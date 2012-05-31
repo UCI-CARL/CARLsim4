@@ -2037,10 +2037,14 @@ digraph G {\n\
 				if (grp_Info[g].WithConductances) {
 					for (int j=0; j<COND_INTEGRATION_SCALE; j++) {
 						float NMDAtmp = (voltage[i]+80)*(voltage[i]+80)/60/60;
+						// There is an instability issue when dealing with large conductances, which causes the membr.
+						// pot. to plateau just below the spike threshold... We cap the "slow" conductances to prevent
+						// this issue. Note: 8.0 and 2.0 seemed to work in some experiments, but it might not be the
+						// best choice in general...
 						float tmpI =  - (  gAMPA[i]*(voltage[i]-0)
-								+ gNMDA[i]*NMDAtmp/(1+NMDAtmp)*(voltage[i]-0)
+								+ MIN(8.0f,gNMDA[i])*NMDAtmp/(1+NMDAtmp)*(voltage[i]-0) // cap gNMDA at 8.0
 								+ gGABAa[i]*(voltage[i]+70)
-								+ gGABAb[i]*(voltage[i]+90));
+								+ MIN(2.0f,gGABAb[i]*(voltage[i]+90))); // cap gGABAb at 2.0
 
 #ifdef NEURON_NOISE
 	float noiseI = -intrinsicWeight[i]*log(getRand());
