@@ -194,12 +194,12 @@
 			postSynCnt += (grp_Info[g].SizeN*grp_Info[g].numPostSynapses);
 			preSynCnt  += (grp_Info[g].SizeN*grp_Info[g].numPreSynapses);
 		}
-		assert(postSynCnt <= numN*numPostSynapses);
+		assert(postSynCnt/numN <= numPostSynapses); // divide by numN to prevent INT overflow
 		postSynapticIds		= new post_info_t[postSynCnt+100];
 		tmp_SynapticDelay	= new uint8_t[postSynCnt+100];	// Temporary array to store the delays of each connection
 		postDelayInfo		= new delay_info_t[numN*(D+1)];	// Possible delay values are 0....D (inclusive of D)
 		cpuSnnSz.networkInfoSize += ((sizeof(post_info_t)+sizeof(uint8_t))*postSynCnt+100) + (sizeof(delay_info_t)*numN*(D+1));
-		assert(preSynCnt <= numN*numPreSynapses);
+		assert(preSynCnt/numN <= numPreSynapses); // divide by numN to prevent INT overflow
 
 		wt  			= new float[preSynCnt+100];
 		maxSynWt     	= new float[preSynCnt+100];
@@ -886,7 +886,7 @@
 
 		assert(Npost[src] >= 0);
 		assert(Npre[dest] >= 0);
-		assert((src*numPostSynapses+p) < numN*numPostSynapses);
+		assert((src*numPostSynapses+p)/numN < numPostSynapses); // divide by numN to prevent INT overflow
 
 		int post_pos = cumulativePost[src] + Npost[src];
 		int pre_pos  = cumulativePre[dest] + Npre[dest];
