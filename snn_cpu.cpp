@@ -2807,19 +2807,17 @@ digraph G {\n\
 	{
 		for(int grpId=0; grpId < numGrp; grpId++) {
 			for(int nid=grp_Info[grpId].StartN; nid <= grp_Info[grpId].EndN; nid++) {
-				int jPos=0;					// this points to the top of the delay queue
-				int cumN=cumulativePost[nid];
-				int cumDelayStart=0;
+				unsigned int jPos=0;					// this points to the top of the delay queue
+				unsigned int cumN=cumulativePost[nid];	// cumulativePost[] is unsigned int
+				unsigned int cumDelayStart=0; 			// Npost[] is unsigned short
 				for(int td = 0; td < D; td++) {
-					int j=jPos;				// start searching from top of the queue until the end
-					int cnt=0;				// store the number of nodes with a delay of td;
+					unsigned int j=jPos;				// start searching from top of the queue until the end
+					unsigned int cnt=0;					// store the number of nodes with a delay of td;
 					while(j < Npost[nid]) {
 						// found a node j with delay=td and we put
 						// the delay value = 1 at array location td=0;
 						if(td==(tmp_SynapticDelay[cumN+j]-1)) {
-
 							assert(jPos<Npost[nid]);
-
 							swapConnections(nid, j, jPos);
 
 							jPos=jPos+1;
@@ -2836,12 +2834,12 @@ digraph G {\n\
 					assert(cumDelayStart <= Npost[nid]);
 				}
 
-				//total cumulative delay should be equal to number of post-synaptic connections	at the end of the loop
+				// total cumulative delay should be equal to number of post-synaptic connections at the end of the loop
 				assert(cumDelayStart == Npost[nid]);
-				for( int j=1; j < Npost[nid]; j++) {
-					int cumN=cumulativePost[nid];
+				for(unsigned int j=1; j < Npost[nid]; j++) {
+					unsigned int cumN=cumulativePost[nid]; // cumulativePost[] is unsigned int
 					if( tmp_SynapticDelay[cumN+j] < tmp_SynapticDelay[cumN+j-1]) {
-						fprintf(stderr, "Post-synaptic delays not sorted corrected...\n");
+						fprintf(stderr, "Post-synaptic delays not sorted correctly...\n");
 						fprintf(stderr, "id=%d, delay[%d]=%d, delay[%d]=%d\n",
 							nid, j, tmp_SynapticDelay[cumN+j], j-1, tmp_SynapticDelay[cumN+j-1]);
 						assert( tmp_SynapticDelay[cumN+j] >= tmp_SynapticDelay[cumN+j-1]);
