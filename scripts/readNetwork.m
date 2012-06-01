@@ -13,8 +13,8 @@ end
 nrGroups = fread(nid,1,'int32');
 groups = struct('name',{},'startN',{},'endN',{});
 for g=1:nrGroups
-    groups(g).startN = fread(nid,1,'int32')+1;
-    groups(g).endN = fread(nid,1,'int32')+1;
+    groups(g).startN = fread(nid,1,'int32'); // start index at 0
+    groups(g).endN = fread(nid,1,'int32');
     groups(g).name = char(fread(nid,100,'int8')');
     groups(g).name = groups(g).name(groups(g).name>0);
 end
