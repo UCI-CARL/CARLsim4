@@ -2035,16 +2035,21 @@ digraph G {\n\
 				assert(i < numNReg);
 
 				if (grp_Info[g].WithConductances) {
+					// all the tmpIs will be summed into current[i] in the following loop
+					current[i] = 0.0f;
+
 					for (int j=0; j<COND_INTEGRATION_SCALE; j++) {
 						float NMDAtmp = (voltage[i]+80)*(voltage[i]+80)/60/60;
 						// There is an instability issue when dealing with large conductances, which causes the membr.
 						// pot. to plateau just below the spike threshold... We cap the "slow" conductances to prevent
 						// this issue. Note: 8.0 and 2.0 seemed to work in some experiments, but it might not be the
-						// best choice in general...
+						// best choice in general... compare updateNeuronState() in snn_gpu.cu
 						float tmpI =  - (  gAMPA[i]*(voltage[i]-0)
 								+ MIN(8.0f,gNMDA[i])*NMDAtmp/(1+NMDAtmp)*(voltage[i]-0) // cap gNMDA at 8.0
 								+ gGABAa[i]*(voltage[i]+70)
 								+ MIN(2.0f,gGABAb[i]*(voltage[i]+90))); // cap gGABAb at 2.0
+
+						current[i] += tmpI;
 
 #ifdef NEURON_NOISE
 	float noiseI = -intrinsicWeight[i]*log(getRand());
@@ -2052,7 +2057,6 @@ digraph G {\n\
 	tmpI += noiseI;
 #endif
 
-//						Icurrent[i] = tmpI;
 						voltage[i]+=((0.04f*voltage[i]+5)*voltage[i]+140-recovery[i]+tmpI)/COND_INTEGRATION_SCALE;
 						assert(!isnan(voltage[i]) && !isinf(voltage[i]));
 
