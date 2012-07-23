@@ -2047,7 +2047,7 @@ digraph G {\n\
 						float tmpI =  - (  gAMPA[i]*(voltage[i]-0)
 								+ MIN(8.0f,gNMDA[i])*NMDAtmp/(1+NMDAtmp)*(voltage[i]-0) // cap gNMDA at 8.0
 								+ gGABAa[i]*(voltage[i]+70)
-								+ MIN(2.0f,gGABAb[i]*(voltage[i]+90))); // cap gGABAb at 2.0
+								+ MIN(2.0f,gGABAb[i])*(voltage[i]+90)); // cap gGABAb at 2.0
 
 						current[i] += tmpI;
 

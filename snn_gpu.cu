@@ -916,9 +916,9 @@
 				// this issue. Note: 8.0 and 2.0 seemed to work in some experiments, but it might not be the
 				// best choice in general... compare globalStateUpdate() in snn_cpu.cpp
 				I_sum = - ( gpuPtrs.gAMPA[nid]*(v-0)
-					+ min(8.0f, gpuPtrs.gNMDA[nid]*NMDAtmp/(1+NMDAtmp)*(v-0)) // cap gNMDA at 8.0
+					+ min(8.0f,gpuPtrs.gNMDA[nid])*NMDAtmp/(1+NMDAtmp)*(v-0) // cap gNMDA at 8.0
 					+ gpuPtrs.gGABAa[nid]*(v+70)
-					+ min(2.0f, gpuPtrs.gGABAb[nid]*(v+90))); // cap gGABAb at 2.0
+					+ min(2.0f,gpuPtrs.gGABAb[nid])*(v+90)); // cap gGABAb at 2.0
 			}
 			else
 				I_sum = gpuPtrs.current[nid];
