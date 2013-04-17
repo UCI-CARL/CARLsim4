@@ -2195,13 +2195,13 @@ digraph G {\n\
 	// reorganize the network and do the necessary allocation
 	// of all variable for carrying out the simulation..
 	// this code is run only one time during network initialization
-	void CpuSNN::setupNetwork(int simType, bool removeTempMem)
+	void CpuSNN::setupNetwork(int simType, int ithGPU, bool removeTempMem)
 	{
 		if(!doneReorganization)
 			reorganizeNetwork(removeTempMem, simType);
 
 		if((simType == GPU_MODE) && (cpu_gpuNetPtrs.allocated == false))
-			allocateSNN_GPU();
+			allocateSNN_GPU(ithGPU);
 	}
 
 	bool CpuSNN::updateTime()
@@ -2226,7 +2226,7 @@ digraph G {\n\
 	}
 
 	// Run the simulation for n sec
-	int CpuSNN::runNetwork(int _nsec, int _nmsec, int simType, bool enablePrint, int copyState)
+	int CpuSNN::runNetwork(int _nsec, int _nmsec, int simType, int ithGPU, bool enablePrint, int copyState)
 	{
 		DBG(2, fpLog, AT, "runNetwork() called");
 
@@ -2242,7 +2242,7 @@ digraph G {\n\
 		// First time when the network is run we do various kind of space compression,
 		// and data structure optimization to improve performance and save memory.
 
-		setupNetwork(simType);
+		setupNetwork(simType,ithGPU);
 
 		currentMode = simType;
 
