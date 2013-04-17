@@ -499,7 +499,9 @@ class CpuSNN
 
 
 		// run the simulation for n sec
-		int runNetwork(int _nsec, int _tstep = 0, int simType = CPU_MODE, bool enablePrint=false, int copyState=false);
+		// simType can either be CPU_MODE or GPU_MODE
+		// ithGPU: specify on which CUDA device to establish a context
+		int runNetwork(int _nsec, int _tstep = 0, int simType = CPU_MODE, int ithGPU = 0, bool enablePrint=false, int copyState=false);
 
 		bool updateTime(); // returns true when a new second is started
 		uint64_t getSimTime()    { return simTime;    }
@@ -788,7 +790,7 @@ class CpuSNN
 
 
 		// allocates required memory and then initialize the GPU
-		void allocateSNN_GPU();
+		void allocateSNN_GPU(int ithGPU);
 
 		void allocateNetworkParameters();
 
@@ -879,7 +881,7 @@ class CpuSNN
 		// deprecated, may be removed soon...
 		void setDefaultParameters(float alpha_ltp=0, float tau_ltp=0, float alpha_ltd=0, float tau_ltd=0);
 
-		void setupNetwork(int simType=CPU_MODE, bool removeTempMemory=true);
+		void setupNetwork(int simType=CPU_MODE, int ithGPU=0, bool removeTempMemory=true);
 
 
 

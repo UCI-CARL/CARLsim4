@@ -2830,12 +2830,27 @@
 		return;
 	}
 
-	void checkGPUDevice()
+	void checkGPUDevice(int ithGPU)
 	{
+		int devCount;
+		cudaGetDeviceCount(&devCount);
+		cutilCheckMsg("cudaGetDeviceCount failed\n");
+		fprintf(stdout, "Number of CUDA devices : %d\n",devCount);
+
 		int dev = cutGetMaxGflopsDeviceId();
 		fprintf(stdout, "Device with maximum GFLOPs is : %d\n", dev);
 		cudaDeviceProp deviceProp;
-		dev = 0;
+
+		// ithGPU gives an index number on which device to run the simulation
+		// if index exceeds number of devices, use dev 0 instead
+		if (ithGPU>=0 && ithGPU<devCount)
+			dev = ithGPU;
+		else {
+			fprintf(stdout, "Device index %d exceeds number of devices (%d), choose from [0,%d].\n",ithGPU,devCount,devCount-1);
+			fprintf(stdout, "Defaulting to using device 0...\n");
+			dev = 0;
+		}
+
 		cutilSafeCall(cudaGetDeviceProperties(&deviceProp, dev));
 		fprintf(stdout, "\nDevice %d: \"%s\"\n", dev, deviceProp.name);
 		if (deviceProp.major == 1 && deviceProp.minor < 3) {
@@ -2877,7 +2892,7 @@
 	}
 
 	// Allocates required memory and then initialize the GPU
-	void CpuSNN::allocateSNN_GPU()
+	void CpuSNN::allocateSNN_GPU(int ithGPU)
 	{
 		if (D > MAX_SynapticDelay) {
 			printf("Error, you are using a synaptic delay (%d) greater than MAX_SynapticDelay defined in config.h\n",D);
@@ -2890,7 +2905,7 @@
 
 		int gridSize = 64; int blkSize  = 128;
 
-		checkGPUDevice();
+		checkGPUDevice(ithGPU);
 
 		int numN=0;
 		for (int g=0;g<numGrp;g++) {

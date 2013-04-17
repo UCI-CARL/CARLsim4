@@ -1,9 +1,71 @@
+//
+// Copyright (c) 2011 Regents of the University of California. All rights reserved.
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions
+// are met:
+//
+// 1. Redistributions of source code must retain the above copyright
+//    notice, this list of conditions and the following disclaimer.
+//
+// 2. Redistributions in binary form must reproduce the above copyright
+//    notice, this list of conditions and the following disclaimer in the
+//    documentation and/or other materials provided with the distribution.
+//
+// 3. The names of its contributors may not be used to endorse or promote
+//    products derived from this software without specific prior written
+//    permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+// "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+// LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+// A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
+// CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+// EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+// PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+// PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+// LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+// NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+// SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+/*
+ * Large-scale simulation of cortical visual processing.
+ * This code implements both (i) the color opponency model (De Valoisetal.,1958; LivingstoneandHubel,1984) as well as
+ * (ii) the motion energy model (Simoncelli & Heeger, 1998). The original version of this code has been released as
+ * part of the publication
+ * Richert, M., Nageswaran, J.M., Dutt, N., and Krichmar, J.L. (2011). "An efficient simulation environment for modeling
+ * large-scale cortical processing". Frontiers in Neuroinformatics 5, 1-15.
+ *
+ * Creator: Micah Richert
+ * Curator: Michael Beyeler
+ *
+ * Ver 02/15/2013
+ */
+
+
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <cufft.h>
 #include <cutil_inline.h>
 #define IMUL(a, b) __mul24(a, b)
+
+// In order to run the color opponency / motion energy model within your simulation, you need to declare the function
+// in your "main_[].cpp" à la:
+// void calcColorME(int nrX, int nrY, unsigned char* stim, float* red_green, float* green_red, float* blue_yellow, float* yellow_blue, float* ME, bool GPUpointers);
+//	input arguments:
+//		nrX:	input dimension, x-coordinate
+//		nrY:	input dimension, y-coordinate
+//		stim:	RGB input stimulus, must be a nrX*nrY*3 array of unsigned chars, where the R, G, and B values of each
+//				pixel is ordered as R1 G1 B1 R2 G2 B2 ...
+//	output arguments (pre-allocated):
+//		red_green:		red-green channel, pre-allocated array of floats with dimensionality nrX*nrY
+//		green_red:		green-red channel: pre-allocated array of floats with dimensionality nrX*nrY
+//		blue_yellow:	blue-yellow channel: pre-allocated array of floats with dimensionality nrX*nrY
+//		yellow_blue:	yellow-blue channel: pre-allocated array of floats with dimensionality nrX*nrY
+//		ME:				motion energy, V1 complex cells: pre-allocated array of floats with dimensionality nrX*nrY*28*3
+
 
 // 28 space-time orientations of V1 simple cells
 #define nrDirs 28
