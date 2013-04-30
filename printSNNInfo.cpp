@@ -97,7 +97,7 @@ extern RNG_rand48* gpuRand48;
 		fprintf(fp, "\n*** Network configuration dumped in %s.dot file...\n\
 				Use graphViz to see the network connectivity...\n\n", networkName.c_str());
 		fprintf(fp, "*********** %s Simulation Summary **********\n", (currentMode == GPU_MODE)?("GPU"):"CPU");
-		fprintf(fp, "Network Parameters: \n\tN = %d (numNExcReg:numNInhReg=%2.1f:%2.1f), numPostSynapses = %d, D = %d\n", numN, 100.0*numNExcReg/numN, 100.0*numNInhReg/numN, numPostSynapses, D);
+		fprintf(fp, "Network Parameters: \n\tnumNeurons = %d (numNExcReg:numNInhReg=%2.1f:%2.1f), numSynapses = %d, D = %d\n", numN, 100.0*numNExcReg/numN, 100.0*numNInhReg/numN, postSynCnt, D);
 		fprintf(fp, "Random Seed: %d\n", randSeed);
 		fprintf(fp, "Timing: \n\tModel Simulation Time = %lld sec \n\tActual Execution Time = %4.2f sec\n",  (unsigned long long)simTimeSec, etime/1000.0);
 		fprintf(fp, "Average Firing Rate \n\t2+ms delay = %3.3f Hz \n\t1ms delay = %3.3f Hz \n\tOverall = %3.3f Hz\n",
