@@ -1,32 +1,41 @@
-//
-// Copyright (c) 2011 Regents of the University of California. All rights reserved.
-//
-// Redistribution and use in source and binary forms, with or without
-// modification, are permitted provided that the following conditions
-// are met:
-//
-// 1. Redistributions of source code must retain the above copyright
-//    notice, this list of conditions and the following disclaimer.
-//
-// 2. Redistributions in binary form must reproduce the above copyright
-//    notice, this list of conditions and the following disclaimer in the
-//    documentation and/or other materials provided with the distribution.
-//
-// 3. The names of its contributors may not be used to endorse or promote
-//    products derived from this software without specific prior written
-//    permission.
-//
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-// "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-// LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-// A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
-// CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
-// EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
-// PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
-// PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
-// LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-// NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-// SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+/*
+ * Copyright (c) 2013 Regents of the University of California. All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ *
+ * 3. The names of its contributors may not be used to endorse or promote
+ *    products derived from this software without specific prior written
+ *    permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
+ * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+ * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ * *********************************************************************************************** *
+ * created by: 		Micah Richert, Jayram M. Nageswaran
+ * maintained by:	Mike Avery <averym@uci.edu>, Michael Beyeler <mbeyeler@uci.edu>,
+ *					Kristofor Carlson <kdcarlso@uci.edu>
+ *
+ * CARLsim 1.1
+ * Ver 07/13/2013
+ */
 
 	#include "config.h"
 	#include "snn.h"
@@ -451,7 +460,8 @@
 		// This is fully uncoalsced access...need to convert to coalsced access..
 		gpuPtrs.voltage[nid] = gpuPtrs.Izh_c[nid];
 		gpuPtrs.recovery[nid] += gpuPtrs.Izh_d[nid];
-		gpuPtrs.lastSpikeTime[nid] = simTime;
+		if (gpuGrpInfo[grpId].WithSTDP)
+			gpuPtrs.lastSpikeTime[nid] = simTime;
 		gpuPtrs.nSpikeCnt[nid]++;
 	}
 
@@ -604,8 +614,8 @@
 			uint16_t grpId = fireGrpId[pos];
 			if (gpuGrpInfo[grpId].WithSTDP) { // MDR, FIXME this probably will cause more thread divergence than need be...
 				int  nid   = fireTablePtr[pos];
-				int  end_p = gpuPtrs.cumulativePre[nid] + gpuPtrs.Npre_plastic[nid];
-				for(int p  = gpuPtrs.cumulativePre[nid] + threadIdx.x%LTP_GROUPING_SZ;
+				unsigned int  end_p = gpuPtrs.cumulativePre[nid] + gpuPtrs.Npre_plastic[nid];
+				for(unsigned int p  = gpuPtrs.cumulativePre[nid] + threadIdx.x%LTP_GROUPING_SZ;
 						p < end_p;
 						p+=LTP_GROUPING_SZ) {
 					int stdp_tDiff = (simTime - gpuPtrs.synSpikeTime[p]);
@@ -749,7 +759,8 @@
 					if (retCode != 0) return;
 					// update based on stdp rule
 					// KILLME !!! if (simTime > 0))
-					gpu_updateLTP (fireTable, fireGrpId, fireCnt, simTime);
+					if (gpuNetInfo.sim_with_stdp)
+						gpu_updateLTP (fireTable, fireGrpId, fireCnt, simTime);
 
 					// reset counters
 					if (0==threadIdx.x) {
@@ -768,7 +779,9 @@
 		if (fireCnt) {
 			int retCode = newFireUpdate(fireTable, fireGrpId, fireCnt, fireCntD1, simTime);
 			if (retCode != 0) return;
-			gpu_updateLTP(fireTable, fireGrpId, fireCnt, simTime);
+			
+			if (gpuNetInfo.sim_with_stdp)
+				gpu_updateLTP(fireTable, fireGrpId, fireCnt, simTime);
 			MEASURE_GPU(0, 1);
 		}
 	}
@@ -826,7 +839,7 @@
 				float GABAa_sum   =  0.0;
 				float GABAb_sum   =  0.0;
 				int   lmt       =  gpuPtrs.Npre[post_nid];
-				int   cum_pos   =  gpuPtrs.cumulativePre[post_nid];
+				unsigned int   cum_pos   =  gpuPtrs.cumulativePre[post_nid];
 				
 				// find the total current to this neuron...
 				for(int j=0; (lmt)&&(j <= ((lmt-1)>>LOG_CURRENT_GROUP)); j++) {
@@ -1057,8 +1070,9 @@
 	//   3. We read each value of "wtChange" and update the value of "synaptic weights wt".
 	//      We also clip the "synaptic weight wt" to lie within the required range.
 	//////////////////////////////////////////////////////////////////
-	__device__ void updateSynapticWeights(int& nid, int& jpos, int& grpId)
+	__device__ void updateSynapticWeights(int& nid, unsigned int& jpos, int& grpId)
 	{
+		// This function does not get called if the neuron group has all fixed weights.
 		float t_wt   	  = gpuPtrs.wt[jpos];
 		float t_wtChange  = gpuPtrs.wtChange[jpos];
 		float t_maxWt 	  = gpuPtrs.maxSynWt[jpos];
@@ -1117,22 +1131,14 @@
 			// update the synaptic weights from the synaptic weight derivatives
 			for(; nid < startId+lastId; nid+=grpNCnt) {
 				int Npre_plastic = gpuPtrs.Npre_plastic[nid];
-				int cumulativePre = gpuPtrs.cumulativePre[nid];
+				unsigned int cumulativePre = gpuPtrs.cumulativePre[nid];
 
 				const int threadIdGrp   = (threadIdx.x%UPWTS_CLUSTERING_SZ);
 				// synaptic grouping
-				for(int j=cumulativePre; j < (cumulativePre+Npre_plastic); j+=UPWTS_CLUSTERING_SZ) {
+				for(unsigned int j=cumulativePre; j < (cumulativePre+Npre_plastic); j+=UPWTS_CLUSTERING_SZ) {
 					//excitatory connection change the synaptic weights
-					int jpos=j+threadIdGrp;
+					unsigned int jpos=j+threadIdGrp;
 					if(jpos < (cumulativePre+Npre_plastic)) {
-						//fprintf(fpProgLog,"%1.2f %1.2f \t", wt[offset+j]*10, wtChange[offset+j]*10);
-//						if (nid == gpuGrpInfo[grpId].StartN)  {
-//							if (testVarCnt < gpuNetInfo.numN) {
-//								int val = atomicAdd(&testVarCnt, 2);
-//								gpuPtrs.testVar[val]   = gpuPtrs.wt[jpos]*10;
-//								gpuPtrs.testVar[val+1] = gpuPtrs.wtChange[jpos]*10;
-//							}
-//						}
 						updateSynapticWeights(nid, jpos, grpId);
 					}
 				}
@@ -1206,7 +1212,7 @@
 		int syn_id = GET_CONN_SYN_ID(post_info); //(post_info>>POST_SYN_NEURON_BITS)&POST_SYN_CONN_MASK;
 
 		// get the actual position of the synapses and other variables...
-		int pos_ns = gpuPtrs.cumulativePre[nid] + syn_id;
+		unsigned int pos_ns = gpuPtrs.cumulativePre[nid] + syn_id;
 
 //		uint16_t pre_grpId = GET_FIRING_TABLE_GID(firingId);
 //		int pre_nid = GET_FIRING_TABLE_NID(firingId);
@@ -1233,12 +1239,6 @@
 			int stdp_tDiff = simTime-gpuPtrs.lastSpikeTime[nid];
 			if ((stdp_tDiff >= 0) && ((stdp_tDiff*gpuGrpInfo[post_grpId].TAU_LTD_INV)<25)) {
 				gpuPtrs.wtChange[pos_ns] -= STDP( stdp_tDiff, gpuGrpInfo[post_grpId].ALPHA_LTD, gpuGrpInfo[post_grpId].TAU_LTD_INV); // uncoalesced access
-				// gpuPtrs.wtChange[pos_ns] -= GPU_LTD(stdp_tDiff);	  //uncoalesced access
-//				int val = atomicAdd(&testVarCnt, 4);
-//				gpuPtrs.testVar[val]   = 1+nid;
-//				gpuPtrs.testVar[val+1] = 1+syn_id;
-//				gpuPtrs.testVar[val+2] = 1+gpuPtrs.wtChange[pos_ns];
-//				gpuPtrs.testVar[val+3] = 1+stdp_tDiff;
 			}
 		}
 	
@@ -1633,18 +1633,21 @@
 		if(allocateMem)   	cutilSafeCall( cudaMalloc((void**) &dest->Npre, sizeof(dest->Npre[0])*numN));
 		cutilSafeCall( cudaMemcpy( dest->Npre, Npre, sizeof(dest->Npre[0])*numN, cudaMemcpyHostToDevice));
 
-		// presyn excitatory connections
-		if(allocateMem)     cutilSafeCall( cudaMalloc( (void**) &dest->Npre_plastic, sizeof(dest->Npre_plastic[0])*numN));
-		cutilSafeCall( cudaMemcpy( dest->Npre_plastic, Npre_plastic, sizeof(dest->Npre_plastic[0])*numN, cudaMemcpyHostToDevice));
+		// we don't need these data structures if the network doesn't have any plastic synapses at all
+		if (!sim_with_fixedwts) {
+			// presyn excitatory connections
+			if(allocateMem)     cutilSafeCall( cudaMalloc( (void**) &dest->Npre_plastic, sizeof(dest->Npre_plastic[0])*numN));
+			cutilSafeCall( cudaMemcpy( dest->Npre_plastic, Npre_plastic, sizeof(dest->Npre_plastic[0])*numN, cudaMemcpyHostToDevice));
 
-		float* Npre_plasticInv = new float[numN];
-		for (int i=0;i<numN;i++) Npre_plasticInv[i] = 1.0/Npre_plastic[i];
+			float* Npre_plasticInv = new float[numN];
+			for (int i=0;i<numN;i++) Npre_plasticInv[i] = 1.0/Npre_plastic[i];
 
-		if(allocateMem)     cutilSafeCall( cudaMalloc( (void**) &dest->Npre_plasticInv, sizeof(dest->Npre_plasticInv[0])*numN));
-		cutilSafeCall( cudaMemcpy( dest->Npre_plasticInv, Npre_plasticInv, sizeof(dest->Npre_plasticInv[0])*numN, cudaMemcpyHostToDevice));
+			if(allocateMem)     cutilSafeCall( cudaMalloc( (void**) &dest->Npre_plasticInv, sizeof(dest->Npre_plasticInv[0])*numN));
+			cutilSafeCall( cudaMemcpy( dest->Npre_plasticInv, Npre_plasticInv, sizeof(dest->Npre_plasticInv[0])*numN, cudaMemcpyHostToDevice));
 
-		delete[] Npre_plasticInv;
-
+			delete[] Npre_plasticInv;
+		}
+		
 		// beginning position for the pre-synaptic information
 		if(allocateMem)     cutilSafeCall( cudaMalloc( (void**) &dest->cumulativePre, sizeof(int)*numN));
 		cutilSafeCall( cudaMemcpy( dest->cumulativePre, cumulativePre, sizeof(int)*numN, cudaMemcpyHostToDevice));
@@ -1915,7 +1918,7 @@
 
 	void CpuSNN::copyWeightState (network_ptr_t* dest, network_ptr_t* src,  cudaMemcpyKind kind, int allocateMem, int grpId)
 	{
-		int length_wt, cumPos_syn;
+		unsigned int length_wt, cumPos_syn;
 
 		assert(allocateMem==0);
 
@@ -1941,23 +1944,23 @@
 			}
 
 			assert (cumPos_syn < preSynCnt);
-			assert (cumPos_syn >=  0);
-
 			assert (length_wt <= preSynCnt);
-			assert (length_wt >= 0);
+			
 //MDR FIXME, allocateMem option is VERY wrong
 			// synaptic information based
 			
 //			if(allocateMem)		cutilSafeCall( cudaMalloc( (void**) &dest->wt, sizeof(float)*length_wt));
 			cutilSafeCall( cudaMemcpy( &dest->wt[cumPos_syn], &src->wt[cumPos_syn], sizeof(float)*length_wt,  kind));
 
-			// synaptic weight derivative
-//			if(allocateMem)		cutilSafeCall( cudaMalloc( (void**) &dest->wtChange, sizeof(float)*length_wt));
-			cutilSafeCall( cudaMemcpy( &dest->wtChange[cumPos_syn], &src->wtChange[cumPos_syn], sizeof(float)*length_wt, kind));
-
 			// firing time for individual synapses
 //			if(allocateMem)		cutilSafeCall( cudaMalloc( (void**) &dest->synSpikeTime, sizeof(int)*length_wt));
 			cutilSafeCall( cudaMemcpy( &dest->synSpikeTime[cumPos_syn], &src->synSpikeTime[cumPos_syn], sizeof(int)*length_wt, kind));
+
+			if (!sim_with_fixedwts) {
+				// synaptic weight derivative
+	//			if(allocateMem)		cutilSafeCall( cudaMalloc( (void**) &dest->wtChange, sizeof(float)*length_wt));
+				cutilSafeCall( cudaMemcpy( &dest->wtChange[cumPos_syn], &src->wtChange[cumPos_syn], sizeof(float)*length_wt, kind));
+			}
 		}
 	}
 
@@ -1976,18 +1979,23 @@
 		if(allocateMem)		cutilSafeCall( cudaMalloc( (void**) &dest->wt, sizeof(float)*preSynCnt));
 		cutilSafeCall( cudaMemcpy( dest->wt, wt, sizeof(float)*preSynCnt, cudaMemcpyHostToDevice));
 
-		// synaptic weight derivative
-		if(allocateMem)		cutilSafeCall( cudaMalloc( (void**) &dest->wtChange, sizeof(float)*preSynCnt));
-		cutilSafeCall( cudaMemcpy( dest->wtChange, wtChange, sizeof(float)*preSynCnt, cudaMemcpyHostToDevice));
+		// we don't need these data structures if the network doesn't have any plastic synapses at all
+		// they show up in gpuUpdateLTP() and updateSynapticWeights(), two functions that do not get called if
+		// sim_with_fixedwts is set
+		if (!sim_with_fixedwts) {
+			// synaptic weight derivative
+			if(allocateMem)		cutilSafeCall( cudaMalloc( (void**) &dest->wtChange, sizeof(float)*preSynCnt));
+			cutilSafeCall( cudaMemcpy( dest->wtChange, wtChange, sizeof(float)*preSynCnt, cudaMemcpyHostToDevice));
+
+			// synaptic weight maximum value
+			if(allocateMem)		cutilSafeCall( cudaMalloc( (void**) &dest->maxSynWt, sizeof(float)*preSynCnt));
+			cutilSafeCall( cudaMemcpy( dest->maxSynWt, maxSynWt, sizeof(float)*preSynCnt, cudaMemcpyHostToDevice));
+		}
 
 		// firing time for individual synapses
 		if(allocateMem)		cutilSafeCall( cudaMalloc( (void**) &dest->synSpikeTime, sizeof(int)*preSynCnt));
-		cutilSafeCall( cudaMemcpy( dest->synSpikeTime, synSpikeTime, sizeof(int)*preSynCnt, cudaMemcpyHostToDevice));
+		cutilSafeCall( cudaMemcpy( dest->synSpikeTime, synSpikeTime, sizeof(int)*preSynCnt, cudaMemcpyHostToDevice));		
 		net_Info.preSynLength = preSynCnt;
-
-		// synaptic weight maximum value...
-		if(allocateMem)		cutilSafeCall( cudaMalloc( (void**) &dest->maxSynWt, sizeof(float)*preSynCnt));
-		cutilSafeCall( cudaMemcpy( dest->maxSynWt, maxSynWt, sizeof(float)*preSynCnt, cudaMemcpyHostToDevice));
 
 		assert(net_Info.maxSpikesD1 != 0);
 		if(allocateMem) {
@@ -2003,10 +2011,13 @@
 		if(allocateMem)		cutilSafeCall( cudaMalloc( (void**) &dest->firingTableD2, sizeof(int)*net_Info.maxSpikesD2));
 		if (net_Info.maxSpikesD2>0) cutilSafeCall( cudaMemcpy( dest->firingTableD2, firingTableD2, sizeof(int)*net_Info.maxSpikesD2, cudaMemcpyHostToDevice));
 
-		// neuron firing time..
-		if(allocateMem)     cutilSafeCall( cudaMalloc( (void**) &dest->lastSpikeTime, sizeof(int)*numNReg));
-		cutilSafeCall( cudaMemcpy( dest->lastSpikeTime, lastSpikeTime, sizeof(int)*numNReg, cudaMemcpyHostToDevice));
-
+		// we don't need this data structure if the network doesn't have any plastic synapses at all
+		if (!sim_with_fixedwts) {
+			// neuron firing time..
+			if(allocateMem)     cutilSafeCall( cudaMalloc( (void**) &dest->lastSpikeTime, sizeof(int)*numNReg));
+			cutilSafeCall( cudaMemcpy( dest->lastSpikeTime, lastSpikeTime, sizeof(int)*numNReg, cudaMemcpyHostToDevice));
+		}
+		
 		if(allocateMem)		cutilSafeCall( cudaMalloc( (void**) &dest->spikeGenBits, sizeof(int)*(NgenFunc/32+1)));
 
 		// copy the neuron state information to the GPU..
@@ -2257,7 +2268,10 @@
         		retErrVal[0][i++]= gpuPtrs.poissonRandPtr[1];
         		retErrVal[0][i++]= gpuNetInfo.maxSpikesD1;
         		retErrVal[0][i++]= gpuNetInfo.maxSpikesD2;
+        		retErrVal[0][i++]= gpuNetInfo.sim_with_fixedwts;
         		retErrVal[0][i++]= gpuNetInfo.sim_with_conductances;
+        		retErrVal[0][i++]= gpuNetInfo.sim_with_stdp;
+        		retErrVal[0][i++]= gpuNetInfo.sim_with_stp;
         		retErrVal[0][i++]= gpuGrpInfo[0].MonitorId;
         		retErrVal[0][i++]= gpuGrpInfo[1].MonitorId;
         		retErrVal[0][i++]= gpuGrpInfo[0].WithSTP;
@@ -2670,6 +2684,7 @@
 		// printState("globalState update\n");
 		//printTestVarInfo(stderr, "globalStateUpdate_GPU", true, false, false, 0, 1);
 
+		// FIXME: WTF is this!??
 		for (int grpId=20; 0 & grpId < 25; grpId++) {
 			int ptrPos  = grp_Info[grpId].StartN;
 			int length  = grp_Info[grpId].SizeN;
@@ -2822,7 +2837,9 @@
 		net_Info.maxSpikesD2 = maxSpikesD2;
 		net_Info.maxSpikesD1 = maxSpikesD1;
 		net_Info.numProbe = numProbe;
+		net_Info.sim_with_fixedwts = sim_with_fixedwts;
 		net_Info.sim_with_conductances = sim_with_conductances;
+		net_Info.sim_with_stdp = sim_with_stdp;
 		net_Info.sim_with_stp = sim_with_stp;
 		net_Info.numGrp = numGrp;
 		cpu_gpuNetPtrs.memType = GPU_MODE;
@@ -2923,20 +2940,46 @@
 		cpu_gpuNetPtrs.poissonRandPtr = (unsigned int*) gpuPoissonRand->get_random_numbers();
 
 		//ensure that we dont do all the above optimizations again		
-		assert(doneReorganization == true);		
+		assert(doneReorganization == true);
+		
+		// display some memory management info
+		size_t avail, total, previous;
+		float toGB = 1024.0*1024.0*1024.0;
+		cudaMemGetInfo(&avail,&total);
+		printf("GPU Memory Management (Total %2.3f GB)\n",(float)(total/toGB));
+		printf("Data\t\t\tSize\t\tTotal Used\tTotal Available\n");
+		printf("Init:\t\t\t%2.3f GB\t%2.3f GB\t%2.3f GB\n",(float)(total)/toGB,(float)((total-avail)/toGB),(float)(avail/toGB));
+		previous=avail;
 
 		allocateNetworkParameters();
+		cudaMemGetInfo(&avail,&total);
+		printf("Ntw Params:\t\t%2.3f GB\t%2.3f GB\t%2.3f GB\n",(float)(previous-avail)/toGB,(float)((total-avail)/toGB),(float)(avail/toGB));
+		previous=avail;
 
 		allocateStaticLoad(blkSize);
+		cudaMemGetInfo(&avail,&total);
+		printf("Static Load:\t\t%2.3f GB\t%2.3f GB\t%2.3f GB\n",(float)(previous-avail)/toGB,(float)((total-avail)/toGB),(float)(avail/toGB));
+		previous=avail;
 
 		allocateGroupId();
+		cudaMemGetInfo(&avail,&total);
+		printf("Group Id:\t\t%2.3f GB\t%2.3f GB\t%2.3f GB\n",(float)(previous-avail)/toGB,(float)((total-avail)/toGB),(float)(avail/toGB));
+		previous=avail;
 
 		// this table is useful for quick evaluation of the position of fired neuron
 		// given a sequence of bits denoting the firing..
 		initTableQuickSynId();
 		gpuProbeInit(&cpu_gpuNetPtrs);
+
 		copyConnections(&cpu_gpuNetPtrs,  cudaMemcpyHostToDevice, 1);
+		cudaMemGetInfo(&avail,&total);
+		printf("Conn Info:\t\t%2.3f GB\t%2.3f GB\t%2.3f GB\n",(float)(previous-avail)/toGB,(float)((total-avail)/toGB),(float)(avail/toGB));
+		previous=avail;
+
 		copyState(&cpu_gpuNetPtrs, cudaMemcpyHostToDevice, 1);
+		cudaMemGetInfo(&avail,&total);
+		printf("State Info:\t\t%2.3f GB\t%2.3f GB\t%2.3f GB\n",(float)(previous-avail)/toGB,(float)((total-avail)/toGB),(float)(avail/toGB));
+		previous=avail;
 		
 		// copy relevant pointers and network information to GPU
 		void* devPtr;

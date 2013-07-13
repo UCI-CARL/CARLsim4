@@ -1,33 +1,42 @@
-//
-// Copyright (c) 2011 Regents of the University of California. All rights reserved.
-//
-// Redistribution and use in source and binary forms, with or without
-// modification, are permitted provided that the following conditions
-// are met:
-//
-// 1. Redistributions of source code must retain the above copyright
-//    notice, this list of conditions and the following disclaimer.
-//
-// 2. Redistributions in binary form must reproduce the above copyright
-//    notice, this list of conditions and the following disclaimer in the
-//    documentation and/or other materials provided with the distribution.
-//
-// 3. The names of its contributors may not be used to endorse or promote
-//    products derived from this software without specific prior written
-//    permission.
-//
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-// "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-// LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-// A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
-// CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
-// EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
-// PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
-// PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
-// LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-// NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-// SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
+/*
+ * Copyright (c) 2013 Regents of the University of California. All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ *
+ * 3. The names of its contributors may not be used to endorse or promote
+ *    products derived from this software without specific prior written
+ *    permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
+ * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+ * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ * *********************************************************************************************** *
+ * created by: 		Micah Richert, Jayram M. Nageswaran
+ * maintained by:	Mike Avery <averym@uci.edu>, Michael Beyeler <mbeyeler@uci.edu>,
+ *					Kristofor Carlson <kdcarlso@uci.edu>
+ *
+ * CARLsim 1.1
+ * Ver 07/13/2013
+ */ 
+ 
 #include "snn.h"
 #include <sstream>
 
@@ -139,8 +148,6 @@
 		Izh_c	 = new float[numNReg];
 		Izh_d	 = new float[numNReg];
 		current	 = new float[numNReg];
-		nextTaste  = new unsigned int[numNReg];
-		nextDeath  = new unsigned int[numNReg];
 		cpuSnnSz.neuronInfoSize += (sizeof(int)*numNReg*12);
 
 		if (sim_with_conductances) {
@@ -191,6 +198,9 @@
 		postSynCnt = 0;	// stores the total number of post-synaptic connections in the network
 		preSynCnt  = 0;	// stores the total number of pre-synaptic connections in the network
 		for(int g=0; g < numGrp; g++) {
+			// check for INT overflow: postSynCnt is O(numNeurons*numSynapses), must be able to fit within u int limit
+			assert(postSynCnt < UINT_MAX - (grp_Info[g].SizeN*grp_Info[g].numPostSynapses));
+			assert(preSynCnt < UINT_MAX - (grp_Info[g].SizeN*grp_Info[g].numPreSynapses));
 			postSynCnt += (grp_Info[g].SizeN*grp_Info[g].numPostSynapses);
 			preSynCnt  += (grp_Info[g].SizeN*grp_Info[g].numPreSynapses);
 		}
@@ -277,8 +287,10 @@
 
 	CpuSNN::CpuSNN(const string& _name, int _numConfig, int _randSeed, int _mode)
 	{
+		MAJOR_VERSION = 1;
+		MINOR_VERSION = 2;
 		fprintf(stdout, "************************************************\n");
-		fprintf(stdout, "***** GPU-SNN Simulation Begins Version 0.3 *** \n");
+		fprintf(stdout, "***** GPU-SNN Simulation Begins Version %d.%d *** \n",MAJOR_VERSION,MINOR_VERSION);
 		fprintf(stdout, "************************************************\n");
 
 		// initialize propogated spike buffers.....
@@ -409,7 +421,9 @@
 
 		spikeRateUpdated = false;
 
-		sim_with_conductances = false;
+		sim_with_fixedwts = true; // default is true, will be set to false if there are any plastic synapses
+		sim_with_conductances = false; // for all others, the default is false
+		sim_with_stdp = false;
 		sim_with_stp = false;
 
 		maxSpikesD2 = maxSpikesD1 = 0;
@@ -515,6 +529,8 @@
 		} else {
 			int cGrpId = getGroupId(grpId, configId);
 
+			sim_with_stdp |= enable;
+			
 			grp_Info[cGrpId].WithSTDP      = enable;
 			grp_Info[cGrpId].ALPHA_LTP     = ALPHA_LTP;
 			grp_Info[cGrpId].ALPHA_LTD     = ALPHA_LTD;
@@ -551,9 +567,7 @@
 			int cGrpId = getGroupId(grpId, configId);
 
 			sim_with_stp |= enable;
-
-			//printf("sim_with_stp: %d\n",sim_with_stp);
-
+			
 			grp_Info[cGrpId].WithSTP     = enable;
 			grp_Info[cGrpId].STP_U=STP_U;
 			grp_Info[cGrpId].STP_tD=STP_tD;
@@ -888,8 +902,8 @@
 		assert(Npre[dest] >= 0);
 		assert((src*numPostSynapses+p)/numN < numPostSynapses); // divide by numN to prevent INT overflow
 
-		int post_pos = cumulativePost[src] + Npost[src];
-		int pre_pos  = cumulativePre[dest] + Npre[dest];
+		unsigned int post_pos = cumulativePost[src] + Npost[src];
+		unsigned int pre_pos  = cumulativePre[dest] + Npre[dest];
 
 		assert(post_pos < postSynCnt);
 		assert(pre_pos  < preSynCnt);
@@ -904,6 +918,7 @@
 		bool synWtType = GET_FIXED_PLASTIC(connProp);
 
 		if (synWtType == SYN_PLASTIC) {
+			sim_with_fixedwts = false; // if network has any plastic synapses at all, this will be set to true
 			Npre_plastic[dest]++;
 		}
 
@@ -1520,7 +1535,7 @@ digraph G {\n\
 		fwrite(&nrCells,sizeof(int),1,fid);
 
 		for (unsigned int i=0;i<nrCells;i++) {
-			int offset = cumulativePost[i];
+			unsigned int offset = cumulativePost[i];
 
 			unsigned int count = 0;
 			for (int t=0;t<D;t++) {
@@ -1677,7 +1692,8 @@ digraph G {\n\
 	}
 
 
-
+	// this is a user function
+	// FIXME is this guy functional? replace it with Kris' version
 	float* CpuSNN::getWeights(int gIDpre, int gIDpost, int& Npre, int& Npost, float* weights) {
 		Npre = grp_Info[gIDpre].SizeN;
 		Npost = grp_Info[gIDpost].SizeN;
@@ -1686,10 +1702,12 @@ digraph G {\n\
 		memset(weights,0,Npre*Npost*sizeof(float));
 
 		// copy the pre synaptic data from GPU, if needed
-		if (currentMode == GPU_MODE) copyWeightState(&cpuNetPtrs, &cpu_gpuNetPtrs, cudaMemcpyDeviceToHost, false, gIDpost);
+		// note: this will not include wtChange[] and synSpikeTime[] if sim_with_fixedwts
+		if (currentMode == GPU_MODE)
+			copyWeightState(&cpuNetPtrs, &cpu_gpuNetPtrs, cudaMemcpyDeviceToHost, false, gIDpost);
 
 		for (int i=grp_Info[gIDpre].StartN;i<grp_Info[gIDpre].EndN;i++) {
-			int offset = cumulativePost[i];
+			unsigned int offset = cumulativePost[i];
 
 			for (int t=0;t<D;t++) {
 				delay_info_t dPar = postDelayInfo[i*(D+1)+t];
@@ -1709,7 +1727,7 @@ digraph G {\n\
 						int s_i = GET_CONN_SYN_ID(post_info);
 
 						// get the cumulative position for quick access...
-						int pos_i = cumulativePre[p_i] + s_i;
+						unsigned int pos_i = cumulativePre[p_i] + s_i;
 
 						weights[i+Npre*(p_i-grp_Info[gIDpost].StartN)] = cpuNetPtrs.wt[pos_i];
 					}
@@ -1720,6 +1738,7 @@ digraph G {\n\
 		return weights;
 	}
 
+	// this is a user function
 	float* CpuSNN::getWeightChanges(int gIDpre, int gIDpost, int& Npre, int& Npost, float* weightChanges) {
 		Npre = grp_Info[gIDpre].SizeN;
 		Npost = grp_Info[gIDpost].SizeN;
@@ -1728,10 +1747,12 @@ digraph G {\n\
 		memset(weightChanges,0,Npre*Npost*sizeof(float));
 
 		// copy the pre synaptic data from GPU, if needed
-		if (currentMode == GPU_MODE) copyWeightState(&cpuNetPtrs, &cpu_gpuNetPtrs, cudaMemcpyDeviceToHost, false, gIDpost);
+		// note: this will not include wtChange[] and synSpikeTime[] if sim_with_fixedwts
+		if (currentMode == GPU_MODE)
+			copyWeightState(&cpuNetPtrs, &cpu_gpuNetPtrs, cudaMemcpyDeviceToHost, false, gIDpost);
 
 		for (int i=grp_Info[gIDpre].StartN;i<grp_Info[gIDpre].EndN;i++) {
-			int offset = cumulativePost[i];
+			unsigned int offset = cumulativePost[i];
 
 			for (int t=0;t<D;t++) {
 				delay_info_t dPar = postDelayInfo[i*(D+1)+t];
@@ -1751,9 +1772,13 @@ digraph G {\n\
 						int s_i = GET_CONN_SYN_ID(post_info);
 
 						// get the cumulative position for quick access...
-						int pos_i = cumulativePre[p_i] + s_i;
+						unsigned int pos_i = cumulativePre[p_i] + s_i;
 
-						weightChanges[i+Npre*(p_i-grp_Info[gIDpost].StartN)] = wtChange[pos_i];
+						// if a group has fixed input weights, it will not have wtChange[] on the GPU side
+						if (grp_Info[gIDpost].FixedInputWts)
+							weightChanges[i+Npre*(p_i-grp_Info[gIDpost].StartN)] = 0.0f;
+						else
+							weightChanges[i+Npre*(p_i-grp_Info[gIDpost].StartN)] = wtChange[pos_i];
 					}
 				}
 			}
@@ -1772,7 +1797,7 @@ digraph G {\n\
 		memset(delays,0,Npre*Npost);
 
 		for (int i=grp_Info[gIDpre].StartN;i<grp_Info[gIDpre].EndN;i++) {
-			int offset = cumulativePost[i];
+			unsigned int offset = cumulativePost[i];
 
 			for (int t=0;t<D;t++) {
 				delay_info_t dPar = postDelayInfo[i*(D+1)+t];
@@ -1792,7 +1817,7 @@ digraph G {\n\
 						int s_i = GET_CONN_SYN_ID(post_info);
 
 						// get the cumulative position for quick access...
-						int pos_i = cumulativePre[p_i] + s_i;
+						unsigned int pos_i = cumulativePre[p_i] + s_i;
 
 						delays[i+Npre*(p_i-grp_Info[gIDpost].StartN)] = t+1;
 					}
@@ -1832,7 +1857,7 @@ digraph G {\n\
 			for(int i=grp_Info[g].StartN; i <= grp_Info[g].EndN; i++) {
 				///nSpikeCnt[i] = 0;
 				assert(i < numNReg);
-				int offset = cumulativePre[i];
+				unsigned int offset = cumulativePre[i];
 				float diff_firing  = 0.0;
 
 				if ((showLogMode >= 1) && (i==grp_Info[g].StartN))
@@ -1910,7 +1935,7 @@ digraph G {\n\
 
 			delay_info_t dPar = postDelayInfo[i*(D+1)+tD];
 
-			int offset = cumulativePost[i];
+			unsigned int offset = cumulativePost[i];
 
 			// for each delay variables
 			for(int idx_d = dPar.delay_index_start;
@@ -1937,7 +1962,7 @@ digraph G {\n\
 
 			delay_info_t dPar = postDelayInfo[neuron_id*(D+1)];
 
-			int  offset = cumulativePost[neuron_id];
+			unsigned int  offset = cumulativePost[neuron_id];
 
 			for(int idx_d = dPar.delay_index_start;
 				idx_d < (dPar.delay_index_start + dPar.delay_length);
@@ -1962,7 +1987,7 @@ digraph G {\n\
 		assert(s_i<(Npre[p_i]));
 
 		// get the cumulative position for quick access...
-		int pos_i = cumulativePre[p_i] + s_i;
+		unsigned int pos_i = cumulativePre[p_i] + s_i;
 
 		assert(p_i < numNReg);
 
@@ -2103,7 +2128,7 @@ digraph G {\n\
 					copyWeightState (&cpuNetPtrs, &cpu_gpuNetPtrs, cudaMemcpyDeviceToHost, false, g);
 				}
 				int i=grp_Info[g].StartN;
-				int offset = cumulativePre[i];
+				unsigned int offset = cumulativePre[i];
 				//fprintf(stderr, "time=%d, Neuron synaptic weights %d:\n", simTime, i);
 				for(int j=0; j < Npre[i]; j++) {
 					//fprintf(stderr, "w=%f c=%f spt=%d\t", wt[offset+j], wtChange[offset+j], synSpikeTime[offset+j]);
@@ -2688,7 +2713,7 @@ digraph G {\n\
 					if (spikeBufferFull)  break;
 
 					if (grp_Info[g].WithSTDP) {
-						int pos_ij = cumulativePre[i];
+						unsigned int pos_ij = cumulativePre[i];
 						for(int j=0; j < Npre_plastic[i]; pos_ij++, j++) {
 							//stdpChanged[pos_ij] = true;
 							int stdp_tDiff = (simTime-synSpikeTime[pos_ij]);
@@ -2769,7 +2794,7 @@ digraph G {\n\
 
 	void CpuSNN::swapConnections(int nid, int oldPos, int newPos)
 	{
-		int cumN=cumulativePost[nid];
+		unsigned int cumN=cumulativePost[nid];
 
 		// Put the node oldPos to the top of the delay queue
 		post_info_t tmp = postSynapticIds[cumN+oldPos];
@@ -3031,7 +3056,7 @@ digraph G {\n\
 			fprintf(fpLog,  "Grp: %d:%s s=%d e=%d  %s\n",  destGrp, grp_Info2[destGrp].Name.c_str(), grp_Info[destGrp].StartN, grp_Info[destGrp].EndN, updateStr);
 
 			for(int nid=grp_Info[destGrp].StartN; nid <= grp_Info[destGrp].EndN; nid++) {
-				int offset = cumulativePre[nid];
+				unsigned int offset = cumulativePre[nid];
 				for (j=0;j<Npre[nid]; j++) wtChange[offset+j] = 0.0;						// synaptic derivatives is reset
 				for (j=0;j<Npre[nid]; j++) synSpikeTime[offset+j] = MAX_SIMULATION_TIME;	// some large negative value..
 				post_info_t *preIdPtr = &preSynapticIds[cumulativePre[nid]];

@@ -431,7 +431,7 @@ int main()
 	// use command-line specified CUDA device, otherwise use device with highest Gflops/s
 //	cutilSafeCall(cudaSetDevice(cutGetMaxGflopsDeviceId()));
 
-	CpuSNN s("global");
+	CpuSNN s("colorblind");
 
 	int v1Cells[5];
 	int num_V1_groups=6;
