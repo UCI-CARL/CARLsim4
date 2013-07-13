@@ -29,13 +29,14 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * *********************************************************************************************** *
- * created by: 		Micah Richert, Jayram M. Nageswaran
- * maintained by:	Mike Avery <averym@uci.edu>, Michael Beyeler <mbeyeler@uci.edu>,
- *					Kristofor Carlson <kdcarlso@uci.edu>
+ * CARLsim
+ * created by: 		(MDR) Micah Richert, (JN) Jayram M. Nageswaran
+ * maintained by:	(MA) Mike Avery <averym@uci.edu>, (MB) Michael Beyeler <mbeyeler@uci.edu>,
+ *					(KDC) Kristofor Carlson <kdcarlso@uci.edu>
  *
  * CARLsim available from http://socsci.uci.edu/~jkrichma/CARL/CARLsim/
  * Ver 07/13/2013
- */
+ */ 
 
 #ifndef __ERROR_CODE_H__
 #define __ERROR_CODE_H__

@@ -1,3 +1,10 @@
+CARLSIM INSTALLATION
+--------------------
+
+CARLsim is available from: http://socsci.uci.edu/~jkrichma/CARL/CARLsim/
+CARLsim was written by: Jayram Moorkanikara Nageswaran (JN), Micah Richert (MDR)
+CARLsim is maintained by: Mike Avery (MA), Michael Beyeler (MB), Kristofor Carlson (KDC)
+
 This code has been predominately developed under Linux and the build instructions reflect that.  
 While the code should function under MS Windows these instructions are not applicable.  We will
 hopefully release instructions in the future on how to setup the code base under Visual Studio 
