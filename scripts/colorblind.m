@@ -1,6 +1,6 @@
 list={'R','G','B','C','M','Y'};
 nrX=64;
-fid=fopen('videos/colorblind.dat','r');
+fid=fopen('../videos/colorblind.dat','r');
 vid=fread(fid,[3*nrX*nrX inf],'uint8');
 fclose(fid);
 inputs = reshape(permute(reshape(vid(:,1:6)/255,3,nrX,nrX,6),[3 2 4 1 ]),[nrX,nrX*6,3]);

@@ -1,6 +1,6 @@
-FrameDur=3300;
+frameDur=3300;
 nrX=32;
-s = readspikes('V4o.dat',FrameDur);
+s = readSpikes('../Results/orientation/V4o.dat',frameDur);
 
 if ~isequal(size(s),[4,nrX*nrX*4]), s(4,nrX*nrX*4) = 0; end
 
