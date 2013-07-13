@@ -1,5 +1,5 @@
 # CARLsim Makefile
-# CARLsim available from http://socsci.uci.edu/~jkrichma/CARL/CARLsim/
+# CARLsim available from http://socsci.uci.edu/~jkrichma/CARLsim/
 # Ver 07/13/2013
 
 # source files of the sim core
