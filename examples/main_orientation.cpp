@@ -1,32 +1,42 @@
-//
-// Copyright (c) 2011 Regents of the University of California. All rights reserved.
-//
-// Redistribution and use in source and binary forms, with or without
-// modification, are permitted provided that the following conditions
-// are met:
-//
-// 1. Redistributions of source code must retain the above copyright
-//    notice, this list of conditions and the following disclaimer.
-//
-// 2. Redistributions in binary form must reproduce the above copyright
-//    notice, this list of conditions and the following disclaimer in the
-//    documentation and/or other materials provided with the distribution.
-//
-// 3. The names of its contributors may not be used to endorse or promote
-//    products derived from this software without specific prior written
-//    permission.
-//
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-// "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-// LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-// A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
-// CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
-// EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
-// PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
-// PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
-// LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-// NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-// SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+/*
+ * Copyright (c) 2013 Regents of the University of California. All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ *
+ * 3. The names of its contributors may not be used to endorse or promote
+ *    products derived from this software without specific prior written
+ *    permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
+ * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+ * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ * *********************************************************************************************** *
+ * CARLsim
+ * created by: 		(MDR) Micah Richert, (JN) Jayram M. Nageswaran
+ * maintained by:	(MA) Mike Avery <averym@uci.edu>, (MB) Michael Beyeler <mbeyeler@uci.edu>,
+ *					(KDC) Kristofor Carlson <kdcarlso@uci.edu>
+ *
+ * CARLsim available from http://socsci.uci.edu/~jkrichma/CARL/CARLsim/
+ * Ver 07/13/2013
+ */ 
 
 #include "snn.h"
 void calcColorME(int nrX, int nrY, unsigned char* stim, float* red_green, float* green_red, float* blue_yellow, float* yellow_blue, float* ME, bool GPUpointers);
@@ -416,6 +426,7 @@ public:
 int main()
 {
 	MTRand	      getRand(210499257);
+	char saveFolder[] = "Results/orientation";
 
 	float synscale = 1;
 	float stdpscale = 1;
@@ -427,6 +438,16 @@ int main()
 	#define FRAMEDURATION 100
 
 	FILE* fid;
+	char thisTmpSave[128]; // temp var to store save folder
+	
+	// if save folder does not exist, create it
+	// read/write/search permissions for owner and group, and with read/search permissions for others
+	int status = mkdir(saveFolder, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+	if (status==-1 && errno!=EEXIST) {
+		printf("ERROR %d: could not create directory: %s\n",errno, strerror(errno));
+		return 1;
+	}
+
 
 	// use command-line specified CUDA device, otherwise use device with highest Gflops/s
 //	cutilSafeCall(cudaSetDevice(cutGetMaxGflopsDeviceId()));
@@ -593,34 +614,34 @@ int main()
 */
 
 	s.setSpikeMonitor(gV1ME);
-	s.setSpikeMonitor(gMT1,"MT1.dat");
-	s.setSpikeMonitor(gMT2,"MT2.dat");
-	s.setSpikeMonitor(gMT3,"MT3.dat");
-	s.setSpikeMonitor(gPFC,"PFC.dat");
-	s.setSpikeMonitor(gMT1i,"MT1i.dat");
-	s.setSpikeMonitor(gPFCi,"PFCi.dat");
+	strcpy(thisTmpSave,saveFolder); s.setSpikeMonitor(gMT1,strcat(thisTmpSave,"spkMT1.dat"));
+	strcpy(thisTmpSave,saveFolder); s.setSpikeMonitor(gMT2,strcat(thisTmpSave,"spkMT2.dat"));
+	strcpy(thisTmpSave,saveFolder); s.setSpikeMonitor(gMT3,strcat(thisTmpSave,"spkMT3.dat"));
+	strcpy(thisTmpSave,saveFolder); s.setSpikeMonitor(gMT1i,strcat(thisTmpSave,"spkMT1i.dat"));
+	strcpy(thisTmpSave,saveFolder); s.setSpikeMonitor(gPFC,strcat(thisTmpSave,"spkPFC.dat"));
+	strcpy(thisTmpSave,saveFolder); s.setSpikeMonitor(gPFCi,strcat(thisTmpSave,"spkPFCi.dat"));
 
-	s.setSpikeMonitor(gV4o,"V4o.dat");
-	s.setSpikeMonitor(gV4oi,"V4oi.dat");
+	strcpy(thisTmpSave,saveFolder); s.setSpikeMonitor(gV4o,strcat(thisTmpSave,"spkV4o.dat"));
+	strcpy(thisTmpSave,saveFolder); s.setSpikeMonitor(gV4oi,strcat(thisTmpSave,"spkV4oi.dat"));
 
-	s.setSpikeMonitor(v1Cells[RED_GREEN],"V1RG.dat");
-	s.setSpikeMonitor(v1Cells[GREEN_RED],"V1GR.dat");
-	s.setSpikeMonitor(v1Cells[BLUE_YELLOW],"V1BY.dat");
-	s.setSpikeMonitor(v1Cells[YELLOW_BLUE],"V1YB.dat");
+	strcpy(thisTmpSave,saveFolder); s.setSpikeMonitor(gV1RG,strcat(thisTmpSave,"spkV1RG.dat"));
+	strcpy(thisTmpSave,saveFolder); s.setSpikeMonitor(gV1GR,strcat(thisTmpSave,"spkV1GR.dat"));
+	strcpy(thisTmpSave,saveFolder); s.setSpikeMonitor(gV1BY,strcat(thisTmpSave,"spkV1BY.dat"));
+	strcpy(thisTmpSave,saveFolder); s.setSpikeMonitor(gV1YB,strcat(thisTmpSave,"spkV1YB.dat"));
 
-	s.setSpikeMonitor(v4CellsExc[RED_V4],"V4R.dat");
-	s.setSpikeMonitor(v4CellsExc[GREEN_V4],"V4G.dat");
-	s.setSpikeMonitor(v4CellsExc[BLUE_V4],"V4B.dat");
-	s.setSpikeMonitor(v4CellsExc[YELLOW_V4],"V4Y.dat");
-	s.setSpikeMonitor(v4CellsExc[CYAN_V4],"V4C.dat");
-	s.setSpikeMonitor(v4CellsExc[MAGENTA_V4],"V4M.dat");
+	strcpy(thisTmpSave,saveFolder); s.setSpikeMonitor(v4CellsExc[RED_V4],strcat(thisTmpSave,"spkV4R.dat"));
+	strcpy(thisTmpSave,saveFolder); s.setSpikeMonitor(v4CellsExc[GREEN_V4],strcat(thisTmpSave,"spkV4G.dat"));
+	strcpy(thisTmpSave,saveFolder); s.setSpikeMonitor(v4CellsExc[BLUE_V4],strcat(thisTmpSave,"spkV4B.dat"));
+	strcpy(thisTmpSave,saveFolder); s.setSpikeMonitor(v4CellsExc[YELLOW_V4],strcat(thisTmpSave,"spkV4Y.dat"));
+	strcpy(thisTmpSave,saveFolder); s.setSpikeMonitor(v4CellsExc[CYAN_V4],strcat(thisTmpSave,"spkV4C.dat"));
+	strcpy(thisTmpSave,saveFolder); s.setSpikeMonitor(v4CellsExc[MAGENTA_V4],strcat(thisTmpSave,"spkV4M.dat"));
 
-	s.setSpikeMonitor(v4CellsInh[RED_V4],"V4Ri.dat");
-	s.setSpikeMonitor(v4CellsInh[GREEN_V4],"V4Gi.dat");
-	s.setSpikeMonitor(v4CellsInh[BLUE_V4],"V4Bi.dat");
-	s.setSpikeMonitor(v4CellsInh[YELLOW_V4],"V4Yi.dat");
-	s.setSpikeMonitor(v4CellsInh[CYAN_V4],"V4Ci.dat");
-	s.setSpikeMonitor(v4CellsInh[MAGENTA_V4],"V4Mi.dat");
+	strcpy(thisTmpSave,saveFolder); s.setSpikeMonitor(v4CellsInh[RED_V4],strcat(thisTmpSave,"spkV4Ri.dat"));
+	strcpy(thisTmpSave,saveFolder); s.setSpikeMonitor(v4CellsInh[GREEN],strcat(thisTmpSave,"spkV4Gi.dat"));
+	strcpy(thisTmpSave,saveFolder); s.setSpikeMonitor(v4CellsInh[BLUE],strcat(thisTmpSave,"spkV4Bi.dat"));
+	strcpy(thisTmpSave,saveFolder); s.setSpikeMonitor(v4CellsInh[YELLOW],strcat(thisTmpSave,"spkV4Yi.dat"));
+	strcpy(thisTmpSave,saveFolder); s.setSpikeMonitor(v4CellsInh[CYAN],strcat(thisTmpSave,"spkV4Ci.dat"));
+	strcpy(thisTmpSave,saveFolder); s.setSpikeMonitor(v4CellsInh[MAGENTA_V4],strcat(thisTmpSave,"spkV4Mi.dat"));
 
 
 	unsigned char* vid = new unsigned char[nrX*nrY*3];
@@ -654,7 +675,8 @@ int main()
 		s.runNetwork(0,FRAMEDURATION, onGPU?GPU_MODE:CPU_MODE);
 
 		if (i==1) {
-			FILE* nid = fopen("net.dat","wb");
+			strcpy(thisTmpSave,saveFolder);
+			FILE* nid = fopen(strcat(thisTmpSave,"net.dat"),"wb");
 			s.writeNetwork(nid);
 			fclose(nid);
 		}
