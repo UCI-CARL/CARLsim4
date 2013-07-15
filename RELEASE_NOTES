@@ -6,37 +6,39 @@ CARLsim was written by: Jayram Moorkanikara Nageswaran (JN), Micah Richert (MDR)
 CARLsim is maintained by: Mike Avery (MA), Michael Beyeler (MB), Kristofor Carlson (KDC)
 
 CARLsim 1.2 (July 2013)
-	* (MB) Added examples/main_V1MTLIP.cpp, scripts/V1MTLIP
+	* (MB) Added examples/main_V1MTLIP.cpp, scripts/V1MTLIP/
 		complete source code to run motion energy model in COBA on CPU/GPU
-	* (MB) Added option to specify on which CUDA card to establish a context
+	* (MB) Added option in CpuSNN::runNetwork to specify on which CUDA card to establish a context
 		The first time you run sim.runNetwork() add an int ithGPU that specifies the device index.
 		> bool onGPU=true; // GPU mode on
 		> int ithGPU=2; // run on the third card
 		> sim.runNetwork(0,0,onGPU?GPU_MODE:CPU_MODE,ithGPU);	
 		If ithGPU is invalid (e.g., exceeds the number of cards), it defaults to using device 0.
-	* (MB) Added GPU memory management summary
+	* (MB) Added GPU memory management summary in CpuSNN::allocateSNN_GPU
 		At beginning of simulation, prints how many cards are available, which one has the most
 		GFLOPs, on which card you're running your experiment, how much memory is available, etc.
-	* (MB) Added spikesAERtoFull.m
-		Expands a AER-representation of <spike time/neuron ID> to a full matrix
+	* (MB) Added functionality for scripts/common/readSpikes.m to return AER format
+	* (MB) Added scripts/common/spikesAERtoFull.m
+		Expands an AER-representation of <spike time/neuron ID> to a full matrix
 	* (MB) Changed v1ColorME.cu to removed edge effects, reproduce V1 contrast sensitivity function,
 		and feature scaling factors from Simoncelli & Heeger, 1998.
-	* (MB) Changed max. firing rate from 1000 Hz to 520 Hz
-	* (MB) Fixed simulation summary: number of (actual vs. allocated) synapses
-	* (MB) Fixed GPU memory allocation for fixed-weight simulations
-	* (MB) Fixed storing of current[] when running COBA in CPU mode
-	* (MB) Fixed integer overflow issues for largest-scale simulations
+	* (MA/MB/KC) Changed max. firing rate from 1000 Hz to 520 Hz in config.h
+	* (MB) Fixed CpuSNN::printSimSummary: number of (actual vs. allocated) synapses
+	* (MB) Fixed GPU memory allocation for fixed-weight simulations in snn_gpu.cu
+	* (MB) Fixed storing of current[] when running COBA in CPU mode in CpuSNN::globalStateUpdate
+	* (MB) Fixed integer overflow issues for largest-scale simulations in snn_cpu.cpp
 	* (MB) Fixed indexing issue in scripts/common/readNetwork.m
-	* (MB) Workaround for COBA instability issue: conductances are capped to prevent from 
+	* (MB) Workaround for COBA instability issue: conductances are capped to prevent instability 
+		in CpuSNN::globalStateUpdate
 
 CARLSim 1.1 (September 2011)
 	* Publication:
 		M Richert, JM Nageswaran, N Dutt, JL Krichmar (2011). "An efficient simulation environment
 		for modeling large-scale cortical processing", Frontiers in Neuroinformatics 5(19):1-15.
-	* (MDR)/(JN) Added COBA mode
-	* (MDR)/(JN) Added STDP (Song et al, 2000)
-	* (MDR)/(JN) Added STP  (Markram et al, 1998; Mongillo et al, 2008)
-	* (MDR)/(JN) Added example networks
+	* (MDR/JN) Added COBA mode
+	* (MDR/JN) Added STDP (Song et al, 2000)
+	* (MDR/JN) Added STP  (Markram et al, 1998; Mongillo et al, 2008)
+	* (MDR/JN) Added example networks
 	
 CARLsim 1.0 (2009)
 	* Publication:
