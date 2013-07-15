@@ -288,8 +288,6 @@
 
 	CpuSNN::CpuSNN(const string& _name, int _numConfig, int _randSeed, int _mode)
 	{
-		MAJOR_VERSION = 1;
-		MINOR_VERSION = 2;
 		fprintf(stdout, "************************************************\n");
 		fprintf(stdout, "***** GPU-SNN Simulation Begins Version %d.%d *** \n",MAJOR_VERSION,MINOR_VERSION);
 		fprintf(stdout, "************************************************\n");
