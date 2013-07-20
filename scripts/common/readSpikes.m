@@ -9,11 +9,11 @@ function s = readSpikes( file, frameDur )
 %               [times;nIDs]
 %
 % Created by: Micah Richert
-% Maintained by: Mike Avery, Michael Beyeler, Kristofor Carlson
+% Currently maintained by: Michael Beyeler, Kristofor Carlson
 % Ver 05/31/12
 
 % NARGIN is number of arguments passed to the function
-if nargin<2,frameDur=1;end
+if nargin<2,frameDur=1000;end
 if nargin<1,error('path to spike file needed');end
 
 % Open, initialize, and read file

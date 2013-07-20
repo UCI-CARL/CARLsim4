@@ -1,5 +1,5 @@
 function s = readSpikesAERtoFull( time,nIDs,frameDur,dim )
-%SPIKESAERTOFULL expects spike data in AER format as input, i.e. spiketimes
+%READSPIKESAERTOFULL expects spike data in AER format as input, i.e. spiketimes
 %(TIME) and neuron IDs (NIDS), and converts to a FULL representation.
 %Indexing in the input should start at 0, and will be converted to start at
 %1.
@@ -9,7 +9,7 @@ function s = readSpikesAERtoFull( time,nIDs,frameDur,dim )
 %   dim:        [max limit of TIME, max limit of NIDS]. If omitted, extract
 %               from input params
 %
-% Created by: Michael Beyeler
+% Created by: Michael Beyeler <mbeyeler@uci.edu>
 % Ver 05/31/12
 
 if nargin<4
