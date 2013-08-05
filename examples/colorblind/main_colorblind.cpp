@@ -38,6 +38,9 @@
  * Ver 07/13/2013
  */ 
 
+#include <sys/stat.h>
+#include <errno.h>
+
 #include "snn.h"
 void calcColorME(int nrX, int nrY, unsigned char* stim, float* red_green, float* green_red, float* blue_yellow, float* yellow_blue, float* ME, bool GPUpointers);
 extern MTRand	      getRand;
@@ -575,10 +578,10 @@ int main()
 	strcpy(thisTmpSave,saveFolder); s.setSpikeMonitor(v4CellsExc[MAGENTA_V4],strcat(thisTmpSave,"spkV4M.dat"));
 
 	strcpy(thisTmpSave,saveFolder); s.setSpikeMonitor(v4CellsInh[RED_V4],strcat(thisTmpSave,"spkV4Ri.dat"));
-	strcpy(thisTmpSave,saveFolder); s.setSpikeMonitor(v4CellsInh[GREEN],strcat(thisTmpSave,"spkV4Gi.dat"));
-	strcpy(thisTmpSave,saveFolder); s.setSpikeMonitor(v4CellsInh[BLUE],strcat(thisTmpSave,"spkV4Bi.dat"));
-	strcpy(thisTmpSave,saveFolder); s.setSpikeMonitor(v4CellsInh[YELLOW],strcat(thisTmpSave,"spkV4Yi.dat"));
-	strcpy(thisTmpSave,saveFolder); s.setSpikeMonitor(v4CellsInh[CYAN],strcat(thisTmpSave,"spkV4Ci.dat"));
+	strcpy(thisTmpSave,saveFolder); s.setSpikeMonitor(v4CellsInh[GREEN_V4],strcat(thisTmpSave,"spkV4Gi.dat"));
+	strcpy(thisTmpSave,saveFolder); s.setSpikeMonitor(v4CellsInh[BLUE_V4],strcat(thisTmpSave,"spkV4Bi.dat"));
+	strcpy(thisTmpSave,saveFolder); s.setSpikeMonitor(v4CellsInh[YELLOW_V4],strcat(thisTmpSave,"spkV4Yi.dat"));
+	strcpy(thisTmpSave,saveFolder); s.setSpikeMonitor(v4CellsInh[CYAN_V4],strcat(thisTmpSave,"spkV4Ci.dat"));
 	strcpy(thisTmpSave,saveFolder); s.setSpikeMonitor(v4CellsInh[MAGENTA_V4],strcat(thisTmpSave,"spkV4Mi.dat"));
 
 

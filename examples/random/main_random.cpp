@@ -38,6 +38,9 @@
  * Ver 07/13/2013
  */ 
 
+#include <sys/stat.h>
+#include <errno.h>
+
 #include "snn.h"
 
 #define N    1000
