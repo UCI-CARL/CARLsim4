@@ -1,58 +1,46 @@
-/*
- * Copyright (c) 2013 Regents of the University of California. All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- *
- * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- *
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in the
- *    documentation and/or other materials provided with the distribution.
- *
- * 3. The names of its contributors may not be used to endorse or promote
- *    products derived from this software without specific prior written
- *    permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
- * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
- * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
- * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
- * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
- * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
- * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
- * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- * *********************************************************************************************** *
- * CARLsim
- * created by: 		(MDR) Micah Richert, (JN) Jayram M. Nageswaran
- * maintained by:	(MA) Mike Avery <averym@uci.edu>, (MB) Michael Beyeler <mbeyeler@uci.edu>,
- *					(KDC) Kristofor Carlson <kdcarlso@uci.edu>
- *
- * CARLsim available from http://socsci.uci.edu/~jkrichma/CARLsim/
- * Ver 07/13/2013
- */ 
+//
+// Copyright (c) 2011 Regents of the University of California. All rights reserved.
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions
+// are met:
+//
+// 1. Redistributions of source code must retain the above copyright
+//    notice, this list of conditions and the following disclaimer.
+//
+// 2. Redistributions in binary form must reproduce the above copyright
+//    notice, this list of conditions and the following disclaimer in the
+//    documentation and/or other materials provided with the distribution.
+//
+// 3. The names of its contributors may not be used to endorse or promote
+//    products derived from this software without specific prior written
+//    permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+// "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+// LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+// A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
+// CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+// EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+// PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+// PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+// LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+// NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+// SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /*
  * Large-scale simulation of cortical visual processing.
  * This code implements both (i) the color opponency model (De Valoisetal.,1958; LivingstoneandHubel,1984) as well as
  * (ii) the motion energy model (Simoncelli & Heeger, 1998). The original version of this code has been released as
- * part of the publication
+ * part of the publication:
  * Richert, M., Nageswaran, J.M., Dutt, N., and Krichmar, J.L. (2011). "An efficient simulation environment for modeling
  * large-scale cortical processing". Frontiers in Neuroinformatics 5, 1-15.
  *
- * Creator: Micah Richert
- * Curator: Michael Beyeler
+ * Created by: Micah Richert
+ * Maintained by: Michael Beyeler <mbeyeler@uci.edu>
  *
- * Ver 02/15/2013
+ * Ver 07/19/2013
  */
-
-
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -60,22 +48,6 @@
 #include <cufft.h>
 #include <cutil_inline.h>
 #define IMUL(a, b) __mul24(a, b)
-
-// In order to run the color opponency / motion energy model within your simulation, you need to declare the function
-// in your "main_[].cpp" à la:
-// void calcColorME(int nrX, int nrY, unsigned char* stim, float* red_green, float* green_red, float* blue_yellow, float* yellow_blue, float* ME, bool GPUpointers);
-//	input arguments:
-//		nrX:	input dimension, x-coordinate
-//		nrY:	input dimension, y-coordinate
-//		stim:	RGB input stimulus, must be a nrX*nrY*3 array of unsigned chars, where the R, G, and B values of each
-//				pixel is ordered as R1 G1 B1 R2 G2 B2 ...
-//	output arguments (pre-allocated):
-//		red_green:		red-green channel, pre-allocated array of floats with dimensionality nrX*nrY
-//		green_red:		green-red channel: pre-allocated array of floats with dimensionality nrX*nrY
-//		blue_yellow:	blue-yellow channel: pre-allocated array of floats with dimensionality nrX*nrY
-//		yellow_blue:	yellow-blue channel: pre-allocated array of floats with dimensionality nrX*nrY
-//		ME:				motion energy, V1 complex cells: pre-allocated array of floats with dimensionality nrX*nrY*28*3
-
 
 // 28 space-time orientations of V1 simple cells
 #define nrDirs 28
@@ -89,9 +61,8 @@ __constant__  float d_v1Dirs[3][nrDirs] = {{-0.6559, -0.1019, 0.6240, -0.7797, 0
 
 // this filter is used for the 3 different scales in space/time:
 // first scale  == original image resolution
-// second scale == first scale blurred with Gaussian (width 1), so resolution should scale down sqrt(2)
-// third scale  == second scale blurred with Gaussian (width 1)
-// FIXME: not sure why this guy is not normalized
+// second scale == first scale blurred with Gaussian (width 1)
+// third scale  == second scale blurred with Gaussian (width 1) once again
 #define scalingFiltSize 5
 __constant__ float d_scalingFilt[scalingFiltSize] = {0.0884, 0.3536, 0.5303, 0.3536, 0.0884};
 float* scalingFilt;
@@ -140,7 +111,7 @@ float* diff3filt;
 
 // number of time steps to be considered in computation
 // nrT = 5*(3-1)-1 = 9
-#define nrT (scalingFiltSize*(nrScales-1)-1)//(scalingFiltSize*nrScales-2)
+#define nrT 9 // (scalingFiltSize*(nrScales-1)-1)
 
 int stimBufX, stimBufY;
 float* d_resp; // will be the returned ME responses
@@ -159,11 +130,11 @@ float* d_red;
 float* d_green;
 float* d_blue;
 
-float* d_center;
+/*float* d_center;
 float* d_surround;
 float* d_color_tmp;
 float* d_color_tmp_green;
-float* d_color_tmp_yellow;
+float* d_color_tmp_yellow;*/
 
 
 #define iDivUp(a,b) ((a)+(b)-1)/(b)
@@ -228,7 +199,6 @@ __global__ void dev_convn(float* idata, float* odata, int nrX, int nrN, int stri
 // conv2D is only used in the color model
 // odata must be pre-allocated
 // the result will end up in idata...
-// FIXME: in conv1D the logic was: perform operation on idata and output to odata
 // filtlen can not be greater than CONVN_THREAD_SIZE2
 void conv2D(float* idata, float* odata, dim3 _sizes, const float* filt, int filtlen) {
 	unsigned int* sizes = (unsigned int*)&_sizes;
@@ -249,8 +219,6 @@ void conv2D(float* idata, float* odata, dim3 _sizes, const float* filt, int filt
 	dim3 threads2(CONVN_THREAD_SIZE1, CONVN_THREAD_SIZE2, 1);
 	dev_convn<<<grid2, threads2>>>(idata, odata, sizes[0], sizes[1], sizes[0], sizes[0]*sizes[1], sizes[2], filt, filtlen);
         cutilCheckMsg("dev_convn() execution failed\n");
-
-	// FIXME: shouldn't there be a tmp=idata; idata=odata; odata=tmp; here???
 }
 
 // conv3D is only used in the motion model in freq space (\omega_x,\omega_y,\omega_t)
@@ -258,9 +226,6 @@ void conv2D(float* idata, float* odata, dim3 _sizes, const float* filt, int filt
 // the result will end up in idata
 // filtlen can not be greater than CONVN_THREAD_SIZE2
 
-// FIXME: this is confusing... am i missing something? why do we even need odata? we are giving in idata (e.g. called
-// d_scalingStimBuf), performing 3D convolution and storing the result back in idata. Good so far, but odata seems to
-// be surplus... why have this additional function argument, and not just a local tmp and tmp2?
 void conv3D(float* idata, float* odata, dim3 _sizes, const float* filt, int filtlen) {
 	unsigned int* sizes = (unsigned int*)&_sizes;
 	float* tmp;
@@ -387,9 +352,39 @@ void accumDiffStims(float *d_resp, float* diffV1GausBuf, uint3 _sizes, int order
 	// the scaling factor for this directial derivative; similar to the binomial coefficients
 	int c = 6/factorials[orderX]/factorials[orderY]/factorials[orderT];
 
-        dev_accumDiffStims<<<iDivUp(_sizes.x*_sizes.y, 128), 128>>>(d_resp, diffV1GausBuf, _sizes.x*_sizes.y, c, orderX, orderY, orderT);
-        cutilCheckMsg("dev_accumDiffStims() execution failed\n");
+	dev_accumDiffStims<<<iDivUp(_sizes.x*_sizes.y, 128), 128>>>(d_resp, diffV1GausBuf, _sizes.x*_sizes.y, c, orderX, orderY, orderT);
+	cutilCheckMsg("dev_accumDiffStims() execution failed\n");
 }
+
+
+// consider edge effects
+__global__ void dev_edges(float *data, int len, int nrX, int nrY) {
+	const int     tid = IMUL(blockDim.x, blockIdx.x) + threadIdx.x;
+	const int threadN = IMUL(blockDim.x, gridDim.x);
+	
+	float edgeFactor;
+
+	for(int i = tid; i < len; i += threadN) {
+		int X = i%nrX;
+		int Y = (i/nrX)%nrY;
+		int scale = i/(nrX*nrY*28);
+
+		// we decrease filter responses near edges (use a different scaling factor per spatiotemporal scale level)
+		// scaling factors are chosen such that no more edge effects are visible in the direction tuning task, whatever
+		// works...
+		float edgedist = (float)min(min(X,nrX-1-X),min(Y,nrY-1-Y)); // box-shaped instead of round
+		if (scale==0)
+			edgeFactor = fmin(125.0f,edgedist*edgedist*edgedist)/125.0f; // 5px^3
+		else if (scale==1)
+			edgeFactor = fmin(1296.0f,edgedist*edgedist*edgedist*edgedist)/1296.0f; // 6px^4
+		else
+			edgeFactor = fmin(7776.0f,edgedist*edgedist*edgedist*edgedist*edgedist)/7776.0f; // 6px^5
+
+		float d = data[i]*edgeFactor;
+		data[i] = d;
+	}
+}
+
 
 // parallel half-wave rectification and squaring
 __global__ void dev_halfRect2(float *data, int len) {
@@ -397,9 +392,9 @@ __global__ void dev_halfRect2(float *data, int len) {
 	const int threadN = IMUL(blockDim.x, gridDim.x);
 
 	for(int i = tid; i < len; i += threadN) {
-		float d = data[i];
-		d = (d>0)?d:0;
-		data[i] = d*d;
+		float d = data[i]*6.6084f; // scaleFactors.v1Linear
+//		d = (d>0)?d:0; // Matlab code and Rust et al, 2006 do not half-rectify anymore
+		data[i] = d*d*1.9263; // scaleFactors.v1FullWaveRectified
 	}
 }
 
@@ -419,8 +414,8 @@ __global__ void dev_mean3(float *idata, float *odata, int nrXnrY, int nrZ) {
 	}
 }
 
+
 // population normalization of complex cell responses
-// note the 0.1, probably to avoid division by zero
 __global__ void dev_normalize(float *resp, float *pop, int nrXnrY, int nrZ) {
 	const int     tid = IMUL(blockDim.x, blockIdx.x) + threadIdx.x;
 	const int threadN = IMUL(blockDim.x, gridDim.x);
@@ -429,7 +424,7 @@ __global__ void dev_normalize(float *resp, float *pop, int nrXnrY, int nrZ) {
 	for(int i = tid; i < nrXnrY; i += threadN) {
 		float norm = pop[i+blockIdx.y*nrXnrY];
 		int ind = i + blockIdx.y*blockSize;
-		for (int j=0; j < nrZ; j++) resp[ind+j*nrXnrY] /= (norm + 0.1);
+		for (int j=0; j < nrZ; j++) resp[ind+j*nrXnrY] /= (norm + 0.1*0.1); // scaleFactors.v1sigma
 	}
 }
 
@@ -488,6 +483,8 @@ __global__ void dev_sum(float *i1data, float *i2data, float* odata, int len) {
 	}
 }
 
+/*
+// only used in color model
 // parallel half-rectification at a given scale
 __global__ void dev_scaleHalfRect(float *data, float scale, int len) {
 	const int     tid = IMUL(blockDim.x, blockIdx.x) + threadIdx.x;
@@ -498,6 +495,7 @@ __global__ void dev_scaleHalfRect(float *data, float scale, int len) {
 		data[i] = (tmp>0)?sqrt(sqrt(tmp))*scale:0;
 	}
 }
+*/
 
 // parallel mulitplying with a scale factor
 __global__ void dev_scale(float *data, float scale, int len) {
@@ -549,11 +547,11 @@ void calcColorME(int nrX, int nrY, unsigned char* stim, float* red_green, float*
 		cutilSafeCall(cudaMalloc ((void**)&d_green, nrX*nrY*sizeof(float)));
 		cutilSafeCall(cudaMalloc ((void**)&d_blue, nrX*nrY*sizeof(float)));
 
-		cutilSafeCall(cudaMalloc ((void**)&d_center, nrX*nrY*sizeof(float)));
+/*		cutilSafeCall(cudaMalloc ((void**)&d_center, nrX*nrY*sizeof(float)));
 		cutilSafeCall(cudaMalloc ((void**)&d_surround, nrX*nrY*sizeof(float)));
 		cutilSafeCall(cudaMalloc ((void**)&d_color_tmp, nrX*nrY*sizeof(float)));
 		cutilSafeCall(cudaMalloc ((void**)&d_color_tmp_green, nrX*nrY*sizeof(float)));
-		cutilSafeCall(cudaMalloc ((void**)&d_color_tmp_yellow, nrX*nrY*sizeof(float)));
+		cutilSafeCall(cudaMalloc ((void**)&d_color_tmp_yellow, nrX*nrY*sizeof(float)));*/
 
 		cutilSafeCall(cudaGetSymbolAddress((void**)&scalingFilt, "d_scalingFilt"));
 		cutilSafeCall(cudaGetSymbolAddress((void**)&v1Gaus, "d_v1Gaus"));
@@ -564,20 +562,32 @@ void calcColorME(int nrX, int nrY, unsigned char* stim, float* red_green, float*
 		cutilSafeCall(cudaGetSymbolAddress((void**)&diff3filt, "d_diff3filt"));
 		
 	}
-	// use the preexisting filters because they are about the right size and give good results
+/*	// use the preexisting filters because they are about the right size and give good results
 	float* center_filt = v1Gaus;
 	float* surround_filt = complexV1Filt;
 	const int center_filtSize = v1GausSize;
-	const int surround_filtSize = complexV1FiltSize;
+	const int surround_filtSize = complexV1FiltSize; */
+	
+/*	size_t avail, total, previous;
+	float toGB = 1024.0*1024.0*1024.0;
+	cudaMemGetInfo(&avail,&total);
+	printf("after ME:\t\t\t%2.3f GB\t%2.3f GB\t%2.3f GB\n",(float)(avail)/toGB,(float)((total-avail)/toGB),(float)(avail/toGB));
+	previous=avail; */
+
 
 	cutilSafeCall(cudaMemcpy(d_stim,stim,3*nrX*nrY,cudaMemcpyHostToDevice));
+
+/*	cudaMemGetInfo(&avail,&total);
+	printf("after d_stim:\t\t\t%2.3f GB\t%2.3f GB\t%2.3f GB\n",(float)(previous-avail)/toGB,(float)((total-avail)/toGB),(float)(avail/toGB));
+	previous=avail; */
+
 	dev_split<<<iDivUp(nrX*nrY,128), 128>>>(d_stim, d_red, d_green, d_blue, &d_stimBuf[nrX*nrY*(nrT-1)], nrX*nrY);
  	cutilCheckMsg("dev_split() execution failed\n");
 
 
 	/* ***** COLOR MODEL ***** */
 
-	uint3 color_sizes = make_uint3(nrX,nrY,1);
+/*	uint3 color_sizes = make_uint3(nrX,nrY,1);
 
 	//d_center will contain center_red
 	cutilSafeCall(cudaMemcpy(d_center,d_red,sizeof(float)*nrX*nrY,cudaMemcpyDeviceToDevice));
@@ -622,7 +632,7 @@ void calcColorME(int nrX, int nrY, unsigned char* stim, float* red_green, float*
 
 	dev_sub<<<iDivUp(nrX*nrY,128), 128>>>(d_blue, d_surround, d_color_tmp, nrX*nrY);
 	dev_scaleHalfRect<<<iDivUp(nrX*nrY,128), 128>>>(d_color_tmp, 50.0, nrX*nrY);
-	cutilSafeCall(cudaMemcpy(blue_yellow,d_color_tmp,sizeof(float)*nrX*nrY,GPUpointers?cudaMemcpyDeviceToDevice:cudaMemcpyDeviceToHost));
+	cutilSafeCall(cudaMemcpy(blue_yellow,d_color_tmp,sizeof(float)*nrX*nrY,GPUpointers?cudaMemcpyDeviceToDevice:cudaMemcpyDeviceToHost)); */
 
 
 
@@ -696,24 +706,30 @@ void calcColorME(int nrX, int nrY, unsigned char* stim, float* red_green, float*
 			}
 		}
 	}
-	
-	// perform half-rectification on V1 simple cell responses
-	// eq.4 in S&H: halfrec[L(t)]^2 = max[0,L(t)]^2
+
+	// consider edge effects
+	dev_edges<<<iDivUp(nrX*nrY*nrDirs*nrScales,128), 128>>>(d_resp, nrX*nrY*nrDirs*nrScales, nrX, nrY);
+	cutilCheckMsg("dev_edges() execution failed\n");
+
+
+	// half-square the linear responses
+	// contains scaleFactor.v1Linear and scaleFactor.v1FullWaveRectified
 	dev_halfRect2<<<iDivUp(nrX*nrY*nrDirs*nrScales,128), 128>>>(d_resp, nrX*nrY*nrDirs*nrScales);
 	cutilCheckMsg("dev_halfRect2() execution failed\n");
 
 	float* tmp;
-
-	// The following two steps have reversed order... S&H first compute the normalized simple cell response, S_n(t),
-	// and then compute the local average. We do it the other way around. We might be doing that because we need a
-	// normalized responses at the complex cell level (this is our output), but S&H does only normalize at the simple
-	// cell and at the MT level. Also, the order of normalizing / local averaging should not matter (interchangeable)
 
 	// complex: convolve by d_complexV1Filt in 2D
 	cutilSafeCall(cudaMalloc((void**)&tmp, sizeof(float)*nrX*nrY*nrDirs*nrScales));
 	uint3 sizes = make_uint3(nrX,nrY,nrDirs*nrScales);
 	conv2D(d_resp, tmp, sizes, complexV1Filt, complexV1FiltSize);
 	cutilSafeCall(cudaFree(tmp));
+
+	// scale with scaleFactors.v1Blur
+	// NOTE: scaling with 1.0205..? Skip to save computation time
+//	dev_scale<<<iDivUp(nrX*nrY*nrDirs*nrScales,128), 128>>>(d_resp, 1.0205, nrX*nrY*nrDirs*nrScales);
+//	cutilCheckMsg("dev_scale() execution failed\n");
+
 
 	// we need to associate each filter at pixel position (x,y) with a power/intensity, but there are 28 filter
 	// responses at each location... so we need to (i) average over the 28 filters (3rd dimension in d_resp) and put it
@@ -722,28 +738,43 @@ void calcColorME(int nrX, int nrY, unsigned char* stim, float* red_green, float*
 	dev_mean3<<<gridm, 128>>>(d_resp, d_pop, nrX*nrY, nrDirs);
 	cutilCheckMsg("dev_mean3() execution failed\n");
 
-	// ... and (ii) sum over some spatial neighborhood
+	// ... (ii) scale with scaleFactors.v1Complex
+	// NOTE: Scale with 0.99..? Skip to save computation time
+//	dev_scale<<<iDivUp(nrX*nrY*nrDirs*nrScales,128), 128>>>(d_resp, 0.99, nrX*nrY*nrDirs*nrScales);
+//	cutilCheckMsg("dev_scale() execution failed\n");
+
+
+	// ... and (iii) sum over some spatial neighborhood
 	// population normalization: convolve by d_normV1filtSize in 2D
 	uint3 nsizes = make_uint3(nrX,nrY,nrScales);
 	cutilSafeCall(cudaMalloc((void**)&tmp, sizeof(float)*nrX*nrY*nrScales));
 	conv2D(d_pop, tmp, nsizes, normV1filt, normV1filtSize);
 	cutilSafeCall(cudaFree(tmp));
 
+	// don't scale with scaleFactors.v1NormalizationStrength * scaleFactors.v1NormalizationPopulationK
+	// since we don't normalize over the WHOLE population, these factors are off
+	// the purpose of this normalization is to get a htan()-like response normalization: a scaling factor of 1.0 turns
+	// out to be good enough
+	dev_scale<<<iDivUp(nrX*nrY*nrScales,128), 128>>>(d_pop, 1.0, nrX*nrY*nrScales);
+	cutilCheckMsg("dev_scale() execution failed\n");
+
+	// d_resp is the numerator, d_pop the denominator sum term
 	dev_normalize<<<gridm, 128>>>(d_resp, d_pop, nrX*nrY, nrDirs);
 	cutilCheckMsg("dev_normalize() execution failed\n");
 
-	// FIXME: i have no idea where the numbers 1e6, 5e5, and 1e5 are coming from...
-	// FIXME: also, there's no need to de-grayscale the inputs, this has already been done dev_split()
-	// but the idea is to normalize the responses and linearly map them onto [0,50 Hz]
+	// Scaling factors were chosen such that in a RDK task all 3 scales have similar mean responses
+	// We believe this to be a reasonable assumption considering that dots do not suffer from the aperture problem;
+	// thus the model should have similar response strengths at all 3 scales
 	for (int scale=0; scale<nrScales; scale++)
-		dev_scale<<<iDivUp(nrX*nrY*nrDirs,128), 128>>>(&d_resp[scale*nrX*nrY*nrDirs], (scale==0?1000000:(scale==1?500000:100000))/255.0/255*50, nrX*nrY*nrDirs);
+		dev_scale<<<iDivUp(nrX*nrY*nrDirs,128), 128>>>(&d_resp[scale*nrX*nrY*nrDirs], (scale==0?15.0f:(scale==1?17.0f:11.0f)), nrX*nrY*nrDirs); // 15 17.5 17
 
-	// copy response to the Host side
+	// copy response to device or host (depending on whether we run in CPU_MODE or GPU_MODE)
 	cutilSafeCall(cudaMemcpy(ME,d_resp,sizeof(float)*nrX*nrY*nrDirs*nrScales,GPUpointers?cudaMemcpyDeviceToDevice:cudaMemcpyDeviceToHost));
+
 /*
-	unsigned int free, total;
-	CUresult res = cuMemGetInfo(&free, &total);
-	if(res != CUDA_SUCCESS) printf("!!!! cuMemGetInfo failed! (status = %x)", res);
-	printf("used GPU memory %ld\n", total - free);
+	size_t avail, total, used;
+	cudaMemGetInfo( &avail, &total );
+	used = total - avail;
+	printf("used GPU memory %f MB\n",(float)(used/1024.0/1024.0));
 */
 }
