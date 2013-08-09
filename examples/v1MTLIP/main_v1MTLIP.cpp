@@ -42,6 +42,12 @@ extern MTRand getRand;
 /// specify hyper-parameters
 /// **************************************************************************************************************** ///
 
+// choose which experiment to run (define only one)
+//#define RUN_DIRECTION_TUNING			// V1, MT CDS and MT PDS direction tuning
+//#define RUN_SPEED_TUNING				// MT CDS speed tuning
+//#define RUN_CONTRAST_SENSITIVITY		// V1 contrast sensitivity
+//#define RUN_RDK							// RDK motion discrimination task
+
 // the dimension of the input stimulus
 #define nrX (32)
 #define nrY (32)
@@ -508,7 +514,7 @@ int main()
 	time_t		  timer_start,timer_build,timer_end;
 	
 	time(&timer_start);
-
+	
 	// at the beginning of this file, set the experiment to run
 	// expected format of video: R1 G1 B1 R2 G2 B2 ... e[0,255]
 	#if defined RUN_DIRECTION_TUNING
@@ -524,10 +530,12 @@ int main()
 	char loadVideo[]	 = "videos/mkRDK_32x32x14400.dat";
 	int vidLen 			 = 14400;
 	#else
+	char loadVideo[]	 = "";
+	int vidLen			 = 0;
 	printf("WARNING: NO EXPERIMENT SELECTED\n");
 	return -1;
 	#endif
-	
+		
 	
 	int startAtFrame	 = 0; 					// at which frame of movie to start
 	char saveFolder[]	 = "Results/v1MTLIP/";	// where to store all files (folder will be created if not exists)
@@ -548,6 +556,8 @@ int main()
 		printf("ERROR %d: could not open video file: %s\n",errno,strerror(errno));
 		return 1;
 	}
+	printf("Loading video file: %s\n",loadVideo);
+
 
 	// same goes for results folder, try to create
 	// read/write/search permissions for owner and group, and with read/search permissions for others
