@@ -28,13 +28,17 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+
+
 /*
- * Large-scale simulation of cortical visual processing.
  * This code implements both (i) the color opponency model (De Valoisetal.,1958; LivingstoneandHubel,1984) as well as
  * (ii) the motion energy model (Simoncelli & Heeger, 1998). The original version of this code has been released as
  * part of the publication:
  * Richert, M., Nageswaran, J.M., Dutt, N., and Krichmar, J.L. (2011). "An efficient simulation environment for modeling
  * large-scale cortical processing". Frontiers in Neuroinformatics 5, 1-15.
+ *
+ * It has been modified in 2013 by Michael Beyeler to better match the original C/Matlab implementation
+ * by (Simoncelli & Heeger, 1998). 
  *
  * Created by: Micah Richert
  * Maintained by: Michael Beyeler <mbeyeler@uci.edu>
@@ -130,11 +134,11 @@ float* d_red;
 float* d_green;
 float* d_blue;
 
-/*float* d_center;
+float* d_center;
 float* d_surround;
 float* d_color_tmp;
 float* d_color_tmp_green;
-float* d_color_tmp_yellow;*/
+float* d_color_tmp_yellow;
 
 
 #define iDivUp(a,b) ((a)+(b)-1)/(b)
@@ -483,8 +487,6 @@ __global__ void dev_sum(float *i1data, float *i2data, float* odata, int len) {
 	}
 }
 
-/*
-// only used in color model
 // parallel half-rectification at a given scale
 __global__ void dev_scaleHalfRect(float *data, float scale, int len) {
 	const int     tid = IMUL(blockDim.x, blockIdx.x) + threadIdx.x;
@@ -495,7 +497,6 @@ __global__ void dev_scaleHalfRect(float *data, float scale, int len) {
 		data[i] = (tmp>0)?sqrt(sqrt(tmp))*scale:0;
 	}
 }
-*/
 
 // parallel mulitplying with a scale factor
 __global__ void dev_scale(float *data, float scale, int len) {
@@ -547,11 +548,11 @@ void calcColorME(int nrX, int nrY, unsigned char* stim, float* red_green, float*
 		cutilSafeCall(cudaMalloc ((void**)&d_green, nrX*nrY*sizeof(float)));
 		cutilSafeCall(cudaMalloc ((void**)&d_blue, nrX*nrY*sizeof(float)));
 
-/*		cutilSafeCall(cudaMalloc ((void**)&d_center, nrX*nrY*sizeof(float)));
+		cutilSafeCall(cudaMalloc ((void**)&d_center, nrX*nrY*sizeof(float)));
 		cutilSafeCall(cudaMalloc ((void**)&d_surround, nrX*nrY*sizeof(float)));
 		cutilSafeCall(cudaMalloc ((void**)&d_color_tmp, nrX*nrY*sizeof(float)));
 		cutilSafeCall(cudaMalloc ((void**)&d_color_tmp_green, nrX*nrY*sizeof(float)));
-		cutilSafeCall(cudaMalloc ((void**)&d_color_tmp_yellow, nrX*nrY*sizeof(float)));*/
+		cutilSafeCall(cudaMalloc ((void**)&d_color_tmp_yellow, nrX*nrY*sizeof(float)));
 
 		cutilSafeCall(cudaGetSymbolAddress((void**)&scalingFilt, "d_scalingFilt"));
 		cutilSafeCall(cudaGetSymbolAddress((void**)&v1Gaus, "d_v1Gaus"));
@@ -562,11 +563,11 @@ void calcColorME(int nrX, int nrY, unsigned char* stim, float* red_green, float*
 		cutilSafeCall(cudaGetSymbolAddress((void**)&diff3filt, "d_diff3filt"));
 		
 	}
-/*	// use the preexisting filters because they are about the right size and give good results
+	// use the preexisting filters because they are about the right size and give good results
 	float* center_filt = v1Gaus;
 	float* surround_filt = complexV1Filt;
 	const int center_filtSize = v1GausSize;
-	const int surround_filtSize = complexV1FiltSize; */
+	const int surround_filtSize = complexV1FiltSize; 
 	
 /*	size_t avail, total, previous;
 	float toGB = 1024.0*1024.0*1024.0;
@@ -576,18 +577,13 @@ void calcColorME(int nrX, int nrY, unsigned char* stim, float* red_green, float*
 
 
 	cutilSafeCall(cudaMemcpy(d_stim,stim,3*nrX*nrY,cudaMemcpyHostToDevice));
-
-/*	cudaMemGetInfo(&avail,&total);
-	printf("after d_stim:\t\t\t%2.3f GB\t%2.3f GB\t%2.3f GB\n",(float)(previous-avail)/toGB,(float)((total-avail)/toGB),(float)(avail/toGB));
-	previous=avail; */
-
 	dev_split<<<iDivUp(nrX*nrY,128), 128>>>(d_stim, d_red, d_green, d_blue, &d_stimBuf[nrX*nrY*(nrT-1)], nrX*nrY);
  	cutilCheckMsg("dev_split() execution failed\n");
 
 
 	/* ***** COLOR MODEL ***** */
 
-/*	uint3 color_sizes = make_uint3(nrX,nrY,1);
+	uint3 color_sizes = make_uint3(nrX,nrY,1);
 
 	//d_center will contain center_red
 	cutilSafeCall(cudaMemcpy(d_center,d_red,sizeof(float)*nrX*nrY,cudaMemcpyDeviceToDevice));
@@ -632,7 +628,7 @@ void calcColorME(int nrX, int nrY, unsigned char* stim, float* red_green, float*
 
 	dev_sub<<<iDivUp(nrX*nrY,128), 128>>>(d_blue, d_surround, d_color_tmp, nrX*nrY);
 	dev_scaleHalfRect<<<iDivUp(nrX*nrY,128), 128>>>(d_color_tmp, 50.0, nrX*nrY);
-	cutilSafeCall(cudaMemcpy(blue_yellow,d_color_tmp,sizeof(float)*nrX*nrY,GPUpointers?cudaMemcpyDeviceToDevice:cudaMemcpyDeviceToHost)); */
+	cutilSafeCall(cudaMemcpy(blue_yellow,d_color_tmp,sizeof(float)*nrX*nrY,GPUpointers?cudaMemcpyDeviceToDevice:cudaMemcpyDeviceToHost));
 
 
 
