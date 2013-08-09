@@ -1,5 +1,24 @@
-function I = makeTuningGrating()
-% I = makeTuningGrating()
+function stim = makeTuningGrating(nrX, nrY, nrF, nPnts, gratingContrast,...
+    gratingSf, gratingTf)
+% stim = makeTuningGrating(nrX, nrY, nrF, nPnts, gratingContrast, 
+%                   gratingSf, gratingTf)
+%
+% MAKETUNINGGRATING creates a sinusoidal grating stimulus. The stimulus is
+% both returned and written to file, such that it can be plugged into
+% CARLsim example model v1MTLIP.
+% Use default parameter values to reproduce the stimulus used in CARLsim
+% example v1MTLIP.
+% Input arguments:
+%   nrX             number of neurons in direction X
+%   nrY             number of neurons in direction Y
+%   nrF             number of frames per stimulus drift direction
+%   nPnts           number of data points (samples 360deg drift direction)
+%   gratingContrast contrast of the plaid (between 0 and 1)
+%   gratingSf       spatial frequency component of the grating
+%   gratingTf       temporal frequency component of the grating
+%
+% Output argument:
+%   stim          cell array of frames, each frame has dim nrX x nrY
 %
 %
 % This function uses scripts from an open-source MATLAB package of
@@ -11,23 +30,19 @@ function I = makeTuningGrating()
 % Author: Michael Beyeler <mbeyeler@uci.edu>
 % Ver 07/20/2013
 
-%% make grating stimulus
-nrX=32;
-nrY=32;
-nrF=50;
+%% SET PARAMS
+if nargin<1,nrX=32;end
+if nargin<2,nrY=32;end
+if nargin<3,nrF=50;end
+if nargin<4,nPnts=24;end
+if nargin<5,gratingContrast=0.3;end
+if nargin<6,gratingSf=0.1205;end
+if nargin<7,gratingTf=0.1808;end
 
-nDataPoints=24;
 
-% mt2sin([0 1.5])
-gratingSf=0.1205; % 0.2051;
-gratingTf=0.1808; % 0.0718;
-gratingContrast=0.3;
-
-xDirection = (0:nDataPoints-1)*2*pi/nDataPoints;
-% xDirection = linspace(0, 2.*pi, nDataPoints);
-
+%% CREATE STIMULUS USING S&H MODEL
 stim=[];
-for i=1:nDataPoints
+for i=1:nPnts
     s=mkSin([nrX nrY nrF],xDirection(i),gratingSf,gratingTf,gratingContrast);
     stim(:,:,(i-1)*nrF+1:i*nrF)=s;
 end
@@ -35,6 +50,8 @@ end
 stim = stim-min(stim(:));
 stim = stim./max(stim(:));
 
+
+%% APPEND ALL FRAMES AND WRITE TO FILE
 for i=1:size(stim,3)
     I{i}(:,:,1) = stim(:,:,i)*255;
     I{i}(:,:,2) = stim(:,:,i)*255;
@@ -45,7 +62,7 @@ writeFramesToRgbFile(['mkGrid_' num2str(nrX) 'x' num2str(nrY) 'x' ...
     num2str(length(I)) '.dat'],I,false);
 
 
-%% Use S&H mkSin to create stimulus
+%% USE S&H MODEL TO CREATE STIMULUS
 
 % S =  mkSin(stimSz, sinDirection, sinSf, sinTf, sinContrast, sinPhase)    
 % 

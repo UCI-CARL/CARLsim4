@@ -49,9 +49,11 @@ extern MTRand getRand;
 // set for debug modus (will print actual connections made, etc.)
 #define DEBUG (0)
 
+// the spatial pooling filter for MT CDS cells
 #define poolCDSsz 3
 float poolCDSfilt[poolCDSsz] = {0.7866,0.1065,0.0003};
 
+// the spatial pooling filter for MT PDS cells
 #define poolPDSsz 10
 float poolPDSfilt[poolPDSsz] = {0.1330,0.1258,0.1065,0.0807,0.0547,0.0332,0.0180,0.0087,0.0038,0.0015};
 
@@ -213,96 +215,6 @@ float motionProj3[28][8] = {{-4.829119,-4.831345,-4.787727,-4.705154,-4.610980,-
 };
 
 
-/* cutoff 0.1
-float motionProj1[28][8] = {{-0.000000, 0.098204, -0.054803, -0.000000, 0.081613, 0.155659, 0.243218, -0.181278},
-{-0.051547, 0.086001, -0.104213, -0.000000, 0.119056, 0.120256, 0.095439, -0.000000},
-{-0.000000, -0.051644, -0.000000, -0.098173, 0.106693, -0.041648, -0.051062, -0.000000},
-{-0.000000, -0.000000, -0.043009, 0.000000, -0.090711, 0.000000, 0.103010, -0.090262},
-{-0.074341, 0.107197, -0.101121, 0.077934, -0.000000, 0.169014, 0.210953, -0.104007},
-{-0.019925, -0.076036, -0.081324, 0.000000, -0.133908, -0.149524, -0.124623, -0.043806},
-{-0.103383, -0.035249, -0.023638, -0.096156, -0.025891, -0.137256, -0.204444, 0.098809},
-{-0.081515, -0.099921, 0.000000, -0.094606, -0.056228, -0.091452, -0.144019, 0.000000},
-{0.000000, -0.128702, -0.000000, -0.069869, -0.041357, -0.152347, -0.177001, -0.031239},
-{0.000000, -0.208748, 0.000000, -0.061726, -0.116555, -0.177646, -0.184915, -0.042809},
-{-0.038474, -0.099190, 0.000000, -0.044953, -0.191529, -0.094202, -0.091563, -0.000000},
-{-0.078227, -0.000000, -0.051523, -0.084593, -0.063341, -0.106169, -0.107583, -0.000000},
-{-0.072116, -0.074235, -0.034509, -0.063164, -0.119746, -0.184680, -0.170620, -0.045874},
-{0.099639, -0.175349, 0.000000, -0.044518, -0.132098, -0.093296, -0.000000, -0.176650},
-{-0.063591, -0.190533, -0.025576, -0.000000, -0.234428, -0.184545, -0.386621, 0.172719},
-{-0.139132, 0.280178, -0.209602, 0.000000, 0.000000, 0.116512, 0.129550, -0.036768},
-{0.000000, -0.231510, 0.141923, -0.198956, 0.000000, -0.177308, -0.214468, 0.000000},
-{-0.048179, 0.000000, -0.179244, 0.183468, -0.165069, 0.000000, 0.000000, -0.079922},
-{0.000000, 0.000000, -0.058737, 0.000000, -0.025343, 0.196732, 0.408543, -0.292905},
-{-0.040849, 0.063824, 0.000000, -0.174407, 0.357043, 0.157304, 0.159919, -0.086417},
-{-0.160247, 0.057308, -0.057985, -0.087190, 0.078606, -0.039077, -0.071885, 0.133105},
-{0.413895, -0.123885, -0.000000, 0.000000, 0.000000, 0.122759, 0.000000, 0.678043},
-{-0.025676, -0.056010, 0.522878, 0.667901, -0.048829, 0.107441, 0.127975, -0.082942},
-{-0.163661, 0.568995, 0.606944, -0.133394, -0.112060, -0.056543, -0.046204, -0.030482},
-{0.690498, 0.464887, -0.175255, -0.052946, -0.000000, -0.120535, -0.140133, -0.067136},
-{-0.031067, -0.142339, -0.127959, 0.414941, 0.651372, -0.294106, -0.307513, 0.072809},
-{-0.108360, -0.117727, -0.021273, -0.025480, -0.211832, -0.219791, 0.619699, 0.451733},
-{-0.019321, 0.066593, -0.029605, -0.137358, 0.316625, 1.060998, 0.285716, -0.227058},
-};
-float motionProj2[28][8] = {{-0.000000, 0.897296, 0.353176, 0.161847, 0.000000, 1.209524, 0.285543, 0.265591},
-{1.029417, 0.143998, 0.174893, 0.173806, 0.620836, 0.142623, 0.188835, 0.246830},
-{-0.108047, -0.000000, -0.055396, 0.929848, -0.197093, -0.055609, 0.078786, 0.508013},
-{0.150528, 0.000000, 0.000000, 0.367456, 0.197863, 0.000000, -0.000000, 0.859015},
-{0.000000, 0.000000, 1.229100, 0.126720, 0.116950, 0.000000, 0.738794, 0.271190},
-{0.168411, -0.410008, -0.247282, -0.086121, 0.462063, -0.271767, -0.182609, -0.182525},
-{0.000000, -0.263183, -0.099207, -0.088605, 0.000000, -0.053877, 0.174004, -0.096171},
-{0.000000, 0.278772, -0.085714, -0.140555, -0.146193, -0.000000, -0.091507, -0.109096},
-{-0.201618, -0.102119, 0.000000, -0.193351, -0.268166, -0.162138, 0.555250, -0.276805},
-{-0.151171, 0.360803, -0.466397, -0.178297, -0.186825, -0.000000, -0.475992, -0.326441},
-{-0.000000, -0.000000, -0.095843, -0.277033, 0.374329, -0.062798, -0.210372, -0.264749},
-{-0.061829, -0.000000, 0.000000, 0.000000, -0.000000, -0.052675, -0.180506, -0.239941},
-{-0.395916, -0.138865, -0.195059, -0.224185, -0.413778, -0.191141, -0.156726, -0.000000},
-{-0.147002, -0.285356, -0.156458, -0.103351, -0.243213, -0.128499, -0.195833, -0.280861},
-{-0.189982, -0.737936, -0.455772, -0.300128, -0.382581, -0.523640, -0.524815, -0.397732},
-{0.000000, 0.137863, 0.287464, 0.165727, 0.200886, 0.000000, 0.338290, 0.285218},
-{-0.101822, -0.298001, -0.479286, -0.185336, -0.174942, -0.190061, -0.451103, -0.143887},
-{0.000000, -0.000000, -0.000000, -0.190980, -0.052967, -0.000000, -0.000000, -0.230796},
-{0.000000, 0.293190, 0.136640, 0.163402, 0.172343, 0.151056, 0.101605, 0.210156},
-{-0.061165, 0.430281, 0.305841, 0.200276, 0.000000, 0.234614, 0.363526, 0.321661},
-{0.000000, -0.000000, -0.108791, -0.143990, 0.000000, 0.000000, -0.145709, -0.197730},
-{0.120017, 0.204758, 0.240411, 0.152700, 0.200794, 0.000000, 0.271457, 0.115479},
-{-0.000000, 0.332910, 0.286988, 0.162025, 0.155198, 0.150918, 0.329061, 0.300256},
-{-0.000000, -0.165435, -0.050914, -0.092666, -0.128557, -0.075127, -0.084900, -0.269069},
-{-0.097398, -0.000000, -0.208955, -0.130879, -0.082892, -0.075539, -0.212524, -0.000000},
-{-0.105448, -0.491387, -0.410388, -0.190047, -0.237196, -0.307983, -0.477275, -0.285832},
-{-0.218714, -0.380534, -0.261717, -0.160753, -0.338830, -0.255540, -0.277978, -0.161782},
-{0.112201, 0.364896, 0.243452, 0.000000, 0.240844, 0.233003, 0.297409, 0.099891},
-};
-float motionProj3[28][8] = {{-4.864834, -4.867060, -4.823441, -4.740868, -4.646694, -4.603636, -4.662763, -4.786739},
-{-3.428012, -3.488151, -3.550758, -3.560310, -3.517467, -3.463406, -3.420058, -3.404072},
-{-0.735549, -0.712829, -0.671083, -0.632360, -0.628035, -0.673401, -0.722371, -0.739107},
-{-1.957444, -2.017401, -2.055229, -2.057289, -2.021035, -1.947560, -1.893333, -1.904727},
-{-3.979133, -3.925736, -3.877434, -3.860755, -3.871451, -3.888292, -3.926100, -3.978706},
-{1.948717, 1.963352, 2.010421, 2.063527, 2.077270, 2.045093, 1.995961, 1.960698},
-{1.629890, 1.580667, 1.557382, 1.570485, 1.611004, 1.649102, 1.673758, 1.672242},
-{1.784991, 1.784529, 1.721898, 1.625747, 1.555419, 1.550628, 1.617398, 1.718844},
-{2.012012, 1.975361, 1.945907, 1.935350, 1.941052, 1.955430, 1.983538, 2.016023},
-{3.419318, 3.451937, 3.429333, 3.357931, 3.269283, 3.215087, 3.236822, 3.329197},
-{1.741699, 1.776702, 1.808409, 1.802087, 1.766176, 1.738879, 1.725429, 1.724178},
-{1.588804, 1.642456, 1.666208, 1.648262, 1.603281, 1.552858, 1.526549, 1.541457},
-{3.138541, 3.164963, 3.161345, 3.130037, 3.093148, 3.071225, 3.073344, 3.100179},
-{0.886189, 0.967194, 1.099349, 1.180536, 1.181763, 1.126990, 1.025747, 0.917258},
-{5.539593, 5.543994, 5.485430, 5.362374, 5.208172, 5.140021, 5.240953, 5.428928},
-{-4.056137, -4.117032, -4.056287, -3.905148, -3.762848, -3.703982, -3.756792, -3.904550},
-{2.270790, 2.128664, 2.040068, 2.067253, 2.168129, 2.257849, 2.320046, 2.343929},
-{-0.692253, -0.778171, -0.885892, -0.936806, -0.887094, -0.767721, -0.674110, -0.655431},
-{-3.781555, -3.698213, -3.649388, -3.646792, -3.687281, -3.747849, -3.813056, -3.839367},
-{-4.309134, -4.343614, -4.415685, -4.477585, -4.459957, -4.384120, -4.318594, -4.299292},
-{-0.694784, -0.586566, -0.508364, -0.479368, -0.508499, -0.611029, -0.724046, -0.758095},
-{-3.010623, -3.110226, -3.151800, -3.137590, -3.097021, -3.040314, -2.977231, -2.948042},
-{-2.954503, -2.839443, -2.696440, -2.662777, -2.755236, -2.858274, -2.933426, -2.978990},
-{1.209452, 1.377843, 1.404586, 1.263931, 1.109909, 1.029849, 1.017192, 1.069681},
-{2.089420, 2.032800, 1.842197, 1.695787, 1.641550, 1.658555, 1.762882, 1.948551},
-{4.438072, 4.492991, 4.604519, 4.721339, 4.695153, 4.525393, 4.405185, 4.402908},
-{4.205318, 4.047975, 3.943128, 3.896789, 3.932025, 4.088749, 4.284825, 4.331347},
-{-3.438845, -3.446991, -3.378377, -3.223788, -3.010716, -2.916123, -3.067748, -3.308302},
-};
-*/
-
 
 
 /// **************************************************************************************************************** ///
@@ -346,9 +258,6 @@ public:
 		// to generate a 2-D Gaussian.
 		int gaussX = abs(round(mtX-v1X));
 		int gaussY = abs(round(mtY-v1Y));
-//		float gauss = ((gaussX<mtPoolSz)?mtPoolFilt[gaussX]:0.0f) * ((gaussY<mtPoolSz)?mtPoolFilt[gaussY]:0.0f);
-//		bool connectGauss = mtX==v1X && mtY==v1Y; // (gauss>0.001f*mtPoolFilt[0]);
-
 		float gauss = ((gaussX<poolCDSsz)?poolCDSfilt[gaussX]:0.0f) * ((gaussY<poolCDSsz)?poolCDSfilt[gaussY]:0.0f);
 		bool connectGauss = v1X==mtX && v1Y==mtY;
 		
@@ -391,13 +300,11 @@ public:
 		int postPool = j/(nrX*nrY);
 
 		// fast_exp(x) is 1 at x=0, and decays such that at x=-1 it is 0
-//		float gausPos = fast_exp(-((postX-preX)*(postX-preX)+(postY-preY)*(postY-preY))/(2*standDev*standDev));
 		int gaussX = abs(round(postX-preX));
 		int gaussY = abs(round(postY-preY));
 
 		float gausPos = ((gaussX<poolPDSsz)?poolPDSfilt[gaussX]:0.0f) * ((gaussY<poolPDSsz)?poolPDSfilt[gaussY]:0.0f);
 		gausPos /= poolPDSfilt[0];
-//		float gausPos = (gauss>0.01*poolPDSfilt[0])?gauss:0.0f;
 
 
 		int diffPool = abs(prePool-postPool);
@@ -420,7 +327,6 @@ public:
 };
 
 
-// FIXME: this is just one-to-one
 class connectMTtoMTpattTunedNorm: public ConnectionGenerator {
 public:
 	connectMTtoMTpattTunedNorm(float weightScale, int standDev) {
@@ -602,21 +508,35 @@ int main()
 	time_t		  timer_start,timer_build,timer_end;
 	
 	time(&timer_start);
-	
+
+	// at the beginning of this file, set the experiment to run
 	// expected format of video: R1 G1 B1 R2 G2 B2 ... e[0,255]
-//	char loadVideo[]	 = "videos/mkBarSpeed_ctrst0.2_32x32x7520.dat";
-//	char loadVideo[] 	 = "videos/mkGratingPlaid_ctrst0.3_32x32x2400.dat";
-//	char loadVideo[]	 = "videos/mkGratingContrast_32x32x1000.dat";
-	char loadVideo[]	 = "videos/mkRDK_32x32x1600.dat";
-	int startAtFrame	 = 0; 						// at which frame of movie to start
-	char saveFolder[]	 = "Results/MTpatternTest/"; // where to store all files (folder will be created if not exists)
-	bool storeNetwork	 = false;					// store network? at beginning and end
-	bool onGPU = true;					// run on GPU?
-	int ithGPU 			 = 1;						// on which GPU to run (in case of carlculator: 0-3)
-	int frameDur 		 = 50;						// present each frame for .. ms
-	int presentEachFrame = 1;					 	// present each frame .. times (> 1 to slow down motion patterns)
-	int vidLen 			 = 1600;				 	// number of frames
-	float synScale		 = 0.01;				 	// some scaling factor for syn weights
+	#if defined RUN_DIRECTION_TUNING
+	char loadVideo[] 	 = "videos/mkGratingPlaid_ctrst0.3_32x32x2400.dat";	
+	int vidLen			 = 2400; // number of frames
+	#elif defined RUN_SPEED_TUNING
+	char loadVideo[]	 = "videos/mkBarSpeed_ctrst0.2_32x32x7520.dat";
+	int vidLen			 = 7520;
+	#elif defined RUN_CONTRAST_SENSITIVITY
+	char loadVideo[]	 = "videos/mkGratingContrast_32x32x1000.dat";
+	int vidLen			 = 1000;
+	#elif defined RUN_RDK
+	char loadVideo[]	 = "videos/mkRDK_32x32x14400.dat";
+	int vidLen 			 = 14400;
+	#else
+	printf("WARNING: NO EXPERIMENT SELECTED\n");
+	return -1;
+	#endif
+	
+	
+	int startAtFrame	 = 0; 					// at which frame of movie to start
+	char saveFolder[]	 = "Results/v1MTLIP/";	// where to store all files (folder will be created if not exists)
+	bool storeNetwork	 = false;				// store network? at beginning and end
+	bool onGPU = true;						 	// run on GPU?
+	int ithGPU 			 = 1;					// on which GPU to run (in case of carlculator: 0-3)
+	int frameDur 		 = 50;					// present each frame for .. ms
+	int presentEachFrame = 1;					// present each frame .. times (> 1 to slow down motion patterns)
+	float synScale		 = 0.01;				// some scaling factor for syn weights
 
 	unsigned char* vid = new unsigned char[nrX*nrY*3]; // pointer to read out video
 	char thisTmpSave[128]; // temp var to store save folder
@@ -756,43 +676,9 @@ int main()
 	float wt_MTpattInh_MTpatt = -synScale*15.0;
 	s.connect(gMT1PDSinh, gMT1PDS, "one-to-one", wt_MTpattInh_MTpatt, wt_MTpattInh_MTpatt, 1.0, 1, 1, SYN_FIXED);
 
-	s.connect(gMT1PDS, gPFC, new connectMTtoPFC(40,synScale*1.0), SYN_FIXED, 1000, 3000);
-	s.connect(gMT1PDS, gPFCi, new connectMTtoPFC(10,synScale*0.5), SYN_FIXED, 1000, 3000);
-	s.connect(gPFCi, gPFC, new connectPFCitoPFC(40,10,-synScale*1.0), SYN_FIXED, 1000, 3000);
-
-
-
-
-
-
-
-	// -------------------------------------------------------------------------------------------------------------- //
-	// write to file params.txt
-	// -------------------------------------------------------------------------------------------------------------- //
-
-	// write to file at beginning rather than end of experiment: this way we immediately now what's going on
-	strcpy(thisTmpSave,saveFolder);
-	FILE* fParamId = fopen(strcat(thisTmpSave,"params.txt"),"w");
-	fprintf(fParamId, "Version d1 2\n");
-
-	fprintf(fParamId, "remoteFolder s1 spnetME/%s\n",saveFolder);
-	fprintf(fParamId, "populations s12 V1ME MT1CDS MT2CDS MT3CDS MT1CDSi MT2CDSi MT3CDSi MTCDSnorm MT1PDS MT1PDSinh PFC PFCi\n");
-	fprintf(fParamId, "popSize d12 %d %d %d %d %d %d %d %d %d %d %d %d\n",prod(V1MEdim,3),prod(MTdim,3),prod(MTdim,3),prod(MTdim,3),
-								prod(MTiDim,3),prod(MTiDim,3),prod(MTiDim,3),prod(MTnormDim,3),prod(MTdim,3),prod(MTiDim,3),prod(PFCdim,3),prod(PFCiDim,3));
-	fprintf(fParamId, "popNrX d12 %d %d %d %d %d %d %d %d %d %d %d %d\n",V1MEdim[0],MTdim[0],MTdim[0],MTdim[0],
-								MTiDim[0],MTiDim[0],MTiDim[0],MTnormDim[0],MTdim[0],MTiDim[0],PFCdim[0],PFCiDim[0]);
-	fprintf(fParamId, "popNrY d12 %d %d %d %d %d %d %d %d %d %d %d %d\n",V1MEdim[1],MTdim[1],MTdim[1],MTdim[1],
-								MTiDim[1],MTiDim[1],MTiDim[1],MTnormDim[1],MTdim[1],MTiDim[1],PFCdim[1],PFCiDim[1]);
-	fprintf(fParamId, "loadVideo s1 %s\n",loadVideo);
-	fprintf(fParamId, "synScale d1 %f\n",synScale);
-	fprintf(fParamId, "simFrameDur d1 %d\n",frameDur);
-	fprintf(fParamId, "presentEachFrame d1 %d\n",presentEachFrame);
-	fprintf(fParamId, "startAtFrame d1 %d\n",startAtFrame);
-	fprintf(fParamId, "vidLen d1 %d\n",vidLen);
-	fprintf(fParamId, "onGPU s1 %s\n",(onGPU?"on":"off"));
-	fprintf(fParamId, "nrX d1 %d\n",nrX);
-	fprintf(fParamId, "nrY d1 %d\n",nrY);
-	fclose(fParamId);
+	s.connect(gMT1PDS, gPFC, new connectMTtoPFC(40,synScale*2.0), SYN_FIXED, 1000, 3000);
+	s.connect(gMT1PDS, gPFCi, new connectMTtoPFC(10,synScale*0.8), SYN_FIXED, 1000, 3000);
+	s.connect(gPFCi, gPFC, new connectPFCitoPFC(40,10,-synScale*5.0), SYN_FIXED, 1000, 3000);
 
 
 	// -------------------------------------------------------------------------------------------------------------- //

@@ -1,6 +1,25 @@
-function I = makeTuningPlaid()
-% I = makeTuningPlaid()
+function stim = makeTuningPlaid(nrX, nrY, nrF, nPnts, plaidContrast,...
+    plaidAngle, gratingSf, gratingTf)
+% stim = makeTuningPlaid(nrX, nrY, nrF, nPnts, plaidContrast, plaidAngle,
+%                   gratingSf, gratingTf)
 %
+% MAKETUNINGPLAID creates a plaid stimulus consisting of two superimposed
+% sinusoidal gratings. The stimulus is both returned and written to file,
+% such that it can be plugged into CARLsim example model v1MTLIP.
+% Use default parameter values to reproduce the stimulus used in CARLsim
+% example v1MTLIP.
+% Input arguments:
+%   nrX           number of neurons in direction X
+%   nrY           number of neurons in direction Y
+%   nrF           number of frames per stimulus drift direction
+%   nPnts         number of data points (samples 360deg drift direction)
+%   plaidContrast contrast of the plaid (between 0 and 1)
+%   plaidAngle    separating angle of the two gratings
+%   gratingSf     spatial frequency component of the grating
+%   gratingTf     temporal frequency component of the grating
+%
+% Output argument:
+%   stim          cell array of frames, each frame has dim nrX x nrY
 %
 %
 % This function uses scripts from an open-source MATLAB package of
@@ -12,45 +31,44 @@ function I = makeTuningPlaid()
 % Author: Michael Beyeler <mbeyeler@uci.edu>
 % Ver 07/20/2013
 
-%% create plaid stimulus
+%% SET PARAMS %%
 
-nrX=32;
-nrY=32;
-nrF=50;
+if nargin<1,nrX=32;end
+if nargin<2,nrY=32;end
+if nargin<3,nrF=50;end
+if nargin<4,nPnts=24;end
+if nargin<5,plaidContrast=0.3;end
+if nargin<6,plaidAngle=2.0944;end
+if nargin<7,gratingSf=0.1205;end
+if nargin<8,gratingTf=0.1808;end
 
-nDataPoints=24;
+xDirection = (0:nPnts-1)*2*pi/nPnts;
 
-% mt2sin([0 1.5])
-gratingSf=0.1205; % 0.2051;
-gratingTf=0.1808; % 0.0718;
-plaidAngle=2.0944;
-plaidContrast=0.3;
 
-xDirection = (0:nDataPoints-1)*2*pi/nDataPoints;
-% xDirection = linspace(0, 2.*pi, nDataPoints);
-
-stim=[];
-for i=1:nDataPoints
+%% CREATE PLAID STIMULUS USING S&H MODEL
+frames=[];
+for i=1:nPnts
     s=mkPlaid([nrX nrY nrF], xDirection(i), gratingSf, gratingTf, plaidAngle, plaidContrast);
-    stim(:,:,(i-1)*nrF+1:i*nrF)=s;
+    frames(:,:,(i-1)*nrF+1:i*nrF)=s;
 end
 
-stim = stim-min(stim(:));
-stim = stim./max(stim(:));
+frames = frames-min(frames(:));
+frames = frames./max(frames(:));
 
 
-for i=1:size(stim,3)
-    I{i}(:,:,1) = stim(:,:,i)*255;
-    I{i}(:,:,2) = stim(:,:,i)*255;
-    I{i}(:,:,3) = stim(:,:,i)*255;
+%% APPEND ALL FRAMES AND WRITE TO FILE
+for i=1:size(frames,3)
+    stim{i}(:,:,1) = frames(:,:,i)*255;
+    stim{i}(:,:,2) = frames(:,:,i)*255;
+    stim{i}(:,:,3) = frames(:,:,i)*255;
 end
 
 writeFramesToRgbFile(['mkPlaid_' num2str(nrX) 'x' num2str(nrY) 'x' ...
-    num2str(length(I)) '.dat'],I,false);
+    num2str(length(stim)) '.dat'],stim,false);
 
 
 
-%% use S&H plaid stimulus blaster
+%% USE S&H MODEL TO CREATE STIMULUS
 
 
 % s = mkPlaid(stimSz, plaidDirection, gratingSf, gratingTf, plaidAngle,
@@ -72,27 +90,27 @@ writeFramesToRgbFile(['mkPlaid_' num2str(nrX) 'x' num2str(nrY) 'x' ...
 function s = mkSin(varargin)
 
 % The following arguments are optional and by default are 'default'
-plaidAngle = 'default';
-plaidContrast = 'default';
+angle = 'default';
+contrast = 'default';
 
 % parse the varargin
                     stimSz = varargin{1};
-                    plaidDirection = varargin{2};
-                    gratingSf = varargin{3};
-                    gratingTf = varargin{4};
-if nargin >= 5      plaidAngle = varargin{5};       end
-if nargin >= 6      plaidContrast = varargin{6};    end
+                    direction = varargin{2};
+                    gratSf = varargin{3};
+                    gratTf = varargin{4};
+if nargin >= 5      angle = varargin{5};       end
+if nargin >= 6      contrast = varargin{6};    end
 
 % assign default values where appropriate
-if strcmp(plaidAngle, 'default');       plaidAngle = (2/3)*pi;      end
-if strcmp(plaidContrast, 'default');    plaidContrast = 1;          end
+if strcmp(angle, 'default');       angle = (2/3)*pi;      end
+if strcmp(contrast, 'default');    contrast = 1;          end
 
-firstDirection = mod(plaidDirection + plaidAngle/2, 2*pi);
-secondDirection = mod(plaidDirection - plaidAngle/2, 2*pi);
-firstGrating =  mkSin(stimSz, firstDirection, gratingSf, gratingTf, ...
-                      plaidContrast/2);
-secondGrating = mkSin(stimSz, secondDirection, gratingSf, gratingTf, ...
-                      plaidContrast/2);
+firstDirection = mod(direction + angle/2, 2*pi);
+secondDirection = mod(direction - angle/2, 2*pi);
+firstGrating =  mkSin(stimSz, firstDirection, gratSf, gratTf, ...
+                      contrast/2);
+secondGrating = mkSin(stimSz, secondDirection, gratSf, gratTf, ...
+                      contrast/2);
 s = firstGrating + secondGrating;
 end
 
