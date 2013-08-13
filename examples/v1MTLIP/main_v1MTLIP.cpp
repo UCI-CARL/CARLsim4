@@ -43,7 +43,7 @@ extern MTRand getRand;
 /// **************************************************************************************************************** ///
 
 // choose which experiment to run (define only one)
-//#define RUN_DIRECTION_TUNING			// V1, MT CDS and MT PDS direction tuning
+#define RUN_DIRECTION_TUNING			// V1, MT CDS and MT PDS direction tuning
 //#define RUN_SPEED_TUNING				// MT CDS speed tuning
 //#define RUN_CONTRAST_SENSITIVITY		// V1 contrast sensitivity
 //#define RUN_RDK							// RDK motion discrimination task
