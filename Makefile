@@ -1,17 +1,28 @@
-random:    
-	nvcc -I${NVIDIA_SDK}/C/common/inc/ -L${NVIDIA_SDK}/C/lib/ -lcutil -arch sm_13 snn_cpu.cpp mtrand.cpp PropagatedSpikeBuffer.cpp printSNNInfo.cpp gpu_random.cu snn_gpu.cu examples/main_random.cpp
+# CARLsim Makefile
+# CARLsim available from http://socsci.uci.edu/~jkrichma/CARLsim/
+# Ver 07/13/2013
 
-v1v4PFC:
-	nvcc -I${NVIDIA_SDK}/C/common/inc/ -L${NVIDIA_SDK}/C/lib -lcutil -arch sm_13 snn_cpu.cpp mtrand.cpp PropagatedSpikeBuffer.cpp printSNNInfo.cpp gpu_random.cu snn_gpu.cu examples/main_v1v4PFC.cpp v1ColorME.cu
-	
-colorcycle:
-	nvcc -I${NVIDIA_SDK}/C/common/inc/ -L${NVIDIA_SDK}/C/lib -lcutil -arch sm_13 snn_cpu.cpp mtrand.cpp PropagatedSpikeBuffer.cpp printSNNInfo.cpp gpu_random.cu snn_gpu.cu examples/main_colorcycle.cpp v1ColorME.cu
+# source files of the sim core
+SOURCES = snn_cpu.cpp mtrand.cpp PropagatedSpikeBuffer.cpp printSNNInfo.cpp gpu_random.cu snn_gpu.cu
+LIBCUTIL = -lcutil_x86_64
 
-orientation:
-	nvcc -I${NVIDIA_SDK}/C/common/inc/ -L${NVIDIA_SDK}/C/lib -lcutil -arch sm_13 snn_cpu.cpp mtrand.cpp PropagatedSpikeBuffer.cpp printSNNInfo.cpp gpu_random.cu snn_gpu.cu examples/main_orientation.cpp v1ColorME.cu
-	
-colorblind:
-	nvcc -I${NVIDIA_SDK}/C/common/inc/ -L${NVIDIA_SDK}/C/lib -lcutil -arch sm_13 snn_cpu.cpp mtrand.cpp PropagatedSpikeBuffer.cpp printSNNInfo.cpp gpu_random.cu snn_gpu.cu examples/main_colorblind.cpp v1ColorME.cu
+colorblind: ${SOURCES} examples/colorblind/main_colorblind.cpp v1ColorMEold.cu
+	nvcc -I${NVIDIA_SDK}/C/common/inc/ -L${NVIDIA_SDK}/C/lib ${LIBCUTIL} -arch sm_13 ${SOURCES} examples/colorblind/main_colorblind.cpp v1ColorME.cu -o colorblind
 
-rdk:
-	nvcc -I${NVIDIA_SDK}/C/common/inc/ -L${NVIDIA_SDK}/C/lib -lcutil -arch sm_13 snn_cpu.cpp mtrand.cpp PropagatedSpikeBuffer.cpp printSNNInfo.cpp gpu_random.cu snn_gpu.cu examples/main_rdk.cpp v1ColorME.cu
+colorcycle: ${SOURCES} examples/colorcycle/main_colorcycle.cpp v1ColorMEold.cu
+	nvcc -I${NVIDIA_SDK}/C/common/inc/ -L${NVIDIA_SDK}/C/lib ${LIBCUTIL} -arch sm_13 ${SOURCES} examples/colorcycle/main_colorcycle.cpp v1ColorME.cu -o colorcycle
+
+orientation: ${SOURCES} examples/orientation/main_orientation.cpp v1ColorMEold.cu
+	nvcc -I${NVIDIA_SDK}/C/common/inc/ -L${NVIDIA_SDK}/C/lib ${LIBCUTIL} -arch sm_13 ${SOURCES} examples/orientation/main_orientation.cpp v1ColorME.cu -o orientation
+
+random: ${SOURCES} examples/random/main_random.cpp v1ColorMEold.cu
+	nvcc -I${NVIDIA_SDK}/C/common/inc/ -L${NVIDIA_SDK}/C/lib ${LIBCUTIL} -arch sm_13 ${SOURCES} examples/random/main_random.cpp v1ColorME.cu -o random
+
+rdk: ${SOURCES} examples/rdk/main_rdk.cpp v1ColorMEold.cu
+	nvcc -I${NVIDIA_SDK}/C/common/inc/ -L${NVIDIA_SDK}/C/lib ${LIBCUTIL} -arch sm_13 ${SOURCES} examples/rdk/main_rdk.cpp v1ColorME.cu -o rdk
+
+v1MTLIP: ${SOURCES} examples/v1MTLIP/main_v1MTLIP.cpp v1ColorME.cu
+	nvcc -I${NVIDIA_SDK}/C/common/inc/ -L${NVIDIA_SDK}/C/lib ${LIBCUTIL} -arch sm_13 ${SOURCES} examples/v1MTLIP/main_v1MTLIP.cpp v1ColorME.cu -o v1MTLIP
+
+v1v4PFC: ${SOURCES} examples/v1v4PFC/main_v1v4PFC.cpp v1ColorMEold.cu
+	nvcc -I${NVIDIA_SDK}/C/common/inc/ -L${NVIDIA_SDK}/C/lib ${LIBCUTIL} -arch sm_13 ${SOURCES} examples/v1v4PFC/main_v1v4PFC.cpp v1ColorME.cu -o v1v4PFC

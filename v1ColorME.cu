@@ -1,3 +1,51 @@
+//
+// Copyright (c) 2011 Regents of the University of California. All rights reserved.
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions
+// are met:
+//
+// 1. Redistributions of source code must retain the above copyright
+//    notice, this list of conditions and the following disclaimer.
+//
+// 2. Redistributions in binary form must reproduce the above copyright
+//    notice, this list of conditions and the following disclaimer in the
+//    documentation and/or other materials provided with the distribution.
+//
+// 3. The names of its contributors may not be used to endorse or promote
+//    products derived from this software without specific prior written
+//    permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+// "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+// LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+// A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
+// CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+// EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+// PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+// PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+// LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+// NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+// SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+
+
+/*
+ * This code implements both (i) the color opponency model (De Valoisetal.,1958; LivingstoneandHubel,1984) as well as
+ * (ii) the motion energy model (Simoncelli & Heeger, 1998). The original version of this code has been released as
+ * part of the publication:
+ * Richert, M., Nageswaran, J.M., Dutt, N., and Krichmar, J.L. (2011). "An efficient simulation environment for modeling
+ * large-scale cortical processing". Frontiers in Neuroinformatics 5, 1-15.
+ *
+ * It has been modified in 2013 by Michael Beyeler to better match the original C/Matlab implementation
+ * by (Simoncelli & Heeger, 1998). 
+ *
+ * Created by: Micah Richert
+ * Maintained by: Michael Beyeler <mbeyeler@uci.edu>
+ *
+ * Ver 07/19/2013
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -5,42 +53,72 @@
 #include <cutil_inline.h>
 #define IMUL(a, b) __mul24(a, b)
 
+// 28 space-time orientations of V1 simple cells
 #define nrDirs 28
+
+// each of these is a unit vector (e.g. d_v1Dirs[0][1..3] => (-0.6559)^2+(0.7246)^2+(0.2113)^2 == 1
+// all vectors lie on the surface of a dome (hemisphere) in 3D Fourier space
 __constant__  float d_v1Dirs[3][nrDirs] = {{-0.6559, -0.1019, 0.6240, -0.7797, 0.9692, -0.2312, -0.9151, 0.4207, -0.9533, 0.8175, 0.2398, 0.8810, -0.4430, 0.0588, -0.5384, 0.5644, 0.7931, 0.5142, -0.7680, -0.0669, -0.6670, -0.2747, 0.5034, 0.5042, 0.1580, 0.1332, -0.5159, -0.3549},
                                            { 0.7246, -0.9718, 0.7496, -0.5837, -0.0810, 0.9439, 0.3203, -0.8712, -0.1593, -0.5142, 0.9304, 0.3737, -0.8031, -0.8126, 0.6004, -0.5738, 0.0024, 0.5969, 0.1436, 0.7757, -0.4004, -0.5108, 0.2375, -0.2221, -0.5140, 0.5194, -0.0870, 0.3838},
                                            { 0.2113, 0.2126, 0.2210, 0.2266, 0.2327, 0.2359, 0.2451, 0.2529, 0.2567, 0.2593, 0.2772, 0.2902, 0.3984, 0.5799, 0.5913, 0.5935, 0.6091, 0.6160, 0.6241, 0.6275, 0.6283, 0.8146, 0.8308, 0.8345, 0.8431, 0.8441, 0.8522, 0.8525}};
 
 
+// this filter is used for the 3 different scales in space/time:
+// first scale  == original image resolution
+// second scale == first scale blurred with Gaussian (width 1)
+// third scale  == second scale blurred with Gaussian (width 1) once again
 #define scalingFiltSize 5
 __constant__ float d_scalingFilt[scalingFiltSize] = {0.0884, 0.3536, 0.5303, 0.3536, 0.0884};
 float* scalingFilt;
+
+// d_v1Gaus defines the 1D receptive field of a V1 unit, which is then used for all three dimensions (X,Y and T)
+// this guy can be reproduced in matlab with g=normpdf(-4:4,0,1.25);
+// it is the same as provided by the S&H matlab code
 #define v1GausSize 9
 __constant__ float d_v1Gaus[v1GausSize] = {0.0007, 0.0155, 0.0903, 0.2345, 0.3179, 0.2345, 0.0903, 0.0155, 0.0007};
 float* v1Gaus;
+
+// d_complexV1Filt is the spacial filter for complex cells; it averages over "simple" V1 cells
+// all simple cells must have the same space-time orientation and phase
+// this guy can be reproduced in matlab with g=normpdf(-5:5,0,1.6);
+// it is the same as provided by the S&H matlab code
 #define complexV1FiltSize 11
 __constant__ float d_complexV1Filt[complexV1FiltSize] = {0.0019, 0.0110, 0.0430, 0.1142, 0.2052, 0.2495, 0.2052, 0.1142, 0.0430, 0.0110, 0.0019};
 float* complexV1Filt;
+
+// d_normV1filt is the spatial filter used complex cell normalization
+// this guy can be reproduced in matlab with: g=normpdf(-10:10,0,3.35);
 #define normV1filtSize 21
 __constant__ float d_normV1filt[normV1filtSize] = {0.0013, 0.0031, 0.0067, 0.0132, 0.0237, 0.0389, 0.0584, 0.0800, 0.1001, 0.1146, 0.1199, 0.1146, 0.1001, 0.0800, 0.0584, 0.0389, 0.0237, 0.0132, 0.0067, 0.0031, 0.0013};
 float* normV1filt;
 
+// difference operator for taking the first-order derivative
 #define diff1filtSize 3
 __constant__ float d_diff1filt[diff1filtSize] = {-1/2.0, 0, 1/2.0};
 float* diff1filt;
 
+// difference operator for taking the second-order derivative
 #define diff2filtSize 3
 __constant__ float d_diff2filt[diff2filtSize] = {1, -2, 1};
 float* diff2filt;
 
+// difference operator for taking the third-order derivative
+// the grayscale values of our input stimuli will be convolved with d_scalingFilt in 3D
 #define diff3filtSize 5
 __constant__ float d_diff3filt[diff3filtSize] = {-1/2.0, 1, 0, -1, 1/2.0};
 float* diff3filt;
 
+// 3 different spatio-temporal scales (these must correspond to the 3 blobs along the x-, y-, or t-axis in Fig. 3 in
+// the Simoncelli & Heeger paper... because they are scales in the x,y,t-space they cannot be temporal frequency or
+// "speed" alone)
 #define nrScales 3
-#define nrT (scalingFiltSize*(nrScales-1)-1)//(scalingFiltSize*nrScales-2)
+
+// number of time steps to be considered in computation
+// nrT = 5*(3-1)-1 = 9
+#define nrT 9 // (scalingFiltSize*(nrScales-1)-1)
 
 int stimBufX, stimBufY;
-float* d_resp;
+float* d_resp; // will be the returned ME responses
 float* d_stimBuf;
 float* d_scalingStimBuf; // the temporary matrix that will be filtered once for each scale...
 float* d_v1GausBuf;
@@ -48,9 +126,10 @@ float* d_v1GausBuf2;
 float* d_diffV1GausBuf;
 float* diffV1GausBufT;
 
-unsigned char* d_stim;
+unsigned char* d_stim; // the video input
 float* d_pop;
 
+// following 3 lines are needed for dev_split(), altho we only care about d_stim
 float* d_red;
 float* d_green;
 float* d_blue;
@@ -64,6 +143,7 @@ float* d_color_tmp_yellow;
 
 #define iDivUp(a,b) ((a)+(b)-1)/(b)
 
+// convolve idata with filt and store output in odata
 # define CONV1_THREAD_SIZE 256
 __global__ void dev_conv1(float* idata, float* odata, int len, const float* filt, int filtlen) {
 	__shared__ float block[CONV1_THREAD_SIZE];
@@ -120,6 +200,7 @@ __global__ void dev_convn(float* idata, float* odata, int nrX, int nrN, int stri
 	}
 }
 
+// conv2D is only used in the color model
 // odata must be pre-allocated
 // the result will end up in idata...
 // filtlen can not be greater than CONVN_THREAD_SIZE2
@@ -144,8 +225,11 @@ void conv2D(float* idata, float* odata, dim3 _sizes, const float* filt, int filt
         cutilCheckMsg("dev_convn() execution failed\n");
 }
 
+// conv3D is only used in the motion model in freq space (\omega_x,\omega_y,\omega_t)
 // odata must be pre-allocated
+// the result will end up in idata
 // filtlen can not be greater than CONVN_THREAD_SIZE2
+
 void conv3D(float* idata, float* odata, dim3 _sizes, const float* filt, int filtlen) {
 	unsigned int* sizes = (unsigned int*)&_sizes;
 	float* tmp;
@@ -181,6 +265,7 @@ void conv3D(float* idata, float* odata, dim3 _sizes, const float* filt, int filt
 }
 
 //will free idata
+// this computes the difference / approximates the derivative of idata
 float* diff(float* idata, uint3 _sizes, int order, int dim)
 {
 	unsigned int* sizes = (unsigned int*)&_sizes;
@@ -244,9 +329,9 @@ __global__ void dev_accumDiffStims(float *d_resp, float *diffV1GausBuf, int nrXn
 	__shared__ float dirorders[nrDirs];
 
 	if (threadIdx.x < nrDirs) {
-		const float dir1 = d_v1Dirs[0][threadIdx.x];
-		const float dir2 = d_v1Dirs[1][threadIdx.x];
-		const float dir3 = d_v1Dirs[2][threadIdx.x];
+		const float dir1 = d_v1Dirs[0][threadIdx.x]; // x-component
+		const float dir2 = d_v1Dirs[1][threadIdx.x]; // y-component
+		const float dir3 = d_v1Dirs[2][threadIdx.x]; // t-component
 
 		float dirX = (orderX==0)?1:(orderX==1)?dir1:(orderX==2)?dir1*dir1:dir1*dir1*dir1;
 		float dirY = (orderY==0)?1:(orderY==1)?dir2:(orderY==2)?dir2*dir2:dir2*dir2*dir2;
@@ -265,25 +350,61 @@ __global__ void dev_accumDiffStims(float *d_resp, float *diffV1GausBuf, int nrXn
 }
 
 void accumDiffStims(float *d_resp, float* diffV1GausBuf, uint3 _sizes, int orderX, int orderY, int orderT) {
+	// a useful list of factorials for computing the scaling factors for the derivatives
 	int factorials[4] = {1, 1, 2, 6};
-	int c = 6/factorials[orderX]/factorials[orderY]/factorials[orderT]; // the scaling factor for this directial derivative; similar to the binomial coefficients
 
-        dev_accumDiffStims<<<iDivUp(_sizes.x*_sizes.y, 128), 128>>>(d_resp, diffV1GausBuf, _sizes.x*_sizes.y, c, orderX, orderY, orderT);
-        cutilCheckMsg("dev_accumDiffStims() execution failed\n");
+	// the scaling factor for this directial derivative; similar to the binomial coefficients
+	int c = 6/factorials[orderX]/factorials[orderY]/factorials[orderT];
+
+	dev_accumDiffStims<<<iDivUp(_sizes.x*_sizes.y, 128), 128>>>(d_resp, diffV1GausBuf, _sizes.x*_sizes.y, c, orderX, orderY, orderT);
+	cutilCheckMsg("dev_accumDiffStims() execution failed\n");
 }
 
 
+// consider edge effects
+__global__ void dev_edges(float *data, int len, int nrX, int nrY) {
+	const int     tid = IMUL(blockDim.x, blockIdx.x) + threadIdx.x;
+	const int threadN = IMUL(blockDim.x, gridDim.x);
+	
+	float edgeFactor;
+
+	for(int i = tid; i < len; i += threadN) {
+		int X = i%nrX;
+		int Y = (i/nrX)%nrY;
+		int scale = i/(nrX*nrY*28);
+
+		// we decrease filter responses near edges (use a different scaling factor per spatiotemporal scale level)
+		// scaling factors are chosen such that no more edge effects are visible in the direction tuning task, whatever
+		// works...
+		float edgedist = (float)min(min(X,nrX-1-X),min(Y,nrY-1-Y)); // box-shaped instead of round
+		if (scale==0)
+			edgeFactor = fmin(125.0f,edgedist*edgedist*edgedist)/125.0f; // 5px^3
+		else if (scale==1)
+			edgeFactor = fmin(1296.0f,edgedist*edgedist*edgedist*edgedist)/1296.0f; // 6px^4
+		else
+			edgeFactor = fmin(7776.0f,edgedist*edgedist*edgedist*edgedist*edgedist)/7776.0f; // 6px^5
+
+		float d = data[i]*edgeFactor;
+		data[i] = d;
+	}
+}
+
+
+// parallel half-wave rectification and squaring
 __global__ void dev_halfRect2(float *data, int len) {
 	const int     tid = IMUL(blockDim.x, blockIdx.x) + threadIdx.x;
 	const int threadN = IMUL(blockDim.x, gridDim.x);
 
 	for(int i = tid; i < len; i += threadN) {
-		float d = data[i];
-		d = (d>0)?d:0;
-		data[i] = d*d;
+		float d = data[i]*6.6084f; // scaleFactors.v1Linear
+//		d = (d>0)?d:0; // Matlab code and Rust et al, 2006 do not half-rectify anymore
+		data[i] = d*d*1.9263; // scaleFactors.v1FullWaveRectified
 	}
 }
 
+// compute the mean on the array's third dimension
+// this is used to compute the mean of all 28 filter responses at a given location/scale (used in the complex cell
+// normalization step)
 __global__ void dev_mean3(float *idata, float *odata, int nrXnrY, int nrZ) {
 	const int     tid = IMUL(blockDim.x, blockIdx.x) + threadIdx.x;
 	const int threadN = IMUL(blockDim.x, gridDim.x);
@@ -297,6 +418,8 @@ __global__ void dev_mean3(float *idata, float *odata, int nrXnrY, int nrZ) {
 	}
 }
 
+
+// population normalization of complex cell responses
 __global__ void dev_normalize(float *resp, float *pop, int nrXnrY, int nrZ) {
 	const int     tid = IMUL(blockDim.x, blockIdx.x) + threadIdx.x;
 	const int threadN = IMUL(blockDim.x, gridDim.x);
@@ -305,10 +428,11 @@ __global__ void dev_normalize(float *resp, float *pop, int nrXnrY, int nrZ) {
 	for(int i = tid; i < nrXnrY; i += threadN) {
 		float norm = pop[i+blockIdx.y*nrXnrY];
 		int ind = i + blockIdx.y*blockSize;
-		for (int j=0; j < nrZ; j++) resp[ind+j*nrXnrY] /= (norm + 0.1);
+		for (int j=0; j < nrZ; j++) resp[ind+j*nrXnrY] /= (norm + 0.1*0.1); // scaleFactors.v1sigma
 	}
 }
 
+// reads in stimuli in RGB format and extracts R, G, B, and grayscale values (normalized to [0,1])
 __global__ void dev_split(unsigned char *idata, float *red, float *green, float *blue, float *gray, int len) {
 	const int     tid = IMUL(blockDim.x, blockIdx.x) + threadIdx.x;
 	const int threadN = IMUL(blockDim.x, gridDim.x);
@@ -333,6 +457,7 @@ __global__ void dev_split(unsigned char *idata, float *red, float *green, float 
 	}
 }
 
+// parallel subtraction
 __global__ void dev_sub(float *i1data, float *i2data, float* odata, int len) {
 	const int     tid = IMUL(blockDim.x, blockIdx.x) + threadIdx.x;
 	const int threadN = IMUL(blockDim.x, gridDim.x);
@@ -342,6 +467,7 @@ __global__ void dev_sub(float *i1data, float *i2data, float* odata, int len) {
 	}
 }
 
+// parallel averaging
 __global__ void dev_ave(float *i1data, float *i2data, float* odata, int len) {
 	const int     tid = IMUL(blockDim.x, blockIdx.x) + threadIdx.x;
 	const int threadN = IMUL(blockDim.x, gridDim.x);
@@ -351,6 +477,7 @@ __global__ void dev_ave(float *i1data, float *i2data, float* odata, int len) {
 	}
 }
 
+// parallel summing
 __global__ void dev_sum(float *i1data, float *i2data, float* odata, int len) {
 	const int     tid = IMUL(blockDim.x, blockIdx.x) + threadIdx.x;
 	const int threadN = IMUL(blockDim.x, gridDim.x);
@@ -360,6 +487,7 @@ __global__ void dev_sum(float *i1data, float *i2data, float* odata, int len) {
 	}
 }
 
+// parallel half-rectification at a given scale
 __global__ void dev_scaleHalfRect(float *data, float scale, int len) {
 	const int     tid = IMUL(blockDim.x, blockIdx.x) + threadIdx.x;
 	const int threadN = IMUL(blockDim.x, gridDim.x);
@@ -370,6 +498,7 @@ __global__ void dev_scaleHalfRect(float *data, float scale, int len) {
 	}
 }
 
+// parallel mulitplying with a scale factor
 __global__ void dev_scale(float *data, float scale, int len) {
 	const int     tid = IMUL(blockDim.x, blockIdx.x) + threadIdx.x;
 	const int threadN = IMUL(blockDim.x, gridDim.x);
@@ -379,6 +508,7 @@ __global__ void dev_scale(float *data, float scale, int len) {
 	}
 }
 
+// parallel taking the square root and multiplying with a scale factor
 __global__ void dev_scaleSqrt(float *data, float scale, int len) {
 	const int     tid = IMUL(blockDim.x, blockIdx.x) + threadIdx.x;
 	const int threadN = IMUL(blockDim.x, gridDim.x);
@@ -390,6 +520,7 @@ __global__ void dev_scaleSqrt(float *data, float scale, int len) {
 }
 
 // stim should be an array of lenght nrX*nrY*3 with the data being organized such as: R1 G1 B1 R2 G2 B2 ...
+// void calcColorME(int spatFreq, int nrX, int nrY, unsigned char* stim, float* red_green, float* green_red, float* blue_yellow, float* yellow_blue, float* ME, bool GPUpointers)
 void calcColorME(int nrX, int nrY, unsigned char* stim, float* red_green, float* green_red, float* blue_yellow, float* yellow_blue, float* ME, bool GPUpointers)
 {
 	// allocate memory on the GPU
@@ -411,7 +542,7 @@ void calcColorME(int nrX, int nrY, unsigned char* stim, float* red_green, float*
 		cutilSafeCall(cudaMalloc ((void**)&d_scalingStimBuf, nrX*nrY*nrT*sizeof(float)));
 		cutilSafeCall(cudaMalloc ((void**)&d_v1GausBuf, nrX*nrY*nrT*sizeof(float)));
 		cutilSafeCall(cudaMalloc ((void**)&d_diffV1GausBuf, nrX*nrY*nrT*sizeof(float)));
-		cutilSafeCall(cudaMalloc ((void**)&d_pop, nrX*sizeof(float)*nrY*nrScales));
+		cutilSafeCall(cudaMalloc ((void**)&d_pop, nrX*sizeof(float)*nrY*nrScales)); // mean of 28 filter responses for all x,y and spatial scales, at a given step in time
 
 		cutilSafeCall(cudaMalloc ((void**)&d_red, nrX*nrY*sizeof(float)));
 		cutilSafeCall(cudaMalloc ((void**)&d_green, nrX*nrY*sizeof(float)));
@@ -436,12 +567,21 @@ void calcColorME(int nrX, int nrY, unsigned char* stim, float* red_green, float*
 	float* center_filt = v1Gaus;
 	float* surround_filt = complexV1Filt;
 	const int center_filtSize = v1GausSize;
-	const int surround_filtSize = complexV1FiltSize;
+	const int surround_filtSize = complexV1FiltSize; 
+	
+/*	size_t avail, total, previous;
+	float toGB = 1024.0*1024.0*1024.0;
+	cudaMemGetInfo(&avail,&total);
+	printf("after ME:\t\t\t%2.3f GB\t%2.3f GB\t%2.3f GB\n",(float)(avail)/toGB,(float)((total-avail)/toGB),(float)(avail/toGB));
+	previous=avail; */
+
 
 	cutilSafeCall(cudaMemcpy(d_stim,stim,3*nrX*nrY,cudaMemcpyHostToDevice));
 	dev_split<<<iDivUp(nrX*nrY,128), 128>>>(d_stim, d_red, d_green, d_blue, &d_stimBuf[nrX*nrY*(nrT-1)], nrX*nrY);
  	cutilCheckMsg("dev_split() execution failed\n");
 
+
+	/* ***** COLOR MODEL ***** */
 
 	uint3 color_sizes = make_uint3(nrX,nrY,1);
 
@@ -490,15 +630,28 @@ void calcColorME(int nrX, int nrY, unsigned char* stim, float* red_green, float*
 	dev_scaleHalfRect<<<iDivUp(nrX*nrY,128), 128>>>(d_color_tmp, 50.0, nrX*nrY);
 	cutilSafeCall(cudaMemcpy(blue_yellow,d_color_tmp,sizeof(float)*nrX*nrY,GPUpointers?cudaMemcpyDeviceToDevice:cudaMemcpyDeviceToHost));
 
-	// shift d_stimBuf in time by 1 frame
+
+
+
+	/* ***** MOTION ENERGY MODEL ***** */
+
+	// ME responses do not depend on color responses, but on grayscale values found in d_stimBuf[]
+
+	// shift d_stimBuf in time by 1 frame, from frame i to frame i-1
 	for(int i=1;i<nrT;i++)
 		cutilSafeCall(cudaMemcpy(&d_stimBuf[nrX*nrY*(i-1)],&d_stimBuf[nrX*nrY*i],sizeof(float)*nrX*nrY,cudaMemcpyDeviceToDevice));
 
+	// allocate d_resp, which will contain the response to all 28 (nrDirs) space-time orientation at 3 (nrScales) scales
+	// for every pixel location (x,y)
 	cutilSafeCall(cudaMemset (d_resp, 0, sizeof(float)*nrX*nrY*nrDirs*nrScales));
 
-	//copy d_stimBuf to d_scalingStimBuf
+	// working copy of grayscale values: copy d_stimBuf to d_scalingStimBuf
 	cutilSafeCall(cudaMemcpy(d_scalingStimBuf,d_stimBuf,sizeof(float)*nrX*nrY*nrT,cudaMemcpyDeviceToDevice));
+
+	// compute the V1 simple cell responses at 3 different spatial scales
 	for (int scale=1; scale<=nrScales; scale++) {
+		// blur/scale the image... each time this is called stim is blurred more
+		// scale 1 == original image resolution (space/time)
 		if (scale > 1) {
 			float* tmp;
 			cutilSafeCall(cudaMalloc((void**)&tmp, sizeof(float)*nrX*nrY*nrT));
@@ -511,7 +664,8 @@ void calcColorME(int nrX, int nrY, unsigned char* stim, float* red_green, float*
 			d_scalingStimBuf = tmp;
 		}
 
-		// extract just the part we want...
+		// nrT is 9, v1GaussSize is 9, so we're taking d_scalingStimBuf[0-0+nrX*nrY*9]
+		// since nrT could be greater than v1GaussSize, we take "only the part we want", quote Micah comment
 		cutilSafeCall(cudaMemcpy(d_v1GausBuf, &d_scalingStimBuf[nrX*nrY*((nrT-v1GausSize)/2)], sizeof(float)*nrX*nrY*v1GausSize, cudaMemcpyDeviceToDevice));
 
 		float* tmp;
@@ -523,9 +677,17 @@ void calcColorME(int nrX, int nrY, unsigned char* stim, float* red_green, float*
 		cutilSafeCall(cudaFree(d_v1GausBuf));
 		d_v1GausBuf = tmp;
 
+		// go through and calculate all directional derivatives and then combine them to calculate the diferent
+		// space-time oriented filters
 		for (int orderT=0; orderT<=3; orderT++) {
+			// reset diffV1GausBufT back to the 3D gaussian filtered version
 			cutilSafeCall(cudaMemcpy(diffV1GausBufT, d_v1GausBuf, sizeof(float)*nrX*nrY*v1GausSize, cudaMemcpyDeviceToDevice));
-			if (orderT > 0) diffV1GausBufT = diff(diffV1GausBufT, sizes, orderT,2);
+
+			if (orderT > 0) {
+				// take the derivative
+				// sizes: tripel (nrX,nrY,v1GaussSize)
+				diffV1GausBufT = diff(diffV1GausBufT, sizes, orderT,2);
+			}
 
 			for (int orderY=0; orderY<=3-orderT; orderY++) {
 				int orderX = 3-orderY-orderT;
@@ -535,12 +697,19 @@ void calcColorME(int nrX, int nrY, unsigned char* stim, float* red_green, float*
 				if (orderX > 0) d_diffV1GausBuf = diff(d_diffV1GausBuf, sizes, orderX,0);
 				if (orderY > 0) d_diffV1GausBuf = diff(d_diffV1GausBuf, sizes, orderY,1);
 
+				// combine the directional derivative by the direction of the space-time filter
 				accumDiffStims(&d_resp[(scale-1)*nrX*nrY*nrDirs], &d_diffV1GausBuf[nrX*nrY*(v1GausSize/2)], sizes, orderX, orderY, orderT);
 			}
 		}
 	}
-	
-	// half rect squared...
+
+	// consider edge effects
+	dev_edges<<<iDivUp(nrX*nrY*nrDirs*nrScales,128), 128>>>(d_resp, nrX*nrY*nrDirs*nrScales, nrX, nrY);
+	cutilCheckMsg("dev_edges() execution failed\n");
+
+
+	// half-square the linear responses
+	// contains scaleFactor.v1Linear and scaleFactor.v1FullWaveRectified
 	dev_halfRect2<<<iDivUp(nrX*nrY*nrDirs*nrScales,128), 128>>>(d_resp, nrX*nrY*nrDirs*nrScales);
 	cutilCheckMsg("dev_halfRect2() execution failed\n");
 
@@ -552,30 +721,56 @@ void calcColorME(int nrX, int nrY, unsigned char* stim, float* red_green, float*
 	conv2D(d_resp, tmp, sizes, complexV1Filt, complexV1FiltSize);
 	cutilSafeCall(cudaFree(tmp));
 
-	// normalize
+	// scale with scaleFactors.v1Blur
+	// NOTE: scaling with 1.0205..? Skip to save computation time
+//	dev_scale<<<iDivUp(nrX*nrY*nrDirs*nrScales,128), 128>>>(d_resp, 1.0205, nrX*nrY*nrDirs*nrScales);
+//	cutilCheckMsg("dev_scale() execution failed\n");
+
+
+	// we need to associate each filter at pixel position (x,y) with a power/intensity, but there are 28 filter
+	// responses at each location... so we need to (i) average over the 28 filters (3rd dimension in d_resp) and put it
+	// into d_pop ...
 	dim3 gridm(iDivUp(nrX*nrY,128), nrScales);
 	dev_mean3<<<gridm, 128>>>(d_resp, d_pop, nrX*nrY, nrDirs);
 	cutilCheckMsg("dev_mean3() execution failed\n");
 
+	// ... (ii) scale with scaleFactors.v1Complex
+	// NOTE: Scale with 0.99..? Skip to save computation time
+//	dev_scale<<<iDivUp(nrX*nrY*nrDirs*nrScales,128), 128>>>(d_resp, 0.99, nrX*nrY*nrDirs*nrScales);
+//	cutilCheckMsg("dev_scale() execution failed\n");
+
+
+	// ... and (iii) sum over some spatial neighborhood
 	// population normalization: convolve by d_normV1filtSize in 2D
 	uint3 nsizes = make_uint3(nrX,nrY,nrScales);
 	cutilSafeCall(cudaMalloc((void**)&tmp, sizeof(float)*nrX*nrY*nrScales));
 	conv2D(d_pop, tmp, nsizes, normV1filt, normV1filtSize);
 	cutilSafeCall(cudaFree(tmp));
 
+	// don't scale with scaleFactors.v1NormalizationStrength * scaleFactors.v1NormalizationPopulationK
+	// since we don't normalize over the WHOLE population, these factors are off
+	// the purpose of this normalization is to get a htan()-like response normalization: a scaling factor of 1.0 turns
+	// out to be good enough
+	dev_scale<<<iDivUp(nrX*nrY*nrScales,128), 128>>>(d_pop, 1.0, nrX*nrY*nrScales);
+	cutilCheckMsg("dev_scale() execution failed\n");
+
+	// d_resp is the numerator, d_pop the denominator sum term
 	dev_normalize<<<gridm, 128>>>(d_resp, d_pop, nrX*nrY, nrDirs);
 	cutilCheckMsg("dev_normalize() execution failed\n");
 
+	// Scaling factors were chosen such that in a RDK task all 3 scales have similar mean responses
+	// We believe this to be a reasonable assumption considering that dots do not suffer from the aperture problem;
+	// thus the model should have similar response strengths at all 3 scales
 	for (int scale=0; scale<nrScales; scale++)
-		dev_scale<<<iDivUp(nrX*nrY*nrDirs,128), 128>>>(&d_resp[scale*nrX*nrY*nrDirs], (scale==0?1000000:(scale==1?500000:100000))/255.0/255*50, nrX*nrY*nrDirs);
+		dev_scale<<<iDivUp(nrX*nrY*nrDirs,128), 128>>>(&d_resp[scale*nrX*nrY*nrDirs], (scale==0?15.0f:(scale==1?17.0f:11.0f)), nrX*nrY*nrDirs); // 15 17.5 17
 
-	// copy response to the Host side
+	// copy response to device or host (depending on whether we run in CPU_MODE or GPU_MODE)
 	cutilSafeCall(cudaMemcpy(ME,d_resp,sizeof(float)*nrX*nrY*nrDirs*nrScales,GPUpointers?cudaMemcpyDeviceToDevice:cudaMemcpyDeviceToHost));
+
 /*
-	unsigned int free, total;
-	CUresult res = cuMemGetInfo(&free, &total);
-	if(res != CUDA_SUCCESS) printf("!!!! cuMemGetInfo failed! (status = %x)", res);
-	printf("used GPU memory %ld\n", total - free);
+	size_t avail, total, used;
+	cudaMemGetInfo( &avail, &total );
+	used = total - avail;
+	printf("used GPU memory %f MB\n",(float)(used/1024.0/1024.0));
 */
 }
-

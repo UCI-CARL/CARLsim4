@@ -1,32 +1,42 @@
-//
-// Copyright (c) 2011 Regents of the University of California. All rights reserved.
-//
-// Redistribution and use in source and binary forms, with or without
-// modification, are permitted provided that the following conditions
-// are met:
-//
-// 1. Redistributions of source code must retain the above copyright
-//    notice, this list of conditions and the following disclaimer.
-//
-// 2. Redistributions in binary form must reproduce the above copyright
-//    notice, this list of conditions and the following disclaimer in the
-//    documentation and/or other materials provided with the distribution.
-//
-// 3. The names of its contributors may not be used to endorse or promote
-//    products derived from this software without specific prior written
-//    permission.
-//
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-// "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-// LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-// A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
-// CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
-// EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
-// PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
-// PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
-// LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-// NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-// SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+/*
+ * Copyright (c) 2013 Regents of the University of California. All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ *
+ * 3. The names of its contributors may not be used to endorse or promote
+ *    products derived from this software without specific prior written
+ *    permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
+ * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+ * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ * *********************************************************************************************** *
+ * CARLsim
+ * created by: 		(MDR) Micah Richert, (JN) Jayram M. Nageswaran
+ * maintained by:	(MA) Mike Avery <averym@uci.edu>, (MB) Michael Beyeler <mbeyeler@uci.edu>,
+ *					(KDC) Kristofor Carlson <kdcarlso@uci.edu>
+ *
+ * CARLsim available from http://socsci.uci.edu/~jkrichma/CARLsim/
+ * Ver 07/13/2013
+ */ 
 
 #ifndef _SNN_GOLD_H_
 #define _SNN_GOLD_H_
@@ -205,7 +215,6 @@ public:
 	bool onGPU;
 };
 
-
 typedef struct {
     short  delay_index_start;
     short  delay_length;
@@ -232,7 +241,9 @@ typedef struct network_info_s  {
 	unsigned int	numNInhPois;
 	unsigned int	numNPois;
 	unsigned int	numGrp;
+	bool		sim_with_fixedwts;
 	bool		sim_with_conductances;
+	bool		sim_with_stdp;
 	bool		sim_with_stp;
 } network_info_t;
 
@@ -473,6 +484,9 @@ class CpuSNN
 {
 	public:
 
+		const static unsigned int MAJOR_VERSION = 1;
+		const static unsigned int MINOR_VERSION = 2;
+
 		CpuSNN(const string& _name, int _numConfig = 1, int randomize = 0, int mode=CPU_MODE);
 		~CpuSNN();
 
@@ -499,7 +513,9 @@ class CpuSNN
 
 
 		// run the simulation for n sec
-		int runNetwork(int _nsec, int _tstep = 0, int simType = CPU_MODE, bool enablePrint=false, int copyState=false);
+		// simType can either be CPU_MODE or GPU_MODE
+		// ithGPU: specify on which CUDA device to establish a context
+		int runNetwork(int _nsec, int _tstep = 0, int simType = CPU_MODE, int ithGPU = 0, bool enablePrint=false, int copyState=false);
 
 		bool updateTime(); // returns true when a new second is started
 		uint64_t getSimTime()    { return simTime;    }
@@ -788,7 +804,7 @@ class CpuSNN
 
 
 		// allocates required memory and then initialize the GPU
-		void allocateSNN_GPU();
+		void allocateSNN_GPU(int ithGPU);
 
 		void allocateNetworkParameters();
 
@@ -879,7 +895,7 @@ class CpuSNN
 		// deprecated, may be removed soon...
 		void setDefaultParameters(float alpha_ltp=0, float tau_ltp=0, float alpha_ltd=0, float tau_ltd=0);
 
-		void setupNetwork(int simType=CPU_MODE, bool removeTempMemory=true);
+		void setupNetwork(int simType=CPU_MODE, int ithGPU=0, bool removeTempMemory=true);
 
 
 
@@ -907,21 +923,23 @@ private:
 		int			numConfig;
 
 		// properties of the network (number of groups, network name, allocated neurons etc..)
-		bool		doneReorganization;
-		bool		memoryOptimized;
+		bool			doneReorganization;
+		bool			memoryOptimized;
 
-		string		networkName;
-		int			numGrp;
-		int			numConnections;
-		int			allocatedN;
-		int			allocatedPre;
-		int			allocatedPost;
+		string			networkName;
+		int				numGrp;
+		int				numConnections;
+		unsigned int	allocatedN;
+		unsigned int	allocatedPre;
+		unsigned int	allocatedPost;
 
 		grpConnectInfo_t* connectBegin;
 
 		// Buffer to store spikes
 		PropagatedSpikeBuffer* pbuf;
 
+		bool sim_with_fixedwts;
+		bool sim_with_stdp;
 		bool sim_with_stp;
 		bool sim_with_conductances;
 
@@ -941,8 +959,6 @@ private:
 		unsigned int		postSynCnt;
 		unsigned int		preSynCnt;
 		float			*intrinsicWeight;
-		unsigned int	*nextTaste;
-		unsigned int	*nextDeath;
 		unsigned int		*cumulativePost;
 		unsigned int		*cumulativePre;
 		post_info_t		*preSynapticIds;
