@@ -24,7 +24,9 @@ function [stim,whichStage] = makeBarSpeed(stimContrast, writeFile)
 % (eero.simoncelli@nyu.edu)
 %
 % Author: Michael Beyeler <mbeyeler@uci.edu>
-% Ver 5/7/2013
+% Ver 10/4/2013
+
+addpath ../common
 
 if nargin<2,writeFile=false;end
 if nargin<1,stimContrast=0.2;end
