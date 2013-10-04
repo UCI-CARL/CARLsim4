@@ -686,8 +686,8 @@ int main()
 	float wt_MTpattInh_MTpatt = -synScale*15.0;
 	s.connect(gMT1PDSinh, gMT1PDS, "one-to-one", wt_MTpattInh_MTpatt, wt_MTpattInh_MTpatt, 1.0, 1, 1, SYN_FIXED);
 
-	s.connect(gMT1PDS, gPFC, new connectMTtoPFC(40,synScale*1.0), SYN_FIXED, 1000, 3000);
-	s.connect(gMT1PDS, gPFCi, new connectMTtoPFC(10,synScale*1.0), SYN_FIXED, 1000, 3000);
+	s.connect(gMT1PDS, gPFC, new connectMTtoPFC(40,synScale*0.8), SYN_FIXED, 1000, 3000);
+	s.connect(gMT1PDS, gPFCi, new connectMTtoPFC(10,synScale*0.5), SYN_FIXED, 1000, 3000);
 	s.connect(gPFCi, gPFC, new connectPFCitoPFC(40,10,-synScale*2.0), SYN_FIXED, 1000, 3000);
 
 

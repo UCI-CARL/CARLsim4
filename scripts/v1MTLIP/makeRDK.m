@@ -33,15 +33,18 @@ function frames = makeRDK(nrX, nrY, nrF, nrTr, speed, density, delayPeriod)
 % (eero.simoncelli@nyu.edu)
 %
 % Author: Michael Beyeler <mbeyeler@uci.edu>
-% Ver 07/20/2013
+% Ver 10/04/2013
+
+% make sure writeFramesToRgbFile is found
+addpath ../common
 
 
 %% LOAD PARAMS
 if nargin<1,nrX=32;end
 if nargin<2,nrY=32;end
-if nargin<3,nrF=50;end
-if nargin<4,nrTr=24;end
-if nargin<5,speed=1.0;end
+if nargin<3,nrF=20;end
+if nargin<4,nrTr=10;end
+if nargin<5,speed=1.5;end
 if nargin<6,density=0.15;end
 if nargin<7,delayPeriod=0;end
 

@@ -2696,12 +2696,13 @@ digraph G {\n\
 				assert(i < numNReg);
 
 				if (grp_Info[g].WithConductances) {
-
 					gAMPA[i] *= grp_Info[g].dAMPA;
 					gNMDA[i] *= grp_Info[g].dNMDA;
 					gGABAa[i] *= grp_Info[g].dGABAa;
 					gGABAb[i] *= grp_Info[g].dGABAb;
 				}
+				else
+					current[i] = 0.0f; // in CUBA mode, reset current to 0 at each time step and sum up all wts
 
 				if (voltage[i] >= 30.0) {
 					voltage[i] = Izh_c[i];

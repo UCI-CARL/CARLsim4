@@ -10,6 +10,7 @@ Build 2.1.1
 	* scripts/v1MTLIP/plotSpeed.m: fixed a bug concerning the plotting of the speed tuning curve for a particular
 		MT neuron; added a comment on the location within the visual field of the chosen neuron
 	* scripts/v1MTLIP/plotRDKdecision.m: fixed number of spikes per neuron
+	* scripts/v1MTLIP: added "common" folder to path
 	* examples/v1MTLIP/main_v1MTLIP.cpp (connectMTtoMTpatt): fixed RF size thresholding gausPos
 	* Makefile: fixed error where v1ColorME.cu should read v1ColorMEold.cu
 	* snn.h: fixed version numbering
