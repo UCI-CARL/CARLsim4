@@ -319,11 +319,11 @@ public:
 		float gausDir = cos(diffPool/8.0*2.0*M_PI);
 
 		if (usePosWts) {
-			connected = (gausPos>0.1) && (gausDir>0.1);
+			connected = (gausPos>0.01) && (gausDir>0.01);
 			weight = weightScale*gausPos*gausDir;
 		}
 		else {
-			connected = (gausPos>0.1) && ((-gausDir)>0.1);
+			connected = (gausPos>0.01) && ((-gausDir)>0.01);
 			weight = weightScale*gausPos*(-gausDir);
 
 		}
@@ -686,9 +686,9 @@ int main()
 	float wt_MTpattInh_MTpatt = -synScale*15.0;
 	s.connect(gMT1PDSinh, gMT1PDS, "one-to-one", wt_MTpattInh_MTpatt, wt_MTpattInh_MTpatt, 1.0, 1, 1, SYN_FIXED);
 
-	s.connect(gMT1PDS, gPFC, new connectMTtoPFC(40,synScale*2.0), SYN_FIXED, 1000, 3000);
-	s.connect(gMT1PDS, gPFCi, new connectMTtoPFC(10,synScale*0.8), SYN_FIXED, 1000, 3000);
-	s.connect(gPFCi, gPFC, new connectPFCitoPFC(40,10,-synScale*5.0), SYN_FIXED, 1000, 3000);
+	s.connect(gMT1PDS, gPFC, new connectMTtoPFC(40,synScale*1.0), SYN_FIXED, 1000, 3000);
+	s.connect(gMT1PDS, gPFCi, new connectMTtoPFC(10,synScale*1.0), SYN_FIXED, 1000, 3000);
+	s.connect(gPFCi, gPFC, new connectPFCitoPFC(40,10,-synScale*2.0), SYN_FIXED, 1000, 3000);
 
 
 	// -------------------------------------------------------------------------------------------------------------- //
@@ -705,11 +705,11 @@ int main()
 //	s.setSpikeMonitor(gMT1CDSinh);
 //	s.setSpikeMonitor(gMT2CDSinh);
 //	s.setSpikeMonitor(gMT3CDSinh);
-	strcpy(thisTmpSave,saveFolder); s.setSpikeMonitor(gMTCDSnorm, strcat(thisTmpSave,"spkMTCDSnorm.dat"));
+//	strcpy(thisTmpSave,saveFolder); s.setSpikeMonitor(gMTCDSnorm, strcat(thisTmpSave,"spkMTCDSnorm.dat"));
 	strcpy(thisTmpSave,saveFolder); s.setSpikeMonitor(gMT1PDS, strcat(thisTmpSave,"spkMT1PDS.dat"));
-	strcpy(thisTmpSave,saveFolder); s.setSpikeMonitor(gMT1PDSinh, strcat(thisTmpSave,"spkMT1PDSinh.dat"));
+//	strcpy(thisTmpSave,saveFolder); s.setSpikeMonitor(gMT1PDSinh, strcat(thisTmpSave,"spkMT1PDSinh.dat"));
 	strcpy(thisTmpSave,saveFolder); s.setSpikeMonitor(gPFC, strcat(thisTmpSave,"spkPFC.dat"));
-	strcpy(thisTmpSave,saveFolder); s.setSpikeMonitor(gPFCi, strcat(thisTmpSave,"spkPFCi.dat"));
+//	strcpy(thisTmpSave,saveFolder); s.setSpikeMonitor(gPFCi, strcat(thisTmpSave,"spkPFCi.dat"));
 
 
 	// -------------------------------------------------------------------------------------------------------------- //

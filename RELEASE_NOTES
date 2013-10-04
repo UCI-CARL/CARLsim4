@@ -1,48 +1,87 @@
+========================================================================================================================
 CARLSIM RELEASE NOTES
----------------------
+========================================================================================================================
 
-CARLsim is available from: http://socsci.uci.edu/~jkrichma/CARLsim/
-CARLsim was written by: Jayram Moorkanikara Nageswaran (JN), Micah Richert (MDR)
-CARLsim is maintained by: Mike Avery (MA), Michael Beyeler (MB), Kristofor Carlson (KDC)
+CARLsim is available from: http://socsci.uci.edu/~jkrichma/CARLsim/.
+For a list of all people who have contributed to this project, please refer to AUTHORS.
+For installation instructions, please refer to INSTALL.
+For a log of source code changes, refer to CHANGELOG.
 
-CARLsim 1.2 (July 2013)
-	* (MB) Added examples/main_V1MTLIP.cpp, scripts/V1MTLIP/
-		complete source code to run motion energy model in COBA on CPU/GPU
-	* (MB) Added option in CpuSNN::runNetwork to specify on which CUDA card to establish a context
-		The first time you run sim.runNetwork() add an int ithGPU that specifies the device index.
-		> bool onGPU=true; // GPU mode on
-		> int ithGPU=2; // run on the third card
-		> sim.runNetwork(0,0,onGPU?GPU_MODE:CPU_MODE,ithGPU);	
-		If ithGPU is invalid (e.g., exceeds the number of cards), it defaults to using device 0.
-	* (MB) Added GPU memory management summary in CpuSNN::allocateSNN_GPU
-		At beginning of simulation, prints how many cards are available, which one has the most
-		GFLOPs, on which card you're running your experiment, how much memory is available, etc.
-	* (MB) Added functionality for scripts/common/readSpikes.m to return AER format
-	* (MB) Added scripts/common/spikesAERtoFull.m
-		Expands an AER-representation of <spike time/neuron ID> to a full matrix
-	* (MB) Changed v1ColorME.cu to removed edge effects, reproduce V1 contrast sensitivity function,
-		and feature scaling factors from Simoncelli & Heeger, 1998.
-	* (MA/MB/KC) Changed max. firing rate from 1000 Hz to 520 Hz in config.h
-	* (MB) Fixed CpuSNN::printSimSummary: number of (actual vs. allocated) synapses
-	* (MB) Fixed GPU memory allocation for fixed-weight simulations in snn_gpu.cu
-	* (MB) Fixed storing of current[] when running COBA in CPU mode in CpuSNN::globalStateUpdate
-	* (MB) Fixed integer overflow issues for largest-scale simulations in snn_cpu.cpp
-	* (MB) Fixed indexing issue in scripts/common/readNetwork.m
-	* (MB) Workaround for COBA instability issue: conductances are capped to prevent instability 
-		in CpuSNN::globalStateUpdate
 
-CARLSim 1.1 (September 2011)
-	* Publication:
-		M Richert, JM Nageswaran, N Dutt, JL Krichmar (2011). "An efficient simulation environment
-		for modeling large-scale cortical processing", Frontiers in Neuroinformatics 5(19):1-15.
-	* (MDR/JN) Added COBA mode
-	* (MDR/JN) Added STDP (Song et al, 2000)
-	* (MDR/JN) Added STP  (Markram et al, 1998; Mongillo et al, 2008)
-	* (MDR/JN) Added example networks
-	
-CARLsim 1.0 (2009)
-	* Publication:
-		JM Nageswaran, N Dutt, JL Krichmar, A Nicolau, AV Veidenbaum (2009). "A configurable
-		simulation environment for the efficient simulation of large-scale spiking neural networks
-		on graphics processors", Neural Networks 22:791-800.
-	* (JN) Initial release.
+------------------------------------------------------------------------------------------------------------------------
+CARLsim 2.1
+------------------------------------------------------------------------------------------------------------------------
+
+Highlights:
+	Introduced "CARLsim" branding.
+	Efficient SNN model of pattern motion selectivity in visual cortex (V1, MT, LIP).
+	Improved GPU memory management. Bugfixes.
+
+Description:
+	We present a two-stage model of visual area MT that we believe to be the first large-scale spiking network to
+	demonstrate pattern direction selectivity. In this model, componentdirection-selective (CDS) cells in MT linearly
+	combine inputs from V1 cells that have spatiotemporal receptive fields according to the motion energy model of
+	Simoncelli and Heeger. Pattern-direction-selective (PDS) cells in MT are constructed by pooling over MT CDS cells
+	with a wide range of preferred directions. Responses of our model neurons are comparable to electrophysiological
+	results for grating and plaid stimuli as well as speed tuning. The behavioral response of the network in a motion
+	discrimination task is in agreement with psychophysical data. Moreover, our implementation outperforms a previous
+	implementation of the motion energy model by orders of magnitude in terms of computational speed and memory usage.
+	The full network, which comprises 153,216 neurons and approximately 40 million synapses, processes 20 frames per
+	second of a 32×32 input video in real-time using a single off-the-shelf GPU.
+	To promote the use of this algorithm among neuroscientists and computer vision researchers, the source code for the
+	simulator, the network, and analysis scripts are publicly available.
+
+Publication:
+	tba
+
+
+------------------------------------------------------------------------------------------------------------------------
+CARLsim 2.0
+------------------------------------------------------------------------------------------------------------------------
+
+Highlights:
+	Added COBA mode, STDP, and STP. Cortical model of color selectivity (color opponency).
+	Cortical model of motion selectivity (V1, MT) and orientation selectivity (V1, V4).
+
+Description:
+	We have developed a spiking neural network simulator, which is both easy to use and computationally efficient, for
+	the generation of large-scale computational neuroscience models. The simulator implements current or conductance
+	based Izhikevich neuron networks, having spike-timing dependent plasticity and short-term plasticity. It uses a
+	standard network construction interface. The simulator allows for execution on either GPUs or CPUs. The simulator,
+	which is written in C/C++, allows for both fine grain and coarse grain specificity of a host of parameters.
+	We demonstrate the ease of use and computational efficiency of this model by implementing a large-scale model of
+	cortical areas V1, V4, and area MT. The complete model, which has 138,240 neurons and approximately 30 million
+	synapses, runs in real-time on an off-the-shelf GPU.
+	The simulator source code, as well as the source code for the cortical model examples is publicly available.
+
+Publication:
+	M Richert, JM Nageswaran, N Dutt, JL Krichmar (2011). "An efficient simulation environment
+	for modeling large-scale cortical processing", Frontiers in Neuroinformatics 5(19):1-15.
+
+
+------------------------------------------------------------------------------------------------------------------------
+CARLsim 1.0
+------------------------------------------------------------------------------------------------------------------------
+
+Highlights:
+	Initial release. CUBA mode. Demonstration of GPU speedup.
+
+Description:
+	We demonstrate an efficient, biologically realistic, large-scale SNN simulator that runs on a single GPU.
+	The SNN model includes Izhikevich spiking neurons, detailed models of synaptic plasticity and variable axonal delay.
+	We allow user-defined configuration of the GPU-SNN model by means of a high-level programming interface written in
+	C++ but similar to the PyNN programming interface specification.
+
+	The GPU implementation (on NVIDIA GTX-280 with 1 GB of memory) is up to 26 times faster than a CPU version for the
+	simulation of 100K neurons with 50 Million synaptic connections, firing at an average rate of 7 Hz. For simulation
+	of 10 Million synaptic connections and 100K neurons, the GPU SNN model is only 1.5 times slower than real-time.
+	Further, we present a collection of new techniques related to parallelism extraction, mapping of irregular
+	communication, and network representation for effective simulation of SNNs on GPUs.
+	The fidelity of the simulation results was validated on CPU simulations using firing rate, synaptic weight
+	distribution, and inter-spike interval analysis. Our simulator is publicly available to the modeling community so
+	that researchers will have easy access to large-scale SNN simulations.
+
+Publication:
+	JM Nageswaran, N Dutt, JL Krichmar, A Nicolau, AV Veidenbaum (2009). "A configurable
+	simulation environment for the efficient simulation of large-scale spiking neural networks
+	on graphics processors", Neural Networks 22:791-800.

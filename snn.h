@@ -484,8 +484,8 @@ class CpuSNN
 {
 	public:
 
-		const static unsigned int MAJOR_VERSION = 1;
-		const static unsigned int MINOR_VERSION = 2;
+		const static unsigned int MAJOR_VERSION = 2;
+		const static unsigned int MINOR_VERSION = 1;
 
 		CpuSNN(const string& _name, int _numConfig = 1, int randomize = 0, int mode=CPU_MODE);
 		~CpuSNN();

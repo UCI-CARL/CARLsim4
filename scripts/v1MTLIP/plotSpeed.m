@@ -12,10 +12,13 @@ function [] = plotSpeed()
 % which can then be plugged into the CARLsim example model v1MTLIP.
 %
 % Author: Michael Beyeler <mbeyeler@uci.edu>
-% Ver 07/23/13
+% Ver 10/03/13
 
 
 %% LOAD PARAMS
+
+% NOTE: the following params need to be changed for stimulus sizes other
+% than 32x32
 
 % each speed/direction scene has a different number of frames. the
 % structure whichStage contains, for each frame, an experiment number. this
@@ -37,7 +40,10 @@ xSpeed(3,:) = [1.0000  1.5849  2.5119  3.9811  6.3096 10.0000]; % high-pass
 
 % plot all 3x3 responses
 % the diagonal should contain the tuning curves from the S&H paper
-thisNeuron = 7079; % 528    ; %nrX*nrX*6 + round(nrX*nrX/2);
+
+% pick a neuron in the first subpopulation (selective to rightward motion)
+% near the center of the visual field
+thisNeuron = sub2ind([nrX nrY 8],nrX/2,nrY/2+1);
 for mt=1:3
     disp(['MT' num2str(mt) 'CDS'])
     spk = readSpikes(['../../Results/v1MTLIP/spkMT' num2str(mt) 'CDS.dat'],frameDur);
@@ -46,33 +52,20 @@ for mt=1:3
     % normalize to Hz
     spk = spk/frameDur*1000;
     
-    % reshape and remove border pixels
-    spk = reshape(spk,vidLen,nrX,nrY,8);
-    spk = reshape(spk(:,10:22,10:22,1),vidLen,[]);
-    
-    % for each stage (direction and speed), compute mean and standard
-    % deviation of population response
-    muData=zeros(1,max(unique(whichStage)));
-    stdData=zeros(size(muData));
+    % average neuron's response over all relevant image frames (where
+    % whichStage==i)
+    x=zeros(1,max(unique(whichStage)));
     for i=1:max(unique(whichStage))
-        % first subpopulation, only this stage, ignore border
-        muData(i) = mean(reshape(spk(whichStage==i,:),1,[]));
-        stdData(i) = std(reshape(spk(whichStage==i,:),1,[]));
+        x(i)=mean(spk(whichStage==i,thisNeuron));
     end
     
-    subplot(1,3,mt)
-    errorbar([xSpeed(mt,:);xSpeed(mt,:)]', ...
-        [muData(12*(mt-1)+1:12*(mt-1)+6);muData(12*(mt-1)+7:12*(mt-1)+12)]', ...
-        [stdData(12*(mt-1)+1:12*(mt-1)+6);stdData(12*(mt-1)+7:12*(mt-1)+12)]',...
-        '.-','LineWidth',2,'MarkerSize',25);
-    set(gca,'xscale','log');
-    
-    %    semilogx(xSpeed(mt,:),[x(12*(mt-1)+1:12*(mt-1)+6);x(12*(mt-1)+7:12*(mt-1)+12)]','.-','LineWidth',2,'MarkerSize',25);
+    subplot(3,1,mt)
+    semilogx(xSpeed(mt,:),[x(12*(mt-1)+1:12*(mt-1)+6);x(12*(mt-1)+7:12*(mt-1)+12)]','.-','LineWidth',2,'MarkerSize',25);
     title(['MT' num2str(mt)],'FontSize',14);
     xlabel('speed (pixels/frame)','FontSize',14);
     ylabel('activity (spikes/sec)','FontSize',14);
     set(gca,'FontSize',14)
+    legend('preferred direction','anti-preferred direction');
 end
-legend('preferred direction','anti-preferred direction');
 
 end
