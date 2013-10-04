@@ -1,35 +1,68 @@
+========================================================================================================================
 CARLSIM INSTALLATION
---------------------
+========================================================================================================================
 
-CARLsim is available from: http://socsci.uci.edu/~jkrichma/CARLsim/
-CARLsim was written by: Jayram Moorkanikara Nageswaran (JN), Micah Richert (MDR)
-CARLsim is maintained by: Mike Avery (MA), Michael Beyeler (MB), Kristofor Carlson (KDC)
+Use of CARLsim requires that the NVIDIA CUDA driver and NVIDIA CUDA SDK are installed and functional.
 
-This code has been predominately developed under Linux and the build instructions reflect that.  
-While the code should function under MS Windows these instructions are not applicable.  We will
-hopefully release instructions in the future on how to setup the code base under Visual Studio 
-on Windows based systems.
+This code has been predominately developed under Linux and the build instructions reflect that.
+While the code should function under MS Windows these instructions are not applicable. We will hopefully release
+instructions in the future on how to setup the code base under Visual Studio on Windows based systems.
 
-To run the code the NVIDIA Cuda Driver and SDK must be installed and functional.  You must first
-compile the Cuda SDK examples (at least one) in order to have cutil compiled (libcutil).  Once 
-that has been accomplished, you need to setup an environment variable that points to where the 
-nVidia SDK is located.  So, under most linux systems do something like the following:
 
-export NVIDIA_SDK=(SOME PATH)/NVIDIA_GPU_Computing_SDK
 
-Where (SOME PATH) needs to be filled in with where the SDK is installed.
+INSTALLING NVIDIA CUDA SDK
+------------------------------------------------------------------------------------------------------------------------
 
-To then run the simulator you have several choices: random, orientation, colorblind, colorcycle, 
-and rdk.
+Download and install NVIDIA CUDA SDK from from: https://developer.nvidia.com/cuda-downloads (see website for
+platform-dependent installation instructions).
 
-To run them first compile the one you desire by typing make followed by the name, such as:
+In order to run CARLsim, the cutil library must be compiled (libcutil). This can be achieved by compiling at least one
+CUDA SDK example.
 
-make random
 
-Then type ./a.out and the simulation will start.
 
-To run Matlab from the simulators directory (or change Matlab's current directory to here).
+SETTING UP ENVIRONMENT VARIABLES
+------------------------------------------------------------------------------------------------------------------------
 
-The rdk and orientation examples can only be run on a system with a compatible GPU (compute 
-capability 1.3 or higher).  The colorblind example most likely must be run on CPU because at 
-high spatial resolution it requires more memory than most GPUs have available.
+Once that has been accomplished, you need to setup an environment variable that points to where the NVIDIA SDK is
+located. So, under most linux systems do something like the following:
+
+$ export NVIDIA_SDK=(SOME PATH)/NVIDIA_GPU_Computing_SDK
+
+where (SOME PATH) is the actual path to the SDK on your system. The environment variable $NVIDIA_SDK will then be used
+in the CARLsim Makefile to compile your network.
+
+Also, make sure that the environment variable $LD_LIBRARY_PATH exists (should have been created during the installation
+of CUDA SDK). On a 64-bit system this could look like this (however, depends on your CUDA install path):
+
+$ export LD_LIBRARY_PATH=/usr/local/cuda/lib64
+
+A good idea would be to add these two "export" lines to your ~/.bashrc, so you don't have to type every time you open
+up a new terminal.
+
+
+
+COMPILING AND RUNNING A NETWORK
+------------------------------------------------------------------------------------------------------------------------
+
+The CARLsim software package contains a number of simulation examples, whose source code can be found under the
+directory /examples/.
+
+The following examples are available: colorblind, colorcycle, orientation, rdk, and v1MTLIP.
+
+To run them, first compile one you desire by typing "make" followed by the name, such as:
+
+$ make v1MTLIP
+
+This will then create a binary file named as the experiment. Then type
+
+$ ./v1MTLIP
+
+and the simulation will start.
+The results of the simulation (i.e., output spike files) will be stored in the directory /Results/v1MTLIP/.
+Analysis scripts are available under /scripts/v1MTLIP/. Simply open MATLAB in that directory (or change MATLAB's
+current directory to that) and run the script.
+
+The rdk, orientation, and v1MTLIP examples can only be run on a system with a compatible GPU (compute capability 1.3
+or higher). The colorblind example most likely must be run on CPU because at high spatial resolution it requires more
+memory than most GPUs have available.

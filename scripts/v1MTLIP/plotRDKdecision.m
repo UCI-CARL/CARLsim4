@@ -14,12 +14,15 @@ function [] = plotRDKdecision()
 % Author: Michael Beyeler <mbeyeler@uci.edu>
 % Ver 07/19/13
 
+% NOTE: 64-bit MATLAB may be required to run this script (in order to
+% handle objects > 4GB)
+
 frameDur=1000; % frame duration
 nDir=8; % number of directions
 nRep=10; % number of trials
 cohVec=[0.1 1 5:5:20 30 40 50]; % coherence levels
 nDataPoints=length(cohVec); % number of data points
-spkPerNeur = 5; % spikes per neuron needed to reach a decision
+spkPerNeur = 10; % spikes per neuron needed to reach a decision
 
 s = readSpikes('../../Results/v1MTLIP/spkPFC.dat',1);
 s(nDir*nRep*nDataPoints*frameDur,1) = 0; % grow it to right size...
