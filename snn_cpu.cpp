@@ -196,8 +196,8 @@
 		cumulativePre  = new unsigned int[numN];
 		cpuSnnSz.networkInfoSize += (int)(sizeof(int)*numN*3.5);
 
-		postSynCnt = 0;	// stores the total number of post-synaptic connections in the network
-		preSynCnt  = 0;	// stores the total number of pre-synaptic connections in the network
+		postSynCnt = 0;
+		preSynCnt  = 0;
 		for(int g=0; g < numGrp; g++) {
 			// check for INT overflow: postSynCnt is O(numNeurons*numSynapses), must be able to fit within u int limit
 			assert(postSynCnt < UINT_MAX - (grp_Info[g].SizeN*grp_Info[g].numPostSynapses));
@@ -207,14 +207,14 @@
 		}
 		assert(postSynCnt/numN <= numPostSynapses); // divide by numN to prevent INT overflow
 		postSynapticIds		= new post_info_t[postSynCnt+100];
-		tmp_SynapticDelay	= new uint8_t[postSynCnt+100];	// Temporary array to store the delays of each connection
-		postDelayInfo		= new delay_info_t[numN*(D+1)];	// Possible delay values are 0....D (inclusive of D)
+		tmp_SynapticDelay	= new uint8_t[postSynCnt+100];	//!< Temporary array to store the delays of each connection
+		postDelayInfo		= new delay_info_t[numN*(D+1)];	//!< Possible delay values are 0....D (inclusive of D)
 		cpuSnnSz.networkInfoSize += ((sizeof(post_info_t)+sizeof(uint8_t))*postSynCnt+100) + (sizeof(delay_info_t)*numN*(D+1));
 		assert(preSynCnt/numN <= numPreSynapses); // divide by numN to prevent INT overflow
 
 		wt  			= new float[preSynCnt+100];
 		maxSynWt     	= new float[preSynCnt+100];
-		// Temporary array to hold pre-syn connections. will be deleted later if necessary
+		//! Temporary array to hold pre-syn connections. will be deleted later if necessary
 		preSynapticIds	= new post_info_t[preSynCnt+100];
 		// size due to weights and maximum weights
 		cpuSnnSz.synapticInfoSize += ((2*sizeof(float)+sizeof(post_info_t))*(preSynCnt+100));
