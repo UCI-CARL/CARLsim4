@@ -1,0 +1,13 @@
+/**
+\mainpage CARLsim - a GPU-accelerated SNN simulator
+
+\section intro_sec Introduction
+<b>CARLsim</b> is an efficient C/C++-based Spiking Neural Network (SNN) simulator that allows execution on both generic x86 CPUs and standard off-the-shelf GPUs. The simulator provides a PyNN-like programming interface, which allows for details and parameters to be specified at the synapse, neuron, and network level. <br/>
+Currently CARLsim supports four-parameter Izhikevich spiking neurons in combination with current-based (CUBA) and conductance-based (COBA) synapses. Also, the simulator provides standard equations for (nearest-neighbor) spike-timing-dependent plasticity (STDP) as well as short-term plasticity (STP). <br/>
+CARLsim was written by Jayram Moorkanikara Nageswaran and Micah Richert. The code is now being maintained and extended by Mike Avery, Michael Beyeler, and Kristofor Carlson. <br/>
+CARLsim can be freely obtained from http://www.socsci.uci.edu/~jkrichma/CARLsim.
+
+\section install_sec Installation
+Detailed installation instructions can be found in INSTALL.
+
+*/
