@@ -74,6 +74,14 @@
 
 	RNG_rand48* gpuRand48 = NULL;
 
+	// includes for mkdir
+	#if defined(CREATE_SPIKEDIR_IF_NOT_EXISTS)
+		#include <sys/stat.h>
+		#include <errno.h>
+		#include <libgen.h>
+	#endif
+
+
 /*********************************************/
 
 	void CpuSNN::resetPointers()
@@ -3461,6 +3469,39 @@ digraph G {\n\
 
 	void CpuSNN::setSpikeMonitor(int gid, const string& fname, int configId) {
 		FILE* fid = fopen(fname.c_str(),"wb");
+		if (fid==NULL) {
+			// file could not be opened
+
+			#if defined(CREATE_SPIKEDIR_IF_NOT_EXISTS)
+				// if option set, attempt to create directory
+				int status;
+
+				// this is annoying...for dirname we need to convert from const string to char*
+				char fchar[200];
+				strcpy(fchar,fname.c_str());
+
+				#if defined(_WIN32) || defined(_WIN64) // TODO: test it
+					status = _mkdir(dirname(fchar); // Windows platform
+				#else
+					status = mkdir(dirname(fchar), 0777); // Unix
+				#endif
+				if (status==-1 && errno!=EEXIST) {
+					fprintf(stderr,"ERROR %d: could not create directory: %s\n",errno, strerror(errno));
+					exit(1);
+					return;
+				}
+
+				// now that the directory is created, fopen file
+				fid = fopen(fname.c_str(),"wb");
+			#else
+				// default case: print error and exit
+				fprintf(stderr,"ERROR: File \"%s\" could not be opened, please check if it exists.\n",fname.c_str());
+				fprintf(stderr,"       Enable option CREATE_SPIKEDIR_IF_NOT_EXISTS in config.h to attempt creating the "
+					"specified subdirectory automatically.\n");
+				exit(1);
+				return;
+			#endif
+		}
 
 		assert(configId != ALL);
 

@@ -102,6 +102,15 @@
 // however, it uses much less memory than setting it to 0.
 #define READNETWORK_ADD_SYNAPSES_FROM_FILE 1
 
+// If this option is set, CpuSNN::setSpikeMonitor will attempt to create the subdirectory
+// specified by the user if it does not exist.
+// Example:
+// main_mySim.cpp
+//		sim.setSpikeMonitor(gEx,"Results/mySim/spkEx.dat")
+// => This will attempt to create subdirectory "./Results/mySim", but not "./Results".
+#define CREATE_SPIKEDIR_IF_NOT_EXISTS 0
+	
+
 #define INHIBITORY_STDP
 
 //#define NEURON_NOISE
