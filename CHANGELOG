@@ -3,6 +3,18 @@ Release 2.1
 ========================================================================================================================
 
 ---------------------
+Build 2.1.2
+---------------------
+
+2013-10-09	Michael Beyeler <mbeyeler@uci.edu>
+	* snn_cpu.cpp (CpuSNN::setSpikeMonitor): if spike subdirectory does not exist, display error message and exit.
+	  If option CREATE_SPIKEDIR_IF_NOT_EXISTS is set in config.h, will attempt to create subdirectory
+	  (e.g., "Results/random", but NOT "Results")
+	* config.h: added option CREATE_SPIKEDIR_IF_NOT_EXISTS (default: disabled)
+	* Makefile: fixed header dependencies
+
+
+---------------------
 Build 2.1.1
 ---------------------
 
