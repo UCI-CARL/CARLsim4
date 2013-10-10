@@ -2685,7 +2685,8 @@
 		// printState("globalState update\n");
 		//printTestVarInfo(stderr, "globalStateUpdate_GPU", true, false, false, 0, 1);
 
-		// FIXME: WTF is this!??
+/*
+		// FIXME: I broke the following because it seems to only apply to grpId 20..25 - legacy code?
 		for (int grpId=20; 0 & grpId < 25; grpId++) {
 			int ptrPos  = grp_Info[grpId].StartN;
 			int length  = grp_Info[grpId].SizeN;
@@ -2694,6 +2695,7 @@
 				fprintf(stderr, "current %d -> %f\n", ptrPos+i, cpuNetPtrs.current[ptrPos+i]);
 			}
 		}
+*/
 
 		if(0) {
 			int cnt=0;

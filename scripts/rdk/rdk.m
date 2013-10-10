@@ -1,6 +1,6 @@
 ss = zeros(8,10,8);
 
-s = readSpikes('../../Results/rdk/PFC.dat',3300);
+s = readSpikes('../../Results/rdk/spkPFC.dat',3300);
 if (size(s,1) < 80) s(80,8) = 0; end
 
 ss = squeeze(mean(reshape(s,8,10,[],8),3));

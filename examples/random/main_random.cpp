@@ -35,11 +35,8 @@
  *					(KDC) Kristofor Carlson <kdcarlso@uci.edu>
  *
  * CARLsim available from http://socsci.uci.edu/~jkrichma/CARL/CARLsim/
- * Ver 07/13/2013
+ * Ver 10/09/2013
  */ 
-
-#include <sys/stat.h>
-#include <errno.h>
 
 #include "snn.h"
 
@@ -95,6 +92,10 @@ int main()
 		// run the established network for a duration of 1 (sec)  and 0 (millisecond), in CPU_MODE
 		s.runNetwork(1, 0, CPU_MODE);
 	}
+
+	FILE* nid = fopen("Results/random/network.dat","wb");
+	s.writeNetwork(nid);
+	fclose(nid);
 
 	// display the details of the current simulation run
 	s.printSimSummary();

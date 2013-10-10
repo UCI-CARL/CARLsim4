@@ -10,9 +10,9 @@ FrameDur=100;
 resp = zeros(0,nrX*6);
 
 for j=1:length(list)
-    s = readspikes(['../../Results/colorblind/V4' list{j} '.dat'],FrameDur);
+    s = readSpikes(['../../Results/colorblind/spkV4' list{j} '.dat'],FrameDur);
     
     resp = [resp; reshape(permute(reshape(s(1:6,:),6,nrX,nrX),[3 2 1]),[nrX nrX*6])];
 end
 figure, imagesc([inputs; repmat(resp/max(resp(:)), [1 1 3])]);
-axis off;
+axis image off;

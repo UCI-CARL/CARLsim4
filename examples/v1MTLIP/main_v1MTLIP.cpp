@@ -1,36 +1,43 @@
-//
-// Copyright (c) 2011 Regents of the University of California. All rights reserved.
-//
-// Redistribution and use in source and binary forms, with or without
-// modification, are permitted provided that the following conditions
-// are met:
-//
-// 1. Redistributions of source code must retain the above copyright
-//    notice, this list of conditions and the following disclaimer.
-//
-// 2. Redistributions in binary form must reproduce the above copyright
-//    notice, this list of conditions and the following disclaimer in the
-//    documentation and/or other materials provided with the distribution.
-//
-// 3. The names of its contributors may not be used to endorse or promote
-//    products derived from this software without specific prior written
-//    permission.
-//
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-// "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-// LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-// A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
-// CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
-// EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
-// PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
-// PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
-// LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-// NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-// SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
+/*
+ * Copyright (c) 2013 Regents of the University of California. All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ *
+ * 3. The names of its contributors may not be used to endorse or promote
+ *    products derived from this software without specific prior written
+ *    permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
+ * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+ * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ * *********************************************************************************************** *
+ * CARLsim
+ * created by: 		(MDR) Micah Richert, (JN) Jayram M. Nageswaran
+ * maintained by:	(MA) Mike Avery <averym@uci.edu>, (MB) Michael Beyeler <mbeyeler@uci.edu>,
+ *					(KDC) Kristofor Carlson <kdcarlso@uci.edu>
+ *
+ * CARLsim available from http://socsci.uci.edu/~jkrichma/CARL/CARLsim/
+ * Ver 10/09/2013
+ */ 
 #include "snn.h"
-#include <sys/stat.h>
-#include <errno.h>
 
 // stim must be a file of unsigned char in RGB, arranged as R1 G1 B1 R2 G2 B2 ...
 void calcColorME(int nrX, int nrY, unsigned char* stim, float* red_green, float* green_red, float* blue_yellow,
@@ -283,9 +290,9 @@ public:
 };
 
 
-class connectMTtoMTpatt: public ConnectionGenerator {
+class connectMTCDStoMTPDS: public ConnectionGenerator {
 public:
-	connectMTtoMTpatt(float weightScale, int standDev, bool usePosWts) {
+	connectMTCDStoMTPDS(float weightScale, int standDev, bool usePosWts) {
 		this->weightScale = weightScale;
 		this->standDev = standDev;
 		this->usePosWts = usePosWts;
@@ -333,9 +340,9 @@ public:
 };
 
 
-class connectMTtoMTpattTunedNorm: public ConnectionGenerator {
+class connectMTCDStoMTtunedNorm: public ConnectionGenerator {
 public:
-	connectMTtoMTpattTunedNorm(float weightScale, int standDev) {
+	connectMTCDStoMTtunedNorm(float weightScale, int standDev) {
 		this->weightScale = weightScale;
 		this->standDev = standDev;
 	}
@@ -553,19 +560,10 @@ int main()
 	// try to open video first: in case of an error, we don't have to wait until the network is allocated
 	FILE* fid = fopen(loadVideo,"rb");
 	if (fid==NULL) {
-		printf("ERROR %d: could not open video file: %s\n",errno,strerror(errno));
+		printf("ERROR: could not open video file: %s\n",loadVideo);
 		return 1;
 	}
 	printf("Loading video file: %s\n",loadVideo);
-
-
-	// same goes for results folder, try to create
-	// read/write/search permissions for owner and group, and with read/search permissions for others
-	int status = mkdir(saveFolder, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
-	if (status==-1 && errno!=EEXIST) {
-		printf("ERROR %d: could not create directory: %s\n",errno, strerror(errno));
-		return 1;
-	}
 
 
 	// -------------------------------------------------------------------------------------------------------------- //
@@ -672,13 +670,13 @@ int main()
 	// weight strength plotted against direction is Gaussian, with the strongest positive weights coming from cells that
 	// have a similar direction preference, and the strongest negative weights coming from cells with opposite direction
 	// preference
-	float wt_MT_MTpatt = synScale*15.0;
+	float wt_MT_MTpatt = synScale*10.0;
 	int MTtoMTpattStd = 4;
-	s.connect(gMT1CDS, gMT1PDS, new connectMTtoMTpatt(wt_MT_MTpatt,MTtoMTpattStd,true), SYN_FIXED,1000,3000);
+	s.connect(gMT1CDS, gMT1PDS, new connectMTCDStoMTPDS(wt_MT_MTpatt,MTtoMTpattStd,true), SYN_FIXED,1000,3000);
 
 	// negative weights of direction pooling
 	float wt_MT_MTpattInh = synScale*5.0;
-	s.connect(gMT1CDS, gMT1PDSinh, new connectMTtoMTpatt(wt_MT_MTpattInh,MTtoMTpattStd,false), SYN_FIXED,1000,3000);
+	s.connect(gMT1CDS, gMT1PDSinh, new connectMTCDStoMTPDS(wt_MT_MTpattInh,MTtoMTpattStd,false), SYN_FIXED,1000,3000);
 
 	// tuned normalization
 	float wt_MT_MTpattInh_tunedNorm = synScale*5.0;

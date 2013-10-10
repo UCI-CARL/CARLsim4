@@ -22,9 +22,12 @@ V1 = readSpikes('../../Results/v1MTLIP/spkV1ME.dat',frameDur*nrF);
 CDS = readSpikes('../../Results/v1MTLIP/spkMT1CDS.dat',frameDur*nrF);
 PDS = readSpikes('../../Results/v1MTLIP/spkMT1PDS.dat',frameDur*nrF);
 
-data{1} = V1(:,16*1024+1:17*1024);
-data{2} = CDS(:,2*1024+1:3*1024);
-data{3} = PDS(:,2*1024+1:3*1024);
+% convert to Hz
+toHz = frameDur*nrF/1000;
+
+data{1} = V1(:,16*1024+1:17*1024)/toHz;
+data{2} = CDS(:,2*1024+1:3*1024)/toHz;
+data{3} = PDS(:,2*1024+1:3*1024)/toHz;
 
 for d=1:3
     for i=1:2
@@ -36,7 +39,6 @@ for d=1:3
         muData = mean(reshape(tmpData,nPnt,[]),2);
         stdData = std(reshape(tmpData,nPnt,[]),0,2);
         
-        
         maxR = 120;
         if d~=1 || i~=1, maxR=60; end
         polar([0 1e-3],[maxR maxR]);
@@ -46,7 +48,6 @@ for d=1:3
         polar([xDirection xDirection(1)], [muData+stdData;muData(1)+stdData(1)]', 'g.-');
         polar([xDirection xDirection(1)], [muData-stdData;muData(1)-stdData(1)]', 'r.-');
         hold off;
-        freezeColors;
     end
 end
 

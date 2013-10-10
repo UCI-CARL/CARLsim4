@@ -35,11 +35,8 @@
  *					(KDC) Kristofor Carlson <kdcarlso@uci.edu>
  *
  * CARLsim available from http://socsci.uci.edu/~jkrichma/CARL/CARLsim/
- * Ver 07/13/2013
+ * Ver 10/09/2013
  */ 
-
-#include <sys/stat.h>
-#include <errno.h>
 
 
 #include "snn.h"
@@ -53,7 +50,7 @@ extern MTRand	      getRand;
 #define V1_LAYER_DIM	(nrX)
 #define V4_LAYER_DIM	(nrX)
 
-#define MTsize (3)
+#define MTsize (2)
 
 #define FAST_EXP_BUF_SIZE 100
 #define FAST_EXP_MAX_STD 5.0
@@ -160,47 +157,6 @@ float motion_proj3[28][8] = {{0.189300, 0.893778, 1.569800, 1.821361, 1.501100, 
 			{2.892900, 2.982485, 3.321800, 3.712078, 3.924700, 3.835115, 3.495800, 3.105522},
 			{3.055100, 3.430435, 3.793800, 3.932340, 3.764900, 3.389565, 3.026200, 2.887660}};
 
-float orientation_proj[28][4] = {{0.311800, 0.000000, 0.449200, 0.952322},
-				{0.000000, 0.518441, 0.943600, 0.230224},
-				{0.248000, 0.942564, 0.499200, 0.000000},
-				{0.559400, 0.928139, 0.167400, 0.000000},
-				{0.938400, 0.256104, 0.000000, 0.485207},
-				{0.000000, 0.007910, 0.887800, 0.661842},
-				{0.830200, 0.000000, 0.000000, 0.747119},
-				{0.000000, 0.000000, 0.742400, 0.827023},
-				{0.906600, 0.573454, 0.000000, 0.122886},
-				{0.635000, 0.000000, 0.028400, 0.883308},
-				{0.000000, 0.654913, 0.860800, 0.000000},
-				{0.762000, 0.774414, 0.000000, 0.000000},
-				{0.000000, 0.000000, 0.000000, 0.000000},
-				{0.000000, 0.000000, 0.000000, 0.000000},
-				{0.000000, 0.000000, 0.000000, 0.000000},
-				{0.000000, 0.000000, 0.000000, 0.000000},
-				{0.000000, 0.000000, 0.000000, 0.000000},
-				{0.000000, 0.000000, 0.000000, 0.000000},
-				{0.000000, 0.000000, 0.000000, 0.000000},
-				{0.000000, 0.000000, 0.000000, 0.000000},
-				{0.000000, 0.000000, 0.000000, 0.000000},
-				{0.000000, 0.000000, 0.000000, 0.000000},
-				{0.000000, 0.000000, 0.000000, 0.000000},
-				{0.000000, 0.000000, 0.000000, 0.000000},
-				{0.000000, 0.000000, 0.000000, 0.000000},
-				{0.000000, 0.000000, 0.000000, 0.000000},
-				{0.000000, 0.000000, 0.000000, 0.000000},
-				{0.000000, 0.000000, 0.000000, 0.000000}};
-
-
-enum color_name_t { BLUE=0, GREEN, RED, YELLOW};
-string imageName[] = { "blue", "green", "red", "yellow"};
-
-enum v1color_name_t    { RED_GREEN=0, BLUE_YELLOW, GREEN_RED, YELLOW_BLUE };
-string v1ImageName[] = { "red-green-cells", "blue-yellow-cells",
-			 "green-red-cells", "yellow-blue-cells"};
-
-string  v4CellNameExc[] = { "Ev4magenta", "Ev4blue", "Ev4cyan", "Ev4green", "Ev4yellow", "Ev4red"};
-string  v4CellNameInh[] = { "Iv4magenta", "Iv4blue", "Iv4cyan", "Iv4green", "Iv4yellow", "Iv4red"};
-
-enum  v4CellType_t  {MAGENTA_V4=0, BLUE_V4, CYAN_V4, GREEN_V4, YELLOW_V4, RED_V4};
 
 class connectV1toMT: public ConnectionGenerator {
 public:
@@ -261,68 +217,6 @@ public:
 	}
 };
 
-class connectV1toV4o: public ConnectionGenerator {
-public:
-	connectV1toV4o(int scale, float weightScale, float (*proj)[4], float bias[4]) {
-		spatialScale = scale;
-		this->weightScale = weightScale;
-		this->proj = proj;
-		this->bias = bias;
-	}
-
-	int spatialScale;
-	float weightScale;
-	float (*proj)[4];	
-	float* bias;
-	
-	void connect(CpuSNN* net, int srcGrp, int i, int destGrp, int j, float& weight, float& maxWt, float& delay, bool& connected)
-	{
-		int v1X = i%nrX;
-		int v1Y = (i/nrX)%nrY;
-		int spaceTimeInd = (i/(nrX*nrY))%28;
-		int scale = i/(nrX*nrY)/28;
-
-		int edgedist = fmin(fmin(v1X,nrX-1-v1X),fmin(v1Y,nrY-1-v1Y)); // deal with the edges, which tend to have very high responses...
-
-		int v4X = (j%(nrX/spatialScale))*spatialScale;
-		int v4Y = ((j/(nrX/spatialScale))%(nrY/spatialScale))*spatialScale;
-		int o = j/(nrX*nrY/spatialScale/spatialScale);
-
-		float gaus = fast_exp(-((v4X-v1X)*(v4X-v1X)+(v4Y-v1Y)*(v4Y-v1Y))/MTsize/2);//sqrt(2*3.1459*MTsize);
-
-		connected = getRand()<gaus*proj[spaceTimeInd][o];
-		weight = proj[spaceTimeInd][o] * bias[o]*fmin(9,edgedist)/9.0*weightScale;
-		delay = 1;
-	}
-};
-
-class connectV4oitoV4o: public ConnectionGenerator {
-public:
-	connectV4oitoV4o(int scale, float weightScale) {
-		spatialScale = scale;
-		this->weightScale = weightScale;
-	}
-
-	int spatialScale;
-	float weightScale;
-	
-	void connect(CpuSNN* net, int srcGrp, int i, int destGrp, int j, float& weight, float& maxWt, float& delay, bool& connected)
-	{
-		int X = j%nrX;
-		int Y = (j/nrX)%nrY;
-		int o = j/(nrX*nrY);
-
-		int iX = (i%(nrX/spatialScale))*spatialScale;
-		int iY = ((i/(nrX/spatialScale))%(nrY/spatialScale))*spatialScale;
-		int iOr = i/(nrX*nrY/spatialScale/spatialScale);
-
-		float gaus = fast_exp(-((X-iX)*(X-iX)+(Y-iY)*(Y-iY))/MTsize); //for Inhibition use twice the radius...
-
-		connected = getRand()<gaus*(o!=iOr);//cos((o-iOr+2)/4.0*2*3.1459);
-		weight = weightScale;
-		delay = 1;
-	}
-};
 
 class connectMTtoPFC: public ConnectionGenerator {
 public:
@@ -367,71 +261,11 @@ public:
 	}
 };
 
-class v1v4Proj: public ConnectionGenerator {
-public:
-	v1v4Proj(int src_x, int src_y, int dest_x, int dest_y, int radius, float weightScale) {
-		this->src_x=src_x;
-		this->src_y=src_y;
-		this->dest_x=dest_x;
-		this->dest_y=dest_y;
-		this->radius=radius;
-		this->weightScale = weightScale;
-	}
-
-	int src_x; int src_y; int dest_x; int dest_y; int radius;
-	float weightScale;
-	
-	void connect(CpuSNN* net, int srcGrp, int src_i, int destGrp, int dest_i, float& weight, float& maxWt, float& delay, bool& connected)
-	{
-		// extract x and y positions...
-		int dest_i_x  = dest_i%dest_x;
-		int dest_i_y  = dest_i/dest_x;
-		int src_i_y = src_i/src_x;
-		int src_i_x = src_i%(src_x);
-
-		float distance2 = ((dest_i_y-src_i_y)*(dest_i_y-src_i_y))+((dest_i_x-src_i_x)*(dest_i_x-src_i_x));
-		float gaus = fast_exp(-distance2/radius/radius*3);
-		
-		connected = getRand()<gaus;
-		delay     = 1;
-		weight    = gaus*weightScale;
-	}
-};
-
-class simpleProjection: public ConnectionGenerator {
-public:
-	simpleProjection(float radius, float weightScale) {
-		this->weightScale = weightScale;
-		localRadius2 = radius*radius;
-	}
-
-	float localRadius2;
-	float weightScale;
-	
-	void connect(CpuSNN* net, int srcGrp, int src_i, int destGrp, int dest_i, float& weight, float& maxWt, float& delay, bool& connected)
-	{
-		// extract x and y position from the destination
-		int dest_i_x = dest_i%V4_LAYER_DIM;
-		int dest_i_y = dest_i/V4_LAYER_DIM;
-
-		// extract x and y position from the source
-		int src_i_x = src_i%V4_LAYER_DIM;
-		int src_i_y = src_i/V4_LAYER_DIM;
-
-		float distance2 = ((dest_i_y-src_i_y)*(dest_i_y-src_i_y))+((dest_i_x-src_i_x)*(dest_i_x-src_i_x));
-		float gaus = fast_exp(-distance2/localRadius2*3);
-
-		connected   = getRand()<gaus;
-		delay       = 1.0;
-		weight  = gaus*weightScale;
-	}
-};
-
 int main()
 {
 	MTRand	      getRand(210499257);
 
-	char saveFolder[] = "Results/rdk";
+	char saveFolder[] = "Results/rdk/";
 
 	float synscale = 1;
 	float stdpscale = 1;
@@ -444,100 +278,12 @@ int main()
 
 	FILE* fid;
 	char thisTmpSave[128]; // temp var to store save folder
-	
-	// if save folder does not exist, create it
-	// read/write/search permissions for owner and group, and with read/search permissions for others
-	int status = mkdir(saveFolder, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
-	if (status==-1 && errno!=EEXIST) {
-		printf("ERROR %d: could not create directory: %s\n",errno, strerror(errno));
-		return 1;
-	}
 
 	
 	// use command-line specified CUDA device, otherwise use device with highest Gflops/s
 //	cutilSafeCall(cudaSetDevice(cutGetMaxGflopsDeviceId()));
 
 	CpuSNN s("global");
-
-	int v1Cells[5];
-	int num_V1_groups=6;
-	for (int i=RED_GREEN; i <= YELLOW_BLUE; i++) {
-		v1Cells[i] = s.createSpikeGeneratorGroup(v1ImageName[i].c_str(), V1_LAYER_DIM*V1_LAYER_DIM, TARGET_AMPA);
-
-//		s.setSTP(v1Cells[i],true, 0.2, 800, 20);
-	}
-	
-	int   num_V4_groups = RED_V4+1;
-
-	int v4CellsExc[num_V4_groups];
-	int v4CellsInh[num_V4_groups];
-	for (int i=0; i < num_V4_groups; i++) {
-		v4CellsExc[i] = s.createGroup(v4CellNameExc[i].c_str(), V4_LAYER_DIM*V4_LAYER_DIM, TARGET_AMPA);
-		s.setNeuronParameters(v4CellsExc[i], 0.02f, 0.2f, -65.0f, 8.0f);
-		v4CellsInh[i] = s.createGroup(v4CellNameInh[i].c_str(), V4_LAYER_DIM*V4_LAYER_DIM, TARGET_GABAa);
-		s.setNeuronParameters(v4CellsInh[i], 0.1f,  0.2f, -65.0f, 2.0f);
-	}
-
-	//{int src_x; int src_y; int dest_x; int dest_y; int overlap; int radius; float  prob;} projParam_t;
-	float v1toV4w = 0.1;
-	float v1toV4iw = 0.1;
-	float radius = sqrt(3);
-	
-	v1v4Proj* projSecondary = new v1v4Proj(V1_LAYER_DIM, V1_LAYER_DIM, V4_LAYER_DIM, V4_LAYER_DIM, radius, v1toV4w*1.5);
-	v1v4Proj* projPrimary = new v1v4Proj(V1_LAYER_DIM, V1_LAYER_DIM, V4_LAYER_DIM, V4_LAYER_DIM, radius, v1toV4w);
-	v1v4Proj* projYellow = new v1v4Proj(V1_LAYER_DIM, V1_LAYER_DIM, V4_LAYER_DIM, V4_LAYER_DIM, radius, v1toV4w*2);
-	v1v4Proj* projInhib = new v1v4Proj(V1_LAYER_DIM, V1_LAYER_DIM, V4_LAYER_DIM, V4_LAYER_DIM, radius, v1toV4iw);
-
-	// feedforward connections
-	s.connect(v1Cells[RED_GREEN],   v4CellsExc[MAGENTA_V4], projSecondary, SYN_FIXED, radius*radius*4, radius*radius*4);
-	s.connect(v1Cells[BLUE_YELLOW], v4CellsExc[MAGENTA_V4], projSecondary, SYN_FIXED, radius*radius*4, radius*radius*4);
-
-	s.connect(v1Cells[GREEN_RED],   v4CellsExc[CYAN_V4], projSecondary, SYN_FIXED, radius*radius*4, radius*radius*4);
-	s.connect(v1Cells[BLUE_YELLOW], v4CellsExc[CYAN_V4], projSecondary, SYN_FIXED, radius*radius*4, radius*radius*4);
-
-	// same weight connectivity pattern, but the probability has been made 1.00 instead of 0.60 in the previous case...
-	s.connect(v1Cells[RED_GREEN],   v4CellsExc[RED_V4], projPrimary, SYN_FIXED, radius*radius*4, radius*radius*4);
-	s.connect(v1Cells[GREEN_RED], 	v4CellsExc[GREEN_V4], projPrimary, SYN_FIXED, radius*radius*4, radius*radius*4);
-	s.connect(v1Cells[BLUE_YELLOW], v4CellsExc[BLUE_V4], projPrimary, SYN_FIXED, radius*radius*4, radius*radius*4);
-	s.connect(v1Cells[YELLOW_BLUE], v4CellsExc[YELLOW_V4], projYellow, SYN_FIXED, radius*radius*4, radius*radius*4);
-
-
-	// feedforward inhibition
-	s.connect(v1Cells[RED_GREEN],   v4CellsInh[MAGENTA_V4], projInhib, SYN_FIXED, radius*radius*4, radius*radius*4);
-	s.connect(v1Cells[BLUE_YELLOW], v4CellsInh[MAGENTA_V4], projInhib, SYN_FIXED, radius*radius*4, radius*radius*4);
-
-	s.connect(v1Cells[GREEN_RED],   v4CellsInh[CYAN_V4], projInhib, SYN_FIXED, radius*radius*4, radius*radius*4);
-	s.connect(v1Cells[BLUE_YELLOW], v4CellsInh[CYAN_V4], projInhib, SYN_FIXED, radius*radius*4, radius*radius*4);
-
-	// same weight connectivity pattern, but the probability has been made 1.00 instead of 0.60 in the previous case...
-	s.connect(v1Cells[RED_GREEN], 	v4CellsInh[RED_V4], projInhib, SYN_FIXED, radius*radius*4, radius*radius*4);
-	s.connect(v1Cells[GREEN_RED], 	v4CellsInh[GREEN_V4], projInhib, SYN_FIXED, radius*radius*4, radius*radius*4);
-	s.connect(v1Cells[BLUE_YELLOW], v4CellsInh[BLUE_V4], projInhib, SYN_FIXED, radius*radius*4, radius*radius*4);
-	s.connect(v1Cells[YELLOW_BLUE], v4CellsInh[YELLOW_V4], projInhib, SYN_FIXED, radius*radius*4, radius*radius*4);
-
-	// laternal connections.....
-	float wtScale = -0.3;
-	
-	simpleProjection* projInhToExc = new simpleProjection(radius, wtScale);
-	
-	s.connect(v4CellsInh[MAGENTA_V4], v4CellsExc[CYAN_V4], projInhToExc, SYN_FIXED, radius*radius*4, radius*radius*4);
-	s.connect(v4CellsInh[MAGENTA_V4], v4CellsExc[YELLOW_V4], projInhToExc, SYN_FIXED, radius*radius*4, radius*radius*4);
-
-	s.connect(v4CellsInh[CYAN_V4], v4CellsExc[MAGENTA_V4], projInhToExc, SYN_FIXED, radius*radius*4, radius*radius*4);
-	s.connect(v4CellsInh[CYAN_V4], v4CellsExc[YELLOW_V4], projInhToExc, SYN_FIXED, radius*radius*4, radius*radius*4);
-
-	s.connect(v4CellsInh[YELLOW_V4], v4CellsExc[CYAN_V4], projInhToExc, SYN_FIXED, radius*radius*4, radius*radius*4);
-	s.connect(v4CellsInh[YELLOW_V4], v4CellsExc[MAGENTA_V4], projInhToExc, SYN_FIXED, radius*radius*4, radius*radius*4);
-
-
-	s.connect(v4CellsInh[RED_V4], v4CellsExc[GREEN_V4], projInhToExc, SYN_FIXED, radius*radius*4, radius*radius*4);
-	s.connect(v4CellsInh[RED_V4], v4CellsExc[BLUE_V4], projInhToExc, SYN_FIXED, radius*radius*4, radius*radius*4);
-
-	s.connect(v4CellsInh[BLUE_V4], v4CellsExc[RED_V4], projInhToExc, SYN_FIXED, radius*radius*4, radius*radius*4);
-	s.connect(v4CellsInh[BLUE_V4], v4CellsExc[GREEN_V4], projInhToExc, SYN_FIXED, radius*radius*4, radius*radius*4);
-
-	s.connect(v4CellsInh[GREEN_V4], v4CellsExc[RED_V4], projInhToExc, SYN_FIXED, radius*radius*4, radius*radius*4);
-	s.connect(v4CellsInh[GREEN_V4], v4CellsExc[BLUE_V4], projInhToExc, SYN_FIXED, radius*radius*4, radius*radius*4);
 
 	int gV1ME = s.createSpikeGeneratorGroup("V1ME", nrX*nrY*28*3, EXCITATORY_NEURON);
 	int gMT1 = s.createGroup("MT1", nrX*nrY*8, EXCITATORY_NEURON);
@@ -553,11 +299,6 @@ int main()
 	s.setNeuronParameters(gMT2i, 0.1f,  0.2f, -65.0f, 2.0f);
 	s.setNeuronParameters(gMT3i, 0.1f,  0.2f, -65.0f, 2.0f);
 
-	int gV4o = s.createGroup("V4o", nrX*nrY*4, EXCITATORY_NEURON);
-	s.setNeuronParameters(gV4o, 0.02f, 0.2f, -65.0f, 8.0f);
-	int gV4oi = s.createGroup("V4oi", nrX*nrY*4/4, INHIBITORY_NEURON);
-	s.setNeuronParameters(gV4oi, 0.1f,  0.2f, -65.0f, 2.0f);
-
 	int gPFC = s.createGroup("PFC", 50*8, EXCITATORY_NEURON);
 	s.setNeuronParameters(gPFC, 0.02f, 0.2f, -65.0f, 8.0f);
 	int gPFCi = s.createGroup("PFCi", 10*8, INHIBITORY_NEURON);
@@ -565,25 +306,17 @@ int main()
 
 
 
-	s.connect(gV1ME, gMT1, new connectV1toMT(1,synscale*4.5/2,motion_proj1), SYN_FIXED,100,3000);
-	s.connect(gV1ME, gMT2, new connectV1toMT(1,synscale*4.5/2,motion_proj2), SYN_FIXED,100,3000);
-	s.connect(gV1ME, gMT3, new connectV1toMT(1,synscale*4.5/2,motion_proj3), SYN_FIXED,100,3000);
+	s.connect(gV1ME, gMT1, new connectV1toMT(1,synscale*4.5/2,motion_proj1), SYN_FIXED,1000,3000);
+	s.connect(gV1ME, gMT2, new connectV1toMT(1,synscale*4.5/2,motion_proj2), SYN_FIXED,1000,3000);
+	s.connect(gV1ME, gMT3, new connectV1toMT(1,synscale*4.5/2,motion_proj3), SYN_FIXED,1000,3000);
 
-	s.connect(gV1ME, gMT1i, new connectV1toMT(2,synscale*3/2,motion_proj1), SYN_FIXED,100,3000);
-	s.connect(gV1ME, gMT2i, new connectV1toMT(2,synscale*3/2,motion_proj2), SYN_FIXED,100,3000);
-	s.connect(gV1ME, gMT3i, new connectV1toMT(2,synscale*3/2,motion_proj3), SYN_FIXED,100,3000);
+	s.connect(gV1ME, gMT1i, new connectV1toMT(2,synscale*3/2,motion_proj1), SYN_FIXED,1000,3000);
+	s.connect(gV1ME, gMT2i, new connectV1toMT(2,synscale*3/2,motion_proj2), SYN_FIXED,1000,3000);
+	s.connect(gV1ME, gMT3i, new connectV1toMT(2,synscale*3/2,motion_proj3), SYN_FIXED,1000,3000);
 
-	s.connect(gMT1i, gMT1, new connectMTitoMT(2,-synscale*20), SYN_FIXED,100,3000);
-	s.connect(gMT2i, gMT2, new connectMTitoMT(2,-synscale*20), SYN_FIXED,100,3000);
-	s.connect(gMT3i, gMT3, new connectMTitoMT(2,-synscale*20), SYN_FIXED,100,3000);
-	
-	float bias[4] = {1, 1, 1.2, 1};
-
-	s.connect(gV1ME, gV4o, new connectV1toV4o(1, synscale*4.5*2, orientation_proj, bias), SYN_FIXED,1000,3000);
-	s.connect(gV1ME, gV4oi, new connectV1toV4o(1, synscale*1*2, orientation_proj, bias), SYN_FIXED,1000,3000);
-
-	s.connect(gV4oi, gV4o, new connectV4oitoV4o(1,-0.01*4), SYN_FIXED,1000,3000);
-
+	s.connect(gMT1i, gMT1, new connectMTitoMT(2,-synscale*20), SYN_FIXED,1000,3000);
+	s.connect(gMT2i, gMT2, new connectMTitoMT(2,-synscale*20), SYN_FIXED,1000,3000);
+	s.connect(gMT3i, gMT3, new connectMTitoMT(2,-synscale*20), SYN_FIXED,1000,3000);
 
 	s.connect(gMT1, gPFC, new connectMTtoPFC(50,synscale*0.8), SYN_FIXED);
 	s.connect(gMT1, gPFCi, new connectMTtoPFC(10,synscale*0.5), SYN_FIXED);
@@ -600,23 +333,6 @@ int main()
 	s.setSTDP(ALL, false);
 
 	s.setSTP(ALL,false);
-/*
-	s.setSTP(gV1ME, true, 0.2, 700, 20);
-	s.setSTP(gMT, true, 0.2, 700, 20);
-	s.setSTP(gPFC, true, 0.2, 700, 20);
-
-	s.setSTP(gMTi, true, 0.5, 800, 1000);
-	s.setSTP(gPFCi, true, 0.5, 800, 1000);
-
-	for(int i=0; i < num_V4_groups; i++) {
-		s.setSTP(v4CellsExc[i], true, 0.5, 800, 1000);
-		s.setSTP(v4CellsInh[i], true, 0.2, 700, 20);
-	}
-
-	for (int i=RED_GREEN; i <= YELLOW_BLUE; i++) {
-		s.setSTP(v1Cells[i], true, 0.05, 5, 500);
-	}
-*/
 
 	s.setSpikeMonitor(gV1ME);
 	strcpy(thisTmpSave,saveFolder); s.setSpikeMonitor(gMT1,strcat(thisTmpSave,"spkMT1.dat"));
@@ -625,29 +341,6 @@ int main()
 	strcpy(thisTmpSave,saveFolder); s.setSpikeMonitor(gMT1i,strcat(thisTmpSave,"spkMT1i.dat"));
 	strcpy(thisTmpSave,saveFolder); s.setSpikeMonitor(gPFC,strcat(thisTmpSave,"spkPFC.dat"));
 	strcpy(thisTmpSave,saveFolder); s.setSpikeMonitor(gPFCi,strcat(thisTmpSave,"spkPFCi.dat"));
-
-	strcpy(thisTmpSave,saveFolder); s.setSpikeMonitor(gV4o,strcat(thisTmpSave,"spkV4o.dat"));
-	strcpy(thisTmpSave,saveFolder); s.setSpikeMonitor(gV4oi,strcat(thisTmpSave,"spkV4oi.dat"));
-
-	strcpy(thisTmpSave,saveFolder); s.setSpikeMonitor(v1Cells[RED_GREEN],strcat(thisTmpSave,"spkV1RG.dat"));
-	strcpy(thisTmpSave,saveFolder); s.setSpikeMonitor(v1Cells[GREEN_RED],strcat(thisTmpSave,"spkV1GR.dat"));
-	strcpy(thisTmpSave,saveFolder); s.setSpikeMonitor(v1Cells[BLUE_YELLOW],strcat(thisTmpSave,"spkV1BY.dat"));
-	strcpy(thisTmpSave,saveFolder); s.setSpikeMonitor(v1Cells[YELLOW_BLUE],strcat(thisTmpSave,"spkV1YB.dat"));
-
-	strcpy(thisTmpSave,saveFolder); s.setSpikeMonitor(v4CellsExc[RED_V4],strcat(thisTmpSave,"spkV4R.dat"));
-	strcpy(thisTmpSave,saveFolder); s.setSpikeMonitor(v4CellsExc[GREEN_V4],strcat(thisTmpSave,"spkV4G.dat"));
-	strcpy(thisTmpSave,saveFolder); s.setSpikeMonitor(v4CellsExc[BLUE_V4],strcat(thisTmpSave,"spkV4B.dat"));
-	strcpy(thisTmpSave,saveFolder); s.setSpikeMonitor(v4CellsExc[YELLOW_V4],strcat(thisTmpSave,"spkV4Y.dat"));
-	strcpy(thisTmpSave,saveFolder); s.setSpikeMonitor(v4CellsExc[CYAN_V4],strcat(thisTmpSave,"spkV4C.dat"));
-	strcpy(thisTmpSave,saveFolder); s.setSpikeMonitor(v4CellsExc[MAGENTA_V4],strcat(thisTmpSave,"spkV4M.dat"));
-
-	strcpy(thisTmpSave,saveFolder); s.setSpikeMonitor(v4CellsInh[RED_V4],strcat(thisTmpSave,"spkV4Ri.dat"));
-	strcpy(thisTmpSave,saveFolder); s.setSpikeMonitor(v4CellsInh[GREEN_V4],strcat(thisTmpSave,"spkV4Gi.dat"));
-	strcpy(thisTmpSave,saveFolder); s.setSpikeMonitor(v4CellsInh[BLUE_V4],strcat(thisTmpSave,"spkV4Bi.dat"));
-	strcpy(thisTmpSave,saveFolder); s.setSpikeMonitor(v4CellsInh[YELLOW_V4],strcat(thisTmpSave,"spkV4Yi.dat"));
-	strcpy(thisTmpSave,saveFolder); s.setSpikeMonitor(v4CellsInh[CYAN_V4],strcat(thisTmpSave,"spkV4Ci.dat"));
-	strcpy(thisTmpSave,saveFolder); s.setSpikeMonitor(v4CellsInh[MAGENTA_V4],strcat(thisTmpSave,"spkV4Mi.dat"));
-
 
 	unsigned char* vid = new unsigned char[nrX*nrY*3];
 
@@ -671,10 +364,6 @@ int main()
 		calcColorME(nrX, nrY, vid, red_green.rates, green_red.rates, blue_yellow.rates, yellow_blue.rates, me.rates, onGPU);
 
 		s.setSpikeRate(gV1ME, &me, 1);
-		s.setSpikeRate(v1Cells[RED_GREEN], &red_green, 1);
-		s.setSpikeRate(v1Cells[GREEN_RED], &green_red, 1);
-		s.setSpikeRate(v1Cells[BLUE_YELLOW], &blue_yellow, 1);
-		s.setSpikeRate(v1Cells[YELLOW_BLUE], &yellow_blue, 1);
 
 		// run the established network for 1 (sec)  and 0 (millisecond), in GPU_MODE
 		s.runNetwork(0,FRAMEDURATION, onGPU?GPU_MODE:CPU_MODE);

@@ -258,9 +258,6 @@ void conv2D(float* idata, float* odata, dim3 _sizes, const float* filt, int filt
 // the result will end up in idata
 // filtlen can not be greater than CONVN_THREAD_SIZE2
 
-// FIXME: this is confusing... am i missing something? why do we even need odata? we are giving in idata (e.g. called
-// d_scalingStimBuf), performing 3D convolution and storing the result back in idata. Good so far, but odata seems to
-// be surplus... why have this additional function argument, and not just a local tmp and tmp2?
 void conv3D(float* idata, float* odata, dim3 _sizes, const float* filt, int filtlen) {
 	unsigned int* sizes = (unsigned int*)&_sizes;
 	float* tmp;
@@ -732,9 +729,6 @@ void calcColorME(int nrX, int nrY, unsigned char* stim, float* red_green, float*
 	dev_normalize<<<gridm, 128>>>(d_resp, d_pop, nrX*nrY, nrDirs);
 	cutilCheckMsg("dev_normalize() execution failed\n");
 
-	// FIXME: i have no idea where the numbers 1e6, 5e5, and 1e5 are coming from...
-	// FIXME: also, there's no need to de-grayscale the inputs, this has already been done dev_split()
-	// but the idea is to normalize the responses and linearly map them onto [0,50 Hz]
 	for (int scale=0; scale<nrScales; scale++)
 		dev_scale<<<iDivUp(nrX*nrY*nrDirs,128), 128>>>(&d_resp[scale*nrX*nrY*nrDirs], (scale==0?1000000:(scale==1?500000:100000))/255.0/255*50, nrX*nrY*nrDirs);
 
