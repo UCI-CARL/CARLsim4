@@ -12,6 +12,7 @@ Build 2.1.2
 	  (e.g., "Results/random", but NOT "Results")
 	* config.h: added option CREATE_SPIKEDIR_IF_NOT_EXISTS (default: disabled)
 	* Makefile: fixed header dependencies
+	* examples: fixed path to spike files
 
 
 ---------------------

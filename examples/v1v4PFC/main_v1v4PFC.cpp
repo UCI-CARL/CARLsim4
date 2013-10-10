@@ -35,11 +35,8 @@
  *					(KDC) Kristofor Carlson <kdcarlso@uci.edu>
  *
  * CARLsim available from http://socsci.uci.edu/~jkrichma/CARL/CARLsim/
- * Ver 07/13/2013
+ * Ver 10/09/2013
  */ 
-
-#include <sys/stat.h>
-#include <errno.h>
 
 #include "snn.h"
 void calcColorME(int nrX, int nrY, unsigned char* stim, float* red_green, float* green_red, float* blue_yellow, float* yellow_blue, float* ME, bool GPUpointers);
@@ -391,7 +388,7 @@ public:
 		float distance2 = ((dest_i_y-src_i_y)*(dest_i_y-src_i_y))+((dest_i_x-src_i_x)*(dest_i_x-src_i_x));
 		float gaus = fast_exp(-distance2/radius/radius*3);
 		
-		connected = getRand()<gaus;
+		connected = gaus>0.1;
 		delay     = 1;
 		weight    = gaus*weightScale;
 	}
@@ -420,7 +417,7 @@ public:
 		float distance2 = ((dest_i_y-src_i_y)*(dest_i_y-src_i_y))+((dest_i_x-src_i_x)*(dest_i_x-src_i_x));
 		float gaus = fast_exp(-distance2/localRadius2*3);
 
-		connected   = getRand()<gaus;
+		connected   = gaus>0.1;
 		delay       = 1.0;
 		weight  = gaus*weightScale;
 	}
@@ -429,8 +426,6 @@ public:
 int main()
 {
 	MTRand	      getRand(210499257);
-	
-	char saveFolder[] = "Results/v1v4PFC";
 
 	float synscale = 1;
 	float stdpscale = 1;
@@ -442,16 +437,6 @@ int main()
 	#define FRAMEDURATION 100
 
 	FILE* fid;
-	char thisTmpSave[128]; // temp var to store save folder
-	
-	// if save folder does not exist, create it
-	// read/write/search permissions for owner and group, and with read/search permissions for others
-	int status = mkdir(saveFolder, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
-	if (status==-1 && errno!=EEXIST) {
-		printf("ERROR %d: could not create directory: %s\n",errno, strerror(errno));
-		return 1;
-	}
-
 
 	// use command-line specified CUDA device, otherwise use device with highest Gflops/s
 //	cutilSafeCall(cudaSetDevice(cutGetMaxGflopsDeviceId()));
@@ -478,8 +463,8 @@ int main()
 	}
 
 	//{int src_x; int src_y; int dest_x; int dest_y; int overlap; int radius; float  prob;} projParam_t;
-	float v1toV4w = 0.1;
-	float v1toV4iw = 0.1;
+	float v1toV4w = 0.5;
+	float v1toV4iw = 0.5;
 	float radius = sqrt(3);
 	
 	v1v4Proj* projSecondary = new v1v4Proj(V1_LAYER_DIM, V1_LAYER_DIM, V4_LAYER_DIM, V4_LAYER_DIM, radius, v1toV4w*1.5);
@@ -516,7 +501,8 @@ int main()
 
 	// laternal connections.....
 	float wtScale = -0.3;
-	
+
+	radius *= 2; // inhibition has a larger radius
 	simpleProjection* projInhToExc = new simpleProjection(radius, wtScale);
 	
 	s.connect(v4CellsInh[MAGENTA_V4], v4CellsExc[CYAN_V4], projInhToExc, SYN_FIXED, radius*radius*4, radius*radius*4);
@@ -527,8 +513,7 @@ int main()
 
 	s.connect(v4CellsInh[YELLOW_V4], v4CellsExc[CYAN_V4], projInhToExc, SYN_FIXED, radius*radius*4, radius*radius*4);
 	s.connect(v4CellsInh[YELLOW_V4], v4CellsExc[MAGENTA_V4], projInhToExc, SYN_FIXED, radius*radius*4, radius*radius*4);
-
-
+/*
 	s.connect(v4CellsInh[RED_V4], v4CellsExc[GREEN_V4], projInhToExc, SYN_FIXED, radius*radius*4, radius*radius*4);
 	s.connect(v4CellsInh[RED_V4], v4CellsExc[BLUE_V4], projInhToExc, SYN_FIXED, radius*radius*4, radius*radius*4);
 
@@ -537,6 +522,9 @@ int main()
 
 	s.connect(v4CellsInh[GREEN_V4], v4CellsExc[RED_V4], projInhToExc, SYN_FIXED, radius*radius*4, radius*radius*4);
 	s.connect(v4CellsInh[GREEN_V4], v4CellsExc[BLUE_V4], projInhToExc, SYN_FIXED, radius*radius*4, radius*radius*4);
+*/
+
+
 
 	int gV1ME = s.createSpikeGeneratorGroup("V1ME", nrX*nrY*28*3, EXCITATORY_NEURON);
 	int gMT1 = s.createGroup("MT1", nrX*nrY*8, EXCITATORY_NEURON);
@@ -552,11 +540,6 @@ int main()
 	s.setNeuronParameters(gMT2i, 0.1f,  0.2f, -65.0f, 2.0f);
 	s.setNeuronParameters(gMT3i, 0.1f,  0.2f, -65.0f, 2.0f);
 
-	int gV4o = s.createGroup("V4o", nrX*nrY*4, EXCITATORY_NEURON);
-	s.setNeuronParameters(gV4o, 0.02f, 0.2f, -65.0f, 8.0f);
-	int gV4oi = s.createGroup("V4oi", nrX*nrY*4/4, INHIBITORY_NEURON);
-	s.setNeuronParameters(gV4oi, 0.1f,  0.2f, -65.0f, 2.0f);
-
 	int gPFC = s.createGroup("PFC", 50*8, EXCITATORY_NEURON);
 	s.setNeuronParameters(gPFC, 0.02f, 0.2f, -65.0f, 8.0f);
 	int gPFCi = s.createGroup("PFCi", 10*8, INHIBITORY_NEURON);
@@ -564,30 +547,40 @@ int main()
 
 
 
-	s.connect(gV1ME, gMT1, new connectV1toMT(1,synscale*4.5/2,motion_proj1), SYN_FIXED,100,3000);
-	s.connect(gV1ME, gMT2, new connectV1toMT(1,synscale*4.5/2,motion_proj2), SYN_FIXED,100,3000);
-	s.connect(gV1ME, gMT3, new connectV1toMT(1,synscale*4.5/2,motion_proj3), SYN_FIXED,100,3000);
+	s.connect(gV1ME, gMT1, new connectV1toMT(1,synscale*4.5/2,motion_proj1), SYN_FIXED,1000,3000);
+	s.connect(gV1ME, gMT2, new connectV1toMT(1,synscale*4.5/2,motion_proj2), SYN_FIXED,1000,3000);
+	s.connect(gV1ME, gMT3, new connectV1toMT(1,synscale*4.5/2,motion_proj3), SYN_FIXED,1000,3000);
 
-	s.connect(gV1ME, gMT1i, new connectV1toMT(2,synscale*3/2,motion_proj1), SYN_FIXED,100,3000);
-	s.connect(gV1ME, gMT2i, new connectV1toMT(2,synscale*3/2,motion_proj2), SYN_FIXED,100,3000);
-	s.connect(gV1ME, gMT3i, new connectV1toMT(2,synscale*3/2,motion_proj3), SYN_FIXED,100,3000);
+	s.connect(gV1ME, gMT1i, new connectV1toMT(2,synscale*3/2,motion_proj1), SYN_FIXED,1000,3000);
+	s.connect(gV1ME, gMT2i, new connectV1toMT(2,synscale*3/2,motion_proj2), SYN_FIXED,1000,3000);
+	s.connect(gV1ME, gMT3i, new connectV1toMT(2,synscale*3/2,motion_proj3), SYN_FIXED,1000,3000);
 
-	s.connect(gMT1i, gMT1, new connectMTitoMT(2,-synscale*20), SYN_FIXED,100,3000);
-	s.connect(gMT2i, gMT2, new connectMTitoMT(2,-synscale*20), SYN_FIXED,100,3000);
-	s.connect(gMT3i, gMT3, new connectMTitoMT(2,-synscale*20), SYN_FIXED,100,3000);
+	s.connect(gMT1i, gMT1, new connectMTitoMT(2,-synscale*20), SYN_FIXED,1000,3000);
+	s.connect(gMT2i, gMT2, new connectMTitoMT(2,-synscale*20), SYN_FIXED,1000,3000);
+	s.connect(gMT3i, gMT3, new connectMTitoMT(2,-synscale*20), SYN_FIXED,1000,3000);
 	
-	float bias[4] = {1, 1, 1.2, 1};
-
-	s.connect(gV1ME, gV4o, new connectV1toV4o(1, synscale*4.5*2, orientation_proj, bias), SYN_FIXED,1000,3000);
-	s.connect(gV1ME, gV4oi, new connectV1toV4o(1, synscale*1*2, orientation_proj, bias), SYN_FIXED,1000,3000);
-
-	s.connect(gV4oi, gV4o, new connectV4oitoV4o(1,-0.01*4), SYN_FIXED,1000,3000);
-
 
 	s.connect(gMT1, gPFC, new connectMTtoPFC(50,synscale*0.8), SYN_FIXED);
 	s.connect(gMT1, gPFCi, new connectMTtoPFC(10,synscale*0.5), SYN_FIXED);
 
 	s.connect(gPFCi, gPFC, new connectPFCitoPFC(50,10,-synscale*1), SYN_FIXED);
+
+
+
+	int inhibScale = 2;
+
+	int gV4o = s.createGroup("V4o", nrX*nrY*4, EXCITATORY_NEURON);
+	s.setNeuronParameters(gV4o, 0.02f, 0.2f, -65.0f, 8.0f);
+	int gV4oi = s.createGroup("V4oi", nrX*nrY*4/inhibScale/inhibScale, INHIBITORY_NEURON);
+	s.setNeuronParameters(gV4oi, 0.1f,  0.2f, -65.0f, 2.0f);
+
+	float biasE[4] = {1, 1.2, 1.3, 1.2};
+	float biasI[4] = {1, 0.9, 1.3, 0.95};
+
+	s.connect(gV1ME, gV4o, new connectV1toV4o(1, synscale*4.5*2, orientation_proj, biasE), SYN_FIXED,1000,3000);
+	s.connect(gV1ME, gV4oi, new connectV1toV4o(inhibScale, synscale*1*2*2, orientation_proj, biasI), SYN_FIXED,1000,3000);
+
+	s.connect(gV4oi, gV4o, new connectV4oitoV4o(inhibScale,-0.01*2), SYN_FIXED,1000,3000);
 
 
 	// show log every 1 sec (0 to disable logging). You can pass a file pointer or pass stdout to specify where the log output should go.
@@ -599,57 +592,45 @@ int main()
 	s.setSTDP(ALL, false);
 
 	s.setSTP(ALL,false);
-/*
-	s.setSTP(gV1ME, true, 0.2, 700, 20);
-	s.setSTP(gMT, true, 0.2, 700, 20);
-	s.setSTP(gPFC, true, 0.2, 700, 20);
 
-	s.setSTP(gMTi, true, 0.5, 800, 1000);
-	s.setSTP(gPFCi, true, 0.5, 800, 1000);
+	s.setSpikeMonitor(v1Cells[RED_GREEN],"Results/v1v4PFC/V1RG.dat");
+	s.setSpikeMonitor(v1Cells[GREEN_RED],"Results/v1v4PFC/V1GR.dat");
+	s.setSpikeMonitor(v1Cells[BLUE_YELLOW],"Results/v1v4PFC/V1BY.dat");
+	s.setSpikeMonitor(v1Cells[YELLOW_BLUE],"Results/v1v4PFC/V1YB.dat");
 
-	for(int i=0; i < num_V4_groups; i++) {
-		s.setSTP(v4CellsExc[i], true, 0.5, 800, 1000);
-		s.setSTP(v4CellsInh[i], true, 0.2, 700, 20);
-	}
+	s.setSpikeMonitor(v4CellsExc[RED_V4],"Results/v1v4PFC/V4R.dat");
+	s.setSpikeMonitor(v4CellsExc[GREEN_V4],"Results/v1v4PFC/V4G.dat");
+	s.setSpikeMonitor(v4CellsExc[BLUE_V4],"Results/v1v4PFC/V4B.dat");
+	s.setSpikeMonitor(v4CellsExc[YELLOW_V4],"Results/v1v4PFC/V4Y.dat");
+	s.setSpikeMonitor(v4CellsExc[CYAN_V4],"Results/v1v4PFC/V4C.dat");
+	s.setSpikeMonitor(v4CellsExc[MAGENTA_V4],"Results/v1v4PFC/V4M.dat");
 
-	for (int i=RED_GREEN; i <= YELLOW_BLUE; i++) {
-		s.setSTP(v1Cells[i], true, 0.05, 5, 500);
-	}
-*/
+	s.setSpikeMonitor(v4CellsInh[RED_V4],"Results/v1v4PFC/V4Ri.dat");
+	s.setSpikeMonitor(v4CellsInh[GREEN_V4],"Results/v1v4PFC/V4Gi.dat");
+	s.setSpikeMonitor(v4CellsInh[BLUE_V4],"Results/v1v4PFC/V4Bi.dat");
+	s.setSpikeMonitor(v4CellsInh[YELLOW_V4],"Results/v1v4PFC/V4Yi.dat");
+	s.setSpikeMonitor(v4CellsInh[CYAN_V4],"Results/v1v4PFC/V4Ci.dat");
+	s.setSpikeMonitor(v4CellsInh[MAGENTA_V4],"Results/v1v4PFC/V4Mi.dat");
 
 	s.setSpikeMonitor(gV1ME);
-	strcpy(thisTmpSave,saveFolder); s.setSpikeMonitor(gMT1,strcat(thisTmpSave,"spkMT1.dat"));
-	strcpy(thisTmpSave,saveFolder); s.setSpikeMonitor(gMT2,strcat(thisTmpSave,"spkMT2.dat"));
-	strcpy(thisTmpSave,saveFolder); s.setSpikeMonitor(gMT3,strcat(thisTmpSave,"spkMT3.dat"));
-	strcpy(thisTmpSave,saveFolder); s.setSpikeMonitor(gMT1i,strcat(thisTmpSave,"spkMT1i.dat"));
-	strcpy(thisTmpSave,saveFolder); s.setSpikeMonitor(gPFC,strcat(thisTmpSave,"spkPFC.dat"));
-	strcpy(thisTmpSave,saveFolder); s.setSpikeMonitor(gPFCi,strcat(thisTmpSave,"spkPFCi.dat"));
+	s.setSpikeMonitor(gMT1,"Results/v1v4PFC/MT1.dat");
+	s.setSpikeMonitor(gMT2,"Results/v1v4PFC/MT2.dat");
+	s.setSpikeMonitor(gMT3,"Results/v1v4PFC/MT3.dat");
+	s.setSpikeMonitor(gPFC,"Results/v1v4PFC/PFC.dat");
+	s.setSpikeMonitor(gMT1i,"Results/v1v4PFC/MT1i.dat");
+	s.setSpikeMonitor(gPFCi,"Results/v1v4PFC/PFCi.dat");
 
-	strcpy(thisTmpSave,saveFolder); s.setSpikeMonitor(gV4o,strcat(thisTmpSave,"spkV4o.dat"));
-	strcpy(thisTmpSave,saveFolder); s.setSpikeMonitor(gV4oi,strcat(thisTmpSave,"spkV4oi.dat"));
+	s.setSpikeMonitor(gV4o,"Results/v1v4PFC/V4o.dat");
+	s.setSpikeMonitor(gV4oi,"Results/v1v4PFC/V4oi.dat");
 
-	strcpy(thisTmpSave,saveFolder); s.setSpikeMonitor(v1Cells[RED_GREEN],strcat(thisTmpSave,"spkV1RG.dat"));
-	strcpy(thisTmpSave,saveFolder); s.setSpikeMonitor(v1Cells[GREEN_RED],strcat(thisTmpSave,"spkV1GR.dat"));
-	strcpy(thisTmpSave,saveFolder); s.setSpikeMonitor(v1Cells[BLUE_YELLOW],strcat(thisTmpSave,"spkV1BY.dat"));
-	strcpy(thisTmpSave,saveFolder); s.setSpikeMonitor(v1Cells[YELLOW_BLUE],strcat(thisTmpSave,"spkV1YB.dat"));
-
-	strcpy(thisTmpSave,saveFolder); s.setSpikeMonitor(v4CellsExc[RED_V4],strcat(thisTmpSave,"spkV4R.dat"));
-	strcpy(thisTmpSave,saveFolder); s.setSpikeMonitor(v4CellsExc[GREEN_V4],strcat(thisTmpSave,"spkV4G.dat"));
-	strcpy(thisTmpSave,saveFolder); s.setSpikeMonitor(v4CellsExc[BLUE_V4],strcat(thisTmpSave,"spkV4B.dat"));
-	strcpy(thisTmpSave,saveFolder); s.setSpikeMonitor(v4CellsExc[YELLOW_V4],strcat(thisTmpSave,"spkV4Y.dat"));
-	strcpy(thisTmpSave,saveFolder); s.setSpikeMonitor(v4CellsExc[CYAN_V4],strcat(thisTmpSave,"spkV4C.dat"));
-	strcpy(thisTmpSave,saveFolder); s.setSpikeMonitor(v4CellsExc[MAGENTA_V4],strcat(thisTmpSave,"spkV4M.dat"));
-
-	strcpy(thisTmpSave,saveFolder); s.setSpikeMonitor(v4CellsInh[RED_V4],strcat(thisTmpSave,"spkV4Ri.dat"));
-	strcpy(thisTmpSave,saveFolder); s.setSpikeMonitor(v4CellsInh[GREEN_V4],strcat(thisTmpSave,"spkV4Gi.dat"));
-	strcpy(thisTmpSave,saveFolder); s.setSpikeMonitor(v4CellsInh[BLUE_V4],strcat(thisTmpSave,"spkV4Bi.dat"));
-	strcpy(thisTmpSave,saveFolder); s.setSpikeMonitor(v4CellsInh[YELLOW_V4],strcat(thisTmpSave,"spkV4Yi.dat"));
-	strcpy(thisTmpSave,saveFolder); s.setSpikeMonitor(v4CellsInh[CYAN_V4],strcat(thisTmpSave,"spkV4Ci.dat"));
-	strcpy(thisTmpSave,saveFolder); s.setSpikeMonitor(v4CellsInh[MAGENTA_V4],strcat(thisTmpSave,"spkV4Mi.dat"));
 
 	unsigned char* vid = new unsigned char[nrX*nrY*3];
 
 	bool onGPU = true;
+
+	if (!onGPU) {
+		cutilSafeCall(cudaSetDevice(cutGetMaxGflopsDeviceId()));
+	}
 
 	//initialize the GPU/network
 	s.runNetwork(0,0, onGPU?GPU_MODE:CPU_MODE);
@@ -680,11 +661,11 @@ int main()
 		s.runNetwork(0,FRAMEDURATION, onGPU?GPU_MODE:CPU_MODE);
 
 		if (i==1) {
-			strcpy(thisTmpSave,saveFolder);
-			FILE* nid = fopen(strcat(thisTmpSave,"net.dat"),"wb");
+			FILE* nid = fopen("Results/v1v4PFC/net.dat","wb");
 			s.writeNetwork(nid);
 			fclose(nid);
 		}
 	}
 	fclose(fid);
 }
+
