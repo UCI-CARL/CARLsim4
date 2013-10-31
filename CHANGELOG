@@ -3,6 +3,19 @@ Release 2.1
 ========================================================================================================================
 
 ---------------------
+Build 2.1.3
+---------------------
+
+2013-10-31	Michael Beyeler <mbeyeler@uci.edu>
+	* examples/v1MTLIP/main_v1MTLIP.cpp: corrected name of LIP group, fixed weights MT PDS -> LIP
+	* examples/v1MTLIP/v1ColorME.cu (freeAllCUDA): added
+	* scripts/v1MTLIP/plotRDKdecision.m: corrected name of LIP spike file, added some comments
+	* snn_cpu.cpp (deleteObjects): fixed memory leaks (due to un-freed dynamically allocated structures)
+	* snn_gpu.cu (deleteObjectsGPU): added, fixed memory leaks on GPU side
+	* snn_gpu.cu (CpuSNNinitGPUparams): added, correctly instantiates global vars on GPU side
+
+
+---------------------
 Build 2.1.2
 ---------------------
 

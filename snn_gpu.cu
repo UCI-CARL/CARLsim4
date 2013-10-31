@@ -50,7 +50,7 @@
 	#include "cutil_inline.h"
 	#include "cutil_math.h"
 
-	RNG_rand48* gpuPoissonRand = NULL;
+	RNG_rand48* gpuPoissonRand; // initialized in CpuSNNinitGPUparams
 
 	#define ROUNDED_TIMING_COUNT  (((1000+MAX_SynapticDelay+1)+127) & ~(127))  // (1000+D) rounded to multiple 128
 
@@ -91,20 +91,22 @@
 
 	__device__ int  timingTableD2[ROUNDED_TIMING_COUNT];
 	__device__ int  timingTableD1[ROUNDED_TIMING_COUNT];
-	__device__ int	testVarCnt=0;
-	__device__ int	testVarCnt2=0;
-	__device__ int	testVarCnt1=0;
-	__device__ unsigned int	secD2fireCnt=0;
-	__device__ unsigned int	secD1fireCnt=0;
-	__device__ unsigned int	secD2fireCntTest=0;
-	__device__ unsigned int	secD1fireCntTest=0;
-	__device__ unsigned int spikeCountD2=0;
-	__device__ unsigned int spikeCountD1=0;
 
-	__device__ int  generatedSpikesE=0;
-	__device__ int  generatedSpikesI=0;
-	__device__ int  receivedSpikesE=0;
-	__device__ int  receivedSpikesI=0;
+	__device__ unsigned int	secD2fireCnt;
+	__device__ unsigned int	secD1fireCnt;
+	__device__ unsigned int spikeCountD2;
+	__device__ unsigned int spikeCountD1;
+
+	// I believe the following are all just test variables
+	__device__ int	testVarCnt;
+	__device__ int	testVarCnt2;
+	__device__ int	testVarCnt1;
+	__device__ unsigned int	secD2fireCntTest;
+	__device__ unsigned int	secD1fireCntTest;
+	__device__ int  generatedSpikesE;
+	__device__ int  generatedSpikesI;
+	__device__ int  receivedSpikesE;
+	__device__ int  receivedSpikesI;
 	__device__ int  senderIdE[1000];
 	__device__ int  senderIdI[1000];
 	__device__ int  receiverId[1000];
@@ -121,7 +123,6 @@
 
 	float data[256];
 
-	float* currentVal;
 
 	texture <int,    1, cudaReadModeElementType>  timingTableD2_tex;
 	texture <int,    1, cudaReadModeElementType>  timingTableD1_tex;
@@ -321,10 +322,13 @@
 		}
 	}
 
-	__device__ int 	 testFireCnt1  = 0;
-	__device__ int 	 testFireCnt2  = 0;
-	__device__ float testFireCntf1 = 0.0;
-	__device__ float testFireCntf2 = 0.0;
+
+	// following are initialized in CpuSNNinitGPUparams
+	__device__ int 	 testFireCnt1;
+	__device__ int 	 testFireCnt2;
+	__device__ float testFireCntf1;
+	__device__ float testFireCntf2;
+
 
 	// Allocation of the group and its id..
 	void CpuSNN::allocateGroupId()
@@ -2308,6 +2312,34 @@
         	}
     }
 
+
+    // initializes all params needed in snn_gpu.cu
+    // up to now they were initialized outside any class member in snn_gpu.cu (as global variables), so if you were
+    // to create two CpuSNN instances within the same .cpp file, then the second network would fail to run
+    void CpuSNN::CpuSNNinitGPUparams() {
+		gpuPoissonRand = NULL;
+		spikeCountD2=0;
+		spikeCountD1=0;
+		secD2fireCnt=0;
+		secD1fireCnt=0;
+
+		// I believe the following are all just test variables
+		testFireCnt1  = 0;
+		testFireCnt2  = 0;
+		testFireCntf1 = 0.0;
+		testFireCntf2 = 0.0;
+		testVarCnt=0;
+		testVarCnt2=0;
+		testVarCnt1=0;
+		secD2fireCntTest=0;
+		secD1fireCntTest=0;
+		generatedSpikesE=0;
+		generatedSpikesI=0;
+		receivedSpikesE=0;
+		receivedSpikesI=0;
+    }
+
+
 	void CpuSNN::initGPU(int gridSize, int blkSize)
 	{
 		DBG(2, fpLog, AT, "gpu_initGPU()");
@@ -2495,6 +2527,14 @@
 		}
 		return;
 	}
+
+
+	void CpuSNN::deleteObjectsGPU() {
+		if (testVar!=NULL) delete[] testVar;
+		if (testVar2!=NULL) delete[] testVar2;
+
+	}
+
 
 	void CpuSNN::testSpikeSenderReceiver(FILE* fpLog, int simTime)
 	{

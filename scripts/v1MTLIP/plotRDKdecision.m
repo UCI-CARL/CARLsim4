@@ -12,7 +12,7 @@ function [] = plotRDKdecision()
 % A suitable stimulus can be created using scripts/v1MTLIP/makeRDK.m
 %
 % Author: Michael Beyeler <mbeyeler@uci.edu>
-% Ver 07/19/13
+% Ver 10/31/13
 
 % NOTE: 64-bit MATLAB may be required to run this script (in order to
 % handle objects > 4GB)
@@ -24,7 +24,7 @@ cohVec=[0.1 1 5:5:20 30 40 50]; % coherence levels
 nDataPoints=length(cohVec); % number of data points
 spkPerNeur = 10; % spikes per neuron needed to reach a decision
 
-s = readSpikes('../../Results/v1MTLIP/spkPFC.dat',1);
+s = readSpikes('../../Results/v1MTLIP/spkLIP.dat',1);
 s(nDir*nRep*nDataPoints*frameDur,1) = 0; % grow it to right size...
 s=reshape(s,frameDur,nDir,nRep,nDataPoints,[],8);
 nNeur = size(s,4);
@@ -46,9 +46,13 @@ for i=1:nDir
             % enough spikes
             spikeTimesPref = [sort(ti); inf(measureAtSpike,1)];
             
+            % for antiPref, count the spikes in the group coding for the
+            % opposite direction: mod(i-1+4,8) instead of mod(i-1,8)
             [ti,id]=find(squeeze(s(:,i,r,c,:,mod(i-1+4,8)+1)));
             spikeTimesAntiPref = [sort(ti); inf(measureAtSpike,1)];
             
+            % correct is true if pref group reached threshold before
+            % antipref
             correct((r-1)*nDir+i,c) = spikeTimesPref(measureAtSpike)<spikeTimesAntiPref(measureAtSpike);
             times((r-1)*nDir+i,c) = min(spikeTimesPref(measureAtSpike),spikeTimesAntiPref(measureAtSpike));
             
@@ -85,7 +89,7 @@ hold on
 % T2 choices (outside RF) from Roitman & Shadlen, 2002 (Table 2)
 plot([0 3.2 6.4 12.8 25.6 51.2],[827.6 818.3 758.3 678.1 551.1 436.9],'r','LineWidth',5);
 xlabel('Motion strength (% coherence)','FontSize',14);
-ylabel('Reaction Time (ms)','FontSize',14);
+ylabel('Reaction time (ms)','FontSize',14);
 axis([-1 51 -20 1020]);
 set(gca,'FontSize',14);
 

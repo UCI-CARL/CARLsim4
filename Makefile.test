@@ -1,0 +1,14 @@
+# CARLsim Makefile
+# CARLsim available from http://socsci.uci.edu/~jkrichma/CARLsim/
+# Ver 07/13/2013
+
+# source files of the sim core
+SOURCES = snn_cpu.cpp mtrand.cpp PropagatedSpikeBuffer.cpp printSNNInfo.cpp gpu_random.cu snn_gpu.cu
+DEP = snn.h PropagatedSpikeBuffer.h errorCode.h config.h gpu_random.hpp
+LIBCUTIL = -lcutil_x86_64
+
+test_bug10: ${SOURCES} ${DEP} test/test_bug10.cpp
+	nvcc -I${NVIDIA_SDK}/C/common/inc/ -L${NVIDIA_SDK}/C/lib ${LIBCUTIL} -arch sm_13 ${SOURCES} test/test_bug10.cpp -o test_bug10
+
+test_bug14: ${SOURCES} ${DEP} test/test_bug14.cpp
+	nvcc -I${NVIDIA_SDK}/C/common/inc/ -L${NVIDIA_SDK}/C/lib ${LIBCUTIL} -arch sm_13 ${SOURCES} test/test_bug14.cpp -o test_bug14

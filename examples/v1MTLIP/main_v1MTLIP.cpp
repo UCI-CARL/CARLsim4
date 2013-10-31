@@ -42,6 +42,7 @@
 // stim must be a file of unsigned char in RGB, arranged as R1 G1 B1 R2 G2 B2 ...
 void calcColorME(int nrX, int nrY, unsigned char* stim, float* red_green, float* green_red, float* blue_yellow,
 					float* yellow_blue, float* ME, bool GPUpointers);
+void freeAllCUDA();
 extern MTRand getRand;
 
 
@@ -50,10 +51,10 @@ extern MTRand getRand;
 /// **************************************************************************************************************** ///
 
 // choose which experiment to run (define only one)
-#define RUN_DIRECTION_TUNING			// V1, MT CDS and MT PDS direction tuning
+//#define RUN_DIRECTION_TUNING			// V1, MT CDS and MT PDS direction tuning
 //#define RUN_SPEED_TUNING				// MT CDS speed tuning
 //#define RUN_CONTRAST_SENSITIVITY		// V1 contrast sensitivity
-//#define RUN_RDK							// RDK motion discrimination task
+#define RUN_RDK							// RDK motion discrimination task
 
 // the dimension of the input stimulus
 #define nrX (32)
@@ -420,7 +421,7 @@ public:
  * - weight:	     the weight value
  * - stayWithinPool: if set to true, do not connect different pools
  * Output:		     none
- * Usage:		     s.connect(gPre, gPost, new connectOneToOne(preDim,postDim,weight,stayWithinPool),SYN_FIXED);
+ * Usage:		     snn.connect(gPre, gPost, new connectOneToOne(preDim,postDim,weight,stayWithinPool),SYN_FIXED);
  *
  * Pre and post populations do not need to have the same size. The function will compute the row- and column-indices
  * of each cell with respect to population size, and convert post-coordinates into pre-coordinates.
@@ -464,9 +465,9 @@ public:
 };
 
 
-class connectMTtoPFC: public ConnectionGenerator {
+class connectMTtoLIP: public ConnectionGenerator {
 public:
-	connectMTtoPFC(int num, float weightScale) {
+	connectMTtoLIP(int num, float weightScale) {
 		this->num = num;
 		this->weightScale = weightScale;
 	}
@@ -485,9 +486,9 @@ public:
 	}
 };
 
-class connectPFCitoPFC: public ConnectionGenerator {
+class connectLIPitoLIP: public ConnectionGenerator {
 public:
-	connectPFCitoPFC(int num, int numi, float weightScale) {
+	connectLIPitoLIP(int num, int numi, float weightScale) {
 		this->num = num;
 		this->numi = numi;
 		this->weightScale = weightScale;
@@ -570,7 +571,7 @@ int main()
 	// create network
 	// -------------------------------------------------------------------------------------------------------------- //
 
-	CpuSNN s("Motion Energy");
+	CpuSNN snn("Motion Energy");
 
 	// population sizes: {number of rows, number of columns, number of pools}
 	int V1MEdim[3]		= {nrX,nrY,28*3};	// 28 space-time filters at 3 scales
@@ -581,41 +582,41 @@ int main()
 	int PFCiDim[3]		= {40,1,8};			// for lateral inhibition
 
 
-	int gV1ME      = s.createSpikeGeneratorGroup("V1ME", prod(V1MEdim,3), EXCITATORY_NEURON);
-	int gMT1CDS    = s.createGroup("MT1CDS", prod(MTdim,3), EXCITATORY_NEURON);
-	int gMT2CDS    = s.createGroup("MT2CDS", prod(MTdim,3), EXCITATORY_NEURON);
-	int gMT3CDS    = s.createGroup("MT3CDS", prod(MTdim,3), EXCITATORY_NEURON);
-	int gMT1CDSinh = s.createGroup("MT1CDSi", prod(MTiDim,3), INHIBITORY_NEURON);
-	int gMT2CDSinh = s.createGroup("MT2CDSi", prod(MTiDim,3), INHIBITORY_NEURON);
-	int gMT3CDSinh = s.createGroup("MT3CDSi", prod(MTiDim,3), INHIBITORY_NEURON);
-	int gMTCDSnorm = s.createGroup("MTCDSnorm", prod(MTnormDim,3), INHIBITORY_NEURON);
-	int gMT1PDS    = s.createGroup("MT1PDS", prod(MTdim,3), EXCITATORY_NEURON);
-	int gMT1PDSinh = s.createGroup("MT1PDSinh", prod(MTiDim,3), INHIBITORY_NEURON);
+	int gV1ME      = snn.createSpikeGeneratorGroup("V1ME", prod(V1MEdim,3), EXCITATORY_NEURON);
+	int gMT1CDS    = snn.createGroup("MT1CDS", prod(MTdim,3), EXCITATORY_NEURON);
+	int gMT2CDS    = snn.createGroup("MT2CDS", prod(MTdim,3), EXCITATORY_NEURON);
+	int gMT3CDS    = snn.createGroup("MT3CDS", prod(MTdim,3), EXCITATORY_NEURON);
+	int gMT1CDSinh = snn.createGroup("MT1CDSi", prod(MTiDim,3), INHIBITORY_NEURON);
+	int gMT2CDSinh = snn.createGroup("MT2CDSi", prod(MTiDim,3), INHIBITORY_NEURON);
+	int gMT3CDSinh = snn.createGroup("MT3CDSi", prod(MTiDim,3), INHIBITORY_NEURON);
+	int gMTCDSnorm = snn.createGroup("MTCDSnorm", prod(MTnormDim,3), INHIBITORY_NEURON);
+	int gMT1PDS    = snn.createGroup("MT1PDS", prod(MTdim,3), EXCITATORY_NEURON);
+	int gMT1PDSinh = snn.createGroup("MT1PDSinh", prod(MTiDim,3), INHIBITORY_NEURON);
 
-	int gPFC = s.createGroup("PFC", prod(PFCdim,3), EXCITATORY_NEURON);
-	int gPFCi = s.createGroup("PFCi", prod(PFCiDim,3), INHIBITORY_NEURON);
+	int gLIP = snn.createGroup("PFC", prod(PFCdim,3), EXCITATORY_NEURON);
+	int gLIPi = snn.createGroup("PFCi", prod(PFCiDim,3), INHIBITORY_NEURON);
 
 
-	s.setNeuronParameters(gMT1CDS, 0.02f, 0.2f, -65.0f, 8.0f);
-	s.setNeuronParameters(gMT2CDS, 0.02f, 0.2f, -65.0f, 8.0f);
-	s.setNeuronParameters(gMT3CDS, 0.02f, 0.2f, -65.0f, 8.0f);
-	s.setNeuronParameters(gMT1CDSinh, 0.02f, 0.2f, -65.0f, 8.0f);
-	s.setNeuronParameters(gMT2CDSinh, 0.02f, 0.2f, -65.0f, 8.0f);
-	s.setNeuronParameters(gMT3CDSinh, 0.02f, 0.2f, -65.0f, 8.0f);
-	s.setNeuronParameters(gMTCDSnorm, 0.1f, 0.2f, -65.0f, 2.0f);
-	s.setNeuronParameters(gMT1PDS, 0.02f, 0.2f, -65.0f, 8.0f);
-	s.setNeuronParameters(gMT1PDSinh, 0.1f, 0.2f, -65.0f, 2.0f);
+	snn.setNeuronParameters(gMT1CDS, 0.02f, 0.2f, -65.0f, 8.0f);
+	snn.setNeuronParameters(gMT2CDS, 0.02f, 0.2f, -65.0f, 8.0f);
+	snn.setNeuronParameters(gMT3CDS, 0.02f, 0.2f, -65.0f, 8.0f);
+	snn.setNeuronParameters(gMT1CDSinh, 0.02f, 0.2f, -65.0f, 8.0f);
+	snn.setNeuronParameters(gMT2CDSinh, 0.02f, 0.2f, -65.0f, 8.0f);
+	snn.setNeuronParameters(gMT3CDSinh, 0.02f, 0.2f, -65.0f, 8.0f);
+	snn.setNeuronParameters(gMTCDSnorm, 0.1f, 0.2f, -65.0f, 2.0f);
+	snn.setNeuronParameters(gMT1PDS, 0.02f, 0.2f, -65.0f, 8.0f);
+	snn.setNeuronParameters(gMT1PDSinh, 0.1f, 0.2f, -65.0f, 2.0f);
 
-	s.setNeuronParameters(gPFC, 0.02f, 0.2f, -65.0f, 8.0f);
-	s.setNeuronParameters(gPFCi, 0.1f,  0.2f, -65.0f, 2.0f);
+	snn.setNeuronParameters(gLIP, 0.02f, 0.2f, -65.0f, 8.0f);
+	snn.setNeuronParameters(gLIPi, 0.1f,  0.2f, -65.0f, 2.0f);
 
 
 	// show log every 1 sec (0 to disable logging). You can pass a file pointer or pass stdout to specify where the
 	// log output should go.
-	s.setLogCycle(1, 1, stdout);
-	s.setConductances(ALL,true,5,150,6,150);	
-	s.setSTDP(ALL,false);
-	s.setSTP(ALL,false);
+	snn.setLogCycle(1, 1, stdout);
+	snn.setConductances(ALL,true,5,150,6,150);	
+	snn.setSTDP(ALL,false);
+	snn.setSTP(ALL,false);
 
 
 	// -------------------------------------------------------------------------------------------------------------- //
@@ -632,23 +633,23 @@ int main()
 	float wt_V1_MT2 = synScale*8.0;
 	float wt_V1_MT3 = synScale*4.0;
 	int v1toMTstd = 3; // g=normpdf(-3:3,0,0.75);g/trapz(-3:3,g)
-	s.connect(gV1ME, gMT1CDS, new connectV1toMT(wt_V1_MT1,v1toMTstd,motionProj1,true), SYN_FIXED,1000,3000);
-	s.connect(gV1ME, gMT2CDS, new connectV1toMT(wt_V1_MT2,v1toMTstd,motionProj2,true), SYN_FIXED,1000,3000);
-	s.connect(gV1ME, gMT3CDS, new connectV1toMT(wt_V1_MT3,v1toMTstd,motionProj3,true), SYN_FIXED,1000,3000);
+	snn.connect(gV1ME, gMT1CDS, new connectV1toMT(wt_V1_MT1,v1toMTstd,motionProj1,true), SYN_FIXED,1000,3000);
+	snn.connect(gV1ME, gMT2CDS, new connectV1toMT(wt_V1_MT2,v1toMTstd,motionProj2,true), SYN_FIXED,1000,3000);
+	snn.connect(gV1ME, gMT3CDS, new connectV1toMT(wt_V1_MT3,v1toMTstd,motionProj3,true), SYN_FIXED,1000,3000);
 
 	// (ii) negative weights
 	float wt_V1_MT1inh = synScale*7.0;
 	float wt_V1_MT2inh = synScale*8.0;
 	float wt_V1_MT3inh = synScale*4.0;
-	s.connect(gV1ME, gMT1CDSinh, new connectV1toMT(wt_V1_MT1inh,v1toMTstd,motionProj1,false), SYN_FIXED,1000,3000);
-	s.connect(gV1ME, gMT2CDSinh, new connectV1toMT(wt_V1_MT2inh,v1toMTstd,motionProj2,false), SYN_FIXED,1000,3000);
-	s.connect(gV1ME, gMT3CDSinh, new connectV1toMT(wt_V1_MT3inh,v1toMTstd,motionProj3,false), SYN_FIXED,1000,3000);
+	snn.connect(gV1ME, gMT1CDSinh, new connectV1toMT(wt_V1_MT1inh,v1toMTstd,motionProj1,false), SYN_FIXED,1000,3000);
+	snn.connect(gV1ME, gMT2CDSinh, new connectV1toMT(wt_V1_MT2inh,v1toMTstd,motionProj2,false), SYN_FIXED,1000,3000);
+	snn.connect(gV1ME, gMT3CDSinh, new connectV1toMT(wt_V1_MT3inh,v1toMTstd,motionProj3,false), SYN_FIXED,1000,3000);
 	float wt_MTi_MT1 = -synScale*15;
 	float wt_MTi_MT2 = -synScale*15;
 	float wt_MTi_MT3 = -synScale*15;
-	s.connect(gMT1CDSinh, gMT1CDS, "one-to-one", wt_MTi_MT1, wt_MTi_MT1, 1.0, 1, 1, SYN_FIXED);
-	s.connect(gMT2CDSinh, gMT2CDS, "one-to-one", wt_MTi_MT2, wt_MTi_MT2, 1.0, 1, 1, SYN_FIXED);
-	s.connect(gMT3CDSinh, gMT3CDS, "one-to-one", wt_MTi_MT3, wt_MTi_MT3, 1.0, 1, 1, SYN_FIXED);
+	snn.connect(gMT1CDSinh, gMT1CDS, "one-to-one", wt_MTi_MT1, wt_MTi_MT1, 1.0, 1, 1, SYN_FIXED);
+	snn.connect(gMT2CDSinh, gMT2CDS, "one-to-one", wt_MTi_MT2, wt_MTi_MT2, 1.0, 1, 1, SYN_FIXED);
+	snn.connect(gMT3CDSinh, gMT3CDS, "one-to-one", wt_MTi_MT3, wt_MTi_MT3, 1.0, 1, 1, SYN_FIXED);
 
 	// MT normalization
 	// In the S&H model, neuron activity is normalized by the activity of ALL MT neurons. We normalize in a large
@@ -657,14 +658,14 @@ int main()
 	float wt_MT_MTnorm = synScale*0.12;
 	int wMTtoMTnormRadius = 3;
 	bool stayWithinPool = false; // collapse 8 directions onto 1 pool
-	s.connect(gMT1CDS, gMTCDSnorm, new connectGauss(wMTtoMTnormRadius,wt_MT_MTnorm,stayWithinPool),SYN_FIXED,1000,3000);
-	s.connect(gMT2CDS, gMTCDSnorm, new connectGauss(wMTtoMTnormRadius,wt_MT_MTnorm,stayWithinPool),SYN_FIXED,1000,3000);
-	s.connect(gMT3CDS, gMTCDSnorm, new connectGauss(wMTtoMTnormRadius,wt_MT_MTnorm,stayWithinPool),SYN_FIXED,1000,3000);
+	snn.connect(gMT1CDS, gMTCDSnorm, new connectGauss(wMTtoMTnormRadius,wt_MT_MTnorm,stayWithinPool),SYN_FIXED,1000,3000);
+	snn.connect(gMT2CDS, gMTCDSnorm, new connectGauss(wMTtoMTnormRadius,wt_MT_MTnorm,stayWithinPool),SYN_FIXED,1000,3000);
+	snn.connect(gMT3CDS, gMTCDSnorm, new connectGauss(wMTtoMTnormRadius,wt_MT_MTnorm,stayWithinPool),SYN_FIXED,1000,3000);
 	float wt_MTnorm_MT = -synScale*1;
 	stayWithinPool = false;
-	s.connect(gMTCDSnorm, gMT1CDS, new connectOneToOne(MTnormDim,MTdim,wt_MTnorm_MT,stayWithinPool),SYN_FIXED,1000,3000);
-	s.connect(gMTCDSnorm, gMT2CDS, new connectOneToOne(MTnormDim,MTdim,wt_MTnorm_MT,stayWithinPool),SYN_FIXED,1000,3000);
-	s.connect(gMTCDSnorm, gMT3CDS, new connectOneToOne(MTnormDim,MTdim,wt_MTnorm_MT,stayWithinPool),SYN_FIXED,1000,3000);
+	snn.connect(gMTCDSnorm, gMT1CDS, new connectOneToOne(MTnormDim,MTdim,wt_MTnorm_MT,stayWithinPool),SYN_FIXED,1000,3000);
+	snn.connect(gMTCDSnorm, gMT2CDS, new connectOneToOne(MTnormDim,MTdim,wt_MTnorm_MT,stayWithinPool),SYN_FIXED,1000,3000);
+	snn.connect(gMTCDSnorm, gMT3CDS, new connectOneToOne(MTnormDim,MTdim,wt_MTnorm_MT,stayWithinPool),SYN_FIXED,1000,3000);
 
 	// MT PDS cells are given by pooling of MT CDS cell activity and tuned normalization
 	// weight strength plotted against direction is Gaussian, with the strongest positive weights coming from cells that
@@ -672,42 +673,43 @@ int main()
 	// preference
 	float wt_MT_MTpatt = synScale*10.0;
 	int MTtoMTpattStd = 4;
-	s.connect(gMT1CDS, gMT1PDS, new connectMTCDStoMTPDS(wt_MT_MTpatt,MTtoMTpattStd,true), SYN_FIXED,1000,3000);
+	snn.connect(gMT1CDS, gMT1PDS, new connectMTCDStoMTPDS(wt_MT_MTpatt,MTtoMTpattStd,true), SYN_FIXED,1000,3000);
 
 	// negative weights of direction pooling
 	float wt_MT_MTpattInh = synScale*5.0;
-	s.connect(gMT1CDS, gMT1PDSinh, new connectMTCDStoMTPDS(wt_MT_MTpattInh,MTtoMTpattStd,false), SYN_FIXED,1000,3000);
+	snn.connect(gMT1CDS, gMT1PDSinh, new connectMTCDStoMTPDS(wt_MT_MTpattInh,MTtoMTpattStd,false), SYN_FIXED,1000,3000);
 
 	// tuned normalization
 	float wt_MT_MTpattInh_tunedNorm = synScale*5.0;
-	s.connect(gMT1CDS, gMT1PDSinh, "one-to-one", wt_MT_MTpattInh_tunedNorm, wt_MT_MTpattInh_tunedNorm, 1.0, 1, 1, SYN_FIXED);
+	snn.connect(gMT1CDS, gMT1PDSinh, "one-to-one", wt_MT_MTpattInh_tunedNorm, wt_MT_MTpattInh_tunedNorm, 1.0, 1, 1, SYN_FIXED);
 	float wt_MTpattInh_MTpatt = -synScale*15.0;
-	s.connect(gMT1PDSinh, gMT1PDS, "one-to-one", wt_MTpattInh_MTpatt, wt_MTpattInh_MTpatt, 1.0, 1, 1, SYN_FIXED);
+	snn.connect(gMT1PDSinh, gMT1PDS, "one-to-one", wt_MTpattInh_MTpatt, wt_MTpattInh_MTpatt, 1.0, 1, 1, SYN_FIXED);
 
-	s.connect(gMT1PDS, gPFC, new connectMTtoPFC(40,synScale*0.8), SYN_FIXED, 1000, 3000);
-	s.connect(gMT1PDS, gPFCi, new connectMTtoPFC(10,synScale*0.5), SYN_FIXED, 1000, 3000);
-	s.connect(gPFCi, gPFC, new connectPFCitoPFC(40,10,-synScale*2.0), SYN_FIXED, 1000, 3000);
+	snn.connect(gMT1PDS, gLIP, new connectMTtoLIP(40,synScale*1.5), SYN_FIXED, 1000, 3000);
+	snn.connect(gMT1PDS, gLIPi, new connectMTtoLIP(10,synScale*1.0), SYN_FIXED, 1000, 3000);
+	snn.connect(gLIPi, gLIP, new connectLIPitoLIP(40,10,-synScale*3.0), SYN_FIXED, 1000, 3000);
 
 
 	// -------------------------------------------------------------------------------------------------------------- //
 	// set all spike monitors
 	// -------------------------------------------------------------------------------------------------------------- //
 
-	strcpy(thisTmpSave,saveFolder); s.setSpikeMonitor(gV1ME,strcat(thisTmpSave,"spkV1ME.dat"));
-	strcpy(thisTmpSave,saveFolder); s.setSpikeMonitor(gMT1CDS, strcat(thisTmpSave,"spkMT1CDS.dat"));
-	strcpy(thisTmpSave,saveFolder); s.setSpikeMonitor(gMT2CDS, strcat(thisTmpSave,"spkMT2CDS.dat"));
-	strcpy(thisTmpSave,saveFolder); s.setSpikeMonitor(gMT3CDS, strcat(thisTmpSave,"spkMT3CDS.dat"));
-//	strcpy(thisTmpSave,saveFolder); s.setSpikeMonitor(gMT1CDSinh, strcat(thisTmpSave,"spkMT1CDSi.dat"));
-//	strcpy(thisTmpSave,saveFolder); s.setSpikeMonitor(gMT2CDSinh, strcat(thisTmpSave,"spkMT2CDSi.dat"));
-//	strcpy(thisTmpSave,saveFolder); s.setSpikeMonitor(gMT3CDSinh, strcat(thisTmpSave,"spkMT3CDSi.dat"));
-//	s.setSpikeMonitor(gMT1CDSinh);
-//	s.setSpikeMonitor(gMT2CDSinh);
-//	s.setSpikeMonitor(gMT3CDSinh);
-//	strcpy(thisTmpSave,saveFolder); s.setSpikeMonitor(gMTCDSnorm, strcat(thisTmpSave,"spkMTCDSnorm.dat"));
-	strcpy(thisTmpSave,saveFolder); s.setSpikeMonitor(gMT1PDS, strcat(thisTmpSave,"spkMT1PDS.dat"));
-//	strcpy(thisTmpSave,saveFolder); s.setSpikeMonitor(gMT1PDSinh, strcat(thisTmpSave,"spkMT1PDSinh.dat"));
-	strcpy(thisTmpSave,saveFolder); s.setSpikeMonitor(gPFC, strcat(thisTmpSave,"spkPFC.dat"));
-//	strcpy(thisTmpSave,saveFolder); s.setSpikeMonitor(gPFCi, strcat(thisTmpSave,"spkPFCi.dat"));
+	strcpy(thisTmpSave,saveFolder); snn.setSpikeMonitor(gV1ME,strcat(thisTmpSave,"spkV1ME.dat"));
+	strcpy(thisTmpSave,saveFolder); snn.setSpikeMonitor(gMT1CDS, strcat(thisTmpSave,"spkMT1CDS.dat"));
+	strcpy(thisTmpSave,saveFolder); snn.setSpikeMonitor(gMT2CDS, strcat(thisTmpSave,"spkMT2CDS.dat"));
+	strcpy(thisTmpSave,saveFolder); snn.setSpikeMonitor(gMT3CDS, strcat(thisTmpSave,"spkMT3CDS.dat"));
+//	strcpy(thisTmpSave,saveFolder); snn.setSpikeMonitor(gMT1CDSinh, strcat(thisTmpSave,"spkMT1CDSi.dat"));
+//	strcpy(thisTmpSave,saveFolder); snn.setSpikeMonitor(gMT2CDSinh, strcat(thisTmpSave,"spkMT2CDSi.dat"));
+//	strcpy(thisTmpSave,saveFolder); snn.setSpikeMonitor(gMT3CDSinh, strcat(thisTmpSave,"spkMT3CDSi.dat"));
+//	snn.setSpikeMonitor(gMT1CDSinh);
+//	snn.setSpikeMonitor(gMT2CDSinh);
+//	snn.setSpikeMonitor(gMT3CDSinh);
+//	strcpy(thisTmpSave,saveFolder); snn.setSpikeMonitor(gMTCDSnorm, strcat(thisTmpSave,"spkMTCDSnorm.dat"));
+	strcpy(thisTmpSave,saveFolder); snn.setSpikeMonitor(gMT1PDS, strcat(thisTmpSave,"spkMT1PDS.dat"));
+//	strcpy(thisTmpSave,saveFolder); snn.setSpikeMonitor(gMT1PDSinh, strcat(thisTmpSave,"spkMT1PDSinh.dat"));
+	strcpy(thisTmpSave,saveFolder); snn.setSpikeMonitor(gLIP, strcat(thisTmpSave,"spkLIP.dat"));
+	snn.setSpikeMonitor(gLIPi);
+//	strcpy(thisTmpSave,saveFolder); snn.setSpikeMonitor(gLIPi, strcat(thisTmpSave,"spkPFCi.dat"));
 
 
 	// -------------------------------------------------------------------------------------------------------------- //
@@ -716,7 +718,7 @@ int main()
 
 
 	// initialize the GPU/network, run on device with index ithGPU
-	s.runNetwork(0,0, onGPU?GPU_MODE:CPU_MODE, ithGPU);
+	snn.runNetwork(0,0, onGPU?GPU_MODE:CPU_MODE, ithGPU);
 	
 	time(&timer_build);
 	
@@ -731,7 +733,7 @@ int main()
 	if (storeNetwork) {
 		strcpy(thisTmpSave,saveFolder);
 		nid = fopen(strcat(thisTmpSave,"netA.dat"),"wb");
-		s.writeNetwork(nid);
+		snn.writeNetwork(nid);
 		fclose(nid);
 	}
 
@@ -745,10 +747,10 @@ int main()
 		for (int j=1;j<=presentEachFrame;j++) {
 			// run motion energy model and assign spike rates
 			calcColorME(nrX, nrY, vid, red_green.rates, green_red.rates, blue_yellow.rates, yellow_blue.rates, me.rates, onGPU);
-			s.setSpikeRate(gV1ME, &me, 1);
+			snn.setSpikeRate(gV1ME, &me, 1);
 
 			// run the established network for 1 frame
-			s.runNetwork(0,frameDur, onGPU?GPU_MODE:CPU_MODE);
+			snn.runNetwork(0,frameDur, onGPU?GPU_MODE:CPU_MODE);
 		}
 	}
 
@@ -756,7 +758,7 @@ int main()
 	if (storeNetwork) {
 		strcpy(thisTmpSave,saveFolder);
 		nid = fopen(strcat(thisTmpSave,"netZ.dat"),"wb");
-		s.writeNetwork(nid);
+		snn.writeNetwork(nid);
 		fclose(nid);
 	}
 
@@ -764,6 +766,8 @@ int main()
 	printf("DONE %s\n",saveFolder);
 	
 	time(&timer_end);
+
+	freeAllCUDA();
 	
 	printf("Time to build: %.f seconds\n",difftime(timer_build,timer_start));
 	printf("Time to run: %.f seconds\n",difftime(timer_end,timer_build));

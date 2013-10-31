@@ -774,3 +774,25 @@ void calcColorME(int nrX, int nrY, unsigned char* stim, float* red_green, float*
 	printf("used GPU memory %f MB\n",(float)(used/1024.0/1024.0));
 */
 }
+
+// free all allocated blocks
+void freeAllCUDA() {
+	cutilSafeCall(cudaFree(d_stimBuf));
+	cutilSafeCall(cudaFree(diffV1GausBufT));
+	cutilSafeCall(cudaFree(d_stim));
+	cutilSafeCall(cudaFree(d_scalingStimBuf));
+	cutilSafeCall(cudaFree(d_v1GausBuf));
+	cutilSafeCall(cudaFree(d_diffV1GausBuf));
+	cutilSafeCall(cudaFree(d_pop));
+	cutilSafeCall(cudaFree(d_red));
+	cutilSafeCall(cudaFree(d_green));
+	cutilSafeCall(cudaFree(d_blue));
+	cutilSafeCall(cudaFree(d_center));
+	cutilSafeCall(cudaFree(d_surround));
+	cutilSafeCall(cudaFree(d_color_tmp));
+	cutilSafeCall(cudaFree(d_color_tmp_green));
+	cutilSafeCall(cudaFree(d_color_tmp_yellow));
+
+	stimBufX = 0;
+	stimBufY = 0;
+}

@@ -435,6 +435,9 @@
 
 		maxSpikesD2 = maxSpikesD1 = 0;
 		readNetworkFID = NULL;
+
+		// initialize parameters needed in snn_gpu.cu
+		CpuSNNinitGPUparams();
 	}
 
 	void CpuSNN::deleteObjects()
@@ -446,34 +449,62 @@
 				return;
 
 			if(fpLog) {
-				printSimSummary(fpLog);
+				printSimSummary(fpLog); // TODO: can fpLog be stdout? In this case printSimSummary is executed twice
 				printSimSummary();
 				fclose(fpLog);
+			}
+
+			// close param.txt
+			if (fpParam) {
+				fclose(fpParam);
 			}
 
 //			if(val==0)
 //				saveConnectionWeights();
 
-			if(voltage!=NULL) 	delete[] voltage;
-			if(recovery!=NULL) 	delete[] recovery;
-			if(Izh_a!=NULL) 	delete[] Izh_a;
-			if(Izh_b!=NULL)		delete[] Izh_b;
-			if(Izh_c!=NULL)		delete[] Izh_c;
-			if(Izh_d!=NULL)		delete[] Izh_d;
-			if(current!=NULL)	delete[] current;
-			if(Npre!=NULL)	delete[] Npre;
-			if(Npost!=NULL)	delete[] Npost;
 
-			if(lastSpikeTime!=NULL)		delete[] lastSpikeTime;
-			if(lastSpikeTime!=NULL)		delete[] postSynapticIds;
-			if(postDelayInfo!=NULL)		delete[] postDelayInfo;
+			if (voltage!=NULL) 	delete[] voltage;
+			if (recovery!=NULL) 	delete[] recovery;
+			if (Izh_a!=NULL) 	delete[] Izh_a;
+			if (Izh_b!=NULL)		delete[] Izh_b;
+			if (Izh_c!=NULL)		delete[] Izh_c;
+			if (Izh_d!=NULL)		delete[] Izh_d;
+			if (current!=NULL)	delete[] current;
+
+			if (Npre!=NULL)	delete[] Npre;
+			if (Npre_plastic!=NULL) delete[] Npre_plastic;
+			if (Npost!=NULL)	delete[] Npost;
+
+			if (cumulativePre!=NULL) delete[] cumulativePre;
+			if (cumulativePost!=NULL) delete[] cumulativePost;
+
+			if (gAMPA!=NULL) delete[] gAMPA;
+			if (gNMDA!=NULL) delete[] gNMDA;
+			if (gGABAa!=NULL) delete[] gGABAa;
+			if (gGABAb!=NULL) delete[] gGABAb;
+
+			if (stpu!=NULL) delete[] stpu;
+			if (stpx!=NULL) delete[] stpx;
+
+			if (lastSpikeTime!=NULL)		delete[] lastSpikeTime;
+			if (synSpikeTime !=NULL)		delete[] synSpikeTime;
+			if (curSpike!=NULL) delete[] curSpike;
+			if (nSpikeCnt!=NULL) delete[] nSpikeCnt;
+			if (intrinsicWeight!=NULL) delete[] intrinsicWeight;
+
+			if (postDelayInfo!=NULL) delete[] postDelayInfo;
+			if (preSynapticIds!=NULL) delete[] preSynapticIds;
+			if (postSynapticIds!=NULL) delete[] postSynapticIds;
+			if (tmp_SynapticDelay!=NULL) delete[] tmp_SynapticDelay;
+
 			if(wt!=NULL)			delete[] wt;
 			if(maxSynWt!=NULL)		delete[] maxSynWt;
 			if(wtChange !=NULL)		delete[] wtChange;
-			if(synSpikeTime !=NULL)		delete[] synSpikeTime;
 
-			if(firingTableD2) delete[] firingTableD2;
-			if(firingTableD1) delete[] firingTableD1;
+			if (firingTableD2) delete[] firingTableD2;
+			if (firingTableD1) delete[] firingTableD1;
+			if (timeTableD2!=NULL) delete[] timeTableD2;
+			if (timeTableD1!=NULL) delete[] timeTableD1;
 
 			delete pbuf;
 
@@ -490,6 +521,11 @@
 			}
 
 			if(spikeGenBits) delete[] spikeGenBits;
+
+			// do the same as above, but for snn_gpu.cu
+			deleteObjectsGPU();
+
+			cutDeleteTimer(timer);
 
 			simulatorDeleted = true;
 		}
