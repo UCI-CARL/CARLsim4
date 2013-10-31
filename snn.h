@@ -1,4 +1,4 @@
-/*
+/* 
  * Copyright (c) 2013 Regents of the University of California. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -231,6 +231,7 @@ public:
 		rates=_rates;
 		len=_len;
 		onGPU=_onGPU;
+		allocatedRatesInternally = false;
 	};
 
 	PoissonRate(uint32_t _len, bool _onGPU=false) {
@@ -241,12 +242,28 @@ public:
 		}
 		len=_len;
 		onGPU=_onGPU;
+		allocatedRatesInternally = true;
 	};
+
+	// destructor
+	~PoissonRate() {
+		if (allocatedRatesInternally) {
+			if (onGPU) {
+				cutilSafeCall(cudaThreadSynchronize()); // wait for kernel to complete
+				cutilSafeCall(cudaFree(rates)); // free memory
+			}
+			else {
+				delete[] rates;
+			}
+		}
+	}
 
 	float*    rates;
 	uint32_t len;
 	bool onGPU;
+	bool allocatedRatesInternally;
 };
+
 
 typedef struct {
     short  delay_index_start;
@@ -814,7 +831,8 @@ class CpuSNN
 
 		void exitSimulation(int val);
 
-		void deleteObjects();
+		void deleteObjects(); //!< deallocates all used data structures in snn_cpu.cpp
+		void deleteObjectsGPU(); //!< deallocates all used data structures in snn_gpu.cu
 
 		void testSpikeSenderReceiver(FILE* fpLog, int simTime);
 
@@ -863,6 +881,9 @@ class CpuSNN
 
 		void updateAfterMaxTime();
 
+
+		//! initializes params needed in snn_gpu.cu (gets called in CpuSNN constructor)
+		void CpuSNNinitGPUparams();
 
 		//! allocates required memory and then initialize the GPU
 		void allocateSNN_GPU(int ithGPU);
