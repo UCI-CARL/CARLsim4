@@ -1,6 +1,6 @@
 /*
- * BUG 14: MEMORY LEAKS
- * see https://carlserver.ss.uci.edu/bugz
+ * ISSUE 9: MEMORY LEAKS
+ * see list of issues on GitHub
  *
  * Bug description:
  *   Some heap blocks are not freed, leading to memory leak.
@@ -12,7 +12,7 @@
  * How the following script tests the bug:
  *   Run the bash script. It will compile the below network and check for memory leaks using valgrind
  *
- * Ver 10/18/13 MB
+ * Ver 11/01/13 MB
  */
 
 #include "snn.h"

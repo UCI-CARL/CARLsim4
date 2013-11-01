@@ -1,6 +1,6 @@
 /*
- * BUG 10: RESET / INIT
- * see https://carlserver.ss.uci.edu/bugz
+ * ISSUE 8: RESET / INIT
+ * see list of issues on GitHub
  *
  * Bug description:
  *   Certain global variables in snn_gpu.cu are set outside class scope. If you want to run multiple networks in a single
@@ -19,7 +19,7 @@
  *   It creates a larger number of CpuSNN instances within a for loop.
  *   Script should fail if bug still persists; i.e. segmentation fault if fpParam is not fclosed.
  *
- * Ver 10/18/13 MB
+ * Ver 11/01/13 MB
  */
 
 #include "snn.h"
