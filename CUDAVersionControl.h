@@ -24,7 +24,7 @@
 
     #define CUDA_GET_MAXGFLOP_DEVICE_ID cutGetMaxGflopsDeviceId
 
-    #define CUDA_CONVERT_SYMBOL(x) ("\""##x##"\"")
+    #define CUDA_CONVERT_SYMBOL(x) ("x")
 
 #elif __CUDA5__
     #define CUDA_CHECK_ERRORS(x) checkCudaErrors(x)
