@@ -42,9 +42,13 @@
 	#include "snn.h"
 	#include "errorCode.h"
 	#include "cuda_runtime.h"
-	
+
+#if __CUDA3__
 	// includes, library
 	#include "cudpp/cudpp.h"
+#elif __CUDA5__
+
+#endif
 
 	RNG_rand48* gpuPoissonRand; // initialized in CpuSNNinitGPUparams
 
@@ -215,7 +219,7 @@
 	   }
 	   
 	   cudaGetSymbolAddress(&devPtr, gpu_tableQuickSynId);
-	   CUDA_SAFE_CALL( cudaMemcpy( devPtr, tableQuickSynId, sizeof(tableQuickSynId), cudaMemcpyHostToDevice));            
+	   CUDA_CHECK_ERRORS_MACRO( cudaMemcpy( devPtr, tableQuickSynId, sizeof(tableQuickSynId), cudaMemcpyHostToDevice));
 	}
 	
 	__device__ inline bool isPoissonGroup(uint16_t& grpId, unsigned int& nid)
@@ -338,9 +342,9 @@
 			threadLoad.z = g;
 			tmp_neuronAllocation[g] = threadLoad;
 		}
-		cutilSafeCall  ( cudaMalloc ((void**) &cpu_gpuNetPtrs.groupIdInfo, sizeof(int3)*net_Info.numGrp));
-		CUDA_SAFE_CALL ( cudaMemcpy ( cpu_gpuNetPtrs.groupIdInfo, tmp_neuronAllocation, sizeof(int3)*net_Info.numGrp, cudaMemcpyHostToDevice));
-		CUDA_SAFE_CALL ( cudaBindTexture (NULL, groupIdInfo_tex, cpu_gpuNetPtrs.groupIdInfo, sizeof(int3)*net_Info.numGrp));
+		CUDA_CHECK_ERRORS  ( cudaMalloc ((void**) &cpu_gpuNetPtrs.groupIdInfo, sizeof(int3)*net_Info.numGrp));
+		CUDA_CHECK_ERRORS_MACRO ( cudaMemcpy ( cpu_gpuNetPtrs.groupIdInfo, tmp_neuronAllocation, sizeof(int3)*net_Info.numGrp, cudaMemcpyHostToDevice));
+		CUDA_CHECK_ERRORS_MACRO ( cudaBindTexture (NULL, groupIdInfo_tex, cpu_gpuNetPtrs.groupIdInfo, sizeof(int3)*net_Info.numGrp));
 	}
 
 	/************************ VARIOUS KERNELS FOR FIRING CALCULATION AND FIRING UPDATE ****************************/
@@ -413,10 +417,10 @@
 		// Finally writeback the total bufferCnt
 		// Note down the buffer size for reference
 		fprintf(fpLog, "GPU loadBufferSize = %d, GPU loadBufferCount = %d\n", bufSize, bufferCnt);
-		CUDA_SAFE_CALL( cudaMemcpyToSymbol( "loadBufferCount",  &bufferCnt, sizeof(int), 0, cudaMemcpyHostToDevice));
-		CUDA_SAFE_CALL( cudaMemcpyToSymbol( "loadBufferSize",   &bufSize,   sizeof(int), 0, cudaMemcpyHostToDevice));
-		cutilSafeCall(  cudaMalloc((void**) &cpu_gpuNetPtrs.neuronAllocation, sizeof(int2)*bufferCnt));
-		CUDA_SAFE_CALL( cudaMemcpy( cpu_gpuNetPtrs.neuronAllocation, tmp_neuronAllocation, sizeof(int2)*bufferCnt, cudaMemcpyHostToDevice));
+		CUDA_CHECK_ERRORS_MACRO( cudaMemcpyToSymbol( CUDA_CONVERT_SYMBOL(loadBufferCount),  &bufferCnt, sizeof(int), 0, cudaMemcpyHostToDevice));
+		CUDA_CHECK_ERRORS_MACRO( cudaMemcpyToSymbol( CUDA_CONVERT_SYMBOL(loadBufferSize),   &bufSize,   sizeof(int), 0, cudaMemcpyHostToDevice));
+		CUDA_CHECK_ERRORS(  cudaMalloc((void**) &cpu_gpuNetPtrs.neuronAllocation, sizeof(int2)*bufferCnt));
+		CUDA_CHECK_ERRORS_MACRO( cudaMemcpy( cpu_gpuNetPtrs.neuronAllocation, tmp_neuronAllocation, sizeof(int2)*bufferCnt, cudaMemcpyHostToDevice));
 
 		return bufferCnt;
 	}
@@ -1526,7 +1530,7 @@
 	// the simulator kernel sets appropriate errors  and returns some important values in the 
 	// array "retErrVal".
 	/**********************************************************************************************/
-	int CpuSNN::checkCudaErrors(string calledKernel, int numBlocks)
+	int CpuSNN::checkErrors(string calledKernel, int numBlocks)
 	{
 	   int errCode = NO_KERNEL_ERRORS;
 	   #if(!ENABLE_MORE_CHECK)
@@ -1538,17 +1542,17 @@
 	   
 	   cudaThreadSynchronize();
 	   cudaGetSymbolAddress(&devPtr, retErrCode);
-	   cutilSafeCall( cudaMemcpy(&errCode, devPtr, sizeof(int), cudaMemcpyDeviceToHost));
+	   CUDA_CHECK_ERRORS( cudaMemcpy(&errCode, devPtr, sizeof(int), cudaMemcpyDeviceToHost));
 
 	   cudaGetSymbolAddress(&devPtr, generatedErrors);
-   	   cutilSafeCall( cudaMemcpy(&errCnt, devPtr, sizeof(int), cudaMemcpyDeviceToHost));
+   	   CUDA_CHECK_ERRORS( cudaMemcpy(&errCnt, devPtr, sizeof(int), cudaMemcpyDeviceToHost));
 
 	   if (errCode != NO_KERNEL_ERRORS) {
 
 		  fprintf(stderr, "\n (Error in Kernel <<< %s >>> , RETURN ERROR CODE = %x, total Errors = %d\n", calledKernel.c_str(), errCode, errCnt);
 
-		  cudaGetSymbolAddress(&devPtr, "retErrVal");
-		  cutilSafeCall( cudaMemcpy(&errVal, devPtr, sizeof(errVal), cudaMemcpyDeviceToHost));
+		  cudaGetSymbolAddress(&devPtr, CUDA_CONVERT_SYMBOL(retErrVal));
+		  CUDA_CHECK_ERRORS( cudaMemcpy(&errVal, devPtr, sizeof(errVal), cudaMemcpyDeviceToHost));
 
 		  for(int j=0; j < errCnt; j++) {
 			  if (1) /*errVal[j][0]==0xdead) */ {
@@ -1562,10 +1566,10 @@
 
 		   errCode = NO_KERNEL_ERRORS;
 		   cudaGetSymbolAddress(&devPtr, retErrCode);
-		   cutilSafeCall( cudaMemcpy(devPtr, &errCode, sizeof(int), cudaMemcpyHostToDevice));
+		   CUDA_CHECK_ERRORS( cudaMemcpy(devPtr, &errCode, sizeof(int), cudaMemcpyHostToDevice));
 
 		   cudaGetSymbolAddress(&devPtr, generatedErrors);
-	   	   cutilSafeCall( cudaMemcpy(devPtr, &errCnt, sizeof(int), cudaMemcpyHostToDevice));
+	   	   CUDA_CHECK_ERRORS( cudaMemcpy(devPtr, &errCnt, sizeof(int), cudaMemcpyHostToDevice));
 
 	   }
 
@@ -1587,24 +1591,24 @@
 		assert(doneReorganization == true);
 
 		// beginning position for the post-synaptic information
-		if(allocateMem)     cutilSafeCall( cudaMalloc( (void**) &dest->cumulativePost, sizeof(cumulativePost[0])*numN));
-		cutilSafeCall( cudaMemcpy( dest->cumulativePost, cumulativePost, sizeof(int)*numN, cudaMemcpyHostToDevice));
+		if(allocateMem)     CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->cumulativePost, sizeof(cumulativePost[0])*numN));
+		CUDA_CHECK_ERRORS( cudaMemcpy( dest->cumulativePost, cumulativePost, sizeof(int)*numN, cudaMemcpyHostToDevice));
 
 		// number of postsynaptic connections
-		if(allocateMem)     cutilSafeCall( cudaMalloc( (void**) &dest->Npost, sizeof(Npost[0])*numN));
-		cutilSafeCall( cudaMemcpy( dest->Npost, Npost, sizeof(Npost[0])*numN, cudaMemcpyHostToDevice));
+		if(allocateMem)     CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->Npost, sizeof(Npost[0])*numN));
+		CUDA_CHECK_ERRORS( cudaMemcpy( dest->Npost, Npost, sizeof(Npost[0])*numN, cudaMemcpyHostToDevice));
 
 		// static specific mapping and actual post-synaptic delay metric
-		if(allocateMem)     cutilSafeCall( cudaMalloc( (void**) &dest->postDelayInfo, sizeof(postDelayInfo[0])*numN*(D+1)));
-		cutilSafeCall( cudaMemcpy( dest->postDelayInfo, postDelayInfo, sizeof(postDelayInfo[0])*numN*(D+1), cudaMemcpyHostToDevice));
+		if(allocateMem)     CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->postDelayInfo, sizeof(postDelayInfo[0])*numN*(D+1)));
+		CUDA_CHECK_ERRORS( cudaMemcpy( dest->postDelayInfo, postDelayInfo, sizeof(postDelayInfo[0])*numN*(D+1), cudaMemcpyHostToDevice));
 
 		// actual post synaptic connection information...
-		if(allocateMem)     cutilSafeCall( cudaMalloc( (void**) &dest->postSynapticIds, sizeof(postSynapticIds[0])*(postSynCnt+10)));
-		cutilSafeCall( cudaMemcpy( dest->postSynapticIds, postSynapticIds, sizeof(postSynapticIds[0])*(postSynCnt+10), cudaMemcpyHostToDevice));
+		if(allocateMem)     CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->postSynapticIds, sizeof(postSynapticIds[0])*(postSynCnt+10)));
+		CUDA_CHECK_ERRORS( cudaMemcpy( dest->postSynapticIds, postSynapticIds, sizeof(postSynapticIds[0])*(postSynCnt+10), cudaMemcpyHostToDevice));
 		net_Info.postSynCnt = postSynCnt;
 
-		if(allocateMem)     cutilSafeCall( cudaMalloc( (void**) &dest->preSynapticIds, sizeof(preSynapticIds[0])*(preSynCnt+10)));
-		cutilSafeCall( cudaMemcpy( dest->preSynapticIds, preSynapticIds, sizeof(preSynapticIds[0])*(preSynCnt+10), cudaMemcpyHostToDevice));
+		if(allocateMem)     CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->preSynapticIds, sizeof(preSynapticIds[0])*(preSynCnt+10)));
+		CUDA_CHECK_ERRORS( cudaMemcpy( dest->preSynapticIds, preSynapticIds, sizeof(preSynapticIds[0])*(preSynCnt+10), cudaMemcpyHostToDevice));
 		net_Info.preSynCnt = preSynCnt;
 	}
 
@@ -1624,50 +1628,50 @@
 		if(allocateMem)
 			cudaMallocPitch( (void**) &dest->I_set, &net_Info.I_setPitch, sizeof(int)*numNReg, net_Info.I_setLength);
 		assert(net_Info.I_setPitch > 0);
-		cutilSafeCall( cudaMemset( dest->I_set, 0, net_Info.I_setPitch*net_Info.I_setLength));
+		CUDA_CHECK_ERRORS( cudaMemset( dest->I_set, 0, net_Info.I_setPitch*net_Info.I_setLength));
 
 	#if TESTING
 		fprintf(stdout, "numNReg=%d numPostSynapses = %d, I_set = %x, I_setPitch = %d,  I_setLength = %d\n", numNReg, numPostSynapses, dest->I_set, net_Info.I_setPitch, net_Info.I_setLength);
 	#endif
 
 		// connection synaptic lengths and cumulative lengths...
-		if(allocateMem)   	cutilSafeCall( cudaMalloc((void**) &dest->Npre, sizeof(dest->Npre[0])*numN));
-		cutilSafeCall( cudaMemcpy( dest->Npre, Npre, sizeof(dest->Npre[0])*numN, cudaMemcpyHostToDevice));
+		if(allocateMem)   	CUDA_CHECK_ERRORS( cudaMalloc((void**) &dest->Npre, sizeof(dest->Npre[0])*numN));
+		CUDA_CHECK_ERRORS( cudaMemcpy( dest->Npre, Npre, sizeof(dest->Npre[0])*numN, cudaMemcpyHostToDevice));
 
 		// we don't need these data structures if the network doesn't have any plastic synapses at all
 		if (!sim_with_fixedwts) {
 			// presyn excitatory connections
-			if(allocateMem)     cutilSafeCall( cudaMalloc( (void**) &dest->Npre_plastic, sizeof(dest->Npre_plastic[0])*numN));
-			cutilSafeCall( cudaMemcpy( dest->Npre_plastic, Npre_plastic, sizeof(dest->Npre_plastic[0])*numN, cudaMemcpyHostToDevice));
+			if(allocateMem)     CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->Npre_plastic, sizeof(dest->Npre_plastic[0])*numN));
+			CUDA_CHECK_ERRORS( cudaMemcpy( dest->Npre_plastic, Npre_plastic, sizeof(dest->Npre_plastic[0])*numN, cudaMemcpyHostToDevice));
 
 			float* Npre_plasticInv = new float[numN];
 			for (int i=0;i<numN;i++) Npre_plasticInv[i] = 1.0/Npre_plastic[i];
 
-			if(allocateMem)     cutilSafeCall( cudaMalloc( (void**) &dest->Npre_plasticInv, sizeof(dest->Npre_plasticInv[0])*numN));
-			cutilSafeCall( cudaMemcpy( dest->Npre_plasticInv, Npre_plasticInv, sizeof(dest->Npre_plasticInv[0])*numN, cudaMemcpyHostToDevice));
+			if(allocateMem)     CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->Npre_plasticInv, sizeof(dest->Npre_plasticInv[0])*numN));
+			CUDA_CHECK_ERRORS( cudaMemcpy( dest->Npre_plasticInv, Npre_plasticInv, sizeof(dest->Npre_plasticInv[0])*numN, cudaMemcpyHostToDevice));
 
 			delete[] Npre_plasticInv;
 		}
 		
 		// beginning position for the pre-synaptic information
-		if(allocateMem)     cutilSafeCall( cudaMalloc( (void**) &dest->cumulativePre, sizeof(int)*numN));
-		cutilSafeCall( cudaMemcpy( dest->cumulativePre, cumulativePre, sizeof(int)*numN, cudaMemcpyHostToDevice));
+		if(allocateMem)     CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->cumulativePre, sizeof(int)*numN));
+		CUDA_CHECK_ERRORS( cudaMemcpy( dest->cumulativePre, cumulativePre, sizeof(int)*numN, cudaMemcpyHostToDevice));
 
 		// allocate randomPtr.... containing the firing information for the random firing neurons...
-//		if(allocateMem)  cutilSafeCall( cudaMalloc( (void**) &dest->randId, sizeof(int)*numN));
+//		if(allocateMem)  CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->randId, sizeof(int)*numN));
 //		net_Info.numRandNeurons=numRandNeurons;
 
 		// copy the properties of the noise generator here.....
-//		if(allocateMem) cutilSafeCall( cudaMalloc( (void**) &dest->noiseGenProp, sizeof(noiseGenProperty_t)*numNoise));
-//		cutilSafeCall( cudaMemcpy( dest->noiseGenProp, &noiseGenGroup[0], sizeof(noiseGenProperty_t)*numNoise, cudaMemcpyHostToDevice));
+//		if(allocateMem) CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->noiseGenProp, sizeof(noiseGenProperty_t)*numNoise));
+//		CUDA_CHECK_ERRORS( cudaMemcpy( dest->noiseGenProp, &noiseGenGroup[0], sizeof(noiseGenProperty_t)*numNoise, cudaMemcpyHostToDevice));
 
 		// allocate the poisson neuron poissonFireRate
-		if(allocateMem) cutilSafeCall( cudaMalloc( (void**) &dest->poissonFireRate, sizeof(dest->poissonFireRate[0])*numNPois));
-		cutilSafeCall( cudaMemset( dest->poissonFireRate, 0, sizeof(dest->poissonFireRate[0])*numNPois));
+		if(allocateMem) CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->poissonFireRate, sizeof(dest->poissonFireRate[0])*numNPois));
+		CUDA_CHECK_ERRORS( cudaMemset( dest->poissonFireRate, 0, sizeof(dest->poissonFireRate[0])*numNPois));
 
 		// neuron firing recently or not...
-		if(allocateMem)     cutilSafeCall( cudaMalloc( (void**) &dest->neuronFiring, sizeof(int)*numN));
-		cutilSafeCall( cudaMemset( dest->neuronFiring, 0, sizeof(int)*numN));
+		if(allocateMem)     CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->neuronFiring, sizeof(int)*numN));
+		CUDA_CHECK_ERRORS( cudaMemset( dest->neuronFiring, 0, sizeof(int)*numN));
 
 		copyPostConnectionInfo(dest, allocateMem);
 
@@ -1676,11 +1680,11 @@
 		testVar2 = new float[numN];
 		cpuSnnSz.addInfoSize += sizeof(float)*numN*2;
 
-		if(allocateMem)     cutilSafeCall( cudaMalloc( (void**) &dest->testVar, sizeof(float)*numN));
-		cutilSafeCall( cudaMemset( dest->testVar, 0, sizeof(float)*numN));
+		if(allocateMem)     CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->testVar, sizeof(float)*numN));
+		CUDA_CHECK_ERRORS( cudaMemset( dest->testVar, 0, sizeof(float)*numN));
 
-		if(allocateMem)     cutilSafeCall( cudaMalloc( (void**) &dest->testVar2, sizeof(float)*numN));
-		cutilSafeCall( cudaMemset( dest->testVar2, 0, sizeof(float)*numN));
+		if(allocateMem)     CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->testVar2, sizeof(float)*numN));
+		CUDA_CHECK_ERRORS( cudaMemset( dest->testVar2, 0, sizeof(float)*numN));
 	}
 
 	void CpuSNN::checkDestSrcPtrs(network_ptr_t* dest, network_ptr_t* src, cudaMemcpyKind kind, int allocateMem, int grpId)
@@ -1735,7 +1739,7 @@
 		cudaMemcpyKind kind = cudaMemcpyDeviceToHost;
 
 		// Spike Cnt. Firing...
-		cutilSafeCall( cudaMemcpy( &dest->nSpikeCnt[ptrPos], &src->nSpikeCnt[ptrPos], sizeof(int)*length2, kind));
+		CUDA_CHECK_ERRORS( cudaMemcpy( &dest->nSpikeCnt[ptrPos], &src->nSpikeCnt[ptrPos], sizeof(int)*length2, kind));
 
 	}
 
@@ -1767,17 +1771,17 @@
 			assert(grpId == -1);
 
 		// Spike Cnt. Firing...
-		if (allocateMem) cutilSafeCall( cudaMalloc( (void**) &dest->nSpikeCnt, sizeof(int)*length2));
-		cutilSafeCall( cudaMemcpy( &dest->nSpikeCnt[ptrPos], &src->nSpikeCnt[ptrPos], sizeof(int)*length2, kind));
+		if (allocateMem) CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->nSpikeCnt, sizeof(int)*length2));
+		CUDA_CHECK_ERRORS( cudaMemcpy( &dest->nSpikeCnt[ptrPos], &src->nSpikeCnt[ptrPos], sizeof(int)*length2, kind));
 
 		if( !allocateMem && grp_Info[grpId].Type&POISSON_NEURON)
 			return;
 
-		if(allocateMem)     cutilSafeCall( cudaMalloc( (void**) &dest->recovery, sizeof(float)*length));
-		cutilSafeCall( cudaMemcpy( &dest->recovery[ptrPos], &src->recovery[ptrPos], sizeof(float)*length, kind));
+		if(allocateMem)     CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->recovery, sizeof(float)*length));
+		CUDA_CHECK_ERRORS( cudaMemcpy( &dest->recovery[ptrPos], &src->recovery[ptrPos], sizeof(float)*length, kind));
 
-		if(allocateMem)     cutilSafeCall( cudaMalloc( (void**) &dest->voltage, sizeof(float)*length));
-		cutilSafeCall( cudaMemcpy( &dest->voltage[ptrPos], &src->voltage[ptrPos], sizeof(float)*length, kind));
+		if(allocateMem)     CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->voltage, sizeof(float)*length));
+		CUDA_CHECK_ERRORS( cudaMemcpy( &dest->voltage[ptrPos], &src->voltage[ptrPos], sizeof(float)*length, kind));
 
 		if (sim_with_conductances) {
 			//conductance information
@@ -1786,22 +1790,22 @@
 			assert(src->gNMDA  != NULL);
 			assert(src->gAMPA  != NULL);
 
-			if(allocateMem)     cutilSafeCall( cudaMalloc( (void**) &dest->gGABAa, sizeof(float)*length));
-			cutilSafeCall( cudaMemcpy( &dest->gGABAa[ptrPos], &src->gGABAa[ptrPos], sizeof(float)*length, kind));
+			if(allocateMem)     CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->gGABAa, sizeof(float)*length));
+			CUDA_CHECK_ERRORS( cudaMemcpy( &dest->gGABAa[ptrPos], &src->gGABAa[ptrPos], sizeof(float)*length, kind));
 
-			if(allocateMem)     cutilSafeCall( cudaMalloc( (void**) &dest->gGABAb, sizeof(float)*length));
-			cutilSafeCall( cudaMemcpy( &dest->gGABAb[ptrPos], &src->gGABAb[ptrPos], sizeof(float)*length, kind));
+			if(allocateMem)     CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->gGABAb, sizeof(float)*length));
+			CUDA_CHECK_ERRORS( cudaMemcpy( &dest->gGABAb[ptrPos], &src->gGABAb[ptrPos], sizeof(float)*length, kind));
 
-			if(allocateMem)     cutilSafeCall( cudaMalloc( (void**) &dest->gAMPA, sizeof(float)*length));
-			cutilSafeCall( cudaMemcpy( &dest->gAMPA[ptrPos], &src->gAMPA[ptrPos], sizeof(float)*length, kind));
+			if(allocateMem)     CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->gAMPA, sizeof(float)*length));
+			CUDA_CHECK_ERRORS( cudaMemcpy( &dest->gAMPA[ptrPos], &src->gAMPA[ptrPos], sizeof(float)*length, kind));
 
-			if(allocateMem)     cutilSafeCall( cudaMalloc( (void**) &dest->gNMDA, sizeof(float)*length));
-			cutilSafeCall( cudaMemcpy( &dest->gNMDA[ptrPos], &src->gNMDA[ptrPos], sizeof(float)*length, kind));
+			if(allocateMem)     CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->gNMDA, sizeof(float)*length));
+			CUDA_CHECK_ERRORS( cudaMemcpy( &dest->gNMDA[ptrPos], &src->gNMDA[ptrPos], sizeof(float)*length, kind));
 		}
 
 		//neuron input current...
-		if(allocateMem)     cutilSafeCall( cudaMalloc( (void**) &dest->current, sizeof(float)*length));
-		cutilSafeCall( cudaMemcpy( &dest->current[ptrPos], &src->current[ptrPos], sizeof(float)*length, kind));
+		if(allocateMem)     CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->current, sizeof(float)*length));
+		CUDA_CHECK_ERRORS( cudaMemcpy( &dest->current[ptrPos], &src->current[ptrPos], sizeof(float)*length, kind));
 	}
 
 	void CpuSNN::copyNeuronParameters(network_ptr_t* dest, int kind, int allocateMem, int grpId)
@@ -1832,17 +1836,17 @@
 		//neuron information...
 		if(allocateMem)     assert(dest->Izh_a == NULL);
 
-		if(allocateMem)     cutilSafeCall( cudaMalloc( (void**) &dest->Izh_a, sizeof(float)*length));
-		cutilSafeCall( cudaMemcpy( &dest->Izh_a[ptrPos], &Izh_a[ptrPos], sizeof(float)*length, cudaMemcpyHostToDevice));
+		if(allocateMem)     CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->Izh_a, sizeof(float)*length));
+		CUDA_CHECK_ERRORS( cudaMemcpy( &dest->Izh_a[ptrPos], &Izh_a[ptrPos], sizeof(float)*length, cudaMemcpyHostToDevice));
 
-		if(allocateMem)     cutilSafeCall( cudaMalloc( (void**) &dest->Izh_b, sizeof(float)*length));
-		cutilSafeCall( cudaMemcpy( &dest->Izh_b[ptrPos], &Izh_b[ptrPos], sizeof(float)*length, cudaMemcpyHostToDevice));
+		if(allocateMem)     CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->Izh_b, sizeof(float)*length));
+		CUDA_CHECK_ERRORS( cudaMemcpy( &dest->Izh_b[ptrPos], &Izh_b[ptrPos], sizeof(float)*length, cudaMemcpyHostToDevice));
 
-		if(allocateMem)     cutilSafeCall( cudaMalloc( (void**) &dest->Izh_c, sizeof(float)*length));
-		cutilSafeCall( cudaMemcpy( &dest->Izh_c[ptrPos], &Izh_c[ptrPos], sizeof(float)*length, cudaMemcpyHostToDevice));
+		if(allocateMem)     CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->Izh_c, sizeof(float)*length));
+		CUDA_CHECK_ERRORS( cudaMemcpy( &dest->Izh_c[ptrPos], &Izh_c[ptrPos], sizeof(float)*length, cudaMemcpyHostToDevice));
 
-		if(allocateMem)     cutilSafeCall( cudaMalloc( (void**) &dest->Izh_d, sizeof(float)*length));
-		cutilSafeCall( cudaMemcpy( &dest->Izh_d[ptrPos], &Izh_d[ptrPos], sizeof(float)*length, cudaMemcpyHostToDevice));
+		if(allocateMem)     CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->Izh_d, sizeof(float)*length));
+		CUDA_CHECK_ERRORS( cudaMemcpy( &dest->Izh_d[ptrPos], &Izh_d[ptrPos], sizeof(float)*length, cudaMemcpyHostToDevice));
 	}
 
 	void assertSTPState(network_ptr_t* dest, network_ptr_t* src, int kind, int allocateMem)
@@ -1872,9 +1876,9 @@
 
 		// allocate the stpu and stpx variable
 		if (allocateMem)
-			cutilSafeCall( cudaMallocPitch ((void**) &dest->stpu, &net_Info.STP_Pitch, widthInBytes, STP_BUF_SIZE));
+			CUDA_CHECK_ERRORS( cudaMallocPitch ((void**) &dest->stpu, &net_Info.STP_Pitch, widthInBytes, STP_BUF_SIZE));
 		if (allocateMem)
-			cutilSafeCall( cudaMallocPitch ((void**) &dest->stpx, &STP_Pitch, widthInBytes, STP_BUF_SIZE));
+			CUDA_CHECK_ERRORS( cudaMallocPitch ((void**) &dest->stpx, &STP_Pitch, widthInBytes, STP_BUF_SIZE));
 
 		assert(net_Info.STP_Pitch > 0);
 		assert(STP_Pitch > 0);				// stp_pitch should be greater than zero
@@ -1898,18 +1902,18 @@
 					tmp_stp[n]=stpu[STP_BUF_POS(n,t)];
 					assert(tmp_stp[n] != 0);
 				}
-				cutilSafeCall( cudaMemcpy( &dest->stpu[t*net_Info.STP_Pitch], tmp_stp, sizeof(float)*net_Info.numN, cudaMemcpyHostToDevice));
+				CUDA_CHECK_ERRORS( cudaMemcpy( &dest->stpu[t*net_Info.STP_Pitch], tmp_stp, sizeof(float)*net_Info.numN, cudaMemcpyHostToDevice));
 				for (int n=0; n < net_Info.numN; n++) {
 					tmp_stp[n]=stpx[STP_BUF_POS(n,t)];
 					assert(tmp_stp[n] != 0);
 				}
-				cutilSafeCall( cudaMemcpy( &dest->stpx[t*net_Info.STP_Pitch], tmp_stp, sizeof(float)*net_Info.numN, cudaMemcpyHostToDevice));
+				CUDA_CHECK_ERRORS( cudaMemcpy( &dest->stpx[t*net_Info.STP_Pitch], tmp_stp, sizeof(float)*net_Info.numN, cudaMemcpyHostToDevice));
 			}
 			else {
-				cutilSafeCall( cudaMemcpy( tmp_stp, &dest->stpu[t*net_Info.STP_Pitch], sizeof(float)*net_Info.numN, cudaMemcpyDeviceToHost));
+				CUDA_CHECK_ERRORS( cudaMemcpy( tmp_stp, &dest->stpu[t*net_Info.STP_Pitch], sizeof(float)*net_Info.numN, cudaMemcpyDeviceToHost));
 				for (int n=0; n < net_Info.numN; n++)
 					stpu[STP_BUF_POS(n,t)]=tmp_stp[n];
-				cutilSafeCall( cudaMemcpy( tmp_stp, &dest->stpx[t*net_Info.STP_Pitch], sizeof(float)*net_Info.numN, cudaMemcpyDeviceToHost));
+				CUDA_CHECK_ERRORS( cudaMemcpy( tmp_stp, &dest->stpx[t*net_Info.STP_Pitch], sizeof(float)*net_Info.numN, cudaMemcpyDeviceToHost));
 				for (int n=0; n < net_Info.numN; n++)
 					stpx[STP_BUF_POS(n,t)]=tmp_stp[n];
 			}
@@ -1950,17 +1954,17 @@
 //MDR FIXME, allocateMem option is VERY wrong
 			// synaptic information based
 			
-//			if(allocateMem)		cutilSafeCall( cudaMalloc( (void**) &dest->wt, sizeof(float)*length_wt));
-			cutilSafeCall( cudaMemcpy( &dest->wt[cumPos_syn], &src->wt[cumPos_syn], sizeof(float)*length_wt,  kind));
+//			if(allocateMem)		CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->wt, sizeof(float)*length_wt));
+			CUDA_CHECK_ERRORS( cudaMemcpy( &dest->wt[cumPos_syn], &src->wt[cumPos_syn], sizeof(float)*length_wt,  kind));
 
 			// firing time for individual synapses
-//			if(allocateMem)		cutilSafeCall( cudaMalloc( (void**) &dest->synSpikeTime, sizeof(int)*length_wt));
-			cutilSafeCall( cudaMemcpy( &dest->synSpikeTime[cumPos_syn], &src->synSpikeTime[cumPos_syn], sizeof(int)*length_wt, kind));
+//			if(allocateMem)		CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->synSpikeTime, sizeof(int)*length_wt));
+			CUDA_CHECK_ERRORS( cudaMemcpy( &dest->synSpikeTime[cumPos_syn], &src->synSpikeTime[cumPos_syn], sizeof(int)*length_wt, kind));
 
 			if (!sim_with_fixedwts) {
 				// synaptic weight derivative
-	//			if(allocateMem)		cutilSafeCall( cudaMalloc( (void**) &dest->wtChange, sizeof(float)*length_wt));
-				cutilSafeCall( cudaMemcpy( &dest->wtChange[cumPos_syn], &src->wtChange[cumPos_syn], sizeof(float)*length_wt, kind));
+	//			if(allocateMem)		CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->wtChange, sizeof(float)*length_wt));
+				CUDA_CHECK_ERRORS( cudaMemcpy( &dest->wtChange[cumPos_syn], &src->wtChange[cumPos_syn], sizeof(float)*length_wt, kind));
 			}
 		}
 	}
@@ -1977,25 +1981,25 @@
 		}
 
 		// synaptic information based
-		if(allocateMem)		cutilSafeCall( cudaMalloc( (void**) &dest->wt, sizeof(float)*preSynCnt));
-		cutilSafeCall( cudaMemcpy( dest->wt, wt, sizeof(float)*preSynCnt, cudaMemcpyHostToDevice));
+		if(allocateMem)		CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->wt, sizeof(float)*preSynCnt));
+		CUDA_CHECK_ERRORS( cudaMemcpy( dest->wt, wt, sizeof(float)*preSynCnt, cudaMemcpyHostToDevice));
 
 		// we don't need these data structures if the network doesn't have any plastic synapses at all
 		// they show up in gpuUpdateLTP() and updateSynapticWeights(), two functions that do not get called if
 		// sim_with_fixedwts is set
 		if (!sim_with_fixedwts) {
 			// synaptic weight derivative
-			if(allocateMem)		cutilSafeCall( cudaMalloc( (void**) &dest->wtChange, sizeof(float)*preSynCnt));
-			cutilSafeCall( cudaMemcpy( dest->wtChange, wtChange, sizeof(float)*preSynCnt, cudaMemcpyHostToDevice));
+			if(allocateMem)		CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->wtChange, sizeof(float)*preSynCnt));
+			CUDA_CHECK_ERRORS( cudaMemcpy( dest->wtChange, wtChange, sizeof(float)*preSynCnt, cudaMemcpyHostToDevice));
 
 			// synaptic weight maximum value
-			if(allocateMem)		cutilSafeCall( cudaMalloc( (void**) &dest->maxSynWt, sizeof(float)*preSynCnt));
-			cutilSafeCall( cudaMemcpy( dest->maxSynWt, maxSynWt, sizeof(float)*preSynCnt, cudaMemcpyHostToDevice));
+			if(allocateMem)		CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->maxSynWt, sizeof(float)*preSynCnt));
+			CUDA_CHECK_ERRORS( cudaMemcpy( dest->maxSynWt, maxSynWt, sizeof(float)*preSynCnt, cudaMemcpyHostToDevice));
 		}
 
 		// firing time for individual synapses
-		if(allocateMem)		cutilSafeCall( cudaMalloc( (void**) &dest->synSpikeTime, sizeof(int)*preSynCnt));
-		cutilSafeCall( cudaMemcpy( dest->synSpikeTime, synSpikeTime, sizeof(int)*preSynCnt, cudaMemcpyHostToDevice));		
+		if(allocateMem)		CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->synSpikeTime, sizeof(int)*preSynCnt));
+		CUDA_CHECK_ERRORS( cudaMemcpy( dest->synSpikeTime, synSpikeTime, sizeof(int)*preSynCnt, cudaMemcpyHostToDevice));
 		net_Info.preSynLength = preSynCnt;
 
 		assert(net_Info.maxSpikesD1 != 0);
@@ -2005,21 +2009,21 @@
 		}
 
 		// allocate 1ms firing table
-		if(allocateMem)		cutilSafeCall( cudaMalloc( (void**) &dest->firingTableD1, sizeof(int)*net_Info.maxSpikesD1));
-		if (net_Info.maxSpikesD1>0) cutilSafeCall( cudaMemcpy( dest->firingTableD1, firingTableD1, sizeof(int)*net_Info.maxSpikesD1, cudaMemcpyHostToDevice));
+		if(allocateMem)		CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->firingTableD1, sizeof(int)*net_Info.maxSpikesD1));
+		if (net_Info.maxSpikesD1>0) CUDA_CHECK_ERRORS( cudaMemcpy( dest->firingTableD1, firingTableD1, sizeof(int)*net_Info.maxSpikesD1, cudaMemcpyHostToDevice));
 
 		// allocate 2+ms firing table
-		if(allocateMem)		cutilSafeCall( cudaMalloc( (void**) &dest->firingTableD2, sizeof(int)*net_Info.maxSpikesD2));
-		if (net_Info.maxSpikesD2>0) cutilSafeCall( cudaMemcpy( dest->firingTableD2, firingTableD2, sizeof(int)*net_Info.maxSpikesD2, cudaMemcpyHostToDevice));
+		if(allocateMem)		CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->firingTableD2, sizeof(int)*net_Info.maxSpikesD2));
+		if (net_Info.maxSpikesD2>0) CUDA_CHECK_ERRORS( cudaMemcpy( dest->firingTableD2, firingTableD2, sizeof(int)*net_Info.maxSpikesD2, cudaMemcpyHostToDevice));
 
 		// we don't need this data structure if the network doesn't have any plastic synapses at all
 		if (!sim_with_fixedwts) {
 			// neuron firing time..
-			if(allocateMem)     cutilSafeCall( cudaMalloc( (void**) &dest->lastSpikeTime, sizeof(int)*numNReg));
-			cutilSafeCall( cudaMemcpy( dest->lastSpikeTime, lastSpikeTime, sizeof(int)*numNReg, cudaMemcpyHostToDevice));
+			if(allocateMem)     CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->lastSpikeTime, sizeof(int)*numNReg));
+			CUDA_CHECK_ERRORS( cudaMemcpy( dest->lastSpikeTime, lastSpikeTime, sizeof(int)*numNReg, cudaMemcpyHostToDevice));
 		}
 		
-		if(allocateMem)		cutilSafeCall( cudaMalloc( (void**) &dest->spikeGenBits, sizeof(int)*(NgenFunc/32+1)));
+		if(allocateMem)		CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->spikeGenBits, sizeof(int)*(NgenFunc/32+1)));
 
 		// copy the neuron state information to the GPU..
 		copyNeuronState(dest, &cpuNetPtrs, cudaMemcpyHostToDevice, allocateMem);
@@ -2056,7 +2060,7 @@
 			generateSpikes();
 
 			// copy the spikeGenBits from the CPU to the GPU..
-			CUDA_SAFE_CALL( cudaMemcpy( cpu_gpuNetPtrs.spikeGenBits, cpuNetPtrs.spikeGenBits, sizeof(int)*(NgenFunc/32+1), cudaMemcpyHostToDevice));
+			CUDA_CHECK_ERRORS_MACRO( cudaMemcpy( cpu_gpuNetPtrs.spikeGenBits, cpuNetPtrs.spikeGenBits, sizeof(int)*(NgenFunc/32+1), cudaMemcpyHostToDevice));
 		}
 	}
 	
@@ -2076,8 +2080,8 @@
 
 		if (sim_with_stp || sim_with_conductances) {
 			kernel_STPUpdateAndDecayConductances <<<gridSize, blkSize>>>(simTimeMs, simTimeSec, simTime);
-			cutilCheckMsg("STP update\n");
-			errCode = checkCudaErrors("gpu_STPUpdate", gridSize);
+			CUDA_GET_LAST_ERROR("STP update\n");
+			errCode = checkErrors("gpu_STPUpdate", gridSize);
 			assert(errCode == NO_KERNEL_ERRORS);
 		}
 
@@ -2086,8 +2090,8 @@
 		// printTestVarInfo(fpLog, "Testing STP :", true, true, false, 0, 2, 7);
 
 		kernel_findFiring <<<gridSize,blkSize >>> (simTimeMs, simTimeSec, simTime);
-		cutilCheckMsg("findFiring kernel failed\n");
-		errCode = checkCudaErrors("kernel_findFiring", gridSize);
+		CUDA_GET_LAST_ERROR("findFiring kernel failed\n");
+		errCode = checkErrors("kernel_findFiring", gridSize);
 		assert(errCode == NO_KERNEL_ERRORS);
 
 
@@ -2104,16 +2108,16 @@
 
 		static int	 cpu_tmp_val[MAX_BLOCKS][LOOP_CNT];
 
-		cudaGetSymbolAddress(&devPtr, "tmp_val");
+		cudaGetSymbolAddress(&devPtr, CUDA_CONVERT_SYMBOL(tmp_val));
 
 		if(init) {
 			// reset the load balance variable..
-			cutilSafeCall( cudaMemset(devPtr, 0, sizeof(tmp_val)));
+			CUDA_CHECK_ERRORS( cudaMemset(devPtr, 0, sizeof(tmp_val)));
 			return;
 		}
 
-		cutilSafeCall( cudaMemcpy(&cpu_tmp_val, devPtr, sizeof(cpu_tmp_val), cudaMemcpyDeviceToHost));
-		cutilSafeCall( cudaMemset(devPtr, 0, sizeof(tmp_val)));
+		CUDA_CHECK_ERRORS( cudaMemcpy(&cpu_tmp_val, devPtr, sizeof(cpu_tmp_val), cudaMemcpyDeviceToHost));
+		CUDA_CHECK_ERRORS( cudaMemset(devPtr, 0, sizeof(tmp_val)));
 
 		fprintf(fp, "GPU Load Balancing Information\n");
 
@@ -2146,8 +2150,8 @@
 		int blkSize  = 128;
 		int gridSize = 64;
 		kernel_timingTableUpdate <<<gridSize,blkSize >>> (simTimeMs);
-		cutilCheckMsg("timing Table update kernel failed\n");
-		int errCode = checkCudaErrors("kernel_timingTableUpdate", gridSize);
+		CUDA_GET_LAST_ERROR("timing Table update kernel failed\n");
+		int errCode = checkErrors("kernel_timingTableUpdate", gridSize);
 		assert(errCode == NO_KERNEL_ERRORS);
 
 		//printTestVarInfo(stderr, true, true, true);
@@ -2171,16 +2175,16 @@
 
 		if(D > 1) {
 			gpu_doCurrentUpdateD2 <<<gridSize, blkSize>>>(simTimeMs,simTimeSec,simTime);
-			CUT_CHECK_ERROR("Kernel execution failed");
-			errCode = checkCudaErrors("kernel_updateCurrentE", gridSize);
+			CUDA_GET_LAST_ERROR_MACRO("Kernel execution failed");
+			errCode = checkErrors("kernel_updateCurrentE", gridSize);
 			assert(errCode == NO_KERNEL_ERRORS);
 		}
 
 		// printTestVarInfo(stderr, "Variable Delay", true, false, false, 0);
 
 		gpu_doCurrentUpdateD1 <<<gridSize, blkSize>>>(simTimeMs,simTimeSec,simTime);
-		CUT_CHECK_ERROR("Kernel execution failed");	
-		errCode = checkCudaErrors("kernel_updateCurrentI", gridSize);
+		CUDA_GET_LAST_ERROR_MACRO("Kernel execution failed");
+		errCode = checkErrors("kernel_updateCurrentI", gridSize);
 		assert(errCode == NO_KERNEL_ERRORS);
 
 		//printTestVarInfo(stderr, "LTD", true, false, false, 0, 3, 0);
@@ -2345,8 +2349,8 @@
 //			allocateSNN_GPU();
 
 		kernel_init <<< gridSize, blkSize >>> ();
-		cutilCheckMsg("initGPU kernel failed\n");
-		int errCode = checkCudaErrors("kernel_init", gridSize);
+		CUDA_GET_LAST_ERROR("initGPU kernel failed\n");
+		int errCode = checkErrors("kernel_init", gridSize);
 		assert(errCode == NO_KERNEL_ERRORS);
 
 		printGpuLoadBalance(true);
@@ -2367,7 +2371,7 @@
 
 		memset(errVal, 0, sizeof(errVal));
 		cudaGetSymbolAddress(&devPtr, retErrVal);
-		cutilSafeCall( cudaMemcpy(devPtr, &errVal, sizeof(errVal), cudaMemcpyHostToDevice));
+		CUDA_CHECK_ERRORS( cudaMemcpy(devPtr, &errVal, sizeof(errVal), cudaMemcpyHostToDevice));
 
 		int testTable[10];
 		// we write some number in this table..
@@ -2375,15 +2379,15 @@
 		// using the texture access and check if everything is correctly initialized
 		testTable[0] = 11; testTable[1] = 12; testTable[2] = 13;
 		testTable[3] = 14; testTable[4] = 15; testTable[5] = 16;
-		cutilSafeCall( cudaMemcpyToSymbol("timingTableD2", testTable, sizeof(int)*(10), 0, cudaMemcpyHostToDevice));
+		CUDA_CHECK_ERRORS( cudaMemcpyToSymbol(CUDA_CONVERT_SYMBOL(timingTableD2), testTable, sizeof(int)*(10), 0, cudaMemcpyHostToDevice));
 //MDR this check fails because it assumes too much about the network...
 //		kernel_check_GPU_init <<< 1, 128 >>> ();
-		cutilCheckMsg("check GPU failed\n");
+		CUDA_GET_LAST_ERROR("check GPU failed\n");
 
 		// printTestVarInfo(stderr);
 		// read back the intialization and ensure that they are okay
 		fprintf(fpLog, "%s Checking initialization of GPU...\n", testString?testString:"");
-		cutilSafeCall( cudaMemcpy(&errVal, devPtr, sizeof(errVal), cudaMemcpyDeviceToHost));
+		CUDA_CHECK_ERRORS( cudaMemcpy(&errVal, devPtr, sizeof(errVal), cudaMemcpyDeviceToHost));
 		for(int i=0; i < 4; i++) {
 			for(int j=0; j < (int)errVal[i][0]; j++) {
 				fprintf(fpLog, "val[%3d][%3d] = %f\n", i, j, errVal[i][j]);
@@ -2391,7 +2395,7 @@
 			fprintf(fpLog, "******************\n");
 		}
 		fprintf(fpLog, "Checking done...\n");
-		cutilSafeCall( cudaMemcpyToSymbol("timingTableD2", timeTableD2, sizeof(int)*(10), 0, cudaMemcpyHostToDevice));
+		CUDA_CHECK_ERRORS( cudaMemcpyToSymbol(CUDA_CONVERT_SYMBOL(timingTableD2), timeTableD2, sizeof(int)*(10), 0, cudaMemcpyHostToDevice));
 		fflush(fpLog);
 	}
 
@@ -2401,18 +2405,18 @@
 		void *devPtr;
 		memset(errVal, 0, sizeof(errVal));
 		cudaGetSymbolAddress(&devPtr, retErrVal);
-		cutilSafeCall( cudaMemcpy(devPtr, &errVal, sizeof(errVal), cudaMemcpyHostToDevice));
+		CUDA_CHECK_ERRORS( cudaMemcpy(devPtr, &errVal, sizeof(errVal), cudaMemcpyHostToDevice));
 
 		if (sim_with_stp) {
 			kernel_check_GPU_init2 <<< 1, 128>>> (simTime);
-			cutilCheckMsg("kernel_check_GPU_init2_1 failed\n");
-			int errCode = checkCudaErrors("kernel_init2_1", 1);
+			CUDA_GET_LAST_ERROR("kernel_check_GPU_init2_1 failed\n");
+			int errCode = checkErrors("kernel_init2_1", 1);
 			assert(errCode == NO_KERNEL_ERRORS);
 		}
 
 		// read back the intialization and ensure that they are okay
 		fprintf(fpLog, "%s Checking Initialization of STP Variable Correctly in GPU...\n", (testString?testString:""));
-		cutilSafeCall( cudaMemcpy(&errVal, devPtr, sizeof(errVal), cudaMemcpyDeviceToHost));
+		CUDA_CHECK_ERRORS( cudaMemcpy(&errVal, devPtr, sizeof(errVal), cudaMemcpyDeviceToHost));
 		for(int i=0; i < 4; i++) {
 			for(int j=0; j < (int)errVal[i][0]; j++) {
 				fprintf(fpLog, "val[%3d][%3d] = %f\n", i, j, errVal[i][j]);
@@ -2425,7 +2429,7 @@
 	{
 		// copy neuron input current...
 		fprintf(fp, "Total Synaptic updates: \n");
-		cutilSafeCall( cudaMemcpy( current, cpu_gpuNetPtrs.current, sizeof(float)*numNReg, cudaMemcpyDeviceToHost));
+		CUDA_CHECK_ERRORS( cudaMemcpy( current, cpu_gpuNetPtrs.current, sizeof(float)*numNReg, cudaMemcpyDeviceToHost));
 		for(int i=0; i < numNReg; i++) {
 			if (current[i] != 0.0 ) {
 				fprintf(fp, "I[%d] -> %f\n", i, current[i]);
@@ -2447,10 +2451,10 @@
 		fflush(stdout);
 
 		if(test1 || test12)
-			cutilSafeCall( cudaMemcpy( testVar, cpu_gpuNetPtrs.testVar, sizeof(float)*numN, cudaMemcpyDeviceToHost));
+			CUDA_CHECK_ERRORS( cudaMemcpy( testVar, cpu_gpuNetPtrs.testVar, sizeof(float)*numN, cudaMemcpyDeviceToHost));
 
 		if(test2 || test12)
-			cutilSafeCall( cudaMemcpy( testVar2, cpu_gpuNetPtrs.testVar2, sizeof(float)*numN, cudaMemcpyDeviceToHost));
+			CUDA_CHECK_ERRORS( cudaMemcpy( testVar2, cpu_gpuNetPtrs.testVar2, sizeof(float)*numN, cudaMemcpyDeviceToHost));
 
 		int gcnt=0;
 		bool firstPrint = true;
@@ -2471,10 +2475,10 @@
 			fflush(fp);
 			test1 = false;
 			test2 = false;
-			cutilSafeCall( cudaMemcpy( cpu_gpuNetPtrs.testVar,  testVar, sizeof(float)*numN, cudaMemcpyHostToDevice));
-			CUDA_SAFE_CALL( cudaMemcpyToSymbol( "testVarCnt", &cnt, sizeof(int), 0, cudaMemcpyHostToDevice));
-			cutilSafeCall( cudaMemcpy( cpu_gpuNetPtrs.testVar2, testVar2, sizeof(float)*numN, cudaMemcpyHostToDevice));
-			CUDA_SAFE_CALL( cudaMemcpyToSymbol( "testVarCnt2", &cnt, sizeof(int), 0, cudaMemcpyHostToDevice));
+			CUDA_CHECK_ERRORS( cudaMemcpy( cpu_gpuNetPtrs.testVar,  testVar, sizeof(float)*numN, cudaMemcpyHostToDevice));
+			CUDA_CHECK_ERRORS_MACRO( cudaMemcpyToSymbol( CUDA_CONVERT_SYMBOL(testVarCnt), &cnt, sizeof(int), 0, cudaMemcpyHostToDevice));
+			CUDA_CHECK_ERRORS( cudaMemcpy( cpu_gpuNetPtrs.testVar2, testVar2, sizeof(float)*numN, cudaMemcpyHostToDevice));
+			CUDA_CHECK_ERRORS_MACRO( cudaMemcpyToSymbol( CUDA_CONVERT_SYMBOL(testVarCnt2), &cnt, sizeof(int), 0, cudaMemcpyHostToDevice));
 		}
 
 		gcnt=0;
@@ -2496,8 +2500,8 @@
 //			fprintf(fp, "\n");
 			fflush(fp);
 			cnt=0;
-			cutilSafeCall( cudaMemcpy( cpu_gpuNetPtrs.testVar,  testVar, sizeof(float)*numN, cudaMemcpyHostToDevice));
-			CUDA_SAFE_CALL( cudaMemcpyToSymbol( "testVarCnt", &cnt, sizeof(int), 0, cudaMemcpyHostToDevice));
+			CUDA_CHECK_ERRORS( cudaMemcpy( cpu_gpuNetPtrs.testVar,  testVar, sizeof(float)*numN, cudaMemcpyHostToDevice));
+			CUDA_CHECK_ERRORS_MACRO( cudaMemcpyToSymbol( CUDA_CONVERT_SYMBOL(testVarCnt), &cnt, sizeof(int), 0, cudaMemcpyHostToDevice));
 		}
 
 		gcnt=0;
@@ -2518,8 +2522,8 @@
 //			fprintf(fp, "\n");
 			fflush(fp);
 
-			cutilSafeCall( cudaMemcpy( cpu_gpuNetPtrs.testVar2, testVar2, sizeof(float)*numN, cudaMemcpyHostToDevice));
-			CUDA_SAFE_CALL( cudaMemcpyToSymbol( "testVarCnt2", &cnt, sizeof(int), 0, cudaMemcpyHostToDevice));
+			CUDA_CHECK_ERRORS( cudaMemcpy( cpu_gpuNetPtrs.testVar2, testVar2, sizeof(float)*numN, cudaMemcpyHostToDevice));
+			CUDA_CHECK_ERRORS_MACRO( cudaMemcpyToSymbol( CUDA_CONVERT_SYMBOL(testVarCnt2), &cnt, sizeof(int), 0, cudaMemcpyHostToDevice));
 		}
 		return;
 	}
@@ -2536,18 +2540,18 @@
 	{
 		if(0) {
 			int EnumFires = 0; int InumFires = 0;
-			CUDA_SAFE_CALL( cudaMemcpyFromSymbol( &EnumFires, "secD2fireCnt", sizeof(int), 0, cudaMemcpyDeviceToHost));
-			CUDA_SAFE_CALL( cudaMemcpyFromSymbol( &InumFires, "secD1fireCnt", sizeof(int), 0, cudaMemcpyDeviceToHost));
+			CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &EnumFires, CUDA_CONVERT_SYMBOL(secD2fireCnt), sizeof(int), 0, cudaMemcpyDeviceToHost));
+			CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &InumFires, CUDA_CONVERT_SYMBOL(secD1fireCnt), sizeof(int), 0, cudaMemcpyDeviceToHost));
 			fprintf(stdout, " ***********( t = %d) FIRE COUNTS ************** %d %d\n", simTime, EnumFires, InumFires);
 			int   numFires;
 			float fireCnt;
-			CUDA_SAFE_CALL( cudaMemcpyFromSymbol( &numFires,  "testFireCnt1", sizeof(int), 0, cudaMemcpyDeviceToHost));
+			CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &numFires,  CUDA_CONVERT_SYMBOL(testFireCnt1), sizeof(int), 0, cudaMemcpyDeviceToHost));
 			fprintf(stdout, "testFireCnt1 = %d\n", numFires);
-			CUDA_SAFE_CALL( cudaMemcpyFromSymbol( &numFires,  "testFireCnt2", sizeof(int), 0, cudaMemcpyDeviceToHost));
+			CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &numFires,  CUDA_CONVERT_SYMBOL(testFireCnt2), sizeof(int), 0, cudaMemcpyDeviceToHost));
 			fprintf(stdout, "testFireCnt2 = %d\n", numFires);
-			CUDA_SAFE_CALL( cudaMemcpyFromSymbol( &fireCnt,  "testFireCntf1", sizeof(int), 0, cudaMemcpyDeviceToHost));
+			CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &fireCnt,  CUDA_CONVERT_SYMBOL(testFireCntf1), sizeof(int), 0, cudaMemcpyDeviceToHost));
 			fprintf(stdout, "testFireCntFloat1 = %f\n", fireCnt);
-			CUDA_SAFE_CALL( cudaMemcpyFromSymbol( &fireCnt,  "testFireCntf2", sizeof(int), 0, cudaMemcpyDeviceToHost));
+			CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &fireCnt,  CUDA_CONVERT_SYMBOL(testFireCntf2), sizeof(int), 0, cudaMemcpyDeviceToHost));
 			fprintf(stdout, "testFireCntFloat2 = %f\n", fireCnt);
 			fprintf(stdout, " *************************\n");
 
@@ -2560,10 +2564,10 @@
 			fprintf(stdout, "Total Fired Neuron in GPU = E=%d + I=%d\n", EnumFires, InumFires);
 
 			if (EnumFires > 0) 
-				CUDA_SAFE_CALL( cudaMemcpy( firingTableD2, cpu_gpuNetPtrs.firingTableD2, sizeof(int)*EnumFires, cudaMemcpyDeviceToHost));
+				CUDA_CHECK_ERRORS_MACRO( cudaMemcpy( firingTableD2, cpu_gpuNetPtrs.firingTableD2, sizeof(int)*EnumFires, cudaMemcpyDeviceToHost));
 
 			if (InumFires > 0) 
-				CUDA_SAFE_CALL( cudaMemcpy( firingTableD1, cpu_gpuNetPtrs.firingTableD1, sizeof(int)*InumFires, cudaMemcpyDeviceToHost));
+				CUDA_CHECK_ERRORS_MACRO( cudaMemcpy( firingTableD1, cpu_gpuNetPtrs.firingTableD1, sizeof(int)*InumFires, cudaMemcpyDeviceToHost));
 
 			static int cumCntI = 0;
 			static int cumcntD2 = 0;
@@ -2585,8 +2589,8 @@
 			int sendId[1000];
 			int recId[1000];
 			int genI, genE, recE, recI;
-			CUDA_SAFE_CALL( cudaMemcpyFromSymbol( &recE, "receivedSpikesE", sizeof(int), 0, cudaMemcpyDeviceToHost));
-			CUDA_SAFE_CALL( cudaMemcpyFromSymbol( &recI, "receivedSpikesI", sizeof(int), 0, cudaMemcpyDeviceToHost));
+			CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &recE, CUDA_CONVERT_SYMBOL(receivedSpikesE), sizeof(int), 0, cudaMemcpyDeviceToHost));
+			CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &recI, CUDA_CONVERT_SYMBOL(receivedSpikesI), sizeof(int), 0, cudaMemcpyDeviceToHost));
 
 			//fprintf(stderr, "generatedE = %d, receivedE = %d generatedI = %d, receivedI = %d\n", genE, recE, genI, recI);
 			fprintf(fpLog, "generatedE = %d, receivedE = %d generatedI = %d, receivedI = %d\n", genE, recE, genI, recI);
@@ -2606,15 +2610,15 @@
 
 			if(cntTest++ == 1000) {
 				genI = 0; genE = 0; recI = 0; recE = 0;
-				CUDA_SAFE_CALL( cudaMemcpyToSymbol( "receivedSpikesE", &recE, sizeof(int), 0, cudaMemcpyHostToDevice));	
-				CUDA_SAFE_CALL( cudaMemcpyToSymbol( "receivedSpikesI", &recI, sizeof(int), 0, cudaMemcpyHostToDevice));	
+				CUDA_CHECK_ERRORS_MACRO( cudaMemcpyToSymbol( CUDA_CONVERT_SYMBOL(receivedSpikesE), &recE, sizeof(int), 0, cudaMemcpyHostToDevice));
+				CUDA_CHECK_ERRORS_MACRO( cudaMemcpyToSymbol( CUDA_CONVERT_SYMBOL(receivedSpikesI), &recI, sizeof(int), 0, cudaMemcpyHostToDevice));
 				cntTest = 0;
 			}
 #endif
 		/*
-		CUDA_SAFE_CALL( cudaMemcpyFromSymbol( &sendId, "senderIdE", sizeof(int)*genE, 0, cudaMemcpyDeviceToHost));
-		CUDA_SAFE_CALL( cudaMemcpyFromSymbol( &sendId[genE], "senderIdI", sizeof(int)*genI, 0, cudaMemcpyDeviceToHost));
-		CUDA_SAFE_CALL( cudaMemcpyFromSymbol( &recId, "receiverId", sizeof(int)*(recI+recE), 0, cudaMemcpyDeviceToHost));
+		CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &sendId, "senderIdE", sizeof(int)*genE, 0, cudaMemcpyDeviceToHost));
+		CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &sendId[genE], "senderIdI", sizeof(int)*genI, 0, cudaMemcpyDeviceToHost));
+		CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &recId, "receiverId", sizeof(int)*(recI+recE), 0, cudaMemcpyDeviceToHost));
 
 		int cnt=0;
 		for(int i = 0; i < genE+genI; i++) {
@@ -2652,19 +2656,19 @@
 		kernel_globalConductanceUpdate <<<gridSize, blkSize>>> (simTimeMs, simTimeSec, simTime);
 
 		kernel_globalStateUpdate <<<gridSize, blkSize>>> (simTimeMs, simTimeSec, simTime);
-		CUT_CHECK_ERROR("Kernel execution failed");
-		int errCode = checkCudaErrors("gpu_globalStateUpdate", gridSize);
+		CUDA_GET_LAST_ERROR_MACRO("Kernel execution failed");
+		int errCode = checkErrors("gpu_globalStateUpdate", gridSize);
 		assert(errCode == NO_KERNEL_ERRORS);
 
 
 //		printTestVarInfo(stderr, "globalStateUpdate_GPU", true, false, false, 0, 1, 0);
 //		int recE, recI;
-//		CUDA_SAFE_CALL( cudaMemcpyFromSymbol( &recE, "receivedSpikesE", sizeof(int), 0, cudaMemcpyDeviceToHost));
-//		CUDA_SAFE_CALL( cudaMemcpyFromSymbol( &recI, "receivedSpikesI", sizeof(int), 0, cudaMemcpyDeviceToHost));
+//		CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &recE, "receivedSpikesE", sizeof(int), 0, cudaMemcpyDeviceToHost));
+//		CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &recI, "receivedSpikesI", sizeof(int), 0, cudaMemcpyDeviceToHost));
 //		fprintf(stderr, "t=%d, receivedE = %d, receivedI = %d\n", simTime, recE, recI);
 //		recE=0;recI=0;
-//		CUDA_SAFE_CALL( cudaMemcpyToSymbol( "receivedSpikesE", &recE, sizeof(int), 0, cudaMemcpyHostToDevice));
-//		CUDA_SAFE_CALL( cudaMemcpyToSymbol( "receivedSpikesI", &recI, sizeof(int), 0, cudaMemcpyHostToDevice));
+//		CUDA_CHECK_ERRORS_MACRO( cudaMemcpyToSymbol( "receivedSpikesE", &recE, sizeof(int), 0, cudaMemcpyHostToDevice));
+//		CUDA_CHECK_ERRORS_MACRO( cudaMemcpyToSymbol( "receivedSpikesI", &recI, sizeof(int), 0, cudaMemcpyHostToDevice));
 	}
 
 	void CpuSNN::assignPoissonFiringRate_GPU()
@@ -2682,7 +2686,7 @@
 				
 				if (grp_Info[grpId].spikeGen || rate == NULL) return;
 				
-				cutilSafeCall( cudaMemcpy( &cpu_gpuNetPtrs.poissonFireRate[nid-numNReg], rate->rates, sizeof(float)*rate->len, rate->onGPU?cudaMemcpyDeviceToDevice:cudaMemcpyHostToDevice));
+				CUDA_CHECK_ERRORS( cudaMemcpy( &cpu_gpuNetPtrs.poissonFireRate[nid-numNReg], rate->rates, sizeof(float)*rate->len, rate->onGPU?cudaMemcpyDeviceToDevice:cudaMemcpyHostToDevice));
 			}
 		}
 	}
@@ -2708,8 +2712,8 @@
 		#if (ENABLE_MORE_CHECK)
 			unsigned int gpu_secD2fireCnt, gpu_secD1fireCnt;
 
-			CUDA_SAFE_CALL( cudaMemcpyFromSymbol( &gpu_secD2fireCnt, "secD2fireCnt", sizeof(int), 0, cudaMemcpyDeviceToHost));
-			CUDA_SAFE_CALL( cudaMemcpyFromSymbol( &gpu_secD1fireCnt, "secD1fireCnt", sizeof(int), 0, cudaMemcpyDeviceToHost));
+			CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &gpu_secD2fireCnt, CUDA_CONVERT_SYMBOL(secD2fireCnt), sizeof(int), 0, cudaMemcpyDeviceToHost));
+			CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &gpu_secD1fireCnt, CUDA_CONVERT_SYMBOL(secD1fireCnt), sizeof(int), 0, cudaMemcpyDeviceToHost));
 
 			printf("gpu_secD1fireCnt: %d max: %d gpu_secD2fireCnt: %d max: %d\n",gpu_secD1fireCnt,maxSpikesD1,gpu_secD2fireCnt,maxSpikesD2);
 
@@ -2726,7 +2730,7 @@
 		for (int grpId=20; 0 & grpId < 25; grpId++) {
 			int ptrPos  = grp_Info[grpId].StartN;
 			int length  = grp_Info[grpId].SizeN;
-			cutilSafeCall( cudaMemcpy( &cpuNetPtrs.current[ptrPos], &cpu_gpuNetPtrs.current[ptrPos], sizeof(float)*length, cudaMemcpyDeviceToHost));
+			CUDA_CHECK_ERRORS( cudaMemcpy( &cpuNetPtrs.current[ptrPos], &cpu_gpuNetPtrs.current[ptrPos], sizeof(float)*length, cudaMemcpyDeviceToHost));
 			for(int i=0; i < length; i++) {
 				fprintf(stderr, "current %d -> %f\n", ptrPos+i, cpuNetPtrs.current[ptrPos+i]);
 			}
@@ -2736,14 +2740,14 @@
 		if(0) {
 			int cnt=0;
 			testSpikeSenderReceiver(fpLog, simTime);
-			CUDA_SAFE_CALL( cudaMemcpyToSymbol( "testVarCnt", &cnt, sizeof(int), 0, cudaMemcpyHostToDevice));
-			CUDA_SAFE_CALL( cudaMemcpyToSymbol( "testVarCnt2", &cnt, sizeof(int), 0, cudaMemcpyHostToDevice));
+			CUDA_CHECK_ERRORS_MACRO( cudaMemcpyToSymbol( CUDA_CONVERT_SYMBOL(testVarCnt), &cnt, sizeof(int), 0, cudaMemcpyHostToDevice));
+			CUDA_CHECK_ERRORS_MACRO( cudaMemcpyToSymbol( CUDA_CONVERT_SYMBOL(testVarCnt2), &cnt, sizeof(int), 0, cudaMemcpyHostToDevice));
 		}
 
 //		int tmpCnt;
-//		CUDA_SAFE_CALL( cudaMemcpyFromSymbol( &tmpCnt, "testVarCnt1", sizeof(int), 0, cudaMemcpyDeviceToHost));
+//		CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &tmpCnt, "testVarCnt1", sizeof(int), 0, cudaMemcpyDeviceToHost));
 //		int EnumFires = 0;
-//		CUDA_SAFE_CALL( cudaMemcpyFromSymbol( &EnumFires, "secD2fireCnt", sizeof(int), 0, cudaMemcpyDeviceToHost));
+//		CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &EnumFires, "secD2fireCnt", sizeof(int), 0, cudaMemcpyDeviceToHost));
 //		fprintf(stderr, " (t=%d) fireCnt=%d, testVarCnt=%d\n", simTime, EnumFires, tmpCnt);
 
 		return;
@@ -2773,16 +2777,16 @@
 
 //		// the firing id is stored in firingTableD1, and the firing bit pattern is stored in firingTableD2...
 //		int gpu_secD2fireCnt;
-//		CUDA_SAFE_CALL( cudaMemcpyFromSymbol( &gpu_secD2fireCnt, "secD2fireCnt", sizeof(int), 0, cudaMemcpyDeviceToHost));
-//		//CUDA_SAFE_CALL( cudaMemcpyFromSymbol( &gpu_secD1fireCnt, "secD1fireCnt", sizeof(int), 0, cudaMemcpyDeviceToHost));
+//		CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &gpu_secD2fireCnt, "secD2fireCnt", sizeof(int), 0, cudaMemcpyDeviceToHost));
+//		//CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &gpu_secD1fireCnt, "secD1fireCnt", sizeof(int), 0, cudaMemcpyDeviceToHost));
 //		fprintf(stderr, "Total spikes before next time sec is %d\n", gpu_secD2fireCnt);
 	}
 
 	void CpuSNN::showStatus_GPU()
 	{
 		int gpu_secD1fireCnt, gpu_secD2fireCnt;
-		CUDA_SAFE_CALL( cudaMemcpyFromSymbol( &gpu_secD2fireCnt, "secD2fireCnt", sizeof(int), 0, cudaMemcpyDeviceToHost));
-		CUDA_SAFE_CALL( cudaMemcpyFromSymbol( &gpu_secD1fireCnt, "secD1fireCnt", sizeof(int), 0, cudaMemcpyDeviceToHost));
+		CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &gpu_secD2fireCnt, CUDA_CONVERT_SYMBOL(secD2fireCnt), sizeof(int), 0, cudaMemcpyDeviceToHost));
+		CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &gpu_secD1fireCnt, CUDA_CONVERT_SYMBOL(secD1fireCnt), sizeof(int), 0, cudaMemcpyDeviceToHost));
 		spikeCountAll1sec = gpu_secD1fireCnt + gpu_secD2fireCnt;
 		secD1fireCnt  = gpu_secD1fireCnt;
 		
@@ -2819,16 +2823,16 @@
 	void CpuSNN::copyFiringInfo_GPU()
 	{
 		unsigned int gpu_secD1fireCnt, gpu_secD2fireCnt;
-		CUDA_SAFE_CALL( cudaMemcpyFromSymbol( &gpu_secD2fireCnt, "secD2fireCnt", sizeof(int), 0, cudaMemcpyDeviceToHost));
-		CUDA_SAFE_CALL( cudaMemcpyFromSymbol( &gpu_secD1fireCnt, "secD1fireCnt", sizeof(int), 0, cudaMemcpyDeviceToHost));
+		CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &gpu_secD2fireCnt, CUDA_CONVERT_SYMBOL(secD2fireCnt), sizeof(int), 0, cudaMemcpyDeviceToHost));
+		CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &gpu_secD1fireCnt, CUDA_CONVERT_SYMBOL(secD1fireCnt), sizeof(int), 0, cudaMemcpyDeviceToHost));
 		spikeCountAll1sec = gpu_secD1fireCnt + gpu_secD2fireCnt;
 		secD1fireCnt  = gpu_secD1fireCnt;
 		assert(gpu_secD1fireCnt<=maxSpikesD1);
 		assert(gpu_secD2fireCnt<=maxSpikesD2);
-		cutilSafeCall( cudaMemcpy(firingTableD2, cpu_gpuNetPtrs.firingTableD2, sizeof(int)*gpu_secD2fireCnt, cudaMemcpyDeviceToHost));
-		cutilSafeCall( cudaMemcpy(firingTableD1, cpu_gpuNetPtrs.firingTableD1, sizeof(int)*gpu_secD1fireCnt, cudaMemcpyDeviceToHost));
-		cutilSafeCall( cudaMemcpyFromSymbol(timeTableD2, "timingTableD2", sizeof(int)*(1000+D+1), 0, cudaMemcpyDeviceToHost));
-		cutilSafeCall( cudaMemcpyFromSymbol(timeTableD1, "timingTableD1", sizeof(int)*(1000+D+1), 0, cudaMemcpyDeviceToHost));
+		CUDA_CHECK_ERRORS( cudaMemcpy(firingTableD2, cpu_gpuNetPtrs.firingTableD2, sizeof(int)*gpu_secD2fireCnt, cudaMemcpyDeviceToHost));
+		CUDA_CHECK_ERRORS( cudaMemcpy(firingTableD1, cpu_gpuNetPtrs.firingTableD1, sizeof(int)*gpu_secD1fireCnt, cudaMemcpyDeviceToHost));
+		CUDA_CHECK_ERRORS( cudaMemcpyFromSymbol(timeTableD2, CUDA_CONVERT_SYMBOL(timingTableD2), sizeof(int)*(1000+D+1), 0, cudaMemcpyDeviceToHost));
+		CUDA_CHECK_ERRORS( cudaMemcpyFromSymbol(timeTableD1, CUDA_CONVERT_SYMBOL(timingTableD1), sizeof(int)*(1000+D+1), 0, cudaMemcpyDeviceToHost));
 		fprintf(stderr, "Total spikes Multiple Delays=%d, 1Ms Delay=%d\n", gpu_secD2fireCnt,gpu_secD1fireCnt);
 		//getchar();
 	}
@@ -2850,11 +2854,11 @@
 		}
 		assert(cnt == numProbe);
 		// allocate the destination probes on the GPU
-		cutilSafeCall( cudaMalloc( (void**) &dest->probeId, sizeof(uint32_t)*net_Info.numN*numProbe));
-		cutilSafeCall( cudaMemcpy( dest->probeId, &probeId, sizeof(uint32_t)*net_Info.numN*numProbe, cudaMemcpyHostToDevice));
+		CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->probeId, sizeof(uint32_t)*net_Info.numN*numProbe));
+		CUDA_CHECK_ERRORS( cudaMemcpy( dest->probeId, &probeId, sizeof(uint32_t)*net_Info.numN*numProbe, cudaMemcpyHostToDevice));
 		// allocate and assign the probes
-		cutilSafeCall( cudaMalloc( (void**) &dest->probeV, 	   1000*sizeof(float)*numProbe));
-		cutilSafeCall( cudaMalloc( (void**) &dest->probeI, 	   1000*sizeof(float)*numProbe));
+		CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->probeV, 	   1000*sizeof(float)*numProbe));
+		CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->probeI, 	   1000*sizeof(float)*numProbe));
 
 		free(probeId);
     }
@@ -2890,10 +2894,10 @@
 	{
 		int devCount;
 		cudaGetDeviceCount(&devCount);
-		cutilCheckMsg("cudaGetDeviceCount failed\n");
+		CUDA_GET_LAST_ERROR("cudaGetDeviceCount failed\n");
 		fprintf(stdout, "Number of CUDA devices : %d\n",devCount);
 
-		int dev = cutGetMaxGflopsDeviceId();
+		int dev = CUDA_GET_MAXGFLOP_DEVICE_ID();
 		fprintf(stdout, "Device with maximum GFLOPs is : %d\n", dev);
 		cudaDeviceProp deviceProp;
 
@@ -2907,7 +2911,7 @@
 			dev = 0;
 		}
 
-		cutilSafeCall(cudaGetDeviceProperties(&deviceProp, dev));
+		CUDA_CHECK_ERRORS(cudaGetDeviceProperties(&deviceProp, dev));
 		fprintf(stdout, "\nDevice %d: \"%s\"\n", dev, deviceProp.name);
 		if (deviceProp.major == 1 && deviceProp.minor < 3) {
 			printf("GPU SNN does not support NVidia cards older than version 1.3\n");
@@ -2918,7 +2922,7 @@
 		//assert(deviceProp.minor >= 3);		
 		cudaThreadExit();
 		cudaSetDevice( dev );
-		cutilCheckMsg("cudaSetDevice failed\n");	
+		CUDA_GET_LAST_ERROR("cudaSetDevice failed\n");
 	}
 
 	void CpuSNN::copyWeightsGPU(unsigned int nid, int src_grp)
@@ -2936,7 +2940,7 @@
 		}
 		fprintf(fpLog, "\n");
 #endif
-		cutilSafeCall( cudaMemcpy( synWts, &cpu_gpuNetPtrs.wt[cumId], sizeof(float)*Npre[nid], cudaMemcpyDeviceToHost));
+		CUDA_CHECK_ERRORS( cudaMemcpy( synWts, &cpu_gpuNetPtrs.wt[cumId], sizeof(float)*Npre[nid], cudaMemcpyDeviceToHost));
 
 #if 0
 		fprintf(fpLog, "NEW WEIGHTS\n");
@@ -3022,11 +3026,11 @@
 		
 		// copy relevant pointers and network information to GPU
 		void* devPtr;
-		cutilSafeCall( cudaMemcpyToSymbol("gpuPtrs",    &cpu_gpuNetPtrs, sizeof(network_ptr_t), 0, cudaMemcpyHostToDevice));
-		cutilSafeCall( cudaMemcpyToSymbol("gpuNetInfo", &net_Info, sizeof(network_info_t), 0, cudaMemcpyHostToDevice));
+		CUDA_CHECK_ERRORS( cudaMemcpyToSymbol(CUDA_CONVERT_SYMBOL(gpuPtrs),    &cpu_gpuNetPtrs, sizeof(network_ptr_t), 0, cudaMemcpyHostToDevice));
+		CUDA_CHECK_ERRORS( cudaMemcpyToSymbol(CUDA_CONVERT_SYMBOL(gpuNetInfo), &net_Info, sizeof(network_info_t), 0, cudaMemcpyHostToDevice));
 		// FIXME: we can chance the group properties such as STDP as the network is running.  So, we need a way to updating the GPU when changes are made.
 
-		cutilSafeCall( cudaMemcpyToSymbol("gpuGrpInfo", grp_Info, (net_Info.numGrp)*sizeof(group_info_t), 0, cudaMemcpyHostToDevice));
+		CUDA_CHECK_ERRORS( cudaMemcpyToSymbol(CUDA_CONVERT_SYMBOL(gpuGrpInfo), grp_Info, (net_Info.numGrp)*sizeof(group_info_t), 0, cudaMemcpyHostToDevice));
 
 		if (showLogMode >= 3) {
 			fprintf(stderr,"Transfering group settings to GPU:\n");
@@ -3069,24 +3073,58 @@
 		cpu_gpuNetPtrs.allocated = true;
 
 		// map the timing table to texture.. saves a lot of headache in using shared memory
-		CUDA_SAFE_CALL ( cudaGetSymbolAddress(&devPtr, "timingTableD2"));
+		CUDA_CHECK_ERRORS_MACRO ( cudaGetSymbolAddress(&devPtr, CUDA_CONVERT_SYMBOL(timingTableD2)));
 		size_t offset;
-		CUDA_SAFE_CALL ( cudaBindTexture(&offset, timingTableD2_tex, devPtr, sizeof(int)*ROUNDED_TIMING_COUNT));
+		CUDA_CHECK_ERRORS_MACRO ( cudaBindTexture(&offset, timingTableD2_tex, devPtr, sizeof(int)*ROUNDED_TIMING_COUNT));
 		offset = offset/sizeof(int);
-		CUDA_SAFE_CALL ( cudaGetSymbolAddress(&devPtr, "timingTableD2_tex_offset"));
-		cutilSafeCall( cudaMemcpy(devPtr, &offset, sizeof(int), cudaMemcpyHostToDevice));
+		CUDA_CHECK_ERRORS_MACRO ( cudaGetSymbolAddress(&devPtr, CUDA_CONVERT_SYMBOL(timingTableD2_tex_offset)));
+		CUDA_CHECK_ERRORS( cudaMemcpy(devPtr, &offset, sizeof(int), cudaMemcpyHostToDevice));
 		
-		CUDA_SAFE_CALL ( cudaGetSymbolAddress(&devPtr, "timingTableD1"));
-		CUDA_SAFE_CALL ( cudaBindTexture(&offset, timingTableD1_tex, devPtr, sizeof(int)*ROUNDED_TIMING_COUNT));
+		CUDA_CHECK_ERRORS_MACRO ( cudaGetSymbolAddress(&devPtr, CUDA_CONVERT_SYMBOL(timingTableD1)));
+		CUDA_CHECK_ERRORS_MACRO ( cudaBindTexture(&offset, timingTableD1_tex, devPtr, sizeof(int)*ROUNDED_TIMING_COUNT));
 		offset = offset/sizeof(int);
-		CUDA_SAFE_CALL ( cudaGetSymbolAddress(&devPtr, "timingTableD1_tex_offset"));
-		cutilSafeCall( cudaMemcpy(devPtr, &offset, sizeof(int), cudaMemcpyHostToDevice));
+		CUDA_CHECK_ERRORS_MACRO ( cudaGetSymbolAddress(&devPtr, CUDA_CONVERT_SYMBOL(timingTableD1_tex_offset)));
+		CUDA_CHECK_ERRORS( cudaMemcpy(devPtr, &offset, sizeof(int), cudaMemcpyHostToDevice));
 
-		cutilSafeCall( cudaMemset( cpu_gpuNetPtrs.current, 0, sizeof(float)*numNReg));
+		CUDA_CHECK_ERRORS( cudaMemset( cpu_gpuNetPtrs.current, 0, sizeof(float)*numNReg));
 
 		initGPU(gridSize, blkSize);
 	}
 
+
+	void CpuSNN::printSimSummary(FILE *fp)
+	{
+		DBG(2, fpLog, AT, "printSimSummary()");
+		float etime;
+		if(currentMode == GPU_MODE)	 {
+			stopGPUTiming();
+			etime = gpuExecutionTime;
+			CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &spikeCountD2Host, CUDA_CONVERT_SYMBOL(secD2fireCnt), sizeof(int), 0, cudaMemcpyDeviceToHost));
+			CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &spikeCountD1Host, CUDA_CONVERT_SYMBOL(secD1fireCnt), sizeof(int), 0, cudaMemcpyDeviceToHost));
+			spikeCountAll1sec = spikeCountD1 + spikeCountD2;
+			CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &spikeCountD2Host, CUDA_CONVERT_SYMBOL(spikeCountD2), sizeof(int), 0, cudaMemcpyDeviceToHost));
+			CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &spikeCountD1Host, CUDA_CONVERT_SYMBOL(spikeCountD1), sizeof(int), 0, cudaMemcpyDeviceToHost));
+			spikeCountAll      = spikeCountD1 + spikeCountD2;
+		}
+		else {
+			stopCPUTiming();
+			etime = cpuExecutionTime;
+		}
+
+		fprintf(fp, "\n*** Network configuration dumped in %s.dot file...\n\
+				Use graphViz to see the network connectivity...\n\n", networkName.c_str());
+		fprintf(fp, "*********** %s Simulation Summary **********\n", (currentMode == GPU_MODE)?("GPU"):"CPU");
+		fprintf(fp, "Network Parameters: \n\tnumNeurons = %d (numNExcReg:numNInhReg=%2.1f:%2.1f), numSynapses = %d, D = %d\n", numN, 100.0*numNExcReg/numN, 100.0*numNInhReg/numN, postSynCnt, D);
+		fprintf(fp, "Random Seed: %d\n", randSeed);
+		fprintf(fp, "Timing: \n\tModel Simulation Time = %lld sec \n\tActual Execution Time = %4.2f sec\n",  (unsigned long long)simTimeSec, etime/1000.0);
+		fprintf(fp, "Average Firing Rate \n\t2+ms delay = %3.3f Hz \n\t1ms delay = %3.3f Hz \n\tOverall = %3.3f Hz\n",
+			spikeCountD2Host/(1.0*simTimeSec*numNExcReg), spikeCountD1Host/(1.0*simTimeSec*numNInhReg), spikeCountAll/(1.0*simTimeSec*numN));
+		fprintf(fp, "Overall Firing Count: \n\t2+ms delay = %d \n\t1ms delay = %d \n\tTotal = %d\n",
+			spikeCountD2Host, spikeCountD1Host, spikeCountAll );
+		fprintf(fp, "**************************************\n\n");
+
+		fflush(fp);
+	}
 
 
 /* MDR -- Deprecated
@@ -3146,11 +3184,11 @@
 		// Initialize the Thalamic input current into the network
 		if(numNoise) {
 			// copy the generated random number into the randId array
-			cutilSafeCall( cudaMemcpy(cpu_gpuNetPtrs.randId, randNeuronId, sizeof(int)*numRandNeurons, cudaMemcpyHostToDevice));
+			CUDA_CHECK_ERRORS( cudaMemcpy(cpu_gpuNetPtrs.randId, randNeuronId, sizeof(int)*numRandNeurons, cudaMemcpyHostToDevice));
 
 			kernel_initThalInput <<<gridSize,blkSize >>> (setVoltage);
-			cutilCheckMsg("initThalInput kernel failed\n");
-			int errCode = checkCudaErrors("kernel_initThalInput", gridSize);
+			CUDA_GET_LAST_ERROR("initThalInput kernel failed\n");
+			int errCode = checkErrors("kernel_initThalInput", gridSize);
 		}
 	}
 

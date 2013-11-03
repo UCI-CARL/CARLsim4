@@ -45,7 +45,7 @@
 #include <string>
 #include <map>
 #include "mtrand.h"
-#include "gpu_random.hpp"
+#include "gpu_random.h"
 #include "config.h"
 #include "PropagatedSpikeBuffer.h"
 
@@ -53,14 +53,19 @@ using std::string;
 using std::map;
 
 #if __CUDA3__
-
-#include <cuda.h>
-#include <cutil_inline.h>
-#include <cutil_math.h>
-
+    #include <cuda.h>
+    #include <cutil_inline.h>
+    #include <cutil_math.h>
 #elif __CUDA5__
-
+    #include <cuda.h>
+    #include <cuda_runtime.h>
+    #include <helper_cuda.h>
+    #include <helper_functions.h>
+    #include <helper_timer.h>
+    #include <helper_math.h>
 #endif
+
+#include "CUDAVersionControl.h"
 
 extern RNG_rand48* gpuRand48; //!< Used by all network to generate global random number
 
@@ -167,6 +172,7 @@ extern RNG_rand48* gpuRand48; //!< Used by all network to generate global random
 #define GET_FIRING_TABLE_NID(val)   ((val) & MAX_NUMBER_OF_NEURONS_MASK)
 #define GET_FIRING_TABLE_GID(val)   (((val) >> MAX_NUMBER_OF_NEURONS_BITS) & MAX_NUMBER_OF_GROUPS_MASK)
 
+
 //#define CHECK_CONNECTION_ID(n,total) { assert(n >= 0); assert(n < total); }
 
 //Various callback functions
@@ -242,7 +248,7 @@ public:
 
 	PoissonRate(uint32_t _len, bool _onGPU=false) {
 		if (_onGPU) {
-			cutilSafeCall(cudaMalloc ((void**)&rates, _len*sizeof(float)));
+			CUDA_CHECK_ERRORS(cudaMalloc ((void**)&rates, _len*sizeof(float)));
 		} else {
 			rates = new float[_len];
 		}
@@ -255,8 +261,8 @@ public:
 	~PoissonRate() {
 		if (allocatedRatesInternally) {
 			if (onGPU) {
-				cutilSafeCall(cudaThreadSynchronize()); // wait for kernel to complete
-				cutilSafeCall(cudaFree(rates)); // free memory
+				CUDA_CHECK_ERRORS(cudaThreadSynchronize()); // wait for kernel to complete
+				CUDA_CHECK_ERRORS(cudaFree(rates)); // free memory
 			}
 			else {
 				delete[] rates;
@@ -852,8 +858,8 @@ class CpuSNN
 
 		void printCurrentInfo(FILE *fp);
 
-		int checkCudaErrors(string kernelName, int numBlocks);
-		int checkCudaErrors(int numBlocks);
+		int checkErrors(string kernelName, int numBlocks);
+		int checkErrors(int numBlocks);
 
 		void updateParameters(int* numN, int* numPostSynapses, int* D, int nConfig=1);
 
@@ -1085,12 +1091,16 @@ private:
 		unsigned int	simTimeMs;
 		uint64_t        simTimeSec;		//!< this is used to store the seconds.
 		unsigned int	simTime;		//!< this value is not reset but keeps increasing to its max value.
-		unsigned int		spikeCountAll1sec, secD1fireCnt, secD2fireCnt;	//!< firing counts for each second
-		unsigned int		spikeCountAll, spikeCountD1, spikeCountD2;	//!< overall firing counts values
+		unsigned int		spikeCountAll1sec, secD1fireCntHost, secD2fireCntHost;	//!< firing counts for each second
+		unsigned int		spikeCountAll, spikeCountD1Host, spikeCountD2Host;	//!< overall firing counts values
 		unsigned int     nPoissonSpikes;
 
 		//cuda keep track of performance...
+#if __CUDA3__
 		unsigned int    timer;
+#elif __CUDA5__
+		StopWatchInterface* timer;
+#endif
 		float		cumExecutionTime;
 		float           lastExecutionTime;
 

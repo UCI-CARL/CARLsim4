@@ -4,8 +4,10 @@
 
 # source files of the sim core
 SOURCES = snn_cpu.cpp mtrand.cpp PropagatedSpikeBuffer.cpp printSNNInfo.cpp gpu_random.cu snn_gpu.cu
-DEP = snn.h PropagatedSpikeBuffer.h errorCode.h config.h gpu_random.hpp
+DEP = snn.h PropagatedSpikeBuffer.h errorCode.h config.h gpu_random.h
 LIBCUTIL = -lcutil_x86_64
+
+all: random
 
 colorblind: ${SOURCES} ${DEP} examples/colorblind/main_colorblind.cpp v1ColorMEold.cu
 	nvcc -I${NVIDIA_SDK}/C/common/inc/ -L${NVIDIA_SDK}/C/lib ${LIBCUTIL} -D__CUDA3__ -arch sm_13 ${SOURCES} examples/colorblind/main_colorblind.cpp v1ColorMEold.cu -o colorblind
@@ -17,7 +19,8 @@ orientation: ${SOURCES} ${DEP} examples/orientation/main_orientation.cpp v1Color
 	nvcc -I${NVIDIA_SDK}/C/common/inc/ -L${NVIDIA_SDK}/C/lib ${LIBCUTIL} -D__CUDA3__ -arch sm_13 ${SOURCES} examples/orientation/main_orientation.cpp v1ColorMEold.cu -o orientation
 
 random: ${SOURCES} ${DEP} examples/random/main_random.cpp v1ColorMEold.cu
-	nvcc -I${NVIDIA_SDK}/C/common/inc/ -L${NVIDIA_SDK}/C/lib ${LIBCUTIL} -D__CUDA3__ -arch sm_13 ${SOURCES} examples/random/main_random.cpp v1ColorMEold.cu -o random
+#	nvcc -I${NVIDIA_SDK}/C/common/inc/ -L${NVIDIA_SDK}/C/lib ${LIBCUTIL} -D__CUDA3__ -arch sm_13 ${SOURCES} examples/random/main_random.cpp v1ColorMEold.cu -o random
+	nvcc -I/usr/local/cuda/samples/common/inc/ -D__CUDA5__ -arch sm_21 ${SOURCES} examples/random/main_random.cpp v1ColorMEold.cu -o random
 
 rdk: ${SOURCES} ${DEP} examples/rdk/main_rdk.cpp v1ColorMEold.cu
 	nvcc -I${NVIDIA_SDK}/C/common/inc/ -L${NVIDIA_SDK}/C/lib ${LIBCUTIL} -D__CUDA3__ -arch sm_13 ${SOURCES} examples/rdk/main_rdk.cpp v1ColorMEold.cu -o rdk
