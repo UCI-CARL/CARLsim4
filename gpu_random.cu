@@ -25,8 +25,8 @@
   MA 02111-1307 USA
 */
 
-#include "gpu.hpp"
-#include "gpu_random.hpp"
+#include "gpu.h"
+#include "gpu_random.h"
 
 /************************************************
  * GPU kernels
@@ -132,7 +132,7 @@ RNG_rand48::init(int seed)
 
   uint2* seeds = new uint2[ nThreads ];
 
-  cutilSafeCall( cudaMalloc( (void**) &state, sizeof(uint2)*nThreads ) );
+  CUDA_CHECK_ERRORS( cudaMalloc( (void**) &state, sizeof(uint2)*nThreads ) );
 
   // calculate strided iteration constants
   unsigned long long A, C;
@@ -154,14 +154,14 @@ RNG_rand48::init(int seed)
     seeds[i].y = (unsigned int)((x >> 24) & 0xFFFFFFLL);
   }
 
-  cutilSafeCall(cudaMemcpy(state, seeds, sizeof(uint2)*nThreads, cudaMemcpyHostToDevice));
+  CUDA_CHECK_ERRORS(cudaMemcpy(state, seeds, sizeof(uint2)*nThreads, cudaMemcpyHostToDevice));
 
   delete[] seeds;
 }
 
 void
 RNG_rand48::cleanup() {
-  cutilSafeCall(cudaFree((void*) state));
+  CUDA_CHECK_ERRORS(cudaFree((void*) state));
 }
 
 void
@@ -172,7 +172,7 @@ RNG_rand48::generate_int(int n, int _r_max, int offset)
   int num_blocks = (n + nThreads-1)/nThreads;
 	
   if (res == 0) {
-    cutilSafeCall(cudaMalloc( (void**) &res, sizeof(int)*nThreads*num_blocks));
+    CUDA_CHECK_ERRORS(cudaMalloc( (void**) &res, sizeof(int)*nThreads*num_blocks));
   }
   
   dim3 grid( blocksX, 1, 1);
@@ -203,5 +203,5 @@ RNG_rand48::generate(int n)
 void
 RNG_rand48::get(int *r, int n)
  {
-  cutilSafeCall(cudaMemcpy( r, res, sizeof(int)*n, cudaMemcpyDeviceToHost ) );
+  CUDA_CHECK_ERRORS(cudaMemcpy( r, res, sizeof(int)*n, cudaMemcpyDeviceToHost ) );
 }

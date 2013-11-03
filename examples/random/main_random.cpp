@@ -38,7 +38,7 @@
  * Ver 10/09/2013
  */ 
 
-#include "snn.h"
+#include "../../snn.h"
 
 #define N    1000
 
@@ -90,7 +90,7 @@ int main()
 	//run for 10 seconds
 	for(int i=0; i < 10; i++) {
 		// run the established network for a duration of 1 (sec)  and 0 (millisecond), in CPU_MODE
-		s.runNetwork(1, 0, CPU_MODE);
+		s.runNetwork(1, 0, GPU_MODE);
 	}
 
 	FILE* nid = fopen("Results/random/network.dat","wb");

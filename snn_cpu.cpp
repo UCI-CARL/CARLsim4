@@ -66,9 +66,6 @@
 	#define strcmpi(s1,s2) strcasecmp(s1,s2)
 #endif
 
-	// includes, project
-	#include <cutil.h>
-
 	MTRand_closed getRandClosed;
 	MTRand	      getRand;
 
@@ -378,8 +375,8 @@
 		neuronProbe  = NULL;
 
 		simTimeMs	 = 0;	simTimeSec		 = 0;   simTime = 0;
-		spikeCountAll1sec = 0;  secD1fireCnt  = 0;	secD2fireCnt  = 0;
-		spikeCountAll     = 0;	spikeCountD2 = 0;	spikeCountD1 = 0;
+		spikeCountAll1sec = 0;  secD1fireCntHost  = 0;	secD2fireCntHost  = 0;
+		spikeCountAll     = 0;	spikeCountD2Host = 0;	spikeCountD1Host = 0;
 		nPoissonSpikes     = 0;
 
 		networkName	= _name; //new char[sizeof(_name)];
@@ -422,8 +419,8 @@
 		fprintf ( fpParam,  "// Current local time and date: %s\n", asctime (timeinfo));
 		fflush(fpParam);
 
-		cutCreateTimer(&timer);
-		cutResetTimer(timer);
+		CUDA_CREATE_TIMER(timer);
+		CUDA_RESET_TIMER(timer);
 		cumExecutionTime = 0.0;
 
 		spikeRateUpdated = false;
@@ -525,7 +522,7 @@
 			// do the same as above, but for snn_gpu.cu
 			deleteObjectsGPU();
 
-			cutDeleteTimer(timer);
+			CUDA_DELETE_TIMER(timer);
 
 			simulatorDeleted = true;
 		}
@@ -1937,12 +1934,12 @@ digraph G {\n\
 		}
 
 		spikeCountAll	+= spikeCountAll1sec;
-		spikeCountD2 += (secD2fireCnt-timeTableD2[D]);
-		spikeCountD1 += secD1fireCnt;
+		spikeCountD2Host += (secD2fireCntHost-timeTableD2[D]);
+		spikeCountD1Host += secD1fireCntHost;
 
-		secD1fireCnt  = 0;
+		secD1fireCntHost  = 0;
 		spikeCountAll1sec = 0;
-		secD2fireCnt  = timeTableD2[D];
+		secD2fireCntHost  = timeTableD2[D];
 
 		for(int i=0; i < numGrp; i++) {
 			grp_Info[i].FiringCount1sec=0;
@@ -1954,7 +1951,7 @@ digraph G {\n\
 	// and delivers the spikes to the appropriate post-synaptic neuron
 	void CpuSNN::doD2CurrentUpdate()
 	{
-		int k = secD2fireCnt-1;
+		int k = secD2fireCntHost-1;
 		int k_end = timeTableD2[simTimeMs+1];
 		int t_pos = simTimeMs;
 
@@ -1995,7 +1992,7 @@ digraph G {\n\
 	// and delivers the spikes to the appropriate post-synaptic neuron
 	void CpuSNN::doD1CurrentUpdate()
 	{
-		int k     = secD1fireCnt-1;
+		int k     = secD1fireCntHost-1;
 		int k_end = timeTableD1[simTimeMs+D];
 
 		while((k>=k_end) && (k>=0)) {
@@ -2314,9 +2311,9 @@ digraph G {\n\
 
 		currentMode = simType;
 
-		cutResetTimer(timer);
+		CUDA_RESET_TIMER(timer);
 
-		cutStartTimer(timer);
+		CUDA_START_TIMER(timer);
 
 		// if nsec=0, simTimeMs=10, we need to run the simulator for 10 timeStep;
 		// if nsec=1, simTimeMs=10, we need to run the simulator for 1*1000+10, time Step;
@@ -2361,8 +2358,8 @@ digraph G {\n\
 		}
 
 		// keep track of simulation time...
-		cutStopTimer(timer);
-		lastExecutionTime = cutGetTimerValue(timer);
+		CUDA_STOP_TIMER(timer);
+		lastExecutionTime = CUDA_GET_TIMER_VALUE(timer);
 		if(0) {
 			fprintf(fpLog, "(t%s = %2.2f sec)\n",  (currentMode == GPU_MODE)?"GPU":"CPU", lastExecutionTime/1000);
 			fprintf(stdout, "(t%s = %2.2f sec)\n", (currentMode == GPU_MODE)?"GPU":"CPU", lastExecutionTime/1000);
@@ -2704,22 +2701,22 @@ digraph G {\n\
 
 		if (grp_Info[g].MaxDelay == 1) {
 			assert(nid < numN);
-			firingTableD1[secD1fireCnt] = nid;
-			secD1fireCnt++;
+			firingTableD1[secD1fireCntHost] = nid;
+			secD1fireCntHost++;
 			grp_Info[g].FiringCount1sec++;
-			if (secD1fireCnt >= maxSpikesD1) {
+			if (secD1fireCntHost >= maxSpikesD1) {
 				spikeBufferFull = 2;
-				secD1fireCnt = maxSpikesD1-1;
+				secD1fireCntHost = maxSpikesD1-1;
 			}
 		}
 		else {
 			assert(nid < numN);
-			firingTableD2[secD2fireCnt] = nid;
+			firingTableD2[secD2fireCntHost] = nid;
 			grp_Info[g].FiringCount1sec++;
-			secD2fireCnt++;
-			if (secD2fireCnt >= maxSpikesD2) {
+			secD2fireCntHost++;
+			if (secD2fireCntHost >= maxSpikesD2) {
 				spikeBufferFull = 1;
-				secD2fireCnt = maxSpikesD2-1;
+				secD2fireCntHost = maxSpikesD2-1;
 			}
 		}
 		return spikeBufferFull;
@@ -2819,8 +2816,8 @@ digraph G {\n\
 		// find the neurons that has fired..
 		findFiring();
 
-		timeTableD2[simTimeMs+D+1] = secD2fireCnt;
-		timeTableD1[simTimeMs+D+1] = secD1fireCnt;
+		timeTableD2[simTimeMs+D+1] = secD2fireCntHost;
+		timeTableD1[simTimeMs+D+1] = secD1fireCntHost;
 
 		if(0) fprintf(fpProgLog, "\nLTD time=%d,\n", simTime);
 
@@ -3193,11 +3190,11 @@ digraph G {\n\
 		// reset Various Times..
 		spikeCountAll	  = 0;
 		spikeCountAll1sec = 0;
-		spikeCountD2 = 0;
-		spikeCountD1 = 0;
+		spikeCountD2Host = 0;
+		spikeCountD1Host = 0;
 
-		secD1fireCnt  = 0;
-		secD2fireCnt  = 0;
+		secD1fireCntHost  = 0;
+		secD2fireCntHost  = 0;
 
 		for(int i=0; i < numGrp; i++) {
 			grp_Info[i].FiringCount1sec = 0;
