@@ -46,10 +46,6 @@
 	// includes, library
 	#include "cudpp/cudpp.h"
 
-	// includes, project
-	#include "cutil_inline.h"
-	#include "cutil_math.h"
-
 	RNG_rand48* gpuPoissonRand; // initialized in CpuSNNinitGPUparams
 
 	#define ROUNDED_TIMING_COUNT  (((1000+MAX_SynapticDelay+1)+127) & ~(127))  // (1000+D) rounded to multiple 128
