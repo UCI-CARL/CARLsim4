@@ -52,17 +52,23 @@
 using std::string;
 using std::map;
 
-#include <cutil_inline.h>
-#include <cuda.h>
+#if __CUDA3__
 
+#include <cuda.h>
+#include <cutil_inline.h>
+#include <cutil_math.h>
+
+#elif __CUDA5__
+
+#endif
 
 extern RNG_rand48* gpuRand48; //!< Used by all network to generate global random number
 
 
 #define ALL -1 //!< used for the set* methods to specify all groups and/or configIds
 
-#define SYN_FIXED 		0
-#define SYN_PLASTIC  	1
+#define SYN_FIXED      0
+#define SYN_PLASTIC    1
 
 #define CPU_MODE 0
 #define GPU_MODE 1
