@@ -37,7 +37,7 @@
  * CARLsim available from http://socsci.uci.edu/~jkrichma/CARL/CARLsim/
  * Ver 10/09/2013
  */ 
-#include "snn.h"
+#include "../../snn.h"
 
 // stim must be a file of unsigned char in RGB, arranged as R1 G1 B1 R2 G2 B2 ...
 void calcColorME(int nrX, int nrY, unsigned char* stim, float* red_green, float* green_red, float* blue_yellow,
@@ -549,7 +549,7 @@ int main()
 	char saveFolder[]	 = "Results/v1MTLIP/";	// where to store all files (folder will be created if not exists)
 	bool storeNetwork	 = false;				// store network? at beginning and end
 	bool onGPU = true;						 	// run on GPU?
-	int ithGPU 			 = 1;					// on which GPU to run (in case of carlculator: 0-3)
+	int ithGPU 			 = 0;					// on which GPU to run (in case of carlculator: 0-3)
 	int frameDur 		 = 50;					// present each frame for .. ms
 	int presentEachFrame = 1;					// present each frame .. times (> 1 to slow down motion patterns)
 	float synScale		 = 0.01;				// some scaling factor for syn weights

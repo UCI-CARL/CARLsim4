@@ -560,13 +560,13 @@ void calcColorME(int nrX, int nrY, unsigned char* stim, float* red_green, float*
 		CUDA_CHECK_ERRORS(cudaMalloc ((void**)&d_color_tmp_green, nrX*nrY*sizeof(float)));
 		CUDA_CHECK_ERRORS(cudaMalloc ((void**)&d_color_tmp_yellow, nrX*nrY*sizeof(float)));
 
-		CUDA_CHECK_ERRORS(cudaGetSymbolAddress((void**)&scalingFilt, "d_scalingFilt"));
-		CUDA_CHECK_ERRORS(cudaGetSymbolAddress((void**)&v1Gaus, "d_v1Gaus"));
-		CUDA_CHECK_ERRORS(cudaGetSymbolAddress((void**)&complexV1Filt, "d_complexV1Filt"));
-		CUDA_CHECK_ERRORS(cudaGetSymbolAddress((void**)&normV1filt, "d_normV1filt"));
-		CUDA_CHECK_ERRORS(cudaGetSymbolAddress((void**)&diff1filt, "d_diff1filt"));
-		CUDA_CHECK_ERRORS(cudaGetSymbolAddress((void**)&diff2filt, "d_diff2filt"));
-		CUDA_CHECK_ERRORS(cudaGetSymbolAddress((void**)&diff3filt, "d_diff3filt"));
+		CUDA_CHECK_ERRORS(cudaGetSymbolAddress((void**)&scalingFilt, d_scalingFilt));
+		CUDA_CHECK_ERRORS(cudaGetSymbolAddress((void**)&v1Gaus, d_v1Gaus));
+		CUDA_CHECK_ERRORS(cudaGetSymbolAddress((void**)&complexV1Filt, d_complexV1Filt));
+		CUDA_CHECK_ERRORS(cudaGetSymbolAddress((void**)&normV1filt, d_normV1filt));
+		CUDA_CHECK_ERRORS(cudaGetSymbolAddress((void**)&diff1filt, d_diff1filt));
+		CUDA_CHECK_ERRORS(cudaGetSymbolAddress((void**)&diff2filt, d_diff2filt));
+		CUDA_CHECK_ERRORS(cudaGetSymbolAddress((void**)&diff3filt, d_diff3filt));
 		
 	}
 	// use the preexisting filters because they are about the right size and give good results

@@ -50,7 +50,15 @@
 #include <stdlib.h>
 #include <string.h>
 #include <cufft.h>
-#include <cutil_inline.h>
+
+#if __CUDA3__
+    #include <cutil_inline.h>
+#elif __CUDA5__
+    #include <helper_cuda.h>
+#endif
+
+#include "CUDAVersionControl.h"
+
 #define IMUL(a, b) __mul24(a, b)
 
 // 28 space-time orientations of V1 simple cells
@@ -212,7 +220,7 @@ void conv2D(float* idata, float* odata, dim3 _sizes, const float* filt, int filt
 	dim3 grid1(iDivUp(sizes[0], CONV1_THREAD_SIZE-(filtlen-1)), sizes[1]*sizes[2]);
 	dim3 threads1(CONV1_THREAD_SIZE, 1, 1);
 	dev_conv1<<<grid1, threads1>>>(idata, odata, sizes[0], filt, filtlen);
-        cutilCheckMsg("dev_conv1() execution failed\n");
+        CUDA_GET_LAST_ERROR("dev_conv1() execution failed\n");
 
 	tmp = idata;
 	idata = odata;
@@ -222,7 +230,7 @@ void conv2D(float* idata, float* odata, dim3 _sizes, const float* filt, int filt
 	dim3 grid2(iDivUp(sizes[0], CONVN_THREAD_SIZE1), iDivUp(sizes[1], CONVN_THREAD_SIZE2-(filtlen-1))*sizes[2]);
 	dim3 threads2(CONVN_THREAD_SIZE1, CONVN_THREAD_SIZE2, 1);
 	dev_convn<<<grid2, threads2>>>(idata, odata, sizes[0], sizes[1], sizes[0], sizes[0]*sizes[1], sizes[2], filt, filtlen);
-        cutilCheckMsg("dev_convn() execution failed\n");
+        CUDA_GET_LAST_ERROR("dev_convn() execution failed\n");
 }
 
 // conv3D is only used in the motion model in freq space (\omega_x,\omega_y,\omega_t)
@@ -238,7 +246,7 @@ void conv3D(float* idata, float* odata, dim3 _sizes, const float* filt, int filt
 	dim3 grid1(iDivUp(sizes[0], CONV1_THREAD_SIZE-(filtlen-1)), sizes[1]*sizes[2]);
 	dim3 threads1(CONV1_THREAD_SIZE, 1, 1);
 	dev_conv1<<<grid1, threads1>>>(idata, odata, sizes[0], filt, filtlen);
-        cutilCheckMsg("dev_conv1() execution failed\n");
+        CUDA_GET_LAST_ERROR("dev_conv1() execution failed\n");
 	tmp = idata;
 	idata = odata;
 	odata = tmp;
@@ -247,7 +255,7 @@ void conv3D(float* idata, float* odata, dim3 _sizes, const float* filt, int filt
 	dim3 grid2(iDivUp(sizes[0], CONVN_THREAD_SIZE1), iDivUp(sizes[1], CONVN_THREAD_SIZE2-(filtlen-1))*sizes[2]);
 	dim3 threads2(CONVN_THREAD_SIZE1, CONVN_THREAD_SIZE2, 1);
 	dev_convn<<<grid2, threads2>>>(idata, odata, sizes[0], sizes[1], sizes[0], sizes[0]*sizes[1], sizes[2], filt, filtlen);
-        cutilCheckMsg("dev_convn() execution failed\n");
+        CUDA_GET_LAST_ERROR("dev_convn() execution failed\n");
 
 	tmp = idata;
 	idata = odata;
@@ -257,7 +265,7 @@ void conv3D(float* idata, float* odata, dim3 _sizes, const float* filt, int filt
 	dim3 grid3(iDivUp(sizes[0], CONVN_THREAD_SIZE1), iDivUp(sizes[2], CONVN_THREAD_SIZE2-(filtlen-1))*sizes[1]);
 	dim3 threads3(CONVN_THREAD_SIZE1, CONVN_THREAD_SIZE2, 1);
 	dev_convn<<<grid3, threads3>>>(idata, odata, sizes[0], sizes[2], sizes[0]*sizes[1], sizes[0], sizes[1], filt, filtlen);
-        cutilCheckMsg("dev_convn() execution failed\n");
+        CUDA_GET_LAST_ERROR("dev_convn() execution failed\n");
 
 	tmp = idata;
 	idata = odata;
@@ -273,7 +281,7 @@ float* diff(float* idata, uint3 _sizes, int order, int dim)
 	float* filt;
 	float* odata;
 
-	cutilSafeCall(cudaMalloc((void**)&odata, sizeof(float)*sizes[0]*sizes[1]*sizes[2]));
+	CUDA_CHECK_ERRORS(cudaMalloc((void**)&odata, sizeof(float)*sizes[0]*sizes[1]*sizes[2]));
 	
 	switch (order) {
 		case 1:
@@ -296,7 +304,7 @@ float* diff(float* idata, uint3 _sizes, int order, int dim)
 			dim3 grid1(iDivUp(sizes[0], CONV1_THREAD_SIZE-(filtlen-1)), sizes[1]*sizes[2]);
 			dim3 threads1(CONV1_THREAD_SIZE, 1, 1);
 			dev_conv1<<<grid1, threads1>>>(idata, odata, sizes[0], filt, filtlen);
-			cutilCheckMsg("dev_conv1() execution failed\n");
+			CUDA_GET_LAST_ERROR("dev_conv1() execution failed\n");
 			break;
 		}
 		case 1: {
@@ -304,7 +312,7 @@ float* diff(float* idata, uint3 _sizes, int order, int dim)
 			dim3 grid2(iDivUp(sizes[0], CONVN_THREAD_SIZE1), iDivUp(sizes[1], CONVN_THREAD_SIZE2-(filtlen-1))*sizes[2]);
 			dim3 threads2(CONVN_THREAD_SIZE1, CONVN_THREAD_SIZE2, 1);
 			dev_convn<<<grid2, threads2>>>(idata, odata, sizes[0], sizes[1], sizes[0], sizes[0]*sizes[1], sizes[2], filt, filtlen);
-			cutilCheckMsg("dev_convn() execution failed\n");
+			CUDA_GET_LAST_ERROR("dev_convn() execution failed\n");
 			break;
 		}
 		case 2: {
@@ -312,12 +320,12 @@ float* diff(float* idata, uint3 _sizes, int order, int dim)
 			dim3 grid3(iDivUp(sizes[0], CONVN_THREAD_SIZE1), iDivUp(sizes[2], CONVN_THREAD_SIZE2-(filtlen-1))*sizes[1]);
 			dim3 threads3(CONVN_THREAD_SIZE1, CONVN_THREAD_SIZE2, 1);
 			dev_convn<<<grid3, threads3>>>(idata, odata, sizes[0], sizes[2], sizes[0]*sizes[1], sizes[0], sizes[1], filt, filtlen);
-			cutilCheckMsg("dev_convn() execution failed\n");
+			CUDA_GET_LAST_ERROR("dev_convn() execution failed\n");
 			break;
 		}
 	}
 
-	cutilSafeCall(cudaFree (idata));
+	CUDA_CHECK_ERRORS(cudaFree (idata));
 
 	return odata;
 }
@@ -357,7 +365,7 @@ void accumDiffStims(float *d_resp, float* diffV1GausBuf, uint3 _sizes, int order
 	int c = 6/factorials[orderX]/factorials[orderY]/factorials[orderT];
 
 	dev_accumDiffStims<<<iDivUp(_sizes.x*_sizes.y, 128), 128>>>(d_resp, diffV1GausBuf, _sizes.x*_sizes.y, c, orderX, orderY, orderT);
-	cutilCheckMsg("dev_accumDiffStims() execution failed\n");
+	CUDA_GET_LAST_ERROR("dev_accumDiffStims() execution failed\n");
 }
 
 
@@ -529,38 +537,38 @@ void calcColorME(int nrX, int nrY, unsigned char* stim, float* red_green, float*
 		stimBufY = nrY;
 
 		// allocate the response matrix
-		cutilSafeCall(cudaMalloc((void**)&d_resp, sizeof(float)*nrX*nrY*nrDirs*nrScales));
+		CUDA_CHECK_ERRORS(cudaMalloc((void**)&d_resp, sizeof(float)*nrX*nrY*nrDirs*nrScales));
 
 		// probably should free previous buffers if they were previously allocated...
 
-		cutilSafeCall(cudaMalloc ((void**)&d_stimBuf, nrX*nrY*nrT*sizeof(float)));
-		cutilSafeCall(cudaMemset (d_stimBuf, 0, nrX*nrY*nrT*sizeof(float)));
+		CUDA_CHECK_ERRORS(cudaMalloc ((void**)&d_stimBuf, nrX*nrY*nrT*sizeof(float)));
+		CUDA_CHECK_ERRORS(cudaMemset (d_stimBuf, 0, nrX*nrY*nrT*sizeof(float)));
 
-		cutilSafeCall(cudaMalloc((void**)&diffV1GausBufT, sizeof(float)*nrX*nrY*v1GausSize));
+		CUDA_CHECK_ERRORS(cudaMalloc((void**)&diffV1GausBufT, sizeof(float)*nrX*nrY*v1GausSize));
 	
-		cutilSafeCall(cudaMalloc ((void**)&d_stim, nrX*nrY*3));
-		cutilSafeCall(cudaMalloc ((void**)&d_scalingStimBuf, nrX*nrY*nrT*sizeof(float)));
-		cutilSafeCall(cudaMalloc ((void**)&d_v1GausBuf, nrX*nrY*nrT*sizeof(float)));
-		cutilSafeCall(cudaMalloc ((void**)&d_diffV1GausBuf, nrX*nrY*nrT*sizeof(float)));
-		cutilSafeCall(cudaMalloc ((void**)&d_pop, nrX*sizeof(float)*nrY*nrScales)); // mean of 28 filter responses for all x,y and spatial scales, at a given step in time
+		CUDA_CHECK_ERRORS(cudaMalloc ((void**)&d_stim, nrX*nrY*3));
+		CUDA_CHECK_ERRORS(cudaMalloc ((void**)&d_scalingStimBuf, nrX*nrY*nrT*sizeof(float)));
+		CUDA_CHECK_ERRORS(cudaMalloc ((void**)&d_v1GausBuf, nrX*nrY*nrT*sizeof(float)));
+		CUDA_CHECK_ERRORS(cudaMalloc ((void**)&d_diffV1GausBuf, nrX*nrY*nrT*sizeof(float)));
+		CUDA_CHECK_ERRORS(cudaMalloc ((void**)&d_pop, nrX*sizeof(float)*nrY*nrScales)); // mean of 28 filter responses for all x,y and spatial scales, at a given step in time
 
-		cutilSafeCall(cudaMalloc ((void**)&d_red, nrX*nrY*sizeof(float)));
-		cutilSafeCall(cudaMalloc ((void**)&d_green, nrX*nrY*sizeof(float)));
-		cutilSafeCall(cudaMalloc ((void**)&d_blue, nrX*nrY*sizeof(float)));
+		CUDA_CHECK_ERRORS(cudaMalloc ((void**)&d_red, nrX*nrY*sizeof(float)));
+		CUDA_CHECK_ERRORS(cudaMalloc ((void**)&d_green, nrX*nrY*sizeof(float)));
+		CUDA_CHECK_ERRORS(cudaMalloc ((void**)&d_blue, nrX*nrY*sizeof(float)));
 
-		cutilSafeCall(cudaMalloc ((void**)&d_center, nrX*nrY*sizeof(float)));
-		cutilSafeCall(cudaMalloc ((void**)&d_surround, nrX*nrY*sizeof(float)));
-		cutilSafeCall(cudaMalloc ((void**)&d_color_tmp, nrX*nrY*sizeof(float)));
-		cutilSafeCall(cudaMalloc ((void**)&d_color_tmp_green, nrX*nrY*sizeof(float)));
-		cutilSafeCall(cudaMalloc ((void**)&d_color_tmp_yellow, nrX*nrY*sizeof(float)));
+		CUDA_CHECK_ERRORS(cudaMalloc ((void**)&d_center, nrX*nrY*sizeof(float)));
+		CUDA_CHECK_ERRORS(cudaMalloc ((void**)&d_surround, nrX*nrY*sizeof(float)));
+		CUDA_CHECK_ERRORS(cudaMalloc ((void**)&d_color_tmp, nrX*nrY*sizeof(float)));
+		CUDA_CHECK_ERRORS(cudaMalloc ((void**)&d_color_tmp_green, nrX*nrY*sizeof(float)));
+		CUDA_CHECK_ERRORS(cudaMalloc ((void**)&d_color_tmp_yellow, nrX*nrY*sizeof(float)));
 
-		cutilSafeCall(cudaGetSymbolAddress((void**)&scalingFilt, "d_scalingFilt"));
-		cutilSafeCall(cudaGetSymbolAddress((void**)&v1Gaus, "d_v1Gaus"));
-		cutilSafeCall(cudaGetSymbolAddress((void**)&complexV1Filt, "d_complexV1Filt"));
-		cutilSafeCall(cudaGetSymbolAddress((void**)&normV1filt, "d_normV1filt"));
-		cutilSafeCall(cudaGetSymbolAddress((void**)&diff1filt, "d_diff1filt"));
-		cutilSafeCall(cudaGetSymbolAddress((void**)&diff2filt, "d_diff2filt"));
-		cutilSafeCall(cudaGetSymbolAddress((void**)&diff3filt, "d_diff3filt"));
+		CUDA_CHECK_ERRORS(cudaGetSymbolAddress((void**)&scalingFilt, d_scalingFilt));
+		CUDA_CHECK_ERRORS(cudaGetSymbolAddress((void**)&v1Gaus, d_v1Gaus));
+		CUDA_CHECK_ERRORS(cudaGetSymbolAddress((void**)&complexV1Filt, d_complexV1Filt));
+		CUDA_CHECK_ERRORS(cudaGetSymbolAddress((void**)&normV1filt, d_normV1filt));
+		CUDA_CHECK_ERRORS(cudaGetSymbolAddress((void**)&diff1filt, d_diff1filt));
+		CUDA_CHECK_ERRORS(cudaGetSymbolAddress((void**)&diff2filt, d_diff2filt));
+		CUDA_CHECK_ERRORS(cudaGetSymbolAddress((void**)&diff3filt, d_diff3filt));
 		
 	}
 	// use the preexisting filters because they are about the right size and give good results
@@ -576,9 +584,9 @@ void calcColorME(int nrX, int nrY, unsigned char* stim, float* red_green, float*
 	previous=avail; */
 
 
-	cutilSafeCall(cudaMemcpy(d_stim,stim,3*nrX*nrY,cudaMemcpyHostToDevice));
+	CUDA_CHECK_ERRORS(cudaMemcpy(d_stim,stim,3*nrX*nrY,cudaMemcpyHostToDevice));
 	dev_split<<<iDivUp(nrX*nrY,128), 128>>>(d_stim, d_red, d_green, d_blue, &d_stimBuf[nrX*nrY*(nrT-1)], nrX*nrY);
- 	cutilCheckMsg("dev_split() execution failed\n");
+ 	CUDA_GET_LAST_ERROR("dev_split() execution failed\n");
 
 
 	/* ***** COLOR MODEL ***** */
@@ -586,11 +594,11 @@ void calcColorME(int nrX, int nrY, unsigned char* stim, float* red_green, float*
 	uint3 color_sizes = make_uint3(nrX,nrY,1);
 
 	//d_center will contain center_red
-	cutilSafeCall(cudaMemcpy(d_center,d_red,sizeof(float)*nrX*nrY,cudaMemcpyDeviceToDevice));
+	CUDA_CHECK_ERRORS(cudaMemcpy(d_center,d_red,sizeof(float)*nrX*nrY,cudaMemcpyDeviceToDevice));
 	conv2D(d_center, d_color_tmp, color_sizes, center_filt, center_filtSize);
 
 	//d_color_tmp_green will contain center_green
-	cutilSafeCall(cudaMemcpy(d_color_tmp_green,d_green,sizeof(float)*nrX*nrY,cudaMemcpyDeviceToDevice));
+	CUDA_CHECK_ERRORS(cudaMemcpy(d_color_tmp_green,d_green,sizeof(float)*nrX*nrY,cudaMemcpyDeviceToDevice));
 	conv2D(d_color_tmp_green, d_color_tmp, color_sizes, center_filt, center_filtSize);
 
 	//d_color_tmp_yellow will contain center_yellow
@@ -602,23 +610,23 @@ void calcColorME(int nrX, int nrY, unsigned char* stim, float* red_green, float*
 	//d_color_tmp will contain the result
 	dev_sub<<<iDivUp(nrX*nrY,128), 128>>>(d_center, d_green, d_color_tmp, nrX*nrY);
 	dev_scaleHalfRect<<<iDivUp(nrX*nrY,128), 128>>>(d_color_tmp, 50.0, nrX*nrY);
-	cutilSafeCall(cudaMemcpy(red_green,d_color_tmp,sizeof(float)*nrX*nrY,GPUpointers?cudaMemcpyDeviceToDevice:cudaMemcpyDeviceToHost));
+	CUDA_CHECK_ERRORS(cudaMemcpy(red_green,d_color_tmp,sizeof(float)*nrX*nrY,GPUpointers?cudaMemcpyDeviceToDevice:cudaMemcpyDeviceToHost));
 	
 	//d_red will contain surround_red
 	conv2D(d_red, d_color_tmp, color_sizes, surround_filt, surround_filtSize);
 
 	//d_surround will contain surround_blue
-	cutilSafeCall(cudaMemcpy(d_surround,d_blue,sizeof(float)*nrX*nrY,cudaMemcpyDeviceToDevice));
+	CUDA_CHECK_ERRORS(cudaMemcpy(d_surround,d_blue,sizeof(float)*nrX*nrY,cudaMemcpyDeviceToDevice));
 	conv2D(d_surround, d_color_tmp, color_sizes, surround_filt, surround_filtSize);
 
 	//d_color_tmp_yellow will contain the result
 	dev_sub<<<iDivUp(nrX*nrY,128), 128>>>(d_color_tmp_yellow, d_surround, d_color_tmp, nrX*nrY);
 	dev_scaleHalfRect<<<iDivUp(nrX*nrY,128), 128>>>(d_color_tmp, 50.0, nrX*nrY);
-	cutilSafeCall(cudaMemcpy(yellow_blue,d_color_tmp,sizeof(float)*nrX*nrY,GPUpointers?cudaMemcpyDeviceToDevice:cudaMemcpyDeviceToHost));
+	CUDA_CHECK_ERRORS(cudaMemcpy(yellow_blue,d_color_tmp,sizeof(float)*nrX*nrY,GPUpointers?cudaMemcpyDeviceToDevice:cudaMemcpyDeviceToHost));
 
 	dev_sub<<<iDivUp(nrX*nrY,128), 128>>>(d_color_tmp_green, d_red, d_color_tmp, nrX*nrY);
 	dev_scaleHalfRect<<<iDivUp(nrX*nrY,128), 128>>>(d_color_tmp, 50.0, nrX*nrY);
-	cutilSafeCall(cudaMemcpy(green_red,d_color_tmp,sizeof(float)*nrX*nrY,GPUpointers?cudaMemcpyDeviceToDevice:cudaMemcpyDeviceToHost));
+	CUDA_CHECK_ERRORS(cudaMemcpy(green_red,d_color_tmp,sizeof(float)*nrX*nrY,GPUpointers?cudaMemcpyDeviceToDevice:cudaMemcpyDeviceToHost));
 
 	//d_surround will contain surround_yellow
 	dev_ave<<<iDivUp(nrX*nrY,128), 128>>>(d_red, d_green, d_surround, nrX*nrY);
@@ -628,7 +636,7 @@ void calcColorME(int nrX, int nrY, unsigned char* stim, float* red_green, float*
 
 	dev_sub<<<iDivUp(nrX*nrY,128), 128>>>(d_blue, d_surround, d_color_tmp, nrX*nrY);
 	dev_scaleHalfRect<<<iDivUp(nrX*nrY,128), 128>>>(d_color_tmp, 50.0, nrX*nrY);
-	cutilSafeCall(cudaMemcpy(blue_yellow,d_color_tmp,sizeof(float)*nrX*nrY,GPUpointers?cudaMemcpyDeviceToDevice:cudaMemcpyDeviceToHost));
+	CUDA_CHECK_ERRORS(cudaMemcpy(blue_yellow,d_color_tmp,sizeof(float)*nrX*nrY,GPUpointers?cudaMemcpyDeviceToDevice:cudaMemcpyDeviceToHost));
 
 
 
@@ -639,14 +647,14 @@ void calcColorME(int nrX, int nrY, unsigned char* stim, float* red_green, float*
 
 	// shift d_stimBuf in time by 1 frame, from frame i to frame i-1
 	for(int i=1;i<nrT;i++)
-		cutilSafeCall(cudaMemcpy(&d_stimBuf[nrX*nrY*(i-1)],&d_stimBuf[nrX*nrY*i],sizeof(float)*nrX*nrY,cudaMemcpyDeviceToDevice));
+		CUDA_CHECK_ERRORS(cudaMemcpy(&d_stimBuf[nrX*nrY*(i-1)],&d_stimBuf[nrX*nrY*i],sizeof(float)*nrX*nrY,cudaMemcpyDeviceToDevice));
 
 	// allocate d_resp, which will contain the response to all 28 (nrDirs) space-time orientation at 3 (nrScales) scales
 	// for every pixel location (x,y)
-	cutilSafeCall(cudaMemset (d_resp, 0, sizeof(float)*nrX*nrY*nrDirs*nrScales));
+	CUDA_CHECK_ERRORS(cudaMemset (d_resp, 0, sizeof(float)*nrX*nrY*nrDirs*nrScales));
 
 	// working copy of grayscale values: copy d_stimBuf to d_scalingStimBuf
-	cutilSafeCall(cudaMemcpy(d_scalingStimBuf,d_stimBuf,sizeof(float)*nrX*nrY*nrT,cudaMemcpyDeviceToDevice));
+	CUDA_CHECK_ERRORS(cudaMemcpy(d_scalingStimBuf,d_stimBuf,sizeof(float)*nrX*nrY*nrT,cudaMemcpyDeviceToDevice));
 
 	// compute the V1 simple cell responses at 3 different spatial scales
 	for (int scale=1; scale<=nrScales; scale++) {
@@ -654,34 +662,34 @@ void calcColorME(int nrX, int nrY, unsigned char* stim, float* red_green, float*
 		// scale 1 == original image resolution (space/time)
 		if (scale > 1) {
 			float* tmp;
-			cutilSafeCall(cudaMalloc((void**)&tmp, sizeof(float)*nrX*nrY*nrT));
+			CUDA_CHECK_ERRORS(cudaMalloc((void**)&tmp, sizeof(float)*nrX*nrY*nrT));
 
 			// convolve d_scalingStimBuf by scalingFilt in 3D
 			uint3 sizes = make_uint3(nrX,nrY,nrT);
 			conv3D(d_scalingStimBuf, tmp, sizes, scalingFilt, scalingFiltSize);
 
-			cutilSafeCall(cudaFree(d_scalingStimBuf));
+			CUDA_CHECK_ERRORS(cudaFree(d_scalingStimBuf));
 			d_scalingStimBuf = tmp;
 		}
 
 		// nrT is 9, v1GaussSize is 9, so we're taking d_scalingStimBuf[0-0+nrX*nrY*9]
 		// since nrT could be greater than v1GaussSize, we take "only the part we want", quote Micah comment
-		cutilSafeCall(cudaMemcpy(d_v1GausBuf, &d_scalingStimBuf[nrX*nrY*((nrT-v1GausSize)/2)], sizeof(float)*nrX*nrY*v1GausSize, cudaMemcpyDeviceToDevice));
+		CUDA_CHECK_ERRORS(cudaMemcpy(d_v1GausBuf, &d_scalingStimBuf[nrX*nrY*((nrT-v1GausSize)/2)], sizeof(float)*nrX*nrY*v1GausSize, cudaMemcpyDeviceToDevice));
 
 		float* tmp;
-		cutilSafeCall(cudaMalloc((void**)&tmp, sizeof(float)*nrX*nrY*v1GausSize));
+		CUDA_CHECK_ERRORS(cudaMalloc((void**)&tmp, sizeof(float)*nrX*nrY*v1GausSize));
 
 		// convolve d_v1GausBuf by v1Gaus in 3D
 		uint3 sizes = make_uint3(nrX,nrY,v1GausSize);
 		conv3D(d_v1GausBuf, tmp, sizes, v1Gaus, v1GausSize);
-		cutilSafeCall(cudaFree(d_v1GausBuf));
+		CUDA_CHECK_ERRORS(cudaFree(d_v1GausBuf));
 		d_v1GausBuf = tmp;
 
 		// go through and calculate all directional derivatives and then combine them to calculate the diferent
 		// space-time oriented filters
 		for (int orderT=0; orderT<=3; orderT++) {
 			// reset diffV1GausBufT back to the 3D gaussian filtered version
-			cutilSafeCall(cudaMemcpy(diffV1GausBufT, d_v1GausBuf, sizeof(float)*nrX*nrY*v1GausSize, cudaMemcpyDeviceToDevice));
+			CUDA_CHECK_ERRORS(cudaMemcpy(diffV1GausBufT, d_v1GausBuf, sizeof(float)*nrX*nrY*v1GausSize, cudaMemcpyDeviceToDevice));
 
 			if (orderT > 0) {
 				// take the derivative
@@ -692,7 +700,7 @@ void calcColorME(int nrX, int nrY, unsigned char* stim, float* red_green, float*
 			for (int orderY=0; orderY<=3-orderT; orderY++) {
 				int orderX = 3-orderY-orderT;
 			
-				cutilSafeCall(cudaMemcpy(d_diffV1GausBuf, diffV1GausBufT, sizeof(float)*nrX*nrY*v1GausSize, cudaMemcpyDeviceToDevice));
+				CUDA_CHECK_ERRORS(cudaMemcpy(d_diffV1GausBuf, diffV1GausBufT, sizeof(float)*nrX*nrY*v1GausSize, cudaMemcpyDeviceToDevice));
 
 				if (orderX > 0) d_diffV1GausBuf = diff(d_diffV1GausBuf, sizes, orderX,0);
 				if (orderY > 0) d_diffV1GausBuf = diff(d_diffV1GausBuf, sizes, orderY,1);
@@ -705,26 +713,26 @@ void calcColorME(int nrX, int nrY, unsigned char* stim, float* red_green, float*
 
 	// consider edge effects
 	dev_edges<<<iDivUp(nrX*nrY*nrDirs*nrScales,128), 128>>>(d_resp, nrX*nrY*nrDirs*nrScales, nrX, nrY);
-	cutilCheckMsg("dev_edges() execution failed\n");
+	CUDA_GET_LAST_ERROR("dev_edges() execution failed\n");
 
 
 	// half-square the linear responses
 	// contains scaleFactor.v1Linear and scaleFactor.v1FullWaveRectified
 	dev_halfRect2<<<iDivUp(nrX*nrY*nrDirs*nrScales,128), 128>>>(d_resp, nrX*nrY*nrDirs*nrScales);
-	cutilCheckMsg("dev_halfRect2() execution failed\n");
+	CUDA_GET_LAST_ERROR("dev_halfRect2() execution failed\n");
 
 	float* tmp;
 
 	// complex: convolve by d_complexV1Filt in 2D
-	cutilSafeCall(cudaMalloc((void**)&tmp, sizeof(float)*nrX*nrY*nrDirs*nrScales));
+	CUDA_CHECK_ERRORS(cudaMalloc((void**)&tmp, sizeof(float)*nrX*nrY*nrDirs*nrScales));
 	uint3 sizes = make_uint3(nrX,nrY,nrDirs*nrScales);
 	conv2D(d_resp, tmp, sizes, complexV1Filt, complexV1FiltSize);
-	cutilSafeCall(cudaFree(tmp));
+	CUDA_CHECK_ERRORS(cudaFree(tmp));
 
 	// scale with scaleFactors.v1Blur
 	// NOTE: scaling with 1.0205..? Skip to save computation time
 //	dev_scale<<<iDivUp(nrX*nrY*nrDirs*nrScales,128), 128>>>(d_resp, 1.0205, nrX*nrY*nrDirs*nrScales);
-//	cutilCheckMsg("dev_scale() execution failed\n");
+//	CUDA_GET_LAST_ERROR("dev_scale() execution failed\n");
 
 
 	// we need to associate each filter at pixel position (x,y) with a power/intensity, but there are 28 filter
@@ -732,31 +740,31 @@ void calcColorME(int nrX, int nrY, unsigned char* stim, float* red_green, float*
 	// into d_pop ...
 	dim3 gridm(iDivUp(nrX*nrY,128), nrScales);
 	dev_mean3<<<gridm, 128>>>(d_resp, d_pop, nrX*nrY, nrDirs);
-	cutilCheckMsg("dev_mean3() execution failed\n");
+	CUDA_GET_LAST_ERROR("dev_mean3() execution failed\n");
 
 	// ... (ii) scale with scaleFactors.v1Complex
 	// NOTE: Scale with 0.99..? Skip to save computation time
 //	dev_scale<<<iDivUp(nrX*nrY*nrDirs*nrScales,128), 128>>>(d_resp, 0.99, nrX*nrY*nrDirs*nrScales);
-//	cutilCheckMsg("dev_scale() execution failed\n");
+//	CUDA_GET_LAST_ERROR("dev_scale() execution failed\n");
 
 
 	// ... and (iii) sum over some spatial neighborhood
 	// population normalization: convolve by d_normV1filtSize in 2D
 	uint3 nsizes = make_uint3(nrX,nrY,nrScales);
-	cutilSafeCall(cudaMalloc((void**)&tmp, sizeof(float)*nrX*nrY*nrScales));
+	CUDA_CHECK_ERRORS(cudaMalloc((void**)&tmp, sizeof(float)*nrX*nrY*nrScales));
 	conv2D(d_pop, tmp, nsizes, normV1filt, normV1filtSize);
-	cutilSafeCall(cudaFree(tmp));
+	CUDA_CHECK_ERRORS(cudaFree(tmp));
 
 	// don't scale with scaleFactors.v1NormalizationStrength * scaleFactors.v1NormalizationPopulationK
 	// since we don't normalize over the WHOLE population, these factors are off
 	// the purpose of this normalization is to get a htan()-like response normalization: a scaling factor of 1.0 turns
 	// out to be good enough
 	dev_scale<<<iDivUp(nrX*nrY*nrScales,128), 128>>>(d_pop, 1.0, nrX*nrY*nrScales);
-	cutilCheckMsg("dev_scale() execution failed\n");
+	CUDA_GET_LAST_ERROR("dev_scale() execution failed\n");
 
 	// d_resp is the numerator, d_pop the denominator sum term
 	dev_normalize<<<gridm, 128>>>(d_resp, d_pop, nrX*nrY, nrDirs);
-	cutilCheckMsg("dev_normalize() execution failed\n");
+	CUDA_GET_LAST_ERROR("dev_normalize() execution failed\n");
 
 	// Scaling factors were chosen such that in a RDK task all 3 scales have similar mean responses
 	// We believe this to be a reasonable assumption considering that dots do not suffer from the aperture problem;
@@ -765,7 +773,7 @@ void calcColorME(int nrX, int nrY, unsigned char* stim, float* red_green, float*
 		dev_scale<<<iDivUp(nrX*nrY*nrDirs,128), 128>>>(&d_resp[scale*nrX*nrY*nrDirs], (scale==0?15.0f:(scale==1?17.0f:11.0f)), nrX*nrY*nrDirs); // 15 17.5 17
 
 	// copy response to device or host (depending on whether we run in CPU_MODE or GPU_MODE)
-	cutilSafeCall(cudaMemcpy(ME,d_resp,sizeof(float)*nrX*nrY*nrDirs*nrScales,GPUpointers?cudaMemcpyDeviceToDevice:cudaMemcpyDeviceToHost));
+	CUDA_CHECK_ERRORS(cudaMemcpy(ME,d_resp,sizeof(float)*nrX*nrY*nrDirs*nrScales,GPUpointers?cudaMemcpyDeviceToDevice:cudaMemcpyDeviceToHost));
 
 /*
 	size_t avail, total, used;
@@ -777,21 +785,21 @@ void calcColorME(int nrX, int nrY, unsigned char* stim, float* red_green, float*
 
 // free all allocated blocks
 void freeAllCUDA() {
-	cutilSafeCall(cudaFree(d_stimBuf));
-	cutilSafeCall(cudaFree(diffV1GausBufT));
-	cutilSafeCall(cudaFree(d_stim));
-	cutilSafeCall(cudaFree(d_scalingStimBuf));
-	cutilSafeCall(cudaFree(d_v1GausBuf));
-	cutilSafeCall(cudaFree(d_diffV1GausBuf));
-	cutilSafeCall(cudaFree(d_pop));
-	cutilSafeCall(cudaFree(d_red));
-	cutilSafeCall(cudaFree(d_green));
-	cutilSafeCall(cudaFree(d_blue));
-	cutilSafeCall(cudaFree(d_center));
-	cutilSafeCall(cudaFree(d_surround));
-	cutilSafeCall(cudaFree(d_color_tmp));
-	cutilSafeCall(cudaFree(d_color_tmp_green));
-	cutilSafeCall(cudaFree(d_color_tmp_yellow));
+	CUDA_CHECK_ERRORS(cudaFree(d_stimBuf));
+	CUDA_CHECK_ERRORS(cudaFree(diffV1GausBufT));
+	CUDA_CHECK_ERRORS(cudaFree(d_stim));
+	CUDA_CHECK_ERRORS(cudaFree(d_scalingStimBuf));
+	CUDA_CHECK_ERRORS(cudaFree(d_v1GausBuf));
+	CUDA_CHECK_ERRORS(cudaFree(d_diffV1GausBuf));
+	CUDA_CHECK_ERRORS(cudaFree(d_pop));
+	CUDA_CHECK_ERRORS(cudaFree(d_red));
+	CUDA_CHECK_ERRORS(cudaFree(d_green));
+	CUDA_CHECK_ERRORS(cudaFree(d_blue));
+	CUDA_CHECK_ERRORS(cudaFree(d_center));
+	CUDA_CHECK_ERRORS(cudaFree(d_surround));
+	CUDA_CHECK_ERRORS(cudaFree(d_color_tmp));
+	CUDA_CHECK_ERRORS(cudaFree(d_color_tmp_green));
+	CUDA_CHECK_ERRORS(cudaFree(d_color_tmp_yellow));
 
 	stimBufX = 0;
 	stimBufY = 0;
