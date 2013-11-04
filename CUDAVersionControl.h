@@ -23,9 +23,6 @@
     #define CUDA_GET_TIMER_VALUE(x) cutGetTimerValue(x)
 
     #define CUDA_GET_MAXGFLOP_DEVICE_ID cutGetMaxGflopsDeviceId
-
-    #define CUDA_CONVERT_SYMBOL(x) ("x")
-
 #elif __CUDA5__
     #define CUDA_CHECK_ERRORS(x) checkCudaErrors(x)
 	#define CUDA_CHECK_ERRORS_MACRO(x) checkCudaErrors(x)
@@ -41,8 +38,6 @@
     #define CUDA_GET_LAST_ERROR_MACRO(x) getLastCudaError(x)
 
     #define CUDA_GET_MAXGFLOP_DEVICE_ID gpuGetMaxGflopsDeviceId
-
-    #define CUDA_CONVERT_SYMBOL(x) (x)
 #endif
 
 
