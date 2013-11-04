@@ -97,9 +97,6 @@ int main()
 	s.writeNetwork(nid);
 	fclose(nid);
 
-	// display the details of the current simulation run
-	s.printSimSummary();
-
 	return 0;
 }
 
