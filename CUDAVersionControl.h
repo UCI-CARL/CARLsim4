@@ -25,7 +25,7 @@
     #define CUDA_GET_MAXGFLOP_DEVICE_ID cutGetMaxGflopsDeviceId
 #elif __CUDA5__
     #define CUDA_CHECK_ERRORS(x) checkCudaErrors(x)
-	#define CUDA_CHECK_ERRORS_MACRO(x) checkCudaErrors(x)
+    #define CUDA_CHECK_ERRORS_MACRO(x) checkCudaErrors(x)
 
     #define CUDA_CREATE_TIMER(x) sdkCreateTimer(&(x))
     #define CUDA_DELETE_TIMER(x) sdkDeleteTimer(&(x))
