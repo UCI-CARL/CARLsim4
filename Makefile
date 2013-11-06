@@ -63,13 +63,26 @@ ifeq (${strip ${CARLSIM_FASTMATH}},1)
 endif
 
 CC = nvcc
-SRCS = snn_cpu.cpp mtrand.cpp PropagatedSpikeBuffer.cpp printSNNInfo.cpp gpu_random.cu snn_gpu.cu
-OBJS = ${SRCS:.cpp=.o}
+SRCS = snn_cpu.cpp mtrand.cpp PropagatedSpikeBuffer.cpp printSNNInfo.cpp gpu_random.cu snn_gpu.cu v1ColorME.2.0.cu v1ColorME.2.1.cu
+DEP = snn.h PropagatedSpikeBuffer.h gpu.h gpu_random.h mtrand.h config.h CUDAVersionControl.h
+
+#OBJS = ${SRCS:.cpp=.o}
+
+CORE_OBJS = snn_cpu.o \
+            snn_gpu.o \
+            mtrand.o \
+            PropagatedSpikeBuffer.o \
+            printSNNInfo.o \
+            gpu_random.o \
+
+UTIL_2_0_OBJS = v1ColorME.2.0.o
+UTIL_2_1_OBJS = v1ColorME.2.1.o
 
 # examples are split according to the version of v1ColorME they are using
 EXE_CU_NONE = random
 EXE_CU_20 = colorblind colorcycle orientation rdk v1v4PFC
 EXE_CU_21 = v1MTLIP
+
 
 
 ########################################################################################################################
@@ -79,19 +92,22 @@ EXE_CU_21 = v1MTLIP
 all: ${EXE_CU_21} ${EXE_CU_20} ${EXE_CU_NONE}
 
 # using none of the v1ColorME.cu
-${EXE_CU_NONE}: ${SRCS} ${OBJS}
-	${CC} ${INCLUDES} ${LFLAGS} ${LIBS} ${CFLAGS} ${SRCS} examples/$@/main_$@.cpp -o $@
+${EXE_CU_NONE}: ${CORE_OBJS}
+	${CC} ${INCLUDES} ${LFLAGS} ${LIBS} ${CFLAGS} ${CORE_OBJS} examples/$@/main_$@.cpp -o $@
 
 # using v1ColorME.2.0.cu
-${EXE_CU_20}: ${SRCS} ${OBJS}
-	${CC} ${INCLUDES} ${LFLAGS} ${LIBS} ${CFLAGS} ${SRCS} examples/$@/main_$@.cpp v1ColorME.2.0.cu -o $@
+${EXE_CU_20}: ${CORE_OBJS} ${UTIL_2_0_OBJS}
+	${CC} ${INCLUDES} ${LFLAGS} ${LIBS} ${CFLAGS} ${CORE_OBJS} examples/$@/main_$@.cpp ${UTIL_2_0_OBJS} -o $@
 
 # using v1ColorME.2.1.cu
-${EXE_CU_21}: ${SRCS} ${OBJS}
-	${CC} ${INCLUDES} ${LFLAGS} ${LIBS} ${CFLAGS} ${SRCS} examples/$@/main_$@.cpp v1ColorME.2.1.cu -o $@
+${EXE_CU_21}: ${CORE_OBJS} ${UTIL_2_1_OBJS}
+	${CC} ${INCLUDES} ${LFLAGS} ${LIBS} ${CFLAGS} ${CORE_OBJS} examples/$@/main_$@.cpp ${UTIL_2_1_OBJS} -o $@
 
 # object files
-%.o: %.cpp
+%.o: %.cpp ${DEP}
+	${CC} -c ${INCLUDES} ${LFLAGS} ${CFLAGS} $< -o $@
+
+%.o: %.cu ${DEP}
 	${CC} -c ${INCLUDES} ${LFLAGS} ${CFLAGS} $< -o $@
 
 
