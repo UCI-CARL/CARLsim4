@@ -1,0 +1,7 @@
+Changes since release 2.1:
+
+2013-11-05	Michael Beyeler <mbeyeler@uci.edu>
+	* Makefile: more general, more flexible Makefile. Options for fast math and CUDA5 support.
+
+2013-11-04	Ting-Shuo Chou <tingshuc@uci.edu>
+	* CUDAVersionControl.h, Makefile: added CUDA5 support
