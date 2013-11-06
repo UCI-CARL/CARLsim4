@@ -1,38 +1,107 @@
+########################################################################################################################
+#
 # CARLsim Makefile
+#
 # CARLsim available from http://socsci.uci.edu/~jkrichma/CARLsim/
-# Ver 07/13/2013
+# Ver 11/05/2013
+#
+########################################################################################################################
 
-# source files of the sim core
-SOURCES = snn_cpu.cpp mtrand.cpp PropagatedSpikeBuffer.cpp printSNNInfo.cpp gpu_random.cu snn_gpu.cu
-DEP = snn.h PropagatedSpikeBuffer.h errorCode.h config.h gpu_random.h
-LIBCUTIL = -lcutil_x86_64
 
-all: colorblind colorcycle orientation random rdk v1MTLIP v1v4PFC
+########################################################################################################################
+# HOW TO USE
+########################################################################################################################
+#
+# In order to display all available example experiments, open up a terminal in the current directory and type
+# $ make help
+# In order to clean up object files, executables, etc., type
+# $ make clean
+# 
+# CARLsim simulation examples follow a common rule: Some experiment (e.g., called "test") has a source file named
+# "main_test.cpp" in subdirectory "examples/test/", and should direct all of its output files to a subdirectory
+# "Results/test/". If Matlab analysis scripts are available for this particular experiment, they can be found in a
+# subdirectory "scripts/test/".
+# The experiment can be compiled by typing:
+# $ make test
+# This will create an executable called "test". In order to run it, type:
+# $ ./test
+# This naming convention is true for all example simulations.
+#
+# Required environment variables:
+#	${NVIDIA_SDK}: path to NVIDIA GPU Computing SDK
+#		no longer required in combination with CUDA 5
+#
+# Optional environment variables:
+#	${CARLSIM_CUDAVER}: which CUDA version to use
+#		set to version number you want to use (int). Default: 3
+#	${CARLSIM_FASTMATH}: whether to use fast math flags
+#		set to 1 if you want to use fast math. Default: 0
 
-colorblind: ${SOURCES} ${DEP} examples/colorblind/main_colorblind.cpp v1ColorMEold.cu
-	nvcc -I${NVIDIA_SDK}/C/common/inc/ -L${NVIDIA_SDK}/C/lib ${LIBCUTIL} -D__CUDA3__ -arch sm_13 ${SOURCES} examples/colorblind/main_colorblind.cpp v1ColorMEold.cu -o colorblind
-#	nvcc -I/usr/local/cuda/samples/common/inc/ -D__CUDA5__ -arch sm_20 ${SOURCES} examples/colorblind/main_colorblind.cpp v1ColorMEold.cu -o colorblind
 
-colorcycle: ${SOURCES} ${DEP} examples/colorcycle/main_colorcycle.cpp v1ColorMEold.cu
-	nvcc -I${NVIDIA_SDK}/C/common/inc/ -L${NVIDIA_SDK}/C/lib ${LIBCUTIL} -D__CUDA3__ -arch sm_13 ${SOURCES} examples/colorcycle/main_colorcycle.cpp v1ColorMEold.cu -o colorcycle
-#	nvcc -I/usr/local/cuda/samples/common/inc/ -D__CUDA5__ -arch sm_20 ${SOURCES} examples/colorcycle/main_colorcycle.cpp v1ColorMEold.cu -o colorcycle
+########################################################################################################################
+# COMMON BUILD
+########################################################################################################################
 
-orientation: ${SOURCES} ${DEP} examples/orientation/main_orientation.cpp v1ColorMEold.cu
-	nvcc -I${NVIDIA_SDK}/C/common/inc/ -L${NVIDIA_SDK}/C/lib ${LIBCUTIL} -D__CUDA3__ -arch sm_13 ${SOURCES} examples/orientation/main_orientation.cpp v1ColorMEold.cu -o orientation
-#	nvcc -I/usr/local/cuda/samples/common/inc/ -D__CUDA5__ -arch sm_20 ${SOURCES} examples/orientation/main_orientation.cpp v1ColorMEold.cu -o orientation
+# if optional env vars do not exist, assign default values
+CARLSIM_CUDAVER ?= 3
+CARLSIM_FASTMATH ?= 0
 
-random: ${SOURCES} ${DEP} examples/random/main_random.cpp v1ColorMEold.cu
-	nvcc -I${NVIDIA_SDK}/C/common/inc/ -L${NVIDIA_SDK}/C/lib ${LIBCUTIL} -D__CUDA3__ -arch sm_13 ${SOURCES} examples/random/main_random.cpp v1ColorMEold.cu -o random
-#	nvcc -I/usr/local/cuda/samples/common/inc/ -D__CUDA5__ -arch sm_20 ${SOURCES} examples/random/main_random.cpp v1ColorMEold.cu -o random
+ifeq (${strip ${CARLSIM_CUDAVER}},5)
+	INCLUDES = -I/usr/local/cuda/samples/common/inc/
+	LFLAGS =
+	LIBS =
+	CFLAGS = -D__CUDA5__ -arch sm_20
+else
+	INCLUDES = -I${NVIDIA_SDK}/C/common/inc/
+	LFLAGS = -L${NVIDIA_SDK}/C/lib
+	LIBS = -lcutil_x86_64
+	CFLAGS = -D__CUDA3__ -arch sm_13
+endif
 
-rdk: ${SOURCES} ${DEP} examples/rdk/main_rdk.cpp v1ColorMEold.cu
-	nvcc -I${NVIDIA_SDK}/C/common/inc/ -L${NVIDIA_SDK}/C/lib ${LIBCUTIL} -D__CUDA3__ -arch sm_13 ${SOURCES} examples/rdk/main_rdk.cpp v1ColorMEold.cu -o rdk
-#	nvcc -I/usr/local/cuda/samples/common/inc/ -D__CUDA5__ -arch sm_20 ${SOURCES} examples/rdk/main_rdk.cpp v1ColorMEold.cu -o rdk
+ifeq (${strip ${CARLSIM_FASTMATH}},1)
+	CFLAGS += -O3 -use_fast_math
+endif
 
-v1MTLIP: ${SOURCES} ${DEP} examples/v1MTLIP/main_v1MTLIP.cpp v1ColorME.cu
-	nvcc -I${NVIDIA_SDK}/C/common/inc/ -L${NVIDIA_SDK}/C/lib ${LIBCUTIL} -D__CUDA3__ -arch sm_13 ${SOURCES} examples/v1MTLIP/main_v1MTLIP.cpp v1ColorME.cu -o v1MTLIP
-#	nvcc -I/usr/local/cuda/samples/common/inc/ -D__CUDA5__ -arch sm_20 ${SOURCES} examples/v1MTLIP/main_v1MTLIP.cpp v1ColorME.cu -o v1MTLIP
+CC = nvcc
+SRCS = snn_cpu.cpp mtrand.cpp PropagatedSpikeBuffer.cpp printSNNInfo.cpp gpu_random.cu snn_gpu.cu
+OBJS = ${SRCS:.cpp=.o}
 
-v1v4PFC: ${SOURCES} ${DEP} examples/v1v4PFC/main_v1v4PFC.cpp v1ColorMEold.cu
-	nvcc -I${NVIDIA_SDK}/C/common/inc/ -L${NVIDIA_SDK}/C/lib ${LIBCUTIL} -D__CUDA3__ -arch sm_13 ${SOURCES} examples/v1v4PFC/main_v1v4PFC.cpp v1ColorMEold.cu -o v1v4PFC
-#	nvcc -I/usr/local/cuda/samples/common/inc/ -D__CUDA5__ -arch sm_20 ${SOURCES} examples/v1v4PFC/main_v1v4PFC.cpp v1ColorMEold.cu -o v1v4PFC
+# examples are split according to the version of v1ColorME they are using
+EXE_CU_NONE = random
+EXE_CU_20 = colorblind colorcycle orientation rdk v1v4PFC
+EXE_CU_21 = v1MTLIP
+
+
+########################################################################################################################
+# RULES
+########################################################################################################################
+
+all: ${EXE_CU_21} ${EXE_CU_20} ${EXE_CU_NONE}
+
+# using none of the v1ColorME.cu
+${EXE_CU_NONE}: ${SRCS} ${OBJS}
+	${CC} ${INCLUDES} ${LFLAGS} ${LIBS} ${CFLAGS} ${SRCS} examples/$@/main_$@.cpp -o $@
+
+# using v1ColorME.2.0.cu
+${EXE_CU_20}: ${SRCS} ${OBJS}
+	${CC} ${INCLUDES} ${LFLAGS} ${LIBS} ${CFLAGS} ${SRCS} examples/$@/main_$@.cpp v1ColorME.2.0.cu -o $@
+
+# using v1ColorME.2.1.cu
+${EXE_CU_21}: ${SRCS} ${OBJS}
+	${CC} ${INCLUDES} ${LFLAGS} ${LIBS} ${CFLAGS} ${SRCS} examples/$@/main_$@.cpp v1ColorME.2.1.cu -o $@
+
+# object files
+%.o: %.cpp
+	${CC} -c ${INCLUDES} ${LFLAGS} ${CFLAGS} $< -o $@
+
+
+########################################################################################################################
+# MAINTENANCE AND SPECIAL RULES
+########################################################################################################################
+
+clean:
+	rm -f *.o *~ *.dot param.txt *.log ${EXE_CU} ${EXE_CU_21} ${EXE_CU_20} ${EXE_CU_NONE}
+
+help:
+	@echo Choose from the following example networks: ${EXE_CU} ${EXE_CU_21} ${EXE_CU_20} ${EXE_CU_NONE}.
+	@echo Create env var USECUDAVER to specify which CUDA version to use \(Default: 5\)

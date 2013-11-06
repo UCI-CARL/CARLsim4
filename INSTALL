@@ -45,24 +45,61 @@ up a new terminal.
 COMPILING AND RUNNING A NETWORK
 ------------------------------------------------------------------------------------------------------------------------
 
+CARLsim can be compiled using either the CUDA5 or the CUDA3 runtime environment. By default, CUDA3 is used. If you want
+to use CUDA5, you can set up an environment variable called CARLSIM_CUDAVER and set its value to 5.
+Edit your ~/.bashrc:
+$ export CARLSIM_CUDAVER=5
+
+CARLsim can be compiled using an increased optimization level and fast math. By default, these flags are not used. In
+order to use them, set up an environment variable CARLSIM_FASTMATH and set it to 1:
+$ CARLSIM_FASTMATH=1
+For more information, please refer to http://docs.nvidia.com/cuda/cuda-compiler-driver-nvcc/.
+
 The CARLsim software package contains a number of simulation examples, whose source code can be found under the
 directory /examples/.
+The following examples are available: colorblind, colorcycle, orientation, rdk, v1MTLIP, and v1v4PFC.
 
-The following examples are available: colorblind, colorcycle, orientation, rdk, and v1MTLIP.
-
-To run them, first compile one you desire by typing "make" followed by the name, such as:
-
+All simulation examples follow a common rule: Some experiment (e.g., called "v1MTLIP") has a source file named
+"random.cpp" in subdirectory "examples/test/", and should direct all of its output files to a subdirectory
+"Results/v1MTLIP/". If Matlab analysis scripts are available for this particular experiment, they can be found in a
+subdirectory "scripts/v1MTLIP/".
+The experiment can be compiled by typing:
 $ make v1MTLIP
-
-This will then create a binary file named as the experiment. Then type
-
+This will create an executable called "v1MTLIP". In order to run it, type:
 $ ./v1MTLIP
 
-and the simulation will start.
-The results of the simulation (i.e., output spike files) will be stored in the directory /Results/v1MTLIP/.
-Analysis scripts are available under /scripts/v1MTLIP/. Simply open MATLAB in that directory (or change MATLAB's
-current directory to that) and run the script.
-
-The rdk, orientation, and v1MTLIP examples can only be run on a system with a compatible GPU (compute capability 1.3
+The rdk, orientation, v1MTLIP, and v1v4PFC examples can only be run on a system with a compatible GPU (compute capability 1.3
 or higher). The colorblind example most likely must be run on CPU because at high spatial resolution it requires more
 memory than most GPUs have available.
+
+
+
+CREATING AND COMPILING YOUR OWN NETWORKS
+------------------------------------------------------------------------------------------------------------------------
+
+The easiest way to add your own network/experiment to the existing Makefile is the following:
+* Create your network/experiment, say "myExp", in a source file called "main_myExp.cpp" and put it in the directory
+  "examples/myExp/".
+* Within that source file, make sure that all spike monitors output to a directory "Results/myExp/" for consistency
+  (see existing examples for inspiration/help).
+* Again for consistency, if you have any input videos, add them to directory "videos/".
+* Add your experiment name ("myExp") to the list of known experiments in the Makefile.
+  - If you want to use either the color opponency or the motion energy model (both contained in the various v1ColorME
+    CUDA files), add your experiment name to the variable EXE_CU_21 (Makefile l.72, all experiments separated by
+    spaces).
+  - If you do not want to use either of the models, add your experiment name to the variable EXE_CU_NONE (Makefile l.70)
+* Now simply type
+  $ make myExp
+  in the current directory, and you are good to go.
+
+
+MAKEFILE HELP AND MAINTENANCE
+------------------------------------------------------------------------------------------------------------------------
+
+For more information on the above, please refer to the Makefile.
+
+You can automatically clean up all object files, executables, etc. by typing
+$ make clean
+
+A help message, which contains the list of all available example experiments can be displayed by typing
+$ make help
