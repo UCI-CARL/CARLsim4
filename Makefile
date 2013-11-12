@@ -91,16 +91,17 @@ EXE_CU_21 = v1MTLIP
 
 all: ${EXE_CU_21} ${EXE_CU_20} ${EXE_CU_NONE}
 
+.SECONDEXPANSION:
 # using none of the v1ColorME.cu
-${EXE_CU_NONE}: ${CORE_OBJS}
-	${CC} ${INCLUDES} ${LFLAGS} ${LIBS} ${CFLAGS} ${CORE_OBJS} examples/$@/main_$@.cpp -o $@
+${EXE_CU_NONE}: ${DEP} ${CORE_OBJS} examples/$$@/main_$$@.cpp
+	${CC} ${INCLUDES} ${LFLAGS} ${LIBS} ${CFLAGS} ${CORE_OBJS} examples/random/main_random.cpp -o $@
 
 # using v1ColorME.2.0.cu
-${EXE_CU_20}: ${CORE_OBJS} ${UTIL_2_0_OBJS}
+${EXE_CU_20}: ${DEP} ${CORE_OBJS} ${UTIL_2_0_OBJS} examples/$$@/main_$$@.cpp
 	${CC} ${INCLUDES} ${LFLAGS} ${LIBS} ${CFLAGS} ${CORE_OBJS} examples/$@/main_$@.cpp ${UTIL_2_0_OBJS} -o $@
 
 # using v1ColorME.2.1.cu
-${EXE_CU_21}: ${CORE_OBJS} ${UTIL_2_1_OBJS}
+${EXE_CU_21}: ${DEP} ${CORE_OBJS} ${UTIL_2_1_OBJS} examples/$$@/main_$$@.cpp
 	${CC} ${INCLUDES} ${LFLAGS} ${LIBS} ${CFLAGS} ${CORE_OBJS} examples/$@/main_$@.cpp ${UTIL_2_1_OBJS} -o $@
 
 # object files
