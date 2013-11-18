@@ -38,7 +38,7 @@
  * Ver 10/09/2013
  */ 
 
-#include "../../snn.h"
+#include "snn.h"
 
 #define N    1000
 
@@ -75,7 +75,7 @@ int main()
 	s.setLogCycle(10, 1, stdout);
 
 	// put spike times into spikes.dat
-	s.setSpikeMonitor(g1,"Results/random/spikes.dat");
+	s.setSpikeMonitor(g1,"spikes.dat");
 
 	// Show basic statistics about g2
 	s.setSpikeMonitor(g2);
@@ -93,7 +93,7 @@ int main()
 		s.runNetwork(1, 0, GPU_MODE);
 	}
 
-	FILE* nid = fopen("Results/random/network.dat","wb");
+	FILE* nid = fopen("network.dat","wb");
 	s.writeNetwork(nid);
 	fclose(nid);
 

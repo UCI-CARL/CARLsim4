@@ -59,10 +59,10 @@ using std::map;
 #elif __CUDA5__
     #include <cuda.h>
     #include <cuda_runtime.h>
-    #include <helper_cuda.h>
-    #include <helper_functions.h>
-    #include <helper_timer.h>
-    #include <helper_math.h>
+    #include "helper_cuda.h"
+    #include "helper_functions.h"
+    #include "helper_timer.h"
+    #include "helper_math.h"
 #endif
 
 #include "CUDAVersionControl.h"

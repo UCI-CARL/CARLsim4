@@ -41,7 +41,7 @@
 #include "snn.h"
 #include <sstream>
 
-#if (_WIN32 || _WIN64)
+#if (WIN32 || WIN64)
 	#include <float.h>
 	#include <time.h>
 
@@ -66,17 +66,20 @@
 	#define strcmpi(s1,s2) strcasecmp(s1,s2)
 #endif
 
-	MTRand_closed getRandClosed;
-	MTRand	      getRand;
+MTRand_closed getRandClosed;
+MTRand	      getRand;
 
-	RNG_rand48* gpuRand48 = NULL;
+RNG_rand48* gpuRand48 = NULL;
 
-	// includes for mkdir
-	#if defined(CREATE_SPIKEDIR_IF_NOT_EXISTS)
-		#include <sys/stat.h>
-		#include <errno.h>
+// FIXME: only works in linux platform, includes for mkdir
+#if CREATE_SPIKEDIR_IF_NOT_EXISTS
+	#include <sys/stat.h>
+	#include <errno.h>
+
+	#if ! (WIN32 || WIN64)
 		#include <libgen.h>
 	#endif
+#endif
 
 
 /*********************************************/
@@ -3342,7 +3345,7 @@ digraph G {\n\
 		}
 	}
 
-#if ! (_WIN32 || _WIN64)
+#if ! (WIN32 || WIN64)
 	#include <string.h>
 	#define strcmpi(s1,s2) strcasecmp(s1,s2)
 #endif
@@ -3505,7 +3508,8 @@ digraph G {\n\
 		if (fid==NULL) {
 			// file could not be opened
 
-			#if defined(CREATE_SPIKEDIR_IF_NOT_EXISTS)
+			// FIXME: mkdir in windows platform
+			#if CREATE_SPIKEDIR_IF_NOT_EXISTS
 				// if option set, attempt to create directory
 				int status;
 
@@ -3513,8 +3517,8 @@ digraph G {\n\
 				char fchar[200];
 				strcpy(fchar,fname.c_str());
 
-				#if defined(_WIN32) || defined(_WIN64) // TODO: test it
-					status = _mkdir(dirname(fchar); // Windows platform
+				#if (WIN32 || WIN64) // TODO: test it
+					status = _tmkdir(dirname(fchar); // Windows platform
 				#else
 					status = mkdir(dirname(fchar), 0777); // Unix
 				#endif
