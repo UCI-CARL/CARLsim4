@@ -36,6 +36,8 @@
 #		set to version number you want to use (int). Default: 3
 #	${CARLSIM_FASTMATH}: whether to use fast math flags
 #		set to 1 if you want to use fast math. Default: 0
+#	${CARLSIM_CUOPTLEVEL}: whether to use increased CUDA optimization level
+#		set to value>1 if you want to use increased optimization level. Default: 0
 
 
 ########################################################################################################################
@@ -45,6 +47,7 @@
 # if optional env vars do not exist, assign default values
 CARLSIM_CUDAVER ?= 3
 CARLSIM_FASTMATH ?= 0
+CARLSIM_CUOPTLEVEL ?= 0
 
 ifeq (${strip ${CARLSIM_CUDAVER}},5)
 	INCLUDES = -I/usr/local/cuda/samples/common/inc/
@@ -58,8 +61,14 @@ else
 	CFLAGS = -D__CUDA3__ -arch sm_13
 endif
 
+# use fast math
 ifeq (${strip ${CARLSIM_FASTMATH}},1)
-	CFLAGS += -O3 -use_fast_math
+	CFLAGS += -use_fast_math
+endif
+
+# use CUDA optimization level
+ifneq (${strip ${CARLSIM_CUOPTLEVEL}},1)
+	CFLAGS += -O${CARLSIM_CUOPTLEVEL}
 endif
 
 CC = nvcc
