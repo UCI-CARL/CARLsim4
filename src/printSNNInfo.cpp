@@ -159,7 +159,7 @@ extern RNG_rand48* gpuRand48;
 
 	void CpuSNN::printConnectionInfo2(FILE *fpg)
 	{
-		grpConnectInfo_t* newInfo = connectBegin;
+		GroupConnectData* newInfo = connectBegin;
 
 		fprintf(fpg, "#Connection Information \n");
 		fprintf(fpg, "#(e.g. from => to : approx. # of post (numPostSynapses) : approx. # of pre-synaptic (numPreSynapses) : weights.. : type plastic or fixed : max and min axonal delay\n");
@@ -177,7 +177,7 @@ extern RNG_rand48* gpuRand48;
 
 	void CpuSNN::printConnectionInfo(FILE *fp)
 	{
-		grpConnectInfo_t* newInfo = connectBegin;
+		GroupConnectData* newInfo = connectBegin;
 
 //		fprintf(fp, "\nGlobal STDP Info: \n");
 //		fprintf(fp, "------------\n");

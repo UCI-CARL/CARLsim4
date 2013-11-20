@@ -48,6 +48,7 @@
 #include "gpu_random.h"
 #include "config.h"
 #include "PropagatedSpikeBuffer.h"
+#include "PoissonRate.h"
 
 using std::string;
 using std::map;
@@ -111,17 +112,17 @@ extern RNG_rand48* gpuRand48; //!< Used by all network to generate global random
 #define CONNECTION_INITWTS_RAMPUP		3
 #define CONNECTION_INITWTS_RAMPDOWN		4
 
-#define SET_INITWTS_RANDOM(a)		((a&1) << CONNECTION_INITWTS_RANDOM)
-#define SET_CONN_PRESENT(a)		((a&1) << CONNECTION_CONN_PRESENT)
-#define SET_FIXED_PLASTIC(a)		((a&1) << CONNECTION_FIXED_PLASTIC)
-#define SET_INITWTS_RAMPUP(a)		((a&1) << CONNECTION_INITWTS_RAMPUP)
-#define SET_INITWTS_RAMPDOWN(a)		((a&1) << CONNECTION_INITWTS_RAMPDOWN)
+#define SET_INITWTS_RANDOM(a)		((a & 1) << CONNECTION_INITWTS_RANDOM)
+#define SET_CONN_PRESENT(a)		((a & 1) << CONNECTION_CONN_PRESENT)
+#define SET_FIXED_PLASTIC(a)		((a & 1) << CONNECTION_FIXED_PLASTIC)
+#define SET_INITWTS_RAMPUP(a)		((a & 1) << CONNECTION_INITWTS_RAMPUP)
+#define SET_INITWTS_RAMPDOWN(a)		((a & 1) << CONNECTION_INITWTS_RAMPDOWN)
 
-#define GET_INITWTS_RANDOM(a)		(((a) >> CONNECTION_INITWTS_RANDOM)&1)
-#define GET_CONN_PRESENT(a)		(((a) >> CONNECTION_CONN_PRESENT)&1)
-#define GET_FIXED_PLASTIC(a)		(((a) >> CONNECTION_FIXED_PLASTIC)&1)
-#define GET_INITWTS_RAMPUP(a)		(((a) >> CONNECTION_INITWTS_RAMPUP)&1)
-#define GET_INITWTS_RAMPDOWN(a)		(((a) >> CONNECTION_INITWTS_RAMPDOWN)&1)
+#define GET_INITWTS_RANDOM(a)		(((a) >> CONNECTION_INITWTS_RANDOM) & 1)
+#define GET_CONN_PRESENT(a)		(((a) >> CONNECTION_CONN_PRESENT) & 1)
+#define GET_FIXED_PLASTIC(a)		(((a) >> CONNECTION_FIXED_PLASTIC) & 1)
+#define GET_INITWTS_RAMPUP(a)		(((a) >> CONNECTION_INITWTS_RAMPUP) & 1)
+#define GET_INITWTS_RAMPDOWN(a)		(((a) >> CONNECTION_INITWTS_RAMPDOWN) & 1)
 
 #define  checkNetworkBuilt()  {                                                         \
                 if(!doneReorganization)  {                                              \
@@ -134,7 +135,7 @@ extern RNG_rand48* gpuRand48; //!< Used by all network to generate global random
 
 /****************************/
 
-#define STP_BUF_POS(nid,t)  (nid*STP_BUF_SIZE+((t)%STP_BUF_SIZE))
+#define STP_BUF_POS(nid, t)  ((nid) * STP_BUF_SIZE + ((t) % STP_BUF_SIZE))
 
 /////    !!!!!!! IMPORTANT : NEURON ORGANIZATION/ARRANGEMENT MAP !!!!!!!!!!
 ////     <--- Excitatory --> | <-------- Inhibitory REGION ----------> | <-- Excitatory -->
@@ -237,72 +238,38 @@ class SpikeMonitor {
 };
 
 
-class PoissonRate {
-public:
-	PoissonRate(float* _rates, uint32_t _len, bool _onGPU=false) {
-		rates=_rates;
-		len=_len;
-		onGPU=_onGPU;
-		allocatedRatesInternally = false;
-	};
-
-	PoissonRate(uint32_t _len, bool _onGPU=false) {
-		if (_onGPU) {
-			CUDA_CHECK_ERRORS(cudaMalloc ((void**)&rates, _len*sizeof(float)));
-		} else {
-			rates = new float[_len];
-		}
-		len=_len;
-		onGPU=_onGPU;
-		allocatedRatesInternally = true;
-	};
-
-	// destructor
-	~PoissonRate() {
-		if (allocatedRatesInternally) {
-			if (onGPU) {
-				CUDA_CHECK_ERRORS(cudaThreadSynchronize()); // wait for kernel to complete
-				CUDA_CHECK_ERRORS(cudaFree(rates)); // free memory
-			}
-			else {
-				delete[] rates;
-			}
-		}
-	}
-
-	float*    rates;
-	uint32_t len;
-	bool onGPU;
-	bool allocatedRatesInternally;
-};
-
-
 typedef struct {
-    short  delay_index_start;
-    short  delay_length;
+    uint16_t	delay_index_start;
+    uint16_t	delay_length;
 } delay_info_t;
 
 typedef struct {
-	int      postId;
-	uint8_t  grpId;
+	int32_t		postId;
+	uint8_t		grpId;
 } post_info_t;
 
 typedef struct network_info_s  {
 	size_t		STP_Pitch;		//!< numN rounded upwards to the nearest 256 boundary
-	unsigned int		numN,numPostSynapses,D,numNExcReg,numNInhReg, numNReg;
-	unsigned int		I_setLength;
+	uint32_t	numN;
+	uint32_t	numPostSynapses;
+	uint32_t	D;
+	uint32_t	numNExcReg;
+	uint32_t	numNInhReg;
+	uint32_t	numNReg;
+	uint32_t	I_setLength;
 	size_t		I_setPitch;
-	unsigned int		preSynLength;
-//	unsigned int		numRandNeurons;
-//	unsigned int		numNoise;
-	unsigned int		postSynCnt;
-	unsigned int		preSynCnt;
-	unsigned int		maxSpikesD2,maxSpikesD1;
+	uint32_t	preSynLength;
+//	uint32_t	numRandNeurons;
+//	uint32_t	numNoise;
+	uint32_t	postSynCnt;
+	uint32_t	preSynCnt;
+	uint32_t	maxSpikesD2;
+	uint32_t	maxSpikesD1;
 	uint32_t	numProbe;
-	unsigned int   	numNExcPois;
-	unsigned int	numNInhPois;
-	unsigned int	numNPois;
-	unsigned int	numGrp;
+	uint32_t   	numNExcPois;
+	uint32_t	numNInhPois;
+	uint32_t	numNPois;
+	uint32_t	numGrp;
 	bool		sim_with_fixedwts;
 	bool		sim_with_conductances;
 	bool		sim_with_stdp;
@@ -322,26 +289,37 @@ inline post_info_t SET_CONN_ID(int nid, int sid, int grpId)
 }
 
 typedef struct network_ptr_s  {
-	float	*voltage, *recovery, *Izh_a, *Izh_b, *Izh_c, *Izh_d, *current;
+	float	*voltage;
+	float	*recovery;
+	float	*Izh_a;
+	float	*Izh_b;
+	float	*Izh_c;
+	float	*Izh_d;
+	float	*current;
 
 	// conductances and stp values
-	float	*gNMDA, *gAMPA, *gGABAa, *gGABAb;
-	int*	I_set;
+	float	*gNMDA;
+	float	*gAMPA;
+	float	*gGABAa;
+	float	*gGABAb;
+	int		*I_set;
 	int		memType;
-	int		allocated;			//!< true if all data has been allocated..
-	float	*stpx, *stpu;
+	int		allocated;				//!< true if all data has been allocated..
+	float	*stpx;
+	float	*stpu;
 
-	unsigned short	*Npre;				//!< stores the number of input connections to the neuron
-	unsigned short	*Npre_plastic;			//!< stores the number of plastic input connections
-	float	*Npre_plasticInv;			//!< stores the 1/number of plastic input connections, for use on the GPU
-	unsigned short	*Npost;				//!< stores the number of output connections from a neuron.
-	unsigned int		*lastSpikeTime;			//!< storees the firing time of the neuron
-	float	*wtChange, *wt;	//!< stores the synaptic weight and weight change of a synaptic connection
-	float	 *maxSynWt;			//!< maximum synaptic weight for given connection..
-	uint32_t *synSpikeTime;
-	uint32_t *neuronFiring;
-	unsigned int		*cumulativePost;
-	unsigned int		*cumulativePre;
+	uint16_t	*Npre;				//!< stores the number of input connections to the neuron
+	uint16_t	*Npre_plastic;		//!< stores the number of plastic input connections
+	float		*Npre_plasticInv;	//!< stores the 1/number of plastic input connections, for use on the GPU
+	uint16_t	*Npost;				//!< stores the number of output connections from a neuron.
+	uint32_t	*lastSpikeTime;		//!< storees the firing time of the neuron
+	float		*wtChange;
+	float		*wt;				//!< stores the synaptic weight and weight change of a synaptic connection
+	float		*maxSynWt;			//!< maximum synaptic weight for given connection..
+	uint32_t	*synSpikeTime;
+	uint32_t	*neuronFiring;
+	uint32_t	*cumulativePost;
+	uint32_t	*cumulativePre;
 
 	/*!
 	 * \brief 10 bit syn id, 22 bit neuron id, ordered based on delay
@@ -353,28 +331,28 @@ typedef struct network_ptr_s  {
 
 	post_info_t	*preSynapticIds;
 	delay_info_t    *postDelayInfo;  	//!< delay information
-	unsigned int*		firingTableD1;
-	unsigned int*		firingTableD2;
+	uint32_t	*firingTableD1;
+	uint32_t	*firingTableD2;
 //	int*		randId;
 //	void*		noiseGenProp;
 
-	float*		probeV;
-	float*		probeI;
-	uint32_t*	probeId;
+	float		*probeV;
+	float		*probeI;
+	uint32_t	*probeId;
 
-	float*		poissonFireRate;
-	unsigned int*		poissonRandPtr;		//!< firing random number. max value is 10,000
-	int2*		neuronAllocation;
-	int3*		groupIdInfo;		//!< used for group Id calculations...
-	short int*	synIdLimit;			//
-	float*		synMaxWts;			//
+	float		*poissonFireRate;
+	uint32_t	*poissonRandPtr;		//!< firing random number. max value is 10,000
+	int2		*neuronAllocation;
+	int3		*groupIdInfo;				//!< used for group Id calculations...
+	short int	*synIdLimit;			//!<
+	float		*synMaxWts;					//!<
 
-	unsigned int*		nSpikeCnt;
+	uint32_t	*nSpikeCnt;
 
-	float* 		testVar;
-	float*		testVar2;
-	uint32_t*	spikeGenBits;
-	bool*		curSpike;
+	float		*testVar;
+	float		*testVar2;
+	uint32_t	*spikeGenBits;
+	bool		*curSpike;
 } network_ptr_t;
 
 typedef struct group_info_s
@@ -389,8 +367,8 @@ typedef struct group_info_s
 	short int  	MaxFiringRate; //!< this is for the monitoring mechanism, it needs to know what is the maximum firing rate in order to allocate a buffer big enough to store spikes...
 	int			MonitorId;
 	float   	RefractPeriod;
-	int		CurrTimeSlice; //!< timeSlice is used by the Poisson generators in order to note generate too many or too few spikes within a window of time
-	int		NewTimeSlice;
+	int			CurrTimeSlice; //!< timeSlice is used by the Poisson generators in order to note generate too many or too few spikes within a window of time
+	int			NewTimeSlice;
 	uint32_t 	SliceUpdateTime;
 	int 		FiringCount1sec;
 	int 		numPostSynapses;
@@ -452,24 +430,27 @@ typedef struct group_info2_s
 	int			sumPreConn;
 } group_info2_t;
 
-enum conType_t { CONN_RANDOM, CONN_ONE_TO_ONE, CONN_FULL, CONN_FULL_NO_DIRECT, CONN_USER_DEFINED, CONN_UNKNOWN};
+enum ConnType { CONN_RANDOM, CONN_ONE_TO_ONE, CONN_FULL, CONN_FULL_NO_DIRECT, CONN_USER_DEFINED, CONN_UNKNOWN};
 
-//! connection infos...
-typedef struct connectData_s {
-	int 	  		grpSrc, grpDest;
-	uint8_t	  		maxDelay,  minDelay;
-	float	  		initWt, maxWt;
+//! connection information...
+typedef struct connect_data_s {
+	int 	  		grpSrc;				//!< group source
+	int				grpDest;			//!< group destination
+	uint8_t	  		maxDelay;			//!< maximum delay
+	uint8_t			minDelay;			//!< minimum delay
+	float	  		initWt;				//!< initial weight
+	float			maxWt;				//!< maximum weight
 	int	  	  		numPostSynapses;
 	int	  	  		numPreSynapses;
 	uint32_t  		connProp;
 	ConnectionGenerator*		conn;
-	conType_t 		type;
+	ConnType 		type;
 	float			p;
 	int				connId;
 	bool			newUpdates;
 	int		   		numberOfConnections;
-	struct connectData_s* next;
-} grpConnectInfo_t;
+	struct connect_data_s* next;
+} GroupConnectData;
 
 
 #define MAX_GRPS_PER_BLOCK 		100
@@ -477,19 +458,19 @@ typedef struct connectData_s {
 ////////////////////////////////////
 // member variable
 ////////////////////////////////////
-typedef struct grpConnInfo_s {
-	int16_t	srcGrpId;			//!< group id
-	int	srcStartN;		//!< starting neuron to begin computation
-	int	srcEndN;			//!< ending neuron to stop computation
-	int	grpDelayVector;	//!< a vector with ones in position having a given delay
-	int	grpMaxM;			//!< the maximum value of the number of post-synaptic connections
-	bool	hasCommonDelay;   //!< 'true' if the grpDelayVector is same as the neuron DelayVector
-	bool	hasRandomConn;	//!< set to 'true' if the group has random connections
-	int*	randomDelayPointer; //
-	int16_t	fixedDestGrpCnt;	//!< destination group count
-	int*	fixedDestGrps;		//!< connected destination groups array, (x=destGrpId, y=startN, z=endN, w=function pointer)
-	int*	fixedDestParam;	//!< connected destination parameters ,  (x=Start, y=Width, z=Stride, w=height)
-} grpConnInfo_t;
+typedef struct group_connect_info_s {
+	int16_t		srcGrpId;		//!< group id
+	int			srcStartN;		//!< starting neuron to begin computation
+	int			srcEndN;		//!< ending neuron to stop computation
+	int			grpDelayVector;	//!< a vector with ones in position having a given delay
+	int			grpMaxM;		//!< the maximum value of the number of post-synaptic connections
+	bool		hasCommonDelay; //!< 'true' if the grpDelayVector is same as the neuron DelayVector
+	bool		hasRandomConn;	//!< set to 'true' if the group has random connections
+	int*		randomDelayPointer; //
+	int16_t		fixedDestGrpCnt;//!< destination group count
+	int*		fixedDestGrps;	//!< connected destination groups array, (x=destGrpId, y=startN, z=endN, w=function pointer)
+	int*		fixedDestParam;	//!< connected destination parameters ,  (x=Start, y=Width, z=Stride, w=height)
+} GroupConnectInfo;
 
 
 class SparseWeightDelayMatrix {
@@ -835,10 +816,10 @@ class CpuSNN
 
 		//conection related methods...
 		inline void setConnection(int srcGrpId, int destGrpId, unsigned int src, unsigned int dest, float synWt, float maxWt, uint8_t dVal, int connProp);
-		void connectUserDefined ( grpConnectInfo_t* info);
-		void connectRandom(grpConnectInfo_t* info);
-		void connectFull(grpConnectInfo_t* info);
-		void connectOneToOne(grpConnectInfo_t* info);
+		void connectUserDefined ( GroupConnectData* info);
+		void connectRandom(GroupConnectData* info);
+		void connectFull(GroupConnectData* info);
+		void connectOneToOne(GroupConnectData* info);
 		void connectFromMatrix(SparseWeightDelayMatrix* mat, int connProp);
 
 		void exitSimulation(int val);
@@ -1012,9 +993,9 @@ private:
 
 		int		randSeed;
 
-		int			currentMode;	//!< current operating mode
+		int		currentMode;	//!< current operating mode
 
-		int			numConfig;
+		int		numConfig;
 
 		//! properties of the network (number of groups, network name, allocated neurons etc..)
 		bool			doneReorganization;
@@ -1027,7 +1008,7 @@ private:
 		unsigned int	allocatedPre;
 		unsigned int	allocatedPost;
 
-		grpConnectInfo_t* connectBegin;
+		GroupConnectData* connectBegin;
 
 		//! Buffer to store spikes
 		PropagatedSpikeBuffer* pbuf;
@@ -1116,12 +1097,12 @@ private:
 
 
 		//spike monitor code...
-		unsigned int			numSpikeMonitor;
-		unsigned int			monGrpId[MAX_GRP_PER_SNN];
-		unsigned int			monBufferPos[MAX_GRP_PER_SNN];
-		unsigned int			monBufferSize[MAX_GRP_PER_SNN];
-		unsigned int*		monBufferFiring[MAX_GRP_PER_SNN];
-		unsigned int*		monBufferTimeCnt[MAX_GRP_PER_SNN];
+		unsigned int	numSpikeMonitor;
+		unsigned int	monGrpId[MAX_GRP_PER_SNN];
+		unsigned int	monBufferPos[MAX_GRP_PER_SNN];
+		unsigned int	monBufferSize[MAX_GRP_PER_SNN];
+		unsigned int*	monBufferFiring[MAX_GRP_PER_SNN];
+		unsigned int*	monBufferTimeCnt[MAX_GRP_PER_SNN];
 		SpikeMonitor*	monBufferCallback[MAX_GRP_PER_SNN];
 
 		unsigned int	numSpikeGenGrps;

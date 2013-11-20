@@ -510,7 +510,7 @@ RNG_rand48* gpuRand48 = NULL;
 
 			// clear all existing connection info...
 			while (connectBegin) {
-				grpConnectInfo_t* nextConn = connectBegin->next;
+				GroupConnectData* nextConn = connectBegin->next;
 				free(connectBegin);
 				connectBegin = nextConn;
 			}
@@ -1003,7 +1003,7 @@ RNG_rand48* gpuRand48 = NULL;
 	}
 
 	// make 'C' random connections from grpSrc to grpDest
-	void CpuSNN::connectRandom (grpConnectInfo_t* info)
+	void CpuSNN::connectRandom (GroupConnectData* info)
 	{
 		int grpSrc = info->grpSrc;
 		int grpDest = info->grpDest;
@@ -1023,7 +1023,7 @@ RNG_rand48* gpuRand48 = NULL;
 		grp_Info2[grpDest].sumPreConn += info->numberOfConnections;
 	}
 
-	void CpuSNN::connectOneToOne (grpConnectInfo_t* info)
+	void CpuSNN::connectOneToOne (GroupConnectData* info)
 	{
 		int grpSrc = info->grpSrc;
 		int grpDest = info->grpDest;
@@ -1050,7 +1050,7 @@ RNG_rand48* gpuRand48 = NULL;
 	}
 
 	// user-defined functions called here...
-	void CpuSNN::connectUserDefined (grpConnectInfo_t* info)
+	void CpuSNN::connectUserDefined (GroupConnectData* info)
 	{
 		int grpSrc = info->grpSrc;
 		int grpDest = info->grpDest;
@@ -1088,7 +1088,7 @@ RNG_rand48* gpuRand48 = NULL;
 	}
 
 	// make 'C' full connections from grpSrc to grpDest
-	void CpuSNN::connectFull (grpConnectInfo_t* info)
+	void CpuSNN::connectFull (GroupConnectData* info)
 	{
 		int grpSrc = info->grpSrc;
 		int grpDest = info->grpDest;
@@ -1183,7 +1183,7 @@ digraph G {\n\
 		}
 */
 
-		grpConnectInfo_t* info = connectBegin;
+		GroupConnectData* info = connectBegin;
 		while(info) {
 			int grpSrc = info->grpSrc;
 			int grpDest = info->grpDest;
@@ -1243,7 +1243,7 @@ digraph G {\n\
 				assert(maxPreM <= MAX_numPreSynapses);
 			}
 
-			grpConnectInfo_t* newInfo = (grpConnectInfo_t*) calloc(1, sizeof(grpConnectInfo_t));
+			GroupConnectData* newInfo = (GroupConnectData*) calloc(1, sizeof(GroupConnectData));
 
 			newInfo->grpSrc   = grpId1;
 			newInfo->grpDest  = grpId2;
@@ -1293,7 +1293,7 @@ digraph G {\n\
 										| SET_INITWTS_RAMPUP(useRampUpWts)
 										| SET_INITWTS_RAMPDOWN(useRampDownWts);
 
-			grpConnectInfo_t* newInfo = (grpConnectInfo_t*) calloc(1, sizeof(grpConnectInfo_t));
+			GroupConnectData* newInfo = (GroupConnectData*) calloc(1, sizeof(GroupConnectData));
 			newInfo->grpSrc   = grpId1;
 			newInfo->grpDest  = grpId2;
 			newInfo->initWt	  = initWt;
@@ -1365,7 +1365,7 @@ digraph G {\n\
 		int grpSrc;
 		// find the maximum delay in the given network
 		// and also the maximum delay for each group.
-		grpConnectInfo_t* newInfo = connectBegin;
+		GroupConnectData* newInfo = connectBegin;
 		while(newInfo) {
 			grpSrc = newInfo->grpSrc;
 			if (newInfo->maxDelay > curD)
@@ -1406,7 +1406,7 @@ digraph G {\n\
 
 	void CpuSNN::buildNetwork()
 	{
-		grpConnectInfo_t* newInfo = connectBegin;
+		GroupConnectData* newInfo = connectBegin;
 		int curN = 0, curD = 0, numPostSynapses = 0, numPreSynapses = 0;
 
 		assert(numConfig > 0);
@@ -3112,7 +3112,7 @@ digraph G {\n\
 					int preId    = GET_CONN_NEURON_ID((*preIdPtr));
 					assert(preId < numN);
 					int srcGrp   = findGrpId(preId);
-					grpConnectInfo_t* connInfo = grpConnInfo[srcGrp][destGrp];
+					GroupConnectData* connInfo = grpConnInfo[srcGrp][destGrp];
 					assert(connInfo != NULL);
 					int connProp   = connInfo->connProp;
 					bool   synWtType = GET_FIXED_PLASTIC(connProp);
@@ -3151,7 +3151,7 @@ digraph G {\n\
 			grp_Info[destGrp].newUpdates = false;
 		}
 
-		grpConnectInfo_t* connInfo = connectBegin;
+		GroupConnectData* connInfo = connectBegin;
 		// clear all existing connection info...
 		while (connInfo) {
 			connInfo->newUpdates = false;

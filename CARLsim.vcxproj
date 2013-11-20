@@ -25,6 +25,7 @@
   <ItemGroup>
     <ClCompile Include="examples\random\main_random.cpp" />
     <ClCompile Include="src\mtrand.cpp" />
+    <ClCompile Include="src\PoissonRate.cpp" />
     <ClCompile Include="src\printSNNInfo.cpp" />
     <ClCompile Include="src\PropagatedSpikeBuffer.cpp" />
     <ClCompile Include="src\snn_cpu.cpp" />
@@ -36,6 +37,7 @@
     <ClInclude Include="include\gpu.h" />
     <ClInclude Include="include\gpu_random.h" />
     <ClInclude Include="include\mtrand.h" />
+    <ClInclude Include="include\PoissonRate.h" />
     <ClInclude Include="include\PropagatedSpikeBuffer.h" />
     <ClInclude Include="include\snn.h" />
   </ItemGroup>

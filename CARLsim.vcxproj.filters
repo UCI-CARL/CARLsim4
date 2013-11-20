@@ -24,6 +24,9 @@
     <ClCompile Include="examples\random\main_random.cpp">
       <Filter>Source</Filter>
     </ClCompile>
+    <ClCompile Include="src\PoissonRate.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\config.h">
@@ -48,6 +51,9 @@
       <Filter>Include</Filter>
     </ClInclude>
     <ClInclude Include="include\snn.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\PoissonRate.h">
       <Filter>Include</Filter>
     </ClInclude>
   </ItemGroup>
