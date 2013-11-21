@@ -21,12 +21,10 @@
     <ClCompile Include="src\snn_cpu.cpp">
       <Filter>Source</Filter>
     </ClCompile>
-    <ClCompile Include="examples\random\main_random.cpp">
-      <Filter>Source</Filter>
-    </ClCompile>
     <ClCompile Include="src\PoissonRate.cpp">
       <Filter>Source</Filter>
     </ClCompile>
+    <ClCompile Include="examples\random\main_random.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\config.h">

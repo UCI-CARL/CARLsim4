@@ -45,7 +45,7 @@
 int main()
 {
 	// create a network
-	CpuSNN s("global");
+	CpuSNN s("global", GPU_MODE);
 
 	int g1=s.createGroup("excit", N*0.8, EXCITATORY_NEURON);
 	s.setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f);
@@ -90,7 +90,7 @@ int main()
 	//run for 10 seconds
 	for(int i=0; i < 10; i++) {
 		// run the established network for a duration of 1 (sec)  and 0 (millisecond), in CPU_MODE
-		s.runNetwork(1, 0, GPU_MODE);
+		s.runNetwork(1, 0);
 	}
 
 	FILE* nid = fopen("network.dat","wb");

@@ -144,17 +144,17 @@
 	#define TOSTRING(x) STRINGIFY(x)
 	#define AT __FILE__ ":" TOSTRING(__LINE__)
 
-	inline void error(FILE *fp, const char *location, const char *msg, int sec, int step)
+	inline void error(FILE *_fp, const char *location, const char *msg, int sec, int step)
 	{
-	  fprintf(fp, "(wt=%d,ms=%d) Error at %s: %s\n", sec, step, location, msg);
+	  fprintf(_fp, "(wt=%d,ms=%d) Error at %s: %s\n", sec, step, location, msg);
 	}
 
-	inline void debug(FILE *fp, const char *location, const char *msg, int sec, int step)
+	inline void debug(FILE *_fp, const char *location, const char *msg, int sec, int step)
 	{
-	  fprintf(fp, "(wt=%d,ms=%d) Executing %s: %s\n", sec, step, location, msg);
+	  fprintf(_fp, "(wt=%d,ms=%d) Executing %s: %s\n", sec, step, location, msg);
 	}
 
-	#define DBG(num,fp,loc,msg)  if( DEBUG_LEVEL >= num ) debug(fp,loc,msg,simTimeSec,simTimeMs);
+	#define DBG(num,_fp,loc,msg)  if( DEBUG_LEVEL >= num ) debug(_fp,loc,msg,simTimeSec,simTimeMs);
 
 
 #define MAX_NEURON_CHUNK_SIZE 				   (750)

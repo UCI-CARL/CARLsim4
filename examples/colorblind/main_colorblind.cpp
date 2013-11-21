@@ -38,7 +38,8 @@
  * Ver 10/09/2013
  */ 
 
-#include "../../snn.h"
+#include "snn.h"
+
 void calcColorME(int nrX, int nrY, unsigned char* stim, float* red_green, float* green_red, float* blue_yellow, float* yellow_blue, float* ME, bool GPUpointers);
 extern MTRand	      getRand;
 
@@ -160,7 +161,8 @@ int main()
 //		s.setSTP(v1Cells[i],true, 0.2, 800, 20);
 	}
 	
-	int   num_V4_groups = RED_V4+1;
+//	int   num_V4_groups = RED_V4+1;
+#define num_V4_groups 6 // MS VS compiler compatible
 
 	int v4CellsExc[num_V4_groups];
 	int v4CellsInh[num_V4_groups];

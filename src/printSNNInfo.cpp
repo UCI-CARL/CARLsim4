@@ -50,21 +50,21 @@ extern MTRand_closed getRandClosed;
 extern MTRand	getRand;
 extern RNG_rand48* gpuRand48;
 
-	void CpuSNN::printMemoryInfo(FILE *fp)
+	void CpuSNN::printMemoryInfo(FILE *_fp)
 	{
 		checkNetworkBuilt();
 
-		fprintf(fp, "*************Memory Info *************\n");
+		fprintf(_fp, "*************Memory Info *************\n");
 		int totMemSize = cpuSnnSz.networkInfoSize+cpuSnnSz.synapticInfoSize+cpuSnnSz.neuronInfoSize+cpuSnnSz.spikingInfoSize;
-		fprintf(fp, "Neuron Info Size:    %3.2f (%f MB)\n", cpuSnnSz.neuronInfoSize*100.0/totMemSize,   cpuSnnSz.neuronInfoSize/(1024.0*1024));
-		fprintf(fp, "Synaptic Info Size:  %3.2f (%f MB)\n", cpuSnnSz.synapticInfoSize*100.0/totMemSize, cpuSnnSz.synapticInfoSize/(1024.0*1024));
-		fprintf(fp, "Network Size:	%3.2f (%f MB)\n", cpuSnnSz.networkInfoSize*100.0/totMemSize,  cpuSnnSz.networkInfoSize/(1024.0*1024));
-		fprintf(fp, "Firing Info Size:    %3.2f (%f MB)\n", cpuSnnSz.spikingInfoSize*100.0/totMemSize,   cpuSnnSz.spikingInfoSize/(1024.0*1024));
-		fprintf(fp, "Additional Info:     %3.2f (%f MB)\n", cpuSnnSz.addInfoSize*100.0/totMemSize,      cpuSnnSz.addInfoSize/(1024.0*1024));
-		fprintf(fp, "DebugInfo Info:      %3.2f (%f MB)\n", cpuSnnSz.debugInfoSize*100.0/totMemSize,    cpuSnnSz.debugInfoSize/(1024.0*1024));
-		fprintf(fp, "**************************************\n\n");
+		fprintf(_fp, "Neuron Info Size:    %3.2f (%f MB)\n", cpuSnnSz.neuronInfoSize*100.0/totMemSize,   cpuSnnSz.neuronInfoSize/(1024.0*1024));
+		fprintf(_fp, "Synaptic Info Size:  %3.2f (%f MB)\n", cpuSnnSz.synapticInfoSize*100.0/totMemSize, cpuSnnSz.synapticInfoSize/(1024.0*1024));
+		fprintf(_fp, "Network Size:	%3.2f (%f MB)\n", cpuSnnSz.networkInfoSize*100.0/totMemSize,  cpuSnnSz.networkInfoSize/(1024.0*1024));
+		fprintf(_fp, "Firing Info Size:    %3.2f (%f MB)\n", cpuSnnSz.spikingInfoSize*100.0/totMemSize,   cpuSnnSz.spikingInfoSize/(1024.0*1024));
+		fprintf(_fp, "Additional Info:     %3.2f (%f MB)\n", cpuSnnSz.addInfoSize*100.0/totMemSize,      cpuSnnSz.addInfoSize/(1024.0*1024));
+		fprintf(_fp, "DebugInfo Info:      %3.2f (%f MB)\n", cpuSnnSz.debugInfoSize*100.0/totMemSize,    cpuSnnSz.debugInfoSize/(1024.0*1024));
+		fprintf(_fp, "**************************************\n\n");
 
-		fprintf(fp, "************* Connection Info *************\n");
+		fprintf(_fp, "************* Connection Info *************\n");
 		for(int g=0; g < numGrp; g++) {
 			int TNpost=0;
 			int TNpre=0;
@@ -74,12 +74,12 @@ extern RNG_rand48* gpuRand48;
 				TNpre  += Npre[i];
 				TNpre_plastic += Npre_plastic[i];
 			}
-			fprintf(fp, "%s Group (num_neurons=%5d): \n\t\tNpost[%2d] = %3d, Npre[%2d]=%3d Npre_plastic[%2d]=%3d \n\t\tcumPre[%5d]=%5d cumPre[%5d]=%5d cumPost[%5d]=%5d cumPost[%5d]=%5d \n",
+			fprintf(_fp, "%s Group (num_neurons=%5d): \n\t\tNpost[%2d] = %3d, Npre[%2d]=%3d Npre_plastic[%2d]=%3d \n\t\tcumPre[%5d]=%5d cumPre[%5d]=%5d cumPost[%5d]=%5d cumPost[%5d]=%5d \n",
 					grp_Info2[g].Name.c_str(), grp_Info[g].SizeN, g, TNpost/grp_Info[g].SizeN, g, TNpre/grp_Info[g].SizeN, g, TNpre_plastic/grp_Info[g].SizeN,
 					grp_Info[g].StartN, cumulativePre[grp_Info[g].StartN],  grp_Info[g].EndN, cumulativePre[grp_Info[g].EndN],
 					grp_Info[g].StartN, cumulativePost[grp_Info[g].StartN], grp_Info[g].EndN, cumulativePost[grp_Info[g].EndN]);
 		}
-		fprintf(fp, "**************************************\n\n");
+		fprintf(_fp, "**************************************\n\n");
 
 	}
 
@@ -99,39 +99,39 @@ extern RNG_rand48* gpuRand48;
 		}
 	}
 
-	void CpuSNN::printGroupInfo(FILE* fp)
+	void CpuSNN::printGroupInfo(FILE* _fp)
 	{
 		//FILE* fpg=fopen("group_info.txt", "w");
 		//fprintf(fpg, "Group Id : Start : End : Group Name\n");
 		for(int g=0; g < numGrp; g++) {
 			//fprintf(fpg, "%d %d %d %s\n", g, grp_Info[g].StartN, grp_Info[g].EndN, grp_Info2[g].Name.c_str());
-			fprintf(fp, "Group %s: \n", grp_Info2[g].Name.c_str());
-			fprintf(fp, "------------\n");
-			fprintf(fp, "\t Size = %d\n", grp_Info[g].SizeN);
-			fprintf(fp, "\t Start = %d\n", grp_Info[g].StartN);
-			fprintf(fp, "\t End   = %d\n", grp_Info[g].EndN);
-			fprintf(fp, "\t numPostSynapses     = %d\n", grp_Info[g].numPostSynapses);
-			fprintf(fp, "\t numPreSynapses  = %d\n", grp_Info[g].numPreSynapses);
-			fprintf(fp, "\t Average Post Connections = %f\n", 1.0*grp_Info2[g].numPostConn/grp_Info[g].SizeN);
-			fprintf(fp, "\t Average Pre Connections = %f\n",  1.0*grp_Info2[g].numPreConn/grp_Info[g].SizeN);
+			fprintf(_fp, "Group %s: \n", grp_Info2[g].Name.c_str());
+			fprintf(_fp, "------------\n");
+			fprintf(_fp, "\t Size = %d\n", grp_Info[g].SizeN);
+			fprintf(_fp, "\t Start = %d\n", grp_Info[g].StartN);
+			fprintf(_fp, "\t End   = %d\n", grp_Info[g].EndN);
+			fprintf(_fp, "\t numPostSynapses     = %d\n", grp_Info[g].numPostSynapses);
+			fprintf(_fp, "\t numPreSynapses  = %d\n", grp_Info[g].numPreSynapses);
+			fprintf(_fp, "\t Average Post Connections = %f\n", 1.0*grp_Info2[g].numPostConn/grp_Info[g].SizeN);
+			fprintf(_fp, "\t Average Pre Connections = %f\n",  1.0*grp_Info2[g].numPreConn/grp_Info[g].SizeN);
 
 			if(grp_Info[g].Type&POISSON_NEURON) {
-				fprintf(fp, "\t Refractory-Period = %f\n", grp_Info[g].RefractPeriod);
+				fprintf(_fp, "\t Refractory-Period = %f\n", grp_Info[g].RefractPeriod);
 			}
 
-			fprintf(fp, "\t FIXED_WTS = %s\n", grp_Info[g].FixedInputWts? "FIXED_WTS":"PLASTIC_WTS");
+			fprintf(_fp, "\t FIXED_WTS = %s\n", grp_Info[g].FixedInputWts? "FIXED_WTS":"PLASTIC_WTS");
 
 			if (grp_Info[g].WithSTP) {
-				fprintf(fp, "\t STP_U = %f\n", grp_Info[g].STP_U);
-				fprintf(fp, "\t STP_tD = %f\n", grp_Info[g].STP_tD);
-				fprintf(fp, "\t STP_tF = %f\n", grp_Info[g].STP_tF);
+				fprintf(_fp, "\t STP_U = %f\n", grp_Info[g].STP_U);
+				fprintf(_fp, "\t STP_tD = %f\n", grp_Info[g].STP_tD);
+				fprintf(_fp, "\t STP_tF = %f\n", grp_Info[g].STP_tF);
 			}
 
 			if(grp_Info[g].WithSTDP) {
-				fprintf(fp, "\t ALPHA_LTP = %f\n", grp_Info[g].ALPHA_LTP);
-				fprintf(fp, "\t ALPHA_LTD = %f\n", grp_Info[g].ALPHA_LTD);
-				fprintf(fp, "\t TAU_LTP_INV = %f\n", grp_Info[g].TAU_LTP_INV);
-				fprintf(fp, "\t TAU_LTD_INV = %f\n", grp_Info[g].TAU_LTD_INV);
+				fprintf(_fp, "\t ALPHA_LTP = %f\n", grp_Info[g].ALPHA_LTP);
+				fprintf(_fp, "\t ALPHA_LTD = %f\n", grp_Info[g].ALPHA_LTD);
+				fprintf(_fp, "\t TAU_LTP_INV = %f\n", grp_Info[g].TAU_LTP_INV);
+				fprintf(_fp, "\t TAU_LTD_INV = %f\n", grp_Info[g].TAU_LTD_INV);
 			}
 
 		}
@@ -175,19 +175,19 @@ extern RNG_rand48* gpuRand48;
 		fflush(fpg);
 	}
 
-	void CpuSNN::printConnectionInfo(FILE *fp)
+	void CpuSNN::printConnectionInfo(FILE *_fp)
 	{
 		GroupConnectData* newInfo = connectBegin;
 
-//		fprintf(fp, "\nGlobal STDP Info: \n");
-//		fprintf(fp, "------------\n");
-//		fprintf(fp, " alpha_ltp: %f\n tau_ltp: %f\n alpha_ldp: %f\n tau_ldp: %f\n", ALPHA_LTP, TAU_LTP, ALPHA_LTD, TAU_LTD);
+//		fprintf(_fp, "\nGlobal STDP Info: \n");
+//		fprintf(_fp, "------------\n");
+//		fprintf(_fp, " alpha_ltp: %f\n tau_ltp: %f\n alpha_ldp: %f\n tau_ldp: %f\n", ALPHA_LTP, TAU_LTP, ALPHA_LTD, TAU_LTD);
 
-		fprintf(fp, "\nConnections: \n");
-		fprintf(fp, "------------\n");
+		fprintf(_fp, "\nConnections: \n");
+		fprintf(_fp, "------------\n");
 		while(newInfo) {
 			bool synWtType	= GET_FIXED_PLASTIC(newInfo->connProp);
-			fprintf(fp, " // (%s => %s): numPostSynapses=%d, numPreSynapses=%d, iWt=%3.3f, mWt=%3.3f, ty=%x, maxD=%d, minD=%d %s\n",
+			fprintf(_fp, " // (%s => %s): numPostSynapses=%d, numPreSynapses=%d, iWt=%3.3f, mWt=%3.3f, ty=%x, maxD=%d, minD=%d %s\n",
 					grp_Info2[newInfo->grpSrc].Name.c_str(), grp_Info2[newInfo->grpDest].Name.c_str(),
 					newInfo->numPostSynapses, newInfo->numPreSynapses, newInfo->initWt,   newInfo->maxWt,
 					newInfo->connProp, newInfo->maxDelay, newInfo->minDelay, (synWtType == SYN_PLASTIC)?"(*)":"");
@@ -199,14 +199,14 @@ extern RNG_rand48* gpuRand48;
 			newInfo = newInfo->next;
 		}
 
-		fflush(fp);
+		fflush(_fp);
 	}
 
-	void CpuSNN::printParameters(FILE* fp)
+	void CpuSNN::printParameters(FILE* _fp)
 	{
-		assert(fp!=NULL);
-		printGroupInfo(fp);
-		printConnectionInfo(fp);
+		assert(_fp!=NULL);
+		printGroupInfo(_fp);
+		printConnectionInfo(_fp);
 	}
 
 	void CpuSNN::printGroupInfo(string& strName)
@@ -219,21 +219,21 @@ extern RNG_rand48* gpuRand48;
 	}
 
 	// print all post-connections...
-	void CpuSNN::printPostConnection(FILE *fp)
+	void CpuSNN::printPostConnection(FILE *_fp)
 	{
-		if(fp) fprintf(fp, "PRINTING POST-SYNAPTIC CONNECTION TOPOLOGY\n");
-		if(fp) fprintf(fp, "(((((((((((((((((((((())))))))))))))))))))))\n");
+		if(_fp) fprintf(_fp, "PRINTING POST-SYNAPTIC CONNECTION TOPOLOGY\n");
+		if(_fp) fprintf(_fp, "(((((((((((((((((((((())))))))))))))))))))))\n");
 		for(int i=0; i < numGrp; i++)
-			printPostConnection(i,fp);
+			printPostConnection(i,_fp);
 	}
 
 	// print all the pre-connections...
-	void CpuSNN::printPreConnection(FILE *fp)
+	void CpuSNN::printPreConnection(FILE *_fp)
 	{
-		if(fp) fprintf(fp, "PRINTING PRE-SYNAPTIC CONNECTION TOPOLOGY\n");
-		if(fp) fprintf(fp, "(((((((((((((((((((((())))))))))))))))))))))\n");
+		if(_fp) fprintf(_fp, "PRINTING PRE-SYNAPTIC CONNECTION TOPOLOGY\n");
+		if(_fp) fprintf(_fp, "(((((((((((((((((((((())))))))))))))))))))))\n");
 		for(int i=0; i < numGrp; i++)
-			printPreConnection(i,fp);
+			printPreConnection(i,_fp);
 	}
 
 	// print the connection info of grpId
@@ -331,10 +331,10 @@ extern RNG_rand48* gpuRand48;
 	}
 
 	// print the connection info of grpId
-	void CpuSNN::printPostConnection(int grpId, FILE* fp)
+	void CpuSNN::printPostConnection(int grpId, FILE* _fp)
 	{
 		for(int i=grp_Info[grpId].StartN; i<=grp_Info[grpId].EndN; i++) {
-			if(fp) fprintf(fp, " %3d ( %3d ) : \t", i, Npost[i]);
+			if(_fp) fprintf(_fp, " %3d ( %3d ) : \t", i, Npost[i]);
 			// fetch the starting position
 			post_info_t* postIds = &postSynapticIds[cumulativePost[i]];
 			int  offset  = cumulativePost[i];
@@ -342,15 +342,15 @@ extern RNG_rand48* gpuRand48;
 				int post_nid = GET_CONN_NEURON_ID((*postIds));
 				int post_gid = GET_CONN_GRP_ID((*postIds));
 				assert( findGrpId(post_nid) == post_gid);
-				if(fp) fprintf(fp, " %3d ( D=%3d, Grp=%3d) ", post_nid, tmp_SynapticDelay[offset+j], post_gid);
+				if(_fp) fprintf(_fp, " %3d ( D=%3d, Grp=%3d) ", post_nid, tmp_SynapticDelay[offset+j], post_gid);
 			}
-			if(fp) fprintf(fp, "\n");
-			if(fp) fprintf(fp, " Delay ( %3d ) : ", i);
+			if(_fp) fprintf(_fp, "\n");
+			if(_fp) fprintf(_fp, " Delay ( %3d ) : ", i);
 			for(int j=0; j < D; j++) {
-				if(fp) fprintf(fp, " %d,%d ", postDelayInfo[i*(D+1)+j].delay_length,
+				if(_fp) fprintf(_fp, " %d,%d ", postDelayInfo[i*(D+1)+j].delay_length,
 									   postDelayInfo[i*(D+1)+j].delay_index_start);
 			}
-			if(fp) fprintf(fp, "\n");
+			if(_fp) fprintf(_fp, "\n");
 		}
 	}
 
@@ -371,20 +371,20 @@ extern RNG_rand48* gpuRand48;
 		return maxLength;
 	}
 
-	void CpuSNN::printPreConnection(int grpId, FILE* fp)
+	void CpuSNN::printPreConnection(int grpId, FILE* _fp)
 	{
 		for(int i=grp_Info[grpId].StartN; i<=grp_Info[grpId].EndN; i++) {
-			if(fp) fprintf(fp, " %d ( preCnt=%d, prePlastic=%d ) : (id => (wt, maxWt),(preId, P/F)\n\t", i, Npre[i], Npre_plastic[i]);
+			if(_fp) fprintf(_fp, " %d ( preCnt=%d, prePlastic=%d ) : (id => (wt, maxWt),(preId, P/F)\n\t", i, Npre[i], Npre_plastic[i]);
 			post_info_t* preIds = &preSynapticIds[cumulativePre[i]];
 			int  pos_i  = cumulativePre[i];
 			for(int j=0; j < Npre[i]; j++, pos_i++, preIds++) {
-				if(fp) fprintf(fp,  "  %d => (%f, %f)", j, wt[pos_i], maxSynWt[pos_i]);
+				if(_fp) fprintf(_fp,  "  %d => (%f, %f)", j, wt[pos_i], maxSynWt[pos_i]);
 				if(doneReorganization && (!memoryOptimized))
-					if(fp) fprintf(fp, ",(%d, %s)",
+					if(_fp) fprintf(_fp, ",(%d, %s)",
 							GET_CONN_NEURON_ID((*preIds)),
 							(j < Npre_plastic[i])?"P":"F");
 			}
-			if(fp) fprintf(fp, "\n");
+			if(_fp) fprintf(_fp, "\n");
 		}
 	}
 
@@ -434,14 +434,14 @@ extern RNG_rand48* gpuRand48;
 				fprintf( stderr, "Saving simulation status using %s (weights from grp=%d to nid=%d\n", fname, src_grp, nid);
 			}
 
-			FILE *fp;
+			FILE *_fp;
 
 			if(restore)
-				fp= fopen(fname, "r");
+				_fp= fopen(fname, "r");
 			else
-				fp= fopen(fname, "a");
+				_fp= fopen(fname, "a");
 
-			if(fp==NULL) {
+			if(_fp==NULL) {
 				fprintf(stderr, "Unable to open/create log file => %s\n", fname);
 				return;
 			}
@@ -458,12 +458,12 @@ extern RNG_rand48* gpuRand48;
 
 			int preNum = 0;
 			if(restore) {
-				retVal = fscanf(fp, "%d ", &preNum);
+				retVal = fscanf(_fp, "%d ", &preNum);
 				assert(retVal > 0);
 				assert(preNum == Npre[nid]);
 			}
 			else
-				fprintf(fp, "%d ", Npre[nid]);
+				fprintf(_fp, "%d ", Npre[nid]);
 
 			for(int i=0; i < Npre[nid]; i++, preIds++, synWts++) {
 				//int preId = (*preIds) & POST_SYN_NEURON_MASK;
@@ -472,45 +472,45 @@ extern RNG_rand48* gpuRand48;
 				// preId matches the src_grp that we are interested..
 				if( src_grp == findGrpId(preId)) {
 					if (restore) {
-					  retVal = fscanf(fp, " %f ", synWts);
+					  retVal = fscanf(_fp, " %f ", synWts);
 					  assert(retVal > 0);
 					  *synWts = maxWt*(*synWts);
 					  //fprintf(stderr, " %f", *synWts);
 					}
 					else
-					  fprintf(fp, " %f ", *synWts/maxWt);
+					  fprintf(_fp, " %f ", *synWts/maxWt);
 				}
 			}
 
 			if (restore) {
-				fprintf(fp, "\n");
+				fprintf(_fp, "\n");
 			}
 			else
 				fprintf(stderr, "\n");
-			fclose(fp);
+			fclose(_fp);
 		}
 	}
 */
-	void CpuSNN::printNeuronState(int grpId, FILE*fp)
+	void CpuSNN::printNeuronState(int grpId, FILE*_fp)
 	{
 		if (currentMode==GPU_MODE) {
 			copyNeuronState(&cpuNetPtrs, &cpu_gpuNetPtrs, cudaMemcpyDeviceToHost, false, grpId);
 		}
 
-		fprintf(fp, "[MODE=%s] ", (currentMode==GPU_MODE)?"GPU_MODE":"CPU_MODE");
-		fprintf(fp, "Group %s (%d) Neuron State Information (totSpike=%d, poissSpike=%d)\n",
-					 grp_Info2[grpId].Name.c_str(), grpId, spikeCountAll, nPoissonSpikes);
+		fprintf(_fp, "[MODE=%s] ", (currentMode==GPU_MODE)?"GPU_MODE":"CPU_MODE");
+		fprintf(_fp, "Group %s (%d) Neuron State Information (totSpike=%d, poissSpike=%d)\n",
+					 grp_Info2[grpId].Name.c_str(), grpId, spikeCountAll, numPoissonSpikes);
 
 		// poisson group does not have default neuron state
 		if(grp_Info[grpId].Type&POISSON_NEURON) {
-			fprintf(fp, "t=%d msec ", simTime);
+			fprintf(_fp, "t=%d msec ", simTime);
 			int totSpikes = 0;
 			for (int nid=grp_Info[grpId].StartN; nid <= grp_Info[grpId].EndN; nid++) {
 				totSpikes += cpuNetPtrs.nSpikeCnt[nid];
-				fprintf(fp, "%d ", cpuNetPtrs.nSpikeCnt[nid]);
+				fprintf(_fp, "%d ", cpuNetPtrs.nSpikeCnt[nid]);
 			}
-			fprintf(fp, "\n");
-			fprintf(fp, "TotalSpikes [grp=%d, %s]=  %d\n", grpId, grp_Info2[grpId].Name.c_str(), totSpikes);
+			fprintf(_fp, "\n");
+			fprintf(_fp, "TotalSpikes [grp=%d, %s]=  %d\n", grpId, grp_Info2[grpId].Name.c_str(), totSpikes);
 			return;
 		}
 
@@ -520,18 +520,18 @@ extern RNG_rand48* gpuRand48;
 			totSpikes += cpuNetPtrs.nSpikeCnt[nid];
 			if(!sim_with_conductances) {
 				if(cpuNetPtrs.current[nid] != 0.0)
-					fprintf(fp, "t=%d id=%d v=%+3.3f u=%+3.3f I=%+3.3f nSpikes=%d\n", simTime, nid,
+					fprintf(_fp, "t=%d id=%d v=%+3.3f u=%+3.3f I=%+3.3f nSpikes=%d\n", simTime, nid,
 									cpuNetPtrs.voltage[nid],     cpuNetPtrs.recovery[nid],      cpuNetPtrs.current[nid],
 									cpuNetPtrs.nSpikeCnt[nid]);
 			}
 			else {
 				if (cpuNetPtrs.gAMPA[nid]+ cpuNetPtrs.gNMDA[nid]+cpuNetPtrs.gGABAa[nid]+cpuNetPtrs.gGABAb[nid] != 0.0)
-					fprintf(fp, "t=%d id=%d v=%+3.3f u=%+3.3f I=%+3.3f gAMPA=%2.5f gNMDA=%2.5f gGABAa=%2.5f gGABAb=%2.5f nSpikes=%d\n", simTime, nid,
+					fprintf(_fp, "t=%d id=%d v=%+3.3f u=%+3.3f I=%+3.3f gAMPA=%2.5f gNMDA=%2.5f gGABAa=%2.5f gGABAb=%2.5f nSpikes=%d\n", simTime, nid,
 							cpuNetPtrs.voltage[nid],     cpuNetPtrs.recovery[nid],      cpuNetPtrs.current[nid], cpuNetPtrs.gAMPA[nid],
 							cpuNetPtrs.gNMDA[nid], cpuNetPtrs.gGABAa[nid], cpuNetPtrs.gGABAb[nid], cpuNetPtrs.nSpikeCnt[nid]);
 			}
 		}
-		fprintf(fp, "TotalSpikes [grp=%d, %s] = %d\n", grpId, grp_Info2[grpId].Name.c_str(), totSpikes);
-		fprintf(fp, "\n");
-		fflush(fp);
+		fprintf(_fp, "TotalSpikes [grp=%d, %s] = %d\n", grpId, grp_Info2[grpId].Name.c_str(), totSpikes);
+		fprintf(_fp, "\n");
+		fflush(_fp);
 	}

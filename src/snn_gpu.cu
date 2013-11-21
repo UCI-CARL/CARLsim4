@@ -2124,7 +2124,7 @@
 		return;
 	}
 
-	void CpuSNN::printGpuLoadBalance(bool init, int numBlocks, FILE*fp)
+	void CpuSNN::printGpuLoadBalance(bool init, int numBlocks, FILE*_fp)
 	{
 		void* devPtr;
 
@@ -2141,16 +2141,16 @@
 		CUDA_CHECK_ERRORS( cudaMemcpy(&cpu_tmp_val, devPtr, sizeof(cpu_tmp_val), cudaMemcpyDeviceToHost));
 		CUDA_CHECK_ERRORS( cudaMemset(devPtr, 0, sizeof(tmp_val)));
 
-		fprintf(fp, "GPU Load Balancing Information\n");
+		fprintf(_fp, "GPU Load Balancing Information\n");
 
 		for (int i=0; i < numBlocks; i++) {
 			if (cpu_tmp_val[i][0] != 0)
-				fprintf(fp, "[%d] Fired Neuron = %d \n", i, cpu_tmp_val[i][1]+cpu_tmp_val[i][2]);
+				fprintf(_fp, "[%d] Fired Neuron = %d \n", i, cpu_tmp_val[i][1]+cpu_tmp_val[i][2]);
 		}
 
-		fprintf(fp, "\n");
+		fprintf(_fp, "\n");
 
-		fflush(fp);
+		fflush(_fp);
 
 	}
 
@@ -2447,26 +2447,26 @@
 		}
 	}
 
-	void CpuSNN::printCurrentInfo(FILE* fp)
+	void CpuSNN::printCurrentInfo(FILE* _fp)
 	{
 		// copy neuron input current...
-		fprintf(fp, "Total Synaptic updates: \n");
+		fprintf(_fp, "Total Synaptic updates: \n");
 		CUDA_CHECK_ERRORS( cudaMemcpy( current, cpu_gpuNetPtrs.current, sizeof(float)*numNReg, cudaMemcpyDeviceToHost));
 		for(int i=0; i < numNReg; i++) {
 			if (current[i] != 0.0 ) {
-				fprintf(fp, "I[%d] -> %f\n", i, current[i]);
+				fprintf(_fp, "I[%d] -> %f\n", i, current[i]);
 			}
 		}
-		fprintf(fp, "\n");
-		fflush(fp);
+		fprintf(_fp, "\n");
+		fflush(_fp);
 	}
 
-	void CpuSNN::printFiringInfo(FILE* fp, int myGrpId)
+	void CpuSNN::printFiringInfo(FILE* _fp, int myGrpId)
 	{
 		//printNeuronState(myGrpId, stderr);
 	}
 
-	void CpuSNN::printTestVarInfo(FILE* fp, char* testString, bool test1, bool test2, bool test12, int subVal, int grouping1, int grouping2)
+	void CpuSNN::printTestVarInfo(FILE* _fp, char* testString, bool test1, bool test2, bool test12, int subVal, int grouping1, int grouping2)
 	{
 		int cnt=0;
 
@@ -2484,17 +2484,17 @@
 			for(int i=0; i < numN; i++) {
 				if ((testVar[i] != 0.0) || (testVar2[i] != 0.0)) {
 					if(firstPrint) {
-						fprintf(fp, "\ntime=%d: Testing Variable 1 and 2: %s\n", simTime, testString);
+						fprintf(_fp, "\ntime=%d: Testing Variable 1 and 2: %s\n", simTime, testString);
 						firstPrint = false;
 					}
-					fprintf(fp, "testVar12[%d] -> %f : %f\n", i, testVar[i]-subVal, testVar2[i]-subVal);
+					fprintf(_fp, "testVar12[%d] -> %f : %f\n", i, testVar[i]-subVal, testVar2[i]-subVal);
 					testVar[i]  = 0.0;
 					testVar2[i] = 0.0;
-					if(gcnt++==grouping1) { fprintf(fp, "\n"); gcnt=0;}
+					if(gcnt++==grouping1) { fprintf(_fp, "\n"); gcnt=0;}
  				}
 			}
-//			fprintf(fp, "\n");
-			fflush(fp);
+//			fprintf(_fp, "\n");
+			fflush(_fp);
 			test1 = false;
 			test2 = false;
 			CUDA_CHECK_ERRORS( cudaMemcpy( cpu_gpuNetPtrs.testVar,  testVar, sizeof(float)*numN, cudaMemcpyHostToDevice));
@@ -2510,17 +2510,17 @@
 			for(int i=0; i < numN; i++) {
 				if (testVar[i] != 0.0 ) {
 					if(firstPrint) {
-						fprintf(fp, "\ntime=%d: Testing Variable 1 and 2: %s\n", simTime, testString);
+						fprintf(_fp, "\ntime=%d: Testing Variable 1 and 2: %s\n", simTime, testString);
 						firstPrint = false;
 					}
-					if(gcnt==0) fprintf(fp, "testVar[%d] -> ", i);
-					fprintf(fp, "%d\t", i, testVar[i]-subVal);
+					if(gcnt==0) fprintf(_fp, "testVar[%d] -> ", i);
+					fprintf(_fp, "%d\t", i, testVar[i]-subVal);
 					testVar[i] = 0.0;
-					if(++gcnt==grouping1) { fprintf(fp, "\n"); gcnt=0;}
+					if(++gcnt==grouping1) { fprintf(_fp, "\n"); gcnt=0;}
 				}
 			}
-//			fprintf(fp, "\n");
-			fflush(fp);
+//			fprintf(_fp, "\n");
+			fflush(_fp);
 			cnt=0;
 			CUDA_CHECK_ERRORS( cudaMemcpy( cpu_gpuNetPtrs.testVar,  testVar, sizeof(float)*numN, cudaMemcpyHostToDevice));
 			CUDA_CHECK_ERRORS_MACRO( cudaMemcpyToSymbol(testVarCnt, &cnt, sizeof(int), 0, cudaMemcpyHostToDevice));
@@ -2532,17 +2532,17 @@
 			for(int i=0; i < numN; i++) {
 				if (testVar2[i] != 0.0 ) {
 					if(firstPrint) {
-						fprintf(fp, "\ntime=%d: Testing Variable 1 and 2: %s\n", simTime, testString);
+						fprintf(_fp, "\ntime=%d: Testing Variable 1 and 2: %s\n", simTime, testString);
 						firstPrint = 0;
 					}
-					if(gcnt==0) fprintf(fp, "testVar2[%d] -> ", i);
-					fprintf(fp, "%d\t", i, testVar2[i]-subVal);
+					if(gcnt==0) fprintf(_fp, "testVar2[%d] -> ", i);
+					fprintf(_fp, "%d\t", i, testVar2[i]-subVal);
 					testVar2[i] = 0.0;
-					if(++gcnt==grouping2) { fprintf(fp, "\n"); gcnt=0;}
+					if(++gcnt==grouping2) { fprintf(_fp, "\n"); gcnt=0;}
 				}
 			}
-//			fprintf(fp, "\n");
-			fflush(fp);
+//			fprintf(_fp, "\n");
+			fflush(_fp);
 
 			CUDA_CHECK_ERRORS( cudaMemcpy( cpu_gpuNetPtrs.testVar2, testVar2, sizeof(float)*numN, cudaMemcpyHostToDevice));
 			CUDA_CHECK_ERRORS_MACRO( cudaMemcpyToSymbol(testVarCnt2, &cnt, sizeof(int), 0, cudaMemcpyHostToDevice));
@@ -3114,7 +3114,7 @@
 	}
 
 
-	void CpuSNN::printSimSummary(FILE *fp)
+	void CpuSNN::printSimSummary(FILE *_fp)
 	{
 		DBG(2, fpLog, AT, "printSimSummary()");
 		float etime;
@@ -3133,19 +3133,19 @@
 			etime = cpuExecutionTime;
 		}
 
-		fprintf(fp, "\n*** Network configuration dumped in %s.dot file...\n\
+		fprintf(_fp, "\n*** Network configuration dumped in %s.dot file...\n\
 				Use graphViz to see the network connectivity...\n\n", networkName.c_str());
-		fprintf(fp, "*********** %s Simulation Summary **********\n", (currentMode == GPU_MODE)?("GPU"):"CPU");
-		fprintf(fp, "Network Parameters: \n\tnumNeurons = %d (numNExcReg:numNInhReg=%2.1f:%2.1f), numSynapses = %d, D = %d\n", numN, 100.0*numNExcReg/numN, 100.0*numNInhReg/numN, postSynCnt, D);
-		fprintf(fp, "Random Seed: %d\n", randSeed);
-		fprintf(fp, "Timing: \n\tModel Simulation Time = %lld sec \n\tActual Execution Time = %4.2f sec\n",  (unsigned long long)simTimeSec, etime/1000.0);
-		fprintf(fp, "Average Firing Rate \n\t2+ms delay = %3.3f Hz \n\t1ms delay = %3.3f Hz \n\tOverall = %3.3f Hz\n",
+		fprintf(_fp, "*********** %s Simulation Summary **********\n", (currentMode == GPU_MODE)?("GPU"):"CPU");
+		fprintf(_fp, "Network Parameters: \n\tnumNeurons = %d (numNExcReg:numNInhReg=%2.1f:%2.1f), numSynapses = %d, D = %d\n", numN, 100.0*numNExcReg/numN, 100.0*numNInhReg/numN, postSynCnt, D);
+		fprintf(_fp, "Random Seed: %d\n", randSeed);
+		fprintf(_fp, "Timing: \n\tModel Simulation Time = %lld sec \n\tActual Execution Time = %4.2f sec\n",  (unsigned long long)simTimeSec, etime/1000.0);
+		fprintf(_fp, "Average Firing Rate \n\t2+ms delay = %3.3f Hz \n\t1ms delay = %3.3f Hz \n\tOverall = %3.3f Hz\n",
 			spikeCountD2Host/(1.0*simTimeSec*numNExcReg), spikeCountD1Host/(1.0*simTimeSec*numNInhReg), spikeCountAll/(1.0*simTimeSec*numN));
-		fprintf(fp, "Overall Firing Count: \n\t2+ms delay = %d \n\t1ms delay = %d \n\tTotal = %d\n",
+		fprintf(_fp, "Overall Firing Count: \n\t2+ms delay = %d \n\t1ms delay = %d \n\tTotal = %d\n",
 			spikeCountD2Host, spikeCountD1Host, spikeCountAll );
-		fprintf(fp, "**************************************\n\n");
+		fprintf(_fp, "**************************************\n\n");
 
-		fflush(fp);
+		fflush(_fp);
 	}
 
 
