@@ -25,6 +25,9 @@
       <Filter>Source</Filter>
     </ClCompile>
     <ClCompile Include="examples\random\main_random.cpp" />
+    <ClCompile Include="src\SparseWeightDelayMatrix.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\config.h">
@@ -52,6 +55,9 @@
       <Filter>Include</Filter>
     </ClInclude>
     <ClInclude Include="include\PoissonRate.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\SparseWeightDelayMatrix.h">
       <Filter>Include</Filter>
     </ClInclude>
   </ItemGroup>

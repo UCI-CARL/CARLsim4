@@ -76,6 +76,7 @@
 #include "config.h"
 #include "PropagatedSpikeBuffer.h"
 #include "PoissonRate.h"
+#include "SparseWeightDelayMatrix.h"
 
 using std::string;
 using std::map;
@@ -499,68 +500,6 @@ typedef struct group_connect_info_s {
 	int*		fixedDestGrps;	//!< connected destination groups array, (x=destGrpId, y=startN, z=endN, w=function pointer)
 	int*		fixedDestParam;	//!< connected destination parameters ,  (x=Start, y=Width, z=Stride, w=height)
 } GroupConnectInfo;
-
-
-class SparseWeightDelayMatrix {
-	public:
-	SparseWeightDelayMatrix(int Npre, int Npost, int initSize=0) {
-		count = 0;
-		size = 0;
-		weights = NULL;
-		maxWeights = NULL;
-		preIds = NULL;
-		preIds = NULL;
-		delay_opts = NULL;
-
-		maxPreId = 0;
-		maxPostId = 0;
-
-		resize(initSize);
-	}
-
-	~SparseWeightDelayMatrix() {
-		free(weights);
-		free(maxWeights);
-		free(preIds);
-		free(postIds);
-		free(delay_opts);
-	}
-
-	void resize(int inc) {
-		size += inc;
-
-		weights = (float*)realloc(weights,size*sizeof(float));
-		maxWeights = (float*)realloc(maxWeights,size*sizeof(float));
-		preIds = (unsigned int*)realloc(preIds,size*sizeof(int));
-		postIds = (unsigned int*)realloc(postIds,size*sizeof(int));
-		delay_opts = (unsigned int*)realloc(delay_opts,size*sizeof(int));
-	}
-
-	int add(int preId, int postId, float weight, float maxWeight, uint8_t delay, int opts=0) {
-		if (count == size) resize(size==0?1000:size*2);
-
-		weights[count] = weight;
-		maxWeights[count] = maxWeight;
-		preIds[count] = preId;
-		postIds[count] = postId;
-		delay_opts[count] = delay | (opts << 8);
-
-		if (preId > maxPreId) maxPreId = preId;
-		if (postId > maxPostId) maxPostId = postId;
-
-		return ++count;
-	}
-
-	uint32_t	count;
-	uint32_t	size;
-	uint32_t	maxPreId;
-	uint32_t	maxPostId;
-	float		*weights;
-	float		*maxWeights;
-	uint32_t	*preIds;
-	uint32_t	*postIds;
-	uint32_t	*delay_opts; //!< first 8 bits are delay, higher are for Fixed/Plastic and any other future options
-};
 
 
 

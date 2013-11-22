@@ -29,6 +29,7 @@
     <ClCompile Include="src\printSNNInfo.cpp" />
     <ClCompile Include="src\PropagatedSpikeBuffer.cpp" />
     <ClCompile Include="src\snn_cpu.cpp" />
+    <ClCompile Include="src\SparseWeightDelayMatrix.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\config.h" />
@@ -40,6 +41,7 @@
     <ClInclude Include="include\PoissonRate.h" />
     <ClInclude Include="include\PropagatedSpikeBuffer.h" />
     <ClInclude Include="include\snn.h" />
+    <ClInclude Include="include\SparseWeightDelayMatrix.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{2A96CB30-2293-4890-9D05-8361232F9C2C}</ProjectGuid>
