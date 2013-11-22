@@ -72,7 +72,7 @@ int main()
 	s.setSTDP(g1, true, ALPHA_LTP, TAU_LTP, ALPHA_LTD, TAU_LTD);
 
 	// show logout every 10 secs, enabled with level 1 and output to stdout.
-	s.setLogCycle(10, 1, stdout);
+	s.setLogCycle(10, 2, stdout);
 
 	// put spike times into spikes.dat
 	s.setSpikeMonitor(g1,"spikes.dat");

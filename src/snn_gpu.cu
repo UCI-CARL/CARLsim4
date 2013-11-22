@@ -52,7 +52,7 @@
 
 	RNG_rand48* gpuPoissonRand; // initialized in CpuSNNinitGPUparams
 
-	#define ROUNDED_TIMING_COUNT  (((1000+MAX_SynapticDelay+1)+127) & ~(127))  // (1000+D) rounded to multiple 128
+	#define ROUNDED_TIMING_COUNT  (((1000+MAX_SYN_DELAY+1)+127) & ~(127))  // (1000+D) rounded to multiple 128
 
 	#define  FIRE_CHUNK_CNT    (512)
 
@@ -2976,8 +2976,8 @@
 	// Allocates required memory and then initialize the GPU
 	void CpuSNN::allocateSNN_GPU(int ithGPU)
 	{
-		if (D > MAX_SynapticDelay) {
-			printf("Error, you are using a synaptic delay (%d) greater than MAX_SynapticDelay defined in config.h\n",D);
+		if (D > MAX_SYN_DELAY) {
+			printf("Error, you are using a synaptic delay (%d) greater than MAX_SYN_DELAY defined in config.h\n",D);
 			assert(0);
 		}
 	

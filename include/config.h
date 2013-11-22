@@ -61,9 +61,9 @@
 	#include <stdint.h>
 //#endif
 
-#define MAX_numPostSynapses (10000)
-#define MAX_numPreSynapses (20000)
-#define MAX_SynapticDelay (20)
+#define MAX_POST_SYN_PER_N (10000)
+#define MAX_PRE_SYN_PER_N (20000)
+#define MAX_SYN_DELAY (20)
 
 //#define CONDUCTANCES 		1
 #define COND_INTEGRATION_SCALE	2

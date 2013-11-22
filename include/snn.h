@@ -62,6 +62,8 @@
  * cnt: count
  * curr: current
  * mon: monitor
+ * reg/Reg: regurlar
+ * pois/Pois: poisson
  */
 #ifndef _SNN_GOLD_H_
 #define _SNN_GOLD_H_
@@ -680,11 +682,11 @@ class CpuSNN
 		 * \param _grpIdPost ID of the post-synaptic group 
 		 * \param _conn: pointer to an instance of class ConnectionGenerator 
 		 * \param _synWtType: (optional) connection type, either SYN_FIXED or SYN_PLASTIC, default = SYN_FIXED
-		 * \param _maxM: (optional) maximum number of post-synaptic connections (per neuron), Set to 0 for no limit, default = 0
+		 * \param _maxPostM: (optional) maximum number of post-synaptic connections (per neuron), Set to 0 for no limit, default = 0
 		 * \param _maxPreM: (optional) maximum number of pre-synaptic connections (per neuron), Set to 0 for no limit, default = 0. 
 		 * \return number of created synaptic projections
 		 */
-		int connect(int _grpIdPre, int _grpIdPost, ConnectionGenerator* _conn, bool _synWtType = SYN_FIXED, int _maxM = 0, int _maxPreM = 0);
+		int connect(int _grpIdPre, int _grpIdPost, ConnectionGenerator* _conn, bool _synWtType = SYN_FIXED, int _maxPostM = 0, int _maxPreM = 0);
 
 		//! Run a simulation. Note, network must be correctly specified and instantiated.
 		/*!
@@ -858,7 +860,7 @@ class CpuSNN
 		 * \param _logMode (optional) the higher this number, the more logging information will be printed, default = 0
 		 * \param _fp (optional) file pointer for log info, default = NULL
 		 */
-		void setLogCycle(unsigned int _cnt, int mode = 0, FILE *_fp = NULL);
+		void setLogCycle(unsigned int _cnt, int _logMode = 0, FILE *_fp = NULL);
 
 		void setProbe(int g, const string& type, int startId=0, int cnt=1, uint32_t _printProbe=0);
 
