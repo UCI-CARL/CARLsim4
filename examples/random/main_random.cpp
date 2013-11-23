@@ -88,7 +88,7 @@ int main()
 	s.setSpikeRate(gin,&in);
 
 	//run for 10 seconds
-	for(int i=0; i < 10; i++) {
+	for(int i=0; i < 20; i++) {
 		// run the established network for a duration of 1 (sec)  and 0 (millisecond), in CPU_MODE
 		s.runNetwork(1, 0);
 	}

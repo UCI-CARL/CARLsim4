@@ -277,6 +277,13 @@ typedef struct {
 	uint8_t		grpId;
 } post_info_t;
 
+
+//! network information structure
+/*!
+ *	This structure contains network information that is required for GPU simulation.
+ *	The data in this structure are copied to device memory when running GPU simulation.
+ *	\sa CpuSNN
+ */ 
 typedef struct network_info_s  {
 	size_t		STP_Pitch;		//!< numN rounded upwards to the nearest 256 boundary
 	uint32_t	numN;
@@ -371,8 +378,8 @@ typedef struct network_ptr_s  {
 
 	float		*poissonFireRate;
 	uint32_t	*poissonRandPtr;		//!< firing random number. max value is 10,000
-	int2		*neuronAllocation;
-	int3		*groupIdInfo;			//!< used for group Id calculations...
+	int2		*neuronAllocation;		//!< .x: [31:0] index of the first neuron, .y: [31:16] number of neurons, [15:0] group id
+	int3		*groupIdInfo;			//!< .x , .y: the start and end index of neurons in a group, .z: gourd id, used for group Id calculations
 	short int	*synIdLimit;			//!<
 	float		*synMaxWts;				//!<
 
@@ -1155,9 +1162,17 @@ private:
 		bool sim_with_stp;
 		bool sim_with_conductances;
 
-		// spiking network related info.. neurons, synapses and network parameters
-		int	        	numN,numNReg,numPostSynapses,D,numNExcReg,numNInhReg, numPreSynapses;
-		int   			numNExcPois, numNInhPois, numNPois;
+		// spiking neural network related information, including neurons, synapses and network parameters
+		int	        	numN;				//!< number of neurons in the spiking neural network
+		int				numPostSynapses;	//!< maximum number of post-synaptic connections in groups
+		int				numPreSynapses;		//!< maximum number of pre-syanptic connections in groups
+		int				D;					//!< maximum axonal delay in groups
+		int				numNReg;			//!< number of regular (spking) neurons
+		int				numNExcReg;			//!< number of regular excitatory neurons
+		int				numNInhReg;			//!< number of regular inhibitory neurons
+		int   			numNExcPois;		//!< number of excitatory poisson neurons
+		int				numNInhPois;		//!< number of inhibitory poisson neurons
+		int				numNPois;			//!< number of poisson neurons
 		float       	*voltage, *recovery, *Izh_a, *Izh_b, *Izh_c, *Izh_d, *current;
 		bool			*curSpike;
 		uint32_t        *nSpikeCnt;     //!< spike counts per neuron
@@ -1168,8 +1183,8 @@ private:
 		float			*wtChange, *wt;	//!< stores the synaptic weight and weight change of a synaptic connection
 		float	 		*maxSynWt;		//!< maximum synaptic weight for given connection..
 		uint32_t    	*synSpikeTime;	//!< stores the spike time of each synapse
-		uint32_t		postSynCnt; //!< stores the total number of post-synaptic connections in the network
-		uint32_t		preSynCnt; //!< stores the total number of pre-synaptic connections in the network
+		uint32_t		postSynCnt;		//!< stores the total number of post-synaptic connections in the network
+		uint32_t		preSynCnt;		//!< stores the total number of pre-synaptic connections in the network
 		float			*intrinsicWeight;
 		uint32_t		*cumulativePost;
 		uint32_t		*cumulativePre;
@@ -1203,7 +1218,8 @@ private:
 		uint32_t		*timeTableD1;
 		uint32_t		*firingTableD2;
 		uint32_t		*firingTableD1;
-		uint32_t		maxSpikesD1, maxSpikesD2;
+		uint32_t		maxSpikesD1;
+		uint32_t		maxSpikesD2;
 
 		//time and timestep
 		uint64_t	simTimeSec;		//!< this is used to store the seconds.

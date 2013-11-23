@@ -46,7 +46,7 @@
 
 class PoissonRate {
 public:
-	float*    rates;
+	float* rates;
 	uint32_t len;
 	bool onGPU;
 	bool allocatedRatesInternally;

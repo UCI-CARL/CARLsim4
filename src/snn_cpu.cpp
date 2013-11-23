@@ -330,11 +330,11 @@ RNG_rand48* gpuRand48 = NULL;
 		showGrpFiringInfo = true;
 
 		currentMode = _mode;
-		memset(&cpu_gpuNetPtrs,0,sizeof(network_ptr_t));
-		memset(&net_Info,0,sizeof(network_info_t));
+		memset(&cpu_gpuNetPtrs, 0, sizeof(network_ptr_t));
+		memset(&net_Info, 0, sizeof(network_info_t));
 		cpu_gpuNetPtrs.allocated = false;
 
-		memset(&cpuNetPtrs,0, sizeof(network_ptr_t));
+		memset(&cpuNetPtrs, 0, sizeof(network_ptr_t));
 		cpuNetPtrs.allocated = false;
 
 #ifndef VIEW_DOTTY
