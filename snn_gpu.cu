@@ -3126,7 +3126,7 @@
 			spikeCountAll1sec = spikeCountD1 + spikeCountD2;
 			CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &spikeCountD2Host, spikeCountD2, sizeof(int), 0, cudaMemcpyDeviceToHost));
 			CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &spikeCountD1Host, spikeCountD1, sizeof(int), 0, cudaMemcpyDeviceToHost));
-			spikeCountAll      = spikeCountD1 + spikeCountD2;
+			spikeCountAll      = spikeCountD1Host + spikeCountD2Host;
 		}
 		else {
 			stopCPUTiming();
