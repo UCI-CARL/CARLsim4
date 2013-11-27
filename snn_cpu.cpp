@@ -395,6 +395,13 @@
 		doneReorganization = false;
 		memoryOptimized	   = false;
 
+		stpu = NULL;
+		stpx = NULL;
+		gAMPA = NULL;
+		gNMDA = NULL;
+		gGABAa = NULL;
+		gGABAb = NULL;
+
 		if (_randSeed == -1) {
 			randSeed = time(NULL);
 		}

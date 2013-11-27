@@ -68,6 +68,8 @@ DEP = snn.h PropagatedSpikeBuffer.h gpu.h gpu_random.h mtrand.h config.h CUDAVer
 
 #OBJS = ${SRCS:.cpp=.o}
 
+OBJS_DIR = obj
+
 CORE_OBJS = snn_cpu.o \
             snn_gpu.o \
             mtrand.o \
@@ -83,7 +85,7 @@ EXE_CU_NONE = random
 EXE_CU_20 = colorblind colorcycle orientation rdk v1v4PFC
 EXE_CU_21 = v1MTLIP
 
-
+EXE_DIR = bin
 
 ########################################################################################################################
 # RULES
@@ -94,7 +96,7 @@ all: ${EXE_CU_21} ${EXE_CU_20} ${EXE_CU_NONE}
 .SECONDEXPANSION:
 # using none of the v1ColorME.cu
 ${EXE_CU_NONE}: ${DEP} ${CORE_OBJS} examples/$$@/main_$$@.cpp
-	${CC} ${INCLUDES} ${LFLAGS} ${LIBS} ${CFLAGS} ${CORE_OBJS} examples/random/main_$@.cpp -o $@
+	${CC} ${INCLUDES} ${LFLAGS} ${LIBS} ${CFLAGS} ${CORE_OBJS} examples/$@/main_$@.cpp -o $@
 
 # using v1ColorME.2.0.cu
 ${EXE_CU_20}: ${DEP} ${CORE_OBJS} ${UTIL_2_0_OBJS} examples/$$@/main_$$@.cpp
