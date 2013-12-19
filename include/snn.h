@@ -1224,7 +1224,7 @@ private:
 		//time and timestep
 		uint64_t	simTimeSec;		//!< this is used to store the seconds.
 		uint32_t	simTimeMs;
-		uint32_t	simTime;		//!< this value is not reset but keeps increasing to its max value.
+		uint32_t	simTime;		//!< this value is not reset but keeps increasing to its max value. The unit is millisecond.
 		uint32_t	spikeCountAll1sec;
 		uint32_t	secD1fireCntHost;
 		uint32_t	secD2fireCntHost;	//!< firing counts for each second

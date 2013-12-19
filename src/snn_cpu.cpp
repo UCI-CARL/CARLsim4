@@ -407,6 +407,13 @@ RNG_rand48* gpuRand48 = NULL;
 		doneReorganization = false;
 		memoryOptimized	   = false;
 
+		stpu = NULL;
+		stpx = NULL;
+		gAMPA = NULL;
+		gNMDA = NULL;
+		gGABAa = NULL;
+		gGABAb = NULL;
+
 		if (_randSeed == -1) {
 			randSeed = time(NULL);
 		}
@@ -658,10 +665,10 @@ RNG_rand48* gpuRand48 = NULL;
 
 			grp_Info[cGrpId].WithConductances = _enable;
 
-			grp_Info[cGrpId].dAMPA= 1 - (1.0 / _tAMPA);
-			grp_Info[cGrpId].dNMDA= 1 - (1.0 / _tNMDA);
-			grp_Info[cGrpId].dGABAa=1 - (1.0 / _tGABAa);
-			grp_Info[cGrpId].dGABAb=1 - (1.0 / _tGABAb);
+			grp_Info[cGrpId].dAMPA = 1 - (1.0 / _tAMPA);
+			grp_Info[cGrpId].dNMDA = 1 - (1.0 / _tNMDA);
+			grp_Info[cGrpId].dGABAa = 1 - (1.0 / _tGABAa);
+			grp_Info[cGrpId].dGABAb = 1 - (1.0 / _tGABAb);
 
 			grp_Info[cGrpId].newUpdates = true;
 

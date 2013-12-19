@@ -38,7 +38,8 @@ class PropagatedSpikeBuffer
 public:
 
     //! New spike buffer
-    /*! \param minDelay Minimum delay (in number of time steps) the buffer can handle
+    /*!
+	*  \param minDelay Minimum delay (in number of time steps) the buffer can handle
     *  \param maxDelay Maximum delay (in number of time steps) the buffer can handle
     *  \param chunkSize Constant used for internal memory management.
     *                   Should increase with increasing number of synapses and

@@ -52,7 +52,7 @@
 
 	RNG_rand48* gpuPoissonRand; // initialized in CpuSNNinitGPUparams
 
-	#define ROUNDED_TIMING_COUNT  (((1000+MAX_SYN_DELAY+1)+127) & ~(127))  // (1000+D) rounded to multiple 128
+	#define ROUNDED_TIMING_COUNT  (((1000 + MAX_SYN_DELAY + 1) + 127) & ~(127))  // (1000+D) rounded to multiple 128
 
 	#define  FIRE_CHUNK_CNT    (512)
 
@@ -627,12 +627,13 @@
 			if (gpuGrpInfo[grpId].WithSTDP) { // MDR, FIXME this probably will cause more thread divergence than need be...
 				int  nid   = fireTablePtr[pos];
 				unsigned int  end_p = gpuPtrs.cumulativePre[nid] + gpuPtrs.Npre_plastic[nid];
-				for(unsigned int p  = gpuPtrs.cumulativePre[nid] + threadIdx.x%LTP_GROUPING_SZ;
+				for(unsigned int p  = gpuPtrs.cumulativePre[nid] + threadIdx.x % LTP_GROUPING_SZ;
 						p < end_p;
 						p+=LTP_GROUPING_SZ) {
 					int stdp_tDiff = (simTime - gpuPtrs.synSpikeTime[p]);
 					if ((stdp_tDiff > 0) && ((stdp_tDiff*gpuGrpInfo[grpId].TAU_LTP_INV)<25)) {
-						gpuPtrs.wtChange[p] += STDP(stdp_tDiff, gpuGrpInfo[grpId].ALPHA_LTP, gpuGrpInfo[grpId].TAU_LTP_INV);
+						//gpuPtrs.wtChange[p] += STDP(stdp_tDiff, gpuGrpInfo[grpId].ALPHA_LTP, gpuGrpInfo[grpId].TAU_LTP_INV);
+						gpuPtrs.wtChange[p] += 0.2 * STDP(stdp_tDiff, gpuGrpInfo[grpId].ALPHA_LTP, gpuGrpInfo[grpId].TAU_LTP_INV); // TSC
 //						int val = atomicAdd(&testVarCnt, 4);
 //						gpuPtrs.testVar[val]   = 1+nid;
 //						gpuPtrs.testVar[val+1] = 1+p-gpuPtrs.cumulativePre[nid];
@@ -925,39 +926,40 @@
 
 	//******************************** UPDATE GLOBAL STATE EVERY TIME STEP *********************************************************
 
+	//! update neuron state (i.e., voltage and recovery)
 	__device__ void updateNeuronState(unsigned int& nid, int& grpId)
 	{
-		float v      =  gpuPtrs.voltage[nid];
-		float u      =  gpuPtrs.recovery[nid];
+		float v = gpuPtrs.voltage[nid];
+		float u = gpuPtrs.recovery[nid];
 		float I_sum;
 
 		// loop that allows smaller integration time step for v's and u's
-		for (int c=0; c<COND_INTEGRATION_SCALE; c++) {
+		for (int c = 0; c < COND_INTEGRATION_SCALE; c++) {
 			I_sum = 0.0;
 			if (gpuNetInfo.sim_with_conductances) {
-				float NMDAtmp = (v+80)*(v+80)/60/60;
+				float NMDAtmp = (v + 80) * (v + 80) / 60 / 60;
 				// There is an instability issue when dealing with large conductances, which causes the membr.
 				// pot. to plateau just below the spike threshold... We cap the "slow" conductances to prevent
 				// this issue. Note: 8.0 and 2.0 seemed to work in some experiments, but it might not be the
 				// best choice in general... compare globalStateUpdate() in snn_cpu.cpp
-				I_sum = - ( gpuPtrs.gAMPA[nid]*(v-0)
-					+ min(8.0f,gpuPtrs.gNMDA[nid])*NMDAtmp/(1+NMDAtmp)*(v-0) // cap gNMDA at 8.0
-					+ gpuPtrs.gGABAa[nid]*(v+70)
-					+ min(2.0f,gpuPtrs.gGABAb[nid])*(v+90)); // cap gGABAb at 2.0
+				I_sum = -(gpuPtrs.gAMPA[nid] * (v - 0)
+					+ min(8.0f, gpuPtrs.gNMDA[nid]) * NMDAtmp / (1 + NMDAtmp) * (v - 0) // cap gNMDA at 8.0
+					+ gpuPtrs.gGABAa[nid] * (v + 70)
+					+ min(2.0f, gpuPtrs.gGABAb[nid]) * (v + 90)); // cap gGABAb at 2.0
 			}
 			else
 				I_sum = gpuPtrs.current[nid];
 
 			// update vpos and upos for the current neuron
-			v += ((0.04f*v+5)*v+140-u+I_sum)/COND_INTEGRATION_SCALE;
-			if (v > 30)  { v = 30; c=COND_INTEGRATION_SCALE; }// break the loop but evaluate u[i]
+			v += ((0.04f * v + 5) * v + 140 - u + I_sum) / COND_INTEGRATION_SCALE;
+			if (v > 30) {v = 30; c = COND_INTEGRATION_SCALE;}// break the loop but evaluate u[i]
 			if (v < -90) v = -90;
-			u += (gpuPtrs.Izh_a[nid]*(gpuPtrs.Izh_b[nid]*v-u)/COND_INTEGRATION_SCALE);
+			u += (gpuPtrs.Izh_a[nid] * (gpuPtrs.Izh_b[nid] * v - u) / COND_INTEGRATION_SCALE);
 		}
 
-		gpuPtrs.current[nid]		 = I_sum;
-		gpuPtrs.voltage[nid] 	     = v;
-		gpuPtrs.recovery[nid] 	     = u;
+		gpuPtrs.current[nid] = I_sum;
+		gpuPtrs.voltage[nid] = v;
+		gpuPtrs.recovery[nid] = u;
 	}
 
 	__device__ inline int assertGlobalStates()
@@ -967,31 +969,30 @@
 		return 0;
 	}
 
-	///////////////////////////////////////////////////////////
-	/// Global Kernel function:      gpu_globalStateUpdate
-	/// Description:
-	//  change this with selective upgrading
-	//  technique used for firing neurons
-	///////////////////////////////////////////////////////////
+	//!
+	/*! Global Kernel function:      kernel_globalStateUpdate
+	 *  \brief update neuron state
+	 *  change this with selective upgrading technique used for firing neurons
+	 */
 	__global__ void kernel_globalStateUpdate (int t, int sec, int simTime)
 	{
-		const int totBuffers=loadBufferCount;
+		const int totBuffers = loadBufferCount;
 
 		for (int bufPos = blockIdx.x; bufPos < totBuffers; bufPos += gridDim.x) {
 			// KILLME !!! This can be further optimized ....
 			// instead of reading each neuron group separately .....
 			// read a whole buffer and use the result ......
 			int2 threadLoad  = getStaticThreadLoad(bufPos);
-			unsigned int  nid        = (STATIC_LOAD_START(threadLoad) + threadIdx.x);
-			int  lastId      = STATIC_LOAD_SIZE(threadLoad);
-			int  grpId       = STATIC_LOAD_GROUP(threadLoad);
+			unsigned int nid = (STATIC_LOAD_START(threadLoad) + threadIdx.x);
+			int  lastId = STATIC_LOAD_SIZE(threadLoad);
+			int  grpId = STATIC_LOAD_GROUP(threadLoad);
 
 			// do some error checking...
 			assertGlobalStates();
 
 			if ((threadIdx.x < lastId) && (nid < gpuNetInfo.numN)) {
 
-				if (IS_REGULAR_NEURON(nid,gpuNetInfo.numNReg, gpuNetInfo.numNPois)) {
+				if (IS_REGULAR_NEURON(nid, gpuNetInfo.numNReg, gpuNetInfo.numNPois)) {
 
 					// update neuron state here....
 					updateNeuronState(nid, grpId);
@@ -1091,12 +1092,12 @@
 
 		t_wt += t_wtChange;
 
-		//MDR - don't decay weight cahnges, just set to 0
-		//t_wtChange*=0.90f;
-		t_wtChange = 0;
+		
+		t_wtChange *= 0.90f; // TSC - resume decay weight changes
+		//t_wtChange = 0; //MDR - don't decay weight changes, just set to 0
 
-		if (t_wt>t_maxWt) t_wt=t_maxWt;
-		if (t_wt<0)  	  t_wt=0.0f;
+		if (t_wt > t_maxWt) t_wt = t_maxWt;
+		if (t_wt < 0)  	  t_wt = 0.0f;
 
 		gpuPtrs.wt[jpos] = t_wt;
 		gpuPtrs.wtChange[jpos] = t_wtChange;
@@ -1250,7 +1251,8 @@
 		if (gpuGrpInfo[post_grpId].WithSTDP)  {
 			int stdp_tDiff = simTime-gpuPtrs.lastSpikeTime[nid];
 			if ((stdp_tDiff >= 0) && ((stdp_tDiff*gpuGrpInfo[post_grpId].TAU_LTD_INV)<25)) {
-				gpuPtrs.wtChange[pos_ns] -= STDP( stdp_tDiff, gpuGrpInfo[post_grpId].ALPHA_LTD, gpuGrpInfo[post_grpId].TAU_LTD_INV); // uncoalesced access
+				//gpuPtrs.wtChange[pos_ns] -= STDP( stdp_tDiff, gpuGrpInfo[post_grpId].ALPHA_LTD, gpuGrpInfo[post_grpId].TAU_LTD_INV); // uncoalesced access
+				gpuPtrs.wtChange[pos_ns] -= 0.2 * STDP( stdp_tDiff, gpuGrpInfo[post_grpId].ALPHA_LTD, gpuGrpInfo[post_grpId].TAU_LTD_INV); // TSC
 			}
 		}
 	
@@ -1280,7 +1282,7 @@
    	//  KERNEL DESCRIPTION:-
 	//  This kernel is required for updating and generating spikes for delays greater than 1 from the fired neuron. 
 	//  The LTD computation is also executed by this approach kernel.
-	__global__ void gpu_doCurrentUpdateD2(int simTimeMs, int simTimeSec, int simTime)
+	__global__ void kernel_doCurrentUpdateD2(int simTimeMs, int simTimeSec, int simTime)
 	{
 		__shared__	volatile int sh_neuronOffsetTable[EXCIT_READ_CHUNK_SZ+2];
 		__shared__	int sh_delayLength[EXCIT_READ_CHUNK_SZ+2];
@@ -1422,7 +1424,7 @@
 	//  with a delay of 1ms from the fired neuron. This function looks
 	//  mostly like the previous kernel but has been optimized for a fixed delay of 1ms. 
 	//  Ultimately we may merge this kernel with the previous kernel.
-	__global__ void gpu_doCurrentUpdateD1(int simTimeMs, int simTimeSec, int simTime)
+	__global__ void kernel_doCurrentUpdateD1(int simTimeMs, int simTimeSec, int simTime)
 	{
 		__shared__ volatile	int sh_NeuronCnt;
 		__shared__ volatile int sh_neuronOffsetTable[NUM_THREADS/WARP_SIZE+2];
@@ -2240,7 +2242,7 @@
 		int errCode;
 
 		if(D > 1) {
-			gpu_doCurrentUpdateD2 <<<gridSize, blkSize>>>(simTimeMs,simTimeSec,simTime);
+			kernel_doCurrentUpdateD2 <<<gridSize, blkSize>>>(simTimeMs,simTimeSec,simTime);
 			CUDA_GET_LAST_ERROR_MACRO("Kernel execution failed");
 			errCode = checkErrors("kernel_updateCurrentE", gridSize);
 			assert(errCode == NO_KERNEL_ERRORS);
@@ -2248,7 +2250,7 @@
 
 		// printTestVarInfo(stderr, "Variable Delay", true, false, false, 0);
 
-		gpu_doCurrentUpdateD1 <<<gridSize, blkSize>>>(simTimeMs,simTimeSec,simTime);
+		kernel_doCurrentUpdateD1 <<<gridSize, blkSize>>>(simTimeMs,simTimeSec,simTime);
 		CUDA_GET_LAST_ERROR_MACRO("Kernel execution failed");
 		errCode = checkErrors("kernel_updateCurrentI", gridSize);
 		assert(errCode == NO_KERNEL_ERRORS);
@@ -2437,7 +2439,7 @@
 
 		memset(errVal, 0, sizeof(errVal));
 		cudaGetSymbolAddress(&devPtr, retErrVal);
-		CUDA_CHECK_ERRORS( cudaMemcpy(devPtr, &errVal, sizeof(errVal), cudaMemcpyHostToDevice));
+		CUDA_CHECK_ERRORS(cudaMemcpy(devPtr, &errVal, sizeof(errVal), cudaMemcpyHostToDevice));
 
 		int testTable[10];
 		// we write some number in this table..
@@ -2445,7 +2447,7 @@
 		// using the texture access and check if everything is correctly initialized
 		testTable[0] = 11; testTable[1] = 12; testTable[2] = 13;
 		testTable[3] = 14; testTable[4] = 15; testTable[5] = 16;
-		CUDA_CHECK_ERRORS( cudaMemcpyToSymbol(timingTableD2, testTable, sizeof(int)*(10), 0, cudaMemcpyHostToDevice));
+		CUDA_CHECK_ERRORS(cudaMemcpyToSymbol(timingTableD2, testTable, sizeof(int) * (10), 0, cudaMemcpyHostToDevice));
 //MDR this check fails because it assumes too much about the network...
 //		kernel_check_GPU_init <<< 1, 128 >>> ();
 		CUDA_GET_LAST_ERROR("check GPU failed\n");
@@ -2453,15 +2455,15 @@
 		// printTestVarInfo(stderr);
 		// read back the intialization and ensure that they are okay
 		fprintf(fpLog, "%s Checking initialization of GPU...\n", testString?testString:"");
-		CUDA_CHECK_ERRORS( cudaMemcpy(&errVal, devPtr, sizeof(errVal), cudaMemcpyDeviceToHost));
-		for(int i=0; i < 4; i++) {
-			for(int j=0; j < (int)errVal[i][0]; j++) {
+		CUDA_CHECK_ERRORS(cudaMemcpy(&errVal, devPtr, sizeof(errVal), cudaMemcpyDeviceToHost));
+		for(int i = 0; i < 4; i++) {
+			for(int j= 0 ; j < (int)errVal[i][0]; j++) {
 				fprintf(fpLog, "val[%3d][%3d] = %f\n", i, j, errVal[i][j]);
 			}
 			fprintf(fpLog, "******************\n");
 		}
 		fprintf(fpLog, "Checking done...\n");
-		CUDA_CHECK_ERRORS( cudaMemcpyToSymbol(timingTableD2, timeTableD2, sizeof(int)*(10), 0, cudaMemcpyHostToDevice));
+		CUDA_CHECK_ERRORS(cudaMemcpyToSymbol(timingTableD2, timeTableD2, sizeof(int) * (10), 0, cudaMemcpyHostToDevice));
 		fflush(fpLog);
 	}
 
@@ -3067,7 +3069,7 @@
 		printf("Init:\t\t\t%2.3f GB\t%2.3f GB\t%2.3f GB\n", (float)(total) / toGB, (float)((total - avail) / toGB), (float)(avail / toGB));
 		previous = avail;
 
-		// copy data to network_info_t CpuSNN::net_Info
+		// copy data to from CpuSNN:: to network_info_t CpuSNN::net_Info
 		allocateNetworkParameters();
 		cudaMemGetInfo(&avail, &total);
 		printf("Ntw Params:\t\t%2.3f GB\t%2.3f GB\t%2.3f GB\n", (float)(previous - avail) / toGB, (float)((total - avail) / toGB), (float)(avail / toGB));
@@ -3156,7 +3158,7 @@
 				fprintf(stderr,"\tWithSTP: %d\n", (int)grp_Info[i].WithSTP);
 				if (grp_Info[i].WithSTP) {
 					fprintf(stderr,"\t\tSTP_U: %f\n", grp_Info[i].STP_U);
-					fprintf(stderr,"\t\tSTP_tD: %f\n", grp_Info[i].STP_tD);
+					fprintf(stderr,"\t\tSTP_tD: %f\n", grp_Info[i].STP_tD); 
 					fprintf(stderr,"\t\tSTP_tF: %f\n", grp_Info[i].STP_tF);
 				}
 				fprintf(stderr,"\tspikeGen: %s\n", grp_Info[i].spikeGen == NULL ? "Is Null" : "Is set");
