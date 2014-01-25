@@ -77,6 +77,8 @@ DEP = snn.h PropagatedSpikeBuffer.h gpu.h gpu_random.h mtrand.h config.h CUDAVer
 
 #OBJS = ${SRCS:.cpp=.o}
 
+OBJS_DIR = obj
+
 CORE_OBJS = snn_cpu.o \
             snn_gpu.o \
             mtrand.o \
@@ -92,7 +94,7 @@ EXE_CU_NONE = random
 EXE_CU_20 = colorblind colorcycle orientation rdk v1v4PFC
 EXE_CU_21 = v1MTLIP
 
-
+EXE_DIR = bin
 
 ########################################################################################################################
 # RULES

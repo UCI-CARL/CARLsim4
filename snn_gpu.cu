@@ -1593,28 +1593,23 @@
 		// beginning position for the post-synaptic information
 		if(allocateMem)     CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->cumulativePost, sizeof(cumulativePost[0])*numN));
 		CUDA_CHECK_ERRORS( cudaMemcpy( dest->cumulativePost, cumulativePost, sizeof(int)*numN, cudaMemcpyHostToDevice));
-		printf("allocated GPU mem: %ld\n", sizeof(cumulativePost[0])*numN);
 
 		// number of postsynaptic connections
 		if(allocateMem)     CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->Npost, sizeof(Npost[0])*numN));
 		CUDA_CHECK_ERRORS( cudaMemcpy( dest->Npost, Npost, sizeof(Npost[0])*numN, cudaMemcpyHostToDevice));
-		printf("allocated GPU mem: %ld\n", sizeof(Npost[0])*numN);
 
 		// static specific mapping and actual post-synaptic delay metric
 		if(allocateMem)     CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->postDelayInfo, sizeof(postDelayInfo[0])*numN*(D+1)));
 		CUDA_CHECK_ERRORS( cudaMemcpy( dest->postDelayInfo, postDelayInfo, sizeof(postDelayInfo[0])*numN*(D+1), cudaMemcpyHostToDevice));
-		printf("allocated GPU mem: %ld\n", sizeof(postDelayInfo[0])*numN*(D+1));
 
 		// actual post synaptic connection information...
 		if(allocateMem)     CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->postSynapticIds, sizeof(postSynapticIds[0])*(postSynCnt+10)));
 		CUDA_CHECK_ERRORS( cudaMemcpy( dest->postSynapticIds, postSynapticIds, sizeof(postSynapticIds[0])*(postSynCnt+10), cudaMemcpyHostToDevice));
 		net_Info.postSynCnt = postSynCnt;
-		printf("allocated GPU mem: %ld\n", sizeof(postSynapticIds[0])*(postSynCnt+10));
 
 		if(allocateMem)     CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->preSynapticIds, sizeof(preSynapticIds[0])*(preSynCnt+10)));
 		CUDA_CHECK_ERRORS( cudaMemcpy( dest->preSynapticIds, preSynapticIds, sizeof(preSynapticIds[0])*(preSynCnt+10), cudaMemcpyHostToDevice));
 		net_Info.preSynCnt = preSynCnt;
-		printf("allocated GPU mem: %ld\n", sizeof(preSynapticIds[0])*(preSynCnt+10));
 	}
 
 	void CpuSNN::copyConnections(network_ptr_t* dest, int kind, int allocateMem)
@@ -1634,7 +1629,6 @@
 			cudaMallocPitch( (void**) &dest->I_set, &net_Info.I_setPitch, sizeof(int)*numNReg, net_Info.I_setLength);
 		assert(net_Info.I_setPitch > 0);
 		CUDA_CHECK_ERRORS( cudaMemset( dest->I_set, 0, net_Info.I_setPitch*net_Info.I_setLength));
-		printf("allocated GPU mem: %ld\n", sizeof(int)*numNReg);
 
 	#if TESTING
 		fprintf(stdout, "numNReg=%d numPostSynapses = %d, I_set = %x, I_setPitch = %d,  I_setLength = %d\n", numNReg, numPostSynapses, dest->I_set, net_Info.I_setPitch, net_Info.I_setLength);
@@ -1643,21 +1637,18 @@
 		// connection synaptic lengths and cumulative lengths...
 		if(allocateMem)   	CUDA_CHECK_ERRORS( cudaMalloc((void**) &dest->Npre, sizeof(dest->Npre[0])*numN));
 		CUDA_CHECK_ERRORS( cudaMemcpy( dest->Npre, Npre, sizeof(dest->Npre[0])*numN, cudaMemcpyHostToDevice));
-		printf("allocated GPU mem: %ld\n", sizeof(dest->Npre[0])*numN);
 
 		// we don't need these data structures if the network doesn't have any plastic synapses at all
 		if (!sim_with_fixedwts) {
 			// presyn excitatory connections
 			if(allocateMem)     CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->Npre_plastic, sizeof(dest->Npre_plastic[0])*numN));
 			CUDA_CHECK_ERRORS( cudaMemcpy( dest->Npre_plastic, Npre_plastic, sizeof(dest->Npre_plastic[0])*numN, cudaMemcpyHostToDevice));
-			printf("allocated GPU mem: %ld\n", sizeof(dest->Npre_plastic[0])*numN);
 
 			float* Npre_plasticInv = new float[numN];
 			for (int i=0;i<numN;i++) Npre_plasticInv[i] = 1.0/Npre_plastic[i];
 
 			if(allocateMem)     CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->Npre_plasticInv, sizeof(dest->Npre_plasticInv[0])*numN));
 			CUDA_CHECK_ERRORS( cudaMemcpy( dest->Npre_plasticInv, Npre_plasticInv, sizeof(dest->Npre_plasticInv[0])*numN, cudaMemcpyHostToDevice));
-			printf("allocated GPU mem: %ld\n", sizeof(dest->Npre_plasticInv[0])*numN);
 
 			delete[] Npre_plasticInv;
 		}
@@ -1665,7 +1656,6 @@
 		// beginning position for the pre-synaptic information
 		if(allocateMem)     CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->cumulativePre, sizeof(int)*numN));
 		CUDA_CHECK_ERRORS( cudaMemcpy( dest->cumulativePre, cumulativePre, sizeof(int)*numN, cudaMemcpyHostToDevice));
-		printf("allocated GPU mem: %ld\n", sizeof(int)*numN);
 
 		// allocate randomPtr.... containing the firing information for the random firing neurons...
 //		if(allocateMem)  CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->randId, sizeof(int)*numN));
@@ -1678,12 +1668,10 @@
 		// allocate the poisson neuron poissonFireRate
 		if(allocateMem) CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->poissonFireRate, sizeof(dest->poissonFireRate[0])*numNPois));
 		CUDA_CHECK_ERRORS( cudaMemset( dest->poissonFireRate, 0, sizeof(dest->poissonFireRate[0])*numNPois));
-		printf("allocated GPU mem: %ld\n", sizeof(dest->poissonFireRate[0])*numNPois);
 
 		// neuron firing recently or not...
 		if(allocateMem)     CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->neuronFiring, sizeof(int)*numN));
 		CUDA_CHECK_ERRORS( cudaMemset( dest->neuronFiring, 0, sizeof(int)*numN));
-		printf("allocated GPU mem: %ld\n", sizeof(int)*numN);
 
 		copyPostConnectionInfo(dest, allocateMem);
 
@@ -1694,11 +1682,9 @@
 
 		if(allocateMem)     CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->testVar, sizeof(float)*numN));
 		CUDA_CHECK_ERRORS( cudaMemset( dest->testVar, 0, sizeof(float)*numN));
-		printf("allocated GPU mem: %ld\n", sizeof(cumulativePost[0])*numN);
 
 		if(allocateMem)     CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->testVar2, sizeof(float)*numN));
 		CUDA_CHECK_ERRORS( cudaMemset( dest->testVar2, 0, sizeof(float)*numN));
-		printf("allocated GPU mem: %ld\n", sizeof(cumulativePost[0])*numN);
 	}
 
 	void CpuSNN::checkDestSrcPtrs(network_ptr_t* dest, network_ptr_t* src, cudaMemcpyKind kind, int allocateMem, int grpId)
@@ -1997,7 +1983,6 @@
 		// synaptic information based
 		if(allocateMem)		CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->wt, sizeof(float)*preSynCnt));
 		CUDA_CHECK_ERRORS( cudaMemcpy( dest->wt, wt, sizeof(float)*preSynCnt, cudaMemcpyHostToDevice));
-		printf("allocated GPU mem: %ld\n", sizeof(float)*preSynCnt);
 
 		// we don't need these data structures if the network doesn't have any plastic synapses at all
 		// they show up in gpuUpdateLTP() and updateSynapticWeights(), two functions that do not get called if
@@ -2006,19 +1991,16 @@
 			// synaptic weight derivative
 			if(allocateMem)		CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->wtChange, sizeof(float)*preSynCnt));
 			CUDA_CHECK_ERRORS( cudaMemcpy( dest->wtChange, wtChange, sizeof(float)*preSynCnt, cudaMemcpyHostToDevice));
-			printf("allocated GPU mem: %ld\n", sizeof(float)*preSynCnt);
 
 			// synaptic weight maximum value
 			if(allocateMem)		CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->maxSynWt, sizeof(float)*preSynCnt));
 			CUDA_CHECK_ERRORS( cudaMemcpy( dest->maxSynWt, maxSynWt, sizeof(float)*preSynCnt, cudaMemcpyHostToDevice));
-			printf("allocated GPU mem: %ld\n", sizeof(float)*preSynCnt);
 		}
 
 		// firing time for individual synapses
 		if(allocateMem)		CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->synSpikeTime, sizeof(int)*preSynCnt));
 		CUDA_CHECK_ERRORS( cudaMemcpy( dest->synSpikeTime, synSpikeTime, sizeof(int)*preSynCnt, cudaMemcpyHostToDevice));
 		net_Info.preSynLength = preSynCnt;
-		printf("allocated GPU mem: %ld\n", sizeof(float)*preSynCnt);
 
 		assert(net_Info.maxSpikesD1 != 0);
 		if(allocateMem) {
@@ -2029,23 +2011,19 @@
 		// allocate 1ms firing table
 		if(allocateMem)		CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->firingTableD1, sizeof(int)*net_Info.maxSpikesD1));
 		if (net_Info.maxSpikesD1>0) CUDA_CHECK_ERRORS( cudaMemcpy( dest->firingTableD1, firingTableD1, sizeof(int)*net_Info.maxSpikesD1, cudaMemcpyHostToDevice));
-		printf("allocated GPU mem: %ld\n", sizeof(int)*net_Info.maxSpikesD1);
 
 		// allocate 2+ms firing table
 		if(allocateMem)		CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->firingTableD2, sizeof(int)*net_Info.maxSpikesD2));
 		if (net_Info.maxSpikesD2>0) CUDA_CHECK_ERRORS( cudaMemcpy( dest->firingTableD2, firingTableD2, sizeof(int)*net_Info.maxSpikesD2, cudaMemcpyHostToDevice));
-		printf("allocated GPU mem: %ld\n", sizeof(int)*net_Info.maxSpikesD2);
 
 		// we don't need this data structure if the network doesn't have any plastic synapses at all
 		if (!sim_with_fixedwts) {
 			// neuron firing time..
 			if(allocateMem)     CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->lastSpikeTime, sizeof(int)*numNReg));
 			CUDA_CHECK_ERRORS( cudaMemcpy( dest->lastSpikeTime, lastSpikeTime, sizeof(int)*numNReg, cudaMemcpyHostToDevice));
-			printf("allocated GPU mem: %ld\n", sizeof(int)*numNReg);
 		}
 		
 		if(allocateMem)		CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->spikeGenBits, sizeof(int)*(NgenFunc/32+1)));
-		printf("allocated GPU mem: %ld\n", sizeof(int)*(NgenFunc/32+1));
 
 		// copy the neuron state information to the GPU..
 		copyNeuronState(dest, &cpuNetPtrs, cudaMemcpyHostToDevice, allocateMem);
@@ -3126,7 +3104,7 @@
 			spikeCountAll1sec = spikeCountD1 + spikeCountD2;
 			CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &spikeCountD2Host, spikeCountD2, sizeof(int), 0, cudaMemcpyDeviceToHost));
 			CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &spikeCountD1Host, spikeCountD1, sizeof(int), 0, cudaMemcpyDeviceToHost));
-			spikeCountAll      = spikeCountD1 + spikeCountD2;
+			spikeCountAll      = spikeCountD1Host + spikeCountD2Host;
 		}
 		else {
 			stopCPUTiming();
