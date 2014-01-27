@@ -358,6 +358,10 @@
 
 			grp_Info[i].spikeGen = NULL;
 
+			grp_Info[i].spkMonRT = false;
+			grp_Info[i].spkMonRTrecordDur = 1000;
+			grp_Info[i].spkMonRTbuf = NULL;
+
 			grp_Info[i].StartN       = -1;
 			grp_Info[i].EndN       	 = -1;
 
@@ -509,6 +513,10 @@
 			if (firingTableD1) delete[] firingTableD1;
 			if (timeTableD2!=NULL) delete[] timeTableD2;
 			if (timeTableD1!=NULL) delete[] timeTableD1;
+
+			for(int g=0; g < getNumGroups(); g++) {
+				if (grp_Info[g].spkMonRTbuf!=NULL) delete grp_Info[g].spkMonRTbuf;
+			}
 
 			delete pbuf;
 
@@ -2654,6 +2662,12 @@ digraph G {\n\
 			//generate a spike to all the target neurons from source neuron nid with a delay of del
 			int g = findGrpId(nid);
 
+			// if flag spkMonRT is set, we want to keep track of how many spikes per neuron in the group
+			if (grp_Info[g].spkMonRT) {
+				(*grp_Info[g].spkMonRTbuf)[nid-grp_Info[g].StartN]++;
+//				printf("%d: %s[%d], nid=%d, %u spikes\n",simTimeMs,grp_Info2[g].Name.c_str(),g,nid,(*grp_Info[g].spkMonRTbuf)[nid-grp_Info[g].StartN]);
+			}
+
 			addSpikeToTable (nid, g);
 			//fprintf(stderr, "nid = %d\t", nid);
 			spikeCountAll1sec++;
@@ -2756,6 +2770,12 @@ digraph G {\n\
 					voltage[i] = Izh_c[i];
 					recovery[i] += Izh_d[i];
 
+					// if flag spkMonRT is set, we want to keep track of how many spikes per neuron in the group
+					if (grp_Info[g].spkMonRT) {
+						(*grp_Info[g].spkMonRTbuf)[i-grp_Info[g].StartN]++;
+//						printf("%d: %s[%d], nid=%d, %u spikes\n",simTimeMs,grp_Info2[g].Name.c_str(),g,i,(*grp_Info[g].spkMonRTbuf)[i-grp_Info[g].StartN]);
+					}
+
 					spikeBufferFull = addSpikeToTable(i, g);
 
 					if (spikeBufferFull)  break;
@@ -2807,11 +2827,24 @@ digraph G {\n\
 		}
 	}
 
+	// a real-time spike monitor keeps track of all spikes per neuron for a certain time period (recordDur)
+	// after this period of time, the spike buffers need to be reset
+	void CpuSNN::checkSpkMonRTrecDur() {
+		for (int g=0; g<numGrp; g++) {
+			if (grp_Info[g].spkMonRT && grp_Info[g].spkMonRTrecordDur>0) {
+				if (!(simTime%grp_Info[g].spkMonRTrecordDur))
+					resetSpikeMonitorRealTime(g);
+			}
+		}
+	}
+
 	void CpuSNN::doSnnSim()
 	{
-		doSTPUpdates();
+		// for all real-time spike monitors, reset their spike counts to zero if simTime % recordDur == 0
+		checkSpkMonRTrecDur();
 
-		//return;
+		// decay STP variables before adding new spikes
+		doSTPUpdates();
 
 		updateSpikeGenerators();
 
@@ -2837,7 +2870,6 @@ digraph G {\n\
 		updateMonitors();
 
 		return;
-
 	}
 
 	void CpuSNN::swapConnections(int nid, int oldPos, int newPos)
@@ -3590,6 +3622,43 @@ digraph G {\n\
 			cpuSnnSz.monitorInfoSize += sizeof(int)*(1000);
 		}
 	}
+
+
+
+	void CpuSNN::setSpikeMonitorRealTime(int grpId, int recordDur, int configId) {
+		if (configId==ALL) {
+			for(int c=0; c < numConfig; c++)
+				setSpikeMonitorRealTime(grpId,recordDur,c);
+		} else {
+			int cGrpId = getGroupId(grpId, configId);
+			DBG(2, fpLog, AT, "spikeMonitorRealTime Added");
+
+			grp_Info[cGrpId].spkMonRT = true; // set flag for later use
+			grp_Info[cGrpId].spkMonRTrecordDur = recordDur; // set record duration, after which spike buf will be reset
+			grp_Info[cGrpId].spkMonRTbuf = new std::vector<unsigned int> (grp_Info[cGrpId].SizeN,0); // init buffer
+
+			printf("Real-Time Spike Monitor set up for Group %s(%d): %d ms recording window\n",grp_Info2[cGrpId].Name.c_str(),cGrpId,recordDur);
+		}
+	}
+
+	void CpuSNN::resetSpikeMonitorRealTime(int grpId) {
+		if (grpId==ALL) {
+			for (int g=0; g<numGrp; g++)
+				resetSpikeMonitorRealTime(g);
+		} else {
+			// only update if SpikeMonRT is set for this group
+			if (!grp_Info[grpId].spkMonRT)
+				return;
+
+			std::fill((*grp_Info[grpId].spkMonRTbuf).begin(), (*grp_Info[grpId].spkMonRTbuf).end(), 0);
+		}
+	}
+
+	// return spike buffer, which contains #spikes per neuron in the group
+	std::vector<unsigned int>* CpuSNN::getSpikesRealTime(int grpId) {
+		return grp_Info[grpId].spkMonRTbuf;
+	}
+
 
 	void CpuSNN::updateSpikeMonitor()
 	{

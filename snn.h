@@ -44,6 +44,7 @@
 #include <iostream>
 #include <string>
 #include <map>
+#include <vector>
 #include "mtrand.h"
 #include "gpu_random.h"
 #include "config.h"
@@ -415,6 +416,10 @@ typedef struct group_info_s
 	float		dGABAa;
 	float		dGABAb;
 
+	bool spkMonRT; //!< if this flag is set, we want to keep track of how many spikes per neuron in the group
+	std::vector<unsigned int>* spkMonRTbuf; //!< stores #spikes for each neuron in the group
+	int spkMonRTrecordDur; //!< record duration, after which spike buffer gets reset
+
 	SpikeGenerator* spikeGen;
 	bool		newUpdates;  //!< FIXME this flag has mixed meaning and is not rechecked after the simulation is started
 } group_info_t;
@@ -640,6 +645,54 @@ class CpuSNN
 		void setSpikeGenerator(int grpId, SpikeGenerator* spikeGen, int configId=ALL);
 
 
+
+		/* ******************************* *
+		 * REAL-TIME SPIKE MONITOR
+		 * ******************************* */
+
+		// TODO: Consider making this its own class, or merging it with existing SpikeMonitor class
+		// see also private member CpuSNN::checkSpkMonRTrecDur();
+
+		/*!
+		 * \brief A "real-time" spike monitor keeps track of the number of spikes per neuron in a group.
+		 * A real-time spike monitor keeps track of all spikes per neuron for a certain time period (recordDur).
+		 * After that, the spike buffers get reset to zero number of spikes.
+		 * Works for excitatory/inhibitory neurons as well as spike generators.
+		 * The recording time can be set to any x number of ms, so that after x ms the spike counts will be reset
+		 * to zero. If x==-1, then the spike counts will never be reset (should only overflow after 97 days of sim).
+		 * Also, spike counts can be manually reset at any time by calling snn->resetSpikeMonitorRealTime(group);
+		 * You can have only one real-time spike monitor per group. however, a group can have both a regular and a
+		 * real-time spike monitor.
+		 * \param grpId the group for which you want to enable a RT SpikeMon
+		 * \param recordDur number of ms for which to record spike numbers. Spike numbers will be reset to zero after
+		 * this. Set frameDur to -1 to never reset spike counts. Default:
+		 */
+		void setSpikeMonitorRealTime(int grpId, int recordDur=-1, int configId=ALL);
+
+		/*!
+		 * \brief return the number of spikes per neuron for a certain group
+		 * A real-time spike monitor keeps track of all spikes per neuron for a certain time period (recordDur)
+		 * at any point in time.
+		 * \param grpId	the group for which you want the spikes
+		 * \return pointer to vector of unsigned ints. Number of elements in vector is the number of neurons in group.
+		 * Each entry is the number of spikes for this neuron (unsigned int) since the last reset.
+		 */
+		std::vector<unsigned int>* getSpikesRealTime(int grpId);
+
+		/*!
+		 * \brief reset spike counter to zero
+		 * Manually resets the spike buffers of a RT SpikeMon to zero (for a specific group).
+		 * Buffers get reset to zero automatically after recordDur. However, you can reset the buffer manually at any
+		 * point in time.
+		 * \param grpId the group for which to reset the spike counts. Set to ALL if you want to reset all RT SpikeMons
+		 */
+		void resetSpikeMonitorRealTime(int grpId);
+
+
+		/* ********************************** *
+		 * READING / WRITING NETWORK STATE
+		 * ********************************** */
+
 		void writeNetwork(FILE* fid); //!< stores the pre and post synaptic neuron ids with the weight and delay
 
 		void readNetwork(FILE* fid); //!< reads the network state from file
@@ -827,6 +880,13 @@ class CpuSNN
 
 		void updateSpikeGenerators();
 
+		/*!
+		 * \brief reset spike buffers to zero if simTime % recordDur == 0
+		 * a real-time spike monitor keeps track of all spikes per neuron for a certain time period (recordDur)
+		 * after this period of time, the spike buffers need to be reset
+		 * this function checks simTime vs. recordDur and resets the spike buffers if necessary
+		 */
+		void checkSpkMonRTrecDur();
 
 		//! add the entry that the current neuron has spiked..
 		int addSpikeToTable(int id, int g);
