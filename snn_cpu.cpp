@@ -515,7 +515,7 @@
 			if (timeTableD1!=NULL) delete[] timeTableD1;
 
 			for(int g=0; g < getNumGroups(); g++) {
-				if (grp_Info[g].spkMonRTbuf!=NULL) delete grp_Info[g].spkMonRTbuf;
+				if (grp_Info[g].spkMonRTbuf!=NULL) delete[] grp_Info[g].spkMonRTbuf;
 			}
 
 			delete pbuf;
@@ -2664,8 +2664,8 @@ digraph G {\n\
 
 			// if flag spkMonRT is set, we want to keep track of how many spikes per neuron in the group
 			if (grp_Info[g].spkMonRT) {
-				(*grp_Info[g].spkMonRTbuf)[nid-grp_Info[g].StartN]++;
-//				printf("%d: %s[%d], nid=%d, %u spikes\n",simTimeMs,grp_Info2[g].Name.c_str(),g,nid,(*grp_Info[g].spkMonRTbuf)[nid-grp_Info[g].StartN]);
+				grp_Info[g].spkMonRTbuf[nid-grp_Info[g].StartN]++;
+//				printf("%d: %s[%d], nid=%d, %u spikes\n",simTimeMs,grp_Info2[g].Name.c_str(),g,nid,grp_Info[g].spkMonRTbuf[nid-grp_Info[g].StartN]);
 			}
 
 			addSpikeToTable (nid, g);
@@ -2772,8 +2772,8 @@ digraph G {\n\
 
 					// if flag spkMonRT is set, we want to keep track of how many spikes per neuron in the group
 					if (grp_Info[g].spkMonRT) {
-						(*grp_Info[g].spkMonRTbuf)[i-grp_Info[g].StartN]++;
-//						printf("%d: %s[%d], nid=%d, %u spikes\n",simTimeMs,grp_Info2[g].Name.c_str(),g,i,(*grp_Info[g].spkMonRTbuf)[i-grp_Info[g].StartN]);
+						grp_Info[g].spkMonRTbuf[i-grp_Info[g].StartN]++;
+//						printf("%d: %s[%d], nid=%d, %u spikes\n",simTimeMs,grp_Info2[g].Name.c_str(),g,i,grp_Info[g].spkMonRTbuf[i-grp_Info[g].StartN]);
 					}
 
 					spikeBufferFull = addSpikeToTable(i, g);
@@ -3582,6 +3582,14 @@ digraph G {\n\
 
 	void CpuSNN::setSpikeMonitor(int grpId, SpikeMonitor* spikeMon, int configId)
 	{
+		// if spike monitor is set up after buildNetwork, then gpuGrpInfo will not be up-to-date
+		// so, technically, !doneReorganization is not imperative, but cleaner
+		if (doneReorganization || (currentMode==GPU_MODE) && cpu_gpuNetPtrs.allocated) {
+			fprintf(stderr,"ERROR: Spike Monitor has to be set BEFORE runNetwork is called for the first time.");
+			exit(1);
+			return;
+		}
+
 		if (configId == ALL) {
 			for(int c=0; c < numConfig; c++)
 				setSpikeMonitor(grpId, spikeMon,c);
@@ -3624,8 +3632,16 @@ digraph G {\n\
 	}
 
 
-
+	// A "real-time" spike monitor keeps track of the number of spikes per neuron in a group.
 	void CpuSNN::setSpikeMonitorRealTime(int grpId, int recordDur, int configId) {
+		// if spike monitor is set up after buildNetwork, then gpuGrpInfo will not be up-to-date
+		// so, technically, !doneReorganization is not imperative, but cleaner
+		if (doneReorganization || (currentMode==GPU_MODE) && cpu_gpuNetPtrs.allocated) {
+			fprintf(stderr,"ERROR: Spike Monitor has to be set BEFORE runNetwork is called for the first time.");
+			exit(1);
+			return;
+		}
+
 		if (configId==ALL) {
 			for(int c=0; c < numConfig; c++)
 				setSpikeMonitorRealTime(grpId,recordDur,c);
@@ -3635,12 +3651,15 @@ digraph G {\n\
 
 			grp_Info[cGrpId].spkMonRT = true; // set flag for later use
 			grp_Info[cGrpId].spkMonRTrecordDur = recordDur; // set record duration, after which spike buf will be reset
-			grp_Info[cGrpId].spkMonRTbuf = new std::vector<unsigned int> (grp_Info[cGrpId].SizeN,0); // init buffer
+
+			grp_Info[cGrpId].spkMonRTbuf = new unsigned int[grp_Info[cGrpId].SizeN];
+			memset(grp_Info[cGrpId].spkMonRTbuf,0,sizeof(unsigned int)*(grp_Info[cGrpId].SizeN));
 
 			printf("Real-Time Spike Monitor set up for Group %s(%d): %d ms recording window\n",grp_Info2[cGrpId].Name.c_str(),cGrpId,recordDur);
 		}
 	}
 
+	// reset spike counter to zero
 	void CpuSNN::resetSpikeMonitorRealTime(int grpId) {
 		if (grpId==ALL) {
 			for (int g=0; g<numGrp; g++)
@@ -3650,13 +3669,16 @@ digraph G {\n\
 			if (!grp_Info[grpId].spkMonRT)
 				return;
 
-			std::fill((*grp_Info[grpId].spkMonRTbuf).begin(), (*grp_Info[grpId].spkMonRTbuf).end(), 0);
+			memset(grp_Info[grpId].spkMonRTbuf,0,sizeof(unsigned int)*(grp_Info[grpId].SizeN));
 		}
 	}
 
 	// return spike buffer, which contains #spikes per neuron in the group
-	std::vector<unsigned int>* CpuSNN::getSpikesRealTime(int grpId) {
-		return grp_Info[grpId].spkMonRTbuf;
+	unsigned int* CpuSNN::getSpikesRealTime(int grpId) {
+		if (grp_Info[grpId].spkMonRT)
+			return grp_Info[grpId].spkMonRTbuf;
+		else
+			return NULL;
 	}
 
 

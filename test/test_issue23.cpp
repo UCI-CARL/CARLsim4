@@ -24,22 +24,25 @@ int main() {
 	CpuSNN* snn;
 
 	int frameDur = 50; 		// frame duration
-	int frameNum = 2000;		// number of frames per simulation
+	int frameNum = 20;		// number of frames per simulation
 
 	int numNeurIn = 1000;		// number of neurons in input group
-	int numNeurOut = 1000;	// number of neurons in output group
+	int numNeurOut = 10;	// number of neurons in output group
 
 	float rateIn = 10.0f; 	// mean spike rate of input group
 	PoissonRate rIn(numNeurIn);
 
-	std::vector<unsigned int>* spkOut;
+//	std::vector<unsigned int>* spkOut;
+	unsigned int* spkOut;
 
 
-	for (int sim_mode=0; sim_mode<1; sim_mode++) {
+	for (int sim_mode=0; sim_mode<=0; sim_mode++) {
 		// run in CPU and GPU mode
 
-		for (int useSpkMonRT=0; useSpkMonRT<=0; useSpkMonRT++) {
+		for (int useSpkMonRT=1; useSpkMonRT<=1; useSpkMonRT++) {
 			// run with SpikeMonRT off and on
+
+			unsigned int spkOutTotal=0;
 
 			snn = new CpuSNN("issue23");
 			int gIn = snn->createSpikeGeneratorGroup("input", numNeurIn, EXCITATORY_NEURON);
@@ -51,9 +54,6 @@ int main() {
 
 			snn->setLogCycle(0, 0, stdout);
 		
-			// initialize
-			snn->runNetwork(1,0, sim_mode);
-
 			// regular spike monitors, updated every 1000ms
 			snn->setSpikeMonitor(gIn);
 			snn->setSpikeMonitor(gOut);
@@ -69,6 +69,9 @@ int main() {
 				snn->setSpikeMonitorRealTime(gOut,frameDur);
 			}
 
+			// initialize
+			snn->runNetwork(1,0, sim_mode);
+
 
 			for (int j=0; j<numNeurIn; j++)
 				rIn.rates[j] = rateIn;
@@ -76,19 +79,22 @@ int main() {
 
 			// main loop
 			for (int i=0; i<frameNum; i++) {
-				snn->runNetwork(0,frameDur);
+				snn->runNetwork(0,frameDur, sim_mode);
 
 //				if (i==frameNum/2)
 //					snn->resetSpikeMonitorRealTime(ALL);
 			}
 
 			if (useSpkMonRT) {
-				spkOut = snn->getSpikesRealTime(gOut);	// gets out all the spikes3
-				printf("spikes of group %d:\n",gOut);
-				unsigned int spkOutTotal=0;
-				for (int n=0; n<snn->grpNumNeurons(gOut); n++) {
-					spkOutTotal += (*spkOut)[n];
-					printf("%u\t",(*spkOut)[n]);
+				spkOut = snn->getSpikesRealTime(gOut);	// gets out all the spikes
+				if (spkOut==NULL)
+					printf("Group %d: couldn't get spikes\n",gOut);
+				else {
+					printf("spikes of group %d:\n",gOut);
+					for (int n=0; n<snn->grpNumNeurons(gOut); n++) {
+						spkOutTotal += spkOut[n];
+						printf("%u\t",spkOut[n]);
+					}
 				}
 				printf("\nTotal: %u spikes\n",spkOutTotal);
 			}

@@ -417,7 +417,7 @@ typedef struct group_info_s
 	float		dGABAb;
 
 	bool spkMonRT; //!< if this flag is set, we want to keep track of how many spikes per neuron in the group
-	std::vector<unsigned int>* spkMonRTbuf; //!< stores #spikes for each neuron in the group
+	unsigned int* spkMonRTbuf; //!< stores #spikes for each neuron in the group
 	int spkMonRTrecordDur; //!< record duration, after which spike buffer gets reset
 
 	SpikeGenerator* spikeGen;
@@ -674,10 +674,10 @@ class CpuSNN
 		 * A real-time spike monitor keeps track of all spikes per neuron for a certain time period (recordDur)
 		 * at any point in time.
 		 * \param grpId	the group for which you want the spikes
-		 * \return pointer to vector of unsigned ints. Number of elements in vector is the number of neurons in group.
+		 * \return pointer to array of unsigned ints. Number of elements in array is the number of neurons in group.
 		 * Each entry is the number of spikes for this neuron (unsigned int) since the last reset.
 		 */
-		std::vector<unsigned int>* getSpikesRealTime(int grpId);
+		unsigned int* getSpikesRealTime(int grpId);
 
 		/*!
 		 * \brief reset spike counter to zero
@@ -1072,7 +1072,7 @@ private:
 
 		int		randSeed;
 
-		int			currentMode;	//!< current operating mode
+		int			currentMode;	//!< current operating mode (CPU_MODE || GPU_MODE)
 
 		int			numConfig;
 
