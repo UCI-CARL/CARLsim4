@@ -632,8 +632,7 @@
 						p+=LTP_GROUPING_SZ) {
 					int stdp_tDiff = (simTime - gpuPtrs.synSpikeTime[p]);
 					if ((stdp_tDiff > 0) && ((stdp_tDiff*gpuGrpInfo[grpId].TAU_LTP_INV)<25)) {
-						//gpuPtrs.wtChange[p] += STDP(stdp_tDiff, gpuGrpInfo[grpId].ALPHA_LTP, gpuGrpInfo[grpId].TAU_LTP_INV);
-						gpuPtrs.wtChange[p] += 0.2 * STDP(stdp_tDiff, gpuGrpInfo[grpId].ALPHA_LTP, gpuGrpInfo[grpId].TAU_LTP_INV); // TSC
+						gpuPtrs.wtChange[p] += STDP(stdp_tDiff, gpuGrpInfo[grpId].ALPHA_LTP, gpuGrpInfo[grpId].TAU_LTP_INV);
 //						int val = atomicAdd(&testVarCnt, 4);
 //						gpuPtrs.testVar[val]   = 1+nid;
 //						gpuPtrs.testVar[val+1] = 1+p-gpuPtrs.cumulativePre[nid];
@@ -978,6 +977,7 @@
 	{
 		const int totBuffers = loadBufferCount;
 
+		// update neuron state
 		for (int bufPos = blockIdx.x; bufPos < totBuffers; bufPos += gridDim.x) {
 			// KILLME !!! This can be further optimized ....
 			// instead of reading each neuron group separately .....
@@ -998,6 +998,23 @@
 					updateNeuronState(nid, grpId);
 				}
 			}
+		}		
+	}
+
+	//!
+	/*! Global Kernel function:      kernel_globalGroupStateUpdate
+	 *  \brief update group state
+	 *  update the concentration of neuronmodulator
+	 */
+	__global__ void kernel_globalGroupStateUpdate (int t, int sec, int simTime)
+	{
+		// update group state
+		int grpIdx = blockIdx.x * blockDim.x + threadIdx.x;
+
+		if (grpIdx < gpuNetInfo.numGrp) {
+			// decay dopamine concentration
+			if (gpuPtrs.grpDA[grpIdx] > gpuGrpInfo[grpIdx].baseDP)
+				gpuPtrs.grpDA[grpIdx] *= gpuGrpInfo[grpIdx].decayDP;
 		}
 	}
 
@@ -1089,11 +1106,11 @@
 		float t_wt   	  = gpuPtrs.wt[jpos];
 		float t_wtChange  = gpuPtrs.wtChange[jpos];
 		float t_maxWt 	  = gpuPtrs.maxSynWt[jpos];
-
-		t_wt += t_wtChange;
-
+	
+		t_wt += gpuNetInfo.stdpScaleFactor * gpuPtrs.grpDA[grpId] * t_wtChange;
 		
-		t_wtChange *= 0.90f; // TSC - resume decay weight changes
+		//t_wtChange *= 0.90f; // TSC - resume decay weight changes
+		t_wtChange *= gpuNetInfo.wtChangeDecay;
 		//t_wtChange = 0; //MDR - don't decay weight changes, just set to 0
 
 		if (t_wt > t_maxWt) t_wt = t_maxWt;
@@ -1105,10 +1122,8 @@
 
 
 #define UPWTS_CLUSTERING_SZ	32
-	__global__ void kernel_updateWeightsFiring_static()
+	__global__ void kernel_updateWeight()
 	{
-		//int gid=blockIdx.x*blockDim.x+threadIdx.x;
-		//int gnthreads=blockDim.x*gridDim.x;
 		__shared__ volatile int errCode;
 		__shared__ int    		startId, lastId, grpId, totBuffers, grpNCnt;
 		__shared__ int2 		threadLoad;
@@ -1117,9 +1132,7 @@
 			totBuffers=loadBufferCount;
 			grpNCnt	= (blockDim.x/UPWTS_CLUSTERING_SZ) + ((blockDim.x%UPWTS_CLUSTERING_SZ)!=0);
 		}
-
-		updateTimingTable();
-
+		
 		__syncthreads();
 
 		for (int bufPos = blockIdx.x; bufPos < totBuffers; bufPos += gridDim.x) {
@@ -1159,6 +1172,60 @@
 		}
 	}
 
+	__global__ void kernel_updateFiring_static()
+	{
+		//int gid=blockIdx.x*blockDim.x+threadIdx.x;
+		//int gnthreads=blockDim.x*gridDim.x;
+		__shared__ volatile int errCode;
+		__shared__ int    		startId, lastId, grpId, totBuffers, grpNCnt;
+		__shared__ int2 		threadLoad;
+
+		if(threadIdx.x==0) {
+			totBuffers=loadBufferCount;
+			grpNCnt	= (blockDim.x/UPWTS_CLUSTERING_SZ) + ((blockDim.x%UPWTS_CLUSTERING_SZ)!=0);
+		}
+
+		updateTimingTable();
+
+		//__syncthreads();
+
+		//for (int bufPos = blockIdx.x; bufPos < totBuffers; bufPos += gridDim.x) {
+		//	// KILLME !!! This can be further optimized ....
+		//	// instead of reading each neuron group separately .....
+		//	// read a whole buffer and use the result ......
+		//	if ( threadIdx.x) {
+		//		threadLoad  = getStaticThreadLoad(bufPos);
+		//		startId 	= STATIC_LOAD_START(threadLoad);
+		//		lastId  	= STATIC_LOAD_SIZE(threadLoad);
+		//		grpId   	= STATIC_LOAD_GROUP(threadLoad);
+		//	}
+
+		//	__syncthreads();
+
+		//	// the weights are fixed for this group.. so dont make any changes on
+		//	// the weight and continue to the next set of neurons...
+		//	if (gpuGrpInfo[grpId].FixedInputWts)
+		//		continue;
+		//		
+		//	int nid=(threadIdx.x/UPWTS_CLUSTERING_SZ) + startId;
+		//	// update the synaptic weights from the synaptic weight derivatives
+		//	for(; nid < startId+lastId; nid+=grpNCnt) {
+		//		int Npre_plastic = gpuPtrs.Npre_plastic[nid];
+		//		unsigned int cumulativePre = gpuPtrs.cumulativePre[nid];
+
+		//		const int threadIdGrp   = (threadIdx.x%UPWTS_CLUSTERING_SZ);
+		//		// synaptic grouping
+		//		for(unsigned int j=cumulativePre; j < (cumulativePre+Npre_plastic); j+=UPWTS_CLUSTERING_SZ) {
+		//			//excitatory connection change the synaptic weights
+		//			unsigned int jpos=j+threadIdGrp;
+		//			if(jpos < (cumulativePre+Npre_plastic)) {
+		//				updateSynapticWeights(nid, jpos, grpId);
+		//			}
+		//		}
+		//	}
+		//}
+	}
+
 	//********************************UPDATE TABLES AND COUNTERS EVERY SECOND  *************************************************************
 	// KERNEL DESCRIPTION:
 	// This is the second part of the previous kernel "kernel_updateWeightsFiring"
@@ -1167,7 +1234,7 @@
 	// time step would become the first D time step firing information for the next cycle of simulation.
 	// We also reset/update various counters to appropriate values as indicated in the second part 
 	// of this kernel.
-	__global__ void kernel_updateWeightsFiring()
+	__global__ void kernel_updateFiring()
 	{
 		// CHECK !!!
 		int D = gpuNetInfo.D;
@@ -1196,7 +1263,7 @@
 	}
 
 	/// THIS KERNEL IS USED BY BLOCK_CONFIG_VERSION
-	__global__ void kernel_updateWeightsFiring2()
+	__global__ void kernel_updateFiring2()
 	{
 		// reset various counters for the firing information
 		if((blockIdx.x==0)&&(threadIdx.x==0)) {
@@ -1227,7 +1294,7 @@
 		// get the actual position of the synapses and other variables...
 		unsigned int pos_ns = gpuPtrs.cumulativePre[nid] + syn_id;
 
-//		uint16_t pre_grpId = GET_FIRING_TABLE_GID(firingId);
+		uint16_t pre_grpId = GET_FIRING_TABLE_GID(firingId);
 //		int pre_nid = GET_FIRING_TABLE_NID(firingId);
 
 		// Error MNJ... this should have been from nid.. not firingId...
@@ -1244,6 +1311,12 @@
 			if (errCode) return errCode;
 		}
 
+		// Got one spike from dopaminergic neuron, increase dopamine concentration in the target area
+		if (gpuGrpInfo[pre_grpId].Type & TARGET_DA) {
+			atomicAdd(&(gpuPtrs.grpDA[post_grpId]), 0.04);
+			
+		}
+
 		setFiringBitSynapses(nid, syn_id);
 
 		gpuPtrs.synSpikeTime[pos_ns] = simTime;		  //uncoalesced access
@@ -1251,8 +1324,7 @@
 		if (gpuGrpInfo[post_grpId].WithSTDP)  {
 			int stdp_tDiff = simTime-gpuPtrs.lastSpikeTime[nid];
 			if ((stdp_tDiff >= 0) && ((stdp_tDiff*gpuGrpInfo[post_grpId].TAU_LTD_INV)<25)) {
-				//gpuPtrs.wtChange[pos_ns] -= STDP( stdp_tDiff, gpuGrpInfo[post_grpId].ALPHA_LTD, gpuGrpInfo[post_grpId].TAU_LTD_INV); // uncoalesced access
-				gpuPtrs.wtChange[pos_ns] -= 0.2 * STDP( stdp_tDiff, gpuGrpInfo[post_grpId].ALPHA_LTD, gpuGrpInfo[post_grpId].TAU_LTD_INV); // TSC
+				gpuPtrs.wtChange[pos_ns] -= STDP( stdp_tDiff, gpuGrpInfo[post_grpId].ALPHA_LTD, gpuGrpInfo[post_grpId].TAU_LTD_INV); // uncoalesced access
 			}
 		}
 	
@@ -1854,6 +1926,20 @@
 		CUDA_CHECK_ERRORS(cudaMemcpy(&dest->current[ptrPos], &src->current[ptrPos], sizeof(float) * length, kind));
 	}
 
+	void CpuSNN::copyGroupState(network_ptr_t* dest, network_ptr_t* src,  cudaMemcpyKind kind, int allocateMem, int grpId)
+	{
+		if (allocateMem) {
+			CUDA_CHECK_ERRORS(cudaMalloc((void**) &dest->grpDA, sizeof(float) * numGrp)); 
+			CUDA_CHECK_ERRORS(cudaMalloc((void**) &dest->grp5HT, sizeof(float) * numGrp)); 
+			CUDA_CHECK_ERRORS(cudaMalloc((void**) &dest->grpACh, sizeof(float) * numGrp)); 
+			CUDA_CHECK_ERRORS(cudaMalloc((void**) &dest->grpNE, sizeof(float) * numGrp));
+		}
+		CUDA_CHECK_ERRORS(cudaMemcpy(dest->grpDA, src->grpDA, sizeof(float) * numGrp, kind));
+		CUDA_CHECK_ERRORS(cudaMemcpy(dest->grp5HT, src->grp5HT, sizeof(float) * numGrp, kind));
+		CUDA_CHECK_ERRORS(cudaMemcpy(dest->grpACh, src->grpACh, sizeof(float) * numGrp, kind));
+		CUDA_CHECK_ERRORS(cudaMemcpy(dest->grpNE, src->grpNE, sizeof(float) * numGrp, kind));
+	}
+
 	void CpuSNN::copyNeuronParameters(network_ptr_t* dest, int kind, int allocateMem, int grpId)
 	{
 		int ptrPos, length;
@@ -2019,6 +2105,27 @@
 		}
 	}
 
+	//void CpuSNN::copyPartialWeightState (network_ptr_t* dest, network_ptr_t* src,  cudaMemcpyKind kind, int nidPost)
+	//{
+	//	unsigned int length = dest->Npre[nidPost]; // number of pre-synaptic neurons
+	//	unsigned int cumPosSyn = dest->cumulativePre[nidPost]; // cumulative position of synapses
+
+	//	// check that the destination pointer is properly allocated..
+	//	//checkDestSrcPtrs(dest, src, kind, allocateMem, grpId);
+
+
+	//	//assert (cumPos_syn < preSynCnt);
+	//	//assert (length_wt <= preSynCnt);
+	//		
+	//	CUDA_CHECK_ERRORS(cudaMemcpy(&dest->wt[cumPosSyn], &src->wt[cumPosSyn], sizeof(float) * length, kind));
+
+	//	//CUDA_CHECK_ERRORS(cudaMemcpy( &dest->synSpikeTime[cumPos_syn], &src->synSpikeTime[cumPos_syn], sizeof(int)*length_wt, kind));
+
+	//	if (!sim_with_fixedwts) {
+	//		CUDA_CHECK_ERRORS(cudaMemcpy(&dest->wtChange[cumPosSyn], &src->wtChange[cumPosSyn], sizeof(float) * length_wt, kind));
+	//	}
+	//}
+
 	// allocate necessary memory for the GPU...
 	void CpuSNN::copyState(network_ptr_t* dest, int kind, int allocateMem)
 	{
@@ -2092,6 +2199,11 @@
 		if(allocateMem)
 			CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->spikeGenBits, sizeof(int) * (NgenFunc / 32 + 1)));
 		printf("allocated GPU mem: %ld\n", sizeof(int) * (NgenFunc / 32 + 1));
+
+		// copy the group state to the GPU
+		copyGroupState(dest, &cpuNetPtrs, cudaMemcpyHostToDevice, allocateMem);
+		printf("allocated GPU mem: %ld\n", sizeof(float) * (numGrp * 4));
+
 
 		// copy the neuron state information to the GPU..
 		copyNeuronState(dest, &cpuNetPtrs, cudaMemcpyHostToDevice, allocateMem);
@@ -2723,9 +2835,17 @@
 
 		kernel_globalConductanceUpdate <<<gridSize, blkSize>>> (simTimeMs, simTimeSec, simTime);
 
+		// update all neuron state (i.e., voltage and recovery)
 		kernel_globalStateUpdate <<<gridSize, blkSize>>> (simTimeMs, simTimeSec, simTime);
 		CUDA_GET_LAST_ERROR_MACRO("Kernel execution failed");
-		int errCode = checkErrors("gpu_globalStateUpdate", gridSize);
+		int errCode = checkErrors("kernel_globalStateUpdate", gridSize);
+		assert(errCode == NO_KERNEL_ERRORS);
+
+		// update all group state (i.e., concentration of neuronmodulators)
+		// currently support 4 x 128 groups
+		kernel_globalGroupStateUpdate <<<4, blkSize>>> (simTimeMs, simTimeSec, simTime);
+		CUDA_GET_LAST_ERROR_MACRO("Kernel execution failed");
+		errCode = checkErrors("kernel_globalGroupStateUpdate", 4);
 		assert(errCode == NO_KERNEL_ERRORS);
 
 
@@ -2828,18 +2948,18 @@
 		//exit(0);
 	}
 
-	void CpuSNN::updateStateAndFiringTable_GPU()
+	void CpuSNN::updateFiringTable_GPU()
 	{			
-		DBG(2, fpLog, AT, "gpu_updateStateAndFiringTable()");
+		DBG(2, fpLog, AT, "updateStateAndFiringTable_GPU()");
 
 		int blkSize  = 128;
 		int gridSize = 64;
 //		void* devPtr;
 
 		//kernel_updateWeightsFiring  <<<gridSize, blkSize>>> ();
-		kernel_updateWeightsFiring_static  <<<gridSize, blkSize>>> ();
+		kernel_updateFiring_static<<<gridSize, blkSize>>>();
 
-		kernel_updateWeightsFiring <<<gridSize, blkSize>>> ();
+		kernel_updateFiring<<<gridSize, blkSize>>>();
 
 		 //printTestVarInfo(stderr, "STDP", true, false, false, 0, 2, 0);
 
@@ -2848,6 +2968,16 @@
 //		CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &gpu_secD2fireCnt, "secD2fireCnt", sizeof(int), 0, cudaMemcpyDeviceToHost));
 //		//CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &gpu_secD1fireCnt, "secD1fireCnt", sizeof(int), 0, cudaMemcpyDeviceToHost));
 //		fprintf(stderr, "Total spikes before next time sec is %d\n", gpu_secD2fireCnt);
+	}
+
+	void CpuSNN::updateWeight_GPU()
+	{			
+		DBG(2, fpLog, AT, "updateWeight_GPU()");
+
+		int blkSize  = 128;
+		int gridSize = 64;
+
+		kernel_updateWeight<<<gridSize, blkSize>>>();
 	}
 
 	void CpuSNN::showStatus_GPU()
@@ -2951,8 +3081,11 @@
 		net_Info.sim_with_fixedwts = sim_with_fixedwts;
 		net_Info.sim_with_conductances = sim_with_conductances;
 		net_Info.sim_with_stdp = sim_with_stdp;
+		net_Info.sim_with_modulated_stdp = sim_with_modulated_stdp;
 		net_Info.sim_with_stp = sim_with_stp;
 		net_Info.numGrp = numGrp;
+		net_Info.stdpScaleFactor = stdpScaleFactor;
+		net_Info.wtChangeDecay = wtChangeDecay;
 		cpu_gpuNetPtrs.memType = GPU_MODE;
 		
 		return;
@@ -3001,7 +3134,7 @@
 		assert(nid < numNReg);
 		unsigned int    cumId   =  cumulativePre[nid];
 		float* synWts  = &wt[cumId];
-		assert(cumId >= (nid-numNPois));
+		//assert(cumId >= (nid-numNPois));
 		//assert(cumId < numPreSynapses*numN);
 
 #if 0
@@ -3092,28 +3225,29 @@
 		// initialize __device__ gpu_tableQuickSynId[256]
 		initTableQuickSynId();
 		
-		// initialize cpu_gpuNetPtrs.probeId, cpu_gpuNetPtrs.probeI, cpu_gpuNetPtrs.probeV
+		// initialize (cudaMalloc) cpu_gpuNetPtrs.probeId, cpu_gpuNetPtrs.probeI, cpu_gpuNetPtrs.probeV
 		gpuProbeInit(&cpu_gpuNetPtrs);
 
-		// initialize (memset) cpu_gpuNetPtrs.I_set, cpu_gpuNetPtrs.poissonFireRate, cpu_gpuNetPtrs.neuronFiring
-		// initialize (memset) cpu_gpuNetPtrs.testVar, cpu_gpuNetPtrs.testVar2
-		// initialize (copy CpuSNN) cpu_gpuNetPtrs.Npre, cpu_gpuNetPtrs.Npre_plastic, cpu_gpuNetPtrs.Npre_plasticInv, cpu_gpuNetPtrs.cumulativePre
-		// initialize (copy CpuSNN) cpu_gpuNetPtrs.cumulativePost, cpu_gpuNetPtrs.Npost, cpu_gpuNetPtrs.postDelayInfo
-		// initialize (copy CpuSNN) cpu_gpuNetPtrs.postSynapticIds, cpu_gpuNetPtrs.preSynapticIds
+		// initialize (cudaMemset) cpu_gpuNetPtrs.I_set, cpu_gpuNetPtrs.poissonFireRate, cpu_gpuNetPtrs.neuronFiring
+		// initialize (cudaMemset) cpu_gpuNetPtrs.testVar, cpu_gpuNetPtrs.testVar2
+		// initialize (copy from CpuSNN) cpu_gpuNetPtrs.Npre, cpu_gpuNetPtrs.Npre_plastic, cpu_gpuNetPtrs.Npre_plasticInv, cpu_gpuNetPtrs.cumulativePre
+		// initialize (copy from CpuSNN) cpu_gpuNetPtrs.cumulativePost, cpu_gpuNetPtrs.Npost, cpu_gpuNetPtrs.postDelayInfo
+		// initialize (copy from CpuSNN) cpu_gpuNetPtrs.postSynapticIds, cpu_gpuNetPtrs.preSynapticIds
 		// copy data to CpuSNN:net_Info.postSynCnt, preSynCnt
 		copyConnections(&cpu_gpuNetPtrs, cudaMemcpyHostToDevice, 1);
 		cudaMemGetInfo(&avail, &total);
 		printf("Conn Info:\t\t%2.3f GB\t%2.3f GB\t%2.3f GB\n", (float)(previous - avail) / toGB,(float)((total - avail) / toGB), (float)(avail / toGB));
 		previous = avail;
 
-		// initialize (copy CpuSNN) cpu_gpuNetPtrs.wt, cpu_gpuNetPtrs.wtChange, cpu_gpuNetPtrs.maxSynWt, cpu_gpuNetPtrs.synSpikeTime
-		// initialize (copy CpuSNN) cpu_gpuNetPtrs.firingTableD1, cpu_gpuNetPtrs.firingTableD2, cpu_gpuNetPtrs.lastSpikeTime
-		// initialize (malloc) cpu_gpuNetPtrs.spikeGenBits
-		// initialize (copy cpuNetPtrs) cpu_gpuNetPtrs.nSpikeCnt, cpu_gpuNetPtrs.recovery, cpu_gpuNetPtrs.voltage, cpu_gpuNetPtrs.current
-		// initialize (copy cpuNetPtrs) cpu_gpuNetPtrs.gGABAa, cpu_gpuNetPtrs.gGABAb, cpu_gpuNetPtrs.gAMPA, cpu_gpuNetPtrs.gNMDA
-		// initialize (copy CpuSNN) cpu_gpuNetPtrs.Izh_a, cpu_gpuNetPtrs.Izh_b, cpu_gpuNetPtrs.Izh_c, cpu_gpuNetPtrs.Izh_d
+		// initialize (copy from CpuSNN) cpu_gpuNetPtrs.wt, cpu_gpuNetPtrs.wtChange, cpu_gpuNetPtrs.maxSynWt, cpu_gpuNetPtrs.synSpikeTime
+		// initialize (copy from CpuSNN) cpu_gpuNetPtrs.firingTableD1, cpu_gpuNetPtrs.firingTableD2, cpu_gpuNetPtrs.lastSpikeTime
+		// initialize (cudaMalloc) cpu_gpuNetPtrs.spikeGenBits
+		// initialize (copy from cpuNetPtrs) cpu_gpuNetPtrs.nSpikeCnt, cpu_gpuNetPtrs.recovery, cpu_gpuNetPtrs.voltage, cpu_gpuNetPtrs.current
+		// initialize (copy from cpuNetPtrs) cpu_gpuNetPtrs.gGABAa, cpu_gpuNetPtrs.gGABAb, cpu_gpuNetPtrs.gAMPA, cpu_gpuNetPtrs.gNMDA
+		// initialize (copy from CpuSNN) cpu_gpuNetPtrs.Izh_a, cpu_gpuNetPtrs.Izh_b, cpu_gpuNetPtrs.Izh_c, cpu_gpuNetPtrs.Izh_d
 		// copy data to CpuSNN:net_Info.preSynLength
-		// initialize (copy CpuSNN) stpu, stpx
+		// initialize (copy from CpuSNN) stpu, stpx
+		// initialize (copy from CpuSNN) cpu_gpuNetPtrs.grpDA, cpu_gpuNetPtrs.grp5HT, cpu_gpuNetPtrs.grpACh, cpu_gpuNetPtrs.grpNE
 		copyState(&cpu_gpuNetPtrs, cudaMemcpyHostToDevice, 1);
 		cudaMemGetInfo(&avail, &total);
 		printf("State Info:\t\t%2.3f GB\t%2.3f GB\t%2.3f GB\n", (float)(previous - avail) / toGB, (float)((total - avail) / toGB), (float)(avail / toGB));
@@ -3142,11 +3276,22 @@
 				fprintf(stderr,"\tFixedInputWts: %d\n", (int)grp_Info[i].FixedInputWts);
 				fprintf(stderr,"\tMaxDelay: %d\n", (int)grp_Info[i].MaxDelay);
 				fprintf(stderr,"\tWithSTDP: %d\n", (int)grp_Info[i].WithSTDP);
+				fprintf(stderr,"\tWithModulatedSTDP: %d\n", (int)grp_Info[i].WithModulatedSTDP);
 				if (grp_Info[i].WithSTDP) {
 					fprintf(stderr,"\t\tTAU_LTP_INV: %f\n", grp_Info[i].TAU_LTP_INV);
 					fprintf(stderr,"\t\tTAU_LTD_INV: %f\n", grp_Info[i].TAU_LTD_INV);
 					fprintf(stderr,"\t\tALPHA_LTP: %f\n", grp_Info[i].ALPHA_LTP);
 					fprintf(stderr,"\t\tALPHA_LTD: %f\n", grp_Info[i].ALPHA_LTD);
+				}
+				if (grp_Info[i].WithModulatedSTDP) {
+					fprintf(stderr,"\t\tbaseDP: %f\n", grp_Info[i].baseDP);
+					fprintf(stderr,"\t\tbase5HT: %f\n", grp_Info[i].base5HT);
+					fprintf(stderr,"\t\tbaseACh: %f\n", grp_Info[i].baseACh);
+					fprintf(stderr,"\t\tbaseNE: %f\n", grp_Info[i].baseNE);
+					fprintf(stderr,"\t\tdecayDP: %f\n", grp_Info[i].decayDP);
+					fprintf(stderr,"\t\tdecay5HT: %f\n", grp_Info[i].decay5HT);
+					fprintf(stderr,"\t\tdecayACh: %f\n", grp_Info[i].decayACh);
+					fprintf(stderr,"\t\tdecayNE: %f\n", grp_Info[i].decayNE);
 				}
 				fprintf(stderr,"\tWithConductances: %d\n", (int)grp_Info[i].WithConductances);
 				if (grp_Info[i].WithConductances) {

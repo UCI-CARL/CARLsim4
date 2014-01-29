@@ -33,6 +33,7 @@
  * created by: 		(MDR) Micah Richert, (JN) Jayram M. Nageswaran
  * maintained by:	(MA) Mike Avery <averym@uci.edu>, (MB) Michael Beyeler <mbeyeler@uci.edu>,
  *					(KDC) Kristofor Carlson <kdcarlso@uci.edu>
+ *					(TSC) Ting-Shuo Chou <tingshuc@uci.edu>
  *
  * CARLsim available from http://socsci.uci.edu/~jkrichma/CARL/CARLsim/
  * Ver 10/09/2013
@@ -45,58 +46,62 @@
 int main()
 {
 	// create a network
-	CpuSNN s("global", GPU_MODE);
+	CpuSNN* s;
+	
+	s = new CpuSNN("global", CPU_MODE);
 
-	int g1 = s.createGroup("excit", N * 0.8, EXCITATORY_NEURON);
-	s.setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f);
+	int g1 = s->createGroup("excit", N * 0.8, EXCITATORY_NEURON);
+	s->setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f);
 
-	int g2 = s.createGroup("inhib", N * 0.2, INHIBITORY_NEURON);
-	s.setNeuronParameters(g2, 0.1f,  0.2f, -65.0f, 2.0f);
+	int g2 = s->createGroup("inhib", N * 0.2, INHIBITORY_NEURON);
+	s->setNeuronParameters(g2, 0.1f,  0.2f, -65.0f, 2.0f);
 
-	int gin = s.createSpikeGeneratorGroup("input", N * 0.5, EXCITATORY_NEURON);
+	int gin = s->createSpikeGeneratorGroup("input", N * 0.8, EXCITATORY_NEURON);
 
 	// make random connections with 10% probability
-	s.connect(g2, g1, "random", -2.0f/100, -2.0f/100, 0.1f, 1, 1, SYN_FIXED);
+	s->connect(g2, g1, "random", -2.0f/100, -2.0f/100, 0.1f, 1, 1, SYN_FIXED);
 	// make random connections with 10% probability, and random delays between 1 and 20
-	s.connect(g1, g2, "random", +2.5f/100, 5.0f/100, 0.1f,  1, 20, SYN_PLASTIC);
-	s.connect(g1, g1, "random", +5.0f/100, 10.0f/100, 0.1f,  1, 20, SYN_PLASTIC);
+	s->connect(g1, g2, "random", +2.5f/100, 5.0f/100, 0.1f,  1, 20, SYN_PLASTIC);
+	s->connect(g1, g1, "random", +4.0f/100, 10.0f/100, 0.1f,  1, 20, SYN_PLASTIC);
 
 	// 5% probability of connection
-	s.connect(gin, g1, "random", +20.0f/100, 20.0f/100, 0.05f,  1, 20, SYN_FIXED);
+	s->connect(gin, g1, "one-to-one", +20.0f/100, 20.0f/100, 1.0f,  1, 20, SYN_FIXED);
 
-	float COND_tAMPA=5.0, COND_tNMDA=150.0, COND_tGABAa=6.0, COND_tGABAb=150.0;
-	s.setConductances(ALL,true,COND_tAMPA,COND_tNMDA,COND_tGABAa,COND_tGABAb);
+	float COND_tAMPA = 5.0, COND_tNMDA = 150.0, COND_tGABAa = 6.0, COND_tGABAb = 150.0;
+	s->setConductances(ALL, true, COND_tAMPA, COND_tNMDA, COND_tGABAa, COND_tGABAb);
 
 	// here we define and set the properties of the STDP. 
 	float ALPHA_LTP = 0.10f/100, TAU_LTP = 20.0f, ALPHA_LTD = 0.08f/100, TAU_LTD = 40.0f;	
-	s.setSTDP(g1, true, ALPHA_LTP, TAU_LTP, ALPHA_LTD, TAU_LTD);
-	s.setSTDP(g2, true, ALPHA_LTP, TAU_LTP, ALPHA_LTD, TAU_LTD);
+	s->setSTDP(g1, true, false, ALPHA_LTP, TAU_LTP, ALPHA_LTD, TAU_LTD);
+	s->setSTDP(g2, true, false, ALPHA_LTP, TAU_LTP, ALPHA_LTD, TAU_LTD);
 
 	// show logout every 10 secs, enabled with level 1 and output to stdout.
-	s.setLogCycle(10, 3, stdout);
+	s->setLogCycle(10, 0, stdout);
 
 	// put spike times into spikes.dat
-	s.setSpikeMonitor(g1,"spikes.dat");
+	s->setSpikeMonitor(g1,"spikes.dat");
 
 	// Show basic statistics about g2
-	s.setSpikeMonitor(g2);
+	s->setSpikeMonitor(g2, "spikes2.dat");
 
-	s.setSpikeMonitor(gin);
+	s->setSpikeMonitor(gin);
 
 	//setup some baseline input
-	PoissonRate in(N * 0.5);
-	for (int i = 0; i < N * 0.5; i++) in.rates[i] = 1;
-	s.setSpikeRate(gin,&in);
+	PoissonRate in(N * 0.8);
+	for (int i = 0; i < N * 0.8; i++) in.rates[i] = 1;
+	s->setSpikeRate(gin,&in);
 
 	//run for 60 seconds
-	for(int i=0; i < 60; i++) {
+	for(int i=0; i < 10; i++) {
 		// run the established network for a duration of 1 (sec)  and 0 (millisecond), in CPU_MODE
-		s.runNetwork(1, 0);
+		s->runNetwork(1, 0);
 	}
 
 	FILE* nid = fopen("network.dat","wb");
-	s.writeNetwork(nid);
+	s->writeNetwork(nid);
 	fclose(nid);
+
+	delete s;
 
 	return 0;
 }

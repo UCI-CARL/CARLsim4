@@ -24,10 +24,10 @@
     <ClCompile Include="src\PoissonRate.cpp">
       <Filter>Source</Filter>
     </ClCompile>
-    <ClCompile Include="examples\random\main_random.cpp" />
     <ClCompile Include="src\SparseWeightDelayMatrix.cpp">
       <Filter>Source</Filter>
     </ClCompile>
+    <ClCompile Include="examples\reinforcement_learning\main_reinforcement_learning.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\config.h">
@@ -60,6 +60,7 @@
     <ClInclude Include="include\SparseWeightDelayMatrix.h">
       <Filter>Include</Filter>
     </ClInclude>
+    <ClInclude Include="examples\reinforcement_learning\gaussian_connect.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Source">
@@ -68,5 +69,8 @@
     <Filter Include="Include">
       <UniqueIdentifier>{d2871a87-c59d-4274-878f-f70f7b5798e7}</UniqueIdentifier>
     </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="ClassDiagram.cd" />
   </ItemGroup>
 </Project>

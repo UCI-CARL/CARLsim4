@@ -23,7 +23,7 @@
     <CudaCompile Include="src\snn_gpu.cu" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="examples\random\main_random.cpp" />
+    <ClCompile Include="examples\reinforcement_learning\main_reinforcement_learning.cpp" />
     <ClCompile Include="src\mtrand.cpp" />
     <ClCompile Include="src\PoissonRate.cpp" />
     <ClCompile Include="src\printSNNInfo.cpp" />
@@ -32,6 +32,7 @@
     <ClCompile Include="src\SparseWeightDelayMatrix.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="examples\reinforcement_learning\gaussian_connect.h" />
     <ClInclude Include="include\config.h" />
     <ClInclude Include="include\CUDAVersionControl.h" />
     <ClInclude Include="include\errorCode.h" />
@@ -42,6 +43,9 @@
     <ClInclude Include="include\PropagatedSpikeBuffer.h" />
     <ClInclude Include="include\snn.h" />
     <ClInclude Include="include\SparseWeightDelayMatrix.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="ClassDiagram.cd" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{2A96CB30-2293-4890-9D05-8361232F9C2C}</ProjectGuid>

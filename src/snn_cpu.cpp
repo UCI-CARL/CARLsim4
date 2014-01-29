@@ -177,6 +177,12 @@ RNG_rand48* gpuRand48 = NULL;
 			cpuSnnSz.neuronInfoSize += sizeof(int) * numNReg * 4;
 		}
 
+		grpDA = new float[numGrp];
+		grp5HT = new float[numGrp];
+		grpACh = new float[numGrp];
+		grpNE = new float[numGrp];
+		//cpuSnnSz
+
 		resetCurrent();
 		resetConductances();
 
@@ -269,6 +275,10 @@ RNG_rand48* gpuRand48 = NULL;
 		cpuNetPtrs.gNMDA			= gNMDA;
 		cpuNetPtrs.gGABAa       	= gGABAa;
 		cpuNetPtrs.gGABAb			= gGABAb;
+		cpuNetPtrs.grpDA			= grpDA;
+		cpuNetPtrs.grp5HT			= grp5HT;
+		cpuNetPtrs.grpACh			= grpACh;
+		cpuNetPtrs.grpNE			= grpNE;
 		cpuNetPtrs.allocated    	= true;
 		cpuNetPtrs.memType      	= CPU_MODE;
 		cpuNetPtrs.stpu 			= stpu;
@@ -325,6 +335,8 @@ RNG_rand48* gpuRand48 = NULL;
 
 		fpLog = fopen("tmp_debug.log", "w");
 		fpProgLog = NULL;
+		fpGrpLog = fopen("grp_debug.log", "w");
+		fpWtLog = fopen("wt_debug.log", "w");
 		showLog = 0;		// disable showing log..
 		showLogMode = 0;	// show only basic logs. if set higher more logs generated
 		showGrpFiringInfo = true;
@@ -352,6 +364,7 @@ RNG_rand48* gpuRand48 = NULL;
 			grp_Info[i].numPreSynapses 	= 0;	// default value
 			grp_Info[i].WithSTP = false;
 			grp_Info[i].WithSTDP = false;
+			grp_Info[i].WithModulatedSTDP = false;
 			grp_Info[i].FixedInputWts = true; // Default is true. This value changed to false
 							  // if any incoming  connections are plastic
 			grp_Info[i].WithConductances = false;
@@ -367,6 +380,15 @@ RNG_rand48* gpuRand48 = NULL;
 			grp_Info[i].dNMDA=1-(1.0/150);
 			grp_Info[i].dGABAa=1-(1.0/6);
 			grp_Info[i].dGABAb=1-(1.0/150);
+
+			grp_Info[i].baseDP = 1.0;
+			grp_Info[i].base5HT = 1.0;
+			grp_Info[i].baseACh = 1.0;
+			grp_Info[i].baseNE = 1.0;
+			grp_Info[i].decayDP = 0.99;
+			grp_Info[i].decay5HT = 0.99;
+			grp_Info[i].decayACh = 0.99;
+			grp_Info[i].decayNE = 0.99;
 
 			grp_Info[i].spikeGen = NULL;
 
@@ -414,6 +436,11 @@ RNG_rand48* gpuRand48 = NULL;
 		gGABAa = NULL;
 		gGABAb = NULL;
 
+		grpDA = NULL;
+		grp5HT = NULL;
+		grpACh = NULL;
+		grpNE = NULL;
+
 		if (_randSeed == -1) {
 			randSeed = time(NULL);
 		}
@@ -447,10 +474,18 @@ RNG_rand48* gpuRand48 = NULL;
 		sim_with_fixedwts = true; // default is true, will be set to false if there are any plastic synapses
 		sim_with_conductances = false; // for all others, the default is false
 		sim_with_stdp = false;
+		sim_with_modulated_stdp = false;
 		sim_with_stp = false;
 
 		maxSpikesD2 = maxSpikesD1 = 0;
 		readNetworkFID = NULL;
+
+		testVar = NULL;
+		testVar2 = NULL;
+
+		updateInterval = 1000;
+		stdpScaleFactor = 0.1;
+		wtChangeDecay = 0.9;
 
 		// initialize parameters needed in snn_gpu.cu
 		CpuSNNinitGPUparams();
@@ -473,6 +508,14 @@ RNG_rand48* gpuRand48 = NULL;
 			// close param.txt
 			if (fpParam) {
 				fclose(fpParam);
+			}
+
+			if (fpGrpLog) {
+				fclose(fpGrpLog);
+			}
+
+			if (fpWtLog) {
+				fclose(fpWtLog);
 			}
 
 //			if(val==0)
@@ -498,6 +541,11 @@ RNG_rand48* gpuRand48 = NULL;
 			if (gNMDA!=NULL) delete[] gNMDA;
 			if (gGABAa!=NULL) delete[] gGABAa;
 			if (gGABAb!=NULL) delete[] gGABAb;
+
+			if (grpDA != NULL) delete [] grpDA;
+			if (grp5HT != NULL) delete [] grp5HT;
+			if (grpACh != NULL) delete [] grpACh;
+			if (grpNE != NULL) delete [] grpNE;
 
 			if (stpu!=NULL) delete[] stpu;
 			if (stpx!=NULL) delete[] stpx;
@@ -566,31 +614,35 @@ RNG_rand48* gpuRand48 = NULL;
 	void CpuSNN::setSTDP( int _grpId, bool _enable, int _configId)
 	{
 		assert(_enable == false);
-		setSTDP(_grpId, false, 0, 0, 0, 0, _configId);
+		setSTDP(_grpId, false, false, 0, 0, 0, 0, _configId);
 	}
 
-	void CpuSNN::setSTDP( int _grpId, bool _enable, float _ALPHA_LTP, float _TAU_LTP, float _ALPHA_LTD, float _TAU_LTD, int _configId)
+	void CpuSNN::setSTDP( int _grpId, bool _enable, bool _enable_modulation, float _ALPHA_LTP, float _TAU_LTP, float _ALPHA_LTD, float _TAU_LTD, int _configId)
 	{
 		assert(_TAU_LTP >= 0.0);
 		assert(_TAU_LTD >= 0.0);
 
 		if (_grpId == ALL && _configId == ALL) {
 			for(int g = 0; g < numGrp; g++)
-				setSTDP(g, _enable, _ALPHA_LTP, _TAU_LTP, _ALPHA_LTD, _TAU_LTD, 0);
+				setSTDP(g, _enable, _enable_modulation, _ALPHA_LTP, _TAU_LTP, _ALPHA_LTD, _TAU_LTD, 0);
 		} else if (_grpId == ALL) {
 			for(int grpId1 = 0; grpId1 < numGrp; grpId1 += numConfig) {
 				int g = getGroupId(grpId1, _configId);
-				setSTDP(g, _enable, _ALPHA_LTP, _TAU_LTP, _ALPHA_LTD, _TAU_LTD, _configId);
+				setSTDP(g, _enable, _enable_modulation, _ALPHA_LTP, _TAU_LTP, _ALPHA_LTD, _TAU_LTD, _configId);
 			}
 		} else if (_configId == ALL) {
 			for(int c = 0; c < numConfig; c++)
-				setSTDP(_grpId, _enable, _ALPHA_LTP, _TAU_LTP, _ALPHA_LTD, _TAU_LTD, c);
+				setSTDP(_grpId, _enable, _enable_modulation, _ALPHA_LTP, _TAU_LTP, _ALPHA_LTD, _TAU_LTD, c);
 		} else {
 			int cGrpId = getGroupId(_grpId, _configId);
 
-			sim_with_stdp |= _enable;
-			
+			sim_with_stdp = _enable;
+			sim_with_modulated_stdp = _enable_modulation;
+
+			assert(!(!_enable && _enable_modulation)); // modulated STDP can be enabled only when STDP is enabled
+
 			grp_Info[cGrpId].WithSTDP      = _enable;
+			grp_Info[cGrpId].WithModulatedSTDP = _enable_modulation;
 			grp_Info[cGrpId].ALPHA_LTP     = _ALPHA_LTP;
 			grp_Info[cGrpId].ALPHA_LTD     = _ALPHA_LTD;
 			grp_Info[cGrpId].TAU_LTP_INV   = 1.0 / _TAU_LTP;
@@ -598,7 +650,7 @@ RNG_rand48* gpuRand48 = NULL;
 
 			grp_Info[cGrpId].newUpdates   = true;
 
-			fprintf(stderr, "STDP %s for %d (%s): %f, %f, %f, %f\n", _enable ? "enabled" : "disabled",
+			fprintf(stderr, "%s STDP %s for %d (%s): %f, %f, %f, %f\n", _enable_modulation ? "Modulated" : "Non-modulated", _enable ? "enabled" : "disabled",
 					cGrpId, grp_Info2[cGrpId].Name.c_str(), _ALPHA_LTP, _ALPHA_LTD, _TAU_LTP, _TAU_LTD);
 		}
 	}
@@ -798,18 +850,18 @@ RNG_rand48* gpuRand48 = NULL;
 		return connId;
 	}
 
-	void CpuSNN::setNeuronParameters(int groupId, float _a, float _b, float _c, float _d, int _configId)
+	void CpuSNN::setNeuronParameters(int _grpId, float _a, float _b, float _c, float _d, int _configId)
 	{
-		setNeuronParameters(groupId, _a, 0, _b, 0, _c, 0, _d, 0, _configId);
+		setNeuronParameters(_grpId, _a, 0, _b, 0, _c, 0, _d, 0, _configId);
 	}
 
-	void CpuSNN::setNeuronParameters(int _groupId, float _a, float _a_sd, float _b, float _b_sd, float _c, float _c_sd, float _d, float _d_sd, int _configId)
+	void CpuSNN::setNeuronParameters(int _grpId, float _a, float _a_sd, float _b, float _b_sd, float _c, float _c_sd, float _d, float _d_sd, int _configId)
 	{
 		if (_configId == ALL) {
 			for (int c = 0; c < numConfig; c++)
-				setNeuronParameters(_groupId, _a, _a_sd, _b, _b_sd, _c, _c_sd, _d, _d_sd, c);
+				setNeuronParameters(_grpId, _a, _a_sd, _b, _b_sd, _c, _c_sd, _d, _d_sd, c);
 		} else {
-			int cGrpId = getGroupId(_groupId, _configId);
+			int cGrpId = getGroupId(_grpId, _configId);
 			grp_Info2[cGrpId].Izh_a	  	= _a;
 			grp_Info2[cGrpId].Izh_a_sd  = _a_sd;
 			grp_Info2[cGrpId].Izh_b	  	= _b;
@@ -831,6 +883,51 @@ RNG_rand48* gpuRand48 = NULL;
 
 			grp_Info2[cGrpId].IzhGen = _IzhGen;
 		}
+	}
+
+	void CpuSNN::setNeuromodulator(int _grpId, float _tauDP, float _tau5HT, float _tauACh, float _tauNE, int _configId)
+	{
+		setNeuromodulator(_grpId, 1.0, _tauDP, 1.0, _tau5HT, 1.0, _tauACh, 1.0, _tauNE, _configId);
+	}
+
+	void CpuSNN::setNeuromodulator(int _grpId, float _baseDP, float _tauDP, float _base5HT, float _tau5HT, float _baseACh, float _tauACh, float _baseNE, float _tauNE, int _configId)
+	{
+		if (_configId == ALL) {
+			for (int c = 0; c < numConfig; c++)
+				setNeuromodulator(_grpId, _baseDP, _tauDP, _base5HT, _tau5HT, _baseACh, _tauACh, _baseNE, _tauNE, c);
+		} else {
+			int cGrpId = getGroupId(_grpId, _configId);
+			grp_Info[cGrpId].baseDP	= _baseDP;
+			grp_Info[cGrpId].decayDP = 1.0 - (1.0 / _tauDP);
+			grp_Info[cGrpId].base5HT = _base5HT;
+			grp_Info[cGrpId].decay5HT = 1.0 - (1.0 / _tau5HT);
+			grp_Info[cGrpId].baseACh = _baseACh;
+			grp_Info[cGrpId].decayACh = 1.0 - (1.0 / _tauACh);
+			grp_Info[cGrpId].baseNE	= _baseNE;
+			grp_Info[cGrpId].decayNE = 1.0 - (1.0 / _tauNE);
+		}
+	}
+
+	void CpuSNN::setWeightUpdateParameter(int _updateInterval, int _tauWeightChange) {
+		switch (_updateInterval) {
+			case _10MS:
+				updateInterval = 10;
+				stdpScaleFactor = 0.001;
+				break;
+			case _100MS:
+				updateInterval = 100;
+				stdpScaleFactor = 0.01;
+				break;
+			case _1000MS:
+			default:
+				updateInterval = 1000;
+				stdpScaleFactor = 0.1;
+				break;
+		}
+
+		wtChangeDecay = 1.0 - (1.0 / _tauWeightChange);
+		
+		fprintf(stdout, "update weight every %d ms, stdpScaleFactor = %1.3f, wtChangeDecay = %1.3f\n", updateInterval, stdpScaleFactor, wtChangeDecay);
 	}
 
 	void CpuSNN::setGroupInfo(int _groupId, group_info_t _info, int _configId)
@@ -891,6 +988,13 @@ RNG_rand48* gpuRand48 = NULL;
 		}
 	}
 
+	void CpuSNN::resetNeuromodulator(int grpId) {
+		grpDA[grpId] = grp_Info[grpId].baseDP;
+		grp5HT[grpId] = grp_Info[grpId].base5HT;
+		grpACh[grpId] = grp_Info[grpId].baseACh;
+		grpNE[grpId] = grp_Info[grpId].baseNE;
+	}
+
 	void CpuSNN::resetNeuron(unsigned int nid, int grpId)
 	{
 		assert(nid < numNReg);
@@ -932,6 +1036,8 @@ RNG_rand48* gpuRand48 = NULL;
 				grpId, grp_Info2[grpId].Name.c_str(), grp_Info[grpId].StartN, grp_Info[grpId].EndN);
 
 		resetSpikeCnt(grpId);
+
+		resetNeuromodulator(grpId);
 
 		allocatedN = allocatedN + grp_Info[grpId].SizeN;
 		assert(allocatedN <= numN);
@@ -986,10 +1092,10 @@ RNG_rand48* gpuRand48 = NULL;
 		assert(post_pos < postSynCnt);
 		assert(pre_pos  < preSynCnt);
 
-		postSynapticIds[post_pos]   = SET_CONN_ID(dest, Npre[dest], destGrp); //generate a new postSynapticIds id for the current connection
+		postSynapticIds[post_pos] = SET_CONN_ID(dest, Npre[dest], destGrp); //generate a new postSynapticIds id for the current connection
 		tmp_SynapticDelay[post_pos] = dVal;
 
-		preSynapticIds[pre_pos] 	= SET_CONN_ID(src, Npost[src], srcGrp);
+		preSynapticIds[pre_pos] = SET_CONN_ID(src, Npost[src], srcGrp);
 		wt[pre_pos] 	  = synWt;
 		maxSynWt[pre_pos] = maxWt;
 
@@ -1508,7 +1614,7 @@ digraph G {\n\
 		//! update (initialize) numN, numPostSynapses, numPreSynapses, D, postSynCnt, preSynCnt
 		//! allocate space for voltage, recovery, Izh_a, Izh_b, Izh_c, Izh_d, current, gAMPA, gNMDA, gGABAa, gGABAb
 		//! lastSpikeTime, curSpike, nSpikeCnt, intrinsicWeight, stpu, stpx, Npre, Npre_plastic, Npost, cumulativePost, cumulativePre
-		//! postSynapticIds, tmp_SynapticDely, postDelayInfo, wt, maxSynWt, preSynapticIds, timeTableD2, timeTableD1
+		//! postSynapticIds, tmp_SynapticDely, postDelayInfo, wt, maxSynWt, preSynapticIds, timeTableD2, timeTableD1, grpDA, grp5HT, grpACh, grpNE
 		CpuSNNInit(curN, numPostSynapses, numPreSynapses, curD);
 
 		// we build network in the order...
@@ -1948,10 +2054,38 @@ digraph G {\n\
 		return simTimeMs;
 	}
 
+	// get a connection pair
+	void CpuSNN::getConnectionPair(int grpId, int& nidPre, int& nidPost)
+	{
+		nidPre = grp_Info[grpId].StartN + 2;
+
+		//fprintf(stdout, " %3d ( %3d ) : \t", i, Npost[i]);
+		// fetch the starting position
+		post_info_t* postIds = &postSynapticIds[cumulativePost[nidPre]];
+		int  offset  = cumulativePost[nidPre];
+		for (int j = 0; j < Npost[nidPre]; j++, postIds++) {
+			int post_nid = GET_CONN_NEURON_ID((*postIds));
+			int post_gid = GET_CONN_GRP_ID((*postIds));
+			assert(findGrpId(post_nid) == post_gid);
+			if (post_gid == grpId) {
+				nidPost = post_nid;
+				fprintf(stdout, "Connection Pair (%d:%d)\n", nidPre, nidPost);
+				break;
+			}
+			//fprintf(stdout, " %3d (Grp=%3d) ", post_nid, post_gid);
+		}
+		//fprintf(stdout, "\n");
+		//fprintf(stdout, " Delay ( %3d ) : ", i);
+		//for(int j=0; j < D; j++) {
+		//	fprintf(stdout, " %d,%d ", postDelayInfo[i*(D+1)+j].delay_length,
+		//						   postDelayInfo[i*(D+1)+j].delay_index_start);
+		//}
+		//fprintf(stdout, "\n");
+	}
+
 	// This function is called every second by simulator...
 	// This function updates the firingTable by removing older firing values...
-	// and also update the synaptic weights from its derivatives..
-	void CpuSNN::updateStateAndFiringTable()
+	void CpuSNN::updateFiringTable()
 	{
 		// Read the neuron ids that fired in the last D seconds
 		// and put it to the beginning of the firing table...
@@ -1965,6 +2099,7 @@ digraph G {\n\
 
 		timeTableD1[D] = 0;
 
+		/* the code of weight update has been moved to CpuSNN::updateWeight()
 		// update synaptic weights here for all the neurons..
 		for(int g=0; g < numGrp; g++) {
 			// no changable weights so continue without changing..
@@ -1988,11 +2123,13 @@ digraph G {\n\
 					if ((showLogMode >= 1) && (i==grp_Info[g].StartN))
 						fprintf(fpProgLog,"%1.2f %1.2f \t", wt[offset+j]*10, wtChange[offset+j]*10);
 
-					wt[offset+j] += wtChange[offset+j];
+					//if (grp_Info[g].WithModulatedSTDP)
+						wt[offset+j] += cpuNetPtrs.grpDA[g] * wtChange[offset+j];
+					//else
+					//	wt[offset+j] += wtChange[offset+j];
 
 					//MDR - don't decay weights, just set to 0
-					//wtChange[offset+j]*=0.99f;
-					wtChange[offset+j] = 0;
+					//wtChange[offset+j] = 0;
 
 					// if this is an excitatory or inhibitory synapse
 					if (maxSynWt[offset+j] >= 0) {
@@ -2008,10 +2145,12 @@ digraph G {\n\
 					}
 				}
 
+
 				if ((showLogMode >= 1) && (i==grp_Info[g].StartN))
 					fprintf(fpProgLog,"\n");
 			}
 		}
+		*/
 
 		spikeCountAll	+= spikeCountAll1sec;
 		spikeCountD2Host += (secD2fireCntHost-timeTableD2[D]);
@@ -2025,6 +2164,97 @@ digraph G {\n\
 			grp_Info[i].FiringCount1sec=0;
 		}
 
+	}
+
+	// This function updates the synaptic weights from its derivatives..
+	void CpuSNN::updateWeight() {		
+		// update synaptic weights here for all the neurons..
+		for(int g = 0; g < numGrp; g++) {
+			// no changable weights so continue without changing..
+			if(grp_Info[g].FixedInputWts || !(grp_Info[g].WithSTDP)) {
+//				for(int i=grp_Info[g].StartN; i <= grp_Info[g].EndN; i++)
+//					nSpikeCnt[i]=0;
+				continue;
+			}
+
+			for(int i = grp_Info[g].StartN; i <= grp_Info[g].EndN; i++) {
+				///nSpikeCnt[i] = 0;
+				assert(i < numNReg);
+				unsigned int offset = cumulativePre[i];
+				float diff_firing = 0.0;
+
+				if ((showLogMode >= 1) && (i == grp_Info[g].StartN))
+					fprintf(fpProgLog,"Weights, Change at %lu (diff_firing:%f) \n", simTimeSec, diff_firing);
+
+				for(int j = 0; j < Npre_plastic[i]; j++) {
+
+					if ((showLogMode >= 1) && (i == grp_Info[g].StartN))
+						fprintf(fpProgLog,"%1.2f %1.2f \t", wt[offset + j] * 10, wtChange[offset + j] * 10);
+
+					if (grp_Info[g].WithModulatedSTDP)
+						wt[offset+j] += stdpScaleFactor * cpuNetPtrs.grpDA[g] * wtChange[offset+j];
+					else
+						wt[offset+j] += stdpScaleFactor * wtChange[offset+j];
+					
+					//else
+					//	wt[offset+j] += wtChange[offset+j];
+
+					//MDR - don't decay weights, just set to 0
+					//wtChange[offset+j] = 0;
+
+					//TSC - decay weights
+					wtChange[offset+j] *= wtChangeDecay;
+
+					// if this is an excitatory or inhibitory synapse
+					if (maxSynWt[offset + j] >= 0) {
+						if (wt[offset + j] >= maxSynWt[offset + j])
+							wt[offset + j] = maxSynWt[offset + j];
+						if (wt[offset + j] < 0)
+							wt[offset + j] = 0.0;
+					} else {
+						if (wt[offset + j] <= maxSynWt[offset + j])
+							wt[offset + j] = maxSynWt[offset + j];
+						if (wt[offset+j] > 0)
+							wt[offset+j] = 0.0;
+					}
+				}
+
+				if ((showLogMode >= 1) && (i==grp_Info[g].StartN))
+					fprintf(fpProgLog,"\n");
+			}
+		}
+		
+		// log wt and wtChanges
+		int nid = 2;
+		unsigned int offset = cumulativePost[nid];
+
+		for (int t = 0; t < D; t++) {
+			delay_info_t dPar = postDelayInfo[nid * (D + 1) + t];
+
+			for(int idx_d = dPar.delay_index_start; idx_d < (dPar.delay_index_start + dPar.delay_length); idx_d = idx_d + 1) {
+
+				// get synaptic info...
+				post_info_t post_info = postSynapticIds[offset + idx_d];
+
+				// get neuron id
+				//int p_i = (post_info&POST_SYN_NEURON_MASK);
+				unsigned int p_i = GET_CONN_NEURON_ID(post_info);
+				assert(p_i < numN);
+
+				if (p_i == 576) {
+					// get syn id
+					unsigned int s_i = GET_CONN_SYN_ID(post_info);
+					//>>POST_SYN_NEURON_BITS)&POST_SYN_CONN_MASK;
+					assert(s_i<(Npre[p_i]));
+
+					// get the cumulative position for quick access...
+					unsigned int pos_i = cumulativePre[p_i] + s_i;
+
+					fprintf(fpWtLog, "%f\n", wt[pos_i]);
+					//fprintf(stdout, "Pre=%d, Post=%d, wt=%f, maxSynWt=%f\n", nid, p_i, wt[pos_i], maxSynWt[pos_i]);
+				}
+			}
+		}
 	}
 
 	// This method loops through all spikes that are generated by neurons with a delay of 2+ms
@@ -2108,13 +2338,13 @@ digraph G {\n\
 
 		// get the cumulative position for quick access...
 		unsigned int pos_i = cumulativePre[p_i] + s_i;
-
+		
 		assert(p_i < numNReg);
 
 		float change;
 
 		int pre_grpId = findGrpId(pre_i);
-		char type = grp_Info[pre_grpId].Type;
+		uint32_t type = grp_Info[pre_grpId].Type;
 
 		// TODO: MNJ TEST THESE CONDITIONS FOR CORRECTNESS...
 		int ind = STP_BUF_POS(pre_i,(simTime-tD-1));
@@ -2138,6 +2368,11 @@ digraph G {\n\
 			printf("%d => %d (%d) am=%f ga=%f wt=%f stpu=%f stpx=%f td=%d\n",
 					pre_i, p_i, findGrpId(p_i), gAMPA[p_i], gGABAa[p_i],
 					wt[pos_i],(grp_Info[post_grpId].WithSTP?stpx[ind]:1.0),(grp_Info[post_grpId].WithSTP?stpu[ind]:1.0),tD);
+
+		// Got one spike from dopaminergic neuron, increase dopamine concentration in the target area
+		if (type & TARGET_DA) {
+			cpuNetPtrs.grpDA[post_grpId] += 0.04;
+		}
 
 		// STDP calculation....
 		if (grp_Info[post_grpId].WithSTDP) {
@@ -2175,6 +2410,16 @@ digraph G {\n\
 		// now we update the state of all the neurons
 		for(int g=0; g < numGrp; g++) {
 			if (grp_Info[g].Type&POISSON_NEURON) continue;
+
+			
+			// log dopamine concentration
+			if (g == 0) {
+				fprintf(fpGrpLog, "%f\n", cpuNetPtrs.grpDA[g]);
+			}
+
+			// decay dopamine concentration
+			if (cpuNetPtrs.grpDA[g] > grp_Info[g].baseDP)
+				cpuNetPtrs.grpDA[g] *= grp_Info[g].decayDP;
 
 			for(int i=grp_Info[g].StartN; i <= grp_Info[g].EndN; i++) {
 				assert(i < numNReg);
@@ -2265,7 +2510,7 @@ digraph G {\n\
 	{
 		DBG(2, fpLog, AT, "showStatus() called");
 
-		printState("showStatus");
+		printState("showStatus\n");
 
 		if(simType == GPU_MODE) {
 			showStatus_GPU();
@@ -2414,6 +2659,21 @@ digraph G {\n\
 				printState();
 			}
 
+			// update weight every 10 ms
+			if (simTimeMs % updateInterval == 0) {
+				if (currentMode == CPU_MODE) {
+					updateWeight();
+				} else if (currentMode == GPU_MODE) {
+					updateWeight_GPU();
+
+					// temp debug , log dopamine concentration
+					//copyGroupState(&cpuNetPtrs, &cpu_gpuNetPtrs, cudaMemcpyDeviceToHost, false, 0);
+					//fprintf(fpGrpLog, "%f\n", cpuNetPtrs.grpDA[0]);
+				} else {
+					// something wrong
+				}
+			}
+
 			if (updateTime()) {
 
 				// finished one sec of simulation...
@@ -2426,12 +2686,30 @@ digraph G {\n\
 				updateSpikeMonitor();
 
 				if (currentMode == CPU_MODE)
-					updateStateAndFiringTable();
+					updateFiringTable();
 				else if (currentMode == GPU_MODE)
-					updateStateAndFiringTable_GPU();
+					updateFiringTable_GPU();
 				else {
 					// something wrong
 				}
+
+
+				// temp debug, log the weight of pair
+				//if (currentMode == GPU_MODE) {
+				//	// log wt and wtChanges
+				//	//copyWeightState(&cpuNetPtrs, &cpu_gpuNetPtrs, cudaMemcpyDeviceToHost, false, 0);
+				//	copyWeightsGPU(576, 0);
+				//	
+				//	unsigned int offset = cumulativePre[576];
+
+				//	for (int sid = 0; sid < Npre[576]; sid++) {
+				//		post_info_t pre_info = preSynapticIds[offset + sid];
+				//		unsigned int pre_i = GET_CONN_NEURON_ID(pre_info);
+
+				//		if (pre_i == 2)
+				//			fprintf(fpWtLog, "%f\n", wt[offset + sid]);
+				//	}
+				//}
 			}
 		}
 
@@ -2573,8 +2851,8 @@ digraph G {\n\
 		SpikeGenerator* spikeGen = grp_Info[grpId].spikeGen;
 		int timeSlice = grp_Info[grpId].CurrTimeSlice;
 		unsigned int currTime = simTime;
-		int spikeCnt=0;
-		for(int i=grp_Info[grpId].StartN;i<=grp_Info[grpId].EndN;i++) {
+		int spikeCnt = 0;
+		for(int i = grp_Info[grpId].StartN; i <= grp_Info[grpId].EndN; i++) {
 			// start the time from the last time it spiked, that way we can ensure that the refractory period is maintained
 			unsigned int nextTime = lastSpikeTime[i];
 			if (nextTime == MAX_SIMULATION_TIME)
@@ -2583,19 +2861,21 @@ digraph G {\n\
 			done = false;
 			while (!done) {
 
-				nextTime = spikeGen->nextSpikeTime(this, grpId, i-grp_Info[grpId].StartN, nextTime);
+				//printf("A current time = %d, next time = %d, nid = %d\n", currTime, nextTime, i);
+				
+				nextTime = spikeGen->nextSpikeTime(this, grpId, i - grp_Info[grpId].StartN, currTime, nextTime);
 
+				//printf("B current time = %d, next time = %d, nid = %d\n", currTime, nextTime, i);
 				// found a valid time window
-				if (nextTime < (currTime+timeSlice)) {
+				if (nextTime < (currTime + timeSlice)) {
 					if (nextTime >= currTime) {
 						// scheduled spike...
-						//fprintf(stderr, "scheduled time = %d, nid = %d\n", nextTime, i);
-						pbuf->scheduleSpikeTargetGroup(i, nextTime-currTime);
+						fprintf(stderr, "scheduled time = %d, nid = %d\n", nextTime, i);
+						pbuf->scheduleSpikeTargetGroup(i, nextTime - currTime);
 						spikeCnt++;
 					}
-				}
-				else {
-					done=true;
+				} else {
+					done = true;
 				}
 			}
 		}
@@ -3431,7 +3711,7 @@ digraph G {\n\
 			if(isExcitatoryGroup(g)) {
 				setSTP(g, true, DEFAULT_STP_U_Exc, DEFAULT_STP_tD_Exc, DEFAULT_STP_tF_Exc);
 				if ((alpha_ltp!=0.0) && (!isPoissonGroup(g)))
-					setSTDP(g, true, alpha_ltp, tau_ltp, alpha_ltd, tau_ltd);
+					setSTDP(g, true, false, alpha_ltp, tau_ltp, alpha_ltd, tau_ltd);
 			}
 			else {
 				setSTP(g, true, DEFAULT_STP_U_Inh, DEFAULT_STP_tD_Inh, DEFAULT_STP_tF_Inh);

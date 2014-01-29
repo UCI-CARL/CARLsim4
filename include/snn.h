@@ -115,10 +115,14 @@ extern RNG_rand48* gpuRand48; //!< Used by all network to generate global random
 #define TARGET_NMDA	(1 << 2)
 #define TARGET_GABAa	(1 << 3)
 #define TARGET_GABAb	(1 << 4)
-//#define TARGET_DA		(1 << 5)
+#define TARGET_DA		(1 << 5)
+#define TARGET_5HT		(1 << 6)
+#define TARGET_ACh		(1 << 7)
+#define TARGET_NE		(1 << 8)
 
 #define INHIBITORY_NEURON 		(TARGET_GABAa | TARGET_GABAb)
 #define EXCITATORY_NEURON 		(TARGET_NMDA | TARGET_AMPA)
+#define DOPAMINERGIC_NEURON		(TARGET_DA | EXCITATORY_NEURON)
 #define EXCITATORY_POISSON 		(EXCITATORY_NEURON | POISSON_NEURON)
 #define INHIBITORY_POISSON		(INHIBITORY_NEURON | POISSON_NEURON)
 #define IS_INHIBITORY_TYPE(type)	(((type) & TARGET_GABAa) || ((type) & TARGET_GABAb))
@@ -202,6 +206,10 @@ extern RNG_rand48* gpuRand48; //!< Used by all network to generate global random
 #define GET_FIRING_TABLE_NID(val)   ((val) & MAX_NUMBER_OF_NEURONS_MASK)
 #define GET_FIRING_TABLE_GID(val)   (((val) >> MAX_NUMBER_OF_NEURONS_BITS) & MAX_NUMBER_OF_GROUPS_MASK)
 
+#define _10MS 0
+#define _100MS 1
+#define _1000MS 2
+
 
 //#define CHECK_CONNECTION_ID(n,total) { assert(n >= 0); assert(n < total); }
 
@@ -223,8 +231,14 @@ class SpikeGenerator {
 		SpikeGenerator() {};
 
 		//! controls spike generation using a callback
-		/*! \attention The virtual method should never be called directly */
-		virtual unsigned int nextSpikeTime(CpuSNN* s, int grpId, int i, unsigned int currentTime) { assert(false); return 0; }; // the virtual method should never be called directly
+		/*! \attention The virtual method should never be called directly
+		 *  \param s pointer to the simulator object
+		 *  \param grpId the group id
+		 *  \param i the neuron index in the group
+		 *  \param currentTime the current simluation time
+		 *  \param lastScheduledSpikeTime the last spike time which was scheduled
+		 */
+		virtual unsigned int nextSpikeTime(CpuSNN* s, int grpId, int i, unsigned int currentTime, unsigned int lastScheduledSpikeTime) { assert(false); return 0; }; // the virtual method should never be called directly
 };
 
 //! used for fine-grained control over spike generation, using a callback mechanism
@@ -309,7 +323,10 @@ typedef struct network_info_s  {
 	bool		sim_with_fixedwts;
 	bool		sim_with_conductances;
 	bool		sim_with_stdp;
+	bool		sim_with_modulated_stdp;
 	bool		sim_with_stp;
+	float		stdpScaleFactor;
+	float		wtChangeDecay; //!< the wtChange decay 
 } network_info_t;
 
 inline post_info_t SET_CONN_ID(int nid, int sid, int grpId)
@@ -372,6 +389,14 @@ typedef struct network_ptr_s  {
 //	int*		randId;
 //	void*		noiseGenProp;
 
+	/*!
+	 * neuromodulator concentration for each group
+	 */
+	float		*grpDA;
+	float		*grp5HT;
+	float		*grpACh;
+	float		*grpNE;
+
 	float		*probeV;
 	float		*probeI;
 	uint32_t	*probeId;
@@ -397,7 +422,7 @@ typedef struct group_info_s
 	PoissonRate	*RatePtr;
 	int			StartN;
 	int			EndN;
-	char		Type;
+	uint32_t	Type;
 	int			SizeN;
 	int			NumTraceN;
 	short int  	MaxFiringRate; //!< this is for the monitoring mechanism, it needs to know what is the maximum firing rate in order to allocate a buffer big enough to store spikes...
@@ -412,6 +437,7 @@ typedef struct group_info_s
 	bool 		isSpikeGenerator;
 	bool 		WithSTP;
 	bool 		WithSTDP;
+	bool		WithModulatedSTDP;
 	bool 		WithConductances;
 	bool		FixedInputWts;
 	int			Noffset;
@@ -428,6 +454,16 @@ typedef struct group_info_s
 	float		dNMDA;
 	float		dGABAa;
 	float		dGABAb;
+
+	// parameters of neuromodulator
+	float		baseDP;		//!< baseline concentration of Dopamine
+	float		base5HT;	//!< baseline concentration of Serotonin
+	float		baseACh;	//!< baseline concentration of Acetylcholine
+	float		baseNE;		//!< baseline concentration of Noradrenaline
+	float		decayDP;		//!< decay rate for Dopaamine
+	float		decay5HT;		//!< decay rate for Serotonin
+	float		decayACh;		//!< decay rate for Acetylcholine
+	float		decayNE;		//!< decay rate for Noradrenaline
 
 	SpikeGenerator	*spikeGen;
 	bool		newUpdates;  //!< FIXME this flag has mixed meaning and is not rechecked after the simulation is started
@@ -583,6 +619,32 @@ class CpuSNN
 		 * \param _configId (optional, deprecated) configuration id
 		 */
 		void setNeuronParameters(int _groupId, float _a, float _b, float _c, float _d, int _configId = ALL);
+
+		//! Sets baseline concentration and decay time constant of neuromodulators (DP, 5HT, ACh, NE) for a neuron group.
+		/*!
+		 * \param _groupId the symbolic name of a group
+		 * \param _baseDP  the baseline concentration of Dopamine
+		 * \param _tauDP the decay time constant of Dopamine
+		 * \param _base5HT  the baseline concentration of Serotonin
+		 * \param _tau5HT the decay time constant of Serotonin
+		 * \param _baseACh  the baseline concentration of Acetylcholine
+		 * \param _tauACh the decay time constant of Acetylcholine
+		 * \param _baseNE  the baseline concentration of Noradrenaline 
+		 * \param _tauNE the decay time constant of Noradrenaline 
+		 * \param _configId (optional, deprecated) configuration id
+		 */
+		void setNeuromodulator(int _grpId, float _baseDP, float _tauDP, float _base5HT, float _tau5HT, float _baseACh, float _tauACh, float _baseNE, float _tauNE, int _configId = ALL);
+
+		//! Sets baseline concentration and decay time constant of neuromodulators (DP, 5HT, ACh, NE) for a neuron group.
+		/*!
+		 * \param _groupId the symbolic name of a group
+		 * \param _baseDP  the decay time constant of Dopamine
+		 * \param _base5HT  the decay time constant of Serotonin
+		 * \param _baseACh  the decay time constant of Acetylcholine
+		 * \param _baseNE  the decay time constant of Noradrenaline 
+		 * \param _configId (optional, deprecated) configuration id
+		 */
+		void setNeuromodulator(int _grpId, float _tauDP, float _tau5HT, float _tauACh, float _tauNE, int _configId = ALL);
 		
 		//! Sets the Izhikevich parameters of a neuron group with IzhGenerator class.
 		/*!
@@ -595,6 +657,13 @@ class CpuSNN
 		void setNeuronParameters(int _groupId, IzhGenerator* _IzhGen, int _configId = ALL);
 
 		void setGroupInfo(int _groupId, group_info_t _info, int _configId = ALL);
+
+		//! Sets the weight update parameters
+		/*!
+		 * \param _updateInterval the interval between two weight update. the setting could be _10MS, _100MS, _1000MS
+		 * \param _tauWeightChange the decay time constant of weight change (wtChange)
+		 */
+		void setWeightUpdateParameter(int _updateInterval, int _tauWeightChange = 10);
 
 		group_info_t getGroupInfo(int _groupId, int _configId = 0);
 		group_info2_t getGroupInfo2(int _groupId, int _configId = 0);
@@ -662,14 +731,15 @@ class CpuSNN
 		/*
 		 * \brief STDP must be defined post-synaptically; that is, if STP should be implemented on the connections from group 0 to group 1, call setSTP on group 1. Fore details on the phenomeon, see (for example) (Bi & Poo, 2001).
 		 * \param _grpId ID of the neuron group 
-		 * \param _enable set to true to enable STDP for this group 
+		 * \param _enable set to true to enable STDP for this group
+		 * \param _enable_modulation set to true to enable modulated STDP for this group
 		 * \param _ALPHA_LTP max magnitude for LTP change 
 		 * \param _TAU_LTP decay time constant for LTP 
 		 * \param _ALPHA_LTD max magnitude for LTD change (leave positive) 
 		 * \param _TAU_LTD decay time constant for LTD
 		 * \param _configId (optional, deprecated) configuration id
 		 */
-		void setSTDP(int _grpId, bool _enable, float _ALPHA_LTP, float _TAU_LTP, float _ALPHA_LTD, float _TAU_LTD, int configId = ALL);
+		void setSTDP(int _grpId, bool _enable, bool _enable_modulation, float _ALPHA_LTP, float _TAU_LTP, float _ALPHA_LTD, float _TAU_LTD, int configId = ALL);
 
 		// grpId == -1, means all groups
 		//! Disable the short-term plasticity (STP) for a neuron group.
@@ -894,6 +964,8 @@ class CpuSNN
 
 		void showDottyViewer(int _f)        { showDotty = _f; }
 
+		void getConnectionPair(int grpId, int& preId, int& postId);
+
 	private:
 		void setGrpTimeSlice(int grpId, int timeSlice); //!< used for the Poisson generator.  It can probably be further optimized...
 
@@ -929,6 +1001,7 @@ class CpuSNN
 		void resetTimingTable();
 		void resetPoissonNeuron(unsigned int nid, int grpId);
 		void resetNeuron(unsigned int nid, int grpId);
+		void resetNeuromodulator(int grpId);
 		void resetPropogationBuffer();
 		void resetGroups();
 		void resetFiringInformation();
@@ -944,7 +1017,9 @@ class CpuSNN
 
 		void globalStateUpdate();
 
-		void updateStateAndFiringTable();
+		void updateFiringTable();
+
+		void updateWeight();
 
 		void updateSpikesFromGrp(int grpId);
 
@@ -1041,6 +1116,8 @@ class CpuSNN
 
 		void copyNeuronState(network_ptr_t* dest, network_ptr_t* src, cudaMemcpyKind kind, int allocateMem, int grpId=-1);
 
+		void copyGroupState(network_ptr_t* dest, network_ptr_t* src, cudaMemcpyKind kind, int allocateMem, int grpId = -1);
+
 		//! copy presynaptic information
 		void copyWeightState(network_ptr_t* dest, network_ptr_t* src, cudaMemcpyKind kind, int allocateMem, int grpId=-1);
 
@@ -1086,7 +1163,9 @@ class CpuSNN
 
 		void copyFiringStateFromGPU (int grpId = -1);
 
-		void updateStateAndFiringTable_GPU();
+		void updateFiringTable_GPU();
+
+		void updateWeight_GPU();
 
 		void showStatus(int simType=CPU_MODE);
 		void showStatus_GPU();
@@ -1159,6 +1238,7 @@ private:
 
 		bool sim_with_fixedwts;
 		bool sim_with_stdp;
+		bool sim_with_modulated_stdp;
 		bool sim_with_stp;
 		bool sim_with_conductances;
 
@@ -1224,7 +1304,7 @@ private:
 		//time and timestep
 		uint64_t	simTimeSec;		//!< this is used to store the seconds.
 		uint32_t	simTimeMs;
-		uint32_t	simTime;		//!< this value is not reset but keeps increasing to its max value. The unit is millisecond.
+		uint32_t	simTime;		//!< The absolute simulation time. The unit is millisecond. this value is not reset but keeps increasing to its max value. 
 		uint32_t	spikeCountAll1sec;
 		uint32_t	secD1fireCntHost;
 		uint32_t	secD2fireCntHost;	//!< firing counts for each second
@@ -1246,6 +1326,8 @@ private:
 		FILE	*fpProgLog;
 		FILE	*fpLog;
 		FILE	*fpTuningLog;
+		FILE	*fpGrpLog;
+		FILE	*fpWtLog;
 		int		cntTuning;
 		FILE 	*fpParam;
 		int		showLog;
@@ -1297,6 +1379,12 @@ private:
 		float	*gGABAa;
 		float	*gGABAb;
 
+		// concentration of neuromodulators for each group
+		float	*grpDA;
+		float	*grp5HT;
+		float	*grpACh;
+		float	*grpNE;
+
 		bool 		enableSimLogs;
 		string		simLogDirName;
 
@@ -1324,6 +1412,10 @@ private:
 		float		*testVar, *testVar2;
 		uint32_t	*spikeGenBits;
 
+		// weight update parameter
+		uint32_t updateInterval;
+		float stdpScaleFactor;
+		float wtChangeDecay; //!< the wtChange decay 
 
 		/* these are deprecated, and replaced by writeNetwork(FILE*)
 		void storePostWeight (int destGrp, int srcNid, const string& fname, const string& name);
