@@ -372,6 +372,9 @@ typedef struct network_ptr_s  {
 
 	unsigned int*		nSpikeCnt;
 
+	unsigned int** spkMonRTbuf; //!< for copying 2D array to GPU (see CpuSNN::allocateSNN_GPU)
+	unsigned int* spkMonRTbufChild[MAX_GRP_PER_SNN]; //!< child pointers for above
+
 	float* 		testVar;
 	float*		testVar2;
 	uint32_t*	spikeGenBits;
@@ -416,9 +419,9 @@ typedef struct group_info_s
 	float		dGABAa;
 	float		dGABAb;
 
-	bool spkMonRT; //!< if this flag is set, we want to keep track of how many spikes per neuron in the group
-	unsigned int* spkMonRTbuf; //!< stores #spikes for each neuron in the group
+	bool hasSpkMonRT; //!< if this flag is set, we want to keep track of how many spikes per neuron in the group
 	int spkMonRTrecordDur; //!< record duration, after which spike buffer gets reset
+	unsigned int spkMonRTbufPos; //!< which position in the spike buffer the group has
 
 	SpikeGenerator* spikeGen;
 	bool		newUpdates;  //!< FIXME this flag has mixed meaning and is not rechecked after the simulation is started
@@ -651,7 +654,8 @@ class CpuSNN
 		 * ******************************* */
 
 		// TODO: Consider making this its own class, or merging it with existing SpikeMonitor class
-		// see also private member CpuSNN::checkSpkMonRTrecDur();
+		// see also private members CpuSNN::checkSpkMonRTrecDur(), CpuSNN::getSpikesRealTime_GPU(),
+		// and CpuSNN::resetSpikeMonitorRealTime_GPU()
 
 		/*!
 		 * \brief A "real-time" spike monitor keeps track of the number of spikes per neuron in a group.
@@ -887,6 +891,26 @@ class CpuSNN
 		 * this function checks simTime vs. recordDur and resets the spike buffers if necessary
 		 */
 		void checkSpkMonRTrecDur();
+
+		/*!
+		 * \brief return the number of spikes per neuron for a certain group in GPU mode
+		 * A real-time spike monitor keeps track of all spikes per neuron for a certain time period (recordDur)
+		 * at any point in time.
+		 * \param grpId	the group for which you want the spikes
+		 * \return pointer to array of unsigned ints. Number of elements in array is the number of neurons in group.
+		 * Each entry is the number of spikes for this neuron (unsigned int) since the last reset.
+		 */
+		unsigned int* getSpikesRealTime_GPU(int grpId);
+
+		/*!
+		 * \brief reset spike counter to zero in GPU mode
+		 * Buffers get reset to zero automatically after recordDur. However, you can reset the buffer manually at any
+		 * point in time through calling the public equivalent. This one gets called in
+		 * CpuSNN::resetSpikeMonitorRealTime if we're running GPU mode.
+		 * \param grpId	the group for which you want to reset the spikes
+		 */
+		void resetSpikeMonitorRealTime_GPU(int grpId);
+
 
 		//! add the entry that the current neuron has spiked..
 		int addSpikeToTable(int id, int g);
@@ -1185,6 +1209,9 @@ private:
 		SpikeMonitor*	monBufferCallback[MAX_GRP_PER_SNN];
 
 		unsigned int	numSpikeGenGrps;
+
+		unsigned int numSpkMonRT; //!< number of real-time spike monitors in the network
+		unsigned int* spkMonRTbuf[MAX_GRP_PER_SNN]; //!< the actual buffer of spike counts (per group, per neuron)
 
 		//current/voltage probe code...
 		unsigned int	numProbe;

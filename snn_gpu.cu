@@ -729,6 +729,11 @@
 				else  {
 					if (gpuPtrs.voltage[nid] >= 30.0) {
 						needToWrite = true;
+						if (gpuGrpInfo[grpId].hasSpkMonRT) {
+							unsigned int bufPos = gpuGrpInfo[grpId].spkMonRTbufPos;
+							unsigned int bufNeur = nid-gpuGrpInfo[grpId].StartN;
+							gpuPtrs.spkMonRTbuf[bufPos][bufNeur]++;
+						}
 					}
 				}
 			}
@@ -2073,10 +2078,6 @@
 		int errCode;
 		
 		assert(cpu_gpuNetPtrs.allocated);
-//		if(cpu_gpuNetPtrs.allocated == false)  
-//			allocateSNN_GPU();
-
-		//checkInitialization2("checking STP setting before firing : ");
 
 		if (sim_with_stp || sim_with_conductances) {
 			kernel_STPUpdateAndDecayConductances <<<gridSize, blkSize>>>(simTimeMs, simTimeSec, simTime);
@@ -2132,6 +2133,24 @@
 
 	}
 
+
+
+	unsigned int* CpuSNN::getSpikesRealTime_GPU(int grpId) {
+		unsigned int bufPos = grp_Info[grpId].spkMonRTbufPos;
+		CUDA_CHECK_ERRORS( cudaMemcpy(spkMonRTbuf[bufPos],cpu_gpuNetPtrs.spkMonRTbufChild[bufPos],grp_Info[grpId].SizeN*sizeof(unsigned int),cudaMemcpyDeviceToHost) );
+
+		return spkMonRTbuf[bufPos];
+	}
+
+
+	void CpuSNN::resetSpikeMonitorRealTime_GPU(int grpId) {
+		unsigned int bufPos = grp_Info[grpId].spkMonRTbufPos;
+		CUDA_CHECK_ERRORS( cudaMemset(cpu_gpuNetPtrs.spkMonRTbufChild[bufPos],0,grp_Info[grpId].SizeN*sizeof(unsigned int)) );
+	}
+
+
+
+
 	// copy the spike from the GPU to the CPU..
 	void CpuSNN::updateSpikeMonitor_GPU()
 	{
@@ -2144,8 +2163,6 @@
 		DBG(2, fpLog, AT, "gpu_updateTimingTable()");
 
 		assert(cpu_gpuNetPtrs.allocated);
-//		if(cpu_gpuNetPtrs.allocated == false)
-//			allocateSNN_GPU();
 
 		int blkSize  = 128;
 		int gridSize = 64;
@@ -2166,8 +2183,6 @@
 		DBG(2, fpLog, AT, "gpu_doCurrentUpdate()");
 
 		assert(cpu_gpuNetPtrs.allocated);
-//		if(cpu_gpuNetPtrs.allocated == false)
-//			allocateSNN_GPU();
 
 		int blkSize  = 128;
 		int gridSize = 64;
@@ -2345,8 +2360,6 @@
 		DBG(2, fpLog, AT, "gpu_initGPU()");
 
 		assert(cpu_gpuNetPtrs.allocated);
-//		if(cpu_gpuNetPtrs.allocated == false)  
-//			allocateSNN_GPU();
 
 		kernel_init <<< gridSize, blkSize >>> ();
 		CUDA_GET_LAST_ERROR("initGPU kernel failed\n");
@@ -2366,8 +2379,6 @@
 		void *devPtr;
 
 		assert(cpu_gpuNetPtrs.allocated);
-//		if(cpu_gpuNetPtrs.allocated == false)  
-//			allocateSNN_GPU();
 
 		memset(errVal, 0, sizeof(errVal));
 		cudaGetSymbolAddress(&devPtr, retErrVal);
@@ -2533,6 +2544,8 @@
 		if (testVar!=NULL) delete[] testVar;
 		if (testVar2!=NULL) delete[] testVar2;
 
+		if (gpuPoissonRand!=NULL) delete gpuPoissonRand;
+
 	}
 
 
@@ -2693,6 +2706,9 @@
 
 	void CpuSNN::doGPUSim()
 	{
+		// for all real-time spike monitors, reset their spike counts to zero if simTime % recordDur == 0		
+		checkSpkMonRTrecDur();
+
 		if (spikeRateUpdated) {
 			assignPoissonFiringRate_GPU();
 			spikeRateUpdated = false;
@@ -3023,6 +3039,29 @@
 		cudaMemGetInfo(&avail,&total);
 		printf("State Info:\t\t%2.3f GB\t%2.3f GB\t%2.3f GB\n",(float)(previous-avail)/toGB,(float)((total-avail)/toGB),(float)(avail/toGB));
 		previous=avail;
+
+
+		// copy real-time spike monitors
+		// 2D arrays are a bit tricky... We can't just copy spkMonRTbuf over. We still have to use spkMonRTbuf for
+		// cudaMalloc(), but then we need to cudaMemcpy() that array of pointers to the pointer that we got from the
+		// first cudaMalloc().
+		CUDA_CHECK_ERRORS( cudaMalloc( (void**) &(cpu_gpuNetPtrs.spkMonRTbuf), sizeof(unsigned int*)*MAX_GRP_PER_SNN));
+		for (int g=0; g<numGrp; g++) {
+			if (!grp_Info[g].hasSpkMonRT)
+				continue; // skip group if it doesn't have a spkMonRT
+
+			unsigned int bufPos = grp_Info[g].spkMonRTbufPos; // retrieve pos in spike buf
+
+			// allocate child pointers
+			CUDA_CHECK_ERRORS( cudaMalloc( (void**) &(cpu_gpuNetPtrs.spkMonRTbufChild[bufPos]), sizeof(unsigned int)*grp_Info[g].SizeN));
+
+			// copy child pointer to device
+			CUDA_CHECK_ERRORS( cudaMemcpy(&(cpu_gpuNetPtrs.spkMonRTbuf[bufPos]), &(cpu_gpuNetPtrs.spkMonRTbufChild[bufPos]), sizeof(unsigned int*), cudaMemcpyHostToDevice) );
+
+			// copy data
+			CUDA_CHECK_ERRORS( cudaMemcpy(cpu_gpuNetPtrs.spkMonRTbufChild[bufPos], spkMonRTbuf[bufPos], sizeof(unsigned int)*grp_Info[g].SizeN, cudaMemcpyHostToDevice) );
+		}
+
 		
 		// copy relevant pointers and network information to GPU
 		void* devPtr;
@@ -3067,6 +3106,14 @@
 					fprintf(stderr,"\t\tSTP_tF: %f\n",grp_Info[i].STP_tF);
 				}
 				fprintf(stderr,"\tspikeGen: %s\n",grp_Info[i].spikeGen==NULL?"Is Null":"Is set");
+				fprintf(stderr,"\tspikeMonitorRT: %s\n",grp_Info[i].hasSpkMonRT?"Is set":"Is Null");
+				if (grp_Info[i].hasSpkMonRT) {
+					unsigned int bufPos = grp_Info[i].spkMonRTbufPos;
+					fprintf(stderr,"\t");
+					for (int j=0; j<grp_Info[i].SizeN; j++)
+						fprintf(stderr,"\t%u",spkMonRTbuf[bufPos][j]);
+					fprintf(stderr,"\n\trecordDur: %d\n",grp_Info[i].spkMonRTrecordDur);
+				} 				
 			}
 		}
 
@@ -3174,8 +3221,6 @@
 		DBG(2, fpLog, AT, "gpu_initThalInput()");
 
 		assert(cpu_gpuNetPtrs.allocated);
-//		if(cpu_gpuNetPtrs.allocated == false)  
-//			allocateSNN_GPU();
 
 		int blkSize  = 128;
 		int gridSize = 64;
