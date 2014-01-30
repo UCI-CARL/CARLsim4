@@ -448,6 +448,8 @@
 		CpuSNNinitGPUparams();
 	}
 
+	// this function should deallocate all dynamically allocated data structures that are in the scope of snn_cpu.cpp
+	// CpuSNN::deleteObjects_GPU() does the same for data structures in snn_gpu.cu
 	void CpuSNN::deleteObjects()
 	{
 		try
@@ -466,10 +468,6 @@
 			if (fpParam) {
 				fclose(fpParam);
 			}
-
-//			if(val==0)
-//				saveConnectionWeights();
-
 
 			if (voltage!=NULL) 	delete[] voltage;
 			if (recovery!=NULL) 	delete[] recovery;
@@ -515,13 +513,9 @@
 			if (timeTableD1!=NULL) delete[] timeTableD1;
 
 			// delete all real-time spike monitors
-			for (int g=0; g<numGrp; g++) {
-				if (!grp_Info[g].hasSpkMonRT)
-					continue;
-
-				unsigned int bufPos = grp_Info[g].spkMonRTbufPos;
-				if (spkMonRTbuf[bufPos]!=NULL)
-					delete[] spkMonRTbuf[bufPos];
+			for (int i=0; i<numSpkMonRT; i++) {
+				if (spkMonRTbuf[i]!=NULL)
+					delete[] spkMonRTbuf[i];
 			}
 
 			delete pbuf;
@@ -2784,7 +2778,7 @@ digraph G {\n\
 						unsigned int bufPos = grp_Info[g].spkMonRTbufPos; // retrieve buf pos
 						int buffNeur = i-grp_Info[g].StartN;
 						spkMonRTbuf[bufPos][buffNeur]++;
-						printf("%d: %s[%d], nid=%d, %u spikes\n",simTimeMs,grp_Info2[g].Name.c_str(),g,i,spkMonRTbuf[bufPos][buffNeur]);
+//						printf("%d: %s[%d], nid=%d, %u spikes\n",simTimeMs,grp_Info2[g].Name.c_str(),g,i,spkMonRTbuf[bufPos][buffNeur]);
 					}
 
 					spikeBufferFull = addSpikeToTable(i, g);

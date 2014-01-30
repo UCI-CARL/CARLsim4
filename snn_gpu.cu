@@ -2546,6 +2546,10 @@
 
 		if (gpuPoissonRand!=NULL) delete gpuPoissonRand;
 
+		// delete all real-time spike monitors
+		CUDA_CHECK_ERRORS( cudaFree(cpu_gpuNetPtrs.spkMonRTbuf));
+		for (int i=0; i<numSpkMonRT; i++)
+			CUDA_CHECK_ERRORS(cudaFree(cpu_gpuNetPtrs.spkMonRTbufChild[i]));
 	}
 
 
