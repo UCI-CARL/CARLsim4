@@ -593,35 +593,35 @@ int main()
 
 	s.setSTP(ALL,false);
 
-	s.setSpikeMonitor(v1Cells[RED_GREEN],"../../results/v1v4PFC/V1RG.dat");
-	s.setSpikeMonitor(v1Cells[GREEN_RED],"../../results/v1v4PFC/V1GR.dat");
-	s.setSpikeMonitor(v1Cells[BLUE_YELLOW],"../../results/v1v4PFC/V1BY.dat");
-	s.setSpikeMonitor(v1Cells[YELLOW_BLUE],"../../results/v1v4PFC/V1YB.dat");
+	s.setSpikeMonitor(v1Cells[RED_GREEN],"results/v1v4PFC/V1RG.dat");
+	s.setSpikeMonitor(v1Cells[GREEN_RED],"results/v1v4PFC/V1GR.dat");
+	s.setSpikeMonitor(v1Cells[BLUE_YELLOW],"results/v1v4PFC/V1BY.dat");
+	s.setSpikeMonitor(v1Cells[YELLOW_BLUE],"results/v1v4PFC/V1YB.dat");
 
-	s.setSpikeMonitor(v4CellsExc[RED_V4],"../../results/v1v4PFC/V4R.dat");
-	s.setSpikeMonitor(v4CellsExc[GREEN_V4],"../../results/v1v4PFC/V4G.dat");
-	s.setSpikeMonitor(v4CellsExc[BLUE_V4],"../../results/v1v4PFC/V4B.dat");
-	s.setSpikeMonitor(v4CellsExc[YELLOW_V4],"../../results/v1v4PFC/V4Y.dat");
-	s.setSpikeMonitor(v4CellsExc[CYAN_V4],"../../results/v1v4PFC/V4C.dat");
-	s.setSpikeMonitor(v4CellsExc[MAGENTA_V4],"../../results/v1v4PFC/V4M.dat");
+	s.setSpikeMonitor(v4CellsExc[RED_V4],"results/v1v4PFC/V4R.dat");
+	s.setSpikeMonitor(v4CellsExc[GREEN_V4],"results/v1v4PFC/V4G.dat");
+	s.setSpikeMonitor(v4CellsExc[BLUE_V4],"results/v1v4PFC/V4B.dat");
+	s.setSpikeMonitor(v4CellsExc[YELLOW_V4],"results/v1v4PFC/V4Y.dat");
+	s.setSpikeMonitor(v4CellsExc[CYAN_V4],"results/v1v4PFC/V4C.dat");
+	s.setSpikeMonitor(v4CellsExc[MAGENTA_V4],"results/v1v4PFC/V4M.dat");
 
-	s.setSpikeMonitor(v4CellsInh[RED_V4],"../../results/v1v4PFC/V4Ri.dat");
-	s.setSpikeMonitor(v4CellsInh[GREEN_V4],"../../results/v1v4PFC/V4Gi.dat");
-	s.setSpikeMonitor(v4CellsInh[BLUE_V4],"../../results/v1v4PFC/V4Bi.dat");
-	s.setSpikeMonitor(v4CellsInh[YELLOW_V4],"../../results/v1v4PFC/V4Yi.dat");
-	s.setSpikeMonitor(v4CellsInh[CYAN_V4],"../../results/v1v4PFC/V4Ci.dat");
-	s.setSpikeMonitor(v4CellsInh[MAGENTA_V4],"../../results/v1v4PFC/V4Mi.dat");
+	s.setSpikeMonitor(v4CellsInh[RED_V4],"results/v1v4PFC/V4Ri.dat");
+	s.setSpikeMonitor(v4CellsInh[GREEN_V4],"results/v1v4PFC/V4Gi.dat");
+	s.setSpikeMonitor(v4CellsInh[BLUE_V4],"results/v1v4PFC/V4Bi.dat");
+	s.setSpikeMonitor(v4CellsInh[YELLOW_V4],"results/v1v4PFC/V4Yi.dat");
+	s.setSpikeMonitor(v4CellsInh[CYAN_V4],"results/v1v4PFC/V4Ci.dat");
+	s.setSpikeMonitor(v4CellsInh[MAGENTA_V4],"results/v1v4PFC/V4Mi.dat");
 
 	s.setSpikeMonitor(gV1ME);
-	s.setSpikeMonitor(gMT1,"../../results/v1v4PFC/MT1.dat");
-	s.setSpikeMonitor(gMT2,"../../results/v1v4PFC/MT2.dat");
-	s.setSpikeMonitor(gMT3,"../../results/v1v4PFC/MT3.dat");
-	s.setSpikeMonitor(gPFC,"../../results/v1v4PFC/PFC.dat");
-	s.setSpikeMonitor(gMT1i,"../../results/v1v4PFC/MT1i.dat");
-	s.setSpikeMonitor(gPFCi,"../../results/v1v4PFC/PFCi.dat");
+	s.setSpikeMonitor(gMT1,"results/v1v4PFC/MT1.dat");
+	s.setSpikeMonitor(gMT2,"results/v1v4PFC/MT2.dat");
+	s.setSpikeMonitor(gMT3,"results/v1v4PFC/MT3.dat");
+	s.setSpikeMonitor(gPFC,"results/v1v4PFC/PFC.dat");
+	s.setSpikeMonitor(gMT1i,"results/v1v4PFC/MT1i.dat");
+	s.setSpikeMonitor(gPFCi,"results/v1v4PFC/PFCi.dat");
 
-	s.setSpikeMonitor(gV4o,"../../results/v1v4PFC/V4o.dat");
-	s.setSpikeMonitor(gV4oi,"../../results/v1v4PFC/V4oi.dat");
+	s.setSpikeMonitor(gV4o,"results/v1v4PFC/V4o.dat");
+	s.setSpikeMonitor(gV4oi,"results/v1v4PFC/V4oi.dat");
 
 
 	unsigned char* vid = new unsigned char[nrX*nrY*3];
@@ -645,7 +645,7 @@ int main()
 //	#define VIDLEN (8*33*10)
 
 	for(long long i=0; i < VIDLEN*1; i++) {
-		if (i%VIDLEN==0) fid = fopen("../../videos/colorcycle.dat","rb");
+		if (i%VIDLEN==0) fid = fopen("videos/colorcycle.dat","rb");
 //		if (i%VIDLEN==0) fid = fopen("videos/rdk3.dat","rb");
 		fread(vid,1,nrX*nrY*3,fid);
 
@@ -661,7 +661,7 @@ int main()
 		s.runNetwork(0,FRAMEDURATION, onGPU?GPU_MODE:CPU_MODE);
 
 		if (i==1) {
-			FILE* nid = fopen("../../results/v1v4PFC/net.dat","wb");
+			FILE* nid = fopen("results/v1v4PFC/net.dat","wb");
 			s.writeNetwork(nid);
 			fclose(nid);
 		}

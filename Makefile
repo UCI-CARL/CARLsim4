@@ -43,6 +43,9 @@ inc_dir = include
 src_dir = src
 lib_dir = libpti
 ex_dir  = examples
+
+CARLSIM_ROOT := $(CURDIR)
+export CARLSIM_ROOT
 # location of .cpp files
 vpath %.cpp $(EO_INSTALL_DIR)/src $(EO_INSTALL_DIR)/src/do \
 $(EO_INSTALL_DIR)/src/es $(EO_INSTALL_DIR)/src/utils $(lib_dir) \
@@ -71,10 +74,10 @@ libraries: $(libraries)
 
 examples: $(carlsim_programs)
 
-pti_examples: $(pti_programs)
+pti-examples: $(pti_programs)
 
 clean:
-	$(RM) $(objects) $(carlsim_programs) $(pti_programs)
+	$(RM) $(objects) $(carlsim_programs) $(pti_programs) $(output_files)
 
 distclean:
 	$(RM) $(objects) $(carlsim_programs) $(pti_programs) $(libraries) $(output_files)

@@ -138,6 +138,9 @@ corresponding .cpp file lives. So in order to run "random", type:
 
 $ ./examples/random/random
 
+WARNING: Excutables must be run from the main directory (as shown above) 
+and not from the example directory or the executables will not run!
+
 The rdk, orientation, v1MTLIP, and v1v4PFC examples can only be run on a 
 system with a compatible GPU (compute capability 1.3 or higher). The 
 colorblind example most likely must be run on CPU because at high spatial 
@@ -159,7 +162,7 @@ Compiling and installing the CARLsim PTI libary
    may need to run 'make install' as root if you are installing the pti 
    library somewhere outside of your home directory.
 
-4. Type 'make pti_examples' to compile the PTI examples.  You can also make
+4. Type 'make pti-examples' to compile the PTI examples.  You can also make
    them by typing 'make <directory-name>' for the PTI examples which include:
    simpleEA, tuningFiringRates, and SORFs.
 

@@ -194,11 +194,11 @@ int main()
   // BEGIN PTI initialization
   // -----------------------------------------------------------------------------
   // create our results directory
-  system("mkdir -p ../../results/tuneFiringRates");
+  system("mkdir -p results/tuneFiringRates");
   // must always be called first
-  InitializeParamTuning("ESEA-plus.param");
+  InitializeParamTuning("examples/tuneFiringRates/ESEA-plus.param");
   // Use contstructor to say where will some EO statistics and data
-  p = new ParamTuning("../../results/tuneFiringRates/eoOutput.txt");
+  p = new ParamTuning("results/tuneFiringRates/eoOutput.txt");
 
   // Create parameter tuning parameters and register them here
   addParamsToPTI();
@@ -489,7 +489,7 @@ int evaluateFitnessV1()
   // FITNESS STEP 3: Output data to file
   // -----------------------------------------------------------------------------
   FILE* fpResp;
-  fpResp = fopen("../../results/tuneFiringRates/resp.txt","a");
+  fpResp = fopen("results/tuneFiringRates/resp.txt","a");
   // output every SNN
   for(int configID=0; configID<NUM_CONFIGS; configID++){
     fprintf(fpResp,"Generation Number: %d\n",genCounter);

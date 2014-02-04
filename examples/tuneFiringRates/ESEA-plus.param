@@ -33,7 +33,7 @@
 --printPop=0                                   # Print sorted pop. every gen.
 
 ######    Output - Disk           ######
---resDir=../../results/tuneFiringRates/EA-Data # Directory to store DISK outputs
+--resDir=results/tuneFiringRates/EA-Data       # Directory to store DISK outputs
 --eraseDir=0                                   # erase files in dirName if any
 --fileBestStat=1                               # Output bes/avg/std to file
 

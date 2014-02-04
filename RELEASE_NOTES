@@ -3,6 +3,59 @@ CARLSIM RELEASE NOTES
 ===============================================================================
 
 -------------------------------------------------------------------------------
+CARLsim 2.2
+-------------------------------------------------------------------------------
+Highlights:
+	Included model for homeostatic synaptic scaling.
+	Included support for parameter tuning interface (PTI) library, which
+	enables the automated parameter tuning of SNNs using evolutionary
+	algorithms.
+
+Description:
+	As the desire for biologically realistic spiking neural networks (SNNs)
+	increases, tuning the enormous number of open parameters in these 
+	models becomes a difficult challenge. SNNs have been used to 
+	successfully model complex neural circuits that explore various neural 
+	phenomena such as neural plasticity, vision systems, auditory systems, 
+	neural oscillations, and many other important topics of neural 
+	function. Additionally, SNNs are particularly well-adapted to run on 
+	neuromorphic hardware that will support biological brain-scale 
+	architectures. Although the inclusion of realistic plasticity 
+	equations, neural dynamics, and recurrent topologies has increased the
+	descriptive power of SNNs, it has also made the task of tuning these 
+	biologically realistic SNNs difficult. To meet this challenge, we 
+	present an automated parameter tuning framework capable of tuning SNNs 
+	quickly and efficiently using evolutionary algorithms (EA) and 
+	inexpensive, readily accessible graphics processing units (GPUs). A 
+	sample SNN with 4104 neurons was tuned to give V1 simple cell-like 
+	tuning curve responses and produce self-organizing receptive fields 
+	(SORFs) when presented with a random sequence of counterphase 
+	sinusoidal grating stimuli. A performance analysis comparing the 
+	GPU-accelerated implementation to a single-threaded central 
+	processing unit (CPU) implementation was carried out and showed a 
+	speedup of 65× of the GPU implementation over the CPU implementation, 
+	or 0.35 h per generation for GPU vs. 23.5 h per generation for CPU. 
+	Additionally, the parameter value solutions found in the tuned SNN 
+	were studied and found to be stable and repeatable. The automated 
+	parameter tuning framework presented here will be of use to both the 
+	computational neuroscience and neuromorphic engineering communities, 
+	making the process of constructing and tuning large-scale SNNs much 
+	quicker and easier.
+
+Publications:
+	Parameter tuning interface:
+	Carlson KD, Nageswaran JM, Dutt N and Krichmar JL (2014) An efficient 
+	automated parameter tuning framework for spiking neural networks. 
+	Front. Neurosci. 8:10. doi: 10.3389/fnins.2014.00010
+
+        Homeostatic synaptic scaling model:
+	Carlson, K. D., Richert, M., Dutt, N., and Krichmar, J. L. (2013). 
+	“Biologically plausible models of homeostasis and STDP: stability and 
+	learning in spiking neural networks,” in Proceedings of the 2013 
+	International Joint Conference on Neural Networks (IJCNN) (Dallas, TX). 
+	doi: 10.1109/IJCNN.2013.6706961
+
+-------------------------------------------------------------------------------
 CARLsim 2.1
 -------------------------------------------------------------------------------
 

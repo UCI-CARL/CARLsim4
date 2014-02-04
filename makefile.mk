@@ -29,6 +29,8 @@ CPPFLAGS = $(DEBUG_FLAG) $(OPT_FLAG) -Wall -std=c++0x
 MV := mv -f
 RM := rm -rf
 
+output_files += *.dot *.txt *.log tmp* *.status
+
 help:
 	@echo -e '\n'Type \'make\' or \'make all\' to make CARLsim and CARLsim \
 	examples.'\n'

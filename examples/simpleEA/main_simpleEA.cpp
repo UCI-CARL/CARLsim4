@@ -91,7 +91,7 @@ int main_fitness_function(int argc, char *argv[])
   // This is the name of the paramter file we are using. EO has many predefined 
   // files/algorithms so that we can choose different algorithms just by 
   // choosing different files.  This must always be run first.
-  InitializeParamTuning("ESEA-comma.param");
+  InitializeParamTuning("examples/simpleEA/ESEA-comma.param");
   // Must create a paramTuning object so that we can run the EA.
   
   // 1) The first argument is the file where evolving objects outputs the 
@@ -102,8 +102,8 @@ int main_fitness_function(int argc, char *argv[])
   // 2) The second argument is whether or not to output the best individual
   // for each generation in the resDir variable in the parameter file.
   // It should be used for larger parameter sets. It is off by default.
-  system("mkdir -p ../../results/simpleEA");
-  ParamTuning *p = new ParamTuning("../../results/simpleEA/eoOutput.txt", true);
+  system("mkdir -p results/simpleEA");
+  ParamTuning *p = new ParamTuning("results/simpleEA/eoOutput.txt", true);
   //ParamTuning *p = new ParamTuning(false);
 
   string s1;

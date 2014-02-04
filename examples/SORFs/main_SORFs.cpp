@@ -7,174 +7,6 @@
    function to be optimized.  Many different EA algorithms can be implemented
    by changing the paramter file.
 */
-// -----------------------------------------------------------------------------
-// need to modify and add documentation
-// 06/18/2012 -- began editing again.
-
-// 07/8/2012
-/* Rewrote updateNetwork and resetSynapticConnections in snn_cpu.cpp.
-   Implementing fitness function on CPU in a serial fashion (numConfig = 1).
-*/
-
-// 07/15/2012
-/* Added noise or silence between stimulus presentations.
- */
-
-// 07/23/2012
-/* Added homeostasis to the simulator from Jay's code.  Added homeostasis
-   function calls but didn't not make homeostasis parameters into arguments
-   for the evolutionary algorithm as Jay did.  Reorganized supporting code
-   and Makefile.
-*/
-
-// 07/25/2012
-/* Added a different fitness function.  It is a combination of the orthogonality
-   condition and the relative difference between firing rates and target rates.
-   The target firing rates are relative for the maxResponse of that neuron to a
-   particular stimulus.
-*/
-
-// 08/07/2012
-/* Using several new functions developed for use in CPU_MODE and GPU_MODE.  They
-   are used and documented in snnNewFeatures.cpp.  Attempting to run tuning
-   curve development program in GPU_MODE instead of CPU_MODE.
-*/
-
-// 08/14/2012
-/* Added functions to snn_cpu.cpp and snn_gpu.cu to make resetFiringInformation(),
-   resetSynapticConnections(), and updateNetwork() function correctly. Wrote code
-   to run on GPU in serial and in parallel.  Code will be run on carlcluster 1/2
-   or carlculator.
-*/
-
-// 08/16/2012
-/* Trying to parallelize on the GPU.  The simulator works with the features that
-   I want.  Homeostasis helps but I am unsure exactly how it works.  Right now
-   I am not using STP but I may want to use it eventually.  Currently I don't
-   think it is working correctly in GPU_MODE but it probably works correctly
-   in CPU_MODE.  STP should be used until I fix it to my satisfaction.
-   I'm not implementing STP until I understand exactly how to fix it and exactly
-   how it works.  Eventually I'd like to implement a different form of
-   homeostasis but I have to read some papers first.
-*/
-
-// 08/20/2012
-/* I need to make an easy #define or if statement to choose which type of 
-   fitness I am using.  I want to be able to be choose from 5 or 6 different
-   kinds of fitness condition combinations.  I need to work on outputting the
-   weights and evaluating them in MATLAB.  Most importantly, I am getting 
-   everything running in parallel on the GPU.  The refractory period for
-   Poisson spikes is 1 (ms) by default.  This is something I had to look up.
-*/
-
-// 08/22/2012
-/* Fixed division by zero error in fitness2 calculation.*/
-
-// 08/24/2012
-/* Turned down weights a factor of ten from the excitatory buffers to the 
-   excitatory/output neurons.  I haven't decided if I'll keep this change 
-   yet.  Also tried out turning on STP.  However, I had to comment out some
-   assert statements in gpu code so that change is not permanent either.
-   I also tried turning up homeostasis (from HOMEO_FACTOR = 0.1 to 10).  I
-   also presented the stimulus for 60 seconds instead of the 2 seconds so
-   homeostasis could kick in.  I'm not sure if I'll keep these changes.
-*/
-
-//08/28/2012
-/* I disregarded all previous changes and rewrote the fitness function to be 
-   discrete.  It is more fit if it is 1: orthogonal, 2: tuning curves within
-   some error bounds, and 3: max firing rates close to the target firing rates
-   (25 Hz).
-*/
-
-//08/29/2012
-/* Changed the final fitness calculation from:
-   _fitness=fitnessStep1+fitnessStep2+fitnessStep3 to:
-   _fitness=(1+fitnessStep1/2)*fitnessStep2+fitnessStep3.
-*/
-
-//09/17/2012
-/*
-  Added fixedWeights.cpp to test direct encoding of weights via EA.  Added tuningCurvesParVerify.cpp to 
-  test how consistent learning performance is for a network with the same paramters.
-*/
-
-//09/25/2012
-/*
-  Fixed a bug in counting the spikes in the fitness function.  The resetSpikeCnt function is
-  now called first, followed by the running of the network, followed by the counting of the
-  spikes.
-*/
-
-//10/01/2012
-/*
-  Fixed another very stupid bug in all tuningCurve programs.  We should only present patterns over the
-  rotation range from zero to pi because from zero to 2 pi will give present all patterns twice!!!
-*/
-
-//10/19/2012
-/*
-  Made major changes:
-  1) Made fitness step 2 be the error between what the tuning curves should be and
-  what they currently are starting with the calculation of what the max value of
-  the current neuron.
-  2) Changed fitness step 3 to have a max target firing rate of 50 Hz.
-  3) Changed the max_poisson_rate and base_firing_rate to higher ranges so that neurons
-  would enter the target firing range of 50 Hz more often.
-  4) Output the initial, middle, and final weights for every individual in an organized
-  fashion.
-  5) Increased the resolution from 16x16 to 32x32 to see if we get better results.
-  6) Made the minimum value of the far-off-center neurons equal to the noiseRate (1-2 Hz)
-  and not 0 Hz.  In the fitness functions. Note: I changed how I output the 
-  targetFiringRate so that outputs correctly.
-  7) Made new preprocess define that defines MAX_TARGET_FIRING_RATE for use in fitness
-  function.
-*/
-
-//10/30/2012
-/* Decided to use STDP (different values) to connect the inhibitory connections to 
-   the excitatory connections. This means I may have to remove the inhibitory_weight parameter
-   and put in 4 new inhibitory STDP parameters.  Techinically, I cannot make these STDP
-   connections directly from inhibitory to excitatory so I have made the connections from
-   excitatory to inhibitory.
-*/
-
-//11/01/2012
-/* Changed the amount of angles to 40 angles and the amount of output and inhibitory neurons
-   from 8 to 4.  Tweaked the correct tuning curve to span 45 degrees on either side of the
-   max value.
-*/
-
-// 11/06/2012
-// This file replaces tuningCurvesGPUParallel.cpp
-
-// 11/13/2012
-// Changed the orthogonality calculation to be more appropriate for many patterns
-// and not that many neurons.  It should be much more accurate in assigning points
-// to orthogonal patterns.
-
-
-// 11/16/2012
-/* Added the ability to change the max weight and the initial weights of some plastic
-   weight connections.  Increased the range over which alpha+/- can vary.  Took out
-   meaningless scaling factors that just made it more difficult to see what parameter
-   values were.
-*/
-
-// 12/11/2012
-/* Only the buffer->output layers have homeostasis.  Exc->Inh may require it also.
-   After testing, the max weight should not be larger than 0.016.  Which gives
-   the output layer a firing rate of 100 Hz when the input Poisson spike generators
-   have a maximum firing rate of 25 Hz (which will be the mean of this parameter).
-*/
-
-// 01/08/2013
-/* 
-   Fixed the miscounting of the generations by the tuningCurves and weightfiles. both
-   genCounter and globalGenCounter were decremented by 1.  This is because they were
-   counting the 0th generation as the first generation, therefore, their count was +1
-   too high every time.
-*/
 
 #ifdef _MSC_VER
 #pragma warning(disable:4786)
@@ -184,18 +16,7 @@
 #include "PropagatedSpikeBuffer.h"
 //TODO: Still need this one.
 #include "../common/stimGenerator.h"
-
-// I shouldn't need to include any header files except for
-// pti.h.  So I have to make it so that these
-// other libraries are not necessary because they are included
-// in pti.h.
-// representation specific                                                           
-
-// TODO: THESE SHOULD BE GONE TOO!
-#include "pti_make_es.h" // why do I need this?!                                   
-#include "pti_make_real.h" // why do I need this?!                                 
-#include "pti_make_algo_scalar.h"                                                 
-
+// include the PTI framework classes and functions
 #include <pti.h>   
 
 using namespace std;
@@ -250,7 +71,7 @@ float COND_tAMPA=5.0, COND_tNMDA=150.0, COND_tGABAa=6.0, COND_tGABAb=150.0;
 // has individual and generation information attached to it.  
 uint32_t globalIndiId = 0;
 int      globalGenCounter = 0;
-char tuningCurvesDir[100] = "../../results/SORFs/tuningCurvesFiles";
+char tuningCurvesDir[100] = "results/SORFs/tuningCurvesFiles";
 
 // these variables eventually get set by the evolutionary algorithm
 // perhaps they should not be global.  TAGS:TODO.
@@ -702,7 +523,7 @@ int evaluateFitness(CpuSNN& snn, double* _fitness)
 
 int main_fitness_function(int argc, char *argv[])
 {
-  fpResp = fopen("../../results/SORFs/resp.txt","a");
+  fpResp = fopen("results/SORFs/resp.txt","a");
 
   // BEGIN SNN initialization
   // --------------------------------------------------------------------------------------------------
@@ -852,10 +673,10 @@ int main_fitness_function(int argc, char *argv[])
   std::string s1;
 
   // InitializeParamTuning(argc, argv);
-  system("mkdir -p ../../results/SORFs");
-  InitializeParamTuning("ESEA-plus.param");
+  system("mkdir -p results/SORFs");
+  InitializeParamTuning("examples/SORFs/ESEA-plus.param");
   // constructor
-  ParamTuning *p = new ParamTuning("../../results/SORFs/eoOutput.txt");
+  ParamTuning *p = new ParamTuning("results/SORFs/eoOutput.txt");
 
   // all alphas are eventually multiplied by 0.3 originally,
   // I don't do this anymore so I should do this here!
@@ -938,8 +759,8 @@ int main_fitness_function(int argc, char *argv[])
 
   //separate spike files and weight files into different
   //folders
-  char spikeDir[100] = "../../results/SORFs/spikeFiles";
-  char weightsDir[100] = "../../results/SORFs/weightFiles";
+  char spikeDir[100] = "results/SORFs/spikeFiles";
+  char weightsDir[100] = "results/SORFs/weightFiles";
   char cmdName[100];
   sprintf(cmdName, "rm -r %s", spikeDir);
   system(cmdName);

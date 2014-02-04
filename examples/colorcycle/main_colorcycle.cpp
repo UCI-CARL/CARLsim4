@@ -244,24 +244,24 @@ int main()
 
 	s.setSTP(ALL,false);
 
-	s.setSpikeMonitor(v1Cells[RED_GREEN],"../../results/colorcycle/spkV1RG.dat");
-	s.setSpikeMonitor(v1Cells[GREEN_RED],"../../results/colorcycle/spkV1GR.dat");
-	s.setSpikeMonitor(v1Cells[BLUE_YELLOW],"../../results/colorcycle/spkV1BY.dat");
-	s.setSpikeMonitor(v1Cells[YELLOW_BLUE],"../../results/colorcycle/spkV1YB.dat");
+	s.setSpikeMonitor(v1Cells[RED_GREEN],"results/colorcycle/spkV1RG.dat");
+	s.setSpikeMonitor(v1Cells[GREEN_RED],"results/colorcycle/spkV1GR.dat");
+	s.setSpikeMonitor(v1Cells[BLUE_YELLOW],"results/colorcycle/spkV1BY.dat");
+	s.setSpikeMonitor(v1Cells[YELLOW_BLUE],"results/colorcycle/spkV1YB.dat");
 
-	s.setSpikeMonitor(v4CellsExc[RED_V4],"../../results/colorcycle/spkV4R.dat");
-	s.setSpikeMonitor(v4CellsExc[GREEN_V4],"../../results/colorcycle/spkV4G.dat");
-	s.setSpikeMonitor(v4CellsExc[BLUE_V4],"../../results/colorcycle/spkV4B.dat");
-	s.setSpikeMonitor(v4CellsExc[YELLOW_V4],"../../results/colorcycle/spkV4Y.dat");
-	s.setSpikeMonitor(v4CellsExc[CYAN_V4],"../../results/colorcycle/spkV4C.dat");
-	s.setSpikeMonitor(v4CellsExc[MAGENTA_V4],"../../results/colorcycle/spkV4M.dat");
+	s.setSpikeMonitor(v4CellsExc[RED_V4],"results/colorcycle/spkV4R.dat");
+	s.setSpikeMonitor(v4CellsExc[GREEN_V4],"results/colorcycle/spkV4G.dat");
+	s.setSpikeMonitor(v4CellsExc[BLUE_V4],"results/colorcycle/spkV4B.dat");
+	s.setSpikeMonitor(v4CellsExc[YELLOW_V4],"results/colorcycle/spkV4Y.dat");
+	s.setSpikeMonitor(v4CellsExc[CYAN_V4],"results/colorcycle/spkV4C.dat");
+	s.setSpikeMonitor(v4CellsExc[MAGENTA_V4],"results/colorcycle/spkV4M.dat");
 
-	s.setSpikeMonitor(v4CellsInh[RED_V4],"../../results/colorcycle/spk4Ri.dat");
-	s.setSpikeMonitor(v4CellsInh[GREEN_V4],"../../results/colorcycle/spkV4Gi.dat");
-	s.setSpikeMonitor(v4CellsInh[BLUE_V4],"../../results/colorcycle/spkV4Bi.dat");
-	s.setSpikeMonitor(v4CellsInh[YELLOW_V4],"../../results/colorcycle/spkV4Yi.dat");
-	s.setSpikeMonitor(v4CellsInh[CYAN_V4],"../../results/colorcycle/spkV4Ci.dat");
-	s.setSpikeMonitor(v4CellsInh[MAGENTA_V4],"../../results/colorcycle/spkV4Mi.dat");
+	s.setSpikeMonitor(v4CellsInh[RED_V4],"results/colorcycle/spk4Ri.dat");
+	s.setSpikeMonitor(v4CellsInh[GREEN_V4],"results/colorcycle/spkV4Gi.dat");
+	s.setSpikeMonitor(v4CellsInh[BLUE_V4],"results/colorcycle/spkV4Bi.dat");
+	s.setSpikeMonitor(v4CellsInh[YELLOW_V4],"results/colorcycle/spkV4Yi.dat");
+	s.setSpikeMonitor(v4CellsInh[CYAN_V4],"results/colorcycle/spkV4Ci.dat");
+	s.setSpikeMonitor(v4CellsInh[MAGENTA_V4],"results/colorcycle/spkV4Mi.dat");
 
 
 	unsigned char* vid = new unsigned char[nrX*nrY*3];
@@ -284,7 +284,7 @@ int main()
 	#define VIDLEN (256*3)
 
 	for(long long i=0; i < VIDLEN*1; i++) {
-		if (i%VIDLEN==0) fid = fopen("../../videos/colorcycle.dat","rb");
+		if (i%VIDLEN==0) fid = fopen("videos/colorcycle.dat","rb");
 		fread(vid,1,nrX*nrY*3,fid);
 
 		calcColorME(nrX, nrY, vid, red_green.rates, green_red.rates, blue_yellow.rates, yellow_blue.rates, me.rates, onGPU);
@@ -298,7 +298,7 @@ int main()
 		s.runNetwork(0,FRAMEDURATION, onGPU?GPU_MODE:CPU_MODE);
 
 		if (i==1) {
-			FILE* nid = fopen("../../results/colorcycle/net.dat","wb");
+			FILE* nid = fopen("results/colorcycle/net.dat","wb");
 			s.writeNetwork(nid);
 			fclose(nid);
 		}
