@@ -3903,7 +3903,7 @@ void CpuSNN::setSpikeMonitor(int gid, const string& fname, int configId) {
 		    status = mkdir(dirname(fchar), 0777); // Unix
 #endif
 		    if (status==-1 && errno!=EEXIST) {
-		      fprintf(stderr,"ERROR %d: could not create directory: %s\n",errno, strerror(errno));
+		      fprintf(stderr,"ERROR %d: could not create spike file '%s', directory '%%CARLSIM_ROOT%%/results/' does not exist\n",errno,fname.c_str());
 		      exit(1);
 		      return;
 		    }
