@@ -41,23 +41,23 @@ SOURCE CODE DIRECTORY DESCRIPTION
 directory
     │
     │
-    ├── examples
-    │   ├── colorblind
-    │   ├── colorcycle
-    │   ├── common
-    │   ├── orientation
-    │   ├── random
-    │   ├── rdk
-    │   ├── simpleEA
-    │   ├── SORFs
-    │   ├── tuneFiringRates
-    │   ├── v1MTLIP
-    │   └── v1v4PFC
-    ├── include
-    ├── libpti
-    ├── results
-    ├── src
-    └── videos
+    +-- examples
+    │   +-- colorblind
+    │   +-- colorcycle
+    │   +-- common
+    │   +-- orientation
+    │   +-- random
+    │   +-- rdk
+    │   +-- simpleEA
+    │   +-- SORFs
+    │   +-- tuneFiringRates
+    │   +-- v1MTLIP
+    │   +-- v1v4PFC
+    +--include
+    +-- libpti
+    +-- results
+    +-- src
+    +-- videos
 
 
 Main directory - contains the Makefile, documentation files, and other
