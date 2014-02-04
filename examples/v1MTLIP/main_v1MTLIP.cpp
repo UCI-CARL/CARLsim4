@@ -37,7 +37,7 @@
  * CARLsim available from http://socsci.uci.edu/~jkrichma/CARL/CARLsim/
  * Ver 10/09/2013
  */ 
-#include "../../snn.h"
+#include <snn.h>
 
 // stim must be a file of unsigned char in RGB, arranged as R1 G1 B1 R2 G2 B2 ...
 void calcColorME(int nrX, int nrY, unsigned char* stim, float* red_green, float* green_red, float* blue_yellow,
@@ -526,16 +526,16 @@ int main()
 	// at the beginning of this file, set the experiment to run
 	// expected format of video: R1 G1 B1 R2 G2 B2 ... e[0,255]
 	#if defined RUN_DIRECTION_TUNING
-	char loadVideo[] 	 = "videos/mkGratingPlaid_ctrst0.3_32x32x2400.dat";	
+	char loadVideo[] 	 = "../../videos/mkGratingPlaid_ctrst0.3_32x32x2400.dat";	
 	int vidLen			 = 2400; // number of frames
 	#elif defined RUN_SPEED_TUNING
-	char loadVideo[]	 = "videos/mkBarSpeed_ctrst0.2_32x32x7520.dat";
+	char loadVideo[]	 = "../../videos/mkBarSpeed_ctrst0.2_32x32x7520.dat";
 	int vidLen			 = 7520;
 	#elif defined RUN_CONTRAST_SENSITIVITY
-	char loadVideo[]	 = "videos/mkGratingContrast_32x32x1000.dat";
+	char loadVideo[]	 = "../../videos/mkGratingContrast_32x32x1000.dat";
 	int vidLen			 = 1000;
 	#elif defined RUN_RDK
-	char loadVideo[]	 = "videos/mkRDK_32x32x14400.dat";
+	char loadVideo[]	 = "../../videos/mkRDK_32x32x14400.dat";
 	int vidLen 			 = 14400;
 	#else
 	char loadVideo[]	 = "";
@@ -546,7 +546,7 @@ int main()
 		
 	
 	int startAtFrame	 = 0; 					// at which frame of movie to start
-	char saveFolder[]	 = "Results/v1MTLIP/";	// where to store all files (folder will be created if not exists)
+	char saveFolder[]	 = "../../results/v1MTLIP/";	// where to store all files (folder will be created if not exists)
 	bool storeNetwork	 = false;				// store network? at beginning and end
 	bool onGPU = true;						 	// run on GPU?
 	int ithGPU 			 = 0;					// on which GPU to run (in case of carlculator: 0-3)

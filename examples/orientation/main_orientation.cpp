@@ -38,7 +38,7 @@
  * Ver 10/09/2013
  */ 
 
-#include "../../snn.h"
+#include <snn.h>
 void calcColorME(int nrX, int nrY, unsigned char* stim, float* red_green, float* green_red, float* blue_yellow, float* yellow_blue, float* ME, bool GPUpointers);
 extern MTRand	      getRand;
 
@@ -213,8 +213,8 @@ int main()
 
 	s.setSpikeMonitor(gV1ME);
 
-	s.setSpikeMonitor(gV4o,"Results/orientation/spkV4o.dat");
-	s.setSpikeMonitor(gV4oi,"Results/orientation/spkV4oi.dat");
+	s.setSpikeMonitor(gV4o,"../../results/orientation/spkV4o.dat");
+	s.setSpikeMonitor(gV4oi,"../../results/orientation/spkV4oi.dat");
 
 	unsigned char* vid = new unsigned char[nrX*nrY*3];
 
@@ -236,7 +236,7 @@ int main()
 	#define VIDLEN (4*33)
 
 	for(long long i=0; i < VIDLEN*1; i++) {
-		if (i%VIDLEN==0) fid = fopen("videos/orienR.dat","rb");
+		if (i%VIDLEN==0) fid = fopen("../../videos/orienR.dat","rb");
 		fread(vid,1,nrX*nrY*3,fid);
 
 		calcColorME(nrX, nrY, vid, red_green.rates, green_red.rates, blue_yellow.rates, yellow_blue.rates, me.rates, onGPU);
@@ -247,7 +247,7 @@ int main()
 		s.runNetwork(0,FRAMEDURATION, onGPU?GPU_MODE:GPU_MODE);
 
 		if (i==1) {
-			FILE* nid = fopen("Results/orientation/net.dat","wb");
+			FILE* nid = fopen("../../results/orientation/net.dat","wb");
 			s.writeNetwork(nid);
 			fclose(nid);
 		}

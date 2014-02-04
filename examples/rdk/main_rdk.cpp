@@ -39,7 +39,7 @@
  */ 
 
 
-#include "../../snn.h"
+#include <snn.h>
 void calcColorME(int nrX, int nrY, unsigned char* stim, float* red_green, float* green_red, float* blue_yellow, float* yellow_blue, float* ME, bool GPUpointers);
 extern MTRand	      getRand;
 
@@ -265,7 +265,7 @@ int main()
 {
 	MTRand	      getRand(210499257);
 
-	char saveFolder[] = "Results/rdk/";
+	char saveFolder[] = "../../results/rdk/";
 
 	float synscale = 1;
 	float stdpscale = 1;
@@ -358,7 +358,7 @@ int main()
 	#define VIDLEN (8*33*10)
 
 	for(long long i=0; i < VIDLEN*1; i++) {
-		if (i%VIDLEN==0) fid = fopen("videos/rdk3.dat","rb");
+		if (i%VIDLEN==0) fid = fopen("../../videos/rdk3.dat","rb");
 		fread(vid,1,nrX*nrY*3,fid);
 
 		calcColorME(nrX, nrY, vid, red_green.rates, green_red.rates, blue_yellow.rates, yellow_blue.rates, me.rates, onGPU);

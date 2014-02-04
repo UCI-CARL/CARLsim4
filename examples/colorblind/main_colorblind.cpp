@@ -38,7 +38,8 @@
  * Ver 10/09/2013
  */ 
 
-#include "../../snn.h"
+//Change this!
+#include <snn.h>
 void calcColorME(int nrX, int nrY, unsigned char* stim, float* red_green, float* green_red, float* blue_yellow, float* yellow_blue, float* ME, bool GPUpointers);
 extern MTRand	      getRand;
 
@@ -242,24 +243,24 @@ int main()
 
 	s.setSTP(ALL,false);
 
-	s.setSpikeMonitor(v1Cells[RED_GREEN],"Results/colorblind/spkV1RG.dat");
-	s.setSpikeMonitor(v1Cells[GREEN_RED],"Results/colorblind/spkV1GR.dat");
-	s.setSpikeMonitor(v1Cells[BLUE_YELLOW],"Results/colorblind/spkV1BY.dat");
-	s.setSpikeMonitor(v1Cells[YELLOW_BLUE],"Results/colorblind/spkV1YB.dat");
+	s.setSpikeMonitor(v1Cells[RED_GREEN],"../../results/colorblind/spkV1RG.dat");
+	s.setSpikeMonitor(v1Cells[GREEN_RED],"../../results/colorblind/spkV1GR.dat");
+	s.setSpikeMonitor(v1Cells[BLUE_YELLOW],"../../results/colorblind/spkV1BY.dat");
+	s.setSpikeMonitor(v1Cells[YELLOW_BLUE],"../../results/colorblind/spkV1YB.dat");
 
-	s.setSpikeMonitor(v4CellsExc[RED_V4],"Results/colorblind/spkV4R.dat");
-	s.setSpikeMonitor(v4CellsExc[GREEN_V4],"Results/colorblind/spkV4G.dat");
-	s.setSpikeMonitor(v4CellsExc[BLUE_V4],"Results/colorblind/spkV4B.dat");
-	s.setSpikeMonitor(v4CellsExc[YELLOW_V4],"Results/colorblind/spkV4Y.dat");
-	s.setSpikeMonitor(v4CellsExc[CYAN_V4],"Results/colorblind/spkV4C.dat");
-	s.setSpikeMonitor(v4CellsExc[MAGENTA_V4],"Results/colorblind/spkV4M.dat");
+	s.setSpikeMonitor(v4CellsExc[RED_V4],"../../results/colorblind/spkV4R.dat");
+	s.setSpikeMonitor(v4CellsExc[GREEN_V4],"../../results/colorblind/spkV4G.dat");
+	s.setSpikeMonitor(v4CellsExc[BLUE_V4],"../../results/colorblind/spkV4B.dat");
+	s.setSpikeMonitor(v4CellsExc[YELLOW_V4],"../../results/colorblind/spkV4Y.dat");
+	s.setSpikeMonitor(v4CellsExc[CYAN_V4],"../../results/colorblind/spkV4C.dat");
+	s.setSpikeMonitor(v4CellsExc[MAGENTA_V4],"../../results/colorblind/spkV4M.dat");
 
-	s.setSpikeMonitor(v4CellsInh[RED_V4],"Results/colorblind/spkV4Ri.dat");
-	s.setSpikeMonitor(v4CellsInh[GREEN_V4],"Results/colorblind/spkV4Gi.dat");
-	s.setSpikeMonitor(v4CellsInh[BLUE_V4],"Results/colorblind/spkV4Bi.dat");
-	s.setSpikeMonitor(v4CellsInh[YELLOW_V4],"Results/colorblind/spkV4Yi.dat");
-	s.setSpikeMonitor(v4CellsInh[CYAN_V4],"Results/colorblind/spkV4Ci.dat");
-	s.setSpikeMonitor(v4CellsInh[MAGENTA_V4],"Results/colorblind/spkV4Mi.dat");
+	s.setSpikeMonitor(v4CellsInh[RED_V4],"../../results/colorblind/spkV4Ri.dat");
+	s.setSpikeMonitor(v4CellsInh[GREEN_V4],"../../results/colorblind/spkV4Gi.dat");
+	s.setSpikeMonitor(v4CellsInh[BLUE_V4],"../../results/colorblind/spkV4Bi.dat");
+	s.setSpikeMonitor(v4CellsInh[YELLOW_V4],"../../results/colorblind/spkV4Yi.dat");
+	s.setSpikeMonitor(v4CellsInh[CYAN_V4],"../../results/colorblind/spkV4Ci.dat");
+	s.setSpikeMonitor(v4CellsInh[MAGENTA_V4],"../../results/colorblind/spkV4Mi.dat");
 
 
 	unsigned char* vid = new unsigned char[nrX*nrY*3];
@@ -281,7 +282,7 @@ int main()
 	#define VIDLEN 12
 
 	for(long long i=0; i < VIDLEN*1; i++) {
-		if (i%VIDLEN==0) fid = fopen("videos/colorblind.dat","rb");
+		if (i%VIDLEN==0) fid = fopen("../../videos/colorblind.dat","rb");
 		fread(vid,1,nrX*nrY*3,fid);
 
 		calcColorME(nrX, nrY, vid, red_green.rates, green_red.rates, blue_yellow.rates, yellow_blue.rates, me.rates, onGPU);
@@ -295,7 +296,7 @@ int main()
 		s.runNetwork(0,FRAMEDURATION, onGPU?GPU_MODE:CPU_MODE);
 
 		if (i==1) {
-			FILE* nid = fopen("Results/colorblind/net.dat","wb");
+			FILE* nid = fopen("../../results/colorblind/net.dat","wb");
 			s.writeNetwork(nid);
 			fclose(nid);
 		}

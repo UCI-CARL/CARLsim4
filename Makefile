@@ -1,135 +1,80 @@
-########################################################################################################################
-#
-# CARLsim Makefile
-#
-# CARLsim available from http://socsci.uci.edu/~jkrichma/CARLsim/
-# Ver 11/05/2013
-#
-########################################################################################################################
+# Makefile that includes modules for organization
+#-------------------------------------------------------------------------------
+# Begin user modifiable section
+#-------------------------------------------------------------------------------
+# absolute path of evolving objects installation 
+EO_INSTALL_DIR ?= /opt/eo
 
-
-########################################################################################################################
-# HOW TO USE
-########################################################################################################################
-#
-# In order to display all available example experiments, open up a terminal in the current directory and type
-# $ make help
-# In order to clean up object files, executables, etc., type
-# $ make clean
-# 
-# CARLsim simulation examples follow a common rule: Some experiment (e.g., called "test") has a source file named
-# "main_test.cpp" in subdirectory "examples/test/", and should direct all of its output files to a subdirectory
-# "Results/test/". If Matlab analysis scripts are available for this particular experiment, they can be found in a
-# subdirectory "scripts/test/".
-# The experiment can be compiled by typing:
-# $ make test
-# This will create an executable called "test". In order to run it, type:
-# $ ./test
-# This naming convention is true for all example simulations.
-#
-# Required environment variables:
-#	${NVIDIA_SDK}: path to NVIDIA GPU Computing SDK
-#		no longer required in combination with CUDA 5
-#
-# Optional environment variables:
-#	${CARLSIM_CUDAVER}: which CUDA version to use
-#		set to version number you want to use (int). Default: 3
-#	${CARLSIM_FASTMATH}: whether to use fast math flags
-#		set to 1 if you want to use fast math. Default: 0
-#	${CARLSIM_CUOPTLEVEL}: whether to use increased CUDA optimization level
-#		set to value>1 if you want to use increased optimization level. Default: 0
-
-
-########################################################################################################################
-# COMMON BUILD
-########################################################################################################################
+# desired installation absolute path of pti 
+PTI_INSTALL_DIR ?= /opt/pti
 
 # if optional env vars do not exist, assign default values
 CARLSIM_CUDAVER ?= 3
 CARLSIM_FASTMATH ?= 0
 CARLSIM_CUOPTLEVEL ?= 0
 
-ifeq (${strip ${CARLSIM_CUDAVER}},5)
-	INCLUDES = -I/usr/local/cuda/samples/common/inc/
-	LFLAGS =
-	LIBS =
-	CFLAGS = -D__CUDA5__ -arch sm_20
-else
-	INCLUDES = -I${NVIDIA_SDK}/C/common/inc/
-	LFLAGS = -L${NVIDIA_SDK}/C/lib
-	LIBS = -lcutil_x86_64
-	CFLAGS = -D__CUDA3__ -arch sm_13
-endif
+# Optional environment variables
+# $(OPT_LEVEL): set to 1, 2, or 3 if you want to use optimization.  Default: 0.
+OPT_LEVEL ?= 0
 
-# use fast math
-ifeq (${strip ${CARLSIM_FASTMATH}},1)
-	CFLAGS += -use_fast_math
-endif
+# $(DEBUG_INFO): set to 1 to include debug info, set to 0 to not include 
+# debugging info.  Default: 0.
+DEBUG_INFO ?= 0
 
-# use CUDA optimization level
-ifneq (${strip ${CARLSIM_CUOPTLEVEL}},1)
-	CFLAGS += -O${CARLSIM_CUOPTLEVEL}
-endif
+#-------------------------------------------------------------------------------
+# End user modifiable section
+#-------------------------------------------------------------------------------
 
-CC = nvcc
-SRCS = snn_cpu.cpp mtrand.cpp PropagatedSpikeBuffer.cpp printSNNInfo.cpp gpu_random.cu snn_gpu.cu v1ColorME.2.0.cu v1ColorME.2.1.cu
-DEP = snn.h PropagatedSpikeBuffer.h gpu.h gpu_random.h mtrand.h config.h CUDAVersionControl.h
+# these variables collect the information from the other modules
+all_targets :=
+carlsim_programs  := 
+pti_programs :=
+sources   :=
+libraries := 
+carlsim_deps :=
+carlsim_sources :=
+carlsim_objs := 
+common_sources :=
+common_objs :=
+output_files :=
+objects :=
 
-#OBJS = ${SRCS:.cpp=.o}
+inc_dir = include
+src_dir = src
+lib_dir = libpti
+ex_dir  = examples
+# location of .cpp files
+vpath %.cpp $(EO_INSTALL_DIR)/src $(EO_INSTALL_DIR)/src/do \
+$(EO_INSTALL_DIR)/src/es $(EO_INSTALL_DIR)/src/utils $(lib_dir) \
+$(ex_dir)/common/ $(src_dir)
+# location of .cu files
+vpath %.cu $(src_dir)
+# location of .h files
+vpath %.h $(EO_INSTALL_DIR)/src $(inc_dir) $(src_dir) $(ex_dir)/common
 
-OBJS_DIR = obj
+# this blank 'all' is required
+all:
 
-CORE_OBJS = snn_cpu.o \
-            snn_gpu.o \
-            mtrand.o \
-            PropagatedSpikeBuffer.o \
-            printSNNInfo.o \
-            gpu_random.o \
-
-UTIL_2_0_OBJS = v1ColorME.2.0.o
-UTIL_2_1_OBJS = v1ColorME.2.1.o
-
-# examples are split according to the version of v1ColorME they are using
-EXE_CU_NONE = random
-EXE_CU_20 = colorblind colorcycle orientation rdk v1v4PFC
-EXE_CU_21 = v1MTLIP
-
-EXE_DIR = bin
-
-########################################################################################################################
-# RULES
-########################################################################################################################
-
-all: ${EXE_CU_21} ${EXE_CU_20} ${EXE_CU_NONE}
-
-.SECONDEXPANSION:
-# using none of the v1ColorME.cu
-${EXE_CU_NONE}: ${DEP} ${CORE_OBJS} examples/$$@/main_$$@.cpp
-	${CC} ${INCLUDES} ${LFLAGS} ${LIBS} ${CFLAGS} ${CORE_OBJS} examples/$@/main_$@.cpp -o $@
-
-# using v1ColorME.2.0.cu
-${EXE_CU_20}: ${DEP} ${CORE_OBJS} ${UTIL_2_0_OBJS} examples/$$@/main_$$@.cpp
-	${CC} ${INCLUDES} ${LFLAGS} ${LIBS} ${CFLAGS} ${CORE_OBJS} examples/$@/main_$@.cpp ${UTIL_2_0_OBJS} -o $@
-
-# using v1ColorME.2.1.cu
-${EXE_CU_21}: ${DEP} ${CORE_OBJS} ${UTIL_2_1_OBJS} examples/$$@/main_$$@.cpp
-	${CC} ${INCLUDES} ${LFLAGS} ${LIBS} ${CFLAGS} ${CORE_OBJS} examples/$@/main_$@.cpp ${UTIL_2_1_OBJS} -o $@
-
-# object files
-%.o: %.cpp ${DEP}
-	${CC} -c ${INCLUDES} ${LFLAGS} ${CFLAGS} $< -o $@
-
-%.o: %.cu ${DEP}
-	${CC} -c ${INCLUDES} ${LFLAGS} ${CFLAGS} $< -o $@
+# core makefile includes
+include makefile.mk
+include libpti/libpti.mk
+include src/carlsim.mk
+# include all directories in examples
+example_includes := $(addsuffix /examples.mk, $(wildcard examples/*))
+include $(example_includes)
 
 
-########################################################################################################################
-# MAINTENANCE AND SPECIAL RULES
-########################################################################################################################
+.PHONY: all libraries examples pti_examples clean distclean
+all: $(all_targets)
+
+libraries: $(libraries)
+
+examples: $(carlsim_programs)
+
+pti_examples: $(pti_programs)
 
 clean:
-	rm -f *.o *~ *.dot param.txt *.log ${EXE_CU} ${EXE_CU_21} ${EXE_CU_20} ${EXE_CU_NONE}
+	$(RM) $(objects) $(carlsim_programs) $(pti_programs)
 
-help:
-	@echo Choose from the following example networks: ${EXE_CU} ${EXE_CU_21} ${EXE_CU_20} ${EXE_CU_NONE}.
-	@echo Create env var USECUDAVER to specify which CUDA version to use \(Default: 5\)
+distclean:
+	$(RM) $(objects) $(carlsim_programs) $(pti_programs) $(libraries) $(output_files)
