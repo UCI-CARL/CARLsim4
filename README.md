@@ -36,29 +36,29 @@ Type 'make uninstall' to uninstall the pti library.
 
 SOURCE CODE DIRECTORY DESCRIPTION
 -------------------------------------------------------------------------------
-
+<pre>
   Main
 directory
     │
     │
-    +-- examples
-    │   +-- colorblind
-    │   +-- colorcycle
-    │   +-- common
-    │   +-- orientation
-    │   +-- random
-    │   +-- rdk
-    │   +-- simpleEA
-    │   +-- SORFs
-    │   +-- tuneFiringRates
-    │   +-- v1MTLIP
-    │   +-- v1v4PFC
-    +--include
-    +-- libpti
-    +-- results
-    +-- src
-    +-- videos
-
+    ├── examples
+    │   ├── colorblind
+    │   ├── colorcycle
+    │   ├── common
+    │   ├── orientation
+    │   ├── random
+    │   ├── rdk
+    │   ├── simpleEA
+    │   ├── SORFs
+    │   ├── tuneFiringRates
+    │   ├── v1MTLIP
+    │   └── v1v4PFC
+    ├── include
+    ├── libpti
+    ├── results
+    ├── src
+    └── videos
+</pre>
 
 Main directory - contains the Makefile, documentation files, and other
                  directories.
