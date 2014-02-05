@@ -51,10 +51,10 @@ extern MTRand getRand;
 /// **************************************************************************************************************** ///
 
 // choose which experiment to run (define only one)
-//#define RUN_DIRECTION_TUNING			// V1, MT CDS and MT PDS direction tuning
+#define RUN_DIRECTION_TUNING			// V1, MT CDS and MT PDS direction tuning
 //#define RUN_SPEED_TUNING				// MT CDS speed tuning
 //#define RUN_CONTRAST_SENSITIVITY		// V1 contrast sensitivity
-#define RUN_RDK							// RDK motion discrimination task
+//#define RUN_RDK							// RDK motion discrimination task
 
 // the dimension of the input stimulus
 #define nrX (32)
@@ -593,8 +593,8 @@ int main()
 	int gMT1PDS    = snn.createGroup("MT1PDS", prod(MTdim,3), EXCITATORY_NEURON);
 	int gMT1PDSinh = snn.createGroup("MT1PDSinh", prod(MTiDim,3), INHIBITORY_NEURON);
 
-	int gLIP = snn.createGroup("PFC", prod(PFCdim,3), EXCITATORY_NEURON);
-	int gLIPi = snn.createGroup("PFCi", prod(PFCiDim,3), INHIBITORY_NEURON);
+	int gLIP = snn.createGroup("LIP", prod(PFCdim,3), EXCITATORY_NEURON);
+	int gLIPi = snn.createGroup("LIPi", prod(PFCiDim,3), INHIBITORY_NEURON);
 
 
 	snn.setNeuronParameters(gMT1CDS, 0.02f, 0.2f, -65.0f, 8.0f);

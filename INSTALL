@@ -185,7 +185,7 @@ the following:
 
 4. Add your compilation rules to a file called examples.mk inside the 
    examples/myExp directory. It's easiest to just grab an existing examples.mk 
-   from another example and use that.  Only the top two lines need to be modified. 
+   from another example and use that. Only the top two lines need to bemodified. 
    The first line is the name of your example, in this case it would be myExp. 
    The second line is the name of log files the program outputs, so they can be 
    deleted by makefile commands.  The defaults are usually okay.  You can also 

@@ -5,11 +5,13 @@ CARLSIM RELEASE NOTES
 -------------------------------------------------------------------------------
 CARLsim 2.2
 -------------------------------------------------------------------------------
+
 Highlights:
 	Included model for homeostatic synaptic scaling.
 	Included support for parameter tuning interface (PTI) library, which
 	enables the automated parameter tuning of SNNs using evolutionary
 	algorithms.
+	Added CUDA5 support.
 
 Description:
 	As the desire for biologically realistic spiking neural networks (SNNs)
@@ -48,12 +50,13 @@ Publications:
 	automated parameter tuning framework for spiking neural networks. 
 	Front. Neurosci. 8:10. doi: 10.3389/fnins.2014.00010
 
-        Homeostatic synaptic scaling model:
+    Homeostatic synaptic scaling model:
 	Carlson, K. D., Richert, M., Dutt, N., and Krichmar, J. L. (2013). 
 	“Biologically plausible models of homeostasis and STDP: stability and 
 	learning in spiking neural networks,” in Proceedings of the 2013 
 	International Joint Conference on Neural Networks (IJCNN) (Dallas, TX). 
 	doi: 10.1109/IJCNN.2013.6706961
+
 
 -------------------------------------------------------------------------------
 CARLsim 2.1
