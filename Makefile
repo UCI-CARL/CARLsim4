@@ -44,8 +44,6 @@ src_dir = src
 lib_dir = libpti
 ex_dir  = examples
 
-CARLSIM_ROOT := $(CURDIR)
-export CARLSIM_ROOT
 # location of .cpp files
 vpath %.cpp $(EO_INSTALL_DIR)/src $(EO_INSTALL_DIR)/src/do \
 $(EO_INSTALL_DIR)/src/es $(EO_INSTALL_DIR)/src/utils $(lib_dir) \
