@@ -5,8 +5,8 @@ function [] = plotGratingPlaidCorrelation()
 % circles) and all MT PDS cells (red crosses), and plots them as a Fisher
 % Z-score. The blue solid lines are the classification region boundaries,
 % with a criterion of 1.28.
-% This script reproduces Fig. 5 of (Beyeler, Dutt & Krichmar, 2013;
-% publication to be named later).
+% This script reproduces Fig. 5 of Beyeler, Richert, Dutt, and Krichmar
+% (2014).
 % A suitable stimulus can be created using
 % scripts/v1MTLIP/makeTuningGrating.m and scripts/v1MTLIP/makeTuningPlaid.m
 %
@@ -24,8 +24,8 @@ frameDur=50; % number of ms each frame is presented
 nB = 5;      % margin; border pix to remove
 
 % load spike files
-CDS = readSpikes('../../Results/v1MTLIP/spkMT1CDS.dat',frameDur*nrF);
-PDS = readSpikes('../../Results/v1MTLIP/spkMT1PDS.dat',frameDur*nrF);
+CDS = readSpikes('../../results/v1MTLIP/spkMT1CDS.dat',frameDur*nrF);
+PDS = readSpikes('../../results/v1MTLIP/spkMT1PDS.dat',frameDur*nrF);
 
 % remove border pix
 CDS = reshape(CDS(:,2*nrX*nrY+1:3*nrX*nrY),[],nrX,nrY);

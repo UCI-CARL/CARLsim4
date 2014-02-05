@@ -9,13 +9,10 @@ EO_INSTALL_DIR ?= /opt/eo
 PTI_INSTALL_DIR ?= /opt/pti
 
 # if optional env vars do not exist, assign default values
-CARLSIM_CUDAVER ?= 3
-CARLSIM_FASTMATH ?= 0
-CARLSIM_CUOPTLEVEL ?= 0
-
-# Optional environment variables
 # $(OPT_LEVEL): set to 1, 2, or 3 if you want to use optimization.  Default: 0.
-OPT_LEVEL ?= 0
+CARLSIM_CUDAVER ?= 3
+CARLSIM_FASTMATH ?= 1
+CARLSIM_CUOPTLEVEL ?= 0
 
 # $(DEBUG_INFO): set to 1 to include debug info, set to 0 to not include 
 # debugging info.  Default: 0.

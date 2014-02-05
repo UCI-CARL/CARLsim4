@@ -5,14 +5,14 @@ function [] = plotSpeed()
 % single bar is drifting over the entire visual field either to the right
 % (preferred direction) and left (anti-preferred) direction at different
 % speeds. MT CDS cells are either "band-pass", "low-pass" or "high-pass".
-% This script reproduces Fig. 6 in (Beyeler, Dutt, and Krichmar, 2013;
-% publication to be named later).
+% This script reproduces Fig. 6 of Beyeler, Richert, Dutt, and Krichmar
+% (2014).
 %
 % A suitable stimulus can be created using scripts/v1MTLIP/makeBarSpeed.m,
 % which can then be plugged into the CARLsim example model v1MTLIP.
 %
 % Author: Michael Beyeler <mbeyeler@uci.edu>
-% Ver 10/03/13
+% Ver 2/5/14
 
 
 %% LOAD PARAMS
@@ -46,7 +46,7 @@ xSpeed(3,:) = [1.0000  1.5849  2.5119  3.9811  6.3096 10.0000]; % high-pass
 thisNeuron = sub2ind([nrX nrY 8],nrX/2,nrY/2+1);
 for mt=1:3
     disp(['MT' num2str(mt) 'CDS'])
-    spk = readSpikes(['../../Results/v1MTLIP/spkMT' num2str(mt) 'CDS.dat'],frameDur);
+    spk = readSpikes(['../../results/v1MTLIP/spkMT' num2str(mt) 'CDS.dat'],frameDur);
     spk(vidLen,8*nrX*nrY)=0; % grow to right size
     
     % normalize to Hz

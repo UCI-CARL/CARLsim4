@@ -41,6 +41,7 @@ if nargin<5,gratingContrast=0.3;end
 if nargin<6,gratingSf=0.1205;end
 if nargin<7,gratingTf=0.1808;end
 
+xDirection = (0:nPnts-1)*2*pi/nPnts;
 
 %% CREATE STIMULUS USING S&H MODEL
 stim=[];
