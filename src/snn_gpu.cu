@@ -223,6 +223,19 @@
 	   CUDA_CHECK_ERRORS_MACRO(cudaMemcpy(devPtr, tableQuickSynId, sizeof(tableQuickSynId), cudaMemcpyHostToDevice));
 	}
 	
+#if __CUDA3__
+	__device__ inline void atomicAdd(float* address, float value)
+	{
+	  float old = value;
+	  float new_old;
+
+	  do {
+		new_old = atomicExch(address, 0.0f);
+		new_old += old;
+	  } while ((old = atomicExch(address, new_old)) != 0.0f);
+	}
+#endif
+
 	__device__ inline bool isPoissonGroup(uint16_t& grpId, unsigned int& nid)
 	{
 		bool poiss = (gpuGrpInfo[grpId].Type & POISSON_NEURON);
@@ -1314,7 +1327,6 @@
 		// Got one spike from dopaminergic neuron, increase dopamine concentration in the target area
 		if (gpuGrpInfo[pre_grpId].Type & TARGET_DA) {
 			atomicAdd(&(gpuPtrs.grpDA[post_grpId]), 0.04);
-			
 		}
 
 		setFiringBitSynapses(nid, syn_id);
@@ -3124,7 +3136,7 @@
 		assert(deviceProp.major >= 1);
 		//assert(deviceProp.minor >= 3);		
 		
-		cudaDeviceReset(); //Note, cudaThreadExit() is deprecated function, use cudaDeviceReset instead
+		CUDA_DEVICE_RESET();
 		cudaSetDevice(dev);
 		CUDA_GET_LAST_ERROR("cudaSetDevice failed\n");
 	}
