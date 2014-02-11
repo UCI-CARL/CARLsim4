@@ -224,15 +224,18 @@
 	}
 	
 #if __CUDA3__
-	__device__ inline void atomicAdd(float* address, float value)
+	static __device__ inline float atomicAddf(float* address, float value)
 	{
-	  float old = value;
-	  float new_old;
+		float old = value;
+		float ret = atomicExch(address, 0.0f);
+		float new_old = ret + old;
 
-	  do {
-		new_old = atomicExch(address, 0.0f);
-		new_old += old;
-	  } while ((old = atomicExch(address, new_old)) != 0.0f);
+	  	while ((old = atomicExch(address, new_old)) != 0.0f) {
+			new_old = atomicExch(address, 0.0f);
+			new_old += old;
+		}
+
+		return ret;
 	}
 #endif
 
@@ -1326,7 +1329,11 @@
 
 		// Got one spike from dopaminergic neuron, increase dopamine concentration in the target area
 		if (gpuGrpInfo[pre_grpId].Type & TARGET_DA) {
-			atomicAdd(&(gpuPtrs.grpDA[post_grpId]), 0.04);
+#ifdef __CUDA3__
+			atomicAddf(&(gpuPtrs.grpDA[post_grpId]), 0.04f);
+#elif __CUDA5__ 
+			atomicAdd(&(gpuPtrs.grpDA[post_grpId]), 0.04f);
+#endif
 		}
 
 		setFiringBitSynapses(nid, syn_id);
