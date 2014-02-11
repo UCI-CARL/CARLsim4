@@ -39,7 +39,7 @@
  */ 
 
 
-#include "../../snn.h"
+#include "snn.h"
 void calcColorME(int nrX, int nrY, unsigned char* stim, float* red_green, float* green_red, float* blue_yellow, float* yellow_blue, float* ME, bool GPUpointers);
 extern MTRand	      getRand;
 

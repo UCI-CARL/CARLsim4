@@ -43,10 +43,38 @@
 #define WIN32_LEAN_AND_MEAN
 #endif
 
-#include <windows.h>
-#include <winsock2.h>
-#include <ws2tcpip.h>
-#include <iphlpapi.h>
+#if (WIN32 || WIN64)
+	#include <windows.h>
+	#include <winsock2.h>
+	#include <ws2tcpip.h>
+	#include <iphlpapi.h>
+
+	#define SOCKET_LAST_ERROR WSAGetLastError()
+	#define SOCKET_CLEAN_UP WSACleanup()
+	#define CLOSE_SOCKET(a) closesocket(a)
+	#define SHUT_SEND SD_SEND
+#else
+	#include <unistd.h>
+	#include <errno.h>
+	#include <sys/types.h>
+	#include <sys/socket.h>
+	#include <netinet/in.h>
+	#include <netdb.h>
+	#include <arpa/inet.h>
+	#include <pthread.h>
+
+	#define SOCKET int
+	#define SOCKADDR_IN struct sockaddr_in
+	#define SOCKADDR struct sockaddr
+	#define ADDRINFO struct addrinfo
+	#define INVALID_SOCKET (-1)
+	#define SOCKET_ERROR (-1)
+	#define SOCKET_LAST_ERROR errno
+	#define CLOSE_SOCKET(a) close(a)
+	#define SOCKET_CLEAN_UP
+	#define SHUT_SEND SHUT_WR
+
+#endif
 #include <stdio.h>
 
 #include "snn.h"
@@ -60,7 +88,9 @@
 
 #define BUF_LEN 128
 
-#pragma comment(lib, "Ws2_32.lib")
+#if (WIN32 || WIN64)
+	#pragma comment(lib, "Ws2_32.lib")
+#endif
 
 typedef struct CARLsim_service_config_t {
 	volatile bool execute;
@@ -136,7 +166,12 @@ public:
 	}
 };
 
-DWORD WINAPI service(LPVOID lpParam) {
+#if (WIN32 || WIN64)
+DWORD WINAPI service(LPVOID lpParam)
+#else
+void *service(void *lpParam)
+#endif
+{
 	CpuSNN* s;
 	CARLsimServiceConfig* csc = (CARLsimServiceConfig*)lpParam;
 	
@@ -271,13 +306,15 @@ DWORD WINAPI service(LPVOID lpParam) {
 
 	delete spikeCtrl;
 	
-	closesocket(dataSocket);
+	CLOSE_SOCKET(dataSocket);
 
 	return 0;
 }
 
 int main() {
+#if (WIN32 || WIN64)
 	WSADATA wsaData;
+#endif
     int iResult;
 
     SOCKET listenSocket = INVALID_SOCKET;
@@ -293,25 +330,33 @@ int main() {
 	char sendBuf[DEFAULT_BUFLEN];
     int bufLen = DEFAULT_BUFLEN;
 	int numBytes;
-	int clientAddrLen = sizeof(SOCKADDR_IN);
+	unsigned int clientAddrLen = sizeof(SOCKADDR_IN);
 
 	bool serverLoop = false;
+	bool serviceThreadExe = false;
 	
 	// service
+#if (WIN32 || WIN64)
 	HANDLE serviceThread = NULL;
+#else
+	pthread_t serviceThread = 0;
+#endif
 	CARLsimServiceConfig serviceConfig;
 	serviceConfig.run = false;
 	serviceConfig.execute = false;
 	serviceConfig.display = false;
     
+#if (WIN32 || WIN64)
     // Initialize Winsock
     iResult = WSAStartup(MAKEWORD(2,2), &wsaData);
     if (iResult != 0) {
         printf("WSAStartup failed with error: %d\n", iResult);
         return 1;
     }
+#endif
 
-    ZeroMemory(&hints, sizeof(hints));
+    //ZeroMemory(&hints, sizeof(hints));
+    memset(&hints, 0, sizeof(hints));
     hints.ai_family = AF_INET;
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_protocol = IPPROTO_TCP;
@@ -321,26 +366,26 @@ int main() {
     iResult = getaddrinfo(NULL, DEFAULT_TCPIP_PORT, &hints, &result);
     if ( iResult != 0 ) {
         printf("getaddrinfo failed with error: %d\n", iResult);
-        WSACleanup();
+        SOCKET_CLEAN_UP;
         return 1;
     }
 
     // Create a SOCKET for connecting to server
     listenSocket = socket(result->ai_family, result->ai_socktype, result->ai_protocol);
     if (listenSocket == INVALID_SOCKET) {
-        printf("socket failed with error: %ld\n", WSAGetLastError());
+        printf("socket failed with error: %d\n", SOCKET_LAST_ERROR);
         freeaddrinfo(result);
-        WSACleanup();
+        SOCKET_CLEAN_UP;
         return 1;
     }
 
     // Setup the TCP listening socket
     iResult = bind(listenSocket, result->ai_addr, (int)result->ai_addrlen);
     if (iResult == SOCKET_ERROR) {
-        printf("bind failed with error: %d\n", WSAGetLastError());
+        printf("bind failed with error: %d\n", SOCKET_LAST_ERROR);
         freeaddrinfo(result);
-        closesocket(listenSocket);
-        WSACleanup();
+        CLOSE_SOCKET(listenSocket);
+        SOCKET_CLEAN_UP;
         return 1;
     }
 
@@ -348,9 +393,9 @@ int main() {
     
 	iResult = listen(listenSocket, SOMAXCONN);
     if (iResult == SOCKET_ERROR) {
-        printf("listen failed with error: %d\n", WSAGetLastError());
-        closesocket(listenSocket);
-        WSACleanup();
+        printf("listen failed with error: %d\n", SOCKET_LAST_ERROR);
+        CLOSE_SOCKET(listenSocket);
+        SOCKET_CLEAN_UP;
         return 1;
     }
 
@@ -361,23 +406,23 @@ int main() {
 	do {
 		// Accept a client socket
 		if (clientSocket != INVALID_SOCKET) {
-			closesocket(clientSocket);
+			CLOSE_SOCKET(clientSocket);
 			clientSocket = INVALID_SOCKET;
 		}
 
 		printf("Waiting for connection...\n");
 		clientSocket = accept(listenSocket, (SOCKADDR*)&clientAddr, &clientAddrLen);
 		if (clientSocket == INVALID_SOCKET) {
-			printf("accept failed with error: %d\n", WSAGetLastError());
-			closesocket(listenSocket);
-			WSACleanup();
+			printf("accept failed with error: %d\n", SOCKET_LAST_ERROR);
+			CLOSE_SOCKET(listenSocket);
+			SOCKET_CLEAN_UP;
 			return 1;
 		}
 
 		printf("Connection with %s is established!\n", inet_ntoa(clientAddr.sin_addr));
 
 		// No longer need server socket
-		//closesocket(listenSocket);
+		//CLOSE_SOCKET(listenSocket);
 
 		// Setup client address for udp socket
 		//clientAddr.sin_addr // the same as vaule got from accept()
@@ -396,9 +441,9 @@ int main() {
 				sendBuf[0] = SERVER_RES_ACCEPT;
 				iSendResult = send(clientSocket, sendBuf, 1 /* 1 byte */, 0);
 				if (iSendResult == SOCKET_ERROR) {
-					printf("send failed with error: %d\n", WSAGetLastError());
-					//closesocket(clientSocket);
-					//WSACleanup();
+					printf("send failed with error: %d\n", SOCKET_LAST_ERROR);
+					//CLOSE_SOCKET(clientSocket);
+					//SOCKET_CLEAN_UP;
 					//return 1;
 				}
 				printf("Bytes sent: %d\n", iSendResult);
@@ -408,37 +453,48 @@ int main() {
 					case CLIENT_REQ_START_SNN:
 						//printf("run SNN\n");
 						//runSNN(spikeCtrl);
-						if (serviceThread == NULL) {
+						if (!serviceThreadExe) {
 							serviceConfig.run = true;
 							serviceConfig.execute = true;
 							serviceConfig.display = false;
+#if (WIN32 || WIN64)
 							serviceThread = CreateThread(NULL, 0, service, (LPVOID)&serviceConfig, 0, NULL);
+#else
+							int ret = pthread_create(&serviceThread, NULL, service, (void*)&serviceConfig);
+							printf("return of pthread_crate():%d [%ld]\n", ret, serviceThread);
+#endif
+							serviceThreadExe = true;
 						} else {
 							serviceConfig.run = true;
 						}
 						break;
 					case CLIENT_REQ_STOP_SNN:
-						if (serviceThread != NULL) {
+						if (serviceThreadExe) {
 							serviceConfig.display = false;
 							serviceConfig.run = false;
 							serviceConfig.execute = false;
+#if (WIN32 || WIN64)
 							WaitForSingleObject(serviceThread, INFINITE);
 							CloseHandle(serviceThread);
-							serviceThread = NULL;
+#else
+							pthread_join(serviceThread, NULL);
+#endif
+							//serviceThread = NULL;
+							serviceThreadExe = false;
 						}
 						break;
 					case CLIENT_REQ_PAUSE_SNN:
-						if (serviceThread != NULL)
+						if (serviceThreadExe)
 							serviceConfig.run = false;
 						break;
 					case CLIENT_REQ_START_SEND_SPIKE:
 						//if (spikeCtrl == NULL)
 						//	spikeCtrl = new SpikeController(dataSocket, clientAddr);
-						if (serviceThread != NULL)
+						if (serviceThreadExe)
 							serviceConfig.display = true;
 						break;
 					case CLIENT_REQ_STOP_SEND_SPIKE:
-						if (serviceThread != NULL)
+						if (serviceThreadExe)
 							serviceConfig.display = false;
 						break;
 					case CLIENT_REQ_SERVER_SHUTDOWN:
@@ -453,9 +509,9 @@ int main() {
 			else if (numBytes == 0)
 				printf("Connection closing...\n");
 			else  {
-				printf("Client closed the connection, error: %d\n", WSAGetLastError());
-				//closesocket(clientSocket);
-				//WSACleanup();
+				printf("Client closed the connection, error: %d\n", SOCKET_LAST_ERROR);
+				//CLOSE_SOCKET(clientSocket);
+				//SOCKET_CLEAN_UP;
 				//return 1;
 			}
 
@@ -464,20 +520,20 @@ int main() {
 
 
     // shutdown the connection since we're done
-    iResult = shutdown(clientSocket, SD_SEND);
+    iResult = shutdown(clientSocket, SHUT_SEND);
     if (iResult == SOCKET_ERROR) {
-        printf("shutdown failed with error: %d\n", WSAGetLastError());
-        closesocket(clientSocket);
-        WSACleanup();
+        printf("shutdown failed with error: %d\n", SOCKET_LAST_ERROR);
+        CLOSE_SOCKET(clientSocket);
+        SOCKET_CLEAN_UP;
         return 1;
     }
 
 	if (listenSocket != INVALID_SOCKET)
-		closesocket(listenSocket);
+		CLOSE_SOCKET(listenSocket);
 
 	// clean up
-	closesocket(clientSocket);
-	WSACleanup();
+	CLOSE_SOCKET(clientSocket);
+	SOCKET_CLEAN_UP;
 
 	return 0;
 }
