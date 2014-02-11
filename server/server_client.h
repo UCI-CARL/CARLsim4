@@ -48,9 +48,10 @@
 
 // Client side request
 #define CLIENT_REQ_START_SNN 0x71		// Ask server to run SNN
-#define CLIENT_REQ_STOP_SNN x72
+#define CLIENT_REQ_STOP_SNN 0x72
 #define CLIENT_REQ_START_SEND_SPIKE 0x73	// Ask server to send out spikes of SNN
 #define CLIENT_REQ_STOP_SEND_SPIKE 0x74
 #define CLIENT_REQ_SERVER_SHUTDOWN 0x75
+#define CLIENT_REQ_PAUSE_SNN 0x76
 
 #endif

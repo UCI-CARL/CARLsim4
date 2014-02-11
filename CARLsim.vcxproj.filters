@@ -27,40 +27,42 @@
     <ClCompile Include="src\SparseWeightDelayMatrix.cpp">
       <Filter>Source</Filter>
     </ClCompile>
-    <ClCompile Include="examples\reinforcement_learning\main_reinforcement_learning.cpp" />
+    <ClCompile Include="server\server_windows.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="include\config.h">
+    <ClInclude Include="src\config.h">
       <Filter>Include</Filter>
     </ClInclude>
-    <ClInclude Include="include\CUDAVersionControl.h">
+    <ClInclude Include="src\CUDAVersionControl.h">
       <Filter>Include</Filter>
     </ClInclude>
-    <ClInclude Include="include\gpu_random.h">
+    <ClInclude Include="src\errorCode.h">
       <Filter>Include</Filter>
     </ClInclude>
-    <ClInclude Include="include\errorCode.h">
+    <ClInclude Include="src\gpu.h">
       <Filter>Include</Filter>
     </ClInclude>
-    <ClInclude Include="include\gpu.h">
+    <ClInclude Include="src\gpu_random.h">
       <Filter>Include</Filter>
     </ClInclude>
-    <ClInclude Include="include\PropagatedSpikeBuffer.h">
+    <ClInclude Include="src\mtrand.h">
       <Filter>Include</Filter>
     </ClInclude>
-    <ClInclude Include="include\mtrand.h">
+    <ClInclude Include="src\PoissonRate.h">
       <Filter>Include</Filter>
     </ClInclude>
-    <ClInclude Include="include\snn.h">
+    <ClInclude Include="src\PropagatedSpikeBuffer.h">
       <Filter>Include</Filter>
     </ClInclude>
-    <ClInclude Include="include\PoissonRate.h">
+    <ClInclude Include="server\server_client.h">
       <Filter>Include</Filter>
     </ClInclude>
-    <ClInclude Include="include\SparseWeightDelayMatrix.h">
+    <ClInclude Include="src\SparseWeightDelayMatrix.h">
       <Filter>Include</Filter>
     </ClInclude>
-    <ClInclude Include="examples\reinforcement_learning\gaussian_connect.h" />
+    <ClInclude Include="src\snn.h">
+      <Filter>Include</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Source">
@@ -69,8 +71,5 @@
     <Filter Include="Include">
       <UniqueIdentifier>{d2871a87-c59d-4274-878f-f70f7b5798e7}</UniqueIdentifier>
     </Filter>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="ClassDiagram.cd" />
   </ItemGroup>
 </Project>

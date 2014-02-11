@@ -62,6 +62,13 @@
 
 #pragma comment(lib, "Ws2_32.lib")
 
+typedef struct CARLsim_service_config_t {
+	volatile bool execute;
+	volatile bool run;
+	volatile bool display;
+	SOCKADDR_IN clientAddr;
+} CARLsimServiceConfig;
+
 class SpikeController: public SpikeMonitor, SpikeGenerator {
 private:
 	SOCKET dataSocket;
@@ -119,67 +126,141 @@ public:
 		}
 
 		// send out the rest of data
-		numByteSent = sendto(dataSocket, (char*)buf, bufPos * sizeof(unsigned int), NULL, (SOCKADDR*)&clientAddr, sizeof(SOCKADDR_IN));
-		printf("send out %d bytes udp data on port %d\n", numByteSent, ntohs(clientAddr.sin_port));
+		if (bufPos > 0) {
+			numByteSent = sendto(dataSocket, (char*)buf, bufPos * sizeof(unsigned int), NULL, (SOCKADDR*)&clientAddr, sizeof(SOCKADDR_IN));
+			printf("send out %d bytes udp data on port %d\n", numByteSent, ntohs(clientAddr.sin_port));
+		}
 
 		bufPos = 0;
 		//buf[0] = currentTimeSlice++;
 	}
 };
 
-void runSNN(SpikeController* spikeCtrl) {
+DWORD WINAPI service(LPVOID lpParam) {
 	CpuSNN* s;
+	CARLsimServiceConfig* csc = (CARLsimServiceConfig*)lpParam;
+	
+	SOCKET dataSocket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+	SpikeController* spikeCtrl = new SpikeController(dataSocket, csc->clientAddr);
 
-	// Create Spiking Neural Network
+	int pfc, sen_cs, sen_us, ic_cs, ic_us, str, da;
+	int pfc_input, sen_cs_input, sen_us_input;
+	
+	// create a spiking neural network
 	s = new CpuSNN("global", GPU_MODE);
 
-	int g1 = s->createGroup("excit", N * 0.8, EXCITATORY_NEURON);
-	s->setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f);
+	//daController = new DopamineController(stdpLog);
 
-	int g2 = s->createGroup("inhib", N * 0.2, INHIBITORY_NEURON);
-	s->setNeuronParameters(g2, 0.1f,  0.2f, -65.0f, 2.0f);
+	pfc = s->createGroup("PFC_Ex", 1000, EXCITATORY_NEURON);
+	s->setNeuronParameters(pfc, 0.02f, 0.2f, -65.0f, 8.0f);
 
-	int gin = s->createSpikeGeneratorGroup("input", N * 0.8, EXCITATORY_NEURON);
+	//int g2 = s->createGroup("inhib", N * 0.2, INHIBITORY_NEURON);
+	//s->setNeuronParameters(g2, 0.1f,  0.2f, -65.0f, 2.0f);
 
-	s->setWeightUpdateParameter(_1000MS, 100);
+	// sensory neurons
+	sen_cs = s->createGroup("Sensory_CS", 50, EXCITATORY_NEURON);
+	s->setNeuronParameters(sen_cs, 0.02f, 0.2f, -65.0f, 8.0f);
+
+	sen_us = s->createGroup("Sensory_US", 50, EXCITATORY_NEURON);
+	s->setNeuronParameters(sen_us, 0.02f, 0.2f, -65.0f, 8.0f);
+
+	// ic neurons
+	ic_cs = s->createGroup("Insular_CS", 50, EXCITATORY_NEURON);
+	s->setNeuronParameters(ic_cs, 0.02f, 0.2f, -65.0f, 8.0f);
+
+	ic_us = s->createGroup("Insular_US", 50, EXCITATORY_NEURON);
+	s->setNeuronParameters(ic_us, 0.02f, 0.2f, -65.0f, 8.0f);
+
+	// 100 striatum neurons
+	str = s->createGroup("Stritum", 100, INHIBITORY_NEURON);
+	s->setNeuronParameters(str, 0.02f, 0.2f, -65.0f, 8.0f);
 	
+	// 100 dopaminergeic neurons
+	da = s->createGroup("Dopaminergic Area", 100, DOPAMINERGIC_NEURON);
+	s->setNeuronParameters(da, 0.02f, 0.2f, -65.0f, 8.0f);
+
+	// stimulus 
+	pfc_input = s->createSpikeGeneratorGroup("PFC input", 1000, EXCITATORY_NEURON);
+	sen_cs_input = s->createSpikeGeneratorGroup("Sensory_CS input", 50, EXCITATORY_NEURON);
+	sen_us_input = s->createSpikeGeneratorGroup("Sensory_US input", 50, EXCITATORY_NEURON);
+
+
+	s->setWeightUpdateParameter(_10MS, 100);
+
 	// make random connections with 10% probability
-	s->connect(g2, g1, "random", -2.0f/100, -2.0f/100, 0.1f, 1, 1, SYN_FIXED);
+	//s->connect(g2, g1, "random", -4.0f/100, -4.0f/100, 0.1f, 1, 1, SYN_FIXED);
 	// make random connections with 10% probability, and random delays between 1 and 20
-	s->connect(g1, g2, "random", +2.5f/100, 5.0f/100, 0.1f,  1, 20, SYN_PLASTIC);
-	s->connect(g1, g1, "random", +4.0f/100, 10.0f/100, 0.1f,  1, 20, SYN_PLASTIC);
+	//s->connect(g1, g2, "random", 5.0f/100, 10.0f/100, 0.1f,  1, 20, SYN_PLASTIC);
+	
+	s->connect(pfc, str, "random", 2.0f/100, 10.0f/100, 0.1f,  1, 20, SYN_PLASTIC);
+
+	s->connect(sen_cs, ic_cs, "full", 3.0f/100, 10.0f/100, 1.0f, 1, 20, SYN_PLASTIC);
+	s->connect(sen_us, ic_us, "full", 3.0f/100, 10.0f/100, 1.0f, 1, 20, SYN_PLASTIC);
+
+	s->connect(str, da, "full", -0.5f/100, -0.5f/100, 1.0f, 1, 10, SYN_FIXED);
+
+	s->connect(ic_cs, da, "full", 1.0f/100, 1.0f/100, 1.0f, 1, 10, SYN_FIXED);
+	s->connect(ic_us, da, "full", 1.0f/100, 1.0f/100, 1.0f, 1, 10, SYN_FIXED);
 
 	// 5% probability of connection
-	s->connect(gin, g1, "one-to-one", +20.0f/100, 20.0f/100, 1.0f,  1, 20, SYN_FIXED);
+	// Dummy synaptic weights. Dopaminergic neurons only release dopamine to the target area in the current model.
+	s->connect(da, str, "random", 0.0, 0.0, 0.05f, 10, 20, SYN_FIXED);
+	s->connect(da, ic_cs, "random", 0.0, 0.0, 0.05f, 10, 20, SYN_FIXED);
+	s->connect(da, ic_us, "random", 0.0, 0.0, 0.05f, 10, 20, SYN_FIXED);
 
-	float COND_tAMPA = 5.0, COND_tNMDA = 150.0, COND_tGABAa = 6.0, COND_tGABAb = 150.0;
-	s->setConductances(ALL, true, COND_tAMPA, COND_tNMDA, COND_tGABAa, COND_tGABAb);
+	// input connection
+	s->connect(pfc_input, pfc, "one-to-one", 20.0f/100, 20.0f/100, 1.0f,  1, 1, SYN_FIXED);
+	s->connect(sen_cs_input, sen_cs, "one-to-one", 20.0f/100, 20.0f/100, 1.0f, 1, 1, SYN_FIXED);
+	s->connect(sen_us_input, sen_us, "one-to-one", 20.0f/100, 20.0f/100, 1.0f, 1, 1, SYN_FIXED);
+
+	float COND_tAMPA=5.0, COND_tNMDA=150.0, COND_tGABAa=6.0, COND_tGABAb=150.0;
+	s->setConductances(ALL,true,COND_tAMPA,COND_tNMDA,COND_tGABAa,COND_tGABAb);
 
 	// here we define and set the properties of the STDP. 
 	float ALPHA_LTP = 0.10f/100, TAU_LTP = 20.0f, ALPHA_LTD = 0.08f/100, TAU_LTD = 40.0f;	
-	s->setSTDP(g1, true, false, ALPHA_LTP, TAU_LTP, ALPHA_LTD, TAU_LTD);
-	s->setSTDP(g2, true, false, ALPHA_LTP, TAU_LTP, ALPHA_LTD, TAU_LTD);
+	s->setSTDP(str, true, true, ALPHA_LTP, TAU_LTP, ALPHA_LTD, TAU_LTD);
+	s->setSTDP(ic_cs, true, true, ALPHA_LTP, TAU_LTP, ALPHA_LTD, TAU_LTD);
+	s->setSTDP(ic_us, true, true, ALPHA_LTP, TAU_LTP, ALPHA_LTD, TAU_LTD);
 
 	// show logout every 10 secs, enabled with level 1 and output to stdout.
 	s->setLogCycle(10, 3, stdout);
 
 	// put spike times into spikes.dat
-	s->setSpikeMonitor(g1, spikeCtrl);
+	//s->setSpikeMonitor(g1,"spikes.dat");
+	s->setSpikeMonitor(pfc, spikeCtrl);
+	s->setSpikeMonitor(sen_cs, spikeCtrl);
+	s->setSpikeMonitor(sen_us, spikeCtrl);
+	s->setSpikeMonitor(ic_cs, spikeCtrl);
+	s->setSpikeMonitor(ic_us, spikeCtrl);
+	s->setSpikeMonitor(str, spikeCtrl);
+	s->setSpikeMonitor(da, spikeCtrl);
 
-	// Show basic statistics about g2
-	s->setSpikeMonitor(g2);
+	//setup random thalamic noise
+	PoissonRate pfc_input_rate(1000);
+	for (int i = 0; i < 1000; i++)
+		pfc_input_rate.rates[i] = 1.0;
+	s->setSpikeRate(pfc_input, &pfc_input_rate);
 
-	s->setSpikeMonitor(gin);
+	PoissonRate sen_cs_input_rate(50);
+	for (int i = 0; i < 50; i++)
+		sen_cs_input_rate.rates[i] = 1.0;
+	s->setSpikeRate(sen_cs_input, &sen_cs_input_rate);
+	
+	PoissonRate sen_us_input_rate(50);
+	for (int i = 0; i < 50; i++)
+		sen_us_input_rate.rates[i] = 1.0;
+	s->setSpikeRate(sen_us_input, &sen_us_input_rate);
 
-	//setup some baseline input
-	PoissonRate in(N * 0.8);
-	for (int i = 0; i < N * 0.8; i++) in.rates[i] = 1;
-	s->setSpikeRate(gin,&in);
+	//s->setSpikeGenerator(pfc_input, (SpikeGenerator*)spikeCtrl);
+	//s->setSpikeGenerator(sen_cs_input, (SpikeGenerator*)spikeCtrl);
+	//s->setSpikeGenerator(sen_us_input, (SpikeGenerator*)spikeCtrl);
 
 	//run for 60 seconds
-	for(int i=0; i < 20; i++) {
+	while (csc->execute) {
 		// run the established network for a duration of 1 (sec)  and 0 (millisecond), in CPU_MODE
-		s->runNetwork(1, 0);
+		while (csc->run) {
+			s->runNetwork(1, 0);
+		}
 	}
 
 	FILE* nid = fopen("network.dat","wb");
@@ -187,6 +268,12 @@ void runSNN(SpikeController* spikeCtrl) {
 	fclose(nid);
 
 	delete s;
+
+	delete spikeCtrl;
+	
+	closesocket(dataSocket);
+
+	return 0;
 }
 
 int main() {
@@ -195,7 +282,6 @@ int main() {
 
     SOCKET listenSocket = INVALID_SOCKET;
     SOCKET clientSocket = INVALID_SOCKET;
-	SOCKET dataSocket = INVALID_SOCKET;
 
 	SOCKADDR_IN clientAddr;
 	
@@ -210,8 +296,13 @@ int main() {
 	int clientAddrLen = sizeof(SOCKADDR_IN);
 
 	bool serverLoop = false;
-
-	SpikeController* spikeCtrl = NULL;
+	
+	// service
+	HANDLE serviceThread = NULL;
+	CARLsimServiceConfig serviceConfig;
+	serviceConfig.run = false;
+	serviceConfig.execute = false;
+	serviceConfig.display = false;
     
     // Initialize Winsock
     iResult = WSAStartup(MAKEWORD(2,2), &wsaData);
@@ -263,7 +354,7 @@ int main() {
         return 1;
     }
 
-    dataSocket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+    
 	
     // Receive until the peer shuts down the connection
 	serverLoop = true;
@@ -292,35 +383,63 @@ int main() {
 		//clientAddr.sin_addr // the same as vaule got from accept()
 		clientAddr.sin_family = AF_INET;
 		clientAddr.sin_port = htons(DEFAULT_UDP_PORT);
+
+		serviceConfig.clientAddr = clientAddr;
 		
 		do {
 
 			numBytes = recv(clientSocket, recvBuf, bufLen, 0);
 			if (numBytes > 0) {
-				printf("Bytes received: %d\n", numBytes);
+				printf("Bytes received: %d[%x]\n", numBytes, recvBuf[0]);
 
 				// Process client requests
 				sendBuf[0] = SERVER_RES_ACCEPT;
 				iSendResult = send(clientSocket, sendBuf, 1 /* 1 byte */, 0);
 				if (iSendResult == SOCKET_ERROR) {
 					printf("send failed with error: %d\n", WSAGetLastError());
-					closesocket(clientSocket);
-					WSACleanup();
-					return 1;
+					//closesocket(clientSocket);
+					//WSACleanup();
+					//return 1;
 				}
 				printf("Bytes sent: %d\n", iSendResult);
 
 				//printf("%x\n", recvBuf[0]);
 				switch (recvBuf[0]) {
 					case CLIENT_REQ_START_SNN:
-						printf("run SNN\n");
-						runSNN(spikeCtrl);
+						//printf("run SNN\n");
+						//runSNN(spikeCtrl);
+						if (serviceThread == NULL) {
+							serviceConfig.run = true;
+							serviceConfig.execute = true;
+							serviceConfig.display = false;
+							serviceThread = CreateThread(NULL, 0, service, (LPVOID)&serviceConfig, 0, NULL);
+						} else {
+							serviceConfig.run = true;
+						}
+						break;
+					case CLIENT_REQ_STOP_SNN:
+						if (serviceThread != NULL) {
+							serviceConfig.display = false;
+							serviceConfig.run = false;
+							serviceConfig.execute = false;
+							WaitForSingleObject(serviceThread, INFINITE);
+							CloseHandle(serviceThread);
+							serviceThread = NULL;
+						}
+						break;
+					case CLIENT_REQ_PAUSE_SNN:
+						if (serviceThread != NULL)
+							serviceConfig.run = false;
 						break;
 					case CLIENT_REQ_START_SEND_SPIKE:
-						if (spikeCtrl == NULL)
-							spikeCtrl = new SpikeController(dataSocket, clientAddr);
+						//if (spikeCtrl == NULL)
+						//	spikeCtrl = new SpikeController(dataSocket, clientAddr);
+						if (serviceThread != NULL)
+							serviceConfig.display = true;
 						break;
 					case CLIENT_REQ_STOP_SEND_SPIKE:
+						if (serviceThread != NULL)
+							serviceConfig.display = false;
 						break;
 					case CLIENT_REQ_SERVER_SHUTDOWN:
 						serverLoop = false;
@@ -353,11 +472,6 @@ int main() {
         return 1;
     }
 
-	if (spikeCtrl != NULL)
-		delete spikeCtrl;
-	
-	if (dataSocket != INVALID_SOCKET)
-		closesocket(dataSocket);
 	if (listenSocket != INVALID_SOCKET)
 		closesocket(listenSocket);
 
