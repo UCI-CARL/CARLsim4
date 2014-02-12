@@ -23,7 +23,7 @@
     <CudaCompile Include="src\snn_gpu.cu" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="server\server_windows.cpp" />
+    <ClCompile Include="server\server.cpp" />
     <ClCompile Include="src\mtrand.cpp" />
     <ClCompile Include="src\PoissonRate.cpp" />
     <ClCompile Include="src\printSNNInfo.cpp" />

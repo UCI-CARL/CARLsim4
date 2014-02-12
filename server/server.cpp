@@ -193,31 +193,31 @@ void *service(void *lpParam)
 	//s->setNeuronParameters(g2, 0.1f,  0.2f, -65.0f, 2.0f);
 
 	// sensory neurons
-	sen_cs = s->createGroup("Sensory_CS", 50, EXCITATORY_NEURON);
+	sen_cs = s->createGroup("Sensory_CS", 500, EXCITATORY_NEURON);
 	s->setNeuronParameters(sen_cs, 0.02f, 0.2f, -65.0f, 8.0f);
 
-	sen_us = s->createGroup("Sensory_US", 50, EXCITATORY_NEURON);
+	sen_us = s->createGroup("Sensory_US", 500, EXCITATORY_NEURON);
 	s->setNeuronParameters(sen_us, 0.02f, 0.2f, -65.0f, 8.0f);
 
-	// ic neurons
-	ic_cs = s->createGroup("Insular_CS", 50, EXCITATORY_NEURON);
-	s->setNeuronParameters(ic_cs, 0.02f, 0.2f, -65.0f, 8.0f);
-
-	ic_us = s->createGroup("Insular_US", 50, EXCITATORY_NEURON);
-	s->setNeuronParameters(ic_us, 0.02f, 0.2f, -65.0f, 8.0f);
-
-	// 100 striatum neurons
-	str = s->createGroup("Stritum", 100, INHIBITORY_NEURON);
+    // 200 striatum neurons
+	str = s->createGroup("Stritum", 400, INHIBITORY_NEURON);
 	s->setNeuronParameters(str, 0.02f, 0.2f, -65.0f, 8.0f);
 	
+	// ic neurons
+	ic_cs = s->createGroup("Insular_CS", 200, EXCITATORY_NEURON);
+	s->setNeuronParameters(ic_cs, 0.02f, 0.2f, -65.0f, 8.0f);
+
+	ic_us = s->createGroup("Insular_US", 200, EXCITATORY_NEURON);
+	s->setNeuronParameters(ic_us, 0.02f, 0.2f, -65.0f, 8.0f);
+	
 	// 100 dopaminergeic neurons
-	da = s->createGroup("Dopaminergic Area", 100, DOPAMINERGIC_NEURON);
+	da = s->createGroup("Dopaminergic Area", 50, DOPAMINERGIC_NEURON);
 	s->setNeuronParameters(da, 0.02f, 0.2f, -65.0f, 8.0f);
 
 	// stimulus 
 	pfc_input = s->createSpikeGeneratorGroup("PFC input", 1000, EXCITATORY_NEURON);
-	sen_cs_input = s->createSpikeGeneratorGroup("Sensory_CS input", 50, EXCITATORY_NEURON);
-	sen_us_input = s->createSpikeGeneratorGroup("Sensory_US input", 50, EXCITATORY_NEURON);
+	sen_cs_input = s->createSpikeGeneratorGroup("Sensory_CS input", 500, EXCITATORY_NEURON);
+	sen_us_input = s->createSpikeGeneratorGroup("Sensory_US input", 500, EXCITATORY_NEURON);
 
 
 	s->setWeightUpdateParameter(_10MS, 100);
@@ -227,15 +227,15 @@ void *service(void *lpParam)
 	// make random connections with 10% probability, and random delays between 1 and 20
 	//s->connect(g1, g2, "random", 5.0f/100, 10.0f/100, 0.1f,  1, 20, SYN_PLASTIC);
 	
-	s->connect(pfc, str, "random", 2.0f/100, 10.0f/100, 0.1f,  1, 20, SYN_PLASTIC);
+	s->connect(pfc, str, "random", 2.5f/100, 10.0f/100, 0.1f, 1, 20, SYN_PLASTIC);
 
-	s->connect(sen_cs, ic_cs, "full", 3.0f/100, 10.0f/100, 1.0f, 1, 20, SYN_PLASTIC);
-	s->connect(sen_us, ic_us, "full", 3.0f/100, 10.0f/100, 1.0f, 1, 20, SYN_PLASTIC);
+	s->connect(sen_cs, ic_cs, "random", 2.5f/100, 10.0f/100, 0.18f, 1, 20, SYN_PLASTIC);
+	s->connect(sen_us, ic_us, "random", 2.5f/100, 10.0f/100, 0.18f, 1, 20, SYN_PLASTIC);
 
-	s->connect(str, da, "full", -0.5f/100, -0.5f/100, 1.0f, 1, 10, SYN_FIXED);
+	s->connect(str, da, "random", -2.0f/100, -2.0f/100, 0.16f, 1, 20, SYN_FIXED);
 
-	s->connect(ic_cs, da, "full", 1.0f/100, 1.0f/100, 1.0f, 1, 10, SYN_FIXED);
-	s->connect(ic_us, da, "full", 1.0f/100, 1.0f/100, 1.0f, 1, 10, SYN_FIXED);
+	s->connect(ic_cs, da, "random", 3.6f/100, 3.6f/100, 0.16f, 1, 20, SYN_FIXED);
+	s->connect(ic_us, da, "random", 3.6f/100, 3.6f/100, 0.16f, 1, 20, SYN_FIXED);
 
 	// 5% probability of connection
 	// Dummy synaptic weights. Dopaminergic neurons only release dopamine to the target area in the current model.
@@ -248,8 +248,8 @@ void *service(void *lpParam)
 	s->connect(sen_cs_input, sen_cs, "one-to-one", 20.0f/100, 20.0f/100, 1.0f, 1, 1, SYN_FIXED);
 	s->connect(sen_us_input, sen_us, "one-to-one", 20.0f/100, 20.0f/100, 1.0f, 1, 1, SYN_FIXED);
 
-	float COND_tAMPA=5.0, COND_tNMDA=150.0, COND_tGABAa=6.0, COND_tGABAb=150.0;
-	s->setConductances(ALL,true,COND_tAMPA,COND_tNMDA,COND_tGABAa,COND_tGABAb);
+	float COND_tAMPA = 5.0, COND_tNMDA = 150.0, COND_tGABAa = 6.0, COND_tGABAb = 150.0;
+	s->setConductances(ALL, true, COND_tAMPA, COND_tNMDA, COND_tGABAa, COND_tGABAb);
 
 	// here we define and set the properties of the STDP. 
 	float ALPHA_LTP = 0.10f/100, TAU_LTP = 20.0f, ALPHA_LTD = 0.08f/100, TAU_LTD = 40.0f;	
@@ -273,17 +273,17 @@ void *service(void *lpParam)
 	//setup random thalamic noise
 	PoissonRate pfc_input_rate(1000);
 	for (int i = 0; i < 1000; i++)
-		pfc_input_rate.rates[i] = 1.0;
+		pfc_input_rate.rates[i] = 0.6;
 	s->setSpikeRate(pfc_input, &pfc_input_rate);
 
-	PoissonRate sen_cs_input_rate(50);
-	for (int i = 0; i < 50; i++)
-		sen_cs_input_rate.rates[i] = 1.0;
+	PoissonRate sen_cs_input_rate(500);
+	for (int i = 0; i < 500; i++)
+		sen_cs_input_rate.rates[i] = 0.6;
 	s->setSpikeRate(sen_cs_input, &sen_cs_input_rate);
 	
-	PoissonRate sen_us_input_rate(50);
-	for (int i = 0; i < 50; i++)
-		sen_us_input_rate.rates[i] = 1.0;
+	PoissonRate sen_us_input_rate(500);
+	for (int i = 0; i < 500; i++)
+		sen_us_input_rate.rates[i] = 0.6;
 	s->setSpikeRate(sen_us_input, &sen_us_input_rate);
 
 	//s->setSpikeGenerator(pfc_input, (SpikeGenerator*)spikeCtrl);
@@ -330,17 +330,19 @@ int main() {
 	char sendBuf[DEFAULT_BUFLEN];
     int bufLen = DEFAULT_BUFLEN;
 	int numBytes;
-	unsigned int clientAddrLen = sizeof(SOCKADDR_IN);
 
 	bool serverLoop = false;
 	bool serviceThreadExe = false;
 	
-	// service
+	// platform specific variable
 #if (WIN32 || WIN64)
 	HANDLE serviceThread = NULL;
+	int clientAddrLen = sizeof(SOCKADDR_IN);
 #else
 	pthread_t serviceThread = 0;
+	unsigned int clientAddrLen = sizeof(SOCKADDR_IN);
 #endif
+
 	CARLsimServiceConfig serviceConfig;
 	serviceConfig.run = false;
 	serviceConfig.execute = false;
