@@ -92,12 +92,45 @@
 	#pragma comment(lib, "Ws2_32.lib")
 #endif
 
-typedef struct CARLsim_service_config_t {
+typedef struct carlsim_service_config_t {
 	volatile bool execute;
 	volatile bool run;
 	volatile bool display;
 	SOCKADDR_IN clientAddr;
 } CARLsimServiceConfig;
+
+typedef struct group_data_t {
+	unsigned int time;
+	unsigned int grpId;
+	float buf[100];
+} GroupData;
+
+class GroupController: public GroupMonitor {
+private:
+	SOCKET dataSocket;
+	SOCKADDR_IN clientAddr;
+	//float buf[BUF_LEN];
+	GroupData grpData;
+	//int bufPos;
+
+public:
+	GroupController(SOCKET ds, SOCKADDR_IN cd) {
+		dataSocket = ds;
+		clientAddr = cd;
+		//bufPos = 0;
+	}
+
+	void update(CpuSNN* s, int grpId, float* daBuffer, int n) {
+		// prepare group data
+		grpData.time = 0xFFFFFFFF;
+		grpData.grpId = grpId << 24;
+		for (int i = 0; i < 100 /* n is 100 currently */; i++)
+			grpData.buf[i] = daBuffer[i];
+
+		int numByteSent = sendto(dataSocket, (char*)&grpData, 2 * sizeof(unsigned int) + 100 * sizeof(float), NULL, (SOCKADDR*)&clientAddr, sizeof(SOCKADDR_IN));
+		printf("send out %d bytes udp data\n", numByteSent);
+	}
+};
 
 class SpikeController: public SpikeMonitor, SpikeGenerator {
 private:
@@ -142,7 +175,7 @@ public:
 				//assert(cnt != 0);
 
 				buf[bufPos] = time;
-				buf[bufPos + 1] = id | gId;
+				buf[bufPos + 1] = gId | id;
 				bufPos += 2;
 
 				// send out data if buffer is full
@@ -177,6 +210,7 @@ void *service(void *lpParam)
 	
 	SOCKET dataSocket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
 	SpikeController* spikeCtrl = new SpikeController(dataSocket, csc->clientAddr);
+	GroupController* groupCtrl = new GroupController(dataSocket, csc->clientAddr);
 
 	int pfc, sen_cs, sen_us, ic_cs, ic_us, str, da;
 	int pfc_input, sen_cs_input, sen_us_input;
@@ -227,21 +261,21 @@ void *service(void *lpParam)
 	// make random connections with 10% probability, and random delays between 1 and 20
 	//s->connect(g1, g2, "random", 5.0f/100, 10.0f/100, 0.1f,  1, 20, SYN_PLASTIC);
 	
-	s->connect(pfc, str, "random", 2.5f/100, 10.0f/100, 0.1f, 1, 20, SYN_PLASTIC);
+	s->connect(pfc, str, "random", 2.8f/100, 10.0f/100, 0.04f, 1, 10, SYN_PLASTIC);
 
-	s->connect(sen_cs, ic_cs, "random", 2.5f/100, 10.0f/100, 0.18f, 1, 20, SYN_PLASTIC);
-	s->connect(sen_us, ic_us, "random", 2.5f/100, 10.0f/100, 0.18f, 1, 20, SYN_PLASTIC);
+	s->connect(sen_cs, ic_cs, "random", 6.0f/100, 10.0f/100, 0.04f, 1, 10, SYN_PLASTIC);
+	s->connect(sen_us, ic_us, "random", 0.5f/100, 10.0f/100, 0.04f, 1, 10, SYN_PLASTIC);
 
-	s->connect(str, da, "random", -2.0f/100, -2.0f/100, 0.16f, 1, 20, SYN_FIXED);
+	s->connect(str, da, "random", -2.0f/100, -2.0f/100, 0.08f, 10, 10, SYN_FIXED);
 
-	s->connect(ic_cs, da, "random", 3.6f/100, 3.6f/100, 0.16f, 1, 20, SYN_FIXED);
-	s->connect(ic_us, da, "random", 3.6f/100, 3.6f/100, 0.16f, 1, 20, SYN_FIXED);
+	s->connect(ic_cs, da, "random", 3.6f/100, 3.6f/100, 0.08f, 10, 10, SYN_FIXED);
+	s->connect(ic_us, da, "random", 3.6f/100, 3.6f/100, 0.08f, 10, 10, SYN_FIXED);
 
 	// 5% probability of connection
 	// Dummy synaptic weights. Dopaminergic neurons only release dopamine to the target area in the current model.
-	s->connect(da, str, "random", 0.0, 0.0, 0.05f, 10, 20, SYN_FIXED);
-	s->connect(da, ic_cs, "random", 0.0, 0.0, 0.05f, 10, 20, SYN_FIXED);
-	s->connect(da, ic_us, "random", 0.0, 0.0, 0.05f, 10, 20, SYN_FIXED);
+	s->connect(da, str, "random", 0.0, 0.0, 0.02f, 1, 20, SYN_FIXED);
+	s->connect(da, ic_cs, "random", 0.0, 0.0, 0.05f, 1, 20, SYN_FIXED);
+	s->connect(da, ic_us, "random", 0.0, 0.0, 0.05f, 1, 20, SYN_FIXED);
 
 	// input connection
 	s->connect(pfc_input, pfc, "one-to-one", 20.0f/100, 20.0f/100, 1.0f,  1, 1, SYN_FIXED);
@@ -269,6 +303,10 @@ void *service(void *lpParam)
 	s->setSpikeMonitor(ic_us, spikeCtrl);
 	s->setSpikeMonitor(str, spikeCtrl);
 	s->setSpikeMonitor(da, spikeCtrl);
+
+	s->setGroupMonitor(str, groupCtrl);
+	s->setGroupMonitor(ic_cs, groupCtrl);
+	s->setGroupMonitor(ic_us, groupCtrl);
 
 	//setup random thalamic noise
 	PoissonRate pfc_input_rate(1000);
@@ -305,6 +343,7 @@ void *service(void *lpParam)
 	delete s;
 
 	delete spikeCtrl;
+	delete groupCtrl;
 	
 	CLOSE_SOCKET(dataSocket);
 

@@ -353,12 +353,14 @@ RNG_rand48* gpuRand48 = NULL;
   #define VIEW_DOTTY false
 #endif
 		showDotty   = VIEW_DOTTY;
-		numSpikeMonitor  = 0;
+		numSpikeMonitor = 0;
+		numGroupMonitor = 0;
 
 		for (int i=0; i < MAX_GRP_PER_SNN; i++) {
-			grp_Info[i].Type	 = UNKNOWN_NEURON;
-			grp_Info[i].MaxFiringRate  = UNKNOWN_NEURON_MAX_FIRING_RATE;
-			grp_Info[i].MonitorId		 = -1;
+			grp_Info[i].Type = UNKNOWN_NEURON;
+			grp_Info[i].MaxFiringRate = UNKNOWN_NEURON_MAX_FIRING_RATE;
+			grp_Info[i].MonitorId = -1;
+			grp_Info[i].GroupMonitorId = -1;
 			grp_Info[i].FiringCount1sec=0;
 			grp_Info[i].numPostSynapses 		= 0;	// default value
 			grp_Info[i].numPreSynapses 	= 0;	// default value
@@ -582,6 +584,13 @@ RNG_rand48* gpuRand48 = NULL;
 			for (int i = 0; i < numSpikeMonitor; i++) {
 				delete[] monBufferFiring[i];
 				delete[] monBufferTimeCnt[i];
+			}
+
+			for (int i = 0; i < numGroupMonitor; i++) {
+				delete [] grpDABuffer[i];
+				delete [] grp5HTBuffer[i];
+				delete [] grpAChBuffer[i];
+				delete [] grpNEBuffer[i];
 			}
 
 			if(spikeGenBits) delete[] spikeGenBits;
@@ -2666,8 +2675,15 @@ digraph G {\n\
 				} else if (currentMode == GPU_MODE) {
 					updateWeight_GPU();
 
-					// temp debug , log dopamine concentration
-					//copyGroupState(&cpuNetPtrs, &cpu_gpuNetPtrs, cudaMemcpyDeviceToHost, false, 0);
+					// TODO: build DA buffer in GPU memory so that we can retrieve data every one second instead of 10 ms
+					// Log dopamine concentration
+					copyGroupState(&cpuNetPtrs, &cpu_gpuNetPtrs, cudaMemcpyDeviceToHost, false, 0);
+					for (int i = 0; i < numGrp; i++) {
+						int monitorId = grp_Info[i].GroupMonitorId;
+						if (monitorId != -1)
+							grpDABuffer[monitorId][simTimeMs / updateInterval] = cpuNetPtrs.grpDA[i];
+					}
+						
 					//fprintf(fpGrpLog, "%f\n", cpuNetPtrs.grpDA[0]);
 				} else {
 					// something wrong
@@ -2684,6 +2700,8 @@ digraph G {\n\
 					}
 
 				updateSpikeMonitor();
+
+				updateGroupMonitor();
 
 				if (currentMode == CPU_MODE)
 					updateFiringTable();
@@ -4033,15 +4051,56 @@ digraph G {\n\
 			}
 		}
 	}
+		
+	void CpuSNN::setGroupMonitor(int _grpId, GroupMonitor* _groupMon, int _configId) {
+		if (_configId == ALL) {
+			for(int c = 0; c < numConfig; c++)
+				setGroupMonitor(_grpId, _groupMon, c);
+		} else {
+			int cGrpId = getGroupId(_grpId, _configId);
+			DBG(2, fpLog, AT, "groupMonitor Added");
 
+			// store the grpId for further reference
+			groupMonitorGrpId[numGroupMonitor] = cGrpId;
 
+			// also inform the grp that it is being monitored...
+			grp_Info[cGrpId].GroupMonitorId = numGroupMonitor;
 
+			grpBufferCallback[numGroupMonitor] = _groupMon;
 
+			// create the new buffer for keeping track of group status in the system
+			grpDABuffer[numGroupMonitor] = new float[100]; // maximum resolution 10 ms
+			grp5HTBuffer[numGroupMonitor] = new float[100]; // maximum resolution 10 ms
+			grpAChBuffer[numGroupMonitor] = new float[100]; // maximum resolution 10 ms
+			grpNEBuffer[numGroupMonitor] = new float[100]; // maximum resolution 10 ms
+			
+			memset(grpDABuffer[numGroupMonitor], 0, sizeof(float) * 100);
 
+			numGroupMonitor++;
 
+			// Finally update the size info that will be useful to see
+			// how much memory are we eating...
+			// FIXME: when running on GPU mode??
+			cpuSnnSz.monitorInfoSize += sizeof(float) * 100 * 4;
+		}
+	}
+	
+	void CpuSNN::updateGroupMonitor() {
+		// TODO: build DA, 5HT, ACh, NE buffer in GPU memory and retrieve data every one second
+		// Currently, there is no buffer in GPU side. data are retrieved at every 10 ms simulation time
 
+		for (int grpId = 0; grpId < numGrp; grpId++) {
+			int monitorId = grp_Info[grpId].GroupMonitorId;
+			
+			if(monitorId != -1) {
+				fprintf(stderr, "Group Monitor for Group %s has DA(%f)\n", grp_Info2[grpId].Name.c_str(), grpDABuffer[monitorId][0]);
 
-
+				// call the callback function
+				if (grpBufferCallback[monitorId])
+					grpBufferCallback[monitorId]->update(this, grpId, grpDABuffer[monitorId], 100);
+			}
+		}
+	}
 
 
 

@@ -280,6 +280,19 @@ class SpikeMonitor {
 		virtual void update(CpuSNN* s, int grpId, unsigned int* Nids, unsigned int* timeCnts) {};
 };
 
+//! can be used to create a custom group monitor
+/*! To retrieve group status, a group-monitoring callback mechanism is used. This mechanism allows the user to monitor
+ * basic status of a group (currently support concentrations of neuromodulator). Group monitors are registered
+ * for a group and are called automatically by the simulator every second. The parameter would be the group ID, an
+ * array of data, number of elements in that array.
+ */
+class GroupMonitor {
+	public:
+		GroupMonitor() {};
+
+		virtual void update(CpuSNN* s, int grpID, float* grpDA, int numData) {};
+};
+
 
 typedef struct {
     uint16_t	delay_index_start;
@@ -426,7 +439,8 @@ typedef struct group_info_s
 	int			SizeN;
 	int			NumTraceN;
 	short int  	MaxFiringRate; //!< this is for the monitoring mechanism, it needs to know what is the maximum firing rate in order to allocate a buffer big enough to store spikes...
-	int			MonitorId;
+	int			MonitorId;		//!< spike monitor id
+	int			GroupMonitorId; //!< group monitor id
 	float   	RefractPeriod;
 	int			CurrTimeSlice; //!< timeSlice is used by the Poisson generators in order to note generate too many or too few spikes within a window of time
 	int			NewTimeSlice;
@@ -775,8 +789,8 @@ class CpuSNN
 		 */
 		void setConductances(int _grpId, bool _enable, float _tAMPA, float _tNMDA, float _tGABAa, float _tGABAb, int _configId = ALL);
 
-		//! sets up a spike monitor registered with a callback to process the spikes, there can only be one
-		/*! SpikeMonitor per group
+		//! sets up a spike monitor registered with a callback to process the spikes, there can only be one SpikeMonitor per group
+		/*!
 		 * \param _grpId ID of the neuron group
 		 * \param _spikeMon (optional) spikeMonitor class
 		 * \param _configId (optional, deprecated) configuration id, default = ALL
@@ -802,6 +816,14 @@ class CpuSNN
 
 		void setSpikeGenerator(int grpId, SpikeGenerator* spikeGen, int configId = ALL);
 
+		//! sets up a group monitor registered with a callback to process the spikes.
+		/*!
+		 * \param _grpId ID of the neuron group
+		 * \param _spikeMon (optional) spikeMonitor class
+		 * \param _configId (optional, deprecated) configuration id, default = ALL
+		 */
+		void setGroupMonitor(int _grpId, GroupMonitor* _groupMon = NULL, int _configId = ALL);
+		
 		//! stores the pre and post synaptic neuron ids with the weight and delay
 		/*
 		 * \param _fp: file pointer
@@ -1091,6 +1113,8 @@ class CpuSNN
 
 		void updateMonitors();
 
+		void updateGroupMonitor();
+
 		void updateAfterMaxTime();
 
 
@@ -1335,7 +1359,7 @@ private:
 		int		showLogCycle;			//!< how often do we need to update the log
 
 
-		//spike monitor code...
+		// spike monitor code...
 		uint32_t	numSpikeMonitor;
 		uint32_t	monGrpId[MAX_GRP_PER_SNN];
 		uint32_t	monBufferPos[MAX_GRP_PER_SNN];
@@ -1346,7 +1370,16 @@ private:
 
 		unsigned int	numSpikeGenGrps;
 
-		//current/voltage probe code...
+		// group mointor variables
+		GroupMonitor	*grpBufferCallback[MAX_GRP_PER_SNN];
+		float			*grpDABuffer[MAX_GRP_PER_SNN];
+		float			*grp5HTBuffer[MAX_GRP_PER_SNN];
+		float			*grpAChBuffer[MAX_GRP_PER_SNN];
+		float			*grpNEBuffer[MAX_GRP_PER_SNN];
+		uint32_t		groupMonitorGrpId[MAX_GRP_PER_SNN];
+		uint32_t		numGroupMonitor;
+
+		// current/voltage probe code...
 		unsigned int	numProbe;
 		typedef struct probeParam_s {
 			uint32_t		printProbe;
