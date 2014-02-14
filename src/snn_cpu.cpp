@@ -2888,7 +2888,7 @@ digraph G {\n\
 				if (nextTime < (currTime + timeSlice)) {
 					if (nextTime >= currTime) {
 						// scheduled spike...
-						fprintf(stderr, "scheduled time = %d, nid = %d\n", nextTime, i);
+						//fprintf(stderr, "scheduled time = %d, nid = %d\n", nextTime, i);
 						pbuf->scheduleSpikeTargetGroup(i, nextTime - currTime);
 						spikeCnt++;
 					}

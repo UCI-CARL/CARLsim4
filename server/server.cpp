@@ -89,6 +89,25 @@
 #define BUF_LEN 128
 
 #if (WIN32 || WIN64)
+	#include <float.h>
+	#include <time.h>
+
+	#ifndef isnan
+		#define isnan(x) _isnan(x)
+	#endif
+
+	#ifndef isinf
+		#define isinf(x) (!_finite(x))
+	#endif
+
+	#ifndef srand48
+		#define srand48(x) srand(x)
+	#endif
+
+	#ifndef drand48
+		#define drand48() (double(rand())/RAND_MAX)
+	#endif
+
 	#pragma comment(lib, "Ws2_32.lib")
 #endif
 
@@ -128,7 +147,7 @@ public:
 			grpData.buf[i] = daBuffer[i];
 
 		int numByteSent = sendto(dataSocket, (char*)&grpData, 2 * sizeof(unsigned int) + 100 * sizeof(float), NULL, (SOCKADDR*)&clientAddr, sizeof(SOCKADDR_IN));
-		printf("send out %d bytes udp data\n", numByteSent);
+		//printf("send out %d bytes udp data\n", numByteSent);
 	}
 };
 
@@ -137,25 +156,123 @@ private:
 	SOCKET dataSocket;
 	SOCKADDR_IN clientAddr;
 	unsigned int buf[BUF_LEN];
-	//unsigned int currentTimeSlice;
 	int bufPos;
+	unsigned int pattern1[1000][4];
+	unsigned int pattern2[1000][4];
 
 public:
 	SpikeController(SOCKET ds, SOCKADDR_IN cd) {
 		dataSocket = ds;
 		clientAddr = cd;
 		bufPos = 0;
-		//for (int i = 0; i < 16; i++)
-		//	buf[i] = i;
 
-		//currentTimeSlice = 0;
+		for (int nid = 0; nid < 1000; nid++)
+			for (int j = 0; j < 4; j++) {
+				pattern1[nid][j] = 0xFFFFFFFF;
+				pattern2[nid][j] = 0xFFFFFFFF;
+			}
+	}
 
+	void generateInputPattern() {
+		unsigned int lastScheduledSpikeTime;
+		int j1, j2;
+
+		for (int nid = 0; nid < 1000; nid++) {
+			
+			lastScheduledSpikeTime = 0; j1 = 0; j2 = 0;
+			do {
+				lastScheduledSpikeTime = poissonSpike(lastScheduledSpikeTime, 1.0 / 1000, 4);
+				if (nid < 500) { // CS pattern
+					if (lastScheduledSpikeTime >= 300 && lastScheduledSpikeTime < 1300) {
+						if (lastScheduledSpikeTime < 1000) {
+							if (j1 < 4) pattern1[nid][j1++] = lastScheduledSpikeTime;
+						} else {
+							if (j2 < 4) pattern2[nid][j2++] = lastScheduledSpikeTime - 1000;
+						}
+					}	
+				} else { // US pattern
+					if (lastScheduledSpikeTime >= 800 && lastScheduledSpikeTime < 1800) {
+						if (lastScheduledSpikeTime < 1000) {
+							if (j1 < 4) pattern1[nid][j1++] = lastScheduledSpikeTime;
+						} else {
+							if (j2 < 4) pattern2[nid][j2++] = lastScheduledSpikeTime - 1000;
+						}
+					}	
+				}
+			} while (lastScheduledSpikeTime < 2000); // two seconds 
+		}
+
+		for (int nid = 0; nid < 1000; nid++) {
+			for (int j = 0; j < 4; j++)
+				printf("%u ", pattern1[nid][j]);
+			
+			for (int j = 0; j < 4; j++) 
+				printf("%u ", pattern2[nid][j]);
+			
+			printf("\n");
+		}
 	}
 
 	// nextSpikeTime is called every one second (simulation time)
 	unsigned int nextSpikeTime(CpuSNN* s, int grpId, int nid, unsigned int currentTime, unsigned int lastScheduledSpikeTime) {
-		//currentTimeSlice = currentTime;
-		return 0xFFFFFFFF;
+		unsigned int tentativeSpikeTime = poissonSpike(lastScheduledSpikeTime, 0.8 / 1000, 8);
+
+		//if (grpId == 7 && currentTime / 1000 % 4 == 0) {
+		//	if (nid < 500) { // CS
+		//		if (tentativeSpikeTime >= currentTime + 300) // replace it
+		//			for (int j = 0; j < 4; j++) {
+		//				if (pattern1[nid][j] == 0xFFFFFFFF)
+		//					tentativeSpikeTime = 0xFFFFFFFF;
+		//				else if (pattern1[nid][j] + currentTime > lastScheduledSpikeTime) {
+		//					tentativeSpikeTime = pattern1[nid][j] + currentTime;
+		//					break;
+		//				}
+		//			}
+		//	} else { // US
+		//		if (tentativeSpikeTime >= currentTime + 800) // replace it
+		//			for (int j = 0; j < 4; j++)
+		//				if (pattern1[nid][j] == 0xFFFFFFFF)
+		//					tentativeSpikeTime = 0xFFFFFFFF;
+		//				else if (pattern1[nid][j] + currentTime > lastScheduledSpikeTime) {
+		//					tentativeSpikeTime = pattern1[nid][j] + currentTime;
+		//					break;
+		//				}
+		//	}
+		//}
+
+		//if (grpId == 7 && currentTime / 1000 % 4 == 1) {
+		//	if (nid < 500) { // CS
+		//		if (tentativeSpikeTime < currentTime + 300) // replace it
+		//			for (int j = 0; j < 4; j++)
+		//				if (pattern2[nid][j] == 0xFFFFFFFF)
+		//					tentativeSpikeTime = 0xFFFFFFFF;
+		//				else if (pattern2[nid][j] + currentTime > lastScheduledSpikeTime) {
+		//					tentativeSpikeTime = pattern2[nid][j] + currentTime;
+		//					break;
+		//				}
+		//	} else { // US
+		//		if (tentativeSpikeTime < currentTime + 800) // replace it
+		//			for (int j = 0; j < 4; j++)
+		//				if (pattern2[nid][j] == 0xFFFFFFFF)
+		//					tentativeSpikeTime = 0xFFFFFFFF;
+		//				else if (pattern2[nid][j] + currentTime > lastScheduledSpikeTime) {
+		//					tentativeSpikeTime = pattern2[nid][j] + currentTime;
+		//					break;
+		//				}
+		//	}
+		//}
+		
+		if (grpId == 8 && (currentTime / 1000) % 4 == 0 && tentativeSpikeTime >= currentTime + 210 && lastScheduledSpikeTime < currentTime + 200) {
+			if (nid % 10 == 1)
+				tentativeSpikeTime = currentTime + 200 + nid % 9;
+		}
+
+		if (grpId == 9 && (currentTime / 1000) % 4 == 0 && tentativeSpikeTime >= currentTime + 710 && lastScheduledSpikeTime < currentTime + 700) {
+			if (nid % 10 == 1)
+				tentativeSpikeTime = currentTime + 700 + nid % 9;
+		}
+
+		return tentativeSpikeTime;
 	}
 
 	// update is called every one second (simulation time)
@@ -181,7 +298,7 @@ public:
 				// send out data if buffer is full
 				if (bufPos >= BUF_LEN) {
 					int numByteSent = sendto(dataSocket, (char*)buf, BUF_LEN * sizeof(unsigned int), NULL, (SOCKADDR*)&clientAddr, sizeof(SOCKADDR_IN));
-					printf("send out %d bytes udp data on port %d\n", numByteSent, ntohs(clientAddr.sin_port));
+					//printf("send out %d bytes udp data on port %d\n", numByteSent, ntohs(clientAddr.sin_port));
 
 					bufPos = 0;
 				}
@@ -191,11 +308,31 @@ public:
 		// send out the rest of data
 		if (bufPos > 0) {
 			numByteSent = sendto(dataSocket, (char*)buf, bufPos * sizeof(unsigned int), NULL, (SOCKADDR*)&clientAddr, sizeof(SOCKADDR_IN));
-			printf("send out %d bytes udp data on port %d\n", numByteSent, ntohs(clientAddr.sin_port));
+			//printf("send out %d bytes udp data on port %d\n", numByteSent, ntohs(clientAddr.sin_port));
 		}
 
 		bufPos = 0;
 		//buf[0] = currentTimeSlice++;
+	}
+
+private:
+	unsigned int poissonSpike(unsigned int currTime, float frate, int refractPeriod)
+	{
+		bool done = false;
+		unsigned int nextTime = 0;
+		assert(refractPeriod > 0); // refractory period must be 1 or greater, 0 means could have multiple spikes specified at the same time.
+		static int cnt = 0;
+		while(!done) {
+			float randVal = drand48();
+			unsigned int tmpVal  = -log(randVal)/frate;
+			nextTime = currTime + tmpVal;
+			//fprintf(stderr, "%d: next random = %f, frate = %f, currTime = %d, nextTime = %d tmpVal = %d\n", cnt++, randVal, frate, currTime, nextTime, tmpVal);
+			if ((nextTime - currTime) >= (unsigned) refractPeriod)
+				done = true;
+		}
+
+		assert(nextTime != 0);
+		return nextTime;
 	}
 };
 
@@ -211,6 +348,7 @@ void *service(void *lpParam)
 	SOCKET dataSocket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
 	SpikeController* spikeCtrl = new SpikeController(dataSocket, csc->clientAddr);
 	GroupController* groupCtrl = new GroupController(dataSocket, csc->clientAddr);
+	spikeCtrl->generateInputPattern();
 
 	int pfc, sen_cs, sen_us, ic_cs, ic_us, str, da;
 	int pfc_input, sen_cs_input, sen_us_input;
@@ -261,10 +399,10 @@ void *service(void *lpParam)
 	// make random connections with 10% probability, and random delays between 1 and 20
 	//s->connect(g1, g2, "random", 5.0f/100, 10.0f/100, 0.1f,  1, 20, SYN_PLASTIC);
 	
-	s->connect(pfc, str, "random", 2.8f/100, 10.0f/100, 0.04f, 1, 10, SYN_PLASTIC);
+	s->connect(pfc, str, "random", 5.0f/100, 10.0f/100, 0.04f, 1, 10, SYN_PLASTIC);
 
-	s->connect(sen_cs, ic_cs, "random", 6.0f/100, 10.0f/100, 0.04f, 1, 10, SYN_PLASTIC);
-	s->connect(sen_us, ic_us, "random", 0.5f/100, 10.0f/100, 0.04f, 1, 10, SYN_PLASTIC);
+	s->connect(sen_cs, ic_cs, "random", 3.0f/100, 10.0f/100, 0.04f, 1, 10, SYN_PLASTIC);
+	s->connect(sen_us, ic_us, "random", 6.5f/100, 10.0f/100, 0.04f, 1, 10, SYN_PLASTIC);
 
 	s->connect(str, da, "random", -2.0f/100, -2.0f/100, 0.08f, 10, 10, SYN_FIXED);
 
@@ -273,9 +411,9 @@ void *service(void *lpParam)
 
 	// 5% probability of connection
 	// Dummy synaptic weights. Dopaminergic neurons only release dopamine to the target area in the current model.
-	s->connect(da, str, "random", 0.0, 0.0, 0.02f, 1, 20, SYN_FIXED);
-	s->connect(da, ic_cs, "random", 0.0, 0.0, 0.05f, 1, 20, SYN_FIXED);
-	s->connect(da, ic_us, "random", 0.0, 0.0, 0.05f, 1, 20, SYN_FIXED);
+	s->connect(da, str, "random", 0.0, 0.0, 0.04f, 1, 20, SYN_FIXED);
+	s->connect(da, ic_cs, "random", 0.0, 0.0, 0.1f, 1, 20, SYN_FIXED);
+	s->connect(da, ic_us, "random", 0.0, 0.0, 0.08f, 1, 20, SYN_FIXED);
 
 	// input connection
 	s->connect(pfc_input, pfc, "one-to-one", 20.0f/100, 20.0f/100, 1.0f,  1, 1, SYN_FIXED);
@@ -286,7 +424,7 @@ void *service(void *lpParam)
 	s->setConductances(ALL, true, COND_tAMPA, COND_tNMDA, COND_tGABAa, COND_tGABAb);
 
 	// here we define and set the properties of the STDP. 
-	float ALPHA_LTP = 0.10f/100, TAU_LTP = 20.0f, ALPHA_LTD = 0.08f/100, TAU_LTD = 40.0f;	
+	float ALPHA_LTP = 0.10f/100, TAU_LTP = 20.0f, ALPHA_LTD = 0.15f/100, TAU_LTD = 20.0f;	
 	s->setSTDP(str, true, true, ALPHA_LTP, TAU_LTP, ALPHA_LTD, TAU_LTD);
 	s->setSTDP(ic_cs, true, true, ALPHA_LTP, TAU_LTP, ALPHA_LTD, TAU_LTD);
 	s->setSTDP(ic_us, true, true, ALPHA_LTP, TAU_LTP, ALPHA_LTD, TAU_LTD);
@@ -309,24 +447,24 @@ void *service(void *lpParam)
 	s->setGroupMonitor(ic_us, groupCtrl);
 
 	//setup random thalamic noise
-	PoissonRate pfc_input_rate(1000);
-	for (int i = 0; i < 1000; i++)
-		pfc_input_rate.rates[i] = 0.6;
-	s->setSpikeRate(pfc_input, &pfc_input_rate);
+	//PoissonRate pfc_input_rate(1000);
+	//for (int i = 0; i < 1000; i++)
+	//	pfc_input_rate.rates[i] = 1.0;
+	//s->setSpikeRate(pfc_input, &pfc_input_rate);
 
-	PoissonRate sen_cs_input_rate(500);
-	for (int i = 0; i < 500; i++)
-		sen_cs_input_rate.rates[i] = 0.6;
-	s->setSpikeRate(sen_cs_input, &sen_cs_input_rate);
-	
-	PoissonRate sen_us_input_rate(500);
-	for (int i = 0; i < 500; i++)
-		sen_us_input_rate.rates[i] = 0.6;
-	s->setSpikeRate(sen_us_input, &sen_us_input_rate);
+	//PoissonRate sen_cs_input_rate(500);
+	//for (int i = 0; i < 500; i++)
+	//	sen_cs_input_rate.rates[i] = 1.0;
+	//s->setSpikeRate(sen_cs_input, &sen_cs_input_rate);
+	//
+	//PoissonRate sen_us_input_rate(500);
+	//for (int i = 0; i < 500; i++)
+	//	sen_us_input_rate.rates[i] = 1.0;
+	//s->setSpikeRate(sen_us_input, &sen_us_input_rate);
 
-	//s->setSpikeGenerator(pfc_input, (SpikeGenerator*)spikeCtrl);
-	//s->setSpikeGenerator(sen_cs_input, (SpikeGenerator*)spikeCtrl);
-	//s->setSpikeGenerator(sen_us_input, (SpikeGenerator*)spikeCtrl);
+	s->setSpikeGenerator(pfc_input, (SpikeGenerator*)spikeCtrl);
+	s->setSpikeGenerator(sen_cs_input, (SpikeGenerator*)spikeCtrl);
+	s->setSpikeGenerator(sen_us_input, (SpikeGenerator*)spikeCtrl);
 
 	//run for 60 seconds
 	while (csc->execute) {
