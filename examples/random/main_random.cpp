@@ -58,7 +58,7 @@ int main()
 	int gin=s.createSpikeGeneratorGroup("input",N*0.1,EXCITATORY_NEURON);
 
 	// make random connections with 10% probability
-//	s.connect(g2,g1,"random", -1.0f/100, -1.0f/100, 0.1f, 1, 1, SYN_FIXED);
+	s.connect(g2,g1,"random", -1.0f/100, -1.0f/100, 0.1f, 1, 1, SYN_FIXED);
 	// make random connections with 10% probability, and random delays between 1 and 20
 //	s.connect(g1,g2,"random", +0.25f/100, 0.5f/100, 0.1f,  1, 20, SYN_PLASTIC);
 //	s.connect(g1,g1,"random", +6.0f/100, 10.0f/100, 0.1f,  1, 20, SYN_PLASTIC);
@@ -67,7 +67,9 @@ int main()
 //	s.connect(gin,g1,"random", +100.0f/100, 100.0f/100, 0.05f,  1, 20, SYN_FIXED);
 
 	float COND_tAMPA=5.0, COND_tNMDA=150.0, COND_tGABAa=6.0, COND_tGABAb=150.0;
-//	s.setConductances(ALL,true,COND_tAMPA,COND_tNMDA,COND_tGABAa,COND_tGABAb);
+	s.setConductances(ALL,true,COND_tAMPA,COND_tNMDA,COND_tGABAa,COND_tGABAb,ALL);
+
+	s.runNetwork();
 
 	// here we define and set the properties of the STDP. 
 	float ALPHA_LTP = 0.10f/100, TAU_LTP = 20.0f, ALPHA_LTD = 0.12f/100, TAU_LTD = 20.0f;	

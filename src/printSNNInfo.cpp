@@ -50,6 +50,25 @@ extern MTRand_closed getRandClosed;
 extern MTRand	getRand;
 extern RNG_rand48* gpuRand48;
 
+
+void CpuSNN::printConnection(const std::string& fname) {
+	FILE *fp = fopen(fname.c_str(), "w");
+	printConnection(fp);
+	fclose(fp);
+}
+
+void CpuSNN::printConnection(FILE *fp) {
+	printPostConnection(fp);
+	printPreConnection(fp);
+}
+
+//! print the connection info of grpId
+void CpuSNN::printConnection(int grpId, FILE  *fp) {
+	printPostConnection(grpId, fp);
+	printPreConnection(grpId, fp);
+}
+
+
 void CpuSNN::printMemoryInfo(FILE *fp)
 {
   checkNetworkBuilt();
@@ -99,6 +118,71 @@ void CpuSNN::printState(const char *str)
   }
 }
 
+void CpuSNN::printTuningLog()
+{
+  if (fpTuningLog) {
+    fprintf(fpTuningLog, "Generating Tuning log %d\n", cntTuning);
+    printParameters(fpTuningLog);
+    cntTuning++;
+  }
+}
+
+
+void CpuSNN::printConnectionInfo(FILE *fp)
+{
+  grpConnectInfo_t* newInfo = connectBegin;
+
+  //    fprintf(fp, "\nGlobal STDP Info: \n");
+  //    fprintf(fp, "------------\n");
+  //    fprintf(fp, " alpha_ltp: %f\n tau_ltp: %f\n alpha_ldp: %f\n tau_ldp: %f\n", ALPHA_LTP, TAU_LTP, ALPHA_LTD, TAU_LTD);
+
+  fprintf(fp, "\nConnections: \n");
+  fprintf(fp, "------------\n");
+  while(newInfo) {
+    bool synWtType  = GET_FIXED_PLASTIC(newInfo->connProp);
+    fprintf(fp, " // (%s => %s): numPostSynapses=%d, numPreSynapses=%d, iWt=%3.3f, mWt=%3.3f, ty=%x, maxD=%d, minD=%d %s\n",
+      grp_Info2[newInfo->grpSrc].Name.c_str(), grp_Info2[newInfo->grpDest].Name.c_str(),
+      newInfo->numPostSynapses, newInfo->numPreSynapses, newInfo->initWt,   newInfo->maxWt,
+      newInfo->connProp, newInfo->maxDelay, newInfo->minDelay, (synWtType == SYN_PLASTIC)?"(*)":"");
+
+    //      weights of input spike generating layers need not be observed...
+    //          bool synWtType  = GET_FIXED_PLASTIC(newInfo->connProp);
+    //      if ((synWtType == SYN_PLASTIC) && (enableSimLogs))
+    //         storeWeights(newInfo->grpDest, newInfo->grpSrc, "logs");
+    newInfo = newInfo->next;
+  }
+
+  fflush(fp);
+}
+
+void CpuSNN::printConnectionInfo2(FILE *fpg)
+{
+  grpConnectInfo_t* newInfo = connectBegin;
+
+  fprintf(fpg, "#Connection Information \n");
+  fprintf(fpg, "#(e.g. from => to : approx. # of post (numPostSynapses) : approx. # of pre-synaptic (numPreSynapses) : weights.. : type plastic or fixed : max and min axonal delay\n");
+  while(newInfo) {
+    bool synWtType	= GET_FIXED_PLASTIC(newInfo->connProp);
+    fprintf(fpg, " %d => %d : %s => %s : numPostSynapses %d : numPreSynapses %d : initWeight %f : maxWeight %3.3f : type %s : maxDelay %d : minDelay %d\n",
+	    newInfo->grpSrc, newInfo->grpDest, grp_Info2[newInfo->grpSrc].Name.c_str(), grp_Info2[newInfo->grpDest].Name.c_str(),
+	    newInfo->numPostSynapses, newInfo->numPreSynapses, newInfo->initWt,   newInfo->maxWt,
+	    (synWtType == SYN_PLASTIC)?"plastic":"fixed", newInfo->maxDelay, newInfo->minDelay);
+    newInfo = newInfo->next;
+  }
+  fprintf(fpg, "\n");
+  fflush(fpg);
+}
+
+
+void CpuSNN::printGroupInfo(std::string& strName)
+{
+  fprintf(stderr, "String Name : %s\n", strName.c_str());
+  for(int g=0; g < numGrp; g++) {
+    if(grp_Info[g].Type&POISSON_NEURON)
+      fprintf(stderr, "Poisson Group %d: %s\n", g, grp_Info2[g].Name.c_str());
+  }
+}
+
 void CpuSNN::printGroupInfo(FILE* fp)
 {
   //FILE* fpg=fopen("group_info.txt", "w");
@@ -143,64 +227,20 @@ void CpuSNN::printGroupInfo2(FILE* fpg)
   fprintf(fpg, "#Group Information\n");
   for(int g=0; g < numGrp; g++) {
     fprintf(fpg, "group %d: name %s : type %s %s %s %s %s: size %d : start %d : end %d \n",
-	    g, grp_Info2[g].Name.c_str(),
-	    (grp_Info[g].Type&POISSON_NEURON) ? "poisson " : "",
-	    (grp_Info[g].Type&TARGET_AMPA) ? "AMPA" : "",
-	    (grp_Info[g].Type&TARGET_NMDA) ? "NMDA" : "",
-	    (grp_Info[g].Type&TARGET_GABAa) ? "GABAa" : "",
-	    (grp_Info[g].Type&TARGET_GABAb) ? "GABAb" : "",
-	    grp_Info[g].SizeN,
-	    grp_Info[g].StartN,
-	    grp_Info[g].EndN);
+      g, grp_Info2[g].Name.c_str(),
+      (grp_Info[g].Type&POISSON_NEURON) ? "poisson " : "",
+      (grp_Info[g].Type&TARGET_AMPA) ? "AMPA" : "",
+      (grp_Info[g].Type&TARGET_NMDA) ? "NMDA" : "",
+      (grp_Info[g].Type&TARGET_GABAa) ? "GABAa" : "",
+      (grp_Info[g].Type&TARGET_GABAb) ? "GABAb" : "",
+      grp_Info[g].SizeN,
+      grp_Info[g].StartN,
+      grp_Info[g].EndN);
   }
   fprintf(fpg, "\n");
   fflush(fpg);
 }
 
-void CpuSNN::printConnectionInfo2(FILE *fpg)
-{
-  grpConnectInfo_t* newInfo = connectBegin;
-
-  fprintf(fpg, "#Connection Information \n");
-  fprintf(fpg, "#(e.g. from => to : approx. # of post (numPostSynapses) : approx. # of pre-synaptic (numPreSynapses) : weights.. : type plastic or fixed : max and min axonal delay\n");
-  while(newInfo) {
-    bool synWtType	= GET_FIXED_PLASTIC(newInfo->connProp);
-    fprintf(fpg, " %d => %d : %s => %s : numPostSynapses %d : numPreSynapses %d : initWeight %f : maxWeight %3.3f : type %s : maxDelay %d : minDelay %d\n",
-	    newInfo->grpSrc, newInfo->grpDest, grp_Info2[newInfo->grpSrc].Name.c_str(), grp_Info2[newInfo->grpDest].Name.c_str(),
-	    newInfo->numPostSynapses, newInfo->numPreSynapses, newInfo->initWt,   newInfo->maxWt,
-	    (synWtType == SYN_PLASTIC)?"plastic":"fixed", newInfo->maxDelay, newInfo->minDelay);
-    newInfo = newInfo->next;
-  }
-  fprintf(fpg, "\n");
-  fflush(fpg);
-}
-
-void CpuSNN::printConnectionInfo(FILE *fp)
-{
-  grpConnectInfo_t* newInfo = connectBegin;
-
-  //		fprintf(fp, "\nGlobal STDP Info: \n");
-  //		fprintf(fp, "------------\n");
-  //		fprintf(fp, " alpha_ltp: %f\n tau_ltp: %f\n alpha_ldp: %f\n tau_ldp: %f\n", ALPHA_LTP, TAU_LTP, ALPHA_LTD, TAU_LTD);
-
-  fprintf(fp, "\nConnections: \n");
-  fprintf(fp, "------------\n");
-  while(newInfo) {
-    bool synWtType	= GET_FIXED_PLASTIC(newInfo->connProp);
-    fprintf(fp, " // (%s => %s): numPostSynapses=%d, numPreSynapses=%d, iWt=%3.3f, mWt=%3.3f, ty=%x, maxD=%d, minD=%d %s\n",
-	    grp_Info2[newInfo->grpSrc].Name.c_str(), grp_Info2[newInfo->grpDest].Name.c_str(),
-	    newInfo->numPostSynapses, newInfo->numPreSynapses, newInfo->initWt,   newInfo->maxWt,
-	    newInfo->connProp, newInfo->maxDelay, newInfo->minDelay, (synWtType == SYN_PLASTIC)?"(*)":"");
-
-    // 			weights of input spike generating layers need not be observed...
-    //          bool synWtType	= GET_FIXED_PLASTIC(newInfo->connProp);
-    //			if ((synWtType == SYN_PLASTIC) && (enableSimLogs))
-    //			   storeWeights(newInfo->grpDest, newInfo->grpSrc, "logs");
-    newInfo = newInfo->next;
-  }
-
-  fflush(fp);
-}
 
 void CpuSNN::printParameters(FILE* fp)
 {
@@ -209,14 +249,7 @@ void CpuSNN::printParameters(FILE* fp)
   printConnectionInfo(fp);
 }
 
-void CpuSNN::printGroupInfo(std::string& strName)
-{
-  fprintf(stderr, "String Name : %s\n", strName.c_str());
-  for(int g=0; g < numGrp; g++)	{
-    if(grp_Info[g].Type&POISSON_NEURON)
-      fprintf(stderr, "Poisson Group %d: %s\n", g, grp_Info2[g].Name.c_str());
-  }
-}
+
 
 // print all post-connections...
 void CpuSNN::printPostConnection(FILE *fp)
@@ -432,4 +465,36 @@ void CpuSNN::printNeuronState(int grpId, FILE*fp)
   fprintf(fp, "TotalSpikes [grp=%d, %s] = %d\n", grpId, grp_Info2[grpId].Name.c_str(), totSpikes);
   fprintf(fp, "\n");
   fflush(fp);
+}
+
+//! used in showStatus
+void CpuSNN::printWeight(int grpId, const char *str)
+{
+  int stg, endg;
+  if(grpId == -1) {
+    stg  = 0;
+    endg = numGrp;
+  }
+  else {
+    stg = grpId;
+    endg = grpId+1;
+  }
+
+  for(int g=stg; (g < endg) ; g++) {
+    fprintf(stderr, "%s", str);
+    if (!grp_Info[g].FixedInputWts) {
+      //fprintf(stderr, "w=\t");
+      if (currentMode == GPU_MODE) {
+  copyWeightState (&cpuNetPtrs, &cpu_gpuNetPtrs, cudaMemcpyDeviceToHost, false, g);
+      }
+      int i=grp_Info[g].StartN;
+      unsigned int offset = cumulativePre[i];
+      //fprintf(stderr, "time=%d, Neuron synaptic weights %d:\n", simTime, i);
+      for(int j=0; j < Npre[i]; j++) {
+  //fprintf(stderr, "w=%f c=%f spt=%d\t", wt[offset+j], wtChange[offset+j], synSpikeTime[offset+j]);
+  fprintf(stdout, "%1.3f,%1.3f\t", cpuNetPtrs.wt[offset+j], cpuNetPtrs.wtChange[offset+j]);
+      }
+      fprintf(stdout, "\n");
+    }
+  }
 }
