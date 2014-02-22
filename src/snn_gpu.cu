@@ -3005,35 +3005,6 @@ void CpuSNN::copyFiringInfo_GPU()
   //getchar();
 }
 
-// initialize the probes to appropriate values
-void CpuSNN::gpuProbeInit (network_ptr_t* dest) 
-{
-  if(dest->allocated || numProbe==0)
-    return;
-
-  probeParam_t* n = neuronProbe;
-  uint32_t* probeId;
-  probeId = (uint32_t*) calloc(numProbe, sizeof(uint32_t)*net_Info.numN);
-  int cnt = 0;
-  while(n) {
-    int nid  = n->nid;
-    probeId[nid] = cnt++;
-    n = n->next;
-  }
-  assert(cnt == numProbe);
-  // allocate the destination probes on the GPU
-  CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->probeId, sizeof(uint32_t)*net_Info.numN*numProbe));
-  CUDA_CHECK_ERRORS( cudaMemcpy( dest->probeId, &probeId, sizeof(uint32_t)*net_Info.numN*numProbe, cudaMemcpyHostToDevice));
-  // allocate and assign the probes
-  CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->probeV, 	   1000*sizeof(float)*numProbe));
-  CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->probeI, 	   1000*sizeof(float)*numProbe));
-
-  // homeostasis parameters
-  CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->probeHomeoFreq, 1000*sizeof(float)*numProbe));
-  CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->probeBaseFreq,  1000*sizeof(float)*numProbe));
-
-  free(probeId);
-}
 
 void CpuSNN::allocateNetworkParameters()
 {
@@ -3051,7 +3022,6 @@ void CpuSNN::allocateNetworkParameters()
   //		net_Info.numNoise  = numNoise;
   net_Info.maxSpikesD2 = maxSpikesD2;
   net_Info.maxSpikesD1 = maxSpikesD1;
-  net_Info.numProbe = numProbe;
   net_Info.sim_with_fixedwts = sim_with_fixedwts;
   net_Info.sim_with_conductances = sim_with_conductances;
   net_Info.sim_with_stdp = sim_with_stdp;
@@ -3185,7 +3155,6 @@ void CpuSNN::allocateSNN_GPU(int ithGPU)
   // this table is useful for quick evaluation of the position of fired neuron
   // given a sequence of bits denoting the firing..
   initTableQuickSynId();
-  gpuProbeInit(&cpu_gpuNetPtrs);
 
   copyConnections(&cpu_gpuNetPtrs,  cudaMemcpyHostToDevice, 1);
   cudaMemGetInfo(&avail,&total);
