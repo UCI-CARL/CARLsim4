@@ -2636,7 +2636,8 @@ void CpuSNN::printTestVarInfo(FILE* fp, char* testString, bool test1, bool test2
 }
 
 
-void CpuSNN::deleteObjectsGPU() {
+// TODO FIXME there's more...
+void CpuSNN::deleteObjects_GPU() {
   if (testVar!=NULL) delete[] testVar;
   if (testVar2!=NULL) delete[] testVar2;
 

@@ -498,3 +498,47 @@ void CpuSNN::printWeight(int grpId, const char *str)
     }
   }
 }
+
+// show the status of the simulator...
+// when onlyCnt is set, we print the actual count instead of frequency of firing
+void CpuSNN::showStatus(int simType)
+{
+  DBG(2, fpLog, AT, "showStatus() called");
+
+  printState("showStatus\n");
+
+  if(simType == GPU_MODE) {
+    showStatus_GPU();
+    return;
+  }
+
+  FILE* fpVal[2];
+  fpVal[0] = fpLog;
+  fpVal[1] = fpProgLog;
+
+  for(int k=0; k < 2; k++) {
+
+    if(k==0)
+      printWeight(-1);
+
+    fprintf(fpVal[k], "(time=%lld) =========\n\n", (unsigned long long) simTimeSec);
+
+
+#if REG_TESTING
+    // if the overall firing rate is very low... then report error...
+    if((spikeCountAll1sec*1.0f/numN) < 1.0) {
+      fprintf(fpVal[k], " SIMULATION WARNING !!! Very Low Firing happened...\n");
+      fflush(fpVal[k]);
+    }
+#endif
+
+    fflush(fpVal[k]);
+  }
+
+#if REG_TESTING
+  if(spikeCountAll1sec == 0) {
+    fprintf(stderr, " SIMULATION ERROR !!! Very Low or no firing happened...\n");
+    //exit(-1);
+  }
+#endif
+}

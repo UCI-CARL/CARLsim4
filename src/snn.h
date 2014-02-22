@@ -175,8 +175,7 @@ inline bool isInhibitoryNeuron (unsigned int& nid, unsigned int& numNInhPois, un
 //!< Used for in the function getConnectionId
 #define CHECK_CONNECTION_ID(n,total) { assert(n >= 0); assert(n < total); }
 
-//Various callback functions
-
+// forward-declaration
 class CpuSNN;
 
 //! used for fine-grained control over spike generation, using a callback mechanism
@@ -464,10 +463,10 @@ typedef struct grpConnInfo_s {
 
 
 
+
 /// **************************************************************************************************************** ///
 /// CPUSNN CORE CLASS
 /// **************************************************************************************************************** ///
-
 
 /*!
  * \brief Contains all of CARLsim's core functionality
@@ -475,18 +474,20 @@ typedef struct grpConnInfo_s {
  * This is a more elaborate description of our main class.
  */
 class CpuSNN {
+
+/// **************************************************************************************************************** ///
+/// PUBLIC METHODS
+/// **************************************************************************************************************** ///
 public:
 	CpuSNN(const std::string& _name, int _numConfig=1, int randomize=0, int mode=CPU_MODE);
 	~CpuSNN();
 
+	// +++++ PUBLIC PROPERTIES ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 	const static unsigned int MAJOR_VERSION = 2; //!< major release version, as in CARLsim X
 	const static unsigned int MINOR_VERSION = 2; //!< minor release version, as in CARLsim 2.X
 
 
-	/// ************************************************************************************************************ ///
-	/// PUBLIC METHODS: SETTING UP A SIMULATION
-	/// ************************************************************************************************************ ///
-
+	// +++++ PUBLIC METHODS: SETTING UP A SIMULATION ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
 	//! make connection of type "random","full","one-to-one" from each neuron in grpId1 to neurons in grpId2
 	int connect(int gIDpre, int gIDpost, const std::string& _type, float initWt, float maxWt, float _C,
@@ -517,24 +518,13 @@ public:
 
 
 
-	/// ************************************************************************************************************ ///
-	/// PUBLIC METHODS: RUNNING A SIMULATION
-	/// ************************************************************************************************************ ///
+	// +++++ PUBLIC METHODS: RUNNING A SIMULATION +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
 
 
-	/// ************************************************************************************************************ ///
-	/// PUBLIC METHODS: INTERACTING WITH A SIMULATION
-	/// ************************************************************************************************************ ///
+	// +++++ PUBLIC METHODS: INTERACTING WITH A SIMULATION ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
-	void copyGrpInfo_GPU(); //!< Used to copy grp_info to gpu for setSTDP, setSTP, and setHomeostasis
-
-	//! Copies synaptic weight information, neuronal state information, and STP state information from the host
-	//! to the device (GPU).
-	void copyUpdateVariables_GPU();
-
-	//added this for Jay's functionality -- KDC
-	//TAGS:TODO: may need to make it work for different configurations. -- KDC
+	//TODO: may need to make it work for different configurations. -- KDC
 	/*!
  	 * \brief Returns pointer to nSpikeCnt, which is a 1D array of the number of spikes every neuron in the group
 	 *  has fired.  Takes the grpID and the simulation mode (CPU_MODE or GPU_MODE) as arguments.
@@ -543,16 +533,12 @@ public:
 
 	void readNetwork(FILE* fid);						//!< reads the network state from file
 
-	// This function calls the callback connect function for a particular
-	// connection (or number of identical configurations of a connection).
-	// This function can only be used for fixed weights and for connections
-	// of type CONN_USER_DEFINED.  Only the weights are changed, not the 
-	// maxWts, delays, or the connected values. -- KDC
 	// TODO: figure out scope; is this a user function?
 	/*!
 	 * \brief Reassigns fixed weights to values passed into the function in a single 1D float matrix called
 	 * weightMatrix.  The user passes the connection ID (connectID), the weightMatrix, the matrixSize, and 
-	 * configuration ID (configID).  This function only works for fixed synapses.
+	 * configuration ID (configID).  This function only works for fixed synapses and for connections of type
+	 * CONN_USER_DEFINED. Only the weights are changed, not the maxWts, delays, or connected values
 	 */
 	void reassignFixedWeights(int connectId, float weightMatrix [], int matrixSize, int configId = ALL);
 
@@ -579,13 +565,12 @@ public:
 
 
 
-	/// ************************************************************************************************************ ///
-	/// PUBLIC METHODS: PLOTTING / LOGGING
-	/// ************************************************************************************************************ ///
+	// +++++ PUBLIC METHODS: LOGGING / PLOTTING +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
 	void setLogCycle(unsigned int _cnt, int mode=0, FILE *fp=NULL);
 
 	// NOTE: all these printer functions should be in printSNNInfo.cpp
+	// FIXME: are any of these actually supposed to be public??
 	void printConnection(const std::string& fname);
 	void printConnection(FILE *fp=stdout);
 	void printConnection(int grpId, FILE  *fp=stdout); //!< print the connection info of grpId
@@ -614,21 +599,7 @@ public:
 	void printTuningLog();
 
 
-
-	// added this to output regular neuron state variables
-	// to a binary file at every timestep. -- KDC
-	/*!
-	 * \brief Debugging function that outputs regular neuron state variables to a binary file at every timestep.
-	 * Warning: drastically reduces speed of simulation.  Only use for debugging purposes.
-	 */
-	// void printNeuronStateBinary(std::string fname, int grpId, int configId=0, int count=-1);
-
-
-
-
-	/// ************************************************************************************************************ ///
-	/// PUBLIC METHODS: GETTERS / SETTERS
-	/// ************************************************************************************************************ ///
+	// +++++ PUBLIC METHODS: GETTERS / SETTERS ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
 	grpConnectInfo_t* getConnectInfo(int connectId, int configId=0); //!< required for homeostasis
 	int  getConnectionId(int connId, int configId);
@@ -685,9 +656,7 @@ public:
 
 
 
-
-
-
+// TODO........
 
 
   /*!
@@ -742,20 +711,21 @@ public:
 
 
 
- 
-
-
-
-
-
 /// **************************************************************************************************************** ///
 /// PRIVATE METHODS
 /// **************************************************************************************************************** ///
 
 private:
+	// +++++ CPU MODE +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 	void CpuSNNInit(unsigned int nNeur, unsigned int nPostSyn, unsigned int nPreSyn, unsigned int maxDelay);
 
-	//conection related methods
+	int  addSpikeToTable(int id, int g); //!< add the entry that the current neuron has spiked
+
+	void buildGroup(int groupId);
+	void buildNetwork();
+	void buildPoissonGroup(int groupId);
+
+	void compactConnections(); //!< minimize any other wastage in that array by compacting the store
 	void connectFromMatrix(SparseWeightDelayMatrix* mat, int connProp);
 	void connectFull(grpConnectInfo_t* info);
 	void connectOneToOne(grpConnectInfo_t* info);
@@ -763,228 +733,141 @@ private:
 	void connectUserDefined(grpConnectInfo_t* info);
 
 	void deleteObjects();			//!< deallocates all used data structures in snn_cpu.cpp
-	void deleteObjectsGPU();		//!< deallocates all used data structures in snn_gpu.cu
 
-	float getWeights(int connProp, float initWt, float maxWt, unsigned int nid, int grpId);
+	void doD1CurrentUpdate();
+	void doD2CurrentUpdate();
+	void doGPUSim();
+	void doSnnSim();
+	void doSTPUpdates();
 
 	void exitSimulation(int val);	//!< deallocates all dynamical structures and exits
 
+	void findFiring();
+	int  findGrpId(int nid); //!< for given neuron id, find group id
+
+	void generatePostSpike(unsigned int pre_i, unsigned int idx_d, unsigned int offset, unsigned int tD);
+	void generateSpikes();
+	void generateSpikes(int grpId);
+	void generateSpikesFromFuncPtr(int grpId);
+	void generateSpikesFromRate(int grpId);
+
+	int  getPoissNeuronPos(int nid);
+	float getWeights(int connProp, float initWt, float maxWt, unsigned int nid, int grpId);
+
+	void globalStateUpdate();
+
+	void initSynapticWeights(); //!< init all wt to appropriate values (total size of syn conn is 'length')
+
+	bool isExcitatoryGroup(int g) { return (grp_Info[g].Type&TARGET_AMPA) || (grp_Info[g].Type&TARGET_NMDA); }
+	bool isInhibitoryGroup(int g) { return (grp_Info[g].Type&TARGET_GABAa) || (grp_Info[g].Type&TARGET_GABAb); }
+	bool isPoissonGroup(int g) { return (grp_Info[g].Type&POISSON_NEURON); }
+
 	void makePtrInfo();				//!< creates CPU net ptrs
+
+	unsigned int poissonSpike(unsigned int currTime, float frate, int refractPeriod); //!< for generateSpikesFromRate
 
 	void printWeight(int grpId, const char *str = "");
 
+	// FIXME: difference between the options? is one deprecated or are both still used?
 	#if READNETWORK_ADD_SYNAPSES_FROM_FILE
 		int readNetwork_internal(bool onlyPlastic);
 	#else
 		int readNetwork_internal();
 	#endif
 
+	void reorganizeDelay();
+	void reorganizeNetwork(bool removeTempMemory, int simType);
+
 	void resetConductances();
 	void resetCounters();
+	void resetCPUTiming();
 	void resetCurrent();
+	void resetFiringInformation(); //!< resets the firing information when updateNetwork is called
+	void resetGroups();
 	void resetNeuron(unsigned int nid, int grpId);
 	void resetPointers();
+	void resetPoissonNeuron(unsigned int nid, int grpId);
+	void resetPropogationBuffer();
+	void resetSynapticConnections(bool changeWeights=false);
 	void resetTimingTable();
 
 	inline void setConnection(int srcGrpId, int destGrpId, unsigned int src, unsigned int dest, float synWt,
 								float maxWt, uint8_t dVal, int connProp);
 
+	void setGrpTimeSlice(int grpId, int timeSlice); //!< used for the Poisson generator. TODO: further optimize
+
+	void setupNetwork(int simType=CPU_MODE, int ithGPU=0, bool removeTempMemory=true);
+
+	void showStatus(int simType=CPU_MODE);
+
+	void startCPUTiming();
+	void stopCPUTiming();
+
+	void swapConnections(int nid, int oldPos, int newPos);
+
+	void updateAfterMaxTime();
+	void updateParameters(int* numN, int* numPostSynapses, int* D, int nConfig=1);
+	void updateSpikesFromGrp(int grpId);
+	void updateSpikeGenerators();
+	void updateSpikeGeneratorsInit();
+	void updateSpikeMonitor(); //!< copy required spikes from firing buffer to spike buffer
 	int  updateSpikeTables();
-
-
-
-
-
-
-  void setGrpTimeSlice(int grpId, int timeSlice); //!< used for the Poisson generator.  It can probably be further optimized...
-
-  void doSnnSim();
-
-  void dumpSpikeBuffToFile_GPU(int gid);
-
-  void assignPoissonFiringRate_GPU();
-
-  void setSpikeGenBit_GPU(unsigned int nid, int grp);
-
-  void generateSpikes();
-
-  void generateSpikes(int grpId);
-
-  void generateSpikesFromFuncPtr(int grpId);
-
-  void generateSpikesFromRate(int grpId);
-
-  void startCPUTiming();
-  void resetCPUTiming();
-  void stopCPUTiming();
-  void startGPUTiming();
-  void resetGPUTiming();
-  void stopGPUTiming();
-
-	
-
-
-  void resetSynapticConnections(bool changeWeights=false);
-  void resetPoissonNeuron(unsigned int nid, int grpId);
-  void resetPropogationBuffer();
-  void resetGroups();
-  void resetFiringInformation();
-  //! Resets the firing information of GPU_MODE program when updateNetwork is called.
-  void resetFiringInformation_GPU();
-
-
-  void doD1CurrentUpdate();
-  void doD2CurrentUpdate();
-
-  void findFiring();
-
-  void doSTPUpdates();
-
-  void generatePostSpike(unsigned int pre_i, unsigned int idx_d, unsigned int offset, unsigned int tD);
-
-  void globalStateUpdate();
-
-  void updateStateAndFiringTable();
-
-  void updateSpikesFromGrp(int grpId);
-
-  void updateSpikeGeneratorsInit();
-
-  void updateSpikeGenerators();
-
-
-  //! add the entry that the current neuron has spiked..
-  int addSpikeToTable(int id, int g);
-
-
-
-  void testSpikeSenderReceiver(FILE* fpLog, int simTime);
-
-
-  int checkErrors(std::string kernelName, int numBlocks);
-  int checkErrors(int numBlocks);
-
-  void updateParameters(int* numN, int* numPostSynapses, int* D, int nConfig=1);
-
-
-  void reorganizeNetwork(bool removeTempMemory, int simType);
-
-  void reorganizeDelay();
-
-  void swapConnections(int nid, int oldPos, int newPos);
-
-  //! minimize any other wastage in that array by compacting the store
-  void compactConnections();
-
-  //! Here we reorganize all the input connections to the neurons such that the first set is all excitatory
-  //! connection and next set is inhibitory connections
-  void regroupConnections(FILE *fp=NULL);
-
-  //! initialize all the synaptic weights to appropriate values. total size of the synaptic connection is 'length'
-  void initSynapticWeights();
-
-  //! For the given neuron nid, find the group id
-  int findGrpId(int nid);
-
-  //! copy required spikes from the firing buffer to the spike buffer for later preprocessing
-  void updateSpikeMonitor();
-
-  void updateSpikeMonitor_GPU();
-
-  void updateAfterMaxTime();
-
-
-  //! initializes params needed in snn_gpu.cu (gets called in CpuSNN constructor)
-  void CpuSNNinitGPUparams();
-
-  //! allocates required memory and then initialize the GPU
-  void allocateSNN_GPU(int ithGPU);
-
-  void allocateNetworkParameters();
-
-  void allocateGroupParameters();
-
-  void buildNetwork();
-
-  void buildGroup(int groupId);
-
-  void buildPoissonGroup(int groupId);
-
-  void copyWeightsGPU(unsigned int nid, int src_grp);
-
-
-  void copyNeuronState(network_ptr_t* dest, network_ptr_t* src, cudaMemcpyKind kind, int allocateMem, int grpId=-1);
-
-  //! copy presynaptic information
-  void copyWeightState(network_ptr_t* dest, network_ptr_t* src, cudaMemcpyKind kind, int allocateMem, int grpId=-1);
-
-  void copyNeuronParameters(network_ptr_t* dest, int kind, int allocateMem, int grpId = -1);
-
-  void copySTPState(network_ptr_t* dest, network_ptr_t* src, int kind, int allocateMem);
-
-  void checkDestSrcPtrs(network_ptr_t* dest, network_ptr_t* src, cudaMemcpyKind kind, int allocateMem, int grpId);
-
-  void copyConnections(network_ptr_t* dest, int kind, int allocateMem);
-
-  void copyPostConnectionInfo(network_ptr_t* dest, int allocateMem);
-
-  void copyState(network_ptr_t* dest, int kind, int allocateMem);
-
-
-
-  void copyParameters();
-
-  int getPoissNeuronPos(int nid);
-
-  void findFiring_GPU();
-
-  void spikeGeneratorUpdate_GPU();
-
-  void updateTimingTable_GPU();
-
-  void doCurrentUpdate_GPU();
-
-  void globalStateUpdate_GPU();
-
-  void doGPUSim();
-
-  void initGPU(int gridSize, int blkSize);
-
-  int  allocateStaticLoad(int bufSize);
-
-  void allocateGroupId();
-
-  void copyFiringInfo_GPU();
-
-  void copyFiringStateFromGPU (int grpId = -1);
-
-  void updateStateAndFiringTable_GPU();
-
-  void showStatus(int simType=CPU_MODE);
-  void showStatus_GPU();
-
-  void checkInitialization(char* testString=NULL);
-
-  void checkInitialization2(char* testString=NULL);
-
-
-  bool isExcitatoryGroup(int g) {
-    return (grp_Info[g].Type&TARGET_AMPA) || (grp_Info[g].Type&TARGET_NMDA);
-  }
-
-  bool isInhibitoryGroup(int g) {
-    return (grp_Info[g].Type&TARGET_GABAa) || (grp_Info[g].Type&TARGET_GABAb);
-  }
-
-  bool isPoissonGroup(int g) {
-    return (grp_Info[g].Type&POISSON_NEURON);
-  }
-
-  void setupNetwork(int simType=CPU_MODE, int ithGPU=0, bool removeTempMemory=true);
-
-
-
-private:
+	void updateStateAndFiringTable();
+
+
+	// +++++ GPU MODE +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
+	// TODO: consider moving to snn_gpu.h
+	void CpuSNNinitGPUparams();	//!< initializes params needed in snn_gpu.cu (gets called in CpuSNN constructor)
+
+	void allocateGroupId();
+	void allocateGroupParameters();
+	void allocateNetworkParameters();
+	void allocateSNN_GPU(int ithGPU); //!< allocates required memory and then initialize the GPU
+	int  allocateStaticLoad(int bufSize);
+
+	void assignPoissonFiringRate_GPU();
+
+	void checkDestSrcPtrs(network_ptr_t* dest, network_ptr_t* src, cudaMemcpyKind kind, int allocateMem, int grpId);
+	int  checkErrors(std::string kernelName, int numBlocks);
+	int  checkErrors(int numBlocks);
+	void checkInitialization(char* testString=NULL);
+	void checkInitialization2(char* testString=NULL);
+
+	void copyConnections(network_ptr_t* dest, int kind, int allocateMem);
+	void copyFiringInfo_GPU();
+	void copyFiringStateFromGPU (int grpId = -1);
+	void copyGrpInfo_GPU(); //!< Used to copy grp_info to gpu for setSTDP, setSTP, and setHomeostasis
+	void copyNeuronParameters(network_ptr_t* dest, int kind, int allocateMem, int grpId = -1);
+	void copyNeuronState(network_ptr_t* dest, network_ptr_t* src, cudaMemcpyKind kind, int allocateMem, int grpId=-1);
+	void copyParameters();
+	void copyPostConnectionInfo(network_ptr_t* dest, int allocateMem);
+	void copyState(network_ptr_t* dest, int kind, int allocateMem);
+	void copySTPState(network_ptr_t* dest, network_ptr_t* src, int kind, int allocateMem);
+	void copyUpdateVariables_GPU(); //!< copies wt / neuron state / STP state info from host to device
+	void copyWeightsGPU(unsigned int nid, int src_grp);
+	void copyWeightState(network_ptr_t* dest, network_ptr_t* src, cudaMemcpyKind kind, //!< copy presynaptic info
+							int allocateMem, int grpId=-1);
+
+	void deleteObjects_GPU();		//!< deallocates all used data structures in snn_gpu.cu
+	void doCurrentUpdate_GPU();
+	void dumpSpikeBuffToFile_GPU(int gid);
+	void findFiring_GPU();
+	void globalStateUpdate_GPU();
+	void initGPU(int gridSize, int blkSize);
+	void resetFiringInformation_GPU(); //!< resets the firing information in GPU_MODE when updateNetwork is called
+	void resetGPUTiming();
+	void setSpikeGenBit_GPU(unsigned int nid, int grp);
+	void showStatus_GPU();
+	void spikeGeneratorUpdate_GPU();
+	void startGPUTiming();
+	void stopGPUTiming();
+	void testSpikeSenderReceiver(FILE* fpLog, int simTime);
+	void updateSpikeMonitor_GPU();
+	void updateStateAndFiringTable_GPU();
+	void updateTimingTable_GPU();
+
+
+	// +++++ PRIVATE PROPERTIES +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 	SparseWeightDelayMatrix* tmp_SynapseMatrix_fixed;
 	SparseWeightDelayMatrix* tmp_SynapseMatrix_plastic;
 	FILE* readNetworkFID;
@@ -1188,5 +1071,4 @@ private:
   } noiseGenProperty_t;
 
 */
-
 #endif
