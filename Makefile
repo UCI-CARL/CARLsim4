@@ -39,15 +39,16 @@ inc_dir = include
 src_dir = src
 lib_dir = libpti
 ex_dir  = examples
+interface_dir = interface
 
 # location of .cpp files
 vpath %.cpp $(EO_INSTALL_DIR)/src $(EO_INSTALL_DIR)/src/do \
 $(EO_INSTALL_DIR)/src/es $(EO_INSTALL_DIR)/src/utils $(lib_dir) \
-$(ex_dir)/common/ $(src_dir)
+$(ex_dir)/common/ $(src_dir) $(interface_dir)/src
 # location of .cu files
 vpath %.cu $(src_dir)
 # location of .h files
-vpath %.h $(EO_INSTALL_DIR)/src $(inc_dir) $(src_dir) $(ex_dir)/common
+vpath %.h $(EO_INSTALL_DIR)/src $(inc_dir) $(src_dir) $(ex_dir)/common $(interface_dir)/include
 
 # this blank 'all' is required
 all:

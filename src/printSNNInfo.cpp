@@ -209,7 +209,7 @@ void CpuSNN::printParameters(FILE* fp)
   printConnectionInfo(fp);
 }
 
-void CpuSNN::printGroupInfo(string& strName)
+void CpuSNN::printGroupInfo(std::string& strName)
 {
   fprintf(stderr, "String Name : %s\n", strName.c_str());
   for(int g=0; g < numGrp; g++)	{
@@ -291,7 +291,7 @@ void CpuSNN::printFiringRate(char *fname)
 {
   static int printCnt = 0;
   FILE *fpg;
-  string strFname;
+  std::string strFname;
   if (fname == NULL)
     strFname = networkName;
   else
@@ -388,109 +388,7 @@ void CpuSNN::printPreConnection(int grpId, FILE* fp)
   }
 }
 
-/* deprecated
-   void CpuSNN::storeWeights(int destGrp, int src_grp, const string& logname, int restoreTime )
-   {
-   if(!enableSimLogs)
-   return;
 
-   checkNetworkBuilt();
-
-   // if restoreTime has some value then we restore the weight to that time, else dont restore (default -1)
-   bool restore = (restoreTime == -1) ? 0 : 1;     // default false;
-   int retVal;
-
-   for(int k=0, nid = grp_Info[destGrp].StartN; nid <= grp_Info[destGrp].EndN; nid++,k++)
-   {
-   char fname[200];
-   char dirname[200];
-
-   if(restore)
-   sprintf(dirname, "%s", logname.c_str());
-   else {
-   sprintf(dirname, "%s/%d", logname.c_str(), randSeed);
-
-   sprintf(fname, "mkdir -p %s", dirname );
-   retVal = system(fname);
-   if(retVal == -1) {
-   fprintf(stderr, "system command(%s) failed !!\n", fname);
-   return;
-   }
-
-   sprintf(fname, "cp -f param.txt %s", dirname );
-   retVal = system(fname);
-   if(retVal == -1) {
-   fprintf(stderr, "system command(%s) failed !!\n", fname);
-   return;
-   }
-   }
-
-   if(restore)  {
-   sprintf(fname, "%s/weightsSrc%dDest%d_%d.m", dirname, src_grp, nid, restoreTime);
-   fprintf( stderr, "Restoring simulation status using %s (weights from grp=%d to nid=%d\n", fname, src_grp, nid);
-   }
-   else {
-   sprintf(fname, "%s/weightsSrc%dDest%d_%lld.m", dirname, src_grp, nid, (unsigned long long)simTimeSec);
-   fprintf( stderr, "Saving simulation status using %s (weights from grp=%d to nid=%d\n", fname, src_grp, nid);
-   }
-
-   FILE *fp;
-
-   if(restore)
-   fp= fopen(fname, "r");
-   else
-   fp= fopen(fname, "a");
-
-   if(fp==NULL) {
-   fprintf(stderr, "Unable to open/create log file => %s\n", fname);
-   return;
-   }
-
-   int  dest_grp  = findGrpId(nid);
-   post_info_t* preIds    = &preSynapticIds[cumulativePre[nid]];
-   float* synWts  = &wt[cumulativePre[nid]];
-
-   assert(grpConnInfo[src_grp][dest_grp] != NULL);
-   assert(synWts != NULL);
-
-   // find a suitable match for each pre-syn id that we are interested in ..
-   float maxWt    = grpConnInfo[src_grp][dest_grp]->maxWt;
-
-   int preNum = 0;
-   if(restore) {
-   retVal = fscanf(fp, "%d ", &preNum);
-   assert(retVal > 0);
-   assert(preNum == Npre[nid]);
-   }
-   else
-   fprintf(fp, "%d ", Npre[nid]);
-
-   for(int i=0; i < Npre[nid]; i++, preIds++, synWts++) {
-   //int preId = (*preIds) & POST_SYN_NEURON_MASK;
-   int preId = GET_CONN_NEURON_ID((*preIds));
-   assert(preId < (numN));
-   // preId matches the src_grp that we are interested..
-   if( src_grp == findGrpId(preId)) {
-   if (restore) {
-   retVal = fscanf(fp, " %f ", synWts);
-   assert(retVal > 0);
-   *synWts = maxWt*(*synWts);
-   //fprintf(stderr, " %f", *synWts);
-   }
-   else
-   fprintf(fp, " %f ", *synWts/maxWt);
-   }
-   }
-
-   if (restore) {
-   fprintf(fp, "\n");
-   }
-   else
-   fprintf(stderr, "\n");
-   fclose(fp);
-   }
-   }
-*/
 void CpuSNN::printNeuronState(int grpId, FILE*fp)
 {
   if (currentMode==GPU_MODE) {

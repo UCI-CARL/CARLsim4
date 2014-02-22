@@ -1624,7 +1624,7 @@ float errVal[MAX_NUM_BLOCKS][20];
 // the simulator kernel sets appropriate errors  and returns some important values in the 
 // array "retErrVal".
 /**********************************************************************************************/
-int CpuSNN::checkErrors(string calledKernel, int numBlocks)
+int CpuSNN::checkErrors(std::string calledKernel, int numBlocks)
 {
   int errCode = NO_KERNEL_ERRORS;
 #if(!ENABLE_MORE_CHECK)
