@@ -39,7 +39,7 @@
  */ 
 
 
-#include <snn.h>
+#include <carlsim.h>
 void calcColorME(int nrX, int nrY, unsigned char* stim, float* red_green, float* green_red, float* blue_yellow, float* yellow_blue, float* ME, bool GPUpointers);
 extern MTRand	      getRand;
 
@@ -283,7 +283,9 @@ int main()
 	// use command-line specified CUDA device, otherwise use device with highest Gflops/s
 //	cutilSafeCall(cudaSetDevice(cutGetMaxGflopsDeviceId()));
 
-	CpuSNN s("global");
+	CARLsim s("rdk");
+	bool onGPU = true;
+	s.setDefaultSimulationMode(onGPU?GPU_MODE:CPU_MODE,0,false,false);
 
 	int gV1ME = s.createSpikeGeneratorGroup("V1ME", nrX*nrY*28*3, EXCITATORY_NEURON);
 	int gMT1 = s.createGroup("MT1", nrX*nrY*8, EXCITATORY_NEURON);
@@ -344,10 +346,6 @@ int main()
 
 	unsigned char* vid = new unsigned char[nrX*nrY*3];
 
-	bool onGPU = true;
-
-	//initialize the GPU/network
-	s.runNetwork(0,0, onGPU?GPU_MODE:CPU_MODE);
 
 	PoissonRate me(nrX*nrY*28*3,onGPU);
 	PoissonRate red_green(nrX*nrY,onGPU);

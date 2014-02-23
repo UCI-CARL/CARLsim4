@@ -483,8 +483,10 @@ public:
 	~CpuSNN();
 
 	// +++++ PUBLIC PROPERTIES ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
+
 	const static unsigned int MAJOR_VERSION = 2; //!< major release version, as in CARLsim X
 	const static unsigned int MINOR_VERSION = 2; //!< minor release version, as in CARLsim 2.X
+
 
 
 	// +++++ PUBLIC METHODS: SETTING UP A SIMULATION ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
@@ -552,6 +554,7 @@ public:
 
 	// +++++ PUBLIC METHODS: INTERACTING WITH A SIMULATION ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
+	// TODO: same as spikeMonRT
 	//TODO: may need to make it work for different configurations. -- KDC
 	/*!
  	 * \brief Returns pointer to nSpikeCnt, which is a 1D array of the number of spikes every neuron in the group
@@ -585,21 +588,18 @@ public:
 	//! assign spike rate to poisson group
 	void setSpikeRate(int grpId, PoissonRate* spikeRate, int refPeriod, int configId);
 
-	/*!
-	 * \brief Resets either the neuronal firing rate information by setting resetFiringRate = true and/or the
-	 * weight values back to their default values by setting resetWeights = true.
-	 */
+	//! Resets either the neuronal firing rate information by setting resetFiringRate = true and/or the
+	//! weight values back to their default values by setting resetWeights = true.
 	void updateNetwork(bool resetFiringInfo, bool resetWeights);
-	void updateNetwork(); //!< Original updateNetwork() function used by JMN
+	void updateNetwork(); //!< Original updateNetwork() function used by JMN FIMXE: is this still supported?
 	void updateNetwork_GPU(bool resetFiringInfo); //!< Allows parameters to be reset in the middle of the simulation
+	// FIXME is this suppsed to be public?
 
 	//!< writes the network state to file
 	void writeNetwork(FILE* fid);
 
-	/*!
-	 * \brief function writes population weights from gIDpre to gIDpost to file fname in binary.
-	 */
-	void writePopWeights(std::string fname, int gIDpre, int gIDpost, int configId = 0);
+	//! function writes population weights from gIDpre to gIDpost to file fname in binary.
+	void writePopWeights(std::string fname, int gIDpre, int gIDpost, int configId);
 
 
 
@@ -609,7 +609,7 @@ public:
 	void setLogCycle(unsigned int _cnt, int mode, FILE *fp);
 
 	// NOTE: all these printer functions should be in printSNNInfo.cpp
-	// FIXME: are any of these actually supposed to be public??
+	// FIXME: are any of these actually supposed to be public?? they are not yet in carlsim.h
 	void printConnection(const std::string& fname);
 	void printConnection(FILE *fp=stdout);
 	void printConnection(int grpId, FILE  *fp=stdout); //!< print the connection info of grpId
@@ -641,16 +641,15 @@ public:
 
 	// +++++ PUBLIC METHODS: GETTERS / SETTERS ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
-	grpConnectInfo_t* getConnectInfo(int connectId, int configId=0); //!< required for homeostasis
+	grpConnectInfo_t* getConnectInfo(int connectId, int configId); //!< required for homeostasis
 	int  getConnectionId(int connId, int configId);
 
 	// FIXME: fix this
 	uint8_t* getDelays(int gIDpre, int gIDpost, int& Npre, int& Npost, uint8_t* delays=NULL);
 
 	int  getGroupId(int groupId, int configId);
-	group_info_t getGroupInfo(int groupId, int configId=0);
-	std::string getGroupName(int grpId);
-	int  getNextGroupId(int); //!< used in setHomeostasis
+	group_info_t getGroupInfo(int groupId, int configId);
+	std::string getGroupName(int grpId, int configId);
 
 	int getNumConfigurations()	{ return numConfig; }	//!< gets number of network configurations
 	int getNumConnections(int connectionId);			//!< gets number of connections associated with a connection ID

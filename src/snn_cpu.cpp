@@ -480,11 +480,16 @@ int CpuSNN::createSpikeGeneratorGroup(const std::string& grpName, unsigned int n
 // set conductance values for a group (custom values or disable conductances alltogether)
 void CpuSNN::setConductances(int grpId, bool isSet, float tdAMPA, float tdNMDA, float tdGABAa, float tdGABAb,
 								int configId) {
-	if (grpId==ALL) { // shortcut to apply to all groups
+	if (grpId==ALL && configId==ALL) { // shortcut for all groups & configs
 		for(int g=0; g < numGrp; g++)
-			setConductances(g, isSet, tdAMPA, tdNMDA, tdGABAa, tdGABAb, configId);		
-	} else if (configId==ALL) { // shortcut to apply to all configIds
-		for(int c=0; c<numConfig; c++)
+			setConductances(g, isSet, tdAMPA, tdNMDA, tdGABAa, tdGABAb, 0);
+	} else if (grpId == ALL) { // shortcut for all groups
+		for(int grpId1=0; grpId1 < numGrp; grpId1 += numConfig) {
+			int g = getGroupId(grpId1, configId);
+			setConductances(g, isSet, tdAMPA, tdNMDA, tdGABAa, tdGABAb, configId);
+		}
+	} else if (configId == ALL) { // shortcut for all configs
+		for(int c=0; c < numConfig; c++)
 			setConductances(grpId, isSet, tdAMPA, tdNMDA, tdGABAa, tdGABAb, c);
 	} else {
 		// set conductances for a given group and configId
@@ -497,18 +502,23 @@ void CpuSNN::setConductances(int grpId, bool isSet, float tdAMPA, float tdNMDA, 
 		grp_Info[cGrpId].dGABAb 			= 1-(1.0/tdGABAb);
 		grp_Info[cGrpId].newUpdates 		= true; 			// FIXME What is this?
 
-		fprintf(stderr, "Conductances %s for %d (%s): %4.0f, %4.0f, %4.0f, %4.0f\n", isSet?"enabled":"disabled",
-				cGrpId, grp_Info2[cGrpId].Name.c_str(), tdAMPA, tdNMDA, tdGABAa, tdGABAb);
+		fprintf(stderr, "Conductances %s for %d (%s):\ttdAMPA: %4.0f, tdNMDA: %4.0f, tdGABAa: %4.0f, tdGABAb: %4.0f\n",
+					isSet?"enabled":"disabled",cGrpId, grp_Info2[cGrpId].Name.c_str(),tdAMPA,tdNMDA,tdGABAa,tdGABAb);
 	}
 }
 
 // set homeostasis for group
 void CpuSNN::setHomeostasis(int grpId, bool isSet, float homeoScale, float avgTimeScale, int configId) {
-	if (grpId==ALL) { // shortcut to apply to all groups
+	if (grpId==ALL && configId==ALL) { // shortcut for all groups & configs
 		for(int g=0; g < numGrp; g++)
-			setHomeostasis(g, isSet, homeoScale, avgTimeScale, configId);	
-	} else if (configId==ALL) { // shortcut to apply to all configIds
-		for(int c=0; c<numConfig; c++)
+			setHomeostasis(g, isSet, homeoScale, avgTimeScale, 0);
+	} else if (grpId == ALL) { // shortcut for all groups
+		for(int grpId1=0; grpId1 < numGrp; grpId1 += numConfig) {
+			int g = getGroupId(grpId1, configId);
+			setHomeostasis(g, isSet, homeoScale, avgTimeScale, configId);
+		}
+	} else if (configId == ALL) { // shortcut for all configs
+		for(int c=0; c < numConfig; c++)
 			setHomeostasis(grpId, isSet, homeoScale, avgTimeScale, c);
 	} else {
 		// set conductances for a given group and configId
@@ -520,18 +530,23 @@ void CpuSNN::setHomeostasis(int grpId, bool isSet, float homeoScale, float avgTi
 		grp_Info[cGrpId].avgTimeScale_decay = (avgTimeScale*1000.0f-1.0f)/(avgTimeScale*1000.0f);
 		grp_Info[cGrpId].newUpdates 		= true; // FIXME: what's this?
 
-		fprintf(stderr, "Homeostasis parameters %s for %d (%s): homeoScale: %f, avgTimeScale: %f\n",
+		fprintf(stderr, "Homeostasis parameters %s for %d (%s):\thomeoScale: %f, avgTimeScale: %f\n",
 					isSet?"enabled":"disabled",cGrpId,grp_Info2[cGrpId].Name.c_str(),homeoScale,avgTimeScale);
 	}
 }
 
 // set a homeostatic target firing rate (enforced through homeostatic synaptic scaling)
 void CpuSNN::setHomeoBaseFiringRate(int grpId, float baseFiring, float baseFiringSD, int configId) {
-	if (grpId==ALL) { // shortcut to apply to all groups
+	if (grpId==ALL && configId==ALL) { // shortcut for all groups & configs
 		for(int g=0; g < numGrp; g++)
-			setHomeoBaseFiringRate(g, baseFiring, baseFiringSD, configId);	
-	} else if (configId==ALL) { // shortcut to apply to all configIds
-		for(int c=0; c<numConfig; c++)
+			setHomeoBaseFiringRate(g, baseFiring, baseFiringSD, 0);
+	} else if (grpId == ALL) { // shortcut for all groups
+		for(int grpId1=0; grpId1 < numGrp; grpId1 += numConfig) {
+			int g = getGroupId(grpId1, configId);
+			setHomeoBaseFiringRate(g, baseFiring, baseFiringSD, configId);
+		}
+	} else if (configId == ALL) { // shortcut for all configs
+		for(int c=0; c < numConfig; c++)
 			setHomeoBaseFiringRate(grpId, baseFiring, baseFiringSD, c);
 	} else {
 		// set conductances for a given group and configId
@@ -540,7 +555,7 @@ void CpuSNN::setHomeoBaseFiringRate(int grpId, float baseFiring, float baseFirin
 		grp_Info2[cGrpId].baseFiringSD 	= baseFiringSD;
 		grp_Info[cGrpId].newUpdates 	= true; //TODO: I have to see how this is handled.  -- KDC
 
-		fprintf(stderr, "Homeostatic base firing rate set for %d (%s): baseFiring: %3.3f, baseFiringStd: %3.3f\n",
+		fprintf(stderr, "Homeostatic base firing rate set for %d (%s):\tbaseFiring: %3.3f, baseFiringStd: %3.3f\n",
 							cGrpId,grp_Info2[cGrpId].Name.c_str(),baseFiring,baseFiringSD);
 	}
 }
@@ -549,8 +564,16 @@ void CpuSNN::setHomeoBaseFiringRate(int grpId, float baseFiring, float baseFirin
 // set Izhikevich parameters for group
 void CpuSNN::setNeuronParameters(int grpId, float izh_a, float izh_a_sd, float izh_b, float izh_b_sd,
 								float izh_c, float izh_c_sd, float izh_d, float izh_d_sd, int configId) {
-	if (configId == ALL) {
-		for(int c=0; c<numConfig; c++) // do for all network configurations
+	if (grpId==ALL && configId==ALL) { // shortcut for all groups & configs
+		for(int g=0; g < numGrp; g++)
+			setNeuronParameters(g, izh_a, izh_a_sd, izh_b, izh_b_sd, izh_c, izh_c_sd, izh_d, izh_d_sd, 0);
+	} else if (grpId == ALL) { // shortcut for all groups
+		for(int grpId1=0; grpId1 < numGrp; grpId1 += numConfig) {
+			int g = getGroupId(grpId1, configId);
+			setNeuronParameters(g, izh_a, izh_a_sd, izh_b, izh_b_sd, izh_c, izh_c_sd, izh_d, izh_d_sd, configId);
+		}
+	} else if (configId == ALL) { // shortcut for all configs
+		for(int c=0; c < numConfig; c++)
 			setNeuronParameters(grpId, izh_a, izh_a_sd, izh_b, izh_b_sd, izh_c, izh_c_sd, izh_d, izh_d_sd, c);
 	} else {
 		int cGrpId = getGroupId(grpId, configId);
@@ -568,11 +591,16 @@ void CpuSNN::setNeuronParameters(int grpId, float izh_a, float izh_a_sd, float i
 
 // set STDP params
 void CpuSNN::setSTDP(int grpId, bool isSet, float alphaLTP, float tauLTP, float alphaLTD, float tauLTD, int configId) {
-	if (grpId==ALL) { // shortcut to apply to all groups
+	if (grpId==ALL && configId==ALL) { // shortcut for all groups & configs
 		for(int g=0; g < numGrp; g++)
-			setSTDP(g, isSet, alphaLTP, tauLTP, alphaLTD, tauLTD, configId);		
-	} else if (configId==ALL) { // shortcut to apply to all configIds
-		for(int c=0; c<numConfig; c++)
+			setSTDP(g, isSet, alphaLTP, tauLTP, alphaLTD, tauLTD, 0);
+	} else if (grpId == ALL) { // shortcut for all groups
+		for(int grpId1=0; grpId1 < numGrp; grpId1 += numConfig) {
+			int g = getGroupId(grpId1, configId);
+			setSTDP(g, isSet, alphaLTP, tauLTP, alphaLTD, tauLTD, configId);
+		}
+	} else if (configId == ALL) { // shortcut for all configs
+		for(int c=0; c < numConfig; c++)
 			setSTDP(grpId, isSet, alphaLTP, tauLTP, alphaLTD, tauLTD, c);
 	} else {
 		// set STDP for a given group and configId
@@ -585,7 +613,7 @@ void CpuSNN::setSTDP(int grpId, bool isSet, float alphaLTP, float tauLTP, float 
 		grp_Info[cGrpId].TAU_LTD_INV	= 1.0/tauLTD;
 		grp_Info[cGrpId].newUpdates 	= true; // FIXME whatsathiis?
 
-		fprintf(stderr, "STDP %s for %d (%s): alphaLTP: %1.4f, alphaLTD: %1.4f, tauLTP: %4.0f, tauLTD: %4.0f\n",
+		fprintf(stderr, "STDP %s for %d (%s):\talphaLTP: %1.4f, alphaLTD: %1.4f, tauLTP: %4.0f, tauLTD: %4.0f\n",
 					isSet?"enabled":"disabled",cGrpId,grp_Info2[cGrpId].Name.c_str(),
 					alphaLTP,alphaLTD,tauLTP,tauLTD);
 	}
@@ -594,11 +622,16 @@ void CpuSNN::setSTDP(int grpId, bool isSet, float alphaLTP, float tauLTP, float 
 
 // set STP params
 void CpuSNN::setSTP(int grpId, bool isSet, float STP_U, float STP_tD, float STP_tF, int configId) {
-	if (grpId==ALL) { // shortcut to apply to all groups
+	if (grpId==ALL && configId==ALL) { // shortcut for all groups & configs
 		for(int g=0; g < numGrp; g++)
-			setSTP(g, isSet, STP_U, STP_tD, STP_tF, configId);		
-	} else if (configId==ALL) { // shortcut to apply to all configIds
-		for(int c=0; c<numConfig; c++)
+			setSTP(g, isSet, STP_U, STP_tD, STP_tF, 0);
+	} else if (grpId == ALL) { // shortcut for all groups
+		for(int grpId1=0; grpId1 < numGrp; grpId1 += numConfig) {
+			int g = getGroupId(grpId1, configId);
+			setSTP(g, isSet, STP_U, STP_tD, STP_tF, configId);
+		}
+	} else if (configId == ALL) { // shortcut for all configs
+		for(int c=0; c < numConfig; c++)
 			setSTP(grpId, isSet, STP_U, STP_tD, STP_tF, c);
 	} else {
 		// set STDP for a given group and configId
@@ -610,7 +643,7 @@ void CpuSNN::setSTP(int grpId, bool isSet, float STP_U, float STP_tD, float STP_
 		grp_Info[cGrpId].STP_tF 	= STP_tF;
 		grp_Info[cGrpId].newUpdates = true;
 
-		fprintf(stderr, "STP %s for %d (%s): U: %1.4f, tD: %4.0f, tF: %4.0f\n", isSet?"enabled":"disabled",
+		fprintf(stderr, "STP %s for %d (%s):\tU: %1.4f, tD: %4.0f, tF: %4.0f\n", isSet?"enabled":"disabled",
 					cGrpId, grp_Info2[cGrpId].Name.c_str(), STP_U, STP_tD, STP_tF);
 	}
 }
@@ -807,7 +840,7 @@ void CpuSNN::resetSpikeCntUtil(int my_grpId ) {
 
   if(currentMode == GPU_MODE){
     //call analogous function, return, else do CPU stuff
-    if (my_grpId == -1) {
+    if (my_grpId == ALL) {
       startGrp = 0;
       endGrp   = numGrp;
     }
@@ -942,8 +975,7 @@ void CpuSNN::updateNetwork() {
 // function used for parameter tuning interface
 void CpuSNN::updateNetwork(bool resetFiringInfo, bool resetWeights) {
   if(!doneReorganization){
-    fprintf(stderr,"UpdateNetwork function was called but nothing was done because reorganizeNetwork "
-    			+ "must be called first.\n");
+    fprintf(stderr,"UpdateNetwork function was called but nothing was done because reorganizeNetwork must be called first.\n");
     return;
   }
   //change weights back to the default level for all the connections...
@@ -1205,11 +1237,12 @@ uint8_t* CpuSNN::getDelays(int gIDpre, int gIDpost, int& Npre, int& Npost, uint8
 	return delays;
 }
 
-int  CpuSNN::getGroupId(int groupId, int configId) {
-  assert(configId < numConfig);
-  int cGrpId = (groupId+configId);
-  assert(cGrpId  < numGrp);
-  return cGrpId;
+
+int CpuSNN::getGroupId(int grpId, int configId) {
+	assert(configId < numConfig);
+	int cGrpId = (grpId+configId);
+	assert(cGrpId  < numGrp);
+	return cGrpId;
 }
 
 group_info_t CpuSNN::getGroupInfo(int grpId, int configId) {
@@ -1217,13 +1250,9 @@ group_info_t CpuSNN::getGroupInfo(int grpId, int configId) {
 	return grp_Info[cGrpId];
 }
 
-std::string CpuSNN::getGroupName(int grpId) {
-	return grp_Info2[grpId].Name;
-}
-
-//! used for homeostasis functionality
-int  CpuSNN::getNextGroupId(int groupId) {
-	return (groupId+numConfig);
+std::string CpuSNN::getGroupName(int grpId, int configId) {
+	int cGrpId = getGroupId(grpId, configId);
+	return grp_Info2[cGrpId].Name;
 }
 
 // returns the number of synaptic connections associated with this connection.
@@ -1414,8 +1443,8 @@ void CpuSNN::CpuSNNInit(unsigned int nNeur, unsigned int nPostSyn, unsigned int 
 	if (sim_with_conductances) {
 		for (int g=0;g<numGrp;g++) {
 			if (!grp_Info[g].WithConductances && ((grp_Info[g].Type&POISSON_NEURON)==0)) {
-				printf("If one group enables conductances then all groups, except for generators, must enable "
-							+ "conductances.  Group '%s' is not enabled.\n", grp_Info2[g].Name.c_str());
+				printf("If one group enables conductances then all groups, except for generators, must enable conductances.  Group '%s' is not enabled.\n",
+							grp_Info2[g].Name.c_str());
 				assert(false);
 			}
 		}
@@ -1719,8 +1748,8 @@ void CpuSNN::buildNetwork() {
 	    float avgPostM = newInfo->numberOfConnections/grp_Info[newInfo->grpSrc].SizeN;
 	    float avgPreM  = newInfo->numberOfConnections/grp_Info[newInfo->grpDest].SizeN;
 
-	    fprintf(stderr, "connect(%s(%d) => %s(%d), iWt=%f, mWt=%f, numPostSynapses=%d, numPreSynapses=%d, minD=%d, "
-	    			+ "maxD=%d, %s)\n", grp_Info2[newInfo->grpSrc].Name.c_str(), newInfo->grpSrc,
+	    fprintf(stderr, "connect(%s(%d) => %s(%d), iWt=%f, mWt=%f, numPostSynapses=%d, numPreSynapses=%d, minD=%d, maxD=%d, %s)\n",
+	    			grp_Info2[newInfo->grpSrc].Name.c_str(), newInfo->grpSrc,
 	    			grp_Info2[newInfo->grpDest].Name.c_str(), newInfo->grpDest, newInfo->initWt, newInfo->maxWt,
 	    			(int)avgPostM, (int)avgPreM, newInfo->minDelay, newInfo->maxDelay, synWtType?"Plastic":"Fixed");
 	  }

@@ -47,9 +47,11 @@ private:
 /// CONSTRUCTOR / DESTRUCTOR
 /// **************************************************************************************************************** ///
 
-CARLsim::CARLsim(std::string netName, int numConfig, int simType, int ithGPU, bool enablePrint, bool copyState) {
-	snn_ = new CpuSNN(netName.c_str());
+CARLsim::CARLsim(std::string netName, int numConfig, int randSeed, int simType, int ithGPU, bool enablePrint,
+					bool copyState) {
+	snn_ = new CpuSNN(netName.c_str(), numConfig, randSeed, simType);
 	numConfig_ 					= numConfig;
+	randSeed_					= randSeed;
 	simType_ 					= simType;
 	ithGPU_ 					= ithGPU;
 	enablePrint_ 				= enablePrint;
@@ -193,7 +195,7 @@ void CARLsim::setHomeostasis(int grpId, bool isSet, int configId) {
 		snn_->setHomeostasis(grpId,true,def_homeo_scale_,def_homeo_avgTimeScale_,configId);
 		if (grpId!=ALL && hasSetHomeoBaseFiringALL_)
 			userWarnings_.push_back("USER WARNING: Make sure to call setHomeoBaseFiringRate on group "
-										+ snn_->getGroupName(grpId));
+										+ getGroupName(grpId));
 	} else { // discable conductances
 		snn_->setHomeostasis(grpId,false,0.0f,0.0f,configId);
 	}
@@ -208,7 +210,7 @@ void CARLsim::setHomeostasis(int grpId, bool isSet, float homeoScale, float avgT
 		snn_->setHomeostasis(grpId,true,homeoScale,avgTimeScale,configId);
 		if (grpId!=ALL && hasSetHomeoBaseFiringALL_)
 			userWarnings_.push_back("USER WARNING: Make sure to call setHomeoBaseFiringRate on group "
-										+ snn_->getGroupName(grpId));
+										+ getGroupName(grpId));
 	} else { // discable conductances
 		snn_->setHomeostasis(grpId,false,0.0f,0.0f,configId);
 	}
@@ -305,6 +307,11 @@ void CARLsim::setSTP(int grpId, bool isSet, float STP_U, float STP_tD, float STP
 // run network in default simulation mode
 // this way, you don't need to specify GPU_MODE every time you call runNetwork
 // use CARLsim::setDefaultSimulationMode instead
+// TODO: figure out if the following sequence is expected behavior, otherwise inform user
+//		1. setDefault -> GPU_MODE
+//		2. runNetwork(1,0); // will run in GPU_MODE
+//		3. runNetwork(1,0,CPU_MODE); // will run in CPU_MODE
+//		4. runNetwork(1,0); // this will run in GPU_MODE again, because that's the default
 int CARLsim::runNetwork(int nSec, int nMsec) {
 	if (!hasRunNetwork_) {
 		handleUserWarnings();	// before running network, make sure user didn't provoque any user warnings
@@ -344,6 +351,11 @@ void CARLsim::setLogCycle(unsigned int cnt, int mode, FILE *fp) {
 void CARLsim::readNetwork(FILE* fid) {
 	assert(!hasRunNetwork_); // TODO make nice
 	snn_->readNetwork(fid);
+}
+
+// resets spike count for particular neuron group
+void CARLsim::resetSpikeCntUtil(int grpId) {
+	snn_->resetSpikeCntUtil(grpId);
 }
 
 // sets up a spike generator
@@ -407,9 +419,18 @@ void CARLsim::setSpikeMonitor(int grpId, const std::string& fname, int configId)
 
 // assign spike rate to poisson group
 void CARLsim::setSpikeRate(int grpId, PoissonRate* spikeRate, int refPeriod, int configId) {
-	assert(!hasRunNetwork_); // TODO make nice
-
 	snn_->setSpikeRate(grpId, spikeRate, refPeriod, configId);
+}
+
+// switches default from CPU mode <-> GPU mode
+void CARLsim::switchCPUGPUmode() {
+	simType_ = (simType_==CPU_MODE) ? GPU_MODE : CPU_MODE;
+}
+
+// Resets either the neuronal firing rate information by setting resetFiringRate = true and/or the
+// weight values back to their default values by setting resetWeights = true.
+void CARLsim::updateNetwork(bool resetFiringInfo, bool resetWeights) {
+	snn_->updateNetwork(resetFiringInfo,resetWeights);
 }
 
 // writes network state to file
@@ -417,9 +438,56 @@ void CARLsim::writeNetwork(FILE* fid) {
 	snn_->writeNetwork(fid);
 }
 
+// function writes population weights from gIDpre to gIDpost to file fname in binary.
+void CARLsim::writePopWeights(std::string fname, int gIDpre, int gIDpost, int configId) {
+	assert(configId!=ALL); // TODO make nice
+	snn_->writePopWeights(fname,gIDpre,gIDpost,configId);
+}
+
 
 
 // +++++++++ PUBLIC METHODS: SETTERS / GETTERS ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
+
+// get connection info struct
+grpConnectInfo_t* CARLsim::getConnectInfo(int connectId, int configId) {
+	assert(configId!=ALL); // TODO make nice
+	return snn_->getConnectInfo(connectId,configId);
+}
+
+int CARLsim::getGroupId(int grpId, int configId) {
+	assert(configId!=ALL); // TODO make nice
+	return snn_->getGroupId(grpId,configId);
+}
+// get group info struct
+group_info_t CARLsim::getGroupInfo(int grpId, int configId) {
+	assert(configId!=ALL); // TODO make nice
+	return snn_->getGroupInfo(grpId, configId);
+}
+
+// get group info struct
+std::string CARLsim::getGroupName(int grpId, int configId) {
+	assert(configId!=ALL); // TODO make nice
+	return snn_->getGroupName(grpId, configId);
+}
+
+unsigned int* CARLsim::getSpikeCntPtr(int grpId) {
+	return snn_->getSpikeCntPtr(grpId,simType_); // use default sim mode
+}
+
+unsigned int* CARLsim::getSpikeCntPtr(int grpId, int simType) {
+	assert(simType==CPU_MODE || simType==GPU_MODE);
+	return snn_->getSpikeCntPtr(grpId,simType);
+}
+
+
+// Sets enableGpuSpikeCntPtr to true or false.
+void CARLsim::setCopyFiringStateFromGPU(bool enableGPUSpikeCntPtr) {
+	snn_->setCopyFiringStateFromGPU(enableGPUSpikeCntPtr);
+}
+
+
+
+// +++++++++ PUBLIC METHODS: SET DEFAULTS +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
 // set default values for conductance decay times
 void CARLsim::setDefaultConductanceDecay(float tdAMPA, float tdNMDA, float tdGABAa, float tdGABAb) {
@@ -482,11 +550,6 @@ void CARLsim::setDefaultSTPparams(int neurType, float STP_U, float STP_tD, float
 			// some error message instead of assert
 			break;
 	}
-}
-
-//! switches default from CPU mode <-> GPU mode
-void CARLsim::switchCPUGPUmode() {
-	simType_ = (simType_==CPU_MODE) ? GPU_MODE : CPU_MODE;
 }
 
 

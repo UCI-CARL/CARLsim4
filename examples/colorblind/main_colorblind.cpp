@@ -39,7 +39,7 @@
  */ 
 
 //Change this!
-#include <snn.h>
+#include <carlsim.h>
 void calcColorME(int nrX, int nrY, unsigned char* stim, float* red_green, float* green_red, float* blue_yellow, float* yellow_blue, float* ME, bool GPUpointers);
 extern MTRand	      getRand;
 
@@ -151,7 +151,7 @@ int main()
 
 	FILE* fid;
 
-	CpuSNN s("global");
+	CARLsim s("global");
 
 	int v1Cells[5];
 	int num_V1_groups=6;

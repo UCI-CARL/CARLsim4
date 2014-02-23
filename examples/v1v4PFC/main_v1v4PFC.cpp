@@ -38,7 +38,7 @@
  * Ver 10/09/2013
  */ 
 
-#include <snn.h>
+#include <carlsim.h>
 void calcColorME(int nrX, int nrY, unsigned char* stim, float* red_green, float* green_red, float* blue_yellow, float* yellow_blue, float* ME, bool GPUpointers);
 extern MTRand	      getRand;
 
@@ -187,14 +187,14 @@ float orientation_proj[28][4] = {{0.311800, 0.000000, 0.449200, 0.952322},
 
 
 enum color_name_t { BLUE=0, GREEN, RED, YELLOW};
-string imageName[] = { "blue", "green", "red", "yellow"};
+std::string imageName[] = { "blue", "green", "red", "yellow"};
 
 enum v1color_name_t    { RED_GREEN=0, BLUE_YELLOW, GREEN_RED, YELLOW_BLUE };
-string v1ImageName[] = { "red-green-cells", "blue-yellow-cells",
+std::string v1ImageName[] = { "red-green-cells", "blue-yellow-cells",
 			 "green-red-cells", "yellow-blue-cells"};
 
-string  v4CellNameExc[] = { "Ev4magenta", "Ev4blue", "Ev4cyan", "Ev4green", "Ev4yellow", "Ev4red"};
-string  v4CellNameInh[] = { "Iv4magenta", "Iv4blue", "Iv4cyan", "Iv4green", "Iv4yellow", "Iv4red"};
+std::string  v4CellNameExc[] = { "Ev4magenta", "Ev4blue", "Ev4cyan", "Ev4green", "Ev4yellow", "Ev4red"};
+std::string  v4CellNameInh[] = { "Iv4magenta", "Iv4blue", "Iv4cyan", "Iv4green", "Iv4yellow", "Iv4red"};
 
 enum  v4CellType_t  {MAGENTA_V4=0, BLUE_V4, CYAN_V4, GREEN_V4, YELLOW_V4, RED_V4};
 
@@ -441,7 +441,9 @@ int main()
 	// use command-line specified CUDA device, otherwise use device with highest Gflops/s
 //	CUDA_CHECK_ERRORS(cudaSetDevice(cutGetMaxGflopsDeviceId()));
 
-	CpuSNN s("global");
+	CARLsim s("V1V4PFC");
+	bool onGPU = true;
+	s.setDefaultSimulationMode(onGPU?GPU_MODE:CPU_MODE,0,false,false);
 
 	int v1Cells[5];
 	int num_V1_groups=6;
@@ -461,6 +463,36 @@ int main()
 		v4CellsInh[i] = s.createGroup(v4CellNameInh[i].c_str(), V4_LAYER_DIM*V4_LAYER_DIM, TARGET_GABAa);
 		s.setNeuronParameters(v4CellsInh[i], 0.1f,  0.2f, -65.0f, 2.0f);
 	}
+
+
+
+	int gV1ME = s.createSpikeGeneratorGroup("V1ME", nrX*nrY*28*3, EXCITATORY_NEURON);
+	int gMT1 = s.createGroup("MT1", nrX*nrY*8, EXCITATORY_NEURON);
+	int gMT2 = s.createGroup("MT2", nrX*nrY*8, EXCITATORY_NEURON);
+	int gMT3 = s.createGroup("MT3", nrX*nrY*8, EXCITATORY_NEURON);
+	s.setNeuronParameters(gMT1, 0.02f, 0.2f, -65.0f, 8.0f);
+	s.setNeuronParameters(gMT2, 0.02f, 0.2f, -65.0f, 8.0f);
+	s.setNeuronParameters(gMT3, 0.02f, 0.2f, -65.0f, 8.0f);
+	int gMT1i = s.createGroup("MT1i", nrX*nrY*8/4, INHIBITORY_NEURON);
+	int gMT2i = s.createGroup("MT2i", nrX*nrY*8/4, INHIBITORY_NEURON);
+	int gMT3i = s.createGroup("MT3i", nrX*nrY*8/4, INHIBITORY_NEURON);
+	s.setNeuronParameters(gMT1i, 0.1f,  0.2f, -65.0f, 2.0f);
+	s.setNeuronParameters(gMT2i, 0.1f,  0.2f, -65.0f, 2.0f);
+	s.setNeuronParameters(gMT3i, 0.1f,  0.2f, -65.0f, 2.0f);
+
+	int gPFC = s.createGroup("PFC", 50*8, EXCITATORY_NEURON);
+	s.setNeuronParameters(gPFC, 0.02f, 0.2f, -65.0f, 8.0f);
+	int gPFCi = s.createGroup("PFCi", 10*8, INHIBITORY_NEURON);
+	s.setNeuronParameters(gPFCi, 0.1f,  0.2f, -65.0f, 2.0f);
+
+	int inhibScale = 2;
+
+	int gV4o = s.createGroup("V4o", nrX*nrY*4, EXCITATORY_NEURON);
+	s.setNeuronParameters(gV4o, 0.02f, 0.2f, -65.0f, 8.0f);
+	int gV4oi = s.createGroup("V4oi", nrX*nrY*4/inhibScale/inhibScale, INHIBITORY_NEURON);
+	s.setNeuronParameters(gV4oi, 0.1f,  0.2f, -65.0f, 2.0f);
+
+
 
 	//{int src_x; int src_y; int dest_x; int dest_y; int overlap; int radius; float  prob;} projParam_t;
 	float v1toV4w = 0.5;
@@ -526,26 +558,6 @@ int main()
 
 
 
-	int gV1ME = s.createSpikeGeneratorGroup("V1ME", nrX*nrY*28*3, EXCITATORY_NEURON);
-	int gMT1 = s.createGroup("MT1", nrX*nrY*8, EXCITATORY_NEURON);
-	int gMT2 = s.createGroup("MT2", nrX*nrY*8, EXCITATORY_NEURON);
-	int gMT3 = s.createGroup("MT3", nrX*nrY*8, EXCITATORY_NEURON);
-	s.setNeuronParameters(gMT1, 0.02f, 0.2f, -65.0f, 8.0f);
-	s.setNeuronParameters(gMT2, 0.02f, 0.2f, -65.0f, 8.0f);
-	s.setNeuronParameters(gMT3, 0.02f, 0.2f, -65.0f, 8.0f);
-	int gMT1i = s.createGroup("MT1i", nrX*nrY*8/4, INHIBITORY_NEURON);
-	int gMT2i = s.createGroup("MT2i", nrX*nrY*8/4, INHIBITORY_NEURON);
-	int gMT3i = s.createGroup("MT3i", nrX*nrY*8/4, INHIBITORY_NEURON);
-	s.setNeuronParameters(gMT1i, 0.1f,  0.2f, -65.0f, 2.0f);
-	s.setNeuronParameters(gMT2i, 0.1f,  0.2f, -65.0f, 2.0f);
-	s.setNeuronParameters(gMT3i, 0.1f,  0.2f, -65.0f, 2.0f);
-
-	int gPFC = s.createGroup("PFC", 50*8, EXCITATORY_NEURON);
-	s.setNeuronParameters(gPFC, 0.02f, 0.2f, -65.0f, 8.0f);
-	int gPFCi = s.createGroup("PFCi", 10*8, INHIBITORY_NEURON);
-	s.setNeuronParameters(gPFCi, 0.1f,  0.2f, -65.0f, 2.0f);
-
-
 
 	s.connect(gV1ME, gMT1, new connectV1toMT(1,synscale*4.5/2,motion_proj1), SYN_FIXED,1000,3000);
 	s.connect(gV1ME, gMT2, new connectV1toMT(1,synscale*4.5/2,motion_proj2), SYN_FIXED,1000,3000);
@@ -565,14 +577,6 @@ int main()
 
 	s.connect(gPFCi, gPFC, new connectPFCitoPFC(50,10,-synscale*1), SYN_FIXED);
 
-
-
-	int inhibScale = 2;
-
-	int gV4o = s.createGroup("V4o", nrX*nrY*4, EXCITATORY_NEURON);
-	s.setNeuronParameters(gV4o, 0.02f, 0.2f, -65.0f, 8.0f);
-	int gV4oi = s.createGroup("V4oi", nrX*nrY*4/inhibScale/inhibScale, INHIBITORY_NEURON);
-	s.setNeuronParameters(gV4oi, 0.1f,  0.2f, -65.0f, 2.0f);
 
 	float biasE[4] = {1, 1.2, 1.3, 1.2};
 	float biasI[4] = {1, 0.9, 1.3, 0.95};
@@ -626,15 +630,6 @@ int main()
 
 	unsigned char* vid = new unsigned char[nrX*nrY*3];
 
-	bool onGPU = true;
-
-	if (!onGPU) {
-		CUDA_CHECK_ERRORS(cudaSetDevice(CUDA_GET_MAXGFLOP_DEVICE_ID()));
-	}
-
-	//initialize the GPU/network
-	s.runNetwork(0,0, onGPU?GPU_MODE:CPU_MODE);
-
 	PoissonRate me(nrX*nrY*28*3,onGPU);
 	PoissonRate red_green(nrX*nrY,onGPU);
 	PoissonRate green_red(nrX*nrY,onGPU);
@@ -658,7 +653,7 @@ int main()
 		s.setSpikeRate(v1Cells[YELLOW_BLUE], &yellow_blue, 1);
 
 		// run the established network for 1 (sec)  and 0 (millisecond), in GPU_MODE
-		s.runNetwork(0,FRAMEDURATION, onGPU?GPU_MODE:CPU_MODE);
+		s.runNetwork(0,FRAMEDURATION);
 
 		if (i==1) {
 			FILE* nid = fopen("results/v1v4PFC/net.dat","wb");

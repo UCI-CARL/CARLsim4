@@ -38,7 +38,7 @@
  * Ver 10/09/2013
  */ 
 
-#include <snn.h>
+#include <carlsim.h>
 void calcColorME(int nrX, int nrY, unsigned char* stim, float* red_green, float* green_red, float* blue_yellow, float* yellow_blue, float* ME, bool GPUpointers);
 extern MTRand	      getRand;
 
@@ -70,14 +70,14 @@ float fast_exp(float x)
 
 
 enum color_name_t { BLUE=0, GREEN, RED, YELLOW};
-string imageName[] = { "blue", "green", "red", "yellow"};
+std::string imageName[] = { "blue", "green", "red", "yellow"};
 
 enum v1color_name_t    { RED_GREEN=0, BLUE_YELLOW, GREEN_RED, YELLOW_BLUE };
-string v1ImageName[] = { "red-green-cells", "blue-yellow-cells",
+std::string v1ImageName[] = { "red-green-cells", "blue-yellow-cells",
 			 "green-red-cells", "yellow-blue-cells"};
 
-string  v4CellNameExc[] = { "Ev4magenta", "Ev4blue", "Ev4cyan", "Ev4green", "Ev4yellow", "Ev4red"};
-string  v4CellNameInh[] = { "Iv4magenta", "Iv4blue", "Iv4cyan", "Iv4green", "Iv4yellow", "Iv4red"};
+std::string  v4CellNameExc[] = { "Ev4magenta", "Ev4blue", "Ev4cyan", "Ev4green", "Ev4yellow", "Ev4red"};
+std::string  v4CellNameInh[] = { "Iv4magenta", "Iv4blue", "Iv4cyan", "Iv4green", "Iv4yellow", "Iv4red"};
 
 enum  v4CellType_t  {MAGENTA_V4=0, BLUE_V4, CYAN_V4, GREEN_V4, YELLOW_V4, RED_V4};
 
@@ -150,7 +150,9 @@ int main()
 
 	FILE* fid;
 
-	CpuSNN s("global");
+	CARLsim s("colorcycle");
+	bool onGPU = true;
+	s.setDefaultSimulationMode(onGPU?GPU_MODE:CPU_MODE,0,false,false);
 
 	int v1Cells[5];
 	int num_V1_groups=6;
@@ -266,14 +268,7 @@ int main()
 
 	unsigned char* vid = new unsigned char[nrX*nrY*3];
 
-	bool onGPU = true;
 
-	if (!onGPU) {
-		CUDA_CHECK_ERRORS(cudaSetDevice(CUDA_GET_MAXGFLOP_DEVICE_ID()));
-	}
-
-	//initialize the GPU/network
-	s.runNetwork(0,0, onGPU?GPU_MODE:CPU_MODE);
 
 	PoissonRate me(nrX*nrY*28*3,onGPU);
 	PoissonRate red_green(nrX*nrY,onGPU);
@@ -295,7 +290,7 @@ int main()
 		s.setSpikeRate(v1Cells[YELLOW_BLUE], &yellow_blue, 1);
 
 		// run the established network for 1 (sec)  and 0 (millisecond), in GPU_MODE
-		s.runNetwork(0,FRAMEDURATION, onGPU?GPU_MODE:CPU_MODE);
+		s.runNetwork(0,FRAMEDURATION);
 
 		if (i==1) {
 			FILE* nid = fopen("results/colorcycle/net.dat","wb");

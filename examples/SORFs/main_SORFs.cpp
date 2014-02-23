@@ -11,9 +11,9 @@
 #ifdef _MSC_VER
 #pragma warning(disable:4786)
 #endif
-#include <snn.h>
+#include <carlsim.h>
 //TODO: THESE SHOULD BE GONE!!
-#include "PropagatedSpikeBuffer.h"
+//#include "PropagatedSpikeBuffer.h"
 //TODO: Still need this one.
 #include "../common/stimGenerator.h"
 // include the PTI framework classes and functions
@@ -21,9 +21,9 @@
 
 using namespace std;
 
-//#define SIM_MODE	    CPU_MODE
+//#define SIM_MODE      CPU_MODE
 #define SIM_MODE            GPU_MODE 
-#define SPON_RATE 	    1.0
+#define SPON_RATE       1.0
 #define REFRACTORY_PERIOD   1.0
 // #define MAX_POISS_RATE    20 // also try 75 hz // now a variable
 #define NUM_PATTERNS        40
@@ -34,12 +34,12 @@ using namespace std;
 #define DUMMY_WEIGHT (0.0160f) // was 0.2f
 #define MAX_TARGET_FIRING_RATE  60 //used in fitness function to use as target firing rate.
 // Jay's STP parameters.
-#define GABOR_STP_U_Inh  	0.5
-#define	GABOR_STP_tD_Inh 	800
-#define	GABOR_STP_tF_Inh 	1000
-#define GABOR_STP_U_Exc  	0.2
-#define	GABOR_STP_tD_Exc 	700
-#define	GABOR_STP_tF_Exc 	20
+#define GABOR_STP_U_Inh   0.5
+#define GABOR_STP_tD_Inh  800
+#define GABOR_STP_tF_Inh  1000
+#define GABOR_STP_U_Exc   0.2
+#define GABOR_STP_tD_Exc  700
+#define GABOR_STP_tF_Exc  20
 #define NUM_OUTPUT              4 //number of output exc and inh neurons.
 #define TUNING_SIGMA            15*(PI/180)
 
@@ -107,7 +107,7 @@ float tuningCurve(float _rMax, float _maxAngle, float _sigma, float _noiseRate, 
 }
 
 // 3-component fitness function to test the fitness of each individual (SNN).
-int evaluateFitness(CpuSNN& snn, double* _fitness)
+int evaluateFitness(CARLsim& snn, double* _fitness)
 {
   // Phase 0: Initialize values and set target firing rates
   // ---------------------------------------------------------------------
@@ -171,26 +171,26 @@ int evaluateFitness(CpuSNN& snn, double* _fitness)
       // first run the network for 500 ms with noise input so we have
       // an accurate count.  (This is probably unnecessary.)
       /*
-	for(int configId=0;configId<NUM_CONFIG;configId++){
-	// set the correct spike rate for each configuration.
-	snn.setSpikeRate(inputOnGrp, noiseGen, 1, configId);
-	snn.setSpikeRate(inputOffGrp, noiseGen, 1, configId);
-	}
-	// run the network with noise/background input
-	snn.runNetwork(TEST_RUN_SEC, TEST_RUN_MSEC, SIM_MODE);
+  for(int configId=0;configId<NUM_CONFIG;configId++){
+  // set the correct spike rate for each configuration.
+  snn.setSpikeRate(inputOnGrp, noiseGen, 1, configId);
+  snn.setSpikeRate(inputOffGrp, noiseGen, 1, configId);
+  }
+  // run the network with noise/background input
+  snn.runNetwork(TEST_RUN_SEC, TEST_RUN_MSEC, SIM_MODE);
       */  //seems to be accurate without this.
       // reset spike counters and set spike rates for each configuration.
       for(int configId=0;configId<NUM_CONFIG;configId++){
         //we need to reset the correct spike counter group each config.
         int currentGrpId = snn.getGroupId(excGrp,configId);
-        snn.resetSpikeCntUtil(currentGrpId);	
+        snn.resetSpikeCntUtil(currentGrpId);  
         // set the correct spike rate for each configuration.
         snn.setSpikeRate(inputOnGrp, (spikeResponseOn[stim]), 1, configId);
         snn.setSpikeRate(inputOffGrp, (spikeResponseOff[stim]), 1, configId);
       }
 
       // run the network
-      snn.runNetwork(TEST_RUN_SEC, TEST_RUN_MSEC, SIM_MODE);
+      snn.runNetwork(TEST_RUN_SEC, TEST_RUN_MSEC);
       // count the spikes for each configuraton.
       for(int configId=0; configId<NUM_CONFIG; configId++){
         int currentGrpId = snn.getGroupId(excGrp,configId);
@@ -529,7 +529,8 @@ int main_fitness_function(int argc, char *argv[])
   // --------------------------------------------------------------------------------------------------
 
 
-  CpuSNN snn("SpikingNeuralNetworkEvolvedUsingEO",NUM_CONFIG,RAND_SEED);
+  CARLsim snn("SpikingNeuralNetworkEvolvedUsingEO",NUM_CONFIG,RAND_SEED);
+  snn.setDefaultSimulationMode(SIM_MODE,0,false,false);
 
   //  create a population or group of neurons with the label "inhib", having
   inputOnGrp     = snn.createSpikeGeneratorGroup("spike_input_on", nPois, EXCITATORY_POISSON);
@@ -550,10 +551,13 @@ int main_fitness_function(int argc, char *argv[])
   inputOffToBufferOff_cid = snn.connect(inputOffGrp, bufferOffGrp, "one-to-one", 0.2f, 0.6f, 1.0, 1, 1, SYN_FIXED);
   // The initial connections for these weights are labelled DUMMY_WT because they are
   // replaced by the evolutionary algorithm.
-  bufferOnToExc_cid       = snn.connect(bufferOnGrp,  excGrp, "full", DUMMY_WEIGHT/4, DUMMY_WEIGHT, 1.0, 1, 1, SYN_PLASTIC, "random");
-  bufferOffToExc_cid      = snn.connect(bufferOffGrp, excGrp, "full", DUMMY_WEIGHT/4, DUMMY_WEIGHT, 1.0, 1, 1, SYN_PLASTIC, "random");
+//  bufferOnToExc_cid       = snn.connect(bufferOnGrp,  excGrp, "full", DUMMY_WEIGHT/4, DUMMY_WEIGHT, 1.0, 1, 1, SYN_PLASTIC, "random");
+//  bufferOffToExc_cid      = snn.connect(bufferOffGrp, excGrp, "full", DUMMY_WEIGHT/4, DUMMY_WEIGHT, 1.0, 1, 1, SYN_PLASTIC, "random");
+  bufferOnToExc_cid       = snn.connect(bufferOnGrp,  excGrp, "full", DUMMY_WEIGHT/4, DUMMY_WEIGHT, 1.0, 1, 1, SYN_PLASTIC);
+  bufferOffToExc_cid      = snn.connect(bufferOffGrp, excGrp, "full", DUMMY_WEIGHT/4, DUMMY_WEIGHT, 1.0, 1, 1, SYN_PLASTIC);
 
-  excToInh_cid            = snn.connect(excGrp, inhGrp, "full", DUMMY_WEIGHT/4, DUMMY_WEIGHT, 1.0,  1, 1, SYN_PLASTIC, "random");
+//  excToInh_cid            = snn.connect(excGrp, inhGrp, "full", DUMMY_WEIGHT/4, DUMMY_WEIGHT, 1.0,  1, 1, SYN_PLASTIC, "random");
+  excToInh_cid            = snn.connect(excGrp, inhGrp, "full", DUMMY_WEIGHT/4, DUMMY_WEIGHT, 1.0,  1, 1, SYN_PLASTIC);
 
   inhToExc_cid            = snn.connect(inhGrp, excGrp, "full", -0.21, -0.21, 1.0, 1, 1, SYN_FIXED); // original
   //inhToExc_cid            = snn.connect(inhGrp, excGrp, "full", -1*DUMMY_WEIGHT, -1*DUMMY_WEIGHT, 1.0, 1, 1, SYN_FIXED);
@@ -589,8 +593,8 @@ int main_fitness_function(int argc, char *argv[])
   //#define HOMEO_FACTOR                    (5.0)
   //#define HOMEO_AVERAGE_TIME_SCALE        (10.0)
   //I may need to change the homeofactor to 0.01
-#define HOMEO_FACTOR 			(0.1) //original
-#define HOMEO_AVERAGE_TIME_SCALE 	(10.0) // original: begin with this value from Jay's
+#define HOMEO_FACTOR      (0.1) //original
+#define HOMEO_AVERAGE_TIME_SCALE  (10.0) // original: begin with this value from Jay's
   snn.setHomeostasis(excGrp, true, HOMEO_FACTOR, HOMEO_AVERAGE_TIME_SCALE, ALL);
   snn.setHomeostasis(inhGrp, true, HOMEO_FACTOR, HOMEO_AVERAGE_TIME_SCALE, ALL);
 
@@ -814,10 +818,10 @@ int main_fitness_function(int argc, char *argv[])
       // makes sure that we don't spend extra time
       // evaluating an individual that already has a fitness
       /*
-	if (p->fitnessAlreadyExists(IndiId)){// seems to work
-	printf("fitness exists for this individual, moving to next individual\n");
-	continue;
-	}
+  if (p->fitnessAlreadyExists(IndiId)){// seems to work
+  printf("fitness exists for this individual, moving to next individual\n");
+  continue;
+  }
       */
       for(int configId=0; configId < NUM_CONFIG; configId++, IndiId++, globalIndiId++){
         bool finished = false;
@@ -858,27 +862,27 @@ int main_fitness_function(int argc, char *argv[])
 
         //selecting the correct configId/IndiId match.
         /*
-	  while (!finished) {
-	  if (IndiId >= p->getPopulationSize()) {
-	  finished = true;
-	  }
-	  else if (p->fitnessAlreadyExists(IndiId)) {
-	  IndiId++;
-	  }
-	  else {
-	  finished = true;
-	  //configIndiId = IndiId;
-	  newNetworks=true;
-	  }
-	  }
-	*/
+    while (!finished) {
+    if (IndiId >= p->getPopulationSize()) {
+    finished = true;
+    }
+    else if (p->fitnessAlreadyExists(IndiId)) {
+    IndiId++;
+    }
+    else {
+    finished = true;
+    //configIndiId = IndiId;
+    newNetworks=true;
+    }
+    }
+  */
         //condition where we have no configurations to run
         /*
-	  if(!newNetworks){
-	  //break out of IndiId loop to avoid simulations.
-	  //set special flag to not run sim.
-	  }
-	*/
+    if(!newNetworks){
+    //break out of IndiId loop to avoid simulations.
+    //set special flag to not run sim.
+    }
+  */
         // Get value of EO parameters
         // --------------------------------------------------------
         // param 1: inhibitory to excitatory weights (static)
@@ -891,7 +895,7 @@ int main_fitness_function(int argc, char *argv[])
         // param 4: alpha LTP input
         ALPHA_LTP_INPUT[configId] = p->getParam(IndiId,s1="alpha_ltp_input");
         // param 5: alpha LTD input
-        ALPHA_LTD_INPUT[configId] = p->getParam(IndiId,s1="alpha_ltd_input");		
+        ALPHA_LTD_INPUT[configId] = p->getParam(IndiId,s1="alpha_ltd_input");   
         // param 6: tau LTP inh
         TAU_LTP_INH[configId] = p->getParam(IndiId,s1="tau_ltp_inh");
         // param 7: tau DELTA input
@@ -937,7 +941,7 @@ int main_fitness_function(int argc, char *argv[])
           }
         }
         // param 11: base firing rate excGrp (homeostasis)
-        snn.setBaseFiring(excGrp, configId, baseFiring_excGrp_param[configId], 0.0);
+        snn.setHomeoBaseFiringRate(excGrp, configId, baseFiring_excGrp_param[configId], 0.0);
         // param 12: buffer to excitatory weights (plastic)
         // for on buffer to exc weights
         gc = snn.getConnectInfo(bufferOnToExc_cid, configId);
@@ -952,7 +956,7 @@ int main_fitness_function(int argc, char *argv[])
         gc->initWt = exc_weight_param[configId]/4.0f;
         gc->maxWt  = exc_weight_param[configId];
         // param 14: base firing rate for inhGrp (homeostasis)
-        snn.setBaseFiring(inhGrp, configId, baseFiring_inhGrp_param[configId], 0.0);
+        snn.setHomeoBaseFiringRate(inhGrp, configId, baseFiring_inhGrp_param[configId], 0.0);
       } // end loop over configurations
 
 
@@ -1025,14 +1029,14 @@ int main_fitness_function(int argc, char *argv[])
         snn.setSpikeRate(inputOffGrp,(spikeResponseOff[randNum]));
 
         // run network with chosen pattern
-        snn.runNetwork(PRES_RUN_SEC, PRES_RUN_MSEC, SIM_MODE);
+        snn.runNetwork(PRES_RUN_SEC, PRES_RUN_MSEC);
 
         // now do the off interval presentation
         snn.setSpikeRate(inputOnGrp,noiseGen);
         snn.setSpikeRate(inputOffGrp,noiseGen);
 
         // run network with 'rest' interval
-        snn.runNetwork(OFF_RUN_SEC, OFF_RUN_MSEC, SIM_MODE);
+        snn.runNetwork(OFF_RUN_SEC, OFF_RUN_MSEC);
       }
       // we can print out the weights here once, before they get evaluated
       // so we can make sure it is working and the weights have not changed

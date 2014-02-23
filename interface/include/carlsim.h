@@ -1,14 +1,13 @@
 #ifndef _CARLSIM_H_
 #define _CARLSIM_H_
 
-//#include "../src/snn.h"
 #include <snn.h>
 #include <string>
 
 
 class CARLsim {
 public:
-	CARLsim(std::string netName="SNN", int numConfig=1, int simType=CPU_MODE, int ithGPU=0,
+	CARLsim(std::string netName="SNN", int numConfig=1, int randSeed=42, int simType=CPU_MODE, int ithGPU=0,
 				bool enablePrint=false, bool copyState=false);
 	~CARLsim();
 
@@ -89,6 +88,8 @@ public:
 	//! reads the network state from file
 	void readNetwork(FILE* fid);
 
+	void resetSpikeCntUtil(int grpId=ALL); //!< resets spike count for particular neuron group
+
 	//! Sets up a spike generator
 	void setSpikeGenerator(int grpId, SpikeGenerator* spikeGen, int configId=ALL);
 
@@ -100,13 +101,44 @@ public:
 
 	void setSpikeRate(int grpId, PoissonRate* spikeRate, int refPeriod=1, int configId=ALL);
 
+	//! switches default from CPU mode <-> GPU mode
+	void switchCPUGPUmode();
+
+	//! Resets either the neuronal firing rate information by setting resetFiringRate = true and/or the
+	//! weight values back to their default values by setting resetWeights = true.
+	void updateNetwork(bool resetFiringInfo, bool resetWeights);
+
 	//!< writes the network state to file
 	void writeNetwork(FILE* fid);
 
+	//! function writes population weights from gIDpre to gIDpost to file fname in binary.
+	void writePopWeights(std::string fname, int gIDpre, int gIDpost, int configId=0);
 
 
 
 	// +++++ PUBLIC METHODS: GETTER / SETTERS +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
+
+	grpConnectInfo_t* getConnectInfo(int connectId, int configId=0); //!< gets connection info struct
+
+	int getGroupId(int grpId, int configId=0);
+	group_info_t getGroupInfo(int grpId, int configId=0); //!< gets group info struct
+	std::string getGroupName(int grpId, int configId=0);
+
+	//! Returns pointer to 1D array of the number of spikes every neuron in the group has fired
+	unsigned int* getSpikeCntPtr(int grpId, int simType);
+
+	//! use default simulation mode
+	unsigned int* getSpikeCntPtr(int grpId);
+
+	/*!
+	 * \brief Sets enableGpuSpikeCntPtr to true or false.  True allows getSpikeCntPtr_GPU to copy firing
+	 * state information from GPU kernel to cpuNetPtrs.  Warning: setting this flag to true will slow down
+	 * the simulation significantly.
+	 */
+	void setCopyFiringStateFromGPU(bool enableGPUSpikeCntPtr);
+
+
+	// +++++ PUBLIC METHODS: SET DEFAULTS +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
 	//! sets default values for conductance decays
 	void setDefaultConductanceDecay(float tdAMPA, float tdNMDA, float tdGABAa, float tdGABAb);
@@ -123,9 +155,6 @@ public:
 	//! sets default values for STP params (neurType either EXCITATORY_NEURON or INHIBITORY_NEURON)
 	void setDefaultSTPparams(int neurType, float STP_U, float STP_tD, float STP_tF);
 
-	//! switches default from CPU mode <-> GPU mode
-	void switchCPUGPUmode();
-
 
 	// +++++ PUBLIC PROPERTIES ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
@@ -141,6 +170,7 @@ private:
 
 	CpuSNN* snn_;			//!< an instance of CARLsim core class
 	int numConfig_;			//!< number of configurations
+	int randSeed_;			//!< RNG seed
 	int simType_;			//!< CPU_MODE or GPU_MODE
 	int ithGPU_;			//!< on which device to establish a context
 	bool enablePrint_;

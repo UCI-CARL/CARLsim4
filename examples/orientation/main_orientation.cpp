@@ -38,7 +38,7 @@
  * Ver 10/09/2013
  */ 
 
-#include <snn.h>
+#include <carlsim.h>
 void calcColorME(int nrX, int nrY, unsigned char* stim, float* red_green, float* green_red, float* blue_yellow, float* yellow_blue, float* ME, bool GPUpointers);
 extern MTRand	      getRand;
 
@@ -181,7 +181,10 @@ int main()
 	// use command-line specified CUDA device, otherwise use device with highest Gflops/s
 //	cutilSafeCall(cudaSetDevice(cutGetMaxGflopsDeviceId()));
 
-	CpuSNN s("global");
+	CARLsim s("orientation");
+	bool onGPU = true;
+	s.setDefaultSimulationMode(onGPU?GPU_MODE:CPU_MODE,0,false,false);
+
 
 	int gV1ME = s.createSpikeGeneratorGroup("V1ME", nrX*nrY*28*3, EXCITATORY_NEURON);
 
@@ -218,15 +221,6 @@ int main()
 
 	unsigned char* vid = new unsigned char[nrX*nrY*3];
 
-	bool onGPU = true;
-
-	if (!onGPU) {
-		CUDA_CHECK_ERRORS(cudaSetDevice(CUDA_GET_MAXGFLOP_DEVICE_ID()));
-	}
-
-	//initialize the GPU/network
-	s.runNetwork(0,0, onGPU?GPU_MODE:CPU_MODE);
-
 	PoissonRate me(nrX*nrY*28*3,onGPU);
 	PoissonRate red_green(nrX*nrY,onGPU);
 	PoissonRate green_red(nrX*nrY,onGPU);
@@ -244,7 +238,7 @@ int main()
 		s.setSpikeRate(gV1ME, &me, 1);
 
 		// run the established network for 1 (sec)  and 0 (millisecond), in GPU_MODE
-		s.runNetwork(0,FRAMEDURATION, onGPU?GPU_MODE:GPU_MODE);
+		s.runNetwork(0,FRAMEDURATION);
 
 		if (i==1) {
 			FILE* nid = fopen("results/orientation/net.dat","wb");
