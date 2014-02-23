@@ -1,8 +1,45 @@
-#include "../include/carlsim.h"
+#include <carlsim.h>
 
-#include "../../src/snn.h"
+#include <snn.h>
 #include <string>
 #include <iostream>
+
+// includes for mkdir
+#if defined(CREATE_SPIKEDIR_IF_NOT_EXISTS)
+	#include <sys/stat.h>
+	#include <errno.h>
+	#include <libgen.h>
+#endif
+
+
+// FIXME: consider moving this... also, see class SpikeMonitor in snn.h
+class WriteSpikesToFile: public SpikeMonitor {
+public:
+	WriteSpikesToFile(FILE* fid) {
+		fileId_ = fid;
+	}
+	~WriteSpikesToFile() {}; // TODO: where does fileId_ get closed?
+
+	void update(CpuSNN* snn, int grpId, unsigned int* neuronIds, unsigned int* timeCnts) {
+		int pos    = 0;
+
+		for (int t=0; t < 1000; t++) {
+			for(int i=0; i<timeCnts[t];i++,pos++) {
+				int time = t + snn->getSimTime() - 1000;
+				int id   = neuronIds[pos];
+				int cnt = fwrite(&time,sizeof(int),1,fileId_);
+				assert(cnt != 0);
+				cnt = fwrite(&id,sizeof(int),1,fileId_);
+				assert(cnt != 0);
+			}
+		}
+
+		fflush(fileId_);
+	}
+
+private:
+	FILE* fileId_;
+};
 
 
 
@@ -10,13 +47,22 @@
 /// CONSTRUCTOR / DESTRUCTOR
 /// **************************************************************************************************************** ///
 
-CARLsim::CARLsim(std::string netName, int numConfig) {
-
+CARLsim::CARLsim(std::string netName, int numConfig, int simType, int ithGPU, bool enablePrint, bool copyState) {
 	snn_ = new CpuSNN(netName.c_str());
-	numConfig_ = numConfig;
-	hasConnectBegun_ = false;
-	hasSetConductALL_ = false;
-	hasRunNetwork_ = false;
+	numConfig_ 					= numConfig;
+	simType_ 					= simType;
+	ithGPU_ 					= ithGPU;
+	enablePrint_ 				= enablePrint;
+	copyState_ 					= copyState;
+
+	hasConnectBegun_ 			= false;
+	hasRunNetwork_  			= false;
+
+	hasSetConductALL_ 			= false;
+	hasSetHomeoALL_ 			= false;
+	hasSetHomeoBaseFiringALL_ 	= false;
+	hasSetSTDPALL_ 				= false;
+	hasSetSTPALL_ 				= false;
 
 	// set default time constants for synaptic current decay
 	// TODO: add ref
@@ -24,6 +70,27 @@ CARLsim::CARLsim(std::string netName, int numConfig) {
 	def_tdNMDA_  = 150.0f;	// default decay time for NMDA (ms)
 	def_tdGABAa_ = 6.0f;	// default decay time for GABAa (ms)
 	def_tdGABAb_ = 150.0f;	// default decay time for GABAb (ms)
+
+	// set default values for STDP params
+	// TODO: add ref
+	def_STDP_alphaLTP_ = 0.001f;
+	def_STDP_tauLTP_   = 20.0f;
+	def_STDP_alphaLTD_ = 0.0012f;
+	def_STDP_tauLTD_   = 20.0f;
+
+	// set default values for STP params
+	// TODO: add ref
+	def_STP_U_exc_  = 0.2f;
+	def_STP_tD_exc_ = 700.0f;
+	def_STP_tF_exc_ = 20.0f;
+	def_STP_U_inh_  = 0.5f;
+	def_STP_tD_inh_ = 800.0f;
+	def_STP_tF_inh_ = 1000.0f;
+
+	// set default homeostasis params
+	// TODO: add ref, find good values
+	def_homeo_scale_ = 0.1f;
+	def_homeo_avgTimeScale_ = 10.f;
 }
 
 CARLsim::~CARLsim() {
@@ -36,6 +103,8 @@ CARLsim::~CARLsim() {
 /// **************************************************************************************************************** ///
 /// PUBLIC METHODS
 /// **************************************************************************************************************** ///
+
+// +++++++++ PUBLIC METHODS: SETTING UP A SIMULATION ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
 // shortcut to make SYN_FIXED with one weight and one delay value
 int CARLsim::connect(int grpId1, int grpId2, const std::string& connType, float wt, float connProb, uint8_t delay) {
@@ -54,44 +123,39 @@ int CARLsim::connect(int grpId1, int grpId2, const std::string& connType, float 
 	return snn_->connect(grpId1, grpId2, connType, initWt, maxWt, connProb, minDelay, maxDelay, synWtType);
 }
 
+// custom connectivity profile
+int CARLsim::connect(int grpId1, int grpId2, ConnectionGenerator* conn, bool synWtType, int maxM, int maxPreM) {
+	assert(!hasRunNetwork_); // TODO: make nice
+	hasConnectBegun_ = true; // inform class that creating groups etc. is no longer allowed
+
+	return snn_->connect(grpId1, grpId2, conn, synWtType, maxM, maxPreM);
+}
+
 
 // create group of Izhikevich spiking neurons
 int CARLsim::createGroup(std::string grpName, unsigned int nNeur, int neurType, int configId) {
 	assert(!hasConnectBegun_ && !hasRunNetwork_); // TODO: make nice error message
 
-	if (hasSetConductALL_) {
-		// user has called setConductances on ALL groups: adding a group now will not have conductances set
+	// if user has called any set functions with grpId=ALL, and is now adding another group, previously set properties
+	// will not apply to newly added group
+	if (hasSetConductALL_)
 		userWarnings_.push_back("USER WARNING: Make sure to call setConductances on group "+grpName);
-	}
+	if (hasSetSTPALL_)
+		userWarnings_.push_back("USER WARNING: Make sure to call setSTP on group "+grpName);
+	if (hasSetSTDPALL_)
+		userWarnings_.push_back("USER WARNING: Make sure to call setSTDP on group "+grpName);
+	if (hasSetHomeoALL_)
+		userWarnings_.push_back("USER WARNING: Make sure to call setHomeostasis on group "+grpName);
+	if (hasSetHomeoBaseFiringALL_)
+		userWarnings_.push_back("USER WARNING: Make sure to call setHomeoBaseFiringRate on group "+grpName);
 
 	return snn_->createGroup(grpName.c_str(),nNeur,neurType,configId);
 }
-
 
 // create group of spike generators
 int CARLsim::createSpikeGeneratorGroup(std::string grpName, unsigned int nNeur, int neurType, int configId) {
 	assert(!hasConnectBegun_ && !hasRunNetwork_); // TODO: make nicer
 	return snn_->createSpikeGeneratorGroup(grpName.c_str(),nNeur,neurType,configId);
-}
-
-
-void CARLsim::runNetwork() {
-	// before running network, make sure user didn't provoque any user warnings
-	if (userWarnings_.size()) {
-		for (int i=0; i<userWarnings_.size(); i++)
-			printf("%s\n",userWarnings_[i].c_str()); // print all user warnings
-
-		printf("Ignore warnings and continue? Y/n ");
-		char ignoreWarn = std::cin.get();
-		if (std::cin.fail() || ignoreWarn!='y' || ignoreWarn!='Y') {
-			printf("exiting...\n");
-			exit(1);
-		}
-	}
-
-	// TODO: run network
-	hasConnectBegun_ = true;
-	hasRunNetwork_ = true;
 }
 
 
@@ -120,6 +184,43 @@ void CARLsim::setConductances(int grpId, bool isSet, float tdAMPA, float tdNMDA,
 	}
 }
 
+// set default homeostasis params
+void CARLsim::setHomeostasis(int grpId, bool isSet, int configId) {
+	assert(!hasRunNetwork_); // TODO make nice
+	hasSetHomeoALL_ = grpId==ALL; // adding groups after this will not have homeostasis set
+
+	if (isSet) { // enable homeostasis, use default values
+		snn_->setHomeostasis(grpId,true,def_homeo_scale_,def_homeo_avgTimeScale_,configId);
+		if (grpId!=ALL && hasSetHomeoBaseFiringALL_)
+			userWarnings_.push_back("USER WARNING: Make sure to call setHomeoBaseFiringRate on group "
+										+ snn_->getGroupName(grpId));
+	} else { // discable conductances
+		snn_->setHomeostasis(grpId,false,0.0f,0.0f,configId);
+	}
+}
+
+// set custom homeostasis params for group
+void CARLsim::setHomeostasis(int grpId, bool isSet, float homeoScale, float avgTimeScale, int configId) {
+	assert(!hasRunNetwork_); // TODO make nice
+	hasSetHomeoALL_ = grpId==ALL; // adding groups after this will not have homeostasis set
+
+	if (isSet) { // enable homeostasis, use default values
+		snn_->setHomeostasis(grpId,true,homeoScale,avgTimeScale,configId);
+		if (grpId!=ALL && hasSetHomeoBaseFiringALL_)
+			userWarnings_.push_back("USER WARNING: Make sure to call setHomeoBaseFiringRate on group "
+										+ snn_->getGroupName(grpId));
+	} else { // discable conductances
+		snn_->setHomeostasis(grpId,false,0.0f,0.0f,configId);
+	}
+}
+
+// set a homeostatic target firing rate (enforced through homeostatic synaptic scaling)
+void CARLsim::setHomeoBaseFiringRate(int grpId, float baseFiring, float baseFiringSD, int configId) {
+	assert(!hasRunNetwork_); // TODO make nice
+	hasSetHomeoBaseFiringALL_ = grpId=ALL; // adding groups after this will not have base firing set
+
+	snn_->setHomeoBaseFiringRate(grpId, baseFiring, baseFiringSD, configId);
+}
 
 // set neuron parameters for Izhikevich neuron, with standard deviations
 void CARLsim::setNeuronParameters(int grpId, float izh_a, float izh_a_sd, float izh_b, float izh_b_sd,
@@ -138,21 +239,283 @@ void CARLsim::setNeuronParameters(int grpId, float izh_a, float izh_b, float izh
 	snn_->setNeuronParameters(grpId, izh_a, 0.0f, izh_b, 0.0f, izh_c, 0.0f, izh_d, 0.0f, configId);
 }
 
+// set STDP, default
+void CARLsim::setSTDP(int grpId, bool isSet, int configId) {
+	assert(!hasRunNetwork_); // TODO make nice
+	hasSetSTDPALL_ = grpId==ALL; // adding groups after this will not have conductances set
+
+	if (isSet) { // enable STDP, use default values
+		snn_->setSTDP(grpId,true,def_STDP_alphaLTP_,def_STDP_tauLTP_,def_STDP_alphaLTD_,def_STDP_tauLTD_,configId);
+	} else { // disable STDP
+		snn_->setSTDP(grpId,false,0.0f,0.0f,0.0f,0.0f,configId);
+	}	
+}
+
+// set STDP, custom
+void CARLsim::setSTDP(int grpId, bool isSet, float alphaLTP, float tauLTP, float alphaLTD, float tauLTD, int configId) {
+	assert(!hasRunNetwork_); // TODO make nice
+	hasSetSTDPALL_ = grpId==ALL; // adding groups after this will not have conductances set
+
+	if (isSet) { // enable STDP, use custom values
+		assert(tauLTP>0); // TODO make nice
+		assert(tauLTD>0);
+		snn_->setSTDP(grpId,true,alphaLTP,tauLTP,alphaLTD,tauLTD,configId);
+	} else { // disable STDP
+		snn_->setSTDP(grpId,false,0.0f,0.0f,0.0f,0.0f,configId);
+	}
+}
+
+// set STP, default
+void CARLsim::setSTP(int grpId, bool isSet, int configId) {
+	assert(!hasRunNetwork_); // TODO make nice
+	hasSetSTPALL_ = grpId==ALL; // adding groups after this will not have conductances set
+
+	if (isSet) { // enable STDP, use default values
+		assert(snn_->isExcitatoryGroup(grpId) || snn_->isInhibitoryGroup(grpId)); // TODO make nice
+
+		if (snn_->isExcitatoryGroup(grpId))
+			snn_->setSTP(grpId,true,def_STP_U_exc_,def_STP_tD_exc_,def_STP_tF_exc_,configId);
+		else if (snn_->isInhibitoryGroup(grpId))
+			snn_->setSTP(grpId,true,def_STP_U_inh_,def_STP_tD_inh_,def_STP_tF_inh_,configId);
+		else {
+			// some error message
+		}
+	} else { // disable STDP
+		snn_->setSTP(grpId,false,0.0f,0.0f,0.0f,configId);
+	}		
+}
+
+// set STP, custom
+void CARLsim::setSTP(int grpId, bool isSet, float STP_U, float STP_tD, float STP_tF, int configId) {
+	assert(!hasRunNetwork_); // TODO make nice
+	hasSetSTPALL_ = grpId==ALL; // adding groups after this will not have conductances set
+
+	if (isSet) { // enable STDP, use default values
+		assert(snn_->isExcitatoryGroup(grpId) || snn_->isInhibitoryGroup(grpId)); // TODO make nice
+
+		snn_->setSTP(grpId,true,STP_U,STP_tD,STP_tF,configId);
+	} else { // disable STDP
+		snn_->setSTP(grpId,false,0.0f,0.0f,0.0f,configId);
+	}		
+}
+
+
+// +++++++++ PUBLIC METHODS: RUNNING A SIMULATION +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
+
+// run network in default simulation mode
+// this way, you don't need to specify GPU_MODE every time you call runNetwork
+// use CARLsim::setDefaultSimulationMode instead
+int CARLsim::runNetwork(int nSec, int nMsec) {
+	if (!hasRunNetwork_) {
+		handleUserWarnings();	// before running network, make sure user didn't provoque any user warnings
+		printSimulationSpecs();	// first time around, show simMode etc.
+	}
+
+	hasConnectBegun_ = true;
+	hasRunNetwork_ = true;
+
+	return snn_->runNetwork(nSec, nMsec, simType_, ithGPU_, enablePrint_, copyState_);
+}
+
+// run network with custom mode and options
+int CARLsim::runNetwork(int nSec, int nMsec, int simType, int ithGPU, bool enablePrint, bool copyState) {
+	if (!hasRunNetwork_) {
+		handleUserWarnings();	// before running network, make sure user didn't provoque any user warnings
+		printSimulationSpecs(); // first time around, show simMode etc.
+	}
+
+	hasConnectBegun_ = true;
+	hasRunNetwork_ = true;
+
+	return snn_->runNetwork(nSec, nMsec, simType, ithGPU, enablePrint, copyState);	
+}
+
+
+// sets update cycle for log messages
+void CARLsim::setLogCycle(unsigned int cnt, int mode, FILE *fp) {
+	assert(!hasRunNetwork_); // TODO make nice
+	snn_->setLogCycle(cnt, mode, fp);
+}
+
+
+// +++++++++ PUBLIC METHODS: INTERACTING WITH A SIMULATION ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
+
+// reads network state from file
+void CARLsim::readNetwork(FILE* fid) {
+	assert(!hasRunNetwork_); // TODO make nice
+	snn_->readNetwork(fid);
+}
+
+// sets up a spike generator
+void CARLsim::setSpikeGenerator(int grpId, SpikeGenerator* spikeGen, int configId) {
+	assert(!hasRunNetwork_); // TODO make nice
+	assert(grpId!=ALL);
+
+	snn_->setSpikeGenerator(grpId,spikeGen,configId);
+}
+
+// set spike monitor for a group
+void CARLsim::setSpikeMonitor(int grpId, SpikeMonitor* spikeMon, int configId) {
+	assert(!hasRunNetwork_); // TODO make nice
+	assert(grpId!=ALL);
+	snn_->setSpikeMonitor(grpId,spikeMon,configId);
+}
+
+
+// set spike monitor for group and write spikes to file
+void CARLsim::setSpikeMonitor(int grpId, const std::string& fname, int configId) {
+	assert(!hasRunNetwork_); // TODO make nice
+	assert(configId!=ALL);
+	assert(grpId!=ALL);
+
+	// try to open spike file
+	FILE* fid = fopen(fname.c_str(),"wb"); // FIXME: where does fid get closed?
+	if (fid==NULL) {
+		// file could not be opened
+
+		#if defined(CREATE_SPIKEDIR_IF_NOT_EXISTS)
+			// if option set, attempt to create directory
+			int status;
+
+			// this is annoying...for dirname we need to convert from const string to char*
+	    	char fchar[200];
+	    	strcpy(fchar,fname.c_str());
+
+			#if defined(_WIN32) || defined(_WIN64) // TODO: test it
+				status = _mkdir(dirname(fchar); // Windows platform
+			#else
+			    status = mkdir(dirname(fchar), 0777); // Unix
+			#endif
+			if (status==-1 && errno!=EEXIST) {
+				fprintf(stderr,"ERROR %d: could not create spike file '%s', directory '%%CARLSIM_ROOT%%/results/' does not exist\n",errno,fname.c_str());
+				exit(1);
+		    }
+
+			// now that the directory is created, fopen file
+			fid = fopen(fname.c_str(),"wb");
+		#else
+		    // default case: print error and exit
+		    fprintf(stderr,"ERROR: File \"%s\" could not be opened, please check if it exists.\n",fname.c_str());
+		    fprintf(stderr,"       Enable option CREATE_SPIKEDIR_IF_NOT_EXISTS in config.h to attempt creating the "
+			    "specified subdirectory automatically.\n");
+		    exit(1);
+		#endif
+	}
+
+	setSpikeMonitor(grpId, new WriteSpikesToFile(fid), configId);
+}
+
+// assign spike rate to poisson group
+void CARLsim::setSpikeRate(int grpId, PoissonRate* spikeRate, int refPeriod, int configId) {
+	assert(!hasRunNetwork_); // TODO make nice
+
+	snn_->setSpikeRate(grpId, spikeRate, refPeriod, configId);
+}
+
+// writes network state to file
+void CARLsim::writeNetwork(FILE* fid) {
+	snn_->writeNetwork(fid);
+}
 
 
 
-/// **************************************************************************************************************** ///
-/// PUBLIC GETTERS / SETTERS
-/// **************************************************************************************************************** ///
+// +++++++++ PUBLIC METHODS: SETTERS / GETTERS ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
 // set default values for conductance decay times
 void CARLsim::setDefaultConductanceDecay(float tdAMPA, float tdNMDA, float tdGABAa, float tdGABAb) {
+	assert(tdAMPA>0); // TODO make nice
+	assert(tdNMDA>0);
+	assert(tdGABAa>0);
+	assert(tdGABAb>0);
+
 	def_tdAMPA_  = tdAMPA;
 	def_tdNMDA_  = tdNMDA;
 	def_tdGABAa_ = tdGABAa;
 	def_tdGABAb_ = tdGABAb;
 }
 
+void CARLsim::setDefaultHomeostasisParams(float homeoScale, float avgTimeScale) {
+	assert(avgTimeScale>0); // TODO make nice
+
+	def_homeo_scale_ = homeoScale;
+	def_homeo_avgTimeScale_ = avgTimeScale;
+}
+
+// set default simulation mode
+void CARLsim::setDefaultSimulationMode(int simType, int ithGPU, bool enablePrint, bool copyState) {
+	assert(simType==CPU_MODE || simType==GPU_MODE); // TODO make nice
+
+	simType_ = simType;
+	ithGPU_ = ithGPU;
+	enablePrint_ = enablePrint;
+	copyState_ = copyState;
+}
+
+// set default values for STDP params
+void CARLsim::setDefaultSTDPparams(float alphaLTP, float tauLTP, float alphaLTD, float tauLTD) {
+	assert(tauLTP>0); // TODO make nice
+	assert(tauLTD>0);
+	def_STDP_alphaLTP_ = alphaLTP;
+	def_STDP_tauLTP_ = tauLTP;
+	def_STDP_alphaLTD_ = alphaLTD;
+	def_STDP_tauLTD_ = tauLTD;
+}
+
+// set default STP values for an EXCITATORY_NEURON or INHIBITORY_NEURON
+void CARLsim::setDefaultSTPparams(int neurType, float STP_U, float STP_tD, float STP_tF) {
+	assert(neurType==EXCITATORY_NEURON || neurType==INHIBITORY_NEURON); // TODO make nice
+	assert(STP_tD>0);
+	assert(STP_tF>0);
+
+	switch (neurType) {
+		case EXCITATORY_NEURON:
+			def_STP_U_exc_ = STP_U;
+			def_STP_tD_exc_ = STP_tD;
+			def_STP_tF_exc_ = STP_tF;
+			break;
+		case INHIBITORY_NEURON:
+			def_STP_U_inh_ = STP_U;
+			def_STP_tD_inh_ = STP_tD;
+			def_STP_tF_inh_ = STP_tF;
+			break;
+		default:
+			// some error message instead of assert
+			break;
+	}
+}
+
+//! switches default from CPU mode <-> GPU mode
+void CARLsim::switchCPUGPUmode() {
+	simType_ = (simType_==CPU_MODE) ? GPU_MODE : CPU_MODE;
+}
+
+
+
 /// **************************************************************************************************************** ///
 /// PRIVATE METHODS
 /// **************************************************************************************************************** ///
+
+// print all user warnings, continue only after user input
+void CARLsim::handleUserWarnings() {
+	if (userWarnings_.size()) {
+		for (int i=0; i<userWarnings_.size(); i++)
+			fprintf(stdout,"%s\n",userWarnings_[i].c_str()); // print all user warnings
+
+		fprintf(stdout,"Ignore warnings and continue? Y/n ");
+		char ignoreWarn = std::cin.get();
+		if (std::cin.fail() || ignoreWarn!='y' || ignoreWarn!='Y') {
+			fprintf(stdout,"exiting...\n");
+			exit(1);
+		}
+	}
+}
+
+// print all simulation specs
+void CARLsim::printSimulationSpecs() {
+	if (simType_==CPU_MODE) {
+		fprintf(stdout,"CPU_MODE, enablePrint=%s, copyState=%s\n\n",enablePrint_?"on":"off",copyState_?"on":"off");
+	} else {
+		fprintf(stdout,"GPU_MODE, GPUid=%d, enablePrint=%s, copyState=%s\n\n",ithGPU_,enablePrint_?"on":"off",
+					copyState_?"on":"off");
+	}
+}

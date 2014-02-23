@@ -70,13 +70,6 @@ MTRand	      getRand;
 
 RNG_rand48* gpuRand48 = NULL;
 
-// includes for mkdir
-#if defined(CREATE_SPIKEDIR_IF_NOT_EXISTS)
-	#include <sys/stat.h>
-	#include <errno.h>
-	#include <libgen.h>
-#endif
-
 
 // FIXME what are the following for? why were they all the way at the bottom of this file?
 
@@ -90,7 +83,6 @@ RNG_rand48* gpuRand48 = NULL;
 
 
 
-
 /// **************************************************************************************************************** ///
 /// CONSTRUCTOR / DESTRUCTOR
 /// **************************************************************************************************************** ///
@@ -100,7 +92,7 @@ CpuSNN::CpuSNN(const std::string& _name, int _numConfig, int _randSeed, int _mod
 	fprintf(stdout, "********************      Welcome to CARLsim %d.%d      *************************\n",
 				MAJOR_VERSION,MINOR_VERSION);
 	fprintf(stdout, "*******************************************************************************\n");
-	fprintf(stdout, "Starting %s simulation \"%s\"\n",(_mode==CPU_MODE)?"CPU":"GPU",_name.c_str());
+	fprintf(stdout, "Starting CARLsim simulation \"%s\"\n",_name.c_str());
 
 	// initialize propogated spike buffers.....
 	pbuf = new PropagatedSpikeBuffer(0, PROPAGATED_BUFFER_SIZE);
@@ -393,8 +385,11 @@ int CpuSNN::connect(int grpId1, int grpId2, ConnectionGenerator* conn, bool synW
 		grp_Info[grpId1].numPostSynapses    += newInfo->numPostSynapses;
 		grp_Info[grpId2].numPreSynapses += newInfo->numPreSynapses;
 
-		if (showLogMode >= 1)
-			printf("grp_Info[%d, %s].numPostSynapses = %d, grp_Info[%d, %s].numPreSynapses = %d\n",grpId1,grp_Info2[grpId1].Name.c_str(),grp_Info[grpId1].numPostSynapses,grpId2,grp_Info2[grpId2].Name.c_str(),grp_Info[grpId2].numPreSynapses);
+		if (showLogMode >= 1) {
+			printf("grp_Info[%d, %s].numPostSynapses = %d, grp_Info[%d, %s].numPreSynapses = %d\n",
+						grpId1,grp_Info2[grpId1].Name.c_str(),grp_Info[grpId1].numPostSynapses,grpId2,
+						grp_Info2[grpId2].Name.c_str(),grp_Info[grpId2].numPreSynapses);
+		}
 
 		newInfo->connId	  = numConnections++;
 		if(c==0)
@@ -494,22 +489,62 @@ void CpuSNN::setConductances(int grpId, bool isSet, float tdAMPA, float tdNMDA, 
 	} else {
 		// set conductances for a given group and configId
 		int cGrpId = getGroupId(grpId, configId);
+		sim_with_conductances 			   |= isSet;
+		grp_Info[cGrpId].WithConductances 	= isSet;
+		grp_Info[cGrpId].dAMPA 				= 1-(1.0/tdAMPA);	// factor for numerical integration
+		grp_Info[cGrpId].dNMDA 				= 1-(1.0/tdNMDA);	// iAMPA[t+1] = iAMPA[t]*dAMPA
+		grp_Info[cGrpId].dGABAa 			= 1-(1.0/tdGABAa);	// => exponential decay
+		grp_Info[cGrpId].dGABAb 			= 1-(1.0/tdGABAb);
+		grp_Info[cGrpId].newUpdates 		= true; 			// FIXME What is this?
 
-		sim_with_conductances |= isSet;
-
-		grp_Info[cGrpId].WithConductances     = isSet;
-
-		grp_Info[cGrpId].dAMPA=1-(1.0/tdAMPA);		// factor for numerical integration
-		grp_Info[cGrpId].dNMDA=1-(1.0/tdNMDA);		// iAMPA[t+1] = iAMPA[t]*dAMPA
-		grp_Info[cGrpId].dGABAa=1-(1.0/tdGABAa);	// => exponential decay
-		grp_Info[cGrpId].dGABAb=1-(1.0/tdGABAb);
-
-		grp_Info[cGrpId].newUpdates = true; // What is this?
-
-		fprintf(stderr, "Conductances %s for %d (%s): %f, %f, %f, %f\n", isSet?"enabled":"disabled",
+		fprintf(stderr, "Conductances %s for %d (%s): %4.0f, %4.0f, %4.0f, %4.0f\n", isSet?"enabled":"disabled",
 				cGrpId, grp_Info2[cGrpId].Name.c_str(), tdAMPA, tdNMDA, tdGABAa, tdGABAb);
 	}
 }
+
+// set homeostasis for group
+void CpuSNN::setHomeostasis(int grpId, bool isSet, float homeoScale, float avgTimeScale, int configId) {
+	if (grpId==ALL) { // shortcut to apply to all groups
+		for(int g=0; g < numGrp; g++)
+			setHomeostasis(g, isSet, homeoScale, avgTimeScale, configId);	
+	} else if (configId==ALL) { // shortcut to apply to all configIds
+		for(int c=0; c<numConfig; c++)
+			setHomeostasis(grpId, isSet, homeoScale, avgTimeScale, c);
+	} else {
+		// set conductances for a given group and configId
+		int cGrpId = getGroupId(grpId, configId);
+		grp_Info[cGrpId].WithHomeostasis    = isSet;
+		grp_Info[cGrpId].homeostasisScale   = homeoScale;
+		grp_Info[cGrpId].avgTimeScale       = avgTimeScale;
+		grp_Info[cGrpId].avgTimeScaleInv    = 1.0f/avgTimeScale;
+		grp_Info[cGrpId].avgTimeScale_decay = (avgTimeScale*1000.0f-1.0f)/(avgTimeScale*1000.0f);
+		grp_Info[cGrpId].newUpdates 		= true; // FIXME: what's this?
+
+		fprintf(stderr, "Homeostasis parameters %s for %d (%s): homeoScale: %f, avgTimeScale: %f\n",
+					isSet?"enabled":"disabled",cGrpId,grp_Info2[cGrpId].Name.c_str(),homeoScale,avgTimeScale);
+	}
+}
+
+// set a homeostatic target firing rate (enforced through homeostatic synaptic scaling)
+void CpuSNN::setHomeoBaseFiringRate(int grpId, float baseFiring, float baseFiringSD, int configId) {
+	if (grpId==ALL) { // shortcut to apply to all groups
+		for(int g=0; g < numGrp; g++)
+			setHomeoBaseFiringRate(g, baseFiring, baseFiringSD, configId);	
+	} else if (configId==ALL) { // shortcut to apply to all configIds
+		for(int c=0; c<numConfig; c++)
+			setHomeoBaseFiringRate(grpId, baseFiring, baseFiringSD, c);
+	} else {
+		// set conductances for a given group and configId
+		int cGrpId 						= getGroupId(grpId, configId);
+		grp_Info2[cGrpId].baseFiring 	= baseFiring;
+		grp_Info2[cGrpId].baseFiringSD 	= baseFiringSD;
+		grp_Info[cGrpId].newUpdates 	= true; //TODO: I have to see how this is handled.  -- KDC
+
+		fprintf(stderr, "Homeostatic base firing rate set for %d (%s): baseFiring: %3.3f, baseFiringStd: %3.3f\n",
+							cGrpId,grp_Info2[cGrpId].Name.c_str(),baseFiring,baseFiringSD);
+	}
+}
+
 
 // set Izhikevich parameters for group
 void CpuSNN::setNeuronParameters(int grpId, float izh_a, float izh_a_sd, float izh_b, float izh_b_sd,
@@ -531,9 +566,133 @@ void CpuSNN::setNeuronParameters(int grpId, float izh_a, float izh_a_sd, float i
 }
 
 
+// set STDP params
+void CpuSNN::setSTDP(int grpId, bool isSet, float alphaLTP, float tauLTP, float alphaLTD, float tauLTD, int configId) {
+	if (grpId==ALL) { // shortcut to apply to all groups
+		for(int g=0; g < numGrp; g++)
+			setSTDP(g, isSet, alphaLTP, tauLTP, alphaLTD, tauLTD, configId);		
+	} else if (configId==ALL) { // shortcut to apply to all configIds
+		for(int c=0; c<numConfig; c++)
+			setSTDP(grpId, isSet, alphaLTP, tauLTP, alphaLTD, tauLTD, c);
+	} else {
+		// set STDP for a given group and configId
+		int cGrpId = getGroupId(grpId, configId);
+		sim_with_stdp 				   |= isSet;
+		grp_Info[cGrpId].WithSTDP 		= isSet;
+		grp_Info[cGrpId].ALPHA_LTP 		= alphaLTP;
+		grp_Info[cGrpId].ALPHA_LTD 		= alphaLTD;
+		grp_Info[cGrpId].TAU_LTP_INV 	= 1.0/tauLTP;
+		grp_Info[cGrpId].TAU_LTD_INV	= 1.0/tauLTD;
+		grp_Info[cGrpId].newUpdates 	= true; // FIXME whatsathiis?
+
+		fprintf(stderr, "STDP %s for %d (%s): alphaLTP: %1.4f, alphaLTD: %1.4f, tauLTP: %4.0f, tauLTD: %4.0f\n",
+					isSet?"enabled":"disabled",cGrpId,grp_Info2[cGrpId].Name.c_str(),
+					alphaLTP,alphaLTD,tauLTP,tauLTD);
+	}
+}
+
+
+// set STP params
+void CpuSNN::setSTP(int grpId, bool isSet, float STP_U, float STP_tD, float STP_tF, int configId) {
+	if (grpId==ALL) { // shortcut to apply to all groups
+		for(int g=0; g < numGrp; g++)
+			setSTP(g, isSet, STP_U, STP_tD, STP_tF, configId);		
+	} else if (configId==ALL) { // shortcut to apply to all configIds
+		for(int c=0; c<numConfig; c++)
+			setSTP(grpId, isSet, STP_U, STP_tD, STP_tF, c);
+	} else {
+		// set STDP for a given group and configId
+		int cGrpId = getGroupId(grpId, configId);
+		sim_with_stp 			   |= isSet;
+		grp_Info[cGrpId].WithSTP 	= isSet;
+		grp_Info[cGrpId].STP_U 		= STP_U;
+		grp_Info[cGrpId].STP_tD 	= STP_tD;
+		grp_Info[cGrpId].STP_tF 	= STP_tF;
+		grp_Info[cGrpId].newUpdates = true;
+
+		fprintf(stderr, "STP %s for %d (%s): U: %1.4f, tD: %4.0f, tF: %4.0f\n", isSet?"enabled":"disabled",
+					cGrpId, grp_Info2[cGrpId].Name.c_str(), STP_U, STP_tD, STP_tF);
+	}
+}
+
+
 /// ************************************************************************************************************ ///
 /// PUBLIC METHODS: RUNNING A SIMULATION
 /// ************************************************************************************************************ ///
+
+// Run the simulation for n sec
+int CpuSNN::runNetwork(int _nsec, int _nmsec, int simType, int ithGPU, bool enablePrint, bool copyState) {
+	DBG(2, fpLog, AT, "runNetwork() called");
+
+	assert(_nmsec >= 0);
+	assert(_nsec  >= 0);
+	assert(simType == CPU_MODE || simType == GPU_MODE);
+	int runDuration = _nsec*1000 + _nmsec;
+
+	// set the Poisson generation time slice to be at the run duration up to PROPOGATED_BUFFER_SIZE ms.
+	setGrpTimeSlice(ALL, MAX(1,MIN(runDuration,PROPAGATED_BUFFER_SIZE-1))); 
+
+	// First time when the network is run we do various kind of space compression,
+	// and data structure optimization to improve performance and save memory.
+	setupNetwork(simType,ithGPU);
+
+	currentMode = simType;
+
+	CUDA_RESET_TIMER(timer);
+	CUDA_START_TIMER(timer);
+
+	// if nsec=0, simTimeMs=10, we need to run the simulator for 10 timeStep;
+	// if nsec=1, simTimeMs=10, we need to run the simulator for 1*1000+10, time Step;
+	for(int i=0; i < runDuration; i++) {
+		if(simType == CPU_MODE)
+			doSnnSim();
+		else
+			doGPUSim();
+
+		if (enablePrint) {
+			printState();
+		}
+
+		if (updateTime()) {
+			// finished one sec of simulation...
+			if(showLog) {
+				if(showLogCycle==showLog++) {
+					showStatus(currentMode);
+					showLog=1;
+				}
+			}
+
+			updateSpikeMonitor();
+
+			if(simType == CPU_MODE)
+				updateStateAndFiringTable();
+			else
+				updateStateAndFiringTable_GPU();
+		}
+
+		if(enableGPUSpikeCntPtr==true && simType == CPU_MODE){
+			fprintf(stderr,"Error: the enableGPUSpikeCntPtr flag cannot be set in CPU_MODE\n");
+			assert(currentMode==GPU_MODE);
+		}
+		if(enableGPUSpikeCntPtr==true && simType == GPU_MODE){
+			copyFiringStateFromGPU();
+		}
+	}
+	if(copyState) {
+		// copy the state from GPU to GPU
+		for(int g=0; g < numGrp; g++) {
+			if ((!grp_Info[g].isSpikeGenerator) && (currentMode==GPU_MODE)) {
+				copyNeuronState(&cpuNetPtrs, &cpu_gpuNetPtrs, cudaMemcpyDeviceToHost, false, g);
+			}
+		}
+	}
+  
+	// keep track of simulation time...
+	CUDA_STOP_TIMER(timer);
+	lastExecutionTime = CUDA_GET_TIMER_VALUE(timer);
+	cumExecutionTime += lastExecutionTime;
+	return 0;
+}
 
 
 
@@ -677,6 +836,92 @@ void CpuSNN::resetSpikeCntUtil(int my_grpId ) {
   }
 }
 
+// sets up a spike generator
+void CpuSNN::setSpikeGenerator(int grpId, SpikeGenerator* spikeGen, int configId) {
+	if (configId == ALL) {
+		for(int c=0; c < numConfig; c++)
+			setSpikeGenerator(grpId, spikeGen,c);
+	} else {
+		int cGrpId = getGroupId(grpId, configId);
+
+		assert(spikeGen);
+		assert (grp_Info[cGrpId].isSpikeGenerator);
+		grp_Info[cGrpId].spikeGen = spikeGen;
+	}
+}
+
+
+// add a SpikeMonitor for group where spikeMon can be custom class or WriteSpikesToFile
+void CpuSNN::setSpikeMonitor(int grpId, SpikeMonitor* spikeMon, int configId) {
+	if (configId == ALL) {
+		for(int c=0; c < numConfig; c++)
+		setSpikeMonitor(grpId, spikeMon,c);
+	} else {
+	    int cGrpId = getGroupId(grpId, configId);
+	    DBG(2, fpLog, AT, "spikeMonitor Added");
+
+	    // store the gid for further reference
+	    monGrpId[numSpikeMonitor]	= cGrpId;
+
+	    // also inform the grp that it is being monitored...
+	    grp_Info[cGrpId].MonitorId		= numSpikeMonitor;
+
+	    float maxRate	= grp_Info[cGrpId].MaxFiringRate;
+
+	    // count the size of the buffer for storing 1 sec worth of info..
+	    // only the last second is stored in this buffer...
+	    int buffSize = (int)(maxRate*grp_Info[cGrpId].SizeN);
+
+	    // store the size for future comparison etc.
+	    monBufferSize[numSpikeMonitor] = buffSize;
+
+	    // reset the position of the buffer pointer..
+	    monBufferPos[numSpikeMonitor]  = 0;
+
+	    monBufferCallback[numSpikeMonitor] = spikeMon;
+
+	    // create the new buffer for keeping track of all the spikes in the system
+	    monBufferFiring[numSpikeMonitor] = new unsigned int[buffSize];
+	    monBufferTimeCnt[numSpikeMonitor]= new unsigned int[1000];
+	    memset(monBufferTimeCnt[numSpikeMonitor],0,sizeof(int)*(1000));
+
+	    numSpikeMonitor++;
+
+	    // oh. finally update the size info that will be useful to see
+	    // how much memory are we eating...
+	    cpuSnnSz.monitorInfoSize += sizeof(int)*buffSize;
+	    cpuSnnSz.monitorInfoSize += sizeof(int)*(1000);
+
+	    fprintf(stderr,"SpikeMonitor set for group %d (%s)\n",grpId,grp_Info2[grpId].Name.c_str());
+	}
+}
+
+// assigns spike rate to group
+void CpuSNN::setSpikeRate(int grpId, PoissonRate* ratePtr, int refPeriod, int configId) {
+	if (configId == ALL) {
+		for(int c=0; c < numConfig; c++)
+			setSpikeRate(grpId, ratePtr, refPeriod,c);
+	} else {
+		int cGrpId = getGroupId(grpId, configId);
+		if(grp_Info[cGrpId].RatePtr==NULL) {
+			fprintf(fpParam, " // refPeriod = %d\n", refPeriod);
+		}
+
+		assert(ratePtr);
+		if (ratePtr->len != grp_Info[cGrpId].SizeN) {
+			fprintf(stderr,"The PoissonRate length did not match the number of neurons in group %s(%d).\n",
+						grp_Info2[cGrpId].Name.c_str(),grpId);
+			exitSimulation(1);
+		}
+
+		assert (grp_Info[cGrpId].isSpikeGenerator);
+		grp_Info[cGrpId].RatePtr = ratePtr;
+		grp_Info[cGrpId].RefractPeriod   = refPeriod;
+		spikeRateUpdated = true;
+	}
+}
+
+
 // function used for parameter tuning interface
 void CpuSNN::updateNetwork() {
   if(!doneReorganization)
@@ -697,7 +942,8 @@ void CpuSNN::updateNetwork() {
 // function used for parameter tuning interface
 void CpuSNN::updateNetwork(bool resetFiringInfo, bool resetWeights) {
   if(!doneReorganization){
-    fprintf(stderr,"UpdateNetwork function was called but nothing was done because reorganizeNetwork must be called first.\n");
+    fprintf(stderr,"UpdateNetwork function was called but nothing was done because reorganizeNetwork "
+    			+ "must be called first.\n");
     return;
   }
   //change weights back to the default level for all the connections...
@@ -907,12 +1153,14 @@ grpConnectInfo_t* CpuSNN::getConnectInfo(int connectId, int configId) {
 
 int  CpuSNN::getConnectionId(int connId, int configId) {
 	if(configId >= numConfig) {
-		fprintf(stderr, "getConnectionId(int, int): Assertion `configId(%d) < numConfig(%d)' failed\n", configId, numConfig);
+		fprintf(stderr, "getConnectionId(int, int): Assertion `configId(%d) < numConfig(%d)' failed\n", 
+					configId, numConfig);
 		assert(0);
 	}
 	connId = connId+configId;
 	if (connId  >= numConnections) {
-		fprintf(stderr, "getConnectionId(int, int): Assertion `connId(%d) < numConnections(%d)' failed\n", connId, numConnections);
+		fprintf(stderr, "getConnectionId(int, int): Assertion `connId(%d) < numConnections(%d)' failed\n", 
+					connId, numConnections);
 		assert(0);
 	}
 	return connId;
@@ -967,6 +1215,10 @@ int  CpuSNN::getGroupId(int groupId, int configId) {
 group_info_t CpuSNN::getGroupInfo(int grpId, int configId) {
 	int cGrpId = getGroupId(grpId, configId);
 	return grp_Info[cGrpId];
+}
+
+std::string CpuSNN::getGroupName(int grpId) {
+	return grp_Info2[grpId].Name;
 }
 
 //! used for homeostasis functionality
@@ -1139,6 +1391,7 @@ void CpuSNN::setTuningLog(std::string fname) {
 }
 
 
+
 /// **************************************************************************************************************** ///
 /// PRIVATE METHODS
 /// **************************************************************************************************************** ///
@@ -1161,7 +1414,8 @@ void CpuSNN::CpuSNNInit(unsigned int nNeur, unsigned int nPostSyn, unsigned int 
 	if (sim_with_conductances) {
 		for (int g=0;g<numGrp;g++) {
 			if (!grp_Info[g].WithConductances && ((grp_Info[g].Type&POISSON_NEURON)==0)) {
-				printf("If one group enables conductances then all groups, except for generators, must enable conductances.  Group '%s' is not enabled.\n", grp_Info2[g].Name.c_str());
+				printf("If one group enables conductances then all groups, except for generators, must enable "
+							+ "conductances.  Group '%s' is not enabled.\n", grp_Info2[g].Name.c_str());
 				assert(false);
 			}
 		}
@@ -1221,7 +1475,7 @@ void CpuSNN::CpuSNNInit(unsigned int nNeur, unsigned int nPostSyn, unsigned int 
 	postSynapticIds		= new post_info_t[postSynCnt+100];
 	tmp_SynapticDelay	= new uint8_t[postSynCnt+100];	//!< Temporary array to store the delays of each connection
 	postDelayInfo		= new delay_info_t[numN*(D+1)];	//!< Possible delay values are 0....D (inclusive of D)
-	cpuSnnSz.networkInfoSize += ((sizeof(post_info_t)+sizeof(uint8_t))*postSynCnt+100) + (sizeof(delay_info_t)*numN*(D+1));
+	cpuSnnSz.networkInfoSize += ((sizeof(post_info_t)+sizeof(uint8_t))*postSynCnt+100)+(sizeof(delay_info_t)*numN*(D+1));
 	assert(preSynCnt/numN <= numPreSynapses); // divide by numN to prevent INT overflow
 
 	wt  			= new float[preSynCnt+100];
@@ -1265,7 +1519,8 @@ int CpuSNN::addSpikeToTable(int nid, int g) {
 	if (grp_Info[g].WithSTP) {
 		// implements Mongillo, Barak and Tsodyks model of Short term plasticity
 		int ind = STP_BUF_POS(nid,simTime);
-		int ind_1 = STP_BUF_POS(nid,(simTime-1)); // MDR -1 is correct, we use the value before the decay has been applied for the current time step.
+		int ind_1 = STP_BUF_POS(nid,(simTime-1)); // MDR -1 is correct, we use the value before the decay has been
+												  // applied for the current time step.
 		stpx[ind] = stpx[ind] - stpu[ind_1]*stpx[ind_1];
 		stpu[ind] = stpu[ind] + grp_Info[g].STP_U*(1-stpu[ind_1]);
 	}
@@ -1340,28 +1595,38 @@ void CpuSNN::buildNetwork() {
   // display the evaluated network and delay length....
   fprintf(stdout, ">>>>>>>>>>>>>> NUM_CONFIGURATIONS = %d <<<<<<<<<<<<<<<<<<\n", numConfig);
   fprintf(stdout, "**********************************\n");
-  fprintf(stdout, "numN = %d, numPostSynapses = %d, numPreSynapses = %d, D = %d\n", curN, numPostSynapses, numPreSynapses, curD);
+  fprintf(stdout, "numN = %d, numPostSynapses = %d, numPreSynapses = %d, D = %d\n", curN, numPostSynapses,
+  			numPreSynapses, curD);
   fprintf(stdout, "**********************************\n");
 
   fprintf(fpLog, "**********************************\n");
-  fprintf(fpLog, "numN = %d, numPostSynapses = %d, numPreSynapses = %d, D = %d\n", curN, numPostSynapses, numPreSynapses, curD);
+  fprintf(fpLog, "numN = %d, numPostSynapses = %d, numPreSynapses = %d, D = %d\n", curN, numPostSynapses,
+  			numPreSynapses, curD);
   fprintf(fpLog, "**********************************\n");
 
   assert(curD != 0); 	assert(numPostSynapses != 0);		assert(curN != 0); 		assert(numPreSynapses != 0);
 
   if (showLogMode >= 1)
     for (int g=0;g<numGrp;g++)
-      printf("grp_Info[%d, %s].numPostSynapses = %d, grp_Info[%d, %s].numPreSynapses = %d\n",g,grp_Info2[g].Name.c_str(),grp_Info[g].numPostSynapses,g,grp_Info2[g].Name.c_str(),grp_Info[g].numPreSynapses);
+      printf("grp_Info[%d, %s].numPostSynapses = %d, grp_Info[%d, %s].numPreSynapses = %d\n",
+      			g,grp_Info2[g].Name.c_str(),grp_Info[g].numPostSynapses,g,grp_Info2[g].Name.c_str(),
+      			grp_Info[g].numPreSynapses);
 
   if (numPostSynapses > MAX_numPostSynapses) {
-    for (int g=0;g<numGrp;g++)
-      if (grp_Info[g].numPostSynapses>MAX_numPostSynapses) printf("Grp: %s(%d) has too many output synapses (%d), max %d.\n",grp_Info2[g].Name.c_str(),g,grp_Info[g].numPostSynapses,MAX_numPostSynapses);
+    for (int g=0;g<numGrp;g++) {
+      if (grp_Info[g].numPostSynapses>MAX_numPostSynapses)
+      	printf("Grp: %s(%d) has too many output synapses (%d), max %d.\n",grp_Info2[g].Name.c_str(),g,
+      				grp_Info[g].numPostSynapses,MAX_numPostSynapses);
+  }
     assert(numPostSynapses <= MAX_numPostSynapses);
   }
   if (numPreSynapses > MAX_numPreSynapses) {
-    for (int g=0;g<numGrp;g++)
-      if (grp_Info[g].numPreSynapses>MAX_numPreSynapses) printf("Grp: %s(%d) has too many input synapses (%d), max %d.\n",grp_Info2[g].Name.c_str(),g,grp_Info[g].numPreSynapses,MAX_numPreSynapses);
-    assert(numPreSynapses <= MAX_numPreSynapses);
+    for (int g=0;g<numGrp;g++) {
+      if (grp_Info[g].numPreSynapses>MAX_numPreSynapses)
+      	printf("Grp: %s(%d) has too many input synapses (%d), max %d.\n",grp_Info2[g].Name.c_str(),g,
+      				grp_Info[g].numPreSynapses,MAX_numPreSynapses);
+	}
+	assert(numPreSynapses <= MAX_numPreSynapses);
   }
   assert(curD <= MAX_SynapticDelay); assert(curN <= 1000000);
 
@@ -1423,7 +1688,8 @@ void CpuSNN::buildNetwork() {
       while(newInfo) {
 	bool    synWtType = GET_FIXED_PLASTIC(newInfo->connProp);
 	if (synWtType == SYN_PLASTIC) {
-	  grp_Info[newInfo->grpDest].FixedInputWts = false; // given group has plastic connection, and we need to apply STDP rule...
+      // given group has plastic connection, and we need to apply STDP rule...
+	  grp_Info[newInfo->grpDest].FixedInputWts = false;
 	}
 
 	if( ((con == 0) && (synWtType == SYN_PLASTIC)) ||
@@ -1453,10 +1719,10 @@ void CpuSNN::buildNetwork() {
 	    float avgPostM = newInfo->numberOfConnections/grp_Info[newInfo->grpSrc].SizeN;
 	    float avgPreM  = newInfo->numberOfConnections/grp_Info[newInfo->grpDest].SizeN;
 
-	    fprintf(stderr, "connect(%s(%d) => %s(%d), iWt=%f, mWt=%f, numPostSynapses=%d, numPreSynapses=%d, minD=%d, maxD=%d, %s)\n",
-		    grp_Info2[newInfo->grpSrc].Name.c_str(), newInfo->grpSrc, grp_Info2[newInfo->grpDest].Name.c_str(),
-		    newInfo->grpDest, newInfo->initWt, newInfo->maxWt, (int)avgPostM, (int)avgPreM,
-		    newInfo->minDelay, newInfo->maxDelay, synWtType?"Plastic":"Fixed");
+	    fprintf(stderr, "connect(%s(%d) => %s(%d), iWt=%f, mWt=%f, numPostSynapses=%d, numPreSynapses=%d, minD=%d, "
+	    			+ "maxD=%d, %s)\n", grp_Info2[newInfo->grpSrc].Name.c_str(), newInfo->grpSrc,
+	    			grp_Info2[newInfo->grpDest].Name.c_str(), newInfo->grpDest, newInfo->initWt, newInfo->maxWt,
+	    			(int)avgPostM, (int)avgPreM, newInfo->minDelay, newInfo->maxDelay, synWtType?"Plastic":"Fixed");
 	  }
 	newInfo = newInfo->next;
       }
@@ -1951,7 +2217,8 @@ void CpuSNN::findFiring() {
 #ifdef INHIBITORY_STDP
 		else
 		  if ((stdp_tDiff > 0) && ((stdp_tDiff*grp_Info[g].TAU_LTD_INV)<25))
-		    wtChange[pos_ij] -= (STDP(stdp_tDiff, grp_Info[g].ALPHA_LTP, grp_Info[g].TAU_LTP_INV) - STDP(stdp_tDiff, grp_Info[g].ALPHA_LTD*1.5, grp_Info[g].TAU_LTD_INV));
+		    wtChange[pos_ij] -= (STDP(stdp_tDiff, grp_Info[g].ALPHA_LTP, grp_Info[g].TAU_LTP_INV)
+		    					 - STDP(stdp_tDiff, grp_Info[g].ALPHA_LTD*1.5, grp_Info[g].TAU_LTD_INV));
 #endif
 	  }
 	}
@@ -2029,7 +2296,8 @@ void CpuSNN::generatePostSpike(unsigned int pre_i, unsigned int idx_d, unsigned 
 	{
 	  //printf("I");
 	  if ((stdp_tDiff*grp_Info[post_grpId].TAU_LTD_INV)<25)
-	    wtChange[pos_i] -= (STDP(stdp_tDiff, grp_Info[post_grpId].ALPHA_LTP, grp_Info[post_grpId].TAU_LTP_INV) - STDP(stdp_tDiff, grp_Info[post_grpId].ALPHA_LTD*1.5, grp_Info[post_grpId].TAU_LTD_INV));
+	    wtChange[pos_i] -= (STDP(stdp_tDiff, grp_Info[post_grpId].ALPHA_LTP, grp_Info[post_grpId].TAU_LTP_INV)
+	    					 - STDP(stdp_tDiff, grp_Info[post_grpId].ALPHA_LTD*1.5, grp_Info[post_grpId].TAU_LTD_INV));
 	}
       else
 #endif
@@ -2119,7 +2387,8 @@ void CpuSNN::generateSpikesFromRate(int grpId) {
 	for (int cnt=0;cnt<rate->len;cnt++,ptr++) {
 		float frate = *ptr;
 
-		unsigned int nextTime = lastSpikeTime[grp_Info[grpId].StartN+cnt]; // start the time from the last time it spiked, that way we can ensure that the refractory period is maintained
+		// start the time from the last time it spiked, that way we can ensure that the refractory period is maintained
+		unsigned int nextTime = lastSpikeTime[grp_Info[grpId].StartN+cnt];
 		if (nextTime == MAX_SIMULATION_TIME)
 			nextTime = 0;
 
@@ -2233,7 +2502,6 @@ void  CpuSNN::globalStateUpdate() {
 	  if (voltage[i] < -90) voltage[i] = -90;
 	  recovery[i]+=Izh_a[i]*(Izh_b[i]*voltage[i]-recovery[i])/COND_INTEGRATION_SCALE;
 	}
-	//if (i==grp_Info[6].StartN) printf("voltage: %f AMPA: %f NMDA: %f GABAa: %f GABAb: %f\n",voltage[i],gAMPA[i],gNMDA[i],gGABAa[i],gGABAb[i]);
       } else {
 	voltage[i]+=0.5f*((0.04f*voltage[i]+5)*voltage[i]+140-recovery[i]+current[i]); // for numerical stability
 	voltage[i]+=0.5f*((0.04f*voltage[i]+5)*voltage[i]+140-recovery[i]+current[i]); // time step is 0.5 ms
@@ -2285,7 +2553,9 @@ void CpuSNN::makePtrInfo() {
 unsigned int CpuSNN::poissonSpike(unsigned int currTime, float frate, int refractPeriod) {
 	bool done = false;
 	unsigned int nextTime = 0;
-	assert(refractPeriod>0); // refractory period must be 1 or greater, 0 means could have multiple spikes specified at the same time.
+
+	// refractory period must be 1 or greater, 0 means could have multiple spikes specified at the same time.
+	assert(refractPeriod>0);
 	static int cnt = 0;
 	while(!done) {
 		float randVal = drand48();
@@ -2363,11 +2633,19 @@ int CpuSNN::readNetwork_internal(bool onlyPlastic)
       if (!fread(&weight,sizeof(float),1,readNetworkFID)) return -11;
 
       int gIDpre = findGrpId(nIDpre);
-      if (IS_INHIBITORY_TYPE(grp_Info[gIDpre].Type) && (weight>0) || !IS_INHIBITORY_TYPE(grp_Info[gIDpre].Type) && (weight<0)) return -8;
+      if (IS_INHIBITORY_TYPE(grp_Info[gIDpre].Type) && (weight>0)
+      		|| !IS_INHIBITORY_TYPE(grp_Info[gIDpre].Type) && (weight<0))
+      {
+      	return -8;
+      }
 
       if (!fread(&maxWeight,sizeof(float),1,readNetworkFID)) return -11;
 
-      if (IS_INHIBITORY_TYPE(grp_Info[gIDpre].Type) && (maxWeight>=0) || !IS_INHIBITORY_TYPE(grp_Info[gIDpre].Type) && (maxWeight<=0)) return -8;
+      if (IS_INHIBITORY_TYPE(grp_Info[gIDpre].Type) && (maxWeight>=0)
+      		|| !IS_INHIBITORY_TYPE(grp_Info[gIDpre].Type) && (maxWeight<=0))
+      {
+      	return -8;
+      }
 
       if (!fread(&delay,sizeof(uint8_t),1,readNetworkFID)) return -11;
 
@@ -2686,8 +2964,10 @@ void CpuSNN::resetSynapticConnections(bool changeWeights) {
   // Reset wt,wtChange,pre-firingtime values to default values...
   for(int destGrp=0; destGrp < numGrp; destGrp++) {
     const char* updateStr = (grp_Info[destGrp].newUpdates == true)?"(**)":"";
-    fprintf(stdout, "Grp: %d:%s s=%d e=%d %s\n", destGrp, grp_Info2[destGrp].Name.c_str(), grp_Info[destGrp].StartN, grp_Info[destGrp].EndN,  updateStr);
-    fprintf(fpLog,  "Grp: %d:%s s=%d e=%d  %s\n",  destGrp, grp_Info2[destGrp].Name.c_str(), grp_Info[destGrp].StartN, grp_Info[destGrp].EndN, updateStr);
+    fprintf(stdout, "Grp: %d:%s s=%d e=%d %s\n", destGrp, grp_Info2[destGrp].Name.c_str(), grp_Info[destGrp].StartN,
+    			grp_Info[destGrp].EndN,  updateStr);
+    fprintf(fpLog,  "Grp: %d:%s s=%d e=%d  %s\n",  destGrp, grp_Info2[destGrp].Name.c_str(), grp_Info[destGrp].StartN,
+    			grp_Info[destGrp].EndN, updateStr);
 
     for(int nid=grp_Info[destGrp].StartN; nid <= grp_Info[destGrp].EndN; nid++) {
       unsigned int offset = cumulativePre[nid];
@@ -2767,16 +3047,20 @@ inline void CpuSNN::setConnection(int srcGrp,  int destGrp,  unsigned int src, u
 
 	// we have exceeded the number of possible connection for one neuron
 	if(Npost[src] >= grp_Info[srcGrp].numPostSynapses)	{
-		fprintf(stderr, "setConnection(%d (Grp=%s), %d (Grp=%s), %f, %d)\n", src, grp_Info2[srcGrp].Name.c_str(), dest, grp_Info2[destGrp].Name.c_str(), synWt, dVal);
-		fprintf(stderr, "(Npost[%d] = %d ) >= (numPostSynapses = %d) value given for the network very less\n", src, Npost[src], grp_Info[srcGrp].numPostSynapses);
+		fprintf(stderr, "setConnection(%d (Grp=%s), %d (Grp=%s), %f, %d)\n", src, grp_Info2[srcGrp].Name.c_str(),
+					dest, grp_Info2[destGrp].Name.c_str(), synWt, dVal);
+		fprintf(stderr, "(Npost[%d] = %d ) >= (numPostSynapses = %d) value given for the network very less\n", src,
+					Npost[src], grp_Info[srcGrp].numPostSynapses);
 		fprintf(stderr, "Large number of postsynaptic connections is established\n");
 		fprintf(stderr, "Increase the numPostSynapses value for the Group = %s \n", grp_Info2[srcGrp].Name.c_str());
 		assert(0);
 	}
 
 	if(Npre[dest] >= grp_Info[destGrp].numPreSynapses) {
-		fprintf(stderr, "setConnection(%d (Grp=%s), %d (Grp=%s), %f, %d)\n", src, grp_Info2[srcGrp].Name.c_str(), dest, grp_Info2[destGrp].Name.c_str(), synWt, dVal);
-		fprintf(stderr, "(Npre[%d] = %d) >= (numPreSynapses = %d) value given for the network very less\n", dest, Npre[dest], grp_Info[destGrp].numPreSynapses);
+		fprintf(stderr, "setConnection(%d (Grp=%s), %d (Grp=%s), %f, %d)\n", src, grp_Info2[srcGrp].Name.c_str(),
+					dest, grp_Info2[destGrp].Name.c_str(), synWt, dVal);
+		fprintf(stderr, "(Npre[%d] = %d) >= (numPreSynapses = %d) value given for the network very less\n", dest,
+					Npre[dest], grp_Info[destGrp].numPreSynapses);
 		fprintf(stderr, "Large number of presynaptic connections established\n");
 		fprintf(stderr, "Increase the numPostSynapses for the Grp = %s value \n", grp_Info2[destGrp].Name.c_str());
 		assert(0);
@@ -2794,7 +3078,8 @@ inline void CpuSNN::setConnection(int srcGrp,  int destGrp,  unsigned int src, u
 	assert(post_pos < postSynCnt);
 	assert(pre_pos  < preSynCnt);
 
-	postSynapticIds[post_pos]   = SET_CONN_ID(dest, Npre[dest], destGrp); //generate a new postSynapticIds id for the current connection
+	//generate a new postSynapticIds id for the current connection
+	postSynapticIds[post_pos]   = SET_CONN_ID(dest, Npre[dest], destGrp);
 	tmp_SynapticDelay[post_pos] = dVal;
 
 	preSynapticIds[pre_pos] 	= SET_CONN_ID(src, Npost[src], srcGrp);
@@ -3132,7 +3417,7 @@ void CpuSNN::updateStateAndFiringTable()
 	// homeostatic weight update
 	if(grp_Info[g].WithHomeostasis) {
 	  if ((showLogMode >= 3) && (i==grp_Info[g].StartN)) 
-	    fprintf(fpProgLog,"%f\t",(diff_firing*(0.0+wt[offset+j]) + wtChange[offset+j])/10/(Npre_plastic[i]+10)/(grp_Info[g].avgTimeScale*2/1000.0)*baseFiring[i]/(1+fabs(diff_firing)*50));
+	    fprintf(fpProgLog,"%f\t", (diff_firing*(0.0+wt[offset+j]) + wtChange[offset+j])/10/(Npre_plastic[i]+10)/(grp_Info[g].avgTimeScale*2/1000.0)*baseFiring[i]/(1+fabs(diff_firing)*50));
 	  //need to figure out exactly why we change the weight to this value.  Specifically, what is with the second term?  -- KDC
 	  wt[offset+j] += (diff_firing*wt[offset+j]*homeostasisScale + wtChange[offset+j])*baseFiring[i]/grp_Info[g].avgTimeScale/(1+fabs(diff_firing)*50);
 	} else{
@@ -3176,445 +3461,30 @@ void CpuSNN::updateStateAndFiringTable()
   for(int i=0; i < numGrp; i++) {
     grp_Info[i].FiringCount1sec=0;
   }
-
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-void CpuSNN::setSTDP( int grpId, bool enable, int configId)
-{
-  assert(enable==false);
-  setSTDP(grpId,false,0,0,0,0,configId);
-}
-
-void CpuSNN::setSTDP( int grpId, bool enable, float ALPHA_LTP, float TAU_LTP, float ALPHA_LTD, float TAU_LTD, int configId)
-{
-  assert(TAU_LTP >= 0.0);
-  assert(TAU_LTD >= 0.0);
-
-  if (grpId == ALL && configId == ALL) {
-    for(int g=0; g < numGrp; g++)
-      setSTDP(g, enable, ALPHA_LTP,TAU_LTP,ALPHA_LTD,TAU_LTD, 0);
-  } else if (grpId == ALL) {
-    for(int grpId1=0; grpId1 < numGrp; grpId1 += numConfig) {
-      int g = getGroupId(grpId1, configId);
-      setSTDP(g, enable, ALPHA_LTP,TAU_LTP,ALPHA_LTD,TAU_LTD, configId);
-    }
-  } else if (configId == ALL) {
-    for(int c=0; c < numConfig; c++)
-      setSTDP(grpId, enable, ALPHA_LTP,TAU_LTP,ALPHA_LTD,TAU_LTD, c);
-  } else {
-    int cGrpId = getGroupId(grpId, configId);
-
-    sim_with_stdp |= enable;
-			
-    grp_Info[cGrpId].WithSTDP      = enable;
-    grp_Info[cGrpId].ALPHA_LTP     = ALPHA_LTP;
-    grp_Info[cGrpId].ALPHA_LTD     = ALPHA_LTD;
-    grp_Info[cGrpId].TAU_LTP_INV   = 1.0/TAU_LTP;
-    grp_Info[cGrpId].TAU_LTD_INV   = 1.0/TAU_LTD;
-
-    grp_Info[cGrpId].newUpdates   = true;
-
-    fprintf(stderr, "STDP %s for %d (%s): %f, %f, %f, %f\n", enable?"enabled":"disabled",
-	    cGrpId, grp_Info2[cGrpId].Name.c_str(), ALPHA_LTP, ALPHA_LTD, TAU_LTP, TAU_LTD);
-  }
-}
-
-void CpuSNN::setSTP( int grpId, bool enable, int configId)
-{
-  assert(enable==false);
-  setSTP(grpId,false,0,0,0,configId);
-}
-
-void CpuSNN::setSTP(int grpId, bool enable, float STP_U, float STP_tD, float STP_tF, int configId)
-{
-  if (grpId == ALL && configId == ALL) {
-    for(int g=0; g < numGrp; g++)
-      setSTP(g, enable, STP_U, STP_tD, STP_tF, 0);
-  } else if (grpId == ALL) {
-    for(int grpId1=0; grpId1 < numGrp; grpId1 += numConfig) {
-      int g = getGroupId(grpId1, configId);
-      setSTP(g, enable, STP_U, STP_tD, STP_tF, configId);
-    }
-  } else if (configId == ALL) {
-    for(int c=0; c < numConfig; c++)
-      setSTP(grpId, enable, STP_U, STP_tD, STP_tF, c);
-  } else {
-    int cGrpId = getGroupId(grpId, configId);
-
-    sim_with_stp |= enable;
-			
-    grp_Info[cGrpId].WithSTP     = enable;
-    grp_Info[cGrpId].STP_U=STP_U;
-    grp_Info[cGrpId].STP_tD=STP_tD;
-    grp_Info[cGrpId].STP_tF=STP_tF;
-
-    grp_Info[cGrpId].newUpdates = true;
-
-    fprintf(stderr, "STP %s for %d (%s): %f, %f, %f\n", enable?"enabled":"disabled",
-	    cGrpId, grp_Info2[cGrpId].Name.c_str(), STP_U, STP_tD, STP_tF);
-  }
-}
-
-
-
-
-void CpuSNN::setHomeostasis( int grpId, bool enable, int configId)
-{
-  assert(enable==false);
-  setHomeostasis(grpId,false,0,0,configId);
-}
-
-void CpuSNN::setHomeostasis(int grpId, bool enable, float homeostasisScale, float avgTimeScale, int configId)
-{
-  if (grpId == ALL && configId == ALL) {
-    for(int g=0; g < numGrp; g++)
-      setHomeostasis(g, enable, homeostasisScale, avgTimeScale, 0);
-  } else if (grpId == ALL) {
-    for(int grpId1=0; grpId1 < numGrp; grpId1 += numConfig) {
-      int g = getGroupId(grpId1, configId);
-      setHomeostasis(g, enable, homeostasisScale, avgTimeScale, configId);
-    }
-  } else if (configId == ALL) {
-    for(int c=0; c < numConfig; c++)
-      setHomeostasis(grpId, enable, homeostasisScale, avgTimeScale, c);
-  } else {
-    int cGrpId = getGroupId(grpId, configId);
-    
-    grp_Info[cGrpId].WithHomeostasis    = enable;
-    grp_Info[cGrpId].homeostasisScale   = homeostasisScale;
-    grp_Info[cGrpId].avgTimeScale       = avgTimeScale;
-    grp_Info[cGrpId].avgTimeScaleInv    = 1/avgTimeScale;
-    grp_Info[cGrpId].avgTimeScale_decay = (avgTimeScale*1000-1)/(avgTimeScale*1000);
-    fprintf(stderr, "Homeostasis parameters set for cGrpId: %d (%s)\n",  cGrpId, grp_Info2[cGrpId].Name.c_str());
-
-    grp_Info[cGrpId].newUpdates = true;
-  }
-}
-
-void CpuSNN::setBaseFiring(int groupId, int configId, float _baseFiring, float _baseFiringSD) {
-	int cGrpId = getGroupId(groupId, configId);
-	grp_Info2[cGrpId].baseFiring   = _baseFiring;
-	grp_Info2[cGrpId].baseFiringSD = _baseFiringSD;
-	grp_Info[cGrpId].newUpdates = true;//TODO: I have to see how this is handled.  -- KDC
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-bool CpuSNN::updateTime()
-{
-  bool finishedOneSec = false;
-
-  // done one second worth of simulation
-  // update relevant parameters...now
-  if(++simTimeMs == 1000) {
-    simTimeMs = 0;
-    simTimeSec++;
-    finishedOneSec = true;
-  }
-
-  simTime++;
-  if(simTime >= MAX_SIMULATION_TIME){
-    // reached the maximum limit of the simulation time using 32 bit value...
-    updateAfterMaxTime();
-  }
-
-  return finishedOneSec;
-}
-
-// Run the simulation for n sec
-int CpuSNN::runNetwork(int _nsec, int _nmsec, int simType, int ithGPU, bool enablePrint, int copyState)
-{
-  DBG(2, fpLog, AT, "runNetwork() called");
-
-  assert(_nmsec >= 0);
-  assert(_nsec  >= 0);
-
-  assert(simType == CPU_MODE || simType == GPU_MODE);
-
-  int runDuration = _nsec*1000 + _nmsec;
-
-  setGrpTimeSlice(ALL, MAX(1,MIN(runDuration,PROPAGATED_BUFFER_SIZE-1)));  // set the Poisson generation time slice to be at the run duration up to PROPOGATED_BUFFER_SIZE ms.
-
-  // First time when the network is run we do various kind of space compression,
-  // and data structure optimization to improve performance and save memory.
-
-  setupNetwork(simType,ithGPU);
-
-  currentMode = simType;
-
-  CUDA_RESET_TIMER(timer);
-
-  CUDA_START_TIMER(timer);
-
-  // if nsec=0, simTimeMs=10, we need to run the simulator for 10 timeStep;
-  // if nsec=1, simTimeMs=10, we need to run the simulator for 1*1000+10, time Step;
-  for(int i=0; i < runDuration; i++) {
-
-    //			initThalInput();
-
-    if(simType == CPU_MODE)
-      doSnnSim();
-    else
-      doGPUSim();
-
-    if (enablePrint) {
-      printState();
-    }
-
-    if (updateTime()) {
-
-      // finished one sec of simulation...
-      if(showLog)
-	if(showLogCycle==showLog++) {
-	  showStatus(currentMode);
-	  showLog=1;
+// updates simTime, returns true when new second started
+bool CpuSNN::updateTime() {
+	bool finishedOneSec = false;
+
+	// done one second worth of simulation
+	// update relevant parameters...now
+	if(++simTimeMs == 1000) {
+		simTimeMs = 0;
+		simTimeSec++;
+		finishedOneSec = true;
 	}
 
-      updateSpikeMonitor();
+	simTime++;
+	if(simTime >= MAX_SIMULATION_TIME){
+		// reached the maximum limit of the simulation time using 32 bit value...
+		updateAfterMaxTime();
+	}
 
-      if(simType == CPU_MODE)
-	updateStateAndFiringTable();
-      else
-	updateStateAndFiringTable_GPU();
-    }
-
-    if(enableGPUSpikeCntPtr==true && simType == CPU_MODE){
-      fprintf(stderr,"Error: the enableGPUSpikeCntPtr flag cannot be set in CPU_MODE\n");
-      assert(currentMode==GPU_MODE);
-    }
-    if(enableGPUSpikeCntPtr==true && simType == GPU_MODE){
-      copyFiringStateFromGPU();
-    }
-  }
-  if(copyState) {
-     // copy the state from GPU to GPU
-     for(int g=0; g < numGrp; g++) {
-       if ((!grp_Info[g].isSpikeGenerator) && (currentMode==GPU_MODE)) {
-   	copyNeuronState(&cpuNetPtrs, &cpu_gpuNetPtrs, cudaMemcpyDeviceToHost, false, g);
-       }
-     }
-   }
-  
-  // keep track of simulation time...
-  CUDA_STOP_TIMER(timer);
-  lastExecutionTime = CUDA_GET_TIMER_VALUE(timer);
-  if(0) {
-    fprintf(fpLog, "(t%s = %2.2f sec)\n",  (currentMode == GPU_MODE)?"GPU":"CPU", lastExecutionTime/1000);
-    fprintf(stdout, "(t%s = %2.2f sec)\n", (currentMode == GPU_MODE)?"GPU":"CPU", lastExecutionTime/1000);
-  }
-  cumExecutionTime += lastExecutionTime;
-  return 0;
+	return finishedOneSec;
 }
 
 
-
-
-
-
-
-
-
-
-
-void CpuSNN::setSpikeRate(int grpId, PoissonRate* ratePtr, int refPeriod, int configId)
-{
-  if (configId == ALL) {
-    for(int c=0; c < numConfig; c++)
-      setSpikeRate(grpId, ratePtr, refPeriod,c);
-  } else {
-    int cGrpId = getGroupId(grpId, configId);
-    if(grp_Info[cGrpId].RatePtr==NULL) {
-      fprintf(fpParam, " // refPeriod = %d\n", refPeriod);
-    }
-
-    assert(ratePtr);
-    if (ratePtr->len != grp_Info[cGrpId].SizeN) {
-      fprintf(stderr,"The PoissonRate length did not match the number of neurons in group %s(%d).\n", grp_Info2[cGrpId].Name.c_str(),grpId);
-      assert(0);
-    }
-
-    assert (grp_Info[cGrpId].isSpikeGenerator);
-    grp_Info[cGrpId].RatePtr = ratePtr;
-    grp_Info[cGrpId].RefractPeriod   = refPeriod;
-    spikeRateUpdated = true;
-
-  }
-}
-
-void CpuSNN::setSpikeGenerator(int grpId, SpikeGenerator* spikeGen, int configId)
-{
-  if (configId == ALL) {
-    for(int c=0; c < numConfig; c++)
-      setSpikeGenerator(grpId, spikeGen,c);
-  } else {
-    int cGrpId = getGroupId(grpId, configId);
-
-    assert(spikeGen);
-
-    assert (grp_Info[cGrpId].isSpikeGenerator);
-    grp_Info[cGrpId].spikeGen = spikeGen;
-  }
-}
-
-
-
-
-
-
-
-
-/*
-char* extractFileName(char *fname)
-{
-  char* varname = strrchr(fname, '\\');
-  size_t len1 = strlen(varname+1);
-  char* extname = strchr(varname, '.');
-  size_t len2 = strlen(extname);
-  varname[len1-len2]='\0';
-  return (varname+1);
-}
-*/
-
-
-
-class WriteSpikeToFile: public SpikeMonitor {
-public:
-  WriteSpikeToFile(FILE* _fid) {
-    fid = _fid;
-  }
-
-  void update(CpuSNN* s, int grpId, unsigned int* Nids, unsigned int* timeCnts)
-  {
-    int pos    = 0;
-
-    for (int t=0; t < 1000; t++) {
-      for(int i=0; i<timeCnts[t];i++,pos++) {
-	int time = t + s->getSimTime() - 1000;
-	int id   = Nids[pos];
-	int cnt = fwrite(&time,sizeof(int),1,fid);
-	assert(cnt != 0);
-	cnt = fwrite(&id,sizeof(int),1,fid);
-	assert(cnt != 0);
-      }
-    }
-
-    fflush(fid);
-  }
-
-  FILE* fid;
-};
-
-void CpuSNN::setSpikeMonitor(int gid, const std::string& fname, int configId) {
-  FILE* fid = fopen(fname.c_str(),"wb");
-  if (fid==NULL) {
-    // file could not be opened
-
-#if defined(CREATE_SPIKEDIR_IF_NOT_EXISTS)
-    // if option set, attempt to create directory
-    int status;
-
-    // this is annoying...for dirname we need to convert from const string to char*
-    char fchar[200];
-    strcpy(fchar,fname.c_str());
-
-#if defined(_WIN32) || defined(_WIN64) // TODO: test it
-    status = _mkdir(dirname(fchar); // Windows platform
-#else
-		    status = mkdir(dirname(fchar), 0777); // Unix
-#endif
-		    if (status==-1 && errno!=EEXIST) {
-		      fprintf(stderr,"ERROR %d: could not create spike file '%s', directory '%%CARLSIM_ROOT%%/results/' does not exist\n",errno,fname.c_str());
-		      exit(1);
-		      return;
-		    }
-
-		    // now that the directory is created, fopen file
-		    fid = fopen(fname.c_str(),"wb");
-#else
-		    // default case: print error and exit
-		    fprintf(stderr,"ERROR: File \"%s\" could not be opened, please check if it exists.\n",fname.c_str());
-		    fprintf(stderr,"       Enable option CREATE_SPIKEDIR_IF_NOT_EXISTS in config.h to attempt creating the "
-			    "specified subdirectory automatically.\n");
-		    exit(1);
-		    return;
-#endif
-		    }
-
-      assert(configId != ALL);
-
-    setSpikeMonitor(gid, new WriteSpikeToFile(fid), configId);
- }
-
-void CpuSNN::setSpikeMonitor(int grpId, SpikeMonitor* spikeMon, int configId)
-{
-  if (configId == ALL) {
-    for(int c=0; c < numConfig; c++)
-      setSpikeMonitor(grpId, spikeMon,c);
-  } else {
-    int cGrpId = getGroupId(grpId, configId);
-    DBG(2, fpLog, AT, "spikeMonitor Added");
-
-    // store the gid for further reference
-    monGrpId[numSpikeMonitor]	= cGrpId;
-
-    // also inform the grp that it is being monitored...
-    grp_Info[cGrpId].MonitorId		= numSpikeMonitor;
-
-    float maxRate	= grp_Info[cGrpId].MaxFiringRate;
-
-    // count the size of the buffer for storing 1 sec worth of info..
-    // only the last second is stored in this buffer...
-    int buffSize = (int)(maxRate*grp_Info[cGrpId].SizeN);
-
-    // store the size for future comparison etc.
-    monBufferSize[numSpikeMonitor] = buffSize;
-
-    // reset the position of the buffer pointer..
-    monBufferPos[numSpikeMonitor]  = 0;
-
-    monBufferCallback[numSpikeMonitor] = spikeMon;
-
-    // create the new buffer for keeping track of all the spikes in the system
-    monBufferFiring[numSpikeMonitor] = new unsigned int[buffSize];
-    monBufferTimeCnt[numSpikeMonitor]= new unsigned int[1000];
-    memset(monBufferTimeCnt[numSpikeMonitor],0,sizeof(int)*(1000));
-
-    numSpikeMonitor++;
-
-    // oh. finally update the size info that will be useful to see
-    // how much memory are we eating...
-    cpuSnnSz.monitorInfoSize += sizeof(int)*buffSize;
-    cpuSnnSz.monitorInfoSize += sizeof(int)*(1000);
-  }
-}
 
 void CpuSNN::updateSpikeMonitor()
 {
@@ -3661,7 +3531,8 @@ void CpuSNN::updateSpikeMonitor()
 	    if((pos >= monBufferSize[monitorId]))
 	      {
 		if(!bufferOverFlow[monitorId])
-		  fprintf(stderr, "Buffer Monitor size (%d) is small. Increase buffer firing rate for %s\n", monBufferSize[monitorId], grp_Info2[grpId].Name.c_str());
+		  fprintf(stderr, "Buffer Monitor size (%d) is small. Increase buffer firing rate for %s\n",
+		  			monBufferSize[monitorId], grp_Info2[grpId].Name.c_str());
 		bufferOverFlow[monitorId] = true;
 	      }
 	    else {
@@ -3678,7 +3549,8 @@ void CpuSNN::updateSpikeMonitor()
   for (int grpId=0;grpId<numGrp;grpId++) {
     int monitorId = grp_Info[grpId].MonitorId;
     if(monitorId!= -1) {
-      fprintf(stderr, "Spike Monitor for Group %s has %d spikes (%f Hz)\n",grp_Info2[grpId].Name.c_str(),monBufferPos[monitorId],((float)monBufferPos[monitorId])/(grp_Info[grpId].SizeN));
+      fprintf(stderr, "Spike Monitor for Group %s has %d spikes (%f Hz)\n",grp_Info2[grpId].Name.c_str(),
+      			monBufferPos[monitorId],((float)monBufferPos[monitorId])/(grp_Info[grpId].SizeN));
 
       // call the callback function
       if (monBufferCallback[monitorId])
@@ -3686,7 +3558,3 @@ void CpuSNN::updateSpikeMonitor()
     }
   }
 }
-
-
-
-

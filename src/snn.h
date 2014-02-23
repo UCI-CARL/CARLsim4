@@ -489,36 +489,64 @@ public:
 
 	// +++++ PUBLIC METHODS: SETTING UP A SIMULATION ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
+	// NOTE: there should be no default argument values in here, this should be handled by the user interface
+
 	//! make connection of type "random","full","one-to-one" from each neuron in grpId1 to neurons in grpId2
 	int connect(int gIDpre, int gIDpost, const std::string& _type, float initWt, float maxWt, float _C,
-					uint8_t minDelay, uint8_t maxDelay, bool synWtType = SYN_FIXED);
+					uint8_t minDelay, uint8_t maxDelay, bool synWtType);
 
 	//! make custom connections from grpId1 to grpId2
 	// TODO: describe maxM and maxPreM
-	int connect(int gIDpre, int gIDpost, ConnectionGenerator* conn, bool synWtType=SYN_FIXED, int maxM=0,int maxPreM=0);
+	int connect(int gIDpre, int gIDpost, ConnectionGenerator* conn, bool synWtType, int maxM,int maxPreM);
 
 
 	//! creates a group of Izhikevich spiking neurons
-	int createGroup(const std::string& grpName, unsigned int nNeur, int neurType, int configId=ALL);
+	int createGroup(const std::string& grpName, unsigned int nNeur, int neurType, int configId);
 
 	//! creates a spike generator group (dummy-neurons, not Izhikevich spiking neurons). 
-	int createSpikeGeneratorGroup(const std::string& grpName, int unsigned nNeur, int neurType, int configId=ALL);
+	int createSpikeGeneratorGroup(const std::string& grpName, int unsigned nNeur, int neurType, int configId);
 
 
   	//! sets custom values for conductance decay (\tau_decay) or disables conductances alltogether
 	void setConductances(int grpId, bool isSet, float tdAMPA, float tdNMDA, float tdGABAa, float tdGABAb, int configId);
 
 
+	/*!
+	 * \brief Sets the homeostasis parameters. g is the grpID, enable=true(false) enables(disables) homeostasis,
+	 * configId is the configuration ID that homeostasis will be enabled/disabled, homeostasisScale is strength of
+	 * homeostasis compared to the strength of normal LTP/LTD from STDP (which is 1), and avgTimeScale is the time
+	 * frame over which the average firing rate is averaged (it should be larger in scale than STDP timescales).
+	 */
+	void setHomeostasis(int grpId, bool isSet, float homeoScale, float avgTimeScale, int configId);
+
+	//! Sets homeostatic target firing rate (enforced through homeostatic synaptic scaling)
+	void setHomeoBaseFiringRate(int groupId, float baseFiring, float baseFiringSD, int configId);
+
+
 	//! Sets the Izhikevich parameters a, b, c, and d of a neuron group.
 	/*! Parameter values for each neuron are given by a normal distribution with mean _a, _b, _c, _d standard
 	 * deviation a_sd, b_sd, c_sd, and d_sd, respectively. */
 	void setNeuronParameters(int grpId, float izh_a, float izh_a_sd, float izh_b, float izh_b_sd,
-								float izh_c, float izh_c_sd, float izh_d, float izh_d_sd, int configId=ALL);
+								float izh_c, float izh_c_sd, float izh_d, float izh_d_sd, int configId);
 
+	//! Sets STDP params alphas and taus of a neuron group (post-synaptically)
+	// TODO: make per connection, not per group
+	void setSTDP(int grpId, bool isSet, float alphaLTP, float tauLTP, float alphaLTD, float tauLTD, int configId);
+
+	//! Sets STP params U, tD, TF of a neuron group (pre-synaptically)
+	// TODO: make per connection, not per group
+	void setSTP(int grpId, bool isSet, float STP_U, float STP_tD, float STP_tF, int configId);
 
 
 
 	// +++++ PUBLIC METHODS: RUNNING A SIMULATION +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
+
+	/*!
+	 * \brief run the simulation for n sec
+	 * simType can either be CPU_MODE or GPU_MODE
+	 * ithGPU: specify on which CUDA device to establish a context
+	 */
+	int runNetwork(int _nsec, int _nmsec, int simType, int ithGPU, bool enablePrint, bool copyState);
 
 
 
@@ -531,7 +559,8 @@ public:
 	 */
 	unsigned int* getSpikeCntPtr(int grpId=ALL, int simType=CPU_MODE);
 
-	void readNetwork(FILE* fid);						//!< reads the network state from file
+	//! reads the network state from file
+	void readNetwork(FILE* fid);
 
 	// TODO: figure out scope; is this a user function?
 	/*!
@@ -540,11 +569,21 @@ public:
 	 * configuration ID (configID).  This function only works for fixed synapses and for connections of type
 	 * CONN_USER_DEFINED. Only the weights are changed, not the maxWts, delays, or connected values
 	 */
-	void reassignFixedWeights(int connectId, float weightMatrix [], int matrixSize, int configId = ALL);
+	void reassignFixedWeights(int connectId, float weightMatrix[], int matrixSize, int configId = ALL);
 
 	void resetSpikeCnt(int grpId = -1);					//!< Resets the spike count for a particular group.
 	void resetSpikeCnt_GPU(int _startGrp, int _endGrp); //!< Utility function to clear spike counts in the GPU code.
 	void resetSpikeCntUtil(int grpId = -1); //!< resets spike count for particular neuron group
+
+	//! sets up a spike generator
+	void setSpikeGenerator(int grpId, SpikeGenerator* spikeGen, int configId);
+
+	//! sets up a spike monitor registered with a callback to process the spikes, there can only be one
+	//! SpikeMonitor per group
+	void setSpikeMonitor(int gid, SpikeMonitor* spikeMon, int configId);
+
+	//! assign spike rate to poisson group
+	void setSpikeRate(int grpId, PoissonRate* spikeRate, int refPeriod, int configId);
 
 	/*!
 	 * \brief Resets either the neuronal firing rate information by setting resetFiringRate = true and/or the
@@ -554,8 +593,8 @@ public:
 	void updateNetwork(); //!< Original updateNetwork() function used by JMN
 	void updateNetwork_GPU(bool resetFiringInfo); //!< Allows parameters to be reset in the middle of the simulation
 
-
-	void writeNetwork(FILE* fid); 						//!< writes the network state to file
+	//!< writes the network state to file
+	void writeNetwork(FILE* fid);
 
 	/*!
 	 * \brief function writes population weights from gIDpre to gIDpost to file fname in binary.
@@ -567,7 +606,7 @@ public:
 
 	// +++++ PUBLIC METHODS: LOGGING / PLOTTING +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
-	void setLogCycle(unsigned int _cnt, int mode=0, FILE *fp=NULL);
+	void setLogCycle(unsigned int _cnt, int mode, FILE *fp);
 
 	// NOTE: all these printer functions should be in printSNNInfo.cpp
 	// FIXME: are any of these actually supposed to be public??
@@ -599,6 +638,7 @@ public:
 	void printTuningLog();
 
 
+
 	// +++++ PUBLIC METHODS: GETTERS / SETTERS ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
 	grpConnectInfo_t* getConnectInfo(int connectId, int configId=0); //!< required for homeostasis
@@ -609,7 +649,7 @@ public:
 
 	int  getGroupId(int groupId, int configId);
 	group_info_t getGroupInfo(int groupId, int configId=0);
-	group_info2_t getGroupInfo2(int groupId, int configId=0);
+	std::string getGroupName(int grpId);
 	int  getNextGroupId(int); //!< used in setHomeostasis
 
 	int getNumConfigurations()	{ return numConfig; }	//!< gets number of network configurations
@@ -638,6 +678,10 @@ public:
 	int grpEndNeuronId(int g)   { return grp_Info[g].EndN; }
 	int grpNumNeurons(int g)    { return grp_Info[g].SizeN; }
 
+	bool isExcitatoryGroup(int g) { return (grp_Info[g].Type&TARGET_AMPA) || (grp_Info[g].Type&TARGET_NMDA); }
+	bool isInhibitoryGroup(int g) { return (grp_Info[g].Type&TARGET_GABAa) || (grp_Info[g].Type&TARGET_GABAb); }
+	bool isPoissonGroup(int g) { return (grp_Info[g].Type&POISSON_NEURON); }
+
 	/*!
 	 * \brief Sets enableGpuSpikeCntPtr to true or false.  True allows getSpikeCntPtr_GPU to copy firing
 	 * state information from GPU kernel to cpuNetPtrs.  Warning: setting this flag to true will slow down
@@ -650,64 +694,6 @@ public:
 	void setPrintState(int grpId, bool _status, int neuronId=-1);
 	void setSimLogs(bool enable, std::string logDirName = "");
 	void setTuningLog(std::string fname);
-
-
-
-
-
-
-// TODO........
-
-
-  /*!
-   * \brief run the simulation for n sec
-   * simType can either be CPU_MODE or GPU_MODE
-   * ithGPU: specify on which CUDA device to establish a context
-   */
-  int runNetwork(int _nsec, int _tstep = 0, int simType = CPU_MODE, int ithGPU = 0, bool enablePrint=false, int copyState=false);
-
-  bool updateTime(); //!< returns true when a new second is started
-
-  // grpId == -1, means all groups
-  void setSTDP(int grpId, bool enable, int configId=ALL);
-  void setSTDP(int grpId, bool enable, float _ALPHA_LTP, float _TAU_LTP, float _ALPHA_LTD, float _TAU_LTD, int configId=ALL);
-
-  // g == -1, means all groups
-  void setSTP(int g, bool enable, int configId=ALL);
-  void setSTP(int g, bool enable, float STP_U, float STP_tD, float STP_tF, int configId=ALL);
-
-
- /*!
-   * \brief Sets the homeostasis parameters. g is the grpID, enable=true(false) enables(disables) homeostasis,
-   * and configId is the configuration ID that homeostasis will be enabled/disabled.
-   */
-  void setHomeostasis(int g, bool enable, int configId=0);
-  /*!
-   * \brief Sets the homeostasis parameters. g is the grpID, enable=true(false) enables(disables) homeostasis,
-   * configId is the configuration ID that homeostasis will be enabled/disabled, homeostasisScale is strength of
-   * homeostasis compared to the strength of normal LTP/LTD from STDP (which is 1), and avgTimeScale is the time
-   * frame over which the average firing rate is averaged (it should be larger in scale than STDP timescales).
-   */
-  void setHomeostasis(int g, bool enable, float homeostasisScale, float avgTimeScale, int configId=0);
-  
-  
-  /*!
-   * \brief Sets the homeostatic target firing rate.  Neurons will try to attain this firing rate using 
-   * homeostatic synaptic scaling.
-   */
-  void setBaseFiring(int groupId, int configId, float _baseFiring, float _baseFiringSD);
-
-  //! sets up a spike monitor registered with a callback to process the spikes, there can only be one
-  //! SpikeMonitor per group
-  void setSpikeMonitor(int gid, SpikeMonitor* spikeMon=NULL, int configId=ALL);
-
-  //! a simple wrapper that uses a predetermined callback to save the data to a file
-  void setSpikeMonitor(int gid, const std::string& fname, int configId=0);
-
-  void setSpikeRate(int grpId, PoissonRate* spikeRate, int refPeriod=1, int configId=ALL);
-  void setSpikeGenerator(int grpId, SpikeGenerator* spikeGen, int configId=ALL);
-
-  
 
 
 
@@ -757,10 +743,6 @@ private:
 	void globalStateUpdate();
 
 	void initSynapticWeights(); //!< init all wt to appropriate values (total size of syn conn is 'length')
-
-	bool isExcitatoryGroup(int g) { return (grp_Info[g].Type&TARGET_AMPA) || (grp_Info[g].Type&TARGET_NMDA); }
-	bool isInhibitoryGroup(int g) { return (grp_Info[g].Type&TARGET_GABAa) || (grp_Info[g].Type&TARGET_GABAb); }
-	bool isPoissonGroup(int g) { return (grp_Info[g].Type&POISSON_NEURON); }
 
 	void makePtrInfo();				//!< creates CPU net ptrs
 
@@ -813,6 +795,7 @@ private:
 	void updateSpikeMonitor(); //!< copy required spikes from firing buffer to spike buffer
 	int  updateSpikeTables();
 	void updateStateAndFiringTable();
+	bool updateTime(); //!< updates simTime, returns true when a new second is started
 
 
 	// +++++ GPU MODE +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
