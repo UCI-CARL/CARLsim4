@@ -11,6 +11,8 @@ public:
 				bool enablePrint=false, bool copyState=false);
 	~CARLsim();
 
+
+
 	// +++++ PUBLIC METHODS: SETTING UP A SIMULATION ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
 	//! shortcut to create SYN_FIXED connections with just one weight and one delay value
