@@ -37,7 +37,7 @@
  * CARLsim available from http://socsci.uci.edu/~jkrichma/CARL/CARLsim/
  * Ver 10/09/2013
  */ 
-#include <snn.h>
+#include <carlsim.h>
 
 // stim must be a file of unsigned char in RGB, arranged as R1 G1 B1 R2 G2 B2 ...
 void calcColorME(int nrX, int nrY, unsigned char* stim, float* red_green, float* green_red, float* blue_yellow,
@@ -571,7 +571,8 @@ int main()
 	// create network
 	// -------------------------------------------------------------------------------------------------------------- //
 
-	CpuSNN snn("Motion Energy");
+	CARLsim snn("Motion Energy",1,42,onGPU?GPU_MODE:CPU_MODE,0);
+
 
 	// population sizes: {number of rows, number of columns, number of pools}
 	int V1MEdim[3]		= {nrX,nrY,28*3};	// 28 space-time filters at 3 scales

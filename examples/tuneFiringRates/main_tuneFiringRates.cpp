@@ -32,7 +32,7 @@
 // This file makes sure update network works for fixed weights.
 
 // includes core CARLsim functionality
-#include <snn.h>
+#include <carlsim.h>
 // includes the callback function to output spike data to arrays
 #include "../common/writeSpikeToArray.h"
 // include the PTI framework classes and functions
@@ -76,7 +76,7 @@ using namespace std;
 // BEGIN global variables (don't give me that look)
 // -----------------------------------------------------------------------------
 // CARLSIM core:
-CpuSNN* snn;
+CARLsim* snn;
 int inputGroup; int excGroup; int inhGroup;
 int input_exc_cid; int exc_exc_cid; int exc_inh_cid; int inh_exc_cid;
 float COND_tAMPA=5.0, COND_tNMDA=150.0, COND_tGABAa=6.0, COND_tGABAb=150.0;
@@ -141,7 +141,7 @@ int main()
   // BEGIN CARLsim initialization
   // -----------------------------------------------------------------------------
   //create a network
-  snn = new CpuSNN("TuningFixedWeightsSNN",NUM_CONFIGS,RAND_SEED); // 'Tuned Internal Model'     
+  snn = new CARLsim("TuningFixedWeightsSNN",NUM_CONFIGS,RAND_SEED,GPU_MODE,0); // 'Tuned Internal Model'     
   inputGroup=snn->createSpikeGeneratorGroup("Input",INPUT_SIZE,EXCITATORY_NEURON);
   excGroup=snn->createGroup("Exc",EXC_SIZE,EXCITATORY_NEURON);
   inhGroup=snn->createGroup("Inh",INH_SIZE,INHIBITORY_NEURON);
@@ -379,7 +379,7 @@ int evaluateFitnessV1()
       // set the correct spike rate for each configuration.
       snn->setSpikeRate(inputGroup,input);
       // run the network for TRIAL_RUN_SEC
-      snn->runNetwork(TRIAL_RUN_SEC,0,GPU_MODE);
+      snn->runNetwork(TRIAL_RUN_SEC,0);
     }
   }
   // calculate firing rate here so we can just the fitness error. 

@@ -1624,7 +1624,7 @@ float errVal[MAX_NUM_BLOCKS][20];
 // the simulator kernel sets appropriate errors  and returns some important values in the 
 // array "retErrVal".
 /**********************************************************************************************/
-int CpuSNN::checkErrors(string calledKernel, int numBlocks)
+int CpuSNN::checkErrors(std::string calledKernel, int numBlocks)
 {
   int errCode = NO_KERNEL_ERRORS;
 #if(!ENABLE_MORE_CHECK)
@@ -2272,10 +2272,6 @@ void CpuSNN::updateTimingTable_GPU()
   int errCode = checkErrors("kernel_timingTableUpdate", gridSize);
   assert(errCode == NO_KERNEL_ERRORS);
 
-  //printTestVarInfo(stderr, true, true, true);
-  //printFiredId(stderr, false, 2);
-  //getchar();
-
   return;
 }
 
@@ -2284,8 +2280,6 @@ void CpuSNN::doCurrentUpdate_GPU()
   DBG(2, fpLog, AT, "gpu_doCurrentUpdate()");
 
   assert(cpu_gpuNetPtrs.allocated);
-  //		if(cpu_gpuNetPtrs.allocated == false)
-  //			allocateSNN_GPU();
 
   int blkSize  = 128;
   int gridSize = 64;
@@ -2298,14 +2292,11 @@ void CpuSNN::doCurrentUpdate_GPU()
     assert(errCode == NO_KERNEL_ERRORS);
   }
 
-  // printTestVarInfo(stderr, "Variable Delay", true, false, false, 0);
 
   gpu_doCurrentUpdateD1 <<<gridSize, blkSize>>>(simTimeMs,simTimeSec,simTime);
   CUDA_GET_LAST_ERROR_MACRO("Kernel execution failed");
   errCode = checkErrors("kernel_updateCurrentI", gridSize);
   assert(errCode == NO_KERNEL_ERRORS);
-
-  //printTestVarInfo(stderr, "LTD", true, false, false, 0, 3, 0);
 }
 
 __device__ float getSTPScaleFactor (int& nid, const int& simTime, int& del)
@@ -2505,7 +2496,6 @@ void CpuSNN::checkInitialization(char* testString)
   //		kernel_check_GPU_init <<< 1, 128 >>> ();
   CUDA_GET_LAST_ERROR("check GPU failed\n");
 
-  // printTestVarInfo(stderr);
   // read back the intialization and ensure that they are okay
   fprintf(fpLog, "%s Checking initialization of GPU...\n", testString?testString:"");
   CUDA_CHECK_ERRORS( cudaMemcpy(&errVal, devPtr, sizeof(errVal), cudaMemcpyDeviceToHost));
@@ -2560,10 +2550,6 @@ void CpuSNN::printCurrentInfo(FILE* fp)
   fflush(fp);
 }
 
-void CpuSNN::printFiringInfo(FILE* fp, int myGrpId)
-{
-  //printNeuronState(myGrpId, stderr);
-}
 
 void CpuSNN::printTestVarInfo(FILE* fp, char* testString, bool test1, bool test2, bool test12, int subVal, int grouping1, int grouping2)
 {
@@ -2650,7 +2636,8 @@ void CpuSNN::printTestVarInfo(FILE* fp, char* testString, bool test1, bool test2
 }
 
 
-void CpuSNN::deleteObjectsGPU() {
+// TODO FIXME there's more...
+void CpuSNN::deleteObjects_GPU() {
   if (testVar!=NULL) delete[] testVar;
   if (testVar2!=NULL) delete[] testVar2;
 
@@ -3005,35 +2992,6 @@ void CpuSNN::copyFiringInfo_GPU()
   //getchar();
 }
 
-// initialize the probes to appropriate values
-void CpuSNN::gpuProbeInit (network_ptr_t* dest) 
-{
-  if(dest->allocated || numProbe==0)
-    return;
-
-  probeParam_t* n = neuronProbe;
-  uint32_t* probeId;
-  probeId = (uint32_t*) calloc(numProbe, sizeof(uint32_t)*net_Info.numN);
-  int cnt = 0;
-  while(n) {
-    int nid  = n->nid;
-    probeId[nid] = cnt++;
-    n = n->next;
-  }
-  assert(cnt == numProbe);
-  // allocate the destination probes on the GPU
-  CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->probeId, sizeof(uint32_t)*net_Info.numN*numProbe));
-  CUDA_CHECK_ERRORS( cudaMemcpy( dest->probeId, &probeId, sizeof(uint32_t)*net_Info.numN*numProbe, cudaMemcpyHostToDevice));
-  // allocate and assign the probes
-  CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->probeV, 	   1000*sizeof(float)*numProbe));
-  CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->probeI, 	   1000*sizeof(float)*numProbe));
-
-  // homeostasis parameters
-  CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->probeHomeoFreq, 1000*sizeof(float)*numProbe));
-  CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->probeBaseFreq,  1000*sizeof(float)*numProbe));
-
-  free(probeId);
-}
 
 void CpuSNN::allocateNetworkParameters()
 {
@@ -3051,7 +3009,6 @@ void CpuSNN::allocateNetworkParameters()
   //		net_Info.numNoise  = numNoise;
   net_Info.maxSpikesD2 = maxSpikesD2;
   net_Info.maxSpikesD1 = maxSpikesD1;
-  net_Info.numProbe = numProbe;
   net_Info.sim_with_fixedwts = sim_with_fixedwts;
   net_Info.sim_with_conductances = sim_with_conductances;
   net_Info.sim_with_stdp = sim_with_stdp;
@@ -3185,7 +3142,6 @@ void CpuSNN::allocateSNN_GPU(int ithGPU)
   // this table is useful for quick evaluation of the position of fired neuron
   // given a sequence of bits denoting the firing..
   initTableQuickSynId();
-  gpuProbeInit(&cpu_gpuNetPtrs);
 
   copyConnections(&cpu_gpuNetPtrs,  cudaMemcpyHostToDevice, 1);
   cudaMemGetInfo(&avail,&total);

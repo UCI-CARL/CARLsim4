@@ -3,7 +3,7 @@
 // http://www.lsm.tugraz.at/pcsim/
 /////////////////////////////////
 
-#include "PropagatedSpikeBuffer.h"
+#include "propagated_spike_buffer.h"
 
 #include <iostream>
 
@@ -26,7 +26,7 @@ PropagatedSpikeBuffer::PropagatedSpikeBuffer(int minDelay, int maxDelay, int chu
     //assert( minDelay >= 0 );
     //assert( maxDelay >= 0 );
     
-    cout << "Ringbuffer size is: " << ringBufferFront.size() << endl; 
+    cout << "Ringbuffer size: " << ringBufferFront.size() << endl; 
 
     reset( minDelay, maxDelay );
 
