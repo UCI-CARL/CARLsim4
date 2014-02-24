@@ -554,28 +554,17 @@ public:
 
 	// +++++ PUBLIC METHODS: INTERACTING WITH A SIMULATION ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
-	// TODO: same as spikeMonRT
-	//TODO: may need to make it work for different configurations. -- KDC
-	/*!
- 	 * \brief Returns pointer to nSpikeCnt, which is a 1D array of the number of spikes every neuron in the group
-	 *  has fired.  Takes the grpID and the simulation mode (CPU_MODE or GPU_MODE) as arguments.
-	 */
-	unsigned int* getSpikeCntPtr(int grpId=ALL, int simType=CPU_MODE);
-
 	//! reads the network state from file
 	void readNetwork(FILE* fid);
 
-	// TODO: figure out scope; is this a user function?
 	/*!
 	 * \brief Reassigns fixed weights to values passed into the function in a single 1D float matrix called
 	 * weightMatrix.  The user passes the connection ID (connectID), the weightMatrix, the matrixSize, and 
 	 * configuration ID (configID).  This function only works for fixed synapses and for connections of type
 	 * CONN_USER_DEFINED. Only the weights are changed, not the maxWts, delays, or connected values
 	 */
-	void reassignFixedWeights(int connectId, float weightMatrix[], int matrixSize, int configId = ALL);
+	void reassignFixedWeights(int connectId, float weightMatrix[], int matrixSize, int configId);
 
-	void resetSpikeCnt(int grpId = -1);					//!< Resets the spike count for a particular group.
-	void resetSpikeCnt_GPU(int _startGrp, int _endGrp); //!< Utility function to clear spike counts in the GPU code.
 	void resetSpikeCntUtil(int grpId = -1); //!< resets spike count for particular neuron group
 
 	//! sets up a spike generator
@@ -591,8 +580,6 @@ public:
 	//! Resets either the neuronal firing rate information by setting resetFiringRate = true and/or the
 	//! weight values back to their default values by setting resetWeights = true.
 	void updateNetwork(bool resetFiringInfo, bool resetWeights);
-	void updateNetwork_GPU(bool resetFiringInfo); //!< Allows parameters to be reset in the middle of the simulation
-	// FIXME is this suppsed to be public?
 
 	//!< writes the network state to file
 	void writeNetwork(FILE* fid);
@@ -615,7 +602,7 @@ public:
 	int  getConnectionId(int connId, int configId);
 
 	// FIXME: fix this
-	uint8_t* getDelays(int gIDpre, int gIDpost, int& Npre, int& Npost, uint8_t* delays=NULL);
+	uint8_t* getDelays(int gIDpre, int gIDpost, int& Npre, int& Npost, uint8_t* delays);
 
 	int  getGroupId(int groupId, int configId);
 	group_info_t getGroupInfo(int groupId, int configId);
@@ -638,9 +625,17 @@ public:
 	uint32_t getSimTimeSec()	{ return simTimeSec; }
 	uint32_t getSimTimeMs()		{ return simTimeMs; }
 
+	// TODO: same as spikeMonRT
+	//TODO: may need to make it work for different configurations. -- KDC
+	/*!
+ 	 * \brief Returns pointer to nSpikeCnt, which is a 1D array of the number of spikes every neuron in the group
+	 *  has fired.  Takes the grpID and the simulation mode (CPU_MODE or GPU_MODE) as arguments.
+	 */
+	unsigned int* getSpikeCntPtr(int grpId=ALL, int simType=CPU_MODE);
+
 	// FIXME: fix this
 	// TODO: maybe consider renaming getPopWeightChanges
-	float* getWeightChanges(int gIDpre, int gIDpost, int& Npre, int& Npost, float* weightChanges=NULL);
+	float* getWeightChanges(int gIDpre, int gIDpost, int& Npre, int& Npost, float* weightChanges);
 
 
 	int grpStartNeuronId(int g) { return grp_Info[g].StartN; }
@@ -660,10 +655,9 @@ public:
 
 
 	void setGroupInfo(int groupId, group_info_t info, int configId=ALL);
-	void setPrintState(int grpId, bool _status, int neuronId=-1);
+	void setPrintState(int grpId, bool _status);
 	void setSimLogs(bool enable, std::string logDirName = "");
 	void setTuningLog(std::string fname);
-
 
 
 /// **************************************************************************************************************** ///
@@ -767,6 +761,7 @@ private:
 	void resetPointers();
 	void resetPoissonNeuron(unsigned int nid, int grpId);
 	void resetPropogationBuffer();
+	void resetSpikeCnt(int grpId=ALL);					//!< Resets the spike count for a particular group.
 	void resetSynapticConnections(bool changeWeights=false);
 	void resetTimingTable();
 
@@ -836,12 +831,14 @@ private:
 	void initGPU(int gridSize, int blkSize);
 	void resetFiringInformation_GPU(); //!< resets the firing information in GPU_MODE when updateNetwork is called
 	void resetGPUTiming();
+	void resetSpikeCnt_GPU(int _startGrp, int _endGrp); //!< Utility function to clear spike counts in the GPU code.
 	void setSpikeGenBit_GPU(unsigned int nid, int grp);
 	void showStatus_GPU();
 	void spikeGeneratorUpdate_GPU();
 	void startGPUTiming();
 	void stopGPUTiming();
 	void testSpikeSenderReceiver(FILE* fpLog, int simTime);
+	void updateNetwork_GPU(bool resetFiringInfo); //!< Allows parameters to be reset in the middle of the simulation
 	void updateSpikeMonitor_GPU();
 	void updateStateAndFiringTable_GPU();
 	void updateTimingTable_GPU();

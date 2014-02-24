@@ -55,14 +55,13 @@ int main()
 	int g1=sim.createGroup("excit", N*0.8, EXCITATORY_NEURON);
 	sim.setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f);
 
-	float COND_tAMPA=5.0, COND_tNMDA=150.0, COND_tGABAa=6.0, COND_tGABAb=150.0;
-	sim.setConductances(ALL,true,COND_tAMPA,COND_tNMDA,COND_tGABAa,COND_tGABAb,ALL);
-
-
 	int g2=sim.createGroup("inhib", N*0.2, INHIBITORY_NEURON);
 	sim.setNeuronParameters(g2, 0.1f,  0.2f, -65.0f, 2.0f);
 
 	int gin=sim.createSpikeGeneratorGroup("input",N*0.1,EXCITATORY_NEURON);
+
+	float COND_tAMPA=5.0, COND_tNMDA=150.0, COND_tGABAa=6.0, COND_tGABAb=150.0;
+	sim.setConductances(ALL,true,COND_tAMPA,COND_tNMDA,COND_tGABAa,COND_tGABAb,ALL);
 
 	// make random connections with 10% probability
 	sim.connect(g2,g2,"random",-1.0f/100,0.1f,1);

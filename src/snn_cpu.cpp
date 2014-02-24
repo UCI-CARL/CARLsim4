@@ -808,30 +808,6 @@ void CpuSNN::reassignFixedWeights(int connectId, float weightMatrix[], int sizeM
 		copyUpdateVariables_GPU();  
 }
 
-// resets nSpikeCnt[]
-void CpuSNN::resetSpikeCnt(int my_grpId) {
-	int startGrp, endGrp;
-
-	if(!doneReorganization)
-		return;
-
-	if (my_grpId == -1) {
-		startGrp = 0;
-		endGrp   = numGrp;
-	}
-	else {
-		startGrp = my_grpId;
-		endGrp   = my_grpId+numConfig;
-	}
-  
-	for( int grpId=startGrp; grpId < endGrp; grpId++) {
-		int startN = grp_Info[grpId].StartN;
-		int endN   = grp_Info[grpId].EndN+1;
-		for (int i=startN; i < endN; i++)
-			nSpikeCnt[i] = 0;
-	}
-}
-
 void CpuSNN::resetSpikeCntUtil(int my_grpId ) {
   int startGrp, endGrp;
 
@@ -1386,12 +1362,12 @@ void CpuSNN::setGroupInfo(int grpId, group_info_t info, int configId) {
 	}
 }
 
-void CpuSNN::setPrintState(int grpId, bool _status, int neuronId) {
-	grp_Info2[grpId].enablePrint = _status;
+void CpuSNN::setPrintState(int grpId, bool status) {
+	grp_Info2[grpId].enablePrint = status;
 }
 
-void CpuSNN::setSimLogs(bool enable, std::string logDirName) {
-	enableSimLogs = enable;
+void CpuSNN::setSimLogs(bool isSet, std::string logDirName) {
+	enableSimLogs = isSet;
 	if (logDirName != "") {
 		simLogDirName = logDirName;
 	}
@@ -2969,6 +2945,29 @@ void CpuSNN::resetPropogationBuffer() {
 	pbuf->reset(0, 1023);
 }
 
+// resets nSpikeCnt[]
+void CpuSNN::resetSpikeCnt(int my_grpId) {
+	int startGrp, endGrp;
+
+	if(!doneReorganization)
+		return;
+
+	if (my_grpId == -1) {
+		startGrp = 0;
+		endGrp   = numGrp;
+	}
+	else {
+		startGrp = my_grpId;
+		endGrp   = my_grpId+numConfig;
+	}
+  
+	for( int grpId=startGrp; grpId < endGrp; grpId++) {
+		int startN = grp_Info[grpId].StartN;
+		int endN   = grp_Info[grpId].EndN+1;
+		for (int i=startN; i < endN; i++)
+			nSpikeCnt[i] = 0;
+	}
+}
 
 //Reset wt, wtChange, pre-firing time values to default values, rewritten to
 //integrate changes between JMN and MDR -- KDC

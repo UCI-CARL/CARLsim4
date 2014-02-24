@@ -1,6 +1,6 @@
 #include <carlsim.h>
 
-#include <snn.h>
+//#include <snn.h>		// FIXME: move snn.h dependency out of carlsim.h
 #include <string>
 #include <iostream>
 
@@ -360,6 +360,11 @@ void CARLsim::readNetwork(FILE* fid) {
 	snn_->readNetwork(fid);
 }
 
+void CARLsim::reassignFixedWeights(int connectId, float weightMatrix[], int matrixSize, int configId) {
+	snn_->reassignFixedWeights(connectId,weightMatrix,matrixSize,configId);
+}
+
+
 // resets spike count for particular neuron group
 void CARLsim::resetSpikeCntUtil(int grpId) {
 	snn_->resetSpikeCntUtil(grpId);
@@ -456,6 +461,14 @@ grpConnectInfo_t* CARLsim::getConnectInfo(int connectId, int configId) {
 	return snn_->getConnectInfo(connectId,configId);
 }
 
+int CARLsim::getConnectionId(int connectId, int configId) {
+	return snn_->getConnectionId(connectId,configId);
+}
+
+uint8_t* CARLsim::getDelays(int gIDpre, int gIDpost, int& Npre, int& Npost, uint8_t* delays) {
+	return snn_->getDelays(gIDpre,gIDpost,Npre,Npost,delays);
+}
+
 int CARLsim::getGroupId(int grpId, int configId) {
 	assert(configId!=ALL); // TODO make nice
 	return snn_->getGroupId(grpId,configId);
@@ -472,6 +485,21 @@ std::string CARLsim::getGroupName(int grpId, int configId) {
 	return snn_->getGroupName(grpId, configId);
 }
 
+int CARLsim::getNumConnections(int connectionId) {
+	return snn_->getNumConnections(connectionId);
+}
+
+int CARLsim::getNumGroups() { return snn_->getNumGroups(); }
+uint64_t CARLsim::getSimTime() { return snn_->getSimTime(); }
+uint32_t CARLsim::getSimTimeSec() { return snn_->getSimTimeSec(); }
+uint32_t CARLsim::getSimTimeMsec() { return snn_->getSimTimeMs(); }
+
+// Writes weights from synaptic connections from gIDpre to gIDpost.  Returns a pointer to the weights
+// and the size of the 1D array in size.
+void CARLsim::getPopWeights(int gIDpre, int gIDpost, float*& weights, int& size, int configId) {
+	snn_->getPopWeights(gIDpre,gIDpost,weights,size,configId);
+}
+
 unsigned int* CARLsim::getSpikeCntPtr(int grpId) {
 	return snn_->getSpikeCntPtr(grpId,simMode_); // use default sim mode
 }
@@ -481,11 +509,28 @@ unsigned int* CARLsim::getSpikeCntPtr(int grpId, int simType) {
 	return snn_->getSpikeCntPtr(grpId,simType);
 }
 
+float* CARLsim::getWeightChanges(int gIDpre, int gIDpost, int& Npre, int& Npost, float* weightChanges) {
+	return snn_->getWeightChanges(gIDpre,gIDpost,Npre,Npost,weightChanges);
+}
+
+int CARLsim::grpStartNeuronId(int grpId) { return snn_->grpStartNeuronId(grpId); }
+int CARLsim::grpEndNeuronId(int grpId) { return snn_->grpEndNeuronId(grpId); }
+int CARLsim::grpNumNeurons(int grpId) { return snn_->grpNumNeurons(grpId); }
+
+bool CARLsim::isExcitatoryGroup(int grpId) { return snn_->isExcitatoryGroup(grpId); }
+bool CARLsim::isInhibitoryGroup(int grpId) { return snn_->isInhibitoryGroup(grpId); }
+bool CARLsim::isPoissonGroup(int grpId) { return snn_->isPoissonGroup(grpId); }
 
 // Sets enableGpuSpikeCntPtr to true or false.
 void CARLsim::setCopyFiringStateFromGPU(bool enableGPUSpikeCntPtr) {
 	snn_->setCopyFiringStateFromGPU(enableGPUSpikeCntPtr);
 }
+
+void CARLsim::setGroupInfo(int grpId, group_info_t info, int configId) { snn_->setGroupInfo(grpId,info,configId); }
+void CARLsim::setPrintState(int grpId, bool status) { snn_->setPrintState(grpId,status); }
+void CARLsim::setSimLogs(bool isSet, std::string logDirName) { snn_->setSimLogs(isSet,logDirName); }
+void CARLsim::setTuningLog(std::string fname) { snn_->setTuningLog(fname); }
+
 
 
 

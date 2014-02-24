@@ -1,10 +1,11 @@
 #ifndef _CARLSIM_H_
 #define _CARLSIM_H_
 
-#include <snn.h>
+#include <snn.h>	// FIXME: remove snn.h dependency
 #include <string>
 #include <map>
 
+class CpuSNN;
 
 class CARLsim {
 public:
@@ -79,10 +80,13 @@ public:
 	//! run network with custom simulation mode and options
 	int runNetwork(int nSec, int nMsec, int simType, int ithGPU=0, bool enablePrint=false, bool copyState=false);
 
+
+
+	// +++++ PUBLIC METHODS: LOGGING / PLOTTING +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
+
 	// FIXME: needs overhaul
 	//! Sets update cycle for log messages
 	void setLogCycle(unsigned int _cnt, int mode=0, FILE *fp=NULL);
-
 
 
 
@@ -90,6 +94,14 @@ public:
 
 	//! reads the network state from file
 	void readNetwork(FILE* fid);
+
+	/*!
+	 * \brief Reassigns fixed weights to values passed into the function in a single 1D float matrix (weightMatrix)
+	 * The user passes the connection ID (connectID), the weightMatrix, the matrixSize, and 
+	 * configuration ID (configID).  This function only works for fixed synapses and for connections of type
+	 * CONN_USER_DEFINED. Only the weights are changed, not the maxWts, delays, or connected values
+	 */
+	void reassignFixedWeights(int connectId, float weightMatrix[], int matrixSize, int configId=ALL);
 
 	void resetSpikeCntUtil(int grpId=ALL); //!< resets spike count for particular neuron group
 
@@ -119,10 +131,30 @@ public:
 	// +++++ PUBLIC METHODS: GETTER / SETTERS +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
 	grpConnectInfo_t* getConnectInfo(int connectId, int configId=0); //!< gets connection info struct
+	int  getConnectionId(int connId, int configId);
+
+	uint8_t* getDelays(int gIDpre, int gIDpost, int& Npre, int& Npost, uint8_t* delays=NULL);
 
 	int getGroupId(int grpId, int configId=0);
 	group_info_t getGroupInfo(int grpId, int configId=0); //!< gets group info struct
 	std::string getGroupName(int grpId, int configId=0);
+
+	int getNumConfigurations() { return numConfig_; }	//!< gets number of network configurations
+	int getNumConnections(int connectionId);			//!< gets number of connections associated with a connection ID
+	int getNumGroups();									//!< gets number of groups in the network
+
+	/*!
+	 * \brief Writes weights from synaptic connections from gIDpre to gIDpost.  Returns a pointer to the weights
+	 * and the size of the 1D array in size.  gIDpre(post) is the group ID for the pre(post)synaptic group, 
+	 * weights is a pointer to a single dimensional array of floats, size is the size of that array which is 
+	 * returned to the user, and configID is the configuration ID of the SNN.  NOTE: user must free memory from
+	 * weights to avoid a memory leak.  
+	 */
+	void getPopWeights(int gIDpre, int gIDpost, float*& weights, int& size, int configId=0);
+
+	uint64_t getSimTime();
+	uint32_t getSimTimeSec();
+	uint32_t getSimTimeMsec();
 
 	//! Returns pointer to 1D array of the number of spikes every neuron in the group has fired
 	unsigned int* getSpikeCntPtr(int grpId, int simType);
@@ -130,12 +162,29 @@ public:
 	//! use default simulation mode
 	unsigned int* getSpikeCntPtr(int grpId);
 
+	// FIXME: fix this
+	// TODO: maybe consider renaming getPopWeightChanges
+	float* getWeightChanges(int gIDpre, int gIDpost, int& Npre, int& Npost, float* weightChanges=NULL);
+
+	int grpStartNeuronId(int grpId);
+	int grpEndNeuronId(int grpId);
+	int grpNumNeurons(int grpId);
+
+	bool isExcitatoryGroup(int grpId);
+	bool isInhibitoryGroup(int grpId);
+	bool isPoissonGroup(int grpId);
+
 	/*!
 	 * \brief Sets enableGpuSpikeCntPtr to true or false.  True allows getSpikeCntPtr_GPU to copy firing
 	 * state information from GPU kernel to cpuNetPtrs.  Warning: setting this flag to true will slow down
 	 * the simulation significantly.
 	 */
 	void setCopyFiringStateFromGPU(bool enableGPUSpikeCntPtr);
+
+	void setGroupInfo(int grpId, group_info_t info, int configId=ALL);
+	void setPrintState(int grpId, bool status);
+	void setSimLogs(bool isSet, std::string logDirName="");
+	void setTuningLog(std::string fname);
 
 
 	// +++++ PUBLIC METHODS: SET DEFAULTS +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
