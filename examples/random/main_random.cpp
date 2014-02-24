@@ -50,11 +50,14 @@ int main()
 	bool copyState = false;
 
 	// create a network
-	CARLsim sim("random");
-	sim.setDefaultSimulationMode(GPU_MODE, ithGPU, enablePrint, copyState);
+	CARLsim sim("random",1,42,GPU_MODE,ithGPU,enablePrint,copyState);
 
 	int g1=sim.createGroup("excit", N*0.8, EXCITATORY_NEURON);
 	sim.setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f);
+
+	float COND_tAMPA=5.0, COND_tNMDA=150.0, COND_tGABAa=6.0, COND_tGABAb=150.0;
+	sim.setConductances(ALL,true,COND_tAMPA,COND_tNMDA,COND_tGABAa,COND_tGABAb,ALL);
+
 
 	int g2=sim.createGroup("inhib", N*0.2, INHIBITORY_NEURON);
 	sim.setNeuronParameters(g2, 0.1f,  0.2f, -65.0f, 2.0f);
@@ -69,9 +72,6 @@ int main()
 
 	// 5% probability of connection
 	sim.connect(gin,g1,"random", +100.0f/100, 100.0f/100, 0.05f,  1, 20, SYN_FIXED);
-
-	float COND_tAMPA=5.0, COND_tNMDA=150.0, COND_tGABAa=6.0, COND_tGABAb=150.0;
-	sim.setConductances(ALL,true,COND_tAMPA,COND_tNMDA,COND_tGABAa,COND_tGABAb,ALL);
 
 	// here we define and set the properties of the STDP. 
 	float ALPHA_LTP = 0.10f/100, TAU_LTP = 20.0f, ALPHA_LTD = 0.12f/100, TAU_LTD = 20.0f;	

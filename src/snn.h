@@ -591,7 +591,6 @@ public:
 	//! Resets either the neuronal firing rate information by setting resetFiringRate = true and/or the
 	//! weight values back to their default values by setting resetWeights = true.
 	void updateNetwork(bool resetFiringInfo, bool resetWeights);
-	void updateNetwork(); //!< Original updateNetwork() function used by JMN FIMXE: is this still supported?
 	void updateNetwork_GPU(bool resetFiringInfo); //!< Allows parameters to be reset in the middle of the simulation
 	// FIXME is this suppsed to be public?
 

@@ -3,6 +3,7 @@
 
 #include <snn.h>
 #include <string>
+#include <map>
 
 
 class CARLsim {
@@ -103,9 +104,6 @@ public:
 
 	void setSpikeRate(int grpId, PoissonRate* spikeRate, int refPeriod=1, int configId=ALL);
 
-	//! switches default from CPU mode <-> GPU mode
-	void switchCPUGPUmode();
-
 	//! Resets either the neuronal firing rate information by setting resetFiringRate = true and/or the
 	//! weight values back to their default values by setting resetWeights = true.
 	void updateNetwork(bool resetFiringInfo, bool resetWeights);
@@ -148,9 +146,6 @@ public:
 	//! sets default homeostasis params
 	void setDefaultHomeostasisParams(float homeoScale, float avgTimeScale);
 
-	//! sets default simulation mode
-	void setDefaultSimulationMode(int simType, int ithGPU, bool enablePrint, bool copyState);
-
 	//! sets default values for STDP params
 	void setDefaultSTDPparams(float alphaLTP, float tauLTP, float alphaLTD, float tauLTD);
 
@@ -160,12 +155,21 @@ public:
 
 	// +++++ PUBLIC PROPERTIES ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
+	struct grpInfo_s {
+		int grpId;			// the grp id returned from CARLsimCore
+		bool hasSetCond;	// whether conductances are set
+	};
 
 private:
 	// +++++ PRIVATE METHODS ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
-	void handleUserWarnings(); //!< print all user warnings, continue only after user input
+	void checkConductances(); 			//!< all or none of the groups must enable conductances
+
+	void handleUserWarnings(); 			//!< print all user warnings, continue only after user input
+	void handleNetworkConsistency();	//!< do all setupNetwork error checks
 
 	void printSimulationSpecs();
+
+	grpInfo_s makeGrpInfo(int grpId, bool hasSetCond); //!< factory function for grpInfo_s
 
 
 	// +++++ PRIVATE PROPERTIES +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
@@ -173,15 +177,15 @@ private:
 	CpuSNN* snn_;			//!< an instance of CARLsim core class
 	int numConfig_;			//!< number of configurations
 	int randSeed_;			//!< RNG seed
-	int simType_;			//!< CPU_MODE or GPU_MODE
+	int simMode_;			//!< CPU_MODE or GPU_MODE
 	int ithGPU_;			//!< on which device to establish a context
 	bool enablePrint_;
 	bool copyState_;
 
-	bool hasConnectBegun_;	//!< flag to inform that connection setup has begun
-	bool hasRunNetwork_;	//!< flag to inform that network has been run
+	std::map<int, grpInfo_s> grpInfo_;
 
-	bool hasSetConductALL_; 		//!< informs that conductances have been set for ALL groups (can't add more groups)
+	bool hasRunNetwork_;				//!< flag to inform that network has been run
+
 	bool hasSetHomeoALL_;			//!< informs that homeostasis have been set for ALL groups (can't add more groups)
 	bool hasSetHomeoBaseFiringALL_;	//!< informs that base firing has been set for ALL groups (can't add more groups)
 	bool hasSetSTDPALL_; 			//!< informs that STDP have been set for ALL groups (can't add more groups)

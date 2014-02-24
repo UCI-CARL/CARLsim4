@@ -956,23 +956,6 @@ void CpuSNN::setSpikeRate(int grpId, PoissonRate* ratePtr, int refPeriod, int co
 
 
 // function used for parameter tuning interface
-void CpuSNN::updateNetwork() {
-  if(!doneReorganization)
-    return;
-
-  // change weights back to the default level for all the connections...
-  resetSynapticConnections(true);
-
-  // Reset v,u,firing time values to default values...
-  resetGroups();
-
-  // reset all firing information..
-  resetFiringInformation();
-
-  printTuningLog();
-}
-
-// function used for parameter tuning interface
 void CpuSNN::updateNetwork(bool resetFiringInfo, bool resetWeights) {
   if(!doneReorganization){
     fprintf(stderr,"UpdateNetwork function was called but nothing was done because reorganizeNetwork must be called first.\n");
@@ -1440,13 +1423,16 @@ void CpuSNN::CpuSNNInit(unsigned int nNeur, unsigned int nPostSyn, unsigned int 
 	current	 = new float[numNReg];
 	cpuSnnSz.neuronInfoSize += (sizeof(int)*numNReg*12);
 
+	// all or none of the groups must have conductances enabled
+	// user error handling is done in interface
 	if (sim_with_conductances) {
 		for (int g=0;g<numGrp;g++) {
-			if (!grp_Info[g].WithConductances && ((grp_Info[g].Type&POISSON_NEURON)==0)) {
-				printf("If one group enables conductances then all groups, except for generators, must enable conductances.  Group '%s' is not enabled.\n",
-							grp_Info2[g].Name.c_str());
-				assert(false);
-			}
+			assert(grp_Info[g].WithConductances || !grp_Info[g].WithConductances && grp_Info[g].Type&POISSON_NEURON);
+//			if (!grp_Info[g].WithConductances && ((grp_Info[g].Type&POISSON_NEURON)==0)) {
+//				printf("If one group enables conductances then all groups, except for generators, must enable conductances.  Group '%s' is not enabled.\n",
+//							grp_Info2[g].Name.c_str());
+//				assert(false);
+//			}
 		}
 
 		gAMPA  = new float[numNReg];

@@ -52,15 +52,13 @@ CARLsim::CARLsim(std::string netName, int numConfig, int randSeed, int simType, 
 	snn_ = new CpuSNN(netName.c_str(), numConfig, randSeed, simType);
 	numConfig_ 					= numConfig;
 	randSeed_					= randSeed;
-	simType_ 					= simType;
+	simMode_ 					= simType;
 	ithGPU_ 					= ithGPU;
 	enablePrint_ 				= enablePrint;
 	copyState_ 					= copyState;
 
-	hasConnectBegun_ 			= false;
 	hasRunNetwork_  			= false;
 
-	hasSetConductALL_ 			= false;
 	hasSetHomeoALL_ 			= false;
 	hasSetHomeoBaseFiringALL_ 	= false;
 	hasSetSTDPALL_ 				= false;
@@ -90,7 +88,7 @@ CARLsim::CARLsim(std::string netName, int numConfig, int randSeed, int simType, 
 	def_STP_tF_inh_ = 1000.0f;
 
 	// set default homeostasis params
-	// TODO: add ref, find good values
+	// TODO: add ref
 	def_homeo_scale_ = 0.1f;
 	def_homeo_avgTimeScale_ = 10.f;
 }
@@ -111,7 +109,6 @@ CARLsim::~CARLsim() {
 // shortcut to make SYN_FIXED with one weight and one delay value
 int CARLsim::connect(int grpId1, int grpId2, const std::string& connType, float wt, float connProb, uint8_t delay) {
 	assert(!hasRunNetwork_); // TODO: make nice
-	hasConnectBegun_ = true; // inform class that creating groups etc. is no longer allowed
 
 	return snn_->connect(grpId1, grpId2, connType, wt, wt, connProb, delay, delay, SYN_FIXED);
 }
@@ -120,7 +117,6 @@ int CARLsim::connect(int grpId1, int grpId2, const std::string& connType, float 
 int CARLsim::connect(int grpId1, int grpId2, const std::string& connType, float initWt, float maxWt, float connProb,
 					uint8_t minDelay, uint8_t maxDelay, bool synWtType) {
 	assert(!hasRunNetwork_); // TODO: make nice
-	hasConnectBegun_ = true; // inform class that creating groups etc. is no longer allowed
 
 	return snn_->connect(grpId1, grpId2, connType, initWt, maxWt, connProb, minDelay, maxDelay, synWtType);
 }
@@ -128,7 +124,6 @@ int CARLsim::connect(int grpId1, int grpId2, const std::string& connType, float 
 // custom connectivity profile
 int CARLsim::connect(int grpId1, int grpId2, ConnectionGenerator* conn, bool synWtType, int maxM, int maxPreM) {
 	assert(!hasRunNetwork_); // TODO: make nice
-	hasConnectBegun_ = true; // inform class that creating groups etc. is no longer allowed
 
 	return snn_->connect(grpId1, grpId2, conn, synWtType, maxM, maxPreM);
 }
@@ -136,12 +131,10 @@ int CARLsim::connect(int grpId1, int grpId2, ConnectionGenerator* conn, bool syn
 
 // create group of Izhikevich spiking neurons
 int CARLsim::createGroup(std::string grpName, unsigned int nNeur, int neurType, int configId) {
-	assert(!hasConnectBegun_ && !hasRunNetwork_); // TODO: make nice error message
+	assert(!hasRunNetwork_); // TODO: make nice error message
 
 	// if user has called any set functions with grpId=ALL, and is now adding another group, previously set properties
 	// will not apply to newly added group
-	if (hasSetConductALL_)
-		userWarnings_.push_back("USER WARNING: Make sure to call setConductances on group "+grpName);
 	if (hasSetSTPALL_)
 		userWarnings_.push_back("USER WARNING: Make sure to call setSTP on group "+grpName);
 	if (hasSetSTDPALL_)
@@ -151,12 +144,17 @@ int CARLsim::createGroup(std::string grpName, unsigned int nNeur, int neurType, 
 	if (hasSetHomeoBaseFiringALL_)
 		userWarnings_.push_back("USER WARNING: Make sure to call setHomeoBaseFiringRate on group "+grpName);
 
-	return snn_->createGroup(grpName.c_str(),nNeur,neurType,configId);
+	int grpId = snn_->createGroup(grpName.c_str(),nNeur,neurType,configId);
+
+	// keep track of group info
+	grpInfo_[grpId] = makeGrpInfo(grpId,false);
+
+	return grpId;
 }
 
 // create group of spike generators
 int CARLsim::createSpikeGeneratorGroup(std::string grpName, unsigned int nNeur, int neurType, int configId) {
-	assert(!hasConnectBegun_ && !hasRunNetwork_); // TODO: make nicer
+	assert(!hasRunNetwork_); // TODO: make nicer
 	return snn_->createSpikeGeneratorGroup(grpName.c_str(),nNeur,neurType,configId);
 }
 
@@ -164,20 +162,35 @@ int CARLsim::createSpikeGeneratorGroup(std::string grpName, unsigned int nNeur, 
 // set conductance values, use defaults
 void CARLsim::setConductances(int grpId, bool isSet, int configId) {
 	assert(!hasRunNetwork_); // TODO make nice
-	hasSetConductALL_ = grpId==ALL; // adding groups after this will not have conductances set
+
+	// keep track of groups with conductances set
+	if (grpId==ALL) {
+		for (std::map<int,grpInfo_s>::iterator iter = grpInfo_.begin(); iter!=grpInfo_.end(); ++iter)
+			grpInfo_[iter->first].hasSetCond = isSet;
+	} else {
+		grpInfo_[grpId].hasSetCond = isSet;
+	}
 
 	if (isSet) { // enable conductances, use default values
 		snn_->setConductances(grpId,true,def_tdAMPA_,def_tdNMDA_,def_tdGABAa_,def_tdGABAb_,configId);
 	} else { // discable conductances
 		snn_->setConductances(grpId,false,0.0f,0.0f,0.0f,0.0f,configId);
 	}
+
 }
 
 // set conductances values, custom
 void CARLsim::setConductances(int grpId, bool isSet, float tdAMPA, float tdNMDA, float tdGABAa, float tdGABAb,
 								int configId) {
 	assert(!hasRunNetwork_); // TODO make nice
-	hasSetConductALL_ = grpId==ALL; // adding groups after this will not have conductances set
+
+	// keep track of groups with conductances set
+	if (grpId==ALL) {
+		for (std::map<int,grpInfo_s>::iterator iter = grpInfo_.begin(); iter!=grpInfo_.end(); ++iter)
+			grpInfo_[iter->first].hasSetCond = isSet;
+	} else {
+		grpInfo_[grpId].hasSetCond = isSet;
+	}
 
 	if (isSet) { // enable conductances, use custom values
 		snn_->setConductances(grpId,true,tdAMPA,tdNMDA,tdGABAa,tdGABAb,configId);
@@ -227,7 +240,7 @@ void CARLsim::setHomeoBaseFiringRate(int grpId, float baseFiring, float baseFiri
 // set neuron parameters for Izhikevich neuron, with standard deviations
 void CARLsim::setNeuronParameters(int grpId, float izh_a, float izh_a_sd, float izh_b, float izh_b_sd,
 							 		float izh_c, float izh_c_sd, float izh_d, float izh_d_sd, int configId) {
-	assert(!hasRunNetwork_); // TODO: make nice; allowed after hasConnectBegun_?
+	assert(!hasRunNetwork_); // TODO: make nice
 
 	// wrapper identical to core func
 	snn_->setNeuronParameters(grpId, izh_a, izh_a_sd, izh_b, izh_b_sd, izh_c, izh_c_sd, izh_d, izh_d_sd, configId);
@@ -235,7 +248,7 @@ void CARLsim::setNeuronParameters(int grpId, float izh_a, float izh_a_sd, float 
 
 // set neuron parameters for Izhikevich neuron
 void CARLsim::setNeuronParameters(int grpId, float izh_a, float izh_b, float izh_c, float izh_d, int configId) {
-	assert(!hasRunNetwork_); // TODO: make nice; allowed after hasConnectBegun_?
+	assert(!hasRunNetwork_); // TODO: make nice
 
 	// set standard deviations of Izzy params to zero
 	snn_->setNeuronParameters(grpId, izh_a, 0.0f, izh_b, 0.0f, izh_c, 0.0f, izh_d, 0.0f, configId);
@@ -304,34 +317,26 @@ void CARLsim::setSTP(int grpId, bool isSet, float STP_U, float STP_tD, float STP
 
 // +++++++++ PUBLIC METHODS: RUNNING A SIMULATION +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
-// run network in default simulation mode
-// this way, you don't need to specify GPU_MODE every time you call runNetwork
-// use CARLsim::setDefaultSimulationMode instead
-// TODO: figure out if the following sequence is expected behavior, otherwise inform user
-//		1. setDefault -> GPU_MODE
-//		2. runNetwork(1,0); // will run in GPU_MODE
-//		3. runNetwork(1,0,CPU_MODE); // will run in CPU_MODE
-//		4. runNetwork(1,0); // this will run in GPU_MODE again, because that's the default
+// run network
 int CARLsim::runNetwork(int nSec, int nMsec) {
 	if (!hasRunNetwork_) {
-		handleUserWarnings();	// before running network, make sure user didn't provoque any user warnings
-		printSimulationSpecs();	// first time around, show simMode etc.
+		handleNetworkConsistency();	// before running network, make sure it's consistent
+		handleUserWarnings();		// before running network, make sure user didn't provoque any user warnings
+		printSimulationSpecs();		// first time around, show simMode etc.
 	}
 
-	hasConnectBegun_ = true;
 	hasRunNetwork_ = true;
 
-	return snn_->runNetwork(nSec, nMsec, simType_, ithGPU_, enablePrint_, copyState_);
+	return snn_->runNetwork(nSec, nMsec, simMode_, ithGPU_, enablePrint_, copyState_);
 }
 
-// run network with custom mode and options
+// run network with custom options
 int CARLsim::runNetwork(int nSec, int nMsec, int simType, int ithGPU, bool enablePrint, bool copyState) {
 	if (!hasRunNetwork_) {
 		handleUserWarnings();	// before running network, make sure user didn't provoque any user warnings
 		printSimulationSpecs(); // first time around, show simMode etc.
 	}
 
-	hasConnectBegun_ = true;
 	hasRunNetwork_ = true;
 
 	return snn_->runNetwork(nSec, nMsec, simType, ithGPU, enablePrint, copyState);	
@@ -422,11 +427,6 @@ void CARLsim::setSpikeRate(int grpId, PoissonRate* spikeRate, int refPeriod, int
 	snn_->setSpikeRate(grpId, spikeRate, refPeriod, configId);
 }
 
-// switches default from CPU mode <-> GPU mode
-void CARLsim::switchCPUGPUmode() {
-	simType_ = (simType_==CPU_MODE) ? GPU_MODE : CPU_MODE;
-}
-
 // Resets either the neuronal firing rate information by setting resetFiringRate = true and/or the
 // weight values back to their default values by setting resetWeights = true.
 void CARLsim::updateNetwork(bool resetFiringInfo, bool resetWeights) {
@@ -471,7 +471,7 @@ std::string CARLsim::getGroupName(int grpId, int configId) {
 }
 
 unsigned int* CARLsim::getSpikeCntPtr(int grpId) {
-	return snn_->getSpikeCntPtr(grpId,simType_); // use default sim mode
+	return snn_->getSpikeCntPtr(grpId,simMode_); // use default sim mode
 }
 
 unsigned int* CARLsim::getSpikeCntPtr(int grpId, int simType) {
@@ -509,16 +509,6 @@ void CARLsim::setDefaultHomeostasisParams(float homeoScale, float avgTimeScale) 
 	def_homeo_avgTimeScale_ = avgTimeScale;
 }
 
-// set default simulation mode
-void CARLsim::setDefaultSimulationMode(int simType, int ithGPU, bool enablePrint, bool copyState) {
-	assert(simType==CPU_MODE || simType==GPU_MODE); // TODO make nice
-
-	simType_ = simType;
-	ithGPU_ = ithGPU;
-	enablePrint_ = enablePrint;
-	copyState_ = copyState;
-}
-
 // set default values for STDP params
 void CARLsim::setDefaultSTDPparams(float alphaLTP, float tauLTP, float alphaLTD, float tauLTD) {
 	assert(tauLTP>0); // TODO make nice
@@ -553,10 +543,29 @@ void CARLsim::setDefaultSTPparams(int neurType, float STP_U, float STP_tD, float
 }
 
 
-
 /// **************************************************************************************************************** ///
 /// PRIVATE METHODS
 /// **************************************************************************************************************** ///
+
+// check whether all or none of the groups have conductances enabled
+void CARLsim::checkConductances() {
+	bool allSame;
+	for (std::map<int, grpInfo_s>::iterator iter = grpInfo_.begin(); iter != grpInfo_.end(); ++iter) {
+		allSame = (iter==grpInfo_.begin()) ? iter->second.hasSetCond : allSame==iter->second.hasSetCond;
+	}
+
+	if (!allSame) {
+		// TODO: make nice
+		printf("USER ERROR: If one group enables conductances, then all groups (except for generators) must enable conductances.\n");
+		exit(1);
+	}
+}
+
+// check for setupNetwork user errors
+void CARLsim::handleNetworkConsistency() {
+	checkConductances();	// conductances have to be set either for all groups or for none
+
+}
 
 // print all user warnings, continue only after user input
 void CARLsim::handleUserWarnings() {
@@ -566,16 +575,22 @@ void CARLsim::handleUserWarnings() {
 
 		fprintf(stdout,"Ignore warnings and continue? Y/n ");
 		char ignoreWarn = std::cin.get();
-		if (std::cin.fail() || ignoreWarn!='y' || ignoreWarn!='Y') {
+		if (std::cin.fail() || ignoreWarn!='y' && ignoreWarn!='Y') {
 			fprintf(stdout,"exiting...\n");
 			exit(1);
 		}
 	}
 }
 
+// factory function for making grpInfo_s
+CARLsim::grpInfo_s CARLsim::makeGrpInfo(int grpId, bool hasSetCond) {
+	grpInfo_s grpInfo = {grpId, hasSetCond};
+	return grpInfo;
+}
+
 // print all simulation specs
 void CARLsim::printSimulationSpecs() {
-	if (simType_==CPU_MODE) {
+	if (simMode_==CPU_MODE) {
 		fprintf(stdout,"CPU_MODE, enablePrint=%s, copyState=%s\n\n",enablePrint_?"on":"off",copyState_?"on":"off");
 	} else {
 		fprintf(stdout,"GPU_MODE, GPUid=%d, enablePrint=%s, copyState=%s\n\n",ithGPU_,enablePrint_?"on":"off",
