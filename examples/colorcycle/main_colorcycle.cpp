@@ -149,10 +149,9 @@ int main()
 	#define FRAMEDURATION 100
 
 	FILE* fid;
-
-	CARLsim s("colorcycle");
 	bool onGPU = true;
-	s.setDefaultSimulationMode(onGPU?GPU_MODE:CPU_MODE,0,false,false);
+
+	CARLsim s("colorcycle",1,42,onGPU?GPU_MODE:CPU_MODE,0);
 
 	int v1Cells[5];
 	int num_V1_groups=6;

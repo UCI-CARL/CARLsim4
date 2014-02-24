@@ -177,13 +177,9 @@ int main()
 	#define FRAMEDURATION 100
 
 	FILE* fid;
-
-	// use command-line specified CUDA device, otherwise use device with highest Gflops/s
-//	cutilSafeCall(cudaSetDevice(cutGetMaxGflopsDeviceId()));
-
-	CARLsim s("orientation");
 	bool onGPU = true;
-	s.setDefaultSimulationMode(onGPU?GPU_MODE:CPU_MODE,0,false,false);
+
+	CARLsim s("orientation",1,42,onGPU?GPU_MODE:CPU_MODE,0);
 
 
 	int gV1ME = s.createSpikeGeneratorGroup("V1ME", nrX*nrY*28*3, EXCITATORY_NEURON);

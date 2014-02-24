@@ -529,8 +529,7 @@ int main_fitness_function(int argc, char *argv[])
   // --------------------------------------------------------------------------------------------------
 
 
-  CARLsim snn("SpikingNeuralNetworkEvolvedUsingEO",NUM_CONFIG,RAND_SEED);
-  snn.setDefaultSimulationMode(SIM_MODE,0,false,false);
+  CARLsim snn("SpikingNeuralNetworkEvolvedUsingEO",NUM_CONFIG,RAND_SEED,SIM_MODE,0);
 
   //  create a population or group of neurons with the label "inhib", having
   inputOnGrp     = snn.createSpikeGeneratorGroup("spike_input_on", nPois, EXCITATORY_POISSON);

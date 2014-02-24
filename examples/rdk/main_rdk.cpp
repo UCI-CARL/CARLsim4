@@ -275,6 +275,7 @@ int main()
 	synscale = synscale*4;
 
 	#define FRAMEDURATION 100
+	bool onGPU = true;
 
 	FILE* fid;
 	char thisTmpSave[128]; // temp var to store save folder
@@ -283,9 +284,7 @@ int main()
 	// use command-line specified CUDA device, otherwise use device with highest Gflops/s
 //	cutilSafeCall(cudaSetDevice(cutGetMaxGflopsDeviceId()));
 
-	CARLsim s("rdk");
-	bool onGPU = true;
-	s.setDefaultSimulationMode(onGPU?GPU_MODE:CPU_MODE,0,false,false);
+	CARLsim s("rdk",1,42,onGPU?GPU_MODE:CPU_MODE,0);
 
 	int gV1ME = s.createSpikeGeneratorGroup("V1ME", nrX*nrY*28*3, EXCITATORY_NEURON);
 	int gMT1 = s.createGroup("MT1", nrX*nrY*8, EXCITATORY_NEURON);

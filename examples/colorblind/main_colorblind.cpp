@@ -71,14 +71,14 @@ float fast_exp(float x)
 
 
 enum color_name_t { BLUE=0, GREEN, RED, YELLOW};
-string imageName[] = { "blue", "green", "red", "yellow"};
+std::string imageName[] = { "blue", "green", "red", "yellow"};
 
 enum v1color_name_t    { RED_GREEN=0, BLUE_YELLOW, GREEN_RED, YELLOW_BLUE };
-string v1ImageName[] = { "red-green-cells", "blue-yellow-cells",
+std::string v1ImageName[] = { "red-green-cells", "blue-yellow-cells",
 			 "green-red-cells", "yellow-blue-cells"};
 
-string  v4CellNameExc[] = { "Ev4magenta", "Ev4blue", "Ev4cyan", "Ev4green", "Ev4yellow", "Ev4red"};
-string  v4CellNameInh[] = { "Iv4magenta", "Iv4blue", "Iv4cyan", "Iv4green", "Iv4yellow", "Iv4red"};
+std::string  v4CellNameExc[] = { "Ev4magenta", "Ev4blue", "Ev4cyan", "Ev4green", "Ev4yellow", "Ev4red"};
+std::string  v4CellNameInh[] = { "Iv4magenta", "Iv4blue", "Iv4cyan", "Iv4green", "Iv4yellow", "Iv4red"};
 
 enum  v4CellType_t  {MAGENTA_V4=0, BLUE_V4, CYAN_V4, GREEN_V4, YELLOW_V4, RED_V4};
 

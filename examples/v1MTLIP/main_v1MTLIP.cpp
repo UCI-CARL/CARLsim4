@@ -571,8 +571,7 @@ int main()
 	// create network
 	// -------------------------------------------------------------------------------------------------------------- //
 
-	CARLsim snn("Motion Energy");
-	snn.setDefaultSimulationMode(onGPU?GPU_MODE:CPU_MODE,ithGPU,false,false);
+	CARLsim snn("Motion Energy",1,42,onGPU?GPU_MODE:CPU_MODE,0);
 
 
 	// population sizes: {number of rows, number of columns, number of pools}

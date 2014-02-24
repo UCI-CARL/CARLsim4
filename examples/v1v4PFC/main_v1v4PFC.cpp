@@ -435,15 +435,14 @@ int main()
 	synscale = synscale*4;
 
 	#define FRAMEDURATION 100
+	bool onGPU = true;
 
 	FILE* fid;
 
 	// use command-line specified CUDA device, otherwise use device with highest Gflops/s
 //	CUDA_CHECK_ERRORS(cudaSetDevice(cutGetMaxGflopsDeviceId()));
 
-	CARLsim s("V1V4PFC");
-	bool onGPU = true;
-	s.setDefaultSimulationMode(onGPU?GPU_MODE:CPU_MODE,0,false,false);
+	CARLsim s("V1V4PFC",1,42,onGPU?GPU_MODE:CPU_MODE,0);
 
 	int v1Cells[5];
 	int num_V1_groups=6;
