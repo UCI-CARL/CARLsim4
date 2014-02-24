@@ -188,12 +188,14 @@ class CpuSNN;
  * This is accomplished using a callback mechanism, which is called at each time step, to specify whether a neuron has
  * fired or not. */
 class SpikeGenerator {
- public:
-  SpikeGenerator() {};
+public:
+	SpikeGenerator() {};
 
-  //! controls spike generation using a callback
-  /*! \attention The virtual method should never be called directly */
-  virtual unsigned int nextSpikeTime(CpuSNN* s, int grpId, int i, unsigned int currentTime) { assert(false); return 0; }; // the virtual method should never be called directly
+	//! controls spike generation using a callback
+	/*! \attention The virtual method should never be called directly */
+	virtual unsigned int nextSpikeTime(CpuSNN* s, int grpId, int i, unsigned int currentTime) {
+	  	assert(false); return 0;
+	  };
 };
 
 //! used for fine-grained control over spike generation, using a callback mechanism
@@ -206,12 +208,15 @@ class SpikeGenerator {
  * the connection's delay, initial weight, maximum weight, and whether or not it is plastic.
  */
 class ConnectionGenerator {
- public:
-  ConnectionGenerator() {};
+public:
+	ConnectionGenerator() {};
 
-  //! specifies which synaptic connections (per group, per neuron, per synapse) should be made
-  /*! \attention The virtual method should never be called directly */
-  virtual void connect(CpuSNN* s, int srcGrpId, int i, int destGrpId, int j, float& weight, float& maxWt, float& delay, bool& connected) { assert(false); }; // the virtual method should never be called directly
+	//! specifies which synaptic connections (per group, per neuron, per synapse) should be made
+	/*! \attention The virtual method should never be called directly */
+	virtual void connect(CpuSNN* s, int srcGrpId, int i, int destGrpId, int j, float& weight, float& maxWt,
+							float& delay, bool& connected) {
+		assert(false);
+	};
 };
 
 
@@ -264,16 +269,15 @@ typedef struct network_info_s  {
 } network_info_t;
 
 //! nid=neuron id, sid=synapse id, grpId=group id. 
-inline post_info_t SET_CONN_ID(int nid, int sid, int grpId)
-{
-  if (sid > CONN_SYN_MASK) {
-    fprintf(stderr, "Error: Syn Id (%d) exceeds maximum limit (%d) for neuron %d\n", sid, CONN_SYN_MASK, nid);
-    assert(0);
-  }
-  post_info_t p;
-  p.postId = (((sid)<<CONN_SYN_NEURON_BITS)+((nid)&CONN_SYN_NEURON_MASK));
-  p.grpId  = grpId;
-  return p;
+inline post_info_t SET_CONN_ID(int nid, int sid, int grpId) {
+	if (sid > CONN_SYN_MASK) {
+		fprintf(stderr, "Error: Syn Id (%d) exceeds maximum limit (%d) for neuron %d\n", sid, CONN_SYN_MASK, nid);
+		assert(0);
+	}
+	post_info_t p;
+	p.postId = (((sid)<<CONN_SYN_NEURON_BITS)+((nid)&CONN_SYN_NEURON_MASK));
+	p.grpId  = grpId;
+	return p;
 }
 
 typedef struct network_ptr_s  {
@@ -292,6 +296,7 @@ typedef struct network_ptr_s  {
   unsigned short	*Npost;				//!< stores the number of output connections from a neuron.
   unsigned int		*lastSpikeTime;			//!< storees the firing time of the neuron
   float	*wtChange, *wt;	//!< stores the synaptic weight and weight change of a synaptic connection
+	int *connIdFromSynId;			//!< stores connId for each synaptic id (same indexing as in wt or wtChange)
   float	 *maxSynWt;			//!< maximum synaptic weight for given connection..
   uint32_t *synSpikeTime;
   uint32_t *neuronFiring;
@@ -428,6 +433,7 @@ typedef struct connectData_s {
   int 	  		grpSrc, grpDest;
   uint8_t	  		maxDelay,  minDelay;
   float	  		initWt, maxWt;
+  float 		mulSynFast, mulSynSlow;
   int	  	  		numPostSynapses;
   int	  	  		numPreSynapses;
   uint32_t  		connProp;
@@ -495,11 +501,12 @@ public:
 
 	//! make connection of type "random","full","one-to-one" from each neuron in grpId1 to neurons in grpId2
 	int connect(int gIDpre, int gIDpost, const std::string& _type, float initWt, float maxWt, float _C,
-					uint8_t minDelay, uint8_t maxDelay, bool synWtType);
+					uint8_t minDelay, uint8_t maxDelay, float mulSynFast, float mulSynSlow, bool synWtType);
 
 	//! make custom connections from grpId1 to grpId2
 	// TODO: describe maxM and maxPreM
-	int connect(int gIDpre, int gIDpost, ConnectionGenerator* conn, bool synWtType, int maxM,int maxPreM);
+	int connect(int gIDpre, int gIDpost, ConnectionGenerator* conn, float mulSynFast, float mulSynSlow, bool synWtType,
+					int maxM,int maxPreM);
 
 
 	//! creates a group of Izhikevich spiking neurons
@@ -900,6 +907,7 @@ private:
 	uint32_t    	*lastSpikeTime;	//!< stores the most recent spike time of the neuron
 	float			*wtChange, *wt;	//!< stores the synaptic weight and weight change of a synaptic connection
 	float	 		*maxSynWt;		//!< maximum synaptic weight for given connection..
+	int *connIdFromSynId;			//!< stores connId for each synaptic id (same indexing as in wt or wtChange)
 	uint32_t    	*synSpikeTime;	//!< stores the spike time of each synapse
 	unsigned int		postSynCnt; //!< stores the total number of post-synaptic connections in the network
 	unsigned int		preSynCnt; //!< stores the total number of pre-synaptic connections in the network

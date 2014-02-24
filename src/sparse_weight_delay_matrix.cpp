@@ -46,6 +46,8 @@ SparseWeightDelayMatrix::SparseWeightDelayMatrix(int Npre, int Npost, int initSi
 	size = 0;
 	weights = NULL;
 	maxWeights = NULL;
+	mulSynFast = NULL;
+	mulSynSlow = NULL;
 	preIds = NULL;
 	preIds = NULL;
 	delay_opts = NULL;
@@ -59,6 +61,8 @@ SparseWeightDelayMatrix::SparseWeightDelayMatrix(int Npre, int Npost, int initSi
 SparseWeightDelayMatrix::~SparseWeightDelayMatrix() {
 	free(weights);
 	free(maxWeights);
+	free(mulSynFast);
+	free(mulSynSlow);
 	free(preIds);
 	free(postIds);
 	free(delay_opts);
@@ -69,17 +73,22 @@ void SparseWeightDelayMatrix::resize(int inc) {
 
 	weights = (float*)realloc(weights, size * sizeof(float));
 	maxWeights = (float*)realloc(maxWeights, size * sizeof(float));
+	mulSynFast = (float*)realloc(mulSynFast, size * sizeof(float));
+	mulSynSlow = (float*)realloc(mulSynSlow, size * sizeof(float));
 	preIds = (unsigned int*)realloc(preIds, size * sizeof(int));
 	postIds = (unsigned int*)realloc(postIds, size * sizeof(int));
 	delay_opts = (unsigned int*)realloc(delay_opts, size * sizeof(int));
 }
 
-int SparseWeightDelayMatrix::add(int preId, int postId, float weight, float maxWeight, uint8_t delay, int opts) {
+int SparseWeightDelayMatrix::add(int preId, int postId, float weight, float maxWeight, uint8_t delay, 
+									float _mulSynFast, float _mulSynSlow, int opts) {
 	if (count == size)
 		resize(size == 0 ? 1000 : size * 2);
 
 	weights[count] = weight;
 	maxWeights[count] = maxWeight;
+	mulSynFast[count] = _mulSynFast;
+	mulSynSlow[count] = _mulSynSlow;
 	preIds[count] = preId;
 	postIds[count] = postId;
 	delay_opts[count] = delay | (opts << 8);

@@ -53,6 +53,8 @@ public:
 	uint32_t	maxPostId;
 	float		*weights;
 	float		*maxWeights;
+	float		*mulSynFast;	//!< scaling factor for fast synaptic current (AMPA / GABAa)
+	float 		*mulSynSlow;	//!< scaling factor for slow synaptic current (NMDA / GABAb)
 	uint32_t	*preIds;
 	uint32_t	*postIds;
 	uint32_t	*delay_opts; //!< first 8 bits are delay, higher are for Fixed/Plastic and any other future options
@@ -63,7 +65,8 @@ public:
 
 	void resize(int inc);
 
-	int add(int preId, int postId, float weight, float maxWeight, uint8_t delay, int opts = 0);
+	int add(int preId, int postId, float weight, float maxWeight, uint8_t delay, float _mulSynFast, float _mulSynSlow,
+				int opts = 0);
 };
 
 #endif

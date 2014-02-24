@@ -110,22 +110,24 @@ CARLsim::~CARLsim() {
 int CARLsim::connect(int grpId1, int grpId2, const std::string& connType, float wt, float connProb, uint8_t delay) {
 	assert(!hasRunNetwork_); // TODO: make nice
 
-	return snn_->connect(grpId1, grpId2, connType, wt, wt, connProb, delay, delay, SYN_FIXED);
+	return snn_->connect(grpId1, grpId2, connType, wt, wt, connProb, delay, delay, 1.0f, 1.0f, SYN_FIXED);
 }
 
 // basic connection function, from each neuron in grpId1 to neurons in grpId2
 int CARLsim::connect(int grpId1, int grpId2, const std::string& connType, float initWt, float maxWt, float connProb,
-					uint8_t minDelay, uint8_t maxDelay, bool synWtType) {
+							uint8_t minDelay, uint8_t maxDelay, float mulSynFast, float mulSynSlow, bool synWtType) {
 	assert(!hasRunNetwork_); // TODO: make nice
 
-	return snn_->connect(grpId1, grpId2, connType, initWt, maxWt, connProb, minDelay, maxDelay, synWtType);
+	return snn_->connect(grpId1, grpId2, connType, initWt, maxWt, connProb, minDelay, maxDelay, mulSynFast, mulSynSlow,
+							synWtType);
 }
 
 // custom connectivity profile
-int CARLsim::connect(int grpId1, int grpId2, ConnectionGenerator* conn, bool synWtType, int maxM, int maxPreM) {
+int CARLsim::connect(int grpId1, int grpId2, ConnectionGenerator* conn, float mulSynFast, float mulSynSlow,
+						bool synWtType, int maxM, int maxPreM) {
 	assert(!hasRunNetwork_); // TODO: make nice
 
-	return snn_->connect(grpId1, grpId2, conn, synWtType, maxM, maxPreM);
+	return snn_->connect(grpId1, grpId2, conn, mulSynFast, mulSynSlow, synWtType, maxM, maxPreM);
 }
 
 

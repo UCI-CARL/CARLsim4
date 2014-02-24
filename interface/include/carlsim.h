@@ -24,10 +24,11 @@ public:
 	//! make connection from each neuron in grpId1 to 'numPostSynapses' neurons in grpId2
 	// returns connection id
 	int connect(int grpId1, int grpId2, const std::string& connType, float initWt, float maxWt, float connProb,
-					uint8_t minDelay, uint8_t maxDelay, bool synWtType);
+					uint8_t minDelay, uint8_t maxDelay, float mulSynFast, float mulSynSlow, bool synWtType);
 
 	//! make connections with custom connectivity profile
-	int connect(int grpId1, int grpId2, ConnectionGenerator* conn, bool synWtType=SYN_FIXED, int maxM=0,int maxPreM=0);
+	int connect(int grpId1, int grpId2, ConnectionGenerator* conn, float mulSynFast, float mulSynSlow,
+					bool synWtType=SYN_FIXED, int maxM=0,int maxPreM=0);
 
 
 	//! creates a group of Izhikevich spiking neurons

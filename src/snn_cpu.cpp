@@ -249,7 +249,8 @@ CpuSNN::~CpuSNN() {
 
 // make from each neuron in grpId1 to 'numPostSynapses' neurons in grpId2
 int CpuSNN::connect(int grpId1, int grpId2, const std::string& _type, float initWt, float maxWt, float prob,
-						uint8_t minDelay, uint8_t maxDelay, bool synWtType) { //const std::string& wtType
+						uint8_t minDelay, uint8_t maxDelay, float mulSynFast, float mulSynSlow, bool synWtType) {
+						//const std::string& wtType
 	int retId=-1;
 	for(int c=0; c < numConfig; c++, grpId1++, grpId2++) {
 		assert(grpId1 < numGrp);
@@ -274,6 +275,8 @@ int CpuSNN::connect(int grpId1, int grpId2, const std::string& _type, float init
 		newInfo->maxWt	  			= maxWt;
 		newInfo->maxDelay 			= maxDelay;
 		newInfo->minDelay 			= minDelay;
+		newInfo->mulSynFast			= mulSynFast;
+		newInfo->mulSynSlow			= mulSynSlow;
 		newInfo->connProp 			= connProp;
 		newInfo->p 					= prob;
 		newInfo->type	  			= CONN_UNKNOWN;
@@ -337,7 +340,8 @@ int CpuSNN::connect(int grpId1, int grpId2, const std::string& _type, float init
 }
 
 // make custom connections from grpId1 to grpId2
-int CpuSNN::connect(int grpId1, int grpId2, ConnectionGenerator* conn, bool synWtType, int maxM, int maxPreM) {
+int CpuSNN::connect(int grpId1, int grpId2, ConnectionGenerator* conn, float mulSynFast, float mulSynSlow, 
+						bool synWtType, int maxM, int maxPreM) {
 	int retId=-1;
 
 	for(int c=0; c < numConfig; c++, grpId1++, grpId2++) {
@@ -372,6 +376,8 @@ int CpuSNN::connect(int grpId1, int grpId2, ConnectionGenerator* conn, bool synW
 		newInfo->maxWt	  = 1;
 		newInfo->maxDelay = 1;
 		newInfo->minDelay = 1;
+		newInfo->mulSynFast = mulSynFast;
+		newInfo->mulSynSlow = mulSynSlow;
 		newInfo->connProp = SET_CONN_PRESENT(1) | SET_FIXED_PLASTIC(synWtType);
 		newInfo->type	  = CONN_USER_DEFINED;
 		newInfo->numPostSynapses	  	  = maxM;
@@ -1472,11 +1478,13 @@ void CpuSNN::CpuSNNInit(unsigned int nNeur, unsigned int nPostSyn, unsigned int 
 	wt  			= new float[preSynCnt+100];
 	maxSynWt     	= new float[preSynCnt+100];
 
+	connIdFromSynId = new int[preSynCnt+100];
+
 	//! Temporary array to hold pre-syn connections. will be deleted later if necessary
 	preSynapticIds	= new post_info_t[preSynCnt+100];
 
 	// size due to weights and maximum weights
-	cpuSnnSz.synapticInfoSize += ((2*sizeof(float)+sizeof(post_info_t))*(preSynCnt+100));
+	cpuSnnSz.synapticInfoSize += ((sizeof(int)+2*sizeof(float)+sizeof(post_info_t))*(preSynCnt+100));
 
 	timeTableD2  = new unsigned int[1000+D+1];
 	timeTableD1  = new unsigned int[1000+D+1];
@@ -1569,156 +1577,150 @@ void CpuSNN::buildGroup(int grpId) {
 }
 
 void CpuSNN::buildNetwork() {
-  grpConnectInfo_t* newInfo = connectBegin;
-  int curN = 0, curD = 0, numPostSynapses = 0, numPreSynapses = 0;
+	grpConnectInfo_t* newInfo = connectBegin;
+	int curN = 0, curD = 0, numPostSynapses = 0, numPreSynapses = 0;
 
-  assert(numConfig > 0);
+	assert(numConfig > 0);
 
-  //update main set of parameters
-  updateParameters(&curN, &numPostSynapses, &numPreSynapses, numConfig);
+	//update main set of parameters
+	updateParameters(&curN, &numPostSynapses, &numPreSynapses, numConfig);
 
-  curD = updateSpikeTables();
+	curD = updateSpikeTables();
 
-  assert((curN > 0)&& (curN == numNExcReg + numNInhReg + numNPois));
-  assert(numPostSynapses > 0);
-  assert(numPreSynapses > 0);
+	assert((curN > 0)&& (curN == numNExcReg + numNInhReg + numNPois));
+	assert(numPostSynapses > 0);
+	assert(numPreSynapses > 0);
 
-  // display the evaluated network and delay length....
-  fprintf(stdout, ">>>>>>>>>>>>>> NUM_CONFIGURATIONS = %d <<<<<<<<<<<<<<<<<<\n", numConfig);
-  fprintf(stdout, "**********************************\n");
-  fprintf(stdout, "numN = %d, numPostSynapses = %d, numPreSynapses = %d, D = %d\n", curN, numPostSynapses,
-  			numPreSynapses, curD);
-  fprintf(stdout, "**********************************\n");
+	// display the evaluated network and delay length....
+	fprintf(stdout, ">>>>>>>>>>>>>> NUM_CONFIGURATIONS = %d <<<<<<<<<<<<<<<<<<\n", numConfig);
+	fprintf(stdout, "**********************************\n");
+	fprintf(stdout, "numN = %d, numPostSynapses = %d, numPreSynapses = %d, D = %d\n", curN, numPostSynapses,
+					numPreSynapses, curD);
+	fprintf(stdout, "**********************************\n");
 
-  fprintf(fpLog, "**********************************\n");
-  fprintf(fpLog, "numN = %d, numPostSynapses = %d, numPreSynapses = %d, D = %d\n", curN, numPostSynapses,
-  			numPreSynapses, curD);
-  fprintf(fpLog, "**********************************\n");
+	fprintf(fpLog, "**********************************\n");
+	fprintf(fpLog, "numN = %d, numPostSynapses = %d, numPreSynapses = %d, D = %d\n", curN, numPostSynapses,
+					numPreSynapses, curD);
+	fprintf(fpLog, "**********************************\n");
 
-  assert(curD != 0); 	assert(numPostSynapses != 0);		assert(curN != 0); 		assert(numPreSynapses != 0);
+	assert(curD != 0); 	assert(numPostSynapses != 0);		assert(curN != 0); 		assert(numPreSynapses != 0);
 
-  if (showLogMode >= 1)
-    for (int g=0;g<numGrp;g++)
-      printf("grp_Info[%d, %s].numPostSynapses = %d, grp_Info[%d, %s].numPreSynapses = %d\n",
-      			g,grp_Info2[g].Name.c_str(),grp_Info[g].numPostSynapses,g,grp_Info2[g].Name.c_str(),
-      			grp_Info[g].numPreSynapses);
-
-  if (numPostSynapses > MAX_numPostSynapses) {
-    for (int g=0;g<numGrp;g++) {
-      if (grp_Info[g].numPostSynapses>MAX_numPostSynapses)
-      	printf("Grp: %s(%d) has too many output synapses (%d), max %d.\n",grp_Info2[g].Name.c_str(),g,
-      				grp_Info[g].numPostSynapses,MAX_numPostSynapses);
-  }
-    assert(numPostSynapses <= MAX_numPostSynapses);
-  }
-  if (numPreSynapses > MAX_numPreSynapses) {
-    for (int g=0;g<numGrp;g++) {
-      if (grp_Info[g].numPreSynapses>MAX_numPreSynapses)
-      	printf("Grp: %s(%d) has too many input synapses (%d), max %d.\n",grp_Info2[g].Name.c_str(),g,
-      				grp_Info[g].numPreSynapses,MAX_numPreSynapses);
-	}
-	assert(numPreSynapses <= MAX_numPreSynapses);
-  }
-  assert(curD <= MAX_SynapticDelay); assert(curN <= 1000000);
-
-  // initialize all the parameters....
-  CpuSNNInit(curN, numPostSynapses, numPreSynapses, curD);
-
-  // we build network in the order...
-  /////    !!!!!!! IMPORTANT : NEURON ORGANIZATION/ARRANGEMENT MAP !!!!!!!!!!
-  ////     <--- Excitatory --> | <-------- Inhibitory REGION ----------> | <-- Excitatory -->
-  ///      Excitatory-Regular  | Inhibitory-Regular | Inhibitory-Poisson | Excitatory-Poisson
-  int allocatedGrp = 0;
-  for(int order=0; order < 4; order++) {
-    for(int configId=0; configId < numConfig; configId++) {
-      for(int g=0; g < numGrp; g++) {
-	if (grp_Info2[g].ConfigId == configId) {
-	  if        (IS_EXCITATORY_TYPE(grp_Info[g].Type) &&  (grp_Info[g].Type&POISSON_NEURON) && order==3) {
-	    buildPoissonGroup(g);
-	    allocatedGrp++;
-	  } else if (IS_INHIBITORY_TYPE(grp_Info[g].Type) &&  (grp_Info[g].Type&POISSON_NEURON) && order==2) {
-	    buildPoissonGroup(g);
-	    allocatedGrp++;
-	  } else if (IS_EXCITATORY_TYPE(grp_Info[g].Type) && !(grp_Info[g].Type&POISSON_NEURON) && order==0) {
-	    buildGroup(g);
-	    allocatedGrp++;
-	  } else if (IS_INHIBITORY_TYPE(grp_Info[g].Type) && !(grp_Info[g].Type&POISSON_NEURON) && order==1) {
-	    buildGroup(g);
-	    allocatedGrp++;
-	  }
-	}
-      }
-    }
-  }
-  assert(allocatedGrp == numGrp);
-
-  if (readNetworkFID != NULL) {
-    // we the user specified readNetwork the synaptic weights will be restored here...
-#if READNETWORK_ADD_SYNAPSES_FROM_FILE
-    // read the plastic synapses first
-    assert(readNetwork_internal(true) >= 0);
-
-    // read the fixed synapses secon
-    assert(readNetwork_internal(false) >= 0);
-#else
-    assert(readNetwork_internal() >= 0);
-
-    connectFromMatrix(tmp_SynapseMatrix_plastic, SET_FIXED_PLASTIC(SYN_PLASTIC));
-
-    connectFromMatrix(tmp_SynapseMatrix_fixed, SET_FIXED_PLASTIC(SYN_FIXED));
-#endif
-  } else {
-    // build all the connections here...
-    // we run over the linked list two times...
-    // first time, we make all plastic connections...
-    // second time, we make all fixed connections...
-    // this ensures that all the initial pre and post-synaptic
-    // connections are of fixed type and later if of plastic type
-    for(int con=0; con < 2; con++) {
-      newInfo = connectBegin;
-      while(newInfo) {
-	bool    synWtType = GET_FIXED_PLASTIC(newInfo->connProp);
-	if (synWtType == SYN_PLASTIC) {
-      // given group has plastic connection, and we need to apply STDP rule...
-	  grp_Info[newInfo->grpDest].FixedInputWts = false;
+	if (showLogMode >= 1) {
+		for (int g=0;g<numGrp;g++)
+			printf("grp_Info[%d, %s].numPostSynapses = %d, grp_Info[%d, %s].numPreSynapses = %d\n",
+						g,grp_Info2[g].Name.c_str(),grp_Info[g].numPostSynapses,g,grp_Info2[g].Name.c_str(),
+						grp_Info[g].numPreSynapses);
 	}
 
-	if( ((con == 0) && (synWtType == SYN_PLASTIC)) ||
-	    ((con == 1) && (synWtType == SYN_FIXED)))
-	  {
-	    switch(newInfo->type)
-	      {
-	      case CONN_RANDOM:
-		connectRandom(newInfo);
-		break;
-	      case CONN_FULL:
-		connectFull(newInfo);
-		break;
-	      case CONN_FULL_NO_DIRECT:
-		connectFull(newInfo);
-		break;
-	      case CONN_ONE_TO_ONE:
-		connectOneToOne(newInfo);
-		break;
-	      case CONN_USER_DEFINED:
-		connectUserDefined(newInfo);
-		break;
-	      default:
-		printf("Invalid connection type( should be 'random', or 'full')\n");
-	      }
+	if (numPostSynapses > MAX_numPostSynapses) {
+		for (int g=0;g<numGrp;g++) {
+			if (grp_Info[g].numPostSynapses>MAX_numPostSynapses)
+				printf("Grp: %s(%d) has too many output synapses (%d), max %d.\n",grp_Info2[g].Name.c_str(),g,
+							grp_Info[g].numPostSynapses,MAX_numPostSynapses);
+		}
+		assert(numPostSynapses <= MAX_numPostSynapses);
+	}
+	if (numPreSynapses > MAX_numPreSynapses) {
+		for (int g=0;g<numGrp;g++) {
+			if (grp_Info[g].numPreSynapses>MAX_numPreSynapses)
+				printf("Grp: %s(%d) has too many input synapses (%d), max %d.\n",grp_Info2[g].Name.c_str(),g,
+ 							grp_Info[g].numPreSynapses,MAX_numPreSynapses);
+		}
+		assert(numPreSynapses <= MAX_numPreSynapses);
+	}
+	assert(curD <= MAX_SynapticDelay); assert(curN <= 1000000);
 
-	    float avgPostM = newInfo->numberOfConnections/grp_Info[newInfo->grpSrc].SizeN;
-	    float avgPreM  = newInfo->numberOfConnections/grp_Info[newInfo->grpDest].SizeN;
+	// initialize all the parameters....
+	CpuSNNInit(curN, numPostSynapses, numPreSynapses, curD);
 
-	    fprintf(stderr, "connect(%s(%d) => %s(%d), iWt=%f, mWt=%f, numPostSynapses=%d, numPreSynapses=%d, minD=%d, maxD=%d, %s)\n",
-	    			grp_Info2[newInfo->grpSrc].Name.c_str(), newInfo->grpSrc,
-	    			grp_Info2[newInfo->grpDest].Name.c_str(), newInfo->grpDest, newInfo->initWt, newInfo->maxWt,
-	    			(int)avgPostM, (int)avgPreM, newInfo->minDelay, newInfo->maxDelay, synWtType?"Plastic":"Fixed");
-	  }
-	newInfo = newInfo->next;
-      }
-    }
-  }
+	// we build network in the order...
+	/////    !!!!!!! IMPORTANT : NEURON ORGANIZATION/ARRANGEMENT MAP !!!!!!!!!!
+	////     <--- Excitatory --> | <-------- Inhibitory REGION ----------> | <-- Excitatory -->
+	///      Excitatory-Regular  | Inhibitory-Regular | Inhibitory-Poisson | Excitatory-Poisson
+	int allocatedGrp = 0;
+	for(int order=0; order < 4; order++) {
+		for(int configId=0; configId < numConfig; configId++) {
+			for(int g=0; g < numGrp; g++) {
+				if (grp_Info2[g].ConfigId == configId) {
+					if (IS_EXCITATORY_TYPE(grp_Info[g].Type) && (grp_Info[g].Type&POISSON_NEURON) && order==3) {
+						buildPoissonGroup(g);
+						allocatedGrp++;
+					} else if (IS_INHIBITORY_TYPE(grp_Info[g].Type) &&  (grp_Info[g].Type&POISSON_NEURON) && order==2) {
+						buildPoissonGroup(g);
+						allocatedGrp++;
+					} else if (IS_EXCITATORY_TYPE(grp_Info[g].Type) && !(grp_Info[g].Type&POISSON_NEURON) && order==0) {
+					  	buildGroup(g);
+					    allocatedGrp++;
+					} else if (IS_INHIBITORY_TYPE(grp_Info[g].Type) && !(grp_Info[g].Type&POISSON_NEURON) && order==1) {
+						buildGroup(g);
+						allocatedGrp++;
+					}
+				}
+			}
+		}
+	}
+	assert(allocatedGrp == numGrp);
+
+	if (readNetworkFID != NULL) {
+		// we the user specified readNetwork the synaptic weights will be restored here...
+		#if READNETWORK_ADD_SYNAPSES_FROM_FILE
+			assert(readNetwork_internal(true) >= 0); // read the plastic synapses first
+			assert(readNetwork_internal(false) >= 0); // read the fixed synapses second
+		#else
+			assert(readNetwork_internal() >= 0);
+			connectFromMatrix(tmp_SynapseMatrix_plastic, SET_FIXED_PLASTIC(SYN_PLASTIC));
+			connectFromMatrix(tmp_SynapseMatrix_fixed, SET_FIXED_PLASTIC(SYN_FIXED));
+		#endif
+	} else {
+		// build all the connections here...
+		// we run over the linked list two times...
+		// first time, we make all plastic connections...
+		// second time, we make all fixed connections...
+		// this ensures that all the initial pre and post-synaptic
+		// connections are of fixed type and later if of plastic type
+		for(int con=0; con < 2; con++) {
+			newInfo = connectBegin;
+			while(newInfo) {
+				bool synWtType = GET_FIXED_PLASTIC(newInfo->connProp);
+				if (synWtType == SYN_PLASTIC) {
+					// given group has plastic connection, and we need to apply STDP rule...
+					grp_Info[newInfo->grpDest].FixedInputWts = false;
+				}
+
+				if( ((con == 0) && (synWtType == SYN_PLASTIC)) || ((con == 1) && (synWtType == SYN_FIXED))) {
+					switch(newInfo->type) {
+						case CONN_RANDOM:
+							connectRandom(newInfo);
+							break;
+						case CONN_FULL:
+							connectFull(newInfo);
+							break;
+						case CONN_FULL_NO_DIRECT:
+							connectFull(newInfo);
+							break;
+						case CONN_ONE_TO_ONE:
+							connectOneToOne(newInfo);
+							break;
+						case CONN_USER_DEFINED:
+							connectUserDefined(newInfo);
+							break;
+						default:
+							printf("Invalid connection type( should be 'random', or 'full')\n");
+					}
+
+					float avgPostM = newInfo->numberOfConnections/grp_Info[newInfo->grpSrc].SizeN;
+					float avgPreM  = newInfo->numberOfConnections/grp_Info[newInfo->grpDest].SizeN;
+
+					fprintf(stderr, "connect(%s(%d) => %s(%d), iWt=%f, mWt=%f, numPostSynapses=%d, numPreSynapses=%d, minD=%d, maxD=%d, %s)\n",
+								grp_Info2[newInfo->grpSrc].Name.c_str(), newInfo->grpSrc,
+								grp_Info2[newInfo->grpDest].Name.c_str(), newInfo->grpDest, newInfo->initWt,
+								newInfo->maxWt, (int)avgPostM, (int)avgPreM, newInfo->minDelay, newInfo->maxDelay,
+								synWtType?"Plastic":"Fixed");
+				}
+				newInfo = newInfo->next;
+			}
+		}
+	}
 }
 
 void CpuSNN::buildPoissonGroup(int grpId) {
@@ -2011,6 +2013,7 @@ void CpuSNN::deleteObjects() {
 		if(wt!=NULL)			delete[] wt;
 		if(maxSynWt!=NULL)		delete[] maxSynWt;
 		if(wtChange !=NULL)		delete[] wtChange;
+		if(connIdFromSynId!=NULL)	delete[] connIdFromSynId;
 
 		if (firingTableD2) delete[] firingTableD2;
 		if (firingTableD1) delete[] firingTableD1;
@@ -2521,6 +2524,7 @@ void CpuSNN::makePtrInfo() {
 	cpuNetPtrs.synSpikeTime		= synSpikeTime;
 	cpuNetPtrs.wt				= wt;
 	cpuNetPtrs.wtChange			= wtChange;
+	cpuNetPtrs.connIdFromSynId	= connIdFromSynId;
 	cpuNetPtrs.nSpikeCnt		= nSpikeCnt;
 	cpuNetPtrs.curSpike 		= curSpike;
 	cpuNetPtrs.firingTableD2 	= firingTableD2;
@@ -2915,6 +2919,7 @@ void CpuSNN::resetPointers() {
 	wt = NULL;
 	maxSynWt = NULL;
 	wtChange = NULL;
+	connIdFromSynId = NULL;
 	synSpikeTime = NULL;
 	spikeGenBits = NULL;
 	firingTableD2 = NULL;
@@ -2974,76 +2979,76 @@ void CpuSNN::resetSpikeCnt(int my_grpId) {
 //if changeWeights is false, we should keep the values of the weights as they currently
 //are but we should be able to change them to plastic or fixed synapses. -- KDC
 void CpuSNN::resetSynapticConnections(bool changeWeights) {
-  int j;
-  // Reset wt,wtChange,pre-firingtime values to default values...
-  for(int destGrp=0; destGrp < numGrp; destGrp++) {
-    const char* updateStr = (grp_Info[destGrp].newUpdates == true)?"(**)":"";
-    fprintf(stdout, "Grp: %d:%s s=%d e=%d %s\n", destGrp, grp_Info2[destGrp].Name.c_str(), grp_Info[destGrp].StartN,
-    			grp_Info[destGrp].EndN,  updateStr);
-    fprintf(fpLog,  "Grp: %d:%s s=%d e=%d  %s\n",  destGrp, grp_Info2[destGrp].Name.c_str(), grp_Info[destGrp].StartN,
-    			grp_Info[destGrp].EndN, updateStr);
+	int j;
+	// Reset wt,wtChange,pre-firingtime values to default values...
+	for(int destGrp=0; destGrp < numGrp; destGrp++) {
+		const char* updateStr = (grp_Info[destGrp].newUpdates == true)?"(**)":"";
+		fprintf(stdout, "Grp: %d:%s s=%d e=%d %s\n", destGrp, grp_Info2[destGrp].Name.c_str(), grp_Info[destGrp].StartN,
+					grp_Info[destGrp].EndN,  updateStr);
+		fprintf(fpLog,  "Grp: %d:%s s=%d e=%d  %s\n",  destGrp, grp_Info2[destGrp].Name.c_str(), grp_Info[destGrp].StartN,
+					grp_Info[destGrp].EndN, updateStr);
 
-    for(int nid=grp_Info[destGrp].StartN; nid <= grp_Info[destGrp].EndN; nid++) {
-      unsigned int offset = cumulativePre[nid];
-      for (j=0;j<Npre[nid]; j++) wtChange[offset+j] = 0.0;						// synaptic derivatives is reset
-      for (j=0;j<Npre[nid]; j++) synSpikeTime[offset+j] = MAX_SIMULATION_TIME;	// some large negative value..
-      post_info_t *preIdPtr = &preSynapticIds[cumulativePre[nid]];
-      float* synWtPtr       = &wt[cumulativePre[nid]];
-      float* maxWtPtr       = &maxSynWt[cumulativePre[nid]];
-      int prevPreGrp  = -1;
+		for(int nid=grp_Info[destGrp].StartN; nid <= grp_Info[destGrp].EndN; nid++) {
+			unsigned int offset = cumulativePre[nid];
+			for (j=0;j<Npre[nid]; j++) {
+				wtChange[offset+j] = 0.0;						// synaptic derivatives is reset
+				synSpikeTime[offset+j] = MAX_SIMULATION_TIME;	// some large negative value..
+			}
+			post_info_t *preIdPtr = &preSynapticIds[cumulativePre[nid]];
+			float* synWtPtr       = &wt[cumulativePre[nid]];
+			float* maxWtPtr       = &maxSynWt[cumulativePre[nid]];
+			int prevPreGrp  = -1;
 
+			for (j=0; j < Npre[nid]; j++,preIdPtr++, synWtPtr++, maxWtPtr++) {
+				int preId    = GET_CONN_NEURON_ID((*preIdPtr));
+				assert(preId < numN);
+				int srcGrp   = findGrpId(preId);
+				grpConnectInfo_t* connInfo;	      
+				grpConnectInfo_t* connIterator = connectBegin;
+				while(connIterator) {
+					if(connIterator->grpSrc == srcGrp && connIterator->grpDest == destGrp) {
+						//we found the corresponding connection
+						connInfo=connIterator;
+						break;
+					}
+					//move to the next grpConnectInfo_t
+					connIterator=connIterator->next;
+				}
+				assert(connInfo != NULL);
+				int connProp   = connInfo->connProp;
+				bool   synWtType = GET_FIXED_PLASTIC(connProp);
+				// print debug information...
+				if( prevPreGrp != srcGrp) {
+					if(nid==grp_Info[destGrp].StartN) {
+						const char* updateStr = (connInfo->newUpdates==true)? "(**)":"";
+						fprintf(stdout, "\t%d (%s) start=%d, type=%s maxWts = %f %s\n", srcGrp,
+						grp_Info2[srcGrp].Name.c_str(), j, (j<Npre_plastic[nid]?"P":"F"), connInfo->maxWt, updateStr);
+						fprintf(fpLog, "\t%d (%s) start=%d, type=%s maxWts = %f %s\n", srcGrp,
+						grp_Info2[srcGrp].Name.c_str(), j, (j<Npre_plastic[nid]?"P":"F"), connInfo->maxWt, updateStr);
+					}
+					prevPreGrp = srcGrp;
+				}
 
-      for (j=0; j < Npre[nid]; j++,preIdPtr++, synWtPtr++, maxWtPtr++) {
-	int preId    = GET_CONN_NEURON_ID((*preIdPtr));
-	assert(preId < numN);
-	int srcGrp   = findGrpId(preId);
-	grpConnectInfo_t* connInfo;	      
-	grpConnectInfo_t* connIterator = connectBegin;
-	while(connIterator){
-	  if(connIterator->grpSrc == srcGrp && connIterator->grpDest == destGrp){
-	    //we found the corresponding connection
-	    connInfo=connIterator;
-	    break;
-	  }
-	  //move to the next grpConnectInfo_t
-	  connIterator=connIterator->next;
+				if(!changeWeights)
+					continue;
+
+				// if connection was plastic or if the connection weights were updated we need to reset the weights
+				// TODO: How to account for user-defined connection reset
+				if ((synWtType == SYN_PLASTIC) || connInfo->newUpdates) {
+					*synWtPtr = getWeights(connInfo->connProp, connInfo->initWt, connInfo->maxWt, nid, srcGrp);
+					*maxWtPtr = connInfo->maxWt;
+				}
+			}
+		}
+		grp_Info[destGrp].newUpdates = false;
 	}
-	assert(connInfo != NULL);
-	int connProp   = connInfo->connProp;
-	bool   synWtType = GET_FIXED_PLASTIC(connProp);
-	 // print debug information...
-	 if( prevPreGrp != srcGrp) {
-	 if(nid==grp_Info[destGrp].StartN) {
-	 const char* updateStr = (connInfo->newUpdates==true)? "(**)":"";
-	 fprintf(stdout, "\t%d (%s) start=%d, type=%s maxWts = %f %s\n", srcGrp,
-	 grp_Info2[srcGrp].Name.c_str(), j, (j<Npre_plastic[nid]?"P":"F"), connInfo->maxWt, updateStr);
-	 fprintf(fpLog, "\t%d (%s) start=%d, type=%s maxWts = %f %s\n", srcGrp,
-	 grp_Info2[srcGrp].Name.c_str(), j, (j<Npre_plastic[nid]?"P":"F"), connInfo->maxWt, updateStr);
-	 }
-	 prevPreGrp = srcGrp;
-	 }
 
-	 if(!changeWeights)
-	 continue;
-
-	 // if connection was of plastic type or if the connection weights were updated we need to reset the weights..
-	 // TODO: How to account for user-defined connection reset...
-	 if ((synWtType == SYN_PLASTIC) || connInfo->newUpdates) {
-	 *synWtPtr = getWeights(connInfo->connProp, connInfo->initWt, connInfo->maxWt, nid, srcGrp);
-	 *maxWtPtr = connInfo->maxWt;
-	 }
-	 }
-
-    }
-    grp_Info[destGrp].newUpdates = false;
-  }
-
-  grpConnectInfo_t* connInfo = connectBegin;
-  // clear all existing connection info...
-  while (connInfo) {
-    connInfo->newUpdates = false;
-    connInfo = connInfo->next;
-  }
+	grpConnectInfo_t* connInfo = connectBegin;
+	// clear all existing connection info...
+	while (connInfo) {
+		connInfo->newUpdates = false;
+		connInfo = connInfo->next;
+	}
 }
 
 void CpuSNN::resetTimingTable() {
