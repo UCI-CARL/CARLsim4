@@ -164,6 +164,7 @@ void CARLsim::setConductances(int grpId, bool isSet, int configId) {
 	assert(!hasRunNetwork_); // TODO make nice
 
 	// keep track of groups with conductances set
+	// TODO: keep track of configIds, too
 	if (grpId==ALL) {
 		for (std::map<int,grpInfo_s>::iterator iter = grpInfo_.begin(); iter!=grpInfo_.end(); ++iter)
 			grpInfo_[iter->first].hasSetCond = isSet;
@@ -185,6 +186,7 @@ void CARLsim::setConductances(int grpId, bool isSet, float tdAMPA, float tdNMDA,
 	assert(!hasRunNetwork_); // TODO make nice
 
 	// keep track of groups with conductances set
+	// TODO: keep track of configIds, too
 	if (grpId==ALL) {
 		for (std::map<int,grpInfo_s>::iterator iter = grpInfo_.begin(); iter!=grpInfo_.end(); ++iter)
 			grpInfo_[iter->first].hasSetCond = isSet;

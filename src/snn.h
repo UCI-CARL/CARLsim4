@@ -607,35 +607,6 @@ public:
 
 	void setLogCycle(unsigned int _cnt, int mode, FILE *fp);
 
-	// NOTE: all these printer functions should be in printSNNInfo.cpp
-	// FIXME: are any of these actually supposed to be public?? they are not yet in carlsim.h
-	void printConnection(const std::string& fname);
-	void printConnection(FILE *fp=stdout);
-	void printConnection(int grpId, FILE  *fp=stdout); //!< print the connection info of grpId
-	void printConnectionInfo(FILE* fp);
-	void printConnectionInfo2(FILE *fpg);
-	void printCurrentInfo(FILE *fp); //!< for GPU debugging
-	void printFiringRate(char *fname=NULL);
-	void printGpuLoadBalance(bool init = false, int numBlocks = MAX_BLOCKS, FILE*fp = stdout); //!< for GPU debugging
-	void printGroupInfo(FILE* fp);
-	void printGroupInfo(std::string& strName);
-	void printGroupInfo2(FILE* fpg);
-	void printMemoryInfo(FILE* fp=stdout); //!< prints memory info to file
-	void printNetworkInfo();
-	void printNeuronState(int grpId, FILE *fp = stderr);
-	void printParameters(FILE *fp);
-	void printPostConnection(FILE *fp = stdout); //!< print all post connections
-	void printPostConnection(int grpId, FILE  *fp = stdout);
-	int  printPostConnection2(int grpId, FILE* fpg);
-	void printPreConnection(FILE  *fp = stdout); //!< print all pre connections
-	void printPreConnection(int grpId, FILE  *fp = stdout);
-	int  printPreConnection2(int grpId, FILE* fpg);
-	void printSimSummary(FILE *fp = stdout); //!< prints a simulation summary to file
-	void printState(const char *str = "");
-	void printTestVarInfo(FILE *fp, char* testString, bool test1=true, bool test2=true, bool test12=false,
-							int subVal=0, int grouping1=0, int grouping2=0); //!< for GPU debugging
-	void printTuningLog();
-
 
 
 	// +++++ PUBLIC METHODS: GETTERS / SETTERS ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
@@ -746,6 +717,34 @@ private:
 
 	unsigned int poissonSpike(unsigned int currTime, float frate, int refractPeriod); //!< for generateSpikesFromRate
 
+	// NOTE: all these printer functions should be in printSNNInfo.cpp
+	// FIXME: are any of these actually supposed to be public?? they are not yet in carlsim.h
+	void printConnection(const std::string& fname);
+	void printConnection(FILE *fp=stdout);
+	void printConnection(int grpId, FILE  *fp=stdout); //!< print the connection info of grpId
+	void printConnectionInfo(FILE* fp);
+	void printConnectionInfo2(FILE *fpg);
+	void printCurrentInfo(FILE *fp); //!< for GPU debugging
+	void printFiringRate(char *fname=NULL);
+	void printGpuLoadBalance(bool init = false, int numBlocks = MAX_BLOCKS, FILE*fp = stdout); //!< for GPU debugging
+	void printGroupInfo(FILE* fp);
+	void printGroupInfo(std::string& strName);
+	void printGroupInfo2(FILE* fpg);
+	void printMemoryInfo(FILE* fp=stdout); //!< prints memory info to file
+	void printNetworkInfo();
+	void printNeuronState(int grpId, FILE *fp = stderr);
+	void printParameters(FILE *fp);
+	void printPostConnection(FILE *fp = stdout); //!< print all post connections
+	void printPostConnection(int grpId, FILE  *fp = stdout);
+	int  printPostConnection2(int grpId, FILE* fpg);
+	void printPreConnection(FILE  *fp = stdout); //!< print all pre connections
+	void printPreConnection(int grpId, FILE  *fp = stdout);
+	int  printPreConnection2(int grpId, FILE* fpg);
+	void printSimSummary(FILE *fp = stdout); //!< prints a simulation summary to file
+	void printState(const char *str = "");
+	void printTestVarInfo(FILE *fp, char* testString, bool test1=true, bool test2=true, bool test12=false,
+							int subVal=0, int grouping1=0, int grouping2=0); //!< for GPU debugging
+	void printTuningLog();
 	void printWeight(int grpId, const char *str = "");
 
 	// FIXME: difference between the options? is one deprecated or are both still used?
