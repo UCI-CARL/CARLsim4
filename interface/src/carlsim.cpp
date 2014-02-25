@@ -11,6 +11,9 @@
 	#include <libgen.h>
 #endif
 
+// TODO: make all assertion statements in here into a nice error message for the user (maybe with ErrorHandler)
+// Inform the user about want went wrong, why it is considered an error, and how to fix it.
+
 
 // FIXME: consider moving this... also, see class SpikeMonitor in snn.h
 class WriteSpikesToFile: public SpikeMonitor {
@@ -56,6 +59,8 @@ CARLsim::CARLsim(std::string netName, int numConfig, int randSeed, int simType, 
 	ithGPU_ 					= ithGPU;
 	enablePrint_ 				= enablePrint;
 	copyState_ 					= copyState;
+
+	numConnections_				= 0;
 
 	hasRunNetwork_  			= false;
 
@@ -109,23 +114,53 @@ CARLsim::~CARLsim() {
 // shortcut to make SYN_FIXED with one weight and one delay value
 int CARLsim::connect(int grpId1, int grpId2, const std::string& connType, float wt, float connProb, uint8_t delay) {
 	assert(!hasRunNetwork_); // TODO: make nice
+	assert(++numConnections_ <= MAX_numConnections);
 
 	return snn_->connect(grpId1, grpId2, connType, wt, wt, connProb, delay, delay, 1.0f, 1.0f, SYN_FIXED);
+}
+
+// shortcut to create SYN_FIXED connections with one weight / delay and two scaling factors for synaptic currents
+int CARLsim::connect(int grpId1, int grpId2, const std::string& connType, float wt, float connProb, uint8_t delay,
+						float mulSynFast, float mulSynSlow) {
+	assert(!hasRunNetwork_); // TODO: make nice
+	assert(++numConnections_ <= MAX_numConnections);
+
+	return snn_->connect(grpId1,grpId2,connType,wt,wt,connProb,delay,delay,mulSynFast,mulSynSlow,SYN_FIXED);
+}
+
+// shortcut to create SYN_FIXED/SYN_PLASTIC connections with initWt/maxWt, minDelay/maxDelay, but to omit
+// scaling factors for synaptic conductances (default is 1.0 for both)
+int CARLsim::connect(int grpId1, int grpId2, const std::string& connType, float initWt, float maxWt, float connProb,
+							uint8_t minDelay, uint8_t maxDelay, bool synWtType) {
+	assert(!hasRunNetwork_); // TODO: make nice
+	assert(++numConnections_ <= MAX_numConnections);
+
+	return snn_->connect(grpId1,grpId2,connType,initWt,maxWt,connProb,minDelay,maxDelay,1.0f,1.0f,synWtType);
 }
 
 // basic connection function, from each neuron in grpId1 to neurons in grpId2
 int CARLsim::connect(int grpId1, int grpId2, const std::string& connType, float initWt, float maxWt, float connProb,
 							uint8_t minDelay, uint8_t maxDelay, float mulSynFast, float mulSynSlow, bool synWtType) {
 	assert(!hasRunNetwork_); // TODO: make nice
+	assert(++numConnections_ <= MAX_numConnections);
 
-	return snn_->connect(grpId1, grpId2, connType, initWt, maxWt, connProb, minDelay, maxDelay, mulSynFast, mulSynSlow,
-							synWtType);
+	return snn_->connect(grpId1, grpId2, connType, initWt, maxWt, connProb, minDelay, maxDelay, mulSynFast,
+									mulSynSlow,	synWtType);
+}
+
+// custom connectivity profile, omit scaling factors for synaptic conductances
+int CARLsim::connect(int grpId1, int grpId2, ConnectionGenerator* conn, bool synWtType, int maxM, int maxPreM) {
+	assert(!hasRunNetwork_); // TODO: make nice
+	assert(++numConnections_ <= MAX_numConnections);
+
+	return snn_->connect(grpId1, grpId2, conn, 1.0f, 1.0f, synWtType, maxM, maxPreM);
 }
 
 // custom connectivity profile
 int CARLsim::connect(int grpId1, int grpId2, ConnectionGenerator* conn, float mulSynFast, float mulSynSlow,
 						bool synWtType, int maxM, int maxPreM) {
 	assert(!hasRunNetwork_); // TODO: make nice
+	assert(++numConnections_ <= MAX_numConnections);
 
 	return snn_->connect(grpId1, grpId2, conn, mulSynFast, mulSynSlow, synWtType, maxM, maxPreM);
 }

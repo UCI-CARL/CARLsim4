@@ -30,7 +30,7 @@ using namespace std;
 #define PI                  3.1415926535897
 #define RAND_SEED           42
 // the number of networks we run on the GPU simultaneously.
-#define NUM_CONFIG 10
+#define NUM_CONFIG 40
 #define DUMMY_WEIGHT (0.0160f) // was 0.2f
 #define MAX_TARGET_FIRING_RATE  60 //used in fitness function to use as target firing rate.
 // Jay's STP parameters.

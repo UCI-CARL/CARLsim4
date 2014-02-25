@@ -21,10 +21,25 @@ public:
 	// returns connection id
 	int connect(int grpId1, int grpId2, const std::string& connType, float wt, float connProb, uint8_t delay);
 
+	//! shortcut to create SYN_FIXED connections with one weight / delay and two scaling factors for synaptic currents
+	// returns connection id
+	int connect(int grpId1, int grpId2, const std::string& connType, float wt, float connProb, uint8_t delay,
+					float mulSynFast, float mulSynSlow);
+
+	//! shortcut to create SYN_FIXED/SYN_PLASTIC connections with initWt/maxWt, minDelay/maxDelay, but to omit
+	//! scaling factors for synaptic conductances (default is 1.0 for both)
+	// returns connection id
+	int connect(int grpId1, int grpId2, const std::string& connType, float initWt, float maxWt, float connProb,
+					uint8_t minDelay, uint8_t maxDelay, bool synWtType);
+
 	//! make connection from each neuron in grpId1 to 'numPostSynapses' neurons in grpId2
 	// returns connection id
 	int connect(int grpId1, int grpId2, const std::string& connType, float initWt, float maxWt, float connProb,
 					uint8_t minDelay, uint8_t maxDelay, float mulSynFast, float mulSynSlow, bool synWtType);
+
+	//! shortcut to make connections with custom connectivity profile but omit scaling factors for synaptic
+	//! conductances (default is 1.0 for both)
+	int connect(int grpId1, int grpId2, ConnectionGenerator* conn, bool synWtType=SYN_FIXED, int maxM=0,int maxPreM=0);
 
 	//! make connections with custom connectivity profile
 	int connect(int grpId1, int grpId2, ConnectionGenerator* conn, float mulSynFast, float mulSynSlow,
@@ -205,6 +220,10 @@ public:
 
 	// +++++ PUBLIC PROPERTIES ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
+	/*!
+	 * \brief a struct that contains important info about each allocated group
+	 * Can be used (for example) to determine whether all (or none of the) groups have conductances enabled.
+	 */
 	struct grpInfo_s {
 		int grpId;			// the grp id returned from CARLsimCore
 		bool hasSetCond;	// whether conductances are set
@@ -232,9 +251,16 @@ private:
 	bool enablePrint_;
 	bool copyState_;
 
+	unsigned int numConnections_;	//!< keep track of number of allocated connections
+
+	/*!
+	 * \brief a map that stores the grpId and some associated grpInfo (struct)
+	 * grpInfo can be used (for example) to detect whether all allocated groups have conductances enabled (disabled).
+	 * A new entry can be added to the map by using the factory function makeGrpInfo.
+	 */
 	std::map<int, grpInfo_s> grpInfo_;
 
-	bool hasRunNetwork_;				//!< flag to inform that network has been run
+	bool hasRunNetwork_;			//!< flag to inform that network has been run
 
 	bool hasSetHomeoALL_;			//!< informs that homeostasis have been set for ALL groups (can't add more groups)
 	bool hasSetHomeoBaseFiringALL_;	//!< informs that base firing has been set for ALL groups (can't add more groups)

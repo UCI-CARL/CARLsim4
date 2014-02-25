@@ -65,6 +65,12 @@
 extern RNG_rand48* gpuRand48; //!< Used by all network to generate global random number
 
 
+enum conType_t { CONN_RANDOM, CONN_ONE_TO_ONE, CONN_FULL, CONN_FULL_NO_DIRECT, CONN_USER_DEFINED, CONN_UNKNOWN};
+
+
+#define MAX_GRPS_PER_BLOCK 		100
+#define MAX_BLOCKS         		120
+
 #define ALL -1 //!< used for the set* methods to specify all groups and/or configIds
 
 #define SYN_FIXED      0
@@ -279,6 +285,25 @@ inline post_info_t SET_CONN_ID(int nid, int sid, int grpId) {
 	return p;
 }
 
+//! connection infos...
+typedef struct connectData_s {
+	int 	  				grpSrc, grpDest;
+	uint8_t	  				maxDelay,  minDelay;
+	float	  				initWt, maxWt;
+	float 					mulSynFast;				//!< factor to be applied to either gAMPA or gGABAa
+	float 					mulSynSlow;				//!< factor to be applied to either gNMDA or gGABAb
+	int	  	  				numPostSynapses;
+	int	  	  				numPreSynapses;
+	uint32_t  				connProp;
+	ConnectionGenerator*	conn;
+	conType_t 				type;
+	float					p; 						//!< connection probability
+	int						connId;					//!< connectID of the element in the linked list
+	bool					newUpdates;
+	int		   				numberOfConnections;
+	struct connectData_s* next;
+} grpConnectInfo_t;
+
 typedef struct network_ptr_s  {
 	float	*voltage, *recovery, *Izh_a, *Izh_b, *Izh_c, *Izh_d, *current;
 
@@ -295,12 +320,14 @@ typedef struct network_ptr_s  {
 	unsigned short	*Npost;				//!< stores the number of output connections from a neuron.
 	unsigned int		*lastSpikeTime;			//!< storees the firing time of the neuron
 	float	*wtChange, *wt;	//!< stores the synaptic weight and weight change of a synaptic connection
-	int *preConnId;			//!< stores connId for each synaptic id (same indexing as in wt or wtChange)
 	float	 *maxSynWt;			//!< maximum synaptic weight for given connection..
 	uint32_t *synSpikeTime;
 	uint32_t *neuronFiring;
 	unsigned int		*cumulativePost;
 	unsigned int		*cumulativePre;
+
+	float 	*mulSynFast, *mulSynSlow;
+	uint16_t *cumConnIdPre;	//!< connectId, per synapse, presynaptic cumulative indexing
 
 	/*!
 	 * \brief 10 bit syn id, 22 bit neuron id, ordered based on delay
@@ -419,33 +446,10 @@ typedef struct group_info2_s
   int			sumPreConn;
 } group_info2_t;
 
-enum conType_t { CONN_RANDOM, CONN_ONE_TO_ONE, CONN_FULL, CONN_FULL_NO_DIRECT, CONN_USER_DEFINED, CONN_UNKNOWN};
-
-//! connection infos...
-typedef struct connectData_s {
-  int 	  		grpSrc, grpDest;
-  uint8_t	  		maxDelay,  minDelay;
-  float	  		initWt, maxWt;
-  float 		mulSynFast, mulSynSlow;
-  int	  	  		numPostSynapses;
-  int	  	  		numPreSynapses;
-  uint32_t  		connProp;
-  ConnectionGenerator*		conn;
-  conType_t 		type;
-  float			p;
-  int				connId;
-  bool			newUpdates;
-  int		   		numberOfConnections;
-  struct connectData_s* next;
-} grpConnectInfo_t;
 
 
-#define MAX_GRPS_PER_BLOCK 		100
-#define MAX_BLOCKS         		120
-////////////////////////////////////
-// member variable
-////////////////////////////////////
-typedef struct grpConnInfo_s {
+// FIXME: deprecated???
+/*typedef struct grpConnInfo_s {
   int16_t	srcGrpId;			//!< group id
   int	srcStartN;		//!< starting neuron to begin computation
   int	srcEndN;			//!< ending neuron to stop computation
@@ -458,7 +462,7 @@ typedef struct grpConnInfo_s {
   int*	fixedDestGrps;		//!< connected destination groups array, (x=destGrpId, y=startN, z=endN, w=function pointer)
   int*	fixedDestParam;	//!< connected destination parameters ,  (x=Start, y=Width, z=Stride, w=height)
 } grpConnInfo_t;
-
+*/
 
 
 
@@ -499,7 +503,7 @@ public:
 	//! make custom connections from grpId1 to grpId2
 	// TODO: describe maxM and maxPreM
 	int connect(int gIDpre, int gIDpost, ConnectionGenerator* conn, float mulSynFast, float mulSynSlow, bool synWtType,
-					int maxM,int maxPreM);
+					int maxM, int maxPreM);
 
 
 	//! creates a group of Izhikevich spiking neurons
@@ -867,13 +871,16 @@ private:
 
 	std::string			networkName;
 	int				numGrp;
-	int				numConnections;
+	int				numConnections;		//!< number of connection calls (as in snn.connect(...))
 	//! keeps track of total neurons/presynapses/postsynapses currently allocated
 	unsigned int	allocatedN;
 	unsigned int	allocatedPre;
 	unsigned int	allocatedPost;
 
 	grpConnectInfo_t* connectBegin;
+	uint16_t 	*cumConnIdPre;		//!< connId, per synapse, presynaptic cumulative indexing
+	float 		*mulSynFast;	//!< scaling factor for fast synaptic currents, per connection
+	float 		*mulSynSlow;	//!< scaling factor for slow synaptic currents, per connection
 
 	//! Buffer to store spikes
 	PropagatedSpikeBuffer* pbuf;
@@ -897,7 +904,6 @@ private:
 	uint32_t    	*lastSpikeTime;	//!< stores the most recent spike time of the neuron
 	float			*wtChange, *wt;	//!< stores the synaptic weight and weight change of a synaptic connection
 	float	 		*maxSynWt;		//!< maximum synaptic weight for given connection..
-	int *preConnId;			//!< stores connId for each synaptic id (same indexing as in wt or wtChange)
 	uint32_t    	*synSpikeTime;	//!< stores the spike time of each synapse
 	unsigned int		postSynCnt; //!< stores the total number of post-synaptic connections in the network
 	unsigned int		preSynCnt; //!< stores the total number of pre-synaptic connections in the network

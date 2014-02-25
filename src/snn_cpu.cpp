@@ -249,7 +249,7 @@ CpuSNN::~CpuSNN() {
 
 // make from each neuron in grpId1 to 'numPostSynapses' neurons in grpId2
 int CpuSNN::connect(int grpId1, int grpId2, const std::string& _type, float initWt, float maxWt, float prob,
-						uint8_t minDelay, uint8_t maxDelay, float mulSynFast, float mulSynSlow, bool synWtType) {
+						uint8_t minDelay, uint8_t maxDelay, float _mulSynFast, float _mulSynSlow, bool synWtType) {
 						//const std::string& wtType
 	int retId=-1;
 	for(int c=0; c < numConfig; c++, grpId1++, grpId2++) {
@@ -275,8 +275,8 @@ int CpuSNN::connect(int grpId1, int grpId2, const std::string& _type, float init
 		newInfo->maxWt	  			= maxWt;
 		newInfo->maxDelay 			= maxDelay;
 		newInfo->minDelay 			= minDelay;
-		newInfo->mulSynFast			= mulSynFast;
-		newInfo->mulSynSlow			= mulSynSlow;
+		newInfo->mulSynFast			= _mulSynFast;
+		newInfo->mulSynSlow			= _mulSynSlow;
 		newInfo->connProp 			= connProp;
 		newInfo->p 					= prob;
 		newInfo->type	  			= CONN_UNKNOWN;
@@ -334,13 +334,17 @@ int CpuSNN::connect(int grpId1, int grpId2, const std::string& _type, float init
 		newInfo->connId	  = numConnections++;
 		if(c==0)
 			retId = newInfo->connId;
+
+		assert(newInfo->connId<MAX_numConnections);
+
+		printf("CONNECT SETUP: connId=%d, mulFast=%f, mulSlow=%f\n",newInfo->connId,newInfo->mulSynFast,newInfo->mulSynSlow);
 	}
 	assert(retId != -1);
 	return retId;
 }
 
 // make custom connections from grpId1 to grpId2
-int CpuSNN::connect(int grpId1, int grpId2, ConnectionGenerator* conn, float mulSynFast, float mulSynSlow, 
+int CpuSNN::connect(int grpId1, int grpId2, ConnectionGenerator* conn, float _mulSynFast, float _mulSynSlow, 
 						bool synWtType, int maxM, int maxPreM) {
 	int retId=-1;
 
@@ -376,8 +380,8 @@ int CpuSNN::connect(int grpId1, int grpId2, ConnectionGenerator* conn, float mul
 		newInfo->maxWt	  = 1;
 		newInfo->maxDelay = 1;
 		newInfo->minDelay = 1;
-		newInfo->mulSynFast = mulSynFast;
-		newInfo->mulSynSlow = mulSynSlow;
+		newInfo->mulSynFast = _mulSynFast;
+		newInfo->mulSynSlow = _mulSynSlow;
 		newInfo->connProp = SET_CONN_PRESENT(1) | SET_FIXED_PLASTIC(synWtType);
 		newInfo->type	  = CONN_USER_DEFINED;
 		newInfo->numPostSynapses	  	  = maxM;
@@ -400,6 +404,8 @@ int CpuSNN::connect(int grpId1, int grpId2, ConnectionGenerator* conn, float mul
 		newInfo->connId	  = numConnections++;
 		if(c==0)
 			retId = newInfo->connId;
+
+		assert(newInfo->connId<MAX_numConnections);
 	}
 	assert(retId != -1);
 	return retId;
@@ -1024,7 +1030,7 @@ void CpuSNN::writeNetwork(FILE* fid) {
 				fwrite(&(maxSynWt[pos_i]),sizeof(float),1,fid);
 				fwrite(&delay,sizeof(uint8_t),1,fid);
 				fwrite(&plastic,sizeof(uint8_t),1,fid);
-				fwrite(&(preConnId[pos_i]),sizeof(int),1,fid);
+				fwrite(&(cumConnIdPre[pos_i]),sizeof(uint16_t),1,fid);
 			}
 		}
 	}
@@ -1138,7 +1144,7 @@ grpConnectInfo_t* CpuSNN::getConnectInfo(int connectId, int configId) {
 	// clear all existing connection info...
 	while (nextConn) {
 		if (nextConn->connId == connectId) {
-			nextConn->newUpdates = true;
+			nextConn->newUpdates = true;		// FIXME: this is a Jay hack
 			return nextConn;
 		}
 		nextConn = nextConn->next;
@@ -1479,7 +1485,10 @@ void CpuSNN::CpuSNNInit(unsigned int nNeur, unsigned int nPostSyn, unsigned int 
 	wt  			= new float[preSynCnt+100];
 	maxSynWt     	= new float[preSynCnt+100];
 
-	preConnId = new int[preSynCnt+100];
+printf("allocating mulSynFast\n");
+	mulSynFast 		= new float[MAX_numConnections];
+	mulSynSlow 		= new float[MAX_numConnections];
+	cumConnIdPre	= new uint16_t[preSynCnt+100];
 
 	//! Temporary array to hold pre-syn connections. will be deleted later if necessary
 	preSynapticIds	= new post_info_t[preSynCnt+100];
@@ -1681,6 +1690,11 @@ void CpuSNN::buildNetwork() {
 					grp_Info[newInfo->grpDest].FixedInputWts = false;
 				}
 
+				// store scaling factors for synaptic currents in connection-centric array
+				mulSynFast[newInfo->connId] = newInfo->mulSynFast;
+				mulSynSlow[newInfo->connId] = newInfo->mulSynSlow;
+
+
 				if( ((con == 0) && (synWtType == SYN_PLASTIC)) || ((con == 1) && (synWtType == SYN_FIXED))) {
 					switch(newInfo->type) {
 						case CONN_RANDOM:
@@ -1785,10 +1799,14 @@ void CpuSNN::compactConnections() {
 	post_info_t* tmp_postSynapticIds   = new post_info_t[tmp_postSynCnt+100];
 
 	// new buffer with required size + 100 bytes of additional space just to provide limited overflow
-	post_info_t*   tmp_preSynapticIds = new post_info_t[tmp_preSynCnt+100];
-	float* tmp_wt	    	  = new float[tmp_preSynCnt+100];
-	float* tmp_maxSynWt   	  = new float[tmp_preSynCnt+100];
+	post_info_t* tmp_preSynapticIds	= new post_info_t[tmp_preSynCnt+100];
+	float* tmp_wt	    	  		= new float[tmp_preSynCnt+100];
+	float* tmp_maxSynWt   	  		= new float[tmp_preSynCnt+100];
+	uint16_t *tmp_cumConnIdPre 		= new uint16_t[tmp_preSynCnt+100];
+	float *tmp_mulSynFast 			= new float[numConnections];
+	float *tmp_mulSynSlow  			= new float[numConnections];
 
+	// compact synaptic information
 	for(int i=0; i<numN; i++) {
 		assert(tmp_cumulativePost[i] <= cumulativePost[i]);
 		assert(tmp_cumulativePre[i]  <= cumulativePre[i]);
@@ -1804,6 +1822,7 @@ void CpuSNN::compactConnections() {
 			tmp_preSynapticIds[tmpPos]  = preSynapticIds[oldPos];
 			tmp_maxSynWt[tmpPos] 	    = maxSynWt[oldPos];
 			tmp_wt[tmpPos]              = wt[oldPos];
+			tmp_cumConnIdPre[tmpPos]	= cumConnIdPre[oldPos];
 		}
 	}
 
@@ -1822,12 +1841,30 @@ void CpuSNN::compactConnections() {
 	delete[] maxSynWt;
 	maxSynWt = tmp_maxSynWt;
 	cpuSnnSz.synapticInfoSize -= (sizeof(float)*preSynCnt);
-	cpuSnnSz.synapticInfoSize += (sizeof(int)*(tmp_preSynCnt+100));
+	cpuSnnSz.synapticInfoSize += (sizeof(float)*(tmp_preSynCnt+100));
 
 	delete[] wt;
 	wt = tmp_wt;
 	cpuSnnSz.synapticInfoSize -= (sizeof(float)*preSynCnt);
-	cpuSnnSz.synapticInfoSize += (sizeof(int)*(tmp_preSynCnt+100));
+	cpuSnnSz.synapticInfoSize += (sizeof(float)*(tmp_preSynCnt+100));
+
+	delete[] cumConnIdPre;
+	cumConnIdPre = tmp_cumConnIdPre;
+	cpuSnnSz.synapticInfoSize -= (sizeof(uint16_t)*preSynCnt);
+	cpuSnnSz.synapticInfoSize += (sizeof(uint16_t)*(tmp_preSynCnt+100));
+
+	// compact connection-centric information
+	for (int i=0; i<numConnections; i++) {
+		tmp_mulSynFast[i] = mulSynFast[i];
+		tmp_mulSynSlow[i] = mulSynSlow[i];
+	}
+	delete[] mulSynFast;
+	delete[] mulSynSlow;
+	mulSynFast = tmp_mulSynFast;
+	mulSynSlow = tmp_mulSynSlow;
+	cpuSnnSz.networkInfoSize -= (2*sizeof(uint8_t)*preSynCnt);
+	cpuSnnSz.networkInfoSize += (2*sizeof(uint8_t)*(tmp_preSynCnt+100));
+
 
 	delete[] preSynapticIds;
 	preSynapticIds  = tmp_preSynapticIds;
@@ -1855,7 +1892,6 @@ void CpuSNN::connectFull(grpConnectInfo_t* info) {
 
       setConnection(grpSrc, grpDest, nid, j, synWt, info->maxWt, dVal, info->connProp, info->connId);
       info->numberOfConnections++;
-      //setConnection(grpSrc, grpDest, nid, j, info->initWt, info->maxWt, dVal, info->connProp);
     }
   }
 
@@ -1883,22 +1919,22 @@ void CpuSNN::connectOneToOne (grpConnectInfo_t* info) {
 
 // make 'C' random connections from grpSrc to grpDest
 void CpuSNN::connectRandom (grpConnectInfo_t* info) {
-  int grpSrc = info->grpSrc;
-  int grpDest = info->grpDest;
-  for(int pre_nid=grp_Info[grpSrc].StartN; pre_nid<=grp_Info[grpSrc].EndN; pre_nid++) {
-    for(int post_nid=grp_Info[grpDest].StartN; post_nid<=grp_Info[grpDest].EndN; post_nid++) {
-      if (getRand() < info->p) {
-	uint8_t dVal = info->minDelay + (int)(0.5+(getRandClosed()*(info->maxDelay-info->minDelay)));
-	assert((dVal >= info->minDelay) && (dVal <= info->maxDelay));
-	float synWt = getWeights(info->connProp, info->initWt, info->maxWt, pre_nid, grpSrc);
-	setConnection(grpSrc, grpDest, pre_nid, post_nid, synWt, info->maxWt, dVal, info->connProp, info->connId);
-	info->numberOfConnections++;
-      }
-    }
-  }
+	int grpSrc = info->grpSrc;
+	int grpDest = info->grpDest;
+	for(int pre_nid=grp_Info[grpSrc].StartN; pre_nid<=grp_Info[grpSrc].EndN; pre_nid++) {
+		for(int post_nid=grp_Info[grpDest].StartN; post_nid<=grp_Info[grpDest].EndN; post_nid++) {
+			if (getRand() < info->p) {
+				uint8_t dVal = info->minDelay + (int)(0.5+(getRandClosed()*(info->maxDelay-info->minDelay)));
+				assert((dVal >= info->minDelay) && (dVal <= info->maxDelay));
+				float synWt = getWeights(info->connProp, info->initWt, info->maxWt, pre_nid, grpSrc);
+				setConnection(grpSrc, grpDest, pre_nid, post_nid, synWt, info->maxWt, dVal, info->connProp, info->connId);
+				info->numberOfConnections++;
+			}
+		}
+	}
 
-  grp_Info2[grpSrc].sumPostConn += info->numberOfConnections;
-  grp_Info2[grpDest].sumPreConn += info->numberOfConnections;
+	grp_Info2[grpSrc].sumPostConn += info->numberOfConnections;
+	grp_Info2[grpDest].sumPreConn += info->numberOfConnections;
 }
 
 // user-defined functions called here...
@@ -1989,7 +2025,9 @@ void CpuSNN::deleteObjects() {
 		if(wt!=NULL)			delete[] wt;
 		if(maxSynWt!=NULL)		delete[] maxSynWt;
 		if(wtChange !=NULL)		delete[] wtChange;
-		if(preConnId!=NULL)	delete[] preConnId;
+		if (mulSynFast!=NULL)	delete[] mulSynFast;
+		if (mulSynSlow!=NULL)	delete[] mulSynSlow;
+		if (cumConnIdPre!=NULL)	delete[] cumConnIdPre;
 
 		if (firingTableD2) delete[] firingTableD2;
 		if (firingTableD1) delete[] firingTableD1;
@@ -2210,78 +2248,87 @@ int CpuSNN::findGrpId(int nid) {
 
 
 void CpuSNN::generatePostSpike(unsigned int pre_i, unsigned int idx_d, unsigned int offset, unsigned int tD) {
-  // get synaptic info...
-  post_info_t post_info = postSynapticIds[offset + idx_d];
+	// get synaptic info...
+	post_info_t post_info = postSynapticIds[offset + idx_d];
 
-  // get neuron id
-  unsigned int p_i = GET_CONN_NEURON_ID(post_info);
-  assert(p_i<numN);
+	// get neuron id
+	unsigned int post_i = GET_CONN_NEURON_ID(post_info);
+	assert(post_i<numN);
 
-  // get syn id
-  int s_i = GET_CONN_SYN_ID(post_info);
-  assert(s_i<(Npre[p_i]));
+	// get syn id
+	int s_i = GET_CONN_SYN_ID(post_info);
+	assert(s_i<(Npre[post_i]));
 
-  // get the cumulative position for quick access...
-  unsigned int pos_i = cumulativePre[p_i] + s_i;
+	// get the cumulative position for quick access...
+	unsigned int pos_i = cumulativePre[post_i] + s_i;
+	assert(post_i < numNReg); // FIXME is this assert supposed to be for pos_i?
 
-  assert(p_i < numNReg);
 
-  float change;
+	int pre_grpId = findGrpId(pre_i);
+	char type = grp_Info[pre_grpId].Type;
 
-  int pre_grpId = findGrpId(pre_i);
-  char type = grp_Info[pre_grpId].Type;
+	// TODO: MNJ TEST THESE CONDITIONS FOR CORRECTNESS...
+	int ind = STP_BUF_POS(pre_i,(simTime-tD-1));
 
-  // TODO: MNJ TEST THESE CONDITIONS FOR CORRECTNESS...
-  int ind = STP_BUF_POS(pre_i,(simTime-tD-1));
-
-  // if the source group STP is disabled. we need to skip it..
-  if (grp_Info[pre_grpId].WithSTP) {
-    change = wt[pos_i]*stpx[ind]*stpu[ind];
-  } else
-    change = wt[pos_i];
-
-  if (grp_Info[pre_grpId].WithConductances) {
-    if (type & TARGET_AMPA)  gAMPA [p_i] += change;
-    if (type & TARGET_NMDA)  gNMDA [p_i] += change;
-    if (type & TARGET_GABAa) gGABAa[p_i] -= change; // wt should be negative for GABAa and GABAb
-    if (type & TARGET_GABAb) gGABAb[p_i] -= change;
-  } else
-    current[p_i] += change;
-
-  int post_grpId = findGrpId(p_i);
-  if ((showLogMode >= 3) && (p_i==grp_Info[post_grpId].StartN))
-    printf("%d => %d (%d) am=%f ga=%f wt=%f stpu=%f stpx=%f td=%d\n",
-	   pre_i, p_i, findGrpId(p_i), gAMPA[p_i], gGABAa[p_i],
-	   wt[pos_i],(grp_Info[post_grpId].WithSTP?stpx[ind]:1.0),(grp_Info[post_grpId].WithSTP?stpu[ind]:1.0),tD);
-
-  // STDP calculation....
-  if (grp_Info[post_grpId].WithSTDP) {
-    //stdpChanged[pos_i]=false;
-    //assert((simTime-lastSpikeTime[p_i])>=0);
-    int stdp_tDiff = (simTime-lastSpikeTime[p_i]);
-
-    if (stdp_tDiff >= 0) {
-#ifdef INHIBITORY_STDP
-      if ((type & TARGET_GABAa) || (type & TARGET_GABAb))
-	{
-	  //printf("I");
-	  if ((stdp_tDiff*grp_Info[post_grpId].TAU_LTD_INV)<25)
-	    wtChange[pos_i] -= (STDP(stdp_tDiff, grp_Info[post_grpId].ALPHA_LTP, grp_Info[post_grpId].TAU_LTP_INV)
-	    					 - STDP(stdp_tDiff, grp_Info[post_grpId].ALPHA_LTD*1.5, grp_Info[post_grpId].TAU_LTD_INV));
-	}
-      else
-#endif
-	{
-	  //printf("E");
-	  if ((stdp_tDiff*grp_Info[post_grpId].TAU_LTD_INV)<25)
-	    wtChange[pos_i] -= STDP(stdp_tDiff, grp_Info[post_grpId].ALPHA_LTD, grp_Info[post_grpId].TAU_LTD_INV);
+	// for each presynaptic spike, postsynaptic (synaptic) current is going to increase by some amplitude (float change)
+	float change;
+	if (grp_Info[pre_grpId].WithSTP) {
+		change = wt[pos_i]*stpx[ind]*stpu[ind];
+	} else {
+		change = wt[pos_i];
 	}
 
-    }
-    assert(!((stdp_tDiff < 0) && (lastSpikeTime[p_i] != MAX_SIMULATION_TIME)));
-  }
+	// get connect info from the cumulative synapse index for mulSynFast/mulSynSlow (requires less memory than storing
+	// mulSynFast/Slow per synapse or storing a pointer to grpConnectInfo_s)
+	// mulSynFast will be applied to fast currents (either AMPA or GABAa)
+	// mulSynSlow will be applied to slow currents (either NMDA or GABAb)
+	uint16_t mulIndex = cumConnIdPre[pos_i];
+	assert(mulIndex<numConnections);
+	assert(mulIndex>=0);
 
-  synSpikeTime[pos_i] = simTime;
+	// update currents
+	if (grp_Info[pre_grpId].WithConductances) {
+		if (type & TARGET_AMPA) // if post_i expresses AMPAR
+			gAMPA [post_i] += change*mulSynFast[mulIndex]; // scale by some factor
+		if (type & TARGET_NMDA)
+			gNMDA [post_i] += change*mulSynSlow[mulIndex];
+		if (type & TARGET_GABAa)
+			gGABAa[post_i] -= change*mulSynFast[mulIndex]; // wt should be negative for GABAa and GABAb
+		if (type & TARGET_GABAb)
+			gGABAb[post_i] -= change*mulSynSlow[mulIndex];
+	} else {
+		current[post_i] += change;
+	}
+
+	int post_grpId = findGrpId(post_i);
+	if ((showLogMode >= 3) && (post_i==grp_Info[post_grpId].StartN)) {
+		printf("%d => %d (%d) am=%f ga=%f wt=%f stpu=%f stpx=%f td=%d\n", pre_i, post_i, findGrpId(post_i), gAMPA[post_i],
+					gGABAa[post_i], wt[pos_i],(grp_Info[post_grpId].WithSTP?stpx[ind]:1.0),
+					(grp_Info[post_grpId].WithSTP?stpu[ind]:1.0),tD);
+	}
+
+	// STDP calculation....
+	if (grp_Info[post_grpId].WithSTDP) {
+		int stdp_tDiff = (simTime-lastSpikeTime[post_i]);
+
+		if (stdp_tDiff >= 0) {
+			#ifdef INHIBITORY_STDP
+			if ((type & TARGET_GABAa) || (type & TARGET_GABAb))
+			{
+				if ((stdp_tDiff*grp_Info[post_grpId].TAU_LTD_INV)<25)
+					wtChange[pos_i] -= (STDP(stdp_tDiff, grp_Info[post_grpId].ALPHA_LTP, grp_Info[post_grpId].TAU_LTP_INV)
+			    					 - STDP(stdp_tDiff, grp_Info[post_grpId].ALPHA_LTD*1.5, grp_Info[post_grpId].TAU_LTD_INV));
+				}
+				else
+			#endif
+			{
+				if ((stdp_tDiff*grp_Info[post_grpId].TAU_LTD_INV)<25)
+					wtChange[pos_i] -= STDP(stdp_tDiff, grp_Info[post_grpId].ALPHA_LTD, grp_Info[post_grpId].TAU_LTD_INV);
+			}
+		}
+		assert(!((stdp_tDiff < 0) && (lastSpikeTime[post_i] != MAX_SIMULATION_TIME)));
+	}
+	synSpikeTime[pos_i] = simTime;
 }
 
 void CpuSNN::generateSpikes() {
@@ -2481,8 +2528,8 @@ void  CpuSNN::globalStateUpdate() {
       }
 
       if ((showLogMode >= 2) && (i==grp_Info[g].StartN))
-	fprintf(stdout, "%d: voltage=%0.3f, recovery=%0.5f, AMPA=%0.5f, NMDA=%0.5f\n",
-		i,  voltage[i], recovery[i], gAMPA[i], gNMDA[i]);
+	fprintf(stdout, "%d: voltage=%0.3f, recovery=%0.3f, AMPA=%0.5f, NMDA=%0.5f, GABAa=%0.5f, GABAb=%0.5f\n",
+		i,  voltage[i], recovery[i], gAMPA[i], gNMDA[i], gGABAa[i], gGABAb[i]);
     }
   }
 }
@@ -2500,7 +2547,9 @@ void CpuSNN::makePtrInfo() {
 	cpuNetPtrs.synSpikeTime		= synSpikeTime;
 	cpuNetPtrs.wt				= wt;
 	cpuNetPtrs.wtChange			= wtChange;
-	cpuNetPtrs.preConnId	= preConnId;
+	cpuNetPtrs.mulSynFast 		= mulSynFast;
+	cpuNetPtrs.mulSynSlow 		= mulSynSlow;
+	cpuNetPtrs.cumConnIdPre 	= cumConnIdPre;
 	cpuNetPtrs.nSpikeCnt		= nSpikeCnt;
 	cpuNetPtrs.curSpike 		= curSpike;
 	cpuNetPtrs.firingTableD2 	= firingTableD2;
@@ -2583,7 +2632,7 @@ int CpuSNN::readNetwork_internal()
 			float weight, maxWeight;
 			uint8_t delay;
 			uint8_t plastic;
-			int connId;
+			uint16_t connId;
 
 			if (!fread(&nIDpre,sizeof(int),1,readNetworkFID)) return -11;
 			if (nIDpre != i) return -6;
@@ -2608,7 +2657,7 @@ int CpuSNN::readNetwork_internal()
 			if (!fread(&delay,sizeof(uint8_t),1,readNetworkFID)) return -11;
 			if (delay > MAX_SynapticDelay) return -9;
 			if (!fread(&plastic,sizeof(uint8_t),1,readNetworkFID)) return -11;
-			if (!fread(&connId,sizeof(int),1,readNetworkFID)) return -11;
+			if (!fread(&connId,sizeof(uint16_t),1,readNetworkFID)) return -11;
 
 			#if READNETWORK_ADD_SYNAPSES_FROM_FILE
 				if ((plastic && onlyPlastic) || (!plastic && !onlyPlastic)) {
@@ -2874,7 +2923,9 @@ void CpuSNN::resetPointers() {
 	wt = NULL;
 	maxSynWt = NULL;
 	wtChange = NULL;
-	preConnId = NULL;
+	cumConnIdPre = NULL;
+	mulSynFast = NULL;
+	mulSynSlow = NULL;
 	synSpikeTime = NULL;
 	spikeGenBits = NULL;
 	firingTableD2 = NULL;
@@ -3059,7 +3110,7 @@ inline void CpuSNN::setConnection(int srcGrp,  int destGrp,  unsigned int src, u
 	preSynapticIds[pre_pos] 	= SET_CONN_ID(src, Npost[src], srcGrp);
 	wt[pre_pos] 	  = synWt;
 	maxSynWt[pre_pos] = maxWt;
-	preConnId[pre_pos] = connId;
+	cumConnIdPre[pre_pos] = connId;
 
 	bool synWtType = GET_FIXED_PLASTIC(connProp);
 

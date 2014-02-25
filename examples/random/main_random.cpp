@@ -66,11 +66,11 @@ int main()
 	// make random connections with 10% probability
 	sim.connect(g2,g2,"random",-1.0f/100,0.1f,1);
 	// make random connections with 10% probability, and random delays between 1 and 20
-	sim.connect(g1,g2,"random", +0.25f/100, 0.5f/100, 0.1f,  1, 20, 1.0f, 1.0f, SYN_PLASTIC);
-	sim.connect(g1,g1,"random", +6.0f/100, 10.0f/100, 0.1f,  1, 20, 1.0f, 1.0f, SYN_PLASTIC);
+	sim.connect(g1,g2,"random", +0.25f/100, 0.5f/100, 0.1f,  1, 20, SYN_PLASTIC);
+	sim.connect(g1,g1,"random", +6.0f/100, 10.0f/100, 0.1f,  1, 20, SYN_PLASTIC);
 
 	// 5% probability of connection
-	sim.connect(gin,g1,"random", +100.0f/100, 100.0f/100, 0.05f,  1, 20, 1.0f, 1.0f, SYN_FIXED);
+	sim.connect(gin,g1,"random", +100.0f/100, 100.0f/100, 0.05f,  1, 20, SYN_FIXED);
 
 	// here we define and set the properties of the STDP. 
 	float ALPHA_LTP = 0.10f/100, TAU_LTP = 20.0f, ALPHA_LTD = 0.12f/100, TAU_LTD = 20.0f;	

@@ -61,9 +61,10 @@
 	#include <stdint.h>
 #endif
 
-#define MAX_numPostSynapses (10000)
-#define MAX_numPreSynapses (20000)
-#define MAX_SynapticDelay (20)
+#define MAX_numPostSynapses 10000
+#define MAX_numPreSynapses 20000
+#define MAX_SynapticDelay 20
+#define MAX_numConnections 65536			//!< max allowed number of connect() calls by the user (used for mulSynFast)
 
 //#define CONDUCTANCES 		1
 #define COND_INTEGRATION_SCALE	2
@@ -75,10 +76,6 @@
 #define POISSON_MAX_FIRING_RATE 	  		520
 
 #define STDP(t,a,b)       ((a)*exp(-(t)*(b)))
-
-//#define LTD(t,a,b)       (ALPHA_LTD*exp(-(t)/TAU_LTD))
-//#define LTP(t,a,b)       (ALPHA_LTP*exp(-(t)/TAU_LTP))
-//#define LTD(t,a,b)       (ALPHA_LTD*exp(-(t)/TAU_LTD))
 
 #define GPU_LTP(t)   (gpuNetInfo.ALPHA_LTP*__expf(-(t)/gpuNetInfo.TAU_LTP))
 #define GPU_LTD(t)   (gpuNetInfo.ALPHA_LTD*__expf(-(t)/gpuNetInfo.TAU_LTD))
@@ -158,13 +155,5 @@
 
 
 #define MAX_NEURON_CHUNK_SIZE 				   (750)
-/*
 
-#define FACTOR			1
-#define IMAGE_SIZE  	(16*FACTOR)
-
-#define MAX_CV_WINDOW_PIXELS 				   (1000)
-
-#define MIN_CV_WINDOW_PIXELS 				   (100)
-*/
 #endif
