@@ -35,14 +35,14 @@ CARLSIM_FLAGS += -I$(CURDIR)/$(src_dir) -I$(CURDIR)/$(interface_dir)/include
 #-------------------------------------------------------------------------------
 local_dir := src
 local_deps := snn.h mtrand.h gpu.h gpu_random.h config.h \
-	propagated_spike_buffer.h poisson_rate.h sparse_weight_delay_matrix.h \
+	propagated_spike_buffer.h poisson_rate.h \
 	errorCode.h CUDAVersionControl.h
 local_src := $(addprefix $(local_dir)/,$(local_deps) snn_cpu.cpp mtrand.cpp \
-	propagated_spike_buffer.cpp poisson_rate.cpp sparse_weight_delay_matrix.cpp \
+	propagated_spike_buffer.cpp poisson_rate.cpp \
 	printSNNInfo.cpp gpu_random.cu \
 	snn_gpu.cu v1ColorME.2.0.cu v1ColorME.2.1.cu)
 local_objs := $(addprefix $(local_dir)/,snn_cpu.o  mtrand.o \
-	propagated_spike_buffer.o poisson_rate.o sparse_weight_delay_matrix.o printSNNInfo.o \
+	propagated_spike_buffer.o poisson_rate.o printSNNInfo.o \
 	gpu_random.o snn_gpu.o)
 
 

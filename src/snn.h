@@ -46,7 +46,6 @@
 #include "config.h"
 #include "propagated_spike_buffer.h"
 #include "poisson_rate.h"
-#include "sparse_weight_delay_matrix.h"
 
 #if __CUDA3__
 	#include <cuda.h>
@@ -281,64 +280,58 @@ inline post_info_t SET_CONN_ID(int nid, int sid, int grpId) {
 }
 
 typedef struct network_ptr_s  {
-  float	*voltage, *recovery, *Izh_a, *Izh_b, *Izh_c, *Izh_d, *current;
+	float	*voltage, *recovery, *Izh_a, *Izh_b, *Izh_c, *Izh_d, *current;
 
-  // conductances and stp values
-  float	*gNMDA, *gAMPA, *gGABAa, *gGABAb;
-  int*	I_set;
-  int		memType;
-  int		allocated;			//!< true if all data has been allocated..
-  float	*stpx, *stpu;
+	// conductances and stp values
+	float	*gNMDA, *gAMPA, *gGABAa, *gGABAb;
+	int*	I_set;
+	int		memType;
+	int		allocated;			//!< true if all data has been allocated..
+	float	*stpx, *stpu;
 
-  unsigned short	*Npre;				//!< stores the number of input connections to the neuron
-  unsigned short	*Npre_plastic;			//!< stores the number of plastic input connections
-  float	*Npre_plasticInv;			//!< stores the 1/number of plastic input connections, for use on the GPU
-  unsigned short	*Npost;				//!< stores the number of output connections from a neuron.
-  unsigned int		*lastSpikeTime;			//!< storees the firing time of the neuron
-  float	*wtChange, *wt;	//!< stores the synaptic weight and weight change of a synaptic connection
-	int *connIdFromSynId;			//!< stores connId for each synaptic id (same indexing as in wt or wtChange)
-  float	 *maxSynWt;			//!< maximum synaptic weight for given connection..
-  uint32_t *synSpikeTime;
-  uint32_t *neuronFiring;
-  unsigned int		*cumulativePost;
-  unsigned int		*cumulativePre;
+	unsigned short	*Npre;				//!< stores the number of input connections to the neuron
+	unsigned short	*Npre_plastic;			//!< stores the number of plastic input connections
+	float	*Npre_plasticInv;			//!< stores the 1/number of plastic input connections, for use on the GPU
+	unsigned short	*Npost;				//!< stores the number of output connections from a neuron.
+	unsigned int		*lastSpikeTime;			//!< storees the firing time of the neuron
+	float	*wtChange, *wt;	//!< stores the synaptic weight and weight change of a synaptic connection
+	int *preConnId;			//!< stores connId for each synaptic id (same indexing as in wt or wtChange)
+	float	 *maxSynWt;			//!< maximum synaptic weight for given connection..
+	uint32_t *synSpikeTime;
+	uint32_t *neuronFiring;
+	unsigned int		*cumulativePost;
+	unsigned int		*cumulativePre;
 
-  /*!
-   * \brief 10 bit syn id, 22 bit neuron id, ordered based on delay
-   *
-   * allows maximum synapses of 1024 and maximum network size of 4 million neurons, with 64 bit representation. we can
-   * have larger networks for simulation
-   */
-  post_info_t	*postSynapticIds;
+	/*!
+	 * \brief 10 bit syn id, 22 bit neuron id, ordered based on delay
+	 *
+	 * allows maximum synapses of 1024 and maximum network size of 4 million neurons, with 64 bit representation. we can
+	 * have larger networks for simulation
+	 */
+	post_info_t	*postSynapticIds;
 
-  post_info_t	*preSynapticIds;
-  delay_info_t    *postDelayInfo;  	//!< delay information
-  unsigned int*		firingTableD1;
-  unsigned int*		firingTableD2;
-  //	int*		randId;
-  //	void*		noiseGenProp;
+	post_info_t	*preSynapticIds;
+	delay_info_t    *postDelayInfo;  	//!< delay information
+	unsigned int*		firingTableD1;
+	unsigned int*		firingTableD2;
 
+	float*		poissonFireRate;
+	unsigned int*		poissonRandPtr;		//!< firing random number. max value is 10,000
+	int2*		neuronAllocation;
+	int3*		groupIdInfo;		//!< used for group Id calculations...
+	short int*	synIdLimit;			//
+	float*		synMaxWts;			//
+	unsigned int*		nSpikeCnt;
 
-  float*		poissonFireRate;
-  unsigned int*		poissonRandPtr;		//!< firing random number. max value is 10,000
-  int2*		neuronAllocation;
-  int3*		groupIdInfo;		//!< used for group Id calculations...
-  short int*	synIdLimit;			//
-  float*		synMaxWts;			//
+	//!< homeostatic plasticity variables
+	float*	baseFiringInv;
+	float*	baseFiring;
+	float*	avgFiring;
 
-  unsigned int*		nSpikeCnt;
-
-  //!< homeostatic plasticity variables
-  float*	baseFiringInv;
-  float*	baseFiring;
-  float*	avgFiring;
-
-
-
-  float* 		testVar;
-  float*		testVar2;
-  uint32_t*	spikeGenBits;
-  bool*		curSpike;
+	float* 		testVar;
+	float*		testVar2;
+	uint32_t*	spikeGenBits;
+	bool*		curSpike;
 } network_ptr_t;
 
 typedef struct group_info_s
@@ -682,7 +675,6 @@ private:
 	void buildPoissonGroup(int groupId);
 
 	void compactConnections(); //!< minimize any other wastage in that array by compacting the store
-	void connectFromMatrix(SparseWeightDelayMatrix* mat, int connProp);
 	void connectFull(grpConnectInfo_t* info);
 	void connectOneToOne(grpConnectInfo_t* info);
 	void connectRandom(grpConnectInfo_t* info);
@@ -773,7 +765,7 @@ private:
 	void resetTimingTable();
 
 	inline void setConnection(int srcGrpId, int destGrpId, unsigned int src, unsigned int dest, float synWt,
-								float maxWt, uint8_t dVal, int connProp);
+								float maxWt, uint8_t dVal, int connProp, int connId);
 
 	void setGrpTimeSlice(int grpId, int timeSlice); //!< used for the Poisson generator. TODO: further optimize
 
@@ -852,8 +844,6 @@ private:
 
 
 	// +++++ PRIVATE PROPERTIES +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
-	SparseWeightDelayMatrix* tmp_SynapseMatrix_fixed;
-	SparseWeightDelayMatrix* tmp_SynapseMatrix_plastic;
 	FILE* readNetworkFID;
 
 	//! temporary variables created and deleted by network after initialization
@@ -907,7 +897,7 @@ private:
 	uint32_t    	*lastSpikeTime;	//!< stores the most recent spike time of the neuron
 	float			*wtChange, *wt;	//!< stores the synaptic weight and weight change of a synaptic connection
 	float	 		*maxSynWt;		//!< maximum synaptic weight for given connection..
-	int *connIdFromSynId;			//!< stores connId for each synaptic id (same indexing as in wt or wtChange)
+	int *preConnId;			//!< stores connId for each synaptic id (same indexing as in wt or wtChange)
 	uint32_t    	*synSpikeTime;	//!< stores the spike time of each synapse
 	unsigned int		postSynCnt; //!< stores the total number of post-synaptic connections in the network
 	unsigned int		preSynCnt; //!< stores the total number of pre-synaptic connections in the network
