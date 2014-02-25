@@ -2554,6 +2554,10 @@ void CpuSNN::makePtrInfo() {
 	cpuNetPtrs.firingTableD2 	= firingTableD2;
 	cpuNetPtrs.firingTableD1 	= firingTableD1;
 
+	cpuNetPtrs.cumConnIdPre 	= cumConnIdPre;
+	cpuNetPtrs.mulSynFast 		= mulSynFast;
+	cpuNetPtrs.mulSynSlow 		= mulSynSlow;
+
 	// homeostasis variables
 	cpuNetPtrs.avgFiring    	= avgFiring;
 	cpuNetPtrs.baseFiring   	= baseFiring;

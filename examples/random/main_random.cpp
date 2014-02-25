@@ -50,7 +50,7 @@ int main()
 	bool copyState = false;
 
 	// create a network
-	CARLsim sim("random",1,42,CPU_MODE,ithGPU,enablePrint,copyState);
+	CARLsim sim("random",1,42,GPU_MODE,ithGPU,enablePrint,copyState);
 
 	int g1=sim.createGroup("excit", N*0.8, EXCITATORY_NEURON);
 	sim.setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f);
