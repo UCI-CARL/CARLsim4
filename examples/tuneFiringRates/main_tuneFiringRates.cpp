@@ -78,7 +78,7 @@ using namespace std;
 // CARLSIM core:
 CARLsim* snn;
 int inputGroup; int excGroup; int inhGroup;
-int input_exc_cid; int exc_exc_cid; int exc_inh_cid; int inh_exc_cid;
+uint16_t input_exc_cid; uint16_t exc_exc_cid; uint16_t exc_inh_cid; uint16_t inh_exc_cid;
 float COND_tAMPA=5.0, COND_tNMDA=150.0, COND_tGABAa=6.0, COND_tGABAb=150.0;
 
 // poissonRate spiking input pointer

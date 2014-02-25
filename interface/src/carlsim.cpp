@@ -112,7 +112,8 @@ CARLsim::~CARLsim() {
 // +++++++++ PUBLIC METHODS: SETTING UP A SIMULATION ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
 // shortcut to make SYN_FIXED with one weight and one delay value
-int CARLsim::connect(int grpId1, int grpId2, const std::string& connType, float wt, float connProb, uint8_t delay) {
+uint16_t CARLsim::connect(int grpId1, int grpId2, const std::string& connType, float wt, float connProb,
+							uint8_t delay) {
 	assert(!hasRunNetwork_); // TODO: make nice
 	assert(++numConnections_ <= MAX_numConnections);
 
@@ -120,8 +121,8 @@ int CARLsim::connect(int grpId1, int grpId2, const std::string& connType, float 
 }
 
 // shortcut to create SYN_FIXED connections with one weight / delay and two scaling factors for synaptic currents
-int CARLsim::connect(int grpId1, int grpId2, const std::string& connType, float wt, float connProb, uint8_t delay,
-						float mulSynFast, float mulSynSlow) {
+uint16_t CARLsim::connect(int grpId1, int grpId2, const std::string& connType, float wt, float connProb, uint8_t delay,
+							float mulSynFast, float mulSynSlow) {
 	assert(!hasRunNetwork_); // TODO: make nice
 	assert(++numConnections_ <= MAX_numConnections);
 
@@ -130,8 +131,8 @@ int CARLsim::connect(int grpId1, int grpId2, const std::string& connType, float 
 
 // shortcut to create SYN_FIXED/SYN_PLASTIC connections with initWt/maxWt, minDelay/maxDelay, but to omit
 // scaling factors for synaptic conductances (default is 1.0 for both)
-int CARLsim::connect(int grpId1, int grpId2, const std::string& connType, float initWt, float maxWt, float connProb,
-							uint8_t minDelay, uint8_t maxDelay, bool synWtType) {
+uint16_t CARLsim::connect(int grpId1, int grpId2, const std::string& connType, float initWt, float maxWt,
+							float connProb,	uint8_t minDelay, uint8_t maxDelay, bool synWtType) {
 	assert(!hasRunNetwork_); // TODO: make nice
 	assert(++numConnections_ <= MAX_numConnections);
 
@@ -139,8 +140,9 @@ int CARLsim::connect(int grpId1, int grpId2, const std::string& connType, float 
 }
 
 // basic connection function, from each neuron in grpId1 to neurons in grpId2
-int CARLsim::connect(int grpId1, int grpId2, const std::string& connType, float initWt, float maxWt, float connProb,
-							uint8_t minDelay, uint8_t maxDelay, float mulSynFast, float mulSynSlow, bool synWtType) {
+uint16_t CARLsim::connect(int grpId1, int grpId2, const std::string& connType, float initWt, float maxWt,
+							float connProb,	uint8_t minDelay, uint8_t maxDelay, float mulSynFast, float mulSynSlow,
+							bool synWtType) {
 	assert(!hasRunNetwork_); // TODO: make nice
 	assert(++numConnections_ <= MAX_numConnections);
 
@@ -149,7 +151,7 @@ int CARLsim::connect(int grpId1, int grpId2, const std::string& connType, float 
 }
 
 // custom connectivity profile, omit scaling factors for synaptic conductances
-int CARLsim::connect(int grpId1, int grpId2, ConnectionGenerator* conn, bool synWtType, int maxM, int maxPreM) {
+uint16_t CARLsim::connect(int grpId1, int grpId2, ConnectionGenerator* conn, bool synWtType, int maxM, int maxPreM) {
 	assert(!hasRunNetwork_); // TODO: make nice
 	assert(++numConnections_ <= MAX_numConnections);
 
@@ -157,7 +159,7 @@ int CARLsim::connect(int grpId1, int grpId2, ConnectionGenerator* conn, bool syn
 }
 
 // custom connectivity profile
-int CARLsim::connect(int grpId1, int grpId2, ConnectionGenerator* conn, float mulSynFast, float mulSynSlow,
+uint16_t CARLsim::connect(int grpId1, int grpId2, ConnectionGenerator* conn, float mulSynFast, float mulSynSlow,
 						bool synWtType, int maxM, int maxPreM) {
 	assert(!hasRunNetwork_); // TODO: make nice
 	assert(++numConnections_ <= MAX_numConnections);
@@ -397,7 +399,7 @@ void CARLsim::readNetwork(FILE* fid) {
 	snn_->readNetwork(fid);
 }
 
-void CARLsim::reassignFixedWeights(int connectId, float weightMatrix[], int matrixSize, int configId) {
+void CARLsim::reassignFixedWeights(uint16_t connectId, float weightMatrix[], int matrixSize, int configId) {
 	snn_->reassignFixedWeights(connectId,weightMatrix,matrixSize,configId);
 }
 
@@ -493,12 +495,12 @@ void CARLsim::writePopWeights(std::string fname, int gIDpre, int gIDpost, int co
 // +++++++++ PUBLIC METHODS: SETTERS / GETTERS ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
 // get connection info struct
-grpConnectInfo_t* CARLsim::getConnectInfo(int connectId, int configId) {
+grpConnectInfo_t* CARLsim::getConnectInfo(uint16_t connectId, int configId) {
 	assert(configId!=ALL); // TODO make nice
 	return snn_->getConnectInfo(connectId,configId);
 }
 
-int CARLsim::getConnectionId(int connectId, int configId) {
+int CARLsim::getConnectionId(uint16_t connectId, int configId) {
 	return snn_->getConnectionId(connectId,configId);
 }
 
@@ -522,7 +524,7 @@ std::string CARLsim::getGroupName(int grpId, int configId) {
 	return snn_->getGroupName(grpId, configId);
 }
 
-int CARLsim::getNumConnections(int connectionId) {
+int CARLsim::getNumConnections(uint16_t connectionId) {
 	return snn_->getNumConnections(connectionId);
 }
 

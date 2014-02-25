@@ -298,7 +298,7 @@ typedef struct connectData_s {
 	ConnectionGenerator*	conn;
 	conType_t 				type;
 	float					p; 						//!< connection probability
-	int						connId;					//!< connectID of the element in the linked list
+	uint16_t				connId;					//!< connectID of the element in the linked list
 	bool					newUpdates;
 	int		   				numberOfConnections;
 	struct connectData_s* next;
@@ -497,13 +497,13 @@ public:
 	// NOTE: there should be no default argument values in here, this should be handled by the user interface
 
 	//! make connection of type "random","full","one-to-one" from each neuron in grpId1 to neurons in grpId2
-	int connect(int gIDpre, int gIDpost, const std::string& _type, float initWt, float maxWt, float _C,
+	uint16_t connect(int gIDpre, int gIDpost, const std::string& _type, float initWt, float maxWt, float _C,
 					uint8_t minDelay, uint8_t maxDelay, float mulSynFast, float mulSynSlow, bool synWtType);
 
 	//! make custom connections from grpId1 to grpId2
 	// TODO: describe maxM and maxPreM
-	int connect(int gIDpre, int gIDpost, ConnectionGenerator* conn, float mulSynFast, float mulSynSlow, bool synWtType,
-					int maxM, int maxPreM);
+	uint16_t connect(int gIDpre, int gIDpost, ConnectionGenerator* conn, float mulSynFast, float mulSynSlow,
+					bool synWtType,	int maxM, int maxPreM);
 
 
 	//! creates a group of Izhikevich spiking neurons
@@ -567,7 +567,7 @@ public:
 	 * configuration ID (configID).  This function only works for fixed synapses and for connections of type
 	 * CONN_USER_DEFINED. Only the weights are changed, not the maxWts, delays, or connected values
 	 */
-	void reassignFixedWeights(int connectId, float weightMatrix[], int matrixSize, int configId);
+	void reassignFixedWeights(uint16_t connectId, float weightMatrix[], int matrixSize, int configId);
 
 	void resetSpikeCntUtil(int grpId = -1); //!< resets spike count for particular neuron group
 
@@ -602,8 +602,8 @@ public:
 
 	// +++++ PUBLIC METHODS: GETTERS / SETTERS ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
-	grpConnectInfo_t* getConnectInfo(int connectId, int configId); //!< required for homeostasis
-	int  getConnectionId(int connId, int configId);
+	grpConnectInfo_t* getConnectInfo(uint16_t connectId, int configId); //!< required for homeostasis
+	int  getConnectionId(uint16_t connId, int configId);
 
 	// FIXME: fix this
 	uint8_t* getDelays(int gIDpre, int gIDpost, int& Npre, int& Npost, uint8_t* delays);
@@ -613,7 +613,7 @@ public:
 	std::string getGroupName(int grpId, int configId);
 
 	int getNumConfigurations()	{ return numConfig; }	//!< gets number of network configurations
-	int getNumConnections(int connectionId);			//!< gets number of connections associated with a connection ID
+	int getNumConnections(uint16_t connectionId);		//!< gets number of connections associated with a connection ID
 	int getNumGroups() { return numGrp; }
 
 	/*!
@@ -769,7 +769,7 @@ private:
 	void resetTimingTable();
 
 	inline void setConnection(int srcGrpId, int destGrpId, unsigned int src, unsigned int dest, float synWt,
-								float maxWt, uint8_t dVal, int connProp, int connId);
+								float maxWt, uint8_t dVal, int connProp, uint16_t connId);
 
 	void setGrpTimeSlice(int grpId, int timeSlice); //!< used for the Poisson generator. TODO: further optimize
 

@@ -248,7 +248,7 @@ CpuSNN::~CpuSNN() {
 /// ************************************************************************************************************ ///
 
 // make from each neuron in grpId1 to 'numPostSynapses' neurons in grpId2
-int CpuSNN::connect(int grpId1, int grpId2, const std::string& _type, float initWt, float maxWt, float prob,
+uint16_t CpuSNN::connect(int grpId1, int grpId2, const std::string& _type, float initWt, float maxWt, float prob,
 						uint8_t minDelay, uint8_t maxDelay, float _mulSynFast, float _mulSynSlow, bool synWtType) {
 						//const std::string& wtType
 	int retId=-1;
@@ -331,11 +331,11 @@ int CpuSNN::connect(int grpId1, int grpId2, const std::string& _type, float init
 		if (showLogMode >= 1)
 			printf("grp_Info[%d, %s].numPostSynapses = %d, grp_Info[%d, %s].numPreSynapses = %d\n",grpId1,grp_Info2[grpId1].Name.c_str(),grp_Info[grpId1].numPostSynapses,grpId2,grp_Info2[grpId2].Name.c_str(),grp_Info[grpId2].numPreSynapses);
 
-		newInfo->connId	  = numConnections++;
+		newInfo->connId	= numConnections++;
+		assert(numConnections <= MAX_numConnections);	// make sure we don't overflow connId
+
 		if(c==0)
 			retId = newInfo->connId;
-
-		assert(newInfo->connId<MAX_numConnections);
 
 		printf("CONNECT SETUP: connId=%d, mulFast=%f, mulSlow=%f\n",newInfo->connId,newInfo->mulSynFast,newInfo->mulSynSlow);
 	}
@@ -344,7 +344,7 @@ int CpuSNN::connect(int grpId1, int grpId2, const std::string& _type, float init
 }
 
 // make custom connections from grpId1 to grpId2
-int CpuSNN::connect(int grpId1, int grpId2, ConnectionGenerator* conn, float _mulSynFast, float _mulSynSlow, 
+uint16_t CpuSNN::connect(int grpId1, int grpId2, ConnectionGenerator* conn, float _mulSynFast, float _mulSynSlow, 
 						bool synWtType, int maxM, int maxPreM) {
 	int retId=-1;
 
@@ -401,11 +401,11 @@ int CpuSNN::connect(int grpId1, int grpId2, ConnectionGenerator* conn, float _mu
 						grp_Info2[grpId2].Name.c_str(),grp_Info[grpId2].numPreSynapses);
 		}
 
-		newInfo->connId	  = numConnections++;
+		newInfo->connId	= numConnections++;
+		assert(numConnections <= MAX_numConnections);	// make sure we don't overflow connId
+
 		if(c==0)
 			retId = newInfo->connId;
-
-		assert(newInfo->connId<MAX_numConnections);
 	}
 	assert(retId != -1);
 	return retId;
@@ -768,7 +768,7 @@ void CpuSNN::readNetwork(FILE* fid) {
 // reassigns weights from the input weightMatrix to the weights between two
 // specified neuron groups.
 // TODO: figure out scope; is this a user function?
-void CpuSNN::reassignFixedWeights(int connectId, float weightMatrix[], int sizeMatrix, int configId) {
+void CpuSNN::reassignFixedWeights(uint16_t connectId, float weightMatrix[], int sizeMatrix, int configId) {
 	// handle the config == ALL recursive call contigency.
 	if (configId == ALL) {
 		for(int c=0; c < numConfig; c++)
@@ -1136,7 +1136,7 @@ void CpuSNN::setLogCycle(unsigned int _cnt, int mode, FILE *fp) {
 /// **************************************************************************************************************** ///
 
 //! used for parameter tuning functionality
-grpConnectInfo_t* CpuSNN::getConnectInfo(int connectId, int configId) {
+grpConnectInfo_t* CpuSNN::getConnectInfo(uint16_t connectId, int configId) {
 	grpConnectInfo_t* nextConn = connectBegin;
 	connectId = getConnectionId (connectId, configId);
 	CHECK_CONNECTION_ID(connectId, numConnections);
@@ -1155,7 +1155,7 @@ grpConnectInfo_t* CpuSNN::getConnectInfo(int connectId, int configId) {
 	return NULL;
 }
 
-int  CpuSNN::getConnectionId(int connId, int configId) {
+int  CpuSNN::getConnectionId(uint16_t connId, int configId) {
 	if(configId >= numConfig) {
 		fprintf(stderr, "getConnectionId(int, int): Assertion `configId(%d) < numConfig(%d)' failed\n", 
 					configId, numConfig);
@@ -1228,7 +1228,7 @@ std::string CpuSNN::getGroupName(int grpId, int configId) {
 }
 
 // returns the number of synaptic connections associated with this connection.
-int CpuSNN::getNumConnections(int connectionId) {
+int CpuSNN::getNumConnections(uint16_t connectionId) {
   grpConnectInfo_t* connInfo;	      
   grpConnectInfo_t* connIterator = connectBegin;
   while(connIterator){
@@ -2283,8 +2283,7 @@ void CpuSNN::generatePostSpike(unsigned int pre_i, unsigned int idx_d, unsigned 
 	// mulSynFast will be applied to fast currents (either AMPA or GABAa)
 	// mulSynSlow will be applied to slow currents (either NMDA or GABAb)
 	uint16_t mulIndex = cumConnIdPre[pos_i];
-	assert(mulIndex<numConnections);
-	assert(mulIndex>=0);
+	assert(mulIndex>=0 && mulIndex<numConnections);
 
 	// update currents
 	if (grp_Info[pre_grpId].WithConductances) {
@@ -3066,7 +3065,7 @@ void CpuSNN::resetTimingTable() {
 
 //! set one specific connection from neuron id 'src' to neuron id 'dest'
 inline void CpuSNN::setConnection(int srcGrp,  int destGrp,  unsigned int src, unsigned int dest, float synWt,
-									float maxWt, uint8_t dVal, int connProp, int connId) {
+									float maxWt, uint8_t dVal, int connProp, uint16_t connId) {
 	assert(dest<=CONN_SYN_NEURON_MASK);			// total number of neurons is less than 1 million within a GPU
 	assert((dVal >=1) && (dVal <= D));
 
