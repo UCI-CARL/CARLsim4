@@ -819,7 +819,7 @@ private:
 	void copyNeuronState(network_ptr_t* dest, network_ptr_t* src, cudaMemcpyKind kind, int allocateMem, int grpId=-1);
 	void copyParameters();
 	void copyPostConnectionInfo(network_ptr_t* dest, int allocateMem);
-	void copyState(network_ptr_t* dest, int kind, int allocateMem);
+	void copyState(network_ptr_t* dest, int allocateMem);
 	void copySTPState(network_ptr_t* dest, network_ptr_t* src, int kind, int allocateMem);
 	void copyUpdateVariables_GPU(); //!< copies wt / neuron state / STP state info from host to device
 	void copyWeightsGPU(unsigned int nid, int src_grp);

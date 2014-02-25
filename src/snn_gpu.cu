@@ -2094,7 +2094,7 @@ void CpuSNN::copyWeightState (network_ptr_t* dest, network_ptr_t* src,  cudaMemc
 }
 
 // allocate necessary memory for the GPU...
-void CpuSNN::copyState(network_ptr_t* dest, int kind, int allocateMem) {
+void CpuSNN::copyState(network_ptr_t* dest, int allocateMem) {
 	assert(numN != 0);
 	assert(preSynCnt !=0);
 
@@ -2103,17 +2103,20 @@ void CpuSNN::copyState(network_ptr_t* dest, int kind, int allocateMem) {
 		return;
 	}
 
+	// copyState is unidirectional from host to device
+	cudaMemcpyKind kind = cudaMemcpyHostToDevice;
+
 	// synaptic information based
 	if(allocateMem)		CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->wt, sizeof(float)*preSynCnt));
-	CUDA_CHECK_ERRORS( cudaMemcpy( dest->wt, wt, sizeof(float)*preSynCnt, cudaMemcpyHostToDevice));
+	CUDA_CHECK_ERRORS( cudaMemcpy( dest->wt, wt, sizeof(float)*preSynCnt, kind));
 
 	// conductance ratios
 	if(allocateMem)		CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->mulSynFast, sizeof(float)*numConnections));
-	CUDA_CHECK_ERRORS( cudaMemcpy( dest->mulSynFast, mulSynFast, sizeof(float)*numConnections, cudaMemcpyHostToDevice));
+	CUDA_CHECK_ERRORS( cudaMemcpy( dest->mulSynFast, mulSynFast, sizeof(float)*numConnections, kind));
 	if(allocateMem)		CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->mulSynSlow, sizeof(float)*numConnections));
-	CUDA_CHECK_ERRORS( cudaMemcpy( dest->mulSynSlow, mulSynSlow, sizeof(float)*numConnections, cudaMemcpyHostToDevice));
+	CUDA_CHECK_ERRORS( cudaMemcpy( dest->mulSynSlow, mulSynSlow, sizeof(float)*numConnections, kind));
 	if(allocateMem)		CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->cumConnIdPre, sizeof(uint16_t)*preSynCnt));
-	CUDA_CHECK_ERRORS( cudaMemcpy( dest->cumConnIdPre, cumConnIdPre, sizeof(uint16_t)*preSynCnt, cudaMemcpyHostToDevice));
+	CUDA_CHECK_ERRORS( cudaMemcpy( dest->cumConnIdPre, cumConnIdPre, sizeof(uint16_t)*preSynCnt, kind));
 
 	// we don't need these data structures if the network doesn't have any plastic synapses at all
 	// they show up in gpuUpdateLTP() and updateSynapticWeights(), two functions that do not get called if
@@ -2121,16 +2124,16 @@ void CpuSNN::copyState(network_ptr_t* dest, int kind, int allocateMem) {
 	if (!sim_with_fixedwts) {
 		// synaptic weight derivative
 		if(allocateMem)		CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->wtChange, sizeof(float)*preSynCnt));
-		CUDA_CHECK_ERRORS( cudaMemcpy( dest->wtChange, wtChange, sizeof(float)*preSynCnt, cudaMemcpyHostToDevice));
+		CUDA_CHECK_ERRORS( cudaMemcpy( dest->wtChange, wtChange, sizeof(float)*preSynCnt, kind));
 
 		// synaptic weight maximum value
 		if(allocateMem)		CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->maxSynWt, sizeof(float)*preSynCnt));
-		CUDA_CHECK_ERRORS( cudaMemcpy( dest->maxSynWt, maxSynWt, sizeof(float)*preSynCnt, cudaMemcpyHostToDevice));
+		CUDA_CHECK_ERRORS( cudaMemcpy( dest->maxSynWt, maxSynWt, sizeof(float)*preSynCnt, kind));
 	}
 
 	// firing time for individual synapses
 	if(allocateMem)		CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->synSpikeTime, sizeof(int)*preSynCnt));
-	CUDA_CHECK_ERRORS( cudaMemcpy( dest->synSpikeTime, synSpikeTime, sizeof(int)*preSynCnt, cudaMemcpyHostToDevice));
+	CUDA_CHECK_ERRORS( cudaMemcpy( dest->synSpikeTime, synSpikeTime, sizeof(int)*preSynCnt, kind));
 	net_Info.preSynLength = preSynCnt;
 
 	assert(net_Info.maxSpikesD1 != 0);
@@ -2141,28 +2144,28 @@ void CpuSNN::copyState(network_ptr_t* dest, int kind, int allocateMem) {
 
 	// allocate 1ms firing table
 	if(allocateMem)		CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->firingTableD1, sizeof(int)*net_Info.maxSpikesD1));
-	if (net_Info.maxSpikesD1>0) CUDA_CHECK_ERRORS( cudaMemcpy( dest->firingTableD1, firingTableD1, sizeof(int)*net_Info.maxSpikesD1, cudaMemcpyHostToDevice));
+	if (net_Info.maxSpikesD1>0) CUDA_CHECK_ERRORS( cudaMemcpy( dest->firingTableD1, firingTableD1, sizeof(int)*net_Info.maxSpikesD1, kind));
 
 	// allocate 2+ms firing table
 	if(allocateMem)		CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->firingTableD2, sizeof(int)*net_Info.maxSpikesD2));
-	if (net_Info.maxSpikesD2>0) CUDA_CHECK_ERRORS( cudaMemcpy( dest->firingTableD2, firingTableD2, sizeof(int)*net_Info.maxSpikesD2, cudaMemcpyHostToDevice));
+	if (net_Info.maxSpikesD2>0) CUDA_CHECK_ERRORS( cudaMemcpy( dest->firingTableD2, firingTableD2, sizeof(int)*net_Info.maxSpikesD2, kind));
 
 	// we don't need this data structure if the network doesn't have any plastic synapses at all
 	if (!sim_with_fixedwts) {
 		// neuron firing time..
 		if(allocateMem)     CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->lastSpikeTime, sizeof(int)*numNReg));
-		CUDA_CHECK_ERRORS( cudaMemcpy( dest->lastSpikeTime, lastSpikeTime, sizeof(int)*numNReg, cudaMemcpyHostToDevice));
+		CUDA_CHECK_ERRORS( cudaMemcpy( dest->lastSpikeTime, lastSpikeTime, sizeof(int)*numNReg, kind));
 	}
 		
 	if(allocateMem)		CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->spikeGenBits, sizeof(int)*(NgenFunc/32+1)));
 
 	// copy the neuron state information to the GPU..
-	copyNeuronState(dest, &cpuNetPtrs, cudaMemcpyHostToDevice, allocateMem);
+	copyNeuronState(dest, &cpuNetPtrs, kind, allocateMem);
 
-	copyNeuronParameters(dest, cudaMemcpyHostToDevice, allocateMem);
+	copyNeuronParameters(dest, kind, allocateMem);
 
 	if (sim_with_stp) {
-		copySTPState(dest, &cpuNetPtrs, cudaMemcpyHostToDevice, allocateMem);
+		copySTPState(dest, &cpuNetPtrs, kind, allocateMem);
 	}
 }
 
@@ -3134,7 +3137,7 @@ void CpuSNN::allocateSNN_GPU(int ithGPU) {
 	printf("Conn Info:\t\t%2.3f GB\t%2.3f GB\t%2.3f GB\n",(float)(previous-avail)/toGB,(float)((total-avail)/toGB),(float)(avail/toGB));
 	previous=avail;
 
-	copyState(&cpu_gpuNetPtrs, cudaMemcpyHostToDevice, 1);
+	copyState(&cpu_gpuNetPtrs, 1);
 	cudaMemGetInfo(&avail,&total);
 	printf("State Info:\t\t%2.3f GB\t%2.3f GB\t%2.3f GB\n",(float)(previous-avail)/toGB,(float)((total-avail)/toGB),(float)(avail/toGB));
 	previous=avail;
