@@ -9,7 +9,7 @@ class CpuSNN;
 
 class CARLsim {
 public:
-	CARLsim(std::string netName="SNN", int numConfig=1, int randSeed=42, int simType=CPU_MODE, int ithGPU=0,
+	CARLsim(std::string netName="SNN", int nConfig=1, int randSeed=42, int simType=CPU_MODE, int ithGPU=0,
 				bool enablePrint=false, bool copyState=false);
 	~CARLsim();
 
@@ -139,7 +139,7 @@ public:
 	group_info_t getGroupInfo(int grpId, int configId=0); //!< gets group info struct
 	std::string getGroupName(int grpId, int configId=0);
 
-	int getNumConfigurations() { return numConfig_; }	//!< gets number of network configurations
+	int getNumConfigurations() { return nConfig_; }		//!< gets number of network configurations
 	int getNumConnections(int connectionId);			//!< gets number of connections associated with a connection ID
 	int getNumGroups();									//!< gets number of groups in the network
 
@@ -202,45 +202,40 @@ public:
 	void setDefaultSTPparams(int neurType, float STP_U, float STP_tD, float STP_tF);
 
 
-	// +++++ PUBLIC PROPERTIES ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
-
-	struct grpInfo_s {
-		int grpId;			// the grp id returned from CARLsimCore
-		bool hasSetCond;	// whether conductances are set
-	};
-
 private:
 	// +++++ PRIVATE METHODS ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
+	void CARLsimInit();					//!< init function, unsafe computations that would usually go in constructor
+
 	void checkConductances(); 			//!< all or none of the groups must enable conductances
+
+	bool existsGrpId(int grpId);		//!< checks whether a certain grpId exists in grpIds_
 
 	void handleUserWarnings(); 			//!< print all user warnings, continue only after user input
 	void handleNetworkConsistency();	//!< do all setupNetwork error checks
 
 	void printSimulationSpecs();
 
-	grpInfo_s makeGrpInfo(int grpId, bool hasSetCond); //!< factory function for grpInfo_s
-
-
 	// +++++ PRIVATE PROPERTIES +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
 	CpuSNN* snn_;			//!< an instance of CARLsim core class
-	int numConfig_;			//!< number of configurations
+	std::string netName_;	//!< network name
+	int nConfig_;			//!< number of configurations
 	int randSeed_;			//!< RNG seed
 	int simMode_;			//!< CPU_MODE or GPU_MODE
 	int ithGPU_;			//!< on which device to establish a context
 	bool enablePrint_;
 	bool copyState_;
 
-	std::map<int, grpInfo_s> grpInfo_;
+	std::vector<std::string> userWarnings_; // !< an accumulated list of user warnings
 
-	bool hasRunNetwork_;				//!< flag to inform that network has been run
+	std::vector<int> grpIds_;		//!< a list of all created group IDs
 
+	bool hasRunNetwork_;			//!< flag to inform that network has been run
 	bool hasSetHomeoALL_;			//!< informs that homeostasis have been set for ALL groups (can't add more groups)
 	bool hasSetHomeoBaseFiringALL_;	//!< informs that base firing has been set for ALL groups (can't add more groups)
 	bool hasSetSTDPALL_; 			//!< informs that STDP have been set for ALL groups (can't add more groups)
 	bool hasSetSTPALL_; 			//!< informsthat STP have been set for ALL groups (can't add more groups)
 
-	std::vector<std::string> userWarnings_; // !< an accumulated list of user warnings
 	float def_tdAMPA_;				//!< default value for AMPA decay (ms)
 	float def_tdNMDA_;				//!< default value for NMDA decay (ms)
 	float def_tdGABAa_;				//!< default value for GABAa decay (ms)

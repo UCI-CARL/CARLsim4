@@ -53,6 +53,7 @@ int main()
 	CARLsim sim("random",1,42,GPU_MODE,ithGPU,enablePrint,copyState);
 
 	int g1=sim.createGroup("excit", N*0.8, EXCITATORY_NEURON);
+	printf("after c\n");
 	sim.setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f);
 
 	int g2=sim.createGroup("inhib", N*0.2, INHIBITORY_NEURON);

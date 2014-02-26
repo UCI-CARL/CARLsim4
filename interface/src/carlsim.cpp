@@ -1,8 +1,12 @@
 #include <carlsim.h>
+#include <user_errors.h>
 
 //#include <snn.h>		// FIXME: move snn.h dependency out of carlsim.h
 #include <string>
 #include <iostream>
+#include <sstream>
+#include <algorithm>	// std::find
+
 
 // includes for mkdir
 #if defined(CREATE_SPIKEDIR_IF_NOT_EXISTS)
@@ -47,10 +51,10 @@ private:
 /// CONSTRUCTOR / DESTRUCTOR
 /// **************************************************************************************************************** ///
 
-CARLsim::CARLsim(std::string netName, int numConfig, int randSeed, int simType, int ithGPU, bool enablePrint,
+CARLsim::CARLsim(std::string netName, int nConfig, int randSeed, int simType, int ithGPU, bool enablePrint,
 					bool copyState) {
-	snn_ = new CpuSNN(netName.c_str(), numConfig, randSeed, simType);
-	numConfig_ 					= numConfig;
+	netName_					= netName;
+	nConfig_ 					= nConfig;
 	randSeed_					= randSeed;
 	simMode_ 					= simType;
 	ithGPU_ 					= ithGPU;
@@ -58,11 +62,23 @@ CARLsim::CARLsim(std::string netName, int numConfig, int randSeed, int simType, 
 	copyState_ 					= copyState;
 
 	hasRunNetwork_  			= false;
-
 	hasSetHomeoALL_ 			= false;
 	hasSetHomeoBaseFiringALL_ 	= false;
 	hasSetSTDPALL_ 				= false;
 	hasSetSTPALL_ 				= false;
+
+	CARLsimInit(); // move everything else out of constructor
+}
+
+CARLsim::~CARLsim() {
+	// deallocate all dynamically allocated structures
+	if (snn_!=NULL)
+		delete snn_;
+}
+
+// unsafe computations that would otherwise go in constructor
+void CARLsim::CARLsimInit() {
+	snn_ = new CpuSNN(netName_.c_str(), nConfig_, randSeed_, simMode_);
 
 	// set default time constants for synaptic current decay
 	// TODO: add ref
@@ -91,13 +107,11 @@ CARLsim::CARLsim(std::string netName, int numConfig, int randSeed, int simType, 
 	// TODO: add ref
 	def_homeo_scale_ = 0.1f;
 	def_homeo_avgTimeScale_ = 10.f;
+
+//	error(AT,"fake error");
+//	UserErrors::userAssert(AT,false,UserErrors::NETWORK_ALREADY_RUN);
 }
 
-CARLsim::~CARLsim() {
-	// deallocate all dynamically allocated structures
-	if (snn_!=NULL)
-		delete snn_;
-}
 
 
 /// **************************************************************************************************************** ///
@@ -108,7 +122,8 @@ CARLsim::~CARLsim() {
 
 // shortcut to make SYN_FIXED with one weight and one delay value
 int CARLsim::connect(int grpId1, int grpId2, const std::string& connType, float wt, float connProb, uint8_t delay) {
-	assert(!hasRunNetwork_); // TODO: make nice
+	UserErrors::userAssert(!hasRunNetwork_, UserErrors::NETWORK_ALREADY_RUN,"connect(\""	// can't change setup after
+								+getGroupName(grpId1,0)+"\",\""+getGroupName(grpId2,0)+"\")");	// network has been run
 
 	return snn_->connect(grpId1, grpId2, connType, wt, wt, connProb, delay, delay, SYN_FIXED);
 }
@@ -116,14 +131,16 @@ int CARLsim::connect(int grpId1, int grpId2, const std::string& connType, float 
 // basic connection function, from each neuron in grpId1 to neurons in grpId2
 int CARLsim::connect(int grpId1, int grpId2, const std::string& connType, float initWt, float maxWt, float connProb,
 					uint8_t minDelay, uint8_t maxDelay, bool synWtType) {
-	assert(!hasRunNetwork_); // TODO: make nice
+	UserErrors::userAssert(!hasRunNetwork_, UserErrors::NETWORK_ALREADY_RUN,"connect(\""	// can't change setup after
+								+getGroupName(grpId1,0)+"\",\""+getGroupName(grpId2,0)+"\")");	// network has been run
 
 	return snn_->connect(grpId1, grpId2, connType, initWt, maxWt, connProb, minDelay, maxDelay, synWtType);
 }
 
 // custom connectivity profile
 int CARLsim::connect(int grpId1, int grpId2, ConnectionGenerator* conn, bool synWtType, int maxM, int maxPreM) {
-	assert(!hasRunNetwork_); // TODO: make nice
+	UserErrors::userAssert(!hasRunNetwork_, UserErrors::NETWORK_ALREADY_RUN,"connect(\""	// can't change setup after
+								+getGroupName(grpId1,0)+"\",\""+getGroupName(grpId2,0)+"\")");	// network has been run
 
 	return snn_->connect(grpId1, grpId2, conn, synWtType, maxM, maxPreM);
 }
@@ -131,7 +148,8 @@ int CARLsim::connect(int grpId1, int grpId2, ConnectionGenerator* conn, bool syn
 
 // create group of Izhikevich spiking neurons
 int CARLsim::createGroup(std::string grpName, unsigned int nNeur, int neurType, int configId) {
-	assert(!hasRunNetwork_); // TODO: make nice error message
+	UserErrors::userAssert(!hasRunNetwork_, UserErrors::NETWORK_ALREADY_RUN,			// can't change setup after
+								"createGroup(\""+grpName+"\")");						// network has been run
 
 	// if user has called any set functions with grpId=ALL, and is now adding another group, previously set properties
 	// will not apply to newly added group
@@ -145,32 +163,26 @@ int CARLsim::createGroup(std::string grpName, unsigned int nNeur, int neurType, 
 		userWarnings_.push_back("USER WARNING: Make sure to call setHomeoBaseFiringRate on group "+grpName);
 
 	int grpId = snn_->createGroup(grpName.c_str(),nNeur,neurType,configId);
-
-	// keep track of group info
-	grpInfo_[grpId] = makeGrpInfo(grpId,false);
+	grpIds_.push_back(grpId); // keep track of all groups
 
 	return grpId;
 }
 
 // create group of spike generators
 int CARLsim::createSpikeGeneratorGroup(std::string grpName, unsigned int nNeur, int neurType, int configId) {
-	assert(!hasRunNetwork_); // TODO: make nicer
+	UserErrors::userAssert(!hasRunNetwork_, UserErrors::NETWORK_ALREADY_RUN,			// can't change setup after
+								"createSpikeGeneratorGroup(\""+grpName+"\")");			// network has been run
+
 	return snn_->createSpikeGeneratorGroup(grpName.c_str(),nNeur,neurType,configId);
 }
 
 
 // set conductance values, use defaults
 void CARLsim::setConductances(int grpId, bool isSet, int configId) {
-	assert(!hasRunNetwork_); // TODO make nice
-
-	// keep track of groups with conductances set
-	// TODO: keep track of configIds, too
-	if (grpId==ALL) {
-		for (std::map<int,grpInfo_s>::iterator iter = grpInfo_.begin(); iter!=grpInfo_.end(); ++iter)
-			grpInfo_[iter->first].hasSetCond = isSet;
-	} else {
-		grpInfo_[grpId].hasSetCond = isSet;
-	}
+	std::stringstream grpStr; grpStr << "setConductances(" << grpId << "). Group ID " << grpId;
+	UserErrors::userAssert(grpId==ALL || existsGrpId(grpId), UserErrors::UNKNOWN_GROUP_ID, grpStr.str());
+	UserErrors::userAssert(!hasRunNetwork_, UserErrors::NETWORK_ALREADY_RUN,				// can't change setup after
+								"setConductances(\""+getGroupName(grpId,configId)+"\")");	// network has been run
 
 	if (isSet) { // enable conductances, use default values
 		snn_->setConductances(grpId,true,def_tdAMPA_,def_tdNMDA_,def_tdGABAa_,def_tdGABAb_,configId);
@@ -183,16 +195,10 @@ void CARLsim::setConductances(int grpId, bool isSet, int configId) {
 // set conductances values, custom
 void CARLsim::setConductances(int grpId, bool isSet, float tdAMPA, float tdNMDA, float tdGABAa, float tdGABAb,
 								int configId) {
-	assert(!hasRunNetwork_); // TODO make nice
-
-	// keep track of groups with conductances set
-	// TODO: keep track of configIds, too
-	if (grpId==ALL) {
-		for (std::map<int,grpInfo_s>::iterator iter = grpInfo_.begin(); iter!=grpInfo_.end(); ++iter)
-			grpInfo_[iter->first].hasSetCond = isSet;
-	} else {
-		grpInfo_[grpId].hasSetCond = isSet;
-	}
+	std::stringstream grpStr; grpStr << "setConductances(" << grpId << "). Group ID " << grpId;
+	UserErrors::userAssert(grpId==ALL || existsGrpId(grpId), UserErrors::UNKNOWN_GROUP_ID, grpStr.str());
+	UserErrors::userAssert(!hasRunNetwork_, UserErrors::NETWORK_ALREADY_RUN,				// can't change setup after
+								"setConductances(\""+getGroupName(grpId,configId)+"\")");	// network has been run
 
 	if (isSet) { // enable conductances, use custom values
 		snn_->setConductances(grpId,true,tdAMPA,tdNMDA,tdGABAa,tdGABAb,configId);
@@ -203,14 +209,15 @@ void CARLsim::setConductances(int grpId, bool isSet, float tdAMPA, float tdNMDA,
 
 // set default homeostasis params
 void CARLsim::setHomeostasis(int grpId, bool isSet, int configId) {
-	assert(!hasRunNetwork_); // TODO make nice
+	UserErrors::userAssert(!hasRunNetwork_, UserErrors::NETWORK_ALREADY_RUN,				// can't change setup after
+								"setHomeostasis(\""+getGroupName(grpId,configId)+"\")");	// network has been run
 	hasSetHomeoALL_ = grpId==ALL; // adding groups after this will not have homeostasis set
 
 	if (isSet) { // enable homeostasis, use default values
 		snn_->setHomeostasis(grpId,true,def_homeo_scale_,def_homeo_avgTimeScale_,configId);
 		if (grpId!=ALL && hasSetHomeoBaseFiringALL_)
 			userWarnings_.push_back("USER WARNING: Make sure to call setHomeoBaseFiringRate on group "
-										+ getGroupName(grpId));
+										+ getGroupName(grpId,configId));
 	} else { // discable conductances
 		snn_->setHomeostasis(grpId,false,0.0f,0.0f,configId);
 	}
@@ -218,14 +225,15 @@ void CARLsim::setHomeostasis(int grpId, bool isSet, int configId) {
 
 // set custom homeostasis params for group
 void CARLsim::setHomeostasis(int grpId, bool isSet, float homeoScale, float avgTimeScale, int configId) {
-	assert(!hasRunNetwork_); // TODO make nice
+	UserErrors::userAssert(!hasRunNetwork_, UserErrors::NETWORK_ALREADY_RUN,				// can't change setup after
+								"setHomeostasis(\""+getGroupName(grpId,configId)+"\")");	// network has been run
 	hasSetHomeoALL_ = grpId==ALL; // adding groups after this will not have homeostasis set
 
 	if (isSet) { // enable homeostasis, use default values
 		snn_->setHomeostasis(grpId,true,homeoScale,avgTimeScale,configId);
 		if (grpId!=ALL && hasSetHomeoBaseFiringALL_)
 			userWarnings_.push_back("USER WARNING: Make sure to call setHomeoBaseFiringRate on group "
-										+ getGroupName(grpId));
+										+ getGroupName(grpId,configId));
 	} else { // discable conductances
 		snn_->setHomeostasis(grpId,false,0.0f,0.0f,configId);
 	}
@@ -233,7 +241,8 @@ void CARLsim::setHomeostasis(int grpId, bool isSet, float homeoScale, float avgT
 
 // set a homeostatic target firing rate (enforced through homeostatic synaptic scaling)
 void CARLsim::setHomeoBaseFiringRate(int grpId, float baseFiring, float baseFiringSD, int configId) {
-	assert(!hasRunNetwork_); // TODO make nice
+	UserErrors::userAssert(!hasRunNetwork_, UserErrors::NETWORK_ALREADY_RUN,				// can't change setup after
+								"setHomeBaseFiringRate(\""+getGroupName(grpId,configId)+"\")");	// network has been run
 	hasSetHomeoBaseFiringALL_ = grpId=ALL; // adding groups after this will not have base firing set
 
 	snn_->setHomeoBaseFiringRate(grpId, baseFiring, baseFiringSD, configId);
@@ -242,7 +251,8 @@ void CARLsim::setHomeoBaseFiringRate(int grpId, float baseFiring, float baseFiri
 // set neuron parameters for Izhikevich neuron, with standard deviations
 void CARLsim::setNeuronParameters(int grpId, float izh_a, float izh_a_sd, float izh_b, float izh_b_sd,
 							 		float izh_c, float izh_c_sd, float izh_d, float izh_d_sd, int configId) {
-	assert(!hasRunNetwork_); // TODO: make nice
+	UserErrors::userAssert(!hasRunNetwork_, UserErrors::NETWORK_ALREADY_RUN,			// can't change setup after
+								"setNeuronParameters(\""+getGroupName(grpId,configId)+"\")");// network has been run
 
 	// wrapper identical to core func
 	snn_->setNeuronParameters(grpId, izh_a, izh_a_sd, izh_b, izh_b_sd, izh_c, izh_c_sd, izh_d, izh_d_sd, configId);
@@ -250,7 +260,8 @@ void CARLsim::setNeuronParameters(int grpId, float izh_a, float izh_a_sd, float 
 
 // set neuron parameters for Izhikevich neuron
 void CARLsim::setNeuronParameters(int grpId, float izh_a, float izh_b, float izh_c, float izh_d, int configId) {
-	assert(!hasRunNetwork_); // TODO: make nice
+	UserErrors::userAssert(!hasRunNetwork_, UserErrors::NETWORK_ALREADY_RUN,			// can't change setup after
+								"setNeuronParameters(\""+getGroupName(grpId,configId)+"\")");// network has been run
 
 	// set standard deviations of Izzy params to zero
 	snn_->setNeuronParameters(grpId, izh_a, 0.0f, izh_b, 0.0f, izh_c, 0.0f, izh_d, 0.0f, configId);
@@ -258,7 +269,8 @@ void CARLsim::setNeuronParameters(int grpId, float izh_a, float izh_b, float izh
 
 // set STDP, default
 void CARLsim::setSTDP(int grpId, bool isSet, int configId) {
-	assert(!hasRunNetwork_); // TODO make nice
+	UserErrors::userAssert(!hasRunNetwork_, UserErrors::NETWORK_ALREADY_RUN,			// can't change setup after
+								"setSTDP(\""+getGroupName(grpId,configId)+"\")");			// network has been run
 	hasSetSTDPALL_ = grpId==ALL; // adding groups after this will not have conductances set
 
 	if (isSet) { // enable STDP, use default values
@@ -270,7 +282,8 @@ void CARLsim::setSTDP(int grpId, bool isSet, int configId) {
 
 // set STDP, custom
 void CARLsim::setSTDP(int grpId, bool isSet, float alphaLTP, float tauLTP, float alphaLTD, float tauLTD, int configId) {
-	assert(!hasRunNetwork_); // TODO make nice
+	UserErrors::userAssert(!hasRunNetwork_, UserErrors::NETWORK_ALREADY_RUN,			// can't change setup after
+								"setSTDP(\""+getGroupName(grpId,configId)+"\")");			// network has been run
 	hasSetSTDPALL_ = grpId==ALL; // adding groups after this will not have conductances set
 
 	if (isSet) { // enable STDP, use custom values
@@ -284,7 +297,8 @@ void CARLsim::setSTDP(int grpId, bool isSet, float alphaLTP, float tauLTP, float
 
 // set STP, default
 void CARLsim::setSTP(int grpId, bool isSet, int configId) {
-	assert(!hasRunNetwork_); // TODO make nice
+	UserErrors::userAssert(!hasRunNetwork_, UserErrors::NETWORK_ALREADY_RUN,			// can't change setup after
+								"setSTP(\""+getGroupName(grpId,configId)+"\")");				// network has been run
 	hasSetSTPALL_ = grpId==ALL; // adding groups after this will not have conductances set
 
 	if (isSet) { // enable STDP, use default values
@@ -304,7 +318,8 @@ void CARLsim::setSTP(int grpId, bool isSet, int configId) {
 
 // set STP, custom
 void CARLsim::setSTP(int grpId, bool isSet, float STP_U, float STP_tD, float STP_tF, int configId) {
-	assert(!hasRunNetwork_); // TODO make nice
+	UserErrors::userAssert(!hasRunNetwork_, UserErrors::NETWORK_ALREADY_RUN,			// can't change setup after
+								"setSTP(\""+getGroupName(grpId,configId)+"\")");				// network has been run
 	hasSetSTPALL_ = grpId==ALL; // adding groups after this will not have conductances set
 
 	if (isSet) { // enable STDP, use default values
@@ -347,7 +362,8 @@ int CARLsim::runNetwork(int nSec, int nMsec, int simType, int ithGPU, bool enabl
 
 // sets update cycle for log messages
 void CARLsim::setLogCycle(unsigned int cnt, int mode, FILE *fp) {
-	assert(!hasRunNetwork_); // TODO make nice
+	UserErrors::userAssert(!hasRunNetwork_, UserErrors::NETWORK_ALREADY_RUN,			// can't change setup after
+								"setLogCycle()");										// network has been run
 	snn_->setLogCycle(cnt, mode, fp);
 }
 
@@ -356,7 +372,8 @@ void CARLsim::setLogCycle(unsigned int cnt, int mode, FILE *fp) {
 
 // reads network state from file
 void CARLsim::readNetwork(FILE* fid) {
-	assert(!hasRunNetwork_); // TODO make nice
+	UserErrors::userAssert(!hasRunNetwork_, UserErrors::NETWORK_ALREADY_RUN,			// can't change setup after
+								"readNetwork()");										// network has been run
 	snn_->readNetwork(fid);
 }
 
@@ -372,7 +389,8 @@ void CARLsim::resetSpikeCntUtil(int grpId) {
 
 // sets up a spike generator
 void CARLsim::setSpikeGenerator(int grpId, SpikeGenerator* spikeGen, int configId) {
-	assert(!hasRunNetwork_); // TODO make nice
+	UserErrors::userAssert(!hasRunNetwork_, UserErrors::NETWORK_ALREADY_RUN,			// can't change setup after
+								"setSpikeGenerator(\""+getGroupName(grpId,configId)+"\")");	// network has been run
 	assert(grpId!=ALL);
 
 	snn_->setSpikeGenerator(grpId,spikeGen,configId);
@@ -380,7 +398,8 @@ void CARLsim::setSpikeGenerator(int grpId, SpikeGenerator* spikeGen, int configI
 
 // set spike monitor for a group
 void CARLsim::setSpikeMonitor(int grpId, SpikeMonitor* spikeMon, int configId) {
-	assert(!hasRunNetwork_); // TODO make nice
+	UserErrors::userAssert(!hasRunNetwork_, UserErrors::NETWORK_ALREADY_RUN,			// can't change setup after
+								"setSpikeMonitor(\""+getGroupName(grpId,configId)+"\")");	// network has been run
 	assert(grpId!=ALL);
 	snn_->setSpikeMonitor(grpId,spikeMon,configId);
 }
@@ -388,7 +407,8 @@ void CARLsim::setSpikeMonitor(int grpId, SpikeMonitor* spikeMon, int configId) {
 
 // set spike monitor for group and write spikes to file
 void CARLsim::setSpikeMonitor(int grpId, const std::string& fname, int configId) {
-	assert(!hasRunNetwork_); // TODO make nice
+	UserErrors::userAssert(!hasRunNetwork_, UserErrors::NETWORK_ALREADY_RUN,			// can't change setup after
+								"setSpikeMonitor(\""+getGroupName(grpId,configId)+"\")");	// network has been run
 	assert(configId!=ALL);
 	assert(grpId!=ALL);
 
@@ -479,9 +499,8 @@ group_info_t CARLsim::getGroupInfo(int grpId, int configId) {
 	return snn_->getGroupInfo(grpId, configId);
 }
 
-// get group info struct
+// get group name
 std::string CARLsim::getGroupName(int grpId, int configId) {
-	assert(configId!=ALL); // TODO make nice
 	return snn_->getGroupName(grpId, configId);
 }
 
@@ -597,8 +616,11 @@ void CARLsim::setDefaultSTPparams(int neurType, float STP_U, float STP_tD, float
 // check whether all or none of the groups have conductances enabled
 void CARLsim::checkConductances() {
 	bool allSame;
-	for (std::map<int, grpInfo_s>::iterator iter = grpInfo_.begin(); iter != grpInfo_.end(); ++iter) {
-		allSame = (iter==grpInfo_.begin()) ? iter->second.hasSetCond : allSame==iter->second.hasSetCond;
+	for (std::vector<int>::const_iterator it = grpIds_.begin(); it!=grpIds_.end(); ++it) {
+		for (int c=0; c<nConfig_; c++) {
+			group_info_t grpInfo = getGroupInfo(*it,c);
+			allSame = (it==grpIds_.begin() && c==0) ? grpInfo.WithConductances : allSame==grpInfo.WithConductances;
+		}
 	}
 
 	if (!allSame) {
@@ -606,6 +628,11 @@ void CARLsim::checkConductances() {
 		printf("USER ERROR: If one group enables conductances, then all groups (except for generators) must enable conductances.\n");
 		exit(1);
 	}
+}
+
+// check whether grpId exists in grpIds_
+bool CARLsim::existsGrpId(int grpId) {
+	return std::find(grpIds_.begin(), grpIds_.end(), grpId)!=grpIds_.end();
 }
 
 // check for setupNetwork user errors
@@ -627,12 +654,6 @@ void CARLsim::handleUserWarnings() {
 			exit(1);
 		}
 	}
-}
-
-// factory function for making grpInfo_s
-CARLsim::grpInfo_s CARLsim::makeGrpInfo(int grpId, bool hasSetCond) {
-	grpInfo_s grpInfo = {grpId, hasSetCond};
-	return grpInfo;
 }
 
 // print all simulation specs
