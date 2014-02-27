@@ -2,9 +2,9 @@
 #include <user_errors.h>
 
 //#include <snn.h>		// FIXME: move snn.h dependency out of carlsim.h
-#include <string>
-#include <iostream>
-#include <sstream>
+#include <string>		// std::string
+#include <iostream>		// std::cout, std::endl
+#include <sstream>		// std::stringstream
 #include <algorithm>	// std::find
 
 
