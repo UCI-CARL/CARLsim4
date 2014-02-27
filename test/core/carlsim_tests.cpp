@@ -1,19 +1,17 @@
+/*!
+ * Testing for the public member function: read, of the pti class.
+ * 
+ * @author Kris Carlson (KDC)
+ */
 
-#include <carlsim.h>
-//#include <limits.h>
-#include <gtest/gtest.h>		// Don't forget gtest.h, which declares the testing framework
-
+#include <limits.h>
+#include "gtest/gtest.h"
 
 // Tests for args > 3
 TEST(readTestArgc, ArgNumber) {
   // This test is named "ArgNumber", and belongs to the "readTest"
   // test case.
-  //pti p;
-  //p.readArgc(1);
-  //char* argv[4];
 
-
- // p.readArgc(4);
   EXPECT_EQ(1,1);
   //EXPECT_EQ(1, Factorial(-1));
   //EXPECT_GT(Factorial(-10), 0);

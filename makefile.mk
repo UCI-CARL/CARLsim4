@@ -22,7 +22,7 @@ else
 endif
 
 # common flags
-CC = g++
+CXX = g++
 NVCC = nvcc
 CPPFLAGS = $(DEBUG_FLAG) $(OPT_FLAG) -Wall -std=c++0x
 

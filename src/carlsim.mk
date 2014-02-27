@@ -33,7 +33,7 @@ CARLSIM_FLAGS += -I$(CURDIR)/$(src_dir) -I$(CURDIR)/$(interface_dir)/include
 #-------------------------------------------------------------------------------
 # CARLsim local variables
 #-------------------------------------------------------------------------------
-local_dir := src
+local_dir := $(src_dir)
 local_deps := snn.h mtrand.h gpu.h gpu_random.h config.h \
 	propagated_spike_buffer.h poisson_rate.h \
 	errorCode.h CUDAVersionControl.h
