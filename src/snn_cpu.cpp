@@ -1214,7 +1214,7 @@ std::string CpuSNN::getGroupName(int grpId, int configId) {
 		return "ALL";
 
 	if (configId==ALL)
-		return "ALL "+grp_Info2[grpId].Name;
+		return grp_Info2[grpId].Name+",ALL";
 
 	int cGrpId = getGroupId(grpId, configId);
 	return grp_Info2[cGrpId].Name;

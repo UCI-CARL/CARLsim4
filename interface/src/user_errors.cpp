@@ -24,6 +24,30 @@ void UserErrors::userAssert(bool statement, errorType errorIfAssertionFails, std
 void UserErrors::throwError(std::string errorFunc, errorType error) {
 	std::cout << "USER ERROR: " << errorFunc;
 	switch (error) {
+		case ALL_NOT_ALLOWED:
+			std::cout << " cannot be ALL.";
+			break;
+		case CANNOT_BE_NEGATIVE:
+			std::cout << " cannot be negative.";
+			break;
+		case CANNOT_BE_POSITIVE:
+			std::cout << " cannot be positive.";
+			break;
+		case FILE_CANNOT_CREATE:
+			std::cout << " could not be created.";
+			break;
+		case FILE_CANNOT_OPEN:
+			std::cout << " could not be opened.";
+			break;
+		case MUST_BE_NEGATIVE:
+			std::cout << " must be negative.";
+			break;
+		case MUST_BE_POSITIVE:
+			std::cout << " must be positive.";
+			break;
+		case MUST_HAVE_SAME_SIGN:
+			std::cout << " must have the same sign.";
+			break;
 		case NETWORK_ALREADY_RUN:
 			std::cout << " cannot be called after network has been run.";
 			break;

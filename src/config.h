@@ -108,7 +108,7 @@
 // main_mySim.cpp
 //		sim.setSpikeMonitor(gEx,"Results/mySim/spkEx.dat")
 // => This will attempt to create subdirectory "./Results/mySim", but not "./Results".
-#define CREATE_SPIKEDIR_IF_NOT_EXISTS 0
+#define CREATE_SPIKEDIR_IF_NOT_EXISTS 1
 	
 
 #define INHIBITORY_STDP
@@ -143,6 +143,8 @@
 	#define STRINGIFY(x) #x
 	#define TOSTRING(x) STRINGIFY(x)
 	#define AT __FILE__ ":" TOSTRING(__LINE__)
+
+
 
 	inline void error(FILE *fp, const char *location, const char *msg, int sec, int step)
 	{

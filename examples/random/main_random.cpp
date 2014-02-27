@@ -53,7 +53,6 @@ int main()
 	CARLsim sim("random",1,42,GPU_MODE,ithGPU,enablePrint,copyState);
 
 	int g1=sim.createGroup("excit", N*0.8, EXCITATORY_NEURON);
-	printf("after c\n");
 	sim.setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f);
 
 	int g2=sim.createGroup("inhib", N*0.2, INHIBITORY_NEURON);
@@ -71,7 +70,7 @@ int main()
 	sim.connect(g1,g1,"random", +6.0f/100, 10.0f/100, 0.1f,  1, 20, SYN_PLASTIC);
 
 	// 5% probability of connection
-	sim.connect(gin,g1,"random", +100.0f/100, 100.0f/100, 0.05f,  1, 20, SYN_FIXED);
+	sim.connect(gin,g1,"random", 100.0f/100, +100.0f/100, 0.05f,  1, 20, SYN_FIXED);
 
 	// here we define and set the properties of the STDP. 
 	float ALPHA_LTP = 0.10f/100, TAU_LTP = 20.0f, ALPHA_LTD = 0.12f/100, TAU_LTD = 20.0f;	
