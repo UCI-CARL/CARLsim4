@@ -1,28 +1,89 @@
 #ifndef _CARLSIM_H_
 #define _CARLSIM_H_
 
-#include <snn.h>	// FIXME: remove snn.h dependency
-#include <string>
-#include <map>
+#include <snn.h>		// FIXME: remove snn.h dependency
+#include <string>		// std::string
 
-class CpuSNN;
+// TODO: complete documentation
 
+
+/*!
+ * \brief CARLsim User Interface
+ * This class provides a user interface to the public sections of CARLsimCore source code. Example networks that use
+ * this methodology can be found in the examples/ directory. Documentation is available on our website.
+ *
+ * The source code is organized into different sections in the following way:
+ *  ├── Public section
+ *  │     ├── Public methods
+ *  │     │     ├── Constructor / destructor
+ *  │     │     ├── Setting up a simulation
+ *  │     │     ├── Running a simulation
+ *  │     │     ├── Plotting / logging
+ *  │     │     ├── Interacting with a simulation
+ *  │     │     ├── Getters / setters
+ *  │     │     └── Set defaults
+ *  │     └── Public properties
+ *  └── Private section 
+ *        ├── Private methods
+ *        └── Private properties
+ * Within these sections, methods and properties are ordered alphabetically. carlsim.cpp follows the same organization.
+ * 
+ */
 class CARLsim {
 public:
+	// +++++ PUBLIC METHODS: CONSTRUCTOR / DESTRUCTOR +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
+
+	/*!
+	 * \brief CARLsim constructor
+	 * \param[in] netName 		network name
+	 * \param[in] nConfig 		number of network configurations 			// TODO: explain configurations
+	 * \param[in] randSeed 		random number generator seed
+	 * \param[in] simType		either CPU_MODE or GPU_MODE
+	 * \param[in] ithGPU 		on which GPU to establish a context (only relevant in GPU_MODE)
+	 * \param[in] enablePrint 												// TODO
+	 * \param[in] copyState 												// TODO
+	 */
 	CARLsim(std::string netName="SNN", int nConfig=1, int randSeed=42, int simType=CPU_MODE, int ithGPU=0,
 				bool enablePrint=false, bool copyState=false);
+
 	~CARLsim();
 
 
 
 	// +++++ PUBLIC METHODS: SETTING UP A SIMULATION ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
-	//! shortcut to create SYN_FIXED connections with just one weight and one delay value
-	// returns connection id
+	/*!
+	 * \brief Connects a presynaptic to a postsynaptic group using fixed weights and a single delay value
+	 * This function is a shortcut to create synaptic connections from a pre-synaptic group grpId1 to a post-synaptic
+	 * group grpId2 using a pre-defined primitive type (such as "full", "one-to-one", or "random"). Synapse weights 
+	 * will stay the same throughout the simulation (SYN_FIXED, no plasticity). All synapses will have the same delay.
+	 * For more flexibility, see the other connect() calls.
+	 * \param[in] grpId1	ID of the pre-synaptic group
+	 * \param[in] grpId2 	ID of the post-synaptic group
+	 * \param[in] connType 	connection type. "random": random connectivity. "one-to-one": connect the i-th neuron in 
+	 *						pre to the i-th neuron in post. "full": connect all neurons in pre to all neurons in post
+	 * 						(no self-connections).
+	 * \param[in] connProb	connection probability
+	 * \param[in] delay 	delay for all synapses (ms)
+	 * \returns a unique ID associated with the newly created connection
+	 */
 	int connect(int grpId1, int grpId2, const std::string& connType, float wt, float connProb, uint8_t delay);
 
-	//! make connection from each neuron in grpId1 to 'numPostSynapses' neurons in grpId2
-	// returns connection id
+	/*!
+	 * \brief Connects a presynaptic to a postsynaptic group using fixed/plastic weights and a range of delay values
+	 * This function is a shortcut to create synaptic connections from a pre-synaptic group grpId1 to a post-synaptic
+	 * group grpId2 using a pre-defined primitive type (such as "full", "one-to-one", or "random"). Synapse weights 
+	 * will stay the same throughout the simulation (SYN_FIXED, no plasticity). All synapses will have the same delay.
+	 * For more flexibility, see the other connect() calls.
+	 * \param[in] grpId1	ID of the pre-synaptic group
+	 * \param[in] grpId2 	ID of the post-synaptic group
+	 * \param[in] connType 	connection type. "random": random connectivity. "one-to-one": connect the i-th neuron in 
+	 *						pre to the i-th neuron in post. "full": connect all neurons in pre to all neurons in post
+	 * 						(no self-connections).
+	 * \param[in] connProb	connection probability
+	 * \param[in] delay 	delay for all synapses (ms)
+	 * \returns a unique ID associated with the newly created connection
+	 */
 	int connect(int grpId1, int grpId2, const std::string& connType, float initWt, float maxWt, float connProb,
 					uint8_t minDelay, uint8_t maxDelay, bool synWtType);
 
@@ -37,10 +98,10 @@ public:
 	int createSpikeGeneratorGroup(const std::string grpName, unsigned int nNeur, int neurType, int configId=ALL);
 
 
-	//! Sets default values for conduction decays or disables COBA if enable==false
+	//! Sets default values for conduction decays or disables COBA if isSet==false
 	void setConductances(int grpId, bool isSet, int configId=ALL);
 
-	//! Sets custom values for conduction decays or disables COBA if enable==false
+	//! Sets custom values for conduction decays or disables COBA if isSet==false
 	void setConductances(int grpId, bool isSet, float tdAMPA, float tdNMDA, float tdGABAa, float tdGABAb,
 							int configId=ALL);
 
@@ -204,6 +265,7 @@ public:
 
 private:
 	// +++++ PRIVATE METHODS ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
+
 	void CARLsimInit();					//!< init function, unsafe computations that would usually go in constructor
 
 	void checkConductances(); 			//!< all or none of the groups must enable conductances
@@ -215,14 +277,16 @@ private:
 
 	void printSimulationSpecs();
 
+
+
 	// +++++ PRIVATE PROPERTIES +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
-	CpuSNN* snn_;			//!< an instance of CARLsim core class
-	std::string netName_;	//!< network name
-	int nConfig_;			//!< number of configurations
-	int randSeed_;			//!< RNG seed
-	int simMode_;			//!< CPU_MODE or GPU_MODE
-	int ithGPU_;			//!< on which device to establish a context
+	CpuSNN* snn_;					//!< an instance of CARLsim core class
+	std::string netName_;			//!< network name
+	int nConfig_;					//!< number of configurations
+	int randSeed_;					//!< RNG seed
+	int simMode_;					//!< CPU_MODE or GPU_MODE
+	int ithGPU_;					//!< on which device to establish a context
 	bool enablePrint_;
 	bool copyState_;
 

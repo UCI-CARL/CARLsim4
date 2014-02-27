@@ -9,14 +9,24 @@
 
 
 // includes for mkdir
-#if defined(CREATE_SPIKEDIR_IF_NOT_EXISTS)
+#if CREATE_SPIKEDIR_IF_NOT_EXISTS
 	#include <sys/stat.h>
 	#include <errno.h>
 	#include <libgen.h>
 #endif
 
+// NOTE: Conceptual code documentation should go in carlsim.h. Do not include extensive high-level documentation here,
+// but do document your code.
 
-// FIXME: consider moving this... also, see class SpikeMonitor in snn.h
+
+// FIXME: consider moving this... but it doesn't belong in the core code. Also, see class SpikeMonitor in snn.h
+
+/*!
+ * \brief class to automatically write spike times collected with SpikeMonitor to binary file
+ * This class derives from class SpikeMonitor and implements its virtual member update() to automatically store
+ * collected spike times (and neuron IDs) to binary file.
+ * Note that this function will only be called every 1000 ms.
+ */
 class WriteSpikesToFile: public SpikeMonitor {
 public:
 	WriteSpikesToFile(FILE* fid) {
@@ -24,13 +34,30 @@ public:
 	}
 	~WriteSpikesToFile() {}; // TODO: where does fileId_ get closed?
 
-	void update(CpuSNN* snn, int grpId, unsigned int* neuronIds, unsigned int* timeCnts) {
-		int pos    = 0;
+	/*
+	 * \brief update method that gets called every 1000 ms by CARLsimCore
+	 * This is an implementation of virtual void SpikeMonitor::update. It gets called every 1000 ms with a pointer to
+	 * all the neurons (neurIds) that have spiked during the last 1000 ms (timeCnts).
+	 * This implementation will iterate over all neuron IDs and spike times, and print them to file (binary).
+	 * To save space, neuron IDs are stored in a continuous (flattened) list, whereas timeCnts holds the number of
+	 * neurons that have spiked at each time step (reduced AER).
+	 * Example: There are 3 neurons, where neuron with ID 0 spikes at time 1, neurons with ID 1 and 2 both spike at
+	 *  		time 3. Then neurIds = {0,1,2} and timeCnts = {0,1,0,2,0,...,0}. Note that neurIds could also be {0,2,1}
+	 *
+	 * \param[in] snn 		pointer to an instance of CARLsimCore
+	 * \param[in] grpId 	the group ID from which to record spikes
+	 * \param[in] neurIds	pointer to a flattened list that contains all the IDs of neurons that have spiked within
+	 *                      the last 1000 ms.
+	 * \param[in] timeCnts 	pointer to a data structures that holds the number of spikes at each time step during the
+	 *  					last 1000 ms. timeCnts[i] will hold the number of spikes in the i-th millisecond.
+	 */
+	void update(CpuSNN* snn, int grpId, unsigned int* neurIds, unsigned int* timeCnts) {
+		int pos    = 0; // keep track of position in flattened list of neuron IDs
 
 		for (int t=0; t < 1000; t++) {
 			for(int i=0; i<timeCnts[t];i++,pos++) {
 				int time = t + snn->getSimTime() - 1000;
-				int id   = neuronIds[pos];
+				int id   = neurIds[pos];
 				int cnt = fwrite(&time,sizeof(int),1,fileId_);
 				assert(cnt != 0);
 				cnt = fwrite(&id,sizeof(int),1,fileId_);
@@ -107,9 +134,6 @@ void CARLsim::CARLsimInit() {
 	// TODO: add ref
 	def_homeo_scale_ = 0.1f;
 	def_homeo_avgTimeScale_ = 10.f;
-
-//	error(AT,"fake error");
-//	UserErrors::userAssert(AT,false,UserErrors::NETWORK_ALREADY_RUN);
 }
 
 
@@ -120,7 +144,7 @@ void CARLsim::CARLsimInit() {
 
 // +++++++++ PUBLIC METHODS: SETTING UP A SIMULATION ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
-// shortcut to make SYN_FIXED with one weight and one delay value
+// Connects a presynaptic to a postsynaptic group using fixed weights and a single delay value
 int CARLsim::connect(int grpId1, int grpId2, const std::string& connType, float wt, float connProb, uint8_t delay) {
 	std::string funcName = "connect(\""+getGroupName(grpId1,0)+"\",\""+getGroupName(grpId2,0)+"\")";
 	std::stringstream grpId1str; grpId1str << funcName << ". Group Id " << grpId1;
@@ -134,9 +158,10 @@ int CARLsim::connect(int grpId1, int grpId2, const std::string& connType, float 
 	return snn_->connect(grpId1, grpId2, connType, wt, wt, connProb, delay, delay, SYN_FIXED);
 }
 
-// basic connection function, from each neuron in grpId1 to neurons in grpId2
+// brief Connects a presynaptic to a postsynaptic group using fixed/plastic weights and a range of delay values
 int CARLsim::connect(int grpId1, int grpId2, const std::string& connType, float initWt, float maxWt, float connProb,
-					uint8_t minDelay, uint8_t maxDelay, bool synWtType) {
+					uint8_t minDelay, uint8_t maxDelay, bool synWtType)
+{
 	std::string funcName = "connect(\""+getGroupName(grpId1,0)+"\",\""+getGroupName(grpId2,0)+"\")";
 	std::stringstream grpId1str; grpId1str << funcName << ". Group Id " << grpId1;
 	std::stringstream grpId2str; grpId2str << funcName << ". Group Id " << grpId2;
@@ -204,7 +229,7 @@ void CARLsim::setConductances(int grpId, bool isSet, int configId) {
 
 	if (isSet) { // enable conductances, use default values
 		snn_->setConductances(grpId,true,def_tdAMPA_,def_tdNMDA_,def_tdGABAa_,def_tdGABAb_,configId);
-	} else { // discable conductances
+	} else { // disable conductances
 		snn_->setConductances(grpId,false,0.0f,0.0f,0.0f,0.0f,configId);
 	}
 
@@ -212,14 +237,15 @@ void CARLsim::setConductances(int grpId, bool isSet, int configId) {
 
 // set conductances values, custom
 void CARLsim::setConductances(int grpId, bool isSet, float tdAMPA, float tdNMDA, float tdGABAa, float tdGABAb,
-								int configId) {
-	std::string funcName = "setCOnductances(\""+getGroupName(grpId,configId)+"\")";
+								int configId)
+{
+	std::string funcName = "setConductances(\""+getGroupName(grpId,configId)+"\")";
 	std::stringstream grpIdStr; grpIdStr << "setConductances(" << grpId << "). Group Id " << grpId;
 	UserErrors::userAssert(!hasRunNetwork_, UserErrors::NETWORK_ALREADY_RUN, funcName); // can't change setup after run
 
 	if (isSet) { // enable conductances, use custom values
 		snn_->setConductances(grpId,true,tdAMPA,tdNMDA,tdGABAa,tdGABAb,configId);
-	} else { // discable conductances
+	} else { // disable conductances
 		snn_->setConductances(grpId,false,0.0f,0.0f,0.0f,0.0f,configId);
 	}
 }
@@ -227,8 +253,6 @@ void CARLsim::setConductances(int grpId, bool isSet, float tdAMPA, float tdNMDA,
 // set default homeostasis params
 void CARLsim::setHomeostasis(int grpId, bool isSet, int configId) {
 	std::string funcName = "setHomeostasis(\""+getGroupName(grpId,configId)+"\")";
-	std::stringstream grpIdStr; grpIdStr << "setHomeostasis(" << grpId << "). Group Id " << grpId;
-	UserErrors::userAssert(grpId==ALL || existsGrpId(grpId), UserErrors::UNKNOWN_GROUP_ID, grpIdStr.str());
 	UserErrors::userAssert(!hasRunNetwork_, UserErrors::NETWORK_ALREADY_RUN, funcName); // can't change setup after run
 
 	hasSetHomeoALL_ = grpId==ALL; // adding groups after this will not have homeostasis set
@@ -238,7 +262,7 @@ void CARLsim::setHomeostasis(int grpId, bool isSet, int configId) {
 		if (grpId!=ALL && hasSetHomeoBaseFiringALL_)
 			userWarnings_.push_back("USER WARNING: Make sure to call setHomeoBaseFiringRate on group "
 										+ getGroupName(grpId,configId));
-	} else { // discable conductances
+	} else { // disable conductances
 		snn_->setHomeostasis(grpId,false,0.0f,0.0f,configId);
 	}
 }
@@ -246,8 +270,6 @@ void CARLsim::setHomeostasis(int grpId, bool isSet, int configId) {
 // set custom homeostasis params for group
 void CARLsim::setHomeostasis(int grpId, bool isSet, float homeoScale, float avgTimeScale, int configId) {
 	std::string funcName = "setHomeostasis(\""+getGroupName(grpId,configId)+"\")";
-	std::stringstream grpIdStr; grpIdStr << "setHomeostasis(" << grpId << "). Group Id " << grpId;
-	UserErrors::userAssert(grpId==ALL || existsGrpId(grpId), UserErrors::UNKNOWN_GROUP_ID, grpIdStr.str());
 	UserErrors::userAssert(!hasRunNetwork_, UserErrors::NETWORK_ALREADY_RUN, funcName); // can't change setup after run
 
 	hasSetHomeoALL_ = grpId==ALL; // adding groups after this will not have homeostasis set
@@ -257,7 +279,7 @@ void CARLsim::setHomeostasis(int grpId, bool isSet, float homeoScale, float avgT
 		if (grpId!=ALL && hasSetHomeoBaseFiringALL_)
 			userWarnings_.push_back("USER WARNING: Make sure to call setHomeoBaseFiringRate on group "
 										+ getGroupName(grpId,configId));
-	} else { // discable conductances
+	} else { // disable conductances
 		snn_->setHomeostasis(grpId,false,0.0f,0.0f,configId);
 	}
 }
@@ -274,7 +296,8 @@ void CARLsim::setHomeoBaseFiringRate(int grpId, float baseFiring, float baseFiri
 
 // set neuron parameters for Izhikevich neuron, with standard deviations
 void CARLsim::setNeuronParameters(int grpId, float izh_a, float izh_a_sd, float izh_b, float izh_b_sd,
-							 		float izh_c, float izh_c_sd, float izh_d, float izh_d_sd, int configId) {
+							 		float izh_c, float izh_c_sd, float izh_d, float izh_d_sd, int configId)
+{
 	std::string funcName = "setNeuronParameters(\""+getGroupName(grpId,configId)+"\")";
 	UserErrors::userAssert(!hasRunNetwork_, UserErrors::NETWORK_ALREADY_RUN, funcName); // can't change setup after run
 
@@ -329,9 +352,9 @@ void CARLsim::setSTP(int grpId, bool isSet, int configId) {
 		UserErrors::userAssert(isExcitatoryGroup(grpId) || isInhibitoryGroup(grpId), UserErrors::WRONG_NEURON_TYPE,
 									funcName);
 
-		if (snn_->isExcitatoryGroup(grpId))
+		if (isExcitatoryGroup(grpId))
 			snn_->setSTP(grpId,true,def_STP_U_exc_,def_STP_tD_exc_,def_STP_tF_exc_,configId);
-		else if (snn_->isInhibitoryGroup(grpId))
+		else if (isInhibitoryGroup(grpId))
 			snn_->setSTP(grpId,true,def_STP_U_inh_,def_STP_tD_inh_,def_STP_tF_inh_,configId);
 		else {
 			// some error message
@@ -376,6 +399,7 @@ int CARLsim::runNetwork(int nSec, int nMsec) {
 // run network with custom options
 int CARLsim::runNetwork(int nSec, int nMsec, int simType, int ithGPU, bool enablePrint, bool copyState) {
 	if (!hasRunNetwork_) {
+		handleNetworkConsistency();	// before running network, make sure it's consistent
 		handleUserWarnings();	// before running network, make sure user didn't provoque any user warnings
 		printSimulationSpecs(); // first time around, show simMode etc.
 	}
