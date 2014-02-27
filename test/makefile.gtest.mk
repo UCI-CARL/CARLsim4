@@ -5,7 +5,7 @@
 GTEST_DIR = /opt/gtest
 
 # Our local, project-specific compilation of Google Test
-GTEST_LIB_DIR = lib
+GTEST_LIB_DIR = test/lib
 
 # Where to find user code.
 USER_DIR = $(GTEST_DIR)/samples
