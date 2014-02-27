@@ -198,9 +198,7 @@ public:
 
 	//! controls spike generation using a callback
 	/*! \attention The virtual method should never be called directly */
-	virtual unsigned int nextSpikeTime(CpuSNN* s, int grpId, int i, unsigned int currentTime) {
-	  	assert(false); return 0;
-	  };
+	virtual unsigned int nextSpikeTime(CpuSNN* s, int grpId, int i, unsigned int currentTime) = 0;
 };
 
 //! used for fine-grained control over spike generation, using a callback mechanism
@@ -219,9 +217,7 @@ public:
 	//! specifies which synaptic connections (per group, per neuron, per synapse) should be made
 	/*! \attention The virtual method should never be called directly */
 	virtual void connect(CpuSNN* s, int srcGrpId, int i, int destGrpId, int j, float& weight, float& maxWt,
-							float& delay, bool& connected) {
-		assert(false);
-	};
+							float& delay, bool& connected) = 0;
 };
 
 
@@ -237,7 +233,7 @@ class SpikeMonitor {
 
   //! Controls actions that are performed when certain neurons fire (user-defined).
   /*! \attention The virtual method should never be called directly */
-  virtual void update(CpuSNN* s, int grpId, unsigned int* Nids, unsigned int* timeCnts) {};
+  virtual void update(CpuSNN* s, int grpId, unsigned int* Nids, unsigned int* timeCnts) = 0;
 };
 
 
@@ -489,6 +485,12 @@ public:
 
 	const static unsigned int MAJOR_VERSION = 2; //!< major release version, as in CARLsim X
 	const static unsigned int MINOR_VERSION = 2; //!< minor release version, as in CARLsim 2.X
+
+	//! an enum for all possible errors that can occur in CARLsimCore
+	enum errorType {
+		NO_ERROR,			//!< no error occurred
+		SOME_ERROR			//!< some error occurred
+	};
 
 
 
