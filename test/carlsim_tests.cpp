@@ -4,6 +4,7 @@
  * @author Kris Carlson (KDC)
  */
 
+#include <carlsim.h>
 #include <limits.h>
 #include "gtest/gtest.h"
 
@@ -11,6 +12,8 @@
 TEST(readTestArgc, ArgNumber) {
   // This test is named "ArgNumber", and belongs to the "readTest"
   // test case.
+
+	CARLsim snn("SNN");
 
   EXPECT_EQ(1,1);
   //EXPECT_EQ(1, Factorial(-1));

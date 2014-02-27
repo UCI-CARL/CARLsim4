@@ -2011,6 +2011,7 @@ void CpuSNN::deleteObjects() {
 		if (stpu!=NULL) delete[] stpu;
 		if (stpx!=NULL) delete[] stpx;
 
+
 		if (lastSpikeTime!=NULL)		delete[] lastSpikeTime;
 		if (synSpikeTime !=NULL)		delete[] synSpikeTime;
 		if (curSpike!=NULL) delete[] curSpike;
@@ -2020,7 +2021,6 @@ void CpuSNN::deleteObjects() {
 		if (postDelayInfo!=NULL) delete[] postDelayInfo;
 		if (preSynapticIds!=NULL) delete[] preSynapticIds;
 		if (postSynapticIds!=NULL) delete[] postSynapticIds;
-		if (tmp_SynapticDelay!=NULL) delete[] tmp_SynapticDelay;
 
 		if(wt!=NULL)			delete[] wt;
 		if(maxSynWt!=NULL)		delete[] maxSynWt;
