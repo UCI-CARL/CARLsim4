@@ -1,5 +1,7 @@
 # module include file for CARLsim pti 
 
+objects += $(test_dir)/carlsim_tests.o
+output_files += $(test_dir)/carlsim_tests
 
 gtest_deps = $(GTEST_LIB_DIR)/libgtest.a $(GTEST_LIB_DIR)/libgtest_main.a
 

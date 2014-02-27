@@ -51,13 +51,12 @@ $(GTEST_LIB_DIR)/gtest_main.o : $(GTEST_SRCS_)
 	$(CXX) $(GTEST_CPPFLAGS) -I$(GTEST_DIR) $(GTEST_CXXFLAGS) -c \
             $(GTEST_DIR)/src/gtest_main.cc -o $@ $^
 
-sample1.o : $(USER_DIR)/sample1.cc $(USER_DIR)/sample1.h 
-	$(CXX) $(GTEST_CPPFLAGS) $(GTEST_CXXFLAGS) -c $(USER_DIR)/sample1.cc
+$(GTEST_LIB_DIR)/sample1.o : $(USER_DIR)/sample1.cc $(USER_DIR)/sample1.h 
+	$(CXX) $(GTEST_CPPFLAGS) $(GTEST_CXXFLAGS) -c $(USER_DIR)/sample1.cc -o $@
 
-sample1_unittest.o : $(USER_DIR)/sample1_unittest.cc \
+$(GTEST_LIB_DIR)/sample1_unittest.o : $(USER_DIR)/sample1_unittest.cc \
                      $(USER_DIR)/sample1.h 
-	$(CXX) $(GTEST_CPPFLAGS) $(GTEST_CXXFLAGS) -c $(USER_DIR)/sample1_unittest.cc
+	$(CXX) $(GTEST_CPPFLAGS) $(GTEST_CXXFLAGS) -c $(USER_DIR)/sample1_unittest.cc -o $@
 
-sample1_unittest : sample1.o sample1_unittest.o
-	echo $(GTEST_CPPFLAGS)
-	$(CXX) $(GTEST_CPPFLAGS) $(GTEST_CXXFLAGS) -lpthread -L$(GTEST_LIB_DIR) -lgtest_main $^ -o $@
+sample1_unittest : $(GTEST_LIB_DIR)/sample1.o $(GTEST_LIB_DIR)/sample1_unittest.o
+	$(CXX) $(GTEST_CPPFLAGS) $(GTEST_CXXFLAGS) -lpthread -L$(GTEST_LIB_DIR) -lgtest_main $^ -o $(GTEST_LIB_DIR)/$@
