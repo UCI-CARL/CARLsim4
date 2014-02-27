@@ -50,15 +50,16 @@ private:
 /// CONSTRUCTOR / DESTRUCTOR
 /// **************************************************************************************************************** ///
 
-CARLsim::CARLsim(std::string netName, int numConfig, int randSeed, int simType, int ithGPU, bool enablePrint,
-					bool copyState) {
-	snn_ = new CpuSNN(netName.c_str(), numConfig, randSeed, simType);
+CARLsim::CARLsim(std::string netName, int numConfig, int randSeed, int simType, int ithGPU, bool enableSilentMode) {
+	snn_ = new CpuSNN(netName.c_str(), numConfig, randSeed, simType, enableSilentMode);
 	numConfig_ 					= numConfig;
 	randSeed_					= randSeed;
 	simMode_ 					= simType;
 	ithGPU_ 					= ithGPU;
-	enablePrint_ 				= enablePrint;
-	copyState_ 					= copyState;
+//	enablePrint_ 				= enablePrint;
+//	copyState_ 					= copyState;
+	enablePrint_ = false;
+	copyState_ = false;
 
 	numConnections_				= 0;
 
@@ -383,6 +384,7 @@ int CARLsim::runNetwork(int nSec, int nMsec, int simType, int ithGPU, bool enabl
 	return snn_->runNetwork(nSec, nMsec, simType, ithGPU, enablePrint, copyState);	
 }
 
+// +++++++++ PUBLIC METHODS: LOGGING / PLOTTING +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
 // sets update cycle for log messages
 void CARLsim::setLogCycle(unsigned int cnt, int mode, FILE *fp) {

@@ -10,7 +10,7 @@ class CpuSNN;
 class CARLsim {
 public:
 	CARLsim(std::string netName="SNN", int numConfig=1, int randSeed=42, int simType=CPU_MODE, int ithGPU=0,
-				bool enablePrint=false, bool copyState=false);
+				bool enableSilentMode=false);
 	~CARLsim();
 
 
@@ -104,7 +104,6 @@ public:
 	// FIXME: needs overhaul
 	//! Sets update cycle for log messages
 	void setLogCycle(unsigned int _cnt, int mode=0, FILE *fp=NULL);
-
 
 
 	// +++++ PUBLIC METHODS: INTERACTING WITH A SIMULATION ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //

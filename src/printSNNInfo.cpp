@@ -512,6 +512,10 @@ void CpuSNN::showStatus(int simType)
     return;
   }
 
+  printWeight(-1);
+  fprintf(fpDeb_, "(time=%lld) =========\n\n", (unsigned long long) simTimeSec);
+
+/*
   FILE* fpVal[2];
   fpVal[0] = fpLog;
   fpVal[1] = fpProgLog;
@@ -541,4 +545,7 @@ void CpuSNN::showStatus(int simType)
     //exit(-1);
   }
 #endif
+*/
+
+
 }

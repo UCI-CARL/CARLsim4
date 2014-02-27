@@ -478,7 +478,7 @@ class CpuSNN {
 /// PUBLIC METHODS
 /// **************************************************************************************************************** ///
 public:
-	CpuSNN(const std::string& _name, int _numConfig=1, int randomize=0, int mode=CPU_MODE);
+	CpuSNN(const std::string& _name, int _numConfig=1, int randomize=0, int mode=CPU_MODE, bool inSilentMode=false);
 	~CpuSNN();
 
 	// +++++ PUBLIC PROPERTIES ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
@@ -600,6 +600,13 @@ public:
 
 	void setLogCycle(unsigned int _cnt, int mode, FILE *fp);
 
+	/*!
+	 * \brief sets file pointers of where to direct output, errors, and debug info
+	 * \param[in] fpOut 	All simulation output (status information) will be written to fpOut (Default: stdout).
+	 * \param[in] fpErr 	All errors will be written to fpErr (Default: stderr).
+	 * \param[in] fpDeb 	All debug information will be written to fpDeb (Default: dev/null)
+	 */
+	void setLogsFp(FILE* fpOut, FILE* fpErr, FILE* fpDeb);
 
 
 	// +++++ PUBLIC METHODS: GETTERS / SETTERS ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
@@ -962,6 +969,12 @@ private:
 	float		cumExecutionTime;
 	float           lastExecutionTime;
 
+	bool enableSilentMode_;	//!< flag to inform whether we're in silent mode or not (silent will not print anything)
+	FILE*	fpOut_;			//!< fp of where to write all simulation output (status info) if not in silent mode
+	FILE*	fpErr_;			//!< fp of where to write all errors if not in silent mode
+	FILE*	fpDeb_;			//!< fp of where to write all debug info if not in silent mode
+
+	// FIXME
 	//debug file
 	FILE*	fpProgLog;
 	FILE*	fpLog;

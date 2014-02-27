@@ -26,7 +26,7 @@ PropagatedSpikeBuffer::PropagatedSpikeBuffer(int minDelay, int maxDelay, int chu
     //assert( minDelay >= 0 );
     //assert( maxDelay >= 0 );
     
-    cout << "Ringbuffer size: " << ringBufferFront.size() << endl; 
+//    cout << "Ringbuffer size: " << ringBufferFront.size() << endl; 
 
     reset( minDelay, maxDelay );
 

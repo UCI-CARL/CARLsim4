@@ -28,8 +28,7 @@ ifneq (${strip ${CARLSIM_CUOPTLEVEL}},1)
 endif
 
 # append include path to CARLSIM_FLAGS
-CARLSIM_FLAGS += -I$(CURDIR)/$(src_dir) -I$(CURDIR)/$(interface_dir)/include \
--I$(CURDIR)/$(test_dir) -I$(CURDIR)/$(test_core_dir)
+CARLSIM_FLAGS += -I$(CURDIR)/$(src_dir) -I$(CURDIR)/$(interface_dir)/include
 
 #-------------------------------------------------------------------------------
 # CARLsim local variables
