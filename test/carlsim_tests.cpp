@@ -1,87 +1,313 @@
-/*!
- * Testing for the public member function: read, of the pti class.
- * 
- * @author Kris Carlson (KDC)
- */
+// Testing COBA
 
 #include <carlsim.h>
 #include <limits.h>
 #include "gtest/gtest.h"
 
-// Tests for args > 3
-TEST(readTestArgc, ArgNumber) {
-  // This test is named "ArgNumber", and belongs to the "readTest"
-  // test case.
+/*!
+ * \brief testing setConductances to true
+ * This function tests the information stored in the group info struct after calling setConductances and enabling COBA.
+ */
+TEST(COBA, setCondTrue) {
+	// create network by varying nConfig from 1...maxConfig, with
+	// step size nConfigStep
+	int maxConfig = rand()%10 + 10;
+	int nConfigStep = rand()%3 + 2;
+	float tAMPA = 5.0f;		// the exact values don't matter
+	float tNMDA = 10.0f;
+	float tGABAa = 15.0f;
+	float tGABAb = 20.0f;
+	CARLsim* sim;
+	group_info_t grpInfo;
+	int grps[2] = {-1};
 
-	CARLsim sim("SNN",1,42,CPU_MODE,0,true);
+	for (int mode=0; mode<=1; mode++) {
+		for (int nConfig=1; nConfig<=maxConfig; nConfig+=nConfigStep) {
+			sim = new CARLsim("SNN",nConfig,42,mode?GPU_MODE:CPU_MODE,0,true);
 
-	int N=1000;
+			grps[0]=sim->createSpikeGeneratorGroup("spike", 10, EXCITATORY_NEURON);
+			grps[1]=sim->createGroup("excit", 10, EXCITATORY_NEURON);
+			sim->setNeuronParameters(grps[1], 0.02f, 0.2f, -65.0f, 8.0f);
 
-	int gin=sim.createSpikeGeneratorGroup("input",N*0.1,EXCITATORY_NEURON);
+			sim->setConductances(grps[0],true,tAMPA,tNMDA,tGABAa,tGABAb);
+			sim->setConductances(grps[1],true,tAMPA,tNMDA,tGABAa,tGABAb);
 
-	int g1=sim.createGroup("excit", N*0.8, EXCITATORY_NEURON);
-	sim.setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f);
-
-	// 5% probability of connection
-	sim.connect(gin,g1,"random", +100.0f/100, 100.0f/100, 0.05f,  1, 20, SYN_FIXED);
-
-	sim.setConductances(ALL,true);
-
-	PoissonRate in(N*0.1);
-	for (int i=0;i<N*0.1;i++) in.rates[i] = 1;
-		sim.setSpikeRate(gin,&in);
-
-
-	//run for 10 seconds
-	for(int i=0; i < 10; i++) {
-		// run the established network for a duration of 1 (sec)  and 0 (millisecond)
-		sim.runNetwork(1,0);
+			for (int c=0; c<nConfig; c++) {
+				for (int g=0; g<=1; g++) {
+					grpInfo = sim->getGroupInfo(grps[g],c);
+					EXPECT_TRUE(grpInfo.WithConductances);
+					EXPECT_FLOAT_EQ(grpInfo.dAMPA,1.0-1.0/tAMPA);
+					EXPECT_FLOAT_EQ(grpInfo.dNMDA,1.0-1.0/tNMDA);
+					EXPECT_FLOAT_EQ(grpInfo.dGABAa,1.0-1.0/tGABAa);
+					EXPECT_FLOAT_EQ(grpInfo.dGABAb,1.0-1.0/tGABAb);
+				}
+			}
+			delete sim;
+		}
 	}
-
-
-  EXPECT_EQ(1,1);
-  //EXPECT_EQ(1, Factorial(-1));
-  //EXPECT_GT(Factorial(-10), 0);
-
 }
 
-// // Tests factorial of 0.
-// TEST(FactorialTest, Zero) {
-//   EXPECT_EQ(1, Factorial(0));
-// }
+/*!
+ * \brief testing setConductances to true using default values
+ * This function tests the information stored in the group info struct after calling setConductances and enabling COBA.
+ * Actual conductance values are set via the interface function setDefaultConductanceDecay
+ */
+TEST(COBA, setCondTrueDefault) {
+	// create network by varying nConfig from 1...maxConfig, with
+	// step size nConfigStep
+	int maxConfig = rand()%10 + 10;
+	int nConfigStep = rand()%3 + 2;
+	float tAMPA = 5.0f;		// the exact values don't matter
+	float tNMDA = 10.0f;
+	float tGABAa = 15.0f;
+	float tGABAb = 20.0f;
+	CARLsim* sim;
+	group_info_t grpInfo;
+	int grps[2] = {-1};
 
-// // Tests factorial of positive numbers.
-// TEST(FactorialTest, Positive) {
-//   EXPECT_EQ(1, Factorial(1));
-//   EXPECT_EQ(2, Factorial(2));
-//   EXPECT_EQ(6, Factorial(3));
-//   EXPECT_EQ(40320, Factorial(8));
-// }
+	for (int mode=0; mode<=1; mode++) {
+		for (int nConfig=1; nConfig<=maxConfig; nConfig+=nConfigStep) {
+			sim = new CARLsim("SNN",nConfig,42,mode?GPU_MODE:CPU_MODE,0,true);
+
+			sim->setDefaultConductanceDecay(tAMPA,tNMDA,tGABAa,tGABAb);
+
+			grps[0]=sim->createSpikeGeneratorGroup("spike", 10, EXCITATORY_NEURON);
+			grps[1]=sim->createGroup("excit", 10, EXCITATORY_NEURON);
+			sim->setNeuronParameters(grps[1], 0.02f, 0.2f, -65.0f, 8.0f);
+
+			sim->setConductances(grps[0],true);
+			sim->setConductances(grps[1],true);
+
+			for (int c=0; c<nConfig; c++) {
+				for (int g=0; g<=1; g++) {
+					grpInfo = sim->getGroupInfo(grps[g],c);
+					EXPECT_TRUE(grpInfo.WithConductances);
+					EXPECT_FLOAT_EQ(grpInfo.dAMPA,1.0-1.0/tAMPA);
+					EXPECT_FLOAT_EQ(grpInfo.dNMDA,1.0-1.0/tNMDA);
+					EXPECT_FLOAT_EQ(grpInfo.dGABAa,1.0-1.0/tGABAa);
+					EXPECT_FLOAT_EQ(grpInfo.dGABAb,1.0-1.0/tGABAb);
+				}
+			}
+			delete sim;
+		}
+	}
+}
+
+/*!
+ * \brief testing setConductances to false
+ * This function tests the information stored in the group info struct after calling setConductances and disabling COBA.
+ */
+TEST(COBA, setCondFalse) {
+	// create network by varying nConfig from 1...maxConfig, with
+	// step size nConfigStep
+	int maxConfig = rand()%10 + 10;
+	int nConfigStep = rand()%3 + 2;
+	float tAMPA = 5.0f;		// the exact values don't matter
+	float tNMDA = 10.0f;
+	float tGABAa = 15.0f;
+	float tGABAb = 20.0f;
+	CARLsim* sim;
+	group_info_t grpInfo;
+	int grps[2] = {-1};
+
+	for (int mode=0; mode<=1; mode++) {
+		for (int nConfig=1; nConfig<=maxConfig; nConfig+=nConfigStep) {
+			sim = new CARLsim("SNN",nConfig,42,mode?GPU_MODE:CPU_MODE,0,true);
+
+			grps[0]=sim->createSpikeGeneratorGroup("spike", 10, EXCITATORY_NEURON);
+			grps[1]=sim->createGroup("excit", 10, EXCITATORY_NEURON);
+			sim->setNeuronParameters(grps[1], 0.02f, 0.2f, -65.0f, 8.0f);
+
+			sim->setConductances(grps[0],false,tAMPA,tNMDA,tGABAa,tGABAb);
+			sim->setConductances(grps[1],false,tAMPA,tNMDA,tGABAa,tGABAb);
+
+			for (int c=0; c<nConfig; c++) {
+				for (int g=0; g<=1; g++) {
+					grpInfo = sim->getGroupInfo(grps[g],c);
+					EXPECT_FALSE(grpInfo.WithConductances);
+				}
+			}
+			delete sim;
+		}
+	}
+}
+
+// TODO: test to trigger error that not all groups have conductances enabled
+
+//! connect with certain mulSynFast, mulSynSlow and observe connectInfo
+TEST(Connect, connect) {
+	// create network by varying nConfig from 1...maxConfig, with
+	// step size nConfigStep
+	int maxConfig = rand()%10 + 10;
+	int nConfigStep = rand()%3 + 2;
+
+	CARLsim* sim;
+	grpConnectInfo_t* connInfo;
+	std::string typeStr;
+
+	int conn[4] 		= {-1};
+	conType_t type[4] 	= {CONN_RANDOM,CONN_ONE_TO_ONE,CONN_FULL,CONN_FULL_NO_DIRECT};
+	float initWt[4] 	= {0.05f, 0.1f, 0.21f, 0.42f};
+	float maxWt[4] 		= {0.05f, 0.1f, 0.21f, 0.42f};
+	float prob[4] 		= {0.1, 0.2, 0.3, 0.4};
+	int minDelay[4] 	= {1,2,3,4};
+	int maxDelay[4] 	= {1,2,3,4};
+	float mulSynFast[4] = {0.2f, 0.8f, 1.2f, 0.0};
+	float mulSynSlow[4] = {0.0f, 2.4f, 11.1f, 10.0f};
+	int synType[4] 		= {SYN_FIXED,SYN_PLASTIC,SYN_FIXED,SYN_PLASTIC};
+
+	for (int mode=0; mode<=1; mode++) {
+		for (int nConfig=1; nConfig<=maxConfig; nConfig+=nConfigStep) {
+			for (int i=0; i<4; i++) {
+				sim = new CARLsim("SNN",nConfig,42,mode?GPU_MODE:CPU_MODE,0,true);
+
+				int g0=sim->createSpikeGeneratorGroup("spike", 10, EXCITATORY_NEURON);
+				int g1=sim->createGroup("excit0", 10, EXCITATORY_NEURON);
+				sim->setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f);
+				int g2=sim->createGroup("excit1", 10, EXCITATORY_NEURON);
+				sim->setNeuronParameters(g2, 0.02f, 0.2f, -65.0f, 8.0f);
+
+				if (type[i]==CONN_RANDOM) typeStr = "random";
+				else if (type[i]==CONN_ONE_TO_ONE) typeStr = "one-to-one";
+				else if (type[i]=CONN_FULL) typeStr = "full";
+				else if (type[i]=CONN_FULL_NO_DIRECT) typeStr = "full-no-direct";
+
+				conn[i] = sim->connect(g0, g1, typeStr, initWt[i], maxWt[i], prob[i], minDelay[i], maxDelay[i], 
+											mulSynFast[i], mulSynSlow[i], synType[i]);
+
+				for (int c=0; c<nConfig; c++) {
+					connInfo = sim->getConnectInfo(conn[i],c);
+					EXPECT_FLOAT_EQ(connInfo->initWt,initWt[i]);
+					EXPECT_FLOAT_EQ(connInfo->maxWt,maxWt[i]);
+					EXPECT_FLOAT_EQ(connInfo->p,prob[i]);
+					EXPECT_FLOAT_EQ(connInfo->mulSynFast,mulSynFast[i]);
+					EXPECT_FLOAT_EQ(connInfo->mulSynSlow,mulSynSlow[i]);
+					EXPECT_EQ(connInfo->minDelay,minDelay[i]);
+					EXPECT_EQ(connInfo->maxDelay,maxDelay[i]);
+					EXPECT_EQ(connInfo->type,type[i]);
+					EXPECT_EQ(GET_FIXED_PLASTIC(connInfo->connProp),synType[i]);
+				}
+				delete sim;
+			}
+		}
+	}
+}
+
+// TODO: set both mulSynFast and mulSynSlow to 0.0, observe no spiking
+
+// TODO: set mulSynSlow=0, have some pre-defined mulSynFast and check output rate via spkMonRT
+// TODO: set mulSynFast=0, have some pre-defined mulSynSlow and check output rate via spkMonRT
+
+// TODO: connect g0->g2 and g1->g2 with some pre-defined values, observe spike output
 
 
-// // Tests IsPrime()
 
-// // Tests negative input.
-// TEST(IsPrimeTest, Negative) {
-//   // This test belongs to the IsPrimeTest test case.
 
-//   EXPECT_FALSE(IsPrime(-1));
-//   EXPECT_FALSE(IsPrime(-2));
-//   EXPECT_FALSE(IsPrime(INT_MIN));
-// }
+// Testing STDP
 
-// // Tests some trivial cases.
-// TEST(IsPrimeTest, Trivial) {
-//   EXPECT_FALSE(IsPrime(0));
-//   EXPECT_FALSE(IsPrime(1));
-//   EXPECT_TRUE(IsPrime(2));
-//   EXPECT_TRUE(IsPrime(3));
-// }
+/*!
+ * \brief testing setSTDP to true
+ * This function tests the information stored in the group info struct after enabling STDP via setSTDP
+ */
+TEST(STDP, setSTDPTrue) {
+	// create network by varying nConfig from 1...maxConfig, with
+	// step size nConfigStep
+	int maxConfig = rand()%10 + 10;
+	int nConfigStep = rand()%3 + 2;
+	float alphaLTP = 5.0f;		// the exact values don't matter
+	float alphaLTD = 10.0f;
+	float tauLTP = 15.0f;
+	float tauLTD = 20.0f;
+	CARLsim* sim;
 
-// // Tests positive input.
-// TEST(IsPrimeTest, Positive) {
-//   EXPECT_FALSE(IsPrime(4));
-//   EXPECT_TRUE(IsPrime(5));
-//   EXPECT_FALSE(IsPrime(6));
-//   EXPECT_TRUE(IsPrime(23));
-// }
+	for (int mode=0; mode<=1; mode++) {
+		for (int nConfig=1; nConfig<=maxConfig; nConfig+=nConfigStep) {
+			sim = new CARLsim("SNN",nConfig,42,mode?GPU_MODE:CPU_MODE,0,true);
+
+			int g1=sim->createGroup("excit", 10, EXCITATORY_NEURON);
+			sim->setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f);
+			sim->setSTDP(g1,true,alphaLTP,tauLTP,alphaLTD,tauLTD);
+
+			for (int c=0; c<nConfig; c++) {
+				group_info_t grpInfo = sim->getGroupInfo(g1,c);
+				EXPECT_TRUE(grpInfo.WithSTDP);
+				EXPECT_FLOAT_EQ(grpInfo.ALPHA_LTP,alphaLTP);
+				EXPECT_FLOAT_EQ(grpInfo.ALPHA_LTD,alphaLTD);
+				EXPECT_FLOAT_EQ(grpInfo.TAU_LTP_INV,1.0/tauLTP);
+				EXPECT_FLOAT_EQ(grpInfo.TAU_LTD_INV,1.0/tauLTD);
+			}
+			delete sim;
+		}
+	}
+}
+
+/*!
+ * \brief testing setSTDP to false
+ * This function tests the information stored in the group info struct after disabling STDP via setSTDP
+ */
+TEST(STDP, setSTDPFalse) {
+	// create network by varying nConfig from 1...maxConfig, with
+	// step size nConfigStep
+	int maxConfig = rand()%10 + 10;
+	int nConfigStep = rand()%3 + 2;
+	float alphaLTP = 5.0f;		// the exact values don't matter
+	float alphaLTD = 10.0f;
+	float tauLTP = 15.0f;
+	float tauLTD = 20.0f;
+	CARLsim* sim;
+
+	for (int mode=0; mode<=1; mode++) {
+		for (int nConfig=1; nConfig<=maxConfig; nConfig+=nConfigStep) {
+			sim = new CARLsim("SNN",nConfig,42,mode?GPU_MODE:CPU_MODE,0,true);
+
+			int g1=sim->createGroup("excit", 10, EXCITATORY_NEURON);
+			sim->setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f);
+			sim->setSTDP(g1,false,alphaLTP,tauLTP,alphaLTD,tauLTD);
+
+			for (int c=0; c<nConfig; c++) {
+				group_info_t grpInfo = sim->getGroupInfo(g1,c);
+				EXPECT_FALSE(grpInfo.WithSTDP);
+			}
+			delete sim;
+		}
+	}
+}
+
+
+
+
+// Testing STP
+
+/*!
+ * \brief testing setSTP to true
+ * This function tests the information stored in the group info struct after enabling STP via setSTP
+ */
+TEST(STDP, setSTPTrue) {
+	// create network by varying nConfig from 1...maxConfig, with
+	// step size nConfigStep
+	int maxConfig = rand()%10 + 10;
+	int nConfigStep = rand()%3 + 2;
+	float STP_U = 5.0f;		// the exact values don't matter
+	float STP_tF = 10.0f;
+	float STP_tD = 15.0f;
+	CARLsim* sim;
+
+	for (int mode=0; mode<=1; mode++) {
+		for (int nConfig=1; nConfig<=maxConfig; nConfig+=nConfigStep) {
+			sim = new CARLsim("SNN",nConfig,42,mode?GPU_MODE:CPU_MODE,0,true);
+
+			int g1=sim->createGroup("excit", 10, EXCITATORY_NEURON);
+			sim->setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f);
+			sim->setSTP(g1,true,STP_U,STP_tD,STP_tF);
+
+			for (int c=0; c<nConfig; c++) {
+				group_info_t grpInfo = sim->getGroupInfo(g1,c);
+				EXPECT_TRUE(grpInfo.WithSTP);
+				EXPECT_FLOAT_EQ(grpInfo.STP_U,STP_U);
+				EXPECT_FLOAT_EQ(grpInfo.STP_tD,STP_tD);
+				EXPECT_FLOAT_EQ(grpInfo.STP_tF,STP_tF);
+			}
+			delete sim;
+		}
+	}
+}

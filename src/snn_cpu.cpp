@@ -341,15 +341,15 @@ uint16_t CpuSNN::connect(int grpId1, int grpId2, const std::string& _type, float
 			newInfo->numPreSynapses   = MIN(grp_Info[grpId1].SizeN,((int) (prob*grp_Info[grpId1].SizeN +5*sqrt(prob*(1-prob)*grp_Info[grpId1].SizeN)+0.5))); // estimate the maximum number of connections we need.  This uses a binomial distribution at 5 stds.
 		}
 		//so you're setting the size to be prob*Number of synapses in group info + some standard deviation ...
-		else if ( _type.find("full") != std::string::npos) {
-			newInfo->type 	= CONN_FULL;
-			newInfo->numPostSynapses	= grp_Info[grpId2].SizeN;
-			newInfo->numPreSynapses   = grp_Info[grpId1].SizeN;
-		}
 		else if ( _type.find("full-no-direct") != std::string::npos) {
 			newInfo->type 	= CONN_FULL_NO_DIRECT;
 			newInfo->numPostSynapses	= grp_Info[grpId2].SizeN-1;
 			newInfo->numPreSynapses	= grp_Info[grpId1].SizeN-1;
+		}
+		else if ( _type.find("full") != std::string::npos) {
+			newInfo->type 	= CONN_FULL;
+			newInfo->numPostSynapses	= grp_Info[grpId2].SizeN;
+			newInfo->numPreSynapses   = grp_Info[grpId1].SizeN;
 		}
 		else if ( _type.find("one-to-one") != std::string::npos) {
 			newInfo->type 	= CONN_ONE_TO_ONE;
