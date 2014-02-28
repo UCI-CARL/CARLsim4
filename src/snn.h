@@ -970,6 +970,7 @@ private:
 	FILE*	fpOut_;			//!< fp of where to write all simulation output (status info) if not in silent mode
 	FILE*	fpErr_;			//!< fp of where to write all errors if not in silent mode
 	FILE*	fpDeb_;			//!< fp of where to write all debug info if not in silent mode
+	FILE*	fpLog_;
 
 	// FIXME
 	//debug file

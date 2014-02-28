@@ -119,6 +119,65 @@ bool toggleSilentMode() {
 */
 
 
+//#define CARLSIM_ERROR3(fp1, fp2, fp3, formatc, ...) { CARLSIM_ERROR(fp1,formatc,##__VA_ARGS__); \
+//						      CARLSIM_ERROR(fp2,formatc,##__VA_ARGS__); \
+//						      CARLSIM_ERROR(fp3,formatc,##__VA_ARGS__); }
+//#define CARLSIM_ERROR2(fp1, fp2, formatc, ...) {      CARLSIM_ERROR(fp1,formatc,##__VA_ARGS__); \
+//                                                      CARLSIM_ERROR(fp2,formatc,##__VA_ARGS__);}
+
+/*!
+ * \brief Logger modes
+ * The logger mode defines where to print all status, error, and debug messages. Several predefined
+ * modes exist (USER, DEVELOPER, SILENT). However, the user can also set each file pointer to a
+ * location of their choice (CUSTOM mode).
+ * The following logger modes exist:
+ *  USER 	User mode, for experiment-oriented simulations. Errors and warnings go to stderr,
+ *              status information goes to stdout. Debug information can only be found in the log file.
+ *  DEVELOPER   Developer mode, for developing and debugging code. Same as user, but additionally,
+ *              all debug information is printed to stdout.
+ *  SILENT      Silent mode, no output is generated.
+ *  CUSTOM      Custom mode, the user can set the location of all the file pointers.
+ * 
+ * The following file pointers exist:
+ *  fpOut_	where CARLSIM_INFO messages go
+ *  fpErr_ 	where CARLSIM_ERROR and CARLSIM_WARN messages go
+ *  fpDeb_ 	where CARLSIM_DEBUG messages go
+ *  fpLog_ 	typically a log file, where all of the above messages go
+ *
+ * The file pointers are automatically set to different locations, depending on the loggerMode:
+ *
+ *          |    USER    | DEVELOPER  |   SILENT   |  CUSTOM
+ * ---------|------------|------------|------------|---------
+ * fpOut_   |   stdout   |   stdout   | /dev/null  |    ?
+ * fpErr_   |   stderr   |   stderr   | /dev/null  |    ?
+ * fpDeb_   | /dev/null  |   stdout   | /dev/null  |    ?
+ * fpLog_   | debug.log  | debug.log  | /dev/null  |    ?
+ *
+ * Location of the log file can be set in any mode using CARLsim::setLogFileFp.
+ * In mode CUSTOM, the other file pointers can be set using CARLsim::setLogsFp.
+ */
+enum loggerMode { USER, DEVELOPER, SILENT, CUSTOM };
+
+
+// use these macros for logging / error printing
+// every message will be printed to one of fpOut_, fpErr_, fpDeb_ depending on the nature of the message
+// Additionally, every message gets printed to some log file fpLog_. This is different from fpDeb_ for
+// the case in which you want the two to be different (e.g., developer mode, in which you would like to
+// see all debug info (stdout) but also have it saved to a file
+#define CARLSIM_ERROR(formatc, ...) {	CARLSIM_ERROR_PRINT(fpErr_,formatc,##__VA_ARGS__); \
+					CARLSIM_DEBUG_PRINT(fpLog_,formatc,##__VA_ARGS__);}
+#define CARLSIM_WARN(formatc, ...) {	CARLSIM_WARN_PRINT(fpErr_,formatc,##__VA_ARGS__); \
+					CARLSIM_DEBUG_PRINT(fpLog_,formatc,##__VA_ARGS__);}
+#define CARLSIM_INFO(formatc, ...) {	CARLSIM_INFO_PRINT(fpOut_,formatc,##__VA_ARGS__); \
+					CARLSIM_DEBUG_PRINT(fpLog_,formatc,##__VA_ARGS__);}
+#define CARLSIM_DEBUG(formatc, ...) {	CARLSIM_DEBUG_PRINT(fpOut_,formatc,##__VA_ARGS__); \
+					CARLSIM_DEBUG_PRINT(fpLog_,formatc,##__VA_ARGS__);}
+
+#define CARLSIM_ERROR_PRINT(fp, formatc, ...) fprintf(fp,"\033[31;1m[ERROR %s:%d] " formatc "\n\033[0m",__FILE__,__LINE__,##__VA_ARGS__)
+#define CARLSIM_WARN_PRINT(fp, formatc, ...) fprintf(fp,"\033[33;1m[WARNING %s:%d] " formatc "\n\033[0m",__FILE__,__LINE__,##__VA_ARGS__)
+#define CARLSIM_INFO_PRINT(fp, formatc, ...) fprintf(fp,formatc "\n",##__VA_ARGS__)
+#define CARLSIM_DEBUG_PRINT(fp, formatc, ...) fprintf(fp,"[DEBUG %s:%d] " formatc "\n",__FILE__,__LINE__,##__VA_ARGS__)
+
 // TODO: consider moving unsafe computations out of constructor
 CpuSNN::CpuSNN(const std::string& _name, int _numConfig, int _randSeed, int _mode, bool enableSilentMode) {
 	// set default file pointers for logging
@@ -137,12 +196,22 @@ CpuSNN::CpuSNN(const std::string& _name, int _numConfig, int _randSeed, int _mod
 		fpErr_ = stderr;
 		fpDeb_ = fopen("/dev/null","w");
 	}
+fpLog_ = fopen("debug.log","w");
 
-	fprintf(fpOut_, "*******************************************************************************\n");
-	fprintf(fpOut_, "********************      Welcome to CARLsim %d.%d      *************************\n",
+CARLSIM_ERROR("hallo");
+//CARLSIM_ERROR2(fpErr_,fpOut_,"hallo2");
+//CARLSIM_ERROR3(fpOut_,fpOut_,fpOut_,"hallo3");
+int dd=42;
+CARLSIM_WARN("O-ooh, d=%d",dd);
+CARLSIM_INFO("Info %d",dd);
+CARLSIM_DEBUG("Some debug info %d",dd);
+
+
+	CARLSIM_INFO("*******************************************************************************");
+	CARLSIM_INFO("********************      Welcome to CARLsim %d.%d      *************************",
 				MAJOR_VERSION,MINOR_VERSION);
-	fprintf(fpOut_, "*******************************************************************************\n");
-	fprintf(fpOut_, "Starting CARLsim simulation \"%s\"\n",_name.c_str());
+	CARLSIM_INFO("*******************************************************************************");
+	CARLSIM_INFO("Starting CARLsim simulation \"%s\"",_name.c_str());
 
 	// initialize propogated spike buffers.....
 	pbuf = new PropagatedSpikeBuffer(0, PROPAGATED_BUFFER_SIZE);
@@ -254,10 +323,9 @@ CpuSNN::CpuSNN(const std::string& _name, int _numConfig, int _randSeed, int _mod
 	fprintf(fpOut_, "nConfig: %d, randSeed: %d\n",_numConfig,randSeed);
 
 	fpParam = fopen("param.txt", "w");
-	if (fpParam==NULL) {
-		fprintf(fpErr_, "WARNING !!! Unable to open/create parameter file 'param.txt'; check if current directory is writable \n");
-		exit(1);
-		return;
+	if (fpParam!=NULL) {
+		CARLSIM_ERROR("Unable to create/open parameter file 'param.txt'; check if current directory is writable.");
+		exitSimulation(1);
 	}
 	fprintf(fpParam, "// *****************************************\n");
 	time_t rawtime; struct tm * timeinfo;
@@ -2059,6 +2127,8 @@ void CpuSNN::deleteObjects() {
 		if (fpOut_!=NULL) fclose(fpOut_);
 		if (fpErr_!=NULL) fclose(fpErr_);
 		if (fpDeb_!=NULL) fclose(fpDeb_);
+
+		if (fpLog_!=NULL) fclose(fpLog_);
 
 		// close param.txt
 		if (fpParam) {
