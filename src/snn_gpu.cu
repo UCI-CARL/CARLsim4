@@ -2435,7 +2435,7 @@ __global__ void kernel_check_GPU_init ()
 // initializes all params needed in snn_gpu.cu
 // up to now they were initialized outside any class member in snn_gpu.cu (as global variables), so if you were
 // to create two CpuSNN instances within the same .cpp file, then the second network would fail to run
-void CpuSNN::CpuSNNinitGPUparams() {
+void CpuSNN::buildNetworkInit_GPU() {
   gpuPoissonRand = NULL;
   spikeCountD2=0;
   spikeCountD1=0;
@@ -2643,6 +2643,10 @@ void CpuSNN::printTestVarInfo(FILE* fp, char* testString, bool test1, bool test2
 void CpuSNN::deleteObjects_GPU() {
   if (testVar!=NULL) delete[] testVar;
   if (testVar2!=NULL) delete[] testVar2;
+
+  CUDA_DELETE_TIMER(timer);
+
+
 
 }
 

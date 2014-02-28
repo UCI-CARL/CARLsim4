@@ -131,7 +131,7 @@ bool toggleSilentMode() {
  * modes exist (USER, DEVELOPER, SILENT). However, the user can also set each file pointer to a
  * location of their choice (CUSTOM mode).
  * The following logger modes exist:
- *  USER 	User mode, for experiment-oriented simulations. Errors and warnings go to stderr,
+ *  USER 		User mode, for experiment-oriented simulations. Errors and warnings go to stderr,
  *              status information goes to stdout. Debug information can only be found in the log file.
  *  DEVELOPER   Developer mode, for developing and debugging code. Same as user, but additionally,
  *              all debug information is printed to stdout.
@@ -165,13 +165,13 @@ enum loggerMode { USER, DEVELOPER, SILENT, CUSTOM };
 // the case in which you want the two to be different (e.g., developer mode, in which you would like to
 // see all debug info (stdout) but also have it saved to a file
 #define CARLSIM_ERROR(formatc, ...) {	CARLSIM_ERROR_PRINT(fpErr_,formatc,##__VA_ARGS__); \
-					CARLSIM_DEBUG_PRINT(fpLog_,formatc,##__VA_ARGS__);}
+										CARLSIM_DEBUG_PRINT(fpLog_,formatc,##__VA_ARGS__); }
 #define CARLSIM_WARN(formatc, ...) {	CARLSIM_WARN_PRINT(fpErr_,formatc,##__VA_ARGS__); \
-					CARLSIM_DEBUG_PRINT(fpLog_,formatc,##__VA_ARGS__);}
+										CARLSIM_DEBUG_PRINT(fpLog_,formatc,##__VA_ARGS__); }
 #define CARLSIM_INFO(formatc, ...) {	CARLSIM_INFO_PRINT(fpOut_,formatc,##__VA_ARGS__); \
-					CARLSIM_DEBUG_PRINT(fpLog_,formatc,##__VA_ARGS__);}
+										CARLSIM_DEBUG_PRINT(fpLog_,formatc,##__VA_ARGS__); }
 #define CARLSIM_DEBUG(formatc, ...) {	CARLSIM_DEBUG_PRINT(fpOut_,formatc,##__VA_ARGS__); \
-					CARLSIM_DEBUG_PRINT(fpLog_,formatc,##__VA_ARGS__);}
+										CARLSIM_DEBUG_PRINT(fpLog_,formatc,##__VA_ARGS__); }
 
 #define CARLSIM_ERROR_PRINT(fp, formatc, ...) fprintf(fp,"\033[31;1m[ERROR %s:%d] " formatc "\n\033[0m",__FILE__,__LINE__,##__VA_ARGS__)
 #define CARLSIM_WARN_PRINT(fp, formatc, ...) fprintf(fp,"\033[33;1m[WARNING %s:%d] " formatc "\n\033[0m",__FILE__,__LINE__,##__VA_ARGS__)
@@ -323,7 +323,7 @@ CARLSIM_DEBUG("Some debug info %d",dd);
 	fprintf(fpOut_, "nConfig: %d, randSeed: %d\n",_numConfig,randSeed);
 
 	fpParam = fopen("param.txt", "w");
-	if (fpParam!=NULL) {
+	if (fpParam==NULL) {
 		CARLSIM_ERROR("Unable to create/open parameter file 'param.txt'; check if current directory is writable.");
 		exitSimulation(1);
 	}
@@ -350,13 +350,13 @@ CARLSIM_DEBUG("Some debug info %d",dd);
 	readNetworkFID = NULL;
 
 	// initialize parameters needed in snn_gpu.cu
-	CpuSNNinitGPUparams();
+	buildNetworkInit_GPU();
 }
 
 // destructor
 CpuSNN::~CpuSNN() {
-  if (!simulatorDeleted)
-    deleteObjects();
+	if (!simulatorDeleted)
+		deleteObjects();
 }
 
 
@@ -1534,7 +1534,7 @@ void CpuSNN::setTuningLog(std::string fname) {
 /// PRIVATE METHODS
 /// **************************************************************************************************************** ///
 
-void CpuSNN::CpuSNNInit(unsigned int nNeur, unsigned int nPostSyn, unsigned int nPreSyn, unsigned int maxDelay) {
+void CpuSNN::buildNetworkInit(unsigned int nNeur, unsigned int nPostSyn, unsigned int nPreSyn, unsigned int maxDelay) {
 	numN = nNeur;
 	numPostSynapses = nPostSyn;
 	D = maxDelay; // FIXME
@@ -1774,7 +1774,7 @@ void CpuSNN::buildNetwork() {
 	assert(curD <= MAX_SynapticDelay); assert(curN <= 1000000);
 
 	// initialize all the parameters....
-	CpuSNNInit(curN, numPostSynapses, numPreSynapses, curD);
+	buildNetworkInit(curN, numPostSynapses, numPreSynapses, curD);
 
 	// we build network in the order...
 	/////    !!!!!!! IMPORTANT : NEURON ORGANIZATION/ARRANGEMENT MAP !!!!!!!!!!
@@ -2117,8 +2117,7 @@ void CpuSNN::connectUserDefined (grpConnectInfo_t* info) {
 
 // delete all objects (CPU and GPU side)
 void CpuSNN::deleteObjects() {
-	try {
-		if(simulatorDeleted)
+		if (simulatorDeleted)
 			return;
 
 		printSimSummary(fpDeb_);
@@ -2127,11 +2126,10 @@ void CpuSNN::deleteObjects() {
 		if (fpOut_!=NULL) fclose(fpOut_);
 		if (fpErr_!=NULL) fclose(fpErr_);
 		if (fpDeb_!=NULL) fclose(fpDeb_);
-
 		if (fpLog_!=NULL) fclose(fpLog_);
 
 		// close param.txt
-		if (fpParam) {
+		if (fpParam!=NULL) {
 			fclose(fpParam);
 		}
 
@@ -2145,7 +2143,7 @@ void CpuSNN::deleteObjects() {
 
 		if (Npre!=NULL)	delete[] Npre;
 		if (Npre_plastic!=NULL) delete[] Npre_plastic;
-		if (Npost!=NULL)	delete[] Npost;
+		if (Npost!=NULL) delete[] Npost;
 
 		if (cumulativePre!=NULL) delete[] cumulativePre;
 		if (cumulativePost!=NULL) delete[] cumulativePost;
@@ -2158,9 +2156,8 @@ void CpuSNN::deleteObjects() {
 		if (stpu!=NULL) delete[] stpu;
 		if (stpx!=NULL) delete[] stpx;
 
-
-		if (lastSpikeTime!=NULL)		delete[] lastSpikeTime;
-		if (synSpikeTime !=NULL)		delete[] synSpikeTime;
+		if (lastSpikeTime!=NULL) delete[] lastSpikeTime;
+		if (synSpikeTime !=NULL) delete[] synSpikeTime;
 		if (curSpike!=NULL) delete[] curSpike;
 		if (nSpikeCnt!=NULL) delete[] nSpikeCnt;
 		if (intrinsicWeight!=NULL) delete[] intrinsicWeight;
@@ -2169,44 +2166,39 @@ void CpuSNN::deleteObjects() {
 		if (preSynapticIds!=NULL) delete[] preSynapticIds;
 		if (postSynapticIds!=NULL) delete[] postSynapticIds;
 
-		if(wt!=NULL)			delete[] wt;
-		if(maxSynWt!=NULL)		delete[] maxSynWt;
-		if(wtChange !=NULL)		delete[] wtChange;
+		if (wt!=NULL)			delete[] wt;
+		if (maxSynWt!=NULL)		delete[] maxSynWt;
+		if (wtChange !=NULL)		delete[] wtChange;
 		if (mulSynFast!=NULL)	delete[] mulSynFast;
 		if (mulSynSlow!=NULL)	delete[] mulSynSlow;
 		if (cumConnIdPre!=NULL)	delete[] cumConnIdPre;
 
-		if (firingTableD2) delete[] firingTableD2;
-		if (firingTableD1) delete[] firingTableD1;
+		if (firingTableD2!=NULL) delete[] firingTableD2;
+		if (firingTableD1!=NULL) delete[] firingTableD1;
 		if (timeTableD2!=NULL) delete[] timeTableD2;
 		if (timeTableD1!=NULL) delete[] timeTableD1;
 
-		delete pbuf;
+		if (pbuf!=NULL) delete pbuf;
 
 		// clear all existing connection info...
 		while (connectBegin) {
 			grpConnectInfo_t* nextConn = connectBegin->next;
-			free(connectBegin);
-			connectBegin = nextConn;
+			if (connectBegin!=NULL) {
+				free(connectBegin);
+				connectBegin = nextConn;
+			}
 		}
 
 		for (int i = 0; i < numSpikeMonitor; i++) {
-			delete[] monBufferFiring[i];
-			delete[] monBufferTimeCnt[i];
+			if (monBufferFiring[i]!=NULL) delete[] monBufferFiring[i];
+			if (monBufferTimeCnt[i]!=NULL) delete[] monBufferTimeCnt[i];
 		}
 
-		if(spikeGenBits) delete[] spikeGenBits;
+		if (spikeGenBits!=NULL) delete[] spikeGenBits;
 
 		// do the same as above, but for snn_gpu.cu
 		deleteObjects_GPU();
-
-		CUDA_DELETE_TIMER(timer);
-
 		simulatorDeleted = true;
-	}
-	catch(...) {
-		fprintf(fpErr_, "Unknown exception ...\n");
-	}
 }
 
 

@@ -671,7 +671,7 @@ public:
 
 private:
 	// +++++ CPU MODE +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
-	void CpuSNNInit(unsigned int nNeur, unsigned int nPostSyn, unsigned int nPreSyn, unsigned int maxDelay);
+	void buildNetworkInit(unsigned int nNeur, unsigned int nPostSyn, unsigned int nPreSyn, unsigned int maxDelay);
 
 	int  addSpikeToTable(int id, int g); //!< add the entry that the current neuron has spiked
 
@@ -800,7 +800,7 @@ private:
 
 	// +++++ GPU MODE +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 	// TODO: consider moving to snn_gpu.h
-	void CpuSNNinitGPUparams();	//!< initializes params needed in snn_gpu.cu (gets called in CpuSNN constructor)
+	void buildNetworkInit_GPU();	//!< initializes params needed in snn_gpu.cu (gets called in CpuSNN constructor)
 
 	void allocateGroupId();
 	void allocateGroupParameters();
