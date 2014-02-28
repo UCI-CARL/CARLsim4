@@ -345,6 +345,7 @@ void CpuSNN::allocateGroupId()
   CUDA_CHECK_ERRORS  ( cudaMalloc ((void**) &cpu_gpuNetPtrs.groupIdInfo, sizeof(int3)*net_Info.numGrp));
   CUDA_CHECK_ERRORS_MACRO ( cudaMemcpy ( cpu_gpuNetPtrs.groupIdInfo, tmp_neuronAllocation, sizeof(int3)*net_Info.numGrp, cudaMemcpyHostToDevice));
   CUDA_CHECK_ERRORS_MACRO ( cudaBindTexture (NULL, groupIdInfo_tex, cpu_gpuNetPtrs.groupIdInfo, sizeof(int3)*net_Info.numGrp));
+  free(tmp_neuronAllocation);
 }
 
 /************************ VARIOUS KERNELS FOR FIRING CALCULATION AND FIRING UPDATE ****************************/
@@ -421,7 +422,7 @@ int CpuSNN::allocateStaticLoad(int bufSize)
   CUDA_CHECK_ERRORS_MACRO( cudaMemcpyToSymbol(loadBufferSize,   &bufSize,   sizeof(int), 0, cudaMemcpyHostToDevice));
   CUDA_CHECK_ERRORS(  cudaMalloc((void**) &cpu_gpuNetPtrs.neuronAllocation, sizeof(int2)*bufferCnt));
   CUDA_CHECK_ERRORS_MACRO( cudaMemcpy( cpu_gpuNetPtrs.neuronAllocation, tmp_neuronAllocation, sizeof(int2)*bufferCnt, cudaMemcpyHostToDevice));
-
+  free(tmp_neuronAllocation);
   return bufferCnt;
 }
 
@@ -2641,13 +2642,62 @@ void CpuSNN::printTestVarInfo(FILE* fp, char* testString, bool test1, bool test2
 
 // TODO FIXME there's more...
 void CpuSNN::deleteObjects_GPU() {
-  if (testVar!=NULL) delete[] testVar;
-  if (testVar2!=NULL) delete[] testVar2;
+	// cudaFree all device pointers
+	CUDA_CHECK_ERRORS( cudaFree(cpu_gpuNetPtrs.voltage) );
+	CUDA_CHECK_ERRORS( cudaFree(cpu_gpuNetPtrs.recovery) );
+	CUDA_CHECK_ERRORS( cudaFree(cpu_gpuNetPtrs.current) );
+	CUDA_CHECK_ERRORS( cudaFree(cpu_gpuNetPtrs.Npre) );
+	CUDA_CHECK_ERRORS( cudaFree(cpu_gpuNetPtrs.Npre_plastic) );
+	CUDA_CHECK_ERRORS( cudaFree(cpu_gpuNetPtrs.Npre_plasticInv) );
+	CUDA_CHECK_ERRORS( cudaFree(cpu_gpuNetPtrs.Npost) );
+	CUDA_CHECK_ERRORS( cudaFree(cpu_gpuNetPtrs.cumulativePost) );
+	CUDA_CHECK_ERRORS( cudaFree(cpu_gpuNetPtrs.cumulativePre) );
+	CUDA_CHECK_ERRORS( cudaFree(cpu_gpuNetPtrs.synSpikeTime) );
+	CUDA_CHECK_ERRORS( cudaFree(cpu_gpuNetPtrs.wt) );
+	CUDA_CHECK_ERRORS( cudaFree(cpu_gpuNetPtrs.wtChange) );
+	CUDA_CHECK_ERRORS( cudaFree(cpu_gpuNetPtrs.maxSynWt) );
+	CUDA_CHECK_ERRORS( cudaFree(cpu_gpuNetPtrs.mulSynFast) );
+	CUDA_CHECK_ERRORS( cudaFree(cpu_gpuNetPtrs.mulSynSlow) );
+	CUDA_CHECK_ERRORS( cudaFree(cpu_gpuNetPtrs.nSpikeCnt) );
+	CUDA_CHECK_ERRORS( cudaFree(cpu_gpuNetPtrs.curSpike) );
+	CUDA_CHECK_ERRORS( cudaFree(cpu_gpuNetPtrs.firingTableD2) );
+	CUDA_CHECK_ERRORS( cudaFree(cpu_gpuNetPtrs.firingTableD1) );
+	CUDA_CHECK_ERRORS( cudaFree(cpu_gpuNetPtrs.avgFiring) );
+	CUDA_CHECK_ERRORS( cudaFree(cpu_gpuNetPtrs.neuronFiring) );
+	CUDA_CHECK_ERRORS( cudaFree(cpu_gpuNetPtrs.baseFiring) );
+	CUDA_CHECK_ERRORS( cudaFree(cpu_gpuNetPtrs.baseFiringInv) );
 
-  CUDA_DELETE_TIMER(timer);
+	CUDA_CHECK_ERRORS( cudaFree(cpu_gpuNetPtrs.Izh_a) );
+	CUDA_CHECK_ERRORS( cudaFree(cpu_gpuNetPtrs.Izh_b) );
+	CUDA_CHECK_ERRORS( cudaFree(cpu_gpuNetPtrs.Izh_c) );
+	CUDA_CHECK_ERRORS( cudaFree(cpu_gpuNetPtrs.Izh_d) );
+	CUDA_CHECK_ERRORS( cudaFree(cpu_gpuNetPtrs.gAMPA) );
+	CUDA_CHECK_ERRORS( cudaFree(cpu_gpuNetPtrs.gNMDA) );
+	CUDA_CHECK_ERRORS( cudaFree(cpu_gpuNetPtrs.gGABAa) );
+	CUDA_CHECK_ERRORS( cudaFree(cpu_gpuNetPtrs.gGABAb) );
 
+	CUDA_CHECK_ERRORS( cudaFree(cpu_gpuNetPtrs.stpu) );
+	CUDA_CHECK_ERRORS( cudaFree(cpu_gpuNetPtrs.stpx) );
 
+	CUDA_CHECK_ERRORS( cudaFree(cpu_gpuNetPtrs.cumConnIdPre) );
 
+	CUDA_CHECK_ERRORS( cudaFree(cpu_gpuNetPtrs.groupIdInfo) );
+	CUDA_CHECK_ERRORS( cudaFree(cpu_gpuNetPtrs.neuronAllocation) );
+
+	CUDA_CHECK_ERRORS( cudaFree(cpu_gpuNetPtrs.postDelayInfo) );
+	CUDA_CHECK_ERRORS( cudaFree(cpu_gpuNetPtrs.postSynapticIds) );
+	CUDA_CHECK_ERRORS( cudaFree(cpu_gpuNetPtrs.preSynapticIds) );
+	CUDA_CHECK_ERRORS( cudaFree(cpu_gpuNetPtrs.I_set) );
+	CUDA_CHECK_ERRORS( cudaFree(cpu_gpuNetPtrs.poissonFireRate) );
+	CUDA_CHECK_ERRORS( cudaFree(cpu_gpuNetPtrs.lastSpikeTime) );
+	CUDA_CHECK_ERRORS( cudaFree(cpu_gpuNetPtrs.spikeGenBits) );
+
+	CUDA_CHECK_ERRORS( cudaFree(cpu_gpuNetPtrs.testVar) );
+	CUDA_CHECK_ERRORS( cudaFree(cpu_gpuNetPtrs.testVar2) );
+	if (testVar!=NULL) delete[] testVar;
+	if (testVar2!=NULL) delete[] testVar2;
+
+	CUDA_DELETE_TIMER(timer);
 }
 
 

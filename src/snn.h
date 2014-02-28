@@ -961,7 +961,7 @@ private:
 	#if __CUDA3__
 		unsigned int    timer;
 	#elif __CUDA5__
-		StopWatchInterface* timer;
+		StopWatchInterface *timer;
 	#endif
 	float		cumExecutionTime;
 	float           lastExecutionTime;

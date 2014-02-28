@@ -2674,6 +2674,7 @@ void  CpuSNN::globalStateUpdate() {
 
 
 // creates the CPU net pointers
+// don't forget to cudaFree the device pointers if you make cpu_gpuNetPtrs
 void CpuSNN::makePtrInfo() {
 	cpuNetPtrs.voltage			= voltage;
 	cpuNetPtrs.recovery			= recovery;
@@ -2692,10 +2693,6 @@ void CpuSNN::makePtrInfo() {
 	cpuNetPtrs.curSpike 		= curSpike;
 	cpuNetPtrs.firingTableD2 	= firingTableD2;
 	cpuNetPtrs.firingTableD1 	= firingTableD1;
-
-	cpuNetPtrs.cumConnIdPre 	= cumConnIdPre;
-	cpuNetPtrs.mulSynFast 		= mulSynFast;
-	cpuNetPtrs.mulSynSlow 		= mulSynSlow;
 
 	// homeostasis variables
 	cpuNetPtrs.avgFiring    	= avgFiring;
