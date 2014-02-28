@@ -366,12 +366,12 @@ void CpuSNN::allocateGroupId()
 //-----------------------
 int CpuSNN::allocateStaticLoad(int bufSize)
 {
-  FILE* fpArr[]={fpLog, stderr};
+  FILE* fpArr[]={fpDeb_, fpOut_};
   // only one thread does the static load table
   int   bufferCnt = 0;
   for (int g=0; g < net_Info.numGrp; g++) {
     bufferCnt += (int) ceil(1.0*grp_Info[g].SizeN/bufSize);
-    fprintf(fpLog, "Grp Size = %d, Total Buffer Cnt = %d, Buffer Cnt = %f\n",  grp_Info[g].SizeN, bufferCnt, ceil(1.0*grp_Info[g].SizeN/bufSize));
+    fprintf(fpDeb_, "Grp Size = %d, Total Buffer Cnt = %d, Buffer Cnt = %f\n",  grp_Info[g].SizeN, bufferCnt, ceil(1.0*grp_Info[g].SizeN/bufSize));
   }
   assert(bufferCnt > 0);
 
@@ -691,8 +691,6 @@ void CpuSNN::setSpikeGenBit_GPU(unsigned int nid, int grp)
   unsigned int nidIndex  = nidPos/32;
 
   assert(nidIndex < (NgenFunc/32+1));
-
-  //fprintf(stderr, "time = %d, nid = %d\n", simTime, nid);
 
   cpuNetPtrs.spikeGenBits[nidIndex] |= (1 << nidBitPos);
 }
@@ -1649,16 +1647,16 @@ int CpuSNN::checkErrors(std::string calledKernel, int numBlocks)
 
   if (errCode != NO_KERNEL_ERRORS) {
 
-    fprintf(stderr, "\n (Error in Kernel <<< %s >>> , RETURN ERROR CODE = %x, total Errors = %d\n", calledKernel.c_str(), errCode, errCnt);
+    fprintf(fpErr_, "\n (Error in Kernel <<< %s >>> , RETURN ERROR CODE = %x, total Errors = %d\n", calledKernel.c_str(), errCode, errCnt);
 
     cudaGetSymbolAddress(&devPtr, CUDA_CONVERT_SYMBOL(retErrVal));
     CUDA_CHECK_ERRORS( cudaMemcpy(&errVal, devPtr, sizeof(errVal), cudaMemcpyDeviceToHost));
 
     for(int j=0; j < errCnt; j++) {
       if (1) /*errVal[j][0]==0xdead) */ {
-	fprintf(stderr, "Block: %d, Err code = %x, Total err val is %f\n", j, (int)errVal[j][0]	, errVal[j][1]);
+	fprintf(fpErr_, "Block: %d, Err code = %x, Total err val is %f\n", j, (int)errVal[j][0]	, errVal[j][1]);
 	for(int i=2; i < (errVal[j][1]); i++) {
-	  fprintf(stderr, "ErrVal[%d][%d] = %f\n", j, i, errVal[j][i]);
+	  fprintf(fpErr_, "ErrVal[%d][%d] = %f\n", j, i, errVal[j][i]);
 	  getchar();
 	}
       }
@@ -1673,8 +1671,8 @@ int CpuSNN::checkErrors(std::string calledKernel, int numBlocks)
 
   }
 
-  fflush(stderr);
-  fflush(stdout);
+  fflush(fpErr_);
+  fflush(fpOut_);
   return errCode;
 #endif
 }
@@ -1731,7 +1729,7 @@ void CpuSNN::copyConnections(network_ptr_t* dest, int kind, int allocateMem)
   CUDA_CHECK_ERRORS( cudaMemset( dest->I_set, 0, net_Info.I_setPitch*net_Info.I_setLength));
 
 #if TESTING
-  fprintf(stdout, "numNReg=%d numPostSynapses = %d, I_set = %x, I_setPitch = %d,  I_setLength = %d\n", numNReg, numPostSynapses, dest->I_set, net_Info.I_setPitch, net_Info.I_setLength);
+  fprintf(fpOut_, "numNReg=%d numPostSynapses = %d, I_set = %x, I_setPitch = %d,  I_setLength = %d\n", numNReg, numPostSynapses, dest->I_set, net_Info.I_setPitch, net_Info.I_setLength);
 #endif
 
   // connection synaptic lengths and cumulative lengths...
@@ -1920,7 +1918,7 @@ void CpuSNN::copyNeuronParameters(network_ptr_t* dest, int kind, int allocateMem
   int ptrPos, length;
 
   if (dest->allocated && allocateMem) {
-    fprintf(stderr, "GPU Memory already allocated.. \n");
+    fprintf(fpErr_, "GPU Memory already allocated.. \n");
     return;
   }
 
@@ -2012,7 +2010,7 @@ void CpuSNN::copySTPState(network_ptr_t* dest, network_ptr_t* src, int kind, int
   if (allocateMem) net_Info.STP_Pitch = net_Info.STP_Pitch/sizeof(float);
 
 #if TESTING
-  fprintf(stdout, "STP_Pitch = %d, STP_witdhInBytes = %d\n", net_Info.STP_Pitch, widthInBytes);
+  fprintf(fpOut_, "STP_Pitch = %d, STP_witdhInBytes = %d\n", net_Info.STP_Pitch, widthInBytes);
 #endif
 
   float* tmp_stp = new float[net_Info.numN];
@@ -2099,7 +2097,7 @@ void CpuSNN::copyState(network_ptr_t* dest, int allocateMem) {
 	assert(preSynCnt !=0);
 
 	if (dest->allocated && allocateMem) {
-		fprintf(stderr, "GPU Memory already allocated.. \n");
+		fprintf(fpErr_, "GPU Memory already allocated.. \n");
 		return;
 	}
 
@@ -2225,7 +2223,6 @@ void CpuSNN::findFiring_GPU()
   assert(errCode == NO_KERNEL_ERRORS);
 
 
-  //printTestVarInfo(stderr, "LTP", true, false, false, 1, 4, 0);
 
   if(MEASURE_LOADING) printGpuLoadBalance(false,MAX_BLOCKS,fpOut_);
 
@@ -2561,7 +2558,7 @@ void CpuSNN::printTestVarInfo(FILE* fp, char* testString, bool test1, bool test2
 {
   int cnt=0;
 
-  fflush(stdout);
+  fflush(fpOut_);
 
   if(test1 || test12)
     CUDA_CHECK_ERRORS( cudaMemcpy( testVar, cpu_gpuNetPtrs.testVar, sizeof(float)*numN, cudaMemcpyDeviceToHost));
@@ -2656,18 +2653,18 @@ void CpuSNN::testSpikeSenderReceiver(FILE* fpLog, int simTime)
     int EnumFires = 0; int InumFires = 0;
     CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &EnumFires, secD2fireCnt, sizeof(int), 0, cudaMemcpyDeviceToHost));
     CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &InumFires, secD1fireCnt, sizeof(int), 0, cudaMemcpyDeviceToHost));
-    fprintf(stdout, " ***********( t = %d) FIRE COUNTS ************** %d %d\n", simTime, EnumFires, InumFires);
+    fprintf(fpDeb_, " ***********( t = %d) FIRE COUNTS ************** %d %d\n", simTime, EnumFires, InumFires);
     int   numFires;
     float fireCnt;
     CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &numFires,  testFireCnt1, sizeof(int), 0, cudaMemcpyDeviceToHost));
-    fprintf(stdout, "testFireCnt1 = %d\n", numFires);
+    fprintf(fpDeb_, "testFireCnt1 = %d\n", numFires);
     CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &numFires,  testFireCnt2, sizeof(int), 0, cudaMemcpyDeviceToHost));
-    fprintf(stdout, "testFireCnt2 = %d\n", numFires);
+    fprintf(fpDeb_, "testFireCnt2 = %d\n", numFires);
     CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &fireCnt,  testFireCntf1, sizeof(int), 0, cudaMemcpyDeviceToHost));
-    fprintf(stdout, "testFireCntFloat1 = %f\n", fireCnt);
+    fprintf(fpDeb_, "testFireCntFloat1 = %f\n", fireCnt);
     CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &fireCnt,  testFireCntf2, sizeof(int), 0, cudaMemcpyDeviceToHost));
-    fprintf(stdout, "testFireCntFloat2 = %f\n", fireCnt);
-    fprintf(stdout, " *************************\n");
+    fprintf(fpDeb_, "testFireCntFloat2 = %f\n", fireCnt);
+    fprintf(fpDeb_, " *************************\n");
 
     // MDR originally had this. 
     float* baseFiringInv = new float[numN];
@@ -2680,101 +2677,14 @@ void CpuSNN::testSpikeSenderReceiver(FILE* fpLog, int simTime)
       if (!grp_Info[g].FixedInputWts) {
 	fprintf(fpLog, "Group %s:\t", grp_Info2[g].Name.c_str());
 	for(int j=grp_Info[g].StartN; j <= grp_Info[g].EndN; j++) {
-	  fprintf(fpLog, " %d: Home =%f (Base =%f)  \n", j, avgFiring[j], 1/baseFiringInv[j]);
-	  fprintf(stdout, " %d: Home =%f (Base =%f)  \n", j, avgFiring[j], 1/baseFiringInv[j]);
+	  fprintf(fpDeb_, " %d: Home =%f (Base =%f)  \n", j, avgFiring[j], 1/baseFiringInv[j]);
+	  fprintf(fpOut_, " %d: Home =%f (Base =%f)  \n", j, avgFiring[j], 1/baseFiringInv[j]);
 	}
       }
     }
     
-    fprintf(fpLog, "\n");
+    fprintf(fpDeb_, "\n");
   }
-
-#if 0
-  static int* firingTableD2 = (int*) malloc(sizeof(int)*(EnumFires+1));	
-  static int* firingTableD1 = (int*) malloc(sizeof(int)*(InumFires+1));	
-  fprintf(stdout, "Total Fired Neuron in GPU = E=%d + I=%d\n", EnumFires, InumFires);
-
-  if (EnumFires > 0) 
-    CUDA_CHECK_ERRORS_MACRO( cudaMemcpy( firingTableD2, cpu_gpuNetPtrs.firingTableD2, sizeof(int)*EnumFires, cudaMemcpyDeviceToHost));
-
-  if (InumFires > 0) 
-    CUDA_CHECK_ERRORS_MACRO( cudaMemcpy( firingTableD1, cpu_gpuNetPtrs.firingTableD1, sizeof(int)*InumFires, cudaMemcpyDeviceToHost));
-
-  static int cumCntI = 0;
-  static int cumcntD2 = 0;
-  fprintf(stdout, "\n");
-  fprintf(stdout, "current threshold crossing neurons (GPU) = %d\n", EnumFires+InumFires-cumcntD2-cumCntI);
-  for(int i=cumCntI; i < InumFires; i++) {
-    fprintf(stdout, " %d " , firingTableD1[i]);
-  }
-  cumCntI = InumFires;
-
-  for(int i=cumcntD2; i < EnumFires; i++) {
-    fprintf(stdout, " %d " , firingTableD2[i]);
-  }
-  cumcntD2 = EnumFires;
-  getchar();
-#endif
-
-#if 0 && (TESTING)
-  int sendId[1000];
-  int recId[1000];
-  int genI, genE, recE, recI;
-  CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &recE, CUDA_CONVERT_SYMBOL(receivedSpikesE), sizeof(int), 0, cudaMemcpyDeviceToHost));
-  CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &recI, CUDA_CONVERT_SYMBOL(receivedSpikesI), sizeof(int), 0, cudaMemcpyDeviceToHost));
-
-  //fprintf(stderr, "generatedE = %d, receivedE = %d generatedI = %d, receivedI = %d\n", genE, recE, genI, recI);
-  fprintf(fpLog, "generatedE = %d, receivedE = %d generatedI = %d, receivedI = %d\n", genE, recE, genI, recI);
-
-  //KILLME !!!
-  if ((genE != recE) || (genI != recI)) {
-    fprintf( stderr, "ERROR !! generatedE = %d, receivedE = %d generatedI = %d, receivedI = %d\n", genE, recE, genI, recI);
-    fprintf( fpLog, "ERROR !! generatedE = %d, receivedE = %d generatedI = %d, receivedI = %d\n", genE, recE, genI, recI);
-    fflush(fpLog);
-    assert(0);
-  }
-
-  //assert(genE == recE);
-  //assert(genI == recI);
-
-  static int cntTest = 0;
-
-  if(cntTest++ == 1000) {
-    genI = 0; genE = 0; recI = 0; recE = 0;
-    CUDA_CHECK_ERRORS_MACRO( cudaMemcpyToSymbol( CUDA_CONVERT_SYMBOL(receivedSpikesE), &recE, sizeof(int), 0, cudaMemcpyHostToDevice));
-    CUDA_CHECK_ERRORS_MACRO( cudaMemcpyToSymbol( CUDA_CONVERT_SYMBOL(receivedSpikesI), &recI, sizeof(int), 0, cudaMemcpyHostToDevice));
-    cntTest = 0;
-  }
-#endif
-  /*
-    CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &sendId, "senderIdE", sizeof(int)*genE, 0, cudaMemcpyDeviceToHost));
-    CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &sendId[genE], "senderIdI", sizeof(int)*genI, 0, cudaMemcpyDeviceToHost));
-    CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &recId, "receiverId", sizeof(int)*(recI+recE), 0, cudaMemcpyDeviceToHost));
-
-    int cnt=0;
-    for(int i = 0; i < genE+genI; i++) {
-    int found = false;
-    for(int j=0; j < 0; j++) {
-    if(recId[j] == (sendId[i])) {
-    recId[j]= -1;
-    cnt++;
-    found = false;
-    }
-    }
-    if(!found)
-    fprintf(fpLog, "sendE[%d] = %d, syn = %d\n", i, sendId[i]&POST_SYN_NEURON_MASK
-    , ((sendId[i]>>POST_SYN_NEURON_BITS)&POST_SYN_CONN_MASK));
-    }
-    if(cnt != (recI+recE)) {
-    for(int i = 0; i < recE+recI; i++) {
-    if(recId[i]!=-1) {
-    fprintf(fpLog, "extra[%d] = %d, syn = %d\n", i, 
-    recId[i]&POST_SYN_NEURON_MASK,
-    ((recId[i]>>POST_SYN_NEURON_BITS)&POST_SYN_CONN_MASK));
-    }
-    }
-    }
-  */
 }
 
 void CpuSNN::globalStateUpdate_GPU()
@@ -2790,16 +2700,6 @@ void CpuSNN::globalStateUpdate_GPU()
   CUDA_GET_LAST_ERROR_MACRO("Kernel execution failed");
   int errCode = checkErrors("gpu_globalStateUpdate", gridSize);
   assert(errCode == NO_KERNEL_ERRORS);
-
-
-  //		printTestVarInfo(stderr, "globalStateUpdate_GPU", true, false, false, 0, 1, 0);
-  //		int recE, recI;
-  //		CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &recE, "receivedSpikesE", sizeof(int), 0, cudaMemcpyDeviceToHost));
-  //		CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &recI, "receivedSpikesI", sizeof(int), 0, cudaMemcpyDeviceToHost));
-  //		fprintf(stderr, "t=%d, receivedE = %d, receivedI = %d\n", simTime, recE, recI);
-  //		recE=0;recI=0;
-  //		CUDA_CHECK_ERRORS_MACRO( cudaMemcpyToSymbol( "receivedSpikesE", &recE, sizeof(int), 0, cudaMemcpyHostToDevice));
-  //		CUDA_CHECK_ERRORS_MACRO( cudaMemcpyToSymbol( "receivedSpikesI", &recI, sizeof(int), 0, cudaMemcpyHostToDevice));
 }
 
 void CpuSNN::assignPoissonFiringRate_GPU()
@@ -2829,12 +2729,7 @@ void CpuSNN::doGPUSim()
     spikeRateUpdated = false;
   }
 
-  //		initThalInput_GPU();
-  //printTestVarInfo(stderr, "initThalInput", true, false, false);
-
   findFiring_GPU();
-  //printTestVarInfo(stderr, "findFiring", true, false, false);
-
 
   updateTimingTable_GPU();
 
@@ -2853,20 +2748,6 @@ void CpuSNN::doGPUSim()
 #endif
 
   globalStateUpdate_GPU();
-  // printState("globalState update\n");
-  //printTestVarInfo(stderr, "globalStateUpdate_GPU", true, false, false, 0, 1);
-
-  /*
-  // FIXME: I broke the following because it seems to only apply to grpId 20..25 - legacy code?
-  for (int grpId=20; 0 & grpId < 25; grpId++) {
-  int ptrPos  = grp_Info[grpId].StartN;
-  int length  = grp_Info[grpId].SizeN;
-  CUDA_CHECK_ERRORS( cudaMemcpy( &cpuNetPtrs.current[ptrPos], &cpu_gpuNetPtrs.current[ptrPos], sizeof(float)*length, cudaMemcpyDeviceToHost));
-  for(int i=0; i < length; i++) {
-  fprintf(stderr, "current %d -> %f\n", ptrPos+i, cpuNetPtrs.current[ptrPos+i]);
-  }
-  }
-  */
 
   if(0) {
     int cnt=0;
@@ -2875,20 +2756,8 @@ void CpuSNN::doGPUSim()
     CUDA_CHECK_ERRORS_MACRO( cudaMemcpyToSymbol(testVarCnt2, &cnt, sizeof(int), 0, cudaMemcpyHostToDevice));
   }
 
-  //		int tmpCnt;
-  //		CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &tmpCnt, "testVarCnt1", sizeof(int), 0, cudaMemcpyDeviceToHost));
-  //		int EnumFires = 0;
-  //		CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &EnumFires, "secD2fireCnt", sizeof(int), 0, cudaMemcpyDeviceToHost));
-  //		fprintf(stderr, " (t=%d) fireCnt=%d, testVarCnt=%d\n", simTime, EnumFires, tmpCnt);
 
   return;
-
-  //getchar();
-  //if(simTime%100==99)
-  //updateSpikeMonitor();
-  //showStatus(GPU_MODE,1, fpLog);
-  //simTime++;
-  //exit(0);
 }
 
 void CpuSNN::updateStateAndFiringTable_GPU()
@@ -2903,52 +2772,17 @@ void CpuSNN::updateStateAndFiringTable_GPU()
   kernel_updateWeightsFiring_static  <<<gridSize, blkSize>>> ();
 
   kernel_updateWeightsFiring <<<gridSize, blkSize>>> ();
-
-  //printTestVarInfo(stderr, "STDP", true, false, false, 0, 2, 0);
-
-  //		// the firing id is stored in firingTableD1, and the firing bit pattern is stored in firingTableD2...
-  //		int gpu_secD2fireCnt;
-  //		CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &gpu_secD2fireCnt, "secD2fireCnt", sizeof(int), 0, cudaMemcpyDeviceToHost));
-  //		//CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &gpu_secD1fireCnt, "secD1fireCnt", sizeof(int), 0, cudaMemcpyDeviceToHost));
-  //		fprintf(stderr, "Total spikes before next time sec is %d\n", gpu_secD2fireCnt);
 }
 
-void CpuSNN::showStatus_GPU()
-{
-  int gpu_secD1fireCnt, gpu_secD2fireCnt;
-  CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &gpu_secD2fireCnt, secD2fireCnt, sizeof(int), 0, cudaMemcpyDeviceToHost));
-  CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &gpu_secD1fireCnt, secD1fireCnt, sizeof(int), 0, cudaMemcpyDeviceToHost));
-  spikeCountAll1sec = gpu_secD1fireCnt + gpu_secD2fireCnt;
-  secD1fireCnt  = gpu_secD1fireCnt;
-		
-  FILE* fpVal[2];
-  fpVal[0] = fpLog;
-  fpVal[1] = fpProgLog;
-
-  for(int k=0; k < 2; k++) {
-    if(k==0)
-      printWeight(-1);
-
-    fprintf(fpVal[k], "(time=%lld) =========\n\n", (unsigned long long) simTimeSec);
-
-			
-#if REG_TESTING
-    // if the overall firing rate is very low... then report error...
-    if((spikeCountAll1sec*1.0f/numN) < 1.0) {
-      fprintf(fpVal[k], " SIMULATION WARNING !!! Very Low Firing happened...\n");
-      fflush(fpVal[k]);
-    }
-#endif
-
-    fflush(fpVal[k]);
-  }
-
-#if REG_TESTING
-  if(spikeCountAll1sec == 0) {
-    fprintf(stderr, " SIMULATION ERROR !!! Very Low or no firing happened...\n");
-    //exit(-1);
-  }
-#endif		
+void CpuSNN::showStatus_GPU() {
+	int gpu_secD1fireCnt, gpu_secD2fireCnt;
+	CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &gpu_secD2fireCnt, secD2fireCnt, sizeof(int), 0, cudaMemcpyDeviceToHost));
+	CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &gpu_secD1fireCnt, secD1fireCnt, sizeof(int), 0, cudaMemcpyDeviceToHost));
+	spikeCountAll1sec = gpu_secD1fireCnt + gpu_secD2fireCnt;
+	secD1fireCnt  = gpu_secD1fireCnt;
+	printWeight(-1);
+	fprintf(fpOut_, "(time=%lld) =========\n\n", (unsigned long long) simTimeSec);
+	fflush(fpOut_);
 }
 
 __global__ void gpu_resetFiringInformation()
@@ -2994,7 +2828,7 @@ void CpuSNN::copyFiringInfo_GPU()
   CUDA_CHECK_ERRORS( cudaMemcpy(firingTableD1, cpu_gpuNetPtrs.firingTableD1, sizeof(int)*gpu_secD1fireCnt, cudaMemcpyDeviceToHost));
   CUDA_CHECK_ERRORS( cudaMemcpyFromSymbol(timeTableD2, timingTableD2, sizeof(int)*(1000+D+1), 0, cudaMemcpyDeviceToHost));
   CUDA_CHECK_ERRORS( cudaMemcpyFromSymbol(timeTableD1, timingTableD1, sizeof(int)*(1000+D+1), 0, cudaMemcpyDeviceToHost));
-  fprintf(stderr, "Total spikes Multiple Delays=%d, 1Ms Delay=%d\n", gpu_secD2fireCnt,gpu_secD1fireCnt);
+  fprintf(fpOut_, "Total spikes Multiple Delays=%d, 1Ms Delay=%d\n", gpu_secD2fireCnt,gpu_secD1fireCnt);
   //getchar();
 }
 
@@ -3025,15 +2859,14 @@ void CpuSNN::allocateNetworkParameters()
   return;
 }
 
-void checkGPUDevice(int ithGPU)
-{
+void CpuSNN::checkGPUDevice(int ithGPU) {
   int devCount;
   cudaGetDeviceCount(&devCount);
   CUDA_GET_LAST_ERROR("cudaGetDeviceCount failed\n");
-  fprintf(stdout, "Number of CUDA devices : %d\n",devCount);
+  fprintf(fpOut_, "Number of CUDA devices : %d\n",devCount);
 
   int dev = CUDA_GET_MAXGFLOP_DEVICE_ID();
-  fprintf(stdout, "Device with maximum GFLOPs is : %d\n", dev);
+  fprintf(fpOut_, "Device with maximum GFLOPs is : %d\n", dev);
   cudaDeviceProp deviceProp;
 
   // ithGPU gives an index number on which device to run the simulation
@@ -3041,13 +2874,13 @@ void checkGPUDevice(int ithGPU)
   if (ithGPU>=0 && ithGPU<devCount)
     dev = ithGPU;
   else {
-    fprintf(stdout, "Device index %d exceeds number of devices (%d), choose from [0,%d].\n",ithGPU,devCount,devCount-1);
-    fprintf(stdout, "Defaulting to using device 0...\n");
+    fprintf(fpOut_, "Device index %d exceeds number of devices (%d), choose from [0,%d].\n",ithGPU,devCount,devCount-1);
+    fprintf(fpOut_, "Defaulting to using device 0...\n");
     dev = 0;
   }
 
   CUDA_CHECK_ERRORS(cudaGetDeviceProperties(&deviceProp, dev));
-  fprintf(stdout, "\nDevice %d: \"%s\"\n", dev, deviceProp.name);
+  fprintf(fpOut_, "\nDevice %d: \"%s\"\n", dev, deviceProp.name);
   if (deviceProp.major == 1 && deviceProp.minor < 3) {
     printf("GPU SNN does not support NVidia cards older than version 1.3\n");
     //exit(1);
@@ -3167,40 +3000,40 @@ void CpuSNN::allocateSNN_GPU(int ithGPU) {
 	CUDA_CHECK_ERRORS( cudaMemcpyToSymbol(gpuGrpInfo, grp_Info, (net_Info.numGrp)*sizeof(group_info_t), 0, cudaMemcpyHostToDevice));
 
 	if (showLogMode >= 3) {
-		fprintf(stderr,"Transfering group settings to GPU:\n");
+		fprintf(fpDeb_,"Transfering group settings to GPU:\n");
 		for (int i=0;i<numGrp;i++) {
-			fprintf(stderr,"Settings for Group %s: \n", grp_Info2[i].Name.c_str());
+			fprintf(fpDeb_,"Settings for Group %s: \n", grp_Info2[i].Name.c_str());
 		
-			fprintf(stderr,"\tType: %d\n",(int)grp_Info[i].Type);
-			fprintf(stderr,"\tSizeN: %d\n",grp_Info[i].SizeN);
-			fprintf(stderr,"\tMaxFiringRate: %d\n",(int)grp_Info[i].MaxFiringRate);
-			fprintf(stderr,"\tRefractPeriod: %f\n",grp_Info[i].RefractPeriod);
-			fprintf(stderr,"\tM: %d\n",grp_Info[i].numPostSynapses);
-			fprintf(stderr,"\tPreM: %d\n",grp_Info[i].numPreSynapses);
-			fprintf(stderr,"\tspikeGenerator: %d\n",(int)grp_Info[i].isSpikeGenerator);
-			fprintf(stderr,"\tFixedInputWts: %d\n",(int)grp_Info[i].FixedInputWts);
- 			fprintf(stderr,"\tMaxDelay: %d\n",(int)grp_Info[i].MaxDelay);
- 			fprintf(stderr,"\tWithSTDP: %d\n",(int)grp_Info[i].WithSTDP);
+			fprintf(fpDeb_,"\tType: %d\n",(int)grp_Info[i].Type);
+			fprintf(fpDeb_,"\tSizeN: %d\n",grp_Info[i].SizeN);
+			fprintf(fpDeb_,"\tMaxFiringRate: %d\n",(int)grp_Info[i].MaxFiringRate);
+			fprintf(fpDeb_,"\tRefractPeriod: %f\n",grp_Info[i].RefractPeriod);
+			fprintf(fpDeb_,"\tM: %d\n",grp_Info[i].numPostSynapses);
+			fprintf(fpDeb_,"\tPreM: %d\n",grp_Info[i].numPreSynapses);
+			fprintf(fpDeb_,"\tspikeGenerator: %d\n",(int)grp_Info[i].isSpikeGenerator);
+			fprintf(fpDeb_,"\tFixedInputWts: %d\n",(int)grp_Info[i].FixedInputWts);
+ 			fprintf(fpDeb_,"\tMaxDelay: %d\n",(int)grp_Info[i].MaxDelay);
+ 			fprintf(fpDeb_,"\tWithSTDP: %d\n",(int)grp_Info[i].WithSTDP);
 			if (grp_Info[i].WithSTDP) {
-				fprintf(stderr,"\t\tTAU_LTP_INV: %f\n",grp_Info[i].TAU_LTP_INV);
-				fprintf(stderr,"\t\tTAU_LTD_INV: %f\n",grp_Info[i].TAU_LTD_INV);
-				fprintf(stderr,"\t\tALPHA_LTP: %f\n",grp_Info[i].ALPHA_LTP);
-				fprintf(stderr,"\t\tALPHA_LTD: %f\n",grp_Info[i].ALPHA_LTD);
+				fprintf(fpDeb_,"\t\tTAU_LTP_INV: %f\n",grp_Info[i].TAU_LTP_INV);
+				fprintf(fpDeb_,"\t\tTAU_LTD_INV: %f\n",grp_Info[i].TAU_LTD_INV);
+				fprintf(fpDeb_,"\t\tALPHA_LTP: %f\n",grp_Info[i].ALPHA_LTP);
+				fprintf(fpDeb_,"\t\tALPHA_LTD: %f\n",grp_Info[i].ALPHA_LTD);
 			}
-			fprintf(stderr,"\tWithConductances: %d\n",(int)grp_Info[i].WithConductances);
+			fprintf(fpDeb_,"\tWithConductances: %d\n",(int)grp_Info[i].WithConductances);
 			if (grp_Info[i].WithConductances) {
-				fprintf(stderr,"\t\tdAMPA: %f\n",grp_Info[i].dAMPA);
-				fprintf(stderr,"\t\tdNMDA: %f\n",grp_Info[i].dNMDA);
-				fprintf(stderr,"\t\tdGABAa: %f\n",grp_Info[i].dGABAa);
-				fprintf(stderr,"\t\tdGABAb: %f\n",grp_Info[i].dGABAb);
+				fprintf(fpDeb_,"\t\tdAMPA: %f\n",grp_Info[i].dAMPA);
+				fprintf(fpDeb_,"\t\tdNMDA: %f\n",grp_Info[i].dNMDA);
+				fprintf(fpDeb_,"\t\tdGABAa: %f\n",grp_Info[i].dGABAa);
+				fprintf(fpDeb_,"\t\tdGABAb: %f\n",grp_Info[i].dGABAb);
 			}
-			fprintf(stderr,"\tWithSTP: %d\n",(int)grp_Info[i].WithSTP);
+			fprintf(fpDeb_,"\tWithSTP: %d\n",(int)grp_Info[i].WithSTP);
 			if (grp_Info[i].WithSTP) {
-				fprintf(stderr,"\t\tSTP_U: %f\n",grp_Info[i].STP_U);
-				fprintf(stderr,"\t\tSTP_tD: %f\n",grp_Info[i].STP_tD);
-				fprintf(stderr,"\t\tSTP_tF: %f\n",grp_Info[i].STP_tF);
+				fprintf(fpDeb_,"\t\tSTP_U: %f\n",grp_Info[i].STP_U);
+				fprintf(fpDeb_,"\t\tSTP_tD: %f\n",grp_Info[i].STP_tD);
+				fprintf(fpDeb_,"\t\tSTP_tF: %f\n",grp_Info[i].STP_tF);
 			}
-			fprintf(stderr,"\tspikeGen: %s\n",grp_Info[i].spikeGen==NULL?"Is Null":"Is set");
+			fprintf(fpDeb_,"\tspikeGen: %s\n",grp_Info[i].spikeGen==NULL?"Is Null":"Is set");
 		}
 	}
 

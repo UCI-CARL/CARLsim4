@@ -813,6 +813,7 @@ private:
 	void checkDestSrcPtrs(network_ptr_t* dest, network_ptr_t* src, cudaMemcpyKind kind, int allocateMem, int grpId);
 	int  checkErrors(std::string kernelName, int numBlocks);
 	int  checkErrors(int numBlocks);
+	void checkGPUDevice(int ithGPU);
 	void checkInitialization(char* testString=NULL);
 	void checkInitialization2(char* testString=NULL);
 
