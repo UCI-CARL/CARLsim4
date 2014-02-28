@@ -2227,7 +2227,7 @@ void CpuSNN::findFiring_GPU()
 
   //printTestVarInfo(stderr, "LTP", true, false, false, 1, 4, 0);
 
-  if(MEASURE_LOADING) printGpuLoadBalance(false);
+  if(MEASURE_LOADING) printGpuLoadBalance(false,MAX_BLOCKS,fpOut_);
 
   return;
 }
@@ -2473,7 +2473,7 @@ void CpuSNN::initGPU(int gridSize, int blkSize)
   int errCode = checkErrors("kernel_init", gridSize);
   assert(errCode == NO_KERNEL_ERRORS);
 
-  printGpuLoadBalance(true);
+  printGpuLoadBalance(true,false,fpOut_);
 
   checkInitialization();
 
@@ -3268,39 +3268,39 @@ void CpuSNN::updateNetwork_GPU(bool resetFiringInfo)
   copyUpdateVariables_GPU();
 }
 
-void CpuSNN::printSimSummary(FILE *fp)
-{
-  DBG(2, fpLog, AT, "printSimSummary()");
-  float etime;
-  if(currentMode == GPU_MODE)	 {
-    stopGPUTiming();
-    etime = gpuExecutionTime;
-    CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &spikeCountD2Host, secD2fireCnt, sizeof(int), 0, cudaMemcpyDeviceToHost));
-    CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &spikeCountD1Host, secD1fireCnt, sizeof(int), 0, cudaMemcpyDeviceToHost));
-    spikeCountAll1sec = spikeCountD1 + spikeCountD2;
-    CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &spikeCountD2Host, spikeCountD2, sizeof(int), 0, cudaMemcpyDeviceToHost));
-    CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &spikeCountD1Host, spikeCountD1, sizeof(int), 0, cudaMemcpyDeviceToHost));
-    spikeCountAll      = spikeCountD1Host + spikeCountD2Host;
-  }
-  else {
-    stopCPUTiming();
-    etime = cpuExecutionTime;
-  }
+void CpuSNN::printSimSummary(FILE *fp) {
+	DBG(2, fpLog, AT, "printSimSummary()");
+	float etime;
+	if(currentMode == GPU_MODE) {
+		stopGPUTiming();
+		etime = gpuExecutionTime;
+		CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &spikeCountD2Host, secD2fireCnt, sizeof(int), 0, cudaMemcpyDeviceToHost));
+		CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &spikeCountD1Host, secD1fireCnt, sizeof(int), 0, cudaMemcpyDeviceToHost));
+		spikeCountAll1sec = spikeCountD1 + spikeCountD2;
+		CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &spikeCountD2Host, spikeCountD2, sizeof(int), 0, cudaMemcpyDeviceToHost));
+		CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &spikeCountD1Host, spikeCountD1, sizeof(int), 0, cudaMemcpyDeviceToHost));
+		spikeCountAll      = spikeCountD1Host + spikeCountD2Host;
+	}
+	else {
+		stopCPUTiming();
+		etime = cpuExecutionTime;
+	}
 
-  fprintf(fp, "\n*** Network configuration dumped in %s.dot file...\n\
-				Use graphViz to see the network connectivity...\n\n", networkName.c_str());
-  fprintf(fp, "*********** %s Simulation Summary **********\n", (currentMode == GPU_MODE)?("GPU"):"CPU");
-  fprintf(fp, "Network Parameters: \n\tnumNeurons = %d (numNExcReg:numNInhReg=%2.1f:%2.1f), numSynapses = %d, D = %d\n", numN, 100.0*numNExcReg/numN, 100.0*numNInhReg/numN, postSynCnt, D);
-  fprintf(fp, "Random Seed: %d\n", randSeed);
-  fprintf(fp, "Timing: \n\tModel Simulation Time = %lld sec \n\tActual Execution Time = %4.2f sec\n",  (unsigned long long)simTimeSec, etime/1000.0);
-  fprintf(fp, "Average Firing Rate \n\t2+ms delay = %3.3f Hz \n\t1ms delay = %3.3f Hz \n\tOverall = %3.3f Hz\n",
-	  spikeCountD2Host/(1.0*simTimeSec*numNExcReg), spikeCountD1Host/(1.0*simTimeSec*numNInhReg), spikeCountAll/(1.0*simTimeSec*numN));
-  fprintf(fp, "Overall Firing Count: \n\t2+ms delay = %d \n\t1ms delay = %d \n\tTotal = %d\n",
-	  spikeCountD2Host, spikeCountD1Host, spikeCountAll );
-  fprintf(fp, "**************************************\n\n");
+	fprintf(fp, "\n*** Network configuration dumped in %s.dot file...\n\
+	      Use graphViz to see the network connectivity...\n\n", networkName.c_str());
+	fprintf(fp, "*********** %s Simulation Summary **********\n", (currentMode == GPU_MODE)?("GPU"):"CPU");
+	fprintf(fp, "Network Parameters: \n\tnumNeurons = %d (numNExcReg:numNInhReg=%2.1f:%2.1f), numSynapses = %d, D = %d\n", numN, 100.0*numNExcReg/numN, 100.0*numNInhReg/numN, postSynCnt, D);
+	fprintf(fp, "Random Seed: %d\n", randSeed);
+	fprintf(fp, "Timing: \n\tModel Simulation Time = %lld sec \n\tActual Execution Time = %4.2f sec\n",  (unsigned long long)simTimeSec, etime/1000.0);
+	fprintf(fp, "Average Firing Rate \n\t2+ms delay = %3.3f Hz \n\t1ms delay = %3.3f Hz \n\tOverall = %3.3f Hz\n",
+					spikeCountD2Host/(1.0*simTimeSec*numNExcReg), spikeCountD1Host/(1.0*simTimeSec*numNInhReg), spikeCountAll/(1.0*simTimeSec*numN));
+	fprintf(fp, "Overall Firing Count: \n\t2+ms delay = %d \n\t1ms delay = %d \n\tTotal = %d\n",
+					spikeCountD2Host, spikeCountD1Host, spikeCountAll );
+	fprintf(fp, "**************************************\n\n");
 
-  fflush(fp);
+	fflush(fp);
 }
+
 
 
 /* MDR -- Deprecated

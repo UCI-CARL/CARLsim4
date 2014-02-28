@@ -133,7 +133,6 @@ CpuSNN::CpuSNN(const std::string& _name, int _numConfig, int _randSeed, int _mod
 		fpErr_ = fopen("/dev/null","w");
 		fpDeb_ = fopen("/dev/null","w");
 	} else {
-printf("NOT IN SILENT MODE\n");
 		fpOut_ = stdout;
 		fpErr_ = stderr;
 		fpDeb_ = fopen("/dev/null","w");
@@ -252,7 +251,7 @@ printf("NOT IN SILENT MODE\n");
 	getRand.seed(randSeed*2);
 	getRandClosed.seed(randSeed*3);
 
-	fprintf(fpOut_, "numConfig: %d, randSeed: %d\n",_numConfig,randSeed);
+	fprintf(fpOut_, "nConfig: %d, randSeed: %d\n",_numConfig,randSeed);
 
 	fpParam = fopen("param.txt", "w");
 	if (fpParam==NULL) {
@@ -748,7 +747,7 @@ int CpuSNN::runNetwork(int _nsec, int _nmsec, int simType, int ithGPU, bool enab
 			doGPUSim();
 
 		if (enablePrint) {
-			printState();
+			printState("",fpOut_);
 		}
 
 		if (updateTime()) {
@@ -999,29 +998,30 @@ void CpuSNN::setSpikeRate(int grpId, PoissonRate* ratePtr, int refPeriod, int co
 
 // function used for parameter tuning interface
 void CpuSNN::updateNetwork(bool resetFiringInfo, bool resetWeights) {
-  if(!doneReorganization){
-    fprintf(fpErr_,"UpdateNetwork function was called but nothing was done because reorganizeNetwork must be called first.\n");
-    return;
-  }
-  //change weights back to the default level for all the connections...
-  if(resetWeights)
-    resetSynapticConnections(true);
-  else
-    resetSynapticConnections(false);
+	if(!doneReorganization){
+		fprintf(fpErr_,"UpdateNetwork function was called but nothing was done because reorganizeNetwork must be called first.\n");
+		return;
+	}
 
-  // Reset v,u,firing time values to default values...
-  resetGroups();
+	//change weights back to the default level for all the connections...
+	if(resetWeights)
+		resetSynapticConnections(true);
+	else
+		resetSynapticConnections(false);
 
-  if(resetFiringInfo)
-    resetFiringInformation();
+	// Reset v,u,firing time values to default values...
+	resetGroups();
 
-  if(currentMode==GPU_MODE){
-    //copyGrpInfo_GPU();
-    //do a call to updateNetwork_GPU()
-    updateNetwork_GPU(resetFiringInfo);
-  }
+	if(resetFiringInfo)
+		resetFiringInformation();
 
-  printTuningLog();
+	if(currentMode==GPU_MODE){
+		//copyGrpInfo_GPU();
+		//do a call to updateNetwork_GPU()
+		updateNetwork_GPU(resetFiringInfo);
+	}
+
+	printTuningLog(fpDeb_);
 }
 
 // writes network state to file
@@ -1179,13 +1179,15 @@ void CpuSNN::setLogCycle(unsigned int _cnt, int mode, FILE *fp) {
 	showLogCycle = _cnt;
 
 	showLogMode = mode;
-
+/*
 	if (fp!=NULL)
 		fpLog = fp;
+*/
 }
 
 // directs status info, errors, and debug info to a file or /dev/null
-void CpuSNN::setLogsFp(FILE* fpOut, FILE* fpErr, FILE* fpDeb) {
+/*
+void CpuSNN::setLogsFp(FILE* const fpOut, FILE* const fpErr, FILE* const fpDeb) {
 	// if members already have open fp, close them
 	if (fpOut_!=NULL) fclose(fpOut_);
 	if (fpErr_!=NULL) fclose(fpErr_);
@@ -1196,7 +1198,7 @@ void CpuSNN::setLogsFp(FILE* fpOut, FILE* fpErr, FILE* fpDeb) {
 	fpErr_ = (fpErr==NULL) ? fopen("/dev/null","w") : fpErr;
 	fpDeb_ = (fpDeb==NULL) ? fopen("/dev/null","w") : fpDeb;	
 }
-
+*/
 
 /// **************************************************************************************************************** ///
 /// GETTERS / SETTERS
@@ -1552,7 +1554,6 @@ void CpuSNN::CpuSNNInit(unsigned int nNeur, unsigned int nPostSyn, unsigned int 
 	wt  			= new float[preSynCnt+100];
 	maxSynWt     	= new float[preSynCnt+100];
 
-printf("allocating mulSynFast\n");
 	mulSynFast 		= new float[MAX_numConnections];
 	mulSynSlow 		= new float[MAX_numConnections];
 	cumConnIdPre	= new uint16_t[preSynCnt+100];
@@ -1826,6 +1827,13 @@ void CpuSNN::buildPoissonGroup(int grpId) {
 }
 
 
+void CpuSNN::checkNetworkBuilt(FILE * const fp) {
+	if (!doneReorganization) {
+		DBG(0, fpDeb_, AT, "checkNetworkBuilt()"); // this is always debug
+		fprintf(fp, "Network not yet elaborated and built...\n");
+	}
+}
+
 // We parallelly cleanup the postSynapticIds array to minimize any other wastage in that array by compacting the store
 // Appropriate alignment specified by ALIGN_COMPACTION macro is used to ensure some level of alignment (if necessary)
 void CpuSNN::compactConnections() {
@@ -2045,11 +2053,12 @@ void CpuSNN::deleteObjects() {
 		if(simulatorDeleted)
 			return;
 
-		if(fpDeb_) {
-			printSimSummary(fpDeb_);
-			printSimSummary(fpOut_);
-			fclose(fpDeb_);
-		}
+		printSimSummary(fpDeb_);
+		printSimSummary(fpOut_);
+
+		if (fpOut_!=NULL) fclose(fpOut_);
+		if (fpErr_!=NULL) fclose(fpErr_);
+		if (fpDeb_!=NULL) fclose(fpDeb_);
 
 		// close param.txt
 		if (fpParam) {
@@ -2819,9 +2828,6 @@ void CpuSNN::reorganizeNetwork(bool removeTempMemory, int simType) {
 	// The post synaptic connections are sorted based on delay here
 	reorganizeDelay();
 
-	// Print statistics of the memory used to fpOut_...
-	printMemoryInfo();
-
 	// Print the statistics again but dump the results to a file
 	printMemoryInfo(fpDeb_);
 
@@ -2834,7 +2840,7 @@ void CpuSNN::reorganizeNetwork(bool removeTempMemory, int simType) {
 	doneReorganization = true;
 
 	printParameters(fpDeb_);
-	printTuningLog();
+	printTuningLog(fpDeb_);
 
 	makePtrInfo();
 
@@ -3003,9 +3009,6 @@ void CpuSNN::resetPointers() {
 	firingTableD1 = NULL;
 
 	fpParam = NULL;
-	fpDeb_   = NULL;
-	fpDeb_ = fpErr_;
-	fpTuningLog = NULL;
 	cntTuning  = 0;
 }
 
@@ -3505,7 +3508,7 @@ void CpuSNN::updateStateAndFiringTable()
       }
 
       if ((showLogMode >= 1) && (i==grp_Info[g].StartN))
-	fprintf(fpDeb_,"Weights, Change at %lu (diff_firing:%f) \n", simTimeSec, diff_firing);
+	fprintf(fpOut_,"Weights, Change at %lu (diff_firing:%f) \n", simTimeSec, diff_firing);
 
       for(int j=0; j < Npre_plastic[i]; j++) {
 
@@ -3646,7 +3649,7 @@ void CpuSNN::updateSpikeMonitor()
   for (int grpId=0;grpId<numGrp;grpId++) {
     int monitorId = grp_Info[grpId].MonitorId;
     if(monitorId!= -1) {
-      fprintf(fpErr_, "Spike Monitor for Group %s has %d spikes (%f Hz)\n",grp_Info2[grpId].Name.c_str(),
+      fprintf(fpOut_, "Spike Monitor for Group %s has %d spikes (%f Hz)\n",grp_Info2[grpId].Name.c_str(),
       			monBufferPos[monitorId],((float)monBufferPos[monitorId])/(grp_Info[grpId].SizeN));
 
       // call the callback function

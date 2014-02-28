@@ -364,7 +364,7 @@ int CARLsim::runNetwork(int nSec, int nMsec) {
 	if (!hasRunNetwork_) {
 		handleNetworkConsistency();	// before running network, make sure it's consistent
 		handleUserWarnings();		// before running network, make sure user didn't provoque any user warnings
-		printSimulationSpecs();		// first time around, show simMode etc.
+//		printSimulationSpecs();		// first time around, show simMode etc.
 	}
 
 	hasRunNetwork_ = true;
@@ -376,7 +376,7 @@ int CARLsim::runNetwork(int nSec, int nMsec) {
 int CARLsim::runNetwork(int nSec, int nMsec, int simType, int ithGPU, bool enablePrint, bool copyState) {
 	if (!hasRunNetwork_) {
 		handleUserWarnings();	// before running network, make sure user didn't provoque any user warnings
-		printSimulationSpecs(); // first time around, show simMode etc.
+//		printSimulationSpecs(); // first time around, show simMode etc.
 	}
 
 	hasRunNetwork_ = true;

@@ -25,6 +25,8 @@ TEST(readTestArgc, ArgNumber) {
 	// 5% probability of connection
 	sim.connect(gin,g1,"random", +100.0f/100, 100.0f/100, 0.05f,  1, 20, SYN_FIXED);
 
+	sim.setConductances(ALL,true);
+
 	PoissonRate in(N*0.1);
 	for (int i=0;i<N*0.1;i++) in.rates[i] = 1;
 		sim.setSpikeRate(gin,&in);
