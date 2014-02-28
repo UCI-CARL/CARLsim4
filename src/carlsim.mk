@@ -67,7 +67,7 @@ all_targets += CARLsim
 # CARLsim rules
 #-------------------------------------------------------------------------------
 .PHONY: CARLsim
-CARLsim: $(local_src) $(local_objs) $(interface_objs)
+CARLsim: $(local_src) $(interface_src) $(local_objs) $(interface_objs)
 
 # interface
 $(interface_dir)/src/%.o: $(interface_dir)/src/%.cpp $(interface_deps)

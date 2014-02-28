@@ -67,10 +67,10 @@ example_includes := $(addsuffix /examples.mk, $(wildcard examples/*))
 include $(example_includes)
 
 
-.PHONY: all libraries examples pti_examples clean distclean CARLsim
+.PHONY: all libraries examples pti_examples clean distclean tests
 all: $(all_targets)
 
-tests: $(carlsim_objs) gtest sample1_unittest carlsim_tests
+tests: gtest sample1_unittest carlsim_tests
 
 libraries: $(libraries)
 
