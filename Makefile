@@ -83,3 +83,6 @@ clean:
 
 distclean:
 	$(RM) $(objects) $(carlsim_programs) $(pti_programs) $(libraries) $(output_files)
+
+devtest:
+	@echo $(all_targets)

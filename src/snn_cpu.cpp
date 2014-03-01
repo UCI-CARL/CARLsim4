@@ -192,19 +192,18 @@ CpuSNN::CpuSNN(const std::string& _name, int _numConfig, int _randSeed, int _mod
 		fpErr_ = fopen("/dev/null","w");
 		fpDeb_ = fopen("/dev/null","w");
 	} else {
+		CARLSIM_ERROR("Not in silent mode!!");
+		int dd=42;
+		CARLSIM_WARN("O-ooh, d=%d",dd);
+		CARLSIM_INFO("Just kidding... %d",dd);
+		CARLSIM_DEBUG("Some debug info %d",dd);
 		fpOut_ = stdout;
 		fpErr_ = stderr;
 		fpDeb_ = fopen("/dev/null","w");
 	}
-fpLog_ = fopen("debug.log","w");
 
-CARLSIM_ERROR("hallo");
-//CARLSIM_ERROR2(fpErr_,fpOut_,"hallo2");
-//CARLSIM_ERROR3(fpOut_,fpOut_,fpOut_,"hallo3");
-int dd=42;
-CARLSIM_WARN("O-ooh, d=%d",dd);
-CARLSIM_INFO("Info %d",dd);
-CARLSIM_DEBUG("Some debug info %d",dd);
+	fpLog_ = fopen("debug.log","w");
+
 
 
 	CARLSIM_INFO("*******************************************************************************");
@@ -534,6 +533,8 @@ uint16_t CpuSNN::connect(int grpId1, int grpId2, ConnectionGenerator* conn, floa
 
 // create group of Izhikevich neurons
 int CpuSNN::createGroup(const std::string& grpName, unsigned int nNeur, int neurType, int configId) {
+	assert(nNeur>0); assert(neurType>=0); assert(configId>=-1);	assert(configId<numConfig);
+//printf("nNeur=%u\n",nNeur);
 	if (configId == ALL) {
 		for(int c=0; c < numConfig; c++)
 			createGroup(grpName, nNeur, neurType, c);
@@ -612,6 +613,8 @@ int CpuSNN::createSpikeGeneratorGroup(const std::string& grpName, unsigned int n
 // set conductance values for a group (custom values or disable conductances alltogether)
 void CpuSNN::setConductances(int grpId, bool isSet, float tdAMPA, float tdNMDA, float tdGABAa, float tdGABAb,
 								int configId) {
+	assert(grpId>=0); assert(tdAMPA>0); assert(tdNMDA>0); assert(tdGABAa>0); assert(tdGABAb>0); assert(configId>=-1);
+
 	if (grpId==ALL && configId==ALL) { // shortcut for all groups & configs
 		for(int g=0; g < numGrp; g++)
 			setConductances(g, isSet, tdAMPA, tdNMDA, tdGABAa, tdGABAb, 0);
@@ -695,7 +698,11 @@ void CpuSNN::setHomeoBaseFiringRate(int grpId, float baseFiring, float baseFirin
 
 // set Izhikevich parameters for group
 void CpuSNN::setNeuronParameters(int grpId, float izh_a, float izh_a_sd, float izh_b, float izh_b_sd,
-								float izh_c, float izh_c_sd, float izh_d, float izh_d_sd, int configId) {
+								float izh_c, float izh_c_sd, float izh_d, float izh_d_sd, int configId)
+{
+	assert(grpId>=0); assert(izh_a>0); assert(izh_a_sd>=0); assert(izh_b>0); assert(izh_b_sd>=0); assert(izh_c_sd>=0);
+	assert(izh_d>0); assert(izh_d_sd>=0); assert(configId>=-1);
+
 	if (grpId==ALL && configId==ALL) { // shortcut for all groups & configs
 		for(int g=0; g < numGrp; g++)
 			setNeuronParameters(g, izh_a, izh_a_sd, izh_b, izh_b_sd, izh_c, izh_c_sd, izh_d, izh_d_sd, 0);

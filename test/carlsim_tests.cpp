@@ -4,6 +4,72 @@
 #include <limits.h>
 #include "gtest/gtest.h"
 
+
+//! Death tests for setNeuronParameters (test all possible silly values)
+TEST(CORE, createGroupSilly) {
+	CpuSNN* sim;
+	sim = new CpuSNN("SNN",1,42,CPU_MODE,true);
+
+	// set silly values to all possible input arguments
+	// e.g., negative values for things>=0, values>numGrps or values>numConfig, etc.
+	EXPECT_DEATH({int N=-10; sim->createGroup("excit", N, EXCITATORY_NEURON, ALL);},"");
+	EXPECT_DEATH({sim->createGroup("excit", 10, -3, ALL);},"");
+	EXPECT_DEATH({sim->createGroup("excit", 10, EXCITATORY_NEURON, 2);},"");
+	EXPECT_DEATH({sim->createGroup("excit", 10, EXCITATORY_NEURON, -2);},"");
+
+	if (sim!=NULL)
+		delete sim;
+}
+
+//! Death tests for setNeuronParameters (test all possible silly values)
+TEST(CORE, setNeuronParametersSilly) {
+	CpuSNN* sim;
+	sim = new CpuSNN("SNN",1,42,CPU_MODE,true);
+	int g0=sim->createGroup("excit", 10, EXCITATORY_NEURON, ALL);
+
+	// set silly values to all possible input arguments
+	// e.g., negative values for things>=0, values>numGrps or values>numConfig, etc.
+	EXPECT_DEATH({sim->setNeuronParameters(-1, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f, ALL);},"");
+	EXPECT_DEATH({sim->setNeuronParameters(g0+1, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f, ALL);},"");
+	EXPECT_DEATH({sim->setNeuronParameters(g0, -0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f, ALL);},"");
+	EXPECT_DEATH({sim->setNeuronParameters(g0, 0.02f, -10.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f, ALL);},"");
+	EXPECT_DEATH({sim->setNeuronParameters(g0, 0.02f, 0.0f, -0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f, ALL);},"");
+	EXPECT_DEATH({sim->setNeuronParameters(g0, 0.02f, 0.0f, 0.2f, -10.0f, -65.0f, 0.0f, 8.0f, 0.0f, ALL);},"");
+	EXPECT_DEATH({sim->setNeuronParameters(g0, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, -2.0f, 8.0f, 0.0f, ALL);},"");
+	EXPECT_DEATH({sim->setNeuronParameters(g0, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, -8.0f, 0.0f, ALL);},"");
+	EXPECT_DEATH({sim->setNeuronParameters(g0, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, -10.0f, ALL);},"");
+	EXPECT_DEATH({sim->setNeuronParameters(g0, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f, 2);},"");
+	EXPECT_DEATH({sim->setNeuronParameters(g0, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f, -2);},"");
+
+	if (sim!=NULL)
+		delete sim;
+}
+
+
+//! Death tests for setConductances (test all possible silly values)
+TEST(COBA, setCondSilly) {
+	CpuSNN* sim;
+	sim = new CpuSNN("SNN",1,42,CPU_MODE,true);
+	int g0=sim->createGroup("excit", 10, EXCITATORY_NEURON, ALL);
+
+	// set silly values to all possible input arguments
+	// e.g., negative values for things>=0, values>numGrps or values>numConfig, etc.
+	EXPECT_DEATH({sim->setConductances(g0+1, true, 5.0f, 150.0f, 6.0f, 150.0f, ALL);},"");
+	EXPECT_DEATH({sim->setConductances(-2, true, 5.0f, 150.0f, 6.0f, 150.0f, ALL);},"");
+	EXPECT_DEATH({sim->setConductances(g0, true, -5.0f, 150.0f, 6.0f, 150.0f, ALL);},"");
+	EXPECT_DEATH({sim->setConductances(g0, true, 5.0f, -150.0f, 6.0f, 150.0f, ALL);},"");
+	EXPECT_DEATH({sim->setConductances(g0, true, 5.0f, 150.0f, -6.0f, 150.0f, ALL);},"");
+	EXPECT_DEATH({sim->setConductances(g0, true, 5.0f, 150.0f, 6.0f, -150.0f, ALL);},"");
+	EXPECT_DEATH({sim->setConductances(g0, true, 5.0f, 150.0f, 6.0f, 150.0f, 2);},"");
+	EXPECT_DEATH({sim->setConductances(g0, true, 5.0f, 150.0f, 6.0f, 150.0f, -2);},"");
+
+	if (sim!=NULL)
+		delete sim;
+}
+
+
+
+
 /*!
  * \brief testing setConductances to true
  * This function tests the information stored in the group info struct after calling setConductances and enabling COBA.
@@ -17,20 +83,20 @@ TEST(COBA, setCondTrue) {
 	float tNMDA = 10.0f;
 	float tGABAa = 15.0f;
 	float tGABAb = 20.0f;
-	CARLsim* sim;
+	CpuSNN* sim;
 	group_info_t grpInfo;
 	int grps[2] = {-1};
 
 	for (int mode=0; mode<=1; mode++) {
 		for (int nConfig=1; nConfig<=maxConfig; nConfig+=nConfigStep) {
-			sim = new CARLsim("SNN",nConfig,42,mode?GPU_MODE:CPU_MODE,0,true);
+			sim = new CpuSNN("SNN",nConfig,42,mode?GPU_MODE:CPU_MODE,true);
 
-			grps[0]=sim->createSpikeGeneratorGroup("spike", 10, EXCITATORY_NEURON);
-			grps[1]=sim->createGroup("excit", 10, EXCITATORY_NEURON);
-			sim->setNeuronParameters(grps[1], 0.02f, 0.2f, -65.0f, 8.0f);
+			grps[0]=sim->createSpikeGeneratorGroup("spike", 10, EXCITATORY_NEURON, ALL);
+			grps[1]=sim->createGroup("excit", 10, EXCITATORY_NEURON, ALL);
+			sim->setNeuronParameters(grps[1], 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f, ALL);
 
-			sim->setConductances(grps[0],true,tAMPA,tNMDA,tGABAa,tGABAb);
-			sim->setConductances(grps[1],true,tAMPA,tNMDA,tGABAa,tGABAb);
+			sim->setConductances(grps[0],true,tAMPA,tNMDA,tGABAa,tGABAb,ALL);
+			sim->setConductances(grps[1],true,tAMPA,tNMDA,tGABAa,tGABAb,ALL);
 
 			for (int c=0; c<nConfig; c++) {
 				for (int g=0; g<=1; g++) {
@@ -106,20 +172,20 @@ TEST(COBA, setCondFalse) {
 	float tNMDA = 10.0f;
 	float tGABAa = 15.0f;
 	float tGABAb = 20.0f;
-	CARLsim* sim;
+	CpuSNN* sim;
 	group_info_t grpInfo;
 	int grps[2] = {-1};
 
 	for (int mode=0; mode<=1; mode++) {
 		for (int nConfig=1; nConfig<=maxConfig; nConfig+=nConfigStep) {
-			sim = new CARLsim("SNN",nConfig,42,mode?GPU_MODE:CPU_MODE,0,true);
+			sim = new CpuSNN("SNN",nConfig,42,mode?GPU_MODE:CPU_MODE,true);
 
-			grps[0]=sim->createSpikeGeneratorGroup("spike", 10, EXCITATORY_NEURON);
-			grps[1]=sim->createGroup("excit", 10, EXCITATORY_NEURON);
-			sim->setNeuronParameters(grps[1], 0.02f, 0.2f, -65.0f, 8.0f);
+			grps[0]=sim->createSpikeGeneratorGroup("spike", 10, EXCITATORY_NEURON, ALL);
+			grps[1]=sim->createGroup("excit", 10, EXCITATORY_NEURON, ALL);
+			sim->setNeuronParameters(grps[1], 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f, ALL);
 
-			sim->setConductances(grps[0],false,tAMPA,tNMDA,tGABAa,tGABAb);
-			sim->setConductances(grps[1],false,tAMPA,tNMDA,tGABAa,tGABAb);
+			sim->setConductances(grps[0],false,tAMPA,tNMDA,tGABAa,tGABAb, ALL);
+			sim->setConductances(grps[1],false,tAMPA,tNMDA,tGABAa,tGABAb, ALL);
 
 			for (int c=0; c<nConfig; c++) {
 				for (int g=0; g<=1; g++) {
