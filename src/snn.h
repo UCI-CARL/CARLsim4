@@ -41,11 +41,11 @@
 #ifndef _SNN_GOLD_H_
 #define _SNN_GOLD_H_
 
-#include "mtrand.h"
-#include "gpu_random.h"
-#include "config.h"
-#include "propagated_spike_buffer.h"
-#include "poisson_rate.h"
+#include <mtrand.h>
+#include <gpu_random.h>
+#include <config.h>
+#include <propagated_spike_buffer.h>
+#include <poisson_rate.h>
 
 #if __CUDA3__
 	#include <cuda.h>
@@ -61,6 +61,14 @@
 #endif
 
 #include "CUDAVersionControl.h"
+
+
+
+#if REGRESSION_TESTING
+	#define private public
+ 	#define protected public
+#endif
+
 
 extern RNG_rand48* gpuRand48; //!< Used by all network to generate global random number
 
@@ -557,10 +565,10 @@ public:
 
 
 	//! creates a group of Izhikevich spiking neurons
-	int createGroup(const std::string& grpName, unsigned int nNeur, int neurType, int configId);
+	int createGroup(const std::string& grpName, int nNeur, int neurType, int configId);
 
 	//! creates a spike generator group (dummy-neurons, not Izhikevich spiking neurons). 
-	int createSpikeGeneratorGroup(const std::string& grpName, int unsigned nNeur, int neurType, int configId);
+	int createSpikeGeneratorGroup(const std::string& grpName, int nNeur, int neurType, int configId);
 
 
   	//! sets custom values for conductance decay (\tau_decay) or disables conductances alltogether
@@ -671,11 +679,9 @@ public:
 
 	loggerMode_t getLoggerMode() { return loggerMode_; }
 
-	std::string getNetworkName() { return networkName; }
 	int getNumConfigurations()	{ return numConfig; }	//!< gets number of network configurations
 	int getNumConnections(uint16_t connectionId);		//!< gets number of connections associated with a connection ID
 	int getNumGroups() { return numGrp; }
-	int getRandSeed() { return randSeed; }
 
 	/*!
 	 * \brief Writes weights from synaptic connections from gIDpre to gIDpost.  Returns a pointer to the weights

@@ -1,5 +1,7 @@
 // Testing COBA
 
+//#define REGRESSION_TESTING
+
 #include <carlsim.h>
 #include <limits.h>
 #include "gtest/gtest.h"
@@ -12,7 +14,6 @@ TEST(CORE, CpuSNNinit) {
 	// Problem: The first two modes will print to stdout, and close it in the end; so all subsequent calls to sdout
 	// via GTEST fail
 	loggerMode_t modes[4] = {USER, DEVELOPER, SILENT, CUSTOM};
-//	loggerMode_t modes[2] = {SILENT, CUSTOM};
 	for (int i=0; i<4; i++) {
 		for (int j=0; j<=1; j++) {
 			std::string name = "SNN";
@@ -20,30 +21,28 @@ TEST(CORE, CpuSNNinit) {
 			int randSeed = rand() % 1000;
 			sim = new CpuSNN(name,nConfig,randSeed,j,modes[i]);
 
-			EXPECT_EQ(sim->getNetworkName(),name);
+			EXPECT_EQ(sim->networkName,name);
 			EXPECT_EQ(sim->getNumConfigurations(),nConfig);
-			EXPECT_EQ(sim->getRandSeed(),randSeed);
+			EXPECT_EQ(sim->randSeed,randSeed);
 			EXPECT_EQ(sim->getSimMode(),j);
 			EXPECT_EQ(sim->getLoggerMode(),modes[i]);
 
 			delete sim;
-			if (modes[i]==USER || modes[i]==DEVELOPER)
-				stdout = fdopen(1, "w"); //reopen: 1 is file descriptor of std output
 		}
 	}
-	printf("hallo\n");
 
 	sim = new CpuSNN("SNN",1,0);
-	EXPECT_EQ(sim->getRandSeed(),123);
+	EXPECT_EQ(sim->randSeed,123);
 	delete sim;
 
 	// time(NULL)
 	sim = new CpuSNN("SNN",1,-1);
-	EXPECT_NE(sim->getRandSeed(),-1);
-	EXPECT_NE(sim->getRandSeed(),0);
+	EXPECT_NE(sim->randSeed,-1);
+	EXPECT_NE(sim->randSeed,0);
 	delete sim;
 }
 
+// FIXME: enabling the following generates a segfault
 //! check all possible (invalid) ways of instantiating CpuSNN
 /*TEST(CORE, CpuSNNinitDeath) {
 	CpuSNN* sim;
@@ -64,7 +63,7 @@ TEST(CORE, CpuSNNinit) {
 	if (sim!=NULL) delete sim;
 }*/
 
-//! Death tests for setNeuronParameters (test all possible silly values)
+//! Death tests for createGroup (test all possible silly values)
 TEST(CORE, createGroupSilly) {
 	CpuSNN* sim;
 	sim = new CpuSNN("SNN",1,42,CPU_MODE,SILENT);
@@ -79,6 +78,23 @@ TEST(CORE, createGroupSilly) {
 	if (sim!=NULL)
 		delete sim;
 }
+
+//! Death tests for createSpikeGenerator (test all possible silly values)
+TEST(CORE, createSpikeGeneratorGroupSilly) {
+	CpuSNN* sim;
+	sim = new CpuSNN("SNN",1,42,CPU_MODE,SILENT);
+
+	// set silly values to all possible input arguments
+	// e.g., negative values for things>=0, values>numGrps or values>numConfig, etc.
+	EXPECT_DEATH({int N=-10; sim->createSpikeGeneratorGroup("excit", N, EXCITATORY_NEURON, ALL);},"");
+	EXPECT_DEATH({sim->createSpikeGeneratorGroup("excit", 10, -3, ALL);},"");
+	EXPECT_DEATH({sim->createSpikeGeneratorGroup("excit", 10, EXCITATORY_NEURON, 2);},"");
+	EXPECT_DEATH({sim->createSpikeGeneratorGroup("excit", 10, EXCITATORY_NEURON, -2);},"");
+
+	if (sim!=NULL)
+		delete sim;
+}
+
 
 //! Death tests for setNeuronParameters (test all possible silly values)
 TEST(CORE, setNeuronParametersSilly) {
@@ -105,6 +121,13 @@ TEST(CORE, setNeuronParametersSilly) {
 }
 
 
+
+
+
+
+
+
+
 //! Death tests for setConductances (test all possible silly values)
 TEST(COBA, setCondSilly) {
 	CpuSNN* sim;
@@ -125,9 +148,6 @@ TEST(COBA, setCondSilly) {
 	if (sim!=NULL)
 		delete sim;
 }
-
-
-
 
 /*!
  * \brief testing setConductances to true
@@ -258,6 +278,17 @@ TEST(COBA, setCondFalse) {
 }
 
 // TODO: test to trigger error that not all groups have conductances enabled
+
+
+
+
+
+
+
+
+
+
+
 
 //! connect with certain mulSynFast, mulSynSlow and observe connectInfo
 TEST(Connect, connect) {

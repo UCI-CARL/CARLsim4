@@ -208,7 +208,7 @@ uint16_t CARLsim::connect(int grpId1, int grpId2, ConnectionGenerator* conn, flo
 
 
 // create group of Izhikevich spiking neurons
-int CARLsim::createGroup(std::string grpName, unsigned int nNeur, int neurType, int configId) {
+int CARLsim::createGroup(std::string grpName, int nNeur, int neurType, int configId) {
 	std::string funcName = "createGroup(\""+grpName+"\")";
 	UserErrors::userAssert(!hasRunNetwork_, UserErrors::NETWORK_ALREADY_RUN, funcName); // can't change setup after run
 
@@ -230,7 +230,7 @@ int CARLsim::createGroup(std::string grpName, unsigned int nNeur, int neurType, 
 }
 
 // create group of spike generators
-int CARLsim::createSpikeGeneratorGroup(std::string grpName, unsigned int nNeur, int neurType, int configId) {
+int CARLsim::createSpikeGeneratorGroup(std::string grpName, int nNeur, int neurType, int configId) {
 	std::string funcName = "createSpikeGeneratorGroup(\""+grpName+"\")";
 	UserErrors::userAssert(!hasRunNetwork_, UserErrors::NETWORK_ALREADY_RUN, funcName); // can't change setup after run
 

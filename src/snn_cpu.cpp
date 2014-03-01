@@ -38,8 +38,9 @@
  * Ver 2/21/2014
  */ 
  
-#include "snn.h"
+#include <snn.h>
 #include <sstream>
+
 
 #if (_WIN32 || _WIN64)
 	#include <float.h>
@@ -79,7 +80,6 @@ RNG_rand48* gpuRand48 = NULL;
 #define SETPOST_INFO(name, nid, sid, val) name[cumulativePost[nid]+sid]=val;
 
 #define SETPRE_INFO(name, nid, sid, val)  name[cumulativePre[nid]+sid]=val;
-
 
 
 
@@ -136,7 +136,11 @@ CpuSNN::CpuSNN(const std::string& _name, int _numConfig, int _randSeed, int simM
 	}
 	fpLog_ = fopen("debug.log","w");
 
-
+	#if REGRESSION_TESTING
+		fpOut_ = fopen("/dev/null","w");
+		fpErr_ = fopen("/dev/null","w");
+		fpDeb_ = fopen("/dev/null","w");
+	#endif
 
 	CARLSIM_INFO("*******************************************************************************");
 	CARLSIM_INFO("********************      Welcome to CARLsim %d.%d      *************************",
@@ -450,9 +454,9 @@ uint16_t CpuSNN::connect(int grpId1, int grpId2, ConnectionGenerator* conn, floa
 
 
 // create group of Izhikevich neurons
-int CpuSNN::createGroup(const std::string& grpName, unsigned int nNeur, int neurType, int configId) {
+// use int for nNeur to avoid arithmetic underflow
+int CpuSNN::createGroup(const std::string& grpName, int nNeur, int neurType, int configId) {
 	assert(nNeur>0); assert(neurType>=0); assert(configId>=-1);	assert(configId<numConfig);
-//printf("nNeur=%u\n",nNeur);
 	if (configId == ALL) {
 		for(int c=0; c < numConfig; c++)
 			createGroup(grpName, nNeur, neurType, c);
@@ -498,7 +502,9 @@ int CpuSNN::createGroup(const std::string& grpName, unsigned int nNeur, int neur
 }
 
 // create spike generator group
-int CpuSNN::createSpikeGeneratorGroup(const std::string& grpName, unsigned int nNeur, int neurType, int configId) {
+// use int for nNeur to avoid arithmetic underflow
+int CpuSNN::createSpikeGeneratorGroup(const std::string& grpName, int nNeur, int neurType, int configId) {
+	assert(nNeur>0); assert(neurType>=0); assert(configId>=-1);	assert(configId<numConfig);
 	if (configId == ALL) {
 		for(int c=0; c < numConfig; c++)
 			createSpikeGeneratorGroup(grpName, nNeur, neurType, c);

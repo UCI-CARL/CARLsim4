@@ -38,9 +38,9 @@
  * Ver 07/13/2013
  */ 
 
-#include "config.h"
-#include "snn.h"
-#include "errorCode.h"
+#include <config.h>
+#include <snn.h>
+#include <errorCode.h>
 #include <cuda_runtime.h>
 
 #if __CUDA3__
@@ -1729,10 +1729,6 @@ void CpuSNN::copyConnections(network_ptr_t* dest, int kind, int allocateMem)
   assert(net_Info.I_setPitch > 0);
   CUDA_CHECK_ERRORS( cudaMemset( dest->I_set, 0, net_Info.I_setPitch*net_Info.I_setLength));
 
-#if TESTING
-  fprintf(fpOut_, "numNReg=%d numPostSynapses = %d, I_set = %x, I_setPitch = %d,  I_setLength = %d\n", numNReg, numPostSynapses, dest->I_set, net_Info.I_setPitch, net_Info.I_setLength);
-#endif
-
   // connection synaptic lengths and cumulative lengths...
   if(allocateMem)   	CUDA_CHECK_ERRORS( cudaMalloc((void**) &dest->Npre, sizeof(dest->Npre[0])*numN));
   CUDA_CHECK_ERRORS( cudaMemcpy( dest->Npre, Npre, sizeof(dest->Npre[0])*numN, cudaMemcpyHostToDevice));
@@ -3173,8 +3169,6 @@ void CpuSNN::printSimSummary(FILE *fp) {
 		etime = cpuExecutionTime;
 	}
 
-	fprintf(fp, "\n*** Network configuration dumped in %s.dot file...\n\
-	      Use graphViz to see the network connectivity...\n\n", networkName.c_str());
 	fprintf(fp, "*********** %s Simulation Summary **********\n", (currentMode == GPU_MODE)?("GPU"):"CPU");
 	fprintf(fp, "Network Parameters: \n\tnumNeurons = %d (numNExcReg:numNInhReg=%2.1f:%2.1f), numSynapses = %d, D = %d\n", numN, 100.0*numNExcReg/numN, 100.0*numNInhReg/numN, postSynCnt, D);
 	fprintf(fp, "Random Seed: %d\n", randSeed);

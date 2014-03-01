@@ -107,10 +107,10 @@ public:
 
 
 	//! creates a group of Izhikevich spiking neurons
-	int createGroup(const std::string grpName, unsigned int nNeur, int neurType, int configId=ALL);
+	int createGroup(const std::string grpName, int nNeur, int neurType, int configId=ALL);
 
 	//! creates a spike generator group
-	int createSpikeGeneratorGroup(const std::string grpName, unsigned int nNeur, int neurType, int configId=ALL);
+	int createSpikeGeneratorGroup(const std::string grpName, int nNeur, int neurType, int configId=ALL);
 
 
 	//! Sets default values for conduction decays or disables COBA if isSet==false

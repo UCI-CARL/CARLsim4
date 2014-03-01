@@ -61,6 +61,7 @@
 	#include <stdint.h>
 #endif
 
+
 #define MAX_numPostSynapses 10000
 #define MAX_numPreSynapses 20000
 #define MAX_SynapticDelay 20
@@ -92,6 +93,12 @@
 #define DEBUG_LEVEL		0
 
 #define MAX_GRP_PER_SNN 250
+
+
+// set to 1 if doing regression tests
+// will make private members public and disable output/logging
+#define REGRESSION_TESTING 1
+
 
 // This option effects readNetwork()'s behavior.  Setting this option to 1 will cause 
 // the network file to be read twice, once for plastic synapses and then again for 

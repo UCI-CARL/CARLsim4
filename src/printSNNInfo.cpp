@@ -41,8 +41,8 @@
 #include "snn.h"
 
 #if ! (_WIN32 || _WIN64)
-#include <string.h>
-#define strcmpi(s1,s2) strcasecmp(s1,s2)
+  #include <string.h>
+  #define strcmpi(s1,s2) strcasecmp(s1,s2)
 #endif
 
 
