@@ -67,7 +67,7 @@ int main()
 	sim.connect(g1,g1,"random", 0.006f, 0.01f, 0.1f,  1, 20, SYN_PLASTIC);
 
 	// 5% probability of connection
-	sim.connect(gin,g1,"random", 1.0f, 1.0f, 0.05f,  1, 20, SYN_FIXED);
+	sim.connect(gin,g1,"random", 0.5f, 0.5f, 0.05f,  1, 20, SYN_FIXED);
 
 	// here we define and set the properties of the STDP. 
 	float ALPHA_LTP = 0.10f/100, TAU_LTP = 20.0f, ALPHA_LTD = 0.12f/100, TAU_LTD = 20.0f;	
