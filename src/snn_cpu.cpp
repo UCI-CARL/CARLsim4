@@ -159,24 +159,6 @@ bool toggleSilentMode() {
 enum loggerMode { USER, DEVELOPER, SILENT, CUSTOM };
 
 
-// use these macros for logging / error printing
-// every message will be printed to one of fpOut_, fpErr_, fpDeb_ depending on the nature of the message
-// Additionally, every message gets printed to some log file fpLog_. This is different from fpDeb_ for
-// the case in which you want the two to be different (e.g., developer mode, in which you would like to
-// see all debug info (stdout) but also have it saved to a file
-#define CARLSIM_ERROR(formatc, ...) {	CARLSIM_ERROR_PRINT(fpErr_,formatc,##__VA_ARGS__); \
-										CARLSIM_DEBUG_PRINT(fpLog_,formatc,##__VA_ARGS__); }
-#define CARLSIM_WARN(formatc, ...) {	CARLSIM_WARN_PRINT(fpErr_,formatc,##__VA_ARGS__); \
-										CARLSIM_DEBUG_PRINT(fpLog_,formatc,##__VA_ARGS__); }
-#define CARLSIM_INFO(formatc, ...) {	CARLSIM_INFO_PRINT(fpOut_,formatc,##__VA_ARGS__); \
-										CARLSIM_DEBUG_PRINT(fpLog_,formatc,##__VA_ARGS__); }
-#define CARLSIM_DEBUG(formatc, ...) {	CARLSIM_DEBUG_PRINT(fpOut_,formatc,##__VA_ARGS__); \
-										CARLSIM_DEBUG_PRINT(fpLog_,formatc,##__VA_ARGS__); }
-
-#define CARLSIM_ERROR_PRINT(fp, formatc, ...) fprintf(fp,"\033[31;1m[ERROR %s:%d] " formatc "\n\033[0m",__FILE__,__LINE__,##__VA_ARGS__)
-#define CARLSIM_WARN_PRINT(fp, formatc, ...) fprintf(fp,"\033[33;1m[WARNING %s:%d] " formatc "\n\033[0m",__FILE__,__LINE__,##__VA_ARGS__)
-#define CARLSIM_INFO_PRINT(fp, formatc, ...) fprintf(fp,formatc "\n",##__VA_ARGS__)
-#define CARLSIM_DEBUG_PRINT(fp, formatc, ...) fprintf(fp,"[DEBUG %s:%d] " formatc "\n",__FILE__,__LINE__,##__VA_ARGS__)
 
 // TODO: consider moving unsafe computations out of constructor
 CpuSNN::CpuSNN(const std::string& _name, int _numConfig, int _randSeed, int _mode, bool enableSilentMode) {
@@ -192,19 +174,12 @@ CpuSNN::CpuSNN(const std::string& _name, int _numConfig, int _randSeed, int _mod
 		fpErr_ = fopen("/dev/null","w");
 		fpDeb_ = fopen("/dev/null","w");
 	} else {
-		CARLSIM_ERROR("Not in silent mode!!");
-		int dd=42;
-		CARLSIM_WARN("O-ooh, d=%d",dd);
-		CARLSIM_INFO("Just kidding... %d",dd);
-		CARLSIM_DEBUG("Some debug info %d",dd);
 		fpOut_ = stdout;
 		fpErr_ = stderr;
 		fpDeb_ = fopen("/dev/null","w");
 	}
 
 	fpLog_ = fopen("debug.log","w");
-
-
 
 	CARLSIM_INFO("*******************************************************************************");
 	CARLSIM_INFO("********************      Welcome to CARLsim %d.%d      *************************",
@@ -319,7 +294,7 @@ CpuSNN::CpuSNN(const std::string& _name, int _numConfig, int _randSeed, int _mod
 	getRand.seed(randSeed*2);
 	getRandClosed.seed(randSeed*3);
 
-	fprintf(fpOut_, "nConfig: %d, randSeed: %d\n",_numConfig,randSeed);
+	CARLSIM_INFO("nConfig: %d, randSeed: %d\n",_numConfig,randSeed);
 
 	fpParam = fopen("param.txt", "w");
 	if (fpParam==NULL) {
@@ -424,18 +399,18 @@ uint16_t CpuSNN::connect(int grpId1, int grpId2, const std::string& _type, float
 			newInfo->numPreSynapses	= 1;
 		}
 		else {
-			fprintf(fpErr_, "Invalid connection type (should be 'random', 'full', 'one-to-one', or 'full-no-direct')\n");
+			CARLSIM_ERROR("Invalid connection type (should be 'random', 'full', 'one-to-one', or 'full-no-direct')");
 			exitSimulation(-1);
 		}
 
 		if (newInfo->numPostSynapses > MAX_numPostSynapses) {
-			fprintf(fpErr_,"Connection exceeded the maximum number of output synapses (%d), has %d.\n",
+			CARLSIM_ERROR("Connection exceeded the maximum number of output synapses (%d), has %d.",
 						MAX_numPostSynapses,newInfo->numPostSynapses);
 			assert(newInfo->numPostSynapses <= MAX_numPostSynapses);
 		}
 
 		if (newInfo->numPreSynapses > MAX_numPreSynapses) {
-			fprintf(fpErr_,"Connection exceeded the maximum number of input synapses (%d), has %d.\n",
+			CARLSIM_ERROR("Connection exceeded the maximum number of input synapses (%d), has %d.",
 						MAX_numPreSynapses,newInfo->numPreSynapses);
 			assert(newInfo->numPreSynapses <= MAX_numPreSynapses);
 		}
@@ -447,8 +422,9 @@ uint16_t CpuSNN::connect(int grpId1, int grpId2, const std::string& _type, float
 		grp_Info[grpId1].numPostSynapses 	+= newInfo->numPostSynapses;
 		grp_Info[grpId2].numPreSynapses 	+= newInfo->numPreSynapses;
 
-		if (showLogMode >= 1)
-			fprintf(fpDeb_,"grp_Info[%d, %s].numPostSynapses = %d, grp_Info[%d, %s].numPreSynapses = %d\n",grpId1,grp_Info2[grpId1].Name.c_str(),grp_Info[grpId1].numPostSynapses,grpId2,grp_Info2[grpId2].Name.c_str(),grp_Info[grpId2].numPreSynapses);
+		CARLSIM_DEBUG("grp_Info[%d, %s].numPostSynapses = %d, grp_Info[%d, %s].numPreSynapses = %d",
+						grpId1,grp_Info2[grpId1].Name.c_str(),grp_Info[grpId1].numPostSynapses,grpId2,
+						grp_Info2[grpId2].Name.c_str(),grp_Info[grpId2].numPreSynapses);
 
 		newInfo->connId	= numConnections++;
 		assert(numConnections <= MAX_numConnections);	// make sure we don't overflow connId
@@ -456,7 +432,8 @@ uint16_t CpuSNN::connect(int grpId1, int grpId2, const std::string& _type, float
 		if(c==0)
 			retId = newInfo->connId;
 
-		fprintf(fpDeb_,"CONNECT SETUP: connId=%d, mulFast=%f, mulSlow=%f\n",newInfo->connId,newInfo->mulSynFast,newInfo->mulSynSlow);
+		CARLSIM_DEBUG("CONNECT SETUP: connId=%d, mulFast=%f, mulSlow=%f",newInfo->connId,newInfo->mulSynFast,
+							newInfo->mulSynSlow);
 	}
 	assert(retId != -1);
 	return retId;
@@ -478,16 +455,16 @@ uint16_t CpuSNN::connect(int grpId1, int grpId2, ConnectionGenerator* conn, floa
 			maxPreM = grp_Info[grpId1].SizeN;
 
 		if (maxM > MAX_numPostSynapses) {
-			fprintf(fpErr_,"Connection from %s (%d) to %s (%d) exceeded the maximum number of output synapses (%d), has %d.\n",
-						grp_Info2[grpId1].Name.c_str(),grpId1,grp_Info2[grpId2].Name.c_str(), grpId2,
-						MAX_numPostSynapses,maxM);
+			CARLSIM_ERROR("Connection from %s (%d) to %s (%d) exceeded the maximum number of output synapses (%d), "
+								"has %d.", grp_Info2[grpId1].Name.c_str(),grpId1,grp_Info2[grpId2].Name.c_str(),
+								grpId2,	MAX_numPostSynapses,maxM);
 			assert(maxM <= MAX_numPostSynapses);
 		}
 
 		if (maxPreM > MAX_numPreSynapses) {
-			fprintf(fpErr_,"Connection from %s (%d) to %s (%d) exceeded the maximum number of input synapses (%d), has %d.\n",
-						grp_Info2[grpId1].Name.c_str(), grpId1,grp_Info2[grpId2].Name.c_str(), grpId2,
-						MAX_numPreSynapses,maxPreM);
+			CARLSIM_ERROR("Connection from %s (%d) to %s (%d) exceeded the maximum number of input synapses (%d), "
+								"has %d.\n", grp_Info2[grpId1].Name.c_str(), grpId1,grp_Info2[grpId2].Name.c_str(),
+								grpId2, MAX_numPreSynapses,maxPreM);
 			assert(maxPreM <= MAX_numPreSynapses);
 		}
 
@@ -514,11 +491,9 @@ uint16_t CpuSNN::connect(int grpId1, int grpId2, ConnectionGenerator* conn, floa
 		grp_Info[grpId1].numPostSynapses    += newInfo->numPostSynapses;
 		grp_Info[grpId2].numPreSynapses += newInfo->numPreSynapses;
 
-		if (showLogMode >= 1) {
-			fprintf(fpDeb_,"grp_Info[%d, %s].numPostSynapses = %d, grp_Info[%d, %s].numPreSynapses = %d\n",
+		CARLSIM_DEBUG("grp_Info[%d, %s].numPostSynapses = %d, grp_Info[%d, %s].numPreSynapses = %d",
 						grpId1,grp_Info2[grpId1].Name.c_str(),grp_Info[grpId1].numPostSynapses,grpId2,
 						grp_Info2[grpId2].Name.c_str(),grp_Info[grpId2].numPreSynapses);
-		}
 
 		newInfo->connId	= numConnections++;
 		assert(numConnections <= MAX_numConnections);	// make sure we don't overflow connId
@@ -544,8 +519,7 @@ int CpuSNN::createGroup(const std::string& grpName, unsigned int nNeur, int neur
 
 		if ( (!(neurType&TARGET_AMPA) && !(neurType&TARGET_NMDA) &&
 			  !(neurType&TARGET_GABAa) && !(neurType&TARGET_GABAb)) || (neurType&POISSON_NEURON)) {
-			fprintf(fpErr_, "Invalid type using createGroup...\n");
-			fprintf(fpErr_, "Cannot create poisson generators here...\n");
+			CARLSIM_ERROR("Invalid type using createGroup... Cannot create poisson generators here.");
 			exitSimulation(1);
 		}
 
@@ -613,7 +587,7 @@ int CpuSNN::createSpikeGeneratorGroup(const std::string& grpName, unsigned int n
 // set conductance values for a group (custom values or disable conductances alltogether)
 void CpuSNN::setConductances(int grpId, bool isSet, float tdAMPA, float tdNMDA, float tdGABAa, float tdGABAb,
 								int configId) {
-	assert(grpId>=0); assert(tdAMPA>0); assert(tdNMDA>0); assert(tdGABAa>0); assert(tdGABAb>0); assert(configId>=-1);
+	assert(grpId>=-1); assert(tdAMPA>0); assert(tdNMDA>0); assert(tdGABAa>0); assert(tdGABAb>0); assert(configId>=-1);
 
 	if (grpId==ALL && configId==ALL) { // shortcut for all groups & configs
 		for(int g=0; g < numGrp; g++)
@@ -637,7 +611,7 @@ void CpuSNN::setConductances(int grpId, bool isSet, float tdAMPA, float tdNMDA, 
 		grp_Info[cGrpId].dGABAb 			= 1-(1.0/tdGABAb);
 		grp_Info[cGrpId].newUpdates 		= true; 			// FIXME What is this?
 
-		fprintf(fpOut_, "Conductances %s for %d (%s):\ttdAMPA: %4.0f, tdNMDA: %4.0f, tdGABAa: %4.0f, tdGABAb: %4.0f\n",
+		CARLSIM_INFO("Conductances %s for %d (%s):\ttdAMPA: %4.0f, tdNMDA: %4.0f, tdGABAa: %4.0f, tdGABAb: %4.0f",
 					isSet?"enabled":"disabled",cGrpId, grp_Info2[cGrpId].Name.c_str(),tdAMPA,tdNMDA,tdGABAa,tdGABAb);
 	}
 }
@@ -665,7 +639,7 @@ void CpuSNN::setHomeostasis(int grpId, bool isSet, float homeoScale, float avgTi
 		grp_Info[cGrpId].avgTimeScale_decay = (avgTimeScale*1000.0f-1.0f)/(avgTimeScale*1000.0f);
 		grp_Info[cGrpId].newUpdates 		= true; // FIXME: what's this?
 
-		fprintf(fpOut_, "Homeostasis parameters %s for %d (%s):\thomeoScale: %f, avgTimeScale: %f\n",
+		CARLSIM_INFO("Homeostasis parameters %s for %d (%s):\thomeoScale: %f, avgTimeScale: %f",
 					isSet?"enabled":"disabled",cGrpId,grp_Info2[cGrpId].Name.c_str(),homeoScale,avgTimeScale);
 	}
 }
@@ -690,7 +664,7 @@ void CpuSNN::setHomeoBaseFiringRate(int grpId, float baseFiring, float baseFirin
 		grp_Info2[cGrpId].baseFiringSD 	= baseFiringSD;
 		grp_Info[cGrpId].newUpdates 	= true; //TODO: I have to see how this is handled.  -- KDC
 
-		fprintf(fpOut_, "Homeostatic base firing rate set for %d (%s):\tbaseFiring: %3.3f, baseFiringStd: %3.3f\n",
+		CARLSIM_INFO("Homeostatic base firing rate set for %d (%s):\tbaseFiring: %3.3f, baseFiringStd: %3.3f",
 							cGrpId,grp_Info2[cGrpId].Name.c_str(),baseFiring,baseFiringSD);
 	}
 }
@@ -700,7 +674,7 @@ void CpuSNN::setHomeoBaseFiringRate(int grpId, float baseFiring, float baseFirin
 void CpuSNN::setNeuronParameters(int grpId, float izh_a, float izh_a_sd, float izh_b, float izh_b_sd,
 								float izh_c, float izh_c_sd, float izh_d, float izh_d_sd, int configId)
 {
-	assert(grpId>=0); assert(izh_a>0); assert(izh_a_sd>=0); assert(izh_b>0); assert(izh_b_sd>=0); assert(izh_c_sd>=0);
+	assert(grpId>=-1); assert(izh_a>0); assert(izh_a_sd>=0); assert(izh_b>0); assert(izh_b_sd>=0); assert(izh_c_sd>=0);
 	assert(izh_d>0); assert(izh_d_sd>=0); assert(configId>=-1);
 
 	if (grpId==ALL && configId==ALL) { // shortcut for all groups & configs
@@ -752,7 +726,7 @@ void CpuSNN::setSTDP(int grpId, bool isSet, float alphaLTP, float tauLTP, float 
 		grp_Info[cGrpId].TAU_LTD_INV	= 1.0/tauLTD;
 		grp_Info[cGrpId].newUpdates 	= true; // FIXME whatsathiis?
 
-		fprintf(fpOut_, "STDP %s for %d (%s):\talphaLTP: %1.4f, alphaLTD: %1.4f, tauLTP: %4.0f, tauLTD: %4.0f\n",
+		CARLSIM_INFO("STDP %s for %d (%s):\talphaLTP: %1.4f, alphaLTD: %1.4f, tauLTP: %4.0f, tauLTD: %4.0f",
 					isSet?"enabled":"disabled",cGrpId,grp_Info2[cGrpId].Name.c_str(),
 					alphaLTP,alphaLTD,tauLTP,tauLTD);
 	}
@@ -782,7 +756,7 @@ void CpuSNN::setSTP(int grpId, bool isSet, float STP_U, float STP_tD, float STP_
 		grp_Info[cGrpId].STP_tF 	= STP_tF;
 		grp_Info[cGrpId].newUpdates = true;
 
-		fprintf(fpOut_, "STP %s for %d (%s):\tU: %1.4f, tD: %4.0f, tF: %4.0f\n", isSet?"enabled":"disabled",
+		CARLSIM_INFO("STP %s for %d (%s):\tU: %1.4f, tD: %4.0f, tF: %4.0f", isSet?"enabled":"disabled",
 					cGrpId, grp_Info2[cGrpId].Name.c_str(), STP_U, STP_tD, STP_tF);
 	}
 }
@@ -794,7 +768,7 @@ void CpuSNN::setSTP(int grpId, bool isSet, float STP_U, float STP_tD, float STP_
 
 // Run the simulation for n sec
 int CpuSNN::runNetwork(int _nsec, int _nmsec, int simType, int ithGPU, bool enablePrint, bool copyState) {
-	DBG(2, fpDeb_, AT, "runNetwork() called");
+	CARLSIM_DEBUG("runNetwork() called");
 
 	assert(_nmsec >= 0);
 	assert(_nsec  >= 0);
@@ -843,7 +817,7 @@ int CpuSNN::runNetwork(int _nsec, int _nmsec, int simType, int ithGPU, bool enab
 		}
 
 		if(enableGPUSpikeCntPtr==true && simType == CPU_MODE){
-			fprintf(fpErr_,"Error: the enableGPUSpikeCntPtr flag cannot be set in CPU_MODE\n");
+			CARLSIM_ERROR("Error: the enableGPUSpikeCntPtr flag cannot be set in CPU_MODE");
 			assert(currentMode==GPU_MODE);
 		}
 		if(enableGPUSpikeCntPtr==true && simType == GPU_MODE){
@@ -876,7 +850,7 @@ int CpuSNN::runNetwork(int _nsec, int _nmsec, int simType, int ithGPU, bool enab
 unsigned int* CpuSNN::getSpikeCntPtr(int grpId, int simType) {
 	//! do check to make sure appropriate flag is set
 	if(simType == GPU_MODE && enableGPUSpikeCntPtr == false){
-		fprintf(fpErr_,"Error: the enableGPUSpikeCntPtr flag must be set to true to use this function in GPU_MODE.\n");
+		CARLSIM_ERROR("Error: the enableGPUSpikeCntPtr flag must be set to true to use this function in GPU_MODE.");
 		assert(enableGPUSpikeCntPtr);
 	}
     
@@ -908,14 +882,14 @@ void CpuSNN::reassignFixedWeights(uint16_t connectId, float weightMatrix[], int 
 		//make sure that it is for fixed connections.
 		bool synWtType = GET_FIXED_PLASTIC(connInfo->connProp);
 		if(synWtType == SYN_PLASTIC){
-			fprintf(fpErr_,"The synapses in this connection must be SYN_FIXED in order to use this function.\n");
-			assert(false);
+			CARLSIM_ERROR("The synapses in this connection must be SYN_FIXED in order to use this function.");
+			exitSimulation(1);
 		}
 		//make sure that the user passes the correctly sized matrix
 		if(connInfo->numberOfConnections != sizeMatrix){
-			fprintf(fpErr_,"The size of the input weight matrix and the number of synaptic connections in this "
-							"connection do not match.\n");
-			assert(false);
+			CARLSIM_ERROR("The size of the input weight matrix and the number of synaptic connections in this "
+							"connection do not match.");
+			exitSimulation(1);
 		}
 		//We have to iterate over all the presynaptic connections of each postsynaptic neuron
 		//and see if they are part of our srcGrp.  If they are,
@@ -1007,7 +981,7 @@ void CpuSNN::setSpikeMonitor(int grpId, SpikeMonitor* spikeMon, int configId) {
 		setSpikeMonitor(grpId, spikeMon,c);
 	} else {
 	    int cGrpId = getGroupId(grpId, configId);
-	    DBG(2, fpDeb_, AT, "spikeMonitor Added");
+	    CARLSIM_DEBUG("spikeMonitor added");
 
 	    // store the gid for further reference
 	    monGrpId[numSpikeMonitor]	= cGrpId;
@@ -1041,7 +1015,7 @@ void CpuSNN::setSpikeMonitor(int grpId, SpikeMonitor* spikeMon, int configId) {
 	    cpuSnnSz.monitorInfoSize += sizeof(int)*buffSize;
 	    cpuSnnSz.monitorInfoSize += sizeof(int)*(1000);
 
-	    fprintf(fpOut_,"SpikeMonitor set for group %d (%s)\n",grpId,grp_Info2[grpId].Name.c_str());
+	    CARLSIM_INFO("SpikeMonitor set for group %d (%s)",grpId,grp_Info2[grpId].Name.c_str());
 	}
 }
 
@@ -1058,7 +1032,7 @@ void CpuSNN::setSpikeRate(int grpId, PoissonRate* ratePtr, int refPeriod, int co
 
 		assert(ratePtr);
 		if (ratePtr->len != grp_Info[cGrpId].SizeN) {
-			fprintf(fpErr_,"The PoissonRate length did not match the number of neurons in group %s(%d).\n",
+			CARLSIM_ERROR("The PoissonRate length did not match the number of neurons in group %s(%d).",
 						grp_Info2[cGrpId].Name.c_str(),grpId);
 			exitSimulation(1);
 		}
@@ -1074,7 +1048,8 @@ void CpuSNN::setSpikeRate(int grpId, PoissonRate* ratePtr, int refPeriod, int co
 // function used for parameter tuning interface
 void CpuSNN::updateNetwork(bool resetFiringInfo, bool resetWeights) {
 	if(!doneReorganization){
-		fprintf(fpErr_,"UpdateNetwork function was called but nothing was done because reorganizeNetwork must be called first.\n");
+		CARLSIM_ERROR("UpdateNetwork function was called but nothing was done because reorganizeNetwork must be "
+						"called first.");
 		return;
 	}
 
@@ -1167,6 +1142,9 @@ void CpuSNN::writeNetwork(FILE* fid) {
 
 // writes population weights from gIDpre to gIDpost to file fname in binary
 void CpuSNN::writePopWeights(std::string fname, int grpPreId, int grpPostId, int configId){
+	assert(grpPreId>=0); assert(grpPostId>=0);
+	assert(configId>=0); // ALL not allowed
+
 	float* weights;
 	int matrixSize;
 	FILE* fid; 
@@ -1175,17 +1153,12 @@ void CpuSNN::writePopWeights(std::string fname, int grpPreId, int grpPostId, int
 	assert(fid != NULL);
 
 	if(!doneReorganization){
-		fprintf(fpErr_,"Simulation has not been run yet, cannot output weights.\n");
+		CARLSIM_ERROR("Simulation has not been run yet, cannot output weights.");
 		exitSimulation(1);
 	}
 
 	post_info_t* preId;
 	int pre_nid, pos_ij;
-
-	if(configId < 0){
-		fprintf(fpErr_,"Invalid configId.  You can not pass the ALL (ALL=-1) argument.\n");
-		assert(false);
-	}
 
 	int cGrpIdPre = getGroupId(grpPreId, configId);
 	int cGrpIdPost = getGroupId(grpPostId, configId);
@@ -1254,26 +1227,8 @@ void CpuSNN::setLogCycle(unsigned int _cnt, int mode, FILE *fp) {
 	showLogCycle = _cnt;
 
 	showLogMode = mode;
-/*
-	if (fp!=NULL)
-		fpLog = fp;
-*/
 }
 
-// directs status info, errors, and debug info to a file or /dev/null
-/*
-void CpuSNN::setLogsFp(FILE* const fpOut, FILE* const fpErr, FILE* const fpDeb) {
-	// if members already have open fp, close them
-	if (fpOut_!=NULL) fclose(fpOut_);
-	if (fpErr_!=NULL) fclose(fpErr_);
-	if (fpDeb_!=NULL) fclose(fpDeb_);
-
-	// assign or open new fps
-	fpOut_ = (fpOut==NULL) ? fopen("/dev/null","w") : fpOut;
-	fpErr_ = (fpErr==NULL) ? fopen("/dev/null","w") : fpErr;
-	fpDeb_ = (fpDeb==NULL) ? fopen("/dev/null","w") : fpDeb;	
-}
-*/
 
 /// **************************************************************************************************************** ///
 /// GETTERS / SETTERS
@@ -1294,23 +1249,17 @@ grpConnectInfo_t* CpuSNN::getConnectInfo(uint16_t connectId, int configId) {
 		nextConn = nextConn->next;
 	}
 
-	fprintf(fpDeb_, "Total Connections = %d\n", numConnections);
-	fprintf(fpDeb_, "ConnectId (%d) cannot be recognized\n", connectId);
+	CARLSIM_DEBUG("Total Connections = %d", numConnections);
+	CARLSIM_DEBUG("ConnectId (%d) cannot be recognized", connectId);
 	return NULL;
 }
 
 int  CpuSNN::getConnectionId(uint16_t connId, int configId) {
-	if(configId >= numConfig) {
-		fprintf(fpErr_, "getConnectionId(int, int): Assertion `configId(%d) < numConfig(%d)' failed\n", 
-					configId, numConfig);
-		assert(0);
-	}
+	assert(configId>=0); assert(configId<numConfig);
+
 	connId = connId+configId;
-	if (connId  >= numConnections) {
-		fprintf(fpErr_, "getConnectionId(int, int): Assertion `connId(%d) < numConnections(%d)' failed\n", 
-					connId, numConnections);
-		assert(0);
-	}
+	assert(connId>=0); assert(connId<numConnections);
+
 	return connId;
 }
 
@@ -1367,6 +1316,12 @@ group_info_t CpuSNN::getGroupInfo(int grpId, int configId) {
 }
 
 std::string CpuSNN::getGroupName(int grpId, int configId) {
+	if (grpId==ALL)
+		return "ALL";
+
+	if (configId==ALL)
+		return grp_Info2[grpId].Name+",ALL";
+
 	int cGrpId = getGroupId(grpId, configId);
 	return grp_Info2[cGrpId].Name;
 }
@@ -1384,21 +1339,18 @@ int CpuSNN::getNumConnections(uint16_t connectionId) {
     connIterator=connIterator->next;
   }
   //we didn't find the connection.
-  fprintf(fpErr_,"Connection ID was not found.  Quitting.\n");
-  assert(false);  
+  CARLSIM_ERROR("Connection ID was not found.  Quitting.");
+  exitSimulation(1);
 }
 
 // gets weights from synaptic connections from gIDpre to gIDpost
 void CpuSNN::getPopWeights(int grpPreId, int grpPostId, float*& weights, int& matrixSize, int configId) {
+	assert(configId>=0); assert(configId<numConfig);
+	assert(grpPreId>=0); assert(grpPreId<numGrp); assert(grpPostId>=0); assert(grpPostId<numGrp);
 	post_info_t* preId;
 	int pre_nid, pos_ij;
 	int numPre, numPost;
   
-	if(configId < 0){
-		fprintf(fpErr_,"Invalid configId.  You can not pass the ALL (ALL=-1) argument.\n");
-		exitSimulation(1);
-	}
-
 	int cGrpIdPre = getGroupId(grpPreId, configId);
 	int cGrpIdPost = getGroupId(grpPostId, configId);
 
@@ -1656,9 +1608,6 @@ int CpuSNN::addSpikeToTable(int nid, int g) {
 	nSpikeCnt[nid]++;
 	avgFiring[nid] += 1000/(grp_Info[g].avgTimeScale*1000);
 
-	if(showLogMode >= 3)
-		if (nid<128) fprintf(fpDeb_,"spiked: %d\n",nid);
-
 	if (currentMode == GPU_MODE) {
 		assert(grp_Info[g].isSpikeGenerator == true);
 		setSpikeGenBit_GPU(nid, g);
@@ -1703,7 +1652,7 @@ void CpuSNN::buildGroup(int grpId) {
 	grp_Info[grpId].StartN = allocatedN;
 	grp_Info[grpId].EndN   = allocatedN + grp_Info[grpId].SizeN - 1;
 
-	fprintf(fpDeb_, "Allocation for %d(%s), St=%d, End=%d\n",
+	CARLSIM_DEBUG("Allocation for %d(%s), St=%d, End=%d",
 				grpId, grp_Info2[grpId].Name.c_str(), grp_Info[grpId].StartN, grp_Info[grpId].EndN);
 
 	resetSpikeCnt(grpId);
@@ -1742,22 +1691,22 @@ void CpuSNN::buildNetwork() {
 	assert(numPreSynapses > 0);
 
 	// display the evaluated network and delay length....
-	fprintf(fpOut_, ">>>>>>>>>>>>>> NUM_CONFIGURATIONS = %d <<<<<<<<<<<<<<<<<<\n", numConfig);
-	fprintf(fpOut_, "**********************************\n");
-	fprintf(fpOut_, "numN = %d, numPostSynapses = %d, numPreSynapses = %d, D = %d\n", curN, numPostSynapses,
+	CARLSIM_INFO(">>>>>>>>>>>>>> NUM_CONFIGURATIONS = %d <<<<<<<<<<<<<<<<<<", numConfig);
+	CARLSIM_INFO("*********************************************************");
+	CARLSIM_INFO("numN = %d, numPostSynapses = %d, numPreSynapses = %d, D = %d", curN, numPostSynapses,
 					numPreSynapses, curD);
-	fprintf(fpOut_, "**********************************\n");
+	CARLSIM_INFO("*********************************************************");
 
-	fprintf(fpDeb_, "**********************************\n");
-	fprintf(fpDeb_, "numN = %d, numPostSynapses = %d, numPreSynapses = %d, D = %d\n", curN, numPostSynapses,
+	CARLSIM_INFO("*********************************************************");
+	CARLSIM_INFO("numN = %d, numPostSynapses = %d, numPreSynapses = %d, D = %d", curN, numPostSynapses,
 					numPreSynapses, curD);
-	fprintf(fpDeb_, "**********************************\n");
+	CARLSIM_INFO("*********************************************************");
 
 	assert(curD != 0); 	assert(numPostSynapses != 0);		assert(curN != 0); 		assert(numPreSynapses != 0);
 
 	if (showLogMode >= 1) {
 		for (int g=0;g<numGrp;g++)
-			fprintf(fpOut_,"grp_Info[%d, %s].numPostSynapses = %d, grp_Info[%d, %s].numPreSynapses = %d\n",
+			CARLSIM_INFO("grp_Info[%d, %s].numPostSynapses = %d, grp_Info[%d, %s].numPreSynapses = %d",
 						g,grp_Info2[g].Name.c_str(),grp_Info[g].numPostSynapses,g,grp_Info2[g].Name.c_str(),
 						grp_Info[g].numPreSynapses);
 	}
@@ -1765,7 +1714,7 @@ void CpuSNN::buildNetwork() {
 	if (numPostSynapses > MAX_numPostSynapses) {
 		for (int g=0;g<numGrp;g++) {
 			if (grp_Info[g].numPostSynapses>MAX_numPostSynapses)
-				fprintf(fpOut_,"Grp: %s(%d) has too many output synapses (%d), max %d.\n",grp_Info2[g].Name.c_str(),g,
+				CARLSIM_INFO("Grp: %s(%d) has too many output synapses (%d), max %d.",grp_Info2[g].Name.c_str(),g,
 							grp_Info[g].numPostSynapses,MAX_numPostSynapses);
 		}
 		assert(numPostSynapses <= MAX_numPostSynapses);
@@ -1773,7 +1722,7 @@ void CpuSNN::buildNetwork() {
 	if (numPreSynapses > MAX_numPreSynapses) {
 		for (int g=0;g<numGrp;g++) {
 			if (grp_Info[g].numPreSynapses>MAX_numPreSynapses)
-				fprintf(fpOut_,"Grp: %s(%d) has too many input synapses (%d), max %d.\n",grp_Info2[g].Name.c_str(),g,
+				CARLSIM_INFO("Grp: %s(%d) has too many input synapses (%d), max %d.",grp_Info2[g].Name.c_str(),g,
  							grp_Info[g].numPreSynapses,MAX_numPreSynapses);
 		}
 		assert(numPreSynapses <= MAX_numPreSynapses);
@@ -1856,18 +1805,18 @@ void CpuSNN::buildNetwork() {
 							connectUserDefined(newInfo);
 							break;
 						default:
-							fprintf(fpErr_,"Invalid connection type( should be 'random', or 'full')\n");
+							CARLSIM_ERROR("Invalid connection type( should be 'random', or 'full')");
 							exitSimulation(-1);
 					}
 
 					float avgPostM = newInfo->numberOfConnections/grp_Info[newInfo->grpSrc].SizeN;
 					float avgPreM  = newInfo->numberOfConnections/grp_Info[newInfo->grpDest].SizeN;
 
-					fprintf(fpOut_, "connect(%s(%d) => %s(%d), iWt=%f, mWt=%f, numPostSynapses=%d, numPreSynapses=%d, minD=%d, maxD=%d, %s)\n",
-								grp_Info2[newInfo->grpSrc].Name.c_str(), newInfo->grpSrc,
-								grp_Info2[newInfo->grpDest].Name.c_str(), newInfo->grpDest, newInfo->initWt,
-								newInfo->maxWt, (int)avgPostM, (int)avgPreM, newInfo->minDelay, newInfo->maxDelay,
-								synWtType?"Plastic":"Fixed");
+					CARLSIM_INFO("connect(%s(%d) => %s(%d), iWt=%f, mWt=%f, numPostSynapses=%d, numPreSynapses=%d, "
+									"minD=%d, maxD=%d, %s)", grp_Info2[newInfo->grpSrc].Name.c_str(), newInfo->grpSrc,
+									grp_Info2[newInfo->grpDest].Name.c_str(), newInfo->grpDest, newInfo->initWt,
+									newInfo->maxWt, (int)avgPostM, (int)avgPreM, newInfo->minDelay, newInfo->maxDelay,
+									synWtType?"Plastic":"Fixed");
 				}
 				newInfo = newInfo->next;
 			}
@@ -1880,7 +1829,7 @@ void CpuSNN::buildPoissonGroup(int grpId) {
 	grp_Info[grpId].StartN 	= allocatedN;
 	grp_Info[grpId].EndN   	= allocatedN + grp_Info[grpId].SizeN - 1;
 
-	fprintf(fpDeb_, "Allocation for %d(%s), St=%d, End=%d\n",
+	CARLSIM_DEBUG("Allocation for %d(%s), St=%d, End=%d",
 				grpId, grp_Info2[grpId].Name.c_str(), grp_Info[grpId].StartN, grp_Info[grpId].EndN);
 	resetSpikeCnt(grpId);
 
@@ -1901,13 +1850,6 @@ void CpuSNN::buildPoissonGroup(int grpId) {
 	assert(allocatedPre  <= preSynCnt);
 }
 
-
-void CpuSNN::checkNetworkBuilt(FILE * const fp) {
-	if (!doneReorganization) {
-		DBG(0, fpDeb_, AT, "checkNetworkBuilt()"); // this is always debug
-		fprintf(fp, "Network not yet elaborated and built...\n");
-	}
-}
 
 // We parallelly cleanup the postSynapticIds array to minimize any other wastage in that array by compacting the store
 // Appropriate alignment specified by ALIGN_COMPACTION macro is used to ensure some level of alignment (if necessary)
@@ -1940,11 +1882,11 @@ void CpuSNN::compactConnections() {
 	assert(tmp_preSynCnt  <= allocatedPre);
 	assert(tmp_postSynCnt <= postSynCnt);
 	assert(tmp_preSynCnt  <= preSynCnt);
-	fprintf(fpDeb_, "******************\n");
-	fprintf(fpDeb_, "CompactConnection: \n");
-	fprintf(fpDeb_, "******************\n");
-	fprintf(fpDeb_, "old_postCnt = %d, new_postCnt = %d\n", postSynCnt, tmp_postSynCnt);
-	fprintf(fpDeb_, "old_preCnt = %d,  new_postCnt = %d\n", preSynCnt,  tmp_preSynCnt);
+	CARLSIM_DEBUG("******************");
+	CARLSIM_DEBUG("CompactConnection: ");
+	CARLSIM_DEBUG("******************");
+	CARLSIM_DEBUG("old_postCnt = %d, new_postCnt = %d", postSynCnt, tmp_postSynCnt);
+	CARLSIM_DEBUG("old_preCnt = %d,  new_postCnt = %d", preSynCnt,  tmp_preSynCnt);
 
 	// new buffer with required size + 100 bytes of additional space just to provide limited overflow
 	post_info_t* tmp_postSynapticIds   = new post_info_t[tmp_postSynCnt+100];
@@ -2388,8 +2330,8 @@ int CpuSNN::findGrpId(int nid) {
 			return g;
 		}
 	}
-	fprintf(fpErr_, "findGrp(): cannot find the group for neuron %d\n", nid);
-	assert(0);
+	CARLSIM_ERROR("findGrp(): cannot find the group for neuron %d", nid);
+	exitSimulation(1);
 }
 
 
@@ -2441,16 +2383,19 @@ void CpuSNN::generatePostSpike(unsigned int pre_i, unsigned int idx_d, unsigned 
 			gGABAa[post_i] -= change*mulSynFast[mulIndex]; // wt should be negative for GABAa and GABAb
 		if (type & TARGET_GABAb)
 			gGABAb[post_i] -= change*mulSynSlow[mulIndex];
+
+		if (gNMDA[post_i]>=10.0f) CARLSIM_WARN("High NMDA conductance (gNMDA>=10.0) may cause instability");
+		if (gGABAb[post_i]>=2.0f) CARLSIM_WARN("High GABAb conductance (gGABAb>=2.0) may cause instability");
 	} else {
 		current[post_i] += change;
 	}
 
 	int post_grpId = findGrpId(post_i);
-	if ((showLogMode >= 3) && (post_i==grp_Info[post_grpId].StartN)) {
-		fprintf(fpOut_,"%d => %d (%d) am=%f ga=%f wt=%f stpu=%f stpx=%f td=%d\n", pre_i, post_i, findGrpId(post_i),
-					gAMPA[post_i], gGABAa[post_i], wt[pos_i],(grp_Info[post_grpId].WithSTP?stpx[ind]:1.0),
-					(grp_Info[post_grpId].WithSTP?stpu[ind]:1.0),tD);
-	}
+//	if ((showLogMode >= 3) && (post_i==grp_Info[post_grpId].StartN)) {
+//		fprintf(fpOut_,"%d => %d (%d) am=%f ga=%f wt=%f stpu=%f stpx=%f td=%d\n", pre_i, post_i, findGrpId(post_i),
+//					gAMPA[post_i], gGABAa[post_i], wt[pos_i],(grp_Info[post_grpId].WithSTP?stpx[ind]:1.0),
+//					(grp_Info[post_grpId].WithSTP?stpu[ind]:1.0),tD);
+//	}
 
 	// STDP calculation....
 	if (grp_Info[post_grpId].WithSTDP) {
@@ -2488,7 +2433,6 @@ void CpuSNN::generateSpikes() {
 		int g = findGrpId(nid);
 
 		addSpikeToTable (nid, g);
-		//fprintf(fpErr_, "nid = %d\t", nid);
 		spikeCountAll1sec++;
 		nPoissonSpikes++;
 	}
@@ -2518,7 +2462,6 @@ void CpuSNN::generateSpikesFromFuncPtr(int grpId) {
       if (nextTime < (currTime+timeSlice)) {
 	if (nextTime >= currTime) {
 	  // scheduled spike...
-	  //fprintf(fpErr_, "scheduled time = %d, nid = %d\n", nextTime, i);
 	  pbuf->scheduleSpikeTargetGroup(i, nextTime-currTime);
 	  spikeCnt++;
 	}
@@ -2541,8 +2484,8 @@ void CpuSNN::generateSpikesFromRate(int grpId) {
 	if (rate == NULL) return;
 
 	if (rate->onGPU) {
-		fprintf(fpErr_,"specifying rates on the GPU but using the CPU SNN is not supported.\n");
-		return;
+		CARLSIM_ERROR("Specifying rates on the GPU but using the CPU SNN is not supported.");
+		exitSimulation(1);
 	}
 
 	const float* ptr = rate->rates;
@@ -2617,66 +2560,79 @@ float CpuSNN::getWeights(int connProp, float initWt, float maxWt, unsigned int n
 
 
 void  CpuSNN::globalStateUpdate() {
-#define CUR_DEBUG 1
-  //fprintf(fpOut_, "---%d ----\n", simTime);
-  // now we update the state of all the neurons
-  for(int g=0; g < numGrp; g++) {
-    if (grp_Info[g].Type&POISSON_NEURON){ 
-      for(int i=grp_Info[g].StartN; i <= grp_Info[g].EndN; i++)
-	avgFiring[i] *= grp_Info[g].avgTimeScale_decay;
-      continue;
-    }
+	float tmpNMDA, tmpI;
 
-    for(int i=grp_Info[g].StartN; i <= grp_Info[g].EndN; i++) {
-      assert(i < numNReg);
-      avgFiring[i] *= grp_Info[g].avgTimeScale_decay;
+	for(int g=0; g < numGrp; g++) {
+		if (grp_Info[g].Type&POISSON_NEURON){ 
+			for(int i=grp_Info[g].StartN; i <= grp_Info[g].EndN; i++)
+				avgFiring[i] *= grp_Info[g].avgTimeScale_decay;
+			continue;
+		}
 
-      if (grp_Info[g].WithConductances) {
-	// all the tmpIs will be summed into current[i] in the following loop
-	current[i] = 0.0f;
+		for(int i=grp_Info[g].StartN; i <= grp_Info[g].EndN; i++) {
+			assert(i < numNReg);
+			avgFiring[i] *= grp_Info[g].avgTimeScale_decay;
 
-	for (int j=0; j<COND_INTEGRATION_SCALE; j++) {
-	  float NMDAtmp = (voltage[i]+80)*(voltage[i]+80)/60/60;
-	  // There is an instability issue when dealing with large conductances, which causes the membr.
-	  // pot. to plateau just below the spike threshold... We cap the "slow" conductances to prevent
-	  // this issue. Note: 8.0 and 2.0 seemed to work in some experiments, but it might not be the
-	  // best choice in general... compare updateNeuronState() in snn_gpu.cu
-	  float tmpI =  - (  gAMPA[i]*(voltage[i]-0)
-			     + MIN(8.0f,gNMDA[i])*NMDAtmp/(1+NMDAtmp)*(voltage[i]-0) // cap gNMDA at 8.0
-			     + gGABAa[i]*(voltage[i]+70)
-			     + MIN(2.0f,gGABAb[i])*(voltage[i]+90)); // cap gGABAb at 2.0
+			if (grp_Info[g].WithConductances) {
+				// COBA model
 
-	  current[i] += tmpI;
+				// all the tmpIs will be summed into current[i] in the following loop
+				current[i] = 0.0f;
 
-#ifdef NEURON_NOISE
-	  float noiseI = -intrinsicWeight[i]*log(getRand());
-	  if (isnan(noiseI) || isinf(noiseI)) noiseI = 0;
-	  tmpI += noiseI;
-#endif
+				for (int j=0; j<COND_INTEGRATION_SCALE; j++) {
+					tmpNMDA = (voltage[i]+80)*(voltage[i]+80)/60/60;
 
-	  voltage[i]+=((0.04f*voltage[i]+5)*voltage[i]+140-recovery[i]+tmpI)/COND_INTEGRATION_SCALE;
-	  assert(!isnan(voltage[i]) && !isinf(voltage[i]));
+					// TODO: define the instability regime, throw warning or error when in that
+					float tmpI = -(    gAMPA[i]*(voltage[i]-0)
+									 + gNMDA[i]*tmpNMDA/(1+tmpNMDA)*(voltage[i]-0)
+									 + gGABAa[i]*(voltage[i]+70)
+									 + gGABAb[i]*(voltage[i]+90)
+								  );
+					current[i] += tmpI;
 
-	  if (voltage[i] > 30) {
-	    voltage[i] = 30;
-	    j=COND_INTEGRATION_SCALE; // break the loop but evaluate u[i]
-	  }
-	  if (voltage[i] < -90) voltage[i] = -90;
-	  recovery[i]+=Izh_a[i]*(Izh_b[i]*voltage[i]-recovery[i])/COND_INTEGRATION_SCALE;
+					#ifdef NEURON_NOISE
+						float noiseI = -intrinsicWeight[i]*log(getRand());
+						if (isnan(noiseI) || isinf(noiseI))
+							noiseI = 0;
+						tmpI += noiseI;
+					#endif
+
+					voltage[i]+=((0.04f*voltage[i]+5)*voltage[i]+140-recovery[i]+tmpI)/COND_INTEGRATION_SCALE;
+					assert(!isnan(voltage[i]) && !isinf(voltage[i]));
+
+					if (voltage[i] > 30) {
+						voltage[i] = 30;
+						j=COND_INTEGRATION_SCALE; // break the loop but evaluate u[i]
+					}
+					if (voltage[i] < -90) voltage[i] = -90;
+						recovery[i]+=Izh_a[i]*(Izh_b[i]*voltage[i]-recovery[i])/COND_INTEGRATION_SCALE;
+				} // end COND_INTEGRATION_SCALE loop
+
+				// FIXME: DO ONLY IN DEVELOPER MODE
+//				if (i==grp_Info[g].StartN) {
+//	      			CARLSIM_DEBUG("%d: volt=%0.3f, rec=%0.3f, curr=%0.3f, gAMPA=%0.5f, iAMPA=%0.5f, gNMDA=%0.5f, "
+//	      				"iNMDA=%0.5f, gGABAa=%0.5f, iAMPAa=%0.5f, gGABAb=%0.5f, iGABAb=%0.5f", i, voltage[i],
+//	      				recovery[i], current[i], gAMPA[i], gAMPA[i]*(voltage[i]-0), gNMDA[i],
+//	      				gNMDA[i]*tmpNMDA/(1+tmpNMDA)*(voltage[i]-0), gGABAa[i], gGABAa[i]*(voltage[i]+70),
+//	      				gGABAb[i], gGABAb[i]*(voltage[i]+90));
+//	      		}
+			} else {
+				// CUBA model
+				voltage[i]+=0.5f*((0.04f*voltage[i]+5)*voltage[i]+140-recovery[i]+current[i]); // for numerical stability
+				voltage[i]+=0.5f*((0.04f*voltage[i]+5)*voltage[i]+140-recovery[i]+current[i]); // time step is 0.5 ms
+				if (voltage[i] > 30)
+					voltage[i] = 30;
+				if (voltage[i] < -90)
+					voltage[i] = -90;
+				recovery[i]+=Izh_a[i]*(Izh_b[i]*voltage[i]-recovery[i]);
+			}
+
+			// FIXME: DO ONLY IN DEVELOPER MODE
+//			if (i==grp_Info[g].StartN) {
+//				CARLSIM_DEBUG("%d: voltage=%0.3f, recovery=%0.3f, current=%0.3f",i,voltage[i],recovery[i],current[i]);
+//			}
+		}
 	}
-      } else {
-	voltage[i]+=0.5f*((0.04f*voltage[i]+5)*voltage[i]+140-recovery[i]+current[i]); // for numerical stability
-	voltage[i]+=0.5f*((0.04f*voltage[i]+5)*voltage[i]+140-recovery[i]+current[i]); // time step is 0.5 ms
-	if (voltage[i] > 30) voltage[i] = 30;
-	if (voltage[i] < -90) voltage[i] = -90;
-	recovery[i]+=Izh_a[i]*(Izh_b[i]*voltage[i]-recovery[i]);
-      }
-
-      if ((showLogMode >= 2) && (i==grp_Info[g].StartN))
-	fprintf(fpDeb_, "%d: voltage=%0.3f, recovery=%0.3f, AMPA=%0.5f, NMDA=%0.5f, GABAa=%0.5f, GABAb=%0.5f\n",
-		i,  voltage[i], recovery[i], gAMPA[i], gNMDA[i], gGABAa[i], gGABAb[i]);
-    }
-  }
 }
 
 
@@ -2866,9 +2822,8 @@ void CpuSNN::reorganizeDelay()
       for(unsigned int j=1; j < Npost[nid]; j++) {
 	unsigned int cumN=cumulativePost[nid]; // cumulativePost[] is unsigned int
 	if( tmp_SynapticDelay[cumN+j] < tmp_SynapticDelay[cumN+j-1]) {
-	  fprintf(fpErr_, "Post-synaptic delays not sorted correctly...\n");
-	  fprintf(fpErr_, "id=%d, delay[%d]=%d, delay[%d]=%d\n",
-		  nid, j, tmp_SynapticDelay[cumN+j], j-1, tmp_SynapticDelay[cumN+j-1]);
+	  CARLSIM_ERROR("Post-synaptic delays not sorted correctly... id=%d, delay[%d]=%d, delay[%d]=%d",
+						nid, j, tmp_SynapticDelay[cumN+j], j-1, tmp_SynapticDelay[cumN+j-1]);
 	  assert( tmp_SynapticDelay[cumN+j] >= tmp_SynapticDelay[cumN+j-1]);
 	}
       }
@@ -2883,7 +2838,7 @@ void CpuSNN::reorganizeNetwork(bool removeTempMemory, int simType) {
 	if(doneReorganization)
 		return;
 
-	fprintf(fpOut_, "Beginning reorganization of network....\n");
+	CARLSIM_INFO("Beginning reorganization of network....");
 
 	// time to build the complete network with relevant parameters..
 	buildNetwork();
@@ -2910,11 +2865,11 @@ void CpuSNN::reorganizeNetwork(bool removeTempMemory, int simType) {
 
 	makePtrInfo();
 
-	if(simType==GPU_MODE)
-		fprintf(fpOut_, "Starting GPU-SNN Simulations ....\n");
-	else
-		fprintf(fpOut_, "Starting CPU-SNN Simulations ....\n");
-
+	if (simType==GPU_MODE) {
+		CARLSIM_INFO("Starting GPU-SNN Simulations ....");
+	} else {
+		CARLSIM_INFO("Starting CPU-SNN Simulations ....");
+	}
 
 	if(removeTempMemory) {
 		memoryOptimized = true;
@@ -3009,8 +2964,8 @@ void CpuSNN::resetGroups() {
 void CpuSNN::resetNeuron(unsigned int neurId, int grpId) {
 	assert(neurId < numNReg);
     if (grp_Info2[grpId].Izh_a == -1) {
-		fprintf(fpErr_,"setNeuronParameters must be called for group %s (%d)\n",grp_Info2[grpId].Name.c_str(),grpId);
-		exit(-1);
+		CARLSIM_ERROR("setNeuronParameters must be called for group %s (%d)",grp_Info2[grpId].Name.c_str(),grpId);
+		exitSimulation(1);
 	}
 
 	Izh_a[neurId] = grp_Info2[grpId].Izh_a + grp_Info2[grpId].Izh_a_sd*(float)getRandClosed();
@@ -3129,9 +3084,9 @@ void CpuSNN::resetSynapticConnections(bool changeWeights) {
 	// Reset wt,wtChange,pre-firingtime values to default values...
 	for(int destGrp=0; destGrp < numGrp; destGrp++) {
 		const char* updateStr = (grp_Info[destGrp].newUpdates == true)?"(**)":"";
-		fprintf(fpOut_, "Grp: %d:%s s=%d e=%d %s\n", destGrp, grp_Info2[destGrp].Name.c_str(), grp_Info[destGrp].StartN,
+		CARLSIM_DEBUG("Grp: %d:%s s=%d e=%d %s", destGrp, grp_Info2[destGrp].Name.c_str(), grp_Info[destGrp].StartN,
 					grp_Info[destGrp].EndN,  updateStr);
-		fprintf(fpDeb_,  "Grp: %d:%s s=%d e=%d  %s\n",  destGrp, grp_Info2[destGrp].Name.c_str(), grp_Info[destGrp].StartN,
+		CARLSIM_DEBUG("Grp: %d:%s s=%d e=%d  %s",  destGrp, grp_Info2[destGrp].Name.c_str(), grp_Info[destGrp].StartN,
 					grp_Info[destGrp].EndN, updateStr);
 
 		for(int nid=grp_Info[destGrp].StartN; nid <= grp_Info[destGrp].EndN; nid++) {
@@ -3167,10 +3122,9 @@ void CpuSNN::resetSynapticConnections(bool changeWeights) {
 				if( prevPreGrp != srcGrp) {
 					if(nid==grp_Info[destGrp].StartN) {
 						const char* updateStr = (connInfo->newUpdates==true)? "(**)":"";
-						fprintf(fpOut_, "\t%d (%s) start=%d, type=%s maxWts = %f %s\n", srcGrp,
-						grp_Info2[srcGrp].Name.c_str(), j, (j<Npre_plastic[nid]?"P":"F"), connInfo->maxWt, updateStr);
-						fprintf(fpDeb_, "\t%d (%s) start=%d, type=%s maxWts = %f %s\n", srcGrp,
-						grp_Info2[srcGrp].Name.c_str(), j, (j<Npre_plastic[nid]?"P":"F"), connInfo->maxWt, updateStr);
+						CARLSIM_DEBUG("\t%d (%s) start=%d, type=%s maxWts = %f %s", srcGrp,
+										grp_Info2[srcGrp].Name.c_str(), j, (j<Npre_plastic[nid]?"P":"F"),
+										connInfo->maxWt, updateStr);
 					}
 					prevPreGrp = srcGrp;
 				}
@@ -3212,23 +3166,23 @@ inline void CpuSNN::setConnection(int srcGrp,  int destGrp,  unsigned int src, u
 
 	// we have exceeded the number of possible connection for one neuron
 	if(Npost[src] >= grp_Info[srcGrp].numPostSynapses)	{
-		fprintf(fpErr_, "setConnection(%d (Grp=%s), %d (Grp=%s), %f, %d)\n", src, grp_Info2[srcGrp].Name.c_str(),
+		CARLSIM_ERROR("setConnection(%d (Grp=%s), %d (Grp=%s), %f, %d)", src, grp_Info2[srcGrp].Name.c_str(),
 					dest, grp_Info2[destGrp].Name.c_str(), synWt, dVal);
-		fprintf(fpErr_, "(Npost[%d] = %d ) >= (numPostSynapses = %d) value given for the network very less\n", src,
+		CARLSIM_ERROR("(Npost[%d] = %d ) >= (numPostSynapses = %d) value given for the network very low", src,
 					Npost[src], grp_Info[srcGrp].numPostSynapses);
-		fprintf(fpErr_, "Large number of postsynaptic connections is established\n");
-		fprintf(fpErr_, "Increase the numPostSynapses value for the Group = %s \n", grp_Info2[srcGrp].Name.c_str());
-		assert(0);
+		CARLSIM_ERROR("Large number of postsynaptic connections is established");
+		CARLSIM_ERROR("Increase the numPostSynapses value for the Group = %s", grp_Info2[srcGrp].Name.c_str());
+		exitSimulation(1);
 	}
 
 	if(Npre[dest] >= grp_Info[destGrp].numPreSynapses) {
-		fprintf(fpErr_, "setConnection(%d (Grp=%s), %d (Grp=%s), %f, %d)\n", src, grp_Info2[srcGrp].Name.c_str(),
+		CARLSIM_ERROR("setConnection(%d (Grp=%s), %d (Grp=%s), %f, %d)", src, grp_Info2[srcGrp].Name.c_str(),
 					dest, grp_Info2[destGrp].Name.c_str(), synWt, dVal);
-		fprintf(fpErr_, "(Npre[%d] = %d) >= (numPreSynapses = %d) value given for the network very less\n", dest,
+		CARLSIM_ERROR("(Npre[%d] = %d) >= (numPreSynapses = %d) value given for the network very less", dest,
 					Npre[dest], grp_Info[destGrp].numPreSynapses);
-		fprintf(fpErr_, "Large number of presynaptic connections established\n");
-		fprintf(fpErr_, "Increase the numPostSynapses for the Grp = %s value \n", grp_Info2[destGrp].Name.c_str());
-		assert(0);
+		CARLSIM_ERROR("Large number of presynaptic connections established");
+		CARLSIM_ERROR("Increase the numPostSynapses for the Grp = %s value ", grp_Info2[destGrp].Name.c_str());
+		exitSimulation(1);
 	}
 
 	int p = Npost[src];
@@ -3354,7 +3308,7 @@ void CpuSNN::swapConnections(int nid, int oldPos, int newPos) {
 
 
 void CpuSNN::updateAfterMaxTime() {
-  fprintf(fpErr_, "Maximum Simulation Time Reached...Resetting simulation time\n");
+  CARLSIM_WARN("Maximum Simulation Time Reached...Resetting simulation time");
 
   // This will be our cut of time. All other time values
   // that are less than cutOffTime will be set to zero
@@ -3401,7 +3355,7 @@ void CpuSNN::updateParameters(int* curN, int* numPostSynapses, int* numPreSynaps
 	//  about the group (numN, numPostSynapses, numPreSynapses and others).
 	for(int g=0; g < numGrp; g++)  {
 		if (grp_Info[g].Type==UNKNOWN_NEURON) {
-			fprintf(fpErr_, "Unknown group for %d (%s)\n", g, grp_Info2[g].Name.c_str());
+			CARLSIM_ERROR("Unknown group for %d (%s)", g, grp_Info2[g].Name.c_str());
 			exitSimulation(1);
 		}
 
@@ -3523,7 +3477,7 @@ int CpuSNN::updateSpikeTables() {
 	}
 
 	if ((maxSpikesD1+maxSpikesD2) < (numNExcReg+numNInhReg+numNPois)*UNKNOWN_NEURON_MAX_FIRING_RATE) {
-		fprintf(fpErr_, "Insufficient amount of buffer allocated...\n");
+		CARLSIM_ERROR("Insufficient amount of buffer allocated...");
 		exitSimulation(1);
 	}
 
@@ -3573,17 +3527,17 @@ void CpuSNN::updateStateAndFiringTable()
 		homeostasisScale = grp_Info[g].homeostasisScale;
       }
 
-      if ((showLogMode >= 1) && (i==grp_Info[g].StartN))
-	fprintf(fpOut_,"Weights, Change at %lu (diff_firing:%f) \n", simTimeSec, diff_firing);
+      if (i==grp_Info[g].StartN)
+		CARLSIM_DEBUG("Weights, Change at %lu (diff_firing: %f)", simTimeSec, diff_firing);
 
       for(int j=0; j < Npre_plastic[i]; j++) {
 
-	if ((showLogMode >= 1) && (i==grp_Info[g].StartN))
-	  fprintf(fpDeb_,"%1.2f %1.2f \t", wt[offset+j]*10, wtChange[offset+j]*10);
+//	if (i==grp_Info[g].StartN)
+//	  CARLSIM_DEBUG("%1.2f %1.2f \t", wt[offset+j]*10, wtChange[offset+j]*10);
 	// homeostatic weight update
 	if(grp_Info[g].WithHomeostasis) {
-	  if ((showLogMode >= 3) && (i==grp_Info[g].StartN)) 
-	    fprintf(fpDeb_,"%f\t", (diff_firing*(0.0+wt[offset+j]) + wtChange[offset+j])/10/(Npre_plastic[i]+10)/(grp_Info[g].avgTimeScale*2/1000.0)*baseFiring[i]/(1+fabs(diff_firing)*50));
+//	  if ((showLogMode >= 3) && (i==grp_Info[g].StartN)) 
+//	    fprintf(fpDeb_,"%f\t", (diff_firing*(0.0+wt[offset+j]) + wtChange[offset+j])/10/(Npre_plastic[i]+10)/(grp_Info[g].avgTimeScale*2/1000.0)*baseFiring[i]/(1+fabs(diff_firing)*50));
 	  //need to figure out exactly why we change the weight to this value.  Specifically, what is with the second term?  -- KDC
 	  wt[offset+j] += (diff_firing*wt[offset+j]*homeostasisScale + wtChange[offset+j])*baseFiring[i]/grp_Info[g].avgTimeScale/(1+fabs(diff_firing)*50);
 	} else{
@@ -3594,7 +3548,6 @@ void CpuSNN::updateStateAndFiringTable()
 	}
 
 	//MDR - don't decay weights, just set to 0
-	//wtChange[offset+j]*=0.99f;
 	wtChange[offset+j] = 0;
 
 	// if this is an excitatory or inhibitory synapse
@@ -3611,8 +3564,8 @@ void CpuSNN::updateStateAndFiringTable()
 	}
       }
 
-      if ((showLogMode >= 1) && (i==grp_Info[g].StartN))
-	fprintf(fpDeb_,"\n");
+//      if ((showLogMode >= 1) && (i==grp_Info[g].StartN))
+//	fprintf(fpDeb_,"\n");
     }
   }
 
@@ -3685,7 +3638,6 @@ void CpuSNN::updateSpikeMonitor()
 	int nid   = fireTablePtr[i];
 	if (currentMode == GPU_MODE)
 	  nid = GET_FIRING_TABLE_NID(nid);
-	//fprintf(fpDeb_, "%d %d \n", t, nid);
 	assert(nid < numN);
 	  
 	int grpId = findGrpId(nid);
@@ -3697,7 +3649,7 @@ void CpuSNN::updateSpikeMonitor()
 	    if((pos >= monBufferSize[monitorId]))
 	      {
 		if(!bufferOverFlow[monitorId])
-		  fprintf(fpErr_, "Buffer Monitor size (%d) is small. Increase buffer firing rate for %s\n",
+		  CARLSIM_WARN("Buffer Monitor size (%d) is small. Increase buffer firing rate for %s",
 		  			monBufferSize[monitorId], grp_Info2[grpId].Name.c_str());
 		bufferOverFlow[monitorId] = true;
 	      }
@@ -3715,7 +3667,7 @@ void CpuSNN::updateSpikeMonitor()
   for (int grpId=0;grpId<numGrp;grpId++) {
     int monitorId = grp_Info[grpId].MonitorId;
     if(monitorId!= -1) {
-      fprintf(fpOut_, "Spike Monitor for Group %s has %d spikes (%f Hz)\n",grp_Info2[grpId].Name.c_str(),
+      CARLSIM_INFO("Spike Monitor for Group %s has %d spikes (%f Hz)",grp_Info2[grpId].Name.c_str(),
       			monBufferPos[monitorId],((float)monBufferPos[monitorId])/(grp_Info[grpId].SizeN));
 
       // call the callback function

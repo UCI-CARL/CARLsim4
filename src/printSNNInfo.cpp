@@ -70,9 +70,11 @@ void CpuSNN::printConnection(int grpId, FILE* const fp) {
 
 
 
-void CpuSNN::printMemoryInfo(FILE* const fp)
-{
-  checkNetworkBuilt(fp);
+void CpuSNN::printMemoryInfo(FILE* const fp) {
+  if (!doneReorganization) {
+    CARLSIM_DEBUG("checkNetworkBuilt()");
+    CARLSIM_DEBUG("Network not yet elaborated and built...");
+  }
 
   fprintf(fp, "************* Memory Info ***************\n");
   int totMemSize = cpuSnnSz.networkInfoSize+cpuSnnSz.synapticInfoSize+cpuSnnSz.neuronInfoSize+cpuSnnSz.spikingInfoSize;

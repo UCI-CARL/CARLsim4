@@ -1,24 +1,72 @@
 #ifndef _CARLSIM_H_
 #define _CARLSIM_H_
 
-#include <snn.h>	// FIXME: remove snn.h dependency
-#include <string>
-#include <map>
+#include <snn.h>		// FIXME: remove snn.h dependency
+#include <string>		// std::string
 
-class CpuSNN;
+// TODO: complete documentation
 
+
+/*!
+ * \brief CARLsim User Interface
+ * This class provides a user interface to the public sections of CARLsimCore source code. Example networks that use
+ * this methodology can be found in the examples/ directory. Documentation is available on our website.
+ *
+ * The source code is organized into different sections in the following way:
+ *  ├── Public section
+ *  │     ├── Public methods
+ *  │     │     ├── Constructor / destructor
+ *  │     │     ├── Setting up a simulation
+ *  │     │     ├── Running a simulation
+ *  │     │     ├── Plotting / logging
+ *  │     │     ├── Interacting with a simulation
+ *  │     │     ├── Getters / setters
+ *  │     │     └── Set defaults
+ *  │     └── Public properties
+ *  └── Private section 
+ *        ├── Private methods
+ *        └── Private properties
+ * Within these sections, methods and properties are ordered alphabetically. carlsim.cpp follows the same organization.
+ * 
+ */
 class CARLsim {
 public:
-	CARLsim(std::string netName="SNN", int numConfig=1, int randSeed=42, int simType=CPU_MODE, int ithGPU=0,
+	// +++++ PUBLIC METHODS: CONSTRUCTOR / DESTRUCTOR +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
+
+	/*!
+	 * \brief CARLsim constructor
+	 * \param[in] netName 		network name
+	 * \param[in] nConfig 		number of network configurations 			// TODO: explain configurations
+	 * \param[in] randSeed 		random number generator seed
+	 * \param[in] simType		either CPU_MODE or GPU_MODE
+	 * \param[in] ithGPU 		on which GPU to establish a context (only relevant in GPU_MODE)
+	 * \param[in] enablePrint 												// TODO
+	 * \param[in] copyState 												// TODO
+	 */
+	CARLsim(std::string netName="SNN", int nConfig=1, int randSeed=42, int simType=CPU_MODE, int ithGPU=0,
 				bool enableSilentMode=false);
+
 	~CARLsim();
 
 
 
 	// +++++ PUBLIC METHODS: SETTING UP A SIMULATION ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
-	//! shortcut to create SYN_FIXED connections with just one weight and one delay value
-	// returns connection id
+	/*!
+	 * \brief Connects a presynaptic to a postsynaptic group using fixed weights and a single delay value
+	 * This function is a shortcut to create synaptic connections from a pre-synaptic group grpId1 to a post-synaptic
+	 * group grpId2 using a pre-defined primitive type (such as "full", "one-to-one", or "random"). Synapse weights 
+	 * will stay the same throughout the simulation (SYN_FIXED, no plasticity). All synapses will have the same delay.
+	 * For more flexibility, see the other connect() calls.
+	 * \param[in] grpId1	ID of the pre-synaptic group
+	 * \param[in] grpId2 	ID of the post-synaptic group
+	 * \param[in] connType 	connection type. "random": random connectivity. "one-to-one": connect the i-th neuron in 
+	 *						pre to the i-th neuron in post. "full": connect all neurons in pre to all neurons in post
+	 * 						(no self-connections).
+	 * \param[in] connProb	connection probability
+	 * \param[in] delay 	delay for all synapses (ms)
+	 * \returns a unique ID associated with the newly created connection
+	 */
 	uint16_t connect(int grpId1, int grpId2, const std::string& connType, float wt, float connProb, uint8_t delay);
 
 	//! shortcut to create SYN_FIXED connections with one weight / delay and two scaling factors for synaptic currents
@@ -26,9 +74,21 @@ public:
 	uint16_t connect(int grpId1, int grpId2, const std::string& connType, float wt, float connProb, uint8_t delay,
 						float mulSynFast, float mulSynSlow);
 
-	//! shortcut to create SYN_FIXED/SYN_PLASTIC connections with initWt/maxWt, minDelay/maxDelay, but to omit
-	//! scaling factors for synaptic conductances (default is 1.0 for both)
-	// returns connection id
+	/*!
+	 * \brief Connects a presynaptic to a postsynaptic group using fixed/plastic weights and a range of delay values
+	 * This function is a shortcut to create synaptic connections from a pre-synaptic group grpId1 to a post-synaptic
+	 * group grpId2 using a pre-defined primitive type (such as "full", "one-to-one", or "random"). Synapse weights 
+	 * will stay the same throughout the simulation (SYN_FIXED, no plasticity). All synapses will have the same delay.
+	 * For more flexibility, see the other connect() calls.
+	 * \param[in] grpId1	ID of the pre-synaptic group
+	 * \param[in] grpId2 	ID of the post-synaptic group
+	 * \param[in] connType 	connection type. "random": random connectivity. "one-to-one": connect the i-th neuron in 
+	 *						pre to the i-th neuron in post. "full": connect all neurons in pre to all neurons in post
+	 * 						(no self-connections).
+	 * \param[in] connProb	connection probability
+	 * \param[in] delay 	delay for all synapses (ms)
+	 * \returns a unique ID associated with the newly created connection
+	 */
 	uint16_t connect(int grpId1, int grpId2, const std::string& connType, float initWt, float maxWt, float connProb,
 						uint8_t minDelay, uint8_t maxDelay, bool synWtType);
 
@@ -54,10 +114,10 @@ public:
 	int createSpikeGeneratorGroup(const std::string grpName, unsigned int nNeur, int neurType, int configId=ALL);
 
 
-	//! Sets default values for conduction decays or disables COBA if enable==false
+	//! Sets default values for conduction decays or disables COBA if isSet==false
 	void setConductances(int grpId, bool isSet, int configId=ALL);
 
-	//! Sets custom values for conduction decays or disables COBA if enable==false
+	//! Sets custom values for conduction decays or disables COBA if isSet==false
 	void setConductances(int grpId, bool isSet, float tdAMPA, float tdNMDA, float tdGABAa, float tdGABAb,
 							int configId=ALL);
 
@@ -155,7 +215,7 @@ public:
 	group_info_t getGroupInfo(int grpId, int configId=0); //!< gets group info struct
 	std::string getGroupName(int grpId, int configId=0);
 
-	int getNumConfigurations() { return numConfig_; }	//!< gets number of network configurations
+	int getNumConfigurations() { return nConfig_; }		//!< gets number of network configurations
 	int getNumConnections(uint16_t connectionId);		//!< gets number of connections associated with a connection ID
 	int getNumGroups();									//!< gets number of groups in the network
 
@@ -218,56 +278,44 @@ public:
 	void setDefaultSTPparams(int neurType, float STP_U, float STP_tD, float STP_tF);
 
 
-	// +++++ PUBLIC PROPERTIES ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
-
-	/*!
-	 * \brief a struct that contains important info about each allocated group
-	 * Can be used (for example) to determine whether all (or none of the) groups have conductances enabled.
-	 */
-	struct grpInfo_s {
-		int grpId;			// the grp id returned from CARLsimCore
-		bool hasSetCond;	// whether conductances are set
-	};
-
 private:
 	// +++++ PRIVATE METHODS ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
+
+	void CARLsimInit();					//!< init function, unsafe computations that would usually go in constructor
+
 	void checkConductances(); 			//!< all or none of the groups must enable conductances
+
+	bool existsGrpId(int grpId);		//!< checks whether a certain grpId exists in grpIds_
 
 	void handleUserWarnings(); 			//!< print all user warnings, continue only after user input
 	void handleNetworkConsistency();	//!< do all setupNetwork error checks
 
 	void printSimulationSpecs();
 
-	grpInfo_s makeGrpInfo(int grpId, bool hasSetCond); //!< factory function for grpInfo_s
 
 
 	// +++++ PRIVATE PROPERTIES +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
-	CpuSNN* snn_;			//!< an instance of CARLsim core class
-	int numConfig_;			//!< number of configurations
-	int randSeed_;			//!< RNG seed
-	int simMode_;			//!< CPU_MODE or GPU_MODE
-	int ithGPU_;			//!< on which device to establish a context
+	CpuSNN* snn_;					//!< an instance of CARLsim core class
+	std::string netName_;			//!< network name
+	int nConfig_;					//!< number of configurations
+	int randSeed_;					//!< RNG seed
+	int simMode_;					//!< CPU_MODE or GPU_MODE
+	int ithGPU_;					//!< on which device to establish a context
 	bool enablePrint_;
 	bool copyState_;
 
 	unsigned int numConnections_;	//!< keep track of number of allocated connections
+	std::vector<std::string> userWarnings_; // !< an accumulated list of user warnings
 
-	/*!
-	 * \brief a map that stores the grpId and some associated grpInfo (struct)
-	 * grpInfo can be used (for example) to detect whether all allocated groups have conductances enabled (disabled).
-	 * A new entry can be added to the map by using the factory function makeGrpInfo.
-	 */
-	std::map<int, grpInfo_s> grpInfo_;
+	std::vector<int> grpIds_;		//!< a list of all created group IDs
 
 	bool hasRunNetwork_;			//!< flag to inform that network has been run
-
 	bool hasSetHomeoALL_;			//!< informs that homeostasis have been set for ALL groups (can't add more groups)
 	bool hasSetHomeoBaseFiringALL_;	//!< informs that base firing has been set for ALL groups (can't add more groups)
 	bool hasSetSTDPALL_; 			//!< informs that STDP have been set for ALL groups (can't add more groups)
 	bool hasSetSTPALL_; 			//!< informsthat STP have been set for ALL groups (can't add more groups)
 
-	std::vector<std::string> userWarnings_; // !< an accumulated list of user warnings
 	float def_tdAMPA_;				//!< default value for AMPA decay (ms)
 	float def_tdNMDA_;				//!< default value for NMDA decay (ms)
 	float def_tdGABAa_;				//!< default value for GABAa decay (ms)

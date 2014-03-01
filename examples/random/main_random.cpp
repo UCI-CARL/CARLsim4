@@ -58,24 +58,23 @@ int main()
 
 	int gin=sim.createSpikeGeneratorGroup("input",N*0.1,EXCITATORY_NEURON);
 
-	float COND_tAMPA=5.0, COND_tNMDA=150.0, COND_tGABAa=6.0, COND_tGABAb=150.0;
-	sim.setConductances(ALL,true,COND_tAMPA,COND_tNMDA,COND_tGABAa,COND_tGABAb,ALL);
+	sim.setConductances(ALL,true);
 
 	// make random connections with 10% probability
-	sim.connect(g2,g2,"random",-1.0f/100,0.1f,1);
+	sim.connect(g2,g2,"random",-0.01f,0.1f,1);
 	// make random connections with 10% probability, and random delays between 1 and 20
-	sim.connect(g1,g2,"random", +0.25f/100, 0.5f/100, 0.1f,  1, 20, SYN_PLASTIC);
-	sim.connect(g1,g1,"random", +6.0f/100, 10.0f/100, 0.1f,  1, 20, SYN_PLASTIC);
+	sim.connect(g1,g2,"random", 0.0025f, 0.005f, 0.1f,  1, 20, SYN_PLASTIC);
+	sim.connect(g1,g1,"random", 0.006f, 0.01f, 0.1f,  1, 20, SYN_PLASTIC);
 
 	// 5% probability of connection
-	sim.connect(gin,g1,"random", +100.0f/100, 100.0f/100, 0.05f,  1, 20, SYN_FIXED);
+	sim.connect(gin,g1,"random", 1.0f, 1.0f, 0.05f,  1, 20, SYN_FIXED);
 
 	// here we define and set the properties of the STDP. 
 	float ALPHA_LTP = 0.10f/100, TAU_LTP = 20.0f, ALPHA_LTD = 0.12f/100, TAU_LTD = 20.0f;	
 	sim.setSTDP(g1, true, ALPHA_LTP, TAU_LTP, ALPHA_LTD, TAU_LTD);
 
 	// show logout every 10 secs, enabled with level 1 and output to stdout.
-	sim.setLogCycle(10, 1, stdout);
+	sim.setLogCycle(1, 1, stdout);
 
 	// put spike times into spikes.dat
 	sim.setSpikeMonitor(g1,"results/random/spikes.dat");
