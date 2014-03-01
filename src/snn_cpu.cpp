@@ -87,99 +87,56 @@ RNG_rand48* gpuRand48 = NULL;
 /// CONSTRUCTOR / DESTRUCTOR
 /// **************************************************************************************************************** ///
 
-/*!
- * \brief toggles silent mode
- * In silent mode, no output (status info, errors, debug) will be printed to console (everything ends up in /dev/null).
- * Entering silent mode thus redirects all output to the bit bucket. Exiting silent mode will reload previously defined
- * file pointers (fpOutDefault_, etc.) and direct output there.
- * These defaults are usually fpOut_ for fpOut_, fpErr_ for fpErr_, and dev/null for fpDeb_.
- * However, the user can customize these.
- *
-bool toggleSilentMode() {
-	// first, close all open file pointers
-	if (fpOut_!=NULL) fclose(fpOut_);
-	if (fpErr_!=NULL) fclose(fpErr_);
-	if (fpDeb_!=NULL) fclose(fpDeb_);
-
-	if (inSilentMode_) {
-		// exit silent mode (redirect output to default fps)
-		fpOut_ = fpOutDefault_;
-		fpErr_ = fpErrDefault_;
-		fpDeb_ = fpDebDefault_;
-	} else {
-		// enter silent mode
-		fpOut_ = fopen("/dev/null","w");
-		fpErr_ = fopen("/dev/null","w");
-		fpDeb_ = fopen("/dev/null","w");
-	}
-
-	silentMode_=!silentMode_;
-	return silentMode_;
-}
-*/
-
-
-//#define CARLSIM_ERROR3(fp1, fp2, fp3, formatc, ...) { CARLSIM_ERROR(fp1,formatc,##__VA_ARGS__); \
-//						      CARLSIM_ERROR(fp2,formatc,##__VA_ARGS__); \
-//						      CARLSIM_ERROR(fp3,formatc,##__VA_ARGS__); }
-//#define CARLSIM_ERROR2(fp1, fp2, formatc, ...) {      CARLSIM_ERROR(fp1,formatc,##__VA_ARGS__); \
-//                                                      CARLSIM_ERROR(fp2,formatc,##__VA_ARGS__);}
-
-/*!
- * \brief Logger modes
- * The logger mode defines where to print all status, error, and debug messages. Several predefined
- * modes exist (USER, DEVELOPER, SILENT). However, the user can also set each file pointer to a
- * location of their choice (CUSTOM mode).
- * The following logger modes exist:
- *  USER 		User mode, for experiment-oriented simulations. Errors and warnings go to stderr,
- *              status information goes to stdout. Debug information can only be found in the log file.
- *  DEVELOPER   Developer mode, for developing and debugging code. Same as user, but additionally,
- *              all debug information is printed to stdout.
- *  SILENT      Silent mode, no output is generated.
- *  CUSTOM      Custom mode, the user can set the location of all the file pointers.
- * 
- * The following file pointers exist:
- *  fpOut_	where CARLSIM_INFO messages go
- *  fpErr_ 	where CARLSIM_ERROR and CARLSIM_WARN messages go
- *  fpDeb_ 	where CARLSIM_DEBUG messages go
- *  fpLog_ 	typically a log file, where all of the above messages go
- *
- * The file pointers are automatically set to different locations, depending on the loggerMode:
- *
- *          |    USER    | DEVELOPER  |   SILENT   |  CUSTOM
- * ---------|------------|------------|------------|---------
- * fpOut_   |   stdout   |   stdout   | /dev/null  |    ?
- * fpErr_   |   stderr   |   stderr   | /dev/null  |    ?
- * fpDeb_   | /dev/null  |   stdout   | /dev/null  |    ?
- * fpLog_   | debug.log  | debug.log  | /dev/null  |    ?
- *
- * Location of the log file can be set in any mode using CARLsim::setLogFileFp.
- * In mode CUSTOM, the other file pointers can be set using CARLsim::setLogsFp.
- */
-enum loggerMode { USER, DEVELOPER, SILENT, CUSTOM };
-
-
-
 // TODO: consider moving unsafe computations out of constructor
-CpuSNN::CpuSNN(const std::string& _name, int _numConfig, int _randSeed, int _mode, bool enableSilentMode) {
+CpuSNN::CpuSNN(const std::string& _name, int _numConfig, int _randSeed, int simMode, loggerMode_t loggerMode) {
 	// set default file pointers for logging
 
-	// silent mode: will not print anything to console
-	// else: 		specify fp of where to print status info (fpOut_), errors (fpErr_), and debug info (fpDeb_)
-	//		 		default values for these are fpOut_, fpErr_, and "/dev/null", respectively
-	// we want to be able to toggle silent mode, so we'll store default fp
-	enableSilentMode_ = enableSilentMode;
-	if (enableSilentMode_) {
-		fpOut_ = fopen("/dev/null","w");
-		fpErr_ = fopen("/dev/null","w");
-		fpDeb_ = fopen("/dev/null","w");
-	} else {
-		fpOut_ = stdout;
-		fpErr_ = stderr;
-		fpDeb_ = fopen("/dev/null","w");
-	}
+	networkName	= _name;
+	numConfig   = _numConfig;
+	assert(numConfig>0 && numConfig<=100);
 
+	loggerMode_ = loggerMode;
+	currentMode = simMode;
+	assert(currentMode==CPU_MODE || currentMode==GPU_MODE);
+
+	if (_randSeed<0)
+		randSeed = time(NULL);
+	else if(_randSeed==0)
+		randSeed = 123;
+	else
+		randSeed = _randSeed;
+	srand48(randSeed);
+	getRand.seed(randSeed*2);
+	getRandClosed.seed(randSeed*3);
+
+	// set logger mode (defines where to print all status, error, and debug messages)
+	switch (loggerMode_) {
+		case USER:
+			fpOut_ = stdout;
+			fpErr_ = stderr;
+			fpDeb_ = fopen("/dev/null","w");
+			break;
+		case DEVELOPER:
+			fpOut_ = stdout;
+			fpErr_ = stderr;
+			fpDeb_ = stdout;
+			break;
+		case SILENT:
+		case CUSTOM:
+			fpOut_ = fopen("/dev/null","w");
+			fpErr_ = fopen("/dev/null","w");
+			fpDeb_ = fopen("/dev/null","w");
+			break;
+		default:
+			fpOut_ = fopen("/dev/null","w");
+			fpDeb_ = fopen("/dev/null","w");
+			fpErr_ = stdout;
+			CARLSIM_ERROR("Unknown logger mode");
+			exit(1);
+	}
 	fpLog_ = fopen("debug.log","w");
+
+
 
 	CARLSIM_INFO("*******************************************************************************");
 	CARLSIM_INFO("********************      Welcome to CARLsim %d.%d      *************************",
@@ -190,10 +147,7 @@ CpuSNN::CpuSNN(const std::string& _name, int _numConfig, int _randSeed, int _mod
 	// initialize propogated spike buffers.....
 	pbuf = new PropagatedSpikeBuffer(0, PROPAGATED_BUFFER_SIZE);
 
-	numConfig 			  = _numConfig;
 	finishedPoissonGroup  = false;
-	assert(numConfig > 0);
-	assert(numConfig < 100);
 
 	resetPointers();
 	numN = 0;
@@ -209,7 +163,6 @@ CpuSNN::CpuSNN(const std::string& _name, int _numConfig, int _randSeed, int _mod
 	showLogMode = 0;	// show only basic logs. if set higher more logs generated
 	showGrpFiringInfo = true;
 
-	currentMode = _mode;
 	memset(&cpu_gpuNetPtrs,0,sizeof(network_ptr_t));
 	memset(&net_Info,0,sizeof(network_info_t));
 	cpu_gpuNetPtrs.allocated = false;
@@ -263,7 +216,6 @@ CpuSNN::CpuSNN(const std::string& _name, int _numConfig, int _randSeed, int _mod
 	spikeCountAll 		= 0;	spikeCountD2Host	= 0;	spikeCountD1Host = 0;
 	nPoissonSpikes 		= 0;
 
-	networkName	= _name;
 	numGrp   = 0;
 	numConnections = 0;
 	numSpikeGenGrps  = 0;
@@ -284,15 +236,6 @@ CpuSNN::CpuSNN(const std::string& _name, int _numConfig, int _randSeed, int _mod
 	gGABAa = NULL;
 	gGABAb = NULL;
 
-	if (_randSeed == -1) {
-		randSeed = time(NULL);
-	}
-	else if(_randSeed==0) {
-		randSeed=123;
-	}
-	srand48(randSeed);
-	getRand.seed(randSeed*2);
-	getRandClosed.seed(randSeed*3);
 
 	CARLSIM_INFO("nConfig: %d, randSeed: %d\n",_numConfig,randSeed);
 
@@ -2072,10 +2015,15 @@ void CpuSNN::deleteObjects() {
 		printSimSummary(fpDeb_);
 		printSimSummary(fpOut_);
 
-		if (fpOut_!=NULL) fclose(fpOut_);
-		if (fpErr_!=NULL) fclose(fpErr_);
-		if (fpDeb_!=NULL) fclose(fpDeb_);
-		if (fpLog_!=NULL) fclose(fpLog_);
+		// don't fclose if it's stdout or stderr, otherwise they're gonna stay closed for the rest of the process
+		if (fpOut_!=NULL && fpOut_!=stdout && fpOut_!=stderr)
+			fclose(fpOut_);
+		if (fpErr_!=NULL && fpErr_!=stdout && fpErr_!=stderr)
+			fclose(fpErr_);
+		if (fpDeb_!=NULL && fpDeb_!=stdout && fpDeb_!=stderr)
+			fclose(fpDeb_);
+		if (fpLog_!=NULL && fpLog_!=stdout && fpLog_!=stderr)
+			fclose(fpLog_);
 
 		// close param.txt
 		if (fpParam!=NULL) {

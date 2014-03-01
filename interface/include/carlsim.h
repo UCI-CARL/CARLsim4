@@ -43,9 +43,8 @@ public:
 	 * \param[in] enablePrint 												// TODO
 	 * \param[in] copyState 												// TODO
 	 */
-	CARLsim(std::string netName="SNN", int nConfig=1, int randSeed=42, int simType=CPU_MODE, int ithGPU=0,
-				bool enableSilentMode=false);
-
+	CARLsim(std::string netName="SNN", int nConfig=1, int randSeed=42, int simMode=CPU_MODE, int ithGPU=0,
+				loggerMode_t loggerMode=USER);
 	~CARLsim();
 
 
@@ -301,6 +300,7 @@ private:
 	int nConfig_;					//!< number of configurations
 	int randSeed_;					//!< RNG seed
 	int simMode_;					//!< CPU_MODE or GPU_MODE
+	loggerMode_t loggerMode_;		//!< logger mode (USER, DEVELOPER, SILENT, CUSTOM)
 	int ithGPU_;					//!< on which device to establish a context
 	bool enablePrint_;
 	bool copyState_;

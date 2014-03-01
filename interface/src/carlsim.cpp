@@ -78,14 +78,13 @@ private:
 /// CONSTRUCTOR / DESTRUCTOR
 /// **************************************************************************************************************** ///
 
-CARLsim::CARLsim(std::string netName, int nConfig, int randSeed, int simType, int ithGPU, bool enableSilentMode) {
-	snn_ = new CpuSNN(netName.c_str(), nConfig, randSeed, simType, enableSilentMode);
+CARLsim::CARLsim(std::string netName, int nConfig, int randSeed, int simMode, int ithGPU, loggerMode_t loggerMode) {
+	netName_ 					= netName;
 	nConfig_ 					= nConfig;
 	randSeed_					= randSeed;
-	simMode_ 					= simType;
+	simMode_ 					= simMode;
 	ithGPU_ 					= ithGPU;
-//	enablePrint_ 				= enablePrint;
-//	copyState_ 					= copyState;
+	loggerMode_ 				= loggerMode;
 	enablePrint_ = false;
 	copyState_ = false;
 
@@ -108,7 +107,7 @@ CARLsim::~CARLsim() {
 
 // unsafe computations that would otherwise go in constructor
 void CARLsim::CARLsimInit() {
-	snn_ = new CpuSNN(netName_.c_str(), nConfig_, randSeed_, simMode_);
+	snn_ = new CpuSNN(netName_.c_str(), nConfig_, randSeed_, simMode_, loggerMode_);
 
 	// set default time constants for synaptic current decay
 	// TODO: add ref

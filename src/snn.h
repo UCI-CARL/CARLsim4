@@ -192,6 +192,38 @@ inline bool isInhibitoryNeuron (unsigned int& nid, unsigned int& numNInhPois, un
 #define CARLSIM_INFO_PRINT(fp, formatc, ...) fprintf(fp,formatc "\n",##__VA_ARGS__)
 #define CARLSIM_DEBUG_PRINT(fp, formatc, ...) fprintf(fp,"[DEBUG %s:%d] " formatc "\n",__FILE__,__LINE__,##__VA_ARGS__)
 
+/*!
+ * \brief Logger modes
+ * The logger mode defines where to print all status, error, and debug messages. Several predefined
+ * modes exist (USER, DEVELOPER, SILENT). However, the user can also set each file pointer to a
+ * location of their choice (CUSTOM mode).
+ * The following logger modes exist:
+ *  USER 		User mode, for experiment-oriented simulations. Errors and warnings go to stderr,
+ *              status information goes to stdout. Debug information can only be found in the log file.
+ *  DEVELOPER   Developer mode, for developing and debugging code. Same as user, but additionally,
+ *              all debug information is printed to stdout.
+ *  SILENT      Silent mode, no output is generated.
+ *  CUSTOM      Custom mode, the user can set the location of all the file pointers.
+ * 
+ * The following file pointers exist:
+ *  fpOut_	where CARLSIM_INFO messages go
+ *  fpErr_ 	where CARLSIM_ERROR and CARLSIM_WARN messages go
+ *  fpDeb_ 	where CARLSIM_DEBUG messages go
+ *  fpLog_ 	typically a log file, where all of the above messages go
+ *
+ * The file pointers are automatically set to different locations, depending on the loggerMode:
+ *
+ *          |    USER    | DEVELOPER  |   SILENT   |  CUSTOM
+ * ---------|------------|------------|------------|---------
+ * fpOut_   |   stdout   |   stdout   | /dev/null  |    ?
+ * fpErr_   |   stderr   |   stderr   | /dev/null  |    ?
+ * fpDeb_   | /dev/null  |   stdout   | /dev/null  |    ?
+ * fpLog_   | debug.log  | debug.log  | /dev/null  |    ?
+ *
+ * Location of the log file can be set in any mode using CARLsim::setLogFileFp.
+ * In mode CUSTOM, the other file pointers can be set using CARLsim::setLogsFp.
+ */
+enum loggerMode_t { USER, DEVELOPER, SILENT, CUSTOM, UNKNOWN };
 
 
 
@@ -493,7 +525,8 @@ class CpuSNN {
 /// PUBLIC METHODS
 /// **************************************************************************************************************** ///
 public:
-	CpuSNN(const std::string& _name, int _numConfig=1, int randomize=0, int mode=CPU_MODE, bool inSilentMode=false);
+	CpuSNN(const std::string& _name, int _numConfig=1, int randomize=0, int simMode=CPU_MODE,
+				loggerMode_t loggerMode=USER);
 	~CpuSNN();
 
 	// +++++ PUBLIC PROPERTIES ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
@@ -636,9 +669,13 @@ public:
 	group_info_t getGroupInfo(int groupId, int configId);
 	std::string getGroupName(int grpId, int configId);
 
+	loggerMode_t getLoggerMode() { return loggerMode_; }
+
+	std::string getNetworkName() { return networkName; }
 	int getNumConfigurations()	{ return numConfig; }	//!< gets number of network configurations
 	int getNumConnections(uint16_t connectionId);		//!< gets number of connections associated with a connection ID
 	int getNumGroups() { return numGrp; }
+	int getRandSeed() { return randSeed; }
 
 	/*!
 	 * \brief Writes weights from synaptic connections from gIDpre to gIDpost.  Returns a pointer to the weights
@@ -649,6 +686,7 @@ public:
 	 */
 	void getPopWeights(int gIDpre, int gIDpost, float*& weights, int& size, int configId = 0);
 
+	int getSimMode()			{ return currentMode; }
 	uint64_t getSimTime()		{ return simTime; }
 	uint32_t getSimTimeSec()	{ return simTimeSec; }
 	uint32_t getSimTimeMs()		{ return simTimeMs; }
@@ -877,6 +915,12 @@ private:
 	// +++++ PRIVATE PROPERTIES +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 	FILE* readNetworkFID;
 
+	loggerMode_t loggerMode_;	//!< current logger mode (USER, DEVELOPER, SILENT, CUSTOM)
+	int	randSeed;
+	int	currentMode;			//!< current simulation mode (CPU_MODE or GPU_MODE) FIXME: give better name
+	int	numConfig;
+
+
 	//! temporary variables created and deleted by network after initialization
 	uint8_t			*tmp_SynapticDelay;
 
@@ -888,9 +932,6 @@ private:
 	float prevGpuExecutionTime;
 	float gpuExecutionTime;
 
-	int		randSeed;
-	int			currentMode;	//!< current operating mode
-	int			numConfig;
 
 	//! properties of the network (number of groups, network name, allocated neurons etc..)
 	bool			doneReorganization;
