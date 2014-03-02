@@ -146,7 +146,8 @@ CpuSNN::CpuSNN(const std::string& _name, int _numConfig, int _randSeed, int simM
 	CARLSIM_INFO("********************      Welcome to CARLsim %d.%d      *************************",
 				MAJOR_VERSION,MINOR_VERSION);
 	CARLSIM_INFO("*******************************************************************************");
-	CARLSIM_INFO("Starting CARLsim simulation \"%s\"",_name.c_str());
+	CARLSIM_INFO("Starting CARLsim simulation \"%s\" in %s mode",_name.c_str(),
+				loggerMode_==USER?"user":(loggerMode_==DEVELOPER?"developer":(loggerMode_==SILENT?"silent":"custom")));
 
 	// initialize propogated spike buffers.....
 	pbuf = new PropagatedSpikeBuffer(0, PROPAGATED_BUFFER_SIZE);
@@ -1663,7 +1664,7 @@ void CpuSNN::buildNetwork() {
 	if (numPostSynapses > MAX_numPostSynapses) {
 		for (int g=0;g<numGrp;g++) {
 			if (grp_Info[g].numPostSynapses>MAX_numPostSynapses)
-				CARLSIM_INFO("Grp: %s(%d) has too many output synapses (%d), max %d.",grp_Info2[g].Name.c_str(),g,
+				CARLSIM_ERROR("Grp: %s(%d) has too many output synapses (%d), max %d.",grp_Info2[g].Name.c_str(),g,
 							grp_Info[g].numPostSynapses,MAX_numPostSynapses);
 		}
 		assert(numPostSynapses <= MAX_numPostSynapses);
@@ -1671,7 +1672,7 @@ void CpuSNN::buildNetwork() {
 	if (numPreSynapses > MAX_numPreSynapses) {
 		for (int g=0;g<numGrp;g++) {
 			if (grp_Info[g].numPreSynapses>MAX_numPreSynapses)
-				CARLSIM_INFO("Grp: %s(%d) has too many input synapses (%d), max %d.",grp_Info2[g].Name.c_str(),g,
+				CARLSIM_ERROR("Grp: %s(%d) has too many input synapses (%d), max %d.",grp_Info2[g].Name.c_str(),g,
  							grp_Info[g].numPreSynapses,MAX_numPreSynapses);
 		}
 		assert(numPreSynapses <= MAX_numPreSynapses);
@@ -2018,8 +2019,7 @@ void CpuSNN::deleteObjects() {
 		if (simulatorDeleted)
 			return;
 
-		printSimSummary(fpDeb_);
-		printSimSummary(fpOut_);
+		printSimSummary();
 
 		// don't fclose if it's stdout or stderr, otherwise they're gonna stay closed for the rest of the process
 		if (fpOut_!=NULL && fpOut_!=stdout && fpOut_!=stderr)
@@ -2328,6 +2328,7 @@ void CpuSNN::generatePostSpike(unsigned int pre_i, unsigned int idx_d, unsigned 
 	assert(mulIndex>=0 && mulIndex<numConnections);
 
 	// update currents
+	// it's faster to += 0.0 than checking for zero and not updating
 	if (grp_Info[pre_grpId].WithConductances) {
 		if (type & TARGET_AMPA) // if post_i expresses AMPAR
 			gAMPA [post_i] += change*mulSynFast[mulIndex]; // scale by some factor
@@ -2337,9 +2338,6 @@ void CpuSNN::generatePostSpike(unsigned int pre_i, unsigned int idx_d, unsigned 
 			gGABAa[post_i] -= change*mulSynFast[mulIndex]; // wt should be negative for GABAa and GABAb
 		if (type & TARGET_GABAb)
 			gGABAb[post_i] -= change*mulSynSlow[mulIndex];
-
-		if (gNMDA[post_i]>=10.0f) CARLSIM_WARN("High NMDA conductance (gNMDA>=10.0) may cause instability");
-		if (gGABAb[post_i]>=2.0f) CARLSIM_WARN("High GABAb conductance (gGABAb>=2.0) may cause instability");
 	} else {
 		current[post_i] += change;
 	}
@@ -2350,6 +2348,8 @@ void CpuSNN::generatePostSpike(unsigned int pre_i, unsigned int idx_d, unsigned 
 //					gAMPA[post_i], gGABAa[post_i], wt[pos_i],(grp_Info[post_grpId].WithSTP?stpx[ind]:1.0),
 //					(grp_Info[post_grpId].WithSTP?stpu[ind]:1.0),tD);
 //	}
+
+	synSpikeTime[pos_i] = simTime;
 
 	// STDP calculation....
 	if (grp_Info[post_grpId].WithSTDP) {
@@ -2372,7 +2372,6 @@ void CpuSNN::generatePostSpike(unsigned int pre_i, unsigned int idx_d, unsigned 
 		}
 		assert(!((stdp_tDiff < 0) && (lastSpikeTime[post_i] != MAX_SIMULATION_TIME)));
 	}
-	synSpikeTime[pos_i] = simTime;
 }
 
 void CpuSNN::generateSpikes() {
@@ -2557,34 +2556,46 @@ void  CpuSNN::globalStateUpdate() {
 					if (voltage[i] > 30) {
 						voltage[i] = 30;
 						j=COND_INTEGRATION_SCALE; // break the loop but evaluate u[i]
+						if (gNMDA[i]>=10.0f) CARLSIM_WARN("High NMDA conductance (gNMDA>=10.0) may cause instability");
+						if (gGABAb[i]>=2.0f) CARLSIM_WARN("High GABAb conductance (gGABAb>=2.0) may cause instability");
 					}
 					if (voltage[i] < -90) voltage[i] = -90;
 						recovery[i]+=Izh_a[i]*(Izh_b[i]*voltage[i]-recovery[i])/COND_INTEGRATION_SCALE;
 				} // end COND_INTEGRATION_SCALE loop
 
-				// FIXME: DO ONLY IN DEVELOPER MODE
-//				if (i==grp_Info[g].StartN) {
-//	      			CARLSIM_DEBUG("%d: volt=%0.3f, rec=%0.3f, curr=%0.3f, gAMPA=%0.5f, iAMPA=%0.5f, gNMDA=%0.5f, "
-//	      				"iNMDA=%0.5f, gGABAa=%0.5f, iAMPAa=%0.5f, gGABAb=%0.5f, iGABAb=%0.5f", i, voltage[i],
-//	      				recovery[i], current[i], gAMPA[i], gAMPA[i]*(voltage[i]-0), gNMDA[i],
-//	      				gNMDA[i]*tmpNMDA/(1+tmpNMDA)*(voltage[i]-0), gGABAa[i], gGABAa[i]*(voltage[i]+70),
-//	      				gGABAb[i], gGABAb[i]*(voltage[i]+90));
-//	      		}
+				// skip logging if not in developer mode to save time
+				if (loggerMode_!=DEVELOPER)
+					continue;
+
+				if (i==grp_Info[g].StartN) {
+					// this will inflate the execution time A LOT
+	      			CARLSIM_DEBUG("%d: volt=%0.3f, rec=%0.3f, curr=%0.3f, gAMPA=%0.5f, iAMPA=%0.5f, gNMDA=%0.5f, "
+      								"iNMDA=%0.5f, gGABAa=%0.5f, iAMPAa=%0.5f, gGABAb=%0.5f, iGABAb=%0.5f",
+      								i, voltage[i], recovery[i], current[i], gAMPA[i], gAMPA[i]*(voltage[i]-0),
+      								gNMDA[i], gNMDA[i]*tmpNMDA/(1+tmpNMDA)*(voltage[i]-0), gGABAa[i],
+      								gGABAa[i]*(voltage[i]+70), gGABAb[i], gGABAb[i]*(voltage[i]+90));
+	      		}
 			} else {
 				// CUBA model
-				voltage[i]+=0.5f*((0.04f*voltage[i]+5)*voltage[i]+140-recovery[i]+current[i]); // for numerical stability
-				voltage[i]+=0.5f*((0.04f*voltage[i]+5)*voltage[i]+140-recovery[i]+current[i]); // time step is 0.5 ms
+				voltage[i]+=0.5f*((0.04f*voltage[i]+5)*voltage[i]+140-recovery[i]+current[i]); //for numerical stability
+				voltage[i]+=0.5f*((0.04f*voltage[i]+5)*voltage[i]+140-recovery[i]+current[i]); //time step is 0.5 ms
 				if (voltage[i] > 30)
 					voltage[i] = 30;
 				if (voltage[i] < -90)
 					voltage[i] = -90;
 				recovery[i]+=Izh_a[i]*(Izh_b[i]*voltage[i]-recovery[i]);
-			}
 
-			// FIXME: DO ONLY IN DEVELOPER MODE
-//			if (i==grp_Info[g].StartN) {
-//				CARLSIM_DEBUG("%d: voltage=%0.3f, recovery=%0.3f, current=%0.3f",i,voltage[i],recovery[i],current[i]);
-//			}
+				// skip logging if not in developer mode to save time
+				if (loggerMode_!=DEVELOPER)
+					continue;
+
+				if (loggerMode_==USER) {
+					// this will inflate the execution time A LOT
+					if (i==grp_Info[g].StartN)
+						CARLSIM_DEBUG("%d: voltage=%0.3f, recovery=%0.3f, current=%0.3f", i, voltage[i], recovery[i], 
+											current[i]);
+				}
+			}
 		}
 	}
 }

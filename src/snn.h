@@ -806,7 +806,7 @@ private:
 	void printPreConnection(FILE* fp); //!< print all pre connections
 	void printPreConnection(int grpId, FILE* fp);
 	int  printPreConnection2(int grpId, FILE* fpg);
-	void printSimSummary(FILE* fp); //!< prints a simulation summary to file
+	void printSimSummary(); 	//!< prints a simulation summary at the end of sim
 	void printState(const char *str, FILE* fp);
 //	void printState(const char *str = "", const FILE* fp);
 	void printTestVarInfo(FILE* fp, char* testString, bool test1=true, bool test2=true, bool test12=false,

@@ -97,7 +97,7 @@
 
 // set to 1 if doing regression tests
 // will make private members public and disable output/logging
-#define REGRESSION_TESTING 1
+#define REGRESSION_TESTING 0
 
 
 // This option effects readNetwork()'s behavior.  Setting this option to 1 will cause 

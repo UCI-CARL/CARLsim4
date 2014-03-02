@@ -365,65 +365,56 @@ void CpuSNN::allocateGroupId()
 //  756  :   2    :   256
 // 1012  :   2    :    88
 //-----------------------
-int CpuSNN::allocateStaticLoad(int bufSize)
-{
-  FILE* fpArr[]={fpDeb_, fpOut_};
-  // only one thread does the static load table
-  int   bufferCnt = 0;
-  for (int g=0; g < net_Info.numGrp; g++) {
-    bufferCnt += (int) ceil(1.0*grp_Info[g].SizeN/bufSize);
-    fprintf(fpDeb_, "Grp Size = %d, Total Buffer Cnt = %d, Buffer Cnt = %f\n",  grp_Info[g].SizeN, bufferCnt, ceil(1.0*grp_Info[g].SizeN/bufSize));
-  }
-  assert(bufferCnt > 0);
-
-  int2*  tmp_neuronAllocation = (int2 *) malloc(sizeof(int2)*bufferCnt);
-  for(int i=0; i < 2; i++) {
-    if (i == 0 || (showLogMode >= 2)) {
-      fprintf(fpArr[i], "STATIC THREAD ALLOCATION\n");
-      fprintf(fpArr[i], "------------------------\n");
-      fprintf(fpArr[i], "Buffer Size = %d, Buffer Count = %d\n", bufSize, bufferCnt);
-    }
-  }
-  bufferCnt = 0;
-  for (int g=0; g < net_Info.numGrp; g++) {
-    for (int n=grp_Info[g].StartN; n <= grp_Info[g].EndN; n += bufSize) {
-      int2  threadLoad;
-      // starting neuron id is saved...
-      threadLoad.x = n;
-      if ((n + bufSize-1) <= grp_Info[g].EndN)
-	// grpID + full size
-	threadLoad.y = (g + (bufSize << 16));
-      else
-	// grpID + left-over size
-	threadLoad.y = (g + ((grp_Info[g].EndN-n+1) << 16));
-
-      // fill the static load distribution here...
-      int testg = STATIC_LOAD_GROUP(threadLoad);
-      tmp_neuronAllocation[bufferCnt] = threadLoad;
-      for(int i=0; i < 2; i++) {
-	if (i == 0 || (showLogMode >= 2)) {
-	  fprintf(fpArr[i], "%d. Start=%d, size=%d grpId=%d:%s (MonId=%d)\n",
-		  bufferCnt, STATIC_LOAD_START(threadLoad),
-		  STATIC_LOAD_SIZE(threadLoad),
-		  STATIC_LOAD_GROUP(threadLoad),
-		  grp_Info2[testg].Name.c_str(),
-		  grp_Info[testg].MonitorId);
+int CpuSNN::allocateStaticLoad(int bufSize) {
+	// only one thread does the static load table
+	int   bufferCnt = 0;
+	for (int g=0; g < net_Info.numGrp; g++) {
+		bufferCnt += (int) ceil(1.0*grp_Info[g].SizeN/bufSize);
+		CARLSIM_DEBUG("Grp Size = %d, Total Buffer Cnt = %d, Buffer Cnt = %f", grp_Info[g].SizeN, bufferCnt, ceil(1.0*grp_Info[g].SizeN/bufSize));
 	}
-      }
-      bufferCnt++;
-    }
-  }
+	assert(bufferCnt > 0);
 
-  assert(cpu_gpuNetPtrs.allocated==false);
-  // Finally writeback the total bufferCnt
-  // Note down the buffer size for reference
-  fprintf(fpLog, "GPU loadBufferSize = %d, GPU loadBufferCount = %d\n", bufSize, bufferCnt);
-  CUDA_CHECK_ERRORS_MACRO( cudaMemcpyToSymbol(loadBufferCount,  &bufferCnt, sizeof(int), 0, cudaMemcpyHostToDevice));
-  CUDA_CHECK_ERRORS_MACRO( cudaMemcpyToSymbol(loadBufferSize,   &bufSize,   sizeof(int), 0, cudaMemcpyHostToDevice));
-  CUDA_CHECK_ERRORS(  cudaMalloc((void**) &cpu_gpuNetPtrs.neuronAllocation, sizeof(int2)*bufferCnt));
-  CUDA_CHECK_ERRORS_MACRO( cudaMemcpy( cpu_gpuNetPtrs.neuronAllocation, tmp_neuronAllocation, sizeof(int2)*bufferCnt, cudaMemcpyHostToDevice));
-  free(tmp_neuronAllocation);
-  return bufferCnt;
+	int2*  tmp_neuronAllocation = (int2 *) malloc(sizeof(int2)*bufferCnt);
+	CARLSIM_DEBUG("STATIC THREAD ALLOCATION");
+	CARLSIM_DEBUG("------------------------");
+	CARLSIM_DEBUG("Buffer Size = %d, Buffer Count = %d", bufSize, bufferCnt);
+
+	bufferCnt = 0;
+	for (int g=0; g < net_Info.numGrp; g++) {
+		for (int n=grp_Info[g].StartN; n <= grp_Info[g].EndN; n += bufSize) {
+			int2  threadLoad;
+			// starting neuron id is saved...
+			threadLoad.x = n;
+			if ((n + bufSize-1) <= grp_Info[g].EndN)
+				// grpID + full size
+				threadLoad.y = (g + (bufSize << 16));
+			else
+				// grpID + left-over size
+				threadLoad.y = (g + ((grp_Info[g].EndN-n+1) << 16));
+
+			// fill the static load distribution here...
+			int testg = STATIC_LOAD_GROUP(threadLoad);
+			tmp_neuronAllocation[bufferCnt] = threadLoad;
+			CARLSIM_DEBUG("%d. Start=%d, size=%d grpId=%d:%s (MonId=%d)",
+					bufferCnt, STATIC_LOAD_START(threadLoad),
+					STATIC_LOAD_SIZE(threadLoad),
+					STATIC_LOAD_GROUP(threadLoad),
+					grp_Info2[testg].Name.c_str(),
+					grp_Info[testg].MonitorId);
+			bufferCnt++;
+		}
+	}
+
+	assert(cpu_gpuNetPtrs.allocated==false);
+	// Finally writeback the total bufferCnt
+	// Note down the buffer size for reference
+	CARLSIM_DEBUG("GPU loadBufferSize = %d, GPU loadBufferCount = %d", bufSize, bufferCnt);
+	CUDA_CHECK_ERRORS_MACRO( cudaMemcpyToSymbol(loadBufferCount,  &bufferCnt, sizeof(int), 0, cudaMemcpyHostToDevice));
+	CUDA_CHECK_ERRORS_MACRO( cudaMemcpyToSymbol(loadBufferSize,   &bufSize,   sizeof(int), 0, cudaMemcpyHostToDevice));
+	CUDA_CHECK_ERRORS(  cudaMalloc((void**) &cpu_gpuNetPtrs.neuronAllocation, sizeof(int2)*bufferCnt));
+	CUDA_CHECK_ERRORS_MACRO( cudaMemcpy( cpu_gpuNetPtrs.neuronAllocation, tmp_neuronAllocation, sizeof(int2)*bufferCnt, cudaMemcpyHostToDevice));
+	free(tmp_neuronAllocation);
+	return bufferCnt;
 }
 
 ///////////////////////////////////////////////
@@ -594,8 +585,6 @@ __global__ void gpu_resetSpikeCnt(int _startGrp, int _endGrp)
       int startN = gpuGrpInfo[grpId].StartN;
       int endN   = gpuGrpInfo[grpId].EndN+1;
       for (int i=startN; i < endN; i++){
-	//has to gpuPtrs on the actual device.
-	//printf("got here\n");
 	gpuPtrs.nSpikeCnt[i] = 0;
       }
     }
@@ -912,11 +901,11 @@ __global__ void kernel_globalConductanceUpdate (int t, int sec, int simTime) {
 						if (type & TARGET_AMPA)
 							AMPA_sum += wt*gpuPtrs.mulSynFast[connId];
 						if (type & TARGET_NMDA)
-							NMDA_sum += wt*gpuPtrs.mulSynFast[connId];
+							NMDA_sum += wt*gpuPtrs.mulSynSlow[connId];
 						if (type & TARGET_GABAa)
 							GABAa_sum += wt*gpuPtrs.mulSynFast[connId];	// wt should be negative for GABAa and GABAb
 						if (type & TARGET_GABAb)						// but that is dealt with below
-							GABAb_sum += wt*gpuPtrs.mulSynFast[connId];
+							GABAb_sum += wt*gpuPtrs.mulSynSlow[connId];
 					}
 					else {
 						// current based model with STP (CUBA)
@@ -1034,7 +1023,7 @@ __global__ void kernel_globalStateUpdate (int t, int sec, int simTime)
 	// update neuron state here....
 	updateNeuronState(nid, grpId);
 
-	// Could check with homeostasis flag here
+	// TODO: Could check with homeostasis flag here
 	updateHomeoStaticState(nid, grpId);
       }
     }
@@ -1648,16 +1637,16 @@ int CpuSNN::checkErrors(std::string calledKernel, int numBlocks)
 
   if (errCode != NO_KERNEL_ERRORS) {
 
-    fprintf(fpErr_, "\n (Error in Kernel <<< %s >>> , RETURN ERROR CODE = %x, total Errors = %d\n", calledKernel.c_str(), errCode, errCnt);
+    CARLSIM_ERROR("(Error in Kernel <<< %s >>> , RETURN ERROR CODE = %x, total Errors = %d", calledKernel.c_str(), errCode, errCnt);
 
     cudaGetSymbolAddress(&devPtr, CUDA_CONVERT_SYMBOL(retErrVal));
     CUDA_CHECK_ERRORS( cudaMemcpy(&errVal, devPtr, sizeof(errVal), cudaMemcpyDeviceToHost));
 
     for(int j=0; j < errCnt; j++) {
       if (1) /*errVal[j][0]==0xdead) */ {
-	fprintf(fpErr_, "Block: %d, Err code = %x, Total err val is %f\n", j, (int)errVal[j][0]	, errVal[j][1]);
+	CARLSIM_ERROR("Block: %d, Err code = %x, Total err val is %f", j, (int)errVal[j][0]	, errVal[j][1]);
 	for(int i=2; i < (errVal[j][1]); i++) {
-	  fprintf(fpErr_, "ErrVal[%d][%d] = %f\n", j, i, errVal[j][i]);
+	  CARLSIM_ERROR("ErrVal[%d][%d] = %f", j, i, errVal[j][i]);
 	  getchar();
 	}
       }
@@ -1915,7 +1904,7 @@ void CpuSNN::copyNeuronParameters(network_ptr_t* dest, int kind, int allocateMem
   int ptrPos, length;
 
   if (dest->allocated && allocateMem) {
-    fprintf(fpErr_, "GPU Memory already allocated.. \n");
+    CARLSIM_ERROR("GPU Memory already allocated...");
     return;
   }
 
@@ -2006,9 +1995,7 @@ void CpuSNN::copySTPState(network_ptr_t* dest, network_ptr_t* src, int kind, int
   assert(net_Info.STP_Pitch % (sizeof(float)) == 0);
   if (allocateMem) net_Info.STP_Pitch = net_Info.STP_Pitch/sizeof(float);
 
-#if TESTING
-  fprintf(fpOut_, "STP_Pitch = %d, STP_witdhInBytes = %d\n", net_Info.STP_Pitch, widthInBytes);
-#endif
+  CARLSIM_DEBUG("STP_Pitch = %d, STP_witdhInBytes = %d", (int)net_Info.STP_Pitch, (int)widthInBytes);
 
   float* tmp_stp = new float[net_Info.numN];
   // copy the already generated values of stpx and stpu to the GPU
@@ -2094,7 +2081,7 @@ void CpuSNN::copyState(network_ptr_t* dest, int allocateMem) {
 	assert(preSynCnt !=0);
 
 	if (dest->allocated && allocateMem) {
-		fprintf(fpErr_, "GPU Memory already allocated.. \n");
+		CARLSIM_ERROR("GPU Memory already allocated..");
 		return;
 	}
 
@@ -2228,6 +2215,7 @@ void CpuSNN::findFiring_GPU()
 
 void CpuSNN::printGpuLoadBalance(bool init, int numBlocks, FILE*fp)
 {
+	CARLSIM_WARN("Calling printGpuLoadBalance with FILE*fp is deprecated");
   void* devPtr;
 
   static int	 cpu_tmp_val[MAX_BLOCKS][LOOP_CNT];
@@ -2243,14 +2231,14 @@ void CpuSNN::printGpuLoadBalance(bool init, int numBlocks, FILE*fp)
   CUDA_CHECK_ERRORS( cudaMemcpy(&cpu_tmp_val, devPtr, sizeof(cpu_tmp_val), cudaMemcpyDeviceToHost));
   CUDA_CHECK_ERRORS( cudaMemset(devPtr, 0, sizeof(tmp_val)));
 
-  fprintf(fp, "GPU Load Balancing Information\n");
+  CARLSIM_DEBUG("GPU Load Balancing Information");
 
   for (int i=0; i < numBlocks; i++) {
     if (cpu_tmp_val[i][0] != 0)
-      fprintf(fp, "[%d] Fired Neuron = %d \n", i, cpu_tmp_val[i][1]+cpu_tmp_val[i][2]);
+      CARLSIM_DEBUG("[%d] Fired Neuron = %d \n", i, cpu_tmp_val[i][1]+cpu_tmp_val[i][2]);
   }
 
-  fprintf(fp, "\n");
+  CARLSIM_DEBUG("\n");
 
   fflush(fp);
 
@@ -2476,7 +2464,7 @@ void CpuSNN::initGPU(int gridSize, int blkSize)
 
 void CpuSNN::checkInitialization(char* testString)
 {
-  DBG(2, fpLog, AT, "gpu_checkInitialization()");
+  CARLSIM_DEBUG("gpu_checkInitialization()");
   void *devPtr;
 
   assert(cpu_gpuNetPtrs.allocated);
@@ -2497,22 +2485,22 @@ void CpuSNN::checkInitialization(char* testString)
   CUDA_GET_LAST_ERROR("check GPU failed\n");
 
   // read back the intialization and ensure that they are okay
-  fprintf(fpLog, "%s Checking initialization of GPU...\n", testString?testString:"");
+  CARLSIM_DEBUG("%s Checking initialization of GPU...", testString?testString:"");
   CUDA_CHECK_ERRORS( cudaMemcpy(&errVal, devPtr, sizeof(errVal), cudaMemcpyDeviceToHost));
   for(int i=0; i < 4; i++) {
     for(int j=0; j < (int)errVal[i][0]; j++) {
-      fprintf(fpLog, "val[%3d][%3d] = %f\n", i, j, errVal[i][j]);
+      CARLSIM_DEBUG("val[%3d][%3d] = %f", i, j, errVal[i][j]);
     }
-    fprintf(fpLog, "******************\n");
+    CARLSIM_DEBUG("******************");
   }
-  fprintf(fpLog, "Checking done...\n");
+  CARLSIM_DEBUG("Checking done...");
   CUDA_CHECK_ERRORS( cudaMemcpyToSymbol(timingTableD2, timeTableD2, sizeof(int)*(10), 0, cudaMemcpyHostToDevice));
   fflush(fpLog);
 }
 
 void CpuSNN::checkInitialization2(char* testString)
 {
-  fprintf(fpLog, "CheckInitialization2: Time = %d\n", simTime);
+  CARLSIM_DEBUG("CheckInitialization2: Time = %d", simTime);
   void *devPtr;
   memset(errVal, 0, sizeof(errVal));
   cudaGetSymbolAddress(&devPtr, retErrVal);
@@ -2526,27 +2514,27 @@ void CpuSNN::checkInitialization2(char* testString)
   }
 
   // read back the intialization and ensure that they are okay
-  fprintf(fpLog, "%s Checking Initialization of STP Variable Correctly in GPU...\n", (testString?testString:""));
+  CARLSIM_DEBUG("%s Checking Initialization of STP Variable Correctly in GPU...", (testString?testString:""));
   CUDA_CHECK_ERRORS( cudaMemcpy(&errVal, devPtr, sizeof(errVal), cudaMemcpyDeviceToHost));
   for(int i=0; i < 4; i++) {
     for(int j=0; j < (int)errVal[i][0]; j++) {
-      fprintf(fpLog, "val[%3d][%3d] = %f\n", i, j, errVal[i][j]);
+      CARLSIM_DEBUG("val[%3d][%3d] = %f", i, j, errVal[i][j]);
     }
-    fprintf(fpLog, "******************\n");
+    CARLSIM_DEBUG("******************");
   }
 }
 
 void CpuSNN::printCurrentInfo(FILE* fp)
 {
+	CARLSIM_WARN("Calling printCurrentInfo with fp is deprecated");
   // copy neuron input current...
-  fprintf(fp, "Total Synaptic updates: \n");
+  CARLSIM_DEBUG("Total Synaptic updates:");
   CUDA_CHECK_ERRORS( cudaMemcpy( current, cpu_gpuNetPtrs.current, sizeof(float)*numNReg, cudaMemcpyDeviceToHost));
   for(int i=0; i < numNReg; i++) {
     if (current[i] != 0.0 ) {
-      fprintf(fp, "I[%d] -> %f\n", i, current[i]);
+      CARLSIM_DEBUG("I[%d] -> %f", i, current[i]);
     }
   }
-  fprintf(fp, "\n");
   fflush(fp);
 }
 
@@ -2555,7 +2543,8 @@ void CpuSNN::printTestVarInfo(FILE* fp, char* testString, bool test1, bool test2
 {
   int cnt=0;
 
-  fflush(fpOut_);
+  CARLSIM_WARN("Calling printTestVarInfo with fp is deprecated");
+//  fflush(fpOut_);
 
   if(test1 || test12)
     CUDA_CHECK_ERRORS( cudaMemcpy( testVar, cpu_gpuNetPtrs.testVar, sizeof(float)*numN, cudaMemcpyDeviceToHost));
@@ -2569,16 +2558,18 @@ void CpuSNN::printTestVarInfo(FILE* fp, char* testString, bool test1, bool test2
     for(int i=0; i < numN; i++) {
       if ((testVar[i] != 0.0) || (testVar2[i] != 0.0)) {
 	if(firstPrint) {
-	  fprintf(fp, "\ntime=%d: Testing Variable 1 and 2: %s\n", simTime, testString);
+	  CARLSIM_DEBUG("\ntime=%d: Testing Variable 1 and 2: %s", simTime, testString);
 	  firstPrint = false;
 	}
-	fprintf(fp, "testVar12[%d] -> %f : %f\n", i, testVar[i]-subVal, testVar2[i]-subVal);
+	CARLSIM_DEBUG("testVar12[%d] -> %f : %f", i, testVar[i]-subVal, testVar2[i]-subVal);
 	testVar[i]  = 0.0;
 	testVar2[i] = 0.0;
-	if(gcnt++==grouping1) { fprintf(fp, "\n"); gcnt=0;}
+	if(gcnt++==grouping1) {
+		CARLSIM_INFO("");
+		gcnt=0;
+		}
       }
     }
-    //			fprintf(fp, "\n");
     fflush(fp);
     test1 = false;
     test2 = false;
@@ -2595,16 +2586,15 @@ void CpuSNN::printTestVarInfo(FILE* fp, char* testString, bool test1, bool test2
     for(int i=0; i < numN; i++) {
       if (testVar[i] != 0.0 ) {
 	if(firstPrint) {
-	  fprintf(fp, "\ntime=%d: Testing Variable 1 and 2: %s\n", simTime, testString);
+	  CARLSIM_DEBUG("\ntime=%d: Testing Variable 1 and 2: %s", simTime, testString);
 	  firstPrint = false;
 	}
-	if(gcnt==0) fprintf(fp, "testVar[%d] -> ", i);
-	fprintf(fp, "%d\t", i, testVar[i]-subVal);
+	if(gcnt==0) CARLSIM_DEBUG("testVar[%d] -> ", i);
+	CARLSIM_DEBUG("%d\t", i, testVar[i]-subVal);
 	testVar[i] = 0.0;
-	if(++gcnt==grouping1) { fprintf(fp, "\n"); gcnt=0;}
+	if(++gcnt==grouping1) { CARLSIM_DEBUG("\n"); gcnt=0;}
       }
     }
-    //			fprintf(fp, "\n");
     fflush(fp);
     cnt=0;
     CUDA_CHECK_ERRORS( cudaMemcpy( cpu_gpuNetPtrs.testVar,  testVar, sizeof(float)*numN, cudaMemcpyHostToDevice));
@@ -2617,16 +2607,15 @@ void CpuSNN::printTestVarInfo(FILE* fp, char* testString, bool test1, bool test2
     for(int i=0; i < numN; i++) {
       if (testVar2[i] != 0.0 ) {
 	if(firstPrint) {
-	  fprintf(fp, "\ntime=%d: Testing Variable 1 and 2: %s\n", simTime, testString);
+	  CARLSIM_DEBUG("\ntime=%d: Testing Variable 1 and 2: %s", simTime, testString);
 	  firstPrint = 0;
 	}
-	if(gcnt==0) fprintf(fp, "testVar2[%d] -> ", i);
-	fprintf(fp, "%d\t", i, testVar2[i]-subVal);
+	if(gcnt==0) CARLSIM_DEBUG("testVar2[%d] -> ", i);
+	CARLSIM_DEBUG("%d\t", i, testVar2[i]-subVal);
 	testVar2[i] = 0.0;
-	if(++gcnt==grouping2) { fprintf(fp, "\n"); gcnt=0;}
+	if(++gcnt==grouping2) { CARLSIM_DEBUG("\n"); gcnt=0;}
       }
     }
-    //			fprintf(fp, "\n");
     fflush(fp);
 
     CUDA_CHECK_ERRORS( cudaMemcpy( cpu_gpuNetPtrs.testVar2, testVar2, sizeof(float)*numN, cudaMemcpyHostToDevice));
@@ -2699,22 +2688,23 @@ void CpuSNN::deleteObjects_GPU() {
 
 void CpuSNN::testSpikeSenderReceiver(FILE* fpLog, int simTime)
 {
+	CARLSIM_WARN("Calling testSpikeSenderReceiver with fpLog is deprecated");
   if(0) {
     int EnumFires = 0; int InumFires = 0;
     CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &EnumFires, secD2fireCnt, sizeof(int), 0, cudaMemcpyDeviceToHost));
     CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &InumFires, secD1fireCnt, sizeof(int), 0, cudaMemcpyDeviceToHost));
-    fprintf(fpDeb_, " ***********( t = %d) FIRE COUNTS ************** %d %d\n", simTime, EnumFires, InumFires);
+    CARLSIM_DEBUG(" ***********( t = %d) FIRE COUNTS ************** %d %d", simTime, EnumFires, InumFires);
     int   numFires;
     float fireCnt;
     CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &numFires,  testFireCnt1, sizeof(int), 0, cudaMemcpyDeviceToHost));
-    fprintf(fpDeb_, "testFireCnt1 = %d\n", numFires);
+    CARLSIM_DEBUG("testFireCnt1 = %d", numFires);
     CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &numFires,  testFireCnt2, sizeof(int), 0, cudaMemcpyDeviceToHost));
-    fprintf(fpDeb_, "testFireCnt2 = %d\n", numFires);
+    CARLSIM_DEBUG("testFireCnt2 = %d", numFires);
     CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &fireCnt,  testFireCntf1, sizeof(int), 0, cudaMemcpyDeviceToHost));
-    fprintf(fpDeb_, "testFireCntFloat1 = %f\n", fireCnt);
+    CARLSIM_DEBUG("testFireCntFloat1 = %f", fireCnt);
     CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &fireCnt,  testFireCntf2, sizeof(int), 0, cudaMemcpyDeviceToHost));
-    fprintf(fpDeb_, "testFireCntFloat2 = %f\n", fireCnt);
-    fprintf(fpDeb_, " *************************\n");
+    CARLSIM_DEBUG("testFireCntFloat2 = %f", fireCnt);
+    CARLSIM_DEBUG(" *************************");
 
     // MDR originally had this. 
     float* baseFiringInv = new float[numN];
@@ -2723,17 +2713,16 @@ void CpuSNN::testSpikeSenderReceiver(FILE* fpLog, int simTime)
     delete(baseFiringInv);
     CUDA_CHECK_ERRORS( cudaMemcpy( avgFiring, cpu_gpuNetPtrs.avgFiring, sizeof(float)*numN, cudaMemcpyDeviceToHost));
     for(int g=0; g < numGrp; g++) {
-      fprintf(fpLog, "Homeostasis values\n");
+      CARLSIM_DEBUG("Homeostasis values");
       if (!grp_Info[g].FixedInputWts) {
-	fprintf(fpLog, "Group %s:\t", grp_Info2[g].Name.c_str());
+	CARLSIM_DEBUG("Group %s:\t", grp_Info2[g].Name.c_str());
 	for(int j=grp_Info[g].StartN; j <= grp_Info[g].EndN; j++) {
-	  fprintf(fpDeb_, " %d: Home =%f (Base =%f)  \n", j, avgFiring[j], 1/baseFiringInv[j]);
-	  fprintf(fpOut_, " %d: Home =%f (Base =%f)  \n", j, avgFiring[j], 1/baseFiringInv[j]);
+	  CARLSIM_DEBUG(" %d: Home =%f (Base =%f)  ", j, avgFiring[j], 1/baseFiringInv[j]);
+	  CARLSIM_DEBUG(" %d: Home =%f (Base =%f)  ", j, avgFiring[j], 1/baseFiringInv[j]);
 	}
       }
     }
     
-    fprintf(fpDeb_, "\n");
   }
 }
 
@@ -2791,7 +2780,7 @@ void CpuSNN::doGPUSim()
   CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &gpu_secD2fireCnt, CUDA_CONVERT_SYMBOL(secD2fireCnt), sizeof(int), 0, cudaMemcpyDeviceToHost));
   CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &gpu_secD1fireCnt, CUDA_CONVERT_SYMBOL(secD1fireCnt), sizeof(int), 0, cudaMemcpyDeviceToHost));
 
-  printf("gpu_secD1fireCnt: %d max: %d gpu_secD2fireCnt: %d max: %d\n",gpu_secD1fireCnt,maxSpikesD1,gpu_secD2fireCnt,maxSpikesD2);
+  CARLSIM_DEBUG("gpu_secD1fireCnt: %d max: %d gpu_secD2fireCnt: %d max: %d",gpu_secD1fireCnt,maxSpikesD1,gpu_secD2fireCnt,maxSpikesD2);
 
   assert(gpu_secD1fireCnt<=maxSpikesD1);
   assert(gpu_secD2fireCnt<=maxSpikesD2);
@@ -2831,8 +2820,7 @@ void CpuSNN::showStatus_GPU() {
 	spikeCountAll1sec = gpu_secD1fireCnt + gpu_secD2fireCnt;
 	secD1fireCnt  = gpu_secD1fireCnt;
 	printWeight(-1);
-	fprintf(fpOut_, "(time=%lld) =========\n\n", (unsigned long long) simTimeSec);
-	fflush(fpOut_);
+	CARLSIM_INFO("(time=%lld) =========\n", (unsigned long long) simTimeSec);
 }
 
 __global__ void gpu_resetFiringInformation()
@@ -2878,7 +2866,7 @@ void CpuSNN::copyFiringInfo_GPU()
   CUDA_CHECK_ERRORS( cudaMemcpy(firingTableD1, cpu_gpuNetPtrs.firingTableD1, sizeof(int)*gpu_secD1fireCnt, cudaMemcpyDeviceToHost));
   CUDA_CHECK_ERRORS( cudaMemcpyFromSymbol(timeTableD2, timingTableD2, sizeof(int)*(1000+D+1), 0, cudaMemcpyDeviceToHost));
   CUDA_CHECK_ERRORS( cudaMemcpyFromSymbol(timeTableD1, timingTableD1, sizeof(int)*(1000+D+1), 0, cudaMemcpyDeviceToHost));
-  fprintf(fpOut_, "Total spikes Multiple Delays=%d, 1Ms Delay=%d\n", gpu_secD2fireCnt,gpu_secD1fireCnt);
+  CARLSIM_INFO("Total spikes Multiple Delays=%d, 1Ms Delay=%d", gpu_secD2fireCnt,gpu_secD1fireCnt);
   //getchar();
 }
 
@@ -2913,10 +2901,10 @@ void CpuSNN::checkGPUDevice(int ithGPU) {
   int devCount;
   cudaGetDeviceCount(&devCount);
   CUDA_GET_LAST_ERROR("cudaGetDeviceCount failed\n");
-  fprintf(fpOut_, "Number of CUDA devices : %d\n",devCount);
+  CARLSIM_INFO("Number of CUDA devices : %d",devCount);
 
   int dev = CUDA_GET_MAXGFLOP_DEVICE_ID();
-  fprintf(fpOut_, "Device with maximum GFLOPs is : %d\n", dev);
+  CARLSIM_INFO("Device with maximum GFLOPs is : %d", dev);
   cudaDeviceProp deviceProp;
 
   // ithGPU gives an index number on which device to run the simulation
@@ -2924,18 +2912,18 @@ void CpuSNN::checkGPUDevice(int ithGPU) {
   if (ithGPU>=0 && ithGPU<devCount)
     dev = ithGPU;
   else {
-    fprintf(fpOut_, "Device index %d exceeds number of devices (%d), choose from [0,%d].\n",ithGPU,devCount,devCount-1);
-    fprintf(fpOut_, "Defaulting to using device 0...\n");
+    CARLSIM_WARN("Device index %d exceeds number of devices (%d), choose from [0,%d]. Defaulting to using device 0...",
+    				ithGPU,devCount,devCount-1);
     dev = 0;
   }
 
   CUDA_CHECK_ERRORS(cudaGetDeviceProperties(&deviceProp, dev));
-  fprintf(fpOut_, "\nDevice %d: \"%s\"\n", dev, deviceProp.name);
+  CARLSIM_DEBUG("Device %d: \"%s\"", dev, deviceProp.name);
   if (deviceProp.major == 1 && deviceProp.minor < 3) {
-    printf("GPU SNN does not support NVidia cards older than version 1.3\n");
-    //exit(1);
+    CARLSIM_ERROR("GPU SNN does not support NVidia cards older than version 1.3");
+    exitSimulation(1);
   }
-  printf("CUDA Device is of type %d.%d\n", deviceProp.major, deviceProp.minor);
+  CARLSIM_INFO("CUDA Device is of type %d.%d", deviceProp.major, deviceProp.minor);
   assert(deviceProp.major >= 1);
   cudaThreadExit();
   cudaSetDevice( dev );
@@ -2957,8 +2945,8 @@ void CpuSNN::copyWeightsGPU(unsigned int nid, int src_grp)
 // Allocates required memory and then initialize the GPU
 void CpuSNN::allocateSNN_GPU(int ithGPU) {
 	if (D > MAX_SynapticDelay) {
-		printf("Error, you are using a synaptic delay (%d) greater than MAX_SynapticDelay defined in config.h\n",D);
-		exit(1);
+		CARLSIM_ERROR("You are using a synaptic delay (%d) greater than MAX_SynapticDelay defined in config.h",D);
+		exitSimulation(1);
 	}
 	
 	// if we have already allocated the GPU data.. dont do it again...
@@ -2991,24 +2979,28 @@ void CpuSNN::allocateSNN_GPU(int ithGPU) {
 	size_t avail, total, previous;
 	float toGB = 1024.0*1024.0*1024.0;
 	cudaMemGetInfo(&avail,&total);
-	printf("GPU Memory Management (Total %2.3f GB)\n",(float)(total/toGB));
-	printf("Data\t\t\tSize\t\tTotal Used\tTotal Available\n");
-	printf("Init:\t\t\t%2.3f GB\t%2.3f GB\t%2.3f GB\n",(float)(total)/toGB,(float)((total-avail)/toGB),(float)(avail/toGB));
+	CARLSIM_INFO("GPU Memory Management (Total %2.3f GB)",(float)(total/toGB));
+	CARLSIM_INFO("Data\t\t\tSize\t\tTotal Used\tTotal Available");
+	CARLSIM_INFO("Init:\t\t\t%2.3f GB\t%2.3f GB\t%2.3f GB",(float)(total)/toGB,(float)((total-avail)/toGB),
+					(float)(avail/toGB));
 	previous=avail;
 
 	allocateNetworkParameters();
 	cudaMemGetInfo(&avail,&total);
-	printf("Ntw Params:\t\t%2.3f GB\t%2.3f GB\t%2.3f GB\n",(float)(previous-avail)/toGB,(float)((total-avail)/toGB),(float)(avail/toGB));
+	CARLSIM_INFO("Ntw Params:\t\t%2.3f GB\t%2.3f GB\t%2.3f GB",(float)(previous-avail)/toGB,(float)((total-avail)/toGB),
+					(float)(avail/toGB));
 	previous=avail;
 
 	allocateStaticLoad(blkSize);
 	cudaMemGetInfo(&avail,&total);
-	printf("Static Load:\t\t%2.3f GB\t%2.3f GB\t%2.3f GB\n",(float)(previous-avail)/toGB,(float)((total-avail)/toGB),(float)(avail/toGB));
+	CARLSIM_INFO("Static Load:\t\t%2.3f GB\t%2.3f GB\t%2.3f GB",(float)(previous-avail)/toGB,
+					(float)((total-avail)/toGB),(float)(avail/toGB));
 	previous=avail;
 
 	allocateGroupId();
 	cudaMemGetInfo(&avail,&total);
-	printf("Group Id:\t\t%2.3f GB\t%2.3f GB\t%2.3f GB\n",(float)(previous-avail)/toGB,(float)((total-avail)/toGB),(float)(avail/toGB));
+	CARLSIM_INFO("Group Id:\t\t%2.3f GB\t%2.3f GB\t%2.3f GB",(float)(previous-avail)/toGB,(float)((total-avail)/toGB),
+					(float)(avail/toGB));
 	previous=avail;
 
 	// this table is useful for quick evaluation of the position of fired neuron
@@ -3017,28 +3009,15 @@ void CpuSNN::allocateSNN_GPU(int ithGPU) {
 
 	copyConnections(&cpu_gpuNetPtrs,  cudaMemcpyHostToDevice, 1);
 	cudaMemGetInfo(&avail,&total);
-	printf("Conn Info:\t\t%2.3f GB\t%2.3f GB\t%2.3f GB\n",(float)(previous-avail)/toGB,(float)((total-avail)/toGB),(float)(avail/toGB));
+	CARLSIM_INFO("Conn Info:\t\t%2.3f GB\t%2.3f GB\t%2.3f GB",(float)(previous-avail)/toGB,(float)((total-avail)/toGB),
+					(float)(avail/toGB));
 	previous=avail;
 
 	copyState(&cpu_gpuNetPtrs, 1);
 	cudaMemGetInfo(&avail,&total);
-	printf("State Info:\t\t%2.3f GB\t%2.3f GB\t%2.3f GB\n",(float)(previous-avail)/toGB,(float)((total-avail)/toGB),(float)(avail/toGB));
+	CARLSIM_INFO("State Info:\t\t%2.3f GB\t%2.3f GB\t%2.3f GB",(float)(previous-avail)/toGB,(float)((total-avail)/toGB),
+					(float)(avail/toGB));
 	previous=avail;
-
-
-	// Options of how to copy mulSynFast and mulSynSlow to GPU (possibly also for STDP params in the future, etc.)
-	// 1. store float[preSynCnt] for each of the structures
-	//		+ straight-forward
-	//		- memory-inefficient (mulSynFast is defined at connection level < 256, preSynCnt might be very large)
-	//			=> 2*sizeof(float)*preSynCnt = 8*preSynCnt
-	// 2. store pointer grpConnectInfo, dereference and access connInfo.mulSynFast
-	//		+ more memory-efficient
-	//		- pointers will not exist on device; need to copy whole data structure
-	//			=> sizeof(grpConnectInfo*)*preSynCnt >= 8*preSynCnt (grpConnectInfo might be growing in the future)
-	// 3. store float[numConn] for each of the structures (<256), store uint8_t[preSynCnt] to index into the former
-	//		+ memory-efficient
-	//			=> 2*sizeof(float)*numConn + sizeof(uint8_t)*preSynCnt = 8*numConn + 2*preSynCnt
-	//			=> very efficient as long as numConn <<< preSynCnt (which it usually is)
 
 
 	// copy relevant pointers and network information to GPU
@@ -3050,40 +3029,40 @@ void CpuSNN::allocateSNN_GPU(int ithGPU) {
 	CUDA_CHECK_ERRORS( cudaMemcpyToSymbol(gpuGrpInfo, grp_Info, (net_Info.numGrp)*sizeof(group_info_t), 0, cudaMemcpyHostToDevice));
 
 	if (showLogMode >= 3) {
-		fprintf(fpDeb_,"Transfering group settings to GPU:\n");
+		CARLSIM_DEBUG("Transfering group settings to GPU:");
 		for (int i=0;i<numGrp;i++) {
-			fprintf(fpDeb_,"Settings for Group %s: \n", grp_Info2[i].Name.c_str());
+			CARLSIM_DEBUG("Settings for Group %s:", grp_Info2[i].Name.c_str());
 		
-			fprintf(fpDeb_,"\tType: %d\n",(int)grp_Info[i].Type);
-			fprintf(fpDeb_,"\tSizeN: %d\n",grp_Info[i].SizeN);
-			fprintf(fpDeb_,"\tMaxFiringRate: %d\n",(int)grp_Info[i].MaxFiringRate);
-			fprintf(fpDeb_,"\tRefractPeriod: %f\n",grp_Info[i].RefractPeriod);
-			fprintf(fpDeb_,"\tM: %d\n",grp_Info[i].numPostSynapses);
-			fprintf(fpDeb_,"\tPreM: %d\n",grp_Info[i].numPreSynapses);
-			fprintf(fpDeb_,"\tspikeGenerator: %d\n",(int)grp_Info[i].isSpikeGenerator);
-			fprintf(fpDeb_,"\tFixedInputWts: %d\n",(int)grp_Info[i].FixedInputWts);
- 			fprintf(fpDeb_,"\tMaxDelay: %d\n",(int)grp_Info[i].MaxDelay);
- 			fprintf(fpDeb_,"\tWithSTDP: %d\n",(int)grp_Info[i].WithSTDP);
+			CARLSIM_DEBUG("\tType: %d",(int)grp_Info[i].Type);
+			CARLSIM_DEBUG("\tSizeN: %d",grp_Info[i].SizeN);
+			CARLSIM_DEBUG("\tMaxFiringRate: %d",(int)grp_Info[i].MaxFiringRate);
+			CARLSIM_DEBUG("\tRefractPeriod: %f",grp_Info[i].RefractPeriod);
+			CARLSIM_DEBUG("\tM: %d",grp_Info[i].numPostSynapses);
+			CARLSIM_DEBUG("\tPreM: %d",grp_Info[i].numPreSynapses);
+			CARLSIM_DEBUG("\tspikeGenerator: %d",(int)grp_Info[i].isSpikeGenerator);
+			CARLSIM_DEBUG("\tFixedInputWts: %d",(int)grp_Info[i].FixedInputWts);
+ 			CARLSIM_DEBUG("\tMaxDelay: %d",(int)grp_Info[i].MaxDelay);
+ 			CARLSIM_DEBUG("\tWithSTDP: %d",(int)grp_Info[i].WithSTDP);
 			if (grp_Info[i].WithSTDP) {
-				fprintf(fpDeb_,"\t\tTAU_LTP_INV: %f\n",grp_Info[i].TAU_LTP_INV);
-				fprintf(fpDeb_,"\t\tTAU_LTD_INV: %f\n",grp_Info[i].TAU_LTD_INV);
-				fprintf(fpDeb_,"\t\tALPHA_LTP: %f\n",grp_Info[i].ALPHA_LTP);
-				fprintf(fpDeb_,"\t\tALPHA_LTD: %f\n",grp_Info[i].ALPHA_LTD);
+				CARLSIM_DEBUG("\t\tTAU_LTP_INV: %f",grp_Info[i].TAU_LTP_INV);
+				CARLSIM_DEBUG("\t\tTAU_LTD_INV: %f",grp_Info[i].TAU_LTD_INV);
+				CARLSIM_DEBUG("\t\tALPHA_LTP: %f",grp_Info[i].ALPHA_LTP);
+				CARLSIM_DEBUG("\t\tALPHA_LTD: %f",grp_Info[i].ALPHA_LTD);
 			}
-			fprintf(fpDeb_,"\tWithConductances: %d\n",(int)grp_Info[i].WithConductances);
+			CARLSIM_DEBUG("\tWithConductances: %d",(int)grp_Info[i].WithConductances);
 			if (grp_Info[i].WithConductances) {
-				fprintf(fpDeb_,"\t\tdAMPA: %f\n",grp_Info[i].dAMPA);
-				fprintf(fpDeb_,"\t\tdNMDA: %f\n",grp_Info[i].dNMDA);
-				fprintf(fpDeb_,"\t\tdGABAa: %f\n",grp_Info[i].dGABAa);
-				fprintf(fpDeb_,"\t\tdGABAb: %f\n",grp_Info[i].dGABAb);
+				CARLSIM_DEBUG("\t\tdAMPA: %f",grp_Info[i].dAMPA);
+				CARLSIM_DEBUG("\t\tdNMDA: %f",grp_Info[i].dNMDA);
+				CARLSIM_DEBUG("\t\tdGABAa: %f",grp_Info[i].dGABAa);
+				CARLSIM_DEBUG("\t\tdGABAb: %f",grp_Info[i].dGABAb);
 			}
-			fprintf(fpDeb_,"\tWithSTP: %d\n",(int)grp_Info[i].WithSTP);
+			CARLSIM_DEBUG("\tWithSTP: %d",(int)grp_Info[i].WithSTP);
 			if (grp_Info[i].WithSTP) {
-				fprintf(fpDeb_,"\t\tSTP_U: %f\n",grp_Info[i].STP_U);
-				fprintf(fpDeb_,"\t\tSTP_tD: %f\n",grp_Info[i].STP_tD);
-				fprintf(fpDeb_,"\t\tSTP_tF: %f\n",grp_Info[i].STP_tF);
+				CARLSIM_DEBUG("\t\tSTP_U: %f",grp_Info[i].STP_U);
+				CARLSIM_DEBUG("\t\tSTP_tD: %f",grp_Info[i].STP_tD);
+				CARLSIM_DEBUG("\t\tSTP_tF: %f",grp_Info[i].STP_tF);
 			}
-			fprintf(fpDeb_,"\tspikeGen: %s\n",grp_Info[i].spikeGen==NULL?"Is Null":"Is set");
+			CARLSIM_DEBUG("\tspikeGen: %s",grp_Info[i].spikeGen==NULL?"Is Null":"Is set");
 		}
 	}
 
@@ -3151,8 +3130,8 @@ void CpuSNN::updateNetwork_GPU(bool resetFiringInfo)
   copyUpdateVariables_GPU();
 }
 
-void CpuSNN::printSimSummary(FILE *fp) {
-	DBG(2, fpLog, AT, "printSimSummary()");
+void CpuSNN::printSimSummary() {
+	CARLSIM_DEBUG("printSimSummary()");
 	float etime;
 	if(currentMode == GPU_MODE) {
 		stopGPUTiming();
@@ -3169,17 +3148,15 @@ void CpuSNN::printSimSummary(FILE *fp) {
 		etime = cpuExecutionTime;
 	}
 
-	fprintf(fp, "*********** %s Simulation Summary **********\n", (currentMode == GPU_MODE)?("GPU"):"CPU");
-	fprintf(fp, "Network Parameters: \n\tnumNeurons = %d (numNExcReg:numNInhReg=%2.1f:%2.1f), numSynapses = %d, D = %d\n", numN, 100.0*numNExcReg/numN, 100.0*numNInhReg/numN, postSynCnt, D);
-	fprintf(fp, "Random Seed: %d\n", randSeed);
-	fprintf(fp, "Timing: \n\tModel Simulation Time = %lld sec \n\tActual Execution Time = %4.2f sec\n",  (unsigned long long)simTimeSec, etime/1000.0);
-	fprintf(fp, "Average Firing Rate \n\t2+ms delay = %3.3f Hz \n\t1ms delay = %3.3f Hz \n\tOverall = %3.3f Hz\n",
+	CARLSIM_INFO("*********** %s Simulation Summary **********", (currentMode == GPU_MODE)?("GPU"):"CPU");
+	CARLSIM_INFO("Network Parameters: \n\tnumNeurons = %d (numNExcReg:numNInhReg=%2.1f:%2.1f), numSynapses = %d, D = %d", numN, 100.0*numNExcReg/numN, 100.0*numNInhReg/numN, postSynCnt, D);
+	CARLSIM_INFO("Random Seed: %d", randSeed);
+	CARLSIM_INFO("Timing: \n\tModel Simulation Time = %lld sec \n\tActual Execution Time = %4.2f sec",  (unsigned long long)simTimeSec, etime/1000.0);
+	CARLSIM_INFO("Average Firing Rate \n\t2+ms delay = %3.3f Hz \n\t1ms delay = %3.3f Hz \n\tOverall = %3.3f Hz",
 					spikeCountD2Host/(1.0*simTimeSec*numNExcReg), spikeCountD1Host/(1.0*simTimeSec*numNInhReg), spikeCountAll/(1.0*simTimeSec*numN));
-	fprintf(fp, "Overall Firing Count: \n\t2+ms delay = %d \n\t1ms delay = %d \n\tTotal = %d\n",
+	CARLSIM_INFO("Overall Firing Count: \n\t2+ms delay = %d \n\t1ms delay = %d \n\tTotal = %d",
 					spikeCountD2Host, spikeCountD1Host, spikeCountAll );
-	fprintf(fp, "**************************************\n\n");
-
-	fflush(fp);
+	CARLSIM_INFO("**************************************\n");
 }
 
 
