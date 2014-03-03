@@ -87,27 +87,20 @@ RNG_rand48* gpuRand48 = NULL;
 /// CONSTRUCTOR / DESTRUCTOR
 /// **************************************************************************************************************** ///
 
+
 // TODO: consider moving unsafe computations out of constructor
-CpuSNN::CpuSNN(const std::string& _name, int _numConfig, int _randSeed, int simMode, loggerMode_t loggerMode) {
+CpuSNN::CpuSNN(std::string& name, int nConfig, int seed, int simMode, loggerMode_t loggerMode)
+					: networkName_(name), nConfig_(nConfig), randSeed_(CpuSNN::setRandSeed(seed)),
+							simMode_(simMode), loggerMode_(loggerMode) // all of these are const
+{
 	// set default file pointers for logging
 
-	networkName	= _name;
-	numConfig   = _numConfig;
-	assert(numConfig>0 && numConfig<=100);
+	assert(nConfig_>0 && nConfig_<=MAX_nConfig);
+	assert(simMode_==CPU_MODE || simMode_==GPU_MODE);
 
-	loggerMode_ = loggerMode;
-	currentMode = simMode;
-	assert(currentMode==CPU_MODE || currentMode==GPU_MODE);
-
-	if (_randSeed<0)
-		randSeed = time(NULL);
-	else if(_randSeed==0)
-		randSeed = 123;
-	else
-		randSeed = _randSeed;
-	srand48(randSeed);
-	getRand.seed(randSeed*2);
-	getRandClosed.seed(randSeed*3);
+	srand48(randSeed_);
+	getRand.seed(randSeed_*2);
+	getRandClosed.seed(randSeed_*3);
 
 	// set logger mode (defines where to print all status, error, and debug messages)
 	switch (loggerMode_) {
@@ -146,7 +139,7 @@ CpuSNN::CpuSNN(const std::string& _name, int _numConfig, int _randSeed, int simM
 	CARLSIM_INFO("********************      Welcome to CARLsim %d.%d      *************************",
 				MAJOR_VERSION,MINOR_VERSION);
 	CARLSIM_INFO("*******************************************************************************");
-	CARLSIM_INFO("Starting CARLsim simulation \"%s\" in %s mode",_name.c_str(),
+	CARLSIM_INFO("Starting CARLsim simulation \"%s\" in %s mode",networkName_.c_str(),
 				loggerMode_==USER?"user":(loggerMode_==DEVELOPER?"developer":(loggerMode_==SILENT?"silent":"custom")));
 
 	// initialize propogated spike buffers.....
@@ -242,20 +235,13 @@ CpuSNN::CpuSNN(const std::string& _name, int _numConfig, int _randSeed, int simM
 	gGABAb = NULL;
 
 
-	CARLSIM_INFO("nConfig: %d, randSeed: %d\n",_numConfig,randSeed);
+	CARLSIM_INFO("nConfig: %d, randSeed: %d",nConfig_,randSeed_);
 
-	fpParam = fopen("param.txt", "w");
-	if (fpParam==NULL) {
-		CARLSIM_ERROR("Unable to create/open parameter file 'param.txt'; check if current directory is writable.");
-		exitSimulation(1);
-	}
-	fprintf(fpParam, "// *****************************************\n");
-	time_t rawtime; struct tm * timeinfo;
-	time ( &rawtime ); timeinfo = localtime ( &rawtime );
-	fprintf ( fpParam,  "// program name : %s \n", _name.c_str());
-	fprintf ( fpParam,  "// rand val  : %d \n", randSeed);
-	fprintf ( fpParam,  "// Current local time and date: %s\n", asctime (timeinfo));
-	fflush(fpParam);
+	time_t rawtime;
+	struct tm * timeinfo;
+	time(&rawtime);
+	timeinfo = localtime(&rawtime);
+	CARLSIM_DEBUG("Current local time and date: %s", asctime(timeinfo));
 
 	CUDA_CREATE_TIMER(timer);
 	CUDA_RESET_TIMER(timer);
@@ -292,7 +278,7 @@ uint16_t CpuSNN::connect(int grpId1, int grpId2, const std::string& _type, float
 						uint8_t minDelay, uint8_t maxDelay, float _mulSynFast, float _mulSynSlow, bool synWtType) {
 						//const std::string& wtType
 	int retId=-1;
-	for(int c=0; c < numConfig; c++, grpId1++, grpId2++) {
+	for(int c=0; c < nConfig_; c++, grpId1++, grpId2++) {
 		assert(grpId1 < numGrp);
 		assert(grpId2 < numGrp);
 		assert(minDelay <= maxDelay);
@@ -375,7 +361,7 @@ uint16_t CpuSNN::connect(int grpId1, int grpId2, const std::string& _type, float
 						grp_Info2[grpId2].Name.c_str(),grp_Info[grpId2].numPreSynapses);
 
 		newInfo->connId	= numConnections++;
-		assert(numConnections <= MAX_numConnections);	// make sure we don't overflow connId
+		assert(numConnections <= MAX_nConnections);	// make sure we don't overflow connId
 
 		if(c==0)
 			retId = newInfo->connId;
@@ -392,7 +378,7 @@ uint16_t CpuSNN::connect(int grpId1, int grpId2, ConnectionGenerator* conn, floa
 						bool synWtType, int maxM, int maxPreM) {
 	int retId=-1;
 
-	for(int c=0; c < numConfig; c++, grpId1++, grpId2++) {
+	for(int c=0; c < nConfig_; c++, grpId1++, grpId2++) {
 		assert(grpId1 < numGrp);
 		assert(grpId2 < numGrp);
 
@@ -444,7 +430,7 @@ uint16_t CpuSNN::connect(int grpId1, int grpId2, ConnectionGenerator* conn, floa
 						grp_Info2[grpId2].Name.c_str(),grp_Info[grpId2].numPreSynapses);
 
 		newInfo->connId	= numConnections++;
-		assert(numConnections <= MAX_numConnections);	// make sure we don't overflow connId
+		assert(numConnections <= MAX_nConnections);	// make sure we don't overflow connId
 
 		if(c==0)
 			retId = newInfo->connId;
@@ -457,11 +443,11 @@ uint16_t CpuSNN::connect(int grpId1, int grpId2, ConnectionGenerator* conn, floa
 // create group of Izhikevich neurons
 // use int for nNeur to avoid arithmetic underflow
 int CpuSNN::createGroup(const std::string& grpName, int nNeur, int neurType, int configId) {
-	assert(nNeur>0); assert(neurType>=0); assert(configId>=-1);	assert(configId<numConfig);
+	assert(nNeur>0); assert(neurType>=0); assert(configId>=-1);	assert(configId<nConfig_);
 	if (configId == ALL) {
-		for(int c=0; c < numConfig; c++)
+		for(int c=0; c < nConfig_; c++)
 			createGroup(grpName, nNeur, neurType, c);
-		return (numGrp-numConfig);
+		return (numGrp-nConfig_);
 	} else {
 		assert(numGrp < MAX_GRP_PER_SNN);
 
@@ -505,11 +491,11 @@ int CpuSNN::createGroup(const std::string& grpName, int nNeur, int neurType, int
 // create spike generator group
 // use int for nNeur to avoid arithmetic underflow
 int CpuSNN::createSpikeGeneratorGroup(const std::string& grpName, int nNeur, int neurType, int configId) {
-	assert(nNeur>0); assert(neurType>=0); assert(configId>=-1);	assert(configId<numConfig);
+	assert(nNeur>0); assert(neurType>=0); assert(configId>=-1);	assert(configId<nConfig_);
 	if (configId == ALL) {
-		for(int c=0; c < numConfig; c++)
+		for(int c=0; c < nConfig_; c++)
 			createSpikeGeneratorGroup(grpName, nNeur, neurType, c);
-		return (numGrp-numConfig);
+		return (numGrp-nConfig_);
 	} else {
 		grp_Info[numGrp].SizeN   		= nNeur;
 		grp_Info[numGrp].Type    		= neurType | POISSON_NEURON;
@@ -543,12 +529,12 @@ void CpuSNN::setConductances(int grpId, bool isSet, float tdAMPA, float tdNMDA, 
 		for(int g=0; g < numGrp; g++)
 			setConductances(g, isSet, tdAMPA, tdNMDA, tdGABAa, tdGABAb, 0);
 	} else if (grpId == ALL) { // shortcut for all groups
-		for(int grpId1=0; grpId1 < numGrp; grpId1 += numConfig) {
+		for(int grpId1=0; grpId1 < numGrp; grpId1 += nConfig_) {
 			int g = getGroupId(grpId1, configId);
 			setConductances(g, isSet, tdAMPA, tdNMDA, tdGABAa, tdGABAb, configId);
 		}
 	} else if (configId == ALL) { // shortcut for all configs
-		for(int c=0; c < numConfig; c++)
+		for(int c=0; c < nConfig_; c++)
 			setConductances(grpId, isSet, tdAMPA, tdNMDA, tdGABAa, tdGABAb, c);
 	} else {
 		// set conductances for a given group and configId
@@ -572,12 +558,12 @@ void CpuSNN::setHomeostasis(int grpId, bool isSet, float homeoScale, float avgTi
 		for(int g=0; g < numGrp; g++)
 			setHomeostasis(g, isSet, homeoScale, avgTimeScale, 0);
 	} else if (grpId == ALL) { // shortcut for all groups
-		for(int grpId1=0; grpId1 < numGrp; grpId1 += numConfig) {
+		for(int grpId1=0; grpId1 < numGrp; grpId1 += nConfig_) {
 			int g = getGroupId(grpId1, configId);
 			setHomeostasis(g, isSet, homeoScale, avgTimeScale, configId);
 		}
 	} else if (configId == ALL) { // shortcut for all configs
-		for(int c=0; c < numConfig; c++)
+		for(int c=0; c < nConfig_; c++)
 			setHomeostasis(grpId, isSet, homeoScale, avgTimeScale, c);
 	} else {
 		// set conductances for a given group and configId
@@ -600,12 +586,12 @@ void CpuSNN::setHomeoBaseFiringRate(int grpId, float baseFiring, float baseFirin
 		for(int g=0; g < numGrp; g++)
 			setHomeoBaseFiringRate(g, baseFiring, baseFiringSD, 0);
 	} else if (grpId == ALL) { // shortcut for all groups
-		for(int grpId1=0; grpId1 < numGrp; grpId1 += numConfig) {
+		for(int grpId1=0; grpId1 < numGrp; grpId1 += nConfig_) {
 			int g = getGroupId(grpId1, configId);
 			setHomeoBaseFiringRate(g, baseFiring, baseFiringSD, configId);
 		}
 	} else if (configId == ALL) { // shortcut for all configs
-		for(int c=0; c < numConfig; c++)
+		for(int c=0; c < nConfig_; c++)
 			setHomeoBaseFiringRate(grpId, baseFiring, baseFiringSD, c);
 	} else {
 		// set conductances for a given group and configId
@@ -631,12 +617,12 @@ void CpuSNN::setNeuronParameters(int grpId, float izh_a, float izh_a_sd, float i
 		for(int g=0; g < numGrp; g++)
 			setNeuronParameters(g, izh_a, izh_a_sd, izh_b, izh_b_sd, izh_c, izh_c_sd, izh_d, izh_d_sd, 0);
 	} else if (grpId == ALL) { // shortcut for all groups
-		for(int grpId1=0; grpId1 < numGrp; grpId1 += numConfig) {
+		for(int grpId1=0; grpId1 < numGrp; grpId1 += nConfig_) {
 			int g = getGroupId(grpId1, configId);
 			setNeuronParameters(g, izh_a, izh_a_sd, izh_b, izh_b_sd, izh_c, izh_c_sd, izh_d, izh_d_sd, configId);
 		}
 	} else if (configId == ALL) { // shortcut for all configs
-		for(int c=0; c < numConfig; c++)
+		for(int c=0; c < nConfig_; c++)
 			setNeuronParameters(grpId, izh_a, izh_a_sd, izh_b, izh_b_sd, izh_c, izh_c_sd, izh_d, izh_d_sd, c);
 	} else {
 		int cGrpId = getGroupId(grpId, configId);
@@ -658,12 +644,12 @@ void CpuSNN::setSTDP(int grpId, bool isSet, float alphaLTP, float tauLTP, float 
 		for(int g=0; g < numGrp; g++)
 			setSTDP(g, isSet, alphaLTP, tauLTP, alphaLTD, tauLTD, 0);
 	} else if (grpId == ALL) { // shortcut for all groups
-		for(int grpId1=0; grpId1 < numGrp; grpId1 += numConfig) {
+		for(int grpId1=0; grpId1 < numGrp; grpId1 += nConfig_) {
 			int g = getGroupId(grpId1, configId);
 			setSTDP(g, isSet, alphaLTP, tauLTP, alphaLTD, tauLTD, configId);
 		}
 	} else if (configId == ALL) { // shortcut for all configs
-		for(int c=0; c < numConfig; c++)
+		for(int c=0; c < nConfig_; c++)
 			setSTDP(grpId, isSet, alphaLTP, tauLTP, alphaLTD, tauLTD, c);
 	} else {
 		// set STDP for a given group and configId
@@ -689,12 +675,12 @@ void CpuSNN::setSTP(int grpId, bool isSet, float STP_U, float STP_tD, float STP_
 		for(int g=0; g < numGrp; g++)
 			setSTP(g, isSet, STP_U, STP_tD, STP_tF, 0);
 	} else if (grpId == ALL) { // shortcut for all groups
-		for(int grpId1=0; grpId1 < numGrp; grpId1 += numConfig) {
+		for(int grpId1=0; grpId1 < numGrp; grpId1 += nConfig_) {
 			int g = getGroupId(grpId1, configId);
 			setSTP(g, isSet, STP_U, STP_tD, STP_tF, configId);
 		}
 	} else if (configId == ALL) { // shortcut for all configs
-		for(int c=0; c < numConfig; c++)
+		for(int c=0; c < nConfig_; c++)
 			setSTP(grpId, isSet, STP_U, STP_tD, STP_tF, c);
 	} else {
 		// set STDP for a given group and configId
@@ -732,7 +718,7 @@ int CpuSNN::runNetwork(int _nsec, int _nmsec, int simType, int ithGPU, bool enab
 	// and data structure optimization to improve performance and save memory.
 	setupNetwork(simType,ithGPU);
 
-	currentMode = simType;
+//	simMode_ = simType;
 
 	CUDA_RESET_TIMER(timer);
 	CUDA_START_TIMER(timer);
@@ -753,7 +739,7 @@ int CpuSNN::runNetwork(int _nsec, int _nmsec, int simType, int ithGPU, bool enab
 			// finished one sec of simulation...
 			if(showLog) {
 				if(showLogCycle==showLog++) {
-					showStatus(currentMode);
+					showStatus(simMode_);
 					showLog=1;
 				}
 			}
@@ -768,7 +754,7 @@ int CpuSNN::runNetwork(int _nsec, int _nmsec, int simType, int ithGPU, bool enab
 
 		if(enableGPUSpikeCntPtr==true && simType == CPU_MODE){
 			CARLSIM_ERROR("Error: the enableGPUSpikeCntPtr flag cannot be set in CPU_MODE");
-			assert(currentMode==GPU_MODE);
+			assert(simMode_==GPU_MODE);
 		}
 		if(enableGPUSpikeCntPtr==true && simType == GPU_MODE){
 			copyFiringStateFromGPU();
@@ -777,7 +763,7 @@ int CpuSNN::runNetwork(int _nsec, int _nmsec, int simType, int ithGPU, bool enab
 	if(copyState) {
 		// copy the state from GPU to GPU
 		for(int g=0; g < numGrp; g++) {
-			if ((!grp_Info[g].isSpikeGenerator) && (currentMode==GPU_MODE)) {
+			if ((!grp_Info[g].isSpikeGenerator) && (simMode_==GPU_MODE)) {
 				copyNeuronState(&cpuNetPtrs, &cpu_gpuNetPtrs, cudaMemcpyDeviceToHost, false, g);
 			}
 		}
@@ -822,7 +808,7 @@ void CpuSNN::readNetwork(FILE* fid) {
 void CpuSNN::reassignFixedWeights(uint16_t connectId, float weightMatrix[], int sizeMatrix, int configId) {
 	// handle the config == ALL recursive call contigency.
 	if (configId == ALL) {
-		for(int c=0; c < numConfig; c++)
+		for(int c=0; c < nConfig_; c++)
 			reassignFixedWeights(connectId, weightMatrix, sizeMatrix, c);
 	} else {
 		int j;
@@ -868,7 +854,7 @@ void CpuSNN::reassignFixedWeights(uint16_t connectId, float weightMatrix[], int 
 	}
 	//after all configurations and weights have been set, copy them back to the GPU if
 	//necessary:
-	if(currentMode == GPU_MODE)
+	if(simMode_ == GPU_MODE)
 		copyUpdateVariables_GPU();  
 }
 
@@ -878,7 +864,7 @@ void CpuSNN::resetSpikeCntUtil(int my_grpId ) {
   if(!doneReorganization)
     return;
 
-  if(currentMode == GPU_MODE){
+  if(simMode_ == GPU_MODE){
     //call analogous function, return, else do CPU stuff
     if (my_grpId == ALL) {
       startGrp = 0;
@@ -886,7 +872,7 @@ void CpuSNN::resetSpikeCntUtil(int my_grpId ) {
     }
     else {
       startGrp = my_grpId;
-      endGrp   = my_grpId+numConfig;
+      endGrp   = my_grpId+nConfig_;
     } 
     resetSpikeCnt_GPU(startGrp, endGrp);
     return;
@@ -898,7 +884,7 @@ void CpuSNN::resetSpikeCntUtil(int my_grpId ) {
   }
   else {
     startGrp = my_grpId;
-    endGrp   = my_grpId+numConfig;
+    endGrp   = my_grpId+nConfig_;
   }
   
   for( int grpId=startGrp; grpId < endGrp; grpId++) {
@@ -912,7 +898,7 @@ void CpuSNN::resetSpikeCntUtil(int my_grpId ) {
 // sets up a spike generator
 void CpuSNN::setSpikeGenerator(int grpId, SpikeGenerator* spikeGen, int configId) {
 	if (configId == ALL) {
-		for(int c=0; c < numConfig; c++)
+		for(int c=0; c < nConfig_; c++)
 			setSpikeGenerator(grpId, spikeGen,c);
 	} else {
 		int cGrpId = getGroupId(grpId, configId);
@@ -927,7 +913,7 @@ void CpuSNN::setSpikeGenerator(int grpId, SpikeGenerator* spikeGen, int configId
 // add a SpikeMonitor for group where spikeMon can be custom class or WriteSpikesToFile
 void CpuSNN::setSpikeMonitor(int grpId, SpikeMonitor* spikeMon, int configId) {
 	if (configId == ALL) {
-		for(int c=0; c < numConfig; c++)
+		for(int c=0; c < nConfig_; c++)
 		setSpikeMonitor(grpId, spikeMon,c);
 	} else {
 	    int cGrpId = getGroupId(grpId, configId);
@@ -972,7 +958,7 @@ void CpuSNN::setSpikeMonitor(int grpId, SpikeMonitor* spikeMon, int configId) {
 // assigns spike rate to group
 void CpuSNN::setSpikeRate(int grpId, PoissonRate* ratePtr, int refPeriod, int configId) {
 	if (configId == ALL) {
-		for(int c=0; c < numConfig; c++)
+		for(int c=0; c < nConfig_; c++)
 			setSpikeRate(grpId, ratePtr, refPeriod,c);
 	} else {
 		int cGrpId = getGroupId(grpId, configId);
@@ -1015,7 +1001,7 @@ void CpuSNN::updateNetwork(bool resetFiringInfo, bool resetWeights) {
 	if(resetFiringInfo)
 		resetFiringInformation();
 
-	if(currentMode==GPU_MODE){
+	if(simMode_==GPU_MODE){
 		//copyGrpInfo_GPU();
 		//do a call to updateNetwork_GPU()
 		updateNetwork_GPU(resetFiringInfo);
@@ -1143,7 +1129,7 @@ void CpuSNN::writePopWeights(std::string fname, int grpPreId, int grpPostId, int
 		// for every post-neuron, find all pre
 		pos_ij = cumulativePre[i]; // i-th neuron, j=0th synapse
 		//do the GPU copy here.  Copy the current weights from GPU to CPU.
-		if(currentMode==GPU_MODE){
+		if(simMode_==GPU_MODE){
 			copyWeightsGPU(i,cGrpIdPre);
 		}
 		//iterate over all presynaptic synapses
@@ -1205,7 +1191,7 @@ grpConnectInfo_t* CpuSNN::getConnectInfo(uint16_t connectId, int configId) {
 }
 
 int  CpuSNN::getConnectionId(uint16_t connId, int configId) {
-	assert(configId>=0); assert(configId<numConfig);
+	assert(configId>=0); assert(configId<nConfig_);
 
 	connId = connId+configId;
 	assert(connId>=0); assert(connId<numConnections);
@@ -1254,7 +1240,7 @@ uint8_t* CpuSNN::getDelays(int gIDpre, int gIDpost, int& Npre, int& Npost, uint8
 
 
 int CpuSNN::getGroupId(int grpId, int configId) {
-	assert(configId < numConfig);
+	assert(configId < nConfig_);
 	int cGrpId = (grpId+configId);
 	assert(cGrpId  < numGrp);
 	return cGrpId;
@@ -1295,7 +1281,7 @@ int CpuSNN::getNumConnections(uint16_t connectionId) {
 
 // gets weights from synaptic connections from gIDpre to gIDpost
 void CpuSNN::getPopWeights(int grpPreId, int grpPostId, float*& weights, int& matrixSize, int configId) {
-	assert(configId>=0); assert(configId<numConfig);
+	assert(configId>=0); assert(configId<nConfig_);
 	assert(grpPreId>=0); assert(grpPreId<numGrp); assert(grpPostId>=0); assert(grpPostId<numGrp);
 	post_info_t* preId;
 	int pre_nid, pos_ij;
@@ -1335,7 +1321,7 @@ void CpuSNN::getPopWeights(int grpPreId, int grpPostId, float*& weights, int& ma
 		// for every post-neuron, find all pre
 		pos_ij = cumulativePre[i]; // i-th neuron, j=0th synapse
 		//do the GPU copy here.  Copy the current weights from GPU to CPU.
-		if(currentMode==GPU_MODE){
+		if(simMode_==GPU_MODE){
 			copyWeightsGPU(i,cGrpIdPre);
 		}
 		//iterate over all presynaptic synapses
@@ -1365,7 +1351,7 @@ float* CpuSNN::getWeightChanges(int gIDpre, int gIDpost, int& Npre, int& Npost, 
 
   // copy the pre synaptic data from GPU, if needed
   // note: this will not include wtChange[] and synSpikeTime[] if sim_with_fixedwts
-  if (currentMode == GPU_MODE)
+  if (simMode_ == GPU_MODE)
     copyWeightState(&cpuNetPtrs, &cpu_gpuNetPtrs, cudaMemcpyDeviceToHost, false, gIDpost);
 
   for (int i=grp_Info[gIDpre].StartN;i<grp_Info[gIDpre].EndN;i++) {
@@ -1413,7 +1399,7 @@ void CpuSNN::setCopyFiringStateFromGPU(bool _enableGPUSpikeCntPtr) {
 
 void CpuSNN::setGroupInfo(int grpId, group_info_t info, int configId) {
 	if (configId == ALL) {
-		for(int c=0; c < numConfig; c++)
+		for(int c=0; c < nConfig_; c++)
 			setGroupInfo(grpId, info, c);
 	} else {
 		int cGrpId = getGroupId(grpId, configId);
@@ -1531,8 +1517,8 @@ void CpuSNN::buildNetworkInit(unsigned int nNeur, unsigned int nPostSyn, unsigne
 	wt  			= new float[preSynCnt+100];
 	maxSynWt     	= new float[preSynCnt+100];
 
-	mulSynFast 		= new float[MAX_numConnections];
-	mulSynSlow 		= new float[MAX_numConnections];
+	mulSynFast 		= new float[MAX_nConnections];
+	mulSynSlow 		= new float[MAX_nConnections];
 	cumConnIdPre	= new uint16_t[preSynCnt+100];
 
 	//! Temporary array to hold pre-syn connections. will be deleted later if necessary
@@ -1558,7 +1544,7 @@ int CpuSNN::addSpikeToTable(int nid, int g) {
 	nSpikeCnt[nid]++;
 	avgFiring[nid] += 1000/(grp_Info[g].avgTimeScale*1000);
 
-	if (currentMode == GPU_MODE) {
+	if (simMode_ == GPU_MODE) {
 		assert(grp_Info[g].isSpikeGenerator == true);
 		setSpikeGenBit_GPU(nid, g);
 		return 0;
@@ -1629,10 +1615,10 @@ void CpuSNN::buildNetwork() {
 	grpConnectInfo_t* newInfo = connectBegin;
 	int curN = 0, curD = 0, numPostSynapses = 0, numPreSynapses = 0;
 
-	assert(numConfig > 0);
+	assert(nConfig_ > 0);
 
 	//update main set of parameters
-	updateParameters(&curN, &numPostSynapses, &numPreSynapses, numConfig);
+	updateParameters(&curN, &numPostSynapses, &numPreSynapses, nConfig_);
 
 	curD = updateSpikeTables();
 
@@ -1641,7 +1627,7 @@ void CpuSNN::buildNetwork() {
 	assert(numPreSynapses > 0);
 
 	// display the evaluated network and delay length....
-	CARLSIM_INFO(">>>>>>>>>>>>>> NUM_CONFIGURATIONS = %d <<<<<<<<<<<<<<<<<<", numConfig);
+	CARLSIM_INFO(">>>>>>>>>>>>>> NUM_CONFIGURATIONS = %d <<<<<<<<<<<<<<<<<<", nConfig_);
 	CARLSIM_INFO("*********************************************************");
 	CARLSIM_INFO("numN = %d, numPostSynapses = %d, numPreSynapses = %d, D = %d", curN, numPostSynapses,
 					numPreSynapses, curD);
@@ -1688,7 +1674,7 @@ void CpuSNN::buildNetwork() {
 	///      Excitatory-Regular  | Inhibitory-Regular | Inhibitory-Poisson | Excitatory-Poisson
 	int allocatedGrp = 0;
 	for(int order=0; order < 4; order++) {
-		for(int configId=0; configId < numConfig; configId++) {
+		for(int configId=0; configId < nConfig_; configId++) {
 			for(int g=0; g < numGrp; g++) {
 				if (grp_Info2[g].ConfigId == configId) {
 					if (IS_EXCITATORY_TYPE(grp_Info[g].Type) && (grp_Info[g].Type&POISSON_NEURON) && order==3) {
@@ -3029,7 +3015,7 @@ void CpuSNN::resetSpikeCnt(int my_grpId) {
 	}
 	else {
 		startGrp = my_grpId;
-		endGrp   = my_grpId+numConfig;
+		endGrp   = my_grpId+nConfig_;
 	}
   
 	for( int grpId=startGrp; grpId < endGrp; grpId++) {
@@ -3207,6 +3193,16 @@ void CpuSNN::setGrpTimeSlice(int grpId, int timeSlice) {
 	}
 }
 
+// method to set const member randSeed_
+int CpuSNN::setRandSeed(int seed) {
+	if (seed<0)
+		return time(NULL);
+	else if(seed==0)
+		return 123;
+	else
+		return seed;
+}
+
 // reorganize the network and do the necessary allocation
 // of all variable for carrying out the simulation..
 // this code is run only one time during network initialization
@@ -3368,7 +3364,7 @@ void CpuSNN::updateSpikesFromGrp(int grpId)
     // current mode is GPU, and GPU would take care of poisson generators
     // and other information about refractor period etc. So no need to continue further...
 #if !TESTING_CPU_GPU_POISSON
-    if(currentMode == GPU_MODE)
+    if(simMode_ == GPU_MODE)
       return;
 #endif
 
@@ -3586,7 +3582,7 @@ void CpuSNN::updateSpikeMonitor()
   /* Reset buffer position */
   memset(monBufferPos,0,sizeof(int)*numSpikeMonitor);
 
-  if(currentMode == GPU_MODE) {
+  if(simMode_ == GPU_MODE) {
     updateSpikeMonitor_GPU();
   }
 
@@ -3601,7 +3597,7 @@ void CpuSNN::updateSpikeMonitor()
       for(int i=timeTablePtr[t+D]; i<timeTablePtr[t+D+1];i++) {
 	/* retrieve the neuron id */
 	int nid   = fireTablePtr[i];
-	if (currentMode == GPU_MODE)
+	if (simMode_ == GPU_MODE)
 	  nid = GET_FIRING_TABLE_NID(nid);
 	assert(nid < numN);
 	  

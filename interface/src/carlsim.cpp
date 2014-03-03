@@ -107,7 +107,7 @@ CARLsim::~CARLsim() {
 
 // unsafe computations that would otherwise go in constructor
 void CARLsim::CARLsimInit() {
-	snn_ = new CpuSNN(netName_.c_str(), nConfig_, randSeed_, simMode_, loggerMode_);
+	snn_ = new CpuSNN(netName_, nConfig_, randSeed_, simMode_, loggerMode_);
 
 	// set default time constants for synaptic current decay
 	// TODO: add ref

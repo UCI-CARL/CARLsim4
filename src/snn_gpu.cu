@@ -2964,7 +2964,7 @@ void CpuSNN::allocateSNN_GPU(int ithGPU) {
 
 	// generate the random number for the poisson neuron here...
 	if(gpuPoissonRand == NULL) {
-		gpuPoissonRand = new RNG_rand48(randSeed);
+		gpuPoissonRand = new RNG_rand48(randSeed_);
 	}
 
 	gpuPoissonRand->generate(numNPois, RNG_rand48::MAX_RANGE);
@@ -3133,7 +3133,7 @@ void CpuSNN::updateNetwork_GPU(bool resetFiringInfo)
 void CpuSNN::printSimSummary() {
 	CARLSIM_DEBUG("printSimSummary()");
 	float etime;
-	if(currentMode == GPU_MODE) {
+	if(simMode_ == GPU_MODE) {
 		stopGPUTiming();
 		etime = gpuExecutionTime;
 		CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &spikeCountD2Host, secD2fireCnt, sizeof(int), 0, cudaMemcpyDeviceToHost));
@@ -3148,9 +3148,9 @@ void CpuSNN::printSimSummary() {
 		etime = cpuExecutionTime;
 	}
 
-	CARLSIM_INFO("*********** %s Simulation Summary **********", (currentMode == GPU_MODE)?("GPU"):"CPU");
+	CARLSIM_INFO("*********** %s Simulation Summary **********", (simMode_ == GPU_MODE)?("GPU"):"CPU");
 	CARLSIM_INFO("Network Parameters: \n\tnumNeurons = %d (numNExcReg:numNInhReg=%2.1f:%2.1f), numSynapses = %d, D = %d", numN, 100.0*numNExcReg/numN, 100.0*numNInhReg/numN, postSynCnt, D);
-	CARLSIM_INFO("Random Seed: %d", randSeed);
+	CARLSIM_INFO("Random Seed: %d", randSeed_);
 	CARLSIM_INFO("Timing: \n\tModel Simulation Time = %lld sec \n\tActual Execution Time = %4.2f sec",  (unsigned long long)simTimeSec, etime/1000.0);
 	CARLSIM_INFO("Average Firing Rate \n\t2+ms delay = %3.3f Hz \n\t1ms delay = %3.3f Hz \n\tOverall = %3.3f Hz",
 					spikeCountD2Host/(1.0*simTimeSec*numNExcReg), spikeCountD1Host/(1.0*simTimeSec*numNInhReg), spikeCountAll/(1.0*simTimeSec*numN));

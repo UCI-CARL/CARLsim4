@@ -533,7 +533,7 @@ class CpuSNN {
 /// PUBLIC METHODS
 /// **************************************************************************************************************** ///
 public:
-	CpuSNN(const std::string& _name, int _numConfig=1, int randomize=0, int simMode=CPU_MODE,
+	CpuSNN(std::string& name, int nConfig=1, int seed=0, int simMode=CPU_MODE,
 				loggerMode_t loggerMode=USER);
 	~CpuSNN();
 
@@ -677,9 +677,9 @@ public:
 	group_info_t getGroupInfo(int groupId, int configId);
 	std::string getGroupName(int grpId, int configId);
 
-	loggerMode_t getLoggerMode() { return loggerMode_; }
+	//loggerMode_t getLoggerMode() { return loggerMode_; }
 
-	int getNumConfigurations()	{ return numConfig; }	//!< gets number of network configurations
+	int getNumConfigurations()	{ return nConfig_; }	//!< gets number of network configurations
 	int getNumConnections(uint16_t connectionId);		//!< gets number of connections associated with a connection ID
 	int getNumGroups() { return numGrp; }
 
@@ -692,7 +692,7 @@ public:
 	 */
 	void getPopWeights(int gIDpre, int gIDpost, float*& weights, int& size, int configId = 0);
 
-	int getSimMode()			{ return currentMode; }
+	int getSimMode()		{ return simMode_; }
 	uint64_t getSimTime()		{ return simTime; }
 	uint32_t getSimTimeSec()	{ return simTimeSec; }
 	uint32_t getSimTimeMs()		{ return simTimeMs; }
@@ -842,6 +842,7 @@ private:
 								float maxWt, uint8_t dVal, int connProp, uint16_t connId);
 
 	void setGrpTimeSlice(int grpId, int timeSlice); //!< used for the Poisson generator. TODO: further optimize
+	int setRandSeed(int seed);	//!< setter function for const member randSeed_
 
 	void setupNetwork(int simType=CPU_MODE, int ithGPU=0, bool removeTempMemory=true);
 
@@ -921,10 +922,10 @@ private:
 	// +++++ PRIVATE PROPERTIES +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 	FILE* readNetworkFID;
 
-	loggerMode_t loggerMode_;	//!< current logger mode (USER, DEVELOPER, SILENT, CUSTOM)
-	int	randSeed;
-	int	currentMode;			//!< current simulation mode (CPU_MODE or GPU_MODE) FIXME: give better name
-	int	numConfig;
+	const loggerMode_t loggerMode_;	//!< current logger mode (USER, DEVELOPER, SILENT, CUSTOM)
+	const int	randSeed_;
+	const int	simMode_;			//!< current simulation mode (CPU_MODE or GPU_MODE) FIXME: give better name
+	const int	nConfig_;
 
 
 	//! temporary variables created and deleted by network after initialization
@@ -943,7 +944,7 @@ private:
 	bool			doneReorganization;
 	bool			memoryOptimized;
 
-	std::string			networkName;
+	std::string			networkName_;
 	int				numGrp;
 	int				numConnections;		//!< number of connection calls (as in snn.connect(...))
 	//! keeps track of total neurons/presynapses/postsynapses currently allocated

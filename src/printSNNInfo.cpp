@@ -321,7 +321,7 @@ void CpuSNN::printFiringRate(char *fname)
   FILE *fpg;
   std::string strFname;
   if (fname == NULL)
-    strFname = networkName;
+    strFname = networkName_;
   else
     strFname = fname;
 
@@ -333,7 +333,7 @@ void CpuSNN::printFiringRate(char *fname)
 
   fprintf(fpg, "#Average Firing Rate\n");
   if(printCnt==0) {
-    fprintf(fpg, "#network %s: size = %d\n", networkName.c_str(), numN);
+    fprintf(fpg, "#network %s: size = %d\n", networkName_.c_str(), numN);
     for(int grpId=0; grpId < numGrp; grpId++) {
       fprintf(fpg, "#group %d: name %s : size = %d\n", grpId, grp_Info2[grpId].Name.c_str(), grp_Info[grpId].SizeN);
     }
@@ -419,11 +419,11 @@ void CpuSNN::printPreConnection(int grpId, FILE* const fp)
 
 void CpuSNN::printNeuronState(int grpId, FILE* const fp)
 {
-  if (currentMode==GPU_MODE) {
+  if (simMode_==GPU_MODE) {
     copyNeuronState(&cpuNetPtrs, &cpu_gpuNetPtrs, cudaMemcpyDeviceToHost, false, grpId);
   }
 
-  fprintf(fp, "[MODE=%s] ", (currentMode==GPU_MODE)?"GPU_MODE":"CPU_MODE");
+  fprintf(fp, "[MODE=%s] ", (simMode_==GPU_MODE)?"GPU_MODE":"CPU_MODE");
   fprintf(fp, "Group %s (%d) Neuron State Information (totSpike=%d, poissSpike=%d)\n",
 	  grp_Info2[grpId].Name.c_str(), grpId, spikeCountAll, nPoissonSpikes);
 
@@ -477,7 +477,7 @@ void CpuSNN::printWeight(int grpId, const char *str) {
 	for(int g=stg; (g < endg) ; g++) {
 		fprintf(fpOut_, "%s", str);
 		if (!grp_Info[g].FixedInputWts) {
-			if (currentMode == GPU_MODE) {
+			if (simMode_ == GPU_MODE) {
 				copyWeightState (&cpuNetPtrs, &cpu_gpuNetPtrs, cudaMemcpyDeviceToHost, false, g);
 			}
 			int i=grp_Info[g].StartN;
