@@ -66,11 +66,11 @@ public:
 	 * \param[in] delay 	delay for all synapses (ms)
 	 * \returns a unique ID associated with the newly created connection
 	 */
-	uint16_t connect(int grpId1, int grpId2, const std::string& connType, float wt, float connProb, uint8_t delay);
+	short int connect(int grpId1, int grpId2, const std::string& connType, float wt, float connProb, uint8_t delay);
 
 	//! shortcut to create SYN_FIXED connections with one weight / delay and two scaling factors for synaptic currents
 	// returns connection id
-	uint16_t connect(int grpId1, int grpId2, const std::string& connType, float wt, float connProb, uint8_t delay,
+	short int connect(int grpId1, int grpId2, const std::string& connType, float wt, float connProb, uint8_t delay,
 						float mulSynFast, float mulSynSlow);
 
 	/*!
@@ -88,21 +88,21 @@ public:
 	 * \param[in] delay 	delay for all synapses (ms)
 	 * \returns a unique ID associated with the newly created connection
 	 */
-	uint16_t connect(int grpId1, int grpId2, const std::string& connType, float initWt, float maxWt, float connProb,
+	short int connect(int grpId1, int grpId2, const std::string& connType, float initWt, float maxWt, float connProb,
 						uint8_t minDelay, uint8_t maxDelay, bool synWtType);
 
 	//! make connection from each neuron in grpId1 to 'numPostSynapses' neurons in grpId2
 	// returns connection id
-	uint16_t connect(int grpId1, int grpId2, const std::string& connType, float initWt, float maxWt, float connProb,
+	short int connect(int grpId1, int grpId2, const std::string& connType, float initWt, float maxWt, float connProb,
 						uint8_t minDelay, uint8_t maxDelay, float mulSynFast, float mulSynSlow, bool synWtType);
 
 	//! shortcut to make connections with custom connectivity profile but omit scaling factors for synaptic
 	//! conductances (default is 1.0 for both)
-	uint16_t connect(int grpId1, int grpId2, ConnectionGenerator* conn, bool synWtType=SYN_FIXED, int maxM=0, 
+	short int connect(int grpId1, int grpId2, ConnectionGenerator* conn, bool synWtType=SYN_FIXED, int maxM=0, 
 						int maxPreM=0);
 
 	//! make connections with custom connectivity profile
-	uint16_t connect(int grpId1, int grpId2, ConnectionGenerator* conn, float mulSynFast, float mulSynSlow,
+	short int connect(int grpId1, int grpId2, ConnectionGenerator* conn, float mulSynFast, float mulSynSlow,
 						bool synWtType=SYN_FIXED, int maxM=0,int maxPreM=0);
 
 
@@ -176,7 +176,7 @@ public:
 	 * configuration ID (configID).  This function only works for fixed synapses and for connections of type
 	 * CONN_USER_DEFINED. Only the weights are changed, not the maxWts, delays, or connected values
 	 */
-	void reassignFixedWeights(uint16_t connectId, float weightMatrix[], int matrixSize, int configId=ALL);
+	void reassignFixedWeights(short int connectId, float weightMatrix[], int matrixSize, int configId=ALL);
 
 	void resetSpikeCntUtil(int grpId=ALL); //!< resets spike count for particular neuron group
 
@@ -205,8 +205,8 @@ public:
 
 	// +++++ PUBLIC METHODS: GETTER / SETTERS +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
-	grpConnectInfo_t* getConnectInfo(uint16_t connectId, int configId=0); //!< gets connection info struct
-	int  getConnectionId(uint16_t connId, int configId);
+	grpConnectInfo_t* getConnectInfo(short int connectId, int configId=0); //!< gets connection info struct
+	int  getConnectionId(short int connId, int configId);
 
 	uint8_t* getDelays(int gIDpre, int gIDpost, int& Npre, int& Npost, uint8_t* delays=NULL);
 
@@ -215,7 +215,7 @@ public:
 	std::string getGroupName(int grpId, int configId=0);
 
 	int getNumConfigurations() { return nConfig_; }		//!< gets number of network configurations
-	int getNumConnections(uint16_t connectionId);		//!< gets number of connections associated with a connection ID
+	int getNumConnections(short int connectionId);		//!< gets number of connections associated with a connection ID
 	int getNumGroups();									//!< gets number of groups in the network
 
 	/*!

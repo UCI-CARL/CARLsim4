@@ -222,7 +222,7 @@ void initTableQuickSynId()
   CUDA_CHECK_ERRORS_MACRO( cudaMemcpy( devPtr, tableQuickSynId, sizeof(tableQuickSynId), cudaMemcpyHostToDevice));
 }
 	
-__device__ inline bool isPoissonGroup(uint16_t& grpId, unsigned int& nid)
+__device__ inline bool isPoissonGroup(short int& grpId, unsigned int& nid)
 {
   bool poiss = (gpuGrpInfo[grpId].Type & POISSON_NEURON);
 
@@ -308,7 +308,7 @@ __global__ void kernel_init ()
     int2 	 threadLoad  = getStaticThreadLoad(bufPos);
     int  	 nid        = STATIC_LOAD_START(threadLoad);
     int  	 lastId      = STATIC_LOAD_SIZE(threadLoad);
-    uint16_t grpId   	 = STATIC_LOAD_GROUP(threadLoad);
+    short int grpId   	 = STATIC_LOAD_GROUP(threadLoad);
 
     // errors...
     ERROR_CHECK_COND_NORETURN(TESTING, retErrCode, KERNEL_INIT_ERROR0, (grpId   < gpuNetInfo.numGrp));
@@ -426,7 +426,7 @@ int CpuSNN::allocateStaticLoad(int bufSize) {
 // update the STPU and STPX variable after firing			      ///
 /////////////////////////////////////////////////////////////////////////////////
 
-__device__ void firingUpdateSTP (unsigned int& nid, int& simTime, uint16_t&  grpId)
+__device__ void firingUpdateSTP (unsigned int& nid, int& simTime, short int&  grpId)
 {
   // implements Mongillo, Barak and Tsodyks model of Short term plasticity
   uint32_t ind   = getSTPBufPos(nid, simTime);
@@ -450,7 +450,7 @@ __device__ void measureFiringLoad(volatile int& fireCnt, volatile int& fireCntD1
   __syncthreads();
 }
 
-__device__ void resetFiredNeuron(unsigned int& nid, uint16_t & grpId, int& simTime)
+__device__ void resetFiredNeuron(unsigned int& nid, short int & grpId, int& simTime)
 {
   // TODO: convert this to use coalesced access by grouping into a
   // single 16 byte access. This might improve bandwidth performance
@@ -502,7 +502,7 @@ __device__ void updateFiringCounter(volatile unsigned int& fireCnt, volatile uns
 }
 
 // update the firing table...
-__device__ void updateFiringTable(unsigned int& nid, uint16_t& grpId, volatile unsigned int& cntD2, volatile unsigned int& cntD1)
+__device__ void updateFiringTable(unsigned int& nid, short int& grpId, volatile unsigned int& cntD2, volatile unsigned int& cntD1)
 {
   int pos;
   if (gpuGrpInfo[grpId].MaxDelay == 1) {
@@ -518,7 +518,7 @@ __device__ void updateFiringTable(unsigned int& nid, uint16_t& grpId, volatile u
 }
 
 __device__ int newFireUpdate (	int* 	fireTablePtr,
-				uint16_t* fireGrpId,
+				short int* fireGrpId,
 				volatile unsigned int& 	fireCnt,
 				volatile unsigned int& 	fireCntD1,
 				int& 	simTime)
@@ -629,7 +629,7 @@ __device__ void findGrpId_GPU(unsigned int& nid, int& grpId)
 // synaptic grouping for LTP Calculation
 #define		LTP_GROUPING_SZ     16
 __device__ void gpu_updateLTP(	int*     		fireTablePtr,
-				uint16_t*  		fireGrpId,
+				short int*  		fireGrpId,
 				volatile unsigned int&   fireCnt,
 				int&      		simTime)
 {
@@ -637,7 +637,7 @@ __device__ void gpu_updateLTP(	int*     		fireTablePtr,
     // each neuron has two variable pre and pre_exc
     // pre: number of pre-neuron
     // pre_exc: number of neuron had has plastic connections
-    uint16_t grpId = fireGrpId[pos];
+    short int grpId = fireGrpId[pos];
     if (gpuGrpInfo[grpId].WithSTDP) { // MDR, FIXME this probably will cause more thread divergence than need be...
       int  nid   = fireTablePtr[pos];
       unsigned int  end_p = gpuPtrs.cumulativePre[nid] + gpuPtrs.Npre_plastic[nid];
@@ -659,7 +659,7 @@ __device__ void gpu_updateLTP(	int*     		fireTablePtr,
   __syncthreads();
 }
 
-__device__ inline int assertionFiringParam(uint16_t& grpId, int& lastId)
+__device__ inline int assertionFiringParam(short int& grpId, int& lastId)
 {
   ERROR_CHECK_COND(TESTING, retErrCode, ERROR_FIRING_0, (grpId   < gpuNetInfo.numGrp), 0);
   ERROR_CHECK_COND(TESTING, retErrCode, ERROR_FIRING_1, (lastId  < gpuNetInfo.numN), 0);
@@ -703,7 +703,7 @@ __global__ 	void kernel_findFiring (int t, int sec, int simTime)
   __shared__ volatile unsigned int fireCntTest;
   __shared__ volatile unsigned int fireCntD1;
   __shared__ int 		fireTable[FIRE_CHUNK_CNT];
-  __shared__ uint16_t	fireGrpId[FIRE_CHUNK_CNT];
+  __shared__ short int	fireGrpId[FIRE_CHUNK_CNT];
   __shared__ volatile int errCode;
 
   if (0==threadIdx.x) {
@@ -726,7 +726,7 @@ __global__ 	void kernel_findFiring (int t, int sec, int simTime)
       int2 threadLoad  = getStaticThreadLoad(bufPos);
       unsigned int  nid        = (STATIC_LOAD_START(threadLoad) + threadIdx.x);
       int  lastId      = STATIC_LOAD_SIZE(threadLoad);
-      uint16_t grpId   = STATIC_LOAD_GROUP(threadLoad);
+      short int grpId   = STATIC_LOAD_GROUP(threadLoad);
       bool needToWrite = false;	// used by all neuron to indicate firing condition
       int  fireId      = 0;
 
@@ -897,7 +897,7 @@ __global__ void kernel_globalConductanceUpdate (int t, int sec, int simTime) {
 					}
 						
 					if (gpuNetInfo.sim_with_conductances) {
-						uint16_t connId = gpuPtrs.cumConnIdPre[cum_pos+wtId];
+						short int connId = gpuPtrs.cumConnIdPre[cum_pos+wtId];
 						if (type & TARGET_AMPA)
 							AMPA_sum += wt*gpuPtrs.mulSynFast[connId];
 						if (type & TARGET_NMDA)
@@ -1307,7 +1307,7 @@ __device__ int generatePostSynapticSpike(int& simTime, int& firingId, int& myDel
   // get the actual position of the synapses and other variables...
   unsigned int pos_ns = gpuPtrs.cumulativePre[nid] + syn_id;
 
-  //		uint16_t pre_grpId = GET_FIRING_TABLE_GID(firingId);
+  //		short int pre_grpId = GET_FIRING_TABLE_GID(firingId);
   //		int pre_nid = GET_FIRING_TABLE_NID(firingId);
 
   // Error MNJ... this should have been from nid.. not firingId...
@@ -2097,8 +2097,8 @@ void CpuSNN::copyState(network_ptr_t* dest, int allocateMem) {
 	CUDA_CHECK_ERRORS( cudaMemcpy( dest->mulSynFast, mulSynFast, sizeof(float)*numConnections, kind));
 	if(allocateMem)		CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->mulSynSlow, sizeof(float)*numConnections));
 	CUDA_CHECK_ERRORS( cudaMemcpy( dest->mulSynSlow, mulSynSlow, sizeof(float)*numConnections, kind));
-	if(allocateMem)		CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->cumConnIdPre, sizeof(uint16_t)*preSynCnt));
-	CUDA_CHECK_ERRORS( cudaMemcpy( dest->cumConnIdPre, cumConnIdPre, sizeof(uint16_t)*preSynCnt, kind));
+	if(allocateMem)		CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->cumConnIdPre, sizeof(short int)*preSynCnt));
+	CUDA_CHECK_ERRORS( cudaMemcpy( dest->cumConnIdPre, cumConnIdPre, sizeof(short int)*preSynCnt, kind));
 
 	// we don't need these data structures if the network doesn't have any plastic synapses at all
 	// they show up in gpuUpdateLTP() and updateSynapticWeights(), two functions that do not get called if

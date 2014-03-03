@@ -62,8 +62,8 @@
 #endif
 
 
-#define MAX_numPostSynapses 10000
-#define MAX_numPreSynapses 20000
+#define MAX_nPostSynapses 10000
+#define MAX_nPreSynapses 20000
 #define MAX_SynapticDelay 20
 #define MAX_nConnections 32768			//!< max allowed number of connect() calls by the user (used for mulSynFast)
 #define MAX_nConfig 100

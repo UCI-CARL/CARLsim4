@@ -147,7 +147,7 @@ void CARLsim::CARLsimInit() {
 // +++++++++ PUBLIC METHODS: SETTING UP A SIMULATION ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
 // Connects a presynaptic to a postsynaptic group using fixed weights and a single delay value
-uint16_t CARLsim::connect(int grpId1, int grpId2, const std::string& connType, float wt, float connProb, uint8_t delay) {
+short int CARLsim::connect(int grpId1, int grpId2, const std::string& connType, float wt, float connProb, uint8_t delay) {
 	std::string funcName = "connect(\""+getGroupName(grpId1,0)+"\",\""+getGroupName(grpId2,0)+"\")";
 	std::stringstream grpId1str; grpId1str << "Group Id " << grpId1;
 	std::stringstream grpId2str; grpId2str << "Group Id " << grpId2;
@@ -161,17 +161,17 @@ uint16_t CARLsim::connect(int grpId1, int grpId2, const std::string& connType, f
 }
 
 // shortcut to create SYN_FIXED connections with one weight / delay and two scaling factors for synaptic currents
-uint16_t CARLsim::connect(int grpId1, int grpId2, const std::string& connType, float wt, float connProb, uint8_t delay,
+short int CARLsim::connect(int grpId1, int grpId2, const std::string& connType, float wt, float connProb, uint8_t delay,
 							float mulSynFast, float mulSynSlow) {
 	assert(!hasRunNetwork_); // TODO: make nice
-	assert(++numConnections_ <= MAX_numConnections);
+	assert(++numConnections_ <= MAX_nConnections);
 
 	return snn_->connect(grpId1,grpId2,connType,wt,wt,connProb,delay,delay,mulSynFast,mulSynSlow,SYN_FIXED);
 }
 
 // shortcut to create SYN_FIXED/SYN_PLASTIC connections with initWt/maxWt, minDelay/maxDelay, but to omit
 // scaling factors for synaptic conductances (default is 1.0 for both)
-uint16_t CARLsim::connect(int grpId1, int grpId2, const std::string& connType, float initWt, float maxWt,
+short int CARLsim::connect(int grpId1, int grpId2, const std::string& connType, float initWt, float maxWt,
 							float connProb,	uint8_t minDelay, uint8_t maxDelay, bool synWtType)
 {
 	std::string funcName = "connect(\""+getGroupName(grpId1,0)+"\",\""+getGroupName(grpId2,0)+"\")";
@@ -188,7 +188,7 @@ uint16_t CARLsim::connect(int grpId1, int grpId2, const std::string& connType, f
 }
 
 // custom connectivity profile
-uint16_t CARLsim::connect(int grpId1, int grpId2, ConnectionGenerator* conn, bool synWtType, int maxM, int maxPreM) {
+short int CARLsim::connect(int grpId1, int grpId2, ConnectionGenerator* conn, bool synWtType, int maxM, int maxPreM) {
 	std::string funcName = "connect(\""+getGroupName(grpId1,0)+"\",\""+getGroupName(grpId2,0)+"\")";
 	UserErrors::userAssert(!hasRunNetwork_, UserErrors::NETWORK_ALREADY_RUN, funcName); // can't change setup after run
 
@@ -197,11 +197,11 @@ uint16_t CARLsim::connect(int grpId1, int grpId2, ConnectionGenerator* conn, boo
 }
 
 // custom connectivity profile
-uint16_t CARLsim::connect(int grpId1, int grpId2, ConnectionGenerator* conn, float mulSynFast, float mulSynSlow,
+short int CARLsim::connect(int grpId1, int grpId2, ConnectionGenerator* conn, float mulSynFast, float mulSynSlow,
 						bool synWtType, int maxM, int maxPreM) {
 	std::string funcName = "connect(\""+getGroupName(grpId1,0)+"\",\""+getGroupName(grpId2,0)+"\")";
 	UserErrors::userAssert(!hasRunNetwork_, UserErrors::NETWORK_ALREADY_RUN, funcName); // can't change setup after run
-	assert(++numConnections_ <= MAX_numConnections);
+	assert(++numConnections_ <= MAX_nConnections);
 
 	return snn_->connect(grpId1, grpId2, conn, mulSynFast, mulSynSlow, synWtType, maxM, maxPreM);
 }
@@ -449,7 +449,7 @@ void CARLsim::readNetwork(FILE* fid) {
 	snn_->readNetwork(fid);
 }
 
-void CARLsim::reassignFixedWeights(uint16_t connectId, float weightMatrix[], int matrixSize, int configId) {
+void CARLsim::reassignFixedWeights(short int connectId, float weightMatrix[], int matrixSize, int configId) {
 	snn_->reassignFixedWeights(connectId,weightMatrix,matrixSize,configId);
 }
 
@@ -548,13 +548,13 @@ void CARLsim::writePopWeights(std::string fname, int gIDpre, int gIDpost, int co
 // +++++++++ PUBLIC METHODS: SETTERS / GETTERS ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
 // get connection info struct
-grpConnectInfo_t* CARLsim::getConnectInfo(uint16_t connectId, int configId) {
+grpConnectInfo_t* CARLsim::getConnectInfo(short int connectId, int configId) {
 	std::stringstream funcName;	funcName << "getConnectInfo(" << connectId << "," << configId << ")";
 	UserErrors::userAssert(configId!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName.str(), "configId");			// configId can't be ALL
 	return snn_->getConnectInfo(connectId,configId);
 }
 
-int CARLsim::getConnectionId(uint16_t connectId, int configId) {
+int CARLsim::getConnectionId(short int connectId, int configId) {
 	return snn_->getConnectionId(connectId,configId);
 }
 
@@ -579,7 +579,7 @@ std::string CARLsim::getGroupName(int grpId, int configId) {
 	return snn_->getGroupName(grpId, configId);
 }
 
-int CARLsim::getNumConnections(uint16_t connectionId) {
+int CARLsim::getNumConnections(short int connectionId) {
 	return snn_->getNumConnections(connectionId);
 }
 

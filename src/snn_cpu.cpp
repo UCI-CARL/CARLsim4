@@ -274,7 +274,7 @@ CpuSNN::~CpuSNN() {
 /// ************************************************************************************************************ ///
 
 // make from each neuron in grpId1 to 'numPostSynapses' neurons in grpId2
-uint16_t CpuSNN::connect(int grpId1, int grpId2, const std::string& _type, float initWt, float maxWt, float prob,
+short int CpuSNN::connect(int grpId1, int grpId2, const std::string& _type, float initWt, float maxWt, float prob,
 						uint8_t minDelay, uint8_t maxDelay, float _mulSynFast, float _mulSynSlow, bool synWtType) {
 						//const std::string& wtType
 	int retId=-1;
@@ -337,16 +337,16 @@ uint16_t CpuSNN::connect(int grpId1, int grpId2, const std::string& _type, float
 			exitSimulation(-1);
 		}
 
-		if (newInfo->numPostSynapses > MAX_numPostSynapses) {
+		if (newInfo->numPostSynapses > MAX_nPostSynapses) {
 			CARLSIM_ERROR("Connection exceeded the maximum number of output synapses (%d), has %d.",
-						MAX_numPostSynapses,newInfo->numPostSynapses);
-			assert(newInfo->numPostSynapses <= MAX_numPostSynapses);
+						MAX_nPostSynapses,newInfo->numPostSynapses);
+			assert(newInfo->numPostSynapses <= MAX_nPostSynapses);
 		}
 
-		if (newInfo->numPreSynapses > MAX_numPreSynapses) {
+		if (newInfo->numPreSynapses > MAX_nPreSynapses) {
 			CARLSIM_ERROR("Connection exceeded the maximum number of input synapses (%d), has %d.",
-						MAX_numPreSynapses,newInfo->numPreSynapses);
-			assert(newInfo->numPreSynapses <= MAX_numPreSynapses);
+						MAX_nPreSynapses,newInfo->numPreSynapses);
+			assert(newInfo->numPreSynapses <= MAX_nPreSynapses);
 		}
 
 		// update the pre and post size...
@@ -374,7 +374,7 @@ uint16_t CpuSNN::connect(int grpId1, int grpId2, const std::string& _type, float
 }
 
 // make custom connections from grpId1 to grpId2
-uint16_t CpuSNN::connect(int grpId1, int grpId2, ConnectionGenerator* conn, float _mulSynFast, float _mulSynSlow, 
+short int CpuSNN::connect(int grpId1, int grpId2, ConnectionGenerator* conn, float _mulSynFast, float _mulSynSlow, 
 						bool synWtType, int maxM, int maxPreM) {
 	int retId=-1;
 
@@ -388,18 +388,18 @@ uint16_t CpuSNN::connect(int grpId1, int grpId2, ConnectionGenerator* conn, floa
 		if (maxPreM == 0)
 			maxPreM = grp_Info[grpId1].SizeN;
 
-		if (maxM > MAX_numPostSynapses) {
+		if (maxM > MAX_nPostSynapses) {
 			CARLSIM_ERROR("Connection from %s (%d) to %s (%d) exceeded the maximum number of output synapses (%d), "
 								"has %d.", grp_Info2[grpId1].Name.c_str(),grpId1,grp_Info2[grpId2].Name.c_str(),
-								grpId2,	MAX_numPostSynapses,maxM);
-			assert(maxM <= MAX_numPostSynapses);
+								grpId2,	MAX_nPostSynapses,maxM);
+			assert(maxM <= MAX_nPostSynapses);
 		}
 
-		if (maxPreM > MAX_numPreSynapses) {
+		if (maxPreM > MAX_nPreSynapses) {
 			CARLSIM_ERROR("Connection from %s (%d) to %s (%d) exceeded the maximum number of input synapses (%d), "
 								"has %d.\n", grp_Info2[grpId1].Name.c_str(), grpId1,grp_Info2[grpId2].Name.c_str(),
-								grpId2, MAX_numPreSynapses,maxPreM);
-			assert(maxPreM <= MAX_numPreSynapses);
+								grpId2, MAX_nPreSynapses,maxPreM);
+			assert(maxPreM <= MAX_nPreSynapses);
 		}
 
 		grpConnectInfo_t* newInfo = (grpConnectInfo_t*) calloc(1, sizeof(grpConnectInfo_t));
@@ -805,7 +805,7 @@ void CpuSNN::readNetwork(FILE* fid) {
 // reassigns weights from the input weightMatrix to the weights between two
 // specified neuron groups.
 // TODO: figure out scope; is this a user function?
-void CpuSNN::reassignFixedWeights(uint16_t connectId, float weightMatrix[], int sizeMatrix, int configId) {
+void CpuSNN::reassignFixedWeights(short int connectId, float weightMatrix[], int sizeMatrix, int configId) {
 	// handle the config == ALL recursive call contigency.
 	if (configId == ALL) {
 		for(int c=0; c < nConfig_; c++)
@@ -1070,7 +1070,7 @@ void CpuSNN::writeNetwork(FILE* fid) {
 				fwrite(&(maxSynWt[pos_i]),sizeof(float),1,fid);
 				fwrite(&delay,sizeof(uint8_t),1,fid);
 				fwrite(&plastic,sizeof(uint8_t),1,fid);
-				fwrite(&(cumConnIdPre[pos_i]),sizeof(uint16_t),1,fid);
+				fwrite(&(cumConnIdPre[pos_i]),sizeof(short int),1,fid);
 			}
 		}
 	}
@@ -1171,7 +1171,7 @@ void CpuSNN::setLogCycle(unsigned int _cnt, int mode, FILE *fp) {
 /// **************************************************************************************************************** ///
 
 //! used for parameter tuning functionality
-grpConnectInfo_t* CpuSNN::getConnectInfo(uint16_t connectId, int configId) {
+grpConnectInfo_t* CpuSNN::getConnectInfo(short int connectId, int configId) {
 	grpConnectInfo_t* nextConn = connectBegin;
 	connectId = getConnectionId (connectId, configId);
 	CHECK_CONNECTION_ID(connectId, numConnections);
@@ -1190,7 +1190,7 @@ grpConnectInfo_t* CpuSNN::getConnectInfo(uint16_t connectId, int configId) {
 	return NULL;
 }
 
-int  CpuSNN::getConnectionId(uint16_t connId, int configId) {
+int  CpuSNN::getConnectionId(short int connId, int configId) {
 	assert(configId>=0); assert(configId<nConfig_);
 
 	connId = connId+configId;
@@ -1263,7 +1263,7 @@ std::string CpuSNN::getGroupName(int grpId, int configId) {
 }
 
 // returns the number of synaptic connections associated with this connection.
-int CpuSNN::getNumConnections(uint16_t connectionId) {
+int CpuSNN::getNumConnections(short int connectionId) {
   grpConnectInfo_t* connInfo;	      
   grpConnectInfo_t* connIterator = connectBegin;
   while(connIterator){
@@ -1519,7 +1519,7 @@ void CpuSNN::buildNetworkInit(unsigned int nNeur, unsigned int nPostSyn, unsigne
 
 	mulSynFast 		= new float[MAX_nConnections];
 	mulSynSlow 		= new float[MAX_nConnections];
-	cumConnIdPre	= new uint16_t[preSynCnt+100];
+	cumConnIdPre	= new short int[preSynCnt+100];
 
 	//! Temporary array to hold pre-syn connections. will be deleted later if necessary
 	preSynapticIds	= new post_info_t[preSynCnt+100];
@@ -1647,21 +1647,21 @@ void CpuSNN::buildNetwork() {
 						grp_Info[g].numPreSynapses);
 	}
 
-	if (numPostSynapses > MAX_numPostSynapses) {
+	if (numPostSynapses > MAX_nPostSynapses) {
 		for (int g=0;g<numGrp;g++) {
-			if (grp_Info[g].numPostSynapses>MAX_numPostSynapses)
+			if (grp_Info[g].numPostSynapses>MAX_nPostSynapses)
 				CARLSIM_ERROR("Grp: %s(%d) has too many output synapses (%d), max %d.",grp_Info2[g].Name.c_str(),g,
-							grp_Info[g].numPostSynapses,MAX_numPostSynapses);
+							grp_Info[g].numPostSynapses,MAX_nPostSynapses);
 		}
-		assert(numPostSynapses <= MAX_numPostSynapses);
+		assert(numPostSynapses <= MAX_nPostSynapses);
 	}
-	if (numPreSynapses > MAX_numPreSynapses) {
+	if (numPreSynapses > MAX_nPreSynapses) {
 		for (int g=0;g<numGrp;g++) {
-			if (grp_Info[g].numPreSynapses>MAX_numPreSynapses)
+			if (grp_Info[g].numPreSynapses>MAX_nPreSynapses)
 				CARLSIM_ERROR("Grp: %s(%d) has too many input synapses (%d), max %d.",grp_Info2[g].Name.c_str(),g,
- 							grp_Info[g].numPreSynapses,MAX_numPreSynapses);
+ 							grp_Info[g].numPreSynapses,MAX_nPreSynapses);
 		}
-		assert(numPreSynapses <= MAX_numPreSynapses);
+		assert(numPreSynapses <= MAX_nPreSynapses);
 	}
 	assert(curD <= MAX_SynapticDelay); assert(curN <= 1000000);
 
@@ -1831,7 +1831,7 @@ void CpuSNN::compactConnections() {
 	post_info_t* tmp_preSynapticIds	= new post_info_t[tmp_preSynCnt+100];
 	float* tmp_wt	    	  		= new float[tmp_preSynCnt+100];
 	float* tmp_maxSynWt   	  		= new float[tmp_preSynCnt+100];
-	uint16_t *tmp_cumConnIdPre 		= new uint16_t[tmp_preSynCnt+100];
+	short int *tmp_cumConnIdPre 		= new short int[tmp_preSynCnt+100];
 	float *tmp_mulSynFast 			= new float[numConnections];
 	float *tmp_mulSynSlow  			= new float[numConnections];
 
@@ -1879,8 +1879,8 @@ void CpuSNN::compactConnections() {
 
 	delete[] cumConnIdPre;
 	cumConnIdPre = tmp_cumConnIdPre;
-	cpuSnnSz.synapticInfoSize -= (sizeof(uint16_t)*preSynCnt);
-	cpuSnnSz.synapticInfoSize += (sizeof(uint16_t)*(tmp_preSynCnt+100));
+	cpuSnnSz.synapticInfoSize -= (sizeof(short int)*preSynCnt);
+	cpuSnnSz.synapticInfoSize += (sizeof(short int)*(tmp_preSynCnt+100));
 
 	// compact connection-centric information
 	for (int i=0; i<numConnections; i++) {
@@ -2310,7 +2310,7 @@ void CpuSNN::generatePostSpike(unsigned int pre_i, unsigned int idx_d, unsigned 
 	// mulSynFast/Slow per synapse or storing a pointer to grpConnectInfo_s)
 	// mulSynFast will be applied to fast currents (either AMPA or GABAa)
 	// mulSynSlow will be applied to slow currents (either NMDA or GABAb)
-	uint16_t mulIndex = cumConnIdPre[pos_i];
+	short int mulIndex = cumConnIdPre[pos_i];
 	assert(mulIndex>=0 && mulIndex<numConnections);
 
 	// update currents
@@ -2685,7 +2685,7 @@ int CpuSNN::readNetwork_internal()
 			float weight, maxWeight;
 			uint8_t delay;
 			uint8_t plastic;
-			uint16_t connId;
+			short int connId;
 
 			if (!fread(&nIDpre,sizeof(int),1,readNetworkFID)) return -11;
 			if (nIDpre != i) return -6;
@@ -2710,7 +2710,7 @@ int CpuSNN::readNetwork_internal()
 			if (!fread(&delay,sizeof(uint8_t),1,readNetworkFID)) return -11;
 			if (delay > MAX_SynapticDelay) return -9;
 			if (!fread(&plastic,sizeof(uint8_t),1,readNetworkFID)) return -11;
-			if (!fread(&connId,sizeof(uint16_t),1,readNetworkFID)) return -11;
+			if (!fread(&connId,sizeof(short int),1,readNetworkFID)) return -11;
 
 			#if READNETWORK_ADD_SYNAPSES_FROM_FILE
 				if ((plastic && onlyPlastic) || (!plastic && !onlyPlastic)) {
@@ -3111,7 +3111,7 @@ void CpuSNN::resetTimingTable() {
 
 //! set one specific connection from neuron id 'src' to neuron id 'dest'
 inline void CpuSNN::setConnection(int srcGrp,  int destGrp,  unsigned int src, unsigned int dest, float synWt,
-									float maxWt, uint8_t dVal, int connProp, uint16_t connId) {
+									float maxWt, uint8_t dVal, int connProp, short int connId) {
 	assert(dest<=CONN_SYN_NEURON_MASK);			// total number of neurons is less than 1 million within a GPU
 	assert((dVal >=1) && (dVal <= D));
 
