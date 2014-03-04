@@ -205,7 +205,7 @@ int main()
 	s.setLogCycle(1, 1, stdout);
 
 
-	s.setConductances(ALL, true,5,150,6,150);
+	s.setConductances(ALL,true);
 	
 	s.setSTDP(ALL, false);
 

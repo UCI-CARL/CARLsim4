@@ -694,15 +694,13 @@ void CARLsim::checkConductances() {
 	for (std::vector<int>::const_iterator it = grpIds_.begin(); it!=grpIds_.end(); ++it) {
 		for (int c=0; c<nConfig_; c++) {
 			group_info_t grpInfo = getGroupInfo(*it,c);
-			if (grpInfo.isSpikeGenerator)	// NOTE: skipping spike generator might not be required, but it's cleaner
-				continue;
-			allSame = (it==grpIds_.begin() && c==0) ? grpInfo.WithConductances : allSame==grpInfo.WithConductances;
+			allSame = ((it-1)==grpIds_.begin() && c==0) ? grpInfo.WithConductances : allSame==grpInfo.WithConductances;
 		}
 	}
 
 	std::string errorMsg = "If one group enables conductances, then all groups (except for generators) must enable "
 							"conductances. All conductances";
-	UserErrors::userAssert(allSame, UserErrors::MUST_HAVE_SAME_SIGN, "", errorMsg);
+	UserErrors::userAssert(allSame, UserErrors::MUST_HAVE_SAME_SIGN,"setConductances", errorMsg);
 }
 
 // check whether grpId exists in grpIds_

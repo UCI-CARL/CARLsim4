@@ -13,32 +13,33 @@ TEST(CORE, CpuSNNinit) {
 
 	// Problem: The first two modes will print to stdout, and close it in the end; so all subsequent calls to sdout
 	// via GTEST fail
-	loggerMode_t modes[4] = {USER, DEVELOPER, SILENT, CUSTOM};
+	std::string name = "SNN";
+	simMode_t simModes[2] = {CPU_MODE, GPU_MODE};
+	loggerMode_t loggerModes[4] = {USER, DEVELOPER, SILENT, CUSTOM};
 	for (int i=0; i<4; i++) {
-		for (int j=0; j<=1; j++) {
-			std::string name = "SNN";
+		for (int j=0; j<2; j++) {
 			int nConfig = rand() % 100 + 1;
 			int randSeed = rand() % 1000;
-			sim = new CpuSNN(name,j,modes[i],0,nConfig,randSeed);
+			sim = new CpuSNN(name,simModes[j],loggerModes[i],0,nConfig,randSeed);
 
-			EXPECT_EQ(sim->networkName,name);
+			EXPECT_EQ(sim->networkName_,name);
 			EXPECT_EQ(sim->getNumConfigurations(),nConfig);
-			EXPECT_EQ(sim->randSeed,randSeed);
-			EXPECT_EQ(sim->getSimMode(),j);
-			EXPECT_EQ(sim->getLoggerMode(),modes[i]);
+			EXPECT_EQ(sim->randSeed_,randSeed);
+			EXPECT_EQ(sim->getSimMode(),simModes[j]);
+			EXPECT_EQ(sim->getLoggerMode(),loggerModes[i]);
 
 			delete sim;
 		}
 	}
 
-	sim = new CpuSNN("SNN",0,SILENT,0,1,0);
-	EXPECT_EQ(sim->randSeed,123);
+	sim = new CpuSNN(name,CPU_MODE,SILENT,0,1,0);
+	EXPECT_EQ(sim->randSeed_,123);
 	delete sim;
 
 	// time(NULL)
-	sim = new CpuSNN("SNN",0,SILENT,0,1,-1);
-	EXPECT_NE(sim->randSeed,-1);
-	EXPECT_NE(sim->randSeed,0);
+	sim = new CpuSNN(name,CPU_MODE,SILENT,0,1,-1);
+	EXPECT_NE(sim->randSeed_,-1);
+	EXPECT_NE(sim->randSeed_,0);
 	delete sim;
 }
 
@@ -66,7 +67,8 @@ TEST(CORE, CpuSNNinit) {
 //! Death tests for createGroup (test all possible silly values)
 TEST(CORE, createGroupSilly) {
 	CpuSNN* sim;
-	sim = new CpuSNN("SNN",1,42,CPU_MODE,SILENT);
+	std::string name="SNN";
+	sim = new CpuSNN(name,CPU_MODE,SILENT,0,1,42);
 
 	// set silly values to all possible input arguments
 	// e.g., negative values for things>=0, values>numGrps or values>numConfig, etc.
@@ -82,7 +84,8 @@ TEST(CORE, createGroupSilly) {
 //! Death tests for createSpikeGenerator (test all possible silly values)
 TEST(CORE, createSpikeGeneratorGroupSilly) {
 	CpuSNN* sim;
-	sim = new CpuSNN("SNN",1,42,CPU_MODE,SILENT);
+	std::string name="SNN";
+	sim = new CpuSNN(name,CPU_MODE,SILENT,0,1,42);
 
 	// set silly values to all possible input arguments
 	// e.g., negative values for things>=0, values>numGrps or values>numConfig, etc.
@@ -99,7 +102,8 @@ TEST(CORE, createSpikeGeneratorGroupSilly) {
 //! Death tests for setNeuronParameters (test all possible silly values)
 TEST(CORE, setNeuronParametersSilly) {
 	CpuSNN* sim;
-	sim = new CpuSNN("SNN",1,42,CPU_MODE,SILENT);
+	std::string name="SNN";
+	sim = new CpuSNN(name,CPU_MODE,SILENT,0,1,42);
 	int g0=sim->createGroup("excit", 10, EXCITATORY_NEURON, ALL);
 
 	// set silly values to all possible input arguments
@@ -131,6 +135,7 @@ TEST(CORE, connect) {
 	CpuSNN* sim;
 	grpConnectInfo_t* connInfo;
 	std::string typeStr;
+	std::string name="SNN";
 
 	int conn[4] 		= {-1};
 	conType_t type[4] 	= {CONN_RANDOM,CONN_ONE_TO_ONE,CONN_FULL,CONN_FULL_NO_DIRECT};
@@ -146,7 +151,7 @@ TEST(CORE, connect) {
 	for (int mode=0; mode<=1; mode++) {
 		for (int nConfig=1; nConfig<=maxConfig; nConfig+=nConfigStep) {
 			for (int i=0; i<4; i++) {
-				sim = new CpuSNN("SNN",nConfig,42,mode?GPU_MODE:CPU_MODE,SILENT);
+				sim = new CpuSNN(name,mode?GPU_MODE:CPU_MODE,SILENT,0,nConfig,42);
 
 				int g0=sim->createSpikeGeneratorGroup("spike", 10, EXCITATORY_NEURON, ALL);
 				int g1=sim->createGroup("excit0", 10, EXCITATORY_NEURON, ALL);
@@ -199,6 +204,7 @@ TEST(CORE, connect) {
 TEST(CORE, setSTDPTrue) {
 	// create network by varying nConfig from 1...maxConfig, with
 	// step size nConfigStep
+	std::string name="SNN";
 	int maxConfig = rand()%10 + 10;
 	int nConfigStep = rand()%3 + 2;
 	float alphaLTP = 5.0f;		// the exact values don't matter
@@ -209,7 +215,7 @@ TEST(CORE, setSTDPTrue) {
 
 	for (int mode=0; mode<=1; mode++) {
 		for (int nConfig=1; nConfig<=maxConfig; nConfig+=nConfigStep) {
-			sim = new CARLsim("SNN",mode?GPU_MODE:CPU_MODE,SILENT,0,nConfig,42);
+			sim = new CARLsim(name,mode?GPU_MODE:CPU_MODE,SILENT,0,nConfig,42);
 
 			int g1=sim->createGroup("excit", 10, EXCITATORY_NEURON);
 			sim->setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f);
@@ -306,7 +312,8 @@ TEST(CORE, setSTPTrue) {
 //! Death tests for setConductances (test all possible silly values)
 TEST(COBA, setCondSilly) {
 	CpuSNN* sim;
-	sim = new CpuSNN("SNN",CPU_MODE,SILENT,0,1,42);
+	std::string name="SNN";
+	sim = new CpuSNN(name,CPU_MODE,SILENT,0,1,42);
 	int g0=sim->createGroup("excit", 10, EXCITATORY_NEURON, ALL);
 
 	// set silly values to all possible input arguments
@@ -331,6 +338,7 @@ TEST(COBA, setCondSilly) {
 TEST(COBA, setCondTrue) {
 	// create network by varying nConfig from 1...maxConfig, with
 	// step size nConfigStep
+	std::string name="SNN";
 	int maxConfig = rand()%10 + 10;
 	int nConfigStep = rand()%3 + 2;
 	float tAMPA = 5.0f;		// the exact values don't matter
@@ -343,7 +351,7 @@ TEST(COBA, setCondTrue) {
 
 	for (int mode=0; mode<=1; mode++) {
 		for (int nConfig=1; nConfig<=maxConfig; nConfig+=nConfigStep) {
-			sim = new CpuSNN("SNN",mode?GPU_MODE:CPU_MODE,SILENT,0,nConfig,42);
+			sim = new CpuSNN(name,mode?GPU_MODE:CPU_MODE,SILENT,0,nConfig,42);
 
 			grps[0]=sim->createSpikeGeneratorGroup("spike", 10, EXCITATORY_NEURON, ALL);
 			grps[1]=sim->createGroup("excit", 10, EXCITATORY_NEURON, ALL);
@@ -420,6 +428,7 @@ TEST(COBA, setCondTrueDefault) {
 TEST(COBA, setCondFalse) {
 	// create network by varying nConfig from 1...maxConfig, with
 	// step size nConfigStep
+	std::string name="SNN";
 	int maxConfig = rand()%10 + 10;
 	int nConfigStep = rand()%3 + 2;
 	float tAMPA = 5.0f;		// the exact values don't matter
@@ -432,7 +441,7 @@ TEST(COBA, setCondFalse) {
 
 	for (int mode=0; mode<=1; mode++) {
 		for (int nConfig=1; nConfig<=maxConfig; nConfig+=nConfigStep) {
-			sim = new CpuSNN("SNN",mode?GPU_MODE:CPU_MODE,SILENT,0,nConfig,42);
+			sim = new CpuSNN(name,mode?GPU_MODE:CPU_MODE,SILENT,0,nConfig,42);
 
 			grps[0]=sim->createSpikeGeneratorGroup("spike", 10, EXCITATORY_NEURON, ALL);
 			grps[1]=sim->createGroup("excit", 10, EXCITATORY_NEURON, ALL);
@@ -458,6 +467,7 @@ TEST(COBA, setCondFalse) {
 TEST(COBA, disableSynReceptors) {
 	// create network by varying nConfig from 1...maxConfig, with
 	// step size nConfigStep
+	std::string name="SNN";
 	int maxConfig = 1; //rand()%10 + 10;
 	int nConfigStep = rand()%3 + 2;
 	float tAMPA = 5.0f;		// the exact values don't matter
@@ -480,7 +490,7 @@ TEST(COBA, disableSynReceptors) {
 
 	for (int mode=0; mode<=1; mode++) {
 		for (int nConfig=1; nConfig<=maxConfig; nConfig+=nConfigStep) {
-			sim = new CpuSNN("SNN",mode?GPU_MODE:CPU_MODE,SILENT,0,nConfig,42);
+			sim = new CpuSNN(name,mode?GPU_MODE:CPU_MODE,SILENT,0,nConfig,42);
 
 			int g0=sim->createSpikeGeneratorGroup("spike", nInput, EXCITATORY_NEURON, ALL);
 			int g1=sim->createSpikeGeneratorGroup("spike", nInput, INHIBITORY_NEURON, ALL);
@@ -510,7 +520,7 @@ TEST(COBA, disableSynReceptors) {
 			sim->setSpikeRate(g0,&poissIn1,1,ALL);
 			sim->setSpikeRate(g1,&poissIn2,1,ALL);
 
-			sim->runNetwork(1,0,mode?GPU_MODE:CPU_MODE,0,false,false);
+			sim->runNetwork(1,0,false,false);
 
 			if (mode) {
 				// GPU_MODE: copy from device to host

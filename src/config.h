@@ -62,6 +62,12 @@
 #endif
 
 
+// TODO: as Kris put it, this should really be called something like
+// some_random_macros_and_hardware_limitation_dependent_param_checks.h ... for example, the MAX_... defines
+// should really be private members of CpuSNN. These ranges are limited by the data structures that implement
+// the corresponding functionality. For example, you can't just set MAX_nConnections > 32768, because connIds
+// are stored as short int. 
+
 #define MAX_nPostSynapses 10000
 #define MAX_nPreSynapses 20000
 #define MAX_SynapticDelay 20
@@ -98,7 +104,7 @@
 
 // set to 1 if doing regression tests
 // will make private members public and disable output/logging
-#define REGRESSION_TESTING 0
+#define REGRESSION_TESTING 1
 
 
 // This option effects readNetwork()'s behavior.  Setting this option to 1 will cause 
