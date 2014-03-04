@@ -110,8 +110,7 @@ void CpuSNN::printMemoryInfo(FILE* const fp) {
 
 // This method allows us to print all information about the neuron.
 // If the enablePrint is false for a specific group, we do not print its state.
-void CpuSNN::printState(const char *str, FILE* const fp) {
-	fprintf(fp, "%s", str);
+void CpuSNN::printState(FILE* const fp) {
 	for(int g=0; g < numGrp; g++) {
 		if(grp_Info2[g].enablePrint) {
 			printNeuronState(g, fp);
@@ -121,9 +120,8 @@ void CpuSNN::printState(const char *str, FILE* const fp) {
 
 void CpuSNN::printTuningLog(FILE * const fp) {
 	if (fp) {
-		fprintf(fp, "Generating Tuning log %d\n", cntTuning);
+		fprintf(fp, "Generating Tuning log\n");
 		printParameters(fp);
-		cntTuning++;
 	}
 }
 
@@ -493,7 +491,8 @@ void CpuSNN::printWeight(int grpId, const char *str) {
 // show the status of the simulator...
 // when onlyCnt is set, we print the actual count instead of frequency of firing
 void CpuSNN::showStatus() {
-	printState("showStatus\n",fpOut_);
+  fprintf(fpOut_, "vvv (time=%lld) =========\n\n", (unsigned long long) simTimeSec);
+	printState(fpOut_);
 
 	if(simMode_ == GPU_MODE) {
 		showStatus_GPU();
@@ -501,5 +500,5 @@ void CpuSNN::showStatus() {
 	}
 
 	printWeight(-1);
-	fprintf(fpOut_, "(time=%lld) =========\n\n", (unsigned long long) simTimeSec);
+
 }

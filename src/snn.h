@@ -658,15 +658,23 @@ public:
 
 	// +++++ PUBLIC METHODS: LOGGING / PLOTTING +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
-	void setLogCycle(unsigned int _cnt, int mode, FILE *fp);
+	//! how often network status should be printed (seconds)
+	void setLogCycle(int showStatusCycle);
 
 	/*!
-	 * \brief sets file pointers of where to direct output, errors, and debug info
-	 * \param[in] fpOut 	All simulation output (status information) will be written to fpOut (Default: stdout).
-	 * \param[in] fpErr 	All errors will be written to fpErr (Default: stderr).
-	 * \param[in] fpDeb 	All debug information will be written to fpDeb (Default: dev/null)
+	 * \brief Sets the file pointer of the debug log file
+	 * \param[in] fpLog file pointer to new log file
 	 */
-	void setLogsFp(FILE* fpOut, FILE* fpErr, FILE* fpDeb);
+	void setLogDebugFp(FILE* fpLog);
+
+	/*!
+	 * \brief Sets the file pointers for all log files
+	 * \param[in] fpOut file pointer for status info
+	 * \param[in] fpErr file pointer for errors/warnings
+	 * \param[in] fpDeb file pointer for debug info
+	 * \param[in] fpLog file pointer for debug log file that contains all the above info
+	 */
+	void setLogsFp(FILE* fpOut, FILE* fpErr, FILE* fpDeb, FILE* fpLog);
 
 
 	// +++++ PUBLIC METHODS: GETTERS / SETTERS ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
@@ -729,25 +737,8 @@ public:
 	 */
 	void setCopyFiringStateFromGPU(bool _enableGPUSpikeCntPtr);
 
-	/*!
-	 * \brief Sets the file pointer of the debug log file
-	 * \param[in] fpLog file pointer to new log file
-	 */
-	void setLogDebugFp(FILE* fpLog);
-
-	/*!
-	 * \brief Sets the file pointers for all log files
-	 * \param[in] fpOut file pointer for status info
-	 * \param[in] fpErr file pointer for errors/warnings
-	 * \param[in] fpDeb file pointer for debug info
-	 * \param[in] fpLog file pointer for debug log file that contains all the above info
-	 */
-	void setLogsFp(FILE* fpOut, FILE* fpErr, FILE* fpDeb, FILE* fpLog);
-
 	void setGroupInfo(int groupId, group_info_t info, int configId=ALL);
 	void setPrintState(int grpId, bool _status);
-	void setSimLogs(bool enable, std::string logDirName = "");
-	void setTuningLog(std::string fname);
 
 
 /// **************************************************************************************************************** ///
@@ -827,7 +818,7 @@ private:
 	void printPreConnection(int grpId, FILE* fp);
 	int  printPreConnection2(int grpId, FILE* fpg);
 	void printSimSummary(); 	//!< prints a simulation summary at the end of sim
-	void printState(const char *str, FILE* fp);
+	void printState(FILE* fp);
 //	void printState(const char *str = "", const FILE* fp);
 	void printTestVarInfo(FILE* fp, char* testString, bool test1=true, bool test2=true, bool test12=false,
 							int subVal=0, int grouping1=0, int grouping2=0); //!< for GPU debugging
@@ -1057,22 +1048,12 @@ private:
 	float		cumExecutionTime;
 	float           lastExecutionTime;
 
-	bool enableSilentMode_;	//!< flag to inform whether we're in silent mode or not (silent will not print anything)
 	FILE*	fpOut_;			//!< fp of where to write all simulation output (status info) if not in silent mode
 	FILE*	fpErr_;			//!< fp of where to write all errors if not in silent mode
 	FILE*	fpDeb_;			//!< fp of where to write all debug info if not in silent mode
 	FILE*	fpLog_;
-
-	// FIXME
-	//debug file
-	FILE*	fpProgLog;
-	FILE*	fpLog;
-	FILE* 	fpTuningLog;
-	int		cntTuning;
-	FILE 	*fpParam;
-	int		showLog;
-	int		showLogMode;			//!< each debug statement has a mode. If log set to high mode, more logs generated
-	int		showLogCycle;			//!< how often do we need to update the log
+	int showStatusCycle_;	//!< how often to call showStatus (seconds)
+	int showStatusCnt_; //!< internal counter to implement fast version of !(simTimeSec%showStatusCycle_)
 
 
 	//spike monitor code...
@@ -1096,9 +1077,6 @@ private:
 	float*		gNMDA;
 	float*		gGABAa;
 	float*		gGABAb;
-
-	bool 		enableSimLogs;
-	std::string		simLogDirName;
 
 	network_info_t 	net_Info;
 

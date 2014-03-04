@@ -165,7 +165,7 @@ int main()
   }
   
   // set log stats 
-  snn->setLogCycle(1, 1, stdout);
+  snn->setLogCycle(1);
 
   // initialize every callback object in each array
   for(int i=0; i<NUM_CONFIGS; i++){

@@ -420,12 +420,23 @@ int CARLsim::runNetwork(int nSec, int nMsec, bool enablePrint, bool copyState) {
 
 // +++++++++ PUBLIC METHODS: LOGGING / PLOTTING +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
-// sets update cycle for log messages
-void CARLsim::setLogCycle(unsigned int cnt, int mode, FILE *fp) {
-	std::string funcName = "setLogCycle()";
-	UserErrors::userAssert(!hasRunNetwork_, UserErrors::NETWORK_ALREADY_RUN, funcName); // can't change setup after run
+// sets update cycle for showing network status
+void CARLsim::setLogCycle(int showStatusCycle) {
+	snn_->setLogCycle(showStatusCycle);
+}
 
-	snn_->setLogCycle(cnt, mode, fp);
+// set new file pointer for debug log file
+void CARLsim::setLogDebugFp(FILE* fpLog) {
+	UserErrors::userAssert(fpLog!=NULL,UserErrors::CANNOT_BE_NULL,"setLogDebugFp","fpLog");
+
+	snn_->setLogDebugFp(fpLog);
+}
+
+// set new file pointer for all files
+void CARLsim::setLogsFp(FILE* fpOut, FILE* fpErr, FILE* fpDeb, FILE* fpLog) {
+	UserErrors::userAssert(loggerMode_==CUSTOM,UserErrors::MUST_BE_LOGGER_CUSTOM,"setLogsFp","Logger mode");
+
+	snn_->setLogsFp(fpOut,fpErr,fpDeb,fpLog);
 }
 
 
@@ -606,24 +617,7 @@ void CARLsim::setCopyFiringStateFromGPU(bool enableGPUSpikeCntPtr) {
 }
 
 void CARLsim::setGroupInfo(int grpId, group_info_t info, int configId) { snn_->setGroupInfo(grpId,info,configId); }
-
-// set new file pointer for debug log file
-void CARLsim::setLogDebugFp(FILE* fpLog) {
-	UserErrors::userAssert(fpLog!=NULL,UserErrors::CANNOT_BE_NULL,"setLogDebugFp","fpLog");
-
-	snn_->setLogDebugFp(fpLog);
-}
-
-// set new file pointer for all files
-void CARLsim::setLogsFp(FILE* fpOut, FILE* fpErr, FILE* fpDeb, FILE* fpLog) {
-	UserErrors::userAssert(loggerMode_==CUSTOM,UserErrors::MUST_BE_LOGGER_CUSTOM,"setLogsFp","Logger mode");
-
-	snn_->setLogsFp(fpOut,fpErr,fpDeb,fpLog);
-}
-
 void CARLsim::setPrintState(int grpId, bool status) { snn_->setPrintState(grpId,status); }
-void CARLsim::setSimLogs(bool isSet, std::string logDirName) { snn_->setSimLogs(isSet,logDirName); }
-void CARLsim::setTuningLog(std::string fname) { snn_->setTuningLog(fname); }
 
 
 

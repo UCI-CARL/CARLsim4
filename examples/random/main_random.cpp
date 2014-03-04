@@ -73,8 +73,8 @@ int main()
 	float ALPHA_LTP = 0.10f/100, TAU_LTP = 20.0f, ALPHA_LTD = 0.12f/100, TAU_LTD = 20.0f;	
 	sim.setSTDP(g1, true, ALPHA_LTP, TAU_LTP, ALPHA_LTD, TAU_LTD);
 
-	// show logout every 10 secs, enabled with level 1 and output to stdout.
-	sim.setLogCycle(1, 1, stdout);
+	// show network status every 10 secs
+	sim.setLogCycle(2);
 
 	// put spike times into spikes.dat
 	sim.setSpikeMonitor(g1,"results/random/spikes.dat");

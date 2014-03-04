@@ -2182,7 +2182,6 @@ void CpuSNN::spikeGeneratorUpdate_GPU()
 	
 void CpuSNN::findFiring_GPU()
 {
-  DBG(2, fpLog, AT, "gpu_findFiring()");
 
   int blkSize  = 128;
   int gridSize = 64;
@@ -2198,8 +2197,6 @@ void CpuSNN::findFiring_GPU()
   }
 
   spikeGeneratorUpdate_GPU();
-
-  // printTestVarInfo(fpLog, "Testing STP :", true, true, false, 0, 2, 7);
 
   kernel_findFiring <<<gridSize,blkSize >>> (simTimeMs, simTimeSec, simTime);
   CUDA_GET_LAST_ERROR("findFiring kernel failed\n");
@@ -2253,7 +2250,6 @@ void CpuSNN::updateSpikeMonitor_GPU()
 
 void CpuSNN::updateTimingTable_GPU()
 {
-  DBG(2, fpLog, AT, "gpu_updateTimingTable()");
 
   assert(cpu_gpuNetPtrs.allocated);
 
@@ -2269,7 +2265,6 @@ void CpuSNN::updateTimingTable_GPU()
 
 void CpuSNN::doCurrentUpdate_GPU()
 {
-  DBG(2, fpLog, AT, "gpu_doCurrentUpdate()");
 
   assert(cpu_gpuNetPtrs.allocated);
 
@@ -2446,7 +2441,6 @@ void CpuSNN::CpuSNNinit_GPU() {
 
 void CpuSNN::initGPU(int gridSize, int blkSize)
 {
-  DBG(2, fpLog, AT, "gpu_initGPU()");
 
   assert(cpu_gpuNetPtrs.allocated);
 
@@ -2495,7 +2489,6 @@ void CpuSNN::checkInitialization(char* testString)
   }
   CARLSIM_DEBUG("Checking done...");
   CUDA_CHECK_ERRORS( cudaMemcpyToSymbol(timingTableD2, timeTableD2, sizeof(int)*(10), 0, cudaMemcpyHostToDevice));
-  fflush(fpLog);
 }
 
 void CpuSNN::checkInitialization2(char* testString)
@@ -2728,8 +2721,6 @@ void CpuSNN::testSpikeSenderReceiver(FILE* fpLog, int simTime)
 
 void CpuSNN::globalStateUpdate_GPU()
 {
-  DBG(2, fpLog, AT, "gpu_globalStateUpdate()");
-
   int blkSize  = 128;
   int gridSize = 64;
 
@@ -2790,7 +2781,7 @@ void CpuSNN::doGPUSim()
 
   if(0) {
     int cnt=0;
-    testSpikeSenderReceiver(fpLog, simTime);
+    testSpikeSenderReceiver(fpLog_, simTime);
     CUDA_CHECK_ERRORS_MACRO( cudaMemcpyToSymbol(testVarCnt, &cnt, sizeof(int), 0, cudaMemcpyHostToDevice));
     CUDA_CHECK_ERRORS_MACRO( cudaMemcpyToSymbol(testVarCnt2, &cnt, sizeof(int), 0, cudaMemcpyHostToDevice));
   }
@@ -2800,8 +2791,7 @@ void CpuSNN::doGPUSim()
 }
 
 void CpuSNN::updateStateAndFiringTable_GPU()
-{			
-  DBG(2, fpLog, AT, "gpu_updateStateAndFiringTable()");
+{
 
   int blkSize  = 128;
   int gridSize = 64;
@@ -2820,7 +2810,6 @@ void CpuSNN::showStatus_GPU() {
 	spikeCountAll1sec = gpu_secD1fireCnt + gpu_secD2fireCnt;
 	secD1fireCnt  = gpu_secD1fireCnt;
 	printWeight(-1);
-	CARLSIM_INFO("(time=%lld) =========\n", (unsigned long long) simTimeSec);
 }
 
 __global__ void gpu_resetFiringInformation()
@@ -3028,7 +3017,6 @@ void CpuSNN::allocateSNN_GPU() {
 
 	CUDA_CHECK_ERRORS( cudaMemcpyToSymbol(gpuGrpInfo, grp_Info, (net_Info.numGrp)*sizeof(group_info_t), 0, cudaMemcpyHostToDevice));
 
-	if (showLogMode >= 3) {
 		CARLSIM_DEBUG("Transfering group settings to GPU:");
 		for (int i=0;i<numGrp;i++) {
 			CARLSIM_DEBUG("Settings for Group %s:", grp_Info2[i].Name.c_str());
@@ -3064,7 +3052,6 @@ void CpuSNN::allocateSNN_GPU() {
 			}
 			CARLSIM_DEBUG("\tspikeGen: %s",grp_Info[i].spikeGen==NULL?"Is Null":"Is set");
 		}
-	}
 
 	cpu_gpuNetPtrs.allocated = true;
 

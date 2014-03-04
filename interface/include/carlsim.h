@@ -185,7 +185,29 @@ public:
 
 	// FIXME: needs overhaul
 	//! Sets update cycle for log messages
-	void setLogCycle(unsigned int _cnt, int mode=0, FILE *fp=NULL);
+	/*!
+	 * \brief Sets update cycle for printing the network status (seconds)
+	 * Network status includes includes spiking and plasticity information (SpikeMonitor updates, weight changes, etc.).
+	 * Set cycle to -1 to disable.
+	 * \param[in] showStatusCycle how often to print network state (seconds)
+	 */
+	void setLogCycle(int showStatusCycle);
+
+	/*!
+	 * \brief Sets the file pointer of the debug log file
+	 * \param[in] fpLog file pointer to new log file
+	 */
+	void setLogDebugFp(FILE* fpLog);
+
+	/*!
+	 * \brief Sets the file pointers for all log files
+	 * \param[in] fpOut file pointer for status info
+	 * \param[in] fpErr file pointer for errors/warnings
+	 * \param[in] fpDeb file pointer for debug info
+	 * \param[in] fpLog file pointer for debug log file that contains all the above info
+	 */
+	void setLogsFp(FILE* fpOut, FILE* fpErr=NULL, FILE* fpDeb=NULL, FILE* fpLog=NULL);
+
 
 
 	// +++++ PUBLIC METHODS: INTERACTING WITH A SIMULATION ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
@@ -278,24 +300,7 @@ public:
 
 	void setGroupInfo(int grpId, group_info_t info, int configId=ALL);
 
-	/*!
-	 * \brief Sets the file pointer of the debug log file
-	 * \param[in] fpLog file pointer to new log file
-	 */
-	void setLogDebugFp(FILE* fpLog);
-
-	/*!
-	 * \brief Sets the file pointers for all log files
-	 * \param[in] fpOut file pointer for status info
-	 * \param[in] fpErr file pointer for errors/warnings
-	 * \param[in] fpDeb file pointer for debug info
-	 * \param[in] fpLog file pointer for debug log file that contains all the above info
-	 */
-	void setLogsFp(FILE* fpOut, FILE* fpErr=NULL, FILE* fpDeb=NULL, FILE* fpLog=NULL);
-
 	void setPrintState(int grpId, bool status);
-	void setSimLogs(bool isSet, std::string logDirName="");
-	void setTuningLog(std::string fname);
 
 
 	// +++++ PUBLIC METHODS: SET DEFAULTS +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //

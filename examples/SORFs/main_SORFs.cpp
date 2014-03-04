@@ -583,9 +583,8 @@ int main_fitness_function(int argc, char *argv[])
   snn.setSpikeMonitor(inputOffGrp,"inputOffGrp_spikes.dat");
   */
 
-  // show logout every 100 secs, enabled with level 1 and output to stdout.
-  // make it show output every 100 seconds so I don't have to look at it.
-  snn.setLogCycle(100, 1, stdout);
+  // disable showstatus
+  snn.setLogCycle(-1);
 
   snn.setConductances(ALL,true,COND_tAMPA,COND_tNMDA,COND_tGABAa,COND_tGABAb, ALL);
   //snn.setSTDP(excGrp, true, ALPHA_LTP, TAU_LTP, ALPHA_LTD, TAU_LTD);

@@ -563,16 +563,14 @@ int CpuSNN::runNetwork(int _nsec, int _nmsec, bool enablePrint, bool copyState) 
 			doGPUSim();
 
 		if (enablePrint) {
-			printState("",fpOut_);
+			printState(fpOut_);
 		}
 
 		if (updateTime()) {
 			// finished one sec of simulation...
-			if(showLog) {
-				if(showLogCycle==showLog++) {
+			if (showStatusCycle_==showStatusCnt_++) {
 					showStatus();
-					showLog=1;
-				}
+					showStatusCnt_=1;
 			}
 
 			updateSpikeMonitor();
@@ -982,15 +980,47 @@ void CpuSNN::writePopWeights(std::string fname, int grpPreId, int grpPostId, int
 /// PUBLIC METHODS: PLOTTING / LOGGING
 /// ************************************************************************************************************ ///
 
-//! sets the update cycle for log messages
-void CpuSNN::setLogCycle(unsigned int _cnt, int mode, FILE *fp) {
-	//enable or disable logging...
-	showLog = (_cnt == 0)? 0 : 1;
+//! how often to show network status (seconds), set to -1 to disable
+void CpuSNN::setLogCycle(int showStatusCycle) {
+	showStatusCycle_ = showStatusCycle;
+}
 
-	//set the update cycle...
-	showLogCycle = _cnt;
+// set new file pointer for debug log file
+void CpuSNN::setLogDebugFp(FILE* fpLog) {
+	assert(fpLog!=NULL);
 
-	showLogMode = mode;
+	if (fpLog_!=NULL && fpLog!=stdout && fpLog!=stderr)
+		fclose(fpLog_);
+
+	fpLog_ = fpLog;
+}
+
+// set new file pointer for all files
+void CpuSNN::setLogsFp(FILE* fpOut, FILE* fpErr, FILE* fpDeb, FILE* fpLog) {
+	assert(loggerMode_==CUSTOM); // only valid in custom mode
+	assert(fpOut!=NULL); // at least one of the must be non-NULL
+
+	if (fpOut_!=NULL && fpOut_!=stdout && fpOut_!=stderr)
+		fclose(fpOut_);
+	fpOut_ = fpOut;
+
+	if (fpErr!=NULL) {
+		if (fpErr_!=NULL && fpErr_!=stdout && fpErr_!=stderr)
+			fclose(fpErr_);
+		fpErr_ = fpErr;
+	}
+
+	if (fpDeb!=NULL) {
+		if (fpDeb_!=NULL && fpDeb_!=stdout && fpDeb_!=stderr)
+			fclose(fpDeb_);
+		fpDeb_ = fpDeb;
+	}
+
+	if (fpLog!=NULL) {
+		if (fpLog_!=NULL && fpLog_!=stdout && fpLog_!=stderr)
+			fclose(fpLog_);
+		fpLog_ = fpLog;
+	}
 }
 
 
@@ -1235,60 +1265,9 @@ void CpuSNN::setGroupInfo(int grpId, group_info_t info, int configId) {
 	}
 }
 
-// set new file pointer for debug log file
-void CpuSNN::setLogDebugFp(FILE* fpLog) {
-	assert(fpLog!=NULL);
-
-	if (fpLog_!=NULL && fpLog!=stdout && fpLog!=stderr)
-		fclose(fpLog_);
-
-	fpLog_ = fpLog;
-}
-
-// set new file pointer for all files
-void CpuSNN::setLogsFp(FILE* fpOut, FILE* fpErr, FILE* fpDeb, FILE* fpLog) {
-	assert(loggerMode_==CUSTOM); // only valid in custom mode
-	assert(fpOut!=NULL); // at least one of the must be non-NULL
-
-	if (fpOut_!=NULL && fpOut_!=stdout && fpOut_!=stderr)
-		fclose(fpOut_);
-	fpOut_ = fpOut;
-
-	if (fpErr!=NULL) {
-		if (fpErr_!=NULL && fpErr_!=stdout && fpErr_!=stderr)
-			fclose(fpErr_);
-		fpErr_ = fpErr;
-	}
-
-	if (fpDeb!=NULL) {
-		if (fpDeb_!=NULL && fpDeb_!=stdout && fpDeb_!=stderr)
-			fclose(fpDeb_);
-		fpDeb_ = fpDeb;
-	}
-
-	if (fpLog!=NULL) {
-		if (fpLog_!=NULL && fpLog_!=stdout && fpLog_!=stderr)
-			fclose(fpLog_);
-		fpLog_ = fpLog;
-	}
-}
-
 void CpuSNN::setPrintState(int grpId, bool status) {
 	grp_Info2[grpId].enablePrint = status;
 }
-
-void CpuSNN::setSimLogs(bool isSet, std::string logDirName) {
-	enableSimLogs = isSet;
-	if (logDirName != "") {
-		simLogDirName = logDirName;
-	}
-}
-
-void CpuSNN::setTuningLog(std::string fname) {
-	fpTuningLog = fopen(fname.c_str(),"w");
-	assert(fpTuningLog != NULL);
-}
-
 
 
 /// **************************************************************************************************************** ///
@@ -1353,6 +1332,9 @@ void CpuSNN::CpuSNNinit() {
 
 	resetPointers();
 
+	showStatusCycle_ = (loggerMode_==SILENT)? -1 : 1; // default: show network status every second
+	showStatusCnt_ = 1; // counter to implement fast version of !(simTimeSec%showStatusCycle_)
+
 	finishedPoissonGroup  = false;
 	connectBegin = NULL;
 
@@ -1400,13 +1382,7 @@ void CpuSNN::CpuSNNinit() {
 
 
 	memset(&cpuSnnSz, 0, sizeof(cpuSnnSz));
-	enableSimLogs = false;
-	simLogDirName = "logs";
 
-	fpLog=fopen("tmp_debug.log","w");
-	fpProgLog = fopen("/dev/null","w");
-	showLog = 0;		// disable showing log..
-	showLogMode = 0;	// show only basic logs. if set higher more logs generated
 	showGrpFiringInfo = true;
 
 	// initialize propogated spike buffers.....
@@ -1668,19 +1644,12 @@ void CpuSNN::buildNetwork() {
 					numPreSynapses, curD);
 	CARLSIM_INFO("*********************************************************");
 
-	CARLSIM_INFO("*********************************************************");
-	CARLSIM_INFO("numN = %d, numPostSynapses = %d, numPreSynapses = %d, D = %d", curN, numPostSynapses,
-					numPreSynapses, curD);
-	CARLSIM_INFO("*********************************************************");
-
 	assert(curD != 0); 	assert(numPostSynapses != 0);		assert(curN != 0); 		assert(numPreSynapses != 0);
 
-	if (showLogMode >= 1) {
-		for (int g=0;g<numGrp;g++)
-			CARLSIM_INFO("grp_Info[%d, %s].numPostSynapses = %d, grp_Info[%d, %s].numPreSynapses = %d",
-						g,grp_Info2[g].Name.c_str(),grp_Info[g].numPostSynapses,g,grp_Info2[g].Name.c_str(),
-						grp_Info[g].numPreSynapses);
-	}
+	for (int g=0;g<numGrp;g++)
+		CARLSIM_INFO("grp_Info[%d, %s].numPostSynapses = %d, grp_Info[%d, %s].numPreSynapses = %d",
+					g,grp_Info2[g].Name.c_str(),grp_Info[g].numPostSynapses,g,grp_Info2[g].Name.c_str(),
+					grp_Info[g].numPreSynapses);
 
 	if (numPostSynapses > MAX_nPostSynapses) {
 		for (int g=0;g<numGrp;g++) {
@@ -3009,8 +2978,6 @@ void CpuSNN::resetPointers() {
 	spikeGenBits = NULL;
 	firingTableD2 = NULL;
 	firingTableD1 = NULL;
-
-	cntTuning  = 0;
 }
 
 void CpuSNN::resetPoissonNeuron(unsigned int nid, int grpId) {
@@ -3553,9 +3520,6 @@ void CpuSNN::updateStateAndFiringTable()
 	    wt[offset+j] = 0.0;
 	}
       }
-
-//      if ((showLogMode >= 1) && (i==grp_Info[g].StartN))
-//	fprintf(fpDeb_,"\n");
     }
   }
 
