@@ -39,7 +39,8 @@
  */ 
 
 #include <carlsim.h>
-void calcColorME(int nrX, int nrY, unsigned char* stim, float* red_green, float* green_red, float* blue_yellow, float* yellow_blue, float* ME, bool GPUpointers);
+void calcColorME(int nrX, int nrY, unsigned char* stim, float* red_green, float* green_red, float* blue_yellow,
+						float* yellow_blue, float* ME, bool GPUpointers);
 extern MTRand	      getRand;
 
 
@@ -179,7 +180,7 @@ int main()
 	FILE* fid;
 	bool onGPU = true;
 
-	CARLsim s("orientation",1,42,onGPU?GPU_MODE:CPU_MODE,0);
+	CARLsim s("orientation",onGPU?GPU_MODE:CPU_MODE);
 
 
 	int gV1ME = s.createSpikeGeneratorGroup("V1ME", nrX*nrY*28*3, EXCITATORY_NEURON);

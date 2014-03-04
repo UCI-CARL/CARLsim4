@@ -89,176 +89,12 @@ RNG_rand48* gpuRand48 = NULL;
 
 
 // TODO: consider moving unsafe computations out of constructor
-CpuSNN::CpuSNN(std::string& name, int nConfig, int seed, int simMode, loggerMode_t loggerMode)
-					: networkName_(name), nConfig_(nConfig), randSeed_(CpuSNN::setRandSeed(seed)),
-							simMode_(simMode), loggerMode_(loggerMode) // all of these are const
+CpuSNN::CpuSNN(std::string& name, simMode_t simMode, loggerMode_t loggerMode, int ithGPU, int nConfig, int randSeed)
+					: networkName_(name), simMode_(simMode), loggerMode_(loggerMode), ithGPU_(ithGPU),
+					  nConfig_(nConfig), randSeed_(CpuSNN::setRandSeed(randSeed)) // all of these are const
 {
-	// set default file pointers for logging
-
-	assert(nConfig_>0 && nConfig_<=MAX_nConfig);
-	assert(simMode_==CPU_MODE || simMode_==GPU_MODE);
-
-	srand48(randSeed_);
-	getRand.seed(randSeed_*2);
-	getRandClosed.seed(randSeed_*3);
-
-	// set logger mode (defines where to print all status, error, and debug messages)
-	switch (loggerMode_) {
-		case USER:
-			fpOut_ = stdout;
-			fpErr_ = stderr;
-			fpDeb_ = fopen("/dev/null","w");
-			break;
-		case DEVELOPER:
-			fpOut_ = stdout;
-			fpErr_ = stderr;
-			fpDeb_ = stdout;
-			break;
-		case SILENT:
-		case CUSTOM:
-			fpOut_ = fopen("/dev/null","w");
-			fpErr_ = fopen("/dev/null","w");
-			fpDeb_ = fopen("/dev/null","w");
-			break;
-		default:
-			fpOut_ = fopen("/dev/null","w");
-			fpDeb_ = fopen("/dev/null","w");
-			fpErr_ = stdout;
-			CARLSIM_ERROR("Unknown logger mode");
-			exit(1);
-	}
-	fpLog_ = fopen("debug.log","w");
-
-	#if REGRESSION_TESTING
-		fpOut_ = fopen("/dev/null","w");
-		fpErr_ = fopen("/dev/null","w");
-		fpDeb_ = fopen("/dev/null","w");
-	#endif
-
-	CARLSIM_INFO("*******************************************************************************");
-	CARLSIM_INFO("********************      Welcome to CARLsim %d.%d      *************************",
-				MAJOR_VERSION,MINOR_VERSION);
-	CARLSIM_INFO("*******************************************************************************");
-	CARLSIM_INFO("Starting CARLsim simulation \"%s\" in %s mode",networkName_.c_str(),
-				loggerMode_==USER?"user":(loggerMode_==DEVELOPER?"developer":(loggerMode_==SILENT?"silent":"custom")));
-
-	// initialize propogated spike buffers.....
-	pbuf = new PropagatedSpikeBuffer(0, PROPAGATED_BUFFER_SIZE);
-
-	finishedPoissonGroup  = false;
-
-	resetPointers();
-	numN = 0;
-	numPostSynapses = 0;
-	D = 0; // FIXME name this maxAllowedDelay or something more meaningful
-	memset(&cpuSnnSz, 0, sizeof(cpuSnnSz));
-	enableSimLogs = false;
-	simLogDirName = "logs";
-
-	fpLog=fopen("tmp_debug.log","w");
-	fpProgLog = fopen("/dev/null","w");
-	showLog = 0;		// disable showing log..
-	showLogMode = 0;	// show only basic logs. if set higher more logs generated
-	showGrpFiringInfo = true;
-
-	memset(&cpu_gpuNetPtrs,0,sizeof(network_ptr_t));
-	memset(&net_Info,0,sizeof(network_info_t));
-	cpu_gpuNetPtrs.allocated = false;
-
-	memset(&cpuNetPtrs,0, sizeof(network_ptr_t));
-	cpuNetPtrs.allocated = false;
-
-	numSpikeMonitor  = 0;
-
-	for (int i=0; i < MAX_GRP_PER_SNN; i++) {
-		grp_Info[i].Type	 = UNKNOWN_NEURON;
-		grp_Info[i].MaxFiringRate  = UNKNOWN_NEURON_MAX_FIRING_RATE;
-		grp_Info[i].MonitorId		 = -1;
-		grp_Info[i].FiringCount1sec=0;
-		grp_Info[i].numPostSynapses 		= 0;	// default value
-		grp_Info[i].numPreSynapses 	= 0;	// default value
-		grp_Info[i].WithSTP = false;
-		grp_Info[i].WithSTDP = false;
-		grp_Info[i].FixedInputWts = true; // Default is true. This value changed to false
-		// if any incoming  connections are plastic
-		grp_Info[i].WithConductances = false;
-		grp_Info[i].isSpikeGenerator = false;
-		grp_Info[i].RatePtr = NULL;
-
-		grp_Info[i].homeoId = -1;
-		grp_Info[i].avgTimeScale  = 10000.0;
-
-		grp_Info[i].dAMPA=1-(1.0/5);	// FIXME why default values again!? this should be in interface
-		grp_Info[i].dNMDA=1-(1.0/150);
-		grp_Info[i].dGABAa=1-(1.0/6);
-		grp_Info[i].dGABAb=1-(1.0/150);
-
-		grp_Info[i].spikeGen = NULL;
-
-		grp_Info[i].StartN       = -1;
-		grp_Info[i].EndN       	 = -1;
-
-		grp_Info2[i].numPostConn = 0;
-		grp_Info2[i].numPreConn  = 0;
-		grp_Info2[i].enablePrint = false;
-		grp_Info2[i].maxPostConn = 0;
-		grp_Info2[i].maxPreConn  = 0;
-		grp_Info2[i].sumPostConn = 0;
-		grp_Info2[i].sumPreConn  = 0;
-	}
-
-	connectBegin = NULL;
-
-	simTimeMs	 		= 0;	simTimeSec			= 0;	simTime = 0;
-	spikeCountAll1sec	= 0;	secD1fireCntHost 	= 0;	secD2fireCntHost  = 0;
-	spikeCountAll 		= 0;	spikeCountD2Host	= 0;	spikeCountD1Host = 0;
-	nPoissonSpikes 		= 0;
-
-	numGrp   = 0;
-	numConnections = 0;
-	numSpikeGenGrps  = 0;
-	NgenFunc = 0;
-	simulatorDeleted = false;
-	enableGPUSpikeCntPtr = false;
-
-	allocatedN      = 0;
-	allocatedPre    = 0;
-	allocatedPost   = 0;
-	doneReorganization = false;
-	memoryOptimized	   = false;
-
-	stpu = NULL;
-	stpx = NULL;
-	gAMPA = NULL;
-	gNMDA = NULL;
-	gGABAa = NULL;
-	gGABAb = NULL;
-
-
-	CARLSIM_INFO("nConfig: %d, randSeed: %d",nConfig_,randSeed_);
-
-	time_t rawtime;
-	struct tm * timeinfo;
-	time(&rawtime);
-	timeinfo = localtime(&rawtime);
-	CARLSIM_DEBUG("Current local time and date: %s", asctime(timeinfo));
-
-	CUDA_CREATE_TIMER(timer);
-	CUDA_RESET_TIMER(timer);
-	cumExecutionTime = 0.0;
-
-	spikeRateUpdated = false;
-
-	sim_with_fixedwts = true; // default is true, will be set to false if there are any plastic synapses
-	sim_with_conductances = false; // for all others, the default is false
-	sim_with_stdp = false;
-	sim_with_stp = false;
-
-	maxSpikesD2 = maxSpikesD1 = 0;
-	readNetworkFID = NULL;
-
-	// initialize parameters needed in snn_gpu.cu
-	buildNetworkInit_GPU();
+	// move all unsafe operations out of constructor
+	CpuSNNinit();
 }
 
 // destructor
@@ -703,12 +539,9 @@ void CpuSNN::setSTP(int grpId, bool isSet, float STP_U, float STP_tD, float STP_
 /// ************************************************************************************************************ ///
 
 // Run the simulation for n sec
-int CpuSNN::runNetwork(int _nsec, int _nmsec, int simType, int ithGPU, bool enablePrint, bool copyState) {
-	CARLSIM_DEBUG("runNetwork() called");
-
+int CpuSNN::runNetwork(int _nsec, int _nmsec, bool enablePrint, bool copyState) {
 	assert(_nmsec >= 0);
 	assert(_nsec  >= 0);
-	assert(simType == CPU_MODE || simType == GPU_MODE);
 	int runDuration = _nsec*1000 + _nmsec;
 
 	// set the Poisson generation time slice to be at the run duration up to PROPOGATED_BUFFER_SIZE ms.
@@ -716,9 +549,7 @@ int CpuSNN::runNetwork(int _nsec, int _nmsec, int simType, int ithGPU, bool enab
 
 	// First time when the network is run we do various kind of space compression,
 	// and data structure optimization to improve performance and save memory.
-	setupNetwork(simType,ithGPU);
-
-//	simMode_ = simType;
+	setupNetwork();
 
 	CUDA_RESET_TIMER(timer);
 	CUDA_START_TIMER(timer);
@@ -726,7 +557,7 @@ int CpuSNN::runNetwork(int _nsec, int _nmsec, int simType, int ithGPU, bool enab
 	// if nsec=0, simTimeMs=10, we need to run the simulator for 10 timeStep;
 	// if nsec=1, simTimeMs=10, we need to run the simulator for 1*1000+10, time Step;
 	for(int i=0; i < runDuration; i++) {
-		if(simType == CPU_MODE)
+		if(simMode_ == CPU_MODE)
 			doSnnSim();
 		else
 			doGPUSim();
@@ -739,24 +570,24 @@ int CpuSNN::runNetwork(int _nsec, int _nmsec, int simType, int ithGPU, bool enab
 			// finished one sec of simulation...
 			if(showLog) {
 				if(showLogCycle==showLog++) {
-					showStatus(simMode_);
+					showStatus();
 					showLog=1;
 				}
 			}
 
 			updateSpikeMonitor();
 
-			if(simType == CPU_MODE)
+			if(simMode_ == CPU_MODE)
 				updateStateAndFiringTable();
 			else
 				updateStateAndFiringTable_GPU();
 		}
 
-		if(enableGPUSpikeCntPtr==true && simType == CPU_MODE){
+		if(enableGPUSpikeCntPtr==true && simMode_ == CPU_MODE){
 			CARLSIM_ERROR("Error: the enableGPUSpikeCntPtr flag cannot be set in CPU_MODE");
 			assert(simMode_==GPU_MODE);
 		}
-		if(enableGPUSpikeCntPtr==true && simType == GPU_MODE){
+		if(enableGPUSpikeCntPtr==true && simMode_ == GPU_MODE){
 			copyFiringStateFromGPU();
 		}
 	}
@@ -783,14 +614,14 @@ int CpuSNN::runNetwork(int _nsec, int _nmsec, int simType, int ithGPU, bool enab
 /// ************************************************************************************************************ ///
 
 // Returns pointer to nSpikeCnt, which is a 1D array of the number of spikes every neuron in the group
-unsigned int* CpuSNN::getSpikeCntPtr(int grpId, int simType) {
+unsigned int* CpuSNN::getSpikeCntPtr(int grpId) {
 	//! do check to make sure appropriate flag is set
-	if(simType == GPU_MODE && enableGPUSpikeCntPtr == false){
+	if(simMode_ == GPU_MODE && enableGPUSpikeCntPtr == false){
 		CARLSIM_ERROR("Error: the enableGPUSpikeCntPtr flag must be set to true to use this function in GPU_MODE.");
 		assert(enableGPUSpikeCntPtr);
 	}
     
-	if(simType == GPU_MODE){
+	if(simMode_ == GPU_MODE){
 		assert(enableGPUSpikeCntPtr);
 	}
     
@@ -962,9 +793,6 @@ void CpuSNN::setSpikeRate(int grpId, PoissonRate* ratePtr, int refPeriod, int co
 			setSpikeRate(grpId, ratePtr, refPeriod,c);
 	} else {
 		int cGrpId = getGroupId(grpId, configId);
-		if(grp_Info[cGrpId].RatePtr==NULL) {
-			fprintf(fpParam, " // refPeriod = %d\n", refPeriod);
-		}
 
 		assert(ratePtr);
 		if (ratePtr->len != grp_Info[cGrpId].SizeN) {
@@ -1407,6 +1235,44 @@ void CpuSNN::setGroupInfo(int grpId, group_info_t info, int configId) {
 	}
 }
 
+// set new file pointer for debug log file
+void CpuSNN::setLogDebugFp(FILE* fpLog) {
+	assert(fpLog!=NULL);
+
+	if (fpLog_!=NULL && fpLog!=stdout && fpLog!=stderr)
+		fclose(fpLog_);
+
+	fpLog_ = fpLog;
+}
+
+// set new file pointer for all files
+void CpuSNN::setLogsFp(FILE* fpOut, FILE* fpErr, FILE* fpDeb, FILE* fpLog) {
+	assert(loggerMode_==CUSTOM); // only valid in custom mode
+	assert(fpOut!=NULL); // at least one of the must be non-NULL
+
+	if (fpOut_!=NULL && fpOut_!=stdout && fpOut_!=stderr)
+		fclose(fpOut_);
+	fpOut_ = fpOut;
+
+	if (fpErr!=NULL) {
+		if (fpErr_!=NULL && fpErr_!=stdout && fpErr_!=stderr)
+			fclose(fpErr_);
+		fpErr_ = fpErr;
+	}
+
+	if (fpDeb!=NULL) {
+		if (fpDeb_!=NULL && fpDeb_!=stdout && fpDeb_!=stderr)
+			fclose(fpDeb_);
+		fpDeb_ = fpDeb;
+	}
+
+	if (fpLog!=NULL) {
+		if (fpLog_!=NULL && fpLog_!=stdout && fpLog_!=stderr)
+			fclose(fpLog_);
+		fpLog_ = fpLog;
+	}
+}
+
 void CpuSNN::setPrintState(int grpId, bool status) {
 	grp_Info2[grpId].enablePrint = status;
 }
@@ -1428,6 +1294,175 @@ void CpuSNN::setTuningLog(std::string fname) {
 /// **************************************************************************************************************** ///
 /// PRIVATE METHODS
 /// **************************************************************************************************************** ///
+
+// all unsafe operations of CpuSNN constructor
+void CpuSNN::CpuSNNinit() {
+	assert(nConfig_>0 && nConfig_<=MAX_nConfig);
+
+	// set logger mode (defines where to print all status, error, and debug messages)
+	switch (loggerMode_) {
+		case USER:
+			fpOut_ = stdout;
+			fpErr_ = stderr;
+			fpDeb_ = fopen("/dev/null","w");
+			break;
+		case DEVELOPER:
+			fpOut_ = stdout;
+			fpErr_ = stderr;
+			fpDeb_ = stdout;
+			break;
+		case SILENT:
+		case CUSTOM:
+			fpOut_ = fopen("/dev/null","w");
+			fpErr_ = fopen("/dev/null","w");
+			fpDeb_ = fopen("/dev/null","w");
+			break;
+		default:
+			fpOut_ = fopen("/dev/null","w");
+			fpDeb_ = fopen("/dev/null","w");
+			fpErr_ = stdout;
+			CARLSIM_ERROR("Unknown logger mode");
+			exit(1);
+	}
+	fpLog_ = fopen("debug.log","w");
+
+	#if REGRESSION_TESTING
+		fpOut_ = fopen("/dev/null","w");
+		fpErr_ = fopen("/dev/null","w");
+		fpDeb_ = fopen("/dev/null","w");
+	#endif
+
+	CARLSIM_INFO("*******************************************************************************");
+	CARLSIM_INFO("********************      Welcome to CARLsim %d.%d      *************************",
+				MAJOR_VERSION,MINOR_VERSION);
+	CARLSIM_INFO("*******************************************************************************");
+	CARLSIM_INFO("Starting CARLsim simulation \"%s\" in %s mode",networkName_.c_str(),
+				loggerMode_==USER?"user":(loggerMode_==DEVELOPER?"developer":(loggerMode_==SILENT?"silent":"custom")));
+	CARLSIM_INFO("nConfig: %d, randSeed: %d",nConfig_,randSeed_);
+
+	time_t rawtime;
+	struct tm * timeinfo;
+	time(&rawtime);
+	timeinfo = localtime(&rawtime);
+	CARLSIM_DEBUG("Current local time and date: %s", asctime(timeinfo));
+
+	// init random seed
+	srand48(randSeed_);
+	getRand.seed(randSeed_*2);
+	getRandClosed.seed(randSeed_*3);
+
+	resetPointers();
+
+	finishedPoissonGroup  = false;
+	connectBegin = NULL;
+
+	simTimeMs	 		= 0;	simTimeSec			= 0;	simTime = 0;
+	spikeCountAll1sec	= 0;	secD1fireCntHost 	= 0;	secD2fireCntHost  = 0;
+	spikeCountAll 		= 0;	spikeCountD2Host	= 0;	spikeCountD1Host = 0;
+	nPoissonSpikes 		= 0;
+
+	numGrp   = 0;
+	numConnections = 0;
+	numSpikeGenGrps  = 0;
+	NgenFunc = 0;
+	simulatorDeleted = false;
+	enableGPUSpikeCntPtr = false;
+
+	allocatedN      = 0;
+	allocatedPre    = 0;
+	allocatedPost   = 0;
+	doneReorganization = false;
+	memoryOptimized	   = false;
+
+	stpu = NULL;
+	stpx = NULL;
+	gAMPA = NULL;
+	gNMDA = NULL;
+	gGABAa = NULL;
+	gGABAb = NULL;
+
+	cumExecutionTime = 0.0;
+
+	spikeRateUpdated = false;
+	numSpikeMonitor  = 0;
+
+	sim_with_fixedwts = true; // default is true, will be set to false if there are any plastic synapses
+	sim_with_conductances = false; // for all others, the default is false
+	sim_with_stdp = false;
+	sim_with_stp = false;
+
+	maxSpikesD2 = maxSpikesD1 = 0;
+	readNetworkFID = NULL;
+
+	numN = 0;
+	numPostSynapses = 0;
+	D = 0; // FIXME name this maxAllowedDelay or something more meaningful
+
+
+	memset(&cpuSnnSz, 0, sizeof(cpuSnnSz));
+	enableSimLogs = false;
+	simLogDirName = "logs";
+
+	fpLog=fopen("tmp_debug.log","w");
+	fpProgLog = fopen("/dev/null","w");
+	showLog = 0;		// disable showing log..
+	showLogMode = 0;	// show only basic logs. if set higher more logs generated
+	showGrpFiringInfo = true;
+
+	// initialize propogated spike buffers.....
+	pbuf = new PropagatedSpikeBuffer(0, PROPAGATED_BUFFER_SIZE);
+
+	memset(&cpu_gpuNetPtrs,0,sizeof(network_ptr_t));
+	memset(&net_Info,0,sizeof(network_info_t));
+	cpu_gpuNetPtrs.allocated = false;
+
+	memset(&cpuNetPtrs,0, sizeof(network_ptr_t));
+	cpuNetPtrs.allocated = false;
+
+	for (int i=0; i < MAX_GRP_PER_SNN; i++) {
+		grp_Info[i].Type	 = UNKNOWN_NEURON;
+		grp_Info[i].MaxFiringRate  = UNKNOWN_NEURON_MAX_FIRING_RATE;
+		grp_Info[i].MonitorId		 = -1;
+		grp_Info[i].FiringCount1sec=0;
+		grp_Info[i].numPostSynapses 		= 0;	// default value
+		grp_Info[i].numPreSynapses 	= 0;	// default value
+		grp_Info[i].WithSTP = false;
+		grp_Info[i].WithSTDP = false;
+		grp_Info[i].FixedInputWts = true; // Default is true. This value changed to false
+		// if any incoming  connections are plastic
+		grp_Info[i].WithConductances = false;
+		grp_Info[i].isSpikeGenerator = false;
+		grp_Info[i].RatePtr = NULL;
+
+		grp_Info[i].homeoId = -1;
+		grp_Info[i].avgTimeScale  = 10000.0;
+
+		grp_Info[i].dAMPA=1-(1.0/5);	// FIXME why default values again!? this should be in interface
+		grp_Info[i].dNMDA=1-(1.0/150);
+		grp_Info[i].dGABAa=1-(1.0/6);
+		grp_Info[i].dGABAb=1-(1.0/150);
+
+		grp_Info[i].spikeGen = NULL;
+
+		grp_Info[i].StartN       = -1;
+		grp_Info[i].EndN       	 = -1;
+
+		grp_Info2[i].numPostConn = 0;
+		grp_Info2[i].numPreConn  = 0;
+		grp_Info2[i].enablePrint = false;
+		grp_Info2[i].maxPostConn = 0;
+		grp_Info2[i].maxPreConn  = 0;
+		grp_Info2[i].sumPostConn = 0;
+		grp_Info2[i].sumPreConn  = 0;
+	}
+
+	CUDA_CREATE_TIMER(timer);
+	CUDA_RESET_TIMER(timer);
+
+	// initialize parameters needed in snn_gpu.cu
+	// FIXME: naming is terrible... so it's a CPU SNN on GPU...
+	CpuSNNinit_GPU();
+}
 
 void CpuSNN::buildNetworkInit(unsigned int nNeur, unsigned int nPostSyn, unsigned int nPreSyn, unsigned int maxDelay) {
 	numN = nNeur;
@@ -2016,11 +2051,6 @@ void CpuSNN::deleteObjects() {
 			fclose(fpDeb_);
 		if (fpLog_!=NULL && fpLog_!=stdout && fpLog_!=stderr)
 			fclose(fpLog_);
-
-		// close param.txt
-		if (fpParam!=NULL) {
-			fclose(fpParam);
-		}
 
 		if (voltage!=NULL) 	delete[] voltage;
 		if (recovery!=NULL) 	delete[] recovery;
@@ -2784,7 +2814,7 @@ void CpuSNN::reorganizeDelay()
 
 // after all the initalization. Its time to create the synaptic weights, weight change and also
 // time of firing these are the mostly costly arrays so dense packing is essential to minimize wastage of space
-void CpuSNN::reorganizeNetwork(bool removeTempMemory, int simType) {
+void CpuSNN::reorganizeNetwork(bool removeTempMemory) {
 	//Double check...sometimes by mistake we might call reorganize network again...
 	if(doneReorganization)
 		return;
@@ -2816,7 +2846,7 @@ void CpuSNN::reorganizeNetwork(bool removeTempMemory, int simType) {
 
 	makePtrInfo();
 
-	if (simType==GPU_MODE) {
+	if (simMode_==GPU_MODE) {
 		CARLSIM_INFO("Starting GPU-SNN Simulations ....");
 	} else {
 		CARLSIM_INFO("Starting CPU-SNN Simulations ....");
@@ -2980,7 +3010,6 @@ void CpuSNN::resetPointers() {
 	firingTableD2 = NULL;
 	firingTableD1 = NULL;
 
-	fpParam = NULL;
 	cntTuning  = 0;
 }
 
@@ -3206,12 +3235,12 @@ int CpuSNN::setRandSeed(int seed) {
 // reorganize the network and do the necessary allocation
 // of all variable for carrying out the simulation..
 // this code is run only one time during network initialization
-void CpuSNN::setupNetwork(int simType, int ithGPU, bool removeTempMem) {
+void CpuSNN::setupNetwork(bool removeTempMem) {
 	if(!doneReorganization)
-		reorganizeNetwork(removeTempMem, simType);
+		reorganizeNetwork(removeTempMem);
 
-	if((simType == GPU_MODE) && (cpu_gpuNetPtrs.allocated == false))
-		allocateSNN_GPU(ithGPU);
+	if((simMode_ == GPU_MODE) && (cpu_gpuNetPtrs.allocated == false))
+		allocateSNN_GPU();
 }
 
 

@@ -2420,7 +2420,7 @@ __global__ void kernel_check_GPU_init ()
 // initializes all params needed in snn_gpu.cu
 // up to now they were initialized outside any class member in snn_gpu.cu (as global variables), so if you were
 // to create two CpuSNN instances within the same .cpp file, then the second network would fail to run
-void CpuSNN::buildNetworkInit_GPU() {
+void CpuSNN::CpuSNNinit_GPU() {
   gpuPoissonRand = NULL;
   spikeCountD2=0;
   spikeCountD1=0;
@@ -2897,7 +2897,7 @@ void CpuSNN::allocateNetworkParameters()
   return;
 }
 
-void CpuSNN::checkGPUDevice(int ithGPU) {
+void CpuSNN::checkGPUDevice() {
   int devCount;
   cudaGetDeviceCount(&devCount);
   CUDA_GET_LAST_ERROR("cudaGetDeviceCount failed\n");
@@ -2909,11 +2909,11 @@ void CpuSNN::checkGPUDevice(int ithGPU) {
 
   // ithGPU gives an index number on which device to run the simulation
   // if index exceeds number of devices, use dev 0 instead
-  if (ithGPU>=0 && ithGPU<devCount)
-    dev = ithGPU;
+  if (ithGPU_>=0 && ithGPU_<devCount)
+    dev = ithGPU_;
   else {
     CARLSIM_WARN("Device index %d exceeds number of devices (%d), choose from [0,%d]. Defaulting to using device 0...",
-    				ithGPU,devCount,devCount-1);
+    				ithGPU_,devCount,devCount-1);
     dev = 0;
   }
 
@@ -2943,7 +2943,7 @@ void CpuSNN::copyWeightsGPU(unsigned int nid, int src_grp)
 }
 
 // Allocates required memory and then initialize the GPU
-void CpuSNN::allocateSNN_GPU(int ithGPU) {
+void CpuSNN::allocateSNN_GPU() {
 	if (D > MAX_SynapticDelay) {
 		CARLSIM_ERROR("You are using a synaptic delay (%d) greater than MAX_SynapticDelay defined in config.h",D);
 		exitSimulation(1);
@@ -2955,7 +2955,7 @@ void CpuSNN::allocateSNN_GPU(int ithGPU) {
 
 	int gridSize = 64; int blkSize  = 128;
 
-	checkGPUDevice(ithGPU);
+	checkGPUDevice();
 
 	int numN=0;
 	for (int g=0;g<numGrp;g++) {

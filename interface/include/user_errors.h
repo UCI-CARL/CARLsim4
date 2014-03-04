@@ -22,9 +22,11 @@ public:
 	enum errorType {
 		ALL_NOT_ALLOWED,		//!< keyword ALL is not allowed for this variable
 		CANNOT_BE_NEGATIVE,		//!< parameter cannot have negative value (opposite to "must be", but includes zero)
+		CANNOT_BE_NULL,			//!< parameter cannot have NULL value
 		CANNOT_BE_POSITIVE,		//!< parameter cannot have positive value (opposite to "must be", but includes zero)
 		FILE_CANNOT_CREATE,		//!< could not create a file
 		FILE_CANNOT_OPEN,		//!< could not open file
+		MUST_BE_LOGGER_CUSTOM,	//!< must be in custom logger mode
 		MUST_BE_NEGATIVE,		//!< parameter must have negative value
 		MUST_BE_POSITIVE,		//!< parameter must have positive value
 		MUST_HAVE_SAME_SIGN,	//!< some parameters must have the same sign

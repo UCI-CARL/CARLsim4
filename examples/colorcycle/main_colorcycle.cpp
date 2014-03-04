@@ -151,7 +151,7 @@ int main()
 	FILE* fid;
 	bool onGPU = true;
 
-	CARLsim s("colorcycle",1,42,onGPU?GPU_MODE:CPU_MODE,0);
+	CARLsim s("colorcycle",onGPU?GPU_MODE:CPU_MODE);
 
 	int v1Cells[5];
 	int num_V1_groups=6;

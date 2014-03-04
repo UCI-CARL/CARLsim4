@@ -151,7 +151,7 @@ int main()
 
 	FILE* fid;
 
-	CARLsim s("global");
+	CARLsim s("colorblind");
 
 	int v1Cells[5];
 	int num_V1_groups=6;

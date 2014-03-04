@@ -442,7 +442,7 @@ int main()
 	// use command-line specified CUDA device, otherwise use device with highest Gflops/s
 //	CUDA_CHECK_ERRORS(cudaSetDevice(cutGetMaxGflopsDeviceId()));
 
-	CARLsim s("V1V4PFC",1,42,onGPU?GPU_MODE:CPU_MODE,0);
+	CARLsim s("V1V4PFC",onGPU?GPU_MODE:CPU_MODE);
 
 	int v1Cells[5];
 	int num_V1_groups=6;

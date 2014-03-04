@@ -35,16 +35,36 @@ public:
 
 	/*!
 	 * \brief CARLsim constructor
+	 *
+	 * Creates a new instance of class CARLsim. All input arguments are optional, but if specified will be constant
+	 * throughout the lifetime of the CARLsim object.
+	 *
+	 * CARLsim allows execution on both generic x86 CPUs and standard off-the-shelf GPUs by specifying the simulation
+	 * mode (CPU_MODE and GPU_MODE, respectively). When using the latter in a multi-GPU system, the user can also
+	 * specify which CUDA device to use (param ithGPU, 0-indexed).
+	 *
+	 * The logger mode defines where to print all status, error, and debug messages. Logger mode can either be USER (for
+	 * experiment-oriented simulations), DEVELOPER (for developing and debugging code), SILENT (e.g., for benchmarking,
+	 * where no output is generated at all), or CUSTOM (where the user can specify the file pointers of all log files).
+	 * In summary, messages are printed to the following locations, depending on the logger mode:
+	 *                 |    USER    | DEVELOPER  |   SILENT   |  CUSTOM
+	 * ----------------|------------|------------|------------|---------
+	 * Status msgs     |   stdout   |   stdout   | /dev/null  |    ?
+	 * Errors/warnings |   stderr   |   stderr   | /dev/null  |    ?
+	 * Debug msgs      | /dev/null  |   stdout   | /dev/null  |    ?
+	 * All msgs        | debug.log  | debug.log  | /dev/null  |    ?
+	 * Location of the debug log file can be set in any mode using CARLsim::setLogDebugFp.
+	 * In mode CUSTOM, the other file pointers can be set using CARLsim::setLogsFp.
+	 *
 	 * \param[in] netName 		network name
-	 * \param[in] nConfig 		number of network configurations 			// TODO: explain configurations
-	 * \param[in] randSeed 		random number generator seed
-	 * \param[in] simType		either CPU_MODE or GPU_MODE
+	 * \param[in] simMode		either CPU_MODE or GPU_MODE
+	 * \param[in] loggerMode    either USER, DEVELOPER, SILENT, or CUSTOM
 	 * \param[in] ithGPU 		on which GPU to establish a context (only relevant in GPU_MODE)
-	 * \param[in] enablePrint 												// TODO
-	 * \param[in] copyState 												// TODO
+	 * \param[in] nConfig 		number of network configurations 									// TODO: explain
+	 * \param[in] randSeed 		random number generator seed
 	 */
-	CARLsim(std::string netName="SNN", int nConfig=1, int randSeed=42, int simMode=CPU_MODE, int ithGPU=0,
-				loggerMode_t loggerMode=USER);
+	CARLsim(std::string netName="SNN", simMode_t simMode=CPU_MODE, loggerMode_t loggerMode=USER, int ithGPU=0,
+				int nConfig=1, int randSeed=-1);
 	~CARLsim();
 
 
@@ -150,11 +170,14 @@ public:
 
 	// +++++ PUBLIC METHODS: RUNNING A SIMULATION ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
-	//! run network using default simulation mode
-	int runNetwork(int nSec, int nMsec);
-
-	//! run network with custom simulation mode and options
-	int runNetwork(int nSec, int nMsec, int simType, int ithGPU=0, bool enablePrint=false, bool copyState=false);
+	/*!
+	 * \brief run the simulation for time=(nSec*seconds + nMsec*milliseconds)
+	 * \param[in] nSec 			number of seconds to run the network
+	 * \param[in] nMsec 		number of milliseconds to run the network
+	 * \param[in] enablePrint 	enable printing of status information
+	 * \param[in] copyState 	enable copying of data from device to host
+	 */
+	int runNetwork(int nSec, int nMsec, bool enablePrint=false, bool copyState=false);
 
 
 
@@ -232,9 +255,6 @@ public:
 	uint32_t getSimTimeMsec();
 
 	//! Returns pointer to 1D array of the number of spikes every neuron in the group has fired
-	unsigned int* getSpikeCntPtr(int grpId, int simType);
-
-	//! use default simulation mode
 	unsigned int* getSpikeCntPtr(int grpId);
 
 	// FIXME: fix this
@@ -257,6 +277,22 @@ public:
 	void setCopyFiringStateFromGPU(bool enableGPUSpikeCntPtr);
 
 	void setGroupInfo(int grpId, group_info_t info, int configId=ALL);
+
+	/*!
+	 * \brief Sets the file pointer of the debug log file
+	 * \param[in] fpLog file pointer to new log file
+	 */
+	void setLogDebugFp(FILE* fpLog);
+
+	/*!
+	 * \brief Sets the file pointers for all log files
+	 * \param[in] fpOut file pointer for status info
+	 * \param[in] fpErr file pointer for errors/warnings
+	 * \param[in] fpDeb file pointer for debug info
+	 * \param[in] fpLog file pointer for debug log file that contains all the above info
+	 */
+	void setLogsFp(FILE* fpOut, FILE* fpErr=NULL, FILE* fpDeb=NULL, FILE* fpLog=NULL);
+
 	void setPrintState(int grpId, bool status);
 	void setSimLogs(bool isSet, std::string logDirName="");
 	void setTuningLog(std::string fname);
@@ -299,7 +335,7 @@ private:
 	std::string netName_;			//!< network name
 	int nConfig_;					//!< number of configurations
 	int randSeed_;					//!< RNG seed
-	int simMode_;					//!< CPU_MODE or GPU_MODE
+	simMode_t simMode_;				//!< CPU_MODE or GPU_MODE
 	loggerMode_t loggerMode_;		//!< logger mode (USER, DEVELOPER, SILENT, CUSTOM)
 	int ithGPU_;					//!< on which device to establish a context
 	bool enablePrint_;

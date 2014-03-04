@@ -141,7 +141,7 @@ int main()
   // BEGIN CARLsim initialization
   // -----------------------------------------------------------------------------
   //create a network
-  snn = new CARLsim("TuningFixedWeightsSNN",NUM_CONFIGS,RAND_SEED,GPU_MODE,0); // 'Tuned Internal Model'     
+  snn = new CARLsim("TuningFixedWeightsSNN",GPU_MODE,USER,0,NUM_CONFIGS,RAND_SEED); // 'Tuned Internal Model'     
   inputGroup=snn->createSpikeGeneratorGroup("Input",INPUT_SIZE,EXCITATORY_NEURON);
   excGroup=snn->createGroup("Exc",EXC_SIZE,EXCITATORY_NEURON);
   inhGroup=snn->createGroup("Inh",INH_SIZE,INHIBITORY_NEURON);

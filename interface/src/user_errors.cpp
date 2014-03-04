@@ -31,6 +31,9 @@ void UserErrors::throwError(std::string errorFunc, errorType error, std::string 
 		case CANNOT_BE_NEGATIVE:
 			std::cerr << " cannot be negative.";
 			break;
+		case CANNOT_BE_NULL:
+			std::cerr << " cannot be NULL.";
+			break;
 		case CANNOT_BE_POSITIVE:
 			std::cerr << " cannot be positive.";
 			break;
@@ -39,6 +42,9 @@ void UserErrors::throwError(std::string errorFunc, errorType error, std::string 
 			break;
 		case FILE_CANNOT_OPEN:
 			std::cerr << " could not be opened.";
+			break;
+		case MUST_BE_LOGGER_CUSTOM:
+			std::cerr << " must be set to CUSTOM.";
 			break;
 		case MUST_BE_NEGATIVE:
 			std::cerr << " must be negative.";

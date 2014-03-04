@@ -78,13 +78,16 @@ private:
 /// CONSTRUCTOR / DESTRUCTOR
 /// **************************************************************************************************************** ///
 
-CARLsim::CARLsim(std::string netName, int nConfig, int randSeed, int simMode, int ithGPU, loggerMode_t loggerMode) {
+// constructor
+CARLsim::CARLsim(std::string netName, simMode_t simMode, loggerMode_t loggerMode, int ithGPU, int nConfig,
+						int randSeed)
+{
 	netName_ 					= netName;
+	simMode_ 					= simMode;
+	loggerMode_ 				= loggerMode;
+	ithGPU_ 					= ithGPU;
 	nConfig_ 					= nConfig;
 	randSeed_					= randSeed;
-	simMode_ 					= simMode;
-	ithGPU_ 					= ithGPU;
-	loggerMode_ 				= loggerMode;
 	enablePrint_ = false;
 	copyState_ = false;
 
@@ -107,7 +110,7 @@ CARLsim::~CARLsim() {
 
 // unsafe computations that would otherwise go in constructor
 void CARLsim::CARLsimInit() {
-	snn_ = new CpuSNN(netName_, nConfig_, randSeed_, simMode_, loggerMode_);
+	snn_ = new CpuSNN(netName_, simMode_, loggerMode_, ithGPU_, nConfig_, randSeed_);
 
 	// set default time constants for synaptic current decay
 	// TODO: add ref
@@ -402,21 +405,8 @@ void CARLsim::setSTP(int grpId, bool isSet, float STP_U, float STP_tD, float STP
 
 // +++++++++ PUBLIC METHODS: RUNNING A SIMULATION +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
-// run network
-int CARLsim::runNetwork(int nSec, int nMsec) {
-	if (!hasRunNetwork_) {
-		handleNetworkConsistency();	// before running network, make sure it's consistent
-		handleUserWarnings();		// before running network, make sure user didn't provoque any user warnings
-//		printSimulationSpecs();		// first time around, show simMode etc.
-	}
-
-	hasRunNetwork_ = true;
-
-	return snn_->runNetwork(nSec, nMsec, simMode_, ithGPU_, enablePrint_, copyState_);
-}
-
 // run network with custom options
-int CARLsim::runNetwork(int nSec, int nMsec, int simType, int ithGPU, bool enablePrint, bool copyState) {
+int CARLsim::runNetwork(int nSec, int nMsec, bool enablePrint, bool copyState) {
 	if (!hasRunNetwork_) {
 		handleNetworkConsistency();	// before running network, make sure it's consistent
 		handleUserWarnings();	// before running network, make sure user didn't provoque any user warnings
@@ -425,7 +415,7 @@ int CARLsim::runNetwork(int nSec, int nMsec, int simType, int ithGPU, bool enabl
 
 	hasRunNetwork_ = true;
 
-	return snn_->runNetwork(nSec, nMsec, simType, ithGPU, enablePrint, copyState);	
+	return snn_->runNetwork(nSec, nMsec, enablePrint, copyState);	
 }
 
 // +++++++++ PUBLIC METHODS: LOGGING / PLOTTING +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
@@ -595,12 +585,7 @@ void CARLsim::getPopWeights(int gIDpre, int gIDpost, float*& weights, int& size,
 }
 
 unsigned int* CARLsim::getSpikeCntPtr(int grpId) {
-	return snn_->getSpikeCntPtr(grpId,simMode_); // use default sim mode
-}
-
-unsigned int* CARLsim::getSpikeCntPtr(int grpId, int simType) {
-	assert(simType==CPU_MODE || simType==GPU_MODE);
-	return snn_->getSpikeCntPtr(grpId,simType);
+	return snn_->getSpikeCntPtr(grpId);
 }
 
 float* CARLsim::getWeightChanges(int gIDpre, int gIDpost, int& Npre, int& Npost, float* weightChanges) {
@@ -621,6 +606,21 @@ void CARLsim::setCopyFiringStateFromGPU(bool enableGPUSpikeCntPtr) {
 }
 
 void CARLsim::setGroupInfo(int grpId, group_info_t info, int configId) { snn_->setGroupInfo(grpId,info,configId); }
+
+// set new file pointer for debug log file
+void CARLsim::setLogDebugFp(FILE* fpLog) {
+	UserErrors::userAssert(fpLog!=NULL,UserErrors::CANNOT_BE_NULL,"setLogDebugFp","fpLog");
+
+	snn_->setLogDebugFp(fpLog);
+}
+
+// set new file pointer for all files
+void CARLsim::setLogsFp(FILE* fpOut, FILE* fpErr, FILE* fpDeb, FILE* fpLog) {
+	UserErrors::userAssert(loggerMode_==CUSTOM,UserErrors::MUST_BE_LOGGER_CUSTOM,"setLogsFp","Logger mode");
+
+	snn_->setLogsFp(fpOut,fpErr,fpDeb,fpLog);
+}
+
 void CARLsim::setPrintState(int grpId, bool status) { snn_->setPrintState(grpId,status); }
 void CARLsim::setSimLogs(bool isSet, std::string logDirName) { snn_->setSimLogs(isSet,logDirName); }
 void CARLsim::setTuningLog(std::string fname) { snn_->setTuningLog(fname); }

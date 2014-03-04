@@ -284,7 +284,7 @@ int main()
 	// use command-line specified CUDA device, otherwise use device with highest Gflops/s
 //	cutilSafeCall(cudaSetDevice(cutGetMaxGflopsDeviceId()));
 
-	CARLsim s("rdk",1,42,onGPU?GPU_MODE:CPU_MODE,0);
+	CARLsim s("rdk",onGPU?GPU_MODE:CPU_MODE);
 
 	int gV1ME = s.createSpikeGeneratorGroup("V1ME", nrX*nrY*28*3, EXCITATORY_NEURON);
 	int gMT1 = s.createGroup("MT1", nrX*nrY*8, EXCITATORY_NEURON);

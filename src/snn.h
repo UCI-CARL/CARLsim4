@@ -63,7 +63,7 @@
 #include "CUDAVersionControl.h"
 
 
-
+// enable easy testing of private members
 #if REGRESSION_TESTING
 	#define private public
  	#define protected public
@@ -71,10 +71,6 @@
 
 
 extern RNG_rand48* gpuRand48; //!< Used by all network to generate global random number
-
-
-enum conType_t { CONN_RANDOM, CONN_ONE_TO_ONE, CONN_FULL, CONN_FULL_NO_DIRECT, CONN_USER_DEFINED, CONN_UNKNOWN};
-
 
 #define MAX_GRPS_PER_BLOCK 		100
 #define MAX_BLOCKS         		120
@@ -84,8 +80,6 @@ enum conType_t { CONN_RANDOM, CONN_ONE_TO_ONE, CONN_FULL, CONN_FULL_NO_DIRECT, C
 #define SYN_FIXED      0
 #define SYN_PLASTIC    1
 
-#define CPU_MODE 0
-#define GPU_MODE 1
 
 // Bit flags to be used to specify the type of neuron.  Future types can be added in the future such as Dopamine, etc.
 // Yes, they should be bit flags because some neurons release more than one transmitter at a synapse.
@@ -228,10 +222,27 @@ inline bool isInhibitoryNeuron (unsigned int& nid, unsigned int& numNInhPois, un
  * fpDeb_   | /dev/null  |   stdout   | /dev/null  |    ?
  * fpLog_   | debug.log  | debug.log  | /dev/null  |    ?
  *
- * Location of the log file can be set in any mode using CARLsim::setLogFileFp.
+ * Location of the debug log file can be set in any mode using CARLsim::setLogDebugFp.
  * In mode CUSTOM, the other file pointers can be set using CARLsim::setLogsFp.
  */
 enum loggerMode_t { USER, DEVELOPER, SILENT, CUSTOM, UNKNOWN };
+
+/*!
+ * \brief simulation mode
+ * CARLsim supports execution either on standard x86 central processing units (CPUs) or off-the-shelf NVIDIA GPUs.
+ * 
+ * When creating a new CARLsim object, you can choose from the following:
+ * CPU_MODE:	run on a single CPU core
+ * GPU_MODE:	run on a single GPU card
+ * 
+ * When running GPU mode on a multi-GPU system, you can specify on which CUDA device to establish a context (ithGPU,
+ * 0-indexed) when you create a new CpuSNN object.
+ * The simulation mode will be fixed throughout the lifetime of a CpuSNN object.
+ */
+enum simMode_t {CPU_MODE, GPU_MODE};
+
+//! connection types, used internally (externally it's a string)
+enum conType_t { CONN_RANDOM, CONN_ONE_TO_ONE, CONN_FULL, CONN_FULL_NO_DIRECT, CONN_USER_DEFINED, CONN_UNKNOWN};
 
 
 
@@ -361,7 +372,7 @@ typedef struct network_ptr_s  {
 	// conductances and stp values
 	float	*gNMDA, *gAMPA, *gGABAa, *gGABAb;
 	int*	I_set;
-	int		memType;
+	simMode_t		memType; // FIXME: horrible naming
 	int		allocated;			//!< true if all data has been allocated..
 	float	*stpx, *stpu;
 
@@ -533,20 +544,13 @@ class CpuSNN {
 /// PUBLIC METHODS
 /// **************************************************************************************************************** ///
 public:
-	CpuSNN(std::string& name, int nConfig=1, int seed=0, int simMode=CPU_MODE,
-				loggerMode_t loggerMode=USER);
+	CpuSNN(std::string& name, simMode_t simMode, loggerMode_t loggerMode, int ithGPU, int nConfig, int randSeed);
 	~CpuSNN();
 
 	// +++++ PUBLIC PROPERTIES ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
 	const static unsigned int MAJOR_VERSION = 2; //!< major release version, as in CARLsim X
 	const static unsigned int MINOR_VERSION = 2; //!< minor release version, as in CARLsim 2.X
-
-	//! an enum for all possible errors that can occur in CARLsimCore
-	enum errorType {
-		NO_ERROR,			//!< no error occurred
-		SOME_ERROR			//!< some error occurred
-	};
 
 
 
@@ -607,10 +611,10 @@ public:
 
 	/*!
 	 * \brief run the simulation for n sec
-	 * simType can either be CPU_MODE or GPU_MODE
-	 * ithGPU: specify on which CUDA device to establish a context
+	 * \param[in] enablePrint 	enable printing of status information
+	 * \param[in] copyState 	enable copying of data from device to host
 	 */
-	int runNetwork(int _nsec, int _nmsec, int simType, int ithGPU, bool enablePrint, bool copyState);
+	int runNetwork(int _nsec, int _nmsec, bool enablePrint, bool copyState);
 
 
 
@@ -677,7 +681,7 @@ public:
 	group_info_t getGroupInfo(int groupId, int configId);
 	std::string getGroupName(int grpId, int configId);
 
-	//loggerMode_t getLoggerMode() { return loggerMode_; }
+	loggerMode_t getLoggerMode() { return loggerMode_; }
 
 	int getNumConfigurations()	{ return nConfig_; }	//!< gets number of network configurations
 	int getNumConnections(short int connectionId);		//!< gets number of connections associated with a connection ID
@@ -703,7 +707,7 @@ public:
  	 * \brief Returns pointer to nSpikeCnt, which is a 1D array of the number of spikes every neuron in the group
 	 *  has fired.  Takes the grpID and the simulation mode (CPU_MODE or GPU_MODE) as arguments.
 	 */
-	unsigned int* getSpikeCntPtr(int grpId=ALL, int simType=CPU_MODE);
+	unsigned int* getSpikeCntPtr(int grpId=ALL);
 
 	// FIXME: fix this
 	// TODO: maybe consider renaming getPopWeightChanges
@@ -725,6 +729,20 @@ public:
 	 */
 	void setCopyFiringStateFromGPU(bool _enableGPUSpikeCntPtr);
 
+	/*!
+	 * \brief Sets the file pointer of the debug log file
+	 * \param[in] fpLog file pointer to new log file
+	 */
+	void setLogDebugFp(FILE* fpLog);
+
+	/*!
+	 * \brief Sets the file pointers for all log files
+	 * \param[in] fpOut file pointer for status info
+	 * \param[in] fpErr file pointer for errors/warnings
+	 * \param[in] fpDeb file pointer for debug info
+	 * \param[in] fpLog file pointer for debug log file that contains all the above info
+	 */
+	void setLogsFp(FILE* fpOut, FILE* fpErr, FILE* fpDeb, FILE* fpLog);
 
 	void setGroupInfo(int groupId, group_info_t info, int configId=ALL);
 	void setPrintState(int grpId, bool _status);
@@ -738,6 +756,8 @@ public:
 
 private:
 	// +++++ CPU MODE +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
+	void CpuSNNinit();	//!< all unsafe operations of constructor
+
 	void buildNetworkInit(unsigned int nNeur, unsigned int nPostSyn, unsigned int nPreSyn, unsigned int maxDelay);
 
 	int  addSpikeToTable(int id, int g); //!< add the entry that the current neuron has spiked
@@ -822,7 +842,7 @@ private:
 	#endif
 
 	void reorganizeDelay();
-	void reorganizeNetwork(bool removeTempMemory, int simType);
+	void reorganizeNetwork(bool removeTempMemory);
 
 	void resetConductances();
 	void resetCounters();
@@ -844,9 +864,9 @@ private:
 	void setGrpTimeSlice(int grpId, int timeSlice); //!< used for the Poisson generator. TODO: further optimize
 	int setRandSeed(int seed);	//!< setter function for const member randSeed_
 
-	void setupNetwork(int simType=CPU_MODE, int ithGPU=0, bool removeTempMemory=true);
+	void setupNetwork(bool removeTempMemory=true);
 
-	void showStatus(int simType=CPU_MODE);
+	void showStatus();
 
 	void startCPUTiming();
 	void stopCPUTiming();
@@ -866,12 +886,12 @@ private:
 
 	// +++++ GPU MODE +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 	// TODO: consider moving to snn_gpu.h
-	void buildNetworkInit_GPU();	//!< initializes params needed in snn_gpu.cu (gets called in CpuSNN constructor)
+	void CpuSNNinit_GPU();	//!< initializes params needed in snn_gpu.cu (gets called in CpuSNN constructor)
 
 	void allocateGroupId();
 	void allocateGroupParameters();
 	void allocateNetworkParameters();
-	void allocateSNN_GPU(int ithGPU); //!< allocates required memory and then initialize the GPU
+	void allocateSNN_GPU(); //!< allocates required memory and then initialize the GPU
 	int  allocateStaticLoad(int bufSize);
 
 	void assignPoissonFiringRate_GPU();
@@ -879,7 +899,7 @@ private:
 	void checkDestSrcPtrs(network_ptr_t* dest, network_ptr_t* src, cudaMemcpyKind kind, int allocateMem, int grpId);
 	int  checkErrors(std::string kernelName, int numBlocks);
 	int  checkErrors(int numBlocks);
-	void checkGPUDevice(int ithGPU);
+	void checkGPUDevice();
 	void checkInitialization(char* testString=NULL);
 	void checkInitialization2(char* testString=NULL);
 
@@ -922,10 +942,13 @@ private:
 	// +++++ PRIVATE PROPERTIES +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 	FILE* readNetworkFID;
 
+
+	const std::string networkName_;	//!< network name
+	const simMode_t simMode_;		//!< current simulation mode (CPU_MODE or GPU_MODE) FIXME: give better name
 	const loggerMode_t loggerMode_;	//!< current logger mode (USER, DEVELOPER, SILENT, CUSTOM)
-	const int	randSeed_;
-	const int	simMode_;			//!< current simulation mode (CPU_MODE or GPU_MODE) FIXME: give better name
-	const int	nConfig_;
+	const int ithGPU_;				//!< on which CUDA device to establish a context (only in GPU_MODE)
+	const int nConfig_;				//!< number of network configurations
+	const int randSeed_;			//!< random number seed to use
 
 
 	//! temporary variables created and deleted by network after initialization
@@ -944,7 +967,6 @@ private:
 	bool			doneReorganization;
 	bool			memoryOptimized;
 
-	std::string			networkName_;
 	int				numGrp;
 	int				numConnections;		//!< number of connection calls (as in snn.connect(...))
 	//! keeps track of total neurons/presynapses/postsynapses currently allocated
