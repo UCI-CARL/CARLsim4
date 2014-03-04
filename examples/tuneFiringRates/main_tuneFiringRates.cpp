@@ -78,7 +78,7 @@ using namespace std;
 // CARLSIM core:
 CARLsim* snn;
 int inputGroup; int excGroup; int inhGroup;
-int input_exc_cid; int exc_exc_cid; int exc_inh_cid; int inh_exc_cid;
+uint16_t input_exc_cid; uint16_t exc_exc_cid; uint16_t exc_inh_cid; uint16_t inh_exc_cid;
 float COND_tAMPA=5.0, COND_tNMDA=150.0, COND_tGABAa=6.0, COND_tGABAb=150.0;
 
 // poissonRate spiking input pointer
@@ -141,7 +141,7 @@ int main()
   // BEGIN CARLsim initialization
   // -----------------------------------------------------------------------------
   //create a network
-  snn = new CARLsim("TuningFixedWeightsSNN",NUM_CONFIGS,RAND_SEED,GPU_MODE,0); // 'Tuned Internal Model'     
+  snn = new CARLsim("TuningFixedWeightsSNN",GPU_MODE,USER,0,NUM_CONFIGS,RAND_SEED); // 'Tuned Internal Model'     
   inputGroup=snn->createSpikeGeneratorGroup("Input",INPUT_SIZE,EXCITATORY_NEURON);
   excGroup=snn->createGroup("Exc",EXC_SIZE,EXCITATORY_NEURON);
   inhGroup=snn->createGroup("Inh",INH_SIZE,INHIBITORY_NEURON);
@@ -165,7 +165,7 @@ int main()
   }
   
   // set log stats 
-  snn->setLogCycle(1, 1, stdout);
+  snn->setLogCycle(1);
 
   // initialize every callback object in each array
   for(int i=0; i<NUM_CONFIGS; i++){

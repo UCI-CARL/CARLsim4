@@ -442,7 +442,7 @@ int main()
 	// use command-line specified CUDA device, otherwise use device with highest Gflops/s
 //	CUDA_CHECK_ERRORS(cudaSetDevice(cutGetMaxGflopsDeviceId()));
 
-	CARLsim s("V1V4PFC",1,42,onGPU?GPU_MODE:CPU_MODE,0);
+	CARLsim s("V1V4PFC",onGPU?GPU_MODE:CPU_MODE);
 
 	int v1Cells[5];
 	int num_V1_groups=6;
@@ -586,8 +586,8 @@ int main()
 	s.connect(gV4oi, gV4o, new connectV4oitoV4o(inhibScale,-0.01*2), SYN_FIXED,1000,3000);
 
 
-	// show log every 1 sec (0 to disable logging). You can pass a file pointer or pass stdout to specify where the log output should go.
-	s.setLogCycle(1, 1, stdout);
+	// show log every 1 sec
+	s.setLogCycle(1);
 
 
 	s.setConductances(ALL, true,5,150,6,150);

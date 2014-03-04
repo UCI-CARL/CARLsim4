@@ -41,8 +41,8 @@
 #include "snn.h"
 
 #if ! (_WIN32 || _WIN64)
-#include <string.h>
-#define strcmpi(s1,s2) strcasecmp(s1,s2)
+  #include <string.h>
+  #define strcmpi(s1,s2) strcasecmp(s1,s2)
 #endif
 
 
@@ -57,31 +57,34 @@ void CpuSNN::printConnection(const std::string& fname) {
 	fclose(fp);
 }
 
-void CpuSNN::printConnection(FILE *fp) {
+void CpuSNN::printConnection(FILE* const fp) {
 	printPostConnection(fp);
 	printPreConnection(fp);
 }
 
 //! print the connection info of grpId
-void CpuSNN::printConnection(int grpId, FILE  *fp) {
+void CpuSNN::printConnection(int grpId, FILE* const fp) {
 	printPostConnection(grpId, fp);
 	printPreConnection(grpId, fp);
 }
 
 
-void CpuSNN::printMemoryInfo(FILE *fp)
-{
-  checkNetworkBuilt();
 
-  fprintf(fp, "*************Memory Info *************\n");
+void CpuSNN::printMemoryInfo(FILE* const fp) {
+  if (!doneReorganization) {
+    CARLSIM_DEBUG("checkNetworkBuilt()");
+    CARLSIM_DEBUG("Network not yet elaborated and built...");
+  }
+
+  fprintf(fp, "************* Memory Info ***************\n");
   int totMemSize = cpuSnnSz.networkInfoSize+cpuSnnSz.synapticInfoSize+cpuSnnSz.neuronInfoSize+cpuSnnSz.spikingInfoSize;
-  fprintf(fp, "Neuron Info Size:    %3.2f (%f MB)\n", cpuSnnSz.neuronInfoSize*100.0/totMemSize,   cpuSnnSz.neuronInfoSize/(1024.0*1024));
-  fprintf(fp, "Synaptic Info Size:  %3.2f (%f MB)\n", cpuSnnSz.synapticInfoSize*100.0/totMemSize, cpuSnnSz.synapticInfoSize/(1024.0*1024));
-  fprintf(fp, "Network Size:	%3.2f (%f MB)\n", cpuSnnSz.networkInfoSize*100.0/totMemSize,  cpuSnnSz.networkInfoSize/(1024.0*1024));
-  fprintf(fp, "Firing Info Size:    %3.2f (%f MB)\n", cpuSnnSz.spikingInfoSize*100.0/totMemSize,   cpuSnnSz.spikingInfoSize/(1024.0*1024));
-  fprintf(fp, "Additional Info:     %3.2f (%f MB)\n", cpuSnnSz.addInfoSize*100.0/totMemSize,      cpuSnnSz.addInfoSize/(1024.0*1024));
-  fprintf(fp, "DebugInfo Info:      %3.2f (%f MB)\n", cpuSnnSz.debugInfoSize*100.0/totMemSize,    cpuSnnSz.debugInfoSize/(1024.0*1024));
-  fprintf(fp, "**************************************\n\n");
+  fprintf(fp, "Neuron Info Size:\t%3.2f %%\t(%3.2f MB)\n", cpuSnnSz.neuronInfoSize*100.0/totMemSize,   cpuSnnSz.neuronInfoSize/(1024.0*1024));
+  fprintf(fp, "Synaptic Info Size:\t%3.2f %%\t(%3.2f MB)\n", cpuSnnSz.synapticInfoSize*100.0/totMemSize, cpuSnnSz.synapticInfoSize/(1024.0*1024));
+  fprintf(fp, "Network Size:\t\t%3.2f %%\t(%3.2f MB)\n", cpuSnnSz.networkInfoSize*100.0/totMemSize,  cpuSnnSz.networkInfoSize/(1024.0*1024));
+  fprintf(fp, "Firing Info Size:\t%3.2f %%\t(%3.2f MB)\n", cpuSnnSz.spikingInfoSize*100.0/totMemSize,   cpuSnnSz.spikingInfoSize/(1024.0*1024));
+  fprintf(fp, "Additional Info:\t%3.2f %%\t(%3.2f MB)\n", cpuSnnSz.addInfoSize*100.0/totMemSize,      cpuSnnSz.addInfoSize/(1024.0*1024));
+  fprintf(fp, "DebugInfo Info:\t\t%3.2f %%\t(%3.2f MB)\n", cpuSnnSz.debugInfoSize*100.0/totMemSize,    cpuSnnSz.debugInfoSize/(1024.0*1024));
+  fprintf(fp, "*****************************************\n\n");
 
   fprintf(fp, "************* Connection Info *************\n");
   for(int g=0; g < numGrp; g++) {
@@ -107,28 +110,23 @@ void CpuSNN::printMemoryInfo(FILE *fp)
 
 // This method allows us to print all information about the neuron.
 // If the enablePrint is false for a specific group, we do not print its state.
-void CpuSNN::printState(const char *str)
-{
-  fprintf(stderr, "%s", str);
-  for(int g=0; g < numGrp; g++) {
-    if(grp_Info2[g].enablePrint) {
-      printNeuronState(g, stderr);
-      //printWeight(currentMode, g, "Displaying weights\n");
-    }
-  }
+void CpuSNN::printState(FILE* const fp) {
+	for(int g=0; g < numGrp; g++) {
+		if(grp_Info2[g].enablePrint) {
+			printNeuronState(g, fp);
+		}
+	}
 }
 
-void CpuSNN::printTuningLog()
-{
-  if (fpTuningLog) {
-    fprintf(fpTuningLog, "Generating Tuning log %d\n", cntTuning);
-    printParameters(fpTuningLog);
-    cntTuning++;
-  }
+void CpuSNN::printTuningLog(FILE * const fp) {
+	if (fp) {
+		fprintf(fp, "Generating Tuning log\n");
+		printParameters(fp);
+	}
 }
 
 
-void CpuSNN::printConnectionInfo(FILE *fp)
+void CpuSNN::printConnectionInfo(FILE * const fp)
 {
   grpConnectInfo_t* newInfo = connectBegin;
 
@@ -155,7 +153,7 @@ void CpuSNN::printConnectionInfo(FILE *fp)
   fflush(fp);
 }
 
-void CpuSNN::printConnectionInfo2(FILE *fpg)
+void CpuSNN::printConnectionInfo2(FILE * const fpg)
 {
   grpConnectInfo_t* newInfo = connectBegin;
 
@@ -183,7 +181,7 @@ void CpuSNN::printGroupInfo(std::string& strName)
   }
 }
 
-void CpuSNN::printGroupInfo(FILE* fp)
+void CpuSNN::printGroupInfo(FILE* const fp)
 {
   //FILE* fpg=fopen("group_info.txt", "w");
   //fprintf(fpg, "Group Id : Start : End : Group Name\n");
@@ -222,7 +220,7 @@ void CpuSNN::printGroupInfo(FILE* fp)
   //fclose(fpg);
 }
 
-void CpuSNN::printGroupInfo2(FILE* fpg)
+void CpuSNN::printGroupInfo2(FILE* const fpg)
 {
   fprintf(fpg, "#Group Information\n");
   for(int g=0; g < numGrp; g++) {
@@ -242,17 +240,16 @@ void CpuSNN::printGroupInfo2(FILE* fpg)
 }
 
 
-void CpuSNN::printParameters(FILE* fp)
-{
-  assert(fp!=NULL);
-  printGroupInfo(fp);
-  printConnectionInfo(fp);
+void CpuSNN::printParameters(FILE* const fp) {
+	assert(fp!=NULL);
+	printGroupInfo(fp);
+	printConnectionInfo(fp);
 }
 
 
 
 // print all post-connections...
-void CpuSNN::printPostConnection(FILE *fp)
+void CpuSNN::printPostConnection(FILE * const fp)
 {
   if(fp) fprintf(fp, "PRINTING POST-SYNAPTIC CONNECTION TOPOLOGY\n");
   if(fp) fprintf(fp, "(((((((((((((((((((((())))))))))))))))))))))\n");
@@ -261,7 +258,7 @@ void CpuSNN::printPostConnection(FILE *fp)
 }
 
 // print all the pre-connections...
-void CpuSNN::printPreConnection(FILE *fp)
+void CpuSNN::printPreConnection(FILE * const fp)
 {
   if(fp) fprintf(fp, "PRINTING PRE-SYNAPTIC CONNECTION TOPOLOGY\n");
   if(fp) fprintf(fp, "(((((((((((((((((((((())))))))))))))))))))))\n");
@@ -270,7 +267,7 @@ void CpuSNN::printPreConnection(FILE *fp)
 }
 
 // print the connection info of grpId
-int CpuSNN::printPostConnection2(int grpId, FILE* fpg)
+int CpuSNN::printPostConnection2(int grpId, FILE* const fpg)
 {
   int maxLength = -1;
   for(int i=grp_Info[grpId].StartN; i<=grp_Info[grpId].EndN; i++) {
@@ -297,27 +294,23 @@ int CpuSNN::printPostConnection2(int grpId, FILE* fpg)
   return maxLength;
 }
 
-void CpuSNN::printNetworkInfo()
-{
-  int maxLengthPost = -1;
-  int maxLengthPre  = -1;
-  FILE *fpg = fopen("net_info.txt", "w");
-  printGroupInfo2(fpg);
-  printConnectionInfo2(fpg);
-  fprintf(fpg, "#Flat Network Info Format \n");
-  fprintf(fpg, "#(neuron id : length (number of connections) : neuron_id0,delay0 : neuron_id1,delay1 : ... \n");
-  for(int g=0; g < numGrp; g++) {
-    int postM = printPostConnection2(g, fpg);
-    int numPreSynapses  = printPreConnection2(g, fpg);
-    if (postM > maxLengthPost)
-      maxLengthPost = postM;
-    if (numPreSynapses > maxLengthPre)
-      maxLengthPre = numPreSynapses;
-  }
-  fflush(fpg);
-  fclose(fpg);
-  fprintf(stdout, "Max post-synaptic length = %d\n", maxLengthPost);
-  fprintf(stdout, "Max pre-synaptic length = %d\n", maxLengthPre);
+void CpuSNN::printNetworkInfo(FILE* const fpg) {
+	int maxLengthPost = -1;
+	int maxLengthPre  = -1;
+	printGroupInfo2(fpg);
+	printConnectionInfo2(fpg);
+	fprintf(fpg, "#Flat Network Info Format \n");
+	fprintf(fpg, "#(neuron id : length (number of connections) : neuron_id0,delay0 : neuron_id1,delay1 : ... \n");
+	for(int g=0; g < numGrp; g++) {
+		int postM = printPostConnection2(g, fpg);
+		int numPreSynapses  = printPreConnection2(g, fpg);
+		if (postM > maxLengthPost)
+			maxLengthPost = postM;
+		if (numPreSynapses > maxLengthPre)
+			maxLengthPre = numPreSynapses;
+	}
+	fflush(fpg);
+	fclose(fpg);
 }
 
 void CpuSNN::printFiringRate(char *fname)
@@ -326,7 +319,7 @@ void CpuSNN::printFiringRate(char *fname)
   FILE *fpg;
   std::string strFname;
   if (fname == NULL)
-    strFname = networkName;
+    strFname = networkName_;
   else
     strFname = fname;
 
@@ -338,7 +331,7 @@ void CpuSNN::printFiringRate(char *fname)
 
   fprintf(fpg, "#Average Firing Rate\n");
   if(printCnt==0) {
-    fprintf(fpg, "#network %s: size = %d\n", networkName.c_str(), numN);
+    fprintf(fpg, "#network %s: size = %d\n", networkName_.c_str(), numN);
     for(int grpId=0; grpId < numGrp; grpId++) {
       fprintf(fpg, "#group %d: name %s : size = %d\n", grpId, grp_Info2[grpId].Name.c_str(), grp_Info[grpId].SizeN);
     }
@@ -364,7 +357,7 @@ void CpuSNN::printFiringRate(char *fname)
 }
 
 // print the connection info of grpId
-void CpuSNN::printPostConnection(int grpId, FILE* fp)
+void CpuSNN::printPostConnection(int grpId, FILE* const fp)
 {
   for(int i=grp_Info[grpId].StartN; i<=grp_Info[grpId].EndN; i++) {
     if(fp) fprintf(fp, " %3d ( %3d ) : \t", i, Npost[i]);
@@ -387,7 +380,7 @@ void CpuSNN::printPostConnection(int grpId, FILE* fp)
   }
 }
 
-int CpuSNN::printPreConnection2(int grpId, FILE* fpg)
+int CpuSNN::printPreConnection2(int grpId, FILE* const fpg)
 {
   int maxLength = -1;
   for(int i=grp_Info[grpId].StartN; i<=grp_Info[grpId].EndN; i++) {
@@ -404,7 +397,7 @@ int CpuSNN::printPreConnection2(int grpId, FILE* fpg)
   return maxLength;
 }
 
-void CpuSNN::printPreConnection(int grpId, FILE* fp)
+void CpuSNN::printPreConnection(int grpId, FILE* const fp)
 {
   for(int i=grp_Info[grpId].StartN; i<=grp_Info[grpId].EndN; i++) {
     if(fp) fprintf(fp, " %d ( preCnt=%d, prePlastic=%d ) : (id => (wt, maxWt),(preId, P/F)\n\t", i, Npre[i], Npre_plastic[i]);
@@ -422,13 +415,13 @@ void CpuSNN::printPreConnection(int grpId, FILE* fp)
 }
 
 
-void CpuSNN::printNeuronState(int grpId, FILE*fp)
+void CpuSNN::printNeuronState(int grpId, FILE* const fp)
 {
-  if (currentMode==GPU_MODE) {
+  if (simMode_==GPU_MODE) {
     copyNeuronState(&cpuNetPtrs, &cpu_gpuNetPtrs, cudaMemcpyDeviceToHost, false, grpId);
   }
 
-  fprintf(fp, "[MODE=%s] ", (currentMode==GPU_MODE)?"GPU_MODE":"CPU_MODE");
+  fprintf(fp, "[MODE=%s] ", (simMode_==GPU_MODE)?"GPU_MODE":"CPU_MODE");
   fprintf(fp, "Group %s (%d) Neuron State Information (totSpike=%d, poissSpike=%d)\n",
 	  grp_Info2[grpId].Name.c_str(), grpId, spikeCountAll, nPoissonSpikes);
 
@@ -468,77 +461,44 @@ void CpuSNN::printNeuronState(int grpId, FILE*fp)
 }
 
 //! used in showStatus
-void CpuSNN::printWeight(int grpId, const char *str)
-{
-  int stg, endg;
-  if(grpId == -1) {
-    stg  = 0;
-    endg = numGrp;
-  }
-  else {
-    stg = grpId;
-    endg = grpId+1;
-  }
+void CpuSNN::printWeight(int grpId, const char *str) {
+	int stg, endg;
+	if(grpId == -1) {
+		stg  = 0;
+		endg = numGrp;
+	}
+	else {
+		stg = grpId;
+		endg = grpId+1;
+	}
 
-  for(int g=stg; (g < endg) ; g++) {
-    fprintf(stderr, "%s", str);
-    if (!grp_Info[g].FixedInputWts) {
-      //fprintf(stderr, "w=\t");
-      if (currentMode == GPU_MODE) {
-  copyWeightState (&cpuNetPtrs, &cpu_gpuNetPtrs, cudaMemcpyDeviceToHost, false, g);
-      }
-      int i=grp_Info[g].StartN;
-      unsigned int offset = cumulativePre[i];
-      //fprintf(stderr, "time=%d, Neuron synaptic weights %d:\n", simTime, i);
-      for(int j=0; j < Npre[i]; j++) {
-  //fprintf(stderr, "w=%f c=%f spt=%d\t", wt[offset+j], wtChange[offset+j], synSpikeTime[offset+j]);
-  fprintf(stdout, "%1.3f,%1.3f\t", cpuNetPtrs.wt[offset+j], cpuNetPtrs.wtChange[offset+j]);
-      }
-      fprintf(stdout, "\n");
-    }
-  }
+	for(int g=stg; (g < endg) ; g++) {
+		fprintf(fpOut_, "%s", str);
+		if (!grp_Info[g].FixedInputWts) {
+			if (simMode_ == GPU_MODE) {
+				copyWeightState (&cpuNetPtrs, &cpu_gpuNetPtrs, cudaMemcpyDeviceToHost, false, g);
+			}
+			int i=grp_Info[g].StartN;
+			unsigned int offset = cumulativePre[i];
+			for(int j=0; j < Npre[i]; j++) {
+				fprintf(fpOut_, "%1.3f,%1.3f\t", cpuNetPtrs.wt[offset+j], cpuNetPtrs.wtChange[offset+j]);
+			}
+			fprintf(fpOut_, "\n");
+		}
+	}
 }
 
 // show the status of the simulator...
 // when onlyCnt is set, we print the actual count instead of frequency of firing
-void CpuSNN::showStatus(int simType)
-{
-  DBG(2, fpLog, AT, "showStatus() called");
+void CpuSNN::showStatus() {
+  fprintf(fpOut_, "vvv (time=%lld) =========\n\n", (unsigned long long) simTimeSec);
+	printState(fpOut_);
 
-  printState("showStatus\n");
+	if(simMode_ == GPU_MODE) {
+		showStatus_GPU();
+		return;
+	}
 
-  if(simType == GPU_MODE) {
-    showStatus_GPU();
-    return;
-  }
+	printWeight(-1);
 
-  FILE* fpVal[2];
-  fpVal[0] = fpLog;
-  fpVal[1] = fpProgLog;
-
-  for(int k=0; k < 2; k++) {
-
-    if(k==0)
-      printWeight(-1);
-
-    fprintf(fpVal[k], "(time=%lld) =========\n\n", (unsigned long long) simTimeSec);
-
-
-#if REG_TESTING
-    // if the overall firing rate is very low... then report error...
-    if((spikeCountAll1sec*1.0f/numN) < 1.0) {
-      fprintf(fpVal[k], " SIMULATION WARNING !!! Very Low Firing happened...\n");
-      fflush(fpVal[k]);
-    }
-#endif
-
-    fflush(fpVal[k]);
-  }
-
-#if REG_TESTING
-  if(spikeCountAll1sec == 0) {
-    fprintf(stderr, " SIMULATION ERROR !!! Very Low or no firing happened...\n");
-    //exit(-1);
-  }
-#endif
 }

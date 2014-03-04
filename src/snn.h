@@ -41,12 +41,11 @@
 #ifndef _SNN_GOLD_H_
 #define _SNN_GOLD_H_
 
-#include "mtrand.h"
-#include "gpu_random.h"
-#include "config.h"
-#include "propagated_spike_buffer.h"
-#include "poisson_rate.h"
-#include "sparse_weight_delay_matrix.h"
+#include <mtrand.h>
+#include <gpu_random.h>
+#include <config.h>
+#include <propagated_spike_buffer.h>
+#include <poisson_rate.h>
 
 #if __CUDA3__
 	#include <cuda.h>
@@ -63,16 +62,24 @@
 
 #include "CUDAVersionControl.h"
 
+
+// enable easy testing of private members
+#if REGRESSION_TESTING
+	#define private public
+ 	#define protected public
+#endif
+
+
 extern RNG_rand48* gpuRand48; //!< Used by all network to generate global random number
 
+#define MAX_GRPS_PER_BLOCK 		100
+#define MAX_BLOCKS         		120
 
 #define ALL -1 //!< used for the set* methods to specify all groups and/or configIds
 
 #define SYN_FIXED      0
 #define SYN_PLASTIC    1
 
-#define CPU_MODE 0
-#define GPU_MODE 1
 
 // Bit flags to be used to specify the type of neuron.  Future types can be added in the future such as Dopamine, etc.
 // Yes, they should be bit flags because some neurons release more than one transmitter at a synapse.
@@ -119,14 +126,6 @@ extern RNG_rand48* gpuRand48; //!< Used by all network to generate global random
 #define GET_INITWTS_RAMPUP(a)		(((a) >> CONNECTION_INITWTS_RAMPUP)&1)
 #define GET_INITWTS_RAMPDOWN(a)		(((a) >> CONNECTION_INITWTS_RAMPDOWN)&1)
 
-#define  checkNetworkBuilt()  {						\
-    if(!doneReorganization)  {						\
-      DBG(0, fpLog, AT, "checkNetworkBuilt()");				\
-      fprintf(fpLog, "Network not yet elaborated and built...\n");	\
-      fprintf(stderr, "Network not yet elaborated and built...\n");	\
-      return;								\
-    }									\
-  }
 
 /****************************/
 
@@ -175,6 +174,78 @@ inline bool isInhibitoryNeuron (unsigned int& nid, unsigned int& numNInhPois, un
 //!< Used for in the function getConnectionId
 #define CHECK_CONNECTION_ID(n,total) { assert(n >= 0); assert(n < total); }
 
+
+// use these macros for logging / error printing
+// every message will be printed to one of fpOut_, fpErr_, fpDeb_ depending on the nature of the message
+// Additionally, every message gets printed to some log file fpLog_. This is different from fpDeb_ for
+// the case in which you want the two to be different (e.g., developer mode, in which you would like to
+// see all debug info (stdout) but also have it saved to a file
+#define CARLSIM_ERROR(formatc, ...) {	CARLSIM_ERROR_PRINT(fpErr_,formatc,##__VA_ARGS__); \
+										CARLSIM_DEBUG_PRINT(fpLog_,formatc,##__VA_ARGS__); }
+#define CARLSIM_WARN(formatc, ...) {	CARLSIM_WARN_PRINT(fpErr_,formatc,##__VA_ARGS__); \
+										CARLSIM_DEBUG_PRINT(fpLog_,formatc,##__VA_ARGS__); }
+#define CARLSIM_INFO(formatc, ...) {	CARLSIM_INFO_PRINT(fpOut_,formatc,##__VA_ARGS__); \
+										CARLSIM_DEBUG_PRINT(fpLog_,formatc,##__VA_ARGS__); }
+#define CARLSIM_DEBUG(formatc, ...) {	CARLSIM_DEBUG_PRINT(fpDeb_,formatc,##__VA_ARGS__); \
+										CARLSIM_DEBUG_PRINT(fpLog_,formatc,##__VA_ARGS__); }
+
+#define CARLSIM_ERROR_PRINT(fp, formatc, ...) fprintf(fp,"\033[31;1m[ERROR %s:%d] " formatc "\033[0m \n",__FILE__,__LINE__,##__VA_ARGS__)
+#define CARLSIM_WARN_PRINT(fp, formatc, ...) fprintf(fp,"\033[33;1m[WARNING %s:%d] " formatc "\033[0m \n",__FILE__,__LINE__,##__VA_ARGS__)
+#define CARLSIM_INFO_PRINT(fp, formatc, ...) fprintf(fp,formatc "\n",##__VA_ARGS__)
+#define CARLSIM_DEBUG_PRINT(fp, formatc, ...) fprintf(fp,"[DEBUG %s:%d] " formatc "\n",__FILE__,__LINE__,##__VA_ARGS__)
+
+/*!
+ * \brief Logger modes
+ * The logger mode defines where to print all status, error, and debug messages. Several predefined
+ * modes exist (USER, DEVELOPER, SILENT). However, the user can also set each file pointer to a
+ * location of their choice (CUSTOM mode).
+ * The following logger modes exist:
+ *  USER 		User mode, for experiment-oriented simulations. Errors and warnings go to stderr,
+ *              status information goes to stdout. Debug information can only be found in the log file.
+ *  DEVELOPER   Developer mode, for developing and debugging code. Same as user, but additionally,
+ *              all debug information is printed to stdout.
+ *  SILENT      Silent mode, no output is generated.
+ *  CUSTOM      Custom mode, the user can set the location of all the file pointers.
+ * 
+ * The following file pointers exist:
+ *  fpOut_	where CARLSIM_INFO messages go
+ *  fpErr_ 	where CARLSIM_ERROR and CARLSIM_WARN messages go
+ *  fpDeb_ 	where CARLSIM_DEBUG messages go
+ *  fpLog_ 	typically a log file, where all of the above messages go
+ *
+ * The file pointers are automatically set to different locations, depending on the loggerMode:
+ *
+ *          |    USER    | DEVELOPER  |   SILENT   |  CUSTOM
+ * ---------|------------|------------|------------|---------
+ * fpOut_   |   stdout   |   stdout   | /dev/null  |    ?
+ * fpErr_   |   stderr   |   stderr   | /dev/null  |    ?
+ * fpDeb_   | /dev/null  |   stdout   | /dev/null  |    ?
+ * fpLog_   | debug.log  | debug.log  | /dev/null  |    ?
+ *
+ * Location of the debug log file can be set in any mode using CARLsim::setLogDebugFp.
+ * In mode CUSTOM, the other file pointers can be set using CARLsim::setLogsFp.
+ */
+enum loggerMode_t { USER, DEVELOPER, SILENT, CUSTOM, UNKNOWN };
+
+/*!
+ * \brief simulation mode
+ * CARLsim supports execution either on standard x86 central processing units (CPUs) or off-the-shelf NVIDIA GPUs.
+ * 
+ * When creating a new CARLsim object, you can choose from the following:
+ * CPU_MODE:	run on a single CPU core
+ * GPU_MODE:	run on a single GPU card
+ * 
+ * When running GPU mode on a multi-GPU system, you can specify on which CUDA device to establish a context (ithGPU,
+ * 0-indexed) when you create a new CpuSNN object.
+ * The simulation mode will be fixed throughout the lifetime of a CpuSNN object.
+ */
+enum simMode_t {CPU_MODE, GPU_MODE};
+
+//! connection types, used internally (externally it's a string)
+enum conType_t { CONN_RANDOM, CONN_ONE_TO_ONE, CONN_FULL, CONN_FULL_NO_DIRECT, CONN_USER_DEFINED, CONN_UNKNOWN};
+
+
+
 // forward-declaration
 class CpuSNN;
 
@@ -188,12 +259,12 @@ class CpuSNN;
  * This is accomplished using a callback mechanism, which is called at each time step, to specify whether a neuron has
  * fired or not. */
 class SpikeGenerator {
- public:
-  SpikeGenerator() {};
+public:
+	SpikeGenerator() {};
 
-  //! controls spike generation using a callback
-  /*! \attention The virtual method should never be called directly */
-  virtual unsigned int nextSpikeTime(CpuSNN* s, int grpId, int i, unsigned int currentTime) { assert(false); return 0; }; // the virtual method should never be called directly
+	//! controls spike generation using a callback
+	/*! \attention The virtual method should never be called directly */
+	virtual unsigned int nextSpikeTime(CpuSNN* s, int grpId, int i, unsigned int currentTime) = 0;
 };
 
 //! used for fine-grained control over spike generation, using a callback mechanism
@@ -206,12 +277,13 @@ class SpikeGenerator {
  * the connection's delay, initial weight, maximum weight, and whether or not it is plastic.
  */
 class ConnectionGenerator {
- public:
-  ConnectionGenerator() {};
+public:
+	ConnectionGenerator() {};
 
-  //! specifies which synaptic connections (per group, per neuron, per synapse) should be made
-  /*! \attention The virtual method should never be called directly */
-  virtual void connect(CpuSNN* s, int srcGrpId, int i, int destGrpId, int j, float& weight, float& maxWt, float& delay, bool& connected) { assert(false); }; // the virtual method should never be called directly
+	//! specifies which synaptic connections (per group, per neuron, per synapse) should be made
+	/*! \attention The virtual method should never be called directly */
+	virtual void connect(CpuSNN* s, int srcGrpId, int i, int destGrpId, int j, float& weight, float& maxWt,
+							float& delay, bool& connected) = 0;
 };
 
 
@@ -227,7 +299,7 @@ class SpikeMonitor {
 
   //! Controls actions that are performed when certain neurons fire (user-defined).
   /*! \attention The virtual method should never be called directly */
-  virtual void update(CpuSNN* s, int grpId, unsigned int* Nids, unsigned int* timeCnts) {};
+  virtual void update(CpuSNN* s, int grpId, unsigned int* Nids, unsigned int* timeCnts) = 0;
 };
 
 
@@ -264,76 +336,91 @@ typedef struct network_info_s  {
 } network_info_t;
 
 //! nid=neuron id, sid=synapse id, grpId=group id. 
-inline post_info_t SET_CONN_ID(int nid, int sid, int grpId)
-{
-  if (sid > CONN_SYN_MASK) {
-    fprintf(stderr, "Error: Syn Id (%d) exceeds maximum limit (%d) for neuron %d\n", sid, CONN_SYN_MASK, nid);
-    assert(0);
-  }
-  post_info_t p;
-  p.postId = (((sid)<<CONN_SYN_NEURON_BITS)+((nid)&CONN_SYN_NEURON_MASK));
-  p.grpId  = grpId;
-  return p;
+inline post_info_t SET_CONN_ID(int nid, int sid, int grpId) {
+	if (sid > CONN_SYN_MASK) {
+		fprintf(stderr, "Error: Syn Id (%d) exceeds maximum limit (%d) for neuron %d\n", sid, CONN_SYN_MASK, nid);
+		assert(0);
+	}
+	post_info_t p;
+	p.postId = (((sid)<<CONN_SYN_NEURON_BITS)+((nid)&CONN_SYN_NEURON_MASK));
+	p.grpId  = grpId;
+	return p;
 }
 
+//! connection infos...
+typedef struct connectData_s {
+	int 	  				grpSrc, grpDest;
+	uint8_t	  				maxDelay,  minDelay;
+	float	  				initWt, maxWt;
+	float 					mulSynFast;				//!< factor to be applied to either gAMPA or gGABAa
+	float 					mulSynSlow;				//!< factor to be applied to either gNMDA or gGABAb
+	int	  	  				numPostSynapses;
+	int	  	  				numPreSynapses;
+	uint32_t  				connProp;
+	ConnectionGenerator*	conn;
+	conType_t 				type;
+	float					p; 						//!< connection probability
+	short int				connId;					//!< connectID of the element in the linked list
+	bool					newUpdates;
+	int		   				numberOfConnections;
+	struct connectData_s* next;
+} grpConnectInfo_t;
+
 typedef struct network_ptr_s  {
-  float	*voltage, *recovery, *Izh_a, *Izh_b, *Izh_c, *Izh_d, *current;
+	float	*voltage, *recovery, *Izh_a, *Izh_b, *Izh_c, *Izh_d, *current;
 
-  // conductances and stp values
-  float	*gNMDA, *gAMPA, *gGABAa, *gGABAb;
-  int*	I_set;
-  int		memType;
-  int		allocated;			//!< true if all data has been allocated..
-  float	*stpx, *stpu;
+	// conductances and stp values
+	float	*gNMDA, *gAMPA, *gGABAa, *gGABAb;
+	int*	I_set;
+	simMode_t		memType; // FIXME: horrible naming
+	int		allocated;			//!< true if all data has been allocated..
+	float	*stpx, *stpu;
 
-  unsigned short	*Npre;				//!< stores the number of input connections to the neuron
-  unsigned short	*Npre_plastic;			//!< stores the number of plastic input connections
-  float	*Npre_plasticInv;			//!< stores the 1/number of plastic input connections, for use on the GPU
-  unsigned short	*Npost;				//!< stores the number of output connections from a neuron.
-  unsigned int		*lastSpikeTime;			//!< storees the firing time of the neuron
-  float	*wtChange, *wt;	//!< stores the synaptic weight and weight change of a synaptic connection
-  float	 *maxSynWt;			//!< maximum synaptic weight for given connection..
-  uint32_t *synSpikeTime;
-  uint32_t *neuronFiring;
-  unsigned int		*cumulativePost;
-  unsigned int		*cumulativePre;
+	unsigned short	*Npre;				//!< stores the number of input connections to the neuron
+	unsigned short	*Npre_plastic;			//!< stores the number of plastic input connections
+	float	*Npre_plasticInv;			//!< stores the 1/number of plastic input connections, for use on the GPU
+	unsigned short	*Npost;				//!< stores the number of output connections from a neuron.
+	unsigned int		*lastSpikeTime;			//!< storees the firing time of the neuron
+	float	*wtChange, *wt;	//!< stores the synaptic weight and weight change of a synaptic connection
+	float	 *maxSynWt;			//!< maximum synaptic weight for given connection..
+	uint32_t *synSpikeTime;
+	uint32_t *neuronFiring;
+	unsigned int		*cumulativePost;
+	unsigned int		*cumulativePre;
 
-  /*!
-   * \brief 10 bit syn id, 22 bit neuron id, ordered based on delay
-   *
-   * allows maximum synapses of 1024 and maximum network size of 4 million neurons, with 64 bit representation. we can
-   * have larger networks for simulation
-   */
-  post_info_t	*postSynapticIds;
+	float 	*mulSynFast, *mulSynSlow;
+	short int *cumConnIdPre;	//!< connectId, per synapse, presynaptic cumulative indexing
 
-  post_info_t	*preSynapticIds;
-  delay_info_t    *postDelayInfo;  	//!< delay information
-  unsigned int*		firingTableD1;
-  unsigned int*		firingTableD2;
-  //	int*		randId;
-  //	void*		noiseGenProp;
+	/*!
+	 * \brief 10 bit syn id, 22 bit neuron id, ordered based on delay
+	 *
+	 * allows maximum synapses of 1024 and maximum network size of 4 million neurons, with 64 bit representation. we can
+	 * have larger networks for simulation
+	 */
+	post_info_t	*postSynapticIds;
 
+	post_info_t	*preSynapticIds;
+	delay_info_t    *postDelayInfo;  	//!< delay information
+	unsigned int*		firingTableD1;
+	unsigned int*		firingTableD2;
 
-  float*		poissonFireRate;
-  unsigned int*		poissonRandPtr;		//!< firing random number. max value is 10,000
-  int2*		neuronAllocation;
-  int3*		groupIdInfo;		//!< used for group Id calculations...
-  short int*	synIdLimit;			//
-  float*		synMaxWts;			//
+	float*		poissonFireRate;
+	unsigned int*		poissonRandPtr;		//!< firing random number. max value is 10,000
+	int2*		neuronAllocation;
+	int3*		groupIdInfo;		//!< used for group Id calculations...
+	short int*	synIdLimit;			//
+	float*		synMaxWts;			//
+	unsigned int*		nSpikeCnt;
 
-  unsigned int*		nSpikeCnt;
+	//!< homeostatic plasticity variables
+	float*	baseFiringInv;
+	float*	baseFiring;
+	float*	avgFiring;
 
-  //!< homeostatic plasticity variables
-  float*	baseFiringInv;
-  float*	baseFiring;
-  float*	avgFiring;
-
-
-
-  float* 		testVar;
-  float*		testVar2;
-  uint32_t*	spikeGenBits;
-  bool*		curSpike;
+	float* 		testVar;
+	float*		testVar2;
+	uint32_t*	spikeGenBits;
+	bool*		curSpike;
 } network_ptr_t;
 
 typedef struct group_info_s
@@ -421,32 +508,10 @@ typedef struct group_info2_s
   int			sumPreConn;
 } group_info2_t;
 
-enum conType_t { CONN_RANDOM, CONN_ONE_TO_ONE, CONN_FULL, CONN_FULL_NO_DIRECT, CONN_USER_DEFINED, CONN_UNKNOWN};
-
-//! connection infos...
-typedef struct connectData_s {
-  int 	  		grpSrc, grpDest;
-  uint8_t	  		maxDelay,  minDelay;
-  float	  		initWt, maxWt;
-  int	  	  		numPostSynapses;
-  int	  	  		numPreSynapses;
-  uint32_t  		connProp;
-  ConnectionGenerator*		conn;
-  conType_t 		type;
-  float			p;
-  int				connId;
-  bool			newUpdates;
-  int		   		numberOfConnections;
-  struct connectData_s* next;
-} grpConnectInfo_t;
 
 
-#define MAX_GRPS_PER_BLOCK 		100
-#define MAX_BLOCKS         		120
-////////////////////////////////////
-// member variable
-////////////////////////////////////
-typedef struct grpConnInfo_s {
+// FIXME: deprecated???
+/*typedef struct grpConnInfo_s {
   int16_t	srcGrpId;			//!< group id
   int	srcStartN;		//!< starting neuron to begin computation
   int	srcEndN;			//!< ending neuron to stop computation
@@ -459,7 +524,7 @@ typedef struct grpConnInfo_s {
   int*	fixedDestGrps;		//!< connected destination groups array, (x=destGrpId, y=startN, z=endN, w=function pointer)
   int*	fixedDestParam;	//!< connected destination parameters ,  (x=Start, y=Width, z=Stride, w=height)
 } grpConnInfo_t;
-
+*/
 
 
 
@@ -479,7 +544,7 @@ class CpuSNN {
 /// PUBLIC METHODS
 /// **************************************************************************************************************** ///
 public:
-	CpuSNN(const std::string& _name, int _numConfig=1, int randomize=0, int mode=CPU_MODE);
+	CpuSNN(std::string& name, simMode_t simMode, loggerMode_t loggerMode, int ithGPU, int nConfig, int randSeed);
 	~CpuSNN();
 
 	// +++++ PUBLIC PROPERTIES ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
@@ -494,19 +559,20 @@ public:
 	// NOTE: there should be no default argument values in here, this should be handled by the user interface
 
 	//! make connection of type "random","full","one-to-one" from each neuron in grpId1 to neurons in grpId2
-	int connect(int gIDpre, int gIDpost, const std::string& _type, float initWt, float maxWt, float _C,
-					uint8_t minDelay, uint8_t maxDelay, bool synWtType);
+	short int connect(int gIDpre, int gIDpost, const std::string& _type, float initWt, float maxWt, float _C,
+					uint8_t minDelay, uint8_t maxDelay, float mulSynFast, float mulSynSlow, bool synWtType);
 
 	//! make custom connections from grpId1 to grpId2
 	// TODO: describe maxM and maxPreM
-	int connect(int gIDpre, int gIDpost, ConnectionGenerator* conn, bool synWtType, int maxM,int maxPreM);
+	short int connect(int gIDpre, int gIDpost, ConnectionGenerator* conn, float mulSynFast, float mulSynSlow,
+					bool synWtType,	int maxM, int maxPreM);
 
 
 	//! creates a group of Izhikevich spiking neurons
-	int createGroup(const std::string& grpName, unsigned int nNeur, int neurType, int configId);
+	int createGroup(const std::string& grpName, int nNeur, int neurType, int configId);
 
 	//! creates a spike generator group (dummy-neurons, not Izhikevich spiking neurons). 
-	int createSpikeGeneratorGroup(const std::string& grpName, int unsigned nNeur, int neurType, int configId);
+	int createSpikeGeneratorGroup(const std::string& grpName, int nNeur, int neurType, int configId);
 
 
   	//! sets custom values for conductance decay (\tau_decay) or disables conductances alltogether
@@ -545,10 +611,10 @@ public:
 
 	/*!
 	 * \brief run the simulation for n sec
-	 * simType can either be CPU_MODE or GPU_MODE
-	 * ithGPU: specify on which CUDA device to establish a context
+	 * \param[in] enablePrint 	enable printing of status information
+	 * \param[in] copyState 	enable copying of data from device to host
 	 */
-	int runNetwork(int _nsec, int _nmsec, int simType, int ithGPU, bool enablePrint, bool copyState);
+	int runNetwork(int _nsec, int _nmsec, bool enablePrint, bool copyState);
 
 
 
@@ -563,7 +629,7 @@ public:
 	 * configuration ID (configID).  This function only works for fixed synapses and for connections of type
 	 * CONN_USER_DEFINED. Only the weights are changed, not the maxWts, delays, or connected values
 	 */
-	void reassignFixedWeights(int connectId, float weightMatrix[], int matrixSize, int configId);
+	void reassignFixedWeights(short int connectId, float weightMatrix[], int matrixSize, int configId);
 
 	void resetSpikeCntUtil(int grpId = -1); //!< resets spike count for particular neuron group
 
@@ -592,14 +658,29 @@ public:
 
 	// +++++ PUBLIC METHODS: LOGGING / PLOTTING +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
-	void setLogCycle(unsigned int _cnt, int mode, FILE *fp);
+	//! how often network status should be printed (seconds)
+	void setLogCycle(int showStatusCycle);
 
+	/*!
+	 * \brief Sets the file pointer of the debug log file
+	 * \param[in] fpLog file pointer to new log file
+	 */
+	void setLogDebugFp(FILE* fpLog);
+
+	/*!
+	 * \brief Sets the file pointers for all log files
+	 * \param[in] fpOut file pointer for status info
+	 * \param[in] fpErr file pointer for errors/warnings
+	 * \param[in] fpDeb file pointer for debug info
+	 * \param[in] fpLog file pointer for debug log file that contains all the above info
+	 */
+	void setLogsFp(FILE* fpOut, FILE* fpErr, FILE* fpDeb, FILE* fpLog);
 
 
 	// +++++ PUBLIC METHODS: GETTERS / SETTERS ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
-	grpConnectInfo_t* getConnectInfo(int connectId, int configId); //!< required for homeostasis
-	int  getConnectionId(int connId, int configId);
+	grpConnectInfo_t* getConnectInfo(short int connectId, int configId); //!< required for homeostasis
+	int  getConnectionId(short int connId, int configId);
 
 	// FIXME: fix this
 	uint8_t* getDelays(int gIDpre, int gIDpost, int& Npre, int& Npost, uint8_t* delays);
@@ -608,8 +689,10 @@ public:
 	group_info_t getGroupInfo(int groupId, int configId);
 	std::string getGroupName(int grpId, int configId);
 
-	int getNumConfigurations()	{ return numConfig; }	//!< gets number of network configurations
-	int getNumConnections(int connectionId);			//!< gets number of connections associated with a connection ID
+	loggerMode_t getLoggerMode() { return loggerMode_; }
+
+	int getNumConfigurations()	{ return nConfig_; }	//!< gets number of network configurations
+	int getNumConnections(short int connectionId);		//!< gets number of connections associated with a connection ID
 	int getNumGroups() { return numGrp; }
 
 	/*!
@@ -621,6 +704,7 @@ public:
 	 */
 	void getPopWeights(int gIDpre, int gIDpost, float*& weights, int& size, int configId = 0);
 
+	int getSimMode()		{ return simMode_; }
 	uint64_t getSimTime()		{ return simTime; }
 	uint32_t getSimTimeSec()	{ return simTimeSec; }
 	uint32_t getSimTimeMs()		{ return simTimeMs; }
@@ -631,7 +715,7 @@ public:
  	 * \brief Returns pointer to nSpikeCnt, which is a 1D array of the number of spikes every neuron in the group
 	 *  has fired.  Takes the grpID and the simulation mode (CPU_MODE or GPU_MODE) as arguments.
 	 */
-	unsigned int* getSpikeCntPtr(int grpId=ALL, int simType=CPU_MODE);
+	unsigned int* getSpikeCntPtr(int grpId=ALL);
 
 	// FIXME: fix this
 	// TODO: maybe consider renaming getPopWeightChanges
@@ -653,11 +737,8 @@ public:
 	 */
 	void setCopyFiringStateFromGPU(bool _enableGPUSpikeCntPtr);
 
-
 	void setGroupInfo(int groupId, group_info_t info, int configId=ALL);
 	void setPrintState(int grpId, bool _status);
-	void setSimLogs(bool enable, std::string logDirName = "");
-	void setTuningLog(std::string fname);
 
 
 /// **************************************************************************************************************** ///
@@ -666,7 +747,9 @@ public:
 
 private:
 	// +++++ CPU MODE +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
-	void CpuSNNInit(unsigned int nNeur, unsigned int nPostSyn, unsigned int nPreSyn, unsigned int maxDelay);
+	void CpuSNNinit();	//!< all unsafe operations of constructor
+
+	void buildNetworkInit(unsigned int nNeur, unsigned int nPostSyn, unsigned int nPreSyn, unsigned int maxDelay);
 
 	int  addSpikeToTable(int id, int g); //!< add the entry that the current neuron has spiked
 
@@ -675,7 +758,6 @@ private:
 	void buildPoissonGroup(int groupId);
 
 	void compactConnections(); //!< minimize any other wastage in that array by compacting the store
-	void connectFromMatrix(SparseWeightDelayMatrix* mat, int connProp);
 	void connectFull(grpConnectInfo_t* info);
 	void connectOneToOne(grpConnectInfo_t* info);
 	void connectRandom(grpConnectInfo_t* info);
@@ -714,31 +796,33 @@ private:
 	// NOTE: all these printer functions should be in printSNNInfo.cpp
 	// FIXME: are any of these actually supposed to be public?? they are not yet in carlsim.h
 	void printConnection(const std::string& fname);
-	void printConnection(FILE *fp=stdout);
-	void printConnection(int grpId, FILE  *fp=stdout); //!< print the connection info of grpId
+	void printConnection(FILE* fp);
+	void printConnection(int grpId, FILE* fp); //!< print the connection info of grpId
 	void printConnectionInfo(FILE* fp);
 	void printConnectionInfo2(FILE *fpg);
-	void printCurrentInfo(FILE *fp); //!< for GPU debugging
+	void printCurrentInfo(FILE* fp); //!< for GPU debugging
 	void printFiringRate(char *fname=NULL);
-	void printGpuLoadBalance(bool init = false, int numBlocks = MAX_BLOCKS, FILE*fp = stdout); //!< for GPU debugging
+	void printGpuLoadBalance(bool init, int numBlocks, FILE* fp); //!< for GPU debugging
+//	void printGpuLoadBalance(bool init=false, int numBlocks = MAX_BLOCKS, const FILE* fp); //!< for GPU debugging
 	void printGroupInfo(FILE* fp);
 	void printGroupInfo(std::string& strName);
 	void printGroupInfo2(FILE* fpg);
-	void printMemoryInfo(FILE* fp=stdout); //!< prints memory info to file
-	void printNetworkInfo();
-	void printNeuronState(int grpId, FILE *fp = stderr);
+	void printMemoryInfo(FILE* fp); //!< prints memory info to file
+	void printNetworkInfo(FILE* fp);
+	void printNeuronState(int grpId, FILE* fp);
 	void printParameters(FILE *fp);
-	void printPostConnection(FILE *fp = stdout); //!< print all post connections
-	void printPostConnection(int grpId, FILE  *fp = stdout);
+	void printPostConnection(FILE* fp); //!< print all post connections
+	void printPostConnection(int grpId, FILE* fp);
 	int  printPostConnection2(int grpId, FILE* fpg);
-	void printPreConnection(FILE  *fp = stdout); //!< print all pre connections
-	void printPreConnection(int grpId, FILE  *fp = stdout);
+	void printPreConnection(FILE* fp); //!< print all pre connections
+	void printPreConnection(int grpId, FILE* fp);
 	int  printPreConnection2(int grpId, FILE* fpg);
-	void printSimSummary(FILE *fp = stdout); //!< prints a simulation summary to file
-	void printState(const char *str = "");
-	void printTestVarInfo(FILE *fp, char* testString, bool test1=true, bool test2=true, bool test12=false,
+	void printSimSummary(); 	//!< prints a simulation summary at the end of sim
+	void printState(FILE* fp);
+//	void printState(const char *str = "", const FILE* fp);
+	void printTestVarInfo(FILE* fp, char* testString, bool test1=true, bool test2=true, bool test12=false,
 							int subVal=0, int grouping1=0, int grouping2=0); //!< for GPU debugging
-	void printTuningLog();
+	void printTuningLog(FILE* fp);
 	void printWeight(int grpId, const char *str = "");
 
 	// FIXME: difference between the options? is one deprecated or are both still used?
@@ -749,7 +833,7 @@ private:
 	#endif
 
 	void reorganizeDelay();
-	void reorganizeNetwork(bool removeTempMemory, int simType);
+	void reorganizeNetwork(bool removeTempMemory);
 
 	void resetConductances();
 	void resetCounters();
@@ -766,13 +850,14 @@ private:
 	void resetTimingTable();
 
 	inline void setConnection(int srcGrpId, int destGrpId, unsigned int src, unsigned int dest, float synWt,
-								float maxWt, uint8_t dVal, int connProp);
+								float maxWt, uint8_t dVal, int connProp, short int connId);
 
 	void setGrpTimeSlice(int grpId, int timeSlice); //!< used for the Poisson generator. TODO: further optimize
+	int setRandSeed(int seed);	//!< setter function for const member randSeed_
 
-	void setupNetwork(int simType=CPU_MODE, int ithGPU=0, bool removeTempMemory=true);
+	void setupNetwork(bool removeTempMemory=true);
 
-	void showStatus(int simType=CPU_MODE);
+	void showStatus();
 
 	void startCPUTiming();
 	void stopCPUTiming();
@@ -792,12 +877,12 @@ private:
 
 	// +++++ GPU MODE +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 	// TODO: consider moving to snn_gpu.h
-	void CpuSNNinitGPUparams();	//!< initializes params needed in snn_gpu.cu (gets called in CpuSNN constructor)
+	void CpuSNNinit_GPU();	//!< initializes params needed in snn_gpu.cu (gets called in CpuSNN constructor)
 
 	void allocateGroupId();
 	void allocateGroupParameters();
 	void allocateNetworkParameters();
-	void allocateSNN_GPU(int ithGPU); //!< allocates required memory and then initialize the GPU
+	void allocateSNN_GPU(); //!< allocates required memory and then initialize the GPU
 	int  allocateStaticLoad(int bufSize);
 
 	void assignPoissonFiringRate_GPU();
@@ -805,6 +890,7 @@ private:
 	void checkDestSrcPtrs(network_ptr_t* dest, network_ptr_t* src, cudaMemcpyKind kind, int allocateMem, int grpId);
 	int  checkErrors(std::string kernelName, int numBlocks);
 	int  checkErrors(int numBlocks);
+	void checkGPUDevice();
 	void checkInitialization(char* testString=NULL);
 	void checkInitialization2(char* testString=NULL);
 
@@ -816,7 +902,7 @@ private:
 	void copyNeuronState(network_ptr_t* dest, network_ptr_t* src, cudaMemcpyKind kind, int allocateMem, int grpId=-1);
 	void copyParameters();
 	void copyPostConnectionInfo(network_ptr_t* dest, int allocateMem);
-	void copyState(network_ptr_t* dest, int kind, int allocateMem);
+	void copyState(network_ptr_t* dest, int allocateMem);
 	void copySTPState(network_ptr_t* dest, network_ptr_t* src, int kind, int allocateMem);
 	void copyUpdateVariables_GPU(); //!< copies wt / neuron state / STP state info from host to device
 	void copyWeightsGPU(unsigned int nid, int src_grp);
@@ -845,9 +931,16 @@ private:
 
 
 	// +++++ PRIVATE PROPERTIES +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
-	SparseWeightDelayMatrix* tmp_SynapseMatrix_fixed;
-	SparseWeightDelayMatrix* tmp_SynapseMatrix_plastic;
 	FILE* readNetworkFID;
+
+
+	const std::string networkName_;	//!< network name
+	const simMode_t simMode_;		//!< current simulation mode (CPU_MODE or GPU_MODE) FIXME: give better name
+	const loggerMode_t loggerMode_;	//!< current logger mode (USER, DEVELOPER, SILENT, CUSTOM)
+	const int ithGPU_;				//!< on which CUDA device to establish a context (only in GPU_MODE)
+	const int nConfig_;				//!< number of network configurations
+	const int randSeed_;			//!< random number seed to use
+
 
 	//! temporary variables created and deleted by network after initialization
 	uint8_t			*tmp_SynapticDelay;
@@ -860,23 +953,22 @@ private:
 	float prevGpuExecutionTime;
 	float gpuExecutionTime;
 
-	int		randSeed;
-	int			currentMode;	//!< current operating mode
-	int			numConfig;
 
 	//! properties of the network (number of groups, network name, allocated neurons etc..)
 	bool			doneReorganization;
 	bool			memoryOptimized;
 
-	std::string			networkName;
 	int				numGrp;
-	int				numConnections;
+	int				numConnections;		//!< number of connection calls (as in snn.connect(...))
 	//! keeps track of total neurons/presynapses/postsynapses currently allocated
 	unsigned int	allocatedN;
 	unsigned int	allocatedPre;
 	unsigned int	allocatedPost;
 
 	grpConnectInfo_t* connectBegin;
+	short int 	*cumConnIdPre;		//!< connId, per synapse, presynaptic cumulative indexing
+	float 		*mulSynFast;	//!< scaling factor for fast synaptic currents, per connection
+	float 		*mulSynSlow;	//!< scaling factor for slow synaptic currents, per connection
 
 	//! Buffer to store spikes
 	PropagatedSpikeBuffer* pbuf;
@@ -951,20 +1043,17 @@ private:
 	#if __CUDA3__
 		unsigned int    timer;
 	#elif __CUDA5__
-		StopWatchInterface* timer;
+		StopWatchInterface *timer;
 	#endif
 	float		cumExecutionTime;
 	float           lastExecutionTime;
 
-	//debug file
-	FILE*	fpProgLog;
-	FILE*	fpLog;
-	FILE* 	fpTuningLog;
-	int		cntTuning;
-	FILE 	*fpParam;
-	int		showLog;
-	int		showLogMode;			//!< each debug statement has a mode. If log set to high mode, more logs generated
-	int		showLogCycle;			//!< how often do we need to update the log
+	FILE*	fpOut_;			//!< fp of where to write all simulation output (status info) if not in silent mode
+	FILE*	fpErr_;			//!< fp of where to write all errors if not in silent mode
+	FILE*	fpDeb_;			//!< fp of where to write all debug info if not in silent mode
+	FILE*	fpLog_;
+	int showStatusCycle_;	//!< how often to call showStatus (seconds)
+	int showStatusCnt_; //!< internal counter to implement fast version of !(simTimeSec%showStatusCycle_)
 
 
 	//spike monitor code...
@@ -988,9 +1077,6 @@ private:
 	float*		gNMDA;
 	float*		gGABAa;
 	float*		gGABAb;
-
-	bool 		enableSimLogs;
-	std::string		simLogDirName;
 
 	network_info_t 	net_Info;
 

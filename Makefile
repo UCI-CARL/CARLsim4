@@ -40,11 +40,12 @@ src_dir = src
 lib_dir = libpti
 ex_dir  = examples
 interface_dir = interface
+test_dir = test
 
 # location of .cpp files
 vpath %.cpp $(EO_INSTALL_DIR)/src $(EO_INSTALL_DIR)/src/do \
 $(EO_INSTALL_DIR)/src/es $(EO_INSTALL_DIR)/src/utils $(lib_dir) \
-$(ex_dir)/common/ $(src_dir) $(interface_dir)/src
+$(ex_dir)/common/ $(src_dir) $(interface_dir)/src $(test_dir)
 # location of .cu files
 vpath %.cu $(src_dir)
 # location of .h files
@@ -57,13 +58,19 @@ all:
 include makefile.mk
 include libpti/libpti.mk
 include src/carlsim.mk
+
+include test/makefile.gtest.mk
+include test/carlsim_tests.mk
+
 # include all directories in examples
 example_includes := $(addsuffix /examples.mk, $(wildcard examples/*))
 include $(example_includes)
 
 
-.PHONY: all libraries examples pti_examples clean distclean
+.PHONY: all libraries examples pti_examples clean distclean tests
 all: $(all_targets)
+
+tests: gtest sample1_unittest carlsim_tests
 
 libraries: $(libraries)
 
@@ -72,7 +79,10 @@ examples: $(carlsim_programs)
 pti-examples: $(pti_programs)
 
 clean:
-	$(RM) $(objects) $(carlsim_programs) $(pti_programs) $(output_files)
+	$(RM) $(objects) $(carlsim_programs) $(pti_programs) $(output_files) $(GTEST_LIB_DIR)
 
 distclean:
 	$(RM) $(objects) $(carlsim_programs) $(pti_programs) $(libraries) $(output_files)
+
+devtest:
+	@echo $(all_targets)

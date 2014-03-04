@@ -571,7 +571,7 @@ int main()
 	// create network
 	// -------------------------------------------------------------------------------------------------------------- //
 
-	CARLsim snn("Motion Energy",1,42,onGPU?GPU_MODE:CPU_MODE,0);
+	CARLsim snn("Motion Energy",onGPU?GPU_MODE:CPU_MODE);
 
 
 	// population sizes: {number of rows, number of columns, number of pools}
@@ -612,9 +612,8 @@ int main()
 	snn.setNeuronParameters(gLIPi, 0.1f,  0.2f, -65.0f, 2.0f);
 
 
-	// show log every 1 sec (0 to disable logging). You can pass a file pointer or pass stdout to specify where the
-	// log output should go.
-	snn.setLogCycle(1, 1, stdout);
+	// show log every 1 sec
+	snn.setLogCycle(1);
 	snn.setConductances(ALL,true,5,150,6,150);	
 	snn.setSTDP(ALL,false);
 	snn.setSTP(ALL,false);

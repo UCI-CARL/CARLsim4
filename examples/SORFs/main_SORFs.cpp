@@ -30,7 +30,7 @@ using namespace std;
 #define PI                  3.1415926535897
 #define RAND_SEED           42
 // the number of networks we run on the GPU simultaneously.
-#define NUM_CONFIG 10
+#define NUM_CONFIG 40
 #define DUMMY_WEIGHT (0.0160f) // was 0.2f
 #define MAX_TARGET_FIRING_RATE  60 //used in fitness function to use as target firing rate.
 // Jay's STP parameters.
@@ -529,7 +529,7 @@ int main_fitness_function(int argc, char *argv[])
   // --------------------------------------------------------------------------------------------------
 
 
-  CARLsim snn("SpikingNeuralNetworkEvolvedUsingEO",NUM_CONFIG,RAND_SEED,SIM_MODE,0);
+  CARLsim snn("SpikingNeuralNetworkEvolvedUsingEO",SIM_MODE,USER,0,NUM_CONFIG,RAND_SEED);
 
   //  create a population or group of neurons with the label "inhib", having
   inputOnGrp     = snn.createSpikeGeneratorGroup("spike_input_on", nPois, EXCITATORY_POISSON);
@@ -583,9 +583,8 @@ int main_fitness_function(int argc, char *argv[])
   snn.setSpikeMonitor(inputOffGrp,"inputOffGrp_spikes.dat");
   */
 
-  // show logout every 100 secs, enabled with level 1 and output to stdout.
-  // make it show output every 100 seconds so I don't have to look at it.
-  snn.setLogCycle(100, 1, stdout);
+  // disable showstatus
+  snn.setLogCycle(-1);
 
   snn.setConductances(ALL,true,COND_tAMPA,COND_tNMDA,COND_tGABAa,COND_tGABAb, ALL);
   //snn.setSTDP(excGrp, true, ALPHA_LTP, TAU_LTP, ALPHA_LTD, TAU_LTD);

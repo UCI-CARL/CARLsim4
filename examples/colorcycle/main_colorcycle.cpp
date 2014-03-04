@@ -151,7 +151,7 @@ int main()
 	FILE* fid;
 	bool onGPU = true;
 
-	CARLsim s("colorcycle",1,42,onGPU?GPU_MODE:CPU_MODE,0);
+	CARLsim s("colorcycle",onGPU?GPU_MODE:CPU_MODE);
 
 	int v1Cells[5];
 	int num_V1_groups=6;
@@ -236,7 +236,7 @@ int main()
 */
 
 	// show log every 1 sec (0 to disable logging). You can pass a file pointer or pass stdout to specify where the log output should go.
-	s.setLogCycle(1, 1, stdout);
+	s.setLogCycle(1);
 
 
 	s.setConductances(ALL, true,5,150,6,150);

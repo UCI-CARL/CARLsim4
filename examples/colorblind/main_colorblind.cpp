@@ -151,7 +151,7 @@ int main()
 
 	FILE* fid;
 
-	CARLsim s("global");
+	CARLsim s("colorblind");
 
 	int v1Cells[5];
 	int num_V1_groups=6;
@@ -234,7 +234,7 @@ int main()
 	s.connect(v4CellsInh[GREEN_V4], v4CellsExc[BLUE_V4], projInhToExc, SYN_FIXED, radius*radius*4, radius*radius*4);
 */
 	// show log every 1 sec (0 to disable logging). You can pass a file pointer or pass stdout to specify where the log output should go.
-	s.setLogCycle(1, 1, stdout);
+	s.setLogCycle(1);
 
 
 	s.setConductances(ALL, true,5,150,6,150);

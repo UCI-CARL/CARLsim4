@@ -284,7 +284,7 @@ int main()
 	// use command-line specified CUDA device, otherwise use device with highest Gflops/s
 //	cutilSafeCall(cudaSetDevice(cutGetMaxGflopsDeviceId()));
 
-	CARLsim s("rdk",1,42,onGPU?GPU_MODE:CPU_MODE,0);
+	CARLsim s("rdk",onGPU?GPU_MODE:CPU_MODE);
 
 	int gV1ME = s.createSpikeGeneratorGroup("V1ME", nrX*nrY*28*3, EXCITATORY_NEURON);
 	int gMT1 = s.createGroup("MT1", nrX*nrY*8, EXCITATORY_NEURON);
@@ -326,7 +326,7 @@ int main()
 
 
 	// show log every 1 sec (0 to disable logging). You can pass a file pointer or pass stdout to specify where the log output should go.
-	s.setLogCycle(1, 1, stdout);
+	s.setLogCycle(1);
 
 
 	s.setConductances(ALL, true,5,150,6,150);

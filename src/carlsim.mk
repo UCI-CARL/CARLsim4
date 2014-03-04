@@ -33,22 +33,25 @@ CARLSIM_FLAGS += -I$(CURDIR)/$(src_dir) -I$(CURDIR)/$(interface_dir)/include
 #-------------------------------------------------------------------------------
 # CARLsim local variables
 #-------------------------------------------------------------------------------
-local_dir := src
+local_dir := $(src_dir)
 local_deps := snn.h mtrand.h gpu.h gpu_random.h config.h \
-	propagated_spike_buffer.h poisson_rate.h sparse_weight_delay_matrix.h \
+	propagated_spike_buffer.h poisson_rate.h \
 	errorCode.h CUDAVersionControl.h
 local_src := $(addprefix $(local_dir)/,$(local_deps) snn_cpu.cpp mtrand.cpp \
-	propagated_spike_buffer.cpp poisson_rate.cpp sparse_weight_delay_matrix.cpp \
+	propagated_spike_buffer.cpp poisson_rate.cpp \
 	printSNNInfo.cpp gpu_random.cu \
 	snn_gpu.cu v1ColorME.2.0.cu v1ColorME.2.1.cu)
 local_objs := $(addprefix $(local_dir)/,snn_cpu.o  mtrand.o \
-	propagated_spike_buffer.o poisson_rate.o sparse_weight_delay_matrix.o printSNNInfo.o \
+	propagated_spike_buffer.o poisson_rate.o printSNNInfo.o \
 	gpu_random.o snn_gpu.o)
 
 
-interface_deps := carlsim.h carlsim.cpp
-interface_src := $(interface_dir)/include/carlsim.h $(interface_dir)/src/carlsim.cpp
-interface_objs := $(interface_dir)/src/carlsim.o
+interface_deps := carlsim.h carlsim.cpp user_errors.h user_errors.cpp
+interface_src := $(interface_dir)/include/carlsim.h \
+	$(interface_dir)/include/user_errors.h \
+	$(interface_dir)/src/carlsim.cpp $(interface_dir)/src/user_errors.cpp
+interface_objs := $(interface_dir)/src/carlsim.o \
+	$(interface_dir)/src/user_errors.o
 
 
 
@@ -66,8 +69,8 @@ all_targets += CARLsim
 #-------------------------------------------------------------------------------
 # CARLsim rules
 #-------------------------------------------------------------------------------
-.PHONY: CARLsim
-CARLsim: $(local_src) $(local_objs) $(interface_objs)
+.PHONY: carlsim
+carlsim: $(local_src) $(interface_src) $(local_objs) $(interface_objs)
 
 # interface
 $(interface_dir)/src/%.o: $(interface_dir)/src/%.cpp $(interface_deps)
