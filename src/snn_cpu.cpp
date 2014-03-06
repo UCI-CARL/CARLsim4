@@ -2317,7 +2317,6 @@ void CpuSNN::generatePostSpike(unsigned int pre_i, unsigned int idx_d, unsigned 
 	// NOTE: Order is important! (Tsodyks & Markram, 1998) use u^+ (value right after spike-update) but x^- (value
 	// right before spike-update)
 	if (grp_Info[pre_grpId].WithSTP) {
-		printf("%d: stpu-[%d]=%f, stpx-[%d]=%f\n",simTime,pre_i,stpu[pre_i],pre_i,stpx[pre_i]);
 		// du/dt = -u/tau_F + U * (1-u^-) * \delta(t-t_{spk})
 		stpu[pre_i] += grp_Info[pre_grpId].STP_U*(1.0f-stpu[pre_i]);
 

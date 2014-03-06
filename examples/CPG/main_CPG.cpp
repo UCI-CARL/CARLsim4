@@ -40,11 +40,24 @@
 
 #include <carlsim.h>
 
-class SpikeAt20Hz : public SpikeGenerator {
-	unsigned int nextSpikeTime(CpuSNN* snn, int grpId, int nid, unsigned int currentTime) {
-		return currentTime+50;
+//! a periodic spike generator (constant ISI) creating spikes at a certain rate
+class PeriodicSpikeGenerator : public SpikeGenerator {
+public:
+	PeriodicSpikeGenerator(float rate) {
+		assert(rate>0);
+		rate_ = rate;	  // spike rate
+		isi_ = 1000/rate; // inter-spike interval in ms
 	}
+
+	unsigned int nextSpikeTime(CpuSNN* snn, int grpId, int nid, unsigned int currentTime) {
+		return currentTime+isi_; // periodic spiking according to ISI
+	}
+
+private:
+	float rate_;	// spike rate
+	int isi_;		// inter-spike interval that results in above spike rate
 };
+
 
 int main()
 {
@@ -105,7 +118,7 @@ int main()
 //	sim.setSpikeMonitor(g3);
 //	sim.setSpikeMonitor(g4);
 
-	sim.setSpikeGenerator(g0, new SpikeAt20Hz());
+	sim.setSpikeGenerator(g0, new PeriodicSpikeGenerator(20.0f));
 
 	// run network
 	sim.runNetwork(0,300);
