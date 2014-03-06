@@ -205,8 +205,8 @@ void CpuSNN::printGroupInfo(FILE* const fp)
 
     if (grp_Info[g].WithSTP) {
       fprintf(fp, "\t STP_U = %f\n", grp_Info[g].STP_U);
-      fprintf(fp, "\t STP_tD = %f\n", grp_Info[g].STP_tD);
-      fprintf(fp, "\t STP_tF = %f\n", grp_Info[g].STP_tF);
+      fprintf(fp, "\t STP_tau_u_inv = %f\n", grp_Info[g].STP_tau_u_inv);
+      fprintf(fp, "\t STP_tau_x_inv = %f\n", grp_Info[g].STP_tau_x_inv);
     }
 
     if(grp_Info[g].WithSTDP) {

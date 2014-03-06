@@ -1079,8 +1079,8 @@ __global__ void kernel_STPUpdateAndDecayConductances (int t, int sec, int simTim
       uint32_t ind_1 = getSTPBufPos(nid, (simTime));
 
       //				TODO: update this to more optimized floating multiplication rather than division.....
-      gpuPtrs.stpx[ind] = gpuPtrs.stpx[ind_1] + (1-gpuPtrs.stpx[ind_1])/gpuGrpInfo[grpId].STP_tD;
-      gpuPtrs.stpu[ind] = gpuPtrs.stpu[ind_1] + (gpuGrpInfo[grpId].STP_U - gpuPtrs.stpu[ind_1])/gpuGrpInfo[grpId].STP_tF;
+//      gpuPtrs.stpx[ind] = gpuPtrs.stpx[ind_1] + (1-gpuPtrs.stpx[ind_1])/gpuGrpInfo[grpId].STP_tD;
+//      gpuPtrs.stpu[ind] = gpuPtrs.stpu[ind_1] + (gpuGrpInfo[grpId].STP_U - gpuPtrs.stpu[ind_1])/gpuGrpInfo[grpId].STP_tF;
     }
   }
 }
@@ -2400,8 +2400,8 @@ __global__ void kernel_check_GPU_init ()
     retErrVal[1][i++]= gpuPtrs.baseFiringInv[gpuGrpInfo[1].StartN];
     retErrVal[1][i++]= gpuPtrs.baseFiringInv[gpuGrpInfo[0].StartN];
     retErrVal[1][i++]= gpuGrpInfo[0].STP_U;
-    retErrVal[1][i++]= gpuGrpInfo[0].STP_tD;
-    retErrVal[1][i++]= gpuGrpInfo[0].STP_tF;
+//    retErrVal[1][i++]= gpuGrpInfo[0].STP_tD;
+//    retErrVal[1][i++]= gpuGrpInfo[0].STP_tF;
     uint32_t ind     = getSTPBufPos(0, 1); //(((simTime%STP_BUF_SIZE)*gpuNetInfo.STP_Pitch) + nid);
     retErrVal[1][i++]= gpuPtrs.stpu[ind];
     retErrVal[1][i++]= gpuPtrs.stpx[ind];
@@ -3047,8 +3047,8 @@ void CpuSNN::allocateSNN_GPU() {
 			CARLSIM_DEBUG("\tWithSTP: %d",(int)grp_Info[i].WithSTP);
 			if (grp_Info[i].WithSTP) {
 				CARLSIM_DEBUG("\t\tSTP_U: %f",grp_Info[i].STP_U);
-				CARLSIM_DEBUG("\t\tSTP_tD: %f",grp_Info[i].STP_tD);
-				CARLSIM_DEBUG("\t\tSTP_tF: %f",grp_Info[i].STP_tF);
+//				CARLSIM_DEBUG("\t\tSTP_tD: %f",grp_Info[i].STP_tD);
+//				CARLSIM_DEBUG("\t\tSTP_tF: %f",grp_Info[i].STP_tF);
 			}
 			CARLSIM_DEBUG("\tspikeGen: %s",grp_Info[i].spikeGen==NULL?"Is Null":"Is set");
 		}
