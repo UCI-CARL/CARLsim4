@@ -38,7 +38,7 @@
  * Ver 10/09/2013
  */ 
 
-#include "snn.h"
+#include <carlsim.h>
 void calcColorME(int nrX, int nrY, unsigned char* stim, float* red_green, float* green_red, float* blue_yellow, float* yellow_blue, float* ME, bool GPUpointers);
 extern MTRand	      getRand;
 
@@ -70,14 +70,14 @@ float fast_exp(float x)
 
 
 enum color_name_t { BLUE=0, GREEN, RED, YELLOW};
-string imageName[] = { "blue", "green", "red", "yellow"};
+std::string imageName[] = { "blue", "green", "red", "yellow"};
 
 enum v1color_name_t    { RED_GREEN=0, BLUE_YELLOW, GREEN_RED, YELLOW_BLUE };
-string v1ImageName[] = { "red-green-cells", "blue-yellow-cells",
+std::string v1ImageName[] = { "red-green-cells", "blue-yellow-cells",
 			 "green-red-cells", "yellow-blue-cells"};
 
-string  v4CellNameExc[] = { "Ev4magenta", "Ev4blue", "Ev4cyan", "Ev4green", "Ev4yellow", "Ev4red"};
-string  v4CellNameInh[] = { "Iv4magenta", "Iv4blue", "Iv4cyan", "Iv4green", "Iv4yellow", "Iv4red"};
+std::string  v4CellNameExc[] = { "Ev4magenta", "Ev4blue", "Ev4cyan", "Ev4green", "Ev4yellow", "Ev4red"};
+std::string  v4CellNameInh[] = { "Iv4magenta", "Iv4blue", "Iv4cyan", "Iv4green", "Iv4yellow", "Iv4red"};
 
 enum  v4CellType_t  {MAGENTA_V4=0, BLUE_V4, CYAN_V4, GREEN_V4, YELLOW_V4, RED_V4};
 
@@ -149,8 +149,9 @@ int main()
 	#define FRAMEDURATION 100
 
 	FILE* fid;
+	bool onGPU = true;
 
-	CpuSNN s("global");
+	CARLsim s("colorcycle",onGPU?GPU_MODE:CPU_MODE);
 
 	int v1Cells[5];
 	int num_V1_groups=6;
@@ -235,7 +236,7 @@ int main()
 */
 
 	// show log every 1 sec (0 to disable logging). You can pass a file pointer or pass stdout to specify where the log output should go.
-	s.setLogCycle(1, 1, stdout);
+	s.setLogCycle(1);
 
 
 	s.setConductances(ALL, true,5,150,6,150);
@@ -244,36 +245,29 @@ int main()
 
 	s.setSTP(ALL,false);
 
-	s.setSpikeMonitor(v1Cells[RED_GREEN],"Results/colorcycle/spkV1RG.dat");
-	s.setSpikeMonitor(v1Cells[GREEN_RED],"Results/colorcycle/spkV1GR.dat");
-	s.setSpikeMonitor(v1Cells[BLUE_YELLOW],"Results/colorcycle/spkV1BY.dat");
-	s.setSpikeMonitor(v1Cells[YELLOW_BLUE],"Results/colorcycle/spkV1YB.dat");
+	s.setSpikeMonitor(v1Cells[RED_GREEN],"results/colorcycle/spkV1RG.dat");
+	s.setSpikeMonitor(v1Cells[GREEN_RED],"results/colorcycle/spkV1GR.dat");
+	s.setSpikeMonitor(v1Cells[BLUE_YELLOW],"results/colorcycle/spkV1BY.dat");
+	s.setSpikeMonitor(v1Cells[YELLOW_BLUE],"results/colorcycle/spkV1YB.dat");
 
-	s.setSpikeMonitor(v4CellsExc[RED_V4],"Results/colorcycle/spkV4R.dat");
-	s.setSpikeMonitor(v4CellsExc[GREEN_V4],"Results/colorcycle/spkV4G.dat");
-	s.setSpikeMonitor(v4CellsExc[BLUE_V4],"Results/colorcycle/spkV4B.dat");
-	s.setSpikeMonitor(v4CellsExc[YELLOW_V4],"Results/colorcycle/spkV4Y.dat");
-	s.setSpikeMonitor(v4CellsExc[CYAN_V4],"Results/colorcycle/spkV4C.dat");
-	s.setSpikeMonitor(v4CellsExc[MAGENTA_V4],"Results/colorcycle/spkV4M.dat");
+	s.setSpikeMonitor(v4CellsExc[RED_V4],"results/colorcycle/spkV4R.dat");
+	s.setSpikeMonitor(v4CellsExc[GREEN_V4],"results/colorcycle/spkV4G.dat");
+	s.setSpikeMonitor(v4CellsExc[BLUE_V4],"results/colorcycle/spkV4B.dat");
+	s.setSpikeMonitor(v4CellsExc[YELLOW_V4],"results/colorcycle/spkV4Y.dat");
+	s.setSpikeMonitor(v4CellsExc[CYAN_V4],"results/colorcycle/spkV4C.dat");
+	s.setSpikeMonitor(v4CellsExc[MAGENTA_V4],"results/colorcycle/spkV4M.dat");
 
-	s.setSpikeMonitor(v4CellsInh[RED_V4],"Results/colorcycle/spk4Ri.dat");
-	s.setSpikeMonitor(v4CellsInh[GREEN_V4],"Results/colorcycle/spkV4Gi.dat");
-	s.setSpikeMonitor(v4CellsInh[BLUE_V4],"Results/colorcycle/spkV4Bi.dat");
-	s.setSpikeMonitor(v4CellsInh[YELLOW_V4],"Results/colorcycle/spkV4Yi.dat");
-	s.setSpikeMonitor(v4CellsInh[CYAN_V4],"Results/colorcycle/spkV4Ci.dat");
-	s.setSpikeMonitor(v4CellsInh[MAGENTA_V4],"Results/colorcycle/spkV4Mi.dat");
+	s.setSpikeMonitor(v4CellsInh[RED_V4],"results/colorcycle/spk4Ri.dat");
+	s.setSpikeMonitor(v4CellsInh[GREEN_V4],"results/colorcycle/spkV4Gi.dat");
+	s.setSpikeMonitor(v4CellsInh[BLUE_V4],"results/colorcycle/spkV4Bi.dat");
+	s.setSpikeMonitor(v4CellsInh[YELLOW_V4],"results/colorcycle/spkV4Yi.dat");
+	s.setSpikeMonitor(v4CellsInh[CYAN_V4],"results/colorcycle/spkV4Ci.dat");
+	s.setSpikeMonitor(v4CellsInh[MAGENTA_V4],"results/colorcycle/spkV4Mi.dat");
 
 
 	unsigned char* vid = new unsigned char[nrX*nrY*3];
 
-	bool onGPU = true;
 
-	if (!onGPU) {
-		CUDA_CHECK_ERRORS(cudaSetDevice(CUDA_GET_MAXGFLOP_DEVICE_ID()));
-	}
-
-	//initialize the GPU/network
-	s.runNetwork(0,0, onGPU?GPU_MODE:CPU_MODE);
 
 	PoissonRate me(nrX*nrY*28*3,onGPU);
 	PoissonRate red_green(nrX*nrY,onGPU);
@@ -295,10 +289,10 @@ int main()
 		s.setSpikeRate(v1Cells[YELLOW_BLUE], &yellow_blue, 1);
 
 		// run the established network for 1 (sec)  and 0 (millisecond), in GPU_MODE
-		s.runNetwork(0,FRAMEDURATION, onGPU?GPU_MODE:CPU_MODE);
+		s.runNetwork(0,FRAMEDURATION);
 
 		if (i==1) {
-			FILE* nid = fopen("Results/colorcycle/net.dat","wb");
+			FILE* nid = fopen("results/colorcycle/net.dat","wb");
 			s.writeNetwork(nid);
 			fclose(nid);
 		}

@@ -33,75 +33,72 @@
  * created by: 		(MDR) Micah Richert, (JN) Jayram M. Nageswaran
  * maintained by:	(MA) Mike Avery <averym@uci.edu>, (MB) Michael Beyeler <mbeyeler@uci.edu>,
  *					(KDC) Kristofor Carlson <kdcarlso@uci.edu>
- *					(TSC) Ting-Shuo Chou <tingshuc@uci.edu>
  *
  * CARLsim available from http://socsci.uci.edu/~jkrichma/CARL/CARLsim/
- * Ver 10/09/2013
+ * Ver 2/22/14
  */ 
 
-#include "snn.h"
+#include <carlsim.h>
 
-#define N    1000
 
 int main()
 {
+	// simulation details
+	int N = 1000; // number of neurons
+	int ithGPU = 0; // run on first GPU
+
 	// create a network
-	CpuSNN* s;
-	
-	s = new CpuSNN("global", CPU_MODE);
+	CARLsim sim("random",GPU_MODE,USER,ithGPU);
 
-	int g1 = s->createGroup("excit", N * 0.8, EXCITATORY_NEURON);
-	s->setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f);
+	int g1=sim.createGroup("excit", N*0.8, EXCITATORY_NEURON);
+	sim.setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f);
 
-	int g2 = s->createGroup("inhib", N * 0.2, INHIBITORY_NEURON);
-	s->setNeuronParameters(g2, 0.1f,  0.2f, -65.0f, 2.0f);
+	int g2=sim.createGroup("inhib", N*0.2, INHIBITORY_NEURON);
+	sim.setNeuronParameters(g2, 0.1f,  0.2f, -65.0f, 2.0f);
 
-	int gin = s->createSpikeGeneratorGroup("input", N * 0.8, EXCITATORY_NEURON);
+	int gin=sim.createSpikeGeneratorGroup("input",N*0.1,EXCITATORY_NEURON);
+
+	sim.setConductances(ALL,true);
 
 	// make random connections with 10% probability
-	s->connect(g2, g1, "random", -2.0f/100, -2.0f/100, 0.1f, 1, 1, SYN_FIXED);
+	sim.connect(g2,g2,"random",-0.01f,0.1f,1);
 	// make random connections with 10% probability, and random delays between 1 and 20
-	s->connect(g1, g2, "random", +2.5f/100, 5.0f/100, 0.1f,  1, 20, SYN_PLASTIC);
-	s->connect(g1, g1, "random", +4.0f/100, 10.0f/100, 0.1f,  1, 20, SYN_PLASTIC);
+	sim.connect(g1,g2,"random", 0.0025f, 0.005f, 0.1f,  1, 20, SYN_PLASTIC);
+	sim.connect(g1,g1,"random", 0.006f, 0.01f, 0.1f,  1, 20, SYN_PLASTIC);
 
 	// 5% probability of connection
-	s->connect(gin, g1, "one-to-one", +20.0f/100, 20.0f/100, 1.0f,  1, 20, SYN_FIXED);
-
-	float COND_tAMPA = 5.0, COND_tNMDA = 150.0, COND_tGABAa = 6.0, COND_tGABAb = 150.0;
-	s->setConductances(ALL, true, COND_tAMPA, COND_tNMDA, COND_tGABAa, COND_tGABAb);
+	sim.connect(gin,g1,"random", 0.5f, 0.5f, 0.05f,  1, 20, SYN_FIXED);
 
 	// here we define and set the properties of the STDP. 
-	float ALPHA_LTP = 0.10f/100, TAU_LTP = 20.0f, ALPHA_LTD = 0.08f/100, TAU_LTD = 40.0f;	
-	s->setSTDP(g1, true, false, ALPHA_LTP, TAU_LTP, ALPHA_LTD, TAU_LTD);
-	s->setSTDP(g2, true, false, ALPHA_LTP, TAU_LTP, ALPHA_LTD, TAU_LTD);
+	float ALPHA_LTP = 0.10f/100, TAU_LTP = 20.0f, ALPHA_LTD = 0.12f/100, TAU_LTD = 20.0f;	
+	sim.setSTDP(g1, true, ALPHA_LTP, TAU_LTP, ALPHA_LTD, TAU_LTD);
 
-	// show logout every 10 secs, enabled with level 1 and output to stdout.
-	s->setLogCycle(10, 0, stdout);
+	// show network status every 10 secs
+	sim.setLogCycle(2);
 
 	// put spike times into spikes.dat
-	s->setSpikeMonitor(g1,"spikes.dat");
+	sim.setSpikeMonitor(g1,"results/random/spikes.dat");
 
 	// Show basic statistics about g2
-	s->setSpikeMonitor(g2, "spikes2.dat");
+	sim.setSpikeMonitor(g2);
 
-	s->setSpikeMonitor(gin);
+	sim.setSpikeMonitor(gin);
 
 	//setup some baseline input
-	PoissonRate in(N * 0.8);
-	for (int i = 0; i < N * 0.8; i++) in.rates[i] = 1;
-	s->setSpikeRate(gin,&in);
+	PoissonRate in(N*0.1);
+	for (int i=0;i<N*0.1;i++) in.rates[i] = 1;
+		sim.setSpikeRate(gin,&in);
 
-	//run for 60 seconds
+
+	//run for 10 seconds
 	for(int i=0; i < 10; i++) {
-		// run the established network for a duration of 1 (sec)  and 0 (millisecond), in CPU_MODE
-		s->runNetwork(1, 0);
+		// run the established network for a duration of 1 (sec)  and 0 (millisecond)
+		sim.runNetwork(1,0);
 	}
 
-	FILE* nid = fopen("network.dat","wb");
-	s->writeNetwork(nid);
+	FILE* nid = fopen("results/random/network.dat","wb");
+	sim.writeNetwork(nid);
 	fclose(nid);
-
-	delete s;
 
 	return 0;
 }

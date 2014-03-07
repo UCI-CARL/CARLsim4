@@ -1,105 +1,236 @@
-========================================================================================================================
-CARLSIM INSTALLATION
-========================================================================================================================
+===============================================================================
+CARLsim Installation
+===============================================================================
 
-Use of CARLsim requires that the NVIDIA CUDA driver and NVIDIA CUDA SDK are installed and functional.
+Use of CARLsim requires that the NVIDIA CUDA driver and NVIDIA CUDA SDK are 
+installed and functional.
 
-This code has been predominately developed under Linux and the build instructions reflect that.
-While the code should function under MS Windows these instructions are not applicable. We will hopefully release
-instructions in the future on how to setup the code base under Visual Studio on Windows based systems.
+This code has been predominately developed under Linux and the build 
+instructions reflect that. While the code should function under MS Windows 
+these instructions are not applicable. We will hopefully release instructions 
+in the future on how to setup the code base under Visual Studio on Windows 
+based systems.
+
+-------------------------------------------------------------------------------
+Installing NVIDIA CUDA SDK (For GPU support in CARLsim)
+-------------------------------------------------------------------------------
+
+Download and install NVIDIA CUDA SDK from: 
+https://developer.nvidia.com/cuda-downloads (see website for platform-dependent 
+installation instructions).  Currently NVIDIA SDK versions 3.1, 3.2, 5.0, 
+and 5.5 are supported.
 
 
+-------------------------------------------------------------------------------
+Installing Evolving Objects 
+(Optional: For use with CARLsim parameter tuning interface (PTI))
+-------------------------------------------------------------------------------
 
-INSTALLING NVIDIA CUDA SDK
-------------------------------------------------------------------------------------------------------------------------
+Download and install Evolving Objects from http://eodev.sourceforge.net/.  
+Currently the parameter tuning interface used by CARLsim has only been tested
+with Evolving Objects version 1.2.0.
+All you have to do is download and extract the 1.2.0 code package, cd into the
+eo/ directory, and run
 
-Download and install NVIDIA CUDA SDK from from: https://developer.nvidia.com/cuda-downloads (see website for
-platform-dependent installation instructions).
+$ ./build_gcc_linux_release
 
-In order to run CARLsim, the cutil library must be compiled (libcutil). This can be achieved by compiling at least one
-CUDA SDK example.
+This will create, among others, a release/ subfolder within eo/.
+Now copy the whole eo/ folder to somewhere in your path, e.g. /opt/eo.
+More instructions can be found in eo/INSTALL.
 
-
-
-SETTING UP ENVIRONMENT VARIABLES
-------------------------------------------------------------------------------------------------------------------------
-
-Once that has been accomplished, you need to setup an environment variable that points to where the NVIDIA SDK is
-located. So, under most linux systems do something like the following:
+-------------------------------------------------------------------------------
+Setting Up Environment Variables
+-------------------------------------------------------------------------------
+Once that has been accomplished, you need to setup an environment variable that 
+points to where the NVIDIA SDK is located. So, under most linux systems do 
+something like the following:
 
 $ export NVIDIA_SDK=(SOME PATH)/NVIDIA_GPU_Computing_SDK
 
-where (SOME PATH) is the actual path to the SDK on your system. The environment variable $NVIDIA_SDK will then be used
-in the CARLsim Makefile to compile your network.
+where (SOME PATH) is the actual path to the SDK on your system. The environment 
+variable $NVIDIA_SDK will then be used in the CARLsim Makefile to compile your 
+network.
 
-Also, make sure that the environment variable $LD_LIBRARY_PATH exists (should have been created during the installation
-of CUDA SDK). On a 64-bit system this could look like this (however, depends on your CUDA install path):
+Also, make sure that the environment variable $LD_LIBRARY_PATH exists 
+(should have been created during the installation of CUDA SDK). On a 64-bit 
+system this could look like this (however, depends on your CUDA install path):
 
 $ export LD_LIBRARY_PATH=/usr/local/cuda/lib64
 
-A good idea would be to add these two "export" lines to your ~/.bashrc, so you don't have to type every time you open
-up a new terminal.
+The environment variable named EO_INSTALL_DIR should point to where Evolving 
+Objects is installed.  This can be set in the .bashrc or in the user-modifiable 
+section of the Makefile.
+
+For example. to point to an installation in /opt/eo you would use:
+
+$ export EO_INSTALL_DIR = /opt/eo
+
+If you want to install the CARLsim PTI, you can define where it should be 
+installed in the .bashrc or in the user-modifiable section of the Makefile.
+
+For example. to point to a desired installation in /opt/pti you would use:
+
+$ export PTI_INSTALL_DIR = /opt/pti
+
+Once it is installed, you need to add the pti libraries to your 
+LD_LIBRARY_PATH.  The pti library is installed at $(PTI_INSTALL_DIR)/lib. For
+example, to do this you could type:
+
+$ export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/opt/pti/lib
+
+A good idea would be to add these "export" lines to your ~/.bashrc, so you 
+don't have to type them every time you open up a new terminal.
+
+-------------------------------------------------------------------------------
+Compiling CARLsim and CARLsim Examples
+-------------------------------------------------------------------------------
+1. Type 'make' or 'make all' and CARLsim and the CARLsim examples will be
+   compiled automatically.
+
+2. The example networks can be compiled separately (See Compiling and Running
+   a Network with CARLsim).
 
 
+-------------------------------------------------------------------------------
+Compiling and running a network with CARLsim
+-------------------------------------------------------------------------------
 
-COMPILING AND RUNNING A NETWORK
-------------------------------------------------------------------------------------------------------------------------
+CARLsim can be compiled using either the CUDA5 or the CUDA3 runtime 
+environment. By default, CUDA3 is used. If you want to use CUDA5, you can set 
+up an environment variable called CARLSIM_CUDAVER and set its value to 5.
 
-CARLsim can be compiled using either the CUDA5 or the CUDA3 runtime environment. By default, CUDA3 is used. If you want
-to use CUDA5, you can set up an environment variable called CARLSIM_CUDAVER and set its value to 5.
 Edit your ~/.bashrc:
+
 $ export CARLSIM_CUDAVER=5
 
-CARLsim can be compiled using an increased optimization level and fast math. By default, these flags are not used. In
-order to use them, set up an environment variable CARLSIM_FASTMATH and set it to 1:
+CARLsim can be compiled using an increased optimization level and fast math. 
+By default, these flags are not used. In order to use them, set up an 
+environment variable CARLSIM_FASTMATH and set it to 1:
+
 $ CARLSIM_FASTMATH=1
-For more information, please refer to http://docs.nvidia.com/cuda/cuda-compiler-driver-nvcc/.
 
-The CARLsim software package contains a number of simulation examples, whose source code can be found under the
-directory /examples/.
-The following examples are available: colorblind, colorcycle, orientation, rdk, v1MTLIP, and v1v4PFC.
+For more information, please refer to 
+http://docs.nvidia.com/cuda/cuda-compiler-driver-nvcc/.
 
-All simulation examples follow a common rule: Some experiment (e.g., called "v1MTLIP") has a source file named
-"random.cpp" in subdirectory "examples/test/", and should direct all of its output files to a subdirectory
-"Results/v1MTLIP/". If Matlab analysis scripts are available for this particular experiment, they can be found in a
-subdirectory "scripts/v1MTLIP/".
+The CARLsim software package contains a number of simulation examples, 
+whose source code can be found under the directory /examples.
+
+The following CARLsim examples are available: colorblind, colorcycle, 
+orientation, random, rdk, v1MTLIP, and v1v4PFC.
+
+The following Evolving Objects/PTI examples are available: simpleEA
+
+The following Evolving Objects/PTI/CARLsim examples are available: 
+tuneFiringRates and SORFs.
+
+All simulation examples follow a common rule: Some experiment (e.g., called 
+"random") has a source file named "main_random.cpp" in subdirectory 
+"examples/random" should direct all of its output files to a subdirectory 
+"results/random". If Matlab analysis scripts are available for this particular 
+experiment, they can be found in a subdirectory "scripts/random".
+
 The experiment can be compiled by typing:
-$ make v1MTLIP
-This will create an executable called "v1MTLIP". In order to run it, type:
-$ ./v1MTLIP
 
-The rdk, orientation, v1MTLIP, and v1v4PFC examples can only be run on a system with a compatible GPU (compute capability 1.3
-or higher). The colorblind example most likely must be run on CPU because at high spatial resolution it requires more
-memory than most GPUs have available.
+$ make random
 
+This will create an executable called "random", in the same folder where the
+corresponding .cpp file lives. So in order to run "random", type:
 
+$ ./examples/random/random
 
-CREATING AND COMPILING YOUR OWN NETWORKS
-------------------------------------------------------------------------------------------------------------------------
+WARNING: Excutables must be run from the main directory (as shown above) 
+and not from the example directory or the executables will not run!
 
-The easiest way to add your own network/experiment to the existing Makefile is the following:
-* Create your network/experiment, say "myExp", in a source file called "main_myExp.cpp" and put it in the directory
-  "examples/myExp/".
-* Within that source file, make sure that all spike monitors output to a directory "Results/myExp/" for consistency
-  (see existing examples for inspiration/help).
-* Again for consistency, if you have any input videos, add them to directory "videos/".
-* Add your experiment name ("myExp") to the list of known experiments in the Makefile.
-  - If you want to use either the color opponency or the motion energy model (both contained in the various v1ColorME
-    CUDA files), add your experiment name to the variable EXE_CU_21 (Makefile l.72, all experiments separated by
-    spaces).
-  - If you do not want to use either of the models, add your experiment name to the variable EXE_CU_NONE (Makefile l.70)
-* Now simply type
-  $ make myExp
-  in the current directory, and you are good to go.
+The rdk, orientation, v1MTLIP, and v1v4PFC examples can only be run on a 
+system with a compatible GPU (compute capability 1.3 or higher). The 
+colorblind example most likely must be run on CPU because at high spatial 
+resolution it requires more memory than most GPUs have available.
 
+If you are interested in tuning spiking neural networks, we recommend first 
+reviewing simpleEA to understand how the PTI works then reviewing the 
+tuneFiringRates example to understand how to use the PTI along with CARLsim.
 
+-------------------------------------------------------------------------------
+Compiling and installing the CARLsim PTI libary
+-------------------------------------------------------------------------------
+1. Set the EO_INSTALL_DIR, PTI_INSTALL_DIR, and LD_LIBRARY_PATH  environment 
+   variables in the Makefile or .bashrc.
+
+2. Type 'make pti' to compile the PTI library.
+
+3. Type 'make install' to install the PTI library to the desired location. You
+   may need to run 'make install' as root if you are installing the pti 
+   library somewhere outside of your home directory.
+
+4. Type 'make pti-examples' to compile the PTI examples.  You can also make
+   them by typing 'make <directory-name>' for the PTI examples which include:
+   simpleEA, tuningFiringRates, and SORFs.
+
+-------------------------------------------------------------------------------
+Creating and Compiling Your Own Networks
+-------------------------------------------------------------------------------
+
+The easiest way to add your own network/experiment to the existing Makefile is 
+the following:
+
+1. Create your network/experiment, say "myExp", in a source file called 
+   "main_myExp.cpp" and put it in the directory "examples/myExp".
+
+2. Within that source file, make sure that all spike monitors output to a 
+   directory "results/myExp/" for consistency (see existing examples for 
+   inspiration/help).
+
+3. Again for consistency, if you have any input videos/data, add them to 
+   directory "videos/".
+
+4. Add your compilation rules to a file called examples.mk inside the 
+   examples/myExp directory. It's easiest to just grab an existing examples.mk 
+   from another example and use that. Only the top two lines need to bemodified. 
+   The first line is the name of your example, in this case it would be myExp. 
+   The second line is the name of log files the program outputs, so they can be 
+   deleted by makefile commands.  The defaults are usually okay.  You can also 
+   write your own compilation rules and the make command will work correctly as 
+   long as the top two lines are defined.
+    
+    - If you simply want to run a CARLsim model begin with the 
+      examples/random/example.mk file.
+
+    - If you want to use either the color opponency or the motion energy model 
+      (version 2.0) begin with the examples/rdk/examples.mk file.
+
+    - If you want to use either the color opponency or the motion energy model 
+      (version 2.1) begin with the examples/v1MTLIP/examples.mk file.
+  
+    - If you want to use just the PTI and EO libaries without CARLsim, begin 
+      with the examples/simpleEA/examples.mk file.
+
+    - If you want to use the PTI/EO libraries with CARLsim to tune SNNs, begin 
+      with the examples/tuneFiringRates/examples.mk file.
+
+5. Now type
+  
+   $ make myExp
+  
+   in the directory containing the main Makefile, and you are good to go.
+
+-------------------------------------------------------------------------------
 MAKEFILE HELP AND MAINTENANCE
-------------------------------------------------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 
 For more information on the above, please refer to the Makefile.
 
-You can automatically clean up all object files, executables, etc. by typing
+You can automatically clean up all object files, executables, etc. by typing:
+
 $ make clean
 
-A help message, which contains the list of all available example experiments can be displayed by typing
+This will leave your results folders untouched. 
+
+To delete all object files, executables, and output files (not results), 
+you can type:
+
+$ make distclean 
+
+A help message, which contains the list of all available example experiments 
+can be displayed by typing
+
 $ make help

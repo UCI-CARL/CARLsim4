@@ -7,12 +7,12 @@ function [] = plotRDKdecision()
 % compared to psychophysical data from (Roitman & Shadlen, 2002).
 % The RDK stimulus was constructed out of approximately 150 dots (15 % dot
 % density, maximum stimulus contrast) on a 32x32 input movie
-% This script reproduces Fig. 7 from (Beyeler, Dutt, and Krichmar 2013;
-% publication to be named later).
+% This script reproduces Fig. 7 of Beyeler, Richert, Dutt, and Krichmar
+% (2014).
 % A suitable stimulus can be created using scripts/v1MTLIP/makeRDK.m
 %
 % Author: Michael Beyeler <mbeyeler@uci.edu>
-% Ver 10/31/13
+% Ver 2/5/14
 
 % NOTE: 64-bit MATLAB may be required to run this script (in order to
 % handle objects > 4GB)
@@ -24,7 +24,7 @@ cohVec=[0.1 1 5:5:20 30 40 50]; % coherence levels
 nDataPoints=length(cohVec); % number of data points
 spkPerNeur = 10; % spikes per neuron needed to reach a decision
 
-s = readSpikes('../../Results/v1MTLIP/spkLIP.dat',1);
+s = readSpikes('../../results/v1MTLIP/spkLIP.dat',1);
 s(nDir*nRep*nDataPoints*frameDur,1) = 0; % grow it to right size...
 s=reshape(s,frameDur,nDir,nRep,nDataPoints,[],8);
 nNeur = size(s,4);

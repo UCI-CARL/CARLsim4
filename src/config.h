@@ -47,23 +47,20 @@
 #include <malloc.h>
 #include <assert.h>
 #include <math.h>
+#include <stdint.h>
 
-//#if WIN32 || WIN64
-//	typedef __int8 int8_t;
-	//typedef __int16 int16_t;
-	//typedef __int32 int32_t;
-	//typedef __int64 int64_t;
-	//typedef unsigned __int8 uint8_t;
-	//typedef unsigned __int16 uint16_t;
-	//typedef unsigned __int32 uint32_t;
-	//typedef unsigned __int64 uint64_t;
-//#else
-	#include <stdint.h>
-//#endif
 
-#define MAX_POST_SYN_PER_N (10000)
-#define MAX_PRE_SYN_PER_N (20000)
-#define MAX_SYN_DELAY (20)
+// TODO: as Kris put it, this should really be called something like
+// some_random_macros_and_hardware_limitation_dependent_param_checks.h ... for example, the MAX_... defines
+// should really be private members of CpuSNN. These ranges are limited by the data structures that implement
+// the corresponding functionality. For example, you can't just set MAX_nConnections > 32768, because connIds
+// are stored as short int. 
+
+#define MAX_nPostSynapses 10000
+#define MAX_nPreSynapses 20000
+#define MAX_SynapticDelay 20
+#define MAX_nConnections 32768			//!< max allowed number of connect() calls by the user (used for mulSynFast)
+#define MAX_nConfig 100
 
 //#define CONDUCTANCES 		1
 #define COND_INTEGRATION_SCALE	2
@@ -76,14 +73,10 @@
 
 #define STDP(t,a,b)       ((a)*exp(-(t)*(b)))
 
-//#define LTD(t,a,b)       (ALPHA_LTD*exp(-(t)/TAU_LTD))
-//#define LTP(t,a,b)       (ALPHA_LTP*exp(-(t)/TAU_LTP))
-//#define LTD(t,a,b)       (ALPHA_LTD*exp(-(t)/TAU_LTD))
-
 #define GPU_LTP(t)   (gpuNetInfo.ALPHA_LTP*__expf(-(t)/gpuNetInfo.TAU_LTP))
 #define GPU_LTD(t)   (gpuNetInfo.ALPHA_LTD*__expf(-(t)/gpuNetInfo.TAU_LTD))
 
-#define PROPOGATED_BUFFER_SIZE  (1023)
+#define PROPAGATED_BUFFER_SIZE  (1023)
 #define MAX_SIMULATION_TIME     ((uint32_t)(0x7fffffff))
 #define LARGE_NEGATIVE_VALUE    (-(1 << 30))
 
@@ -95,6 +88,12 @@
 #define DEBUG_LEVEL		0
 
 #define MAX_GRP_PER_SNN 250
+
+
+// set to 1 if doing regression tests
+// will make private members public and disable output/logging
+#define REGRESSION_TESTING 0
+
 
 // This option effects readNetwork()'s behavior.  Setting this option to 1 will cause 
 // the network file to be read twice, once for plastic synapses and then again for 
@@ -108,7 +107,7 @@
 // main_mySim.cpp
 //		sim.setSpikeMonitor(gEx,"Results/mySim/spkEx.dat")
 // => This will attempt to create subdirectory "./Results/mySim", but not "./Results".
-#define CREATE_SPIKEDIR_IF_NOT_EXISTS 0
+#define CREATE_SPIKEDIR_IF_NOT_EXISTS 1
 	
 
 #define INHIBITORY_STDP
@@ -144,27 +143,21 @@
 	#define TOSTRING(x) STRINGIFY(x)
 	#define AT __FILE__ ":" TOSTRING(__LINE__)
 
-	inline void error(FILE *_fp, const char *location, const char *msg, int sec, int step)
+
+
+	inline void error(FILE *fp, const char *location, const char *msg, int sec, int step)
 	{
-	  fprintf(_fp, "(wt=%d,ms=%d) Error at %s: %s\n", sec, step, location, msg);
+	  fprintf(fp, "(wt=%d,ms=%d) Error at %s: %s\n", sec, step, location, msg);
 	}
 
-	inline void debug(FILE *_fp, const char *location, const char *msg, int sec, int step)
+	inline void debug(FILE *fp, const char *location, const char *msg, int sec, int step)
 	{
-	  fprintf(_fp, "(wt=%d,ms=%d) Executing %s: %s\n", sec, step, location, msg);
+	  fprintf(fp, "(wt=%d,ms=%d) Executing %s: %s\n", sec, step, location, msg);
 	}
 
-	#define DBG(num,_fp,loc,msg)  if( DEBUG_LEVEL >= num ) debug(_fp,loc,msg,simTimeSec,simTimeMs);
+	#define DBG(num,fp,loc,msg)  if( DEBUG_LEVEL >= num ) debug(fp,loc,msg,simTimeSec,simTimeMs);
 
 
 #define MAX_NEURON_CHUNK_SIZE 				   (750)
-/*
 
-#define FACTOR			1
-#define IMAGE_SIZE  	(16*FACTOR)
-
-#define MAX_CV_WINDOW_PIXELS 				   (1000)
-
-#define MIN_CV_WINDOW_PIXELS 				   (100)
-*/
 #endif

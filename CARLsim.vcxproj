@@ -23,26 +23,27 @@
     <CudaCompile Include="src\snn_gpu.cu" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="server\server.cpp" />
+    <ClCompile Include="examples\random\main_random.cpp" />
+    <ClCompile Include="interface\src\carlsim.cpp" />
+    <ClCompile Include="interface\src\user_errors.cpp" />
     <ClCompile Include="src\mtrand.cpp" />
-    <ClCompile Include="src\PoissonRate.cpp" />
+    <ClCompile Include="src\poisson_rate.cpp" />
     <ClCompile Include="src\printSNNInfo.cpp" />
-    <ClCompile Include="src\PropagatedSpikeBuffer.cpp" />
+    <ClCompile Include="src\propagated_spike_buffer.cpp" />
     <ClCompile Include="src\snn_cpu.cpp" />
-    <ClCompile Include="src\SparseWeightDelayMatrix.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="server\server_client.h" />
+    <ClInclude Include="interface\include\carlsim.h" />
+    <ClInclude Include="interface\include\user_errors.h" />
     <ClInclude Include="src\config.h" />
     <ClInclude Include="src\CUDAVersionControl.h" />
     <ClInclude Include="src\errorCode.h" />
     <ClInclude Include="src\gpu.h" />
     <ClInclude Include="src\gpu_random.h" />
     <ClInclude Include="src\mtrand.h" />
-    <ClInclude Include="src\PoissonRate.h" />
-    <ClInclude Include="src\PropagatedSpikeBuffer.h" />
+    <ClInclude Include="src\poisson_rate.h" />
+    <ClInclude Include="src\propagated_spike_buffer.h" />
     <ClInclude Include="src\snn.h" />
-    <ClInclude Include="src\SparseWeightDelayMatrix.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{2A96CB30-2293-4890-9D05-8361232F9C2C}</ProjectGuid>
@@ -163,7 +164,7 @@ copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;WIN64;__CUDA5__;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(CudaToolkitIncludeDir);$(NVCUDASAMPLES_ROOT)\common\inc;$(ProjectDir)\src</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(CudaToolkitIncludeDir);$(NVCUDASAMPLES_ROOT)\common\inc;$(ProjectDir)\src;$(ProjectDir)\interface\include</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>

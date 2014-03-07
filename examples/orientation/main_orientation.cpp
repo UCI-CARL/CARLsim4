@@ -38,8 +38,9 @@
  * Ver 10/09/2013
  */ 
 
-#include "snn.h"
-void calcColorME(int nrX, int nrY, unsigned char* stim, float* red_green, float* green_red, float* blue_yellow, float* yellow_blue, float* ME, bool GPUpointers);
+#include <carlsim.h>
+void calcColorME(int nrX, int nrY, unsigned char* stim, float* red_green, float* green_red, float* blue_yellow,
+						float* yellow_blue, float* ME, bool GPUpointers);
 extern MTRand	      getRand;
 
 
@@ -177,11 +178,10 @@ int main()
 	#define FRAMEDURATION 100
 
 	FILE* fid;
+	bool onGPU = true;
 
-	// use command-line specified CUDA device, otherwise use device with highest Gflops/s
-//	cutilSafeCall(cudaSetDevice(cutGetMaxGflopsDeviceId()));
+	CARLsim s("orientation",onGPU?GPU_MODE:CPU_MODE);
 
-	CpuSNN s("global");
 
 	int gV1ME = s.createSpikeGeneratorGroup("V1ME", nrX*nrY*28*3, EXCITATORY_NEURON);
 
@@ -202,10 +202,10 @@ int main()
 
 
 	// show log every 1 sec (0 to disable logging). You can pass a file pointer or pass stdout to specify where the log output should go.
-	s.setLogCycle(1, 1, stdout);
+	s.setLogCycle(1);
 
 
-	s.setConductances(ALL, true,5,150,6,150);
+	s.setConductances(ALL,true);
 	
 	s.setSTDP(ALL, false);
 
@@ -213,19 +213,10 @@ int main()
 
 	s.setSpikeMonitor(gV1ME);
 
-	s.setSpikeMonitor(gV4o,"Results/orientation/spkV4o.dat");
-	s.setSpikeMonitor(gV4oi,"Results/orientation/spkV4oi.dat");
+	s.setSpikeMonitor(gV4o,"results/orientation/spkV4o.dat");
+	s.setSpikeMonitor(gV4oi,"results/orientation/spkV4oi.dat");
 
 	unsigned char* vid = new unsigned char[nrX*nrY*3];
-
-	bool onGPU = true;
-
-	if (!onGPU) {
-		CUDA_CHECK_ERRORS(cudaSetDevice(CUDA_GET_MAXGFLOP_DEVICE_ID()));
-	}
-
-	//initialize the GPU/network
-	s.runNetwork(0,0, onGPU?GPU_MODE:CPU_MODE);
 
 	PoissonRate me(nrX*nrY*28*3,onGPU);
 	PoissonRate red_green(nrX*nrY,onGPU);
@@ -244,10 +235,10 @@ int main()
 		s.setSpikeRate(gV1ME, &me, 1);
 
 		// run the established network for 1 (sec)  and 0 (millisecond), in GPU_MODE
-		s.runNetwork(0,FRAMEDURATION, onGPU?GPU_MODE:GPU_MODE);
+		s.runNetwork(0,FRAMEDURATION);
 
 		if (i==1) {
-			FILE* nid = fopen("Results/orientation/net.dat","wb");
+			FILE* nid = fopen("results/orientation/net.dat","wb");
 			s.writeNetwork(nid);
 			fclose(nid);
 		}

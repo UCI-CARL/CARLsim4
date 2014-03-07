@@ -39,7 +39,7 @@
  */ 
 
 
-#include "snn.h"
+#include <carlsim.h>
 void calcColorME(int nrX, int nrY, unsigned char* stim, float* red_green, float* green_red, float* blue_yellow, float* yellow_blue, float* ME, bool GPUpointers);
 extern MTRand	      getRand;
 
@@ -265,7 +265,7 @@ int main()
 {
 	MTRand	      getRand(210499257);
 
-	char saveFolder[] = "Results/rdk/";
+	char saveFolder[] = "results/rdk/";
 
 	float synscale = 1;
 	float stdpscale = 1;
@@ -275,6 +275,7 @@ int main()
 	synscale = synscale*4;
 
 	#define FRAMEDURATION 100
+	bool onGPU = true;
 
 	FILE* fid;
 	char thisTmpSave[128]; // temp var to store save folder
@@ -283,7 +284,7 @@ int main()
 	// use command-line specified CUDA device, otherwise use device with highest Gflops/s
 //	cutilSafeCall(cudaSetDevice(cutGetMaxGflopsDeviceId()));
 
-	CpuSNN s("global");
+	CARLsim s("rdk",onGPU?GPU_MODE:CPU_MODE);
 
 	int gV1ME = s.createSpikeGeneratorGroup("V1ME", nrX*nrY*28*3, EXCITATORY_NEURON);
 	int gMT1 = s.createGroup("MT1", nrX*nrY*8, EXCITATORY_NEURON);
@@ -325,7 +326,7 @@ int main()
 
 
 	// show log every 1 sec (0 to disable logging). You can pass a file pointer or pass stdout to specify where the log output should go.
-	s.setLogCycle(1, 1, stdout);
+	s.setLogCycle(1);
 
 
 	s.setConductances(ALL, true,5,150,6,150);
@@ -344,10 +345,6 @@ int main()
 
 	unsigned char* vid = new unsigned char[nrX*nrY*3];
 
-	bool onGPU = true;
-
-	//initialize the GPU/network
-	s.runNetwork(0,0, onGPU?GPU_MODE:CPU_MODE);
 
 	PoissonRate me(nrX*nrY*28*3,onGPU);
 	PoissonRate red_green(nrX*nrY,onGPU);

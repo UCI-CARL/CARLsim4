@@ -1,5 +1,5 @@
 /* 
- * Copyright (c) 2013 Regents of the University of California. All rights reserved.
+ * Copyright (c) 2014 Regents of the University of California. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -36,51 +36,27 @@
  *					(TSC) Ting-Shuo Chou <tingshuc@uci.edu>
  *
  * CARLsim available from http://socsci.uci.edu/~jkrichma/CARLsim/
- * Ver 07/13/2013
+ * Ver 2/21/2014
  */
 
-#include "PoissonRate.h"
+#ifndef _POISSON_RATE_H_
+#define _POISSON_RATE_H_
 
-#if __CUDA3__
-    #include <cuda.h>
-    #include <cutil_inline.h>
-    #include <cutil_math.h>
-#elif __CUDA5__
-    #include <cuda.h>
-    #include <cuda_runtime.h>
-    #include "helper_cuda.h"
+#include <stdint.h>
+
+class PoissonRate {
+public:
+	float* rates;
+	uint32_t len;
+	bool onGPU;
+	bool allocatedRatesInternally;
+
+	PoissonRate(float* _rates, uint32_t _len, bool _onGPU = false);
+
+	PoissonRate(uint32_t _len, bool _onGPU = false);
+
+	// destructor
+	~PoissonRate();
+};
+
 #endif
-
-#include "CUDAVersionControl.h"
-
-
-PoissonRate::PoissonRate(float* _rates, uint32_t _len, bool _onGPU) {
-	rates = _rates;
-	len = _len;
-	onGPU = _onGPU;
-	allocatedRatesInternally = false;
-};
-
-PoissonRate::PoissonRate(uint32_t _len, bool _onGPU) {
-	if (_onGPU) {
-		CUDA_CHECK_ERRORS(cudaMalloc((void**)&rates, _len * sizeof(float)));
-	} else {
-		rates = new float[_len];
-	}
-	len = _len;
-	onGPU = _onGPU;
-	allocatedRatesInternally = true;
-};
-
-// destructor
-PoissonRate::~PoissonRate() {
-	if (allocatedRatesInternally) {
-		if (onGPU) {
-			CUDA_CHECK_ERRORS(cudaThreadSynchronize()); // wait for kernel to complete
-			CUDA_CHECK_ERRORS(cudaFree(rates)); // free memory
-		}
-		else {
-			delete[] rates;
-		}
-	}
-}

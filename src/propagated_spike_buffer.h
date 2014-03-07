@@ -1,5 +1,5 @@
-#ifndef PROPAGATEDSPIKEBUFFER_H_
-#define PROPAGATEDSPIKEBUFFER_H_
+#ifndef _PROPAGATED_SPIKE_BUFFER_H_
+#define _PROPAGATED_SPIKE_BUFFER_H_
 
 ///////////////////////////////////
 // IMPORTED FROM PCSIM SOURCE CODE  http://www.lsm.tugraz.at/pcsim/
@@ -38,8 +38,7 @@ class PropagatedSpikeBuffer
 public:
 
     //! New spike buffer
-    /*!
-	*  \param minDelay Minimum delay (in number of time steps) the buffer can handle
+    /*! \param minDelay Minimum delay (in number of time steps) the buffer can handle
     *  \param maxDelay Maximum delay (in number of time steps) the buffer can handle
     *  \param chunkSize Constant used for internal memory management.
     *                   Should increase with increasing number of synapses and
