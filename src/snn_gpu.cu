@@ -64,7 +64,7 @@ RNG_rand48* gpuPoissonRand; // initialized in CpuSNNinitGPUparams
 
 #define GPU_LTP(t)   (gpuNetInfo.ALPHA_LTP*__expf(-(t)/gpuNetInfo.TAU_LTP))
 #define GPU_LTD(t)   (gpuNetInfo.ALPHA_LTD*__expf(-(t)/gpuNetInfo.TAU_LTD))
-	
+
 ///////////////////////////////////////////////////////////////////
 // Some important ideas that explains the GPU execution are as follows:
 //  1. Each GPU block has a local firing table (called fireTable). The block of threads
@@ -130,70 +130,70 @@ texture <int,    1, cudaReadModeElementType>  groupIdInfo_tex; // groupIDInfo is
 __device__  int timingTableD1_tex_offset;
 __device__  int timingTableD2_tex_offset;
 
-	
+
 __device__ int generatedErrors = 0;
 __device__ int	 tmp_val[MAX_NUM_BLOCKS][LOOP_CNT];
 __device__ int	 retErrCode=NO_KERNEL_ERRORS;
 __device__ float retErrVal[MAX_NUM_BLOCKS][20];
 
 #define INIT_CHECK(enable, src, val)		\
-  {						\
-    if(enable)					\
-      if(threadIdx.x==0) 			\
-	src = val;				\
-  }
+{						\
+	if(enable)					\
+		if(threadIdx.x==0) 			\
+			src = val;				\
+	}
 
 
 #define ERROR_CHECK_COND(enable, src, val, cond, retVal)	\
-  {								\
-    if(enable)							\
-      if (!(cond)) {						\
-	src = val;						\
-	return retVal;						\
-      }								\
-  }
+	{								\
+		if(enable)							\
+			if (!(cond)) {						\
+				src = val;						\
+				return retVal;						\
+			}								\
+		}
 
 #define ERROR_CHECK_COND_NORETURN(enable, src, val, cond)	\
-  {								\
-    if(enable)							\
-      if (!(cond)) {						\
-	src = val;						\
-	return;							\
-      }								\
-  }
+		{								\
+			if(enable)							\
+				if (!(cond)) {						\
+					src = val;						\
+					return;							\
+				}								\
+			}
 
 #define ERROR_CHECK(enable, src, val)		\
-  {						\
-    if(enable)					\
-      if( blockIdx.x >= MAX_NUM_BLOCKS) {	\
-	src = val;				\
-	return;					\
-      }						\
-  }
+			{						\
+				if(enable)					\
+					if( blockIdx.x >= MAX_NUM_BLOCKS) {	\
+						src = val;				\
+						return;					\
+					}						\
+				}
 
 #define UPDATE_ERROR_CHECK4(src, val1, val2, val3, val4)	\
-  {								\
-    if (src && (threadIdx.x==0))	 {			\
-      retErrCode = src;						\
-      if(ENABLE_MORE_CHECK) {					\
-	retErrVal[blockIdx.x][0]=0xdead;			\
-	retErrVal[blockIdx.x][1]=4;				\
-	retErrVal[blockIdx.x][2]=val1;				\
-	retErrVal[blockIdx.x][3]=val2;				\
-	retErrVal[blockIdx.x][4]=val3;				\
-	retErrVal[blockIdx.x][5]=val4;				\
-      }								\
-    }								\
-  }
-		
+				{								\
+					if (src && (threadIdx.x==0))	 {			\
+						retErrCode = src;						\
+						if(ENABLE_MORE_CHECK) {					\
+							retErrVal[blockIdx.x][0]=0xdead;			\
+							retErrVal[blockIdx.x][1]=4;				\
+							retErrVal[blockIdx.x][2]=val1;				\
+							retErrVal[blockIdx.x][3]=val2;				\
+							retErrVal[blockIdx.x][4]=val3;				\
+							retErrVal[blockIdx.x][5]=val4;				\
+						}								\
+					}								\
+				}
+
 #define	MEASURE_LOADING			0
 
 #define MEASURE_GPU(pos,val)			\
-  {						\
-    if(MEASURE_LOADING)				\
-      if (threadIdx.x==0)			\
-	tmp_val[blockIdx.x][pos] += val;	\
-  }
+				{						\
+					if(MEASURE_LOADING)				\
+						if (threadIdx.x==0)			\
+							tmp_val[blockIdx.x][pos] += val;	\
+					}
 
 // example of the quick synaptic table
 // index     cnt
@@ -202,73 +202,67 @@ __device__ float retErrVal[MAX_NUM_BLOCKS][20];
 // 0000010 - 1
 // 0100000 - 5
 // 0110000 - 4
-int tableQuickSynId[256];
-__device__ int  gpu_tableQuickSynId[256];
-void initTableQuickSynId()
-{
-  void* devPtr;
-	   
-  for(int i=1; i < 256; i++) {
-    int cnt=0;
-    while(i) {
-      if(((i>>cnt)&1)==1) break;
-      cnt++;
-      assert(cnt<=7);
-    }
-    tableQuickSynId[i]=cnt;		 
-  }
-	   
-  cudaGetSymbolAddress(&devPtr, gpu_tableQuickSynId);
-  CUDA_CHECK_ERRORS_MACRO( cudaMemcpy( devPtr, tableQuickSynId, sizeof(tableQuickSynId), cudaMemcpyHostToDevice));
-}
-	
-__device__ inline bool isPoissonGroup(short int& grpId, unsigned int& nid)
-{
-  bool poiss = (gpuGrpInfo[grpId].Type & POISSON_NEURON);
+					int tableQuickSynId[256];
+					__device__ int  gpu_tableQuickSynId[256];
+					void initTableQuickSynId()
+					{
+						void* devPtr;
 
-  if (poiss) {
-    ERROR_CHECK_COND(TESTING, retErrCode, ERROR_FIRING_2, (nid >= gpuNetInfo.numNReg), 0);
-  }
+						for(int i=1; i < 256; i++) {
+							int cnt=0;
+							while(i) {
+								if(((i>>cnt)&1)==1) break;
+								cnt++;
+								assert(cnt<=7);
+							}
+							tableQuickSynId[i]=cnt;		 
+						}
 
-  return poiss;
-}
+						cudaGetSymbolAddress(&devPtr, gpu_tableQuickSynId);
+						CUDA_CHECK_ERRORS_MACRO( cudaMemcpy( devPtr, tableQuickSynId, sizeof(tableQuickSynId), cudaMemcpyHostToDevice));
+					}
 
-__device__ inline void setFiringBitSynapses(unsigned int& nid, int& syn_id)
-{
-  uint32_t* tmp_I_set_p = ((uint32_t*)((char*) gpuPtrs.I_set + ((syn_id>>5)*gpuNetInfo.I_setPitch)) + nid);
-  int atomicVal = atomicOr(tmp_I_set_p, 1 <<(syn_id%32));
-}
+					__device__ inline bool isPoissonGroup(short int& grpId, unsigned int& nid)
+					{
+						bool poiss = (gpuGrpInfo[grpId].Type & POISSON_NEURON);
 
-__device__ inline uint32_t* getFiringBitGroupPtr(unsigned int& nid, int& synGrpId)
-{
-  uint32_t* tmp_ptr = (((uint32_t*)((char*) gpuPtrs.I_set + synGrpId*gpuNetInfo.I_setPitch)) + nid);
+						if (poiss) {
+							ERROR_CHECK_COND(TESTING, retErrCode, ERROR_FIRING_2, (nid >= gpuNetInfo.numNReg), 0);
+						}
+
+						return poiss;
+					}
+
+					__device__ inline void setFiringBitSynapses(unsigned int& nid, int& syn_id)
+					{
+						uint32_t* tmp_I_set_p = ((uint32_t*)((char*) gpuPtrs.I_set + ((syn_id>>5)*gpuNetInfo.I_setPitch)) + nid);
+						int atomicVal = atomicOr(tmp_I_set_p, 1 <<(syn_id%32));
+					}
+
+					__device__ inline uint32_t* getFiringBitGroupPtr(unsigned int& nid, int& synGrpId)
+					{
+						uint32_t* tmp_ptr = (((uint32_t*)((char*) gpuPtrs.I_set + synGrpId*gpuNetInfo.I_setPitch)) + nid);
   //		int val=atomicAdd(&testVarCnt2, 3);
   //		gpuPtrs.testVar2[val]   = nid+1;
   //		gpuPtrs.testVar2[val+1] = synGrpId+1;
   //		gpuPtrs.testVar2[val+2] = *tmp_ptr+1;
-  return tmp_ptr;
-}
+						return tmp_ptr;
+					}
 
-__device__ inline uint32_t getSTPBufPos(unsigned int nid, uint32_t t)
-{
-  // TODO: MNJ CHECK THIS FOR CORRECTNESS..
-  return (((t%STP_BUF_SIZE)*gpuNetInfo.STP_Pitch) + nid);
-}
+					__device__ inline int2 getStaticThreadLoad(int& bufPos)
+					{
+						return (gpuPtrs.neuronAllocation[bufPos]);
+					}
 
-__device__ inline int2 getStaticThreadLoad(int& bufPos)
-{
-  return (gpuPtrs.neuronAllocation[bufPos]);
-}
-
-__device__ inline bool getPoissonSpike_GPU (unsigned int& nid)
-{
+					__device__ inline bool getPoissonSpike_GPU (unsigned int& nid)
+					{
   // Random number value is less than the poisson firing probability
   // if poisson firing probability is say 1.0 then the random poisson ptr
   // will always be less than 1.0 and hence it will continiously fire
-  ERROR_CHECK_COND(TESTING, retErrCode, POISSON_COUNT_ERROR_0, (nid >= gpuNetInfo.numNReg), 0);
+						ERROR_CHECK_COND(TESTING, retErrCode, POISSON_COUNT_ERROR_0, (nid >= gpuNetInfo.numNReg), 0);
 
-  return gpuPtrs.poissonRandPtr[nid-gpuNetInfo.numNReg]*(1000.0/RNG_rand48::MAX_RANGE) < gpuPtrs.poissonFireRate[nid-gpuNetInfo.numNReg];
-}
+						return gpuPtrs.poissonRandPtr[nid-gpuNetInfo.numNReg]*(1000.0/RNG_rand48::MAX_RANGE) < gpuPtrs.poissonFireRate[nid-gpuNetInfo.numNReg];
+					}
 
 ///////////////////////////////////////////////////////////////////
 // Device local function:      update_GPU_TimingTable			///
@@ -276,50 +270,50 @@ __device__ inline bool getPoissonSpike_GPU (unsigned int& nid)
 // so that we have the new values of the fired neurons for the	///
 // current time t.												///
 ///////////////////////////////////////////////////////////////////
-__global__ void kernel_timingTableUpdate(int t)
-{
-  if ( threadIdx.x == 0 && blockIdx.x == 0) {
-    timingTableD2[t+gpuNetInfo.D+1]  = secD2fireCnt;
-    timingTableD1[t+gpuNetInfo.D+1]  = secD1fireCnt;
-  }
-  __syncthreads();									     
-}
+					__global__ void kernel_timingTableUpdate(int t)
+					{
+						if ( threadIdx.x == 0 && blockIdx.x == 0) {
+							timingTableD2[t+gpuNetInfo.D+1]  = secD2fireCnt;
+							timingTableD1[t+gpuNetInfo.D+1]  = secD1fireCnt;
+						}
+						__syncthreads();									     
+					}
 
 /////////////////////////////////////////////////////////////////////////////////
 // Device Kernel Function:  Intialization of the GPU side of the simulator    ///
 // KERNEL: This kernel is called after initialization of various parameters   ///
 // so that we can reset all required parameters. 			      ///
 /////////////////////////////////////////////////////////////////////////////////
-__global__ void kernel_init ()
-{
-  if(threadIdx.x==0 && blockIdx.x==0) {
-    for(int i=0; i < ROUNDED_TIMING_COUNT; i++) {
-      timingTableD2[i]   = 0;
-      timingTableD1[i]   = 0;
-    }
-  }
+					__global__ void kernel_init ()
+					{
+						if(threadIdx.x==0 && blockIdx.x==0) {
+							for(int i=0; i < ROUNDED_TIMING_COUNT; i++) {
+								timingTableD2[i]   = 0;
+								timingTableD1[i]   = 0;
+							}
+						}
 
-  const int totBuffers=loadBufferCount;
-  __syncthreads();
-  for (int bufPos = blockIdx.x; bufPos < totBuffers; bufPos += gridDim.x) {
+						const int totBuffers=loadBufferCount;
+						__syncthreads();
+						for (int bufPos = blockIdx.x; bufPos < totBuffers; bufPos += gridDim.x) {
     // KILLME !!! This can be further optimized ....
     // instead of reading each neuron group separately .....
     // read a whole buffer and use the result ......
-    int2 	 threadLoad  = getStaticThreadLoad(bufPos);
-    int  	 nid        = STATIC_LOAD_START(threadLoad);
-    int  	 lastId      = STATIC_LOAD_SIZE(threadLoad);
-    short int grpId   	 = STATIC_LOAD_GROUP(threadLoad);
+							int2 	 threadLoad  = getStaticThreadLoad(bufPos);
+							int  	 nid        = STATIC_LOAD_START(threadLoad);
+							int  	 lastId      = STATIC_LOAD_SIZE(threadLoad);
+							short int grpId   	 = STATIC_LOAD_GROUP(threadLoad);
 
     // errors...
-    ERROR_CHECK_COND_NORETURN(TESTING, retErrCode, KERNEL_INIT_ERROR0, (grpId   < gpuNetInfo.numGrp));
-    ERROR_CHECK_COND_NORETURN(TESTING, retErrCode, KERNEL_INIT_ERROR1, (lastId  < gpuNetInfo.numN));
+							ERROR_CHECK_COND_NORETURN(TESTING, retErrCode, KERNEL_INIT_ERROR0, (grpId   < gpuNetInfo.numGrp));
+							ERROR_CHECK_COND_NORETURN(TESTING, retErrCode, KERNEL_INIT_ERROR1, (lastId  < gpuNetInfo.numN));
 
-    while ((threadIdx.x < lastId) && (nid < gpuNetInfo.numN)) {
+							while ((threadIdx.x < lastId) && (nid < gpuNetInfo.numN)) {
       //				int totCnt = gpuPtrs.Npre[nid];			// total synaptic count
       //				int nCum   = gpuPtrs.cumulativePre[nid];	// total pre-synaptic count
       nid=nid+1; // move to the next neuron in the group..
-    }
   }
+}
 }
 
 
@@ -333,19 +327,19 @@ __device__ float testFireCntf2;
 // Allocation of the group and its id..
 void CpuSNN::allocateGroupId()
 {
-  assert (cpu_gpuNetPtrs.groupIdInfo == NULL);
-  int3* tmp_neuronAllocation = (int3 *) malloc(sizeof(int3)*net_Info.numGrp);
-  for (int g=0; g < net_Info.numGrp; g++) {
-    int3  threadLoad;
-    threadLoad.x = grp_Info[g].StartN;
-    threadLoad.y = grp_Info[g].EndN;
-    threadLoad.z = g;
-    tmp_neuronAllocation[g] = threadLoad;
-  }
-  CUDA_CHECK_ERRORS  ( cudaMalloc ((void**) &cpu_gpuNetPtrs.groupIdInfo, sizeof(int3)*net_Info.numGrp));
-  CUDA_CHECK_ERRORS_MACRO ( cudaMemcpy ( cpu_gpuNetPtrs.groupIdInfo, tmp_neuronAllocation, sizeof(int3)*net_Info.numGrp, cudaMemcpyHostToDevice));
-  CUDA_CHECK_ERRORS_MACRO ( cudaBindTexture (NULL, groupIdInfo_tex, cpu_gpuNetPtrs.groupIdInfo, sizeof(int3)*net_Info.numGrp));
-  free(tmp_neuronAllocation);
+	assert (cpu_gpuNetPtrs.groupIdInfo == NULL);
+	int3* tmp_neuronAllocation = (int3 *) malloc(sizeof(int3)*net_Info.numGrp);
+	for (int g=0; g < net_Info.numGrp; g++) {
+		int3  threadLoad;
+		threadLoad.x = grp_Info[g].StartN;
+		threadLoad.y = grp_Info[g].EndN;
+		threadLoad.z = g;
+		tmp_neuronAllocation[g] = threadLoad;
+	}
+	CUDA_CHECK_ERRORS  ( cudaMalloc ((void**) &cpu_gpuNetPtrs.groupIdInfo, sizeof(int3)*net_Info.numGrp));
+	CUDA_CHECK_ERRORS_MACRO ( cudaMemcpy ( cpu_gpuNetPtrs.groupIdInfo, tmp_neuronAllocation, sizeof(int3)*net_Info.numGrp, cudaMemcpyHostToDevice));
+	CUDA_CHECK_ERRORS_MACRO ( cudaBindTexture (NULL, groupIdInfo_tex, cpu_gpuNetPtrs.groupIdInfo, sizeof(int3)*net_Info.numGrp));
+	free(tmp_neuronAllocation);
 }
 
 /************************ VARIOUS KERNELS FOR FIRING CALCULATION AND FIRING UPDATE ****************************/
@@ -396,11 +390,11 @@ int CpuSNN::allocateStaticLoad(int bufSize) {
 			int testg = STATIC_LOAD_GROUP(threadLoad);
 			tmp_neuronAllocation[bufferCnt] = threadLoad;
 			CARLSIM_DEBUG("%d. Start=%d, size=%d grpId=%d:%s (MonId=%d)",
-					bufferCnt, STATIC_LOAD_START(threadLoad),
-					STATIC_LOAD_SIZE(threadLoad),
-					STATIC_LOAD_GROUP(threadLoad),
-					grp_Info2[testg].Name.c_str(),
-					grp_Info[testg].MonitorId);
+				bufferCnt, STATIC_LOAD_START(threadLoad),
+				STATIC_LOAD_SIZE(threadLoad),
+				STATIC_LOAD_GROUP(threadLoad),
+				grp_Info2[testg].Name.c_str(),
+				grp_Info[testg].MonitorId);
 			bufferCnt++;
 		}
 	}
@@ -426,28 +420,23 @@ int CpuSNN::allocateStaticLoad(int bufSize) {
 // update the STPU and STPX variable after firing			      ///
 /////////////////////////////////////////////////////////////////////////////////
 
-__device__ void firingUpdateSTP (unsigned int& nid, int& simTime, short int&  grpId)
-{
-  // implements Mongillo, Barak and Tsodyks model of Short term plasticity
-  uint32_t ind   = getSTPBufPos(nid, simTime);
-  uint32_t ind_1 = getSTPBufPos(nid, (simTime-1)); // MDR -1 is correct, we use the value before the decay has been applied for the current time step.
-
-  gpuPtrs.stpx[ind] = gpuPtrs.stpx[ind] - gpuPtrs.stpu[ind_1]*gpuPtrs.stpx[ind_1];
-  gpuPtrs.stpu[ind] = gpuPtrs.stpu[ind] + gpuGrpInfo[grpId].STP_U*(1-gpuPtrs.stpu[ind_1]);
+__device__ void firingUpdateSTP (unsigned int& nid, int& simTime, short int&  grpId) {
+	gpuPtrs.stpu[nid] += gpuGrpInfo[grpId].STP_U*(1.0f-gpuPtrs.stpu[nid]);
+	gpuPtrs.stpx[nid] -= gpuPtrs.stpu[nid]*gpuPtrs.stpx[nid];
 }
 
 __device__ void setFiringBit(unsigned int& nid)
 {
-  gpuPtrs.neuronFiring[nid] |= 0x1;
+	gpuPtrs.neuronFiring[nid] |= 0x1;
 }
 
 __device__ void measureFiringLoad(volatile int& fireCnt, volatile int& fireCntD1)
 {
-  if (0==threadIdx.x) {
-    MEASURE_GPU(1, (fireCnt-fireCntD1));
-    MEASURE_GPU(2, fireCntD1);
-  }
-  __syncthreads();
+	if (0==threadIdx.x) {
+		MEASURE_GPU(1, (fireCnt-fireCntD1));
+		MEASURE_GPU(2, fireCntD1);
+	}
+	__syncthreads();
 }
 
 __device__ void resetFiredNeuron(unsigned int& nid, short int & grpId, int& simTime)
@@ -455,13 +444,13 @@ __device__ void resetFiredNeuron(unsigned int& nid, short int & grpId, int& simT
   // TODO: convert this to use coalesced access by grouping into a
   // single 16 byte access. This might improve bandwidth performance
   // This is fully uncoalsced access...need to convert to coalsced access..
-  gpuPtrs.voltage[nid] = gpuPtrs.Izh_c[nid];
-  gpuPtrs.recovery[nid] += gpuPtrs.Izh_d[nid];
-  if (gpuGrpInfo[grpId].WithSTDP)
-    gpuPtrs.lastSpikeTime[nid] = simTime;
+	gpuPtrs.voltage[nid] = gpuPtrs.Izh_c[nid];
+	gpuPtrs.recovery[nid] += gpuPtrs.Izh_d[nid];
+	if (gpuGrpInfo[grpId].WithSTDP)
+		gpuPtrs.lastSpikeTime[nid] = simTime;
   // with homeostasis flag can be used here.
-  gpuPtrs.avgFiring[nid] += 1000/(gpuGrpInfo[grpId].avgTimeScale*1000);
-  gpuPtrs.nSpikeCnt[nid]++;
+	gpuPtrs.avgFiring[nid] += 1000/(gpuGrpInfo[grpId].avgTimeScale*1000);
+	gpuPtrs.nSpikeCnt[nid]++;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
@@ -476,100 +465,100 @@ __device__ void resetFiredNeuron(unsigned int& nid, short int & grpId, int& simT
 ////////////////////////////////////////////////////////////////////////////////////////////////
 __device__ void updateFiringCounter(volatile unsigned int& fireCnt, volatile unsigned int& fireCntD1, volatile unsigned int& cntD2, volatile unsigned int& cntD1, volatile int&  blkErrCode)
 {
-  int fireCntD2 = fireCnt-fireCntD1;
+	int fireCntD2 = fireCnt-fireCntD1;
 
-  cntD2 = atomicAdd(&secD2fireCntTest, fireCntD2);
-  cntD1 = atomicAdd(&secD1fireCntTest, fireCntD1);
+	cntD2 = atomicAdd(&secD2fireCntTest, fireCntD2);
+	cntD1 = atomicAdd(&secD1fireCntTest, fireCntD1);
 
   //check for overflow in the firing table size....
-  if(secD2fireCntTest>gpuNetInfo.maxSpikesD2) {
-    blkErrCode = NEW_FIRE_UPDATE_OVERFLOW_ERROR2;
-    return;
-  }
-  else if(secD1fireCntTest>gpuNetInfo.maxSpikesD1) {
-    blkErrCode = NEW_FIRE_UPDATE_OVERFLOW_ERROR1;
-    return;
-  }
-  blkErrCode = 0;
+	if(secD2fireCntTest>gpuNetInfo.maxSpikesD2) {
+		blkErrCode = NEW_FIRE_UPDATE_OVERFLOW_ERROR2;
+		return;
+	}
+	else if(secD1fireCntTest>gpuNetInfo.maxSpikesD1) {
+		blkErrCode = NEW_FIRE_UPDATE_OVERFLOW_ERROR1;
+		return;
+	}
+	blkErrCode = 0;
 
   // get a distinct counter to store firing info
   // into the firing table
-  cntD2 = atomicAdd(&secD2fireCnt, fireCntD2);
-  cntD1 = atomicAdd(&secD1fireCnt, fireCntD1);
+	cntD2 = atomicAdd(&secD2fireCnt, fireCntD2);
+	cntD1 = atomicAdd(&secD1fireCnt, fireCntD1);
 
-  MEASURE_GPU(1, fireCntD2);
-  MEASURE_GPU(2, fireCntD1);
+	MEASURE_GPU(1, fireCntD2);
+	MEASURE_GPU(2, fireCntD1);
 }
 
 // update the firing table...
 __device__ void updateFiringTable(unsigned int& nid, short int& grpId, volatile unsigned int& cntD2, volatile unsigned int& cntD1)
 {
-  int pos;
-  if (gpuGrpInfo[grpId].MaxDelay == 1) {
+	int pos;
+	if (gpuGrpInfo[grpId].MaxDelay == 1) {
     // this group has a delay of only 1
-    pos = atomicAdd((int*)&cntD1, 1);
-    gpuPtrs.firingTableD1[pos]  = SET_FIRING_TABLE(nid, grpId);
-  }
-  else {
+		pos = atomicAdd((int*)&cntD1, 1);
+		gpuPtrs.firingTableD1[pos]  = SET_FIRING_TABLE(nid, grpId);
+	}
+	else {
     // all other groups is dumped here 
-    pos = atomicAdd((int*)&cntD2, 1);
-    gpuPtrs.firingTableD2[pos]  = SET_FIRING_TABLE(nid, grpId);
-  }
+		pos = atomicAdd((int*)&cntD2, 1);
+		gpuPtrs.firingTableD2[pos]  = SET_FIRING_TABLE(nid, grpId);
+	}
 }
 
 __device__ int newFireUpdate (	int* 	fireTablePtr,
-				short int* fireGrpId,
-				volatile unsigned int& 	fireCnt,
-				volatile unsigned int& 	fireCntD1,
-				int& 	simTime)
+	short int* fireGrpId,
+	volatile unsigned int& 	fireCnt,
+	volatile unsigned int& 	fireCntD1,
+	int& 	simTime)
 {
-  __shared__ volatile unsigned int cntD2;
-  __shared__ volatile unsigned int cntD1;
-  __shared__ volatile int blkErrCode;
+	__shared__ volatile unsigned int cntD2;
+	__shared__ volatile unsigned int cntD1;
+	__shared__ volatile int blkErrCode;
 
-  blkErrCode = 0;
-  if (0==threadIdx.x) {
-    updateFiringCounter(fireCnt, fireCntD1, cntD2, cntD1, blkErrCode);
-  }
+	blkErrCode = 0;
+	if (0==threadIdx.x) {
+		updateFiringCounter(fireCnt, fireCntD1, cntD2, cntD1, blkErrCode);
+	}
 
-  __syncthreads();
+	__syncthreads();
 
-  UPDATE_ERROR_CHECK4(blkErrCode,cntD2,fireCnt,cntD1,fireCntD1);
+	UPDATE_ERROR_CHECK4(blkErrCode,cntD2,fireCnt,cntD1,fireCntD1);
 
   // if we overflow the spike buffer space that is available,
   // then we return with an error here...
-  if (blkErrCode)
-    return blkErrCode;
+	if (blkErrCode)
+		return blkErrCode;
 
-  for (int i=threadIdx.x; i < fireCnt; i+=(blockDim.x)) {
+	for (int i=threadIdx.x; i < fireCnt; i+=(blockDim.x)) {
 
     // Read the firing id from the local table.....
-    unsigned int nid  = fireTablePtr[i];
+		unsigned int nid  = fireTablePtr[i];
 
     //storeTestSpikedNeurons(gpuPtrs.testVar2, fireCnt, fireTablePtr, NULL);
-    ERROR_CHECK_COND (ENABLE_MORE_CHECK, blkErrCode, ERROR_FIRING_3, (nid < gpuNetInfo.numN), blkErrCode);
+		ERROR_CHECK_COND (ENABLE_MORE_CHECK, blkErrCode, ERROR_FIRING_3, (nid < gpuNetInfo.numN), blkErrCode);
 
     // set the LSB bit indicating the current neuron has
-    if(TESTING) {
-      setFiringBit(nid);
-    }
-    updateFiringTable(nid, fireGrpId[i], cntD2, cntD1);
+		if(TESTING) {
+			setFiringBit(nid);
+		}
+		updateFiringTable(nid, fireGrpId[i], cntD2, cntD1);
 
-    if (gpuGrpInfo[fireGrpId[i]].WithSTP)
-      firingUpdateSTP(nid, simTime, fireGrpId[i]);
+		if (gpuGrpInfo[fireGrpId[i]].WithSTP)
+			firingUpdateSTP(nid, simTime, fireGrpId[i]);
 
     // only neurons would do the remaining settings...
     // pure poisson generators will return without changing anything else..
-    if (IS_REGULAR_NEURON(nid, gpuNetInfo.numNReg, gpuNetInfo.numNPois))
-      resetFiredNeuron(nid, fireGrpId[i], simTime);
-    else {
-      gpuPtrs.nSpikeCnt[nid]++;
-    }
-  }
+		if (IS_REGULAR_NEURON(nid, gpuNetInfo.numNReg, gpuNetInfo.numNPois))
+			resetFiredNeuron(nid, fireGrpId[i], simTime);
+		else {
+			gpuPtrs.nSpikeCnt[nid]++;
+		}
+	}
 
-  __syncthreads();
+	__syncthreads();
 
-  return 0;
+	return 0;
 }
 
 // zero GPU spike counts
@@ -579,42 +568,42 @@ __global__ void gpu_resetSpikeCnt(int _startGrp, int _endGrp)
   //because this is a global call we want to make sure it only executes
   //once (i.e. for a particular index).  
   //TODO: I need to test and make sure this still works. TAGS:UPDATE.
-  if((blockIdx.x==0)&&(threadIdx.x==0)) {
+	if((blockIdx.x==0)&&(threadIdx.x==0)) {
     //grp_Info seems to be accessible. -- KDC
-    for( int grpId=_startGrp; grpId < _endGrp; grpId++) {
-      int startN = gpuGrpInfo[grpId].StartN;
-      int endN   = gpuGrpInfo[grpId].EndN+1;
-      for (int i=startN; i < endN; i++){
-	gpuPtrs.nSpikeCnt[i] = 0;
-      }
-    }
-  }
+		for( int grpId=_startGrp; grpId < _endGrp; grpId++) {
+			int startN = gpuGrpInfo[grpId].StartN;
+			int endN   = gpuGrpInfo[grpId].EndN+1;
+			for (int i=startN; i < endN; i++){
+				gpuPtrs.nSpikeCnt[i] = 0;
+			}
+		}
+	}
 }
 
 // wrapper to call resetSpikeCnt
 void CpuSNN::resetSpikeCnt_GPU(int _startGrp, int _endGrp)
 {
-  int blkSize  = 128;
-  int gridSize = 64;
-  gpu_resetSpikeCnt<<<gridSize,blkSize>>> (_startGrp,_endGrp);
+	int blkSize  = 128;
+	int gridSize = 64;
+	gpu_resetSpikeCnt<<<gridSize,blkSize>>> (_startGrp,_endGrp);
 }
 
 __device__ void findGrpId_GPU(unsigned int& nid, int& grpId)
 {
-  for (int g=0; g < gpuNetInfo.numGrp; g++) {
+	for (int g=0; g < gpuNetInfo.numGrp; g++) {
     //uint3 groupIdInfo = {1, 1, 1};
-    int startN  = tex1Dfetch (groupIdInfo_tex, g*3);
-    int endN    = tex1Dfetch (groupIdInfo_tex, g*3+1);
+		int startN  = tex1Dfetch (groupIdInfo_tex, g*3);
+		int endN    = tex1Dfetch (groupIdInfo_tex, g*3+1);
     // printf("%d:%s s=%d e=%d\n", g, grp_Info2[g].Name.c_str(), grp_Info[g].StartN, grp_Info[g].EndN);
     //if ((nid >= groupIdInfo.x) && (nid <= groupIdInfo.y)) {
     // grpId = groupIdInfo.z;
-    if ((nid >= startN) && (nid <= endN)) {
-      grpId = tex1Dfetch (groupIdInfo_tex, g*3+2);
-      return;
-    }
-  }
-  grpId = -1;
-  return;
+		if ((nid >= startN) && (nid <= endN)) {
+			grpId = tex1Dfetch (groupIdInfo_tex, g*3+2);
+			return;
+		}
+	}
+	grpId = -1;
+	return;
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -629,60 +618,60 @@ __device__ void findGrpId_GPU(unsigned int& nid, int& grpId)
 // synaptic grouping for LTP Calculation
 #define		LTP_GROUPING_SZ     16
 __device__ void gpu_updateLTP(	int*     		fireTablePtr,
-				short int*  		fireGrpId,
-				volatile unsigned int&   fireCnt,
-				int&      		simTime)
+	short int*  		fireGrpId,
+	volatile unsigned int&   fireCnt,
+	int&      		simTime)
 {
-  for(int pos=threadIdx.x/LTP_GROUPING_SZ; pos < fireCnt; pos += (blockDim.x/LTP_GROUPING_SZ))  {
+	for(int pos=threadIdx.x/LTP_GROUPING_SZ; pos < fireCnt; pos += (blockDim.x/LTP_GROUPING_SZ))  {
     // each neuron has two variable pre and pre_exc
     // pre: number of pre-neuron
     // pre_exc: number of neuron had has plastic connections
-    short int grpId = fireGrpId[pos];
+		short int grpId = fireGrpId[pos];
     if (gpuGrpInfo[grpId].WithSTDP) { // MDR, FIXME this probably will cause more thread divergence than need be...
-      int  nid   = fireTablePtr[pos];
-      unsigned int  end_p = gpuPtrs.cumulativePre[nid] + gpuPtrs.Npre_plastic[nid];
-      for(unsigned int p  = gpuPtrs.cumulativePre[nid] + threadIdx.x%LTP_GROUPING_SZ;
-	  p < end_p;
-	  p+=LTP_GROUPING_SZ) {
-	int stdp_tDiff = (simTime - gpuPtrs.synSpikeTime[p]);
-	if ((stdp_tDiff > 0) && ((stdp_tDiff*gpuGrpInfo[grpId].TAU_LTP_INV)<25)) {
-	  gpuPtrs.wtChange[p] += STDP(stdp_tDiff, gpuGrpInfo[grpId].ALPHA_LTP, gpuGrpInfo[grpId].TAU_LTP_INV);
+    	int  nid   = fireTablePtr[pos];
+    	unsigned int  end_p = gpuPtrs.cumulativePre[nid] + gpuPtrs.Npre_plastic[nid];
+    	for(unsigned int p  = gpuPtrs.cumulativePre[nid] + threadIdx.x%LTP_GROUPING_SZ;
+    		p < end_p;
+    		p+=LTP_GROUPING_SZ) {
+    		int stdp_tDiff = (simTime - gpuPtrs.synSpikeTime[p]);
+    	if ((stdp_tDiff > 0) && ((stdp_tDiff*gpuGrpInfo[grpId].TAU_LTP_INV)<25)) {
+    		gpuPtrs.wtChange[p] += STDP(stdp_tDiff, gpuGrpInfo[grpId].ALPHA_LTP, gpuGrpInfo[grpId].TAU_LTP_INV);
 	  //						int val = atomicAdd(&testVarCnt, 4);
 	  //						gpuPtrs.testVar[val]   = 1+nid;
 	  //						gpuPtrs.testVar[val+1] = 1+p-gpuPtrs.cumulativePre[nid];
 	  //						gpuPtrs.testVar[val+2] = 1+gpuPtrs.wtChange[p];
 	  //						gpuPtrs.testVar[val+3] = 1+stdp_tDiff;
-	}
-      }
+    	}
     }
-  }
-  __syncthreads();
+}
+}
+__syncthreads();
 }
 
 __device__ inline int assertionFiringParam(short int& grpId, int& lastId)
 {
-  ERROR_CHECK_COND(TESTING, retErrCode, ERROR_FIRING_0, (grpId   < gpuNetInfo.numGrp), 0);
-  ERROR_CHECK_COND(TESTING, retErrCode, ERROR_FIRING_1, (lastId  < gpuNetInfo.numN), 0);
-  return 0;
+	ERROR_CHECK_COND(TESTING, retErrCode, ERROR_FIRING_0, (grpId   < gpuNetInfo.numGrp), 0);
+	ERROR_CHECK_COND(TESTING, retErrCode, ERROR_FIRING_1, (lastId  < gpuNetInfo.numN), 0);
+	return 0;
 }
 
 __device__ inline bool getSpikeGenBit_GPU (unsigned int& nidPos)
 {
-  const int nidBitPos = nidPos%32;
-  const int nidIndex  = nidPos/32;
-  return ((gpuPtrs.spikeGenBits[nidIndex]>>nidBitPos)&0x1);
+	const int nidBitPos = nidPos%32;
+	const int nidIndex  = nidPos/32;
+	return ((gpuPtrs.spikeGenBits[nidIndex]>>nidBitPos)&0x1);
 }
 
 // setSpikeGenBit for given neuron and group..
 void CpuSNN::setSpikeGenBit_GPU(unsigned int nid, int grp)
 {
-  unsigned int nidPos    = (nid - grp_Info[grp].StartN + grp_Info[grp].Noffset);
-  unsigned int nidBitPos = nidPos%32;
-  unsigned int nidIndex  = nidPos/32;
+	unsigned int nidPos    = (nid - grp_Info[grp].StartN + grp_Info[grp].Noffset);
+	unsigned int nidBitPos = nidPos%32;
+	unsigned int nidIndex  = nidPos/32;
 
-  assert(nidIndex < (NgenFunc/32+1));
+	assert(nidIndex < (NgenFunc/32+1));
 
-  cpuNetPtrs.spikeGenBits[nidIndex] |= (1 << nidBitPos);
+	cpuNetPtrs.spikeGenBits[nidIndex] |= (1 << nidBitPos);
 }
 
 
@@ -699,34 +688,34 @@ void CpuSNN::setSpikeGenBit_GPU(unsigned int nid, int grp)
 ///////////////////////////////////////////////////////////////////////////
 __global__ 	void kernel_findFiring (int t, int sec, int simTime)
 {
-  __shared__ volatile unsigned int fireCnt;
-  __shared__ volatile unsigned int fireCntTest;
-  __shared__ volatile unsigned int fireCntD1;
-  __shared__ int 		fireTable[FIRE_CHUNK_CNT];
-  __shared__ short int	fireGrpId[FIRE_CHUNK_CNT];
-  __shared__ volatile int errCode;
+	__shared__ volatile unsigned int fireCnt;
+	__shared__ volatile unsigned int fireCntTest;
+	__shared__ volatile unsigned int fireCntD1;
+	__shared__ int 		fireTable[FIRE_CHUNK_CNT];
+	__shared__ short int	fireGrpId[FIRE_CHUNK_CNT];
+	__shared__ volatile int errCode;
 
-  if (0==threadIdx.x) {
+	if (0==threadIdx.x) {
     fireCnt	  = 0; // initialize total cnt to 0
     fireCntD1  = 0; // initialize inh. cnt to 0
-  }
+}
 
   // Ignore this unless you are doing real debugging gpu code...
-  INIT_CHECK(ENABLE_MORE_CHECK, retErrCode, NO_KERNEL_ERRORS);
+INIT_CHECK(ENABLE_MORE_CHECK, retErrCode, NO_KERNEL_ERRORS);
 
-  const int totBuffers=loadBufferCount;
+const int totBuffers=loadBufferCount;
 
-  __syncthreads();
+__syncthreads();
 
-  for (int bufPos = blockIdx.x; bufPos < totBuffers; bufPos += gridDim.x)
-    {
+for (int bufPos = blockIdx.x; bufPos < totBuffers; bufPos += gridDim.x)
+{
       // KILLME !!! This can be further optimized ....
       // instead of reading each neuron group separately .....
       // read a whole buffer and use the result ......
-      int2 threadLoad  = getStaticThreadLoad(bufPos);
-      unsigned int  nid        = (STATIC_LOAD_START(threadLoad) + threadIdx.x);
-      int  lastId      = STATIC_LOAD_SIZE(threadLoad);
-      short int grpId   = STATIC_LOAD_GROUP(threadLoad);
+	int2 threadLoad  = getStaticThreadLoad(bufPos);
+	unsigned int  nid        = (STATIC_LOAD_START(threadLoad) + threadIdx.x);
+	int  lastId      = STATIC_LOAD_SIZE(threadLoad);
+	short int grpId   = STATIC_LOAD_GROUP(threadLoad);
       bool needToWrite = false;	// used by all neuron to indicate firing condition
       int  fireId      = 0;
 
@@ -737,39 +726,39 @@ __global__ 	void kernel_findFiring (int t, int sec, int simTime)
 
 	// Simple poisson spiker uses the poisson firing probability
 	// to detect whether it has fired or not....
-	if( isPoissonGroup(grpId, nid) ) {
-	  if(gpuGrpInfo[grpId].spikeGen) {
-	    unsigned int  offset      = nid-gpuGrpInfo[grpId].StartN+gpuGrpInfo[grpId].Noffset;
-	    needToWrite = getSpikeGenBit_GPU(offset);
-	  }
-	  else
-	    needToWrite = getPoissonSpike_GPU(nid);
-	}
-	else  {
-	  if (gpuPtrs.voltage[nid] >= 30.0) {
-	    needToWrite = true;
-	  }
-	}
+      	if( isPoissonGroup(grpId, nid) ) {
+      		if(gpuGrpInfo[grpId].spikeGen) {
+      			unsigned int  offset      = nid-gpuGrpInfo[grpId].StartN+gpuGrpInfo[grpId].Noffset;
+      			needToWrite = getSpikeGenBit_GPU(offset);
+      		}
+      		else
+      			needToWrite = getPoissonSpike_GPU(nid);
+      	}
+      	else  {
+      		if (gpuPtrs.voltage[nid] >= 30.0) {
+      			needToWrite = true;
+      		}
+      	}
       }
-			
+
       // loop through a few times to ensure that we have added/processed all spikes that need to be written
       // if the buffer is small relative to the number of spikes needing to be written, we may have to empty the buffer a few times...
       for (uint8_t c=0;c<2;c++) {
 	// we first increment fireCntTest to make sure we haven't filled the buffer
-	if (needToWrite)
-	  fireId = atomicAdd((int*)&fireCntTest, 1);
+      	if (needToWrite)
+      		fireId = atomicAdd((int*)&fireCntTest, 1);
 
 	// if there is a spike and the buffer still has space...
-	if (needToWrite && (fireId <(FIRE_CHUNK_CNT))) {
+      	if (needToWrite && (fireId <(FIRE_CHUNK_CNT))) {
 	  // get our position in the buffer
-	  fireId = atomicAdd((int*)&fireCnt, 1);
+      		fireId = atomicAdd((int*)&fireCnt, 1);
 
-	  if (gpuGrpInfo[grpId].MaxDelay == 1)
-	    atomicAdd((int*)&fireCntD1, 1);
+      		if (gpuGrpInfo[grpId].MaxDelay == 1)
+      			atomicAdd((int*)&fireCntD1, 1);
 
 	  // store ID of the fired neuron
-	  needToWrite 	  = false;
-	  fireTable[fireId] = nid;
+      		needToWrite 	  = false;
+      		fireTable[fireId] = nid;
 	  fireGrpId[fireId] = grpId;//setFireProperties(grpId, isInhib);
 	}
 
@@ -779,35 +768,35 @@ __global__ 	void kernel_findFiring (int t, int sec, int simTime)
 	if (fireCntTest >= (FIRE_CHUNK_CNT)) {
 
 	  // clear the table and update...
-	  int retCode = newFireUpdate(fireTable,  fireGrpId, fireCnt, fireCntD1, simTime);
-	  if (retCode != 0) return;
+		int retCode = newFireUpdate(fireTable,  fireGrpId, fireCnt, fireCntD1, simTime);
+		if (retCode != 0) return;
 	  // update based on stdp rule
 	  // KILLME !!! if (simTime > 0))
-	  if (gpuNetInfo.sim_with_stdp)
-	    gpu_updateLTP (fireTable, fireGrpId, fireCnt, simTime);
+		if (gpuNetInfo.sim_with_stdp)
+			gpu_updateLTP (fireTable, fireGrpId, fireCnt, simTime);
 
 	  // reset counters
-	  if (0==threadIdx.x) {
-	    fireCntD1  = 0;
-	    fireCnt   = 0;
-	    fireCntTest = 0;
-	    MEASURE_GPU(0, 1);
-	  }
+		if (0==threadIdx.x) {
+			fireCntD1  = 0;
+			fireCnt   = 0;
+			fireCntTest = 0;
+			MEASURE_GPU(0, 1);
+		}
 	}
-      }
-    }
+}
+}
 
-  __syncthreads();
+__syncthreads();
 
   // few more fired neurons are left. we update their firing state here..
-  if (fireCnt) {
-    int retCode = newFireUpdate(fireTable, fireGrpId, fireCnt, fireCntD1, simTime);
-    if (retCode != 0) return;
-			
-    if (gpuNetInfo.sim_with_stdp)
-      gpu_updateLTP(fireTable, fireGrpId, fireCnt, simTime);
-    MEASURE_GPU(0, 1);
-  }
+if (fireCnt) {
+	int retCode = newFireUpdate(fireTable, fireGrpId, fireCnt, fireCntD1, simTime);
+	if (retCode != 0) return;
+
+	if (gpuNetInfo.sim_with_stdp)
+		gpu_updateLTP(fireTable, fireGrpId, fireCnt, simTime);
+	MEASURE_GPU(0, 1);
+}
 }
 
 //******************************** UPDATE CONDUCTANCES AND TOTAL SYNAPTIC CURRENT EVERY TIME STEP *****************************
@@ -818,8 +807,8 @@ __global__ 	void kernel_findFiring (int t, int sec, int simTime)
 __device__ inline int assertConductanceStates()
 {
   // error checking done here
-  ERROR_CHECK_COND(ENABLE_MORE_CHECK, retErrCode, GLOBAL_CONDUCTANCE_ERROR_0, (blockIdx.x < MAX_NUM_BLOCKS), 0);
-  return 0;
+	ERROR_CHECK_COND(ENABLE_MORE_CHECK, retErrCode, GLOBAL_CONDUCTANCE_ERROR_0, (blockIdx.x < MAX_NUM_BLOCKS), 0);
+	return 0;
 }
 
 // Based on the bitvector used for indicating the presence of spike
@@ -857,7 +846,7 @@ __global__ void kernel_globalConductanceUpdate (int t, int sec, int simTime) {
 			float GABAb_sum		 =  0.0;
 			int   lmt      		 =  gpuPtrs.Npre[post_nid];
 			unsigned int cum_pos =  gpuPtrs.cumulativePre[post_nid];
-				
+
 			// find the total current to this neuron...
 			for(int j=0; (lmt)&&(j <= ((lmt-1)>>LOG_CURRENT_GROUP)); j++) {
 				// because of malloc2D operation we are using pitch, post_nid, j to get
@@ -895,7 +884,7 @@ __global__ void kernel_globalConductanceUpdate (int t, int sec, int simTime) {
 					if(gpuGrpInfo[pre_grpId].WithSTP) {
 						wt *= gpuPtrs.stpx[pre_nid]*gpuPtrs.stpu[pre_nid];
 					}
-						
+
 					if (gpuNetInfo.sim_with_conductances) {
 						short int connId = gpuPtrs.cumConnIdPre[cum_pos+wtId];
 						if (type & TARGET_AMPA)
@@ -945,52 +934,52 @@ __global__ void kernel_globalConductanceUpdate (int t, int sec, int simTime) {
 
 __device__ void updateNeuronState(unsigned int& nid, int& grpId)
 {
-  float v      =  gpuPtrs.voltage[nid];
-  float u      =  gpuPtrs.recovery[nid];
-  float I_sum;
+	float v      =  gpuPtrs.voltage[nid];
+	float u      =  gpuPtrs.recovery[nid];
+	float I_sum;
 
   // loop that allows smaller integration time step for v's and u's
-  for (int c=0; c<COND_INTEGRATION_SCALE; c++) {
-    I_sum = 0.0;
-    if (gpuNetInfo.sim_with_conductances) {
-      float NMDAtmp = (v+80)*(v+80)/60/60;
+	for (int c=0; c<COND_INTEGRATION_SCALE; c++) {
+		I_sum = 0.0;
+		if (gpuNetInfo.sim_with_conductances) {
+			float NMDAtmp = (v+80)*(v+80)/60/60;
       // There is an instability issue when dealing with large conductances, which causes the membr.
       // pot. to plateau just below the spike threshold... We cap the "slow" conductances to prevent
       // this issue. Note: 8.0 and 2.0 seemed to work in some experiments, but it might not be the
       // best choice in general... compare globalStateUpdate() in snn_cpu.cpp
-      I_sum = - ( gpuPtrs.gAMPA[nid]*(v-0)
+			I_sum = - ( gpuPtrs.gAMPA[nid]*(v-0)
 		  + min(8.0f,gpuPtrs.gNMDA[nid])*NMDAtmp/(1+NMDAtmp)*(v-0) // cap gNMDA at 8.0
 		  + gpuPtrs.gGABAa[nid]*(v+70)
 		  + min(2.0f,gpuPtrs.gGABAb[nid])*(v+90)); // cap gGABAb at 2.0
-    }
-    else
-      I_sum = gpuPtrs.current[nid];
+		}
+		else
+			I_sum = gpuPtrs.current[nid];
 
     // update vpos and upos for the current neuron
-    v += ((0.04f*v+5)*v+140-u+I_sum)/COND_INTEGRATION_SCALE;
+		v += ((0.04f*v+5)*v+140-u+I_sum)/COND_INTEGRATION_SCALE;
     if (v > 30)  { v = 30; c=COND_INTEGRATION_SCALE; }// break the loop but evaluate u[i]
     if (v < -90) v = -90;
     u += (gpuPtrs.Izh_a[nid]*(gpuPtrs.Izh_b[nid]*v-u)/COND_INTEGRATION_SCALE);
-  }
+}
 
-  gpuPtrs.current[nid]		 = I_sum;
-  gpuPtrs.voltage[nid] 	     = v;
-  gpuPtrs.recovery[nid] 	     = u;
+gpuPtrs.current[nid]		 = I_sum;
+gpuPtrs.voltage[nid] 	     = v;
+gpuPtrs.recovery[nid] 	     = u;
 }
 
 __device__ inline int assertGlobalStates()
 {
   // error checking done here
-  ERROR_CHECK_COND(ENABLE_MORE_CHECK, retErrCode, GLOBAL_STATE_ERROR_0, (blockIdx.x < MAX_NUM_BLOCKS), 0);
-  return 0;
+	ERROR_CHECK_COND(ENABLE_MORE_CHECK, retErrCode, GLOBAL_STATE_ERROR_0, (blockIdx.x < MAX_NUM_BLOCKS), 0);
+	return 0;
 }
 
 // homeostasis in GPU_MODE
 __device__ inline void updateHomeoStaticState(unsigned int& pos, int& grpId)
 {
   // here the homeostasis adjustment
-  if (gpuGrpInfo[grpId].WithHomeostasis)
-    gpuPtrs.avgFiring[pos] *= (gpuGrpInfo[grpId].avgTimeScale_decay);
+	if (gpuGrpInfo[grpId].WithHomeostasis)
+		gpuPtrs.avgFiring[pos] *= (gpuGrpInfo[grpId].avgTimeScale_decay);
 }
 
 
@@ -1002,32 +991,32 @@ __device__ inline void updateHomeoStaticState(unsigned int& pos, int& grpId)
 ///////////////////////////////////////////////////////////
 __global__ void kernel_globalStateUpdate (int t, int sec, int simTime)
 {
-  const int totBuffers=loadBufferCount;
+	const int totBuffers=loadBufferCount;
 
-  for (int bufPos = blockIdx.x; bufPos < totBuffers; bufPos += gridDim.x) {
+	for (int bufPos = blockIdx.x; bufPos < totBuffers; bufPos += gridDim.x) {
     // KILLME !!! This can be further optimized ....
     // instead of reading each neuron group separately .....
     // read a whole buffer and use the result ......
-    int2 threadLoad  = getStaticThreadLoad(bufPos);
-    unsigned int  nid        = (STATIC_LOAD_START(threadLoad) + threadIdx.x);
-    int  lastId      = STATIC_LOAD_SIZE(threadLoad);
-    int  grpId       = STATIC_LOAD_GROUP(threadLoad);
+		int2 threadLoad  = getStaticThreadLoad(bufPos);
+		unsigned int  nid        = (STATIC_LOAD_START(threadLoad) + threadIdx.x);
+		int  lastId      = STATIC_LOAD_SIZE(threadLoad);
+		int  grpId       = STATIC_LOAD_GROUP(threadLoad);
 
     // do some error checking...
-    assertGlobalStates();
+		assertGlobalStates();
 
-    if ((threadIdx.x < lastId) && (nid < gpuNetInfo.numN)) {
+		if ((threadIdx.x < lastId) && (nid < gpuNetInfo.numN)) {
 
-      if (IS_REGULAR_NEURON(nid,gpuNetInfo.numNReg, gpuNetInfo.numNPois)) {
+			if (IS_REGULAR_NEURON(nid,gpuNetInfo.numNReg, gpuNetInfo.numNPois)) {
 
 	// update neuron state here....
-	updateNeuronState(nid, grpId);
+				updateNeuronState(nid, grpId);
 
 	// TODO: Could check with homeostasis flag here
-	updateHomeoStaticState(nid, grpId);
-      }
-    }
-  }
+				updateHomeoStaticState(nid, grpId);
+			}
+		}
+	}
 }
 
 //******************************** UPDATE STP STATE  EVERY TIME STEP **********************************************
@@ -1038,8 +1027,8 @@ __global__ void kernel_globalStateUpdate (int t, int sec, int simTime)
 __device__ inline int assertSTPConditions()
 {
   // error checking done here
-  ERROR_CHECK_COND(ENABLE_MORE_CHECK, retErrCode, STP_ERROR, (blockDim.x < MAX_NUM_BLOCKS), 0);
-  return 0;
+	ERROR_CHECK_COND(ENABLE_MORE_CHECK, retErrCode, STP_ERROR, (blockDim.x < MAX_NUM_BLOCKS), 0);
+	return 0;
 }
 
 
@@ -1052,51 +1041,47 @@ __global__ void kernel_STPUpdateAndDecayConductances (int t, int sec, int simTim
   // global id
   // int gid=threadIdx.x + blockDim.x*blockIdx.x;
 
-  const int totBuffers=loadBufferCount;
-  for (int bufPos = blockIdx.x; bufPos < totBuffers; bufPos += gridDim.x) {
+	const int totBuffers=loadBufferCount;
+	for (int bufPos = blockIdx.x; bufPos < totBuffers; bufPos += gridDim.x) {
     // KILLME !!! This can be further optimized ....
     // instead of reading each neuron group separately .....
     // read a whole buffer and use the result ......
-    int2 threadLoad  = getStaticThreadLoad(bufPos);
-    unsigned int nid        = (STATIC_LOAD_START(threadLoad) + threadIdx.x);
-    int  lastId      = STATIC_LOAD_SIZE(threadLoad);
-    uint32_t  grpId  = STATIC_LOAD_GROUP(threadLoad);
+		int2 threadLoad  = getStaticThreadLoad(bufPos);
+		unsigned int nid        = (STATIC_LOAD_START(threadLoad) + threadIdx.x);
+		int  lastId      = STATIC_LOAD_SIZE(threadLoad);
+		uint32_t  grpId  = STATIC_LOAD_GROUP(threadLoad);
 
 
     // update the conductane parameter of the current neron
-    if (gpuGrpInfo[grpId].WithConductances && IS_REGULAR_NEURON(nid, gpuNetInfo.numNReg, gpuNetInfo.numNPois)) {
-      gpuPtrs.gAMPA[nid]   *=  gpuGrpInfo[grpId].dAMPA;
-      gpuPtrs.gNMDA[nid]   *=  gpuGrpInfo[grpId].dNMDA;
-      gpuPtrs.gGABAa[nid]  *=  gpuGrpInfo[grpId].dGABAa;
-      gpuPtrs.gGABAb[nid]  *=  gpuGrpInfo[grpId].dGABAb;
-    }
+		if (gpuGrpInfo[grpId].WithConductances && IS_REGULAR_NEURON(nid, gpuNetInfo.numNReg, gpuNetInfo.numNPois)) {
+			gpuPtrs.gAMPA[nid]   *=  gpuGrpInfo[grpId].dAMPA;
+			gpuPtrs.gNMDA[nid]   *=  gpuGrpInfo[grpId].dNMDA;
+			gpuPtrs.gGABAa[nid]  *=  gpuGrpInfo[grpId].dGABAa;
+			gpuPtrs.gGABAb[nid]  *=  gpuGrpInfo[grpId].dGABAb;
+		}
 
     // check various STP asserts here....
-    assertSTPConditions();
+		assertSTPConditions();
 
-    if (gpuGrpInfo[grpId].WithSTP && (threadIdx.x < lastId) && (nid < gpuNetInfo.numN)) {
-      uint32_t ind   = getSTPBufPos(nid, simTime);
-      uint32_t ind_1 = getSTPBufPos(nid, (simTime));
-
-      //				TODO: update this to more optimized floating multiplication rather than division.....
-      gpuPtrs.stpx[ind] = gpuPtrs.stpx[ind_1] + (1-gpuPtrs.stpx[ind_1])/gpuGrpInfo[grpId].STP_tD;
-      gpuPtrs.stpu[ind] = gpuPtrs.stpu[ind_1] + (gpuGrpInfo[grpId].STP_U - gpuPtrs.stpu[ind_1])/gpuGrpInfo[grpId].STP_tF;
-    }
-  }
+		if (gpuGrpInfo[grpId].WithSTP && (threadIdx.x < lastId) && (nid < gpuNetInfo.numN)) {
+			gpuPtrs.stpu[nid] -= gpuPtrs.stpu[nid]*gpuGrpInfo[grpId].STP_tau_u_inv;
+			gpuPtrs.stpx[nid] += (1.0f-gpuPtrs.stpx[nid])*gpuGrpInfo[grpId].STP_tau_x_inv;
+		}
+	}
 }
 
 __device__ void updateTimingTable()
 {
-  int gnthreads=blockDim.x*gridDim.x;
+	int gnthreads=blockDim.x*gridDim.x;
 
   // Shift the firing table so that the initial information in
   // the firing table contain the firing information for the last D time step
-  for(int p=timingTableD2[999],k=0;
-      p<timingTableD2[999+gpuNetInfo.D+1];
-      p+=gnthreads,k+=gnthreads) {
-    if((p+threadIdx.x)<timingTableD2[999+gpuNetInfo.D+1])
-      gpuPtrs.firingTableD2[k+threadIdx.x]=gpuPtrs.firingTableD2[p+threadIdx.x];
-  }
+	for(int p=timingTableD2[999],k=0;
+		p<timingTableD2[999+gpuNetInfo.D+1];
+		p+=gnthreads,k+=gnthreads) {
+		if((p+threadIdx.x)<timingTableD2[999+gpuNetInfo.D+1])
+			gpuPtrs.firingTableD2[k+threadIdx.x]=gpuPtrs.firingTableD2[p+threadIdx.x];
+	}
 }
 
 //********************************UPDATE SYNAPTIC WEIGHTS EVERY SECOND  *************************************************************
@@ -1116,30 +1101,30 @@ __device__ void updateTimingTable()
 // Rewritten updateSynapticWeights to include homeostasis.  We should consider using flag.
 __device__ void updateSynapticWeights(int& nid, unsigned int& jpos, int& grpId, float& diff_firing, float& homeostasisScale, float& baseFiring, float& avgTimeScaleInv)
 {
-  float t_wt   	    = gpuPtrs.wt[jpos];
-  float t_wtChange  = gpuPtrs.wtChange[jpos];
-  float t_maxWt     = gpuPtrs.maxSynWt[jpos];
+	float t_wt   	    = gpuPtrs.wt[jpos];
+	float t_wtChange  = gpuPtrs.wtChange[jpos];
+	float t_maxWt     = gpuPtrs.maxSynWt[jpos];
 
-  if (gpuGrpInfo[grpId].WithHomeostasis) {
+	if (gpuGrpInfo[grpId].WithHomeostasis) {
     // this factor is slow
-    t_wt += (diff_firing*t_wt*homeostasisScale + t_wtChange) * baseFiring * avgTimeScaleInv / (1+fabs(diff_firing)*50);
-  }
-  else{
+		t_wt += (diff_firing*t_wt*homeostasisScale + t_wtChange) * baseFiring * avgTimeScaleInv / (1+fabs(diff_firing)*50);
+	}
+	else{
     //original/default. 
-    t_wt += t_wtChange;
+		t_wt += t_wtChange;
     //biased towards learning.
     //t_wt += t_wtChange+0.1f;
-  }
-  
+	}
+
   //MDR - don't decay weights, just set to 0
   //t_wtChange*=0.90f;
-  t_wtChange = 0;
+	t_wtChange = 0;
 
-  if (t_wt>t_maxWt) t_wt=t_maxWt;
-  if (t_wt<0)  	  t_wt=0.0f;
+	if (t_wt>t_maxWt) t_wt=t_maxWt;
+	if (t_wt<0)  	  t_wt=0.0f;
 
-  gpuPtrs.wt[jpos] = t_wt;
-  gpuPtrs.wtChange[jpos] = t_wtChange;
+	gpuPtrs.wt[jpos] = t_wt;
+	gpuPtrs.wtChange[jpos] = t_wtChange;
 }
 
 
@@ -1171,72 +1156,72 @@ __global__ void kernel_updateWeightsFiring_static()
 {
   //int gid=blockIdx.x*blockDim.x+threadIdx.x;
   //int gnthreads=blockDim.x*gridDim.x;
-  __shared__ volatile int errCode;
-  __shared__ int    		startId, lastId, grpId, totBuffers, grpNCnt;
-  __shared__ int2 		threadLoad;
+	__shared__ volatile int errCode;
+	__shared__ int    		startId, lastId, grpId, totBuffers, grpNCnt;
+	__shared__ int2 		threadLoad;
   // added for homeostasis
-  __shared__ float		homeostasisScale, avgTimeScaleInv;
+	__shared__ float		homeostasisScale, avgTimeScaleInv;
 
-  if(threadIdx.x==0) {
-    totBuffers=loadBufferCount;
-    grpNCnt	= (blockDim.x/UPWTS_CLUSTERING_SZ) + ((blockDim.x%UPWTS_CLUSTERING_SZ)!=0);
-  }
+	if(threadIdx.x==0) {
+		totBuffers=loadBufferCount;
+		grpNCnt	= (blockDim.x/UPWTS_CLUSTERING_SZ) + ((blockDim.x%UPWTS_CLUSTERING_SZ)!=0);
+	}
 
-  updateTimingTable();
+	updateTimingTable();
 
-  __syncthreads();
+	__syncthreads();
 
-  for (int bufPos = blockIdx.x; bufPos < totBuffers; bufPos += gridDim.x) {
+	for (int bufPos = blockIdx.x; bufPos < totBuffers; bufPos += gridDim.x) {
     // KILLME !!! This can be further optimized ....
     // instead of reading each neuron group separately .....
     // read a whole buffer and use the result ......
-    if ( threadIdx.x) {
-      threadLoad  = getStaticThreadLoad(bufPos);
-      startId 	= STATIC_LOAD_START(threadLoad);
-      lastId  	= STATIC_LOAD_SIZE(threadLoad);
-      grpId   	= STATIC_LOAD_GROUP(threadLoad);
+		if ( threadIdx.x) {
+			threadLoad  = getStaticThreadLoad(bufPos);
+			startId 	= STATIC_LOAD_START(threadLoad);
+			lastId  	= STATIC_LOAD_SIZE(threadLoad);
+			grpId   	= STATIC_LOAD_GROUP(threadLoad);
 
       // homestasis functions
-      if (gpuGrpInfo[grpId].WithHomeostasis) {
-	homeostasisScale = gpuGrpInfo[grpId].homeostasisScale;
-	avgTimeScaleInv = gpuGrpInfo[grpId].avgTimeScaleInv;
-      } else {
-	homeostasisScale = 0;
-	avgTimeScaleInv = 1.0;
-      }
-    }
+			if (gpuGrpInfo[grpId].WithHomeostasis) {
+				homeostasisScale = gpuGrpInfo[grpId].homeostasisScale;
+				avgTimeScaleInv = gpuGrpInfo[grpId].avgTimeScaleInv;
+			} else {
+				homeostasisScale = 0;
+				avgTimeScaleInv = 1.0;
+			}
+		}
 
-    __syncthreads();
+		__syncthreads();
 
     // the weights are fixed for this group.. so dont make any changes on
     // the weight and continue to the next set of neurons...
-    if (gpuGrpInfo[grpId].FixedInputWts)  
-      continue;
-				
-    int nid=(threadIdx.x/UPWTS_CLUSTERING_SZ) + startId;
+		if (gpuGrpInfo[grpId].FixedInputWts)  
+			continue;
+
+		int nid=(threadIdx.x/UPWTS_CLUSTERING_SZ) + startId;
     // update the synaptic weights from the synaptic weight derivatives
-    for(; nid < startId+lastId; nid+=grpNCnt) {
-      int Npre_plastic = gpuPtrs.Npre_plastic[nid];
-      unsigned int cumulativePre = gpuPtrs.cumulativePre[nid];
-      float diff_firing  = 0.0;
-      float baseFiring = 0;
-      
-      if (gpuGrpInfo[grpId].WithHomeostasis) {
-	diff_firing  = (1.0-gpuPtrs.avgFiring[nid]*gpuPtrs.baseFiringInv[nid]);
-	baseFiring = gpuPtrs.baseFiring[nid];
-      }
-      
-      const int threadIdGrp   = (threadIdx.x%UPWTS_CLUSTERING_SZ);
+		for(; nid < startId+lastId; nid+=grpNCnt) {
+			int Npre_plastic = gpuPtrs.Npre_plastic[nid];
+			unsigned int cumulativePre = gpuPtrs.cumulativePre[nid];
+			float diff_firing  = 0.0;
+			float baseFiring = 0;
+
+			if (gpuGrpInfo[grpId].WithHomeostasis) {
+				diff_firing  = (1.0-gpuPtrs.avgFiring[nid]*gpuPtrs.baseFiringInv[nid]);
+				baseFiring = gpuPtrs.baseFiring[nid];
+			}
+
+			const int threadIdGrp   = (threadIdx.x%UPWTS_CLUSTERING_SZ);
       // synaptic grouping
-      for(unsigned int j=cumulativePre; j < (cumulativePre+Npre_plastic); j+=UPWTS_CLUSTERING_SZ) {
+			for(unsigned int j=cumulativePre; j < (cumulativePre+Npre_plastic); j+=UPWTS_CLUSTERING_SZ) {
 	//excitatory connection change the synaptic weights
-	unsigned int jpos=j+threadIdGrp;
-	if(jpos < (cumulativePre+Npre_plastic)) {
-	  updateSynapticWeights(nid, jpos, grpId, diff_firing, homeostasisScale, baseFiring, avgTimeScaleInv);
+				unsigned int jpos=j+threadIdGrp;
+				if(jpos < (cumulativePre+Npre_plastic)) {
+					updateSynapticWeights(nid, jpos, grpId, diff_firing, homeostasisScale, baseFiring, avgTimeScaleInv);
+				}
+			}
+		}
 	}
-      }
-    }
-  }
 }
 
 //********************************UPDATE TABLES AND COUNTERS EVERY SECOND  *************************************************************
@@ -1250,53 +1235,53 @@ __global__ void kernel_updateWeightsFiring_static()
 __global__ void kernel_updateWeightsFiring()
 {
   // CHECK !!!
-  int D = gpuNetInfo.D;
+	int D = gpuNetInfo.D;
   // reset the firing table so that we have the firing information
   // for the last D time steps to be used for the next cycle of the simulation
-  if(blockIdx.x==0) {
-    for(int i=threadIdx.x; i < D; i+=blockDim.x) {
+	if(blockIdx.x==0) {
+		for(int i=threadIdx.x; i < D; i+=blockDim.x) {
       // use i+1 instead of just i because timingTableD2[0] should always be 0
-      timingTableD2[i+1] = timingTableD2[1000+i+1]-timingTableD2[1000];
-      timingTableD1[i+1] = timingTableD1[1000+i+1]-timingTableD1[1000];
-    }
-  }
+			timingTableD2[i+1] = timingTableD2[1000+i+1]-timingTableD2[1000];
+			timingTableD1[i+1] = timingTableD1[1000+i+1]-timingTableD1[1000];
+		}
+	}
 
-  __syncthreads();
+	__syncthreads();
 
   // reset various counters for the firing information
-  if((blockIdx.x==0)&&(threadIdx.x==0)) {
-    timingTableD1[gpuNetInfo.D]  = 0;
-    spikeCountD2	+= secD2fireCnt;
-    spikeCountD1	+= secD1fireCnt;
-    secD2fireCnt	= timingTableD2[gpuNetInfo.D];
-    secD2fireCntTest	= timingTableD2[gpuNetInfo.D];
-    secD1fireCnt	= 0;
-    secD1fireCntTest = 0;
-  }
+	if((blockIdx.x==0)&&(threadIdx.x==0)) {
+		timingTableD1[gpuNetInfo.D]  = 0;
+		spikeCountD2	+= secD2fireCnt;
+		spikeCountD1	+= secD1fireCnt;
+		secD2fireCnt	= timingTableD2[gpuNetInfo.D];
+		secD2fireCntTest	= timingTableD2[gpuNetInfo.D];
+		secD1fireCnt	= 0;
+		secD1fireCntTest = 0;
+	}
 }
 
 /// THIS KERNEL IS USED BY BLOCK_CONFIG_VERSION
 __global__ void kernel_updateWeightsFiring2()
 {
   // reset various counters for the firing information
-  if((blockIdx.x==0)&&(threadIdx.x==0)) {
+	if((blockIdx.x==0)&&(threadIdx.x==0)) {
     //			timingTableD1[gpuNetInfo.D]  = 0;
-    spikeCountD2	+= secD2fireCnt;
-    spikeCountD1	+= secD1fireCnt;
+		spikeCountD2	+= secD2fireCnt;
+		spikeCountD1	+= secD1fireCnt;
     secD2fireCnt	= 0; //timingTableD2[gpuNetInfo.D];
     secD1fireCnt	= 0;
     secD2fireCntTest = 0; //timingTableD2[gpuNetInfo.D];
     secD1fireCntTest = 0;
-  }
+}
 }
 
 //****************************** GENERATE POST-SYNAPTIC CURRENT EVERY TIME-STEP  ****************************
 __device__ int generatePostSynapticSpike(int& simTime, int& firingId, int& myDelayIndex, volatile int& offset, bool unitDelay)
 {
-  int errCode = false;
+	int errCode = false;
 
   // get the post synaptic information for specific delay
-  post_info_t post_info = gpuPtrs.postSynapticIds[offset+myDelayIndex];
+	post_info_t post_info = gpuPtrs.postSynapticIds[offset+myDelayIndex];
 
   // get neuron id
   unsigned int nid = GET_CONN_NEURON_ID(post_info);//(post_info&POST_SYN_NEURON_MASK);
@@ -1316,12 +1301,12 @@ __device__ int generatePostSynapticSpike(int& simTime, int& firingId, int& myDel
   findGrpId_GPU(nid, post_grpId);
 
   if(post_grpId == -1)
-    return CURRENT_UPDATE_ERROR4;
+  	return CURRENT_UPDATE_ERROR4;
 
   if(ENABLE_MORE_CHECK) {
-    if (nid >= gpuNetInfo.numN)       	 errCode = (CURRENT_UPDATE_ERROR1|unitDelay);
-    if (syn_id >= gpuPtrs.Npre[nid]) errCode = (CURRENT_UPDATE_ERROR2|unitDelay);
-    if (errCode) return errCode;
+  	if (nid >= gpuNetInfo.numN)       	 errCode = (CURRENT_UPDATE_ERROR1|unitDelay);
+  	if (syn_id >= gpuPtrs.Npre[nid]) errCode = (CURRENT_UPDATE_ERROR2|unitDelay);
+  	if (errCode) return errCode;
   }
 
   setFiringBitSynapses(nid, syn_id);
@@ -1329,30 +1314,30 @@ __device__ int generatePostSynapticSpike(int& simTime, int& firingId, int& myDel
   gpuPtrs.synSpikeTime[pos_ns] = simTime;		  //uncoalesced access
 
   if (gpuGrpInfo[post_grpId].WithSTDP)  {
-    int stdp_tDiff = simTime-gpuPtrs.lastSpikeTime[nid];
-    if ((stdp_tDiff >= 0) && ((stdp_tDiff*gpuGrpInfo[post_grpId].TAU_LTD_INV)<25)) {
+  	int stdp_tDiff = simTime-gpuPtrs.lastSpikeTime[nid];
+  	if ((stdp_tDiff >= 0) && ((stdp_tDiff*gpuGrpInfo[post_grpId].TAU_LTD_INV)<25)) {
       gpuPtrs.wtChange[pos_ns] -= STDP( stdp_tDiff, gpuGrpInfo[post_grpId].ALPHA_LTD, gpuGrpInfo[post_grpId].TAU_LTD_INV); // uncoalesced access
-    }
   }
-	
-  return errCode;
+}
+
+return errCode;
 }
 
 __device__ void CHECK_DELAY_ERROR (int& t_pos, volatile int& sh_blkErrCode)
 {
-  if(ENABLE_MORE_CHECK) {
-    if (!((t_pos+(int)gpuNetInfo.D) >= 0)) {
-      int i=2;
-      sh_blkErrCode = CURRENT_UPDATE_ERROR3;
-      retErrVal[blockIdx.x][0] = 0xdead;
+	if(ENABLE_MORE_CHECK) {
+		if (!((t_pos+(int)gpuNetInfo.D) >= 0)) {
+			int i=2;
+			sh_blkErrCode = CURRENT_UPDATE_ERROR3;
+			retErrVal[blockIdx.x][0] = 0xdead;
       /* retErrVal[blockIdx.x][i++] = simTimeMs;
 	 retErrVal[blockIdx.x][i++] = t_pos;
 	 retErrVal[blockIdx.x][i++] = fPos;
 	 retErrVal[blockIdx.x][i++] = tex1Dfetch(timingTableD2_tex, t_pos+gpuNetInfo.D-1 + timingTableD2_tex_offset);
 	 retErrVal[blockIdx.x][i++] = tex1Dfetch(timingTableD2_tex, t_pos+gpuNetInfo.D + timingTableD2_tex_offset);*/
-      retErrVal[blockIdx.x][1]   = i;
-    }
-  }
+	 retErrVal[blockIdx.x][1]   = i;
+	}
+}
 }
 
 #define NUM_THREADS 			128
@@ -1363,139 +1348,139 @@ __device__ void CHECK_DELAY_ERROR (int& t_pos, volatile int& sh_blkErrCode)
 //  The LTD computation is also executed by this approach kernel.
 __global__ void gpu_doCurrentUpdateD2(int simTimeMs, int simTimeSec, int simTime)
 {
-  __shared__	volatile int sh_neuronOffsetTable[EXCIT_READ_CHUNK_SZ+2];
-  __shared__	int sh_delayLength[EXCIT_READ_CHUNK_SZ+2];
-  __shared__	int sh_delayIndexStart[EXCIT_READ_CHUNK_SZ+2];
-  __shared__	int sh_firingId[EXCIT_READ_CHUNK_SZ+2];
+	__shared__	volatile int sh_neuronOffsetTable[EXCIT_READ_CHUNK_SZ+2];
+	__shared__	int sh_delayLength[EXCIT_READ_CHUNK_SZ+2];
+	__shared__	int sh_delayIndexStart[EXCIT_READ_CHUNK_SZ+2];
+	__shared__	int sh_firingId[EXCIT_READ_CHUNK_SZ+2];
   //__shared__	int sh_axonDelay[EXCIT_READ_CHUNK_SZ+2];
-  __shared__ volatile int sh_NeuronCnt;
+	__shared__ volatile int sh_NeuronCnt;
 
-  const int threadIdSwarp	= (threadIdx.x%WARP_SIZE);
-  const int swarpId		= (threadIdx.x/WARP_SIZE);
-  int updateCnt	  	= 0;
+	const int threadIdSwarp	= (threadIdx.x%WARP_SIZE);
+	const int swarpId		= (threadIdx.x/WARP_SIZE);
+	int updateCnt	  	= 0;
 
-  __shared__ volatile int sh_blkErrCode;
+	__shared__ volatile int sh_blkErrCode;
 
-  if(ENABLE_MORE_CHECK) {			
-    if(threadIdx.x<=0) 
-      sh_blkErrCode = 0;		
-  }
+	if(ENABLE_MORE_CHECK) {			
+		if(threadIdx.x<=0) 
+			sh_blkErrCode = 0;		
+	}
 
   // this variable is used to record the
   // number of updates done by different blocks
-  if(threadIdx.x<=0)   {
-    sh_NeuronCnt = 0;
-  }
+	if(threadIdx.x<=0)   {
+		sh_NeuronCnt = 0;
+	}
 
-  __syncthreads();
+	__syncthreads();
 
   // stores the number of fired neurons at time t
-  int k      = secD2fireCnt - 1;
+	int k      = secD2fireCnt - 1;
 
   // stores the number of fired neurons at time (t - D)
-  int k_end  = tex1Dfetch (timingTableD2_tex, simTimeMs+1+timingTableD2_tex_offset);
+	int k_end  = tex1Dfetch (timingTableD2_tex, simTimeMs+1+timingTableD2_tex_offset);
 
-  int t_pos  = simTimeMs;
+	int t_pos  = simTimeMs;
 
   // we need to read (k-k_end) neurons from the firing 
   // table and do necesary updates for all these post-synaptic
   // connection in these neurons..
-  while((k>=k_end) &&(k>=0)) {
+	while((k>=k_end) &&(k>=0)) {
 
     // at any point of time EXCIT_READ_CHUNK_SZ neurons
     // read different firing id from the firing table
-    if (threadIdx.x<EXCIT_READ_CHUNK_SZ) {
-      int fPos = k - (EXCIT_READ_CHUNK_SZ*blockIdx.x) - threadIdx.x; 
-      if ((fPos >= 0) && (fPos >= k_end)) {
+		if (threadIdx.x<EXCIT_READ_CHUNK_SZ) {
+			int fPos = k - (EXCIT_READ_CHUNK_SZ*blockIdx.x) - threadIdx.x; 
+			if ((fPos >= 0) && (fPos >= k_end)) {
 
 	// get the neuron nid here....
-	int val = gpuPtrs.firingTableD2[fPos];
-	int nid = GET_FIRING_TABLE_NID(val);
+				int val = gpuPtrs.firingTableD2[fPos];
+				int nid = GET_FIRING_TABLE_NID(val);
 
 	// find the time of firing based on the firing number fPos
-	while ( !((fPos >= tex1Dfetch(timingTableD2_tex, t_pos+gpuNetInfo.D+timingTableD2_tex_offset)) 
-		  && (fPos <  tex1Dfetch(timingTableD2_tex, t_pos+gpuNetInfo.D+1+timingTableD2_tex_offset)))) {
-	  t_pos = t_pos - 1;
-	  CHECK_DELAY_ERROR(t_pos, sh_blkErrCode);
-	}
+				while ( !((fPos >= tex1Dfetch(timingTableD2_tex, t_pos+gpuNetInfo.D+timingTableD2_tex_offset)) 
+					&& (fPos <  tex1Dfetch(timingTableD2_tex, t_pos+gpuNetInfo.D+1+timingTableD2_tex_offset)))) {
+					t_pos = t_pos - 1;
+				CHECK_DELAY_ERROR(t_pos, sh_blkErrCode);
+			}
 
 	// find the time difference between firing of the neuron and the current time
-	int tD  = simTimeMs - t_pos;
+			int tD  = simTimeMs - t_pos;
 
 	// find the various delay parameters for neuron 'nid', with a delay of 'tD'
 	//sh_axonDelay[threadIdx.x]	 = tD;
-	int tPos = (gpuNetInfo.D+1)*nid+tD;
-	sh_firingId[threadIdx.x]	 	 = val;
-	sh_neuronOffsetTable[threadIdx.x]= gpuPtrs.cumulativePost[nid];
-	sh_delayLength[threadIdx.x]      = gpuPtrs.postDelayInfo[tPos].delay_length;
-	sh_delayIndexStart[threadIdx.x]  = gpuPtrs.postDelayInfo[tPos].delay_index_start;
+			int tPos = (gpuNetInfo.D+1)*nid+tD;
+			sh_firingId[threadIdx.x]	 	 = val;
+			sh_neuronOffsetTable[threadIdx.x]= gpuPtrs.cumulativePost[nid];
+			sh_delayLength[threadIdx.x]      = gpuPtrs.postDelayInfo[tPos].delay_length;
+			sh_delayIndexStart[threadIdx.x]  = gpuPtrs.postDelayInfo[tPos].delay_index_start;
 
 	// This is to indicate that the current thread
 	// has a valid delay parameter for post-synaptic firing generation
-	atomicAdd((int*)&sh_NeuronCnt,1);
-      }
-    }
+			atomicAdd((int*)&sh_NeuronCnt,1);
+		}
+	}
 
-    __syncthreads();
+	__syncthreads();
 
-    if(ENABLE_MORE_CHECK)
-      if (sh_blkErrCode) break;
+	if(ENABLE_MORE_CHECK)
+		if (sh_blkErrCode) break;
 
     // if cnt is zero than no more neurons need to generate
     // post-synaptic firing, then we break the loop.
-    int cnt = sh_NeuronCnt;
-    updateCnt += cnt;
-    if(cnt==0)  break;
+	int cnt = sh_NeuronCnt;
+	updateCnt += cnt;
+	if(cnt==0)  break;
 
     // first WARP_SIZE threads the post synaptic
     // firing for first neuron, and so on. each of this group
     // needs to generate (numPostSynapses/D) spikes for every fired neuron, every second
     // for numPostSynapses=500,D=20, we need to generate 25 spikes for each fired neuron
     // for numPostSynapses=600,D=20, we need to generate 30 spikes for each fired neuron 
-    for (int pos=swarpId; pos < cnt; pos += (NUM_THREADS/WARP_SIZE)) {
+	for (int pos=swarpId; pos < cnt; pos += (NUM_THREADS/WARP_SIZE)) {
 
-      int   delId     = threadIdSwarp;
+		int   delId     = threadIdSwarp;
 
-      while(delId < sh_delayLength[pos]) {
+		while(delId < sh_delayLength[pos]) {
 
-	int delIndex = sh_delayIndexStart[pos]+delId;
+			int delIndex = sh_delayIndexStart[pos]+delId;
 
-	sh_blkErrCode = generatePostSynapticSpike(simTime,
+			sh_blkErrCode = generatePostSynapticSpike(simTime,
 						  sh_firingId[pos],				// presynaptic nid
 						  delIndex, 	// delayIndex
 						  sh_neuronOffsetTable[pos], 		// offset
 						  false);							// false for unitDelay type..
 
-	if(ENABLE_MORE_CHECK) {
-	  if (sh_blkErrCode) break;
-	}
+			if(ENABLE_MORE_CHECK) {
+				if (sh_blkErrCode) break;
+			}
 
-	delId += WARP_SIZE;
-      }
+			delId += WARP_SIZE;
+		}
     } //(for all excitory neurons in table)
 
     __syncthreads();
 
     if(threadIdx.x==0)  
-      sh_NeuronCnt = 0;
+    	sh_NeuronCnt = 0;
 
     if(ENABLE_MORE_CHECK) 
-      if(sh_blkErrCode) break;
+    	if(sh_blkErrCode) break;
 
     k = k - (gridDim.x*EXCIT_READ_CHUNK_SZ);
 
     __syncthreads();
-  }
+}
 
-  __syncthreads();
+__syncthreads();
 
-  MEASURE_GPU(3, updateCnt);
+MEASURE_GPU(3, updateCnt);
 
-  if(ENABLE_MORE_CHECK)	
-    if (sh_blkErrCode) {
-      retErrCode = sh_blkErrCode;
-      return;
-    }	
+if(ENABLE_MORE_CHECK)	
+	if (sh_blkErrCode) {
+		retErrCode = sh_blkErrCode;
+		return;
+	}	
 }
 
 //  KERNEL DESCRIPTION:-
@@ -1505,13 +1490,13 @@ __global__ void gpu_doCurrentUpdateD2(int simTimeMs, int simTimeSec, int simTime
 //  Ultimately we may merge this kernel with the previous kernel.
 __global__ void gpu_doCurrentUpdateD1(int simTimeMs, int simTimeSec, int simTime)
 {
-  __shared__ volatile	int sh_NeuronCnt;
-  __shared__ volatile int sh_neuronOffsetTable[NUM_THREADS/WARP_SIZE+2];
+	__shared__ volatile	int sh_NeuronCnt;
+	__shared__ volatile int sh_neuronOffsetTable[NUM_THREADS/WARP_SIZE+2];
   //		__shared__	int sh_firedTimeTable[NUM_THREADS/WARP_SIZE+2];
-  __shared__	int sh_delayLength[NUM_THREADS/WARP_SIZE+2];
-  __shared__	int sh_firingId[NUM_THREADS/WARP_SIZE+2];
-  __shared__	int sh_delayIndexStart[NUM_THREADS/WARP_SIZE+2];
-  __shared__	int sh_timing;
+	__shared__	int sh_delayLength[NUM_THREADS/WARP_SIZE+2];
+	__shared__	int sh_firingId[NUM_THREADS/WARP_SIZE+2];
+	__shared__	int sh_delayIndexStart[NUM_THREADS/WARP_SIZE+2];
+	__shared__	int sh_timing;
 
   const int swarpId		= threadIdx.x/WARP_SIZE;  // swarp id within warp
   const int numSwarps     = blockDim.x/WARP_SIZE;   // number of sub-warps (swarps)
@@ -1520,94 +1505,94 @@ __global__ void gpu_doCurrentUpdateD1(int simTimeMs, int simTimeSec, int simTime
   __shared__ volatile int sh_blkErrCode;
 
   if(ENABLE_MORE_CHECK) {			
-    if(threadIdx.x<=0) 
-      sh_blkErrCode = 0;		
+  	if(threadIdx.x<=0) 
+  		sh_blkErrCode = 0;		
   }
 
   // load the time table for neuron firing
   int computedNeurons = 0;
   if (0==threadIdx.x) {
     sh_timing = timingTableD1[simTimeMs+gpuNetInfo.D]; // ??? check check ???
-  }
-  __syncthreads();
+}
+__syncthreads();
 
-  int kPos = sh_timing + (blockIdx.x*numSwarps);
+int kPos = sh_timing + (blockIdx.x*numSwarps);
 
-  __syncthreads();
+__syncthreads();
 
   // Do as long as we have some valid neuron
-  while((kPos >=0)&&(kPos < secD1fireCnt)) {
-    int fPos = -1;
+while((kPos >=0)&&(kPos < secD1fireCnt)) {
+	int fPos = -1;
     // a group of threads loads the delay information
-    if (threadIdx.x < numSwarps) {
-      sh_neuronOffsetTable[threadIdx.x] = -1;
-      fPos = kPos + threadIdx.x;
+	if (threadIdx.x < numSwarps) {
+		sh_neuronOffsetTable[threadIdx.x] = -1;
+		fPos = kPos + threadIdx.x;
 
       // find the neuron nid and also delay information from fPos
-      if((fPos>=0)&&(fPos < secD1fireCnt)) {
-	atomicAdd((int*)&sh_NeuronCnt,1);
-	int val  = gpuPtrs.firingTableD1[fPos];
-	int nid  = GET_FIRING_TABLE_NID(val);
-	int tPos = (gpuNetInfo.D+1)*nid;
-	sh_firingId[threadIdx.x] 	 	 = val;
-	sh_neuronOffsetTable[threadIdx.x]= gpuPtrs.cumulativePost[nid];
-	sh_delayLength[threadIdx.x]      = gpuPtrs.postDelayInfo[tPos].delay_length;
-	sh_delayIndexStart[threadIdx.x]  = gpuPtrs.postDelayInfo[tPos].delay_index_start;
-      }
-    }
+		if((fPos>=0)&&(fPos < secD1fireCnt)) {
+			atomicAdd((int*)&sh_NeuronCnt,1);
+			int val  = gpuPtrs.firingTableD1[fPos];
+			int nid  = GET_FIRING_TABLE_NID(val);
+			int tPos = (gpuNetInfo.D+1)*nid;
+			sh_firingId[threadIdx.x] 	 	 = val;
+			sh_neuronOffsetTable[threadIdx.x]= gpuPtrs.cumulativePost[nid];
+			sh_delayLength[threadIdx.x]      = gpuPtrs.postDelayInfo[tPos].delay_length;
+			sh_delayIndexStart[threadIdx.x]  = gpuPtrs.postDelayInfo[tPos].delay_index_start;
+		}
+	}
 
-    __syncthreads();
+	__syncthreads();
 
     // useful to measure the load balance for each block..
-    if(threadIdx.x==0)  computedNeurons += sh_NeuronCnt;
+	if(threadIdx.x==0)  computedNeurons += sh_NeuronCnt;
 
     // no more fired neuron from table... we just break from loop
-    if (sh_NeuronCnt==0)	break;
+	if (sh_NeuronCnt==0)	break;
 
-    __syncthreads();
+	__syncthreads();
 
-    int offset = sh_neuronOffsetTable[swarpId];
+	int offset = sh_neuronOffsetTable[swarpId];
 
-    if (threadIdx.x == 0) 
-      sh_NeuronCnt = 0;
+	if (threadIdx.x == 0) 
+		sh_NeuronCnt = 0;
 
-    if (offset>=0) {
-      int delId=threadIdSwarp;
+	if (offset>=0) {
+		int delId=threadIdSwarp;
 
-      while(delId < sh_delayLength[swarpId]) {
+		while(delId < sh_delayLength[swarpId]) {
 
-	int delIndex = (sh_delayIndexStart[swarpId]+delId);
+			int delIndex = (sh_delayIndexStart[swarpId]+delId);
 
-	sh_blkErrCode = generatePostSynapticSpike(simTime,
+			sh_blkErrCode = generatePostSynapticSpike(simTime,
 						  sh_firingId[swarpId],				// presynaptic nid
 						  delIndex,							// delayIndex
 						  sh_neuronOffsetTable[swarpId], 		// offset
 						  true);								// true for unit delay connection..
 
-	if(ENABLE_MORE_CHECK) {
-	  if (sh_blkErrCode) break;
+			if(ENABLE_MORE_CHECK) {
+				if (sh_blkErrCode) break;
+			}
+
+			delId += WARP_SIZE;
+		}
 	}
 
-	delId += WARP_SIZE;
-      }
-    }
+	__syncthreads();
 
-    __syncthreads();
+	if(ENABLE_MORE_CHECK)
+		if(sh_blkErrCode)  break;		
 
-    if(ENABLE_MORE_CHECK)
-      if(sh_blkErrCode)  break;		
+	kPos = kPos + (gridDim.x*numSwarps);
+}
 
-    kPos = kPos + (gridDim.x*numSwarps);
-  }
+MEASURE_GPU(4, computedNeurons);
 
-  MEASURE_GPU(4, computedNeurons);
-
-  if(ENABLE_MORE_CHECK) {
-    if (sh_blkErrCode) {
-      retErrCode = sh_blkErrCode;
-      return;
-    }
-  }
+if(ENABLE_MORE_CHECK) {
+	if (sh_blkErrCode) {
+		retErrCode = sh_blkErrCode;
+		return;
+	}
+}
 }
 
 float errVal[MAX_NUM_BLOCKS][20];
@@ -1620,126 +1605,126 @@ float errVal[MAX_NUM_BLOCKS][20];
 /**********************************************************************************************/
 int CpuSNN::checkErrors(std::string calledKernel, int numBlocks)
 {
-  int errCode = NO_KERNEL_ERRORS;
+	int errCode = NO_KERNEL_ERRORS;
 #if(!ENABLE_MORE_CHECK)
-  return errCode;
+	return errCode;
 #else
-  void* devPtr;
-  int errCnt  = 0;
-	   
-	   
-  cudaThreadSynchronize();
-  cudaGetSymbolAddress(&devPtr, retErrCode);
-  CUDA_CHECK_ERRORS( cudaMemcpy(&errCode, devPtr, sizeof(int), cudaMemcpyDeviceToHost));
+	void* devPtr;
+	int errCnt  = 0;
 
-  cudaGetSymbolAddress(&devPtr, generatedErrors);
-  CUDA_CHECK_ERRORS( cudaMemcpy(&errCnt, devPtr, sizeof(int), cudaMemcpyDeviceToHost));
 
-  if (errCode != NO_KERNEL_ERRORS) {
+	cudaThreadSynchronize();
+	cudaGetSymbolAddress(&devPtr, retErrCode);
+	CUDA_CHECK_ERRORS( cudaMemcpy(&errCode, devPtr, sizeof(int), cudaMemcpyDeviceToHost));
 
-    CARLSIM_ERROR("(Error in Kernel <<< %s >>> , RETURN ERROR CODE = %x, total Errors = %d", calledKernel.c_str(), errCode, errCnt);
+	cudaGetSymbolAddress(&devPtr, generatedErrors);
+	CUDA_CHECK_ERRORS( cudaMemcpy(&errCnt, devPtr, sizeof(int), cudaMemcpyDeviceToHost));
 
-    cudaGetSymbolAddress(&devPtr, CUDA_CONVERT_SYMBOL(retErrVal));
-    CUDA_CHECK_ERRORS( cudaMemcpy(&errVal, devPtr, sizeof(errVal), cudaMemcpyDeviceToHost));
+	if (errCode != NO_KERNEL_ERRORS) {
 
-    for(int j=0; j < errCnt; j++) {
+		CARLSIM_ERROR("(Error in Kernel <<< %s >>> , RETURN ERROR CODE = %x, total Errors = %d", calledKernel.c_str(), errCode, errCnt);
+
+			cudaGetSymbolAddress(&devPtr, CUDA_CONVERT_SYMBOL(retErrVal));
+			CUDA_CHECK_ERRORS( cudaMemcpy(&errVal, devPtr, sizeof(errVal), cudaMemcpyDeviceToHost));
+
+			for(int j=0; j < errCnt; j++) {
       if (1) /*errVal[j][0]==0xdead) */ {
-	CARLSIM_ERROR("Block: %d, Err code = %x, Total err val is %f", j, (int)errVal[j][0]	, errVal[j][1]);
-	for(int i=2; i < (errVal[j][1]); i++) {
-	  CARLSIM_ERROR("ErrVal[%d][%d] = %f", j, i, errVal[j][i]);
-	  getchar();
+				CARLSIM_ERROR("Block: %d, Err code = %x, Total err val is %f", j, (int)errVal[j][0]	, errVal[j][1]);
+				for(int i=2; i < (errVal[j][1]); i++) {
+					CARLSIM_ERROR("ErrVal[%d][%d] = %f", j, i, errVal[j][i]);
+					getchar();
+				}
+			}
+		}
+
+		errCode = NO_KERNEL_ERRORS;
+		cudaGetSymbolAddress(&devPtr, retErrCode);
+		CUDA_CHECK_ERRORS( cudaMemcpy(devPtr, &errCode, sizeof(int), cudaMemcpyHostToDevice));
+
+		cudaGetSymbolAddress(&devPtr, generatedErrors);
+		CUDA_CHECK_ERRORS( cudaMemcpy(devPtr, &errCnt, sizeof(int), cudaMemcpyHostToDevice));
+
 	}
-      }
-    }
 
-    errCode = NO_KERNEL_ERRORS;
-    cudaGetSymbolAddress(&devPtr, retErrCode);
-    CUDA_CHECK_ERRORS( cudaMemcpy(devPtr, &errCode, sizeof(int), cudaMemcpyHostToDevice));
-
-    cudaGetSymbolAddress(&devPtr, generatedErrors);
-    CUDA_CHECK_ERRORS( cudaMemcpy(devPtr, &errCnt, sizeof(int), cudaMemcpyHostToDevice));
-
-  }
-
-  fflush(fpErr_);
-  fflush(fpOut_);
-  return errCode;
+	fflush(fpErr_);
+	fflush(fpOut_);
+	return errCode;
 #endif
 }
 
 void CpuSNN::copyPostConnectionInfo(network_ptr_t* dest, int allocateMem)
 {
-  assert(dest->memType == GPU_MODE);
-  if (allocateMem) {
-    assert(dest->allocated==false);
-  }
-  else {
-    assert(dest->allocated == true);
-  }
-  assert(doneReorganization == true);
+	assert(dest->memType == GPU_MODE);
+	if (allocateMem) {
+		assert(dest->allocated==false);
+	}
+	else {
+		assert(dest->allocated == true);
+	}
+	assert(doneReorganization == true);
 
   // beginning position for the post-synaptic information
-  if(allocateMem)     CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->cumulativePost, sizeof(cumulativePost[0])*numN));
-  CUDA_CHECK_ERRORS( cudaMemcpy( dest->cumulativePost, cumulativePost, sizeof(int)*numN, cudaMemcpyHostToDevice));
+	if(allocateMem)     CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->cumulativePost, sizeof(cumulativePost[0])*numN));
+	CUDA_CHECK_ERRORS( cudaMemcpy( dest->cumulativePost, cumulativePost, sizeof(int)*numN, cudaMemcpyHostToDevice));
 
   // number of postsynaptic connections
-  if(allocateMem)     CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->Npost, sizeof(Npost[0])*numN));
-  CUDA_CHECK_ERRORS( cudaMemcpy( dest->Npost, Npost, sizeof(Npost[0])*numN, cudaMemcpyHostToDevice));
+	if(allocateMem)     CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->Npost, sizeof(Npost[0])*numN));
+	CUDA_CHECK_ERRORS( cudaMemcpy( dest->Npost, Npost, sizeof(Npost[0])*numN, cudaMemcpyHostToDevice));
 
   // static specific mapping and actual post-synaptic delay metric
-  if(allocateMem)     CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->postDelayInfo, sizeof(postDelayInfo[0])*numN*(D+1)));
-  CUDA_CHECK_ERRORS( cudaMemcpy( dest->postDelayInfo, postDelayInfo, sizeof(postDelayInfo[0])*numN*(D+1), cudaMemcpyHostToDevice));
+	if(allocateMem)     CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->postDelayInfo, sizeof(postDelayInfo[0])*numN*(D+1)));
+	CUDA_CHECK_ERRORS( cudaMemcpy( dest->postDelayInfo, postDelayInfo, sizeof(postDelayInfo[0])*numN*(D+1), cudaMemcpyHostToDevice));
 
   // actual post synaptic connection information...
-  if(allocateMem)     CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->postSynapticIds, sizeof(postSynapticIds[0])*(postSynCnt+10)));
-  CUDA_CHECK_ERRORS( cudaMemcpy( dest->postSynapticIds, postSynapticIds, sizeof(postSynapticIds[0])*(postSynCnt+10), cudaMemcpyHostToDevice));
-  net_Info.postSynCnt = postSynCnt;
+	if(allocateMem)     CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->postSynapticIds, sizeof(postSynapticIds[0])*(postSynCnt+10)));
+	CUDA_CHECK_ERRORS( cudaMemcpy( dest->postSynapticIds, postSynapticIds, sizeof(postSynapticIds[0])*(postSynCnt+10), cudaMemcpyHostToDevice));
+	net_Info.postSynCnt = postSynCnt;
 
-  if(allocateMem)     CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->preSynapticIds, sizeof(preSynapticIds[0])*(preSynCnt+10)));
-  CUDA_CHECK_ERRORS( cudaMemcpy( dest->preSynapticIds, preSynapticIds, sizeof(preSynapticIds[0])*(preSynCnt+10), cudaMemcpyHostToDevice));
-  net_Info.preSynCnt = preSynCnt;
+	if(allocateMem)     CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->preSynapticIds, sizeof(preSynapticIds[0])*(preSynCnt+10)));
+	CUDA_CHECK_ERRORS( cudaMemcpy( dest->preSynapticIds, preSynapticIds, sizeof(preSynapticIds[0])*(preSynCnt+10), cudaMemcpyHostToDevice));
+	net_Info.preSynCnt = preSynCnt;
 }
 
 void CpuSNN::copyConnections(network_ptr_t* dest, int kind, int allocateMem)
 {
   // void* devPtr;
   // allocateMem memory only if destination memory is not allocated !!!
-  assert(allocateMem && (dest->allocated != 1));
-  if(kind==cudaMemcpyHostToDevice) {
-    assert(dest->memType == GPU_MODE);
-  }
-  else {
-    assert(dest->memType == CPU_MODE);
-  }
+	assert(allocateMem && (dest->allocated != 1));
+	if(kind==cudaMemcpyHostToDevice) {
+		assert(dest->memType == GPU_MODE);
+	}
+	else {
+		assert(dest->memType == CPU_MODE);
+	}
 
-  net_Info.I_setLength = ceil(((numPreSynapses)/32.0));
-  if(allocateMem)
-    cudaMallocPitch( (void**) &dest->I_set, &net_Info.I_setPitch, sizeof(int)*numNReg, net_Info.I_setLength);
-  assert(net_Info.I_setPitch > 0);
-  CUDA_CHECK_ERRORS( cudaMemset( dest->I_set, 0, net_Info.I_setPitch*net_Info.I_setLength));
+	net_Info.I_setLength = ceil(((numPreSynapses)/32.0));
+	if(allocateMem)
+		cudaMallocPitch( (void**) &dest->I_set, &net_Info.I_setPitch, sizeof(int)*numNReg, net_Info.I_setLength);
+	assert(net_Info.I_setPitch > 0);
+	CUDA_CHECK_ERRORS( cudaMemset( dest->I_set, 0, net_Info.I_setPitch*net_Info.I_setLength));
 
   // connection synaptic lengths and cumulative lengths...
-  if(allocateMem)   	CUDA_CHECK_ERRORS( cudaMalloc((void**) &dest->Npre, sizeof(dest->Npre[0])*numN));
-  CUDA_CHECK_ERRORS( cudaMemcpy( dest->Npre, Npre, sizeof(dest->Npre[0])*numN, cudaMemcpyHostToDevice));
+	if(allocateMem)   	CUDA_CHECK_ERRORS( cudaMalloc((void**) &dest->Npre, sizeof(dest->Npre[0])*numN));
+	CUDA_CHECK_ERRORS( cudaMemcpy( dest->Npre, Npre, sizeof(dest->Npre[0])*numN, cudaMemcpyHostToDevice));
 
   // we don't need these data structures if the network doesn't have any plastic synapses at all
-  if (!sim_with_fixedwts) {
+	if (!sim_with_fixedwts) {
     // presyn excitatory connections
-    if(allocateMem)     CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->Npre_plastic, sizeof(dest->Npre_plastic[0])*numN));
-    CUDA_CHECK_ERRORS( cudaMemcpy( dest->Npre_plastic, Npre_plastic, sizeof(dest->Npre_plastic[0])*numN, cudaMemcpyHostToDevice));
+		if(allocateMem)     CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->Npre_plastic, sizeof(dest->Npre_plastic[0])*numN));
+		CUDA_CHECK_ERRORS( cudaMemcpy( dest->Npre_plastic, Npre_plastic, sizeof(dest->Npre_plastic[0])*numN, cudaMemcpyHostToDevice));
 
-    float* Npre_plasticInv = new float[numN];
-    for (int i=0;i<numN;i++) Npre_plasticInv[i] = 1.0/Npre_plastic[i];
+		float* Npre_plasticInv = new float[numN];
+		for (int i=0;i<numN;i++) Npre_plasticInv[i] = 1.0/Npre_plastic[i];
 
-    if(allocateMem)     CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->Npre_plasticInv, sizeof(dest->Npre_plasticInv[0])*numN));
-    CUDA_CHECK_ERRORS( cudaMemcpy( dest->Npre_plasticInv, Npre_plasticInv, sizeof(dest->Npre_plasticInv[0])*numN, cudaMemcpyHostToDevice));
+			if(allocateMem)     CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->Npre_plasticInv, sizeof(dest->Npre_plasticInv[0])*numN));
+		CUDA_CHECK_ERRORS( cudaMemcpy( dest->Npre_plasticInv, Npre_plasticInv, sizeof(dest->Npre_plasticInv[0])*numN, cudaMemcpyHostToDevice));
 
-    delete[] Npre_plasticInv;
-  }
-		
+		delete[] Npre_plasticInv;
+	}
+
   // beginning position for the pre-synaptic information
-  if(allocateMem)     CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->cumulativePre, sizeof(int)*numN));
-  CUDA_CHECK_ERRORS( cudaMemcpy( dest->cumulativePre, cumulativePre, sizeof(int)*numN, cudaMemcpyHostToDevice));
+	if(allocateMem)     CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->cumulativePre, sizeof(int)*numN));
+	CUDA_CHECK_ERRORS( cudaMemcpy( dest->cumulativePre, cumulativePre, sizeof(int)*numN, cudaMemcpyHostToDevice));
 
   // allocate randomPtr.... containing the firing information for the random firing neurons...
   // I'm not sure this is implemented. -- KDC
@@ -1752,327 +1737,274 @@ void CpuSNN::copyConnections(network_ptr_t* dest, int kind, int allocateMem)
   //		CUDA_CHECK_ERRORS( cudaMemcpy( dest->noiseGenProp, &noiseGenGroup[0], sizeof(noiseGenProperty_t)*numNoise, cudaMemcpyHostToDevice));
 
   // allocate the poisson neuron poissonFireRate
-  if(allocateMem) CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->poissonFireRate, sizeof(dest->poissonFireRate[0])*numNPois));
-  CUDA_CHECK_ERRORS( cudaMemset( dest->poissonFireRate, 0, sizeof(dest->poissonFireRate[0])*numNPois));
+	if(allocateMem) CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->poissonFireRate, sizeof(dest->poissonFireRate[0])*numNPois));
+	CUDA_CHECK_ERRORS( cudaMemset( dest->poissonFireRate, 0, sizeof(dest->poissonFireRate[0])*numNPois));
 
   // neuron firing recently or not...
-  if(allocateMem)     CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->neuronFiring, sizeof(int)*numN));
-  CUDA_CHECK_ERRORS( cudaMemset( dest->neuronFiring, 0, sizeof(int)*numN));
+	if(allocateMem)     CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->neuronFiring, sizeof(int)*numN));
+	CUDA_CHECK_ERRORS( cudaMemset( dest->neuronFiring, 0, sizeof(int)*numN));
 
-  copyPostConnectionInfo(dest, allocateMem);
+	copyPostConnectionInfo(dest, allocateMem);
 
   // neuron testing
-  testVar  = new float[numN];
-  testVar2 = new float[numN];
-  cpuSnnSz.addInfoSize += sizeof(float)*numN*2;
+	testVar  = new float[numN];
+	testVar2 = new float[numN];
+	cpuSnnSz.addInfoSize += sizeof(float)*numN*2;
 
-  if(allocateMem)     CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->testVar, sizeof(float)*numN));
-  CUDA_CHECK_ERRORS( cudaMemset( dest->testVar, 0, sizeof(float)*numN));
+	if(allocateMem)     CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->testVar, sizeof(float)*numN));
+	CUDA_CHECK_ERRORS( cudaMemset( dest->testVar, 0, sizeof(float)*numN));
 
-  if(allocateMem)     CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->testVar2, sizeof(float)*numN));
-  CUDA_CHECK_ERRORS( cudaMemset( dest->testVar2, 0, sizeof(float)*numN));
+	if(allocateMem)     CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->testVar2, sizeof(float)*numN));
+	CUDA_CHECK_ERRORS( cudaMemset( dest->testVar2, 0, sizeof(float)*numN));
 }
 
 void CpuSNN::checkDestSrcPtrs(network_ptr_t* dest, network_ptr_t* src, cudaMemcpyKind kind, int allocateMem, int grpId)
 {
-  if(kind==cudaMemcpyHostToDevice) {
-    assert(dest->memType == GPU_MODE);
-    assert(src->memType  == CPU_MODE);
-  }
-  else {
-    assert(dest->memType == CPU_MODE);
-    assert(src->memType  == GPU_MODE);
-  }
+	if(kind==cudaMemcpyHostToDevice) {
+		assert(dest->memType == GPU_MODE);
+		assert(src->memType  == CPU_MODE);
+	}
+	else {
+		assert(dest->memType == CPU_MODE);
+		assert(src->memType  == GPU_MODE);
+	}
 
-  if (allocateMem) {
+	if (allocateMem) {
     // if allocateMem = false, then the destination must be allocated..
-    assert(dest->allocated==false);
+		assert(dest->allocated==false);
 
     // if allocateMem = true, then we should not specify any specific group.
-    assert(grpId == -1);
-  }
-  else {
+		assert(grpId == -1);
+	}
+	else {
     // if allocateMem = true, then the destination must be empty without allocation..
-    assert(dest->allocated == true);
-  }
+		assert(dest->allocated == true);
+	}
 
   // source should always be allocated...
-  assert(src->allocated==true);
+	assert(src->allocated==true);
 }
 
 void CpuSNN::copyFiringStateFromGPU (int grpId)
 {
-  int ptrPos, length, length2;
+	int ptrPos, length, length2;
 
-  if(grpId == -1) {
-    ptrPos  = 0;
-    length  = numNReg;
-    length2 = numN;
-  }
-  else {
-    ptrPos  = grp_Info[grpId].StartN;
-    length  = grp_Info[grpId].SizeN;
-    length2 = length;
-  }
+	if(grpId == -1) {
+		ptrPos  = 0;
+		length  = numNReg;
+		length2 = numN;
+	}
+	else {
+		ptrPos  = grp_Info[grpId].StartN;
+		length  = grp_Info[grpId].SizeN;
+		length2 = length;
+	}
 
-  assert(length  <= numNReg);
-  assert(length2 <= numN);
-  assert(length > 0);
-  assert(length2 > 0);
+	assert(length  <= numNReg);
+	assert(length2 <= numN);
+	assert(length > 0);
+	assert(length2 > 0);
 
-  network_ptr_t* dest = &cpuNetPtrs;
-  network_ptr_t* src  = &cpu_gpuNetPtrs;
-  cudaMemcpyKind kind = cudaMemcpyDeviceToHost;
+	network_ptr_t* dest = &cpuNetPtrs;
+	network_ptr_t* src  = &cpu_gpuNetPtrs;
+	cudaMemcpyKind kind = cudaMemcpyDeviceToHost;
 
   // Spike Cnt. Firing...
-  CUDA_CHECK_ERRORS( cudaMemcpy( &dest->nSpikeCnt[ptrPos], &src->nSpikeCnt[ptrPos], sizeof(int)*length2, kind));
+	CUDA_CHECK_ERRORS( cudaMemcpy( &dest->nSpikeCnt[ptrPos], &src->nSpikeCnt[ptrPos], sizeof(int)*length2, kind));
 
 }
 
 void CpuSNN::copyNeuronState(network_ptr_t* dest, network_ptr_t* src,  cudaMemcpyKind kind, int allocateMem, int grpId)
 {
-  int ptrPos, length, length2;
+	int ptrPos, length, length2;
 
   // check that the destination pointer is properly allocated..
-  checkDestSrcPtrs(dest, src, kind, allocateMem, grpId);
+	checkDestSrcPtrs(dest, src, kind, allocateMem, grpId);
 
-  if(grpId == -1) {
-    ptrPos  = 0;
-    length  = numNReg;
-    length2 = numN;
-  }
-  else {
-    ptrPos  = grp_Info[grpId].StartN;
-    length  = grp_Info[grpId].SizeN;
-    length2 = length;
-  }
+	if(grpId == -1) {
+		ptrPos  = 0;
+		length  = numNReg;
+		length2 = numN;
+	}
+	else {
+		ptrPos  = grp_Info[grpId].StartN;
+		length  = grp_Info[grpId].SizeN;
+		length2 = length;
+	}
 
-  assert(length  <= numNReg);
-  assert(length2 <= numN);
-  assert(length > 0);
-  assert(length2 > 0);
+	assert(length  <= numNReg);
+	assert(length2 <= numN);
+	assert(length > 0);
+	assert(length2 > 0);
 
   // when allocating we are allocating the memory.. we need to do it completely... to avoid memory fragmentation..
-  if(allocateMem)
-    assert(grpId == -1);
+	if(allocateMem)
+		assert(grpId == -1);
 
   // Spike Cnt. Firing...
-  if (allocateMem) CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->nSpikeCnt, sizeof(int)*length2));
-  CUDA_CHECK_ERRORS( cudaMemcpy( &dest->nSpikeCnt[ptrPos], &src->nSpikeCnt[ptrPos], sizeof(int)*length2, kind));
+	if (allocateMem) CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->nSpikeCnt, sizeof(int)*length2));
+	CUDA_CHECK_ERRORS( cudaMemcpy( &dest->nSpikeCnt[ptrPos], &src->nSpikeCnt[ptrPos], sizeof(int)*length2, kind));
 
-  if( !allocateMem && grp_Info[grpId].Type&POISSON_NEURON)
-    return;
+	if( !allocateMem && grp_Info[grpId].Type&POISSON_NEURON)
+		return;
 
-  if(allocateMem)     CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->recovery, sizeof(float)*length));
-  CUDA_CHECK_ERRORS( cudaMemcpy( &dest->recovery[ptrPos], &src->recovery[ptrPos], sizeof(float)*length, kind));
+	if(allocateMem)     CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->recovery, sizeof(float)*length));
+	CUDA_CHECK_ERRORS( cudaMemcpy( &dest->recovery[ptrPos], &src->recovery[ptrPos], sizeof(float)*length, kind));
 
-  if(allocateMem)     CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->voltage, sizeof(float)*length));
-  CUDA_CHECK_ERRORS( cudaMemcpy( &dest->voltage[ptrPos], &src->voltage[ptrPos], sizeof(float)*length, kind));
+	if(allocateMem)     CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->voltage, sizeof(float)*length));
+	CUDA_CHECK_ERRORS( cudaMemcpy( &dest->voltage[ptrPos], &src->voltage[ptrPos], sizeof(float)*length, kind));
 
-  if (sim_with_conductances) {
+	if (sim_with_conductances) {
     //conductance information
-    assert(src->gGABAa != NULL);
-    assert(src->gGABAb != NULL);
-    assert(src->gNMDA  != NULL);
-    assert(src->gAMPA  != NULL);
+		assert(src->gGABAa != NULL);
+		assert(src->gGABAb != NULL);
+		assert(src->gNMDA  != NULL);
+		assert(src->gAMPA  != NULL);
 
-    if(allocateMem)     CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->gGABAa, sizeof(float)*length));
-    CUDA_CHECK_ERRORS( cudaMemcpy( &dest->gGABAa[ptrPos], &src->gGABAa[ptrPos], sizeof(float)*length, kind));
+		if(allocateMem)     CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->gGABAa, sizeof(float)*length));
+		CUDA_CHECK_ERRORS( cudaMemcpy( &dest->gGABAa[ptrPos], &src->gGABAa[ptrPos], sizeof(float)*length, kind));
 
-    if(allocateMem)     CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->gGABAb, sizeof(float)*length));
-    CUDA_CHECK_ERRORS( cudaMemcpy( &dest->gGABAb[ptrPos], &src->gGABAb[ptrPos], sizeof(float)*length, kind));
+		if(allocateMem)     CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->gGABAb, sizeof(float)*length));
+		CUDA_CHECK_ERRORS( cudaMemcpy( &dest->gGABAb[ptrPos], &src->gGABAb[ptrPos], sizeof(float)*length, kind));
 
-    if(allocateMem)     CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->gAMPA, sizeof(float)*length));
-    CUDA_CHECK_ERRORS( cudaMemcpy( &dest->gAMPA[ptrPos], &src->gAMPA[ptrPos], sizeof(float)*length, kind));
+		if(allocateMem)     CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->gAMPA, sizeof(float)*length));
+		CUDA_CHECK_ERRORS( cudaMemcpy( &dest->gAMPA[ptrPos], &src->gAMPA[ptrPos], sizeof(float)*length, kind));
 
-    if(allocateMem)     CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->gNMDA, sizeof(float)*length));
-    CUDA_CHECK_ERRORS( cudaMemcpy( &dest->gNMDA[ptrPos], &src->gNMDA[ptrPos], sizeof(float)*length, kind));
-  }
+		if(allocateMem)     CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->gNMDA, sizeof(float)*length));
+		CUDA_CHECK_ERRORS( cudaMemcpy( &dest->gNMDA[ptrPos], &src->gNMDA[ptrPos], sizeof(float)*length, kind));
+	}
 
   //neuron input current...
-  if(allocateMem)     CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->current, sizeof(float)*length));
-  CUDA_CHECK_ERRORS( cudaMemcpy( &dest->current[ptrPos], &src->current[ptrPos], sizeof(float)*length, kind));
+	if(allocateMem)     CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->current, sizeof(float)*length));
+	CUDA_CHECK_ERRORS( cudaMemcpy( &dest->current[ptrPos], &src->current[ptrPos], sizeof(float)*length, kind));
 
   //Included to enable homeostasis in GPU_MODE.
   // Avg. Firing...
-  if(allocateMem) CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->avgFiring, sizeof(float)*length));
-  CUDA_CHECK_ERRORS( cudaMemcpy( &dest->avgFiring[ptrPos], &src->avgFiring[ptrPos], sizeof(float)*length, kind));
+	if(allocateMem) CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->avgFiring, sizeof(float)*length));
+	CUDA_CHECK_ERRORS( cudaMemcpy( &dest->avgFiring[ptrPos], &src->avgFiring[ptrPos], sizeof(float)*length, kind));
 }
 
 void CpuSNN::copyNeuronParameters(network_ptr_t* dest, int kind, int allocateMem, int grpId)
 {
-  int ptrPos, length;
+	int ptrPos, length;
 
-  if (dest->allocated && allocateMem) {
-    CARLSIM_ERROR("GPU Memory already allocated...");
-    return;
-  }
+	if (dest->allocated && allocateMem) {
+		CARLSIM_ERROR("GPU Memory already allocated...");
+		return;
+	}
 
   // for neuron parameter the copy is one-directional...
-  assert(kind==cudaMemcpyHostToDevice);
+	assert(kind==cudaMemcpyHostToDevice);
 
-  if(grpId == -1) {
-    ptrPos = 0;
-    length = numNReg;
-  }
-  else {
-    ptrPos = grp_Info[grpId].StartN;
-    length = grp_Info[grpId].SizeN;
-  }
+	if(grpId == -1) {
+		ptrPos = 0;
+		length = numNReg;
+	}
+	else {
+		ptrPos = grp_Info[grpId].StartN;
+		length = grp_Info[grpId].SizeN;
+	}
 
   // when allocating we are allocating the memory.. we need to do it completely... to avoid memory fragmentation..
-  if(allocateMem)
-    assert(grpId == -1);
+	if(allocateMem)
+		assert(grpId == -1);
 
   //neuron information...
-  if(allocateMem)     assert(dest->Izh_a == NULL);
+	if(allocateMem)     assert(dest->Izh_a == NULL);
 
-  if(allocateMem)     CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->Izh_a, sizeof(float)*length));
-  CUDA_CHECK_ERRORS( cudaMemcpy( &dest->Izh_a[ptrPos], &Izh_a[ptrPos], sizeof(float)*length, cudaMemcpyHostToDevice));
+	if(allocateMem)     CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->Izh_a, sizeof(float)*length));
+	CUDA_CHECK_ERRORS( cudaMemcpy( &dest->Izh_a[ptrPos], &Izh_a[ptrPos], sizeof(float)*length, cudaMemcpyHostToDevice));
 
-  if(allocateMem)     CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->Izh_b, sizeof(float)*length));
-  CUDA_CHECK_ERRORS( cudaMemcpy( &dest->Izh_b[ptrPos], &Izh_b[ptrPos], sizeof(float)*length, cudaMemcpyHostToDevice));
+	if(allocateMem)     CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->Izh_b, sizeof(float)*length));
+	CUDA_CHECK_ERRORS( cudaMemcpy( &dest->Izh_b[ptrPos], &Izh_b[ptrPos], sizeof(float)*length, cudaMemcpyHostToDevice));
 
-  if(allocateMem)     CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->Izh_c, sizeof(float)*length));
-  CUDA_CHECK_ERRORS( cudaMemcpy( &dest->Izh_c[ptrPos], &Izh_c[ptrPos], sizeof(float)*length, cudaMemcpyHostToDevice));
+	if(allocateMem)     CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->Izh_c, sizeof(float)*length));
+	CUDA_CHECK_ERRORS( cudaMemcpy( &dest->Izh_c[ptrPos], &Izh_c[ptrPos], sizeof(float)*length, cudaMemcpyHostToDevice));
 
-  if(allocateMem)     CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->Izh_d, sizeof(float)*length));
-  CUDA_CHECK_ERRORS( cudaMemcpy( &dest->Izh_d[ptrPos], &Izh_d[ptrPos], sizeof(float)*length, cudaMemcpyHostToDevice));
+	if(allocateMem)     CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->Izh_d, sizeof(float)*length));
+	CUDA_CHECK_ERRORS( cudaMemcpy( &dest->Izh_d[ptrPos], &Izh_d[ptrPos], sizeof(float)*length, cudaMemcpyHostToDevice));
 
 //Included to enable homeostatic plasticity in GPU_MODE. 
 // Base Firing...
-float baseFiringInv[length];
-for(int i=0; i < length; i++) {
-  if (baseFiring[i]!=0.0)
-    baseFiringInv[i] = 1.0/baseFiring[ptrPos+i];
-  else
-    baseFiringInv[i] = 0.0;
- }
+	float baseFiringInv[length];
+	for(int i=0; i < length; i++) {
+		if (baseFiring[i]!=0.0)
+			baseFiringInv[i] = 1.0/baseFiring[ptrPos+i];
+		else
+			baseFiringInv[i] = 0.0;
+	}
 
-if(allocateMem) CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->baseFiringInv, sizeof(float)*length));
-CUDA_CHECK_ERRORS( cudaMemcpy( &dest->baseFiringInv[ptrPos], baseFiringInv, sizeof(float)*length, cudaMemcpyHostToDevice));
+	if(allocateMem) CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->baseFiringInv, sizeof(float)*length));
+	CUDA_CHECK_ERRORS( cudaMemcpy( &dest->baseFiringInv[ptrPos], baseFiringInv, sizeof(float)*length, cudaMemcpyHostToDevice));
 
-if(allocateMem) CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->baseFiring, sizeof(float)*length));
-CUDA_CHECK_ERRORS( cudaMemcpy( &dest->baseFiring[ptrPos], baseFiring, sizeof(float)*length, cudaMemcpyHostToDevice));
+	if(allocateMem) CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->baseFiring, sizeof(float)*length));
+	CUDA_CHECK_ERRORS( cudaMemcpy( &dest->baseFiring[ptrPos], baseFiring, sizeof(float)*length, cudaMemcpyHostToDevice));
 }
 
-void assertSTPState(network_ptr_t* dest, network_ptr_t* src, int kind, int allocateMem)
-{
-  if(allocateMem) {
-    assert(dest->stpu==NULL);
-    assert(dest->stpx==NULL);
-  }
-  else {
-    assert(dest->stpu != NULL);
-    assert(dest->stpx != NULL);
-  }
+void CpuSNN::copySTPState(network_ptr_t* dest, network_ptr_t* src, cudaMemcpyKind kind, int allocateMem) {
+	if(allocateMem) {
+		assert(dest->stpu==NULL);
+		assert(dest->stpx==NULL);
+	} else {
+		assert(dest->stpu != NULL);
+		assert(dest->stpx != NULL);
+	}
+	assert(src->stpu != NULL); assert(src->stpx != NULL);
 
-  assert(src->stpu != NULL);
-  assert(src->stpx != NULL);
-}
+	if(allocateMem)		CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->stpu, sizeof(float)*numN));
+	CUDA_CHECK_ERRORS( cudaMemcpy( &dest->stpu[0], &src->stpu[0], sizeof(float)*numN, kind));
 
-void CpuSNN::copySTPState(network_ptr_t* dest, network_ptr_t* src, int kind, int allocateMem)
-{
-  assert(stpu != NULL);
-  assert(stpx != NULL);
-
-  size_t STP_Pitch;
-  size_t widthInBytes = sizeof(float)*net_Info.numN;
-
-  assertSTPState(dest,src, kind,allocateMem);
-
-  // allocate the stpu and stpx variable
-  if (allocateMem)
-    CUDA_CHECK_ERRORS( cudaMallocPitch ((void**) &dest->stpu, &net_Info.STP_Pitch, widthInBytes, STP_BUF_SIZE));
-  if (allocateMem)
-    CUDA_CHECK_ERRORS( cudaMallocPitch ((void**) &dest->stpx, &STP_Pitch, widthInBytes, STP_BUF_SIZE));
-
-  assert(net_Info.STP_Pitch > 0);
-  assert(STP_Pitch > 0);				// stp_pitch should be greater than zero
-  assert(STP_Pitch == net_Info.STP_Pitch);	// we want same Pitch for stpu and stpx
-  assert(net_Info.STP_Pitch >= widthInBytes);	// stp_pitch should be greater than the width
-  // convert the Pitch value to multiples of float
-  assert(net_Info.STP_Pitch % (sizeof(float)) == 0);
-  if (allocateMem) net_Info.STP_Pitch = net_Info.STP_Pitch/sizeof(float);
-
-  CARLSIM_DEBUG("STP_Pitch = %d, STP_witdhInBytes = %d", (int)net_Info.STP_Pitch, (int)widthInBytes);
-
-  float* tmp_stp = new float[net_Info.numN];
-  // copy the already generated values of stpx and stpu to the GPU
-  for(int t=0; t < STP_BUF_SIZE; t++) {
-    if (kind==cudaMemcpyHostToDevice) {
-      // stpu in the CPU might be mapped in a specific way. we want to change the format
-      // to something that is okay with the GPU STP_U and STP_X variable implementation..
-      for (int n=0; n < net_Info.numN; n++) {
-	tmp_stp[n]=stpu[STP_BUF_POS(n,t)];
-	assert(tmp_stp[n] != 0);
-      }
-      CUDA_CHECK_ERRORS( cudaMemcpy( &dest->stpu[t*net_Info.STP_Pitch], tmp_stp, sizeof(float)*net_Info.numN, cudaMemcpyHostToDevice));
-      for (int n=0; n < net_Info.numN; n++) {
-	tmp_stp[n]=stpx[STP_BUF_POS(n,t)];
-	assert(tmp_stp[n] != 0);
-      }
-      CUDA_CHECK_ERRORS( cudaMemcpy( &dest->stpx[t*net_Info.STP_Pitch], tmp_stp, sizeof(float)*net_Info.numN, cudaMemcpyHostToDevice));
-    }
-    else {
-      CUDA_CHECK_ERRORS( cudaMemcpy( tmp_stp, &dest->stpu[t*net_Info.STP_Pitch], sizeof(float)*net_Info.numN, cudaMemcpyDeviceToHost));
-      for (int n=0; n < net_Info.numN; n++)
-	stpu[STP_BUF_POS(n,t)]=tmp_stp[n];
-      CUDA_CHECK_ERRORS( cudaMemcpy( tmp_stp, &dest->stpx[t*net_Info.STP_Pitch], sizeof(float)*net_Info.numN, cudaMemcpyDeviceToHost));
-      for (int n=0; n < net_Info.numN; n++)
-	stpx[STP_BUF_POS(n,t)]=tmp_stp[n];
-    }
-  }
-  delete [] tmp_stp;
+	if(allocateMem)		CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->stpx, sizeof(float)*numN));
+	CUDA_CHECK_ERRORS( cudaMemcpy( &dest->stpx[0], &src->stpx[0], sizeof(float)*numN, kind));
 }
 
 void CpuSNN::copyWeightState (network_ptr_t* dest, network_ptr_t* src,  cudaMemcpyKind kind, int allocateMem, int grpId)
 {
-  unsigned int length_wt, cumPos_syn;
+	unsigned int length_wt, cumPos_syn;
 
-  assert(allocateMem==0);
+	assert(allocateMem==0);
 
   // check that the destination pointer is properly allocated..
-  checkDestSrcPtrs(dest, src, kind, allocateMem, grpId);
+	checkDestSrcPtrs(dest, src, kind, allocateMem, grpId);
 
-  int numCnt = 0;
-  if (grpId == -1)
-    numCnt = 1;
-  else
-    numCnt = grp_Info[grpId].SizeN;
+	int numCnt = 0;
+	if (grpId == -1)
+		numCnt = 1;
+	else
+		numCnt = grp_Info[grpId].SizeN;
 
-  for (int i=0; i < numCnt; i++) {
-    if (grpId == -1) {
-      length_wt 	= preSynCnt;
-      cumPos_syn  = 0;
-      assert(0);
-    }
-    else {
-      int id = grp_Info[grpId].StartN + i;
-      length_wt 	= dest->Npre[id];
-      cumPos_syn 	= dest->cumulativePre[id];
-    }
+	for (int i=0; i < numCnt; i++) {
+		if (grpId == -1) {
+			length_wt 	= preSynCnt;
+			cumPos_syn  = 0;
+			assert(0);
+		}
+		else {
+			int id = grp_Info[grpId].StartN + i;
+			length_wt 	= dest->Npre[id];
+			cumPos_syn 	= dest->cumulativePre[id];
+		}
 
-    assert (cumPos_syn < preSynCnt);
-    assert (length_wt <= preSynCnt);
-			
+		assert (cumPos_syn < preSynCnt);
+		assert (length_wt <= preSynCnt);
+
     //MDR FIXME, allocateMem option is VERY wrong
     // synaptic information based
-			
+
     //			if(allocateMem)		CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->wt, sizeof(float)*length_wt));
-    CUDA_CHECK_ERRORS( cudaMemcpy( &dest->wt[cumPos_syn], &src->wt[cumPos_syn], sizeof(float)*length_wt,  kind));
+		CUDA_CHECK_ERRORS( cudaMemcpy( &dest->wt[cumPos_syn], &src->wt[cumPos_syn], sizeof(float)*length_wt,  kind));
 
     // firing time for individual synapses
     //			if(allocateMem)		CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->synSpikeTime, sizeof(int)*length_wt));
-    CUDA_CHECK_ERRORS( cudaMemcpy( &dest->synSpikeTime[cumPos_syn], &src->synSpikeTime[cumPos_syn], sizeof(int)*length_wt, kind));
+		CUDA_CHECK_ERRORS( cudaMemcpy( &dest->synSpikeTime[cumPos_syn], &src->synSpikeTime[cumPos_syn], sizeof(int)*length_wt, kind));
 
     // added this to CARLsim 2.1 - 2.2 file merge -- KDC
-    if ((!sim_with_fixedwts) || (sim_with_stdp)){
+		if ((!sim_with_fixedwts) || (sim_with_stdp)){
       // synaptic weight derivative
       //			if(allocateMem)		CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->wtChange, sizeof(float)*length_wt));
-      CUDA_CHECK_ERRORS( cudaMemcpy( &dest->wtChange[cumPos_syn], &src->wtChange[cumPos_syn], sizeof(float)*length_wt, kind));
-    }
-  }
+			CUDA_CHECK_ERRORS( cudaMemcpy( &dest->wtChange[cumPos_syn], &src->wtChange[cumPos_syn], sizeof(float)*length_wt, kind));
+		}
+	}
 }
 
 // allocate necessary memory for the GPU...
@@ -2138,7 +2070,7 @@ void CpuSNN::copyState(network_ptr_t* dest, int allocateMem) {
 		if(allocateMem)     CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->lastSpikeTime, sizeof(int)*numNReg));
 		CUDA_CHECK_ERRORS( cudaMemcpy( dest->lastSpikeTime, lastSpikeTime, sizeof(int)*numNReg, kind));
 	}
-		
+
 	if(allocateMem)		CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->spikeGenBits, sizeof(int)*(NgenFunc/32+1)));
 
 	// copy the neuron state information to the GPU..
@@ -2155,89 +2087,89 @@ void CpuSNN::copyState(network_ptr_t* dest, int allocateMem) {
 void CpuSNN::spikeGeneratorUpdate_GPU()
 {
   // this part of the code is useful for poisson spike generator function..
-  if((numNPois > 0) && (gpuPoissonRand != NULL)) {
-    gpuPoissonRand->generate(numNPois, RNG_rand48::MAX_RANGE);
-  }
+	if((numNPois > 0) && (gpuPoissonRand != NULL)) {
+		gpuPoissonRand->generate(numNPois, RNG_rand48::MAX_RANGE);
+	}
 
   // this part of the code is invoked when we use spike generators
-  if (NgenFunc) {
+	if (NgenFunc) {
 
-    resetCounters();
+		resetCounters();
 
-    assert(cpuNetPtrs.spikeGenBits!=NULL);
+		assert(cpuNetPtrs.spikeGenBits!=NULL);
 
     // reset the bit status of the spikeGenBits...
-    memset(cpuNetPtrs.spikeGenBits, 0, sizeof(int)*(NgenFunc/32+1));
+		memset(cpuNetPtrs.spikeGenBits, 0, sizeof(int)*(NgenFunc/32+1));
 
     // If time slice has expired, check if new spikes needs to be generated....
-    updateSpikeGenerators();
+		updateSpikeGenerators();
 
     // fill spikeGenBits accordingly...
-    generateSpikes();
+		generateSpikes();
 
     // copy the spikeGenBits from the CPU to the GPU..
-    CUDA_CHECK_ERRORS_MACRO( cudaMemcpy( cpu_gpuNetPtrs.spikeGenBits, cpuNetPtrs.spikeGenBits, sizeof(int)*(NgenFunc/32+1), cudaMemcpyHostToDevice));
-  }
+		CUDA_CHECK_ERRORS_MACRO( cudaMemcpy( cpu_gpuNetPtrs.spikeGenBits, cpuNetPtrs.spikeGenBits, sizeof(int)*(NgenFunc/32+1), cudaMemcpyHostToDevice));
+	}
 }
-	
+
 void CpuSNN::findFiring_GPU()
 {
 
-  int blkSize  = 128;
-  int gridSize = 64;
-  int errCode;
-		
-  assert(cpu_gpuNetPtrs.allocated);
+	int blkSize  = 128;
+	int gridSize = 64;
+	int errCode;
 
-  if (sim_with_stp || sim_with_conductances) {
-    kernel_STPUpdateAndDecayConductances <<<gridSize, blkSize>>>(simTimeMs, simTimeSec, simTime);
-    CUDA_GET_LAST_ERROR("STP update\n");
-    errCode = checkErrors("gpu_STPUpdate", gridSize);
-    assert(errCode == NO_KERNEL_ERRORS);
-  }
+	assert(cpu_gpuNetPtrs.allocated);
 
-  spikeGeneratorUpdate_GPU();
+	if (sim_with_stp || sim_with_conductances) {
+		kernel_STPUpdateAndDecayConductances <<<gridSize, blkSize>>>(simTimeMs, simTimeSec, simTime);
+		CUDA_GET_LAST_ERROR("STP update\n");
+		errCode = checkErrors("gpu_STPUpdate", gridSize);
+		assert(errCode == NO_KERNEL_ERRORS);
+	}
 
-  kernel_findFiring <<<gridSize,blkSize >>> (simTimeMs, simTimeSec, simTime);
-  CUDA_GET_LAST_ERROR("findFiring kernel failed\n");
-  errCode = checkErrors("kernel_findFiring", gridSize);
-  assert(errCode == NO_KERNEL_ERRORS);
+	spikeGeneratorUpdate_GPU();
+
+	kernel_findFiring <<<gridSize,blkSize >>> (simTimeMs, simTimeSec, simTime);
+	CUDA_GET_LAST_ERROR("findFiring kernel failed\n");
+	errCode = checkErrors("kernel_findFiring", gridSize);
+	assert(errCode == NO_KERNEL_ERRORS);
 
 
 
-  if(MEASURE_LOADING) printGpuLoadBalance(false,MAX_BLOCKS,fpOut_);
+	if(MEASURE_LOADING) printGpuLoadBalance(false,MAX_BLOCKS,fpOut_);
 
-  return;
+	return;
 }
 
 void CpuSNN::printGpuLoadBalance(bool init, int numBlocks, FILE*fp)
 {
 	CARLSIM_WARN("Calling printGpuLoadBalance with FILE*fp is deprecated");
-  void* devPtr;
+	void* devPtr;
 
-  static int	 cpu_tmp_val[MAX_BLOCKS][LOOP_CNT];
+	static int	 cpu_tmp_val[MAX_BLOCKS][LOOP_CNT];
 
-  cudaGetSymbolAddress(&devPtr, tmp_val);
+	cudaGetSymbolAddress(&devPtr, tmp_val);
 
-  if(init) {
+	if(init) {
     // reset the load balance variable..
-    CUDA_CHECK_ERRORS( cudaMemset(devPtr, 0, sizeof(tmp_val)));
-    return;
-  }
+		CUDA_CHECK_ERRORS( cudaMemset(devPtr, 0, sizeof(tmp_val)));
+		return;
+	}
 
-  CUDA_CHECK_ERRORS( cudaMemcpy(&cpu_tmp_val, devPtr, sizeof(cpu_tmp_val), cudaMemcpyDeviceToHost));
-  CUDA_CHECK_ERRORS( cudaMemset(devPtr, 0, sizeof(tmp_val)));
+	CUDA_CHECK_ERRORS( cudaMemcpy(&cpu_tmp_val, devPtr, sizeof(cpu_tmp_val), cudaMemcpyDeviceToHost));
+	CUDA_CHECK_ERRORS( cudaMemset(devPtr, 0, sizeof(tmp_val)));
 
-  CARLSIM_DEBUG("GPU Load Balancing Information");
+	CARLSIM_DEBUG("GPU Load Balancing Information");
 
-  for (int i=0; i < numBlocks; i++) {
-    if (cpu_tmp_val[i][0] != 0)
-      CARLSIM_DEBUG("[%d] Fired Neuron = %d \n", i, cpu_tmp_val[i][1]+cpu_tmp_val[i][2]);
-  }
+	for (int i=0; i < numBlocks; i++) {
+		if (cpu_tmp_val[i][0] != 0)
+			CARLSIM_DEBUG("[%d] Fired Neuron = %d \n", i, cpu_tmp_val[i][1]+cpu_tmp_val[i][2]);
+	}
 
-  CARLSIM_DEBUG("\n");
+	CARLSIM_DEBUG("\n");
 
-  fflush(fp);
+	fflush(fp);
 
 }
 
@@ -2245,80 +2177,68 @@ void CpuSNN::printGpuLoadBalance(bool init, int numBlocks, FILE*fp)
 void CpuSNN::updateSpikeMonitor_GPU()
 {
   // copy the neuron firing information from the GPU to the CPU..
-  copyFiringInfo_GPU();
+	copyFiringInfo_GPU();
 }
 
 void CpuSNN::updateTimingTable_GPU()
 {
 
-  assert(cpu_gpuNetPtrs.allocated);
+	assert(cpu_gpuNetPtrs.allocated);
 
-  int blkSize  = 128;
-  int gridSize = 64;
-  kernel_timingTableUpdate <<<gridSize,blkSize >>> (simTimeMs);
-  CUDA_GET_LAST_ERROR("timing Table update kernel failed\n");
-  int errCode = checkErrors("kernel_timingTableUpdate", gridSize);
-  assert(errCode == NO_KERNEL_ERRORS);
+	int blkSize  = 128;
+	int gridSize = 64;
+	kernel_timingTableUpdate <<<gridSize,blkSize >>> (simTimeMs);
+	CUDA_GET_LAST_ERROR("timing Table update kernel failed\n");
+	int errCode = checkErrors("kernel_timingTableUpdate", gridSize);
+	assert(errCode == NO_KERNEL_ERRORS);
 
-  return;
+	return;
 }
 
 void CpuSNN::doCurrentUpdate_GPU()
 {
 
-  assert(cpu_gpuNetPtrs.allocated);
+	assert(cpu_gpuNetPtrs.allocated);
 
-  int blkSize  = 128;
-  int gridSize = 64;
-  int errCode;
+	int blkSize  = 128;
+	int gridSize = 64;
+	int errCode;
 
-  if(D > 1) {
-    gpu_doCurrentUpdateD2 <<<gridSize, blkSize>>>(simTimeMs,simTimeSec,simTime);
-    CUDA_GET_LAST_ERROR_MACRO("Kernel execution failed");
-    errCode = checkErrors("kernel_updateCurrentE", gridSize);
-    assert(errCode == NO_KERNEL_ERRORS);
-  }
+	if(D > 1) {
+		gpu_doCurrentUpdateD2 <<<gridSize, blkSize>>>(simTimeMs,simTimeSec,simTime);
+		CUDA_GET_LAST_ERROR_MACRO("Kernel execution failed");
+		errCode = checkErrors("kernel_updateCurrentE", gridSize);
+		assert(errCode == NO_KERNEL_ERRORS);
+	}
 
 
-  gpu_doCurrentUpdateD1 <<<gridSize, blkSize>>>(simTimeMs,simTimeSec,simTime);
-  CUDA_GET_LAST_ERROR_MACRO("Kernel execution failed");
-  errCode = checkErrors("kernel_updateCurrentI", gridSize);
-  assert(errCode == NO_KERNEL_ERRORS);
-}
-
-__device__ float getSTPScaleFactor (int& nid, const int& simTime, int& del)
-{
-  // Get the STP scaling factor
-  // Read stpu and stpx. Generate stp_scale after re-evaluation
-  uint32_t ind   = getSTPBufPos(nid, (unsigned)(simTime-del));
-  //(((((unsigned)(simTime-tD))%STP_BUF_SIZE)*gpuNetInfo.STP_Pitch) + id);
-  return (gpuPtrs.stpx[ind])*(gpuPtrs.stpu[ind]);
+	gpu_doCurrentUpdateD1 <<<gridSize, blkSize>>>(simTimeMs,simTimeSec,simTime);
+	CUDA_GET_LAST_ERROR_MACRO("Kernel execution failed");
+	errCode = checkErrors("kernel_updateCurrentI", gridSize);
+	assert(errCode == NO_KERNEL_ERRORS);
 }
 
 __global__ void kernel_check_GPU_init2 (int simTime)
 {
   //	  	int gid=threadIdx.x + blockDim.x*blockIdx.x;
-  int nid[]   = {0,1,2,3};
+	int nid[]   = {0,1,2,3};
 
-  for(int k=0; k < 4; k++) {
-    int i=1;
-    for(int t=0; t < 5; t++) {
-      float stp = getSTPScaleFactor(nid[k], simTime, t);
-      int buf = getSTPBufPos(nid[k], simTime-t);
-      retErrVal[k][i++]= stp;
-      retErrVal[k][i++]= buf;
-    }
-    retErrVal[k][0] = i;
-  }
+	for(int k=0; k < 4; k++) {
+		int i=1;
+		for(int t=0; t < 5; t++) {
+			retErrVal[k][i++]= gpuPtrs.stpu[nid[k]]*gpuPtrs.stpx[nid[k]];
+		}
+		retErrVal[k][0] = i;
+	}
 }
 
 __global__ void kernel_check_GPU_init2_1 (int simTime)
 {
   //	  	int gid=threadIdx.x + blockDim.x*blockIdx.x;
-  int nid=0;
-  for(int k=0; k < gpuNetInfo.numN; k++) {
-    if ( gpuPtrs.neuronFiring[k]) {
-      int i=1;
+	int nid=0;
+	for(int k=0; k < gpuNetInfo.numN; k++) {
+		if ( gpuPtrs.neuronFiring[k]) {
+			int i=1;
       //				int pos = atomicAdd(&testVarCnt2, 7);
       //				gpuPtrs.testVar2[pos]   = nid;
       //				gpuPtrs.testVar2[pos+1] = ind_1;
@@ -2327,20 +2247,18 @@ __global__ void kernel_check_GPU_init2_1 (int simTime)
       //				gpuPtrs.testVar2[pos+4] = gpuPtrs.stpu[ind];
       //				gpuPtrs.testVar2[pos+5] = gpuPtrs.stpx[ind];
       //				gpuPtrs.testVar2[pos+6] = gpuPtrs.stpu[ind]*gpuPtrs.stpx[ind];
-      retErrVal[nid][i++]= k;
-      for(int t=0; t < 5; t++) {
-	float stp = getSTPScaleFactor(k, simTime, t);
-	int buf = getSTPBufPos(k, simTime-t);
-	retErrVal[nid][i++]= stp;
-	retErrVal[nid][i++]= buf;
-      }
+			retErrVal[nid][i++]= k;
+			for(int t=0; t < 5; t++) {
+				float stp = gpuPtrs.stpu[k]*gpuPtrs.stpx[k];
+				retErrVal[nid][i++]= stp;
+			}
       //gpuPtrs.neuronFiring[k]=0;
-      retErrVal[nid][0] = i;
-      nid++;
-      if(nid==(MAX_NUM_BLOCKS-1))
-	break;
-    }
-  }
+			retErrVal[nid][0] = i;
+			nid++;
+			if(nid==(MAX_NUM_BLOCKS-1))
+				break;
+		}
+	}
 }
 ///////////////////////////////////////////////////////////////////////////
 /// Device local function:      check_GPU_initialization		///
@@ -2352,63 +2270,62 @@ __global__ void kernel_check_GPU_init2_1 (int simTime)
 ///////////////////////////////////////////////////////////////////////////
 __global__ void kernel_check_GPU_init ()
 {
-  int i=1;
+	int i=1;
 
   //    		int gid=threadIdx.x + blockDim.x*blockIdx.x;
 
-  if(threadIdx.x==0 && blockIdx.x==0) {
+	if(threadIdx.x==0 && blockIdx.x==0) {
     //float hstep = gpuNetInfo.maxWeight/(HISTOGRAM_SIZE);
-    retErrVal[0][i++]= gpuNetInfo.numN;
-    retErrVal[0][i++]= gpuNetInfo.numPostSynapses;
-    retErrVal[0][i++]= gpuNetInfo.numNReg;
-    retErrVal[0][i++]= gpuNetInfo.numNExcReg;
-    retErrVal[0][i++]= gpuNetInfo.numNInhReg;
-    retErrVal[0][i++]= gpuPtrs.wt[0];
-    retErrVal[0][i++]= gpuNetInfo.numNPois;
-    retErrVal[0][i++]= gpuPtrs.poissonRandPtr[0];
-    retErrVal[0][i++]= gpuPtrs.poissonRandPtr[1];
-    retErrVal[0][i++]= gpuNetInfo.maxSpikesD1;
-    retErrVal[0][i++]= gpuNetInfo.maxSpikesD2;
-    retErrVal[0][i++]= gpuNetInfo.sim_with_fixedwts;
-    retErrVal[0][i++]= gpuNetInfo.sim_with_conductances;
-    retErrVal[0][i++]= gpuNetInfo.sim_with_stdp;
-    retErrVal[0][i++]= gpuNetInfo.sim_with_stp;
-    retErrVal[0][i++]= gpuGrpInfo[0].MonitorId;
-    retErrVal[0][i++]= gpuGrpInfo[1].MonitorId;
-    retErrVal[0][i++]= gpuGrpInfo[0].WithSTP;
-    retErrVal[0][i++]= gpuGrpInfo[1].WithSTP;
-    retErrVal[0][i++]= gpuGrpInfo[1].avgTimeScale;
-    retErrVal[0][i++]= 123456789.0;
-    retErrVal[0][0]  = i;
-    i = 1;
-    retErrVal[1][i++]= tex1Dfetch(timingTableD2_tex, 0+timingTableD2_tex_offset);
-    retErrVal[1][i++]= tex1Dfetch(timingTableD2_tex, 1+timingTableD2_tex_offset);
-    retErrVal[1][i++]= loadBufferCount;
-    retErrVal[1][i++]= tex1Dfetch(groupIdInfo_tex, 0);
-    retErrVal[1][i++]= tex1Dfetch(groupIdInfo_tex, 1);
-    retErrVal[1][i++]= tex1Dfetch(groupIdInfo_tex, 2);
-    unsigned int id = 124;
-    int grpId; findGrpId_GPU(id, grpId);
-    retErrVal[1][i++]= gpuGrpInfo[0].WithSTDP;
-    retErrVal[1][i++]= gpuGrpInfo[1].WithSTDP;
-    retErrVal[1][i++]= gpuGrpInfo[2].WithSTDP;
-    retErrVal[1][i++]= STATIC_LOAD_START(gpuPtrs.neuronAllocation[0]);
-    retErrVal[1][i++]= STATIC_LOAD_GROUP(gpuPtrs.neuronAllocation[0]);
-    retErrVal[1][i++]= STATIC_LOAD_SIZE(gpuPtrs.neuronAllocation[0]);
-    retErrVal[1][i++]= gpuNetInfo.STP_Pitch;
-    retErrVal[1][i++]= gpuGrpInfo[2].FixedInputWts;
-    retErrVal[1][i++]= gpuPtrs.baseFiringInv[gpuGrpInfo[1].StartN];
-    retErrVal[1][i++]= gpuPtrs.baseFiringInv[gpuGrpInfo[0].StartN];
-    retErrVal[1][i++]= gpuGrpInfo[0].STP_U;
-    retErrVal[1][i++]= gpuGrpInfo[0].STP_tD;
-    retErrVal[1][i++]= gpuGrpInfo[0].STP_tF;
-    uint32_t ind     = getSTPBufPos(0, 1); //(((simTime%STP_BUF_SIZE)*gpuNetInfo.STP_Pitch) + nid);
-    retErrVal[1][i++]= gpuPtrs.stpu[ind];
-    retErrVal[1][i++]= gpuPtrs.stpx[ind];
+		retErrVal[0][i++]= gpuNetInfo.numN;
+		retErrVal[0][i++]= gpuNetInfo.numPostSynapses;
+		retErrVal[0][i++]= gpuNetInfo.numNReg;
+		retErrVal[0][i++]= gpuNetInfo.numNExcReg;
+		retErrVal[0][i++]= gpuNetInfo.numNInhReg;
+		retErrVal[0][i++]= gpuPtrs.wt[0];
+		retErrVal[0][i++]= gpuNetInfo.numNPois;
+		retErrVal[0][i++]= gpuPtrs.poissonRandPtr[0];
+		retErrVal[0][i++]= gpuPtrs.poissonRandPtr[1];
+		retErrVal[0][i++]= gpuNetInfo.maxSpikesD1;
+		retErrVal[0][i++]= gpuNetInfo.maxSpikesD2;
+		retErrVal[0][i++]= gpuNetInfo.sim_with_fixedwts;
+		retErrVal[0][i++]= gpuNetInfo.sim_with_conductances;
+		retErrVal[0][i++]= gpuNetInfo.sim_with_stdp;
+		retErrVal[0][i++]= gpuNetInfo.sim_with_stp;
+		retErrVal[0][i++]= gpuGrpInfo[0].MonitorId;
+		retErrVal[0][i++]= gpuGrpInfo[1].MonitorId;
+		retErrVal[0][i++]= gpuGrpInfo[0].WithSTP;
+		retErrVal[0][i++]= gpuGrpInfo[1].WithSTP;
+		retErrVal[0][i++]= gpuGrpInfo[1].avgTimeScale;
+		retErrVal[0][i++]= 123456789.0;
+		retErrVal[0][0]  = i;
+		i = 1;
+		retErrVal[1][i++]= tex1Dfetch(timingTableD2_tex, 0+timingTableD2_tex_offset);
+		retErrVal[1][i++]= tex1Dfetch(timingTableD2_tex, 1+timingTableD2_tex_offset);
+		retErrVal[1][i++]= loadBufferCount;
+		retErrVal[1][i++]= tex1Dfetch(groupIdInfo_tex, 0);
+		retErrVal[1][i++]= tex1Dfetch(groupIdInfo_tex, 1);
+		retErrVal[1][i++]= tex1Dfetch(groupIdInfo_tex, 2);
+		unsigned int id = 124;
+		int grpId; findGrpId_GPU(id, grpId);
+		retErrVal[1][i++]= gpuGrpInfo[0].WithSTDP;
+		retErrVal[1][i++]= gpuGrpInfo[1].WithSTDP;
+		retErrVal[1][i++]= gpuGrpInfo[2].WithSTDP;
+		retErrVal[1][i++]= STATIC_LOAD_START(gpuPtrs.neuronAllocation[0]);
+		retErrVal[1][i++]= STATIC_LOAD_GROUP(gpuPtrs.neuronAllocation[0]);
+		retErrVal[1][i++]= STATIC_LOAD_SIZE(gpuPtrs.neuronAllocation[0]);
+		retErrVal[1][i++]= gpuNetInfo.STP_Pitch;
+		retErrVal[1][i++]= gpuGrpInfo[2].FixedInputWts;
+		retErrVal[1][i++]= gpuPtrs.baseFiringInv[gpuGrpInfo[1].StartN];
+		retErrVal[1][i++]= gpuPtrs.baseFiringInv[gpuGrpInfo[0].StartN];
+		retErrVal[1][i++]= gpuGrpInfo[0].STP_U;
+//    retErrVal[1][i++]= gpuGrpInfo[0].STP_tD;
+//    retErrVal[1][i++]= gpuGrpInfo[0].STP_tF;
+    retErrVal[1][i++]= gpuPtrs.stpu[0];
+    retErrVal[1][i++]= gpuPtrs.stpx[0];
     retErrVal[1][i++]= 123456789.0;
     retErrVal[1][0]  = i;
     return;
-  }
+}
 }
 
 
@@ -2416,205 +2333,208 @@ __global__ void kernel_check_GPU_init ()
 // up to now they were initialized outside any class member in snn_gpu.cu (as global variables), so if you were
 // to create two CpuSNN instances within the same .cpp file, then the second network would fail to run
 void CpuSNN::CpuSNNinit_GPU() {
-  gpuPoissonRand = NULL;
-  spikeCountD2=0;
-  spikeCountD1=0;
-  secD2fireCnt=0;
-  secD1fireCnt=0;
+	gpuPoissonRand = NULL;
+	testVar=NULL;
+	testVar2=NULL;
+	
+	spikeCountD2=0;
+	spikeCountD1=0;
+	secD2fireCnt=0;
+	secD1fireCnt=0;
 
   // I believe the following are all just test variables
-  testFireCnt1  = 0;
-  testFireCnt2  = 0;
-  testFireCntf1 = 0.0;
-  testFireCntf2 = 0.0;
-  testVarCnt=0;
-  testVarCnt2=0;
-  testVarCnt1=0;
-  secD2fireCntTest=0;
-  secD1fireCntTest=0;
-  generatedSpikesE=0;
-  generatedSpikesI=0;
-  receivedSpikesE=0;
-  receivedSpikesI=0;
+	testFireCnt1  = 0;
+	testFireCnt2  = 0;
+	testFireCntf1 = 0.0;
+	testFireCntf2 = 0.0;
+	testVarCnt=0;
+	testVarCnt2=0;
+	testVarCnt1=0;
+	secD2fireCntTest=0;
+	secD1fireCntTest=0;
+	generatedSpikesE=0;
+	generatedSpikesI=0;
+	receivedSpikesE=0;
+	receivedSpikesI=0;
 }
 
 
 void CpuSNN::initGPU(int gridSize, int blkSize)
 {
 
-  assert(cpu_gpuNetPtrs.allocated);
+	assert(cpu_gpuNetPtrs.allocated);
 
-  kernel_init <<< gridSize, blkSize >>> ();
-  CUDA_GET_LAST_ERROR("initGPU kernel failed\n");
-  int errCode = checkErrors("kernel_init", gridSize);
-  assert(errCode == NO_KERNEL_ERRORS);
+	kernel_init <<< gridSize, blkSize >>> ();
+	CUDA_GET_LAST_ERROR("initGPU kernel failed\n");
+	int errCode = checkErrors("kernel_init", gridSize);
+	assert(errCode == NO_KERNEL_ERRORS);
 
-  printGpuLoadBalance(true,false,fpOut_);
+	printGpuLoadBalance(true,false,fpOut_);
 
-  checkInitialization();
+	checkInitialization();
 
-  checkInitialization2();
+	checkInitialization2();
 }
 
 void CpuSNN::checkInitialization(char* testString)
 {
-  CARLSIM_DEBUG("gpu_checkInitialization()");
-  void *devPtr;
+	CARLSIM_DEBUG("gpu_checkInitialization()");
+	void *devPtr;
 
-  assert(cpu_gpuNetPtrs.allocated);
+	assert(cpu_gpuNetPtrs.allocated);
 
-  memset(errVal, 0, sizeof(errVal));
-  cudaGetSymbolAddress(&devPtr, retErrVal);
-  CUDA_CHECK_ERRORS( cudaMemcpy(devPtr, &errVal, sizeof(errVal), cudaMemcpyHostToDevice));
+	memset(errVal, 0, sizeof(errVal));
+	cudaGetSymbolAddress(&devPtr, retErrVal);
+	CUDA_CHECK_ERRORS( cudaMemcpy(devPtr, &errVal, sizeof(errVal), cudaMemcpyHostToDevice));
 
-  int testTable[10];
+	int testTable[10];
   // we write some number in this table..
   // write that to the GPU memory. Read it back
   // using the texture access and check if everything is correctly initialized
-  testTable[0] = 11; testTable[1] = 12; testTable[2] = 13;
-  testTable[3] = 14; testTable[4] = 15; testTable[5] = 16;
-  CUDA_CHECK_ERRORS( cudaMemcpyToSymbol(timingTableD2, testTable, sizeof(int)*(10), 0, cudaMemcpyHostToDevice));
+	testTable[0] = 11; testTable[1] = 12; testTable[2] = 13;
+	testTable[3] = 14; testTable[4] = 15; testTable[5] = 16;
+	CUDA_CHECK_ERRORS( cudaMemcpyToSymbol(timingTableD2, testTable, sizeof(int)*(10), 0, cudaMemcpyHostToDevice));
   //MDR this check fails because it assumes too much about the network...
   //		kernel_check_GPU_init <<< 1, 128 >>> ();
-  CUDA_GET_LAST_ERROR("check GPU failed\n");
+	CUDA_GET_LAST_ERROR("check GPU failed\n");
 
   // read back the intialization and ensure that they are okay
-  CARLSIM_DEBUG("%s Checking initialization of GPU...", testString?testString:"");
-  CUDA_CHECK_ERRORS( cudaMemcpy(&errVal, devPtr, sizeof(errVal), cudaMemcpyDeviceToHost));
-  for(int i=0; i < 4; i++) {
-    for(int j=0; j < (int)errVal[i][0]; j++) {
-      CARLSIM_DEBUG("val[%3d][%3d] = %f", i, j, errVal[i][j]);
-    }
-    CARLSIM_DEBUG("******************");
-  }
-  CARLSIM_DEBUG("Checking done...");
-  CUDA_CHECK_ERRORS( cudaMemcpyToSymbol(timingTableD2, timeTableD2, sizeof(int)*(10), 0, cudaMemcpyHostToDevice));
+	CARLSIM_DEBUG("%s Checking initialization of GPU...", testString?testString:"");
+	CUDA_CHECK_ERRORS( cudaMemcpy(&errVal, devPtr, sizeof(errVal), cudaMemcpyDeviceToHost));
+	for(int i=0; i < 4; i++) {
+		for(int j=0; j < (int)errVal[i][0]; j++) {
+			CARLSIM_DEBUG("val[%3d][%3d] = %f", i, j, errVal[i][j]);
+		}
+		CARLSIM_DEBUG("******************");
+	}
+	CARLSIM_DEBUG("Checking done...");
+	CUDA_CHECK_ERRORS( cudaMemcpyToSymbol(timingTableD2, timeTableD2, sizeof(int)*(10), 0, cudaMemcpyHostToDevice));
 }
 
 void CpuSNN::checkInitialization2(char* testString)
 {
-  CARLSIM_DEBUG("CheckInitialization2: Time = %d", simTime);
-  void *devPtr;
-  memset(errVal, 0, sizeof(errVal));
-  cudaGetSymbolAddress(&devPtr, retErrVal);
-  CUDA_CHECK_ERRORS( cudaMemcpy(devPtr, &errVal, sizeof(errVal), cudaMemcpyHostToDevice));
+	CARLSIM_DEBUG("CheckInitialization2: Time = %d", simTime);
+	void *devPtr;
+	memset(errVal, 0, sizeof(errVal));
+	cudaGetSymbolAddress(&devPtr, retErrVal);
+	CUDA_CHECK_ERRORS( cudaMemcpy(devPtr, &errVal, sizeof(errVal), cudaMemcpyHostToDevice));
 
-  if (sim_with_stp) {
-    kernel_check_GPU_init2 <<< 1, 128>>> (simTime);
-    CUDA_GET_LAST_ERROR("kernel_check_GPU_init2_1 failed\n");
-    int errCode = checkErrors("kernel_init2_1", 1);
-    assert(errCode == NO_KERNEL_ERRORS);
-  }
+	if (sim_with_stp) {
+		kernel_check_GPU_init2 <<< 1, 128>>> (simTime);
+		CUDA_GET_LAST_ERROR("kernel_check_GPU_init2_1 failed\n");
+		int errCode = checkErrors("kernel_init2_1", 1);
+		assert(errCode == NO_KERNEL_ERRORS);
+	}
 
   // read back the intialization and ensure that they are okay
-  CARLSIM_DEBUG("%s Checking Initialization of STP Variable Correctly in GPU...", (testString?testString:""));
-  CUDA_CHECK_ERRORS( cudaMemcpy(&errVal, devPtr, sizeof(errVal), cudaMemcpyDeviceToHost));
-  for(int i=0; i < 4; i++) {
-    for(int j=0; j < (int)errVal[i][0]; j++) {
-      CARLSIM_DEBUG("val[%3d][%3d] = %f", i, j, errVal[i][j]);
-    }
-    CARLSIM_DEBUG("******************");
-  }
+	CARLSIM_DEBUG("%s Checking Initialization of STP Variable Correctly in GPU...", (testString?testString:""));
+	CUDA_CHECK_ERRORS( cudaMemcpy(&errVal, devPtr, sizeof(errVal), cudaMemcpyDeviceToHost));
+	for(int i=0; i < 4; i++) {
+		for(int j=0; j < (int)errVal[i][0]; j++) {
+			CARLSIM_DEBUG("val[%3d][%3d] = %f", i, j, errVal[i][j]);
+		}
+		CARLSIM_DEBUG("******************");
+	}
 }
 
 void CpuSNN::printCurrentInfo(FILE* fp)
 {
 	CARLSIM_WARN("Calling printCurrentInfo with fp is deprecated");
   // copy neuron input current...
-  CARLSIM_DEBUG("Total Synaptic updates:");
-  CUDA_CHECK_ERRORS( cudaMemcpy( current, cpu_gpuNetPtrs.current, sizeof(float)*numNReg, cudaMemcpyDeviceToHost));
-  for(int i=0; i < numNReg; i++) {
-    if (current[i] != 0.0 ) {
-      CARLSIM_DEBUG("I[%d] -> %f", i, current[i]);
-    }
-  }
-  fflush(fp);
+	CARLSIM_DEBUG("Total Synaptic updates:");
+	CUDA_CHECK_ERRORS( cudaMemcpy( current, cpu_gpuNetPtrs.current, sizeof(float)*numNReg, cudaMemcpyDeviceToHost));
+	for(int i=0; i < numNReg; i++) {
+		if (current[i] != 0.0 ) {
+			CARLSIM_DEBUG("I[%d] -> %f", i, current[i]);
+		}
+	}
+	fflush(fp);
 }
 
 
 void CpuSNN::printTestVarInfo(FILE* fp, char* testString, bool test1, bool test2, bool test12, int subVal, int grouping1, int grouping2)
 {
-  int cnt=0;
+	int cnt=0;
 
-  CARLSIM_WARN("Calling printTestVarInfo with fp is deprecated");
+	CARLSIM_WARN("Calling printTestVarInfo with fp is deprecated");
 //  fflush(fpOut_);
 
-  if(test1 || test12)
-    CUDA_CHECK_ERRORS( cudaMemcpy( testVar, cpu_gpuNetPtrs.testVar, sizeof(float)*numN, cudaMemcpyDeviceToHost));
+	if(test1 || test12)
+		CUDA_CHECK_ERRORS( cudaMemcpy( testVar, cpu_gpuNetPtrs.testVar, sizeof(float)*numN, cudaMemcpyDeviceToHost));
 
-  if(test2 || test12)
-    CUDA_CHECK_ERRORS( cudaMemcpy( testVar2, cpu_gpuNetPtrs.testVar2, sizeof(float)*numN, cudaMemcpyDeviceToHost));
+	if(test2 || test12)
+		CUDA_CHECK_ERRORS( cudaMemcpy( testVar2, cpu_gpuNetPtrs.testVar2, sizeof(float)*numN, cudaMemcpyDeviceToHost));
 
-  int gcnt=0;
-  bool firstPrint = true;
-  if(test12) {
-    for(int i=0; i < numN; i++) {
-      if ((testVar[i] != 0.0) || (testVar2[i] != 0.0)) {
-	if(firstPrint) {
-	  CARLSIM_DEBUG("\ntime=%d: Testing Variable 1 and 2: %s", simTime, testString);
-	  firstPrint = false;
-	}
-	CARLSIM_DEBUG("testVar12[%d] -> %f : %f", i, testVar[i]-subVal, testVar2[i]-subVal);
-	testVar[i]  = 0.0;
-	testVar2[i] = 0.0;
-	if(gcnt++==grouping1) {
-		CARLSIM_INFO("");
-		gcnt=0;
+	int gcnt=0;
+	bool firstPrint = true;
+	if(test12) {
+		for(int i=0; i < numN; i++) {
+			if ((testVar[i] != 0.0) || (testVar2[i] != 0.0)) {
+				if(firstPrint) {
+					CARLSIM_DEBUG("\ntime=%d: Testing Variable 1 and 2: %s", simTime, testString);
+					firstPrint = false;
+				}
+				CARLSIM_DEBUG("testVar12[%d] -> %f : %f", i, testVar[i]-subVal, testVar2[i]-subVal);
+				testVar[i]  = 0.0;
+				testVar2[i] = 0.0;
+				if(gcnt++==grouping1) {
+					CARLSIM_INFO("");
+					gcnt=0;
+				}
+			}
 		}
-      }
-    }
-    fflush(fp);
-    test1 = false;
-    test2 = false;
-    CUDA_CHECK_ERRORS( cudaMemcpy( cpu_gpuNetPtrs.testVar,  testVar, sizeof(float)*numN, cudaMemcpyHostToDevice));
-    CUDA_CHECK_ERRORS_MACRO( cudaMemcpyToSymbol(testVarCnt, &cnt, sizeof(int), 0, cudaMemcpyHostToDevice));
-    CUDA_CHECK_ERRORS( cudaMemcpy( cpu_gpuNetPtrs.testVar2, testVar2, sizeof(float)*numN, cudaMemcpyHostToDevice));
-    CUDA_CHECK_ERRORS_MACRO( cudaMemcpyToSymbol(testVarCnt2, &cnt, sizeof(int), 0, cudaMemcpyHostToDevice));
-  }
+		fflush(fp);
+		test1 = false;
+		test2 = false;
+		CUDA_CHECK_ERRORS( cudaMemcpy( cpu_gpuNetPtrs.testVar,  testVar, sizeof(float)*numN, cudaMemcpyHostToDevice));
+		CUDA_CHECK_ERRORS_MACRO( cudaMemcpyToSymbol(testVarCnt, &cnt, sizeof(int), 0, cudaMemcpyHostToDevice));
+		CUDA_CHECK_ERRORS( cudaMemcpy( cpu_gpuNetPtrs.testVar2, testVar2, sizeof(float)*numN, cudaMemcpyHostToDevice));
+		CUDA_CHECK_ERRORS_MACRO( cudaMemcpyToSymbol(testVarCnt2, &cnt, sizeof(int), 0, cudaMemcpyHostToDevice));
+	}
 
-  gcnt=0;
-  firstPrint = true;
-  if(test1) {
+	gcnt=0;
+	firstPrint = true;
+	if(test1) {
     // copy neuron input current...
-    for(int i=0; i < numN; i++) {
-      if (testVar[i] != 0.0 ) {
-	if(firstPrint) {
-	  CARLSIM_DEBUG("\ntime=%d: Testing Variable 1 and 2: %s", simTime, testString);
-	  firstPrint = false;
+		for(int i=0; i < numN; i++) {
+			if (testVar[i] != 0.0 ) {
+				if(firstPrint) {
+					CARLSIM_DEBUG("\ntime=%d: Testing Variable 1 and 2: %s", simTime, testString);
+					firstPrint = false;
+				}
+				if(gcnt==0) CARLSIM_DEBUG("testVar[%d] -> ", i);
+				CARLSIM_DEBUG("%d\t", i, testVar[i]-subVal);
+				testVar[i] = 0.0;
+				if(++gcnt==grouping1) { CARLSIM_DEBUG("\n"); gcnt=0;}
+			}
+		}
+		fflush(fp);
+		cnt=0;
+		CUDA_CHECK_ERRORS( cudaMemcpy( cpu_gpuNetPtrs.testVar,  testVar, sizeof(float)*numN, cudaMemcpyHostToDevice));
+		CUDA_CHECK_ERRORS_MACRO( cudaMemcpyToSymbol(testVarCnt, &cnt, sizeof(int), 0, cudaMemcpyHostToDevice));
 	}
-	if(gcnt==0) CARLSIM_DEBUG("testVar[%d] -> ", i);
-	CARLSIM_DEBUG("%d\t", i, testVar[i]-subVal);
-	testVar[i] = 0.0;
-	if(++gcnt==grouping1) { CARLSIM_DEBUG("\n"); gcnt=0;}
-      }
-    }
-    fflush(fp);
-    cnt=0;
-    CUDA_CHECK_ERRORS( cudaMemcpy( cpu_gpuNetPtrs.testVar,  testVar, sizeof(float)*numN, cudaMemcpyHostToDevice));
-    CUDA_CHECK_ERRORS_MACRO( cudaMemcpyToSymbol(testVarCnt, &cnt, sizeof(int), 0, cudaMemcpyHostToDevice));
-  }
 
-  gcnt=0;
-  firstPrint = 1;
-  if(test2) {
-    for(int i=0; i < numN; i++) {
-      if (testVar2[i] != 0.0 ) {
-	if(firstPrint) {
-	  CARLSIM_DEBUG("\ntime=%d: Testing Variable 1 and 2: %s", simTime, testString);
-	  firstPrint = 0;
+	gcnt=0;
+	firstPrint = 1;
+	if(test2) {
+		for(int i=0; i < numN; i++) {
+			if (testVar2[i] != 0.0 ) {
+				if(firstPrint) {
+					CARLSIM_DEBUG("\ntime=%d: Testing Variable 1 and 2: %s", simTime, testString);
+					firstPrint = 0;
+				}
+				if(gcnt==0) CARLSIM_DEBUG("testVar2[%d] -> ", i);
+				CARLSIM_DEBUG("%d\t", i, testVar2[i]-subVal);
+				testVar2[i] = 0.0;
+				if(++gcnt==grouping2) { CARLSIM_DEBUG("\n"); gcnt=0;}
+			}
+		}
+		fflush(fp);
+
+		CUDA_CHECK_ERRORS( cudaMemcpy( cpu_gpuNetPtrs.testVar2, testVar2, sizeof(float)*numN, cudaMemcpyHostToDevice));
+		CUDA_CHECK_ERRORS_MACRO( cudaMemcpyToSymbol(testVarCnt2, &cnt, sizeof(int), 0, cudaMemcpyHostToDevice));
 	}
-	if(gcnt==0) CARLSIM_DEBUG("testVar2[%d] -> ", i);
-	CARLSIM_DEBUG("%d\t", i, testVar2[i]-subVal);
-	testVar2[i] = 0.0;
-	if(++gcnt==grouping2) { CARLSIM_DEBUG("\n"); gcnt=0;}
-      }
-    }
-    fflush(fp);
-
-    CUDA_CHECK_ERRORS( cudaMemcpy( cpu_gpuNetPtrs.testVar2, testVar2, sizeof(float)*numN, cudaMemcpyHostToDevice));
-    CUDA_CHECK_ERRORS_MACRO( cudaMemcpyToSymbol(testVarCnt2, &cnt, sizeof(int), 0, cudaMemcpyHostToDevice));
-  }
-  return;
+	return;
 }
 
 
@@ -2674,6 +2594,11 @@ void CpuSNN::deleteObjects_GPU() {
 	CUDA_CHECK_ERRORS( cudaFree(cpu_gpuNetPtrs.testVar2) );
 	if (testVar!=NULL) delete[] testVar;
 	if (testVar2!=NULL) delete[] testVar2;
+	testVar=NULL; testVar2=NULL;
+
+	if (gpuPoissonRand!=NULL)
+		delete gpuPoissonRand;
+	gpuPoissonRand=NULL;
 
 	CUDA_DELETE_TIMER(timer);
 }
@@ -2682,125 +2607,125 @@ void CpuSNN::deleteObjects_GPU() {
 void CpuSNN::testSpikeSenderReceiver(FILE* fpLog, int simTime)
 {
 	CARLSIM_WARN("Calling testSpikeSenderReceiver with fpLog is deprecated");
-  if(0) {
-    int EnumFires = 0; int InumFires = 0;
-    CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &EnumFires, secD2fireCnt, sizeof(int), 0, cudaMemcpyDeviceToHost));
-    CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &InumFires, secD1fireCnt, sizeof(int), 0, cudaMemcpyDeviceToHost));
-    CARLSIM_DEBUG(" ***********( t = %d) FIRE COUNTS ************** %d %d", simTime, EnumFires, InumFires);
-    int   numFires;
-    float fireCnt;
-    CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &numFires,  testFireCnt1, sizeof(int), 0, cudaMemcpyDeviceToHost));
-    CARLSIM_DEBUG("testFireCnt1 = %d", numFires);
-    CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &numFires,  testFireCnt2, sizeof(int), 0, cudaMemcpyDeviceToHost));
-    CARLSIM_DEBUG("testFireCnt2 = %d", numFires);
-    CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &fireCnt,  testFireCntf1, sizeof(int), 0, cudaMemcpyDeviceToHost));
-    CARLSIM_DEBUG("testFireCntFloat1 = %f", fireCnt);
-    CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &fireCnt,  testFireCntf2, sizeof(int), 0, cudaMemcpyDeviceToHost));
-    CARLSIM_DEBUG("testFireCntFloat2 = %f", fireCnt);
-    CARLSIM_DEBUG(" *************************");
+	if(0) {
+		int EnumFires = 0; int InumFires = 0;
+		CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &EnumFires, secD2fireCnt, sizeof(int), 0, cudaMemcpyDeviceToHost));
+		CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &InumFires, secD1fireCnt, sizeof(int), 0, cudaMemcpyDeviceToHost));
+		CARLSIM_DEBUG(" ***********( t = %d) FIRE COUNTS ************** %d %d", simTime, EnumFires, InumFires);
+		int   numFires;
+		float fireCnt;
+		CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &numFires,  testFireCnt1, sizeof(int), 0, cudaMemcpyDeviceToHost));
+		CARLSIM_DEBUG("testFireCnt1 = %d", numFires);
+		CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &numFires,  testFireCnt2, sizeof(int), 0, cudaMemcpyDeviceToHost));
+		CARLSIM_DEBUG("testFireCnt2 = %d", numFires);
+		CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &fireCnt,  testFireCntf1, sizeof(int), 0, cudaMemcpyDeviceToHost));
+		CARLSIM_DEBUG("testFireCntFloat1 = %f", fireCnt);
+		CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &fireCnt,  testFireCntf2, sizeof(int), 0, cudaMemcpyDeviceToHost));
+		CARLSIM_DEBUG("testFireCntFloat2 = %f", fireCnt);
+		CARLSIM_DEBUG(" *************************");
 
     // MDR originally had this. 
-    float* baseFiringInv = new float[numN];
-    for (int i=0;i<numN;i++) baseFiringInv[i] = 1/baseFiring[i];
-    CUDA_CHECK_ERRORS( cudaMemcpy( baseFiringInv, cpu_gpuNetPtrs.baseFiringInv, sizeof(float)*numN, cudaMemcpyDeviceToHost));
-    delete(baseFiringInv);
-    CUDA_CHECK_ERRORS( cudaMemcpy( avgFiring, cpu_gpuNetPtrs.avgFiring, sizeof(float)*numN, cudaMemcpyDeviceToHost));
-    for(int g=0; g < numGrp; g++) {
-      CARLSIM_DEBUG("Homeostasis values");
-      if (!grp_Info[g].FixedInputWts) {
-	CARLSIM_DEBUG("Group %s:\t", grp_Info2[g].Name.c_str());
-	for(int j=grp_Info[g].StartN; j <= grp_Info[g].EndN; j++) {
-	  CARLSIM_DEBUG(" %d: Home =%f (Base =%f)  ", j, avgFiring[j], 1/baseFiringInv[j]);
-	  CARLSIM_DEBUG(" %d: Home =%f (Base =%f)  ", j, avgFiring[j], 1/baseFiringInv[j]);
+		float* baseFiringInv = new float[numN];
+		for (int i=0;i<numN;i++) baseFiringInv[i] = 1/baseFiring[i];
+			CUDA_CHECK_ERRORS( cudaMemcpy( baseFiringInv, cpu_gpuNetPtrs.baseFiringInv, sizeof(float)*numN, cudaMemcpyDeviceToHost));
+		delete(baseFiringInv);
+		CUDA_CHECK_ERRORS( cudaMemcpy( avgFiring, cpu_gpuNetPtrs.avgFiring, sizeof(float)*numN, cudaMemcpyDeviceToHost));
+		for(int g=0; g < numGrp; g++) {
+			CARLSIM_DEBUG("Homeostasis values");
+			if (!grp_Info[g].FixedInputWts) {
+				CARLSIM_DEBUG("Group %s:\t", grp_Info2[g].Name.c_str());
+				for(int j=grp_Info[g].StartN; j <= grp_Info[g].EndN; j++) {
+					CARLSIM_DEBUG(" %d: Home =%f (Base =%f)  ", j, avgFiring[j], 1/baseFiringInv[j]);
+					CARLSIM_DEBUG(" %d: Home =%f (Base =%f)  ", j, avgFiring[j], 1/baseFiringInv[j]);
+				}
+			}
+		}
+
 	}
-      }
-    }
-    
-  }
 }
 
 void CpuSNN::globalStateUpdate_GPU()
 {
-  int blkSize  = 128;
-  int gridSize = 64;
+	int blkSize  = 128;
+	int gridSize = 64;
 
-  kernel_globalConductanceUpdate <<<gridSize, blkSize>>> (simTimeMs, simTimeSec, simTime);
+	kernel_globalConductanceUpdate <<<gridSize, blkSize>>> (simTimeMs, simTimeSec, simTime);
 
-  kernel_globalStateUpdate <<<gridSize, blkSize>>> (simTimeMs, simTimeSec, simTime);
-  CUDA_GET_LAST_ERROR_MACRO("Kernel execution failed");
-  int errCode = checkErrors("gpu_globalStateUpdate", gridSize);
-  assert(errCode == NO_KERNEL_ERRORS);
+	kernel_globalStateUpdate <<<gridSize, blkSize>>> (simTimeMs, simTimeSec, simTime);
+	CUDA_GET_LAST_ERROR_MACRO("Kernel execution failed");
+	int errCode = checkErrors("gpu_globalStateUpdate", gridSize);
+	assert(errCode == NO_KERNEL_ERRORS);
 }
 
 void CpuSNN::assignPoissonFiringRate_GPU()
 {
-  assert(cpu_gpuNetPtrs.poissonFireRate != NULL);
-  for (int grpId=0; grpId < numGrp; grpId++) {
+	assert(cpu_gpuNetPtrs.poissonFireRate != NULL);
+	for (int grpId=0; grpId < numGrp; grpId++) {
     // given group of neurons belong to the poisson group....
-    if (grp_Info[grpId].isSpikeGenerator) {
-      int nid    = grp_Info[grpId].StartN;
-      PoissonRate* rate = grp_Info[grpId].RatePtr;
+		if (grp_Info[grpId].isSpikeGenerator) {
+			int nid    = grp_Info[grpId].StartN;
+			PoissonRate* rate = grp_Info[grpId].RatePtr;
 
       // TODO::: what do we need to do with the refPeriod...
       // does GPU use the refPeriod ???
       //float refPeriod = grp_Info[grpId].RefractPeriod;
-				
-      if (grp_Info[grpId].spikeGen || rate == NULL) return;
-				
-      CUDA_CHECK_ERRORS( cudaMemcpy( &cpu_gpuNetPtrs.poissonFireRate[nid-numNReg], rate->rates, sizeof(float)*rate->len, rate->onGPU?cudaMemcpyDeviceToDevice:cudaMemcpyHostToDevice));
-    }
-  }
+
+			if (grp_Info[grpId].spikeGen || rate == NULL) return;
+
+			CUDA_CHECK_ERRORS( cudaMemcpy( &cpu_gpuNetPtrs.poissonFireRate[nid-numNReg], rate->rates, sizeof(float)*rate->len, rate->onGPU?cudaMemcpyDeviceToDevice:cudaMemcpyHostToDevice));
+		}
+	}
 }
 
 void CpuSNN::doGPUSim()
 {
-  if (spikeRateUpdated) {
-    assignPoissonFiringRate_GPU();
-    spikeRateUpdated = false;
-  }
+	if (spikeRateUpdated) {
+		assignPoissonFiringRate_GPU();
+		spikeRateUpdated = false;
+	}
 
-  findFiring_GPU();
+	findFiring_GPU();
 
-  updateTimingTable_GPU();
+	updateTimingTable_GPU();
 
-  doCurrentUpdate_GPU();
+	doCurrentUpdate_GPU();
 
 #if (ENABLE_MORE_CHECK)
-  unsigned int gpu_secD2fireCnt, gpu_secD1fireCnt;
+	unsigned int gpu_secD2fireCnt, gpu_secD1fireCnt;
 
-  CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &gpu_secD2fireCnt, CUDA_CONVERT_SYMBOL(secD2fireCnt), sizeof(int), 0, cudaMemcpyDeviceToHost));
-  CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &gpu_secD1fireCnt, CUDA_CONVERT_SYMBOL(secD1fireCnt), sizeof(int), 0, cudaMemcpyDeviceToHost));
+	CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &gpu_secD2fireCnt, CUDA_CONVERT_SYMBOL(secD2fireCnt), sizeof(int), 0, cudaMemcpyDeviceToHost));
+	CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &gpu_secD1fireCnt, CUDA_CONVERT_SYMBOL(secD1fireCnt), sizeof(int), 0, cudaMemcpyDeviceToHost));
 
-  CARLSIM_DEBUG("gpu_secD1fireCnt: %d max: %d gpu_secD2fireCnt: %d max: %d",gpu_secD1fireCnt,maxSpikesD1,gpu_secD2fireCnt,maxSpikesD2);
+	CARLSIM_DEBUG("gpu_secD1fireCnt: %d max: %d gpu_secD2fireCnt: %d max: %d",gpu_secD1fireCnt,maxSpikesD1,gpu_secD2fireCnt,maxSpikesD2);
 
-  assert(gpu_secD1fireCnt<=maxSpikesD1);
-  assert(gpu_secD2fireCnt<=maxSpikesD2);
+	assert(gpu_secD1fireCnt<=maxSpikesD1);
+	assert(gpu_secD2fireCnt<=maxSpikesD2);
 #endif
 
-  globalStateUpdate_GPU();
+	globalStateUpdate_GPU();
 
-  if(0) {
-    int cnt=0;
-    testSpikeSenderReceiver(fpLog_, simTime);
-    CUDA_CHECK_ERRORS_MACRO( cudaMemcpyToSymbol(testVarCnt, &cnt, sizeof(int), 0, cudaMemcpyHostToDevice));
-    CUDA_CHECK_ERRORS_MACRO( cudaMemcpyToSymbol(testVarCnt2, &cnt, sizeof(int), 0, cudaMemcpyHostToDevice));
-  }
+	if(0) {
+		int cnt=0;
+		testSpikeSenderReceiver(fpLog_, simTime);
+		CUDA_CHECK_ERRORS_MACRO( cudaMemcpyToSymbol(testVarCnt, &cnt, sizeof(int), 0, cudaMemcpyHostToDevice));
+		CUDA_CHECK_ERRORS_MACRO( cudaMemcpyToSymbol(testVarCnt2, &cnt, sizeof(int), 0, cudaMemcpyHostToDevice));
+	}
 
 
-  return;
+	return;
 }
 
 void CpuSNN::updateStateAndFiringTable_GPU()
 {
 
-  int blkSize  = 128;
-  int gridSize = 64;
+	int blkSize  = 128;
+	int gridSize = 64;
   //		void* devPtr;
 
   //kernel_updateWeightsFiring  <<<gridSize, blkSize>>> ();
-  kernel_updateWeightsFiring_static  <<<gridSize, blkSize>>> ();
+	kernel_updateWeightsFiring_static  <<<gridSize, blkSize>>> ();
 
-  kernel_updateWeightsFiring <<<gridSize, blkSize>>> ();
+	kernel_updateWeightsFiring <<<gridSize, blkSize>>> ();
 }
 
 void CpuSNN::showStatus_GPU() {
@@ -2814,121 +2739,121 @@ void CpuSNN::showStatus_GPU() {
 
 __global__ void gpu_resetFiringInformation()
 {
-  if(threadIdx.x==0 && blockIdx.x==0) {
-    for(int i=0; i < ROUNDED_TIMING_COUNT; i++) {
-      timingTableD2[i]   = 0;
-      timingTableD1[i]   = 0;
-    }
-    secD2fireCnt=0;
-    secD1fireCnt=0;
-    secD2fireCntTest=0;
-    secD1fireCntTest=0;
-    spikeCountD2=0;
-    spikeCountD1=0;
-          
+	if(threadIdx.x==0 && blockIdx.x==0) {
+		for(int i=0; i < ROUNDED_TIMING_COUNT; i++) {
+			timingTableD2[i]   = 0;
+			timingTableD1[i]   = 0;
+		}
+		secD2fireCnt=0;
+		secD1fireCnt=0;
+		secD2fireCntTest=0;
+		secD1fireCntTest=0;
+		spikeCountD2=0;
+		spikeCountD1=0;
+
 
     //spikeCountAll1Sec=0;//assigned in copyFiringInfo_GPU()
-  }
+	}
 
 }
 
 
 void CpuSNN::resetFiringInformation_GPU()
 {
-  int blkSize  = 128;
-  int gridSize = 64;
-  gpu_resetFiringInformation<<<gridSize,blkSize>>>();
+	int blkSize  = 128;
+	int gridSize = 64;
+	gpu_resetFiringInformation<<<gridSize,blkSize>>>();
 }
 
 
 
 void CpuSNN::copyFiringInfo_GPU()
 {
-  unsigned int gpu_secD1fireCnt, gpu_secD2fireCnt;
-  CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &gpu_secD2fireCnt, secD2fireCnt, sizeof(int), 0, cudaMemcpyDeviceToHost));
-  CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &gpu_secD1fireCnt, secD1fireCnt, sizeof(int), 0, cudaMemcpyDeviceToHost));
-  spikeCountAll1sec = gpu_secD1fireCnt + gpu_secD2fireCnt;
-  secD1fireCnt  = gpu_secD1fireCnt;
-  assert(gpu_secD1fireCnt<=maxSpikesD1);
-  assert(gpu_secD2fireCnt<=maxSpikesD2);
-  CUDA_CHECK_ERRORS( cudaMemcpy(firingTableD2, cpu_gpuNetPtrs.firingTableD2, sizeof(int)*gpu_secD2fireCnt, cudaMemcpyDeviceToHost));
-  CUDA_CHECK_ERRORS( cudaMemcpy(firingTableD1, cpu_gpuNetPtrs.firingTableD1, sizeof(int)*gpu_secD1fireCnt, cudaMemcpyDeviceToHost));
-  CUDA_CHECK_ERRORS( cudaMemcpyFromSymbol(timeTableD2, timingTableD2, sizeof(int)*(1000+D+1), 0, cudaMemcpyDeviceToHost));
-  CUDA_CHECK_ERRORS( cudaMemcpyFromSymbol(timeTableD1, timingTableD1, sizeof(int)*(1000+D+1), 0, cudaMemcpyDeviceToHost));
-  CARLSIM_INFO("Total spikes Multiple Delays=%d, 1Ms Delay=%d", gpu_secD2fireCnt,gpu_secD1fireCnt);
+	unsigned int gpu_secD1fireCnt, gpu_secD2fireCnt;
+	CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &gpu_secD2fireCnt, secD2fireCnt, sizeof(int), 0, cudaMemcpyDeviceToHost));
+	CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &gpu_secD1fireCnt, secD1fireCnt, sizeof(int), 0, cudaMemcpyDeviceToHost));
+	spikeCountAll1sec = gpu_secD1fireCnt + gpu_secD2fireCnt;
+	secD1fireCnt  = gpu_secD1fireCnt;
+	assert(gpu_secD1fireCnt<=maxSpikesD1);
+	assert(gpu_secD2fireCnt<=maxSpikesD2);
+	CUDA_CHECK_ERRORS( cudaMemcpy(firingTableD2, cpu_gpuNetPtrs.firingTableD2, sizeof(int)*gpu_secD2fireCnt, cudaMemcpyDeviceToHost));
+	CUDA_CHECK_ERRORS( cudaMemcpy(firingTableD1, cpu_gpuNetPtrs.firingTableD1, sizeof(int)*gpu_secD1fireCnt, cudaMemcpyDeviceToHost));
+	CUDA_CHECK_ERRORS( cudaMemcpyFromSymbol(timeTableD2, timingTableD2, sizeof(int)*(1000+D+1), 0, cudaMemcpyDeviceToHost));
+	CUDA_CHECK_ERRORS( cudaMemcpyFromSymbol(timeTableD1, timingTableD1, sizeof(int)*(1000+D+1), 0, cudaMemcpyDeviceToHost));
+	CARLSIM_INFO("Total spikes Multiple Delays=%d, 1Ms Delay=%d", gpu_secD2fireCnt,gpu_secD1fireCnt);
   //getchar();
 }
 
 
 void CpuSNN::allocateNetworkParameters()
 {
-  net_Info.numN  = numN;
-  net_Info.numPostSynapses  = numPostSynapses;
-  net_Info.D  = D;
-  net_Info.numNExcReg = numNExcReg;
-  net_Info.numNInhReg	= numNInhReg;
-  net_Info.numNReg = numNReg;
-  assert(numNReg == (numNExcReg+numNInhReg));
-  net_Info.numNPois = numNPois;
-  net_Info.numNExcPois = numNExcPois;		
-  net_Info.numNInhPois = numNInhPois;
-  assert(numNPois== (numNExcPois+numNInhPois));
+	net_Info.numN  = numN;
+	net_Info.numPostSynapses  = numPostSynapses;
+	net_Info.D  = D;
+	net_Info.numNExcReg = numNExcReg;
+	net_Info.numNInhReg	= numNInhReg;
+	net_Info.numNReg = numNReg;
+	assert(numNReg == (numNExcReg+numNInhReg));
+	net_Info.numNPois = numNPois;
+	net_Info.numNExcPois = numNExcPois;		
+	net_Info.numNInhPois = numNInhPois;
+	assert(numNPois== (numNExcPois+numNInhPois));
   //		net_Info.numNoise  = numNoise;
-  net_Info.maxSpikesD2 = maxSpikesD2;
-  net_Info.maxSpikesD1 = maxSpikesD1;
-  net_Info.sim_with_fixedwts = sim_with_fixedwts;
-  net_Info.sim_with_conductances = sim_with_conductances;
-  net_Info.sim_with_stdp = sim_with_stdp;
-  net_Info.sim_with_stp = sim_with_stp;
-  net_Info.numGrp = numGrp;
-  cpu_gpuNetPtrs.memType = GPU_MODE;
-		
-  return;
+	net_Info.maxSpikesD2 = maxSpikesD2;
+	net_Info.maxSpikesD1 = maxSpikesD1;
+	net_Info.sim_with_fixedwts = sim_with_fixedwts;
+	net_Info.sim_with_conductances = sim_with_conductances;
+	net_Info.sim_with_stdp = sim_with_stdp;
+	net_Info.sim_with_stp = sim_with_stp;
+	net_Info.numGrp = numGrp;
+	cpu_gpuNetPtrs.memType = GPU_MODE;
+
+	return;
 }
 
 void CpuSNN::checkGPUDevice() {
-  int devCount;
-  cudaGetDeviceCount(&devCount);
-  CUDA_GET_LAST_ERROR("cudaGetDeviceCount failed\n");
-  CARLSIM_INFO("Number of CUDA devices : %d",devCount);
+	int devCount;
+	cudaGetDeviceCount(&devCount);
+	CUDA_GET_LAST_ERROR("cudaGetDeviceCount failed\n");
+	CARLSIM_INFO("Number of CUDA devices : %d",devCount);
 
-  int dev = CUDA_GET_MAXGFLOP_DEVICE_ID();
-  CARLSIM_INFO("Device with maximum GFLOPs is : %d", dev);
-  cudaDeviceProp deviceProp;
+	int dev = CUDA_GET_MAXGFLOP_DEVICE_ID();
+	CARLSIM_INFO("Device with maximum GFLOPs is : %d", dev);
+	cudaDeviceProp deviceProp;
 
   // ithGPU gives an index number on which device to run the simulation
   // if index exceeds number of devices, use dev 0 instead
-  if (ithGPU_>=0 && ithGPU_<devCount)
-    dev = ithGPU_;
-  else {
-    CARLSIM_WARN("Device index %d exceeds number of devices (%d), choose from [0,%d]. Defaulting to using device 0...",
-    				ithGPU_,devCount,devCount-1);
-    dev = 0;
-  }
+	if (ithGPU_>=0 && ithGPU_<devCount)
+		dev = ithGPU_;
+	else {
+		CARLSIM_WARN("Device index %d exceeds number of devices (%d), choose from [0,%d]. Defaulting to using device 0...",
+			ithGPU_,devCount,devCount-1);
+		dev = 0;
+	}
 
-  CUDA_CHECK_ERRORS(cudaGetDeviceProperties(&deviceProp, dev));
-  CARLSIM_DEBUG("Device %d: \"%s\"", dev, deviceProp.name);
-  if (deviceProp.major == 1 && deviceProp.minor < 3) {
-    CARLSIM_ERROR("GPU SNN does not support NVidia cards older than version 1.3");
-    exitSimulation(1);
-  }
-  CARLSIM_INFO("CUDA Device is of type %d.%d", deviceProp.major, deviceProp.minor);
-  assert(deviceProp.major >= 1);
-  cudaThreadExit();
-  cudaSetDevice( dev );
-  CUDA_GET_LAST_ERROR("cudaSetDevice failed\n");
+	CUDA_CHECK_ERRORS(cudaGetDeviceProperties(&deviceProp, dev));
+	CARLSIM_DEBUG("Device %d: \"%s\"", dev, deviceProp.name);
+	if (deviceProp.major == 1 && deviceProp.minor < 3) {
+		CARLSIM_ERROR("GPU SNN does not support NVidia cards older than version 1.3");
+		exitSimulation(1);
+	}
+	CARLSIM_INFO("CUDA Device is of type %d.%d", deviceProp.major, deviceProp.minor);
+	assert(deviceProp.major >= 1);
+	cudaThreadExit();
+	cudaSetDevice( dev );
+	CUDA_GET_LAST_ERROR("cudaSetDevice failed\n");
 }
 
 void CpuSNN::copyWeightsGPU(unsigned int nid, int src_grp)
 {
-  assert(nid < numNReg);
-  unsigned int    cumId   =  cumulativePre[nid];
-  float* synWts  = &wt[cumId];
+	assert(nid < numNReg);
+	unsigned int    cumId   =  cumulativePre[nid];
+	float* synWts  = &wt[cumId];
   //TODO: NEEDED TO COMMENT THIS FOR CARLSIM 2.1-2.2 FILEMERGE -- KDC
   // assert(cumId >= (nid-numNPois));
   //assert(cumId < numPreSynapses*numN);
 
-  CUDA_CHECK_ERRORS( cudaMemcpy( synWts, &cpu_gpuNetPtrs.wt[cumId], sizeof(float)*Npre[nid], cudaMemcpyDeviceToHost));
+	CUDA_CHECK_ERRORS( cudaMemcpy( synWts, &cpu_gpuNetPtrs.wt[cumId], sizeof(float)*Npre[nid], cudaMemcpyDeviceToHost));
 }
 
 // Allocates required memory and then initialize the GPU
@@ -2957,13 +2882,13 @@ void CpuSNN::allocateSNN_GPU() {
 	}
 
 	gpuPoissonRand->generate(numNPois, RNG_rand48::MAX_RANGE);
-		
+
 	// save the random pointer as poisson generator....
 	cpu_gpuNetPtrs.poissonRandPtr = (unsigned int*) gpuPoissonRand->get_random_numbers();
 
 	//ensure that we dont do all the above optimizations again		
 	assert(doneReorganization == true);
-		
+
 	// display some memory management info
 	size_t avail, total, previous;
 	float toGB = 1024.0*1024.0*1024.0;
@@ -2971,25 +2896,25 @@ void CpuSNN::allocateSNN_GPU() {
 	CARLSIM_INFO("GPU Memory Management (Total %2.3f GB)",(float)(total/toGB));
 	CARLSIM_INFO("Data\t\t\tSize\t\tTotal Used\tTotal Available");
 	CARLSIM_INFO("Init:\t\t\t%2.3f GB\t%2.3f GB\t%2.3f GB",(float)(total)/toGB,(float)((total-avail)/toGB),
-					(float)(avail/toGB));
+		(float)(avail/toGB));
 	previous=avail;
 
 	allocateNetworkParameters();
 	cudaMemGetInfo(&avail,&total);
 	CARLSIM_INFO("Ntw Params:\t\t%2.3f GB\t%2.3f GB\t%2.3f GB",(float)(previous-avail)/toGB,(float)((total-avail)/toGB),
-					(float)(avail/toGB));
+		(float)(avail/toGB));
 	previous=avail;
 
 	allocateStaticLoad(blkSize);
 	cudaMemGetInfo(&avail,&total);
 	CARLSIM_INFO("Static Load:\t\t%2.3f GB\t%2.3f GB\t%2.3f GB",(float)(previous-avail)/toGB,
-					(float)((total-avail)/toGB),(float)(avail/toGB));
+		(float)((total-avail)/toGB),(float)(avail/toGB));
 	previous=avail;
 
 	allocateGroupId();
 	cudaMemGetInfo(&avail,&total);
 	CARLSIM_INFO("Group Id:\t\t%2.3f GB\t%2.3f GB\t%2.3f GB",(float)(previous-avail)/toGB,(float)((total-avail)/toGB),
-					(float)(avail/toGB));
+		(float)(avail/toGB));
 	previous=avail;
 
 	// this table is useful for quick evaluation of the position of fired neuron
@@ -2999,13 +2924,13 @@ void CpuSNN::allocateSNN_GPU() {
 	copyConnections(&cpu_gpuNetPtrs,  cudaMemcpyHostToDevice, 1);
 	cudaMemGetInfo(&avail,&total);
 	CARLSIM_INFO("Conn Info:\t\t%2.3f GB\t%2.3f GB\t%2.3f GB",(float)(previous-avail)/toGB,(float)((total-avail)/toGB),
-					(float)(avail/toGB));
+		(float)(avail/toGB));
 	previous=avail;
 
 	copyState(&cpu_gpuNetPtrs, 1);
 	cudaMemGetInfo(&avail,&total);
 	CARLSIM_INFO("State Info:\t\t%2.3f GB\t%2.3f GB\t%2.3f GB",(float)(previous-avail)/toGB,(float)((total-avail)/toGB),
-					(float)(avail/toGB));
+		(float)(avail/toGB));
 	previous=avail;
 
 
@@ -3017,41 +2942,41 @@ void CpuSNN::allocateSNN_GPU() {
 
 	CUDA_CHECK_ERRORS( cudaMemcpyToSymbol(gpuGrpInfo, grp_Info, (net_Info.numGrp)*sizeof(group_info_t), 0, cudaMemcpyHostToDevice));
 
-		CARLSIM_DEBUG("Transfering group settings to GPU:");
-		for (int i=0;i<numGrp;i++) {
-			CARLSIM_DEBUG("Settings for Group %s:", grp_Info2[i].Name.c_str());
+	CARLSIM_DEBUG("Transfering group settings to GPU:");
+	for (int i=0;i<numGrp;i++) {
+		CARLSIM_DEBUG("Settings for Group %s:", grp_Info2[i].Name.c_str());
 		
-			CARLSIM_DEBUG("\tType: %d",(int)grp_Info[i].Type);
-			CARLSIM_DEBUG("\tSizeN: %d",grp_Info[i].SizeN);
-			CARLSIM_DEBUG("\tMaxFiringRate: %d",(int)grp_Info[i].MaxFiringRate);
-			CARLSIM_DEBUG("\tRefractPeriod: %f",grp_Info[i].RefractPeriod);
-			CARLSIM_DEBUG("\tM: %d",grp_Info[i].numPostSynapses);
-			CARLSIM_DEBUG("\tPreM: %d",grp_Info[i].numPreSynapses);
-			CARLSIM_DEBUG("\tspikeGenerator: %d",(int)grp_Info[i].isSpikeGenerator);
-			CARLSIM_DEBUG("\tFixedInputWts: %d",(int)grp_Info[i].FixedInputWts);
- 			CARLSIM_DEBUG("\tMaxDelay: %d",(int)grp_Info[i].MaxDelay);
- 			CARLSIM_DEBUG("\tWithSTDP: %d",(int)grp_Info[i].WithSTDP);
-			if (grp_Info[i].WithSTDP) {
-				CARLSIM_DEBUG("\t\tTAU_LTP_INV: %f",grp_Info[i].TAU_LTP_INV);
-				CARLSIM_DEBUG("\t\tTAU_LTD_INV: %f",grp_Info[i].TAU_LTD_INV);
-				CARLSIM_DEBUG("\t\tALPHA_LTP: %f",grp_Info[i].ALPHA_LTP);
-				CARLSIM_DEBUG("\t\tALPHA_LTD: %f",grp_Info[i].ALPHA_LTD);
-			}
-			CARLSIM_DEBUG("\tWithConductances: %d",(int)grp_Info[i].WithConductances);
-			if (grp_Info[i].WithConductances) {
-				CARLSIM_DEBUG("\t\tdAMPA: %f",grp_Info[i].dAMPA);
-				CARLSIM_DEBUG("\t\tdNMDA: %f",grp_Info[i].dNMDA);
-				CARLSIM_DEBUG("\t\tdGABAa: %f",grp_Info[i].dGABAa);
-				CARLSIM_DEBUG("\t\tdGABAb: %f",grp_Info[i].dGABAb);
-			}
-			CARLSIM_DEBUG("\tWithSTP: %d",(int)grp_Info[i].WithSTP);
-			if (grp_Info[i].WithSTP) {
-				CARLSIM_DEBUG("\t\tSTP_U: %f",grp_Info[i].STP_U);
-				CARLSIM_DEBUG("\t\tSTP_tD: %f",grp_Info[i].STP_tD);
-				CARLSIM_DEBUG("\t\tSTP_tF: %f",grp_Info[i].STP_tF);
-			}
-			CARLSIM_DEBUG("\tspikeGen: %s",grp_Info[i].spikeGen==NULL?"Is Null":"Is set");
+		CARLSIM_DEBUG("\tType: %d",(int)grp_Info[i].Type);
+		CARLSIM_DEBUG("\tSizeN: %d",grp_Info[i].SizeN);
+		CARLSIM_DEBUG("\tMaxFiringRate: %d",(int)grp_Info[i].MaxFiringRate);
+		CARLSIM_DEBUG("\tRefractPeriod: %f",grp_Info[i].RefractPeriod);
+		CARLSIM_DEBUG("\tM: %d",grp_Info[i].numPostSynapses);
+		CARLSIM_DEBUG("\tPreM: %d",grp_Info[i].numPreSynapses);
+		CARLSIM_DEBUG("\tspikeGenerator: %d",(int)grp_Info[i].isSpikeGenerator);
+		CARLSIM_DEBUG("\tFixedInputWts: %d",(int)grp_Info[i].FixedInputWts);
+		CARLSIM_DEBUG("\tMaxDelay: %d",(int)grp_Info[i].MaxDelay);
+		CARLSIM_DEBUG("\tWithSTDP: %d",(int)grp_Info[i].WithSTDP);
+		if (grp_Info[i].WithSTDP) {
+			CARLSIM_DEBUG("\t\tTAU_LTP_INV: %f",grp_Info[i].TAU_LTP_INV);
+			CARLSIM_DEBUG("\t\tTAU_LTD_INV: %f",grp_Info[i].TAU_LTD_INV);
+			CARLSIM_DEBUG("\t\tALPHA_LTP: %f",grp_Info[i].ALPHA_LTP);
+			CARLSIM_DEBUG("\t\tALPHA_LTD: %f",grp_Info[i].ALPHA_LTD);
 		}
+		CARLSIM_DEBUG("\tWithConductances: %d",(int)grp_Info[i].WithConductances);
+		if (grp_Info[i].WithConductances) {
+			CARLSIM_DEBUG("\t\tdAMPA: %f",grp_Info[i].dAMPA);
+			CARLSIM_DEBUG("\t\tdNMDA: %f",grp_Info[i].dNMDA);
+			CARLSIM_DEBUG("\t\tdGABAa: %f",grp_Info[i].dGABAa);
+			CARLSIM_DEBUG("\t\tdGABAb: %f",grp_Info[i].dGABAb);
+		}
+		CARLSIM_DEBUG("\tWithSTP: %d",(int)grp_Info[i].WithSTP);
+		if (grp_Info[i].WithSTP) {
+			CARLSIM_DEBUG("\t\tSTP_U: %f",grp_Info[i].STP_U);
+//				CARLSIM_DEBUG("\t\tSTP_tD: %f",grp_Info[i].STP_tD);
+//				CARLSIM_DEBUG("\t\tSTP_tF: %f",grp_Info[i].STP_tF);
+		}
+		CARLSIM_DEBUG("\tspikeGen: %s",grp_Info[i].spikeGen==NULL?"Is Null":"Is set");
+	}
 
 	cpu_gpuNetPtrs.allocated = true;
 
@@ -3062,7 +2987,7 @@ void CpuSNN::allocateSNN_GPU() {
 	offset = offset/sizeof(int);
 	CUDA_CHECK_ERRORS_MACRO ( cudaGetSymbolAddress(&devPtr, timingTableD2_tex_offset));
 	CUDA_CHECK_ERRORS( cudaMemcpy(devPtr, &offset, sizeof(int), cudaMemcpyHostToDevice));
-		
+
 	CUDA_CHECK_ERRORS_MACRO ( cudaGetSymbolAddress(&devPtr, timingTableD1));
 	CUDA_CHECK_ERRORS_MACRO ( cudaBindTexture(&offset, timingTableD1_tex, devPtr, sizeof(int)*ROUNDED_TIMING_COUNT));
 	offset = offset/sizeof(int);
@@ -3085,22 +3010,22 @@ void CpuSNN::copyGrpInfo_GPU() {
 void CpuSNN::copyUpdateVariables_GPU()
 {
   //we now copy all variables that get reset in updateNetwork.
-  CUDA_CHECK_ERRORS( cudaMemcpy( cpu_gpuNetPtrs.wt, wt, sizeof(float)*preSynCnt, cudaMemcpyHostToDevice));
-  if ((!sim_with_fixedwts) || (sim_with_stdp)){
-      CUDA_CHECK_ERRORS( cudaMemcpy( cpu_gpuNetPtrs.wtChange, wtChange, sizeof(float)*preSynCnt, cudaMemcpyHostToDevice));
-      CUDA_CHECK_ERRORS( cudaMemcpy( cpu_gpuNetPtrs.maxSynWt, maxSynWt, sizeof(float)*preSynCnt, cudaMemcpyHostToDevice));
-    }
-  CUDA_CHECK_ERRORS( cudaMemcpy( cpu_gpuNetPtrs.synSpikeTime, synSpikeTime, sizeof(int)*preSynCnt, cudaMemcpyHostToDevice));
-  
+	CUDA_CHECK_ERRORS( cudaMemcpy( cpu_gpuNetPtrs.wt, wt, sizeof(float)*preSynCnt, cudaMemcpyHostToDevice));
+	if ((!sim_with_fixedwts) || (sim_with_stdp)){
+		CUDA_CHECK_ERRORS( cudaMemcpy( cpu_gpuNetPtrs.wtChange, wtChange, sizeof(float)*preSynCnt, cudaMemcpyHostToDevice));
+		CUDA_CHECK_ERRORS( cudaMemcpy( cpu_gpuNetPtrs.maxSynWt, maxSynWt, sizeof(float)*preSynCnt, cudaMemcpyHostToDevice));
+	}
+	CUDA_CHECK_ERRORS( cudaMemcpy( cpu_gpuNetPtrs.synSpikeTime, synSpikeTime, sizeof(int)*preSynCnt, cudaMemcpyHostToDevice));
+
   // copy the neuron state information to the GPU..
-  copyNeuronState(&cpu_gpuNetPtrs, &cpuNetPtrs, cudaMemcpyHostToDevice, 0);
-  copyNeuronParameters(&cpu_gpuNetPtrs, cudaMemcpyHostToDevice, 0);
-  if(sim_with_stp){
-    copySTPState(&cpu_gpuNetPtrs, &cpuNetPtrs, cudaMemcpyHostToDevice, 0);
-  }
+	copyNeuronState(&cpu_gpuNetPtrs, &cpuNetPtrs, cudaMemcpyHostToDevice, 0);
+	copyNeuronParameters(&cpu_gpuNetPtrs, cudaMemcpyHostToDevice, 0);
+	if(sim_with_stp){
+		copySTPState(&cpu_gpuNetPtrs, &cpuNetPtrs, cudaMemcpyHostToDevice, 0);
+	}
 
 //finally copy this to something the GPU can access.
-  CUDA_CHECK_ERRORS( cudaMemcpyToSymbol("gpuPtrs", &cpu_gpuNetPtrs, sizeof(network_ptr_t), 0, cudaMemcpyHostToDevice));
+	CUDA_CHECK_ERRORS( cudaMemcpyToSymbol("gpuPtrs", &cpu_gpuNetPtrs, sizeof(network_ptr_t), 0, cudaMemcpyHostToDevice));
 
 }
 
@@ -3109,12 +3034,12 @@ void CpuSNN::copyUpdateVariables_GPU()
 void CpuSNN::updateNetwork_GPU(bool resetFiringInfo)
 {
   //need to copy this data so STDP, STP, conductances can be reset.
-  copyGrpInfo_GPU();
-  
-  if(resetFiringInfo)
-    resetFiringInformation_GPU();
+	copyGrpInfo_GPU();
 
-  copyUpdateVariables_GPU();
+	if(resetFiringInfo)
+		resetFiringInformation_GPU();
+
+	copyUpdateVariables_GPU();
 }
 
 void CpuSNN::printSimSummary() {
@@ -3140,9 +3065,9 @@ void CpuSNN::printSimSummary() {
 	CARLSIM_INFO("Random Seed: %d", randSeed_);
 	CARLSIM_INFO("Timing: \n\tModel Simulation Time = %lld sec \n\tActual Execution Time = %4.2f sec",  (unsigned long long)simTimeSec, etime/1000.0);
 	CARLSIM_INFO("Average Firing Rate \n\t2+ms delay = %3.3f Hz \n\t1ms delay = %3.3f Hz \n\tOverall = %3.3f Hz",
-					spikeCountD2Host/(1.0*simTimeSec*numNExcReg), spikeCountD1Host/(1.0*simTimeSec*numNInhReg), spikeCountAll/(1.0*simTimeSec*numN));
+		spikeCountD2Host/(1.0*simTimeSec*numNExcReg), spikeCountD1Host/(1.0*simTimeSec*numNInhReg), spikeCountAll/(1.0*simTimeSec*numN));
 	CARLSIM_INFO("Overall Firing Count: \n\t2+ms delay = %d \n\t1ms delay = %d \n\tTotal = %d",
-					spikeCountD2Host, spikeCountD1Host, spikeCountAll );
+		spikeCountD2Host, spikeCountD1Host, spikeCountAll );
 	CARLSIM_INFO("**************************************\n");
 }
 

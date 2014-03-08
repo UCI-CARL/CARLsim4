@@ -129,8 +129,6 @@ extern RNG_rand48* gpuRand48; //!< Used by all network to generate global random
 
 /****************************/
 
-#define STP_BUF_POS(nid,t)  (nid*STP_BUF_SIZE+((t)%STP_BUF_SIZE))
-
 
 // FIXME: 
 /////    !!!!!!! EVEN MORE IMPORTANT : IS THIS STILL BEING USED?? !!!!!!!!!!
@@ -173,6 +171,13 @@ inline bool isInhibitoryNeuron (unsigned int& nid, unsigned int& numNInhPois, un
 
 //!< Used for in the function getConnectionId
 #define CHECK_CONNECTION_ID(n,total) { assert(n >= 0); assert(n < total); }
+
+// Macros for STP
+// we keep a history of STP values to compute resource change over time
+// the macro is slightly faster than an inline function, but we should consider changing it anyway because
+// it's unsafe
+#define STP_BUF_SIZE 32
+#define STP_BUF_POS(nid,t)  (nid*STP_BUF_SIZE+((t)%STP_BUF_SIZE))
 
 
 // use these macros for logging / error printing
@@ -452,8 +457,8 @@ typedef struct group_info_s
   int8_t		MaxDelay;
 
   float		STP_U;
-  float		STP_tD;
-  float		STP_tF;
+  float		STP_tau_u_inv;
+  float		STP_tau_x_inv;
   float		TAU_LTP_INV;
   float		TAU_LTD_INV;
   float		ALPHA_LTP;
@@ -601,9 +606,28 @@ public:
 	// TODO: make per connection, not per group
 	void setSTDP(int grpId, bool isSet, float alphaLTP, float tauLTP, float alphaLTD, float tauLTD, int configId);
 
-	//! Sets STP params U, tD, TF of a neuron group (pre-synaptically)
-	// TODO: make per connection, not per group
-	void setSTP(int grpId, bool isSet, float STP_U, float STP_tD, float STP_tF, int configId);
+	/*!
+	 * \brief Sets STP params U, tau_u, and tau_x of a neuron group (pre-synaptically)
+	 * CARLsim implements the short-term plasticity model of (Tsodyks & Markram, 1998).
+	 * du/dt = -u/STP_tau_u + STP_U * (1-u-) * \delta(t-t_spk)
+	 * dx/dt = (1-x)/STP_tau_x - u+ * x- * \delta(t-t_spk)
+	 * dI/dt = -I/tau_S + A * u+ * x- * \delta(t-t_spk)
+	 * where u- means value of variable u right before spike update, and x+ means value of variable x right after
+	 * the spike update, and A is the synaptic weight.
+	 * The STD effect is modeled by a normalized variable (0<=x<=1), denoting the fraction of resources that remain
+	 * available after neurotransmitter depletion.
+	 * The STF effect is modeled by a utilization parameter u, representing the fraction of available resources ready for
+	 * use (release probability). Following a spike, (i) u increases due to spike-induced calcium influx to the
+	 * presynaptic terminal, after which (ii) a fraction u of available resources is consumed to produce the post-synaptic
+	 * current. Between spikes, u decays back to zero with time constant STP_tau_u (\tau_F), and x recovers to value one
+	 * with time constant STP_tau_x (\tau_D).
+	 * \param[in] grpId       pre-synaptic group id. STP will apply to all neurons of that group!
+	 * \param[in] isSet       a flag whether to enable/disable STP
+	 * \param[in] STP_tau_u   decay constant of u (\tau_F)
+	 * \param[in] STP_tau_x   decay constant of x (\tau_D)
+	 * \param[in] configId    configuration ID of group
+	 */
+	void setSTP(int grpId, bool isSet, float STP_U, float STP_tau_u, float STP_tau_x, int configId);
 
 
 
@@ -769,7 +793,7 @@ private:
 	void doD2CurrentUpdate();
 	void doGPUSim();
 	void doSnnSim();
-	void doSTPUpdates();
+	void doSTPUpdateAndDecayCond();
 
 	void exitSimulation(int val);	//!< deallocates all dynamical structures and exits
 
@@ -842,7 +866,7 @@ private:
 	void resetFiringInformation(); //!< resets the firing information when updateNetwork is called
 	void resetGroups();
 	void resetNeuron(unsigned int nid, int grpId);
-	void resetPointers();
+	void resetPointers(bool deallocate=false);
 	void resetPoissonNeuron(unsigned int nid, int grpId);
 	void resetPropogationBuffer();
 	void resetSpikeCnt(int grpId=ALL);					//!< Resets the spike count for a particular group.
@@ -903,7 +927,7 @@ private:
 	void copyParameters();
 	void copyPostConnectionInfo(network_ptr_t* dest, int allocateMem);
 	void copyState(network_ptr_t* dest, int allocateMem);
-	void copySTPState(network_ptr_t* dest, network_ptr_t* src, int kind, int allocateMem);
+	void copySTPState(network_ptr_t* dest, network_ptr_t* src, cudaMemcpyKind kind, int allocateMem);
 	void copyUpdateVariables_GPU(); //!< copies wt / neuron state / STP state info from host to device
 	void copyWeightsGPU(unsigned int nid, int src_grp);
 	void copyWeightState(network_ptr_t* dest, network_ptr_t* src, cudaMemcpyKind kind, //!< copy presynaptic info
@@ -1054,7 +1078,6 @@ private:
 	FILE*	fpLog_;
 	int showStatusCycle_;	//!< how often to call showStatus (seconds)
 	int showStatusCnt_; //!< internal counter to implement fast version of !(simTimeSec%showStatusCycle_)
-
 
 	//spike monitor code...
 	unsigned int			numSpikeMonitor;
