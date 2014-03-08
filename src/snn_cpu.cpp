@@ -3782,49 +3782,50 @@ void CpuSNN::updateWeight() {
 				homeostasisScale = grp_Info[g].homeostasisScale;
 			}
 
-		if (i==grp_Info[g].StartN)
-			CARLSIM_DEBUG("Weights, Change at %lu (diff_firing: %f)", simTimeSec, diff_firing);
+			if (i==grp_Info[g].StartN)
+				CARLSIM_DEBUG("Weights, Change at %lu (diff_firing: %f)", simTimeSec, diff_firing);
 
-		for(int j = 0; j < Npre_plastic[i]; j++) {
-			//	if (i==grp_Info[g].StartN)
-			//		CARLSIM_DEBUG("%1.2f %1.2f \t", wt[offset+j]*10, wtChange[offset+j]*10);
+			for(int j = 0; j < Npre_plastic[i]; j++) {
+				//	if (i==grp_Info[g].StartN)
+				//		CARLSIM_DEBUG("%1.2f %1.2f \t", wt[offset+j]*10, wtChange[offset+j]*10);
 
-			// homeostatic weight update
-			if(grp_Info[g].WithHomeostasis) {
-				//	  if ((showLogMode >= 3) && (i==grp_Info[g].StartN)) 
-				//	    fprintf(fpDeb_,"%f\t", (diff_firing*(0.0+wt[offset+j]) + wtChange[offset+j])/10/(Npre_plastic[i]+10)/(grp_Info[g].avgTimeScale*2/1000.0)*baseFiring[i]/(1+fabs(diff_firing)*50));
-				//need to figure out exactly why we change the weight to this value.  Specifically, what is with the second term?  -- KDC
-				wt[offset+j] += (diff_firing*wt[offset+j]*homeostasisScale + wtChange[offset+j])*baseFiring[i]/grp_Info[g].avgTimeScale/(1+fabs(diff_firing)*50);
-			} else {
-				// just STDP weight update
-				wt[offset+j] += wtChange[offset+j]; 
-				// STDP weight update that is biased towards learning
-				//wt[offset+j] += (wtChange[offset+j]+0.1f);
-			}
+				// homeostatic weight update
+				if(grp_Info[g].WithHomeostasis) {
+					//	  if ((showLogMode >= 3) && (i==grp_Info[g].StartN)) 
+					//	    fprintf(fpDeb_,"%f\t", (diff_firing*(0.0+wt[offset+j]) + wtChange[offset+j])/10/(Npre_plastic[i]+10)/(grp_Info[g].avgTimeScale*2/1000.0)*baseFiring[i]/(1+fabs(diff_firing)*50));
+					//need to figure out exactly why we change the weight to this value.  Specifically, what is with the second term?  -- KDC
+					wt[offset+j] += (diff_firing*wt[offset+j]*homeostasisScale + wtChange[offset+j])*baseFiring[i]/grp_Info[g].avgTimeScale/(1+fabs(diff_firing)*50);
+				} else {
+					// just STDP weight update
+					wt[offset+j] += wtChange[offset+j]; 
+					// STDP weight update that is biased towards learning
+					//wt[offset+j] += (wtChange[offset+j]+0.1f);
+				}
 
-			// ToDo: merge hoemostatic and modulated STDP	
-			if (grp_Info[g].WithModulatedSTDP)
-				wt[offset+j] += stdpScaleFactor * cpuNetPtrs.grpDA[g] * wtChange[offset+j];
-			else
-				wt[offset+j] += stdpScaleFactor * wtChange[offset+j];
+				// ToDo: merge hoemostatic and modulated STDP	
+				if (grp_Info[g].WithModulatedSTDP)
+					wt[offset+j] += stdpScaleFactor * cpuNetPtrs.grpDA[g] * wtChange[offset+j];
+				else
+					wt[offset+j] += stdpScaleFactor * wtChange[offset+j];
 
-			//MDR - don't decay weights, just set to 0
-			//wtChange[offset+j] = 0;
+				//MDR - don't decay weights, just set to 0
+				//wtChange[offset+j] = 0;
 
-			//TSC - decay weights
-			wtChange[offset+j] *= wtChangeDecay;
+				//TSC - decay weights
+				wtChange[offset+j] *= wtChangeDecay;
 
-			// if this is an excitatory or inhibitory synapse
-			if (maxSynWt[offset + j] >= 0) {
-				if (wt[offset + j] >= maxSynWt[offset + j])
-					wt[offset + j] = maxSynWt[offset + j];
-				if (wt[offset + j] < 0)
-					wt[offset + j] = 0.0;
-			} else {
-				if (wt[offset + j] <= maxSynWt[offset + j])
-					wt[offset + j] = maxSynWt[offset + j];
-				if (wt[offset+j] > 0)
-					wt[offset+j] = 0.0;
+				// if this is an excitatory or inhibitory synapse
+				if (maxSynWt[offset + j] >= 0) {
+					if (wt[offset + j] >= maxSynWt[offset + j])
+						wt[offset + j] = maxSynWt[offset + j];
+					if (wt[offset + j] < 0)
+						wt[offset + j] = 0.0;
+				} else {
+					if (wt[offset + j] <= maxSynWt[offset + j])
+						wt[offset + j] = maxSynWt[offset + j];
+					if (wt[offset+j] > 0)
+						wt[offset+j] = 0.0;
+				}
 			}
 		}
 	}
