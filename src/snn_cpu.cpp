@@ -2264,6 +2264,10 @@ void CpuSNN::generatePostSpike(unsigned int pre_i, unsigned int idx_d, unsigned 
 
 		// dx/dt = (1-x)/tau_D - u^+ * x^- * \delta(t-t_{spk})
 		stpx[pre_i] -= stpu[pre_i]*stpx[pre_i];
+
+//		if (pre_i==grp_Info[pre_grpId].StartN)
+//			printf("%d: %d->%d: stpu+[%d]=%f, stpx+[%d]=%f\n",simTimeMs,pre_i,post_i,pre_i,stpu[pre_i],pre_i,stpx[pre_i]);
+
 	}
 
 	// update currents
