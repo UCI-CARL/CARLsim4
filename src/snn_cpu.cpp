@@ -592,11 +592,18 @@ int CpuSNN::runNetwork(int _nsec, int _nmsec, bool enablePrint, bool copyState) 
 			copyFiringStateFromGPU();
 		}
 	}
-	if(copyState) {
-		// copy the state from GPU to GPU
-		for(int g=0; g < numGrp; g++) {
-			if ((!grp_Info[g].isSpikeGenerator) && (simMode_==GPU_MODE)) {
-				copyNeuronState(&cpuNetPtrs, &cpu_gpuNetPtrs, cudaMemcpyDeviceToHost, false, g);
+
+	// in GPU mode, copy info from device to host
+	if (simMode_==GPU_MODE) {
+		if(copyState) {
+			for(int g=0; g < numGrp; g++) {
+				if ((!grp_Info[g].isSpikeGenerator) && (simMode_==GPU_MODE)) {
+					copyNeuronState(&cpuNetPtrs, &cpu_gpuNetPtrs, cudaMemcpyDeviceToHost, false, g);
+				}
+			}
+
+			if (sim_with_stp) {
+				copySTPState(&cpuNetPtrs, &cpu_gpuNetPtrs, cudaMemcpyDeviceToHost, false);
 			}
 		}
 	}
@@ -1314,9 +1321,6 @@ void CpuSNN::CpuSNNinit() {
 		fpDeb_ = fopen("/dev/null","w");
 	#endif
 
-	fpSTPu_ = fopen("stpu.dat","wb");
-	fpSTPx_ = fopen("stpx.dat","wb");
-
 	CARLSIM_INFO("*******************************************************************************");
 	CARLSIM_INFO("********************      Welcome to CARLsim %d.%d      *************************",
 				MAJOR_VERSION,MINOR_VERSION);
@@ -2009,11 +2013,6 @@ void CpuSNN::deleteObjects() {
 
 		printSimSummary();
 
-		if (fpSTPx_!=NULL)
-			fclose(fpSTPx_);
-		if (fpSTPu_!=NULL)
-			fclose(fpSTPu_);
-
 		// don't fclose if it's stdout or stderr, otherwise they're gonna stay closed for the rest of the process
 		if (fpOut_!=NULL && fpOut_!=stdout && fpOut_!=stderr)
 			fclose(fpOut_);
@@ -2325,7 +2324,6 @@ void CpuSNN::generatePostSpike(unsigned int pre_i, unsigned int idx_d, unsigned 
 
 		// dx/dt = (1-x)/tau_D - u^+ * x^- * \delta(t-t_{spk})
 		stpx[pre_i] -= stpu[pre_i]*stpx[pre_i];
-		printf("%d: stpu+[%d]=%f, stpx+[%d]=%f\n",simTime,pre_i,stpu[pre_i],pre_i,stpx[pre_i]);
 	}
 
 	// update currents
@@ -2516,13 +2514,6 @@ void  CpuSNN::globalStateUpdate() {
 	float tmpNMDA, tmpI;
 
 	for(int g=0; g<numGrp; g++) {
-		if (grp_Info[g].WithSTP) {
-			for (int i=grp_Info[g].StartN; i<=grp_Info[g].EndN; i++) {
-				fwrite(&(stpu[i]),sizeof(float),1,fpSTPu_);
-				fwrite(&(stpx[i]),sizeof(float),1,fpSTPx_);
-			}
-		}
-
 		if (grp_Info[g].Type&POISSON_NEURON){ 
 			for(int i=grp_Info[g].StartN; i <= grp_Info[g].EndN; i++)
 				avgFiring[i] *= grp_Info[g].avgTimeScale_decay;

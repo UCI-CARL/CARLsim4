@@ -6,6 +6,65 @@
 #include <limits.h>
 #include "gtest/gtest.h"
 
+//! a periodic spike generator (constant ISI) creating spikes at a certain rate
+class PeriodicSpikeGenerator : public SpikeGenerator {
+public:
+	PeriodicSpikeGenerator(float rate) {
+		assert(rate>0);
+		rate_ = rate;	  // spike rate
+		isi_ = 1000/rate; // inter-spike interval in ms
+	}
+
+	unsigned int nextSpikeTime(CpuSNN* snn, int grpId, int nid, unsigned int currentTime) {
+		return currentTime+isi_; // periodic spiking according to ISI
+	}
+
+private:
+	float rate_;	// spike rate
+	int isi_;		// inter-spike interval that results in above spike rate
+};
+
+
+TEST(STP, testCPUvsGPU) {
+	CpuSNN* sim;
+	std::string name = "SNN";
+	simMode_t simModes[2] = {CPU_MODE, GPU_MODE};
+
+	float stpu[600] = {0.0f};
+	float stpx[600] = {0.0f};
+
+	for (int j=0; j<2; j++) {
+		int nConfig = 1;
+		int randSeed = rand() % 1000;
+		sim = new CpuSNN(name,simModes[j],USER,0,nConfig,randSeed);
+		int g0=sim->createSpikeGeneratorGroup("input", 1, EXCITATORY_NEURON, ALL);
+		int g1=sim->createGroup("excit", 1, EXCITATORY_NEURON, ALL);
+		sim->setNeuronParameters(g1, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f, ALL);
+		sim->connect(g0,g1,"full",0.01f,0.01f,1.0f,1,1,1.0f,1.0f,SYN_FIXED);
+		sim->setConductances(ALL,true,5.0f,10.0f,15.0f,20.0f,ALL);
+		sim->setSTP(g0,true,0.45,50,750,ALL);
+
+		PeriodicSpikeGenerator* spk20 = new PeriodicSpikeGenerator(20.0f);
+		sim->setSpikeGenerator(g0, spk20, ALL);
+
+
+		int neurId = sim->grp_Info[g0].StartN;
+		for (int i=0; i<300; i++) {
+			sim->runNetwork(0,1,false,true); // enable copyState
+			stpu[j*300+i] = sim->stpu[neurId];
+			stpx[j*300+i] = sim->stpx[neurId];
+		}
+
+		delete spk20;
+		delete sim;
+	}
+
+	// compare stpu and stpx for both sim modes
+	for (int i=0; i<300; i++) {
+		EXPECT_FLOAT_EQ(stpu[i],stpu[i+300]);
+		EXPECT_FLOAT_EQ(stpx[i],stpx[i+300]);
+	}
+}
 
 //! check all possible (valid) ways of instantiating CpuSNN
 TEST(CORE, CpuSNNinit) {
@@ -296,8 +355,8 @@ TEST(CORE, setSTPTrue) {
 				group_info_t grpInfo = sim->getGroupInfo(g1,c);
 				EXPECT_TRUE(grpInfo.WithSTP);
 				EXPECT_FLOAT_EQ(grpInfo.STP_U,STP_U);
-				EXPECT_FLOAT_EQ(grpInfo.STP_tD,STP_tD);
-				EXPECT_FLOAT_EQ(grpInfo.STP_tF,STP_tF);
+				EXPECT_FLOAT_EQ(grpInfo.STP_tau_u_inv,1.0f/STP_tF);
+				EXPECT_FLOAT_EQ(grpInfo.STP_tau_x_inv,1.0f/STP_tD);
 			}
 			delete sim;
 		}

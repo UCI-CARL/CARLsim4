@@ -927,7 +927,7 @@ private:
 	void copyParameters();
 	void copyPostConnectionInfo(network_ptr_t* dest, int allocateMem);
 	void copyState(network_ptr_t* dest, int allocateMem);
-	void copySTPState(network_ptr_t* dest, network_ptr_t* src, int kind, int allocateMem);
+	void copySTPState(network_ptr_t* dest, network_ptr_t* src, cudaMemcpyKind kind, int allocateMem);
 	void copyUpdateVariables_GPU(); //!< copies wt / neuron state / STP state info from host to device
 	void copyWeightsGPU(unsigned int nid, int src_grp);
 	void copyWeightState(network_ptr_t* dest, network_ptr_t* src, cudaMemcpyKind kind, //!< copy presynaptic info
@@ -1078,10 +1078,6 @@ private:
 	FILE*	fpLog_;
 	int showStatusCycle_;	//!< how often to call showStatus (seconds)
 	int showStatusCnt_; //!< internal counter to implement fast version of !(simTimeSec%showStatusCycle_)
-
-	// FIXME
-	FILE* fpSTPu_;
-	FILE* fpSTPx_;
 
 	//spike monitor code...
 	unsigned int			numSpikeMonitor;
