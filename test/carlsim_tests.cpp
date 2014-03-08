@@ -24,6 +24,67 @@ private:
 	int isi_;		// inter-spike interval that results in above spike rate
 };
 
+
+
+
+// Testing STP
+
+/*!
+ * \brief testing setSTP to true
+ * This function tests the information stored in the group info struct after enabling STP via setSTP
+ */
+TEST(STP, setSTPTrue) {
+	// create network by varying nConfig from 1...maxConfig, with
+	// step size nConfigStep
+	int maxConfig = rand()%10 + 10;
+	int nConfigStep = rand()%3 + 2;
+	float STP_U = 0.25f;		// the exact values don't matter
+	float STP_tF = 10.0f;
+	float STP_tD = 15.0f;
+	CARLsim* sim;
+
+	for (int mode=0; mode<=1; mode++) {
+		for (int nConfig=1; nConfig<=maxConfig; nConfig+=nConfigStep) {
+			sim = new CARLsim("SNN",mode?GPU_MODE:CPU_MODE,SILENT,0,nConfig,42);
+
+			int g1=sim->createGroup("excit", 10, EXCITATORY_NEURON);
+			sim->setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f);
+			sim->setSTP(g1,true,STP_U,STP_tF,STP_tD);
+
+			for (int c=0; c<nConfig; c++) {
+				group_info_t grpInfo = sim->getGroupInfo(g1,c);
+				EXPECT_TRUE(grpInfo.WithSTP);
+				EXPECT_FLOAT_EQ(grpInfo.STP_U,STP_U);
+				EXPECT_FLOAT_EQ(grpInfo.STP_tau_u_inv,1.0f/STP_tF);
+				EXPECT_FLOAT_EQ(grpInfo.STP_tau_x_inv,1.0f/STP_tD);
+			}
+			delete sim;
+		}
+	}
+}
+
+//! expect CARLsim to die if setSTP is called with silly params
+TEST(STP, setSTPdeath) {
+	CARLsim* sim = new CARLsim("SNN",CPU_MODE,SILENT,0,1,42);
+	int g1=sim->createSpikeGeneratorGroup("excit", 10, EXCITATORY_NEURON);
+
+	// grpId
+	EXPECT_DEATH({sim->setSTP(-2,true,0.1f,10,10,ALL);},"");
+
+	// STP_U
+	EXPECT_DEATH({sim->setSTP(g1,true,0.0f,10,10,ALL);},"");
+	EXPECT_DEATH({sim->setSTP(g1,true,1.1f,10,10,ALL);},"");
+
+	// STP_tF / STP_tD
+	EXPECT_DEATH({sim->setSTP(g1,true,0.1f,-10,10,ALL);},"");
+	EXPECT_DEATH({sim->setSTP(g1,true,0.1f,10,-10,ALL);},"");
+
+	// configId
+	EXPECT_DEATH({sim->setSTP(g1,true,0.1f,10,10,-2);},"");
+	EXPECT_DEATH({sim->setSTP(g1,true,0.1f,10,10,2);},"");
+	EXPECT_DEATH({sim->setSTP(g1,true,0.1f,10,10,101);},"");
+}
+
 /*!
  * \brief check whether CPU and GPU mode return the same stpu and stpx
  * This test creates a STP connection with random parameter values, runs a simulation
@@ -31,7 +92,7 @@ private:
  * variables stpu and stpx. Input is periodic 20 Hz spiking.
  */
 TEST(STP, testCPUvsGPU) {
-	CpuSNN* sim;
+	CpuSNN* sim = NULL;
 	std::string name = "SNN";
 	simMode_t simModes[2] = {CPU_MODE, GPU_MODE};
 
@@ -43,6 +104,7 @@ TEST(STP, testCPUvsGPU) {
 	float STP_U = (float) rand()/RAND_MAX;
 	int STP_tD = rand() % 100;
 	int STP_tF = rand() % 500 + 500;
+	float abs_error = 1e-4f; // error allowed for CPU<->GPU mode
 
 	for (int j=0; j<2; j++) {
 		sim = new CpuSNN(name,simModes[j],USER,0,nConfig,randSeed);
@@ -68,8 +130,8 @@ TEST(STP, testCPUvsGPU) {
 
 	// compare stpu and stpx for both sim modes
 	for (int i=0; i<300; i++) {
-		EXPECT_FLOAT_EQ(stpu[i],stpu[i+300]);
-		EXPECT_FLOAT_EQ(stpx[i],stpx[i+300]);
+		EXPECT_NEAR(stpu[i],stpu[i+300],abs_error); // EXPECT_FLOAT_EQ sometimes works, too
+		EXPECT_NEAR(stpx[i],stpx[i+300],abs_error);	// but _NEAR is better
 	}
 
 	// check init default values
@@ -80,9 +142,11 @@ TEST(STP, testCPUvsGPU) {
 }
 
 
+
+
 //! check all possible (valid) ways of instantiating CpuSNN
 TEST(CORE, CpuSNNinit) {
-	CpuSNN* sim;
+	CpuSNN* sim = NULL;
 
 	// Problem: The first two modes will print to stdout, and close it in the end; so all subsequent calls to sdout
 	// via GTEST fail
@@ -118,28 +182,24 @@ TEST(CORE, CpuSNNinit) {
 
 // FIXME: enabling the following generates a segfault
 //! check all possible (invalid) ways of instantiating CpuSNN
-/*TEST(CORE, CpuSNNinitDeath) {
-	CpuSNN* sim;
+TEST(CORE, CpuSNNinitDeath) {
+	CpuSNN* sim = NULL;
+	std::string name="SNN";
 
-	EXPECT_DEATH({sim = new CpuSNN("SNN",-1);},"");
-	if (sim!=NULL) delete sim;
+	// ithGPU
+	EXPECT_DEATH({sim = new CpuSNN(name,CPU_MODE,USER,-1,1,42);},"");
+	if (sim!=NULL) delete sim; sim = NULL;
 
-	EXPECT_DEATH({sim = new CpuSNN("SNN",101);},"");
-	if (sim!=NULL) delete sim;
-
-	EXPECT_DEATH({sim = new CpuSNN("SNN",1,42,-1);},"");
-	if (sim!=NULL) delete sim;
-
-	EXPECT_DEATH({sim = new CpuSNN("SNN",1,42,2);},"");
-	if (sim!=NULL) delete sim;
-
-	EXPECT_DEATH({sim = new CpuSNN("SNN",1,42,CPU_MODE,UNKNOWN);},"");
-	if (sim!=NULL) delete sim;
-}*/
+	// nConfig
+	EXPECT_DEATH({sim = new CpuSNN(name,GPU_MODE,USER,0,0,42);},"");
+	if (sim!=NULL) delete sim; sim = NULL;
+	EXPECT_DEATH({sim = new CpuSNN(name,CPU_MODE,USER,0,101,42);},"");
+	if (sim!=NULL) delete sim; sim = NULL;
+}
 
 //! Death tests for createGroup (test all possible silly values)
-TEST(CORE, createGroupSilly) {
-	CpuSNN* sim;
+TEST(CORE, createGroupDeath) {
+	CpuSNN* sim = NULL;
 	std::string name="SNN";
 	sim = new CpuSNN(name,CPU_MODE,SILENT,0,1,42);
 
@@ -156,7 +216,7 @@ TEST(CORE, createGroupSilly) {
 
 //! Death tests for createSpikeGenerator (test all possible silly values)
 TEST(CORE, createSpikeGeneratorGroupSilly) {
-	CpuSNN* sim;
+	CpuSNN* sim = NULL;
 	std::string name="SNN";
 	sim = new CpuSNN(name,CPU_MODE,SILENT,0,1,42);
 
@@ -174,7 +234,7 @@ TEST(CORE, createSpikeGeneratorGroupSilly) {
 
 //! Death tests for setNeuronParameters (test all possible silly values)
 TEST(CORE, setNeuronParametersSilly) {
-	CpuSNN* sim;
+	CpuSNN* sim = NULL;
 	std::string name="SNN";
 	sim = new CpuSNN(name,CPU_MODE,SILENT,0,1,42);
 	int g0=sim->createGroup("excit", 10, EXCITATORY_NEURON, ALL);
@@ -205,7 +265,7 @@ TEST(CORE, connect) {
 	int maxConfig = rand()%10 + 10;
 	int nConfigStep = rand()%3 + 2;
 
-	CpuSNN* sim;
+	CpuSNN* sim = NULL;
 	grpConnectInfo_t* connInfo;
 	std::string typeStr;
 	std::string name="SNN";
@@ -341,50 +401,13 @@ TEST(CORE, setSTDPFalse) {
 
 
 
-// Testing STP
-
-/*!
- * \brief testing setSTP to true
- * This function tests the information stored in the group info struct after enabling STP via setSTP
- */
-TEST(CORE, setSTPTrue) {
-	// create network by varying nConfig from 1...maxConfig, with
-	// step size nConfigStep
-	int maxConfig = rand()%10 + 10;
-	int nConfigStep = rand()%3 + 2;
-	float STP_U = 5.0f;		// the exact values don't matter
-	float STP_tF = 10.0f;
-	float STP_tD = 15.0f;
-	CARLsim* sim;
-
-	for (int mode=0; mode<=1; mode++) {
-		for (int nConfig=1; nConfig<=maxConfig; nConfig+=nConfigStep) {
-			sim = new CARLsim("SNN",mode?GPU_MODE:CPU_MODE,SILENT,0,nConfig,42);
-
-			int g1=sim->createGroup("excit", 10, EXCITATORY_NEURON);
-			sim->setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f);
-			sim->setSTP(g1,true,STP_U,STP_tD,STP_tF);
-
-			for (int c=0; c<nConfig; c++) {
-				group_info_t grpInfo = sim->getGroupInfo(g1,c);
-				EXPECT_TRUE(grpInfo.WithSTP);
-				EXPECT_FLOAT_EQ(grpInfo.STP_U,STP_U);
-				EXPECT_FLOAT_EQ(grpInfo.STP_tau_u_inv,1.0f/STP_tF);
-				EXPECT_FLOAT_EQ(grpInfo.STP_tau_x_inv,1.0f/STP_tD);
-			}
-			delete sim;
-		}
-	}
-}
-
-
 
 
 
 
 //! Death tests for setConductances (test all possible silly values)
 TEST(COBA, setCondSilly) {
-	CpuSNN* sim;
+	CpuSNN* sim = NULL;
 	std::string name="SNN";
 	sim = new CpuSNN(name,CPU_MODE,SILENT,0,1,42);
 	int g0=sim->createGroup("excit", 10, EXCITATORY_NEURON, ALL);
@@ -418,7 +441,7 @@ TEST(COBA, setCondTrue) {
 	float tNMDA = 10.0f;
 	float tGABAa = 15.0f;
 	float tGABAb = 20.0f;
-	CpuSNN* sim;
+	CpuSNN* sim = NULL;
 	group_info_t grpInfo;
 	int grps[2] = {-1};
 
@@ -508,7 +531,7 @@ TEST(COBA, setCondFalse) {
 	float tNMDA = 10.0f;
 	float tGABAa = 15.0f;
 	float tGABAb = 20.0f;
-	CpuSNN* sim;
+	CpuSNN* sim = NULL;
 	group_info_t grpInfo;
 	int grps[2] = {-1};
 
@@ -547,7 +570,7 @@ TEST(COBA, disableSynReceptors) {
 	float tNMDA = 10.0f;
 	float tGABAa = 15.0f;
 	float tGABAb = 20.0f;
-	CpuSNN* sim;
+	CpuSNN* sim = NULL;
 	group_info_t grpInfo;
 	int grps[4] = {-1};
 

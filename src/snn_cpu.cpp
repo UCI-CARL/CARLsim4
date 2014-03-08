@@ -359,7 +359,10 @@ int CpuSNN::createSpikeGeneratorGroup(const std::string& grpName, int nNeur, int
 // set conductance values for a group (custom values or disable conductances alltogether)
 void CpuSNN::setConductances(int grpId, bool isSet, float tdAMPA, float tdNMDA, float tdGABAa, float tdGABAb,
 								int configId) {
-	assert(grpId>=-1); assert(tdAMPA>0); assert(tdNMDA>0); assert(tdGABAa>0); assert(tdGABAb>0); assert(configId>=-1);
+	assert(grpId>=-1); assert(configId>=-1);
+	if (isSet) {
+		assert(tdAMPA>0); assert(tdNMDA>0); assert(tdGABAa>0); assert(tdGABAb>0);
+	}
 
 	if (grpId==ALL && configId==ALL) { // shortcut for all groups & configs
 		for(int g=0; g < numGrp; g++)
@@ -476,7 +479,10 @@ void CpuSNN::setNeuronParameters(int grpId, float izh_a, float izh_a_sd, float i
 
 // set STDP params
 void CpuSNN::setSTDP(int grpId, bool isSet, float alphaLTP, float tauLTP, float alphaLTD, float tauLTD, int configId) {
-	assert(grpId>=-1); assert(alphaLTP>0); assert(tauLTP>0); assert(alphaLTD>0); assert(tauLTD>0); assert(configId>=-1);
+	assert(grpId>=-1); assert(configId>=-1);
+	if (isSet) {
+		assert(alphaLTP>=0); assert(tauLTP>=0); assert(alphaLTD>=0); assert(tauLTD>=0);
+	}
 
 	if (grpId==ALL && configId==ALL) { // shortcut for all groups & configs
 		for(int g=0; g < numGrp; g++)
@@ -496,8 +502,8 @@ void CpuSNN::setSTDP(int grpId, bool isSet, float alphaLTP, float tauLTP, float 
 		grp_Info[cGrpId].WithSTDP 		= isSet;
 		grp_Info[cGrpId].ALPHA_LTP 		= alphaLTP;
 		grp_Info[cGrpId].ALPHA_LTD 		= alphaLTD;
-		grp_Info[cGrpId].TAU_LTP_INV 	= 1.0/tauLTP;
-		grp_Info[cGrpId].TAU_LTD_INV	= 1.0/tauLTD;
+		grp_Info[cGrpId].TAU_LTP_INV 	= 1.0f/tauLTP;
+		grp_Info[cGrpId].TAU_LTD_INV	= 1.0f/tauLTD;
 		grp_Info[cGrpId].newUpdates 	= true; // FIXME whatsathiis?
 
 		CARLSIM_INFO("STDP %s for %d (%s):\talphaLTP: %1.4f, alphaLTD: %1.4f, tauLTP: %4.0f, tauLTD: %4.0f",
@@ -509,7 +515,10 @@ void CpuSNN::setSTDP(int grpId, bool isSet, float alphaLTP, float tauLTP, float 
 
 // set STP params
 void CpuSNN::setSTP(int grpId, bool isSet, float STP_U, float STP_tau_u, float STP_tau_x, int configId) {
-	assert(grpId>=-1); assert(STP_U>0); assert(STP_tau_u>0); assert(STP_tau_x>0); assert(configId>=-1);
+	assert(grpId>=-1); assert(configId>=-1);
+	if (isSet) {
+		assert(STP_U>0 && STP_U<=1); assert(STP_tau_u>0); assert(STP_tau_x>0);
+	}
 
 	if (grpId==ALL && configId==ALL) { // shortcut for all groups & configs
 		for(int g=0; g < numGrp; g++)
@@ -1286,7 +1295,7 @@ void CpuSNN::setPrintState(int grpId, bool status) {
 
 // all unsafe operations of CpuSNN constructor
 void CpuSNN::CpuSNNinit() {
-	assert(nConfig_>0 && nConfig_<=MAX_nConfig);
+	assert(nConfig_>0 && nConfig_<=MAX_nConfig); assert(ithGPU_>=0);
 
 	// set logger mode (defines where to print all status, error, and debug messages)
 	switch (loggerMode_) {
@@ -1340,8 +1349,6 @@ void CpuSNN::CpuSNNinit() {
 	getRand.seed(randSeed_*2);
 	getRandClosed.seed(randSeed_*3);
 
-	resetPointers();
-
 	showStatusCycle_ = (loggerMode_==SILENT)? -1 : 1; // default: show network status every second
 	showStatusCnt_ = 1; // counter to implement fast version of !(simTimeSec%showStatusCycle_)
 
@@ -1366,13 +1373,6 @@ void CpuSNN::CpuSNNinit() {
 	doneReorganization = false;
 	memoryOptimized	   = false;
 
-	stpu = NULL;
-	stpx = NULL;
-	gAMPA = NULL;
-	gNMDA = NULL;
-	gGABAa = NULL;
-	gGABAb = NULL;
-
 	cumExecutionTime = 0.0;
 
 	spikeRateUpdated = false;
@@ -1389,6 +1389,8 @@ void CpuSNN::CpuSNNinit() {
 	numN = 0;
 	numPostSynapses = 0;
 	D = 0; // FIXME name this maxAllowedDelay or something more meaningful
+
+	resetPointers(false);
 
 
 	memset(&cpuSnnSz, 0, sizeof(cpuSnnSz));
@@ -2022,68 +2024,7 @@ void CpuSNN::deleteObjects() {
 		if (fpLog_!=NULL && fpLog_!=stdout && fpLog_!=stderr)
 			fclose(fpLog_);
 
-		if (voltage!=NULL) 	delete[] voltage;
-		if (recovery!=NULL) 	delete[] recovery;
-		if (Izh_a!=NULL) 	delete[] Izh_a;
-		if (Izh_b!=NULL)		delete[] Izh_b;
-		if (Izh_c!=NULL)		delete[] Izh_c;
-		if (Izh_d!=NULL)		delete[] Izh_d;
-		if (current!=NULL)	delete[] current;
-
-		if (Npre!=NULL)	delete[] Npre;
-		if (Npre_plastic!=NULL) delete[] Npre_plastic;
-		if (Npost!=NULL) delete[] Npost;
-
-		if (cumulativePre!=NULL) delete[] cumulativePre;
-		if (cumulativePost!=NULL) delete[] cumulativePost;
-
-		if (gAMPA!=NULL) delete[] gAMPA;
-		if (gNMDA!=NULL) delete[] gNMDA;
-		if (gGABAa!=NULL) delete[] gGABAa;
-		if (gGABAb!=NULL) delete[] gGABAb;
-
-		if (stpu!=NULL) delete[] stpu;
-		if (stpx!=NULL) delete[] stpx;
-
-		if (lastSpikeTime!=NULL) delete[] lastSpikeTime;
-		if (synSpikeTime !=NULL) delete[] synSpikeTime;
-		if (curSpike!=NULL) delete[] curSpike;
-		if (nSpikeCnt!=NULL) delete[] nSpikeCnt;
-		if (intrinsicWeight!=NULL) delete[] intrinsicWeight;
-
-		if (postDelayInfo!=NULL) delete[] postDelayInfo;
-		if (preSynapticIds!=NULL) delete[] preSynapticIds;
-		if (postSynapticIds!=NULL) delete[] postSynapticIds;
-
-		if (wt!=NULL)			delete[] wt;
-		if (maxSynWt!=NULL)		delete[] maxSynWt;
-		if (wtChange !=NULL)		delete[] wtChange;
-		if (mulSynFast!=NULL)	delete[] mulSynFast;
-		if (mulSynSlow!=NULL)	delete[] mulSynSlow;
-		if (cumConnIdPre!=NULL)	delete[] cumConnIdPre;
-
-		if (firingTableD2!=NULL) delete[] firingTableD2;
-		if (firingTableD1!=NULL) delete[] firingTableD1;
-		if (timeTableD2!=NULL) delete[] timeTableD2;
-		if (timeTableD1!=NULL) delete[] timeTableD1;
-
-		if (pbuf!=NULL) delete pbuf;
-
-		// clear all existing connection info...
-		while (connectBegin) {
-			grpConnectInfo_t* nextConn = connectBegin->next;
-			if (connectBegin!=NULL) {
-				free(connectBegin);
-				connectBegin = nextConn;
-			}
-		}
-
-		for (int i = 0; i < numSpikeMonitor; i++) {
-			if (monBufferFiring[i]!=NULL) delete[] monBufferFiring[i];
-			if (monBufferTimeCnt[i]!=NULL) delete[] monBufferTimeCnt[i];
-		}
-
-		if (spikeGenBits!=NULL) delete[] spikeGenBits;
+		resetPointers(true); // deallocate pointers
 
 		// do the same as above, but for snn_gpu.cu
 		deleteObjects_GPU();
@@ -2964,30 +2905,94 @@ void CpuSNN::resetNeuron(unsigned int neurId, int grpId) {
 	}
 }
 
-void CpuSNN::resetPointers() {
-	voltage = NULL;
-	recovery = NULL;
-	Izh_a = NULL;
-	Izh_b = NULL;
-	Izh_c = NULL;
-	Izh_d = NULL;
-	current = NULL;
-	Npre = NULL;
-	Npost = NULL;
-	lastSpikeTime = NULL;
-	postSynapticIds = NULL;
-	postDelayInfo = NULL;
-	wt = NULL;
-	maxSynWt = NULL;
-	wtChange = NULL;
-	cumConnIdPre = NULL;
-	mulSynFast = NULL;
-	mulSynSlow = NULL;
-	synSpikeTime = NULL;
-	spikeGenBits = NULL;
-	firingTableD2 = NULL;
-	firingTableD1 = NULL;
+void CpuSNN::resetPointers(bool deallocate) {
+	if (voltage!=NULL && deallocate) delete[] voltage;
+	if (recovery!=NULL && deallocate) delete[] recovery;
+	if (current!=NULL && deallocate) delete[] current;
+	voltage=NULL; recovery=NULL; current=NULL;
+
+	if (Izh_a!=NULL && deallocate) delete[] Izh_a;
+	if (Izh_b!=NULL && deallocate) delete[] Izh_b;
+	if (Izh_c!=NULL && deallocate) delete[] Izh_c;
+	if (Izh_d!=NULL && deallocate) delete[] Izh_d;
+	Izh_a=NULL; Izh_b=NULL; Izh_c=NULL; Izh_d=NULL;
+
+	if (Npre!=NULL && deallocate) delete[] Npre;
+	if (Npre_plastic!=NULL && deallocate) delete[] Npre_plastic;
+	if (Npost!=NULL && deallocate) delete[] Npost;
+	Npre=NULL; Npre_plastic=NULL; Npost=NULL;
+
+	if (cumulativePre!=NULL && deallocate) delete[] cumulativePre;
+	if (cumulativePost!=NULL && deallocate) delete[] cumulativePost;
+	cumulativePre=NULL; cumulativePost=NULL;
+
+	if (gAMPA!=NULL && deallocate) delete[] gAMPA;
+	if (gNMDA!=NULL && deallocate) delete[] gNMDA;
+	if (gGABAa!=NULL && deallocate) delete[] gGABAa;
+	if (gGABAb!=NULL && deallocate) delete[] gGABAb;
+	gAMPA=NULL; gNMDA=NULL; gGABAa=NULL; gGABAb=NULL;
+
+	if (stpu!=NULL && deallocate) delete[] stpu;
+	if (stpx!=NULL && deallocate) delete[] stpx;
+	stpu=NULL; stpx=NULL;
+
+	if (lastSpikeTime!=NULL && deallocate) delete[] lastSpikeTime;
+	if (synSpikeTime !=NULL && deallocate) delete[] synSpikeTime;
+	if (curSpike!=NULL && deallocate) delete[] curSpike;
+	if (nSpikeCnt!=NULL && deallocate) delete[] nSpikeCnt;
+	lastSpikeTime=NULL; synSpikeTime=NULL; curSpike=NULL; nSpikeCnt=NULL;
+
+	if (postDelayInfo!=NULL && deallocate) delete[] postDelayInfo;
+	if (preSynapticIds!=NULL && deallocate) delete[] preSynapticIds;
+	if (postSynapticIds!=NULL && deallocate) delete[] postSynapticIds;
+	postDelayInfo=NULL; preSynapticIds=NULL; postSynapticIds=NULL;
+
+	if (wt!=NULL && deallocate) delete[] wt;
+	if (maxSynWt!=NULL && deallocate) delete[] maxSynWt;
+	if (wtChange !=NULL && deallocate) delete[] wtChange;
+	wt=NULL; maxSynWt=NULL; wtChange=NULL;
+
+	if (mulSynFast!=NULL && deallocate) delete[] mulSynFast;
+	if (mulSynSlow!=NULL && deallocate) delete[] mulSynSlow;
+	if (cumConnIdPre!=NULL && deallocate) delete[] cumConnIdPre;
+	mulSynFast=NULL; mulSynSlow=NULL; cumConnIdPre=NULL;
+
+	#ifdef NEURON_NOISE
+	if (intrinsicWeight!=NULL && deallocate) delete[] intrinsicWeight;
+	#endif
+
+	if (firingTableD2!=NULL && deallocate) delete[] firingTableD2;
+	if (firingTableD1!=NULL && deallocate) delete[] firingTableD1;
+	if (timeTableD2!=NULL && deallocate) delete[] timeTableD2;
+	if (timeTableD1!=NULL && deallocate) delete[] timeTableD1;
+	firingTableD2=NULL; firingTableD1=NULL; timeTableD2=NULL; timeTableD1=NULL;
+
+	if (pbuf!=NULL && deallocate) delete pbuf;
+	if (spikeGenBits!=NULL && deallocate) delete[] spikeGenBits;
+	pbuf=NULL; spikeGenBits=NULL;
+
+	// clear all existing connection info
+	if (deallocate) {
+		while (connectBegin) {
+			grpConnectInfo_t* nextConn = connectBegin->next;
+			if (connectBegin!=NULL && deallocate) {
+				free(connectBegin);
+				connectBegin = nextConn;
+			}
+		}
+	}
+	connectBegin=NULL;
+
+	// clear all spike monitor info
+	if (deallocate) {
+		for (int i = 0; i < numSpikeMonitor; i++) {
+			if (monBufferFiring[i]!=NULL && deallocate) delete[] monBufferFiring[i];
+			if (monBufferTimeCnt[i]!=NULL && deallocate) delete[] monBufferTimeCnt[i];
+			monBufferFiring[i]=NULL; monBufferTimeCnt[i]=NULL;
+		}
+	}
 }
+
 
 void CpuSNN::resetPoissonNeuron(unsigned int nid, int grpId) {
 	assert(nid < numN);

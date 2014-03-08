@@ -866,7 +866,7 @@ private:
 	void resetFiringInformation(); //!< resets the firing information when updateNetwork is called
 	void resetGroups();
 	void resetNeuron(unsigned int nid, int grpId);
-	void resetPointers();
+	void resetPointers(bool deallocate=false);
 	void resetPoissonNeuron(unsigned int nid, int grpId);
 	void resetPropogationBuffer();
 	void resetSpikeCnt(int grpId=ALL);					//!< Resets the spike count for a particular group.

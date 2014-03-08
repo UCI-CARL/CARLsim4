@@ -2334,6 +2334,9 @@ __global__ void kernel_check_GPU_init ()
 // to create two CpuSNN instances within the same .cpp file, then the second network would fail to run
 void CpuSNN::CpuSNNinit_GPU() {
 	gpuPoissonRand = NULL;
+	testVar=NULL;
+	testVar2=NULL;
+	
 	spikeCountD2=0;
 	spikeCountD1=0;
 	secD2fireCnt=0;
@@ -2591,6 +2594,11 @@ void CpuSNN::deleteObjects_GPU() {
 	CUDA_CHECK_ERRORS( cudaFree(cpu_gpuNetPtrs.testVar2) );
 	if (testVar!=NULL) delete[] testVar;
 	if (testVar2!=NULL) delete[] testVar2;
+	testVar=NULL; testVar2=NULL;
+
+	if (gpuPoissonRand!=NULL)
+		delete gpuPoissonRand;
+	gpuPoissonRand=NULL;
 
 	CUDA_DELETE_TIMER(timer);
 }
