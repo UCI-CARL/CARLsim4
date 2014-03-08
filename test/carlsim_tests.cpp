@@ -24,7 +24,12 @@ private:
 	int isi_;		// inter-spike interval that results in above spike rate
 };
 
-
+/*!
+ * \brief check whether CPU and GPU mode return the same stpu and stpx
+ * This test creates a STP connection with random parameter values, runs a simulation
+ * for 300 ms, and checks whether CPU_MODE and GPU_MODE return the same internal
+ * variables stpu and stpx. Input is periodic 20 Hz spiking.
+ */
 TEST(STP, testCPUvsGPU) {
 	CpuSNN* sim;
 	std::string name = "SNN";
@@ -33,26 +38,28 @@ TEST(STP, testCPUvsGPU) {
 	float stpu[600] = {0.0f};
 	float stpx[600] = {0.0f};
 
+	int nConfig = 1;
+	int randSeed = rand() % 1000;
+	float STP_U = (float) rand()/RAND_MAX;
+	int STP_tD = rand() % 100;
+	int STP_tF = rand() % 500 + 500;
+
 	for (int j=0; j<2; j++) {
-		int nConfig = 1;
-		int randSeed = rand() % 1000;
 		sim = new CpuSNN(name,simModes[j],USER,0,nConfig,randSeed);
 		int g0=sim->createSpikeGeneratorGroup("input", 1, EXCITATORY_NEURON, ALL);
 		int g1=sim->createGroup("excit", 1, EXCITATORY_NEURON, ALL);
 		sim->setNeuronParameters(g1, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f, ALL);
 		sim->connect(g0,g1,"full",0.01f,0.01f,1.0f,1,1,1.0f,1.0f,SYN_FIXED);
 		sim->setConductances(ALL,true,5.0f,10.0f,15.0f,20.0f,ALL);
-		sim->setSTP(g0,true,0.45,50,750,ALL);
+		sim->setSTP(g0,true,STP_U,STP_tD,STP_tF,ALL);
 
 		PeriodicSpikeGenerator* spk20 = new PeriodicSpikeGenerator(20.0f);
 		sim->setSpikeGenerator(g0, spk20, ALL);
 
-
-		int neurId = sim->grp_Info[g0].StartN;
 		for (int i=0; i<300; i++) {
 			sim->runNetwork(0,1,false,true); // enable copyState
-			stpu[j*300+i] = sim->stpu[neurId];
-			stpx[j*300+i] = sim->stpx[neurId];
+			stpu[j*300+i] = sim->stpu[1];
+			stpx[j*300+i] = sim->stpx[1];
 		}
 
 		delete spk20;
@@ -64,7 +71,14 @@ TEST(STP, testCPUvsGPU) {
 		EXPECT_FLOAT_EQ(stpu[i],stpu[i+300]);
 		EXPECT_FLOAT_EQ(stpx[i],stpx[i+300]);
 	}
+
+	// check init default values
+	EXPECT_FLOAT_EQ(stpu[0],0.0f);
+	EXPECT_FLOAT_EQ(stpx[0],1.0f);
+	EXPECT_FLOAT_EQ(stpu[300],0.0f);
+	EXPECT_FLOAT_EQ(stpx[300],1.0f);
 }
+
 
 //! check all possible (valid) ways of instantiating CpuSNN
 TEST(CORE, CpuSNNinit) {

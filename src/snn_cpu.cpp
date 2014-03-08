@@ -1506,11 +1506,10 @@ void CpuSNN::buildNetworkInit(unsigned int nNeur, unsigned int nPostSyn, unsigne
 	if (sim_with_stp) {
 		stpu = new float[numN];
 		stpx = new float[numN];
-		for (int i=0; i < numN; i++) {
-			stpu[i] = 0.0f;
-			stpx[i] = 1.0f;
-		}
-		cpuSnnSz.synapticInfoSize += (sizeof(float)*numN);
+		memset(stpu, 0, sizeof(float)*numN); // memset works for 0.0
+		for (int i=0; i < numN; i++)
+			stpx[i] = 1.0f; // but memset doesn't work for 1.0
+		cpuSnnSz.synapticInfoSize += (2*sizeof(float)*numN);
 	}
 
 	Npre 		   = new unsigned short[numN];
