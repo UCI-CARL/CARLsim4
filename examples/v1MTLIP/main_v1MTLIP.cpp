@@ -37,7 +37,7 @@
  * CARLsim available from http://socsci.uci.edu/~jkrichma/CARL/CARLsim/
  * Ver 10/09/2013
  */ 
-#include "../../snn.h"
+#include <carlsim.h>
 
 // stim must be a file of unsigned char in RGB, arranged as R1 G1 B1 R2 G2 B2 ...
 void calcColorME(int nrX, int nrY, unsigned char* stim, float* red_green, float* green_red, float* blue_yellow,
@@ -51,10 +51,10 @@ extern MTRand getRand;
 /// **************************************************************************************************************** ///
 
 // choose which experiment to run (define only one)
-//#define RUN_DIRECTION_TUNING			// V1, MT CDS and MT PDS direction tuning
+#define RUN_DIRECTION_TUNING			// V1, MT CDS and MT PDS direction tuning
 //#define RUN_SPEED_TUNING				// MT CDS speed tuning
 //#define RUN_CONTRAST_SENSITIVITY		// V1 contrast sensitivity
-#define RUN_RDK							// RDK motion discrimination task
+//#define RUN_RDK							// RDK motion discrimination task
 
 // the dimension of the input stimulus
 #define nrX (32)
@@ -546,7 +546,7 @@ int main()
 		
 	
 	int startAtFrame	 = 0; 					// at which frame of movie to start
-	char saveFolder[]	 = "Results/v1MTLIP/";	// where to store all files (folder will be created if not exists)
+	char saveFolder[]	 = "results/v1MTLIP/";	// where to store all files (folder will be created if not exists)
 	bool storeNetwork	 = false;				// store network? at beginning and end
 	bool onGPU = true;						 	// run on GPU?
 	int ithGPU 			 = 0;					// on which GPU to run (in case of carlculator: 0-3)
@@ -571,7 +571,8 @@ int main()
 	// create network
 	// -------------------------------------------------------------------------------------------------------------- //
 
-	CpuSNN snn("Motion Energy");
+	CARLsim snn("Motion Energy",onGPU?GPU_MODE:CPU_MODE);
+
 
 	// population sizes: {number of rows, number of columns, number of pools}
 	int V1MEdim[3]		= {nrX,nrY,28*3};	// 28 space-time filters at 3 scales
@@ -593,8 +594,8 @@ int main()
 	int gMT1PDS    = snn.createGroup("MT1PDS", prod(MTdim,3), EXCITATORY_NEURON);
 	int gMT1PDSinh = snn.createGroup("MT1PDSinh", prod(MTiDim,3), INHIBITORY_NEURON);
 
-	int gLIP = snn.createGroup("PFC", prod(PFCdim,3), EXCITATORY_NEURON);
-	int gLIPi = snn.createGroup("PFCi", prod(PFCiDim,3), INHIBITORY_NEURON);
+	int gLIP = snn.createGroup("LIP", prod(PFCdim,3), EXCITATORY_NEURON);
+	int gLIPi = snn.createGroup("LIPi", prod(PFCiDim,3), INHIBITORY_NEURON);
 
 
 	snn.setNeuronParameters(gMT1CDS, 0.02f, 0.2f, -65.0f, 8.0f);
@@ -611,9 +612,8 @@ int main()
 	snn.setNeuronParameters(gLIPi, 0.1f,  0.2f, -65.0f, 2.0f);
 
 
-	// show log every 1 sec (0 to disable logging). You can pass a file pointer or pass stdout to specify where the
-	// log output should go.
-	snn.setLogCycle(1, 1, stdout);
+	// show log every 1 sec
+	snn.setLogCycle(1);
 	snn.setConductances(ALL,true,5,150,6,150);	
 	snn.setSTDP(ALL,false);
 	snn.setSTP(ALL,false);

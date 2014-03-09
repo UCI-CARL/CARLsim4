@@ -10,7 +10,7 @@ FrameDur=100;
 resp = zeros(0,nrX*6);
 
 for j=1:length(list)
-    s = readSpikes(['../../Results/colorblind/spkV4' list{j} '.dat'],FrameDur);
+    s = readSpikes(['../../results/colorblind/spkV4' list{j} '.dat'],FrameDur);
     
     resp = [resp; reshape(permute(reshape(s(1:6,:),6,nrX,nrX),[3 2 1]),[nrX nrX*6])];
 end

@@ -1,29 +1,78 @@
-========================================================================================================================
+===============================================================================
+Release 2.2
+===============================================================================
+
+Publications:
+	Parameter tuning interface:
+	Carlson KD, Nageswaran JM, Dutt N and Krichmar JL (2014) An efficient 
+	automated parameter tuning framework for spiking neural networks. 
+	Front. Neurosci. 8:10. doi: 10.3389/fnins.2014.00010
+
+    Homeostatic synaptic scaling model:
+	Carlson, K. D., Richert, M., Dutt, N., and Krichmar, J. L. (2013). 
+	“Biologically plausible models of homeostasis and STDP: stability and 
+	learning in spiking neural networks,” in Proceedings of the 2013 
+	International Joint Conference on Neural Networks (IJCNN) (Dallas, TX). 
+	doi: 10.1109/IJCNN.2013.6706961
+
+---------------------
+Build 2.2.0
+---------------------
+
+2014-02-02    	Kristofor D. Carlson <kdcarlso@uci.edu>
+	* Makefile: rewritten to include CARLsim/PTI support and modular include
+	  files.
+	* snn_cpu.cpp/snn_gpu.cu/snn.h: included support for homeostasis.
+	* snn_cpu.cpp/snn_gpu.cu/snn.h: included support for parameter tuning
+	  interface.
+	+ libpti, include: added directories for parameter tuning source and
+	  headers.
+	* README.md, INSTALL, RELEASE_NOTES: updated for new installation.
+
+2013-11-05      Michael Beyeler <mbeyeler@uci.edu>
+	* Makefile: more general, more flexible Makefile. Options for fast math and
+	  CUDA5 support.
+
+2013-11-04      Ting-Shuo Chou <tingshuc@uci.edu>
+	+ CUDAVersionControl.h, Makefile: added CUDA5 support
+
+
+===============================================================================
 Release 2.1
-========================================================================================================================
+===============================================================================
+
+Publication:
+	M Beyeler, M Richert, ND Dutt, JL Krichmar (2014). "Efficient spiking
+	neural network model of pattern motion selectivity in visual cortex",
+	Neuroinformatics.
 
 ---------------------
 Build 2.1.3
 ---------------------
 
-2013-10-31	Michael Beyeler <mbeyeler@uci.edu>
-	* examples/v1MTLIP/main_v1MTLIP.cpp: corrected name of LIP group, fixed weights MT PDS -> LIP
-	* examples/v1MTLIP/v1ColorME.cu (freeAllCUDA): added
-	* scripts/v1MTLIP/plotRDKdecision.m: corrected name of LIP spike file, added some comments
-	* snn_cpu.cpp (deleteObjects): fixed memory leaks (due to un-freed dynamically allocated structures)
-	* snn_gpu.cu (deleteObjectsGPU): added, fixed memory leaks on GPU side
-	* snn_gpu.cu (CpuSNNinitGPUparams): added, correctly instantiates global vars on GPU side
+2013-10-31      Michael Beyeler <mbeyeler@uci.edu>
+	* examples/v1MTLIP/main_v1MTLIP.cpp: corrected name of LIP group, fixed
+	  weights MT PDS -> LIP
+	+ examples/v1MTLIP/v1ColorME.cu (freeAllCUDA): added
+	* scripts/v1MTLIP/plotRDKdecision.m: corrected name of LIP spike file, added
+	  some comments
+	* snn_cpu.cpp (deleteObjects): fixed memory leaks (due to un-freed
+	  dynamically allocated structures)
+	+ snn_gpu.cu (deleteObjectsGPU): added, fixed memory leaks on GPU side
+	+ snn_gpu.cu (CpuSNNinitGPUparams): added, correctly instantiates global
+	  vars on GPU side
 
 
 ---------------------
 Build 2.1.2
 ---------------------
 
-2013-10-09	Michael Beyeler <mbeyeler@uci.edu>
-	* snn_cpu.cpp (CpuSNN::setSpikeMonitor): if spike subdirectory does not exist, display error message and exit.
-	  If option CREATE_SPIKEDIR_IF_NOT_EXISTS is set in config.h, will attempt to create subdirectory
-	  (e.g., "Results/random", but NOT "Results")
-	* config.h: added option CREATE_SPIKEDIR_IF_NOT_EXISTS (default: disabled)
+2013-10-09      Michael Beyeler <mbeyeler@uci.edu>
+	* snn_cpu.cpp (CpuSNN::setSpikeMonitor): if spike subdirectory does not
+	  exist, display error message and exit.
+	  If option CREATE_SPIKEDIR_IF_NOT_EXISTS is set in config.h, will attempt
+	  to create subdirectory (e.g., "Results/random", but NOT "Results")
+	+ config.h: added option CREATE_SPIKEDIR_IF_NOT_EXISTS (default: disabled)
 	* Makefile: fixed header dependencies
 	* examples: fixed path to spike files
 
@@ -32,81 +81,94 @@ Build 2.1.2
 Build 2.1.1
 ---------------------
 
-2013-10-04	Michael Beyeler <mbeyeler@uci.edu>
-	* scripts/v1MTLIP/plotSpeed.m: fixed a bug concerning the plotting of the speed tuning curve for a particular
-		MT neuron; added a comment on the location within the visual field of the chosen neuron
+2013-10-04      Michael Beyeler <mbeyeler@uci.edu>
+	* scripts/v1MTLIP/plotSpeed.m: fixed a bug concerning the plotting of the
+	  speed tuning curve for a particular MT neuron; added a comment on the
+	  location within the visual field of the chosen neuron
 	* scripts/v1MTLIP/plotRDKdecision.m: fixed number of spikes per neuron
-	* scripts/v1MTLIP: added "common" folder to path
-	* examples/v1MTLIP/main_v1MTLIP.cpp (connectMTtoMTpatt): fixed RF size thresholding gausPos
+	+ scripts/v1MTLIP: added "common" folder to path
+	* examples/v1MTLIP/main_v1MTLIP.cpp (connectMTtoMTpatt): fixed RF size
+	  thresholding gausPos
 	* Makefile: fixed error where v1ColorME.cu should read v1ColorMEold.cu
 	* snn.h: fixed version numbering
 	* RELEASE_NOTES: fixed version numbering
-	* CHANGELOG: added
-	* AUTHORS: added
+	+ CHANGELOG: added
+	+ AUTHORS: added
 
 
---------------------
+---------------------
 Build 2.1.0
---------------------
-2013-07-31	Michael Beyeler <mbeyeler@uci.edu>
-	* examples/v1MTLIP/main_v1MTLIP.cpp: added complete source code to run motion energy model in COBA on CPU/GPU
-	* scripts/v1MTLIP: added analysis scripts for motion energy model
-	* scripts/common: moved previous commonly used analysis scripts to this folder
-	* snn_cpu.cpp (CpuSNN::runNetwork): added option to specify on which CUDA card to establish a context
-		The first time you run sim.runNetwork() add an int ithGPU that specifies the device index.
+---------------------
+2013-07-31      Michael Beyeler <mbeyeler@uci.edu>
+	+ examples/v1MTLIP/main_v1MTLIP.cpp: added complete source code to run
+	  motion energy model in COBA on CPU/GPU
+	+ scripts/v1MTLIP: added analysis scripts for motion energy model
+	* scripts/common: moved previous commonly used analysis scripts to this
+	  folder
+	+ snn_cpu.cpp (CpuSNN::runNetwork): added option to specify on which CUDA
+	  card to establish a context
+		The first time you run sim.runNetwork() add an int ithGPU that specifies
+		the device index.
 		> bool onGPU=true; // GPU mode on
 		> int ithGPU=2; // run on the third card
-		> sim.runNetwork(0,0,onGPU?GPU_MODE:CPU_MODE,ithGPU);	
-		If ithGPU is invalid (e.g., exceeds the number of cards), it defaults to using device 0.
-	* snn_cpu.cpp (CpuSNN::allocateSNN_GPU): added GPU memory management summary
-		At beginning of simulation, prints how many cards are available, which one has the most
-		GFLOPs, on which card you're running your experiment, how much memory is available, etc.
-	* snn_cpu.cpp (CpuSNN::printSimSummary): number of (actual vs. allocated) synapses
-	* snn_cpu.cpp (CpuSNN::globalStateUpdate): fixed storing of current[] when running COBA in CPU mode; capped
-		conductances to prevent instability
+		> sim.runNetwork(0,0,onGPU?GPU_MODE:CPU_MODE,ithGPU);
+		If ithGPU is invalid (e.g., exceeds the number of cards), it defaults to
+		using device 0.
+	+ snn_cpu.cpp (CpuSNN::allocateSNN_GPU): added GPU memory management summary
+		At beginning of simulation, prints how many cards are available, which
+		one has the most GFLOPs, on which card you're running your experiment,
+		how much memory is available, etc.
+	* snn_cpu.cpp (CpuSNN::printSimSummary): number of (actual vs. allocated)
+	  synapses
+	* snn_cpu.cpp (CpuSNN::globalStateUpdate): fixed storing of current[] when
+	  running COBA in CPU mode; capped conductances to prevent instability
 	* snn_cpu.cpp: fixed integer overflow issues for largest-scale simulations
 	* snn_gpu.cu: fixed GPU memory allocation for fixed-weight simulations
-	* scripts/common/readSpikes.m: added functionality to return spikes in AER format
-	* scripts/common/readSpikesAERtoFull.m: added; expands an AER representation of <spike time/neuron ID> to a full
-		matrix
+	+ scripts/common/readSpikes.m: added functionality to return spikes in AER
+	  format
+	+ scripts/common/readSpikesAERtoFull.m: added; expands an AER representation
+	  of <spike time/neuron ID> to a full matrix
 	* scripts/common/readNetwork.m: fixed indexing issue (0-indexed)
-	* v1ColorME.cu: edge effects removed in CUDA, reproduces V1 contrast sensitivity function, features scaling
-		factors from Simoncelli & Heeger, 1998
+	* v1ColorME.cu: edge effects removed in CUDA, reproduces V1 contrast
+	  sensitivity function, features scaling factors from Simoncelli & Heeger,
+	  1998
 	* config.h: changed max. firing rate from 1000 Hz to 520 Hz
 
 
 
-========================================================================================================================
+===============================================================================
 Release 2.0
-========================================================================================================================
+===============================================================================
 
 Publication:
-	M Richert, JM Nageswaran, N Dutt, JL Krichmar (2011). "An efficient simulation environment
-	for modeling large-scale cortical processing", Frontiers in Neuroinformatics 5(19):1-15.
+	M Richert, JM Nageswaran, N Dutt, JL Krichmar (2011). "An efficient
+	simulation environment for modeling large-scale cortical processing",
+	Frontiers in Neuroinformatics 5(19):1-15.
 
 --------------------
 Build 2.0.0
 --------------------
-2011-11-01	Micah Richert <richert@braincorporation.com>
-	* /: added COBA mode, STDP (Song et al, 2000), STP (Markram et al, 1998; Mongillo et al, 2008),
-		removed configId support
-	* examples: added example networks
+2011-11-01       Micah Richert <richert@braincorporation.com>
+	+ /: added COBA mode, STDP (Song et al, 2000), STP (Markram et al, 1998; 
+	  Mongillo et al, 2008), removed configId support
+	+ examples: added example networks
 		+ (MDR/JN) Added COBA mode
 
 
 
-========================================================================================================================
+===============================================================================
 Release 1.0
-========================================================================================================================
+===============================================================================
 
 Publication:
-	JM Nageswaran, N Dutt, JL Krichmar, A Nicolau, AV Veidenbaum (2009). "A configurable
-	simulation environment for the efficient simulation of large-scale spiking neural networks
-	on graphics processors", Neural Networks 22:791-800.
+	JM Nageswaran, N Dutt, JL Krichmar, A Nicolau, AV Veidenbaum (2009). "A
+	configurable simulation environment for the efficient simulation of
+	large-scale spiking neural networks on graphics processors", Neural Networks
+	22:791-800.
 
 --------------------
 Build 1.0.0
 --------------------
-2011-11-01	Jayram Moorkanikara Nageswaran <nageswaran@braincorporation.com>
-	* /: initial release
+2011-11-01      Jayram Moorkanikara Nageswaran <nageswaran@braincorporation.com>
+	+ /: initial release
 

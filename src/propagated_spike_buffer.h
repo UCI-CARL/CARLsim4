@@ -1,5 +1,5 @@
-#ifndef PROPAGATEDSPIKEBUFFER_H_
-#define PROPAGATEDSPIKEBUFFER_H_
+#ifndef _PROPAGATED_SPIKE_BUFFER_H_
+#define _PROPAGATED_SPIKE_BUFFER_H_
 
 ///////////////////////////////////
 // IMPORTED FROM PCSIM SOURCE CODE  http://www.lsm.tugraz.at/pcsim/

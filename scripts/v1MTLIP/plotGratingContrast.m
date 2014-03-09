@@ -7,15 +7,15 @@ function [] = plotGratingContrast()
 % a drifting grating, averaged over both one second of stimulus
 % presentation and all neurons in the subpopulation. Vertical bars are the
 % standard deviation on the population average.
-% This script reproduces Fig. 3 of (Beyeler, Dutt, and Krichmar 2013;
-% publication to be named later).
+% This script reproduces Fig. 3 of Beyeler, Richert, Dutt, and Krichmar
+% (2014).
 % A suitable stimulus can be created using
 % scripts/v1MTLIP/makeGratingContrast.m. However, in order to analyze V1
 % simple cell responses, one needs to comment out the V1 complex cell code
 % in v1ColorME.cu.
 %
 % Author: Michael Beyeler <mbeyeler@uci.edu>
-% Ver: 07/16/13
+% Ver: 2/5/14
 
 xDirection = 0; % drift direction
 nrF = 50; % number of frames per contrast
@@ -34,7 +34,7 @@ end
 stimContrast = linspace(log2(0.02), log2(1), nDataPoints);
 stimContrast = 2.^stimContrast;
 
-spk = readSpikes('../../Results/v1MTLIP/spkV1ME.dat',frameDur)/normHz;
+spk = readSpikes('../../results/v1MTLIP/spkV1ME.dat',frameDur)/normHz;
 spk(end,28*3*1024)=0;
 spk=reshape(spk,size(spk,1),32*32,28,3);
 
