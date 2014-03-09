@@ -471,7 +471,7 @@ typedef struct group_info_s
 	float		dGABAa;
 	float		dGABAb;
 
-	bool hasSpkCnt; //!< if this flag is set, we want to keep track of how many spikes per neuron in the group
+	bool withSpikeCounter; //!< if this flag is set, we want to keep track of how many spikes per neuron in the group
 	int spkCntRecordDur; //!< record duration, after which spike buffer gets reset
 	int spkCntBufPos; //!< which position in the spike buffer the group has
 
@@ -670,8 +670,9 @@ typedef struct group_info_s
 	 * Buffers get reset to zero automatically after recordDur. However, you can reset the buffer manually at any
 	 * point in time.
 	 * \param grpId the group for which to reset the spike counts. Set to ALL if you want to reset all Spike Counters.
+	 * \param configId the config id for which to reset the spike counts. Set to ALL if you want to reset all configIds
 	 */
-	void resetSpikeCounter(int grpId);
+	void resetSpikeCounter(int grpId, int configId);
 
 	/*!
 	 * \brief A Spike Counter keeps track of the number of spikes per neuron in a group.
@@ -780,7 +781,7 @@ typedef struct group_info_s
 	 * \return pointer to array of ints. Number of elements in array is the number of neurons in group.
 	 * Each entry is the number of spikes for this neuron (int) since the last reset.
 	 */
-	int* getSpikeCounter(int grpId);
+	int* getSpikeCounter(int grpId, int configId);
 
 	// FIXME: fix this
 	// TODO: maybe consider renaming getPopWeightChanges
@@ -995,7 +996,7 @@ typedef struct group_info_s
 	 * \return pointer to array of unsigned ints. Number of elements in array is the number of neurons in group.
 	 * Each entry is the number of spikes for this neuron (unsigned int) since the last reset.
 	 */
-	int* getSpikeCounter_GPU(int grpId);
+	int* getSpikeCounter_GPU(int grpId, int configId);
 
 	void globalStateUpdate_GPU();
 	void initGPU(int gridSize, int blkSize);
@@ -1011,7 +1012,7 @@ typedef struct group_info_s
 	 * CpuSNN::resetSpikeCounter if we're running GPU mode.
 	 * \param grpId	the group for which you want to reset the spikes
 	 */
-	void resetSpikeCounter_GPU(int grpId);
+	void resetSpikeCounter_GPU(int grpId, int configId);
 
 	void setSpikeGenBit_GPU(unsigned int nid, int grp);
 	void showStatus_GPU();

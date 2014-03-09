@@ -734,7 +734,7 @@ __global__ 	void kernel_findFiring (int t, int sec, int simTime) {
 			else {
 				if (gpuPtrs.voltage[nid] >= 30.0) {
 					needToWrite = true;
-					if (gpuGrpInfo[grpId].hasSpkCnt) {
+					if (gpuGrpInfo[grpId].withSpikeCounter) {
 						int bufPos = gpuGrpInfo[grpId].spkCntBufPos;
 						int bufNeur = nid-gpuGrpInfo[grpId].StartN;
 						gpuPtrs.spkCntBuf[bufPos][bufNeur]++;
@@ -2175,15 +2175,25 @@ void CpuSNN::printGpuLoadBalance(bool init, int numBlocks, FILE*fp)
 
 }
 
-int* CpuSNN::getSpikeCounter_GPU(int grpId) {
-	int bufPos = grp_Info[grpId].spkCntBufPos;
+// get spikes from GPU SpikeCounter
+// grpId and configId cannot be ALL (can only get 1 bufPos at a time)
+int* CpuSNN::getSpikeCounter_GPU(int grpId, int configId) {
+	assert(grpId>=0); assert(grpId<numGrp); assert(configId>=0); assert(configId<nConfig_);
+
+	int cGrpId = getGroupId(grpId, configId);
+	int bufPos = grp_Info[cGrpId].spkCntBufPos;
 	CUDA_CHECK_ERRORS( cudaMemcpy(spkCntBuf[bufPos],cpu_gpuNetPtrs.spkCntBufChild[bufPos],
-		grp_Info[grpId].SizeN*sizeof(int),cudaMemcpyDeviceToHost) );
+		grp_Info[cGrpId].SizeN*sizeof(int),cudaMemcpyDeviceToHost) );
 
 	return spkCntBuf[bufPos];
 }
 
-void CpuSNN::resetSpikeCounter_GPU(int grpId) {
+// reset SpikeCounter
+// grpId and connectId cannot be ALL (this is handled by the CPU side)
+void CpuSNN::resetSpikeCounter_GPU(int grpId, int configId) {
+	assert(grpId>=0); assert(grpId<numGrp); assert(configId>=0); assert(configId<nConfig_);
+
+	int cGrpId = getGroupId(grpId, configId);
 	int bufPos = grp_Info[grpId].spkCntBufPos;
 	CUDA_CHECK_ERRORS( cudaMemset(cpu_gpuNetPtrs.spkCntBufChild[bufPos],0,grp_Info[grpId].SizeN*sizeof(int)) );
 }
@@ -2962,7 +2972,7 @@ void CpuSNN::allocateSNN_GPU() {
 	// first cudaMalloc().
 	CUDA_CHECK_ERRORS( cudaMalloc( (void**) &(cpu_gpuNetPtrs.spkCntBuf), sizeof(int*)*MAX_GRP_PER_SNN));
 	for (int g=0; g<numGrp; g++) {
-		if (!grp_Info[g].hasSpkCnt)
+		if (!grp_Info[g].withSpikeCounter)
 			continue; // skip group if it doesn't have a spkMonRT
 
 		int bufPos = grp_Info[g].spkCntBufPos; // retrieve pos in spike buf
@@ -3021,8 +3031,8 @@ void CpuSNN::allocateSNN_GPU() {
 //				CARLSIM_DEBUG("\t\tSTP_tF: %f",grp_Info[i].STP_tF);
 		}
 		CARLSIM_DEBUG("\tspikeGen: %s",grp_Info[i].spikeGen==NULL?"Is Null":"Is set");
-		CARLSIM_DEBUG("\tspikeMonitorRT: %s",grp_Info[i].hasSpkCnt?"Is set":"Is Null");
-		if (grp_Info[i].hasSpkCnt) {
+		CARLSIM_DEBUG("\tspikeMonitorRT: %s",grp_Info[i].withSpikeCounter?"Is set":"Is Null");
+		if (grp_Info[i].withSpikeCounter) {
 			int bufPos = grp_Info[i].spkCntBufPos;
 			for (int j=0; j<grp_Info[i].SizeN; j++)
 				CARLSIM_DEBUG("\t%d",spkCntBuf[bufPos][j]);
