@@ -112,6 +112,28 @@ public:
 
 
 /// **************************************************************************************************************** ///
+/// CARLSIM INTERFACE
+/// **************************************************************************************************************** ///
+
+//! trigger all UserErrors
+TEST(Interface, setSpikeCounterUserError) {
+	CARLsim* sim = new CARLsim("SNN",CPU_MODE,SILENT,0,1,42);
+	int g1=sim->createGroup("excit", 10, EXCITATORY_NEURON);
+	EXPECT_DEATH({sim->setSpikeCounter(ALL);},"");
+	delete sim;
+}
+
+//! trigger all UserErrors
+TEST(Interface, getSpikeCounterUserError) {
+	CARLsim* sim = new CARLsim("SNN",CPU_MODE,SILENT,0,1,42);
+	int g1=sim->createGroup("excit", 10, EXCITATORY_NEURON);
+	sim->setSpikeCounter(g1);
+	EXPECT_DEATH({sim->getSpikeCounter(ALL);},"");
+	EXPECT_DEATH({sim->getSpikeCounter(g1,ALL);},"");
+	delete sim;
+}
+
+/// **************************************************************************************************************** ///
 /// SPIKE COUNTER
 /// **************************************************************************************************************** ///
 
@@ -161,6 +183,8 @@ TEST(SpikeCounter, setSpikeCounterDeath) {
 	EXPECT_DEATH({sim->setSpikeCounter(g1,1,-2);},"");
 	EXPECT_DEATH({sim->setSpikeCounter(g1,1,2);},"");
 	EXPECT_DEATH({sim->setSpikeCounter(g1,1,100);},"");
+
+	delete sim;
 }
 
 //! expects the number of spikes recorded by spike counter to be equal to spike monitor values

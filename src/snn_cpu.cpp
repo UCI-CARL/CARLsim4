@@ -567,7 +567,7 @@ int CpuSNN::runNetwork(int _nsec, int _nmsec, bool enablePrint, bool copyState) 
 	CUDA_START_TIMER(timer);
 
 	// if nsec=0, simTimeMs=10, we need to run the simulator for 10 timeStep;
-	// if nsec=1, simTimeMs=10, we need to run the simulator for 1*1000+10, time Step;
+	// if nsec=1, simTimeMs=10, we need to run the simulator for 1*1000+10, timeStep;
 	for(int i=0; i < runDuration; i++) {
 		if(simMode_ == CPU_MODE)
 			doSnnSim();
@@ -580,12 +580,17 @@ int CpuSNN::runNetwork(int _nsec, int _nmsec, bool enablePrint, bool copyState) 
 
 		if (updateTime()) {
 			// finished one sec of simulation...
-			if (showStatusCycle_==showStatusCnt_++) {
-					showStatus();
-					showStatusCnt_=1;
-			}
+			bool showLog = showStatusCycle_ == ++showStatusCnt_; // fast way of !(simTimeSec%showStatusCycle_)
 
-			updateSpikeMonitor();
+			if (numSpikeMonitor) {
+				updateSpikeMonitor();
+			}
+			if (showLog) {
+				showStatus();
+				showStatusCnt_=0; // reset counter
+			}
+			if (showLog || numSpikeMonitor)
+				CARLSIM_INFO("\n^ (time=%llds) =========\n", (unsigned long long) simTimeSec);
 
 			if(simMode_ == CPU_MODE)
 				updateStateAndFiringTable();
@@ -745,6 +750,9 @@ void CpuSNN::resetSpikeCntUtil(int my_grpId ) {
 
 // reset spike counter to zero
 void CpuSNN::resetSpikeCounter(int grpId, int configId) {
+	if (!sim_with_spikecounters)
+		return;
+
 	assert(grpId>=-1); assert(grpId<numGrp); assert(configId>=-1); assert(configId<nConfig_);
 
 	if (grpId==ALL && configId==ALL) { // shortcut for all groups & configs
@@ -825,8 +833,10 @@ void CpuSNN::setSpikeCounter(int grpId, int recordDur, int configId) {
 			return;
 		}
 
+		sim_with_spikecounters = true; // inform simulation
 		grp_Info[cGrpId].withSpikeCounter = true; // inform the group
 		grp_Info[cGrpId].spkCntRecordDur = (recordDur>0)?recordDur:-1; // set record duration, after which spike buf will be reset
+		grp_Info[cGrpId].spkCntRecordDurHelper = 0; // counter to help make fast modulo
 		grp_Info[cGrpId].spkCntBufPos = numSpkCnt; // inform group which pos it has in spike buf
 		spkCntBuf[numSpkCnt] = new int[grp_Info[cGrpId].SizeN]; // create spike buf
 		memset(spkCntBuf[numSpkCnt],0,(grp_Info[cGrpId].SizeN)*sizeof(int)); // set all to 0
@@ -1446,7 +1456,7 @@ void CpuSNN::CpuSNNinit() {
 	getRandClosed.seed(randSeed_*3);
 
 	showStatusCycle_ = (loggerMode_==SILENT)? -1 : 1; // default: show network status every second
-	showStatusCnt_ = 1; // counter to implement fast version of !(simTimeSec%showStatusCycle_)
+	showStatusCnt_ = 0; // counter to implement fast version of !(simTimeSec%showStatusCycle_)
 
 	finishedPoissonGroup  = false;
 	connectBegin = NULL;
@@ -1531,6 +1541,7 @@ void CpuSNN::CpuSNNinit() {
 
 		grp_Info[i].withSpikeCounter = false;
 		grp_Info[i].spkCntRecordDur = -1;
+		grp_Info[i].spkCntRecordDurHelper = 0;
 		grp_Info[i].spkCntBufPos = -1;
 
 		grp_Info[i].StartN       = -1;
@@ -1906,7 +1917,7 @@ void CpuSNN::checkSpikeCounterRecordDur() {
 			continue;
 
 		// skip if simTime doesn't need udpating
-		if (simTime % grp_Info[g].spkCntRecordDur)
+		if (simTime != ++grp_Info[g].spkCntRecordDurHelper)
 			continue;
 
  		if (simMode_==GPU_MODE)
@@ -2223,8 +2234,10 @@ void CpuSNN::doD2CurrentUpdate()
 
 void CpuSNN::doSnnSim() {
 	// for all Spike Counters, reset their spike counts to zero if simTime % recordDur == 0
-	checkSpikeCounterRecordDur();
-
+	if (sim_with_spikecounters) {
+		checkSpikeCounterRecordDur();
+	}
+	
 	// decay STP vars and conductances
 	doSTPUpdateAndDecayCond();
 
@@ -3727,10 +3740,6 @@ bool CpuSNN::updateTime() {
 
 
 void CpuSNN::updateSpikeMonitor() {
-	// don't continue if numSpikeMonitor is zero
-	if(numSpikeMonitor==0)
-		return;
-
 	bool bufferOverFlow[MAX_GRP_PER_SNN];
 	memset(bufferOverFlow,0,sizeof(bufferOverFlow));
 

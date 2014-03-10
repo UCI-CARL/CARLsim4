@@ -738,6 +738,14 @@ __global__ 	void kernel_findFiring (int t, int sec, int simTime) {
 						int bufPos = gpuGrpInfo[grpId].spkCntBufPos;
 						int bufNeur = nid-gpuGrpInfo[grpId].StartN;
 						gpuPtrs.spkCntBuf[bufPos][bufNeur]++;
+						/* NOTE: When compiling with -arch sm_13 the following warning might pop up:
+						 * src/snn_gpu.cu(740): Warning:Cannot tell what pointer points to, assuming global memory space
+						 * This warning can be safely ignored.
+						 * It is a limitation of pre-Fermi cards, and "assuming global memory space" is correct in
+						 * 99.999% of cases. If you target a Fermi device, you shouldn't compile with sm_13... So if
+						 * you switch that to, e.g., sm_20, the warning will go away. For more information see:
+						 * http://stackoverflow.com/questions/5212875/resolving-thrust-cuda-warnings-cannot-tell-what-pointer-points-to
+						 */
 					}
 				}
 			}
@@ -2710,8 +2718,10 @@ void CpuSNN::assignPoissonFiringRate_GPU()
 
 void CpuSNN::doGPUSim() {
 	// for all Spike Counters, reset their spike counts to zero if simTime % recordDur == 0
-	checkSpikeCounterRecordDur();
-
+	if (sim_with_spikecounters) {
+		checkSpikeCounterRecordDur();
+	}
+	
 	if (spikeRateUpdated) {
 		assignPoissonFiringRate_GPU();
 		spikeRateUpdated = false;
@@ -2767,7 +2777,7 @@ void CpuSNN::showStatus_GPU() {
 	CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &gpu_secD1fireCnt, secD1fireCnt, sizeof(int), 0, cudaMemcpyDeviceToHost));
 	spikeCountAll1sec = gpu_secD1fireCnt + gpu_secD2fireCnt;
 	secD1fireCnt  = gpu_secD1fireCnt;
-	printWeight(-1);
+//	printWeight(-1);
 }
 
 __global__ void gpu_resetFiringInformation()

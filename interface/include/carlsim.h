@@ -247,10 +247,43 @@ public:
 
 	void resetSpikeCntUtil(int grpId=ALL); //!< resets spike count for particular neuron group
 
+	/*!
+	 * \brief reset Spike Counter to zero
+	 * Manually resets the spike buffers of a Spike Counter to zero (for a specific group).
+	 * Buffers get reset to zero automatically after recordDur. However, you can reset the buffer manually at any
+	 * point in time.
+	 * \param grpId the group for which to reset the spike counts. Set to ALL if you want to reset all Spike Counters.
+	 * \param configId the config id for which to reset the spike counts. Set to ALL if you want to reset all configIds
+	 */
+	void resetSpikeCounter(int grpId, int configId=ALL);
+
+	/*!
+	 * \brief A Spike Counter keeps track of the number of spikes per neuron in a group.
+	 * A Spike Counter keeps track of all spikes per neuron for a certain time period (recordDur).
+	 * After that, the spike buffers get reset to zero number of spikes.
+	 * Works for excitatory/inhibitory neurons.
+	 * The recording time can be set to any x number of ms, so that after x ms the spike counts will be reset
+	 * to zero. If x==-1, then the spike counts will never be reset (should only overflow after 97 days of sim).
+	 * Also, spike counts can be manually reset at any time by calling snn->resetSpikeCounter(group);
+	 * At any time, you can call getSpikeCounter to get the spiking information out.
+	 * You can have only one spike counter per group. However, a group can have both a SpikeMonitor and a SpikeCounter.
+	 * \param grpId the group for which you want to enable a SpikeCounter
+	 * \param recordDur number of ms for which to record spike numbers. Spike numbers will be reset to zero after
+	 * this. Set frameDur to -1 to never reset spike counts. Default: -1.
+	 */
+	void setSpikeCounter(int grpId, int recordDur=-1, int configId=ALL);
+
 	//! Sets up a spike generator
 	void setSpikeGenerator(int grpId, SpikeGenerator* spikeGen, int configId=ALL);
 
-	//! Sets a spike monitor for a group, custom SpikeMonitor class
+	/*!
+	 * \brief Sets a spike monitor for a group, custom SpikeMonitor class
+	 * You can either write your own class that derives from SpikeMonitor, and directly access the neuron IDs and
+	 * spike times in 1000 ms bins, or you can set spikeMon=NULL, in which case the spike counts will simply be
+	 * output to console every 1000 ms.
+	 * If you want to dump spiking information to file, use the other SpikeMonitor.
+	 * If you need spiking information in smaller bins, use a SpikeCounter.
+	 */
 	void setSpikeMonitor(int gid, SpikeMonitor* spikeMon=NULL, int configId=ALL);
 
 	//! Sets a spike monitor for a group, prints spikes to binary file
@@ -300,6 +333,16 @@ public:
 
 	//! Returns pointer to 1D array of the number of spikes every neuron in the group has fired
 	unsigned int* getSpikeCntPtr(int grpId);
+
+	/*!
+	 * \brief return the number of spikes per neuron for a certain group
+	 * A Spike Counter keeps track of all spikes per neuron for a certain time period (recordDur) at any point in time.
+	 * \param[in] grpId	   the group for which you want the spikes (cannot be ALL)
+	 * \param[in] configId the configuration ID (cannot be ALL)
+	 * \returns pointer to array of ints. Number of elements in array is the number of neurons in group.
+	 * Each entry is the number of spikes for this neuron (int) since the last reset.
+	 */
+	int* getSpikeCounter(int grpId, int configId=0);
 
 	// FIXME: fix this
 	// TODO: maybe consider renaming getPopWeightChanges

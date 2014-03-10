@@ -473,6 +473,7 @@ typedef struct group_info_s
 
 	bool withSpikeCounter; //!< if this flag is set, we want to keep track of how many spikes per neuron in the group
 	int spkCntRecordDur; //!< record duration, after which spike buffer gets reset
+	int spkCntRecordDurHelper; //!< counter to help make fast modulo
 	int spkCntBufPos; //!< which position in the spike buffer the group has
 
 	//!< homeostatic plasticity variables
@@ -660,7 +661,7 @@ typedef struct group_info_s
 	 * configuration ID (configID).  This function only works for fixed synapses and for connections of type
 	 * CONN_USER_DEFINED. Only the weights are changed, not the maxWts, delays, or connected values
 	 */
-	 void reassignFixedWeights(short int connectId, float weightMatrix[], int matrixSize, int configId);
+	void reassignFixedWeights(short int connectId, float weightMatrix[], int matrixSize, int configId);
 
 	void resetSpikeCntUtil(int grpId = -1); //!< resets spike count for particular neuron group
 
@@ -678,17 +679,17 @@ typedef struct group_info_s
 	 * \brief A Spike Counter keeps track of the number of spikes per neuron in a group.
 	 * A Spike Counter keeps track of all spikes per neuron for a certain time period (recordDur).
 	 * After that, the spike buffers get reset to zero number of spikes.
-	 * Works for excitatory/inhibitory neurons as well as spike generators.
+	 * Works for excitatory/inhibitory neurons.
 	 * The recording time can be set to any x number of ms, so that after x ms the spike counts will be reset
 	 * to zero. If x==-1, then the spike counts will never be reset (should only overflow after 97 days of sim).
 	 * Also, spike counts can be manually reset at any time by calling snn->resetSpikeCounter(group);
-	 * You can have only one spike counter per group. However, a group can have both a Spike Monitor and a Spike
-	 * Counter.
-	 * \param grpId the group for which you want to enable a RT SpikeMon
+	 * At any time, you can call getSpikeCounter to get the spiking information out.
+	 * You can have only one spike counter per group. However, a group can have both a SpikeMonitor and a SpikeCounter.
+	 * \param grpId the group for which you want to enable a SpikeCounter
 	 * \param recordDur number of ms for which to record spike numbers. Spike numbers will be reset to zero after
-	 * this. Set frameDur to -1 to never reset spike counts. Default:
+	 * this. Set frameDur to -1 to never reset spike counts. Default: -1.
 	 */
-	void setSpikeCounter(int grpId, int recordDur=-1, int configId=ALL);
+	void setSpikeCounter(int grpId, int recordDur, int configId);
 	
 	//! sets up a spike generator
 	void setSpikeGenerator(int grpId, SpikeGenerator* spikeGen, int configId);
@@ -1073,6 +1074,7 @@ typedef struct group_info_s
 	bool sim_with_stdp;
 	bool sim_with_stp;
 	bool sim_with_conductances;
+	bool sim_with_spikecounters; //!< flag will be true if there are any spike counters around
 	//! flag to enable the copyFiringStateInfo from GPU to CPU
 	bool enableGPUSpikeCntPtr;
 
