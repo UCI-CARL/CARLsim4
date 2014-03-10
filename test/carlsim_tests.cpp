@@ -71,7 +71,234 @@ private:
 };
 
 
+//! a spike monitor that counts the number of spikes per neuron, and also the total number of spikes
+//! used to test the behavior of SpikeCounter
+class SpikeMonitorPerNeuron: public SpikeMonitor {
+private:
+	const int nNeur_; // number of neurons in the group
+	int* spkPerNeur_; // number of spikes per neuron
+	long long spkTotal_; // number of spikes in group (across all neurons)
 
+public:
+	SpikeMonitorPerNeuron(int numNeur) : nNeur_(numNeur) {
+		// we're gonna count the spikes each neuron emits
+		spkPerNeur_ = new int[nNeur_];
+		memset(spkPerNeur_,0,sizeof(int)*nNeur_);
+		spkTotal_ = 0;
+	}
+		
+	// destructor, delete all dynamically allocated data structures
+	~SpikeMonitorPerNeuron() { delete spkPerNeur_; }
+		
+	int* getSpikes() { return spkPerNeur_; }
+	long long getSpikesTotal() { return spkTotal_; }
+
+	// the update function counts the spikes per neuron in the current second
+	void update(CpuSNN* s, int grpId, unsigned int* NeuronIds, unsigned int *timeCounts) {
+		int pos = 0;
+		for (int t=0; t<1000; t++) {
+			for (int i=0; i<timeCounts[t]; i++,pos++) {
+				// turns out id will be enumerated between 0..numNeur_; it is NOT preSynIds[]
+				// or postSynIds[] or whatever...
+				int id = NeuronIds[pos];
+				assert(id>=0); assert(id<nNeur_);
+				spkPerNeur_[id]++;
+				spkTotal_++;
+			}
+		}
+	}
+};
+
+
+
+/// **************************************************************************************************************** ///
+/// CARLSIM INTERFACE
+/// **************************************************************************************************************** ///
+
+//! trigger all UserErrors
+TEST(Interface, setSpikeCounterUserError) {
+	CARLsim* sim = new CARLsim("SNN",CPU_MODE,SILENT,0,1,42);
+	int g1=sim->createGroup("excit", 10, EXCITATORY_NEURON);
+	EXPECT_DEATH({sim->setSpikeCounter(ALL);},"");
+	delete sim;
+}
+
+//! trigger all UserErrors
+TEST(Interface, getSpikeCounterUserError) {
+	CARLsim* sim = new CARLsim("SNN",CPU_MODE,SILENT,0,1,42);
+	int g1=sim->createGroup("excit", 10, EXCITATORY_NEURON);
+	sim->setSpikeCounter(g1);
+	EXPECT_DEATH({sim->getSpikeCounter(ALL);},"");
+	EXPECT_DEATH({sim->getSpikeCounter(g1,ALL);},"");
+	delete sim;
+}
+
+/// **************************************************************************************************************** ///
+/// SPIKE COUNTER
+/// **************************************************************************************************************** ///
+
+TEST(SpikeCounter, setSpikeCounterTrue) {
+	// create network by varying nConfig from 1...maxConfig, with
+	// step size nConfigStep
+	std::string name = "SNN";
+	int maxConfig = rand()%10 + 10;
+	int nConfigStep = rand()%3 + 2;
+	float STP_U = 0.25f;		// the exact values don't matter
+	float STP_tF = 10.0f;
+	float STP_tD = 15.0f;
+	CpuSNN* sim;
+
+	for (int mode=0; mode<=1; mode++) {
+		for (int nConfig=1; nConfig<=maxConfig; nConfig+=nConfigStep) {
+			sim = new CpuSNN(name,mode?GPU_MODE:CPU_MODE,SILENT,0,nConfig,42);
+
+			int recordDur = rand()%1000 + 1;
+
+			int g1=sim->createGroup("excit", 10, EXCITATORY_NEURON,ALL);
+			sim->setNeuronParameters(g1, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f, ALL);
+			sim->setSpikeCounter(g1,recordDur,ALL);
+
+			for (int c=0; c<nConfig; c++) {
+				group_info_t grpInfo = sim->getGroupInfo(g1,c);
+				EXPECT_TRUE(grpInfo.withSpikeCounter);
+				EXPECT_FLOAT_EQ(grpInfo.spkCntRecordDur,recordDur);
+			}
+			delete sim;
+		}
+	}
+}
+
+//! expect CARLsim to die if SpikeCounter is called with silly params
+TEST(SpikeCounter, setSpikeCounterDeath) {
+	std::string name = "SNN";
+	CpuSNN* sim = new CpuSNN(name,CPU_MODE,SILENT,0,1,42);
+	int g1=sim->createGroup("excit", 10, EXCITATORY_NEURON, ALL);
+
+	// grpId
+	EXPECT_DEATH({sim->setSpikeCounter(g1+1,1,ALL);},"");
+	EXPECT_DEATH({sim->setSpikeCounter(-1,1,ALL);},"");
+	EXPECT_DEATH({sim->setSpikeCounter(sim->numGrp,1,ALL);},"");
+
+	// configId
+	EXPECT_DEATH({sim->setSpikeCounter(g1,1,-2);},"");
+	EXPECT_DEATH({sim->setSpikeCounter(g1,1,2);},"");
+	EXPECT_DEATH({sim->setSpikeCounter(g1,1,100);},"");
+
+	delete sim;
+}
+
+//! expects the number of spikes recorded by spike counter to be equal to spike monitor values
+TEST(SpikeCounter, SpikeCntvsSpikeMon) {
+	// create network by varying nConfig from 1...maxConfig, with
+	// step size nConfigStep
+	std::string name = "SNN";
+	int maxConfig = rand()%10 + 10;
+	int nConfigStep = rand()%3 + 2;
+	float STP_U = 0.25f;		// the exact values don't matter
+	float STP_tF = 10.0f;
+	float STP_tD = 15.0f;
+	CpuSNN* sim;
+
+	int* spikesCnt;
+	int* spikesMon;
+
+	// FIXME: this will fail in GPU mode... Because number of spikes will be zero. However, even the "official" Spike
+	// Monitor is returning zero spikes. Is this due to the ordering in doGPUsim()?
+	for (int mode=0; mode<=1; mode++) {
+		for (int nConfig=1; nConfig<=maxConfig; nConfig+=nConfigStep) {
+			sim = new CpuSNN(name,mode?GPU_MODE:CPU_MODE,USER,0,nConfig,42);
+			int recordDur = -1;
+
+			int g0=sim->createSpikeGeneratorGroup("input", 100, EXCITATORY_NEURON,ALL);
+			int g1=sim->createGroup("excit", 10, EXCITATORY_NEURON,ALL);
+			sim->setNeuronParameters(g1, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f, ALL);
+
+			sim->connect(g0,g1,"full",0.001f,0.001f,1.0f,1,1,1.0f,1.0f,SYN_FIXED);
+			sim->setConductances(ALL,true,5.0f,150.0f,6.0f,150.0f,ALL);
+
+			sim->setSpikeCounter(g1,recordDur,ALL);
+			SpikeMonitorPerNeuron* spikePN = new SpikeMonitorPerNeuron(10);
+			sim->setSpikeMonitor(g1,spikePN,ALL);
+
+			PeriodicSpikeGenerator* spk50 = new PeriodicSpikeGenerator(50.0f); // periodic spiking @ 50 Hz
+			sim->setSpikeGenerator(g0, spk50, ALL);
+
+			// after some time expect some number of spikes
+			sim->runNetwork(1,0,false,false);
+			spikesMon = spikePN->getSpikes();
+			for (int c=0; c<nConfig; c++) { // for each configId
+				spikesCnt = sim->getSpikeCounter(g1,c);
+				for (int i=0; i<10; i++) { // for each neuron
+					EXPECT_EQ(spikesCnt[i],14);
+					EXPECT_EQ(spikesCnt[i]*nConfig,spikesMon[i]); // SpkMon should have the same, but all configId's together
+				}
+			}
+
+			delete sim;
+			delete spikePN;
+			delete spk50;
+		}
+	}
+}
+
+//! expects certain number of spikes, CPU same as GPU
+TEST(SpikeCounter, CPUvsGPU) {
+	// create network by varying nConfig from 1...maxConfig, with
+	// step size nConfigStep
+	std::string name = "SNN";
+	int maxConfig = rand()%10 + 10;
+	int nConfigStep = rand()%3 + 2;
+	float STP_U = 0.25f;		// the exact values don't matter
+	float STP_tF = 10.0f;
+	float STP_tD = 15.0f;
+	CpuSNN* sim;
+
+	int* spikes;
+
+	for (int mode=0; mode<=1; mode++) {
+		for (int nConfig=1; nConfig<=maxConfig; nConfig+=nConfigStep) {
+			sim = new CpuSNN(name,mode?GPU_MODE:CPU_MODE,SILENT,0,nConfig,42);
+
+			int recordDur = -1;
+
+			int g0=sim->createSpikeGeneratorGroup("input", 100, EXCITATORY_NEURON,ALL);
+			int g1=sim->createGroup("excit", 1, EXCITATORY_NEURON,ALL);
+			sim->setNeuronParameters(g1, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f, ALL);
+
+			sim->connect(g0,g1,"full",0.001f,0.001f,1.0f,1,1,1.0f,1.0f,SYN_FIXED);
+			sim->setConductances(ALL,true,5.0f,150.0f,6.0f,150.0f,ALL);
+
+			sim->setSpikeCounter(g1,recordDur,ALL);
+			sim->setSpikeMonitor(g1,NULL,ALL);
+
+			PeriodicSpikeGenerator* spk50 = new PeriodicSpikeGenerator(50.0f); // periodic spiking @ 50 Hz
+			sim->setSpikeGenerator(g0, spk50, ALL);
+
+			// after some time expect some number of spikes
+			sim->runNetwork(0,750,false,false);
+			spikes = sim->getSpikeCounter(g1,0);
+			EXPECT_EQ(spikes[0],10);
+
+			// reset different group and expect same number
+			sim->resetSpikeCounter(g0,ALL);
+			spikes = sim->getSpikeCounter(g1,0);
+			EXPECT_EQ(spikes[0],10);
+
+			// reset group and expect zero
+			sim->resetSpikeCounter(g1,ALL);
+			spikes = sim->getSpikeCounter(g1,0);
+			EXPECT_EQ(spikes[0],0);
+
+			// run some more and expect number
+			sim->runNetwork(2,134,false,false);
+			spikes = sim->getSpikeCounter(g1,0);
+			EXPECT_EQ(spikes[0],28);
+
+			delete spk50;
+			delete sim;
+		}
+	}
+}
 
 /// **************************************************************************************************************** ///
 /// SHORT-TERM PLASTICITY STP
@@ -84,20 +311,21 @@ private:
 TEST(STP, setSTPTrue) {
 	// create network by varying nConfig from 1...maxConfig, with
 	// step size nConfigStep
+	std::string name = "SNN";
 	int maxConfig = rand()%10 + 10;
 	int nConfigStep = rand()%3 + 2;
 	float STP_U = 0.25f;		// the exact values don't matter
 	float STP_tF = 10.0f;
 	float STP_tD = 15.0f;
-	CARLsim* sim;
+	CpuSNN* sim;
 
 	for (int mode=0; mode<=1; mode++) {
 		for (int nConfig=1; nConfig<=maxConfig; nConfig+=nConfigStep) {
-			sim = new CARLsim("SNN",mode?GPU_MODE:CPU_MODE,SILENT,0,nConfig,42);
+			sim = new CpuSNN(name,mode?GPU_MODE:CPU_MODE,SILENT,0,nConfig,42);
 
-			int g1=sim->createGroup("excit", 10, EXCITATORY_NEURON);
-			sim->setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f);
-			sim->setSTP(g1,true,STP_U,STP_tF,STP_tD);					// exact values matter
+			int g1=sim->createGroup("excit", 10, EXCITATORY_NEURON,ALL);
+			sim->setNeuronParameters(g1, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f, ALL);
+			sim->setSTP(g1,true,STP_U,STP_tF,STP_tD,ALL);					// exact values matter
 
 			for (int c=0; c<nConfig; c++) {
 				group_info_t grpInfo = sim->getGroupInfo(g1,c);
@@ -226,7 +454,7 @@ TEST(STP, externalCPUvsData) {
 	int randSeed = rand() % 1000;	// randSeed must not interfere with STP
 	float abs_error = 1e-4f;		// allowed error margin
 
-	CpuSNN* sim = new CpuSNN(name,CPU_MODE,USER,0,1,randSeed);
+	CpuSNN* sim = new CpuSNN(name,CPU_MODE,SILENT,0,1,randSeed);
 	int g0=sim->createSpikeGeneratorGroup("input", 1, EXCITATORY_NEURON, ALL);
 	int g1=sim->createGroup("excit", 1, EXCITATORY_NEURON, ALL);
 	sim->setNeuronParameters(g1, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f, ALL);

@@ -460,6 +460,19 @@ void CARLsim::resetSpikeCntUtil(int grpId) {
 	snn_->resetSpikeCntUtil(grpId);
 }
 
+// resets spike counters
+void CARLsim::resetSpikeCounter(int grpId, int configId) {
+	snn_->resetSpikeCounter(grpId,configId);
+}
+
+// sets a spike counter for a group
+void CARLsim::setSpikeCounter(int grpId, int recordDur, int configId) {
+	std::stringstream funcName;	funcName << "setSpikeCounter(" << grpId << "," << recordDur << "," << configId << ")";
+	UserErrors::userAssert(grpId!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName.str(), "grpId");
+
+	snn_->setSpikeCounter(grpId,recordDur,configId);
+}
+
 // sets up a spike generator
 void CARLsim::setSpikeGenerator(int grpId, SpikeGenerator* spikeGen, int configId) {
 	std::string funcName = "setSpikeGenerator(\""+getGroupName(grpId,configId)+"\")";
@@ -597,6 +610,15 @@ void CARLsim::getPopWeights(int gIDpre, int gIDpost, float*& weights, int& size,
 
 unsigned int* CARLsim::getSpikeCntPtr(int grpId) {
 	return snn_->getSpikeCntPtr(grpId);
+}
+
+// get spiking information out for a given group
+int* CARLsim::getSpikeCounter(int grpId, int configId) {
+	std::stringstream funcName;	funcName << "getSpikeCounter(" << grpId << "," << configId << ")";
+	UserErrors::userAssert(grpId!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName.str(), "grpId");
+	UserErrors::userAssert(configId!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName.str(), "configId");
+
+	return snn_->getSpikeCounter(grpId,configId);
 }
 
 float* CARLsim::getWeightChanges(int gIDpre, int gIDpost, int& Npre, int& Npost, float* weightChanges) {

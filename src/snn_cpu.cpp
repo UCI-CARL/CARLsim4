@@ -567,7 +567,7 @@ int CpuSNN::runNetwork(int _nsec, int _nmsec, bool enablePrint, bool copyState) 
 	CUDA_START_TIMER(timer);
 
 	// if nsec=0, simTimeMs=10, we need to run the simulator for 10 timeStep;
-	// if nsec=1, simTimeMs=10, we need to run the simulator for 1*1000+10, time Step;
+	// if nsec=1, simTimeMs=10, we need to run the simulator for 1*1000+10, timeStep;
 	for(int i=0; i < runDuration; i++) {
 		if(simMode_ == CPU_MODE)
 			doSnnSim();
@@ -580,12 +580,17 @@ int CpuSNN::runNetwork(int _nsec, int _nmsec, bool enablePrint, bool copyState) 
 
 		if (updateTime()) {
 			// finished one sec of simulation...
-			if (showStatusCycle_==showStatusCnt_++) {
-					showStatus();
-					showStatusCnt_=1;
-			}
+			bool showLog = showStatusCycle_ == ++showStatusCnt_; // fast way of !(simTimeSec%showStatusCycle_)
 
-			updateSpikeMonitor();
+			if (numSpikeMonitor) {
+				updateSpikeMonitor();
+			}
+			if (showLog) {
+				showStatus();
+				showStatusCnt_=0; // reset counter
+			}
+			if (showLog || numSpikeMonitor)
+				CARLSIM_INFO("\n^ (time=%llds) =========\n", (unsigned long long) simTimeSec);
 
 			if(simMode_ == CPU_MODE)
 				updateStateAndFiringTable();
@@ -743,6 +748,42 @@ void CpuSNN::resetSpikeCntUtil(int my_grpId ) {
   }
 }
 
+// reset spike counter to zero
+void CpuSNN::resetSpikeCounter(int grpId, int configId) {
+	if (!sim_with_spikecounters)
+		return;
+
+	assert(grpId>=-1); assert(grpId<numGrp); assert(configId>=-1); assert(configId<nConfig_);
+
+	if (grpId==ALL && configId==ALL) { // shortcut for all groups & configs
+		for(int g=0; g<numGrp; g++)
+			resetSpikeCounter(g,0);
+	} else if (grpId == ALL) { // shortcut for all groups
+		for(int grpId1=0; grpId1 < numGrp; grpId1 += nConfig_) {
+			int g = getGroupId(grpId1, configId);
+			resetSpikeCounter(g,configId);
+		}
+	} else if (configId == ALL) { // shortcut for all configs
+		for(int c=0; c < nConfig_; c++)
+			resetSpikeCounter(grpId,c);
+	} else {
+		int cGrpId = getGroupId(grpId,configId);
+
+		// only update if SpikeMonRT is set for this group
+		if (!grp_Info[cGrpId].withSpikeCounter)
+			return;
+
+		if (simMode_==GPU_MODE) {
+			// grpId and configId can no longer be ALL
+			resetSpikeCounter_GPU(grpId,configId);
+		}
+		else {
+			int bufPos = grp_Info[cGrpId].spkCntBufPos; // retrieve buf pos
+			memset(spkCntBuf[bufPos],0,grp_Info[cGrpId].SizeN*sizeof(int)); // set all to 0
+		}
+	}
+}
+
 // sets up a spike generator
 void CpuSNN::setSpikeGenerator(int grpId, SpikeGenerator* spikeGen, int configId) {
 	if (configId == ALL) {
@@ -757,6 +798,55 @@ void CpuSNN::setSpikeGenerator(int grpId, SpikeGenerator* spikeGen, int configId
 	}
 }
 
+// A Spike Counter keeps track of the number of spikes per neuron in a group.
+void CpuSNN::setSpikeCounter(int grpId, int recordDur, int configId) {
+	assert(grpId>=0); assert(grpId<numGrp); assert(configId>=-1); assert(configId<nConfig_);
+
+	// the following does currently not make sense because SpikeGenerators are not supported
+	/*
+	assert(grpId>=-1); assert(grpId<numGrp); assert(configId>=-1); assert(configId<nConfig_);
+	if (grpId==ALL && configId==ALL) { // shortcut for all groups & configs
+		for(int g=0; g < numGrp; g++)
+			setSpikeCounter(g, recordDur, 0);
+	} else if (grpId == ALL) { // shortcut for all groups
+		for(int grpId1=0; grpId1 < numGrp; grpId1 += nConfig_) {
+			int g = getGroupId(grpId1, configId);
+			setSpikeCounter(g, recordDur, configId);
+		}
+	} else if (configId == ALL) { // shortcut for all configs
+		for(int c=0; c < nConfig_; c++)
+			setSpikeCounter(grpId, recordDur, c);
+	} else {
+		*/
+
+	if (configId == ALL) { // shortcut for all configs
+		for(int c=0; c < nConfig_; c++)
+			setSpikeCounter(grpId, recordDur, c);
+	} else {
+
+		int cGrpId = getGroupId(grpId, configId);
+
+		// TODO: implement same for spike generators on GPU side (see CpuSNN::generateSpikes)
+		if (grp_Info[cGrpId].isSpikeGenerator) {
+			fprintf(stderr,"ERROR: Spike Counters for Spike Generators are currently not supported.\n");
+			exit(1);
+			return;
+		}
+
+		sim_with_spikecounters = true; // inform simulation
+		grp_Info[cGrpId].withSpikeCounter = true; // inform the group
+		grp_Info[cGrpId].spkCntRecordDur = (recordDur>0)?recordDur:-1; // set record duration, after which spike buf will be reset
+		grp_Info[cGrpId].spkCntRecordDurHelper = 0; // counter to help make fast modulo
+		grp_Info[cGrpId].spkCntBufPos = numSpkCnt; // inform group which pos it has in spike buf
+		spkCntBuf[numSpkCnt] = new int[grp_Info[cGrpId].SizeN]; // create spike buf
+		memset(spkCntBuf[numSpkCnt],0,(grp_Info[cGrpId].SizeN)*sizeof(int)); // set all to 0
+
+		numSpkCnt++;
+
+		CARLSIM_INFO("SpikeCounter set for Group %d (%s): %d ms recording window",cGrpId,
+			grp_Info2[cGrpId].Name.c_str(),recordDur);
+	}
+}
 
 // add a SpikeMonitor for group where spikeMon can be custom class or WriteSpikesToFile
 void CpuSNN::setSpikeMonitor(int grpId, SpikeMonitor* spikeMon, int configId) {
@@ -799,7 +889,7 @@ void CpuSNN::setSpikeMonitor(int grpId, SpikeMonitor* spikeMon, int configId) {
 	    cpuSnnSz.monitorInfoSize += sizeof(int)*buffSize;
 	    cpuSnnSz.monitorInfoSize += sizeof(int)*(1000);
 
-	    CARLSIM_INFO("SpikeMonitor set for group %d (%s)",grpId,grp_Info2[grpId].Name.c_str());
+	    CARLSIM_INFO("SpikeMonitor set for group %d (%s)",cGrpId,grp_Info2[grpId].Name.c_str());
 	}
 }
 
@@ -1217,6 +1307,22 @@ void CpuSNN::getPopWeights(int grpPreId, int grpPostId, float*& weights, int& ma
 	}
 }
 
+// return spike buffer, which contains #spikes per neuron in the group
+int* CpuSNN::getSpikeCounter(int grpId, int configId) {
+	assert(grpId>=0); assert(grpId<numGrp); assert(configId>=0); assert(configId<nConfig_);
+
+	int cGrpId = getGroupId(grpId, configId);
+	if (!grp_Info[cGrpId].withSpikeCounter)
+		return NULL;
+
+	if (simMode_==GPU_MODE)
+		return getSpikeCounter_GPU(grpId,configId);
+	else {
+		int bufPos = grp_Info[cGrpId].spkCntBufPos; // retrieve buf pos
+		return spkCntBuf[bufPos]; // return pointer to buffer
+	}
+}
+
 // this is a user function
 // TODO: fix this
 float* CpuSNN::getWeightChanges(int gIDpre, int gIDpost, int& Npre, int& Npost, float* weightChanges) {
@@ -1350,7 +1456,7 @@ void CpuSNN::CpuSNNinit() {
 	getRandClosed.seed(randSeed_*3);
 
 	showStatusCycle_ = (loggerMode_==SILENT)? -1 : 1; // default: show network status every second
-	showStatusCnt_ = 1; // counter to implement fast version of !(simTimeSec%showStatusCycle_)
+	showStatusCnt_ = 0; // counter to implement fast version of !(simTimeSec%showStatusCycle_)
 
 	finishedPoissonGroup  = false;
 	connectBegin = NULL;
@@ -1377,6 +1483,7 @@ void CpuSNN::CpuSNNinit() {
 
 	spikeRateUpdated = false;
 	numSpikeMonitor  = 0;
+	numSpkCnt = 0;
 
 	sim_with_fixedwts = true; // default is true, will be set to false if there are any plastic synapses
 	sim_with_conductances = false; // for all others, the default is false
@@ -1431,6 +1538,11 @@ void CpuSNN::CpuSNNinit() {
 		grp_Info[i].dGABAb=1-(1.0/150);
 
 		grp_Info[i].spikeGen = NULL;
+
+		grp_Info[i].withSpikeCounter = false;
+		grp_Info[i].spkCntRecordDur = -1;
+		grp_Info[i].spkCntRecordDurHelper = 0;
+		grp_Info[i].spkCntBufPos = -1;
 
 		grp_Info[i].StartN       = -1;
 		grp_Info[i].EndN       	 = -1;
@@ -1793,6 +1905,27 @@ void CpuSNN::buildPoissonGroup(int grpId) {
 	assert(allocatedPre  <= preSynCnt);
 }
 
+/*!
+ * \brief check whether Spike Counters need to be reset
+ * A Spike Counter keeps track of all spikes per neuron for a certain time period (recordDur)
+ * After this period of time, the spike buffers need to be reset
+ */
+void CpuSNN::checkSpikeCounterRecordDur() {
+	for (int g=0; g<numGrp; g++) {
+		// skip groups w/o spkMonRT or non-real record durations
+		if (!grp_Info[g].withSpikeCounter || grp_Info[g].spkCntRecordDur<=0)
+			continue;
+
+		// skip if simTime doesn't need udpating
+		if (simTime != ++grp_Info[g].spkCntRecordDurHelper)
+			continue;
+
+ 		if (simMode_==GPU_MODE)
+			resetSpikeCounter_GPU(g,0);
+		else
+			resetSpikeCounter(g,0);
+	}
+}
 
 // We parallelly cleanup the postSynapticIds array to minimize any other wastage in that array by compacting the store
 // Appropriate alignment specified by ALIGN_COMPACTION macro is used to ensure some level of alignment (if necessary)
@@ -2100,6 +2233,12 @@ void CpuSNN::doD2CurrentUpdate()
 }
 
 void CpuSNN::doSnnSim() {
+	// for all Spike Counters, reset their spike counts to zero if simTime % recordDur == 0
+	if (sim_with_spikecounters) {
+		checkSpikeCounterRecordDur();
+	}
+	
+	// decay STP vars and conductances
 	doSTPUpdateAndDecayCond();
 
 	updateSpikeGenerators();
@@ -2157,54 +2296,61 @@ void CpuSNN::exitSimulation(int val) {
 
 
 void CpuSNN::findFiring() {
-  int spikeBufferFull = 0;
+	int spikeBufferFull = 0;
 
-  for(int g=0; (g < numGrp) & !spikeBufferFull; g++) {
+	for(int g=0; (g < numGrp) & !spikeBufferFull; g++) {
     // given group of neurons belong to the poisson group....
-    if (grp_Info[g].Type&POISSON_NEURON)
-      continue;
+		if (grp_Info[g].Type&POISSON_NEURON)
+			continue;
 
     // his flag is set if with_stdp is set and also grpType is set to have GROUP_SYN_FIXED
-    for(int i=grp_Info[g].StartN; i <= grp_Info[g].EndN; i++) {
+		for(int i=grp_Info[g].StartN; i <= grp_Info[g].EndN; i++) {
 
-      assert(i < numNReg);
+			assert(i < numNReg);
 
-      if (voltage[i] >= 30.0) {
-	voltage[i] = Izh_c[i];
-	recovery[i] += Izh_d[i];
+			if (voltage[i] >= 30.0) {
+				voltage[i] = Izh_c[i];
+				recovery[i] += Izh_d[i];
 
-	spikeBufferFull = addSpikeToTable(i, g);
+				// if flag hasSpkMonRT is set, we want to keep track of how many spikes per neuron in the group
+				if (grp_Info[g].withSpikeCounter) {
+					int bufPos = grp_Info[g].spkCntBufPos; // retrieve buf pos
+					int bufNeur = i-grp_Info[g].StartN;
+					spkCntBuf[bufPos][bufNeur]++;
+//					printf("%d: %s[%d], nid=%d, %u spikes\n",simTimeMs,grp_Info2[g].Name.c_str(),g,i,spkMonRTbuf[bufPos][buffNeur]);
+				}
+				spikeBufferFull = addSpikeToTable(i, g);
 
-	if (spikeBufferFull)  break;
+				if (spikeBufferFull)
+					break;
 
-	if (grp_Info[g].WithSTDP) {
-	  unsigned int pos_ij = cumulativePre[i];
-	  for(int j=0; j < Npre_plastic[i]; pos_ij++, j++) {
-	    //stdpChanged[pos_ij] = true;
-	    int stdp_tDiff = (simTime-synSpikeTime[pos_ij]);
-	    assert(!((stdp_tDiff < 0) && (synSpikeTime[pos_ij] != MAX_SIMULATION_TIME)));
-	    // don't do LTP if time difference is a lot..
+				if (grp_Info[g].WithSTDP) {
+					unsigned int pos_ij = cumulativePre[i];
+					for(int j=0; j < Npre_plastic[i]; pos_ij++, j++) {
+						int stdp_tDiff = (simTime-synSpikeTime[pos_ij]);
+						assert(!((stdp_tDiff < 0) && (synSpikeTime[pos_ij] != MAX_SIMULATION_TIME)));
 
-	    if (stdp_tDiff > 0)
-#ifdef INHIBITORY_STDP
-	      // if this is an excitatory or inhibitory synapse
-	      if (maxSynWt[pos_ij] >= 0)
-#endif
-		if ((stdp_tDiff*grp_Info[g].TAU_LTP_INV)<25)
-		  wtChange[pos_ij] += STDP(stdp_tDiff, grp_Info[g].ALPHA_LTP, grp_Info[g].TAU_LTP_INV);
-
-#ifdef INHIBITORY_STDP
-		else
-		  if ((stdp_tDiff > 0) && ((stdp_tDiff*grp_Info[g].TAU_LTD_INV)<25))
-		    wtChange[pos_ij] -= (STDP(stdp_tDiff, grp_Info[g].ALPHA_LTP, grp_Info[g].TAU_LTP_INV)
-		    					 - STDP(stdp_tDiff, grp_Info[g].ALPHA_LTD*1.5, grp_Info[g].TAU_LTD_INV));
-#endif
-	  }
+						if (stdp_tDiff > 0) {
+							#ifdef INHIBITORY_STDP
+							// if this is an excitatory or inhibitory synapse
+							if (maxSynWt[pos_ij] >= 0)
+							#endif
+							if ((stdp_tDiff*grp_Info[g].TAU_LTP_INV)<25)
+								wtChange[pos_ij] += STDP(stdp_tDiff, grp_Info[g].ALPHA_LTP, grp_Info[g].TAU_LTP_INV);
+							#ifdef INHIBITORY_STDP
+							else
+								if ((stdp_tDiff > 0) && ((stdp_tDiff*grp_Info[g].TAU_LTD_INV)<25)) {
+									wtChange[pos_ij] -= (STDP(stdp_tDiff, grp_Info[g].ALPHA_LTP, grp_Info[g].TAU_LTP_INV)
+										- STDP(stdp_tDiff, grp_Info[g].ALPHA_LTD*1.5, grp_Info[g].TAU_LTD_INV));
+								}
+							#endif
+						}
+					}
+				}
+				spikeCountAll1sec++;
+			}
+		}
 	}
-	spikeCountAll1sec++;
-      }
-    }
-  }
 }
 
 int CpuSNN::findGrpId(int nid) {
@@ -2327,6 +2473,18 @@ void CpuSNN::generateSpikes() {
 		//generate a spike to all the target neurons from source neuron nid with a delay of del
 		int g = findGrpId(nid);
 
+/*
+// MB: Uncomment this if you want to activate real-time spike monitors for SpikeGenerators
+// However, the GPU version of this is not implemented... Need to implement it for the case 1) GPU mode
+// and generators on CPU side, 2) GPU mode and generators on GPU side
+			// if flag hasSpkCnt is set, we want to keep track of how many spikes per neuron in the group
+			if (grp_Info[g].withSpikeCounter) {
+				int bufPos = grp_Info[g].spkCntBufPos; // retrieve buf pos
+				int bufNeur = nid-grp_Info[g].StartN;
+				spkCntBuf[bufPos][bufNeur]++;
+				printf("%d: %s[%d], nid=%d, %u spikes\n",simTimeMs,grp_Info2[g].Name.c_str(),g,nid,spkCntBuf[bufPos][bufNeur]);
+			}
+*/
 		addSpikeToTable (nid, g);
 		spikeCountAll1sec++;
 		nPoissonSpikes++;
@@ -2971,6 +3129,13 @@ void CpuSNN::resetPointers(bool deallocate) {
 	if (timeTableD1!=NULL && deallocate) delete[] timeTableD1;
 	firingTableD2=NULL; firingTableD1=NULL; timeTableD2=NULL; timeTableD1=NULL;
 
+	// delete all Spike Counters
+	for (int i=0; i<numSpkCnt; i++) {
+		if (spkCntBuf[i]!=NULL && deallocate)
+			delete[] spkCntBuf[i];
+		spkCntBuf[i]=NULL;
+	}
+
 	if (pbuf!=NULL && deallocate) delete pbuf;
 	if (spikeGenBits!=NULL && deallocate) delete[] spikeGenBits;
 	pbuf=NULL; spikeGenBits=NULL;
@@ -3574,74 +3739,67 @@ bool CpuSNN::updateTime() {
 
 
 
-void CpuSNN::updateSpikeMonitor()
-{
-  // don't continue if numSpikeMonitor is zero
-  if(numSpikeMonitor==0)
-    return;
+void CpuSNN::updateSpikeMonitor() {
+	bool bufferOverFlow[MAX_GRP_PER_SNN];
+	memset(bufferOverFlow,0,sizeof(bufferOverFlow));
 
-  bool bufferOverFlow[MAX_GRP_PER_SNN];
-  memset(bufferOverFlow,0,sizeof(bufferOverFlow));
+	/* Reset buffer time counter */
+	for(int i=0; i < numSpikeMonitor; i++)
+		memset(monBufferTimeCnt[i],0,sizeof(int)*(1000));
 
-  /* Reset buffer time counter */
-  for(int i=0; i < numSpikeMonitor; i++)
-    memset(monBufferTimeCnt[i],0,sizeof(int)*(1000));
+	/* Reset buffer position */
+	memset(monBufferPos,0,sizeof(int)*numSpikeMonitor);
 
-  /* Reset buffer position */
-  memset(monBufferPos,0,sizeof(int)*numSpikeMonitor);
+	if(simMode_ == GPU_MODE) {
+		updateSpikeMonitor_GPU();
+	}
 
-  if(simMode_ == GPU_MODE) {
-    updateSpikeMonitor_GPU();
-  }
+	// Read one spike at a time from the buffer and put the spikes to an appopriate monitor buffer. Later the user may
+	// need need to dump these spikes to an output file
+	for(int k=0; k < 2; k++) {
+		unsigned int* timeTablePtr = (k==0)?timeTableD2:timeTableD1;
+		unsigned int* fireTablePtr = (k==0)?firingTableD2:firingTableD1;
+		for(int t=0; t < 1000; t++) {
+			for(int i=timeTablePtr[t+D]; i<timeTablePtr[t+D+1];i++) {
+				/* retrieve the neuron id */
+				int nid   = fireTablePtr[i];
+				if (simMode_ == GPU_MODE)
+					nid = GET_FIRING_TABLE_NID(nid);
+				assert(nid < numN);
 
-  /* Read one spike at a time from the buffer and
-     put the spikes to an appopriate monitor buffer.
-     Later the user may need need to dump these spikes
-     to an output file */
-  for(int k=0; k < 2; k++) {
-    unsigned int* timeTablePtr = (k==0)?timeTableD2:timeTableD1;
-    unsigned int* fireTablePtr = (k==0)?firingTableD2:firingTableD1;
-    for(int t=0; t < 1000; t++) {
-      for(int i=timeTablePtr[t+D]; i<timeTablePtr[t+D+1];i++) {
-	/* retrieve the neuron id */
-	int nid   = fireTablePtr[i];
-	if (simMode_ == GPU_MODE)
-	  nid = GET_FIRING_TABLE_NID(nid);
-	assert(nid < numN);
-	  
-	int grpId = findGrpId(nid);
-	int monitorId = grp_Info[grpId].MonitorId;
-	if(monitorId!= -1) {
-	    assert(nid >= grp_Info[grpId].StartN);
-	    assert(nid <= grp_Info[grpId].EndN);
-	    int   pos   = monBufferPos[monitorId];
-	    if((pos >= monBufferSize[monitorId]))
-	      {
-		if(!bufferOverFlow[monitorId])
-		  CARLSIM_WARN("Buffer Monitor size (%d) is small. Increase buffer firing rate for %s",
-		  			monBufferSize[monitorId], grp_Info2[grpId].Name.c_str());
-		bufferOverFlow[monitorId] = true;
-	      }
-	    else {
-	      monBufferPos[monitorId]++;
-	      monBufferFiring[monitorId][pos] = nid-grp_Info[grpId].StartN; // store the Neuron ID relative to the start of the group
-	      // we store the total firing at time t...
-	      monBufferTimeCnt[monitorId][t]++;
-	    }
-	} /* if monitoring is enabled for this spike */
-      } /* for all spikes happening at time t */
-    }  /* for all time t */
-  }
+				int grpId = findGrpId(nid);
+				int monitorId = grp_Info[grpId].MonitorId;
+				if(monitorId!= -1) {
+					assert(nid >= grp_Info[grpId].StartN);
+					assert(nid <= grp_Info[grpId].EndN);
+					int   pos   = monBufferPos[monitorId];
+					if((pos >= monBufferSize[monitorId])) {
+						if(!bufferOverFlow[monitorId])
+							CARLSIM_WARN("Buffer Monitor size (%d) is small. Increase buffer firing rate for %s",
+								monBufferSize[monitorId], grp_Info2[grpId].Name.c_str());
+						bufferOverFlow[monitorId] = true;
+					}
+					else {
+						monBufferPos[monitorId]++;
+						// store the Neuron ID relative to the start of the group
+						monBufferFiring[monitorId][pos] = nid-grp_Info[grpId].StartN;
+						// we store the total firing at time t...
+						monBufferTimeCnt[monitorId][t]++;
+					}
+				} /* if monitoring is enabled for this spike */
+			} /* for all spikes happening at time t */
+		} /* for all time t */
+	}
 
-  for (int grpId=0;grpId<numGrp;grpId++) {
-    int monitorId = grp_Info[grpId].MonitorId;
-    if(monitorId!= -1) {
-      CARLSIM_INFO("Spike Monitor for Group %s has %d spikes (%f Hz)",grp_Info2[grpId].Name.c_str(),
-      			monBufferPos[monitorId],((float)monBufferPos[monitorId])/(grp_Info[grpId].SizeN));
+	for (int grpId=0;grpId<numGrp;grpId++) {
+		int monitorId = grp_Info[grpId].MonitorId;
+		if(monitorId!= -1) {
+			CARLSIM_INFO("Spike Monitor for Group %s has %d spikes (%f Hz)",grp_Info2[grpId].Name.c_str(),
+				monBufferPos[monitorId],((float)monBufferPos[monitorId])/(grp_Info[grpId].SizeN));
 
-      // call the callback function
-      if (monBufferCallback[monitorId])
-	monBufferCallback[monitorId]->update(this,grpId,monBufferFiring[monitorId],monBufferTimeCnt[monitorId]);
-    }
-  }
+			// call the callback function
+			if (monBufferCallback[monitorId])
+				monBufferCallback[monitorId]->update(this,grpId,monBufferFiring[monitorId],monBufferTimeCnt[monitorId]);
+		}
+	}
 }

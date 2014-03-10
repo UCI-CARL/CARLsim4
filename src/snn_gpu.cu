@@ -686,8 +686,7 @@ void CpuSNN::setSpikeGenBit_GPU(unsigned int nid, int grp)
 // the buffer and make it easy to carry out the calculations in a single group.
 // A single firing function is used for simple neurons and also for poisson neurons
 ///////////////////////////////////////////////////////////////////////////
-__global__ 	void kernel_findFiring (int t, int sec, int simTime)
-{
+__global__ 	void kernel_findFiring (int t, int sec, int simTime) {
 	__shared__ volatile unsigned int fireCnt;
 	__shared__ volatile unsigned int fireCntTest;
 	__shared__ volatile unsigned int fireCntD1;
@@ -696,107 +695,118 @@ __global__ 	void kernel_findFiring (int t, int sec, int simTime)
 	__shared__ volatile int errCode;
 
 	if (0==threadIdx.x) {
-    fireCnt	  = 0; // initialize total cnt to 0
-    fireCntD1  = 0; // initialize inh. cnt to 0
-}
+		fireCnt	  = 0; // initialize total cnt to 0
+		fireCntD1  = 0; // initialize inh. cnt to 0
+	}
 
-  // Ignore this unless you are doing real debugging gpu code...
-INIT_CHECK(ENABLE_MORE_CHECK, retErrCode, NO_KERNEL_ERRORS);
+	// Ignore this unless you are doing real debugging gpu code...
+	INIT_CHECK(ENABLE_MORE_CHECK, retErrCode, NO_KERNEL_ERRORS);
 
-const int totBuffers=loadBufferCount;
+	const int totBuffers=loadBufferCount;
 
-__syncthreads();
+	__syncthreads();
 
-for (int bufPos = blockIdx.x; bufPos < totBuffers; bufPos += gridDim.x)
-{
-      // KILLME !!! This can be further optimized ....
-      // instead of reading each neuron group separately .....
-      // read a whole buffer and use the result ......
-	int2 threadLoad  = getStaticThreadLoad(bufPos);
-	unsigned int  nid        = (STATIC_LOAD_START(threadLoad) + threadIdx.x);
-	int  lastId      = STATIC_LOAD_SIZE(threadLoad);
-	short int grpId   = STATIC_LOAD_GROUP(threadLoad);
-      bool needToWrite = false;	// used by all neuron to indicate firing condition
-      int  fireId      = 0;
+	for (int bufPos = blockIdx.x; bufPos < totBuffers; bufPos += gridDim.x) {
+		// KILLME !!! This can be further optimized ....
+		// instead of reading each neuron group separately .....
+		// read a whole buffer and use the result ......
+		int2 threadLoad  = getStaticThreadLoad(bufPos);
+		unsigned int  nid        = (STATIC_LOAD_START(threadLoad) + threadIdx.x);
+		int  lastId      = STATIC_LOAD_SIZE(threadLoad);
+		short int grpId   = STATIC_LOAD_GROUP(threadLoad);
+		bool needToWrite = false;	// used by all neuron to indicate firing condition
+		int  fireId      = 0;
 
-      assertionFiringParam(grpId, lastId);
+		assertionFiringParam(grpId, lastId);
 
-      // threadId is valid and lies within the lastId.....
-      if ((threadIdx.x < lastId) && (nid < gpuNetInfo.numN)) {
+		// threadId is valid and lies within the lastId.....
+		if ((threadIdx.x < lastId) && (nid < gpuNetInfo.numN)) {
+			// Simple poisson spiker uses the poisson firing probability
+			// to detect whether it has fired or not....
+			if( isPoissonGroup(grpId, nid) ) {
+				if(gpuGrpInfo[grpId].spikeGen) {
+					unsigned int  offset      = nid-gpuGrpInfo[grpId].StartN+gpuGrpInfo[grpId].Noffset;
+					needToWrite = getSpikeGenBit_GPU(offset);
+				}
+				else
+					needToWrite = getPoissonSpike_GPU(nid);
+			}
+			else {
+				if (gpuPtrs.voltage[nid] >= 30.0) {
+					needToWrite = true;
+					if (gpuGrpInfo[grpId].withSpikeCounter) {
+						int bufPos = gpuGrpInfo[grpId].spkCntBufPos;
+						int bufNeur = nid-gpuGrpInfo[grpId].StartN;
+						gpuPtrs.spkCntBuf[bufPos][bufNeur]++;
+						/* NOTE: When compiling with -arch sm_13 the following warning might pop up:
+						 * src/snn_gpu.cu(740): Warning:Cannot tell what pointer points to, assuming global memory space
+						 * This warning can be safely ignored.
+						 * It is a limitation of pre-Fermi cards, and "assuming global memory space" is correct in
+						 * 99.999% of cases. If you target a Fermi device, you shouldn't compile with sm_13... So if
+						 * you switch that to, e.g., sm_20, the warning will go away. For more information see:
+						 * http://stackoverflow.com/questions/5212875/resolving-thrust-cuda-warnings-cannot-tell-what-pointer-points-to
+						 */
+					}
+				}
+			}
+		}
 
-	// Simple poisson spiker uses the poisson firing probability
-	// to detect whether it has fired or not....
-      	if( isPoissonGroup(grpId, nid) ) {
-      		if(gpuGrpInfo[grpId].spikeGen) {
-      			unsigned int  offset      = nid-gpuGrpInfo[grpId].StartN+gpuGrpInfo[grpId].Noffset;
-      			needToWrite = getSpikeGenBit_GPU(offset);
-      		}
-      		else
-      			needToWrite = getPoissonSpike_GPU(nid);
-      	}
-      	else  {
-      		if (gpuPtrs.voltage[nid] >= 30.0) {
-      			needToWrite = true;
-      		}
-      	}
-      }
+		// loop through a few times to ensure that we have added/processed all spikes that need to be written
+		// if the buffer is small relative to the number of spikes needing to be written, we may have to empty the buffer a few times...
+		for (uint8_t c=0;c<2;c++) {
+			// we first increment fireCntTest to make sure we haven't filled the buffer
+			if (needToWrite)
+				fireId = atomicAdd((int*)&fireCntTest, 1);
 
-      // loop through a few times to ensure that we have added/processed all spikes that need to be written
-      // if the buffer is small relative to the number of spikes needing to be written, we may have to empty the buffer a few times...
-      for (uint8_t c=0;c<2;c++) {
-	// we first increment fireCntTest to make sure we haven't filled the buffer
-      	if (needToWrite)
-      		fireId = atomicAdd((int*)&fireCntTest, 1);
+			// if there is a spike and the buffer still has space...
+			if (needToWrite && (fireId <(FIRE_CHUNK_CNT))) {
+				// get our position in the buffer
+				fireId = atomicAdd((int*)&fireCnt, 1);
 
-	// if there is a spike and the buffer still has space...
-      	if (needToWrite && (fireId <(FIRE_CHUNK_CNT))) {
-	  // get our position in the buffer
-      		fireId = atomicAdd((int*)&fireCnt, 1);
+				if (gpuGrpInfo[grpId].MaxDelay == 1)
+					atomicAdd((int*)&fireCntD1, 1);
 
-      		if (gpuGrpInfo[grpId].MaxDelay == 1)
-      			atomicAdd((int*)&fireCntD1, 1);
+				// store ID of the fired neuron
+				needToWrite 	  = false;
+				fireTable[fireId] = nid;
+				fireGrpId[fireId] = grpId;//setFireProperties(grpId, isInhib);
+			}
 
-	  // store ID of the fired neuron
-      		needToWrite 	  = false;
-      		fireTable[fireId] = nid;
-	  fireGrpId[fireId] = grpId;//setFireProperties(grpId, isInhib);
+			__syncthreads();
+
+			// table is full.. dump the local table to the global table before proceeding
+			if (fireCntTest >= (FIRE_CHUNK_CNT)) {
+
+				// clear the table and update...
+				int retCode = newFireUpdate(fireTable,  fireGrpId, fireCnt, fireCntD1, simTime);
+				if (retCode != 0) return;
+				// update based on stdp rule
+				// KILLME !!! if (simTime > 0))
+				if (gpuNetInfo.sim_with_stdp)
+					gpu_updateLTP (fireTable, fireGrpId, fireCnt, simTime);
+
+				// reset counters
+				if (0==threadIdx.x) {
+					fireCntD1  = 0;
+					fireCnt   = 0;
+					fireCntTest = 0;
+					MEASURE_GPU(0, 1);
+				}
+			}
+		}
 	}
 
 	__syncthreads();
 
-	// table is full.. dump the local table to the global table before proceeding
-	if (fireCntTest >= (FIRE_CHUNK_CNT)) {
-
-	  // clear the table and update...
-		int retCode = newFireUpdate(fireTable,  fireGrpId, fireCnt, fireCntD1, simTime);
+	// few more fired neurons are left. we update their firing state here..
+	if (fireCnt) {
+		int retCode = newFireUpdate(fireTable, fireGrpId, fireCnt, fireCntD1, simTime);
 		if (retCode != 0) return;
-	  // update based on stdp rule
-	  // KILLME !!! if (simTime > 0))
+
 		if (gpuNetInfo.sim_with_stdp)
-			gpu_updateLTP (fireTable, fireGrpId, fireCnt, simTime);
-
-	  // reset counters
-		if (0==threadIdx.x) {
-			fireCntD1  = 0;
-			fireCnt   = 0;
-			fireCntTest = 0;
-			MEASURE_GPU(0, 1);
-		}
+			gpu_updateLTP(fireTable, fireGrpId, fireCnt, simTime);
+		MEASURE_GPU(0, 1);
 	}
-}
-}
-
-__syncthreads();
-
-  // few more fired neurons are left. we update their firing state here..
-if (fireCnt) {
-	int retCode = newFireUpdate(fireTable, fireGrpId, fireCnt, fireCntD1, simTime);
-	if (retCode != 0) return;
-
-	if (gpuNetInfo.sim_with_stdp)
-		gpu_updateLTP(fireTable, fireGrpId, fireCnt, simTime);
-	MEASURE_GPU(0, 1);
-}
 }
 
 //******************************** UPDATE CONDUCTANCES AND TOTAL SYNAPTIC CURRENT EVERY TIME STEP *****************************
@@ -2173,6 +2183,30 @@ void CpuSNN::printGpuLoadBalance(bool init, int numBlocks, FILE*fp)
 
 }
 
+// get spikes from GPU SpikeCounter
+// grpId and configId cannot be ALL (can only get 1 bufPos at a time)
+int* CpuSNN::getSpikeCounter_GPU(int grpId, int configId) {
+	assert(grpId>=0); assert(grpId<numGrp); assert(configId>=0); assert(configId<nConfig_);
+
+	int cGrpId = getGroupId(grpId, configId);
+	int bufPos = grp_Info[cGrpId].spkCntBufPos;
+	CUDA_CHECK_ERRORS( cudaMemcpy(spkCntBuf[bufPos],cpu_gpuNetPtrs.spkCntBufChild[bufPos],
+		grp_Info[cGrpId].SizeN*sizeof(int),cudaMemcpyDeviceToHost) );
+
+	return spkCntBuf[bufPos];
+}
+
+// reset SpikeCounter
+// grpId and connectId cannot be ALL (this is handled by the CPU side)
+void CpuSNN::resetSpikeCounter_GPU(int grpId, int configId) {
+	assert(grpId>=0); assert(grpId<numGrp); assert(configId>=0); assert(configId<nConfig_);
+
+	int cGrpId = getGroupId(grpId, configId);
+	int bufPos = grp_Info[grpId].spkCntBufPos;
+	CUDA_CHECK_ERRORS( cudaMemset(cpu_gpuNetPtrs.spkCntBufChild[bufPos],0,grp_Info[grpId].SizeN*sizeof(int)) );
+}
+
+
 // copy the spike from the GPU to the CPU..
 void CpuSNN::updateSpikeMonitor_GPU()
 {
@@ -2596,6 +2630,11 @@ void CpuSNN::deleteObjects_GPU() {
 	if (testVar2!=NULL) delete[] testVar2;
 	testVar=NULL; testVar2=NULL;
 
+	// delete all real-time spike monitors
+	CUDA_CHECK_ERRORS( cudaFree(cpu_gpuNetPtrs.spkCntBuf));
+	for (int i=0; i<numSpkCnt; i++)
+		CUDA_CHECK_ERRORS(cudaFree(cpu_gpuNetPtrs.spkCntBufChild[i]));
+
 	if (gpuPoissonRand!=NULL)
 		delete gpuPoissonRand;
 	gpuPoissonRand=NULL;
@@ -2677,8 +2716,12 @@ void CpuSNN::assignPoissonFiringRate_GPU()
 	}
 }
 
-void CpuSNN::doGPUSim()
-{
+void CpuSNN::doGPUSim() {
+	// for all Spike Counters, reset their spike counts to zero if simTime % recordDur == 0
+	if (sim_with_spikecounters) {
+		checkSpikeCounterRecordDur();
+	}
+	
 	if (spikeRateUpdated) {
 		assignPoissonFiringRate_GPU();
 		spikeRateUpdated = false;
@@ -2734,7 +2777,7 @@ void CpuSNN::showStatus_GPU() {
 	CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &gpu_secD1fireCnt, secD1fireCnt, sizeof(int), 0, cudaMemcpyDeviceToHost));
 	spikeCountAll1sec = gpu_secD1fireCnt + gpu_secD2fireCnt;
 	secD1fireCnt  = gpu_secD1fireCnt;
-	printWeight(-1);
+//	printWeight(-1);
 }
 
 __global__ void gpu_resetFiringInformation()
@@ -2933,6 +2976,28 @@ void CpuSNN::allocateSNN_GPU() {
 		(float)(avail/toGB));
 	previous=avail;
 
+	// copy Spike Counters
+	// 2D arrays are a bit tricky... We can't just copy spkCntBuf over. We still have to use spkCntBuf for
+	// cudaMalloc(), but then we need to cudaMemcpy() that array of pointers to the pointer that we got from the
+	// first cudaMalloc().
+	CUDA_CHECK_ERRORS( cudaMalloc( (void**) &(cpu_gpuNetPtrs.spkCntBuf), sizeof(int*)*MAX_GRP_PER_SNN));
+	for (int g=0; g<numGrp; g++) {
+		if (!grp_Info[g].withSpikeCounter)
+			continue; // skip group if it doesn't have a spkMonRT
+
+		int bufPos = grp_Info[g].spkCntBufPos; // retrieve pos in spike buf
+
+		// allocate child pointers
+		CUDA_CHECK_ERRORS( cudaMalloc( (void**) &(cpu_gpuNetPtrs.spkCntBufChild[bufPos]), sizeof(int)*grp_Info[g].SizeN));
+
+		// copy child pointer to device
+		CUDA_CHECK_ERRORS( cudaMemcpy(&(cpu_gpuNetPtrs.spkCntBuf[bufPos]), &(cpu_gpuNetPtrs.spkCntBufChild[bufPos]),
+			sizeof(int*), cudaMemcpyHostToDevice) );
+
+		// copy data
+		CUDA_CHECK_ERRORS( cudaMemcpy(cpu_gpuNetPtrs.spkCntBufChild[bufPos], spkCntBuf[bufPos],
+			sizeof(int)*grp_Info[g].SizeN, cudaMemcpyHostToDevice) );
+	}
 
 	// copy relevant pointers and network information to GPU
 	void* devPtr;
@@ -2975,6 +3040,14 @@ void CpuSNN::allocateSNN_GPU() {
 //				CARLSIM_DEBUG("\t\tSTP_tD: %f",grp_Info[i].STP_tD);
 //				CARLSIM_DEBUG("\t\tSTP_tF: %f",grp_Info[i].STP_tF);
 		}
+		CARLSIM_DEBUG("\tspikeGen: %s",grp_Info[i].spikeGen==NULL?"Is Null":"Is set");
+		CARLSIM_DEBUG("\tspikeMonitorRT: %s",grp_Info[i].withSpikeCounter?"Is set":"Is Null");
+		if (grp_Info[i].withSpikeCounter) {
+			int bufPos = grp_Info[i].spkCntBufPos;
+			for (int j=0; j<grp_Info[i].SizeN; j++)
+				CARLSIM_DEBUG("\t%d",spkCntBuf[bufPos][j]);
+			CARLSIM_DEBUG("\trecordDur: %d",grp_Info[i].spkCntRecordDur);
+		} 	
 		CARLSIM_DEBUG("\tspikeGen: %s",grp_Info[i].spikeGen==NULL?"Is Null":"Is set");
 	}
 
