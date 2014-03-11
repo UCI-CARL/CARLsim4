@@ -117,6 +117,7 @@ public:
 
 //! trigger all UserErrors
 TEST(Interface, setSpikeCounterUserError) {
+	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 	CARLsim* sim = new CARLsim("SNN",CPU_MODE,SILENT,0,1,42);
 	int g1=sim->createGroup("excit", 10, EXCITATORY_NEURON);
 	EXPECT_DEATH({sim->setSpikeCounter(ALL);},"");
@@ -125,6 +126,7 @@ TEST(Interface, setSpikeCounterUserError) {
 
 //! trigger all UserErrors
 TEST(Interface, getSpikeCounterUserError) {
+	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 	CARLsim* sim = new CARLsim("SNN",CPU_MODE,SILENT,0,1,42);
 	int g1=sim->createGroup("excit", 10, EXCITATORY_NEURON);
 	sim->setSpikeCounter(g1);
@@ -170,6 +172,7 @@ TEST(SpikeCounter, setSpikeCounterTrue) {
 
 //! expect CARLsim to die if SpikeCounter is called with silly params
 TEST(SpikeCounter, setSpikeCounterDeath) {
+	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 	std::string name = "SNN";
 	CpuSNN* sim = new CpuSNN(name,CPU_MODE,SILENT,0,1,42);
 	int g1=sim->createGroup("excit", 10, EXCITATORY_NEURON, ALL);
@@ -368,6 +371,7 @@ TEST(STP, setSTPFalse) {
 
 //! expect CARLsim to die if setSTP is called with silly params
 TEST(STP, setSTPdeath) {
+	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 	CARLsim* sim = new CARLsim("SNN",CPU_MODE,SILENT,0,1,42);
 	int g1=sim->createSpikeGeneratorGroup("excit", 10, EXCITATORY_NEURON);
 
@@ -624,6 +628,7 @@ TEST(CORE, CpuSNNinit) {
 // FIXME: enabling the following generates a segfault
 //! check all possible (invalid) ways of instantiating CpuSNN
 TEST(CORE, CpuSNNinitDeath) {
+	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 	CpuSNN* sim = NULL;
 	std::string name="SNN";
 
@@ -640,6 +645,7 @@ TEST(CORE, CpuSNNinitDeath) {
 
 //! Death tests for createGroup (test all possible silly values)
 TEST(CORE, createGroupDeath) {
+	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 	CpuSNN* sim = NULL;
 	std::string name="SNN";
 	sim = new CpuSNN(name,CPU_MODE,SILENT,0,1,42);
@@ -657,6 +663,7 @@ TEST(CORE, createGroupDeath) {
 
 //! Death tests for createSpikeGenerator (test all possible silly values)
 TEST(CORE, createSpikeGeneratorGroupSilly) {
+	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 	CpuSNN* sim = NULL;
 	std::string name="SNN";
 	sim = new CpuSNN(name,CPU_MODE,SILENT,0,1,42);
@@ -675,6 +682,7 @@ TEST(CORE, createSpikeGeneratorGroupSilly) {
 
 //! Death tests for setNeuronParameters (test all possible silly values)
 TEST(CORE, setNeuronParametersSilly) {
+	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 	CpuSNN* sim = NULL;
 	std::string name="SNN";
 	sim = new CpuSNN(name,CPU_MODE,SILENT,0,1,42);
@@ -852,6 +860,7 @@ TEST(STDP, setSTDPFalse) {
 
 //! Death tests for setConductances (test all possible silly values)
 TEST(COBA, setCondSilly) {
+	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 	CpuSNN* sim = NULL;
 	std::string name="SNN";
 	sim = new CpuSNN(name,CPU_MODE,SILENT,0,1,42);
