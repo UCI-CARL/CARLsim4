@@ -134,11 +134,10 @@ public:
 
 
 	//! Sets default values for conduction decays or disables COBA if isSet==false
-	void setConductances(int grpId, bool isSet, int configId=ALL);
+	void setConductances(bool isSet, int configId=ALL);
 
 	//! Sets custom values for conduction decays or disables COBA if isSet==false
-	void setConductances(int grpId, bool isSet, float tdAMPA, float tdNMDA, float tdGABAa, float tdGABAb,
-							int configId=ALL);
+	void setConductances(bool isSet, int tdAMPA, int tdNMDA, int tdGABAa, int tdGABAb, int configId=ALL);
 
 	//! Sets default homeostasis params for group
 	void setHomeostasis(int grpId, bool isSet, int configId=ALL);
@@ -371,7 +370,7 @@ public:
 	// +++++ PUBLIC METHODS: SET DEFAULTS +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
 	//! sets default values for conductance decays
-	void setDefaultConductanceDecay(float tdAMPA, float tdNMDA, float tdGABAa, float tdGABAb);
+	void setDefaultConductanceDecay(int tdAMPA, int tdNMDA, int tdGABAa, int tdGABAb);
 
 	//! sets default homeostasis params
 	void setDefaultHomeostasisParams(float homeoScale, float avgTimeScale);
@@ -388,12 +387,9 @@ private:
 
 	void CARLsimInit();					//!< init function, unsafe computations that would usually go in constructor
 
-	void checkConductances(); 			//!< all or none of the groups must enable conductances
-
 	bool existsGrpId(int grpId);		//!< checks whether a certain grpId exists in grpIds_
 
 	void handleUserWarnings(); 			//!< print all user warnings, continue only after user input
-	void handleNetworkConsistency();	//!< do all setupNetwork error checks
 
 	void printSimulationSpecs();
 
@@ -422,10 +418,10 @@ private:
 	bool hasSetSTDPALL_; 			//!< informs that STDP have been set for ALL groups (can't add more groups)
 	bool hasSetSTPALL_; 			//!< informsthat STP have been set for ALL groups (can't add more groups)
 
-	float def_tdAMPA_;				//!< default value for AMPA decay (ms)
-	float def_tdNMDA_;				//!< default value for NMDA decay (ms)
-	float def_tdGABAa_;				//!< default value for GABAa decay (ms)
-	float def_tdGABAb_;				//!< default value for GABAb decay (ms)
+	int def_tdAMPA_;				//!< default value for AMPA decay (ms)
+	int def_tdNMDA_;				//!< default value for NMDA decay (ms)
+	int def_tdGABAa_;				//!< default value for GABAa decay (ms)
+	int def_tdGABAb_;				//!< default value for GABAb decay (ms)
 
 	float def_STDP_alphaLTP_;		//!< default value for LTP amplitude
 	float def_STDP_tauLTP_;			//!< default value for LTP decay (ms)

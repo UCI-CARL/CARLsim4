@@ -850,12 +850,16 @@ __global__ void kernel_globalConductanceUpdate (int t, int sec, int simTime) {
 		if ((threadIdx.x < lastId) && (IS_REGULAR_NEURON(post_nid, gpuNetInfo.numNReg, gpuNetInfo.numNPois))) {
 			// load the initial current due to noise inputs for neuron 'post_nid'
 			// initial values of the conductances for neuron 'post_nid'
-			float AMPA_sum		 =  0.0;
-			float NMDA_sum		 =  0.0;
-			float GABAa_sum		 =  0.0;
-			float GABAb_sum		 =  0.0;
-			int   lmt      		 =  gpuPtrs.Npre[post_nid];
-			unsigned int cum_pos =  gpuPtrs.cumulativePre[post_nid];
+			float AMPA_sum		 = 0.0f;
+			float NMDA_sum		 = 0.0f;
+			float NMDA_r_sum 	 = 0.0f;
+			float NMDA_d_sum 	 = 0.0f;
+			float GABAa_sum		 = 0.0f;
+			float GABAb_sum		 = 0.0f;
+			float GABAb_r_sum 	 = 0.0f;
+			float GABAb_d_sum 	 = 0.0f;
+			int   lmt      		 = gpuPtrs.Npre[post_nid];
+			unsigned int cum_pos = gpuPtrs.cumulativePre[post_nid];
 
 			// find the total current to this neuron...
 			for(int j=0; (lmt)&&(j <= ((lmt-1)>>LOG_CURRENT_GROUP)); j++) {
@@ -899,12 +903,24 @@ __global__ void kernel_globalConductanceUpdate (int t, int sec, int simTime) {
 						short int connId = gpuPtrs.cumConnIdPre[cum_pos+wtId];
 						if (type & TARGET_AMPA)
 							AMPA_sum += wt*gpuPtrs.mulSynFast[connId];
-						if (type & TARGET_NMDA)
-							NMDA_sum += wt*gpuPtrs.mulSynSlow[connId];
+						if (type & TARGET_NMDA) {
+							if (gpuNetInfo.sim_with_NMDA_rise) {
+								NMDA_r_sum += wt*gpuPtrs.mulSynSlow[connId];
+								NMDA_d_sum += wt*gpuPtrs.mulSynSlow[connId];
+							} else {
+								NMDA_sum += wt*gpuPtrs.mulSynSlow[connId];
+							}
+						}
 						if (type & TARGET_GABAa)
 							GABAa_sum += wt*gpuPtrs.mulSynFast[connId];	// wt should be negative for GABAa and GABAb
-						if (type & TARGET_GABAb)						// but that is dealt with below
-							GABAb_sum += wt*gpuPtrs.mulSynSlow[connId];
+						if (type & TARGET_GABAb) {						// but that is dealt with below
+							if (gpuNetInfo.sim_with_GABAb_rise) {
+								GABAb_r_sum += wt*gpuPtrs.mulSynSlow[connId];
+								GABAb_d_sum += wt*gpuPtrs.mulSynSlow[connId];
+							} else {
+								GABAb_sum += wt*gpuPtrs.mulSynSlow[connId];
+							}
+						}
 					}
 					else {
 						// current based model with STP (CUBA)
@@ -929,9 +945,9 @@ __global__ void kernel_globalConductanceUpdate (int t, int sec, int simTime) {
 				// don't add mulSynFast/mulSynSlow here, because they depend on the exact pre<->post connection, not
 				// just post_nid
 				gpuPtrs.gAMPA[post_nid]   += AMPA_sum;
-				gpuPtrs.gNMDA[post_nid]   += NMDA_sum;
+				gpuPtrs.gNMDA[post_nid]   += (gpuNetInfo.sim_with_NMDA_rise) ? NMDA_d_sum-NMDA_r_sum : NMDA_sum;
 				gpuPtrs.gGABAa[post_nid]  -= GABAa_sum; // wt should be negative for GABAa and GABAb
-				gpuPtrs.gGABAb[post_nid]  -= GABAb_sum;
+				gpuPtrs.gGABAb[post_nid]  -= (gpuNetInfo.sim_with_GABAb_rise) ? GABAb_d_sum-GABAb_r_sum : GABAb_sum;
 			}
 			else {
 				gpuPtrs.current[post_nid] += AMPA_sum;
@@ -942,39 +958,41 @@ __global__ void kernel_globalConductanceUpdate (int t, int sec, int simTime) {
 
 //************************ UPDATE GLOBAL STATE EVERY TIME STEP *******************************************************//
 
-__device__ void updateNeuronState(unsigned int& nid, int& grpId)
-{
+__device__ void updateNeuronState(unsigned int& nid, int& grpId) {
 	float v      =  gpuPtrs.voltage[nid];
 	float u      =  gpuPtrs.recovery[nid];
-	float I_sum;
+	float I_sum, NMDAtmp;
+	float gNMDA, gGABAb;
 
-  // loop that allows smaller integration time step for v's and u's
+	// loop that allows smaller integration time step for v's and u's
 	for (int c=0; c<COND_INTEGRATION_SCALE; c++) {
 		I_sum = 0.0;
 		if (gpuNetInfo.sim_with_conductances) {
-			float NMDAtmp = (v+80)*(v+80)/60/60;
-      // There is an instability issue when dealing with large conductances, which causes the membr.
-      // pot. to plateau just below the spike threshold... We cap the "slow" conductances to prevent
-      // this issue. Note: 8.0 and 2.0 seemed to work in some experiments, but it might not be the
-      // best choice in general... compare globalStateUpdate() in snn_cpu.cpp
+			NMDAtmp = (v+80)*(v+80)/60/60;
+			gNMDA = (gpuNetInfo.sim_with_NMDA_rise) ? gpuPtrs.gNMDA_d[nid]-gpuPtrs.gNMDA_r[nid] : gpuPtrs.gNMDA[nid];
+			gGABAb = (gpuNetInfo.sim_with_GABAb_rise) ? gpuPtrs.gGABAb_d[nid]-gpuPtrs.gGABAb_r[nid] : gpuPtrs.gGABAb[nid];
 			I_sum = - ( gpuPtrs.gAMPA[nid]*(v-0)
-		  + min(8.0f,gpuPtrs.gNMDA[nid])*NMDAtmp/(1+NMDAtmp)*(v-0) // cap gNMDA at 8.0
-		  + gpuPtrs.gGABAa[nid]*(v+70)
-		  + min(2.0f,gpuPtrs.gGABAb[nid])*(v+90)); // cap gGABAb at 2.0
+					+ gNMDA*NMDAtmp/(1+NMDAtmp)*(v-0) // cap gNMDA at 8.0
+					+ gpuPtrs.gGABAa[nid]*(v+70)
+					+ gGABAb*(v+90)); // cap gGABAb at 2.0
 		}
 		else
 			I_sum = gpuPtrs.current[nid];
 
-    // update vpos and upos for the current neuron
+		// update vpos and upos for the current neuron
 		v += ((0.04f*v+5)*v+140-u+I_sum)/COND_INTEGRATION_SCALE;
-    if (v > 30)  { v = 30; c=COND_INTEGRATION_SCALE; }// break the loop but evaluate u[i]
-    if (v < -90) v = -90;
-    u += (gpuPtrs.Izh_a[nid]*(gpuPtrs.Izh_b[nid]*v-u)/COND_INTEGRATION_SCALE);
-}
+		if (v > 30) { 
+			v = 30; // break the loop but evaluate u[i]
+			c=COND_INTEGRATION_SCALE;
+		}
+		if (v < -90)
+			v = -90;
+		u += (gpuPtrs.Izh_a[nid]*(gpuPtrs.Izh_b[nid]*v-u)/COND_INTEGRATION_SCALE);
+	}
 
-gpuPtrs.current[nid]		 = I_sum;
-gpuPtrs.voltage[nid] 	     = v;
-gpuPtrs.recovery[nid] 	     = u;
+	gpuPtrs.current[nid]		 = I_sum;
+	gpuPtrs.voltage[nid] 	     = v;
+	gpuPtrs.recovery[nid] 	     = u;
 }
 
 __device__ inline int assertGlobalStates()
@@ -1063,11 +1081,21 @@ __global__ void kernel_STPUpdateAndDecayConductances (int t, int sec, int simTim
 
 
     // update the conductane parameter of the current neron
-		if (gpuGrpInfo[grpId].WithConductances && IS_REGULAR_NEURON(nid, gpuNetInfo.numNReg, gpuNetInfo.numNPois)) {
-			gpuPtrs.gAMPA[nid]   *=  gpuGrpInfo[grpId].dAMPA;
-			gpuPtrs.gNMDA[nid]   *=  gpuGrpInfo[grpId].dNMDA;
-			gpuPtrs.gGABAa[nid]  *=  gpuGrpInfo[grpId].dGABAa;
-			gpuPtrs.gGABAb[nid]  *=  gpuGrpInfo[grpId].dGABAb;
+		if (gpuNetInfo.sim_with_conductances && IS_REGULAR_NEURON(nid, gpuNetInfo.numNReg, gpuNetInfo.numNPois)) {
+			gpuPtrs.gAMPA[nid]   *=  gpuNetInfo.dAMPA;
+			if (gpuNetInfo.sim_with_NMDA_rise) {
+				gpuPtrs.gNMDA_r[nid]   *=  gpuNetInfo.rNMDA;
+				gpuPtrs.gNMDA_d[nid]   *=  gpuNetInfo.dNMDA;
+			} else {
+				gpuPtrs.gNMDA[nid]   *=  gpuNetInfo.dNMDA;
+			}
+			gpuPtrs.gGABAa[nid]  *=  gpuNetInfo.dGABAa;
+			if (gpuNetInfo.sim_with_GABAb_rise) {
+				gpuPtrs.gGABAb_r[nid]  *=  gpuNetInfo.rGABAb;
+				gpuPtrs.gGABAb_d[nid]  *=  gpuNetInfo.dGABAb;
+			} else {
+				gpuPtrs.gGABAb[nid]  *=  gpuNetInfo.dGABAb;
+			}
 		}
 
     // check various STP asserts here....
@@ -1865,23 +1893,43 @@ void CpuSNN::copyNeuronState(network_ptr_t* dest, network_ptr_t* src,  cudaMemcp
 	CUDA_CHECK_ERRORS( cudaMemcpy( &dest->voltage[ptrPos], &src->voltage[ptrPos], sizeof(float)*length, kind));
 
 	if (sim_with_conductances) {
-    //conductance information
-		assert(src->gGABAa != NULL);
-		assert(src->gGABAb != NULL);
-		assert(src->gNMDA  != NULL);
+	    //conductance information
 		assert(src->gAMPA  != NULL);
-
-		if(allocateMem)     CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->gGABAa, sizeof(float)*length));
-		CUDA_CHECK_ERRORS( cudaMemcpy( &dest->gGABAa[ptrPos], &src->gGABAa[ptrPos], sizeof(float)*length, kind));
-
-		if(allocateMem)     CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->gGABAb, sizeof(float)*length));
-		CUDA_CHECK_ERRORS( cudaMemcpy( &dest->gGABAb[ptrPos], &src->gGABAb[ptrPos], sizeof(float)*length, kind));
-
 		if(allocateMem)     CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->gAMPA, sizeof(float)*length));
 		CUDA_CHECK_ERRORS( cudaMemcpy( &dest->gAMPA[ptrPos], &src->gAMPA[ptrPos], sizeof(float)*length, kind));
 
-		if(allocateMem)     CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->gNMDA, sizeof(float)*length));
-		CUDA_CHECK_ERRORS( cudaMemcpy( &dest->gNMDA[ptrPos], &src->gNMDA[ptrPos], sizeof(float)*length, kind));
+		if (sim_with_NMDA_rise) {
+			assert(src->gNMDA_r != NULL);
+			if(allocateMem)     CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->gNMDA_r, sizeof(float)*length));
+			CUDA_CHECK_ERRORS( cudaMemcpy( &dest->gNMDA_r[ptrPos], &src->gNMDA_r[ptrPos], sizeof(float)*length, kind));
+
+			assert(src->gNMDA_d != NULL);
+			if(allocateMem)     CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->gNMDA_d, sizeof(float)*length));
+			CUDA_CHECK_ERRORS( cudaMemcpy( &dest->gNMDA_d[ptrPos], &src->gNMDA_d[ptrPos], sizeof(float)*length, kind));
+		} else {
+			assert(src->gNMDA  != NULL);
+			if(allocateMem)     CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->gNMDA, sizeof(float)*length));
+			CUDA_CHECK_ERRORS( cudaMemcpy( &dest->gNMDA[ptrPos], &src->gNMDA[ptrPos], sizeof(float)*length, kind));
+		}
+
+		assert(src->gGABAa != NULL);
+		if(allocateMem)     CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->gGABAa, sizeof(float)*length));
+		CUDA_CHECK_ERRORS( cudaMemcpy( &dest->gGABAa[ptrPos], &src->gGABAa[ptrPos], sizeof(float)*length, kind));
+
+		if (sim_with_GABAb_rise) {
+			assert(src->gGABAb_r != NULL);
+			if(allocateMem)     CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->gGABAb_r, sizeof(float)*length));
+			CUDA_CHECK_ERRORS( cudaMemcpy(&dest->gGABAb_r[ptrPos],&src->gGABAb_r[ptrPos],sizeof(float)*length,kind) );
+
+			assert(src->gGABAb_d != NULL);
+			if(allocateMem)     CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->gGABAb_d, sizeof(float)*length));
+			CUDA_CHECK_ERRORS( cudaMemcpy(&dest->gGABAb_d[ptrPos],&src->gGABAb_d[ptrPos],sizeof(float)*length,kind) );
+
+		} else {
+			assert(src->gGABAb != NULL);
+			if(allocateMem)     CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->gGABAb, sizeof(float)*length));
+			CUDA_CHECK_ERRORS( cudaMemcpy( &dest->gGABAb[ptrPos], &src->gGABAb[ptrPos], sizeof(float)*length, kind));
+		}
 	}
 
   //neuron input current...
@@ -2604,9 +2652,19 @@ void CpuSNN::deleteObjects_GPU() {
 	CUDA_CHECK_ERRORS( cudaFree(cpu_gpuNetPtrs.Izh_c) );
 	CUDA_CHECK_ERRORS( cudaFree(cpu_gpuNetPtrs.Izh_d) );
 	CUDA_CHECK_ERRORS( cudaFree(cpu_gpuNetPtrs.gAMPA) );
-	CUDA_CHECK_ERRORS( cudaFree(cpu_gpuNetPtrs.gNMDA) );
+	if (sim_with_NMDA_rise) {
+		CUDA_CHECK_ERRORS( cudaFree(cpu_gpuNetPtrs.gNMDA_r) );
+		CUDA_CHECK_ERRORS( cudaFree(cpu_gpuNetPtrs.gNMDA_d) );
+	} else {
+		CUDA_CHECK_ERRORS( cudaFree(cpu_gpuNetPtrs.gNMDA) );
+	}
 	CUDA_CHECK_ERRORS( cudaFree(cpu_gpuNetPtrs.gGABAa) );
-	CUDA_CHECK_ERRORS( cudaFree(cpu_gpuNetPtrs.gGABAb) );
+	if (sim_with_GABAb_rise) {
+		CUDA_CHECK_ERRORS( cudaFree(cpu_gpuNetPtrs.gGABAb_r) );
+		CUDA_CHECK_ERRORS( cudaFree(cpu_gpuNetPtrs.gGABAb_d) );
+	} else {
+		CUDA_CHECK_ERRORS( cudaFree(cpu_gpuNetPtrs.gGABAb) );
+	}
 
 	CUDA_CHECK_ERRORS( cudaFree(cpu_gpuNetPtrs.stpu) );
 	CUDA_CHECK_ERRORS( cudaFree(cpu_gpuNetPtrs.stpx) );
@@ -2851,6 +2909,15 @@ void CpuSNN::allocateNetworkParameters()
 	net_Info.numGrp = numGrp;
 	cpu_gpuNetPtrs.memType = GPU_MODE;
 
+	net_Info.sim_with_NMDA_rise = sim_with_NMDA_rise;
+	net_Info.sim_with_GABAb_rise = sim_with_GABAb_rise;
+	net_Info.dAMPA = dAMPA;
+	net_Info.rNMDA = rNMDA;
+	net_Info.dNMDA = dNMDA;
+	net_Info.dGABAa = dGABAa;
+	net_Info.rGABAb = rGABAb;
+	net_Info.dGABAb = dGABAb;
+
 	return;
 }
 
@@ -3026,13 +3093,6 @@ void CpuSNN::allocateSNN_GPU() {
 			CARLSIM_DEBUG("\t\tTAU_LTD_INV: %f",grp_Info[i].TAU_LTD_INV);
 			CARLSIM_DEBUG("\t\tALPHA_LTP: %f",grp_Info[i].ALPHA_LTP);
 			CARLSIM_DEBUG("\t\tALPHA_LTD: %f",grp_Info[i].ALPHA_LTD);
-		}
-		CARLSIM_DEBUG("\tWithConductances: %d",(int)grp_Info[i].WithConductances);
-		if (grp_Info[i].WithConductances) {
-			CARLSIM_DEBUG("\t\tdAMPA: %f",grp_Info[i].dAMPA);
-			CARLSIM_DEBUG("\t\tdNMDA: %f",grp_Info[i].dNMDA);
-			CARLSIM_DEBUG("\t\tdGABAa: %f",grp_Info[i].dGABAa);
-			CARLSIM_DEBUG("\t\tdGABAb: %f",grp_Info[i].dGABAb);
 		}
 		CARLSIM_DEBUG("\tWithSTP: %d",(int)grp_Info[i].WithSTP);
 		if (grp_Info[i].WithSTP) {

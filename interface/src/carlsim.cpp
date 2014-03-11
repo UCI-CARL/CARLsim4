@@ -114,10 +114,10 @@ void CARLsim::CARLsimInit() {
 
 	// set default time constants for synaptic current decay
 	// TODO: add ref
-	def_tdAMPA_  = 5.0f;	// default decay time for AMPA (ms)
-	def_tdNMDA_  = 150.0f;	// default decay time for NMDA (ms)
-	def_tdGABAa_ = 6.0f;	// default decay time for GABAa (ms)
-	def_tdGABAb_ = 150.0f;	// default decay time for GABAb (ms)
+	def_tdAMPA_  = 5;	// default decay time for AMPA (ms)
+	def_tdNMDA_  = 150;	// default decay time for NMDA (ms)
+	def_tdGABAa_ = 6;	// default decay time for GABAa (ms)
+	def_tdGABAb_ = 150;	// default decay time for GABAb (ms)
 
 	// set default values for STDP params
 	// TODO: add ref
@@ -245,30 +245,29 @@ int CARLsim::createSpikeGeneratorGroup(std::string grpName, int nNeur, int neurT
 
 
 // set conductance values, use defaults
-void CARLsim::setConductances(int grpId, bool isSet, int configId) {
-	std::string funcName = "setConductances(\""+getGroupName(grpId,configId)+"\")";
-	std::stringstream grpIdStr; grpIdStr << "setConductances(" << grpId << "). Group Id " << grpId;
-	UserErrors::userAssert(!hasRunNetwork_, UserErrors::NETWORK_ALREADY_RUN, funcName); // can't change setup after run
+void CARLsim::setConductances(bool isSet, int configId) {
+	std::stringstream funcName; funcName << "setConductances(" << isSet << "," << configId << ")";
+	UserErrors::userAssert(!hasRunNetwork_, UserErrors::NETWORK_ALREADY_RUN, funcName.str()); // can't change setup after run
 
 	if (isSet) { // enable conductances, use default values
-		snn_->setConductances(grpId,true,def_tdAMPA_,def_tdNMDA_,def_tdGABAa_,def_tdGABAb_,configId);
+		snn_->setConductances(true,def_tdAMPA_,0,def_tdNMDA_,def_tdGABAa_,0,def_tdGABAb_,configId);
 	} else { // disable conductances
-		snn_->setConductances(grpId,false,0.0f,0.0f,0.0f,0.0f,configId);
+		snn_->setConductances(false,0,0,0,0,0,0,configId);
 	}
 
 }
 
 // set conductances values, custom
-void CARLsim::setConductances(int grpId, bool isSet, float tdAMPA, float tdNMDA, float tdGABAa, float tdGABAb,
-								int configId)
+void CARLsim::setConductances(bool isSet, int tdAMPA, int tdNMDA, int tdGABAa, int tdGABAb, int configId)
 {
-	std::string funcName = "setConductances(\""+getGroupName(grpId,configId)+"\")";
-	UserErrors::userAssert(!hasRunNetwork_, UserErrors::NETWORK_ALREADY_RUN, funcName); // can't change setup after run
+	std::stringstream funcName; funcName << "setConductances(" << isSet << "," << tdAMPA << "," << tdNMDA << ","
+		<< tdGABAa << "," << tdGABAb << "," << configId << ")";
+	UserErrors::userAssert(!hasRunNetwork_, UserErrors::NETWORK_ALREADY_RUN, funcName.str()); // can't change setup after run
 
 	if (isSet) { // enable conductances, use custom values
-		snn_->setConductances(grpId,true,tdAMPA,tdNMDA,tdGABAa,tdGABAb,configId);
+		snn_->setConductances(true,tdAMPA,0,tdNMDA,tdGABAa,0,tdGABAb,configId);
 	} else { // disable conductances
-		snn_->setConductances(grpId,false,0.0f,0.0f,0.0f,0.0f,configId);
+		snn_->setConductances(false,0,0,0,0,0,0,configId);
 	}
 }
 
@@ -408,7 +407,6 @@ void CARLsim::setSTP(int grpId, bool isSet, float STP_U, float STP_tau_u, float 
 // run network with custom options
 int CARLsim::runNetwork(int nSec, int nMsec, bool enablePrint, bool copyState) {
 	if (!hasRunNetwork_) {
-		handleNetworkConsistency();	// before running network, make sure it's consistent
 		handleUserWarnings();	// before running network, make sure user didn't provoque any user warnings
 //		printSimulationSpecs(); // first time around, show simMode etc.
 	}
@@ -647,7 +645,7 @@ void CARLsim::setPrintState(int grpId, bool status) { snn_->setPrintState(grpId,
 // +++++++++ PUBLIC METHODS: SET DEFAULTS +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
 // set default values for conductance decay times
-void CARLsim::setDefaultConductanceDecay(float tdAMPA, float tdNMDA, float tdGABAa, float tdGABAb) {
+void CARLsim::setDefaultConductanceDecay(int tdAMPA, int tdNMDA, int tdGABAa, int tdGABAb) {
 	assert(tdAMPA>0); // TODO make nice
 	assert(tdNMDA>0);
 	assert(tdGABAa>0);
@@ -706,30 +704,9 @@ void CARLsim::setDefaultSTPparams(int neurType, float STP_U, float STP_tau_u, fl
 /// PRIVATE METHODS
 /// **************************************************************************************************************** ///
 
-// check whether all or none of the groups have conductances enabled
-void CARLsim::checkConductances() {
-	bool allSame;
-	for (std::vector<int>::const_iterator it = grpIds_.begin(); it!=grpIds_.end(); ++it) {
-		for (int c=0; c<nConfig_; c++) {
-			group_info_t grpInfo = getGroupInfo(*it,c);
-			allSame = ((it-1)==grpIds_.begin() && c==0) ? grpInfo.WithConductances : allSame==grpInfo.WithConductances;
-		}
-	}
-
-	std::string errorMsg = "If one group enables conductances, then all groups (except for generators) must enable "
-							"conductances. All conductances";
-	UserErrors::userAssert(allSame, UserErrors::MUST_HAVE_SAME_SIGN,"setConductances", errorMsg);
-}
-
 // check whether grpId exists in grpIds_
 bool CARLsim::existsGrpId(int grpId) {
 	return std::find(grpIds_.begin(), grpIds_.end(), grpId)!=grpIds_.end();
-}
-
-// check for setupNetwork user errors
-void CARLsim::handleNetworkConsistency() {
-	checkConductances();	// conductances have to be set either for all groups or for none
-
 }
 
 // print all user warnings, continue only after user input

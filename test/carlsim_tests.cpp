@@ -115,8 +115,11 @@ public:
 /// CARLSIM INTERFACE
 /// **************************************************************************************************************** ///
 
+
 //! trigger all UserErrors
 TEST(Interface, setSpikeCounterUserError) {
+	::testing::FLAGS_gtest_death_test_style = "threadsafe";
+
 	CARLsim* sim = new CARLsim("SNN",CPU_MODE,SILENT,0,1,42);
 	int g1=sim->createGroup("excit", 10, EXCITATORY_NEURON);
 	EXPECT_DEATH({sim->setSpikeCounter(ALL);},"");
@@ -125,6 +128,8 @@ TEST(Interface, setSpikeCounterUserError) {
 
 //! trigger all UserErrors
 TEST(Interface, getSpikeCounterUserError) {
+	::testing::FLAGS_gtest_death_test_style = "threadsafe";
+
 	CARLsim* sim = new CARLsim("SNN",CPU_MODE,SILENT,0,1,42);
 	int g1=sim->createGroup("excit", 10, EXCITATORY_NEURON);
 	sim->setSpikeCounter(g1);
