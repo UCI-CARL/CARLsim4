@@ -840,7 +840,7 @@ void CpuSNN::setSpikeCounter(int grpId, int recordDur, int configId) {
 
 		// TODO: implement same for spike generators on GPU side (see CpuSNN::generateSpikes)
 		if (grp_Info[cGrpId].isSpikeGenerator) {
-			fprintf(stderr,"ERROR: Spike Counters for Spike Generators are currently not supported.\n");
+			CARLSIM_ERROR("ERROR: Spike Counters for Spike Generators are currently not supported.");
 			exit(1);
 			return;
 		}
@@ -2681,6 +2681,7 @@ void  CpuSNN::globalStateUpdate() {
 				// all the tmpIs will be summed into current[i] in the following loop
 				current[i] = 0.0f;
 
+				// FIXME: these tmp vars cause a lot of rounding errors... consider rewriting
 				for (int j=0; j<COND_INTEGRATION_SCALE; j++) {
 					tmp_iNMDA = (voltage[i]+80)*(voltage[i]+80)/60/60;
 
@@ -2974,7 +2975,6 @@ void CpuSNN::reorganizeNetwork(bool removeTempMemory) {
 	CARLSIM_INFO("Beginning reorganization of network....");
 
 	// time to build the complete network with relevant parameters..
-	printf("buildNetwork\n");
 	buildNetwork();
 
 	//..minimize any other wastage in that array by compacting the store
