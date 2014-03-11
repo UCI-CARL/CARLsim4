@@ -2707,8 +2707,8 @@ void  CpuSNN::globalStateUpdate() {
 					if (voltage[i] > 30) {
 						voltage[i] = 30;
 						j=COND_INTEGRATION_SCALE; // break the loop but evaluate u[i]
-						if (gNMDA[i]>=10.0f) CARLSIM_WARN("High NMDA conductance (gNMDA>=10.0) may cause instability");
-						if (gGABAb[i]>=2.0f) CARLSIM_WARN("High GABAb conductance (gGABAb>=2.0) may cause instability");
+//						if (gNMDA[i]>=10.0f) CARLSIM_WARN("High NMDA conductance (gNMDA>=10.0) may cause instability");
+//						if (gGABAb[i]>=2.0f) CARLSIM_WARN("High GABAb conductance (gGABAb>=2.0) may cause instability");
 					}
 					if (voltage[i] < -90)
 						voltage[i] = -90;

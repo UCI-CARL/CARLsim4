@@ -887,8 +887,6 @@ __global__ void kernel_globalConductanceUpdate (int t, int sec, int simTime) {
 					// load the synaptic weight for the wtId'th input
 					float wt = gpuPtrs.wt[cum_pos + wtId];
 
-//					grpConnectInfo_t* connInfo = gpuPtrs.cumConnInfoPre[cum_pos+wtId];
-
 					post_info_t pre_Id   = gpuPtrs.preSynapticIds[cum_pos + wtId];
 					uint8_t  pre_grpId  = GET_CONN_GRP_ID(pre_Id);
 					uint32_t  pre_nid  = GET_CONN_NEURON_ID(pre_Id);
@@ -944,10 +942,20 @@ __global__ void kernel_globalConductanceUpdate (int t, int sec, int simTime) {
 			if (gpuNetInfo.sim_with_conductances) {
 				// don't add mulSynFast/mulSynSlow here, because they depend on the exact pre<->post connection, not
 				// just post_nid
-				gpuPtrs.gAMPA[post_nid]   += AMPA_sum;
-				gpuPtrs.gNMDA[post_nid]   += (gpuNetInfo.sim_with_NMDA_rise) ? NMDA_d_sum-NMDA_r_sum : NMDA_sum;
-				gpuPtrs.gGABAa[post_nid]  -= GABAa_sum; // wt should be negative for GABAa and GABAb
-				gpuPtrs.gGABAb[post_nid]  -= (gpuNetInfo.sim_with_GABAb_rise) ? GABAb_d_sum-GABAb_r_sum : GABAb_sum;
+				gpuPtrs.gAMPA[post_nid]        += AMPA_sum;
+				gpuPtrs.gGABAa[post_nid]       -= GABAa_sum; // wt should be negative for GABAa and GABAb
+				if (gpuNetInfo.sim_with_NMDA_rise) {
+					gpuPtrs.gNMDA_r[post_nid]  += NMDA_r_sum;
+					gpuPtrs.gNMDA_d[post_nid]  += NMDA_d_sum;
+				} else {
+					gpuPtrs.gNMDA[post_nid]    += NMDA_sum;
+				}
+				if (gpuNetInfo.sim_with_GABAb_rise) {
+					gpuPtrs.gGABAb_r[post_nid] -= GABAb_r_sum;
+					gpuPtrs.gGABAb_d[post_nid] -= GABAb_d_sum;
+				} else {
+					gpuPtrs.gGABAb[post_nid]   -= GABAb_sum;
+				}
 			}
 			else {
 				gpuPtrs.current[post_nid] += AMPA_sum;
@@ -2747,9 +2755,11 @@ void CpuSNN::globalStateUpdate_GPU()
 	int gridSize = 64;
 
 	kernel_globalConductanceUpdate <<<gridSize, blkSize>>> (simTimeMs, simTimeSec, simTime);
+	CUDA_GET_LAST_ERROR_MACRO("kernel_globalConductanceUpdate failed");
 
 	kernel_globalStateUpdate <<<gridSize, blkSize>>> (simTimeMs, simTimeSec, simTime);
-	CUDA_GET_LAST_ERROR_MACRO("Kernel execution failed");
+	CUDA_GET_LAST_ERROR_MACRO("kernel_globalStateUpdate execution failed");
+
 	int errCode = checkErrors("gpu_globalStateUpdate", gridSize);
 	assert(errCode == NO_KERNEL_ERRORS);
 }

@@ -58,10 +58,10 @@ int main()
 
 	int gin=sim.createSpikeGeneratorGroup("input",N*0.1,EXCITATORY_NEURON);
 
-	sim.setConductances(true);
+	sim.setConductances(true,5,50,150,6,100,150);
 
 	// make random connections with 10% probability
-	sim.connect(g2,g2,"random",-0.01f,0.1f,1);
+	sim.connect(g2,g2,"random",-0.003f,0.1f,1);
 	// make random connections with 10% probability, and random delays between 1 and 20
 	sim.connect(g1,g2,"random", 0.0025f, 0.005f, 0.1f,  1, 20, SYN_PLASTIC);
 	sim.connect(g1,g1,"random", 0.006f, 0.01f, 0.1f,  1, 20, SYN_PLASTIC);
