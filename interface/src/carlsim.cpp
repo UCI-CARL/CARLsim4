@@ -271,6 +271,20 @@ void CARLsim::setConductances(bool isSet, int tdAMPA, int tdNMDA, int tdGABAa, i
 	}
 }
 
+// set conductances values, custom
+void CARLsim::setConductances(bool isSet, int tdAMPA, int trNMDA, int tdNMDA, int tdGABAa, int trGABAb, int tdGABAb,
+int configId) {
+	std::stringstream funcName; funcName << "setConductances(" << isSet << "," << tdAMPA << "," << trNMDA << "," <<
+		tdNMDA << "," << tdGABAa << "," << trGABAb << "," << tdGABAb << "," << configId << ")";
+	UserErrors::userAssert(!hasRunNetwork_, UserErrors::NETWORK_ALREADY_RUN, funcName.str()); // can't change setup after run
+
+	if (isSet) { // enable conductances, use custom values
+		snn_->setConductances(true,tdAMPA,trNMDA,tdNMDA,tdGABAa,trGABAb,tdGABAb,configId);
+	} else { // disable conductances
+		snn_->setConductances(false,0,0,0,0,0,0,configId);
+	}
+}
+
 // set default homeostasis params
 void CARLsim::setHomeostasis(int grpId, bool isSet, int configId) {
 	std::string funcName = "setHomeostasis(\""+getGroupName(grpId,configId)+"\")";

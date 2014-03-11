@@ -136,8 +136,37 @@ public:
 	//! Sets default values for conduction decays or disables COBA if isSet==false
 	void setConductances(bool isSet, int configId=ALL);
 
-	//! Sets custom values for conduction decays or disables COBA if isSet==false
+	/*!
+	 * \brief Sets custom values for conduction decay times (instantaneous rise time) or disables COBA
+	 * This function sets the time constants for the decay of AMPA, NMDA, GABAa, and GABAb. The decay constants will be
+	 * applied to all connections in the network. Set isSet to false to run your simulation in CUBA mode.
+	 * The NMDA current is voltage dependent (see Izhikevich et al., 2004).
+	 * Use setConductances(true) to use default decay values.
+	 * Use the other setConductances to enable non-zero rise times for NMDA and GABAb.
+	 * \param[in] isSet   a flag to inform whether to run simulation in COBA mode (true) or CUBA mode (false)
+	 * \param[in] tdAMPA  time constant for AMPA decay (ms)
+	 * \param[in] tdNMDA  time constant for NMDA decay (ms)
+	 * \param[in] tdGABAa time constant for GABAa decay (ms)
+	 * \param[in] tdGABAb time constant for GABAb decay (ms)
+	 */
 	void setConductances(bool isSet, int tdAMPA, int tdNMDA, int tdGABAa, int tdGABAb, int configId=ALL);
+
+	/*!
+	 * \brief Sets custom values for conduction rise and decay times or disables COBA
+	 * This function sets the time constants for the rise and decay time of AMPA, NMDA, GABAa, and GABAb. AMPA and GABAa
+	 * will always have instantaneous rise time. The rise times of NMDA and GABAb can be set manually. They need to be
+	 * strictly smaller than the decay time. Set isSet to false to run your simulation in CUBA mode.
+	 * Use setConductances(true) to use default decay values.
+	 * \param[in] isSet   a flag to inform whether to run simulation in COBA mode (true) or CUBA mode (false)
+	 * \param[in] tdAMPA  time constant for AMPA decay (ms)
+	 * \param[in] trNMDA  time constant for NMDA rise (ms), must be smaller than tdNMDA
+	 * \param[in] tdNMDA  time constant for NMDA decay (ms)
+	 * \param[in] tdGABAa time constant for GABAa decay (ms)
+	 * \param[in] trGABAb time constant for GABAb rise (ms), must be smaller than tdGABAb
+	 * \param[in] tdGABAb time constant for GABAb decay (ms)
+	 */
+	void setConductances(bool isSet, int tdAMPA, int trNMDA, int tdNMDA, int tdGABAa, int trGABAb, int tdGABAb,
+		int configId=ALL);
 
 	//! Sets default homeostasis params for group
 	void setHomeostasis(int grpId, bool isSet, int configId=ALL);

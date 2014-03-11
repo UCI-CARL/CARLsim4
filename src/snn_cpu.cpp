@@ -367,6 +367,7 @@ int trGABAb, int tdGABAb, int configId) {
 	if (isSet) {
 		assert(tdAMPA>0); assert(tdNMDA>0); assert(tdGABAa>0); assert(tdGABAb>0);
 		assert(trNMDA>=0); assert(trGABAb>=0); // 0 to disable rise times
+		assert(trNMDA<tdNMDA); assert(trGABAb<tdGABAb);
 	}
 
 	// we do not care about configId anymore
