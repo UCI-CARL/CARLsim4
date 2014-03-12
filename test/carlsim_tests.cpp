@@ -188,6 +188,21 @@ TEST(Interface, setSpikeCounter) {
 	delete sim;
 }
 
+//! trigger all UserErrors
+TEST(Interface, setDefaultConductanceTimeConstants) {
+	::testing::FLAGS_gtest_death_test_style = "threadsafe";
+
+	CARLsim* sim = new CARLsim("SNN",CPU_MODE,SILENT);
+	EXPECT_DEATH({sim->setDefaultConductanceTimeConstants(-1,2,3,4,5,6);},""); // negative values
+	EXPECT_DEATH({sim->setDefaultConductanceTimeConstants(1,-2,3,4,5,6);},"");
+	EXPECT_DEATH({sim->setDefaultConductanceTimeConstants(1,2,-3,4,5,6);},"");
+	EXPECT_DEATH({sim->setDefaultConductanceTimeConstants(1,2,3,-4,5,6);},"");
+	EXPECT_DEATH({sim->setDefaultConductanceTimeConstants(1,2,3,4,-5,6);},"");
+	EXPECT_DEATH({sim->setDefaultConductanceTimeConstants(1,2,3,4,5,-6);},"");
+	EXPECT_DEATH({sim->setDefaultConductanceTimeConstants(1,2,2,4,5,6);},"");  // trNMDA==tdNMDA
+	EXPECT_DEATH({sim->setDefaultConductanceTimeConstants(1,2,3,4,5,5);},"");  // trGABAb==tdGABAb
+	delete sim;
+}
 
 /// **************************************************************************************************************** ///
 /// SET CONDUCTANCES

@@ -115,8 +115,10 @@ void CARLsim::CARLsimInit() {
 	// set default time constants for synaptic current decay
 	// TODO: add ref
 	def_tdAMPA_  = 5;	// default decay time for AMPA (ms)
+	def_trNMDA_  = 0;	// default rise time for NMDA (ms)
 	def_tdNMDA_  = 150;	// default decay time for NMDA (ms)
 	def_tdGABAa_ = 6;	// default decay time for GABAa (ms)
+	def_trGABAb_ = 0;   // default rise time for GABAb (ms)
 	def_tdGABAb_ = 150;	// default decay time for GABAb (ms)
 
 	// set default values for STDP params
@@ -694,15 +696,24 @@ void CARLsim::setPrintState(int grpId, bool status) { snn_->setPrintState(grpId,
 // +++++++++ PUBLIC METHODS: SET DEFAULTS +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
 // set default values for conductance decay times
-void CARLsim::setDefaultConductanceDecay(int tdAMPA, int tdNMDA, int tdGABAa, int tdGABAb) {
-	assert(tdAMPA>0); // TODO make nice
-	assert(tdNMDA>0);
-	assert(tdGABAa>0);
-	assert(tdGABAb>0);
+void CARLsim::setDefaultConductanceTimeConstants(int tdAMPA, int trNMDA, int tdNMDA, int tdGABAa, int trGABAb, 
+int tdGABAb) {
+	std::stringstream funcName;	funcName << "setDefaultConductanceTimeConstants(" << tdAMPA << "," << trNMDA << 
+		"," << tdNMDA << "," << tdGABAa << "," << trGABAb << "," << tdGABAb << ")";
+	UserErrors::assertTrue(tdAMPA>0, UserErrors::MUST_BE_POSITIVE, funcName.str(), "tdAMPA");
+	UserErrors::assertTrue(trNMDA>0, UserErrors::MUST_BE_POSITIVE, funcName.str(), "trNMDA");
+	UserErrors::assertTrue(tdNMDA>0, UserErrors::MUST_BE_POSITIVE, funcName.str(), "tdNMDA");
+	UserErrors::assertTrue(tdGABAa>0, UserErrors::MUST_BE_POSITIVE, funcName.str(), "tdGABAa");
+	UserErrors::assertTrue(trGABAb>0, UserErrors::MUST_BE_POSITIVE, funcName.str(), "trGABAb");
+	UserErrors::assertTrue(tdGABAb>0, UserErrors::MUST_BE_POSITIVE, funcName.str(), "tdGABAb");
+	UserErrors::assertTrue(trNMDA!=tdNMDA, UserErrors::CANNOT_BE_IDENTICAL, funcName.str(), "trNMDA and tdNMDA");
+	UserErrors::assertTrue(trGABAb!=tdGABAb, UserErrors::CANNOT_BE_IDENTICAL, funcName.str(), "trGABAb and tdGABAb");
 
 	def_tdAMPA_  = tdAMPA;
+	def_trNMDA_  = trNMDA;
 	def_tdNMDA_  = tdNMDA;
 	def_tdGABAa_ = tdGABAa;
+	def_trGABAb_ = trGABAb;
 	def_tdGABAb_ = tdGABAb;
 }
 

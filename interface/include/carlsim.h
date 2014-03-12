@@ -134,10 +134,20 @@ public:
 
 
 	//! Sets default values for conduction decays or disables COBA if isSet==false
+	/*!
+	 * \brief Sets default values for conduction decay and rise times or disables COBA alltogether
+	 * This function sets the time constants for the decay of AMPA, NMDA, GABA, and GABAb, and the rise times for
+	 * NMDA and GABAb. These constants will be applied to all connections in the network. Set isSet to false to run
+	 * your simulation in CUBA mode.
+	 * Use setDefaultConductanceTimeConstants to set default values for all time constants.
+	 * If you call this function without setting your own defaults, then the following defaults will be used:
+	 * tdAMPA=5ms, trNMDA=0, tdNMDA=150ms, tdGABAa=6ms, trGABAb=0, tdGABAb=150ms (instantaneous rise time).
+	 * \param[in] isSet   a flag to inform whether to run simulation in COBA mode (true) or CUBA mode (false)
+	 */
 	void setConductances(bool isSet, int configId=ALL);
 
 	/*!
-	 * \brief Sets custom values for conduction decay times (instantaneous rise time) or disables COBA
+	 * \brief Sets custom values for conduction decay times (instantaneous rise time) or disables COBA alltogether
 	 * This function sets the time constants for the decay of AMPA, NMDA, GABAa, and GABAb. The decay constants will be
 	 * applied to all connections in the network. Set isSet to false to run your simulation in CUBA mode.
 	 * The NMDA current is voltage dependent (see Izhikevich et al., 2004).
@@ -152,10 +162,13 @@ public:
 	void setConductances(bool isSet, int tdAMPA, int tdNMDA, int tdGABAa, int tdGABAb, int configId=ALL);
 
 	/*!
-	 * \brief Sets custom values for conduction rise and decay times or disables COBA
+	 * \brief Sets custom values for conduction rise and decay times or disables COBA alltogether
 	 * This function sets the time constants for the rise and decay time of AMPA, NMDA, GABAa, and GABAb. AMPA and GABAa
 	 * will always have instantaneous rise time. The rise times of NMDA and GABAb can be set manually. They need to be
 	 * strictly smaller than the decay time. Set isSet to false to run your simulation in CUBA mode.
+	 * We do not provide non-zero rise times for AMPA and GABAa, because these rise times are typically on the order of
+	 * 1 ms, which is equal to the simulation time step.
+	 * The NMDA current is voltage dependent (see Izhikevich et al., 2004).
 	 * Use setConductances(true) to use default decay values.
 	 * \param[in] isSet   a flag to inform whether to run simulation in COBA mode (true) or CUBA mode (false)
 	 * \param[in] tdAMPA  time constant for AMPA decay (ms)
@@ -398,8 +411,16 @@ public:
 
 	// +++++ PUBLIC METHODS: SET DEFAULTS +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
-	//! sets default values for conductance decays
-	void setDefaultConductanceDecay(int tdAMPA, int tdNMDA, int tdGABAa, int tdGABAb);
+	/*!
+	 * \brief Sets default values for conductance time constants
+	 * \param[in] tdAMPA   time constant for AMPA decay (ms)
+	 * \param[in] trNMDA   time constant for NMDA rise (ms)
+	 * \param[in] tdNMDA   time constant for NMDA decay (ms)
+	 * \param[in] tdGABAa  time constant for GABAa decay (ms)
+	 * \param[in] trGABAb  time constant for GABAb rise (ms)
+	 * \param[in] tdGABAb  time constant for GABAb decay (ms)
+	 */
+	void setDefaultConductanceTimeConstants(int tdAMPA, int trNMDA, int tdNMDA, int tdGABAa, int trGABAb, int tdGABAb);
 
 	//! sets default homeostasis params
 	void setDefaultHomeostasisParams(float homeoScale, float avgTimeScale);
@@ -448,8 +469,10 @@ private:
 	bool hasSetSTPALL_; 			//!< informsthat STP have been set for ALL groups (can't add more groups)
 
 	int def_tdAMPA_;				//!< default value for AMPA decay (ms)
+	int def_trNMDA_;				//!< default value for NMDA rise (ms)
 	int def_tdNMDA_;				//!< default value for NMDA decay (ms)
 	int def_tdGABAa_;				//!< default value for GABAa decay (ms)
+	int def_trGABAb_;				//!< default value for GABAb rise (ms)
 	int def_tdGABAb_;				//!< default value for GABAb decay (ms)
 
 	float def_STDP_alphaLTP_;		//!< default value for LTP amplitude
