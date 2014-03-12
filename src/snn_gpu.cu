@@ -903,8 +903,8 @@ __global__ void kernel_globalConductanceUpdate (int t, int sec, int simTime) {
 							AMPA_sum += wt*gpuPtrs.mulSynFast[connId];
 						if (type & TARGET_NMDA) {
 							if (gpuNetInfo.sim_with_NMDA_rise) {
-								NMDA_r_sum += wt*gpuPtrs.mulSynSlow[connId];
-								NMDA_d_sum += wt*gpuPtrs.mulSynSlow[connId];
+								NMDA_r_sum += wt*gpuPtrs.mulSynSlow[connId]*gpuNetInfo.sNMDA;
+								NMDA_d_sum += wt*gpuPtrs.mulSynSlow[connId]*gpuNetInfo.sNMDA;
 							} else {
 								NMDA_sum += wt*gpuPtrs.mulSynSlow[connId];
 							}
@@ -913,8 +913,8 @@ __global__ void kernel_globalConductanceUpdate (int t, int sec, int simTime) {
 							GABAa_sum += wt*gpuPtrs.mulSynFast[connId];	// wt should be negative for GABAa and GABAb
 						if (type & TARGET_GABAb) {						// but that is dealt with below
 							if (gpuNetInfo.sim_with_GABAb_rise) {
-								GABAb_r_sum += wt*gpuPtrs.mulSynSlow[connId];
-								GABAb_d_sum += wt*gpuPtrs.mulSynSlow[connId];
+								GABAb_r_sum += wt*gpuPtrs.mulSynSlow[connId]*gpuNetInfo.sGABAb;
+								GABAb_d_sum += wt*gpuPtrs.mulSynSlow[connId]*gpuNetInfo.sGABAb;
 							} else {
 								GABAb_sum += wt*gpuPtrs.mulSynSlow[connId];
 							}
@@ -967,22 +967,23 @@ __global__ void kernel_globalConductanceUpdate (int t, int sec, int simTime) {
 //************************ UPDATE GLOBAL STATE EVERY TIME STEP *******************************************************//
 
 __device__ void updateNeuronState(unsigned int& nid, int& grpId) {
-	float v      =  gpuPtrs.voltage[nid];
-	float u      =  gpuPtrs.recovery[nid];
-	float I_sum, NMDAtmp;
-	float gNMDA, gGABAb;
+	double v      =  gpuPtrs.voltage[nid];
+	double u      =  gpuPtrs.recovery[nid];
+	double I_sum, NMDAtmp;
+	double gNMDA, gGABAb;
 
 	// loop that allows smaller integration time step for v's and u's
 	for (int c=0; c<COND_INTEGRATION_SCALE; c++) {
 		I_sum = 0.0;
 		if (gpuNetInfo.sim_with_conductances) {
 			NMDAtmp = (v+80)*(v+80)/60/60;
-			gNMDA = (gpuNetInfo.sim_with_NMDA_rise) ? gpuPtrs.gNMDA_d[nid]-gpuPtrs.gNMDA_r[nid] : gpuPtrs.gNMDA[nid];
-			gGABAb = (gpuNetInfo.sim_with_GABAb_rise) ? gpuPtrs.gGABAb_d[nid]-gpuPtrs.gGABAb_r[nid] : gpuPtrs.gGABAb[nid];
-			I_sum = - ( gpuPtrs.gAMPA[nid]*(v-0)
-					+ gNMDA*NMDAtmp/(1+NMDAtmp)*(v-0) // cap gNMDA at 8.0
-					+ gpuPtrs.gGABAa[nid]*(v+70)
-					+ gGABAb*(v+90)); // cap gGABAb at 2.0
+			gNMDA = (gpuNetInfo.sim_with_NMDA_rise) ? (gpuPtrs.gNMDA_d[nid]-gpuPtrs.gNMDA_r[nid]) : gpuPtrs.gNMDA[nid];
+			gGABAb = (gpuNetInfo.sim_with_GABAb_rise) ? (gpuPtrs.gGABAb_d[nid]-gpuPtrs.gGABAb_r[nid]) : gpuPtrs.gGABAb[nid];
+			I_sum = -(   gpuPtrs.gAMPA[nid]*(v-0)
+					   + gNMDA*NMDAtmp/(1+NMDAtmp)*(v-0)
+					   + gpuPtrs.gGABAa[nid]*(v+70)
+					   + gGABAb*(v+90)
+					 );
 		}
 		else
 			I_sum = gpuPtrs.current[nid];
@@ -2924,9 +2925,11 @@ void CpuSNN::allocateNetworkParameters()
 	net_Info.dAMPA = dAMPA;
 	net_Info.rNMDA = rNMDA;
 	net_Info.dNMDA = dNMDA;
+	net_Info.sNMDA = sNMDA;
 	net_Info.dGABAa = dGABAa;
 	net_Info.rGABAb = rGABAb;
 	net_Info.dGABAb = dGABAb;
+	net_Info.sGABAb = sGABAb;
 
 	return;
 }

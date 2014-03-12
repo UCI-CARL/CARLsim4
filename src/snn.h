@@ -341,12 +341,14 @@ typedef struct network_info_s  {
 
 	bool sim_with_NMDA_rise;	//!< a flag to inform whether to compute NMDA rise time
 	bool sim_with_GABAb_rise;	//!< a flag to inform whether to compute GABAb rise time
-	float dAMPA;				//!< multiplication factor for decay time of AMPA conductance (gAMPA[i] *= dAMPA)
-	float rNMDA;				//!< multiplication factor for rise time of NMDA
-	float dNMDA;				//!< multiplication factor for decay time of NMDA
-	float dGABAa;				//!< multiplication factor for decay time of GABAa
-	float rGABAb;				//!< multiplication factor for rise time of GABAb
-	float dGABAb;				//!< multiplication factor for decay time of GABAb
+	double dAMPA;				//!< multiplication factor for decay time of AMPA conductance (gAMPA[i] *= dAMPA)
+	double rNMDA;				//!< multiplication factor for rise time of NMDA
+	double dNMDA;				//!< multiplication factor for decay time of NMDA
+	double sNMDA;				//!< scaling factor for NMDA amplitude
+	double dGABAa;				//!< multiplication factor for decay time of GABAa
+	double rGABAb;				//!< multiplication factor for rise time of GABAb
+	double dGABAb;				//!< multiplication factor for decay time of GABAb
+	double sGABAb;				//!< scaling factor for GABAb amplitude
 } network_info_t;
 
 //! nid=neuron id, sid=synapse id, grpId=group id. 
@@ -1084,12 +1086,14 @@ typedef struct group_info_s
 	bool sim_with_conductances;		//!< flag to inform whether we run in COBA mode (true) or CUBA mode (false)
 	bool sim_with_NMDA_rise;	//!< a flag to inform whether to compute NMDA rise time
 	bool sim_with_GABAb_rise;	//!< a flag to inform whether to compute GABAb rise time
-	float dAMPA;				//!< multiplication factor for decay time of AMPA conductance (gAMPA[i] *= dAMPA)
-	float rNMDA;				//!< multiplication factor for rise time of NMDA
-	float dNMDA;				//!< multiplication factor for decay time of NMDA
-	float dGABAa;				//!< multiplication factor for decay time of GABAa
-	float rGABAb;				//!< multiplication factor for rise time of GABAb
-	float dGABAb;				//!< multiplication factor for decay time of GABAb
+	double dAMPA;				//!< multiplication factor for decay time of AMPA conductance (gAMPA[i] *= dAMPA)
+	double rNMDA;				//!< multiplication factor for rise time of NMDA
+	double dNMDA;				//!< multiplication factor for decay time of NMDA
+	double sNMDA;				//!< scaling factor for NMDA amplitude
+	double dGABAa;				//!< multiplication factor for decay time of GABAa
+	double rGABAb;				//!< multiplication factor for rise time of GABAb
+	double dGABAb;				//!< multiplication factor for decay time of GABAb
+	double sGABAb;				//!< scaling factor for GABAb amplitude
 
 	bool sim_with_fixedwts;
 	bool sim_with_stdp;

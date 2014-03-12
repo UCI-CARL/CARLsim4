@@ -368,32 +368,42 @@ int trGABAb, int tdGABAb, int configId) {
 	if (isSet) {
 		assert(tdAMPA>0); assert(tdNMDA>0); assert(tdGABAa>0); assert(tdGABAb>0);
 		assert(trNMDA>=0); assert(trGABAb>=0); // 0 to disable rise times
-		assert(trNMDA<tdNMDA); assert(trGABAb<tdGABAb);
+		assert(trNMDA!=tdNMDA); assert(trGABAb!=tdGABAb); // singularity
 	}
 
 	// we do not care about configId anymore
 	// set conductances globally for all connections
 	sim_with_conductances  = true;
-	dAMPA  = 1.0f-1.0f/tdAMPA;
-	dNMDA  = 1.0f-1.0f/tdNMDA;
-	dGABAa = 1.0f-1.0f/tdGABAa;
-	dGABAb = 1.0f-1.0f/tdGABAb;
+	dAMPA  = 1.0-1.0/tdAMPA;
+	dNMDA  = 1.0-1.0/tdNMDA;
+	dGABAa = 1.0-1.0/tdGABAa;
+	dGABAb = 1.0-1.0/tdGABAb;
 
 	if (trNMDA>0) {
 		// use rise time for NMDA
 		sim_with_NMDA_rise = true;
-		rNMDA = 1.0f-1.0f/trNMDA;
+		rNMDA = 1.0-1.0/trNMDA;
+
+		// compute max conductance under this model to scale it back to 1
+		// otherwise the peak conductance will not be equal to the weight
+		double tmax = (-tdNMDA*trNMDA*log(1.0*trNMDA/tdNMDA))/(tdNMDA-trNMDA); // t at which cond will be max
+		sNMDA = 1.0/(exp(-tmax/tdNMDA)-exp(-tmax/trNMDA)); // scaling factor, 1 over max amplitude
+		assert(!isinf(tmax) && !isnan(tmax) && tmax>=0);
+		assert(!isinf(sNMDA) && !isnan(sNMDA) && sNMDA>0);
 	}
+
 	if (trGABAb>0) {
 		// use rise time for GABAb
 		sim_with_GABAb_rise = true;
-		rGABAb = 1.0f-1.0f/trGABAb;
+		rGABAb = 1.0-1.0/trGABAb;
+
+		// compute max conductance under this model to scale it back to 1
+		// otherwise the peak conductance will not be equal to the weight
+		double tmax = (-tdGABAb*trGABAb*log(1.0*trGABAb/tdGABAb))/(tdGABAb-trGABAb); // t at which cond will be max
+		sGABAb = 1.0/(exp(-tmax/tdGABAb)-exp(-tmax/trGABAb)); // scaling factor, 1 over max amplitude
+		assert(!isinf(tmax) && !isnan(tmax)); assert(!isinf(sGABAb) && !isnan(sGABAb) && sGABAb>0);
 	}
 //		grp_Info[cGrpId].newUpdates 		= true; // \deprecated
-
-	CARLSIM_INFO("sim_with_conductances: %s, sim_with_NMDA_rise: %s, sim_with_GABAb_rise: %s, dAMPA=%1.4f, "
-		"rNMDA=%1.4f, dNMDA=%1.4f, dGABAa=%1.4f, rGABAb=%1.4f, dGABAb=%1.4f", sim_with_conductances?"t":"f",
-		sim_with_NMDA_rise?"t":"f", sim_with_GABAb_rise?"t":"f", dAMPA, rNMDA, dNMDA, dGABAa, rGABAb, dGABAb);
 
 	if (sim_with_conductances) {
 		CARLSIM_INFO("Running COBA mode: tdAMPA: %d ms, trNMDA%s: %d ms, tdNMDA: %d ms, tdGABAa: %d ms, trGABAb%s: "
@@ -1514,12 +1524,14 @@ void CpuSNN::CpuSNNinit() {
 	// conductance info struct for simulation
 	sim_with_NMDA_rise = false;
 	sim_with_GABAb_rise = false;
-	dAMPA  = 1.0f-1.0f/5.0f;		// some default decay and rise times
-	rNMDA  = 1.0f-1.0f/10.0f;
-	dNMDA  = 1.0f-1.0f/150.0f;
-	dGABAa = 1.0f-1.0f/6.0f;
-	rGABAb = 1.0f-1.0f/100.0f;
-	dGABAb = 1.0f-1.0f/150.0f;
+	dAMPA  = 1.0-1.0/5.0;		// some default decay and rise times
+	rNMDA  = 1.0-1.0/10.0;
+	dNMDA  = 1.0-1.0/150.0;
+	sNMDA  = 1.0;
+	dGABAa = 1.0-1.0/6.0;
+	rGABAb = 1.0-1.0/100.0;
+	dGABAb = 1.0-1.0/150.0;
+	sGABAb = 1.0;
 
 	// reset all pointers, don't deallocate (false)
 	resetPointers(false);
@@ -2457,7 +2469,7 @@ void CpuSNN::generatePostSpike(unsigned int pre_i, unsigned int idx_d, unsigned 
 	// right before spike-update)
 	if (grp_Info[pre_grpId].WithSTP) {
 		// du/dt = -u/tau_F + U * (1-u^-) * \delta(t-t_{spk})
-		stpu[pre_i] += grp_Info[pre_grpId].STP_U*(1.0f-stpu[pre_i]);
+		stpu[pre_i] += grp_Info[pre_grpId].STP_U*(1.0-stpu[pre_i]);
 
 		// dI/dt = -I/tau_S + A * u^+ * x^- * \delta(t-t_{spk})
 		change *= stpu[pre_i]*stpx[pre_i];
@@ -2477,8 +2489,8 @@ void CpuSNN::generatePostSpike(unsigned int pre_i, unsigned int idx_d, unsigned 
 			gAMPA [post_i] += change*mulSynFast[mulIndex]; // scale by some factor
 		if (pre_type & TARGET_NMDA) {
 			if (sim_with_NMDA_rise) {
-				gNMDA_r[post_i] += change*mulSynSlow[mulIndex];
-				gNMDA_d[post_i] += change*mulSynSlow[mulIndex];
+				gNMDA_r[post_i] += change*sNMDA*mulSynSlow[mulIndex];
+				gNMDA_d[post_i] += change*sNMDA*mulSynSlow[mulIndex];
 			} else {
 				gNMDA [post_i] += change*mulSynSlow[mulIndex];
 			}
@@ -2487,8 +2499,8 @@ void CpuSNN::generatePostSpike(unsigned int pre_i, unsigned int idx_d, unsigned 
 			gGABAa[post_i] -= change*mulSynFast[mulIndex]; // wt should be negative for GABAa and GABAb
 		if (pre_type & TARGET_GABAb) {
 			if (sim_with_GABAb_rise) {
-				gGABAb_r[post_i] += change*mulSynSlow[mulIndex];
-				gGABAb_d[post_i] += change*mulSynSlow[mulIndex];
+				gGABAb_r[post_i] -= change*sGABAb*mulSynSlow[mulIndex];
+				gGABAb_d[post_i] -= change*sGABAb*mulSynSlow[mulIndex];
 			} else {
 				gGABAb[post_i] -= change*mulSynSlow[mulIndex];
 			}
@@ -2680,8 +2692,8 @@ float CpuSNN::getWeights(int connProp, float initWt, float maxWt, unsigned int n
 
 
 void  CpuSNN::globalStateUpdate() {
-	float tmp_iNMDA, tmp_I;
-	float tmp_gNMDA, tmp_gGABAb;
+	double tmp_iNMDA, tmp_I;
+	double tmp_gNMDA, tmp_gGABAb;
 
 	for(int g=0; g<numGrp; g++) {
 		if (grp_Info[g].Type&POISSON_NEURON){ 
@@ -2702,26 +2714,25 @@ void  CpuSNN::globalStateUpdate() {
 
 				// FIXME: these tmp vars cause a lot of rounding errors... consider rewriting
 				for (int j=0; j<COND_INTEGRATION_SCALE; j++) {
-					tmp_iNMDA = (voltage[i]+80)*(voltage[i]+80)/60/60;
+					tmp_iNMDA = (voltage[i]+80.0)*(voltage[i]+80.0)/60.0/60.0;
 
 					tmp_gNMDA = sim_with_NMDA_rise ? gNMDA_d[i]-gNMDA_r[i] : gNMDA[i];
 					tmp_gGABAb = sim_with_GABAb_rise ? gGABAb_d[i]-gGABAb_r[i] : gGABAb[i];
 
-					float tmp_I = -(    gAMPA[i]*(voltage[i]-0)
+					current[i] += -(   gAMPA[i]*(voltage[i]-0)
 									 + tmp_gNMDA*tmp_iNMDA/(1+tmp_iNMDA)*(voltage[i]-0)
 									 + gGABAa[i]*(voltage[i]+70)
 									 + tmp_gGABAb*(voltage[i]+90)
-								  );
-					current[i] += tmp_I;
+								   );
 
 					#ifdef NEURON_NOISE
-						float noiseI = -intrinsicWeight[i]*log(getRand());
+						double noiseI = -intrinsicWeight[i]*log(getRand());
 						if (isnan(noiseI) || isinf(noiseI))
 							noiseI = 0;
-						tmp_I += noiseI;
+						current[i] += noiseI;
 					#endif
 
-					voltage[i]+=((0.04f*voltage[i]+5)*voltage[i]+140-recovery[i]+tmp_I)/COND_INTEGRATION_SCALE;
+					voltage[i]+=((0.04*voltage[i]+5.0)*voltage[i]+140.0-recovery[i]+current[i])/COND_INTEGRATION_SCALE;
 					assert(!isnan(voltage[i]) && !isinf(voltage[i]));
 
 					if (voltage[i] > 30) {
@@ -2749,8 +2760,8 @@ void  CpuSNN::globalStateUpdate() {
 	      		}
 			} else {
 				// CUBA model
-				voltage[i]+=0.5f*((0.04f*voltage[i]+5)*voltage[i]+140-recovery[i]+current[i]); //for numerical stability
-				voltage[i]+=0.5f*((0.04f*voltage[i]+5)*voltage[i]+140-recovery[i]+current[i]); //time step is 0.5 ms
+				voltage[i]+=0.5*((0.04*voltage[i]+5.0)*voltage[i]+140.0-recovery[i]+current[i]); //for numerical stability
+				voltage[i]+=0.5*((0.04*voltage[i]+5.0)*voltage[i]+140.0-recovery[i]+current[i]); //time step is 0.5 ms
 				if (voltage[i] > 30)
 					voltage[i] = 30;
 				if (voltage[i] < -90)
