@@ -156,6 +156,8 @@ short int CARLsim::connect(int grpId1, int grpId2, const std::string& connType, 
 	std::stringstream grpId2str; grpId2str << "Group Id " << grpId2;
 	UserErrors::userAssert(grpId1!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName, grpId1str.str()); // grpId can't be ALL
 	UserErrors::userAssert(grpId2!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName, grpId2str.str());
+	UserErrors::userAssert(!isPoissonGroup(grpId2), UserErrors::WRONG_NEURON_TYPE, funcName, grpId2str.str() + 
+		" is PoissonGroup, connect");
 	UserErrors::userAssert(!isExcitatoryGroup(grpId1) || wt>0, UserErrors::MUST_BE_POSITIVE, funcName, "wt");
 	UserErrors::userAssert(!isInhibitoryGroup(grpId1) || wt<0, UserErrors::MUST_BE_NEGATIVE, funcName, "wt");
 	UserErrors::userAssert(!hasRunNetwork_, UserErrors::NETWORK_ALREADY_RUN, funcName); // can't change setup after run
@@ -166,8 +168,16 @@ short int CARLsim::connect(int grpId1, int grpId2, const std::string& connType, 
 // shortcut to create SYN_FIXED connections with one weight / delay and two scaling factors for synaptic currents
 short int CARLsim::connect(int grpId1, int grpId2, const std::string& connType, float wt, float connProb, uint8_t delay,
 							float mulSynFast, float mulSynSlow) {
-	assert(!hasRunNetwork_); // TODO: make nice
-	assert(++numConnections_ <= MAX_nConnections);
+	std::string funcName = "connect(\""+getGroupName(grpId1,0)+"\",\""+getGroupName(grpId2,0)+"\")";
+	std::stringstream grpId1str; grpId1str << "Group Id " << grpId1;
+	std::stringstream grpId2str; grpId2str << "Group Id " << grpId2;
+	UserErrors::userAssert(grpId1!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName, grpId1str.str()); // grpId can't be ALL
+	UserErrors::userAssert(grpId2!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName, grpId2str.str());
+	UserErrors::userAssert(!isPoissonGroup(grpId2), UserErrors::WRONG_NEURON_TYPE, funcName, grpId2str.str() + 
+		" is PoissonGroup, connect");
+	UserErrors::userAssert(!isExcitatoryGroup(grpId1) || wt>0, UserErrors::MUST_BE_POSITIVE, funcName, "wt");
+	UserErrors::userAssert(!isInhibitoryGroup(grpId1) || wt<0, UserErrors::MUST_BE_NEGATIVE, funcName, "wt");
+	UserErrors::userAssert(!hasRunNetwork_, UserErrors::NETWORK_ALREADY_RUN, funcName); // can't change setup after run
 
 	return snn_->connect(grpId1,grpId2,connType,wt,wt,connProb,delay,delay,mulSynFast,mulSynSlow,SYN_FIXED);
 }
@@ -182,6 +192,8 @@ short int CARLsim::connect(int grpId1, int grpId2, const std::string& connType, 
 	std::stringstream grpId2str; grpId2str << ". Group Id " << grpId2;
 	UserErrors::userAssert(grpId1!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName, grpId1str.str()); // grpId can't be ALL
 	UserErrors::userAssert(grpId2!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName, grpId2str.str());
+	UserErrors::userAssert(!isPoissonGroup(grpId2), UserErrors::WRONG_NEURON_TYPE, funcName, grpId2str.str() + 
+		" is PoissonGroup, connect");
 	UserErrors::userAssert(!isExcitatoryGroup(grpId1) || maxWt>0, UserErrors::MUST_BE_POSITIVE, funcName, "maxWt");
 	UserErrors::userAssert(!isInhibitoryGroup(grpId1) || maxWt<0, UserErrors::MUST_BE_NEGATIVE, funcName, "maxWt");
 	UserErrors::userAssert(initWt*maxWt>=0, UserErrors::MUST_HAVE_SAME_SIGN, funcName, "initWt and maxWt");
@@ -193,6 +205,12 @@ short int CARLsim::connect(int grpId1, int grpId2, const std::string& connType, 
 // custom connectivity profile
 short int CARLsim::connect(int grpId1, int grpId2, ConnectionGenerator* conn, bool synWtType, int maxM, int maxPreM) {
 	std::string funcName = "connect(\""+getGroupName(grpId1,0)+"\",\""+getGroupName(grpId2,0)+"\")";
+	std::stringstream grpId1str; grpId1str << ". Group Id " << grpId1;
+	std::stringstream grpId2str; grpId2str << ". Group Id " << grpId2;
+	UserErrors::userAssert(grpId1!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName, grpId1str.str()); // grpId can't be ALL
+	UserErrors::userAssert(grpId2!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName, grpId2str.str());
+	UserErrors::userAssert(!isPoissonGroup(grpId2), UserErrors::WRONG_NEURON_TYPE, funcName, grpId2str.str() + 
+		" is PoissonGroup, connect");
 	UserErrors::userAssert(!hasRunNetwork_, UserErrors::NETWORK_ALREADY_RUN, funcName); // can't change setup after run
 
 	// TODO: check for sign of weights
@@ -203,6 +221,12 @@ short int CARLsim::connect(int grpId1, int grpId2, ConnectionGenerator* conn, bo
 short int CARLsim::connect(int grpId1, int grpId2, ConnectionGenerator* conn, float mulSynFast, float mulSynSlow,
 						bool synWtType, int maxM, int maxPreM) {
 	std::string funcName = "connect(\""+getGroupName(grpId1,0)+"\",\""+getGroupName(grpId2,0)+"\")";
+	std::stringstream grpId1str; grpId1str << ". Group Id " << grpId1;
+	std::stringstream grpId2str; grpId2str << ". Group Id " << grpId2;
+	UserErrors::userAssert(grpId1!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName, grpId1str.str()); // grpId can't be ALL
+	UserErrors::userAssert(grpId2!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName, grpId2str.str());
+	UserErrors::userAssert(!isPoissonGroup(grpId2), UserErrors::WRONG_NEURON_TYPE, funcName, grpId2str.str() + 
+		" is PoissonGroup, connect");
 	UserErrors::userAssert(!hasRunNetwork_, UserErrors::NETWORK_ALREADY_RUN, funcName); // can't change setup after run
 	assert(++numConnections_ <= MAX_nConnections);
 

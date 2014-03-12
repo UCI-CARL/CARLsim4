@@ -406,6 +406,8 @@ typedef struct network_ptr_s  {
 	float 	*mulSynFast, *mulSynSlow;
 	short int *cumConnIdPre;	//!< connectId, per synapse, presynaptic cumulative indexing
 
+	short int *grpIds;
+
 	/*!
 	 * \brief 10 bit syn id, 22 bit neuron id, ordered based on delay
 	 *
@@ -1073,6 +1075,8 @@ typedef struct group_info_s
 	short int 	*cumConnIdPre;		//!< connId, per synapse, presynaptic cumulative indexing
 	float 		*mulSynFast;	//!< scaling factor for fast synaptic currents, per connection
 	float 		*mulSynSlow;	//!< scaling factor for slow synaptic currents, per connection
+
+	short int *grpIds;
 
 	//! Buffer to store spikes
 	PropagatedSpikeBuffer* pbuf;

@@ -118,6 +118,7 @@ short int CpuSNN::connect(int grpId1, int grpId2, const std::string& _type, floa
 		assert(grpId1 < numGrp);
 		assert(grpId2 < numGrp);
 		assert(minDelay <= maxDelay);
+		assert(!isPoissonGroup(grpId2));
 
     //* \deprecated Do these ramp thingies still work?
 //    bool useRandWts = (wtType.find("random") != std::string::npos);
@@ -705,7 +706,8 @@ void CpuSNN::reassignFixedWeights(short int connectId, float weightMatrix[], int
 			for (j=0; j < Npre[postId]; j++,preIdPtr++, synWtPtr++) {
 				int preId       = GET_CONN_NEURON_ID((*preIdPtr));
 				assert(preId < numN);
-				int currentSrcId = findGrpId(preId);
+				short int currentSrcId = grpIds[preId];
+//				int currentSrcId = findGrpId(preId);
 				//if the neuron is part of the source group, assign it a value
 				//from the reassignment matrix.
 				if(currentSrcId == srcGrp){
@@ -1839,6 +1841,19 @@ void CpuSNN::buildNetwork() {
 	}
 	assert(allocatedGrp == numGrp);
 
+	grpIds = new short int[numN];
+	for (int nid=0; nid<numN; nid++) {
+		grpIds[nid] = -1;
+		for (int g=0; g<numGrp; g++) {
+			if (nid>=grp_Info[g].StartN && nid<=grp_Info[g].EndN) {
+				grpIds[nid] = (short int)g;
+//				printf("grpIds[%d] = %d\n",nid,g);
+				break;
+			}
+		}
+		assert(grpIds[nid]!=-1);
+	}
+
 	if (readNetworkFID != NULL) {
 		// we the user specified readNetwork the synaptic weights will be restored here...
 		#if READNETWORK_ADD_SYNAPSES_FROM_FILE
@@ -2390,6 +2405,7 @@ void CpuSNN::findFiring() {
 }
 
 int CpuSNN::findGrpId(int nid) {
+	CARLSIM_WARN("Using findGrpId is deprecated");
 	for(int g=0; g < numGrp; g++) {
 		if(nid >=grp_Info[g].StartN && (nid <=grp_Info[g].EndN)) {
 			return g;
@@ -2417,8 +2433,10 @@ void CpuSNN::generatePostSpike(unsigned int pre_i, unsigned int idx_d, unsigned 
 	assert(post_i < numNReg); // FIXME is this assert supposed to be for pos_i?
 
 	// get group id of pre- / post-neuron
-	int post_grpId = findGrpId(post_i);
-	int pre_grpId = findGrpId(pre_i);
+	short int post_grpId = grpIds[post_i];
+	short int pre_grpId = grpIds[pre_i];
+//	int post_grpId = findGrpId(post_i);
+//	int pre_grpId = findGrpId(pre_i);
 
 	char pre_type = grp_Info[pre_grpId].Type;
 
@@ -2519,7 +2537,8 @@ void CpuSNN::generateSpikes() {
 		int nid	 = srg_iter->stg;
 		//delaystep_t del = srg_iter->delay;
 		//generate a spike to all the target neurons from source neuron nid with a delay of del
-		int g = findGrpId(nid);
+//		int g = findGrpId(nid);
+		short int g = grpIds[nid];
 
 /*
 // MB: Uncomment this if you want to activate real-time spike monitors for SpikeGenerators
@@ -2876,7 +2895,8 @@ int CpuSNN::readNetwork_internal()
 			if (nIDpost >= nrCells) return -7;
 			if (!fread(&weight,sizeof(float),1,readNetworkFID)) return -11;
 
-			int gIDpre = findGrpId(nIDpre);
+//			int gIDpre = findGrpId(nIDpre);
+			short int gIDpre = grpIds[nIDpre];
 			if (IS_INHIBITORY_TYPE(grp_Info[gIDpre].Type) && (weight>0)
 					|| !IS_INHIBITORY_TYPE(grp_Info[gIDpre].Type) && (weight<0))
 			{
@@ -2897,7 +2917,8 @@ int CpuSNN::readNetwork_internal()
 
 			#if READNETWORK_ADD_SYNAPSES_FROM_FILE
 				if ((plastic && onlyPlastic) || (!plastic && !onlyPlastic)) {
-					int gIDpost = findGrpId(nIDpost);
+//					int gIDpost = findGrpId(nIDpost);
+					int gIDpost = grpIds[nIDpost];
 					int connProp = SET_FIXED_PLASTIC(plastic?SYN_PLASTIC:SYN_FIXED);
 
 					setConnection(gIDpre, gIDpost, nIDpre, nIDpost, weight, maxWeight, delay, connProp, connId);
@@ -3201,6 +3222,9 @@ void CpuSNN::resetPointers(bool deallocate) {
 	if (cumConnIdPre!=NULL && deallocate) delete[] cumConnIdPre;
 	mulSynFast=NULL; mulSynSlow=NULL; cumConnIdPre=NULL;
 
+	if (grpIds!=NULL && deallocate) delete[] grpIds;
+	grpIds=NULL;
+
 	#ifdef NEURON_NOISE
 	if (intrinsicWeight!=NULL && deallocate) delete[] intrinsicWeight;
 	#endif
@@ -3312,7 +3336,8 @@ void CpuSNN::resetSynapticConnections(bool changeWeights) {
 			for (j=0; j < Npre[nid]; j++,preIdPtr++, synWtPtr++, maxWtPtr++) {
 				int preId    = GET_CONN_NEURON_ID((*preIdPtr));
 				assert(preId < numN);
-				int srcGrp   = findGrpId(preId);
+//				int srcGrp   = findGrpId(preId);
+				int srcGrp = grpIds[preId];
 				grpConnectInfo_t* connInfo;	      
 				grpConnectInfo_t* connIterator = connectBegin;
 				while(connIterator) {
@@ -3849,7 +3874,8 @@ void CpuSNN::updateSpikeMonitor() {
 					nid = GET_FIRING_TABLE_NID(nid);
 				assert(nid < numN);
 
-				int grpId = findGrpId(nid);
+//				int grpId = findGrpId(nid);
+				int grpId = grpIds[nid];
 				int monitorId = grp_Info[grpId].MonitorId;
 				if(monitorId!= -1) {
 					assert(nid >= grp_Info[grpId].StartN);
