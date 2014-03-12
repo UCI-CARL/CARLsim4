@@ -49,7 +49,8 @@ $(ex_dir)/common/ $(src_dir) $(interface_dir)/src $(test_dir)
 # location of .cu files
 vpath %.cu $(src_dir)
 # location of .h files
-vpath %.h $(EO_INSTALL_DIR)/src $(inc_dir) $(src_dir) $(ex_dir)/common $(interface_dir)/include
+vpath %.h $(EO_INSTALL_DIR)/src $(inc_dir) $(src_dir) $(ex_dir)/common $(interface_dir)/include \
+$(test_dir)
 
 # this blank 'all' is required
 all:
@@ -79,7 +80,7 @@ examples: $(carlsim_programs)
 pti-examples: $(pti_programs)
 
 clean:
-	$(RM) $(objects) $(carlsim_programs) $(pti_programs) $(output_files) $(GTEST_LIB_DIR)
+	$(RM) $(objects) $(carlsim_programs) $(pti_programs) $(output_files) $(GTEST_LIB_DIR) \
 
 distclean:
 	$(RM) $(objects) $(carlsim_programs) $(pti_programs) $(libraries) $(output_files)
