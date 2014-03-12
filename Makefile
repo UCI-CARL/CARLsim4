@@ -60,7 +60,7 @@ include makefile.mk
 include libpti/libpti.mk
 include src/carlsim.mk
 
-include test/makefile.gtest.mk
+include test/gtest.mk
 include test/carlsim_tests.mk
 
 # include all directories in examples

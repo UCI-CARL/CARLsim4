@@ -29,13 +29,6 @@ $(local_dir)/carlsim_tests: $(local_objs) $(gtest_deps) \
 	$(GTEST_CPPFLAGS) -L$(GTEST_LIB_DIR) -lgtest_custom_main \
 	$(carlsim_tests_objs) -o $@
 
-#$(local_dir)/carlsim_tests.o: $(local_dir)/carlsim_tests.cpp
-#	$(NVCC) $(CARLSIM_INCLUDES) $(CARLSIM_LFLAGS) $(CARLSIM_LIBS) \
-#	$(CARLSIM_FLAGS) $(CARLSIM_TEST_FLAGS) \
-#	$(GTEST_CPPFLAGS) -L$(GTEST_LIB_DIR) -lgtest_main \
-#	-c $(local_dir)/carlsim_tests.cpp -o $@
-
-
 $(local_dir)/%.o: $(local_dir)/%.cpp $(local_deps)
 	$(NVCC) $(CARLSIM_INCLUDES) $(CARLSIM_LFLAGS) $(CARLSIM_LIBS) \
 	$(CARLSIM_FLAGS) $(CARLSIM_TEST_FLAGS) \
