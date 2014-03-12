@@ -414,7 +414,7 @@ TEST(SpikeCounter, setSpikeCounterDeath) {
 //! expects certain number of spikes, CPU vs. some pre-recorded data
 TEST(SpikeCounter, SpikeCntVsData) {
 	std::string name = "SNN";
-	int maxConfig = 1;
+	int maxConfig = rand()%10+10;
 	int nConfigStep = rand()%3 + 2;
 	float STP_U = 0.25f;		// the exact values don't matter
 	float STP_tF = 10.0f;
@@ -423,48 +423,64 @@ TEST(SpikeCounter, SpikeCntVsData) {
 
 	int* spikes;
 
-	for (int mode=0; mode<=1; mode++) {
-		for (int nConfig=1; nConfig<=maxConfig; nConfig+=nConfigStep) {
-			sim = new CpuSNN(name,mode?GPU_MODE:CPU_MODE,SILENT,0,nConfig,42);
+	for (int nConfig=1; nConfig<=maxConfig; nConfig+=nConfigStep) {
+		sim = new CpuSNN(name,CPU_MODE,SILENT,0,nConfig,42);
 
-			int recordDur = -1;
+		int recordDur = -1;
 
-			int g0=sim->createSpikeGeneratorGroup("input", 100, EXCITATORY_NEURON,ALL);
-			int g1=sim->createGroup("excit", 1, EXCITATORY_NEURON,ALL);
-			sim->setNeuronParameters(g1, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f, ALL);
+		int g0=sim->createSpikeGeneratorGroup("input", 100, EXCITATORY_NEURON,ALL);
+		int g1=sim->createGroup("excit", 1, EXCITATORY_NEURON,ALL);
+		sim->setNeuronParameters(g1, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f, ALL);
 
-			sim->connect(g0,g1,"full",0.001f,0.001f,1.0f,1,1,1.0f,1.0f,SYN_FIXED);
-			sim->setConductances(true,5,0,150,6,0,150,ALL);
+		sim->connect(g0,g1,"full",0.001f,0.001f,1.0f,1,1,1.0f,1.0f,SYN_FIXED);
+		sim->setConductances(true,5,0,150,6,0,150,ALL);
 
-			sim->setSpikeCounter(g1,recordDur,ALL);
-			sim->setSpikeMonitor(g1,NULL,ALL);
+		sim->setSpikeCounter(g1,recordDur,ALL);
+		sim->setSpikeMonitor(g1,NULL,ALL);
 
-			PeriodicSpikeGenerator* spk50 = new PeriodicSpikeGenerator(50.0f); // periodic spiking @ 50 Hz
-			sim->setSpikeGenerator(g0, spk50, ALL);
+		PeriodicSpikeGenerator* spk50 = new PeriodicSpikeGenerator(50.0f); // periodic spiking @ 50 Hz
+		sim->setSpikeGenerator(g0, spk50, ALL);
 
-			// after some time expect some number of spikes
-			sim->runNetwork(0,750,false,false);
-			spikes = sim->getSpikeCounter(g1,0);
-			EXPECT_EQ(spikes[0],10);
-
-			// reset different group and expect same number
-			sim->resetSpikeCounter(g0,ALL);
-			spikes = sim->getSpikeCounter(g1,0);
-			EXPECT_EQ(spikes[0],10);
-
-			// reset group and expect zero
-			sim->resetSpikeCounter(g1,ALL);
-			spikes = sim->getSpikeCounter(g1,0);
-			EXPECT_EQ(spikes[0],0);
-
-			// run some more and expect number
-			sim->runNetwork(2,134,false,false);
-			spikes = sim->getSpikeCounter(g1,0);
-			EXPECT_EQ(spikes[0],28);
-
-			delete spk50;
-			delete sim;
+		// after some time expect some number of spikes
+		sim->runNetwork(0,750,false,false);
+		for (int c=0; c<nConfig; c++) {
+			spikes = sim->getSpikeCounter(g1,c);
+			EXPECT_EQ(spikes[0],16);
 		}
+
+		// reset different group and expect same number
+		sim->resetSpikeCounter(g0,ALL);
+		for (int c=0; c<nConfig; c++) {
+			spikes = sim->getSpikeCounter(g1,c);
+			EXPECT_EQ(spikes[0],16);
+		}
+
+		// reset group (one configId) and expect zero for it, same number for others
+		sim->resetSpikeCounter(g1,nConfig-1);
+		for (int c=0; c<nConfig; c++) {
+			spikes = sim->getSpikeCounter(g1,c);
+			if (c==nConfig-1)
+				EXPECT_EQ(spikes[0],0);
+			else
+				EXPECT_EQ(spikes[0],16);
+		}
+
+		// reset group and expect zero
+		sim->resetSpikeCounter(g1,ALL);
+		for (int c=0; c<nConfig; c++) {
+			spikes = sim->getSpikeCounter(g1,c);
+			EXPECT_EQ(spikes[0],0);
+		}
+
+		// run some more and expect number
+		sim->runNetwork(2,134,false,false);
+		for (int c=0; c<nConfig; c++) {
+			spikes = sim->getSpikeCounter(g1,0);
+			EXPECT_EQ(spikes[0],42);
+		}
+
+		delete spk50;
+		delete sim;
 	}
 }
 
