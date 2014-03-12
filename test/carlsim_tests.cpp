@@ -1,15 +1,597 @@
-// Testing COBA
+#include <carlsim.h>		// include CARLsim
+#include "gtest/gtest.h"	// include Google testing scripts
+
+#include <limits.h>
+
 
 // Don't forget to set REGRESSION_TESTING flag to 1 in config.h 
 
-#include <carlsim.h>
-#include <limits.h>
-#include "gtest/gtest.h"
+// TODO: figure out test directory organization (see issue #67); group into appropriate test cases; have test cases
+// for published results; add documentation; etc.
 
+// TODO: test interface (see issue #38)
+
+// TODO: add speed test scripts (see issue #32)
+
+// TODO: add more tests in general (see issue #21)
+
+/*
+ * GENERAL TESTING STRATEGY
+ * ------------------------
+ *
+ * We provide test cases to A) test core functionality of CARLsim, to B) test the reproducibility of published results,
+ * and C) to benchmark simulation speed.
+ *
+ * A) TESTING CORE FUNCTIONALITY
+ * 1. Test core data structures when some functionality is enabled.
+ *    For example: Set STP to true for a specific group, check grp_Info to make sure all values are set accordingly.
+ * 2. Test core data structures when some functionality is disabled.
+ *    For example: Set STP to false for a specific group, check grp_Info to make sure it's disabled.
+ * 3. Test behavior when values for input arguments are chosen unreasonably.
+ *    For example: Create a group with N=-4 (number of neurons) and expect simulation to die. This is because each
+ *    core function should have assertion statements to prevent the simulation from running unreasonable input values.
+ *    In some cases, it makes sense to catch this kind of error in the user interface as well (and display an
+ *    appropriate error message to the user), but these tests should be placed in the UserInterface test case.
+ * 4. Test behavior of network when run with reasonable values.
+ *    For example: Run a sample network with STP enabled, and check stpu[nid] and stpx[nid] to make sure they behave.
+ *    as expected. You can use the PeriodicSpikeGenerator to be certain of specific spike times and thus run
+ *    reproducible sample networks.
+ * 5. Test behavior of network when run in CPU mode vs. GPU mode.
+ *    For example: Run a sample network with STP enabled, once in CPU mode and once in GPU mode. Record stpu[nid] and
+ *    stpx[nid], and make sure that both simulation mode give the exact same result (except for some small error
+ *    margin that can account for rounding errors/etc.).
+ *
+ * B) TESTING PUBLISHED RESULTS
+ *
+ * C) BENCHMARK TESTS
+ *
+ */
+
+
+/// **************************************************************************************************************** ///
+/// COMMON
+/// **************************************************************************************************************** ///
+
+//! a periodic spike generator (constant ISI) creating spikes at a certain rate
+class PeriodicSpikeGenerator : public SpikeGenerator {
+public:
+	PeriodicSpikeGenerator(float rate) {
+		assert(rate>0);
+		rate_ = rate;	  // spike rate
+		isi_ = 1000/rate; // inter-spike interval in ms
+	}
+
+	unsigned int nextSpikeTime(CpuSNN* snn, int grpId, int nid, unsigned int currentTime) {
+		return currentTime+isi_; // periodic spiking according to ISI
+	}
+
+private:
+	float rate_;	// spike rate
+	int isi_;		// inter-spike interval that results in above spike rate
+};
+
+
+//! a spike monitor that counts the number of spikes per neuron, and also the total number of spikes
+//! used to test the behavior of SpikeCounter
+class SpikeMonitorPerNeuron: public SpikeMonitor {
+private:
+	const int nNeur_; // number of neurons in the group
+	int* spkPerNeur_; // number of spikes per neuron
+	long long spkTotal_; // number of spikes in group (across all neurons)
+
+public:
+	SpikeMonitorPerNeuron(int numNeur) : nNeur_(numNeur) {
+		// we're gonna count the spikes each neuron emits
+		spkPerNeur_ = new int[nNeur_];
+		memset(spkPerNeur_,0,sizeof(int)*nNeur_);
+		spkTotal_ = 0;
+	}
+		
+	// destructor, delete all dynamically allocated data structures
+	~SpikeMonitorPerNeuron() { delete spkPerNeur_; }
+		
+	int* getSpikes() { return spkPerNeur_; }
+	long long getSpikesTotal() { return spkTotal_; }
+
+	// the update function counts the spikes per neuron in the current second
+	void update(CpuSNN* s, int grpId, unsigned int* NeuronIds, unsigned int *timeCounts) {
+		int pos = 0;
+		for (int t=0; t<1000; t++) {
+			for (int i=0; i<timeCounts[t]; i++,pos++) {
+				// turns out id will be enumerated between 0..numNeur_; it is NOT preSynIds[]
+				// or postSynIds[] or whatever...
+				int id = NeuronIds[pos];
+				assert(id>=0); assert(id<nNeur_);
+				spkPerNeur_[id]++;
+				spkTotal_++;
+			}
+		}
+	}
+};
+
+
+
+/// **************************************************************************************************************** ///
+/// CARLSIM INTERFACE
+/// **************************************************************************************************************** ///
+
+//! trigger all UserErrors
+TEST(Interface, setSpikeCounterUserError) {
+	::testing::FLAGS_gtest_death_test_style = "threadsafe";
+	CARLsim* sim = new CARLsim("SNN",CPU_MODE,SILENT,0,1,42);
+	int g1=sim->createGroup("excit", 10, EXCITATORY_NEURON);
+	EXPECT_DEATH({sim->setSpikeCounter(ALL);},"");
+	delete sim;
+}
+
+//! trigger all UserErrors
+TEST(Interface, getSpikeCounterUserError) {
+	::testing::FLAGS_gtest_death_test_style = "threadsafe";
+	CARLsim* sim = new CARLsim("SNN",CPU_MODE,SILENT,0,1,42);
+	int g1=sim->createGroup("excit", 10, EXCITATORY_NEURON);
+	sim->setSpikeCounter(g1);
+	EXPECT_DEATH({sim->getSpikeCounter(ALL);},"");
+	EXPECT_DEATH({sim->getSpikeCounter(g1,ALL);},"");
+	delete sim;
+}
+
+/// **************************************************************************************************************** ///
+/// SPIKE COUNTER
+/// **************************************************************************************************************** ///
+
+TEST(SpikeCounter, setSpikeCounterTrue) {
+	// create network by varying nConfig from 1...maxConfig, with
+	// step size nConfigStep
+	std::string name = "SNN";
+	int maxConfig = rand()%10 + 10;
+	int nConfigStep = rand()%3 + 2;
+	float STP_U = 0.25f;		// the exact values don't matter
+	float STP_tF = 10.0f;
+	float STP_tD = 15.0f;
+	CpuSNN* sim;
+
+	for (int mode=0; mode<=1; mode++) {
+		for (int nConfig=1; nConfig<=maxConfig; nConfig+=nConfigStep) {
+			sim = new CpuSNN(name,mode?GPU_MODE:CPU_MODE,SILENT,0,nConfig,42);
+
+			int recordDur = rand()%1000 + 1;
+
+			int g1=sim->createGroup("excit", 10, EXCITATORY_NEURON,ALL);
+			sim->setNeuronParameters(g1, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f, ALL);
+			sim->setSpikeCounter(g1,recordDur,ALL);
+
+			for (int c=0; c<nConfig; c++) {
+				group_info_t grpInfo = sim->getGroupInfo(g1,c);
+				EXPECT_TRUE(grpInfo.withSpikeCounter);
+				EXPECT_FLOAT_EQ(grpInfo.spkCntRecordDur,recordDur);
+			}
+			delete sim;
+		}
+	}
+}
+
+//! expect CARLsim to die if SpikeCounter is called with silly params
+TEST(SpikeCounter, setSpikeCounterDeath) {
+	::testing::FLAGS_gtest_death_test_style = "threadsafe";
+	std::string name = "SNN";
+	CpuSNN* sim = new CpuSNN(name,CPU_MODE,SILENT,0,1,42);
+	int g1=sim->createGroup("excit", 10, EXCITATORY_NEURON, ALL);
+
+	// grpId
+	EXPECT_DEATH({sim->setSpikeCounter(g1+1,1,ALL);},"");
+	EXPECT_DEATH({sim->setSpikeCounter(-1,1,ALL);},"");
+	EXPECT_DEATH({sim->setSpikeCounter(sim->numGrp,1,ALL);},"");
+
+	// configId
+	EXPECT_DEATH({sim->setSpikeCounter(g1,1,-2);},"");
+	EXPECT_DEATH({sim->setSpikeCounter(g1,1,2);},"");
+	EXPECT_DEATH({sim->setSpikeCounter(g1,1,100);},"");
+
+	delete sim;
+}
+
+//! expects the number of spikes recorded by spike counter to be equal to spike monitor values
+TEST(SpikeCounter, SpikeCntvsSpikeMon) {
+	// create network by varying nConfig from 1...maxConfig, with
+	// step size nConfigStep
+	std::string name = "SNN";
+	int maxConfig = rand()%10 + 10;
+	int nConfigStep = rand()%3 + 2;
+	float STP_U = 0.25f;		// the exact values don't matter
+	float STP_tF = 10.0f;
+	float STP_tD = 15.0f;
+	CpuSNN* sim;
+
+	int* spikesCnt;
+	int* spikesMon;
+
+	// FIXME: this will fail in GPU mode... Because number of spikes will be zero. However, even the "official" Spike
+	// Monitor is returning zero spikes. Is this due to the ordering in doGPUsim()?
+	for (int mode=0; mode<=1; mode++) {
+		for (int nConfig=1; nConfig<=maxConfig; nConfig+=nConfigStep) {
+			sim = new CpuSNN(name,mode?GPU_MODE:CPU_MODE,USER,0,nConfig,42);
+			int recordDur = -1;
+
+			int g0=sim->createSpikeGeneratorGroup("input", 100, EXCITATORY_NEURON,ALL);
+			int g1=sim->createGroup("excit", 10, EXCITATORY_NEURON,ALL);
+			sim->setNeuronParameters(g1, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f, ALL);
+
+			sim->connect(g0,g1,"full",0.001f,0.001f,1.0f,1,1,1.0f,1.0f,SYN_FIXED);
+			sim->setConductances(ALL,true,5.0f,150.0f,6.0f,150.0f,ALL);
+
+			sim->setSpikeCounter(g1,recordDur,ALL);
+			SpikeMonitorPerNeuron* spikePN = new SpikeMonitorPerNeuron(10);
+			sim->setSpikeMonitor(g1,spikePN,ALL);
+
+			PeriodicSpikeGenerator* spk50 = new PeriodicSpikeGenerator(50.0f); // periodic spiking @ 50 Hz
+			sim->setSpikeGenerator(g0, spk50, ALL);
+
+			// after some time expect some number of spikes
+			sim->runNetwork(1,0,false,false);
+			spikesMon = spikePN->getSpikes();
+			for (int c=0; c<nConfig; c++) { // for each configId
+				spikesCnt = sim->getSpikeCounter(g1,c);
+				for (int i=0; i<10; i++) { // for each neuron
+					EXPECT_EQ(spikesCnt[i],14);
+					EXPECT_EQ(spikesCnt[i]*nConfig,spikesMon[i]); // SpkMon should have the same, but all configId's together
+				}
+			}
+
+			delete sim;
+			delete spikePN;
+			delete spk50;
+		}
+	}
+}
+
+//! expects certain number of spikes, CPU same as GPU
+TEST(SpikeCounter, CPUvsGPU) {
+	// create network by varying nConfig from 1...maxConfig, with
+	// step size nConfigStep
+	std::string name = "SNN";
+	int maxConfig = rand()%10 + 10;
+	int nConfigStep = rand()%3 + 2;
+	float STP_U = 0.25f;		// the exact values don't matter
+	float STP_tF = 10.0f;
+	float STP_tD = 15.0f;
+	CpuSNN* sim;
+
+	int* spikes;
+
+	for (int mode=0; mode<=1; mode++) {
+		for (int nConfig=1; nConfig<=maxConfig; nConfig+=nConfigStep) {
+			sim = new CpuSNN(name,mode?GPU_MODE:CPU_MODE,SILENT,0,nConfig,42);
+
+			int recordDur = -1;
+
+			int g0=sim->createSpikeGeneratorGroup("input", 100, EXCITATORY_NEURON,ALL);
+			int g1=sim->createGroup("excit", 1, EXCITATORY_NEURON,ALL);
+			sim->setNeuronParameters(g1, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f, ALL);
+
+			sim->connect(g0,g1,"full",0.001f,0.001f,1.0f,1,1,1.0f,1.0f,SYN_FIXED);
+			sim->setConductances(ALL,true,5.0f,150.0f,6.0f,150.0f,ALL);
+
+			sim->setSpikeCounter(g1,recordDur,ALL);
+			sim->setSpikeMonitor(g1,NULL,ALL);
+
+			PeriodicSpikeGenerator* spk50 = new PeriodicSpikeGenerator(50.0f); // periodic spiking @ 50 Hz
+			sim->setSpikeGenerator(g0, spk50, ALL);
+
+			// after some time expect some number of spikes
+			sim->runNetwork(0,750,false,false);
+			spikes = sim->getSpikeCounter(g1,0);
+			EXPECT_EQ(spikes[0],10);
+
+			// reset different group and expect same number
+			sim->resetSpikeCounter(g0,ALL);
+			spikes = sim->getSpikeCounter(g1,0);
+			EXPECT_EQ(spikes[0],10);
+
+			// reset group and expect zero
+			sim->resetSpikeCounter(g1,ALL);
+			spikes = sim->getSpikeCounter(g1,0);
+			EXPECT_EQ(spikes[0],0);
+
+			// run some more and expect number
+			sim->runNetwork(2,134,false,false);
+			spikes = sim->getSpikeCounter(g1,0);
+			EXPECT_EQ(spikes[0],28);
+
+			delete spk50;
+			delete sim;
+		}
+	}
+}
+
+/// **************************************************************************************************************** ///
+/// SHORT-TERM PLASTICITY STP
+/// **************************************************************************************************************** ///
+
+/*!
+ * \brief testing setSTP to true
+ * This function tests the information stored in the group info struct after enabling STP via setSTP
+ */
+TEST(STP, setSTPTrue) {
+	// create network by varying nConfig from 1...maxConfig, with
+	// step size nConfigStep
+	std::string name = "SNN";
+	int maxConfig = rand()%10 + 10;
+	int nConfigStep = rand()%3 + 2;
+	float STP_U = 0.25f;		// the exact values don't matter
+	float STP_tF = 10.0f;
+	float STP_tD = 15.0f;
+	CpuSNN* sim;
+
+	for (int mode=0; mode<=1; mode++) {
+		for (int nConfig=1; nConfig<=maxConfig; nConfig+=nConfigStep) {
+			sim = new CpuSNN(name,mode?GPU_MODE:CPU_MODE,SILENT,0,nConfig,42);
+
+			int g1=sim->createGroup("excit", 10, EXCITATORY_NEURON,ALL);
+			sim->setNeuronParameters(g1, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f, ALL);
+			sim->setSTP(g1,true,STP_U,STP_tF,STP_tD,ALL);					// exact values matter
+
+			for (int c=0; c<nConfig; c++) {
+				group_info_t grpInfo = sim->getGroupInfo(g1,c);
+				EXPECT_TRUE(grpInfo.WithSTP); 							// STP must be enabled
+				EXPECT_FLOAT_EQ(grpInfo.STP_U,STP_U); 					// check exact values
+				EXPECT_FLOAT_EQ(grpInfo.STP_tau_u_inv,1.0f/STP_tF);
+				EXPECT_FLOAT_EQ(grpInfo.STP_tau_x_inv,1.0f/STP_tD);
+			}
+			delete sim;
+		}
+	}
+}
+
+/*!
+ * \brief testing setSTP to false
+ * This function tests the information stored in the group info struct after disabling STP via setSTP
+ */
+TEST(STP, setSTPFalse) {
+	int maxConfig = rand()%10 + 10;	// create network by varying nConfig from 1..maxConfig, with some
+	int nConfigStep = rand()%3 + 2; // step size nConfigStep
+	CARLsim* sim;
+
+	for (int mode=0; mode<=1; mode++) {
+		for (int nConfig=1; nConfig<=maxConfig; nConfig+=nConfigStep) {
+			sim = new CARLsim("SNN",mode?GPU_MODE:CPU_MODE,SILENT,0,nConfig,42);
+
+			int g1=sim->createGroup("excit", 10, EXCITATORY_NEURON);
+			sim->setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f);
+			sim->setSTP(g1,false,0.1f,100,200); 					// exact values don't matter
+
+			for (int c=0; c<nConfig; c++) {
+				group_info_t grpInfo = sim->getGroupInfo(g1,c);
+				EXPECT_FALSE(grpInfo.WithSTP);						// STP must be disabled
+			}
+			delete sim;
+		}
+	}
+}
+
+
+//! expect CARLsim to die if setSTP is called with silly params
+TEST(STP, setSTPdeath) {
+	::testing::FLAGS_gtest_death_test_style = "threadsafe";
+	CARLsim* sim = new CARLsim("SNN",CPU_MODE,SILENT,0,1,42);
+	int g1=sim->createSpikeGeneratorGroup("excit", 10, EXCITATORY_NEURON);
+
+	// grpId
+	EXPECT_DEATH({sim->setSTP(-2,true,0.1f,10,10,ALL);},"");
+
+	// STP_U
+	EXPECT_DEATH({sim->setSTP(g1,true,0.0f,10,10,ALL);},"");
+	EXPECT_DEATH({sim->setSTP(g1,true,1.1f,10,10,ALL);},"");
+
+	// STP_tF / STP_tD
+	EXPECT_DEATH({sim->setSTP(g1,true,0.1f,-10,10,ALL);},"");
+	EXPECT_DEATH({sim->setSTP(g1,true,0.1f,10,-10,ALL);},"");
+
+	// configId
+	EXPECT_DEATH({sim->setSTP(g1,true,0.1f,10,10,-2);},"");
+	EXPECT_DEATH({sim->setSTP(g1,true,0.1f,10,10,2);},"");
+	EXPECT_DEATH({sim->setSTP(g1,true,0.1f,10,10,101);},"");
+}
+
+/*
+ * \brief check whether CPU mode reproduces some pre-recorded stpu and stpx (internal variables)
+ * This test ensures that CARLsim quantitatively reproduces STP behavior across machines. This exact network has been
+ * run before, and STP variables (stpu and stpx) have been recorded for a time window of 50 ms. The network should
+ * reproduce these values at all times and on all platforms.
+ * If this test fails, then the low-level behavior of STP has been changed.
+ * There is a separate test that observes the impact of stpu and stpx on the post-synaptic current.
+ * There is a separate test that makes sure CPU mode yields the same result as GPU mode.
+ */
+TEST(STP, internalCPUvsData) {
+	// run network, compare to these pre-recorded values
+	float stpu[50] = {	0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,
+						0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.1900,0.1878,0.1856,0.1834,0.1813,0.1792,
+						0.1771,0.1751,0.1730,0.1710,0.1690,0.1671,0.1651,0.1632,0.1613,0.1594,0.1576,0.1557,0.1539,
+						0.1521,0.3118,0.3082,0.3046,0.3010,0.2975,0.2941,0.2907,0.2873,0.2839,0.2806 };
+	float stpx[50] = {	1.0000,1.0000,1.0000,1.0000,1.0000,1.0000,1.0000,1.0000,1.0000,1.0000,1.0000,1.0000,1.0000,
+						1.0000,1.0000,1.0000,1.0000,1.0000,1.0000,1.0000,0.8100,0.8102,0.8104,0.8106,0.8108,0.8110,
+						0.8111,0.8113,0.8115,0.8117,0.8119,0.8121,0.8123,0.8125,0.8127,0.8129,0.8130,0.8132,0.8134,
+						0.8136,0.5601,0.5605,0.5609,0.5614,0.5618,0.5623,0.5627,0.5631,0.5636,0.5640 };
+
+	std::string name = "SNN";
+	int randSeed = rand() % 1000;	// randSeed must not interfere with STP
+	float abs_error = 1e-4f;		// allowed error margin
+
+	CpuSNN* sim = new CpuSNN(name,CPU_MODE,USER,0,1,randSeed);
+	int g0=sim->createSpikeGeneratorGroup("input", 1, EXCITATORY_NEURON, ALL);
+	int g1=sim->createGroup("excit", 1, EXCITATORY_NEURON, ALL);
+	sim->setNeuronParameters(g1, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f, ALL);
+	sim->connect(g0,g1,"full",0.01f,0.01f,1.0f,1,1,1.0f,1.0f,SYN_FIXED);
+	sim->setConductances(ALL,true,5.0f,10.0f,15.0f,20.0f,ALL);
+	sim->setSTP(g0,true,0.19f,86,992,ALL); // the exact values are not important
+
+	PeriodicSpikeGenerator* spk50 = new PeriodicSpikeGenerator(50.0f); // periodic spiking @ 50 Hz
+	sim->setSpikeGenerator(g0, spk50, ALL);
+
+	for (int i=0; i<50; i++) {
+		sim->runNetwork(0,1,false,true); // enable copyState
+		EXPECT_NEAR(sim->stpu[1], stpu[i], abs_error);
+		EXPECT_NEAR(sim->stpx[1], stpx[i], abs_error);
+	}
+
+	delete spk50;
+	delete sim;
+}
+
+/*
+ * \brief check whether CPU mode reproduces some pre-recorded post-synaptic current (external, behavior)
+ * This test ensures that CARLsim quantitatively reproduces STP behavior across machines. This exact network has been
+ * run before, and post-synaptic currents (affected by pre-synaptic STP) have been recorded for a time window of 50 ms.
+ * The network should reproduce these values at all times and on all platforms.
+ * If this test fails, then the low-level behavior or protocol of STP (the order in which STP variables are updated and
+ * current changes are computed) has been changed.
+ * There is a separate test that observes the internal STP variables stpu and stpx.
+ * There is a separate test that makes sure CPU mode yields the same result as GPU mode.
+ */
+TEST(STP, externalCPUvsData) {
+	// run network, compare to these pre-recorded values of post-synaptic current
+	float current[50] = {	0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,
+							0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.2756,0.2209,0.1772,0.1422,0.1142,0.0918,
+							0.0738,0.0594,0.0478,0.0385,0.0310,0.0251,0.0202,0.0164,0.0133,0.0108,0.0087,0.0071,0.0058,
+							0.0047,0.3706,0.2971,0.2385,0.1916,0.1540,0.1238,0.0996,0.0802,0.0646,0.0521};
+
+	std::string name = "SNN";
+	int randSeed = rand() % 1000;	// randSeed must not interfere with STP
+	float abs_error = 1e-4f;		// allowed error margin
+
+	CpuSNN* sim = new CpuSNN(name,CPU_MODE,SILENT,0,1,randSeed);
+	int g0=sim->createSpikeGeneratorGroup("input", 1, EXCITATORY_NEURON, ALL);
+	int g1=sim->createGroup("excit", 1, EXCITATORY_NEURON, ALL);
+	sim->setNeuronParameters(g1, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f, ALL);
+	sim->connect(g0,g1,"full",0.01f,0.01f,1.0f,1,1,1.0f,1.0f,SYN_FIXED);
+	sim->setConductances(ALL,true,5.0f,10.0f,15.0f,20.0f,ALL);
+	sim->setSTP(g0,true,0.19f,86,992,ALL); // the exact values are not important
+
+	PeriodicSpikeGenerator* spk50 = new PeriodicSpikeGenerator(50.0f); // periodic spiking @ 50 Hz
+	sim->setSpikeGenerator(g0, spk50, ALL);
+
+	for (int i=0; i<50; i++) {
+		sim->runNetwork(0,1,false,true); // enable copyState
+		EXPECT_NEAR(sim->current[0], current[i], abs_error); // check post-synaptic current to see effect of pre-STP
+	}
+
+	delete spk50;
+	delete sim;
+}
+
+/*!
+ * \brief check whether CPU and GPU mode return the same stpu and stpx
+ * This test creates a STP connection with random parameter values, runs a simulation
+ * for 300 ms, and checks whether CPU_MODE and GPU_MODE return the same internal
+ * variables stpu and stpx. Input is periodic 20 Hz spiking.
+ */
+TEST(STP, internalCPUvsGPU) {
+	CpuSNN* sim = NULL;
+	std::string name = "SNN";
+	simMode_t simModes[2] = {CPU_MODE, GPU_MODE};
+
+	float stpu[600] = {0.0f};
+	float stpx[600] = {0.0f};
+
+	int nConfig = 1;
+	int randSeed = rand() % 1000;
+	float STP_U = (float) rand()/RAND_MAX;
+	int STP_tD = rand() % 100;
+	int STP_tF = rand() % 500 + 500;
+	float abs_error = 1e-4f; // error allowed for CPU<->GPU mode
+
+	for (int j=0; j<2; j++) {
+		sim = new CpuSNN(name,simModes[j],USER,0,nConfig,randSeed);
+		int g0=sim->createSpikeGeneratorGroup("input", 1, EXCITATORY_NEURON, ALL);
+		int g1=sim->createGroup("excit", 1, EXCITATORY_NEURON, ALL);
+		sim->setNeuronParameters(g1, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f, ALL);
+		sim->connect(g0,g1,"full",0.01f,0.01f,1.0f,1,1,1.0f,1.0f,SYN_FIXED);
+		sim->setConductances(ALL,true,5.0f,10.0f,15.0f,20.0f,ALL);
+		sim->setSTP(g0,true,STP_U,STP_tD,STP_tF,ALL);
+
+		PeriodicSpikeGenerator* spk20 = new PeriodicSpikeGenerator(20.0f);
+		sim->setSpikeGenerator(g0, spk20, ALL);
+
+		for (int i=0; i<300; i++) {
+			sim->runNetwork(0,1,false,true); // enable copyState
+			stpu[j*300+i] = sim->stpu[1];
+			stpx[j*300+i] = sim->stpx[1];
+		}
+
+		delete spk20;
+		delete sim;
+	}
+
+	// compare stpu and stpx for both sim modes
+	for (int i=0; i<300; i++) {
+		EXPECT_NEAR(stpu[i],stpu[i+300],abs_error); // EXPECT_FLOAT_EQ sometimes works, too
+		EXPECT_NEAR(stpx[i],stpx[i+300],abs_error);	// but _NEAR is better
+	}
+
+	// check init default values
+	EXPECT_FLOAT_EQ(stpu[0],0.0f);
+	EXPECT_FLOAT_EQ(stpx[0],1.0f);
+	EXPECT_FLOAT_EQ(stpu[300],0.0f);
+	EXPECT_FLOAT_EQ(stpx[300],1.0f);
+}
+
+// FIXME: The following test fails, but this is expected because of issue #61). There is the possibility of rounding
+//        errors when going from CPU to GPU. But, the order of computation in the innermost loop (doSnnSim, doGPUsim)
+//        is quite different, which makes it not so hard to believe that the resulting output would be different, too.
+/*!
+ * \brief check whether CPU and GPU mode return the post-synaptic current, affected by pre-synaptic STP (external)
+ * This test creates a STP connection with random parameter values, runs a simulation
+ * for 300 ms, and checks whether CPU_MODE and GPU_MODE return the same external behavior (post-synaptic current
+ * affected by pre-synaptic STP). Input is periodic 20 Hz spiking.
+ */
+TEST(STP, externalCPUvsGPU) {
+	CpuSNN* sim = NULL;
+	std::string name = "SNN";
+	simMode_t simModes[2] = {CPU_MODE, GPU_MODE};
+
+	float current[600] = {0.0f};
+
+	int nConfig = 1;
+	int randSeed = rand() % 1000;
+	float STP_U = (float) rand()/RAND_MAX;
+	int STP_tD = rand() % 100;
+	int STP_tF = rand() % 500 + 500;
+	float abs_error = 1e-4f; // error allowed for CPU<->GPU mode
+
+	for (int j=0; j<2; j++) {
+		sim = new CpuSNN(name,simModes[j],USER,0,nConfig,randSeed);
+		int g0=sim->createSpikeGeneratorGroup("input", 1, EXCITATORY_NEURON, ALL);
+		int g1=sim->createGroup("excit", 1, EXCITATORY_NEURON, ALL);
+		sim->setNeuronParameters(g1, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f, ALL);
+		sim->connect(g0,g1,"full",0.01f,0.01f,1.0f,1,1,1.0f,1.0f,SYN_FIXED);
+		sim->setConductances(ALL,true,5.0f,10.0f,15.0f,20.0f,ALL);
+		sim->setSTP(g0,true,STP_U,STP_tD,STP_tF,ALL);
+
+		PeriodicSpikeGenerator* spk20 = new PeriodicSpikeGenerator(20.0f);
+		sim->setSpikeGenerator(g0, spk20, ALL);
+
+		for (int i=0; i<300; i++) {
+			sim->runNetwork(0,1,false,true); // enable copyState
+			current[j*300+i] = sim->current[0];
+		}
+
+		delete spk20;
+		delete sim;
+	}
+
+	// compare stpu and stpx for both sim modes
+	for (int i=0; i<300; i++) {
+		EXPECT_NEAR(current[i],current[i+300],abs_error); // EXPECT_FLOAT_EQ sometimes works, too
+	}
+}
+
+
+/// **************************************************************************************************************** ///
+/// CORE FUNCTIONALITY
+/// **************************************************************************************************************** ///
 
 //! check all possible (valid) ways of instantiating CpuSNN
 TEST(CORE, CpuSNNinit) {
-	CpuSNN* sim;
+	CpuSNN* sim = NULL;
 
 	// Problem: The first two modes will print to stdout, and close it in the end; so all subsequent calls to sdout
 	// via GTEST fail
@@ -45,28 +627,26 @@ TEST(CORE, CpuSNNinit) {
 
 // FIXME: enabling the following generates a segfault
 //! check all possible (invalid) ways of instantiating CpuSNN
-/*TEST(CORE, CpuSNNinitDeath) {
-	CpuSNN* sim;
+TEST(CORE, CpuSNNinitDeath) {
+	::testing::FLAGS_gtest_death_test_style = "threadsafe";
+	CpuSNN* sim = NULL;
+	std::string name="SNN";
 
-	EXPECT_DEATH({sim = new CpuSNN("SNN",-1);},"");
-	if (sim!=NULL) delete sim;
+	// ithGPU
+	EXPECT_DEATH({sim = new CpuSNN(name,CPU_MODE,USER,-1,1,42);},"");
+	if (sim!=NULL) delete sim; sim = NULL;
 
-	EXPECT_DEATH({sim = new CpuSNN("SNN",101);},"");
-	if (sim!=NULL) delete sim;
-
-	EXPECT_DEATH({sim = new CpuSNN("SNN",1,42,-1);},"");
-	if (sim!=NULL) delete sim;
-
-	EXPECT_DEATH({sim = new CpuSNN("SNN",1,42,2);},"");
-	if (sim!=NULL) delete sim;
-
-	EXPECT_DEATH({sim = new CpuSNN("SNN",1,42,CPU_MODE,UNKNOWN);},"");
-	if (sim!=NULL) delete sim;
-}*/
+	// nConfig
+	EXPECT_DEATH({sim = new CpuSNN(name,GPU_MODE,USER,0,0,42);},"");
+	if (sim!=NULL) delete sim; sim = NULL;
+	EXPECT_DEATH({sim = new CpuSNN(name,CPU_MODE,USER,0,101,42);},"");
+	if (sim!=NULL) delete sim; sim = NULL;
+}
 
 //! Death tests for createGroup (test all possible silly values)
-TEST(CORE, createGroupSilly) {
-	CpuSNN* sim;
+TEST(CORE, createGroupDeath) {
+	::testing::FLAGS_gtest_death_test_style = "threadsafe";
+	CpuSNN* sim = NULL;
 	std::string name="SNN";
 	sim = new CpuSNN(name,CPU_MODE,SILENT,0,1,42);
 
@@ -83,7 +663,8 @@ TEST(CORE, createGroupSilly) {
 
 //! Death tests for createSpikeGenerator (test all possible silly values)
 TEST(CORE, createSpikeGeneratorGroupSilly) {
-	CpuSNN* sim;
+	::testing::FLAGS_gtest_death_test_style = "threadsafe";
+	CpuSNN* sim = NULL;
 	std::string name="SNN";
 	sim = new CpuSNN(name,CPU_MODE,SILENT,0,1,42);
 
@@ -101,7 +682,8 @@ TEST(CORE, createSpikeGeneratorGroupSilly) {
 
 //! Death tests for setNeuronParameters (test all possible silly values)
 TEST(CORE, setNeuronParametersSilly) {
-	CpuSNN* sim;
+	::testing::FLAGS_gtest_death_test_style = "threadsafe";
+	CpuSNN* sim = NULL;
 	std::string name="SNN";
 	sim = new CpuSNN(name,CPU_MODE,SILENT,0,1,42);
 	int g0=sim->createGroup("excit", 10, EXCITATORY_NEURON, ALL);
@@ -132,7 +714,7 @@ TEST(CORE, connect) {
 	int maxConfig = rand()%10 + 10;
 	int nConfigStep = rand()%3 + 2;
 
-	CpuSNN* sim;
+	CpuSNN* sim = NULL;
 	grpConnectInfo_t* connInfo;
 	std::string typeStr;
 	std::string name="SNN";
@@ -195,13 +777,15 @@ TEST(CORE, connect) {
 
 
 
-// Testing STDP
+/// **************************************************************************************************************** ///
+/// SPIKE-TIMING-DEPENDENT PLASTICITY STDP
+/// **************************************************************************************************************** ///
 
 /*!
  * \brief testing setSTDP to true
  * This function tests the information stored in the group info struct after enabling STDP via setSTDP
  */
-TEST(CORE, setSTDPTrue) {
+TEST(STDP, setSTDPTrue) {
 	// create network by varying nConfig from 1...maxConfig, with
 	// step size nConfigStep
 	std::string name="SNN";
@@ -238,7 +822,7 @@ TEST(CORE, setSTDPTrue) {
  * \brief testing setSTDP to false
  * This function tests the information stored in the group info struct after disabling STDP via setSTDP
  */
-TEST(CORE, setSTDPFalse) {
+TEST(STDP, setSTDPFalse) {
 	// create network by varying nConfig from 1...maxConfig, with
 	// step size nConfigStep
 	int maxConfig = rand()%10 + 10;
@@ -268,50 +852,16 @@ TEST(CORE, setSTDPFalse) {
 
 
 
-// Testing STP
-
-/*!
- * \brief testing setSTP to true
- * This function tests the information stored in the group info struct after enabling STP via setSTP
- */
-TEST(CORE, setSTPTrue) {
-	// create network by varying nConfig from 1...maxConfig, with
-	// step size nConfigStep
-	int maxConfig = rand()%10 + 10;
-	int nConfigStep = rand()%3 + 2;
-	float STP_U = 5.0f;		// the exact values don't matter
-	float STP_tF = 10.0f;
-	float STP_tD = 15.0f;
-	CARLsim* sim;
-
-	for (int mode=0; mode<=1; mode++) {
-		for (int nConfig=1; nConfig<=maxConfig; nConfig+=nConfigStep) {
-			sim = new CARLsim("SNN",mode?GPU_MODE:CPU_MODE,SILENT,0,nConfig,42);
-
-			int g1=sim->createGroup("excit", 10, EXCITATORY_NEURON);
-			sim->setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f);
-			sim->setSTP(g1,true,STP_U,STP_tD,STP_tF);
-
-			for (int c=0; c<nConfig; c++) {
-				group_info_t grpInfo = sim->getGroupInfo(g1,c);
-				EXPECT_TRUE(grpInfo.WithSTP);
-				EXPECT_FLOAT_EQ(grpInfo.STP_U,STP_U);
-				EXPECT_FLOAT_EQ(grpInfo.STP_tD,STP_tD);
-				EXPECT_FLOAT_EQ(grpInfo.STP_tF,STP_tF);
-			}
-			delete sim;
-		}
-	}
-}
 
 
-
-
-
+/// **************************************************************************************************************** ///
+/// CONDUCTANCE-BASED MODEL (COBA)
+/// **************************************************************************************************************** ///
 
 //! Death tests for setConductances (test all possible silly values)
 TEST(COBA, setCondSilly) {
-	CpuSNN* sim;
+	::testing::FLAGS_gtest_death_test_style = "threadsafe";
+	CpuSNN* sim = NULL;
 	std::string name="SNN";
 	sim = new CpuSNN(name,CPU_MODE,SILENT,0,1,42);
 	int g0=sim->createGroup("excit", 10, EXCITATORY_NEURON, ALL);
@@ -345,7 +895,7 @@ TEST(COBA, setCondTrue) {
 	float tNMDA = 10.0f;
 	float tGABAa = 15.0f;
 	float tGABAb = 20.0f;
-	CpuSNN* sim;
+	CpuSNN* sim = NULL;
 	group_info_t grpInfo;
 	int grps[2] = {-1};
 
@@ -435,7 +985,7 @@ TEST(COBA, setCondFalse) {
 	float tNMDA = 10.0f;
 	float tGABAa = 15.0f;
 	float tGABAb = 20.0f;
-	CpuSNN* sim;
+	CpuSNN* sim = NULL;
 	group_info_t grpInfo;
 	int grps[2] = {-1};
 
@@ -474,7 +1024,7 @@ TEST(COBA, disableSynReceptors) {
 	float tNMDA = 10.0f;
 	float tGABAa = 15.0f;
 	float tGABAb = 20.0f;
-	CpuSNN* sim;
+	CpuSNN* sim = NULL;
 	group_info_t grpInfo;
 	int grps[4] = {-1};
 
@@ -569,3 +1119,8 @@ TEST(COBA, disableSynReceptors) {
 		}
 	}	
 }
+
+
+/// **************************************************************************************************************** ///
+/// CURRENT-BASED MODEL (CUBA)
+/// **************************************************************************************************************** ///

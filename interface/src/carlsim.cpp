@@ -7,6 +7,7 @@
 #include <sstream>		// std::stringstream
 #include <algorithm>	// std::find
 
+
 // includes for mkdir
 #if CREATE_SPIKEDIR_IF_NOT_EXISTS
 	#if (WIN32 || WIN64)
