@@ -161,8 +161,6 @@ extern RNG_rand48* gpuRand48; //!< Used by all network to generate global random
 
 /****************************/
 
-#define STP_BUF_POS(nid, t)  ((nid) * STP_BUF_SIZE + ((t) % STP_BUF_SIZE))
-
 
 // FIXME: 
 /////    !!!!!!! EVEN MORE IMPORTANT : IS THIS STILL BEING USED?? !!!!!!!!!!
@@ -183,11 +181,11 @@ extern RNG_rand48* gpuRand48; //!< Used by all network to generate global random
 #if __CUDACC__
 inline bool isExcitatoryNeuron (unsigned int& nid, unsigned int& numNInhPois, unsigned int& numNReg, unsigned int& numNExcReg, unsigned int& numN)
 {
-  return ((nid < numN) && ((nid < numNExcReg) || (nid >= numNReg + numNInhPois)));
+	return ((nid < numN) && ((nid < numNExcReg) || (nid >= numNReg + numNInhPois)));
 }
 inline bool isInhibitoryNeuron (unsigned int& nid, unsigned int& numNInhPois, unsigned int& numNReg, unsigned int& numNExcReg, unsigned int& numN)
 {
-  return ((nid >= numNExcReg) && (nid < (numNReg + numNInhPois)));
+	return ((nid >= numNExcReg) && (nid < (numNReg + numNInhPois)));
 }
 #endif
 
@@ -209,6 +207,13 @@ inline bool isInhibitoryNeuron (unsigned int& nid, unsigned int& numNInhPois, un
 
 //!< Used for in the function getConnectionId
 #define CHECK_CONNECTION_ID(n,total) { assert(n >= 0); assert(n < total); }
+
+// Macros for STP
+// we keep a history of STP values to compute resource change over time
+// the macro is slightly faster than an inline function, but we should consider changing it anyway because
+// it's unsafe
+#define STP_BUF_SIZE 32
+#define STP_BUF_POS(nid,t)  (nid*STP_BUF_SIZE+((t)%STP_BUF_SIZE))
 
 
 // use these macros for logging / error printing
@@ -365,8 +370,8 @@ typedef struct {
 } delay_info_t;
 
 typedef struct {
-	int		postId;
-	uint8_t		grpId;
+	int	postId;
+	uint8_t	grpId;
 } post_info_t;
 
 
@@ -438,37 +443,37 @@ typedef struct connectData_s {
 } grpConnectInfo_t;
 
 typedef struct network_ptr_s  {
-	float	*voltage;
-	float	*recovery;
-	float	*Izh_a;
-	float	*Izh_b;
-	float	*Izh_c;
-	float	*Izh_d;
-	float	*current;
+	float*	voltage;
+	float*	recovery;
+	float*	Izh_a;
+	float*	Izh_b;
+	float*	Izh_c;
+	float*	Izh_d;
+	float*	current;
 
 	// conductances and stp values
-	float	*gNMDA;					//!< conductance of gNMDA
-	float	*gAMPA;					//!< conductance of gAMPA
-	float	*gGABAa;				//!< conductance of gGABAa
-	float	*gGABAb;				//!< conductance of gGABAb
-	int		*I_set;
-	int		memType;
+	float*	gNMDA;					//!< conductance of gNMDA
+	float*	gAMPA;					//!< conductance of gAMPA
+	float*	gGABAa;				//!< conductance of gGABAa
+	float*	gGABAb;				//!< conductance of gGABAb
+	int*	I_set;
+	simMode_t	memType;
 	int		allocated;				//!< true if all data has been allocated..
-	float	*stpx;
-	float	*stpu;
+	float*	stpx;
+	float*	stpu;
 
-	unsigned short	*Npre;				//!< stores the number of input connections to the neuron
-	unsigned short	*Npre_plastic;		//!< stores the number of plastic input connections
-	float		*Npre_plasticInv;	//!< stores the 1/number of plastic input connections, for use on the GPU
-	unsigned short	*Npost;				//!< stores the number of output connections from a neuron.
-	unsigned int	*lastSpikeTime;		//!< storees the firing time of the neuron
-	float		*wtChange;
-	float		*wt;				//!< stores the synaptic weight and weight change of a synaptic connection
-	float		*maxSynWt;			//!< maximum synaptic weight for given connection..
-	unsigned int	*synSpikeTime;
-	unsigned int	*neuronFiring;
-	unsigned int	*cumulativePost;
-	unsigned int	*cumulativePre;
+	unsigned short*	Npre;				//!< stores the number of input connections to the neuron
+	unsigned short*	Npre_plastic;		//!< stores the number of plastic input connections
+	float*		Npre_plasticInv;	//!< stores the 1/number of plastic input connections, for use on the GPU
+	unsigned short*	Npost;				//!< stores the number of output connections from a neuron.
+	unsigned int*	lastSpikeTime;		//!< storees the firing time of the neuron
+	float*	wtChange;
+	float*	wt;				//!< stores the synaptic weight and weight change of a synaptic connection
+	float*	maxSynWt;			//!< maximum synaptic weight for given connection..
+	unsigned int*	synSpikeTime;
+	unsigned int*	neuronFiring;
+	unsigned int*	cumulativePost;
+	unsigned int*	cumulativePre;
 
 	float 	*mulSynFast, *mulSynSlow;
 	short int *cumConnIdPre;	//!< connectId, per synapse, presynaptic cumulative indexing
@@ -479,22 +484,25 @@ typedef struct network_ptr_s  {
 	 * allows maximum synapses of 1024 and maximum network size of 4 million neurons, with 64 bit representation. we can
 	 * have larger networks for simulation
 	 */
-	post_info_t	*postSynapticIds;
+	post_info_t*	postSynapticIds;
 
-	post_info_t	*preSynapticIds;
+	post_info_t*	preSynapticIds;
 	delay_info_t    *postDelayInfo;  	//!< delay information
-	unsigned int	*firingTableD1;
-	unsigned int	*firingTableD2;
+	unsigned int*	firingTableD1;
+	unsigned int*	firingTableD2;
 
 
 
-	float		*poissonFireRate;
-	unsigned int	*poissonRandPtr;		//!< firing random number. max value is 10,000
-	int2		*neuronAllocation;		//!< .x: [31:0] index of the first neuron, .y: [31:16] number of neurons, [15:0] group id
-	int3		*groupIdInfo;			//!< .x , .y: the start and end index of neurons in a group, .z: gourd id, used for group Id calculations
-	short int	*synIdLimit;			//!<
-	float		*synMaxWts;				//!<
-	unsigned int	*nSpikeCnt;
+	float*	poissonFireRate;
+	unsigned int*	poissonRandPtr;		//!< firing random number. max value is 10,000
+	int2*	neuronAllocation;		//!< .x: [31:0] index of the first neuron, .y: [31:16] number of neurons, [15:0] group id
+	int3*	groupIdInfo;			//!< .x , .y: the start and end index of neurons in a group, .z: gourd id, used for group Id calculations
+	short int*	synIdLimit;			//!<
+	float*	synMaxWts;				//!<
+	unsigned int*	nSpikeCnt;
+
+	int** spkCntBuf; //!< for copying 2D array to GPU (see CpuSNN::allocateSNN_GPU)
+	int* spkCntBufChild[MAX_GRP_PER_SNN]; //!< child pointers for above
 
 	//!< homeostatic plasticity variables
 	float*	baseFiringInv;
@@ -511,14 +519,14 @@ typedef struct network_ptr_s  {
 
 	float* 		testVar;
 	float*		testVar2;
-	unsigned int	*spikeGenBits;
-	bool		*curSpike;
+	unsigned int*	spikeGenBits;
+	bool*		curSpike;
 } network_ptr_t;
 
 typedef struct group_info_s
 {
 	// properties of group of neurons size, location, initial weights etc.
-	PoissonRate	*RatePtr;
+	PoissonRate*	RatePtr;
 	int			StartN;
 	int			EndN;
 	unsigned int	Type;
@@ -546,8 +554,8 @@ typedef struct group_info_s
 	int8_t		MaxDelay;
 
 	float		STP_U;
-	float		STP_tD;
-	float		STP_tF;
+	float		STP_tau_u_inv;
+	float		STP_tau_x_inv;
 	float		TAU_LTP_INV;
 	float		TAU_LTD_INV;
 	float		ALPHA_LTP;
@@ -556,6 +564,11 @@ typedef struct group_info_s
 	float		dNMDA;
 	float		dGABAa;
 	float		dGABAb;
+
+	bool withSpikeCounter; //!< if this flag is set, we want to keep track of how many spikes per neuron in the group
+	int spkCntRecordDur; //!< record duration, after which spike buffer gets reset
+	int spkCntRecordDurHelper; //!< counter to help make fast modulo
+	int spkCntBufPos; //!< which position in the spike buffer the group has
 
 	//!< homeostatic plasticity variables
 	float	avgTimeScale;
@@ -694,7 +707,7 @@ public:
 	 * \return number of created synaptic projections
 	 */
 	short int connect(int gIDpre, int gIDpost, const std::string& _type, float initWt, float maxWt, float _C,
-					uint8_t minDelay, uint8_t maxDelay, float mulSynFast, float mulSynSlow, bool synWtType);
+		uint8_t minDelay, uint8_t maxDelay, float mulSynFast, float mulSynSlow, bool synWtType);
 
 	/* Creates synaptic projections using a callback mechanism.
 	 *
@@ -707,7 +720,7 @@ public:
 	 * \return number of created synaptic projections
 	 */
 	short int connect(int gIDpre, int gIDpost, ConnectionGenerator* conn, float mulSynFast, float mulSynSlow,
-					bool synWtType,	int maxM, int maxPreM);
+		bool synWtType,	int maxM, int maxPreM);
 	
 	//! Creates a group of Izhikevich spiking neurons
 	/*!
@@ -785,7 +798,6 @@ public:
 	 * \param _configId (optional, deprecated) configuration id
 	 */
 	void setNeuromodulator(int grpId, float baseDP, float tauDP, float base5HT, float tau5HT, float baseACh, float tauACh, float baseNE, float tauNE, int configId);
-		
 
 	//! Set the spike-timing-dependent plasticity (STDP) for a neuron group.  
 	/*
@@ -801,16 +813,29 @@ public:
 	 */
 	void setSTDP(int grpId, bool isSet, float alphaLTP, float tauLTP, float alphaLTD, float tauLTD, int configId);
 		
-	//! Set the short-term plasticity (STP) for a neuron group. 
-	/*! STP must be defined pre-synaptically; that is, if STP should be implemented on the connections from group 0 to group 1, call setSTP on group 0. For details on the phenomenon, see (for example) (Markram et al, 1998), (Mongillo et al, 2008). 
-	 * \param _grpId ID of the neuron group 
-	 * \param _enable set to true to enable STP for this group 
-	 * \param _STP_U the increment of u due to a spike 
-	 * \param _STP_tD time constant for depression term 
-	 * \param _STP_tF: time constant for faciliation term 
-	 * \param _configId (optional, deprecated) configuration id
+	/*!
+	 * \brief Sets STP params U, tau_u, and tau_x of a neuron group (pre-synaptically)
+	 * CARLsim implements the short-term plasticity model of (Tsodyks & Markram, 1998).
+	 * du/dt = -u/STP_tau_u + STP_U * (1-u-) * \delta(t-t_spk)
+	 * dx/dt = (1-x)/STP_tau_x - u+ * x- * \delta(t-t_spk)
+	 * dI/dt = -I/tau_S + A * u+ * x- * \delta(t-t_spk)
+	 * where u- means value of variable u right before spike update, and x+ means value of variable x right after
+	 * the spike update, and A is the synaptic weight.
+	 * The STD effect is modeled by a normalized variable (0<=x<=1), denoting the fraction of resources that remain
+	 * available after neurotransmitter depletion.
+	 * The STF effect is modeled by a utilization parameter u, representing the fraction of available resources ready for
+	 * use (release probability). Following a spike, (i) u increases due to spike-induced calcium influx to the
+	 * presynaptic terminal, after which (ii) a fraction u of available resources is consumed to produce the post-synaptic
+	 * current. Between spikes, u decays back to zero with time constant STP_tau_u (\tau_F), and x recovers to value one
+	 * with time constant STP_tau_x (\tau_D).
+	 * \param[in] grpId       pre-synaptic group id. STP will apply to all neurons of that group!
+	 * \param[in] isSet       a flag whether to enable/disable STP
+	 * \param[in] STP_tau_u   decay constant of u (\tau_F)
+	 * \param[in] STP_tau_x   decay constant of x (\tau_D)
+	 * \param[in] configId    configuration ID of group
 	 */
-	void setSTP(int grpId, bool isSet, float STP_U, float STP_tD, float STP_tF, int configId);
+	 void setSTP(int grpId, bool isSet, float STP_U, float STP_tau_u, float STP_tau_x, int configId);
+
 
 	//! Sets the weight update parameters
 	/*!
@@ -839,7 +864,7 @@ public:
 	 * \param fid: file pointer
 	 * \sa CpuSNN::writeNetwork()
 	 */
-	void readNetwork(FILE* fid);
+	 void readNetwork(FILE* fid);
 
 	/*!
 	 * \brief Reassigns fixed weights to values passed into the function in a single 1D float matrix called
@@ -851,6 +876,32 @@ public:
 
 	void resetSpikeCntUtil(int grpId = -1); //!< resets spike count for particular neuron group
 
+	/*!
+	 * \brief reset Spike Counter to zero
+	 * Manually resets the spike buffers of a Spike Counter to zero (for a specific group).
+	 * Buffers get reset to zero automatically after recordDur. However, you can reset the buffer manually at any
+	 * point in time.
+	 * \param grpId the group for which to reset the spike counts. Set to ALL if you want to reset all Spike Counters.
+	 * \param configId the config id for which to reset the spike counts. Set to ALL if you want to reset all configIds
+	 */
+	void resetSpikeCounter(int grpId, int configId);
+
+	/*!
+	 * \brief A Spike Counter keeps track of the number of spikes per neuron in a group.
+	 * A Spike Counter keeps track of all spikes per neuron for a certain time period (recordDur).
+	 * After that, the spike buffers get reset to zero number of spikes.
+	 * Works for excitatory/inhibitory neurons.
+	 * The recording time can be set to any x number of ms, so that after x ms the spike counts will be reset
+	 * to zero. If x==-1, then the spike counts will never be reset (should only overflow after 97 days of sim).
+	 * Also, spike counts can be manually reset at any time by calling snn->resetSpikeCounter(group);
+	 * At any time, you can call getSpikeCounter to get the spiking information out.
+	 * You can have only one spike counter per group. However, a group can have both a SpikeMonitor and a SpikeCounter.
+	 * \param grpId the group for which you want to enable a SpikeCounter
+	 * \param recordDur number of ms for which to record spike numbers. Spike numbers will be reset to zero after
+	 * this. Set frameDur to -1 to never reset spike counts. Default: -1.
+	 */
+	void setSpikeCounter(int grpId, int recordDur, int configId);
+	
 	//! sets up a spike generator
 	void setSpikeGenerator(int grpId, SpikeGenerator* spikeGen, int configId);
 	
@@ -860,7 +911,7 @@ public:
 	 * \param spikeMon (optional) spikeMonitor class
 	 * \param configId (optional, deprecated) configuration id, default = ALL
 	 */
-	void setSpikeMonitor(int grpId, SpikeMonitor* spikeMon, int configId);
+	void setSpikeMonitor(int gid, SpikeMonitor* spikeMon, int configId);
 
 	//!Sets the Poisson spike rate for a group. For information on how to set up spikeRate, see Section Poisson spike generators in the Tutorial. 
 	/*!Input arguments:
@@ -967,6 +1018,15 @@ public:
 	 */
 	unsigned int* getSpikeCntPtr(int grpId=ALL);
 
+	/*!
+	 * \brief return the number of spikes per neuron for a certain group
+	 * A Spike Counter keeps track of all spikes per neuron for a certain time period (recordDur) at any point in time.
+	 * \param grpId	the group for which you want the spikes
+	 * \return pointer to array of ints. Number of elements in array is the number of neurons in group.
+	 * Each entry is the number of spikes for this neuron (int) since the last reset.
+	 */
+	int* getSpikeCounter(int grpId, int configId);	
+	
 	//! Returns the change in weight strength in the last second (due to plasticity) for all synaptic connections between a pre-synaptic and a post-synaptic neuron group.
 	/*!
 	 * \param grpIdPre ID of pre-synaptic group 
@@ -976,7 +1036,7 @@ public:
 	 * \param weightChanges (optional) return changes in weight strength for all synapses, default = NULL
 	 * \return changes in weight strength for all synapses
 	 */
-	float* getWeightChanges(int grpIDpre, int grpIDpost, int& Npre, int& Npost, float* weightChanges);
+	 float* getWeightChanges(int gIDpre, int gIDpost, int& Npre, int& Npost, float* weightChanges);
 
 
 	int grpStartNeuronId(int g) { return grp_Info[g].StartN; }
@@ -1014,6 +1074,14 @@ private:
 	void buildNetwork();
 	void buildPoissonGroup(int groupId);
 
+	/*!
+	 * \brief reset Spike Counters to zero if simTime % recordDur == 0
+	 * A Spike Counter keeps track of all spikes per neuron for a certain time period (recordDur)
+	 * after this period of time, the spike buffers need to be reset
+	 * this function checks simTime vs. recordDur and resets the spike buffers if necessary
+	 */
+	void checkSpikeCounterRecordDur();
+	
 	void compactConnections(); //!< minimize any other wastage in that array by compacting the store
 	void connectFull(grpConnectInfo_t* info);
 	void connectOneToOne(grpConnectInfo_t* info);
@@ -1026,7 +1094,7 @@ private:
 	void doD2CurrentUpdate();
 	void doGPUSim();
 	void doSnnSim();
-	void doSTPUpdates();
+	void doSTPUpdateAndDecayCond();
 
 	void exitSimulation(int val);	//!< deallocates all dynamical structures and exits
 
@@ -1084,9 +1152,9 @@ private:
 
 	// FIXME: difference between the options? is one deprecated or are both still used?
 	#if READNETWORK_ADD_SYNAPSES_FROM_FILE
-		int readNetwork_internal(bool onlyPlastic);
+	int readNetwork_internal(bool onlyPlastic);
 	#else
-		int readNetwork_internal();
+	int readNetwork_internal();
 	#endif
 
 	void reorganizeDelay();
@@ -1100,7 +1168,7 @@ private:
 	void resetGroups();
 	void resetNeuromodulator(int grpId);
 	void resetNeuron(unsigned int nid, int grpId);
-	void resetPointers();
+	void resetPointers(bool deallocate=false);
 	void resetPoissonNeuron(unsigned int nid, int grpId);
 	void resetPropogationBuffer();
 	void resetSpikeCnt(int grpId=ALL);					//!< Resets the spike count for a particular group.
@@ -1108,7 +1176,7 @@ private:
 	void resetTimingTable();
 
 	inline void setConnection(int srcGrpId, int destGrpId, unsigned int src, unsigned int dest, float synWt,
-								float maxWt, uint8_t dVal, int connProp, short int connId);
+		float maxWt, uint8_t dVal, int connProp, short int connId);
 
 	void setGrpTimeSlice(int grpId, int timeSlice); //!< used for the Poisson generator. TODO: further optimize
 	int setRandSeed(int seed);	//!< setter function for const member randSeed_
@@ -1163,21 +1231,43 @@ private:
 	void copyParameters();
 	void copyPostConnectionInfo(network_ptr_t* dest, int allocateMem);
 	void copyState(network_ptr_t* dest, int allocateMem);
-	void copySTPState(network_ptr_t* dest, network_ptr_t* src, int kind, int allocateMem);
+	void copySTPState(network_ptr_t* dest, network_ptr_t* src, cudaMemcpyKind kind, int allocateMem);
 	void copyUpdateVariables_GPU(); //!< copies wt / neuron state / STP state info from host to device
 	void copyWeightsGPU(unsigned int nid, int src_grp);
 	void copyWeightState(network_ptr_t* dest, network_ptr_t* src, cudaMemcpyKind kind, //!< copy presynaptic info
-							int allocateMem, int grpId=-1);
+		int allocateMem, int grpId=-1);
 
 	void deleteObjects_GPU();		//!< deallocates all used data structures in snn_gpu.cu
 	void doCurrentUpdate_GPU();
 	void dumpSpikeBuffToFile_GPU(int gid);
 	void findFiring_GPU();
+
+	/*!
+	 * \brief return the number of spikes per neuron for a certain group in GPU mode
+	 * A Spike Counter keeps track of all spikes per neuron for a certain time period (recordDur)
+	 * at any point in time.
+	 * \param grpId	the group for which you want the spikes
+	 * \return pointer to array of unsigned ints. Number of elements in array is the number of neurons in group.
+	 * Each entry is the number of spikes for this neuron (unsigned int) since the last reset.
+	 */
+	int* getSpikeCounter_GPU(int grpId, int configId);
+
 	void globalStateUpdate_GPU();
 	void initGPU(int gridSize, int blkSize);
+
 	void resetFiringInformation_GPU(); //!< resets the firing information in GPU_MODE when updateNetwork is called
 	void resetGPUTiming();
 	void resetSpikeCnt_GPU(int _startGrp, int _endGrp); //!< Utility function to clear spike counts in the GPU code.
+
+	/*!
+	 * \brief reset spike counter to zero in GPU mode
+	 * Buffers get reset to zero automatically after recordDur. However, you can reset the buffer manually at any
+	 * point in time through calling the public equivalent. This one gets called in
+	 * CpuSNN::resetSpikeCounter if we're running GPU mode.
+	 * \param grpId	the group for which you want to reset the spikes
+	 */
+	void resetSpikeCounter_GPU(int grpId, int configId);
+
 	void setSpikeGenBit_GPU(unsigned int nid, int grp);
 	void showStatus_GPU();
 	void spikeGeneratorUpdate_GPU();
@@ -1242,6 +1332,7 @@ private:
 	bool sim_with_modulated_stdp;
 	bool sim_with_stp;
 	bool sim_with_conductances;
+	bool sim_with_spikecounters; //!< flag will be true if there are any spike counters around
 	//! flag to enable the copyFiringStateInfo from GPU to CPU
 	bool enableGPUSpikeCntPtr;
 
@@ -1344,6 +1435,9 @@ private:
 	SpikeMonitor*	monBufferCallback[MAX_GRP_PER_SNN];
 
 	unsigned int	numSpikeGenGrps;
+
+	int numSpkCnt; //!< number of real-time spike monitors in the network
+	int* spkCntBuf[MAX_GRP_PER_SNN]; //!< the actual buffer of spike counts (per group, per neuron)
 
 	// group mointor variables
 	GroupMonitor*	grpBufferCallback[MAX_GRP_PER_SNN];

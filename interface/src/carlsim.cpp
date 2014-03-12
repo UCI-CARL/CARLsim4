@@ -7,12 +7,14 @@
 #include <sstream>		// std::stringstream
 #include <algorithm>	// std::find
 
-
 // includes for mkdir
 #if CREATE_SPIKEDIR_IF_NOT_EXISTS
-	#include <sys/stat.h>
-	#include <errno.h>
-	#include <libgen.h>
+	#if (WIN32 || WIN64)
+	#else
+		#include <sys/stat.h>
+		#include <errno.h>
+		#include <libgen.h>
+	#endif
 #endif
 
 // NOTE: Conceptual code documentation should go in carlsim.h. Do not include extensive high-level documentation here,
@@ -129,11 +131,11 @@ void CARLsim::CARLsimInit() {
 	// set default values for STP params
 	// TODO: add ref
 	def_STP_U_exc_  = 0.2f;
-	def_STP_tD_exc_ = 700.0f;
-	def_STP_tF_exc_ = 20.0f;
+	def_STP_tau_u_exc_ = 20.0f;
+	def_STP_tau_x_exc_ = 700.0f;
 	def_STP_U_inh_  = 0.5f;
-	def_STP_tD_inh_ = 800.0f;
-	def_STP_tF_inh_ = 1000.0f;
+	def_STP_tau_u_inh_ = 1000.0f;
+	def_STP_tau_x_inh_ = 800.0f;
 
 	// set default homeostasis params
 	// TODO: add ref
@@ -372,12 +374,12 @@ void CARLsim::setSTP(int grpId, bool isSet, int configId) {
 
 	if (isSet) { // enable STDP, use default values
 		UserErrors::userAssert(isExcitatoryGroup(grpId) || isInhibitoryGroup(grpId), UserErrors::WRONG_NEURON_TYPE,
-									funcName);
+									funcName, "setSTP");
 
 		if (isExcitatoryGroup(grpId))
-			snn_->setSTP(grpId,true,def_STP_U_exc_,def_STP_tD_exc_,def_STP_tF_exc_,configId);
+			snn_->setSTP(grpId,true,def_STP_U_exc_,def_STP_tau_u_exc_,def_STP_tau_x_exc_,configId);
 		else if (isInhibitoryGroup(grpId))
-			snn_->setSTP(grpId,true,def_STP_U_inh_,def_STP_tD_inh_,def_STP_tF_inh_,configId);
+			snn_->setSTP(grpId,true,def_STP_U_inh_,def_STP_tau_u_inh_,def_STP_tau_x_inh_,configId);
 		else {
 			// some error message
 		}
@@ -387,16 +389,16 @@ void CARLsim::setSTP(int grpId, bool isSet, int configId) {
 }
 
 // set STP, custom
-void CARLsim::setSTP(int grpId, bool isSet, float STP_U, float STP_tD, float STP_tF, int configId) {
+void CARLsim::setSTP(int grpId, bool isSet, float STP_U, float STP_tau_u, float STP_tau_x, int configId) {
 	std::string funcName = "setSTP(\""+getGroupName(grpId,configId)+"\")";
 	UserErrors::userAssert(!hasRunNetwork_, UserErrors::NETWORK_ALREADY_RUN, funcName); // can't change setup after run
 	hasSetSTPALL_ = grpId==ALL; // adding groups after this will not have conductances set
 
 	if (isSet) { // enable STDP, use default values
 		UserErrors::userAssert(isExcitatoryGroup(grpId) || isInhibitoryGroup(grpId), UserErrors::WRONG_NEURON_TYPE,
-									funcName);
+									funcName,"setSTP");
 
-		snn_->setSTP(grpId,true,STP_U,STP_tD,STP_tF,configId);
+		snn_->setSTP(grpId,true,STP_U,STP_tau_u,STP_tau_x,configId);
 	} else { // disable STDP
 		snn_->setSTP(grpId,false,0.0f,0.0f,0.0f,configId);
 	}		
@@ -460,6 +462,19 @@ void CARLsim::resetSpikeCntUtil(int grpId) {
 	snn_->resetSpikeCntUtil(grpId);
 }
 
+// resets spike counters
+void CARLsim::resetSpikeCounter(int grpId, int configId) {
+	snn_->resetSpikeCounter(grpId,configId);
+}
+
+// sets a spike counter for a group
+void CARLsim::setSpikeCounter(int grpId, int recordDur, int configId) {
+	std::stringstream funcName;	funcName << "setSpikeCounter(" << grpId << "," << recordDur << "," << configId << ")";
+	UserErrors::userAssert(grpId!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName.str(), "grpId");
+
+	snn_->setSpikeCounter(grpId,recordDur,configId);
+}
+
 // sets up a spike generator
 void CARLsim::setSpikeGenerator(int grpId, SpikeGenerator* spikeGen, int configId) {
 	std::string funcName = "setSpikeGenerator(\""+getGroupName(grpId,configId)+"\")";
@@ -499,14 +514,13 @@ void CARLsim::setSpikeMonitor(int grpId, const std::string& fname, int configId)
 	    	char fchar[200];
 	    	strcpy(fchar,fname.c_str());
 
-			#if defined(_WIN32) || defined(_WIN64) // TODO: test it
-				status = _mkdir(dirname(fchar); // Windows platform
+			#if (WIN32 || WIN64) // TODO: test it
+				//status = _mkdir(dirname(fchar); // Windows platform
 			#else
 			    status = mkdir(dirname(fchar), 0777); // Unix
+				std::string fileError = "%%CARLSIM_ROOT%%/results/ does not exist. Thus file " + fname;
+				UserErrors::userAssert(status!=-1 || errno==EEXIST, UserErrors::FILE_CANNOT_CREATE, funcName, fileError);
 			#endif
-
-			std::string fileError = "%%CARLSIM_ROOT%%/results/ does not exist. Thus file " + fname;
-			UserErrors::userAssert(status!=-1 || errno==EEXIST, UserErrors::FILE_CANNOT_CREATE, funcName, fileError);
 
 			// now that the directory is created, fopen file
 			fid = fopen(fname.c_str(),"wb");
@@ -599,6 +613,15 @@ unsigned int* CARLsim::getSpikeCntPtr(int grpId) {
 	return snn_->getSpikeCntPtr(grpId);
 }
 
+// get spiking information out for a given group
+int* CARLsim::getSpikeCounter(int grpId, int configId) {
+	std::stringstream funcName;	funcName << "getSpikeCounter(" << grpId << "," << configId << ")";
+	UserErrors::userAssert(grpId!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName.str(), "grpId");
+	UserErrors::userAssert(configId!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName.str(), "configId");
+
+	return snn_->getSpikeCounter(grpId,configId);
+}
+
 float* CARLsim::getWeightChanges(int gIDpre, int gIDpost, int& Npre, int& Npost, float* weightChanges) {
 	return snn_->getWeightChanges(gIDpre,gIDpost,Npre,Npost,weightChanges);
 }
@@ -655,21 +678,23 @@ void CARLsim::setDefaultSTDPparams(float alphaLTP, float tauLTP, float alphaLTD,
 }
 
 // set default STP values for an EXCITATORY_NEURON or INHIBITORY_NEURON
-void CARLsim::setDefaultSTPparams(int neurType, float STP_U, float STP_tD, float STP_tF) {
-	assert(neurType==EXCITATORY_NEURON || neurType==INHIBITORY_NEURON); // TODO make nice
-	assert(STP_tD>0);
-	assert(STP_tF>0);
+void CARLsim::setDefaultSTPparams(int neurType, float STP_U, float STP_tau_u, float STP_tau_x) {
+	std::string funcName = "setDefaultSTPparams()";
+	UserErrors::userAssert(neurType==EXCITATORY_NEURON || neurType==INHIBITORY_NEURON, UserErrors::WRONG_NEURON_TYPE,
+									funcName);
+	assert(STP_tau_u>0.0f);
+	assert(STP_tau_x>0.0f);
 
 	switch (neurType) {
 		case EXCITATORY_NEURON:
 			def_STP_U_exc_ = STP_U;
-			def_STP_tD_exc_ = STP_tD;
-			def_STP_tF_exc_ = STP_tF;
+			def_STP_tau_u_exc_ = STP_tau_u;
+			def_STP_tau_x_exc_ = STP_tau_x;
 			break;
 		case INHIBITORY_NEURON:
 			def_STP_U_inh_ = STP_U;
-			def_STP_tD_inh_ = STP_tD;
-			def_STP_tF_inh_ = STP_tF;
+			def_STP_tau_u_inh_ = STP_tau_u;
+			def_STP_tau_x_inh_ = STP_tau_x;
 			break;
 		default:
 			// some error message instead of assert

@@ -162,9 +162,31 @@ public:
 	//! Sets STDP params for a group, custom
 	void setSTDP(int grpId, bool isSet, float alphaLTP, float tauLTP, float alphaLTD, float tauLTD, int configId=ALL);
 
-	void setSTP(int grpId, bool isSet, int configId=ALL);
+	/*!
+	 * \brief Sets STP params U, tau_u, and tau_x of a neuron group (pre-synaptically)
+	 * CARLsim implements the short-term plasticity model of (Tsodyks & Markram, 1998).
+	 * du/dt = -u/STP_tau_u + STP_U * (1-u-) * \delta(t-t_spk)
+	 * dx/dt = (1-x)/STP_tau_x - u+ * x- * \delta(t-t_spk)
+	 * dI/dt = -I/tau_S + A * u+ * x- * \delta(t-t_spk)
+	 * where u- means value of variable u right before spike update, and x+ means value of variable x right after
+	 * the spike update, and A is the synaptic weight.
+	 * The STD effect is modeled by a normalized variable (0<=x<=1), denoting the fraction of resources that remain
+	 * available after neurotransmitter depletion.
+	 * The STF effect is modeled by a utilization parameter u, representing the fraction of available resources ready for
+	 * use (release probability). Following a spike, (i) u increases due to spike-induced calcium influx to the
+	 * presynaptic terminal, after which (ii) a fraction u of available resources is consumed to produce the post-synaptic
+	 * current. Between spikes, u decays back to zero with time constant STP_tau_u (\tau_F), and x recovers to value one
+	 * with time constant STP_tau_x (\tau_D).
+	 * \param[in] grpId       pre-synaptic group id. STP will apply to all neurons of that group!
+	 * \param[in] isSet       a flag whether to enable/disable STP
+	 * \param[in] STP_tau_u   decay constant of u (\tau_F)
+	 * \param[in] STP_tau_x   decay constant of x (\tau_D)
+	 * \param[in] configId    configuration ID of group
+	 */
+	void setSTP(int grpId, bool isSet, float STP_U, float STP_tau_u, float STP_tau_x, int configId=ALL);
 
-	void setSTP(int grpId, bool isSet, float STP_U, float STP_tD, float STP_tF, int configId=ALL);
+	//! Sets STP params U, tau_u, and tau_x of a neuron group (pre-synaptically) using default values
+	void setSTP(int grpId, bool isSet, int configId=ALL);
 
 
 
@@ -225,10 +247,43 @@ public:
 
 	void resetSpikeCntUtil(int grpId=ALL); //!< resets spike count for particular neuron group
 
+	/*!
+	 * \brief reset Spike Counter to zero
+	 * Manually resets the spike buffers of a Spike Counter to zero (for a specific group).
+	 * Buffers get reset to zero automatically after recordDur. However, you can reset the buffer manually at any
+	 * point in time.
+	 * \param grpId the group for which to reset the spike counts. Set to ALL if you want to reset all Spike Counters.
+	 * \param configId the config id for which to reset the spike counts. Set to ALL if you want to reset all configIds
+	 */
+	void resetSpikeCounter(int grpId, int configId=ALL);
+
+	/*!
+	 * \brief A Spike Counter keeps track of the number of spikes per neuron in a group.
+	 * A Spike Counter keeps track of all spikes per neuron for a certain time period (recordDur).
+	 * After that, the spike buffers get reset to zero number of spikes.
+	 * Works for excitatory/inhibitory neurons.
+	 * The recording time can be set to any x number of ms, so that after x ms the spike counts will be reset
+	 * to zero. If x==-1, then the spike counts will never be reset (should only overflow after 97 days of sim).
+	 * Also, spike counts can be manually reset at any time by calling snn->resetSpikeCounter(group);
+	 * At any time, you can call getSpikeCounter to get the spiking information out.
+	 * You can have only one spike counter per group. However, a group can have both a SpikeMonitor and a SpikeCounter.
+	 * \param grpId the group for which you want to enable a SpikeCounter
+	 * \param recordDur number of ms for which to record spike numbers. Spike numbers will be reset to zero after
+	 * this. Set frameDur to -1 to never reset spike counts. Default: -1.
+	 */
+	void setSpikeCounter(int grpId, int recordDur=-1, int configId=ALL);
+
 	//! Sets up a spike generator
 	void setSpikeGenerator(int grpId, SpikeGenerator* spikeGen, int configId=ALL);
 
-	//! Sets a spike monitor for a group, custom SpikeMonitor class
+	/*!
+	 * \brief Sets a spike monitor for a group, custom SpikeMonitor class
+	 * You can either write your own class that derives from SpikeMonitor, and directly access the neuron IDs and
+	 * spike times in 1000 ms bins, or you can set spikeMon=NULL, in which case the spike counts will simply be
+	 * output to console every 1000 ms.
+	 * If you want to dump spiking information to file, use the other SpikeMonitor.
+	 * If you need spiking information in smaller bins, use a SpikeCounter.
+	 */
 	void setSpikeMonitor(int gid, SpikeMonitor* spikeMon=NULL, int configId=ALL);
 
 	//! Sets a spike monitor for a group, prints spikes to binary file
@@ -279,6 +334,16 @@ public:
 	//! Returns pointer to 1D array of the number of spikes every neuron in the group has fired
 	unsigned int* getSpikeCntPtr(int grpId);
 
+	/*!
+	 * \brief return the number of spikes per neuron for a certain group
+	 * A Spike Counter keeps track of all spikes per neuron for a certain time period (recordDur) at any point in time.
+	 * \param[in] grpId	   the group for which you want the spikes (cannot be ALL)
+	 * \param[in] configId the configuration ID (cannot be ALL)
+	 * \returns pointer to array of ints. Number of elements in array is the number of neurons in group.
+	 * Each entry is the number of spikes for this neuron (int) since the last reset.
+	 */
+	int* getSpikeCounter(int grpId, int configId=0);
+
 	// FIXME: fix this
 	// TODO: maybe consider renaming getPopWeightChanges
 	float* getWeightChanges(int gIDpre, int gIDpost, int& Npre, int& Npost, float* weightChanges=NULL);
@@ -315,7 +380,7 @@ public:
 	void setDefaultSTDPparams(float alphaLTP, float tauLTP, float alphaLTD, float tauLTD);
 
 	//! sets default values for STP params (neurType either EXCITATORY_NEURON or INHIBITORY_NEURON)
-	void setDefaultSTPparams(int neurType, float STP_U, float STP_tD, float STP_tF);
+	void setDefaultSTPparams(int neurType, float STP_U, float STP_tau_U, float STP_tau_x);
 
 
 private:
@@ -368,11 +433,11 @@ private:
 	float def_STDP_tauLTD_;			//!< default value for LTD decay (ms)
 
 	float def_STP_U_exc_;			//!< default value for STP U excitatory
-	float def_STP_tD_exc_;			//!< default value for STP tD excitatory (ms)
-	float def_STP_tF_exc_;			//!< default value for STP tF excitatory (ms)
+	float def_STP_tau_u_exc_;		//!< default value for STP u decay (\tau_F) excitatory (ms)
+	float def_STP_tau_x_exc_;		//!< default value for STP x decay (\tau_D) excitatory (ms)
 	float def_STP_U_inh_;			//!< default value for STP U inhibitory
-	float def_STP_tD_inh_;			//!< default value for STP tD inhibitory (ms)
-	float def_STP_tF_inh_;			//!< default value for STP tF inhibitory (ms)
+	float def_STP_tau_u_inh_;		//!< default value for STP u decay (\tau_F) inhibitory (ms)
+	float def_STP_tau_x_inh_;		//!< default value for STP x decay (\tau_D) inhibitory (ms)
 
 	float def_homeo_scale_;			//!< default homeoScale
 	float def_homeo_avgTimeScale_;	//!< default avgTimeScale

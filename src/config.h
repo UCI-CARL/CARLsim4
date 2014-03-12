@@ -114,8 +114,6 @@
 
 //#define NEURON_NOISE
 
-#define STP_BUF_SIZE 32
-
 // useful during testing and development. carries out series of checks 
 // to ensure simulator is working correctly
 #ifndef TESTING
@@ -133,29 +131,6 @@
 // poisson neuron. Copy that curFiring status to the GPU which uses that for evaluation
 // of poisson firing
 #define TESTING_CPU_GPU_POISSON 			(0)
-
-
-
-	/****************************/
-	//  debug related stuff.. inspiration from
-	// http://www.decompile.com/cpp/faq/file_and_line_error_string.htm
-	#define STRINGIFY(x) #x
-	#define TOSTRING(x) STRINGIFY(x)
-	#define AT __FILE__ ":" TOSTRING(__LINE__)
-
-
-
-	inline void error(FILE *fp, const char *location, const char *msg, int sec, int step)
-	{
-	  fprintf(fp, "(wt=%d,ms=%d) Error at %s: %s\n", sec, step, location, msg);
-	}
-
-	inline void debug(FILE *fp, const char *location, const char *msg, int sec, int step)
-	{
-	  fprintf(fp, "(wt=%d,ms=%d) Executing %s: %s\n", sec, step, location, msg);
-	}
-
-	#define DBG(num,fp,loc,msg)  if( DEBUG_LEVEL >= num ) debug(fp,loc,msg,simTimeSec,simTimeMs);
 
 
 #define MAX_NEURON_CHUNK_SIZE 				   (750)

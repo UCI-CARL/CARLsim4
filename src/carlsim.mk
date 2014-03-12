@@ -14,7 +14,7 @@ else
 	CARLSIM_INCLUDES = -I${NVIDIA_SDK}/C/common/inc/
 	CARLSIM_LFLAGS = -L${NVIDIA_SDK}/C/lib
 	CARLSIM_LIBS = -lcutil_x86_64
-	CARLSIM_FLAGS = -D__CUDA3__ -arch sm_13
+	CARLSIM_FLAGS = -D__CUDA3__ -arch sm_20
 endif
 
 # use fast math

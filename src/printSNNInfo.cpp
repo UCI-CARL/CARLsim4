@@ -205,8 +205,8 @@ void CpuSNN::printGroupInfo(FILE* const fp)
 
     if (grp_Info[g].WithSTP) {
       fprintf(fp, "\t STP_U = %f\n", grp_Info[g].STP_U);
-      fprintf(fp, "\t STP_tD = %f\n", grp_Info[g].STP_tD);
-      fprintf(fp, "\t STP_tF = %f\n", grp_Info[g].STP_tF);
+      fprintf(fp, "\t STP_tau_u_inv = %f\n", grp_Info[g].STP_tau_u_inv);
+      fprintf(fp, "\t STP_tau_x_inv = %f\n", grp_Info[g].STP_tau_x_inv);
     }
 
     if(grp_Info[g].WithSTDP) {
@@ -473,15 +473,17 @@ void CpuSNN::printWeight(int grpId, const char *str) {
 	}
 
 	for(int g=stg; (g < endg) ; g++) {
-		fprintf(fpOut_, "%s", str);
 		if (!grp_Info[g].FixedInputWts) {
+			fprintf(fpOut_, "Synapses onto group %d (%s): Weights (+- change in last second)\n", g, grp_Info2[g].Name.c_str());
 			if (simMode_ == GPU_MODE) {
 				copyWeightState (&cpuNetPtrs, &cpu_gpuNetPtrs, cudaMemcpyDeviceToHost, false, g);
 			}
 			int i=grp_Info[g].StartN;
 			unsigned int offset = cumulativePre[i];
 			for(int j=0; j < Npre[i]; j++) {
-				fprintf(fpOut_, "%1.3f,%1.3f\t", cpuNetPtrs.wt[offset+j], cpuNetPtrs.wtChange[offset+j]);
+				float wt  = cpuNetPtrs.wt[offset+j];
+				float wtC = cpuNetPtrs.wtChange[offset+j];
+				fprintf(fpOut_, "%s%1.3f (%s%1.3f)\t", wt<0?"":" ", wt, wtC<0?"":"+", wtC);
 			}
 			fprintf(fpOut_, "\n");
 		}
@@ -491,14 +493,13 @@ void CpuSNN::printWeight(int grpId, const char *str) {
 // show the status of the simulator...
 // when onlyCnt is set, we print the actual count instead of frequency of firing
 void CpuSNN::showStatus() {
-  fprintf(fpOut_, "vvv (time=%lld) =========\n\n", (unsigned long long) simTimeSec);
 	printState(fpOut_);
 
 	if(simMode_ == GPU_MODE) {
 		showStatus_GPU();
-		return;
 	}
 
-	printWeight(-1);
-
+	if (!sim_with_fixedwts) {
+		printWeight(-1);
+	}
 }
