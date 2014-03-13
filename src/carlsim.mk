@@ -64,7 +64,7 @@ carlsim_deps += $(local_deps) $(interface_deps)
 carlsim_objs += $(local_objs) $(interface_objs)
 carlsim_sources += $(local_src) $(interface_src)
 objects += $(carlsim_objs) $(interface_objs) $(util_2_0_objs) $(util_2_1_objs)
-all_targets += CARLsim
+all_targets += carlsim
 
 #-------------------------------------------------------------------------------
 # CARLsim rules
