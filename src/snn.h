@@ -33,11 +33,38 @@
  * created by: 		(MDR) Micah Richert, (JN) Jayram M. Nageswaran
  * maintained by:	(MA) Mike Avery <averym@uci.edu>, (MB) Michael Beyeler <mbeyeler@uci.edu>,
  *					(KDC) Kristofor Carlson <kdcarlso@uci.edu>
+ *					(TSC) Ting-Shuo Chou <tingshuc@uci.edu>
  *
  * CARLsim available from http://socsci.uci.edu/~jkrichma/CARLsim/
  * Ver 2/21/2014
  */ 
 
+/*
+ * Common Abbreviations used in CARLsim
+ * snn/SNN: spiking neural network
+ * stp/STP: short-term plasticity
+ * stdp/STDP: spike-timing dependent plasticity
+ * syn/SYN: synapse
+ * wt/WT: weight
+ * exc/Exc: excitatory
+ * inh/Inh: inhibitory
+ * grp: group
+ * nid/NId/NID: neuron id
+ * gid/GId/GID: group id
+ * 
+ * conn: connection
+ * min: minimum
+ * max: maximum
+ * num: number
+ * mem: memory
+ * id/Id/ID: identification
+ * info: information
+ * cnt: count
+ * curr: current
+ * mon: monitor
+ * reg/Reg: regurlar
+ * pois/Pois: poisson
+ */
 #ifndef _SNN_GOLD_H_
 #define _SNN_GOLD_H_
 
@@ -84,17 +111,22 @@ extern RNG_rand48* gpuRand48; //!< Used by all network to generate global random
 // Bit flags to be used to specify the type of neuron.  Future types can be added in the future such as Dopamine, etc.
 // Yes, they should be bit flags because some neurons release more than one transmitter at a synapse.
 #define UNKNOWN_NEURON	(0)
-#define POISSON_NEURON	(1<<0)
-#define TARGET_AMPA	(1<<1)
-#define TARGET_NMDA	(1<<2)
-#define TARGET_GABAa	(1<<3)
-#define TARGET_GABAb	(1<<4)
+#define POISSON_NEURON	(1 << 0)
+#define TARGET_AMPA	(1 << 1)
+#define TARGET_NMDA	(1 << 2)
+#define TARGET_GABAa	(1 << 3)
+#define TARGET_GABAb	(1 << 4)
+#define TARGET_DA		(1 << 5)
+#define TARGET_5HT		(1 << 6)
+#define TARGET_ACh		(1 << 7)
+#define TARGET_NE		(1 << 8)
 
 #define INHIBITORY_NEURON 		(TARGET_GABAa | TARGET_GABAb)
 #define EXCITATORY_NEURON 		(TARGET_NMDA | TARGET_AMPA)
+#define DOPAMINERGIC_NEURON		(TARGET_DA | EXCITATORY_NEURON)
 #define EXCITATORY_POISSON 		(EXCITATORY_NEURON | POISSON_NEURON)
 #define INHIBITORY_POISSON		(INHIBITORY_NEURON | POISSON_NEURON)
-#define IS_INHIBITORY_TYPE(type)	(((type)&TARGET_GABAa) || ((type)&TARGET_GABAb))
+#define IS_INHIBITORY_TYPE(type)	(((type) & TARGET_GABAa) || ((type) & TARGET_GABAb))
 #define IS_EXCITATORY_TYPE(type)	(!IS_INHIBITORY_TYPE(type))
 
 
@@ -114,17 +146,17 @@ extern RNG_rand48* gpuRand48; //!< Used by all network to generate global random
 #define CONNECTION_INITWTS_RAMPUP		3
 #define CONNECTION_INITWTS_RAMPDOWN		4
 
-#define SET_INITWTS_RANDOM(a)		((a&1) << CONNECTION_INITWTS_RANDOM)
-#define SET_CONN_PRESENT(a)		((a&1) << CONNECTION_CONN_PRESENT)
-#define SET_FIXED_PLASTIC(a)		((a&1) << CONNECTION_FIXED_PLASTIC)
-#define SET_INITWTS_RAMPUP(a)		((a&1) << CONNECTION_INITWTS_RAMPUP)
-#define SET_INITWTS_RAMPDOWN(a)		((a&1) << CONNECTION_INITWTS_RAMPDOWN)
+#define SET_INITWTS_RANDOM(a)		((a & 1) << CONNECTION_INITWTS_RANDOM)
+#define SET_CONN_PRESENT(a)		((a & 1) << CONNECTION_CONN_PRESENT)
+#define SET_FIXED_PLASTIC(a)		((a & 1) << CONNECTION_FIXED_PLASTIC)
+#define SET_INITWTS_RAMPUP(a)		((a & 1) << CONNECTION_INITWTS_RAMPUP)
+#define SET_INITWTS_RAMPDOWN(a)		((a & 1) << CONNECTION_INITWTS_RAMPDOWN)
 
-#define GET_INITWTS_RANDOM(a)		(((a) >> CONNECTION_INITWTS_RANDOM)&1)
-#define GET_CONN_PRESENT(a)		(((a) >> CONNECTION_CONN_PRESENT)&1)
-#define GET_FIXED_PLASTIC(a)		(((a) >> CONNECTION_FIXED_PLASTIC)&1)
-#define GET_INITWTS_RAMPUP(a)		(((a) >> CONNECTION_INITWTS_RAMPUP)&1)
-#define GET_INITWTS_RAMPDOWN(a)		(((a) >> CONNECTION_INITWTS_RAMPDOWN)&1)
+#define GET_INITWTS_RANDOM(a)		(((a) >> CONNECTION_INITWTS_RANDOM) & 1)
+#define GET_CONN_PRESENT(a)		(((a) >> CONNECTION_CONN_PRESENT) & 1)
+#define GET_FIXED_PLASTIC(a)		(((a) >> CONNECTION_FIXED_PLASTIC) & 1)
+#define GET_INITWTS_RAMPUP(a)		(((a) >> CONNECTION_INITWTS_RAMPUP) & 1)
+#define GET_INITWTS_RAMPDOWN(a)		(((a) >> CONNECTION_INITWTS_RAMPDOWN) & 1)
 
 
 /****************************/
@@ -158,16 +190,20 @@ inline bool isInhibitoryNeuron (unsigned int& nid, unsigned int& numNInhPois, un
 #endif
 
 #define STATIC_LOAD_START(n)  (n.x)
-#define STATIC_LOAD_GROUP(n)  (n.y &0xff)
+#define STATIC_LOAD_GROUP(n)  (n.y & 0xff)
 #define STATIC_LOAD_SIZE(n)   ((n.y >> 16) & 0xff)
 
 #define MAX_NUMBER_OF_NEURONS_BITS  (20)
-#define MAX_NUMBER_OF_GROUPS_BITS   (32-MAX_NUMBER_OF_NEURONS_BITS)
-#define MAX_NUMBER_OF_NEURONS_MASK  ((1 << MAX_NUMBER_OF_NEURONS_BITS)-1)
-#define MAX_NUMBER_OF_GROUPS_MASK   ((1 << MAX_NUMBER_OF_GROUPS_BITS)-1)
+#define MAX_NUMBER_OF_GROUPS_BITS   (32 - MAX_NUMBER_OF_NEURONS_BITS)
+#define MAX_NUMBER_OF_NEURONS_MASK  ((1 << MAX_NUMBER_OF_NEURONS_BITS) - 1)
+#define MAX_NUMBER_OF_GROUPS_MASK   ((1 << MAX_NUMBER_OF_GROUPS_BITS) - 1)
 #define SET_FIRING_TABLE(nid, gid)  (((gid) << MAX_NUMBER_OF_NEURONS_BITS) | (nid))
 #define GET_FIRING_TABLE_NID(val)   ((val) & MAX_NUMBER_OF_NEURONS_MASK)
 #define GET_FIRING_TABLE_GID(val)   (((val) >> MAX_NUMBER_OF_NEURONS_BITS) & MAX_NUMBER_OF_GROUPS_MASK)
+
+#define _10MS 0
+#define _100MS 1
+#define _1000MS 2
 
 //!< Used for in the function getConnectionId
 #define CHECK_CONNECTION_ID(n,total) { assert(n >= 0); assert(n < total); }
@@ -186,13 +222,13 @@ inline bool isInhibitoryNeuron (unsigned int& nid, unsigned int& numNInhPois, un
 // the case in which you want the two to be different (e.g., developer mode, in which you would like to
 // see all debug info (stdout) but also have it saved to a file
 #define CARLSIM_ERROR(formatc, ...) {	CARLSIM_ERROR_PRINT(fpErr_,formatc,##__VA_ARGS__); \
-CARLSIM_DEBUG_PRINT(fpLog_,formatc,##__VA_ARGS__); }
+										CARLSIM_DEBUG_PRINT(fpLog_,formatc,##__VA_ARGS__); }
 #define CARLSIM_WARN(formatc, ...) {	CARLSIM_WARN_PRINT(fpErr_,formatc,##__VA_ARGS__); \
-CARLSIM_DEBUG_PRINT(fpLog_,formatc,##__VA_ARGS__); }
+										CARLSIM_DEBUG_PRINT(fpLog_,formatc,##__VA_ARGS__); }
 #define CARLSIM_INFO(formatc, ...) {	CARLSIM_INFO_PRINT(fpOut_,formatc,##__VA_ARGS__); \
-CARLSIM_DEBUG_PRINT(fpLog_,formatc,##__VA_ARGS__); }
+										CARLSIM_DEBUG_PRINT(fpLog_,formatc,##__VA_ARGS__); }
 #define CARLSIM_DEBUG(formatc, ...) {	CARLSIM_DEBUG_PRINT(fpDeb_,formatc,##__VA_ARGS__); \
-CARLSIM_DEBUG_PRINT(fpLog_,formatc,##__VA_ARGS__); }
+										CARLSIM_DEBUG_PRINT(fpLog_,formatc,##__VA_ARGS__); }
 
 #define CARLSIM_ERROR_PRINT(fp, formatc, ...) fprintf(fp,"\033[31;1m[ERROR %s:%d] " formatc "\033[0m \n",__FILE__,__LINE__,##__VA_ARGS__)
 #define CARLSIM_WARN_PRINT(fp, formatc, ...) fprintf(fp,"\033[33;1m[WARNING %s:%d] " formatc "\033[0m \n",__FILE__,__LINE__,##__VA_ARGS__)
@@ -230,7 +266,7 @@ CARLSIM_DEBUG_PRINT(fpLog_,formatc,##__VA_ARGS__); }
  * Location of the debug log file can be set in any mode using CARLsim::setLogDebugFp.
  * In mode CUSTOM, the other file pointers can be set using CARLsim::setLogsFp.
  */
- enum loggerMode_t { USER, DEVELOPER, SILENT, CUSTOM, UNKNOWN };
+enum loggerMode_t { USER, DEVELOPER, SILENT, CUSTOM, UNKNOWN };
 
 /*!
  * \brief simulation mode
@@ -244,15 +280,15 @@ CARLSIM_DEBUG_PRINT(fpLog_,formatc,##__VA_ARGS__); }
  * 0-indexed) when you create a new CpuSNN object.
  * The simulation mode will be fixed throughout the lifetime of a CpuSNN object.
  */
- enum simMode_t {CPU_MODE, GPU_MODE};
+enum simMode_t {CPU_MODE, GPU_MODE};
 
 //! connection types, used internally (externally it's a string)
- enum conType_t { CONN_RANDOM, CONN_ONE_TO_ONE, CONN_FULL, CONN_FULL_NO_DIRECT, CONN_USER_DEFINED, CONN_UNKNOWN};
+enum conType_t { CONN_RANDOM, CONN_ONE_TO_ONE, CONN_FULL, CONN_FULL_NO_DIRECT, CONN_USER_DEFINED, CONN_UNKNOWN};
 
 
 
 // forward-declaration
- class CpuSNN;
+class CpuSNN;
 
 //! used for fine-grained control over spike generation, using a callback mechanism
 /*! Spike generation can be performed using spike generators. Spike generators are dummy-neurons that have their spikes
@@ -263,14 +299,21 @@ CARLSIM_DEBUG_PRINT(fpLog_,formatc,##__VA_ARGS__); }
  * For fine-grained control over spike generation, individual spike times can be specified per neuron in each group.
  * This is accomplished using a callback mechanism, which is called at each time step, to specify whether a neuron has
  * fired or not. */
- class SpikeGenerator {
- public:
- 	SpikeGenerator() {};
+class SpikeGenerator {
+public:
+	SpikeGenerator() {};
 
 	//! controls spike generation using a callback
+	/*! \attention The virtual method should never be called directly
+	 *  \param s pointer to the simulator object
+	 *  \param grpId the group id
+	 *  \param i the neuron index in the group
+	 *  \param currentTime the current simluation time
+	 *  \param lastScheduledSpikeTime the last spike time which was scheduled
+	 */
 	/*! \attention The virtual method should never be called directly */
- 	virtual unsigned int nextSpikeTime(CpuSNN* s, int grpId, int i, unsigned int currentTime) = 0;
- };
+	virtual unsigned int nextSpikeTime(CpuSNN* s, int grpId, int i, unsigned int currentTime, unsigned int lastScheduledSpikeTime) = 0;
+};
 
 //! used for fine-grained control over spike generation, using a callback mechanism
 /*!
@@ -281,15 +324,15 @@ CARLSIM_DEBUG_PRINT(fpLog_,formatc,##__VA_ARGS__); }
  * simulator will automatically call the method for all possible pre- and post-synaptic pairs. The user can then specify
  * the connection's delay, initial weight, maximum weight, and whether or not it is plastic.
  */
- class ConnectionGenerator {
- public:
- 	ConnectionGenerator() {};
+class ConnectionGenerator {
+public:
+	ConnectionGenerator() {};
 
 	//! specifies which synaptic connections (per group, per neuron, per synapse) should be made
 	/*! \attention The virtual method should never be called directly */
- 	virtual void connect(CpuSNN* s, int srcGrpId, int i, int destGrpId, int j, float& weight, float& maxWt,
- 		float& delay, bool& connected) = 0;
- };
+	virtual void connect(CpuSNN* s, int srcGrpId, int i, int destGrpId, int j, float& weight, float& maxWt,
+							float& delay, bool& connected) = 0;
+};
 
 
 //! can be used to create a custom spike monitor
@@ -298,46 +341,74 @@ CARLSIM_DEBUG_PRINT(fpLog_,formatc,##__VA_ARGS__); }
  * for a group and are called automatically by the simulator every second. Similar to an address event representation
  * (AER), the spike monitor indicates which neurons spiked by using the neuron ID within a group (0-indexed) and the
  * time of the spike. Only one spike monitor is allowed per group.*/
- class SpikeMonitor {
- public:
- 	SpikeMonitor() {};
+class SpikeMonitor {
+public:
+	SpikeMonitor() {};
 
-  //! Controls actions that are performed when certain neurons fire (user-defined).
-  /*! \attention The virtual method should never be called directly */
- 	virtual void update(CpuSNN* s, int grpId, unsigned int* Nids, unsigned int* timeCnts) = 0;
- };
+	//! Controls actions that are performed when certain neurons fire (user-defined).
+	/*! \attention The virtual method should never be called directly */
+	virtual void update(CpuSNN* s, int grpId, unsigned int* Nids, unsigned int* timeCnts) = 0;
+};
+
+//! can be used to create a custom group monitor
+/*! To retrieve group status, a group-monitoring callback mechanism is used. This mechanism allows the user to monitor
+ * basic status of a group (currently support concentrations of neuromodulator). Group monitors are registered
+ * for a group and are called automatically by the simulator every second. The parameter would be the group ID, an
+ * array of data, number of elements in that array.
+ */
+class GroupMonitor {
+	public:
+		GroupMonitor() {};
+
+		virtual void update(CpuSNN* s, int grpID, float* grpDA, int numData) {};
+};
 
 
+typedef struct {
+  short  delay_index_start;
+  short  delay_length;
+} delay_info_t;
 
- typedef struct {
- 	short  delay_index_start;
- 	short  delay_length;
- } delay_info_t;
+typedef struct {
+	int	postId;
+	uint8_t	grpId;
+} post_info_t;
 
- typedef struct {
- 	int      postId;
- 	uint8_t  grpId;
- } post_info_t;
 
- typedef struct network_info_s  {
-  size_t		STP_Pitch;		//!< numN rounded upwards to the nearest 256 boundary
-  unsigned int		numN,numPostSynapses,D,numNExcReg,numNInhReg, numNReg;
-  unsigned int		I_setLength;
-  size_t		I_setPitch;
-  unsigned int		preSynLength;
-  //	unsigned int		numRandNeurons;
-  //	unsigned int		numNoise;
-  unsigned int		postSynCnt;
-  unsigned int		preSynCnt;
-  unsigned int		maxSpikesD2,maxSpikesD1;
-  unsigned int   	numNExcPois;
-  unsigned int	numNInhPois;
-  unsigned int	numNPois;
-  unsigned int	numGrp;
-  bool		sim_with_fixedwts;
-  bool		sim_with_conductances;
-  bool		sim_with_stdp;
-  bool		sim_with_stp;
+//! network information structure
+/*!
+ *	This structure contains network information that is required for GPU simulation.
+ *	The data in this structure are copied to device memory when running GPU simulation.
+ *	\sa CpuSNN
+ */ 
+typedef struct network_info_s  {
+	size_t		STP_Pitch;		//!< numN rounded upwards to the nearest 256 boundary
+	unsigned int	numN;
+	unsigned int	numPostSynapses;
+	unsigned int	D;
+	unsigned int	numNExcReg;
+	unsigned int	numNInhReg;
+	unsigned int	numNReg;
+	unsigned int	I_setLength;
+	size_t			I_setPitch;
+	unsigned int	preSynLength;
+//	unsigned int	numRandNeurons;
+//	unsigned int	numNoise;
+	unsigned int	postSynCnt;
+	unsigned int	preSynCnt;
+	unsigned int	maxSpikesD2;
+	unsigned int	maxSpikesD1;
+	unsigned int   	numNExcPois;
+	unsigned int	numNInhPois;
+	unsigned int	numNPois;
+	unsigned int	numGrp;
+	bool		sim_with_fixedwts;
+	bool		sim_with_conductances;
+	bool		sim_with_stdp;
+	bool		sim_with_modulated_stdp;
+	bool		sim_with_stp;
+	float		stdpScaleFactor;
+	float		wtChangeDecay; //!< the wtChange decay 
 } network_info_t;
 
 //! nid=neuron id, sid=synapse id, grpId=group id. 
@@ -372,26 +443,37 @@ typedef struct connectData_s {
 } grpConnectInfo_t;
 
 typedef struct network_ptr_s  {
-	float	*voltage, *recovery, *Izh_a, *Izh_b, *Izh_c, *Izh_d, *current;
+	float*	voltage;
+	float*	recovery;
+	float*	Izh_a;
+	float*	Izh_b;
+	float*	Izh_c;
+	float*	Izh_d;
+	float*	current;
 
 	// conductances and stp values
-	float	*gNMDA, *gAMPA, *gGABAa, *gGABAb;
+	float*	gNMDA;					//!< conductance of gNMDA
+	float*	gAMPA;					//!< conductance of gAMPA
+	float*	gGABAa;				//!< conductance of gGABAa
+	float*	gGABAb;				//!< conductance of gGABAb
 	int*	I_set;
-	simMode_t		memType; // FIXME: horrible naming
-	int		allocated;			//!< true if all data has been allocated..
-	float	*stpx, *stpu;
+	simMode_t	memType;
+	int		allocated;				//!< true if all data has been allocated..
+	float*	stpx;
+	float*	stpu;
 
-	unsigned short	*Npre;				//!< stores the number of input connections to the neuron
-	unsigned short	*Npre_plastic;			//!< stores the number of plastic input connections
-	float	*Npre_plasticInv;			//!< stores the 1/number of plastic input connections, for use on the GPU
-	unsigned short	*Npost;				//!< stores the number of output connections from a neuron.
-	unsigned int		*lastSpikeTime;			//!< storees the firing time of the neuron
-	float	*wtChange, *wt;	//!< stores the synaptic weight and weight change of a synaptic connection
-	float	 *maxSynWt;			//!< maximum synaptic weight for given connection..
-	uint32_t *synSpikeTime;
-	uint32_t *neuronFiring;
-	unsigned int		*cumulativePost;
-	unsigned int		*cumulativePre;
+	unsigned short*	Npre;				//!< stores the number of input connections to the neuron
+	unsigned short*	Npre_plastic;		//!< stores the number of plastic input connections
+	float*		Npre_plasticInv;	//!< stores the 1/number of plastic input connections, for use on the GPU
+	unsigned short*	Npost;				//!< stores the number of output connections from a neuron.
+	unsigned int*	lastSpikeTime;		//!< storees the firing time of the neuron
+	float*	wtChange;
+	float*	wt;				//!< stores the synaptic weight and weight change of a synaptic connection
+	float*	maxSynWt;			//!< maximum synaptic weight for given connection..
+	unsigned int*	synSpikeTime;
+	unsigned int*	neuronFiring;
+	unsigned int*	cumulativePost;
+	unsigned int*	cumulativePre;
 
 	float 	*mulSynFast, *mulSynSlow;
 	short int *cumConnIdPre;	//!< connectId, per synapse, presynaptic cumulative indexing
@@ -402,20 +484,22 @@ typedef struct network_ptr_s  {
 	 * allows maximum synapses of 1024 and maximum network size of 4 million neurons, with 64 bit representation. we can
 	 * have larger networks for simulation
 	 */
-	 post_info_t	*postSynapticIds;
+	post_info_t*	postSynapticIds;
 
-	 post_info_t	*preSynapticIds;
+	post_info_t*	preSynapticIds;
 	delay_info_t    *postDelayInfo;  	//!< delay information
-	unsigned int*		firingTableD1;
-	unsigned int*		firingTableD2;
+	unsigned int*	firingTableD1;
+	unsigned int*	firingTableD2;
 
-	float*		poissonFireRate;
-	unsigned int*		poissonRandPtr;		//!< firing random number. max value is 10,000
-	int2*		neuronAllocation;
-	int3*		groupIdInfo;		//!< used for group Id calculations...
-	short int*	synIdLimit;			//
-	float*		synMaxWts;			//
-	unsigned int*		nSpikeCnt;
+
+
+	float*	poissonFireRate;
+	unsigned int*	poissonRandPtr;		//!< firing random number. max value is 10,000
+	int2*	neuronAllocation;		//!< .x: [31:0] index of the first neuron, .y: [31:16] number of neurons, [15:0] group id
+	int3*	groupIdInfo;			//!< .x , .y: the start and end index of neurons in a group, .z: gourd id, used for group Id calculations
+	short int*	synIdLimit;			//!<
+	float*	synMaxWts;				//!<
+	unsigned int*	nSpikeCnt;
 
 	int** spkCntBuf; //!< for copying 2D array to GPU (see CpuSNN::allocateSNN_GPU)
 	int* spkCntBufChild[MAX_GRP_PER_SNN]; //!< child pointers for above
@@ -425,26 +509,35 @@ typedef struct network_ptr_s  {
 	float*	baseFiring;
 	float*	avgFiring;
 
+	/*!
+	 * neuromodulator concentration for each group
+	 */
+	float		*grpDA;
+	float		*grp5HT;
+	float		*grpACh;
+	float		*grpNE;
+
 	float* 		testVar;
 	float*		testVar2;
-	uint32_t*	spikeGenBits;
+	unsigned int*	spikeGenBits;
 	bool*		curSpike;
 } network_ptr_t;
 
 typedef struct group_info_s
 {
-  // properties of group of neurons size, location, initial weights etc.
-	PoissonRate*		RatePtr;
+	// properties of group of neurons size, location, initial weights etc.
+	PoissonRate*	RatePtr;
 	int			StartN;
 	int			EndN;
-	char		Type;
+	unsigned int	Type;
 	int			SizeN;
 	int			NumTraceN;
 	short int  	MaxFiringRate; //!< this is for the monitoring mechanism, it needs to know what is the maximum firing rate in order to allocate a buffer big enough to store spikes...
-	int			MonitorId;
+	int			MonitorId;		//!< spike monitor id
+	int			GroupMonitorId; //!< group monitor id
 	float   	RefractPeriod;
-	int		CurrTimeSlice; //!< timeSlice is used by the Poisson generators in order to note generate too many or too few spikes within a window of time
-	int		NewTimeSlice;
+	int			CurrTimeSlice; //!< timeSlice is used by the Poisson generators in order to note generate too many or too few spikes within a window of time
+	int			NewTimeSlice;
 	uint32_t 	SliceUpdateTime;
 	int 		FiringCount1sec;
 	int 		numPostSynapses;
@@ -452,6 +545,7 @@ typedef struct group_info_s
 	bool 		isSpikeGenerator;
 	bool 		WithSTP;
 	bool 		WithSTDP;
+	bool		WithModulatedSTDP;
 	bool 		WithHomeostasis;
 	bool 		WithConductances;
 	int		homeoId;
@@ -477,12 +571,22 @@ typedef struct group_info_s
 	int spkCntBufPos; //!< which position in the spike buffer the group has
 
 	//!< homeostatic plasticity variables
-	float		avgTimeScale;
+	float	avgTimeScale;
 	float 	avgTimeScale_decay;
-	float		avgTimeScaleInv;
-	float		homeostasisScale;
+	float	avgTimeScaleInv;
+	float	homeostasisScale;
+	
+	// parameters of neuromodulator
+	float		baseDP;		//!< baseline concentration of Dopamine
+	float		base5HT;	//!< baseline concentration of Serotonin
+	float		baseACh;	//!< baseline concentration of Acetylcholine
+	float		baseNE;		//!< baseline concentration of Noradrenaline
+	float		decayDP;		//!< decay rate for Dopaamine
+	float		decay5HT;		//!< decay rate for Serotonin
+	float		decayACh;		//!< decay rate for Acetylcholine
+	float		decayNE;		//!< decay rate for Noradrenaline
 
-	SpikeGenerator* spikeGen;
+	SpikeGenerator*	spikeGen;
 	bool		newUpdates;  //!< FIXME this flag has mixed meaning and is not rechecked after the simulation is started
 } group_info_t;
 
@@ -491,34 +595,34 @@ typedef struct group_info_s
  * separate group which has unique properties of
  * neuron in the current group.
  */
- typedef struct group_info2_s
- {
- 	std::string		Name;
- 	short		ConfigId;
+typedef struct group_info2_s
+{
+  std::string		Name;
+  short		ConfigId;
   // properties of group of neurons size, location, initial weights etc.
   //<! homeostatic plasticity variables
- 	float 		baseFiring;
- 	float 		baseFiringSD;
- 	float 		Izh_a;
- 	float 		Izh_a_sd;
- 	float 		Izh_b;
- 	float 		Izh_b_sd;
- 	float 		Izh_c;
- 	float 		Izh_c_sd;
- 	float 		Izh_d;
- 	float 		Izh_d_sd;
+  float 		baseFiring;
+  float 		baseFiringSD;
+  float 		Izh_a;
+  float 		Izh_a_sd;
+  float 		Izh_b;
+  float 		Izh_b_sd;
+  float 		Izh_c;
+  float 		Izh_c_sd;
+  float 		Izh_d;
+  float 		Izh_d_sd;
 
-  /*!
-   * \brief when we call print state, should the group properties be printed.
-   * default is false and we do not want any prints for the current group
-   */
-   bool		enablePrint;
-   int			numPostConn;
-   int			numPreConn;
-   int			maxPostConn;
-   int			maxPreConn;
-   int			sumPostConn;
-   int			sumPreConn;
+	/*!
+	 * \brief when we call print state, should the group properties be printed.
+	 * default is false and we do not want any prints for the current group
+	 */
+	bool		enablePrint;
+	int			numPostConn;
+	int			numPreConn;
+	int			maxPostConn;
+	int			maxPreConn;
+	int			sumPostConn;
+	int			sumPreConn;
 } group_info2_t;
 
 
@@ -551,14 +655,29 @@ typedef struct group_info_s
  *
  * This is a more elaborate description of our main class.
  */
- class CpuSNN {
+class CpuSNN {
 
 /// **************************************************************************************************************** ///
 /// PUBLIC METHODS
 /// **************************************************************************************************************** ///
- public:
- 	CpuSNN(std::string& name, simMode_t simMode, loggerMode_t loggerMode, int ithGPU, int nConfig, int randSeed);
- 	~CpuSNN();
+public:
+	//! SNN Constructor
+	/*!
+	 * \brief 
+	 * \param name the symbolic name of a spiking neural network
+	 * \param simMode simulation mode, CPU_MODE: running simluation on CPUs, GPU_MODE: running simulation with GPU acceleration, default = CPU_MODE
+	 * \param loggerMode log mode
+	 * \param ithGPU
+	 * \param nConfig the number of configurations
+	 * \param randSeed randomize seed of the random number generator
+	 */
+	CpuSNN(std::string& name, simMode_t simMode, loggerMode_t loggerMode, int ithGPU, int nConfig, int randSeed);
+
+	//! SNN Destructor
+	/*!
+	 * \brief clean up all allocated resource 
+	 */
+	~CpuSNN();
 
 	// +++++ PUBLIC PROPERTIES ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
@@ -571,24 +690,68 @@ typedef struct group_info_s
 
 	// NOTE: there should be no default argument values in here, this should be handled by the user interface
 
-	//! make connection of type "random","full","one-to-one" from each neuron in grpId1 to neurons in grpId2
+	//! Creates synaptic projections from a pre-synaptic group to a post-synaptic group using a pre-defined primitive type.
+	/*!
+	 * \brief make from each neuron in grpId1 to 'numPostSynapses' neurons in grpId2
+	 *
+	 * \param grpIdPre ID of the pre-synaptic group 
+	 * \param grpIdPost ID of the post-synaptic group 
+	 * \param connType connection type. "random": random connectivity. "one-to-one": connect the i-th neuron in pre to the i-th neuron in post. "full": connect all neurons in pre to all neurons in post (no self-connections). 
+	 * \param initWt initial weight strength (arbitrary units); should be negative for inhibitory connections 
+	 * \param maxWt upper bound on weight strength (arbitrary units); should be negative for inhibitory connections 
+	 * \param connProb connection probability 
+	 * \param minDelay the minimum delay allowed (ms) 
+	 * \param maxdelay: the maximum delay allowed (ms) 
+	 * \param synWtType: (optional) connection type, either SYN_FIXED or SYN_PLASTIC, default = SYN_FIXED. 
+	 * \param wtType: (optional) DEPRECATED
+	 * \return number of created synaptic projections
+	 */
 	short int connect(int gIDpre, int gIDpost, const std::string& _type, float initWt, float maxWt, float _C,
 		uint8_t minDelay, uint8_t maxDelay, float mulSynFast, float mulSynSlow, bool synWtType);
 
-	//! make custom connections from grpId1 to grpId2
-	// TODO: describe maxM and maxPreM
+	/* Creates synaptic projections using a callback mechanism.
+	 *
+	 * \param _grpIdPre:ID of the pre-synaptic group 
+	 * \param _grpIdPost ID of the post-synaptic group 
+	 * \param _conn: pointer to an instance of class ConnectionGenerator 
+	 * \param _synWtType: (optional) connection type, either SYN_FIXED or SYN_PLASTIC, default = SYN_FIXED
+	 * \param _maxPostM: (optional) maximum number of post-synaptic connections (per neuron), Set to 0 for no limit, default = 0
+	 * \param _maxPreM: (optional) maximum number of pre-synaptic connections (per neuron), Set to 0 for no limit, default = 0. 
+	 * \return number of created synaptic projections
+	 */
 	short int connect(int gIDpre, int gIDpost, ConnectionGenerator* conn, float mulSynFast, float mulSynSlow,
 		bool synWtType,	int maxM, int maxPreM);
-
-
-	//! creates a group of Izhikevich spiking neurons
+	
+	//! Creates a group of Izhikevich spiking neurons
+	/*!
+	 * \param name the symbolic name of a group
+	 * \param numN  nubmer of neurons in the group
+	 * \param nType the type of neuron
+	 * \param configId (optional, deprecated) configuration id
+	 */
 	int createGroup(const std::string& grpName, int nNeur, int neurType, int configId);
 
-	//! creates a spike generator group (dummy-neurons, not Izhikevich spiking neurons). 
+	//! Creates a spike generator group (dummy-neurons, not Izhikevich spiking neurons)
+	/*!
+	 * \param name the symbolic name of a group
+	 * \param size_n  nubmer of neurons in the group
+	 * \param nType the type of neuron, currently only support EXCITATORY NEURON
+	 * \param configId (optional, deprecated) configuration id
+	 */
 	int createSpikeGeneratorGroup(const std::string& grpName, int nNeur, int neurType, int configId);
 
-
-  	//! sets custom values for conductance decay (\tau_decay) or disables conductances alltogether
+	//! Sets the decay time constants for synaptic conductances of a neuron group. To disable the use of synaptic conductanes for a group, you can also use a simple wrapper: void setConductances(int grpId, bool enable). To apply conductance values to all groups, replace grpId with ALL.
+	/* Synaptic channels are modeled with instantaneous rise-time and exponential decay.
+	 * For details on the ODE that is implemented refer to (Izhikevich et al, 2004), and for suitable values see (Dayan & Abbott, 2001). 
+	 * 
+	 * \param _grpId: ID of the neuron group 
+	 * \param enable: enables the use of COBA mode 
+	 * \param tAMPA: time _constant of AMPA decay (ms); for example, 5.0 
+	 * \param tNMDA: time constant of NMDA decay (ms); for example, 150.0 
+	 * \param tGABAa: time constant of GABAa decay (ms); for example, 6.0 
+	 * \param tGABAb: time constant of GABAb decay (ms); for example, 150.0 
+	 * \param configId: (optional, deprecated) configuration id
+	 */
 	void setConductances(int grpId, bool isSet, float tdAMPA, float tdNMDA, float tdGABAa, float tdGABAb, int configId);
 
 
@@ -598,22 +761,58 @@ typedef struct group_info_s
 	 * homeostasis compared to the strength of normal LTP/LTD from STDP (which is 1), and avgTimeScale is the time
 	 * frame over which the average firing rate is averaged (it should be larger in scale than STDP timescales).
 	 */
-	 void setHomeostasis(int grpId, bool isSet, float homeoScale, float avgTimeScale, int configId);
+	void setHomeostasis(int grpId, bool isSet, float homeoScale, float avgTimeScale, int configId);
 
 	//! Sets homeostatic target firing rate (enforced through homeostatic synaptic scaling)
-	 void setHomeoBaseFiringRate(int groupId, float baseFiring, float baseFiringSD, int configId);
+	void setHomeoBaseFiringRate(int groupId, float baseFiring, float baseFiringSD, int configId);
 
 
 	//! Sets the Izhikevich parameters a, b, c, and d of a neuron group.
-	/*! Parameter values for each neuron are given by a normal distribution with mean _a, _b, _c, _d standard
-	 * deviation a_sd, b_sd, c_sd, and d_sd, respectively. */
-	 void setNeuronParameters(int grpId, float izh_a, float izh_a_sd, float izh_b, float izh_b_sd,
-	 	float izh_c, float izh_c_sd, float izh_d, float izh_d_sd, int configId);
+	/*!
+	 * \brief Parameter values for each neuron are given by a normal distribution with mean _a, _b, _c, _d and standard deviation _a_sd, _b_sd, _c_sd, and _d_sd, respectively
+	 * \param _groupId the symbolic name of a group
+	 * \param _a  the mean value of izhikevich parameter a
+	 * \param _a_sd the standard deviation value of izhikevich parameter a
+	 * \param _b  the mean value of izhikevich parameter b
+	 * \param _b_sd the standard deviation value of izhikevich parameter b
+	 * \param _c  the mean value of izhikevich parameter c
+	 * \param _c_sd the standard deviation value of izhikevich parameter c
+	 * \param _d  the mean value of izhikevich parameter d
+	 * \param _d_sd the standard deviation value of izhikevich parameter d
+	 * \param _configId (optional, deprecated) configuration id
+	 */
+	void setNeuronParameters(int grpId, float izh_a, float izh_a_sd, float izh_b, float izh_b_sd,
+								float izh_c, float izh_c_sd, float izh_d, float izh_d_sd, int configId);
 
-	//! Sets STDP params alphas and taus of a neuron group (post-synaptically)
-	// TODO: make per connection, not per group
-	 void setSTDP(int grpId, bool isSet, float alphaLTP, float tauLTP, float alphaLTD, float tauLTD, int configId);
+	//! Sets baseline concentration and decay time constant of neuromodulators (DP, 5HT, ACh, NE) for a neuron group.
+	/*!
+	 * \param _groupId the symbolic name of a group
+	 * \param _baseDP  the baseline concentration of Dopamine
+	 * \param _tauDP the decay time constant of Dopamine
+	 * \param _base5HT  the baseline concentration of Serotonin
+	 * \param _tau5HT the decay time constant of Serotonin
+	 * \param _baseACh  the baseline concentration of Acetylcholine
+	 * \param _tauACh the decay time constant of Acetylcholine
+	 * \param _baseNE  the baseline concentration of Noradrenaline 
+	 * \param _tauNE the decay time constant of Noradrenaline 
+	 * \param _configId (optional, deprecated) configuration id
+	 */
+	void setNeuromodulator(int grpId, float baseDP, float tauDP, float base5HT, float tau5HT, float baseACh, float tauACh, float baseNE, float tauNE, int configId);
 
+	//! Set the spike-timing-dependent plasticity (STDP) for a neuron group.  
+	/*
+	 * \brief STDP must be defined post-synaptically; that is, if STP should be implemented on the connections from group 0 to group 1, call setSTP on group 1. Fore details on the phenomeon, see (for example) (Bi & Poo, 2001).
+	 * \param _grpId ID of the neuron group 
+	 * \param _enable set to true to enable STDP for this group
+	 * \param _enable_modulation set to true to enable modulated STDP for this group
+	 * \param _ALPHA_LTP max magnitude for LTP change 
+	 * \param _TAU_LTP decay time constant for LTP 
+	 * \param _ALPHA_LTD max magnitude for LTD change (leave positive) 
+	 * \param _TAU_LTD decay time constant for LTD
+	 * \param _configId (optional, deprecated) configuration id
+	 */
+	void setSTDP(int grpId, bool isSet, float alphaLTP, float tauLTP, float alphaLTD, float tauLTD, int configId);
+		
 	/*!
 	 * \brief Sets STP params U, tau_u, and tau_x of a neuron group (pre-synaptically)
 	 * CARLsim implements the short-term plasticity model of (Tsodyks & Markram, 1998).
@@ -638,6 +837,12 @@ typedef struct group_info_s
 	 void setSTP(int grpId, bool isSet, float STP_U, float STP_tau_u, float STP_tau_x, int configId);
 
 
+	//! Sets the weight update parameters
+	/*!
+	 * \param _updateInterval the interval between two weight update. the setting could be _10MS, _100MS, _1000MS
+	 * \param _tauWeightChange the decay time constant of weight change (wtChange)
+	 */
+	void setWeightUpdateParameter(int _updateInterval, int _tauWeightChange = 10);
 
 	// +++++ PUBLIC METHODS: RUNNING A SIMULATION +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
@@ -646,13 +851,19 @@ typedef struct group_info_s
 	 * \param[in] enablePrint 	enable printing of status information
 	 * \param[in] copyState 	enable copying of data from device to host
 	 */
-	 int runNetwork(int _nsec, int _nmsec, bool enablePrint, bool copyState);
+	int runNetwork(int _nsec, int _nmsec, bool enablePrint, bool copyState);
 
 
 
 	// +++++ PUBLIC METHODS: INTERACTING WITH A SIMULATION ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
 	//! reads the network state from file
+	//! Reads a CARLsim network file. Such a file can be created using CpuSNN:writeNetwork.
+	/*
+	 * \brief After calling CpuSNN::readNetwork, you should run CpuSNN::runNetwork before calling fclose(fp).
+	 * \param fid: file pointer
+	 * \sa CpuSNN::writeNetwork()
+	 */
 	 void readNetwork(FILE* fid);
 
 	/*!
@@ -693,19 +904,40 @@ typedef struct group_info_s
 	
 	//! sets up a spike generator
 	void setSpikeGenerator(int grpId, SpikeGenerator* spikeGen, int configId);
-
-	//! sets up a spike monitor registered with a callback to process the spikes, there can only be one
-	//! SpikeMonitor per group
+	
+	//! sets up a spike monitor registered with a callback to process the spikes, there can only be one SpikeMonitor per group
+	/*!
+	 * \param grpId ID of the neuron group
+	 * \param spikeMon (optional) spikeMonitor class
+	 * \param configId (optional, deprecated) configuration id, default = ALL
+	 */
 	void setSpikeMonitor(int gid, SpikeMonitor* spikeMon, int configId);
 
-	//! assign spike rate to poisson group
+	//!Sets the Poisson spike rate for a group. For information on how to set up spikeRate, see Section Poisson spike generators in the Tutorial. 
+	/*!Input arguments:
+	 * \param grpId ID of the neuron group 
+	 * \param spikeRate pointer to a PoissonRate instance 
+	 * \param refPeriod (optional) refractive period,  default = 1
+	 * \param configId (optional, deprecated) configuration id, default = ALL
+	 */
 	void setSpikeRate(int grpId, PoissonRate* spikeRate, int refPeriod, int configId);
 
+	//! sets up a group monitor registered with a callback to process the spikes.
+	/*!
+	 * \param grpId ID of the neuron group
+	 * \param spikeMon (optional) spikeMonitor class
+	 * \param configId (optional, deprecated) configuration id, default = ALL
+	 */
+	void setGroupMonitor(int grpId, GroupMonitor* groupMon, int configId);
+	
 	//! Resets either the neuronal firing rate information by setting resetFiringRate = true and/or the
 	//! weight values back to their default values by setting resetWeights = true.
 	void updateNetwork(bool resetFiringInfo, bool resetWeights);
-
-	//!< writes the network state to file
+	
+	//! stores the pre and post synaptic neuron ids with the weight and delay
+	/*
+	 * \param fid file pointer
+	 */
 	void writeNetwork(FILE* fid);
 
 	//! function writes population weights from gIDpre to gIDpost to file fname in binary.
@@ -716,14 +948,17 @@ typedef struct group_info_s
 
 	// +++++ PUBLIC METHODS: LOGGING / PLOTTING +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
-	//! how often network status should be printed (seconds)
+	//! Set the update cycle for log messages
+	/*!
+	 * \param showStatusCycle how often network status should be printed (seconds) 
+	 */
 	void setLogCycle(int showStatusCycle);
 
 	/*!
 	 * \brief Sets the file pointer of the debug log file
 	 * \param[in] fpLog file pointer to new log file
 	 */
-	 void setLogDebugFp(FILE* fpLog);
+	void setLogDebugFp(FILE* fpLog);
 
 	/*!
 	 * \brief Sets the file pointers for all log files
@@ -732,7 +967,7 @@ typedef struct group_info_s
 	 * \param[in] fpDeb file pointer for debug info
 	 * \param[in] fpLog file pointer for debug log file that contains all the above info
 	 */
-	 void setLogsFp(FILE* fpOut, FILE* fpErr, FILE* fpDeb, FILE* fpLog);
+	void setLogsFp(FILE* fpOut, FILE* fpErr, FILE* fpDeb, FILE* fpLog);
 
 
 	// +++++ PUBLIC METHODS: GETTERS / SETTERS ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
@@ -740,7 +975,15 @@ typedef struct group_info_s
 	grpConnectInfo_t* getConnectInfo(short int connectId, int configId); //!< required for homeostasis
 	int  getConnectionId(short int connId, int configId);
 
-	// FIXME: fix this
+	//! Returns the delay information for all synaptic connections between a pre-synaptic and a post-synaptic neuron group
+	/*!
+	 * \param _grpIdPre ID of pre-synaptic group 
+	 * \param _grpIdPost ID of post-synaptic group 
+	 * \param _nPre return the number of pre-synaptic neurons 
+	 * \param _nPost retrun the number of post-synaptic neurons 
+	 * \param _delays (optional) return the delay information for all synapses, default = NULL
+	 * \return delay information for all synapses
+	 */
 	uint8_t* getDelays(int gIDpre, int gIDpost, int& Npre, int& Npost, uint8_t* delays);
 
 	int  getGroupId(int groupId, int configId);
@@ -760,12 +1003,12 @@ typedef struct group_info_s
 	 * returned to the user, and configID is the configuration ID of the SNN.  NOTE: user must free memory from
 	 * weights to avoid a memory leak.  
 	 */
-	 void getPopWeights(int gIDpre, int gIDpost, float*& weights, int& size, int configId = 0);
+	void getPopWeights(int gIDpre, int gIDpost, float*& weights, int& size, int configId = 0);
 
-	 int getSimMode()		{ return simMode_; }
-	 uint64_t getSimTime()		{ return simTime; }
-	 uint32_t getSimTimeSec()	{ return simTimeSec; }
-	 uint32_t getSimTimeMs()		{ return simTimeMs; }
+	int getSimMode()		{ return simMode_; }
+	uint64_t getSimTime()		{ return simTime; }
+	unsigned int getSimTimeSec()	{ return simTimeSec; }
+	unsigned int getSimTimeMs()		{ return simTimeMs; }
 
 	// TODO: same as spikeMonRT
 	//TODO: may need to make it work for different configurations. -- KDC
@@ -773,7 +1016,7 @@ typedef struct group_info_s
  	 * \brief Returns pointer to nSpikeCnt, which is a 1D array of the number of spikes every neuron in the group
 	 *  has fired.  Takes the grpID and the simulation mode (CPU_MODE or GPU_MODE) as arguments.
 	 */
-	 unsigned int* getSpikeCntPtr(int grpId=ALL);
+	unsigned int* getSpikeCntPtr(int grpId=ALL);
 
 	/*!
 	 * \brief return the number of spikes per neuron for a certain group
@@ -782,37 +1025,44 @@ typedef struct group_info_s
 	 * \return pointer to array of ints. Number of elements in array is the number of neurons in group.
 	 * Each entry is the number of spikes for this neuron (int) since the last reset.
 	 */
-	int* getSpikeCounter(int grpId, int configId);
-
-	// FIXME: fix this
-	// TODO: maybe consider renaming getPopWeightChanges
+	int* getSpikeCounter(int grpId, int configId);	
+	
+	//! Returns the change in weight strength in the last second (due to plasticity) for all synaptic connections between a pre-synaptic and a post-synaptic neuron group.
+	/*!
+	 * \param grpIdPre ID of pre-synaptic group 
+	 * \param grpIdPost ID of post-synaptic group 
+	 * \param nPre return the number of pre-synaptic neurons 
+	 * \param nPost retrun the number of post-synaptic neurons 
+	 * \param weightChanges (optional) return changes in weight strength for all synapses, default = NULL
+	 * \return changes in weight strength for all synapses
+	 */
 	 float* getWeightChanges(int gIDpre, int gIDpost, int& Npre, int& Npost, float* weightChanges);
 
 
-	 int grpStartNeuronId(int g) { return grp_Info[g].StartN; }
-	 int grpEndNeuronId(int g)   { return grp_Info[g].EndN; }
-	 int grpNumNeurons(int g)    { return grp_Info[g].SizeN; }
+	int grpStartNeuronId(int g) { return grp_Info[g].StartN; }
+	int grpEndNeuronId(int g)   { return grp_Info[g].EndN; }
+	int grpNumNeurons(int g)    { return grp_Info[g].SizeN; }
 
-	 bool isExcitatoryGroup(int g) { return (grp_Info[g].Type&TARGET_AMPA) || (grp_Info[g].Type&TARGET_NMDA); }
-	 bool isInhibitoryGroup(int g) { return (grp_Info[g].Type&TARGET_GABAa) || (grp_Info[g].Type&TARGET_GABAb); }
-	 bool isPoissonGroup(int g) { return (grp_Info[g].Type&POISSON_NEURON); }
+	bool isExcitatoryGroup(int g) { return (grp_Info[g].Type&TARGET_AMPA) || (grp_Info[g].Type&TARGET_NMDA); }
+	bool isInhibitoryGroup(int g) { return (grp_Info[g].Type&TARGET_GABAa) || (grp_Info[g].Type&TARGET_GABAb); }
+	bool isPoissonGroup(int g) { return (grp_Info[g].Type&POISSON_NEURON); }
 
 	/*!
 	 * \brief Sets enableGpuSpikeCntPtr to true or false.  True allows getSpikeCntPtr_GPU to copy firing
 	 * state information from GPU kernel to cpuNetPtrs.  Warning: setting this flag to true will slow down
 	 * the simulation significantly.
 	 */
-	 void setCopyFiringStateFromGPU(bool _enableGPUSpikeCntPtr);
+	void setCopyFiringStateFromGPU(bool _enableGPUSpikeCntPtr);
 
-	 void setGroupInfo(int groupId, group_info_t info, int configId=ALL);
-	 void setPrintState(int grpId, bool _status);
+	void setGroupInfo(int groupId, group_info_t info, int configId=ALL);
+	void setPrintState(int grpId, bool _status);
 
 
 /// **************************************************************************************************************** ///
 /// PRIVATE METHODS
 /// **************************************************************************************************************** ///
 
-	private:
+private:
 	// +++++ CPU MODE +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 	void CpuSNNinit();	//!< all unsafe operations of constructor
 
@@ -849,7 +1099,7 @@ typedef struct group_info_s
 	void exitSimulation(int val);	//!< deallocates all dynamical structures and exits
 
 	void findFiring();
-	int  findGrpId(int nid); //!< for given neuron id, find group id
+	int findGrpId(int nid);//!< For the given neuron nid, find the group id
 
 	void generatePostSpike(unsigned int pre_i, unsigned int idx_d, unsigned int offset, unsigned int tD);
 	void generateSpikes();
@@ -857,13 +1107,13 @@ typedef struct group_info_s
 	void generateSpikesFromFuncPtr(int grpId);
 	void generateSpikesFromRate(int grpId);
 
-	int  getPoissNeuronPos(int nid);
+	int getPoissNeuronPos(int nid);
 	float getWeights(int connProp, float initWt, float maxWt, unsigned int nid, int grpId);
 
 	void globalStateUpdate();
 
-	void initSynapticWeights(); //!< init all wt to appropriate values (total size of syn conn is 'length')
-
+	void initSynapticWeights(); //!< initialize all the synaptic weights to appropriate values. total size of the synaptic connection is 'length'
+		
 	void makePtrInfo();				//!< creates CPU net ptrs
 
 	unsigned int poissonSpike(unsigned int currTime, float frate, int refractPeriod); //!< for generateSpikesFromRate
@@ -916,6 +1166,7 @@ typedef struct group_info_s
 	void resetCurrent();
 	void resetFiringInformation(); //!< resets the firing information when updateNetwork is called
 	void resetGroups();
+	void resetNeuromodulator(int grpId);
 	void resetNeuron(unsigned int nid, int grpId);
 	void resetPointers(bool deallocate=false);
 	void resetPoissonNeuron(unsigned int nid, int grpId);
@@ -940,13 +1191,14 @@ typedef struct group_info_s
 	void swapConnections(int nid, int oldPos, int newPos);
 
 	void updateAfterMaxTime();
+	void updateGroupMonitor();
 	void updateParameters(int* numN, int* numPostSynapses, int* D, int nConfig=1);
 	void updateSpikesFromGrp(int grpId);
 	void updateSpikeGenerators();
 	void updateSpikeGeneratorsInit();
 	void updateSpikeMonitor(); //!< copy required spikes from firing buffer to spike buffer
 	int  updateSpikeTables();
-	void updateStateAndFiringTable();
+	//void updateStateAndFiringTable();
 	bool updateTime(); //!< updates simTime, returns true when a new second is started
 
 
@@ -973,6 +1225,7 @@ typedef struct group_info_s
 	void copyFiringInfo_GPU();
 	void copyFiringStateFromGPU (int grpId = -1);
 	void copyGrpInfo_GPU(); //!< Used to copy grp_info to gpu for setSTDP, setSTP, and setHomeostasis
+	void copyGroupState(network_ptr_t* dest, network_ptr_t* src,  cudaMemcpyKind kind, int allocateMem, int grpId=-1);
 	void copyNeuronParameters(network_ptr_t* dest, int kind, int allocateMem, int grpId = -1);
 	void copyNeuronState(network_ptr_t* dest, network_ptr_t* src, cudaMemcpyKind kind, int allocateMem, int grpId=-1);
 	void copyParameters();
@@ -1021,9 +1274,13 @@ typedef struct group_info_s
 	void startGPUTiming();
 	void stopGPUTiming();
 	void testSpikeSenderReceiver(FILE* fpLog, int simTime);
+	void updateFiringTable();
+	void updateFiringTable_GPU();
 	void updateNetwork_GPU(bool resetFiringInfo); //!< Allows parameters to be reset in the middle of the simulation
 	void updateSpikeMonitor_GPU();
-	void updateStateAndFiringTable_GPU();
+	void updateWeight();		
+	void updateWeight_GPU();
+	//void updateStateAndFiringTable_GPU();
 	void updateTimingTable_GPU();
 
 
@@ -1072,15 +1329,24 @@ typedef struct group_info_s
 
 	bool sim_with_fixedwts;
 	bool sim_with_stdp;
+	bool sim_with_modulated_stdp;
 	bool sim_with_stp;
 	bool sim_with_conductances;
 	bool sim_with_spikecounters; //!< flag will be true if there are any spike counters around
 	//! flag to enable the copyFiringStateInfo from GPU to CPU
 	bool enableGPUSpikeCntPtr;
 
-	// spiking network related info.. neurons, synapses and network parameters
-	int	        	numN,numNReg,numPostSynapses,D,numNExcReg,numNInhReg, numPreSynapses;
-	int   			numNExcPois, numNInhPois, numNPois;
+	// spiking neural network related information, including neurons, synapses and network parameters
+	int	        	numN;				//!< number of neurons in the spiking neural network
+	int				numPostSynapses;	//!< maximum number of post-synaptic connections in groups
+	int				numPreSynapses;		//!< maximum number of pre-syanptic connections in groups
+	int				D;					//!< maximum axonal delay in groups
+	int				numNReg;			//!< number of regular (spking) neurons
+	int				numNExcReg;			//!< number of regular excitatory neurons
+	int				numNInhReg;			//!< number of regular inhibitory neurons
+	int   			numNExcPois;		//!< number of excitatory poisson neurons
+	int				numNInhPois;		//!< number of inhibitory poisson neurons
+	int				numNPois;			//!< number of poisson neurons
 	float       	*voltage, *recovery, *Izh_a, *Izh_b, *Izh_c, *Izh_d, *current;
 	bool			*curSpike;
 	unsigned int         	*nSpikeCnt;     //!< spike counts per neuron
@@ -1125,26 +1391,31 @@ typedef struct group_info_s
 	//! firing info
 	unsigned int		*timeTableD2;
 	unsigned int		*timeTableD1;
-	unsigned int     *firingTableD2;
-	unsigned int     *firingTableD1;
-	unsigned int		maxSpikesD1, maxSpikesD2;
+	unsigned int		*firingTableD2;
+	unsigned int		*firingTableD1;
+	unsigned int		maxSpikesD1;
+	unsigned int		maxSpikesD2;
 
 	//time and timestep
 	unsigned int	simTimeMs;
 	uint64_t        simTimeSec;		//!< this is used to store the seconds.
-	unsigned int	simTime;		//!< this value is not reset but keeps increasing to its max value.
-	unsigned int		spikeCountAll1sec, secD1fireCntHost, secD2fireCntHost;	//!< firing counts for each second
-	unsigned int		spikeCountAll, spikeCountD1Host, spikeCountD2Host;	//!< overall firing counts values
-	unsigned int     nPoissonSpikes;
+	unsigned int	simTime;		//!< The absolute simulation time. The unit is millisecond. this value is not reset but keeps increasing to its max value. 
+	unsigned int	spikeCountAll1sec;
+	unsigned int	secD1fireCntHost;
+	unsigned int	secD2fireCntHost;	//!< firing counts for each second
+	unsigned int	spikeCountAll;
+	unsigned int	spikeCountD1Host;
+	unsigned int	spikeCountD2Host;	//!< overall firing counts values
+	unsigned int	nPoissonSpikes;
 
-	//cuda keep track of performance...
-	#if __CUDA3__
-	unsigned int    timer;
-	#elif __CUDA5__
-	StopWatchInterface *timer;
-	#endif
-	float		cumExecutionTime;
-	float           lastExecutionTime;
+		//cuda keep track of performance...
+#if __CUDA3__
+		unsigned int    timer;
+#elif __CUDA5__
+		StopWatchInterface* timer;
+#endif
+		float		cumExecutionTime;
+		float		lastExecutionTime;
 
 	FILE*	fpOut_;			//!< fp of where to write all simulation output (status info) if not in silent mode
 	FILE*	fpErr_;			//!< fp of where to write all errors if not in silent mode
@@ -1153,13 +1424,14 @@ typedef struct group_info_s
 	int showStatusCycle_;	//!< how often to call showStatus (seconds)
 	int showStatusCnt_; //!< internal counter to implement fast version of !(simTimeSec%showStatusCycle_)
 
-	//spike monitor code...
-	unsigned int			numSpikeMonitor;
-	unsigned int			monGrpId[MAX_GRP_PER_SNN];
-	unsigned int			monBufferPos[MAX_GRP_PER_SNN];
-	unsigned int			monBufferSize[MAX_GRP_PER_SNN];
-	unsigned int*		monBufferFiring[MAX_GRP_PER_SNN];
-	unsigned int*		monBufferTimeCnt[MAX_GRP_PER_SNN];
+
+	// spike monitor code...
+	unsigned int	numSpikeMonitor;
+	unsigned int	monGrpId[MAX_GRP_PER_SNN];
+	unsigned int	monBufferPos[MAX_GRP_PER_SNN];
+	unsigned int	monBufferSize[MAX_GRP_PER_SNN];
+	unsigned int*	monBufferFiring[MAX_GRP_PER_SNN];
+	unsigned int*	monBufferTimeCnt[MAX_GRP_PER_SNN];
 	SpikeMonitor*	monBufferCallback[MAX_GRP_PER_SNN];
 
 	unsigned int	numSpikeGenGrps;
@@ -1167,21 +1439,35 @@ typedef struct group_info_s
 	int numSpkCnt; //!< number of real-time spike monitors in the network
 	int* spkCntBuf[MAX_GRP_PER_SNN]; //!< the actual buffer of spike counts (per group, per neuron)
 
+	// group mointor variables
+	GroupMonitor*	grpBufferCallback[MAX_GRP_PER_SNN];
+	float*			grpDABuffer[MAX_GRP_PER_SNN];
+	float*			grp5HTBuffer[MAX_GRP_PER_SNN];
+	float*			grpAChBuffer[MAX_GRP_PER_SNN];
+	float*			grpNEBuffer[MAX_GRP_PER_SNN];
+	unsigned int		groupMonitorGrpId[MAX_GRP_PER_SNN];
+	unsigned int		numGroupMonitor;
 
 	/* Markram et al. (1998), where the short-term dynamics of synapses is characterized by three parameters:
 	   U (which roughly models the release probability of a synaptic vesicle for the first spike in a train of spikes),
 	   D (time constant for recovery from depression), and F (time constant for recovery from facilitation). */
-	   float*		stpu;
-	   float*		stpx;
-	   float*		gAMPA;
-	   float*		gNMDA;
-	   float*		gGABAa;
-	   float*		gGABAb;
+	float*		stpu;
+	float*		stpx;
+	float*		gAMPA;
+	float*		gNMDA;
+	float*		gGABAa;
+	float*		gGABAb;
 
-	   network_info_t 	net_Info;
+	// concentration of neuromodulators for each group
+	float*	grpDA;
+	float*	grp5HT;
+	float*	grpACh;
+	float*	grpNE;
 
-	   network_ptr_t  		cpu_gpuNetPtrs;
-	   network_ptr_t   	cpuNetPtrs;
+	network_info_t 	net_Info;
+
+	network_ptr_t  		cpu_gpuNetPtrs;
+	network_ptr_t   	cpuNetPtrs;
 
 	//int   Noffset;
 	int	  NgenFunc;					//!< this counts the spike generator offsets...
@@ -1201,37 +1487,11 @@ typedef struct group_info_s
 	float*			testVar, *testVar2;
 	uint32_t*	spikeGenBits;
 
+	// weight update parameter
+	unsigned int updateInterval;
+	float stdpScaleFactor;
+	float wtChangeDecay; //!< the wtChange decay 
 
-  /* deprecated
-     void initThalInput();
-     void initThalInput_GPU();
+};
 
-     void updateNetwork();
-
-     // input noise related codes...
-     void randomNoiseCurrent(float neuronPercentage, float currentStrength, int groupId=-1);
-
-     void updateRandomProperty(); // for random thalamic input
-
-
-     // noise generator related info...
-     int			numNoise;		// Total number of noise generators
-     int			numRandNeurons;	// Total number of neurons selected each time step
-     int*		randNeuronId;	// Store the ids of neuron which will get random input current..
-     noiseGenProperty_t	noiseGenGroup[MAX_GRP_PER_SNN];
-
-  */
- };
-
-/*
-  typedef struct noiseGenProperty_s  {
-  float	neuronPercentage;	// percentage of neuron that needs random inputs..
-  float	currentStrength;	// strength of the noise current applied...
-  int		groupId;			// group id.. cross references to group properties
-  int		nstart;				// start of the neuron id
-  int		ncount;				// total neuron in current group
-  int		rand_ncount;		// (ncount*neuronPercentage/100) neurons will be selected
-  } noiseGenProperty_t;
-
-*/
 #endif

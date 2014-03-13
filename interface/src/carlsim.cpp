@@ -10,9 +10,12 @@
 
 // includes for mkdir
 #if CREATE_SPIKEDIR_IF_NOT_EXISTS
-	#include <sys/stat.h>
-	#include <errno.h>
-	#include <libgen.h>
+	#if (WIN32 || WIN64)
+	#else
+		#include <sys/stat.h>
+		#include <errno.h>
+		#include <libgen.h>
+	#endif
 #endif
 
 // NOTE: Conceptual code documentation should go in carlsim.h. Do not include extensive high-level documentation here,
@@ -512,14 +515,13 @@ void CARLsim::setSpikeMonitor(int grpId, const std::string& fname, int configId)
 	    	char fchar[200];
 	    	strcpy(fchar,fname.c_str());
 
-			#if defined(_WIN32) || defined(_WIN64) // TODO: test it
-				status = _mkdir(dirname(fchar); // Windows platform
+			#if (WIN32 || WIN64) // TODO: test it
+				//status = _mkdir(dirname(fchar); // Windows platform
 			#else
 			    status = mkdir(dirname(fchar), 0777); // Unix
+				std::string fileError = "%%CARLSIM_ROOT%%/results/ does not exist. Thus file " + fname;
+				UserErrors::userAssert(status!=-1 || errno==EEXIST, UserErrors::FILE_CANNOT_CREATE, funcName, fileError);
 			#endif
-
-			std::string fileError = "%%CARLSIM_ROOT%%/results/ does not exist. Thus file " + fname;
-			UserErrors::userAssert(status!=-1 || errno==EEXIST, UserErrors::FILE_CANNOT_CREATE, funcName, fileError);
 
 			// now that the directory is created, fopen file
 			fid = fopen(fname.c_str(),"wb");

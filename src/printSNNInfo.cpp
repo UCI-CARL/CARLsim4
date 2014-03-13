@@ -40,9 +40,9 @@
 
 #include "snn.h"
 
-#if ! (_WIN32 || _WIN64)
-  #include <string.h>
-  #define strcmpi(s1,s2) strcasecmp(s1,s2)
+#if ! (WIN32 || WIN64)
+	#include <string.h>
+	#define strcmpi(s1,s2) strcasecmp(s1,s2)
 #endif
 
 
@@ -157,18 +157,18 @@ void CpuSNN::printConnectionInfo2(FILE * const fpg)
 {
   grpConnectInfo_t* newInfo = connectBegin;
 
-  fprintf(fpg, "#Connection Information \n");
-  fprintf(fpg, "#(e.g. from => to : approx. # of post (numPostSynapses) : approx. # of pre-synaptic (numPreSynapses) : weights.. : type plastic or fixed : max and min axonal delay\n");
-  while(newInfo) {
-    bool synWtType	= GET_FIXED_PLASTIC(newInfo->connProp);
-    fprintf(fpg, " %d => %d : %s => %s : numPostSynapses %d : numPreSynapses %d : initWeight %f : maxWeight %3.3f : type %s : maxDelay %d : minDelay %d\n",
-	    newInfo->grpSrc, newInfo->grpDest, grp_Info2[newInfo->grpSrc].Name.c_str(), grp_Info2[newInfo->grpDest].Name.c_str(),
-	    newInfo->numPostSynapses, newInfo->numPreSynapses, newInfo->initWt,   newInfo->maxWt,
-	    (synWtType == SYN_PLASTIC)?"plastic":"fixed", newInfo->maxDelay, newInfo->minDelay);
-    newInfo = newInfo->next;
-  }
-  fprintf(fpg, "\n");
-  fflush(fpg);
+	fprintf(fpg, "#Connection Information \n");
+	fprintf(fpg, "#(e.g. from => to : approx. # of post (numPostSynapses) : approx. # of pre-synaptic (numPreSynapses) : weights.. : type plastic or fixed : max and min axonal delay\n");
+	while(newInfo) {
+		bool synWtType	= GET_FIXED_PLASTIC(newInfo->connProp);
+		fprintf(fpg, " %d => %d : %s => %s : numPostSynapses %d : numPreSynapses %d : initWeight %f : maxWeight %3.3f : type %s : maxDelay %d : minDelay %d\n",
+				newInfo->grpSrc, newInfo->grpDest, grp_Info2[newInfo->grpSrc].Name.c_str(), grp_Info2[newInfo->grpDest].Name.c_str(),
+				newInfo->numPostSynapses, newInfo->numPreSynapses, newInfo->initWt,   newInfo->maxWt,
+				(synWtType == SYN_PLASTIC)?"plastic":"fixed", newInfo->maxDelay, newInfo->minDelay);
+		newInfo = newInfo->next;
+	}
+	fprintf(fpg, "\n");
+	fflush(fpg);
 }
 
 
