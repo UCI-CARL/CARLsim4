@@ -663,11 +663,9 @@ int CpuSNN::runNetwork(int _nsec, int _nmsec, bool enablePrint, bool copyState) 
 			if (numSpikeMonitor) {
 				updateSpikeMonitor();
 			}
-
 			if (numGroupMonitor) {
 				updateGroupMonitor();
 			}
-
 			if (showLog) {
 				showStatus();
 				showStatusCnt_=0; // reset counter
@@ -675,7 +673,7 @@ int CpuSNN::runNetwork(int _nsec, int _nmsec, bool enablePrint, bool copyState) 
 			if (showLog || numSpikeMonitor)
 				CARLSIM_INFO("\n^ (time=%llds) =========\n", (unsigned long long) simTimeSec);
 
-			if (simMode_ == CPU_MODE)
+			if(simMode_ == CPU_MODE)
 				updateFiringTable();
 			else
 				updateFiringTable_GPU();
@@ -704,7 +702,7 @@ int CpuSNN::runNetwork(int _nsec, int _nmsec, bool enablePrint, bool copyState) 
 			}
 		}
 	}
-  
+
 	// keep track of simulation time...
 	CUDA_STOP_TIMER(timer);
 	lastExecutionTime = CUDA_GET_TIMER_VALUE(timer);
