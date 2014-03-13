@@ -117,6 +117,7 @@ short int CpuSNN::connect(int grpId1, int grpId2, const std::string& _type, floa
 		assert(grpId1 < numGrp);
 		assert(grpId2 < numGrp);
 		assert(minDelay <= maxDelay);
+		assert(!isPoissonGroup(grpId2));
 
     //* \deprecated Do these ramp thingies still work?
 //    bool useRandWts = (wtType.find("random") != std::string::npos);
@@ -294,7 +295,7 @@ int CpuSNN::createGroup(const std::string& grpName, int nNeur, int neurType, int
 
 		grp_Info[numGrp].SizeN  			= nNeur;
 		grp_Info[numGrp].Type   			= neurType;
-		grp_Info[numGrp].WithConductances	= false;
+//		grp_Info[numGrp].WithConductances	= false;
 		grp_Info[numGrp].WithSTP			= false;
 		grp_Info[numGrp].WithSTDP			= false;
 		grp_Info[numGrp].WithModulatedSTDP  = false;
@@ -334,7 +335,7 @@ int CpuSNN::createSpikeGeneratorGroup(const std::string& grpName, int nNeur, int
 	} else {
 		grp_Info[numGrp].SizeN   		= nNeur;
 		grp_Info[numGrp].Type    		= neurType | POISSON_NEURON;
-		grp_Info[numGrp].WithConductances	= false;
+//		grp_Info[numGrp].WithConductances	= false;
 		grp_Info[numGrp].WithSTP		= false;
 		grp_Info[numGrp].WithSTDP		= false;
 		grp_Info[numGrp].WithModulatedSTDP = false;
@@ -356,38 +357,60 @@ int CpuSNN::createSpikeGeneratorGroup(const std::string& grpName, int nNeur, int
 	}
 }
 
-// set conductance values for a group (custom values or disable conductances alltogether)
-void CpuSNN::setConductances(int grpId, bool isSet, float tdAMPA, float tdNMDA, float tdGABAa, float tdGABAb,
-								int configId) {
-	assert(grpId>=-1); assert(configId>=-1);
-	if (isSet) {
-		assert(tdAMPA>0); assert(tdNMDA>0); assert(tdGABAa>0); assert(tdGABAb>0);
+// set conductance values for a simulation (custom values or disable conductances alltogether)
+void CpuSNN::setConductances(bool isSet, int tdAMPA, int trNMDA, int tdNMDA, int tdGABAa,
+int trGABAb, int tdGABAb, int configId) {
+	if (configId!=ALL) {
+		CARLSIM_ERROR("Using setConductances with configId!=ALL is deprecated"); // \deprecated
+		assert(configId==ALL);
 	}
 
-	if (grpId==ALL && configId==ALL) { // shortcut for all groups & configs
-		for(int g=0; g < numGrp; g++)
-			setConductances(g, isSet, tdAMPA, tdNMDA, tdGABAa, tdGABAb, 0);
-	} else if (grpId == ALL) { // shortcut for all groups
-		for(int grpId1=0; grpId1 < numGrp; grpId1 += nConfig_) {
-			int g = getGroupId(grpId1, configId);
-			setConductances(g, isSet, tdAMPA, tdNMDA, tdGABAa, tdGABAb, configId);
-		}
-	} else if (configId == ALL) { // shortcut for all configs
-		for(int c=0; c < nConfig_; c++)
-			setConductances(grpId, isSet, tdAMPA, tdNMDA, tdGABAa, tdGABAb, c);
-	} else {
-		// set conductances for a given group and configId
-		int cGrpId = getGroupId(grpId, configId);
-		sim_with_conductances 			   |= isSet;
-		grp_Info[cGrpId].WithConductances 	= isSet;
-		grp_Info[cGrpId].dAMPA 				= 1-(1.0/tdAMPA);	// factor for numerical integration
-		grp_Info[cGrpId].dNMDA 				= 1-(1.0/tdNMDA);	// iAMPA[t+1] = iAMPA[t]*dAMPA
-		grp_Info[cGrpId].dGABAa 			= 1-(1.0/tdGABAa);	// => exponential decay
-		grp_Info[cGrpId].dGABAb 			= 1-(1.0/tdGABAb);
-		grp_Info[cGrpId].newUpdates 		= true; 			// FIXME What is this?
+	if (isSet) {
+		assert(tdAMPA>0); assert(tdNMDA>0); assert(tdGABAa>0); assert(tdGABAb>0);
+		assert(trNMDA>=0); assert(trGABAb>=0); // 0 to disable rise times
+		assert(trNMDA!=tdNMDA); assert(trGABAb!=tdGABAb); // singularity
+	}
 
-		CARLSIM_INFO("Conductances %s for %d (%s):\ttdAMPA: %4.0f, tdNMDA: %4.0f, tdGABAa: %4.0f, tdGABAb: %4.0f",
-					isSet?"enabled":"disabled",cGrpId, grp_Info2[cGrpId].Name.c_str(),tdAMPA,tdNMDA,tdGABAa,tdGABAb);
+	// we do not care about configId anymore
+	// set conductances globally for all connections
+	sim_with_conductances  = true;
+	dAMPA  = 1.0-1.0/tdAMPA;
+	dNMDA  = 1.0-1.0/tdNMDA;
+	dGABAa = 1.0-1.0/tdGABAa;
+	dGABAb = 1.0-1.0/tdGABAb;
+
+	if (trNMDA>0) {
+		// use rise time for NMDA
+		sim_with_NMDA_rise = true;
+		rNMDA = 1.0-1.0/trNMDA;
+
+		// compute max conductance under this model to scale it back to 1
+		// otherwise the peak conductance will not be equal to the weight
+		double tmax = (-tdNMDA*trNMDA*log(1.0*trNMDA/tdNMDA))/(tdNMDA-trNMDA); // t at which cond will be max
+		sNMDA = 1.0/(exp(-tmax/tdNMDA)-exp(-tmax/trNMDA)); // scaling factor, 1 over max amplitude
+		assert(!isinf(tmax) && !isnan(tmax) && tmax>=0);
+		assert(!isinf(sNMDA) && !isnan(sNMDA) && sNMDA>0);
+	}
+
+	if (trGABAb>0) {
+		// use rise time for GABAb
+		sim_with_GABAb_rise = true;
+		rGABAb = 1.0-1.0/trGABAb;
+
+		// compute max conductance under this model to scale it back to 1
+		// otherwise the peak conductance will not be equal to the weight
+		double tmax = (-tdGABAb*trGABAb*log(1.0*trGABAb/tdGABAb))/(tdGABAb-trGABAb); // t at which cond will be max
+		sGABAb = 1.0/(exp(-tmax/tdGABAb)-exp(-tmax/trGABAb)); // scaling factor, 1 over max amplitude
+		assert(!isinf(tmax) && !isnan(tmax)); assert(!isinf(sGABAb) && !isnan(sGABAb) && sGABAb>0);
+	}
+//		grp_Info[cGrpId].newUpdates 		= true; // \deprecated
+
+	if (sim_with_conductances) {
+		CARLSIM_INFO("Running COBA mode: tdAMPA: %d ms, trNMDA%s: %d ms, tdNMDA: %d ms, tdGABAa: %d ms, trGABAb%s: "
+			"%d ms, tdGABAb: %d ms", tdAMPA, sim_with_NMDA_rise?"":" (disabled)", trNMDA, tdNMDA, tdGABAa,
+			sim_with_GABAb_rise?"":" (disabled)", trGABAb, tdGABAb);
+	} else {
+		CARLSIM_INFO("Running CUBA mode (all synaptic conductances disabled)");
 	}
 }
 
@@ -522,7 +545,7 @@ void CpuSNN::setSTDP(int grpId, bool isSet, float alphaLTP, float tauLTP, float 
 		grp_Info[cGrpId].TAU_LTD_INV	= 1.0f/tauLTD;
 		grp_Info[cGrpId].newUpdates 	= true; // FIXME whatsathiis?
 
-		CARLSIM_INFO("STDP %s for %d (%s):\talphaLTP: %1.4f, alphaLTD: %1.4f, tauLTP: %4.0f, tauLTD: %4.0f",
+		CARLSIM_INFO("STDP %s for %d (%s):\talphaLTP: %1.3f, alphaLTD: %1.3f, tauLTP: %3.0f, tauLTD: %3.0f",
 					isSet?"enabled":"disabled",cGrpId,grp_Info2[cGrpId].Name.c_str(),
 					alphaLTP,alphaLTD,tauLTP,tauLTD);
 	}
@@ -755,7 +778,8 @@ void CpuSNN::reassignFixedWeights(short int connectId, float weightMatrix[], int
 			for (j=0; j < Npre[postId]; j++,preIdPtr++, synWtPtr++) {
 				int preId       = GET_CONN_NEURON_ID((*preIdPtr));
 				assert(preId < numN);
-				int currentSrcId = findGrpId(preId);
+				short int currentSrcId = grpIds[preId];
+//				int currentSrcId = findGrpId(preId);
 				//if the neuron is part of the source group, assign it a value
 				//from the reassignment matrix.
 				if(currentSrcId == srcGrp){
@@ -922,7 +946,7 @@ void CpuSNN::setSpikeCounter(int grpId, int recordDur, int configId) {
 
 		// TODO: implement same for spike generators on GPU side (see CpuSNN::generateSpikes)
 		if (grp_Info[cGrpId].isSpikeGenerator) {
-			fprintf(stderr,"ERROR: Spike Counters for Spike Generators are currently not supported.\n");
+			CARLSIM_ERROR("ERROR: Spike Counters for Spike Generators are currently not supported.");
 			exit(1);
 			return;
 		}
@@ -1573,18 +1597,6 @@ void CpuSNN::CpuSNNinit() {
 	doneReorganization = false;
 	memoryOptimized	   = false;
 
-	stpu = NULL;
-	stpx = NULL;
-	gAMPA = NULL;
-	gNMDA = NULL;
-	gGABAa = NULL;
-	gGABAb = NULL;
-
-	grpDA = NULL;
-	grp5HT = NULL;
-	grpACh = NULL;
-	grpNE = NULL;
-
 	cumExecutionTime = 0.0;
 
 	spikeRateUpdated = false;
@@ -1605,6 +1617,19 @@ void CpuSNN::CpuSNNinit() {
 	numPostSynapses = 0;
 	D = 0; // FIXME name this maxAllowedDelay or something more meaningful
 
+	// conductance info struct for simulation
+	sim_with_NMDA_rise = false;
+	sim_with_GABAb_rise = false;
+	dAMPA  = 1.0-1.0/5.0;		// some default decay and rise times
+	rNMDA  = 1.0-1.0/10.0;
+	dNMDA  = 1.0-1.0/150.0;
+	sNMDA  = 1.0;
+	dGABAa = 1.0-1.0/6.0;
+	rGABAb = 1.0-1.0/100.0;
+	dGABAb = 1.0-1.0/150.0;
+	sGABAb = 1.0;
+
+	// reset all pointers, don't deallocate (false)
 	resetPointers(false);
 
 
@@ -1635,17 +1660,11 @@ void CpuSNN::CpuSNNinit() {
 		grp_Info[i].WithModulatedSTDP = false;
 		grp_Info[i].FixedInputWts = true; // Default is true. This value changed to false
 		// if any incoming  connections are plastic
-		grp_Info[i].WithConductances = false;
 		grp_Info[i].isSpikeGenerator = false;
 		grp_Info[i].RatePtr = NULL;
 
 		grp_Info[i].homeoId = -1;
 		grp_Info[i].avgTimeScale  = 10000.0;
-
-		grp_Info[i].dAMPA=1-(1.0/5);	// FIXME why default values again!? this should be in interface
-		grp_Info[i].dNMDA=1-(1.0/150);
-		grp_Info[i].dGABAa=1-(1.0/6);
-		grp_Info[i].dGABAb=1-(1.0/150);
 
 		grp_Info[i].baseDP = 1.0;
 		grp_Info[i].base5HT = 1.0;
@@ -1705,25 +1724,32 @@ void CpuSNN::buildNetworkInit(unsigned int nNeur, unsigned int nPostSyn, unsigne
 	Izh_c	 = new float[numNReg];
 	Izh_d	 = new float[numNReg];
 	current	 = new float[numNReg];
-	cpuSnnSz.neuronInfoSize += (sizeof(int)*numNReg*12);
+	cpuSnnSz.neuronInfoSize += (sizeof(float)*numNReg*7);
 
-	// all or none of the groups must have conductances enabled
-	// user error handling is done in interface
 	if (sim_with_conductances) {
-		for (int g=0;g<numGrp;g++) {
-			assert(grp_Info[g].WithConductances || !grp_Info[g].WithConductances && grp_Info[g].Type&POISSON_NEURON);
-//			if (!grp_Info[g].WithConductances && ((grp_Info[g].Type&POISSON_NEURON)==0)) {
-//				printf("If one group enables conductances then all groups, except for generators, must enable conductances.  Group '%s' is not enabled.\n",
-//							grp_Info2[g].Name.c_str());
-//				assert(false);
-//			}
+		gAMPA  = new float[numNReg];
+		gGABAa = new float[numNReg];
+		cpuSnnSz.neuronInfoSize += sizeof(float)*numNReg*2;
+
+		if (sim_with_NMDA_rise) {
+			// If NMDA rise time is enabled, we'll have to compute NMDA conductance in two steps (using an exponential
+			// for the rise time and one for the decay time)
+			gNMDA_r = new float[numNReg];
+			gNMDA_d = new float[numNReg];
+			cpuSnnSz.neuronInfoSize += sizeof(float)*numNReg*2;
+		} else {
+			gNMDA = new float[numNReg];
+			cpuSnnSz.neuronInfoSize += sizeof(float)*numNReg;
 		}
 
-		gAMPA  = new float[numNReg];
-		gNMDA  = new float[numNReg];
-		gGABAa = new float[numNReg];
-		gGABAb = new float[numNReg];
-		cpuSnnSz.neuronInfoSize += sizeof(int)*numNReg*4;
+		if (sim_with_GABAb_rise) {
+			gGABAb_r = new float[numNReg];
+			gGABAb_d = new float[numNReg];
+			cpuSnnSz.neuronInfoSize += sizeof(float)*numNReg*2;			
+		} else {
+			gGABAb = new float[numNReg];
+			cpuSnnSz.neuronInfoSize += sizeof(float)*numNReg;
+		}
 	}
 
 	grpDA = new float[numGrp];
@@ -1960,6 +1986,19 @@ void CpuSNN::buildNetwork() {
 		}
 	}
 	assert(allocatedGrp == numGrp);
+
+	grpIds = new short int[numN];
+	for (int nid=0; nid<numN; nid++) {
+		grpIds[nid] = -1;
+		for (int g=0; g<numGrp; g++) {
+			if (nid>=grp_Info[g].StartN && nid<=grp_Info[g].EndN) {
+				grpIds[nid] = (short int)g;
+//				printf("grpIds[%d] = %d\n",nid,g);
+				break;
+			}
+		}
+		assert(grpIds[nid]!=-1);
+	}
 
 	if (readNetworkFID != NULL) {
 		// we the user specified readNetwork the synaptic weights will be restored here...
@@ -2420,11 +2459,23 @@ void CpuSNN::doSTPUpdateAndDecayCond() {
 				continue;
 
 			// decay conductances
-			if (grp_Info[g].WithConductances) {
-				gAMPA[i]  *= grp_Info[g].dAMPA;
-				gNMDA[i]  *= grp_Info[g].dNMDA;
-				gGABAa[i] *= grp_Info[g].dGABAa;
-				gGABAb[i] *= grp_Info[g].dGABAb;
+			if (sim_with_conductances) {
+				gAMPA[i]  *= dAMPA;
+				gGABAa[i] *= dGABAa;
+
+				if (sim_with_NMDA_rise) {
+					gNMDA_r[i] *= rNMDA;	// rise
+					gNMDA_d[i] *= dNMDA;	// decay
+				} else {
+					gNMDA[i]   *= dNMDA;	// instantaneous rise
+				}
+
+				if (sim_with_GABAb_rise) {
+					gGABAb_r[i] *= rGABAb;	// rise
+					gGABAb_d[i] *= dGABAb;	// decay
+				} else {
+					gGABAb[i] *= dGABAb;	// instantaneous rise
+				}
 			}
 			else {
 				current[i] = 0.0f; // in CUBA mode, reset current to 0 at each time step and sum up all wts
@@ -2500,6 +2551,7 @@ void CpuSNN::findFiring() {
 }
 
 int CpuSNN::findGrpId(int nid) {
+	CARLSIM_WARN("Using findGrpId is deprecated");
 	for(int g=0; g < numGrp; g++) {
 		if(nid >=grp_Info[g].StartN && (nid <=grp_Info[g].EndN)) {
 			return g;
@@ -2527,8 +2579,10 @@ void CpuSNN::generatePostSpike(unsigned int pre_i, unsigned int idx_d, unsigned 
 	assert(post_i < numNReg); // FIXME is this assert supposed to be for pos_i?
 
 	// get group id of pre- / post-neuron
-	int post_grpId = findGrpId(post_i);
-	int pre_grpId = findGrpId(pre_i);
+	short int post_grpId = grpIds[post_i];
+	short int pre_grpId = grpIds[pre_i];
+//	int post_grpId = findGrpId(post_i);
+//	int pre_grpId = findGrpId(pre_i);
 
 	unsigned int pre_type = grp_Info[pre_grpId].Type;
 
@@ -2549,7 +2603,7 @@ void CpuSNN::generatePostSpike(unsigned int pre_i, unsigned int idx_d, unsigned 
 	// right before spike-update)
 	if (grp_Info[pre_grpId].WithSTP) {
 		// du/dt = -u/tau_F + U * (1-u^-) * \delta(t-t_{spk})
-		stpu[pre_i] += grp_Info[pre_grpId].STP_U*(1.0f-stpu[pre_i]);
+		stpu[pre_i] += grp_Info[pre_grpId].STP_U*(1.0-stpu[pre_i]);
 
 		// dI/dt = -I/tau_S + A * u^+ * x^- * \delta(t-t_{spk})
 		change *= stpu[pre_i]*stpx[pre_i];
@@ -2564,15 +2618,27 @@ void CpuSNN::generatePostSpike(unsigned int pre_i, unsigned int idx_d, unsigned 
 
 	// update currents
 	// NOTE: it's faster to += 0.0 rather than checking for zero and not updating
-	if (grp_Info[pre_grpId].WithConductances) {
+	if (sim_with_conductances) {
 		if (pre_type & TARGET_AMPA) // if post_i expresses AMPAR
 			gAMPA [post_i] += change*mulSynFast[mulIndex]; // scale by some factor
-		if (pre_type & TARGET_NMDA)
-			gNMDA [post_i] += change*mulSynSlow[mulIndex];
+		if (pre_type & TARGET_NMDA) {
+			if (sim_with_NMDA_rise) {
+				gNMDA_r[post_i] += change*sNMDA*mulSynSlow[mulIndex];
+				gNMDA_d[post_i] += change*sNMDA*mulSynSlow[mulIndex];
+			} else {
+				gNMDA [post_i] += change*mulSynSlow[mulIndex];
+			}
+		}
 		if (pre_type & TARGET_GABAa)
 			gGABAa[post_i] -= change*mulSynFast[mulIndex]; // wt should be negative for GABAa and GABAb
-		if (pre_type & TARGET_GABAb)
-			gGABAb[post_i] -= change*mulSynSlow[mulIndex];
+		if (pre_type & TARGET_GABAb) {
+			if (sim_with_GABAb_rise) {
+				gGABAb_r[post_i] -= change*sGABAb*mulSynSlow[mulIndex];
+				gGABAb_d[post_i] -= change*sGABAb*mulSynSlow[mulIndex];
+			} else {
+				gGABAb[post_i] -= change*mulSynSlow[mulIndex];
+			}
+		}
 	} else {
 		current[post_i] += change;
 	}
@@ -2622,7 +2688,8 @@ void CpuSNN::generateSpikes() {
 		int nid	 = srg_iter->stg;
 		//delaystep_t del = srg_iter->delay;
 		//generate a spike to all the target neurons from source neuron nid with a delay of del
-		int g = findGrpId(nid);
+//		int g = findGrpId(nid);
+		short int g = grpIds[nid];
 
 /*
 // MB: Uncomment this if you want to activate real-time spike monitors for SpikeGenerators
@@ -2763,7 +2830,8 @@ float CpuSNN::getWeights(int connProp, float initWt, float maxWt, unsigned int n
 
 
 void  CpuSNN::globalStateUpdate() {
-	float tmpNMDA, tmpI;
+	double tmp_iNMDA, tmp_I;
+	double tmp_gNMDA, tmp_gGABAb;
 
 	for(int g=0; g < numGrp; g++) {
 		if (grp_Info[g].Type&POISSON_NEURON) {
@@ -2780,41 +2848,44 @@ void  CpuSNN::globalStateUpdate() {
 			assert(i < numNReg);
 			avgFiring[i] *= grp_Info[g].avgTimeScale_decay;
 
-			if (grp_Info[g].WithConductances) {
+			if (sim_with_conductances) {
 				// COBA model
 
 				// all the tmpIs will be summed into current[i] in the following loop
 				current[i] = 0.0f;
 
+				// FIXME: these tmp vars cause a lot of rounding errors... consider rewriting
 				for (int j=0; j<COND_INTEGRATION_SCALE; j++) {
-					tmpNMDA = (voltage[i]+80)*(voltage[i]+80)/60/60;
+					tmp_iNMDA = (voltage[i]+80.0)*(voltage[i]+80.0)/60.0/60.0;
 
-					// TODO: define the instability regime, throw warning or error when in that
-					float tmpI = -(    gAMPA[i]*(voltage[i]-0)
-									 + gNMDA[i]*tmpNMDA/(1+tmpNMDA)*(voltage[i]-0)
+					tmp_gNMDA = sim_with_NMDA_rise ? gNMDA_d[i]-gNMDA_r[i] : gNMDA[i];
+					tmp_gGABAb = sim_with_GABAb_rise ? gGABAb_d[i]-gGABAb_r[i] : gGABAb[i];
+
+					current[i] += -(   gAMPA[i]*(voltage[i]-0)
+									 + tmp_gNMDA*tmp_iNMDA/(1+tmp_iNMDA)*(voltage[i]-0)
 									 + gGABAa[i]*(voltage[i]+70)
-									 + gGABAb[i]*(voltage[i]+90)
-								  );
-					current[i] += tmpI;
+									 + tmp_gGABAb*(voltage[i]+90)
+								   );
 
 					#ifdef NEURON_NOISE
-						float noiseI = -intrinsicWeight[i]*log(getRand());
+						double noiseI = -intrinsicWeight[i]*log(getRand());
 						if (isnan(noiseI) || isinf(noiseI))
 							noiseI = 0;
-						tmpI += noiseI;
+						current[i] += noiseI;
 					#endif
 
-					voltage[i]+=((0.04f*voltage[i]+5)*voltage[i]+140-recovery[i]+tmpI)/COND_INTEGRATION_SCALE;
+					voltage[i]+=((0.04*voltage[i]+5.0)*voltage[i]+140.0-recovery[i]+current[i])/COND_INTEGRATION_SCALE;
 					assert(!isnan(voltage[i]) && !isinf(voltage[i]));
 
 					if (voltage[i] > 30) {
 						voltage[i] = 30;
 						j=COND_INTEGRATION_SCALE; // break the loop but evaluate u[i]
-						if (gNMDA[i]>=10.0f) CARLSIM_WARN("High NMDA conductance (gNMDA>=10.0) may cause instability");
-						if (gGABAb[i]>=2.0f) CARLSIM_WARN("High GABAb conductance (gGABAb>=2.0) may cause instability");
+//						if (gNMDA[i]>=10.0f) CARLSIM_WARN("High NMDA conductance (gNMDA>=10.0) may cause instability");
+//						if (gGABAb[i]>=2.0f) CARLSIM_WARN("High GABAb conductance (gGABAb>=2.0) may cause instability");
 					}
-					if (voltage[i] < -90) voltage[i] = -90;
-						recovery[i]+=Izh_a[i]*(Izh_b[i]*voltage[i]-recovery[i])/COND_INTEGRATION_SCALE;
+					if (voltage[i] < -90)
+						voltage[i] = -90;
+					recovery[i]+=Izh_a[i]*(Izh_b[i]*voltage[i]-recovery[i])/COND_INTEGRATION_SCALE;
 				} // end COND_INTEGRATION_SCALE loop
 
 				// skip logging if not in developer mode to save time
@@ -2826,13 +2897,13 @@ void  CpuSNN::globalStateUpdate() {
 	      			CARLSIM_DEBUG("%d: volt=%0.3f, rec=%0.3f, curr=%0.3f, gAMPA=%0.5f, iAMPA=%0.5f, gNMDA=%0.5f, "
       								"iNMDA=%0.5f, gGABAa=%0.5f, iAMPAa=%0.5f, gGABAb=%0.5f, iGABAb=%0.5f",
       								i, voltage[i], recovery[i], current[i], gAMPA[i], gAMPA[i]*(voltage[i]-0),
-      								gNMDA[i], gNMDA[i]*tmpNMDA/(1+tmpNMDA)*(voltage[i]-0), gGABAa[i],
-      								gGABAa[i]*(voltage[i]+70), gGABAb[i], gGABAb[i]*(voltage[i]+90));
+      								tmp_gNMDA, tmp_gNMDA*tmp_iNMDA/(1+tmp_iNMDA)*(voltage[i]-0), gGABAa[i],
+      								gGABAa[i]*(voltage[i]+70), tmp_gGABAb, tmp_gGABAb*(voltage[i]+90));
 	      		}
 			} else {
 				// CUBA model
-				voltage[i]+=0.5f*((0.04f*voltage[i]+5)*voltage[i]+140-recovery[i]+current[i]); //for numerical stability
-				voltage[i]+=0.5f*((0.04f*voltage[i]+5)*voltage[i]+140-recovery[i]+current[i]); //time step is 0.5 ms
+				voltage[i]+=0.5*((0.04*voltage[i]+5.0)*voltage[i]+140.0-recovery[i]+current[i]); //for numerical stability
+				voltage[i]+=0.5*((0.04*voltage[i]+5.0)*voltage[i]+140.0-recovery[i]+current[i]); //time step is 0.5 ms
 				if (voltage[i] > 30)
 					voltage[i] = 30;
 				if (voltage[i] < -90)
@@ -2881,9 +2952,25 @@ void CpuSNN::makePtrInfo() {
 	cpuNetPtrs.baseFiring   	= baseFiring;
 
 	cpuNetPtrs.gAMPA        	= gAMPA;
-	cpuNetPtrs.gNMDA			= gNMDA;
 	cpuNetPtrs.gGABAa       	= gGABAa;
-	cpuNetPtrs.gGABAb			= gGABAb;
+	if (sim_with_NMDA_rise) {
+		cpuNetPtrs.gNMDA 		= NULL;
+		cpuNetPtrs.gNMDA_r		= gNMDA_r;
+		cpuNetPtrs.gNMDA_d		= gNMDA_d;
+	} else {
+		cpuNetPtrs.gNMDA		= gNMDA;
+		cpuNetPtrs.gNMDA_r 		= NULL;
+		cpuNetPtrs.gNMDA_d 		= NULL;
+	}
+	if (sim_with_GABAb_rise) {
+		cpuNetPtrs.gGABAb		= NULL;
+		cpuNetPtrs.gGABAb_r		= gGABAb_r;
+		cpuNetPtrs.gGABAb_d		= gGABAb_d;
+	} else {
+		cpuNetPtrs.gGABAb		= gGABAb;
+		cpuNetPtrs.gGABAb_r 	= NULL;
+		cpuNetPtrs.gGABAb_d 	= NULL;
+	}
 	cpuNetPtrs.grpDA			= grpDA;
 	cpuNetPtrs.grp5HT			= grp5HT;
 	cpuNetPtrs.grpACh			= grpACh;
@@ -2965,7 +3052,8 @@ int CpuSNN::readNetwork_internal()
 			if (nIDpost >= nrCells) return -7;
 			if (!fread(&weight,sizeof(float),1,readNetworkFID)) return -11;
 
-			int gIDpre = findGrpId(nIDpre);
+//			int gIDpre = findGrpId(nIDpre);
+			short int gIDpre = grpIds[nIDpre];
 			if (IS_INHIBITORY_TYPE(grp_Info[gIDpre].Type) && (weight>0)
 					|| !IS_INHIBITORY_TYPE(grp_Info[gIDpre].Type) && (weight<0)) {
 				return -8;
@@ -2984,7 +3072,8 @@ int CpuSNN::readNetwork_internal()
 
 			#if READNETWORK_ADD_SYNAPSES_FROM_FILE
 				if ((plastic && onlyPlastic) || (!plastic && !onlyPlastic)) {
-					int gIDpost = findGrpId(nIDpost);
+//					int gIDpost = findGrpId(nIDpost);
+					int gIDpost = grpIds[nIDpost];
 					int connProp = SET_FIXED_PLASTIC(plastic?SYN_PLASTIC:SYN_FIXED);
 
 					setConnection(gIDpre, gIDpost, nIDpre, nIDpost, weight, maxWeight, delay, connProp, connId);
@@ -3102,11 +3191,20 @@ void CpuSNN::reorganizeNetwork(bool removeTempMemory) {
 
 void CpuSNN::resetConductances() {
 	if (sim_with_conductances) {
-		assert(gAMPA != NULL);
-		memset(gAMPA, 0, sizeof(float) * numNReg);
-		memset(gNMDA, 0, sizeof(float) * numNReg);
-		memset(gGABAa, 0, sizeof(float) * numNReg);
-		memset(gGABAb, 0, sizeof(float) * numNReg);
+		memset(gAMPA, 0, sizeof(float)*numNReg);
+		if (sim_with_NMDA_rise) {
+			memset(gNMDA_r, 0, sizeof(float)*numNReg);
+			memset(gNMDA_d, 0, sizeof(float)*numNReg);
+		} else {
+			memset(gNMDA, 0, sizeof(float)*numNReg);
+		}
+		memset(gGABAa, 0, sizeof(float)*numNReg);
+		if (sim_with_GABAb_rise) {
+			memset(gGABAb_r, 0, sizeof(float)*numNReg);
+			memset(gGABAb_d, 0, sizeof(float)*numNReg);
+		} else {
+			memset(gGABAb, 0, sizeof(float)*numNReg);
+		}
 	}
 }
 
@@ -3253,9 +3351,13 @@ void CpuSNN::resetPointers(bool deallocate) {
 
 	if (gAMPA!=NULL && deallocate) delete[] gAMPA;
 	if (gNMDA!=NULL && deallocate) delete[] gNMDA;
+	if (gNMDA_r!=NULL && deallocate) delete[] gNMDA_r;
+	if (gNMDA_d!=NULL && deallocate) delete[] gNMDA_d;
 	if (gGABAa!=NULL && deallocate) delete[] gGABAa;
 	if (gGABAb!=NULL && deallocate) delete[] gGABAb;
-	gAMPA=NULL; gNMDA=NULL; gGABAa=NULL; gGABAb=NULL;
+	if (gGABAb_r!=NULL && deallocate) delete[] gGABAb_r;
+	if (gGABAb_d!=NULL && deallocate) delete[] gGABAb_d;
+	gAMPA=NULL; gNMDA=NULL; gNMDA_r=NULL; gNMDA_d=NULL; gGABAa=NULL; gGABAb=NULL; gGABAb_r=NULL; gGABAb_d=NULL;
 
 	if (stpu!=NULL && deallocate) delete[] stpu;
 	if (stpx!=NULL && deallocate) delete[] stpx;
@@ -3281,6 +3383,9 @@ void CpuSNN::resetPointers(bool deallocate) {
 	if (mulSynSlow!=NULL && deallocate) delete[] mulSynSlow;
 	if (cumConnIdPre!=NULL && deallocate) delete[] cumConnIdPre;
 	mulSynFast=NULL; mulSynSlow=NULL; cumConnIdPre=NULL;
+
+	if (grpIds!=NULL && deallocate) delete[] grpIds;
+	grpIds=NULL;
 
 	#ifdef NEURON_NOISE
 	if (intrinsicWeight!=NULL && deallocate) delete[] intrinsicWeight;
@@ -3414,7 +3519,8 @@ void CpuSNN::resetSynapticConnections(bool changeWeights) {
 			for (j=0; j < Npre[nid]; j++,preIdPtr++, synWtPtr++, maxWtPtr++) {
 				int preId    = GET_CONN_NEURON_ID((*preIdPtr));
 				assert(preId < numN);
-				int srcGrp   = findGrpId(preId);
+//				int srcGrp   = findGrpId(preId);
+				int srcGrp = grpIds[preId];
 				grpConnectInfo_t* connInfo;	      
 				grpConnectInfo_t* connIterator = connectBegin;
 				while(connIterator) {
@@ -3926,8 +4032,9 @@ void CpuSNN::updateSpikeMonitor() {
 				if (simMode_ == GPU_MODE)
 					nid = GET_FIRING_TABLE_NID(nid);
 				assert(nid < numN);
-	  
-				int grpId = findGrpId(nid);
+
+//				int grpId = findGrpId(nid);
+				int grpId = grpIds[nid];
 				int monitorId = grp_Info[grpId].MonitorId;
 				if(monitorId!= -1) {
 					assert(nid >= grp_Info[grpId].StartN);

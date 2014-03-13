@@ -365,8 +365,8 @@ class GroupMonitor {
 
 
 typedef struct {
-  short  delay_index_start;
-  short  delay_length;
+	short  delay_index_start;
+	short  delay_length;
 } delay_info_t;
 
 typedef struct {
@@ -382,7 +382,7 @@ typedef struct {
  *	\sa CpuSNN
  */ 
 typedef struct network_info_s  {
-	size_t		STP_Pitch;		//!< numN rounded upwards to the nearest 256 boundary
+	size_t			STP_Pitch;		//!< numN rounded upwards to the nearest 256 boundary
 	unsigned int	numN;
 	unsigned int	numPostSynapses;
 	unsigned int	D;
@@ -402,13 +402,24 @@ typedef struct network_info_s  {
 	unsigned int	numNInhPois;
 	unsigned int	numNPois;
 	unsigned int	numGrp;
-	bool		sim_with_fixedwts;
-	bool		sim_with_conductances;
-	bool		sim_with_stdp;
-	bool		sim_with_modulated_stdp;
-	bool		sim_with_stp;
-	float		stdpScaleFactor;
-	float		wtChangeDecay; //!< the wtChange decay 
+	bool 			sim_with_fixedwts;
+	bool 			sim_with_conductances;
+	bool 			sim_with_stdp;
+	bool 			sim_with_modulated_stdp;
+	bool 			sim_with_stp;
+	float 			stdpScaleFactor;
+	float 			wtChangeDecay; //!< the wtChange decay 
+
+	bool 			sim_with_NMDA_rise;	//!< a flag to inform whether to compute NMDA rise time
+	bool 			sim_with_GABAb_rise;	//!< a flag to inform whether to compute GABAb rise time
+	double 			dAMPA;				//!< multiplication factor for decay time of AMPA conductance (gAMPA[i] *= dAMPA)
+	double 			rNMDA;				//!< multiplication factor for rise time of NMDA
+	double 			dNMDA;				//!< multiplication factor for decay time of NMDA
+	double 			sNMDA;				//!< scaling factor for NMDA amplitude
+	double 			dGABAa;				//!< multiplication factor for decay time of GABAa
+	double 			rGABAb;				//!< multiplication factor for rise time of GABAb
+	double 			dGABAb;				//!< multiplication factor for decay time of GABAb
+	double 			sGABAb;				//!< scaling factor for GABAb amplitude
 } network_info_t;
 
 //! nid=neuron id, sid=synapse id, grpId=group id. 
@@ -453,9 +464,13 @@ typedef struct network_ptr_s  {
 
 	// conductances and stp values
 	float*	gNMDA;					//!< conductance of gNMDA
+	float*	gNMDA_r;
+	float*	gNMDA_d;
 	float*	gAMPA;					//!< conductance of gAMPA
 	float*	gGABAa;				//!< conductance of gGABAa
 	float*	gGABAb;				//!< conductance of gGABAb
+	float*	gGABAb_r;
+	float*	gGABAb_d;
 	int*	I_set;
 	simMode_t	memType;
 	int		allocated;				//!< true if all data has been allocated..
@@ -477,6 +492,8 @@ typedef struct network_ptr_s  {
 
 	float 	*mulSynFast, *mulSynSlow;
 	short int *cumConnIdPre;	//!< connectId, per synapse, presynaptic cumulative indexing
+
+	short int *grpIds;
 
 	/*!
 	 * \brief 10 bit syn id, 22 bit neuron id, ordered based on delay
@@ -547,7 +564,7 @@ typedef struct group_info_s
 	bool 		WithSTDP;
 	bool		WithModulatedSTDP;
 	bool 		WithHomeostasis;
-	bool 		WithConductances;
+//	bool 		WithConductances;
 	int		homeoId;
 	bool		FixedInputWts;
 	int			Noffset;
@@ -560,10 +577,6 @@ typedef struct group_info_s
 	float		TAU_LTD_INV;
 	float		ALPHA_LTP;
 	float		ALPHA_LTD;
-	float		dAMPA;
-	float		dNMDA;
-	float		dGABAa;
-	float		dGABAb;
 
 	bool withSpikeCounter; //!< if this flag is set, we want to keep track of how many spikes per neuron in the group
 	int spkCntRecordDur; //!< record duration, after which spike buffer gets reset
@@ -740,19 +753,21 @@ public:
 	 */
 	int createSpikeGeneratorGroup(const std::string& grpName, int nNeur, int neurType, int configId);
 
-	//! Sets the decay time constants for synaptic conductances of a neuron group. To disable the use of synaptic conductanes for a group, you can also use a simple wrapper: void setConductances(int grpId, bool enable). To apply conductance values to all groups, replace grpId with ALL.
-	/* Synaptic channels are modeled with instantaneous rise-time and exponential decay.
+
+	/*!
+	 * \brief Sets custom values for conductance decay (\tau_decay) or disables conductances alltogether
+  	 * These will be applied to all connections in a network
 	 * For details on the ODE that is implemented refer to (Izhikevich et al, 2004), and for suitable values see (Dayan & Abbott, 2001). 
 	 * 
-	 * \param _grpId: ID of the neuron group 
-	 * \param enable: enables the use of COBA mode 
+	 * \param isSet: enables the use of COBA mode 
 	 * \param tAMPA: time _constant of AMPA decay (ms); for example, 5.0 
 	 * \param tNMDA: time constant of NMDA decay (ms); for example, 150.0 
 	 * \param tGABAa: time constant of GABAa decay (ms); for example, 6.0 
 	 * \param tGABAb: time constant of GABAb decay (ms); for example, 150.0 
 	 * \param configId: (optional, deprecated) configuration id
 	 */
-	void setConductances(int grpId, bool isSet, float tdAMPA, float tdNMDA, float tdGABAa, float tdGABAb, int configId);
+	void setConductances(bool isSet, int tdAMPA, int trNMDA, int tdNMDA, int tdGABAa, int trGABAb, int tdGABAb,
+		int configId);
 
 
 	/*!
@@ -1207,7 +1222,7 @@ private:
 	void CpuSNNinit_GPU();	//!< initializes params needed in snn_gpu.cu (gets called in CpuSNN constructor)
 
 	void allocateGroupId();
-	void allocateGroupParameters();
+//	void allocateGroupParameters();
 	void allocateNetworkParameters();
 	void allocateSNN_GPU(); //!< allocates required memory and then initialize the GPU
 	int  allocateStaticLoad(int bufSize);
@@ -1287,7 +1302,6 @@ private:
 	// +++++ PRIVATE PROPERTIES +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 	FILE* readNetworkFID;
 
-
 	const std::string networkName_;	//!< network name
 	const simMode_t simMode_;		//!< current simulation mode (CPU_MODE or GPU_MODE) FIXME: give better name
 	const loggerMode_t loggerMode_;	//!< current logger mode (USER, DEVELOPER, SILENT, CUSTOM)
@@ -1324,14 +1338,27 @@ private:
 	float 		*mulSynFast;	//!< scaling factor for fast synaptic currents, per connection
 	float 		*mulSynSlow;	//!< scaling factor for slow synaptic currents, per connection
 
+	short int *grpIds;
+
 	//! Buffer to store spikes
 	PropagatedSpikeBuffer* pbuf;
+
+	bool sim_with_conductances;		//!< flag to inform whether we run in COBA mode (true) or CUBA mode (false)
+	bool sim_with_NMDA_rise;	//!< a flag to inform whether to compute NMDA rise time
+	bool sim_with_GABAb_rise;	//!< a flag to inform whether to compute GABAb rise time
+	double dAMPA;				//!< multiplication factor for decay time of AMPA conductance (gAMPA[i] *= dAMPA)
+	double rNMDA;				//!< multiplication factor for rise time of NMDA
+	double dNMDA;				//!< multiplication factor for decay time of NMDA
+	double sNMDA;				//!< scaling factor for NMDA amplitude
+	double dGABAa;				//!< multiplication factor for decay time of GABAa
+	double rGABAb;				//!< multiplication factor for rise time of GABAb
+	double dGABAb;				//!< multiplication factor for decay time of GABAb
+	double sGABAb;				//!< scaling factor for GABAb amplitude
 
 	bool sim_with_fixedwts;
 	bool sim_with_stdp;
 	bool sim_with_modulated_stdp;
 	bool sim_with_stp;
-	bool sim_with_conductances;
 	bool sim_with_spikecounters; //!< flag will be true if there are any spike counters around
 	//! flag to enable the copyFiringStateInfo from GPU to CPU
 	bool enableGPUSpikeCntPtr;
@@ -1448,15 +1475,20 @@ private:
 	unsigned int		groupMonitorGrpId[MAX_GRP_PER_SNN];
 	unsigned int		numGroupMonitor;
 
-	/* Markram et al. (1998), where the short-term dynamics of synapses is characterized by three parameters:
+	/* Tsodyks & Markram (1998), where the short-term dynamics of synapses is characterized by three parameters:
 	   U (which roughly models the release probability of a synaptic vesicle for the first spike in a train of spikes),
 	   D (time constant for recovery from depression), and F (time constant for recovery from facilitation). */
-	float*		stpu;
-	float*		stpx;
-	float*		gAMPA;
-	float*		gNMDA;
-	float*		gGABAa;
-	float*		gGABAb;
+	   float *stpu;
+	   float *stpx;
+	   
+	   float *gAMPA;
+	   float *gNMDA;
+	   float *gNMDA_r;
+	   float *gNMDA_d;
+	   float *gGABAa;
+	   float *gGABAb;
+	   float *gGABAb_r;
+	   float *gGABAb_d;
 
 	// concentration of neuromodulators for each group
 	float*	grpDA;

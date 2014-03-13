@@ -21,6 +21,7 @@ public:
 	 */
 	enum errorType {
 		ALL_NOT_ALLOWED,		//!< keyword ALL is not allowed for this variable
+		CANNOT_BE_IDENTICAL,	//!< parameters cannot be identical
 		CANNOT_BE_NEGATIVE,		//!< parameter cannot have negative value (opposite to "must be", but includes zero)
 		CANNOT_BE_NULL,			//!< parameter cannot have NULL value
 		CANNOT_BE_POSITIVE,		//!< parameter cannot have positive value (opposite to "must be", but includes zero)
@@ -46,7 +47,7 @@ public:
 	 * \param[in] errorIfAssertionFails		the type of error to throw if assertion fails (from enum errorType)
 	 * \param[in] errorFunc					a string to indicate the location where the error occured
 	 */
-	static void userAssert(bool statement, errorType errorIfAssertionFails, std::string errorFunc,
+	static void assertTrue(bool statement, errorType errorIfAssertionFails, std::string errorFunc,
 								std::string errorMsgPrefix="");
 
 //	static void userAssertNonZero();

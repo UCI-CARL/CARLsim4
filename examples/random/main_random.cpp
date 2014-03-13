@@ -48,7 +48,7 @@ int main()
 	int ithGPU = 0; // run on first GPU
 
 	// create a network
-	CARLsim sim("random",GPU_MODE,USER,ithGPU);
+	CARLsim sim("random",CPU_MODE,USER,ithGPU,1,42);
 
 	int g1=sim.createGroup("excit", N*0.8, EXCITATORY_NEURON);
 	sim.setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f);
@@ -58,10 +58,10 @@ int main()
 
 	int gin=sim.createSpikeGeneratorGroup("input",N*0.1,EXCITATORY_NEURON);
 
-	sim.setConductances(ALL,true);
+	sim.setConductances(true,5,150,6,150);
 
 	// make random connections with 10% probability
-	sim.connect(g2,g2,"random",-0.01f,0.1f,1);
+	sim.connect(g2,g2,"random",-0.003f,0.1f,1);
 	// make random connections with 10% probability, and random delays between 1 and 20
 	sim.connect(g1,g2,"random", 0.0025f, 0.005f, 0.1f,  1, 20, SYN_PLASTIC);
 	sim.connect(g1,g1,"random", 0.006f, 0.01f, 0.1f,  1, 20, SYN_PLASTIC);

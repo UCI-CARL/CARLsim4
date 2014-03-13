@@ -117,10 +117,12 @@ void CARLsim::CARLsimInit() {
 
 	// set default time constants for synaptic current decay
 	// TODO: add ref
-	def_tdAMPA_  = 5.0f;	// default decay time for AMPA (ms)
-	def_tdNMDA_  = 150.0f;	// default decay time for NMDA (ms)
-	def_tdGABAa_ = 6.0f;	// default decay time for GABAa (ms)
-	def_tdGABAb_ = 150.0f;	// default decay time for GABAb (ms)
+	def_tdAMPA_  = 5;	// default decay time for AMPA (ms)
+	def_trNMDA_  = 0;	// default rise time for NMDA (ms)
+	def_tdNMDA_  = 150;	// default decay time for NMDA (ms)
+	def_tdGABAa_ = 6;	// default decay time for GABAa (ms)
+	def_trGABAb_ = 0;   // default rise time for GABAb (ms)
+	def_tdGABAb_ = 150;	// default decay time for GABAb (ms)
 
 	// set default values for STDP params
 	// TODO: add ref
@@ -157,11 +159,13 @@ short int CARLsim::connect(int grpId1, int grpId2, const std::string& connType, 
 	std::string funcName = "connect(\""+getGroupName(grpId1,0)+"\",\""+getGroupName(grpId2,0)+"\")";
 	std::stringstream grpId1str; grpId1str << "Group Id " << grpId1;
 	std::stringstream grpId2str; grpId2str << "Group Id " << grpId2;
-	UserErrors::userAssert(grpId1!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName, grpId1str.str()); // grpId can't be ALL
-	UserErrors::userAssert(grpId2!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName, grpId2str.str());
-	UserErrors::userAssert(!isExcitatoryGroup(grpId1) || wt>0, UserErrors::MUST_BE_POSITIVE, funcName, "wt");
-	UserErrors::userAssert(!isInhibitoryGroup(grpId1) || wt<0, UserErrors::MUST_BE_NEGATIVE, funcName, "wt");
-	UserErrors::userAssert(!hasRunNetwork_, UserErrors::NETWORK_ALREADY_RUN, funcName); // can't change setup after run
+	UserErrors::assertTrue(grpId1!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName, grpId1str.str()); // grpId can't be ALL
+	UserErrors::assertTrue(grpId2!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName, grpId2str.str());
+	UserErrors::assertTrue(!isPoissonGroup(grpId2), UserErrors::WRONG_NEURON_TYPE, funcName, grpId2str.str() + 
+		" is PoissonGroup, connect");
+	UserErrors::assertTrue(!isExcitatoryGroup(grpId1) || wt>0, UserErrors::MUST_BE_POSITIVE, funcName, "wt");
+	UserErrors::assertTrue(!isInhibitoryGroup(grpId1) || wt<0, UserErrors::MUST_BE_NEGATIVE, funcName, "wt");
+	UserErrors::assertTrue(!hasRunNetwork_, UserErrors::NETWORK_ALREADY_RUN, funcName); // can't change setup after run
 
 	return snn_->connect(grpId1, grpId2, connType, wt, wt, connProb, delay, delay, 1.0f, 1.0f, SYN_FIXED);
 }
@@ -169,8 +173,16 @@ short int CARLsim::connect(int grpId1, int grpId2, const std::string& connType, 
 // shortcut to create SYN_FIXED connections with one weight / delay and two scaling factors for synaptic currents
 short int CARLsim::connect(int grpId1, int grpId2, const std::string& connType, float wt, float connProb, uint8_t delay,
 							float mulSynFast, float mulSynSlow) {
-	assert(!hasRunNetwork_); // TODO: make nice
-	assert(++numConnections_ <= MAX_nConnections);
+	std::string funcName = "connect(\""+getGroupName(grpId1,0)+"\",\""+getGroupName(grpId2,0)+"\")";
+	std::stringstream grpId1str; grpId1str << "Group Id " << grpId1;
+	std::stringstream grpId2str; grpId2str << "Group Id " << grpId2;
+	UserErrors::assertTrue(grpId1!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName, grpId1str.str()); // grpId can't be ALL
+	UserErrors::assertTrue(grpId2!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName, grpId2str.str());
+	UserErrors::assertTrue(!isPoissonGroup(grpId2), UserErrors::WRONG_NEURON_TYPE, funcName, grpId2str.str() + 
+		" is PoissonGroup, connect");
+	UserErrors::assertTrue(!isExcitatoryGroup(grpId1) || wt>0, UserErrors::MUST_BE_POSITIVE, funcName, "wt");
+	UserErrors::assertTrue(!isInhibitoryGroup(grpId1) || wt<0, UserErrors::MUST_BE_NEGATIVE, funcName, "wt");
+	UserErrors::assertTrue(!hasRunNetwork_, UserErrors::NETWORK_ALREADY_RUN, funcName); // can't change setup after run
 
 	return snn_->connect(grpId1,grpId2,connType,wt,wt,connProb,delay,delay,mulSynFast,mulSynSlow,SYN_FIXED);
 }
@@ -183,12 +195,14 @@ short int CARLsim::connect(int grpId1, int grpId2, const std::string& connType, 
 	std::string funcName = "connect(\""+getGroupName(grpId1,0)+"\",\""+getGroupName(grpId2,0)+"\")";
 	std::stringstream grpId1str; grpId1str << ". Group Id " << grpId1;
 	std::stringstream grpId2str; grpId2str << ". Group Id " << grpId2;
-	UserErrors::userAssert(grpId1!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName, grpId1str.str()); // grpId can't be ALL
-	UserErrors::userAssert(grpId2!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName, grpId2str.str());
-	UserErrors::userAssert(!isExcitatoryGroup(grpId1) || maxWt>0, UserErrors::MUST_BE_POSITIVE, funcName, "maxWt");
-	UserErrors::userAssert(!isInhibitoryGroup(grpId1) || maxWt<0, UserErrors::MUST_BE_NEGATIVE, funcName, "maxWt");
-	UserErrors::userAssert(initWt*maxWt>=0, UserErrors::MUST_HAVE_SAME_SIGN, funcName, "initWt and maxWt");
-	UserErrors::userAssert(!hasRunNetwork_, UserErrors::NETWORK_ALREADY_RUN, funcName); // can't change setup after run
+	UserErrors::assertTrue(grpId1!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName, grpId1str.str()); // grpId can't be ALL
+	UserErrors::assertTrue(grpId2!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName, grpId2str.str());
+	UserErrors::assertTrue(!isPoissonGroup(grpId2), UserErrors::WRONG_NEURON_TYPE, funcName, grpId2str.str() + 
+		" is PoissonGroup, connect");
+	UserErrors::assertTrue(!isExcitatoryGroup(grpId1) || maxWt>0, UserErrors::MUST_BE_POSITIVE, funcName, "maxWt");
+	UserErrors::assertTrue(!isInhibitoryGroup(grpId1) || maxWt<0, UserErrors::MUST_BE_NEGATIVE, funcName, "maxWt");
+	UserErrors::assertTrue(initWt*maxWt>=0, UserErrors::MUST_HAVE_SAME_SIGN, funcName, "initWt and maxWt");
+	UserErrors::assertTrue(!hasRunNetwork_, UserErrors::NETWORK_ALREADY_RUN, funcName); // can't change setup after run
 
 	return snn_->connect(grpId1,grpId2,connType,initWt,maxWt,connProb,minDelay,maxDelay,1.0f,1.0f,synWtType);
 }
@@ -196,7 +210,13 @@ short int CARLsim::connect(int grpId1, int grpId2, const std::string& connType, 
 // custom connectivity profile
 short int CARLsim::connect(int grpId1, int grpId2, ConnectionGenerator* conn, bool synWtType, int maxM, int maxPreM) {
 	std::string funcName = "connect(\""+getGroupName(grpId1,0)+"\",\""+getGroupName(grpId2,0)+"\")";
-	UserErrors::userAssert(!hasRunNetwork_, UserErrors::NETWORK_ALREADY_RUN, funcName); // can't change setup after run
+	std::stringstream grpId1str; grpId1str << ". Group Id " << grpId1;
+	std::stringstream grpId2str; grpId2str << ". Group Id " << grpId2;
+	UserErrors::assertTrue(grpId1!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName, grpId1str.str()); // grpId can't be ALL
+	UserErrors::assertTrue(grpId2!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName, grpId2str.str());
+	UserErrors::assertTrue(!isPoissonGroup(grpId2), UserErrors::WRONG_NEURON_TYPE, funcName, grpId2str.str() + 
+		" is PoissonGroup, connect");
+	UserErrors::assertTrue(!hasRunNetwork_, UserErrors::NETWORK_ALREADY_RUN, funcName); // can't change setup after run
 
 	// TODO: check for sign of weights
 	return snn_->connect(grpId1, grpId2, conn, 1.0f, 1.0f, synWtType, maxM, maxPreM);
@@ -206,7 +226,13 @@ short int CARLsim::connect(int grpId1, int grpId2, ConnectionGenerator* conn, bo
 short int CARLsim::connect(int grpId1, int grpId2, ConnectionGenerator* conn, float mulSynFast, float mulSynSlow,
 						bool synWtType, int maxM, int maxPreM) {
 	std::string funcName = "connect(\""+getGroupName(grpId1,0)+"\",\""+getGroupName(grpId2,0)+"\")";
-	UserErrors::userAssert(!hasRunNetwork_, UserErrors::NETWORK_ALREADY_RUN, funcName); // can't change setup after run
+	std::stringstream grpId1str; grpId1str << ". Group Id " << grpId1;
+	std::stringstream grpId2str; grpId2str << ". Group Id " << grpId2;
+	UserErrors::assertTrue(grpId1!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName, grpId1str.str()); // grpId can't be ALL
+	UserErrors::assertTrue(grpId2!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName, grpId2str.str());
+	UserErrors::assertTrue(!isPoissonGroup(grpId2), UserErrors::WRONG_NEURON_TYPE, funcName, grpId2str.str() + 
+		" is PoissonGroup, connect");
+	UserErrors::assertTrue(!hasRunNetwork_, UserErrors::NETWORK_ALREADY_RUN, funcName); // can't change setup after run
 	assert(++numConnections_ <= MAX_nConnections);
 
 	return snn_->connect(grpId1, grpId2, conn, mulSynFast, mulSynSlow, synWtType, maxM, maxPreM);
@@ -216,7 +242,7 @@ short int CARLsim::connect(int grpId1, int grpId2, ConnectionGenerator* conn, fl
 // create group of Izhikevich spiking neurons
 int CARLsim::createGroup(std::string grpName, int nNeur, int neurType, int configId) {
 	std::string funcName = "createGroup(\""+grpName+"\")";
-	UserErrors::userAssert(!hasRunNetwork_, UserErrors::NETWORK_ALREADY_RUN, funcName); // can't change setup after run
+	UserErrors::assertTrue(!hasRunNetwork_, UserErrors::NETWORK_ALREADY_RUN, funcName); // can't change setup after run
 
 	// if user has called any set functions with grpId=ALL, and is now adding another group, previously set properties
 	// will not apply to newly added group
@@ -238,7 +264,7 @@ int CARLsim::createGroup(std::string grpName, int nNeur, int neurType, int confi
 // create group of spike generators
 int CARLsim::createSpikeGeneratorGroup(std::string grpName, int nNeur, int neurType, int configId) {
 	std::string funcName = "createSpikeGeneratorGroup(\""+grpName+"\")";
-	UserErrors::userAssert(!hasRunNetwork_, UserErrors::NETWORK_ALREADY_RUN, funcName); // can't change setup after run
+	UserErrors::assertTrue(!hasRunNetwork_, UserErrors::NETWORK_ALREADY_RUN, funcName); // can't change setup after run
 
 	int grpId = snn_->createSpikeGeneratorGroup(grpName.c_str(),nNeur,neurType,configId);
 	grpIds_.push_back(grpId); // keep track of all groups
@@ -248,37 +274,61 @@ int CARLsim::createSpikeGeneratorGroup(std::string grpName, int nNeur, int neurT
 
 
 // set conductance values, use defaults
-void CARLsim::setConductances(int grpId, bool isSet, int configId) {
-	std::string funcName = "setConductances(\""+getGroupName(grpId,configId)+"\")";
-	std::stringstream grpIdStr; grpIdStr << "setConductances(" << grpId << "). Group Id " << grpId;
-	UserErrors::userAssert(!hasRunNetwork_, UserErrors::NETWORK_ALREADY_RUN, funcName); // can't change setup after run
+void CARLsim::setConductances(bool isSet, int configId) {
+	std::stringstream funcName; funcName << "setConductances(" << isSet << "," << configId << ")";
+	UserErrors::assertTrue(!hasRunNetwork_, UserErrors::NETWORK_ALREADY_RUN, funcName.str()); // can't change setup after run
 
 	if (isSet) { // enable conductances, use default values
-		snn_->setConductances(grpId,true,def_tdAMPA_,def_tdNMDA_,def_tdGABAa_,def_tdGABAb_,configId);
+		snn_->setConductances(true,def_tdAMPA_,0,def_tdNMDA_,def_tdGABAa_,0,def_tdGABAb_,configId);
 	} else { // disable conductances
-		snn_->setConductances(grpId,false,0.0f,0.0f,0.0f,0.0f,configId);
+		snn_->setConductances(false,0,0,0,0,0,0,configId);
 	}
 
 }
 
 // set conductances values, custom
-void CARLsim::setConductances(int grpId, bool isSet, float tdAMPA, float tdNMDA, float tdGABAa, float tdGABAb,
-								int configId)
-{
-	std::string funcName = "setConductances(\""+getGroupName(grpId,configId)+"\")";
-	UserErrors::userAssert(!hasRunNetwork_, UserErrors::NETWORK_ALREADY_RUN, funcName); // can't change setup after run
+void CARLsim::setConductances(bool isSet, int tdAMPA, int tdNMDA, int tdGABAa, int tdGABAb, int configId) {
+	std::stringstream funcName; funcName << "setConductances(" << isSet << "," << tdAMPA << "," << tdNMDA << ","
+		<< tdGABAa << "," << tdGABAb << "," << configId << ")";
+	UserErrors::assertTrue(!isSet||tdAMPA>0, UserErrors::MUST_BE_POSITIVE, funcName.str(), "tdAMPA");
+	UserErrors::assertTrue(!isSet||tdNMDA>0, UserErrors::MUST_BE_POSITIVE, funcName.str(), "tdNMDA");
+	UserErrors::assertTrue(!isSet||tdGABAa>0, UserErrors::MUST_BE_POSITIVE, funcName.str(), "tdGABAa");
+	UserErrors::assertTrue(!isSet||tdGABAb>0, UserErrors::MUST_BE_POSITIVE, funcName.str(), "trGABAb");
+	UserErrors::assertTrue(!hasRunNetwork_, UserErrors::NETWORK_ALREADY_RUN, funcName.str()); // can't change setup after run
 
 	if (isSet) { // enable conductances, use custom values
-		snn_->setConductances(grpId,true,tdAMPA,tdNMDA,tdGABAa,tdGABAb,configId);
+		snn_->setConductances(true,tdAMPA,0,tdNMDA,tdGABAa,0,tdGABAb,configId);
 	} else { // disable conductances
-		snn_->setConductances(grpId,false,0.0f,0.0f,0.0f,0.0f,configId);
+		snn_->setConductances(false,0,0,0,0,0,0,configId);
+	}
+}
+
+// set conductances values, custom
+void CARLsim::setConductances(bool isSet, int tdAMPA, int trNMDA, int tdNMDA, int tdGABAa, int trGABAb, int tdGABAb,
+int configId) {
+	std::stringstream funcName; funcName << "setConductances(" << isSet << "," << tdAMPA << "," << trNMDA << "," <<
+		tdNMDA << "," << tdGABAa << "," << trGABAb << "," << tdGABAb << "," << configId << ")";
+	UserErrors::assertTrue(!isSet||tdAMPA>0, UserErrors::MUST_BE_POSITIVE, funcName.str(), "tdAMPA");
+	UserErrors::assertTrue(!isSet||trNMDA>0, UserErrors::MUST_BE_POSITIVE, funcName.str(), "trNMDA");
+	UserErrors::assertTrue(!isSet||tdNMDA>0, UserErrors::MUST_BE_POSITIVE, funcName.str(), "tdNMDA");
+	UserErrors::assertTrue(!isSet||tdGABAa>0, UserErrors::MUST_BE_POSITIVE, funcName.str(), "tdGABAa");
+	UserErrors::assertTrue(!isSet||trGABAb>0, UserErrors::MUST_BE_POSITIVE, funcName.str(), "trGABAb");
+	UserErrors::assertTrue(!isSet||tdGABAb>0, UserErrors::MUST_BE_POSITIVE, funcName.str(), "trGABAb");
+	UserErrors::assertTrue(trNMDA!=tdNMDA, UserErrors::CANNOT_BE_IDENTICAL, funcName.str(), "trNMDA and tdNMDA");
+	UserErrors::assertTrue(trGABAb!=tdGABAb, UserErrors::CANNOT_BE_IDENTICAL, funcName.str(), "trGABAb and tdGABAb");
+	UserErrors::assertTrue(!hasRunNetwork_, UserErrors::NETWORK_ALREADY_RUN, funcName.str()); // can't change setup after run
+
+	if (isSet) { // enable conductances, use custom values
+		snn_->setConductances(true,tdAMPA,trNMDA,tdNMDA,tdGABAa,trGABAb,tdGABAb,configId);
+	} else { // disable conductances
+		snn_->setConductances(false,0,0,0,0,0,0,configId);
 	}
 }
 
 // set default homeostasis params
 void CARLsim::setHomeostasis(int grpId, bool isSet, int configId) {
 	std::string funcName = "setHomeostasis(\""+getGroupName(grpId,configId)+"\")";
-	UserErrors::userAssert(!hasRunNetwork_, UserErrors::NETWORK_ALREADY_RUN, funcName); // can't change setup after run
+	UserErrors::assertTrue(!hasRunNetwork_, UserErrors::NETWORK_ALREADY_RUN, funcName); // can't change setup after run
 
 	hasSetHomeoALL_ = grpId==ALL; // adding groups after this will not have homeostasis set
 
@@ -295,7 +345,7 @@ void CARLsim::setHomeostasis(int grpId, bool isSet, int configId) {
 // set custom homeostasis params for group
 void CARLsim::setHomeostasis(int grpId, bool isSet, float homeoScale, float avgTimeScale, int configId) {
 	std::string funcName = "setHomeostasis(\""+getGroupName(grpId,configId)+"\")";
-	UserErrors::userAssert(!hasRunNetwork_, UserErrors::NETWORK_ALREADY_RUN, funcName); // can't change setup after run
+	UserErrors::assertTrue(!hasRunNetwork_, UserErrors::NETWORK_ALREADY_RUN, funcName); // can't change setup after run
 
 	hasSetHomeoALL_ = grpId==ALL; // adding groups after this will not have homeostasis set
 
@@ -312,7 +362,7 @@ void CARLsim::setHomeostasis(int grpId, bool isSet, float homeoScale, float avgT
 // set a homeostatic target firing rate (enforced through homeostatic synaptic scaling)
 void CARLsim::setHomeoBaseFiringRate(int grpId, float baseFiring, float baseFiringSD, int configId) {
 	std::string funcName = "setHomeoBaseFiringRate(\""+getGroupName(grpId,configId)+"\")";
-	UserErrors::userAssert(!hasRunNetwork_, UserErrors::NETWORK_ALREADY_RUN, funcName); // can't change setup after run
+	UserErrors::assertTrue(!hasRunNetwork_, UserErrors::NETWORK_ALREADY_RUN, funcName); // can't change setup after run
 
 	hasSetHomeoBaseFiringALL_ = grpId=ALL; // adding groups after this will not have base firing set
 
@@ -324,7 +374,7 @@ void CARLsim::setNeuronParameters(int grpId, float izh_a, float izh_a_sd, float 
 							 		float izh_c, float izh_c_sd, float izh_d, float izh_d_sd, int configId)
 {
 	std::string funcName = "setNeuronParameters(\""+getGroupName(grpId,configId)+"\")";
-	UserErrors::userAssert(!hasRunNetwork_, UserErrors::NETWORK_ALREADY_RUN, funcName); // can't change setup after run
+	UserErrors::assertTrue(!hasRunNetwork_, UserErrors::NETWORK_ALREADY_RUN, funcName); // can't change setup after run
 
 	// wrapper identical to core func
 	snn_->setNeuronParameters(grpId, izh_a, izh_a_sd, izh_b, izh_b_sd, izh_c, izh_c_sd, izh_d, izh_d_sd, configId);
@@ -333,7 +383,7 @@ void CARLsim::setNeuronParameters(int grpId, float izh_a, float izh_a_sd, float 
 // set neuron parameters for Izhikevich neuron
 void CARLsim::setNeuronParameters(int grpId, float izh_a, float izh_b, float izh_c, float izh_d, int configId) {
 	std::string funcName = "setNeuronParameters(\""+getGroupName(grpId,configId)+"\")";
-	UserErrors::userAssert(!hasRunNetwork_, UserErrors::NETWORK_ALREADY_RUN, funcName); // can't change setup after run
+	UserErrors::assertTrue(!hasRunNetwork_, UserErrors::NETWORK_ALREADY_RUN, funcName); // can't change setup after run
 
 	// set standard deviations of Izzy params to zero
 	snn_->setNeuronParameters(grpId, izh_a, 0.0f, izh_b, 0.0f, izh_c, 0.0f, izh_d, 0.0f, configId);
@@ -342,7 +392,7 @@ void CARLsim::setNeuronParameters(int grpId, float izh_a, float izh_b, float izh
 // set STDP, default
 void CARLsim::setSTDP(int grpId, bool isSet, int configId) {
 	std::string funcName = "setSTDP(\""+getGroupName(grpId,configId)+"\")";
-	UserErrors::userAssert(!hasRunNetwork_, UserErrors::NETWORK_ALREADY_RUN, funcName); // can't change setup after run
+	UserErrors::assertTrue(!hasRunNetwork_, UserErrors::NETWORK_ALREADY_RUN, funcName); // can't change setup after run
 	hasSetSTDPALL_ = grpId==ALL; // adding groups after this will not have conductances set
 
 	if (isSet) { // enable STDP, use default values
@@ -355,7 +405,7 @@ void CARLsim::setSTDP(int grpId, bool isSet, int configId) {
 // set STDP, custom
 void CARLsim::setSTDP(int grpId, bool isSet, float alphaLTP, float tauLTP, float alphaLTD, float tauLTD, int configId) {
 	std::string funcName = "setSTDP(\""+getGroupName(grpId,configId)+"\")";
-	UserErrors::userAssert(!hasRunNetwork_, UserErrors::NETWORK_ALREADY_RUN, funcName); // can't change setup after run
+	UserErrors::assertTrue(!hasRunNetwork_, UserErrors::NETWORK_ALREADY_RUN, funcName); // can't change setup after run
 	hasSetSTDPALL_ = grpId==ALL; // adding groups after this will not have conductances set
 
 	if (isSet) { // enable STDP, use custom values
@@ -370,11 +420,11 @@ void CARLsim::setSTDP(int grpId, bool isSet, float alphaLTP, float tauLTP, float
 // set STP, default
 void CARLsim::setSTP(int grpId, bool isSet, int configId) {
 	std::string funcName = "setSTP(\""+getGroupName(grpId,configId)+"\")";
-	UserErrors::userAssert(!hasRunNetwork_, UserErrors::NETWORK_ALREADY_RUN, funcName); // can't change setup after run
+	UserErrors::assertTrue(!hasRunNetwork_, UserErrors::NETWORK_ALREADY_RUN, funcName); // can't change setup after run
 	hasSetSTPALL_ = grpId==ALL; // adding groups after this will not have conductances set
 
 	if (isSet) { // enable STDP, use default values
-		UserErrors::userAssert(isExcitatoryGroup(grpId) || isInhibitoryGroup(grpId), UserErrors::WRONG_NEURON_TYPE,
+		UserErrors::assertTrue(isExcitatoryGroup(grpId) || isInhibitoryGroup(grpId), UserErrors::WRONG_NEURON_TYPE,
 									funcName, "setSTP");
 
 		if (isExcitatoryGroup(grpId))
@@ -392,11 +442,11 @@ void CARLsim::setSTP(int grpId, bool isSet, int configId) {
 // set STP, custom
 void CARLsim::setSTP(int grpId, bool isSet, float STP_U, float STP_tau_u, float STP_tau_x, int configId) {
 	std::string funcName = "setSTP(\""+getGroupName(grpId,configId)+"\")";
-	UserErrors::userAssert(!hasRunNetwork_, UserErrors::NETWORK_ALREADY_RUN, funcName); // can't change setup after run
+	UserErrors::assertTrue(!hasRunNetwork_, UserErrors::NETWORK_ALREADY_RUN, funcName); // can't change setup after run
 	hasSetSTPALL_ = grpId==ALL; // adding groups after this will not have conductances set
 
 	if (isSet) { // enable STDP, use default values
-		UserErrors::userAssert(isExcitatoryGroup(grpId) || isInhibitoryGroup(grpId), UserErrors::WRONG_NEURON_TYPE,
+		UserErrors::assertTrue(isExcitatoryGroup(grpId) || isInhibitoryGroup(grpId), UserErrors::WRONG_NEURON_TYPE,
 									funcName,"setSTP");
 
 		snn_->setSTP(grpId,true,STP_U,STP_tau_u,STP_tau_x,configId);
@@ -411,7 +461,6 @@ void CARLsim::setSTP(int grpId, bool isSet, float STP_U, float STP_tau_u, float 
 // run network with custom options
 int CARLsim::runNetwork(int nSec, int nMsec, bool enablePrint, bool copyState) {
 	if (!hasRunNetwork_) {
-		handleNetworkConsistency();	// before running network, make sure it's consistent
 		handleUserWarnings();	// before running network, make sure user didn't provoque any user warnings
 //		printSimulationSpecs(); // first time around, show simMode etc.
 	}
@@ -430,14 +479,14 @@ void CARLsim::setLogCycle(int showStatusCycle) {
 
 // set new file pointer for debug log file
 void CARLsim::setLogDebugFp(FILE* fpLog) {
-	UserErrors::userAssert(fpLog!=NULL,UserErrors::CANNOT_BE_NULL,"setLogDebugFp","fpLog");
+	UserErrors::assertTrue(fpLog!=NULL,UserErrors::CANNOT_BE_NULL,"setLogDebugFp","fpLog");
 
 	snn_->setLogDebugFp(fpLog);
 }
 
 // set new file pointer for all files
 void CARLsim::setLogsFp(FILE* fpOut, FILE* fpErr, FILE* fpDeb, FILE* fpLog) {
-	UserErrors::userAssert(loggerMode_==CUSTOM,UserErrors::MUST_BE_LOGGER_CUSTOM,"setLogsFp","Logger mode");
+	UserErrors::assertTrue(loggerMode_==CUSTOM,UserErrors::MUST_BE_LOGGER_CUSTOM,"setLogsFp","Logger mode");
 
 	snn_->setLogsFp(fpOut,fpErr,fpDeb,fpLog);
 }
@@ -448,7 +497,7 @@ void CARLsim::setLogsFp(FILE* fpOut, FILE* fpErr, FILE* fpDeb, FILE* fpLog) {
 // reads network state from file
 void CARLsim::readNetwork(FILE* fid) {
 	std::string funcName = "readNetwork()";
-	UserErrors::userAssert(!hasRunNetwork_, UserErrors::NETWORK_ALREADY_RUN, funcName); // can't change setup after run
+	UserErrors::assertTrue(!hasRunNetwork_, UserErrors::NETWORK_ALREADY_RUN, funcName); // can't change setup after run
 
 	snn_->readNetwork(fid);
 }
@@ -471,7 +520,7 @@ void CARLsim::resetSpikeCounter(int grpId, int configId) {
 // sets a spike counter for a group
 void CARLsim::setSpikeCounter(int grpId, int recordDur, int configId) {
 	std::stringstream funcName;	funcName << "setSpikeCounter(" << grpId << "," << recordDur << "," << configId << ")";
-	UserErrors::userAssert(grpId!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName.str(), "grpId");
+	UserErrors::assertTrue(grpId!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName.str(), "grpId");
 
 	snn_->setSpikeCounter(grpId,recordDur,configId);
 }
@@ -479,8 +528,8 @@ void CARLsim::setSpikeCounter(int grpId, int recordDur, int configId) {
 // sets up a spike generator
 void CARLsim::setSpikeGenerator(int grpId, SpikeGenerator* spikeGen, int configId) {
 	std::string funcName = "setSpikeGenerator(\""+getGroupName(grpId,configId)+"\")";
-	UserErrors::userAssert(!hasRunNetwork_, UserErrors::NETWORK_ALREADY_RUN, funcName); // can't change setup after run
-	UserErrors::userAssert(grpId!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName, "grpId");		// groupId can't be ALL
+	UserErrors::assertTrue(!hasRunNetwork_, UserErrors::NETWORK_ALREADY_RUN, funcName); // can't change setup after run
+	UserErrors::assertTrue(grpId!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName, "grpId");		// groupId can't be ALL
 
 	snn_->setSpikeGenerator(grpId,spikeGen,configId);
 }
@@ -488,8 +537,8 @@ void CARLsim::setSpikeGenerator(int grpId, SpikeGenerator* spikeGen, int configI
 // set spike monitor for a group
 void CARLsim::setSpikeMonitor(int grpId, SpikeMonitor* spikeMon, int configId) {
 	std::string funcName = "setSpikeMonitor(\""+getGroupName(grpId,configId)+"\",SpikeMonitor*)";
-	UserErrors::userAssert(!hasRunNetwork_, UserErrors::NETWORK_ALREADY_RUN, funcName); // can't change setup after run
-	UserErrors::userAssert(grpId!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName, "grpId");		// groupId can't be ALL
+	UserErrors::assertTrue(!hasRunNetwork_, UserErrors::NETWORK_ALREADY_RUN, funcName); // can't change setup after run
+	UserErrors::assertTrue(grpId!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName, "grpId");		// groupId can't be ALL
 
 	snn_->setSpikeMonitor(grpId,spikeMon,configId);
 }
@@ -498,9 +547,9 @@ void CARLsim::setSpikeMonitor(int grpId, SpikeMonitor* spikeMon, int configId) {
 // set spike monitor for group and write spikes to file
 void CARLsim::setSpikeMonitor(int grpId, const std::string& fname, int configId) {
 	std::string funcName = "setSpikeMonitor(\""+getGroupName(grpId,configId)+"\",\""+fname+"\")";
-	UserErrors::userAssert(!hasRunNetwork_, UserErrors::NETWORK_ALREADY_RUN, funcName); // can't change setup after run
-	UserErrors::userAssert(configId!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName, "configId");	// configId can't be ALL
-	UserErrors::userAssert(grpId!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName, "grpId");		// groupId can't be ALL
+	UserErrors::assertTrue(!hasRunNetwork_, UserErrors::NETWORK_ALREADY_RUN, funcName); // can't change setup after run
+	UserErrors::assertTrue(configId!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName, "configId");	// configId can't be ALL
+	UserErrors::assertTrue(grpId!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName, "grpId");		// groupId can't be ALL
 
 	// try to open spike file
 	FILE* fid = fopen(fname.c_str(),"wb"); // FIXME: where does fid get closed?
@@ -520,7 +569,7 @@ void CARLsim::setSpikeMonitor(int grpId, const std::string& fname, int configId)
 			#else
 			    status = mkdir(dirname(fchar), 0777); // Unix
 				std::string fileError = "%%CARLSIM_ROOT%%/results/ does not exist. Thus file " + fname;
-				UserErrors::userAssert(status!=-1 || errno==EEXIST, UserErrors::FILE_CANNOT_CREATE, funcName, fileError);
+				UserErrors::assertTrue(status!=-1 || errno==EEXIST, UserErrors::FILE_CANNOT_CREATE, funcName, fileError);
 			#endif
 
 			// now that the directory is created, fopen file
@@ -529,7 +578,7 @@ void CARLsim::setSpikeMonitor(int grpId, const std::string& fname, int configId)
 		    // default case: print error and exit
 		    std::string fileError = ". Enable option CREATE_SPIKEDIR_IF_NOT_EXISTS in config.h to attempt "
 		    							"creating the specified subdirectory automatically. File " + fname;
-		    UserErrors::userAssert(false, UserErrors::FILE_CANNOT_OPEN, fileName, fileError);
+		    UserErrors::assertTrue(false, UserErrors::FILE_CANNOT_OPEN, fileName, fileError);
 		#endif
 	}
 
@@ -555,7 +604,7 @@ void CARLsim::writeNetwork(FILE* fid) {
 // function writes population weights from gIDpre to gIDpost to file fname in binary.
 void CARLsim::writePopWeights(std::string fname, int gIDpre, int gIDpost, int configId) {
 	std::string funcName = "writePopWeights("+fname+")";
-	UserErrors::userAssert(configId!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName, "configId");	// configId can't be ALL
+	UserErrors::assertTrue(configId!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName, "configId");	// configId can't be ALL
 	snn_->writePopWeights(fname,gIDpre,gIDpost,configId);
 }
 
@@ -566,7 +615,7 @@ void CARLsim::writePopWeights(std::string fname, int gIDpre, int gIDpost, int co
 // get connection info struct
 grpConnectInfo_t* CARLsim::getConnectInfo(short int connectId, int configId) {
 	std::stringstream funcName;	funcName << "getConnectInfo(" << connectId << "," << configId << ")";
-	UserErrors::userAssert(configId!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName.str(), "configId");			// configId can't be ALL
+	UserErrors::assertTrue(configId!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName.str(), "configId");			// configId can't be ALL
 	return snn_->getConnectInfo(connectId,configId);
 }
 
@@ -580,13 +629,13 @@ uint8_t* CARLsim::getDelays(int gIDpre, int gIDpost, int& Npre, int& Npost, uint
 
 int CARLsim::getGroupId(int grpId, int configId) {
 	std::stringstream funcName;	funcName << "getConnectInfo(" << grpId << "," << configId << ")";
-	UserErrors::userAssert(configId!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName.str(), "configId");			// configId can't be ALL
+	UserErrors::assertTrue(configId!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName.str(), "configId");			// configId can't be ALL
 	return snn_->getGroupId(grpId,configId);
 }
 // get group info struct
 group_info_t CARLsim::getGroupInfo(int grpId, int configId) {
 	std::stringstream funcName;	funcName << "getConnectInfo(" << grpId << "," << configId << ")";
-	UserErrors::userAssert(configId!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName.str(), "configId");			// configId can't be ALL
+	UserErrors::assertTrue(configId!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName.str(), "configId");			// configId can't be ALL
 	return snn_->getGroupInfo(grpId, configId);
 }
 
@@ -617,8 +666,8 @@ unsigned int* CARLsim::getSpikeCntPtr(int grpId) {
 // get spiking information out for a given group
 int* CARLsim::getSpikeCounter(int grpId, int configId) {
 	std::stringstream funcName;	funcName << "getSpikeCounter(" << grpId << "," << configId << ")";
-	UserErrors::userAssert(grpId!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName.str(), "grpId");
-	UserErrors::userAssert(configId!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName.str(), "configId");
+	UserErrors::assertTrue(grpId!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName.str(), "grpId");
+	UserErrors::assertTrue(configId!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName.str(), "configId");
 
 	return snn_->getSpikeCounter(grpId,configId);
 }
@@ -649,15 +698,24 @@ void CARLsim::setPrintState(int grpId, bool status) { snn_->setPrintState(grpId,
 // +++++++++ PUBLIC METHODS: SET DEFAULTS +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
 // set default values for conductance decay times
-void CARLsim::setDefaultConductanceDecay(float tdAMPA, float tdNMDA, float tdGABAa, float tdGABAb) {
-	assert(tdAMPA>0); // TODO make nice
-	assert(tdNMDA>0);
-	assert(tdGABAa>0);
-	assert(tdGABAb>0);
+void CARLsim::setDefaultConductanceTimeConstants(int tdAMPA, int trNMDA, int tdNMDA, int tdGABAa, int trGABAb, 
+int tdGABAb) {
+	std::stringstream funcName;	funcName << "setDefaultConductanceTimeConstants(" << tdAMPA << "," << trNMDA << 
+		"," << tdNMDA << "," << tdGABAa << "," << trGABAb << "," << tdGABAb << ")";
+	UserErrors::assertTrue(tdAMPA>0, UserErrors::MUST_BE_POSITIVE, funcName.str(), "tdAMPA");
+	UserErrors::assertTrue(trNMDA>0, UserErrors::MUST_BE_POSITIVE, funcName.str(), "trNMDA");
+	UserErrors::assertTrue(tdNMDA>0, UserErrors::MUST_BE_POSITIVE, funcName.str(), "tdNMDA");
+	UserErrors::assertTrue(tdGABAa>0, UserErrors::MUST_BE_POSITIVE, funcName.str(), "tdGABAa");
+	UserErrors::assertTrue(trGABAb>0, UserErrors::MUST_BE_POSITIVE, funcName.str(), "trGABAb");
+	UserErrors::assertTrue(tdGABAb>0, UserErrors::MUST_BE_POSITIVE, funcName.str(), "tdGABAb");
+	UserErrors::assertTrue(trNMDA!=tdNMDA, UserErrors::CANNOT_BE_IDENTICAL, funcName.str(), "trNMDA and tdNMDA");
+	UserErrors::assertTrue(trGABAb!=tdGABAb, UserErrors::CANNOT_BE_IDENTICAL, funcName.str(), "trGABAb and tdGABAb");
 
 	def_tdAMPA_  = tdAMPA;
+	def_trNMDA_  = trNMDA;
 	def_tdNMDA_  = tdNMDA;
 	def_tdGABAa_ = tdGABAa;
+	def_trGABAb_ = trGABAb;
 	def_tdGABAb_ = tdGABAb;
 }
 
@@ -681,7 +739,7 @@ void CARLsim::setDefaultSTDPparams(float alphaLTP, float tauLTP, float alphaLTD,
 // set default STP values for an EXCITATORY_NEURON or INHIBITORY_NEURON
 void CARLsim::setDefaultSTPparams(int neurType, float STP_U, float STP_tau_u, float STP_tau_x) {
 	std::string funcName = "setDefaultSTPparams()";
-	UserErrors::userAssert(neurType==EXCITATORY_NEURON || neurType==INHIBITORY_NEURON, UserErrors::WRONG_NEURON_TYPE,
+	UserErrors::assertTrue(neurType==EXCITATORY_NEURON || neurType==INHIBITORY_NEURON, UserErrors::WRONG_NEURON_TYPE,
 									funcName);
 	assert(STP_tau_u>0.0f);
 	assert(STP_tau_x>0.0f);
@@ -708,30 +766,9 @@ void CARLsim::setDefaultSTPparams(int neurType, float STP_U, float STP_tau_u, fl
 /// PRIVATE METHODS
 /// **************************************************************************************************************** ///
 
-// check whether all or none of the groups have conductances enabled
-void CARLsim::checkConductances() {
-	bool allSame;
-	for (std::vector<int>::const_iterator it = grpIds_.begin(); it!=grpIds_.end(); ++it) {
-		for (int c=0; c<nConfig_; c++) {
-			group_info_t grpInfo = getGroupInfo(*it,c);
-			allSame = ((it-1)==grpIds_.begin() && c==0) ? grpInfo.WithConductances : allSame==grpInfo.WithConductances;
-		}
-	}
-
-	std::string errorMsg = "If one group enables conductances, then all groups (except for generators) must enable "
-							"conductances. All conductances";
-	UserErrors::userAssert(allSame, UserErrors::MUST_HAVE_SAME_SIGN,"setConductances", errorMsg);
-}
-
 // check whether grpId exists in grpIds_
 bool CARLsim::existsGrpId(int grpId) {
 	return std::find(grpIds_.begin(), grpIds_.end(), grpId)!=grpIds_.end();
-}
-
-// check for setupNetwork user errors
-void CARLsim::handleNetworkConsistency() {
-	checkConductances();	// conductances have to be set either for all groups or for none
-
 }
 
 // print all user warnings, continue only after user input

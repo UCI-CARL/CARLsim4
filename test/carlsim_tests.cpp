@@ -129,6 +129,7 @@ TEST(Interface, connect) {
 
 	CARLsim* sim = new CARLsim("SNN",CPU_MODE,SILENT,0,1,42);
 	int g1=sim->createSpikeGeneratorGroup("excit", 10, EXCITATORY_NEURON);
+	EXPECT_DEATH({sim->connect(g1,g1,"random",0.01f,0.1f,1);},""); // g2 cannot be PoissonGroup
 	EXPECT_DEATH({sim->connect(g1,g1,"random",-0.01f,0.1f,1);},""); // weight cannot be negative
 }
 
@@ -144,7 +145,38 @@ TEST(Interface, getSpikeCounter) {
 	delete sim;
 }
 
+//! trigger all UserErrors
+TEST(Interface, setConductances) {
+	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
+	CARLsim* sim = new CARLsim("SNN",CPU_MODE,USER,0,1,42);
+	int g1=sim->createGroup("excit", 10, EXCITATORY_NEURON);
+	sim->setNeuronParameters(g1, 0.02f, 0.2f,-65.0f,8.0f);
+	sim->connect(g1,g1,"random",0.01f,0.1f,1);
+
+	// set custom values, no rise times
+	EXPECT_DEATH({sim->setConductances(true,-1,2,3,4);},"");
+	EXPECT_DEATH({sim->setConductances(true,1,-2,3,4);},"");
+	EXPECT_DEATH({sim->setConductances(true,1,2,-3,4);},"");
+	EXPECT_DEATH({sim->setConductances(true,1,2,3,-4);},"");
+
+	// set custom values, all
+	EXPECT_DEATH({sim->setConductances(true,-1,2,3,4,5,6);},"");
+	EXPECT_DEATH({sim->setConductances(true,1,-2,3,4,5,6);},"");
+	EXPECT_DEATH({sim->setConductances(true,1,2,-3,4,5,6);},"");
+	EXPECT_DEATH({sim->setConductances(true,1,2,3,-4,5,6);},"");
+	EXPECT_DEATH({sim->setConductances(true,1,2,3,4,-5,6);},"");
+	EXPECT_DEATH({sim->setConductances(true,1,2,3,4,5,-6);},"");
+	EXPECT_DEATH({sim->setConductances(true,1,2,2,4,5,6);},""); // tdNMDA==trNMDA
+	EXPECT_DEATH({sim->setConductances(true,1,2,3,4,5,5);},""); // tdGABAb==trGABAb
+
+	// calling setConductances after runNetwork
+	sim->runNetwork(0,0);
+	EXPECT_DEATH({sim->setConductances(true);},"");
+	EXPECT_DEATH({sim->setConductances(false,1,2,3,4);},"");
+	EXPECT_DEATH({sim->setConductances(false,1,2,3,4,5,6);},"");
+	delete sim;
+}
 
 //! trigger all UserErrors
 TEST(Interface, setSpikeCounter) {
@@ -154,6 +186,187 @@ TEST(Interface, setSpikeCounter) {
 	int g1=sim->createGroup("excit", 10, EXCITATORY_NEURON);
 	EXPECT_DEATH({sim->setSpikeCounter(ALL);},"");
 	delete sim;
+}
+
+//! trigger all UserErrors
+TEST(Interface, setDefaultConductanceTimeConstants) {
+	::testing::FLAGS_gtest_death_test_style = "threadsafe";
+
+	CARLsim* sim = new CARLsim("SNN",CPU_MODE,SILENT);
+	EXPECT_DEATH({sim->setDefaultConductanceTimeConstants(-1,2,3,4,5,6);},""); // negative values
+	EXPECT_DEATH({sim->setDefaultConductanceTimeConstants(1,-2,3,4,5,6);},"");
+	EXPECT_DEATH({sim->setDefaultConductanceTimeConstants(1,2,-3,4,5,6);},"");
+	EXPECT_DEATH({sim->setDefaultConductanceTimeConstants(1,2,3,-4,5,6);},"");
+	EXPECT_DEATH({sim->setDefaultConductanceTimeConstants(1,2,3,4,-5,6);},"");
+	EXPECT_DEATH({sim->setDefaultConductanceTimeConstants(1,2,3,4,5,-6);},"");
+	EXPECT_DEATH({sim->setDefaultConductanceTimeConstants(1,2,2,4,5,6);},"");  // trNMDA==tdNMDA
+	EXPECT_DEATH({sim->setDefaultConductanceTimeConstants(1,2,3,4,5,5);},"");  // trGABAb==tdGABAb
+	delete sim;
+}
+
+/// **************************************************************************************************************** ///
+/// SET CONDUCTANCES
+/// **************************************************************************************************************** ///
+
+//! test all possible valid ways of setting conductances to true
+// FIXME: this could be interface level, but then there would be no way to test net_Info struct
+TEST(CORE, setConductancesTrue) {
+	std::string name = "SNN";
+	int maxConfig = rand()%10 + 10;
+	int nConfigStep = rand()%3 + 2;
+	CpuSNN* sim;
+
+	for (int mode=0; mode<=1; mode++) {
+		for (int nConfig=1; nConfig<=maxConfig; nConfig+=nConfigStep) {
+			int tdAMPA  = rand()%100 + 1;
+			int trNMDA  = (nConfig==1) ? 0 : rand()%100 + 1;
+			int tdNMDA  = rand()%100 + trNMDA + 1; // make sure it's larger than trNMDA
+			int tdGABAa = rand()%100 + 1;
+			int trGABAb = (nConfig==nConfigStep+1) ? 0 : rand()%100 + 1;
+			int tdGABAb = rand()%100 + trGABAb + 1; // make sure it's larger than trGABAb
+
+			sim = new CpuSNN(name,mode?GPU_MODE:CPU_MODE,SILENT,0,nConfig,42);
+			sim->setConductances(true,tdAMPA,trNMDA,tdNMDA,tdGABAa,trGABAb,tdGABAb,ALL);
+			EXPECT_TRUE(sim->sim_with_conductances);
+			EXPECT_FLOAT_EQ(sim->dAMPA,1.0f-1.0f/tdAMPA);
+			if (trNMDA) {
+				EXPECT_TRUE(sim->sim_with_NMDA_rise);
+				EXPECT_FLOAT_EQ(sim->rNMDA,1.0f-1.0f/trNMDA);
+			} else {
+				EXPECT_FALSE(sim->sim_with_NMDA_rise);
+			}
+			EXPECT_FLOAT_EQ(sim->dNMDA,1.0f-1.0f/tdNMDA);
+			EXPECT_FLOAT_EQ(sim->dGABAa,1.0f-1.0f/tdGABAa);
+			if (trGABAb) {
+				EXPECT_TRUE(sim->sim_with_GABAb_rise);
+				EXPECT_FLOAT_EQ(sim->rGABAb,1.0f-1.0f/trGABAb);
+			} else {
+				EXPECT_FALSE(sim->sim_with_GABAb_rise);
+			}
+			EXPECT_FLOAT_EQ(sim->dGABAb,1.0f-1.0f/tdGABAb);
+
+			delete sim;
+		}
+	}
+}
+
+// FIXME: this COULD be interface-level, but then there's no way to check sim->dNMDA, etc.
+// We should ensure everything gets set up correctly
+TEST(COBA, synRiseTimeSettings) {
+	std::string name = "SNN";
+	int maxConfig = rand()%10 + 10;
+	int nConfigStep = rand()%3 + 2;
+	CpuSNN* sim;
+
+	for (int mode=0; mode<=1; mode++) {
+		for (int nConfig=1; nConfig<=maxConfig; nConfig+=nConfigStep) {
+			int tdAMPA  = rand()%100 + 1;
+			int trNMDA  = (nConfig==1) ? 0 : rand()%100 + 1;
+			int tdNMDA  = rand()%100 + trNMDA + 1; // make sure it's larger than trNMDA
+			int tdGABAa = rand()%100 + 1;
+			int trGABAb = (nConfig==nConfigStep+1) ? 0 : rand()%100 + 1;
+			int tdGABAb = rand()%100 + trGABAb + 1; // make sure it's larger than trGABAb
+
+			sim = new CpuSNN(name,mode?GPU_MODE:CPU_MODE,SILENT,0,nConfig,42);
+			sim->setConductances(true,tdAMPA,trNMDA,tdNMDA,tdGABAa,trGABAb,tdGABAb,ALL);
+			EXPECT_TRUE(sim->sim_with_conductances);
+			EXPECT_FLOAT_EQ(sim->dAMPA,1.0f-1.0f/tdAMPA);
+			if (trNMDA) {
+				EXPECT_TRUE(sim->sim_with_NMDA_rise);
+				EXPECT_FLOAT_EQ(sim->rNMDA,1.0f-1.0f/trNMDA);
+				double tmax = (-tdNMDA*trNMDA*log(1.0*trNMDA/tdNMDA))/(tdNMDA-trNMDA); // t at which cond will be max
+				EXPECT_FLOAT_EQ(sim->sNMDA, 1.0/(exp(-tmax/tdNMDA)-exp(-tmax/trNMDA))); // scaling factor, 1 over max amplitude
+
+			} else {
+				EXPECT_FALSE(sim->sim_with_NMDA_rise);
+			}
+			EXPECT_FLOAT_EQ(sim->dNMDA,1.0f-1.0f/tdNMDA);
+			EXPECT_FLOAT_EQ(sim->dGABAa,1.0f-1.0f/tdGABAa);
+			if (trGABAb) {
+				EXPECT_TRUE(sim->sim_with_GABAb_rise);
+				EXPECT_FLOAT_EQ(sim->rGABAb,1.0f-1.0f/trGABAb);
+				double tmax = (-tdGABAb*trGABAb*log(1.0*trGABAb/tdGABAb))/(tdGABAb-trGABAb); // t at which cond will be max
+				EXPECT_FLOAT_EQ(sim->sGABAb, 1.0/(exp(-tmax/tdGABAb)-exp(-tmax/trGABAb))); // scaling factor, 1 over max amplitude
+			} else {
+				EXPECT_FALSE(sim->sim_with_GABAb_rise);
+			}
+			EXPECT_FLOAT_EQ(sim->dGABAb,1.0f-1.0f/tdGABAb);
+
+			delete sim;
+		}
+	}
+}
+
+//! This test assures that the conductance peak occurs as specified by tau_rise and tau_decay, and that the peak is
+//! equal to the specified weight value
+TEST(COBA, synRiseTime) {
+	std::string name = "SNN";
+	int maxConfig = 1;//rand()%10 + 10;
+	int nConfigStep = rand()%3 + 2;
+	CpuSNN* sim;
+
+	float abs_error = 0.05; // five percent error for wt
+
+	for (int mode=0; mode<=1; mode++) {
+		for (int nConfig=1; nConfig<=maxConfig; nConfig+=nConfigStep) {
+			int tdAMPA  = rand()%100 + 1;
+			int trNMDA  = rand()%100 + 1;
+			int tdNMDA  = rand()%100 + trNMDA + 1; // make sure it's larger than trNMDA
+			int tdGABAa = rand()%100 + 1;
+			int trGABAb = rand()%100 + 1;
+			int tdGABAb = rand()%100 + trGABAb + 1; // make sure it's larger than trGABAb
+
+			sim = new CpuSNN(name,mode?GPU_MODE:CPU_MODE,SILENT,0,nConfig,42);
+			int g0=sim->createSpikeGeneratorGroup("inputExc", 1, EXCITATORY_NEURON, ALL);
+			int g1=sim->createGroup("excit", 1, EXCITATORY_NEURON, ALL);
+			sim->setNeuronParameters(g1, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f, ALL);
+			sim->connect(g0,g1,"full",0.5f,0.5f,1.0f,1,1,0.0f,1.0f,SYN_FIXED);
+
+			int g2=sim->createSpikeGeneratorGroup("inputInh", 1, INHIBITORY_NEURON, ALL);
+			int g3=sim->createGroup("inhib", 1, INHIBITORY_NEURON, ALL);
+			sim->setNeuronParameters(g3, 0.1f,  0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 2.0f, 0.0f, ALL);
+			sim->connect(g2,g3,"full",-0.5f,-0.5f,1.0f,1,1,0.0f,1.0f,SYN_FIXED);
+
+			sim->setConductances(true,tdAMPA,trNMDA,tdNMDA,tdGABAa,trGABAb,tdGABAb,ALL);
+
+			// run network for a second first, so that we know spike will happen at simTimeMs==1000
+			PeriodicSpikeGenerator* spk1 = new PeriodicSpikeGenerator(1.0f); // periodic spiking @ 50 Hz
+			sim->setSpikeGenerator(g0, spk1, ALL);
+			sim->setSpikeGenerator(g2, spk1, ALL);
+			sim->runNetwork(1,0,false,false);
+
+			// now observe gNMDA, gGABAb after spike, and make sure that the time at which they're max matches the
+			// analytical solution, and that the peak conductance is actually equal to the weight we set
+			int tmaxNMDA = -1;
+			double maxNMDA = -1;
+			int tmaxGABAb = -1;
+			double maxGABAb = -1;
+			int nMsec = max(trNMDA+tdNMDA,trGABAb+tdGABAb)+10;
+			for (int i=0; i<nMsec; i++) {
+				sim->runNetwork(0,1,false,true); // copyNeuronState
+
+				if ((sim->gNMDA_d[sim->grpStartNeuronId(g1)]-sim->gNMDA_r[sim->grpStartNeuronId(g1)]) > maxNMDA) {
+					tmaxNMDA=i;
+					maxNMDA=sim->gNMDA_d[sim->grpStartNeuronId(g1)]-sim->gNMDA_r[sim->grpStartNeuronId(g1)];
+				}
+				if ((sim->gGABAb_d[sim->grpStartNeuronId(g3)]-sim->gGABAb_r[sim->grpStartNeuronId(g3)]) > maxGABAb) {
+					tmaxGABAb=i;
+					maxGABAb=sim->gGABAb_d[sim->grpStartNeuronId(g3)]-sim->gGABAb_r[sim->grpStartNeuronId(g3)];
+				}
+			}
+
+			double tmax = (-tdNMDA*trNMDA*log(1.0*trNMDA/tdNMDA))/(tdNMDA-trNMDA);
+			EXPECT_NEAR(tmaxNMDA,tmax,1); // t_max should be near the analytical solution
+			EXPECT_NEAR(maxNMDA,0.5,0.5*abs_error); // max should be equal to the weight
+
+			tmax = (-tdGABAb*trGABAb*log(1.0*trGABAb/tdGABAb))/(tdGABAb-trGABAb);
+			EXPECT_NEAR(tmaxGABAb,tmaxGABAb,1); // t_max should be near the analytical solution
+			EXPECT_NEAR(maxGABAb,0.5,0.5*abs_error); // max should be equal to the weight times -1
+
+			delete spk1;
+			delete sim;
+		}
+	}
 }
 
 
@@ -235,7 +448,7 @@ TEST(SpikeCounter, SpikeCntVsData) {
 		sim->setNeuronParameters(g1, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f, ALL);
 
 		sim->connect(g0,g1,"full",0.001f,0.001f,1.0f,1,1,1.0f,1.0f,SYN_FIXED);
-		sim->setConductances(ALL,true,5.0f,150.0f,6.0f,150.0f,ALL);
+		sim->setConductances(true,5,0,150,6,0,150,ALL);
 
 		sim->setSpikeCounter(g1,recordDur,ALL);
 		sim->setSpikeMonitor(g1,NULL,ALL);
@@ -247,14 +460,14 @@ TEST(SpikeCounter, SpikeCntVsData) {
 		sim->runNetwork(0,750,false,false);
 		for (int c=0; c<nConfig; c++) {
 			spikes = sim->getSpikeCounter(g1,c);
-			EXPECT_EQ(spikes[0],10);
+			EXPECT_EQ(spikes[0],16);
 		}
 
 		// reset different group and expect same number
 		sim->resetSpikeCounter(g0,ALL);
 		for (int c=0; c<nConfig; c++) {
 			spikes = sim->getSpikeCounter(g1,c);
-			EXPECT_EQ(spikes[0],10);
+			EXPECT_EQ(spikes[0],16);
 		}
 
 		// reset group (one configId) and expect zero for it, same number for others
@@ -264,7 +477,7 @@ TEST(SpikeCounter, SpikeCntVsData) {
 			if (c==nConfig-1)
 				EXPECT_EQ(spikes[0],0);
 			else
-				EXPECT_EQ(spikes[0],10);
+				EXPECT_EQ(spikes[0],16);
 		}
 
 		// reset group and expect zero
@@ -278,7 +491,7 @@ TEST(SpikeCounter, SpikeCntVsData) {
 		sim->runNetwork(2,134,false,false);
 		for (int c=0; c<nConfig; c++) {
 			spikes = sim->getSpikeCounter(g1,0);
-			EXPECT_EQ(spikes[0],28);
+			EXPECT_EQ(spikes[0],42);
 		}
 
 		delete spk50;
@@ -310,7 +523,7 @@ TEST(SpikeCounter, SpikeCntvsSpikeMon) {
 			sim->setNeuronParameters(g1, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f, ALL);
 
 			sim->connect(g0,g1,"full",0.001f,0.001f,1.0f,1,1,1.0f,1.0f,SYN_FIXED);
-			sim->setConductances(ALL,true,5.0f,150.0f,6.0f,150.0f,ALL);
+			sim->setConductances(true,5,0,150,6,0,150,ALL);
 
 			sim->setSpikeCounter(g1,-1,ALL);
 			SpikeMonitorPerNeuron* spikePN = new SpikeMonitorPerNeuron(10);
@@ -374,7 +587,7 @@ TEST(SpikeCounter, CPUvsGPU) {
 			sim->setNeuronParameters(g1, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f, ALL);
 
 			sim->connect(g0,g1,"full",0.001f,0.001f,1.0f,1,1,1.0f,1.0f,SYN_FIXED);
-			sim->setConductances(ALL,true,5,0,150,6,0,150,ALL);
+			sim->setConductances(true,5,0,150,6,0,150,ALL);
 
 			sim->setSpikeCounter(g1,recordDur,ALL);
 			sim->setSpikeMonitor(g1,NULL,ALL);
@@ -525,7 +738,7 @@ TEST(STP, internalCPUvsData) {
 	int g1=sim->createGroup("excit", 1, EXCITATORY_NEURON, ALL);
 	sim->setNeuronParameters(g1, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f, ALL);
 	sim->connect(g0,g1,"full",0.01f,0.01f,1.0f,1,1,1.0f,1.0f,SYN_FIXED);
-	sim->setConductances(ALL,true,5,10,15,20,ALL);
+	sim->setConductances(true,5,10,15,20,25,30,ALL);
 	sim->setSTP(g0,true,0.19f,86,992,ALL); // the exact values are not important
 
 	PeriodicSpikeGenerator* spk50 = new PeriodicSpikeGenerator(50.0f); // periodic spiking @ 50 Hz
@@ -567,7 +780,7 @@ TEST(STP, externalCPUvsData) {
 	int g1=sim->createGroup("excit", 1, EXCITATORY_NEURON, ALL);
 	sim->setNeuronParameters(g1, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f, ALL);
 	sim->connect(g0,g1,"full",0.01f,0.01f,1.0f,1,1,1.0f,1.0f,SYN_FIXED);
-	sim->setConductances(ALL,true,5.0f,10.0f,15.0f,20.0f,ALL);
+	sim->setConductances(true,5,10,15,20,25,30,ALL);
 	sim->setSTP(g0,true,0.19f,86,992,ALL); // the exact values are not important
 
 	PeriodicSpikeGenerator* spk50 = new PeriodicSpikeGenerator(50.0f); // periodic spiking @ 50 Hz
@@ -609,7 +822,7 @@ TEST(STP, internalCPUvsGPU) {
 		int g1=sim->createGroup("excit", 1, EXCITATORY_NEURON, ALL);
 		sim->setNeuronParameters(g1, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f, ALL);
 		sim->connect(g0,g1,"full",0.01f,0.01f,1.0f,1,1,1.0f,1.0f,SYN_FIXED);
-		sim->setConductances(ALL,true,5,10,15,20,ALL);
+		sim->setConductances(true,5,10,15,20,25,30,ALL);
 		sim->setSTP(g0,true,STP_U,STP_tD,STP_tF,ALL);
 
 		PeriodicSpikeGenerator* spk20 = new PeriodicSpikeGenerator(20.0f);
@@ -668,7 +881,7 @@ TEST(STP, externalCPUvsGPU) {
 		int g1=sim->createGroup("excit", 1, EXCITATORY_NEURON, ALL);
 		sim->setNeuronParameters(g1, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f, ALL);
 		sim->connect(g0,g1,"full",0.01f,0.01f,1.0f,1,1,1.0f,1.0f,SYN_FIXED);
-		sim->setConductances(ALL,true,5,10,15,20,25,30,ALL);
+		sim->setConductances(true,5,10,15,20,25,30,ALL);
 		sim->setSTP(g0,true,STP_U,STP_tD,STP_tF,ALL);
 
 		PeriodicSpikeGenerator* spk20 = new PeriodicSpikeGenerator(20.0f);
@@ -1056,7 +1269,7 @@ TEST(COBA, disableSynReceptors) {
 			sim->setNeuronParameters(grps[2], 0.1f,  0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 2.0f, 0.0f, ALL);
 			sim->setNeuronParameters(grps[3], 0.1f,  0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 2.0f, 0.0f, ALL);
 
-			sim->setConductances(ALL,true, 5.0f, 150.0f, 6.0f, 150.0f, ALL);
+			sim->setConductances(true, 5, 0, 150, 6, 0, 150, ALL);
 
 			sim->connect(g0, grps[0], "full", 0.001f, 0.001f, 1.0f, 1, 1, 1.0, 0.0, SYN_FIXED);
 			sim->connect(g0, grps[1], "full", 0.0005f, 0.0005f, 1.0f, 1, 1, 0.0, 1.0, SYN_FIXED);

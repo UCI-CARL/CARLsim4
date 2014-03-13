@@ -9,7 +9,7 @@
 /// **************************************************************************************************************** ///
 
 // simple wrapper to assert a statement and print an error message
-void UserErrors::userAssert(bool statement, errorType errorIfAssertionFails, std::string errorFunc,
+void UserErrors::assertTrue(bool statement, errorType errorIfAssertionFails, std::string errorFunc,
 								std::string errorMsgPrefix) {
 	if (!statement) {
 		throwError(errorFunc,errorIfAssertionFails,errorMsgPrefix); // display standard error message
@@ -27,6 +27,9 @@ void UserErrors::throwError(std::string errorFunc, errorType error, std::string 
 	switch (error) {
 		case ALL_NOT_ALLOWED:
 			std::cerr << " cannot be ALL.";
+			break;
+		case CANNOT_BE_IDENTICAL:
+			std::cerr << " cannot be identical.";
 			break;
 		case CANNOT_BE_NEGATIVE:
 			std::cerr << " cannot be negative.";
