@@ -295,7 +295,6 @@ int CpuSNN::createGroup(const std::string& grpName, int nNeur, int neurType, int
 
 		grp_Info[numGrp].SizeN  			= nNeur;
 		grp_Info[numGrp].Type   			= neurType;
-//		grp_Info[numGrp].WithConductances	= false;
 		grp_Info[numGrp].WithSTP			= false;
 		grp_Info[numGrp].WithSTDP			= false;
 		grp_Info[numGrp].WithModulatedSTDP  = false;
@@ -335,7 +334,6 @@ int CpuSNN::createSpikeGeneratorGroup(const std::string& grpName, int nNeur, int
 	} else {
 		grp_Info[numGrp].SizeN   		= nNeur;
 		grp_Info[numGrp].Type    		= neurType | POISSON_NEURON;
-//		grp_Info[numGrp].WithConductances	= false;
 		grp_Info[numGrp].WithSTP		= false;
 		grp_Info[numGrp].WithSTDP		= false;
 		grp_Info[numGrp].WithModulatedSTDP = false;
@@ -373,7 +371,7 @@ int trGABAb, int tdGABAb, int configId) {
 
 	// we do not care about configId anymore
 	// set conductances globally for all connections
-	sim_with_conductances  = true;
+	sim_with_conductances  |= isSet;
 	dAMPA  = 1.0-1.0/tdAMPA;
 	dNMDA  = 1.0-1.0/tdNMDA;
 	dGABAa = 1.0-1.0/tdGABAa;
@@ -779,7 +777,6 @@ void CpuSNN::reassignFixedWeights(short int connectId, float weightMatrix[], int
 				int preId       = GET_CONN_NEURON_ID((*preIdPtr));
 				assert(preId < numN);
 				short int currentSrcId = grpIds[preId];
-//				int currentSrcId = findGrpId(preId);
 				//if the neuron is part of the source group, assign it a value
 				//from the reassignment matrix.
 				if(currentSrcId == srcGrp){
@@ -1605,7 +1602,7 @@ void CpuSNN::CpuSNNinit() {
 	numSpkCnt = 0;
 
 	sim_with_fixedwts = true; // default is true, will be set to false if there are any plastic synapses
-	sim_with_conductances = false; // for all others, the default is false
+	sim_with_conductances = false; // default is false
 	sim_with_stdp = false;
 	sim_with_modulated_stdp = false;
 	sim_with_stp = false;
@@ -2551,7 +2548,7 @@ void CpuSNN::findFiring() {
 }
 
 int CpuSNN::findGrpId(int nid) {
-	CARLSIM_WARN("Using findGrpId is deprecated");
+	CARLSIM_WARN("Using findGrpId is deprecated, use array grpIds[] instead...");
 	for(int g=0; g < numGrp; g++) {
 		if(nid >=grp_Info[g].StartN && (nid <=grp_Info[g].EndN)) {
 			return g;
@@ -2581,8 +2578,6 @@ void CpuSNN::generatePostSpike(unsigned int pre_i, unsigned int idx_d, unsigned 
 	// get group id of pre- / post-neuron
 	short int post_grpId = grpIds[post_i];
 	short int pre_grpId = grpIds[pre_i];
-//	int post_grpId = findGrpId(post_i);
-//	int pre_grpId = findGrpId(pre_i);
 
 	unsigned int pre_type = grp_Info[pre_grpId].Type;
 
@@ -2610,10 +2605,6 @@ void CpuSNN::generatePostSpike(unsigned int pre_i, unsigned int idx_d, unsigned 
 
 		// dx/dt = (1-x)/tau_D - u^+ * x^- * \delta(t-t_{spk})
 		stpx[pre_i] -= stpu[pre_i]*stpx[pre_i];
-
-//		if (pre_i==grp_Info[pre_grpId].StartN)
-//			printf("%d: %d->%d: stpu+[%d]=%f, stpx+[%d]=%f\n",simTimeMs,pre_i,post_i,pre_i,stpu[pre_i],pre_i,stpx[pre_i]);
-
 	}
 
 	// update currents
@@ -2642,12 +2633,6 @@ void CpuSNN::generatePostSpike(unsigned int pre_i, unsigned int idx_d, unsigned 
 	} else {
 		current[post_i] += change;
 	}
-
-//	if ((showLogMode >= 3) && (post_i==grp_Info[post_grpId].StartN)) {
-//		fprintf(fpOut_,"%d => %d (%d) am=%f ga=%f wt=%f stpu=%f stpx=%f td=%d\n", pre_i, post_i, findGrpId(post_i),
-//					gAMPA[post_i], gGABAa[post_i], wt[pos_i],(grp_Info[post_grpId].WithSTP?stpx[ind]:1.0),
-//					(grp_Info[post_grpId].WithSTP?stpu[ind]:1.0),tD);
-//	}
 
 	synSpikeTime[pos_i] = simTime;
 
@@ -2688,7 +2673,6 @@ void CpuSNN::generateSpikes() {
 		int nid	 = srg_iter->stg;
 		//delaystep_t del = srg_iter->delay;
 		//generate a spike to all the target neurons from source neuron nid with a delay of del
-//		int g = findGrpId(nid);
 		short int g = grpIds[nid];
 
 /*
@@ -3052,7 +3036,6 @@ int CpuSNN::readNetwork_internal()
 			if (nIDpost >= nrCells) return -7;
 			if (!fread(&weight,sizeof(float),1,readNetworkFID)) return -11;
 
-//			int gIDpre = findGrpId(nIDpre);
 			short int gIDpre = grpIds[nIDpre];
 			if (IS_INHIBITORY_TYPE(grp_Info[gIDpre].Type) && (weight>0)
 					|| !IS_INHIBITORY_TYPE(grp_Info[gIDpre].Type) && (weight<0)) {
@@ -3072,7 +3055,6 @@ int CpuSNN::readNetwork_internal()
 
 			#if READNETWORK_ADD_SYNAPSES_FROM_FILE
 				if ((plastic && onlyPlastic) || (!plastic && !onlyPlastic)) {
-//					int gIDpost = findGrpId(nIDpost);
 					int gIDpost = grpIds[nIDpost];
 					int connProp = SET_FIXED_PLASTIC(plastic?SYN_PLASTIC:SYN_FIXED);
 
@@ -3519,7 +3501,6 @@ void CpuSNN::resetSynapticConnections(bool changeWeights) {
 			for (j=0; j < Npre[nid]; j++,preIdPtr++, synWtPtr++, maxWtPtr++) {
 				int preId    = GET_CONN_NEURON_ID((*preIdPtr));
 				assert(preId < numN);
-//				int srcGrp   = findGrpId(preId);
 				int srcGrp = grpIds[preId];
 				grpConnectInfo_t* connInfo;	      
 				grpConnectInfo_t* connIterator = connectBegin;
@@ -4033,7 +4014,6 @@ void CpuSNN::updateSpikeMonitor() {
 					nid = GET_FIRING_TABLE_NID(nid);
 				assert(nid < numN);
 
-//				int grpId = findGrpId(nid);
 				int grpId = grpIds[nid];
 				int monitorId = grp_Info[grpId].MonitorId;
 				if(monitorId!= -1) {

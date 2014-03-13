@@ -1396,8 +1396,9 @@ __device__ int generatePostSynapticSpike(int& simTime, int& firingId, int& myDel
 
 	// Error MNJ... this should have been from nid.. not firingId...
 	// int  nid  = GET_FIRING_TABLE_NID(firingId);
-	int    post_grpId;		// STP uses pre_grpId, STDP used post_grpId...
-	findGrpId_GPU(nid, post_grpId);
+//	int    post_grpId;		// STP uses pre_grpId, STDP used post_grpId...
+//	findGrpId_GPU(nid, post_grpId);
+	int post_grpId = gpuPtrs.grpIds[nid];
 
 	if(post_grpId == -1)
 		return CURRENT_UPDATE_ERROR4;
