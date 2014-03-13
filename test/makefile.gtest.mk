@@ -19,7 +19,7 @@ USER_DIR = $(GTEST_DIR)/samples
 GTEST_CPPFLAGS += -isystem $(GTEST_DIR)/include -DGTEST_LINKED_AS_SHARED_LIBRARY=1
 
 # Flags passed to the C++ compiler.
-GTEST_CXXFLAGS += -g -Wall -Wextra
+GTEST_CXXFLAGS += -g -Wall -Wextra -pthread
 
 
 # All Google Test headers.  Usually you shouldn't change this
