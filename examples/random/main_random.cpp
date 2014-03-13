@@ -48,7 +48,7 @@ int main()
 	int ithGPU = 0; // run on first GPU
 
 	// create a network
-	CARLsim sim("random",CPU_MODE,USER,ithGPU,1,42);
+	CARLsim sim("random",GPU_MODE,USER,ithGPU,1,42);
 
 	int g1=sim.createGroup("excit", N*0.8, EXCITATORY_NEURON);
 	sim.setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f);

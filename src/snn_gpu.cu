@@ -1150,6 +1150,7 @@ __global__ void kernel_STPUpdateAndDecayConductances (int t, int sec, int simTim
 	}
 }
 
+// FIXME: why the extra function call??
 __device__ void updateTimingTable()
 {
 	int gnthreads=blockDim.x*gridDim.x;
@@ -1311,6 +1312,8 @@ __global__ void kernel_updateWeight()
 
 __global__ void kernel_updateFiring_static()
 {
+	// FIXME: all these are set but never used
+	// if we don't need them...get rid of them, and get rid of extra function call
 	__shared__ volatile int errCode;
 	__shared__ int    		startId, lastId, grpId, totBuffers, grpNCnt;
 	__shared__ int2 		threadLoad;
@@ -1320,6 +1323,7 @@ __global__ void kernel_updateFiring_static()
 		grpNCnt	= (blockDim.x/UPWTS_CLUSTERING_SZ) + ((blockDim.x%UPWTS_CLUSTERING_SZ)!=0);
 	}
 
+	// FIXME: why the extra function call?
 	updateTimingTable();
 }
 
@@ -1396,9 +1400,9 @@ __device__ int generatePostSynapticSpike(int& simTime, int& firingId, int& myDel
 
 	// Error MNJ... this should have been from nid.. not firingId...
 	// int  nid  = GET_FIRING_TABLE_NID(firingId);
-	int    post_grpId;		// STP uses pre_grpId, STDP used post_grpId...
-	findGrpId_GPU(nid, post_grpId);
-//	int post_grpId = gpuPtrs.grpIds[nid];
+//	int    post_grpId;		// STP uses pre_grpId, STDP used post_grpId...
+//	findGrpId_GPU(nid, post_grpId);
+	int post_grpId = gpuPtrs.grpIds[nid];
 
 	if(post_grpId == -1)
 		return CURRENT_UPDATE_ERROR4;
@@ -2239,6 +2243,10 @@ void CpuSNN::copyState(network_ptr_t* dest, int allocateMem) {
 		if(allocateMem)     CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->lastSpikeTime, sizeof(int)*numNReg));
 		CUDA_CHECK_ERRORS( cudaMemcpy( dest->lastSpikeTime, lastSpikeTime, sizeof(int)*numNReg, kind));
 	}
+
+	// grp ids
+	if(allocateMem)		CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->grpIds, sizeof(short int)*numN));
+	CUDA_CHECK_ERRORS( cudaMemcpy( dest->grpIds, grpIds, sizeof(short int)*numN, kind));
 		
 	if(allocateMem)
 		CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->spikeGenBits, sizeof(int) * (NgenFunc / 32 + 1)));
@@ -2503,8 +2511,6 @@ __global__ void kernel_check_GPU_init ()
     	retErrVal[1][i++]= tex1Dfetch(groupIdInfo_tex, 0);
     	retErrVal[1][i++]= tex1Dfetch(groupIdInfo_tex, 1);
     	retErrVal[1][i++]= tex1Dfetch(groupIdInfo_tex, 2);
-    	unsigned int id = 124;
-    	int grpId; findGrpId_GPU(id, grpId);
     	retErrVal[1][i++]= gpuGrpInfo[0].WithSTDP;
     	retErrVal[1][i++]= gpuGrpInfo[1].WithSTDP;
     	retErrVal[1][i++]= gpuGrpInfo[2].WithSTDP;

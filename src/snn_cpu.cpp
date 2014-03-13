@@ -2928,6 +2928,7 @@ void CpuSNN::makePtrInfo() {
 	cpuNetPtrs.curSpike 		= curSpike;
 	cpuNetPtrs.firingTableD2 	= firingTableD2;
 	cpuNetPtrs.firingTableD1 	= firingTableD1;
+	cpuNetPtrs.grpIds 			= grpIds;
 
 	// homeostasis variables
 	cpuNetPtrs.avgFiring    	= avgFiring;
