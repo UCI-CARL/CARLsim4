@@ -146,7 +146,7 @@ int main()
   excGroup=snn->createGroup("Exc",EXC_SIZE,EXCITATORY_NEURON);
   inhGroup=snn->createGroup("Inh",INH_SIZE,INHIBITORY_NEURON);
   // set conductance values
-  snn->setConductances(ALL,true,COND_tAMPA,COND_tNMDA,COND_tGABAa,COND_tGABAb);
+  snn->setConductances(true,COND_tAMPA,COND_tNMDA,COND_tGABAa,COND_tGABAb);
   // set Izhikevich neuron parameter values
   snn->setNeuronParameters(excGroup, 0.02f, 0.2f, -65.0f, 8.0f);
   snn->setNeuronParameters(inhGroup, 0.1f, 0.2f, -65.0f, 2.0f); 

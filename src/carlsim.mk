@@ -40,7 +40,7 @@ local_deps := snn.h mtrand.h gpu.h gpu_random.h config.h \
 local_src := $(addprefix $(local_dir)/,$(local_deps) snn_cpu.cpp mtrand.cpp \
 	propagated_spike_buffer.cpp poisson_rate.cpp \
 	printSNNInfo.cpp gpu_random.cu \
-	snn_gpu.cu v1ColorME.2.0.cu v1ColorME.2.1.cu)
+	snn_gpu.cu)
 local_objs := $(addprefix $(local_dir)/,snn_cpu.o  mtrand.o \
 	propagated_spike_buffer.o poisson_rate.o printSNNInfo.o \
 	gpu_random.o snn_gpu.o)
@@ -57,13 +57,12 @@ interface_objs := $(interface_dir)/src/carlsim.o \
 
 # motion energy objects
 util_2_0_objs := $(addprefix $(local_dir)/,v1ColorME.2.0.o)
-util_2_1_objs := $(addprefix $(local_dir)/,v1ColorME.2.1.o)
 
 sources += $(local_src) $(interface_src)
 carlsim_deps += $(local_deps) $(interface_deps)
 carlsim_objs += $(local_objs) $(interface_objs)
 carlsim_sources += $(local_src) $(interface_src)
-objects += $(carlsim_objs) $(interface_objs) $(util_2_0_objs) $(util_2_1_objs)
+objects += $(carlsim_objs) $(interface_objs)
 all_targets += carlsim
 
 #-------------------------------------------------------------------------------

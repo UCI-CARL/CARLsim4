@@ -614,7 +614,7 @@ int main()
 
 	// show log every 1 sec
 	snn.setLogCycle(1);
-	snn.setConductances(ALL,true,5,150,6,150);	
+	snn.setConductances(true,5,150,6,150);	
 	snn.setSTDP(ALL,false);
 	snn.setSTP(ALL,false);
 
