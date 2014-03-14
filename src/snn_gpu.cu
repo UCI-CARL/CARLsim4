@@ -466,9 +466,12 @@ __device__ void resetFiredNeuron(unsigned int& nid, short int & grpId, int& simT
 	gpuPtrs.recovery[nid] += gpuPtrs.Izh_d[nid];
 	if (gpuGrpInfo[grpId].WithSTDP)
 		gpuPtrs.lastSpikeTime[nid] = simTime;
-	// with homeostasis flag can be used here.
-	gpuPtrs.avgFiring[nid] += 1000/(gpuGrpInfo[grpId].avgTimeScale*1000);
-	gpuPtrs.nSpikeCnt[nid]++;
+
+	if (gpuNetInfo.sim_with_homeostasis) {
+		// with homeostasis flag can be used here.
+		gpuPtrs.avgFiring[nid] += 1000/(gpuGrpInfo[grpId].avgTimeScale*1000);
+		gpuPtrs.nSpikeCnt[nid]++;
+	}
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1033,7 +1036,7 @@ __device__ inline void updateHomeoStaticState(unsigned int& pos, int& grpId)
 {
 	// here the homeostasis adjustment
 	if (gpuGrpInfo[grpId].WithHomeostasis)
-	gpuPtrs.avgFiring[pos] *= (gpuGrpInfo[grpId].avgTimeScale_decay);
+		gpuPtrs.avgFiring[pos] *= (gpuGrpInfo[grpId].avgTimeScale_decay);
 }
 
 //!
@@ -1207,6 +1210,7 @@ __device__ void updateSynapticWeights(int& nid, unsigned int& jpos, int& grpId, 
 		//t_wt += t_wtChange+0.1f;
 	}
 	
+	// FIXME: MB - I agree with MDR, I think this is wrong
 	t_wtChange *= gpuNetInfo.wtChangeDecay; // TSC - resume decay weight changes
 	//t_wtChange = 0; //MDR - don't decay weight changes, just set to 0
 
@@ -1242,7 +1246,7 @@ __device__ void updateSynapticWeights(int& nid, int& jpos, int& grpId)
 
 
 #define UPWTS_CLUSTERING_SZ	32
-__global__ void kernel_updateWeight()
+__global__ void kernel_updateWeights()
 {
 	__shared__ volatile int errCode;
 	__shared__ int    		startId, lastId, grpId, totBuffers, grpNCnt;
@@ -2030,10 +2034,12 @@ void CpuSNN::copyNeuronState(network_ptr_t* dest, network_ptr_t* src,  cudaMemcp
 		CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->current, sizeof(float) * length));
 	CUDA_CHECK_ERRORS(cudaMemcpy(&dest->current[ptrPos], &src->current[ptrPos], sizeof(float) * length, kind));
 
-	//Included to enable homeostasis in GPU_MODE.
-	// Avg. Firing...
-	if(allocateMem) CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->avgFiring, sizeof(float)*length));
-	CUDA_CHECK_ERRORS( cudaMemcpy( &dest->avgFiring[ptrPos], &src->avgFiring[ptrPos], sizeof(float)*length, kind));
+	if (sim_with_homeostasis) {
+		//Included to enable homeostasis in GPU_MODE.
+		// Avg. Firing...
+		if(allocateMem) CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->avgFiring, sizeof(float)*length));
+		CUDA_CHECK_ERRORS( cudaMemcpy( &dest->avgFiring[ptrPos], &src->avgFiring[ptrPos], sizeof(float)*length, kind));
+	}
 }
 
 void CpuSNN::copyGroupState(network_ptr_t* dest, network_ptr_t* src,  cudaMemcpyKind kind, int allocateMem, int grpId)
@@ -2095,24 +2101,26 @@ void CpuSNN::copyNeuronParameters(network_ptr_t* dest, int kind, int allocateMem
 		CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->Izh_d, sizeof(float) * length));
 	CUDA_CHECK_ERRORS(cudaMemcpy(&dest->Izh_d[ptrPos], &Izh_d[ptrPos], sizeof(float) * length, cudaMemcpyHostToDevice));
 
-	//Included to enable homeostatic plasticity in GPU_MODE. 
-	// Base Firing...
-	//float baseFiringInv[length];
-	float* baseFiringInv = new float[length];
-	for(int i=0; i < length; i++) {
-		if (baseFiring[i]!=0.0)
-			baseFiringInv[i] = 1.0/baseFiring[ptrPos+i];
-		else
-			baseFiringInv[i] = 0.0;
+	if (sim_with_homeostasis) {
+		//Included to enable homeostatic plasticity in GPU_MODE. 
+		// Base Firing...
+		//float baseFiringInv[length];
+		float* baseFiringInv = new float[length];
+		for(int i=0; i < length; i++) {
+			if (baseFiring[i]!=0.0)
+				baseFiringInv[i] = 1.0/baseFiring[ptrPos+i];
+			else
+				baseFiringInv[i] = 0.0;
+		}
+
+		if(allocateMem) CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->baseFiringInv, sizeof(float)*length));
+		CUDA_CHECK_ERRORS( cudaMemcpy( &dest->baseFiringInv[ptrPos], baseFiringInv, sizeof(float)*length, cudaMemcpyHostToDevice));
+
+		if(allocateMem) CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->baseFiring, sizeof(float)*length));
+		CUDA_CHECK_ERRORS( cudaMemcpy( &dest->baseFiring[ptrPos], baseFiring, sizeof(float)*length, cudaMemcpyHostToDevice));
+
+		delete [] baseFiringInv;
 	}
-
-	if(allocateMem) CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->baseFiringInv, sizeof(float)*length));
-	CUDA_CHECK_ERRORS( cudaMemcpy( &dest->baseFiringInv[ptrPos], baseFiringInv, sizeof(float)*length, cudaMemcpyHostToDevice));
-
-	if(allocateMem) CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->baseFiring, sizeof(float)*length));
-	CUDA_CHECK_ERRORS( cudaMemcpy( &dest->baseFiring[ptrPos], baseFiring, sizeof(float)*length, cudaMemcpyHostToDevice));
-
-	delete [] baseFiringInv;
 }
 
 void CpuSNN::copySTPState(network_ptr_t* dest, network_ptr_t* src, cudaMemcpyKind kind, int allocateMem) {
@@ -2826,41 +2834,42 @@ void CpuSNN::deleteObjects_GPU() {
 void CpuSNN::testSpikeSenderReceiver(FILE* fpLog, int simTime)
 {
 	CARLSIM_WARN("Calling testSpikeSenderReceiver with fpLog is deprecated");
-  if(0) {
-    int EnumFires = 0; int InumFires = 0;
-    CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &EnumFires, secD2fireCnt, sizeof(int), 0, cudaMemcpyDeviceToHost));
-    CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &InumFires, secD1fireCnt, sizeof(int), 0, cudaMemcpyDeviceToHost));
-    CARLSIM_DEBUG(" ***********( t = %d) FIRE COUNTS ************** %d %d", simTime, EnumFires, InumFires);
-    int   numFires;
-    float fireCnt;
-    CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &numFires,  testFireCnt1, sizeof(int), 0, cudaMemcpyDeviceToHost));
-    CARLSIM_DEBUG("testFireCnt1 = %d", numFires);
-    CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &numFires,  testFireCnt2, sizeof(int), 0, cudaMemcpyDeviceToHost));
-    CARLSIM_DEBUG("testFireCnt2 = %d", numFires);
-    CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &fireCnt,  testFireCntf1, sizeof(int), 0, cudaMemcpyDeviceToHost));
-    CARLSIM_DEBUG("testFireCntFloat1 = %f", fireCnt);
-    CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &fireCnt,  testFireCntf2, sizeof(int), 0, cudaMemcpyDeviceToHost));
-    CARLSIM_DEBUG("testFireCntFloat2 = %f", fireCnt);
-    CARLSIM_DEBUG(" *************************");
+	if(0) {
+		int EnumFires = 0; int InumFires = 0;
+		CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &EnumFires, secD2fireCnt, sizeof(int), 0, cudaMemcpyDeviceToHost));
+		CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &InumFires, secD1fireCnt, sizeof(int), 0, cudaMemcpyDeviceToHost));
+		CARLSIM_DEBUG(" ***********( t = %d) FIRE COUNTS ************** %d %d", simTime, EnumFires, InumFires);
+		int   numFires;
+		float fireCnt;
+		CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &numFires,  testFireCnt1, sizeof(int), 0, cudaMemcpyDeviceToHost));
+		CARLSIM_DEBUG("testFireCnt1 = %d", numFires);
+		CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &numFires,  testFireCnt2, sizeof(int), 0, cudaMemcpyDeviceToHost));
+		CARLSIM_DEBUG("testFireCnt2 = %d", numFires);
+		CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &fireCnt,  testFireCntf1, sizeof(int), 0, cudaMemcpyDeviceToHost));
+		CARLSIM_DEBUG("testFireCntFloat1 = %f", fireCnt);
+		CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &fireCnt,  testFireCntf2, sizeof(int), 0, cudaMemcpyDeviceToHost));
+		CARLSIM_DEBUG("testFireCntFloat2 = %f", fireCnt);
+		CARLSIM_DEBUG(" *************************");
 
-    // MDR originally had this. 
-    float* baseFiringInv = new float[numN];
-    for (int i=0;i<numN;i++) baseFiringInv[i] = 1/baseFiring[i];
-    CUDA_CHECK_ERRORS( cudaMemcpy( baseFiringInv, cpu_gpuNetPtrs.baseFiringInv, sizeof(float)*numN, cudaMemcpyDeviceToHost));
-    delete(baseFiringInv);
-    CUDA_CHECK_ERRORS( cudaMemcpy( avgFiring, cpu_gpuNetPtrs.avgFiring, sizeof(float)*numN, cudaMemcpyDeviceToHost));
-    for(int g=0; g < numGrp; g++) {
-      CARLSIM_DEBUG("Homeostasis values");
-      if (!grp_Info[g].FixedInputWts) {
-	CARLSIM_DEBUG("Group %s:\t", grp_Info2[g].Name.c_str());
-	for(int j=grp_Info[g].StartN; j <= grp_Info[g].EndN; j++) {
-	  CARLSIM_DEBUG(" %d: Home =%f (Base =%f)  ", j, avgFiring[j], 1/baseFiringInv[j]);
-	  CARLSIM_DEBUG(" %d: Home =%f (Base =%f)  ", j, avgFiring[j], 1/baseFiringInv[j]);
+		if (sim_with_homeostasis) {
+			// MDR originally had this.
+			float* baseFiringInv = new float[numN];
+			for (int i=0;i<numN;i++) baseFiringInv[i] = 1/baseFiring[i];
+				CUDA_CHECK_ERRORS( cudaMemcpy( baseFiringInv, cpu_gpuNetPtrs.baseFiringInv, sizeof(float)*numN, cudaMemcpyDeviceToHost));
+			delete(baseFiringInv);
+			CUDA_CHECK_ERRORS( cudaMemcpy( avgFiring, cpu_gpuNetPtrs.avgFiring, sizeof(float)*numN, cudaMemcpyDeviceToHost));
+			for(int g=0; g < numGrp; g++) {
+				CARLSIM_DEBUG("Homeostasis values");
+				if (!grp_Info[g].FixedInputWts) {
+					CARLSIM_DEBUG("Group %s:\t", grp_Info2[g].Name.c_str());
+					for(int j=grp_Info[g].StartN; j <= grp_Info[g].EndN; j++) {
+						CARLSIM_DEBUG(" %d: Home =%f (Base =%f)  ", j, avgFiring[j], 1/baseFiringInv[j]);
+						CARLSIM_DEBUG(" %d: Home =%f (Base =%f)  ", j, avgFiring[j], 1/baseFiringInv[j]);
+					}
+				}
+			}
+		}
 	}
-      }
-    }
-    
-  }
 }
 
 void CpuSNN::globalStateUpdate_GPU() {
@@ -2958,12 +2967,12 @@ void CpuSNN::updateFiringTable_GPU()
 	kernel_updateFiring<<<gridSize, blkSize>>>();
 }
 
-void CpuSNN::updateWeight_GPU()
+void CpuSNN::updateWeights_GPU()
 {			
 	int blkSize  = 128;
 	int gridSize = 64;
 
-	kernel_updateWeight<<<gridSize, blkSize>>>();
+	kernel_updateWeights<<<gridSize, blkSize>>>();
 }
 
 void CpuSNN::showStatus_GPU() {
@@ -3041,12 +3050,13 @@ void CpuSNN::allocateNetworkParameters()
 	net_Info.maxSpikesD1 = maxSpikesD1;
 	net_Info.sim_with_fixedwts = sim_with_fixedwts;
 	net_Info.sim_with_conductances = sim_with_conductances;
+	net_Info.sim_with_homeostasis = sim_with_homeostasis;
 	net_Info.sim_with_stdp = sim_with_stdp;
 	net_Info.sim_with_modulated_stdp = sim_with_modulated_stdp;
 	net_Info.sim_with_stp = sim_with_stp;
 	net_Info.numGrp = numGrp;
-	net_Info.stdpScaleFactor = stdpScaleFactor;
-	net_Info.wtChangeDecay = wtChangeDecay;
+	net_Info.stdpScaleFactor = stdpScaleFactor_;
+	net_Info.wtChangeDecay = wtChangeDecay_;
 	cpu_gpuNetPtrs.memType = GPU_MODE;
 
 	net_Info.sim_with_NMDA_rise = sim_with_NMDA_rise;

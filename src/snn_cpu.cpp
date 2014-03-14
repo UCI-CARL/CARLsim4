@@ -428,6 +428,7 @@ void CpuSNN::setHomeostasis(int grpId, bool isSet, float homeoScale, float avgTi
 	} else {
 		// set conductances for a given group and configId
 		int cGrpId = getGroupId(grpId, configId);
+		sim_with_homeostasis 			   |= isSet;
 		grp_Info[cGrpId].WithHomeostasis    = isSet;
 		grp_Info[cGrpId].homeostasisScale   = homeoScale;
 		grp_Info[cGrpId].avgTimeScale       = avgTimeScale;
@@ -456,6 +457,8 @@ void CpuSNN::setHomeoBaseFiringRate(int grpId, float baseFiring, float baseFirin
 	} else {
 		// set conductances for a given group and configId
 		int cGrpId 						= getGroupId(grpId, configId);
+		assert(grp_Info[cGrpId].WithHomeostasis);
+
 		grp_Info2[cGrpId].baseFiring 	= baseFiring;
 		grp_Info2[cGrpId].baseFiringSD 	= baseFiringSD;
 		grp_Info[cGrpId].newUpdates 	= true; //TODO: I have to see how this is handled.  -- KDC
@@ -583,26 +586,26 @@ void CpuSNN::setSTP(int grpId, bool isSet, float STP_U, float STP_tau_u, float S
 	}
 }
 
-void CpuSNN::setWeightUpdateParameter(int _updateInterval, int _tauWeightChange) {
-	switch (_updateInterval) {
+void CpuSNN::setWeightUpdateParameter(int updateInterval, int tauWeightChange) {
+	switch (updateInterval) {
 		case _10MS:
-			updateInterval = 10;
-			stdpScaleFactor = 0.001;
+			wtUpdateInterval_ = 10;
+			stdpScaleFactor_ = 0.001;
 			break;
 		case _100MS:
-			updateInterval = 100;
-			stdpScaleFactor = 0.01;
+			wtUpdateInterval_ = 100;
+			stdpScaleFactor_ = 0.01;
 			break;
 		case _1000MS:
 		default:
-			updateInterval = 1000;
-			stdpScaleFactor = 0.1;
+			wtUpdateInterval_ = 1000;
+			stdpScaleFactor_ = 0.1;
 			break;
 	}
 
-	wtChangeDecay = 1.0 - (1.0 / _tauWeightChange);
+	wtChangeDecay_ = 1.0 - (1.0 / tauWeightChange);
 		
-	CARLSIM_INFO("update weight every %d ms, stdpScaleFactor = %1.3f, wtChangeDecay = %1.3f", updateInterval, stdpScaleFactor, wtChangeDecay);
+	CARLSIM_INFO("update weight every %d ms, stdpScaleFactor = %1.3f, wtChangeDecay = %1.3f", wtUpdateInterval_, stdpScaleFactor_, wtChangeDecay_);
 }
 
 
@@ -638,20 +641,24 @@ int CpuSNN::runNetwork(int _nsec, int _nmsec, bool enablePrint, bool copyState) 
 			printState(fpOut_);
 		}
 
-		// update weight every 10 ms
-		if (simTimeMs % updateInterval == 0) {
-			if (simMode_ == CPU_MODE) {
-				updateWeight();
-			} else{
-				updateWeight_GPU();
+		// update weight every updateInterval ms if plastic synapses present
+		if (!sim_with_fixedwts && (wtUpdateInterval_==++wtUpdateIntervalCnt_)) {
+			wtUpdateIntervalCnt_ = 0; // reset counter
 
-				// TODO: build DA buffer in GPU memory so that we can retrieve data every one second instead of 10 ms
-				// Log dopamine concentration
-				copyGroupState(&cpuNetPtrs, &cpu_gpuNetPtrs, cudaMemcpyDeviceToHost, false, 0);
-				for (int i = 0; i < numGrp; i++) {
-					int monitorId = grp_Info[i].GroupMonitorId;
-					if (monitorId != -1)
-						grpDABuffer[monitorId][simTimeMs / updateInterval] = cpuNetPtrs.grpDA[i];
+			if (simMode_ == CPU_MODE) {
+				updateWeights();
+			} else{
+				updateWeights_GPU();
+
+				if (copyState) {
+					// TODO: build DA buffer in GPU memory so that we can retrieve data every one second instead of 10ms
+					// Log dopamine concentration
+					copyGroupState(&cpuNetPtrs, &cpu_gpuNetPtrs, cudaMemcpyDeviceToHost, false, 0);
+					for (int i = 0; i < numGrp; i++) {
+						int monitorId = grp_Info[i].GroupMonitorId;
+						if (monitorId != -1)
+							grpDABuffer[monitorId][simTimeMs / wtUpdateInterval_] = cpuNetPtrs.grpDA[i];
+					}
 				}
 			}
 		}
@@ -1603,6 +1610,7 @@ void CpuSNN::CpuSNNinit() {
 	sim_with_conductances = false; // default is false
 	sim_with_stdp = false;
 	sim_with_modulated_stdp = false;
+	sim_with_homeostasis = false;
 	sim_with_stp = false;
 
 	maxSpikesD2 = maxSpikesD1 = 0;
@@ -1693,9 +1701,10 @@ void CpuSNN::CpuSNNinit() {
 	CUDA_RESET_TIMER(timer);
 
 	// default weight update parameter	
-	updateInterval = 1000;
-	stdpScaleFactor = 0.1;
-	wtChangeDecay = 0.9;
+	wtUpdateInterval_ = 1000; // update weights every 1000 ms (default)
+	wtUpdateIntervalCnt_ = 0; // helper var to implement fast modulo
+	stdpScaleFactor_ = 0.1;
+	wtChangeDecay_ = 0.9;
 
 	// initialize parameters needed in snn_gpu.cu
 	// FIXME: naming is terrible... so it's a CPU SNN on GPU...
@@ -1763,8 +1772,10 @@ void CpuSNN::buildNetworkInit(unsigned int nNeur, unsigned int nPostSyn, unsigne
 	nSpikeCnt  = new unsigned int[numN];
 
 	//! homeostasis variables
-	avgFiring  = new float[numN];
-	baseFiring = new float[numN];
+	if (sim_with_homeostasis) {
+		avgFiring  = new float[numN];
+		baseFiring = new float[numN];
+	}
 
 	intrinsicWeight  = new float[numN];
 	memset(intrinsicWeight,0,sizeof(float)*numN);
@@ -1830,7 +1841,8 @@ int CpuSNN::addSpikeToTable(int nid, int g) {
 	lastSpikeTime[nid] = simTime;
 	curSpike[nid] = true;
 	nSpikeCnt[nid]++;
-	avgFiring[nid] += 1000/(grp_Info[g].avgTimeScale*1000);
+	if (sim_with_homeostasis)
+		avgFiring[nid] += 1000/(grp_Info[g].avgTimeScale*1000);
 
 	if (simMode_ == GPU_MODE) {
 		assert(grp_Info[g].isSpikeGenerator == true);
@@ -2817,8 +2829,10 @@ void  CpuSNN::globalStateUpdate() {
 
 	for(int g=0; g < numGrp; g++) {
 		if (grp_Info[g].Type&POISSON_NEURON) {
-			for(int i=grp_Info[g].StartN; i <= grp_Info[g].EndN; i++)
-				avgFiring[i] *= grp_Info[g].avgTimeScale_decay;
+			if (grp_Info[g].WithHomeostasis) {
+				for(int i=grp_Info[g].StartN; i <= grp_Info[g].EndN; i++)
+					avgFiring[i] *= grp_Info[g].avgTimeScale_decay;
+			}
 			continue;
 		}
 
@@ -2828,7 +2842,8 @@ void  CpuSNN::globalStateUpdate() {
 
 		for(int i=grp_Info[g].StartN; i <= grp_Info[g].EndN; i++) {
 			assert(i < numNReg);
-			avgFiring[i] *= grp_Info[g].avgTimeScale_decay;
+			if (grp_Info[g].WithHomeostasis)
+				avgFiring[i] *= grp_Info[g].avgTimeScale_decay;
 
 			if (sim_with_conductances) {
 				// COBA model
@@ -3284,21 +3299,21 @@ void CpuSNN::resetNeuron(unsigned int neurId, int grpId) {
 	recovery[neurId] = 0.2f*voltage[neurId];   		// initial values for u
   
  
-	// set the baseFiring with some standard deviation.
-	if(drand48()>0.5)   {
-	baseFiring[neurId] = grp_Info2[grpId].baseFiring + grp_Info2[grpId].baseFiringSD*-log(drand48());
-	}
-	else  {
-	baseFiring[neurId] = grp_Info2[grpId].baseFiring - grp_Info2[grpId].baseFiringSD*-log(drand48());
-	if(baseFiring[neurId] < 0.1) baseFiring[neurId] = 0.1;
-	}
+ 	if (grp_Info[grpId].WithHomeostasis) {
+		// set the baseFiring with some standard deviation.
+		if(drand48()>0.5)   {
+			baseFiring[neurId] = grp_Info2[grpId].baseFiring + grp_Info2[grpId].baseFiringSD*-log(drand48());
+		} else  {
+			baseFiring[neurId] = grp_Info2[grpId].baseFiring - grp_Info2[grpId].baseFiringSD*-log(drand48());
+			if(baseFiring[neurId] < 0.1) baseFiring[neurId] = 0.1;
+		}
 
-	if( grp_Info2[grpId].baseFiring != 0.0) {
-		avgFiring[neurId]  = baseFiring[neurId];
-	}
-	else {
-		baseFiring[neurId] = 0.0;
-		avgFiring[neurId]  = 0;
+		if( grp_Info2[grpId].baseFiring != 0.0) {
+			avgFiring[neurId]  = baseFiring[neurId];
+		} else {
+			baseFiring[neurId] = 0.0;
+			avgFiring[neurId]  = 0;
+		}
 	}
   
 	lastSpikeTime[neurId]  = MAX_SIMULATION_TIME;
@@ -3343,6 +3358,10 @@ void CpuSNN::resetPointers(bool deallocate) {
 	if (stpu!=NULL && deallocate) delete[] stpu;
 	if (stpx!=NULL && deallocate) delete[] stpx;
 	stpu=NULL; stpx=NULL;
+
+	if (avgFiring!=NULL && deallocate) delete[] avgFiring;
+	if (baseFiring!=NULL && deallocate) delete[] baseFiring;
+	avgFiring=NULL; baseFiring=NULL;
 
 	if (lastSpikeTime!=NULL && deallocate) delete[] lastSpikeTime;
 	if (synSpikeTime !=NULL && deallocate) delete[] synSpikeTime;
@@ -3437,7 +3456,8 @@ void CpuSNN::resetPointers(bool deallocate) {
 void CpuSNN::resetPoissonNeuron(unsigned int nid, int grpId) {
 	assert(nid < numN);
 	lastSpikeTime[nid]  = MAX_SIMULATION_TIME;
-	avgFiring[nid]      = 0.0;
+	if (grp_Info[grpId].WithHomeostasis)
+		avgFiring[nid]      = 0.0;
 
 	if(grp_Info[grpId].WithSTP) {
 		stpu[nid] = 0.0f;
@@ -3943,7 +3963,7 @@ void CpuSNN::updateFiringTable() {
 
 	timeTableD1[D] = 0;
 
-	/* the code of weight update has been moved to CpuSNN::updateWeight() */
+	/* the code of weight update has been moved to CpuSNN::updateWeights() */
 
 	spikeCountAll	+= spikeCountAll1sec;
 	spikeCountD2Host += (secD2fireCntHost-timeTableD2[D]);
@@ -4049,7 +4069,7 @@ void CpuSNN::updateSpikeMonitor() {
 }
 
 // This function updates the synaptic weights from its derivatives..
-void CpuSNN::updateWeight() {		
+void CpuSNN::updateWeights() {		
 	// update synaptic weights here for all the neurons..
 	for(int g = 0; g < numGrp; g++) {
 		// no changable weights so continue without changing..
@@ -4077,7 +4097,7 @@ void CpuSNN::updateWeight() {
 			for(int j = 0; j < Npre_plastic[i]; j++) {
 				//	if (i==grp_Info[g].StartN)
 				//		CARLSIM_DEBUG("%1.2f %1.2f \t", wt[offset+j]*10, wtChange[offset+j]*10);
-				float effectiveWtChange = stdpScaleFactor * wtChange[offset + j];
+				float effectiveWtChange = stdpScaleFactor_ * wtChange[offset + j];
 
 				// homeostatic weight update
 				if (grp_Info[g].WithHomeostasis && grp_Info[g].WithModulatedSTDP) {
@@ -4097,7 +4117,8 @@ void CpuSNN::updateWeight() {
 				//wtChange[offset+j] = 0;
 
 				//TSC - decay weights
-				wtChange[offset+j] *= wtChangeDecay;
+				// FIXME: MB - I agree with MDR, I think this is wrong
+				wtChange[offset+j] *= wtChangeDecay_;
 
 				// if this is an excitatory or inhibitory synapse
 				if (maxSynWt[offset + j] >= 0) {

@@ -406,6 +406,7 @@ typedef struct network_info_s  {
 	bool 			sim_with_conductances;
 	bool 			sim_with_stdp;
 	bool 			sim_with_modulated_stdp;
+	bool 			sim_with_homeostasis;
 	bool 			sim_with_stp;
 	float 			stdpScaleFactor;
 	float 			wtChangeDecay; //!< the wtChange decay 
@@ -522,7 +523,7 @@ typedef struct network_ptr_s  {
 	int* spkCntBufChild[MAX_GRP_PER_SNN]; //!< child pointers for above
 
 	//!< homeostatic plasticity variables
-	float*	baseFiringInv;
+	float*	baseFiringInv; // only used on GPU
 	float*	baseFiring;
 	float*	avgFiring;
 
@@ -854,10 +855,10 @@ public:
 
 	//! Sets the weight update parameters
 	/*!
-	 * \param _updateInterval the interval between two weight update. the setting could be _10MS, _100MS, _1000MS
-	 * \param _tauWeightChange the decay time constant of weight change (wtChange)
+	 * \param updateInterval the interval between two weight update. the setting could be _10MS, _100MS, _1000MS
+	 * \param tauWeightChange the decay time constant of weight change (wtChange)
 	 */
-	void setWeightUpdateParameter(int _updateInterval, int _tauWeightChange = 10);
+	void setWeightUpdateParameter(int updateInterval, int tauWeightChange = 10);
 
 	// +++++ PUBLIC METHODS: RUNNING A SIMULATION +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
@@ -1293,8 +1294,8 @@ private:
 	void updateFiringTable_GPU();
 	void updateNetwork_GPU(bool resetFiringInfo); //!< Allows parameters to be reset in the middle of the simulation
 	void updateSpikeMonitor_GPU();
-	void updateWeight();		
-	void updateWeight_GPU();
+	void updateWeights();		
+	void updateWeights_GPU();
 	//void updateStateAndFiringTable_GPU();
 	void updateTimingTable_GPU();
 
@@ -1358,6 +1359,7 @@ private:
 	bool sim_with_fixedwts;
 	bool sim_with_stdp;
 	bool sim_with_modulated_stdp;
+	bool sim_with_homeostasis;
 	bool sim_with_stp;
 	bool sim_with_spikecounters; //!< flag will be true if there are any spike counters around
 	//! flag to enable the copyFiringStateInfo from GPU to CPU
@@ -1520,9 +1522,10 @@ private:
 	uint32_t*	spikeGenBits;
 
 	// weight update parameter
-	unsigned int updateInterval;
-	float stdpScaleFactor;
-	float wtChangeDecay; //!< the wtChange decay 
+	int wtUpdateInterval_;
+	int wtUpdateIntervalCnt_;
+	float stdpScaleFactor_;
+	float wtChangeDecay_; //!< the wtChange decay 
 
 };
 
