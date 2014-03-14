@@ -205,7 +205,7 @@ public:
 
 	/*!
 	 * \brief Sets STP params U, tau_u, and tau_x of a neuron group (pre-synaptically)
-	 * CARLsim implements the short-term plasticity model of (Tsodyks & Markram, 1998).
+	 * CARLsim implements the short-term plasticity model of (Tsodyks & Markram, 1998; Mongillo, Barak, & Tsodyks, 2008)
 	 * du/dt = -u/STP_tau_u + STP_U * (1-u-) * \delta(t-t_spk)
 	 * dx/dt = (1-x)/STP_tau_x - u+ * x- * \delta(t-t_spk)
 	 * dI/dt = -I/tau_S + A * u+ * x- * \delta(t-t_spk)
