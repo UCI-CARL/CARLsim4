@@ -5,19 +5,41 @@ output_files += $(test_dir)/carlsim_tests
 
 CARLSIM_TEST_FLAGS := -I$(CURDIR)/$(test_dir)
 
-gtest_deps = $(GTEST_LIB_DIR)/libgtest.a $(GTEST_LIB_DIR)/libgtest_main.a
+gtest_deps = $(GTEST_LIB_DIR)/libgtest.a $(GTEST_LIB_DIR)/libgtest_main.a \
+	$(GTEST_LIB_DIR)/libgtest_custom_main.a
+
+local_dir := $(test_dir)
+local_deps := carlsim_tests.h coba.cpp core.cpp interface.cpp spikeCounter.cpp \
+	stdp.cpp stp.cpp
+local_src := $(addprefix $(local_dir)/,$(local_deps))
+local_objs := $(addprefix $(local_dir)/,coba.o core.o spikeCounter.o \
+	stdp.o stp.o)
+
+carlsim_tests_objs := $(local_objs)
+objects += $(carlsim_tests_objs)
+
 
 .PHONY: carlsim_tests
-carlsim_tests: $(test_dir)/carlsim_tests $(test_dir)/carlsim_tests.o
+carlsim_tests: $(test_dir)/carlsim_tests $(local_objs)
 
-$(test_dir)/carlsim_tests: $(test_dir)/carlsim_tests.o $(gtest_deps) \
+$(local_dir)/carlsim_tests: $(local_objs) $(gtest_deps) \
 	$(carlsim_objs)
 	$(NVCC) $(CARLSIM_INCLUDES) $(CARLSIM_LFLAGS) $(CARLSIM_LIBS) \
 	$(CARLSIM_FLAGS) $(CARLSIM_TEST_FLAGS)  $(carlsim_objs) \
-	$(GTEST_CPPFLAGS) -L$(GTEST_LIB_DIR) -lgtest_main $< -o $@
+	$(GTEST_CPPFLAGS) -L$(GTEST_LIB_DIR) -lgtest_custom_main \
+	$(carlsim_tests_objs) -o $@
 
-$(test_dir)/carlsim_tests.o: $(test_dir)/carlsim_tests.cpp
+$(local_dir)/%.o: $(local_dir)/%.cpp $(local_deps)
 	$(NVCC) $(CARLSIM_INCLUDES) $(CARLSIM_LFLAGS) $(CARLSIM_LIBS) \
 	$(CARLSIM_FLAGS) $(CARLSIM_TEST_FLAGS) \
-	$(GTEST_CPPFLAGS) -L$(GTEST_LIB_DIR) -lgtest_main \
-	-c $(test_dir)/carlsim_tests.cpp -o $@
+	$(GTEST_CPPFLAGS) -L$(GTEST_LIB_DIR) -lgtest_custom_main \
+	-c $< -o $@
+
+# rule for our local custom gtest main
+$(GTEST_LIB_DIR)/libgtest_custom_main.a: $(GTEST_LIB_DIR)/gtest-all.o $(GTEST_LIB_DIR)/gtest_custom_main.o
+	$(AR) $(ARFLAGS) $@ $^
+
+$(GTEST_LIB_DIR)/gtest_custom_main.o: gtest_custom_main.cpp $(GTEST_SRCS_)
+	mkdir -p $(GTEST_LIB_DIR)
+	$(CXX) $(GTEST_CPPFLAGS) -I$(GTEST_DIR) $(GTEST_CXXFLAGS) -c \
+	$(test_dir)/gtest_custom_main.cpp -o $@
