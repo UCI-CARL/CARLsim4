@@ -234,3 +234,52 @@ A help message, which contains the list of all available example experiments
 can be displayed by typing
 
 $ make help
+
+-------------------------------------------------------------------------------
+TESTING EXISTING CARLSIM SOURCECODE
+-------------------------------------------------------------------------------
+
+CARLsim uses google tests (https://code.google.com/p/googletest/) to develop
+and test the source code. To make sure the CARLsim source code runs, you
+can run the google tests CARLsim code found in the test directory.
+
+You first need to install google tests:
+
+1)  You need only download google tests and unzip it to a location of your 
+    choice. 
+
+2)  You can then edit the environment variables GTEST_DIR and GTEST_LIB_DIR 
+    found in test/gtest.mk. GTEST_DIR should point to the location of the 
+    unzipped google test source code that you  downloaded. GTEST_LIB_DIR 
+    should point to the location you want the compiled google test libraries 
+    to which you will be linking should be installed.
+
+After google tests has been installed:
+
+1) Edit src/config.h and change the line that reads:
+
+#define REGRESSION_TESTING 0
+
+to
+
+#define REGRESSION_TESTING 0
+
+2) From the Main directory of the CARLsim installation, type:
+
+   'make carlsim_tests'
+
+   which compiles the carlsim tests
+
+3) To run the tests, from the main directory, type:
+
+   './test/carlsim_tests'
+
+   This runs the CARLsim tests which should all pass. If they do not pass,
+   you may have inadvertantly modified the source code and should probably
+   redownload CARLsim.
+
+-------------------------------------------------------------------------------
+USING THE GOOGLE TESTING FRAMEWORK TO TEST YOUR OWN CARLSIM CODE
+-------------------------------------------------------------------------------
+
+
