@@ -1528,7 +1528,11 @@ void CpuSNN::CpuSNNinit() {
 		case USER:
 			fpOut_ = stdout;
 			fpErr_ = stderr;
+		#if (WIN32 || WIN64)
+			fpDeb_ = fopen("nul","w");
+		#else
 			fpDeb_ = fopen("/dev/null","w");
+		#endif
 			break;
 		case DEVELOPER:
 			fpOut_ = stdout;
@@ -1537,23 +1541,42 @@ void CpuSNN::CpuSNNinit() {
 			break;
 		case SILENT:
 		case CUSTOM:
+		#if (WIN32 || WIN64)
+			fpOut_ = fopen("nul","w");
+			fpErr_ = fopen("nul","w");
+			fpDeb_ = fopen("nul","w");
+		#else
 			fpOut_ = fopen("/dev/null","w");
 			fpErr_ = fopen("/dev/null","w");
 			fpDeb_ = fopen("/dev/null","w");
+		#endif
+
 			break;
 		default:
+		#if (WIN32 || WIN64)
+			fpOut_ = fopen("nul","w");
+			fpDeb_ = fopen("nul","w");
+			fpErr_ = stdout;
+		#else
 			fpOut_ = fopen("/dev/null","w");
 			fpDeb_ = fopen("/dev/null","w");
 			fpErr_ = stdout;
+		#endif
 			CARLSIM_ERROR("Unknown logger mode");
 			exit(1);
 	}
 	fpLog_ = fopen("debug.log","w");
 
 	#if REGRESSION_TESTING
+	#if (WIN32 || WIN64)
+		fpOut_ = fopen("nul","w");
+		fpErr_ = fopen("nul","w");
+		fpDeb_ = fopen("nul","w");
+	#else
 		fpOut_ = fopen("/dev/null","w");
 		fpErr_ = fopen("/dev/null","w");
 		fpDeb_ = fopen("/dev/null","w");
+	#endif
 	#endif
 
 	CARLSIM_INFO("*******************************************************************************");

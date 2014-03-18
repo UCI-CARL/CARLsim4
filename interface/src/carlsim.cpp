@@ -1,7 +1,48 @@
+/* 
+ * Copyright (c) 2014 Regents of the University of California. All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ *
+ * 3. The names of its contributors may not be used to endorse or promote
+ *    products derived from this software without specific prior written
+ *    permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
+ * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+ * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ * *********************************************************************************************** *
+ * CARLsim
+ * created by: 		(MDR) Micah Richert, (JN) Jayram M. Nageswaran
+ * maintained by:	(MA) Mike Avery <averym@uci.edu>, (MB) Michael Beyeler <mbeyeler@uci.edu>,
+ *					(KDC) Kristofor Carlson <kdcarlso@uci.edu>
+ *					(TSC) Ting-Shuo Chou <tingshuc@uci.edu>
+ *
+ * CARLsim available from http://socsci.uci.edu/~jkrichma/CARLsim/
+ * Ver 2/21/2014
+ */
+
 #include <carlsim.h>
 #include <user_errors.h>
 
-//#include <snn.h>		// FIXME: move snn.h dependency out of carlsim.h
+#include <snn.h>
 #include <string>		// std::string
 #include <iostream>		// std::cout, std::endl
 #include <sstream>		// std::stringstream
@@ -54,8 +95,9 @@ public:
 	 * \param[in] timeCnts 	pointer to a data structures that holds the number of spikes at each time step during the
 	 *  					last 1000 ms. timeCnts[i] will hold the number of spikes in the i-th millisecond.
 	 */
-	void update(CpuSNN* snn, int grpId, unsigned int* neurIds, unsigned int* timeCnts) {
+	void update(void* s, int grpId, unsigned int* neurIds, unsigned int* timeCnts) {
 		int pos    = 0; // keep track of position in flattened list of neuron IDs
+		CpuSNN* snn = (CpuSNN*)s;
 
 		for (int t=0; t < 1000; t++) {
 			for(int i=0; i<timeCnts[t];i++,pos++) {
@@ -75,6 +117,8 @@ private:
 	FILE* fileId_;
 };
 
+
+CpuSNN* snn_;
 
 
 /// **************************************************************************************************************** ///
@@ -101,6 +145,8 @@ CARLsim::CARLsim(std::string netName, simMode_t simMode, loggerMode_t loggerMode
 	hasSetHomeoBaseFiringALL_ 	= false;
 	hasSetSTDPALL_ 				= false;
 	hasSetSTPALL_ 				= false;
+
+	snn_ = NULL;
 
 	CARLsimInit(); // move everything else out of constructor
 }
@@ -566,14 +612,23 @@ void CARLsim::setSpikeMonitor(int grpId, const std::string& fname, int configId)
 
 			#if (WIN32 || WIN64) // TODO: test it
 				//status = _mkdir(dirname(fchar); // Windows platform
+				size_t pos = fname.rfind('/');
+				std::string fileName;
+
+				if (pos != std::string::npos)
+					fileName = fname.substr(pos + 1);
+				else
+					fileName = fname;
+
+				fid = fopen(fileName.c_str(),"wb");
 			#else
 			    status = mkdir(dirname(fchar), 0777); // Unix
 				std::string fileError = "%%CARLSIM_ROOT%%/results/ does not exist. Thus file " + fname;
 				UserErrors::assertTrue(status!=-1 || errno==EEXIST, UserErrors::FILE_CANNOT_CREATE, funcName, fileError);
-			#endif
 
-			// now that the directory is created, fopen file
-			fid = fopen(fname.c_str(),"wb");
+				// now that the directory is created, fopen file
+				fid = fopen(fname.c_str(),"wb");
+			#endif
 		#else
 		    // default case: print error and exit
 		    std::string fileError = ". Enable option CREATE_SPIKEDIR_IF_NOT_EXISTS in config.h to attempt "
@@ -613,11 +668,11 @@ void CARLsim::writePopWeights(std::string fname, int gIDpre, int gIDpost, int co
 // +++++++++ PUBLIC METHODS: SETTERS / GETTERS ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
 // get connection info struct
-grpConnectInfo_t* CARLsim::getConnectInfo(short int connectId, int configId) {
-	std::stringstream funcName;	funcName << "getConnectInfo(" << connectId << "," << configId << ")";
-	UserErrors::assertTrue(configId!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName.str(), "configId");			// configId can't be ALL
-	return snn_->getConnectInfo(connectId,configId);
-}
+//grpConnectInfo_t* CARLsim::getConnectInfo(short int connectId, int configId) {
+//	std::stringstream funcName;	funcName << "getConnectInfo(" << connectId << "," << configId << ")";
+//	UserErrors::assertTrue(configId!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName.str(), "configId");			// configId can't be ALL
+//	return snn_->getConnectInfo(connectId,configId);
+//}
 
 int CARLsim::getConnectionId(short int connectId, int configId) {
 	return snn_->getConnectionId(connectId,configId);
@@ -633,11 +688,11 @@ int CARLsim::getGroupId(int grpId, int configId) {
 	return snn_->getGroupId(grpId,configId);
 }
 // get group info struct
-group_info_t CARLsim::getGroupInfo(int grpId, int configId) {
-	std::stringstream funcName;	funcName << "getConnectInfo(" << grpId << "," << configId << ")";
-	UserErrors::assertTrue(configId!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName.str(), "configId");			// configId can't be ALL
-	return snn_->getGroupInfo(grpId, configId);
-}
+//group_info_t CARLsim::getGroupInfo(int grpId, int configId) {
+//	std::stringstream funcName;	funcName << "getConnectInfo(" << grpId << "," << configId << ")";
+//	UserErrors::assertTrue(configId!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName.str(), "configId");			// configId can't be ALL
+//	return snn_->getGroupInfo(grpId, configId);
+//}
 
 // get group name
 std::string CARLsim::getGroupName(int grpId, int configId) {
@@ -689,7 +744,7 @@ void CARLsim::setCopyFiringStateFromGPU(bool enableGPUSpikeCntPtr) {
 	snn_->setCopyFiringStateFromGPU(enableGPUSpikeCntPtr);
 }
 
-void CARLsim::setGroupInfo(int grpId, group_info_t info, int configId) { snn_->setGroupInfo(grpId,info,configId); }
+//void CARLsim::setGroupInfo(int grpId, group_info_t info, int configId) { snn_->setGroupInfo(grpId,info,configId); }
 void CARLsim::setPrintState(int grpId, bool status) { snn_->setPrintState(grpId,status); }
 
 
