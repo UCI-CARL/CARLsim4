@@ -42,6 +42,13 @@
 #ifndef _CARLSIM_H_
 #define _CARLSIM_H_
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <malloc.h>
+#include <assert.h>
+#include <math.h>
+#include <stdint.h>
+
 #include <string>		// std::string
 #include <vector>		// std::vector
 

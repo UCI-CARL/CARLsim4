@@ -41,15 +41,6 @@
 #ifndef _CONFIG_H_
 #define _CONFIG_H_
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <malloc.h>
-#include <assert.h>
-#include <math.h>
-#include <stdint.h>
-
-
 // TODO: as Kris put it, this should really be called something like
 // some_random_macros_and_hardware_limitation_dependent_param_checks.h ... for example, the MAX_... defines
 // should really be private members of CpuSNN. These ranges are limited by the data structures that implement
