@@ -69,6 +69,7 @@
 #define _SNN_GOLD_H_
 
 #include <carlsim.h>
+#include <callback_core.h>
 #include <mtrand.h>
 #include <gpu_random.h>
 #include <config.h>
@@ -209,6 +210,8 @@ inline bool isInhibitoryNeuron (unsigned int& nid, unsigned int& numNInhPois, un
 #define CARLSIM_INFO_PRINT(fp, formatc, ...) fprintf(fp,formatc "\n",##__VA_ARGS__)
 #define CARLSIM_DEBUG_PRINT(fp, formatc, ...) fprintf(fp,"[DEBUG %s:%d] " formatc "\n",__FILE__,__LINE__,##__VA_ARGS__)
 
+//! connection types, used internally (externally it's a string)
+enum conType_t { CONN_RANDOM, CONN_ONE_TO_ONE, CONN_FULL, CONN_FULL_NO_DIRECT, CONN_USER_DEFINED, CONN_UNKNOWN};
 
 typedef struct {
 	short  delay_index_start;
@@ -291,7 +294,7 @@ typedef struct connectData_s {
 	int	  	  				numPostSynapses;
 	int	  	  				numPreSynapses;
 	uint32_t  				connProp;
-	ConnectionGenerator*	conn;
+	ConnectionGeneratorCore*	conn;
 	conType_t 				type;
 	float					p; 						//!< connection probability
 	short int				connId;					//!< connectID of the element in the linked list
@@ -446,7 +449,7 @@ typedef struct group_info_s
 	float		decayACh;		//!< decay rate for Acetylcholine
 	float		decayNE;		//!< decay rate for Noradrenaline
 
-	SpikeGenerator*	spikeGen;
+	SpikeGeneratorCore*	spikeGen;
 	bool		newUpdates;  //!< FIXME this flag has mixed meaning and is not rechecked after the simulation is started
 } group_info_t;
 
@@ -579,7 +582,7 @@ public:
 	 * \param _maxPreM: (optional) maximum number of pre-synaptic connections (per neuron), Set to 0 for no limit, default = 0. 
 	 * \return number of created synaptic projections
 	 */
-	short int connect(int gIDpre, int gIDpost, ConnectionGenerator* conn, float mulSynFast, float mulSynSlow,
+	short int connect(int gIDpre, int gIDpost, ConnectionGeneratorCore* conn, float mulSynFast, float mulSynSlow,
 		bool synWtType,	int maxM, int maxPreM);
 	
 	//! Creates a group of Izhikevich spiking neurons
@@ -765,7 +768,7 @@ public:
 	void setSpikeCounter(int grpId, int recordDur, int configId);
 	
 	//! sets up a spike generator
-	void setSpikeGenerator(int grpId, SpikeGenerator* spikeGen, int configId);
+	void setSpikeGenerator(int grpId, SpikeGeneratorCore* spikeGen, int configId);
 	
 	//! sets up a spike monitor registered with a callback to process the spikes, there can only be one SpikeMonitor per group
 	/*!
@@ -773,7 +776,7 @@ public:
 	 * \param spikeMon (optional) spikeMonitor class
 	 * \param configId (optional, deprecated) configuration id, default = ALL
 	 */
-	void setSpikeMonitor(int gid, SpikeMonitor* spikeMon, int configId);
+	void setSpikeMonitor(int gid, SpikeMonitorCore* spikeMon, int configId);
 
 	//!Sets the Poisson spike rate for a group. For information on how to set up spikeRate, see Section Poisson spike generators in the Tutorial. 
 	/*!Input arguments:
@@ -790,7 +793,7 @@ public:
 	 * \param spikeMon (optional) spikeMonitor class
 	 * \param configId (optional, deprecated) configuration id, default = ALL
 	 */
-	void setGroupMonitor(int grpId, GroupMonitor* groupMon, int configId);
+	void setGroupMonitor(int grpId, GroupMonitorCore* groupMon, int configId);
 	
 	//! Resets either the neuronal firing rate information by setting resetFiringRate = true and/or the
 	//! weight values back to their default values by setting resetWeights = true.
@@ -1307,7 +1310,7 @@ private:
 	unsigned int	monBufferSize[MAX_GRP_PER_SNN];
 	unsigned int*	monBufferFiring[MAX_GRP_PER_SNN];
 	unsigned int*	monBufferTimeCnt[MAX_GRP_PER_SNN];
-	SpikeMonitor*	monBufferCallback[MAX_GRP_PER_SNN];
+	SpikeMonitorCore*	monBufferCallback[MAX_GRP_PER_SNN];
 
 	unsigned int	numSpikeGenGrps;
 
@@ -1315,7 +1318,7 @@ private:
 	int* spkCntBuf[MAX_GRP_PER_SNN]; //!< the actual buffer of spike counts (per group, per neuron)
 
 	// group mointor variables
-	GroupMonitor*	grpBufferCallback[MAX_GRP_PER_SNN];
+	GroupMonitorCore*	grpBufferCallback[MAX_GRP_PER_SNN];
 	float*			grpDABuffer[MAX_GRP_PER_SNN];
 	float*			grp5HTBuffer[MAX_GRP_PER_SNN];
 	float*			grpAChBuffer[MAX_GRP_PER_SNN];

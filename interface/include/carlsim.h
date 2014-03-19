@@ -52,6 +52,8 @@
 #include <string>		// std::string
 #include <vector>		// std::vector
 
+#include <callback.h>
+
 #include <poisson_rate.h>
 
 // TODO: complete documentation
@@ -132,86 +134,6 @@ enum loggerMode_t { USER, DEVELOPER, SILENT, CUSTOM, UNKNOWN };
  */
 enum simMode_t {CPU_MODE, GPU_MODE};
 
-//! connection types, used internally (externally it's a string)
-enum conType_t { CONN_RANDOM, CONN_ONE_TO_ONE, CONN_FULL, CONN_FULL_NO_DIRECT, CONN_USER_DEFINED, CONN_UNKNOWN};
-
-
-//! CARLsim user interface classes
-//class CARLsim; //!< forward-declaration
-
-//! used for fine-grained control over spike generation, using a callback mechanism
-/*! Spike generation can be performed using spike generators. Spike generators are dummy-neurons that have their spikes
- * specified externally either defined by a Poisson firing rate or via a spike injection mechanism. Spike generators can
- * have post-synaptic connections with STDP and STP, but unlike Izhikevich neurons, they do not receive any pre-synaptic
- * input. For more information on spike generators see Section Neuron groups: Spike generators in the Tutorial.
- *
- * For fine-grained control over spike generation, individual spike times can be specified per neuron in each group.
- * This is accomplished using a callback mechanism, which is called at each time step, to specify whether a neuron has
- * fired or not. */
-class SpikeGenerator {
-public:
-	SpikeGenerator() {};
-
-	//! controls spike generation using a callback mechanism
-	/*! \attention The virtual method should never be called directly
-	 *  \param s pointer to the simulator object
-	 *  \param grpId the group id
-	 *  \param i the neuron index in the group
-	 *  \param currentTime the current simluation time
-	 *  \param lastScheduledSpikeTime the last spike time which was scheduled
-	 */
-	/*! \attention The virtual method should never be called directly */
-	virtual unsigned int nextSpikeTime(void* s, int grpId, int i,
-											unsigned int currentTime, unsigned int lastScheduledSpikeTime) = 0;
-};
-
-//! used for fine-grained control over spike generation, using a callback mechanism
-/*!
- * The user can choose from a set of primitive pre-defined connection topologies, or he can implement a topology of
- * their choice by using a callback mechanism. In the callback mechanism, the simulator calls a method on a user-defined
- * class in order to determine whether a connection should be made or not. The user simply needs to define a method that
- * specifies whether a connection should be made between a pre-synaptic neuron and a post-synaptic neuron, and the
- * simulator will automatically call the method for all possible pre- and post-synaptic pairs. The user can then specify
- * the connection's delay, initial weight, maximum weight, and whether or not it is plastic.
- */
-class ConnectionGenerator {
-public:
-	ConnectionGenerator() {};
-
-	//! specifies which synaptic connections (per group, per neuron, per synapse) should be made
-	/*! \attention The virtual method should never be called directly */
-	virtual void connect(void* s, int srcGrpId, int i, int destGrpId, int j, float& weight, float& maxWt,
-							float& delay, bool& connected) = 0;
-};
-
-
-//! can be used to create a custom spike monitor
-/*! To retrieve outputs, a spike-monitoring callback mechanism is used. This mechanism allows the user to calculate
- * basic statistics, store spike trains, or perform more complicated output monitoring. Spike monitors are registered
- * for a group and are called automatically by the simulator every second. Similar to an address event representation
- * (AER), the spike monitor indicates which neurons spiked by using the neuron ID within a group (0-indexed) and the
- * time of the spike. Only one spike monitor is allowed per group.*/
-class SpikeMonitor {
-public:
-	SpikeMonitor() {};
-
-	//! Controls actions that are performed when certain neurons fire (user-defined).
-	/*! \attention The virtual method should never be called directly */
-	virtual void update(void* s, int grpId, unsigned int* Nids, unsigned int* timeCnts) = 0;
-};
-
-//! can be used to create a custom group monitor
-/*! To retrieve group status, a group-monitoring callback mechanism is used. This mechanism allows the user to monitor
- * basic status of a group (currently support concentrations of neuromodulator). Group monitors are registered
- * for a group and are called automatically by the simulator every second. The parameter would be the group ID, an
- * array of data, number of elements in that array.
- */
-class GroupMonitor {
-	public:
-		GroupMonitor() {};
-
-		virtual void update(void* s, int grpID, float* grpDA, int numData) = 0;
-};
 
 /*!
  * \brief CARLsim User Interface
@@ -651,8 +573,6 @@ private:
 	void handleUserWarnings(); 			//!< print all user warnings, continue only after user input
 
 	void printSimulationSpecs();
-
-
 
 	// +++++ PRIVATE PROPERTIES +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 

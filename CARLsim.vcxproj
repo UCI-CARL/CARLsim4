@@ -24,6 +24,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="examples\random\main_random.cpp" />
+    <ClCompile Include="interface\src\callback_core.cpp" />
     <ClCompile Include="interface\src\carlsim.cpp" />
     <ClCompile Include="interface\src\user_errors.cpp" />
     <ClCompile Include="src\mtrand.cpp" />
@@ -33,6 +34,8 @@
     <ClCompile Include="src\snn_cpu.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="interface\include\callback.h" />
+    <ClInclude Include="interface\include\callback_core.h" />
     <ClInclude Include="interface\include\carlsim.h" />
     <ClInclude Include="interface\include\user_errors.h" />
     <ClInclude Include="src\config.h" />
@@ -98,6 +101,9 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <TargetExt>.exe</TargetExt>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>

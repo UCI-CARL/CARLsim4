@@ -210,7 +210,7 @@ short int CpuSNN::connect(int grpId1, int grpId2, const std::string& _type, floa
 }
 
 // make custom connections from grpId1 to grpId2
-short int CpuSNN::connect(int grpId1, int grpId2, ConnectionGenerator* conn, float _mulSynFast, float _mulSynSlow, 
+short int CpuSNN::connect(int grpId1, int grpId2, ConnectionGeneratorCore* conn, float _mulSynFast, float _mulSynSlow, 
 						bool synWtType, int maxM, int maxPreM) {
 	int retId=-1;
 
@@ -872,7 +872,7 @@ void CpuSNN::resetSpikeCounter(int grpId, int configId) {
 	}
 }
 
-void CpuSNN::setGroupMonitor(int grpId, GroupMonitor* groupMon, int configId) {
+void CpuSNN::setGroupMonitor(int grpId, GroupMonitorCore* groupMon, int configId) {
 	if (configId == ALL) {
 		for(int c = 0; c < nConfig_; c++)
 			setGroupMonitor(grpId, groupMon, c);
@@ -905,7 +905,7 @@ void CpuSNN::setGroupMonitor(int grpId, GroupMonitor* groupMon, int configId) {
 }
 
 // sets up a spike generator
-void CpuSNN::setSpikeGenerator(int grpId, SpikeGenerator* spikeGen, int configId) {
+void CpuSNN::setSpikeGenerator(int grpId, SpikeGeneratorCore* spikeGen, int configId) {
 	if (configId == ALL) {
 		for(int c=0; c < nConfig_; c++)
 			setSpikeGenerator(grpId, spikeGen,c);
@@ -969,7 +969,7 @@ void CpuSNN::setSpikeCounter(int grpId, int recordDur, int configId) {
 }
 
 // add a SpikeMonitor for group where spikeMon can be custom class or WriteSpikesToFile
-void CpuSNN::setSpikeMonitor(int grpId, SpikeMonitor* spikeMon, int configId) {
+void CpuSNN::setSpikeMonitor(int grpId, SpikeMonitorCore* spikeMon, int configId) {
 	if (configId == ALL) {
 		for(int c=0; c < nConfig_; c++)
 		setSpikeMonitor(grpId, spikeMon,c);
@@ -2731,7 +2731,7 @@ void CpuSNN::generateSpikes() {
 
 void CpuSNN::generateSpikesFromFuncPtr(int grpId) {
 	bool done;
-	SpikeGenerator* spikeGen = grp_Info[grpId].spikeGen;
+	SpikeGeneratorCore* spikeGen = grp_Info[grpId].spikeGen;
 	int timeSlice = grp_Info[grpId].CurrTimeSlice;
 	unsigned int currTime = simTime;
 	int spikeCnt = 0;

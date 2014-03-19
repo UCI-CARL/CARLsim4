@@ -39,14 +39,17 @@
  * Ver 2/21/2014
  */
 
-#include <carlsim.h>
-#include <user_errors.h>
-
-#include <snn.h>
 #include <string>		// std::string
 #include <iostream>		// std::cout, std::endl
 #include <sstream>		// std::stringstream
 #include <algorithm>	// std::find
+
+#include <carlsim.h>
+#include <user_errors.h>
+#include <callback_core.h>
+
+#include <snn.h>
+
 
 
 // includes for mkdir
@@ -95,13 +98,12 @@ public:
 	 * \param[in] timeCnts 	pointer to a data structures that holds the number of spikes at each time step during the
 	 *  					last 1000 ms. timeCnts[i] will hold the number of spikes in the i-th millisecond.
 	 */
-	void update(void* s, int grpId, unsigned int* neurIds, unsigned int* timeCnts) {
+	void update(CARLsim* s, int grpId, unsigned int* neurIds, unsigned int* timeCnts) {
 		int pos    = 0; // keep track of position in flattened list of neuron IDs
-		CpuSNN* snn = (CpuSNN*)s;
 
 		for (int t=0; t < 1000; t++) {
 			for(int i=0; i<timeCnts[t];i++,pos++) {
-				int time = t + snn->getSimTime() - 1000;
+				int time = t + s->getSimTime() - 1000;
 				int id   = neurIds[pos];
 				int cnt = fwrite(&time,sizeof(int),1,fileId_);
 				assert(cnt != 0);
@@ -262,7 +264,7 @@ short int CARLsim::connect(int grpId1, int grpId2, ConnectionGenerator* conn, bo
 	UserErrors::assertTrue(!hasRunNetwork_, UserErrors::NETWORK_ALREADY_RUN, funcName); // can't change setup after run
 
 	// TODO: check for sign of weights
-	return snn_->connect(grpId1, grpId2, conn, 1.0f, 1.0f, synWtType, maxM, maxPreM);
+	return snn_->connect(grpId1, grpId2, new ConnectionGeneratorCore(this, conn), 1.0f, 1.0f, synWtType, maxM, maxPreM);
 }
 
 // custom connectivity profile
@@ -278,7 +280,7 @@ short int CARLsim::connect(int grpId1, int grpId2, ConnectionGenerator* conn, fl
 	UserErrors::assertTrue(!hasRunNetwork_, UserErrors::NETWORK_ALREADY_RUN, funcName); // can't change setup after run
 	assert(++numConnections_ <= MAX_nConnections);
 
-	return snn_->connect(grpId1, grpId2, conn, mulSynFast, mulSynSlow, synWtType, maxM, maxPreM);
+	return snn_->connect(grpId1, grpId2, new ConnectionGeneratorCore(this, conn), mulSynFast, mulSynSlow, synWtType, maxM, maxPreM);
 }
 
 
@@ -574,7 +576,7 @@ void CARLsim::setSpikeGenerator(int grpId, SpikeGenerator* spikeGen, int configI
 	UserErrors::assertTrue(!hasRunNetwork_, UserErrors::NETWORK_ALREADY_RUN, funcName); // can't change setup after run
 	UserErrors::assertTrue(grpId!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName, "grpId");		// groupId can't be ALL
 
-	snn_->setSpikeGenerator(grpId,spikeGen,configId);
+	snn_->setSpikeGenerator(grpId, new SpikeGeneratorCore(this, spikeGen),configId);
 }
 
 // set spike monitor for a group
@@ -583,7 +585,7 @@ void CARLsim::setSpikeMonitor(int grpId, SpikeMonitor* spikeMon, int configId) {
 	UserErrors::assertTrue(!hasRunNetwork_, UserErrors::NETWORK_ALREADY_RUN, funcName); // can't change setup after run
 	UserErrors::assertTrue(grpId!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName, "grpId");		// groupId can't be ALL
 
-	snn_->setSpikeMonitor(grpId,spikeMon,configId);
+	snn_->setSpikeMonitor(grpId, new SpikeMonitorCore(this, spikeMon),configId);
 }
 
 
