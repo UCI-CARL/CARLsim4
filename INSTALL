@@ -245,10 +245,9 @@ can run the google tests CARLsim code found in the test directory.
 
 You first need to install google tests:
 
-1)  You need only download google tests and unzip it to a location of your 
-    choice. 
+1)  Download google tests and unzip it to a location of your choice. 
 
-2)  You can then edit the environment variables GTEST_DIR and GTEST_LIB_DIR 
+2)  Edit the environment variables GTEST_DIR and GTEST_LIB_DIR 
     found in test/gtest.mk. GTEST_DIR should point to the location of the 
     unzipped google test source code that you  downloaded. GTEST_LIB_DIR 
     should point to the location you want the compiled google test libraries 
@@ -264,7 +263,7 @@ to
 
 #define REGRESSION_TESTING 1
 
-2) From the Main directory of the CARLsim installation, type:
+2) From the main directory of the CARLsim installation, type:
 
    'make carlsim_tests'
 
@@ -282,12 +281,14 @@ to
 USING THE GOOGLE TESTING FRAMEWORK TO TEST YOUR OWN CARLSIM CODE
 -------------------------------------------------------------------------------
 
-For more information about how to use google tests please read the google
-tests documentation found in the source code and on the web at:
-https://code.google.com/p/googletest/.
+The easiest way to use google tests to test your own CARLsim code is to use
+test/carlsim.mk as a template for your own makefile. We currently use google
+test v1.7.
 
-For more information about how to use google tests and CARLsim please use
-the test/carlsim_tests.mk make include file as a template. In general you need
-only link to the installed gtest libraries and begin writing your tests.
-The carlsim_tests.mk file shows how to link CARLsim source code with google
-tests code. 
+The easiest way to do use google tests is to build google tests using our 
+gtest.mk file and link your testing code to the static library files.
+
+For more information on how to compile code with google tests, please read the
+google tests README file found in the main directory of the google test source
+code or on the web at:
+https://code.google.com/p/googletest/.
