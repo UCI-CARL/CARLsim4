@@ -235,6 +235,9 @@ class GroupMonitor {
  * Within these sections, methods and properties are ordered alphabetically. carlsim.cpp follows the same organization.
  * 
  */
+
+class CpuSNN;
+
 class CARLsim {
 public:
 	// +++++ PUBLIC METHODS: CONSTRUCTOR / DESTRUCTOR +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
@@ -653,7 +656,7 @@ private:
 
 	// +++++ PRIVATE PROPERTIES +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
-//	CpuSNN* snn_;					//!< an instance of CARLsim core class
+	CpuSNN* snn_;					//!< an instance of CARLsim core class
 	std::string netName_;			//!< network name
 	int nConfig_;					//!< number of configurations
 	int randSeed_;					//!< RNG seed

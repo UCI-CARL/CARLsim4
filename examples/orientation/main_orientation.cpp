@@ -39,6 +39,8 @@
  */ 
 
 #include <carlsim.h>
+#include <mtrand.h>
+
 void calcColorME(int nrX, int nrY, unsigned char* stim, float* red_green, float* green_red, float* blue_yellow,
 						float* yellow_blue, float* ME, bool GPUpointers);
 extern MTRand	      getRand;
@@ -114,7 +116,7 @@ public:
 	float (*proj)[4];	
 	float* bias;
 	
-	void connect(CpuSNN* net, int srcGrp, int i, int destGrp, int j, float& weight, float& maxWt, float& delay, bool& connected)
+	void connect(void* net, int srcGrp, int i, int destGrp, int j, float& weight, float& maxWt, float& delay, bool& connected)
 	{
 		int v1X = i%nrX;
 		int v1Y = (i/nrX)%nrY;
@@ -145,7 +147,7 @@ public:
 	int spatialScale;
 	float weightScale;
 	
-	void connect(CpuSNN* net, int srcGrp, int i, int destGrp, int j, float& weight, float& maxWt, float& delay, bool& connected)
+	void connect(void* net, int srcGrp, int i, int destGrp, int j, float& weight, float& maxWt, float& delay, bool& connected)
 	{
 		int X = j%nrX;
 		int Y = (j/nrX)%nrY;

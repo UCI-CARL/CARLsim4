@@ -39,6 +39,7 @@
  */ 
 
 #include <carlsim.h>
+#include <mtrand.h>
 void calcColorME(int nrX, int nrY, unsigned char* stim, float* red_green, float* green_red, float* blue_yellow, float* yellow_blue, float* ME, bool GPUpointers);
 extern MTRand	      getRand;
 
@@ -210,7 +211,7 @@ public:
 	float weightScale;
 	float (*proj)[8];	
 	
-	void connect(CpuSNN* net, int srcGrp, int i, int destGrp, int j, float& weight, float& maxWt, float& delay, bool& connected)
+	void connect(void* net, int srcGrp, int i, int destGrp, int j, float& weight, float& maxWt, float& delay, bool& connected)
 	{
 		int v1X = i%nrX;
 		int v1Y = (i/nrX)%nrY;
@@ -239,7 +240,7 @@ public:
 	int spatialScale;
 	float weightScale;
 	
-	void connect(CpuSNN* net, int srcGrp, int i, int destGrp, int j, float& weight, float& maxWt, float& delay, bool& connected)
+	void connect(void* net, int srcGrp, int i, int destGrp, int j, float& weight, float& maxWt, float& delay, bool& connected)
 	{
 		int X = j%nrX;
 		int Y = (j/nrX)%nrY;
@@ -271,7 +272,7 @@ public:
 	float (*proj)[4];	
 	float* bias;
 	
-	void connect(CpuSNN* net, int srcGrp, int i, int destGrp, int j, float& weight, float& maxWt, float& delay, bool& connected)
+	void connect(void* net, int srcGrp, int i, int destGrp, int j, float& weight, float& maxWt, float& delay, bool& connected)
 	{
 		int v1X = i%nrX;
 		int v1Y = (i/nrX)%nrY;
@@ -302,7 +303,7 @@ public:
 	int spatialScale;
 	float weightScale;
 	
-	void connect(CpuSNN* net, int srcGrp, int i, int destGrp, int j, float& weight, float& maxWt, float& delay, bool& connected)
+	void connect(void* net, int srcGrp, int i, int destGrp, int j, float& weight, float& maxWt, float& delay, bool& connected)
 	{
 		int X = j%nrX;
 		int Y = (j/nrX)%nrY;
@@ -330,7 +331,7 @@ public:
 	int num;
 	float weightScale;
 	
-	void connect(CpuSNN* net, int srcGrp, int i, int destGrp, int j, float& weight, float& maxWt, float& delay, bool& connected)
+	void connect(void* net, int srcGrp, int i, int destGrp, int j, float& weight, float& maxWt, float& delay, bool& connected)
 	{
 		int MTdir = i/(nrX*nrY);
 		int PFCdir = j/num;
@@ -352,7 +353,7 @@ public:
 	int num, numi;
 	float weightScale;
 	
-	void connect(CpuSNN* net, int srcGrp, int i, int destGrp, int j, float& weight, float& maxWt, float& delay, bool& connected)
+	void connect(void* net, int srcGrp, int i, int destGrp, int j, float& weight, float& maxWt, float& delay, bool& connected)
 	{
 		int PFCidir = i/numi;
 		int PFCdir = j/num;
@@ -377,7 +378,7 @@ public:
 	int src_x; int src_y; int dest_x; int dest_y; int radius;
 	float weightScale;
 	
-	void connect(CpuSNN* net, int srcGrp, int src_i, int destGrp, int dest_i, float& weight, float& maxWt, float& delay, bool& connected)
+	void connect(void* net, int srcGrp, int src_i, int destGrp, int dest_i, float& weight, float& maxWt, float& delay, bool& connected)
 	{
 		// extract x and y positions...
 		int dest_i_x  = dest_i%dest_x;
@@ -404,7 +405,7 @@ public:
 	float localRadius2;
 	float weightScale;
 	
-	void connect(CpuSNN* net, int srcGrp, int src_i, int destGrp, int dest_i, float& weight, float& maxWt, float& delay, bool& connected)
+	void connect(void* net, int srcGrp, int src_i, int destGrp, int dest_i, float& weight, float& maxWt, float& delay, bool& connected)
 	{
 		// extract x and y position from the destination
 		int dest_i_x = dest_i%V4_LAYER_DIM;
