@@ -283,12 +283,9 @@ USING THE GOOGLE TESTING FRAMEWORK TO TEST YOUR OWN CARLSIM CODE
 
 The easiest way to use google tests to test your own CARLsim code is to use
 test/carlsim.mk as a template for your own makefile. We currently use google
-test v1.7.
-
-The easiest way to do use google tests is to build google tests using our 
-gtest.mk file and link your testing code to the static library files.
+test v1.7. Your google tests code can be built by using our gtest.mk file to 
+link your testing code to the static google test library files.
 
 For more information on how to compile code with google tests, please read the
 google tests README file found in the main directory of the google test source
-code or on the web at:
-https://code.google.com/p/googletest/.
+code or on the web at: https://code.google.com/p/googletest/.
