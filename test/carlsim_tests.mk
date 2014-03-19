@@ -36,7 +36,8 @@ $(local_dir)/%.o: $(local_dir)/%.cpp $(local_deps)
 	-c $< -o $@
 
 # rule for our local custom gtest main
-$(GTEST_LIB_DIR)/libgtest_custom_main.a: $(GTEST_LIB_DIR)/gtest-all.o $(GTEST_LIB_DIR)/gtest_custom_main.o
+$(GTEST_LIB_DIR)/libgtest_custom_main.a: $(GTEST_LIB_DIR)/gtest-all.o \
+	$(GTEST_LIB_DIR)/gtest_custom_main.o
 	$(AR) $(ARFLAGS) $@ $^
 
 $(GTEST_LIB_DIR)/gtest_custom_main.o: gtest_custom_main.cpp $(GTEST_SRCS_)

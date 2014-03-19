@@ -262,7 +262,7 @@ After google tests has been installed:
 
 to
 
-#define REGRESSION_TESTING 0
+#define REGRESSION_TESTING 1
 
 2) From the Main directory of the CARLsim installation, type:
 
@@ -282,4 +282,12 @@ to
 USING THE GOOGLE TESTING FRAMEWORK TO TEST YOUR OWN CARLSIM CODE
 -------------------------------------------------------------------------------
 
+For more information about how to use google tests please read the google
+tests documentation found in the source code and on the web at:
+https://code.google.com/p/googletest/.
 
+For more information about how to use google tests and CARLsim please use
+the test/carlsim_tests.mk make include file as a template. In general you need
+only link to the installed gtest libraries and begin writing your tests.
+The carlsim_tests.mk file shows how to link CARLsim source code with google
+tests code. 
