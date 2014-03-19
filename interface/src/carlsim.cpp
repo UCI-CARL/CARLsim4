@@ -262,6 +262,7 @@ short int CARLsim::connect(int grpId1, int grpId2, ConnectionGenerator* conn, bo
 	UserErrors::assertTrue(!isPoissonGroup(grpId2), UserErrors::WRONG_NEURON_TYPE, funcName, grpId2str.str() + 
 		" is PoissonGroup, connect");
 	UserErrors::assertTrue(!hasRunNetwork_, UserErrors::NETWORK_ALREADY_RUN, funcName); // can't change setup after run
+	UserErrors::assertTrue(conn!=NULL, UserErrors::CANNOT_BE_NULL, funcName);
 
 	// TODO: check for sign of weights
 	return snn_->connect(grpId1, grpId2, new ConnectionGeneratorCore(this, conn), 1.0f, 1.0f, synWtType, maxM, maxPreM);
@@ -278,6 +279,7 @@ short int CARLsim::connect(int grpId1, int grpId2, ConnectionGenerator* conn, fl
 	UserErrors::assertTrue(!isPoissonGroup(grpId2), UserErrors::WRONG_NEURON_TYPE, funcName, grpId2str.str() + 
 		" is PoissonGroup, connect");
 	UserErrors::assertTrue(!hasRunNetwork_, UserErrors::NETWORK_ALREADY_RUN, funcName); // can't change setup after run
+	UserErrors::assertTrue(conn!=NULL, UserErrors::CANNOT_BE_NULL, funcName);
 	assert(++numConnections_ <= MAX_nConnections);
 
 	return snn_->connect(grpId1, grpId2, new ConnectionGeneratorCore(this, conn), mulSynFast, mulSynSlow, synWtType, maxM, maxPreM);
@@ -562,6 +564,16 @@ void CARLsim::resetSpikeCounter(int grpId, int configId) {
 	snn_->resetSpikeCounter(grpId,configId);
 }
 
+// set group monitor for a group
+void CARLsim::setGroupMonitor(int grpId, GroupMonitor* groupMon, int configId) {
+	std::string funcName = "setGroupMonitor(\""+getGroupName(grpId,configId)+"\",GroupMonitor*)";
+	UserErrors::assertTrue(!hasRunNetwork_, UserErrors::NETWORK_ALREADY_RUN, funcName); // can't change setup after run
+	UserErrors::assertTrue(grpId!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName, "grpId");		// groupId can't be ALL
+	UserErrors::assertTrue(groupMon!=NULL, UserErrors::CANNOT_BE_NULL, funcName);
+
+	snn_->setGroupMonitor(grpId, new GroupMonitorCore(this, groupMon),configId);
+}
+
 // sets a spike counter for a group
 void CARLsim::setSpikeCounter(int grpId, int recordDur, int configId) {
 	std::stringstream funcName;	funcName << "setSpikeCounter(" << grpId << "," << recordDur << "," << configId << ")";
@@ -575,6 +587,7 @@ void CARLsim::setSpikeGenerator(int grpId, SpikeGenerator* spikeGen, int configI
 	std::string funcName = "setSpikeGenerator(\""+getGroupName(grpId,configId)+"\")";
 	UserErrors::assertTrue(!hasRunNetwork_, UserErrors::NETWORK_ALREADY_RUN, funcName); // can't change setup after run
 	UserErrors::assertTrue(grpId!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName, "grpId");		// groupId can't be ALL
+	UserErrors::assertTrue(spikeGen!=NULL, UserErrors::CANNOT_BE_NULL, funcName);
 
 	snn_->setSpikeGenerator(grpId, new SpikeGeneratorCore(this, spikeGen),configId);
 }
@@ -585,7 +598,10 @@ void CARLsim::setSpikeMonitor(int grpId, SpikeMonitor* spikeMon, int configId) {
 	UserErrors::assertTrue(!hasRunNetwork_, UserErrors::NETWORK_ALREADY_RUN, funcName); // can't change setup after run
 	UserErrors::assertTrue(grpId!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName, "grpId");		// groupId can't be ALL
 
-	snn_->setSpikeMonitor(grpId, new SpikeMonitorCore(this, spikeMon),configId);
+	if (spikeMon == NULL)
+		snn_->setSpikeMonitor(grpId, NULL, configId);
+	else
+		snn_->setSpikeMonitor(grpId, new SpikeMonitorCore(this, spikeMon),configId);
 }
 
 

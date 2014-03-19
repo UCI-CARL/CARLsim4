@@ -53,7 +53,10 @@ SpikeGeneratorCore::SpikeGeneratorCore(CARLsim* c, SpikeGenerator* s) {
 
 unsigned int SpikeGeneratorCore::nextSpikeTime(CpuSNN* s, int grpId, int i,
 											unsigned int currentTime, unsigned int lastScheduledSpikeTime) {
-	return sGen->nextSpikeTime(carlsim, grpId, i, currentTime, lastScheduledSpikeTime);
+	if (sGen != NULL)
+		return sGen->nextSpikeTime(carlsim, grpId, i, currentTime, lastScheduledSpikeTime);
+	else
+		return 0xFFFFFFFF;
 }
 
 ConnectionGeneratorCore::ConnectionGeneratorCore(CARLsim* c, ConnectionGenerator* cg) {

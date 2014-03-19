@@ -2907,7 +2907,7 @@ void CpuSNN::assignPoissonFiringRate_GPU()
 			//float refPeriod = grp_Info[grpId].RefractPeriod;
 				
 			if (grp_Info[grpId].spikeGen || rate == NULL) return;
-				
+
 			CUDA_CHECK_ERRORS( cudaMemcpy( &cpu_gpuNetPtrs.poissonFireRate[nid-numNReg], rate->rates, sizeof(float)*rate->len, rate->onGPU?cudaMemcpyDeviceToDevice:cudaMemcpyHostToDevice));
 		}
 	}

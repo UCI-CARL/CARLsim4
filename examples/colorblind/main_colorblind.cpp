@@ -98,7 +98,7 @@ public:
 	int src_x; int src_y; int dest_x; int dest_y; int radius;
 	float weightScale;
 	
-	void connect(void* net, int srcGrp, int src_i, int destGrp, int dest_i, float& weight, float& maxWt, float& delay, bool& connected)
+	void connect(CARLsim* net, int srcGrp, int src_i, int destGrp, int dest_i, float& weight, float& maxWt, float& delay, bool& connected)
 	{
 		// extract x and y positions...
 		int dest_i_x  = dest_i%dest_x;
@@ -125,7 +125,7 @@ public:
 	float localRadius2;
 	float weightScale;
 	
-	void connect(void* net, int srcGrp, int src_i, int destGrp, int dest_i, float& weight, float& maxWt, float& delay, bool& connected)
+	void connect(CARLsim* net, int srcGrp, int src_i, int destGrp, int dest_i, float& weight, float& maxWt, float& delay, bool& connected)
 	{
 		// extract x and y position from the destination
 		int dest_i_x = dest_i%V4_LAYER_DIM;

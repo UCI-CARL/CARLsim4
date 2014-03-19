@@ -430,6 +430,11 @@ public:
 	void resetSpikeCounter(int grpId, int configId=ALL);
 
 	/*!
+	 * \brief Sets a group monitor for a group, custom GroupMonitor class
+	 */
+	void setGroupMonitor(int grpId, GroupMonitor* groupMon, int configId=ALL);
+
+	/*!
 	 * \brief A Spike Counter keeps track of the number of spikes per neuron in a group.
 	 * A Spike Counter keeps track of all spikes per neuron for a certain time period (recordDur).
 	 * After that, the spike buffers get reset to zero number of spikes.

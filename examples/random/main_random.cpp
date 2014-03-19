@@ -96,7 +96,7 @@ int main()
 		sim.runNetwork(1,0);
 	}
 
-	FILE* nid = fopen("network.dat","wb");
+	FILE* nid = fopen("results/random/network.dat","wb");
 	sim.writeNetwork(nid);
 	fclose(nid);
 
