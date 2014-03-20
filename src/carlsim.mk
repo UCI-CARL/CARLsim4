@@ -46,13 +46,17 @@ local_objs := $(addprefix $(local_dir)/,snn_cpu.o  mtrand.o \
 	gpu_random.o snn_gpu.o)
 
 
-interface_deps := carlsim.h carlsim.cpp user_errors.h user_errors.cpp
+interface_deps := carlsim.h carlsim.cpp user_errors.h user_errors.cpp callback.h callback_core.h callback_core.cpp
 interface_src := $(interface_dir)/include/carlsim.h \
 	$(interface_dir)/include/user_errors.h \
-	$(interface_dir)/src/carlsim.cpp $(interface_dir)/src/user_errors.cpp
+	$(interface_dir)/include/callback.h \
+	$(interface_dir)/include/callback_core.h \
+	$(interface_dir)/src/carlsim.cpp \
+	$(interface_dir)/src/user_errors.cpp \
+	$(interface_dir)/src/callback_core.cpp
 interface_objs := $(interface_dir)/src/carlsim.o \
-	$(interface_dir)/src/user_errors.o
-
+	$(interface_dir)/src/user_errors.o \
+	$(interface_dir)/src/callback_core.o
 
 
 # motion energy objects

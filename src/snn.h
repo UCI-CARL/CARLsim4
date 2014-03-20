@@ -68,6 +68,8 @@
 #ifndef _SNN_GOLD_H_
 #define _SNN_GOLD_H_
 
+#include <carlsim.h>
+#include <callback_core.h>
 #include <mtrand.h>
 #include <gpu_random.h>
 #include <config.h>
@@ -101,33 +103,6 @@ extern RNG_rand48* gpuRand48; //!< Used by all network to generate global random
 
 #define MAX_GRPS_PER_BLOCK 		100
 #define MAX_BLOCKS         		120
-
-#define ALL -1 //!< used for the set* methods to specify all groups and/or configIds
-
-#define SYN_FIXED      0
-#define SYN_PLASTIC    1
-
-
-// Bit flags to be used to specify the type of neuron.  Future types can be added in the future such as Dopamine, etc.
-// Yes, they should be bit flags because some neurons release more than one transmitter at a synapse.
-#define UNKNOWN_NEURON	(0)
-#define POISSON_NEURON	(1 << 0)
-#define TARGET_AMPA	(1 << 1)
-#define TARGET_NMDA	(1 << 2)
-#define TARGET_GABAa	(1 << 3)
-#define TARGET_GABAb	(1 << 4)
-#define TARGET_DA		(1 << 5)
-#define TARGET_5HT		(1 << 6)
-#define TARGET_ACh		(1 << 7)
-#define TARGET_NE		(1 << 8)
-
-#define INHIBITORY_NEURON 		(TARGET_GABAa | TARGET_GABAb)
-#define EXCITATORY_NEURON 		(TARGET_NMDA | TARGET_AMPA)
-#define DOPAMINERGIC_NEURON		(TARGET_DA | EXCITATORY_NEURON)
-#define EXCITATORY_POISSON 		(EXCITATORY_NEURON | POISSON_NEURON)
-#define INHIBITORY_POISSON		(INHIBITORY_NEURON | POISSON_NEURON)
-#define IS_INHIBITORY_TYPE(type)	(((type) & TARGET_GABAa) || ((type) & TARGET_GABAb))
-#define IS_EXCITATORY_TYPE(type)	(!IS_INHIBITORY_TYPE(type))
 
 
 #define CONN_SYN_NEURON_BITS	20                               //!< last 20 bit denote neuron id. 1 Million neuron possible
@@ -235,134 +210,8 @@ inline bool isInhibitoryNeuron (unsigned int& nid, unsigned int& numNInhPois, un
 #define CARLSIM_INFO_PRINT(fp, formatc, ...) fprintf(fp,formatc "\n",##__VA_ARGS__)
 #define CARLSIM_DEBUG_PRINT(fp, formatc, ...) fprintf(fp,"[DEBUG %s:%d] " formatc "\n",__FILE__,__LINE__,##__VA_ARGS__)
 
-/*!
- * \brief Logger modes
- * The logger mode defines where to print all status, error, and debug messages. Several predefined
- * modes exist (USER, DEVELOPER, SILENT). However, the user can also set each file pointer to a
- * location of their choice (CUSTOM mode).
- * The following logger modes exist:
- *  USER 		User mode, for experiment-oriented simulations. Errors and warnings go to stderr,
- *              status information goes to stdout. Debug information can only be found in the log file.
- *  DEVELOPER   Developer mode, for developing and debugging code. Same as user, but additionally,
- *              all debug information is printed to stdout.
- *  SILENT      Silent mode, no output is generated.
- *  CUSTOM      Custom mode, the user can set the location of all the file pointers.
- * 
- * The following file pointers exist:
- *  fpOut_	where CARLSIM_INFO messages go
- *  fpErr_ 	where CARLSIM_ERROR and CARLSIM_WARN messages go
- *  fpDeb_ 	where CARLSIM_DEBUG messages go
- *  fpLog_ 	typically a log file, where all of the above messages go
- *
- * The file pointers are automatically set to different locations, depending on the loggerMode:
- *
- *          |    USER    | DEVELOPER  |   SILENT   |  CUSTOM
- * ---------|------------|------------|------------|---------
- * fpOut_   |   stdout   |   stdout   | /dev/null  |    ?
- * fpErr_   |   stderr   |   stderr   | /dev/null  |    ?
- * fpDeb_   | /dev/null  |   stdout   | /dev/null  |    ?
- * fpLog_   | debug.log  | debug.log  | /dev/null  |    ?
- *
- * Location of the debug log file can be set in any mode using CARLsim::setLogDebugFp.
- * In mode CUSTOM, the other file pointers can be set using CARLsim::setLogsFp.
- */
-enum loggerMode_t { USER, DEVELOPER, SILENT, CUSTOM, UNKNOWN };
-
-/*!
- * \brief simulation mode
- * CARLsim supports execution either on standard x86 central processing units (CPUs) or off-the-shelf NVIDIA GPUs.
- * 
- * When creating a new CARLsim object, you can choose from the following:
- * CPU_MODE:	run on a single CPU core
- * GPU_MODE:	run on a single GPU card
- * 
- * When running GPU mode on a multi-GPU system, you can specify on which CUDA device to establish a context (ithGPU,
- * 0-indexed) when you create a new CpuSNN object.
- * The simulation mode will be fixed throughout the lifetime of a CpuSNN object.
- */
-enum simMode_t {CPU_MODE, GPU_MODE};
-
 //! connection types, used internally (externally it's a string)
 enum conType_t { CONN_RANDOM, CONN_ONE_TO_ONE, CONN_FULL, CONN_FULL_NO_DIRECT, CONN_USER_DEFINED, CONN_UNKNOWN};
-
-
-
-// forward-declaration
-class CpuSNN;
-
-//! used for fine-grained control over spike generation, using a callback mechanism
-/*! Spike generation can be performed using spike generators. Spike generators are dummy-neurons that have their spikes
- * specified externally either defined by a Poisson firing rate or via a spike injection mechanism. Spike generators can
- * have post-synaptic connections with STDP and STP, but unlike Izhikevich neurons, they do not receive any pre-synaptic
- * input. For more information on spike generators see Section Neuron groups: Spike generators in the Tutorial.
- *
- * For fine-grained control over spike generation, individual spike times can be specified per neuron in each group.
- * This is accomplished using a callback mechanism, which is called at each time step, to specify whether a neuron has
- * fired or not. */
-class SpikeGenerator {
-public:
-	SpikeGenerator() {};
-
-	//! controls spike generation using a callback
-	/*! \attention The virtual method should never be called directly
-	 *  \param s pointer to the simulator object
-	 *  \param grpId the group id
-	 *  \param i the neuron index in the group
-	 *  \param currentTime the current simluation time
-	 *  \param lastScheduledSpikeTime the last spike time which was scheduled
-	 */
-	/*! \attention The virtual method should never be called directly */
-	virtual unsigned int nextSpikeTime(CpuSNN* s, int grpId, int i, unsigned int currentTime, unsigned int lastScheduledSpikeTime) = 0;
-};
-
-//! used for fine-grained control over spike generation, using a callback mechanism
-/*!
- * The user can choose from a set of primitive pre-defined connection topologies, or he can implement a topology of
- * their choice by using a callback mechanism. In the callback mechanism, the simulator calls a method on a user-defined
- * class in order to determine whether a connection should be made or not. The user simply needs to define a method that
- * specifies whether a connection should be made between a pre-synaptic neuron and a post-synaptic neuron, and the
- * simulator will automatically call the method for all possible pre- and post-synaptic pairs. The user can then specify
- * the connection's delay, initial weight, maximum weight, and whether or not it is plastic.
- */
-class ConnectionGenerator {
-public:
-	ConnectionGenerator() {};
-
-	//! specifies which synaptic connections (per group, per neuron, per synapse) should be made
-	/*! \attention The virtual method should never be called directly */
-	virtual void connect(CpuSNN* s, int srcGrpId, int i, int destGrpId, int j, float& weight, float& maxWt,
-							float& delay, bool& connected) = 0;
-};
-
-
-//! can be used to create a custom spike monitor
-/*! To retrieve outputs, a spike-monitoring callback mechanism is used. This mechanism allows the user to calculate
- * basic statistics, store spike trains, or perform more complicated output monitoring. Spike monitors are registered
- * for a group and are called automatically by the simulator every second. Similar to an address event representation
- * (AER), the spike monitor indicates which neurons spiked by using the neuron ID within a group (0-indexed) and the
- * time of the spike. Only one spike monitor is allowed per group.*/
-class SpikeMonitor {
-public:
-	SpikeMonitor() {};
-
-	//! Controls actions that are performed when certain neurons fire (user-defined).
-	/*! \attention The virtual method should never be called directly */
-	virtual void update(CpuSNN* s, int grpId, unsigned int* Nids, unsigned int* timeCnts) = 0;
-};
-
-//! can be used to create a custom group monitor
-/*! To retrieve group status, a group-monitoring callback mechanism is used. This mechanism allows the user to monitor
- * basic status of a group (currently support concentrations of neuromodulator). Group monitors are registered
- * for a group and are called automatically by the simulator every second. The parameter would be the group ID, an
- * array of data, number of elements in that array.
- */
-class GroupMonitor {
-	public:
-		GroupMonitor() {};
-
-		virtual void update(CpuSNN* s, int grpID, float* grpDA, int numData) {};
-};
-
 
 typedef struct {
 	short  delay_index_start;
@@ -445,7 +294,7 @@ typedef struct connectData_s {
 	int	  	  				numPostSynapses;
 	int	  	  				numPreSynapses;
 	uint32_t  				connProp;
-	ConnectionGenerator*	conn;
+	ConnectionGeneratorCore*	conn;
 	conType_t 				type;
 	float					p; 						//!< connection probability
 	short int				connId;					//!< connectID of the element in the linked list
@@ -600,7 +449,7 @@ typedef struct group_info_s
 	float		decayACh;		//!< decay rate for Acetylcholine
 	float		decayNE;		//!< decay rate for Noradrenaline
 
-	SpikeGenerator*	spikeGen;
+	SpikeGeneratorCore*	spikeGen;
 	bool		newUpdates;  //!< FIXME this flag has mixed meaning and is not rechecked after the simulation is started
 } group_info_t;
 
@@ -733,7 +582,7 @@ public:
 	 * \param _maxPreM: (optional) maximum number of pre-synaptic connections (per neuron), Set to 0 for no limit, default = 0. 
 	 * \return number of created synaptic projections
 	 */
-	short int connect(int gIDpre, int gIDpost, ConnectionGenerator* conn, float mulSynFast, float mulSynSlow,
+	short int connect(int gIDpre, int gIDpost, ConnectionGeneratorCore* conn, float mulSynFast, float mulSynSlow,
 		bool synWtType,	int maxM, int maxPreM);
 	
 	//! Creates a group of Izhikevich spiking neurons
@@ -919,7 +768,7 @@ public:
 	void setSpikeCounter(int grpId, int recordDur, int configId);
 	
 	//! sets up a spike generator
-	void setSpikeGenerator(int grpId, SpikeGenerator* spikeGen, int configId);
+	void setSpikeGenerator(int grpId, SpikeGeneratorCore* spikeGen, int configId);
 	
 	//! sets up a spike monitor registered with a callback to process the spikes, there can only be one SpikeMonitor per group
 	/*!
@@ -927,7 +776,7 @@ public:
 	 * \param spikeMon (optional) spikeMonitor class
 	 * \param configId (optional, deprecated) configuration id, default = ALL
 	 */
-	void setSpikeMonitor(int gid, SpikeMonitor* spikeMon, int configId);
+	void setSpikeMonitor(int gid, SpikeMonitorCore* spikeMon, int configId);
 
 	//!Sets the Poisson spike rate for a group. For information on how to set up spikeRate, see Section Poisson spike generators in the Tutorial. 
 	/*!Input arguments:
@@ -944,7 +793,7 @@ public:
 	 * \param spikeMon (optional) spikeMonitor class
 	 * \param configId (optional, deprecated) configuration id, default = ALL
 	 */
-	void setGroupMonitor(int grpId, GroupMonitor* groupMon, int configId);
+	void setGroupMonitor(int grpId, GroupMonitorCore* groupMon, int configId);
 	
 	//! Resets either the neuronal firing rate information by setting resetFiringRate = true and/or the
 	//! weight values back to their default values by setting resetWeights = true.
@@ -1461,7 +1310,7 @@ private:
 	unsigned int	monBufferSize[MAX_GRP_PER_SNN];
 	unsigned int*	monBufferFiring[MAX_GRP_PER_SNN];
 	unsigned int*	monBufferTimeCnt[MAX_GRP_PER_SNN];
-	SpikeMonitor*	monBufferCallback[MAX_GRP_PER_SNN];
+	SpikeMonitorCore*	monBufferCallback[MAX_GRP_PER_SNN];
 
 	unsigned int	numSpikeGenGrps;
 
@@ -1469,7 +1318,7 @@ private:
 	int* spkCntBuf[MAX_GRP_PER_SNN]; //!< the actual buffer of spike counts (per group, per neuron)
 
 	// group mointor variables
-	GroupMonitor*	grpBufferCallback[MAX_GRP_PER_SNN];
+	GroupMonitorCore*	grpBufferCallback[MAX_GRP_PER_SNN];
 	float*			grpDABuffer[MAX_GRP_PER_SNN];
 	float*			grp5HTBuffer[MAX_GRP_PER_SNN];
 	float*			grpAChBuffer[MAX_GRP_PER_SNN];

@@ -38,6 +38,8 @@
  * Ver 10/09/2013
  */ 
 #include <carlsim.h>
+#include <mtrand.h>
+#include <string.h>
 
 // stim must be a file of unsigned char in RGB, arranged as R1 G1 B1 R2 G2 B2 ...
 void calcColorME(int nrX, int nrY, unsigned char* stim, float* red_green, float* green_red, float* blue_yellow,
@@ -253,7 +255,7 @@ public:
 	float (*proj)[8];
 	bool usePosWts;
 	
-	void connect(CpuSNN* net, int srcGrp, int i, int destGrp, int j, float& weight, float& maxWt, float& delay, bool& connected)
+	void connect(CARLsim* net, int srcGrp, int i, int destGrp, int j, float& weight, float& maxWt, float& delay, bool& connected)
 	{
 		// pre (V1): get x,y coordinates, index of the space-time filter, and scale (0-2)
 		int v1X = i%nrX;
@@ -303,7 +305,7 @@ public:
 	int standDev;
 	bool usePosWts;
 	
-	void connect(CpuSNN* net, int srcGrp, int i, int destGrp, int j, float& weight, float& maxWt, float& delay, bool& connected)
+	void connect(CARLsim* net, int srcGrp, int i, int destGrp, int j, float& weight, float& maxWt, float& delay, bool& connected)
 	{
 		int preX = i%(nrX);
 		int preY = (i/nrX)%(nrY);
@@ -351,7 +353,7 @@ public:
 	float weightScale;
 	int standDev;
 	
-	void connect(CpuSNN* net, int srcGrp, int i, int destGrp, int j, float& weight, float& maxWt, float& delay, bool& connected)
+	void connect(CARLsim* net, int srcGrp, int i, int destGrp, int j, float& weight, float& maxWt, float& delay, bool& connected)
 	{
 		int preX = i%(nrX);
 		int preY = (i/nrX)%(nrY);
@@ -389,7 +391,7 @@ public:
 	float weightScale;
 	bool stayWithinPool;
 	
-	void connect(CpuSNN* net, int srcGrp, int i, int destGrp, int j, float& weight, float& maxWt, float& delay, bool& connected)
+	void connect(CARLsim* net, int srcGrp, int i, int destGrp, int j, float& weight, float& maxWt, float& delay, bool& connected)
 	{
 		int preX = i%(nrX);
 		int preY = (i/nrX)%(nrY);
@@ -446,7 +448,7 @@ public:
 	float weight;
 	bool stayWithinPool;
 	
-	void connect(CpuSNN* net, int srcGrp, int i, int destGrp, int j, float& weight, float& maxWt, float& delay, bool& connected)
+	void connect(CARLsim* net, int srcGrp, int i, int destGrp, int j, float& weight, float& maxWt, float& delay, bool& connected)
 	{
 		// wrap around
 		int preX     = i%nrXpre;
@@ -475,7 +477,7 @@ public:
 	int num;
 	float weightScale;
 	
-	void connect(CpuSNN* net, int srcGrp, int i, int destGrp, int j, float& weight, float& maxWt, float& delay, bool& connected)
+	void connect(CARLsim* net, int srcGrp, int i, int destGrp, int j, float& weight, float& maxWt, float& delay, bool& connected)
 	{
 		int MTdir = i/(nrX*nrY);
 		int PFCdir = j/num;
@@ -497,7 +499,7 @@ public:
 	int num, numi;
 	float weightScale;
 	
-	void connect(CpuSNN* net, int srcGrp, int i, int destGrp, int j, float& weight, float& maxWt, float& delay, bool& connected)
+	void connect(CARLsim* net, int srcGrp, int i, int destGrp, int j, float& weight, float& maxWt, float& delay, bool& connected)
 	{
 		int PFCidir = i/numi;
 		int PFCdir = j/num;

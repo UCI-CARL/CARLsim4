@@ -40,6 +40,7 @@
 
 //Change this!
 #include <carlsim.h>
+#include <mtrand.h>
 void calcColorME(int nrX, int nrY, unsigned char* stim, float* red_green, float* green_red, float* blue_yellow, float* yellow_blue, float* ME, bool GPUpointers);
 extern MTRand	      getRand;
 
@@ -97,7 +98,7 @@ public:
 	int src_x; int src_y; int dest_x; int dest_y; int radius;
 	float weightScale;
 	
-	void connect(CpuSNN* net, int srcGrp, int src_i, int destGrp, int dest_i, float& weight, float& maxWt, float& delay, bool& connected)
+	void connect(CARLsim* net, int srcGrp, int src_i, int destGrp, int dest_i, float& weight, float& maxWt, float& delay, bool& connected)
 	{
 		// extract x and y positions...
 		int dest_i_x  = dest_i%dest_x;
@@ -124,7 +125,7 @@ public:
 	float localRadius2;
 	float weightScale;
 	
-	void connect(CpuSNN* net, int srcGrp, int src_i, int destGrp, int dest_i, float& weight, float& maxWt, float& delay, bool& connected)
+	void connect(CARLsim* net, int srcGrp, int src_i, int destGrp, int dest_i, float& weight, float& maxWt, float& delay, bool& connected)
 	{
 		// extract x and y position from the destination
 		int dest_i_x = dest_i%V4_LAYER_DIM;
@@ -267,9 +268,9 @@ int main()
 
 	bool onGPU = true;
 
-	if (!onGPU) {
-		CUDA_CHECK_ERRORS(cudaSetDevice(CUDA_GET_MAXGFLOP_DEVICE_ID()));
-	}
+	//if (!onGPU) {
+	//	CUDA_CHECK_ERRORS(cudaSetDevice(CUDA_GET_MAXGFLOP_DEVICE_ID()));
+	//}
 
 	//initialize the GPU/network
 	s.runNetwork(0,0, onGPU?GPU_MODE:CPU_MODE);
