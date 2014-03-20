@@ -41,7 +41,6 @@
     #include <helper_cuda.h>
 #endif
 
-#include "CUDAVersionControl.h"
 
 /// initialize the GPU
 void GPU_init();

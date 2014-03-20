@@ -40,7 +40,7 @@
 
 #include <config.h>
 #include <snn.h>
-#include <errorCode.h>
+#include <error_code.h>
 #include <cuda_runtime.h>
 
 #if __CUDA3__

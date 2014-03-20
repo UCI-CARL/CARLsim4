@@ -1,3 +1,5 @@
+#include <snn.h>
+
 #include "carlsim_tests.h"
 
 // FIXME: this COULD be interface-level, but then there's no way to check sim->dNMDA, etc.

@@ -67,7 +67,7 @@ public:
 	//! controls spike generation using a callback mechanism
 	/*! \attention The virtual method should never be called directly
 	 */
-	unsigned int nextSpikeTime(CpuSNN* s, int grpId, int i,
+	virtual unsigned int nextSpikeTime(CpuSNN* s, int grpId, int i,
 											unsigned int currentTime, unsigned int lastScheduledSpikeTime);
 
 private:
@@ -88,7 +88,7 @@ public:
 
 	//! specifies which synaptic connections (per group, per neuron, per synapse) should be made
 	/*! \attention The virtual method should never be called directly */
-	void connect(CpuSNN* s, int srcGrpId, int i, int destGrpId, int j, float& weight, float& maxWt,
+	virtual void connect(CpuSNN* s, int srcGrpId, int i, int destGrpId, int j, float& weight, float& maxWt,
 		float& delay, bool& connected);
 
 private:
@@ -108,7 +108,7 @@ class SpikeMonitorCore {
 public:
 	SpikeMonitorCore(CARLsim* c, SpikeMonitor* s);
 
-	void update(CpuSNN* s, int grpId, unsigned int* Nids, unsigned int* timeCnts);
+	virtual void update(CpuSNN* s, int grpId, unsigned int* Nids, unsigned int* timeCnts);
 
 private:
 	CARLsim* carlsim;
@@ -126,7 +126,7 @@ class GroupMonitorCore {
 public:
 	GroupMonitorCore(CARLsim* c, GroupMonitor* g);
 
-	void update(CpuSNN* s, int grpID, float* grpDA, int numData);
+	virtual void update(CpuSNN* s, int grpID, float* grpDA, int numData);
 
 private:
 	CARLsim* carlsim;

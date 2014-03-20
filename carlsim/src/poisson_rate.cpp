@@ -51,7 +51,7 @@
     #include "helper_cuda.h"
 #endif
 
-#include "CUDAVersionControl.h"
+#include <cuda_version_control.h>
 
 
 PoissonRate::PoissonRate(float* _rates, uint32_t _len, bool _onGPU) {

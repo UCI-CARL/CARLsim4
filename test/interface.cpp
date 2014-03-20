@@ -1,3 +1,5 @@
+#include <carlsim.h>
+
 #include "carlsim_tests.h"
 
 //! trigger all UserErrors

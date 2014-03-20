@@ -36,7 +36,7 @@ output_files :=
 objects :=
 
 inc_dir = include
-src_dir = src
+carlsim_dir = carlsim
 lib_dir = libpti
 ex_dir  = examples
 interface_dir = interface
@@ -45,11 +45,11 @@ test_dir = test
 # location of .cpp files
 vpath %.cpp $(EO_INSTALL_DIR)/src $(EO_INSTALL_DIR)/src/do \
 $(EO_INSTALL_DIR)/src/es $(EO_INSTALL_DIR)/src/utils $(lib_dir) \
-$(ex_dir)/common/ $(src_dir) $(interface_dir)/src $(test_dir)
+$(ex_dir)/common/ $(carlsim_dir)/src $(interface_dir)/src $(test_dir)
 # location of .cu files
-vpath %.cu $(src_dir)
+vpath %.cu $(carlsim_dir)/src
 # location of .h files
-vpath %.h $(EO_INSTALL_DIR)/src $(inc_dir) $(src_dir) $(ex_dir)/common $(interface_dir)/include \
+vpath %.h $(EO_INSTALL_DIR)/src $(inc_dir) $(carlsim_dir)/include $(ex_dir)/common $(interface_dir)/include \
 $(test_dir)
 
 # this blank 'all' is required
@@ -58,7 +58,7 @@ all:
 # core makefile includes
 include makefile.mk
 include libpti/libpti.mk
-include src/carlsim.mk
+include carlsim/carlsim.mk
 
 include test/gtest.mk
 include test/carlsim_tests.mk
@@ -71,7 +71,7 @@ include $(example_includes)
 .PHONY: all libraries examples pti_examples clean distclean tests
 all: $(all_targets)
 
-tests: gtest sample1_unittest carlsim_tests
+tests: gtest carlsim_tests
 
 libraries: $(libraries)
 

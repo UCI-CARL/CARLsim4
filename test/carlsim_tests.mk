@@ -3,7 +3,7 @@
 objects += $(test_dir)/carlsim_tests.o
 output_files += $(test_dir)/carlsim_tests
 
-CARLSIM_TEST_FLAGS := -I$(CURDIR)/$(test_dir)
+CARLSIM_TEST_FLAGS := -I$(CURDIR)/$(test_dir) -D__REGRESSION_TESTING__
 
 gtest_deps = $(GTEST_LIB_DIR)/libgtest.a $(GTEST_LIB_DIR)/libgtest_main.a \
 	$(GTEST_LIB_DIR)/libgtest_custom_main.a
