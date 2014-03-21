@@ -89,3 +89,13 @@ void GroupMonitorCore::update(CpuSNN* s, int grpID, float* grpDA, int numData) {
 	if (gMon != NULL)
 		gMon->update(carlsim, grpID, grpDA, numData);
 }
+
+NetworkMonitorCore::NetworkMonitorCore(CARLsim* c, NetworkMonitor* n) {
+	carlsim = c;
+	nMon = n;
+}
+
+void NetworkMonitorCore::update(CpuSNN* s, int grpIdPre, int grpIdPost, float* weight, int numData) {
+	if (nMon != NULL)
+		nMon->update(carlsim, grpIdPre, grpIdPost, weight, numData);
+}

@@ -407,12 +407,14 @@ int CpuSNN::allocateStaticLoad(int bufSize) {
 			// fill the static load distribution here...
 			int testg = STATIC_LOAD_GROUP(threadLoad);
 			tempNeuronAllocation[bufferCnt] = threadLoad;
-			CARLSIM_DEBUG("%d. Start=%d, size=%d grpId=%d:%s (MonId=%d)",
+			CARLSIM_DEBUG("%d. Start=%d, size=%d grpId=%d:%s (SpikeMonId=%d) (GroupMonId=%d) (NetworkMonId=%d)",
 					bufferCnt, STATIC_LOAD_START(threadLoad),
 					STATIC_LOAD_SIZE(threadLoad),
 					STATIC_LOAD_GROUP(threadLoad),
 					grp_Info2[testg].Name.c_str(),
-					grp_Info[testg].MonitorId);
+					grp_Info[testg].SpikeMonitorId,
+					grp_Info[testg].GroupMonitorId,
+					grp_Info[testg].NetworkMonitorId);
 			bufferCnt++;
 		}
 	}
@@ -2505,8 +2507,8 @@ __global__ void kernel_check_GPU_init ()
     	retErrVal[0][i++]= gpuNetInfo.sim_with_conductances;
     	retErrVal[0][i++]= gpuNetInfo.sim_with_stdp;
     	retErrVal[0][i++]= gpuNetInfo.sim_with_stp;
-    	retErrVal[0][i++]= gpuGrpInfo[0].MonitorId;
-    	retErrVal[0][i++]= gpuGrpInfo[1].MonitorId;
+    	retErrVal[0][i++]= gpuGrpInfo[0].SpikeMonitorId;
+    	retErrVal[0][i++]= gpuGrpInfo[1].SpikeMonitorId;
     	retErrVal[0][i++]= gpuGrpInfo[0].WithSTP;
     	retErrVal[0][i++]= gpuGrpInfo[1].WithSTP;
 		retErrVal[0][i++]= gpuGrpInfo[1].avgTimeScale;

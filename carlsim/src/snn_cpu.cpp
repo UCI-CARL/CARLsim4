@@ -673,6 +673,9 @@ int CpuSNN::runNetwork(int _nsec, int _nmsec, bool enablePrint, bool copyState) 
 			if (numGroupMonitor) {
 				updateGroupMonitor();
 			}
+			if (numNetworkMonitor) {
+				updateNetworkMonitor();
+			}
 			if (showLog) {
 				showStatus();
 				showStatusCnt_=0; // reset counter
@@ -904,6 +907,27 @@ void CpuSNN::setGroupMonitor(int grpId, GroupMonitorCore* groupMon, int configId
 	}
 }
 
+void CpuSNN::setNetworkMonitor(int grpIdPre, int grpIdPost, NetworkMonitorCore* networkMon, int configId) {
+	if (configId == ALL) {
+		for(int c = 0; c < nConfig_; c++)
+			setNetworkMonitor(grpIdPre, grpIdPost, networkMon, c);
+	} else {
+		int cGrpIdPre = getGroupId(grpIdPre, configId);
+		int cGrpIdPost = getGroupId(grpIdPost, configId);
+
+		// store the grpId for further reference
+		networkMonitorGrpIdPre[numNetworkMonitor] = cGrpIdPre;
+		networkMonitorGrpIdPost[numNetworkMonitor] = cGrpIdPost;
+
+		// also inform the grp that it is being monitored...
+		grp_Info[cGrpIdPre].NetworkMonitorId = numNetworkMonitor;
+
+		netBufferCallback[numNetworkMonitor] = networkMon; // Default value of _netMon is NULL
+
+		numNetworkMonitor++;
+	}
+}
+
 // sets up a spike generator
 void CpuSNN::setSpikeGenerator(int grpId, SpikeGeneratorCore* spikeGen, int configId) {
 	if (configId == ALL) {
@@ -978,12 +1002,12 @@ void CpuSNN::setSpikeMonitor(int grpId, SpikeMonitorCore* spikeMon, int configId
 	    CARLSIM_DEBUG("spikeMonitor added");
 
 	    // store the gid for further reference
-	    monGrpId[numSpikeMonitor]	= cGrpId;
+	    monGrpId[numSpikeMonitor] = cGrpId;
 
 	    // also inform the grp that it is being monitored...
-	    grp_Info[cGrpId].MonitorId		= numSpikeMonitor;
+	    grp_Info[cGrpId].SpikeMonitorId	= numSpikeMonitor;
 
-	    float maxRate	= grp_Info[cGrpId].MaxFiringRate;
+	    float maxRate = grp_Info[cGrpId].MaxFiringRate;
 
 	    // count the size of the buffer for storing 1 sec worth of info..
 	    // only the last second is stored in this buffer...
@@ -999,7 +1023,7 @@ void CpuSNN::setSpikeMonitor(int grpId, SpikeMonitorCore* spikeMon, int configId
 
 	    // create the new buffer for keeping track of all the spikes in the system
 	    monBufferFiring[numSpikeMonitor] = new unsigned int[buffSize];
-	    monBufferTimeCnt[numSpikeMonitor]= new unsigned int[1000];
+	    monBufferTimeCnt[numSpikeMonitor] = new unsigned int[1000];
 	    memset(monBufferTimeCnt[numSpikeMonitor],0,sizeof(int)*(1000));
 
 	    numSpikeMonitor++;
@@ -1567,7 +1591,7 @@ void CpuSNN::CpuSNNinit() {
 	}
 	fpLog_ = fopen("debug.log","w");
 
-	#if REGRESSION_TESTING
+	#ifdef __REGRESSION_TESTING__
 	#if (WIN32 || WIN64)
 		fpOut_ = fopen("nul","w");
 		fpErr_ = fopen("nul","w");
@@ -1676,8 +1700,9 @@ void CpuSNN::CpuSNNinit() {
 	for (int i=0; i < MAX_GRP_PER_SNN; i++) {
 		grp_Info[i].Type = UNKNOWN_NEURON;
 		grp_Info[i].MaxFiringRate = UNKNOWN_NEURON_MAX_FIRING_RATE;
-		grp_Info[i].MonitorId = -1;
+		grp_Info[i].SpikeMonitorId = -1;
 		grp_Info[i].GroupMonitorId = -1;
+		grp_Info[i].NetworkMonitorId = -1;
 		grp_Info[i].FiringCount1sec=0;
 		grp_Info[i].numPostSynapses 		= 0;	// default value
 		grp_Info[i].numPreSynapses 	= 0;	// default value
@@ -3804,11 +3829,39 @@ void CpuSNN::updateGroupMonitor() {
 		int monitorId = grp_Info[grpId].GroupMonitorId;
 			
 		if(monitorId != -1) {
-			fprintf(stderr, "Group Monitor for Group %s has DA(%f)\n", grp_Info2[grpId].Name.c_str(), grpDABuffer[monitorId][0]);
+			CARLSIM_INFO("Group Monitor for Group %s has DA(%f)", grp_Info2[grpId].Name.c_str(), grpDABuffer[monitorId][0]);
 
 			// call the callback function
 			if (grpBufferCallback[monitorId])
 				grpBufferCallback[monitorId]->update(this, grpId, grpDABuffer[monitorId], 100);
+		}
+	}
+}
+
+void CpuSNN::updateNetworkMonitor() {
+	for (int grpId = 0; grpId < numGrp; grpId++) {
+		int monitorId = grp_Info[grpId].NetworkMonitorId;
+
+		if(monitorId != -1) {
+			int grpIdPre = networkMonitorGrpIdPre[monitorId];
+			int grpIdPost = networkMonitorGrpIdPost[monitorId];
+			float* weights = NULL;
+			float avgWeight;
+			int weightSzie;
+			getPopWeights(grpIdPre, grpIdPost, weights, weightSzie, 0);
+
+			for (int i = 0; i < weightSzie; i++)
+				avgWeight += weights[i];
+			avgWeight /= weightSzie;
+
+			CARLSIM_INFO("Network Monitor for Group %s to Group %s has average weight(%f)", grp_Info2[grpIdPre].Name.c_str(), grp_Info2[grpIdPost].Name.c_str(), avgWeight);
+
+			// call the callback function
+			if (netBufferCallback[monitorId])
+				netBufferCallback[monitorId]->update(this, grpIdPre, grpIdPost, weights, weightSzie);
+
+			if (weights != NULL)
+				delete [] weights;
 		}
 	}
 }
@@ -4057,7 +4110,7 @@ void CpuSNN::updateSpikeMonitor() {
 				assert(nid < numN);
 
 				int grpId = grpIds[nid];
-				int monitorId = grp_Info[grpId].MonitorId;
+				int monitorId = grp_Info[grpId].SpikeMonitorId;
 				if(monitorId!= -1) {
 					assert(nid >= grp_Info[grpId].StartN);
 					assert(nid <= grp_Info[grpId].EndN);
@@ -4079,7 +4132,7 @@ void CpuSNN::updateSpikeMonitor() {
 }
 
   for (int grpId=0;grpId<numGrp;grpId++) {
-    int monitorId = grp_Info[grpId].MonitorId;
+    int monitorId = grp_Info[grpId].SpikeMonitorId;
     if(monitorId!= -1) {
       CARLSIM_INFO("Spike Monitor for Group %s has %d spikes (%f Hz)",grp_Info2[grpId].Name.c_str(),
       			monBufferPos[monitorId],((float)monBufferPos[monitorId])/(grp_Info[grpId].SizeN));

@@ -400,8 +400,9 @@ typedef struct group_info_s
 	int			SizeN;
 	int			NumTraceN;
 	short int  	MaxFiringRate; //!< this is for the monitoring mechanism, it needs to know what is the maximum firing rate in order to allocate a buffer big enough to store spikes...
-	int			MonitorId;		//!< spike monitor id
+	int			SpikeMonitorId;		//!< spike monitor id
 	int			GroupMonitorId; //!< group monitor id
+	int			NetworkMonitorId; //!< network monitor id
 	float   	RefractPeriod;
 	int			CurrTimeSlice; //!< timeSlice is used by the Poisson generators in order to note generate too many or too few spikes within a window of time
 	int			NewTimeSlice;
@@ -751,6 +752,23 @@ public:
 	 */
 	void resetSpikeCounter(int grpId, int configId);
 
+	//! sets up a group monitor registered with a callback to process the spikes.
+	/*!
+	 * \param grpId ID of the neuron group
+	 * \param groupMon GroupMonitorCore class
+	 * \param configId (optional, deprecated) configuration id, default = ALL
+	 */
+	void setGroupMonitor(int grpId, GroupMonitorCore* groupMon, int configId);
+
+	//! sets up a network monitor registered with a callback to process the spikes.
+	/*!
+	 * \param[in] grpIdPre ID of the pre-synaptic neuron group
+	 * \param[in] grpIdPost ID of the post-synaptic neuron group
+	 * \param[in] networkMon NetworkMonitorCore class
+	 * \param[in] configId (optional, deprecated) configuration id
+	 */
+	void setNetworkMonitor(int grpIdPre, int grpIdPost, NetworkMonitorCore* networkMon, int configId);
+
 	/*!
 	 * \brief A Spike Counter keeps track of the number of spikes per neuron in a group.
 	 * A Spike Counter keeps track of all spikes per neuron for a certain time period (recordDur).
@@ -786,14 +804,6 @@ public:
 	 * \param configId (optional, deprecated) configuration id, default = ALL
 	 */
 	void setSpikeRate(int grpId, PoissonRate* spikeRate, int refPeriod, int configId);
-
-	//! sets up a group monitor registered with a callback to process the spikes.
-	/*!
-	 * \param grpId ID of the neuron group
-	 * \param spikeMon (optional) spikeMonitor class
-	 * \param configId (optional, deprecated) configuration id, default = ALL
-	 */
-	void setGroupMonitor(int grpId, GroupMonitorCore* groupMon, int configId);
 	
 	//! Resets either the neuronal firing rate information by setting resetFiringRate = true and/or the
 	//! weight values back to their default values by setting resetWeights = true.
@@ -1057,6 +1067,7 @@ private:
 
 	void updateAfterMaxTime();
 	void updateGroupMonitor();
+	void updateNetworkMonitor();
 	void updateParameters(int* numN, int* numPostSynapses, int* D, int nConfig=1);
 	void updateSpikesFromGrp(int grpId);
 	void updateSpikeGenerators();
@@ -1303,7 +1314,7 @@ private:
 	int showStatusCnt_; //!< internal counter to implement fast version of !(simTimeSec%showStatusCycle_)
 
 
-	// spike monitor code...
+	// spike monitor variables
 	unsigned int	numSpikeMonitor;
 	unsigned int	monGrpId[MAX_GRP_PER_SNN];
 	unsigned int	monBufferPos[MAX_GRP_PER_SNN];
@@ -1325,6 +1336,12 @@ private:
 	float*			grpNEBuffer[MAX_GRP_PER_SNN];
 	unsigned int		groupMonitorGrpId[MAX_GRP_PER_SNN];
 	unsigned int		numGroupMonitor;
+
+	// network monitor variables
+	NetworkMonitorCore	*netBufferCallback[MAX_GRP_PER_SNN];
+	unsigned int		networkMonitorGrpIdPre[MAX_GRP_PER_SNN];
+	unsigned int		networkMonitorGrpIdPost[MAX_GRP_PER_SNN];
+	unsigned int		numNetworkMonitor;
 
 	/* Tsodyks & Markram (1998), where the short-term dynamics of synapses is characterized by three parameters:
 	   U (which roughly models the release probability of a synaptic vesicle for the first spike in a train of spikes),

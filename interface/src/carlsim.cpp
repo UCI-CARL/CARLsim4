@@ -569,9 +569,18 @@ void CARLsim::setGroupMonitor(int grpId, GroupMonitor* groupMon, int configId) {
 	std::string funcName = "setGroupMonitor(\""+getGroupName(grpId,configId)+"\",GroupMonitor*)";
 	UserErrors::assertTrue(!hasRunNetwork_, UserErrors::NETWORK_ALREADY_RUN, funcName); // can't change setup after run
 	UserErrors::assertTrue(grpId!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName, "grpId");		// groupId can't be ALL
-	UserErrors::assertTrue(groupMon!=NULL, UserErrors::CANNOT_BE_NULL, funcName);
 
 	snn_->setGroupMonitor(grpId, new GroupMonitorCore(this, groupMon),configId);
+}
+
+// set network monitor for a group
+void CARLsim::setNetworkMonitor(int grpIdPre, int grpIdPost, NetworkMonitor* networkMon, int configId) {
+	std::string funcName = "setNetworkMonitor(\""+getGroupName(grpIdPre,configId)+"\",NetworkMonitor*)";
+	UserErrors::assertTrue(!hasRunNetwork_, UserErrors::NETWORK_ALREADY_RUN, funcName); // can't change setup after run
+	UserErrors::assertTrue(grpIdPre!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName, "grpIdPre");		// groupId can't be ALL
+	UserErrors::assertTrue(grpIdPost!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName, "grpIdPost");		// groupId can't be ALL
+
+	snn_->setNetworkMonitor(grpIdPre, grpIdPost, new NetworkMonitorCore(this, networkMon),configId);
 }
 
 // sets a spike counter for a group
@@ -598,10 +607,7 @@ void CARLsim::setSpikeMonitor(int grpId, SpikeMonitor* spikeMon, int configId) {
 	UserErrors::assertTrue(!hasRunNetwork_, UserErrors::NETWORK_ALREADY_RUN, funcName); // can't change setup after run
 	UserErrors::assertTrue(grpId!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName, "grpId");		// groupId can't be ALL
 
-	if (spikeMon == NULL)
-		snn_->setSpikeMonitor(grpId, NULL, configId);
-	else
-		snn_->setSpikeMonitor(grpId, new SpikeMonitorCore(this, spikeMon),configId);
+	snn_->setSpikeMonitor(grpId, new SpikeMonitorCore(this, spikeMon),configId);
 }
 
 
