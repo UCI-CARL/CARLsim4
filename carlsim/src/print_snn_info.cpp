@@ -38,7 +38,7 @@
  * Ver 07/13/2013
  */ 
 
-#include "snn.h"
+#include <snn.h>
 
 #if ! (WIN32 || WIN64)
 	#include <string.h>

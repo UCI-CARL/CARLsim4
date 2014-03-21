@@ -40,6 +40,9 @@
 
 #include <carlsim.h>
 
+#if (WIN32 || WIN64)
+	#define _CRT_SECURE_NO_WARNINGS
+#endif
 
 int main()
 {

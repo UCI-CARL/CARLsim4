@@ -39,7 +39,7 @@
  * Ver 2/21/2014
  */
 
-#include "poisson_rate.h"
+#include <poisson_rate.h>
 
 #if __CUDA3__
     #include <cuda.h>
