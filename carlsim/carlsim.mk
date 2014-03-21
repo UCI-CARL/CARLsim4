@@ -39,11 +39,11 @@ local_deps := $(addprefix $(local_dir)/include/, snn.h mtrand.h gpu.h gpu_random
 	error_code.h cuda_version_control.h)
 local_src := $(addprefix $(local_dir)/src/, snn_cpu.cpp mtrand.cpp \
 	propagated_spike_buffer.cpp poisson_rate.cpp \
-	printSNNInfo.cpp gpu_random.cu \
+	print_snn_info.cpp gpu_random.cu \
 	snn_gpu.cu) \
 	$(local_deps)
 local_objs := $(addprefix $(local_dir)/src/,snn_cpu.o mtrand.o \
-	propagated_spike_buffer.o poisson_rate.o printSNNInfo.o \
+	propagated_spike_buffer.o poisson_rate.o print_snn_info.o \
 	gpu_random.o snn_gpu.o)
 
 
