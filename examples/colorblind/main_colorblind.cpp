@@ -313,5 +313,13 @@ int main()
 		}
 	}
 	fclose(fid);
+
+	delete projPrimary;
+	delete projSecondary;
+	delete projYellow;
+	delete projInhib;
+	delete projInhToExc;
+
+	delete[] vid;
 }
 

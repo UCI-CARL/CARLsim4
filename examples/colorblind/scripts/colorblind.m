@@ -1,3 +1,5 @@
+% Version 3/22/14
+
 addpath ../../common
 
 list={'R','G','B','C','M','Y'};

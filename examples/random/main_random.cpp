@@ -35,7 +35,7 @@
  *					(KDC) Kristofor Carlson <kdcarlso@uci.edu>
  *
  * CARLsim available from http://socsci.uci.edu/~jkrichma/CARL/CARLsim/
- * Ver 2/22/14
+ * Ver 3/22/14
  */ 
 
 #include <carlsim.h>
@@ -79,7 +79,7 @@ int main()
 	// show network status every 10 secs
 	sim.setLogCycle(2);
 
-	sim.setSpikeMonitor(g1,"results/random/spikes.dat"); // put spike times into spikes.dat
+	sim.setSpikeMonitor(g1,"examples/random/results/spikes.dat"); // put spike times into spikes.dat
 	sim.setSpikeMonitor(g2); // Show basic statistics about g2
 	sim.setSpikeMonitor(gin);
 
@@ -100,7 +100,7 @@ int main()
 		sim.runNetwork(1,0);
 	}
 
-	FILE* nid = fopen("network.dat","wb");
+	FILE* nid = fopen("examples/random/results/network.dat","wb");
 	sim.writeNetwork(nid);
 	fclose(nid);
 
