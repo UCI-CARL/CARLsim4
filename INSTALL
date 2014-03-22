@@ -176,14 +176,16 @@ the following:
 1. Create your network/experiment, say "myExp", in a source file called 
    "main_myExp.cpp" and put it in the directory "examples/myExp".
 
-2. Within that source file, make sure that all spike monitors output to a 
-   directory "results/myExp/" for consistency (see existing examples for 
-   inspiration/help).
+2. Create a folder "examples/myExp/results" for output data. Make sure that all
+   spike monitors in your source files output to that directory for consistency
+   (see existing examples for inspiration/help).
 
-3. Again for consistency, if you have any input videos/data, add them to 
-   directory "videos/".
+3. Again for consistency, if you have any input videos/data, create a folder
+   "examples/myExp/videos" and add them there.
 
-4. Add your compilation rules to a file called examples.mk inside the 
+4. Repeat step 3 for "examples/myExp/scripts" if you have any Matlab scripts.
+
+5. Add your compilation rules to a file called examples.mk inside the 
    examples/myExp directory. It's easiest to just grab an existing examples.mk 
    from another example and use that. Only the top two lines need to bemodified. 
    The first line is the name of your example, in this case it would be myExp. 
@@ -207,11 +209,16 @@ the following:
     - If you want to use the PTI/EO libraries with CARLsim to tune SNNs, begin 
       with the examples/tuneFiringRates/examples.mk file.
 
-5. Now type
+6. Now type
   
    $ make myExp
   
-   in the directory containing the main Makefile, and you are good to go.
+   in the directory containing the main Makefile (CARLsim root), and you are good
+   to go. Type
+
+   $ ./examples/myExp/myExp
+
+   to run the executable.
 
 -------------------------------------------------------------------------------
 MAKEFILE HELP AND MAINTENANCE
@@ -236,7 +243,7 @@ can be displayed by typing
 $ make help
 
 -------------------------------------------------------------------------------
-TESTING EXISTING CARLSIM SOURCECODE
+TESTING EXISTING CARLSIM SOURCE CODE
 -------------------------------------------------------------------------------
 
 CARLsim uses google tests (https://code.google.com/p/googletest/) to develop
@@ -245,7 +252,7 @@ can run the google tests CARLsim code found in the test directory.
 
 You first need to install google tests:
 
-1)  Download google tests and unzip it to a location of your choice. 
+1)  Download google tests and unzip them to a location of your choice. 
 
 2)  Edit the environment variables GTEST_DIR and GTEST_LIB_DIR 
     found in test/gtest.mk. GTEST_DIR should point to the location of the 
@@ -255,23 +262,15 @@ You first need to install google tests:
 
 After google tests has been installed:
 
-1) Edit src/config.h and change the line that reads:
+1) From the main directory of the CARLsim installation, type:
 
-#define REGRESSION_TESTING 0
-
-to
-
-#define REGRESSION_TESTING 1
-
-2) From the main directory of the CARLsim installation, type:
-
-   'make carlsim_tests'
+   $ make carlsim_tests
 
    which compiles the carlsim tests
 
-3) To run the tests, from the main directory, type:
+2) To run the tests, from the main directory, type:
 
-   './test/carlsim_tests'
+   $ ./test/carlsim_tests
 
    This runs the CARLsim tests which should all pass. If they do not pass,
    you may have inadvertantly modified the source code and should probably
