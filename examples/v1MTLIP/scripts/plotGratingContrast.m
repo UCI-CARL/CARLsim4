@@ -15,7 +15,9 @@ function [] = plotGratingContrast()
 % in v1ColorME.cu.
 %
 % Author: Michael Beyeler <mbeyeler@uci.edu>
-% Ver: 2/5/14
+% Ver: 3/22/14
+
+addpath ../../common
 
 xDirection = 0; % drift direction
 nrF = 50; % number of frames per contrast
@@ -34,7 +36,7 @@ end
 stimContrast = linspace(log2(0.02), log2(1), nDataPoints);
 stimContrast = 2.^stimContrast;
 
-spk = readSpikes('../../results/v1MTLIP/spkV1ME.dat',frameDur)/normHz;
+spk = readSpikes('../results/spkV1ME.dat',frameDur)/normHz;
 spk(end,28*3*1024)=0;
 spk=reshape(spk,size(spk,1),32*32,28,3);
 

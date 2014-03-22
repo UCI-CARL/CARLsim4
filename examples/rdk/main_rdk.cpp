@@ -35,13 +35,13 @@
  *					(KDC) Kristofor Carlson <kdcarlso@uci.edu>
  *
  * CARLsim available from http://socsci.uci.edu/~jkrichma/CARL/CARLsim/
- * Ver 10/09/2013
+ * Ver 3/22/14
  */ 
 
 
 #include <carlsim.h>
 #include <mtrand.h>
-#include <string.h>
+#include <string>
 void calcColorME(int nrX, int nrY, unsigned char* stim, float* red_green, float* green_red, float* blue_yellow, float* yellow_blue, float* ME, bool GPUpointers);
 extern MTRand	      getRand;
 
@@ -267,7 +267,7 @@ int main()
 {
 	MTRand	      getRand(210499257);
 
-	char saveFolder[] = "results/rdk/";
+	std::string saveFolder = "examples/rdk/results/";
 
 	float synscale = 1;
 	float stdpscale = 1;
@@ -276,17 +276,14 @@ int main()
 	stdpscale = stdpscale*0.04;
 	synscale = synscale*4;
 
-	#define FRAMEDURATION 100
+	int frameDur = 100;
+	int VIDLEN = 8*33*10;
 	bool onGPU = true;
+	int ithGPU = 0;
 
 	FILE* fid;
-	char thisTmpSave[128]; // temp var to store save folder
 
-	
-	// use command-line specified CUDA device, otherwise use device with highest Gflops/s
-//	cutilSafeCall(cudaSetDevice(cutGetMaxGflopsDeviceId()));
-
-	CARLsim s("rdk",onGPU?GPU_MODE:CPU_MODE);
+	CARLsim s("rdk",onGPU?GPU_MODE:CPU_MODE,USER,ithGPU);
 
 	int gV1ME = s.createSpikeGeneratorGroup("V1ME", nrX*nrY*28*3, EXCITATORY_NEURON);
 	int gMT1 = s.createGroup("MT1", nrX*nrY*8, EXCITATORY_NEURON);
@@ -308,7 +305,7 @@ int main()
 	s.setNeuronParameters(gPFCi, 0.1f,  0.2f, -65.0f, 2.0f);
 
 
-
+	// FIXME: memory leak
 	s.connect(gV1ME, gMT1, new connectV1toMT(1,synscale*4.5/2,motion_proj1), SYN_FIXED,1000,3000);
 	s.connect(gV1ME, gMT2, new connectV1toMT(1,synscale*4.5/2,motion_proj2), SYN_FIXED,1000,3000);
 	s.connect(gV1ME, gMT3, new connectV1toMT(1,synscale*4.5/2,motion_proj3), SYN_FIXED,1000,3000);
@@ -330,23 +327,22 @@ int main()
 	// show log every 1 sec (0 to disable logging). You can pass a file pointer or pass stdout to specify where the log output should go.
 	s.setLogCycle(1);
 
-
 	s.setConductances(true,5,150,6,150);
-	
 	s.setSTDP(ALL, false);
-
 	s.setSTP(ALL,false);
 
 	s.setSpikeMonitor(gV1ME);
-	strcpy(thisTmpSave,saveFolder); s.setSpikeMonitor(gMT1,strcat(thisTmpSave,"spkMT1.dat"));
-	strcpy(thisTmpSave,saveFolder); s.setSpikeMonitor(gMT2,strcat(thisTmpSave,"spkMT2.dat"));
-	strcpy(thisTmpSave,saveFolder); s.setSpikeMonitor(gMT3,strcat(thisTmpSave,"spkMT3.dat"));
-	strcpy(thisTmpSave,saveFolder); s.setSpikeMonitor(gMT1i,strcat(thisTmpSave,"spkMT1i.dat"));
-	strcpy(thisTmpSave,saveFolder); s.setSpikeMonitor(gPFC,strcat(thisTmpSave,"spkPFC.dat"));
-	strcpy(thisTmpSave,saveFolder); s.setSpikeMonitor(gPFCi,strcat(thisTmpSave,"spkPFCi.dat"));
+	s.setSpikeMonitor(gMT1,saveFolder+"spkMT1.dat");
+	s.setSpikeMonitor(gMT2,saveFolder+"spkMT2.dat");
+	s.setSpikeMonitor(gMT3,saveFolder+"spkMT3.dat");
+	s.setSpikeMonitor(gMT1i,saveFolder+"spkMT1i.dat");
+	s.setSpikeMonitor(gPFC,saveFolder+"spkPFC.dat");
+	s.setSpikeMonitor(gPFCi,saveFolder+"spkPFCi.dat");
+
+	// init
+	s.runNetwork(0,0);
 
 	unsigned char* vid = new unsigned char[nrX*nrY*3];
-
 
 	PoissonRate me(nrX*nrY*28*3,onGPU);
 	PoissonRate red_green(nrX*nrY,onGPU);
@@ -354,25 +350,34 @@ int main()
 	PoissonRate yellow_blue(nrX*nrY,onGPU);
 	PoissonRate blue_yellow(nrX*nrY,onGPU);
 
-	#define VIDLEN (8*33*10)
-
-	for(long long i=0; i < VIDLEN*1; i++) {
-		if (i%VIDLEN==0) fid = fopen("videos/rdk3.dat","rb");
-		fread(vid,1,nrX*nrY*3,fid);
+	for(long long i=0; i<VIDLEN; i++) {
+		if (i%VIDLEN==0) {
+			fid = fopen("examples/rdk/videos/rdk3.dat","rb");
+			if (fid==NULL) {
+				printf("ERROR: could not open video file\n");
+				exit(1);
+			}
+		}
+		size_t result = fread(vid,1,nrX*nrY*3,fid);
+		if (result!=nrX*nrY*3) {
+			printf("ERROR: could not read from video file\n");
+			exit(2);
+		}
 
 		calcColorME(nrX, nrY, vid, red_green.rates, green_red.rates, blue_yellow.rates, yellow_blue.rates, me.rates, onGPU);
 
-		s.setSpikeRate(gV1ME, &me, 1);
+		s.setSpikeRate(gV1ME, &me, onGPU);
 
 		// run the established network for 1 (sec)  and 0 (millisecond), in GPU_MODE
-		s.runNetwork(0,FRAMEDURATION, onGPU?GPU_MODE:CPU_MODE);
+		s.runNetwork(0,frameDur);
 
 		if (i==1) {
-			strcpy(thisTmpSave,saveFolder);
-			FILE* nid = fopen(strcat(thisTmpSave,"net.dat"),"wb");
+			FILE* nid = fopen((saveFolder+"net.dat").c_str(),"wb");
 			s.writeNetwork(nid);
 			fclose(nid);
 		}
 	}
 	fclose(fid);
+
+	delete[] vid;
 }

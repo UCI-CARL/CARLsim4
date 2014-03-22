@@ -102,8 +102,7 @@ int main_fitness_function(int argc, char *argv[])
   // 2) The second argument is whether or not to output the best individual
   // for each generation in the resDir variable in the parameter file.
   // It should be used for larger parameter sets. It is off by default.
-  system("mkdir -p results/simpleEA");
-  ParamTuning *p = new ParamTuning("results/simpleEA/eoOutput.txt", true);
+  ParamTuning *p = new ParamTuning("examples/simpleEA/results/eoOutput.txt", true);
   //ParamTuning *p = new ParamTuning(false);
 
   string s1;

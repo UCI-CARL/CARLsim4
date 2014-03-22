@@ -12,8 +12,9 @@ function [] = plotSpeed()
 % which can then be plugged into the CARLsim example model v1MTLIP.
 %
 % Author: Michael Beyeler <mbeyeler@uci.edu>
-% Ver 2/5/14
+% Ver 3/22/14
 
+addpath ../../common
 
 %% LOAD PARAMS
 
@@ -23,7 +24,7 @@ function [] = plotSpeed()
 % each speed/direction scene has a different number of frames. the
 % structure whichStage contains, for each frame, an experiment number. this
 % makes it easy to average the neuronal response over a single scene
-load ../../videos/mkBarSpeed_ctrst0.2_32x32x7520.mat
+load ../videos/mkBarSpeed_ctrst0.2_32x32x7520.mat
 
 vidLen=7520;
 nrX=32;
@@ -46,7 +47,7 @@ xSpeed(3,:) = [1.0000  1.5849  2.5119  3.9811  6.3096 10.0000]; % high-pass
 thisNeuron = sub2ind([nrX nrY 8],nrX/2,nrY/2+1);
 for mt=1:3
     disp(['MT' num2str(mt) 'CDS'])
-    spk = readSpikes(['../../results/v1MTLIP/spkMT' num2str(mt) 'CDS.dat'],frameDur);
+    spk = readSpikes(['../results/spkMT' num2str(mt) 'CDS.dat'],frameDur);
     spk(vidLen,8*nrX*nrY)=0; % grow to right size
     
     % normalize to Hz

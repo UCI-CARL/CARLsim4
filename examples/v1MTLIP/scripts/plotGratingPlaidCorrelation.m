@@ -11,8 +11,9 @@ function [] = plotGratingPlaidCorrelation()
 % scripts/v1MTLIP/makeTuningGrating.m and scripts/v1MTLIP/makeTuningPlaid.m
 %
 % Author: Michael Beyeler <mbeyeler@uci.edu>
-% Ver 07/28/13
+% Ver 3/22/14
 
+addpath ../../common
 
 %% LOAD PARAMS %%
 
@@ -24,8 +25,8 @@ frameDur=50; % number of ms each frame is presented
 nB = 5;      % margin; border pix to remove
 
 % load spike files
-CDS = readSpikes('../../results/v1MTLIP/spkMT1CDS.dat',frameDur*nrF);
-PDS = readSpikes('../../results/v1MTLIP/spkMT1PDS.dat',frameDur*nrF);
+CDS = readSpikes('../results/spkMT1CDS.dat',frameDur*nrF);
+PDS = readSpikes('../results/spkMT1PDS.dat',frameDur*nrF);
 
 % remove border pix
 CDS = reshape(CDS(:,2*nrX*nrY+1:3*nrX*nrY),[],nrX,nrY);

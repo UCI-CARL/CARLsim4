@@ -435,15 +435,17 @@ int main()
 	stdpscale = stdpscale*0.04;
 	synscale = synscale*4;
 
-	#define FRAMEDURATION 100
-	bool onGPU = true;
+	int VIDLEN = 256*3;
+	int frameDur = 100;	// present each frame for 100ms
+	bool onGPU = true;	// run on GPU
+	int ithGPU = 0;		// run on first device
 
 	FILE* fid;
 
 	// use command-line specified CUDA device, otherwise use device with highest Gflops/s
 //	CUDA_CHECK_ERRORS(cudaSetDevice(cutGetMaxGflopsDeviceId()));
 
-	CARLsim s("V1V4PFC",onGPU?GPU_MODE:CPU_MODE);
+	CARLsim s("V1V4PFC",onGPU?GPU_MODE:CPU_MODE,USER,ithGPU);
 
 	int v1Cells[5];
 	int num_V1_groups=6;
@@ -455,8 +457,8 @@ int main()
 	
 	int   num_V4_groups = RED_V4+1;
 
-	int v4CellsExc[num_V4_groups];
-	int v4CellsInh[num_V4_groups];
+	int* v4CellsExc = new int[num_V4_groups];
+	int* v4CellsInh = new int[num_V4_groups];
 	for (int i=0; i < num_V4_groups; i++) {
 		v4CellsExc[i] = s.createGroup(v4CellNameExc[i].c_str(), V4_LAYER_DIM*V4_LAYER_DIM, TARGET_AMPA);
 		s.setNeuronParameters(v4CellsExc[i], 0.02f, 0.2f, -65.0f, 8.0f);
@@ -497,68 +499,68 @@ int main()
 	//{int src_x; int src_y; int dest_x; int dest_y; int overlap; int radius; float  prob;} projParam_t;
 	float v1toV4w = 0.5;
 	float v1toV4iw = 0.5;
-	float radius = sqrt(3);
+	int radius2 = 3;
 	
-	v1v4Proj* projSecondary = new v1v4Proj(V1_LAYER_DIM, V1_LAYER_DIM, V4_LAYER_DIM, V4_LAYER_DIM, radius, v1toV4w*1.5);
-	v1v4Proj* projPrimary = new v1v4Proj(V1_LAYER_DIM, V1_LAYER_DIM, V4_LAYER_DIM, V4_LAYER_DIM, radius, v1toV4w);
-	v1v4Proj* projYellow = new v1v4Proj(V1_LAYER_DIM, V1_LAYER_DIM, V4_LAYER_DIM, V4_LAYER_DIM, radius, v1toV4w*2);
-	v1v4Proj* projInhib = new v1v4Proj(V1_LAYER_DIM, V1_LAYER_DIM, V4_LAYER_DIM, V4_LAYER_DIM, radius, v1toV4iw);
+	v1v4Proj* projSecondary = new v1v4Proj(V1_LAYER_DIM, V1_LAYER_DIM, V4_LAYER_DIM, V4_LAYER_DIM, sqrt(radius2), v1toV4w*1.5);
+	v1v4Proj* projPrimary = new v1v4Proj(V1_LAYER_DIM, V1_LAYER_DIM, V4_LAYER_DIM, V4_LAYER_DIM, sqrt(radius2), v1toV4w);
+	v1v4Proj* projYellow = new v1v4Proj(V1_LAYER_DIM, V1_LAYER_DIM, V4_LAYER_DIM, V4_LAYER_DIM, sqrt(radius2), v1toV4w*2);
+	v1v4Proj* projInhib = new v1v4Proj(V1_LAYER_DIM, V1_LAYER_DIM, V4_LAYER_DIM, V4_LAYER_DIM, sqrt(radius2), v1toV4iw);
 
 	// feedforward connections
-	s.connect(v1Cells[RED_GREEN],   v4CellsExc[MAGENTA_V4], projSecondary, SYN_FIXED, radius*radius*4, radius*radius*4);
-	s.connect(v1Cells[BLUE_YELLOW], v4CellsExc[MAGENTA_V4], projSecondary, SYN_FIXED, radius*radius*4, radius*radius*4);
+	s.connect(v1Cells[RED_GREEN],   v4CellsExc[MAGENTA_V4], projSecondary, SYN_FIXED, radius2*4, radius2*4);
+	s.connect(v1Cells[BLUE_YELLOW], v4CellsExc[MAGENTA_V4], projSecondary, SYN_FIXED, radius2*4, radius2*4);
 
-	s.connect(v1Cells[GREEN_RED],   v4CellsExc[CYAN_V4], projSecondary, SYN_FIXED, radius*radius*4, radius*radius*4);
-	s.connect(v1Cells[BLUE_YELLOW], v4CellsExc[CYAN_V4], projSecondary, SYN_FIXED, radius*radius*4, radius*radius*4);
+	s.connect(v1Cells[GREEN_RED],   v4CellsExc[CYAN_V4], projSecondary, SYN_FIXED, radius2*4, radius2*4);
+	s.connect(v1Cells[BLUE_YELLOW], v4CellsExc[CYAN_V4], projSecondary, SYN_FIXED, radius2*4, radius2*4);
 
 	// same weight connectivity pattern, but the probability has been made 1.00 instead of 0.60 in the previous case...
-	s.connect(v1Cells[RED_GREEN],   v4CellsExc[RED_V4], projPrimary, SYN_FIXED, radius*radius*4, radius*radius*4);
-	s.connect(v1Cells[GREEN_RED], 	v4CellsExc[GREEN_V4], projPrimary, SYN_FIXED, radius*radius*4, radius*radius*4);
-	s.connect(v1Cells[BLUE_YELLOW], v4CellsExc[BLUE_V4], projPrimary, SYN_FIXED, radius*radius*4, radius*radius*4);
-	s.connect(v1Cells[YELLOW_BLUE], v4CellsExc[YELLOW_V4], projYellow, SYN_FIXED, radius*radius*4, radius*radius*4);
+	s.connect(v1Cells[RED_GREEN],   v4CellsExc[RED_V4], projPrimary, SYN_FIXED, radius2*4, radius2*4);
+	s.connect(v1Cells[GREEN_RED], 	v4CellsExc[GREEN_V4], projPrimary, SYN_FIXED, radius2*4, radius2*4);
+	s.connect(v1Cells[BLUE_YELLOW], v4CellsExc[BLUE_V4], projPrimary, SYN_FIXED, radius2*4, radius2*4);
+	s.connect(v1Cells[YELLOW_BLUE], v4CellsExc[YELLOW_V4], projYellow, SYN_FIXED, radius2*4, radius2*4);
 
 
 	// feedforward inhibition
-	s.connect(v1Cells[RED_GREEN],   v4CellsInh[MAGENTA_V4], projInhib, SYN_FIXED, radius*radius*4, radius*radius*4);
-	s.connect(v1Cells[BLUE_YELLOW], v4CellsInh[MAGENTA_V4], projInhib, SYN_FIXED, radius*radius*4, radius*radius*4);
+	s.connect(v1Cells[RED_GREEN],   v4CellsInh[MAGENTA_V4], projInhib, SYN_FIXED, radius2*4, radius2*4);
+	s.connect(v1Cells[BLUE_YELLOW], v4CellsInh[MAGENTA_V4], projInhib, SYN_FIXED, radius2*4, radius2*4);
 
-	s.connect(v1Cells[GREEN_RED],   v4CellsInh[CYAN_V4], projInhib, SYN_FIXED, radius*radius*4, radius*radius*4);
-	s.connect(v1Cells[BLUE_YELLOW], v4CellsInh[CYAN_V4], projInhib, SYN_FIXED, radius*radius*4, radius*radius*4);
+	s.connect(v1Cells[GREEN_RED],   v4CellsInh[CYAN_V4], projInhib, SYN_FIXED, radius2*4, radius2*4);
+	s.connect(v1Cells[BLUE_YELLOW], v4CellsInh[CYAN_V4], projInhib, SYN_FIXED, radius2*4, radius2*4);
 
 	// same weight connectivity pattern, but the probability has been made 1.00 instead of 0.60 in the previous case...
-	s.connect(v1Cells[RED_GREEN], 	v4CellsInh[RED_V4], projInhib, SYN_FIXED, radius*radius*4, radius*radius*4);
-	s.connect(v1Cells[GREEN_RED], 	v4CellsInh[GREEN_V4], projInhib, SYN_FIXED, radius*radius*4, radius*radius*4);
-	s.connect(v1Cells[BLUE_YELLOW], v4CellsInh[BLUE_V4], projInhib, SYN_FIXED, radius*radius*4, radius*radius*4);
-	s.connect(v1Cells[YELLOW_BLUE], v4CellsInh[YELLOW_V4], projInhib, SYN_FIXED, radius*radius*4, radius*radius*4);
+	s.connect(v1Cells[RED_GREEN], 	v4CellsInh[RED_V4], projInhib, SYN_FIXED, radius2*4, radius2*4);
+	s.connect(v1Cells[GREEN_RED], 	v4CellsInh[GREEN_V4], projInhib, SYN_FIXED, radius2*4, radius2*4);
+	s.connect(v1Cells[BLUE_YELLOW], v4CellsInh[BLUE_V4], projInhib, SYN_FIXED, radius2*4, radius2*4);
+	s.connect(v1Cells[YELLOW_BLUE], v4CellsInh[YELLOW_V4], projInhib, SYN_FIXED, radius2*4, radius2*4);
 
 	// laternal connections.....
 	float wtScale = -0.3;
 
-	radius *= 2; // inhibition has a larger radius
-	simpleProjection* projInhToExc = new simpleProjection(radius, wtScale);
+	radius2 *= 4; // inhibition has a larger radius
+	simpleProjection* projInhToExc = new simpleProjection(sqrt(radius2), wtScale);
 	
-	s.connect(v4CellsInh[MAGENTA_V4], v4CellsExc[CYAN_V4], projInhToExc, SYN_FIXED, radius*radius*4, radius*radius*4);
-	s.connect(v4CellsInh[MAGENTA_V4], v4CellsExc[YELLOW_V4], projInhToExc, SYN_FIXED, radius*radius*4, radius*radius*4);
+	s.connect(v4CellsInh[MAGENTA_V4], v4CellsExc[CYAN_V4], projInhToExc, SYN_FIXED, radius2*4, radius2*4);
+	s.connect(v4CellsInh[MAGENTA_V4], v4CellsExc[YELLOW_V4], projInhToExc, SYN_FIXED, radius2*4, radius2*4);
 
-	s.connect(v4CellsInh[CYAN_V4], v4CellsExc[MAGENTA_V4], projInhToExc, SYN_FIXED, radius*radius*4, radius*radius*4);
-	s.connect(v4CellsInh[CYAN_V4], v4CellsExc[YELLOW_V4], projInhToExc, SYN_FIXED, radius*radius*4, radius*radius*4);
+	s.connect(v4CellsInh[CYAN_V4], v4CellsExc[MAGENTA_V4], projInhToExc, SYN_FIXED, radius2*4, radius2*4);
+	s.connect(v4CellsInh[CYAN_V4], v4CellsExc[YELLOW_V4], projInhToExc, SYN_FIXED, radius2*4, radius2*4);
 
-	s.connect(v4CellsInh[YELLOW_V4], v4CellsExc[CYAN_V4], projInhToExc, SYN_FIXED, radius*radius*4, radius*radius*4);
-	s.connect(v4CellsInh[YELLOW_V4], v4CellsExc[MAGENTA_V4], projInhToExc, SYN_FIXED, radius*radius*4, radius*radius*4);
+	s.connect(v4CellsInh[YELLOW_V4], v4CellsExc[CYAN_V4], projInhToExc, SYN_FIXED, radius2*4, radius2*4);
+	s.connect(v4CellsInh[YELLOW_V4], v4CellsExc[MAGENTA_V4], projInhToExc, SYN_FIXED, radius2*4, radius2*4);
 /*
-	s.connect(v4CellsInh[RED_V4], v4CellsExc[GREEN_V4], projInhToExc, SYN_FIXED, radius*radius*4, radius*radius*4);
-	s.connect(v4CellsInh[RED_V4], v4CellsExc[BLUE_V4], projInhToExc, SYN_FIXED, radius*radius*4, radius*radius*4);
+	s.connect(v4CellsInh[RED_V4], v4CellsExc[GREEN_V4], projInhToExc, SYN_FIXED, radius2*4, radius2*4);
+	s.connect(v4CellsInh[RED_V4], v4CellsExc[BLUE_V4], projInhToExc, SYN_FIXED, radius2*4, radius2*4);
 
-	s.connect(v4CellsInh[BLUE_V4], v4CellsExc[RED_V4], projInhToExc, SYN_FIXED, radius*radius*4, radius*radius*4);
-	s.connect(v4CellsInh[BLUE_V4], v4CellsExc[GREEN_V4], projInhToExc, SYN_FIXED, radius*radius*4, radius*radius*4);
+	s.connect(v4CellsInh[BLUE_V4], v4CellsExc[RED_V4], projInhToExc, SYN_FIXED, radius2*4, radius2*4);
+	s.connect(v4CellsInh[BLUE_V4], v4CellsExc[GREEN_V4], projInhToExc, SYN_FIXED, radius2*4, radius2*4);
 
-	s.connect(v4CellsInh[GREEN_V4], v4CellsExc[RED_V4], projInhToExc, SYN_FIXED, radius*radius*4, radius*radius*4);
-	s.connect(v4CellsInh[GREEN_V4], v4CellsExc[BLUE_V4], projInhToExc, SYN_FIXED, radius*radius*4, radius*radius*4);
+	s.connect(v4CellsInh[GREEN_V4], v4CellsExc[RED_V4], projInhToExc, SYN_FIXED, radius2*4, radius2*4);
+	s.connect(v4CellsInh[GREEN_V4], v4CellsExc[BLUE_V4], projInhToExc, SYN_FIXED, radius2*4, radius2*4);
 */
 
 
 
-
+	// FIXME: memory leak
 	s.connect(gV1ME, gMT1, new connectV1toMT(1,synscale*4.5/2,motion_proj1), SYN_FIXED,1000,3000);
 	s.connect(gV1ME, gMT2, new connectV1toMT(1,synscale*4.5/2,motion_proj2), SYN_FIXED,1000,3000);
 	s.connect(gV1ME, gMT3, new connectV1toMT(1,synscale*4.5/2,motion_proj3), SYN_FIXED,1000,3000);
@@ -589,44 +591,42 @@ int main()
 
 	// show log every 1 sec
 	s.setLogCycle(1);
-
-
 	s.setConductances(true,5,150,6,150);
-	
 	s.setSTDP(ALL, false);
-
 	s.setSTP(ALL,false);
 
-	s.setSpikeMonitor(v1Cells[RED_GREEN],"results/v1v4PFC/V1RG.dat");
-	s.setSpikeMonitor(v1Cells[GREEN_RED],"results/v1v4PFC/V1GR.dat");
-	s.setSpikeMonitor(v1Cells[BLUE_YELLOW],"results/v1v4PFC/V1BY.dat");
-	s.setSpikeMonitor(v1Cells[YELLOW_BLUE],"results/v1v4PFC/V1YB.dat");
+	s.setSpikeMonitor(v1Cells[RED_GREEN],"examples/v1v4PFC/results/V1RG.dat");
+	s.setSpikeMonitor(v1Cells[GREEN_RED],"examples/v1v4PFC/results/V1GR.dat");
+	s.setSpikeMonitor(v1Cells[BLUE_YELLOW],"examples/v1v4PFC/results/V1BY.dat");
+	s.setSpikeMonitor(v1Cells[YELLOW_BLUE],"examples/v1v4PFC/results/V1YB.dat");
 
-	s.setSpikeMonitor(v4CellsExc[RED_V4],"results/v1v4PFC/V4R.dat");
-	s.setSpikeMonitor(v4CellsExc[GREEN_V4],"results/v1v4PFC/V4G.dat");
-	s.setSpikeMonitor(v4CellsExc[BLUE_V4],"results/v1v4PFC/V4B.dat");
-	s.setSpikeMonitor(v4CellsExc[YELLOW_V4],"results/v1v4PFC/V4Y.dat");
-	s.setSpikeMonitor(v4CellsExc[CYAN_V4],"results/v1v4PFC/V4C.dat");
-	s.setSpikeMonitor(v4CellsExc[MAGENTA_V4],"results/v1v4PFC/V4M.dat");
+	s.setSpikeMonitor(v4CellsExc[RED_V4],"examples/v1v4PFC/results/V4R.dat");
+	s.setSpikeMonitor(v4CellsExc[GREEN_V4],"examples/v1v4PFC/results/V4G.dat");
+	s.setSpikeMonitor(v4CellsExc[BLUE_V4],"examples/v1v4PFC/results/V4B.dat");
+	s.setSpikeMonitor(v4CellsExc[YELLOW_V4],"examples/v1v4PFC/results/V4Y.dat");
+	s.setSpikeMonitor(v4CellsExc[CYAN_V4],"examples/v1v4PFC/results/V4C.dat");
+	s.setSpikeMonitor(v4CellsExc[MAGENTA_V4],"examples/v1v4PFC/results/V4M.dat");
 
-	s.setSpikeMonitor(v4CellsInh[RED_V4],"results/v1v4PFC/V4Ri.dat");
-	s.setSpikeMonitor(v4CellsInh[GREEN_V4],"results/v1v4PFC/V4Gi.dat");
-	s.setSpikeMonitor(v4CellsInh[BLUE_V4],"results/v1v4PFC/V4Bi.dat");
-	s.setSpikeMonitor(v4CellsInh[YELLOW_V4],"results/v1v4PFC/V4Yi.dat");
-	s.setSpikeMonitor(v4CellsInh[CYAN_V4],"results/v1v4PFC/V4Ci.dat");
-	s.setSpikeMonitor(v4CellsInh[MAGENTA_V4],"results/v1v4PFC/V4Mi.dat");
+	s.setSpikeMonitor(v4CellsInh[RED_V4],"examples/v1v4PFC/results/V4Ri.dat");
+	s.setSpikeMonitor(v4CellsInh[GREEN_V4],"examples/v1v4PFC/results/V4Gi.dat");
+	s.setSpikeMonitor(v4CellsInh[BLUE_V4],"examples/v1v4PFC/results/V4Bi.dat");
+	s.setSpikeMonitor(v4CellsInh[YELLOW_V4],"examples/v1v4PFC/results/V4Yi.dat");
+	s.setSpikeMonitor(v4CellsInh[CYAN_V4],"examples/v1v4PFC/results/V4Ci.dat");
+	s.setSpikeMonitor(v4CellsInh[MAGENTA_V4],"examples/v1v4PFC/results/V4Mi.dat");
 
 	s.setSpikeMonitor(gV1ME);
-	s.setSpikeMonitor(gMT1,"results/v1v4PFC/MT1.dat");
-	s.setSpikeMonitor(gMT2,"results/v1v4PFC/MT2.dat");
-	s.setSpikeMonitor(gMT3,"results/v1v4PFC/MT3.dat");
-	s.setSpikeMonitor(gPFC,"results/v1v4PFC/PFC.dat");
-	s.setSpikeMonitor(gMT1i,"results/v1v4PFC/MT1i.dat");
-	s.setSpikeMonitor(gPFCi,"results/v1v4PFC/PFCi.dat");
+	s.setSpikeMonitor(gMT1,"examples/v1v4PFC/results/MT1.dat");
+	s.setSpikeMonitor(gMT2,"examples/v1v4PFC/results/MT2.dat");
+	s.setSpikeMonitor(gMT3,"examples/v1v4PFC/results/MT3.dat");
+	s.setSpikeMonitor(gPFC,"examples/v1v4PFC/results/PFC.dat");
+	s.setSpikeMonitor(gMT1i,"examples/v1v4PFC/results/MT1i.dat");
+	s.setSpikeMonitor(gPFCi,"examples/v1v4PFC/results/PFCi.dat");
 
-	s.setSpikeMonitor(gV4o,"results/v1v4PFC/V4o.dat");
-	s.setSpikeMonitor(gV4oi,"results/v1v4PFC/V4oi.dat");
+	s.setSpikeMonitor(gV4o,"examples/v1v4PFC/results/V4o.dat");
+	s.setSpikeMonitor(gV4oi,"examples/v1v4PFC/results/V4oi.dat");
 
+	// init
+	s.runNetwork(0,0);
 
 	unsigned char* vid = new unsigned char[nrX*nrY*3];
 
@@ -636,31 +636,50 @@ int main()
 	PoissonRate yellow_blue(nrX*nrY,onGPU);
 	PoissonRate blue_yellow(nrX*nrY,onGPU);
 
-	#define VIDLEN (256*3)
-//	#define VIDLEN (8*33*10)
+	for(long long i=0; i < VIDLEN; i++) {
+		if (i%VIDLEN==0) {
+			fid = fopen("examples/v1v4PFC/videos/colorcycle.dat","rb");
+			if (fid==NULL) {
+				printf("ERROR: could not open video file\n");
+				exit(1);
+			}
+		}
 
-	for(long long i=0; i < VIDLEN*1; i++) {
-		if (i%VIDLEN==0) fid = fopen("videos/colorcycle.dat","rb");
-//		if (i%VIDLEN==0) fid = fopen("videos/rdk3.dat","rb");
-		fread(vid,1,nrX*nrY*3,fid);
+		size_t result = fread(vid,1,nrX*nrY*3,fid);
+		if (result!=nrX*nrY*3) {
+			printf("ERROR: could not read from video file\n");
+			exit(2);
+		}
 
 		calcColorME(nrX, nrY, vid, red_green.rates, green_red.rates, blue_yellow.rates, yellow_blue.rates, me.rates, onGPU);
 
-		s.setSpikeRate(gV1ME, &me, 1);
-		s.setSpikeRate(v1Cells[RED_GREEN], &red_green, 1);
-		s.setSpikeRate(v1Cells[GREEN_RED], &green_red, 1);
-		s.setSpikeRate(v1Cells[BLUE_YELLOW], &blue_yellow, 1);
-		s.setSpikeRate(v1Cells[YELLOW_BLUE], &yellow_blue, 1);
+		s.setSpikeRate(gV1ME, &me, onGPU);
+		s.setSpikeRate(v1Cells[RED_GREEN], &red_green, onGPU);
+		s.setSpikeRate(v1Cells[GREEN_RED], &green_red, onGPU);
+		s.setSpikeRate(v1Cells[BLUE_YELLOW], &blue_yellow, onGPU);
+		s.setSpikeRate(v1Cells[YELLOW_BLUE], &yellow_blue, onGPU);
 
 		// run the established network for 1 (sec)  and 0 (millisecond), in GPU_MODE
-		s.runNetwork(0,FRAMEDURATION);
+		s.runNetwork(0,frameDur);
 
 		if (i==1) {
-			FILE* nid = fopen("results/v1v4PFC/net.dat","wb");
+			FILE* nid = fopen("examples/v1v4PFC/results/net.dat","wb");
+			if (nid==NULL) {
+				printf("ERROR: could not open network file\n");
+				exit(3);
+			}
 			s.writeNetwork(nid);
 			fclose(nid);
 		}
 	}
 	fclose(fid);
+	delete[] vid;
+	delete[] v4CellsInh;
+	delete[] v4CellsExc;
+	delete projPrimary;
+	delete projSecondary;
+	delete projInhib;
+	delete projInhToExc;
+	delete projYellow;
 }
 

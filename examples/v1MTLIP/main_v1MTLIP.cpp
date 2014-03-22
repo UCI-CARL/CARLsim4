@@ -35,7 +35,7 @@
  *					(KDC) Kristofor Carlson <kdcarlso@uci.edu>
  *
  * CARLsim available from http://socsci.uci.edu/~jkrichma/CARL/CARLsim/
- * Ver 10/09/2013
+ * Ver 3/22/14
  */ 
 #include <carlsim.h>
 #include <mtrand.h>
@@ -528,16 +528,16 @@ int main()
 	// at the beginning of this file, set the experiment to run
 	// expected format of video: R1 G1 B1 R2 G2 B2 ... e[0,255]
 	#if defined RUN_DIRECTION_TUNING
-	char loadVideo[] 	 = "videos/mkGratingPlaid_ctrst0.3_32x32x2400.dat";	
+	char loadVideo[] 	 = "examples/v1MTLIP/videos/mkGratingPlaid_ctrst0.3_32x32x2400.dat";	
 	int vidLen			 = 2400; // number of frames
 	#elif defined RUN_SPEED_TUNING
-	char loadVideo[]	 = "videos/mkBarSpeed_ctrst0.2_32x32x7520.dat";
+	char loadVideo[]	 = "examples/v1MTLIP/videos/mkBarSpeed_ctrst0.2_32x32x7520.dat";
 	int vidLen			 = 7520;
 	#elif defined RUN_CONTRAST_SENSITIVITY
-	char loadVideo[]	 = "videos/mkGratingContrast_32x32x1000.dat";
+	char loadVideo[]	 = "examples/v1MTLIP/videos/mkGratingContrast_32x32x1000.dat";
 	int vidLen			 = 1000;
 	#elif defined RUN_RDK
-	char loadVideo[]	 = "videos/mkRDK_32x32x14400.dat";
+	char loadVideo[]	 = "examples/v1MTLIP/videos/mkRDK_32x32x14400.dat";
 	int vidLen 			 = 14400;
 	#else
 	char loadVideo[]	 = "";
@@ -547,17 +547,16 @@ int main()
 	#endif
 		
 	
-	int startAtFrame	 = 0; 					// at which frame of movie to start
-	char saveFolder[]	 = "results/v1MTLIP/";	// where to store all files (folder will be created if not exists)
-	bool storeNetwork	 = false;				// store network? at beginning and end
-	bool onGPU = true;						 	// run on GPU?
-	int ithGPU 			 = 0;					// on which GPU to run (in case of carlculator: 0-3)
-	int frameDur 		 = 50;					// present each frame for .. ms
-	int presentEachFrame = 1;					// present each frame .. times (> 1 to slow down motion patterns)
-	float synScale		 = 0.01;				// some scaling factor for syn weights
+	int startAtFrame	   = 0;                           // at which frame of movie to start
+	std::string saveFolder = "examples/v1MTLIP/results/"; // where to store all files
+	bool storeNetwork	   = false;	                      // store network? at beginning and end
+	bool onGPU			   = true;                        // run on GPU?
+	int ithGPU 			   = 0;	                          // on which GPU to run (in case of carlculator: 0-3)
+	int frameDur 		   = 50;                          // present each frame for .. ms
+	int presentEachFrame   = 1;                           // present each frame .. times (> 1 to slow down motion patterns)
+	float synScale		   = 0.01;                        // some scaling factor for syn weights
 
-	unsigned char* vid = new unsigned char[nrX*nrY*3]; // pointer to read out video
-	char thisTmpSave[128]; // temp var to store save folder
+	unsigned char* vid     = new unsigned char[nrX*nrY*3]; // pointer to read out video
 	FILE* nid; // fp for network file
 
 	// try to open video first: in case of an error, we don't have to wait until the network is allocated
@@ -573,6 +572,7 @@ int main()
 	// create network
 	// -------------------------------------------------------------------------------------------------------------- //
 
+	// NOTE for speed benchmarks: Run in SILENT user mode, disable spike monitors and logging
 	CARLsim snn("Motion Energy",onGPU?GPU_MODE:CPU_MODE,USER,ithGPU);
 
 
@@ -635,17 +635,24 @@ int main()
 	float wt_V1_MT2 = synScale*8.0;
 	float wt_V1_MT3 = synScale*4.0;
 	int v1toMTstd = 3; // g=normpdf(-3:3,0,0.75);g/trapz(-3:3,g)
-	snn.connect(gV1ME, gMT1CDS, new connectV1toMT(wt_V1_MT1,v1toMTstd,motionProj1,true), SYN_FIXED,1000,3000);
-	snn.connect(gV1ME, gMT2CDS, new connectV1toMT(wt_V1_MT2,v1toMTstd,motionProj2,true), SYN_FIXED,1000,3000);
-	snn.connect(gV1ME, gMT3CDS, new connectV1toMT(wt_V1_MT3,v1toMTstd,motionProj3,true), SYN_FIXED,1000,3000);
+	connectV1toMT* cV1MT1CDS = new connectV1toMT(wt_V1_MT1,v1toMTstd,motionProj1,true);
+	connectV1toMT* cV1MT2CDS = new connectV1toMT(wt_V1_MT2,v1toMTstd,motionProj2,true);
+	connectV1toMT* cV1MT3CDS = new connectV1toMT(wt_V1_MT3,v1toMTstd,motionProj3,true);
+	snn.connect(gV1ME, gMT1CDS, cV1MT1CDS, SYN_FIXED,1000,3000);
+	snn.connect(gV1ME, gMT2CDS, cV1MT2CDS, SYN_FIXED,1000,3000);
+	snn.connect(gV1ME, gMT3CDS, cV1MT3CDS, SYN_FIXED,1000,3000);
 
 	// (ii) negative weights
 	float wt_V1_MT1inh = synScale*7.0;
 	float wt_V1_MT2inh = synScale*8.0;
 	float wt_V1_MT3inh = synScale*4.0;
-	snn.connect(gV1ME, gMT1CDSinh, new connectV1toMT(wt_V1_MT1inh,v1toMTstd,motionProj1,false), SYN_FIXED,1000,3000);
-	snn.connect(gV1ME, gMT2CDSinh, new connectV1toMT(wt_V1_MT2inh,v1toMTstd,motionProj2,false), SYN_FIXED,1000,3000);
-	snn.connect(gV1ME, gMT3CDSinh, new connectV1toMT(wt_V1_MT3inh,v1toMTstd,motionProj3,false), SYN_FIXED,1000,3000);
+	connectV1toMT* cV1MT1CDSi = new connectV1toMT(wt_V1_MT1inh,v1toMTstd,motionProj1,false);
+	connectV1toMT* cV1MT2CDSi = new connectV1toMT(wt_V1_MT2inh,v1toMTstd,motionProj2,false);
+	connectV1toMT* cV1MT3CDSi = new connectV1toMT(wt_V1_MT3inh,v1toMTstd,motionProj3,false);
+	snn.connect(gV1ME, gMT1CDSinh, cV1MT1CDSi, SYN_FIXED,1000,3000);
+	snn.connect(gV1ME, gMT2CDSinh, cV1MT2CDSi, SYN_FIXED,1000,3000);
+	snn.connect(gV1ME, gMT3CDSinh, cV1MT3CDSi, SYN_FIXED,1000,3000);
+
 	float wt_MTi_MT1 = -synScale*15;
 	float wt_MTi_MT2 = -synScale*15;
 	float wt_MTi_MT3 = -synScale*15;
@@ -660,14 +667,21 @@ int main()
 	float wt_MT_MTnorm = synScale*0.12;
 	int wMTtoMTnormRadius = 3;
 	bool stayWithinPool = false; // collapse 8 directions onto 1 pool
-	snn.connect(gMT1CDS, gMTCDSnorm, new connectGauss(wMTtoMTnormRadius,wt_MT_MTnorm,stayWithinPool),SYN_FIXED,1000,3000);
-	snn.connect(gMT2CDS, gMTCDSnorm, new connectGauss(wMTtoMTnormRadius,wt_MT_MTnorm,stayWithinPool),SYN_FIXED,1000,3000);
-	snn.connect(gMT3CDS, gMTCDSnorm, new connectGauss(wMTtoMTnormRadius,wt_MT_MTnorm,stayWithinPool),SYN_FIXED,1000,3000);
+	connectGauss* cMT1MTnorm = new connectGauss(wMTtoMTnormRadius,wt_MT_MTnorm,stayWithinPool);
+	connectGauss* cMT2MTnorm = new connectGauss(wMTtoMTnormRadius,wt_MT_MTnorm,stayWithinPool);
+	connectGauss* cMT3MTnorm = new connectGauss(wMTtoMTnormRadius,wt_MT_MTnorm,stayWithinPool);
+	snn.connect(gMT1CDS, gMTCDSnorm, cMT1MTnorm,SYN_FIXED,1000,3000);
+	snn.connect(gMT2CDS, gMTCDSnorm, cMT2MTnorm,SYN_FIXED,1000,3000);
+	snn.connect(gMT3CDS, gMTCDSnorm, cMT3MTnorm,SYN_FIXED,1000,3000);
+
 	float wt_MTnorm_MT = -synScale*1;
 	stayWithinPool = false;
-	snn.connect(gMTCDSnorm, gMT1CDS, new connectOneToOne(MTnormDim,MTdim,wt_MTnorm_MT,stayWithinPool),SYN_FIXED,1000,3000);
-	snn.connect(gMTCDSnorm, gMT2CDS, new connectOneToOne(MTnormDim,MTdim,wt_MTnorm_MT,stayWithinPool),SYN_FIXED,1000,3000);
-	snn.connect(gMTCDSnorm, gMT3CDS, new connectOneToOne(MTnormDim,MTdim,wt_MTnorm_MT,stayWithinPool),SYN_FIXED,1000,3000);
+	connectOneToOne* cMTnormMT1 = new connectOneToOne(MTnormDim,MTdim,wt_MTnorm_MT,stayWithinPool);
+	connectOneToOne* cMTnormMT2 = new connectOneToOne(MTnormDim,MTdim,wt_MTnorm_MT,stayWithinPool);
+	connectOneToOne* cMTnormMT3 = new connectOneToOne(MTnormDim,MTdim,wt_MTnorm_MT,stayWithinPool);
+	snn.connect(gMTCDSnorm, gMT1CDS, cMTnormMT1,SYN_FIXED,8,8);
+	snn.connect(gMTCDSnorm, gMT2CDS, cMTnormMT2,SYN_FIXED,8,8);
+	snn.connect(gMTCDSnorm, gMT3CDS, cMTnormMT3,SYN_FIXED,8,8);
 
 	// MT PDS cells are given by pooling of MT CDS cell activity and tuned normalization
 	// weight strength plotted against direction is Gaussian, with the strongest positive weights coming from cells that
@@ -675,7 +689,8 @@ int main()
 	// preference
 	float wt_MT_MTpatt = synScale*10.0;
 	int MTtoMTpattStd = 4;
-	snn.connect(gMT1CDS, gMT1PDS, new connectMTCDStoMTPDS(wt_MT_MTpatt,MTtoMTpattStd,true), SYN_FIXED,1000,3000);
+	connectMTCDStoMTPDS* cMT1CDSPDS = new connectMTCDStoMTPDS(wt_MT_MTpatt,MTtoMTpattStd,true);
+	snn.connect(gMT1CDS, gMT1PDS, cMT1CDSPDS, SYN_FIXED,1000,3000);
 
 	// negative weights of direction pooling
 	float wt_MT_MTpattInh = synScale*5.0;
@@ -687,57 +702,42 @@ int main()
 	float wt_MTpattInh_MTpatt = -synScale*15.0;
 	snn.connect(gMT1PDSinh, gMT1PDS, "one-to-one", wt_MTpattInh_MTpatt, wt_MTpattInh_MTpatt, 1.0, 1, 1, SYN_FIXED);
 
-	snn.connect(gMT1PDS, gLIP, new connectMTtoLIP(40,synScale*1.5), SYN_FIXED, 1000, 3000);
-	snn.connect(gMT1PDS, gLIPi, new connectMTtoLIP(10,synScale*1.0), SYN_FIXED, 1000, 3000);
-	snn.connect(gLIPi, gLIP, new connectLIPitoLIP(40,10,-synScale*3.0), SYN_FIXED, 1000, 3000);
+	connectMTtoLIP* cMTLIP = new connectMTtoLIP(40,synScale*1.5);
+	connectMTtoLIP* cMTLIPi = new connectMTtoLIP(10,synScale*1.0);
+	connectLIPitoLIP* cLIPiLIP = new connectLIPitoLIP(40,10,-synScale*3.0);
+	snn.connect(gMT1PDS, gLIP, cMTLIP, SYN_FIXED, 1000, 3000);
+	snn.connect(gMT1PDS, gLIPi, cMTLIPi, SYN_FIXED, 1000, 3000);
+	snn.connect(gLIPi, gLIP, cLIPiLIP, SYN_FIXED, 1000, 3000);
 
 
 	// -------------------------------------------------------------------------------------------------------------- //
 	// set all spike monitors
 	// -------------------------------------------------------------------------------------------------------------- //
 
-	strcpy(thisTmpSave,saveFolder); snn.setSpikeMonitor(gV1ME,strcat(thisTmpSave,"spkV1ME.dat"));
-	strcpy(thisTmpSave,saveFolder); snn.setSpikeMonitor(gMT1CDS, strcat(thisTmpSave,"spkMT1CDS.dat"));
-	strcpy(thisTmpSave,saveFolder); snn.setSpikeMonitor(gMT2CDS, strcat(thisTmpSave,"spkMT2CDS.dat"));
-	strcpy(thisTmpSave,saveFolder); snn.setSpikeMonitor(gMT3CDS, strcat(thisTmpSave,"spkMT3CDS.dat"));
-//	strcpy(thisTmpSave,saveFolder); snn.setSpikeMonitor(gMT1CDSinh, strcat(thisTmpSave,"spkMT1CDSi.dat"));
-//	strcpy(thisTmpSave,saveFolder); snn.setSpikeMonitor(gMT2CDSinh, strcat(thisTmpSave,"spkMT2CDSi.dat"));
-//	strcpy(thisTmpSave,saveFolder); snn.setSpikeMonitor(gMT3CDSinh, strcat(thisTmpSave,"spkMT3CDSi.dat"));
-//	snn.setSpikeMonitor(gMT1CDSinh);
-//	snn.setSpikeMonitor(gMT2CDSinh);
-//	snn.setSpikeMonitor(gMT3CDSinh);
-//	strcpy(thisTmpSave,saveFolder); snn.setSpikeMonitor(gMTCDSnorm, strcat(thisTmpSave,"spkMTCDSnorm.dat"));
-	strcpy(thisTmpSave,saveFolder); snn.setSpikeMonitor(gMT1PDS, strcat(thisTmpSave,"spkMT1PDS.dat"));
-//	strcpy(thisTmpSave,saveFolder); snn.setSpikeMonitor(gMT1PDSinh, strcat(thisTmpSave,"spkMT1PDSinh.dat"));
-	strcpy(thisTmpSave,saveFolder); snn.setSpikeMonitor(gLIP, strcat(thisTmpSave,"spkLIP.dat"));
+	// Note: Disable all to speed up simulation
+
+	#if defined(RUN_DIRECTION_TUNING) || defined(RUN_CONTRAST_SENSITIVITY)
+	snn.setSpikeMonitor(gV1ME,saveFolder+"spkV1ME.dat");
+	#endif
+	#if defined(RUN_DIRECTION_TUNING) || defined(RUN_SPEED_TUNING)
+	snn.setSpikeMonitor(gMT1CDS,saveFolder+"spkMT1CDS.dat");
+	#endif
+	#if defined(RUN_SPEED_TUNING)
+	snn.setSpikeMonitor(gMT2CDS,saveFolder+"spkMT2CDS.dat");
+	snn.setSpikeMonitor(gMT3CDS,saveFolder+"spkMT3CDS.dat");
+	#endif
+	#if defined(RUN_DIRECTION_TUNING)
+	snn.setSpikeMonitor(gMT1PDS,saveFolder+"spkMT1PDS.dat");
+	#endif
+	#if defined(RUN_RDK)
+	snn.setSpikeMonitor(gLIP,saveFolder+"spkLIP.dat");
 	snn.setSpikeMonitor(gLIPi);
-//	strcpy(thisTmpSave,saveFolder); snn.setSpikeMonitor(gLIPi, strcat(thisTmpSave,"spkPFCi.dat"));
+	#endif
 
 
 	// -------------------------------------------------------------------------------------------------------------- //
 	// run network
 	// -------------------------------------------------------------------------------------------------------------- //
-
-
-	// initialize the GPU/network, run on device with index ithGPU
-	snn.runNetwork(0,0);
-	
-	time(&timer_build);
-	
-
-	PoissonRate me(nrX*nrY*28*3,onGPU);
-	PoissonRate red_green(nrX*nrY,onGPU);
-	PoissonRate green_red(nrX*nrY,onGPU);
-	PoissonRate yellow_blue(nrX*nrY,onGPU);
-	PoissonRate blue_yellow(nrX*nrY,onGPU);
-
-	// store network for loading
-	if (storeNetwork) {
-		strcpy(thisTmpSave,saveFolder);
-		nid = fopen(strcat(thisTmpSave,"netA.dat"),"wb");
-		snn.writeNetwork(nid);
-		fclose(nid);
-	}
 
 	// movie can be offset by so many frames
 	if (startAtFrame>0) {
@@ -747,6 +747,16 @@ int main()
 			exit(2);
 		}
 	}
+
+	// initialize the GPU/network, run on device with index ithGPU
+	snn.runNetwork(0,0);	
+	time(&timer_build);
+
+	PoissonRate me(nrX*nrY*28*3,onGPU);
+	PoissonRate red_green(nrX*nrY,onGPU);
+	PoissonRate green_red(nrX*nrY,onGPU);
+	PoissonRate yellow_blue(nrX*nrY,onGPU);
+	PoissonRate blue_yellow(nrX*nrY,onGPU);
 
 	for(long long i=0; i < vidLen*1; i++) {
 		size_t result = fread(vid,1,nrX*nrY*3,fid);
@@ -758,7 +768,7 @@ int main()
 		for (int j=1;j<=presentEachFrame;j++) {
 			// run motion energy model and assign spike rates
 			calcColorME(nrX, nrY, vid, red_green.rates, green_red.rates, blue_yellow.rates, yellow_blue.rates, me.rates, onGPU);
-			snn.setSpikeRate(gV1ME, &me, 1);
+			snn.setSpikeRate(gV1ME, &me, onGPU);
 
 			// run the established network for 1 frame
 			snn.runNetwork(0,frameDur);
@@ -767,18 +777,38 @@ int main()
 
 	// store network if bool is set
 	if (storeNetwork) {
-		strcpy(thisTmpSave,saveFolder);
-		nid = fopen(strcat(thisTmpSave,"netZ.dat"),"wb");
+		nid = fopen((saveFolder+"net.dat").c_str(),"wb");
+		if (nid==NULL) {
+			printf("ERROR: could not open network file\n");
+			exit(4);
+		}
 		snn.writeNetwork(nid);
 		fclose(nid);
 	}
 
 	fclose(fid); // close input video file
-	printf("DONE %s\n",saveFolder);
+	printf("DONE %s\n",saveFolder.c_str());
 	
 	time(&timer_end);
 
 	freeAllCUDA();
+	delete[] vid;
+	delete cV1MT1CDS;
+	delete cV1MT2CDS;
+	delete cV1MT3CDS;
+	delete cV1MT1CDSi;
+	delete cV1MT2CDSi;
+	delete cV1MT3CDSi;
+	delete cMT1MTnorm;
+	delete cMT2MTnorm;
+	delete cMT3MTnorm;
+	delete cMTnormMT1;
+	delete cMTnormMT2;
+	delete cMTnormMT3;
+	delete cMT1CDSPDS;
+	delete cMTLIP;
+	delete cMTLIPi;
+	delete cLIPiLIP;
 	
 	printf("Time to build: %.f seconds\n",difftime(timer_build,timer_start));
 	printf("Time to run: %.f seconds\n",difftime(timer_end,timer_build));

@@ -168,8 +168,8 @@ int main()
 	
 	int   num_V4_groups = RED_V4+1;
 
-	int v4CellsExc[num_V4_groups];
-	int v4CellsInh[num_V4_groups];
+	int* v4CellsExc = new int[num_V4_groups];
+	int* v4CellsInh = new int[num_V4_groups];
 	for (int i=0; i < num_V4_groups; i++) {
 		v4CellsExc[i] = s.createGroup(v4CellNameExc[i].c_str(), V4_LAYER_DIM*V4_LAYER_DIM, TARGET_AMPA);
 		s.setNeuronParameters(v4CellsExc[i], 0.02f, 0.2f, -65.0f, 8.0f);
@@ -321,5 +321,7 @@ int main()
 	delete projInhToExc;
 
 	delete[] vid;
+	delete[] v4CellsExc;
+	delete[] v4CellsInh;
 }
 
