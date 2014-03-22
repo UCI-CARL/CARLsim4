@@ -432,7 +432,12 @@ public:
 	/*!
 	 * \brief Sets a group monitor for a group, custom GroupMonitor class
 	 */
-	void setGroupMonitor(int grpId, GroupMonitor* groupMon, int configId=ALL);
+	void setGroupMonitor(int grpId, GroupMonitor* groupMon=NULL, int configId=ALL);
+
+	/*!
+	 * \brief Sets a network monitor for a group, custom NetworkMonitor class
+	 */
+	void setNetworkMonitor(int grpIdPre, int grpIdPost, NetworkMonitor* networkMon=NULL, int configId=ALL);
 
 	/*!
 	 * \brief A Spike Counter keeps track of the number of spikes per neuron in a group.
