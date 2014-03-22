@@ -1,4 +1,3 @@
-#include <carlsim.h>		// include CARLsim
 #include <limits.h>
 #include "gtest/gtest.h"	// include Google testing scripts
 
@@ -59,9 +58,9 @@
 /// **************************************************************************************************************** ///
 
 //! a periodic spike generator (constant ISI) creating spikes at a certain rate
-class PeriodicSpikeGenerator : public SpikeGenerator {
+class PeriodicSpikeGenerator : public SpikeGeneratorCore {
 public:
-	PeriodicSpikeGenerator(float rate) {
+	PeriodicSpikeGenerator(float rate) : SpikeGeneratorCore(NULL, NULL){
 		assert(rate>0);
 		rate_ = rate;	  // spike rate
 		isi_ = 1000/rate; // inter-spike interval in ms
@@ -79,14 +78,14 @@ private:
 
 //! a spike monitor that counts the number of spikes per neuron, and also the total number of spikes
 //! used to test the behavior of SpikeCounter
-class SpikeMonitorPerNeuron: public SpikeMonitor {
+class SpikeMonitorPerNeuron: public SpikeMonitorCore {
 private:
 	const int nNeur_; // number of neurons in the group
 	int* spkPerNeur_; // number of spikes per neuron
 	long long spkTotal_; // number of spikes in group (across all neurons)
 
 public:
-	SpikeMonitorPerNeuron(int numNeur) : nNeur_(numNeur) {
+	SpikeMonitorPerNeuron(int numNeur) : nNeur_(numNeur), SpikeMonitorCore(NULL, NULL) {
 		// we're gonna count the spikes each neuron emits
 		spkPerNeur_ = new int[nNeur_];
 		memset(spkPerNeur_,0,sizeof(int)*nNeur_);

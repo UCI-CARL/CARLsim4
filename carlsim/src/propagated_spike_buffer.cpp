@@ -3,7 +3,7 @@
 // http://www.lsm.tugraz.at/pcsim/
 /////////////////////////////////
 
-#include "propagated_spike_buffer.h"
+#include <propagated_spike_buffer.h>
 
 #include <iostream>
 

@@ -65,7 +65,7 @@
     #include <helper_cuda.h>
 #endif
 
-#include "CUDAVersionControl.h"
+#include <cuda_version_control.h>
 
 #define IMUL(a, b) __mul24(a, b)
 

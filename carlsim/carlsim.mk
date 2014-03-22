@@ -28,21 +28,22 @@ ifneq (${strip ${CARLSIM_CUOPTLEVEL}},1)
 endif
 
 # append include path to CARLSIM_FLAGS
-CARLSIM_FLAGS += -I$(CURDIR)/$(src_dir) -I$(CURDIR)/$(interface_dir)/include
+CARLSIM_FLAGS += -I$(CURDIR)/$(carlsim_dir)/include -I$(CURDIR)/$(interface_dir)/include
 
 #-------------------------------------------------------------------------------
 # CARLsim local variables
 #-------------------------------------------------------------------------------
-local_dir := $(src_dir)
-local_deps := snn.h mtrand.h gpu.h gpu_random.h config.h \
+local_dir := $(carlsim_dir)
+local_deps := $(addprefix $(local_dir)/include/, snn.h mtrand.h gpu.h gpu_random.h config.h \
 	propagated_spike_buffer.h poisson_rate.h \
-	errorCode.h CUDAVersionControl.h
-local_src := $(addprefix $(local_dir)/,$(local_deps) snn_cpu.cpp mtrand.cpp \
+	error_code.h cuda_version_control.h)
+local_src := $(addprefix $(local_dir)/src/, snn_cpu.cpp mtrand.cpp \
 	propagated_spike_buffer.cpp poisson_rate.cpp \
-	printSNNInfo.cpp gpu_random.cu \
-	snn_gpu.cu)
-local_objs := $(addprefix $(local_dir)/,snn_cpu.o  mtrand.o \
-	propagated_spike_buffer.o poisson_rate.o printSNNInfo.o \
+	print_snn_info.cpp gpu_random.cu \
+	snn_gpu.cu) \
+	$(local_deps)
+local_objs := $(addprefix $(local_dir)/src/,snn_cpu.o mtrand.o \
+	propagated_spike_buffer.o poisson_rate.o print_snn_info.o \
 	gpu_random.o snn_gpu.o)
 
 
@@ -81,11 +82,11 @@ $(interface_dir)/src/%.o: $(interface_dir)/src/%.cpp $(interface_deps)
 	$(CARLSIM_FLAGS) $< -o $@
 
 # local cpps
-$(local_dir)/%.o: $(local_dir)/%.cpp $(local_deps)
+$(local_dir)/src/%.o: $(local_dir)/src/%.cpp $(local_deps)
 	$(NVCC) -c $(CARLSIM_INCLUDES) $(CARLSIM_LFLAGS) $(CARLSIM_LIBS) \
 	$(CARLSIM_FLAGS) $< -o $@
 
 # local cuda
-$(local_dir)/%.o: $(local_dir)/%.cu $(local_deps)
+$(local_dir)/src/%.o: $(local_dir)/src/%.cu $(local_deps)
 	$(NVCC) -c $(CARLSIM_INCLUDES) $(CARLSIM_LFLAGS) $(CARLSIM_LIBS) \
 	$(CARLSIM_FLAGS) $< -o $@

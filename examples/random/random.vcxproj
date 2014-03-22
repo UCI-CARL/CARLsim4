@@ -19,38 +19,11 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <CudaCompile Include="src\gpu_random.cu" />
-    <CudaCompile Include="src\snn_gpu.cu" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClCompile Include="examples\random\main_random.cpp" />
-    <ClCompile Include="interface\src\callback_core.cpp" />
-    <ClCompile Include="interface\src\carlsim.cpp" />
-    <ClCompile Include="interface\src\user_errors.cpp" />
-    <ClCompile Include="src\mtrand.cpp" />
-    <ClCompile Include="src\poisson_rate.cpp" />
-    <ClCompile Include="src\printSNNInfo.cpp" />
-    <ClCompile Include="src\propagated_spike_buffer.cpp" />
-    <ClCompile Include="src\snn_cpu.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="interface\include\callback.h" />
-    <ClInclude Include="interface\include\callback_core.h" />
-    <ClInclude Include="interface\include\carlsim.h" />
-    <ClInclude Include="interface\include\user_errors.h" />
-    <ClInclude Include="src\config.h" />
-    <ClInclude Include="src\CUDAVersionControl.h" />
-    <ClInclude Include="src\errorCode.h" />
-    <ClInclude Include="src\gpu.h" />
-    <ClInclude Include="src\gpu_random.h" />
-    <ClInclude Include="src\mtrand.h" />
-    <ClInclude Include="src\poisson_rate.h" />
-    <ClInclude Include="src\propagated_spike_buffer.h" />
-    <ClInclude Include="src\snn.h" />
+    <ClCompile Include="main_random.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{2A96CB30-2293-4890-9D05-8361232F9C2C}</ProjectGuid>
-    <RootNamespace>CARLsim</RootNamespace>
+    <ProjectGuid>{49974217-7B15-464E-A97A-E97D2D1550E7}</ProjectGuid>
+    <RootNamespace>random</RootNamespace>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -102,9 +75,6 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <TargetExt>.exe</TargetExt>
-  </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
@@ -125,23 +95,19 @@ copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32;WIN64;_DEBUG;_CONSOLE;__CUDA5__;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(CudaToolkitIncludeDir);$(NVCUDASAMPLES_ROOT)\common\inc;$(ProjectDir)\src;$(ProjectDir)\interface\include</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;WIN64;__CUDA5__;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(CudaToolkitIncludeDir);$(SolutionDir)interface\include;$(SolutionDir)carlsim\include</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
-      <AdditionalDependencies>cudart.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>cudart.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;carlsim.lib;interface.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories);$(CudaToolkitLibDir);$(OutDir)</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
       <Command>echo copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"
 copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
     </PostBuildEvent>
-    <CudaCompile>
-      <TargetMachinePlatform>64</TargetMachinePlatform>
-      <Include>$(NVCUDASAMPLES_ROOT)\common\inc;$(ProjectDir)\include;%(Include)</Include>
-      <CodeGeneration>compute_20,sm_21</CodeGeneration>
-    </CudaCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -169,22 +135,23 @@ copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>WIN32;WIN64;__CUDA5__;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(CudaToolkitIncludeDir);$(NVCUDASAMPLES_ROOT)\common\inc;$(ProjectDir)\src;$(ProjectDir)\interface\include</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN64;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(CudaToolkitIncludeDir);$(SolutionDir)interface\include;$(SolutionDir)carlsim\include</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <SubSystem>Console</SubSystem>
-      <AdditionalDependencies>cudart.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>cudart.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;carlsim.lib;interface.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories);$(CudaToolkitLibDir);$(OutDir)</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
       <Command>echo copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"
 copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
     </PostBuildEvent>
     <CudaCompile>
-      <Include>$(NVCUDASAMPLES_ROOT)\common\inc;$(ProjectDir)\include;%(Include)</Include>
+      <TargetMachinePlatform>64</TargetMachinePlatform>
       <CodeGeneration>compute_20,sm_21</CodeGeneration>
     </CudaCompile>
   </ItemDefinitionGroup>

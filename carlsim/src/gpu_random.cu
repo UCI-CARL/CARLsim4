@@ -25,8 +25,10 @@
   MA 02111-1307 USA
 */
 
-#include "gpu.h"
-#include "gpu_random.h"
+#include <gpu.h>
+#include <gpu_random.h>
+
+#include <cuda_version_control.h>
 
 /************************************************
  * GPU kernels

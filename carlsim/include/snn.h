@@ -89,11 +89,11 @@
 	#include <helper_math.h>
 #endif
 
-#include "CUDAVersionControl.h"
+#include <cuda_version_control.h>
 
 
 // enable easy testing of private members
-#if REGRESSION_TESTING
+#ifdef __REGRESSION_TESTING__
 	#define private public
  	#define protected public
 #endif
