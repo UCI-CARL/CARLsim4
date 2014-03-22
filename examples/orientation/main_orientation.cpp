@@ -35,7 +35,7 @@
  *					(KDC) Kristofor Carlson <kdcarlso@uci.edu>
  *
  * CARLsim available from http://socsci.uci.edu/~jkrichma/CARL/CARLsim/
- * Ver 10/09/2013
+ * Ver 3/22/14
  */ 
 
 #include <carlsim.h>
@@ -177,12 +177,13 @@ int main()
 	stdpscale = stdpscale*0.04;
 	synscale = synscale*4;
 
-	#define FRAMEDURATION 100
+	int frameDur = 100;
 
 	FILE* fid;
 	bool onGPU = true;
+	int ithGPU = 0;
 
-	CARLsim s("orientation",onGPU?GPU_MODE:CPU_MODE);
+	CARLsim s("orientation",onGPU?GPU_MODE:CPU_MODE,USER,ithGPU);
 
 
 	int gV1ME = s.createSpikeGeneratorGroup("V1ME", nrX*nrY*28*3, EXCITATORY_NEURON);
@@ -215,8 +216,11 @@ int main()
 
 	s.setSpikeMonitor(gV1ME);
 
-	s.setSpikeMonitor(gV4o,"results/orientation/spkV4o.dat");
-	s.setSpikeMonitor(gV4oi,"results/orientation/spkV4oi.dat");
+	s.setSpikeMonitor(gV4o,"examples/orientation/results/spkV4o.dat");
+	s.setSpikeMonitor(gV4oi,"examples/orientation/results/spkV4oi.dat");
+
+	// init
+	s.runNetwork(0,0);
 
 	unsigned char* vid = new unsigned char[nrX*nrY*3];
 
@@ -226,24 +230,36 @@ int main()
 	PoissonRate yellow_blue(nrX*nrY,onGPU);
 	PoissonRate blue_yellow(nrX*nrY,onGPU);
 
-	#define VIDLEN (4*33)
+	int VIDLEN = 4*33;
 
 	for(long long i=0; i < VIDLEN*1; i++) {
-		if (i%VIDLEN==0) fid = fopen("videos/orienR.dat","rb");
-		fread(vid,1,nrX*nrY*3,fid);
+		if (i%VIDLEN==0) {
+			fid = fopen("examples/orientation/videos/orienR.dat","rb");
+			if (fid==NULL) {
+				printf("ERROR: could not open video file\n");
+				exit(1);
+			}
+		}
+		
+		size_t result = fread(vid,1,nrX*nrY*3,fid);
+		if (result!=nrX*nrY*3) {
+			printf("ERROR: could not read from video file\n");
+			exit(2);
+		}
 
 		calcColorME(nrX, nrY, vid, red_green.rates, green_red.rates, blue_yellow.rates, yellow_blue.rates, me.rates, onGPU);
 
 		s.setSpikeRate(gV1ME, &me, 1);
 
 		// run the established network for 1 (sec)  and 0 (millisecond), in GPU_MODE
-		s.runNetwork(0,FRAMEDURATION);
+		s.runNetwork(0,frameDur);
 
 		if (i==1) {
-			FILE* nid = fopen("results/orientation/net.dat","wb");
+			FILE* nid = fopen("examples/orientation/results/net.dat","wb");
 			s.writeNetwork(nid);
 			fclose(nid);
 		}
 	}
 	fclose(fid);
+	delete[] vid;
 }

@@ -29,9 +29,9 @@ function stim = makeTuningPlaid(nrX, nrY, nrF, nPnts, plaidContrast,...
 % (eero.simoncelli@nyu.edu)
 %
 % Author: Michael Beyeler <mbeyeler@uci.edu>
-% Ver 2/5/14
+% Ver 3/22/14
 
-addpath ../common
+addpath ../../common
 
 %% SET PARAMS %%
 

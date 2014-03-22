@@ -10,7 +10,9 @@ function [] = plotGratingPlaid()
 % A suitable stimulus can be produces using scripts/v1MTLIP/makeBarSpeed.m
 %
 % Author: Michael Beyeler <mbeyeler@uci.edu>
-% Ver 2/5/14
+% Ver 3/22/14
+
+addpath ../../common
 
 nPnt = 24; % number of stim directions (data points)
 nrF=50; % number of frames per stim direction
@@ -18,9 +20,9 @@ frameDur=50; % number of ms each frame is presented
 
 xDirection = (0:nPnt-1)*2*pi/nPnt; % stim direction
 
-V1 = readSpikes('../../results/v1MTLIP/spkV1ME.dat',frameDur*nrF);
-CDS = readSpikes('../../results/v1MTLIP/spkMT1CDS.dat',frameDur*nrF);
-PDS = readSpikes('../../results/v1MTLIP/spkMT1PDS.dat',frameDur*nrF);
+V1 = readSpikes('../results/spkV1ME.dat',frameDur*nrF);
+CDS = readSpikes('../results/spkMT1CDS.dat',frameDur*nrF);
+PDS = readSpikes('../results/spkMT1PDS.dat',frameDur*nrF);
 
 % convert to Hz
 toHz = frameDur*nrF/1000;

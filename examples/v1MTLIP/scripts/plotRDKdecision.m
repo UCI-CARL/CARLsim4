@@ -12,10 +12,12 @@ function [] = plotRDKdecision()
 % A suitable stimulus can be created using scripts/v1MTLIP/makeRDK.m
 %
 % Author: Michael Beyeler <mbeyeler@uci.edu>
-% Ver 2/5/14
+% Ver 3/22/14
 
 % NOTE: 64-bit MATLAB may be required to run this script (in order to
 % handle objects > 4GB)
+
+addpath ../../common
 
 frameDur=1000; % frame duration
 nDir=8; % number of directions
@@ -24,7 +26,7 @@ cohVec=[0.1 1 5:5:20 30 40 50]; % coherence levels
 nDataPoints=length(cohVec); % number of data points
 spkPerNeur = 10; % spikes per neuron needed to reach a decision
 
-s = readSpikes('../../results/v1MTLIP/spkLIP.dat',1);
+s = readSpikes('../results/spkLIP.dat',1);
 s(nDir*nRep*nDataPoints*frameDur,1) = 0; % grow it to right size...
 s=reshape(s,frameDur,nDir,nRep,nDataPoints,[],8);
 nNeur = size(s,4);

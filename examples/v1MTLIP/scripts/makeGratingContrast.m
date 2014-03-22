@@ -28,9 +28,9 @@ function stim = makeGratingContrast(nrX, nrY, nrF, nPnts, direction, ...
 % (eero.simoncelli@nyu.edu)
 %
 % Author: Michael Beyeler <mbeyeler@uci.edu>
-% Ver 10/4/2013
+% Ver 3/22/14
 
-addpath ../common
+addpath ../../common
 
 %% LOAD PARAMS
 if nargin<1,nrX=32;end

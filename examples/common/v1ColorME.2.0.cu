@@ -637,8 +637,9 @@ void calcColorME(int nrX, int nrY, unsigned char* stim, float* red_green, float*
 	// ME responses do not depend on color responses, but on grayscale values found in d_stimBuf[]
 
 	// shift d_stimBuf in time by 1 frame, from frame i to frame i-1
-	for(int i=1;i<nrT;i++)
+	for(int i=1;i<nrT;i++) {
 		CUDA_CHECK_ERRORS(cudaMemcpy(&d_stimBuf[nrX*nrY*(i-1)],&d_stimBuf[nrX*nrY*i],sizeof(float)*nrX*nrY,cudaMemcpyDeviceToDevice));
+	}
 
 	// allocate d_resp, which will contain the response to all 28 (nrDirs) space-time orientation at 3 (nrScales) scales
 	// for every pixel location (x,y)

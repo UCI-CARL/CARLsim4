@@ -2107,7 +2107,7 @@ void CpuSNN::buildNetwork() {
 					float avgPostM = newInfo->numberOfConnections/grp_Info[newInfo->grpSrc].SizeN;
 					float avgPreM  = newInfo->numberOfConnections/grp_Info[newInfo->grpDest].SizeN;
 
-					CARLSIM_INFO("connect(%s(%d) => %s(%d), iWt=%f, mWt=%f, numPostSynapses=%d, numPreSynapses=%d, "
+					CARLSIM_INFO("connect(%s(%d) => %s(%d), iWt=%1.4f, mWt=%1.4f, numPostSynapses=%d, numPreSynapses=%d, "
 									"minD=%d, maxD=%d, %s)", grp_Info2[newInfo->grpSrc].Name.c_str(), newInfo->grpSrc,
 									grp_Info2[newInfo->grpDest].Name.c_str(), newInfo->grpDest, newInfo->initWt,
 									newInfo->maxWt, (int)avgPostM, (int)avgPreM, newInfo->minDelay, newInfo->maxDelay,
@@ -3633,20 +3633,16 @@ inline void CpuSNN::setConnection(int srcGrp,  int destGrp,  unsigned int src, u
 	if(Npost[src] >= grp_Info[srcGrp].numPostSynapses)	{
 		CARLSIM_ERROR("setConnection(%d (Grp=%s), %d (Grp=%s), %f, %d)", src, grp_Info2[srcGrp].Name.c_str(),
 					dest, grp_Info2[destGrp].Name.c_str(), synWt, dVal);
-		CARLSIM_ERROR("(Npost[%d] = %d ) >= (numPostSynapses = %d) value given for the network very low", src,
-					Npost[src], grp_Info[srcGrp].numPostSynapses);
-		CARLSIM_ERROR("Large number of postsynaptic connections is established");
-		CARLSIM_ERROR("Increase the numPostSynapses value for the Group = %s", grp_Info2[srcGrp].Name.c_str());
+		CARLSIM_ERROR("Large number of postsynaptic connections established");
+		CARLSIM_ERROR("Increase maxM param in connect(%s,%s)",grp_Info2[srcGrp].Name.c_str(),grp_Info2[destGrp].Name.c_str());
 		exitSimulation(1);
 	}
 
 	if(Npre[dest] >= grp_Info[destGrp].numPreSynapses) {
 		CARLSIM_ERROR("setConnection(%d (Grp=%s), %d (Grp=%s), %f, %d)", src, grp_Info2[srcGrp].Name.c_str(),
 					dest, grp_Info2[destGrp].Name.c_str(), synWt, dVal);
-		CARLSIM_ERROR("(Npre[%d] = %d) >= (numPreSynapses = %d) value given for the network very less", dest,
-					Npre[dest], grp_Info[destGrp].numPreSynapses);
 		CARLSIM_ERROR("Large number of presynaptic connections established");
-		CARLSIM_ERROR("Increase the numPostSynapses for the Grp = %s value ", grp_Info2[destGrp].Name.c_str());
+		CARLSIM_ERROR("Increase maxPreM param in connect(%s,%s)", grp_Info2[srcGrp].Name.c_str(), grp_Info2[destGrp].Name.c_str());
 		exitSimulation(1);
 	}
 
