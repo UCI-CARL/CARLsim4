@@ -542,8 +542,8 @@ int main()
 	#else
 	char loadVideo[]	 = "";
 	int vidLen			 = 0;
-	printf("WARNING: NO EXPERIMENT SELECTED\n");
-	return -1;
+	printf("ERROR: NO EXPERIMENT SELECTED\n");
+	exit(1);
 	#endif
 		
 	
@@ -564,7 +564,7 @@ int main()
 	FILE* fid = fopen(loadVideo,"rb");
 	if (fid==NULL) {
 		printf("ERROR: could not open video file: %s\n",loadVideo);
-		return 1;
+		exit(2);
 	}
 	printf("Loading video file: %s\n",loadVideo);
 
@@ -573,7 +573,7 @@ int main()
 	// create network
 	// -------------------------------------------------------------------------------------------------------------- //
 
-	CARLsim snn("Motion Energy",onGPU?GPU_MODE:CPU_MODE);
+	CARLsim snn("Motion Energy",onGPU?GPU_MODE:CPU_MODE,USER,ithGPU);
 
 
 	// population sizes: {number of rows, number of columns, number of pools}
@@ -720,7 +720,7 @@ int main()
 
 
 	// initialize the GPU/network, run on device with index ithGPU
-	snn.runNetwork(0,0, onGPU?GPU_MODE:CPU_MODE, ithGPU);
+	snn.runNetwork(0,0);
 	
 	time(&timer_build);
 	
@@ -740,11 +740,20 @@ int main()
 	}
 
 	// movie can be offset by so many frames
-	if (startAtFrame>0)
-		fseek(fid,startAtFrame*nrX*nrY*3,SEEK_SET);
+	if (startAtFrame>0) {
+		int seeking = fseek(fid,startAtFrame*nrX*nrY*3,SEEK_SET);
+		if (seeking) {
+			printf("ERROR: fseek failed\n");
+			exit(2);
+		}
+	}
 
 	for(long long i=0; i < vidLen*1; i++) {
-		fread(vid,1,nrX*nrY*3,fid);
+		size_t result = fread(vid,1,nrX*nrY*3,fid);
+		if (result!=nrX*nrY*3) {
+			printf("ERROR: could not read from video file\n");
+			exit(3);
+		}
 
 		for (int j=1;j<=presentEachFrame;j++) {
 			// run motion energy model and assign spike rates
@@ -752,7 +761,7 @@ int main()
 			snn.setSpikeRate(gV1ME, &me, 1);
 
 			// run the established network for 1 frame
-			snn.runNetwork(0,frameDur, onGPU?GPU_MODE:CPU_MODE);
+			snn.runNetwork(0,frameDur);
 		}
 	}
 

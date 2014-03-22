@@ -1,9 +1,11 @@
+addpath ../../common
+
 list={'R','M','B','C','G','Y'};
 R=struct;
 colors = [0:255,0:255,zeros(1,256); 255:-1:0,zeros(1,256),0:255; zeros(1,256),255:-1:0,255:-1:0]/255;
 FrameDur=100;
 for j=1:length(list)
-    s = readSpikes(['../../results/colorcycle/spkV4' list{j} '.dat'],FrameDur);
+    s = readSpikes(['../results/spkV4' list{j} '.dat'],FrameDur);
     
     if size(s,1) < size(colors,2), s(size(colors,2),1) = 0; end
     

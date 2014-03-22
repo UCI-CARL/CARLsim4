@@ -121,7 +121,7 @@ class simpleProjection: public ConnectionGenerator {
 public:
 	simpleProjection(float radius, float weightScale) {
 		this->weightScale = weightScale;
-		localRadius2 = radius;
+		localRadius2 = radius*radius;
 	}
 
 	float localRadius2;
@@ -180,13 +180,12 @@ int main()
 	//{int src_x; int src_y; int dest_x; int dest_y; int overlap; int radius; float  prob;} projParam_t;
 	float v1toV4w = 0.5;
 	float v1toV4iw = 0.5;
-	float radius = sqrt(3);
 	int radius2 = 3;
 
-	v1v4Proj* projSecondary = new v1v4Proj(V1_LAYER_DIM, V1_LAYER_DIM, V4_LAYER_DIM, V4_LAYER_DIM, radius, v1toV4w*1.5);
-	v1v4Proj* projPrimary = new v1v4Proj(V1_LAYER_DIM, V1_LAYER_DIM, V4_LAYER_DIM, V4_LAYER_DIM, radius, v1toV4w);
-	v1v4Proj* projYellow = new v1v4Proj(V1_LAYER_DIM, V1_LAYER_DIM, V4_LAYER_DIM, V4_LAYER_DIM, radius, v1toV4w*2);
-	v1v4Proj* projInhib = new v1v4Proj(V1_LAYER_DIM, V1_LAYER_DIM, V4_LAYER_DIM, V4_LAYER_DIM, radius, v1toV4iw);
+	v1v4Proj* projSecondary = new v1v4Proj(V1_LAYER_DIM, V1_LAYER_DIM, V4_LAYER_DIM, V4_LAYER_DIM, sqrt(radius2), v1toV4w*1.5);
+	v1v4Proj* projPrimary = new v1v4Proj(V1_LAYER_DIM, V1_LAYER_DIM, V4_LAYER_DIM, V4_LAYER_DIM, sqrt(radius2), v1toV4w);
+	v1v4Proj* projYellow = new v1v4Proj(V1_LAYER_DIM, V1_LAYER_DIM, V4_LAYER_DIM, V4_LAYER_DIM, sqrt(radius2), v1toV4w*2);
+	v1v4Proj* projInhib = new v1v4Proj(V1_LAYER_DIM, V1_LAYER_DIM, V4_LAYER_DIM, V4_LAYER_DIM, sqrt(radius2), v1toV4iw);
 
 	// feedforward connections
 	s.connect(v1Cells[RED_GREEN],   v4CellsExc[MAGENTA_V4], projSecondary, SYN_FIXED, radius2*4, radius2*4);
@@ -283,8 +282,19 @@ int main()
 	#define VIDLEN 12
 
 	for(long long i=0; i < VIDLEN*1; i++) {
-		if (i%VIDLEN==0) fid = fopen("examples/colorblind/videos/colorblind.dat","rb");
-		fread(vid,1,nrX*nrY*3,fid);
+		if (i%VIDLEN==0) {
+			fid = fopen("examples/colorblind/videos/colorblind.dat","rb");
+			if (fid==NULL) {
+				printf("could not open video file\n");
+				exit(1);
+			}
+		}
+
+		size_t result = fread(vid,1,nrX*nrY*3,fid);
+		if (result!=nrX*nrY*3) {
+			printf("reading error\n");
+			exit(2);
+		}
 
 		calcColorME(nrX, nrY, vid, red_green.rates, green_red.rates, blue_yellow.rates, yellow_blue.rates, me.rates, onGPU);
 

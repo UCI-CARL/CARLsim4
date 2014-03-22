@@ -2107,7 +2107,7 @@ void CpuSNN::buildNetwork() {
 					float avgPostM = newInfo->numberOfConnections/grp_Info[newInfo->grpSrc].SizeN;
 					float avgPreM  = newInfo->numberOfConnections/grp_Info[newInfo->grpDest].SizeN;
 
-					CARLSIM_INFO("connect(%s(%d) => %s(%d), iWt=%f, mWt=%f, numPostSynapses=%d, numPreSynapses=%d, "
+					CARLSIM_INFO("connect(%s(%d) => %s(%d), iWt=%1.4f, mWt=%1.4f, numPostSynapses=%d, numPreSynapses=%d, "
 									"minD=%d, maxD=%d, %s)", grp_Info2[newInfo->grpSrc].Name.c_str(), newInfo->grpSrc,
 									grp_Info2[newInfo->grpDest].Name.c_str(), newInfo->grpDest, newInfo->initWt,
 									newInfo->maxWt, (int)avgPostM, (int)avgPreM, newInfo->minDelay, newInfo->maxDelay,
