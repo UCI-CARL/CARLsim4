@@ -623,39 +623,9 @@ void CARLsim::setSpikeMonitor(int grpId, const std::string& fname, int configId)
 	if (fid==NULL) {
 		// file could not be opened
 
-		#if CREATE_SPIKEDIR_IF_NOT_EXISTS
-			// if option set, attempt to create directory
-			int status;
-
-			// this is annoying...for dirname we need to convert from const string to char*
-	    	char fchar[200];
-	    	strcpy(fchar,fname.c_str());
-
-			#if (WIN32 || WIN64) // TODO: test it
-				//status = _mkdir(dirname(fchar); // Windows platform
-				size_t pos = fname.rfind('/');
-				std::string fileName;
-
-				if (pos != std::string::npos)
-					fileName = fname.substr(pos + 1);
-				else
-					fileName = fname;
-
-				fid = fopen(fileName.c_str(),"wb");
-			#else
-			    status = mkdir(dirname(fchar), 0777); // Unix
-				std::string fileError = "%%CARLSIM_ROOT%%/results/ does not exist. Thus file " + fname;
-				UserErrors::assertTrue(status!=-1 || errno==EEXIST, UserErrors::FILE_CANNOT_CREATE, funcName, fileError);
-
-				// now that the directory is created, fopen file
-				fid = fopen(fname.c_str(),"wb");
-			#endif
-		#else
-		    // default case: print error and exit
-		    std::string fileError = ". Enable option CREATE_SPIKEDIR_IF_NOT_EXISTS in config.h to attempt "
-		    							"creating the specified subdirectory automatically. File " + fname;
-		    UserErrors::assertTrue(false, UserErrors::FILE_CANNOT_OPEN, fileName, fileError);
-		#endif
+		// default case: print error and exit
+		std::string fileError = "Make sure directory exists: "+fname;
+		UserErrors::assertTrue(false, UserErrors::FILE_CANNOT_OPEN, fname, fileError);
 	}
 
 	setSpikeMonitor(grpId, new WriteSpikesToFile(fid), configId);
