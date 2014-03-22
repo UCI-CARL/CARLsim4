@@ -61,8 +61,8 @@
 //! CARLsim common definitions
 #define ALL -1 //!< used for the set* methods to specify all groups and/or configIds
 
-#define SYN_FIXED      0
-#define SYN_PLASTIC    1
+#define SYN_FIXED      false
+#define SYN_PLASTIC    true
 
 // Bit flags to be used to specify the type of neuron.  Future types can be added in the future such as Dopamine, etc.
 // Yes, they should be bit flags because some neurons release more than one transmitter at a synapse.
@@ -158,7 +158,7 @@ enum simMode_t {CPU_MODE, GPU_MODE};
  * 
  */
 
-class CpuSNN;
+class CpuSNN; // forward-declaration of private implementation
 
 class CARLsim {
 public:
@@ -487,7 +487,8 @@ public:
 
 	// +++++ PUBLIC METHODS: GETTER / SETTERS +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
-	//grpConnectInfo_t* getConnectInfo(short int connectId, int configId=0); //!< gets connection info struct
+// FIXME
+//	grpConnectInfo_t* getConnectInfo(short int connectId, int configId=0); //!< gets connection info struct
 	int  getConnectionId(short int connId, int configId);
 
 	uint8_t* getDelays(int gIDpre, int gIDpost, int& Npre, int& Npost, uint8_t* delays=NULL);

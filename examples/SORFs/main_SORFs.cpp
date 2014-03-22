@@ -71,7 +71,7 @@ float COND_tAMPA=5.0, COND_tNMDA=150.0, COND_tGABAa=6.0, COND_tGABAb=150.0;
 // has individual and generation information attached to it.  
 uint32_t globalIndiId = 0;
 int      globalGenCounter = 0;
-char tuningCurvesDir[100] = "results/SORFs/tuningCurvesFiles";
+char tuningCurvesDir[100] = "examples/SORFs/results/tuningCurvesFiles";
 
 // these variables eventually get set by the evolutionary algorithm
 // perhaps they should not be global.  TAGS:TODO.
@@ -523,7 +523,7 @@ int evaluateFitness(CARLsim& snn, double* _fitness)
 
 int main_fitness_function(int argc, char *argv[])
 {
-  fpResp = fopen("results/SORFs/resp.txt","a");
+  fpResp = fopen("examples/SORFs/results/resp.txt","a");
 
   // BEGIN SNN initialization
   // --------------------------------------------------------------------------------------------------
@@ -675,10 +675,9 @@ int main_fitness_function(int argc, char *argv[])
   std::string s1;
 
   // InitializeParamTuning(argc, argv);
-  system("mkdir -p results/SORFs");
   InitializeParamTuning("examples/SORFs/ESEA-plus.param");
   // constructor
-  ParamTuning *p = new ParamTuning("results/SORFs/eoOutput.txt");
+  ParamTuning *p = new ParamTuning("examples/SORFs/results/eoOutput.txt");
 
   // all alphas are eventually multiplied by 0.3 originally,
   // I don't do this anymore so I should do this here!
@@ -761,8 +760,8 @@ int main_fitness_function(int argc, char *argv[])
 
   //separate spike files and weight files into different
   //folders
-  char spikeDir[100] = "results/SORFs/spikeFiles";
-  char weightsDir[100] = "results/SORFs/weightFiles";
+  char spikeDir[100] = "examples/SORFs/results/spikeFiles";
+  char weightsDir[100] = "examples/SORFs/results/weightFiles";
   char cmdName[100];
   sprintf(cmdName, "rm -r %s", spikeDir);
   system(cmdName);
