@@ -176,10 +176,6 @@ inline bool isInhibitoryNeuron (unsigned int& nid, unsigned int& numNInhPois, un
 #define GET_FIRING_TABLE_NID(val)   ((val) & MAX_NUMBER_OF_NEURONS_MASK)
 #define GET_FIRING_TABLE_GID(val)   (((val) >> MAX_NUMBER_OF_NEURONS_BITS) & MAX_NUMBER_OF_GROUPS_MASK)
 
-#define _10MS 0
-#define _100MS 1
-#define _1000MS 2
-
 //!< Used for in the function getConnectionId
 #define CHECK_CONNECTION_ID(n,total) { assert(n >= 0); assert(n < total); }
 
@@ -652,32 +648,34 @@ public:
 
 	//! Sets baseline concentration and decay time constant of neuromodulators (DP, 5HT, ACh, NE) for a neuron group.
 	/*!
-	 * \param _groupId the symbolic name of a group
-	 * \param _baseDP  the baseline concentration of Dopamine
-	 * \param _tauDP the decay time constant of Dopamine
-	 * \param _base5HT  the baseline concentration of Serotonin
-	 * \param _tau5HT the decay time constant of Serotonin
-	 * \param _baseACh  the baseline concentration of Acetylcholine
-	 * \param _tauACh the decay time constant of Acetylcholine
-	 * \param _baseNE  the baseline concentration of Noradrenaline 
-	 * \param _tauNE the decay time constant of Noradrenaline 
-	 * \param _configId (optional, deprecated) configuration id
+	 * \param groupId the symbolic name of a group
+	 * \param baseDP  the baseline concentration of Dopamine
+	 * \param tauDP the decay time constant of Dopamine
+	 * \param base5HT  the baseline concentration of Serotonin
+	 * \param tau5HT the decay time constant of Serotonin
+	 * \param baseACh  the baseline concentration of Acetylcholine
+	 * \param tauACh the decay time constant of Acetylcholine
+	 * \param baseNE  the baseline concentration of Noradrenaline 
+	 * \param tauNE the decay time constant of Noradrenaline 
+	 * \param configId (optional, deprecated) configuration id
 	 */
-	void setNeuromodulator(int grpId, float baseDP, float tauDP, float base5HT, float tau5HT, float baseACh, float tauACh, float baseNE, float tauNE, int configId);
+	void setNeuromodulator(int grpId, float baseDP, float tauDP, float base5HT, float tau5HT,
+							float baseACh, float tauACh, float baseNE, float tauNE, int configId);
 
 	//! Set the spike-timing-dependent plasticity (STDP) for a neuron group.  
 	/*
-	 * \brief STDP must be defined post-synaptically; that is, if STP should be implemented on the connections from group 0 to group 1, call setSTP on group 1. Fore details on the phenomeon, see (for example) (Bi & Poo, 2001).
-	 * \param _grpId ID of the neuron group 
-	 * \param _enable set to true to enable STDP for this group
-	 * \param _enable_modulation set to true to enable modulated STDP for this group
-	 * \param _ALPHA_LTP max magnitude for LTP change 
-	 * \param _TAU_LTP decay time constant for LTP 
-	 * \param _ALPHA_LTD max magnitude for LTD change (leave positive) 
-	 * \param _TAU_LTD decay time constant for LTD
-	 * \param _configId (optional, deprecated) configuration id
+	 * \brief STDP must be defined post-synaptically; that is, if STP should be implemented on the connections from group 0 to group 1,
+	 * call setSTP on group 1. Fore details on the phenomeon, see (for example) (Bi & Poo, 2001).
+	 * \param[in] grpId ID of the neuron group 
+	 * \param[in] isSet_enable set to true to enable STDP for this group
+	 * \param[in] isSetDASTDP set to true to enable dopamine modulated STDP for this group
+	 * \param[in] alphaLTP max magnitude for LTP change 
+	 * \param[in] tauLTP decay time constant for LTP 
+	 * \param[in] alphaLTD max magnitude for LTD change (leave positive) 
+	 * \param[in] tauLTD decay time constant for LTD
+	 * \param[in] configId (optional, deprecated) configuration id
 	 */
-	void setSTDP(int grpId, bool isSet, float alphaLTP, float tauLTP, float alphaLTD, float tauLTD, int configId);
+	void setSTDP(int grpId, bool isSet, bool isSetDASTDP, float alphaLTP, float tauLTP, float alphaLTD, float tauLTD, int configId);
 		
 	/*!
 	 * \brief Sets STP params U, tau_u, and tau_x of a neuron group (pre-synaptically)
@@ -708,7 +706,7 @@ public:
 	 * \param updateInterval the interval between two weight update. the setting could be _10MS, _100MS, _1000MS
 	 * \param tauWeightChange the decay time constant of weight change (wtChange)
 	 */
-	void setWeightUpdateParameter(int updateInterval, int tauWeightChange = 10);
+	void setWeightUpdateParameter(int updateInterval, int tauWeightChange);
 
 	// +++++ PUBLIC METHODS: RUNNING A SIMULATION +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 

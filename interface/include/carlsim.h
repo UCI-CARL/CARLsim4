@@ -85,6 +85,10 @@
 #define IS_INHIBITORY_TYPE(type)	(((type) & TARGET_GABAa) || ((type) & TARGET_GABAb))
 #define IS_EXCITATORY_TYPE(type)	(!IS_INHIBITORY_TYPE(type))
 
+#define _10MS 0
+#define _100MS 1
+#define _1000MS 2
+
 
 //! CARLsim common enumerations
 /*!
@@ -328,11 +332,30 @@ public:
 	//! Sets Izhikevich params a, b, c, and d of a neuron group. 
 	void setNeuronParameters(int grpId, float izh_a, float izh_b, float izh_c, float izh_d, int configId=ALL);
 
+	//! Sets baseline concentration and decay time constant of neuromodulators (DP, 5HT, ACh, NE) for a neuron group.
+	/*!
+	 * \param groupId the symbolic name of a group
+	 * \param baseDP  the baseline concentration of Dopamine
+	 * \param tauDP the decay time constant of Dopamine
+	 * \param base5HT  the baseline concentration of Serotonin
+	 * \param tau5HT the decay time constant of Serotonin
+	 * \param baseACh  the baseline concentration of Acetylcholine
+	 * \param tauACh the decay time constant of Acetylcholine
+	 * \param baseNE  the baseline concentration of Noradrenaline 
+	 * \param tauNE the decay time constant of Noradrenaline 
+	 * \param configId (optional, deprecated) configuration id
+	 */
+	void setNeuromodulator(int grpId, float baseDP, float tauDP, float base5HT, float tau5HT,
+							float baseACh, float tauACh, float baseNE, float tauNE, int configId);
+
+	void setNeuromodulator(int grpId, float tauDP = 100.0f, float tau5HT = 100.0f,
+							float tauACh = 100.0f, float tauNE = 100.0f, int configId = ALL);
+
 	//! Sets default STDP params
 	void setSTDP(int grpId, bool isSet, int configId=ALL);
 
 	//! Sets STDP params for a group, custom
-	void setSTDP(int grpId, bool isSet, float alphaLTP, float tauLTP, float alphaLTD, float tauLTD, int configId=ALL);
+	void setSTDP(int grpId, bool isSet, bool isSetDASTDP, float alphaLTP, float tauLTP, float alphaLTD, float tauLTD, int configId=ALL);
 
 	/*!
 	 * \brief Sets STP params U, tau_u, and tau_x of a neuron group (pre-synaptically)
@@ -360,6 +383,12 @@ public:
 	//! Sets STP params U, tau_u, and tau_x of a neuron group (pre-synaptically) using default values
 	void setSTP(int grpId, bool isSet, int configId=ALL);
 
+	//! Sets the weight update parameters
+	/*!
+	 * \param updateInterval the interval between two weight update. the setting could be _10MS, _100MS, _1000MS
+	 * \param tauWeightChange the decay time constant of weight change (wtChange)
+	 */
+	void setWeightUpdateParameter(int updateInterval = _1000MS, int tauWeightChange = 10);
 
 
 	// +++++ PUBLIC METHODS: RUNNING A SIMULATION ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //

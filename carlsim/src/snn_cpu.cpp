@@ -518,7 +518,7 @@ void CpuSNN::setNeuromodulator(int grpId, float baseDP, float tauDP, float base5
 }
 
 // set STDP params
-void CpuSNN::setSTDP(int grpId, bool isSet, float alphaLTP, float tauLTP, float alphaLTD, float tauLTD, int configId) {
+void CpuSNN::setSTDP(int grpId, bool isSet, bool isSetDASTDP, float alphaLTP, float tauLTP, float alphaLTD, float tauLTD, int configId) {
 	assert(grpId>=-1); assert(configId>=-1);
 	if (isSet) {
 		assert(alphaLTP>=0); assert(tauLTP>=0); assert(alphaLTD>=0); assert(tauLTD>=0);
@@ -526,20 +526,22 @@ void CpuSNN::setSTDP(int grpId, bool isSet, float alphaLTP, float tauLTP, float 
 
 	if (grpId==ALL && configId==ALL) { // shortcut for all groups & configs
 		for(int g=0; g < numGrp; g++)
-			setSTDP(g, isSet, alphaLTP, tauLTP, alphaLTD, tauLTD, 0);
+			setSTDP(g, isSet, isSetDASTDP, alphaLTP, tauLTP, alphaLTD, tauLTD, 0);
 	} else if (grpId == ALL) { // shortcut for all groups
 		for(int grpId1=0; grpId1 < numGrp; grpId1 += nConfig_) {
 			int g = getGroupId(grpId1, configId);
-			setSTDP(g, isSet, alphaLTP, tauLTP, alphaLTD, tauLTD, configId);
+			setSTDP(g, isSet, isSetDASTDP, alphaLTP, tauLTP, alphaLTD, tauLTD, configId);
 		}
 	} else if (configId == ALL) { // shortcut for all configs
 		for(int c=0; c < nConfig_; c++)
-			setSTDP(grpId, isSet, alphaLTP, tauLTP, alphaLTD, tauLTD, c);
+			setSTDP(grpId, isSet, isSetDASTDP, alphaLTP, tauLTP, alphaLTD, tauLTD, c);
 	} else {
 		// set STDP for a given group and configId
 		int cGrpId = getGroupId(grpId, configId);
 		sim_with_stdp 				   |= isSet;
+		sim_with_modulated_stdp			= isSetDASTDP;
 		grp_Info[cGrpId].WithSTDP 		= isSet;
+		grp_Info[cGrpId].WithModulatedSTDP = isSetDASTDP;
 		grp_Info[cGrpId].ALPHA_LTP 		= alphaLTP;
 		grp_Info[cGrpId].ALPHA_LTD 		= alphaLTD;
 		grp_Info[cGrpId].TAU_LTP_INV 	= 1.0f/tauLTP;
@@ -590,16 +592,16 @@ void CpuSNN::setWeightUpdateParameter(int updateInterval, int tauWeightChange) {
 	switch (updateInterval) {
 		case _10MS:
 			wtUpdateInterval_ = 10;
-			stdpScaleFactor_ = 0.001;
+			stdpScaleFactor_ = 0.004f;
 			break;
 		case _100MS:
 			wtUpdateInterval_ = 100;
-			stdpScaleFactor_ = 0.01;
+			stdpScaleFactor_ = 0.04f;
 			break;
 		case _1000MS:
 		default:
 			wtUpdateInterval_ = 1000;
-			stdpScaleFactor_ = 0.1;
+			stdpScaleFactor_ = 0.4f;
 			break;
 	}
 
@@ -1717,10 +1719,10 @@ void CpuSNN::CpuSNNinit() {
 		grp_Info[i].homeoId = -1;
 		grp_Info[i].avgTimeScale  = 10000.0;
 
-		grp_Info[i].baseDP = 1.0;
-		grp_Info[i].base5HT = 1.0;
-		grp_Info[i].baseACh = 1.0;
-		grp_Info[i].baseNE = 1.0;
+		grp_Info[i].baseDP = 1.0f;
+		grp_Info[i].base5HT = 1.0f;
+		grp_Info[i].baseACh = 1.0f;
+		grp_Info[i].baseNE = 1.0f;
 		grp_Info[i].decayDP = 1 - (1.0 / 100);
 		grp_Info[i].decay5HT = 1 - (1.0 / 100);
 		grp_Info[i].decayACh = 1 - (1.0 / 100);
