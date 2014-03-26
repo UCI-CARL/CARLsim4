@@ -244,7 +244,7 @@ short int CARLsim::connect(int grpId1, int grpId2, const std::string& connType, 
 	UserErrors::assertTrue(grpId2!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName, grpId2str.str());
 	UserErrors::assertTrue(!isPoissonGroup(grpId2), UserErrors::WRONG_NEURON_TYPE, funcName, grpId2str.str() + 
 		" is PoissonGroup, connect");
-	UserErrors::assertTrue(!isExcitatoryGroup(grpId1) || maxWt>0, UserErrors::MUST_BE_POSITIVE, funcName, "maxWt");
+	UserErrors::assertTrue(!isExcitatoryGroup(grpId1) || maxWt>=0, UserErrors::CANNOT_BE_NEGATIVE, funcName, "maxWt");
 	UserErrors::assertTrue(!isInhibitoryGroup(grpId1) || maxWt<0, UserErrors::MUST_BE_NEGATIVE, funcName, "maxWt");
 	UserErrors::assertTrue(initWt*maxWt>=0, UserErrors::MUST_HAVE_SAME_SIGN, funcName, "initWt and maxWt");
 	UserErrors::assertTrue(!hasRunNetwork_, UserErrors::NETWORK_ALREADY_RUN, funcName); // can't change setup after run
@@ -728,6 +728,14 @@ int CARLsim::getNumConnections(short int connectionId) {
 	return snn_->getNumConnections(connectionId);
 }
 
+int CARLsim::getGroupStartNeuronId(int grpId) { return snn_->getGroupStartNeuronId(grpId); }
+int CARLsim::getGroupEndNeuronId(int grpId) { return snn_->getGroupEndNeuronId(grpId); }
+int CARLsim::getGroupNumNeurons(int grpId) { return snn_->getGroupNumNeurons(grpId); }
+
+int CARLsim::getNumNeurons() { return snn_->getNumNeurons(); }
+int CARLsim::getNumPreSynapses() { return snn_->getNumPreSynapses(); }
+int CARLsim::getNumPostSynapses() { return snn_->getNumPostSynapses(); } 
+
 int CARLsim::getNumGroups() { return snn_->getNumGroups(); }
 uint64_t CARLsim::getSimTime() { return snn_->getSimTime(); }
 uint32_t CARLsim::getSimTimeSec() { return snn_->getSimTimeSec(); }
@@ -755,10 +763,6 @@ int* CARLsim::getSpikeCounter(int grpId, int configId) {
 float* CARLsim::getWeightChanges(int gIDpre, int gIDpost, int& Npre, int& Npost, float* weightChanges) {
 	return snn_->getWeightChanges(gIDpre,gIDpost,Npre,Npost,weightChanges);
 }
-
-int CARLsim::grpStartNeuronId(int grpId) { return snn_->grpStartNeuronId(grpId); }
-int CARLsim::grpEndNeuronId(int grpId) { return snn_->grpEndNeuronId(grpId); }
-int CARLsim::grpNumNeurons(int grpId) { return snn_->grpNumNeurons(grpId); }
 
 bool CARLsim::isExcitatoryGroup(int grpId) { return snn_->isExcitatoryGroup(grpId); }
 bool CARLsim::isInhibitoryGroup(int grpId) { return snn_->isInhibitoryGroup(grpId); }

@@ -530,6 +530,14 @@ public:
 	int getNumConnections(short int connectionId);		//!< gets number of connections associated with a connection ID
 	int getNumGroups();									//!< gets number of groups in the network
 
+	int getGroupStartNeuronId(int grpId); //!< get the first neuron id of a groupd specified by grpId
+	int getGroupEndNeuronId(int grpId); //!< get the last neuron id of a groupd specified by grpId
+	int getGroupNumNeurons(int grpId); //!< get the number of neurons of a groupd specified by grpId
+
+	int getNumNeurons(); //!< returns the total number of allocated neurons in the network
+	int getNumPreSynapses(); //!< returns the total number of allocated pre-synaptic connections in the network
+	int getNumPostSynapses(); //!< returns the total number of allocated post-synaptic connections in the network 
+
 	/*!
 	 * \brief Writes weights from synaptic connections from gIDpre to gIDpost.  Returns a pointer to the weights
 	 * and the size of the 1D array in size.  gIDpre(post) is the group ID for the pre(post)synaptic group, 

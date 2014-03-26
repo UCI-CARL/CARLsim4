@@ -865,9 +865,17 @@ public:
 
 	loggerMode_t getLoggerMode() { return loggerMode_; }
 
+	int getGroupStartNeuronId(int grpId) { return grp_Info[grpId].StartN; }
+	int getGroupEndNeuronId(int grpId)   { return grp_Info[grpId].EndN; }
+	int getGroupNumNeurons(int grpId)    { return grp_Info[grpId].SizeN; }
+
 	int getNumConfigurations()	{ return nConfig_; }	//!< gets number of network configurations
 	int getNumConnections(short int connectionId);		//!< gets number of connections associated with a connection ID
 	int getNumGroups() { return numGrp; }
+
+	int getNumNeurons() { return numN; }
+	int getNumPreSynapses() { return preSynCnt; }
+	int getNumPostSynapses() { return postSynCnt; }
 
 	/*!
 	 * \brief Writes weights from synaptic connections from gIDpre to gIDpost.  Returns a pointer to the weights
@@ -912,9 +920,7 @@ public:
 	 float* getWeightChanges(int gIDpre, int gIDpost, int& Npre, int& Npost, float* weightChanges);
 
 
-	int grpStartNeuronId(int g) { return grp_Info[g].StartN; }
-	int grpEndNeuronId(int g)   { return grp_Info[g].EndN; }
-	int grpNumNeurons(int g)    { return grp_Info[g].SizeN; }
+
 
 	bool isExcitatoryGroup(int g) { return (grp_Info[g].Type&TARGET_AMPA) || (grp_Info[g].Type&TARGET_NMDA); }
 	bool isInhibitoryGroup(int g) { return (grp_Info[g].Type&TARGET_GABAa) || (grp_Info[g].Type&TARGET_GABAb); }

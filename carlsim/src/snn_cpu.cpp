@@ -1724,10 +1724,10 @@ void CpuSNN::CpuSNNinit() {
 		grp_Info[i].base5HT = 1.0f;
 		grp_Info[i].baseACh = 1.0f;
 		grp_Info[i].baseNE = 1.0f;
-		grp_Info[i].decayDP = 1 - (1.0 / 100);
-		grp_Info[i].decay5HT = 1 - (1.0 / 100);
-		grp_Info[i].decayACh = 1 - (1.0 / 100);
-		grp_Info[i].decayNE = 1 - (1.0/ 100);
+		grp_Info[i].decayDP = 1 - (1.0f / 100);
+		grp_Info[i].decay5HT = 1 - (1.0f / 100);
+		grp_Info[i].decayACh = 1 - (1.0f / 100);
+		grp_Info[i].decayNE = 1 - (1.0f / 100);
 
 		grp_Info[i].spikeGen = NULL;
 
