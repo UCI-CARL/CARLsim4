@@ -1653,6 +1653,7 @@ void CpuSNN::CpuSNNinit() {
 	spikeRateUpdated = false;
 	numSpikeMonitor = 0;
 	numGroupMonitor = 0;
+	numNetworkMonitor = 0;
 	numSpkCnt = 0;
 
 	sim_with_fixedwts = true; // default is true, will be set to false if there are any plastic synapses
@@ -3844,7 +3845,7 @@ void CpuSNN::updateNetworkMonitor() {
 			int grpIdPre = networkMonitorGrpIdPre[monitorId];
 			int grpIdPost = networkMonitorGrpIdPost[monitorId];
 			float* weights = NULL;
-			float avgWeight;
+			float avgWeight = 0.0f;
 			int weightSzie;
 			getPopWeights(grpIdPre, grpIdPost, weights, weightSzie, 0);
 
