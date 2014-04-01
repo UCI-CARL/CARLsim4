@@ -68,7 +68,7 @@ classdef InputStimulus < handle
             % the following noise types are supported
             obj.supportedNoiseTypes = {'gaussian','poisson','salt & pepper',...
                 'speckle'};
-
+            
             % the following stimulus types are supported
             obj.supportedStimulusTypes = {'grating','plaid','rdk'};
             
@@ -198,6 +198,78 @@ classdef InputStimulus < handle
             this.defaultSaveName = cat(2,this.defaultSaveName,'Plaid');
         end
         
+        function createRdkExpansion(this, length, FOE, density, speed, append)
+            if nargin<6,append=false;end
+            if nargin<5,speed=1;end
+            if nargin<4,density=0.2;end
+            expand = @(x,y,w0,th) ([w0*(x*cos(th)-y*sin(th)),w0*(x*sin(th)+y*cos(th))]);
+            
+            % if this object was created by loading a file, read the header
+            % (loadHeaderOnly=true) to get stimulus dimensions
+            this.loadStimIfNecessary(true);
+            
+            % get number of dots from density
+            nDots = round(density*this.width*this.height);
+            
+            % starting points are random
+            posDots = [randi(this.width, [1 nDots]);
+                       randi(this.height,[1 nDots])];
+            
+            w0 = 0.05; % good for expansion
+            th = 0;
+            fudge = 2; % fudge factor for small retina sizes
+            
+            res=[];
+            for i=1:length
+                % init retina
+                retina = zeros(this.width, this.height);
+                
+                % adjust the center of the motion pattern to (x0,x0)
+                % fudge factor used for small retina sizes
+                dxdt = expand((posDots(1,:)'-FOE(1))*fudge, ...
+                    (posDots(2,:)'-FOE(2))*fudge, ...
+                    w0, th)';
+                
+                % scale dxdt with speed value
+                dxdt = dxdt*speed;
+                
+                % update points
+                posDots = posDots + dxdt;
+                
+                % if points disappear from retina, remove points and insert new
+                % ones at random position
+                [~,c] = find((posDots(1,:)>this.width) | (posDots(1,:)<1));
+                posDots(:,c) = [randi(this.width, [1 numel(c)]);
+                                randi(this.height,[1 numel(c)])];
+                [~,c] = find((posDots(2,:)>this.height) | (posDots(2,:)<1));
+                posDots(:,c) = [randi(this.width, [1 numel(c)]);
+                                randi(this.height,[1 numel(c)])];
+                
+                % translate 2D subscripts to index, set to 1
+                retina(sub2ind(size(retina),round(posDots(1,:)), ...
+                    round(posDots(2,:)))) = 1;
+                
+                % append to frames
+                res = cat(3, res, retina);
+            end
+            
+            % append to existing frames or replace
+            if append
+                this.loadStimIfNecessary(); % need to update stim first
+                this.stim = cat(3, this.stim, res);
+            else
+                this.stim = res;
+            end
+            
+            % update attributes
+            this.needToLoad = false; % stim is up-to-date
+            this.length = size(this.stim,3);
+            
+            % update default save file name
+            this.defaultSaveName = cat(2,this.defaultSaveName,'RdkExpand');
+        end
+        
+        
         function createSinGrating(this, length, sinDir, sinFreq, ...
                 sinContrast, sinPhase, append)
             % IS.createSinGrating(length, sinDir, sinFreq, sinContrast,
@@ -299,11 +371,12 @@ classdef InputStimulus < handle
                 end
                 
                 colormap gray
-                imagesc(permute(img(:,:,i),[2 1 3]),[0 1]);
+                imagesc(permute(img(:,:,i),[2 1 3]),[0 1])
                 text(2,this.height-1,num2str(find(frames==i)), ...
-                    'FontSize',10,'BackgroundColor','white');
-                drawnow;
-                pause(0.1);
+                    'FontSize',10,'BackgroundColor','white')
+                axis image
+                drawnow
+                pause(0.1)
             end
         end
         
@@ -370,7 +443,7 @@ classdef InputStimulus < handle
                 img = cat(3, img, noise);
             end
             
-
+            
             % by default, this function appends to stimulus
             % so the stimulus must be loaded first
             this.loadStimIfNecessary();
@@ -458,8 +531,8 @@ classdef InputStimulus < handle
             %                  Make sure to have write access to the specified
             %                  file, and that the directory exists.
             if nargin<2
-                fileName = [this.defaultSaveName upper(this.mode(1)) ...
-                    this.mode(2:end) '_' num2str(this.width) ...
+                fileName = [this.defaultSaveName '_' lower(this.mode) ...
+                    '_' num2str(this.width) ...
                     'x' num2str(this.height) 'x' num2str(this.length) '.dat'];
             end
             fid=fopen(fileName,'w');
