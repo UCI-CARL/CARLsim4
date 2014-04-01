@@ -195,7 +195,10 @@ classdef InputStimulus < handle
             this.length = size(this.stim,3);
             
             % update default save file name
-            this.defaultSaveName = cat(2,this.defaultSaveName,'Plaid');
+            lastName = this.defaultSaveName(max(1,end-4):end);
+            if ~strcmp(lastName,'Plaid') % only save distinct names
+                this.defaultSaveName = cat(2,this.defaultSaveName,'Plaid');
+            end
         end
         
         function createRdkExpansion(this, length, FOE, density, speed, append)
@@ -266,7 +269,10 @@ classdef InputStimulus < handle
             this.length = size(this.stim,3);
             
             % update default save file name
-            this.defaultSaveName = cat(2,this.defaultSaveName,'RdkExpand');
+            lastName = this.defaultSaveName(max(1,end-8):end);
+            if ~strcmp(lastName,'RdkExpand') % only save distinct names
+                this.defaultSaveName = cat(2,this.defaultSaveName,'RdkExpand');
+            end
         end
         
         
@@ -343,7 +349,10 @@ classdef InputStimulus < handle
             this.length = size(this.stim,3);
             
             % update default save file name
-            this.defaultSaveName = cat(2,this.defaultSaveName,'Grating');
+            lastName = this.defaultSaveName(max(1,end-6):end);
+            if ~strcmp(lastName,'Grating') % only save distinc names
+                this.defaultSaveName = cat(2,this.defaultSaveName,'Grating');
+            end
         end
         
         
