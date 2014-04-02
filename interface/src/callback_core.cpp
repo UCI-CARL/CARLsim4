@@ -75,9 +75,9 @@ SpikeMonitorCore::SpikeMonitorCore(CARLsim* c, SpikeMonitor* s) {
 	sMon = s;
 }
 
-void SpikeMonitorCore::update(CpuSNN* s, int grpId, unsigned int* Nids, unsigned int* timeCnts) {
+void SpikeMonitorCore::update(CpuSNN* s, int grpId, unsigned int* Nids, unsigned int* timeCnts, int timeInterval) {
 	if (sMon != NULL)
-		sMon->update(carlsim, grpId, Nids, timeCnts);
+		sMon->update(carlsim, grpId, Nids, timeCnts, timeInterval);
 }
 
 ConnectionMonitorCore::ConnectionMonitorCore(CARLsim* c, ConnectionMonitor* n) {

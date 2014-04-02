@@ -98,6 +98,13 @@ CpuSNN::CpuSNN(std::string& name, simMode_t simMode, loggerMode_t loggerMode, in
 
 // destructor
 CpuSNN::~CpuSNN() {
+	// if total simulation time is not divisible by 1000 ms, run updateSpikeMonitor again to get the spikes of the
+	// last fraction of a second
+	if (simTimeMs) {
+ 	   updateSpikeMonitor(simTimeMs);
+ 	   CARLSIM_INFO("\n^ (time=%1.3fs) =================\n", (float) (simTimeSec+simTimeMs/1000.0));
+	}
+
 	if (!simulatorDeleted)
 		deleteObjects();
 }
@@ -404,9 +411,12 @@ int trGABAb, int tdGABAb, int configId) {
 //		grp_Info[cGrpId].newUpdates 		= true; // \deprecated
 
 	if (sim_with_conductances) {
-		CARLSIM_INFO("Running COBA mode: tdAMPA: %d ms, trNMDA%s: %d ms, tdNMDA: %d ms, tdGABAa: %d ms, trGABAb%s: "
-			"%d ms, tdGABAb: %d ms", tdAMPA, sim_with_NMDA_rise?"":" (disabled)", trNMDA, tdNMDA, tdGABAa,
-			sim_with_GABAb_rise?"":" (disabled)", trGABAb, tdGABAb);
+		CARLSIM_INFO("Running COBA mode:");
+		CARLSIM_INFO("  - AMPA decay time            = %4d ms", tdAMPA);
+		CARLSIM_INFO("  - NMDA rise time %s  = %4d ms", sim_with_NMDA_rise?"          ":"(disabled)", trNMDA);
+		CARLSIM_INFO("  - GABAa decay time           = %4d ms", tdGABAa);
+		CARLSIM_INFO("  - GABAb rise time %s = %4d ms", sim_with_GABAb_rise?"          ":"(disabled)",trGABAb);
+		CARLSIM_INFO("  - GABAb decay time           = %4d ms", tdGABAb);
 	} else {
 		CARLSIM_INFO("Running CUBA mode (all synaptic conductances disabled)");
 	}
@@ -546,9 +556,7 @@ void CpuSNN::setSTDP(int grpId, bool isSet, float alphaLTP, float tauLTP, float 
 		grp_Info[cGrpId].TAU_LTD_INV	= 1.0f/tauLTD;
 		grp_Info[cGrpId].newUpdates 	= true; // FIXME whatsathiis?
 
-		CARLSIM_INFO("STDP %s for %d (%s):\talphaLTP: %1.3f, alphaLTD: %1.3f, tauLTP: %3.0f, tauLTD: %3.0f",
-					isSet?"enabled":"disabled",cGrpId,grp_Info2[cGrpId].Name.c_str(),
-					alphaLTP,alphaLTD,tauLTP,tauLTD);
+		CARLSIM_INFO("STDP %s for %s(%d)", isSet?"enabled":"disabled", grp_Info2[cGrpId].Name.c_str(), cGrpId);
 	}
 }
 
@@ -677,7 +685,7 @@ int CpuSNN::runNetwork(int _nsec, int _nmsec, bool copyState) {
 				showStatusCnt_=0; // reset counter
 			}
 			if (showLog || numSpikeMonitor)
-				CARLSIM_INFO("\n^ (time=%llds) =========\n", (unsigned long long) simTimeSec);
+				CARLSIM_INFO("\n^ (time=%llds) =================\n", (unsigned long long) simTimeSec);
 
 			if(simMode_ == CPU_MODE)
 				updateFiringTable();
@@ -1598,9 +1606,11 @@ void CpuSNN::CpuSNNinit() {
 	CARLSIM_INFO("*******************************************************************************");
 	CARLSIM_INFO("********************      Welcome to CARLsim %d.%d      *************************",
 				MAJOR_VERSION,MINOR_VERSION);
-	CARLSIM_INFO("*******************************************************************************");
+	CARLSIM_INFO("*******************************************************************************\n");
+
+	CARLSIM_INFO("***************************** Setting Up Network ******************************");
 	CARLSIM_INFO("Starting CARLsim simulation \"%s\" in %s mode",networkName_.c_str(),
-				loggerMode_==USER?"user":(loggerMode_==DEVELOPER?"developer":(loggerMode_==SILENT?"silent":"custom")));
+				loggerMode_==USER?"USER":(loggerMode_==DEVELOPER?"DEVELOPER":(loggerMode_==SILENT?"SILENT":"CUSTOM")));
 	CARLSIM_INFO("nConfig: %d, randSeed: %d",nConfig_,randSeed_);
 
 	time_t rawtime;
@@ -1964,21 +1974,14 @@ void CpuSNN::buildNetwork() {
 	assert(numPreSynapses > 0);
 
 	// display the evaluated network and delay length....
-	CARLSIM_INFO(">>>>>>>>>>>>>> NUM_CONFIGURATIONS = %d <<<<<<<<<<<<<<<<<<", nConfig_);
-	CARLSIM_INFO("*********************************************************");
-	CARLSIM_INFO("numN = %d, numPostSynapses = %d, numPreSynapses = %d, D = %d", curN, numPostSynapses,
+	CARLSIM_INFO("\n**************************** Building Network *********************************");
+	CARLSIM_INFO("numN = %d, numPostSynapses = %d, numPreSynapses = %d, maxDelay = %d", curN, numPostSynapses,
 					numPreSynapses, curD);
-	CARLSIM_INFO("*********************************************************");
 
 	assert(curD != 0);
 	assert(numPostSynapses != 0);
 	assert(curN != 0);
 	assert(numPreSynapses != 0);
-
-	for (int g=0;g<numGrp;g++)
-		CARLSIM_INFO("grp_Info[%d, %s].numPostSynapses = %d, grp_Info[%d, %s].numPreSynapses = %d",
-					g,grp_Info2[g].Name.c_str(),grp_Info[g].numPostSynapses,g,grp_Info2[g].Name.c_str(),
-					grp_Info[g].numPreSynapses);
 
 	if (numPostSynapses > MAX_nPostSynapses) {
 		for (int g=0;g<numGrp;g++) {
@@ -2032,6 +2035,12 @@ void CpuSNN::buildNetwork() {
 		}
 	}
 	assert(allocatedGrp == numGrp);
+
+	// print group overview
+	for (int g=0;g<numGrp;g++) {
+		printGroupInfo(g);
+	}
+
 
 	grpIds = new short int[numN];
 	for (int nid=0; nid<numN; nid++) {
@@ -2923,19 +2932,6 @@ void  CpuSNN::globalStateUpdate() {
 						voltage[i] = -90;
 					recovery[i]+=Izh_a[i]*(Izh_b[i]*voltage[i]-recovery[i])/COND_INTEGRATION_SCALE;
 				} // end COND_INTEGRATION_SCALE loop
-
-				// skip logging if not in developer mode to save time
-				if (loggerMode_!=DEVELOPER)
-					continue;
-
-				if (i==grp_Info[g].StartN) {
-					// this will inflate the execution time A LOT
-	      			CARLSIM_DEBUG("%d: volt=%0.3f, rec=%0.3f, curr=%0.3f, gAMPA=%0.5f, iAMPA=%0.5f, gNMDA=%0.5f, "
-      								"iNMDA=%0.5f, gGABAa=%0.5f, iAMPAa=%0.5f, gGABAb=%0.5f, iGABAb=%0.5f",
-      								i, voltage[i], recovery[i], current[i], gAMPA[i], gAMPA[i]*(voltage[i]-0),
-      								tmp_gNMDA, tmp_gNMDA*tmp_iNMDA/(1+tmp_iNMDA)*(voltage[i]-0), gGABAa[i],
-      								gGABAa[i]*(voltage[i]+70), tmp_gGABAb, tmp_gGABAb*(voltage[i]+90));
-	      		}
 			} else {
 				// CUBA model
 				voltage[i]+=0.5*((0.04*voltage[i]+5.0)*voltage[i]+140.0-recovery[i]+current[i]); //for numerical stability
@@ -3183,7 +3179,7 @@ void CpuSNN::reorganizeNetwork(bool removeTempMemory) {
 	if(doneReorganization)
 		return;
 
-	CARLSIM_INFO("Beginning reorganization of network....");
+	CARLSIM_DEBUG("Beginning reorganization of network....");
 
 	// time to build the complete network with relevant parameters..
 	buildNetwork();
@@ -3205,16 +3201,13 @@ void CpuSNN::reorganizeNetwork(bool removeTempMemory) {
 	//ensure that we dont do all the above optimizations again
 	doneReorganization = true;
 
-	printParameters(fpDeb_);
+//	printParameters(fpDeb_);
 	printTuningLog(fpDeb_);
 
 	makePtrInfo();
 
-	if (simMode_==GPU_MODE) {
-		CARLSIM_INFO("Starting GPU-SNN Simulations ....");
-	} else {
-		CARLSIM_INFO("Starting CPU-SNN Simulations ....");
-	}
+	CARLSIM_INFO("\n*******************      Starting %s Simulation      *************************",
+		simMode_==GPU_MODE?"GPU":"CPU");
 
 	if(removeTempMemory) {
 		memoryOptimized = true;
@@ -4067,20 +4060,25 @@ bool CpuSNN::updateTime() {
 
 
 
-void CpuSNN::updateSpikeMonitor() {
+void CpuSNN::updateSpikeMonitor(int numMs) {
 	// don't continue if numSpikeMonitor is zero
-	if(numSpikeMonitor==0)
+	if(!numSpikeMonitor)
 		return;
 
+	// don't continue if the time interval is zero
+	if (!numMs)
+		return;
+
+	assert(numMs>0); assert(numMs<=1000);
 	bool bufferOverFlow[MAX_GRP_PER_SNN];
 	memset(bufferOverFlow,0,sizeof(bufferOverFlow));
 
 	/* Reset buffer time counter */
 	for(int i=0; i < numSpikeMonitor; i++)
-		memset(monBufferTimeCnt[i],0,sizeof(int)*(1000));
+		memset(monBufferTimeCnt[i],0,sizeof(int)*(numMs));
 
 	/* Reset buffer position */
-		memset(monBufferPos,0,sizeof(int)*numSpikeMonitor);
+	memset(monBufferPos,0,sizeof(int)*numSpikeMonitor);
 
 	if (simMode_ == GPU_MODE) {
 		updateSpikeMonitor_GPU();
@@ -4091,9 +4089,9 @@ void CpuSNN::updateSpikeMonitor() {
 	for (int k=0; k < 2; k++) {
 		unsigned int* timeTablePtr = (k==0)?timeTableD2:timeTableD1;
 		unsigned int* fireTablePtr = (k==0)?firingTableD2:firingTableD1;
-		for(int t=0; t < 1000; t++) {
+		for(int t=0; t < numMs; t++) {
 			for(int i=timeTablePtr[t+D]; i<timeTablePtr[t+D+1];i++) {
-		/* retrieve the neuron id */
+				/* retrieve the neuron id */
 				int nid   = fireTablePtr[i];
 				if (simMode_ == GPU_MODE)
 					nid = GET_FIRING_TABLE_NID(nid);
@@ -4105,33 +4103,35 @@ void CpuSNN::updateSpikeMonitor() {
 					assert(nid >= grp_Info[grpId].StartN);
 					assert(nid <= grp_Info[grpId].EndN);
 					int   pos   = monBufferPos[monitorId];
-				if((pos >= monBufferSize[monitorId])) {
-					if(!bufferOverFlow[monitorId])
-						CARLSIM_WARN("Buffer Monitor size (%d) is small. Increase buffer firing rate for %s",
-			  			monBufferSize[monitorId], grp_Info2[grpId].Name.c_str());
-					bufferOverFlow[monitorId] = true;
-				} else {
-					monBufferPos[monitorId]++;
-					monBufferFiring[monitorId][pos] = nid-grp_Info[grpId].StartN; // store the Neuron ID relative to the start of the group
-					// we store the total firing at time t...
-					monBufferTimeCnt[monitorId][t]++;
-				}
-			} /* if monitoring is enabled for this spike */
-    	} /* for all spikes happening at time t */
-	}  /* for all time t */
-}
+					if((pos >= monBufferSize[monitorId])) {
+						if(!bufferOverFlow[monitorId]) {
+							CARLSIM_WARN("Buffer Monitor size (%d) is small. Increase buffer firing rate for %s",
+								monBufferSize[monitorId], grp_Info2[grpId].Name.c_str());
+						}
+						bufferOverFlow[monitorId] = true;
+					} else {
+						monBufferPos[monitorId]++;
+						monBufferFiring[monitorId][pos] = nid-grp_Info[grpId].StartN; // store the Neuron ID relative to the start of the group
+						// we store the total firing at time t...
+						monBufferTimeCnt[monitorId][t]++;
+					}
+				} /* if monitoring is enabled for this spike */
+			} /* for all spikes happening at time t */
+		}  /* for all time t */
+	}
 
-  for (int grpId=0;grpId<numGrp;grpId++) {
-    int monitorId = grp_Info[grpId].SpikeMonitorId;
-    if(monitorId!= -1) {
-      CARLSIM_INFO("Spike Monitor for Group %s has %d spikes (%f Hz)",grp_Info2[grpId].Name.c_str(),
-      			monBufferPos[monitorId],((float)monBufferPos[monitorId])/(grp_Info[grpId].SizeN));
+	for (int grpId=0;grpId<numGrp;grpId++) {
+		int monitorId = grp_Info[grpId].SpikeMonitorId;
+		if(monitorId!= -1) {
+			CARLSIM_INFO("Spike Monitor for Group %s has %d spikes (%f Hz)",grp_Info2[grpId].Name.c_str(),
+				monBufferPos[monitorId],((float)monBufferPos[monitorId])*1000.0f/(numMs*grp_Info[grpId].SizeN));
 
-      // call the callback function
-      if (monBufferCallback[monitorId])
-	monBufferCallback[monitorId]->update(this,grpId,monBufferFiring[monitorId],monBufferTimeCnt[monitorId]);
-    }
-  }
+			// call the callback function
+			if (monBufferCallback[monitorId])
+				monBufferCallback[monitorId]->update(this, grpId, monBufferFiring[monitorId],
+					monBufferTimeCnt[monitorId], numMs);
+		}
+	}
 }
 
 // This function updates the synaptic weights from its derivatives..
