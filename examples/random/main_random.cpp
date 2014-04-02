@@ -83,7 +83,7 @@ int main()
 	sim.setSpikeMonitor(g2); // Show basic statistics about g2
 	sim.setSpikeMonitor(gin);
 
-	sim.setConnectionMonitor(g1, g2);
+//	sim.setConnectionMonitor(g1, g2);
 
 	//setup some baseline input
 	PoissonRate in(N*0.1);

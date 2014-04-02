@@ -90,13 +90,14 @@
 /*!
  * \brief Logger modes
  * The logger mode defines where to print all status, error, and debug messages. Several predefined
- * modes exist (USER, DEVELOPER, SILENT). However, the user can also set each file pointer to a
+ * modes exist (USER, DEVELOPER, SHOWTIME, SILENT). However, the user can also set each file pointer to a
  * location of their choice (CUSTOM mode).
  * The following logger modes exist:
  *  USER 		User mode, for experiment-oriented simulations. Errors and warnings go to stderr,
  *              status information goes to stdout. Debug information can only be found in the log file.
  *  DEVELOPER   Developer mode, for developing and debugging code. Same as user, but additionally,
  *              all debug information is printed to stdout.
+ *  SHOWTIME    Showtime mode, will only output warnings and errors. 
  *  SILENT      Silent mode, no output is generated.
  *  CUSTOM      Custom mode, the user can set the location of all the file pointers.
  *
@@ -108,17 +109,20 @@
  *
  * The file pointers are automatically set to different locations, depending on the loggerMode:
  *
- *          |    USER    | DEVELOPER  |   SILENT   |  CUSTOM
- * ---------|------------|------------|------------|---------
- * fpOut_   |   stdout   |   stdout   | /dev/null  |    ?
- * fpErr_   |   stderr   |   stderr   | /dev/null  |    ?
- * fpDeb_   | /dev/null  |   stdout   | /dev/null  |    ?
- * fpLog_   | debug.log  | debug.log  | /dev/null  |    ?
+ *          |    USER    | DEVELOPER  |  SHOWTIME  |   SILENT   |  CUSTOM
+ * ---------|------------|------------|------------|------------|---------
+ * fpOut_   |   stdout   |   stdout   | /dev/null  | /dev/null  |    ?
+ * fpErr_   |   stderr   |   stderr   |   stderr   | /dev/null  |    ?
+ * fpDeb_   | /dev/null  |   stdout   | /dev/null  | /dev/null  |    ?
+ * fpLog_   | debug.log  | debug.log  | debug.log  | /dev/null  |    ?
  *
  * Location of the debug log file can be set in any mode using CARLsim::setLogDebugFp.
  * In mode CUSTOM, the other file pointers can be set using CARLsim::setLogsFp.
  */
-enum loggerMode_t { USER, DEVELOPER, SILENT, CUSTOM, UNKNOWN };
+enum loggerMode_t {
+	 USER,  DEVELOPER,  SHOWTIME,  SILENT,  CUSTOM };
+static const char* loggerMode_string[] = {
+	"USER","DEVELOPER","SHOWTIME","SILENT","CUSTOM" };
 
 /*!
  * \brief simulation mode
@@ -175,15 +179,16 @@ public:
 	 * specify which CUDA device to use (param ithGPU, 0-indexed).
 	 *
 	 * The logger mode defines where to print all status, error, and debug messages. Logger mode can either be USER (for
-	 * experiment-oriented simulations), DEVELOPER (for developing and debugging code), SILENT (e.g., for benchmarking,
-	 * where no output is generated at all), or CUSTOM (where the user can specify the file pointers of all log files).
+	 * experiment-oriented simulations), DEVELOPER (for developing and debugging code), SHOWTIME (where only warnings
+	 * and errors are printed to console), SILENT (e.g., for benchmarking, where no output is generated at all), or
+	 * CUSTOM (where the user can specify the file pointers of all log files).
 	 * In summary, messages are printed to the following locations, depending on the logger mode:
-	 *                 |    USER    | DEVELOPER  |   SILENT   |  CUSTOM
-	 * ----------------|------------|------------|------------|---------
-	 * Status msgs     |   stdout   |   stdout   | /dev/null  |    ?
-	 * Errors/warnings |   stderr   |   stderr   | /dev/null  |    ?
-	 * Debug msgs      | /dev/null  |   stdout   | /dev/null  |    ?
-	 * All msgs        | debug.log  | debug.log  | /dev/null  |    ?
+	 *                 |    USER    | DEVELOPER  |  SHOWTIME  |   SILENT   |  CUSTOM
+	 * ----------------|------------|------------|------------|------------|---------
+	 * Status msgs     |   stdout   |   stdout   | /dev/null  | /dev/null  |    ?
+	 * Errors/warnings |   stderr   |   stderr   |   stderr   | /dev/null  |    ?
+	 * Debug msgs      | /dev/null  |   stdout   | /dev/null  | /dev/null  |    ?
+	 * All msgs        | debug.log  | debug.log  |  debug.log | debug.log  |    ?
 	 * Location of the debug log file can be set in any mode using CARLsim::setLogDebugFp.
 	 * In mode CUSTOM, the other file pointers can be set using CARLsim::setLogsFp.
 	 *
