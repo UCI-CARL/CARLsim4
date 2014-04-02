@@ -119,13 +119,13 @@ public:
 	virtual void update(CARLsim* s, int grpID, float* grpDA, int numData) = 0;
 };
 
-//! can be used to create a custom network monitor
-/*! To retrieve network status, a network-monitoring callback mechanism is used. This mechanism allows the user to monitor
- * network status between groups (currently support weight distributions). Network monitors are registered
+//! can be used to create a custom connection monitor
+/*! To retrieve connection status, a connection-monitoring callback mechanism is used. This mechanism allows the user to
+ * monitor connection status between groups (currently support weight distributions). Connection monitors are registered
  * for two groups (i.e., pre- and post- synaptic groups) and are called automatically by the simulator every second.
  * The parameter would be the pre- and post- synaptic group IDs, an array of data, number of elements in that array.
  */
-class NetworkMonitor {
+class ConnectionMonitor {
 public:
 	//NetworkMonitor() {};
 

@@ -111,11 +111,8 @@ void CpuSNN::printMemoryInfo(FILE* const fp) {
 // This method allows us to print all information about the neuron.
 // If the enablePrint is false for a specific group, we do not print its state.
 void CpuSNN::printState(FILE* const fp) {
-	for(int g=0; g < numGrp; g++) {
-		if(grp_Info2[g].enablePrint) {
-			printNeuronState(g, fp);
-		}
-	}
+	for(int g=0; g < numGrp; g++)
+		printNeuronState(g, fp);
 }
 
 void CpuSNN::printTuningLog(FILE * const fp) {
@@ -460,46 +457,58 @@ void CpuSNN::printNeuronState(int grpId, FILE* const fp)
   fflush(fp);
 }
 
-//! used in showStatus
-void CpuSNN::printWeight(int grpId, const char *str) {
-	int stg, endg;
-	if(grpId == -1) {
-		stg  = 0;
-		endg = numGrp;
+// TODO: make CARLSIM_INFO(), don't write to fpOut_
+void CpuSNN::printWeights(int preGrpId, int postGrpId) {
+	int preA, preZ, postA, postZ;
+	if (preGrpId==ALL) {
+		preA = 0;
+		preZ = numGrp;
+	} else {
+		preA = preGrpId;
+		preZ = preGrpId+1;
 	}
-	else {
-		stg = grpId;
-		endg = grpId+1;
+	if (postGrpId==ALL) {
+		postA = 0;
+		postZ = numGrp;
+	} else {
+		postA = postGrpId;
+		postZ = postGrpId+1;
 	}
 
-	for(int g=stg; (g < endg) ; g++) {
-		if (!grp_Info[g].FixedInputWts) {
-			fprintf(fpOut_, "Synapses onto group %d (%s): Weights (+- change in last second)\n", g, grp_Info2[g].Name.c_str());
-			if (simMode_ == GPU_MODE) {
-				copyWeightState (&cpuNetPtrs, &cpu_gpuNetPtrs, cudaMemcpyDeviceToHost, false, g);
-			}
-			int i=grp_Info[g].StartN;
-			unsigned int offset = cumulativePre[i];
-			for(int j=0; j < Npre[i]; j++) {
-				float wt  = cpuNetPtrs.wt[offset+j];
+	for (int gPost=postA; gPost<postZ; gPost++) {
+		// for each postsynaptic group
+
+		fprintf(fpOut_,"Synapses from %s to %s (+- change in last %d ms)\n",
+			(preGrpId==ALL)?"ALL":grp_Info2[preGrpId].Name.c_str(), grp_Info2[gPost].Name.c_str(), wtUpdateInterval_);
+
+		if (simMode_ == GPU_MODE) {
+			copyWeightState (&cpuNetPtrs, &cpu_gpuNetPtrs, cudaMemcpyDeviceToHost, false, gPost);
+		}
+
+		int i=grp_Info[gPost].StartN;
+		unsigned int offset = cumulativePre[i];
+		for (int j=0; j<Npre[i]; j++) {
+			int gPre = grpIds[j];
+			if (gPre<preA || gPre>preZ)
+				continue;
+
+			float wt  = cpuNetPtrs.wt[offset+j];
+			if (!grp_Info[gPost].FixedInputWts) {
 				float wtC = cpuNetPtrs.wtChange[offset+j];
 				fprintf(fpOut_, "%s%1.3f (%s%1.3f)\t", wt<0?"":" ", wt, wtC<0?"":"+", wtC);
+			} else {
+				fprintf(fpOut_, "%s%1.3f \t\t", wt<0?"":" ", wt);				
 			}
-			fprintf(fpOut_, "\n");
 		}
+		fprintf(fpOut_,"\n");
 	}
 }
+
 
 // show the status of the simulator...
 // when onlyCnt is set, we print the actual count instead of frequency of firing
 void CpuSNN::showStatus() {
-	printState(fpOut_);
-
 	if(simMode_ == GPU_MODE) {
 		showStatus_GPU();
-	}
-
-	if (!sim_with_fixedwts) {
-		printWeight(-1);
 	}
 }

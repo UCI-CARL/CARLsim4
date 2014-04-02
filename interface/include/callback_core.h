@@ -47,7 +47,7 @@ class SpikeGenerator;
 class ConnectionGenerator;
 class SpikeMonitor;
 class GroupMonitor;
-class NetworkMonitor;
+class ConnectionMonitor;
 class CpuSNN;
 
 /// **************************************************************************************************************** ///
@@ -134,21 +134,21 @@ private:
 	GroupMonitor* gMon;
 };
 
-//! used for relaying callback to NetworkMonitor
+//! used for relaying callback to ConnectionMonitor
 /*!
  * \brief The class is used to store user-defined callback function and to be registered in core (i.e., snn_cpu.cpp)
  * Once the core invokes the callback method of the class, the class relays all parameter and invokes user-defined
  * callback function.
- * \sa NetworkMonitor
+ * \sa ConnectionMonitor
  */
-class NetworkMonitorCore {
+class ConnectionMonitorCore {
 public:
-	NetworkMonitorCore(CARLsim* c, NetworkMonitor* n);
+	ConnectionMonitorCore(CARLsim* c, ConnectionMonitor* n);
 
 	virtual void update(CpuSNN* s, int grpIdPre, int grpIdPost, float* weight, int numData);
 private:
 	CARLsim* carlsim;
-	NetworkMonitor* nMon;
+	ConnectionMonitor* nMon;
 };
 
 #endif

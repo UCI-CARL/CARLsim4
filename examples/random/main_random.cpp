@@ -51,7 +51,7 @@ int main()
 	int ithGPU = 0; // run on first GPU
 
 	// create a network
-	CARLsim sim("random",GPU_MODE,USER,ithGPU,1,42);
+	CARLsim sim("random",CPU_MODE,USER,ithGPU,1,42);
 
 	int g1=sim.createGroup("excit", N*0.8, EXCITATORY_NEURON);
 	sim.setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f);
@@ -76,29 +76,22 @@ int main()
 	float ALPHA_LTP = 0.10f/100, TAU_LTP = 20.0f, ALPHA_LTD = 0.12f/100, TAU_LTD = 20.0f;	
 	sim.setSTDP(g1, true, ALPHA_LTP, TAU_LTP, ALPHA_LTD, TAU_LTD);
 
-	// show network status every 10 secs
+	// show network status every 2 secs
 	sim.setLogCycle(2);
 
 	sim.setSpikeMonitor(g1,"examples/random/results/spikes.dat"); // put spike times into spikes.dat
 	sim.setSpikeMonitor(g2); // Show basic statistics about g2
 	sim.setSpikeMonitor(gin);
 
-	sim.setGroupMonitor(g1);
-	sim.setGroupMonitor(g2);
-
-	sim.setNetworkMonitor(g1, g2);
+	sim.setConnectionMonitor(g1, g2);
 
 	//setup some baseline input
 	PoissonRate in(N*0.1);
 	for (int i=0;i<N*0.1;i++) in.rates[i] = 1;
 		sim.setSpikeRate(gin,&in);
 
-
 	//run for 10 seconds
-	for(int i=0; i < 10; i++) {
-		// run the established network for a duration of 1 (sec)  and 0 (millisecond)
-		sim.runNetwork(1,0);
-	}
+	sim.runNetwork(10,0);
 
 	FILE* nid = fopen("examples/random/results/network.dat","wb");
 	sim.writeNetwork(nid);

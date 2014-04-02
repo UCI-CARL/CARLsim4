@@ -90,12 +90,12 @@ void GroupMonitorCore::update(CpuSNN* s, int grpID, float* grpDA, int numData) {
 		gMon->update(carlsim, grpID, grpDA, numData);
 }
 
-NetworkMonitorCore::NetworkMonitorCore(CARLsim* c, NetworkMonitor* n) {
+ConnectionMonitorCore::ConnectionMonitorCore(CARLsim* c, ConnectionMonitor* n) {
 	carlsim = c;
 	nMon = n;
 }
 
-void NetworkMonitorCore::update(CpuSNN* s, int grpIdPre, int grpIdPost, float* weight, int numData) {
+void ConnectionMonitorCore::update(CpuSNN* s, int grpIdPre, int grpIdPost, float* weight, int numData) {
 	if (nMon != NULL)
 		nMon->update(carlsim, grpIdPre, grpIdPost, weight, numData);
 }

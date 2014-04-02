@@ -506,7 +506,7 @@ void CARLsim::setSTP(int grpId, bool isSet, float STP_U, float STP_tau_u, float 
 // +++++++++ PUBLIC METHODS: RUNNING A SIMULATION +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
 // run network with custom options
-int CARLsim::runNetwork(int nSec, int nMsec, bool enablePrint, bool copyState) {
+int CARLsim::runNetwork(int nSec, int nMsec, bool copyState) {
 	if (!hasRunNetwork_) {
 		handleUserWarnings();	// before running network, make sure user didn't provoque any user warnings
 //		printSimulationSpecs(); // first time around, show simMode etc.
@@ -514,7 +514,7 @@ int CARLsim::runNetwork(int nSec, int nMsec, bool enablePrint, bool copyState) {
 
 	hasRunNetwork_ = true;
 
-	return snn_->runNetwork(nSec, nMsec, enablePrint, copyState);	
+	return snn_->runNetwork(nSec, nMsec, copyState);	
 }
 
 // +++++++++ PUBLIC METHODS: LOGGING / PLOTTING +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
@@ -564,6 +564,16 @@ void CARLsim::resetSpikeCounter(int grpId, int configId) {
 	snn_->resetSpikeCounter(grpId,configId);
 }
 
+// set network monitor for a group
+void CARLsim::setConnectionMonitor(int grpIdPre, int grpIdPost, ConnectionMonitor* connectionMon, int configId) {
+	std::string funcName = "setNetworkMonitor(\""+getGroupName(grpIdPre,configId)+"\",ConnectionMonitor*)";
+	UserErrors::assertTrue(!hasRunNetwork_, UserErrors::NETWORK_ALREADY_RUN, funcName); // can't change setup after run
+	UserErrors::assertTrue(grpIdPre!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName, "grpIdPre");		// groupId can't be ALL
+	UserErrors::assertTrue(grpIdPost!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName, "grpIdPost");		// groupId can't be ALL
+
+	snn_->setConnectionMonitor(grpIdPre, grpIdPost, new ConnectionMonitorCore(this, connectionMon),configId);
+}
+
 // set group monitor for a group
 void CARLsim::setGroupMonitor(int grpId, GroupMonitor* groupMon, int configId) {
 	std::string funcName = "setGroupMonitor(\""+getGroupName(grpId,configId)+"\",GroupMonitor*)";
@@ -571,16 +581,6 @@ void CARLsim::setGroupMonitor(int grpId, GroupMonitor* groupMon, int configId) {
 	UserErrors::assertTrue(grpId!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName, "grpId");		// groupId can't be ALL
 
 	snn_->setGroupMonitor(grpId, new GroupMonitorCore(this, groupMon),configId);
-}
-
-// set network monitor for a group
-void CARLsim::setNetworkMonitor(int grpIdPre, int grpIdPost, NetworkMonitor* networkMon, int configId) {
-	std::string funcName = "setNetworkMonitor(\""+getGroupName(grpIdPre,configId)+"\",NetworkMonitor*)";
-	UserErrors::assertTrue(!hasRunNetwork_, UserErrors::NETWORK_ALREADY_RUN, funcName); // can't change setup after run
-	UserErrors::assertTrue(grpIdPre!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName, "grpIdPre");		// groupId can't be ALL
-	UserErrors::assertTrue(grpIdPost!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName, "grpIdPost");		// groupId can't be ALL
-
-	snn_->setNetworkMonitor(grpIdPre, grpIdPost, new NetworkMonitorCore(this, networkMon),configId);
 }
 
 // sets a spike counter for a group
@@ -735,10 +735,6 @@ bool CARLsim::isPoissonGroup(int grpId) { return snn_->isPoissonGroup(grpId); }
 void CARLsim::setCopyFiringStateFromGPU(bool enableGPUSpikeCntPtr) {
 	snn_->setCopyFiringStateFromGPU(enableGPUSpikeCntPtr);
 }
-
-//void CARLsim::setGroupInfo(int grpId, group_info_t info, int configId) { snn_->setGroupInfo(grpId,info,configId); }
-void CARLsim::setPrintState(int grpId, bool status) { snn_->setPrintState(grpId,status); }
-
 
 
 
