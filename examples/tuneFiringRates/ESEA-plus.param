@@ -5,7 +5,7 @@
 ######                 General    ######
 --help=0                                       # -h : Prints this message
 --stopOnUnknownParam=1                         # Stop if unkown param entered
---seed=1104133126                              # -S : Random number seed
+--seed=110444                              # -S : Random number seed
 
 ######    ES mutation             ######
 --Isotropic=1		                       # -i : Isotropic self-adaptive mutation
@@ -33,7 +33,7 @@
 --printPop=0                                   # Print sorted pop. every gen.
 
 ######    Output - Disk           ######
---resDir=results/tuneFiringRates/EA-Data       # Directory to store DISK outputs
+--resDir=examples/tuneFiringRates/results/EA-Data       # Directory to store DISK outputs
 --eraseDir=0                                   # erase files in dirName if any
 --fileBestStat=1                               # Output bes/avg/std to file
 
@@ -59,7 +59,7 @@
 ######    Variation Operators     ######
 # --objectBounds=10[-inf,+inf]                 # -B : Bounds for variables
 # --operator=SGA                               # -o : Description of the operator (SGA only now)
---pCross=0.4                                   # -C : Probability of Crossover
+--pCross=0.2                                   # -C : Probability of Crossover
 --pMut=0.4                                     # -M : Probability of Mutation
 #--crossType=global                            # -C : Type of ES recombination (global or standard)
 #--crossObj=discrete                           # -O : Recombination of object variables (discrete, intermediate or none)
