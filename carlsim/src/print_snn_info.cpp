@@ -408,7 +408,7 @@ void CpuSNN::printNeuronState(int grpId, FILE* const fp)
     copyNeuronState(&cpuNetPtrs, &cpu_gpuNetPtrs, cudaMemcpyDeviceToHost, false, grpId);
   }
 
-  fprintf(fp, "[MODE=%s] ", (simMode_==GPU_MODE)?"GPU_MODE":"CPU_MODE");
+  fprintf(fp, "[MODE=%s] ", simMode_string[simMode_]);
   fprintf(fp, "Group %s (%d) Neuron State Information (totSpike=%d, poissSpike=%d)\n",
 	  grp_Info2[grpId].Name.c_str(), grpId, spikeCountAll, nPoissonSpikes);
 

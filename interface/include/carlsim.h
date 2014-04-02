@@ -120,9 +120,11 @@
  * In mode CUSTOM, the other file pointers can be set using CARLsim::setLogsFp.
  */
 enum loggerMode_t {
-	 USER,  DEVELOPER,  SHOWTIME,  SILENT,  CUSTOM };
+	 USER,  DEVELOPER,  SHOWTIME,  SILENT,  CUSTOM
+};
 static const char* loggerMode_string[] = {
-	"USER","DEVELOPER","SHOWTIME","SILENT","CUSTOM" };
+	"USER","DEVELOPER","SHOWTIME","SILENT","CUSTOM"
+};
 
 /*!
  * \brief simulation mode
@@ -136,7 +138,12 @@ static const char* loggerMode_string[] = {
  * 0-indexed) when you create a new CpuSNN object.
  * The simulation mode will be fixed throughout the lifetime of a CpuSNN object.
  */
-enum simMode_t {CPU_MODE, GPU_MODE};
+enum simMode_t {
+	 CPU_MODE,  GPU_MODE
+};
+static const char* simMode_string[] = {
+	"CPU Mode","GPU Mode"
+};
 
 
 /*!
