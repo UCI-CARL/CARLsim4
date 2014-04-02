@@ -566,7 +566,7 @@ void CARLsim::resetSpikeCounter(int grpId, int configId) {
 
 // set network monitor for a group
 void CARLsim::setConnectionMonitor(int grpIdPre, int grpIdPost, ConnectionMonitor* connectionMon, int configId) {
-	std::string funcName = "setNetworkMonitor(\""+getGroupName(grpIdPre,configId)+"\",ConnectionMonitor*)";
+	std::string funcName = "setConnectionMonitor(\""+getGroupName(grpIdPre,configId)+"\",ConnectionMonitor*)";
 	UserErrors::assertTrue(!hasRunNetwork_, UserErrors::NETWORK_ALREADY_RUN, funcName); // can't change setup after run
 	UserErrors::assertTrue(grpIdPre!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName, "grpIdPre");		// groupId can't be ALL
 	UserErrors::assertTrue(grpIdPost!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName, "grpIdPost");		// groupId can't be ALL
