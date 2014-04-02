@@ -67,7 +67,7 @@ int main()
 	sim.connect(g2,g2,"random",-0.003f,0.1f,1);
 	// make random connections with 10% probability, and random delays between 1 and 20
 	sim.connect(g1,g2,"random", 0.0025f, 0.005f, 0.1f,  1, 20, SYN_PLASTIC);
-	sim.connect(g1,g1,"random", 0.006f, 0.01f, 0.1f,  1, 20, SYN_PLASTIC);
+	sim.connect(g1,g1,"random", 0.001f, 0.005f, 0.1f,  1, 20, SYN_PLASTIC);
 
 	// 5% probability of connection
 	sim.connect(gin,g1,"random", 0.5f, 0.5f, 0.05f,  1, 20, SYN_FIXED);
@@ -76,29 +76,22 @@ int main()
 	float ALPHA_LTP = 0.10f/100, TAU_LTP = 20.0f, ALPHA_LTD = 0.12f/100, TAU_LTD = 20.0f;	
 	sim.setSTDP(g1, true, ALPHA_LTP, TAU_LTP, ALPHA_LTD, TAU_LTD);
 
-	// show network status every 10 secs
+	// show network status every 2 secs
 	sim.setLogCycle(2);
 
 	sim.setSpikeMonitor(g1,"examples/random/results/spikes.dat"); // put spike times into spikes.dat
 	sim.setSpikeMonitor(g2); // Show basic statistics about g2
 	sim.setSpikeMonitor(gin);
 
-	sim.setGroupMonitor(g1);
-	sim.setGroupMonitor(g2);
-
-	sim.setNetworkMonitor(g1, g2);
+//	sim.setConnectionMonitor(g1, g2);
 
 	//setup some baseline input
 	PoissonRate in(N*0.1);
 	for (int i=0;i<N*0.1;i++) in.rates[i] = 1;
 		sim.setSpikeRate(gin,&in);
 
-
 	//run for 10 seconds
-	for(int i=0; i < 10; i++) {
-		// run the established network for a duration of 1 (sec)  and 0 (millisecond)
-		sim.runNetwork(1,0);
-	}
+	sim.runNetwork(10,0);
 
 	FILE* nid = fopen("examples/random/results/network.dat","wb");
 	sim.writeNetwork(nid);

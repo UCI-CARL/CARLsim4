@@ -43,12 +43,13 @@
 #define _CALLBACK_CORE_H_
 
 class CARLsim;
-class SpikeGenerator;
-class ConnectionGenerator;
-class SpikeMonitor;
-class GroupMonitor;
-class NetworkMonitor;
 class CpuSNN;
+
+class ConnectionGenerator;
+class ConnectionMonitor;
+class GroupMonitor;
+class SpikeGenerator;
+class SpikeMonitor;
 
 /// **************************************************************************************************************** ///
 /// Classes for relay callback
@@ -98,22 +99,21 @@ private:
 };
 
 
-//! used for relaying callback to SpikeMonitor
+//! used for relaying callback to ConnectionMonitor
 /*!
  * \brief The class is used to store user-defined callback function and to be registered in core (i.e., snn_cpu.cpp)
  * Once the core invokes the callback method of the class, the class relays all parameter and invokes user-defined
  * callback function.
- * \sa SpikeMonitor
+ * \sa ConnectionMonitor
  */
-class SpikeMonitorCore {
+class ConnectionMonitorCore {
 public:
-	SpikeMonitorCore(CARLsim* c, SpikeMonitor* s);
+	ConnectionMonitorCore(CARLsim* c, ConnectionMonitor* n);
 
-	virtual void update(CpuSNN* s, int grpId, unsigned int* Nids, unsigned int* timeCnts);
-
+	virtual void update(CpuSNN* s, int grpIdPre, int grpIdPost, float* weight, int numData);
 private:
 	CARLsim* carlsim;
-	SpikeMonitor* sMon;
+	ConnectionMonitor* nMon;
 };
 
 //! used for relaying callback to GroupMonitor
@@ -134,21 +134,22 @@ private:
 	GroupMonitor* gMon;
 };
 
-//! used for relaying callback to NetworkMonitor
+//! used for relaying callback to SpikeMonitor
 /*!
  * \brief The class is used to store user-defined callback function and to be registered in core (i.e., snn_cpu.cpp)
  * Once the core invokes the callback method of the class, the class relays all parameter and invokes user-defined
  * callback function.
- * \sa NetworkMonitor
+ * \sa SpikeMonitor
  */
-class NetworkMonitorCore {
+class SpikeMonitorCore {
 public:
-	NetworkMonitorCore(CARLsim* c, NetworkMonitor* n);
+	SpikeMonitorCore(CARLsim* c, SpikeMonitor* s);
 
-	virtual void update(CpuSNN* s, int grpIdPre, int grpIdPost, float* weight, int numData);
+	virtual void update(CpuSNN* s, int grpId, unsigned int* Nids, unsigned int* timeCnts, int timeInterval);
+
 private:
 	CARLsim* carlsim;
-	NetworkMonitor* nMon;
+	SpikeMonitor* sMon;
 };
 
 #endif

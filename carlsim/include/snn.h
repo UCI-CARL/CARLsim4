@@ -402,7 +402,7 @@ typedef struct group_info_s
 	short int  	MaxFiringRate; //!< this is for the monitoring mechanism, it needs to know what is the maximum firing rate in order to allocate a buffer big enough to store spikes...
 	int			SpikeMonitorId;		//!< spike monitor id
 	int			GroupMonitorId; //!< group monitor id
-	int			NetworkMonitorId; //!< network monitor id
+	int			ConnectionMonitorId; //!< connection monitor id
 	float   	RefractPeriod;
 	int			CurrTimeSlice; //!< timeSlice is used by the Poisson generators in order to note generate too many or too few spikes within a window of time
 	int			NewTimeSlice;
@@ -714,10 +714,9 @@ public:
 
 	/*!
 	 * \brief run the simulation for n sec
-	 * \param[in] enablePrint 	enable printing of status information
 	 * \param[in] copyState 	enable copying of data from device to host
 	 */
-	int runNetwork(int _nsec, int _nmsec, bool enablePrint, bool copyState);
+	int runNetwork(int _nsec, int _nmsec, bool copyState);
 
 
 
@@ -764,10 +763,10 @@ public:
 	/*!
 	 * \param[in] grpIdPre ID of the pre-synaptic neuron group
 	 * \param[in] grpIdPost ID of the post-synaptic neuron group
-	 * \param[in] networkMon NetworkMonitorCore class
+	 * \param[in] connectionMon ConnectionMonitorCore class
 	 * \param[in] configId (optional, deprecated) configuration id
 	 */
-	void setNetworkMonitor(int grpIdPre, int grpIdPost, NetworkMonitorCore* networkMon, int configId);
+	void setConnectionMonitor(int grpIdPre, int grpIdPost, ConnectionMonitorCore* connectionMon, int configId);
 
 	/*!
 	 * \brief A Spike Counter keeps track of the number of spikes per neuron in a group.
@@ -870,6 +869,9 @@ public:
 	int getNumConfigurations()	{ return nConfig_; }	//!< gets number of network configurations
 	int getNumConnections(short int connectionId);		//!< gets number of connections associated with a connection ID
 	int getNumGroups() { return numGrp; }
+	int getNumNeurons() { return numN; }
+	int getNumPreSynapses() { return preSynCnt; }
+	int getNumPostSynapses() { return postSynCnt; }
 
 	/*!
 	 * \brief Writes weights from synaptic connections from gIDpre to gIDpost.  Returns a pointer to the weights
@@ -921,6 +923,7 @@ public:
 	bool isExcitatoryGroup(int g) { return (grp_Info[g].Type&TARGET_AMPA) || (grp_Info[g].Type&TARGET_NMDA); }
 	bool isInhibitoryGroup(int g) { return (grp_Info[g].Type&TARGET_GABAa) || (grp_Info[g].Type&TARGET_GABAb); }
 	bool isPoissonGroup(int g) { return (grp_Info[g].Type&POISSON_NEURON); }
+	bool isDopaminergicGroup(int g) { return (grp_Info[g].Type&TARGET_DA); }
 
 	/*!
 	 * \brief Sets enableGpuSpikeCntPtr to true or false.  True allows getSpikeCntPtr_GPU to copy firing
@@ -1002,10 +1005,9 @@ private:
 	void printConnectionInfo2(FILE *fpg);
 	void printCurrentInfo(FILE* fp); //!< for GPU debugging
 	void printFiringRate(char *fname=NULL);
-	void printGpuLoadBalance(bool init, int numBlocks, FILE* fp); //!< for GPU debugging
+	void printGpuLoadBalance(bool init, int numBlocks); //!< for GPU debugging
 //	void printGpuLoadBalance(bool init=false, int numBlocks = MAX_BLOCKS, const FILE* fp); //!< for GPU debugging
-	void printGroupInfo(FILE* fp);
-	void printGroupInfo(std::string& strName);
+	void printGroupInfo(int grpId);	//!< CARLSIM_INFO prints group info
 	void printGroupInfo2(FILE* fpg);
 	void printMemoryInfo(FILE* fp); //!< prints memory info to file
 	void printNetworkInfo(FILE* fp);
@@ -1023,7 +1025,7 @@ private:
 	void printTestVarInfo(FILE* fp, char* testString, bool test1=true, bool test2=true, bool test12=false,
 							int subVal=0, int grouping1=0, int grouping2=0); //!< for GPU debugging
 	void printTuningLog(FILE* fp);
-	void printWeight(int grpId, const char *str = "");
+	void printWeights(int preGrpId, int postGrpId=-1);
 
 	// FIXME: difference between the options? is one deprecated or are both still used?
 	#if READNETWORK_ADD_SYNAPSES_FROM_FILE
@@ -1066,13 +1068,23 @@ private:
 	void swapConnections(int nid, int oldPos, int newPos);
 
 	void updateAfterMaxTime();
+	void updateConnectionMonitor();
 	void updateGroupMonitor();
-	void updateNetworkMonitor();
 	void updateParameters(int* numN, int* numPostSynapses, int* D, int nConfig=1);
 	void updateSpikesFromGrp(int grpId);
 	void updateSpikeGenerators();
 	void updateSpikeGeneratorsInit();
-	void updateSpikeMonitor(); //!< copy required spikes from firing buffer to spike buffer
+
+	/*!
+	 * \brief copy required spikes from firing buffer to spike buffer
+	 * This function is usually called once every 1000ms. In GPU_MODE, it will first copy the firing info to the
+	 * host. numMs is an optional parameter specifying how long the time interval is (useful at the end of simulations
+	 * when a time interval < 1000ms must be parsed). Mean firing rate will still be converted to Hz.
+	 *
+	 * \param[in] numMs optional, size of time interval. Default: 1000 ms
+	 */
+	void updateSpikeMonitor(int numMs=1000);
+
 	int  updateSpikeTables();
 	//void updateStateAndFiringTable();
 	bool updateTime(); //!< updates simTime, returns true when a new second is started
@@ -1328,7 +1340,7 @@ private:
 	int numSpkCnt; //!< number of real-time spike monitors in the network
 	int* spkCntBuf[MAX_GRP_PER_SNN]; //!< the actual buffer of spike counts (per group, per neuron)
 
-	// group mointor variables
+	// group monitor variables
 	GroupMonitorCore*	grpBufferCallback[MAX_GRP_PER_SNN];
 	float*			grpDABuffer[MAX_GRP_PER_SNN];
 	float*			grp5HTBuffer[MAX_GRP_PER_SNN];
@@ -1337,11 +1349,15 @@ private:
 	unsigned int		groupMonitorGrpId[MAX_GRP_PER_SNN];
 	unsigned int		numGroupMonitor;
 
+	// neuron monitor variables
+//	NeuronMonitorCore* neurBufferCallback[MAX_]
+	int numNeuronMonitor;
+
 	// network monitor variables
-	NetworkMonitorCore	*netBufferCallback[MAX_GRP_PER_SNN];
-	unsigned int		networkMonitorGrpIdPre[MAX_GRP_PER_SNN];
-	unsigned int		networkMonitorGrpIdPost[MAX_GRP_PER_SNN];
-	unsigned int		numNetworkMonitor;
+	ConnectionMonitorCore	*connBufferCallback[MAX_GRP_PER_SNN];
+	unsigned int		connMonGrpIdPre[MAX_GRP_PER_SNN];
+	unsigned int		connMonGrpIdPost[MAX_GRP_PER_SNN];
+	unsigned int		numConnectionMonitor;
 
 	/* Tsodyks & Markram (1998), where the short-term dynamics of synapses is characterized by three parameters:
 	   U (which roughly models the release probability of a synaptic vesicle for the first spike in a train of spikes),
