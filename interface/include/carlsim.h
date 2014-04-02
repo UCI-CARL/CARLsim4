@@ -522,6 +522,9 @@ public:
 	int getNumConfigurations() { return nConfig_; }		//!< gets number of network configurations
 	int getNumConnections(short int connectionId);		//!< gets number of connections associated with a connection ID
 	int getNumGroups();									//!< gets number of groups in the network
+	int getNumNeurons(); //!< returns the total number of allocated neurons in the network
+	int getNumPreSynapses(); //!< returns the total number of allocated pre-synaptic connections in the network
+	int getNumPostSynapses(); //!< returns the total number of allocated post-synaptic connections in the network
 
 	/*!
 	 * \brief Writes weights from synaptic connections from gIDpre to gIDpost.  Returns a pointer to the weights

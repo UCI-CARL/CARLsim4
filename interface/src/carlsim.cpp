@@ -691,16 +691,13 @@ int CARLsim::getGroupId(int grpId, int configId) {
 //	return snn_->getGroupInfo(grpId, configId);
 //}
 
-// get group name
-std::string CARLsim::getGroupName(int grpId, int configId) {
-	return snn_->getGroupName(grpId, configId);
-}
-
-int CARLsim::getNumConnections(short int connectionId) {
-	return snn_->getNumConnections(connectionId);
-}
-
+std::string CARLsim::getGroupName(int grpId, int configId) { return snn_->getGroupName(grpId, configId); }
+int CARLsim::getNumConnections(short int connectionId) { return snn_->getNumConnections(connectionId); }
 int CARLsim::getNumGroups() { return snn_->getNumGroups(); }
+int CARLsim::getNumNeurons() { return snn_->getNumNeurons(); }
+int CARLsim::getNumPreSynapses() { return snn_->getNumPreSynapses(); }
+int CARLsim::getNumPostSynapses() { return snn_->getNumPostSynapses(); }
+
 uint64_t CARLsim::getSimTime() { return snn_->getSimTime(); }
 uint32_t CARLsim::getSimTimeSec() { return snn_->getSimTimeSec(); }
 uint32_t CARLsim::getSimTimeMsec() { return snn_->getSimTimeMs(); }
