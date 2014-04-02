@@ -91,19 +91,17 @@ public:
 };
 
 
-//! can be used to create a custom spike monitor
-/*! To retrieve outputs, a spike-monitoring callback mechanism is used. This mechanism allows the user to calculate
- * basic statistics, store spike trains, or perform more complicated output monitoring. Spike monitors are registered
- * for a group and are called automatically by the simulator every second. Similar to an address event representation
- * (AER), the spike monitor indicates which neurons spiked by using the neuron ID within a group (0-indexed) and the
- * time of the spike. Only one spike monitor is allowed per group.*/
-class SpikeMonitor {
+//! can be used to create a custom connection monitor
+/*! To retrieve connection status, a connection-monitoring callback mechanism is used. This mechanism allows the user to
+ * monitor connection status between groups (currently support weight distributions). Connection monitors are registered
+ * for two groups (i.e., pre- and post- synaptic groups) and are called automatically by the simulator every second.
+ * The parameter would be the pre- and post- synaptic group IDs, an array of data, number of elements in that array.
+ */
+class ConnectionMonitor {
 public:
-	//SpikeMonitor() {};
+	//NetworkMonitor() {};
 
-	//! Controls actions that are performed when certain neurons fire (user-defined).
-	/*! \attention The virtual method should never be called directly */
-	virtual void update(CARLsim* s, int grpId, unsigned int* Nids, unsigned int* timeCnts) = 0;
+	virtual void update(CARLsim* s, int grpIdPre, int grpIdPost, float* weight, int numData) = 0;
 };
 
 //! can be used to create a custom group monitor
@@ -119,17 +117,19 @@ public:
 	virtual void update(CARLsim* s, int grpID, float* grpDA, int numData) = 0;
 };
 
-//! can be used to create a custom network monitor
-/*! To retrieve network status, a network-monitoring callback mechanism is used. This mechanism allows the user to monitor
- * network status between groups (currently support weight distributions). Network monitors are registered
- * for two groups (i.e., pre- and post- synaptic groups) and are called automatically by the simulator every second.
- * The parameter would be the pre- and post- synaptic group IDs, an array of data, number of elements in that array.
- */
-class NetworkMonitor {
+//! can be used to create a custom spike monitor
+/*! To retrieve outputs, a spike-monitoring callback mechanism is used. This mechanism allows the user to calculate
+ * basic statistics, store spike trains, or perform more complicated output monitoring. Spike monitors are registered
+ * for a group and are called automatically by the simulator every second. Similar to an address event representation
+ * (AER), the spike monitor indicates which neurons spiked by using the neuron ID within a group (0-indexed) and the
+ * time of the spike. Only one spike monitor is allowed per group.*/
+class SpikeMonitor {
 public:
-	//NetworkMonitor() {};
+	//SpikeMonitor() {};
 
-	virtual void update(CARLsim* s, int grpIdPre, int grpIdPost, float* weight, int numData) = 0;
+	//! Controls actions that are performed when certain neurons fire (user-defined).
+	/*! \attention The virtual method should never be called directly */
+	virtual void update(CARLsim* s, int grpId, unsigned int* Nids, unsigned int* timeCnts) = 0;
 };
 
 #endif

@@ -368,10 +368,9 @@ public:
 	 * \brief run the simulation for time=(nSec*seconds + nMsec*milliseconds)
 	 * \param[in] nSec 			number of seconds to run the network
 	 * \param[in] nMsec 		number of milliseconds to run the network
-	 * \param[in] enablePrint 	enable printing of status information
 	 * \param[in] copyState 	enable copying of data from device to host
 	 */
-	int runNetwork(int nSec, int nMsec, bool enablePrint=false, bool copyState=false);
+	int runNetwork(int nSec, int nMsec, bool copyState=false);
 
 
 
@@ -386,6 +385,8 @@ public:
 	 * \param[in] showStatusCycle how often to print network state (seconds)
 	 */
 	void setLogCycle(int showStatusCycle);
+
+	void setShowStatus(int showStatusCycle, int showStatusNeurons, int showStatusSynapses);
 
 	/*!
 	 * \brief Sets the file pointer of the debug log file
@@ -430,14 +431,23 @@ public:
 	void resetSpikeCounter(int grpId, int configId=ALL);
 
 	/*!
+	 * \brief Sets a connection monitor for a group, custom ConnectionMonitor class
+	 * To retrieve connection status, a connection-monitoring callback mechanism is used. This mechanism allows the user
+	 * to monitor connection status between groups. Connection monitors are registered for two groups (i.e., pre- and
+	 * post- synaptic groups) and are called automatically by the simulator every second.
+	 *
+	 * Use setConnectionMonitor(grpIdPre,grpIdPost) to use a ConnectionMonitor with default settings.
+	 *
+	 * \param[in] grpIdPre 		the pre-synaptic group ID
+	 * \param[in] grpIdPost 	the post-synaptic group ID
+	 * \param[in] connectionMon an instance of class ConnectionMonitor (see callback.h)
+	 */
+	void setConnectionMonitor(int grpIdPre, int grpIdPost, ConnectionMonitor* connectionMon=NULL, int configId=ALL);
+
+	/*!
 	 * \brief Sets a group monitor for a group, custom GroupMonitor class
 	 */
 	void setGroupMonitor(int grpId, GroupMonitor* groupMon=NULL, int configId=ALL);
-
-	/*!
-	 * \brief Sets a network monitor for a group, custom NetworkMonitor class
-	 */
-	void setNetworkMonitor(int grpIdPre, int grpIdPost, NetworkMonitor* networkMon=NULL, int configId=ALL);
 
 	/*!
 	 * \brief A Spike Counter keeps track of the number of spikes per neuron in a group.
@@ -545,10 +555,6 @@ public:
 	 * the simulation significantly.
 	 */
 	void setCopyFiringStateFromGPU(bool enableGPUSpikeCntPtr);
-
-	//void setGroupInfo(int grpId, group_info_t info, int configId=ALL);
-
-	void setPrintState(int grpId, bool status);
 
 
 	// +++++ PUBLIC METHODS: SET DEFAULTS +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //

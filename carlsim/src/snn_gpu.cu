@@ -407,14 +407,14 @@ int CpuSNN::allocateStaticLoad(int bufSize) {
 			// fill the static load distribution here...
 			int testg = STATIC_LOAD_GROUP(threadLoad);
 			tempNeuronAllocation[bufferCnt] = threadLoad;
-			CARLSIM_DEBUG("%d. Start=%d, size=%d grpId=%d:%s (SpikeMonId=%d) (GroupMonId=%d) (NetworkMonId=%d)",
+			CARLSIM_DEBUG("%d. Start=%d, size=%d grpId=%d:%s (SpikeMonId=%d) (GroupMonId=%d) (ConnMonId=%d)",
 					bufferCnt, STATIC_LOAD_START(threadLoad),
 					STATIC_LOAD_SIZE(threadLoad),
 					STATIC_LOAD_GROUP(threadLoad),
 					grp_Info2[testg].Name.c_str(),
 					grp_Info[testg].SpikeMonitorId,
 					grp_Info[testg].GroupMonitorId,
-					grp_Info[testg].NetworkMonitorId);
+					grp_Info[testg].ConnectionMonitorId);
 			bufferCnt++;
 		}
 	}

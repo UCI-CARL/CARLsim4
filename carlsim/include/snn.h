@@ -402,7 +402,7 @@ typedef struct group_info_s
 	short int  	MaxFiringRate; //!< this is for the monitoring mechanism, it needs to know what is the maximum firing rate in order to allocate a buffer big enough to store spikes...
 	int			SpikeMonitorId;		//!< spike monitor id
 	int			GroupMonitorId; //!< group monitor id
-	int			NetworkMonitorId; //!< network monitor id
+	int			ConnectionMonitorId; //!< connection monitor id
 	float   	RefractPeriod;
 	int			CurrTimeSlice; //!< timeSlice is used by the Poisson generators in order to note generate too many or too few spikes within a window of time
 	int			NewTimeSlice;
@@ -714,10 +714,9 @@ public:
 
 	/*!
 	 * \brief run the simulation for n sec
-	 * \param[in] enablePrint 	enable printing of status information
 	 * \param[in] copyState 	enable copying of data from device to host
 	 */
-	int runNetwork(int _nsec, int _nmsec, bool enablePrint, bool copyState);
+	int runNetwork(int _nsec, int _nmsec, bool copyState);
 
 
 
@@ -764,10 +763,10 @@ public:
 	/*!
 	 * \param[in] grpIdPre ID of the pre-synaptic neuron group
 	 * \param[in] grpIdPost ID of the post-synaptic neuron group
-	 * \param[in] networkMon NetworkMonitorCore class
+	 * \param[in] connectionMon ConnectionMonitorCore class
 	 * \param[in] configId (optional, deprecated) configuration id
 	 */
-	void setNetworkMonitor(int grpIdPre, int grpIdPost, NetworkMonitorCore* networkMon, int configId);
+	void setConnectionMonitor(int grpIdPre, int grpIdPost, ConnectionMonitorCore* connectionMon, int configId);
 
 	/*!
 	 * \brief A Spike Counter keeps track of the number of spikes per neuron in a group.
@@ -1023,7 +1022,7 @@ private:
 	void printTestVarInfo(FILE* fp, char* testString, bool test1=true, bool test2=true, bool test12=false,
 							int subVal=0, int grouping1=0, int grouping2=0); //!< for GPU debugging
 	void printTuningLog(FILE* fp);
-	void printWeight(int grpId, const char *str = "");
+	void printWeights(int preGrpId, int postGrpId=-1);
 
 	// FIXME: difference between the options? is one deprecated or are both still used?
 	#if READNETWORK_ADD_SYNAPSES_FROM_FILE
@@ -1066,8 +1065,8 @@ private:
 	void swapConnections(int nid, int oldPos, int newPos);
 
 	void updateAfterMaxTime();
+	void updateConnectionMonitor();
 	void updateGroupMonitor();
-	void updateNetworkMonitor();
 	void updateParameters(int* numN, int* numPostSynapses, int* D, int nConfig=1);
 	void updateSpikesFromGrp(int grpId);
 	void updateSpikeGenerators();
@@ -1328,7 +1327,7 @@ private:
 	int numSpkCnt; //!< number of real-time spike monitors in the network
 	int* spkCntBuf[MAX_GRP_PER_SNN]; //!< the actual buffer of spike counts (per group, per neuron)
 
-	// group mointor variables
+	// group monitor variables
 	GroupMonitorCore*	grpBufferCallback[MAX_GRP_PER_SNN];
 	float*			grpDABuffer[MAX_GRP_PER_SNN];
 	float*			grp5HTBuffer[MAX_GRP_PER_SNN];
@@ -1337,11 +1336,15 @@ private:
 	unsigned int		groupMonitorGrpId[MAX_GRP_PER_SNN];
 	unsigned int		numGroupMonitor;
 
+	// neuron monitor variables
+//	NeuronMonitorCore* neurBufferCallback[MAX_]
+	int numNeuronMonitor;
+
 	// network monitor variables
-	NetworkMonitorCore	*netBufferCallback[MAX_GRP_PER_SNN];
-	unsigned int		networkMonitorGrpIdPre[MAX_GRP_PER_SNN];
-	unsigned int		networkMonitorGrpIdPost[MAX_GRP_PER_SNN];
-	unsigned int		numNetworkMonitor;
+	ConnectionMonitorCore	*connBufferCallback[MAX_GRP_PER_SNN];
+	unsigned int		connMonGrpIdPre[MAX_GRP_PER_SNN];
+	unsigned int		connMonGrpIdPost[MAX_GRP_PER_SNN];
+	unsigned int		numConnectionMonitor;
 
 	/* Tsodyks & Markram (1998), where the short-term dynamics of synapses is characterized by three parameters:
 	   U (which roughly models the release probability of a synaptic vesicle for the first spike in a train of spikes),

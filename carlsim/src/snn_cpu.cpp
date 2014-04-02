@@ -614,7 +614,7 @@ void CpuSNN::setWeightUpdateParameter(int updateInterval, int tauWeightChange) {
 /// ************************************************************************************************************ ///
 
 // Run the simulation for n sec
-int CpuSNN::runNetwork(int _nsec, int _nmsec, bool enablePrint, bool copyState) {
+int CpuSNN::runNetwork(int _nsec, int _nmsec, bool copyState) {
 	assert(_nmsec >= 0);
 	assert(_nsec  >= 0);
 	int runDuration = _nsec*1000 + _nmsec;
@@ -636,10 +636,6 @@ int CpuSNN::runNetwork(int _nsec, int _nmsec, bool enablePrint, bool copyState) 
 			doSnnSim();
 		else
 			doGPUSim();
-
-		if (enablePrint) {
-			printState(fpOut_);
-		}
 
 		// update weight every updateInterval ms if plastic synapses present
 		if (!sim_with_fixedwts && (wtUpdateInterval_==++wtUpdateIntervalCnt_)) {
@@ -673,8 +669,8 @@ int CpuSNN::runNetwork(int _nsec, int _nmsec, bool enablePrint, bool copyState) 
 			if (numGroupMonitor) {
 				updateGroupMonitor();
 			}
-			if (numNetworkMonitor) {
-				updateNetworkMonitor();
+			if (numConnectionMonitor) {
+				updateConnectionMonitor();
 			}
 			if (showLog) {
 				showStatus();
@@ -907,24 +903,24 @@ void CpuSNN::setGroupMonitor(int grpId, GroupMonitorCore* groupMon, int configId
 	}
 }
 
-void CpuSNN::setNetworkMonitor(int grpIdPre, int grpIdPost, NetworkMonitorCore* networkMon, int configId) {
+void CpuSNN::setConnectionMonitor(int grpIdPre, int grpIdPost, ConnectionMonitorCore* connectionMon, int configId) {
 	if (configId == ALL) {
 		for(int c = 0; c < nConfig_; c++)
-			setNetworkMonitor(grpIdPre, grpIdPost, networkMon, c);
+			setConnectionMonitor(grpIdPre, grpIdPost, connectionMon, c);
 	} else {
 		int cGrpIdPre = getGroupId(grpIdPre, configId);
 		int cGrpIdPost = getGroupId(grpIdPost, configId);
 
 		// store the grpId for further reference
-		networkMonitorGrpIdPre[numNetworkMonitor] = cGrpIdPre;
-		networkMonitorGrpIdPost[numNetworkMonitor] = cGrpIdPost;
+		connMonGrpIdPre[numConnectionMonitor] = cGrpIdPre;
+		connMonGrpIdPost[numConnectionMonitor] = cGrpIdPost;
 
 		// also inform the grp that it is being monitored...
-		grp_Info[cGrpIdPre].NetworkMonitorId = numNetworkMonitor;
+		grp_Info[cGrpIdPre].ConnectionMonitorId = numConnectionMonitor;
 
-		netBufferCallback[numNetworkMonitor] = networkMon; // Default value of _netMon is NULL
+		connBufferCallback[numConnectionMonitor] = connectionMon; // Default value of _netMon is NULL
 
-		numNetworkMonitor++;
+		numConnectionMonitor++;
 	}
 }
 
@@ -1534,10 +1530,6 @@ void CpuSNN::setGroupInfo(int grpId, group_info_t info, int configId) {
 	}
 }
 
-void CpuSNN::setPrintState(int grpId, bool status) {
-	grp_Info2[grpId].enablePrint = status;
-}
-
 
 /// **************************************************************************************************************** ///
 /// PRIVATE METHODS
@@ -1702,7 +1694,7 @@ void CpuSNN::CpuSNNinit() {
 		grp_Info[i].MaxFiringRate = UNKNOWN_NEURON_MAX_FIRING_RATE;
 		grp_Info[i].SpikeMonitorId = -1;
 		grp_Info[i].GroupMonitorId = -1;
-		grp_Info[i].NetworkMonitorId = -1;
+		grp_Info[i].ConnectionMonitorId = -1;
 		grp_Info[i].FiringCount1sec=0;
 		grp_Info[i].numPostSynapses 		= 0;	// default value
 		grp_Info[i].numPreSynapses 	= 0;	// default value
@@ -1738,7 +1730,6 @@ void CpuSNN::CpuSNNinit() {
 
 		grp_Info2[i].numPostConn = 0;
 		grp_Info2[i].numPreConn  = 0;
-		grp_Info2[i].enablePrint = false;
 		grp_Info2[i].maxPostConn = 0;
 		grp_Info2[i].maxPreConn  = 0;
 		grp_Info2[i].sumPostConn = 0;
@@ -3817,6 +3808,37 @@ void CpuSNN::updateAfterMaxTime() {
 	resetPropogationBuffer();
 }
 
+void CpuSNN::updateConnectionMonitor() {
+	for (int grpId = 0; grpId < numGrp; grpId++) {
+		int monitorId = grp_Info[grpId].ConnectionMonitorId;
+
+		if(monitorId != -1) {
+			int grpIdPre = connMonGrpIdPre[monitorId];
+			int grpIdPost = connMonGrpIdPost[monitorId];
+			float* weights = NULL;
+			float avgWeight;
+			int weightSzie;
+			getPopWeights(grpIdPre, grpIdPost, weights, weightSzie, 0);
+
+			for (int i = 0; i < weightSzie; i++)
+				avgWeight += weights[i];
+			avgWeight /= weightSzie;
+
+			CARLSIM_INFO("\nConnection Monitor for Group %s to Group %s has average weight %f",
+				grp_Info2[grpIdPre].Name.c_str(), grp_Info2[grpIdPost].Name.c_str(), avgWeight);
+
+			printWeights(grpIdPre,grpIdPost);
+
+			// call the callback function
+			if (connBufferCallback[monitorId])
+				connBufferCallback[monitorId]->update(this, grpIdPre, grpIdPost, weights, weightSzie);
+
+			if (weights != NULL)
+				delete [] weights;
+		}
+	}
+}
+
 void CpuSNN::updateGroupMonitor() {
 	// TODO: build DA, 5HT, ACh, NE buffer in GPU memory and retrieve data every one second
 	// Currently, there is no buffer in GPU side. data are retrieved at every 10 ms simulation time
@@ -3830,34 +3852,6 @@ void CpuSNN::updateGroupMonitor() {
 			// call the callback function
 			if (grpBufferCallback[monitorId])
 				grpBufferCallback[monitorId]->update(this, grpId, grpDABuffer[monitorId], 100);
-		}
-	}
-}
-
-void CpuSNN::updateNetworkMonitor() {
-	for (int grpId = 0; grpId < numGrp; grpId++) {
-		int monitorId = grp_Info[grpId].NetworkMonitorId;
-
-		if(monitorId != -1) {
-			int grpIdPre = networkMonitorGrpIdPre[monitorId];
-			int grpIdPost = networkMonitorGrpIdPost[monitorId];
-			float* weights = NULL;
-			float avgWeight;
-			int weightSzie;
-			getPopWeights(grpIdPre, grpIdPost, weights, weightSzie, 0);
-
-			for (int i = 0; i < weightSzie; i++)
-				avgWeight += weights[i];
-			avgWeight /= weightSzie;
-
-			CARLSIM_INFO("Network Monitor for Group %s to Group %s has average weight(%f)", grp_Info2[grpIdPre].Name.c_str(), grp_Info2[grpIdPost].Name.c_str(), avgWeight);
-
-			// call the callback function
-			if (netBufferCallback[monitorId])
-				netBufferCallback[monitorId]->update(this, grpIdPre, grpIdPost, weights, weightSzie);
-
-			if (weights != NULL)
-				delete [] weights;
 		}
 	}
 }
