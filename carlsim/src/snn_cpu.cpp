@@ -1549,22 +1549,35 @@ void CpuSNN::CpuSNNinit() {
 
 	// set logger mode (defines where to print all status, error, and debug messages)
 	switch (loggerMode_) {
-		case USER:
-			fpOut_ = stdout;
-			fpErr_ = stderr;
+	case USER:
+		fpOut_ = stdout;
+		fpErr_ = stderr;
 		#if (WIN32 || WIN64)
 			fpDeb_ = fopen("nul","w");
 		#else
 			fpDeb_ = fopen("/dev/null","w");
 		#endif
-			break;
-		case DEVELOPER:
-			fpOut_ = stdout;
-			fpErr_ = stderr;
-			fpDeb_ = stdout;
-			break;
-		case SILENT:
-		case CUSTOM:
+		break;
+	case DEVELOPER:
+		fpOut_ = stdout;
+		fpErr_ = stderr;
+		fpDeb_ = stdout;
+		break;
+	case SHOWTIME:
+		#if (WIN32 || WIN64)
+			fpOut_ = fopen("nul","w");
+		#else
+			fpOut_ = fopen("/dev/null","w");
+		#endif
+		fpErr_ = stderr;
+		#if (WIN32 || WIN64)
+			fpDeb_ = fopen("nul","w");
+		#else
+			fpDeb_ = fopen("/dev/null","w");
+		#endif
+		break;
+	case SILENT:
+	case CUSTOM:
 		#if (WIN32 || WIN64)
 			fpOut_ = fopen("nul","w");
 			fpErr_ = fopen("nul","w");
@@ -1574,20 +1587,10 @@ void CpuSNN::CpuSNNinit() {
 			fpErr_ = fopen("/dev/null","w");
 			fpDeb_ = fopen("/dev/null","w");
 		#endif
-
-			break;
-		default:
-		#if (WIN32 || WIN64)
-			fpOut_ = fopen("nul","w");
-			fpDeb_ = fopen("nul","w");
-			fpErr_ = stdout;
-		#else
-			fpOut_ = fopen("/dev/null","w");
-			fpDeb_ = fopen("/dev/null","w");
-			fpErr_ = stdout;
-		#endif
-			CARLSIM_ERROR("Unknown logger mode");
-			exit(1);
+	break;
+	default:
+		CARLSIM_ERROR("Unknown logger mode");
+		exit(1);
 	}
 	fpLog_ = fopen("debug.log","w");
 
@@ -1610,7 +1613,7 @@ void CpuSNN::CpuSNNinit() {
 
 	CARLSIM_INFO("***************************** Setting Up Network ******************************");
 	CARLSIM_INFO("Starting CARLsim simulation \"%s\" in %s mode",networkName_.c_str(),
-				loggerMode_==USER?"USER":(loggerMode_==DEVELOPER?"DEVELOPER":(loggerMode_==SILENT?"SILENT":"CUSTOM")));
+		loggerMode_string[loggerMode_]);
 	CARLSIM_INFO("nConfig: %d, randSeed: %d",nConfig_,randSeed_);
 
 	time_t rawtime;
@@ -2941,17 +2944,6 @@ void  CpuSNN::globalStateUpdate() {
 				if (voltage[i] < -90)
 					voltage[i] = -90;
 				recovery[i]+=Izh_a[i]*(Izh_b[i]*voltage[i]-recovery[i]);
-
-				// skip logging if not in developer mode to save time
-				if (loggerMode_!=DEVELOPER)
-					continue;
-
-				if (loggerMode_==USER) {
-					// this will inflate the execution time A LOT
-					if (i==grp_Info[g].StartN)
-						CARLSIM_DEBUG("%d: voltage=%0.3f, recovery=%0.3f, current=%0.3f", i, voltage[i], recovery[i], 
-											current[i]);
-				}
 			} // end COBA/CUBA
 		} // end StartN...EndN
 	} // end numGrp

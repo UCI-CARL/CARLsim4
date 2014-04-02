@@ -869,6 +869,9 @@ public:
 	int getNumConfigurations()	{ return nConfig_; }	//!< gets number of network configurations
 	int getNumConnections(short int connectionId);		//!< gets number of connections associated with a connection ID
 	int getNumGroups() { return numGrp; }
+	int getNumNeurons() { return numN; }
+	int getNumPreSynapses() { return preSynCnt; }
+	int getNumPostSynapses() { return postSynCnt; }
 
 	/*!
 	 * \brief Writes weights from synaptic connections from gIDpre to gIDpost.  Returns a pointer to the weights
