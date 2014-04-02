@@ -129,7 +129,7 @@ public:
 
 	//! Controls actions that are performed when certain neurons fire (user-defined).
 	/*! \attention The virtual method should never be called directly */
-	virtual void update(CARLsim* s, int grpId, unsigned int* Nids, unsigned int* timeCnts) = 0;
+	virtual void update(CARLsim* s, int grpId, unsigned int* Nids, unsigned int* timeCnts, int timeInterval) = 0;
 };
 
 #endif

@@ -145,7 +145,7 @@ class SpikeMonitorCore {
 public:
 	SpikeMonitorCore(CARLsim* c, SpikeMonitor* s);
 
-	virtual void update(CpuSNN* s, int grpId, unsigned int* Nids, unsigned int* timeCnts);
+	virtual void update(CpuSNN* s, int grpId, unsigned int* Nids, unsigned int* timeCnts, int timeInterval);
 
 private:
 	CARLsim* carlsim;

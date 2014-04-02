@@ -920,6 +920,7 @@ public:
 	bool isExcitatoryGroup(int g) { return (grp_Info[g].Type&TARGET_AMPA) || (grp_Info[g].Type&TARGET_NMDA); }
 	bool isInhibitoryGroup(int g) { return (grp_Info[g].Type&TARGET_GABAa) || (grp_Info[g].Type&TARGET_GABAb); }
 	bool isPoissonGroup(int g) { return (grp_Info[g].Type&POISSON_NEURON); }
+	bool isDopaminergicGroup(int g) { return (grp_Info[g].Type&TARGET_DA); }
 
 	/*!
 	 * \brief Sets enableGpuSpikeCntPtr to true or false.  True allows getSpikeCntPtr_GPU to copy firing
@@ -1001,10 +1002,9 @@ private:
 	void printConnectionInfo2(FILE *fpg);
 	void printCurrentInfo(FILE* fp); //!< for GPU debugging
 	void printFiringRate(char *fname=NULL);
-	void printGpuLoadBalance(bool init, int numBlocks, FILE* fp); //!< for GPU debugging
+	void printGpuLoadBalance(bool init, int numBlocks); //!< for GPU debugging
 //	void printGpuLoadBalance(bool init=false, int numBlocks = MAX_BLOCKS, const FILE* fp); //!< for GPU debugging
-	void printGroupInfo(FILE* fp);
-	void printGroupInfo(std::string& strName);
+	void printGroupInfo(int grpId);	//!< CARLSIM_INFO prints group info
 	void printGroupInfo2(FILE* fpg);
 	void printMemoryInfo(FILE* fp); //!< prints memory info to file
 	void printNetworkInfo(FILE* fp);
@@ -1071,7 +1071,17 @@ private:
 	void updateSpikesFromGrp(int grpId);
 	void updateSpikeGenerators();
 	void updateSpikeGeneratorsInit();
-	void updateSpikeMonitor(); //!< copy required spikes from firing buffer to spike buffer
+
+	/*!
+	 * \brief copy required spikes from firing buffer to spike buffer
+	 * This function is usually called once every 1000ms. In GPU_MODE, it will first copy the firing info to the
+	 * host. numMs is an optional parameter specifying how long the time interval is (useful at the end of simulations
+	 * when a time interval < 1000ms must be parsed). Mean firing rate will still be converted to Hz.
+	 *
+	 * \param[in] numMs optional, size of time interval. Default: 1000 ms
+	 */
+	void updateSpikeMonitor(int numMs=1000);
+
 	int  updateSpikeTables();
 	//void updateStateAndFiringTable();
 	bool updateTime(); //!< updates simTime, returns true when a new second is started

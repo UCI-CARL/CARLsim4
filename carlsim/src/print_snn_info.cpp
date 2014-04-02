@@ -118,7 +118,7 @@ void CpuSNN::printState(FILE* const fp) {
 void CpuSNN::printTuningLog(FILE * const fp) {
 	if (fp) {
 		fprintf(fp, "Generating Tuning log\n");
-		printParameters(fp);
+//		printParameters(fp);
 	}
 }
 
@@ -168,54 +168,42 @@ void CpuSNN::printConnectionInfo2(FILE * const fpg)
 	fflush(fpg);
 }
 
+void CpuSNN::printGroupInfo(int grpId) {
+	CARLSIM_INFO("Group %s(%d): ", grp_Info2[grpId].Name.c_str(), grpId);
+	CARLSIM_INFO("  - Type                       =  %s", isExcitatoryGroup(grpId) ? " EXCIT" :
+		(isInhibitoryGroup(grpId) ? " INHIB" : (isPoissonGroup(grpId)?"POISSON" : 
+		(isDopaminergicGroup(grpId) ? " DOPAM" : "UNKNOWN"))) );
+	CARLSIM_INFO("  - Size                       = %7d", grp_Info[grpId].SizeN);
+	CARLSIM_INFO("  - Start Id                   = %7d", grp_Info[grpId].StartN);
+	CARLSIM_INFO("  - End Id                     = %7d", grp_Info[grpId].EndN);
+	CARLSIM_INFO("  - numPostSynapses            = %7d", grp_Info[grpId].numPostSynapses);
+	CARLSIM_INFO("  - numPreSynapses             = %7d", grp_Info[grpId].numPreSynapses);
 
-void CpuSNN::printGroupInfo(std::string& strName)
-{
-  fprintf(stderr, "String Name : %s\n", strName.c_str());
-  for(int g=0; g < numGrp; g++) {
-    if(grp_Info[g].Type&POISSON_NEURON)
-      fprintf(stderr, "Poisson Group %d: %s\n", g, grp_Info2[g].Name.c_str());
-  }
+	if (doneReorganization) {
+		CARLSIM_INFO("  - Avg post connections       = %1.5f", 1.0*grp_Info2[grpId].numPostConn/grp_Info[grpId].SizeN);
+		CARLSIM_INFO("  - Avg pre connections        = %1.5f",  1.0*grp_Info2[grpId].numPreConn/grp_Info[grpId].SizeN);
+	}
+	
+	if(grp_Info[grpId].Type&POISSON_NEURON) {
+		CARLSIM_INFO("  - Refractory period          = %1.5f", grp_Info[grpId].RefractPeriod);
+	}
+
+	if (grp_Info[grpId].WithSTP) {
+		CARLSIM_INFO("  - STP:");
+		CARLSIM_INFO("      - STP_U                 = %1.5f", grp_Info[grpId].STP_U);
+		CARLSIM_INFO("      - STP_tau_u_inv         = %1.0f", grp_Info[grpId].STP_tau_u_inv);
+		CARLSIM_INFO("      - STP_tau_x_inv         = %1.0f", grp_Info[grpId].STP_tau_x_inv);
+	}
+
+	if(grp_Info[grpId].WithSTDP) {
+		CARLSIM_INFO("  - STDP:")
+		CARLSIM_INFO("      - ALPHA_LTP              = %1.5f", grp_Info[grpId].ALPHA_LTP);
+		CARLSIM_INFO("      - ALPHA_LTD              = %1.5f", grp_Info[grpId].ALPHA_LTD);
+		CARLSIM_INFO("      - TAU_LTP_INV            = %1.5f", grp_Info[grpId].TAU_LTP_INV);
+		CARLSIM_INFO("      - TAU_LTD_INV            = %1.5f", grp_Info[grpId].TAU_LTD_INV);
+	}
 }
 
-void CpuSNN::printGroupInfo(FILE* const fp)
-{
-  //FILE* fpg=fopen("group_info.txt", "w");
-  //fprintf(fpg, "Group Id : Start : End : Group Name\n");
-  for(int g=0; g < numGrp; g++) {
-    //fprintf(fpg, "%d %d %d %s\n", g, grp_Info[g].StartN, grp_Info[g].EndN, grp_Info2[g].Name.c_str());
-    fprintf(fp, "Group %s: \n", grp_Info2[g].Name.c_str());
-    fprintf(fp, "------------\n");
-    fprintf(fp, "\t Size = %d\n", grp_Info[g].SizeN);
-    fprintf(fp, "\t Start = %d\n", grp_Info[g].StartN);
-    fprintf(fp, "\t End   = %d\n", grp_Info[g].EndN);
-    fprintf(fp, "\t numPostSynapses     = %d\n", grp_Info[g].numPostSynapses);
-    fprintf(fp, "\t numPreSynapses  = %d\n", grp_Info[g].numPreSynapses);
-    fprintf(fp, "\t Average Post Connections = %f\n", 1.0*grp_Info2[g].numPostConn/grp_Info[g].SizeN);
-    fprintf(fp, "\t Average Pre Connections = %f\n",  1.0*grp_Info2[g].numPreConn/grp_Info[g].SizeN);
-
-    if(grp_Info[g].Type&POISSON_NEURON) {
-      fprintf(fp, "\t Refractory-Period = %f\n", grp_Info[g].RefractPeriod);
-    }
-
-    fprintf(fp, "\t FIXED_WTS = %s\n", grp_Info[g].FixedInputWts? "FIXED_WTS":"PLASTIC_WTS");
-
-    if (grp_Info[g].WithSTP) {
-      fprintf(fp, "\t STP_U = %f\n", grp_Info[g].STP_U);
-      fprintf(fp, "\t STP_tau_u_inv = %f\n", grp_Info[g].STP_tau_u_inv);
-      fprintf(fp, "\t STP_tau_x_inv = %f\n", grp_Info[g].STP_tau_x_inv);
-    }
-
-    if(grp_Info[g].WithSTDP) {
-      fprintf(fp, "\t ALPHA_LTP = %f\n", grp_Info[g].ALPHA_LTP);
-      fprintf(fp, "\t ALPHA_LTD = %f\n", grp_Info[g].ALPHA_LTD);
-      fprintf(fp, "\t TAU_LTP_INV = %f\n", grp_Info[g].TAU_LTP_INV);
-      fprintf(fp, "\t TAU_LTD_INV = %f\n", grp_Info[g].TAU_LTD_INV);
-    }
-
-  }
-  //fclose(fpg);
-}
 
 void CpuSNN::printGroupInfo2(FILE* const fpg)
 {
@@ -237,10 +225,12 @@ void CpuSNN::printGroupInfo2(FILE* const fpg)
 }
 
 
+//! \deprecated
 void CpuSNN::printParameters(FILE* const fp) {
-	assert(fp!=NULL);
+	CARLSIM_WARN("printParameters is deprecated");
+/*	assert(fp!=NULL);
 	printGroupInfo(fp);
-	printConnectionInfo(fp);
+	printConnectionInfo(fp);*/
 }
 
 
