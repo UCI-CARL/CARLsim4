@@ -156,7 +156,6 @@ int main()
 		// individuals from the next generation because we have not evaluated this generation yet.
 		assert(popSize == ptiObj->getPopulationSize());
 		indiId = 0;
-		//hack:
 		int currentIndiId = indiId;
 		// initialize fitness array to zero
 		memset(fitness, 0, sizeof(double)*popSize);
@@ -216,8 +215,7 @@ int main()
 				// END CARLsim initialization
 				// -----------------------------------------------------------------------------
 			}
-			
-			//hack
+
 			indiId=currentIndiId;			
 			// now run the network to evaluate it
 			for(int configId=0; configId < NUM_CONFIGS; configId++, indiId++){
