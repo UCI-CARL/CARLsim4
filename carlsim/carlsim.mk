@@ -1,9 +1,9 @@
 # module include file for CARLsim core
 # edited by KDC
 
-#-------------------------------------------------------------------------------
+#---------------------------------------------------------------------------
 # CARLsim flags
-#-------------------------------------------------------------------------------
+#---------------------------------------------------------------------------
 
 ifeq (${strip ${CARLSIM_CUDAVER}},5)
 	CARLSIM_INCLUDES = -I/usr/local/cuda/samples/common/inc/
@@ -28,14 +28,15 @@ ifneq (${strip ${CARLSIM_CUOPTLEVEL}},1)
 endif
 
 # append include path to CARLSIM_FLAGS
-CARLSIM_FLAGS += -I$(CURDIR)/$(carlsim_dir)/include -I$(CURDIR)/$(interface_dir)/include
+CARLSIM_FLAGS += -I$(CURDIR)/$(carlsim_dir)/include \
+	-I$(CURDIR)/$(interface_dir)/include
 
-#-------------------------------------------------------------------------------
+#---------------------------------------------------------------------------
 # CARLsim local variables
-#-------------------------------------------------------------------------------
+#---------------------------------------------------------------------------
 local_dir := $(carlsim_dir)
-local_deps := $(addprefix $(local_dir)/include/, snn.h mtrand.h gpu.h gpu_random.h config.h \
-	propagated_spike_buffer.h poisson_rate.h \
+local_deps := $(addprefix $(local_dir)/include/, snn.h mtrand.h gpu.h \
+	gpu_random.h config.h propagated_spike_buffer.h poisson_rate.h \
 	error_code.h cuda_version_control.h)
 local_src := $(addprefix $(local_dir)/src/, snn_cpu.cpp mtrand.cpp \
 	propagated_spike_buffer.cpp poisson_rate.cpp \
@@ -47,7 +48,8 @@ local_objs := $(addprefix $(local_dir)/src/,snn_cpu.o mtrand.o \
 	gpu_random.o snn_gpu.o)
 
 
-interface_deps := carlsim.h carlsim.cpp user_errors.h user_errors.cpp callback.h callback_core.h callback_core.cpp
+interface_deps := carlsim.h carlsim.cpp user_errors.h user_errors.cpp \
+	callback.h callback_core.h callback_core.cpp
 interface_src := $(interface_dir)/include/carlsim.h \
 	$(interface_dir)/include/user_errors.h \
 	$(interface_dir)/include/callback.h \
@@ -70,9 +72,9 @@ carlsim_sources += $(local_src) $(interface_src)
 objects += $(carlsim_objs) $(interface_objs)
 all_targets += carlsim
 
-#-------------------------------------------------------------------------------
+#---------------------------------------------------------------------------
 # CARLsim rules
-#-------------------------------------------------------------------------------
+#---------------------------------------------------------------------------
 .PHONY: carlsim
 carlsim: $(local_src) $(interface_src) $(local_objs) $(interface_objs)
 
