@@ -41,17 +41,19 @@ lib_dir = libpti
 ex_dir  = examples
 interface_dir = interface
 test_dir = test
-
+util_dir = util
+analysis_dir = $(util_dir)/analysis
 # location of .cpp files
 vpath %.cpp $(EO_INSTALL_DIR)/src $(EO_INSTALL_DIR)/src/do \
 $(EO_INSTALL_DIR)/src/es $(EO_INSTALL_DIR)/src/utils $(lib_dir) \
-$(ex_dir)/common/ $(carlsim_dir)/src $(interface_dir)/src $(test_dir)
-
+$(ex_dir)/common/ $(carlsim_dir)/src $(interface_dir)/src $(test_dir) \
+$(analysis_dir)/src
 # location of .cu files
 vpath %.cu $(carlsim_dir)/src
 # location of .h files
 vpath %.h $(EO_INSTALL_DIR)/src $(inc_dir) $(carlsim_dir)/include \
 	$(ex_dir)/common $(interface_dir)/include $(test_dir) \
+	$(analysis_dir)/include
 
 # this blank 'all' is required
 all:
@@ -60,6 +62,7 @@ all:
 include makefile.mk
 include libpti/libpti.mk
 include carlsim/carlsim.mk
+include util/analysis/analysis.mk
 include test/gtest.mk
 include test/carlsim_tests.mk
 
