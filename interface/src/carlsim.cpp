@@ -124,6 +124,68 @@ private:
 	FILE* fileId_;
 };
 
+/*!
+ * \brief class to automatically write spike times collected with SpikeMonitor to binary file
+ * This class derives from class SpikeMonitor and implements its virtual member update() to automatically store
+ * collected spike times (and neuron IDs) to binary file.
+ * Note that this function will only be called every 1000 ms.
+ */
+class WriteSpikesToArray: public SpikeMonitor {
+public:
+	WriteSpikesToFile(int* spkArray, int& arraySize) {
+		spkArray=NULL;
+		arraySize=0;
+		_arraySize=arraySize;
+		spkArray_=spkArray;
+	}
+	~WriteSpikesToArray() {}; // TODO: where does fileId_ get closed?
+
+	/*
+	 * \brief update method that gets called every 1000 ms by CARLsimCore
+	 * This is an implementation of virtual void SpikeMonitor::update. It gets called every 1000 ms with a pointer to
+	 * all the neurons (neurIds) that have spiked during the last timeInterval ms (usually 1000).
+	 * It can be called for less than 1000 ms at the end of a simulation.
+	 * This implementation will iterate over all neuron IDs and spike times, and copy them to an int array.
+	 * To save space, neuron IDs are stored in a continuous (flattened) list, whereas timeCnts holds the number of
+	 * neurons that have spiked at each time step (reduced AER).
+	 * Example: There are 3 neurons, where neuron with ID 0 spikes at time 1, neurons with ID 1 and 2 both spike at
+	 *  		time 3. Then neurIds = {0,1,2} and timeCnts = {0,1,0,2,0,...,0}. Note that neurIds could also be {0,2,1}
+	 *
+	 * \param[in] snn 		   pointer to an instance of CARLsimCore
+	 * \param[in] grpId 	   the group ID from which to record spikes
+	 * \param[in] neurIds	   pointer to a flattened list that contains all the IDs of neurons that have spiked within
+	 *                         the last 1000 ms.
+	 * \param[in] timeCnts 	   pointer to a data structures that holds the number of spikes at each time step during the
+	 *  					   last 1000 ms. timeCnts[i] will hold the number of spikes in the i-th millisecond.
+	 * \param[in] timeInterval the time interval to parse (usually 1000ms)
+	 */
+	void update(CARLsim* s, int grpId, unsigned int* neurIds, unsigned int* timeCnts, int timeInterval) {
+		// temp array size should be maxRate*grp.SizeN*sizeof(int)*2. 2 comes from time and nid for
+		// each spike event.
+		int pos    = 0; // keep track of position in flattened list of neuron IDs
+		for (int t=0; t < timeInterval; t++) {
+			for(int i=0; i<timeCnts[t];i++,pos++) {
+				// timeInterval might be < 1000 at the end of a simulation
+				int time = t + s->getSimTime() - timeInterval;
+				assert(time>=0);
+				
+				int id   = neurIds[pos];
+				int cnt = fwrite(&time,sizeof(int),1,fileId_);
+				assert(cnt != 0);
+				cnt = fwrite(&id,sizeof(int),1,fileId_);
+				assert(cnt != 0);
+				// here is where we right things to our new array
+				spkArray_[]
+			}
+		}
+
+		fflush(fileId_);
+	}
+
+private:
+	int* spkArray_;
+	int arraySize_;
+};
 
 /// **************************************************************************************************************** ///
 /// CONSTRUCTOR / DESTRUCTOR
