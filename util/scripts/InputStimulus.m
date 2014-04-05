@@ -17,16 +17,13 @@ classdef InputStimulus < handle
     % Version 3/31/14
     % Author: Michael Beyeler <mbeyeler@uci.edu>
     %
-    % This class uses some scripts from an open-source MATLAB package of
-    % Simoncelli & Heeger's Motion Energy model, obtained from
-    % http://www.cns.nyu.edu/~lcv/MTmodel/ version 1.0 (10/14/05).
+    % This class uses some scripts from a MATLAB package of Simoncelli &
+    % Heeger's Motion Energy model, obtained from
+    % http://www.cns.nyu.edu/~lcv/MTmodel/, version 1.0 (10/14/05).
     % Authors: Timothy Saint <saint@cns.nyu.edu> and Eero P. Simoncelli
     % <eero.simoncelli@nyu.edu>
     
     %% PROPERTIES
-    properties
-    end
-    
     properties (SetAccess = private)
         width;                      % stimulus width (pixels)
         height;                     % stimulus height (pixels)
@@ -53,7 +50,7 @@ classdef InputStimulus < handle
     
     %% PUBLIC METHODS
     methods
-        % Matlab doesn't supper function overloading, so use varargin instead
+        % Use varargin to mimick function overloading
         function obj = InputStimulus(varargin)
             obj.width = -1;
             obj.height = -1;
@@ -67,11 +64,11 @@ classdef InputStimulus < handle
             obj.plotAbortPlotting;
             
             % the following image types are supported
-            obj.supportedImageModes = {'gray','rgb'};
+            obj.supportedImageModes = {'gray'};
             
             % the following noise types are supported
-            obj.supportedNoiseTypes = {'gaussian','poisson','salt & pepper',...
-                'speckle'};
+            obj.supportedNoiseTypes = {'gaussian', 'localvar', 'poisson', ...
+                'salt & pepper', 'speckle'};
             
             % the following stimulus types are supported
             obj.supportedStimulusTypes = {'grating','plaid','rdk'};
@@ -124,55 +121,266 @@ classdef InputStimulus < handle
             end
         end
         
-        function addNoiseToExistingFrames(this, frames, type, varargin)
-            % IS.addNoiseToExistingFrames(frames, type, varargin) adds noise of
-            % a given type to all specified frames. FRAMES is a vector of frame
-            % numbers. TYPE is a string that specifies any of the following
-            % types of noise: 'gaussian', 'localvar', 'poisson', 'salt &
-            % pepper', 'speckle'.
+        function addBar(this, length, barDirection, barSpeed, barWidth, ...
+                barEdgeWidth, pixelsBetweenBars, barStartPos)
+            % IS.addBar(length, barDirection, barSpeed, barWidth, barEdgeWidth,
+            % pixelsBetweenBar, barStartPos) creates a drifting bar stimulus of
+            % LENGTH frames drifting in BARDIRECTION at BARSPEED.
             %
-            % FRAMES     - A vector of frame numbers to which noise should be
-            %              added.
+            % This method is based on a script by Timothy Saint and Eero P.
+            % Simoncelli at NYU. It was adapted for coordinate system [x,y,t].
+            % For more information see beginning of this file.
             %
-            % TYPE       - A string that specifies any of the following noise
-            %              types.
-            %              'gaussian'      - Gaussian with constant mean (1st
-            %                                additional argument) and variance
-            %                                (2nd additional argument). Default
-            %                                is zero mean noise with 0.01
-            %                                variance.
-            %              'localvar'      - Zero-mean, Gaussian white noise of
-            %                                a certain local variance (1st
-            %                                additional argument; must be of
-            %                                size width-by-height).
-            %              'poisson'       - Generates Poisson noise from the
-            %                                data instead of adding additional
-            %                                noise.
-            %              'salt & pepper' - Salt and pepper noise of a certain
-            %                                noise density d (1st additional
-            %                                argument). Default is 0.05.
-            %              'speckle'       - Multiplicative noise, using the
-            %                                equation J=I+n*I, where n is
-            %                                uniformly distributed random noise
-            %                                with zero mean and variance v (1st
-            %                                additional argument). Default for v
-            %                                is 0.04.
+            % LENGTH            - The number of frames to create the stimulus
+            %                     for. Default is 10.
             %
-            % VARARGIN   - Additional arguments as required by the noise types
-            %              described above.
-            if ~isvector(frames)
-                error('Input argument FRAMES must be a vector')
+            % BARDIRECTION      - The direction of the bar motion in radians
+            %                     (0=rightwards, pi/2=upwards; angle increases
+            %                     counterclockwise). Default is 0.
+            %
+            % BARSPEED          - The speed of the bar in pixels/frame. Default
+            %                     is 1.
+            %
+            % BARWIDTH          - The width of the center of the bar in pixels.
+            %                     Default is 1.
+            %
+            % BAREDGEWIDTH      - The width of the cosine edges of the bar in
+            %                     pixels. An edge of width BAREDGEWIDTH will be
+            %                     tacked onto both sides of the bar, so the
+            %                     total width will be BARWIDTH + 2*BAREDGEWIDTH.
+            %                     Default is 3.
+            %
+            % PIXELSBETWEENBARS - The number of pixels between the bars in the
+            %                     stimulus. Default is width.
+            % BARSTARTPOS       - The starting position of the first bar in
+            %                     pixels. The coordinate system is a line lying
+            %                     along the direction of the bar motion and
+            %                     passing through the center of the stimulus.
+            %                     The point 0 is the center of the stimulus.
+            %                     Default is 0.
+            if nargin<8,barStartPos=0;end
+            if nargin<7,pixelsBetweenBars=this.width;end
+            if nargin<6,barEdgeWidth=3;end
+            if nargin<5,barWidth=1;end
+            if nargin<4,barSpeed=1;end
+            if nargin<3,barDirection=0;end
+            if nargin<2,length=10;end
+            
+            res = this.privMakeBar(length, barDirection, barSpeed, barWidth, ...
+                barEdgeWidth, pixelsBetweenBars, barStartPos);
+
+            % add frames to existing stimulus
+            this.privAppendFrames(res);
+
+            % update default save file name
+            lastName = this.defaultSaveName(max(1,end-2):end);
+            if ~strcmp(lastName,'Bar') % only save distinct names
+                this.defaultSaveName = cat(2,this.defaultSaveName,'Bar');
+            end
+        end
+            
+        function addBlankFrames(this, length, grayVal)
+            % IS.addBlankFrames(length) adds a total of LENGTH blank frames with
+            % grayscale value GRAYVAL existing stimulus.
+            %
+            % LENGTH     - The number of blank frames to append. Default is 1.
+            %
+            % GRAYVAL    - The grayscale value of the background (must be in the
+            %              range [0,255]. Default is 0 (black).
+            if nargin<3,grayVal=0;end
+            if nargin<2,length=1;end
+            if ~isnumeric(grayVal) || numel(grayVal)~=1
+                error('Grayscale value must be numeric')
+            end
+            if grayVal<0 || grayVal>255
+                error('Grayscale value must be in the range [0,255]')
+            end
+            if ~isnumeric(length) || numel(length)~=1
+                error('Length must be numeric')
             end
             
-            for i=1:numel(frames)
-                % extract specified frame
-                img = this.getFrames(frames(i));
+            % adjust grayscale range to [0,1]
+            img = ones(this.width, this.height, length)*grayVal/255;
+            
+            % add frames to existing stimulus
+            this.privAppendFrames(img);
+        end
                 
-                % add noise
-                noisy = this.privAddNoiseToFrame(img,type,varargin);
-                
-                % store frame
-                this.privSetFrame(frames(i),noisy);
+        function addDots(this, length, type, dotDirection, dotSpeed, ...
+                dotDensity, dotCoherence, dotRadius, ptCenter, densityStyle, ...
+                sampleFactor, interpMethod)
+            % IS.addDots(length, type, dotDirection, dotSpeed, dotCoherence,
+            % dotRadius, densityStyle, sampleFactor, interpMethod) adds a field
+            % of drifting dots to the existing stimulus. The field consists of
+            % roughly DOTDENSITY*imgWidth*imgHeight drifting dots, of which a 
+            % fraction DOTCOHERENCE drifts coherently into a DOTDIRECTION 
+            % (either direction of motion or motion gradient).
+            % Supported flow patterns include drifting into a certain direction,
+            % expansion, contraction, rotations, and deformations.
+            %
+            % This method uses a script initially authored by Timothy Saint and
+            % Eero P. Simoncelli at NYU. It was adapted for coordinate system
+            % [x,y,t], and extended to feature patterns of expansion,
+            % contraction, rotation, and deformation. For more information see
+            % beginning of this file.
+            %
+            % LENGTH        - The number of frames you want to generate. Default
+            %                 is 10.
+            %
+            % TYPE          - The type of motion stimulus. Currently supported
+            %                 are:
+            %                   'linear'      - The classic RDK stimulus, where
+            %                                   a fraction DOTCOHERENCE of dots
+            %                                   drift coherently into a
+            %                                   direction DOTDIRECTION.
+            %                   'rotExpContr' - Rotations, expansion,
+            %                                   contraction, and mixtures of
+            %                                   those types. These types lie
+            %                                   along the spectrum of
+            %                                   DOTDIRECTION as follows:
+            %                                   0      expansion
+            %                                   pi/2   counterclockwise rotation
+            %                                   pi     contraction
+            %                                   3*pi/2 clockwise rotation
+            %                                   In between those points, the
+            %                                   flow pattern acts as a mixture
+            %                                   between expansion/rotation,
+            %                                   contraction/rotation.
+            %                   'deform'      - Deformations.
+            %                 Default is 'linear'.
+            %
+            % DOTDIRECTION  - The direction in radians in which a fraction
+            %                 DOTCOHERENCE of all dots drift (0=rightwards,
+            %                 pi/2=upwards; angle increases counterclockwise).
+            %                 Default is 0.
+            %                 For TYPE 'rotExpContr' and 'deform', DOTDIRECTION
+            %                 is the direction of the motion gradient (see
+            %                 above).
+            %
+            % DOTSPEED      - The speed in pixels/frame at which a fraction
+            %                 DOTCOHERENCE of all dots drift. Default is 1.
+            %
+            % DOTDENSITY    - The density of the dots (in the range [0,1]). This
+            %                 will create roughly DOTDENSITY*imgWidth*imgHeight
+            %                 dots. Default is 0.1.
+            %
+            % DOTCOHERENCE  - The fraction of dots that drift coherently in a
+            %                 given direction of motion or motion gradient. The
+            %                 remaining fraction moves randomly. Default is 1.
+            %
+            % DOTRADIUS     - The radius of the dots. If dotRadius<0, the dots
+            %                 will be single pixels. If dotRadius>0, the dots
+            %                 will be Gaussian blobs with sigma = 0.5*DOTRADIUS.
+            %                 Default is -1.
+            %
+            % PTCENTER      - Only important when using motion gradients. Center
+            %                 point of expansion, contraction, or rotation
+            %                 (depending on stimulus TYPE). Default is [width/2
+            %                 height/2].
+            %
+            % DENSITYSTYLE  - The number of dots is calculated by multiplying
+            %                 the DOTDENSITY by the size of the image window. If
+            %                 the dots are placed randomly, some dots will
+            %                 overlap, so the actual dot density will be lower
+            %                 than DOTDENSITY. If, however, the dots are placed
+            %                 exactly so that they never overlap, all the dots
+            %                 will move in register.
+            %                 Both of these are problems that only occur when
+            %                 using pixel dots rather than Gaussian dots.
+            %                 DENSITYSTYLE can be either 'random' (for the first
+            %                 problem) or 'exact' (for the second problem).
+            %                 Default is 'random'.
+            %
+            % SAMPLEFACTOR  - Only important when using Gaussian dots. The dots
+            %                 are made by calculating one large Gaussian dot,
+            %                 and interpolating from that dot to make smaller
+            %                 dots. This parameter specifies how much larger the
+            %                 large dot is than the smaller dots (a factor).
+            %                 Default is 10.
+            %
+            % INTERPMETHOD  - Only important when using Gaussian dots. This
+            %                 parameter specifies the interpolation method used
+            %                 in creating smaller dots. Choices: 'linear',
+            %                 'cubic', 'nearest', 'v4'. Default is 'linear'.
+            if nargin<12,interpMethod='linear';end
+            if nargin<11,sampleFactor=10;end
+            if nargin<10,densityStyle='random';end
+            if nargin<9,ptCenter=[this.width/2 this.height/2];end
+            if nargin<8,dotRadius=-1;end
+            if nargin<7,dotCoherence=1;end
+            if nargin<6,dotDensity=0.1;end
+            if nargin<5,dotSpeed=1;end
+            if nargin<4,dotDirection=0;end
+            if nargin<3,type='linear';end
+            if nargin<2,length=10;end
+            
+            % parse numeric input arguments (string arguments are easier to
+            % catch in switch statements)
+            errorStr=' must be a single numeric value';
+            if ~isnumeric(length) || numel(length)>1 || length<=0
+                error(['Length' errorStr ' > 0'])
+            end
+            if ~isnumeric(dotDirection) || numel(dotDirection)>1 ...
+                    || dotDirection<0 || dotDirection>=2*pi
+                error(['Dot direction' errorStr ' in the range [0,2*pi)'])
+            end
+            if ~isnumeric(dotSpeed) || numel(dotSpeed)>1 || dotSpeed<=0
+                error(['Dot speed' errorStr ' > 0'])
+            end
+            if ~isnumeric(dotDensity) || numel(dotDensity)>1 ...
+                    || dotDensity<=0 || dotDensity>1
+                error(['Dot density' errorStr ' in the range [0,1]'])
+            end
+            if ~isnumeric(dotCoherence) || numel(dotCoherence)>1 ...
+                    || dotCoherence<0 || dotCoherence>1
+                error(['Dot coherence' errorStr ' in the range [0,1]'])
+            end
+            if ~isnumeric(dotRadius) || numel(dotRadius)>1
+                error(['Dot radius' errorStr])
+            end
+            if ~isnumeric(ptCenter) || ~isvector(ptCenter) ...
+                    || numel(ptCenter) ~=2 || ptCenter(1)<1 ...
+                    || ptCenter(1)>this.width || ptCenter(2)<1 ...
+                    || ptCenter(2)>this.height
+                error(['Center point must be a 2-element vector whose ' ...
+                    'elemnts are in the range [1:width, 1:height]'])
+            end
+            if ~isnumeric(sampleFactor) || numel(sampleFactor)>1 ...
+                    || sampleFactor<=0
+                error(['Sample factor' errorStr ' > 0'])
+            end
+        
+            % if this object was created by loading a file, read the header
+            % (loadHeaderOnly=true) to get stimulus dimensions
+            this.privLoadStimIfNecessary(true);
+            
+            % use S&H script
+            res = this.privMakeDots(length, type, dotDirection, dotSpeed, ...
+                dotDensity, dotCoherence, dotRadius, ptCenter, densityStyle, ...
+                sampleFactor, interpMethod);
+            
+            % append to existing frames
+            this.privAppendFrames(res);
+            
+            % update default save file name
+            switch lower(type)
+                case 'linear'
+                    svStr='RdkDrift';
+                case 'rotexpcontr'
+                    dirStr = {'Expand','RotCCW','Contract','RotCW'};
+                    dominantDir = mod(round(dotDirection/(pi/2)),4);
+                    svStr = ['Rdk' dirStr{dominantDir+1}];
+                    if dominantDir ~= dotDirection/(pi/2)
+                        svStr = [svStr 'Mixed'];
+                    end
+                case 'deform'
+                    svStr='RdkDeform';
+                otherwise
+                    error(['Unknown stimulus type "' type '"'])
+            end
+            lastName = this.defaultSaveName(max(1,end-numel(svStr)+1):end);
+            if ~strcmp(lastName,svStr) % only save distinc names
+                this.defaultSaveName = cat(2,this.defaultSaveName,svStr);
             end
         end
         
@@ -184,10 +392,10 @@ classdef InputStimulus < handle
             % function IMNOISE). Depending on the noise types, additional
             % arguments may be required (VARARGIN).
             %
-            % LENGTH     - The number of noise frames to append
+            % LENGTH     - The number of noise frames to append. Default is 1.
             %
             % GRAYVAL    - The mean grayscale value of the background. Must be
-            %              in the range [0,255]. Default: 128.
+            %              in the range [0,255]. Default is 128.
             %
             % TYPE       - A string that specifies any of the following noise
             %              types.
@@ -219,7 +427,7 @@ classdef InputStimulus < handle
             if nargin<3,grayVal=128;end
             if nargin<2,length=1;end
             
-            if ~isnumeric(length)
+            if ~isnumeric(length) || numel(length)~=1
                 error('Length must be numeric')
             end
             if ~isnumeric(grayVal) || grayVal<0 || grayVal>255
@@ -235,13 +443,67 @@ classdef InputStimulus < handle
             img=[];
             for i=1:length
                 % for each frame, add noise
-                noisy = this.privAddNoiseToFrame(blank,type,varargin);
+                noisy = this.privAddNoiseToFrame(blank,type,varargin{:});
                 
                 img = cat(3, img, noisy);
             end
             
             % add frames to existing stimulus
             this.privAppendFrames(img);
+        end
+        
+        function addNoiseToExistingFrames(this, frames, type, varargin)
+            % IS.addNoiseToExistingFrames(frames, type, varargin) adds noise of
+            % a given type to all specified frames. FRAMES is a vector of frame
+            % numbers. TYPE is a string that specifies any of the following
+            % types of noise: 'gaussian', 'localvar', 'poisson', 'salt &
+            % pepper', 'speckle'.
+            %
+            % FRAMES     - A vector of frame numbers to which noise should be
+            %              added. Default is all frames.
+            %
+            % TYPE       - A string that specifies any of the following noise
+            %              types. Default is 'gaussian'.
+            %              'gaussian'      - Gaussian with constant mean (1st
+            %                                additional argument) and variance
+            %                                (2nd additional argument). Default
+            %                                is zero mean noise with 0.01
+            %                                variance.
+            %              'localvar'      - Zero-mean, Gaussian white noise of
+            %                                a certain local variance (1st
+            %                                additional argument; must be of
+            %                                size width-by-height).
+            %              'poisson'       - Generates Poisson noise from the
+            %                                data instead of adding additional
+            %                                noise.
+            %              'salt & pepper' - Salt and pepper noise of a certain
+            %                                noise density d (1st additional
+            %                                argument). Default is 0.05.
+            %              'speckle'       - Multiplicative noise, using the
+            %                                equation J=I+n*I, where n is
+            %                                uniformly distributed random noise
+            %                                with zero mean and variance v (1st
+            %                                additional argument). Default for v
+            %                                is 0.04.
+            %
+            % VARARGIN   - Additional arguments as required by the noise types
+            %              described above.
+            if nargin<3,type='gaussian';end
+            if nargin<2,frames=1:this.length;end
+            if ~isvector(frames)
+                error('Input argument FRAMES must be a vector')
+            end
+            
+            for i=1:numel(frames)
+                % extract specified frame
+                img = this.getFrames(frames(i));
+                
+                % add noise
+                noisy = this.privAddNoiseToFrame(img,type,varargin{:});
+                
+                % store frame
+                this.privSetFrame(frames(i),noisy);
+            end
         end
         
         function addPlaid(this, length, plaidDir, gratFreq, plaidAngle, ...
@@ -256,10 +518,11 @@ classdef InputStimulus < handle
             % Simoncelli at NYU. It was adapted for coordinate system [x,y,t].
             % For more information see beginning of this file.
             %
-            % LENGTH        - The number of frames to create. Default is 50.
+            % LENGTH        - The number of frames to create. Default is 10.
             %
             % PLAIDDIR      - The drifting direction of the stimulus in radians
-            %                 (where 0=rightward). Default is 0.
+            %                 (0=rightwards, pi/2=upwards; angle increases
+            %                 counterclockwise). Default is 0.
             %
             % GRATFREQ      - 2-D vector of stimulus frequency for the grating
             %                 components. The first vector element is the
@@ -275,7 +538,7 @@ classdef InputStimulus < handle
             if nargin<5,plaidAngle=(2/3)*pi;end
             if nargin<4,gratFreq=[0.1 0.1];end
             if nargin<3,plaidDir=0;end
-            if nargin<2,length=50;end
+            if nargin<2,length=10;end
             
             if length<=0,error('Length must be positive'),end
             if plaidDir<0 || plaidDir>=2*pi
@@ -311,112 +574,13 @@ classdef InputStimulus < handle
             end
         end
         
-        function addRdkDrift(this, length, dotDirection, dotSpeed, ...
-                dotDensity, dotCoherence, dotRadius, densityStyle, ...
-                sampleFactor, interpMethod)
-            % This method was initially authored by Timothy Saint and Eero
-            % P. Simoncelli at NYU. It was adapted for coordinate system
-            % [x,y,t]. For more information see beginning of this file.
-            if nargin<10,interpMethod='linear';end
-            if nargin<9, sampleFactor=10;end
-            if nargin<8, densityStyle='exact';end
-            if nargin<7, dotRadius=-1;end
-            if nargin<6, dotCoherence=1;end
-            if nargin<5, dotDensity=-1;end
-            if nargin<4, dotSpeed=1;end
-            if nargin<3, dotDirection=0;end
-            if nargin<2, length=20;end
-            
-            % if this object was created by loading a file, read the header
-            % (loadHeaderOnly=true) to get stimulus dimensions
-            this.privLoadStimIfNecessary(true);
-            
-            res = this.privMakeDots(length, dotDirection, dotSpeed, ...
-                dotDensity, dotCoherence, dotRadius, densityStyle, ...
-                sampleFactor, interpMethod);
-
-            % append to existing frames
-            this.privAppendFrames(res);
-            
-            % update default save file name
-            lastName = this.defaultSaveName(max(1,end-7):end);
-            if ~strcmp(lastName,'RdkDrift') % only save distinct names
-                this.defaultSaveName = cat(2,this.defaultSaveName,'RdkDrift');
-            end
-        end
-        
-        function addRdkExpansion(this, length, FOE, density, speed)
-            if nargin<5,speed=1;end
-            if nargin<4,density=0.2;end
-            expand = @(x,y,w0,th) ([w0*(x*cos(th)-y*sin(th)),w0*(x*sin(th)+y*cos(th))]);
-            
-            % if this object was created by loading a file, read the header
-            % (loadHeaderOnly=true) to get stimulus dimensions
-            this.privLoadStimIfNecessary(true);
-            
-            % get number of dots from density
-            nDots = round(density*this.width*this.height);
-            
-            % starting points are random
-            posDots = [randi(this.width, [1 nDots]);
-                randi(this.height,[1 nDots])];
-            
-            w0 = 0.05; % good for expansion
-            th = 0;
-            fudge = 2; % fudge factor for small retina sizes
-            
-            res=[];
-            for i=1:length
-                % init retina
-                retina = zeros(this.width, this.height);
-                
-                % adjust the center of the motion pattern to (x0,x0)
-                % fudge factor used for small retina sizes
-                dxdt = expand((posDots(1,:)'-FOE(1))*fudge, ...
-                    (posDots(2,:)'-FOE(2))*fudge, ...
-                    w0, th)';
-                
-                % scale dxdt with speed value
-                dxdt = dxdt*speed;
-                
-                % update points
-                posDots = posDots + dxdt;
-                
-                % if points disappear from retina, remove points and insert new
-                % ones at random position
-                [~,c] = find((posDots(1,:)>this.width) | (posDots(1,:)<1));
-                posDots(:,c) = [randi(this.width, [1 numel(c)]);
-                    randi(this.height,[1 numel(c)])];
-                [~,c] = find((posDots(2,:)>this.height) | (posDots(2,:)<1));
-                posDots(:,c) = [randi(this.width, [1 numel(c)]);
-                    randi(this.height,[1 numel(c)])];
-                
-                % translate 2D subscripts to index, set to 1
-                retina(sub2ind(size(retina),round(posDots(1,:)), ...
-                    round(posDots(2,:)))) = 1;
-                
-                % append to frames
-                res = cat(3, res, retina);
-            end
-            
-            % append to existing frames
-            this.privAppendFrames(res);
-            
-            % update default save file name
-            lastName = this.defaultSaveName(max(1,end-8):end);
-            if ~strcmp(lastName,'RdkExpand') % only save distinct names
-                this.defaultSaveName = cat(2,this.defaultSaveName,'RdkExpand');
-            end
-        end
-        
-        
         function addSinGrating(this, length, sinDir, sinFreq, sinContrast, ...
                 sinPhase)
             % IS.addSinGrating(length, sinDir, sinFreq, sinContrast, sinPhase)
             % will add a drifting sinusoidal grating with mean intensity value
             % 128 and a contrast of sinContrast to the existing stimulus.
             %
-            % LENGTH       - The number of frames to create. Default is 50.
+            % LENGTH       - The number of frames to create. Default is 10.
             %
             % DIR          - The drifting direction of the stimulus in radians
             %                (where 0=rightward). Default is 0.
@@ -439,7 +603,7 @@ classdef InputStimulus < handle
             if nargin<5,sinContrast=1;end
             if nargin<4,sinFreq=[0.1 0.1];end
             if nargin<3,sinDir=0;end
-            if nargin<2,length=50;end
+            if nargin<2,length=10;end
             
             if length<=0,error('Length must be positive'),end
             if sinDir<0 || sinDir>=2*pi
@@ -603,7 +767,7 @@ classdef InputStimulus < handle
         function noisy = privAddNoiseToFrame(this,frame,type,varargin)
             % Private method to add noise of a specific type to a single
             % stimulus frame
-            if ~isnumeric(frame) || numel(frame)~=1
+            if ~isnumeric(frame) || size(frame,3)~=1
                 error('Cannot act on more than one frame at once')
             end
             if min(frame(:))<0 || max(frame(:))>1
@@ -614,8 +778,18 @@ classdef InputStimulus < handle
                 case 'gaussian'
                     valMean = 0;
                     valVar = 0.01;
-                    if numel(varargin)>=1,valMean=varargin{1};end
-                    if numel(varargin)>=2,valVar =varargin{2};end
+                    if numel(varargin)>=1
+                        valMean=varargin{1};
+                        if ~isnumeric(valMean)
+                            error('Mean for Gaussian noise must be numeric')
+                        end
+                    end
+                    if numel(varargin)>=2
+                        valVar =varargin{2};
+                        if ~isnumeric(valVar)
+                            error('Variance for Gaussian noise must be numeric')
+                        end
+                    end
                     noisy = imnoise(frame,'gaussian',valMean,valVar);
                 case 'localvar'
                     if numel(varargin)<1
@@ -629,11 +803,22 @@ classdef InputStimulus < handle
                     noisy = imnoise(frame,'poisson');
                 case 'salt & pepper'
                     valD = 0.05;
-                    if numel(varargin)>=1,valD=varargin{1};end
+                    if numel(varargin)>=1
+                        valD=varargin{1};
+                        if ~isnumeric(valD)
+                            error(['Noise density for Salt & Pepper noise ' ...
+                                'must be numeric'])
+                        end
+                    end
                     noisy = imnoise(frame,'salt & pepper',valD);
                 case 'speckle'
                     valVar = 0.04;
-                    if numel(varargin)>=1,valVar=varargin{1};end
+                    if numel(varargin)>=1
+                        valVar=varargin{1};
+                        if ~isnumeric(valVar)
+                            error('Variance for Speckle noise must be numeric')
+                        end
+                    end
                     noisy = imnoise(frame,'speckle',valVar);
                 otherwise
                     error(['Unknown noise type "' type '". Currently ' ...
@@ -739,61 +924,64 @@ classdef InputStimulus < handle
             end
         end
         
-        % function s = mkDots(stimSz, dotDirection, dotSpeed, dotDensity, dotCoherence,
-        %                   dotRadius, densityStyle, sampleFactor, interpMethod)
-        %
-        % MKDOTS makes a drifting dot stimulus.
-        %
-        % Required arguments:
-        % stimSz            The dimensions of the stimulus, in [Y X T] coordinates;
-        % dotDirection      The direction of movement, in radians, with 0 = rightward.
-        % (0=rightward, pi/2=upward; angle increases counterclockwise)
-        %                   If dotDirection is just one number, the dots will move
-        %                   in that direction at all times. If dotDirection is a
-        %                   vector of the same length as the number of frames in
-        %                   the stimulus, the direction of movement in each frame
-        %                   will be specified by the corresponding element of
-        %                   dotDirection.
-        % dotSpeed          The speed of movement, in frames/second.
-        %                   If dotSpeed is just one number, the dots will move
-        %                   with that speed at all times. If dotSpeed is a
-        %                   vector of the same length as the number of frames in
-        %                   the stimulus, the speed of movement in each frame
-        %                   will be specified by the corresponding element of
-        %                   dotSpeed.
-        %
-        % Optional arguments:
-        % dotDensity        The density of the dots, which can be from 0 to 1. DEFAULT = .1
-        % dotCoherence      The coherence of dot motion. DEFAULT = 1.
-        % dotRadius         The radius of the dots. If dotRadius < 0, the dots will
-        %                   be single pixels. If dotRadius > 0, the dots will be
-        %                   Gaussian blobs with sigma = .5 * dotRadius. DEFAULT = -1
-        % dotPlacementStyle The number of dots is calculated by multiplying the
-        %                   dotDensity by the size of the image window. If the dots
-        %                   are placed randomly, some dots will overlap, so the
-        %                   actual dot density will be lower than dotDensity. If,
-        %                   however, the dots are placed exactly so that they never
-        %                   overlap, all the dots will move in register. Both of
-        %                   these are problems that only occur when you use pixel
-        %                   dots rather than Gaussian dots. Your choices for
-        %                   dotPlacementStyle are 'random' (for the first problem)
-        %                   or 'exact' (for the second problem). DEFAULT = 'random'
-        % sampleFactor      Only important if you are using Gaussian dots. The dots
-        %                   are made by calculating one large Gaussian dot, and
-        %                   interpolating from that dot to make the smaller dots.
-        %                   This parameter specifies how much larger the large dot
-        %                   is than the smaller dots. DEFAULT = 10.
-        % interpMethod      Only important if you are using Gaussian dots.
-        %                   Specifies the interpolation method used in creating the
-        %                   smaller dots. Choices: 'linear', 'cubic', 'nearest',
-        %                   'v4'. DEFAULT = 'linear'
-        
-        function s = privMakeDots(this, length, dotDirection, dotSpeed, ...
-                dotDensity, dotCoherence, dotRadius, densityStyle, ...
-                sampleFactor, interpMethod)
+        function res = privMakeBar(this, length, dir, speed, barWidth, ...
+                edgeWidth, pxBtwBars, barStartingPos)
+            % Private method to create a drifting bar stimulus.
+            %
             % This method was initially authored by Timothy Saint and Eero
             % P. Simoncelli at NYU. It was adapted for coordinate system
-
+            % [x,y,t]. For more information see beginning of this file.
+            %
+            
+            % spatial and temporal frequencies
+            gratingSf = 1/pxBtwBars;
+            gratingTf = gratingSf * speed;
+            
+            % The plan of action: make a drifting grating with the right
+            % velocity and orientation. The period of the sin wave will be the
+            % same as the distance between the bars that the user wants. Then we
+            % make bars out of the peaks of the sin wave.
+            
+            % Make the grating
+            gratingPhase = barStartingPos * gratingSf;
+            res = 2*this.privMakeSin(length, dir, ...
+                [gratingSf gratingTf], 1, gratingPhase) -1;
+            
+            % Find the thresholds
+            barInnerThreshold = cos(2*pi*gratingSf*barWidth/2);
+            barOuterThreshold = cos(2*pi*gratingSf*(barWidth/2 + edgeWidth));
+            
+            % There are three regions: where the stimulus should be one (the
+            % centers of the bars), where it should be zero (outside the bars),
+            % and where it should be somehwere in between (edges of the bars).
+            % Find them
+            wOne = res >= barInnerThreshold;
+            wEdge = (res < barInnerThreshold) ...
+                & (res > barOuterThreshold);
+            wZero = res <= barOuterThreshold;
+            
+            % Set the regions to the appropriate level
+            res(wOne) = 1;
+            res(wZero) = 0;
+            
+            % adjust range to [0,2*pi)
+            res(wEdge) = acos(res(wEdge));
+            
+            % adjust range to [0,1] spatial period
+            res(wEdge) = res(wEdge)/(2*pi*gratingSf);
+            res(wEdge) =  (pi/2)*(res(wEdge) ...
+                                 - barWidth/2)/(edgeWidth);
+            res(wEdge) = cos(res(wEdge));
+        end
+        
+        function res = privMakeDots(this, length, type, dotDirection, ...
+                dotSpeed, dotDensity, dotCoherence, dotRadius, ...
+                ptCenter, densityStyle, sampleFactor, interpMethod)
+            % Private method to create an RDK stimulus of a given TYPE.
+            %
+            % This method was initially authored by Timothy Saint and Eero
+            % P. Simoncelli at NYU. It was adapted for coordinate system
+            % [x,y,t]. For more information see beginning of this file.
             stimSz = [this.width this.height length];
             if dotDensity<0
                 if dotRadius<0
@@ -805,24 +993,10 @@ classdef InputStimulus < handle
             
             % adjust drift direction to make up for flipped y-axis in imagesc
             dotDirection = mod(2*pi-dotDirection,2*pi);
-
-            % resize dotDirection and dotSpeed if necessary
-            if numel(dotDirection) == 1
-                dotDirection = repmat(dotDirection, stimSz(3), 1);
-            elseif numel(dotDirection) ~= length
-                error(['If DOTDIRECTION is a vector, it must have the same ' ...
-                    'number of entries as there are frames in the stimulus'])
-            end
-            if numel(dotSpeed) == 1
-                dotSpeed = repmat(dotSpeed, stimSz(3), 1);
-            elseif numel(dotSpeed) ~= length
-                error(['If DOTSPEED is a vector, it must have the same ' ...
-                    'number of entries as there are frames in the stimulus'])
-            end
-            
             
             % make the large dot for sampling
-            xLargeDot = linspace(-(3/2)*dotRadius, (3/2)*dotRadius, ceil(3*dotRadius*sampleFactor));
+            xLargeDot = linspace(-(3/2)*dotRadius, (3/2)*dotRadius, ...
+                ceil(3*dotRadius*sampleFactor));
             sigmaLargeDot = dotRadius/2;
             largeDot = exp(-xLargeDot.^2./(2.*sigmaLargeDot^2));
             largeDot = largeDot'*largeDot;
@@ -844,18 +1018,20 @@ classdef InputStimulus < handle
             frameSzX = stimSz(1) + 2.*bufferSize;
             frameSzY = stimSz(2) + 2.*bufferSize;
             [xFrame, yFrame] = meshgrid([1:frameSzX], [1:frameSzY]);
-%             yFrame = flipud(yFrame);
             
-            
+            % adjust center point for frameSz
+            frameScaling = [frameSzX frameSzY]./[this.width this.height];
+            ptCenter = ptCenter.*frameScaling;
+                        
             % nDots is the number of coherently moving dots in the stimulus.
             % nDotsNonCoherent is the number of noncoherently moving dots.
             nDots = round(dotCoherence.*dotDensity.*numel(xFrame));
             nDotsNonCoherent = round((1-dotCoherence).*dotDensity.*numel(xFrame));
             
             % Set the initial dot positions.
-            % dotPositions is a matrix of positions of the coherently moving dots in
-            %   [y, x] coordinates; each row in dotPositions stores the position of one
-            %   dot.
+            % dotPositions is a matrix of positions of the coherently moving
+            % dots in [x,y] coordinates; each row in dotPositions stores the
+            % position of one dot
             if strcmp(densityStyle, 'exact')
                 z = zeros(numel(xFrame), 1);
                 z(1:nDots) = 1;
@@ -867,65 +1043,142 @@ classdef InputStimulus < handle
                 dotPositions = rand(nDots, 2) * [frameSzX 0; 0 frameSzY];
             end
             
-            % s will store the output. After looping over each frame, we will trim away
-            % the buffer from s to obtain the final result.
-            s = zeros(frameSzX, frameSzY, stimSz(3));
-            toInterpolate = [-floor((3/2)*dotRadius):floor((3/2)*dotRadius)];
+            % s will store the output. After looping over each frame, we will
+            % trim away the buffer from s to obtain the final result.
+            res = zeros(frameSzX, frameSzY, stimSz(3));
+            toInterpolate = -floor((3/2)*dotRadius):floor((3/2)*dotRadius);
             dSz = floor((3/2)*dotRadius);
+
+            % dxdt for rotations/expansions/contractions and deformations
+            expand = @(x,y,w0,th) ([w0*(x.*cos(th)-y.*sin(th)), ...
+                w0*(x.*sin(th)+y.*cos(th))]);
+            deform = @(x,y,w0,th) ([w0*(x.*cos(th)+y.*sin(th)), ...
+                w0*(x.*sin(th)-y.*cos(th))]);
+
             for t = 1:stimSz(3)
+                % update the dot positions according to RDK type
+                switch lower(type)
+                    case 'linear'
+                        dotVelocity = [cos(dotDirection), ...
+                                       sin(dotDirection)];
+                        dotVelocity = dotVelocity*dotSpeed;
+                        dotPositions = dotPositions + repmat(dotVelocity, ...
+                            size(dotPositions, 1), 1);
+                        
+                        % wrap around for all dots that have gone past the image
+                        % borders
+                        w = find(dotPositions(:,1)>frameSzX+.5);
+                        dotPositions(w,1) = dotPositions(w,1) - frameSzX;
+                        
+                        w = find(dotPositions(:,1)<.5);
+                        dotPositions(w,1) = dotPositions(w,1) + frameSzX;
+                        
+                        w = find(dotPositions(:,2)>frameSzY+.5);
+                        dotPositions(w,2) = dotPositions(w,2) - frameSzY;
+                        
+                        w = find(dotPositions(:,2)<.5);
+                        dotPositions(w,2) = dotPositions(w,2) + frameSzY;
+                    case 'rotexpcontr'
+                        w0 = 0.05;
+                        dxdt = expand(dotPositions(:,1)-ptCenter(1), ...
+                            dotPositions(:,2)-ptCenter(2), w0, dotDirection);
+                        dxdt = dxdt*dotSpeed;
+                        dotPositions = dotPositions + dxdt;
+                        
+                        if abs(mod(2*pi-dotDirection,2*pi))<=pi/2
+                            % replace dots that have gone past the image borders (a
+                            % little more tricky than the linear case)
+                            radiusFOE = abs(dotRadius)*5.*frameScaling;
+
+                            % dominated by expansion
+                            % if dots go past borders, replace near FOE
+                            w = find(dotPositions(:,1)>frameSzX+0.5);
+                            dotPositions(w,1) = ptCenter(1) ...
+                                + (2*rand(numel(w),1)-1)*radiusFOE(1);
+                            w = find(dotPositions(:,1)<0.5);
+                            dotPositions(w,1) = ptCenter(1) ...
+                                + (2*rand(numel(w),1)-1)*radiusFOE(1);
+                            
+                            w = find(dotPositions(:,2)>frameSzY+0.5);
+                            dotPositions(w,2) = ptCenter(2) ...
+                                + (2*rand(numel(w),1)-1)*radiusFOE(2);
+                            w = find(dotPositions(:,2)<0.5);
+                            dotPositions(w,2) = ptCenter(2) ...
+                                + (2*rand(numel(w),1)-1)*radiusFOE(2);
+                        elseif abs(mod(2*pi-dotDirection,2*pi)-pi)<=pi/2
+                            % dominated by contraction
+                            % the trickiest: if points get close to FOE, move
+                            % them out to the borders
+                            
+                            dist2 = (dotPositions(:,1)-ptCenter(1)).^2 ...
+                                + (dotPositions(:,2)-ptCenter(2)).^2;
+                            radiusFOE = abs(dotRadius)*2*max(frameScaling);
+                            
+                            % TODO: it is kinda tricky to make the points not
+                            % cluster near the FOE...
+                            prob = 1; % min(0.5,sum(dist2<radiusFOE^2)/radiusFOE^2)*2;
+                            w = find(rand<prob & dist2<radiusFOE^2);
+                            
+                            % new position: somewhere in the outer quarter of
+                            % the frame
+                            theta = rand(numel(w),1)*2*pi;
+                            noise = rand(numel(w),1); % prevent syncing up
+                            dotPositions(w,1) = (cos(theta)+1)/2.*(frameSzX-noise/4);
+                            dotPositions(w,2) = (sin(theta)+1)/2.*(frameSzY-noise/4);
+                        end
+                    case 'deform'
+                        w0 = 0.05;
+                        dxdt = deform(dotPositions(:,1)-ptCenter(1), ...
+                            dotPositions(:,2)-ptCenter(2), w0, dotDirection);
+                        dxdt = dxdt*dotSpeed;
+                        dotPositions = dotPositions + dxdt;
+                    otherwise
+                        error(['Unknown RDK type "' type '"'])
+                end
                 
-                % move the positions of all the dots
-                dotVelocity = [cos(dotDirection(t)), sin(dotDirection(t))];
-                dotVelocity = dotVelocity*dotSpeed(t);
-                dotPositions = dotPositions + repmat(dotVelocity, size(dotPositions, 1), 1);
                 
-                % wrap around for all dots that have gone past the image borders
-                w = find(dotPositions(:,1) > frameSzX + .5);
-                dotPositions(w,1) = dotPositions(w,1) - frameSzX;
+                % add noncoherent dots and make a vector of dot positions for
+                % this frame only
+                dotPositionsNonCoherent = rand(nDotsNonCoherent, 2) ...
+                    * [frameSzX-1 0; 0 frameSzY-1] + .5;
                 
-                w = find(dotPositions(:,1) < .5);
-                dotPositions(w,1) = dotPositions(w,1) + frameSzX;
-                
-                w = find(dotPositions(:,2) > frameSzY + .5);
-                dotPositions(w,2) = dotPositions(w,2) - frameSzY;
-                
-                w = find(dotPositions(:,2) < .5);
-                dotPositions(w,2) = dotPositions(w,2) + frameSzY;
-                
-                % add noncoherent dots and make a vector of dot positions for this
-                % frame only.
-                dotPositionsNonCoherent = rand(nDotsNonCoherent, 2) * [frameSzX-1 0; 0 frameSzY-1] + .5;
-                
-                % create a temporary matrix of positions for dots to be shown in this
-                % frame.
+                % create a temporary matrix of positions for dots to be shown in
+                % this frame
                 tmpDotPositions = [dotPositions; dotPositionsNonCoherent];
                 
                 % prepare a matrix of zeros for this frame
                 thisFrame = zeros(size(xFrame));
                 if dotRadius > 0
-                    % in each frame, don't show dots near the edges of the frame. That's
-                    % why we have a buffer. The reason we don't show them is that we don't
-                    % want to deal with edge handling.
-                    w1 = find(tmpDotPositions(:,1) > frameSzX - bufferSize + (3/2)*dotRadius);
-                    w2 = find(tmpDotPositions(:,1) < bufferSize - (3/2)*dotRadius);
-                    w3 = find(tmpDotPositions(:,2) > frameSzY - bufferSize + (3/2)*dotRadius);
-                    w4 = find(tmpDotPositions(:,2) < bufferSize - (3/2)*dotRadius);
+                    % in each frame, don't show dots near the edges of the
+                    % frame. That's why we have a buffer. The reason we don't
+                    % show them is that we don't want to deal with edge 
+                    % handling
+                    w1 = tmpDotPositions(:,1) > (frameSzX - bufferSize ...
+                        + (3/2)*dotRadius);
+                    w2 = tmpDotPositions(:,1) < (bufferSize - (3/2)*dotRadius);
+                    w3 = tmpDotPositions(:,2) > (frameSzY - bufferSize ...
+                        + (3/2)*dotRadius);
+                    w4 = tmpDotPositions(:,2) < (bufferSize - (3/2)*dotRadius);
                     w = [w1; w2; w3; w4];
                     tmpDotPositions(w, :) = [];
                     
                     % add the dots to thisFrame
                     for p = 1:size(tmpDotPositions, 1)
-                        
                         % find the center point of the current dot, in thisFrame
                         % coordinates. This is where the dot will be placed.
                         cpX = round(tmpDotPositions(p, 1));
                         cpY = round(tmpDotPositions(p, 2));
                         
-                        xToInterpolate = toInterpolate + (round(tmpDotPositions(p,1)) - tmpDotPositions(p,1));
-                        yToInterpolate = toInterpolate + (round(tmpDotPositions(p,2)) - tmpDotPositions(p,2));
-                        [xToInterpolate, yToInterpolate] = meshgrid(xToInterpolate, yToInterpolate);
-                        thisSmallDot = interp2(xLargeDot, yLargeDot, largeDot, ...
-                            xToInterpolate, yToInterpolate, interpMethod);
+                        xToInterpol = toInterpolate ...
+                            + (round(tmpDotPositions(p,1)) ...
+                            - tmpDotPositions(p,1));
+                        yToInterpol = toInterpolate ...
+                            + (round(tmpDotPositions(p,2)) ...
+                            - tmpDotPositions(p,2));
+                        [xToInterpol, yToInterpol] = meshgrid(xToInterpol, ...
+                            yToInterpol);
+                        thisSmallDot = interp2(xLargeDot, yLargeDot, ...
+                            largeDot, xToInterpol, yToInterpol, interpMethod);
                         
                         % now add this small dot to the frame.
                         thisFrame(cpX-dSz:cpX+dSz, cpY-dSz:cpY+dSz) = ...
@@ -940,16 +1193,18 @@ classdef InputStimulus < handle
                     tmpDotPositions(tmpDotPositions(:,2) < 1, :) = [];
                     tmpDotPositions = round(tmpDotPositions);
                     
-                    w = sub2ind(size(thisFrame), tmpDotPositions(:,1), tmpDotPositions(:,2));
+                    w = sub2ind(size(thisFrame), tmpDotPositions(:,1), ...
+                        tmpDotPositions(:,2));
                     
                     thisFrame(w) = 1;
                 end
                 % Add this frame to the final output
-                s(:,:,t) = thisFrame;
+                res(:,:,t) = thisFrame;
             end
             % Now trim away the buff
-            s = s(bufferSize+1:end-bufferSize, bufferSize+1:end-bufferSize, :);
-            s(s>1) = 1;
+            res = res(bufferSize+1:end-bufferSize, ...
+                bufferSize+1:end-bufferSize, :);
+            res(res>1) = 1;
         end
         
         function res = privMakePlaid(this, length, dir, freq, angle, contr)
@@ -961,18 +1216,6 @@ classdef InputStimulus < handle
             % This method was initially authored by Timothy Saint and Eero
             % P. Simoncelli at NYU. It was adapted for coordinate system
             % [x,y,t]. For more information see beginning of this file.
-            %
-            % LENGTH       - The number of frames to create.
-            % DIR          - The drifting direction of the stimulus in radians
-            %                (where 0=rightward, pi/2=upward; angle increases
-            %                counterclockwise).
-            % FREQ         - 2-D vector of stimulus frequency. The first
-            %                component is the spatial frequency (cycles/pixels),
-            %                whereas the second component is the temporal
-            %                frequency (cycles/frame)
-            % ANGLE        - The angle between the grating components in
-            %                radians. Default is (2/3)*pi = 120 degrees.
-            % CONTR        - The overall plaid contrast. Default is 1.
             firstDirection = mod(dir + angle/2, 2*pi);
             secondDirection = mod(dir - angle/2, 2*pi);
             firstGrating = this.privMakeSin(length, firstDirection, freq, ...
@@ -989,17 +1232,6 @@ classdef InputStimulus < handle
             % This method was initially authored by Timothy Saint and Eero
             % P. Simoncelli at NYU. It was adapted for coordinate system
             % [x,y,t]. For more information see beginning of this file.
-            %
-            % LENGTH       - The number of frames to create.
-            % DIR          - The drifting direction of the stimulus in radians
-            %                (where 0=rightward, pi/2=upward; angle increases
-            %                counterclockwise).
-            % FREQ         - 2-D vector of stimulus frequency. The first
-            %                component is the spatial frequency (cycles/pixels),
-            %                whereas the second component is the temporal
-            %                frequency (cycles/frame)
-            % CONTR        - The grating contrast.
-            % PHASE        - The initial phase of the grating in periods.
             stimSz = [this.width, this.height, length];
             if numel(freq)~=2
                 error('Frequency must be [spatFreq tempFreq]')
@@ -1032,6 +1264,7 @@ classdef InputStimulus < handle
                     waitforbuttonpress;
                 case 'q'
                     disp('Quitting.')
+                    close % close figure
                     this.plotAbortPlotting = true;
             end
         end
@@ -1041,12 +1274,12 @@ classdef InputStimulus < handle
             if ~isnumeric(index) || size(frame,3)>1
                 error('Cannot set more than one frame at the same time')
             end
-            if size(frame,1) ~= stim.width
-                error(['Stimulus width (' num2str(stim.width) ') does not ' ...
+            if size(frame,1) ~= this.width
+                error(['Stimulus width (' num2str(this.width) ') does not ' ...
                     'match frame width (' num2str(size(frame,1)) ')'])
             end
-            if size(frame,2) ~= stim.height
-                error(['Stimulus height (' num2str(stim.height) ') does ' ...
+            if size(frame,2) ~= this.height
+                error(['Stimulus height (' num2str(this.height) ') does ' ...
                     'not match frame height (' num2str(size(frame,2)) ')'])
             end
             
