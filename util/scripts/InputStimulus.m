@@ -210,11 +210,11 @@ classdef InputStimulus < handle
                 dotDensity, dotCoherence, dotRadius, ptCenter, densityStyle, ...
                 sampleFactor, interpMethod)
             % IS.addDots(length, type, dotDirection, dotSpeed, dotCoherence,
-            % dotRadius, densityStyle, sampleFactor, interpMethod) adds a field
-            % of drifting dots to the existing stimulus. The field consists of
-            % roughly DOTDENSITY*imgWidth*imgHeight drifting dots, of which a 
-            % fraction DOTCOHERENCE drifts coherently into a DOTDIRECTION 
-            % (either direction of motion or motion gradient).
+            % dotRadius, ptCenter, densityStyle, sampleFactor, interpMethod)
+            % adds a field of drifting dots to the existing stimulus. The field
+            % consists of roughly DOTDENSITY*imgWidth*imgHeight drifting dots,
+            % of which a  fraction DOTCOHERENCE drifts coherently into a
+            % DOTDIRECTION (either direction of motion or motion gradient).
             % Supported flow patterns include drifting into a certain direction,
             % expansion, contraction, rotations, and deformations.
             %
@@ -1132,6 +1132,19 @@ classdef InputStimulus < handle
                             dotPositions(:,2)-ptCenter(2), w0, dotDirection);
                         dxdt = dxdt*dotSpeed;
                         dotPositions = dotPositions + dxdt;
+
+                        w = find(dotPositions(:,1)>frameSzX+.5);
+                        dotPositions(w,1) = dotPositions(w,1) - frameSzX;
+                        
+                        w = find(dotPositions(:,1)<.5);
+                        dotPositions(w,1) = dotPositions(w,1) + frameSzX;
+                        
+                        w = find(dotPositions(:,2)>frameSzY+.5);
+                        dotPositions(w,2) = dotPositions(w,2) - frameSzY;
+                        
+                        w = find(dotPositions(:,2)<.5);
+                        dotPositions(w,2) = dotPositions(w,2) + frameSzY;
+
                     otherwise
                         error(['Unknown RDK type "' type '"'])
                 end
@@ -1153,12 +1166,12 @@ classdef InputStimulus < handle
                     % frame. That's why we have a buffer. The reason we don't
                     % show them is that we don't want to deal with edge 
                     % handling
-                    w1 = tmpDotPositions(:,1) > (frameSzX - bufferSize ...
-                        + (3/2)*dotRadius);
-                    w2 = tmpDotPositions(:,1) < (bufferSize - (3/2)*dotRadius);
-                    w3 = tmpDotPositions(:,2) > (frameSzY - bufferSize ...
-                        + (3/2)*dotRadius);
-                    w4 = tmpDotPositions(:,2) < (bufferSize - (3/2)*dotRadius);
+                    w1 = find(tmpDotPositions(:,1) > (frameSzX - bufferSize ...
+                        + (3/2)*dotRadius));
+                    w2 = find(tmpDotPositions(:,1) < (bufferSize - (3/2)*dotRadius));
+                    w3 = find(tmpDotPositions(:,2) > (frameSzY - bufferSize ...
+                        + (3/2)*dotRadius));
+                    w4 = find(tmpDotPositions(:,2) < (bufferSize - (3/2)*dotRadius));
                     w = [w1; w2; w3; w4];
                     tmpDotPositions(w, :) = [];
                     
