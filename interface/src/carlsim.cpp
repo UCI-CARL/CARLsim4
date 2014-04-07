@@ -102,7 +102,6 @@ public:
 	 */
 	void update(CARLsim* s, int grpId, unsigned int* neurIds, unsigned int* timeCnts, int timeInterval) {
 		int pos    = 0; // keep track of position in flattened list of neuron IDs
-
 		for (int t=0; t < timeInterval; t++) {
 			for(int i=0; i<timeCnts[t];i++,pos++) {
 				// timeInterval might be < 1000 at the end of a simulation
@@ -134,6 +133,7 @@ class WriteSpikesToVector: public SpikeMonitor {
 public:
 	WriteSpikesToVector(std::vector<int> &spkVector) {
 		// TODO: do an error check in carlsim to make sure it's an empty vector
+		spkVector_ = spkVector;
 	}
 	~WriteSpikesToVector() {}; // TODO: where does fileId_ get closed?
 
@@ -157,8 +157,8 @@ public:
 	 * \param[in] timeInterval the time interval to parse (usually 1000ms)
 	 */
 	void update(CARLsim* s, int grpId, unsigned int* neurIds, unsigned int* timeCnts, int timeInterval) {
-		// go through the spike buffer and output the time and neuron ids to the vector
-		for (int t=0; t < timeInterval; t++;) {
+		int pos    = 0; // keep track of position in flattened list of neuron IDs
+		for (int t=0; t < timeInterval; t++) {
 			for(int i=0; i<timeCnts[t];i++,pos++) {
 				// timeInterval might be < 1000 at the end of a simulation
 				int time = t + s->getSimTime() - timeInterval;
@@ -169,9 +169,7 @@ public:
 				spkVector_.push_back(id);
 			}
 		}
-		spkVector = spkVector_;
 	}
-
 	// write another class method that returns the stats I'm talking about.
 
 private:

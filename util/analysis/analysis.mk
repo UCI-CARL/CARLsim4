@@ -6,7 +6,7 @@
 local_dir := $(analysis_dir)
 local_deps := $(addprefix $(local_dir)/include/, analysis.h)
 local_src := $(addprefix $(local_dir)/src/, analysis.cpp \
-	$(local_deps)
+	$(local_deps))
 local_objs := $(addprefix $(local_dir)/src/,analysis.o)
 
 sources += $(local_src)
