@@ -130,15 +130,12 @@ private:
  * collected spike times (and neuron IDs) to binary file.
  * Note that this function will only be called every 1000 ms.
  */
-class WriteSpikesToArray: public SpikeMonitor {
+class WriteSpikesToVector: public SpikeMonitor {
 public:
-	WriteSpikesToFile(int* spkArray, int& arraySize) {
-		spkArray=NULL;
-		arraySize=0;
-		_arraySize=arraySize;
-		spkArray_=spkArray;
+	WriteSpikesToVector(std::vector<int> &spkVector) {
+		// TODO: do an error check in carlsim to make sure it's an empty vector
 	}
-	~WriteSpikesToArray() {}; // TODO: where does fileId_ get closed?
+	~WriteSpikesToVector() {}; // TODO: where does fileId_ get closed?
 
 	/*
 	 * \brief update method that gets called every 1000 ms by CARLsimCore
@@ -160,31 +157,25 @@ public:
 	 * \param[in] timeInterval the time interval to parse (usually 1000ms)
 	 */
 	void update(CARLsim* s, int grpId, unsigned int* neurIds, unsigned int* timeCnts, int timeInterval) {
-		// temp array size should be maxRate*grp.SizeN*sizeof(int)*2. 2 comes from time and nid for
-		// each spike event.
-		int pos    = 0; // keep track of position in flattened list of neuron IDs
-		for (int t=0; t < timeInterval; t++) {
+		// go through the spike buffer and output the time and neuron ids to the vector
+		for (int t=0; t < timeInterval; t++;) {
 			for(int i=0; i<timeCnts[t];i++,pos++) {
 				// timeInterval might be < 1000 at the end of a simulation
 				int time = t + s->getSimTime() - timeInterval;
 				assert(time>=0);
-				
 				int id   = neurIds[pos];
-				int cnt = fwrite(&time,sizeof(int),1,fileId_);
-				assert(cnt != 0);
-				cnt = fwrite(&id,sizeof(int),1,fileId_);
-				assert(cnt != 0);
-				// here is where we right things to our new array
-				spkArray_[]
+				// here is where we write things to our new array
+				spkVector_.push_back(time);
+				spkVector_.push_back(id);
 			}
 		}
-
-		fflush(fileId_);
+		spkVector = spkVector_;
 	}
 
+	// write another class method that returns the stats I'm talking about.
+
 private:
-	int* spkArray_;
-	int arraySize_;
+	std::vector<int> spkVector_;
 };
 
 /// **************************************************************************************************************** ///
