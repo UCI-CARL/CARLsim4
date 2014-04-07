@@ -1,6 +1,6 @@
 # module include file for tuneFiringRates example program
 example := tuneFiringRates
-output := *.dot *.txt *.log tmp* *.status *.o
+output := *.o results/EA-Data results/*.txt
 
 #local info (vars can be overwritten)
 local_dir := examples/$(example)

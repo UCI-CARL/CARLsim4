@@ -185,13 +185,13 @@ int main()
 				double maxWeight = initWeight;
 				// create the connections (with a dummy weight) and grab their connection id
 				snn[configId]->connect(inputGroup[configId],excGroup[configId],"random", initWeight, maxWeight, 0.5f, 1, 1, SYN_FIXED);
-				initWeight = ptiObj->getParam(indiId,"InputGroup-ExcGroup");
+				initWeight = ptiObj->getParam(indiId,"ExcGroup-ExcGroup");
 				maxWeight = initWeight;
 				snn[configId]->connect(excGroup[configId],excGroup[configId],"random", initWeight, maxWeight, 0.5f, 1, 1, SYN_FIXED);
-				initWeight = ptiObj->getParam(indiId,"InputGroup-ExcGroup");
+				initWeight = ptiObj->getParam(indiId,"ExcGroup-InhGroup");
 				maxWeight = initWeight;
 				snn[configId]->connect(excGroup[configId],inhGroup[configId],"random", initWeight, maxWeight, 0.5f, 1, 1, SYN_FIXED);
-				initWeight = ptiObj->getParam(indiId,"InputGroup-ExcGroup");
+				initWeight = ptiObj->getParam(indiId,"InhGroup-ExcGroup");
 				maxWeight = initWeight;
 				snn[configId]->connect(inhGroup[configId],excGroup[configId],"random", -1.0f*initWeight,-1.0f*maxWeight, 0.5f, 1, 1, SYN_FIXED);
 
