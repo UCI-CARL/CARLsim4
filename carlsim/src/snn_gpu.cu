@@ -407,14 +407,14 @@ int CpuSNN::allocateStaticLoad(int bufSize) {
 			// fill the static load distribution here...
 			int testg = STATIC_LOAD_GROUP(threadLoad);
 			tempNeuronAllocation[bufferCnt] = threadLoad;
-			CARLSIM_DEBUG("%d. Start=%d, size=%d grpId=%d:%s (SpikeMonId=%d) (GroupMonId=%d) (NetworkMonId=%d)",
+			CARLSIM_DEBUG("%d. Start=%d, size=%d grpId=%d:%s (SpikeMonId=%d) (GroupMonId=%d) (ConnMonId=%d)",
 					bufferCnt, STATIC_LOAD_START(threadLoad),
 					STATIC_LOAD_SIZE(threadLoad),
 					STATIC_LOAD_GROUP(threadLoad),
 					grp_Info2[testg].Name.c_str(),
 					grp_Info[testg].SpikeMonitorId,
 					grp_Info[testg].GroupMonitorId,
-					grp_Info[testg].NetworkMonitorId);
+					grp_Info[testg].ConnectionMonitorId);
 			bufferCnt++;
 		}
 	}
@@ -2329,18 +2329,15 @@ void CpuSNN::findFiring_GPU()
 
 
 
-	if(MEASURE_LOADING) printGpuLoadBalance(false,MAX_BLOCKS,fpOut_);
+	if(MEASURE_LOADING)
+		printGpuLoadBalance(false,MAX_BLOCKS);
 
 	return;
 }
 
-void CpuSNN::printGpuLoadBalance(bool init, int numBlocks, FILE* fp)
-{
-	CARLSIM_WARN("Calling printGpuLoadBalance with FILE*fp is deprecated");
+void CpuSNN::printGpuLoadBalance(bool init, int numBlocks) {
 	void* devPtr;
-
 	static int	 cpu_tmp_val[MAX_BLOCKS][LOOP_CNT];
-
 	cudaGetSymbolAddress(&devPtr, tmp_val);
 
 	if(init) {
@@ -2360,9 +2357,6 @@ void CpuSNN::printGpuLoadBalance(bool init, int numBlocks, FILE* fp)
 	}
 
 	CARLSIM_DEBUG("\n");
-
-	fflush(fp);
-
 }
 
 // get spikes from GPU SpikeCounter
@@ -2573,9 +2567,7 @@ void CpuSNN::CpuSNNinit_GPU() {
 }
 
 
-void CpuSNN::initGPU(int gridSize, int blkSize)
-{
-
+void CpuSNN::initGPU(int gridSize, int blkSize) {
 	assert(cpu_gpuNetPtrs.allocated);
 
 	kernel_init <<< gridSize, blkSize >>> ();
@@ -2583,7 +2575,7 @@ void CpuSNN::initGPU(int gridSize, int blkSize)
 	int errCode = checkErrors("kernel_init", gridSize);
 	assert(errCode == NO_KERNEL_ERRORS);
 
-  printGpuLoadBalance(true,false,fpOut_);
+	printGpuLoadBalance(true,false);
 
 	checkInitialization();
 
@@ -3079,10 +3071,11 @@ void CpuSNN::checkGPUDevice() {
 	int devCount;
 	cudaGetDeviceCount(&devCount);
 	CUDA_GET_LAST_ERROR("cudaGetDeviceCount failed\n");
-	CARLSIM_INFO("Number of CUDA devices : %d",devCount);
+	CARLSIM_INFO("GPU Setup:");
+	CARLSIM_INFO("  - Number of CUDA devices     = %7d",devCount);
 
 	int dev = CUDA_GET_MAXGFLOP_DEVICE_ID();
-	CARLSIM_INFO("Device with maximum GFLOPs is : %d", dev);
+	CARLSIM_INFO("  - Device ID with max GFLOPs  = %7d", dev);
 	cudaDeviceProp deviceProp;
 
 	// ithGPU gives an index number on which device to run the simulation
@@ -3098,10 +3091,10 @@ void CpuSNN::checkGPUDevice() {
 	CUDA_CHECK_ERRORS(cudaGetDeviceProperties(&deviceProp, dev));
 	CARLSIM_DEBUG("Device %d: \"%s\"", dev, deviceProp.name);
 	if (deviceProp.major == 1 && deviceProp.minor < 3) {
-		CARLSIM_ERROR("GPU SNN does not support NVidia cards older than version 1.3");
+		CARLSIM_ERROR("CARLsim does not support NVIDIA cards older than version 1.3");
 		exitSimulation(1);
 	}
-	CARLSIM_INFO("CUDA Device is of type %d.%d", deviceProp.major, deviceProp.minor);
+	CARLSIM_INFO("  - CUDA Compute Capability    =    %2d.%d\n", deviceProp.major, deviceProp.minor);
 	assert(deviceProp.major >= 1);
 	CUDA_DEVICE_RESET();
 	cudaSetDevice(dev);
@@ -3157,7 +3150,7 @@ void CpuSNN::allocateSNN_GPU() {
 	size_t avail, total, previous;
 	float toGB = 1024.0 * 1024.0 * 1024.0;
 	cudaMemGetInfo(&avail,&total);
-	CARLSIM_INFO("GPU Memory Management (Total %2.3f GB)",(float)(total/toGB));
+	CARLSIM_INFO("GPU Memory Management: (Total %2.3f GB)",(float)(total/toGB));
 	CARLSIM_INFO("Data\t\t\tSize\t\tTotal Used\tTotal Available");
 	CARLSIM_INFO("Init:\t\t\t%2.3f GB\t%2.3f GB\t%2.3f GB",(float)(total)/toGB,(float)((total-avail)/toGB),
 		(float)(avail/toGB));
@@ -3211,7 +3204,7 @@ void CpuSNN::allocateSNN_GPU() {
 	// initialize (copy from CpuSNN) cpu_gpuNetPtrs.grpDA, cpu_gpuNetPtrs.grp5HT, cpu_gpuNetPtrs.grpACh, cpu_gpuNetPtrs.grpNE
 	copyState(&cpu_gpuNetPtrs, 1);
 	cudaMemGetInfo(&avail,&total);
-	CARLSIM_INFO("State Info:\t\t%2.3f GB\t%2.3f GB\t%2.3f GB",(float)(previous-avail)/toGB,(float)((total-avail)/toGB),
+	CARLSIM_INFO("State Info:\t\t%2.3f GB\t%2.3f GB\t%2.3f GB\n\n",(float)(previous-avail)/toGB,(float)((total-avail)/toGB),
 		(float)(avail/toGB));
 	previous=avail;
 
@@ -3366,15 +3359,17 @@ void CpuSNN::printSimSummary() {
 		etime = cpuExecutionTime;
 	}
 
-	CARLSIM_INFO("*********** %s Simulation Summary **********", (simMode_ == GPU_MODE)?("GPU"):"CPU");
-	CARLSIM_INFO("Network Parameters: \n\tnumNeurons = %d (numNExcReg:numNInhReg=%2.1f:%2.1f), numSynapses = %d, D = %d", numN, 100.0*numNExcReg/numN, 100.0*numNInhReg/numN, postSynCnt, D);
+	CARLSIM_INFO("********************      %s Simulation Summary      *************************",
+		simMode_==GPU_MODE?"GPU":"CPU");
+
+	CARLSIM_INFO("Network Parameters: \n\tnumNeurons = %d (numNExcReg:numNInhReg = %2.1f:%2.1f)\n\tnumSynapses = %d\n\tmaxDelay = %d", numN, 100.0*numNExcReg/numN, 100.0*numNInhReg/numN, postSynCnt, D);
 	CARLSIM_INFO("Random Seed: %d", randSeed_);
 	CARLSIM_INFO("Timing: \n\tModel Simulation Time = %lld sec \n\tActual Execution Time = %4.2f sec",  (unsigned long long)simTimeSec, etime/1000.0);
-	CARLSIM_INFO("Average Firing Rate \n\t2+ms delay = %3.3f Hz \n\t1ms delay = %3.3f Hz \n\tOverall = %3.3f Hz",
+	CARLSIM_INFO("Average Firing Rate:\n\t2+ms delay = %3.3f Hz \n\t1ms delay = %3.3f Hz \n\tOverall = %3.3f Hz",
 		spikeCountD2Host/(1.0*simTimeSec*numNExcReg), spikeCountD1Host/(1.0*simTimeSec*numNInhReg), spikeCountAll/(1.0*simTimeSec*numN));
 	CARLSIM_INFO("Overall Firing Count: \n\t2+ms delay = %d \n\t1ms delay = %d \n\tTotal = %d",
 		spikeCountD2Host, spikeCountD1Host, spikeCountAll );
-	CARLSIM_INFO("**************************************\n");
+	CARLSIM_INFO("******************************************************************************\n");
 }
 
 

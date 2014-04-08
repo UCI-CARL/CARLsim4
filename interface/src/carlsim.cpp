@@ -84,26 +84,31 @@ public:
 	/*
 	 * \brief update method that gets called every 1000 ms by CARLsimCore
 	 * This is an implementation of virtual void SpikeMonitor::update. It gets called every 1000 ms with a pointer to
-	 * all the neurons (neurIds) that have spiked during the last 1000 ms (timeCnts).
+	 * all the neurons (neurIds) that have spiked during the last timeInterval ms (usually 1000).
+	 * It can be called for less than 1000 ms at the end of a simulation.
 	 * This implementation will iterate over all neuron IDs and spike times, and print them to file (binary).
 	 * To save space, neuron IDs are stored in a continuous (flattened) list, whereas timeCnts holds the number of
 	 * neurons that have spiked at each time step (reduced AER).
 	 * Example: There are 3 neurons, where neuron with ID 0 spikes at time 1, neurons with ID 1 and 2 both spike at
 	 *  		time 3. Then neurIds = {0,1,2} and timeCnts = {0,1,0,2,0,...,0}. Note that neurIds could also be {0,2,1}
 	 *
-	 * \param[in] snn 		pointer to an instance of CARLsimCore
-	 * \param[in] grpId 	the group ID from which to record spikes
-	 * \param[in] neurIds	pointer to a flattened list that contains all the IDs of neurons that have spiked within
-	 *                      the last 1000 ms.
-	 * \param[in] timeCnts 	pointer to a data structures that holds the number of spikes at each time step during the
-	 *  					last 1000 ms. timeCnts[i] will hold the number of spikes in the i-th millisecond.
+	 * \param[in] snn 		   pointer to an instance of CARLsimCore
+	 * \param[in] grpId 	   the group ID from which to record spikes
+	 * \param[in] neurIds	   pointer to a flattened list that contains all the IDs of neurons that have spiked within
+	 *                         the last 1000 ms.
+	 * \param[in] timeCnts 	   pointer to a data structures that holds the number of spikes at each time step during the
+	 *  					   last 1000 ms. timeCnts[i] will hold the number of spikes in the i-th millisecond.
+	 * \param[in] timeInterval the time interval to parse (usually 1000ms)
 	 */
-	void update(CARLsim* s, int grpId, unsigned int* neurIds, unsigned int* timeCnts) {
+	void update(CARLsim* s, int grpId, unsigned int* neurIds, unsigned int* timeCnts, int timeInterval) {
 		int pos    = 0; // keep track of position in flattened list of neuron IDs
 
-		for (int t=0; t < 1000; t++) {
+		for (int t=0; t < timeInterval; t++) {
 			for(int i=0; i<timeCnts[t];i++,pos++) {
-				int time = t + s->getSimTime() - 1000;
+				// timeInterval might be < 1000 at the end of a simulation
+				int time = t + s->getSimTime() - timeInterval;
+				assert(time>=0);
+				
 				int id   = neurIds[pos];
 				int cnt = fwrite(&time,sizeof(int),1,fileId_);
 				assert(cnt != 0);
@@ -244,7 +249,7 @@ short int CARLsim::connect(int grpId1, int grpId2, const std::string& connType, 
 	UserErrors::assertTrue(grpId2!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName, grpId2str.str());
 	UserErrors::assertTrue(!isPoissonGroup(grpId2), UserErrors::WRONG_NEURON_TYPE, funcName, grpId2str.str() + 
 		" is PoissonGroup, connect");
-	UserErrors::assertTrue(!isExcitatoryGroup(grpId1) || maxWt>=0, UserErrors::CANNOT_BE_NEGATIVE, funcName, "maxWt");
+	UserErrors::assertTrue(!isExcitatoryGroup(grpId1) || maxWt>0, UserErrors::MUST_BE_POSITIVE, funcName, "maxWt");
 	UserErrors::assertTrue(!isInhibitoryGroup(grpId1) || maxWt<0, UserErrors::MUST_BE_NEGATIVE, funcName, "maxWt");
 	UserErrors::assertTrue(initWt*maxWt>=0, UserErrors::MUST_HAVE_SAME_SIGN, funcName, "initWt and maxWt");
 	UserErrors::assertTrue(!hasRunNetwork_, UserErrors::NETWORK_ALREADY_RUN, funcName); // can't change setup after run
@@ -539,7 +544,7 @@ void CARLsim::setWeightUpdateParameter(int updateInterval, int tauWeightChange) 
 // +++++++++ PUBLIC METHODS: RUNNING A SIMULATION +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
 // run network with custom options
-int CARLsim::runNetwork(int nSec, int nMsec, bool enablePrint, bool copyState) {
+int CARLsim::runNetwork(int nSec, int nMsec, bool copyState) {
 	if (!hasRunNetwork_) {
 		handleUserWarnings();	// before running network, make sure user didn't provoque any user warnings
 //		printSimulationSpecs(); // first time around, show simMode etc.
@@ -547,7 +552,7 @@ int CARLsim::runNetwork(int nSec, int nMsec, bool enablePrint, bool copyState) {
 
 	hasRunNetwork_ = true;
 
-	return snn_->runNetwork(nSec, nMsec, enablePrint, copyState);	
+	return snn_->runNetwork(nSec, nMsec, copyState);	
 }
 
 // +++++++++ PUBLIC METHODS: LOGGING / PLOTTING +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
@@ -597,6 +602,16 @@ void CARLsim::resetSpikeCounter(int grpId, int configId) {
 	snn_->resetSpikeCounter(grpId,configId);
 }
 
+// set network monitor for a group
+void CARLsim::setConnectionMonitor(int grpIdPre, int grpIdPost, ConnectionMonitor* connectionMon, int configId) {
+	std::string funcName = "setConnectionMonitor(\""+getGroupName(grpIdPre,configId)+"\",ConnectionMonitor*)";
+	UserErrors::assertTrue(!hasRunNetwork_, UserErrors::NETWORK_ALREADY_RUN, funcName); // can't change setup after run
+	UserErrors::assertTrue(grpIdPre!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName, "grpIdPre");		// groupId can't be ALL
+	UserErrors::assertTrue(grpIdPost!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName, "grpIdPost");		// groupId can't be ALL
+
+	snn_->setConnectionMonitor(grpIdPre, grpIdPost, new ConnectionMonitorCore(this, connectionMon),configId);
+}
+
 // set group monitor for a group
 void CARLsim::setGroupMonitor(int grpId, GroupMonitor* groupMon, int configId) {
 	std::string funcName = "setGroupMonitor(\""+getGroupName(grpId,configId)+"\",GroupMonitor*)";
@@ -604,16 +619,6 @@ void CARLsim::setGroupMonitor(int grpId, GroupMonitor* groupMon, int configId) {
 	UserErrors::assertTrue(grpId!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName, "grpId");		// groupId can't be ALL
 
 	snn_->setGroupMonitor(grpId, new GroupMonitorCore(this, groupMon),configId);
-}
-
-// set network monitor for a group
-void CARLsim::setNetworkMonitor(int grpIdPre, int grpIdPost, NetworkMonitor* networkMon, int configId) {
-	std::string funcName = "setNetworkMonitor(\""+getGroupName(grpIdPre,configId)+"\",NetworkMonitor*)";
-	UserErrors::assertTrue(!hasRunNetwork_, UserErrors::NETWORK_ALREADY_RUN, funcName); // can't change setup after run
-	UserErrors::assertTrue(grpIdPre!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName, "grpIdPre");		// groupId can't be ALL
-	UserErrors::assertTrue(grpIdPost!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName, "grpIdPost");		// groupId can't be ALL
-
-	snn_->setNetworkMonitor(grpIdPre, grpIdPost, new NetworkMonitorCore(this, networkMon),configId);
 }
 
 // sets a spike counter for a group
@@ -719,24 +724,17 @@ int CARLsim::getGroupId(int grpId, int configId) {
 //	return snn_->getGroupInfo(grpId, configId);
 //}
 
-// get group name
-std::string CARLsim::getGroupName(int grpId, int configId) {
-	return snn_->getGroupName(grpId, configId);
-}
-
-int CARLsim::getNumConnections(short int connectionId) {
-	return snn_->getNumConnections(connectionId);
-}
+std::string CARLsim::getGroupName(int grpId, int configId) { return snn_->getGroupName(grpId, configId); }
+int CARLsim::getNumConnections(short int connectionId) { return snn_->getNumConnections(connectionId); }
+int CARLsim::getNumGroups() { return snn_->getNumGroups(); }
+int CARLsim::getNumNeurons() { return snn_->getNumNeurons(); }
+int CARLsim::getNumPreSynapses() { return snn_->getNumPreSynapses(); }
+int CARLsim::getNumPostSynapses() { return snn_->getNumPostSynapses(); } 
 
 int CARLsim::getGroupStartNeuronId(int grpId) { return snn_->getGroupStartNeuronId(grpId); }
 int CARLsim::getGroupEndNeuronId(int grpId) { return snn_->getGroupEndNeuronId(grpId); }
 int CARLsim::getGroupNumNeurons(int grpId) { return snn_->getGroupNumNeurons(grpId); }
 
-int CARLsim::getNumNeurons() { return snn_->getNumNeurons(); }
-int CARLsim::getNumPreSynapses() { return snn_->getNumPreSynapses(); }
-int CARLsim::getNumPostSynapses() { return snn_->getNumPostSynapses(); } 
-
-int CARLsim::getNumGroups() { return snn_->getNumGroups(); }
 uint64_t CARLsim::getSimTime() { return snn_->getSimTime(); }
 uint32_t CARLsim::getSimTimeSec() { return snn_->getSimTimeSec(); }
 uint32_t CARLsim::getSimTimeMsec() { return snn_->getSimTimeMs(); }
@@ -772,10 +770,6 @@ bool CARLsim::isPoissonGroup(int grpId) { return snn_->isPoissonGroup(grpId); }
 void CARLsim::setCopyFiringStateFromGPU(bool enableGPUSpikeCntPtr) {
 	snn_->setCopyFiringStateFromGPU(enableGPUSpikeCntPtr);
 }
-
-//void CARLsim::setGroupInfo(int grpId, group_info_t info, int configId) { snn_->setGroupInfo(grpId,info,configId); }
-void CARLsim::setPrintState(int grpId, bool status) { snn_->setPrintState(grpId,status); }
-
 
 
 
