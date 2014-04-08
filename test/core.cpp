@@ -50,6 +50,14 @@ TEST(CORE, CpuSNNinitDeath) {
 	CpuSNN* sim = NULL;
 	std::string name="SNN";
 
+	// sim mode
+	EXPECT_DEATH({sim = new CpuSNN(name,UNKNOWN_SIM,USER,0,1,42);},"");
+	if (sim!=NULL) delete sim; sim = NULL;
+
+	// logger mode
+	EXPECT_DEATH({sim = new CpuSNN(name,CPU_MODE,UNKNOWN_LOGGER,0,1,42);},"");
+	if (sim!=NULL) delete sim; sim = NULL;
+
 	// ithGPU
 	EXPECT_DEATH({sim = new CpuSNN(name,CPU_MODE,USER,-1,1,42);},"");
 	if (sim!=NULL) delete sim; sim = NULL;

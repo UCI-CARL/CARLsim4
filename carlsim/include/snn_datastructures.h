@@ -247,7 +247,8 @@ typedef struct group_info_s
 	bool 		isSpikeGenerator;
 	bool 		WithSTP;
 	bool 		WithSTDP;
-	bool		WithModulatedSTDP;
+	stdpType_t  WithSTDPtype;
+//	bool		WithModulatedSTDP;
 	bool 		WithHomeostasis;
 //	bool 		WithConductances;
 	int		homeoId;

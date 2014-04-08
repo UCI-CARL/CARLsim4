@@ -304,7 +304,7 @@ int CpuSNN::createGroup(const std::string& grpName, int nNeur, int neurType, int
 		grp_Info[numGrp].Type   			= neurType;
 		grp_Info[numGrp].WithSTP			= false;
 		grp_Info[numGrp].WithSTDP			= false;
-		grp_Info[numGrp].WithModulatedSTDP  = false;
+		grp_Info[numGrp].WithSTDPtype       = UNKNOWN_STDP;
 		grp_Info[numGrp].WithHomeostasis	= false;
     
 		if ( (neurType&TARGET_GABAa) || (neurType&TARGET_GABAb)) {
@@ -343,7 +343,7 @@ int CpuSNN::createSpikeGeneratorGroup(const std::string& grpName, int nNeur, int
 		grp_Info[numGrp].Type    		= neurType | POISSON_NEURON;
 		grp_Info[numGrp].WithSTP		= false;
 		grp_Info[numGrp].WithSTDP		= false;
-		grp_Info[numGrp].WithModulatedSTDP = false;
+		grp_Info[numGrp].WithSTDPtype   = UNKNOWN_STDP;
 		grp_Info[numGrp].WithHomeostasis	= false;
 		grp_Info[numGrp].isSpikeGenerator	= true;		// these belong to the spike generator class...
 		grp_Info2[numGrp].ConfigId		= configId;
@@ -528,28 +528,31 @@ void CpuSNN::setNeuromodulator(int grpId, float baseDP, float tauDP, float base5
 }
 
 // set STDP params
-void CpuSNN::setSTDP(int grpId, bool isSet, float alphaLTP, float tauLTP, float alphaLTD, float tauLTD, int configId) {
+void CpuSNN::setSTDP(int grpId, bool isSet, stdpType_t type, float alphaLTP, float tauLTP, float alphaLTD, float tauLTD,
+	int configId) {
 	assert(grpId>=-1); assert(configId>=-1);
 	if (isSet) {
+		assert(type!=UNKNOWN_STDP);
 		assert(alphaLTP>=0); assert(tauLTP>=0); assert(alphaLTD>=0); assert(tauLTD>=0);
 	}
 
 	if (grpId==ALL && configId==ALL) { // shortcut for all groups & configs
 		for(int g=0; g < numGrp; g++)
-			setSTDP(g, isSet, alphaLTP, tauLTP, alphaLTD, tauLTD, 0);
+			setSTDP(g, isSet, type, alphaLTP, tauLTP, alphaLTD, tauLTD, 0);
 	} else if (grpId == ALL) { // shortcut for all groups
 		for(int grpId1=0; grpId1 < numGrp; grpId1 += nConfig_) {
 			int g = getGroupId(grpId1, configId);
-			setSTDP(g, isSet, alphaLTP, tauLTP, alphaLTD, tauLTD, configId);
+			setSTDP(g, isSet, type, alphaLTP, tauLTP, alphaLTD, tauLTD, configId);
 		}
 	} else if (configId == ALL) { // shortcut for all configs
 		for(int c=0; c < nConfig_; c++)
-			setSTDP(grpId, isSet, alphaLTP, tauLTP, alphaLTD, tauLTD, c);
+			setSTDP(grpId, isSet, type, alphaLTP, tauLTP, alphaLTD, tauLTD, c);
 	} else {
 		// set STDP for a given group and configId
 		int cGrpId = getGroupId(grpId, configId);
 		sim_with_stdp 				   |= isSet;
 		grp_Info[cGrpId].WithSTDP 		= isSet;
+		grp_Info[cGrpId].WithSTDPtype	= type;
 		grp_Info[cGrpId].ALPHA_LTP 		= alphaLTP;
 		grp_Info[cGrpId].ALPHA_LTD 		= alphaLTD;
 		grp_Info[cGrpId].TAU_LTP_INV 	= 1.0f/tauLTP;
@@ -598,16 +601,16 @@ void CpuSNN::setWeightUpdateParameter(int updateInterval, int tauWeightChange) {
 	switch (updateInterval) {
 		case _10MS:
 			wtUpdateInterval_ = 10;
-			stdpScaleFactor_ = 0.001;
+			stdpScaleFactor_ = 0.004f;
 			break;
 		case _100MS:
 			wtUpdateInterval_ = 100;
-			stdpScaleFactor_ = 0.01;
+			stdpScaleFactor_ = 0.04f;
 			break;
 		case _1000MS:
 		default:
 			wtUpdateInterval_ = 1000;
-			stdpScaleFactor_ = 0.1;
+			stdpScaleFactor_ = 0.4f;
 			break;
 	}
 
@@ -1546,6 +1549,7 @@ void CpuSNN::setGroupInfo(int grpId, group_info_t info, int configId) {
 // all unsafe operations of CpuSNN constructor
 void CpuSNN::CpuSNNinit() {
 	assert(nConfig_>0 && nConfig_<=MAX_nConfig); assert(ithGPU_>=0);
+	assert(simMode_!=UNKNOWN_SIM); assert(loggerMode_!=UNKNOWN_LOGGER);
 
 	// set logger mode (defines where to print all status, error, and debug messages)
 	switch (loggerMode_) {
@@ -1656,6 +1660,7 @@ void CpuSNN::CpuSNNinit() {
 	spikeRateUpdated = false;
 	numSpikeMonitor = 0;
 	numGroupMonitor = 0;
+	numConnectionMonitor = 0;
 	numSpkCnt = 0;
 
 	sim_with_fixedwts = true; // default is true, will be set to false if there are any plastic synapses
@@ -1713,7 +1718,7 @@ void CpuSNN::CpuSNNinit() {
 		grp_Info[i].numPreSynapses 	= 0;	// default value
 		grp_Info[i].WithSTP = false;
 		grp_Info[i].WithSTDP = false;
-		grp_Info[i].WithModulatedSTDP = false;
+		grp_Info[i].WithSTDPtype = UNKNOWN_STDP;
 		grp_Info[i].FixedInputWts = true; // Default is true. This value changed to false
 		// if any incoming  connections are plastic
 		grp_Info[i].isSpikeGenerator = false;
@@ -1722,14 +1727,14 @@ void CpuSNN::CpuSNNinit() {
 		grp_Info[i].homeoId = -1;
 		grp_Info[i].avgTimeScale  = 10000.0;
 
-		grp_Info[i].baseDP = 1.0;
-		grp_Info[i].base5HT = 1.0;
-		grp_Info[i].baseACh = 1.0;
-		grp_Info[i].baseNE = 1.0;
-		grp_Info[i].decayDP = 1 - (1.0 / 100);
-		grp_Info[i].decay5HT = 1 - (1.0 / 100);
-		grp_Info[i].decayACh = 1 - (1.0 / 100);
-		grp_Info[i].decayNE = 1 - (1.0/ 100);
+		grp_Info[i].baseDP = 1.0f;
+		grp_Info[i].base5HT = 1.0f;
+		grp_Info[i].baseACh = 1.0f;
+		grp_Info[i].baseNE = 1.0f;
+		grp_Info[i].decayDP = 1 - (1.0f / 100);
+		grp_Info[i].decay5HT = 1 - (1.0f / 100);
+		grp_Info[i].decayACh = 1 - (1.0f / 100);
+		grp_Info[i].decayNE = 1 - (1.0f / 100);
 
 		grp_Info[i].spikeGen = NULL;
 
@@ -3801,7 +3806,7 @@ void CpuSNN::updateConnectionMonitor() {
 			int grpIdPre = connMonGrpIdPre[monitorId];
 			int grpIdPost = connMonGrpIdPost[monitorId];
 			float* weights = NULL;
-			float avgWeight;
+			float avgWeight = 0.0f;
 			int weightSzie;
 			getPopWeights(grpIdPre, grpIdPost, weights, weightSzie, 0);
 
@@ -4158,21 +4163,29 @@ void CpuSNN::updateWeights() {
 				float effectiveWtChange = stdpScaleFactor_ * wtChange[offset + j];
 
 				// homeostatic weight update
-				if (grp_Info[g].WithHomeostasis && grp_Info[g].WithModulatedSTDP) {
-					effectiveWtChange = cpuNetPtrs.grpDA[g] * effectiveWtChange;
-					wt[offset+j] += (diff_firing*wt[offset+j]*homeostasisScale + effectiveWtChange)*baseFiring[i]/grp_Info[g].avgTimeScale/(1+fabs(diff_firing)*50);
-				} else if (grp_Info[g].WithHomeostasis) {
-					//need to figure out exactly why we change the weight to this value.  Specifically, what is with the second term?  -- KDC
-					wt[offset+j] += (diff_firing*wt[offset+j]*homeostasisScale + wtChange[offset+j])*baseFiring[i]/grp_Info[g].avgTimeScale/(1+fabs(diff_firing)*50);
-				} else if (grp_Info[g].WithModulatedSTDP) {
-					wt[offset+j] += cpuNetPtrs.grpDA[g] * effectiveWtChange;
-				} else {
-					// just STDP weight update
-					wt[offset+j] += effectiveWtChange;
+				switch (grp_Info[g].WithSTDPtype) {
+				case STANDARD:
+					if (grp_Info[g].WithHomeostasis) {
+						//need to figure out exactly why we change the weight to this value.  Specifically, what is with the second term?  -- KDC
+						wt[offset+j] += (diff_firing*wt[offset+j]*homeostasisScale + wtChange[offset+j])*baseFiring[i]/grp_Info[g].avgTimeScale/(1+fabs(diff_firing)*50);
+					} else {
+						// just STDP weight update
+						wt[offset+j] += effectiveWtChange;
+					}
+					break;
+				case DA_MOD:
+					if (grp_Info[g].WithHomeostasis) {
+						effectiveWtChange = cpuNetPtrs.grpDA[g] * effectiveWtChange;
+						wt[offset+j] += (diff_firing*wt[offset+j]*homeostasisScale + effectiveWtChange)*baseFiring[i]/grp_Info[g].avgTimeScale/(1+fabs(diff_firing)*50);
+					} else {
+						wt[offset+j] += cpuNetPtrs.grpDA[g] * effectiveWtChange;
+					}
+					break;
+				case UNKNOWN_STDP:
+				default:
+					// we shouldn't even be in here if !WithSTDP
+					break;
 				}
-
-				//MDR - don't decay weights, just set to 0
-				//wtChange[offset+j] = 0;
 
 				//TSC - decay weights
 				// FIXME: MB - I agree with MDR, I think this is wrong

@@ -25,11 +25,13 @@ public:
 		CANNOT_BE_NEGATIVE,		//!< parameter cannot have negative value (opposite to "must be", but includes zero)
 		CANNOT_BE_NULL,			//!< parameter cannot have NULL value
 		CANNOT_BE_POSITIVE,		//!< parameter cannot have positive value (opposite to "must be", but includes zero)
+		CANNOT_BE_UNKNOWN, 		//!< parameter cannot be of type UNKNOWN
 		FILE_CANNOT_CREATE,		//!< could not create a file
 		FILE_CANNOT_OPEN,		//!< could not open file
 		MUST_BE_LOGGER_CUSTOM,	//!< must be in custom logger mode
 		MUST_BE_NEGATIVE,		//!< parameter must have negative value
 		MUST_BE_POSITIVE,		//!< parameter must have positive value
+		MUST_BE_WITHIN_RANGE,	//!< parameter must be within some range
 		MUST_HAVE_SAME_SIGN,	//!< some parameters must have the same sign
 		NETWORK_ALREADY_RUN,	//!< function cannot be called because network has already bun run
 		UNKNOWN_GROUP_ID,		//!< the specified group id is unknown

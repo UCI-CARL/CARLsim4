@@ -256,11 +256,33 @@ public:
 	//! Sets Izhikevich params a, b, c, and d of a neuron group. 
 	void setNeuronParameters(int grpId, float izh_a, float izh_b, float izh_c, float izh_d, int configId=ALL);
 
-	//! Sets default STDP params
+	//! Sets baseline concentration and decay time constant of neuromodulators (DP, 5HT, ACh, NE) for a neuron group.
+	/*!
+	 * \param groupId the symbolic name of a group
+	 * \param baseDP  the baseline concentration of Dopamine
+	 * \param tauDP the decay time constant of Dopamine
+	 * \param base5HT  the baseline concentration of Serotonin
+	 * \param tau5HT the decay time constant of Serotonin
+	 * \param baseACh  the baseline concentration of Acetylcholine
+	 * \param tauACh the decay time constant of Acetylcholine
+	 * \param baseNE  the baseline concentration of Noradrenaline 
+	 * \param tauNE the decay time constant of Noradrenaline 
+	 * \param configId (optional, deprecated) configuration id
+	 */
+	void setNeuromodulator(int grpId, float baseDP, float tauDP, float base5HT, float tau5HT,
+							float baseACh, float tauACh, float baseNE, float tauNE, int configId);
+
+	// TODO: this should be implemented via default arguments as members of the class, so that the user can call
+	// setDefaultNeuromodulators()
+	void setNeuromodulator(int grpId, float tauDP = 100.0f, float tau5HT = 100.0f,
+							float tauACh = 100.0f, float tauNE = 100.0f, int configId = ALL);
+
+	//! Sets default STDP mode and params
 	void setSTDP(int grpId, bool isSet, int configId=ALL);
 
 	//! Sets STDP params for a group, custom
-	void setSTDP(int grpId, bool isSet, float alphaLTP, float tauLTP, float alphaLTD, float tauLTD, int configId=ALL);
+	void setSTDP(int grpId, bool isSet, stdpType_t mode, float alphaLTP, float tauLTP, float alphaLTD, float tauLTD,
+		int configId=ALL);
 
 	/*!
 	 * \brief Sets STP params U, tau_u, and tau_x of a neuron group (pre-synaptically)
@@ -288,6 +310,12 @@ public:
 	//! Sets STP params U, tau_u, and tau_x of a neuron group (pre-synaptically) using default values
 	void setSTP(int grpId, bool isSet, int configId=ALL);
 
+	//! Sets the weight update parameters
+	/*!
+	 * \param updateInterval the interval between two weight update. the setting could be _10MS, _100MS, _1000MS
+	 * \param tauWeightChange the decay time constant of weight change (wtChange)
+	 */
+	void setWeightUpdateParameter(int updateInterval = _1000MS, int tauWeightChange = 10);
 
 
 	// +++++ PUBLIC METHODS: RUNNING A SIMULATION ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
@@ -442,6 +470,10 @@ public:
 	int getNumPreSynapses(); //!< returns the total number of allocated pre-synaptic connections in the network
 	int getNumPostSynapses(); //!< returns the total number of allocated post-synaptic connections in the network
 
+	int getGroupStartNeuronId(int grpId); //!< get the first neuron id of a groupd specified by grpId
+	int getGroupEndNeuronId(int grpId); //!< get the last neuron id of a groupd specified by grpId
+	int getGroupNumNeurons(int grpId); //!< get the number of neurons of a groupd specified by grpId
+
 	/*!
 	 * \brief Writes weights from synaptic connections from gIDpre to gIDpost.  Returns a pointer to the weights
 	 * and the size of the 1D array in size.  gIDpre(post) is the group ID for the pre(post)synaptic group, 
@@ -552,6 +584,7 @@ private:
 	int def_trGABAb_;				//!< default value for GABAb rise (ms)
 	int def_tdGABAb_;				//!< default value for GABAb decay (ms)
 
+	stdpType_t def_STDP_type_;		//!< default mode for STDP
 	float def_STDP_alphaLTP_;		//!< default value for LTP amplitude
 	float def_STDP_tauLTP_;			//!< default value for LTP decay (ms)
 	float def_STDP_alphaLTD_;		//!< default value for LTD amplitude

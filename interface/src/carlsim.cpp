@@ -161,6 +161,8 @@ CARLsim::~CARLsim() {
 
 // unsafe computations that would otherwise go in constructor
 void CARLsim::CARLsimInit() {
+	UserErrors::assertTrue(simMode_!=UNKNOWN_SIM,UserErrors::CANNOT_BE_UNKNOWN,"CARLsim()","Simulation mode");
+	UserErrors::assertTrue(loggerMode_!=UNKNOWN_LOGGER,UserErrors::CANNOT_BE_UNKNOWN,"CARLsim()","Logger mode");
 	snn_ = new CpuSNN(netName_, simMode_, loggerMode_, ithGPU_, nConfig_, randSeed_);
 
 	// set default time constants for synaptic current decay
@@ -174,6 +176,7 @@ void CARLsim::CARLsimInit() {
 
 	// set default values for STDP params
 	// TODO: add ref
+	def_STDP_type_      = STANDARD;
 	def_STDP_alphaLTP_ = 0.001f;
 	def_STDP_tauLTP_   = 20.0f;
 	def_STDP_alphaLTD_ = 0.0012f;
@@ -439,31 +442,62 @@ void CARLsim::setNeuronParameters(int grpId, float izh_a, float izh_b, float izh
 	snn_->setNeuronParameters(grpId, izh_a, 0.0f, izh_b, 0.0f, izh_c, 0.0f, izh_d, 0.0f, configId);
 }
 
+// set parameters for each neuronmodulator
+void CARLsim::setNeuromodulator(int grpId, float baseDP, float tauDP, float base5HT, float tau5HT,
+							   float baseACh, float tauACh, float baseNE, float tauNE, int configId) {
+	std::string funcName = "setNeuromodulator(\""+getGroupName(grpId,configId)+"\")";
+	UserErrors::assertTrue(baseDP > 0, UserErrors::MUST_BE_POSITIVE, funcName);
+	UserErrors::assertTrue(tauDP > 0, UserErrors::MUST_BE_POSITIVE, funcName);
+	UserErrors::assertTrue(base5HT > 0, UserErrors::MUST_BE_POSITIVE, funcName);
+	UserErrors::assertTrue(tau5HT > 0, UserErrors::MUST_BE_POSITIVE, funcName);
+	UserErrors::assertTrue(baseACh > 0, UserErrors::MUST_BE_POSITIVE, funcName);
+	UserErrors::assertTrue(tauACh > 0, UserErrors::MUST_BE_POSITIVE, funcName);
+	UserErrors::assertTrue(baseNE > 0, UserErrors::MUST_BE_POSITIVE, funcName);
+	UserErrors::assertTrue(tauNE > 0, UserErrors::MUST_BE_POSITIVE, funcName);
+
+	snn_->setNeuromodulator(grpId, baseDP, tauDP, base5HT, tau5HT, baseACh, tauACh, baseNE, tauNE, configId);
+}
+
+void CARLsim::setNeuromodulator(int grpId,float tauDP, float tau5HT, float tauACh, float tauNE, int configId) {
+	std::string funcName = "setNeuromodulator(\""+getGroupName(grpId,configId)+"\")";
+	UserErrors::assertTrue(tauDP > 0, UserErrors::MUST_BE_POSITIVE, funcName);
+	UserErrors::assertTrue(tau5HT > 0, UserErrors::MUST_BE_POSITIVE, funcName);
+	UserErrors::assertTrue(tauACh > 0, UserErrors::MUST_BE_POSITIVE, funcName);
+	UserErrors::assertTrue(tauNE > 0, UserErrors::MUST_BE_POSITIVE, funcName);
+
+	snn_->setNeuromodulator(grpId, 1.0f, tauDP, 1.0f, tau5HT, 1.0f, tauACh, 1.0f, tauNE, configId);
+}
+
 // set STDP, default
 void CARLsim::setSTDP(int grpId, bool isSet, int configId) {
 	std::string funcName = "setSTDP(\""+getGroupName(grpId,configId)+"\")";
 	UserErrors::assertTrue(!hasRunNetwork_, UserErrors::NETWORK_ALREADY_RUN, funcName); // can't change setup after run
 	hasSetSTDPALL_ = grpId==ALL; // adding groups after this will not have conductances set
 
-	if (isSet) { // enable STDP, use default values
-		snn_->setSTDP(grpId,true,def_STDP_alphaLTP_,def_STDP_tauLTP_,def_STDP_alphaLTD_,def_STDP_tauLTD_,configId);
+	if (isSet) { // enable STDP, use default values and type
+		snn_->setSTDP(grpId, true, def_STDP_type_, def_STDP_alphaLTP_, def_STDP_tauLTP_, def_STDP_alphaLTD_,
+			def_STDP_tauLTD_, configId);
 	} else { // disable STDP
-		snn_->setSTDP(grpId,false,0.0f,0.0f,0.0f,0.0f,configId);
+		snn_->setSTDP(grpId, false, UNKNOWN_STDP, 0.0f, 0.0f, 0.0f, 0.0f, configId);
 	}	
 }
 
 // set STDP, custom
-void CARLsim::setSTDP(int grpId, bool isSet, float alphaLTP, float tauLTP, float alphaLTD, float tauLTD, int configId) {
-	std::string funcName = "setSTDP(\""+getGroupName(grpId,configId)+"\")";
+void CARLsim::setSTDP(int grpId, bool isSet, stdpType_t type, float alphaLTP, float tauLTP, float alphaLTD,
+		float tauLTD, int configId) {
+	std::string funcName = "setSTDP(\""+getGroupName(grpId,configId)+","+stdpType_string[type]+"\")";
 	UserErrors::assertTrue(!hasRunNetwork_, UserErrors::NETWORK_ALREADY_RUN, funcName); // can't change setup after run
+	UserErrors::assertTrue(type!=UNKNOWN_STDP, UserErrors::CANNOT_BE_UNKNOWN, funcName, "Mode");
 	hasSetSTDPALL_ = grpId==ALL; // adding groups after this will not have conductances set
+
+	printf("Hello!!! %s\n",stdpType_string[type]);
 
 	if (isSet) { // enable STDP, use custom values
 		assert(tauLTP>0); // TODO make nice
 		assert(tauLTD>0);
-		snn_->setSTDP(grpId,true,alphaLTP,tauLTP,alphaLTD,tauLTD,configId);
-	} else { // disable STDP
-		snn_->setSTDP(grpId,false,0.0f,0.0f,0.0f,0.0f,configId);
+		snn_->setSTDP(grpId, true, type, alphaLTP, tauLTP, alphaLTD, tauLTD, configId);
+	} else { // disable STDP and DA-STDP as well
+		snn_->setSTDP(grpId, false, UNKNOWN_STDP, 0.0f, 0.0f, 0.0f, 0.0f, configId);
 	}
 }
 
@@ -505,6 +539,13 @@ void CARLsim::setSTP(int grpId, bool isSet, float STP_U, float STP_tau_u, float 
 	}		
 }
 
+void CARLsim::setWeightUpdateParameter(int updateInterval, int tauWeightChange) {
+	std::string funcName = "setWeightUpdateParameter()";
+	UserErrors::assertTrue(updateInterval >= 0 && updateInterval <= 2, UserErrors::MUST_BE_WITHIN_RANGE, funcName);
+	UserErrors::assertTrue(tauWeightChange > 0, UserErrors::MUST_BE_POSITIVE, funcName);
+
+	snn_->setWeightUpdateParameter(updateInterval, tauWeightChange);
+}
 
 // +++++++++ PUBLIC METHODS: RUNNING A SIMULATION +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
@@ -694,7 +735,11 @@ int CARLsim::getNumConnections(short int connectionId) { return snn_->getNumConn
 int CARLsim::getNumGroups() { return snn_->getNumGroups(); }
 int CARLsim::getNumNeurons() { return snn_->getNumNeurons(); }
 int CARLsim::getNumPreSynapses() { return snn_->getNumPreSynapses(); }
-int CARLsim::getNumPostSynapses() { return snn_->getNumPostSynapses(); }
+int CARLsim::getNumPostSynapses() { return snn_->getNumPostSynapses(); } 
+
+int CARLsim::getGroupStartNeuronId(int grpId) { return snn_->getGroupStartNeuronId(grpId); }
+int CARLsim::getGroupEndNeuronId(int grpId) { return snn_->getGroupEndNeuronId(grpId); }
+int CARLsim::getGroupNumNeurons(int grpId) { return snn_->getGroupNumNeurons(grpId); }
 
 uint64_t CARLsim::getSimTime() { return snn_->getSimTime(); }
 uint32_t CARLsim::getSimTimeSec() { return snn_->getSimTimeSec(); }
@@ -722,10 +767,6 @@ int* CARLsim::getSpikeCounter(int grpId, int configId) {
 float* CARLsim::getWeightChanges(int gIDpre, int gIDpost, int& Npre, int& Npost, float* weightChanges) {
 	return snn_->getWeightChanges(gIDpre,gIDpost,Npre,Npost,weightChanges);
 }
-
-int CARLsim::grpStartNeuronId(int grpId) { return snn_->grpStartNeuronId(grpId); }
-int CARLsim::grpEndNeuronId(int grpId) { return snn_->grpEndNeuronId(grpId); }
-int CARLsim::grpNumNeurons(int grpId) { return snn_->grpNumNeurons(grpId); }
 
 bool CARLsim::isExcitatoryGroup(int grpId) { return snn_->isExcitatoryGroup(grpId); }
 bool CARLsim::isInhibitoryGroup(int grpId) { return snn_->isInhibitoryGroup(grpId); }
