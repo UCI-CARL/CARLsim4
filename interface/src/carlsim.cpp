@@ -50,8 +50,6 @@
 
 #include <snn.h>
 
-
-
 // includes for mkdir
 #if CREATE_SPIKEDIR_IF_NOT_EXISTS
 	#if (WIN32 || WIN64)

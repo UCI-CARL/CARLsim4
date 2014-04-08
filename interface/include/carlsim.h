@@ -53,97 +53,13 @@
 #include <vector>		// std::vector
 
 #include <callback.h>
+#include <carlsim_definitions.h>
+#include <carlsim_datastructures.h>
 
 #include <poisson_rate.h>
 
 // TODO: complete documentation
 
-//! CARLsim common definitions
-#define ALL -1 //!< used for the set* methods to specify all groups and/or configIds
-
-#define SYN_FIXED      false
-#define SYN_PLASTIC    true
-
-// Bit flags to be used to specify the type of neuron.  Future types can be added in the future such as Dopamine, etc.
-// Yes, they should be bit flags because some neurons release more than one transmitter at a synapse.
-#define UNKNOWN_NEURON	(0)
-#define POISSON_NEURON	(1 << 0)
-#define TARGET_AMPA	(1 << 1)
-#define TARGET_NMDA	(1 << 2)
-#define TARGET_GABAa	(1 << 3)
-#define TARGET_GABAb	(1 << 4)
-#define TARGET_DA		(1 << 5)
-#define TARGET_5HT		(1 << 6)
-#define TARGET_ACh		(1 << 7)
-#define TARGET_NE		(1 << 8)
-
-#define INHIBITORY_NEURON 		(TARGET_GABAa | TARGET_GABAb)
-#define EXCITATORY_NEURON 		(TARGET_NMDA | TARGET_AMPA)
-#define DOPAMINERGIC_NEURON		(TARGET_DA | EXCITATORY_NEURON)
-#define EXCITATORY_POISSON 		(EXCITATORY_NEURON | POISSON_NEURON)
-#define INHIBITORY_POISSON		(INHIBITORY_NEURON | POISSON_NEURON)
-#define IS_INHIBITORY_TYPE(type)	(((type) & TARGET_GABAa) || ((type) & TARGET_GABAb))
-#define IS_EXCITATORY_TYPE(type)	(!IS_INHIBITORY_TYPE(type))
-
-
-//! CARLsim common enumerations
-/*!
- * \brief Logger modes
- * The logger mode defines where to print all status, error, and debug messages. Several predefined
- * modes exist (USER, DEVELOPER, SHOWTIME, SILENT). However, the user can also set each file pointer to a
- * location of their choice (CUSTOM mode).
- * The following logger modes exist:
- *  USER 		User mode, for experiment-oriented simulations. Errors and warnings go to stderr,
- *              status information goes to stdout. Debug information can only be found in the log file.
- *  DEVELOPER   Developer mode, for developing and debugging code. Same as user, but additionally,
- *              all debug information is printed to stdout.
- *  SHOWTIME    Showtime mode, will only output warnings and errors. 
- *  SILENT      Silent mode, no output is generated.
- *  CUSTOM      Custom mode, the user can set the location of all the file pointers.
- *
- * The following file pointers exist:
- *  fpOut_	where CARLSIM_INFO messages go
- *  fpErr_ 	where CARLSIM_ERROR and CARLSIM_WARN messages go
- *  fpDeb_ 	where CARLSIM_DEBUG messages go
- *  fpLog_ 	typically a log file, where all of the above messages go
- *
- * The file pointers are automatically set to different locations, depending on the loggerMode:
- *
- *          |    USER    | DEVELOPER  |  SHOWTIME  |   SILENT   |  CUSTOM
- * ---------|------------|------------|------------|------------|---------
- * fpOut_   |   stdout   |   stdout   | /dev/null  | /dev/null  |    ?
- * fpErr_   |   stderr   |   stderr   |   stderr   | /dev/null  |    ?
- * fpDeb_   | /dev/null  |   stdout   | /dev/null  | /dev/null  |    ?
- * fpLog_   | debug.log  | debug.log  | debug.log  | /dev/null  |    ?
- *
- * Location of the debug log file can be set in any mode using CARLsim::setLogDebugFp.
- * In mode CUSTOM, the other file pointers can be set using CARLsim::setLogsFp.
- */
-enum loggerMode_t {
-	 USER,  DEVELOPER,  SHOWTIME,  SILENT,  CUSTOM
-};
-static const char* loggerMode_string[] = {
-	"USER","DEVELOPER","SHOWTIME","SILENT","CUSTOM"
-};
-
-/*!
- * \brief simulation mode
- * CARLsim supports execution either on standard x86 central processing units (CPUs) or off-the-shelf NVIDIA GPUs.
- *
- * When creating a new CARLsim object, you can choose from the following:
- * CPU_MODE:	run on a single CPU core
- * GPU_MODE:	run on a single GPU card
- *
- * When running GPU mode on a multi-GPU system, you can specify on which CUDA device to establish a context (ithGPU,
- * 0-indexed) when you create a new CpuSNN object.
- * The simulation mode will be fixed throughout the lifetime of a CpuSNN object.
- */
-enum simMode_t {
-	 CPU_MODE,  GPU_MODE
-};
-static const char* simMode_string[] = {
-	"CPU Mode","GPU Mode"
-};
 
 
 /*!
