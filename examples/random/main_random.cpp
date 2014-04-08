@@ -74,7 +74,7 @@ int main()
 
 	// here we define and set the properties of the STDP. 
 	float ALPHA_LTP = 0.10f/100, TAU_LTP = 20.0f, ALPHA_LTD = 0.12f/100, TAU_LTD = 20.0f;
-	sim.setSTDP(g1, true, DA_MOD, ALPHA_LTP, TAU_LTP, ALPHA_LTD, TAU_LTD);
+	sim.setSTDP(g1, true, STANDARD, ALPHA_LTP, TAU_LTP, ALPHA_LTD, TAU_LTD);
 
 	// show network status every 2 secs
 	sim.setLogCycle(2);

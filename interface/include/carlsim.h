@@ -281,7 +281,7 @@ public:
 	void setSTDP(int grpId, bool isSet, int configId=ALL);
 
 	//! Sets STDP params for a group, custom
-	void setSTDP(int grpId, bool isSet, stdpType_t mode, float alphaLTP, float tauLTP, float alphaLTD, float tauLTD,
+	void setSTDP(int grpId, bool isSet, stdpType_t type, float alphaLTP, float tauLTP, float alphaLTD, float tauLTD,
 		int configId=ALL);
 
 	/*!

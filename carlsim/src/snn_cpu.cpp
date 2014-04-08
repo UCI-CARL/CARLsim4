@@ -4172,6 +4172,7 @@ void CpuSNN::updateWeights() {
 						// just STDP weight update
 						wt[offset+j] += effectiveWtChange;
 					}
+					wtChange[offset+j] = 0.0f;
 					break;
 				case DA_MOD:
 					if (grp_Info[g].WithHomeostasis) {
@@ -4180,16 +4181,13 @@ void CpuSNN::updateWeights() {
 					} else {
 						wt[offset+j] += cpuNetPtrs.grpDA[g] * effectiveWtChange;
 					}
+					wtChange[offset+j] *= wtChangeDecay_;
 					break;
 				case UNKNOWN_STDP:
 				default:
 					// we shouldn't even be in here if !WithSTDP
 					break;
 				}
-
-				//TSC - decay weights
-				// FIXME: MB - I agree with MDR, I think this is wrong
-				wtChange[offset+j] *= wtChangeDecay_;
 
 				// if this is an excitatory or inhibitory synapse
 				if (maxSynWt[offset + j] >= 0) {
