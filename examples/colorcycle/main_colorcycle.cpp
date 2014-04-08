@@ -268,8 +268,8 @@ int main()
 
 	unsigned char* vid = new unsigned char[nrX*nrY*3];
 
-	// init
-	s.runNetwork(0,0);
+	// setup the network
+	s.setupNetwork();
 
 
 	PoissonRate me(nrX*nrY*28*3,false);

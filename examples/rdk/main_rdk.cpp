@@ -339,8 +339,8 @@ int main()
 	s.setSpikeMonitor(gPFC,saveFolder+"spkPFC.dat");
 	s.setSpikeMonitor(gPFCi,saveFolder+"spkPFCi.dat");
 
-	// init
-	s.runNetwork(0,0);
+	// setup the network
+	s.setupNetwork();
 
 	unsigned char* vid = new unsigned char[nrX*nrY*3];
 

@@ -272,7 +272,7 @@ int main()
 
 
 	//initialize the GPU/network
-	s.runNetwork(0,0);
+	s.setupNetwork();
 
 	PoissonRate me(nrX*nrY*28*3,onGPU);
 	PoissonRate red_green(nrX*nrY,onGPU);

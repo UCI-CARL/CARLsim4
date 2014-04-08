@@ -749,7 +749,7 @@ int main()
 	}
 
 	// initialize the GPU/network, run on device with index ithGPU
-	snn.runNetwork(0,0);	
+	snn.setupNetwork();	
 	time(&timer_build);
 
 	PoissonRate me(nrX*nrY*28*3,onGPU);

@@ -89,7 +89,8 @@ int main()
 	PoissonRate in(N*0.1);
 	for (int i=0;i<N*0.1;i++) in.rates[i] = 1;
 		sim.setSpikeRate(gin,&in);
-
+	// build the network
+	sim.setupNetwork();
 	//run for 10 seconds
 	sim.runNetwork(10,0);
 

@@ -625,8 +625,8 @@ int main()
 	s.setSpikeMonitor(gV4o,"examples/v1v4PFC/results/V4o.dat");
 	s.setSpikeMonitor(gV4oi,"examples/v1v4PFC/results/V4oi.dat");
 
-	// init
-	s.runNetwork(0,0);
+	// setup the network
+	s.setupNetwork();
 
 	unsigned char* vid = new unsigned char[nrX*nrY*3];
 
