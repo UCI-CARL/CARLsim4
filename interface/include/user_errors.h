@@ -25,6 +25,7 @@ public:
 		CANNOT_BE_NEGATIVE,		//!< parameter cannot have negative value (opposite to "must be", but includes zero)
 		CANNOT_BE_NULL,			//!< parameter cannot have NULL value
 		CANNOT_BE_POSITIVE,		//!< parameter cannot have positive value (opposite to "must be", but includes zero)
+		CANNOT_BE_LARGER,		//!< parameter cannot have larger vaule than some vaule
 		CANNOT_BE_UNKNOWN, 		//!< parameter cannot be of type UNKNOWN
 		FILE_CANNOT_CREATE,		//!< could not create a file
 		FILE_CANNOT_OPEN,		//!< could not open file
