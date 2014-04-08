@@ -79,7 +79,7 @@ int main()
 	// show network status every 2 secs
 	sim.setLogCycle(2);
 
-	sim.setSpikeMonitor(g1,"spikes.dat"); // put spike times into spikes.dat
+	sim.setSpikeMonitor(g1,"examples/random/results/spikes.dat"); // put spike times into spikes.dat
 	sim.setSpikeMonitor(g2); // Show basic statistics about g2
 	sim.setSpikeMonitor(gin);
 
@@ -93,7 +93,7 @@ int main()
 	//run for 10 seconds
 	sim.runNetwork(10,0);
 
-	FILE* nid = fopen("network.dat","wb");
+	FILE* nid = fopen("examples/random/results/network.dat","wb");
 	sim.writeNetwork(nid);
 	fclose(nid);
 
