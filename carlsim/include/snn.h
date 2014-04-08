@@ -308,7 +308,11 @@ public:
 	 */
 	int runNetwork(int _nsec, int _nmsec, bool copyState);
 
-
+	/*!
+	 * \brief build the network 
+	 * \param[in] removeTempMemory 	remove temp memory after building network
+	 */
+	void setupNetwork(bool removeTempMemory);
 
 	// +++++ PUBLIC METHODS: INTERACTING WITH A SIMULATION ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
@@ -649,8 +653,6 @@ private:
 
 	void setGrpTimeSlice(int grpId, int timeSlice); //!< used for the Poisson generator. TODO: further optimize
 	int setRandSeed(int seed);	//!< setter function for const member randSeed_
-
-	void setupNetwork(bool removeTempMemory=true);
 
 	void showStatus();
 

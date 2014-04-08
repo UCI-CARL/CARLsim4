@@ -635,7 +635,7 @@ int CpuSNN::runNetwork(int _nsec, int _nmsec, bool copyState) {
 
 	// First time when the network is run we do various kind of space compression,
 	// and data structure optimization to improve performance and save memory.
-	setupNetwork();
+	// setupNetwork();
 
 	CUDA_RESET_TIMER(timer);
 	CUDA_START_TIMER(timer);

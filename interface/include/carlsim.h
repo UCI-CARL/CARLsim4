@@ -328,7 +328,11 @@ public:
 	 */
 	int runNetwork(int nSec, int nMsec, bool copyState=false);
 
-
+	/*!
+	 * \brief build the network 
+	 * \param[in] removeTempMemory 	remove temp memory after building network
+	 */
+	void setupNetwork(bool removeTempMemory = true);
 
 	// +++++ PUBLIC METHODS: LOGGING / PLOTTING +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 

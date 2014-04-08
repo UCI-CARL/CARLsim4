@@ -561,6 +561,12 @@ int CARLsim::runNetwork(int nSec, int nMsec, bool copyState) {
 	return snn_->runNetwork(nSec, nMsec, copyState);	
 }
 
+// setup network with custom options
+void CARLsim::setupNetwork(bool removeTempMemory) {
+
+	snn_->setupNetwork(removeTempMemory);
+}
+
 // +++++++++ PUBLIC METHODS: LOGGING / PLOTTING +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
 // sets update cycle for showing network status
