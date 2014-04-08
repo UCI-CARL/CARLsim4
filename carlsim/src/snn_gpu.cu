@@ -38,7 +38,6 @@
  * Ver 07/13/2013
  */ 
 
-#include <config.h>
 #include <snn.h>
 #include <error_code.h>
 #include <cuda_runtime.h>

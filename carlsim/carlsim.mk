@@ -36,7 +36,8 @@ CARLSIM_FLAGS += -I$(CURDIR)/$(carlsim_dir)/include \
 #---------------------------------------------------------------------------
 local_dir := $(carlsim_dir)
 local_deps := $(addprefix $(local_dir)/include/, snn.h mtrand.h gpu.h \
-	gpu_random.h config.h propagated_spike_buffer.h poisson_rate.h \
+	snn_definitions.h snn_datastructures.h \
+	gpu_random.h propagated_spike_buffer.h poisson_rate.h \
 	error_code.h cuda_version_control.h)
 local_src := $(addprefix $(local_dir)/src/, snn_cpu.cpp mtrand.cpp \
 	propagated_spike_buffer.cpp poisson_rate.cpp \
@@ -49,12 +50,9 @@ local_objs := $(addprefix $(local_dir)/src/,snn_cpu.o mtrand.o \
 
 
 interface_deps := carlsim.h carlsim.cpp user_errors.h user_errors.cpp \
-	callback.h callback_core.h callback_core.cpp
-interface_src := $(interface_dir)/include/carlsim.h \
-	$(interface_dir)/include/user_errors.h \
-	$(interface_dir)/include/callback.h \
-	$(interface_dir)/include/callback_core.h \
-	$(interface_dir)/src/carlsim.cpp \
+	callback.h callback_core.h callback_core.cpp carlsim_definitions.h \
+	carlsim_datastructures.h
+interface_src := $(interface_dir)/include/carlsim.cpp \
 	$(interface_dir)/src/user_errors.cpp \
 	$(interface_dir)/src/callback_core.cpp
 interface_objs := $(interface_dir)/src/carlsim.o \
