@@ -75,10 +75,10 @@
  * In mode CUSTOM, the other file pointers can be set using CARLsim::setLogsFp.
  */
 enum loggerMode_t {
-	 USER,  DEVELOPER,  SHOWTIME,  SILENT,  CUSTOM
+	 USER,  DEVELOPER,  SHOWTIME,  SILENT,  CUSTOM,  UNKNOWN_LOGGER
 };
 static const char* loggerMode_string[] = {
-	"USER","DEVELOPER","SHOWTIME","SILENT","CUSTOM"
+	"USER","DEVELOPER","SHOWTIME","SILENT","CUSTOM","Unknown mode"
 };
 
 /*!
@@ -94,10 +94,24 @@ static const char* loggerMode_string[] = {
  * The simulation mode will be fixed throughout the lifetime of a CpuSNN object.
  */
 enum simMode_t {
-	 CPU_MODE,  GPU_MODE
+	 CPU_MODE,  GPU_MODE,  UNKNOWN_SIM
 };
 static const char* simMode_string[] = {
-	"CPU Mode","GPU Mode"
+	"CPU mode","GPU mode","Unknown mode"
+};
+
+// TODO: extend documentation, add relevant references
+/*!
+ * \brief STDP flavors
+ * CARLsim supports two different flavors of STDP.
+ * STANDARD:	The standard model of Bi & Poo (2001), nearest-neighbor.
+ * DA_MOD:      Dopamine-modulated STDP, nearest-neighbor.
+ */
+enum stdpType_t {
+	 STANDARD,       DA_MOD,                   UNKNOWN_STDP
+};
+static const char* stdpType_string[] = {
+	"Standard STDP","Dopamine-modulated STDP","Unknown mode"
 };
 
 #endif

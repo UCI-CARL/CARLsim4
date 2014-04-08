@@ -1193,22 +1193,27 @@ __device__ void updateSynapticWeights(int& nid, unsigned int& jpos, int& grpId, 
 	float t_effectiveWtChange = gpuNetInfo.stdpScaleFactor * t_wtChange;
 	float t_maxWt = gpuPtrs.maxSynWt[jpos];
 
-	if (gpuGrpInfo[grpId].WithHomeostasis && gpuGrpInfo[grpId].WithModulatedSTDP) {
-		t_effectiveWtChange = gpuPtrs.grpDA[grpId] * t_effectiveWtChange;
-		t_wt += (diff_firing*t_wt*homeostasisScale + t_effectiveWtChange) * baseFiring * avgTimeScaleInv / (1+fabs(diff_firing)*50);
-	} else if (gpuGrpInfo[grpId].WithHomeostasis) {
-		// this factor is slow
-		t_wt += (diff_firing*t_wt*homeostasisScale + t_effectiveWtChange) * baseFiring * avgTimeScaleInv / (1+fabs(diff_firing)*50);
-	} else if (gpuGrpInfo[grpId].WithModulatedSTDP) {
-		t_wt += gpuPtrs.grpDA[grpId] * t_effectiveWtChange;
-	} else {
-		//original/default. 
-		//t_wt += t_wtChange;
-			
-		t_wt += t_effectiveWtChange;
-
-		//biased towards learning.
-		//t_wt += t_wtChange+0.1f;
+	switch (gpuGrpInfo[grpId].WithSTDPtype) {
+	case STANDARD:
+		if (gpuGrpInfo[grpId].WithHomeostasis) {
+			// this factor is slow
+			t_wt += (diff_firing*t_wt*homeostasisScale + t_effectiveWtChange) * baseFiring * avgTimeScaleInv / (1+fabs(diff_firing)*50);
+		} else {
+			t_wt += t_effectiveWtChange;
+		}
+		break;
+	case DA_MOD:
+		if (gpuGrpInfo[grpId].WithHomeostasis) {
+			t_effectiveWtChange = gpuPtrs.grpDA[grpId] * t_effectiveWtChange;
+			t_wt += (diff_firing*t_wt*homeostasisScale + t_effectiveWtChange) * baseFiring * avgTimeScaleInv / (1+fabs(diff_firing)*50);
+		} else {
+			t_wt += gpuPtrs.grpDA[grpId] * t_effectiveWtChange;
+		}
+		break;
+	case UNKNOWN_STDP:
+	default:
+		// we shouldn't even be here if !WithSTDP
+		break;
 	}
 	
 	// FIXME: MB - I agree with MDR, I think this is wrong
@@ -3045,7 +3050,7 @@ void CpuSNN::allocateNetworkParameters()
 	net_Info.sim_with_conductances = sim_with_conductances;
 	net_Info.sim_with_homeostasis = sim_with_homeostasis;
 	net_Info.sim_with_stdp = sim_with_stdp;
-	net_Info.sim_with_modulated_stdp = sim_with_modulated_stdp;
+//	net_Info.sim_with_modulated_stdp = sim_with_modulated_stdp;
 	net_Info.sim_with_stp = sim_with_stp;
 	net_Info.numGrp = numGrp;
 	net_Info.stdpScaleFactor = stdpScaleFactor_;
@@ -3071,10 +3076,10 @@ void CpuSNN::checkGPUDevice() {
 	cudaGetDeviceCount(&devCount);
 	CUDA_GET_LAST_ERROR("cudaGetDeviceCount failed\n");
 	CARLSIM_INFO("GPU Setup:");
-	CARLSIM_INFO("  - Number of CUDA devices     = %7d",devCount);
+	CARLSIM_INFO("  - Number of CUDA devices     = %8d",devCount);
 
 	int dev = CUDA_GET_MAXGFLOP_DEVICE_ID();
-	CARLSIM_INFO("  - Device ID with max GFLOPs  = %7d", dev);
+	CARLSIM_INFO("  - Device ID with max GFLOPs  = %8d", dev);
 	cudaDeviceProp deviceProp;
 
 	// ithGPU gives an index number on which device to run the simulation
@@ -3093,7 +3098,7 @@ void CpuSNN::checkGPUDevice() {
 		CARLSIM_ERROR("CARLsim does not support NVIDIA cards older than version 1.3");
 		exitSimulation(1);
 	}
-	CARLSIM_INFO("  - CUDA Compute Capability    =    %2d.%d\n", deviceProp.major, deviceProp.minor);
+	CARLSIM_INFO("  - CUDA Compute Capability    =     %2d.%d\n", deviceProp.major, deviceProp.minor);
 	assert(deviceProp.major >= 1);
 	CUDA_DEVICE_RESET();
 	cudaSetDevice(dev);
@@ -3253,6 +3258,7 @@ void CpuSNN::allocateSNN_GPU() {
 		CARLSIM_DEBUG("\tMaxDelay: %d",(int)grp_Info[i].MaxDelay);
 		CARLSIM_DEBUG("\tWithSTDP: %d",(int)grp_Info[i].WithSTDP);
 		if (grp_Info[i].WithSTDP) {
+			CARLSIM_DEBUG("\t\tSTDP type: %s",stdpType_string[grp_Info[i].WithSTDPtype]);
 			CARLSIM_DEBUG("\t\tTAU_LTP_INV: %f",grp_Info[i].TAU_LTP_INV);
 			CARLSIM_DEBUG("\t\tTAU_LTD_INV: %f",grp_Info[i].TAU_LTD_INV);
 			CARLSIM_DEBUG("\t\tALPHA_LTP: %f",grp_Info[i].ALPHA_LTP);

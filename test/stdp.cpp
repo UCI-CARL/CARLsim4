@@ -6,6 +6,8 @@
 /// SPIKE-TIMING-DEPENDENT PLASTICITY STDP
 /// **************************************************************************************************************** ///
 
+// FIXME: this is missing dopamine-modulated STDP
+
 /*!
  * \brief testing setSTDP to true
  * This function tests the information stored in the group info struct after enabling STDP via setSTDP
@@ -28,7 +30,7 @@ TEST(STDP, setSTDPTrue) {
 
 			int g1=sim->createGroup("excit", 10, EXCITATORY_NEURON);
 			sim->setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f);
-			sim->setSTDP(g1,true,alphaLTP,tauLTP,alphaLTD,tauLTD);
+			sim->setSTDP(g1,true,STANDARD,alphaLTP,tauLTP,alphaLTD,tauLTD);
 
 			// Temporarily mark out the testing code
 			// Discuss whether carlsim user interface needs to spport group_info_t
@@ -68,7 +70,7 @@ TEST(STDP, setSTDPFalse) {
 
 			int g1=sim->createGroup("excit", 10, EXCITATORY_NEURON);
 			sim->setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f);
-			sim->setSTDP(g1,false,alphaLTP,tauLTP,alphaLTD,tauLTD);
+			sim->setSTDP(g1,false,STANDARD,alphaLTP,tauLTP,alphaLTD,tauLTD);
 
 			// Temporarily mark out the testing code
 			// Discuss whether carlsim interface needs to support group_int_t

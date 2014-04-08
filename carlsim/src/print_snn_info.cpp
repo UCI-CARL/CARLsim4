@@ -170,37 +170,39 @@ void CpuSNN::printConnectionInfo2(FILE * const fpg)
 
 void CpuSNN::printGroupInfo(int grpId) {
 	CARLSIM_INFO("Group %s(%d): ", grp_Info2[grpId].Name.c_str(), grpId);
-	CARLSIM_INFO("  - Type                       =  %s", isExcitatoryGroup(grpId) ? " EXCIT" :
-		(isInhibitoryGroup(grpId) ? " INHIB" : (isPoissonGroup(grpId)?"POISSON" : 
-		(isDopaminergicGroup(grpId) ? " DOPAM" : "UNKNOWN"))) );
-	CARLSIM_INFO("  - Size                       = %7d", grp_Info[grpId].SizeN);
-	CARLSIM_INFO("  - Start Id                   = %7d", grp_Info[grpId].StartN);
-	CARLSIM_INFO("  - End Id                     = %7d", grp_Info[grpId].EndN);
-	CARLSIM_INFO("  - numPostSynapses            = %7d", grp_Info[grpId].numPostSynapses);
-	CARLSIM_INFO("  - numPreSynapses             = %7d", grp_Info[grpId].numPreSynapses);
+	CARLSIM_INFO("  - Type                       =  %s", isExcitatoryGroup(grpId) ? "  EXCIT" :
+		(isInhibitoryGroup(grpId) ? "  INHIB" : (isPoissonGroup(grpId)?" POISSON" : 
+		(isDopaminergicGroup(grpId) ? "  DOPAM" : " UNKNOWN"))) );
+	CARLSIM_INFO("  - Size                       = %8d", grp_Info[grpId].SizeN);
+	CARLSIM_INFO("  - Start Id                   = %8d", grp_Info[grpId].StartN);
+	CARLSIM_INFO("  - End Id                     = %8d", grp_Info[grpId].EndN);
+	CARLSIM_INFO("  - numPostSynapses            = %8d", grp_Info[grpId].numPostSynapses);
+	CARLSIM_INFO("  - numPreSynapses             = %8d", grp_Info[grpId].numPreSynapses);
 
 	if (doneReorganization) {
-		CARLSIM_INFO("  - Avg post connections       = %1.5f", 1.0*grp_Info2[grpId].numPostConn/grp_Info[grpId].SizeN);
-		CARLSIM_INFO("  - Avg pre connections        = %1.5f",  1.0*grp_Info2[grpId].numPreConn/grp_Info[grpId].SizeN);
+		CARLSIM_INFO("  - Avg post connections       =  %1.5f", 1.0*grp_Info2[grpId].numPostConn/grp_Info[grpId].SizeN);
+		CARLSIM_INFO("  - Avg pre connections        =  %1.5f",  1.0*grp_Info2[grpId].numPreConn/grp_Info[grpId].SizeN);
 	}
 	
 	if(grp_Info[grpId].Type&POISSON_NEURON) {
-		CARLSIM_INFO("  - Refractory period          = %1.5f", grp_Info[grpId].RefractPeriod);
+		CARLSIM_INFO("  - Refractory period          =  %1.5f", grp_Info[grpId].RefractPeriod);
 	}
 
 	if (grp_Info[grpId].WithSTP) {
 		CARLSIM_INFO("  - STP:");
-		CARLSIM_INFO("      - STP_U                 = %1.5f", grp_Info[grpId].STP_U);
-		CARLSIM_INFO("      - STP_tau_u_inv         = %1.0f", grp_Info[grpId].STP_tau_u_inv);
-		CARLSIM_INFO("      - STP_tau_x_inv         = %1.0f", grp_Info[grpId].STP_tau_x_inv);
+		CARLSIM_INFO("      - STP_U                 =  %1.5f", grp_Info[grpId].STP_U);
+		CARLSIM_INFO("      - STP_tau_u_inv         =  %1.0f", grp_Info[grpId].STP_tau_u_inv);
+		CARLSIM_INFO("      - STP_tau_x_inv         =  %1.0f", grp_Info[grpId].STP_tau_x_inv);
 	}
 
 	if(grp_Info[grpId].WithSTDP) {
 		CARLSIM_INFO("  - STDP:")
-		CARLSIM_INFO("      - ALPHA_LTP              = %1.5f", grp_Info[grpId].ALPHA_LTP);
-		CARLSIM_INFO("      - ALPHA_LTD              = %1.5f", grp_Info[grpId].ALPHA_LTD);
-		CARLSIM_INFO("      - TAU_LTP_INV            = %1.5f", grp_Info[grpId].TAU_LTP_INV);
-		CARLSIM_INFO("      - TAU_LTD_INV            = %1.5f", grp_Info[grpId].TAU_LTD_INV);
+		CARLSIM_INFO("      - TYPE                   = %s",     grp_Info[grpId].WithSTDPtype==STANDARD? "STANDARD" :
+			(grp_Info[grpId].WithSTDPtype==DA_MOD?"  DA_MOD":" UNKNOWN"));
+		CARLSIM_INFO("      - ALPHA_LTP              =  %1.5f", grp_Info[grpId].ALPHA_LTP);
+		CARLSIM_INFO("      - ALPHA_LTD              =  %1.5f", grp_Info[grpId].ALPHA_LTD);
+		CARLSIM_INFO("      - TAU_LTP_INV            =  %1.5f", grp_Info[grpId].TAU_LTP_INV);
+		CARLSIM_INFO("      - TAU_LTD_INV            =  %1.5f", grp_Info[grpId].TAU_LTD_INV);
 	}
 }
 

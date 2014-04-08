@@ -73,5 +73,9 @@
 #define IS_INHIBITORY_TYPE(type)	(((type) & TARGET_GABAa) || ((type) & TARGET_GABAb))
 #define IS_EXCITATORY_TYPE(type)	(!IS_INHIBITORY_TYPE(type))
 
+// FIXME: this should be an enum
+#define _10MS 0
+#define _100MS 1
+#define _1000MS 2
 
 #endif
