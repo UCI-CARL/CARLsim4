@@ -19,7 +19,6 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="include\config.h" />
     <ClInclude Include="include\cuda_version_control.h" />
     <ClInclude Include="include\error_code.h" />
     <ClInclude Include="include\gpu.h" />
@@ -28,6 +27,8 @@
     <ClInclude Include="include\poisson_rate.h" />
     <ClInclude Include="include\propagated_spike_buffer.h" />
     <ClInclude Include="include\snn.h" />
+    <ClInclude Include="include\snn_datastructures.h" />
+    <ClInclude Include="include\snn_definitions.h" />
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="src\gpu_random.cu" />
