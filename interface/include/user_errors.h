@@ -30,6 +30,7 @@ public:
 		MUST_BE_LOGGER_CUSTOM,	//!< must be in custom logger mode
 		MUST_BE_NEGATIVE,		//!< parameter must have negative value
 		MUST_BE_POSITIVE,		//!< parameter must have positive value
+		MUST_BE_ZERO,       //!< parameter must be 0
 		MUST_HAVE_SAME_SIGN,	//!< some parameters must have the same sign
 		NETWORK_ALREADY_RUN,	//!< function cannot be called because network has already bun run
 		UNKNOWN_GROUP_ID,		//!< the specified group id is unknown

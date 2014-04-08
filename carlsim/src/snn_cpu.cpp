@@ -3449,6 +3449,7 @@ void CpuSNN::resetPointers(bool deallocate) {
 		for (int i = 0; i < numSpikeMonitor; i++) {
 			if (monBufferFiring[i]!=NULL && deallocate) delete[] monBufferFiring[i];
 			if (monBufferTimeCnt[i]!=NULL && deallocate) delete[] monBufferTimeCnt[i];
+			if (monBufferCallback[i]!=NULL && deallocate) delete[] monBufferCallback[i];//TODO: DOUBLECHECK --KDC
 			monBufferFiring[i]=NULL; monBufferTimeCnt[i]=NULL;
 		}
 	}

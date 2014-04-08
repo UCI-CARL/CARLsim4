@@ -687,6 +687,20 @@ void CARLsim::setSpikeMonitor(int grpId, const std::string& fname, int configId)
 	setSpikeMonitor(grpId, new WriteSpikesToFile(fid), configId);
 }
 
+// set spike monitor for group and write spikes to vector
+void CARLsim::setSpikeMonitor(int grpId, std::vector& spkVector, int configId) {
+	std::string funcName = "setSpikeMonitor(\""+getGroupName(grpId,configId)+"\",\"spkVector\")";
+	UserErrors::assertTrue(!hasRunNetwork_, UserErrors::NETWORK_ALREADY_RUN, funcName); // can't change setup after run
+	UserErrors::assertTrue(configId!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName, "configId");	// configId can't be ALL
+	UserErrors::assertTrue(grpId!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName, "grpId");		// groupId can't be ALL
+
+	// check to make sure vector.size() is 0
+	if(spkVector.size() != 0){
+		UserErrors::assertTrue(false, UserErrors::MUST_BE_ZERO, funcname, "spkVector");
+	}
+	setSpikeMonitor(grpId, new WriteSpikesToVector(spkVector), configId);
+}
+
 // assign spike rate to poisson group
 void CARLsim::setSpikeRate(int grpId, PoissonRate* spikeRate, int refPeriod, int configId) {
 	snn_->setSpikeRate(grpId, spikeRate, refPeriod, configId);
