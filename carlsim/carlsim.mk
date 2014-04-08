@@ -42,8 +42,7 @@ local_deps := $(addprefix $(local_dir)/include/, snn.h mtrand.h gpu.h \
 local_src := $(addprefix $(local_dir)/src/, snn_cpu.cpp mtrand.cpp \
 	propagated_spike_buffer.cpp poisson_rate.cpp \
 	print_snn_info.cpp gpu_random.cu \
-	snn_gpu.cu) \
-	$(local_deps)
+	snn_gpu.cu)
 local_objs := $(addprefix $(local_dir)/src/,snn_cpu.o mtrand.o \
 	propagated_spike_buffer.o poisson_rate.o print_snn_info.o \
 	gpu_random.o snn_gpu.o)
@@ -52,7 +51,7 @@ local_objs := $(addprefix $(local_dir)/src/,snn_cpu.o mtrand.o \
 interface_deps := carlsim.h carlsim.cpp user_errors.h user_errors.cpp \
 	callback.h callback_core.h callback_core.cpp carlsim_definitions.h \
 	carlsim_datastructures.h
-interface_src := $(interface_dir)/include/carlsim.cpp \
+interface_src := $(interface_dir)/src/carlsim.cpp \
 	$(interface_dir)/src/user_errors.cpp \
 	$(interface_dir)/src/callback_core.cpp
 interface_objs := $(interface_dir)/src/carlsim.o \
