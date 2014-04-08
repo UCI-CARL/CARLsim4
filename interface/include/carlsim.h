@@ -67,7 +67,7 @@
  * This class provides a user interface to the public sections of CARLsimCore source code. Example networks that use
  * this methodology can be found in the examples/ directory. Documentation is available on our website.
  *
- * The source code is organized into different sections in the following way:
+ * This file is organized into different sections in the following way:
  *  ├── Public section
  *  │     ├── Public methods
  *  │     │     ├── Constructor / destructor
@@ -81,7 +81,7 @@
  *  └── Private section 
  *        ├── Private methods
  *        └── Private properties
- * Within these sections, methods and properties are ordered alphabetically. carlsim.cpp follows the same organization.
+ * Within these sections, methods and properties are ordered alphabetically.
  * 
  */
 
