@@ -18,12 +18,14 @@ pti_programs += $(local_prog)
 .PHONY: $(example)
 $(example): $(local_src) $(local_prog)
 
-$(local_prog): $(local_src) $(local_objs) $(carlsim_sources) $(carlsim_objs) \
-	$(common_sources) $(common_objs)
+$(local_prog): $(local_src) $(local_objs) $(carlsim_sources) \
+	$(carlsim_objs) $(net_analysis_objs)
 	$(NVCC) $(CARLSIM_INCLUDES) $(CARLSIM_LFLAGS) $(CARLSIM_FLAGS) \
-	$(EO_FLAGS) $(PTI_FLAGS) $< $(carlsim_objs) $(common_objs) -o $@ \
-	$(CARLSIM_LIBS) $(PTI_LIBS) $(EO_LIBS)
+	$(EO_FLAGS) $(PTI_FLAGS) $(net_analysis_flags) $< $(carlsim_objs) \
+	$(net_analysis_objs) -o $@ $(CARLSIM_LIBS) $(PTI_LIBS) $(EO_LIBS)
 
 $(local_objs): $(local_src)
 	$(NVCC) -c $(CARLSIM_INCLUDES) $(CARLSIM_LFLAGS) $(CARLSIM_FLAGS) \
-	$(PTI_FLAGS) $(EO_FLAGS) $< -o $@ $(CARLSIM_LIBS) $(PTI_LIBS) $(EO_LIBS)
+	$(PTI_FLAGS) $(EO_FLAGS) $(net_analysis_flags) $< -o $@ \
+	$(CARLSIM_LIBS) $(PTI_LIBS) $(EO_LIBS)
+

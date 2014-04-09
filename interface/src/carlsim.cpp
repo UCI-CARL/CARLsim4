@@ -129,9 +129,9 @@ private:
  */
 class WriteSpikesToVector: public SpikeMonitor {
 public:
-	WriteSpikesToVector(std::vector<int> &spkVector) {
+	WriteSpikesToVector(std::vector<AER>& spkVector) {
 		// TODO: do an error check in carlsim to make sure it's an empty vector
-		spkVector_ = spkVector;
+		spkVector_ = &spkVector;
 	}
 	~WriteSpikesToVector() {}; // TODO: where does fileId_ get closed?
 
@@ -141,7 +141,7 @@ public:
 	 * all the neurons (neurIds) that have spiked during the last timeInterval ms (usually 1000).
 	 * It can be called for less than 1000 ms at the end of a simulation.
 	 * This implementation will iterate over all neuron IDs and spike times, and copy them to an int array.
-	 * To save space, neuron IDs are stored in a continuous (flattened) list, whereas timeCnts holds the number of
+	 * To save space, neurobn IDs are stored in a continuous (flattened) list, whereas timeCnts holds the number of
 	 * neurons that have spiked at each time step (reduced AER).
 	 * Example: There are 3 neurons, where neuron with ID 0 spikes at time 1, neurons with ID 1 and 2 both spike at
 	 *  		time 3. Then neurIds = {0,1,2} and timeCnts = {0,1,0,2,0,...,0}. Note that neurIds could also be {0,2,1}
@@ -158,20 +158,21 @@ public:
 		int pos    = 0; // keep track of position in flattened list of neuron IDs
 		for (int t=0; t < timeInterval; t++) {
 			for(int i=0; i<timeCnts[t];i++,pos++) {
+				// create an AER structure to store our time and nid information.
+				AER aer;
 				// timeInterval might be < 1000 at the end of a simulation
-				int time = t + s->getSimTime() - timeInterval;
+				aer.time = t + s->getSimTime() - timeInterval;
 				assert(time>=0);
-				int id   = neurIds[pos];
+				aer.nid   = neurIds[pos];
 				// here is where we write things to our new array
-				spkVector_.push_back(time);
-				spkVector_.push_back(id);
+				spkVector_->push_back(aer);
 			}
 		}
 	}
 	// write another class method that returns the stats I'm talking about.
 
 private:
-	std::vector<int> spkVector_;
+	std::vector<AER>* spkVector_;
 };
 
 /// **************************************************************************************************************** ///
@@ -727,7 +728,7 @@ void CARLsim::setSpikeMonitor(int grpId, const std::string& fname, int configId)
 }
 
 // set spike monitor for group and write spikes to vector
-void CARLsim::setSpikeMonitor(int grpId, std::vector& spkVector, int configId) {
+void CARLsim::setSpikeMonitor(int grpId, std::vector<AER>& spkVector, int configId) {
 	std::string funcName = "setSpikeMonitor(\""+getGroupName(grpId,configId)+"\",\"spkVector\")";
 	UserErrors::assertTrue(!hasRunNetwork_, UserErrors::NETWORK_ALREADY_RUN, funcName); // can't change setup after run
 	UserErrors::assertTrue(configId!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName, "configId");	// configId can't be ALL
@@ -735,10 +736,10 @@ void CARLsim::setSpikeMonitor(int grpId, std::vector& spkVector, int configId) {
 
 	// check to make sure vector.size() is 0
 	if(spkVector.size() != 0){
-		UserErrors::assertTrue(false, UserErrors::MUST_BE_ZERO, funcname, "spkVector");
+		UserErrors::assertTrue(false, UserErrors::MUST_BE_ZERO, funcName, "spkVector");
 	}
 	setSpikeMonitor(grpId, new WriteSpikesToVector(spkVector), configId);
-}
+}// TO DO we need to include something that handles both
 
 // assign spike rate to poisson group
 void CARLsim::setSpikeRate(int grpId, PoissonRate* spikeRate, int refPeriod, int configId) {

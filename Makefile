@@ -42,7 +42,8 @@ ex_dir  = examples
 interface_dir = interface
 test_dir = test
 util_dir = util
-analysis_dir = $(util_dir)/analysis
+net_analysis_dir = $(util_dir)/network_analysis
+
 # location of .cpp files
 vpath %.cpp $(EO_INSTALL_DIR)/src $(EO_INSTALL_DIR)/src/do \
 $(EO_INSTALL_DIR)/src/es $(EO_INSTALL_DIR)/src/utils $(lib_dir) \
@@ -62,7 +63,7 @@ all:
 include makefile.mk
 include libpti/libpti.mk
 include carlsim/carlsim.mk
-include util/analysis/analysis.mk
+include $(net_analysis_dir)/network_analysis.mk
 include test/gtest.mk
 include test/carlsim_tests.mk
 

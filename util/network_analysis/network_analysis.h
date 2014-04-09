@@ -44,10 +44,12 @@
 #ifndef _ANALYSIS_H_
 #define _ANALYSIS_H_
 
-// forward declare carlsim class
-class carlsim;
+// we need the AER data structure
+#include <carlsim_datastructures.h>
+#include <algorithm>
+#include <vector>
 
-class analysis {
+class network_analysis {
  public: 
 	/*! 
 	 * \brief analysis constructor.
@@ -56,36 +58,38 @@ class analysis {
 	 *
 	 * Takes a carlsim object as an argument.
 	 */
-	analysis(); // Maybe setSpikeCounter for all groups in sim. // by calling an initAnalysis
+	network_analysis(const std::vector<AER>& spkVector); // Maybe setSpikeCounter for all groups in sim. // by calling an initAnalysis
 	/*! 
-	 * \brief analysis destructor.
+	 * \brief network_analysis destructor.
 	 *
 	 * Cleans up all the memory upon object deletion.
 	 *
 	 */
-	~analysis();
+	~network_analysis();
 	
 	// +++++ PUBLIC METHODS: +++++++++++++++++++++++++++++++++++++++++++++++//
 	/*!
-	 * \brief Begin recording the spikes.
-	 * \param grpId	the group for which you want the average firing rate.
+	 * \brief return the average firing rate for a certain group averaged
+	 * over timeDuration.
+	 * \param timeDuration is the time duration over which the spikes should
+	 * be averaged.
+	 * \return float value for the average firing rate of the whole group. 
+	 */
+	float getGrpFiringRate(int timeDuration, int sizeN);
+	
+	/*!
+	 * \brief print the time/nid values to stdout. CAUTION: this can be
+	 * a lot of data.
+	 * \param void
 	 * \return void
 	 */
-	void setAvgGrpFiringRate(int grpId);
-	/*!
-	 * \brief return the average firing rate for a certain group. (NEED TO PASS INFO ON HOW TO AVG) 
-	 * \param grpId	the group for which you want the average firing rate.
-	 * \return int value for the firing rate. 
-	 */
-	int getAvgGrpFiringRate(int grpId);
+	void printAER();
+
  private:
 	// will be turned into a data structure
-	unsigned int* beginTimeSec_;
-	unsigned int* endTimeSec_;
-	unsigned int* beginTimeMs_;
-	unsigned int* endTimeMs_;
-	carlsim sim_;
-	group_info_t* grpInfo_;
+	std::vector<AER>::const_iterator it_begin_;
+	std::vector<AER>::const_iterator it_end_;
+	int vectorSize_;
 };
 
 

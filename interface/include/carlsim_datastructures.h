@@ -114,4 +114,19 @@ static const char* stdpType_string[] = {
 	"Standard STDP","Dopamine-modulated STDP","Unknown mode"
 };
 
+/*!
+ * \brief AER data structure
+ * This data structure mimics the address-event representation (AER) of 
+ * data storage by having an int to represent the time and an int to 
+ * represent the neuron id (nid).
+ *
+ * Binary spike files are written in this format: (time first, then nid).
+ * So this data structure mimics that. Most of the time this data structure
+ * will be found in a vector containting AER structures.
+ */
+typedef struct{
+	int time;
+	int nid;
+} AER;
+
 #endif

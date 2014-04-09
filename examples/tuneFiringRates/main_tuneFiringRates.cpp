@@ -35,11 +35,10 @@
 
 // includes core CARLsim functionality
 #include <carlsim.h>
-// includes the callback function to output spike data to arrays
-#include "../common/writeSpikeToArray.h"
+#include <mtrand.h>
 // include the PTI framework classes and functions
 #include <pti.h>
-
+#include <network_analysis.h>
 // TODO: Do away with globals.
 // TODO: put fitness in a separate file.
 
@@ -105,6 +104,14 @@ int main()
 	int inhGroup[NUM_CONFIGS];
 	// poissonRate spiking input pointer
 	PoissonRate* input[NUM_CONFIGS];
+	// create an AER vector to store the spike data
+	vector<AER> inputSpkInfo[NUM_CONFIGS];
+	vector<AER> excSpkInfo[NUM_CONFIGS];
+	vector<AER> inhSpkInfo[NUM_CONFIGS];
+	// create a network_analysis object
+	network_analysis* netMetricInput[NUM_CONFIGS];
+	network_analysis* netMetricExc[NUM_CONFIGS];
+	network_analysis* netMetricInh[NUM_CONFIGS];
 	
 	// -----------------------------------------------------------------------------
 	// BEGIN PTI initialization
@@ -200,17 +207,26 @@ int main()
 				for(int i=0;i<INPUT_SIZE;i++){
 					input[configId]->rates[i]=inputTargetFR;
 				}
-	
+				// intialize the spike counters
+				for(int i=0;i<NUM_CONFIGS;i++){
+					inputSpkInfo[i].clear();
+					excSpkInfo[i].clear();
+					inhSpkInfo[i].clear();
+					assert(inputSpkInfo[i].size()==0);
+					assert(excSpkInfo[i].size()==0);
+					assert(inhSpkInfo[i].size()==0);
+				}
+
+				// set out spike monitors here
+				snn[configId]->setSpikeMonitor(inputGroup[configId],inputSpkInfo[configId],0);
+				snn[configId]->setSpikeMonitor(excGroup[configId],excSpkInfo[configId],0);
+				snn[configId]->setSpikeMonitor(inhGroup[configId],inhSpkInfo[configId],0);
+
 				// still have to set the firing rates (need to double check)
 				snn[configId]->setSpikeRate(inputGroup[configId],input[configId]);
 
 				// set log stats 
 				snn[configId]->setLogCycle(1);
-				snn[configId]->setSpikeCounter(excGroup[configId],-1);
-				snn[configId]->setSpikeCounter(inhGroup[configId],-1);
-				
-				// just build the network				
-				snn[configId]->runNetwork(0,0);
 				// -----------------------------------------------------------------------------
 				// END CARLsim initialization
 				// -----------------------------------------------------------------------------
@@ -224,26 +240,21 @@ int main()
 				// run network for 1 s
 				int runTime = 2;
 				snn[configId]->runNetwork(runTime,0);
-				// evaluate the fitness right here
-				int* excCount = snn[configId]->getSpikeCounter(excGroup[configId]);
-				int* inhCount = snn[configId]->getSpikeCounter(inhGroup[configId]);
-				// count all spikes as a sanity check
-				int excTotalCount = 0;
-				for(int neurId=0;neurId<EXC_SIZE; neurId++)
-					excTotalCount = excTotalCount + excCount[neurId];
-				int inhTotalCount = 0;
-				for(int neurId=0;neurId<INH_SIZE; neurId++)
-					inhTotalCount = inhTotalCount + inhCount[neurId];
-				printf("excTotalCount = %d\n",excTotalCount);
-				printf("inhTotalCount = %d\n",inhTotalCount);
-				double excFR = (double) (*excCount)/((double)EXC_SIZE*runTime);
-				double inhFR = (double) (*inhCount)/((double)INH_SIZE*runTime);
-				printf("excFR = %f Hz\n",excFR);
-				printf("inhFR = %f Hz\n",inhFR);
+				// get the output of our spike monitor
+
+				netMetricInput[configId] = new network_analysis(inputSpkInfo[configId]);
+				netMetricExc[configId] = new network_analysis(excSpkInfo[configId]);
+				netMetricInh[configId] = new network_analysis(inhSpkInfo[configId]);
+				
+				float inputFR = netMetricInput[configId]->getGrpFiringRate(runTime,INPUT_SIZE);
+				cout << "inputFR = " << inputFR << " Hz" << endl;
+				float excFR = netMetricExc[configId]->getGrpFiringRate(runTime,EXC_SIZE);
+				cout << "excFR = " << excFR << " Hz" << endl;
+				float inhFR = netMetricInh[configId]->getGrpFiringRate(runTime,INH_SIZE);
+				cout << "inhFR = " << inhFR << " Hz" << endl;
+				
 				fitness[configId]=fabs(excFR-excTargetFR)+fabs(inhFR-inhTargetFR);
 				printf("fitness = %f\n",fitness[configId]);
-				// reset all spike counters
-				snn[configId]->resetSpikeCounter(-1);
 				// associate the fitness values (CARLsim) with individual Id/associated parameter values (EO)
 				ptiObj->setFitness(fitness[configId], indiId);
 				if (snn[configId]!=NULL) 
@@ -252,7 +263,17 @@ int main()
 				if(input[configId]!=NULL)
 					delete input[configId];
 				input[configId]=NULL;
+				if(netMetricInput[configId]!=NULL)
+					delete netMetricInput[configId];
+				netMetricInput[configId]=NULL;
+				if(netMetricExc[configId]!=NULL)
+					delete netMetricExc[configId];
+				netMetricExc[configId]=NULL;
+				if(netMetricInh[configId]!=NULL)
+					delete netMetricInh[configId];
+				netMetricInh[configId]=NULL;
 			}
+			
 			
 		} // end loop over individuals
 	}while(ptiObj->runEA());// this takes care of all termination conditions specified in the EO param files
