@@ -292,13 +292,14 @@ public:
 	 */
 	 void setSTP(int grpId, bool isSet, float STP_U, float STP_tau_u, float STP_tau_x, int configId);
 
-
-	//! Sets the weight update parameters
+	//! Sets the weight and weight change update parameters
 	/*!
-	 * \param updateInterval the interval between two weight update. the setting could be _10MS, _100MS, _1000MS
-	 * \param tauWeightChange the decay time constant of weight change (wtChange)
+	 * \param[in] updateWeightInterval the interval between two weight update.
+	 * \param[in] updateWeightChangeInterval the interval between two weight update.
+	 * \param[in] tauWeightChange the decay time constant of weight change (wtChange)
 	 */
-	void setWeightUpdateParameter(int updateInterval, int tauWeightChange);
+	void setWeightAndWeightChangeUpdate(updateIterval_t updateWeightInterval, updateIterval_t updateWeightChangeInterval,
+										int tauWeightChange);
 
 	// +++++ PUBLIC METHODS: RUNNING A SIMULATION +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
@@ -999,6 +1000,7 @@ private:
 	int wtUpdateInterval_;
 	int wtUpdateIntervalCnt_;
 	float stdpScaleFactor_;
+	int wtChangeUpdateInterval_;
 	float wtChangeDecay_; //!< the wtChange decay 
 
 };
