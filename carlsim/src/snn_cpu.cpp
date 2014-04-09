@@ -597,7 +597,7 @@ void CpuSNN::setSTP(int grpId, bool isSet, float STP_U, float STP_tau_u, float S
 	}
 }
 
-void CpuSNN::setWeightAndWeightChangeUpdate(updateIterval_t wtUpdateInterval, updateIterval_t wtChangeUpdateInterval,
+void CpuSNN::setWeightAndWeightChangeUpdate(updateInterval_t wtUpdateInterval, updateInterval_t wtChangeUpdateInterval,
 											int tauWeightChange) {
 	switch (wtUpdateInterval) {
 		case INTERVAL_10MS:

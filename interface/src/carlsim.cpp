@@ -539,7 +539,7 @@ void CARLsim::setSTP(int grpId, bool isSet, float STP_U, float STP_tau_u, float 
 	}		
 }
 
-void CARLsim::setWeightAndWeightChangeUpdate(updateIterval_t updateWtInterval, updateIterval_t updateWtChangeInterval,
+void CARLsim::setWeightAndWeightChangeUpdate(updateInterval_t updateWtInterval, updateInterval_t updateWtChangeInterval,
 											 int tauWeightChange) {
 	std::string funcName = "setWeightAndWeightChangeUpdate()";
 	UserErrors::assertTrue(updateWtChangeInterval <= updateWtInterval, UserErrors::CANNOT_BE_LARGER, funcName);

@@ -316,8 +316,8 @@ public:
 	 * \param[in] updateWeightChangeInterval the interval between two weight update.
 	 * \param[in] tauWeightChange the decay time constant of weight change (wtChange)
 	 */
-	void setWeightAndWeightChangeUpdate(updateIterval_t updateWeightInterval = INTERVAL_1000MS,
-		updateIterval_t updateWeightChangeInterval = INTERVAL_1000MS, int tauWeightChange = 10);
+	void setWeightAndWeightChangeUpdate(updateInterval_t updateWeightInterval = INTERVAL_1000MS,
+		updateInterval_t updateWeightChangeInterval = INTERVAL_1000MS, int tauWeightChange = 10);
 
 
 	// +++++ PUBLIC METHODS: RUNNING A SIMULATION ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
