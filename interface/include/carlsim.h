@@ -582,6 +582,7 @@ private:
 	bool hasSetHomeoBaseFiringALL_;	//!< informs that base firing has been set for ALL groups (can't add more groups)
 	bool hasSetSTDPALL_; 			//!< informs that STDP have been set for ALL groups (can't add more groups)
 	bool hasSetSTPALL_; 			//!< informsthat STP have been set for ALL groups (can't add more groups)
+	carlsimState_t carlsimState_;	//!< the current state of carlsim
 
 	int def_tdAMPA_;				//!< default value for AMPA decay (ms)
 	int def_trNMDA_;				//!< default value for NMDA rise (ms)

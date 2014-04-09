@@ -37,7 +37,8 @@ public:
 		NETWORK_ALREADY_RUN,	//!< function cannot be called because network has already bun run
 		UNKNOWN_GROUP_ID,		//!< the specified group id is unknown
 		UNKNOWN,				//!< an unknown error
-		WRONG_NEURON_TYPE		//!< function cannot be applied to neuron type
+		WRONG_NEURON_TYPE,		//!< function cannot be applied to neuron type
+		INVALID_API_AT_CURRENT_STATE //!< the api function (public method) can't be called at the current carlsim sate
 	};
 
 

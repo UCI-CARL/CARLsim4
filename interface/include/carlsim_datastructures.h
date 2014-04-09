@@ -129,4 +129,11 @@ static const char* updateInterval_string[] = {
 	"10 ms interval", "100 ms interval", "1000 ms interval"
 };
 
+enum carlsimState_t {
+	CONFIG_STATE, SETUP_STATE, EXE_STATE
+};
+static const char* carlsimState_string[] = {
+	"Configuration state", "Setup state", "Execution state"
+};
+
 #endif
