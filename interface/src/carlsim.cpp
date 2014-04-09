@@ -539,13 +539,15 @@ void CARLsim::setSTP(int grpId, bool isSet, float STP_U, float STP_tau_u, float 
 	}		
 }
 
-void CARLsim::setWeightUpdateParameter(int updateInterval, int tauWeightChange) {
-	std::string funcName = "setWeightUpdateParameter()";
-	UserErrors::assertTrue(updateInterval >= 0 && updateInterval <= 2, UserErrors::MUST_BE_WITHIN_RANGE, funcName);
+void CARLsim::setWeightAndWeightChangeUpdate(updateIterval_t updateWtInterval, updateIterval_t updateWtChangeInterval,
+											 int tauWeightChange) {
+	std::string funcName = "setWeightAndWeightChangeUpdate()";
+	UserErrors::assertTrue(updateWtChangeInterval <= updateWtInterval, UserErrors::CANNOT_BE_LARGER, funcName);
 	UserErrors::assertTrue(tauWeightChange > 0, UserErrors::MUST_BE_POSITIVE, funcName);
 
-	snn_->setWeightUpdateParameter(updateInterval, tauWeightChange);
+	snn_->setWeightAndWeightChangeUpdate(updateWtInterval, updateWtChangeInterval, tauWeightChange);
 }
+
 
 // +++++++++ PUBLIC METHODS: RUNNING A SIMULATION +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
