@@ -85,7 +85,7 @@ TEST(SpikeCounter, SpikeCntVsData) {
 		sim->setSpikeCounter(g1,recordDur,ALL);
 		sim->setSpikeMonitor(g1,NULL,ALL);
 
-		PeriodicSpikeGenerator* spk50 = new PeriodicSpikeGenerator(50.0f); // periodic spiking @ 50 Hz
+		PeriodicSpikeGeneratorCore* spk50 = new PeriodicSpikeGeneratorCore(50.0f); // periodic spiking @ 50 Hz
 		sim->setSpikeGenerator(g0, spk50, ALL);
 
 		// after some time expect some number of spikes
@@ -158,10 +158,10 @@ TEST(SpikeCounter, SpikeCntvsSpikeMon) {
 			sim->setConductances(true,5,0,150,6,0,150,ALL);
 
 			sim->setSpikeCounter(g1,-1,ALL);
-			SpikeMonitorPerNeuron* spikePN = new SpikeMonitorPerNeuron(10);
+			SpikeMonitorPerNeuronCore* spikePN = new SpikeMonitorPerNeuronCore(10);
 			sim->setSpikeMonitor(g1,spikePN,ALL);
 
-			PeriodicSpikeGenerator* spk50 = new PeriodicSpikeGenerator(50.0f); // periodic spiking @ 50 Hz
+			PeriodicSpikeGeneratorCore* spk50 = new PeriodicSpikeGeneratorCore(50.0f); // periodic spiking @ 50 Hz
 			sim->setSpikeGenerator(g0, spk50, ALL);
 
 			// after some time expect some number of spikes
@@ -224,7 +224,7 @@ TEST(SpikeCounter, CPUvsGPU) {
 			sim->setSpikeCounter(g1,recordDur,ALL);
 			sim->setSpikeMonitor(g1,NULL,ALL);
 
-			PeriodicSpikeGenerator* spk50 = new PeriodicSpikeGenerator(50.0f); // periodic spiking @ 50 Hz
+			PeriodicSpikeGeneratorCore* spk50 = new PeriodicSpikeGeneratorCore(50.0f); // periodic spiking @ 50 Hz
 			sim->setSpikeGenerator(g0, spk50, ALL);
 
 			// after some time expect some number of spikes

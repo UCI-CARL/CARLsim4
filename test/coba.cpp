@@ -82,7 +82,7 @@ TEST(COBA, synRiseTime) {
 			sim->setConductances(true,tdAMPA,trNMDA,tdNMDA,tdGABAa,trGABAb,tdGABAb,ALL);
 
 			// run network for a second first, so that we know spike will happen at simTimeMs==1000
-			PeriodicSpikeGenerator* spk1 = new PeriodicSpikeGenerator(1.0f); // periodic spiking @ 50 Hz
+			PeriodicSpikeGeneratorCore* spk1 = new PeriodicSpikeGeneratorCore(1.0f); // periodic spiking @ 50 Hz
 			sim->setSpikeGenerator(g0, spk1, ALL);
 			sim->setSpikeGenerator(g2, spk1, ALL);
 			sim->runNetwork(1,0,false);

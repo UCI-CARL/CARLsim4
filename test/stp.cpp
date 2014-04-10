@@ -128,7 +128,7 @@ TEST(STP, internalCPUvsData) {
 	sim->setConductances(true,5,10,15,20,25,30,ALL);
 	sim->setSTP(g0,true,0.19f,86,992,ALL); // the exact values are not important
 
-	PeriodicSpikeGenerator* spk50 = new PeriodicSpikeGenerator(50.0f); // periodic spiking @ 50 Hz
+	PeriodicSpikeGeneratorCore* spk50 = new PeriodicSpikeGeneratorCore(50.0f); // periodic spiking @ 50 Hz
 	sim->setSpikeGenerator(g0, spk50, ALL);
 
 	for (int i=0; i<50; i++) {
@@ -170,7 +170,7 @@ TEST(STP, externalCPUvsData) {
 	sim->setConductances(true,5,10,15,20,25,30,ALL);
 	sim->setSTP(g0,true,0.19f,86,992,ALL); // the exact values are not important
 
-	PeriodicSpikeGenerator* spk50 = new PeriodicSpikeGenerator(50.0f); // periodic spiking @ 50 Hz
+	PeriodicSpikeGeneratorCore* spk50 = new PeriodicSpikeGeneratorCore(50.0f); // periodic spiking @ 50 Hz
 	sim->setSpikeGenerator(g0, spk50, ALL);
 
 	for (int i=0; i<50; i++) {
@@ -212,7 +212,7 @@ TEST(STP, internalCPUvsGPU) {
 		sim->setConductances(true,5,10,15,20,25,30,ALL);
 		sim->setSTP(g0,true,STP_U,STP_tD,STP_tF,ALL);
 
-		PeriodicSpikeGenerator* spk20 = new PeriodicSpikeGenerator(20.0f);
+		PeriodicSpikeGeneratorCore* spk20 = new PeriodicSpikeGeneratorCore(20.0f);
 		sim->setSpikeGenerator(g0, spk20, ALL);
 
 		for (int i=0; i<300; i++) {
@@ -271,7 +271,7 @@ TEST(STP, externalCPUvsGPU) {
 		sim->setConductances(true,5,10,15,20,25,30,ALL);
 		sim->setSTP(g0,true,STP_U,STP_tD,STP_tF,ALL);
 
-		PeriodicSpikeGenerator* spk20 = new PeriodicSpikeGenerator(20.0f);
+		PeriodicSpikeGeneratorCore* spk20 = new PeriodicSpikeGeneratorCore(20.0f);
 		sim->setSpikeGenerator(g0, spk20, ALL);
 
 		for (int i=0; i<300; i++) {

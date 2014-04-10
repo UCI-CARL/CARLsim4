@@ -1,5 +1,5 @@
 #include <carlsim.h>
-
+#include <snn.h>
 #include "carlsim_tests.h"
 
 //! trigger all UserErrors
