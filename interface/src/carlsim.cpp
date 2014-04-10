@@ -581,7 +581,8 @@ void CARLsim::setWeightAndWeightChangeUpdate(updateInterval_t updateWtInterval, 
 // run network with custom options
 int CARLsim::runNetwork(int nSec, int nMsec, bool copyState) {
 	std::string funcName = "runNetwork()";
-	UserErrors::assertTrue(carlsimState_ == SETUP_STATE, UserErrors::INVALID_API_AT_CURRENT_STATE, funcName);
+	UserErrors::assertTrue(carlsimState_ == SETUP_STATE || carlsimState_ == EXE_STATE,
+				UserErrors::INVALID_API_AT_CURRENT_STATE, funcName);
 
 	if (!hasRunNetwork_) {
 		handleUserWarnings();	// before running network, make sure user didn't provoque any user warnings
