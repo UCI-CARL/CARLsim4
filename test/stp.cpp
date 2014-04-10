@@ -132,7 +132,7 @@ TEST(STP, internalCPUvsData) {
 	sim->setSpikeGenerator(g0, spk50, ALL);
 
 	for (int i=0; i<50; i++) {
-		sim->runNetwork(0,1,false,true); // enable copyState
+		sim->runNetwork(0,1,true); // enable copyState
 		EXPECT_NEAR(sim->stpu[1], stpu[i], abs_error);
 		EXPECT_NEAR(sim->stpx[1], stpx[i], abs_error);
 	}
@@ -174,7 +174,7 @@ TEST(STP, externalCPUvsData) {
 	sim->setSpikeGenerator(g0, spk50, ALL);
 
 	for (int i=0; i<50; i++) {
-		sim->runNetwork(0,1,false,true); // enable copyState
+		sim->runNetwork(0,1,true); // enable copyState
 		EXPECT_NEAR(sim->current[0], current[i], abs_error); // check post-synaptic current to see effect of pre-STP
 	}
 
@@ -216,7 +216,7 @@ TEST(STP, internalCPUvsGPU) {
 		sim->setSpikeGenerator(g0, spk20, ALL);
 
 		for (int i=0; i<300; i++) {
-			sim->runNetwork(0,1,false,true); // enable copyState
+			sim->runNetwork(0,1,true); // enable copyState
 			stpu[j*300+i] = sim->stpu[1];
 			stpx[j*300+i] = sim->stpx[1];
 		}
@@ -275,7 +275,7 @@ TEST(STP, externalCPUvsGPU) {
 		sim->setSpikeGenerator(g0, spk20, ALL);
 
 		for (int i=0; i<300; i++) {
-			sim->runNetwork(0,1,false,true); // enable copyState
+			sim->runNetwork(0,1,true); // enable copyState
 			current[j*300+i] = sim->current[0];
 		}
 

@@ -17,6 +17,5 @@ all_targets += $(local_prog)
 $(example): $(local_src) $(local_prog)
 
 $(local_prog): $(local_src) $(carlsim_deps) $(carlsim_objs)
-	$(NVCC) $(CARLSIM_INCLUDES) $(CARLSIM_LFLAGS) $(CARLSIM_LIBS) \
-	$(CARLSIM_FLAGS) $(carlsim_objs) $< -o $@
+	$(NVCC) $(CARLSIM_INCLUDES) $(CARLSIM_FLAGS) $(carlsim_objs) $< -o $@
 

@@ -17,4 +17,4 @@ pti_programs += $(local_prog)
 simpleEA: $(local_src) $(local_prog)
 
 $(local_prog): $(local_src)
-	$(CC) $(CPPFLAGS) $(EO_FLAGS) $(PTI_FLAGS) $< -o $@ $(PTI_LIBS) $(EO_LIBS)
+	$(CC) $(CPPFLAGS) $(EO_FLAGS) $(EO_LFLAGS) $(PTI_FLAGS) $(PTI_LFLAGS) $< -o $@ $(PTI_LIBS) $(EO_LIBS)

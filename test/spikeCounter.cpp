@@ -89,7 +89,7 @@ TEST(SpikeCounter, SpikeCntVsData) {
 		sim->setSpikeGenerator(g0, spk50, ALL);
 
 		// after some time expect some number of spikes
-		sim->runNetwork(0,750,false,false);
+		sim->runNetwork(0,750,false);
 		for (int c=0; c<nConfig; c++) {
 			spikes = sim->getSpikeCounter(g1,c);
 			EXPECT_EQ(spikes[0],16);
@@ -120,7 +120,7 @@ TEST(SpikeCounter, SpikeCntVsData) {
 		}
 
 		// run some more and expect number
-		sim->runNetwork(2,134,false,false);
+		sim->runNetwork(2,134,false);
 		for (int c=0; c<nConfig; c++) {
 			spikes = sim->getSpikeCounter(g1,0);
 			EXPECT_EQ(spikes[0],42);
@@ -165,7 +165,7 @@ TEST(SpikeCounter, SpikeCntvsSpikeMon) {
 			sim->setSpikeGenerator(g0, spk50, ALL);
 
 			// after some time expect some number of spikes
-			sim->runNetwork(1,0,false,false);
+			sim->runNetwork(1,0,false);
 			spikesMon = spikePN->getSpikes();
 
 			// spike counter has to loop over all configIds
@@ -229,7 +229,7 @@ TEST(SpikeCounter, CPUvsGPU) {
 
 			// after some time expect some number of spikes
 			for (int tt=0; tt<timeMs; tt++) {
-				sim->runNetwork(0,1,false,false); // run for 1ms
+				sim->runNetwork(0,1,false); // run for 1ms
 				if (!mode) {
 					// CPU mode: record spikes
 					for (int c=0; c<nConfig; c++) {

@@ -26,5 +26,4 @@ $(local_prog): $(local_src) $ $(carlsim_deps) $(carlsim_objs) $(local_objs)
 
 # local cuda
 $(local_dir)/%.o: $(local_dir)/%.cu $(local_deps)
-	$(NVCC) -c $(CARLSIM_INCLUDES) $(CARLSIM_LFLAGS) $(CARLSIM_LIBS) \
-	$(CARLSIM_FLAGS) $< -o $@
+	$(NVCC) -c $(CARLSIM_INCLUDES) $(CARLSIM_FLAGS) $< -o $@

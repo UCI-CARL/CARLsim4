@@ -3,16 +3,14 @@
 objects += $(test_dir)/carlsim_tests.o
 output_files += $(test_dir)/carlsim_tests
 
-CARLSIM_TEST_FLAGS := -I$(CURDIR)/$(test_dir) -D__REGRESSION_TESTING__
-
 gtest_deps = $(GTEST_LIB_DIR)/libgtest.a $(GTEST_LIB_DIR)/libgtest_main.a \
 	$(GTEST_LIB_DIR)/libgtest_custom_main.a
 
 local_dir := $(test_dir)
-local_deps := carlsim_tests.h coba.cpp core.cpp interface.cpp spikeCounter.cpp \
+local_deps := carlsim_tests.h coba.cpp core.cpp interface.cpp \
 	stdp.cpp stp.cpp
 local_src := $(addprefix $(local_dir)/,$(local_deps))
-local_objs := $(addprefix $(local_dir)/,coba.o core.o spikeCounter.o \
+local_objs := $(addprefix $(local_dir)/,coba.o core.o \
 	stdp.o stp.o)
 
 carlsim_tests_objs := $(local_objs)
@@ -25,13 +23,13 @@ carlsim_tests: $(test_dir)/carlsim_tests $(local_objs)
 $(local_dir)/carlsim_tests: $(local_objs) $(gtest_deps) \
 	$(carlsim_objs)
 	$(NVCC) $(CARLSIM_INCLUDES) $(CARLSIM_LFLAGS) $(CARLSIM_LIBS) \
-	$(CARLSIM_FLAGS) $(CARLSIM_TEST_FLAGS)  $(carlsim_objs) \
+	$(CARLSIM_FLAGS) $(carlsim_objs) \
 	$(GTEST_CPPFLAGS) -L$(GTEST_LIB_DIR) -lgtest_custom_main \
 	$(carlsim_tests_objs) -o $@
 
 $(local_dir)/%.o: $(local_dir)/%.cpp $(local_deps)
 	$(NVCC) $(CARLSIM_INCLUDES) $(CARLSIM_LFLAGS) $(CARLSIM_LIBS) \
-	$(CARLSIM_FLAGS) $(CARLSIM_TEST_FLAGS) \
+	$(CARLSIM_FLAGS) \
 	$(GTEST_CPPFLAGS) -L$(GTEST_LIB_DIR) -lgtest_custom_main \
 	-c $< -o $@
 
