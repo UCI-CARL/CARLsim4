@@ -41,15 +41,15 @@
 
 // paradigm shift: run this on spikes. 
 
-#ifndef _ANALYSIS_H_
-#define _ANALYSIS_H_
+#ifndef _SPIKE_INFO_H_
+#define _SPIKE_INFO_H_
 
 // we need the AER data structure
 #include <carlsim_datastructures.h>
 #include <algorithm>
 #include <vector>
 
-class network_analysis {
+class SpikeInfo {
  public: 
 	/*! 
 	 * \brief analysis constructor.
@@ -58,14 +58,14 @@ class network_analysis {
 	 *
 	 * Takes a carlsim object as an argument.
 	 */
-	network_analysis(const std::vector<AER>& spkVector); // Maybe setSpikeCounter for all groups in sim. // by calling an initAnalysis
+	SpikeInfo(const std::vector<AER>& spkVector); // Maybe setSpikeCounter for all groups in sim. // by calling an initAnalysis
 	/*! 
-	 * \brief network_analysis destructor.
+	 * \brief SpikeInfo destructor.
 	 *
 	 * Cleans up all the memory upon object deletion.
 	 *
 	 */
-	~network_analysis();
+	~SpikeInfo();
 	
 	// +++++ PUBLIC METHODS: +++++++++++++++++++++++++++++++++++++++++++++++//
 	/*!

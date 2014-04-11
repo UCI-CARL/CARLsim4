@@ -732,25 +732,21 @@ void CARLsim::setSpikeGenerator(int grpId, SpikeGenerator* spikeGen, int configI
 	snn_->setSpikeGenerator(grpId, new SpikeGeneratorCore(this, spikeGen),configId);
 }
 
-// set spike monitor for a group
-void CARLsim::setSpikeMonitor(int grpId, SpikeMonitor* spikeMon, int configId) {
-	std::string funcName = "setSpikeMonitor(\""+getGroupName(grpId,configId)+"\",SpikeMonitor*)";
-	UserErrors::assertTrue(!hasRunNetwork_, UserErrors::NETWORK_ALREADY_RUN, funcName); // can't change setup after run
-	UserErrors::assertTrue(grpId!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName, "grpId");		// groupId can't be ALL
-
-	snn_->setSpikeMonitor(grpId, new SpikeMonitorCore(this, spikeMon),configId);
-}
+// set spike monitor for a group you create a new SpikeMonitorCore object
 
 
 // set spike monitor for group and write spikes to file
-void CARLsim::setSpikeMonitor(int grpId, const std::string& fname, int configId) {
+*SpikeInfo CARLsim::setSpikeMonitor(int grpId, const std::string& fname, int configId) {
 	std::string funcName = "setSpikeMonitor(\""+getGroupName(grpId,configId)+"\",\""+fname+"\")";
 	UserErrors::assertTrue(!hasRunNetwork_, UserErrors::NETWORK_ALREADY_RUN, funcName); // can't change setup after run
 	UserErrors::assertTrue(configId!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName, "configId");	// configId can't be ALL
 	UserErrors::assertTrue(grpId!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName, "grpId");		// groupId can't be ALL
-
+	// set the default string here
+	if(fname.empty())
+		fname="spk"+snn_->getGroupName(grpId,configId)+".dat"; 
+	
 	// try to open spike file
-	FILE* fid = fopen(fname.c_str(),"wb"); // FIXME: where does fid get closed?
+	FILE* fid = fopen(fname.c_str(),"wb"); // FIXME: where does fid get closed? TODO: FIX THIS IN SNN_CPU -- KDC
 	if (fid==NULL) {
 		// file could not be opened
 
@@ -759,23 +755,11 @@ void CARLsim::setSpikeMonitor(int grpId, const std::string& fname, int configId)
 		UserErrors::assertTrue(false, UserErrors::FILE_CANNOT_OPEN, fname, fileError);
 	}
 
-	setSpikeMonitor(grpId, new WriteSpikesToFile(fid), configId);
+	SpikeInfo* spkInfo;
+	
+	spkInfo=snn_->setSpikeMonitor(grpId, fid, configId);
+	return spkInfo;
 }
-
-// TODO: NEED TO CHANGE THIS!!!!
-// set spike monitor for group and write spikes to vector
-void CARLsim::setSpikeMonitor(int grpId, std::vector<AER>& spkVector, int configId) {
-	std::string funcName = "setSpikeMonitor(\""+getGroupName(grpId,configId)+"\",\"spkVector\")";
-	UserErrors::assertTrue(!hasRunNetwork_, UserErrors::NETWORK_ALREADY_RUN, funcName); // can't change setup after run
-	UserErrors::assertTrue(configId!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName, "configId");	// configId can't be ALL
-	UserErrors::assertTrue(grpId!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName, "grpId");		// groupId can't be ALL
-
-	// check to make sure vector.size() is 0
-	if(spkVector.size() != 0){
-		UserErrors::assertTrue(false, UserErrors::MUST_BE_ZERO, funcName, "spkVector");
-	}
-	setSpikeMonitor(grpId, new WriteSpikesToVector(spkVector), configId);
-}// TO DO we need to include something that handles both
 
 // assign spike rate to poisson group
 void CARLsim::setSpikeRate(int grpId, PoissonRate* spikeRate, int refPeriod, int configId) {

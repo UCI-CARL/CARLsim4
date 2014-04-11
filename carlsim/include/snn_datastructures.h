@@ -286,6 +286,7 @@ typedef struct group_info_s
 	float		decayNE;		//!< decay rate for Noradrenaline
 
 	SpikeGeneratorCore*	spikeGen;
+	SpikeInfo* spkInfo;
 	bool		newUpdates;  //!< FIXME this flag has mixed meaning and is not rechecked after the simulation is started
 } group_info_t;
 

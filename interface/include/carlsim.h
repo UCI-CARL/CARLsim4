@@ -87,6 +87,8 @@
 
 class CpuSNN; // forward-declaration of private implementation
 
+class SpikeInfo; // forward-declaration of private implemenation
+
 class CARLsim {
 public:
 	// +++++ PUBLIC METHODS: CONSTRUCTOR / DESTRUCTOR +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
@@ -432,13 +434,9 @@ public:
 	 * If you want to dump spiking information to file, use the other SpikeMonitor.
 	 * If you need spiking information in smaller bins, use a SpikeCounter.
 	 */
-	void setSpikeMonitor(int gid, SpikeMonitor* spikeMon=NULL, int configId=ALL);
-
 	//! Sets a spike monitor for a group, prints spikes to binary file
-	void setSpikeMonitor(int grpId, const std::string& fname, int configId=0);
+	void setSpikeMonitor(int grpId, const std::string& fname="", int configId=0);
 
-	//! Sets a spike monitor for a group and ouputs in AER format to vector
-	void setSpikeMonitor(int grpId, std::vector<AER>& spkVector, int configId=0);
 
 	void setSpikeRate(int grpId, PoissonRate* spikeRate, int refPeriod=1, int configId=ALL);
 

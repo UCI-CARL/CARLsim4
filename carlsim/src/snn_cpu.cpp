@@ -999,11 +999,11 @@ void CpuSNN::setSpikeCounter(int grpId, int recordDur, int configId) {
 	}
 }
 
-// add a SpikeMonitor for group where spikeMon can be custom class or WriteSpikesToFile
-void CpuSNN::setSpikeMonitor(int grpId, SpikeMonitorCore* spikeMon, int configId) {
+// add a SpikeMonitor for group, return a SpikeInfo object
+SpikeInfo* CpuSNN::setSpikeMonitor(int grpId, FILE* fid, int configId) {
 	if (configId == ALL) {
 		for(int c=0; c < nConfig_; c++)
-		setSpikeMonitor(grpId, spikeMon,c);
+		setSpikeMonitor(grpId, fid ,c);
 	} else {
 	    int cGrpId = getGroupId(grpId, configId);
 	    CARLSIM_DEBUG("spikeMonitor added");
@@ -1026,7 +1026,11 @@ void CpuSNN::setSpikeMonitor(int grpId, SpikeMonitorCore* spikeMon, int configId
 	    // reset the position of the buffer pointer..
 	    monBufferPos[numSpikeMonitor]  = 0;
 
-	    monBufferCallback[numSpikeMonitor] = spikeMon;
+			// assign monBufferFid if we selected to write to a file
+			monBufferFid[numSpikeMonitor] = fid;
+
+			// create a new SpikeInfo object
+			monBufferSpikeInfo[numSpikeMonitor] = new SpikeInfo;
 
 	    // create the new buffer for keeping track of all the spikes in the system
 	    monBufferFiring[numSpikeMonitor] = new unsigned int[buffSize];
@@ -1041,6 +1045,8 @@ void CpuSNN::setSpikeMonitor(int grpId, SpikeMonitorCore* spikeMon, int configId
 	    cpuSnnSz.monitorInfoSize += sizeof(int)*(1000);
 
 	    CARLSIM_INFO("SpikeMonitor set for group %d (%s)",cGrpId,grp_Info2[grpId].Name.c_str());
+	
+			return monBufferSpikeInfo[numSpikeMonitor];
 	}
 }
 
@@ -1737,6 +1743,7 @@ void CpuSNN::CpuSNNinit() {
 		grp_Info[i].decayNE = 1 - (1.0f / 100);
 
 		grp_Info[i].spikeGen = NULL;
+		grp_Info[i].spkInfo = NULL;
 
 		grp_Info[i].withSpikeCounter = false;
 		grp_Info[i].spkCntRecordDur = -1;
@@ -1752,6 +1759,7 @@ void CpuSNN::CpuSNNinit() {
 		grp_Info2[i].maxPreConn  = 0;
 		grp_Info2[i].sumPostConn = 0;
 		grp_Info2[i].sumPreConn  = 0;
+		
 	}
 
 	CUDA_CREATE_TIMER(timer);
@@ -3454,8 +3462,8 @@ void CpuSNN::resetPointers(bool deallocate) {
 		for (int i = 0; i < numSpikeMonitor; i++) {
 			if (monBufferFiring[i]!=NULL && deallocate) delete[] monBufferFiring[i];
 			if (monBufferTimeCnt[i]!=NULL && deallocate) delete[] monBufferTimeCnt[i];
-			if (monBufferCallback[i]!=NULL && deallocate) delete[] monBufferCallback[i];//TODO: DOUBLECHECK --KDC
-			monBufferFiring[i]=NULL; monBufferTimeCnt[i]=NULL;
+			if (monBufferSpikeInfo[i]!=NULL && deallocate) delete[] monBufferSpikeInfo[i];//TODO:don't need anymore. --KDC
+			monBufferFiring[i]=NULL; monBufferTimeCnt[i]=NULL;monBufferSpikeInfo[i]=NULL;
 		}
 	}
 
@@ -4118,17 +4126,20 @@ void CpuSNN::updateSpikeMonitor(int numMs) {
 		}  /* for all time t */
 	}
 
+	// loop over all groups and check if they have a spike monitor
+	// TODO: here is where we do our call to the monBufferSpikeInfo -- KDC
 	for (int grpId=0;grpId<numGrp;grpId++) {
 		int monitorId = grp_Info[grpId].SpikeMonitorId;
 		if(monitorId!= -1) {
 			CARLSIM_INFO("Spike Monitor for Group %s has %d spikes (%f Hz)",grp_Info2[grpId].Name.c_str(),
 				monBufferPos[monitorId],((float)monBufferPos[monitorId])*1000.0f/(numMs*grp_Info[grpId].SizeN));
 
-			// call the callback function
-			if (monBufferCallback[monitorId])
-				monBufferCallback[monitorId]->update(this, grpId, monBufferFiring[monitorId],
-					monBufferTimeCnt[monitorId], numMs);
-		}
+			// call the callback function now replaced with writeSpikesToFile
+			if(monBufferFid[monitorId]!=NULL){
+				writeSpikesToFile(grpId, monBufferFiring[monitorId], monBufferTimeCnt[monitorId], 
+													numMs, monBufferFid[monitorId]);
+			}
+			//another if for SpikeInfo class; // need to create new spikeInfo object
 	}
 }
 
@@ -4205,4 +4216,26 @@ void CpuSNN::updateWeights() {
 			}
 		}
 	}
+}
+
+// This function writes the spike data to a file. It's used in 
+// updateSpikeMonitor().
+void CpuSNN::writeSpikesToFile(int grpId, unsigned int* neurIds, 
+															 unsigned int *timeCnts, int timeInterval, FILE* fileId){
+	//void update(CARLsim* s, int grpId, unsigned int* neurIds, unsigned int* timeCnts, int timeInterval) {
+	int pos    = 0; // keep track of position in flattened list of neuron IDs
+	for (int t=0; t < timeInterval; t++) {
+		for(int i=0; i<timeCnts[t];i++,pos++) {
+			// timeInterval might be < 1000 at the end of a simulation
+			int time = t + getSimTime() - timeInterval;
+			assert(time>=0);
+			
+			int id   = neurIds[pos];
+			int cnt = fwrite(&time,sizeof(int),1,fileId);
+			assert(cnt != 0);
+			cnt = fwrite(&id,sizeof(int),1,fileId);
+			assert(cnt != 0);
+		}
+	}
+	fflush(fileId);
 }
