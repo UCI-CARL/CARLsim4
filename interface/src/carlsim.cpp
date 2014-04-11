@@ -490,8 +490,6 @@ void CARLsim::setSTDP(int grpId, bool isSet, stdpType_t type, float alphaLTP, fl
 	UserErrors::assertTrue(type!=UNKNOWN_STDP, UserErrors::CANNOT_BE_UNKNOWN, funcName, "Mode");
 	hasSetSTDPALL_ = grpId==ALL; // adding groups after this will not have conductances set
 
-	printf("Hello!!! %s\n",stdpType_string[type]);
-
 	if (isSet) { // enable STDP, use custom values
 		assert(tauLTP>0); // TODO make nice
 		assert(tauLTD>0);
