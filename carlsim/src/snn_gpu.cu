@@ -1154,21 +1154,6 @@ __global__ void kernel_STPUpdateAndDecayConductances (int t, int sec, int simTim
 	}
 }
 
-// FIXME: why the extra function call??
-__device__ void updateTimingTable()
-{
-	int gnthreads=blockDim.x*gridDim.x;
-
-	// Shift the firing table so that the initial information in
-	// the firing table contain the firing information for the last D time step
-	for(int p=timingTableD2[999],k=0;
-		p<timingTableD2[999+gpuNetInfo.D+1];
-		p+=gnthreads,k+=gnthreads) {
-		if((p+threadIdx.x)<timingTableD2[999+gpuNetInfo.D+1])
-			gpuPtrs.firingTableD2[k+threadIdx.x]=gpuPtrs.firingTableD2[p+threadIdx.x];
-	}
-}
-
 //********************************UPDATE SYNAPTIC WEIGHTS EVERY SECOND  *************************************************************
 
 //////////////////////////////////////////////////////////////////
@@ -1320,21 +1305,17 @@ __global__ void kernel_updateWeights()
 	}
 }
 
-__global__ void kernel_updateFiring_static()
-{
-	// FIXME: all these are set but never used
-	// if we don't need them...get rid of them, and get rid of extra function call
-	__shared__ volatile int errCode;
-	__shared__ int    		startId, lastId, grpId, totBuffers, grpNCnt;
-	__shared__ int2 		threadLoad;
+__global__ void kernel_updateFiring_static() {
+	int gnthreads=blockDim.x*gridDim.x;
 
-	if(threadIdx.x==0) {
-		totBuffers=loadBufferCount;
-		grpNCnt	= (blockDim.x/UPWTS_CLUSTERING_SZ) + ((blockDim.x%UPWTS_CLUSTERING_SZ)!=0);
+	// Shift the firing table so that the initial information in
+	// the firing table contain the firing information for the last D time step
+	for(int p=timingTableD2[999],k=0;
+		p<timingTableD2[999+gpuNetInfo.D+1];
+		p+=gnthreads,k+=gnthreads) {
+		if((p+threadIdx.x)<timingTableD2[999+gpuNetInfo.D+1])
+			gpuPtrs.firingTableD2[k+threadIdx.x]=gpuPtrs.firingTableD2[p+threadIdx.x];
 	}
-
-	// FIXME: why the extra function call?
-	updateTimingTable();
 }
 
 //********************************UPDATE TABLES AND COUNTERS EVERY SECOND  *************************************************************
