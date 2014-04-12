@@ -15,7 +15,7 @@ TEST(CORE, CpuSNNinit) {
 	std::string name = "SNN";
 	simMode_t simModes[2] = {CPU_MODE, GPU_MODE};
 	loggerMode_t loggerModes[5] = {USER, DEVELOPER, SHOWTIME, SILENT, CUSTOM};
-	for (int i=0; i<4; i++) {
+	for (int i=0; i<5; i++) {
 		for (int j=0; j<2; j++) {
 			int nConfig = rand() % 100 + 1;
 			int randSeed = rand() % 1000;

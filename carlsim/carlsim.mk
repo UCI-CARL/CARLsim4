@@ -27,6 +27,16 @@ ifneq (${strip ${CARLSIM_CUOPTLEVEL}},1)
 	CARLSIM_FLAGS += -O${CARLSIM_CUOPTLEVEL}
 endif
 
+# set debug flag
+ifeq (${strip ${CARLSIM_DEBUG}},1)
+	CARLSIM_FLAGS += -g
+endif
+
+# set regression flag
+ifeq (${strip ${CARLSIM_TEST}},1)
+	CARLSIM_FLAGS += -I$(CURDIR)/$(test_dir) -D__REGRESSION_TESTING__
+endif
+
 # append include path to CARLSIM_FLAGS
 CARLSIM_FLAGS += -I$(CURDIR)/$(carlsim_dir)/include \
 	-I$(CURDIR)/$(interface_dir)/include
@@ -77,15 +87,12 @@ carlsim: $(local_src) $(interface_src) $(local_objs) $(interface_objs)
 
 # interface
 $(interface_dir)/src/%.o: $(interface_dir)/src/%.cpp $(interface_deps)
-	$(NVCC) -c $(CARLSIM_INCLUDES) $(CARLSIM_LFLAGS) $(CARLSIM_LIBS) \
-	$(CARLSIM_FLAGS) $< -o $@
+	$(NVCC) -c $(CARLSIM_INCLUDES) $(CARLSIM_FLAGS) $< -o $@
 
 # local cpps
 $(local_dir)/src/%.o: $(local_dir)/src/%.cpp $(local_deps)
-	$(NVCC) -c $(CARLSIM_INCLUDES) $(CARLSIM_LFLAGS) $(CARLSIM_LIBS) \
-	$(CARLSIM_FLAGS) $< -o $@
+	$(NVCC) -c $(CARLSIM_INCLUDES) $(CARLSIM_FLAGS) $< -o $@
 
 # local cuda
 $(local_dir)/src/%.o: $(local_dir)/src/%.cu $(local_deps)
-	$(NVCC) -c $(CARLSIM_INCLUDES) $(CARLSIM_LFLAGS) $(CARLSIM_LIBS) \
-	$(CARLSIM_FLAGS) $< -o $@
+	$(NVCC) -c $(CARLSIM_INCLUDES) $(CARLSIM_FLAGS) $< -o $@

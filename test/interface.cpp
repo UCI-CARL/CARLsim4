@@ -1,5 +1,5 @@
 #include <carlsim.h>
-
+#include <snn.h>
 #include "carlsim_tests.h"
 
 //! trigger all UserErrors
@@ -51,6 +51,7 @@ TEST(Interface, setConductances) {
 	EXPECT_DEATH({sim->setConductances(true,1,2,3,4,5,5);},""); // tdGABAb==trGABAb
 
 	// calling setConductances after runNetwork
+	sim->setupNetwork();
 	sim->runNetwork(0,0);
 	EXPECT_DEATH({sim->setConductances(true);},"");
 	EXPECT_DEATH({sim->setConductances(false,1,2,3,4);},"");
