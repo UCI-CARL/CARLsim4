@@ -646,7 +646,7 @@ int CpuSNN::runNetwork(int _nsec, int _nmsec, bool copyState) {
 	int runDuration = _nsec*1000 + _nmsec;
 
 	// set the Poisson generation time slice to be at the run duration up to PROPOGATED_BUFFER_SIZE ms.
-	setGrpTimeSlice(ALL, MAX(1,MIN(runDuration,PROPAGATED_BUFFER_SIZE-1))); 
+	setGrpTimeSlice(ALL, MAX(1,MIN(runDuration,PROPAGATED_BUFFER_SIZE-1)));
 
 	// First time when the network is run we do various kind of space compression,
 	// and data structure optimization to improve performance and save memory.
@@ -1760,6 +1760,10 @@ void CpuSNN::CpuSNNinit() {
 
 		grp_Info[i].StartN       = -1;
 		grp_Info[i].EndN       	 = -1;
+
+		grp_Info[i].CurrTimeSlice = 0;
+		grp_Info[i].NewTimeSlice = 0;
+		grp_Info[i].SliceUpdateTime = 0;
 
 		grp_Info2[i].numPostConn = 0;
 		grp_Info2[i].numPreConn  = 0;
@@ -3942,7 +3946,7 @@ void CpuSNN::updateSpikeGenerators() {
 	for(int g=0; (g < numGrp); g++) {
 		if (grp_Info[g].isSpikeGenerator) {
 			// This evaluation is done to check if its time to get new set of spikes..
-			if(((simTime-grp_Info[g].SliceUpdateTime) >= (unsigned) grp_Info[g].CurrTimeSlice))
+			if(((simTime-grp_Info[g].SliceUpdateTime) >= (unsigned) grp_Info[g].CurrTimeSlice || simTime == 0))
 				updateSpikesFromGrp(g);
 		}
 	}
@@ -3960,7 +3964,8 @@ void CpuSNN::updateSpikeGeneratorsInit() {
 				grp_Info[g].Noffset = NgenFunc;
 				NgenFunc += grp_Info[g].SizeN;
 			}
-			updateSpikesFromGrp(g);
+			//Note: updateSpikeFromGrp() will be called first time in updateSpikeGenerators()
+			//updateSpikesFromGrp(g);
 			cnt++;
 			assert(cnt <= numSpikeGenGrps);
 		}

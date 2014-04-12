@@ -1,26 +1,6 @@
 #-------------------------------------------------------------------------------
 # set user-defined flags
 #-------------------------------------------------------------------------------
-# set optimization flag
-ifeq (${strip ${CARLSIM_CUOPTLEVEL}},0)
-	OPT_FLAG = 
-else ifeq (${strip ${OPT_LEVEL}},1)
-	OPT_FLAG = -O1
-else ifeq (${strip ${OPT_LEVEL}},2)
-	OPT_FLAG = -O2
-else ifeq (${strip ${OPT_LEVEL}},3)
-	OPT_FLAG = -O3
-else
-	OPT_FLAG = 
-endif
-
-# set debug flag
-ifeq (${strip ${CARLSIM_DEBUG}},1)
-	DEBUG_FLAG = -g
-else
-	DEBUG_FLAG = 
-endif
-
 # common flags
 CXX = g++
 NVCC = nvcc

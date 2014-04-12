@@ -82,10 +82,11 @@ TEST(COBA, synRiseTime) {
 			sim->setConductances(true,tdAMPA,trNMDA,tdNMDA,tdGABAa,trGABAb,tdGABAb,ALL);
 
 			// run network for a second first, so that we know spike will happen at simTimeMs==1000
-			PeriodicSpikeGenerator* spk1 = new PeriodicSpikeGenerator(1.0f); // periodic spiking @ 50 Hz
+			PeriodicSpikeGeneratorCore* spk1 = new PeriodicSpikeGeneratorCore(1.0f); // periodic spiking @ 50 Hz
 			sim->setSpikeGenerator(g0, spk1, ALL);
 			sim->setSpikeGenerator(g2, spk1, ALL);
-			sim->runNetwork(1,0,false,false);
+			sim->setupNetwork(true);
+			sim->runNetwork(1,0,false);
 
 			// now observe gNMDA, gGABAb after spike, and make sure that the time at which they're max matches the
 			// analytical solution, and that the peak conductance is actually equal to the weight we set
@@ -95,15 +96,15 @@ TEST(COBA, synRiseTime) {
 			double maxGABAb = -1;
 			int nMsec = max(trNMDA+tdNMDA,trGABAb+tdGABAb)+10;
 			for (int i=0; i<nMsec; i++) {
-				sim->runNetwork(0,1,false,true); // copyNeuronState
+				sim->runNetwork(0,1,true); // copyNeuronState
 
-				if ((sim->gNMDA_d[sim->grpStartNeuronId(g1)]-sim->gNMDA_r[sim->grpStartNeuronId(g1)]) > maxNMDA) {
+				if ((sim->gNMDA_d[sim->getGroupStartNeuronId(g1)]-sim->gNMDA_r[sim->getGroupStartNeuronId(g1)]) > maxNMDA) {
 					tmaxNMDA=i;
-					maxNMDA=sim->gNMDA_d[sim->grpStartNeuronId(g1)]-sim->gNMDA_r[sim->grpStartNeuronId(g1)];
+					maxNMDA=sim->gNMDA_d[sim->getGroupStartNeuronId(g1)]-sim->gNMDA_r[sim->getGroupStartNeuronId(g1)];
 				}
-				if ((sim->gGABAb_d[sim->grpStartNeuronId(g3)]-sim->gGABAb_r[sim->grpStartNeuronId(g3)]) > maxGABAb) {
+				if ((sim->gGABAb_d[sim->getGroupStartNeuronId(g3)]-sim->gGABAb_r[sim->getGroupStartNeuronId(g3)]) > maxGABAb) {
 					tmaxGABAb=i;
-					maxGABAb=sim->gGABAb_d[sim->grpStartNeuronId(g3)]-sim->gGABAb_r[sim->grpStartNeuronId(g3)];
+					maxGABAb=sim->gGABAb_d[sim->getGroupStartNeuronId(g3)]-sim->gGABAb_r[sim->getGroupStartNeuronId(g3)];
 				}
 			}
 
@@ -230,7 +231,8 @@ TEST(COBA, disableSynReceptors) {
 			sim->setSpikeRate(g0,&poissIn1,1,ALL);
 			sim->setSpikeRate(g1,&poissIn2,1,ALL);
 
-			sim->runNetwork(1,0,false,false);
+			sim->setupNetwork(true);
+			sim->runNetwork(1,0,false);
 
 			if (mode) {
 				// GPU_MODE: copy from device to host

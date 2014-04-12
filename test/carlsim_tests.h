@@ -57,10 +57,13 @@
 /// COMMON
 /// **************************************************************************************************************** ///
 
+// TODO: these should actually work on the user callback level... so don't inherit from *Core classes, but from the
+// user interface-equivalent...
+
 //! a periodic spike generator (constant ISI) creating spikes at a certain rate
-class PeriodicSpikeGenerator : public SpikeGeneratorCore {
+class PeriodicSpikeGeneratorCore : public SpikeGeneratorCore {
 public:
-	PeriodicSpikeGenerator(float rate) : SpikeGeneratorCore(NULL, NULL){
+	PeriodicSpikeGeneratorCore(float rate) : SpikeGeneratorCore(NULL, NULL){
 		assert(rate>0);
 		rate_ = rate;	  // spike rate
 		isi_ = 1000/rate; // inter-spike interval in ms
@@ -78,14 +81,14 @@ private:
 
 //! a spike monitor that counts the number of spikes per neuron, and also the total number of spikes
 //! used to test the behavior of SpikeCounter
-class SpikeMonitorPerNeuron: public SpikeMonitorCore {
+class SpikeMonitorPerNeuronCore: public SpikeMonitorCore {
 private:
 	const int nNeur_; // number of neurons in the group
 	int* spkPerNeur_; // number of spikes per neuron
 	long long spkTotal_; // number of spikes in group (across all neurons)
 
 public:
-	SpikeMonitorPerNeuron(int numNeur) : nNeur_(numNeur), SpikeMonitorCore(NULL, NULL) {
+	SpikeMonitorPerNeuronCore(int numNeur) : nNeur_(numNeur), SpikeMonitorCore(NULL, NULL) {
 		// we're gonna count the spikes each neuron emits
 		spkPerNeur_ = new int[nNeur_];
 		memset(spkPerNeur_,0,sizeof(int)*nNeur_);
@@ -93,13 +96,13 @@ public:
 	}
 		
 	// destructor, delete all dynamically allocated data structures
-	~SpikeMonitorPerNeuron() { delete spkPerNeur_; }
+	~SpikeMonitorPerNeuronCore() { delete spkPerNeur_; }
 		
 	int* getSpikes() { return spkPerNeur_; }
 	long long getSpikesTotal() { return spkTotal_; }
 
 	// the update function counts the spikes per neuron in the current second
-	void update(CpuSNN* s, int grpId, unsigned int* NeuronIds, unsigned int *timeCounts) {
+	void update(CpuSNN* s, int grpId, unsigned int* NeuronIds, unsigned int *timeCounts, int timeInterval) {
 		int pos = 0;
 		for (int t=0; t<1000; t++) {
 			for (int i=0; i<timeCounts[t]; i++,pos++) {
