@@ -71,14 +71,13 @@
 #include <carlsim.h>
 #include <callback_core.h>
 
-#include <snn_definitions.h>
-#include <snn_datastructures.h>
-
 #include <propagated_spike_buffer.h>
 #include <poisson_rate.h>
 #include <mtrand.h>
 #include <gpu_random.h>
 
+#include <snn_definitions.h>
+#include <snn_datastructures.h>
 
 extern RNG_rand48* gpuRand48; //!< Used by all network to generate global random number
 
