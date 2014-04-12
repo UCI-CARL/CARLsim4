@@ -44,7 +44,7 @@ classdef InputStimulus < handle
         plotAbortPlotting;
     end
     properties(Constant, GetAccess = private)
-        fileSignature = 304698591;
+        fileSignature = 304698591;  % some unique identifier of IS binary files
     end
     
     
@@ -121,6 +121,84 @@ classdef InputStimulus < handle
             end
         end
         
+        function addApertureToExistingFrames(this, frames, maskType, maskSize, ...
+                maskCenter, bgGrayVal)
+            % IS.addApertureToExistingFrames(frames, type, size, ptCenter,
+            % bgGrayVal) adds an aperture window of a given MASKTYPE and
+            % MASKSIZE to all specified FRAMES. The aperture will be drawn
+            % around center pixel location MASKCENTER. At pixel positions that
+            % lie within the aperture, the existing stimulus will be preserved.
+            % The grayscale value of all pixel positions outside the aperture
+            % will be set to BGGRAYVAL.
+            %
+            % FRAMES    - A vector of frame numbers to which the aperture shall
+            %             be applied. Set it to -1 to select all frames. Default
+            %             is all frames.
+            %
+            % MASKTYPE  - A string that specifies the aperture type. Default is
+            %             'gaussian'.
+            %             'gaussian'     - The aperture will be an ellipse whose
+            %                              semi major-axis and semi minor-axis
+            %                              will be equal to the width and height
+            %                              specified by MASKSIZE, respectively.
+            %             'rectangle'    - The aperture will be a rectangle
+            %                              whose width and height are specified
+            %                              by SIZE.
+            %
+            % MASKSIZE  - A 2-element vector specifying the width and height of
+            %             the aperture, respectively. Default is
+            %             [width/4,height/4].
+            %
+            % MASKCENTER- The pixel location of the center point of the
+            %             aperture. Default is [width/2,height/2].
+            %
+            % BGGRAYVAL - The grayscale value of the background, in the range
+            %             [0,255]. Default is 128.
+            if nargin<6,bgGrayVal=128;end
+            if nargin<5,maskCenter=[this.width/2 this.height/2];end
+            if nargin<4,maskSize=[this.width/4 this.height/4];end
+            if nargin<3,maskType='gaussian';end
+            if nargin<2 || frames==-1,frames=1:this.length;end
+
+            if ~isnumeric(frames) || ~isvector(frames)
+                error('Frames must be a numeric vector')
+            end
+            if ~isnumeric(maskSize) || ~isvector(maskSize) || numel(maskSize)~=2
+                error('Size must be a 2-element vector [width height]')
+            end
+            if ~isnumeric(maskCenter) || ~isvector(maskCenter) || numel(maskCenter)~=2
+                error('Center point must be a 2-element vector [x y]')
+            end
+            if ~isnumeric(bgGrayVal) || bgGrayVal<0 || bgGrayVal>255
+                error('Mean grayscale value must be in the range [0,255]')
+            end
+
+            % create aperture mask
+            switch lower(maskType)
+                case 'gaussian'
+                    % find points within elliptic aperture
+                    [X,Y] = meshgrid(1:this.width, 1:this.height);
+                    mask = ((X-maskCenter(1))/maskSize(1)).^2 ...
+                        + ((Y-maskCenter(2))/maskSize(2)).^2 <= 1;
+                case 'rectangle'
+                    [X,Y] = meshgrid(1:this.width, 1:this.height);
+                    mask = abs(X-maskCenter(1))<=maskSize(1)/2 ...
+                        & abs(Y-maskCenter(2))<=maskSize(2)/2;
+                otherwise
+                    error(['Unknown type "' maskType '"'])
+            end
+            for i=1:numel(frames)
+                % get frame
+                img = this.getFrames(frames(i));
+
+                % apply mask and add background grayval
+                img = mask'.*img + not(mask').*bgGrayVal/255;
+
+                % store frame
+                this.privSetFrame(frames(i),img);
+            end
+        end
+
         function addBar(this, length, barDirection, barSpeed, barWidth, ...
                 barEdgeWidth, pixelsBetweenBars, barStartPos)
             % IS.addBar(length, barDirection, barSpeed, barWidth, barEdgeWidth,
@@ -451,7 +529,7 @@ classdef InputStimulus < handle
             % add frames to existing stimulus
             this.privAppendFrames(img);
         end
-        
+
         function addNoiseToExistingFrames(this, frames, type, varargin)
             % IS.addNoiseToExistingFrames(frames, type, varargin) adds noise of
             % a given type to all specified frames. FRAMES is a vector of frame
@@ -459,7 +537,7 @@ classdef InputStimulus < handle
             % types of noise: 'gaussian', 'localvar', 'poisson', 'salt &
             % pepper', 'speckle'.
             %
-            % FRAMES     - A vector of frame numbers to which noise should be
+            % FRAMES     - A vector of frame numbers to which noise shall be
             %              added. Default is all frames.
             %
             % TYPE       - A string that specifies any of the following noise
@@ -660,6 +738,8 @@ classdef InputStimulus < handle
             this.privLoadStimIfNecessary(); % need to load stim first
             if nargin<2,frames = 1:this.length;end
             
+            % reset abort flag, set up callback for key press events
+            this.plotAbortPlotting = false;
             set(gcf,'KeyPressFcn',@this.privPauseOnKeyPressCallback)
             
             % display frame in specified axes

@@ -40,6 +40,7 @@
 
 #include <carlsim.h>
 #include <mtrand.h>
+#include <input_stimulus.h>
 
 void calcColorME(int nrX, int nrY, unsigned char* stim, float* red_green, float* green_red, float* blue_yellow,
 						float* yellow_blue, float* ME, bool GPUpointers);
@@ -179,17 +180,19 @@ int main()
 
 	int frameDur = 100;
 
-	FILE* fid;
+//	FILE* fid;
 	bool onGPU = true;
 	int ithGPU = 0;
+	bool saveNetwork = false;
 
-	CARLsim s("orientation",onGPU?GPU_MODE:CPU_MODE,USER,ithGPU);
+	InputStimulus IS("examples/orientation/videos/orienR.dat");
+	int videoLength = IS.getStimulusLength();
 
-
-	int gV1ME = s.createSpikeGeneratorGroup("V1ME", nrX*nrY*28*3, EXCITATORY_NEURON);
 
 	int inhibScale = 2;
 
+	CARLsim s("orientation",onGPU?GPU_MODE:CPU_MODE,USER,ithGPU);
+	int gV1ME = s.createSpikeGeneratorGroup("V1ME", nrX*nrY*28*3, EXCITATORY_NEURON);
 	int gV4o = s.createGroup("V4o", nrX*nrY*4, EXCITATORY_NEURON);
 	s.setNeuronParameters(gV4o, 0.02f, 0.2f, -65.0f, 8.0f);
 	int gV4oi = s.createGroup("V4oi", nrX*nrY*4/inhibScale/inhibScale, INHIBITORY_NEURON);
@@ -222,7 +225,7 @@ int main()
 	// init
 	s.runNetwork(0,0);
 
-	unsigned char* vid = new unsigned char[nrX*nrY*3];
+//	unsigned char* vid = new unsigned char[nrX*nrY*3];
 
 	PoissonRate me(nrX*nrY*28*3,onGPU);
 	PoissonRate red_green(nrX*nrY,onGPU);
@@ -230,36 +233,22 @@ int main()
 	PoissonRate yellow_blue(nrX*nrY,onGPU);
 	PoissonRate blue_yellow(nrX*nrY,onGPU);
 
-	int VIDLEN = 4*33;
+//	int VIDLEN = 4*33;
 
-	for(long long i=0; i < VIDLEN*1; i++) {
-		if (i%VIDLEN==0) {
-			fid = fopen("examples/orientation/videos/orienR.dat","rb");
-			if (fid==NULL) {
-				printf("ERROR: could not open video file\n");
-				exit(1);
-			}
-		}
-		
-		size_t result = fread(vid,1,nrX*nrY*3,fid);
-		if (result!=nrX*nrY*3) {
-			printf("ERROR: could not read from video file\n");
-			exit(2);
-		}
+	for(long long i=0; i<videoLength; i++) {
+		unsigned char* frame = IS.readFrame();
 
-		calcColorME(nrX, nrY, vid, red_green.rates, green_red.rates, blue_yellow.rates, yellow_blue.rates, me.rates, onGPU);
-
+		calcColorME(nrX, nrY, frame, red_green.rates, green_red.rates, blue_yellow.rates, yellow_blue.rates, me.rates, onGPU);
 		s.setSpikeRate(gV1ME, &me, 1);
 
 		// run the established network for 1 (sec)  and 0 (millisecond), in GPU_MODE
 		s.runNetwork(0,frameDur);
-
-		if (i==1) {
-			FILE* nid = fopen("examples/orientation/results/net.dat","wb");
-			s.writeNetwork(nid);
-			fclose(nid);
-		}
 	}
-	fclose(fid);
-	delete[] vid;
+
+
+	if (saveNetwork) {
+		FILE* nid = fopen("examples/orientation/results/net.dat","wb");
+		s.writeNetwork(nid);
+		fclose(nid);
+	}
 }
