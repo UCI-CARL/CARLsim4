@@ -7,7 +7,7 @@
 #include <stdlib.h> // exit
 
 // constructor
-InputStimulus::InputStimulus(std::string fileName, float maxPoisson, bool wrapAroundEOF) {
+InputStimulus::InputStimulus(std::string fileName, bool wrapAroundEOF) {
 	fileId_ = NULL;
 	fileName_ = fileName;
 	wrapAroundEOF_ = wrapAroundEOF;
@@ -20,7 +20,6 @@ InputStimulus::InputStimulus(std::string fileName, float maxPoisson, bool wrapAr
 	stimLength_ = -1;
 
 	stimFramePoiss_ = NULL;
-	stimMaxPoisson_ = maxPoisson;
 
 	stimChannels_ = -1;
 	stimType_ = STIM_UNKNOWN;
@@ -57,9 +56,6 @@ PoissonRate* InputStimulus::readFrame(float maxPoisson) {
 
 	// read next frame
 	readFramePrivate();
-
-	// if input arg is not given or -1, use default stimMaxPoisson_
-	maxPoisson = (maxPoisson<0) ? stimMaxPoisson_ : maxPoisson;
 
 	// create new Poisson object, assign 
 	stimFramePoiss_ = new PoissonRate(stimWidth_*stimHeight_*stimChannels_);

@@ -68,10 +68,6 @@ include test/carlsim_tests.mk
 example_includes := $(addsuffix /examples.mk, $(wildcard examples/*))
 include $(example_includes)
 
-# include all directories in util
-#util_includes := $(addsuffix /util.mk, $(wildcard $(util_dir)/*))
-#include $(util_includes)
-
 .PHONY: all libraries examples pti_examples clean distclean tests
 all: $(all_targets)
 
