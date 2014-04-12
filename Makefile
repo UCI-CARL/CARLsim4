@@ -44,6 +44,7 @@ lib_dir = libpti
 ex_dir  = examples
 interface_dir = interface
 test_dir = test
+util_dir = util
 
 # location of .cpp files
 vpath %.cpp $(EO_INSTALL_DIR)/src $(EO_INSTALL_DIR)/src/do \
@@ -69,7 +70,6 @@ include test/carlsim_tests.mk
 # include all directories in examples
 example_includes := $(addsuffix /examples.mk, $(wildcard examples/*))
 include $(example_includes)
-
 
 .PHONY: all libraries examples pti_examples clean distclean tests
 all: $(all_targets)
