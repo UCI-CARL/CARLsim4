@@ -1315,7 +1315,7 @@ classdef InputStimulus < handle
                 contr/2, 0);
             secondGrating = this.privMakeSin(length, secondDirection, freq, ...
                 contr/2, 0);
-            res = firstGrating + secondGrating;
+            res = firstGrating + secondGrating - 0.5;
         end
         
         function res = privMakeSin(this, length, dir, freq, contr, phase)
