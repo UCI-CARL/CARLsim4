@@ -76,21 +76,24 @@ int main()
 	float ALPHA_LTP = 0.10f/100, TAU_LTP = 20.0f, ALPHA_LTD = 0.12f/100, TAU_LTD = 20.0f;
 	sim.setSTDP(g1, true, STANDARD, ALPHA_LTP, TAU_LTP, ALPHA_LTD, TAU_LTD);
 
+
+	// build the network
+	sim.setupNetwork();
+
 	// show network status every 2 secs
 	sim.setLogCycle(2);
 
-	sim.setSpikeMonitor(g1,"examples/random/results/spikes.dat"); // put spike times into spikes.dat
+	sim.setSpikeMonitor(g1,"examples/ramdom/results/spikes.dat"); // put spike times into spikes.dat
 	sim.setSpikeMonitor(g2); // Show basic statistics about g2
 	sim.setSpikeMonitor(gin);
 
-//	sim.setConnectionMonitor(g1, g2);
+	sim.setConnectionMonitor(g1, g2);
 
 	//setup some baseline input
 	PoissonRate in(N*0.1);
 	for (int i=0;i<N*0.1;i++) in.rates[i] = 1;
 		sim.setSpikeRate(gin,&in);
-	// build the network
-	sim.setupNetwork();
+
 	//run for 10 seconds
 	sim.runNetwork(10,0);
 

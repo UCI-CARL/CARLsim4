@@ -1258,6 +1258,7 @@ void CpuSNN::writePopWeights(std::string fname, int grpPreId, int grpPostId, int
 //! how often to show network status (seconds), set to -1 to disable
 void CpuSNN::setLogCycle(int showStatusCycle) {
 	showStatusCycle_ = showStatusCycle;
+	showStatusCnt_ = 0;
 }
 
 // set new file pointer for debug log file

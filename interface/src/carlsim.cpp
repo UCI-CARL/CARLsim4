@@ -660,7 +660,7 @@ void CARLsim::setConnectionMonitor(int grpIdPre, int grpIdPost, ConnectionMonito
 	std::string funcName = "setConnectionMonitor(\""+getGroupName(grpIdPre,configId)+"\",ConnectionMonitor*)";
 	UserErrors::assertTrue(!hasRunNetwork_, UserErrors::NETWORK_ALREADY_RUN, funcName); // can't change setup after run
 	UserErrors::assertTrue(grpIdPre!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName, "grpIdPre");		// groupId can't be ALL
-	UserErrors::assertTrue(grpIdPost!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName, "grpIdPost");		// groupId can't be ALL
+	//UserErrors::assertTrue(grpIdPost!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName, "grpIdPost");		// groupId can't be ALL
 
 	snn_->setConnectionMonitor(grpIdPre, grpIdPost, new ConnectionMonitorCore(this, connectionMon),configId);
 }
@@ -688,7 +688,7 @@ void CARLsim::setSpikeGenerator(int grpId, SpikeGenerator* spikeGen, int configI
 	UserErrors::assertTrue(!hasRunNetwork_, UserErrors::NETWORK_ALREADY_RUN, funcName); // can't change setup after run
 	UserErrors::assertTrue(grpId!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName, "grpId");		// groupId can't be ALL
 	UserErrors::assertTrue(spikeGen!=NULL, UserErrors::CANNOT_BE_NULL, funcName);
-	UserErrors::assertTrue(carlsimState_ == CONFIG_STATE, UserErrors::INVALID_API_AT_CURRENT_STATE, funcName);
+	//UserErrors::assertTrue(carlsimState_ == SETUP_STATE, UserErrors::INVALID_API_AT_CURRENT_STATE, funcName);
 
 	snn_->setSpikeGenerator(grpId, new SpikeGeneratorCore(this, spikeGen),configId);
 }
@@ -698,7 +698,7 @@ void CARLsim::setSpikeMonitor(int grpId, SpikeMonitor* spikeMon, int configId) {
 	std::string funcName = "setSpikeMonitor(\""+getGroupName(grpId,configId)+"\",SpikeMonitor*)";
 	UserErrors::assertTrue(!hasRunNetwork_, UserErrors::NETWORK_ALREADY_RUN, funcName); // can't change setup after run
 	UserErrors::assertTrue(grpId!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName, "grpId");		// groupId can't be ALL
-	UserErrors::assertTrue(carlsimState_ == CONFIG_STATE, UserErrors::INVALID_API_AT_CURRENT_STATE, funcName);
+	//UserErrors::assertTrue(carlsimState_ == CONFIG_STATE, UserErrors::INVALID_API_AT_CURRENT_STATE, funcName);
 
 	snn_->setSpikeMonitor(grpId, new SpikeMonitorCore(this, spikeMon),configId);
 }
@@ -710,7 +710,7 @@ void CARLsim::setSpikeMonitor(int grpId, const std::string& fname, int configId)
 	UserErrors::assertTrue(!hasRunNetwork_, UserErrors::NETWORK_ALREADY_RUN, funcName); // can't change setup after run
 	UserErrors::assertTrue(configId!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName, "configId");	// configId can't be ALL
 	UserErrors::assertTrue(grpId!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName, "grpId");		// groupId can't be ALL
-	UserErrors::assertTrue(carlsimState_ == CONFIG_STATE, UserErrors::INVALID_API_AT_CURRENT_STATE, funcName);
+	//UserErrors::assertTrue(carlsimState_ == CONFIG_STATE, UserErrors::INVALID_API_AT_CURRENT_STATE, funcName);
 
 	// try to open spike file
 	FILE* fid = fopen(fname.c_str(),"wb"); // FIXME: where does fid get closed?
