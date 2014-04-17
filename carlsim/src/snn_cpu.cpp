@@ -1031,6 +1031,7 @@ SpikeInfo* CpuSNN::setSpikeMonitor(int grpId, FILE* fid, int configId) {
 
 			// create a new SpikeInfo object
 			monBufferSpikeInfo[numSpikeMonitor] = new SpikeInfo;
+			monBufferSpikeInfo[numSpikeMonitor]->init(this);
 
 	    // create the new buffer for keeping track of all the spikes in the system
 	    monBufferFiring[numSpikeMonitor] = new unsigned int[buffSize];
@@ -2414,6 +2415,14 @@ void CpuSNN::deleteObjects() {
 		if (fpLog_!=NULL && fpLog_!=stdout && fpLog_!=stderr)
 			fclose(fpLog_);
 
+		// close spike monitor fid's
+		for(int i = 0; i< numSpikeMonitor; i++){
+			if(monBufferFid[i]!=NULL && monBufferFid[i]!=stdout && monBufferFid[i]!=stderr){
+				fclose(monBufferFid[i]);
+				monBufferFid[i]=NULL;
+			}
+		}
+	
 		resetPointers(true); // deallocate pointers
 
 		// do the same as above, but for snn_gpu.cu
@@ -3462,9 +3471,12 @@ void CpuSNN::resetPointers(bool deallocate) {
 		for (int i = 0; i < numSpikeMonitor; i++) {
 			if (monBufferFiring[i]!=NULL && deallocate) delete[] monBufferFiring[i];
 			if (monBufferTimeCnt[i]!=NULL && deallocate) delete[] monBufferTimeCnt[i];
-			if (monBufferSpikeInfo[i]!=NULL && deallocate) delete[] monBufferSpikeInfo[i];//TODO:don't need anymore. --KDC
+			if (monBufferSpikeInfo[i]!=NULL && deallocate) delete[] monBufferSpikeInfo[i];
 			monBufferFiring[i]=NULL; monBufferTimeCnt[i]=NULL;monBufferSpikeInfo[i]=NULL;
 		}
+	} 
+	else{
+		monBufferFiring[i]=NULL; monBufferTimeCnt[i]=NULL;monBufferSpikeInfo[i]=NULL;
 	}
 
 	// clear data (i.e., concentration of neuromodulator) of groups
@@ -4120,6 +4132,7 @@ void CpuSNN::updateSpikeMonitor(int numMs) {
 						monBufferFiring[monitorId][pos] = nid-grp_Info[grpId].StartN; // store the Neuron ID relative to the start of the group
 						// we store the total firing at time t...
 						monBufferTimeCnt[monitorId][t]++;
+						// 
 					}
 				} /* if monitoring is enabled for this spike */
 			} /* for all spikes happening at time t */
@@ -4139,7 +4152,10 @@ void CpuSNN::updateSpikeMonitor(int numMs) {
 				writeSpikesToFile(grpId, monBufferFiring[monitorId], monBufferTimeCnt[monitorId], 
 													numMs, monBufferFid[monitorId]);
 			}
-			//another if for SpikeInfo class; // need to create new spikeInfo object
+			// if the group has a spikeInfo object
+			if(monBufferSpikeInfo[monitorId]!=NULL && monBufferSpikeInfo[monitorId].isRecording()){
+				monBufferSpikeInfo[monitorId]->pushAER(grpId, monBufferFiring[monitorId], monBufferTimeCnt[monitorId],numMs);
+			}
 	}
 }
 

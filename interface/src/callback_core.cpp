@@ -70,16 +70,6 @@ void ConnectionGeneratorCore::connect(CpuSNN* s, int srcGrpId, int i, int destGr
 		cGen->connect(carlsim, srcGrpId, i, destGrpId, j, weight, maxWt, delay, connected);
 }
 
-SpikeMonitorCore::SpikeMonitorCore(CARLsim* c, SpikeMonitor* s) {
-	carlsim = c;
-	sMon = s;
-}
-
-void SpikeMonitorCore::update(CpuSNN* s, int grpId, unsigned int* Nids, unsigned int* timeCnts, int timeInterval) {
-	if (sMon != NULL)
-		sMon->update(carlsim, grpId, Nids, timeCnts, timeInterval);
-}
-
 ConnectionMonitorCore::ConnectionMonitorCore(CARLsim* c, ConnectionMonitor* n) {
 	carlsim = c;
 	nMon = n;

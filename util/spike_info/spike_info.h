@@ -49,16 +49,25 @@
 #include <algorithm>
 #include <vector>
 
+class CpuSNN; // forward declaration of CpuSNN class
+
 class SpikeInfo {
  public: 
 	/*! 
 	 * \brief analysis constructor.
 	 *
 	 * Creates a new instance of the analysis class. 
-	 *
-	 * Takes a carlsim object as an argument.
+	 *	 
 	 */
-	SpikeInfo(const std::vector<AER>& spkVector); // Maybe setSpikeCounter for all groups in sim. // by calling an initAnalysis
+	SpikeInfo(); 
+	/*! 
+	 * \brief initialization method for analysis class.
+	 *
+	 * Takes a CpuSNN pointer to an object as an input and assigns
+	 * it to a CpuSNN* member variable for easy reference.
+	 *
+	 */
+	void init(CpuSNN* snn);
 	/*! 
 	 * \brief SpikeInfo destructor.
 	 *
@@ -76,20 +85,72 @@ class SpikeInfo {
 	 * \return float value for the average firing rate of the whole group. 
 	 */
 	float getGrpFiringRate(int timeDuration, int sizeN);
+
+	/*!
+	 * \brief put the nid and time values in an AER vector structure
+	 * \param CARLsim* s pointer to CARLsim object so we can access simTime.
+	 * \param grpId of group being counted.
+	 * \param neurIds unsigned int* array of neuron ids that have fired.
+	 * \param timeCnts unsigned int* array of times neurons have fired.
+	 * \param timeInterval is the time interval over which these neurons
+	 * were recorded.
+	 * \return void
+	 */	
+	void pushAER(int grpId, unsigned int* neurIds, unsigned int* timeCnts, int timeInterval);
+
+	/*!
+	 * \brief Return the current size of the AER vector.
+	 * \param void
+	 * \return the current size of the AER vector.
+	 */
+	unsigned int getSize();
+
+	/*!
+	 * \brief starts copying AER data to AER data structure every second.
+	 * \param void
+	 * \return void
+	 */	
+	void startRecording();
 	
 	/*!
-	 * \brief print the time/nid values to stdout. CAUTION: this can be
-	 * a lot of data.
+	 * \brief stops copying AER data to AER data structure every second.
 	 * \param void
 	 * \return void
 	 */
-	void printAER();
+	void stopRecording();
+	
+	/*!
+	 * \brief Gets record status as a bool. True means it is recording, false
+	 * means it is not recording.
+	 * \param void
+	 * \return bool that is true if object is recording, false otherwise.
+	 */
+	bool isRecording();
+
+	/*!
+	 *\brief returns the AER vector.
+	 *\param void.
+	 *\return AER vector is returned.
+	 */
+	std::vector<AER> getVector();
+	
+	/*!
+	 *\brief deletes data from the AER vector.
+	 *\param void.
+	 *\return void.
+	 */
+	void clear();
 
  private:
 	// will be turned into a data structure
 	std::vector<AER>::const_iterator it_begin_;
 	std::vector<AER>::const_iterator it_end_;
+	std::vector<AER>:: spkVector_;
 	int vectorSize_;
+	bool recordSet_;
+	long int startTime_;
+	long int endTime_;
+	CpuSNN* snn_;
 };
 
 

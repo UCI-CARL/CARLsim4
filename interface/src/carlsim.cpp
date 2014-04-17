@@ -63,153 +63,6 @@
 // NOTE: Conceptual code documentation should go in carlsim.h. Do not include extensive high-level documentation here,
 // but do document your code.
 
-
-// FIXME: consider moving this... but it doesn't belong in the core code. Also, see class SpikeMonitor in snn.h
-
-/*!
- * \brief class to automatically write spike times collected with SpikeMonitor to binary file
- * This class derives from class SpikeMonitor and implements its virtual member update() to automatically store
- * collected spike times (and neuron IDs) to binary file.
- * Note that this function will only be called every 1000 ms.
- */
-class WriteSpikesToFile: public SpikeMonitor {
-public:
-	WriteSpikesToFile(FILE* fid) {
-		fileId_ = fid;
-	}
-	~WriteSpikesToFile() {}; // TODO: where does fileId_ get closed?
-
-	/*
-	 * \brief update method that gets called every 1000 ms by CARLsimCore
-	 * This is an implementation of virtual void SpikeMonitor::update. It gets called every 1000 ms with a pointer to
-	 * all the neurons (neurIds) that have spiked during the last timeInterval ms (usually 1000).
-	 * It can be called for less than 1000 ms at the end of a simulation.
-	 * This implementation will iterate over all neuron IDs and spike times, and print them to file (binary).
-	 * To save space, neuron IDs are stored in a continuous (flattened) list, whereas timeCnts holds the number of
-	 * neurons that have spiked at each time step (reduced AER).
-	 * Example: There are 3 neurons, where neuron with ID 0 spikes at time 1, neurons with ID 1 and 2 both spike at
-	 *  		time 3. Then neurIds = {0,1,2} and timeCnts = {0,1,0,2,0,...,0}. Note that neurIds could also be {0,2,1}
-	 *
-	 * \param[in] snn 		   pointer to an instance of CARLsimCore
-	 * \param[in] grpId 	   the group ID from which to record spikes
-	 * \param[in] neurIds	   pointer to a flattened list that contains all the IDs of neurons that have spiked within
-	 *                         the last 1000 ms.
-	 * \param[in] timeCnts 	   pointer to a data structures that holds the number of spikes at each time step during the
-	 *  					   last 1000 ms. timeCnts[i] will hold the number of spikes in the i-th millisecond.
-	 * \param[in] timeInterval the time interval to parse (usually 1000ms)
-	 */
-	void update(CARLsim* s, int grpId, unsigned int* neurIds, unsigned int* timeCnts, int timeInterval) {
-		int pos    = 0; // keep track of position in flattened list of neuron IDs
-		for (int t=0; t < timeInterval; t++) {
-			for(int i=0; i<timeCnts[t];i++,pos++) {
-				// timeInterval might be < 1000 at the end of a simulation
-				int time = t + s->getSimTime() - timeInterval;
-				assert(time>=0);
-				
-				int id   = neurIds[pos];
-				int cnt = fwrite(&time,sizeof(int),1,fileId_);
-				assert(cnt != 0);
-				cnt = fwrite(&id,sizeof(int),1,fileId_);
-				assert(cnt != 0);
-			}
-		}
-
-		fflush(fileId_);
-	}
-
-private:
-	FILE* fileId_;
-};
-
-/*!
- * \brief class to automatically return spiking neuron activity information
- * to the user. This class derives from class SpikeMonitor and implements 
- * its virtual member update() to automatically store
- * collected spike times (and neuron IDs) to an AER vector. The user can
- * query the returned SpikeMonitorInfo object for acitivity information.
- * Note that the updateSpikeMonitor() function is only be called every 
- * 1000 ms.
- */
-class SpikeMonitorInfo: public SpikeMonitorCore {
-public:
-	SpikeMonitorInfo(CARLsim* c, SpikeMonitor* s) {
-		// TODO: do an error check in carlsim to make sure it's an empty vector
-		spkVector_ = new std::vector<AER>;
-		carlsim = c;
-		gMon = g;
-	}
-	~SpikeMonitorInfo(){
-		if(spkVector_!=NULL)
-			delete spkVector_;
-		spkVector_=NULL;
-	}; // TODO: where does fileId_ get closed?
-
-	/*
-	 * \brief update method that gets called every 1000 ms by CARLsimCore
-	 * This is an implementation of virtual void SpikeMonitor::update. It 
-	 * gets called every 1000 ms with a pointer to all the neurons (neurIds) 
-	 * that have spiked during the last timeInterval ms (usually 1000).
-	 * It can be called for less than 1000 ms at the end of a simulation.
-	 * This implementation will iterate over all neuron IDs and spike times, 
-	 * and copy them to an int array. To save space, neurobn IDs are stored 
-	 * in a continuous (flattened) list, whereas timeCnts holds the number of
-	 * neurons that have spiked at each time step (reduced AER).
-	 * Example: There are 3 neurons, where neuron with ID 0 spikes at time 1, 
-	 * neurons with ID 1 and 2 both spike at time 3. Then neurIds = {0,1,2} 
-	 * and timeCnts = {0,1,0,2,0,...,0}. Note that neurIds could also be {0,2,1}
-	 *
-	 * \param[in] snn 		   pointer to an instance of CARLsimCore
-	 * \param[in] grpId 	   the group ID from which to record spikes
-	 * \param[in] neurIds	   pointer to a flattened list that contains all the 
-	 * IDs of neurons that have spiked within the last 1000 ms.
-	 * \param[in] timeCnts 	  pointer to a data structures that holds the 
-	 * number of spikes at each time step during the last 1000 ms. timeCnts[i] 
-	 * will hold the number of spikes in the i-th millisecond.
-	 * \param[in] timeInterval the time interval to parse (usually 1000ms)
-	 */
-	void update(CARLsim* s, int grpId, unsigned int* neurIds, unsigned int* timeCnts, int timeInterval) {
-		int pos    = 0; // keep track of position in flattened list of neuron IDs
-		for (int t=0; t < timeInterval; t++) {
-			for(int i=0; i<timeCnts[t];i++,pos++) {
-				// create an AER structure to store our time and nid information.
-				AER aer;
-				// timeInterval might be < 1000 at the end of a simulation
-				aer.time = t + s->getSimTime() - timeInterval;
-				assert(time>=0);
-				aer.nid   = neurIds[pos];
-				// here is where we write things to our new array
-				spkVector_->push_back(aer);
-			}
-		}
-	}
-
-	float getGrpFiringRate(){
-		int grpId = carlsim->snn_->getGroupId();
-		group_info_t = carlsim->snn_->getGroupInfo(grpId);
-	}
-
-	void printAER(){
-		
-		std::cout << "Format: Time (ms) : neuron id\n";
-		//use an iterator
-		it_begin_=spkVector.begin();
-		it_end_=spkVector.end();
-		for(it_=it_begin_;it!=it_end_;it++){
-			std::cout << (*it_).time << " : "; 
-			std::cout << (*it_).nid << std::endl;
-			std::cout.flush();
-		}
-		return;
-	}
-	// write another class method that returns the stats I'm talking about.
-	
-private:
-	std::vector<AER>* spkVector_;
-	std::vector<AER>::iteratror it_begin_;
-	std::vector<AER>::iterator it_end_;
-	std::vector<AER>::iterator it_;
-};
-
 /// **************************************************************************************************************** ///
 /// CONSTRUCTOR / DESTRUCTOR
 /// **************************************************************************************************************** ///
@@ -736,7 +589,7 @@ void CARLsim::setSpikeGenerator(int grpId, SpikeGenerator* spikeGen, int configI
 
 
 // set spike monitor for group and write spikes to file
-*SpikeInfo CARLsim::setSpikeMonitor(int grpId, const std::string& fname, int configId) {
+SpikeInfo* CARLsim::setSpikeMonitor(int grpId, const std::string& fname, int configId) {
 	std::string funcName = "setSpikeMonitor(\""+getGroupName(grpId,configId)+"\",\""+fname+"\")";
 	UserErrors::assertTrue(!hasRunNetwork_, UserErrors::NETWORK_ALREADY_RUN, funcName); // can't change setup after run
 	UserErrors::assertTrue(configId!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName, "configId");	// configId can't be ALL
@@ -746,7 +599,7 @@ void CARLsim::setSpikeGenerator(int grpId, SpikeGenerator* spikeGen, int configI
 		fname="spk"+snn_->getGroupName(grpId,configId)+".dat"; 
 	
 	// try to open spike file
-	FILE* fid = fopen(fname.c_str(),"wb"); // FIXME: where does fid get closed? TODO: FIX THIS IN SNN_CPU -- KDC
+	FILE* fid = fopen(fname.c_str(),"wb"); 
 	if (fid==NULL) {
 		// file could not be opened
 

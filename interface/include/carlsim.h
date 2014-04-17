@@ -435,8 +435,7 @@ public:
 	 * If you need spiking information in smaller bins, use a SpikeCounter.
 	 */
 	//! Sets a spike monitor for a group, prints spikes to binary file
-	void setSpikeMonitor(int grpId, const std::string& fname="", int configId=0);
-
+	SpikeInfo* setSpikeMonitor(int grpId, const std::string& fname="", int configId=0);
 
 	void setSpikeRate(int grpId, PoissonRate* spikeRate, int refPeriod=1, int configId=ALL);
 

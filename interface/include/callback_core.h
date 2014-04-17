@@ -134,22 +134,4 @@ private:
 	GroupMonitor* gMon;
 };
 
-//! used for relaying callback to SpikeMonitor
-/*!
- * \brief The class is used to store user-defined callback function and to be registered in core (i.e., snn_cpu.cpp)
- * Once the core invokes the callback method of the class, the class relays all parameter and invokes user-defined
- * callback function.
- * \sa SpikeMonitor
- */
-class SpikeMonitorCore {
-public:
-	SpikeMonitorCore(CARLsim* c, SpikeMonitor* s);
-
-	virtual void update(CpuSNN* s, int grpId, unsigned int* Nids, unsigned int* timeCnts, int timeInterval);
-
-private:
-	CARLsim* carlsim;
-	SpikeMonitor* sMon;
-};
-
 #endif
