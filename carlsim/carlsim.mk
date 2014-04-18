@@ -62,16 +62,17 @@ interface_objs := $(interface_dir)/src/carlsim.o \
 
 
 spike_info_deps := spike_info.h spike_info.cpp
+spike_info_src := spike_info.cpp
 spike_info_objs := $(spike_info_dir)/spike_info.o
 spike_info_flags := -I$(spike_info_dir)
 # motion energy objects
 util_2_0_objs := $(addprefix $(local_dir)/,v1ColorME.2.0.o)
 
 sources += $(local_src) $(interface_src)
-carlsim_deps += $(local_deps) $(interface_deps)
-carlsim_objs += $(local_objs) $(interface_objs)
-carlsim_sources += $(local_src) $(interface_src)
-objects += $(carlsim_objs) $(interface_objs) $(util_objs)
+carlsim_deps += $(local_deps) $(interface_deps) $(spike_info_deps)
+carlsim_objs += $(local_objs) $(interface_objs) $(spike_info_objs)
+carlsim_sources += $(local_src) $(interface_src) $(spike_info_src)
+objects += $(carlsim_objs) $(interface_objs) $(spike_info_objs)
 all_targets += carlsim
 
 #---------------------------------------------------------------------------
@@ -79,7 +80,7 @@ all_targets += carlsim
 #---------------------------------------------------------------------------
 .PHONY: carlsim
 carlsim: $(local_src) $(interface_src) $(local_objs) $(interface_objs) \
-	$(util_objs)
+	$(spike_info_objs)
 
 # interface
 $(interface_dir)/src/%.o: $(interface_dir)/src/%.cpp $(interface_deps)
@@ -88,7 +89,8 @@ $(interface_dir)/src/%.o: $(interface_dir)/src/%.cpp $(interface_deps)
 
 #util
 $(spike_info_dir)/%.o: $(spike_info_dir)/%.cpp $(spike_info_deps)
-	$(NVCC) -c $(spike_info_flags) $(CARLSIM_INCLUDES) $(CARLSIM_FLAGS) $< -o $@
+	$(NVCC) -c $(spike_info_flags) $(CARLSIM_INCLUDES) $(CARLSIM_FLAGS) \
+	$< -o $@
 
 # local cpps
 $(local_dir)/src/%.o: $(local_dir)/src/%.cpp $(local_deps)

@@ -595,17 +595,19 @@ SpikeInfo* CARLsim::setSpikeMonitor(int grpId, const std::string& fname, int con
 	UserErrors::assertTrue(configId!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName, "configId");	// configId can't be ALL
 	UserErrors::assertTrue(grpId!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName, "grpId");		// groupId can't be ALL
 	// set the default string here
-	if(fname.empty())
-		fname="spk"+snn_->getGroupName(grpId,configId)+".dat"; 
-	
+	std::string fileName=fname;
+	if(fileName.empty()){
+		
+		fileName="spk"+snn_->getGroupName(grpId,configId)+".dat"; 
+	}
 	// try to open spike file
-	FILE* fid = fopen(fname.c_str(),"wb"); 
+	FILE* fid = fopen(fileName.c_str(),"wb"); 
 	if (fid==NULL) {
 		// file could not be opened
 
 		// default case: print error and exit
-		std::string fileError = "Make sure directory exists: "+fname;
-		UserErrors::assertTrue(false, UserErrors::FILE_CANNOT_OPEN, fname, fileError);
+		std::string fileError = "Make sure directory exists: "+fileName;
+		UserErrors::assertTrue(false, UserErrors::FILE_CANNOT_OPEN, fileName, fileError);
 	}
 
 	SpikeInfo* spkInfo;
