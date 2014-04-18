@@ -682,7 +682,8 @@ private:
 	
 	// Function writes spikes to file given a particular group id and the file id.
 	// Used in updateSpikeMonitor
-	void writeSpikesToFile(int grpId, FILE* fid);
+	void writeSpikesToFile(int grpId, unsigned int* neurIds, 
+												 unsigned int* timeCnts, int timeInterval, FILE* fid);
 	
 	// +++++ GPU MODE +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 	// TODO: consider moving to snn_gpu.h

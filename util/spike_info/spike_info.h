@@ -67,7 +67,7 @@ class SpikeInfo {
 	 * it to a CpuSNN* member variable for easy reference.
 	 *
 	 */
-	void init(CpuSNN* snn);
+	void initSpikeInfo(CpuSNN* snn);
 	/*! 
 	 * \brief SpikeInfo destructor.
 	 *
@@ -104,6 +104,13 @@ class SpikeInfo {
 	 * \return the current size of the AER vector.
 	 */
 	unsigned int getSize();
+
+	/*!
+	 *\brief prints the AER vector.
+	 *\param void.
+	 *\return AER vector is printed.
+	 */
+	void print();
 
 	/*!
 	 * \brief starts copying AER data to AER data structure every second.
@@ -145,7 +152,7 @@ class SpikeInfo {
 	// will be turned into a data structure
 	std::vector<AER>::const_iterator it_begin_;
 	std::vector<AER>::const_iterator it_end_;
-	std::vector<AER>:: spkVector_;
+	std::vector<AER> spkVector_;
 	int vectorSize_;
 	bool recordSet_;
 	long int startTime_;

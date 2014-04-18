@@ -31,6 +31,8 @@ endif
 CARLSIM_FLAGS += -I$(CURDIR)/$(carlsim_dir)/include \
 	-I$(CURDIR)/$(interface_dir)/include
 
+spike_info_flags := -I$(spike_info_dir)
+
 #---------------------------------------------------------------------------
 # CARLsim local variables
 #---------------------------------------------------------------------------
@@ -59,6 +61,9 @@ interface_objs := $(interface_dir)/src/carlsim.o \
 	$(interface_dir)/src/callback_core.o
 
 
+spike_info_deps := spike_info.h spike_info.cpp
+spike_info_objs := $(spike_info_dir)/spike_info.o
+spike_info_flags := -I$(spike_info_dir)
 # motion energy objects
 util_2_0_objs := $(addprefix $(local_dir)/,v1ColorME.2.0.o)
 
@@ -66,26 +71,31 @@ sources += $(local_src) $(interface_src)
 carlsim_deps += $(local_deps) $(interface_deps)
 carlsim_objs += $(local_objs) $(interface_objs)
 carlsim_sources += $(local_src) $(interface_src)
-objects += $(carlsim_objs) $(interface_objs)
+objects += $(carlsim_objs) $(interface_objs) $(util_objs)
 all_targets += carlsim
 
 #---------------------------------------------------------------------------
 # CARLsim rules
 #---------------------------------------------------------------------------
 .PHONY: carlsim
-carlsim: $(local_src) $(interface_src) $(local_objs) $(interface_objs)
+carlsim: $(local_src) $(interface_src) $(local_objs) $(interface_objs) \
+	$(util_objs)
 
 # interface
 $(interface_dir)/src/%.o: $(interface_dir)/src/%.cpp $(interface_deps)
 	$(NVCC) -c $(CARLSIM_INCLUDES) $(CARLSIM_LFLAGS) $(CARLSIM_LIBS) \
-	$(CARLSIM_FLAGS) $< -o $@
+	$(CARLSIM_FLAGS) $(spike_info_flags) $< -o $@
+
+#util
+$(spike_info_dir)/%.o: $(spike_info_dir)/%.cpp $(spike_info_deps)
+	$(NVCC) -c $(spike_info_flags) $(CARLSIM_INCLUDES) $(CARLSIM_FLAGS) $< -o $@
 
 # local cpps
 $(local_dir)/src/%.o: $(local_dir)/src/%.cpp $(local_deps)
 	$(NVCC) -c $(CARLSIM_INCLUDES) $(CARLSIM_LFLAGS) $(CARLSIM_LIBS) \
-	$(CARLSIM_FLAGS) $< -o $@
+	$(CARLSIM_FLAGS) $(spike_info_flags) $< -o $@
 
 # local cuda
 $(local_dir)/src/%.o: $(local_dir)/src/%.cu $(local_deps)
 	$(NVCC) -c $(CARLSIM_INCLUDES) $(CARLSIM_LFLAGS) $(CARLSIM_LIBS) \
-	$(CARLSIM_FLAGS) $< -o $@
+	$(CARLSIM_FLAGS) $(spike_info_flags) $< -o $@

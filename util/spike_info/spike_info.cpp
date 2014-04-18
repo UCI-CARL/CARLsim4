@@ -12,7 +12,7 @@ SpikeInfo::SpikeInfo(){
 	return;
 }
 
-SpikeInfo::init(CpuSNN* snn){
+void SpikeInfo::initSpikeInfo(CpuSNN* snn){
 	// now we have a reference to the current CpuSNN object
 	snn_=snn;
 	return;
@@ -62,7 +62,6 @@ unsigned int SpikeInfo::getSize(){
 
 void SpikeInfo::startRecording(){
 	recordSet_ = true;
-	startTime_ = 
 	return;
 }
 

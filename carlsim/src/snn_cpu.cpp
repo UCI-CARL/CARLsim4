@@ -1031,7 +1031,7 @@ SpikeInfo* CpuSNN::setSpikeMonitor(int grpId, FILE* fid, int configId) {
 
 			// create a new SpikeInfo object
 			monBufferSpikeInfo[numSpikeMonitor] = new SpikeInfo;
-			monBufferSpikeInfo[numSpikeMonitor]->init(this);
+			monBufferSpikeInfo[numSpikeMonitor]->initSpikeInfo(this);
 
 	    // create the new buffer for keeping track of all the spikes in the system
 	    monBufferFiring[numSpikeMonitor] = new unsigned int[buffSize];
@@ -3472,11 +3472,13 @@ void CpuSNN::resetPointers(bool deallocate) {
 			if (monBufferFiring[i]!=NULL && deallocate) delete[] monBufferFiring[i];
 			if (monBufferTimeCnt[i]!=NULL && deallocate) delete[] monBufferTimeCnt[i];
 			if (monBufferSpikeInfo[i]!=NULL && deallocate) delete[] monBufferSpikeInfo[i];
-			monBufferFiring[i]=NULL; monBufferTimeCnt[i]=NULL;monBufferSpikeInfo[i]=NULL;
+			monBufferFiring[i]=NULL; monBufferTimeCnt[i]=NULL; monBufferSpikeInfo[i]=NULL;
 		}
 	} 
 	else{
-		monBufferFiring[i]=NULL; monBufferTimeCnt[i]=NULL;monBufferSpikeInfo[i]=NULL;
+		for (int i = 0; i < numSpikeMonitor; i++) {
+			monBufferFiring[i]=NULL; monBufferTimeCnt[i]=NULL; monBufferSpikeInfo[i]=NULL;
+		}
 	}
 
 	// clear data (i.e., concentration of neuromodulator) of groups
@@ -4145,20 +4147,21 @@ void CpuSNN::updateSpikeMonitor(int numMs) {
 		int monitorId = grp_Info[grpId].SpikeMonitorId;
 		if(monitorId!= -1) {
 			CARLSIM_INFO("Spike Monitor for Group %s has %d spikes (%f Hz)",grp_Info2[grpId].Name.c_str(),
-				monBufferPos[monitorId],((float)monBufferPos[monitorId])*1000.0f/(numMs*grp_Info[grpId].SizeN));
-
+									 monBufferPos[monitorId],((float)monBufferPos[monitorId])*1000.0f/(numMs*grp_Info[grpId].SizeN));
+			
 			// call the callback function now replaced with writeSpikesToFile
 			if(monBufferFid[monitorId]!=NULL){
 				writeSpikesToFile(grpId, monBufferFiring[monitorId], monBufferTimeCnt[monitorId], 
 													numMs, monBufferFid[monitorId]);
 			}
 			// if the group has a spikeInfo object
-			if(monBufferSpikeInfo[monitorId]!=NULL && monBufferSpikeInfo[monitorId].isRecording()){
+			if(monBufferSpikeInfo[monitorId]!=NULL && monBufferSpikeInfo[monitorId]->isRecording()){
 				monBufferSpikeInfo[monitorId]->pushAER(grpId, monBufferFiring[monitorId], monBufferTimeCnt[monitorId],numMs);
 			}
+		}
 	}
 }
-
+	
 // This function updates the synaptic weights from its derivatives..
 void CpuSNN::updateWeights() {		
 	// update synaptic weights here for all the neurons..
