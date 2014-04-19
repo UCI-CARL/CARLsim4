@@ -57,6 +57,7 @@
 #include <carlsim_datastructures.h>
 
 #include <poisson_rate.h>
+#include <spike_info.h>
 
 // TODO: complete documentation
 
@@ -86,8 +87,6 @@
  */
 
 class CpuSNN; // forward-declaration of private implementation
-
-class SpikeInfo; // forward-declaration of private implemenation
 
 class CARLsim {
 public:

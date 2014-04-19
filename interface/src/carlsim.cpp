@@ -613,6 +613,9 @@ SpikeInfo* CARLsim::setSpikeMonitor(int grpId, const std::string& fname, int con
 	SpikeInfo* spkInfo;
 	
 	spkInfo=snn_->setSpikeMonitor(grpId, fid, configId);
+	printf("carlsim setSpikeMonitor called.\n");
+	spkInfo->getSize();
+	printf("spkInfo->getSize() didn't segfault.\n");
 	return spkInfo;
 }
 

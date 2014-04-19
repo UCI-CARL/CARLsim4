@@ -38,7 +38,6 @@
 #include <mtrand.h>
 // include the PTI framework classes and functions
 #include <pti.h>
-#include <network_analysis.h>
 // TODO: Do away with globals.
 // TODO: put fitness in a separate file.
 
@@ -104,14 +103,10 @@ int main()
 	int inhGroup[NUM_CONFIGS];
 	// poissonRate spiking input pointer
 	PoissonRate* input[NUM_CONFIGS];
-	// create an AER vector to store the spike data
-	vector<AER> inputSpkInfo[NUM_CONFIGS];
-	vector<AER> excSpkInfo[NUM_CONFIGS];
-	vector<AER> inhSpkInfo[NUM_CONFIGS];
-	// create a network_analysis object
-	network_analysis* netMetricInput[NUM_CONFIGS];
-	network_analysis* netMetricExc[NUM_CONFIGS];
-	network_analysis* netMetricInh[NUM_CONFIGS];
+	// create a SpikeInfo pointers
+	SpikeInfo* spikeInfoInput[NUM_CONFIGS];
+	SpikeInfo* spikeInfoExc[NUM_CONFIGS];
+	SpikeInfo* spikeInfoInh[NUM_CONFIGS];
 	
 	// -----------------------------------------------------------------------------
 	// BEGIN PTI initialization
@@ -207,21 +202,13 @@ int main()
 				for(int i=0;i<INPUT_SIZE;i++){
 					input[configId]->rates[i]=inputTargetFR;
 				}
-				// intialize the spike counters
-				for(int i=0;i<NUM_CONFIGS;i++){
-					inputSpkInfo[i].clear();
-					excSpkInfo[i].clear();
-					inhSpkInfo[i].clear();
-					assert(inputSpkInfo[i].size()==0);
-					assert(excSpkInfo[i].size()==0);
-					assert(inhSpkInfo[i].size()==0);
-				}
-
+	
 				// set out spike monitors here
-				snn[configId]->setSpikeMonitor(inputGroup[configId],inputSpkInfo[configId],0);
-				snn[configId]->setSpikeMonitor(excGroup[configId],excSpkInfo[configId],0);
-				snn[configId]->setSpikeMonitor(inhGroup[configId],inhSpkInfo[configId],0);
-
+				printf("before assign SpikeInfo objects\n");
+				spikeInfoInput[configId]=snn[configId]->setSpikeMonitor(inputGroup[configId]);
+				spikeInfoExc[configId]=snn[configId]->setSpikeMonitor(excGroup[configId]);
+				spikeInfoInh[configId]=snn[configId]->setSpikeMonitor(inhGroup[configId]);
+				printf("after assign SpikeInfo objects\n");
 				// still have to set the firing rates (need to double check)
 				snn[configId]->setSpikeRate(inputGroup[configId],input[configId]);
 
@@ -237,20 +224,23 @@ int main()
 			for(int configId=0; configId < NUM_CONFIGS; configId++, indiId++){
 				// now run the simulations in parallel with these parameters and evaluate them
 				//evaluateFitnessV1(CARLsim **snn[],);
+				// we should start timing here too.
+				printf("before startRecording.\n");
+				spikeInfoInput[configId]->startRecording();
+				spikeInfoExc[configId]->startRecording();
+				spikeInfoInh[configId]->startRecording();
+				printf("after startRecording.\n");
 				// run network for 1 s
 				int runTime = 2;
+				printf("before run.\n");
 				snn[configId]->runNetwork(runTime,0);
+				printf("after startRecording.\n");
 				// get the output of our spike monitor
-
-				netMetricInput[configId] = new network_analysis(inputSpkInfo[configId]);
-				netMetricExc[configId] = new network_analysis(excSpkInfo[configId]);
-				netMetricInh[configId] = new network_analysis(inhSpkInfo[configId]);
-				
-				float inputFR = netMetricInput[configId]->getGrpFiringRate(runTime,INPUT_SIZE);
+				float inputFR = spikeInfoInput[configId]->getGrpFiringRate(2,INPUT_SIZE);
 				cout << "inputFR = " << inputFR << " Hz" << endl;
-				float excFR = netMetricExc[configId]->getGrpFiringRate(runTime,EXC_SIZE);
+				float excFR = spikeInfoExc[configId]->getGrpFiringRate(2,EXC_SIZE);
 				cout << "excFR = " << excFR << " Hz" << endl;
-				float inhFR = netMetricInh[configId]->getGrpFiringRate(runTime,INH_SIZE);
+				float inhFR = spikeInfoInh[configId]->getGrpFiringRate(2,INH_SIZE);
 				cout << "inhFR = " << inhFR << " Hz" << endl;
 				
 				fitness[configId]=fabs(excFR-excTargetFR)+fabs(inhFR-inhTargetFR);
@@ -263,15 +253,15 @@ int main()
 				if(input[configId]!=NULL)
 					delete input[configId];
 				input[configId]=NULL;
-				if(netMetricInput[configId]!=NULL)
-					delete netMetricInput[configId];
-				netMetricInput[configId]=NULL;
-				if(netMetricExc[configId]!=NULL)
-					delete netMetricExc[configId];
-				netMetricExc[configId]=NULL;
-				if(netMetricInh[configId]!=NULL)
-					delete netMetricInh[configId];
-				netMetricInh[configId]=NULL;
+				// if(spikeInfoInput[configId]!=NULL)
+				// 	delete spikeInfoInput[configId];
+				// spikeInfoInput[configId]=NULL;
+				// if(spikeInfoExc[configId]!=NULL)
+				// 	delete spikeInfoExc[configId];
+				// spikeInfoExc[configId]=NULL;
+				// if(spikeInfoInh[configId]!=NULL)
+				// 	delete spikeInfoInh[configId];
+				// spikeInfoInh[configId]=NULL;
 			}
 			
 			

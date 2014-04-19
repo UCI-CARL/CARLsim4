@@ -1033,6 +1033,10 @@ SpikeInfo* CpuSNN::setSpikeMonitor(int grpId, FILE* fid, int configId) {
 			monBufferSpikeInfo[numSpikeMonitor] = new SpikeInfo;
 			monBufferSpikeInfo[numSpikeMonitor]->initSpikeInfo(this);
 
+			printf("snn_cpu setSpikeMonitor called.\n");
+			monBufferSpikeInfo[numSpikeMonitor]->getSize();
+			printf("monBufferSpikeInfo[numSpikeMonitor]->getSize() didn't segfault.\n");
+
 	    // create the new buffer for keeping track of all the spikes in the system
 	    monBufferFiring[numSpikeMonitor] = new unsigned int[buffSize];
 	    monBufferTimeCnt[numSpikeMonitor] = new unsigned int[1000];
