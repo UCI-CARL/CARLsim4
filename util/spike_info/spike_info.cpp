@@ -9,20 +9,26 @@ SpikeInfo::SpikeInfo(){
 	recordSet_ = false;
 	startTime_ = -1;
 	endTime_ = -1;
+	grpId_ = -1;
 	return;
 }
 
-void SpikeInfo::initSpikeInfo(CpuSNN* snn){
+void SpikeInfo::initSpikeInfo(CpuSNN* snn, int grpId){
 	// now we have a reference to the current CpuSNN object
-	snn_=snn;
+	snn_ = snn;
+	grpId_= grpId;
 	return;
 }
 
 SpikeInfo::~SpikeInfo(){}
 
-float SpikeInfo::getGrpFiringRate(int timeDuration, int sizeN){
+float SpikeInfo::getGrpFiringRate(){
 	
-	return (float)vectorSize_/((float)timeDuration*(float)sizeN);
+	vectorSize_ = spkVector_.size();
+	int tmpTimeDuration = snn_->getSimTimeSec();
+	int tmpSizeN = snn_->getGroupNumNeurons(grpId_);
+	return (float)vectorSize_/((float)tmpTimeDuration*(float)tmpSizeN);
+	//return (float)vectorSize_/((float)timeDuration*(float)sizeN);
 }
 
 void SpikeInfo::pushAER(int grpId, unsigned int* neurIds, unsigned int* timeCnts, int timeInterval){

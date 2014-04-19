@@ -124,11 +124,10 @@ int main()
 	}
 	
 	// set out spike monitors here
-	printf("before assign SpikeInfo objects\n");
 	spikeInfoInput=snn->setSpikeMonitor(inputGroup);
 	spikeInfoExc=snn->setSpikeMonitor(excGroup);
 	spikeInfoInh=snn->setSpikeMonitor(inhGroup);
-	printf("after assign SpikeInfo objects\n");
+
 	// still have to set the firing rates (need to double check)
 	snn->setSpikeRate(inputGroup,input);
 	
@@ -140,25 +139,18 @@ int main()
 	
 	// now run the simulations in parallel with these parameters and evaluate them
 	// we should start timing here too.
-	printf("before getSize().\n");
-	spikeInfoInput->getSize();
-	printf("after getSize().\n");
-	printf("before startRecording.\n");
 	spikeInfoInput->startRecording();
 	spikeInfoExc->startRecording();
 	spikeInfoInh->startRecording();
-	printf("after startRecording.\n");
 	// run network for 1 s
 	int runTime = 2;
-	printf("before run.\n");
 	snn->runNetwork(runTime,0);
-	printf("after startRecording.\n");
 	// get the output of our spike monitor
-	float inputFR = spikeInfoInput->getGrpFiringRate(2,INPUT_SIZE);
+	float inputFR = spikeInfoInput->getGrpFiringRate();
 	cout << "inputFR = " << inputFR << " Hz" << endl;
-	float excFR = spikeInfoExc->getGrpFiringRate(2,EXC_SIZE);
+	float excFR = spikeInfoExc->getGrpFiringRate();
 	cout << "excFR = " << excFR << " Hz" << endl;
-	float inhFR = spikeInfoInh->getGrpFiringRate(2,INH_SIZE);
+	float inhFR = spikeInfoInh->getGrpFiringRate();
 	cout << "inhFR = " << inhFR << " Hz" << endl;
 	
 	fitness=fabs(excFR-excTargetFR)+fabs(inhFR-inhTargetFR);

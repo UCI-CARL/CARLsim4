@@ -1031,11 +1031,7 @@ SpikeInfo* CpuSNN::setSpikeMonitor(int grpId, FILE* fid, int configId) {
 
 			// create a new SpikeInfo object
 			monBufferSpikeInfo[numSpikeMonitor] = new SpikeInfo;
-			monBufferSpikeInfo[numSpikeMonitor]->initSpikeInfo(this);
-
-			printf("snn_cpu setSpikeMonitor called.\n");
-			monBufferSpikeInfo[numSpikeMonitor]->getSize();
-			printf("monBufferSpikeInfo[numSpikeMonitor]->getSize() didn't segfault.\n");
+			monBufferSpikeInfo[numSpikeMonitor]->initSpikeInfo(this,cGrpId);
 
 	    // create the new buffer for keeping track of all the spikes in the system
 	    monBufferFiring[numSpikeMonitor] = new unsigned int[buffSize];
@@ -1051,7 +1047,9 @@ SpikeInfo* CpuSNN::setSpikeMonitor(int grpId, FILE* fid, int configId) {
 
 	    CARLSIM_INFO("SpikeMonitor set for group %d (%s)",cGrpId,grp_Info2[grpId].Name.c_str());
 	
-			return monBufferSpikeInfo[numSpikeMonitor];
+			// index is numSpikeMonitor-1 because we have already incremented
+			// numSpikeMonitor
+			return monBufferSpikeInfo[numSpikeMonitor-1];
 	}
 }
 
@@ -2426,7 +2424,6 @@ void CpuSNN::deleteObjects() {
 				monBufferFid[i]=NULL;
 			}
 		}
-	
 		resetPointers(true); // deallocate pointers
 
 		// do the same as above, but for snn_gpu.cu
@@ -3475,7 +3472,7 @@ void CpuSNN::resetPointers(bool deallocate) {
 		for (int i = 0; i < numSpikeMonitor; i++) {
 			if (monBufferFiring[i]!=NULL && deallocate) delete[] monBufferFiring[i];
 			if (monBufferTimeCnt[i]!=NULL && deallocate) delete[] monBufferTimeCnt[i];
-			if (monBufferSpikeInfo[i]!=NULL && deallocate) delete[] monBufferSpikeInfo[i];
+			if (monBufferSpikeInfo[i]!=NULL && deallocate) delete monBufferSpikeInfo[i];
 			monBufferFiring[i]=NULL; monBufferTimeCnt[i]=NULL; monBufferSpikeInfo[i]=NULL;
 		}
 	} 
@@ -3484,7 +3481,6 @@ void CpuSNN::resetPointers(bool deallocate) {
 			monBufferFiring[i]=NULL; monBufferTimeCnt[i]=NULL; monBufferSpikeInfo[i]=NULL;
 		}
 	}
-
 	// clear data (i.e., concentration of neuromodulator) of groups
 	if (grpDA != NULL && deallocate) delete [] grpDA;
 	if (grp5HT != NULL && deallocate) delete [] grp5HT;

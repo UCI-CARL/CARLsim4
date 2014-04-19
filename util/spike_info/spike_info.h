@@ -67,7 +67,7 @@ class SpikeInfo {
 	 * it to a CpuSNN* member variable for easy reference.
 	 *
 	 */
-	void initSpikeInfo(CpuSNN* snn);
+	void initSpikeInfo(CpuSNN* snn, int grpId);
 	/*! 
 	 * \brief SpikeInfo destructor.
 	 *
@@ -84,7 +84,7 @@ class SpikeInfo {
 	 * be averaged.
 	 * \return float value for the average firing rate of the whole group. 
 	 */
-	float getGrpFiringRate(int timeDuration, int sizeN);
+	float getGrpFiringRate();
 
 	/*!
 	 * \brief put the nid and time values in an AER vector structure
@@ -158,6 +158,7 @@ class SpikeInfo {
 	long int startTime_;
 	long int endTime_;
 	CpuSNN* snn_;
+	int grpId_;
 };
 
 
