@@ -143,8 +143,14 @@ int main()
 	spikeInfoExc->startRecording();
 	spikeInfoInh->startRecording();
 	// run network for 1 s
-	int runTime = 2;
+	int runTime = 1;
 	snn->runNetwork(runTime,0);
+	
+	// stop recording
+	spikeInfoInput->stopRecording();
+	spikeInfoExc->stopRecording();
+	spikeInfoInh->stopRecording();
+
 	// get the output of our spike monitor
 	float inputFR = spikeInfoInput->getGrpFiringRate();
 	cout << "inputFR = " << inputFR << " Hz" << endl;
@@ -152,6 +158,37 @@ int main()
 	cout << "excFR = " << excFR << " Hz" << endl;
 	float inhFR = spikeInfoInh->getGrpFiringRate();
 	cout << "inhFR = " << inhFR << " Hz" << endl;
+	vector<float>* inputNFR;
+	inputNFR = spikeInfoInput->getNeuronFiringRate();
+	for(int i=0;i<inputNFR->size();i++){
+		cout << inputNFR->at(i) << " Hz" << endl;
+	}
+
+	spikeInfoInput->clear();
+	spikeInfoExc->clear();
+	spikeInfoInh->clear();
+
+	snn->runNetwork(runTime,0);
+	snn->runNetwork(runTime,0);
+
+	spikeInfoInput->startRecording();
+	spikeInfoExc->startRecording();
+	spikeInfoInh->startRecording();
+	
+	snn->runNetwork(runTime,0);
+	
+	spikeInfoInput->stopRecording();
+	spikeInfoExc->stopRecording();
+	spikeInfoInh->stopRecording();
+
+	// get the output of our spike monitor
+	inputFR = spikeInfoInput->getGrpFiringRate();
+	cout << "inputFR = " << inputFR << " Hz" << endl;
+	excFR = spikeInfoExc->getGrpFiringRate();
+	cout << "excFR = " << excFR << " Hz" << endl;
+	inhFR = spikeInfoInh->getGrpFiringRate();
+	cout << "inhFR = " << inhFR << " Hz" << endl;
+
 	
 	fitness=fabs(excFR-excTargetFR)+fabs(inhFR-inhTargetFR);
 	printf("fitness = %f\n",fitness);

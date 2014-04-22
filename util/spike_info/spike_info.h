@@ -67,7 +67,7 @@ class SpikeInfo {
 	 * it to a CpuSNN* member variable for easy reference.
 	 *
 	 */
-	void initSpikeInfo(CpuSNN* snn, int grpId);
+	void init(CpuSNN* snn, int grpId);
 	/*! 
 	 * \brief SpikeInfo destructor.
 	 *
@@ -79,12 +79,23 @@ class SpikeInfo {
 	// +++++ PUBLIC METHODS: +++++++++++++++++++++++++++++++++++++++++++++++//
 	/*!
 	 * \brief return the average firing rate for a certain group averaged
-	 * over timeDuration.
-	 * \param timeDuration is the time duration over which the spikes should
-	 * be averaged.
+	 * over the simulation time duration. The time duration over
+	 * which the neurons are averaged is calculated automatically when
+	 * the user calls startRecording()/stopRecording().
+	 * \param void.
 	 * \return float value for the average firing rate of the whole group. 
 	 */
 	float getGrpFiringRate();
+
+	/*!
+	 * \brief return the average firing rate for each neuron in a group of
+	 * neurons over the simulation time duration. The time duration over
+	 * which the neurons are averaged is calculated automatically when
+	 * the user calls startRecording()/stopRecording().
+	 * \param void
+	 * \return float value for the average firing rate of the whole group. 
+	 */
+	std::vector<float> getNeuronFiringRate();
 
 	/*!
 	 * \brief put the nid and time values in an AER vector structure
@@ -153,12 +164,17 @@ class SpikeInfo {
 	std::vector<AER>::const_iterator it_begin_;
 	std::vector<AER>::const_iterator it_end_;
 	std::vector<AER> spkVector_;
+	std::vector<float> firingRate_;
+	std::vector<int> tmpSpikeCount_;
 	int vectorSize_;
 	bool recordSet_;
 	long int startTime_;
 	long int endTime_;
 	CpuSNN* snn_;
 	int grpId_;
+	int totalTime_;
+	int accumTime_;
+	int numN_;
 };
 
 

@@ -1031,7 +1031,7 @@ SpikeInfo* CpuSNN::setSpikeMonitor(int grpId, FILE* fid, int configId) {
 
 			// create a new SpikeInfo object
 			monBufferSpikeInfo[numSpikeMonitor] = new SpikeInfo;
-			monBufferSpikeInfo[numSpikeMonitor]->initSpikeInfo(this,cGrpId);
+			monBufferSpikeInfo[numSpikeMonitor]->init(this,cGrpId);
 
 	    // create the new buffer for keeping track of all the spikes in the system
 	    monBufferFiring[numSpikeMonitor] = new unsigned int[buffSize];
