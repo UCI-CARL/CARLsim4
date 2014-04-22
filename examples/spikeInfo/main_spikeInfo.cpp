@@ -64,9 +64,9 @@ using namespace std;
 // -----------------------------------------------------------------------------
 // BEGIN internal model global constants
 // -----------------------------------------------------------------------------
-#define INPUT_SIZE			10
-#define EXC_SIZE				10
-#define INH_SIZE				10
+#define INPUT_SIZE			5
+#define EXC_SIZE				5
+#define INH_SIZE				5
 // -----------------------------------------------------------------------------
 // END internal model global constants
 // -----------------------------------------------------------------------------
@@ -158,10 +158,10 @@ int main()
 	cout << "excFR = " << excFR << " Hz" << endl;
 	float inhFR = spikeInfoInh->getGrpFiringRate();
 	cout << "inhFR = " << inhFR << " Hz" << endl;
-	vector<float>* inputNFR;
+	vector<float> inputNFR;
 	inputNFR = spikeInfoInput->getNeuronFiringRate();
-	for(int i=0;i<inputNFR->size();i++){
-		cout << inputNFR->at(i) << " Hz" << endl;
+	for(int i=0;i<inputNFR.size();i++){
+		cout << inputNFR.at(i) << " Hz" << endl;
 	}
 
 	spikeInfoInput->clear();
@@ -176,10 +176,14 @@ int main()
 	spikeInfoInh->startRecording();
 	
 	snn->runNetwork(runTime,0);
-	
 	spikeInfoInput->stopRecording();
 	spikeInfoExc->stopRecording();
 	spikeInfoInh->stopRecording();
+	vector<float> excNFR;
+	excNFR = spikeInfoExc->getNeuronFiringRate();
+	for(int i=0;i< excNFR.size();i++){
+		cout << excNFR.at(i) << " Hz" << endl;
+	}
 
 	// get the output of our spike monitor
 	inputFR = spikeInfoInput->getGrpFiringRate();
