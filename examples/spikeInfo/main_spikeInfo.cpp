@@ -177,7 +177,7 @@ int main()
 
 	int numNeuronsInRange = 0;
 	numNeuronsInRange = spikeInfoInput->getNumNeuronsWithFiringRate(0.0f,7.0f);
-	cout << "Number of neurons with firing range between 0 and 4 Hz: " \
+	cout << "Number of neurons with firing range between 0 and 7 Hz: " \
 			 << numNeuronsInRange << endl << endl;
 
 	float percentNeuronsInRange = 0;
