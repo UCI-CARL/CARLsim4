@@ -938,7 +938,7 @@ int main_fitness_function(int argc, char *argv[])
           }
         }
         // param 11: base firing rate excGrp (homeostasis)
-        snn.setHomeoBaseFiringRate(excGrp, configId, baseFiring_excGrp_param[configId], 0.0);
+        snn.setHomeoBaseFiringRate(excGrp, baseFiring_excGrp_param[configId], 0.0, configId);
         // param 12: buffer to excitatory weights (plastic)
         // for on buffer to exc weights
         gc = snn.getConnectInfo(bufferOnToExc_cid, configId);
@@ -953,7 +953,7 @@ int main_fitness_function(int argc, char *argv[])
         gc->initWt = exc_weight_param[configId]/4.0f;
         gc->maxWt  = exc_weight_param[configId];
         // param 14: base firing rate for inhGrp (homeostasis)
-        snn.setHomeoBaseFiringRate(inhGrp, configId, baseFiring_inhGrp_param[configId], 0.0);
+        snn.setHomeoBaseFiringRate(inhGrp, baseFiring_inhGrp_param[configId], 0.0, configId);
       } // end loop over configurations
 
 

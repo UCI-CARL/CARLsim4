@@ -417,7 +417,7 @@ void CARLsim::setHomeoBaseFiringRate(int grpId, float baseFiring, float baseFiri
 	std::string funcName = "setHomeoBaseFiringRate(\""+getGroupName(grpId,configId)+"\")";
 	UserErrors::assertTrue(!hasRunNetwork_, UserErrors::NETWORK_ALREADY_RUN, funcName); // can't change setup after run
 
-	hasSetHomeoBaseFiringALL_ = grpId=ALL; // adding groups after this will not have base firing set
+	hasSetHomeoBaseFiringALL_ = grpId; // adding groups after this will not have base firing set
 
 	snn_->setHomeoBaseFiringRate(grpId, baseFiring, baseFiringSD, configId);
 }
