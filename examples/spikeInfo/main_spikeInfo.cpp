@@ -158,11 +158,51 @@ int main()
 	cout << "excFR = " << excFR << " Hz" << endl;
 	float inhFR = spikeInfoInh->getGrpFiringRate();
 	cout << "inhFR = " << inhFR << " Hz" << endl;
+
+	cout << "Printing individual neuron firing rates:\n";
 	vector<float> inputNFR;
 	inputNFR = spikeInfoInput->getNeuronFiringRate();
 	for(int i=0;i<inputNFR.size();i++){
 		cout << inputNFR.at(i) << " Hz" << endl;
 	}
+	cout << endl;
+	
+	cout << "Printing sorted individual neuron firing rates:\n";
+	vector<float> inputSNFR;
+	inputSNFR = spikeInfoInput->getSortedNeuronFiringRate();
+	for(int i=0;i<inputSNFR.size();i++){
+		cout << inputSNFR.at(i) << " Hz" << endl;
+	}
+	cout << endl;
+
+	int numNeuronsInRange = 0;
+	numNeuronsInRange = spikeInfoInput->getNumNeuronsWithFiringRate(0.0f,7.0f);
+	cout << "Number of neurons with firing range between 0 and 4 Hz: " \
+			 << numNeuronsInRange << endl << endl;
+
+	float percentNeuronsInRange = 0;
+	percentNeuronsInRange = spikeInfoInput->getPercentNeuronsWithFiringRate(0.0f,7.0f);
+	cout << "Percentage of neurons with firing range between 0 and 7 Hz: " \
+			 << percentNeuronsInRange << endl << endl;
+
+	int numSilent = 0;
+	numSilent = spikeInfoInput->getNumSilentNeurons();
+	cout << "Number of silent neurons: " << numSilent << endl << endl;
+
+	int percentSilent = 0;
+	percentSilent = spikeInfoInput->getPercentSilentNeurons();
+	cout << "Percentage of silent neurons: " << percentSilent << "%" \
+			 << endl << endl;
+
+	float inputMaxFR = 0;
+	inputMaxFR = spikeInfoInput->getMaxNeuronFiringRate();
+	cout << "Neuron with max. firing rate firing at: " << inputMaxFR \
+			 << " Hz." << endl << endl;
+
+	float inputMinFR = 0;
+	inputMinFR = spikeInfoInput->getMinNeuronFiringRate();
+	cout << "Neuron with min. firing rate firing at: " << inputMinFR	\
+			 << " Hz." << endl << endl;
 
 	spikeInfoInput->clear();
 	spikeInfoExc->clear();

@@ -77,6 +77,14 @@ class SpikeInfo {
 	~SpikeInfo();
 	
 	// +++++ PUBLIC METHODS: +++++++++++++++++++++++++++++++++++++++++++++++//
+
+	/*!
+	 *\brief deletes data from the AER vector.
+	 *\param void.
+	 *\return void.
+	 */
+	void clear();
+	
 	/*!
 	 * \brief return the average firing rate for a certain group averaged
 	 * over the simulation time duration. The time duration over
@@ -88,14 +96,91 @@ class SpikeInfo {
 	float getGrpFiringRate();
 
 	/*!
+	 * \brief return the number of neurons that have exactly 0 Hz firing
+	 * rate.
+	 * \param void
+	 * \return int value of the number of silent neurons.
+	 */
+	float getMaxNeuronFiringRate();
+	
+	/*!
+	 * \brief return the number of neurons that have exactly 0 Hz firing
+	 * rate.
+	 * \param void
+	 * \return int value of the number of silent neurons.
+	 */
+	float getMinNeuronFiringRate();
+	
+	/*!
 	 * \brief return the average firing rate for each neuron in a group of
 	 * neurons over the simulation time duration. The time duration over
 	 * which the neurons are averaged is calculated automatically when
 	 * the user calls startRecording()/stopRecording().
 	 * \param void
-	 * \return float value for the average firing rate of the whole group. 
+	 * \return float vector for the average firing rate of each neuron.
 	 */
 	std::vector<float> getNeuronFiringRate();
+
+	/*!
+	 * \brief return the number of neurons that fall within this particular
+	 * min/max range (inclusive). The time duration over which the neurons 
+	 * are averaged is calculated automatically when the user calls 
+	 * startRecording()/stopRecording().
+	 * \param void
+	 * \return int value of the number of neurons that have a firing rate
+	 * within the min/max range.
+	 */
+	int getNumNeuronsWithFiringRate(float min, float max);
+	
+	/*!
+	 * \brief returns the number of neurons that are silent.
+	 * \param min minimum value of range (inclusive) to be searched.
+	 * \param max maximum value of range (inclusive) to be searched.
+	 * \return int of the number of neurons that are silent.
+	 */
+	int getNumSilentNeurons();
+
+	/*!
+	 * \brief returns the percentage of total neurons in that are in the range
+	 * specified by the user, min/max (inclusive). 
+	 * \param min minimum value of range (inclusive) to be searched.
+	 * \param max maximum value of range (inclusive) to be searched.
+	 * \return float of the percentage of total neurons that are in this range.
+	 */
+	float getPercentNeuronsWithFiringRate(float min, float max);
+
+	/*!
+	 * \brief returns the percentage of total neurons in group that are silent.
+	 * \param void
+	 * \return float of the percentage of total neurons that are silent.
+	 */
+	float getPercentSilentNeurons();
+	
+	/*!
+	 * \brief Return the current size of the AER vector.
+	 * \param void
+	 * \return the current size of the AER vector.
+	 */
+	unsigned int getSize();
+
+	/*!
+	 *\brief returns the AER vector.
+	 *\param void.
+	 *\return AER vector is returned.
+	 */
+	std::vector<AER> getVector();
+
+	/*!
+	 * \brief return the ascending sorted firing rate for a particular 
+	 * group of  neurons over the simulation time duration. The time 
+	 * duration over which the neurons are averaged is calculated 
+	 * automatically when the user calls startRecording()/stopRecording().
+	 * \param void
+	 * \return float value for the max firing rate of each neuron. The
+	 * firing rate is taken every second and the max firing rate is taken
+	 * from those values.
+	 */
+	std::vector<float> getSortedNeuronFiringRate();
 
 	/*!
 	 * \brief put the nid and time values in an AER vector structure
@@ -107,14 +192,14 @@ class SpikeInfo {
 	 * were recorded.
 	 * \return void
 	 */	
-	void pushAER(int grpId, unsigned int* neurIds, unsigned int* timeCnts, int timeInterval);
-
+	
 	/*!
-	 * \brief Return the current size of the AER vector.
+	 * \brief Gets record status as a bool. True means it is recording, false
+	 * means it is not recording.
 	 * \param void
-	 * \return the current size of the AER vector.
+	 * \return bool that is true if object is recording, false otherwise.
 	 */
-	unsigned int getSize();
+	bool isRecording();
 
 	/*!
 	 *\brief prints the AER vector.
@@ -122,6 +207,8 @@ class SpikeInfo {
 	 *\return AER vector is printed.
 	 */
 	void print();
+
+	void pushAER(int grpId, unsigned int* neurIds, unsigned int* timeCnts, int timeInterval);
 
 	/*!
 	 * \brief starts copying AER data to AER data structure every second.
@@ -137,28 +224,6 @@ class SpikeInfo {
 	 */
 	void stopRecording();
 	
-	/*!
-	 * \brief Gets record status as a bool. True means it is recording, false
-	 * means it is not recording.
-	 * \param void
-	 * \return bool that is true if object is recording, false otherwise.
-	 */
-	bool isRecording();
-
-	/*!
-	 *\brief returns the AER vector.
-	 *\param void.
-	 *\return AER vector is returned.
-	 */
-	std::vector<AER> getVector();
-	
-	/*!
-	 *\brief deletes data from the AER vector.
-	 *\param void.
-	 *\return void.
-	 */
-	void clear();
-
  private:
 	// will be turned into a data structure
 	std::vector<AER>::const_iterator it_begin_;
@@ -166,6 +231,7 @@ class SpikeInfo {
 	std::vector<AER> spkVector_;
 	std::vector<float> firingRate_;
 	std::vector<int> tmpSpikeCount_;
+	std::vector<float> sortedFiringRate_;
 	int vectorSize_;
 	bool recordSet_;
 	long int startTime_;

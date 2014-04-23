@@ -34,6 +34,19 @@ void SpikeInfo::init(CpuSNN* snn, int grpId){
 
 SpikeInfo::~SpikeInfo(){}
 
+// +++++ PUBLIC METHODS: +++++++++++++++++++++++++++++++++++++++++++++++//
+
+void SpikeInfo::clear(){
+	spkVector_.clear();
+	accumTime_ = 0;
+	totalTime_ = 0;
+	firingRate_.clear();
+	tmpSpikeCount_.clear();
+	firingRate_.assign(numN_,0);
+	tmpSpikeCount_.assign(numN_,0);
+	return;
+}
+
 float SpikeInfo::getGrpFiringRate(){
 	
 	vectorSize_ = spkVector_.size();
@@ -46,7 +59,20 @@ float SpikeInfo::getGrpFiringRate(){
 	}
 }
 
+float SpikeInfo::getMaxNeuronFiringRate(){
+	this->getSortedNeuronFiringRate();
+	return sortedFiringRate_.back();
+}
+
+float SpikeInfo::getMinNeuronFiringRate(){
+	this->getSortedNeuronFiringRate();
+	return sortedFiringRate_.front();
+}
+
 std::vector<float> SpikeInfo::getNeuronFiringRate(){
+	// clear, so we get the same answer every time.
+	tmpSpikeCount_.assign(numN_,0);
+	firingRate_.assign(numN_,0);
 
 	if(!recordSet_ && totalTime_>0){
 		// calculate average firing rate for every neuron
@@ -64,8 +90,90 @@ std::vector<float> SpikeInfo::getNeuronFiringRate(){
 		printf("You have to stop recording before using this function.\n");
 		exit(1);
 	}
-	
 }
+
+int SpikeInfo::getNumNeuronsWithFiringRate(float min, float max){
+	this->getSortedNeuronFiringRate();
+	std::vector<float>::const_iterator it;
+	int counter = 0;
+	for(it=sortedFiringRate_.begin();it!=sortedFiringRate_.end();it++){
+		if((*it) >= min && (*it) <= max)
+			counter++;
+	}
+	return counter;
+}
+
+int SpikeInfo::getNumSilentNeurons(){
+	int numSilent = this->getNumNeuronsWithFiringRate(0,0);
+	return numSilent;
+}
+
+float SpikeInfo::getPercentNeuronsWithFiringRate(float min, float max){
+	this->getSortedNeuronFiringRate();
+	std::vector<float>::const_iterator it;
+	int counter = 0;
+	for(it=sortedFiringRate_.begin();it!=sortedFiringRate_.end();it++){
+		if((*it) >= min && (*it) <= max)
+			counter++;
+	}
+	return (float)counter/numN_;
+}
+
+float SpikeInfo::getPercentSilentNeurons(){
+	float numSilent = this->getNumNeuronsWithFiringRate(0,0);
+	
+	return numSilent/numN_;
+}
+
+unsigned int SpikeInfo::getSize(){
+	return spkVector_.size();	
+}
+
+std::vector<AER> SpikeInfo::getVector(){
+	return spkVector_;
+}
+
+std::vector<float> SpikeInfo::getSortedNeuronFiringRate(){
+	// clear, so we get the same answer every time.
+	tmpSpikeCount_.assign(numN_,0);
+	firingRate_.assign(numN_,0);
+	
+	if(!recordSet_ && totalTime_>0){
+		// calculate average firing rate for every neuron
+		std::vector<AER>::const_iterator it;
+		int tmpNid;
+		for(it=it_begin_;it!=it_end_;it++){
+			tmpSpikeCount_[(*it).nid]++;
+		}
+		for(int i=0;i<numN_;i++){
+			firingRate_[i]=(float)tmpSpikeCount_[i]/(float)totalTime_;
+		}
+		sortedFiringRate_=firingRate_;
+		std::sort(sortedFiringRate_.begin(),sortedFiringRate_.end());
+		return sortedFiringRate_;
+	}else{
+		printf("You have to stop recording before using this function.\n");
+		exit(1);
+	}
+}
+
+bool SpikeInfo::isRecording(){
+	return recordSet_;
+}
+
+void SpikeInfo::print(){
+	
+	std::cout << "Format: Time (ms) : neuron id\n";
+	//use an iterator
+	std::vector<AER>::const_iterator it;
+	for(it=it_begin_;it!=it_end_;it++){
+		std::cout << (*it).time << " : "; 
+		std::cout << (*it).nid << std::endl;
+		std::cout.flush();
+	}
+	return;
+}
+
 void SpikeInfo::pushAER(int grpId, unsigned int* neurIds, unsigned int* timeCnts, int timeInterval){
 	int pos    = 0; // keep track of position in flattened list of neuron IDs
 	for (int t=0; t < timeInterval; t++) {
@@ -82,23 +190,6 @@ void SpikeInfo::pushAER(int grpId, unsigned int* neurIds, unsigned int* timeCnts
 	it_begin_=spkVector_.begin();
 	it_end_=spkVector_.end();
 	return;
-}
-
-void SpikeInfo::print(){
-	
-	std::cout << "Format: Time (ms) : neuron id\n";
-	//use an iterator
-	std::vector<AER>::const_iterator it;
-	for(it=it_begin_;it!=it_end_;it++){
-		std::cout << (*it).time << " : "; 
-		std::cout << (*it).nid << std::endl;
-		std::cout.flush();
-	}
-	return;
-}
-
-unsigned int SpikeInfo::getSize(){
-	return spkVector_.size();	
 }
 
 void SpikeInfo::startRecording(){
@@ -119,21 +210,5 @@ void SpikeInfo::stopRecording(){
 	return;
 }
 
-bool SpikeInfo::isRecording(){
-	return recordSet_;
-}
 
-std::vector<AER> SpikeInfo::getVector(){
-	return spkVector_;
-}
 
-void SpikeInfo::clear(){
-	spkVector_.clear();
-	accumTime_ = 0;
-	totalTime_ = 0;
-	firingRate_.clear();
-	tmpSpikeCount_.clear();
-	firingRate_.assign(numN_,0);
-	tmpSpikeCount_.assign(numN_,0);
-	return;
-}
