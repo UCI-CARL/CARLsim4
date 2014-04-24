@@ -27,6 +27,17 @@ ifneq (${strip ${CARLSIM_CUOPTLEVEL}},1)
 	CARLSIM_FLAGS += -O${CARLSIM_CUOPTLEVEL}
 endif
 
+# set debug flag
+ifeq (${strip ${CARLSIM_DEBUG}},1)
+	CARLSIM_FLAGS += -g
+endif
+
+# set regression flag
+ifeq (${strip ${CARLSIM_TEST}},1)
+	CARLSIM_FLAGS += -I$(CURDIR)/$(test_dir) -D__REGRESSION_TESTING__
+endif
+
+
 # append include path to CARLSIM_FLAGS
 CARLSIM_FLAGS += -I$(CURDIR)/$(carlsim_dir)/include \
 	-I$(CURDIR)/$(interface_dir)/include

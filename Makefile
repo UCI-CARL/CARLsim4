@@ -17,6 +17,9 @@ CARLSIM_FASTMATH ?= 0
 CARLSIM_CUOPTLEVEL ?= 0
 CARLSIM_DEBUG ?= 0
 
+# whether to include flag for regression testing
+CARLSIM_TEST ?= 1
+
 #-------------------------------------------------------------------------------
 # End user modifiable section
 #-------------------------------------------------------------------------------
