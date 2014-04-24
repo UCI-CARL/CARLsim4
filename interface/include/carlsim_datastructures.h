@@ -129,4 +129,18 @@ typedef struct{
 	int nid;
 } AER;
 
+/*!
+ * \brief 
+ * CARLsim supports different update frequency for weight update and weightChange update
+ * INTERVAL_10MS: the update interval will be 10 ms, which is 100Hz update frequency
+ * INTERVAL_100MS: the update interval will be 100 ms, which is 10Hz update frequency
+ * INTERVAL_1000MS: the update interval will be 1000 ms, which is 1Hz update frequency
+ */
+enum updateIterval_t {
+	INTERVAL_10MS, INTERVAL_100MS, INTERVAL_1000MS
+};
+static const char* updateRate_string[] = {
+	"10 ms interval", "100 ms interval", "1000 ms interval"
+};
+
 #endif

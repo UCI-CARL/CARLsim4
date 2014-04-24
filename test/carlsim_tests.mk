@@ -1,22 +1,21 @@
 # module include file for CARLsim pti 
 
-objects += $(test_dir)/carlsim_tests.o
-output_files += $(test_dir)/carlsim_tests
-
-CARLSIM_TEST_FLAGS := -I$(CURDIR)/$(test_dir) -D__REGRESSION_TESTING__
-
 gtest_deps = $(GTEST_LIB_DIR)/libgtest.a $(GTEST_LIB_DIR)/libgtest_main.a \
 	$(GTEST_LIB_DIR)/libgtest_custom_main.a
 
+# list of all test cpp files, but without directory and file extension
+# e.g., file "test/coba.cpp" should appear here as "coba"
+# the prefix (directory "test") and suffix (".cpp") will be appended afterwards
+carlsim_tests_cpps := coba core interface stdp stp spike_info
+
 local_dir := $(test_dir)
-local_deps := carlsim_tests.h coba.cpp core.cpp interface.cpp spikeCounter.cpp \
-	stdp.cpp stp.cpp spike_info_tests.cpp
+local_deps := carlsim_tests.h $(addsuffix .cpp,$(carlsim_tests_cpps))
 local_src := $(addprefix $(local_dir)/,$(local_deps))
-local_objs := $(addprefix $(local_dir)/,coba.o core.o spikeCounter.o \
-	stdp.o stp.o spike_info_tests.o)
+local_objs := $(addsuffix .o,$(addprefix $(local_dir)/,$(carlsim_tests_cpps)))
 
 carlsim_tests_objs := $(local_objs)
 objects += $(carlsim_tests_objs)
+output_files += $(test_dir)/carlsim_tests
 
 
 .PHONY: carlsim_tests
@@ -25,15 +24,13 @@ carlsim_tests: $(test_dir)/carlsim_tests $(local_objs)
 $(local_dir)/carlsim_tests: $(local_objs) $(gtest_deps) \
 	$(carlsim_objs)
 	$(NVCC) $(CARLSIM_INCLUDES) $(CARLSIM_LFLAGS) $(CARLSIM_LIBS) \
-	$(CARLSIM_FLAGS) $(CARLSIM_TEST_FLAGS) $(spike_info_flags) \
-	$(carlsim_objs) $(GTEST_CPPFLAGS) -L$(GTEST_LIB_DIR) -lgtest_custom_main \
+	$(CARLSIM_FLAGS) $(carlsim_objs) \
+	$(GTEST_CPPFLAGS) -L$(GTEST_LIB_DIR) -lgtest_custom_main \
 	$(carlsim_tests_objs) -o $@
 
 $(local_dir)/%.o: $(local_dir)/%.cpp $(local_deps)
-	$(NVCC) $(CARLSIM_INCLUDES) $(CARLSIM_LFLAGS) $(CARLSIM_LIBS) \
-	$(CARLSIM_FLAGS) $(CARLSIM_TEST_FLAGS) $(spike_info_flags) \
-	$(GTEST_CPPFLAGS) -L$(GTEST_LIB_DIR) -lgtest_custom_main \
-	-c $< -o $@
+	$(NVCC) $(CARLSIM_INCLUDES) $(CARLSIM_FLAGS) \
+	$(GTEST_CPPFLAGS) -c $< -o $@
 
 # rule for our local custom gtest main
 $(GTEST_LIB_DIR)/libgtest_custom_main.a: $(GTEST_LIB_DIR)/gtest-all.o \

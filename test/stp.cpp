@@ -128,11 +128,11 @@ TEST(STP, internalCPUvsData) {
 	sim->setConductances(true,5,10,15,20,25,30,ALL);
 	sim->setSTP(g0,true,0.19f,86,992,ALL); // the exact values are not important
 
-	PeriodicSpikeGenerator* spk50 = new PeriodicSpikeGenerator(50.0f); // periodic spiking @ 50 Hz
+	PeriodicSpikeGeneratorCore* spk50 = new PeriodicSpikeGeneratorCore(50.0f); // periodic spiking @ 50 Hz
 	sim->setSpikeGenerator(g0, spk50, ALL);
 
 	for (int i=0; i<50; i++) {
-		sim->runNetwork(0,1,false,true); // enable copyState
+		sim->runNetwork(0,1,true); // enable copyState
 		EXPECT_NEAR(sim->stpu[1], stpu[i], abs_error);
 		EXPECT_NEAR(sim->stpx[1], stpx[i], abs_error);
 	}
@@ -170,11 +170,11 @@ TEST(STP, externalCPUvsData) {
 	sim->setConductances(true,5,10,15,20,25,30,ALL);
 	sim->setSTP(g0,true,0.19f,86,992,ALL); // the exact values are not important
 
-	PeriodicSpikeGenerator* spk50 = new PeriodicSpikeGenerator(50.0f); // periodic spiking @ 50 Hz
+	PeriodicSpikeGeneratorCore* spk50 = new PeriodicSpikeGeneratorCore(50.0f); // periodic spiking @ 50 Hz
 	sim->setSpikeGenerator(g0, spk50, ALL);
 
 	for (int i=0; i<50; i++) {
-		sim->runNetwork(0,1,false,true); // enable copyState
+		sim->runNetwork(0,1,true); // enable copyState
 		EXPECT_NEAR(sim->current[0], current[i], abs_error); // check post-synaptic current to see effect of pre-STP
 	}
 
@@ -212,11 +212,11 @@ TEST(STP, internalCPUvsGPU) {
 		sim->setConductances(true,5,10,15,20,25,30,ALL);
 		sim->setSTP(g0,true,STP_U,STP_tD,STP_tF,ALL);
 
-		PeriodicSpikeGenerator* spk20 = new PeriodicSpikeGenerator(20.0f);
+		PeriodicSpikeGeneratorCore* spk20 = new PeriodicSpikeGeneratorCore(20.0f);
 		sim->setSpikeGenerator(g0, spk20, ALL);
 
 		for (int i=0; i<300; i++) {
-			sim->runNetwork(0,1,false,true); // enable copyState
+			sim->runNetwork(0,1,true); // enable copyState
 			stpu[j*300+i] = sim->stpu[1];
 			stpx[j*300+i] = sim->stpx[1];
 		}
@@ -271,11 +271,11 @@ TEST(STP, externalCPUvsGPU) {
 		sim->setConductances(true,5,10,15,20,25,30,ALL);
 		sim->setSTP(g0,true,STP_U,STP_tD,STP_tF,ALL);
 
-		PeriodicSpikeGenerator* spk20 = new PeriodicSpikeGenerator(20.0f);
+		PeriodicSpikeGeneratorCore* spk20 = new PeriodicSpikeGeneratorCore(20.0f);
 		sim->setSpikeGenerator(g0, spk20, ALL);
 
 		for (int i=0; i<300; i++) {
-			sim->runNetwork(0,1,false,true); // enable copyState
+			sim->runNetwork(0,1,true); // enable copyState
 			current[j*300+i] = sim->current[0];
 		}
 

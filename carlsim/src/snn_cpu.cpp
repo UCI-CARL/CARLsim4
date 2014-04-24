@@ -597,26 +597,41 @@ void CpuSNN::setSTP(int grpId, bool isSet, float STP_U, float STP_tau_u, float S
 	}
 }
 
-void CpuSNN::setWeightUpdateParameter(int updateInterval, int tauWeightChange) {
-	switch (updateInterval) {
-		case _10MS:
+void CpuSNN::setWeightAndWeightChangeUpdate(updateIterval_t wtUpdateInterval, updateIterval_t wtChangeUpdateInterval,
+											int tauWeightChange) {
+	switch (wtUpdateInterval) {
+		case INTERVAL_10MS:
 			wtUpdateInterval_ = 10;
-			stdpScaleFactor_ = 0.004f;
+			stdpScaleFactor_ = 0.005f;
 			break;
-		case _100MS:
+		case INTERVAL_100MS:
 			wtUpdateInterval_ = 100;
-			stdpScaleFactor_ = 0.04f;
+			stdpScaleFactor_ = 0.05f;
 			break;
-		case _1000MS:
+		case INTERVAL_1000MS:
 		default:
 			wtUpdateInterval_ = 1000;
-			stdpScaleFactor_ = 0.4f;
+			stdpScaleFactor_ = 0.5f;
 			break;
+	}
+
+	switch (wtChangeUpdateInterval) {
+	case INTERVAL_10MS:
+		wtChangeUpdateInterval_ = 10;
+		break;
+	case INTERVAL_100MS:
+		wtChangeUpdateInterval_ = 100;
+		break;
+	case INTERVAL_1000MS:
+	default:
+		wtChangeUpdateInterval_ = 1000;
+		break;
 	}
 
 	wtChangeDecay_ = 1.0 - (1.0 / tauWeightChange);
 		
-	CARLSIM_INFO("update weight every %d ms, stdpScaleFactor = %1.3f, wtChangeDecay = %1.3f", wtUpdateInterval_, stdpScaleFactor_, wtChangeDecay_);
+	CARLSIM_INFO("Update weight every %d ms, stdpScaleFactor = %1.3f", wtUpdateInterval_, stdpScaleFactor_);
+	CARLSIM_INFO("Update weight change every %d ms, wtChangeDecay = %1.3f", wtChangeUpdateInterval_, wtChangeDecay_);
 }
 
 
@@ -1771,8 +1786,9 @@ void CpuSNN::CpuSNNinit() {
 	// default weight update parameter	
 	wtUpdateInterval_ = 1000; // update weights every 1000 ms (default)
 	wtUpdateIntervalCnt_ = 0; // helper var to implement fast modulo
-	stdpScaleFactor_ = 0.1;
-	wtChangeDecay_ = 0.9;
+	stdpScaleFactor_ = 1.0f;
+	wtChangeUpdateInterval_ = 1000; // update weight change every 1000 ms (default)
+	wtChangeDecay_ = 0.0f;
 
 	// initialize parameters needed in snn_gpu.cu
 	// FIXME: naming is terrible... so it's a CPU SNN on GPU...
@@ -4163,7 +4179,7 @@ void CpuSNN::updateSpikeMonitor(int numMs) {
 }
 	
 // This function updates the synaptic weights from its derivatives..
-void CpuSNN::updateWeights() {		
+void CpuSNN::updateWeights() {
 	// update synaptic weights here for all the neurons..
 	for(int g = 0; g < numGrp; g++) {
 		// no changable weights so continue without changing..

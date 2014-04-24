@@ -357,7 +357,7 @@ void CARLsim::setHomeoBaseFiringRate(int grpId, float baseFiring, float baseFiri
 	std::string funcName = "setHomeoBaseFiringRate(\""+getGroupName(grpId,configId)+"\")";
 	UserErrors::assertTrue(!hasRunNetwork_, UserErrors::NETWORK_ALREADY_RUN, funcName); // can't change setup after run
 
-	hasSetHomeoBaseFiringALL_ = grpId=ALL; // adding groups after this will not have base firing set
+	hasSetHomeoBaseFiringALL_ = grpId; // adding groups after this will not have base firing set
 
 	snn_->setHomeoBaseFiringRate(grpId, baseFiring, baseFiringSD, configId);
 }
@@ -430,8 +430,6 @@ void CARLsim::setSTDP(int grpId, bool isSet, stdpType_t type, float alphaLTP, fl
 	UserErrors::assertTrue(type!=UNKNOWN_STDP, UserErrors::CANNOT_BE_UNKNOWN, funcName, "Mode");
 	hasSetSTDPALL_ = grpId==ALL; // adding groups after this will not have conductances set
 
-	printf("Hello!!! %s\n",stdpType_string[type]);
-
 	if (isSet) { // enable STDP, use custom values
 		assert(tauLTP>0); // TODO make nice
 		assert(tauLTD>0);
@@ -479,13 +477,15 @@ void CARLsim::setSTP(int grpId, bool isSet, float STP_U, float STP_tau_u, float 
 	}		
 }
 
-void CARLsim::setWeightUpdateParameter(int updateInterval, int tauWeightChange) {
-	std::string funcName = "setWeightUpdateParameter()";
-	UserErrors::assertTrue(updateInterval >= 0 && updateInterval <= 2, UserErrors::MUST_BE_WITHIN_RANGE, funcName);
+void CARLsim::setWeightAndWeightChangeUpdate(updateIterval_t updateWtInterval, updateIterval_t updateWtChangeInterval,
+											 int tauWeightChange) {
+	std::string funcName = "setWeightAndWeightChangeUpdate()";
+	UserErrors::assertTrue(updateWtChangeInterval <= updateWtInterval, UserErrors::CANNOT_BE_LARGER, funcName);
 	UserErrors::assertTrue(tauWeightChange > 0, UserErrors::MUST_BE_POSITIVE, funcName);
 
-	snn_->setWeightUpdateParameter(updateInterval, tauWeightChange);
+	snn_->setWeightAndWeightChangeUpdate(updateWtInterval, updateWtChangeInterval, tauWeightChange);
 }
+
 
 // +++++++++ PUBLIC METHODS: RUNNING A SIMULATION +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 

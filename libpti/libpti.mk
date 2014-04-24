@@ -13,14 +13,16 @@ pti_rel_ver   := 0
 #-------------------------------------------------------------------------------
 LIB_FLAGS = -fPIC
 DL_FLAGS = -shared
-PTI_FLAGS = -I$(PTI_INSTALL_DIR)/include -L$(PTI_INSTALL_DIR)/lib
+PTI_FLAGS = -I$(PTI_INSTALL_DIR)/include
+PTI_LFLAGS = -L$(PTI_INSTALL_DIR)/lib
 PTI_LIBS = -lpti_make_algo_scalar_es \
          -lmake_checkpoint_real \
          -lmake_op_real \
          -lpti_make_algo_scalar_real \
          -lmake_continue_real
 
-EO_FLAGS = -I$(EO_INSTALL_DIR)/src -L$(EO_INSTALL_DIR)/release/lib
+EO_FLAGS = -I$(EO_INSTALL_DIR)/src
+EO_LFLAGS = -L$(EO_INSTALL_DIR)/release/lib
 EO_LIBS = -leo -lga -leoutils -lcma -les
 
 local_dir  := libpti
@@ -50,7 +52,7 @@ sources += $(local_src)
 pti: $(local_deps) $(local_src) $(local_lib)
 
 $(local_dir)/%.o: %.cpp
-	$(CC) -c $(CPPFLAGS) -I$(CURDIR)/$(inc_dir) $(EO_FLAGS) \
+	$(CC) -c $(CPPFLAGS) -I$(CURDIR)/$(inc_dir) $(EO_FLAGS) $(EO_LFLAGS) \
 	$(LIB_FLAGS) $< -o $@
 
 $(local_dir)/lib%.so: $(local_dir)/%.o

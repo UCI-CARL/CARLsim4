@@ -311,12 +311,14 @@ public:
 	//! Sets STP params U, tau_u, and tau_x of a neuron group (pre-synaptically) using default values
 	void setSTP(int grpId, bool isSet, int configId=ALL);
 
-	//! Sets the weight update parameters
+	//! Sets the weight and weight change update parameters
 	/*!
-	 * \param updateInterval the interval between two weight update. the setting could be _10MS, _100MS, _1000MS
-	 * \param tauWeightChange the decay time constant of weight change (wtChange)
+	 * \param[in] updateWeightInterval the interval between two weight update.
+	 * \param[in] updateWeightChangeInterval the interval between two weight update.
+	 * \param[in] tauWeightChange the decay time constant of weight change (wtChange)
 	 */
-	void setWeightUpdateParameter(int updateInterval = _1000MS, int tauWeightChange = 10);
+	void setWeightAndWeightChangeUpdate(updateIterval_t updateWeightInterval = INTERVAL_1000MS,
+		updateIterval_t updateWeightChangeInterval = INTERVAL_1000MS, int tauWeightChange = 10);
 
 
 	// +++++ PUBLIC METHODS: RUNNING A SIMULATION ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //

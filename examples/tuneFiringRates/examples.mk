@@ -18,14 +18,13 @@ pti_programs += $(local_prog)
 .PHONY: $(example)
 $(example): $(local_src) $(local_prog)
 
-$(local_prog): $(local_src) $(local_objs) $(carlsim_sources) \
-	$(carlsim_objs) $(net_analysis_objs)
+$(local_prog): $(local_src) $(local_objs) $(carlsim_sources) $(carlsim_objs) \
+	$(common_sources) $(common_objs)
 	$(NVCC) $(CARLSIM_INCLUDES) $(CARLSIM_LFLAGS) $(CARLSIM_FLAGS) \
-	$(EO_FLAGS) $(PTI_FLAGS) $(spike_info_flags) $< $(carlsim_objs) \
-	$(net_analysis_objs) -o $@ $(CARLSIM_LIBS) $(PTI_LIBS) $(EO_LIBS)
+	$(EO_FLAGS) $(EO_LFLAGS) $(PTI_FLAGS) $(PTI_LFLAGS) $(spike_info_flags) \
+	$< $(carlsim_objs) $(common_objs) -o $@ $(CARLSIM_LIBS) $(PTI_LIBS) \
+	$(EO_LIBS)
 
 $(local_objs): $(local_src)
-	$(NVCC) -c $(CARLSIM_INCLUDES) $(CARLSIM_LFLAGS) $(CARLSIM_FLAGS) \
-	$(PTI_FLAGS) $(EO_FLAGS) $(spike_info_flags) $< -o $@ \
-	$(CARLSIM_LIBS) $(PTI_LIBS) $(EO_LIBS)
-
+	$(NVCC) -c $(CARLSIM_INCLUDES) $(CARLSIM_FLAGS) $(spike_info_flags) \
+	$(PTI_FLAGS) $(EO_FLAGS) $< -o $@

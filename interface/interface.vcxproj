@@ -27,6 +27,8 @@
     <ClInclude Include="include\callback.h" />
     <ClInclude Include="include\callback_core.h" />
     <ClInclude Include="include\carlsim.h" />
+    <ClInclude Include="include\carlsim_datastructures.h" />
+    <ClInclude Include="include\carlsim_definitions.h" />
     <ClInclude Include="include\user_errors.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">

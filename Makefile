@@ -69,7 +69,6 @@ include carlsim/carlsim.mk
 include test/gtest.mk
 include test/carlsim_tests.mk
 
-
 # include all directories in examples
 example_includes := $(addsuffix /examples.mk, $(wildcard examples/*))
 include $(example_includes)
