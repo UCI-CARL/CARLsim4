@@ -10,10 +10,10 @@ gtest_deps = $(GTEST_LIB_DIR)/libgtest.a $(GTEST_LIB_DIR)/libgtest_main.a \
 
 local_dir := $(test_dir)
 local_deps := carlsim_tests.h coba.cpp core.cpp interface.cpp spikeCounter.cpp \
-	stdp.cpp stp.cpp
+	stdp.cpp stp.cpp spike_info_tests.cpp
 local_src := $(addprefix $(local_dir)/,$(local_deps))
 local_objs := $(addprefix $(local_dir)/,coba.o core.o spikeCounter.o \
-	stdp.o stp.o)
+	stdp.o stp.o spike_info_tests.o)
 
 carlsim_tests_objs := $(local_objs)
 objects += $(carlsim_tests_objs)
