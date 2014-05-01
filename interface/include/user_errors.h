@@ -30,6 +30,7 @@ public:
 		FILE_CANNOT_CREATE,		//!< could not create a file
 		FILE_CANNOT_OPEN,		//!< could not open file
 		MUST_BE_LOGGER_CUSTOM,	//!< must be in custom logger mode
+		MUST_BE_IDENTICAL,      //!< parameters must be identical
 		MUST_BE_NEGATIVE,		//!< parameter must have negative value
 		MUST_BE_POSITIVE,		//!< parameter must have positive value
 		MUST_BE_WITHIN_RANGE,	//!< parameter must be within some range
@@ -51,7 +52,7 @@ public:
 	 * \param[in] errorFunc					a string to indicate the location where the error occured
 	 */
 	static void assertTrue(bool statement, errorType errorIfAssertionFails, std::string errorFunc,
-								std::string errorMsgPrefix="");
+								std::string errorMsgPrefix="", std::string errorMsgSuffix="");
 
 //	static void userAssertNonZero();
 //	static void userAssertNonNegative();
@@ -66,7 +67,8 @@ private:
 	 * \param[in] errorFunc 	a string to indicate the location where the error occurred
 	 * \param[in] error 		the type of error to throw (from enum errorType)
 	 */
-	static void throwError(std::string errorFunc, errorType error, std::string errorMsgPrefix="");
+	static void throwError(std::string errorFunc, errorType error, std::string errorMsgPrefix="",
+		std::string errorMsgSuffix="");
 };
 
 #endif
