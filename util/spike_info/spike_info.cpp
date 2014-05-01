@@ -3,7 +3,6 @@
 #include <iostream>
 
 // we aren't using namespace std so pay attention!
-// we need to pass a reference for the iterators, not just a value.
 SpikeInfo::SpikeInfo(){
 	vectorSize_ = spkVector_.size();
 	recordSet_ = false;
@@ -21,14 +20,8 @@ void SpikeInfo::init(CpuSNN* snn, int grpId){
 	snn_ = snn;
 	grpId_= grpId;
 	numN_ = snn_->getGroupNumNeurons(grpId_);
-	printf("init: before\n");
-	printf("numN_: %d\n",numN_);
-	printf("firingRate_.max_size(): %lu\n",firingRate_.max_size());
 	firingRate_.assign(numN_,0);
-	printf("firingRate_.size(): %u\n", firingRate_.size());
 	tmpSpikeCount_.assign(numN_,0);
-	printf("tmpSpikeCount_.size(): %u\n", tmpSpikeCount_.size());
-	printf("init: after\n");
 	return;
 }
 

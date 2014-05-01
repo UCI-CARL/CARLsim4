@@ -593,12 +593,17 @@ SpikeInfo* CARLsim::setSpikeMonitor(int grpId, const std::string& fname, int con
 	std::string funcName = "setSpikeMonitor(\""+getGroupName(grpId,configId)+"\",\""+fname+"\")";
 	UserErrors::assertTrue(!hasRunNetwork_, UserErrors::NETWORK_ALREADY_RUN, funcName); // can't change setup after run
 	UserErrors::assertTrue(configId!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName, "configId");	// configId can't be ALL
-	UserErrors::assertTrue(grpId!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName, "grpId");		// groupId can't be ALL
+	UserErrors::assertTrue(configId>=0, UserErrors::CANNOT_BE_NEGATIVE, funcName, "grpId"); // grpId can't be negative
+	UserErrors::assertTrue(grpId!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName, "grpId");		// grpId can't be ALL
+	UserErrors::assertTrue(grpId>=0, UserErrors::CANNOT_BE_NEGATIVE, funcName, "grpId"); // grpId can't be negative
+	UserErrors::assertTrue(grpId<MAX_GRP_PER_SNN, UserErrors::MUST_BE_WITHIN_RANGE, funcName, "grpId"); //grpId must be
+	// less than MAX_GRP_PER_SNN
+
 	// set the default string here
 	std::string fileName=fname;
 	if(fileName.empty()){
 		
-		fileName="spk"+snn_->getGroupName(grpId,configId)+".dat"; 
+		fileName="results/spk"+snn_->getGroupName(grpId,configId)+".dat"; 
 	}
 	// try to open spike file
 	FILE* fid = fopen(fileName.c_str(),"wb"); 

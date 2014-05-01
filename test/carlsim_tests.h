@@ -78,42 +78,44 @@ private:
 	int isi_;		// inter-spike interval that results in above spike rate
 };
 
+// DEPRECATED: spikeInfo class replaces this functionality.
 
 //! a spike monitor that counts the number of spikes per neuron, and also the total number of spikes
 //! used to test the behavior of SpikeCounter
-class SpikeMonitorPerNeuronCore: public SpikeMonitorCore {
-private:
-	const int nNeur_; // number of neurons in the group
-	int* spkPerNeur_; // number of spikes per neuron
-	long long spkTotal_; // number of spikes in group (across all neurons)
+/* class SpikeMonitorPerNeuronCore: public SpikeMonitorCore { */
+/* private: */
+/* 	const int nNeur_; // number of neurons in the group */
+/* 	int* spkPerNeur_; // number of spikes per neuron */
+/* 	long long spkTotal_; // number of spikes in group (across all neurons) */
 
-public:
-	SpikeMonitorPerNeuronCore(int numNeur) : nNeur_(numNeur), SpikeMonitorCore(NULL, NULL) {
-		// we're gonna count the spikes each neuron emits
-		spkPerNeur_ = new int[nNeur_];
-		memset(spkPerNeur_,0,sizeof(int)*nNeur_);
-		spkTotal_ = 0;
-	}
+/* public: */
+/* 	SpikeMonitorPerNeuronCore(int numNeur) : nNeur_(numNeur), SpikeMonitorCore(NULL, NULL) { */
+/* 		// we're gonna count the spikes each neuron emits */
+/* 		spkPerNeur_ = new int[nNeur_]; */
+/* 		memset(spkPerNeur_,0,sizeof(int)*nNeur_); */
+/* 		spkTotal_ = 0; */
+/* 	} */
 		
-	// destructor, delete all dynamically allocated data structures
-	~SpikeMonitorPerNeuronCore() { delete spkPerNeur_; }
+/* 	// destructor, delete all dynamically allocated data structures */
+/* 	~SpikeMonitorPerNeuronCore() { delete spkPerNeur_; } */
 		
-	int* getSpikes() { return spkPerNeur_; }
-	long long getSpikesTotal() { return spkTotal_; }
+/* 	int* getSpikes() { return spkPerNeur_; } */
+/* 	long long getSpikesTotal() { return spkTotal_; } */
 
-	// the update function counts the spikes per neuron in the current second
-	void update(CpuSNN* s, int grpId, unsigned int* NeuronIds, unsigned int *timeCounts) {
-		int pos = 0;
-		for (int t=0; t<1000; t++) {
-			for (int i=0; i<timeCounts[t]; i++,pos++) {
-				// turns out id will be enumerated between 0..numNeur_; it is NOT preSynIds[]
-				// or postSynIds[] or whatever...
-				int id = NeuronIds[pos];
-				assert(id>=0); assert(id<nNeur_);
-				spkPerNeur_[id]++;
-				spkTotal_++;
-			}
-		}
-	}
-};
+/* 	// the update function counts the spikes per neuron in the current second */
+/* 	void update(CpuSNN* s, int grpId, unsigned int* NeuronIds, unsigned int *timeCounts) { */
+/* 		int pos = 0; */
+/* 		for (int t=0; t<1000; t++) { */
+/* 			for (int i=0; i<timeCounts[t]; i++,pos++) { */
+/* 				// turns out id will be enumerated between 0..numNeur_; it is NOT preSynIds[] */
+/* 				// or postSynIds[] or whatever... */
+/* 				int id = NeuronIds[pos]; */
+/* 				assert(id>=0); assert(id<nNeur_); */
+/* 				spkPerNeur_[id]++; */
+/* 				spkTotal_++; */
+/* 			} */
+/* 		} */
+/* 	} */
+/* }; */
+
 
