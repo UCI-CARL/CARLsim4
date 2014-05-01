@@ -42,6 +42,8 @@
 #ifndef _CARLSIM_DATASTRUCTURES_H_
 #define _CARLSIM_DATASTRUCTURES_H_
 
+#include <ostream>
+
 /*!
  * \brief Logger modes
  * The logger mode defines where to print all status, error, and debug messages. Several predefined
@@ -127,6 +129,27 @@ enum updateIterval_t {
 };
 static const char* updateRate_string[] = {
 	"10 ms interval", "100 ms interval", "1000 ms interval"
+};
+
+
+struct RangeDelay {
+    RangeDelay(int _val) : min(_val), max(_val) {}
+    RangeDelay(int _min, int _max) : min(_min), max(_max) {}
+
+    friend std::ostream& operator<<(std::ostream &strm, const RangeDelay &d) {
+        return strm << "delay=[" << d.min << "," << d.max << "]";
+    }
+    int min,max;
+};
+
+struct RangeWeight {
+    RangeWeight(float _val) : min(_val), max(_val) {}
+    RangeWeight(float _min, float _max) : min(_min), max(_max) {}
+
+    friend std::ostream& operator<<(std::ostream &strm, const RangeWeight &w) {
+        return strm << "wt=[" << w.min << "," << w.max << "]";
+    }
+    float min, max; 
 };
 
 #endif
