@@ -131,49 +131,43 @@ public:
 	// +++++ PUBLIC METHODS: SETTING UP A SIMULATION ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
 	/*!
-	 * \brief Connects a presynaptic to a postsynaptic group using fixed weights and a single delay value
-	 * This function is a shortcut to create synaptic connections from a pre-synaptic group grpId1 to a post-synaptic
-	 * group grpId2 using a pre-defined primitive type (such as "full", "one-to-one", or "random"). Synapse weights 
-	 * will stay the same throughout the simulation (SYN_FIXED, no plasticity). All synapses will have the same delay.
-	 * For more flexibility, see the other connect() calls.
-	 * \param[in] grpId1	ID of the pre-synaptic group
-	 * \param[in] grpId2 	ID of the post-synaptic group
-	 * \param[in] connType 	connection type. "random": random connectivity. "one-to-one": connect the i-th neuron in 
-	 *						pre to the i-th neuron in post. "full": connect all neurons in pre to all neurons in post
-	 * 						(no self-connections).
-	 * \param[in] connProb	connection probability
-	 * \param[in] delay 	delay for all synapses (ms)
-	 * \returns a unique ID associated with the newly created connection
-	 */
-	short int connect(int grpId1, int grpId2, const std::string& connType, float wt, float connProb, uint8_t delay);
-
-	//! shortcut to create SYN_FIXED connections with one weight / delay and two scaling factors for synaptic currents
-	// returns connection id
-	short int connect(int grpId1, int grpId2, const std::string& connType, float wt, float connProb, uint8_t delay,
-						float mulSynFast, float mulSynSlow);
-
-	/*!
 	 * \brief Connects a presynaptic to a postsynaptic group using fixed/plastic weights and a range of delay values
 	 * This function is a shortcut to create synaptic connections from a pre-synaptic group grpId1 to a post-synaptic
 	 * group grpId2 using a pre-defined primitive type (such as "full", "one-to-one", or "random"). Synapse weights 
 	 * will stay the same throughout the simulation (SYN_FIXED, no plasticity). All synapses will have the same delay.
 	 * For more flexibility, see the other connect() calls.
-	 * \param[in] grpId1	ID of the pre-synaptic group
-	 * \param[in] grpId2 	ID of the post-synaptic group
-	 * \param[in] connType 	connection type. "random": random connectivity. "one-to-one": connect the i-th neuron in 
-	 *						pre to the i-th neuron in post. "full": connect all neurons in pre to all neurons in post
-	 * 						(no self-connections).
-	 * \param[in] connProb	connection probability
-	 * \param[in] delay 	delay for all synapses (ms)
+	 * \param[in] grpId1	 ID of the pre-synaptic group
+	 * \param[in] grpId2 	 ID of the post-synaptic group
+	 * \param[in] connType 	 connection type. "random": random connectivity. "one-to-one": connect the i-th neuron in 
+	 *						 pre to the i-th neuron in post. "full": connect all neurons in pre to all neurons in post.
+	 * 						 "full-no-direct": same as "full", but i-th neuron of grpId1 will not be connected to the
+	 *                       i-th neuron of grpId2.
+	 * \param[in] wt 		 a struct specifying the range of weight magnitudes (initial value and max value). Weights
+	 *                       range from 0 to maxWt, and are initialized with initWt. All weight values should be
+	 *                       non-negative (equivalent to weight *magnitudes*), even for inhibitory connections.
+	 *                       Examples:
+	 *                         RangeWeight(0.1)         => all weights will be 0.1 (wt.min=0.1, wt.max=0.1, wt.init=0.1)
+	 *                         RangeWeight(0.0,0.2)     => If pre is excitatory: all weights will be in range [0.0,0.2],
+	 *                                                     and wt.init=0.0. If pre is inhibitory: all weights will be in
+	 *                                                     range [-0.2,0.0], and wt.init=0.0.
+	 *                         RangeWeight(0.0,0.1,0.2) => If pre is excitatory: all weights will be in range [0.0,0.2],
+	 *                                                     and wt.init=0.1. If pre is inhibitory: all weights will be in
+	 *                                                     range [-0.2,0.0], and wt.init=0.0.
+	 * \param[in] connProb	 connection probability
+	 * \param[in] delay 	 a struct specifying the range of delay values (ms). Synaptic delays must be greater than or
+	 *                       equal to 1 ms.
+	 *                       Examples:
+	 *                         RangeDelay(2) => all delays will be 2 (delay.min=2, delay.max=2)
+	 *                         RangeDelay(1,10) => delays will be in range [1,10]
+	 * \param[in] synWtType  specifies whether the synapse should be of fixed value (SYN_FIXED) or plastic (SYN_PLASTIC)
+	 * \param[in] mulSynFast a multiplication factor to be applied to the fast synaptic current (AMPA in the case of
+	 *                       excitatory, and GABAa in the case of inhibitory connections). Default: 1.0
+	 * \param[in] mulSynSlow a multiplication factor to be applied to the slow synaptic current (NMDA in the case of
+	 *                       excitatory, and GABAb in the case of inhibitory connections). Default: 1.0
 	 * \returns a unique ID associated with the newly created connection
 	 */
-	short int connect(int grpId1, int grpId2, const std::string& connType, float initWt, float maxWt, float connProb,
-						uint8_t minDelay, uint8_t maxDelay, bool synWtType);
-
-	//! make connection from each neuron in grpId1 to 'numPostSynapses' neurons in grpId2
-	// returns connection id
-	short int connect(int grpId1, int grpId2, const std::string& connType, float initWt, float maxWt, float connProb,
-						uint8_t minDelay, uint8_t maxDelay, float mulSynFast, float mulSynSlow, bool synWtType);
+	short int connect(int grpId1, int grpId2, const std::string& connType, RangeWeight wt, float connProb,
+		RangeDelay delay, bool synWtType=SYN_FIXED, float mulSynFast=1.0f, float mulSynSlow=1.0f);
 
 	//! shortcut to make connections with custom connectivity profile but omit scaling factors for synaptic
 	//! conductances (default is 1.0 for both)

@@ -32,7 +32,7 @@ TEST(Interface, setConductances) {
 	CARLsim* sim = new CARLsim("SNN",CPU_MODE,USER,0,1,42);
 	int g1=sim->createGroup("excit", 10, EXCITATORY_NEURON);
 	sim->setNeuronParameters(g1, 0.02f, 0.2f,-65.0f,8.0f);
-	sim->connect(g1,g1,"random",0.01f,0.1f,1);
+	sim->connect(g1,g1,"random",RangeWeight(0.01),0.1f,RangeDelay(1));
 
 	// set custom values, no rise times
 	EXPECT_DEATH({sim->setConductances(true,-1,2,3,4);},"");

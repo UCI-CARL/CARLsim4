@@ -546,19 +546,19 @@ int main_fitness_function(int argc, char *argv[])
   snn.setNeuronParameters(inhGrp, 0.1f, 0.2f, -65.0f, 2.0f, ALL);
 
   // connections
-  inputOnToBufferOn_cid   = snn.connect(inputOnGrp,  bufferOnGrp,  "one-to-one", 0.2f, 0.6f, 1.0, 1, 1, SYN_FIXED);
-  inputOffToBufferOff_cid = snn.connect(inputOffGrp, bufferOffGrp, "one-to-one", 0.2f, 0.6f, 1.0, 1, 1, SYN_FIXED);
+  inputOnToBufferOn_cid   = snn.connect(inputOnGrp,  bufferOnGrp,  "one-to-one", RangeWeight(0.0,0.2,0.6), 1.0, RangeDelay(1), SYN_FIXED);
+  inputOffToBufferOff_cid = snn.connect(inputOffGrp, bufferOffGrp, "one-to-one", RangeWeight(0.0,0.2,0.6), 1.0, RangeDelay(1), SYN_FIXED);
   // The initial connections for these weights are labelled DUMMY_WT because they are
   // replaced by the evolutionary algorithm.
 //  bufferOnToExc_cid       = snn.connect(bufferOnGrp,  excGrp, "full", DUMMY_WEIGHT/4, DUMMY_WEIGHT, 1.0, 1, 1, SYN_PLASTIC, "random");
 //  bufferOffToExc_cid      = snn.connect(bufferOffGrp, excGrp, "full", DUMMY_WEIGHT/4, DUMMY_WEIGHT, 1.0, 1, 1, SYN_PLASTIC, "random");
-  bufferOnToExc_cid       = snn.connect(bufferOnGrp,  excGrp, "full", DUMMY_WEIGHT/4, DUMMY_WEIGHT, 1.0, 1, 1, SYN_PLASTIC);
-  bufferOffToExc_cid      = snn.connect(bufferOffGrp, excGrp, "full", DUMMY_WEIGHT/4, DUMMY_WEIGHT, 1.0, 1, 1, SYN_PLASTIC);
+  bufferOnToExc_cid       = snn.connect(bufferOnGrp,  excGrp, "full", RangeWeight(0.0,DUMMY_WEIGHT/4,DUMMY_WEIGHT), 1.0, RangeDelay(1), SYN_PLASTIC);
+  bufferOffToExc_cid      = snn.connect(bufferOffGrp, excGrp, "full", RangeWeight(0.0,DUMMY_WEIGHT/4,DUMMY_WEIGHT), 1.0, RangeDelay(1), SYN_PLASTIC);
 
 //  excToInh_cid            = snn.connect(excGrp, inhGrp, "full", DUMMY_WEIGHT/4, DUMMY_WEIGHT, 1.0,  1, 1, SYN_PLASTIC, "random");
-  excToInh_cid            = snn.connect(excGrp, inhGrp, "full", DUMMY_WEIGHT/4, DUMMY_WEIGHT, 1.0,  1, 1, SYN_PLASTIC);
+  excToInh_cid            = snn.connect(excGrp, inhGrp, "full", RangeWeight(0.0,DUMMY_WEIGHT/4,DUMMY_WEIGHT), 1.0, RangeDelay(1), SYN_PLASTIC);
 
-  inhToExc_cid            = snn.connect(inhGrp, excGrp, "full", -0.21, -0.21, 1.0, 1, 1, SYN_FIXED); // original
+  inhToExc_cid            = snn.connect(inhGrp, excGrp, "full", RangeDelay(0.21), 1.0, RangeDelay(1), SYN_FIXED); // original
   //inhToExc_cid            = snn.connect(inhGrp, excGrp, "full", -1*DUMMY_WEIGHT, -1*DUMMY_WEIGHT, 1.0, 1, 1, SYN_FIXED);
 
   //DUMMY_WEIGHT = 0.20 //DUMMY_WEIGHT/4 = 0.05

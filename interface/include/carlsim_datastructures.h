@@ -42,6 +42,9 @@
 #ifndef _CARLSIM_DATASTRUCTURES_H_
 #define _CARLSIM_DATASTRUCTURES_H_
 
+#include <ostream>
+#include <user_errors.h>
+
 /*!
  * \brief Logger modes
  * The logger mode defines where to print all status, error, and debug messages. Several predefined
@@ -116,7 +119,7 @@ static const char* stdpType_string[] = {
 
 
 /*!
- * \brief 
+ * \brief Update frequency for weights
  * CARLsim supports different update frequency for weight update and weightChange update
  * INTERVAL_10MS: the update interval will be 10 ms, which is 100Hz update frequency
  * INTERVAL_100MS: the update interval will be 100 ms, which is 10Hz update frequency
@@ -127,6 +130,58 @@ enum updateIterval_t {
 };
 static const char* updateRate_string[] = {
 	"10 ms interval", "100 ms interval", "1000 ms interval"
+};
+
+/*!
+ * \brief a range struct for synaptic delays
+ * Synaptic delays can range between 1 and 20 ms. The struct maintains two fields: min and max.
+ * \param[in] min the lower bound for delay values
+ * \param[in] max the upper bound for delay values
+ * Examples:
+ *   RangeDelay(2) => all delays will be 2 (delay.min=2, delay.max=2)
+ *   RangeDelay(1,10) => delays will be in range [1,10]
+ */
+struct RangeDelay {
+	RangeDelay(int _val) : min(_val), max(_val) {}
+	RangeDelay(int _min, int _max) : min(_min), max(_max) {
+		UserErrors::assertTrue(_min<=_max, UserErrors::CANNOT_BE_LARGER, "RangeDelay", "minDelay", "maxDelay");
+	}
+
+	friend std::ostream& operator<<(std::ostream &strm, const RangeDelay &d) {
+		return strm << "delay=[" << d.min << "," << d.max << "]";
+	}
+	int min,max;
+};
+
+/*!
+ * \brief a range struct for synaptic weight magnitudes
+ * Plastic synaptic weights are initialized to initWt, and can range between some minWt and some maxWt. Fixed weights
+ * will always have the same value. All weight values should be non-negative (equivalent to weight *magnitudes*), even
+ * for inhibitory connections.
+ * \param[in] min the lower bound for weight values
+ * \param[in] init the initial value for weight values
+ * \param[in] max the upper bound for weight values
+ * Examples:
+ *   RangeWeight(0.1)         => all weights will be 0.1 (wt.min=0.1, wt.max=0.1, wt.init=0.1)
+ *   RangeWeight(0.0,0.2)     => If pre is excitatory: all weights will be in range [0.0,0.2], and wt.init=0.0. If pre
+ *                               is inhibitory: all weights will be in range [-0.2,0.0], and wt.init=0.0.
+ *   RangeWeight(0.0,0.1,0.2) => If pre is excitatory: all weights will be in range [0.0,0.2], and wt.init=0.1. If pre
+ *                               is inhibitory: all weights will be in range [-0.2,0.0], and wt.init=0.0.
+ */
+struct RangeWeight {
+	RangeWeight(double _val) : init(_val), max(_val) {}
+	RangeWeight(double _min, double _max) : min(_min), init(_min), max(_max) {
+		UserErrors::assertTrue(_min<=_max, UserErrors::CANNOT_BE_LARGER, "RangeWeight", "minWt", "maxWt");
+	}
+	RangeWeight(double _min, double _init, double _max) : min(_min), init(_init), max(_max) {
+		UserErrors::assertTrue(_min<=_init, UserErrors::CANNOT_BE_LARGER, "RangeWeight", "minWt", "initWt");
+		UserErrors::assertTrue(_init<=_max, UserErrors::CANNOT_BE_LARGER, "RangeWeight", "initWt", "maxWt");
+	}
+
+	friend std::ostream& operator<<(std::ostream &strm, const RangeWeight &w) {
+		return strm << "wt=[" << w.min << "," << w.init << "," << w.max << "]";
+	}
+	double min, init, max; 
 };
 
 #endif
