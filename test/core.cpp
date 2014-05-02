@@ -175,8 +175,8 @@ TEST(CORE, connect) {
 				else if (type[i]=CONN_FULL) typeStr = "full";
 				else if (type[i]=CONN_FULL_NO_DIRECT) typeStr = "full-no-direct";
 
-				conn[i] = sim->connect(g0, g1, typeStr, initWt[i], maxWt[i], prob[i], minDelay[i], maxDelay[i], 
-											mulSynFast[i], mulSynSlow[i], synType[i]);
+				conn[i] = sim->connect(g0, g1, typeStr, initWt[i], maxWt[i], prob[i],
+					minDelay[i],maxDelay[i], mulSynFast[i], mulSynSlow[i], synType[i]);
 
 				for (int c=0; c<nConfig; c++) {
 					connInfo = sim->getConnectInfo(conn[i],c);
