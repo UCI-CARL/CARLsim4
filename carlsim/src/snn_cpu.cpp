@@ -3094,14 +3094,31 @@ int CpuSNN::readNetwork_internal()
 #endif
 {
 	long file_position = ftell(readNetworkFID); // so that we can restore the file position later...
-	unsigned int version;
+	int tmpInt;
+	float tmpFloat;
 
-	if (!fread(&version,sizeof(int),1,readNetworkFID)) return -11;
-	if (version > 1) return -10;
+	// read file signature
+	if (!fread(&tmpInt,sizeof(int),1,readNetworkFID)) return -11;
+	if (tmpInt != 294338571) return -10;
 
-	int _numGrp;
-	if (!fread(&_numGrp,sizeof(int),1,readNetworkFID)) return -11;
-	if (numGrp != _numGrp) return -1;
+	// read version number
+	if (!fread(&tmpFloat,sizeof(float),1,readNetworkFID)) return -11;
+	if (tmpFloat > 1.0) return -10;
+
+	// read simulation and execution time
+	if (!fread(&tmpFloat,sizeof(float),2,readNetworkFID)) return -11;
+
+	// read number of neurons
+	if (!fread(&tmpInt,sizeof(int),1,readNetworkFID)) return -11;
+	int nrCells = tmpInt;
+	if (nrCells != numN) return -5;
+
+	// read total synapse counts
+	if (!fread(&tmpInt,sizeof(int),2,readNetworkFID)) return -11;
+
+	// read number of groups
+	if (!fread(&tmpInt,sizeof(int),1,readNetworkFID)) return -11;
+	if (numGrp != tmpInt) return -1;
 
 	char name[100];
 	int startN, endN;
@@ -3114,10 +3131,6 @@ int CpuSNN::readNetwork_internal()
 		if (!fread(name,1,100,readNetworkFID)) return -11;
 		if (strcmp(name,grp_Info2[g].Name.c_str()) != 0) return -4;
 	}
-
-	int nrCells;
-	if (!fread(&nrCells,sizeof(int),1,readNetworkFID)) return -11;
-	if (nrCells != numN) return -5;
 
 	for (unsigned int i=0;i<nrCells;i++) {
 		unsigned int nrSynapses = 0;
