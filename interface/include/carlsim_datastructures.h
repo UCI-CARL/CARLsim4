@@ -47,6 +47,7 @@
 
 /*!
  * \brief Logger modes
+ *
  * The logger mode defines where to print all status, error, and debug messages. Several predefined
  * modes exist (USER, DEVELOPER, SHOWTIME, SILENT). However, the user can also set each file pointer to a
  * location of their choice (CUSTOM mode).
@@ -67,12 +68,14 @@
  *
  * The file pointers are automatically set to different locations, depending on the loggerMode:
  *
+ * \verbatim
  *          |    USER    | DEVELOPER  |  SHOWTIME  |   SILENT   |  CUSTOM
  * ---------|------------|------------|------------|------------|---------
  * fpOut_   |   stdout   |   stdout   | /dev/null  | /dev/null  |    ?
  * fpErr_   |   stderr   |   stderr   |   stderr   | /dev/null  |    ?
  * fpDeb_   | /dev/null  |   stdout   | /dev/null  | /dev/null  |    ?
  * fpLog_   | debug.log  | debug.log  | debug.log  | /dev/null  |    ?
+ * \endverbatim
  *
  * Location of the debug log file can be set in any mode using CARLsim::setLogDebugFp.
  * In mode CUSTOM, the other file pointers can be set using CARLsim::setLogsFp.
@@ -86,6 +89,7 @@ static const char* loggerMode_string[] = {
 
 /*!
  * \brief simulation mode
+ *
  * CARLsim supports execution either on standard x86 central processing units (CPUs) or off-the-shelf NVIDIA GPUs.
  *
  * When creating a new CARLsim object, you can choose from the following:
@@ -106,6 +110,7 @@ static const char* simMode_string[] = {
 // TODO: extend documentation, add relevant references
 /*!
  * \brief STDP flavors
+ *
  * CARLsim supports two different flavors of STDP.
  * STANDARD:	The standard model of Bi & Poo (2001), nearest-neighbor.
  * DA_MOD:      Dopamine-modulated STDP, nearest-neighbor.
@@ -120,6 +125,7 @@ static const char* stdpType_string[] = {
 
 /*!
  * \brief Update frequency for weights
+ *
  * CARLsim supports different update frequency for weight update and weightChange update
  * INTERVAL_10MS: the update interval will be 10 ms, which is 100Hz update frequency
  * INTERVAL_100MS: the update interval will be 100 ms, which is 10Hz update frequency
@@ -134,6 +140,7 @@ static const char* updateRate_string[] = {
 
 /*!
  * \brief a range struct for synaptic delays
+ *
  * Synaptic delays can range between 1 and 20 ms. The struct maintains two fields: min and max.
  * \param[in] min the lower bound for delay values
  * \param[in] max the upper bound for delay values
@@ -155,6 +162,7 @@ struct RangeDelay {
 
 /*!
  * \brief a range struct for synaptic weight magnitudes
+ *
  * Plastic synaptic weights are initialized to initWt, and can range between some minWt and some maxWt. Fixed weights
  * will always have the same value. All weight values should be non-negative (equivalent to weight *magnitudes*), even
  * for inhibitory connections.

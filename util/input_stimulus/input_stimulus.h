@@ -5,31 +5,37 @@
 class PoissonRate;
 
 /*!
- * \brief InputStimulus class
+ * \brief Class to integrate CARLsim with a stimulus created using InputStimulus.m
+ * Version: 4/11/14
+ * Author: Michael Beyeler <mbeyeler@uci.edu>
+ *
  * This class provides a means to integrate CARLsim with a stimulus created using InputStimulus.m. The class reads
  * from binary file, and returns either the raw character array or a PoissonRate object with the same size as number
  * of pixels in a stimulus frame.
  * 
  * Common workflow:
- * // 1. Create a stimulus in Matlab:
+ * \arg 1. Create a stimulus in Matlab:
+ * \verbatim
  * >> IS = InputStimulus(32,32);
  * >> IS.addSinGrating
  * >> IS.saveToFile
+ * \endverbatim
  * Successfully saved stimulus to file "inpGrating_gray_32x32x80.dat"
  *
- * // 2. In your main_$(example).cpp, read from binary file:
+ * \arg 2. In your main_$(example).cpp, read from binary file:
+ * \code
  * InputStimulus IS("inpGrating_gray_32x32x80.dat");
  * int videoLength = IS.getStimulusLength();
+ * \endcode
  *
- * // 3. Assign each frame to a SpikeGenerator group and run network
+ * \arg 3. Assign each frame to a SpikeGenerator group and run network
+ * \code
  * for (int i=0; i<videoLength; i++) {
  *     PoissonRate * rates = IS.readFrame(50.0f); // grayscale value 255 will be mapped to 50 Hz
  *     snn.setSpikeRate(g1, rates); // for this to work, there must be 32x32=1024 neurons in g1
  *     snn.runNetwork(1,0); // run the network
  * }
- *
- * Version: 4/11/14
- * Author: Michael Beyeler <mbeyeler@uci.edu>
+ * \endcode
  */
 class InputStimulus {
 public:
@@ -37,6 +43,7 @@ public:
 
 	/*!
 	 * \brief Default constructor
+	 *
 	 * Instantiates an InputStimulus object.
 	 * \param[in] fileName        path to binary file that was created using InputStimulus.m
 	 * \param[in] wrapAroundEOF   after reaching the end of the file, whether to jump back to the top and start reading
@@ -49,6 +56,7 @@ public:
 
 	/*!
 	 * \brief List of stimulus file types
+	 * 
 	 * STIM_GRAY:      grayscale image
 	 * STIM_RGB:       RGB image
 	 * STIM_UNKNOWN:   unknown image type
@@ -60,6 +68,7 @@ public:
 
 	/*!
 	 * \brief Reads the next image frame and returns a pointer to the char array
+	 * 
 	 * Advances the frame index by 1 (getCurrentFrameNumber) and returns the raw grayscale values for each pixel. The
 	 * char array will have a total of getStimulusWidth()*getStimulusHeight()*getStimulusChannels() entries. The 
 	 * order is columns first (so the first getStimulusWidth() number of pixels will correspond to the top image row).
@@ -73,6 +82,7 @@ public:
 
 	/*!
 	 * \brief Reads the next image frame and returns a pointer to a PoissonRate object
+	 *
 	 * Advances the frame index by 1 (getCurrentFrameNumber) and returns a pointer to a PoissonRate object. The object
 	 * will have a total of getStimulusWidth()*getStimulusHeight()*getStimulusChannels() entries. The order is columns
 	 * first (so the first getStimulusWidth() number of pixels will correspond to the top image row). The PoissonRate
@@ -98,7 +108,7 @@ public:
 	int getStimulusChannels() { return stimChannels_; } //!< returns the number of channels (1=grayscale, 3=RGB)
 	stimType_t getStimulusType() { return stimType_; } //!< returns the stimulus type (STIM_GRAY, STIM_RGB, etc.)
 
-	unsigned char* getCurrentFrameChar() { return stimFrame_; }; //!< returns char array of current frame
+	unsigned char* getCurrentFrameChar() { return stimFrame_; } //!< returns char array of current frame
 	PoissonRate* getCurrentFramePoisson() { return stimFramePoiss_; } //!< returns PoissonRate object of current frame
 	int getCurrentFrameNumber() { return stimFrameNr_; } //! returns the current frame number (0-indexed)
 
