@@ -27,8 +27,8 @@ end
 
 % read simulation info
 sim = struct();
-sim.simTime = fread(fid,1,'float'); % in seconds
-sim.exeTime = fread(fid,1,'float'); % in seconds
+sim.simTimeSec = fread(fid,1,'float'); % in seconds
+sim.exeTimeSec = fread(fid,1,'float'); % in seconds
 % more params could be added:
 % read sim mode
 % read logger mode
@@ -65,10 +65,9 @@ end
 %% READ SYNAPSES
 % reading synapse info is optional
 if loadSynapseInfo
-    nrCells = fread(fid,1,'int32');
     weightData = cell(nrCells,1);
     nrSynTot = 0;
-    for i=1:nrCells
+    for i=1:sim.nNeurons
         nrSyn = fread(fid,1,'int32');
         nrSynTot = nrSynTot + nrSyn;
         if nrSyn>0

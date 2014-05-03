@@ -1129,16 +1129,16 @@ void CpuSNN::saveSimulation(FILE* fid, bool saveSynapseInfo) {
 	if (!fwrite(&tmpFloat,sizeof(int),1,fid)) CARLSIM_ERROR("saveSimulation fwrite error");
 
 	// write simulation time so far (in seconds)
-	tmpFloat = (float)simTimeMs/1000.0f;
+	tmpFloat = ((float)simTimeSec) + ((float)simTimeMs)/1000.0f;
 	if (!fwrite(&tmpFloat,sizeof(float),1,fid)) CARLSIM_ERROR("saveSimulation fwrite error");
 
 	// write execution time so far (in seconds)
 	if(simMode_ == GPU_MODE) {
 		stopGPUTiming();
-		tmpFloat = gpuExecutionTime;
+		tmpFloat = gpuExecutionTime/1000.0f;
 	} else {
 		stopCPUTiming();
-		tmpFloat = cpuExecutionTime;
+		tmpFloat = cpuExecutionTime/1000.0f;
 	}
 	if (!fwrite(&tmpFloat,sizeof(float),1,fid)) CARLSIM_ERROR("saveSimulation fwrite error");
 
@@ -1708,6 +1708,8 @@ void CpuSNN::CpuSNNinit() {
 	memoryOptimized	   = false;
 
 	cumExecutionTime = 0.0;
+	cpuExecutionTime = 0.0;
+	gpuExecutionTime = 0.0;
 
 	spikeRateUpdated = false;
 	numSpikeMonitor = 0;
