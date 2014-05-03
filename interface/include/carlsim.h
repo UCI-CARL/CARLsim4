@@ -328,6 +328,9 @@ public:
 
 	// +++++ PUBLIC METHODS: LOGGING / PLOTTING +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
+	//! saves important simulation and network infos to file
+	void saveSimulation(std::string fileName, bool saveSynapseInfo=true);
+
 	// FIXME: needs overhaul
 	//! Sets update cycle for log messages
 	/*!
@@ -439,9 +442,6 @@ public:
 	//! weight values back to their default values by setting resetWeights = true.
 	void updateNetwork(bool resetFiringInfo, bool resetWeights);
 
-	//!< writes the network state to file
-	void writeNetwork(FILE* fid);
-
 	//! function writes population weights from gIDpre to gIDpost to file fname in binary.
 	void writePopWeights(std::string fname, int gIDpre, int gIDpost, int configId=0);
 
@@ -532,6 +532,9 @@ public:
 	//! sets default homeostasis params
 	void setDefaultHomeostasisParams(float homeoScale, float avgTimeScale);
 
+	//! sets default options for save file
+	void setDefaultSaveOptions(std::string fileName, bool saveSynapseInfo);
+
 	//! sets default values for STDP params
 	void setDefaultSTDPparams(float alphaLTP, float tauLTP, float alphaLTD, float tauLTD);
 
@@ -548,7 +551,6 @@ private:
 
 	void handleUserWarnings(); 			//!< print all user warnings, continue only after user input
 
-	void printSimulationSpecs();
 
 	// +++++ PRIVATE PROPERTIES +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
@@ -580,12 +582,14 @@ private:
 	int def_trGABAb_;				//!< default value for GABAb rise (ms)
 	int def_tdGABAb_;				//!< default value for GABAb decay (ms)
 
+	// all default values for STDP
 	stdpType_t def_STDP_type_;		//!< default mode for STDP
 	float def_STDP_alphaLTP_;		//!< default value for LTP amplitude
 	float def_STDP_tauLTP_;			//!< default value for LTP decay (ms)
 	float def_STDP_alphaLTD_;		//!< default value for LTD amplitude
 	float def_STDP_tauLTD_;			//!< default value for LTD decay (ms)
 
+	// all default values for STP
 	float def_STP_U_exc_;			//!< default value for STP U excitatory
 	float def_STP_tau_u_exc_;		//!< default value for STP u decay (\tau_F) excitatory (ms)
 	float def_STP_tau_x_exc_;		//!< default value for STP x decay (\tau_D) excitatory (ms)
@@ -593,7 +597,12 @@ private:
 	float def_STP_tau_u_inh_;		//!< default value for STP u decay (\tau_F) inhibitory (ms)
 	float def_STP_tau_x_inh_;		//!< default value for STP x decay (\tau_D) inhibitory (ms)
 
+	// all default values for homeostasis
 	float def_homeo_scale_;			//!< default homeoScale
 	float def_homeo_avgTimeScale_;	//!< default avgTimeScale
+
+	// all default values for save file
+	std::string def_save_fileName_;	//!< file name for saving network info
+	bool def_save_synapseInfo_;		//!< flag to inform whether to include synapse info in fpSave_
 };
 #endif
