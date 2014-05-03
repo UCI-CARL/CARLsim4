@@ -154,6 +154,9 @@ CARLsim::CARLsim(std::string netName, simMode_t simMode, loggerMode_t loggerMode
 }
 
 CARLsim::~CARLsim() {
+	// save simulation
+	saveSimulation(def_save_fileName_,def_save_synapseInfo_);
+
 	// deallocate all dynamically allocated structures
 	if (snn_!=NULL)
 		delete snn_;
@@ -167,34 +170,27 @@ void CARLsim::CARLsimInit() {
 
 	// set default time constants for synaptic current decay
 	// TODO: add ref
-	def_tdAMPA_  = 5;	// default decay time for AMPA (ms)
-	def_trNMDA_  = 0;	// default rise time for NMDA (ms)
-	def_tdNMDA_  = 150;	// default decay time for NMDA (ms)
-	def_tdGABAa_ = 6;	// default decay time for GABAa (ms)
-	def_trGABAb_ = 0;   // default rise time for GABAb (ms)
-	def_tdGABAb_ = 150;	// default decay time for GABAb (ms)
+	setDefaultConductanceTimeConstants(5, 0, 150, 6, 0, 150);
 
 	// set default values for STDP params
 	// TODO: add ref
+	// TODO: make STDP type part of default func
 	def_STDP_type_      = STANDARD;
-	def_STDP_alphaLTP_ = 0.001f;
-	def_STDP_tauLTP_   = 20.0f;
-	def_STDP_alphaLTD_ = 0.0012f;
-	def_STDP_tauLTD_   = 20.0f;
+	setDefaultSTDPparams(0.001f, 20.0f, 0.0012f, 20.0f);
 
 	// set default values for STP params
 	// TODO: add ref
-	def_STP_U_exc_  = 0.2f;
-	def_STP_tau_u_exc_ = 20.0f;
-	def_STP_tau_x_exc_ = 700.0f;
-	def_STP_U_inh_  = 0.5f;
-	def_STP_tau_u_inh_ = 1000.0f;
-	def_STP_tau_x_inh_ = 800.0f;
+	setDefaultSTPparams(EXCITATORY_NEURON, 0.2f, 20.0f, 700.0f);
+	setDefaultSTPparams(INHIBITORY_NEURON, 0.5f, 1000.0f, 800.0f);
 
 	// set default homeostasis params
 	// TODO: add ref
-	def_homeo_scale_ = 0.1f;
-	def_homeo_avgTimeScale_ = 10.f;
+	setDefaultHomeostasisParams(0.1f, 10.0f);
+
+	// set default save sim params
+	// TODO: when we run executable from local dir, put save file in results/
+//	setDefaultSaveOptions("results/sim_"+netName_+".dat",false);
+	setDefaultSaveOptions("sim_"+netName_+".dat",false);
 }
 
 
@@ -532,7 +528,6 @@ void CARLsim::setWeightAndWeightChangeUpdate(updateIterval_t updateWtInterval, u
 int CARLsim::runNetwork(int nSec, int nMsec, bool copyState) {
 	if (!hasRunNetwork_) {
 		handleUserWarnings();	// before running network, make sure user didn't provoque any user warnings
-//		printSimulationSpecs(); // first time around, show simMode etc.
 	}
 
 	hasRunNetwork_ = true;
@@ -541,6 +536,15 @@ int CARLsim::runNetwork(int nSec, int nMsec, bool copyState) {
 }
 
 // +++++++++ PUBLIC METHODS: LOGGING / PLOTTING +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
+
+void CARLsim::saveSimulation(std::string fileName, bool saveSynapseInfo) {
+	FILE* fpSave = fopen(fileName.c_str(),"wb");
+	UserErrors::assertTrue(fpSave!=NULL,UserErrors::FILE_CANNOT_OPEN,fileName);
+
+	snn_->saveSimulation(fpSave,saveSynapseInfo);
+
+	fclose(fpSave);
+}
 
 // sets update cycle for showing network status
 void CARLsim::setLogCycle(int showStatusCycle) {
@@ -665,11 +669,6 @@ void CARLsim::updateNetwork(bool resetFiringInfo, bool resetWeights) {
 	snn_->updateNetwork(resetFiringInfo,resetWeights);
 }
 
-// writes network state to file
-void CARLsim::writeNetwork(FILE* fid) {
-	snn_->writeNetwork(fid);
-}
-
 // function writes population weights from gIDpre to gIDpost to file fname in binary.
 void CARLsim::writePopWeights(std::string fname, int gIDpre, int gIDpost, int configId) {
 	std::string funcName = "writePopWeights("+fname+")";
@@ -766,10 +765,10 @@ int tdGABAb) {
 	std::stringstream funcName;	funcName << "setDefaultConductanceTimeConstants(" << tdAMPA << "," << trNMDA << 
 		"," << tdNMDA << "," << tdGABAa << "," << trGABAb << "," << tdGABAb << ")";
 	UserErrors::assertTrue(tdAMPA>0, UserErrors::MUST_BE_POSITIVE, funcName.str(), "tdAMPA");
-	UserErrors::assertTrue(trNMDA>0, UserErrors::MUST_BE_POSITIVE, funcName.str(), "trNMDA");
+	UserErrors::assertTrue(trNMDA>=0, UserErrors::CANNOT_BE_NEGATIVE, funcName.str(), "trNMDA");
 	UserErrors::assertTrue(tdNMDA>0, UserErrors::MUST_BE_POSITIVE, funcName.str(), "tdNMDA");
 	UserErrors::assertTrue(tdGABAa>0, UserErrors::MUST_BE_POSITIVE, funcName.str(), "tdGABAa");
-	UserErrors::assertTrue(trGABAb>0, UserErrors::MUST_BE_POSITIVE, funcName.str(), "trGABAb");
+	UserErrors::assertTrue(trGABAb>=0, UserErrors::CANNOT_BE_NEGATIVE, funcName.str(), "trGABAb");
 	UserErrors::assertTrue(tdGABAb>0, UserErrors::MUST_BE_POSITIVE, funcName.str(), "tdGABAb");
 	UserErrors::assertTrue(trNMDA!=tdNMDA, UserErrors::CANNOT_BE_IDENTICAL, funcName.str(), "trNMDA and tdNMDA");
 	UserErrors::assertTrue(trGABAb!=tdGABAb, UserErrors::CANNOT_BE_IDENTICAL, funcName.str(), "trGABAb and tdGABAb");
@@ -787,6 +786,17 @@ void CARLsim::setDefaultHomeostasisParams(float homeoScale, float avgTimeScale) 
 
 	def_homeo_scale_ = homeoScale;
 	def_homeo_avgTimeScale_ = avgTimeScale;
+}
+
+void CARLsim::setDefaultSaveOptions(std::string fileName, bool saveSynapseInfo) {
+	def_save_fileName_ = fileName;
+	def_save_synapseInfo_ = saveSynapseInfo;
+
+	// try to open save file to make sure we have permission (so the user immediately knows about the error and doesn't
+	// have to wait until their simulation run has ended)
+	FILE* fpTry = fopen(def_save_fileName_.c_str(),"wb");
+	UserErrors::assertTrue(fpTry!=NULL,UserErrors::FILE_CANNOT_OPEN,"Default save file",def_save_fileName_);
+	fclose(fpTry);
 }
 
 // set default values for STDP params
@@ -846,15 +856,5 @@ void CARLsim::handleUserWarnings() {
 			fprintf(stdout,"exiting...\n");
 			exit(1);
 		}
-	}
-}
-
-// print all simulation specs
-void CARLsim::printSimulationSpecs() {
-	if (simMode_==CPU_MODE) {
-		fprintf(stdout,"CPU_MODE, enablePrint=%s, copyState=%s\n\n",enablePrint_?"on":"off",copyState_?"on":"off");
-	} else {
-		fprintf(stdout,"GPU_MODE, GPUid=%d, enablePrint=%s, copyState=%s\n\n",ithGPU_,enablePrint_?"on":"off",
-					copyState_?"on":"off");
 	}
 }

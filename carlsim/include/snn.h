@@ -403,7 +403,7 @@ public:
 	/*
 	 * \param fid file pointer
 	 */
-	void writeNetwork(FILE* fid);
+	void saveSimulation(FILE* fid, bool saveSynapseInfo=false);
 
 	//! function writes population weights from gIDpre to gIDpost to file fname in binary.
 	void writePopWeights(std::string fname, int gIDpre, int gIDpost, int configId);

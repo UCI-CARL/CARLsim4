@@ -62,12 +62,16 @@
 
 
 
+
+class CpuSNN; // forward-declaration of private implementation
+
 /*!
- * \brief CARLsim User Interface
+ * \brief CARLsim User Interface.
  * This class provides a user interface to the public sections of CARLsimCore source code. Example networks that use
  * this methodology can be found in the examples/ directory. Documentation is available on our website.
  *
  * This file is organized into different sections in the following way:
+ * \verbatim
  *  ├── Public section
  *  │     ├── Public methods
  *  │     │     ├── Constructor / destructor
@@ -81,19 +85,16 @@
  *  └── Private section 
  *        ├── Private methods
  *        └── Private properties
+ * \endverbatim
  * Within these sections, methods and properties are ordered alphabetically.
  * 
  */
-
-class CpuSNN; // forward-declaration of private implementation
-
 class CARLsim {
 public:
 	// +++++ PUBLIC METHODS: CONSTRUCTOR / DESTRUCTOR +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
 	/*!
-	 * \brief CARLsim constructor
-	 *
+	 * \brief CARLsim constructor.
 	 * Creates a new instance of class CARLsim. All input arguments are optional, but if specified will be constant
 	 * throughout the lifetime of the CARLsim object.
 	 *
@@ -106,12 +107,14 @@ public:
 	 * and errors are printed to console), SILENT (e.g., for benchmarking, where no output is generated at all), or
 	 * CUSTOM (where the user can specify the file pointers of all log files).
 	 * In summary, messages are printed to the following locations, depending on the logger mode:
+	 * \verbatim
 	 *                 |    USER    | DEVELOPER  |  SHOWTIME  |   SILENT   |  CUSTOM
 	 * ----------------|------------|------------|------------|------------|---------
 	 * Status msgs     |   stdout   |   stdout   | /dev/null  | /dev/null  |    ?
 	 * Errors/warnings |   stderr   |   stderr   |   stderr   | /dev/null  |    ?
 	 * Debug msgs      | /dev/null  |   stdout   | /dev/null  | /dev/null  |    ?
 	 * All msgs        | debug.log  | debug.log  |  debug.log | debug.log  |    ?
+	 * \endverbatim
 	 * Location of the debug log file can be set in any mode using CARLsim::setLogDebugFp.
 	 * In mode CUSTOM, the other file pointers can be set using CARLsim::setLogsFp.
 	 *
@@ -132,6 +135,7 @@ public:
 
 	/*!
 	 * \brief Connects a presynaptic to a postsynaptic group using fixed/plastic weights and a range of delay values
+	 *
 	 * This function is a shortcut to create synaptic connections from a pre-synaptic group grpId1 to a post-synaptic
 	 * group grpId2 using a pre-defined primitive type (such as "full", "one-to-one", or "random"). Synapse weights 
 	 * will stay the same throughout the simulation (SYN_FIXED, no plasticity). All synapses will have the same delay.
@@ -189,6 +193,7 @@ public:
 	//! Sets default values for conduction decays or disables COBA if isSet==false
 	/*!
 	 * \brief Sets default values for conduction decay and rise times or disables COBA alltogether
+	 *
 	 * This function sets the time constants for the decay of AMPA, NMDA, GABA, and GABAb, and the rise times for
 	 * NMDA and GABAb. These constants will be applied to all connections in the network. Set isSet to false to run
 	 * your simulation in CUBA mode.
@@ -201,6 +206,7 @@ public:
 
 	/*!
 	 * \brief Sets custom values for conduction decay times (instantaneous rise time) or disables COBA alltogether
+	 *
 	 * This function sets the time constants for the decay of AMPA, NMDA, GABAa, and GABAb. The decay constants will be
 	 * applied to all connections in the network. Set isSet to false to run your simulation in CUBA mode.
 	 * The NMDA current is voltage dependent (see Izhikevich et al., 2004).
@@ -216,6 +222,7 @@ public:
 
 	/*!
 	 * \brief Sets custom values for conduction rise and decay times or disables COBA alltogether
+	 *
 	 * This function sets the time constants for the rise and decay time of AMPA, NMDA, GABAa, and GABAb. AMPA and GABAa
 	 * will always have instantaneous rise time. The rise times of NMDA and GABAb can be set manually. They need to be
 	 * strictly smaller than the decay time. Set isSet to false to run your simulation in CUBA mode.
@@ -250,8 +257,10 @@ public:
 	//! Sets Izhikevich params a, b, c, and d of a neuron group. 
 	void setNeuronParameters(int grpId, float izh_a, float izh_b, float izh_c, float izh_d, int configId=ALL);
 
-	//! Sets baseline concentration and decay time constant of neuromodulators (DP, 5HT, ACh, NE) for a neuron group.
 	/*!
+	 * \brief Sets baseline concentration and decay time constant of neuromodulators (DP, 5HT, ACh, NE) for a neuron
+	 * group.
+	 *
 	 * \param groupId the symbolic name of a group
 	 * \param baseDP  the baseline concentration of Dopamine
 	 * \param tauDP the decay time constant of Dopamine
@@ -280,10 +289,12 @@ public:
 
 	/*!
 	 * \brief Sets STP params U, tau_u, and tau_x of a neuron group (pre-synaptically)
+	 *
 	 * CARLsim implements the short-term plasticity model of (Tsodyks & Markram, 1998; Mongillo, Barak, & Tsodyks, 2008)
-	 * du/dt = -u/STP_tau_u + STP_U * (1-u-) * \delta(t-t_spk)
-	 * dx/dt = (1-x)/STP_tau_x - u+ * x- * \delta(t-t_spk)
-	 * dI/dt = -I/tau_S + A * u+ * x- * \delta(t-t_spk)
+	 * \f{eqnarray}
+	 * \frac{du}{dt} & = & \frac{-u}{STP\_tau\_u} + STP\_U  (1-u^-)  \delta(t-t_{spk}) \\
+	 * \frac{dx}{dt} & = & \frac{1-x}{STP\_tau\_x} - u^+  x^-  \delta(t-t_{spk}) \\
+	 * \frac{dI}{dt} & = & \frac{-I}{\tau_S} + A  u^+  x-  \delta(t-t_{spk}) \f}
 	 * where u- means value of variable u right before spike update, and x+ means value of variable x right after
 	 * the spike update, and A is the synaptic weight.
 	 * The STD effect is modeled by a normalized variable (0<=x<=1), denoting the fraction of resources that remain
@@ -295,6 +306,7 @@ public:
 	 * with time constant STP_tau_x (\tau_D).
 	 * \param[in] grpId       pre-synaptic group id. STP will apply to all neurons of that group!
 	 * \param[in] isSet       a flag whether to enable/disable STP
+	 * \param[in] STP_U       increment of u induced by a spike
 	 * \param[in] STP_tau_u   decay constant of u (\tau_F)
 	 * \param[in] STP_tau_x   decay constant of x (\tau_D)
 	 * \param[in] configId    configuration ID of group
@@ -328,10 +340,14 @@ public:
 
 	// +++++ PUBLIC METHODS: LOGGING / PLOTTING +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
+	//! saves important simulation and network infos to file
+	void saveSimulation(std::string fileName, bool saveSynapseInfo=true);
+
 	// FIXME: needs overhaul
 	//! Sets update cycle for log messages
 	/*!
 	 * \brief Sets update cycle for printing the network status (seconds)
+	 *
 	 * Network status includes includes spiking and plasticity information (SpikeMonitor updates, weight changes, etc.).
 	 * Set cycle to -1 to disable.
 	 * \param[in] showStatusCycle how often to print network state (seconds)
@@ -364,6 +380,7 @@ public:
 
 	/*!
 	 * \brief Reassigns fixed weights to values passed into the function in a single 1D float matrix (weightMatrix)
+	 *
 	 * The user passes the connection ID (connectID), the weightMatrix, the matrixSize, and 
 	 * configuration ID (configID).  This function only works for fixed synapses and for connections of type
 	 * CONN_USER_DEFINED. Only the weights are changed, not the maxWts, delays, or connected values
@@ -374,6 +391,7 @@ public:
 
 	/*!
 	 * \brief reset Spike Counter to zero
+	 *
 	 * Manually resets the spike buffers of a Spike Counter to zero (for a specific group).
 	 * Buffers get reset to zero automatically after recordDur. However, you can reset the buffer manually at any
 	 * point in time.
@@ -384,6 +402,7 @@ public:
 
 	/*!
 	 * \brief Sets a connection monitor for a group, custom ConnectionMonitor class
+	 *
 	 * To retrieve connection status, a connection-monitoring callback mechanism is used. This mechanism allows the user
 	 * to monitor connection status between groups. Connection monitors are registered for two groups (i.e., pre- and
 	 * post- synaptic groups) and are called automatically by the simulator every second.
@@ -403,6 +422,7 @@ public:
 
 	/*!
 	 * \brief A Spike Counter keeps track of the number of spikes per neuron in a group.
+	 *
 	 * A Spike Counter keeps track of all spikes per neuron for a certain time period (recordDur).
 	 * After that, the spike buffers get reset to zero number of spikes.
 	 * Works for excitatory/inhibitory neurons.
@@ -422,6 +442,7 @@ public:
 
 	/*!
 	 * \brief Sets a spike monitor for a group, custom SpikeMonitor class
+	 *
 	 * You can either write your own class that derives from SpikeMonitor, and directly access the neuron IDs and
 	 * spike times in 1000 ms bins, or you can set spikeMon=NULL, in which case the spike counts will simply be
 	 * output to console every 1000 ms.
@@ -438,9 +459,6 @@ public:
 	//! Resets either the neuronal firing rate information by setting resetFiringRate = true and/or the
 	//! weight values back to their default values by setting resetWeights = true.
 	void updateNetwork(bool resetFiringInfo, bool resetWeights);
-
-	//!< writes the network state to file
-	void writeNetwork(FILE* fid);
 
 	//! function writes population weights from gIDpre to gIDpost to file fname in binary.
 	void writePopWeights(std::string fname, int gIDpre, int gIDpost, int configId=0);
@@ -472,6 +490,7 @@ public:
 
 	/*!
 	 * \brief Writes weights from synaptic connections from gIDpre to gIDpost.  Returns a pointer to the weights
+	 *
 	 * and the size of the 1D array in size.  gIDpre(post) is the group ID for the pre(post)synaptic group, 
 	 * weights is a pointer to a single dimensional array of floats, size is the size of that array which is 
 	 * returned to the user, and configID is the configuration ID of the SNN.  NOTE: user must free memory from
@@ -488,6 +507,7 @@ public:
 
 	/*!
 	 * \brief return the number of spikes per neuron for a certain group
+	 *
 	 * A Spike Counter keeps track of all spikes per neuron for a certain time period (recordDur) at any point in time.
 	 * \param[in] grpId	   the group for which you want the spikes (cannot be ALL)
 	 * \param[in] configId the configuration ID (cannot be ALL)
@@ -510,6 +530,7 @@ public:
 
 	/*!
 	 * \brief Sets enableGpuSpikeCntPtr to true or false.  True allows getSpikeCntPtr_GPU to copy firing
+	 *
 	 * state information from GPU kernel to cpuNetPtrs.  Warning: setting this flag to true will slow down
 	 * the simulation significantly.
 	 */
@@ -520,6 +541,7 @@ public:
 
 	/*!
 	 * \brief Sets default values for conductance time constants
+	 *
 	 * \param[in] tdAMPA   time constant for AMPA decay (ms)
 	 * \param[in] trNMDA   time constant for NMDA rise (ms)
 	 * \param[in] tdNMDA   time constant for NMDA decay (ms)
@@ -531,6 +553,9 @@ public:
 
 	//! sets default homeostasis params
 	void setDefaultHomeostasisParams(float homeoScale, float avgTimeScale);
+
+	//! sets default options for save file
+	void setDefaultSaveOptions(std::string fileName, bool saveSynapseInfo);
 
 	//! sets default values for STDP params
 	void setDefaultSTDPparams(float alphaLTP, float tauLTP, float alphaLTD, float tauLTD);
@@ -548,7 +573,6 @@ private:
 
 	void handleUserWarnings(); 			//!< print all user warnings, continue only after user input
 
-	void printSimulationSpecs();
 
 	// +++++ PRIVATE PROPERTIES +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
@@ -580,12 +604,14 @@ private:
 	int def_trGABAb_;				//!< default value for GABAb rise (ms)
 	int def_tdGABAb_;				//!< default value for GABAb decay (ms)
 
+	// all default values for STDP
 	stdpType_t def_STDP_type_;		//!< default mode for STDP
 	float def_STDP_alphaLTP_;		//!< default value for LTP amplitude
 	float def_STDP_tauLTP_;			//!< default value for LTP decay (ms)
 	float def_STDP_alphaLTD_;		//!< default value for LTD amplitude
 	float def_STDP_tauLTD_;			//!< default value for LTD decay (ms)
 
+	// all default values for STP
 	float def_STP_U_exc_;			//!< default value for STP U excitatory
 	float def_STP_tau_u_exc_;		//!< default value for STP u decay (\tau_F) excitatory (ms)
 	float def_STP_tau_x_exc_;		//!< default value for STP x decay (\tau_D) excitatory (ms)
@@ -593,7 +619,12 @@ private:
 	float def_STP_tau_u_inh_;		//!< default value for STP u decay (\tau_F) inhibitory (ms)
 	float def_STP_tau_x_inh_;		//!< default value for STP x decay (\tau_D) inhibitory (ms)
 
+	// all default values for homeostasis
 	float def_homeo_scale_;			//!< default homeoScale
 	float def_homeo_avgTimeScale_;	//!< default avgTimeScale
+
+	// all default values for save file
+	std::string def_save_fileName_;	//!< file name for saving network info
+	bool def_save_synapseInfo_;		//!< flag to inform whether to include synapse info in fpSave_
 };
 #endif

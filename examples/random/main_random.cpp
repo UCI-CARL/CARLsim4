@@ -93,10 +93,6 @@ int main()
 	//run for 10 seconds
 	sim.runNetwork(10,0);
 
-	FILE* nid = fopen("examples/random/results/network.dat","wb");
-	sim.writeNetwork(nid);
-	fclose(nid);
-
 	return 0;
 }
 
