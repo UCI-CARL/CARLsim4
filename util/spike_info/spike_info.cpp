@@ -84,7 +84,7 @@ std::vector<float> SpikeInfo::getNeuronFiringRate(){
 		exit(1);
 	}
 }
-
+// need to do error check on interface
 int SpikeInfo::getNumNeuronsWithFiringRate(float min, float max){
 	this->getSortedNeuronFiringRate();
 	std::vector<float>::const_iterator it;
@@ -101,6 +101,7 @@ int SpikeInfo::getNumSilentNeurons(){
 	return numSilent;
 }
 
+// need to do error check on interface
 float SpikeInfo::getPercentNeuronsWithFiringRate(float min, float max){
 	this->getSortedNeuronFiringRate();
 	std::vector<float>::const_iterator it;
