@@ -155,6 +155,9 @@ CARLsim::CARLsim(std::string netName, simMode_t simMode, loggerMode_t loggerMode
 }
 
 CARLsim::~CARLsim() {
+	// save simulation
+	saveSimulation(def_save_fileName_,def_save_synapseInfo_);
+
 	// deallocate all dynamically allocated structures
 	if (snn_!=NULL)
 		delete snn_;
@@ -168,34 +171,27 @@ void CARLsim::CARLsimInit() {
 
 	// set default time constants for synaptic current decay
 	// TODO: add ref
-	def_tdAMPA_  = 5;	// default decay time for AMPA (ms)
-	def_trNMDA_  = 0;	// default rise time for NMDA (ms)
-	def_tdNMDA_  = 150;	// default decay time for NMDA (ms)
-	def_tdGABAa_ = 6;	// default decay time for GABAa (ms)
-	def_trGABAb_ = 0;   // default rise time for GABAb (ms)
-	def_tdGABAb_ = 150;	// default decay time for GABAb (ms)
+	setDefaultConductanceTimeConstants(5, 0, 150, 6, 0, 150);
 
 	// set default values for STDP params
 	// TODO: add ref
+	// TODO: make STDP type part of default func
 	def_STDP_type_      = STANDARD;
-	def_STDP_alphaLTP_ = 0.001f;
-	def_STDP_tauLTP_   = 20.0f;
-	def_STDP_alphaLTD_ = 0.0012f;
-	def_STDP_tauLTD_   = 20.0f;
+	setDefaultSTDPparams(0.001f, 20.0f, 0.0012f, 20.0f);
 
 	// set default values for STP params
 	// TODO: add ref
-	def_STP_U_exc_  = 0.2f;
-	def_STP_tau_u_exc_ = 20.0f;
-	def_STP_tau_x_exc_ = 700.0f;
-	def_STP_U_inh_  = 0.5f;
-	def_STP_tau_u_inh_ = 1000.0f;
-	def_STP_tau_x_inh_ = 800.0f;
+	setDefaultSTPparams(EXCITATORY_NEURON, 0.2f, 20.0f, 700.0f);
+	setDefaultSTPparams(INHIBITORY_NEURON, 0.5f, 1000.0f, 800.0f);
 
 	// set default homeostasis params
 	// TODO: add ref
-	def_homeo_scale_ = 0.1f;
-	def_homeo_avgTimeScale_ = 10.f;
+	setDefaultHomeostasisParams(0.1f, 10.0f);
+
+	// set default save sim params
+	// TODO: when we run executable from local dir, put save file in results/
+//	setDefaultSaveOptions("results/sim_"+netName_+".dat",false);
+	setDefaultSaveOptions("sim_"+netName_+".dat",false);
 }
 
 
@@ -206,8 +202,9 @@ void CARLsim::CARLsimInit() {
 
 // +++++++++ PUBLIC METHODS: SETTING UP A SIMULATION ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
-// Connects a presynaptic to a postsynaptic group using fixed weights and a single delay value
-short int CARLsim::connect(int grpId1, int grpId2, const std::string& connType, float wt, float connProb, uint8_t delay) {
+// Connects a presynaptic to a postsynaptic group using one of the primitive types
+short int CARLsim::connect(int grpId1, int grpId2, const std::string& connType, RangeWeight wt, float connProb,
+		RangeDelay delay, bool synWtType, float mulSynFast, float mulSynSlow) {
 	std::string funcName = "connect(\""+getGroupName(grpId1,0)+"\",\""+getGroupName(grpId2,0)+"\")";
 	std::stringstream grpId1str; grpId1str << "Group Id " << grpId1;
 	std::stringstream grpId2str; grpId2str << "Group Id " << grpId2;
@@ -215,52 +212,27 @@ short int CARLsim::connect(int grpId1, int grpId2, const std::string& connType, 
 	UserErrors::assertTrue(grpId2!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName, grpId2str.str());
 	UserErrors::assertTrue(!isPoissonGroup(grpId2), UserErrors::WRONG_NEURON_TYPE, funcName, grpId2str.str() + 
 		" is PoissonGroup, connect");
-	UserErrors::assertTrue(!isExcitatoryGroup(grpId1) || wt>0, UserErrors::MUST_BE_POSITIVE, funcName, "wt");
-	UserErrors::assertTrue(!isInhibitoryGroup(grpId1) || wt<0, UserErrors::MUST_BE_NEGATIVE, funcName, "wt");
+	UserErrors::assertTrue(wt.max>0, UserErrors::MUST_BE_POSITIVE, funcName, "wt.max");
+	UserErrors::assertTrue(wt.min>=0, UserErrors::CANNOT_BE_NEGATIVE, funcName, "wt.min");
+	UserErrors::assertTrue(wt.init>=0, UserErrors::CANNOT_BE_NEGATIVE, funcName, "wt.init");
+	UserErrors::assertTrue(synWtType==SYN_PLASTIC || synWtType==SYN_FIXED && wt.init==wt.max,
+		UserErrors::MUST_BE_IDENTICAL, funcName, "For fixed synapses, initWt and maxWt");
+	UserErrors::assertTrue(delay.min>0, UserErrors::MUST_BE_POSITIVE, funcName, "delay.min");
 	UserErrors::assertTrue(!hasRunNetwork_, UserErrors::NETWORK_ALREADY_RUN, funcName); // can't change setup after run
 	UserErrors::assertTrue(carlsimState_ == CONFIG_STATE, UserErrors::INVALID_API_AT_CURRENT_STATE, funcName);
 
-	return snn_->connect(grpId1, grpId2, connType, wt, wt, connProb, delay, delay, 1.0f, 1.0f, SYN_FIXED);
-}
+	// TODO: enable support for non-zero min
+	if (abs(wt.min)>1e-15) {
+		std::cerr << funcName << ": " << wt << ". Non-zero minimum weights are not yet supported.\n" << std::endl;
+		assert(false);
+	}
 
-// shortcut to create SYN_FIXED connections with one weight / delay and two scaling factors for synaptic currents
-short int CARLsim::connect(int grpId1, int grpId2, const std::string& connType, float wt, float connProb, uint8_t delay,
-							float mulSynFast, float mulSynSlow) {
-	std::string funcName = "connect(\""+getGroupName(grpId1,0)+"\",\""+getGroupName(grpId2,0)+"\")";
-	std::stringstream grpId1str; grpId1str << "Group Id " << grpId1;
-	std::stringstream grpId2str; grpId2str << "Group Id " << grpId2;
-	UserErrors::assertTrue(grpId1!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName, grpId1str.str()); // grpId can't be ALL
-	UserErrors::assertTrue(grpId2!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName, grpId2str.str());
-	UserErrors::assertTrue(!isPoissonGroup(grpId2), UserErrors::WRONG_NEURON_TYPE, funcName, grpId2str.str() + 
-		" is PoissonGroup, connect");
-	UserErrors::assertTrue(!isExcitatoryGroup(grpId1) || wt>0, UserErrors::MUST_BE_POSITIVE, funcName, "wt");
-	UserErrors::assertTrue(!isInhibitoryGroup(grpId1) || wt<0, UserErrors::MUST_BE_NEGATIVE, funcName, "wt");
-	UserErrors::assertTrue(!hasRunNetwork_, UserErrors::NETWORK_ALREADY_RUN, funcName); // can't change setup after run
-	UserErrors::assertTrue(carlsimState_ == CONFIG_STATE, UserErrors::INVALID_API_AT_CURRENT_STATE, funcName);
+	// TODO: clean up internal representation of inhibitory weights (minus sign is unnecessary)
+	// adjust weight struct depending on connection type (inh vs exc)
+	double wtSign = isExcitatoryGroup(grpId1) ? 1.0 : -1.0;
 
-
-	return snn_->connect(grpId1,grpId2,connType,wt,wt,connProb,delay,delay,mulSynFast,mulSynSlow,SYN_FIXED);
-}
-
-// shortcut to create SYN_FIXED/SYN_PLASTIC connections with initWt/maxWt, minDelay/maxDelay, but to omit
-// scaling factors for synaptic conductances (default is 1.0 for both)
-short int CARLsim::connect(int grpId1, int grpId2, const std::string& connType, float initWt, float maxWt,
-							float connProb,	uint8_t minDelay, uint8_t maxDelay, bool synWtType)
-{
-	std::string funcName = "connect(\""+getGroupName(grpId1,0)+"\",\""+getGroupName(grpId2,0)+"\")";
-	std::stringstream grpId1str; grpId1str << ". Group Id " << grpId1;
-	std::stringstream grpId2str; grpId2str << ". Group Id " << grpId2;
-	UserErrors::assertTrue(grpId1!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName, grpId1str.str()); // grpId can't be ALL
-	UserErrors::assertTrue(grpId2!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName, grpId2str.str());
-	UserErrors::assertTrue(!isPoissonGroup(grpId2), UserErrors::WRONG_NEURON_TYPE, funcName, grpId2str.str() + 
-		" is PoissonGroup, connect");
-	UserErrors::assertTrue(!isExcitatoryGroup(grpId1) || maxWt>0, UserErrors::MUST_BE_POSITIVE, funcName, "maxWt");
-	UserErrors::assertTrue(!isInhibitoryGroup(grpId1) || maxWt<0, UserErrors::MUST_BE_NEGATIVE, funcName, "maxWt");
-	UserErrors::assertTrue(initWt*maxWt>=0, UserErrors::MUST_HAVE_SAME_SIGN, funcName, "initWt and maxWt");
-	UserErrors::assertTrue(!hasRunNetwork_, UserErrors::NETWORK_ALREADY_RUN, funcName); // can't change setup after run
-	UserErrors::assertTrue(carlsimState_ == CONFIG_STATE, UserErrors::INVALID_API_AT_CURRENT_STATE, funcName);
-
-	return snn_->connect(grpId1,grpId2,connType,initWt,maxWt,connProb,minDelay,maxDelay,1.0f,1.0f,synWtType);
+	return snn_->connect(grpId1, grpId2, connType, wtSign*wt.init, wtSign*wt.max, connProb, delay.min, delay.max,
+		mulSynFast,	mulSynSlow, synWtType);
 }
 
 // custom connectivity profile
@@ -431,7 +403,7 @@ void CARLsim::setHomeoBaseFiringRate(int grpId, float baseFiring, float baseFiri
 	UserErrors::assertTrue(!hasRunNetwork_, UserErrors::NETWORK_ALREADY_RUN, funcName); // can't change setup after run
 	UserErrors::assertTrue(carlsimState_ == CONFIG_STATE, UserErrors::INVALID_API_AT_CURRENT_STATE, funcName);
 
-	hasSetHomeoBaseFiringALL_ = grpId=ALL; // adding groups after this will not have base firing set
+	hasSetHomeoBaseFiringALL_ = grpId; // adding groups after this will not have base firing set
 
 	snn_->setHomeoBaseFiringRate(grpId, baseFiring, baseFiringSD, configId);
 }
@@ -584,7 +556,6 @@ int CARLsim::runNetwork(int nSec, int nMsec, bool copyState) {
 
 	if (!hasRunNetwork_) {
 		handleUserWarnings();	// before running network, make sure user didn't provoque any user warnings
-//		printSimulationSpecs(); // first time around, show simMode etc.
 	}
 
 	hasRunNetwork_ = true;
@@ -604,6 +575,15 @@ void CARLsim::setupNetwork(bool removeTempMemory) {
 }
 
 // +++++++++ PUBLIC METHODS: LOGGING / PLOTTING +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
+
+void CARLsim::saveSimulation(std::string fileName, bool saveSynapseInfo) {
+	FILE* fpSave = fopen(fileName.c_str(),"wb");
+	UserErrors::assertTrue(fpSave!=NULL,UserErrors::FILE_CANNOT_OPEN,fileName);
+
+	snn_->saveSimulation(fpSave,saveSynapseInfo);
+
+	fclose(fpSave);
+}
 
 // sets update cycle for showing network status
 void CARLsim::setLogCycle(int showStatusCycle) {
@@ -660,7 +640,7 @@ void CARLsim::setConnectionMonitor(int grpIdPre, int grpIdPost, ConnectionMonito
 	std::string funcName = "setConnectionMonitor(\""+getGroupName(grpIdPre,configId)+"\",ConnectionMonitor*)";
 	UserErrors::assertTrue(!hasRunNetwork_, UserErrors::NETWORK_ALREADY_RUN, funcName); // can't change setup after run
 	UserErrors::assertTrue(grpIdPre!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName, "grpIdPre");		// groupId can't be ALL
-	//UserErrors::assertTrue(grpIdPost!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName, "grpIdPost");		// groupId can't be ALL
+	UserErrors::assertTrue(grpIdPost!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName, "grpIdPost");		// groupId can't be ALL
 
 	snn_->setConnectionMonitor(grpIdPre, grpIdPost, new ConnectionMonitorCore(this, connectionMon),configId);
 }
@@ -734,11 +714,6 @@ void CARLsim::setSpikeRate(int grpId, PoissonRate* spikeRate, int refPeriod, int
 // weight values back to their default values by setting resetWeights = true.
 void CARLsim::updateNetwork(bool resetFiringInfo, bool resetWeights) {
 	snn_->updateNetwork(resetFiringInfo,resetWeights);
-}
-
-// writes network state to file
-void CARLsim::writeNetwork(FILE* fid) {
-	snn_->writeNetwork(fid);
 }
 
 // function writes population weights from gIDpre to gIDpost to file fname in binary.
@@ -837,10 +812,10 @@ int tdGABAb) {
 	std::stringstream funcName;	funcName << "setDefaultConductanceTimeConstants(" << tdAMPA << "," << trNMDA << 
 		"," << tdNMDA << "," << tdGABAa << "," << trGABAb << "," << tdGABAb << ")";
 	UserErrors::assertTrue(tdAMPA>0, UserErrors::MUST_BE_POSITIVE, funcName.str(), "tdAMPA");
-	UserErrors::assertTrue(trNMDA>0, UserErrors::MUST_BE_POSITIVE, funcName.str(), "trNMDA");
+	UserErrors::assertTrue(trNMDA>=0, UserErrors::CANNOT_BE_NEGATIVE, funcName.str(), "trNMDA");
 	UserErrors::assertTrue(tdNMDA>0, UserErrors::MUST_BE_POSITIVE, funcName.str(), "tdNMDA");
 	UserErrors::assertTrue(tdGABAa>0, UserErrors::MUST_BE_POSITIVE, funcName.str(), "tdGABAa");
-	UserErrors::assertTrue(trGABAb>0, UserErrors::MUST_BE_POSITIVE, funcName.str(), "trGABAb");
+	UserErrors::assertTrue(trGABAb>=0, UserErrors::CANNOT_BE_NEGATIVE, funcName.str(), "trGABAb");
 	UserErrors::assertTrue(tdGABAb>0, UserErrors::MUST_BE_POSITIVE, funcName.str(), "tdGABAb");
 	UserErrors::assertTrue(trNMDA!=tdNMDA, UserErrors::CANNOT_BE_IDENTICAL, funcName.str(), "trNMDA and tdNMDA");
 	UserErrors::assertTrue(trGABAb!=tdGABAb, UserErrors::CANNOT_BE_IDENTICAL, funcName.str(), "trGABAb and tdGABAb");
@@ -858,6 +833,17 @@ void CARLsim::setDefaultHomeostasisParams(float homeoScale, float avgTimeScale) 
 
 	def_homeo_scale_ = homeoScale;
 	def_homeo_avgTimeScale_ = avgTimeScale;
+}
+
+void CARLsim::setDefaultSaveOptions(std::string fileName, bool saveSynapseInfo) {
+	def_save_fileName_ = fileName;
+	def_save_synapseInfo_ = saveSynapseInfo;
+
+	// try to open save file to make sure we have permission (so the user immediately knows about the error and doesn't
+	// have to wait until their simulation run has ended)
+	FILE* fpTry = fopen(def_save_fileName_.c_str(),"wb");
+	UserErrors::assertTrue(fpTry!=NULL,UserErrors::FILE_CANNOT_OPEN,"Default save file",def_save_fileName_);
+	fclose(fpTry);
 }
 
 // set default values for STDP params
@@ -917,15 +903,5 @@ void CARLsim::handleUserWarnings() {
 			fprintf(stdout,"exiting...\n");
 			exit(1);
 		}
-	}
-}
-
-// print all simulation specs
-void CARLsim::printSimulationSpecs() {
-	if (simMode_==CPU_MODE) {
-		fprintf(stdout,"CPU_MODE, enablePrint=%s, copyState=%s\n\n",enablePrint_?"on":"off",copyState_?"on":"off");
-	} else {
-		fprintf(stdout,"GPU_MODE, GPUid=%d, enablePrint=%s, copyState=%s\n\n",ithGPU_,enablePrint_?"on":"off",
-					copyState_?"on":"off");
 	}
 }

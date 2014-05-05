@@ -71,7 +71,9 @@ float fast_exp(float x)
 }
 
 
-// these are the projections of all 28 space-time filters on to 8 different directions.  In order words, the connection strength and/or probabilty from a V1 cell to an MT cell should be proportional to these values.
+// these are the projections of all 28 space-time filters on to 8 different directions. 
+// In order words, the connection strength and/or probabilty from a V1 cell to an MT cell should be proportional to
+// these values.
 float motion_proj1[28][8] = {{0.000000, 0.259878, 0.935900, 1.187461, 0.867200, 0.162722, 0.000000, 0.000000},
 			{0.110700, 0.000000, 0.000000, 0.000000, 0.314500, 0.971821, 1.184400, 0.827712},
 			{0.845000, 1.192282, 0.970600, 0.309813, 0.000000, 0.000000, 0.000000, 0.132187},
@@ -372,9 +374,7 @@ int main()
 		s.runNetwork(0,frameDur);
 
 		if (i==1) {
-			FILE* nid = fopen((saveFolder+"net.dat").c_str(),"wb");
-			s.writeNetwork(nid);
-			fclose(nid);
+			s.saveSimulation(saveFolder+"net.dat", true);
 		}
 	}
 	fclose(fid);

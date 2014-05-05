@@ -10,9 +10,9 @@
 
 // simple wrapper to assert a statement and print an error message
 void UserErrors::assertTrue(bool statement, errorType errorIfAssertionFails, std::string errorFunc,
-								std::string errorMsgPrefix) {
+								std::string errorMsgPrefix, std::string errorMsgSuffix) {
 	if (!statement) {
-		throwError(errorFunc,errorIfAssertionFails,errorMsgPrefix); // display standard error message
+		throwError(errorFunc,errorIfAssertionFails,errorMsgPrefix,errorMsgSuffix); // display standard error message
 	}
 }
 
@@ -22,7 +22,9 @@ void UserErrors::assertTrue(bool statement, errorType errorIfAssertionFails, std
 /// **************************************************************************************************************** ///
 
 // simple wrapper for displaying standard message per error type
-void UserErrors::throwError(std::string errorFunc, errorType error, std::string errorMsgPrefix) {
+void UserErrors::throwError(std::string errorFunc, errorType error, std::string errorMsgPrefix,
+	std::string errorMsgSuffix) {
+	
 	std::cerr << "\033[31;1m[USER ERROR " << errorFunc << "] \033[0m" << errorMsgPrefix;
 	switch (error) {
 	case ALL_NOT_ALLOWED:
@@ -30,6 +32,9 @@ void UserErrors::throwError(std::string errorFunc, errorType error, std::string 
 		break;
 	case CANNOT_BE_IDENTICAL:
 		std::cerr << " cannot be identical.";
+		break;
+	case CANNOT_BE_LARGER:
+		std::cerr << " cannot be larger than ";
 		break;
 	case CANNOT_BE_NEGATIVE:
 		std::cerr << " cannot be negative.";
@@ -40,9 +45,6 @@ void UserErrors::throwError(std::string errorFunc, errorType error, std::string 
 	case CANNOT_BE_POSITIVE:
 		std::cerr << " cannot be positive.";
 		break;
-	case CANNOT_BE_LARGER:
-		std::cerr << " cannot be lager.";
-		break;
 	case CANNOT_BE_UNKNOWN:
 		std::cerr << " cannot be of type UNKNOWN.";
 		break;
@@ -52,6 +54,8 @@ void UserErrors::throwError(std::string errorFunc, errorType error, std::string 
 	case FILE_CANNOT_OPEN:
 		std::cerr << " could not be opened.";
 		break;
+	case MUST_BE_IDENTICAL:
+		std::cerr << " must be identical.";
 	case MUST_BE_LOGGER_CUSTOM:
 		std::cerr << " must be set to CUSTOM.";
 		break;
@@ -84,6 +88,6 @@ void UserErrors::throwError(std::string errorFunc, errorType error, std::string 
 		std::cerr << ". An unknown error has occurred.";
 		break;
 	}
-	std::cerr << std::endl;
+	std::cerr << errorMsgSuffix << std::endl;
 	exit(EXIT_FAILURE); // abort
 }

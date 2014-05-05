@@ -777,13 +777,7 @@ int main()
 
 	// store network if bool is set
 	if (storeNetwork) {
-		nid = fopen((saveFolder+"net.dat").c_str(),"wb");
-		if (nid==NULL) {
-			printf("ERROR: could not open network file\n");
-			exit(4);
-		}
-		snn.writeNetwork(nid);
-		fclose(nid);
+		snn.saveSimulation(saveFolder+"net.dat", true);
 	}
 
 	fclose(fid); // close input video file

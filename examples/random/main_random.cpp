@@ -64,13 +64,13 @@ int main()
 	sim.setConductances(true,5,150,6,150);
 
 	// make random connections with 10% probability
-	sim.connect(g2,g2,"random",-0.003f,0.1f,1);
+	sim.connect(g2,g2,"random", RangeWeight(0.003),0.1f,RangeDelay(1));
 	// make random connections with 10% probability, and random delays between 1 and 20
-	sim.connect(g1,g2,"random", 0.0025f, 0.005f, 0.1f,  1, 20, SYN_PLASTIC);
-	sim.connect(g1,g1,"random", 0.001f, 0.005f, 0.1f,  1, 20, SYN_PLASTIC);
+	sim.connect(g1,g2,"random", RangeWeight(0.0,0.0025,0.005), 0.1f, RangeDelay(1,20), SYN_PLASTIC);
+	sim.connect(g1,g1,"random", RangeWeight(0.0,0.001,0.005), 0.1f, RangeDelay(1,20), SYN_PLASTIC);
 
 	// 5% probability of connection
-	sim.connect(gin,g1,"random", 0.5f, 0.5f, 0.05f,  1, 20, SYN_FIXED);
+	sim.connect(gin,g1,"random", RangeWeight(0.5), 0.05f, RangeDelay(1,20), SYN_FIXED);
 
 	// here we define and set the properties of the STDP. 
 	float ALPHA_LTP = 0.10f/100, TAU_LTP = 20.0f, ALPHA_LTD = 0.12f/100, TAU_LTD = 20.0f;
@@ -83,7 +83,7 @@ int main()
 	// show network status every 2 secs
 	sim.setLogCycle(2);
 
-	sim.setSpikeMonitor(g1,"examples/ramdom/results/spikes.dat"); // put spike times into spikes.dat
+	sim.setSpikeMonitor(g1,"examples/random/results/spikes.dat"); // put spike times into spikes.dat
 	sim.setSpikeMonitor(g2); // Show basic statistics about g2
 	sim.setSpikeMonitor(gin);
 
@@ -96,10 +96,6 @@ int main()
 
 	//run for 10 seconds
 	sim.runNetwork(10,0);
-
-	FILE* nid = fopen("examples/random/results/network.dat","wb");
-	sim.writeNetwork(nid);
-	fclose(nid);
 
 	return 0;
 }

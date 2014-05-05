@@ -1112,66 +1112,103 @@ void CpuSNN::updateNetwork(bool resetFiringInfo, bool resetWeights) {
 }
 
 // writes network state to file
-void CpuSNN::writeNetwork(FILE* fid) {
-	unsigned int version = 1;
-	fwrite(&version,sizeof(int),1,fid);
-	fwrite(&numGrp,sizeof(int),1,fid);
-	char name[100];
+// handling of file pointer should be handled externally: as far as this function is concerned, it is simply
+// trying to write to file
+void CpuSNN::saveSimulation(FILE* fid, bool saveSynapseInfo) {
+	int tmpInt;
+	float tmpFloat;
 
+	// +++++ WRITE HEADER SECTION +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
+
+	// write file signature
+	tmpInt = 294338571;
+	if (!fwrite(&tmpInt,sizeof(int),1,fid)) CARLSIM_ERROR("saveSimulation fwrite error");
+
+	// write version number
+	tmpFloat = 1.0f;
+	if (!fwrite(&tmpFloat,sizeof(int),1,fid)) CARLSIM_ERROR("saveSimulation fwrite error");
+
+	// write simulation time so far (in seconds)
+	tmpFloat = ((float)simTimeSec) + ((float)simTimeMs)/1000.0f;
+	if (!fwrite(&tmpFloat,sizeof(float),1,fid)) CARLSIM_ERROR("saveSimulation fwrite error");
+
+	// write execution time so far (in seconds)
+	if(simMode_ == GPU_MODE) {
+		stopGPUTiming();
+		tmpFloat = gpuExecutionTime/1000.0f;
+	} else {
+		stopCPUTiming();
+		tmpFloat = cpuExecutionTime/1000.0f;
+	}
+	if (!fwrite(&tmpFloat,sizeof(float),1,fid)) CARLSIM_ERROR("saveSimulation fwrite error");
+
+	// TODO: add more params of interest
+
+	// write network info
+	if (!fwrite(&numN,sizeof(int),1,fid)) CARLSIM_ERROR("saveSimulation fwrite error");
+	if (!fwrite(&preSynCnt,sizeof(int),1,fid)) CARLSIM_ERROR("saveSimulation fwrite error");
+	if (!fwrite(&postSynCnt,sizeof(int),1,fid)) CARLSIM_ERROR("saveSimulation fwrite error");
+	if (!fwrite(&numGrp,sizeof(int),1,fid)) CARLSIM_ERROR("saveSimulation fwrite error");
+
+	// write group info
+	char name[100];
 	for (int g=0;g<numGrp;g++) {
-		fwrite(&grp_Info[g].StartN,sizeof(int),1,fid);
-		fwrite(&grp_Info[g].EndN,sizeof(int),1,fid);
+		if (!fwrite(&grp_Info[g].StartN,sizeof(int),1,fid)) CARLSIM_ERROR("saveSimulation fwrite error");
+		if (!fwrite(&grp_Info[g].EndN,sizeof(int),1,fid)) CARLSIM_ERROR("saveSimulation fwrite error");
 
 		strncpy(name,grp_Info2[g].Name.c_str(),100);
-		fwrite(name,1,100,fid);
+		if (!fwrite(name,1,100,fid)) CARLSIM_ERROR("saveSimulation fwrite error");
 	}
 
-	int nrCells = numN;
-	fwrite(&nrCells,sizeof(int),1,fid);
 
-	for (unsigned int i=0;i<nrCells;i++) {
-		unsigned int offset = cumulativePost[i];
+	// +++++ WRITE SYNAPSE INFO +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
-		unsigned int count = 0;
-		for (int t=0;t<D;t++) {
-			delay_info_t dPar = postDelayInfo[i*(D+1)+t];
+	// FIXME: replace with faster version
+	if (saveSynapseInfo) {
+		for (unsigned int i=0;i<numN;i++) {
+			unsigned int offset = cumulativePost[i];
 
-			for(int idx_d=dPar.delay_index_start; idx_d<(dPar.delay_index_start+dPar.delay_length); idx_d++)
-				count++;
-		}
+			unsigned int count = 0;
+			for (int t=0;t<D;t++) {
+				delay_info_t dPar = postDelayInfo[i*(D+1)+t];
 
-		fwrite(&count,sizeof(int),1,fid);
+				for(int idx_d=dPar.delay_index_start; idx_d<(dPar.delay_index_start+dPar.delay_length); idx_d++)
+					count++;
+			}
 
-		for (int t=0;t<D;t++) {
-			delay_info_t dPar = postDelayInfo[i*(D+1)+t];
+			if (!fwrite(&count,sizeof(int),1,fid)) CARLSIM_ERROR("saveSimulation fwrite error");
 
-			for(int idx_d=dPar.delay_index_start; idx_d<(dPar.delay_index_start+dPar.delay_length); idx_d++) {
-				// get synaptic info...
-				post_info_t post_info = postSynapticIds[offset + idx_d];
+			for (int t=0;t<D;t++) {
+				delay_info_t dPar = postDelayInfo[i*(D+1)+t];
 
-				// get neuron id
-				//int p_i = (post_info&POST_SYN_NEURON_MASK);
-				unsigned int p_i = GET_CONN_NEURON_ID(post_info);
-				assert(p_i<numN);
+				for(int idx_d=dPar.delay_index_start; idx_d<(dPar.delay_index_start+dPar.delay_length); idx_d++) {
+					// get synaptic info...
+					post_info_t post_info = postSynapticIds[offset + idx_d];
 
-				// get syn id
-				unsigned int s_i = GET_CONN_SYN_ID(post_info);
-				//>>POST_SYN_NEURON_BITS)&POST_SYN_CONN_MASK;
-				assert(s_i<(Npre[p_i]));
+					// get neuron id
+					//int p_i = (post_info&POST_SYN_NEURON_MASK);
+					unsigned int p_i = GET_CONN_NEURON_ID(post_info);
+					assert(p_i<numN);
 
-				// get the cumulative position for quick access...
-				unsigned int pos_i = cumulativePre[p_i] + s_i;
+					// get syn id
+					unsigned int s_i = GET_CONN_SYN_ID(post_info);
+					//>>POST_SYN_NEURON_BITS)&POST_SYN_CONN_MASK;
+					assert(s_i<(Npre[p_i]));
 
-				uint8_t delay = t+1;
-				uint8_t plastic = s_i < Npre_plastic[p_i]; // plastic or fixed.
+					// get the cumulative position for quick access...
+					unsigned int pos_i = cumulativePre[p_i] + s_i;
 
-				fwrite(&i,sizeof(int),1,fid);
-				fwrite(&p_i,sizeof(int),1,fid);
-				fwrite(&(wt[pos_i]),sizeof(float),1,fid);
-				fwrite(&(maxSynWt[pos_i]),sizeof(float),1,fid);
-				fwrite(&delay,sizeof(uint8_t),1,fid);
-				fwrite(&plastic,sizeof(uint8_t),1,fid);
-				fwrite(&(cumConnIdPre[pos_i]),sizeof(short int),1,fid);
+					uint8_t delay = t+1;
+					uint8_t plastic = s_i < Npre_plastic[p_i]; // plastic or fixed.
+
+					if (!fwrite(&i,sizeof(int),1,fid)) CARLSIM_ERROR("saveSimulation fwrite error");
+					if (!fwrite(&p_i,sizeof(int),1,fid)) CARLSIM_ERROR("saveSimulation fwrite error");
+					if (!fwrite(&(wt[pos_i]),sizeof(float),1,fid)) CARLSIM_ERROR("saveSimulation fwrite error");
+					if (!fwrite(&(maxSynWt[pos_i]),sizeof(float),1,fid)) CARLSIM_ERROR("saveSimulation fwrite error");
+					if (!fwrite(&delay,sizeof(uint8_t),1,fid)) CARLSIM_ERROR("saveSimulation fwrite error");
+					if (!fwrite(&plastic,sizeof(uint8_t),1,fid)) CARLSIM_ERROR("saveSimulation fwrite error");
+					if (!fwrite(&(cumConnIdPre[pos_i]),sizeof(short int),1,fid)) CARLSIM_ERROR("saveSimulation fwrite error");
+				}
 			}
 		}
 	}
@@ -1672,6 +1709,8 @@ void CpuSNN::CpuSNNinit() {
 	memoryOptimized	   = false;
 
 	cumExecutionTime = 0.0;
+	cpuExecutionTime = 0.0;
+	gpuExecutionTime = 0.0;
 
 	spikeRateUpdated = false;
 	numSpikeMonitor = 0;
@@ -3060,14 +3099,31 @@ int CpuSNN::readNetwork_internal()
 #endif
 {
 	long file_position = ftell(readNetworkFID); // so that we can restore the file position later...
-	unsigned int version;
+	int tmpInt;
+	float tmpFloat;
 
-	if (!fread(&version,sizeof(int),1,readNetworkFID)) return -11;
-	if (version > 1) return -10;
+	// read file signature
+	if (!fread(&tmpInt,sizeof(int),1,readNetworkFID)) return -11;
+	if (tmpInt != 294338571) return -10;
 
-	int _numGrp;
-	if (!fread(&_numGrp,sizeof(int),1,readNetworkFID)) return -11;
-	if (numGrp != _numGrp) return -1;
+	// read version number
+	if (!fread(&tmpFloat,sizeof(float),1,readNetworkFID)) return -11;
+	if (tmpFloat > 1.0) return -10;
+
+	// read simulation and execution time
+	if (!fread(&tmpFloat,sizeof(float),2,readNetworkFID)) return -11;
+
+	// read number of neurons
+	if (!fread(&tmpInt,sizeof(int),1,readNetworkFID)) return -11;
+	int nrCells = tmpInt;
+	if (nrCells != numN) return -5;
+
+	// read total synapse counts
+	if (!fread(&tmpInt,sizeof(int),2,readNetworkFID)) return -11;
+
+	// read number of groups
+	if (!fread(&tmpInt,sizeof(int),1,readNetworkFID)) return -11;
+	if (numGrp != tmpInt) return -1;
 
 	char name[100];
 	int startN, endN;
@@ -3080,10 +3136,6 @@ int CpuSNN::readNetwork_internal()
 		if (!fread(name,1,100,readNetworkFID)) return -11;
 		if (strcmp(name,grp_Info2[g].Name.c_str()) != 0) return -4;
 	}
-
-	int nrCells;
-	if (!fread(&nrCells,sizeof(int),1,readNetworkFID)) return -11;
-	if (nrCells != numN) return -5;
 
 	for (unsigned int i=0;i<nrCells;i++) {
 		unsigned int nrSynapses = 0;

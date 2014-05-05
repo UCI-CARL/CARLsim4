@@ -42,8 +42,12 @@
 #ifndef _CARLSIM_DATASTRUCTURES_H_
 #define _CARLSIM_DATASTRUCTURES_H_
 
+#include <ostream>
+#include <user_errors.h>
+
 /*!
  * \brief Logger modes
+ *
  * The logger mode defines where to print all status, error, and debug messages. Several predefined
  * modes exist (USER, DEVELOPER, SHOWTIME, SILENT). However, the user can also set each file pointer to a
  * location of their choice (CUSTOM mode).
@@ -64,12 +68,14 @@
  *
  * The file pointers are automatically set to different locations, depending on the loggerMode:
  *
+ * \verbatim
  *          |    USER    | DEVELOPER  |  SHOWTIME  |   SILENT   |  CUSTOM
  * ---------|------------|------------|------------|------------|---------
  * fpOut_   |   stdout   |   stdout   | /dev/null  | /dev/null  |    ?
  * fpErr_   |   stderr   |   stderr   |   stderr   | /dev/null  |    ?
  * fpDeb_   | /dev/null  |   stdout   | /dev/null  | /dev/null  |    ?
  * fpLog_   | debug.log  | debug.log  | debug.log  | /dev/null  |    ?
+ * \endverbatim
  *
  * Location of the debug log file can be set in any mode using CARLsim::setLogDebugFp.
  * In mode CUSTOM, the other file pointers can be set using CARLsim::setLogsFp.
@@ -83,6 +89,7 @@ static const char* loggerMode_string[] = {
 
 /*!
  * \brief simulation mode
+ *
  * CARLsim supports execution either on standard x86 central processing units (CPUs) or off-the-shelf NVIDIA GPUs.
  *
  * When creating a new CARLsim object, you can choose from the following:
@@ -103,6 +110,7 @@ static const char* simMode_string[] = {
 // TODO: extend documentation, add relevant references
 /*!
  * \brief STDP flavors
+ *
  * CARLsim supports two different flavors of STDP.
  * STANDARD:	The standard model of Bi & Poo (2001), nearest-neighbor.
  * DA_MOD:      Dopamine-modulated STDP, nearest-neighbor.
@@ -116,7 +124,8 @@ static const char* stdpType_string[] = {
 
 
 /*!
- * \brief 
+ * \brief Update frequency for weights
+ *
  * CARLsim supports different update frequency for weight update and weightChange update
  * INTERVAL_10MS: the update interval will be 10 ms, which is 100Hz update frequency
  * INTERVAL_100MS: the update interval will be 100 ms, which is 10Hz update frequency
@@ -134,6 +143,60 @@ enum carlsimState_t {
 };
 static const char* carlsimState_string[] = {
 	"Configuration state", "Setup state", "Execution state"
+};
+
+/*!
+ * \brief a range struct for synaptic delays
+ *
+ * Synaptic delays can range between 1 and 20 ms. The struct maintains two fields: min and max.
+ * \param[in] min the lower bound for delay values
+ * \param[in] max the upper bound for delay values
+ * Examples:
+ *   RangeDelay(2) => all delays will be 2 (delay.min=2, delay.max=2)
+ *   RangeDelay(1,10) => delays will be in range [1,10]
+ */
+struct RangeDelay {
+	RangeDelay(int _val) : min(_val), max(_val) {}
+	RangeDelay(int _min, int _max) : min(_min), max(_max) {
+		UserErrors::assertTrue(_min<=_max, UserErrors::CANNOT_BE_LARGER, "RangeDelay", "minDelay", "maxDelay");
+	}
+
+	friend std::ostream& operator<<(std::ostream &strm, const RangeDelay &d) {
+		return strm << "delay=[" << d.min << "," << d.max << "]";
+	}
+	int min,max;
+};
+
+/*!
+ * \brief a range struct for synaptic weight magnitudes
+ *
+ * Plastic synaptic weights are initialized to initWt, and can range between some minWt and some maxWt. Fixed weights
+ * will always have the same value. All weight values should be non-negative (equivalent to weight *magnitudes*), even
+ * for inhibitory connections.
+ * \param[in] min the lower bound for weight values
+ * \param[in] init the initial value for weight values
+ * \param[in] max the upper bound for weight values
+ * Examples:
+ *   RangeWeight(0.1)         => all weights will be 0.1 (wt.min=0.1, wt.max=0.1, wt.init=0.1)
+ *   RangeWeight(0.0,0.2)     => If pre is excitatory: all weights will be in range [0.0,0.2], and wt.init=0.0. If pre
+ *                               is inhibitory: all weights will be in range [-0.2,0.0], and wt.init=0.0.
+ *   RangeWeight(0.0,0.1,0.2) => If pre is excitatory: all weights will be in range [0.0,0.2], and wt.init=0.1. If pre
+ *                               is inhibitory: all weights will be in range [-0.2,0.0], and wt.init=0.0.
+ */
+struct RangeWeight {
+	RangeWeight(double _val) : init(_val), max(_val) {}
+	RangeWeight(double _min, double _max) : min(_min), init(_min), max(_max) {
+		UserErrors::assertTrue(_min<=_max, UserErrors::CANNOT_BE_LARGER, "RangeWeight", "minWt", "maxWt");
+	}
+	RangeWeight(double _min, double _init, double _max) : min(_min), init(_init), max(_max) {
+		UserErrors::assertTrue(_min<=_init, UserErrors::CANNOT_BE_LARGER, "RangeWeight", "minWt", "initWt");
+		UserErrors::assertTrue(_init<=_max, UserErrors::CANNOT_BE_LARGER, "RangeWeight", "initWt", "maxWt");
+	}
+
+	friend std::ostream& operator<<(std::ostream &strm, const RangeWeight &w) {
+		return strm << "wt=[" << w.min << "," << w.init << "," << w.max << "]";
+	}
+	double min, init, max; 
 };
 
 #endif

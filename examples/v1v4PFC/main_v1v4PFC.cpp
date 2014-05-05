@@ -663,13 +663,7 @@ int main()
 		s.runNetwork(0,frameDur);
 
 		if (i==1) {
-			FILE* nid = fopen("examples/v1v4PFC/results/net.dat","wb");
-			if (nid==NULL) {
-				printf("ERROR: could not open network file\n");
-				exit(3);
-			}
-			s.writeNetwork(nid);
-			fclose(nid);
+			s.saveSimulation("examples/v1v4PFC/results/net.dat", true);
 		}
 	}
 	fclose(fid);

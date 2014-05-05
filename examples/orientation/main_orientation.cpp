@@ -255,9 +255,7 @@ int main()
 		s.runNetwork(0,frameDur);
 
 		if (i==1) {
-			FILE* nid = fopen("examples/orientation/results/net.dat","wb");
-			s.writeNetwork(nid);
-			fclose(nid);
+			s.saveSimulation("examples/orientation/results/net.dat", true);
 		}
 	}
 	fclose(fid);

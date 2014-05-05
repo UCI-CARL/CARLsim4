@@ -307,9 +307,7 @@ int main()
 		s.runNetwork(0,frameDur);
 
 		if (i==1) {
-			FILE* nid = fopen("examples/colorblind/results/net.dat","wb");
-			s.writeNetwork(nid);
-			fclose(nid);
+			s.saveSimulation("examples/colorblind/results/net.dat", true);
 		}
 	}
 	fclose(fid);
