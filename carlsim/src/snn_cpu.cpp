@@ -101,7 +101,7 @@ CpuSNN::~CpuSNN() {
 	// if total simulation time is not divisible by 1000 ms, run updateSpikeMonitor again to get the spikes of the
 	// last fraction of a second
 	if (simTimeMs) {
- 	   updateSpikeInfo(simTimeMs);
+ 	   updateSpikeMonitor(simTimeMs);
  	   CARLSIM_INFO("\n^ (time=%1.3fs) =================\n", (float) (simTimeSec+simTimeMs/1000.0));
 	}
 
@@ -689,8 +689,8 @@ int CpuSNN::runNetwork(int _nsec, int _nmsec, bool copyState) {
 			// finished one sec of simulation...
 			bool showLog = showStatusCycle_ == ++showStatusCnt_; // fast way of !(simTimeSec%showStatusCycle_)
 
-			if (numSpikeInfo) {
-				updateSpikeInfo();
+			if (numSpikeMonitor) {
+				updateSpikeMonitor();
 			}
 			if (numGroupMonitor) {
 				updateGroupMonitor();
@@ -702,7 +702,7 @@ int CpuSNN::runNetwork(int _nsec, int _nmsec, bool copyState) {
 				showStatus();
 				showStatusCnt_=0; // reset counter
 			}
-			if (showLog || numSpikeInfo)
+			if (showLog || numSpikeMonitor)
 				CARLSIM_INFO("\n^ (time=%llds) =================\n", (unsigned long long) simTimeSec);
 
 			if(simMode_ == CPU_MODE)
@@ -1015,7 +1015,7 @@ void CpuSNN::setSpikeCounter(int grpId, int recordDur, int configId) {
 }
 
 // record spike information, return a SpikeInfo object
-SpikeInfo* CpuSNN::setSpikeMonitor(int grpId, FILE* fid, int configId) {
+SpikeMonitor* CpuSNN::setSpikeMonitor(int grpId, FILE* fid, int configId) {
 	if (configId == ALL) {
 		for(int c=0; c < nConfig_; c++)
 		setSpikeInfo(grpId, fid ,c);
@@ -1032,9 +1032,9 @@ SpikeInfo* CpuSNN::setSpikeMonitor(int grpId, FILE* fid, int configId) {
 			
 	    // store the gid for further reference
 			spikeMonCoreList[numSpikeMonitor]->setSpikeMonitorGrpId(cGrpId);
-			//spikeMonGrpId[numSpikeMon] = cGrpId;	    
+			//spikeMonGrpId[numSpikeMonitor] = cGrpId;	    
 			// also inform the grp that it is being monitored...
-	    grp_Info[cGrpId].SpikeMonitorId	= numSpikeMon;
+	    grp_Info[cGrpId].SpikeMonitorId	= numSpikeMonitor;
 
 	    float maxRate = grp_Info[cGrpId].MaxFiringRate;
 
@@ -1059,7 +1059,7 @@ SpikeInfo* CpuSNN::setSpikeMonitor(int grpId, FILE* fid, int configId) {
 	    //monBufferFiring[numSpikeMonitor] = new unsigned int[buffSize];
 	    spikeMonCoreList[numSpikeMonitor]->setMonBufferTimeCnt(new unsigned int[1000]);
 			//monBufferTimeCnt[numSpikeMonitor] = new unsigned int[1000];
-	    spikeMonCoreList[numSpikeMonitor]->zeroMonBufferTimeCnt();
+	    spikeMonCoreList[numSpikeMonitor]->zeroMonBufferTimeCnt(1000);
 			//memset(monBufferTimeCnt[numSpikeMonitor],0,sizeof(int)*(1000));
 			
 			// create a new SpikeMonitor object for the user-interface
@@ -1070,8 +1070,8 @@ SpikeInfo* CpuSNN::setSpikeMonitor(int grpId, FILE* fid, int configId) {
 
 	    // oh. finally update the size info that will be useful to see
 	    // how much memory are we eating...
-	    cpuSnnSz.monitorInfoSize += sizeof(int)*buffSize;
-	    cpuSnnSz.monitorInfoSize += sizeof(int)*(1000);
+	    cpuSnnSz.spikeInfoSize += sizeof(int)*buffSize;
+	    cpuSnnSz.spikeInfoSize += sizeof(int)*(1000);
 
 	    CARLSIM_INFO("SpikeMonitor set for group %d (%s)",cGrpId,grp_Info2[grpId].Name.c_str());
 	
@@ -1778,8 +1778,7 @@ void CpuSNN::CpuSNNinit() {
 		grp_Info[i].decayNE = 1 - (1.0f / 100);
 
 		grp_Info[i].spikeGen = NULL;
-		grp_Info[i].spkInfo = NULL;
-
+		
 		grp_Info[i].withSpikeCounter = false;
 		grp_Info[i].spkCntRecordDur = -1;
 		grp_Info[i].spkCntRecordDurHelper = 0;
@@ -4128,10 +4127,12 @@ void CpuSNN::updateSpikeMonitor(int numMs) {
 
 	/* Reset buffer time counter */
 	for(int i=0; i < numSpikeMonitor; i++)
-		memset(monBufferTimeCnt[i],0,sizeof(int)*(numMs));
+		spikeMonCoreList[numSpikeMonitor]->zeroMonBufferTimeCnt(numMs);
+		//memset(monBufferTimeCnt[i],0,sizeof(int)*(numMs));
 
 	/* Reset buffer position */
-	memset(monBufferPos,0,sizeof(int)*numSpikeMonitor);
+	spikeMonCoreList[numSpikeMonitor]->setMonBufferPos(0);
+	//memset(monBufferPos,0,sizeof(int)*numSpikeMonitor);
 
 	if (simMode_ == GPU_MODE) {
 		updateSpikeMonitor_GPU();
@@ -4149,30 +4150,37 @@ void CpuSNN::updateSpikeMonitor(int numMs) {
 				if (simMode_ == GPU_MODE)
 					nid = GET_FIRING_TABLE_NID(nid);
 				assert(nid < numN);
-
+				
 				int grpId = grpIds[nid];
 				int monitorId = grp_Info[grpId].SpikeMonitorId;
 				if(monitorId!= -1) {
 					assert(nid >= grp_Info[grpId].StartN);
 					assert(nid <= grp_Info[grpId].EndN);
-					int   pos   = monBufferPos[monitorId];
-					if((pos >= monBufferSize[monitorId])) {
-						if(!bufferOverFlow[monitorId]) {
-							CARLSIM_WARN("Buffer Monitor size (%d) is small. Increase buffer firing rate for %s",
-								monBufferSize[monitorId], grp_Info2[grpId].Name.c_str());
+					int pos = spikeMonCoreList[monitorId]->getMonBufferPos();
+					//int   pos   = monBufferPos[monitorId];
+					if((pos >= spikeMonCoreList[monitorId]->getMonBufferSize()) {
+							//if((pos >= monBufferSize[monitorId])) {
+							if(!bufferOverFlow[monitorId]) {
+								//CARLSIM_WARN("Buffer Monitor size (%d) is small. Increase buffer firing rate for %s",
+								//monBufferSize[monitorId], grp_Info2[grpId].Name.c_str());
+								CARLSIM_WARN("Buffer Monitor size (%d) is small. Increase buffer firing rate for %s",
+														 spikeMonCoreList[monitorId]->getMonBufferSize(), grp_Info2[grpId].Name.c_str());
+							}
+							bufferOverFlow[monitorId] = true;
+						} else {
+							spikeMonCoreList[monitorId]->incMonBufferPos();
+							//monBufferPos[monitorId]++;
+							(spikeMonCoreList[monitorId]->getMonBufferFiring())[pos] = nid-grp_Info[grpId].StartN;
+							//monBufferFiring[monitorId][pos] = nid-grp_Info[grpId].StartN; // store the Neuron ID relative to the start of the group
+							// we store the total firing at time t...
+							(spikeMonCoreList[monitorId]->getMonBufferTimeCnt())[t]++;
+							//monBufferTimeCnt[monitorId][t]++;
+							// 
 						}
-						bufferOverFlow[monitorId] = true;
-					} else {
-						monBufferPos[monitorId]++;
-						monBufferFiring[monitorId][pos] = nid-grp_Info[grpId].StartN; // store the Neuron ID relative to the start of the group
-						// we store the total firing at time t...
-						monBufferTimeCnt[monitorId][t]++;
-						// 
-					}
-				} /* if monitoring is enabled for this spike */
-			} /* for all spikes happening at time t */
-		}  /* for all time t */
-	}
+						} /* if monitoring is enabled for this spike */
+				} /* for all spikes happening at time t */
+			}  /* for all time t */
+		}
 
 	// loop over all groups and check if they have a spike monitor
 	// TODO: here is where we do our call to the monBufferSpikeInfo -- KDC

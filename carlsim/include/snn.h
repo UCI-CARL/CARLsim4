@@ -923,7 +923,7 @@ private:
 
 
 	// keep track of number of SpikeMonitor/SpikeMonitorCore objects
-	unsigned int numSpikeMon;
+	unsigned int numSpikeMonitor;
 	SpikeMonitorCore* spikeMonCoreList[MAX_GRP_PER_SNN];
 	SpikeMonitor*     spikeMonList[MAX_GRP_PER_SNN];
 

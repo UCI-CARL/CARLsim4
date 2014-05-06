@@ -248,6 +248,13 @@ class SpikeMonitorCore {
 	 * \return void
 	 */
 	unsigned int getMonBufferPos();
+	
+	/*!
+	 * \brief increments monBufferPos.
+	 * \param void
+	 * \return void
+	 */
+	void incMonBufferPos();
 
 	/*!
 	 * \brief returns the monBufferSize
@@ -304,6 +311,13 @@ class SpikeMonitorCore {
 	 * \return void
 	 */
 	unsigned int* getMonBufferTimeCnt();
+
+	/*!
+	 * \brief zeroes the monBufferTimeCnt.
+	 * \param unsigned int
+	 * \return void
+	 */
+	void zeroMonBufferTimeCnt(unsigned int timeSize);
 	
  private:
 	// Used to catch the spike information

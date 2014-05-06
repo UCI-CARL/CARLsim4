@@ -222,6 +222,11 @@ unsigned int SpikeMonitorCore::getMonBufferPos(){
 	return monBufferPos_;
 }
 
+void SpikeMonitorCore::incMonBufferPos(){
+	monBufferPos_++;
+	return;
+}
+
 void SpikeMonitorCore::setMonBufferSize(unsigned int monBufferSize){
 	monBufferSize_=monBufferSize;
 	return;
@@ -258,7 +263,7 @@ unsigned int* SpikeMonitorCore::getMonBufferTimeCnt(){
 	return monBufferTimeCnt_;
 }
 
-void SpikeMonitorCore::zeroMonBufferTimeCnt(){
-	memset(monBufferTimeCnt_,0,sizeof(int)*(1000));
+void SpikeMonitorCore::zeroMonBufferTimeCnt(unsigned int timeSize){
+	memset(monBufferTimeCnt_,0,sizeof(int)*(timeSize));
 	return;
 }

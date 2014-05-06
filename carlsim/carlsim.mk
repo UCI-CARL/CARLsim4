@@ -52,9 +52,8 @@ local_deps := $(addprefix $(local_dir)/include/, snn.h mtrand.h gpu.h \
 	gpu_random.h propagated_spike_buffer.h poisson_rate.h \
 	error_code.h cuda_version_control.h)
 local_src := $(addprefix $(local_dir)/src/, snn_cpu.cpp mtrand.cpp \
-	propagated_spike_buffer.cpp poisson_rate.cpp \
-	print_snn_info.cpp gpu_random.cu \
-	snn_gpu.cu)
+	propagated_spike_buffer.cpp poisson_rate.cpp print_snn_info.cpp \
+	gpu_random.cu snn_gpu.cu)
 local_objs := $(addprefix $(local_dir)/src/,snn_cpu.o mtrand.o \
 	propagated_spike_buffer.o poisson_rate.o print_snn_info.o \
 	gpu_random.o snn_gpu.o)
@@ -71,10 +70,11 @@ interface_objs := $(interface_dir)/src/carlsim.o \
 	$(interface_dir)/src/callback_core.o
 
 
-spike_monitor_deps := spike_monitor.h spike_monitor.cpp spike_monitor_core.h \
-spike_monitor_core.cpp
+spike_monitor_deps := spike_monitor.h spike_monitor.cpp \
+	spike_monitor_core.h spike_monitor_core.cpp
 spike_monitor_src := spike_monitor.cpp spike_monitor_core.cpp
-spike_monitor_objs := $(addprefix $(spike_monitor_dir)/,spike_monitor.o spike_monitor_core.o)
+spike_monitor_objs := $(addprefix $(spike_monitor_dir)/,spike_monitor.o \
+	spike_monitor_core.o)
 spike_monitor_flags := -I$(spike_monitor_dir)
 # motion energy objects
 util_2_0_objs := $(addprefix $(local_dir)/,v1ColorME.2.0.o)
@@ -96,19 +96,19 @@ $(spike_monitor_objs)
 # interface
 $(interface_dir)/src/%.o: $(interface_dir)/src/%.cpp $(interface_deps)
 	$(NVCC) -c $(CARLSIM_INCLUDES) $(CARLSIM_FLAGS) $(spike_monitor_flags) \
-	$< -o $@
+$< -o $@
 
 #util
 $(spike_monitor_dir)/%.o: $(spike_monitor_dir)/%.cpp $(spike_monitor_deps)
 	$(NVCC) -c $(spike_monitor_flags) $(CARLSIM_INCLUDES) $(CARLSIM_FLAGS) \
-	$< -o $@
+$< -o $@
 
 # local cpps
 $(local_dir)/src/%.o: $(local_dir)/src/%.cpp $(local_deps)
 	$(NVCC) -c $(CARLSIM_INCLUDES) $(CARLSIM_FLAGS) \
-	$(spike_monitor_flags) $< -o $@
+$(spike_monitor_flags) $< -o $@
 
 # local cuda
 $(local_dir)/src/%.o: $(local_dir)/src/%.cu $(local_deps)
 	$(NVCC) -c $(CARLSIM_INCLUDES) $(CARLSIM_FLAGS) \
-	$(spike_monitor_flags) $< -o $@
+$(spike_monitor_flags) $< -o $@
