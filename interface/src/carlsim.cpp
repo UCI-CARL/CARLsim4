@@ -155,7 +155,8 @@ CARLsim::CARLsim(std::string netName, simMode_t simMode, loggerMode_t loggerMode
 
 CARLsim::~CARLsim() {
 	// save simulation
-	saveSimulation(def_save_fileName_,def_save_synapseInfo_);
+	if (carlsimState_ == SETUP_STATE || carlsimState_ == EXE_STATE)
+		saveSimulation(def_save_fileName_,def_save_synapseInfo_);
 
 	// deallocate all dynamically allocated structures
 	if (snn_!=NULL)
@@ -732,6 +733,14 @@ void CARLsim::writePopWeights(std::string fname, int gIDpre, int gIDpost, int co
 
 // +++++++++ PUBLIC METHODS: SETTERS / GETTERS ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
+int CARLsim::getNumConfigurations() {
+	std::string funcName = "getNumConfigurations()";
+	UserErrors::assertTrue(carlsimState_ == SETUP_STATE || carlsimState_ == EXE_STATE,
+					UserErrors::INVALID_API_AT_CURRENT_STATE, funcName);
+
+	return nConfig_;
+}
+
 // FIXME
 // get connection info struct
 //grpConnectInfo_t* CARLsim::getConnectInfo(short int connectId, int configId) {
@@ -924,6 +933,9 @@ void CARLsim::setDefaultHomeostasisParams(float homeoScale, float avgTimeScale) 
 }
 
 void CARLsim::setDefaultSaveOptions(std::string fileName, bool saveSynapseInfo) {
+	std::string funcName = "setDefaultSaveOptions()";
+	UserErrors::assertTrue(carlsimState_ == CONFIG_STATE, UserErrors::INVALID_API_AT_CURRENT_STATE, funcName);
+
 	def_save_fileName_ = fileName;
 	def_save_synapseInfo_ = saveSynapseInfo;
 

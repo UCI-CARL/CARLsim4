@@ -287,7 +287,7 @@ public:
 	 * \note The method can be called at configuration state only
 	 */
 	void setNeuromodulator(int grpId, float baseDP, float tauDP, float base5HT, float tau5HT,
-							float baseACh, float tauACh, float baseNE, float tauNE, int configId);
+							float baseACh, float tauACh, float baseNE, float tauNE, int configId = ALL);
 
 	// TODO: this should be implemented via default arguments as members of the class, so that the user can call
 	// setDefaultNeuromodulators()
@@ -507,6 +507,7 @@ public:
 
 	// +++++ PUBLIC METHODS: GETTER / SETTERS +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
+	carlsimState_t getCarlsimState() { return carlsimState_; }
 // FIXME
 //	grpConnectInfo_t* getConnectInfo(short int connectId, int configId=0); //!< gets connection info struct
 	//! \note The method can be called at setup state and execution state
@@ -521,7 +522,7 @@ public:
 	std::string getGroupName(int grpId, int configId=0);
 
 	//! \note The method can be called at setup state and execution state
-	int getNumConfigurations() { return nConfig_; }		//!< gets number of network configurations
+	int getNumConfigurations();							//!< gets number of network configurations
 	int getNumConnections(short int connectionId);		//!< gets number of connections associated with a connection ID
 	int getNumGroups();									//!< gets number of groups in the network
 	int getNumNeurons(); //!< returns the total number of allocated neurons in the network
