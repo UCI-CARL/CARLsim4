@@ -45,7 +45,7 @@ ex_dir  = examples
 interface_dir = interface
 test_dir = test
 util_dir =util
-spike_info_dir = $(util_dir)/spike_info
+spike_monitor_dir = $(util_dir)/spike_monitor
 
 # location of .cpp files
 vpath %.cpp $(EO_INSTALL_DIR)/src $(EO_INSTALL_DIR)/src/do \

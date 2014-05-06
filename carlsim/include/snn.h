@@ -78,7 +78,7 @@
 #include <poisson_rate.h>
 #include <mtrand.h>
 #include <gpu_random.h>
-#include <spike_info.h>
+#include <spike_monitor.h>
 
 extern RNG_rand48* gpuRand48; //!< Used by all network to generate global random number
 
@@ -383,9 +383,9 @@ public:
 	 * \param grpId ID of the neuron group
 	 * \param spikeMon (optional) spikeMonitor class
 	 * \param configId (optional, deprecated) configuration id, default = ALL
-	 * \return SpikeInfo* pointer to a SpikeInfo object
+	 * \return SpikeMonitor* pointer to a SpikeMonitor object
 	 */
-	SpikeInfo* setSpikeMonitor(int gid, FILE* fid, int configId);
+	SpikeMonitor* setSpikeMonitor(int gid, FILE* fid, int configId);
 
 	//!Sets the Poisson spike rate for a group. For information on how to set up spikeRate, see Section Poisson spike generators in the Tutorial. 
 	/*!Input arguments:
@@ -877,7 +877,7 @@ private:
 		unsigned int		debugInfoSize;
 		unsigned int		addInfoSize;	//!< includes random number generator etc.
 		unsigned int		blkInfoSize;
-		unsigned int		monitorInfoSize;
+		unsigned int		spikeInfoSize;
 	} snnSize_t;
 
 	snnSize_t cpuSnnSz;
@@ -922,15 +922,12 @@ private:
 	int showStatusCnt_; //!< internal counter to implement fast version of !(simTimeSec%showStatusCycle_)
 
 
-	// spike monitor variables
-	unsigned int	numSpikeMonitor;
-	unsigned int	monGrpId[MAX_GRP_PER_SNN];
-	unsigned int	monBufferPos[MAX_GRP_PER_SNN];
-	unsigned int	monBufferSize[MAX_GRP_PER_SNN];
-	unsigned int*	monBufferFiring[MAX_GRP_PER_SNN];
-	FILE*         monBufferFid[MAX_GRP_PER_SNN];
-	SpikeInfo*    monBufferSpikeInfo[MAX_GRP_PER_SNN];
-	unsigned int*	monBufferTimeCnt[MAX_GRP_PER_SNN];
+	// keep track of number of SpikeMonitor/SpikeMonitorCore objects
+	unsigned int numSpikeMon;
+	SpikeMonitorCore* spikeMonCoreList[MAX_GRP_PER_SNN];
+	SpikeMonitor*     spikeMonList[MAX_GRP_PER_SNN];
+
+
 
 	unsigned int	numSpikeGenGrps;
 

@@ -101,7 +101,7 @@ CpuSNN::~CpuSNN() {
 	// if total simulation time is not divisible by 1000 ms, run updateSpikeMonitor again to get the spikes of the
 	// last fraction of a second
 	if (simTimeMs) {
- 	   updateSpikeMonitor(simTimeMs);
+ 	   updateSpikeInfo(simTimeMs);
  	   CARLSIM_INFO("\n^ (time=%1.3fs) =================\n", (float) (simTimeSec+simTimeMs/1000.0));
 	}
 
@@ -689,8 +689,8 @@ int CpuSNN::runNetwork(int _nsec, int _nmsec, bool copyState) {
 			// finished one sec of simulation...
 			bool showLog = showStatusCycle_ == ++showStatusCnt_; // fast way of !(simTimeSec%showStatusCycle_)
 
-			if (numSpikeMonitor) {
-				updateSpikeMonitor();
+			if (numSpikeInfo) {
+				updateSpikeInfo();
 			}
 			if (numGroupMonitor) {
 				updateGroupMonitor();
@@ -702,7 +702,7 @@ int CpuSNN::runNetwork(int _nsec, int _nmsec, bool copyState) {
 				showStatus();
 				showStatusCnt_=0; // reset counter
 			}
-			if (showLog || numSpikeMonitor)
+			if (showLog || numSpikeInfo)
 				CARLSIM_INFO("\n^ (time=%llds) =================\n", (unsigned long long) simTimeSec);
 
 			if(simMode_ == CPU_MODE)
@@ -1014,20 +1014,27 @@ void CpuSNN::setSpikeCounter(int grpId, int recordDur, int configId) {
 	}
 }
 
-// add a SpikeMonitor for group, return a SpikeInfo object
+// record spike information, return a SpikeInfo object
 SpikeInfo* CpuSNN::setSpikeMonitor(int grpId, FILE* fid, int configId) {
 	if (configId == ALL) {
 		for(int c=0; c < nConfig_; c++)
-		setSpikeMonitor(grpId, fid ,c);
+		setSpikeInfo(grpId, fid ,c);
 	} else {
 	    int cGrpId = getGroupId(grpId, configId);
-	    CARLSIM_DEBUG("spikeMonitor added");
+	    CARLSIM_DEBUG("spikeInfo added");
 
+			// create new SpikeMonitorCore object
+			spikeMonCoreList[numSpikeMonitor] = new SpikeMonitorCore;
+			//monBufferSpikeMonitor[numSpikeMonitor] = new SpikeInfo;
+			
+			// initialize the analysis components of SpikeMonitorCore
+			spikeMonCoreList[numSpikeMonitor]->init(this,cGrpId);
+			
 	    // store the gid for further reference
-	    monGrpId[numSpikeMonitor] = cGrpId;
-
-	    // also inform the grp that it is being monitored...
-	    grp_Info[cGrpId].SpikeMonitorId	= numSpikeMonitor;
+			spikeMonCoreList[numSpikeMonitor]->setSpikeMonitorGrpId(cGrpId);
+			//spikeMonGrpId[numSpikeMon] = cGrpId;	    
+			// also inform the grp that it is being monitored...
+	    grp_Info[cGrpId].SpikeMonitorId	= numSpikeMon;
 
 	    float maxRate = grp_Info[cGrpId].MaxFiringRate;
 
@@ -1036,23 +1043,29 @@ SpikeInfo* CpuSNN::setSpikeMonitor(int grpId, FILE* fid, int configId) {
 	    int buffSize = (int)(maxRate*grp_Info[cGrpId].SizeN);
 
 	    // store the size for future comparison etc.
-	    monBufferSize[numSpikeMonitor] = buffSize;
+	    spikeMonCoreList[numSpikeMonitor]->setMonBufferSize(buffSize);
+			//monBufferSize[numSpikeMonitor] = buffSize;
 
 	    // reset the position of the buffer pointer..
-	    monBufferPos[numSpikeMonitor]  = 0;
+			spikeMonCoreList[numSpikeMonitor]->setMonBufferPos(0);
+	    //monBufferPos[numSpikeMonitor]  = 0;
 
 			// assign monBufferFid if we selected to write to a file
-			monBufferFid[numSpikeMonitor] = fid;
-
-			// create a new SpikeInfo object
-			monBufferSpikeInfo[numSpikeMonitor] = new SpikeInfo;
-			monBufferSpikeInfo[numSpikeMonitor]->init(this,cGrpId);
+			spikeMonCoreList[numSpikeMonitor]->setMonBufferFid(fid);
+			//monBufferFid[numSpikeMonitor] = fid;
 
 	    // create the new buffer for keeping track of all the spikes in the system
-	    monBufferFiring[numSpikeMonitor] = new unsigned int[buffSize];
-	    monBufferTimeCnt[numSpikeMonitor] = new unsigned int[1000];
-	    memset(monBufferTimeCnt[numSpikeMonitor],0,sizeof(int)*(1000));
-
+			spikeMonCoreList[numSpikeMonitor]->setMonBufferFiring(new unsigned int[buffSize]);
+	    //monBufferFiring[numSpikeMonitor] = new unsigned int[buffSize];
+	    spikeMonCoreList[numSpikeMonitor]->setMonBufferTimeCnt(new unsigned int[1000]);
+			//monBufferTimeCnt[numSpikeMonitor] = new unsigned int[1000];
+	    spikeMonCoreList[numSpikeMonitor]->zeroMonBufferTimeCnt();
+			//memset(monBufferTimeCnt[numSpikeMonitor],0,sizeof(int)*(1000));
+			
+			// create a new SpikeMonitor object for the user-interface
+			spikeMonList[numSpikeMonitor] = new SpikeMonitor(spikeMonCoreList[numSpikeMonitor]);
+			//monBufferSpikeMonitor[numSpikeMonitor] = new SpikeInfo;
+		
 	    numSpikeMonitor++;
 
 	    // oh. finally update the size info that will be useful to see
@@ -1062,9 +1075,13 @@ SpikeInfo* CpuSNN::setSpikeMonitor(int grpId, FILE* fid, int configId) {
 
 	    CARLSIM_INFO("SpikeMonitor set for group %d (%s)",cGrpId,grp_Info2[grpId].Name.c_str());
 	
+			// now we return the SpikeMonitor object to the user 
+			// index is numSpikeMonitor-1 because we have already incremented
+			return spikeMonList[numSpikeMonitor-1];
+
 			// index is numSpikeMonitor-1 because we have already incremented
 			// numSpikeMonitor
-			return monBufferSpikeInfo[numSpikeMonitor-1];
+			//return monBufferSpikeInfo[numSpikeMonitor-1];
 	}
 }
 

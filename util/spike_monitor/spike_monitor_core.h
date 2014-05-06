@@ -39,10 +39,8 @@
  * Ver 2/21/2014
  */
 
-// paradigm shift: run this on spikes. 
-
-#ifndef _SPIKE_INFO_H_
-#define _SPIKE_INFO_H_
+#ifndef _SPIKE_MON_CORE_H_
+#define _SPIKE_MON_CORE_H_
 
 // we need the AER data structure
 #include <carlsim_datastructures.h>
@@ -51,7 +49,7 @@
 
 class CpuSNN; // forward declaration of CpuSNN class
 
-class SpikeInfo {
+class SpikeMonitorCore {
  public: 
 	/*! 
 	 * \brief analysis constructor.
@@ -59,7 +57,7 @@ class SpikeInfo {
 	 * Creates a new instance of the analysis class. 
 	 *	 
 	 */
-	SpikeInfo(); 
+	SpikeMonitorCore(); 
 	/*! 
 	 * \brief initialization method for analysis class.
 	 *
@@ -69,12 +67,12 @@ class SpikeInfo {
 	 */
 	void init(CpuSNN* snn, int grpId);
 	/*! 
-	 * \brief SpikeInfo destructor.
+	 * \brief SpikeMonitorCore destructor.
 	 *
 	 * Cleans up all the memory upon object deletion.
 	 *
 	 */
-	~SpikeInfo();
+	~SpikeMonitorCore();
 	
 	// +++++ PUBLIC METHODS: +++++++++++++++++++++++++++++++++++++++++++++++//
 
@@ -183,17 +181,6 @@ class SpikeInfo {
 	std::vector<float> getSortedNeuronFiringRate();
 
 	/*!
-	 * \brief put the nid and time values in an AER vector structure
-	 * \param CARLsim* s pointer to CARLsim object so we can access simTime.
-	 * \param grpId of group being counted.
-	 * \param neurIds unsigned int* array of neuron ids that have fired.
-	 * \param timeCnts unsigned int* array of times neurons have fired.
-	 * \param timeInterval is the time interval over which these neurons
-	 * were recorded.
-	 * \return void
-	 */	
-	
-	/*!
 	 * \brief Gets record status as a bool. True means it is recording, false
 	 * means it is not recording.
 	 * \param void
@@ -208,6 +195,16 @@ class SpikeInfo {
 	 */
 	void print();
 
+	/*!
+	 * \brief put the nid and time values in an AER vector structure
+	 * \param CARLsim* s pointer to CARLsim object so we can access simTime.
+	 * \param grpId of group being counted.
+	 * \param neurIds unsigned int* array of neuron ids that have fired.
+	 * \param timeCnts unsigned int* array of times neurons have fired.
+	 * \param timeInterval is the time interval over which these neurons
+	 * were recorded.
+	 * \return void
+	 */	
 	void pushAER(int grpId, unsigned int* neurIds, unsigned int* timeCnts, int timeInterval);
 
 	/*!
@@ -223,9 +220,100 @@ class SpikeInfo {
 	 * \return void
 	 */
 	void stopRecording();
+
+	// +++++ PUBLIC SETTERS/GETTERS: +++++++++++++++++++++++++++++++++++++++//
+	/*!
+	 * \brief returns the spikeMonGrpId.
+	 * \param void
+	 * \return unsigned int
+	 */
+	void setSpikeMonGrpId(unsigned int spikeMonGrpId);
+
+	/*!
+	 * \brief sets the spikeMonGrpId.
+	 * \param unsigned int
+	 * \return void
+	 */
+	unsigned int getSpikeMonGrpId();
+	/*!
+	 * \brief returns the monBufferPos
+	 * \param void
+	 * \return unsigned int
+	 */
+	void setMonBufferPos(unsigned int monBufferPos);
+	
+	/*!
+	 * \brief sets the monBufferPos.
+	 * \param unsigned int
+	 * \return void
+	 */
+	unsigned int getMonBufferPos();
+
+	/*!
+	 * \brief returns the monBufferSize
+	 * \param void
+	 * \return unsigned int
+	 */
+	void setMonBufferSize(unsigned int monBufferSize);
+	
+	/*!
+	 * \brief sets the monBufferSize.
+	 * \param unsigned int
+	 * \return void
+	 */
+	unsigned int* getMonBufferSize();
+	
+	/*!
+	 * \brief returns the monBufferFiring
+	 * \param void
+	 * \return unsigned int
+	 */
+	void setMonBufferFiring(unsigned int* monBufferFiring);
+	
+	/*!
+	 * \brief sets the monBufferFiring.
+	 * \param unsigned int
+	 * \return void
+	 */
+	unsigned int getMonBufferFiring();
+
+	/*!
+	 * \brief returns the monBufferFid
+	 * \param void
+	 * \return unsigned int
+	 */
+	void setMonBufferFid(FILE* monBufferFid);
+	
+	/*!
+	 * \brief sets the monBufferFid.
+	 * \param unsigned int
+	 * \return void
+	 */
+	FILE* getMonBufferFid();
+
+	/*!
+	 * \brief returns the monBufferTimeCnt
+	 * \param void
+	 * \return unsigned int
+	 */
+	void setMonBufferTimeCnt(unsigned int* monBufferTimeCnt);
+	
+	/*!
+	 * \brief sets the monBufferTimeCnt.
+	 * \param unsigned int
+	 * \return void
+	 */
+	unsigned int* getMonBufferTimeCnt();
 	
  private:
-	// will be turned into a data structure
+	// Used to catch the spike information
+	unsigned int	 spikeMonGrpId_;
+	unsigned int	 monBufferPos_;
+	unsigned int	 monBufferSize_;
+	unsigned int*	 monBufferFiring_;
+	FILE*          monBufferFid_;
+	unsigned int*	 monBufferTimeCnt_;
+	// Used to analyzed the spike information
 	std::vector<AER>::const_iterator it_begin_;
 	std::vector<AER>::const_iterator it_end_;
 	std::vector<AER> spkVector_;

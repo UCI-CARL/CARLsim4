@@ -1,9 +1,9 @@
-#include <spike_info.h>
+#include <spike_monitor.h>
 #include <snn.h>
 #include <iostream>
 
 // we aren't using namespace std so pay attention!
-SpikeInfo::SpikeInfo(){
+SpikeMonitorCore::SpikeMonitorCore(){
 	vectorSize_ = spkVector_.size();
 	recordSet_ = false;
 	startTime_ = -1;
@@ -15,7 +15,7 @@ SpikeInfo::SpikeInfo(){
 	return;
 }
 
-void SpikeInfo::init(CpuSNN* snn, int grpId){
+void SpikeMonitorCore::init(CpuSNN* snn, int grpId){
 	// now we have a reference to the current CpuSNN object
 	snn_ = snn;
 	grpId_= grpId;
@@ -25,11 +25,11 @@ void SpikeInfo::init(CpuSNN* snn, int grpId){
 	return;
 }
 
-SpikeInfo::~SpikeInfo(){}
+SpikeMonitorCore::~SpikeMonitorCore(){}
 
 // +++++ PUBLIC METHODS: +++++++++++++++++++++++++++++++++++++++++++++++//
 
-void SpikeInfo::clear(){
+void SpikeMonitorCore::clear(){
 	spkVector_.clear();
 	accumTime_ = 0;
 	totalTime_ = 0;
@@ -40,7 +40,7 @@ void SpikeInfo::clear(){
 	return;
 }
 
-float SpikeInfo::getGrpFiringRate(){
+float SpikeMonitorCore::getGrpFiringRate(){
 	
 	vectorSize_ = spkVector_.size();
 	// case where we are done recording (easy case)
@@ -52,17 +52,17 @@ float SpikeInfo::getGrpFiringRate(){
 	}
 }
 
-float SpikeInfo::getMaxNeuronFiringRate(){
+float SpikeMonitorCore::getMaxNeuronFiringRate(){
 	this->getSortedNeuronFiringRate();
 	return sortedFiringRate_.back();
 }
 
-float SpikeInfo::getMinNeuronFiringRate(){
+float SpikeMonitorCore::getMinNeuronFiringRate(){
 	this->getSortedNeuronFiringRate();
 	return sortedFiringRate_.front();
 }
 
-std::vector<float> SpikeInfo::getNeuronFiringRate(){
+std::vector<float> SpikeMonitorCore::getNeuronFiringRate(){
 	// clear, so we get the same answer every time.
 	tmpSpikeCount_.assign(numN_,0);
 	firingRate_.assign(numN_,0);
@@ -85,7 +85,7 @@ std::vector<float> SpikeInfo::getNeuronFiringRate(){
 	}
 }
 // need to do error check on interface
-int SpikeInfo::getNumNeuronsWithFiringRate(float min, float max){
+int SpikeMonitorCore::getNumNeuronsWithFiringRate(float min, float max){
 	this->getSortedNeuronFiringRate();
 	std::vector<float>::const_iterator it;
 	int counter = 0;
@@ -96,13 +96,13 @@ int SpikeInfo::getNumNeuronsWithFiringRate(float min, float max){
 	return counter;
 }
 
-int SpikeInfo::getNumSilentNeurons(){
+int SpikeMonitorCore::getNumSilentNeurons(){
 	int numSilent = this->getNumNeuronsWithFiringRate(0,0);
 	return numSilent;
 }
 
 // need to do error check on interface
-float SpikeInfo::getPercentNeuronsWithFiringRate(float min, float max){
+float SpikeMonitorCore::getPercentNeuronsWithFiringRate(float min, float max){
 	this->getSortedNeuronFiringRate();
 	std::vector<float>::const_iterator it;
 	int counter = 0;
@@ -113,21 +113,21 @@ float SpikeInfo::getPercentNeuronsWithFiringRate(float min, float max){
 	return (float)counter/numN_;
 }
 
-float SpikeInfo::getPercentSilentNeurons(){
+float SpikeMonitorCore::getPercentSilentNeurons(){
 	float numSilent = this->getNumNeuronsWithFiringRate(0,0);
 	
 	return numSilent/numN_;
 }
 
-unsigned int SpikeInfo::getSize(){
+unsigned int SpikeMonitorCore::getSize(){
 	return spkVector_.size();	
 }
 
-std::vector<AER> SpikeInfo::getVector(){
+std::vector<AER> SpikeMonitorCore::getVector(){
 	return spkVector_;
 }
 
-std::vector<float> SpikeInfo::getSortedNeuronFiringRate(){
+std::vector<float> SpikeMonitorCore::getSortedNeuronFiringRate(){
 	// clear, so we get the same answer every time.
 	tmpSpikeCount_.assign(numN_,0);
 	firingRate_.assign(numN_,0);
@@ -151,11 +151,11 @@ std::vector<float> SpikeInfo::getSortedNeuronFiringRate(){
 	}
 }
 
-bool SpikeInfo::isRecording(){
+bool SpikeMonitorCore::isRecording(){
 	return recordSet_;
 }
 
-void SpikeInfo::print(){
+void SpikeMonitorCore::print(){
 	
 	std::cout << "Format: Time (ms) : neuron id\n";
 	//use an iterator
@@ -168,7 +168,7 @@ void SpikeInfo::print(){
 	return;
 }
 
-void SpikeInfo::pushAER(int grpId, unsigned int* neurIds, unsigned int* timeCnts, int timeInterval){
+void SpikeMonitorCore::pushAER(int grpId, unsigned int* neurIds, unsigned int* timeCnts, int timeInterval){
 	int pos    = 0; // keep track of position in flattened list of neuron IDs
 	for (int t=0; t < timeInterval; t++) {
 		for(int i=0; i<timeCnts[t];i++,pos++) {
@@ -186,7 +186,7 @@ void SpikeInfo::pushAER(int grpId, unsigned int* neurIds, unsigned int* timeCnts
 	return;
 }
 
-void SpikeInfo::startRecording(){
+void SpikeMonitorCore::startRecording(){
 	recordSet_ = true;
 	startTime_ = snn_->getSimTimeSec();
 	// in case we run this multiple times
@@ -197,12 +197,68 @@ void SpikeInfo::startRecording(){
 	return;
 }
 
-void SpikeInfo::stopRecording(){
+void SpikeMonitorCore::stopRecording(){
 	recordSet_ = false;
 	endTime_ = snn_->getSimTimeSec();
 	totalTime_ = endTime_ - startTime_ + accumTime_;
 	return;
 }
 
+void SpikeMonitorCore::setSpikeMonGrpId(unsigned int spikeMonGrpId){
+	spikeMonGrpId_=spikeMonGrpId;
+	return;
+}
 
+unsigned int SpikeMonitorCore::getSpikeMonGrpId(){
+	return spikeMonGrpId_;
+}
 
+void SpikeMonitorCore::setMonBufferPos(unsigned int monBufferPos){
+	monBufferPos_=monBufferPos;
+	return;
+}
+	
+unsigned int SpikeMonitorCore::getMonBufferPos(){
+	return monBufferPos_;
+}
+
+void SpikeMonitorCore::setMonBufferSize(unsigned int monBufferSize){
+	monBufferSize_=monBufferSize;
+	return;
+}
+	
+unsigned int* SpikeMonitorCore::getMonBufferSize(){
+	return monBufferSize_;
+}
+	
+void SpikeMonitorCore::setMonBufferFiring(unsigned int* monBufferFiring){
+	monBufferFiring_=monBufferFiring;
+	return;
+}
+	
+unsigned int SpikeMonitorCore::getMonBufferFiring(){
+	return monBufferFiring_;
+}
+
+void SpikeMonitorCore::setMonBufferFid(FILE* monBufferFid){
+	monBufferFid_=monBufferFid;
+	return;
+}
+
+FILE* SpikeMonitorCore::getMonBufferFid(){
+	return monBufferFid_;
+}
+
+void SpikeMonitorCore::setMonBufferTimeCnt(unsigned int* monBufferTimeCnt){
+	monBufferTimeCnt_=monBufferTimeCnt;
+	return;
+}
+	
+unsigned int* SpikeMonitorCore::getMonBufferTimeCnt(){
+	return monBufferTimeCnt_;
+}
+
+void SpikeMonitorCore::zeroMonBufferTimeCnt(){
+	memset(monBufferTimeCnt_,0,sizeof(int)*(1000));
+	return;
+}

@@ -57,7 +57,7 @@
 #include <carlsim_datastructures.h>
 
 #include <poisson_rate.h>
-#include <spike_info.h>
+#include <spike_monitor.h>
 
 // TODO: complete documentation
 
@@ -436,7 +436,7 @@ public:
 	 * If you need spiking information in smaller bins, use a SpikeCounter.
 	 */
 	//! Sets a spike monitor for a group, prints spikes to binary file
-	SpikeInfo* setSpikeMonitor(int grpId, const std::string& fname="", int configId=0);
+	SpikeMonitor* setSpikeMonitor(int grpId, const std::string& fname="", int configId=0);
 
 	void setSpikeRate(int grpId, PoissonRate* spikeRate, int refPeriod=1, int configId=ALL);
 

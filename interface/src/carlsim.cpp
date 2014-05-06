@@ -585,11 +585,8 @@ void CARLsim::setSpikeGenerator(int grpId, SpikeGenerator* spikeGen, int configI
 	snn_->setSpikeGenerator(grpId, new SpikeGeneratorCore(this, spikeGen),configId);
 }
 
-// set spike monitor for a group you create a new SpikeMonitorCore object
-
-
 // set spike monitor for group and write spikes to file
-SpikeInfo* CARLsim::setSpikeMonitor(int grpId, const std::string& fname, int configId) {
+SpikeMonitor* CARLsim::setSpikeMonitor(int grpId, const std::string& fname, int configId) {
 	std::string funcName = "setSpikeMonitor(\""+getGroupName(grpId,configId)+"\",\""+fname+"\")";
 	UserErrors::assertTrue(!hasRunNetwork_, UserErrors::NETWORK_ALREADY_RUN, funcName); // can't change setup after run
 	UserErrors::assertTrue(configId!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName, "configId");	// configId can't be ALL
@@ -615,10 +612,10 @@ SpikeInfo* CARLsim::setSpikeMonitor(int grpId, const std::string& fname, int con
 		UserErrors::assertTrue(false, UserErrors::FILE_CANNOT_OPEN, fileName, fileError);
 	}
 
-	SpikeInfo* spkInfo;
-	
-	spkInfo=snn_->setSpikeMonitor(grpId, fid, configId);
-	return spkInfo;
+	SpikeMonitor* spkMonitor;
+	spkMonitor=snn_->setSpikeMonitor(grpId, fid, configId);
+ 
+	return spkMonitor;
 }
 
 // assign spike rate to poisson group
