@@ -268,7 +268,7 @@ class SpikeMonitorCore {
 	 * \param unsigned int
 	 * \return void
 	 */
-	unsigned int* getMonBufferSize();
+	unsigned int getMonBufferSize();
 	
 	/*!
 	 * \brief returns the monBufferFiring

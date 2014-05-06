@@ -232,7 +232,7 @@ void SpikeMonitorCore::setMonBufferSize(unsigned int monBufferSize){
 	return;
 }
 	
-unsigned int* SpikeMonitorCore::getMonBufferSize(){
+unsigned int SpikeMonitorCore::getMonBufferSize(){
 	return monBufferSize_;
 }
 	
