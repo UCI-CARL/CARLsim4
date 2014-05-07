@@ -4142,14 +4142,17 @@ void CpuSNN::updateSpikeMonitor(int numMs) {
 	unsigned int  monBufferPos[numSpikeMonitor];
 	unsigned int  monBufferSize[numSpikeMonitor];
 	FILE*         monBufferFid[numSpikeMonitor];
+ 
+	spikeMonCoreList[0]->getMonBufferFiring();
+	
 	for(int i=0; i < numSpikeMonitor; i++){
-		monBufferFiring[numSpikeMonitor] = spikeMonCoreList[numSpikeMonitor]->getMonBufferFiring();
-		monBufferTimeCnt[numSpikeMonitor] = spikeMonCoreList[numSpikeMonitor]->getMonBufferTimeCnt();
-		monBufferPos[numSpikeMonitor] = spikeMonCoreList[numSpikeMonitor]->getMonBufferPos();
-		monBufferSize[numSpikeMonitor] = spikeMonCoreList[numSpikeMonitor]->getMonBufferSize();
-		monBufferFid[numSpikeMonitor] = spikeMonCoreList[numSpikeMonitor]->getMonBufferFid();
+		monBufferFiring[i] = spikeMonCoreList[i]->getMonBufferFiring();
+		monBufferTimeCnt[i] = spikeMonCoreList[i]->getMonBufferTimeCnt();
+		monBufferPos[i] = spikeMonCoreList[i]->getMonBufferPos();
+		monBufferSize[i] = spikeMonCoreList[i]->getMonBufferSize();
+		monBufferFid[i] = spikeMonCoreList[i]->getMonBufferFid();
 	}
-
+	
 	/* Reset buffer time counter */
 	for(int i=0; i < numSpikeMonitor; i++){
 		//spikeMonCoreList[numSpikeMonitor]->zeroMonBufferTimeCnt(numMs);
@@ -4206,8 +4209,6 @@ void CpuSNN::updateSpikeMonitor(int numMs) {
 			} /* for all spikes happening at time t */
 		}  /* for all time t */
 	}
-	
-	
 	
 	// loop over all groups and check if they have a spike monitor
 	// TODO: here is where we do our call to the monBufferSpikeInfo -- KDC

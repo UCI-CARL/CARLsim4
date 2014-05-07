@@ -24,12 +24,12 @@ carlsim_tests: $(test_dir)/carlsim_tests $(local_objs)
 $(local_dir)/carlsim_tests: $(local_objs) $(gtest_deps) \
 	$(carlsim_objs)
 	$(NVCC) $(CARLSIM_INCLUDES) $(CARLSIM_LFLAGS) $(CARLSIM_LIBS) \
-	$(CARLSIM_FLAGS) $(carlsim_objs) $(spike_info_flags) \
+	$(CARLSIM_FLAGS) $(carlsim_objs) $(spike_monitor_flags) \
 	$(GTEST_CPPFLAGS) -L$(GTEST_LIB_DIR) -lgtest_custom_main \
 	$(carlsim_tests_objs) -o $@
 
 $(local_dir)/%.o: $(local_dir)/%.cpp $(local_deps)
-	$(NVCC) $(CARLSIM_INCLUDES) $(CARLSIM_FLAGS) $(spike_info_flags) \
+	$(NVCC) $(CARLSIM_INCLUDES) $(CARLSIM_FLAGS) $(spike_monitor_flags) \
 	$(GTEST_CPPFLAGS) -c $< -o $@
 
 # rule for our local custom gtest main

@@ -19,12 +19,12 @@ pti_programs += $(local_prog)
 $(example): $(local_src) $(local_prog)
 
 $(local_prog): $(local_src) $(local_objs) $(carlsim_sources) \
-	$(carlsim_objs) $(spike_info_objs)
+	$(carlsim_objs) $(spike_monitor_obs)
 	$(NVCC) $(CARLSIM_INCLUDES) $(CARLSIM_LFLAGS) $(CARLSIM_FLAGS) \
-	$(EO_FLAGS) $(EO_LFLAGS) $(PTI_FLAGS) $(PTI_LFLAGS) $(spike_info_flags) \
+	$(EO_FLAGS) $(EO_LFLAGS) $(PTI_FLAGS) $(PTI_LFLAGS) $(spike_monitor_flags) \
 	$< $(carlsim_objs) -o $@ $(CARLSIM_LIBS) $(PTI_LIBS) $(EO_LIBS)
 
 $(local_objs): $(local_src)
 	$(NVCC) -c $(CARLSIM_INCLUDES) $(CARLSIM_FLAGS) $(PTI_FLAGS) $(EO_FLAGS) \
-	$(spike_info_flags) $< -o $@
+	$(spike_monitor_flags) $< -o $@
 

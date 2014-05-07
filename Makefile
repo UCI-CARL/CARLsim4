@@ -18,7 +18,7 @@ CARLSIM_CUOPTLEVEL ?= 0
 CARLSIM_DEBUG ?= 0
 
 # whether to include flag for regression testing
-CARLSIM_TEST ?= 1
+CARLSIM_TEST ?= 0
 
 #-------------------------------------------------------------------------------
 # End user modifiable section
@@ -44,7 +44,7 @@ lib_dir = libpti
 ex_dir  = examples
 interface_dir = interface
 test_dir = test
-util_dir =util
+util_dir = util
 spike_monitor_dir = $(util_dir)/spike_monitor
 
 # location of .cpp files
@@ -56,8 +56,7 @@ $(spike_info_dir)
 vpath %.cu $(carlsim_dir)/src
 # location of .h files
 vpath %.h $(EO_INSTALL_DIR)/src $(inc_dir) $(carlsim_dir)/include \
-	$(ex_dir)/common $(interface_dir)/include $(test_dir) \
-	$(spike_info_dir)
+$(ex_dir)/common $(interface_dir)/include $(test_dir) $(spike_info_dir)
 
 # this blank 'all' is required
 all:

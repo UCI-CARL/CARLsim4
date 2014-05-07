@@ -18,7 +18,10 @@ void readAndReturnSpikeFile(const std::string fileName, int*& buffer, long &arra
 	// obtain file size:
 	fseek (pFile , 0 , SEEK_END);
 	lSize = ftell(pFile);
+	printf("lSize = %lu\n",lSize);
+	printf("lSize = %ld\n",lSize);
 	arraySize = lSize/sizeof(uint);
+	printf("arraySize = %ld\n",arraySize);
 	rewind (pFile);
 	int* AERArray;
 	AERArray = new int[lSize];
@@ -35,6 +38,9 @@ void readAndReturnSpikeFile(const std::string fileName, int*& buffer, long &arra
 	for(int i=0;i<lSize/sizeof(int);i=i+2){
 		AERArray[i]=buffer[i];
 	}
+	printf("AERARrray[0]=%u\n",AERArray[0]);
+	printf("buffer[0]=%u\n",buffer[0]);
+	printf("lSize = %u\n",lSize);
 
 	// terminate
 	fclose (pFile);
@@ -78,7 +84,7 @@ void readAndPrintSpikeFile(const std::string fileName){
 };
 
 /// ****************************************************************************
-/// TESTS FOR SET SPIKE MON 
+/// TESTS FOR SPIKE MONITOR 
 /// ****************************************************************************
 
 /*!
@@ -169,6 +175,10 @@ TEST(SETSPIKEMON, fname){
 	}
 }
 
+/// ****************************************************************************
+/// TESTS FOR SPIKE-INFO CLASS
+/// ****************************************************************************
+
 /*!
  * \brief testing to make sure clear() function works.
  *
@@ -176,7 +186,7 @@ TEST(SETSPIKEMON, fname){
 TEST(SPIKEMON, clear){
 	CARLsim* sim;
 	PoissonRate* input;
-	const int GRP_SIZE = 5;
+	const int GRP_SIZE = 10;
 	const int inputTargetFR = 5.0f;
 	// use threadsafe version because we have deathtests
 	::testing::FLAGS_gtest_death_test_style = "threadsafe";
@@ -213,7 +223,7 @@ TEST(SPIKEMON, clear){
 		
 		spikeMonG1->startRecording();
 		
-		int runTime = 2;
+		int runTime = 1;
 		// run the network
 		sim->runNetwork(runTime,0);
 	
@@ -245,11 +255,14 @@ TEST(SPIKEMON, clear){
 		delete input;
 	}
 }
-
+/*!
+ * \brief testing to make sure getGrpFiringRate() function works.
+ *
+ */
 TEST(SPIKEMON, getGrpFiringRate){
 	CARLsim* sim;
 	PoissonRate* input;
-	const int GRP_SIZE = 5;
+	const int GRP_SIZE = 1;
 	const int inputTargetFR = 5.0f;
 	// use threadsafe version because we have deathtests
 	::testing::FLAGS_gtest_death_test_style = "threadsafe";
@@ -269,61 +282,190 @@ TEST(SPIKEMON, getGrpFiringRate){
 
 		sim->setNeuronParameters(g1, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f, ALL);
 
+		// input
+		input = new PoissonRate(GRP_SIZE);
+		for(int i=0;i<GRP_SIZE;i++){
+			input->rates[i]=inputTargetFR;
+		}
 		sim->connect(inputGroup,g1,"random", initWeight, maxWeight, 1.0f, 1, 1, SYN_FIXED);
+
+		system("rm -rf spkInputGrp.dat");
+		system("rm -rf spkG1Grp.dat");
+		SpikeMonitor* spikeMonInput = sim->setSpikeMonitor(inputGroup,"spkInputGrp.dat");
+		SpikeMonitor* spikeMonG1 = sim->setSpikeMonitor(g1,"spkG1Grp.dat");
+		
+		readAndPrintSpikeFile("spkInputGrp.dat");
+		readAndPrintSpikeFile("spkG1Grp.dat");
+
+		int* inputArray;
+		long inputSize;
+		readAndReturnSpikeFile("spkInputGrp.dat",inputArray,inputSize);
+		printf("inputSize = %lu\n",inputSize);
+		int* g1Array;
+		long g1Size;
+		readAndReturnSpikeFile("spkG1Grp.dat",g1Array,g1Size);
+		printf("g1Size = %lu\n",g1Size);
+		sim->setSpikeRate(inputGroup,input);
+		
+		spikeMonInput->startRecording();
+		spikeMonG1->startRecording();
+	 		
+		int runTime = 10;
+		// run the network
+		sim->runNetwork(runTime,0);
+	
+		spikeMonInput->stopRecording();
+		spikeMonG1->stopRecording();
+		
+		
+		
+		// calculate the average firing rate from the spike files
+		float inputFR = (float)inputSize/(float)runTime;
+		float g1FR = (float)g1Size/(float)runTime;
+		printf("inputFR = %f\n",inputFR);
+		printf("g1FR = %f\n", g1FR);
+	
+		// change this
+		//EXPECT_FLOAT_EQ(spikeMonInput->getGrpFiringRate(),0);
+
+		// I can do a more exact calulculation of this by reading the spike files later.
+
+		delete sim;
+		delete input;
+	}
+}
+
+/*!
+ * \brief testing to make sure getMaxFiringRate() function works.
+ *
+ */
+TEST(SPIKEMON, getMaxNeuronFiringRate){
+	CARLsim* sim;
+	PoissonRate* input;
+	const int GRP_SIZE = 1;
+	const int inputTargetFR = 5.0f;
+	// use threadsafe version because we have deathtests
+	::testing::FLAGS_gtest_death_test_style = "threadsafe";
+
+	// loop over both CPU and GPU mode.
+	for(int mode=0; mode<=1; mode++){
+		// first iteration, test CPU mode, second test GPU mode
+		sim = new CARLsim("SNN",mode?GPU_MODE:CPU_MODE,SILENT,0,1,42);
+
+		float COND_tAMPA=5.0, COND_tNMDA=150.0, COND_tGABAa=6.0, COND_tGABAb=150.0;
+		int inputGroup = sim->createSpikeGeneratorGroup("Input",GRP_SIZE,EXCITATORY_NEURON);
+		int g1 = sim->createGroup("g1", GRP_SIZE, EXCITATORY_NEURON, ALL);
+		
+		sim->setConductances(true,COND_tAMPA,COND_tNMDA,COND_tGABAa,COND_tGABAb);
+		double initWeight = 0.27f;
+		double maxWeight = 4*initWeight;
+
+		sim->setNeuronParameters(g1, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f, ALL);
 
 		// input
 		input = new PoissonRate(GRP_SIZE);
 		for(int i=0;i<GRP_SIZE;i++){
 			input->rates[i]=inputTargetFR;
 		}
+		sim->connect(inputGroup,g1,"random", initWeight, maxWeight, 1.0f, 1, 1, SYN_FIXED);
 
+		SpikeMonitor* spikeMonInput = sim->setSpikeMonitor(inputGroup);
+		SpikeMonitor* spikeMonG1 = sim->setSpikeMonitor(g1);
+		
 		sim->setSpikeRate(inputGroup,input);
-
-		system("rm -rf spkInputGrp.dat");
-		system("rm -rf spkG1Grp.dat");
-		SpikeMonitor* spikeMonInput = sim->setSpikeMonitor(inputGroup,"spkInputGrp.dat",0);
-		SpikeMonitor* spikeMonG1 = sim->setSpikeMonitor(g1,"spkG1Grp.dat",0);
 		
 		spikeMonInput->startRecording();
 		spikeMonG1->startRecording();
 	 		
-		int runTime = 2;
+		int runTime = 30;
 		// run the network
 		sim->runNetwork(runTime,0);
 	
 		spikeMonInput->stopRecording();
 		spikeMonG1->stopRecording();
-
-		int* inputArray;
-		long inputSize;
-		readAndReturnSpikeFile("spkInputGrp.dat",inputArray,inputSize);
-		int* g1Array;
-		long g1Size;
-		readAndReturnSpikeFile("spkG1Grp.dat",g1Array,g1Size);
-		sim->setSpikeRate(inputGroup,input);
-		// divide both by two, because we are only counting spike events, for 
-		// which there are two data elements (time, nid)
-		inputSize = inputSize/2;
-		g1Size = g1Size/2;
-		float inputFR = (float)inputSize/(runTime*GRP_SIZE);
-		float g1FR = (float)g1Size/(runTime*GRP_SIZE);
-
-		// confirm the spike info information is correct here.
-		EXPECT_FLOAT_EQ(spikeMonInput->getGrpFiringRate(),inputFR);
-		EXPECT_FLOAT_EQ(spikeMonG1->getGrpFiringRate(),g1FR);
 		
-		delete inputArray;
-		delete g1Array;
+		// make sure it's plus or minus 10% of the target firing rate.		
+		EXPECT_TRUE(spikeMonInput->getMaxNeuronFiringRate() < 5.0f+0.1*5.0 &&
+								spikeMonInput->getMaxNeuronFiringRate() > 5.0f-0.1*5.0);
+
+		// I can do a more exact calulculation of this by reading the spike files later.
+
 		delete sim;
 		delete input;
 	}
 }
 
-TEST(SPIKEMON, getMaxMinNeruonFiringRate){
+
+/*!
+ * \brief testing to make sure getMinFiringRate() function works.
+ *
+ */
+TEST(SPIKEMON, getMinNeuronFiringRate){
+	CARLsim* sim;
+	PoissonRate* input;
+	const int GRP_SIZE = 1;
+	const int inputTargetFR = 5.0f;
+	// use threadsafe version because we have deathtests
+	::testing::FLAGS_gtest_death_test_style = "threadsafe";
+
+	// loop over both CPU and GPU mode.
+	for(int mode=0; mode<=1; mode++){
+		// first iteration, test CPU mode, second test GPU mode
+		sim = new CARLsim("SNN",mode?GPU_MODE:CPU_MODE,SILENT,0,1,42);
+
+		float COND_tAMPA=5.0, COND_tNMDA=150.0, COND_tGABAa=6.0, COND_tGABAb=150.0;
+		int inputGroup = sim->createSpikeGeneratorGroup("Input",GRP_SIZE,EXCITATORY_NEURON);
+		int g1 = sim->createGroup("g1", GRP_SIZE, EXCITATORY_NEURON, ALL);
+		
+		sim->setConductances(true,COND_tAMPA,COND_tNMDA,COND_tGABAa,COND_tGABAb);
+		double initWeight = 0.27f;
+		double maxWeight = 4*initWeight;
+
+		sim->setNeuronParameters(g1, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f, ALL);
+
+		// input
+		input = new PoissonRate(GRP_SIZE);
+		for(int i=0;i<GRP_SIZE;i++){
+			input->rates[i]=inputTargetFR;
+		}
+		sim->connect(inputGroup,g1,"random", initWeight, maxWeight, 1.0f, 1, 1, SYN_FIXED);
+
+		SpikeMonitor* spikeMonInput = sim->setSpikeMonitor(inputGroup);
+		SpikeMonitor* spikeMonG1 = sim->setSpikeMonitor(g1);
+		
+		sim->setSpikeRate(inputGroup,input);
+		
+		spikeMonInput->startRecording();
+		spikeMonG1->startRecording();
+	 		
+		int runTime = 30;
+		// run the network
+		sim->runNetwork(runTime,0);
+	
+		spikeMonInput->stopRecording();
+		spikeMonG1->stopRecording();
+		
+		// make sure it's plus or minus 10% of the target firing rate.		
+		EXPECT_TRUE(spikeMonInput->getMinNeuronFiringRate() < 5.0f+0.1*5.0 &&
+								spikeMonInput->getMinNeuronFiringRate() > 5.0f-0.1*5.0);
+
+		// I can do a more exact calulculation of this by reading the spike files later.
+
+		delete sim;
+		delete input;
+	}
+}
+
+/*!
+ * \brief testing to make sure getNeuronFiringRate() function works.
+ *
+ */
+TEST(SPIKEMON, getNeuronFiringRate){
 	CARLsim* sim;
 	PoissonRate* input;
 	const int GRP_SIZE = 5;
 	const int inputTargetFR = 5.0f;
+	vector<float> FR;
 	// use threadsafe version because we have deathtests
 	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
@@ -342,74 +484,164 @@ TEST(SPIKEMON, getMaxMinNeruonFiringRate){
 
 		sim->setNeuronParameters(g1, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f, ALL);
 
+		// input
+		input = new PoissonRate(GRP_SIZE);
+		for(int i=0;i<GRP_SIZE;i++){
+			input->rates[i]=inputTargetFR;
+		}
+		
 		sim->connect(inputGroup,g1,"random", initWeight, maxWeight, 1.0f, 1, 1, SYN_FIXED);
+
+		SpikeMonitor* spikeMonInput = sim->setSpikeMonitor(inputGroup);
+		SpikeMonitor* spikeMonG1 = sim->setSpikeMonitor(g1);
+		
+		sim->setSpikeRate(inputGroup,input);
+		
+		spikeMonInput->startRecording();
+		spikeMonG1->startRecording();
+	 		
+		int runTime = 10;
+		// run the network
+		sim->runNetwork(runTime,0);
+	
+		spikeMonInput->stopRecording();
+		spikeMonG1->stopRecording();
+		
+		// make sure it's plus or minus 10% of the target firing rate.		
+		FR=spikeMonInput->getNeuronFiringRate();
+		
+		for(int i=0;i<GRP_SIZE;i++){
+			EXPECT_TRUE(FR.at(i) > inputTargetFR - 0.25*inputTargetFR &&
+									FR.at(i) < inputTargetFR + 0.25*inputTargetFR);
+		}
+	
+		
+		delete sim;
+		delete input;
+	}
+}
+
+/*!
+ * \brief testing to make sure getNumNeuronsWithFiringRate() function works.
+ *
+ */
+TEST(SPIKEMON, getNumNeuronsWithFiringRate){
+	CARLsim* sim;
+	PoissonRate* input;
+	const int GRP_SIZE = 5;
+	const int inputTargetFR = 5.0f;
+	vector<float> FR;
+	// use threadsafe version because we have deathtests
+	::testing::FLAGS_gtest_death_test_style = "threadsafe";
+
+	// loop over both CPU and GPU mode.
+	for(int mode=0; mode<=1; mode++){
+		// first iteration, test CPU mode, second test GPU mode
+		sim = new CARLsim("SNN",mode?GPU_MODE:CPU_MODE,SILENT,0,1,42);
+
+		float COND_tAMPA=5.0, COND_tNMDA=150.0, COND_tGABAa=6.0, COND_tGABAb=150.0;
+		int inputGroup = sim->createSpikeGeneratorGroup("Input",GRP_SIZE,EXCITATORY_NEURON);
+		int g1 = sim->createGroup("g1", GRP_SIZE, EXCITATORY_NEURON, ALL);
+		
+		sim->setConductances(true,COND_tAMPA,COND_tNMDA,COND_tGABAa,COND_tGABAb);
+		double initWeight = 0.27f;
+		double maxWeight = 4*initWeight;
+
+		sim->setNeuronParameters(g1, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f, ALL);
 
 		// input
 		input = new PoissonRate(GRP_SIZE);
 		for(int i=0;i<GRP_SIZE;i++){
 			input->rates[i]=inputTargetFR;
 		}
+		
+		sim->connect(inputGroup,g1,"full", initWeight, maxWeight, 1.0f, 1, 1, SYN_FIXED);
+
+		system("rm -rf spkInput.dat");
+		SpikeMonitor* spikeMonInput = sim->setSpikeMonitor(inputGroup,"spkInput.dat");
+		SpikeMonitor* spikeMonG1 = sim->setSpikeMonitor(g1);
 
 		sim->setSpikeRate(inputGroup,input);
-
-		system("rm -rf spkInputGrp.dat");
-		system("rm -rf spkG1Grp.dat");
-		SpikeMonitor* spikeMonInput = sim->setSpikeMonitor(inputGroup,"spkInputGrp.dat",0);
-		SpikeMonitor* spikeMonG1 = sim->setSpikeMonitor(g1,"spkG1Grp.dat",0);
 		
 		spikeMonInput->startRecording();
 		spikeMonG1->startRecording();
 	 		
-		int runTime = 2;
+		int runTime = 1;
 		// run the network
 		sim->runNetwork(runTime,0);
 	
 		spikeMonInput->stopRecording();
 		spikeMonG1->stopRecording();
-
-		int* inputArray;
-		long inputSize;
-		readAndReturnSpikeFile("spkInputGrp.dat",inputArray,inputSize);
-		int* g1Array;
-		long g1Size;
-		readAndReturnSpikeFile("spkG1Grp.dat",g1Array,g1Size);
-		sim->setSpikeRate(inputGroup,input);
-		// divide both by two, because we are only counting spike events, for 
-		// which there are two data elements (time, nid)
-		int inputSpkCount[GRP_SIZE];
-		int g1SpkCount[GRP_SIZE];
-		memset(inputSpkCount,0,sizeof(int)*GRP_SIZE);
-		memset(g1SpkCount,0,sizeof(int)*GRP_SIZE);
-		for(int i=0;i<inputSize;i=i+2){
-			inputSpkCount[inputArray[i+1]]++;
-		}
-		for(int i=0;i<g1Size;i=i+2){
-			g1SpkCount[g1Array[i+1]]++;
-		}
-
-		std::vector<float> inputVector;
-		std::vector<float> g1Vector;
-		for(int i=0;i<GRP_SIZE;i++){
-			//float inputFR = ;
-			//float g1FR = ;
-			inputVector.push_back((float)inputSpkCount[i]/(float)runTime);
-			g1Vector.push_back((float)g1SpkCount[i]/(float)runTime);
-		}
-		// confirm the spike info information is correct here.
-		std::sort(inputVector.begin(),inputVector.end());
-		std::sort(g1Vector.begin(),g1Vector.end());
-
-		// check max neuron firing
-		EXPECT_FLOAT_EQ(spikeMonInput->getMaxNeuronFiringRate(),inputVector.back());
-		EXPECT_FLOAT_EQ(spikeMonG1->getMaxNeuronFiringRate(),g1Vector.back());
-
-		// check min neuron firing
-		EXPECT_FLOAT_EQ(spikeMonInput->getMinNeuronFiringRate(),inputVector.front());
-		EXPECT_FLOAT_EQ(spikeMonG1->getMinNeuronFiringRate(),g1Vector.front());
+	
+		// read the entire spike file
+		//readAndPrintSpikeFile("spkInput.dat");
+		uint* spikeData;
+		int arraySize = 0;
+		//readAndReturnSpikeFile("spkInput.dat",spikeData, arraySize);
 		
-		delete inputArray;
-		delete g1Array;
+		printf("time 0 = %u\n",spikeData[0]);
+		printf("nid 0 = %u\n",spikeData[1]);
+		printf("arraySize = %d\n",arraySize);
+
+		// make sure it's plus or minus 10% of the target firing rate.		
+		FR=spikeMonInput->getNeuronFiringRate();
+		
+		for(int i=0;i<GRP_SIZE;i++){
+			EXPECT_TRUE(FR.at(i) > inputTargetFR - 0.25*inputTargetFR &&
+									FR.at(i) < inputTargetFR + 0.25*inputTargetFR);
+		}
+	
+		delete spikeData;
 		delete sim;
 		delete input;
 	}
 }
+
+/*!
+ * \brief testing to make sure getNumSilentNeurons() function works.
+ *
+ */
+
+/*!
+ * \brief testing to make sure getPercentNeuronsWithFiringRate() function works.
+ *
+ */
+
+/*!
+ * \brief testing to make sure getPercentSilentNeurons() function works.
+ *
+ */
+
+/*!
+ * \brief testing to make sure getGrpSize() function works.
+ *
+ */
+
+/*!
+ * \brief testing to make sure getSortedNeuronFiringRate() function works.
+ *
+ */
+
+/*!
+ * \brief testing to make sure isRecording() function works.
+ *
+ */
+
+
+/*!
+ * \brief testing to make sure print() function works.
+ *
+ */
+
+
+/*!
+ * \brief testing to make sure startRecording() function works.
+ *
+ */
+
+/*!
+ * \brief testing to make sure stopRecording() function works.
+ *
+ */
+
+

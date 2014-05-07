@@ -93,10 +93,10 @@ int main()
 	
 	// poissonRate spiking input pointer
 	PoissonRate* input;
-	// create a SpikeInfo pointers
-	SpikeInfo* spikeInfoInput;
-	SpikeInfo* spikeInfoExc;
-	SpikeInfo* spikeInfoInh;
+	// create a SpikeMonitor pointers
+	SpikeMonitor* spikeMonInput;
+	SpikeMonitor* spikeMonExc;
+	SpikeMonitor* spikeMonInh;
 	
 	snn = new CARLsim("TuningFixedWeightsSNN",onGPU?GPU_MODE:CPU_MODE,USER,ithGPU,numConfig,randSeed);
 			
@@ -124,9 +124,9 @@ int main()
 	}
 	
 	// set out spike monitors here
-	spikeInfoInput=snn->setSpikeMonitor(inputGroup);
-	spikeInfoExc=snn->setSpikeMonitor(excGroup);
-	spikeInfoInh=snn->setSpikeMonitor(inhGroup);
+	spikeMonInput=snn->setSpikeMonitor(inputGroup);
+	spikeMonExc=snn->setSpikeMonitor(excGroup);
+	spikeMonInh=snn->setSpikeMonitor(inhGroup);
 
 	// still have to set the firing rates (need to double check)
 	snn->setSpikeRate(inputGroup,input);
@@ -139,29 +139,29 @@ int main()
 	
 	// now run the simulations in parallel with these parameters and evaluate them
 	// we should start timing here too.
-	spikeInfoInput->startRecording();
-	spikeInfoExc->startRecording();
-	spikeInfoInh->startRecording();
+	spikeMonInput->startRecording();
+	spikeMonExc->startRecording();
+	spikeMonInh->startRecording();
 	// run network for 1 s
 	int runTime = 1;
 	snn->runNetwork(runTime,0);
 	
 	// stop recording
-	spikeInfoInput->stopRecording();
-	spikeInfoExc->stopRecording();
-	spikeInfoInh->stopRecording();
+	spikeMonInput->stopRecording();
+	spikeMonExc->stopRecording();
+	spikeMonInh->stopRecording();
 
 	// get the output of our spike monitor
-	float inputFR = spikeInfoInput->getGrpFiringRate();
+	float inputFR = spikeMonInput->getGrpFiringRate();
 	cout << "inputFR = " << inputFR << " Hz" << endl;
-	float excFR = spikeInfoExc->getGrpFiringRate();
+	float excFR = spikeMonExc->getGrpFiringRate();
 	cout << "excFR = " << excFR << " Hz" << endl;
-	float inhFR = spikeInfoInh->getGrpFiringRate();
+	float inhFR = spikeMonInh->getGrpFiringRate();
 	cout << "inhFR = " << inhFR << " Hz" << endl;
 
 	cout << "Printing individual neuron firing rates:\n";
 	vector<float> inputNFR;
-	inputNFR = spikeInfoInput->getNeuronFiringRate();
+	inputNFR = spikeMonInput->getNeuronFiringRate();
 	for(int i=0;i<inputNFR.size();i++){
 		cout << inputNFR.at(i) << " Hz" << endl;
 	}
@@ -169,68 +169,68 @@ int main()
 	
 	cout << "Printing sorted individual neuron firing rates:\n";
 	vector<float> inputSNFR;
-	inputSNFR = spikeInfoInput->getSortedNeuronFiringRate();
+	inputSNFR = spikeMonInput->getSortedNeuronFiringRate();
 	for(int i=0;i<inputSNFR.size();i++){
 		cout << inputSNFR.at(i) << " Hz" << endl;
 	}
 	cout << endl;
 
 	int numNeuronsInRange = 0;
-	numNeuronsInRange = spikeInfoInput->getNumNeuronsWithFiringRate(0.0f,7.0f);
+	numNeuronsInRange = spikeMonInput->getNumNeuronsWithFiringRate(0.0f,7.0f);
 	cout << "Number of neurons with firing range between 0 and 7 Hz: " \
 			 << numNeuronsInRange << endl << endl;
 
 	float percentNeuronsInRange = 0;
-	percentNeuronsInRange = spikeInfoInput->getPercentNeuronsWithFiringRate(0.0f,7.0f);
+	percentNeuronsInRange = spikeMonInput->getPercentNeuronsWithFiringRate(0.0f,7.0f);
 	cout << "Percentage of neurons with firing range between 0 and 7 Hz: " \
 			 << percentNeuronsInRange << endl << endl;
 
 	int numSilent = 0;
-	numSilent = spikeInfoInput->getNumSilentNeurons();
+	numSilent = spikeMonInput->getNumSilentNeurons();
 	cout << "Number of silent neurons: " << numSilent << endl << endl;
 
 	int percentSilent = 0;
-	percentSilent = spikeInfoInput->getPercentSilentNeurons();
+	percentSilent = spikeMonInput->getPercentSilentNeurons();
 	cout << "Percentage of silent neurons: " << percentSilent << "%" \
 			 << endl << endl;
 
 	float inputMaxFR = 0;
-	inputMaxFR = spikeInfoInput->getMaxNeuronFiringRate();
+	inputMaxFR = spikeMonInput->getMaxNeuronFiringRate();
 	cout << "Neuron with max. firing rate firing at: " << inputMaxFR \
 			 << " Hz." << endl << endl;
 
 	float inputMinFR = 0;
-	inputMinFR = spikeInfoInput->getMinNeuronFiringRate();
+	inputMinFR = spikeMonInput->getMinNeuronFiringRate();
 	cout << "Neuron with min. firing rate firing at: " << inputMinFR	\
 			 << " Hz." << endl << endl;
 
-	spikeInfoInput->clear();
-	spikeInfoExc->clear();
-	spikeInfoInh->clear();
+	spikeMonInput->clear();
+	spikeMonExc->clear();
+	spikeMonInh->clear();
 
 	snn->runNetwork(runTime,0);
 	snn->runNetwork(runTime,0);
 
-	spikeInfoInput->startRecording();
-	spikeInfoExc->startRecording();
-	spikeInfoInh->startRecording();
+	spikeMonInput->startRecording();
+	spikeMonExc->startRecording();
+	spikeMonInh->startRecording();
 	
 	snn->runNetwork(runTime,0);
-	spikeInfoInput->stopRecording();
-	spikeInfoExc->stopRecording();
-	spikeInfoInh->stopRecording();
+	spikeMonInput->stopRecording();
+	spikeMonExc->stopRecording();
+	spikeMonInh->stopRecording();
 	vector<float> excNFR;
-	excNFR = spikeInfoExc->getNeuronFiringRate();
+	excNFR = spikeMonExc->getNeuronFiringRate();
 	for(int i=0;i< excNFR.size();i++){
 		cout << excNFR.at(i) << " Hz" << endl;
 	}
 
 	// get the output of our spike monitor
-	inputFR = spikeInfoInput->getGrpFiringRate();
+	inputFR = spikeMonInput->getGrpFiringRate();
 	cout << "inputFR = " << inputFR << " Hz" << endl;
-	excFR = spikeInfoExc->getGrpFiringRate();
+	excFR = spikeMonExc->getGrpFiringRate();
 	cout << "excFR = " << excFR << " Hz" << endl;
-	inhFR = spikeInfoInh->getGrpFiringRate();
+	inhFR = spikeMonInh->getGrpFiringRate();
 	cout << "inhFR = " << inhFR << " Hz" << endl;
 
 	
@@ -243,15 +243,15 @@ int main()
 	if(input!=NULL)
 		delete input;
 	input=NULL;
-	// if(spikeInfoInput!=NULL)
-	// 	delete spikeInfoInput;
-	// spikeInfoInput=NULL;
-	// if(spikeInfoExc!=NULL)
-	// 	delete spikeInfoExc;
-	// spikeInfoExc=NULL;
-	// if(spikeInfoInh!=NULL)
-	// 	delete spikeInfoInh;
-	// spikeInfoInh=NULL;
+	// if(spikeMonInput!=NULL)
+	// 	delete spikeMonInput;
+	// spikeMonInput=NULL;
+	// if(spikeMonExc!=NULL)
+	// 	delete spikeMonExc;
+	// spikeMonExc=NULL;
+	// if(spikeMonInh!=NULL)
+	// 	delete spikeMonInh;
+	// spikeMonInh=NULL;
 	
 	return 0;
 }

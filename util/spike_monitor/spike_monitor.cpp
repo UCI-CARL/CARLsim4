@@ -46,6 +46,10 @@ float SpikeMonitor::getPercentNeuronsWithFiringRate(float min, float max){
 	return spikeMonitorCorePtr_->getPercentNeuronsWithFiringRate(min,max);
 }
 
+int SpikeMonitor::getNumSilentNeurons(){
+	return spikeMonitorCorePtr_->getNumSilentNeurons();
+}
+
 float SpikeMonitor::getPercentSilentNeurons(){
 	return spikeMonitorCorePtr_->getPercentSilentNeurons();
 }
