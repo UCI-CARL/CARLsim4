@@ -1018,7 +1018,7 @@ void CpuSNN::setSpikeCounter(int grpId, int recordDur, int configId) {
 SpikeMonitor* CpuSNN::setSpikeMonitor(int grpId, FILE* fid, int configId) {
 	if (configId == ALL) {
 		for(int c=0; c < nConfig_; c++)
-		setSpikeInfo(grpId, fid ,c);
+		setSpikeMonitor(grpId, fid ,c);
 	} else {
 	    int cGrpId = getGroupId(grpId, configId);
 	    CARLSIM_DEBUG("spikeInfo added");
@@ -1031,7 +1031,7 @@ SpikeMonitor* CpuSNN::setSpikeMonitor(int grpId, FILE* fid, int configId) {
 			spikeMonCoreList[numSpikeMonitor]->init(this,cGrpId);
 			
 	    // store the gid for further reference
-			spikeMonCoreList[numSpikeMonitor]->setSpikeMonitorGrpId(cGrpId);
+			spikeMonCoreList[numSpikeMonitor]->setSpikeMonGrpId(cGrpId);
 			//spikeMonGrpId[numSpikeMonitor] = cGrpId;	    
 			// also inform the grp that it is being monitored...
 	    grp_Info[cGrpId].SpikeMonitorId	= numSpikeMonitor;
@@ -1070,8 +1070,8 @@ SpikeMonitor* CpuSNN::setSpikeMonitor(int grpId, FILE* fid, int configId) {
 
 	    // oh. finally update the size info that will be useful to see
 	    // how much memory are we eating...
-	    cpuSnnSz.spikeInfoSize += sizeof(int)*buffSize;
-	    cpuSnnSz.spikeInfoSize += sizeof(int)*(1000);
+	    cpuSnnSz.monitorInfoSize += sizeof(int)*buffSize;
+	    cpuSnnSz.monitorInfoSize += sizeof(int)*(1000);
 
 	    CARLSIM_INFO("SpikeMonitor set for group %d (%s)",cGrpId,grp_Info2[grpId].Name.c_str());
 	
@@ -2450,14 +2450,16 @@ void CpuSNN::deleteObjects() {
 			fclose(fpLog_);
 
 		// close spike monitor fid's
+		FILE* monBufferFid;
 		for(int i = 0; i< numSpikeMonitor; i++){
-			if(monBufferFid[i]!=NULL && monBufferFid[i]!=stdout && monBufferFid[i]!=stderr){
-				fclose(monBufferFid[i]);
-				monBufferFid[i]=NULL;
+			monBufferFid = spikeMonCoreList[i]->getMonBufferFid();
+			if(monBufferFid!=NULL && monBufferFid!=stdout && monBufferFid!=stderr){
+				fclose(monBufferFid);
+				monBufferFid=NULL;
 			}
 		}
 		resetPointers(true); // deallocate pointers
-
+		
 		// do the same as above, but for snn_gpu.cu
 		deleteObjects_GPU();
 		simulatorDeleted = true;
@@ -3500,17 +3502,26 @@ void CpuSNN::resetPointers(bool deallocate) {
 	connectBegin=NULL;
 
 	// clear all spike monitor info
+	unsigned int* monBufferFiring;
+	unsigned int* monBufferTimeCnt;	
 	if (deallocate) {
 		for (int i = 0; i < numSpikeMonitor; i++) {
-			if (monBufferFiring[i]!=NULL && deallocate) delete[] monBufferFiring[i];
-			if (monBufferTimeCnt[i]!=NULL && deallocate) delete[] monBufferTimeCnt[i];
-			if (monBufferSpikeInfo[i]!=NULL && deallocate) delete monBufferSpikeInfo[i];
-			monBufferFiring[i]=NULL; monBufferTimeCnt[i]=NULL; monBufferSpikeInfo[i]=NULL;
+			monBufferFiring  = spikeMonCoreList[i]->getMonBufferFiring();
+			monBufferTimeCnt = spikeMonCoreList[i]->getMonBufferTimeCnt();
+			if (monBufferFiring!=NULL && deallocate) delete[] monBufferFiring;
+			if (monBufferTimeCnt!=NULL && deallocate) delete[] monBufferTimeCnt;
+			if (spikeMonCoreList[i]!=NULL && deallocate) delete spikeMonCoreList[i];
+			if (spikeMonList[i]!=NULL && deallocate) delete spikeMonList[i];
+			monBufferFiring=NULL; monBufferTimeCnt=NULL; 
+			spikeMonCoreList[i]=NULL; spikeMonList[i]=NULL;
 		}
 	} 
 	else{
 		for (int i = 0; i < numSpikeMonitor; i++) {
-			monBufferFiring[i]=NULL; monBufferTimeCnt[i]=NULL; monBufferSpikeInfo[i]=NULL;
+			monBufferFiring  = spikeMonCoreList[i]->getMonBufferFiring();
+			monBufferTimeCnt = spikeMonCoreList[i]->getMonBufferTimeCnt();
+			monBufferFiring=NULL; monBufferTimeCnt=NULL; 
+			spikeMonCoreList[i]=NULL; spikeMonList[i]=NULL;
 		}
 	}
 	// clear data (i.e., concentration of neuromodulator) of groups
@@ -4136,7 +4147,7 @@ void CpuSNN::updateSpikeMonitor(int numMs) {
 		monBufferTimeCnt[numSpikeMonitor] = spikeMonCoreList[numSpikeMonitor]->getMonBufferTimeCnt();
 		monBufferPos[numSpikeMonitor] = spikeMonCoreList[numSpikeMonitor]->getMonBufferPos();
 		monBufferSize[numSpikeMonitor] = spikeMonCoreList[numSpikeMonitor]->getMonBufferSize();
-		FILE[numSpikeMonitor] = spikeMonCoreList[numSpikeMonitor]->getBufferFid();
+		monBufferFid[numSpikeMonitor] = spikeMonCoreList[numSpikeMonitor]->getMonBufferFid();
 	}
 
 	/* Reset buffer time counter */
@@ -4212,8 +4223,8 @@ void CpuSNN::updateSpikeMonitor(int numMs) {
 													numMs, monBufferFid[monitorId]);
 			}
 			// if the group has a spikeInfo object
-			if(monBufferSpikeInfo[monitorId]!=NULL && monBufferSpikeInfo[monitorId]->isRecording()){
-				monBufferSpikeInfo[monitorId]->pushAER(grpId, monBufferFiring[monitorId], monBufferTimeCnt[monitorId],numMs);
+			if(spikeMonCoreList[monitorId]!=NULL && spikeMonCoreList[monitorId]->isRecording()){
+				spikeMonCoreList[monitorId]->pushAER(grpId, monBufferFiring[monitorId], monBufferTimeCnt[monitorId],numMs);
 			}
 		}
 	}

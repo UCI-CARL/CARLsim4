@@ -1,6 +1,8 @@
-#include <spike_monitor.h>
 #include <snn.h>
 #include <iostream>
+#include <spike_monitor_core.h>
+
+
 
 // we aren't using namespace std so pay attention!
 SpikeMonitorCore::SpikeMonitorCore(){
@@ -241,7 +243,7 @@ void SpikeMonitorCore::setMonBufferFiring(unsigned int* monBufferFiring){
 	return;
 }
 	
-unsigned int SpikeMonitorCore::getMonBufferFiring(){
+unsigned int* SpikeMonitorCore::getMonBufferFiring(){
 	return monBufferFiring_;
 }
 

@@ -282,7 +282,7 @@ class SpikeMonitorCore {
 	 * \param unsigned int
 	 * \return void
 	 */
-	unsigned int getMonBufferFiring();
+	unsigned int* getMonBufferFiring();
 
 	/*!
 	 * \brief returns the monBufferFid

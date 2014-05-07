@@ -79,6 +79,7 @@
 #include <mtrand.h>
 #include <gpu_random.h>
 #include <spike_monitor.h>
+#include <spike_monitor_core.h>
 
 extern RNG_rand48* gpuRand48; //!< Used by all network to generate global random number
 
@@ -877,7 +878,7 @@ private:
 		unsigned int		debugInfoSize;
 		unsigned int		addInfoSize;	//!< includes random number generator etc.
 		unsigned int		blkInfoSize;
-		unsigned int		spikeInfoSize;
+		unsigned int		monitorInfoSize;
 	} snnSize_t;
 
 	snnSize_t cpuSnnSz;

@@ -60,7 +60,7 @@ class SpikeMonitor {
 	 * Creates a new instance of the analysis class. 
 	 *	 
 	 */
-	SpikeMonitor(); 
+	SpikeMonitor(SpikeMonitorCore* spikeMonitorCorePtr); 
 
 	/*! 
 	 * \brief SpikeMonitor destructor.
