@@ -272,7 +272,7 @@ int main()
 
 
 	//initialize the GPU/network
-	s.runNetwork(0,0);
+	s.setupNetwork();
 
 	PoissonRate me(nrX*nrY*28*3,onGPU);
 	PoissonRate red_green(nrX*nrY,onGPU);
@@ -307,9 +307,7 @@ int main()
 		s.runNetwork(0,frameDur);
 
 		if (i==1) {
-			FILE* nid = fopen("examples/colorblind/results/net.dat","wb");
-			s.writeNetwork(nid);
-			fclose(nid);
+			s.saveSimulation("examples/colorblind/results/net.dat", true);
 		}
 	}
 	fclose(fid);

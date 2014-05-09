@@ -131,6 +131,7 @@ TEST(STP, internalCPUvsData) {
 	PeriodicSpikeGeneratorCore* spk50 = new PeriodicSpikeGeneratorCore(50.0f); // periodic spiking @ 50 Hz
 	sim->setSpikeGenerator(g0, spk50, ALL);
 
+	sim->setupNetwork(true);
 	for (int i=0; i<50; i++) {
 		sim->runNetwork(0,1,true); // enable copyState
 		EXPECT_NEAR(sim->stpu[1], stpu[i], abs_error);
@@ -173,6 +174,7 @@ TEST(STP, externalCPUvsData) {
 	PeriodicSpikeGeneratorCore* spk50 = new PeriodicSpikeGeneratorCore(50.0f); // periodic spiking @ 50 Hz
 	sim->setSpikeGenerator(g0, spk50, ALL);
 
+	sim->setupNetwork(true);
 	for (int i=0; i<50; i++) {
 		sim->runNetwork(0,1,true); // enable copyState
 		EXPECT_NEAR(sim->current[0], current[i], abs_error); // check post-synaptic current to see effect of pre-STP
@@ -215,6 +217,7 @@ TEST(STP, internalCPUvsGPU) {
 		PeriodicSpikeGeneratorCore* spk20 = new PeriodicSpikeGeneratorCore(20.0f);
 		sim->setSpikeGenerator(g0, spk20, ALL);
 
+		sim->setupNetwork(true);
 		for (int i=0; i<300; i++) {
 			sim->runNetwork(0,1,true); // enable copyState
 			stpu[j*300+i] = sim->stpu[1];

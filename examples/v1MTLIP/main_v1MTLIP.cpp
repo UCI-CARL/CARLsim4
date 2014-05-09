@@ -749,7 +749,7 @@ int main()
 	}
 
 	// initialize the GPU/network, run on device with index ithGPU
-	snn.runNetwork(0,0);	
+	snn.setupNetwork();	
 	time(&timer_build);
 
 	PoissonRate me(nrX*nrY*28*3,onGPU);
@@ -777,13 +777,7 @@ int main()
 
 	// store network if bool is set
 	if (storeNetwork) {
-		nid = fopen((saveFolder+"net.dat").c_str(),"wb");
-		if (nid==NULL) {
-			printf("ERROR: could not open network file\n");
-			exit(4);
-		}
-		snn.writeNetwork(nid);
-		fclose(nid);
+		snn.saveSimulation(saveFolder+"net.dat", true);
 	}
 
 	fclose(fid); // close input video file

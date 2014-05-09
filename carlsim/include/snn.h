@@ -298,7 +298,7 @@ public:
 	 * \param[in] updateWeightChangeInterval the interval between two weight update.
 	 * \param[in] tauWeightChange the decay time constant of weight change (wtChange)
 	 */
-	void setWeightAndWeightChangeUpdate(updateIterval_t updateWeightInterval, updateIterval_t updateWeightChangeInterval,
+	void setWeightAndWeightChangeUpdate(updateInterval_t updateWeightInterval, updateInterval_t updateWeightChangeInterval,
 										int tauWeightChange);
 
 	// +++++ PUBLIC METHODS: RUNNING A SIMULATION +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
@@ -309,7 +309,11 @@ public:
 	 */
 	int runNetwork(int _nsec, int _nmsec, bool copyState);
 
-
+	/*!
+	 * \brief build the network 
+	 * \param[in] removeTempMemory 	remove temp memory after building network
+	 */
+	void setupNetwork(bool removeTempMemory);
 
 	// +++++ PUBLIC METHODS: INTERACTING WITH A SIMULATION ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
@@ -650,8 +654,6 @@ private:
 
 	void setGrpTimeSlice(int grpId, int timeSlice); //!< used for the Poisson generator. TODO: further optimize
 	int setRandSeed(int seed);	//!< setter function for const member randSeed_
-
-	void setupNetwork(bool removeTempMemory=true);
 
 	void showStatus();
 

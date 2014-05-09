@@ -131,11 +131,18 @@ static const char* stdpType_string[] = {
  * INTERVAL_100MS: the update interval will be 100 ms, which is 10Hz update frequency
  * INTERVAL_1000MS: the update interval will be 1000 ms, which is 1Hz update frequency
  */
-enum updateIterval_t {
+enum updateInterval_t {
 	INTERVAL_10MS, INTERVAL_100MS, INTERVAL_1000MS
 };
-static const char* updateRate_string[] = {
+static const char* updateInterval_string[] = {
 	"10 ms interval", "100 ms interval", "1000 ms interval"
+};
+
+enum carlsimState_t {
+	CONFIG_STATE, SETUP_STATE, EXE_STATE
+};
+static const char* carlsimState_string[] = {
+	"Configuration state", "Setup state", "Execution state"
 };
 
 /*!

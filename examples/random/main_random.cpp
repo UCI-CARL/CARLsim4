@@ -76,6 +76,10 @@ int main()
 	float ALPHA_LTP = 0.10f/100, TAU_LTP = 20.0f, ALPHA_LTD = 0.12f/100, TAU_LTD = 20.0f;
 	sim.setSTDP(g1, true, STANDARD, ALPHA_LTP, TAU_LTP, ALPHA_LTD, TAU_LTD);
 
+
+	// build the network
+	sim.setupNetwork();
+
 	// show network status every 2 secs
 	sim.setLogCycle(2);
 
@@ -83,7 +87,7 @@ int main()
 	sim.setSpikeMonitor(g2); // Show basic statistics about g2
 	sim.setSpikeMonitor(gin);
 
-//	sim.setConnectionMonitor(g1, g2);
+	sim.setConnectionMonitor(g1, g2);
 
 	//setup some baseline input
 	PoissonRate in(N*0.1);

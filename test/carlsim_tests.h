@@ -102,7 +102,7 @@ public:
 	long long getSpikesTotal() { return spkTotal_; }
 
 	// the update function counts the spikes per neuron in the current second
-	void update(CpuSNN* s, int grpId, unsigned int* NeuronIds, unsigned int *timeCounts) {
+	void update(CpuSNN* s, int grpId, unsigned int* NeuronIds, unsigned int *timeCounts, int timeInterval) {
 		int pos = 0;
 		for (int t=0; t<1000; t++) {
 			for (int i=0; i<timeCounts[t]; i++,pos++) {

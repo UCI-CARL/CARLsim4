@@ -66,7 +66,7 @@ void UserErrors::throwError(std::string errorFunc, errorType error, std::string 
 		std::cerr << " must be positive.";
 		break;
 	case MUST_BE_WITHIN_RANGE:
-		std::cerr << " must be within range ";
+		std:: cerr << " must be with some range.";
 		break;
 	case MUST_HAVE_SAME_SIGN:
 		std::cerr << " must have the same sign.";
@@ -79,6 +79,9 @@ void UserErrors::throwError(std::string errorFunc, errorType error, std::string 
 		break;
 	case WRONG_NEURON_TYPE:
 		std::cerr << " cannot be called on this neuron type.";
+		break;
+	case INVALID_API_AT_CURRENT_STATE:
+		std::cerr << " the api cannot be called at the current state";
 		break;
 	case UNKNOWN:
 	default:

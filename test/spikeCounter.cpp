@@ -89,6 +89,7 @@ TEST(SpikeCounter, SpikeCntVsData) {
 		sim->setSpikeGenerator(g0, spk50, ALL);
 
 		// after some time expect some number of spikes
+		sim->setupNetwork(true);
 		sim->runNetwork(0,750,false);
 		for (int c=0; c<nConfig; c++) {
 			spikes = sim->getSpikeCounter(g1,c);
@@ -120,6 +121,7 @@ TEST(SpikeCounter, SpikeCntVsData) {
 		}
 
 		// run some more and expect number
+		sim->setupNetwork(true);
 		sim->runNetwork(2,134,false);
 		for (int c=0; c<nConfig; c++) {
 			spikes = sim->getSpikeCounter(g1,0);
@@ -165,6 +167,7 @@ TEST(SpikeCounter, SpikeCntvsSpikeMon) {
 			sim->setSpikeGenerator(g0, spk50, ALL);
 
 			// after some time expect some number of spikes
+			sim->setupNetwork(true);
 			sim->runNetwork(1,0,false);
 			spikesMon = spikePN->getSpikes();
 

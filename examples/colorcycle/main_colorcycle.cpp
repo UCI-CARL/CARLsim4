@@ -268,8 +268,8 @@ int main()
 
 	unsigned char* vid = new unsigned char[nrX*nrY*3];
 
-	// init
-	s.runNetwork(0,0);
+	// setup the network
+	s.setupNetwork();
 
 
 	PoissonRate me(nrX*nrY*28*3,false);
@@ -306,9 +306,7 @@ int main()
 		s.runNetwork(0,frameDur);
 
 		if (i==1) {
-			FILE* nid = fopen("examples/colorcycle/results/net.dat","wb");
-			s.writeNetwork(nid);
-			fclose(nid);
+			s.saveSimulation("examples/colorcycle/results/net.dat", true);
 		}
 	}
 	fclose(fid);

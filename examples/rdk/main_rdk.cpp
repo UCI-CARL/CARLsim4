@@ -341,8 +341,8 @@ int main()
 	s.setSpikeMonitor(gPFC,saveFolder+"spkPFC.dat");
 	s.setSpikeMonitor(gPFCi,saveFolder+"spkPFCi.dat");
 
-	// init
-	s.runNetwork(0,0);
+	// setup the network
+	s.setupNetwork();
 
 	unsigned char* vid = new unsigned char[nrX*nrY*3];
 
@@ -374,9 +374,7 @@ int main()
 		s.runNetwork(0,frameDur);
 
 		if (i==1) {
-			FILE* nid = fopen((saveFolder+"net.dat").c_str(),"wb");
-			s.writeNetwork(nid);
-			fclose(nid);
+			s.saveSimulation(saveFolder+"net.dat", true);
 		}
 	}
 	fclose(fid);

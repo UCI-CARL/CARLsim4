@@ -85,6 +85,7 @@ TEST(COBA, synRiseTime) {
 			PeriodicSpikeGeneratorCore* spk1 = new PeriodicSpikeGeneratorCore(1.0f); // periodic spiking @ 50 Hz
 			sim->setSpikeGenerator(g0, spk1, ALL);
 			sim->setSpikeGenerator(g2, spk1, ALL);
+			sim->setupNetwork(true);
 			sim->runNetwork(1,0,false);
 
 			// now observe gNMDA, gGABAb after spike, and make sure that the time at which they're max matches the
@@ -230,6 +231,7 @@ TEST(COBA, disableSynReceptors) {
 			sim->setSpikeRate(g0,&poissIn1,1,ALL);
 			sim->setSpikeRate(g1,&poissIn2,1,ALL);
 
+			sim->setupNetwork(true);
 			sim->runNetwork(1,0,false);
 
 			if (mode) {

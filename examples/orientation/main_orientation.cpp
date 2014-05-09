@@ -219,8 +219,8 @@ int main()
 	s.setSpikeMonitor(gV4o,"examples/orientation/results/spkV4o.dat");
 	s.setSpikeMonitor(gV4oi,"examples/orientation/results/spkV4oi.dat");
 
-	// init
-	s.runNetwork(0,0);
+	// setup the network
+	s.setupNetwork();
 
 	unsigned char* vid = new unsigned char[nrX*nrY*3];
 
@@ -255,9 +255,7 @@ int main()
 		s.runNetwork(0,frameDur);
 
 		if (i==1) {
-			FILE* nid = fopen("examples/orientation/results/net.dat","wb");
-			s.writeNetwork(nid);
-			fclose(nid);
+			s.saveSimulation("examples/orientation/results/net.dat", true);
 		}
 	}
 	fclose(fid);

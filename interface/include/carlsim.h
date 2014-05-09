@@ -169,24 +169,29 @@ public:
 	 * \param[in] mulSynSlow a multiplication factor to be applied to the slow synaptic current (NMDA in the case of
 	 *                       excitatory, and GABAb in the case of inhibitory connections). Default: 1.0
 	 * \returns a unique ID associated with the newly created connection
+	 * \note The method can be called at configuration state only
 	 */
 	short int connect(int grpId1, int grpId2, const std::string& connType, RangeWeight wt, float connProb,
 		RangeDelay delay, bool synWtType=SYN_FIXED, float mulSynFast=1.0f, float mulSynSlow=1.0f);
 
 	//! shortcut to make connections with custom connectivity profile but omit scaling factors for synaptic
 	//! conductances (default is 1.0 for both)
+	//! \note The method can be called at configuration state only
 	short int connect(int grpId1, int grpId2, ConnectionGenerator* conn, bool synWtType=SYN_FIXED, int maxM=0, 
 						int maxPreM=0);
 
 	//! make connections with custom connectivity profile
+	//! \note The method can be called at configuration state only
 	short int connect(int grpId1, int grpId2, ConnectionGenerator* conn, float mulSynFast, float mulSynSlow,
 						bool synWtType=SYN_FIXED, int maxM=0,int maxPreM=0);
 
 
 	//! creates a group of Izhikevich spiking neurons
+	//! \note The method can be called at configuration state only
 	int createGroup(const std::string grpName, int nNeur, int neurType, int configId=ALL);
 
 	//! creates a spike generator group
+	//! \note The method can be called at configuration state only
 	int createSpikeGeneratorGroup(const std::string grpName, int nNeur, int neurType, int configId=ALL);
 
 
@@ -201,6 +206,7 @@ public:
 	 * If you call this function without setting your own defaults, then the following defaults will be used:
 	 * tdAMPA=5ms, trNMDA=0, tdNMDA=150ms, tdGABAa=6ms, trGABAb=0, tdGABAb=150ms (instantaneous rise time).
 	 * \param[in] isSet   a flag to inform whether to run simulation in COBA mode (true) or CUBA mode (false)
+	 * \note The method can be called at configuration state only
 	 */
 	void setConductances(bool isSet, int configId=ALL);
 
@@ -217,6 +223,7 @@ public:
 	 * \param[in] tdNMDA  time constant for NMDA decay (ms)
 	 * \param[in] tdGABAa time constant for GABAa decay (ms)
 	 * \param[in] tdGABAb time constant for GABAb decay (ms)
+	 * \note The method can be called at configuration state only
 	 */
 	void setConductances(bool isSet, int tdAMPA, int tdNMDA, int tdGABAa, int tdGABAb, int configId=ALL);
 
@@ -237,24 +244,30 @@ public:
 	 * \param[in] tdGABAa time constant for GABAa decay (ms)
 	 * \param[in] trGABAb time constant for GABAb rise (ms), must be smaller than tdGABAb
 	 * \param[in] tdGABAb time constant for GABAb decay (ms)
+	 * \note The method can be called at configuration state only
 	 */
 	void setConductances(bool isSet, int tdAMPA, int trNMDA, int tdNMDA, int tdGABAa, int trGABAb, int tdGABAb,
 		int configId=ALL);
 
 	//! Sets default homeostasis params for group
+	//! \note The method can be called at configuration state only
 	void setHomeostasis(int grpId, bool isSet, int configId=ALL);
 
 	//! Sets custom homeostasis params for group
+	//! \note The method can be called at configuration state only
 	void setHomeostasis(int grpId, bool isSet, float homeoScale, float avgTimeScale, int configId=ALL);
 
 	//! Sets homeostatic target firing rate (enforced through homeostatic synaptic scaling)
+	//! \note The method can be called at configuration state only
 	void setHomeoBaseFiringRate(int grpId, float baseFiring, float baseFiringSD, int configId=ALL);
 
 	//! Sets Izhikevich params a, b, c, and d with as mean +- standard deviation
+	//! \note The method can be called at configuration state only
 	void setNeuronParameters(int grpId, float izh_a, float izh_a_sd, float izh_b, float izh_b_sd,
 							 float izh_c, float izh_c_sd, float izh_d, float izh_d_sd, int configId=ALL);
 
-	//! Sets Izhikevich params a, b, c, and d of a neuron group. 
+	//! Sets Izhikevich params a, b, c, and d of a neuron group.
+	//! \note The method can be called at configuration state only
 	void setNeuronParameters(int grpId, float izh_a, float izh_b, float izh_c, float izh_d, int configId=ALL);
 
 	/*!
@@ -271,19 +284,23 @@ public:
 	 * \param baseNE  the baseline concentration of Noradrenaline 
 	 * \param tauNE the decay time constant of Noradrenaline 
 	 * \param configId (optional, deprecated) configuration id
+	 * \note The method can be called at configuration state only
 	 */
 	void setNeuromodulator(int grpId, float baseDP, float tauDP, float base5HT, float tau5HT,
-							float baseACh, float tauACh, float baseNE, float tauNE, int configId);
+							float baseACh, float tauACh, float baseNE, float tauNE, int configId = ALL);
 
 	// TODO: this should be implemented via default arguments as members of the class, so that the user can call
 	// setDefaultNeuromodulators()
+	//! \note The method can be called at configuration state only
 	void setNeuromodulator(int grpId, float tauDP = 100.0f, float tau5HT = 100.0f,
 							float tauACh = 100.0f, float tauNE = 100.0f, int configId = ALL);
 
 	//! Sets default STDP mode and params
+	//! \note The method can be called at configuration state only
 	void setSTDP(int grpId, bool isSet, int configId=ALL);
 
 	//! Sets STDP params for a group, custom
+	//! \note The method can be called at configuration state only
 	void setSTDP(int grpId, bool isSet, stdpType_t type, float alphaLTP, float tauLTP, float alphaLTD, float tauLTD,
 		int configId=ALL);
 
@@ -310,10 +327,12 @@ public:
 	 * \param[in] STP_tau_u   decay constant of u (\tau_F)
 	 * \param[in] STP_tau_x   decay constant of x (\tau_D)
 	 * \param[in] configId    configuration ID of group
+	 * \note The method can be called at configuration state only
 	 */
 	void setSTP(int grpId, bool isSet, float STP_U, float STP_tau_u, float STP_tau_x, int configId=ALL);
 
 	//! Sets STP params U, tau_u, and tau_x of a neuron group (pre-synaptically) using default values
+	//! \note The method can be called at configuration state only
 	void setSTP(int grpId, bool isSet, int configId=ALL);
 
 	//! Sets the weight and weight change update parameters
@@ -321,9 +340,10 @@ public:
 	 * \param[in] updateWeightInterval the interval between two weight update.
 	 * \param[in] updateWeightChangeInterval the interval between two weight update.
 	 * \param[in] tauWeightChange the decay time constant of weight change (wtChange)
+	 * \note The method can be called at configuration state only
 	 */
-	void setWeightAndWeightChangeUpdate(updateIterval_t updateWeightInterval = INTERVAL_1000MS,
-		updateIterval_t updateWeightChangeInterval = INTERVAL_1000MS, int tauWeightChange = 10);
+	void setWeightAndWeightChangeUpdate(updateInterval_t updateWeightInterval = INTERVAL_1000MS,
+		updateInterval_t updateWeightChangeInterval = INTERVAL_1000MS, int tauWeightChange = 10);
 
 
 	// +++++ PUBLIC METHODS: RUNNING A SIMULATION ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
@@ -333,14 +353,22 @@ public:
 	 * \param[in] nSec 			number of seconds to run the network
 	 * \param[in] nMsec 		number of milliseconds to run the network
 	 * \param[in] copyState 	enable copying of data from device to host
+	 * \note The method can be called at setup state and execution state. If Carlsim is at setup state, it will
+	 * change to execution state
 	 */
 	int runNetwork(int nSec, int nMsec, bool copyState=false);
 
-
+	/*!
+	 * \brief build the network 
+	 * \param[in] removeTempMemory 	remove temp memory after building network
+	 * \note The method can be called at configuration state only. Carlsim will change to setup state
+	 */
+	void setupNetwork(bool removeTempMemory = true);
 
 	// +++++ PUBLIC METHODS: LOGGING / PLOTTING +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
 	//! saves important simulation and network infos to file
+	//! \note The method can be called at setup state and execution state
 	void saveSimulation(std::string fileName, bool saveSynapseInfo=true);
 
 	// FIXME: needs overhaul
@@ -353,8 +381,6 @@ public:
 	 * \param[in] showStatusCycle how often to print network state (seconds)
 	 */
 	void setLogCycle(int showStatusCycle);
-
-	void setShowStatus(int showStatusCycle, int showStatusNeurons, int showStatusSynapses);
 
 	/*!
 	 * \brief Sets the file pointer of the debug log file
@@ -376,6 +402,7 @@ public:
 	// +++++ PUBLIC METHODS: INTERACTING WITH A SIMULATION ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
 	//! reads the network state from file
+	//! \note The method can be called at configuration state only
 	void readNetwork(FILE* fid);
 
 	/*!
@@ -384,9 +411,11 @@ public:
 	 * The user passes the connection ID (connectID), the weightMatrix, the matrixSize, and 
 	 * configuration ID (configID).  This function only works for fixed synapses and for connections of type
 	 * CONN_USER_DEFINED. Only the weights are changed, not the maxWts, delays, or connected values
+	 * \note The method can be called at setup state only
 	 */
 	void reassignFixedWeights(short int connectId, float weightMatrix[], int matrixSize, int configId=ALL);
 
+	// Deprecated
 	void resetSpikeCntUtil(int grpId=ALL); //!< resets spike count for particular neuron group
 
 	/*!
@@ -397,6 +426,7 @@ public:
 	 * point in time.
 	 * \param grpId the group for which to reset the spike counts. Set to ALL if you want to reset all Spike Counters.
 	 * \param configId the config id for which to reset the spike counts. Set to ALL if you want to reset all configIds
+	 * \note The method can be called at execution state only
 	 */
 	void resetSpikeCounter(int grpId, int configId=ALL);
 
@@ -412,11 +442,13 @@ public:
 	 * \param[in] grpIdPre 		the pre-synaptic group ID
 	 * \param[in] grpIdPost 	the post-synaptic group ID
 	 * \param[in] connectionMon an instance of class ConnectionMonitor (see callback.h)
+	 * \note The method can be called at configuration state and setup state
 	 */
 	void setConnectionMonitor(int grpIdPre, int grpIdPost, ConnectionMonitor* connectionMon=NULL, int configId=ALL);
 
 	/*!
 	 * \brief Sets a group monitor for a group, custom GroupMonitor class
+	 * \note The method can be called at configuration state and setup state
 	 */
 	void setGroupMonitor(int grpId, GroupMonitor* groupMon=NULL, int configId=ALL);
 
@@ -434,10 +466,12 @@ public:
 	 * \param grpId the group for which you want to enable a SpikeCounter
 	 * \param recordDur number of ms for which to record spike numbers. Spike numbers will be reset to zero after
 	 * this. Set frameDur to -1 to never reset spike counts. Default: -1.
+	 * \note The method can be called at configuration state and setup state
 	 */
 	void setSpikeCounter(int grpId, int recordDur=-1, int configId=ALL);
 
 	//! Sets up a spike generator
+	//! \note The method can be called at configuration state and setup state
 	void setSpikeGenerator(int grpId, SpikeGenerator* spikeGen, int configId=ALL);
 
 	/*!
@@ -448,36 +482,47 @@ public:
 	 * output to console every 1000 ms.
 	 * If you want to dump spiking information to file, use the other SpikeMonitor.
 	 * If you need spiking information in smaller bins, use a SpikeCounter.
+	 * \note The method can be called at configuration state and setup state
 	 */
 	void setSpikeMonitor(int gid, SpikeMonitor* spikeMon=NULL, int configId=ALL);
 
 	//! Sets a spike monitor for a group, prints spikes to binary file
+	//! \note The method can be called at configuration state and setup state
 	void setSpikeMonitor(int grpId, const std::string& fname, int configId=0);
 
+	//! \note The method can be called at setup state and execution state
 	void setSpikeRate(int grpId, PoissonRate* spikeRate, int refPeriod=1, int configId=ALL);
 
 	//! Resets either the neuronal firing rate information by setting resetFiringRate = true and/or the
 	//! weight values back to their default values by setting resetWeights = true.
+	//! \note The method can be called at execution state only
+	// Deprecated
 	void updateNetwork(bool resetFiringInfo, bool resetWeights);
 
 	//! function writes population weights from gIDpre to gIDpost to file fname in binary.
+	//! \note The method can be called at setup state and execution state
 	void writePopWeights(std::string fname, int gIDpre, int gIDpost, int configId=0);
 
 
 
 	// +++++ PUBLIC METHODS: GETTER / SETTERS +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
+	carlsimState_t getCarlsimState() { return carlsimState_; }
 // FIXME
 //	grpConnectInfo_t* getConnectInfo(short int connectId, int configId=0); //!< gets connection info struct
+	//! \note The method can be called at setup state and execution state
 	int  getConnectionId(short int connId, int configId);
 
+	//! \note The method can be called at setup state and execution state
 	uint8_t* getDelays(int gIDpre, int gIDpost, int& Npre, int& Npost, uint8_t* delays=NULL);
 
+	//! \note The method can be called at setup state and execution state
 	int getGroupId(int grpId, int configId=0);
 	//group_info_t getGroupInfo(int grpId, int configId=0); //!< gets group info struct
 	std::string getGroupName(int grpId, int configId=0);
 
-	int getNumConfigurations() { return nConfig_; }		//!< gets number of network configurations
+	//! \note The method can be called at setup state and execution state
+	int getNumConfigurations();							//!< gets number of network configurations
 	int getNumConnections(short int connectionId);		//!< gets number of connections associated with a connection ID
 	int getNumGroups();									//!< gets number of groups in the network
 	int getNumNeurons(); //!< returns the total number of allocated neurons in the network
@@ -494,8 +539,10 @@ public:
 	 * and the size of the 1D array in size.  gIDpre(post) is the group ID for the pre(post)synaptic group, 
 	 * weights is a pointer to a single dimensional array of floats, size is the size of that array which is 
 	 * returned to the user, and configID is the configuration ID of the SNN.  NOTE: user must free memory from
-	 * weights to avoid a memory leak.  
+	 * weights to avoid a memory leak.
+	 * \note The method can be called at setup state and execution state
 	 */
+	// why not readPopWeight()?
 	void getPopWeights(int gIDpre, int gIDpost, float*& weights, int& size, int configId=0);
 
 	uint64_t getSimTime();
@@ -503,6 +550,7 @@ public:
 	uint32_t getSimTimeMsec();
 
 	//! Returns pointer to 1D array of the number of spikes every neuron in the group has fired
+	//! \note The method can be called at execution state, Deprecated
 	unsigned int* getSpikeCntPtr(int grpId);
 
 	/*!
@@ -513,17 +561,16 @@ public:
 	 * \param[in] configId the configuration ID (cannot be ALL)
 	 * \returns pointer to array of ints. Number of elements in array is the number of neurons in group.
 	 * Each entry is the number of spikes for this neuron (int) since the last reset.
+	 * \note The method can be called at execution state
 	 */
 	int* getSpikeCounter(int grpId, int configId=0);
 
 	// FIXME: fix this
 	// TODO: maybe consider renaming getPopWeightChanges
+	//! \note The method can be called at execution state, Deprecated
 	float* getWeightChanges(int gIDpre, int gIDpost, int& Npre, int& Npost, float* weightChanges=NULL);
 
-	int grpStartNeuronId(int grpId);
-	int grpEndNeuronId(int grpId);
-	int grpNumNeurons(int grpId);
-
+	//! \note The method can be called at setup state and execution state
 	bool isExcitatoryGroup(int grpId);
 	bool isInhibitoryGroup(int grpId);
 	bool isPoissonGroup(int grpId);
@@ -533,7 +580,9 @@ public:
 	 *
 	 * state information from GPU kernel to cpuNetPtrs.  Warning: setting this flag to true will slow down
 	 * the simulation significantly.
+	 * \note The method can be called at execution state only
 	 */
+	//Deprecated
 	void setCopyFiringStateFromGPU(bool enableGPUSpikeCntPtr);
 
 
@@ -548,19 +597,24 @@ public:
 	 * \param[in] tdGABAa  time constant for GABAa decay (ms)
 	 * \param[in] trGABAb  time constant for GABAb rise (ms)
 	 * \param[in] tdGABAb  time constant for GABAb decay (ms)
+	 * \note The method can be called at configuration state only
 	 */
 	void setDefaultConductanceTimeConstants(int tdAMPA, int trNMDA, int tdNMDA, int tdGABAa, int trGABAb, int tdGABAb);
 
 	//! sets default homeostasis params
+	//! \note The method can be called at configuration state only
 	void setDefaultHomeostasisParams(float homeoScale, float avgTimeScale);
 
 	//! sets default options for save file
+	//! \note The method can be called at configuration state only
 	void setDefaultSaveOptions(std::string fileName, bool saveSynapseInfo);
 
 	//! sets default values for STDP params
+	//! \note The method can be called at configuration state only
 	void setDefaultSTDPparams(float alphaLTP, float tauLTP, float alphaLTD, float tauLTD);
 
 	//! sets default values for STP params (neurType either EXCITATORY_NEURON or INHIBITORY_NEURON)
+	//! \note The method can be called at configuration state only
 	void setDefaultSTPparams(int neurType, float STP_U, float STP_tau_U, float STP_tau_x);
 
 
@@ -591,11 +645,11 @@ private:
 
 	std::vector<int> grpIds_;		//!< a list of all created group IDs
 
-	bool hasRunNetwork_;			//!< flag to inform that network has been run
 	bool hasSetHomeoALL_;			//!< informs that homeostasis have been set for ALL groups (can't add more groups)
 	bool hasSetHomeoBaseFiringALL_;	//!< informs that base firing has been set for ALL groups (can't add more groups)
 	bool hasSetSTDPALL_; 			//!< informs that STDP have been set for ALL groups (can't add more groups)
 	bool hasSetSTPALL_; 			//!< informsthat STP have been set for ALL groups (can't add more groups)
+	carlsimState_t carlsimState_;	//!< the current state of carlsim
 
 	int def_tdAMPA_;				//!< default value for AMPA decay (ms)
 	int def_trNMDA_;				//!< default value for NMDA rise (ms)
