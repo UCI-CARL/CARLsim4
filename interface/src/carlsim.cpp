@@ -669,36 +669,38 @@ void CARLsim::setSpikeGenerator(int grpId, SpikeGenerator* spikeGen, int configI
 	snn_->setSpikeGenerator(grpId, new SpikeGeneratorCore(this, spikeGen),configId);
 }
 
-// set spike monitor for a group
-void CARLsim::setSpikeMonitor(int grpId, SpikeMonitor* spikeMon, int configId) {
-	std::string funcName = "setSpikeMonitor(\""+getGroupName(grpId,configId)+"\",SpikeMonitor*)";
-	UserErrors::assertTrue(grpId!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName, "grpId");		// groupId can't be ALL
-	UserErrors::assertTrue(carlsimState_ == CONFIG_STATE || carlsimState_ == SETUP_STATE,
-					UserErrors::INVALID_API_AT_CURRENT_STATE, funcName);
-
-	snn_->setSpikeMonitor(grpId, new SpikeMonitorCore(this, spikeMon),configId);
-}
-
-
 // set spike monitor for group and write spikes to file
-void CARLsim::setSpikeMonitor(int grpId, const std::string& fname, int configId) {
+SpikeMonitor* CARLsim::setSpikeMonitor(int grpId, const std::string& fname, int configId) {
 	std::string funcName = "setSpikeMonitor(\""+getGroupName(grpId,configId)+"\",\""+fname+"\")";
 	UserErrors::assertTrue(configId!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName, "configId");	// configId can't be ALL
-	UserErrors::assertTrue(grpId!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName, "grpId");		// groupId can't be ALL
+	UserErrors::assertTrue(configId>=0, UserErrors::CANNOT_BE_NEGATIVE, funcName, "grpId"); // grpId can't be negative
+	UserErrors::assertTrue(grpId!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName, "grpId");		// grpId can't be ALL
+	UserErrors::assertTrue(grpId>=0, UserErrors::CANNOT_BE_NEGATIVE, funcName, "grpId"); // grpId can't be negative
+	UserErrors::assertTrue(grpId<MAX_GRP_PER_SNN, UserErrors::MUST_BE_WITHIN_RANGE, funcName, "grpId"); //grpId must be
+	// less than MAX_GRP_PER_SNN
 	UserErrors::assertTrue(carlsimState_ == CONFIG_STATE || carlsimState_ == SETUP_STATE,
 					UserErrors::INVALID_API_AT_CURRENT_STATE, funcName);
 
+	// set the default string here
+	std::string fileName=fname;
+	if(fileName.empty()){
+		
+		fileName="results/spk"+snn_->getGroupName(grpId,configId)+".dat"; 
+	}
 	// try to open spike file
-	FILE* fid = fopen(fname.c_str(),"wb"); // FIXME: where does fid get closed?
+	FILE* fid = fopen(fileName.c_str(),"wb"); 
 	if (fid==NULL) {
 		// file could not be opened
 
 		// default case: print error and exit
-		std::string fileError = "Make sure directory exists: "+fname;
-		UserErrors::assertTrue(false, UserErrors::FILE_CANNOT_OPEN, fname, fileError);
+		std::string fileError = "Make sure directory exists: "+fileName;
+		UserErrors::assertTrue(false, UserErrors::FILE_CANNOT_OPEN, fileName, fileError);
 	}
 
-	setSpikeMonitor(grpId, new WriteSpikesToFile(fid), configId);
+	SpikeMonitor* spkMonitor;
+	spkMonitor=snn_->setSpikeMonitor(grpId, fid, configId);
+ 
+	return spkMonitor;
 }
 
 // assign spike rate to poisson group
@@ -1007,5 +1009,15 @@ void CARLsim::handleUserWarnings() {
 			fprintf(stdout,"exiting...\n");
 			exit(1);
 		}
+	}
+}
+
+// print all simulation specs
+void CARLsim::printSimulationSpecs() {
+	if (simMode_==CPU_MODE) {
+		fprintf(stdout,"CPU_MODE, enablePrint=%s, copyState=%s\n\n",enablePrint_?"on":"off",copyState_?"on":"off");
+	} else {
+		fprintf(stdout,"GPU_MODE, GPUid=%d, enablePrint=%s, copyState=%s\n\n",ithGPU_,enablePrint_?"on":"off",
+					copyState_?"on":"off");
 	}
 }

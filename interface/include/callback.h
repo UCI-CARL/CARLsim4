@@ -117,19 +117,4 @@ public:
 	virtual void update(CARLsim* s, int grpID, float* grpDA, int numData) = 0;
 };
 
-//! can be used to create a custom spike monitor
-/*! To retrieve outputs, a spike-monitoring callback mechanism is used. This mechanism allows the user to calculate
- * basic statistics, store spike trains, or perform more complicated output monitoring. Spike monitors are registered
- * for a group and are called automatically by the simulator every second. Similar to an address event representation
- * (AER), the spike monitor indicates which neurons spiked by using the neuron ID within a group (0-indexed) and the
- * time of the spike. Only one spike monitor is allowed per group.*/
-class SpikeMonitor {
-public:
-	//SpikeMonitor() {};
-
-	//! Controls actions that are performed when certain neurons fire (user-defined).
-	/*! \attention The virtual method should never be called directly */
-	virtual void update(CARLsim* s, int grpId, unsigned int* Nids, unsigned int* timeCnts, int timeInterval) = 0;
-};
-
 #endif

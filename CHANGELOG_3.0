@@ -1,12 +1,13 @@
 ===============================================================================
 Release 3.0
 ===============================================================================
+2014-04-03	       Kristofor D. Carlson <kdcarlso@uci.edu>
+	* Fixed the tuneFiringRates example to work with the new CARLsim/pti
+	interface.
+	* Changed CHANGELOG_2.3 to CHANGELOG_3.0.
+	* Cleaned up Makefile and carlsim.mk a bit.
 
-2013-03-22		Michael Beyeler <mbeyeler@uci.edu>
-	* examples: reorganized files such that all source files, video files, and
-	  scripts of a specific example go in examples/. Fixed dynamic allocation.
-
-2014-03-17    	Kristofor D. Carlson <kdcarlso@uci.edu>
+2014-03-17	       Kristofor D. Carlson <kdcarlso@uci.edu>
 	* carlsim_tests.mk: reorganized this file to support the implementation
 	  of CARLsim google tests in different source files instead of a single
 	  large source file.
@@ -16,3 +17,8 @@ Release 3.0
 	* CHANGELOG_2.3: Added this CHANGELOG file to keep track of changes as
 	  we make them. We can then more easily write a CHANGELOG file when we
 	  release the code.
+
+
+2013-03-22		Michael Beyeler <mbeyeler@uci.edu>
+	* examples: reorganized files such that all source files, video files, and
+	  scripts of a specific example go in examples/. Fixed dynamic allocation.

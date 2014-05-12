@@ -1014,19 +1014,26 @@ void CpuSNN::setSpikeCounter(int grpId, int recordDur, int configId) {
 	}
 }
 
-// add a SpikeMonitor for group where spikeMon can be custom class or WriteSpikesToFile
-void CpuSNN::setSpikeMonitor(int grpId, SpikeMonitorCore* spikeMon, int configId) {
+// record spike information, return a SpikeInfo object
+SpikeMonitor* CpuSNN::setSpikeMonitor(int grpId, FILE* fid, int configId) {
 	if (configId == ALL) {
 		for(int c=0; c < nConfig_; c++)
-		setSpikeMonitor(grpId, spikeMon,c);
+		setSpikeMonitor(grpId, fid ,c);
 	} else {
 	    int cGrpId = getGroupId(grpId, configId);
-	    CARLSIM_DEBUG("spikeMonitor added");
+	    CARLSIM_DEBUG("spikeInfo added");
 
+			// create new SpikeMonitorCore object
+			spikeMonCoreList[numSpikeMonitor] = new SpikeMonitorCore;
+			//monBufferSpikeMonitor[numSpikeMonitor] = new SpikeInfo;
+			
+			// initialize the analysis components of SpikeMonitorCore
+			spikeMonCoreList[numSpikeMonitor]->init(this,cGrpId);
+			
 	    // store the gid for further reference
-	    monGrpId[numSpikeMonitor] = cGrpId;
-
-	    // also inform the grp that it is being monitored...
+			spikeMonCoreList[numSpikeMonitor]->setSpikeMonGrpId(cGrpId);
+			//spikeMonGrpId[numSpikeMonitor] = cGrpId;	    
+			// also inform the grp that it is being monitored...
 	    grp_Info[cGrpId].SpikeMonitorId	= numSpikeMonitor;
 
 	    float maxRate = grp_Info[cGrpId].MaxFiringRate;
@@ -1036,18 +1043,29 @@ void CpuSNN::setSpikeMonitor(int grpId, SpikeMonitorCore* spikeMon, int configId
 	    int buffSize = (int)(maxRate*grp_Info[cGrpId].SizeN);
 
 	    // store the size for future comparison etc.
-	    monBufferSize[numSpikeMonitor] = buffSize;
+	    spikeMonCoreList[numSpikeMonitor]->setMonBufferSize(buffSize);
+			//monBufferSize[numSpikeMonitor] = buffSize;
 
 	    // reset the position of the buffer pointer..
-	    monBufferPos[numSpikeMonitor]  = 0;
+			spikeMonCoreList[numSpikeMonitor]->setMonBufferPos(0);
+	    //monBufferPos[numSpikeMonitor]  = 0;
 
-	    monBufferCallback[numSpikeMonitor] = spikeMon;
+			// assign monBufferFid if we selected to write to a file
+			spikeMonCoreList[numSpikeMonitor]->setMonBufferFid(fid);
+			//monBufferFid[numSpikeMonitor] = fid;
 
 	    // create the new buffer for keeping track of all the spikes in the system
-	    monBufferFiring[numSpikeMonitor] = new unsigned int[buffSize];
-	    monBufferTimeCnt[numSpikeMonitor] = new unsigned int[1000];
-	    memset(monBufferTimeCnt[numSpikeMonitor],0,sizeof(int)*(1000));
-
+			spikeMonCoreList[numSpikeMonitor]->setMonBufferFiring(new unsigned int[buffSize]);
+	    //monBufferFiring[numSpikeMonitor] = new unsigned int[buffSize];
+	    spikeMonCoreList[numSpikeMonitor]->setMonBufferTimeCnt(new unsigned int[1000]);
+			//monBufferTimeCnt[numSpikeMonitor] = new unsigned int[1000];
+	    spikeMonCoreList[numSpikeMonitor]->zeroMonBufferTimeCnt(1000);
+			//memset(monBufferTimeCnt[numSpikeMonitor],0,sizeof(int)*(1000));
+			
+			// create a new SpikeMonitor object for the user-interface
+			spikeMonList[numSpikeMonitor] = new SpikeMonitor(spikeMonCoreList[numSpikeMonitor]);
+			//monBufferSpikeMonitor[numSpikeMonitor] = new SpikeInfo;
+		
 	    numSpikeMonitor++;
 
 	    // oh. finally update the size info that will be useful to see
@@ -1056,6 +1074,14 @@ void CpuSNN::setSpikeMonitor(int grpId, SpikeMonitorCore* spikeMon, int configId
 	    cpuSnnSz.monitorInfoSize += sizeof(int)*(1000);
 
 	    CARLSIM_INFO("SpikeMonitor set for group %d (%s)",cGrpId,grp_Info2[grpId].Name.c_str());
+	
+			// now we return the SpikeMonitor object to the user 
+			// index is numSpikeMonitor-1 because we have already incremented
+			return spikeMonList[numSpikeMonitor-1];
+
+			// index is numSpikeMonitor-1 because we have already incremented
+			// numSpikeMonitor
+			//return monBufferSpikeInfo[numSpikeMonitor-1];
 	}
 }
 
@@ -1792,7 +1818,7 @@ void CpuSNN::CpuSNNinit() {
 		grp_Info[i].decayNE = 1 - (1.0f / 100);
 
 		grp_Info[i].spikeGen = NULL;
-
+		
 		grp_Info[i].withSpikeCounter = false;
 		grp_Info[i].spkCntRecordDur = -1;
 		grp_Info[i].spkCntRecordDurHelper = 0;
@@ -1811,6 +1837,7 @@ void CpuSNN::CpuSNNinit() {
 		grp_Info2[i].maxPreConn  = 0;
 		grp_Info2[i].sumPostConn = 0;
 		grp_Info2[i].sumPreConn  = 0;
+		
 	}
 
 	CUDA_CREATE_TIMER(timer);
@@ -2466,8 +2493,17 @@ void CpuSNN::deleteObjects() {
 		if (fpLog_!=NULL && fpLog_!=stdout && fpLog_!=stderr)
 			fclose(fpLog_);
 
+		// close spike monitor fid's
+		FILE* monBufferFid;
+		for(int i = 0; i< numSpikeMonitor; i++){
+			monBufferFid = spikeMonCoreList[i]->getMonBufferFid();
+			if(monBufferFid!=NULL && monBufferFid!=stdout && monBufferFid!=stderr){
+				fclose(monBufferFid);
+				monBufferFid=NULL;
+			}
+		}
 		resetPointers(true); // deallocate pointers
-
+		
 		// do the same as above, but for snn_gpu.cu
 		deleteObjects_GPU();
 		simulatorDeleted = true;
@@ -3523,14 +3559,28 @@ void CpuSNN::resetPointers(bool deallocate) {
 	connectBegin=NULL;
 
 	// clear all spike monitor info
+	unsigned int* monBufferFiring;
+	unsigned int* monBufferTimeCnt;	
 	if (deallocate) {
 		for (int i = 0; i < numSpikeMonitor; i++) {
-			if (monBufferFiring[i]!=NULL && deallocate) delete[] monBufferFiring[i];
-			if (monBufferTimeCnt[i]!=NULL && deallocate) delete[] monBufferTimeCnt[i];
-			monBufferFiring[i]=NULL; monBufferTimeCnt[i]=NULL;
+			monBufferFiring  = spikeMonCoreList[i]->getMonBufferFiring();
+			monBufferTimeCnt = spikeMonCoreList[i]->getMonBufferTimeCnt();
+			if (monBufferFiring!=NULL && deallocate) delete[] monBufferFiring;
+			if (monBufferTimeCnt!=NULL && deallocate) delete[] monBufferTimeCnt;
+			if (spikeMonCoreList[i]!=NULL && deallocate) delete spikeMonCoreList[i];
+			if (spikeMonList[i]!=NULL && deallocate) delete spikeMonList[i];
+			monBufferFiring=NULL; monBufferTimeCnt=NULL; 
+			spikeMonCoreList[i]=NULL; spikeMonList[i]=NULL;
+		}
+	} 
+	else{
+		for (int i = 0; i < numSpikeMonitor; i++) {
+			monBufferFiring  = spikeMonCoreList[i]->getMonBufferFiring();
+			monBufferTimeCnt = spikeMonCoreList[i]->getMonBufferTimeCnt();
+			monBufferFiring=NULL; monBufferTimeCnt=NULL; 
+			spikeMonCoreList[i]=NULL; spikeMonList[i]=NULL;
 		}
 	}
-
 	// clear data (i.e., concentration of neuromodulator) of groups
 	if (grpDA != NULL && deallocate) delete [] grpDA;
 	if (grp5HT != NULL && deallocate) delete [] grp5HT;
@@ -4135,7 +4185,7 @@ void CpuSNN::updateSpikeMonitor(int numMs) {
 	// don't continue if numSpikeMonitor is zero
 	if(!numSpikeMonitor)
 		return;
-
+	
 	// don't continue if the time interval is zero
 	if (!numMs)
 		return;
@@ -4144,12 +4194,33 @@ void CpuSNN::updateSpikeMonitor(int numMs) {
 	bool bufferOverFlow[MAX_GRP_PER_SNN];
 	memset(bufferOverFlow,0,sizeof(bufferOverFlow));
 
+	// grab tmp variables of all of our spike monitor data structures
+	unsigned int* monBufferFiring[numSpikeMonitor];
+	unsigned int* monBufferTimeCnt[numSpikeMonitor];
+	unsigned int  monBufferPos[numSpikeMonitor];
+	unsigned int  monBufferSize[numSpikeMonitor];
+	FILE*         monBufferFid[numSpikeMonitor];
+ 
+	spikeMonCoreList[0]->getMonBufferFiring();
+	
+	for(int i=0; i < numSpikeMonitor; i++){
+		monBufferFiring[i] = spikeMonCoreList[i]->getMonBufferFiring();
+		monBufferTimeCnt[i] = spikeMonCoreList[i]->getMonBufferTimeCnt();
+		monBufferPos[i] = spikeMonCoreList[i]->getMonBufferPos();
+		monBufferSize[i] = spikeMonCoreList[i]->getMonBufferSize();
+		monBufferFid[i] = spikeMonCoreList[i]->getMonBufferFid();
+	}
+	
 	/* Reset buffer time counter */
-	for(int i=0; i < numSpikeMonitor; i++)
+	for(int i=0; i < numSpikeMonitor; i++){
+		//spikeMonCoreList[numSpikeMonitor]->zeroMonBufferTimeCnt(numMs);
 		memset(monBufferTimeCnt[i],0,sizeof(int)*(numMs));
+		/* Reset buffer position */
+		monBufferPos[i]=0;
+	}
 
-	/* Reset buffer position */
-	memset(monBufferPos,0,sizeof(int)*numSpikeMonitor);
+	//spikeMonCoreList[numSpikeMonitor]->setMonBufferPos(0);
+	//memset(monBufferPos,0,sizeof(int)*numSpikeMonitor);
 
 	if (simMode_ == GPU_MODE) {
 		updateSpikeMonitor_GPU();
@@ -4167,44 +4238,57 @@ void CpuSNN::updateSpikeMonitor(int numMs) {
 				if (simMode_ == GPU_MODE)
 					nid = GET_FIRING_TABLE_NID(nid);
 				assert(nid < numN);
-
+				
 				int grpId = grpIds[nid];
 				int monitorId = grp_Info[grpId].SpikeMonitorId;
 				if(monitorId!= -1) {
 					assert(nid >= grp_Info[grpId].StartN);
 					assert(nid <= grp_Info[grpId].EndN);
+					//int pos = spikeMonCoreList[monitorId]->getMonBufferPos();
 					int   pos   = monBufferPos[monitorId];
+					//if((pos >= spikeMonCoreList[monitorId]->getMonBufferSize())) {
 					if((pos >= monBufferSize[monitorId])) {
-						if(!bufferOverFlow[monitorId]) {
-							CARLSIM_WARN("Buffer Monitor size (%d) is small. Increase buffer firing rate for %s",
-								monBufferSize[monitorId], grp_Info2[grpId].Name.c_str());
-						}
-						bufferOverFlow[monitorId] = true;
-					} else {
+							if(!bufferOverFlow[monitorId]) {
+								CARLSIM_WARN("Buffer Monitor size (%d) is small. Increase buffer firing rate for %s",
+														 monBufferSize[monitorId], grp_Info2[grpId].Name.c_str());
+								//CARLSIM_WARN("Buffer Monitor size (%d) is small. Increase buffer firing rate for %s",spikeMonCoreList[monitorId]->getMonBufferSize(), grp_Info2[grpId].Name.c_str());
+							}
+							bufferOverFlow[monitorId] = true;
+					}  else {
+						//spikeMonCoreList[monitorId]->incMonBufferPos();
 						monBufferPos[monitorId]++;
+						//(spikeMonCoreList[monitorId]->getMonBufferFiring())[pos] = nid-grp_Info[grpId].StartN;
 						monBufferFiring[monitorId][pos] = nid-grp_Info[grpId].StartN; // store the Neuron ID relative to the start of the group
 						// we store the total firing at time t...
+						//(spikeMonCoreList[monitorId]->getMonBufferTimeCnt())[t]++;
 						monBufferTimeCnt[monitorId][t]++;
 					}
 				} /* if monitoring is enabled for this spike */
 			} /* for all spikes happening at time t */
 		}  /* for all time t */
 	}
-
+	
+	// loop over all groups and check if they have a spike monitor
+	// TODO: here is where we do our call to the monBufferSpikeInfo -- KDC
 	for (int grpId=0;grpId<numGrp;grpId++) {
 		int monitorId = grp_Info[grpId].SpikeMonitorId;
 		if(monitorId!= -1) {
 			CARLSIM_INFO("Spike Monitor for Group %s has %d spikes (%f Hz)",grp_Info2[grpId].Name.c_str(),
-				monBufferPos[monitorId],((float)monBufferPos[monitorId])*1000.0f/(numMs*grp_Info[grpId].SizeN));
-
-			// call the callback function
-			if (monBufferCallback[monitorId])
-				monBufferCallback[monitorId]->update(this, grpId, monBufferFiring[monitorId],
-					monBufferTimeCnt[monitorId], numMs);
+									 monBufferPos[monitorId],((float)monBufferPos[monitorId])*1000.0f/(numMs*grp_Info[grpId].SizeN));
+			
+			// call the callback function now replaced with writeSpikesToFile
+			if(monBufferFid[monitorId]!=NULL){
+				writeSpikesToFile(grpId, monBufferFiring[monitorId], monBufferTimeCnt[monitorId], 
+													numMs, monBufferFid[monitorId]);
+			}
+			// if the group has a spikeInfo object
+			if(spikeMonCoreList[monitorId]!=NULL && spikeMonCoreList[monitorId]->isRecording()){
+				spikeMonCoreList[monitorId]->pushAER(grpId, monBufferFiring[monitorId], monBufferTimeCnt[monitorId],numMs);
+			}
 		}
 	}
 }
-
+	
 // This function updates the synaptic weights from its derivatives..
 void CpuSNN::updateWeights() {
 	// update synaptic weights here for all the neurons..
@@ -4278,4 +4362,26 @@ void CpuSNN::updateWeights() {
 			}
 		}
 	}
+}
+
+// This function writes the spike data to a file. It's used in 
+// updateSpikeMonitor().
+void CpuSNN::writeSpikesToFile(int grpId, unsigned int* neurIds, 
+															 unsigned int *timeCnts, int timeInterval, FILE* fileId){
+	//void update(CARLsim* s, int grpId, unsigned int* neurIds, unsigned int* timeCnts, int timeInterval) {
+	int pos    = 0; // keep track of position in flattened list of neuron IDs
+	for (int t=0; t < timeInterval; t++) {
+		for(int i=0; i<timeCnts[t];i++,pos++) {
+			// timeInterval might be < 1000 at the end of a simulation
+			int time = t + getSimTime() - timeInterval;
+			assert(time>=0);
+			
+			int id   = neurIds[pos];
+			int cnt = fwrite(&time,sizeof(int),1,fileId);
+			assert(cnt != 0);
+			cnt = fwrite(&id,sizeof(int),1,fileId);
+			assert(cnt != 0);
+		}
+	}
+	fflush(fileId);
 }

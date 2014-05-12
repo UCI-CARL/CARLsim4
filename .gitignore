@@ -1,0 +1,24 @@
+# =====================
+# C++ ignore list
+# =====================
+
+# Compiled Object files
+*.slo
+*.lo
+*.o
+
+# Compiled Dynamic libraries
+*.so
+*.dylib
+
+# Compiled Static libraries
+*.lai
+*.la
+*.a
+
+# =====================
+# emacs ignore list
+# =====================
+*~
+*.desktop
+*.desktop.lock

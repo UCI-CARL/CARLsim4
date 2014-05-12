@@ -35,6 +35,7 @@ public:
 		MUST_BE_IDENTICAL,      //!< parameters must be identical
 		MUST_BE_NEGATIVE,		//!< parameter must have negative value
 		MUST_BE_POSITIVE,		//!< parameter must have positive value
+		MUST_BE_ZERO,           //!< parameter must be 0
 		MUST_BE_WITHIN_RANGE,	//!< parameter must be within some range
 		MUST_HAVE_SAME_SIGN,	//!< some parameters must have the same sign
 		NETWORK_ALREADY_RUN,	//!< function cannot be called because network has already bun run

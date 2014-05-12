@@ -57,6 +57,7 @@
 #include <carlsim_datastructures.h>
 
 #include <poisson_rate.h>
+#include <spike_monitor.h>
 
 // TODO: complete documentation
 
@@ -66,7 +67,7 @@
 class CpuSNN; // forward-declaration of private implementation
 
 /*!
- * \brief CARLsim User Interface.
+ * \brief CARLsim User Interface
  * This class provides a user interface to the public sections of CARLsimCore source code. Example networks that use
  * this methodology can be found in the examples/ directory. Documentation is available on our website.
  *
@@ -382,6 +383,8 @@ public:
 	 */
 	void setLogCycle(int showStatusCycle);
 
+	void setShowStatus(int showStatusCycle, int showStatusNeurons, int showStatusSynapses);
+
 	/*!
 	 * \brief Sets the file pointer of the debug log file
 	 * \param[in] fpLog file pointer to new log file
@@ -627,6 +630,7 @@ private:
 
 	void handleUserWarnings(); 			//!< print all user warnings, continue only after user input
 
+	void printSimulationSpecs();
 
 	// +++++ PRIVATE PROPERTIES +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
@@ -645,6 +649,7 @@ private:
 
 	std::vector<int> grpIds_;		//!< a list of all created group IDs
 
+	bool hasRunNetwork_;			//!< flag to inform that network has been run
 	bool hasSetHomeoALL_;			//!< informs that homeostasis have been set for ALL groups (can't add more groups)
 	bool hasSetHomeoBaseFiringALL_;	//!< informs that base firing has been set for ALL groups (can't add more groups)
 	bool hasSetSTDPALL_; 			//!< informs that STDP have been set for ALL groups (can't add more groups)

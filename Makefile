@@ -12,7 +12,7 @@ PTI_INSTALL_DIR ?= /opt/pti
 # $(OPT_LEVEL): set to 1, 2, or 3 if you want to use optimization.  Default: 0.
 # $(DEBUG_INFO): set to 1 to include debug info, set to 0 to not include 
 # debugging info.  Default: 0.
-CARLSIM_CUDAVER ?= 3
+CARLSIM_CUDAVER ?= 5
 CARLSIM_FASTMATH ?= 0
 CARLSIM_CUOPTLEVEL ?= 0
 CARLSIM_DEBUG ?= 0
@@ -45,17 +45,18 @@ ex_dir  = examples
 interface_dir = interface
 test_dir = test
 util_dir = util
+spike_monitor_dir = $(util_dir)/spike_monitor
 
 # location of .cpp files
 vpath %.cpp $(EO_INSTALL_DIR)/src $(EO_INSTALL_DIR)/src/do \
 $(EO_INSTALL_DIR)/src/es $(EO_INSTALL_DIR)/src/utils $(lib_dir) \
-$(ex_dir)/common/ $(carlsim_dir)/src $(interface_dir)/src $(test_dir)
-
+$(ex_dir)/common/ $(carlsim_dir)/src $(interface_dir)/src $(test_dir) \
+$(spike_info_dir)
 # location of .cu files
 vpath %.cu $(carlsim_dir)/src
 # location of .h files
 vpath %.h $(EO_INSTALL_DIR)/src $(inc_dir) $(carlsim_dir)/include \
-	$(ex_dir)/common $(interface_dir)/include $(test_dir) \
+$(ex_dir)/common $(interface_dir)/include $(test_dir) $(spike_info_dir)
 
 # this blank 'all' is required
 all:
@@ -70,6 +71,7 @@ include test/carlsim_tests.mk
 # include all directories in examples
 example_includes := $(addsuffix /examples.mk, $(wildcard examples/*))
 include $(example_includes)
+
 
 .PHONY: all libraries examples pti_examples clean distclean tests
 all: $(all_targets)
