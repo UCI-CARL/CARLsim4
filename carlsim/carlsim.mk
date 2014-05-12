@@ -41,7 +41,7 @@ endif
 CARLSIM_FLAGS += -I$(CURDIR)/$(carlsim_dir)/include \
 	-I$(CURDIR)/$(interface_dir)/include
 
-spike_monitor_flags := -I$(spike_monitor_dir)
+CARLSIM_FLAGS += -I$(spike_monitor_dir)
 
 #---------------------------------------------------------------------------
 # CARLsim local variables
@@ -95,20 +95,17 @@ carlsim: $(carlsim_sources) $(carlsim_objs)
 
 # interface
 $(interface_dir)/src/%.o: $(interface_dir)/src/%.cpp $(interface_deps)
-	$(NVCC) -c $(CARLSIM_INCLUDES) $(CARLSIM_FLAGS) $(spike_monitor_flags) \
-$< -o $@
+	$(NVCC) -c $(CARLSIM_INCLUDES) $(CARLSIM_FLAGS) $< -o $@
 
 #util TODO: make sure deps are right
 $(spike_monitor_dir)/%.o: $(spike_monitor_dir)/%.cpp
-	$(NVCC) -c $(spike_monitor_flags) $(CARLSIM_INCLUDES) $(CARLSIM_FLAGS) \
+	$(NVCC) -c $(CARLSIM_INCLUDES) $(CARLSIM_FLAGS) $(spike_monitor_flags) \
 $< -o $@
 
 # local cpps
 $(local_dir)/src/%.o: $(local_dir)/src/%.cpp $(local_deps)
-	$(NVCC) -c $(CARLSIM_INCLUDES) $(CARLSIM_FLAGS) \
-$(spike_monitor_flags) $< -o $@
+	$(NVCC) -c $(CARLSIM_INCLUDES) $(CARLSIM_FLAGS) $< -o $@
 
 # local cuda
 $(local_dir)/src/%.o: $(local_dir)/src/%.cu $(local_deps)
-	$(NVCC) -c $(CARLSIM_INCLUDES) $(CARLSIM_FLAGS) \
-$(spike_monitor_flags) $< -o $@
+	$(NVCC) -c $(CARLSIM_INCLUDES) $(CARLSIM_FLAGS) $< -o $@
