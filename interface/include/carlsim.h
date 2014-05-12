@@ -477,21 +477,8 @@ public:
 	//! \note The method can be called at configuration state and setup state
 	void setSpikeGenerator(int grpId, SpikeGenerator* spikeGen, int configId=ALL);
 
-	/*!
-	 * \brief Sets a spike monitor for a group, custom SpikeMonitor class
-	 *
-	 * You can either write your own class that derives from SpikeMonitor, and directly access the neuron IDs and
-	 * spike times in 1000 ms bins, or you can set spikeMon=NULL, in which case the spike counts will simply be
-	 * output to console every 1000 ms.
-	 * If you want to dump spiking information to file, use the other SpikeMonitor.
-	 * If you need spiking information in smaller bins, use a SpikeCounter.
-	 * \note The method can be called at configuration state and setup state
-	 */
-	void setSpikeMonitor(int gid, SpikeMonitor* spikeMon=NULL, int configId=ALL);
-
 	//! Sets a spike monitor for a group, prints spikes to binary file
-	//! \note The method can be called at configuration state and setup state
-	void setSpikeMonitor(int grpId, const std::string& fname, int configId=0);
+	SpikeMonitor* setSpikeMonitor(int grpId, const std::string& fname="", int configId=0);
 
 	//! \note The method can be called at setup state and execution state
 	void setSpikeRate(int grpId, PoissonRate* spikeRate, int refPeriod=1, int configId=ALL);

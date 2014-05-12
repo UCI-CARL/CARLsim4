@@ -1,13 +1,22 @@
 ===============================================================================
 Release 3.0
 ===============================================================================
-2014-04-03	       Kristofor D. Carlson <kdcarlso@uci.edu>
+2014-05-12     Kristofor D. Carlson <kdcarlso@uci.edu>
+  * Created SpikeMonitor class to return spike activity information to the
+    user.
+  * Removed and reorganized global variables associated with setSpikeMonitor.
+  * Fixed memory leaks.
+	* Added tests for setSpikeMonitor and SpikeMonitor.
+  * Included SpikeMonitor files in carlsim makefile and testing makefile.	
+	* Added spikeInfo example that demonstrates how to use the SpikeMonitor class.
+
+2014-04-03     Kristofor D. Carlson <kdcarlso@uci.edu>
 	* Fixed the tuneFiringRates example to work with the new CARLsim/pti
 	interface.
 	* Changed CHANGELOG_2.3 to CHANGELOG_3.0.
 	* Cleaned up Makefile and carlsim.mk a bit.
 
-2014-03-17	       Kristofor D. Carlson <kdcarlso@uci.edu>
+2014-03-17     Kristofor D. Carlson <kdcarlso@uci.edu>
 	* carlsim_tests.mk: reorganized this file to support the implementation
 	  of CARLsim google tests in different source files instead of a single
 	  large source file.
@@ -19,6 +28,6 @@ Release 3.0
 	  release the code.
 
 
-2013-03-22		Michael Beyeler <mbeyeler@uci.edu>
+2013-03-22     Michael Beyeler <mbeyeler@uci.edu>
 	* examples: reorganized files such that all source files, video files, and
 	  scripts of a specific example go in examples/. Fixed dynamic allocation.

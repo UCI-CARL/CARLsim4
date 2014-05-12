@@ -110,13 +110,15 @@ int main()
 	snn->setNeuronParameters(excGroup, 0.02f, 0.2f, -65.0f, 8.0f);
 	snn->setNeuronParameters(inhGroup, 0.1f, 0.2f, -65.0f, 2.0f); 
 	double initWeight = 0.05f;
-	double maxWeight = 4*initWeight;
+
 	// create the connections (with a dummy weight) and grab their connection id
-	snn->connect(inputGroup,excGroup,"random", initWeight, maxWeight, 0.5f, 1, 1, SYN_FIXED);
-	snn->connect(excGroup,excGroup,"random", initWeight, maxWeight, 0.5f, 1, 1, SYN_FIXED);
-	snn->connect(excGroup,inhGroup,"random", initWeight, maxWeight, 0.5f, 1, 1, SYN_FIXED);
-	snn->connect(inhGroup,excGroup,"random", -1.0f*initWeight,-1.0f*maxWeight, 0.5f, 1, 1, SYN_FIXED);
+	snn->connect(inputGroup,excGroup,"random", RangeWeight(initWeight), 0.5f, RangeDelay(1), SYN_FIXED);
+	snn->connect(excGroup,excGroup,"random", RangeWeight(initWeight), 0.5f, RangeDelay(1), SYN_FIXED);
+	snn->connect(excGroup,inhGroup,"random", RangeWeight(initWeight), 0.5f, RangeDelay(1), SYN_FIXED);
+	snn->connect(inhGroup,excGroup,"random", RangeWeight(initWeight), 0.5f, RangeDelay(1), SYN_FIXED);
 	
+	snn->setupNetwork();
+
 	// initialize input
 	input = new PoissonRate(INPUT_SIZE);
 	for(int i=0;i<INPUT_SIZE;i++){

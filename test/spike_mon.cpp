@@ -193,7 +193,7 @@ TEST(SPIKEMON, clear){
 		
 		sim->setConductances(true,COND_tAMPA,COND_tNMDA,COND_tGABAa,COND_tGABAb);
 		double initWeight = 0.05f;
-		double maxWeight = 4*initWeight;
+		
 
 		sim->setNeuronParameters(g1, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f, ALL);
 		sim->setNeuronParameters(g2, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f, ALL);
@@ -203,12 +203,14 @@ TEST(SPIKEMON, clear){
 		for(int i=0;i<GRP_SIZE;i++){
 			input->rates[i]=inputTargetFR;
 		}
-		sim->connect(inputGroup,g1,"random", initWeight, maxWeight, 0.5f, 1, 1, SYN_FIXED);
-		sim->connect(inputGroup,g2,"random", initWeight, maxWeight, 0.5f, 1, 1, SYN_FIXED);
-		sim->connect(g1,g2,"random", initWeight, maxWeight, 0.5f, 1, 1, SYN_FIXED);
+		sim->connect(inputGroup,g1,"random", RangeWeight(initWeight), 0.5f, RangeDelay(1), SYN_FIXED);
+		sim->connect(inputGroup,g2,"random", RangeWeight(initWeight), 0.5f, RangeDelay(1), SYN_FIXED);
+		sim->connect(g1,g2,"random", RangeWeight(initWeight), 0.5f, RangeDelay(1), SYN_FIXED);
 
 		SpikeMonitor* spikeMonG1 = sim->setSpikeMonitor(g1);
 		
+		sim->setupNetwork();
+
 		sim->setSpikeRate(inputGroup,input);
 		
 		spikeMonG1->startRecording();
@@ -265,11 +267,13 @@ TEST(SPIKEMON, getGrpFiringRate){
 		
 		sim->setConductances(true,COND_tAMPA,COND_tNMDA,COND_tGABAa,COND_tGABAb);
 		double initWeight = 0.27f;
-		double maxWeight = 4*initWeight;
+		
 
 		sim->setNeuronParameters(g1, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f, ALL);
 
-		sim->connect(inputGroup,g1,"random", initWeight, maxWeight, 1.0f, 1, 1, SYN_FIXED);
+		sim->connect(inputGroup,g1,"random", RangeWeight(initWeight), 1.0f, RangeDelay(1), SYN_FIXED);
+
+		sim->setupNetwork();
 
 		// input
 		input = new PoissonRate(GRP_SIZE);
@@ -338,11 +342,13 @@ TEST(SPIKEMON, getMaxMinNeruonFiringRate){
 		
 		sim->setConductances(true,COND_tAMPA,COND_tNMDA,COND_tGABAa,COND_tGABAb);
 		double initWeight = 0.27f;
-		double maxWeight = 4*initWeight;
+		
 
 		sim->setNeuronParameters(g1, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f, ALL);
 
-		sim->connect(inputGroup,g1,"random", initWeight, maxWeight, 1.0f, 1, 1, SYN_FIXED);
+		sim->connect(inputGroup,g1,"random", RangeWeight(initWeight), 1.0f, RangeDelay(1), SYN_FIXED);
+
+		sim->setupNetwork();
 
 		// input
 		input = new PoissonRate(GRP_SIZE);
