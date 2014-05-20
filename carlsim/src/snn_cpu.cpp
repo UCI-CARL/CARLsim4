@@ -4195,11 +4195,11 @@ void CpuSNN::updateSpikeMonitor(int numMs) {
 	memset(bufferOverFlow,0,sizeof(bufferOverFlow));
 
 	// grab tmp variables of all of our spike monitor data structures
-	unsigned int* monBufferFiring[numSpikeMonitor];
-	unsigned int* monBufferTimeCnt[numSpikeMonitor];
-	unsigned int  monBufferPos[numSpikeMonitor];
-	unsigned int  monBufferSize[numSpikeMonitor];
-	FILE*         monBufferFid[numSpikeMonitor];
+	unsigned int** monBufferFiring = new unsigned int*[numSpikeMonitor];
+	unsigned int** monBufferTimeCnt = new unsigned int*[numSpikeMonitor];
+	unsigned int*  monBufferPos = new unsigned int[numSpikeMonitor];
+	unsigned int*  monBufferSize = new unsigned int[numSpikeMonitor];
+	FILE**         monBufferFid = new FILE*[numSpikeMonitor];
  
 	spikeMonCoreList[0]->getMonBufferFiring();
 	
@@ -4287,6 +4287,12 @@ void CpuSNN::updateSpikeMonitor(int numMs) {
 			}
 		}
 	}
+
+	delete [] monBufferFiring;
+	delete [] monBufferTimeCnt;
+	delete [] monBufferPos;
+	delete [] monBufferSize;
+	delete [] monBufferFid;
 }
 	
 // This function updates the synaptic weights from its derivatives..
