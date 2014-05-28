@@ -36,7 +36,7 @@
  *
  * CARLsim available from http://socsci.uci.edu/~jkrichma/CARLsim/
  * Ver 4/7/2014
- */ 
+ */
 
 #ifndef _SNN_DATASTRUCTURES_H_
 #define _SNN_DATASTRUCTURES_H_
@@ -45,7 +45,7 @@
 	#include <cuda.h>
 	#include <cutil_inline.h>
 	#include <cutil_math.h>
-#elif __CUDA5__
+#else
 	#include <cuda.h>
 	#include <cuda_runtime.h>
 	#include <helper_cuda.h>
@@ -54,7 +54,7 @@
 	#include <helper_math.h>
 #endif
 
- 
+
 //! connection types, used internally (externally it's a string)
 enum conType_t { CONN_RANDOM, CONN_ONE_TO_ONE, CONN_FULL, CONN_FULL_NO_DIRECT, CONN_USER_DEFINED, CONN_UNKNOWN};
 
@@ -74,7 +74,7 @@ typedef struct {
  *	This structure contains network information that is required for GPU simulation.
  *	The data in this structure are copied to device memory when running GPU simulation.
  *	\sa CpuSNN
- */ 
+ */
 typedef struct network_info_s  {
 	size_t			STP_Pitch;		//!< numN rounded upwards to the nearest 256 boundary
 	unsigned int	numN;
@@ -103,7 +103,7 @@ typedef struct network_info_s  {
 	bool 			sim_with_homeostasis;
 	bool 			sim_with_stp;
 	float 			stdpScaleFactor;
-	float 			wtChangeDecay; //!< the wtChange decay 
+	float 			wtChangeDecay; //!< the wtChange decay
 
 	bool 			sim_with_NMDA_rise;	//!< a flag to inform whether to compute NMDA rise time
 	bool 			sim_with_GABAb_rise;	//!< a flag to inform whether to compute GABAb rise time
@@ -274,7 +274,7 @@ typedef struct group_info_s
 	float 	avgTimeScale_decay;
 	float	avgTimeScaleInv;
 	float	homeostasisScale;
-	
+
 	// parameters of neuromodulator
 	float		baseDP;		//!< baseline concentration of Dopamine
 	float		base5HT;	//!< baseline concentration of Serotonin

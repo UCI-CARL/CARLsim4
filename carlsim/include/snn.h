@@ -1,4 +1,4 @@
-/* 
+/*
  * Copyright (c) 2014 Regents of the University of California. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -37,7 +37,7 @@
  *
  * CARLsim available from http://socsci.uci.edu/~jkrichma/CARLsim/
  * Ver 2/21/2014
- */ 
+ */
 
 /*
  * Common Abbreviations used in CARLsim
@@ -51,7 +51,7 @@
  * grp: group
  * nid/NId/NID: neuron id
  * gid/GId/GID: group id
- * 
+ *
  * conn: connection
  * min: minimum
  * max: maximum
@@ -83,7 +83,7 @@
 
 extern RNG_rand48* gpuRand48; //!< Used by all network to generate global random number
 
-//! nid=neuron id, sid=synapse id, grpId=group id. 
+//! nid=neuron id, sid=synapse id, grpId=group id.
 inline post_info_t SET_CONN_ID(int nid, int sid, int grpId) {
 	if (sid > CONN_SYN_MASK) {
 		fprintf(stderr, "Error: Syn Id (%d) exceeds maximum limit (%d) for neuron %d\n", sid, CONN_SYN_MASK, nid);
@@ -113,7 +113,7 @@ class CpuSNN {
 public:
 	//! SNN Constructor
 	/*!
-	 * \brief 
+	 * \brief
 	 * \param name the symbolic name of a spiking neural network
 	 * \param simMode simulation mode, CPU_MODE: running simluation on CPUs, GPU_MODE: running simulation with GPU
 	 * acceleration, default = CPU_MODE
@@ -126,7 +126,7 @@ public:
 
 	//! SNN Destructor
 	/*!
-	 * \brief clean up all allocated resource 
+	 * \brief clean up all allocated resource
 	 */
 	~CpuSNN();
 
@@ -146,15 +146,15 @@ public:
 	/*!
 	 * \brief make from each neuron in grpId1 to 'numPostSynapses' neurons in grpId2
 	 *
-	 * \param grpIdPre ID of the pre-synaptic group 
-	 * \param grpIdPost ID of the post-synaptic group 
-	 * \param connType connection type. "random": random connectivity. "one-to-one": connect the i-th neuron in pre to the i-th neuron in post. "full": connect all neurons in pre to all neurons in post (no self-connections). 
-	 * \param initWt initial weight strength (arbitrary units); should be negative for inhibitory connections 
-	 * \param maxWt upper bound on weight strength (arbitrary units); should be negative for inhibitory connections 
-	 * \param connProb connection probability 
-	 * \param minDelay the minimum delay allowed (ms) 
-	 * \param maxdelay: the maximum delay allowed (ms) 
-	 * \param synWtType: (optional) connection type, either SYN_FIXED or SYN_PLASTIC, default = SYN_FIXED. 
+	 * \param grpIdPre ID of the pre-synaptic group
+	 * \param grpIdPost ID of the post-synaptic group
+	 * \param connType connection type. "random": random connectivity. "one-to-one": connect the i-th neuron in pre to the i-th neuron in post. "full": connect all neurons in pre to all neurons in post (no self-connections).
+	 * \param initWt initial weight strength (arbitrary units); should be negative for inhibitory connections
+	 * \param maxWt upper bound on weight strength (arbitrary units); should be negative for inhibitory connections
+	 * \param connProb connection probability
+	 * \param minDelay the minimum delay allowed (ms)
+	 * \param maxdelay: the maximum delay allowed (ms)
+	 * \param synWtType: (optional) connection type, either SYN_FIXED or SYN_PLASTIC, default = SYN_FIXED.
 	 * \param wtType: (optional) DEPRECATED
 	 * \return number of created synaptic projections
 	 */
@@ -163,17 +163,17 @@ public:
 
 	/* Creates synaptic projections using a callback mechanism.
 	 *
-	 * \param _grpIdPre:ID of the pre-synaptic group 
-	 * \param _grpIdPost ID of the post-synaptic group 
-	 * \param _conn: pointer to an instance of class ConnectionGenerator 
+	 * \param _grpIdPre:ID of the pre-synaptic group
+	 * \param _grpIdPost ID of the post-synaptic group
+	 * \param _conn: pointer to an instance of class ConnectionGenerator
 	 * \param _synWtType: (optional) connection type, either SYN_FIXED or SYN_PLASTIC, default = SYN_FIXED
 	 * \param _maxPostM: (optional) maximum number of post-synaptic connections (per neuron), Set to 0 for no limit, default = 0
-	 * \param _maxPreM: (optional) maximum number of pre-synaptic connections (per neuron), Set to 0 for no limit, default = 0. 
+	 * \param _maxPreM: (optional) maximum number of pre-synaptic connections (per neuron), Set to 0 for no limit, default = 0.
 	 * \return number of created synaptic projections
 	 */
 	short int connect(int gIDpre, int gIDpost, ConnectionGeneratorCore* conn, float mulSynFast, float mulSynSlow,
 		bool synWtType,	int maxM, int maxPreM);
-	
+
 	//! Creates a group of Izhikevich spiking neurons
 	/*!
 	 * \param name the symbolic name of a group
@@ -196,13 +196,13 @@ public:
 	/*!
 	 * \brief Sets custom values for conductance decay (\tau_decay) or disables conductances alltogether
   	 * These will be applied to all connections in a network
-	 * For details on the ODE that is implemented refer to (Izhikevich et al, 2004), and for suitable values see (Dayan & Abbott, 2001). 
-	 * 
-	 * \param isSet: enables the use of COBA mode 
-	 * \param tAMPA: time _constant of AMPA decay (ms); for example, 5.0 
-	 * \param tNMDA: time constant of NMDA decay (ms); for example, 150.0 
-	 * \param tGABAa: time constant of GABAa decay (ms); for example, 6.0 
-	 * \param tGABAb: time constant of GABAb decay (ms); for example, 150.0 
+	 * For details on the ODE that is implemented refer to (Izhikevich et al, 2004), and for suitable values see (Dayan & Abbott, 2001).
+	 *
+	 * \param isSet: enables the use of COBA mode
+	 * \param tAMPA: time _constant of AMPA decay (ms); for example, 5.0
+	 * \param tNMDA: time constant of NMDA decay (ms); for example, 150.0
+	 * \param tGABAa: time constant of GABAa decay (ms); for example, 6.0
+	 * \param tGABAb: time constant of GABAb decay (ms); for example, 150.0
 	 * \param configId: (optional, deprecated) configuration id
 	 */
 	void setConductances(bool isSet, int tdAMPA, int trNMDA, int tdNMDA, int tdGABAa, int trGABAb, int tdGABAb,
@@ -247,29 +247,29 @@ public:
 	 * \param tau5HT the decay time constant of Serotonin
 	 * \param baseACh  the baseline concentration of Acetylcholine
 	 * \param tauACh the decay time constant of Acetylcholine
-	 * \param baseNE  the baseline concentration of Noradrenaline 
-	 * \param tauNE the decay time constant of Noradrenaline 
+	 * \param baseNE  the baseline concentration of Noradrenaline
+	 * \param tauNE the decay time constant of Noradrenaline
 	 * \param configId (optional, deprecated) configuration id
 	 */
 	void setNeuromodulator(int grpId, float baseDP, float tauDP, float base5HT, float tau5HT,
 							float baseACh, float tauACh, float baseNE, float tauNE, int configId);
 
-	//! Set the spike-timing-dependent plasticity (STDP) for a neuron group.  
+	//! Set the spike-timing-dependent plasticity (STDP) for a neuron group.
 	/*
 	 * \brief STDP must be defined post-synaptically; that is, if STP should be implemented on the connections from group 0 to group 1,
 	 * call setSTP on group 1. Fore details on the phenomeon, see (for example) (Bi & Poo, 2001).
-	 * \param[in] grpId ID of the neuron group 
+	 * \param[in] grpId ID of the neuron group
 	 * \param[in] isSet_enable set to true to enable STDP for this group
 	 * \param[in] type STDP type (STANDARD, DA_MOD)
-	 * \param[in] alphaLTP max magnitude for LTP change 
-	 * \param[in] tauLTP decay time constant for LTP 
-	 * \param[in] alphaLTD max magnitude for LTD change (leave positive) 
+	 * \param[in] alphaLTP max magnitude for LTP change
+	 * \param[in] tauLTP decay time constant for LTP
+	 * \param[in] alphaLTD max magnitude for LTD change (leave positive)
 	 * \param[in] tauLTD decay time constant for LTD
 	 * \param[in] configId (optional, deprecated) configuration id
 	 */
 	void setSTDP(int grpId, bool isSet, stdpType_t type, float alphaLTP, float tauLTP, float alphaLTD, float tauLTD,
 		int configId);
-		
+
 	/*!
 	 * \brief Sets STP params U, tau_u, and tau_x of a neuron group (pre-synaptically)
 	 * CARLsim implements the short-term plasticity model of (Tsodyks & Markram, 1998; Mongillo, Barak, & Tsodyks, 2008)
@@ -311,7 +311,7 @@ public:
 	int runNetwork(int _nsec, int _nmsec, bool copyState);
 
 	/*!
-	 * \brief build the network 
+	 * \brief build the network
 	 * \param[in] removeTempMemory 	remove temp memory after building network
 	 */
 	void setupNetwork(bool removeTempMemory);
@@ -329,7 +329,7 @@ public:
 
 	/*!
 	 * \brief Reassigns fixed weights to values passed into the function in a single 1D float matrix called
-	 * weightMatrix.  The user passes the connection ID (connectID), the weightMatrix, the matrixSize, and 
+	 * weightMatrix.  The user passes the connection ID (connectID), the weightMatrix, the matrixSize, and
 	 * configuration ID (configID).  This function only works for fixed synapses and for connections of type
 	 * CONN_USER_DEFINED. Only the weights are changed, not the maxWts, delays, or connected values
 	 */
@@ -379,10 +379,10 @@ public:
 	 * this. Set frameDur to -1 to never reset spike counts. Default: -1.
 	 */
 	void setSpikeCounter(int grpId, int recordDur, int configId);
-	
+
 	//! sets up a spike generator
 	void setSpikeGenerator(int grpId, SpikeGeneratorCore* spikeGen, int configId);
-	
+
 	//! sets up a spike monitor registered with a callback to process the spikes, there can only be one SpikeMonitor per group
 	/*!
 	 * \param grpId ID of the neuron group
@@ -392,19 +392,19 @@ public:
 	 */
 	SpikeMonitor* setSpikeMonitor(int gid, FILE* fid, int configId);
 
-	//!Sets the Poisson spike rate for a group. For information on how to set up spikeRate, see Section Poisson spike generators in the Tutorial. 
+	//!Sets the Poisson spike rate for a group. For information on how to set up spikeRate, see Section Poisson spike generators in the Tutorial.
 	/*!Input arguments:
-	 * \param grpId ID of the neuron group 
-	 * \param spikeRate pointer to a PoissonRate instance 
+	 * \param grpId ID of the neuron group
+	 * \param spikeRate pointer to a PoissonRate instance
 	 * \param refPeriod (optional) refractive period,  default = 1
 	 * \param configId (optional, deprecated) configuration id, default = ALL
 	 */
 	void setSpikeRate(int grpId, PoissonRate* spikeRate, int refPeriod, int configId);
-	
+
 	//! Resets either the neuronal firing rate information by setting resetFiringRate = true and/or the
 	//! weight values back to their default values by setting resetWeights = true.
 	void updateNetwork(bool resetFiringInfo, bool resetWeights);
-	
+
 	//! stores the pre and post synaptic neuron ids with the weight and delay
 	/*
 	 * \param fid file pointer
@@ -419,7 +419,7 @@ public:
 
 	//! Set the update cycle for log messages
 	/*!
-	 * \param showStatusCycle how often network status should be printed (seconds) 
+	 * \param showStatusCycle how often network status should be printed (seconds)
 	 */
 	void setLogCycle(int showStatusCycle);
 
@@ -446,10 +446,10 @@ public:
 
 	//! Returns the delay information for all synaptic connections between a pre-synaptic and a post-synaptic neuron group
 	/*!
-	 * \param _grpIdPre ID of pre-synaptic group 
-	 * \param _grpIdPost ID of post-synaptic group 
-	 * \param _nPre return the number of pre-synaptic neurons 
-	 * \param _nPost retrun the number of post-synaptic neurons 
+	 * \param _grpIdPre ID of pre-synaptic group
+	 * \param _grpIdPost ID of post-synaptic group
+	 * \param _nPre return the number of pre-synaptic neurons
+	 * \param _nPost retrun the number of post-synaptic neurons
 	 * \param _delays (optional) return the delay information for all synapses, default = NULL
 	 * \return delay information for all synapses
 	 */
@@ -474,10 +474,10 @@ public:
 
 	/*!
 	 * \brief Writes weights from synaptic connections from gIDpre to gIDpost.  Returns a pointer to the weights
-	 * and the size of the 1D array in size.  gIDpre(post) is the group ID for the pre(post)synaptic group, 
-	 * weights is a pointer to a single dimensional array of floats, size is the size of that array which is 
+	 * and the size of the 1D array in size.  gIDpre(post) is the group ID for the pre(post)synaptic group,
+	 * weights is a pointer to a single dimensional array of floats, size is the size of that array which is
 	 * returned to the user, and configID is the configuration ID of the SNN.  NOTE: user must free memory from
-	 * weights to avoid a memory leak.  
+	 * weights to avoid a memory leak.
 	 */
 	void getPopWeights(int gIDpre, int gIDpost, float*& weights, int& size, int configId = 0);
 
@@ -501,14 +501,14 @@ public:
 	 * \return pointer to array of ints. Number of elements in array is the number of neurons in group.
 	 * Each entry is the number of spikes for this neuron (int) since the last reset.
 	 */
-	int* getSpikeCounter(int grpId, int configId);	
-	
+	int* getSpikeCounter(int grpId, int configId);
+
 	//! Returns the change in weight strength in the last second (due to plasticity) for all synaptic connections between a pre-synaptic and a post-synaptic neuron group.
 	/*!
-	 * \param grpIdPre ID of pre-synaptic group 
-	 * \param grpIdPost ID of post-synaptic group 
-	 * \param nPre return the number of pre-synaptic neurons 
-	 * \param nPost retrun the number of post-synaptic neurons 
+	 * \param grpIdPre ID of pre-synaptic group
+	 * \param grpIdPost ID of post-synaptic group
+	 * \param nPre return the number of pre-synaptic neurons
+	 * \param nPost retrun the number of post-synaptic neurons
 	 * \param weightChanges (optional) return changes in weight strength for all synapses, default = NULL
 	 * \return changes in weight strength for all synapses
 	 */
@@ -556,7 +556,7 @@ private:
 	 * this function checks simTime vs. recordDur and resets the spike buffers if necessary
 	 */
 	void checkSpikeCounterRecordDur();
-	
+
 	void compactConnections(); //!< minimize any other wastage in that array by compacting the store
 	void connectFull(grpConnectInfo_t* info);
 	void connectOneToOne(grpConnectInfo_t* info);
@@ -588,7 +588,7 @@ private:
 	void globalStateUpdate();
 
 	void initSynapticWeights(); //!< initialize all the synaptic weights to appropriate values. total size of the synaptic connection is 'length'
-		
+
 	void makePtrInfo();				//!< creates CPU net ptrs
 
 	unsigned int poissonSpike(unsigned int currTime, float frate, int refractPeriod); //!< for generateSpikesFromRate
@@ -683,12 +683,12 @@ private:
 	int  updateSpikeTables();
 	//void updateStateAndFiringTable();
 	bool updateTime(); //!< updates simTime, returns true when a new second is started
-	
+
 	// Function writes spikes to file given a particular group id and the file id.
 	// Used in updateSpikeMonitor
-	void writeSpikesToFile(int grpId, unsigned int* neurIds, 
+	void writeSpikesToFile(int grpId, unsigned int* neurIds,
 												 unsigned int* timeCnts, int timeInterval, FILE* fid);
-	
+
 	// +++++ GPU MODE +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 	// TODO: consider moving to snn_gpu.h
 	void CpuSNNinit_GPU();	//!< initializes params needed in snn_gpu.cu (gets called in CpuSNN constructor)
@@ -765,7 +765,7 @@ private:
 	void updateFiringTable_GPU();
 	void updateNetwork_GPU(bool resetFiringInfo); //!< Allows parameters to be reset in the middle of the simulation
 	void updateSpikeMonitor_GPU();
-	void updateWeights();		
+	void updateWeights();
 	void updateWeights_GPU();
 	//void updateStateAndFiringTable_GPU();
 	void updateTimingTable_GPU();
@@ -899,7 +899,7 @@ private:
 	//time and timestep
 	unsigned int	simTimeMs;
 	uint64_t        simTimeSec;		//!< this is used to store the seconds.
-	unsigned int	simTime;		//!< The absolute simulation time. The unit is millisecond. this value is not reset but keeps increasing to its max value. 
+	unsigned int	simTime;		//!< The absolute simulation time. The unit is millisecond. this value is not reset but keeps increasing to its max value.
 	unsigned int	spikeCountAll1sec;
 	unsigned int	secD1fireCntHost;
 	unsigned int	secD2fireCntHost;	//!< firing counts for each second
@@ -911,7 +911,7 @@ private:
 		//cuda keep track of performance...
 #if __CUDA3__
 		unsigned int    timer;
-#elif __CUDA5__
+#else
 		StopWatchInterface* timer;
 #endif
 		float		cumExecutionTime;
@@ -961,7 +961,7 @@ private:
 	   D (time constant for recovery from depression), and F (time constant for recovery from facilitation). */
 	   float *stpu;
 	   float *stpx;
-	   
+
 	   float *gAMPA;
 	   float *gNMDA;
 	   float *gNMDA_r;
@@ -1005,7 +1005,7 @@ private:
 	int wtUpdateIntervalCnt_;
 	float stdpScaleFactor_;
 	int wtChangeUpdateInterval_;
-	float wtChangeDecay_; //!< the wtChange decay 
+	float wtChangeDecay_; //!< the wtChange decay
 
 };
 

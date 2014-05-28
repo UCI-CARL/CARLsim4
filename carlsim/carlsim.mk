@@ -5,25 +5,21 @@
 # CARLsim flags
 #---------------------------------------------------------------------------
 
-ifeq (${strip ${CARLSIM_CUDAVER}},6)
-	CARLSIM_INCLUDES = -I/usr/local/cuda/samples/common/inc/
-	CARLSIM_LFLAGS =
-	CARLSIM_LIBS =
-	CARLSIM_FLAGS = -D__CUDA6__ -arch sm_20
-endif
-
-ifeq (${strp ${CARLSIM_CUDAVER}},5)
-	CARLSIM_INCLUDES = -I/usr/local/cuda/samples/common/inc/
-	CARLSIM_LFLAGS =
-	CARLSIM_LIBS =
-	CARLSIM_FLAGS = -D__CUDA5__ -arch sm_20
-endif
-
-ifeq (${strp ${CARLSIM_CUDAVER}},3)
+ifeq (${strip ${CARLSIM_CUDAVER}},3)
 	CARLSIM_INCLUDES = -I${NVIDIA_SDK}/C/common/inc/
 	CARLSIM_LFLAGS = -L${NVIDIA_SDK}/C/lib
 	CARLSIM_LIBS = -lcutil_x86_64
 	CARLSIM_FLAGS = -D__CUDA3__ -arch sm_20
+else ifeq (${strip ${CARLSIM_CUDAVER}},5)
+	CARLSIM_INCLUDES = -I/usr/local/cuda/samples/common/inc/
+	CARLSIM_LFLAGS =
+	CARLSIM_LIBS =
+	CARLSIM_FLAGS = -D__CUDA5__ -arch sm_20
+else ifeq (${strip ${CARLSIM_CUDAVER}},6)
+	CARLSIM_INCLUDES = -I/usr/local/cuda/samples/common/inc/
+	CARLSIM_LFLAGS =
+	CARLSIM_LIBS =
+	CARLSIM_FLAGS = -D__CUDA6__ -arch sm_20
 endif
 
 # use fast math
