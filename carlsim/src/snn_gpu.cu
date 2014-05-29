@@ -2599,7 +2599,7 @@ void CpuSNN::checkInitialization(char* testString)
     CARLSIM_DEBUG("******************");
   }
   CARLSIM_DEBUG("Checking done...");
-  CUDA_CHECK_ERRORS( cudaMemcpyToSymbol(timingTableD2, timeTableD2, sizeof(int)*(10), 0, cudaMemcpyHostToDevice));
+  CUDA_CHECK_ERRORS(cudaMemcpyToSymbol(timingTableD2, timeTableD2, sizeof(int)*(10), 0, cudaMemcpyHostToDevice));
 }
 
 void CpuSNN::checkInitialization2(char* testString)
@@ -2678,9 +2678,9 @@ void CpuSNN::printTestVarInfo(FILE* fp, char* testString, bool test1, bool test2
 		test1 = false;
 		test2 = false;
 		CUDA_CHECK_ERRORS( cudaMemcpy( cpu_gpuNetPtrs.testVar,  testVar, sizeof(float)*numN, cudaMemcpyHostToDevice));
-		CUDA_CHECK_ERRORS_MACRO( cudaMemcpyToSymbol(testVarCnt, &cnt, sizeof(int), 0, cudaMemcpyHostToDevice));
+		CUDA_CHECK_ERRORS_MACRO(cudaMemcpyToSymbol(testVarCnt, &cnt, sizeof(int), 0, cudaMemcpyHostToDevice));
 		CUDA_CHECK_ERRORS( cudaMemcpy( cpu_gpuNetPtrs.testVar2, testVar2, sizeof(float)*numN, cudaMemcpyHostToDevice));
-		CUDA_CHECK_ERRORS_MACRO( cudaMemcpyToSymbol(testVarCnt2, &cnt, sizeof(int), 0, cudaMemcpyHostToDevice));
+		CUDA_CHECK_ERRORS_MACRO(cudaMemcpyToSymbol(testVarCnt2, &cnt, sizeof(int), 0, cudaMemcpyHostToDevice));
 	}
 
 	gcnt=0;
@@ -2702,7 +2702,7 @@ void CpuSNN::printTestVarInfo(FILE* fp, char* testString, bool test1, bool test2
 		fflush(fp);
 		cnt=0;
 		CUDA_CHECK_ERRORS( cudaMemcpy( cpu_gpuNetPtrs.testVar,  testVar, sizeof(float)*numN, cudaMemcpyHostToDevice));
-		CUDA_CHECK_ERRORS_MACRO( cudaMemcpyToSymbol(testVarCnt, &cnt, sizeof(int), 0, cudaMemcpyHostToDevice));
+		CUDA_CHECK_ERRORS_MACRO(cudaMemcpyToSymbol(testVarCnt, &cnt, sizeof(int), 0, cudaMemcpyHostToDevice));
 	}
 
 	gcnt=0;
@@ -2723,7 +2723,7 @@ void CpuSNN::printTestVarInfo(FILE* fp, char* testString, bool test1, bool test2
 		fflush(fp);
 
 		CUDA_CHECK_ERRORS( cudaMemcpy( cpu_gpuNetPtrs.testVar2, testVar2, sizeof(float)*numN, cudaMemcpyHostToDevice));
-		CUDA_CHECK_ERRORS_MACRO( cudaMemcpyToSymbol(testVarCnt2, &cnt, sizeof(int), 0, cudaMemcpyHostToDevice));
+		CUDA_CHECK_ERRORS_MACRO(cudaMemcpyToSymbol(testVarCnt2, &cnt, sizeof(int), 0, cudaMemcpyHostToDevice));
 	}
 	return;
 }
@@ -2926,8 +2926,8 @@ void CpuSNN::doGPUSim() {
 	if(0) {
 		int cnt=0;
 		testSpikeSenderReceiver(fpLog_, simTime);
-		CUDA_CHECK_ERRORS_MACRO( cudaMemcpyToSymbol(testVarCnt, &cnt, sizeof(int), 0, cudaMemcpyHostToDevice));
-		CUDA_CHECK_ERRORS_MACRO( cudaMemcpyToSymbol(testVarCnt2, &cnt, sizeof(int), 0, cudaMemcpyHostToDevice));
+		CUDA_CHECK_ERRORS_MACRO(cudaMemcpyToSymbol(testVarCnt, &cnt, sizeof(int), 0, cudaMemcpyHostToDevice));
+		CUDA_CHECK_ERRORS_MACRO(cudaMemcpyToSymbol(testVarCnt2, &cnt, sizeof(int), 0, cudaMemcpyHostToDevice));
 	}
 
 
@@ -3287,7 +3287,7 @@ void CpuSNN::allocateSNN_GPU() {
 //This gets called when updateNetwork is called so setSTDP, setSTP, or setHomeostasis
 //should now work in GPU_MODE.
 void CpuSNN::copyGrpInfo_GPU() {
-	CUDA_CHECK_ERRORS( cudaMemcpyToSymbol("gpuGrpInfo", grp_Info, (net_Info.numGrp)*sizeof(group_info_t), 0, cudaMemcpyHostToDevice));
+	CUDA_CHECK_ERRORS(cudaMemcpyToSymbol("gpuGrpInfo", grp_Info, (net_Info.numGrp)*sizeof(group_info_t), 0, cudaMemcpyHostToDevice));
 }
 
 //Copy all the appropriate state variables back to the GPU now that they have been
@@ -3310,7 +3310,7 @@ void CpuSNN::copyUpdateVariables_GPU()
 	}
 
 //finally copy this to something the GPU can access.
-	CUDA_CHECK_ERRORS( cudaMemcpyToSymbol("gpuPtrs", &cpu_gpuNetPtrs, sizeof(network_ptr_t), 0, cudaMemcpyHostToDevice));
+	CUDA_CHECK_ERRORS(cudaMemcpyToSymbol("gpuPtrs", &cpu_gpuNetPtrs, sizeof(network_ptr_t), 0, cudaMemcpyHostToDevice));
 
 }
 
