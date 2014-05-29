@@ -17,11 +17,11 @@ else ifeq (${strip ${CUDA_MAJOR_NUM}},2)
 	else
 		CARLSIM_FLAGS += -arch sm_21
 	endif
-else ifeq (${strip} ${CUDA_MAJOR_NUM}},3)
+else ifeq (${strip ${CUDA_MAJOR_NUM}},3)
 	ifeq (${strip ${CUDA_MINOR_NUM}},0)
-		CARLSIM_FLAGS += -arch_sm30
+		CARLSIM_FLAGS += -arch sm_30
 	else
-		CARLSIM_FLAGS += -arch_sm35
+		CARLSIM_FLAGS += -arch sm_35
 	endif
 endif
 
