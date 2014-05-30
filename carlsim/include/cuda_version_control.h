@@ -26,23 +26,7 @@
 
     #define CUDA_GET_MAXGFLOP_DEVICE_ID cutGetMaxGflopsDeviceId
     #define CUDA_DEVICE_RESET cudaThreadExit
-#elif __CUDA5__
-    #define CUDA_CHECK_ERRORS(x) checkCudaErrors(x)
-    #define CUDA_CHECK_ERRORS_MACRO(x) checkCudaErrors(x)
-
-    #define CUDA_CREATE_TIMER(x) sdkCreateTimer(&(x))
-    #define CUDA_DELETE_TIMER(x) sdkDeleteTimer(&(x))
-    #define CUDA_RESET_TIMER(x) sdkResetTimer(&(x))
-    #define CUDA_START_TIMER(x) sdkStartTimer(&(x))
-    #define CUDA_STOP_TIMER(x) sdkStopTimer(&(x))
-    #define CUDA_GET_TIMER_VALUE(x) sdkGetTimerValue(&(x))
-
-    #define CUDA_GET_LAST_ERROR(x) getLastCudaError(x)
-    #define CUDA_GET_LAST_ERROR_MACRO(x) getLastCudaError(x)
-
-    #define CUDA_GET_MAXGFLOP_DEVICE_ID gpuGetMaxGflopsDeviceId
-    #define CUDA_DEVICE_RESET cudaDeviceReset
-#elif __CUDA6__
+#elif defined(__CUDA5__) || defined(__CUDA6__)
     #define CUDA_CHECK_ERRORS(x) checkCudaErrors(x)
     #define CUDA_CHECK_ERRORS_MACRO(x) checkCudaErrors(x)
 
