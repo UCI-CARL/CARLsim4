@@ -1,18 +1,22 @@
 ===============================================================================
 Release 3.0
 ===============================================================================
+2014-06-02     Kristofor D. Carlson <kdcarlso@uci.edu>
+    * Added support for CUDA 6.
+    * Users can now add CUDA compute capability of GPU during installation.
+
 2014-05-12     Kristofor D. Carlson <kdcarlso@uci.edu>
-  * Created SpikeMonitor class to return spike activity information to the
-    user.
-  * Removed and reorganized global variables associated with setSpikeMonitor.
-  * Fixed memory leaks.
-	* Added tests for setSpikeMonitor and SpikeMonitor.
-  * Included SpikeMonitor files in carlsim makefile and testing makefile.	
-	* Added spikeInfo example that demonstrates how to use the SpikeMonitor class.
+    * Created SpikeMonitor class to return spike activity information to the
+      user.
+    * Removed and reorganized global variables associated with setSpikeMonitor.
+    * Fixed memory leaks.
+    * Added tests for setSpikeMonitor and SpikeMonitor.
+    * Included SpikeMonitor files in carlsim makefile and testing makefile.	
+    * Added spikeInfo example that demonstrates how to use the SpikeMonitor class.
 
 2014-04-03     Kristofor D. Carlson <kdcarlso@uci.edu>
-	* Fixed the tuneFiringRates example to work with the new CARLsim/pti
-	interface.
+    * Fixed the tuneFiringRates example to work with the new CARLsim/pti
+	  interface.
 	* Changed CHANGELOG_2.3 to CHANGELOG_3.0.
 	* Cleaned up Makefile and carlsim.mk a bit.
 

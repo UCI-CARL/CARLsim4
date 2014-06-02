@@ -8,11 +8,16 @@ EO_INSTALL_DIR ?= /opt/eo
 # desired installation absolute path of pti 
 PTI_INSTALL_DIR ?= /opt/pti
 
+# cuda capability major version number
+CUDA_MAJOR_NUM=1
+# cuda capability minor version number
+CUDA_MINOR_NUM=3
+
 # if optional env vars do not exist, assign default values
 # $(OPT_LEVEL): set to 1, 2, or 3 if you want to use optimization.  Default: 0.
 # $(DEBUG_INFO): set to 1 to include debug info, set to 0 to not include 
 # debugging info.  Default: 0.
-CARLSIM_CUDAVER ?= 3
+CARLSIM_CUDAVER ?= 6
 CARLSIM_FASTMATH ?= 0
 CARLSIM_CUOPTLEVEL ?= 0
 CARLSIM_DEBUG ?= 0
@@ -26,7 +31,7 @@ CARLSIM_TEST ?= 0
 
 # these variables collect the information from the other modules
 all_targets :=
-carlsim_programs  := 
+carlsim_programs :=
 pti_programs :=
 sources   :=
 libraries := 
@@ -91,4 +96,4 @@ distclean:
 	$(RM) $(objects) $(carlsim_programs) $(pti_programs) $(libraries) $(output_files)
 
 devtest:
-	@echo $(all_targets)
+	@echo $(CARLSIM_FLAGS) $(all_targets)
