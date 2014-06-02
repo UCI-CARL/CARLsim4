@@ -1408,7 +1408,7 @@ __device__ int generatePostSynapticSpike(int& simTime, int& firingId, int& myDel
 	if (gpuGrpInfo[pre_grpId].Type & TARGET_DA) {
 #ifdef __CUDA3__
 		atomicAddf(&(gpuPtrs.grpDA[post_grpId]), 0.04f);
-#elif __CUDA5__ 
+#elif defined(__CUDA5__) || defined(__CUDA6__)
 		atomicAdd(&(gpuPtrs.grpDA[post_grpId]), 0.04f);
 #endif
 	}
