@@ -7,9 +7,9 @@
 
 ifeq (${strip ${CUDA_MAJOR_NUM}},1)
 	ifeq (${strip ${CUDA_MINOR_NUM}},2)
-		CARLSIM_FLAGS += -arch sm_12
+		CARLSIM_FLAGS += -arch sm_12 -D__NO_ATOMIC_ADD__
 	else
-		CARLSIM_FLAGS += -arch sm_13
+		CARLSIM_FLAGS += -arch sm_13 -D__NO_ATOMIC_ADD__
 	endif
 else ifeq (${strip ${CUDA_MAJOR_NUM}},2)
 	ifeq (${strip ${CUDA_MINOR_NUM}},0)

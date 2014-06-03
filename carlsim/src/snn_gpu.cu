@@ -221,7 +221,7 @@ void initTableQuickSynId()
 	CUDA_CHECK_ERRORS_MACRO( cudaMemcpy( devPtr, tableQuickSynId, sizeof(tableQuickSynId), cudaMemcpyHostToDevice));
 }
 	
-#if __CUDA3__
+#if defined(__CUDA3__) || defined(__NO_ATOMIC_ADD__)
 	static __device__ inline float atomicAddf(float* address, float value)
 	{
 		float old = value;
@@ -1406,9 +1406,9 @@ __device__ int generatePostSynapticSpike(int& simTime, int& firingId, int& myDel
 
 	// Got one spike from dopaminergic neuron, increase dopamine concentration in the target area
 	if (gpuGrpInfo[pre_grpId].Type & TARGET_DA) {
-#ifdef __CUDA3__
+#if defined(__CUDA3__) || defined(__NO_ATOMIC_ADD__)
 		atomicAddf(&(gpuPtrs.grpDA[post_grpId]), 0.04f);
-#elif defined(__CUDA5__) || defined(__CUDA6__)
+#else
 		atomicAdd(&(gpuPtrs.grpDA[post_grpId]), 0.04f);
 #endif
 	}
