@@ -27,7 +27,7 @@ endif
 
 ifeq (${strip ${CARLSIM_CUDAVER}},3)
 	CARLSIM_INCLUDES = -I${NVIDIA_SDK}/C/common/inc/
-	CARLSIM_LFLAGS = -L${NVIDIA_SDK}/C/libpti
+	CARLSIM_LFLAGS = -L${NVIDIA_SDK}/C/lib
 	CARLSIM_LIBS = -lcutil_x86_64
 	CARLSIM_FLAGS += -D__CUDA3__
 else ifeq (${strip ${CARLSIM_CUDAVER}},5)
