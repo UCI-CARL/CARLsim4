@@ -9,9 +9,9 @@ EO_INSTALL_DIR ?= /opt/eo
 PTI_INSTALL_DIR ?= /opt/pti
 
 # cuda capability major version number
-CUDA_MAJOR_NUM=1
+CUDA_MAJOR_NUM ?= 1
 # cuda capability minor version number
-CUDA_MINOR_NUM=3
+CUDA_MINOR_NUM ?= 3
 
 # if optional env vars do not exist, assign default values
 # $(OPT_LEVEL): set to 1, 2, or 3 if you want to use optimization.  Default: 0.
