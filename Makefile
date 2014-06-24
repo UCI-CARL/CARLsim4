@@ -47,6 +47,7 @@ inc_dir = include
 carlsim_dir = carlsim
 lib_dir = libpti
 ex_dir  = examples
+proj_dir = projects
 interface_dir = interface
 test_dir = test
 util_dir = util
@@ -76,7 +77,9 @@ include test/carlsim_tests.mk
 # include all directories in examples
 example_includes := $(addsuffix /examples.mk, $(wildcard examples/*))
 include $(example_includes)
-
+# include all directories in projects
+project_includes := $(addsuffix /projects.mk, $(wildcard $(proj_dir)/*))
+include $(project_includes)
 
 .PHONY: all libraries examples pti_examples clean distclean tests
 all: $(all_targets)
