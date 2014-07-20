@@ -554,7 +554,7 @@ void CARLsim::reassignFixedWeights(short int connectId, float weightMatrix[], in
 // resets spike count for particular neuron group
 void CARLsim::resetSpikeCntUtil(int grpId) {
 	std::string funcName = "resetSpikeCntUtil()";
-	UserErrors::assertTrue(carlsimState_ == EXE_STATE, UserErrors::INVALID_API_AT_CURRENT_STATE, funcName);
+	UserErrors::assertTrue(carlsimState_==SETUP_STATE||carlsimState_==EXE_STATE, UserErrors::INVALID_API_AT_CURRENT_STATE, funcName);
 
 	snn_->resetSpikeCntUtil(grpId);
 }
@@ -562,7 +562,7 @@ void CARLsim::resetSpikeCntUtil(int grpId) {
 // resets spike counters
 void CARLsim::resetSpikeCounter(int grpId, int configId) {
 	std::string funcName = "resetSpikeCounter()";
-	UserErrors::assertTrue(carlsimState_ == EXE_STATE, UserErrors::INVALID_API_AT_CURRENT_STATE, funcName);
+	UserErrors::assertTrue(carlsimState_==SETUP_STATE||carlsimState_==EXE_STATE, UserErrors::INVALID_API_AT_CURRENT_STATE, funcName);
 
 	snn_->resetSpikeCounter(grpId,configId);
 }

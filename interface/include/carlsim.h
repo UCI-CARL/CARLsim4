@@ -418,7 +418,7 @@ public:
 	 */
 	void reassignFixedWeights(short int connectId, float weightMatrix[], int matrixSize, int configId=ALL);
 
-	// Deprecated
+	//! \deprecated Deprecated
 	void resetSpikeCntUtil(int grpId=ALL); //!< resets spike count for particular neuron group
 
 	/*!
@@ -426,7 +426,7 @@ public:
 	 *
 	 * Manually resets the spike buffers of a Spike Counter to zero (for a specific group).
 	 * Buffers get reset to zero automatically after recordDur. However, you can reset the buffer manually at any
-	 * point in time.
+	 * point in time, as long as you call CARLsim::setupNetwork() first.
 	 * \param grpId the group for which to reset the spike counts. Set to ALL if you want to reset all Spike Counters.
 	 * \param configId the config id for which to reset the spike counts. Set to ALL if you want to reset all configIds
 	 * \note The method can be called at execution state only
