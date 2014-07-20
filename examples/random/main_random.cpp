@@ -36,7 +36,7 @@
  *
  * CARLsim available from http://socsci.uci.edu/~jkrichma/CARL/CARLsim/
  * Ver 3/22/14
- */ 
+ */
 
 #include <carlsim.h>
 
@@ -64,7 +64,7 @@ int main()
 	sim.setConductances(true,5,150,6,150);
 
 	// make random connections with 10% probability
-	sim.connect(g2,g2,"random", RangeWeight(0.003),0.1f,RangeDelay(1));
+	sim.connect(g2,g1,"random", RangeWeight(0.003),0.1f,RangeDelay(1));
 	// make random connections with 10% probability, and random delays between 1 and 20
 	sim.connect(g1,g2,"random", RangeWeight(0.0,0.0025,0.005), 0.1f, RangeDelay(1,20), SYN_PLASTIC);
 	sim.connect(g1,g1,"random", RangeWeight(0.0,0.001,0.005), 0.1f, RangeDelay(1,20), SYN_PLASTIC);
@@ -72,7 +72,7 @@ int main()
 	// 5% probability of connection
 	sim.connect(gin,g1,"random", RangeWeight(0.5), 0.05f, RangeDelay(1,20), SYN_FIXED);
 
-	// here we define and set the properties of the STDP. 
+	// here we define and set the properties of the STDP.
 	float ALPHA_LTP = 0.10f/100, TAU_LTP = 20.0f, ALPHA_LTD = 0.12f/100, TAU_LTD = 20.0f;
 	sim.setSTDP(g1, true, STANDARD, ALPHA_LTP, TAU_LTP, ALPHA_LTD, TAU_LTD);
 
