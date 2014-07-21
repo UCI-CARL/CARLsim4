@@ -626,20 +626,23 @@ SpikeMonitor* CARLsim::setSpikeMonitor(int grpId, const std::string& fname, int 
 	UserErrors::assertTrue(carlsimState_ == CONFIG_STATE || carlsimState_ == SETUP_STATE,
 					UserErrors::INVALID_API_AT_CURRENT_STATE, funcName);
 
-	// set the default string here
-	std::string fileName=fname;
-	if(fileName.empty()){
-		
-		fileName="results/spk"+snn_->getGroupName(grpId,configId)+".dat"; 
-	}
-	// try to open spike file
-	FILE* fid = fopen(fileName.c_str(),"wb"); 
-	if (fid==NULL) {
-		// file could not be opened
+	// empty string: use default name for binary file
+	std::string fileName = fname.empty() ? "results/spk"+snn_->getGroupName(grpId,configId)+".dat" : fname;
 
-		// default case: print error and exit
-		std::string fileError = "Make sure directory exists: "+fileName;
-		UserErrors::assertTrue(false, UserErrors::FILE_CANNOT_OPEN, fileName, fileError);
+	FILE* fid;
+	if (fileName=="NULL") {
+		// user does not want a binary file created
+		fid = NULL;
+	} else {
+		// try to open spike file
+		fid = fopen(fileName.c_str(),"wb");
+		if (fid==NULL) {
+			// file could not be opened
+
+			// default case: print error and exit
+			std::string fileError = " Double-check file permissions and make sure directory exists.";
+			UserErrors::assertTrue(false, UserErrors::FILE_CANNOT_OPEN, funcName, fileName, fileError);
+		}
 	}
 
 	SpikeMonitor* spkMonitor;
