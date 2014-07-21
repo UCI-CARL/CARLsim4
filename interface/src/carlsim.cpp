@@ -499,6 +499,11 @@ void CARLsim::setupNetwork(bool removeTempMemory) {
 
 // +++++++++ PUBLIC METHODS: LOGGING / PLOTTING +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
+const FILE* CARLsim::getLogFpInf() { return snn_->getLogFpInf(); }
+const FILE* CARLsim::getLogFpErr() { return snn_->getLogFpErr(); }
+const FILE* CARLsim::getLogFpDeb() { return snn_->getLogFpDeb(); }
+const FILE* CARLsim::getLogFpLog() { return snn_->getLogFpLog(); }
+
 void CARLsim::saveSimulation(std::string fileName, bool saveSynapseInfo) {
 	FILE* fpSave = fopen(fileName.c_str(),"wb");
 	std::string funcName = "saveSimulation()";
@@ -525,10 +530,10 @@ void CARLsim::setLogDebugFp(FILE* fpLog) {
 }
 
 // set new file pointer for all files
-void CARLsim::setLogsFp(FILE* fpOut, FILE* fpErr, FILE* fpDeb, FILE* fpLog) {
+void CARLsim::setLogsFp(FILE* fpInf, FILE* fpErr, FILE* fpDeb, FILE* fpLog) {
 	UserErrors::assertTrue(loggerMode_==CUSTOM,UserErrors::MUST_BE_LOGGER_CUSTOM,"setLogsFp","Logger mode");
 
-	snn_->setLogsFp(fpOut,fpErr,fpDeb,fpLog);
+	snn_->setLogsFp(fpInf,fpErr,fpDeb,fpLog);
 }
 
 

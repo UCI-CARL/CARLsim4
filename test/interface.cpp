@@ -30,7 +30,7 @@ TEST(Interface, getSpikeCounter) {
 TEST(Interface, setConductances) {
 	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
-	CARLsim* sim = new CARLsim("SNN",CPU_MODE,USER,0,1,42);
+	CARLsim* sim = new CARLsim("SNN",CPU_MODE,SILENT,0,1,42);
 	int g1=sim->createGroup("excit", 10, EXCITATORY_NEURON);
 	sim->setNeuronParameters(g1, 0.02f, 0.2f,-65.0f,8.0f);
 	sim->connect(g1,g1,"random",RangeWeight(0.01),0.1f,RangeDelay(1));
@@ -104,7 +104,6 @@ TEST(Interface, CarlsimState) {
 	EXPECT_DEATH({sim->runNetwork(1, 0);},"");
 	EXPECT_DEATH({sim->saveSimulation("test.dat", true);},"");
 	EXPECT_DEATH({sim->reassignFixedWeights(0, wM, 4);},"");
-	EXPECT_DEATH({sim->resetSpikeCounter(g1);},"");
 	EXPECT_DEATH({sim->setSpikeRate(g1, NULL);},"");
 	EXPECT_DEATH({sim->writePopWeights("test.dat", 0, 1);},"");
 	EXPECT_DEATH({i = sim->getConnectionId(0, 0);},"");
@@ -121,6 +120,7 @@ TEST(Interface, CarlsimState) {
 	EXPECT_DEATH({i = sim->getGroupNumNeurons(0);},"");
 	EXPECT_DEATH({sim->getPopWeights(0, 1, w, i);},"");
 	EXPECT_DEATH({sim->getSpikeCounter(0);},"");
+	EXPECT_DEATH({sim->resetSpikeCounter(0);},"");
 
 	// test buildNetwork(), change carlsimState_ from CONFIG_STATE to SETUP_STATE
 	EXPECT_TRUE(sim->getCarlsimState() == CONFIG_STATE);
@@ -151,7 +151,6 @@ TEST(Interface, CarlsimState) {
 	EXPECT_DEATH({sim->setWeightAndWeightChangeUpdate();},"");
 	EXPECT_DEATH({sim->setupNetwork();},"");
 	EXPECT_DEATH({sim->readNetwork(NULL);},"");
-	EXPECT_DEATH({sim->resetSpikeCounter(0);},"");
 	EXPECT_DEATH({sim->getSpikeCounter(0);},"");
 	EXPECT_DEATH({sim->setDefaultConductanceTimeConstants(1, 2, 3, 4, 5, 6);},"");
 	EXPECT_DEATH({sim->setDefaultHomeostasisParams(1.0, 2.0);},"");

@@ -98,6 +98,7 @@ TEST(STP, setSTPdeath) {
 
 /*
  * \brief check whether CPU mode reproduces some pre-recorded stpu and stpx (internal variables)
+ *
  * This test ensures that CARLsim quantitatively reproduces STP behavior across machines. This exact network has been
  * run before, and STP variables (stpu and stpx) have been recorded for a time window of 50 ms. The network should
  * reproduce these values at all times and on all platforms.
@@ -120,7 +121,7 @@ TEST(STP, internalCPUvsData) {
 	int randSeed = rand() % 1000;	// randSeed must not interfere with STP
 	float abs_error = 1e-2f;		// allowed error margin
 
-	CpuSNN* sim = new CpuSNN(name,CPU_MODE,USER,0,1,randSeed);
+	CpuSNN* sim = new CpuSNN(name,CPU_MODE,SILENT,0,1,randSeed);
 	int g0=sim->createSpikeGeneratorGroup("input", 1, EXCITATORY_NEURON, ALL);
 	int g1=sim->createGroup("excit", 1, EXCITATORY_NEURON, ALL);
 	sim->setNeuronParameters(g1, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f, ALL);
@@ -206,7 +207,7 @@ TEST(STP, internalCPUvsGPU) {
 	float abs_error = 1e-2f; // error allowed for CPU<->GPU mode
 
 	for (int j=0; j<2; j++) {
-		sim = new CpuSNN(name,simModes[j],USER,0,nConfig,randSeed);
+		sim = new CpuSNN(name,simModes[j],SILENT,0,nConfig,randSeed);
 		int g0=sim->createSpikeGeneratorGroup("input", 1, EXCITATORY_NEURON, ALL);
 		int g1=sim->createGroup("excit", 1, EXCITATORY_NEURON, ALL);
 		sim->setNeuronParameters(g1, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f, ALL);

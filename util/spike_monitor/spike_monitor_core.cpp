@@ -1,6 +1,7 @@
 #include <snn.h>
 #include <iostream>
 #include <spike_monitor_core.h>
+#include <snn_definitions.h>		// CARLSIM_ERROR, CARLSIM_INFO, ...
 
 
 
@@ -14,6 +15,10 @@ SpikeMonitorCore::SpikeMonitorCore(){
 	totalTime_ = -1;
 	accumTime_ = -1;
 	numN_ = -1;
+//	fpInf_ = NULL;
+//	fpErr_ = NULL;
+//	fpDeb_ = NULL;
+//	fpLog_ = NULL;
 	return;
 }
 
@@ -24,6 +29,13 @@ void SpikeMonitorCore::init(CpuSNN* snn, int grpId){
 	numN_ = snn_->getGroupNumNeurons(grpId_);
 	firingRate_.assign(numN_,0);
 	tmpSpikeCount_.assign(numN_,0);
+
+	// use CARLSIM_{ERROR|WARNING|etc} typesetting
+	fpInf_ = snn_->getLogFpInf();
+	fpErr_ = snn_->getLogFpErr();
+	fpDeb_ = snn_->getLogFpDeb();
+	fpLog_ = snn_->getLogFpLog();
+
 	return;
 }
 
@@ -49,8 +61,8 @@ float SpikeMonitorCore::getGrpFiringRate(){
 	if(!recordSet_ && totalTime_>0)
 		return (float)vectorSize_/((float)totalTime_*(float)numN_);
 	else{
-		printf("You have to stop recordiing before using this function.\n");
-		exit(1);
+		CARLSIM_ERROR("You have to stop recording before using getGrpFiringRate.");
+		snn_->exitSimulation();
 	}
 }
 
@@ -82,8 +94,8 @@ std::vector<float> SpikeMonitorCore::getNeuronFiringRate(){
 		return firingRate_;
 	}
 	else{
-		printf("You have to stop recording before using this function.\n");
-		exit(1);
+		CARLSIM_ERROR("You have to stop recording before using getNeuronFiringRate.\n");
+		snn_->exitSimulation();
 	}
 }
 // need to do error check on interface
@@ -148,8 +160,8 @@ std::vector<float> SpikeMonitorCore::getSortedNeuronFiringRate(){
 		std::sort(sortedFiringRate_.begin(),sortedFiringRate_.end());
 		return sortedFiringRate_;
 	}else{
-		printf("You have to stop recording before using this function.\n");
-		exit(1);
+		CARLSIM_ERROR("You have to stop recording before using getSortedNeuronFiringRate.");
+		snn_->exitSimulation();
 	}
 }
 

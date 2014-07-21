@@ -318,6 +318,9 @@ public:
 
 	// +++++ PUBLIC METHODS: INTERACTING WITH A SIMULATION ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
+	//! deallocates all dynamical structures and exits
+	void exitSimulation(int val=1);
+
 	//! reads the network state from file
 	//! Reads a CARLsim network file. Such a file can be created using CpuSNN:writeNetwork.
 	/*
@@ -417,8 +420,17 @@ public:
 
 	// +++++ PUBLIC METHODS: LOGGING / PLOTTING +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
-	//! Set the update cycle for log messages
+	//! returns file pointer to info log
+	const FILE* getLogFpInf() { return fpInf_; }
+	//! returns file pointer to error log
+	const FILE* getLogFpErr() { return fpErr_; }
+	//! returns file pointer to debug log
+	const FILE* getLogFpDeb() { return fpDeb_; }
+	//! returns file pointer to log file
+	const FILE* getLogFpLog() { return fpLog_; }
+
 	/*!
+	 * \brief Sets the update cycle for log messages
 	 * \param showStatusCycle how often network status should be printed (seconds)
 	 */
 	void setLogCycle(int showStatusCycle);
@@ -431,12 +443,13 @@ public:
 
 	/*!
 	 * \brief Sets the file pointers for all log files
-	 * \param[in] fpOut file pointer for status info
+	 *
+	 * \param[in] fpInf file pointer for status info
 	 * \param[in] fpErr file pointer for errors/warnings
 	 * \param[in] fpDeb file pointer for debug info
 	 * \param[in] fpLog file pointer for debug log file that contains all the above info
 	 */
-	void setLogsFp(FILE* fpOut, FILE* fpErr, FILE* fpDeb, FILE* fpLog);
+	void setLogsFp(FILE* fpInf, FILE* fpErr, FILE* fpDeb, FILE* fpLog);
 
 
 	// +++++ PUBLIC METHODS: GETTERS / SETTERS ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
@@ -570,8 +583,6 @@ private:
 	void doGPUSim();
 	void doSnnSim();
 	void doSTPUpdateAndDecayCond();
-
-	void exitSimulation(int val);	//!< deallocates all dynamical structures and exits
 
 	void findFiring();
 	int findGrpId(int nid);//!< For the given neuron nid, find the group id
@@ -917,7 +928,7 @@ private:
 		float		cumExecutionTime;
 		float		lastExecutionTime;
 
-	FILE*	fpOut_;			//!< fp of where to write all simulation output (status info) if not in silent mode
+	FILE*	fpInf_;			//!< fp of where to write all simulation output (status info) if not in silent mode
 	FILE*	fpErr_;			//!< fp of where to write all errors if not in silent mode
 	FILE*	fpDeb_;			//!< fp of where to write all debug info if not in silent mode
 	FILE*	fpLog_;

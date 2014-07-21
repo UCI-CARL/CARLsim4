@@ -50,7 +50,7 @@
 class CpuSNN; // forward declaration of CpuSNN class
 
 class SpikeMonitorCore {
- public: 
+public: 
 	/*! 
 	 * \brief analysis constructor.
 	 *
@@ -319,7 +319,7 @@ class SpikeMonitorCore {
 	 */
 	void zeroMonBufferTimeCnt(unsigned int timeSize);
 	
- private:
+private:
 	// Used to catch the spike information
 	unsigned int	 spikeMonGrpId_;
 	unsigned int	 monBufferPos_;
@@ -343,6 +343,12 @@ class SpikeMonitorCore {
 	int totalTime_;
 	int accumTime_;
 	int numN_;
+
+	// file pointers for error logging
+	const FILE* fpInf_;
+	const FILE* fpErr_;
+	const FILE* fpDeb_;
+	const FILE* fpLog_;
 };
 
 

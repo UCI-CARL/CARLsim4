@@ -368,6 +368,11 @@ public:
 
 	// +++++ PUBLIC METHODS: LOGGING / PLOTTING +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
+	const FILE* getLogFpInf();	//!< returns file pointer to info log
+	const FILE* getLogFpErr();	//!< returns file pointer to error log
+	const FILE* getLogFpDeb();	//!< returns file pointer to debug log
+	const FILE* getLogFpLog();	//!< returns file pointer to log file
+
 	//! saves important simulation and network infos to file
 	//! \note The method can be called at setup state and execution state
 	void saveSimulation(std::string fileName, bool saveSynapseInfo=true);
@@ -393,12 +398,12 @@ public:
 
 	/*!
 	 * \brief Sets the file pointers for all log files
-	 * \param[in] fpOut file pointer for status info
+	 * \param[in] fpInf file pointer for status info
 	 * \param[in] fpErr file pointer for errors/warnings
 	 * \param[in] fpDeb file pointer for debug info
 	 * \param[in] fpLog file pointer for debug log file that contains all the above info
 	 */
-	void setLogsFp(FILE* fpOut, FILE* fpErr=NULL, FILE* fpDeb=NULL, FILE* fpLog=NULL);
+	void setLogsFp(FILE* fpInf, FILE* fpErr=NULL, FILE* fpDeb=NULL, FILE* fpLog=NULL);
 
 
 

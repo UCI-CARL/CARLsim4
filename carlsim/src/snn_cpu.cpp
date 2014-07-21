@@ -748,19 +748,10 @@ int CpuSNN::runNetwork(int _nsec, int _nmsec, bool copyState) {
 /// PUBLIC METHODS: INTERACTING WITH A SIMULATION
 /// ************************************************************************************************************ ///
 
-// Returns pointer to nSpikeCnt, which is a 1D array of the number of spikes every neuron in the group
-unsigned int* CpuSNN::getSpikeCntPtr(int grpId) {
-	//! do check to make sure appropriate flag is set
-	if(simMode_ == GPU_MODE && enableGPUSpikeCntPtr == false){
-		CARLSIM_ERROR("Error: the enableGPUSpikeCntPtr flag must be set to true to use this function in GPU_MODE.");
-		assert(enableGPUSpikeCntPtr);
-	}
-    
-	if(simMode_ == GPU_MODE){
-		assert(enableGPUSpikeCntPtr);
-	}
-    
-	return ((grpId == -1) ? nSpikeCnt : &nSpikeCnt[grp_Info[grpId].StartN]);
+// deallocates dynamical structures and exits
+void CpuSNN::exitSimulation(int val) {
+	deleteObjects();
+	exit(val);
 }
 
 // reads network state from file
@@ -1318,7 +1309,7 @@ void CpuSNN::writePopWeights(std::string fname, int grpPreId, int grpPostId, int
 /// PUBLIC METHODS: PLOTTING / LOGGING
 /// ************************************************************************************************************ ///
 
-//! how often to show network status (seconds), set to -1 to disable
+// how often to show network status (seconds), set to -1 to disable
 void CpuSNN::setLogCycle(int showStatusCycle) {
 	showStatusCycle_ = showStatusCycle;
 	showStatusCnt_ = 0;
@@ -1335,13 +1326,13 @@ void CpuSNN::setLogDebugFp(FILE* fpLog) {
 }
 
 // set new file pointer for all files
-void CpuSNN::setLogsFp(FILE* fpOut, FILE* fpErr, FILE* fpDeb, FILE* fpLog) {
+void CpuSNN::setLogsFp(FILE* fpInf, FILE* fpErr, FILE* fpDeb, FILE* fpLog) {
 	assert(loggerMode_==CUSTOM); // only valid in custom mode
-	assert(fpOut!=NULL); // at least one of the must be non-NULL
+	assert(fpInf!=NULL); // at least one of the must be non-NULL
 
-	if (fpOut_!=NULL && fpOut_!=stdout && fpOut_!=stderr)
-		fclose(fpOut_);
-	fpOut_ = fpOut;
+	if (fpInf_!=NULL && fpInf_!=stdout && fpInf_!=stderr)
+		fclose(fpInf_);
+	fpInf_ = fpInf;
 
 	if (fpErr!=NULL) {
 		if (fpErr_!=NULL && fpErr_!=stdout && fpErr_!=stderr)
@@ -1537,6 +1528,21 @@ void CpuSNN::getPopWeights(int grpPreId, int grpPostId, float*& weights, int& ma
 	}
 }
 
+// Returns pointer to nSpikeCnt, which is a 1D array of the number of spikes every neuron in the group
+unsigned int* CpuSNN::getSpikeCntPtr(int grpId) {
+	//! do check to make sure appropriate flag is set
+	if(simMode_ == GPU_MODE && enableGPUSpikeCntPtr == false){
+		CARLSIM_ERROR("Error: the enableGPUSpikeCntPtr flag must be set to true to use this function in GPU_MODE.");
+		assert(enableGPUSpikeCntPtr);
+	}
+    
+	if(simMode_ == GPU_MODE){
+		assert(enableGPUSpikeCntPtr);
+	}
+    
+	return ((grpId == -1) ? nSpikeCnt : &nSpikeCnt[grp_Info[grpId].StartN]);
+}
+
 // return spike buffer, which contains #spikes per neuron in the group
 int* CpuSNN::getSpikeCounter(int grpId, int configId) {
 	assert(grpId>=0); assert(grpId<numGrp); assert(configId>=0); assert(configId<nConfig_);
@@ -1633,7 +1639,7 @@ void CpuSNN::CpuSNNinit() {
 	// set logger mode (defines where to print all status, error, and debug messages)
 	switch (loggerMode_) {
 	case USER:
-		fpOut_ = stdout;
+		fpInf_ = stdout;
 		fpErr_ = stderr;
 		#if (WIN32 || WIN64)
 			fpDeb_ = fopen("nul","w");
@@ -1642,15 +1648,15 @@ void CpuSNN::CpuSNNinit() {
 		#endif
 		break;
 	case DEVELOPER:
-		fpOut_ = stdout;
+		fpInf_ = stdout;
 		fpErr_ = stderr;
 		fpDeb_ = stdout;
 		break;
 	case SHOWTIME:
 		#if (WIN32 || WIN64)
-			fpOut_ = fopen("nul","w");
+			fpInf_ = fopen("nul","w");
 		#else
-			fpOut_ = fopen("/dev/null","w");
+			fpInf_ = fopen("/dev/null","w");
 		#endif
 		fpErr_ = stderr;
 		#if (WIN32 || WIN64)
@@ -1662,11 +1668,11 @@ void CpuSNN::CpuSNNinit() {
 	case SILENT:
 	case CUSTOM:
 		#if (WIN32 || WIN64)
-			fpOut_ = fopen("nul","w");
+			fpInf_ = fopen("nul","w");
 			fpErr_ = fopen("nul","w");
 			fpDeb_ = fopen("nul","w");
 		#else
-			fpOut_ = fopen("/dev/null","w");
+			fpInf_ = fopen("/dev/null","w");
 			fpErr_ = fopen("/dev/null","w");
 			fpDeb_ = fopen("/dev/null","w");
 		#endif
@@ -1679,11 +1685,11 @@ void CpuSNN::CpuSNNinit() {
 
 	#ifdef __REGRESSION_TESTING__
 	#if (WIN32 || WIN64)
-		fpOut_ = fopen("nul","w");
+		fpInf_ = fopen("nul","w");
 		fpErr_ = fopen("nul","w");
 		fpDeb_ = fopen("nul","w");
 	#else
-		fpOut_ = fopen("/dev/null","w");
+		fpInf_ = fopen("/dev/null","w");
 		fpErr_ = fopen("/dev/null","w");
 		fpDeb_ = fopen("/dev/null","w");
 	#endif
@@ -2484,8 +2490,8 @@ void CpuSNN::deleteObjects() {
 		printSimSummary();
 
 		// don't fclose if it's stdout or stderr, otherwise they're gonna stay closed for the rest of the process
-		if (fpOut_!=NULL && fpOut_!=stdout && fpOut_!=stderr)
-			fclose(fpOut_);
+		if (fpInf_!=NULL && fpInf_!=stdout && fpInf_!=stderr)
+			fclose(fpInf_);
 		if (fpErr_!=NULL && fpErr_!=stdout && fpErr_!=stderr)
 			fclose(fpErr_);
 		if (fpDeb_!=NULL && fpDeb_!=stdout && fpDeb_!=stderr)
@@ -2641,13 +2647,6 @@ void CpuSNN::doSTPUpdateAndDecayCond() {
 			}
 		}
 	}
-}
-
-
-// deallocates dynamical structures and exits
-void CpuSNN::exitSimulation(int val) {
-	deleteObjects();
-	exit(val);
 }
 
 

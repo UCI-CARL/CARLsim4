@@ -248,6 +248,66 @@ TEST(SPIKEMON, clear){
 	}
 }
 
+TEST(SPIKEMON, getGrpFiringRateDeath) {
+	CARLsim* sim;
+	PoissonRate* input;
+	const int GRP_SIZE = 5;
+	const int inputTargetFR = 5.0f;
+
+	// use threadsafe version because we have deathtests
+	::testing::FLAGS_gtest_death_test_style = "threadsafe";
+
+	// loop over both CPU and GPU mode.
+	for(int mode=0; mode<=1; mode++){
+		// first iteration, test CPU mode, second test GPU mode
+		sim = new CARLsim("SNN",mode?GPU_MODE:CPU_MODE,SILENT,0,1,42);
+
+		float COND_tAMPA=5.0, COND_tNMDA=150.0, COND_tGABAa=6.0, COND_tGABAb=150.0;
+		int inputGroup = sim->createSpikeGeneratorGroup("Input",GRP_SIZE,EXCITATORY_NEURON);
+		int g1 = sim->createGroup("g1", GRP_SIZE, EXCITATORY_NEURON, ALL);
+		
+		sim->setConductances(true,COND_tAMPA,COND_tNMDA,COND_tGABAa,COND_tGABAb);
+		double initWeight = 0.27f;
+		
+
+		sim->setNeuronParameters(g1, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f, ALL);
+		sim->connect(inputGroup,g1,"random", RangeWeight(initWeight), 1.0f, RangeDelay(1), SYN_FIXED);
+		sim->setupNetwork();
+
+		// input
+		input = new PoissonRate(GRP_SIZE);
+		for(int i=0;i<GRP_SIZE;i++){
+			input->rates[i]=inputTargetFR;
+		}
+
+		sim->setSpikeRate(inputGroup,input);
+
+		system("rm -rf spkInputGrp.dat");
+		system("rm -rf spkG1Grp.dat");
+		SpikeMonitor* spikeMonInput = sim->setSpikeMonitor(inputGroup,"spkInputGrp.dat",0);
+		SpikeMonitor* spikeMonG1 = sim->setSpikeMonitor(g1,"spkG1Grp.dat",0);
+		
+		spikeMonInput->startRecording();
+		spikeMonG1->startRecording();
+	 		
+		int runTime = 2;
+		// run the network
+		sim->runNetwork(runTime,0);
+	
+		// don't call stopRecording here
+//		spikeMonInput->stopRecording();
+//		spikeMonG1->stopRecording();
+
+		// confirm the spike info information is correct here.
+		EXPECT_DEATH(spikeMonInput->getGrpFiringRate(),"");
+		EXPECT_DEATH(spikeMonG1->getGrpFiringRate(),"");
+		
+		delete sim;
+		delete input;
+	}
+}
+
+
 TEST(SPIKEMON, getGrpFiringRate){
 	CARLsim* sim;
 	PoissonRate* input;
