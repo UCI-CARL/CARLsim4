@@ -203,7 +203,9 @@ TAB_SIZE               = 4
 # will result in a user-defined paragraph with heading "Side Effects:".
 # You can put \n's in the value part of an alias to insert newlines.
 
-ALIASES                =
+ALIASES += "TODO=\xrefitem TODO \"TODO\" \"TODO\" "
+ALIASES += "FIXME=\xrefitem FIXME \"FIXME\" \"FIXME\" "
+ALIASES += "STATE=\par Allowed CARLsim states:\n"
 
 # This tag can be used to specify a number of word-keyword mappings (TCL only).
 # A mapping has the form "name=value". For example adding
@@ -468,7 +470,7 @@ SORT_MEMBER_DOCS       = YES
 # by member name. If set to NO (the default) the members will appear in
 # declaration order.
 
-SORT_BRIEF_DOCS        = NO
+SORT_BRIEF_DOCS        = YES
 
 # If the SORT_MEMBERS_CTORS_1ST tag is set to YES then doxygen
 # will sort the (brief and detailed) documentation of class members so that
@@ -478,7 +480,7 @@ SORT_BRIEF_DOCS        = NO
 # This tag will be ignored for brief docs if SORT_BRIEF_DOCS is set to NO
 # and ignored for detailed docs if SORT_MEMBER_DOCS is set to NO.
 
-SORT_MEMBERS_CTORS_1ST = NO
+SORT_MEMBERS_CTORS_1ST = YES
 
 # If the SORT_GROUP_NAMES tag is set to YES then doxygen will sort the
 # hierarchy of group names into alphabetical order. If set to NO (the default)
@@ -509,7 +511,7 @@ STRICT_PROTO_MATCHING  = NO
 # disable (NO) the todo list. This list is created by putting \todo
 # commands in the documentation.
 
-GENERATE_TODOLIST      = YES
+GENERATE_TODOLIST      = NO
 
 # The GENERATE_TESTLIST tag can be used to enable (YES) or
 # disable (NO) the test list. This list is created by putting \test
@@ -660,6 +662,7 @@ WARN_LOGFILE           =
 
 INPUT                  = interface/include interface/src \
 						 util/input_stimulus \
+						 util/spike_monitor \
 						 util/scripts
 
 # This tag can be used to specify the character encoding of the source files
@@ -683,7 +686,6 @@ FILE_PATTERNS          = *.c \
                          *.h \
                          *.cu \
                          *.hpp \
-#                         *.m \
                          *.dox
 
 # The RECURSIVE tag can be used to turn specify whether or not subdirectories

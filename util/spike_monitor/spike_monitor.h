@@ -52,6 +52,11 @@
 class CpuSNN; // forward declaration of CpuSNN class
 class SpikeMonitorCore; // forward declaration of implementation
 
+/*!
+ * \brief Class SpikeMonitor
+ *
+ * \TODO finish docu
+ */
 class SpikeMonitor {
  public: 
 	/*! 
@@ -75,7 +80,7 @@ class SpikeMonitor {
 	/*!
 	 *\brief deletes data from the AER vector.
 	 *\param void.
-	 *\return void.
+	 *\returns void.
 	 */
 	void clear();
 	
@@ -85,7 +90,7 @@ class SpikeMonitor {
 	 * which the neurons are averaged is calculated automatically when
 	 * the user calls startRecording()/stopRecording().
 	 * \param void.
-	 * \return float value for the average firing rate of the whole group. 
+	 * \returns float value for the average firing rate of the whole group. 
 	 */
 	float getGrpFiringRate();
 
@@ -93,7 +98,7 @@ class SpikeMonitor {
 	 * \brief return the number of neurons that have exactly 0 Hz firing
 	 * rate.
 	 * \param void
-	 * \return int value of the number of silent neurons.
+	 * \returns float value of the number of silent neurons.
 	 */
 	float getMaxNeuronFiringRate();
 	
@@ -101,7 +106,7 @@ class SpikeMonitor {
 	 * \brief return the number of neurons that have exactly 0 Hz firing
 	 * rate.
 	 * \param void
-	 * \return int value of the number of silent neurons.
+	 * \returns int value of the number of silent neurons.
 	 */
 	float getMinNeuronFiringRate();
 	
@@ -111,7 +116,7 @@ class SpikeMonitor {
 	 * which the neurons are averaged is calculated automatically when
 	 * the user calls startRecording()/stopRecording().
 	 * \param void
-	 * \return float vector for the average firing rate of each neuron.
+	 * \returns float vector for the average firing rate of each neuron.
 	 */
 	std::vector<float> getNeuronFiringRate();
 
@@ -121,7 +126,7 @@ class SpikeMonitor {
 	 * are averaged is calculated automatically when the user calls 
 	 * startRecording()/stopRecording().
 	 * \param void
-	 * \return int value of the number of neurons that have a firing rate
+	 * \returns int value of the number of neurons that have a firing rate
 	 * within the min/max range.
 	 */
 	int getNumNeuronsWithFiringRate(float min, float max);
@@ -130,7 +135,7 @@ class SpikeMonitor {
 	 * \brief returns the number of neurons that are silent.
 	 * \param min minimum value of range (inclusive) to be searched.
 	 * \param max maximum value of range (inclusive) to be searched.
-	 * \return int of the number of neurons that are silent.
+	 * \returns int of the number of neurons that are silent.
 	 */
 	int getNumSilentNeurons();
 
@@ -139,28 +144,28 @@ class SpikeMonitor {
 	 * specified by the user, min/max (inclusive). 
 	 * \param min minimum value of range (inclusive) to be searched.
 	 * \param max maximum value of range (inclusive) to be searched.
-	 * \return float of the percentage of total neurons that are in this range.
+	 * \returns float of the percentage of total neurons that are in this range.
 	 */
 	float getPercentNeuronsWithFiringRate(float min, float max);
 
 	/*!
 	 * \brief returns the percentage of total neurons in group that are silent.
 	 * \param void
-	 * \return float of the percentage of total neurons that are silent.
+	 * \returns float of the percentage of total neurons that are silent.
 	 */
 	float getPercentSilentNeurons();
 	
 	/*!
 	 * \brief Return the current size of the AER vector.
 	 * \param void
-	 * \return the current size of the AER vector.
+	 * \returns the current size of the AER vector.
 	 */
 	unsigned int getSize();
 
 	/*!
 	 *\brief returns the AER vector.
 	 *\param void.
-	 *\return AER vector is returned.
+	 *\returns AER vector is returned.
 	 */
 	std::vector<AER> getVector();
 
@@ -170,7 +175,7 @@ class SpikeMonitor {
 	 * duration over which the neurons are averaged is calculated 
 	 * automatically when the user calls startRecording()/stopRecording().
 	 * \param void
-	 * \return float value for the max firing rate of each neuron. The
+	 * \returns float value for the max firing rate of each neuron. The
 	 * firing rate is taken every second and the max firing rate is taken
 	 * from those values.
 	 */
@@ -180,28 +185,28 @@ class SpikeMonitor {
 	 * \brief Gets record status as a bool. True means it is recording, false
 	 * means it is not recording.
 	 * \param void
-	 * \return bool that is true if object is recording, false otherwise.
+	 * \returns bool that is true if object is recording, false otherwise.
 	 */
 	bool isRecording();
 
 	/*!
 	 *\brief prints the AER vector.
 	 *\param void.
-	 *\return AER vector is printed.
+	 *\returns AER vector is printed.
 	 */
 	void print();
 
 	/*!
 	 * \brief starts copying AER data to AER data structure every second.
 	 * \param void
-	 * \return void
+	 * \returns void
 	 */	
 	void startRecording();
 	
 	/*!
 	 * \brief stops copying AER data to AER data structure every second.
 	 * \param void
-	 * \return void
+	 * \returns void
 	 */
 	void stopRecording();
 	

@@ -688,7 +688,7 @@ int CARLsim::getNumConfigurations() {
 	return nConfig_;
 }
 
-// FIXME
+// \FIXME
 // get connection info struct
 //grpConnectInfo_t* CARLsim::getConnectInfo(short int connectId, int configId) {
 //	std::stringstream funcName;	funcName << "getConnectInfo(" << connectId << "," << configId << ")";

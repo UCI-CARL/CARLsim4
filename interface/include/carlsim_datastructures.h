@@ -107,7 +107,7 @@ static const char* simMode_string[] = {
 	"CPU mode","GPU mode","Unknown mode"
 };
 
-// TODO: extend documentation, add relevant references
+// \TODO: extend documentation, add relevant references
 /*!
  * \brief STDP flavors
  *
@@ -152,6 +152,18 @@ static const char* updateInterval_string[] = {
 	"10 ms interval", "100 ms interval", "1000 ms interval"
 };
 
+/*!
+ * \brief CARLsim states
+ *
+ * A CARLsim simulation goes through the following states:
+ * CONFIG 		configuration state, where the neural network is configured
+ * SETUP 		setup state, where the neural network is prepared for execution
+ * EXECUTION 	execution state, where the simulation is executed
+ * Certain methods can only be called in certain states. Check their documentation to see which method can be called
+ * in which state.
+ * Certain methods perform state transitions. CARLsim::setupNetwork will change the state from CONFIG to SETUP. The
+ * first call to CARLsim::runNetwork will change the state from SETUP to EXECUTION.
+ */
 enum carlsimState_t {
 	CONFIG_STATE, SETUP_STATE, EXE_STATE
 };

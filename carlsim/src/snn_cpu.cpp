@@ -71,7 +71,7 @@ MTRand	      getRand;
 RNG_rand48* gpuRand48 = NULL;
 
 
-// FIXME what are the following for? why were they all the way at the bottom of this file?
+// \FIXME what are the following for? why were they all the way at the bottom of this file?
 
 #define COMPACTION_ALIGNMENT_PRE  16
 #define COMPACTION_ALIGNMENT_POST 0
@@ -318,7 +318,7 @@ int CpuSNN::createGroup(const std::string& grpName, int nNeur, int neurType, int
 		grp_Info[numGrp].isSpikeGenerator	= false;
 		grp_Info[numGrp].MaxDelay			= 1;
 
-		grp_Info2[numGrp].Izh_a 			= -1; // FIXME ???
+		grp_Info2[numGrp].Izh_a 			= -1; // \FIXME ???
 
 		std::stringstream outStr;
 		outStr << configId;
@@ -444,7 +444,7 @@ void CpuSNN::setHomeostasis(int grpId, bool isSet, float homeoScale, float avgTi
 		grp_Info[cGrpId].avgTimeScale       = avgTimeScale;
 		grp_Info[cGrpId].avgTimeScaleInv    = 1.0f/avgTimeScale;
 		grp_Info[cGrpId].avgTimeScale_decay = (avgTimeScale*1000.0f-1.0f)/(avgTimeScale*1000.0f);
-		grp_Info[cGrpId].newUpdates 		= true; // FIXME: what's this?
+		grp_Info[cGrpId].newUpdates 		= true; // \FIXME: what's this?
 
 		CARLSIM_INFO("Homeostasis parameters %s for %d (%s):\thomeoScale: %f, avgTimeScale: %f",
 					isSet?"enabled":"disabled",cGrpId,grp_Info2[cGrpId].Name.c_str(),homeoScale,avgTimeScale);
@@ -557,7 +557,7 @@ void CpuSNN::setSTDP(int grpId, bool isSet, stdpType_t type, float alphaLTP, flo
 		grp_Info[cGrpId].ALPHA_LTD 		= alphaLTD;
 		grp_Info[cGrpId].TAU_LTP_INV 	= 1.0f/tauLTP;
 		grp_Info[cGrpId].TAU_LTD_INV	= 1.0f/tauLTD;
-		grp_Info[cGrpId].newUpdates 	= true; // FIXME whatsathiis?
+		grp_Info[cGrpId].newUpdates 	= true; // \FIXME whatsathiis?
 
 		CARLSIM_INFO("STDP %s for %s(%d)", isSet?"enabled":"disabled", grp_Info2[cGrpId].Name.c_str(), cGrpId);
 	}
@@ -915,7 +915,7 @@ void CpuSNN::setGroupMonitor(int grpId, GroupMonitorCore* groupMon, int configId
 
 		// Finally update the size info that will be useful to see
 		// how much memory are we eating...
-		// FIXME: when running on GPU mode??
+		// \FIXME: when running on GPU mode??
 		cpuSnnSz.monitorInfoSize += sizeof(float) * 100 * 4;
 	}
 }
@@ -1009,66 +1009,66 @@ void CpuSNN::setSpikeCounter(int grpId, int recordDur, int configId) {
 SpikeMonitor* CpuSNN::setSpikeMonitor(int grpId, FILE* fid, int configId) {
 	if (configId == ALL) {
 		for(int c=0; c < nConfig_; c++)
-		setSpikeMonitor(grpId, fid ,c);
+			setSpikeMonitor(grpId, fid ,c);
 	} else {
-	    int cGrpId = getGroupId(grpId, configId);
-	    CARLSIM_DEBUG("spikeInfo added");
+		int cGrpId = getGroupId(grpId, configId);
+		CARLSIM_DEBUG("spikeInfo added");
 
-			// create new SpikeMonitorCore object
-			spikeMonCoreList[numSpikeMonitor] = new SpikeMonitorCore;
-			//monBufferSpikeMonitor[numSpikeMonitor] = new SpikeInfo;
-			
-			// initialize the analysis components of SpikeMonitorCore
-			spikeMonCoreList[numSpikeMonitor]->init(this,cGrpId);
-			
+		// create new SpikeMonitorCore object
+		spikeMonCoreList[numSpikeMonitor] = new SpikeMonitorCore;
+		//monBufferSpikeMonitor[numSpikeMonitor] = new SpikeInfo;
+
+		// initialize the analysis components of SpikeMonitorCore
+		spikeMonCoreList[numSpikeMonitor]->init(this,cGrpId);
+
 	    // store the gid for further reference
-			spikeMonCoreList[numSpikeMonitor]->setSpikeMonGrpId(cGrpId);
-			//spikeMonGrpId[numSpikeMonitor] = cGrpId;	    
-			// also inform the grp that it is being monitored...
-	    grp_Info[cGrpId].SpikeMonitorId	= numSpikeMonitor;
+		spikeMonCoreList[numSpikeMonitor]->setSpikeMonGrpId(cGrpId);
+		//spikeMonGrpId[numSpikeMonitor] = cGrpId;	    
+		// also inform the grp that it is being monitored...
+		grp_Info[cGrpId].SpikeMonitorId	= numSpikeMonitor;
 
-	    float maxRate = grp_Info[cGrpId].MaxFiringRate;
+		float maxRate = grp_Info[cGrpId].MaxFiringRate;
 
 	    // count the size of the buffer for storing 1 sec worth of info..
 	    // only the last second is stored in this buffer...
-	    int buffSize = (int)(maxRate*grp_Info[cGrpId].SizeN);
+		int buffSize = (int)(maxRate*grp_Info[cGrpId].SizeN);
 
 	    // store the size for future comparison etc.
-	    spikeMonCoreList[numSpikeMonitor]->setMonBufferSize(buffSize);
-			//monBufferSize[numSpikeMonitor] = buffSize;
+		spikeMonCoreList[numSpikeMonitor]->setMonBufferSize(buffSize);
+		//monBufferSize[numSpikeMonitor] = buffSize;
 
 	    // reset the position of the buffer pointer..
-			spikeMonCoreList[numSpikeMonitor]->setMonBufferPos(0);
+		spikeMonCoreList[numSpikeMonitor]->setMonBufferPos(0);
 	    //monBufferPos[numSpikeMonitor]  = 0;
 
-			// assign monBufferFid if we selected to write to a file
-			spikeMonCoreList[numSpikeMonitor]->setMonBufferFid(fid);
-			//monBufferFid[numSpikeMonitor] = fid;
+		// assign monBufferFid if we selected to write to a file
+		spikeMonCoreList[numSpikeMonitor]->setMonBufferFid(fid);
+		//monBufferFid[numSpikeMonitor] = fid;
 
 	    // create the new buffer for keeping track of all the spikes in the system
-			spikeMonCoreList[numSpikeMonitor]->setMonBufferFiring(new unsigned int[buffSize]);
+		spikeMonCoreList[numSpikeMonitor]->setMonBufferFiring(new unsigned int[buffSize]);
 	    //monBufferFiring[numSpikeMonitor] = new unsigned int[buffSize];
-	    spikeMonCoreList[numSpikeMonitor]->setMonBufferTimeCnt(new unsigned int[1000]);
-			//monBufferTimeCnt[numSpikeMonitor] = new unsigned int[1000];
-	    spikeMonCoreList[numSpikeMonitor]->zeroMonBufferTimeCnt(1000);
-			//memset(monBufferTimeCnt[numSpikeMonitor],0,sizeof(int)*(1000));
-			
-			// create a new SpikeMonitor object for the user-interface
-			spikeMonList[numSpikeMonitor] = new SpikeMonitor(spikeMonCoreList[numSpikeMonitor]);
-			//monBufferSpikeMonitor[numSpikeMonitor] = new SpikeInfo;
+		spikeMonCoreList[numSpikeMonitor]->setMonBufferTimeCnt(new unsigned int[1000]);
+		//monBufferTimeCnt[numSpikeMonitor] = new unsigned int[1000];
+		spikeMonCoreList[numSpikeMonitor]->zeroMonBufferTimeCnt(1000);
+		//memset(monBufferTimeCnt[numSpikeMonitor],0,sizeof(int)*(1000));
+
+		// create a new SpikeMonitor object for the user-interface
+		spikeMonList[numSpikeMonitor] = new SpikeMonitor(spikeMonCoreList[numSpikeMonitor]);
+		//monBufferSpikeMonitor[numSpikeMonitor] = new SpikeInfo;
 		
-	    numSpikeMonitor++;
+		numSpikeMonitor++;
 
 	    // oh. finally update the size info that will be useful to see
 	    // how much memory are we eating...
-	    cpuSnnSz.monitorInfoSize += sizeof(int)*buffSize;
-	    cpuSnnSz.monitorInfoSize += sizeof(int)*(1000);
+		cpuSnnSz.monitorInfoSize += sizeof(int)*buffSize;
+		cpuSnnSz.monitorInfoSize += sizeof(int)*(1000);
 
-	    CARLSIM_INFO("SpikeMonitor set for group %d (%s)",cGrpId,grp_Info2[grpId].Name.c_str());
-	
+		CARLSIM_INFO("SpikeMonitor set for group %d (%s)",cGrpId,grp_Info2[grpId].Name.c_str());
+
 			// now we return the SpikeMonitor object to the user 
 			// index is numSpikeMonitor-1 because we have already incremented
-			return spikeMonList[numSpikeMonitor-1];
+		return spikeMonList[numSpikeMonitor-1];
 
 			// index is numSpikeMonitor-1 because we have already incremented
 			// numSpikeMonitor
@@ -1180,7 +1180,7 @@ void CpuSNN::saveSimulation(FILE* fid, bool saveSynapseInfo) {
 
 	// +++++ WRITE SYNAPSE INFO +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
-	// FIXME: replace with faster version
+	// \FIXME: replace with faster version
 	if (saveSynapseInfo) {
 		for (unsigned int i=0;i<numN;i++) {
 			unsigned int offset = cumulativePost[i];
@@ -1367,7 +1367,7 @@ grpConnectInfo_t* CpuSNN::getConnectInfo(short int connectId, int configId) {
 	// clear all existing connection info...
 	while (nextConn) {
 		if (nextConn->connId == connectId) {
-			nextConn->newUpdates = true;		// FIXME: this is a Jay hack
+			nextConn->newUpdates = true;		// \FIXME: this is a Jay hack
 			return nextConn;
 		}
 		nextConn = nextConn->next;
@@ -1388,7 +1388,7 @@ int  CpuSNN::getConnectionId(short int connId, int configId) {
 }
 
 // this is a user function
-// FIXME: fix this
+// \FIXME: fix this
 uint8_t* CpuSNN::getDelays(int gIDpre, int gIDpost, int& Npre, int& Npost, uint8_t* delays) {
 	Npre = grp_Info[gIDpre].SizeN;
 	Npost = grp_Info[gIDpost].SizeN;
@@ -1762,7 +1762,7 @@ void CpuSNN::CpuSNNinit() {
 
 	numN = 0;
 	numPostSynapses = 0;
-	D = 0; // FIXME name this maxAllowedDelay or something more meaningful
+	D = 0; // \FIXME name this maxAllowedDelay or something more meaningful
 
 	// conductance info struct for simulation
 	sim_with_NMDA_rise = false;
@@ -1857,7 +1857,7 @@ void CpuSNN::CpuSNNinit() {
 	wtChangeDecay_ = 0.0f;
 
 	// initialize parameters needed in snn_gpu.cu
-	// FIXME: naming is terrible... so it's a CPU SNN on GPU...
+	// \FIXME: naming is terrible... so it's a CPU SNN on GPU...
 	CpuSNNinit_GPU();
 }
 
@@ -1868,7 +1868,7 @@ void CpuSNN::CpuSNNinit() {
 void CpuSNN::buildNetworkInit(unsigned int nNeur, unsigned int nPostSyn, unsigned int nPreSyn, unsigned int maxDelay) {
 	numN = nNeur;
 	numPostSynapses = nPostSyn;
-	D = maxDelay; // FIXME
+	D = maxDelay; // \FIXME
 	numPreSynapses = nPreSyn;
 
 	voltage	 = new float[numNReg];
@@ -2734,7 +2734,7 @@ void CpuSNN::generatePostSpike(unsigned int pre_i, unsigned int idx_d, unsigned 
 
 	// get the cumulative position for quick access
 	unsigned int pos_i = cumulativePre[post_i] + s_i;
-	assert(post_i < numNReg); // FIXME is this assert supposed to be for pos_i?
+	assert(post_i < numNReg); // \FIXME is this assert supposed to be for pos_i?
 
 	// get group id of pre- / post-neuron
 	short int post_grpId = grpIds[post_i];
@@ -2956,7 +2956,7 @@ inline int CpuSNN::getPoissNeuronPos(int nid) {
 //depending on their nid (their position with respect to one another). -- KDC
 float CpuSNN::getWeights(int connProp, float initWt, float maxWt, unsigned int nid, int grpId) {
 	float actWts;
-	// FIXME: are these ramping thingies still supported?
+	// \FIXME: are these ramping thingies still supported?
 	bool setRandomWeights   = GET_INITWTS_RANDOM(connProp);
 	bool setRampDownWeights = GET_INITWTS_RAMPDOWN(connProp);
 	bool setRampUpWeights   = GET_INITWTS_RAMPUP(connProp);
@@ -3002,7 +3002,7 @@ void  CpuSNN::globalStateUpdate() {
 				// all the tmpIs will be summed into current[i] in the following loop
 				current[i] = 0.0f;
 
-				// FIXME: these tmp vars cause a lot of rounding errors... consider rewriting
+				// \FIXME: these tmp vars cause a lot of rounding errors... consider rewriting
 				for (int j=0; j<COND_INTEGRATION_SCALE; j++) {
 					tmp_iNMDA = (voltage[i]+80.0)*(voltage[i]+80.0)/60.0/60.0;
 
@@ -3126,7 +3126,7 @@ unsigned int CpuSNN::poissonSpike(unsigned int currTime, float frate, int refrac
 	return nextTime;
 }
 
-// FIXME: this guy is a mess
+// \FIXME: this guy is a mess
 #if READNETWORK_ADD_SYNAPSES_FROM_FILE
 int CpuSNN::readNetwork_internal(bool onlyPlastic)
 #else
