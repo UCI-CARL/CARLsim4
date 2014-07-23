@@ -101,7 +101,7 @@ CpuSNN::~CpuSNN() {
 	// if total simulation time is not divisible by 1000 ms, run updateSpikeMonitor again to get the spikes of the
 	// last fraction of a second
 	if (simTimeMs) {
- 	   updateSpikeMonitor(simTimeMs);
+ 	   updateSpikeMonitor();
  	   CARLSIM_INFO("\n^ (time=%1.3fs) =================\n", (float) (simTimeSec+simTimeMs/1000.0));
 	}
 
@@ -1722,6 +1722,7 @@ void CpuSNN::CpuSNNinit() {
 	finishedPoissonGroup  = false;
 	connectBegin = NULL;
 
+	simTimeLastUpdSpkMon_ = 0;
 	simTimeMs	 		= 0;	simTimeSec			= 0;	simTime = 0;
 	spikeCountAll1sec	= 0;	secD1fireCntHost 	= 0;	secD2fireCntHost  = 0;
 	spikeCountAll 		= 0;	spikeCountD2Host	= 0;	spikeCountD1Host = 0;
@@ -4180,16 +4181,32 @@ bool CpuSNN::updateTime() {
 
 
 
-void CpuSNN::updateSpikeMonitor(int numMs) {
+void CpuSNN::updateSpikeMonitor() { // int numMsMax, int numMsMin, bool writeToFile, bool pushToAER) {
 	// don't continue if numSpikeMonitor is zero
 	if(!numSpikeMonitor)
 		return;
-	
-	// don't continue if the time interval is zero
-	if (!numMs)
-		return;
 
-	assert(numMs>0); assert(numMs<=1000);
+	// don't continue if time interval is zero (nothing to update)
+	if ((long int) getSimTime()-simTimeLastUpdSpkMon_<=0) {
+		return;
+	}
+
+	if (getSimTime()-simTimeLastUpdSpkMon_>1000)
+		CARLSIM_ERROR("updateSpikeMonitor must be called at least once every second");
+
+	// find the time interval in which to update spikes
+	// usually, we call updateSpikeMonitor once every second, so the time interval is [0,1000)
+	// however, updateSpikeMonitor can be called at any time t \in [0,1000)... so we can have the cases [0,t), [t,1000),
+	// and even [t1, t2)
+	int numMsMin = simTimeLastUpdSpkMon_%1000; // lower bound is given by last time we called update
+	int numMsMax = getSimTimeMs(); // upper bound is given by current time
+	if (numMsMax==0)
+		numMsMax = 1000; // special case: full second
+	assert(numMsMin<numMsMax);
+
+	// save current time as last update time
+	simTimeLastUpdSpkMon_ = getSimTime();
+
 	bool bufferOverFlow[MAX_GRP_PER_SNN];
 	memset(bufferOverFlow,0,sizeof(bufferOverFlow));
 
@@ -4213,7 +4230,7 @@ void CpuSNN::updateSpikeMonitor(int numMs) {
 	/* Reset buffer time counter */
 	for(int i=0; i < numSpikeMonitor; i++){
 		//spikeMonCoreList[numSpikeMonitor]->zeroMonBufferTimeCnt(numMs);
-		memset(monBufferTimeCnt[i],0,sizeof(int)*(numMs));
+		memset(monBufferTimeCnt[i],0,sizeof(int)*1000);
 		/* Reset buffer position */
 		monBufferPos[i]=0;
 	}
@@ -4230,7 +4247,7 @@ void CpuSNN::updateSpikeMonitor(int numMs) {
 	for (int k=0; k < 2; k++) {
 		unsigned int* timeTablePtr = (k==0)?timeTableD2:timeTableD1;
 		unsigned int* fireTablePtr = (k==0)?firingTableD2:firingTableD1;
-		for(int t=0; t < numMs; t++) {
+		for(int t=numMsMin; t<numMsMax; t++) {
 			for(int i=timeTablePtr[t+D]; i<timeTablePtr[t+D+1];i++) {
 				/* retrieve the neuron id */
 				int nid   = fireTablePtr[i];
@@ -4243,23 +4260,17 @@ void CpuSNN::updateSpikeMonitor(int numMs) {
 				if(monitorId!= -1) {
 					assert(nid >= grp_Info[grpId].StartN);
 					assert(nid <= grp_Info[grpId].EndN);
-					//int pos = spikeMonCoreList[monitorId]->getMonBufferPos();
 					int   pos   = monBufferPos[monitorId];
-					//if((pos >= spikeMonCoreList[monitorId]->getMonBufferSize())) {
 					if((pos >= monBufferSize[monitorId])) {
 							if(!bufferOverFlow[monitorId]) {
 								CARLSIM_WARN("Buffer Monitor size (%d) is small. Increase buffer firing rate for %s",
 														 monBufferSize[monitorId], grp_Info2[grpId].Name.c_str());
-								//CARLSIM_WARN("Buffer Monitor size (%d) is small. Increase buffer firing rate for %s",spikeMonCoreList[monitorId]->getMonBufferSize(), grp_Info2[grpId].Name.c_str());
 							}
 							bufferOverFlow[monitorId] = true;
 					}  else {
-						//spikeMonCoreList[monitorId]->incMonBufferPos();
 						monBufferPos[monitorId]++;
-						//(spikeMonCoreList[monitorId]->getMonBufferFiring())[pos] = nid-grp_Info[grpId].StartN;
 						monBufferFiring[monitorId][pos] = nid-grp_Info[grpId].StartN; // store the Neuron ID relative to the start of the group
 						// we store the total firing at time t...
-						//(spikeMonCoreList[monitorId]->getMonBufferTimeCnt())[t]++;
 						monBufferTimeCnt[monitorId][t]++;
 					}
 				} /* if monitoring is enabled for this spike */
@@ -4273,16 +4284,18 @@ void CpuSNN::updateSpikeMonitor(int numMs) {
 		int monitorId = grp_Info[grpId].SpikeMonitorId;
 		if(monitorId!= -1) {
 			CARLSIM_INFO("Spike Monitor for Group %s has %d spikes (%f Hz)",grp_Info2[grpId].Name.c_str(),
-									 monBufferPos[monitorId],((float)monBufferPos[monitorId])*1000.0f/(numMs*grp_Info[grpId].SizeN));
+									 monBufferPos[monitorId],((float)monBufferPos[monitorId])*1000.0f/((numMsMax-numMsMin)*grp_Info[grpId].SizeN));
 			
 			// call the callback function now replaced with writeSpikesToFile
-			if(monBufferFid[monitorId]!=NULL){
+			if(monBufferFid[monitorId]!=NULL) {
 				writeSpikesToFile(grpId, monBufferFiring[monitorId], monBufferTimeCnt[monitorId], 
-													numMs, monBufferFid[monitorId]);
+													numMsMin, numMsMax, monBufferFid[monitorId]);
 			}
-			// if the group has a spikeInfo object
-			if(spikeMonCoreList[monitorId]!=NULL && spikeMonCoreList[monitorId]->isRecording()){
-				spikeMonCoreList[monitorId]->pushAER(grpId, monBufferFiring[monitorId], monBufferTimeCnt[monitorId],numMs);
+
+			// if pushToAER flag is set and group has spikeInfo object, push spikes to AER vector
+			if (spikeMonCoreList[monitorId]!=NULL && spikeMonCoreList[monitorId]->isRecording()) {
+				spikeMonCoreList[monitorId]->pushAER(grpId, monBufferFiring[monitorId], monBufferTimeCnt[monitorId],
+					numMsMin, numMsMax);
 			}
 		}
 	}
@@ -4371,15 +4384,22 @@ void CpuSNN::updateWeights() {
 
 // This function writes the spike data to a file. It's used in 
 // updateSpikeMonitor().
-void CpuSNN::writeSpikesToFile(int grpId, unsigned int* neurIds, 
-															 unsigned int *timeCnts, int timeInterval, FILE* fileId){
+void CpuSNN::writeSpikesToFile(int grpId, unsigned int* neurIds, unsigned int *timeCnts, int numMsMin,
+	int numMsMax, FILE* fileId){
+	assert(numMsMin>=0 && numMsMin<1000);
+	assert(numMsMax>0 && numMsMax<=1000);
+
+	// current time is last completed second in milliseconds (plus t to be added below)
+	// special case is after each completed second where !getSimTimeMs(): here we look 1s back
+	int currentTimeSec = getSimTimeSec();
+	if (!getSimTimeMs())
+		currentTimeSec--;
+
 	//void update(CARLsim* s, int grpId, unsigned int* neurIds, unsigned int* timeCnts, int timeInterval) {
 	int pos    = 0; // keep track of position in flattened list of neuron IDs
-	for (int t=0; t < timeInterval; t++) {
+	for (int t=numMsMin; t<numMsMax; t++) {
 		for(int i=0; i<timeCnts[t];i++,pos++) {
-			// timeInterval might be < 1000 at the end of a simulation
-			int time = t + getSimTime() - timeInterval;
-			assert(time>=0);
+			int time = currentTimeSec*1000 + t; // ms
 			
 			int id   = neurIds[pos];
 			int cnt = fwrite(&time,sizeof(int),1,fileId);

@@ -404,6 +404,14 @@ public:
 	 */
 	void setSpikeRate(int grpId, PoissonRate* spikeRate, int refPeriod, int configId);
 
+	/*!
+	 * \brief copy required spikes from firing buffer to spike buffer
+	 * This function is usually called once every 1000ms. In GPU_MODE, it will first copy the firing info to the
+	 * host. numMsMin and numMsMax are optional parameters specifying how long the time interval is (useful at the end
+	 * of simulations when a time interval < 1000ms must be parsed). Mean firing rate will still be converted to Hz.
+	 */
+	void updateSpikeMonitor();
+
 	//! Resets either the neuronal firing rate information by setting resetFiringRate = true and/or the
 	//! weight values back to their default values by setting resetWeights = true.
 	void updateNetwork(bool resetFiringInfo, bool resetWeights);
@@ -681,16 +689,6 @@ private:
 	void updateSpikeGenerators();
 	void updateSpikeGeneratorsInit();
 
-	/*!
-	 * \brief copy required spikes from firing buffer to spike buffer
-	 * This function is usually called once every 1000ms. In GPU_MODE, it will first copy the firing info to the
-	 * host. numMs is an optional parameter specifying how long the time interval is (useful at the end of simulations
-	 * when a time interval < 1000ms must be parsed). Mean firing rate will still be converted to Hz.
-	 *
-	 * \param[in] numMs optional, size of time interval. Default: 1000 ms
-	 */
-	void updateSpikeMonitor(int numMs=1000);
-
 	int  updateSpikeTables();
 	//void updateStateAndFiringTable();
 	bool updateTime(); //!< updates simTime, returns true when a new second is started
@@ -698,7 +696,7 @@ private:
 	// Function writes spikes to file given a particular group id and the file id.
 	// Used in updateSpikeMonitor
 	void writeSpikesToFile(int grpId, unsigned int* neurIds,
-												 unsigned int* timeCnts, int timeInterval, FILE* fid);
+												 unsigned int* timeCnts, int numMsMin, int numMsMax, FILE* fid);
 
 	// +++++ GPU MODE +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 	// TODO: consider moving to snn_gpu.h
@@ -940,6 +938,9 @@ private:
 	unsigned int numSpikeMonitor;
 	SpikeMonitorCore* spikeMonCoreList[MAX_GRP_PER_SNN];
 	SpikeMonitor*     spikeMonList[MAX_GRP_PER_SNN];
+
+
+	long int    simTimeLastUpdSpkMon_; //!< last time we ran updateSpikeMonitor
 
 
 

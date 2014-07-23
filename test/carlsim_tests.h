@@ -52,6 +52,9 @@
  *
  */
 
+#include <vector>
+#include <callback.h>
+#include <callback_core.h>
 
 /// **************************************************************************************************************** ///
 /// COMMON
@@ -61,6 +64,34 @@
 // user interface-equivalent...
 
 //! a periodic spike generator (constant ISI) creating spikes at a certain rate
+class PeriodicSpikeGenerator : public SpikeGenerator {
+public:
+	PeriodicSpikeGenerator(float rate) {
+		assert(rate>0);
+		rate_ = rate;	  // spike rate
+		isi_ = 1000/rate; // inter-spike interval in ms
+		firedAtZero_ = 0;
+	}
+
+	unsigned int nextSpikeTime(CARLsim* sim, int grpId, int nid, unsigned int currentTime, unsigned int lastScheduledSpikeTime) {
+		if (!lastScheduledSpikeTime && firedAtZero_ < sim->getGroupNumNeurons(grpId)) {
+			// insert spike at t=0 for each neuron (use counter to avoid getting stuck in infinite loop)
+			firedAtZero_++;
+			return 0;
+		}
+
+		// periodic spiking according to ISI
+		return lastScheduledSpikeTime+isi_;
+	}
+
+private:
+	float rate_;		// spike rate
+	int isi_;			// inter-spike interval that results in above spike rate
+	int firedAtZero_; 	// counter to help insert spike at t=0 for each neuron
+};
+
+//! a periodic spike generator (constant ISI) creating spikes at a certain rate
+//! \TODO \FIXME this one should be gone, use public interface instead
 class PeriodicSpikeGeneratorCore : public SpikeGeneratorCore {
 public:
 	PeriodicSpikeGeneratorCore(float rate) : SpikeGeneratorCore(NULL, NULL){
@@ -76,6 +107,25 @@ public:
 private:
 	float rate_;	// spike rate
 	int isi_;		// inter-spike interval that results in above spike rate
+};
+
+class SpecificTimeSpikeGeneratorCore : public SpikeGeneratorCore {
+public:
+	SpecificTimeSpikeGeneratorCore(std::vector<int> spkTimes) : SpikeGeneratorCore(NULL, NULL) {
+		spkTimes_ = spkTimes;
+		size_ = spkTimes.size();
+		currentIndex_ = 0;
+
+	}
+
+	unsigned int nextSpikeTime(CpuSNN* snn, int grpId, int nid, unsigned int currentTime, unsigned int lastScheduledSpikeTime) {
+		return (currentIndex_<size_) ? spkTimes_[currentIndex_++] : 0;
+	}
+
+private:
+	std::vector<int> spkTimes_;
+	int currentIndex_;
+	int size_;
 };
 
 // DEPRECATED: spikeInfo class replaces this functionality.

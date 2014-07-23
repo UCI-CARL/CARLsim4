@@ -205,7 +205,7 @@ public:
 	 * were recorded.
 	 * \return void
 	 */	
-	void pushAER(int grpId, unsigned int* neurIds, unsigned int* timeCnts, int timeInterval);
+	void pushAER(int grpId, unsigned int* neurIds, unsigned int* timeCnts, int numMsMin, int numMsMax);
 
 	/*!
 	 * \brief starts copying AER data to AER data structure every second.
@@ -328,20 +328,20 @@ private:
 	FILE*          monBufferFid_;
 	unsigned int*	 monBufferTimeCnt_;
 	// Used to analyzed the spike information
-	std::vector<AER>::const_iterator it_begin_;
-	std::vector<AER>::const_iterator it_end_;
+	std::vector<AER>::iterator it_begin_;
+	std::vector<AER>::iterator it_end_;
 	std::vector<AER> spkVector_;
 	std::vector<float> firingRate_;
 	std::vector<int> tmpSpikeCount_;
 	std::vector<float> sortedFiringRate_;
-	int vectorSize_;
 	bool recordSet_;
-	long int startTime_;
-	long int endTime_;
+	long int startTime_;	//!< time (ms) of startRecording
+	long int endTime_;		//!< time (ms) of stopRecording
 	CpuSNN* snn_;
 	int grpId_;
-	int totalTime_;
-	int accumTime_;
+	long int totalTime_;
+	long int lastStopRecTime_;	//!< time (ms) of the last stopRecording call
+	long int accumTime_;
 	int numN_;
 
 	// file pointers for error logging
