@@ -608,7 +608,7 @@ void CARLsim::setSpikeGenerator(int grpId, SpikeGenerator* spikeGen, int configI
 	std::string funcName = "setSpikeGenerator(\""+getGroupName(grpId,configId)+"\")";
 	UserErrors::assertTrue(grpId!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName, "grpId");		// groupId can't be ALL
 	UserErrors::assertTrue(spikeGen!=NULL, UserErrors::CANNOT_BE_NULL, funcName);
-	UserErrors::assertTrue(carlsimState_ == CONFIG_STATE || carlsimState_ == SETUP_STATE,
+	UserErrors::assertTrue(carlsimState_ == CONFIG_STATE,
 					UserErrors::INVALID_API_AT_CURRENT_STATE, funcName);
 
 	snn_->setSpikeGenerator(grpId, new SpikeGeneratorCore(this, spikeGen),configId);

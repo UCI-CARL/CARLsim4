@@ -559,7 +559,7 @@ public:
 	 * \brief Sets up a spike generator
 	 *
 	 * \TODO finish docu
-	 * \STATE CONFIG, SETUP
+	 * \STATE CONFIG
 	 */
 	void setSpikeGenerator(int grpId, SpikeGenerator* spikeGen, int configId=ALL);
 

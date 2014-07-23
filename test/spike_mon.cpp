@@ -74,6 +74,166 @@ void readAndPrintSpikeFile(const std::string fileName){
 	free (buffer);
 }
 
+/*
+ * This test verifies that the spike times written to file and AER struct match the ones from the simulation.
+ * A PeriodicSpikeGenerator is used to periodically generate spikes, which allows us to know the exact spike times.
+ * We run the simulation for a random number of milliseconds (most probably no full seconds), and read the spike file
+ * afterwards. We expect all spike times to be multiples of the inter-spike interval, and the total number of spikes
+ * to be exactly what it should be. The same must apply to the AER struct from the SpikeMonitor object.
+ */
+TEST(SPIKEMON, spikeTimes) {
+	double rate = rand()%20 + 2.0;  // some random mean firing rate
+	int isi = 1000/rate; // inter-spike interval
+
+	CARLsim* sim;
+	const int GRP_SIZE = rand()%5 + 1; // some random group size
+
+	// use threadsafe version because we have deathtests
+	::testing::FLAGS_gtest_death_test_style = "threadsafe";
+
+	// loop over both CPU and GPU mode.
+	for(int mode=0; mode<=1; mode++){
+		// first iteration, test CPU mode, second test GPU mode
+		sim = new CARLsim("SNN",mode?GPU_MODE:CPU_MODE,SILENT,0,1,42);
+		float COND_tAMPA=5.0, COND_tNMDA=150.0, COND_tGABAa=6.0, COND_tGABAb=150.0;
+		int g0 = sim->createSpikeGeneratorGroup("Input",GRP_SIZE,EXCITATORY_NEURON);
+		int g1 = sim->createGroup("g1", GRP_SIZE, EXCITATORY_NEURON, ALL);
+		sim->setNeuronParameters(g1, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f, ALL);
+		sim->setConductances(true,COND_tAMPA,COND_tNMDA,COND_tGABAa,COND_tGABAb);
+		sim->connect(g0,g1,"random", RangeWeight(0.27f), 1.0f, RangeDelay(1), SYN_FIXED);
+
+		// use periodic spike generator to know the exact spike times
+		PeriodicSpikeGenerator* spkGen = new PeriodicSpikeGenerator(rate);
+		sim->setSpikeGenerator(g0, spkGen);
+
+		sim->setupNetwork();
+
+		// write all spikes to file
+		SpikeMonitor* spikeMonG0 = sim->setSpikeMonitor(g0,"spkG0.dat",0);
+		spikeMonG0->startRecording();
+
+		// pick some random simulation time
+		int runMs = (5+rand()%20) * isi;
+		sim->runNetwork(runMs/1000,runMs%1000);
+
+		spikeMonG0->stopRecording();
+
+		// get spike vector
+		std::vector<AER> spkVector = spikeMonG0->getVector();
+
+		// read spike file
+		int* inputArray;
+		long inputSize;
+		readAndReturnSpikeFile("spkG0.dat",inputArray,inputSize);
+//		readAndPrintSpikeFile("spkG0.dat");
+
+		// sanity-check the size of the arrays
+		EXPECT_EQ(inputSize/2, runMs/isi * GRP_SIZE);
+		EXPECT_EQ(spkVector.size(), runMs/isi * GRP_SIZE);
+
+		// check the spike times of spike file and AER struct
+		// we expect all spike times to be a multiple of the ISI
+		for (int i=0; i<inputSize; i+=2) {
+			EXPECT_EQ(inputArray[i]%isi, 0);
+			EXPECT_EQ(spkVector[i/2].time % isi, 0);
+		}
+
+		system("rm -rf spkG0.dat");
+		delete[] inputArray;
+		delete spkGen;
+		delete sim;
+	}
+}
+
+/*
+ * This test checks for the correctness of the getGrpFiringRate method.
+ * A PeriodicSpikeGenerator is used to periodically generate input spikes, so that the input spike times are known.
+ * A network will then be run for a random amount of milliseconds. The activity of the input group will only be
+ * recorded for a brief amount of time, whereas the activity of another group will be recorded for the full run.
+ * The firing rate of the input group, which is calculated by the SpikeMonitor object, must then be based on only a
+ * brief time window, whereas the spike file should contain all spikes. For the other group, both spike file and AER
+ * struct should have the same number of spikes.
+ */
+TEST(SPIKEMON, getGrpFiringRate){
+	CARLsim* sim;
+
+	double rate = rand()%20 + 2.0;  // some random mean firing rate
+	int isi = 1000/rate; // inter-spike interval
+
+	const int GRP_SIZE = rand()%5 + 1;
+	// use threadsafe version because we have deathtests
+	::testing::FLAGS_gtest_death_test_style = "threadsafe";
+
+	// loop over both CPU and GPU mode.
+	for(int mode=0; mode<=0; mode++){
+		// first iteration, test CPU mode, second test GPU mode
+		sim = new CARLsim("SNN",mode?GPU_MODE:CPU_MODE,SILENT,0,1,42);
+
+		float COND_tAMPA=5.0, COND_tNMDA=150.0, COND_tGABAa=6.0, COND_tGABAb=150.0;
+		int g0 = sim->createSpikeGeneratorGroup("Input",GRP_SIZE,EXCITATORY_NEURON);
+		int g1 = sim->createGroup("g1", GRP_SIZE, EXCITATORY_NEURON, ALL);
+		sim->setConductances(true,COND_tAMPA,COND_tNMDA,COND_tGABAa,COND_tGABAb);
+		sim->setNeuronParameters(g1, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f, ALL);
+		sim->connect(g0,g1,"random", RangeWeight(0.27f), 1.0f, RangeDelay(1), SYN_FIXED);
+
+		PeriodicSpikeGenerator* spkGen = new PeriodicSpikeGenerator(rate);
+		sim->setSpikeGenerator(g0, spkGen);
+
+		sim->setupNetwork();
+
+		SpikeMonitor* spikeMonInput = sim->setSpikeMonitor(g0,"spkInputGrp.dat",0);
+		SpikeMonitor* spikeMonG1 = sim->setSpikeMonitor(g1,"spkG1Grp.dat",0);
+
+		// pick some random simulation time
+		int runTimeMsOff = (5+rand()%10) * isi;
+		int runTimeMsOn  = (5+rand()%20) * isi;
+
+		// run network with recording off for g0, but recording on for G1
+		spikeMonG1->startRecording();
+		sim->runNetwork(runTimeMsOff/1000, runTimeMsOff%1000);
+
+		// then start recording for some period
+		spikeMonInput->startRecording();
+		sim->runNetwork(runTimeMsOn/1000, runTimeMsOn%1000);
+		spikeMonInput->stopRecording();
+
+		// and run some more with recording off for input
+		sim->runNetwork(runTimeMsOff/1000, runTimeMsOff%1000);
+
+		// stopping the recording will update both AER structs and spike files
+		spikeMonG1->stopRecording();
+
+		// read spike files (which are now complete because of stopRecording above)
+		int* inputArray;
+		long inputSize;
+		readAndReturnSpikeFile("spkInputGrp.dat",inputArray,inputSize);
+		int* g1Array;
+		long g1Size;
+		readAndReturnSpikeFile("spkG1Grp.dat",g1Array,g1Size);
+
+		// activity in the input group was recorded only for a short period
+		// the SpikeMon object must thus compute the firing rate based on only a brief time window
+		EXPECT_FLOAT_EQ(spikeMonInput->getGrpFiringRate(), rate); // rate must match
+		EXPECT_EQ(spikeMonInput->getSize(), runTimeMsOn*GRP_SIZE/isi); // spikes only from brief window
+		EXPECT_EQ(inputSize/2, (runTimeMsOn+2*runTimeMsOff)*GRP_SIZE/isi); // but spike file must have all spikes
+
+		// g1 had recording on the whole time
+		// its firing rate is not known explicitly, but AER should match spike file
+		EXPECT_EQ(spikeMonG1->getSize(), g1Size/2);
+		EXPECT_FLOAT_EQ(spikeMonG1->getGrpFiringRate(), g1Size/(2.0*GRP_SIZE) * 1000.0/(runTimeMsOn+2*runTimeMsOff));
+
+		system("rm -rf spkInputGrp.dat");
+		system("rm -rf spkG1Grp.dat");
+
+		delete[] inputArray;
+		delete[] g1Array;
+		delete spkGen;
+		delete sim;
+	}
+}
+
+
+
 /// ****************************************************************************
 /// TESTS FOR SET SPIKE MON 
 /// ****************************************************************************
@@ -82,7 +242,7 @@ void readAndPrintSpikeFile(const std::string fileName){
  * \brief testing to make sure grpId error is caught in setSpikeMonitor.
  *
  */
-TEST(SETSPIKEMON, grpId){
+/*TEST(SETSPIKEMON, grpId){
 	CARLsim* sim;
 	const int GRP_SIZE = 10;
 	
@@ -106,13 +266,13 @@ TEST(SETSPIKEMON, grpId){
 		
 		delete sim;
 	}
-}
+}*/
 
 /*!
  * \brief testing to make sure configId error is caught in setSpikeMonitor.
  *
  */
-TEST(SETSPIKEMON, configId){
+/*TEST(SETSPIKEMON, configId){
 	CARLsim* sim;
 	const int GRP_SIZE = 10;
 	
@@ -135,14 +295,14 @@ TEST(SETSPIKEMON, configId){
 
 		delete sim;
 	}
-}
+}*/
 
 
 /*!
  * \brief testing to make sure file name error is caught in setSpikeMonitor.
  *
  */
-TEST(SETSPIKEMON, fname){
+/*TEST(SETSPIKEMON, fname){
 	CARLsim* sim;
 	const int GRP_SIZE = 10;
 	
@@ -164,13 +324,13 @@ TEST(SETSPIKEMON, fname){
 		
 		delete sim;
 	}
-}
+}*/
 
 /*!
  * \brief testing to make sure clear() function works.
  *
  */
-TEST(SPIKEMON, clear){
+/*TEST(SPIKEMON, clear){
 	CARLsim* sim;
 	PoissonRate* input;
 	const int GRP_SIZE = 5;
@@ -304,158 +464,6 @@ TEST(SPIKEMON, getGrpFiringRateDeath) {
 	}
 }
 
-/*
- * This test verifies that the spike times written to file and AER struct match the ones from the simulation.
- * A PeriodicSpikeGenerator is used to periodically generate spikes, which allows us to know the exact spike times.
- * We run the simulation for a random number of milliseconds (most probably no full seconds), and read the spike file
- * afterwards. We expect all spike times to be multiples of the inter-spike interval, and the total number of spikes
- * to be exactly what it should be. The same must apply to the AER struct from the SpikeMonitor object.
- */
-TEST(SPIKEMON, spikeTimes) {
-	double rate = rand()%20 + 2.0;  // some random mean firing rate
-	int isi = 1000/rate; // inter-spike interval
-	PeriodicSpikeGenerator* spkGen = new PeriodicSpikeGenerator(rate);
-
-	CARLsim* sim;
-	const int GRP_SIZE = rand()%5+1; // some random group size
-
-	// use threadsafe version because we have deathtests
-	::testing::FLAGS_gtest_death_test_style = "threadsafe";
-
-	// loop over both CPU and GPU mode.
-	for(int mode=0; mode<=0; mode++){
-		// first iteration, test CPU mode, second test GPU mode
-		sim = new CARLsim("SNN",mode?GPU_MODE:CPU_MODE,SILENT,0,1,42);
-		float COND_tAMPA=5.0, COND_tNMDA=150.0, COND_tGABAa=6.0, COND_tGABAb=150.0;
-		int g0 = sim->createSpikeGeneratorGroup("Input",GRP_SIZE,EXCITATORY_NEURON);
-		sim->setSpikeGenerator(g0, spkGen);
-		int g1 = sim->createGroup("g1", GRP_SIZE, EXCITATORY_NEURON, ALL);
-		sim->setNeuronParameters(g1, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f, ALL);
-		sim->setConductances(true,COND_tAMPA,COND_tNMDA,COND_tGABAa,COND_tGABAb);
-		sim->connect(g0,g1,"random", RangeWeight(0.27f), 1.0f, RangeDelay(1), SYN_FIXED);
-		sim->setupNetwork();
-
-		// write all spikes to file
-		SpikeMonitor* spikeMonG0 = sim->setSpikeMonitor(g0,"spkG0.dat",0);
-		spikeMonG0->startRecording();
-
-		// pick some random simulation time
-		int runMs = (5+rand()%20) * isi;
-		sim->runNetwork(runMs/1000,runMs%1000);
-
-		spikeMonG0->stopRecording();
-
-		// get spike vector
-		std::vector<AER> spkVector = spikeMonG0->getVector();
-
-		// read spike file
-		int* inputArray;
-		long inputSize;
-		readAndReturnSpikeFile("spkG0.dat",inputArray,inputSize);
-
-		// sanity-check the size of the arrays
-		EXPECT_EQ(inputSize/2, runMs/isi * GRP_SIZE);
-		EXPECT_EQ(spkVector.size(), runMs/isi * GRP_SIZE);
-
-		// check the spike times of spike file and AER struct
-		// we expect all spike times to be a multiple of the ISI
-		for (int i=0; i<inputSize; i+=2) {
-			EXPECT_EQ(inputArray[i]%isi, 0);
-			EXPECT_EQ(spkVector[i/2].time % isi, 0);
-		}
-
-		system("rm -rf spkG0.dat");
-		delete[] inputArray;
-		delete sim;
-	}
-
-	delete spkGen;
-}
-
-
-TEST(SPIKEMON, getGrpFiringRate){
-	CARLsim* sim;
-	PoissonRate* input;
-	const int GRP_SIZE = 5;
-	const int inputTargetFR = 5.0f;
-	// use threadsafe version because we have deathtests
-	::testing::FLAGS_gtest_death_test_style = "threadsafe";
-
-	// loop over both CPU and GPU mode.
-	for(int mode=0; mode<=1; mode++){
-		// first iteration, test CPU mode, second test GPU mode
-		sim = new CARLsim("SNN",mode?GPU_MODE:CPU_MODE,SILENT,0,1,42);
-
-		float COND_tAMPA=5.0, COND_tNMDA=150.0, COND_tGABAa=6.0, COND_tGABAb=150.0;
-		int inputGroup = sim->createSpikeGeneratorGroup("Input",GRP_SIZE,EXCITATORY_NEURON);
-		int g1 = sim->createGroup("g1", GRP_SIZE, EXCITATORY_NEURON, ALL);
-		
-		sim->setConductances(true,COND_tAMPA,COND_tNMDA,COND_tGABAa,COND_tGABAb);
-		double initWeight = 0.27f;
-		
-
-		sim->setNeuronParameters(g1, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f, ALL);
-
-		sim->connect(inputGroup,g1,"random", RangeWeight(initWeight), 1.0f, RangeDelay(1), SYN_FIXED);
-
-		sim->setupNetwork();
-
-		// input
-		input = new PoissonRate(GRP_SIZE);
-		for(int i=0;i<GRP_SIZE;i++){
-			input->rates[i]=inputTargetFR;
-		}
-
-		sim->setSpikeRate(inputGroup,input);
-
-		system("rm -rf spkInputGrp.dat");
-		system("rm -rf spkG1Grp.dat");
-		SpikeMonitor* spikeMonInput = sim->setSpikeMonitor(inputGroup,"spkInputGrp.dat",0);
-		SpikeMonitor* spikeMonG1 = sim->setSpikeMonitor(g1,"spkG1Grp.dat",0);
-			 		
-
-		for (int loop=1; loop<=2; loop++) {
-			int runTimeMs = 750;
-
-//			spikeMonInput->clear();
-//			spikeMonG1->clear();
-
-			spikeMonInput->startRecording();
-			spikeMonG1->startRecording();
-
-			// run the network
-			sim->runNetwork(runTimeMs/1000, runTimeMs%1000);
-
-			spikeMonInput->stopRecording();
-			spikeMonG1->stopRecording();
-
-			int* inputArray;
-			long inputSize;
-			readAndReturnSpikeFile("spkInputGrp.dat",inputArray,inputSize);
-			int* g1Array;
-			long g1Size;
-			readAndReturnSpikeFile("spkG1Grp.dat",g1Array,g1Size);
-			sim->setSpikeRate(inputGroup,input);
-		// divide both by two, because we are only counting spike events, for 
-		// which there are two data elements (time, nid)
-			inputSize /= 2;
-			g1Size /= 2;
-			float inputFR = inputSize*1000.0/(runTimeMs*GRP_SIZE*loop);
-			float g1FR = g1Size*1000.0/(runTimeMs*GRP_SIZE*loop);
-
-		// confirm the spike info information is correct here.
-			EXPECT_FLOAT_EQ(spikeMonInput->getGrpFiringRate(),inputFR);
-			EXPECT_FLOAT_EQ(spikeMonG1->getGrpFiringRate(),g1FR);
-		
-			delete inputArray;
-			delete g1Array;
-		}
-
-		delete sim;
-		delete input;
-	}
-}
-
 TEST(SPIKEMON, getMaxMinNeuronFiringRate){
 	CARLsim* sim;
 	PoissonRate* input;
@@ -474,12 +482,10 @@ TEST(SPIKEMON, getMaxMinNeuronFiringRate){
 		int g1 = sim->createGroup("g1", GRP_SIZE, EXCITATORY_NEURON, ALL);
 		
 		sim->setConductances(true,COND_tAMPA,COND_tNMDA,COND_tGABAa,COND_tGABAb);
-		double initWeight = 0.27f;
-		
 
 		sim->setNeuronParameters(g1, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f, ALL);
 
-		sim->connect(inputGroup,g1,"random", RangeWeight(initWeight), 1.0f, RangeDelay(1), SYN_FIXED);
+		sim->connect(inputGroup,g1,"random", RangeWeight(0.27f), 1.0f, RangeDelay(1), SYN_FIXED);
 
 		sim->setupNetwork();
 
@@ -551,4 +557,4 @@ TEST(SPIKEMON, getMaxMinNeuronFiringRate){
 		delete sim;
 		delete input;
 	}
-}
+}*/

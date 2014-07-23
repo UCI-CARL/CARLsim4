@@ -2879,6 +2879,8 @@ void CpuSNN::generateSpikesFromFuncPtr(int grpId) {
 			if (nextTime < (currTime + timeSlice)) {
 				if (nextTime >= currTime) {
 					// scheduled spike...
+					// \TODO CPU mode does not check whether the same AER event has been scheduled before (bug #212)
+					// check how GPU mode does it, then do the same here.
 					pbuf->scheduleSpikeTargetGroup(i, nextTime - currTime);
 					spikeCnt++;
 				}
@@ -4046,11 +4048,12 @@ void CpuSNN::updateSpikesFromGrp(int grpId) {
 }
 
 void CpuSNN::updateSpikeGenerators() {
-	for(int g=0; (g < numGrp); g++) {
+	for(int g=0; g<numGrp; g++) {
 		if (grp_Info[g].isSpikeGenerator) {
 			// This evaluation is done to check if its time to get new set of spikes..
-			if(((simTime-grp_Info[g].SliceUpdateTime) >= (unsigned) grp_Info[g].CurrTimeSlice || simTime == 0))
+			if(((simTime-grp_Info[g].SliceUpdateTime) >= (unsigned) grp_Info[g].CurrTimeSlice || simTime == 0)) {
 				updateSpikesFromGrp(g);
+			}
 		}
 	}
 }
@@ -4194,6 +4197,10 @@ void CpuSNN::updateSpikeMonitor() { // int numMsMax, int numMsMin, bool writeToF
 	if (getSimTime()-simTimeLastUpdSpkMon_>1000)
 		CARLSIM_ERROR("updateSpikeMonitor must be called at least once every second");
 
+	if (simMode_ == GPU_MODE) {
+		updateSpikeMonitor_GPU();
+	}
+
 	// find the time interval in which to update spikes
 	// usually, we call updateSpikeMonitor once every second, so the time interval is [0,1000)
 	// however, updateSpikeMonitor can be called at any time t \in [0,1000)... so we can have the cases [0,t), [t,1000),
@@ -4233,13 +4240,6 @@ void CpuSNN::updateSpikeMonitor() { // int numMsMax, int numMsMin, bool writeToF
 		memset(monBufferTimeCnt[i],0,sizeof(int)*1000);
 		/* Reset buffer position */
 		monBufferPos[i]=0;
-	}
-
-	//spikeMonCoreList[numSpikeMonitor]->setMonBufferPos(0);
-	//memset(monBufferPos,0,sizeof(int)*numSpikeMonitor);
-
-	if (simMode_ == GPU_MODE) {
-		updateSpikeMonitor_GPU();
 	}
 
 	// Read one spike at a time from the buffer and put the spikes to an appopriate monitor buffer. Later the user may

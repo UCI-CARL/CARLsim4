@@ -106,13 +106,11 @@ int SpikeMonitorCore::getNumSilentNeurons(){
 
 // \TODO need to do error check on interface
 float SpikeMonitorCore::getPercentNeuronsWithFiringRate(float min, float max) {
-	return this->getNumNeuronsWithFiringRate(min,max)*1.0/numN_;
+	return this->getNumNeuronsWithFiringRate(min,max)*100.0/numN_;
 }
 
 float SpikeMonitorCore::getPercentSilentNeurons(){
-	float numSilent = this->getNumNeuronsWithFiringRate(0,0);
-	
-	return numSilent*1.0/numN_;
+	return this->getNumNeuronsWithFiringRate(0,0)*100.0/numN_;
 }
 
 unsigned int SpikeMonitorCore::getSize(){
@@ -185,6 +183,10 @@ void SpikeMonitorCore::pushAER(int grpId, unsigned int* neurIds, unsigned int* t
 }
 
 void SpikeMonitorCore::startRecording(){
+	// call updateSpikeMonitor to make sure spike file and spike vector are up-to-date
+	// Caution: must be called before recordSet_ is set to true!
+	snn_->updateSpikeMonitor();
+
 	recordSet_ = true;
 	startTime_ = snn_->getSimTimeSec()*1000+snn_->getSimTimeMs();
 	// in case we run this multiple times
@@ -194,7 +196,7 @@ void SpikeMonitorCore::startRecording(){
 		accumTime_ = 0;
 }
 
-void SpikeMonitorCore::stopRecording(){
+void SpikeMonitorCore::stopRecording() {
 	// call updateSpikeMonitor to make sure spike file and spike vector are up-to-date
 	// Caution: must be called before recordSet_ is set to false!
 	snn_->updateSpikeMonitor();
