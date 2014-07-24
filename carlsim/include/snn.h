@@ -406,11 +406,15 @@ public:
 
 	/*!
 	 * \brief copy required spikes from firing buffer to spike buffer
-	 * This function is usually called once every 1000ms. In GPU_MODE, it will first copy the firing info to the
-	 * host. numMsMin and numMsMax are optional parameters specifying how long the time interval is (useful at the end
-	 * of simulations when a time interval < 1000ms must be parsed). Mean firing rate will still be converted to Hz.
+	 *
+	 * This function is public in CpuSNN, but it should probably not be a public user function in CARLsim.
+	 * It is usually called once every 1000ms by the core to update spike binaries and SpikeMonitor objects. In GPU
+	 * mode, it will first copy the firing info to the host. The input argument can either be a specific group ID or
+	 * keyword ALL (for all groups).
+	 * Core and utility functions can call updateSpikeMonitor at any point in time. The function will automatically
+	 * determine the last time it was called, and update SpikeMonitor information only if necessary.
 	 */
-	void updateSpikeMonitor();
+	void updateSpikeMonitor(int grpId=ALL);
 
 	//! Resets either the neuronal firing rate information by setting resetFiringRate = true and/or the
 	//! weight values back to their default values by setting resetWeights = true.
@@ -940,7 +944,11 @@ private:
 	SpikeMonitorCore* spikeMonCoreList[MAX_GRP_PER_SNN];
 	SpikeMonitor*     spikeMonList[MAX_GRP_PER_SNN];
 
+	//! for each group, track the simTime at which updateSpikeMonitor(grpId) was last called
+	long int 		  spikeMonLastUpdate[MAX_GRP_PER_SNN];
 
+
+	// \FIXME \DEPRECATED this one moved to group-based
 	long int    simTimeLastUpdSpkMon_; //!< last time we ran updateSpikeMonitor
 
 

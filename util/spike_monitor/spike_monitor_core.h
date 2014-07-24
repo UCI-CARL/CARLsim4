@@ -55,17 +55,12 @@ public:
 	 * \brief analysis constructor.
 	 *
 	 * Creates a new instance of the analysis class. 
+	 * Takes a CpuSNN pointer to an object as an input and assigns it to a CpuSNN* member variable for easy reference.
+	 * \param[in] snn pointer to current CpuSNN object
+	 * \param[in] grpId the ID of the group we're monitoring
 	 *	 
 	 */
-	SpikeMonitorCore(); 
-	/*! 
-	 * \brief initialization method for analysis class.
-	 *
-	 * Takes a CpuSNN pointer to an object as an input and assigns
-	 * it to a CpuSNN* member variable for easy reference.
-	 *
-	 */
-	void init(CpuSNN* snn, int grpId);
+	SpikeMonitorCore(CpuSNN* snn, int grpId); 
 	/*! 
 	 * \brief SpikeMonitorCore destructor.
 	 *
@@ -207,6 +202,8 @@ public:
 	 */	
 	void pushAER(int grpId, unsigned int* neurIds, unsigned int* timeCnts, int numMsMin, int numMsMax);
 
+	void pushAER(AER aer);
+
 	/*!
 	 * \brief starts copying AER data to AER data structure every second.
 	 * \param void
@@ -221,20 +218,17 @@ public:
 	 */
 	void stopRecording();
 
+	int getRecordingTotalTime() { return totalTime_; }
+	int getRecordingStartTime() { return startTime_; }
+	int getRecordingStopTime() { return endTime_; }
+
 	// +++++ PUBLIC SETTERS/GETTERS: +++++++++++++++++++++++++++++++++++++++//
 	/*!
 	 * \brief returns the spikeMonGrpId.
-	 * \param void
-	 * \return unsigned int
+	 * \returns the ID of the group we are monitoring
 	 */
-	void setSpikeMonGrpId(unsigned int spikeMonGrpId);
+	int getSpikeMonGrpId();
 
-	/*!
-	 * \brief sets the spikeMonGrpId.
-	 * \param unsigned int
-	 * \return void
-	 */
-	unsigned int getSpikeMonGrpId();
 	/*!
 	 * \brief returns the monBufferPos
 	 * \param void
@@ -320,6 +314,9 @@ public:
 	void zeroMonBufferTimeCnt(unsigned int timeSize);
 	
 private:
+	//! initialization method
+	void init();
+
 	// Used to catch the spike information
 	unsigned int	 spikeMonGrpId_;
 	unsigned int	 monBufferPos_;

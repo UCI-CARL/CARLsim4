@@ -157,10 +157,10 @@ TEST(SPIKEMON, spikeTimes) {
 TEST(SPIKEMON, getGrpFiringRate){
 	CARLsim* sim;
 
-	double rate = rand()%20 + 2.0;  // some random mean firing rate
+	double rate = 10;//rand()%20 + 2.0;  // some random mean firing rate
 	int isi = 1000/rate; // inter-spike interval
 
-	const int GRP_SIZE = rand()%5 + 1;
+	const int GRP_SIZE = 1;//rand()%5 + 1;
 	// use threadsafe version because we have deathtests
 	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
@@ -185,8 +185,8 @@ TEST(SPIKEMON, getGrpFiringRate){
 		SpikeMonitor* spikeMonG1 = sim->setSpikeMonitor(g1,"spkG1Grp.dat",0);
 
 		// pick some random simulation time
-		int runTimeMsOff = (5+rand()%10) * isi;
-		int runTimeMsOn  = (5+rand()%20) * isi;
+		int runTimeMsOff = 500;//(5+rand()%10) * isi;
+		int runTimeMsOn  = 500;//(5+rand()%20) * isi;
 
 		// run network with recording off for g0, but recording on for G1
 		spikeMonG1->startRecording();
@@ -203,22 +203,29 @@ TEST(SPIKEMON, getGrpFiringRate){
 		// stopping the recording will update both AER structs and spike files
 		spikeMonG1->stopRecording();
 
+		// Note: Starting to record 
+		spikeMonInput->startRecording();
+		spikeMonInput->stopRecording();
+
 		// read spike files (which are now complete because of stopRecording above)
 		int* inputArray;
 		long inputSize;
 		readAndReturnSpikeFile("spkInputGrp.dat",inputArray,inputSize);
+		readAndPrintSpikeFile("spkInputGrp.dat");
 		int* g1Array;
 		long g1Size;
 		readAndReturnSpikeFile("spkG1Grp.dat",g1Array,g1Size);
 
 		// activity in the input group was recorded only for a short period
 		// the SpikeMon object must thus compute the firing rate based on only a brief time window
+		EXPECT_EQ(spikeMonInput->getRecordingTotalTime(), runTimeMsOn);
 		EXPECT_FLOAT_EQ(spikeMonInput->getGrpFiringRate(), rate); // rate must match
 		EXPECT_EQ(spikeMonInput->getSize(), runTimeMsOn*GRP_SIZE/isi); // spikes only from brief window
 		EXPECT_EQ(inputSize/2, (runTimeMsOn+2*runTimeMsOff)*GRP_SIZE/isi); // but spike file must have all spikes
 
 		// g1 had recording on the whole time
 		// its firing rate is not known explicitly, but AER should match spike file
+		EXPECT_EQ(spikeMonG1->getRecordingTotalTime(), runTimeMsOn+2*runTimeMsOff);
 		EXPECT_EQ(spikeMonG1->getSize(), g1Size/2);
 		EXPECT_FLOAT_EQ(spikeMonG1->getGrpFiringRate(), g1Size/(2.0*GRP_SIZE) * 1000.0/(runTimeMsOn+2*runTimeMsOff));
 

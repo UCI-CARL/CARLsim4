@@ -285,6 +285,8 @@ typedef struct group_info_s
 	float		decayACh;		//!< decay rate for Acetylcholine
 	float		decayNE;		//!< decay rate for Noradrenaline
 
+	bool 		writeSpikesToFile; 	//!< whether spikes should be written to file (needs SpikeMonitorId>-1)
+	bool 		writeSpikesToArray;	//!< whether spikes should be written to file (needs SpikeMonitorId>-1)
 	SpikeGeneratorCore*	spikeGen;
 	bool		newUpdates;  //!< FIXME this flag has mixed meaning and is not rechecked after the simulation is started
 } group_info_t;

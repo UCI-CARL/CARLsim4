@@ -56,6 +56,9 @@ class SpikeMonitorCore; // forward declaration of implementation
  * \brief Class SpikeMonitor
  *
  * \TODO finish docu
+ * \TODO Explain what is supposed to happen in the following case. User records for 500ms, then stops recording for
+ * 1000ms, and records for another 500ms. How is the firing rate computed in this case (accumTime vs totalTime)?
+ * How to avoid this from happening (call clear())?
  */
 class SpikeMonitor {
  public: 
@@ -205,10 +208,14 @@ class SpikeMonitor {
 	
 	/*!
 	 * \brief stops copying AER data to AER data structure every second.
-	 * \param void
-	 * \returns void
+	 * \TODO extend... it's not every second anymore. What happens exactly? You should mention that time
+	 * gets accumulated, so you need to call clear() if you want everything gone.
 	 */
 	void stopRecording();
+
+	int getRecordingTotalTime();
+	int getRecordingStartTime();
+	int getRecordingStopTime();
 	
  private:
   /*!

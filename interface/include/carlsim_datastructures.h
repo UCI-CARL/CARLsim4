@@ -132,10 +132,11 @@ static const char* stdpType_string[] = {
  * So this data structure mimics that. Most of the time this data structure
  * will be found in a vector containting AER structures.
  */
-typedef struct{
-	int time;
-	int nid;
-} AER;
+struct AER {
+	AER(int _time, int _nid) : time(_time), nid(_nid) {}
+	int time, nid;
+};
+
 
 /*!
  * \brief Update frequency for weights

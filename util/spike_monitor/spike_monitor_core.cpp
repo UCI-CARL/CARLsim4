@@ -6,21 +6,23 @@
 
 
 // we aren't using namespace std so pay attention!
-SpikeMonitorCore::SpikeMonitorCore() {
+SpikeMonitorCore::SpikeMonitorCore(CpuSNN* snn, int grpId) {
+	snn_ = snn;
+	grpId_= grpId;
+
 	recordSet_ = false;
 	startTime_ = -1;
 	endTime_ = -1;
-	grpId_ = -1;
 	totalTime_ = -1;
 	accumTime_ = -1;
 	numN_ = -1;
 	lastStopRecTime_ = -1;
+
+	// defer all unsafe operations to init function
+	init();
 }
 
-void SpikeMonitorCore::init(CpuSNN* snn, int grpId){
-	// now we have a reference to the current CpuSNN object
-	snn_ = snn;
-	grpId_= grpId;
+void SpikeMonitorCore::init() {
 	numN_ = snn_->getGroupNumNeurons(grpId_);
 	firingRate_.assign(numN_,0);
 	tmpSpikeCount_.assign(numN_,0);
@@ -48,12 +50,13 @@ void SpikeMonitorCore::clear(){
 
 float SpikeMonitorCore::getGrpFiringRate() {
 	// case where we are done recording (easy case)
+	fprintf(stderr, "recordSet=%s, size=%d, totalTime=%d, numN=%d\n",recordSet_?"y":"n",spkVector_.size(), totalTime_, numN_);
 	if(!recordSet_ && totalTime_>0) {
 		return spkVector_.size()*1000.0/(totalTime_*numN_);
 	}
 	else{
 		CARLSIM_ERROR("You have to stop recording before using getGrpFiringRate.");
-		snn_->exitSimulation();
+//		snn_->exitSimulation();
 	}
 }
 
@@ -164,6 +167,8 @@ void SpikeMonitorCore::print(){
 void SpikeMonitorCore::pushAER(int grpId, unsigned int* neurIds, unsigned int* timeCnts, int numMsMin, int numMsMax){
 	int pos = 0; // keep track of position in flattened list of neuron IDs
 
+	fprintf(stderr,"Use of this function is deprecated. Use SpikeMonitorCore::pushAER(AER aer) instead.");
+
 	// current time is last completed second in milliseconds (plus t to be added below)
 	// special case is after each completed second where !getSimTimeMs(): here we look 1s back
 	int currentTimeSec = snn_->getSimTimeSec();
@@ -172,9 +177,7 @@ void SpikeMonitorCore::pushAER(int grpId, unsigned int* neurIds, unsigned int* t
 
 	for (int t=numMsMin; t<numMsMax; t++) {
 		for(int i=0; i<timeCnts[t];i++,pos++) {
-			AER aer;
-			aer.time = currentTimeSec*1000 + t;
-			aer.nid = neurIds[pos];
+			AER aer(currentTimeSec*1000 + t, neurIds[pos]);
 			spkVector_.push_back(aer);
 		}
 	}
@@ -182,10 +185,19 @@ void SpikeMonitorCore::pushAER(int grpId, unsigned int* neurIds, unsigned int* t
 	it_end_=spkVector_.end();
 }
 
+void SpikeMonitorCore::pushAER(AER aer) {
+	spkVector_.push_back(aer);
+}
+
 void SpikeMonitorCore::startRecording(){
+	if (recordSet_) {
+		fprintf(stderr,"You have to stop recording first before you can start again.");
+		snn_->exitSimulation();
+	}
+
 	// call updateSpikeMonitor to make sure spike file and spike vector are up-to-date
 	// Caution: must be called before recordSet_ is set to true!
-	snn_->updateSpikeMonitor();
+	snn_->updateSpikeMonitor(grpId_);
 
 	recordSet_ = true;
 	startTime_ = snn_->getSimTimeSec()*1000+snn_->getSimTimeMs();
@@ -197,9 +209,14 @@ void SpikeMonitorCore::startRecording(){
 }
 
 void SpikeMonitorCore::stopRecording() {
+	if (!recordSet_) {
+		fprintf(stderr,"You have to start recording first before you can stop.");
+		snn_->exitSimulation();
+	}
+
 	// call updateSpikeMonitor to make sure spike file and spike vector are up-to-date
 	// Caution: must be called before recordSet_ is set to false!
-	snn_->updateSpikeMonitor();
+	snn_->updateSpikeMonitor(grpId_);
 
 	recordSet_ = false;
 	endTime_ = snn_->getSimTimeSec()*1000+snn_->getSimTimeMs();
@@ -210,59 +227,33 @@ void SpikeMonitorCore::stopRecording() {
 	assert(totalTime_ >= endTime_-startTime_);
 }
 
-void SpikeMonitorCore::setSpikeMonGrpId(unsigned int spikeMonGrpId){
-	spikeMonGrpId_=spikeMonGrpId;
-}
-
-unsigned int SpikeMonitorCore::getSpikeMonGrpId(){
-	return spikeMonGrpId_;
-}
+int SpikeMonitorCore::getSpikeMonGrpId() { return spikeMonGrpId_; }
 
 void SpikeMonitorCore::setMonBufferPos(unsigned int monBufferPos){
 	monBufferPos_=monBufferPos;
 	return;
 }
 	
-unsigned int SpikeMonitorCore::getMonBufferPos(){
-	return monBufferPos_;
-}
+unsigned int SpikeMonitorCore::getMonBufferPos() { return monBufferPos_; }
 
-void SpikeMonitorCore::incMonBufferPos(){
-	monBufferPos_++;
-}
+void SpikeMonitorCore::incMonBufferPos() { monBufferPos_++; }
 
-void SpikeMonitorCore::setMonBufferSize(unsigned int monBufferSize){
-	monBufferSize_=monBufferSize;
-}
+void SpikeMonitorCore::setMonBufferSize(unsigned int monBufferSize) { monBufferSize_=monBufferSize; }
 	
-unsigned int SpikeMonitorCore::getMonBufferSize(){
-	return monBufferSize_;
-}
+unsigned int SpikeMonitorCore::getMonBufferSize() { return monBufferSize_; }
 	
-void SpikeMonitorCore::setMonBufferFiring(unsigned int* monBufferFiring){
-	monBufferFiring_=monBufferFiring;
-}
+void SpikeMonitorCore::setMonBufferFiring(unsigned int* monBufferFiring) { monBufferFiring_=monBufferFiring; }
 	
-unsigned int* SpikeMonitorCore::getMonBufferFiring(){
-	return monBufferFiring_;
-}
+unsigned int* SpikeMonitorCore::getMonBufferFiring() { return monBufferFiring_; }
 
-void SpikeMonitorCore::setMonBufferFid(FILE* monBufferFid){
-	monBufferFid_=monBufferFid;
-}
+void SpikeMonitorCore::setMonBufferFid(FILE* monBufferFid) { monBufferFid_=monBufferFid; }
 
-FILE* SpikeMonitorCore::getMonBufferFid(){
-	return monBufferFid_;
-}
+FILE* SpikeMonitorCore::getMonBufferFid() {	return monBufferFid_; }
 
-void SpikeMonitorCore::setMonBufferTimeCnt(unsigned int* monBufferTimeCnt){
-	monBufferTimeCnt_=monBufferTimeCnt;
-}
+void SpikeMonitorCore::setMonBufferTimeCnt(unsigned int* monBufferTimeCnt) { monBufferTimeCnt_=monBufferTimeCnt; }
 	
-unsigned int* SpikeMonitorCore::getMonBufferTimeCnt(){
-	return monBufferTimeCnt_;
-}
+unsigned int* SpikeMonitorCore::getMonBufferTimeCnt() { return monBufferTimeCnt_; }
 
-void SpikeMonitorCore::zeroMonBufferTimeCnt(unsigned int timeSize){
+void SpikeMonitorCore::zeroMonBufferTimeCnt(unsigned int timeSize) {
 	memset(monBufferTimeCnt_,0,sizeof(int)*(timeSize));
 }

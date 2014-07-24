@@ -20,7 +20,7 @@ void SpikeMonitor::clear(){
 	return;
 }
 
-float SpikeMonitor::getGrpFiringRate(){
+float SpikeMonitor::getGrpFiringRate() {
 	return spikeMonitorCorePtr_->getGrpFiringRate();
 }
 
@@ -81,3 +81,7 @@ void SpikeMonitor::startRecording(){
 void SpikeMonitor::stopRecording(){
 	return spikeMonitorCorePtr_->stopRecording();
 }
+
+int SpikeMonitor::getRecordingTotalTime() { return spikeMonitorCorePtr_->getRecordingTotalTime(); }
+int SpikeMonitor::getRecordingStartTime() { return spikeMonitorCorePtr_->getRecordingStartTime(); }
+int SpikeMonitor::getRecordingStopTime() { return spikeMonitorCorePtr_->getRecordingStopTime(); }
