@@ -697,11 +697,6 @@ private:
 	//void updateStateAndFiringTable();
 	bool updateTime(); //!< updates simTime, returns true when a new second is started
 
-	// Function writes spikes to file given a particular group id and the file id.
-	// Used in updateSpikeMonitor
-	void writeSpikesToFile(int grpId, unsigned int* neurIds,
-												 unsigned int* timeCnts, int numMsMin, int numMsMax, FILE* fid);
-
 	// +++++ GPU MODE +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 	// TODO: consider moving to snn_gpu.h
 	void CpuSNNinit_GPU();	//!< initializes params needed in snn_gpu.cu (gets called in CpuSNN constructor)
@@ -778,7 +773,6 @@ private:
 	void updateFiringTable();
 	void updateFiringTable_GPU();
 	void updateNetwork_GPU(bool resetFiringInfo); //!< Allows parameters to be reset in the middle of the simulation
-	void updateSpikeMonitor_GPU();
 	void updateWeights();
 	void updateWeights_GPU();
 	//void updateStateAndFiringTable_GPU();

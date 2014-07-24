@@ -162,7 +162,7 @@ TEST(STP, externalCPUvsData) {
 
 	std::string name = "SNN";
 	int randSeed = rand() % 1000;	// randSeed must not interfere with STP
-	float abs_error = 1e-2f;		// allowed error margin
+	float abs_error = 5e-2f;		// allowed error margin
 
 	CpuSNN* sim = new CpuSNN(name,CPU_MODE,SILENT,0,1,randSeed);
 	int g0=sim->createSpikeGeneratorGroup("input", 1, EXCITATORY_NEURON, ALL);
@@ -236,10 +236,10 @@ TEST(STP, internalCPUvsGPU) {
 	}
 
 	// check init default values
-	EXPECT_FLOAT_EQ(stpu[0],0.0f);
-	EXPECT_FLOAT_EQ(stpx[0],1.0f);
-	EXPECT_FLOAT_EQ(stpu[300],0.0f);
-	EXPECT_FLOAT_EQ(stpx[300],1.0f);
+	EXPECT_FLOAT_EQ(stpu[0],0.0);
+	EXPECT_FLOAT_EQ(stpx[0],1.0);
+	EXPECT_FLOAT_EQ(stpu[300],0.0);
+	EXPECT_FLOAT_EQ(stpx[300],1.0);
 }
 
 #if ENABLE_CPU_GPU_TESTS

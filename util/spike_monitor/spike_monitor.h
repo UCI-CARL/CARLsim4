@@ -44,8 +44,7 @@
 #ifndef _SPIKE_MON_H_
 #define _SPIKE_MON_H_
 
-// we need the AER data structure
-#include <carlsim_datastructures.h>
+#include <carlsim_datastructures.h>	// AER
 #include <algorithm>
 #include <vector>
 
@@ -95,7 +94,7 @@ class SpikeMonitor {
 	 * \param void.
 	 * \returns float value for the average firing rate of the whole group. 
 	 */
-	float getGrpFiringRate();
+	float getGroupFiringRate();
 
 	/*!
 	 * \brief return the number of neurons that have exactly 0 Hz firing
@@ -103,7 +102,7 @@ class SpikeMonitor {
 	 * \param void
 	 * \returns float value of the number of silent neurons.
 	 */
-	float getMaxNeuronFiringRate();
+	float getNeuronMaxFiringRate();
 	
 	/*!
 	 * \brief return the number of neurons that have exactly 0 Hz firing
@@ -111,7 +110,7 @@ class SpikeMonitor {
 	 * \param void
 	 * \returns int value of the number of silent neurons.
 	 */
-	float getMinNeuronFiringRate();
+	float getNeuronMinFiringRate();
 	
 	/*!
 	 * \brief return the average firing rate for each neuron in a group of
@@ -163,7 +162,7 @@ class SpikeMonitor {
 	 * \param void
 	 * \returns the current size of the AER vector.
 	 */
-	unsigned int getSize();
+	long int getSize();
 
 	/*!
 	 *\brief returns the AER vector.
@@ -182,7 +181,7 @@ class SpikeMonitor {
 	 * firing rate is taken every second and the max firing rate is taken
 	 * from those values.
 	 */
-	std::vector<float> getSortedNeuronFiringRate();
+	std::vector<float> getNeuronSortedFiringRate();
 
 	/*!
 	 * \brief Gets record status as a bool. True means it is recording, false
@@ -213,9 +212,13 @@ class SpikeMonitor {
 	 */
 	void stopRecording();
 
-	int getRecordingTotalTime();
-	int getRecordingStartTime();
-	int getRecordingStopTime();
+	long int getRecordingTotalTime();
+	long int getRecordingLastStartTime();
+	long int getRecordingStartTime();
+	long int getRecordingStopTime();
+
+	bool getPersistentMode();
+	void setPersistentMode(bool persistentData_);
 	
  private:
   /*!

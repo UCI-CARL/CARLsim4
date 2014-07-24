@@ -45,6 +45,12 @@ void UserErrors::throwError(std::string errorFunc, errorType error, std::string 
 	case CANNOT_BE_POSITIVE:
 		std::cerr << " cannot be positive.";
 		break;
+	case CANNOT_BE_OFF:
+		std::cerr << " cannot not be off at this point.";
+		break;
+	case CANNOT_BE_ON:
+		std::cerr << " cannot be on at this point.";
+		break;
 	case CANNOT_BE_UNKNOWN:
 		std::cerr << " cannot be of type UNKNOWN.";
 		break;
@@ -64,6 +70,12 @@ void UserErrors::throwError(std::string errorFunc, errorType error, std::string 
 		break;
 	case MUST_BE_POSITIVE:
 		std::cerr << " must be positive.";
+		break;
+	case MUST_BE_OFF:
+		std::cerr << " must be off at this point.";
+		break;
+	case MUST_BE_ON:
+		std::cerr << " must be on at this point.";
 		break;
 	case MUST_BE_WITHIN_RANGE:
 		std:: cerr << " must be with some range.";

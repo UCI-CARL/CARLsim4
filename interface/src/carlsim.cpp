@@ -645,10 +645,8 @@ SpikeMonitor* CARLsim::setSpikeMonitor(int grpId, const std::string& fname, int 
 		}
 	}
 
-	SpikeMonitor* spkMonitor;
-	spkMonitor=snn_->setSpikeMonitor(grpId, fid, configId);
- 
-	return spkMonitor;
+	// return SpikeMonitor object
+	return snn_->setSpikeMonitor(grpId, fid, configId);
 }
 
 // assign spike rate to poisson group

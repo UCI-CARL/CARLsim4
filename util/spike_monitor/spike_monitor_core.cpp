@@ -1,22 +1,20 @@
-#include <snn.h>
-#include <iostream>
 #include <spike_monitor_core.h>
+
+#include <snn.h>
 #include <snn_definitions.h>		// CARLSIM_ERROR, CARLSIM_INFO, ...
+
+#include <iostream>		// std::cout, std::endl
 
 
 
 // we aren't using namespace std so pay attention!
-SpikeMonitorCore::SpikeMonitorCore(CpuSNN* snn, int grpId) {
+SpikeMonitorCore::SpikeMonitorCore(CpuSNN* snn, int monitorId, int grpId) {
 	snn_ = snn;
 	grpId_= grpId;
-
-	recordSet_ = false;
-	startTime_ = -1;
-	endTime_ = -1;
-	totalTime_ = -1;
-	accumTime_ = -1;
+	monitorId_ = monitorId;
 	numN_ = -1;
-	lastStopRecTime_ = -1;
+	spikeFileId_ = NULL;
+	persistentData_ = false;
 
 	// defer all unsafe operations to init function
 	init();
@@ -24,7 +22,11 @@ SpikeMonitorCore::SpikeMonitorCore(CpuSNN* snn, int grpId) {
 
 void SpikeMonitorCore::init() {
 	numN_ = snn_->getGroupNumNeurons(grpId_);
+	assert(numN_>0);
+
+	clear();
 	firingRate_.assign(numN_,0);
+	firingRateSorted_.assign(numN_,0);
 	tmpSpikeCount_.assign(numN_,0);
 
 	// use CARLSIM_{ERROR|WARNING|etc} typesetting (const FILE*)
@@ -34,125 +36,131 @@ void SpikeMonitorCore::init() {
 	fpLog_ = snn_->getLogFpLog();
 }
 
-SpikeMonitorCore::~SpikeMonitorCore(){}
+SpikeMonitorCore::~SpikeMonitorCore() {
+	if (spikeFileId_!=NULL) {
+		fclose(spikeFileId_);
+		spikeFileId_ = NULL;
+	}
+}
 
 // +++++ PUBLIC METHODS: +++++++++++++++++++++++++++++++++++++++++++++++//
 
-void SpikeMonitorCore::clear(){
+void SpikeMonitorCore::clear() {
+	recordSet_ = false;
 	spkVector_.clear();
+	startTime_ = -1;
+	startTimeLast_ = -1;
+	stopTime_ = -1;
 	accumTime_ = 0;
-	totalTime_ = 0;
+	totalTime_ = -1;
+
+	needToCalculateFiringRates_ = true;
+	needToSortFiringRates_ = true;
 	firingRate_.clear();
+	firingRateSorted_.clear();
 	tmpSpikeCount_.clear();
 	firingRate_.assign(numN_,0);
+	firingRateSorted_.assign(numN_,0);
 	tmpSpikeCount_.assign(numN_,0);
 }
 
-float SpikeMonitorCore::getGrpFiringRate() {
-	// case where we are done recording (easy case)
-	fprintf(stderr, "recordSet=%s, size=%d, totalTime=%d, numN=%d\n",recordSet_?"y":"n",spkVector_.size(), totalTime_, numN_);
-	if(!recordSet_ && totalTime_>0) {
-		return spkVector_.size()*1000.0/(totalTime_*numN_);
-	}
-	else{
-		CARLSIM_ERROR("You have to stop recording before using getGrpFiringRate.");
-//		snn_->exitSimulation();
-	}
+float SpikeMonitorCore::getGroupFiringRate() {
+	assert(!isRecording());
+
+	if (totalTime_==0)
+		return 0.0f;
+
+	fprintf(stderr, "recordSet=%s, size=%ld, totalTime=%ld, numN=%d\n",recordSet_?"y":"n",spkVector_.size(), totalTime_, numN_);
+	return spkVector_.size()*1000.0/(totalTime_*numN_);
 }
 
-float SpikeMonitorCore::getMaxNeuronFiringRate(){
-	this->getSortedNeuronFiringRate();
-	return sortedFiringRate_.back();
+float SpikeMonitorCore::getNeuronMaxFiringRate() {
+	assert(!isRecording());
+
+	// if necessary, get data structures up-to-date
+	sortFiringRates();
+
+	return firingRateSorted_.back();
 }
 
-float SpikeMonitorCore::getMinNeuronFiringRate(){
-	this->getSortedNeuronFiringRate();
-	return sortedFiringRate_.front();
+float SpikeMonitorCore::getNeuronMinFiringRate(){
+	assert(!isRecording());
+
+	// if necessary, get data structures up-to-date
+	sortFiringRates();
+
+	return firingRateSorted_.front();
 }
 
-std::vector<float> SpikeMonitorCore::getNeuronFiringRate(){
-	// clear, so we get the same answer every time.
-	tmpSpikeCount_.assign(numN_,0);
-	firingRate_.assign(numN_,0);
+std::vector<float> SpikeMonitorCore::getNeuronFiringRate() {
+	assert(!isRecording());
 
-	if(!recordSet_ && totalTime_>0){
-		// calculate average firing rate for every neuron
-		int tmpNid;
-		for(std::vector<AER>::iterator it=it_begin_; it!=it_end_; it++){
-			tmpSpikeCount_[(*it).nid]++;
-		}
-		for(int i=0;i<numN_;i++){
-			firingRate_[i]=tmpSpikeCount_[i]*1000.0/totalTime_;
-		}
-		return firingRate_;
-	}
-	else{
-		CARLSIM_ERROR("You have to stop recording before using getNeuronFiringRate.\n");
-		snn_->exitSimulation();
-	}
+	// if necessary, get data structures up-to-date
+	calculateFiringRates();
+
+	return firingRate_;
 }
-// \TODO need to do error check on interface
+
 int SpikeMonitorCore::getNumNeuronsWithFiringRate(float min, float max){
-	this->getSortedNeuronFiringRate();
+	assert(!isRecording());
+	assert(min>=0.0f && max>=0.0f);
+	assert(max>=min);
+
+	// if necessary, get data structures up-to-date
+	sortFiringRates();
+
 	int counter = 0;
-	for(std::vector<float>::iterator it=sortedFiringRate_.begin(); it!=sortedFiringRate_.end(); it++){
+	for(std::vector<float>::iterator it=firingRateSorted_.begin(); it!=firingRateSorted_.end(); it++){
 		if((*it) >= min && (*it) <= max)
 			counter++;
 	}
+
 	return counter;
 }
 
-int SpikeMonitorCore::getNumSilentNeurons(){
-	int numSilent = this->getNumNeuronsWithFiringRate(0,0);
-	return numSilent;
+int SpikeMonitorCore::getNumSilentNeurons() {
+	assert(!isRecording());
+
+	return getNumNeuronsWithFiringRate(0.0f, 0.0f);
 }
 
 // \TODO need to do error check on interface
 float SpikeMonitorCore::getPercentNeuronsWithFiringRate(float min, float max) {
-	return this->getNumNeuronsWithFiringRate(min,max)*100.0/numN_;
+	assert(!isRecording());
+
+	return getNumNeuronsWithFiringRate(min,max)*100.0/numN_;
 }
 
 float SpikeMonitorCore::getPercentSilentNeurons(){
-	return this->getNumNeuronsWithFiringRate(0,0)*100.0/numN_;
+	assert(!isRecording());
+
+	return getNumNeuronsWithFiringRate(0,0)*100.0/numN_;
 }
 
-unsigned int SpikeMonitorCore::getSize(){
+long int SpikeMonitorCore::getSize(){
+	assert(!isRecording());
+
 	return spkVector_.size();	
 }
 
 std::vector<AER> SpikeMonitorCore::getVector(){
+	assert(!isRecording());
+
 	return spkVector_;
 }
 
-std::vector<float> SpikeMonitorCore::getSortedNeuronFiringRate(){
-	// clear, so we get the same answer every time.
-	tmpSpikeCount_.assign(numN_,0);
-	firingRate_.assign(numN_,0);
-	
-	if(!recordSet_ && totalTime_>0){
-		// calculate average firing rate for every neuron
-		int tmpNid;
-		for(std::vector<AER>::iterator it=it_begin_; it!=it_end_; it++){
-			tmpSpikeCount_[(*it).nid]++;
-		}
-		for(int i=0;i<numN_;i++){
-			firingRate_[i]=tmpSpikeCount_[i]*1000.0/totalTime_;
-		}
-		sortedFiringRate_=firingRate_;
-		std::sort(sortedFiringRate_.begin(),sortedFiringRate_.end());
-		return sortedFiringRate_;
-	}else{
-		CARLSIM_ERROR("You have to stop recording before using getSortedNeuronFiringRate.");
-		snn_->exitSimulation();
-	}
+std::vector<float> SpikeMonitorCore::getNeuronSortedFiringRate() {
+	assert(!isRecording());
+
+	// if necessary, get data structures up-to-date
+	sortFiringRates();
+
+	return firingRateSorted_;
 }
 
-bool SpikeMonitorCore::isRecording(){
-	return recordSet_;
-}
+void SpikeMonitorCore::print() {
+	assert(!isRecording());
 
-void SpikeMonitorCore::print(){
-	
 	std::cout << "Format: Time (ms) : neuron id\n";
 	//use an iterator
 	for(std::vector<AER>::iterator it=it_begin_;it!=it_end_;it++){
@@ -162,98 +170,108 @@ void SpikeMonitorCore::print(){
 	}
 }
 
-// \FIXME: The following code snippet is a near 1-to-1 copy of CpuSNN::writeSpikesToFile. Consider merging for style
-// and safety. Otherwise it is dangerously easy to get the two functions out of sync...
-void SpikeMonitorCore::pushAER(int grpId, unsigned int* neurIds, unsigned int* timeCnts, int numMsMin, int numMsMax){
-	int pos = 0; // keep track of position in flattened list of neuron IDs
-
-	fprintf(stderr,"Use of this function is deprecated. Use SpikeMonitorCore::pushAER(AER aer) instead.");
-
-	// current time is last completed second in milliseconds (plus t to be added below)
-	// special case is after each completed second where !getSimTimeMs(): here we look 1s back
-	int currentTimeSec = snn_->getSimTimeSec();
-	if (!snn_->getSimTimeMs())
-		currentTimeSec--;
-
-	for (int t=numMsMin; t<numMsMax; t++) {
-		for(int i=0; i<timeCnts[t];i++,pos++) {
-			AER aer(currentTimeSec*1000 + t, neurIds[pos]);
-			spkVector_.push_back(aer);
-		}
-	}
-	it_begin_=spkVector_.begin();
-	it_end_=spkVector_.end();
-}
-
 void SpikeMonitorCore::pushAER(AER aer) {
+	assert(isRecording());
 	spkVector_.push_back(aer);
 }
 
-void SpikeMonitorCore::startRecording(){
-	if (recordSet_) {
-		fprintf(stderr,"You have to stop recording first before you can start again.");
-		snn_->exitSimulation();
+void SpikeMonitorCore::startRecording() {
+	assert(!isRecording());
+
+	if (!persistentData_) {
+		// if persistent mode is off (default behavior), automatically call clear() here
+		clear();
 	}
 
 	// call updateSpikeMonitor to make sure spike file and spike vector are up-to-date
 	// Caution: must be called before recordSet_ is set to true!
 	snn_->updateSpikeMonitor(grpId_);
 
+	needToUpdateFiringRate_ = true;
 	recordSet_ = true;
-	startTime_ = snn_->getSimTimeSec()*1000+snn_->getSimTimeMs();
-	// in case we run this multiple times
-	if(totalTime_!=-1)
-		accumTime_ = totalTime_;
-	else
+	long int currentTime = snn_->getSimTimeSec()*1000+snn_->getSimTimeMs();
+
+	if (persistentData_) {
+		// persistent mode on: accumulate all times
+		// change start time only if this is the first time running it
+		startTime_ = (startTime_<0) ? currentTime : startTime_;
+		startTimeLast_ = currentTime;
+		accumTime_ = (totalTime_>0) ? totalTime_ : 0;
+	}
+	else {
+		// persistent mode off: we only care about the last probe
+		startTime_ = currentTime;
+		startTimeLast_ = currentTime;
 		accumTime_ = 0;
+	}
 }
 
 void SpikeMonitorCore::stopRecording() {
-	if (!recordSet_) {
-		fprintf(stderr,"You have to start recording first before you can stop.");
-		snn_->exitSimulation();
-	}
+	assert(isRecording());
+	assert(startTime_>-1 && startTimeLast_>-1 && accumTime_>-1);
 
 	// call updateSpikeMonitor to make sure spike file and spike vector are up-to-date
 	// Caution: must be called before recordSet_ is set to false!
 	snn_->updateSpikeMonitor(grpId_);
 
 	recordSet_ = false;
-	endTime_ = snn_->getSimTimeSec()*1000+snn_->getSimTimeMs();
-	totalTime_ = endTime_ - startTime_ + accumTime_;
+	stopTime_ = snn_->getSimTimeSec()*1000+snn_->getSimTimeMs();
 
-	// check for overflow
+	// total time is the amount of time of the last probe plus all accumulated time from previous probes
+	totalTime_ = stopTime_-startTimeLast_ + accumTime_;
 	assert(totalTime_>=0);
-	assert(totalTime_ >= endTime_-startTime_);
 }
 
-int SpikeMonitorCore::getSpikeMonGrpId() { return spikeMonGrpId_; }
-
-void SpikeMonitorCore::setMonBufferPos(unsigned int monBufferPos){
-	monBufferPos_=monBufferPos;
-	return;
+void SpikeMonitorCore::setPersistentMode(bool persistentData) {
+	persistentData_ = persistentData;
 }
-	
-unsigned int SpikeMonitorCore::getMonBufferPos() { return monBufferPos_; }
 
-void SpikeMonitorCore::incMonBufferPos() { monBufferPos_++; }
+void SpikeMonitorCore::setSpikeFileId(FILE* spikeFileId) {
+	assert(!isRecording());
 
-void SpikeMonitorCore::setMonBufferSize(unsigned int monBufferSize) { monBufferSize_=monBufferSize; }
-	
-unsigned int SpikeMonitorCore::getMonBufferSize() { return monBufferSize_; }
-	
-void SpikeMonitorCore::setMonBufferFiring(unsigned int* monBufferFiring) { monBufferFiring_=monBufferFiring; }
-	
-unsigned int* SpikeMonitorCore::getMonBufferFiring() { return monBufferFiring_; }
+	spikeFileId_=spikeFileId;
+}
 
-void SpikeMonitorCore::setMonBufferFid(FILE* monBufferFid) { monBufferFid_=monBufferFid; }
 
-FILE* SpikeMonitorCore::getMonBufferFid() {	return monBufferFid_; }
+// calculate average firing rate for every neuron if we haven't done so already
+void SpikeMonitorCore::calculateFiringRates() {
+	// only update if we have to
+	if (!needToCalculateFiringRates_)
+		return;
 
-void SpikeMonitorCore::setMonBufferTimeCnt(unsigned int* monBufferTimeCnt) { monBufferTimeCnt_=monBufferTimeCnt; }
-	
-unsigned int* SpikeMonitorCore::getMonBufferTimeCnt() { return monBufferTimeCnt_; }
+	// clear, so we get the same answer every time.
+	tmpSpikeCount_.assign(numN_,0);
+	firingRate_.assign(numN_,0);
 
-void SpikeMonitorCore::zeroMonBufferTimeCnt(unsigned int timeSize) {
-	memset(monBufferTimeCnt_,0,sizeof(int)*(timeSize));
+	// this really shouldn't happen, but if recording time is zero, return all zeros
+	if (totalTime_==0)
+		return;
+
+	// read all AER events and assign them to neuron IDs to get # spikes per neuron
+	for(std::vector<AER>::iterator it=it_begin_; it!=it_end_; it++) {
+		tmpSpikeCount_[(*it).nid]++;
+	}
+
+	// compute firing rate
+	assert(totalTime_>0); // avoid division by zero
+	for(int i=0;i<numN_;i++) {
+		firingRate_[i]=tmpSpikeCount_[i]*1000.0/totalTime_;
+	}
+
+	needToCalculateFiringRates_ = false;
+}
+
+// sort firing rates if we haven't done so already
+void SpikeMonitorCore::sortFiringRates() {
+	// only sort if we have to
+	if (!needToSortFiringRates_)
+		return;
+
+	// first make sure firing rate vector is up-to-date
+	calculateFiringRates();
+
+	firingRateSorted_=firingRate_;
+	std::sort(firingRateSorted_.begin(),firingRateSorted_.end());
+
+	needToSortFiringRates_ = false;
 }

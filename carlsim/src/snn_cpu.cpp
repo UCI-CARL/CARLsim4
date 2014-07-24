@@ -1015,62 +1015,34 @@ SpikeMonitor* CpuSNN::setSpikeMonitor(int grpId, FILE* fid, int configId) {
 
 
 		// create new SpikeMonitorCore object in any case and initialize analysis components
-		spikeMonCoreList[numSpikeMonitor] = new SpikeMonitorCore(this, cGrpId);
-//		spikeMonCoreList[numSpikeMonitor]->init(this,cGrpId);
+		// spkMonObj destructor (see below) will deallocate it
+		SpikeMonitorCore* spkMonCoreObj = new SpikeMonitorCore(this, numSpikeMonitor, cGrpId);
+		spikeMonCoreList[numSpikeMonitor] = spkMonCoreObj;
 
-		// assign monBufferFid if we selected to write to a file, else it's NULL
-		spikeMonCoreList[numSpikeMonitor]->setMonBufferFid(fid);
+		// assign spike file ID if we selected to write to a file, else it's NULL
+		// if file pointer exists, it has already been fopened
+		// spkMonCoreObj destructor will fclose it
+		spkMonCoreObj->setSpikeFileId(fid);
 
 		// create a new SpikeMonitor object for the user-interface
-		spikeMonList[numSpikeMonitor] = new SpikeMonitor(spikeMonCoreList[numSpikeMonitor]);
+		// CpuSNN::deleteObjects will deallocate it
+		SpikeMonitor* spkMonObj = new SpikeMonitor(spkMonCoreObj);
+		spikeMonList[numSpikeMonitor] = spkMonObj;
 
 		// intialize the time when updateSpikeMonitor was last called
 		spikeMonLastUpdate[numSpikeMonitor] = 0;
 
-	    // store the gid for further reference
-	    // \FIXME you have already done this in the constructor
-//		spikeMonCoreList[numSpikeMonitor]->setSpikeMonGrpId(cGrpId);
-
 		// also inform the grp that it is being monitored...
 		grp_Info[cGrpId].SpikeMonitorId	= numSpikeMonitor;
 
-	    // count the size of the buffer for storing 1 sec worth of info..
-	    // only the last second is stored in this buffer...
-		int buffSize = (int)(grp_Info[cGrpId].MaxFiringRate * grp_Info[cGrpId].SizeN);
+	    // not eating much memory anymore, got rid of all buffers
+		cpuSnnSz.monitorInfoSize += sizeof(SpikeMonitor*);
+		cpuSnnSz.monitorInfoSize += sizeof(SpikeMonitorCore*);
 
-	    // store the size for future comparison etc.
-		spikeMonCoreList[numSpikeMonitor]->setMonBufferSize(buffSize);
-		//monBufferSize[numSpikeMonitor] = buffSize;
-
-	    // reset the position of the buffer pointer..
-		spikeMonCoreList[numSpikeMonitor]->setMonBufferPos(0);
-	    //monBufferPos[numSpikeMonitor]  = 0;
-
-	    // create the new buffer for keeping track of all the spikes in the system
-		spikeMonCoreList[numSpikeMonitor]->setMonBufferFiring(new unsigned int[buffSize]);
-	    //monBufferFiring[numSpikeMonitor] = new unsigned int[buffSize];
-		spikeMonCoreList[numSpikeMonitor]->setMonBufferTimeCnt(new unsigned int[1000]);
-		//monBufferTimeCnt[numSpikeMonitor] = new unsigned int[1000];
-		spikeMonCoreList[numSpikeMonitor]->zeroMonBufferTimeCnt(1000);
-		//memset(monBufferTimeCnt[numSpikeMonitor],0,sizeof(int)*(1000));
-
-		
 		numSpikeMonitor++;
-
-	    // oh. finally update the size info that will be useful to see
-	    // how much memory are we eating...
-		cpuSnnSz.monitorInfoSize += sizeof(int)*buffSize;
-		cpuSnnSz.monitorInfoSize += sizeof(int)*(1000);
-
 		CARLSIM_INFO("SpikeMonitor set for group %d (%s)",cGrpId,grp_Info2[grpId].Name.c_str());
 
-			// now we return the SpikeMonitor object to the user 
-			// index is numSpikeMonitor-1 because we have already incremented
-		return spikeMonList[numSpikeMonitor-1];
-
-			// index is numSpikeMonitor-1 because we have already incremented
-			// numSpikeMonitor
-			//return monBufferSpikeInfo[numSpikeMonitor-1];
+		return spkMonObj;
 	}
 }
 
@@ -2498,15 +2470,6 @@ void CpuSNN::deleteObjects() {
 		if (fpLog_!=NULL && fpLog_!=stdout && fpLog_!=stderr)
 			fclose(fpLog_);
 
-		// close spike monitor fid's
-		FILE* monBufferFid;
-		for(int i = 0; i< numSpikeMonitor; i++){
-			monBufferFid = spikeMonCoreList[i]->getMonBufferFid();
-			if(monBufferFid!=NULL && monBufferFid!=stdout && monBufferFid!=stderr){
-				fclose(monBufferFid);
-				monBufferFid=NULL;
-			}
-		}
 		resetPointers(true); // deallocate pointers
 		
 		// do the same as above, but for snn_gpu.cu
@@ -3535,6 +3498,13 @@ void CpuSNN::resetPointers(bool deallocate) {
 	if (timeTableD1!=NULL && deallocate) delete[] timeTableD1;
 	firingTableD2=NULL; firingTableD1=NULL; timeTableD2=NULL; timeTableD1=NULL;
 
+	// delete all SpikeMonitor objects
+	// don't kill SpikeMonitorCore objects, they will get killed automatically
+	for (int i=0; i<numSpikeMonitor; i++) {
+		if (spikeMonList[i]!=NULL && deallocate) delete spikeMonList[i];
+		spikeMonList[i]=NULL;
+	}
+
 	// delete all Spike Counters
 	for (int i=0; i<numSpkCnt; i++) {
 		if (spkCntBuf[i]!=NULL && deallocate)
@@ -3557,23 +3527,6 @@ void CpuSNN::resetPointers(bool deallocate) {
 		}
 	}
 	connectBegin=NULL;
-
-	// clear all spike monitor info
-	unsigned int* monBufferFiring;
-	unsigned int* monBufferTimeCnt;
-	for (int i=0; i<numSpikeMonitor; i++) {
-		// \FIXME ??? are you trying to: delete[] spikeMonCoreList[i]->getMonBufferFiring(); ???
-		monBufferFiring  = spikeMonCoreList[i]->getMonBufferFiring();
-		monBufferTimeCnt = spikeMonCoreList[i]->getMonBufferTimeCnt();
-		if (monBufferFiring!=NULL && deallocate) delete[] monBufferFiring;
-		if (monBufferTimeCnt!=NULL && deallocate) delete[] monBufferTimeCnt;
-		if (spikeMonCoreList[i]!=NULL && deallocate) delete spikeMonCoreList[i];
-		if (spikeMonList[i]!=NULL && deallocate) delete spikeMonList[i];
-		spikeMonCoreList[i]=NULL; spikeMonList[i]=NULL;
-		monBufferFiring=NULL; monBufferTimeCnt=NULL;
-	}
-//	if (spikeMonLastUpdate!=NULL && deallocate) delete[] spikeMonLastUpdate;
-//	spikeMonLastUpdate=NULL;
 
 	// clear data (i.e., concentration of neuromodulator) of groups
 	if (grpDA != NULL && deallocate) delete [] grpDA;
@@ -4206,14 +4159,12 @@ void CpuSNN::updateSpikeMonitor(int grpId) {
 		if (simMode_ == GPU_MODE) {
 			// copy the neuron firing information from the GPU to the CPU..
 			copyFiringInfo_GPU();
-
-//			updateSpikeMonitor_GPU();
 		}
 
 		// find the time interval in which to update spikes
 		// usually, we call updateSpikeMonitor once every second, so the time interval is [0,1000)
-		// however, updateSpikeMonitor can be called at any time t \in [0,1000)... so we can have the cases [0,t), [t,1000),
-		// and even [t1, t2)
+		// however, updateSpikeMonitor can be called at any time t \in [0,1000)... so we can have the cases
+		// [0,t), [t,1000), and even [t1, t2)
 		int numMsMin = lastUpdate%1000; // lower bound is given by last time we called update
 		int numMsMax = getSimTimeMs(); // upper bound is given by current time
 		if (numMsMax==0)
@@ -4230,9 +4181,9 @@ void CpuSNN::updateSpikeMonitor(int grpId) {
 		spikeMonLastUpdate[monitorId] = (long int) getSimTime();
 
 		// prepare fast access
-		FILE* fileId = spikeMonCoreList[monitorId]->getMonBufferFid();
+		FILE* spkFileId = spikeMonCoreList[monitorId]->getSpikeFileId();
 		SpikeMonitorCore* spkMonObj = spikeMonCoreList[monitorId];
-		bool writeSpikesToFile = fileId!=NULL;
+		bool writeSpikesToFile = spkFileId!=NULL;
 		bool writeSpikesToArray = spkMonObj->isRecording();
 
 		// Read one spike at a time from the buffer and put the spikes to an appopriate monitor buffer. Later the user
@@ -4253,12 +4204,13 @@ void CpuSNN::updateSpikeMonitor(int grpId) {
 					if (this_grpId != grpId)
 						continue;
 
+					// current time is last completed second plus whatever is leftover in t
 					int time = currentTimeSec*1000 + t;
 
 					if (writeSpikesToFile) {
 						int cnt;
-						cnt = fwrite(&time, sizeof(int), 1, fileId); assert(cnt==1);
-						cnt = fwrite(&nid, sizeof(int), 1, fileId); assert(cnt==1);
+						cnt = fwrite(&time, sizeof(int), 1, spkFileId); assert(cnt==1);
+						cnt = fwrite(&nid,  sizeof(int), 1, spkFileId); assert(cnt==1);
 					}
 
 					if (writeSpikesToArray) {
@@ -4268,108 +4220,10 @@ void CpuSNN::updateSpikeMonitor(int grpId) {
 			}
 		}
 
-//		if (grp_Infp[grpId].writeSpikesToFile)
-		if (fileId!=NULL)
-			fflush(fileId);
+		if (spkFileId!=NULL) // flush spike file
+			fflush(spkFileId);
 	}
 }
-
-
-/*void updateSpikeMonitorOld() { // int numMsMax, int numMsMin, bool writeToFile, bool pushToAER) {
-
-
-	bool bufferOverFlow[MAX_GRP_PER_SNN];
-	memset(bufferOverFlow,0,sizeof(bufferOverFlow));
-
-	// grab tmp variables of all of our spike monitor data structures
-	unsigned int** monBufferFiring = new unsigned int*[numSpikeMonitor];
-	unsigned int** monBufferTimeCnt = new unsigned int*[numSpikeMonitor];
-	unsigned int*  monBufferPos = new unsigned int[numSpikeMonitor];
-	unsigned int*  monBufferSize = new unsigned int[numSpikeMonitor];
-	FILE**         monBufferFid = new FILE*[numSpikeMonitor];
- 
-	spikeMonCoreList[0]->getMonBufferFiring();
-	
-	for(int i=0; i < numSpikeMonitor; i++){
-		monBufferFiring[i] = spikeMonCoreList[i]->getMonBufferFiring();
-		monBufferTimeCnt[i] = spikeMonCoreList[i]->getMonBufferTimeCnt();
-		monBufferPos[i] = spikeMonCoreList[i]->getMonBufferPos();
-		monBufferSize[i] = spikeMonCoreList[i]->getMonBufferSize();
-		monBufferFid[i] = spikeMonCoreList[i]->getMonBufferFid();
-	}
-	
-	// Reset buffer time counter
-	for(int i=0; i < numSpikeMonitor; i++){
-		//spikeMonCoreList[numSpikeMonitor]->zeroMonBufferTimeCnt(numMs);
-		memset(monBufferTimeCnt[i],0,sizeof(int)*1000);
-		// Reset buffer position
-		monBufferPos[i]=0;
-	}
-
-	// Read one spike at a time from the buffer and put the spikes to an appopriate monitor buffer. Later the user may
-	// need need to dump these spikes to an output file
-	for (int k=0; k < 2; k++) {
-		unsigned int* timeTablePtr = (k==0)?timeTableD2:timeTableD1;
-		unsigned int* fireTablePtr = (k==0)?firingTableD2:firingTableD1;
-		for(int t=numMsMin; t<numMsMax; t++) {
-			for(int i=timeTablePtr[t+D]; i<timeTablePtr[t+D+1];i++) {
-				// retrieve the neuron id
-				int nid   = fireTablePtr[i];
-				if (simMode_ == GPU_MODE)
-					nid = GET_FIRING_TABLE_NID(nid);
-				assert(nid < numN);
-				
-				int grpId = grpIds[nid];
-				int monitorId = grp_Info[grpId].SpikeMonitorId;
-				if(monitorId!= -1) {
-					assert(nid >= grp_Info[grpId].StartN);
-					assert(nid <= grp_Info[grpId].EndN);
-					int   pos   = monBufferPos[monitorId];
-					if((pos >= monBufferSize[monitorId])) {
-							if(!bufferOverFlow[monitorId]) {
-								CARLSIM_WARN("Buffer Monitor size (%d) is small. Increase buffer firing rate for %s",
-														 monBufferSize[monitorId], grp_Info2[grpId].Name.c_str());
-							}
-							bufferOverFlow[monitorId] = true;
-					}  else {
-						monBufferPos[monitorId]++;
-						monBufferFiring[monitorId][pos] = nid-grp_Info[grpId].StartN; // store the Neuron ID relative to the start of the group
-						// we store the total firing at time t...
-						monBufferTimeCnt[monitorId][t]++;
-					}
-				} // if monitoring is enabled for this spike
-			} // for all spikes happening at time t
-		}  // for all time t
-	}
-	
-	// loop over all groups and check if they have a spike monitor
-	// TODO: here is where we do our call to the monBufferSpikeInfo -- KDC
-	for (int grpId=0;grpId<numGrp;grpId++) {
-		int monitorId = grp_Info[grpId].SpikeMonitorId;
-		if(monitorId!= -1) {
-			CARLSIM_INFO("Spike Monitor for Group %s has %d spikes (%f Hz)",grp_Info2[grpId].Name.c_str(),
-									 monBufferPos[monitorId],((float)monBufferPos[monitorId])*1000.0f/((numMsMax-numMsMin)*grp_Info[grpId].SizeN));
-			
-			// call the callback function now replaced with writeSpikesToFile
-			if(monBufferFid[monitorId]!=NULL) {
-				writeSpikesToFile(grpId, monBufferFiring[monitorId], monBufferTimeCnt[monitorId], 
-													numMsMin, numMsMax, monBufferFid[monitorId]);
-			}
-
-			// if pushToAER flag is set and group has spikeInfo object, push spikes to AER vector
-			if (spikeMonCoreList[monitorId]!=NULL && spikeMonCoreList[monitorId]->isRecording()) {
-				spikeMonCoreList[monitorId]->pushAER(grpId, monBufferFiring[monitorId], monBufferTimeCnt[monitorId],
-					numMsMin, numMsMax);
-			}
-		}
-	}
-
-	delete [] monBufferFiring;
-	delete [] monBufferTimeCnt;
-	delete [] monBufferPos;
-	delete [] monBufferSize;
-	delete [] monBufferFid;
-}*/
 	
 // This function updates the synaptic weights from its derivatives..
 void CpuSNN::updateWeights() {
@@ -4444,33 +4298,4 @@ void CpuSNN::updateWeights() {
 			}
 		}
 	}
-}
-
-// This function writes the spike data to a file. It's used in 
-// updateSpikeMonitor().
-void CpuSNN::writeSpikesToFile(int grpId, unsigned int* neurIds, unsigned int *timeCnts, int numMsMin,
-	int numMsMax, FILE* fileId){
-	assert(numMsMin>=0 && numMsMin<1000);
-	assert(numMsMax>0 && numMsMax<=1000);
-
-	// current time is last completed second in milliseconds (plus t to be added below)
-	// special case is after each completed second where !getSimTimeMs(): here we look 1s back
-	int currentTimeSec = getSimTimeSec();
-	if (!getSimTimeMs())
-		currentTimeSec--;
-
-	//void update(CARLsim* s, int grpId, unsigned int* neurIds, unsigned int* timeCnts, int timeInterval) {
-	int pos    = 0; // keep track of position in flattened list of neuron IDs
-	for (int t=numMsMin; t<numMsMax; t++) {
-		for(int i=0; i<timeCnts[t];i++,pos++) {
-			int time = currentTimeSec*1000 + t; // ms
-			
-			int id   = neurIds[pos];
-			int cnt = fwrite(&time,sizeof(int),1,fileId);
-			assert(cnt != 0);
-			cnt = fwrite(&id,sizeof(int),1,fileId);
-			assert(cnt != 0);
-		}
-	}
-	fflush(fileId);
 }

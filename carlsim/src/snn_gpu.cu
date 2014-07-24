@@ -2353,13 +2353,6 @@ void CpuSNN::resetSpikeCounter_GPU(int grpId, int configId) {
 }
 
 
-// copy the spike from the GPU to the CPU..
-void CpuSNN::updateSpikeMonitor_GPU()
-{
-	// copy the neuron firing information from the GPU to the CPU..
-	copyFiringInfo_GPU();
-}
-
 void CpuSNN::updateTimingTable_GPU()
 {
 
