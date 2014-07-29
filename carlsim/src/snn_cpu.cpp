@@ -645,12 +645,13 @@ int CpuSNN::runNetwork(int _nsec, int _nmsec, bool copyState) {
 	assert(_nsec  >= 0);
 	int runDuration = _nsec*1000 + _nmsec;
 
+	// store current start time for future reference
+	simTimeRunStart = simTime;
+	simTimeRunStop  = simTime+runDuration;
+	assert(simTimeRunStop>=simTimeRunStart); // check for arithmetic underflow
+
 	// set the Poisson generation time slice to be at the run duration up to PROPOGATED_BUFFER_SIZE ms.
 	setGrpTimeSlice(ALL, MAX(1,MIN(runDuration,PROPAGATED_BUFFER_SIZE-1)));
-
-	// First time when the network is run we do various kind of space compression,
-	// and data structure optimization to improve performance and save memory.
-	// setupNetwork();
 
 	CUDA_RESET_TIMER(timer);
 	CUDA_START_TIMER(timer);
@@ -1693,9 +1694,10 @@ void CpuSNN::CpuSNNinit() {
 	connectBegin = NULL;
 
 	simTimeLastUpdSpkMon_ = 0;
-	simTimeMs	 		= 0;	simTimeSec			= 0;	simTime = 0;
-	spikeCountAll1sec	= 0;	secD1fireCntHost 	= 0;	secD2fireCntHost  = 0;
-	spikeCountAll 		= 0;	spikeCountD2Host	= 0;	spikeCountD1Host = 0;
+	simTimeRunStart     = 0;    simTimeRunStop      = 0;
+	simTimeMs	 		= 0;    simTimeSec          = 0;    simTime = 0;
+	spikeCountAll1sec	= 0;    secD1fireCntHost    = 0;    secD2fireCntHost  = 0;
+	spikeCountAll 		= 0;    spikeCountD2Host    = 0;    spikeCountD1Host = 0;
 	nPoissonSpikes 		= 0;
 
 	numGrp   = 0;
@@ -2455,26 +2457,26 @@ void CpuSNN::connectUserDefined (grpConnectInfo_t* info) {
 
 // delete all objects (CPU and GPU side)
 void CpuSNN::deleteObjects() {
-		if (simulatorDeleted)
-			return;
+	if (simulatorDeleted)
+		return;
 
-		printSimSummary();
+	printSimSummary();
 
 		// don't fclose if it's stdout or stderr, otherwise they're gonna stay closed for the rest of the process
-		if (fpInf_!=NULL && fpInf_!=stdout && fpInf_!=stderr)
-			fclose(fpInf_);
-		if (fpErr_!=NULL && fpErr_!=stdout && fpErr_!=stderr)
-			fclose(fpErr_);
-		if (fpDeb_!=NULL && fpDeb_!=stdout && fpDeb_!=stderr)
-			fclose(fpDeb_);
-		if (fpLog_!=NULL && fpLog_!=stdout && fpLog_!=stderr)
-			fclose(fpLog_);
+	if (fpInf_!=NULL && fpInf_!=stdout && fpInf_!=stderr)
+		fclose(fpInf_);
+	if (fpErr_!=NULL && fpErr_!=stdout && fpErr_!=stderr)
+		fclose(fpErr_);
+	if (fpDeb_!=NULL && fpDeb_!=stdout && fpDeb_!=stderr)
+		fclose(fpDeb_);
+	if (fpLog_!=NULL && fpLog_!=stdout && fpLog_!=stderr)
+		fclose(fpLog_);
 
-		resetPointers(true); // deallocate pointers
+	resetPointers(true); // deallocate pointers
 		
-		// do the same as above, but for snn_gpu.cu
-		deleteObjects_GPU();
-		simulatorDeleted = true;
+	// do the same as above, but for snn_gpu.cu
+	deleteObjects_GPU();
+	simulatorDeleted = true;
 }
 
 
@@ -2831,14 +2833,19 @@ void CpuSNN::generateSpikesFromFuncPtr(int grpId) {
 		if (nextTime == MAX_SIMULATION_TIME)
 			nextTime = 0;
 
+		// the end of the valid time window is either the length of the scheduling time slice from now (because that
+		// is the max of the allowed propagated buffer size) or simply the end of the simulation
+		unsigned int endOfTimeWindow = MIN(currTime+timeSlice,simTimeRunStop);
+
 		done = false;
 		while (!done) {
 
 			nextTime = spikeGen->nextSpikeTime(this, grpId, i - grp_Info[grpId].StartN, currTime, nextTime);
 
 			// found a valid time window
-			if (nextTime < (currTime + timeSlice)) {
+			if (nextTime < endOfTimeWindow) {
 				if (nextTime >= currTime) {
+//					fprintf(stderr,"%u: spike scheduled for %d at %u\n",currTime, i-grp_Info[grpId].StartN,nextTime);
 					// scheduled spike...
 					// \TODO CPU mode does not check whether the same AER event has been scheduled before (bug #212)
 					// check how GPU mode does it, then do the same here.
@@ -3504,7 +3511,6 @@ void CpuSNN::resetPointers(bool deallocate) {
 		if (spikeMonList[i]!=NULL && deallocate) delete spikeMonList[i];
 		spikeMonList[i]=NULL;
 	}
-
 	// delete all Spike Counters
 	for (int i=0; i<numSpkCnt; i++) {
 		if (spkCntBuf[i]!=NULL && deallocate)
@@ -3996,7 +4002,11 @@ void CpuSNN::updateSpikeGenerators() {
 	for(int g=0; g<numGrp; g++) {
 		if (grp_Info[g].isSpikeGenerator) {
 			// This evaluation is done to check if its time to get new set of spikes..
-			if(((simTime-grp_Info[g].SliceUpdateTime) >= (unsigned) grp_Info[g].CurrTimeSlice || simTime == 0)) {
+			// check whether simTime has advance more than the current time slice, in which case we need to schedule
+			// spikes for the next time slice
+			// we always have to run this the first millisecond of a new runNetwork call; that is,
+			// when simTime==simTimeRunStart
+			if(((simTime-grp_Info[g].SliceUpdateTime) >= (unsigned) grp_Info[g].CurrTimeSlice || simTime == simTimeRunStart)) {
 				updateSpikesFromGrp(g);
 			}
 		}
@@ -4203,6 +4213,12 @@ void CpuSNN::updateSpikeMonitor(int grpId) {
 					int this_grpId = grpIds[nid];
 					if (this_grpId != grpId)
 						continue;
+
+					// adjust nid to be 0-indexed for each group
+					// this way, if a group has 10 neurons, their IDs in the spike file and spike monitor will be
+					// indexed from 0..9, no matter what their real nid is
+					nid -= grp_Info[grpId].StartN;
+					assert(nid>=0);
 
 					// current time is last completed second plus whatever is leftover in t
 					int time = currentTimeSec*1000 + t;

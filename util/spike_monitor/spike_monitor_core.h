@@ -256,11 +256,11 @@ private:
 	int grpId_;
 	int numN_;
 
-	FILE*          spikeFileId_;	//!< file pointer to the spike file or NULL
+	FILE* spikeFileId_;	//!< file pointer to the spike file or NULL
 
 	// Used to analyzed the spike information
-	std::vector<AER>::iterator it_begin_;
-	std::vector<AER>::iterator it_end_;
+//	std::vector<AER>::const_iterator it_begin_;
+//	std::vector<AER>::const_iterator it_end_;
 	std::vector<AER> spkVector_;
 
 	//! this flag will be true whenever the firing rate needs updating (e.g., new data is coming in)

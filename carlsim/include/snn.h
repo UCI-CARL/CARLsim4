@@ -905,6 +905,10 @@ private:
 	unsigned int		maxSpikesD2;
 
 	//time and timestep
+
+	unsigned int    simTimeRunStart; //!< the start time of current/last runNetwork call
+	unsigned int    simTimeRunStop;  //!< the end time of current/last runNetwork call
+	
 	unsigned int	simTimeMs;
 	uint64_t        simTimeSec;		//!< this is used to store the seconds.
 	unsigned int	simTime;		//!< The absolute simulation time. The unit is millisecond. this value is not reset but keeps increasing to its max value.

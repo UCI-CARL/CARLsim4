@@ -60,7 +60,7 @@
 /// COMMON
 /// **************************************************************************************************************** ///
 
-// TODO: these should actually work on the user callback level... so don't inherit from *Core classes, but from the
+// \TODO: these should actually work on the user callback level... so don't inherit from *Core classes, but from the
 // user interface-equivalent...
 
 //! a periodic spike generator (constant ISI) creating spikes at a certain rate

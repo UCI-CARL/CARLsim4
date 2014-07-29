@@ -25,9 +25,6 @@ void SpikeMonitorCore::init() {
 	assert(numN_>0);
 
 	clear();
-	firingRate_.assign(numN_,0);
-	firingRateSorted_.assign(numN_,0);
-	tmpSpikeCount_.assign(numN_,0);
 
 	// use CARLSIM_{ERROR|WARNING|etc} typesetting (const FILE*)
 	fpInf_ = snn_->getLogFpInf();
@@ -70,7 +67,7 @@ float SpikeMonitorCore::getGroupFiringRate() {
 	if (totalTime_==0)
 		return 0.0f;
 
-	fprintf(stderr, "recordSet=%s, size=%ld, totalTime=%ld, numN=%d\n",recordSet_?"y":"n",spkVector_.size(), totalTime_, numN_);
+	fprintf(stderr, "recordSet=%s, rate=%f, size=%ld, totalTime=%ld, numN=%d\n",recordSet_?"y":"n",spkVector_.size()*1000.0/(totalTime_*numN_),spkVector_.size(), totalTime_, numN_);
 	return spkVector_.size()*1000.0/(totalTime_*numN_);
 }
 
@@ -110,7 +107,9 @@ int SpikeMonitorCore::getNumNeuronsWithFiringRate(float min, float max){
 	sortFiringRates();
 
 	int counter = 0;
-	for(std::vector<float>::iterator it=firingRateSorted_.begin(); it!=firingRateSorted_.end(); it++){
+	std::vector<float>::const_iterator it_begin = firingRateSorted_.begin();
+	std::vector<float>::const_iterator it_end = firingRateSorted_.end();
+	for(std::vector<float>::const_iterator it=it_begin; it!=it_end; it++){
 		if((*it) >= min && (*it) <= max)
 			counter++;
 	}
@@ -162,10 +161,11 @@ void SpikeMonitorCore::print() {
 	assert(!isRecording());
 
 	std::cout << "Format: Time (ms) : neuron id\n";
-	//use an iterator
-	for(std::vector<AER>::iterator it=it_begin_;it!=it_end_;it++){
-		std::cout << (*it).time << " : "; 
-		std::cout << (*it).nid << std::endl;
+	std::vector<AER>::const_iterator it_begin = spkVector_.begin();
+	std::vector<AER>::const_iterator it_end = spkVector_.end();
+	for(std::vector<AER>::const_iterator it=it_begin; it!=it_end; it++){
+		std::cout << it->time << " : "; 
+		std::cout << it->nid << std::endl;
 		std::cout.flush();
 	}
 }
@@ -243,13 +243,18 @@ void SpikeMonitorCore::calculateFiringRates() {
 	tmpSpikeCount_.assign(numN_,0);
 	firingRate_.assign(numN_,0);
 
-	// this really shouldn't happen, but if recording time is zero, return all zeros
-	if (totalTime_==0)
+	// this really shouldn't happen at this stage, but if recording time is zero, return all zeros
+	if (totalTime_==0) {
+		CARLSIM_WARN("SpikeMonitorCore:: calculateFiringRates has 0 totalTime");
 		return;
+	}
 
 	// read all AER events and assign them to neuron IDs to get # spikes per neuron
-	for(std::vector<AER>::iterator it=it_begin_; it!=it_end_; it++) {
-		tmpSpikeCount_[(*it).nid]++;
+	std::vector<AER>::const_iterator it_begin = spkVector_.begin();
+	std::vector<AER>::const_iterator it_end = spkVector_.end();
+	for(std::vector<AER>::const_iterator it=it_begin; it!=it_end; it++) {
+		assert(it->nid >=0 && it->nid < numN_);
+		tmpSpikeCount_[it->nid]++;
 	}
 
 	// compute firing rate
