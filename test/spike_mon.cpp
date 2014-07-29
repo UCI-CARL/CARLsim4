@@ -84,7 +84,7 @@ void readAndPrintSpikeFile(const std::string fileName){
  * \brief testing to make sure grpId error is caught in setSpikeMonitor.
  *
  */
-/*TEST(SETSPIKEMON, grpId){
+TEST(SETSPIKEMON, grpId){
 	CARLsim* sim;
 	const int GRP_SIZE = 10;
 	
@@ -108,13 +108,13 @@ void readAndPrintSpikeFile(const std::string fileName){
 		
 		delete sim;
 	}
-}*/
+}
 
 /*!
  * \brief testing to make sure configId error is caught in setSpikeMonitor.
  *
  */
-/*TEST(SETSPIKEMON, configId){
+TEST(SETSPIKEMON, configId){
 	CARLsim* sim;
 	const int GRP_SIZE = 10;
 	
@@ -137,14 +137,14 @@ void readAndPrintSpikeFile(const std::string fileName){
 
 		delete sim;
 	}
-}*/
+}
 
 
 /*!
  * \brief testing to make sure file name error is caught in setSpikeMonitor.
  *
  */
-/*TEST(SETSPIKEMON, fname){
+TEST(SETSPIKEMON, fname){
 	CARLsim* sim;
 	const int GRP_SIZE = 10;
 	
@@ -166,7 +166,7 @@ void readAndPrintSpikeFile(const std::string fileName){
 		
 		delete sim;
 	}
-}*/
+}
 
 
 TEST(SPIKEMON, interfaceDeath) {
@@ -188,7 +188,22 @@ TEST(SPIKEMON, interfaceDeath) {
 	// test all APIs that cannot be called when recording is on
 	spkMon->startRecording();
 	EXPECT_DEATH(spkMon->getGroupFiringRate(),"");
-
+	EXPECT_DEATH(spkMon->getNeuronMaxFiringRate(),"");
+	EXPECT_DEATH(spkMon->getNeuronMinFiringRate(),"");
+	EXPECT_DEATH(spkMon->getNeuronFiringRate(),"");
+	EXPECT_DEATH(spkMon->getNumNeuronsWithFiringRate(0,0),"");
+	EXPECT_DEATH(spkMon->getNumSilentNeurons(),"");
+	EXPECT_DEATH(spkMon->getPercentNeuronsWithFiringRate(0,0),"");
+	EXPECT_DEATH(spkMon->getPercentSilentNeurons(),"");
+	EXPECT_DEATH(spkMon->getSize(),"");
+	EXPECT_DEATH(spkMon->getVector(),"");
+	EXPECT_DEATH(spkMon->getNeuronSortedFiringRate(),"");
+	EXPECT_DEATH(spkMon->print(),"");
+	EXPECT_DEATH(spkMon->startRecording(),"");
+	EXPECT_DEATH(spkMon->getGroupFiringRate(),"");
+	EXPECT_DEATH(spkMon->getGroupFiringRate(),"");
+	EXPECT_DEATH(spkMon->getGroupFiringRate(),"");
+	EXPECT_DEATH(spkMon->getGroupFiringRate(),"");
 
 	delete sim;
 }
@@ -282,15 +297,12 @@ TEST(SPIKEMON, clear){
 		sim->connect(g1,g2,"random", RangeWeight(initWeight), 0.5f, RangeDelay(1), SYN_FIXED);
 
 		SpikeMonitor* spikeMonG1 = sim->setSpikeMonitor(g1);
-		
 		sim->setupNetwork();
 
 		sim->setSpikeRate(inputGroup,input);
-		
 		spikeMonG1->startRecording();
 		
 		int runTimeMs = 2000;
-		// run the network
 		sim->runNetwork(runTimeMs/1000,runTimeMs%1000);
 	
 		spikeMonG1->stopRecording();
@@ -298,19 +310,11 @@ TEST(SPIKEMON, clear){
 		// we should have spikes!
 		EXPECT_TRUE(spikeMonG1->getSize() != 0);
 		
-		// now clear the spikes
+		// now clear the spikes and run again
 		spikeMonG1->clear();
-
-		// we shouldn't have spikes!
-		EXPECT_TRUE(spikeMonG1->getSize() == 0);
-		
-		// start recording again
+		EXPECT_TRUE(spikeMonG1->getSize() == 0); // shouldn't have any spikes!
 		spikeMonG1->startRecording();
-		
-		// run the network again
 		sim->runNetwork(runTimeMs/1000,runTimeMs%1000);
-		
-		// stop recording
 		spikeMonG1->stopRecording();
 		
 		// we should have spikes again
@@ -403,7 +407,7 @@ TEST(SPIKEMON, spikeTimes) {
  * brief time window, whereas the spike file should contain all spikes. For the other group, both spike file and AER
  * struct should have the same number of spikes.
  */
-/*TEST(SPIKEMON, getGroupFiringRate){
+TEST(SPIKEMON, getGroupFiringRate){
 	CARLsim* sim;
 
 	double rate = rand()%12 + 2.0f;  // some random mean firing rate
@@ -487,7 +491,7 @@ TEST(SPIKEMON, spikeTimes) {
 		delete spkGen;
 		delete sim;
 	}
-}*/
+}
 
 TEST(SPIKEMON, getMaxMinNeuronFiringRate){
 	const int GRP_SIZE = 5;

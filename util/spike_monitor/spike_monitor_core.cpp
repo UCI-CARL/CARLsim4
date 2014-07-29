@@ -67,7 +67,6 @@ float SpikeMonitorCore::getGroupFiringRate() {
 	if (totalTime_==0)
 		return 0.0f;
 
-	fprintf(stderr, "recordSet=%s, rate=%f, size=%ld, totalTime=%ld, numN=%d\n",recordSet_?"y":"n",spkVector_.size()*1000.0/(totalTime_*numN_),spkVector_.size(), totalTime_, numN_);
 	return spkVector_.size()*1000.0/(totalTime_*numN_);
 }
 
