@@ -215,7 +215,8 @@ TEST(STP, internalCPUvsGPU) {
 		sim->setConductances(true,5,10,15,20,25,30,ALL);
 		sim->setSTP(g0,true,STP_U,STP_tD,STP_tF,ALL);
 
-		PeriodicSpikeGeneratorCore* spk20 = new PeriodicSpikeGeneratorCore(20.0f);
+		bool spikeAtZero = false;
+		PeriodicSpikeGeneratorCore* spk20 = new PeriodicSpikeGeneratorCore(20.0f,spikeAtZero);
 		sim->setSpikeGenerator(g0, spk20, ALL);
 
 		sim->setupNetwork(true);

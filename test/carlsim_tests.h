@@ -66,19 +66,22 @@
 //! a periodic spike generator (constant ISI) creating spikes at a certain rate
 class PeriodicSpikeGenerator : public SpikeGenerator {
 public:
-	PeriodicSpikeGenerator(float rate) {
+	PeriodicSpikeGenerator(float rate, bool spikeAtZero=true) {
 		assert(rate>0);
 		rate_ = rate;	  // spike rate
 		isi_ = 1000/rate; // inter-spike interval in ms
+		spikeAtZero_ = spikeAtZero;
 	}
 
 	unsigned int nextSpikeTime(CARLsim* sim, int grpId, int nid, unsigned int currentTime, unsigned int lastScheduledSpikeTime) {
 //		fprintf(stderr,"currentTime: %u lastScheduled: %u\n",currentTime,lastScheduledSpikeTime);
-		// insert spike at t=0 for each neuron (keep track of neuron IDs to avoid getting stuck in infinite loop)
-		if (std::find(nIdFiredAtZero_.begin(), nIdFiredAtZero_.end(), nid)==nIdFiredAtZero_.end()) {
-			// spike at t=0 has not been scheduled yet for this neuron
-			nIdFiredAtZero_.push_back(nid);
-			return 0;
+		if (spikeAtZero_) {
+			// insert spike at t=0 for each neuron (keep track of neuron IDs to avoid getting stuck in infinite loop)
+			if (std::find(nIdFiredAtZero_.begin(), nIdFiredAtZero_.end(), nid)==nIdFiredAtZero_.end()) {
+				// spike at t=0 has not been scheduled yet for this neuron
+				nIdFiredAtZero_.push_back(nid);
+				return 0;
+			}
 		}
 
 		// periodic spiking according to ISI
@@ -89,24 +92,28 @@ private:
 	float rate_;		// spike rate
 	int isi_;			// inter-spike interval that results in above spike rate
 	std::vector<int> nIdFiredAtZero_; // keep track of all neuron IDs for which a spike at t=0 has been scheduled
+	bool spikeAtZero_; // whether to emit a spike at t=0
 };
 
 //! a periodic spike generator (constant ISI) creating spikes at a certain rate
 //! \TODO \FIXME this one should be gone, use public interface instead
 class PeriodicSpikeGeneratorCore : public SpikeGeneratorCore {
 public:
-	PeriodicSpikeGeneratorCore(float rate) : SpikeGeneratorCore(NULL, NULL){
+	PeriodicSpikeGeneratorCore(float rate, bool spikeAtZero=true) : SpikeGeneratorCore(NULL, NULL){
 		assert(rate>0);
 		rate_ = rate;	  // spike rate
 		isi_ = 1000/rate; // inter-spike interval in ms
+		spikeAtZero_ = spikeAtZero;
 	}
 
 	unsigned int nextSpikeTime(CpuSNN* snn, int grpId, int nid, unsigned int currentTime, unsigned int lastScheduledSpikeTime) {
-		// insert spike at t=0 for each neuron (keep track of neuron IDs to avoid getting stuck in infinite loop)
-		if (std::find(nIdFiredAtZero_.begin(), nIdFiredAtZero_.end(), nid)==nIdFiredAtZero_.end()) {
-			// spike at t=0 has not been scheduled yet for this neuron
-			nIdFiredAtZero_.push_back(nid);
-			return 0;
+		if (spikeAtZero_) {
+			// insert spike at t=0 for each neuron (keep track of neuron IDs to avoid getting stuck in infinite loop)
+			if (std::find(nIdFiredAtZero_.begin(), nIdFiredAtZero_.end(), nid)==nIdFiredAtZero_.end()) {
+				// spike at t=0 has not been scheduled yet for this neuron
+				nIdFiredAtZero_.push_back(nid);
+				return 0;
+			}
 		}
 
 		// periodic spiking according to ISI
@@ -117,6 +124,7 @@ private:
 	float rate_;	// spike rate
 	int isi_;		// inter-spike interval that results in above spike rate
 	std::vector<int> nIdFiredAtZero_; // keep track of all neuron IDs for which a spike at t=0 has been scheduled
+	bool spikeAtZero_; // whether to spike at t=0
 };
 
 class SpecificTimeSpikeGeneratorCore : public SpikeGeneratorCore {
