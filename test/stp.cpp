@@ -8,7 +8,9 @@
 
 /*!
  * \brief testing setSTP to true
+ *
  * This function tests the information stored in the group info struct after enabling STP via setSTP
+ * \TODO use public user interface
  */
 TEST(STP, setSTPTrue) {
 	// create network by varying nConfig from 1...maxConfig, with
@@ -129,7 +131,8 @@ TEST(STP, internalCPUvsData) {
 	sim->setConductances(true,5,10,15,20,25,30,ALL);
 	sim->setSTP(g0,true,0.19f,86,992,ALL); // the exact values are not important
 
-	PeriodicSpikeGeneratorCore* spk50 = new PeriodicSpikeGeneratorCore(50.0f); // periodic spiking @ 50 Hz
+	bool spikeAtZero = false;
+	PeriodicSpikeGeneratorCore* spk50 = new PeriodicSpikeGeneratorCore(50.0f,spikeAtZero); // periodic spiking @ 50 Hz
 	sim->setSpikeGenerator(g0, spk50, ALL);
 
 	sim->setupNetwork(true);
@@ -172,7 +175,8 @@ TEST(STP, externalCPUvsData) {
 	sim->setConductances(true,5,10,15,20,25,30,ALL);
 	sim->setSTP(g0,true,0.19f,86,992,ALL); // the exact values are not important
 
-	PeriodicSpikeGeneratorCore* spk50 = new PeriodicSpikeGeneratorCore(50.0f); // periodic spiking @ 50 Hz
+	bool spikeAtZero = false;
+	PeriodicSpikeGeneratorCore* spk50 = new PeriodicSpikeGeneratorCore(50.0f,spikeAtZero); // periodic spiking @ 50 Hz
 	sim->setSpikeGenerator(g0, spk50, ALL);
 
 	sim->setupNetwork(true);
@@ -276,7 +280,8 @@ TEST(STP, externalCPUvsGPU) {
 		sim->setConductances(true,5,10,15,20,25,30,ALL);
 		sim->setSTP(g0,true,STP_U,STP_tD,STP_tF,ALL);
 
-		PeriodicSpikeGeneratorCore* spk20 = new PeriodicSpikeGeneratorCore(20.0f);
+		bool spikeAtZero = false;
+		PeriodicSpikeGeneratorCore* spk20 = new PeriodicSpikeGeneratorCore(20.0f,spikeAtZero);
 		sim->setSpikeGenerator(g0, spk20, ALL);
 
 		for (int i=0; i<300; i++) {
