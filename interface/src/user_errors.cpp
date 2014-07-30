@@ -77,8 +77,8 @@ void UserErrors::throwError(std::string errorFunc, errorType error, std::string 
 	case MUST_BE_ON:
 		std::cerr << " must be on at this point.";
 		break;
-	case MUST_BE_WITHIN_RANGE:
-		std:: cerr << " must be with some range.";
+	case MUST_BE_IN_RANGE:
+		std:: cerr << " must be in the range";
 		break;
 	case MUST_HAVE_SAME_SIGN:
 		std::cerr << " must have the same sign.";
@@ -93,7 +93,7 @@ void UserErrors::throwError(std::string errorFunc, errorType error, std::string 
 		std::cerr << " cannot be called on this neuron type.";
 		break;
 	case INVALID_API_AT_CURRENT_STATE:
-		std::cerr << " the api cannot be called at the current state";
+		std::cerr << " cannot be called in the current CARLsim state.";
 		break;
 	case UNKNOWN:
 	default:

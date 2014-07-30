@@ -1,6 +1,9 @@
 #include <limits.h>
 #include "gtest/gtest.h"	// include Google testing scripts
 
+#include <algorithm>		// std::find
+
+
 // FIXME: I added this flag, because as it stands now most CPUvsGPU comparisons fail. And they should, because the
 // order of execution in doSnnSim() and doGPUsim() is really different. No wonder we get, for example, different
 // spike counts in the end.

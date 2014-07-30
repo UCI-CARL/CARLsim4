@@ -1,11 +1,10 @@
 #include <spike_monitor.h>
 
-#include <snn.h>
-#include <spike_monitor_core.h>
-#include <user_errors.h>
+#include <spike_monitor_core.h>	// SpikeMonitor private implementation
+#include <user_errors.h>		// fancy user error messages
 
-#include <iostream>		// std::cout, std::endl
-#include <sstream>		// std::stringstream
+#include <iostream>				// std::cout, std::endl
+#include <sstream>				// std::stringstream
 
 // we aren't using namespace std so pay attention!
 SpikeMonitor::SpikeMonitor(SpikeMonitorCore* spikeMonitorCorePtr){
@@ -20,36 +19,52 @@ SpikeMonitor::~SpikeMonitor() {
 // +++++ PUBLIC METHODS: +++++++++++++++++++++++++++++++++++++++++++++++//
 
 void SpikeMonitor::clear(){
+	std::string funcName = "clear()";
+	UserErrors::assertTrue(!isRecording(), UserErrors::CANNOT_BE_ON, funcName, "Recording");
+
 	spikeMonitorCorePtr_->clear();
-	return;
 }
 
-float SpikeMonitor::getGroupFiringRate() {
-	std::string funcName = "getGroupFiringRate()";
+float SpikeMonitor::getPopMeanFiringRate() {
+	std::string funcName = "getPopMeanFiringRate()";
 	UserErrors::assertTrue(!isRecording(), UserErrors::CANNOT_BE_ON, funcName, "Recording");
 
-	return spikeMonitorCorePtr_->getGroupFiringRate();
+	return spikeMonitorCorePtr_->getPopMeanFiringRate();
 }
 
-float SpikeMonitor::getNeuronMaxFiringRate(){
-	std::string funcName = "getNeuronMaxFiringRate()";
+int SpikeMonitor::getPopNumSpikes() {
+	std::string funcName = "getPopNumSpikes()";
 	UserErrors::assertTrue(!isRecording(), UserErrors::CANNOT_BE_ON, funcName, "Recording");
 
-	return spikeMonitorCorePtr_->getNeuronMaxFiringRate();
+	return spikeMonitorCorePtr_->getPopNumSpikes();	
 }
 
-float SpikeMonitor::getNeuronMinFiringRate(){
-	std::string funcName = "getNeuronMinFiringRate()";
+float SpikeMonitor::getMaxFiringRate(){
+	std::string funcName = "getMaxFiringRate()";
 	UserErrors::assertTrue(!isRecording(), UserErrors::CANNOT_BE_ON, funcName, "Recording");
 
-	return spikeMonitorCorePtr_->getNeuronMinFiringRate();
+	return spikeMonitorCorePtr_->getMaxFiringRate();
 }
 
-std::vector<float> SpikeMonitor::getNeuronFiringRate(){
-	std::string funcName = "getNeuronFiringRate()";
+float SpikeMonitor::getMinFiringRate(){
+	std::string funcName = "getMinFiringRate()";
 	UserErrors::assertTrue(!isRecording(), UserErrors::CANNOT_BE_ON, funcName, "Recording");
 
-	return spikeMonitorCorePtr_->getNeuronFiringRate();
+	return spikeMonitorCorePtr_->getMinFiringRate();
+}
+
+std::vector<float> SpikeMonitor::getAllFiringRates(){
+	std::string funcName = "getAllFiringRates()";
+	UserErrors::assertTrue(!isRecording(), UserErrors::CANNOT_BE_ON, funcName, "Recording");
+
+	return spikeMonitorCorePtr_->getAllFiringRates();
+}
+
+int SpikeMonitor::getNeuronNumSpikes(int neurId) {
+	std::string funcName = "getNeuronNumSpikes()";
+	UserErrors::assertTrue(!isRecording(), UserErrors::CANNOT_BE_ON, funcName, "Recording");
+
+	return spikeMonitorCorePtr_->getNeuronNumSpikes(neurId);
 }
 
 // need to do error check here and maybe throw CARLsim errors.
@@ -85,25 +100,18 @@ float SpikeMonitor::getPercentSilentNeurons(){
 	return spikeMonitorCorePtr_->getPercentSilentNeurons();
 }
 
-long int SpikeMonitor::getSize() {
-	std::string funcName = "getSize()";
+std::vector<std::vector<int> > SpikeMonitor::getSpikeVector2D() {
+	std::string funcName = "getSpikeVector2D()";
 	UserErrors::assertTrue(!isRecording(), UserErrors::CANNOT_BE_ON, funcName, "Recording");
 
-	return spikeMonitorCorePtr_->getSize();
+	return spikeMonitorCorePtr_->getSpikeVector2D();
 }
 
-std::vector<AER> SpikeMonitor::getVector() {
-	std::string funcName = "getVector()";
+std::vector<float> SpikeMonitor::getAllFiringRatesSorted(){
+	std::string funcName = "getAllFiringRatesSorted()";
 	UserErrors::assertTrue(!isRecording(), UserErrors::CANNOT_BE_ON, funcName, "Recording");
 
-	return spikeMonitorCorePtr_->getVector();
-}
-
-std::vector<float> SpikeMonitor::getNeuronSortedFiringRate(){
-	std::string funcName = "getNeuronSortedFiringRate()";
-	UserErrors::assertTrue(!isRecording(), UserErrors::CANNOT_BE_ON, funcName, "Recording");
-
-	return spikeMonitorCorePtr_->getNeuronSortedFiringRate();
+	return spikeMonitorCorePtr_->getAllFiringRatesSorted();
 }
 
 bool SpikeMonitor::isRecording(){
@@ -114,21 +122,21 @@ void SpikeMonitor::print() {
 	std::string funcName = "print()";
 	UserErrors::assertTrue(!isRecording(), UserErrors::CANNOT_BE_ON, funcName, "Recording");
 
-	return spikeMonitorCorePtr_->print();
+	spikeMonitorCorePtr_->print();
 }
 
 void SpikeMonitor::startRecording() {
 	std::string funcName = "startRecording()";
 	UserErrors::assertTrue(!isRecording(), UserErrors::CANNOT_BE_ON, funcName, "Recording");
 
-	return spikeMonitorCorePtr_->startRecording();
+	spikeMonitorCorePtr_->startRecording();
 }
 
 void SpikeMonitor::stopRecording(){
 	std::string funcName = "stopRecording()";
 	UserErrors::assertTrue(isRecording(), UserErrors::MUST_BE_ON, funcName, "Recording");
 
-	return spikeMonitorCorePtr_->stopRecording();
+	spikeMonitorCorePtr_->stopRecording();
 }
 
 long int SpikeMonitor::getRecordingTotalTime() {
@@ -159,7 +167,10 @@ long int SpikeMonitor::getRecordingStopTime() {
 	return spikeMonitorCorePtr_->getRecordingStopTime();
 }
 
-bool SpikeMonitor::getPersistentMode() { return spikeMonitorCorePtr_->getPersistentMode(); }
+bool SpikeMonitor::getPersistentMode() {
+	return spikeMonitorCorePtr_->getPersistentMode();
+}
+
 void SpikeMonitor::setPersistentMode(bool persistentData) {
-	return spikeMonitorCorePtr_->setPersistentMode(persistentData);
+	spikeMonitorCorePtr_->setPersistentMode(persistentData);
 }

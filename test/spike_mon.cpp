@@ -187,23 +187,20 @@ TEST(SPIKEMON, interfaceDeath) {
 
 	// test all APIs that cannot be called when recording is on
 	spkMon->startRecording();
-	EXPECT_DEATH(spkMon->getGroupFiringRate(),"");
-	EXPECT_DEATH(spkMon->getNeuronMaxFiringRate(),"");
-	EXPECT_DEATH(spkMon->getNeuronMinFiringRate(),"");
-	EXPECT_DEATH(spkMon->getNeuronFiringRate(),"");
+	EXPECT_DEATH(spkMon->getPopMeanFiringRate(),"");
+	EXPECT_DEATH(spkMon->getPopNumSpikes(),"");
+	EXPECT_DEATH(spkMon->getAllFiringRates(),"");
+	EXPECT_DEATH(spkMon->getAllFiringRatesSorted(),"");
+	EXPECT_DEATH(spkMon->getMaxFiringRate(),"");
+	EXPECT_DEATH(spkMon->getMinFiringRate(),"");
+	EXPECT_DEATH(spkMon->getNeuronNumSpikes(0),"");
 	EXPECT_DEATH(spkMon->getNumNeuronsWithFiringRate(0,0),"");
 	EXPECT_DEATH(spkMon->getNumSilentNeurons(),"");
 	EXPECT_DEATH(spkMon->getPercentNeuronsWithFiringRate(0,0),"");
 	EXPECT_DEATH(spkMon->getPercentSilentNeurons(),"");
-	EXPECT_DEATH(spkMon->getSize(),"");
-	EXPECT_DEATH(spkMon->getVector(),"");
-	EXPECT_DEATH(spkMon->getNeuronSortedFiringRate(),"");
+	EXPECT_DEATH(spkMon->getSpikeVector2D(),"");
 	EXPECT_DEATH(spkMon->print(),"");
 	EXPECT_DEATH(spkMon->startRecording(),"");
-	EXPECT_DEATH(spkMon->getGroupFiringRate(),"");
-	EXPECT_DEATH(spkMon->getGroupFiringRate(),"");
-	EXPECT_DEATH(spkMon->getGroupFiringRate(),"");
-	EXPECT_DEATH(spkMon->getGroupFiringRate(),"");
 
 	delete sim;
 }
@@ -308,17 +305,17 @@ TEST(SPIKEMON, clear){
 		spikeMonG1->stopRecording();
 		
 		// we should have spikes!
-		EXPECT_TRUE(spikeMonG1->getSize() != 0);
+		EXPECT_TRUE(spikeMonG1->getPopNumSpikes() > 0);
 		
 		// now clear the spikes and run again
 		spikeMonG1->clear();
-		EXPECT_TRUE(spikeMonG1->getSize() == 0); // shouldn't have any spikes!
+		EXPECT_TRUE(spikeMonG1->getPopNumSpikes() == 0); // shouldn't have any spikes!
 		spikeMonG1->startRecording();
 		sim->runNetwork(runTimeMs/1000,runTimeMs%1000);
 		spikeMonG1->stopRecording();
 		
 		// we should have spikes again
-		EXPECT_TRUE(spikeMonG1->getSize() != 0);
+		EXPECT_TRUE(spikeMonG1->getPopNumSpikes() > 0);
 
 		
 		delete sim;
@@ -372,7 +369,7 @@ TEST(SPIKEMON, spikeTimes) {
 		spikeMonG0->stopRecording();
 
 		// get spike vector
-		std::vector<AER> spkVector = spikeMonG0->getVector();
+		std::vector<std::vector<int> > spkVector = spikeMonG0->getSpikeVector2D();
 
 		// read spike file
 		int* inputArray = NULL;
@@ -381,14 +378,18 @@ TEST(SPIKEMON, spikeTimes) {
 
 		// sanity-check the size of the arrays
 		EXPECT_EQ(inputSize/2, runMs/isi * GRP_SIZE);
-		EXPECT_EQ(spkVector.size(), runMs/isi * GRP_SIZE);
+		for (int i=0; i<GRP_SIZE; i++)
+			EXPECT_EQ(spkVector[i].size(), runMs/isi);
 
 		// check the spike times of spike file and AER struct
 		// we expect all spike times to be a multiple of the ISI
 		for (int i=0; i<inputSize; i+=2) {
 			EXPECT_EQ(inputArray[i]%isi, 0);
-			EXPECT_EQ(spkVector[i/2].time % isi, 0);
+//			EXPECT_EQ(spkVector[i/2].time % isi, 0);
 		}
+		for (int i=0; i<GRP_SIZE; i++)
+			for (int j=0; j<spkVector[i].size(); j++)
+				EXPECT_EQ(spkVector[i][j] % isi, 0);
 
 
 		system("rm -rf spkG0.dat");
@@ -473,15 +474,15 @@ TEST(SPIKEMON, getGroupFiringRate){
 		// activity in the input group was recorded only for a short period
 		// the SpikeMon object must thus compute the firing rate based on only a brief time window
 		EXPECT_EQ(spikeMonInput->getRecordingTotalTime(), runTimeMsOn);
-		EXPECT_NEAR(spikeMonInput->getGroupFiringRate(), rate, 0.1); // rate must match
-		EXPECT_EQ(spikeMonInput->getSize(), runTimeMsOn*GRP_SIZE/isi); // spikes only from brief window
+		EXPECT_NEAR(spikeMonInput->getPopMeanFiringRate(), rate, 0.1); // rate must match
+		EXPECT_EQ(spikeMonInput->getPopNumSpikes(), runTimeMsOn*GRP_SIZE/isi); // spikes only from brief window
 		EXPECT_EQ(inputSize/2, (runTimeMsOn+2*runTimeMsOff)*GRP_SIZE/isi); // but spike file must have all spikes
 
 		// g1 had recording on the whole time
 		// its firing rate is not known explicitly, but AER should match spike file
 		EXPECT_EQ(spikeMonG1->getRecordingTotalTime(), runTimeMsOn+2*runTimeMsOff);
-		EXPECT_EQ(spikeMonG1->getSize(), g1Size/2);
-		EXPECT_FLOAT_EQ(spikeMonG1->getGroupFiringRate(), g1Size/(2.0*GRP_SIZE) * 1000.0/(runTimeMsOn+2*runTimeMsOff));
+		EXPECT_EQ(spikeMonG1->getPopNumSpikes(), g1Size/2);
+		EXPECT_FLOAT_EQ(spikeMonG1->getPopMeanFiringRate(), g1Size/(2.0*GRP_SIZE) * 1000.0/(runTimeMsOn+2*runTimeMsOff));
 
 		system("rm -rf spkInputGrp.dat");
 		system("rm -rf spkG1Grp.dat");
@@ -569,16 +570,16 @@ TEST(SPIKEMON, getMaxMinNeuronFiringRate){
 		std::sort(inputVector.begin(),inputVector.end());
 		std::sort(g1Vector.begin(),g1Vector.end());
 
-		spikeMonInput->getNeuronMaxFiringRate();
+		spikeMonInput->getMaxFiringRate();
 
 		// check max neuron firing
 		float tmp = inputVector.back();
-		EXPECT_FLOAT_EQ(spikeMonInput->getNeuronMaxFiringRate(),tmp);
-		EXPECT_FLOAT_EQ(spikeMonG1->getNeuronMaxFiringRate(),g1Vector.back());
+		EXPECT_FLOAT_EQ(spikeMonInput->getMaxFiringRate(),tmp);
+		EXPECT_FLOAT_EQ(spikeMonG1->getMaxFiringRate(),g1Vector.back());
 
 		// check min neuron firing
-		EXPECT_FLOAT_EQ(spikeMonInput->getNeuronMinFiringRate(),inputVector.front());
-		EXPECT_FLOAT_EQ(spikeMonG1->getNeuronMinFiringRate(),g1Vector.front());
+		EXPECT_FLOAT_EQ(spikeMonInput->getMinFiringRate(),inputVector.front());
+		EXPECT_FLOAT_EQ(spikeMonG1->getMinFiringRate(),g1Vector.front());
 
 		if (inputArray!=NULL) delete[] inputArray;
 		if (g1Array!=NULL) delete[] g1Array;

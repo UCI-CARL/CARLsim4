@@ -36,7 +36,7 @@
  *					(TSC) Ting-Shuo Chou <tingshuc@uci.edu>
  *
  * CARLsim available from http://socsci.uci.edu/~jkrichma/CARLsim/
- * Ver 2/21/2014
+ * Ver 7/29/2014
  */
 
 // paradigm shift: run this on spikes. 
@@ -44,8 +44,7 @@
 #ifndef _SPIKE_MON_H_
 #define _SPIKE_MON_H_
 
-#include <carlsim_datastructures.h>	// AER
-#include <algorithm>
+//#include <algorithm>
 #include <vector>
 
 class CpuSNN; // forward declaration of CpuSNN class
@@ -55,16 +54,15 @@ class SpikeMonitorCore; // forward declaration of implementation
  * \brief Class SpikeMonitor
  *
  * \TODO finish docu
- * \TODO Explain what is supposed to happen in the following case. User records for 500ms, then stops recording for
- * 1000ms, and records for another 500ms. How is the firing rate computed in this case (accumTime vs totalTime)?
- * How to avoid this from happening (call clear())?
+ * \TODO Explain startRecording() / stopRecording()
+ * \TODO Explain PersistentMode
  */
 class SpikeMonitor {
  public: 
 	/*! 
-	 * \brief analysis constructor.
+	 * \brief SpikeMonitor constructor
 	 *
-	 * Creates a new instance of the analysis class. 
+	 * Creates a new instance of the SpikeMonitor class.
 	 *	 
 	 */
 	SpikeMonitor(SpikeMonitorCore* spikeMonitorCorePtr); 
@@ -80,70 +78,108 @@ class SpikeMonitor {
 	// +++++ PUBLIC METHODS: +++++++++++++++++++++++++++++++++++++++++++++++//
 
 	/*!
-	 *\brief deletes data from the AER vector.
-	 *\param void.
-	 *\returns void.
+	 *\brief Truncates the 2D spike vector
+	 *
+	 * This function truncates all the data found in the 2D spike vector.
+	 * If PersistentMode is off, this function will be called automatically in startRecording(), such that all
+	 * spikes from previous recording periods will be discarded. By default, PersistentMode is off.
+	 * If PersistentMode is on, the user can call this function after any number of recordings. However, isRecording()
+	 * must always be off.
 	 */
 	void clear();
 	
 	/*!
-	 * \brief return the average firing rate for a certain group averaged
-	 * over the simulation time duration. The time duration over
-	 * which the neurons are averaged is calculated automatically when
-	 * the user calls startRecording()/stopRecording().
-	 * \param void.
-	 * \returns float value for the average firing rate of the whole group. 
-	 */
-	float getGroupFiringRate();
-
-	/*!
-	 * \brief return the number of neurons that have exactly 0 Hz firing
-	 * rate.
-	 * \param void
-	 * \returns float value of the number of silent neurons.
-	 */
-	float getNeuronMaxFiringRate();
-	
-	/*!
-	 * \brief return the number of neurons that have exactly 0 Hz firing
-	 * rate.
-	 * \param void
-	 * \returns int value of the number of silent neurons.
-	 */
-	float getNeuronMinFiringRate();
-	
-	/*!
-	 * \brief return the average firing rate for each neuron in a group of
-	 * neurons over the simulation time duration. The time duration over
-	 * which the neurons are averaged is calculated automatically when
-	 * the user calls startRecording()/stopRecording().
-	 * \param void
+	 * \brief Returns the average firing rate of all the neurons in the group as a vector of floats
+	 *
+	 * This function returns the average firing rate for each neuron in the group.
+	 * If PersistentMode is off, only the last recording period will be considered. If PersistentMode is on, all the
+	 * recording periods will be considered. By default, PersistentMode is off, and can be switched on by calling
+	 * setPersistentMode(bool). The total time over which the metric is calculated can be retrieved by calling
+	 * getRecordingTotalTime().
+	 * Use getGroupFiringRate() to get the mean firing rate of the entire group.
 	 * \returns float vector for the average firing rate of each neuron.
 	 */
-	std::vector<float> getNeuronFiringRate();
+	std::vector<float> getAllFiringRates();
 
 	/*!
-	 * \brief return the number of neurons that fall within this particular
-	 * min/max range (inclusive). The time duration over which the neurons 
-	 * are averaged is calculated automatically when the user calls 
-	 * startRecording()/stopRecording().
-	 * \param void
-	 * \returns int value of the number of neurons that have a firing rate
-	 * within the min/max range.
+	 * \brief Returns all the neuronal mean firing rates in ascending order
+	 *
+	 * This function returns a vector of neuronal mean firing rates, sorted in ascending order. The size of the vector
+	 * is the same as the number of neurons in the group. Firing rates are converted to spikes/sec (Hz).
+	 * If PersistentMode is off, only the last recording period will be considered. If PersistentMode is on, all the
+	 * recording periods will be considered. By default, PersistentMode is off, and can be switched on by calling
+	 * setPersistentMode(bool). The total time over which the metric is calculated can be retrieved by calling
+	 * getRecordingTotalTime().
+	 * \returns a vector of neuronal mean firing rates in ascending order
+	 */
+	std::vector<float> getAllFiringRatesSorted();
+
+	/*!
+	 * \brief returns the largest neuronal mean firing rate in the group
+	 *
+	 * If PersistentMode is off, only the last recording period will be considered. If PersistentMode is on, all the
+	 * recording periods will be considered. By default, PersistentMode is off, and can be switched on by calling
+	 * setPersistentMode(bool). The total time over which the metric is calculated can be retrieved by calling
+	 * getRecordingTotalTime().
+	 * \returns float value of the number of silent neurons.
+	 */
+	float getMaxFiringRate();
+	
+	/*!
+	 * \brief returns the smallest neuronal mean firing rate in the group
+	 *
+	 * If PersistentMode is off, only the last recording period will be considered. If PersistentMode is on, all the
+	 * recording periods will be considered. By default, PersistentMode is off, and can be switched on by calling
+	 * setPersistentMode(bool). The total time over which the metric is calculated can be retrieved by calling
+	 * getRecordingTotalTime().
+	 * \returns int value of the number of silent neurons.
+	 */
+	float getMinFiringRate();
+
+	/*!
+	 * \brief returns the total number of spikes of a neuron
+	 *
+	 * This function returns the total number of spikes emitted by a specific neuron in the recording period, which is
+	 * equal to the number of elements in the 2D spike vector.
+	 * If PersistentMode is off, only the last recording period will be considered. If PersistentMode is on, all the
+	 * recording periods will be considered. By default, PersistentMode is off, and can be switched on by calling
+	 * setPersistentMode(bool). The total time over which the metric is calculated can be retrieved by calling
+	 * getRecordingTotalTime().
+	 * Use getGroupNumSpikes to find the number of spikes of all the neurons in the group.
+	 * \param[in] neurId the neuron ID (0-indexed, must be smaller than getNumNeurons)
+	 */
+	int getNeuronNumSpikes(int neurId);
+
+	/*!
+	 * \brief Returns the number of neurons that fall within this particular min/max range (inclusive).
+	 *
+	 * If PersistentMode is off, only the last recording period will be considered. If PersistentMode is on, all the
+	 * recording periods will be considered. By default, PersistentMode is off, and can be switched on by calling
+	 * setPersistentMode(bool). The total time over which the metric is calculated can be retrieved by calling
+	 * getRecordingTotalTime().
+	 * \returns int value of the number of neurons that have a firing rate within the min/max range.
 	 */
 	int getNumNeuronsWithFiringRate(float min, float max);
 	
 	/*!
 	 * \brief returns the number of neurons that are silent.
-	 * \param min minimum value of range (inclusive) to be searched.
-	 * \param max maximum value of range (inclusive) to be searched.
-	 * \returns int of the number of neurons that are silent.
+	 *
+	 * If PersistentMode is off, only the last recording period will be considered. If PersistentMode is on, all the
+	 * recording periods will be considered. By default, PersistentMode is off, and can be switched on by calling
+	 * setPersistentMode(bool). The total time over which the metric is calculated can be retrieved by calling
+	 * getRecordingTotalTime().
+	 * \returns int of the number of neurons that are silent
 	 */
 	int getNumSilentNeurons();
 
 	/*!
-	 * \brief returns the percentage of total neurons in that are in the range
-	 * specified by the user, min/max (inclusive). 
+	 * \brief returns the percentage of total neurons in that are in the range specified by the user,
+	 * min/max (inclusive). 
+	 *
+	 * If PersistentMode is off, only the last recording period will be considered. If PersistentMode is on, all the
+	 * recording periods will be considered. By default, PersistentMode is off, and can be switched on by calling
+	 * setPersistentMode(bool). The total time over which the metric is calculated can be retrieved by calling
+	 * getRecordingTotalTime().
 	 * \param min minimum value of range (inclusive) to be searched.
 	 * \param max maximum value of range (inclusive) to be searched.
 	 * \returns float of the percentage of total neurons that are in this range.
@@ -152,79 +188,161 @@ class SpikeMonitor {
 
 	/*!
 	 * \brief returns the percentage of total neurons in group that are silent.
-	 * \param void
+	 *
+	 * If PersistentMode is off, only the last recording period will be considered. If PersistentMode is on, all the
+	 * recording periods will be considered. By default, PersistentMode is off, and can be switched on by calling
+	 * setPersistentMode(bool). The total time over which the metric is calculated can be retrieved by calling
+	 * getRecordingTotalTime().
 	 * \returns float of the percentage of total neurons that are silent.
 	 */
 	float getPercentSilentNeurons();
 	
 	/*!
-	 * \brief Return the current size of the AER vector.
-	 * \param void
-	 * \returns the current size of the AER vector.
+	 * \brief Returns the mean firing rate of the entire neuronal population
+	 *
+	 * This function returns the average firing rate of all the neurons in the group averaged over the recording time
+	 * window.
+	 * If PersistentMode is off, only the last recording period will be considered. If PersistentMode is on, all the
+	 * recording periods will be considered. By default, PersistentMode is off, and can be switched on by calling
+	 * setPersistentMode(bool). The total time over which the metric is calculated can be retrieved by calling
+	 * getRecordingTotalTime().
+	 * \returns the average firing rate of all the neurons in the group
 	 */
-	long int getSize();
+	float getPopMeanFiringRate();
 
 	/*!
-	 *\brief returns the AER vector.
-	 *\param void.
-	 *\returns AER vector is returned.
+	 * \brief Returns the total number of spikes in the group
+	 *
+	 * This function returns the total number of spikes in the group, which is equal to the number of elements
+	 * in the 2D spike vector.
+	 * If PersistentMode is off, only the last recording period will be considered. If PersistentMode is on, all the
+	 * recording periods will be considered. By default, PersistentMode is off, and can be switched on by calling
+	 * setPersistentMode(bool). The total time over which the metric is calculated can be retrieved by calling
+	 * getRecordingTotalTime().
+	 * Use getNeuronNumSpikes to find the number of spikes of a specific neuron in the group.
 	 */
-	std::vector<AER> getVector();
+	int getPopNumSpikes();
 
 	/*!
-	 * \brief return the ascending sorted firing rate for a particular 
-	 * group of  neurons over the simulation time duration. The time 
-	 * duration over which the neurons are averaged is calculated 
-	 * automatically when the user calls startRecording()/stopRecording().
-	 * \param void
-	 * \returns float value for the max firing rate of each neuron. The
-	 * firing rate is taken every second and the max firing rate is taken
-	 * from those values.
+	 *\brief returns the 2D spike vector
+	 *
+	 * This function returns a 2D spike vector containing all the spikes of all the neurons in the group.
+	 * The first dimension of the vector is neurons, the second dimension is spike times. Each element spkVector[i]
+	 * is thus a vector of all spike times for the i-th neuron in the group.
+	 * If PersistentMode is off, only the last recording period will be considered. If PersistentMode is on, all the
+	 * recording periods will be considered. By default, PersistentMode is off, and can be switched on by calling
+	 * setPersistentMode(bool). The total time over which the metric is calculated can be retrieved by calling
+	 * getRecordingTotalTime().
+	 *\returns 2D vector where first dimension is neurons, second dimension is spike times
 	 */
-	std::vector<float> getNeuronSortedFiringRate();
+	std::vector<std::vector<int> > getSpikeVector2D();
 
 	/*!
-	 * \brief Gets record status as a bool. True means it is recording, false
-	 * means it is not recording.
-	 * \param void
+	 * \brief Recording status (true=recording, false=not recording)
+	 *
+	 * Gets record status as a bool. True means it is recording, false means it is not recording.
 	 * \returns bool that is true if object is recording, false otherwise.
 	 */
 	bool isRecording();
 
 	/*!
-	 *\brief prints the AER vector.
-	 *\param void.
-	 *\returns AER vector is printed.
+	 *\brief prints the 2D spike vector.
+	 *
+	 * This function prints all the spike times of all the neurons in the group in legible format.
 	 */
 	void print();
 
 	/*!
-	 * \brief starts copying AER data to AER data structure every second.
-	 * \param void
-	 * \returns void
+	 * \brief Starts a new recording period
+	 *
+	 * This function starts a new recording period. From that moment onward, the 2D spike vector will be populated
+	 * with all the spikes of all the neurons in the group. Before any metrics can be computed, the user must call
+	 * stopRecording().
+	 * Recording periods must be ended with stopRecording(). In general, a new recording period can be started at any
+	 * point in time, and can last any number of milliseconds.
+	 * If PersistentMode is off, only the last recording period will be considered. If PersistentMode is on, all the
+	 * recording periods will be considered. By default, PersistentMode is off, and can be switched on by calling
+	 * setPersistentMode(bool). The total time over which the metric is calculated can be retrieved by calling
+	 * getRecordingTotalTime().
 	 */	
 	void startRecording();
 	
 	/*!
-	 * \brief stops copying AER data to AER data structure every second.
-	 * \TODO extend... it's not every second anymore. What happens exactly? You should mention that time
-	 * gets accumulated, so you need to call clear() if you want everything gone.
+	 * \brief Ends a recording period
+	 *
+	 * This function ends a recording period, at which point the 2D spike vector will no longer be populated
+	 * with spikes. In general, a recording period can be ended at any point in time, and last any number of
+	 * milliseconds.
+	 * From this moment onward, a variety of metrics can be computed, which are based on the spikes found in the 2D
+	 * spike vector. It is also possible to retrieve the raw spike vector itself by calling getSpikeVector2D().
+	 * If PersistentMode is off, only the last recording period will be considered. If PersistentMode is on, all the
+	 * recording periods will be considered. By default, PersistentMode is off, and can be switched on by calling
+	 * setPersistentMode(bool). The total time over which the metric is calculated can be retrieved by calling
+	 * getRecordingTotalTime().
 	 */
 	void stopRecording();
 
+	/*!
+	 * \brief Returns the total recording time (ms)
+	 *
+	 * This function returns the total amount of recording time upon which the calculated metrics are based.
+	 * If PersistentMode is off, this number is equivalent to getRecordingStopTime()-getRecordingStartTime().
+	 * If PersistentMode is on, this number is equivalent to the total time accumulated over all past recording
+	 * periods. Note that this is not necessarily equivalent to getRecordingStopTime()-getRecordingStartTime(), as
+	 * there might have been periods in between where recording was off.
+	 * \returns the total recording time (ms)
+	 */
 	long int getRecordingTotalTime();
+
+	/*!
+	 * \brief Returns the simulation time (ms) of the last call to startRecording()
+	 *
+	 * This function returns the simulation time (timestamp) of the last call to startRecording().
+	 * If PersistentMode is off, this number is equivalent to getRecordingStartTime().
+	 * \returns the simulation time (ms) of the last call to startRecording()
+	 */
 	long int getRecordingLastStartTime();
+
+	/*!
+	 * \brief Returns the simulation time (ms) of the first call to startRecording()
+	 *
+	 * This function returns the simulation time (timestamp) of the first call to startRecording().
+	 * If PersistentMode is off, this number is equivalent to getRecordingLastStartTime().
+	 * \returns the simulation time (ms) of the first call to startRecording()
+	 */
 	long int getRecordingStartTime();
+
+	/*!
+	 * \brief Returns the simulation time (ms) of the last call to stopRecording()
+	 *
+	 * This function returns the simulation time (timestamp) of the last call to stopRecording().
+	 * \returns the simulation time (ms) of the last call to stopRecording()
+	 */
 	long int getRecordingStopTime();
 
+	/*!
+	 * \brief Returns a flag that indicates whether PersistentMode is on (true) or off (false)
+	 *
+	 * This function returns a flag that indicates whether PersistentMode is currently on (true) or off (false).
+	 * If PersistentMode is off, only the last recording period will be considered for calculating metrics.
+	 * If PersistentMode is on, all the recording periods will be considered. By default, PersistentMode is off, but
+	 * can be switched on at any point in time by calling setPersistentMode(bool).
+	 */
 	bool getPersistentMode();
-	void setPersistentMode(bool persistentData_);
+
+	/*!
+	 * \brief Sets PersistentMode either on (true) or off (false)
+	 *
+	 * This function sets PersistentMode either on (true) or off (false).
+	 * If PersistentMode is off, only the last recording period will be considered for calculating metrics.
+	 * If PersistentMode is on, all the recording periods will be considered. By default, PersistentMode is off, but
+	 * can be switched on at any point in time.
+	 * The current state of PersistentMode can be retrieved by calling getPersistentMode().
+	 */
+	void setPersistentMode(bool persistentData);
 	
  private:
-  /*!
-   * This is a pointer to the actual implementation of the class.
-   * The user only has access to the SpikeMonitorCore class.
-   */
+  //! This is a pointer to the actual implementation of the class. The user should never directly instantiate it.
   SpikeMonitorCore* spikeMonitorCorePtr_;
 
 };

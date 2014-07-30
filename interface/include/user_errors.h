@@ -41,7 +41,7 @@ public:
 		MUST_BE_OFF,			//!< parameter must be off
 		MUST_BE_ON,				//!< parameter must be on
 		MUST_BE_ZERO,           //!< parameter must be 0
-		MUST_BE_WITHIN_RANGE,	//!< parameter must be within some range
+		MUST_BE_IN_RANGE,		//!< parameter must be in some range
 		MUST_HAVE_SAME_SIGN,	//!< some parameters must have the same sign
 		NETWORK_ALREADY_RUN,	//!< function cannot be called because network has already bun run
 		UNKNOWN_GROUP_ID,		//!< the specified group id is unknown

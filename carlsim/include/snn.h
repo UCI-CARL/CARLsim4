@@ -942,10 +942,6 @@ private:
 	SpikeMonitorCore* spikeMonCoreList[MAX_GRP_PER_SNN];
 	SpikeMonitor*     spikeMonList[MAX_GRP_PER_SNN];
 
-	//! for each group, track the simTime at which updateSpikeMonitor(grpId) was last called
-	long int 		  spikeMonLastUpdate[MAX_GRP_PER_SNN];
-
-
 	// \FIXME \DEPRECATED this one moved to group-based
 	long int    simTimeLastUpdSpkMon_; //!< last time we ran updateSpikeMonitor
 

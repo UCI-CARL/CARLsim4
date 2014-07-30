@@ -36,57 +36,67 @@
  *					(TSC) Ting-Shuo Chou <tingshuc@uci.edu>
  *
  * CARLsim available from http://socsci.uci.edu/~jkrichma/CARLsim/
- * Ver 2/21/2014
+ * Ver 7/29/2014
  */
 
 #ifndef _SPIKE_MON_CORE_H_
 #define _SPIKE_MON_CORE_H_
 
-// we need the AER data structure
-#include <carlsim_datastructures.h>
-#include <algorithm>
+#include <stdio.h>	// FILE
 #include <vector>
 
 class CpuSNN; // forward declaration of CpuSNN class
 
+
+/*
+ * \brief SpikeMonitor private core implementation
+ *
+ * Naming convention for methods:
+ * - getPop*: 		a population metric (single value) that applies to the entire group; e.g., getPopMeanFiringRate.
+ * - getNeuron*: 	a neuron metric (single value), about a specific neuron (requires neurId); e.g., getNeuronNumSpikes. 
+ * - getAll*: 		a metric (vector) that is based on all neurons in the group; e.g. getAllFiringRates.
+ * - getNum*:		a number metric, returns an int
+ * - getPercent*:	a percentage metric, returns a float
+ * - get*:			all the others
+ */
 class SpikeMonitorCore {
 public: 
 	/*! 
-	 * \brief analysis constructor.
+	 * \brief constructor
 	 *
 	 * Creates a new instance of the analysis class. 
 	 * Takes a CpuSNN pointer to an object as an input and assigns it to a CpuSNN* member variable for easy reference.
 	 * \param[in] snn pointer to current CpuSNN object
 	 * \param[in] grpId the ID of the group we're monitoring
-	 *	 
 	 */
 	SpikeMonitorCore(CpuSNN* snn, int monitorId, int grpId); 
-	/*! 
-	 * \brief SpikeMonitorCore destructor.
-	 *
-	 * Cleans up all the memory upon object deletion.
-	 *
-	 */
+
+	//! destructor, cleans up all the memory upon object deletion
 	~SpikeMonitorCore();
 	
 	// +++++ PUBLIC METHODS: +++++++++++++++++++++++++++++++++++++++++++++++//
 
-	/*!
-	 *\brief deletes data from the AER vector.
-	 *\param void.
-	 *\return void.
-	 */
+	//! deletes data from the 2D spike vector
 	void clear();
 	
 	/*!
-	 * \brief return the average firing rate for a certain group averaged
+	 * \brief returns the average firing rate for a certain group averaged
 	 * over the simulation time duration. The time duration over
 	 * which the neurons are averaged is calculated automatically when
 	 * the user calls startRecording()/stopRecording().
 	 * \param void.
 	 * \return float value for the average firing rate of the whole group. 
 	 */
-	float getGroupFiringRate();
+	float getPopMeanFiringRate();
+
+	/*!
+	 * \brief returns the total number of spikes in the group
+	 *
+	 * This function returns the total number of spikes in the group, which is equal to the number of elements
+	 * in the 2D spike vector.
+	 * Use getNeuronNumSpikes to find the number of spikes of a specific neuron in the group
+	 */
+	int getPopNumSpikes();
 
 	/*!
 	 * \brief return the average firing rate for each neuron in a group of
@@ -96,7 +106,7 @@ public:
 	 * \param void
 	 * \return float vector for the average firing rate of each neuron.
 	 */
-	std::vector<float> getNeuronFiringRate();
+	std::vector<float> getAllFiringRates();
 
 	/*!
 	 * \brief return the number of neurons that have exactly 0 Hz firing
@@ -104,7 +114,7 @@ public:
 	 * \param void
 	 * \return int value of the number of silent neurons.
 	 */
-	float getNeuronMaxFiringRate();
+	float getMaxFiringRate();
 	
 	/*!
 	 * \brief return the number of neurons that have exactly 0 Hz firing
@@ -112,7 +122,17 @@ public:
 	 * \param void
 	 * \return int value of the number of silent neurons.
 	 */
-	float getNeuronMinFiringRate();
+	float getMinFiringRate();
+
+	/*!
+	 * \brief returns the total number of spikes in the group
+	 *
+	 * This function returns the total number of spikes in the group, which is equal to the number of elements
+	 * in the 2D spike vector.
+	 * Use getNeuronNumSpikes to find the number of spikes of a specific neuron in the group
+	 */
+	int getNeuronNumSpikes(int neurId);
+
 
 	/*!
 	 * \brief return the ascending sorted firing rate for a particular 
@@ -124,7 +144,7 @@ public:
 	 * firing rate is taken every second and the max firing rate is taken
 	 * from those values.
 	 */
-	std::vector<float> getNeuronSortedFiringRate();
+	std::vector<float> getAllFiringRatesSorted();
 	
 	/*!
 	 * \brief return the number of neurons that fall within this particular
@@ -139,6 +159,7 @@ public:
 	
 	/*!
 	 * \brief returns the number of neurons that are silent.
+	 *
 	 * \param min minimum value of range (inclusive) to be searched.
 	 * \param max maximum value of range (inclusive) to be searched.
 	 * \return int of the number of neurons that are silent.
@@ -162,18 +183,11 @@ public:
 	float getPercentSilentNeurons();
 	
 	/*!
-	 * \brief Return the current size of the AER vector.
-	 * \param void
-	 * \return the current size of the AER vector.
-	 */
-	long int getSize();
-
-	/*!
 	 *\brief returns the AER vector.
 	 *\param void.
 	 *\return AER vector is returned.
 	 */
-	std::vector<AER> getVector();
+	std::vector<std::vector<int> > getSpikeVector2D();
 
 	/*!
 	 *\brief prints the AER vector.
@@ -182,19 +196,8 @@ public:
 	 */
 	void print();
 
-	/*!
-	 * \brief put the nid and time values in an AER vector structure
-	 * \param CARLsim* s pointer to CARLsim object so we can access simTime.
-	 * \param grpId of group being counted.
-	 * \param neurIds unsigned int* array of neuron ids that have fired.
-	 * \param timeCnts unsigned int* array of times neurons have fired.
-	 * \param timeInterval is the time interval over which these neurons
-	 * were recorded.
-	 * \return void
-	 */	
-	void pushAER(int grpId, unsigned int* neurIds, unsigned int* timeCnts, int numMsMin, int numMsMax);
-
-	void pushAER(AER aer);
+	//! inserts a (time,neurId) tupel into the 2D spike vector
+	void pushAER(int time, int neurId);
 
 	/*!
 	 * \brief starts copying AER data to AER data structure every second.
@@ -214,7 +217,7 @@ public:
 	// +++++ PUBLIC SETTERS/GETTERS: +++++++++++++++++++++++++++++++++++++++//
 
 	int getGrpId() { return grpId_; }
-	int getGrpNumNeurons() { return numN_; }
+	int getGrpNumNeurons() { return nNeurons_; }
 	int getMonitorId() { return monitorId_; }
 	FILE* getSpikeFileId() { return spikeFileId_; }
 
@@ -226,7 +229,10 @@ public:
 	bool isRecording() { return recordSet_; }
 
 	bool getPersistentMode() { return persistentData_; }
-	void setPersistentMode(bool persistentData_);
+	void setPersistentMode(bool persistentData) { persistentData_ = persistentData; }
+
+	long int getLastUpdated() { return spkMonLastUpdated_; }
+	void setLastUpdated(long int lastUpdate) { spkMonLastUpdated_ = lastUpdate; }
 
 	/*!
 	 * \brief returns the monBufferFid
@@ -251,30 +257,27 @@ private:
 	//! whether we have to perform sortFiringRates()
 	bool needToSortFiringRates_;
 
-	CpuSNN* snn_;
-	int monitorId_;
-	int grpId_;
-	int numN_;
+	CpuSNN* snn_;	//!< private CARLsim implementation
+	int monitorId_;	//!< current SpikeMonitor ID
+	int grpId_;		//!< current group ID
+	int nNeurons_;	//!< number of neurons in the group
 
 	FILE* spikeFileId_;	//!< file pointer to the spike file or NULL
 
-	// Used to analyzed the spike information
-//	std::vector<AER>::const_iterator it_begin_;
-//	std::vector<AER>::const_iterator it_end_;
-	std::vector<AER> spkVector_;
+	//! Used to analyzed the spike information
+	std::vector<std::vector<int> > spkVector_;
 
-	//! this flag will be true whenever the firing rate needs updating (e.g., new data is coming in)
-	bool needToUpdateFiringRate_;
-	std::vector<float> firingRate_;
-	std::vector<float> firingRateSorted_;
-	std::vector<int> tmpSpikeCount_;
+	std::vector<float> firingRates_;
+	std::vector<float> firingRatesSorted_;
 
-	bool recordSet_;
-	long int startTime_;	 //!< time (ms) of first call to startRecording
-	long int startTimeLast_; //!< time (ms) of last call to startRecording
-	long int stopTime_;		 //!< time (ms) of stopRecording
-	long int totalTime_;
+	bool recordSet_;			//!< flag that indicates whether we're currently recording
+	long int startTime_;	 	//!< time (ms) of first call to startRecording
+	long int startTimeLast_; 	//!< time (ms) of last call to startRecording
+	long int stopTime_;		 	//!< time (ms) of stopRecording
+	long int totalTime_;		//!< the total amount of recording time (over all recording periods)
 	long int accumTime_;
+
+	long int spkMonLastUpdated_;//!< time (ms) when group was last run through updateSpikeMonitor
 
 	//! whether data should be persistent (true) or clear() should be automatically called by startRecording (false)
 	bool persistentData_;

@@ -1030,9 +1030,6 @@ SpikeMonitor* CpuSNN::setSpikeMonitor(int grpId, FILE* fid, int configId) {
 		SpikeMonitor* spkMonObj = new SpikeMonitor(spkMonCoreObj);
 		spikeMonList[numSpikeMonitor] = spkMonObj;
 
-		// intialize the time when updateSpikeMonitor was last called
-		spikeMonLastUpdate[numSpikeMonitor] = 0;
-
 		// also inform the grp that it is being monitored...
 		grp_Info[cGrpId].SpikeMonitorId	= numSpikeMonitor;
 
@@ -4157,7 +4154,8 @@ void CpuSNN::updateSpikeMonitor(int grpId) {
 			return;
 
 		// find last update time for this group
-		long int lastUpdate = spikeMonLastUpdate[monitorId];
+		SpikeMonitorCore* spkMonObj = spikeMonCoreList[monitorId];
+		long int lastUpdate = spkMonObj->getLastUpdated();
 
 		// don't continue if time interval is zero (nothing to update)
 		if ( ((long int)getSimTime()) - lastUpdate <=0)
@@ -4188,11 +4186,10 @@ void CpuSNN::updateSpikeMonitor(int grpId) {
 			currentTimeSec--;
 
 		// save current time as last update time
-		spikeMonLastUpdate[monitorId] = (long int) getSimTime();
+		spkMonObj->setLastUpdated( (long int)getSimTime() );
 
 		// prepare fast access
 		FILE* spkFileId = spikeMonCoreList[monitorId]->getSpikeFileId();
-		SpikeMonitorCore* spkMonObj = spikeMonCoreList[monitorId];
 		bool writeSpikesToFile = spkFileId!=NULL;
 		bool writeSpikesToArray = spkMonObj->isRecording();
 
@@ -4230,7 +4227,7 @@ void CpuSNN::updateSpikeMonitor(int grpId) {
 					}
 
 					if (writeSpikesToArray) {
-						spkMonObj->pushAER(AER(time,nid));
+						spkMonObj->pushAER(time,nid);
 					}
 				}
 			}
