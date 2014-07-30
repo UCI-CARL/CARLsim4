@@ -35,6 +35,10 @@ int SpikeMonitor::getPopNumSpikes() {
 	std::string funcName = "getPopNumSpikes()";
 	UserErrors::assertTrue(!isRecording(), UserErrors::CANNOT_BE_ON, funcName, "Recording");
 
+	// \TODO
+	UserErrors::assertTrue(getMode()==AER, UserErrors::UNKNOWN, funcName, "",
+		"This function is not yet supported in this mode.");
+
 	return spikeMonitorCorePtr_->getPopNumSpikes();	
 }
 
@@ -70,6 +74,10 @@ float SpikeMonitor::getNeuronMeanFiringRate(int neurId) {
 int SpikeMonitor::getNeuronNumSpikes(int neurId) {
 	std::string funcName = "getNeuronNumSpikes()";
 	UserErrors::assertTrue(!isRecording(), UserErrors::CANNOT_BE_ON, funcName, "Recording");
+
+	// \TODO
+	UserErrors::assertTrue(getMode()==AER, UserErrors::UNKNOWN, funcName, "",
+		"This function is not yet supported in this mode.");
 
 	return spikeMonitorCorePtr_->getNeuronNumSpikes(neurId);
 }
@@ -110,6 +118,7 @@ float SpikeMonitor::getPercentSilentNeurons(){
 std::vector<std::vector<int> > SpikeMonitor::getSpikeVector2D() {
 	std::string funcName = "getSpikeVector2D()";
 	UserErrors::assertTrue(!isRecording(), UserErrors::CANNOT_BE_ON, funcName, "Recording");
+	UserErrors::assertTrue(getMode()==AER, UserErrors::CAN_ONLY_BE_CALLED_IN_MODE, funcName, funcName, "AER");
 
 	return spikeMonitorCorePtr_->getSpikeVector2D();
 }
@@ -174,10 +183,22 @@ long int SpikeMonitor::getRecordingStopTime() {
 	return spikeMonitorCorePtr_->getRecordingStopTime();
 }
 
-bool SpikeMonitor::getPersistentMode() {
-	return spikeMonitorCorePtr_->getPersistentMode();
+bool SpikeMonitor::getPersistentData() {
+	return spikeMonitorCorePtr_->getPersistentData();
 }
 
-void SpikeMonitor::setPersistentMode(bool persistentData) {
-	spikeMonitorCorePtr_->setPersistentMode(persistentData);
+void SpikeMonitor::setPersistentData(bool persistentData) {
+	spikeMonitorCorePtr_->setPersistentData(persistentData);
+}
+
+spikeMonMode_t SpikeMonitor::getMode() {
+	return spikeMonitorCorePtr_->getMode();
+}
+
+void SpikeMonitor::setMode(spikeMonMode_t mode) {
+	// \TODO
+	UserErrors::assertTrue(false, UserErrors::UNKNOWN, "setMode()", "",
+		"This function call is not yet supported.");
+
+	spikeMonitorCorePtr_->setMode(mode);
 }

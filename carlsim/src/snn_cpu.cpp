@@ -656,13 +656,13 @@ int CpuSNN::runNetwork(int _nsec, int _nmsec, bool copyState) {
 	// the data, because the data structures have already been cleared.
 	// So a better idea is to do these things right BEFORE we continue the simulation after showLog.
 	if (isRightAfterUpdateTime_) {
-		// reset spikeCnt
-		if (simMode_==GPU_MODE)
-			resetSpikeCnt_GPU(0,numGrp);
-		else
-			resetSpikeCnt(ALL);
-
 		if (isRightAfterShowLog_) {
+			// reset spikeCnt
+			if (simMode_==GPU_MODE)
+				resetSpikeCnt_GPU(0,numGrp);
+			else
+				resetSpikeCnt(ALL);
+
 			CARLSIM_INFO("\n^ (time=%1.3fs) =================\n", (float) (simTimeSec+simTimeMs/1000.0));
 			isRightAfterShowLog_ = false;
 		}
@@ -4254,7 +4254,7 @@ void CpuSNN::updateSpikeMonitor(int grpId) {
 		// prepare fast access
 		FILE* spkFileId = spikeMonCoreList[monitorId]->getSpikeFileId();
 		bool writeSpikesToFile = spkFileId!=NULL;
-		bool writeSpikesToArray = spkMonObj->isRecording();
+		bool writeSpikesToArray = spkMonObj->getMode()==AER && spkMonObj->isRecording();
 
 		// Read one spike at a time from the buffer and put the spikes to an appopriate monitor buffer. Later the user
 		// may need need to dump these spikes to an output file

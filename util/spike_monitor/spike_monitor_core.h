@@ -42,8 +42,9 @@
 #ifndef _SPIKE_MON_CORE_H_
 #define _SPIKE_MON_CORE_H_
 
-#include <stdio.h>	// FILE
-#include <vector>	// std::vector
+#include <carlsim_datastructures.h>	// spikeMonMode_t
+#include <stdio.h>					// FILE
+#include <vector>					// std::vector
 
 class CpuSNN; // forward declaration of CpuSNN class
 
@@ -236,8 +237,11 @@ public:
 
 	bool isRecording() { return recordSet_; }
 
-	bool getPersistentMode() { return persistentData_; }
-	void setPersistentMode(bool persistentData) { persistentData_ = persistentData; }
+	bool getPersistentData() { return persistentData_; }
+	void setPersistentData(bool persistentData) { persistentData_ = persistentData; }
+
+	spikeMonMode_t getMode() { return mode_; }
+	void setMode(spikeMonMode_t mode) { mode_ = mode; }
 
 	long int getLastUpdated() { return spkMonLastUpdated_; }
 	void setLastUpdated(long int lastUpdate) { spkMonLastUpdated_ = lastUpdate; }
@@ -289,6 +293,8 @@ private:
 
 	//! whether data should be persistent (true) or clear() should be automatically called by startRecording (false)
 	bool persistentData_;
+
+	spikeMonMode_t mode_;
 
 	// file pointers for error logging
 	const FILE* fpInf_;

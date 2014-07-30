@@ -86,7 +86,7 @@ int main()
 	int excGroup;
 	int inhGroup;
 	// input firing rate
-	float inputTargetFR=5;
+	float inputTargetFR=50;
 	float excTargetFR=10;
 	float inhTargetFR=20;
 	
@@ -133,7 +133,7 @@ int main()
 	snn->setSpikeRate(inputGroup,input);
 	
 	// set log stats 
-	snn->setLogCycle(1);
+	snn->setLogCycle(2);
 	// -----------------------------------------------------------------------------
 	// END CARLsim initialization
 	// -----------------------------------------------------------------------------
@@ -173,7 +173,6 @@ int main()
 		cout << inputNFR.at(i) << " Hz" << endl;
 	}
 	cout << endl;
-
 
 	cout << "Input: Printing sorted individual neuron firing rates:\n";
 	vector<float> inputSNFR = spikeMonInput->getAllFiringRatesSorted();
@@ -265,6 +264,6 @@ int main()
 	// 	delete spikeMonInh;
 	// spikeMonInh=NULL;
 	*/
-	
+
 	return 0;
 }

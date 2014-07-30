@@ -44,7 +44,8 @@
 #ifndef _SPIKE_MON_H_
 #define _SPIKE_MON_H_
 
-#include <vector>		// std::vector
+#include <carlsim_datastructures.h> // spikeMonMode_t
+#include <vector>					// std::vector
 
 class CpuSNN; 			// forward declaration of CpuSNN class
 class SpikeMonitorCore; // forward declaration of implementation
@@ -56,23 +57,39 @@ class SpikeMonitorCore; // forward declaration of implementation
  * the carlsim function member setSpikeMonitor must be called with the group ID of the desired group as an
  * argument. The setSpikeMonitor call returns a pointer to a SpikeMonitor object which can be queried for spike data.
  *
- * Spike data will not be recorded until the SpikeMonitor member function startRecording is called.
- * From that moment onward, a 2D spike vector will be populated with all the spikes of all the neurons in the group.
- * The first dimension of the vector is neuron id, the second dimension is spike times. Each element spkVector[i]
- * is thus a vector of all spike times for the i-th neuron in the group.
+ * There are two different modes that define what information is collected exactly.
+ * - AER:   AER mode will collect the exact spike times of all neurons in the group and store them in a 2D spike
+ *          spike vector. The first dimension of the vector is neuron id, the second dimension is spike times. Each
+ *          element spkVector[i] is thus a vector of all spike times for the i-th neuron in the group.
+ *          This mode is activated by default.
+ *          Because of the sheer amount of information, it is unwise to run this mode for extended periods of time.
+ *          Note that recording in this mode may significantly slow down your simulation.
+ * - COUNT:	SpikeCount mode will only collect spike count information, such as the number of spikes per neuron. This
+ *          mode cannot retrieve exact spike times. Thus it is not possible to calculate some of the more elaborate
+ *          metrics, such as spike-time correlations.
  *
+ * Spike data will not be recorded until the SpikeMonitor member function startRecording() is called. 
  * Before any metrics can be computed, the user must call stopRecording(). In general, a new recording period
  * (the time period between startRecording and stopRecording calls) can be started at any point in time, and can
  * last any number of milliseconds. The SpikeMonitor has a PersistentMode, which is off by default. When
  * PersistentMode is off, only the last recording period will be considered. When PersistentMode is on, all the
  * recording periods will be considered. By default, PersistentMode can be switched on/off by calling
- * setPersistentMode(bool). The total time over which the metric is calculated can be retrieved by calling
+ * setPersistentData(bool). The total time over which the metric is calculated can be retrieved by calling
  * getRecordingTotalTime().
  *
+ * The above configurations do not affect the generation of the .dat spike file. That file will always contain all the
+ * spikes of all the neurons in the group, for the entire simulation.
+ *
  * SpikeMonitor objects should only be used after setupNetwork has been called.
+ * SpikeMonitor objects will be deallocated automatically.
  *
  * Example usage:
- * //.create a SpikeMonitor pointer to grab the pointer from setSpikeMonitor.
+ * \code
+ * // configure a network etc. ...
+ *
+ * sim->setupNetwork();
+ *
+ * // create a SpikeMonitor pointer to grab the pointer from setSpikeMonitor.
  * SpikeMonitor* spikeMonExc;
  * // call setSpikeMonitor with carlsim object, sim, with the group ID, excGrpId, as an argument.
  * spikeMonExc=sim.setSpikeMonitor(excGrpId);
@@ -82,8 +99,11 @@ class SpikeMonitorCore; // forward declaration of implementation
  * sim->runNetwork(20);
  * // stop recording data for group excGrpId so we can get spike statistics.
  * spikeMonExc->stopRecording();
+ * // print a summary of the spike information
+ * spikeMonExc->print();
  * // get the average firing rate of each of the neurons in group excGrpId
  * vector<float> excFRs = spikeMonExc->getAllFiringRates();
+ * \endcode
  *
  * For additional information on how to use the SpikeMonitor object, please see Examples/spikeInfo.
  *
@@ -107,6 +127,7 @@ class SpikeMonitor {
 	 */
 	~SpikeMonitor();
 
+
 	// +++++ PUBLIC METHODS: +++++++++++++++++++++++++++++++++++++++++++++++//
 
 	/*!
@@ -126,7 +147,7 @@ class SpikeMonitor {
 	 * This function returns the average firing rate for each neuron in the group.
 	 * If PersistentMode is off, only the last recording period will be considered. If PersistentMode is on, all the
 	 * recording periods will be considered. By default, PersistentMode is off, and can be switched on by calling
-	 * setPersistentMode(bool). The total time over which the metric is calculated can be retrieved by calling
+	 * setPersistentData(bool). The total time over which the metric is calculated can be retrieved by calling
 	 * getRecordingTotalTime().
 	 * Use getGroupFiringRate() to get the mean firing rate of the entire group.
 	 * \returns float vector for the average firing rate of each neuron.
@@ -140,7 +161,7 @@ class SpikeMonitor {
 	 * is the same as the number of neurons in the group. Firing rates are converted to spikes/sec (Hz).
 	 * If PersistentMode is off, only the last recording period will be considered. If PersistentMode is on, all the
 	 * recording periods will be considered. By default, PersistentMode is off, and can be switched on by calling
-	 * setPersistentMode(bool). The total time over which the metric is calculated can be retrieved by calling
+	 * setPersistentData(bool). The total time over which the metric is calculated can be retrieved by calling
 	 * getRecordingTotalTime().
 	 * \returns a vector of neuronal mean firing rates in ascending order
 	 */
@@ -151,7 +172,7 @@ class SpikeMonitor {
 	 *
 	 * If PersistentMode is off, only the last recording period will be considered. If PersistentMode is on, all the
 	 * recording periods will be considered. By default, PersistentMode is off, and can be switched on by calling
-	 * setPersistentMode(bool). The total time over which the metric is calculated can be retrieved by calling
+	 * setPersistentData(bool). The total time over which the metric is calculated can be retrieved by calling
 	 * getRecordingTotalTime().
 	 * \returns float value of the number of silent neurons.
 	 */
@@ -162,7 +183,7 @@ class SpikeMonitor {
 	 *
 	 * If PersistentMode is off, only the last recording period will be considered. If PersistentMode is on, all the
 	 * recording periods will be considered. By default, PersistentMode is off, and can be switched on by calling
-	 * setPersistentMode(bool). The total time over which the metric is calculated can be retrieved by calling
+	 * setPersistentData(bool). The total time over which the metric is calculated can be retrieved by calling
 	 * getRecordingTotalTime().
 	 * \returns int value of the number of silent neurons.
 	 */
@@ -175,7 +196,7 @@ class SpikeMonitor {
 	 * the recording time window.
 	 * If PersistentMode is off, only the last recording period will be considered. If PersistentMode is on, all the
 	 * recording periods will be considered. By default, PersistentMode is off, and can be switched on by calling
-	 * setPersistentMode(bool). The total time over which the metric is calculated can be retrieved by calling
+	 * setPersistentData(bool). The total time over which the metric is calculated can be retrieved by calling
 	 * getRecordingTotalTime().
 	 * Use getPopMeanFiringRate to find the population mean firing rate.
 	 * \param[in] neurId the neuron ID (0-indexed, must be smaller than getNumNeurons)
@@ -189,7 +210,7 @@ class SpikeMonitor {
 	 * equal to the number of elements in the 2D spike vector.
 	 * If PersistentMode is off, only the last recording period will be considered. If PersistentMode is on, all the
 	 * recording periods will be considered. By default, PersistentMode is off, and can be switched on by calling
-	 * setPersistentMode(bool). The total time over which the metric is calculated can be retrieved by calling
+	 * setPersistentData(bool). The total time over which the metric is calculated can be retrieved by calling
 	 * getRecordingTotalTime().
 	 * Use getGroupNumSpikes to find the number of spikes of all the neurons in the group.
 	 * \param[in] neurId the neuron ID (0-indexed, must be smaller than getNumNeurons)
@@ -201,7 +222,7 @@ class SpikeMonitor {
 	 *
 	 * If PersistentMode is off, only the last recording period will be considered. If PersistentMode is on, all the
 	 * recording periods will be considered. By default, PersistentMode is off, and can be switched on by calling
-	 * setPersistentMode(bool). The total time over which the metric is calculated can be retrieved by calling
+	 * setPersistentData(bool). The total time over which the metric is calculated can be retrieved by calling
 	 * getRecordingTotalTime().
 	 * \returns int value of the number of neurons that have a firing rate within the min/max range.
 	 */
@@ -212,7 +233,7 @@ class SpikeMonitor {
 	 *
 	 * If PersistentMode is off, only the last recording period will be considered. If PersistentMode is on, all the
 	 * recording periods will be considered. By default, PersistentMode is off, and can be switched on by calling
-	 * setPersistentMode(bool). The total time over which the metric is calculated can be retrieved by calling
+	 * setPersistentData(bool). The total time over which the metric is calculated can be retrieved by calling
 	 * getRecordingTotalTime().
 	 * \returns int of the number of neurons that are silent
 	 */
@@ -224,7 +245,7 @@ class SpikeMonitor {
 	 *
 	 * If PersistentMode is off, only the last recording period will be considered. If PersistentMode is on, all the
 	 * recording periods will be considered. By default, PersistentMode is off, and can be switched on by calling
-	 * setPersistentMode(bool). The total time over which the metric is calculated can be retrieved by calling
+	 * setPersistentData(bool). The total time over which the metric is calculated can be retrieved by calling
 	 * getRecordingTotalTime().
 	 * \param min minimum value of range (inclusive) to be searched.
 	 * \param max maximum value of range (inclusive) to be searched.
@@ -237,7 +258,7 @@ class SpikeMonitor {
 	 *
 	 * If PersistentMode is off, only the last recording period will be considered. If PersistentMode is on, all the
 	 * recording periods will be considered. By default, PersistentMode is off, and can be switched on by calling
-	 * setPersistentMode(bool). The total time over which the metric is calculated can be retrieved by calling
+	 * setPersistentData(bool). The total time over which the metric is calculated can be retrieved by calling
 	 * getRecordingTotalTime().
 	 * \returns float of the percentage of total neurons that are silent.
 	 */
@@ -250,7 +271,7 @@ class SpikeMonitor {
 	 * the recording time window.
 	 * If PersistentMode is off, only the last recording period will be considered. If PersistentMode is on, all the
 	 * recording periods will be considered. By default, PersistentMode is off, and can be switched on by calling
-	 * setPersistentMode(bool). The total time over which the metric is calculated can be retrieved by calling
+	 * setPersistentData(bool). The total time over which the metric is calculated can be retrieved by calling
 	 * getRecordingTotalTime().
 	 * \returns the average firing rate of all the neurons in the group
 	 */
@@ -263,7 +284,7 @@ class SpikeMonitor {
 	 * in the 2D spike vector.
 	 * If PersistentMode is off, only the last recording period will be considered. If PersistentMode is on, all the
 	 * recording periods will be considered. By default, PersistentMode is off, and can be switched on by calling
-	 * setPersistentMode(bool). The total time over which the metric is calculated can be retrieved by calling
+	 * setPersistentData(bool). The total time over which the metric is calculated can be retrieved by calling
 	 * getRecordingTotalTime().
 	 * Use getNeuronNumSpikes to find the number of spikes of a specific neuron in the group.
 	 */
@@ -277,7 +298,7 @@ class SpikeMonitor {
 	 * is thus a vector of all spike times for the i-th neuron in the group.
 	 * If PersistentMode is off, only the last recording period will be considered. If PersistentMode is on, all the
 	 * recording periods will be considered. By default, PersistentMode is off, and can be switched on by calling
-	 * setPersistentMode(bool). The total time over which the metric is calculated can be retrieved by calling
+	 * setPersistentData(bool). The total time over which the metric is calculated can be retrieved by calling
 	 * getRecordingTotalTime().
 	 *\returns 2D vector where first dimension is neurons, second dimension is spike times
 	 */
@@ -308,7 +329,7 @@ class SpikeMonitor {
 	 * point in time, and can last any number of milliseconds.
 	 * If PersistentMode is off, only the last recording period will be considered. If PersistentMode is on, all the
 	 * recording periods will be considered. By default, PersistentMode is off, and can be switched on by calling
-	 * setPersistentMode(bool). The total time over which the metric is calculated can be retrieved by calling
+	 * setPersistentData(bool). The total time over which the metric is calculated can be retrieved by calling
 	 * getRecordingTotalTime().
 	 */
 	void startRecording();
@@ -323,7 +344,7 @@ class SpikeMonitor {
 	 * spike vector. It is also possible to retrieve the raw spike vector itself by calling getSpikeVector2D().
 	 * If PersistentMode is off, only the last recording period will be considered. If PersistentMode is on, all the
 	 * recording periods will be considered. By default, PersistentMode is off, and can be switched on by calling
-	 * setPersistentMode(bool). The total time over which the metric is calculated can be retrieved by calling
+	 * setPersistentData(bool). The total time over which the metric is calculated can be retrieved by calling
 	 * getRecordingTotalTime().
 	 */
 	void stopRecording();
@@ -372,9 +393,9 @@ class SpikeMonitor {
 	 * This function returns a flag that indicates whether PersistentMode is currently on (true) or off (false).
 	 * If PersistentMode is off, only the last recording period will be considered for calculating metrics.
 	 * If PersistentMode is on, all the recording periods will be considered. By default, PersistentMode is off, but
-	 * can be switched on at any point in time by calling setPersistentMode(bool).
+	 * can be switched on at any point in time by calling setPersistentData(bool).
 	 */
-	bool getPersistentMode();
+	bool getPersistentData();
 
 	/*!
 	 * \brief Sets PersistentMode either on (true) or off (false)
@@ -383,9 +404,33 @@ class SpikeMonitor {
 	 * If PersistentMode is off, only the last recording period will be considered for calculating metrics.
 	 * If PersistentMode is on, all the recording periods will be considered. By default, PersistentMode is off, but
 	 * can be switched on at any point in time.
-	 * The current state of PersistentMode can be retrieved by calling getPersistentMode().
+	 * The current state of PersistentMode can be retrieved by calling getPersistentData().
 	 */
-	void setPersistentMode(bool persistentData);
+	void setPersistentData(bool persistentData);
+
+	/*!
+	 * \brief Returns the current SpikeMonitor mode
+	 *
+	 * This function returns the current SpikeMonitor mode.
+	 * COUNT:	Will collect only spike count information (such as number of spikes per neuron),
+	 *          not the explicit spike times. COUNT mode cannot retrieve exact spike times per
+	 *          neuron, and is thus not capable of computing spike train correlation etc.
+	 * AER:     Will collect spike information in AER format (will collect both neuron IDs and
+	 *          spike times).
+	 */
+	spikeMonMode_t getMode();
+
+	/*!
+	 * \brief Sets the current SpikeMonitor mode
+	 *
+	 * This function returns the current SpikeMonitor mode.
+	 * COUNT:	Will collect only spike count information (such as number of spikes per neuron),
+	 *          not the explicit spike times. COUNT mode cannot retrieve exact spike times per
+	 *          neuron, and is thus not capable of computing spike train correlation etc.
+	 * AER:     Will collect spike information in AER format (will collect both neuron IDs and
+	 *          spike times).
+	 */
+	void setMode(spikeMonMode_t mode=AER);
 
  private:
   //! This is a pointer to the actual implementation of the class. The user should never directly instantiate it.
