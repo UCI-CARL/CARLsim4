@@ -90,6 +90,9 @@ public:
 	 */
 	float getPopMeanFiringRate();
 
+	//! computes the standard deviation of firing rates in the group
+	float getPopStdFiringRate();
+
 	/*!
 	 * \brief returns the total number of spikes in the group
 	 *
@@ -203,7 +206,7 @@ public:
 	 *\param void.
 	 *\return AER vector is printed.
 	 */
-	void print();
+	void print(bool printSpikeTimes);
 
 	//! inserts a (time,neurId) tupel into the 2D spike vector
 	void pushAER(int time, int neurId);

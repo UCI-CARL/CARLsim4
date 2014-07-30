@@ -31,6 +31,13 @@ float SpikeMonitor::getPopMeanFiringRate() {
 	return spikeMonitorCorePtr_->getPopMeanFiringRate();
 }
 
+float SpikeMonitor::getPopStdFiringRate() {
+	std::string funcName = "getPopStdFiringRate()";
+	UserErrors::assertTrue(!isRecording(), UserErrors::CANNOT_BE_ON, funcName, "Recording");
+
+	return spikeMonitorCorePtr_->getPopStdFiringRate();
+}
+
 int SpikeMonitor::getPopNumSpikes() {
 	std::string funcName = "getPopNumSpikes()";
 	UserErrors::assertTrue(!isRecording(), UserErrors::CANNOT_BE_ON, funcName, "Recording");
@@ -134,11 +141,11 @@ bool SpikeMonitor::isRecording(){
 	return spikeMonitorCorePtr_->isRecording();
 }
 
-void SpikeMonitor::print() {
+void SpikeMonitor::print(bool printSpikeTimes) {
 	std::string funcName = "print()";
 	UserErrors::assertTrue(!isRecording(), UserErrors::CANNOT_BE_ON, funcName, "Recording");
 
-	spikeMonitorCorePtr_->print();
+	spikeMonitorCorePtr_->print(printSpikeTimes);
 }
 
 void SpikeMonitor::startRecording() {

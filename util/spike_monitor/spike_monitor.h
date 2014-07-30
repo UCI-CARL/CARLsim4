@@ -278,6 +278,19 @@ class SpikeMonitor {
 	float getPopMeanFiringRate();
 
 	/*!
+	 * \brief Returns the standard deviation of firing rates in the entire neuronal population
+	 *
+	 * This function returns the standard deviation of firing rates of all the neurons in the group in spikes/sec (Hz),
+	 * averaged over the recording time window.
+	 * If PersistentMode is off, only the last recording period will be considered. If PersistentMode is on, all the
+	 * recording periods will be considered. By default, PersistentMode is off, and can be switched on by calling
+	 * setPersistentData(bool). The total time over which the metric is calculated can be retrieved by calling
+	 * getRecordingTotalTime().
+	 * \returns the standard deviation of firing rates of all the neurons in the group
+	 */
+	float getPopStdFiringRate();
+
+	/*!
 	 * \brief Returns the total number of spikes in the group
 	 *
 	 * This function returns the total number of spikes in the group, which is equal to the number of elements
@@ -315,9 +328,10 @@ class SpikeMonitor {
 	/*!
 	 *\brief prints the 2D spike vector.
 	 *
-	 * This function prints all the spike times of all the neurons in the group in legible format.
+	 * This function prints all the spiking information in the group in legible format.
+	 * \param[in] printSpikeTimes whether to print the list of spike times for each neuron
 	 */
-	void print();
+	void print(bool printSpikeTimes=true);
 
 	/*!
 	 * \brief Starts a new recording period

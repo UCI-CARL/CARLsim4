@@ -185,14 +185,21 @@ TEST(SPIKEMON, interfaceDeath) {
 
 	sim->setupNetwork();
 
+	// test all APIS that cannot be called in certain modes
+	// \TODO SpikeMonitor mode COUNT not yet implemented
+	EXPECT_DEATH(spkMon->setMode(COUNT),"");
+	// after mode is implemented, make sure you cannot call getSpikeVector2D in COUNT mode, etc.
+
 	// test all APIs that cannot be called when recording is on
 	spkMon->startRecording();
 	EXPECT_DEATH(spkMon->getPopMeanFiringRate(),"");
+	EXPECT_DEATH(spkMon->getPopStdFiringRate(),"");
 	EXPECT_DEATH(spkMon->getPopNumSpikes(),"");
 	EXPECT_DEATH(spkMon->getAllFiringRates(),"");
 	EXPECT_DEATH(spkMon->getAllFiringRatesSorted(),"");
 	EXPECT_DEATH(spkMon->getMaxFiringRate(),"");
 	EXPECT_DEATH(spkMon->getMinFiringRate(),"");
+	EXPECT_DEATH(spkMon->getNeuronMeanFiringRate(0),"");
 	EXPECT_DEATH(spkMon->getNeuronNumSpikes(0),"");
 	EXPECT_DEATH(spkMon->getNumNeuronsWithFiringRate(0,0),"");
 	EXPECT_DEATH(spkMon->getNumSilentNeurons(),"");

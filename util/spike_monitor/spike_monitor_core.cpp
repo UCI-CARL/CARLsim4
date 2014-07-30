@@ -80,6 +80,21 @@ float SpikeMonitorCore::getPopMeanFiringRate() {
 	return getPopNumSpikes()*1000.0/(getRecordingTotalTime()*nNeurons_);
 }
 
+float SpikeMonitorCore::getPopStdFiringRate() {
+	assert(!isRecording());
+
+	if (totalTime_==0)
+		return 0.0f;
+
+	float meanRate = getPopMeanFiringRate();
+	std::vector<float> rates = getAllFiringRates();
+	float std = 0.0f;
+	for (int i=0; i<nNeurons_; i++)
+		std += (rates[i]-meanRate)*(rates[i]-meanRate);
+
+	return sqrt(std/nNeurons_);
+}
+
 int SpikeMonitorCore::getPopNumSpikes() {
 	assert(!isRecording());
 
@@ -184,18 +199,19 @@ std::vector<std::vector<int> > SpikeMonitorCore::getSpikeVector2D(){
 	return spkVector_;
 }
 
-void SpikeMonitorCore::print() {
+void SpikeMonitorCore::print(bool printSpikeTimes) {
 	assert(!isRecording());
 
 	// how many spike times to display per row
 	int dispSpkTimPerRow = 7;
 
-	CARLSIM_INFO("Spike Monitor for Group %s(%d) has %d spikes in %d ms (% 5.2f Hz)",
+	CARLSIM_INFO("Spike Monitor for Group %s(%d) has %d spikes in %ld ms (%.2f +- %.2f Hz)",
 		snn_->getGroupName(grpId_,0).c_str(),
 		grpId_,
 		getPopNumSpikes(),
 		getRecordingTotalTime(),
-		getPopMeanFiringRate());
+		getPopMeanFiringRate(),
+		getPopStdFiringRate());
 
 	if (mode_ == AER) {
 		// spike times only available in AER mode
