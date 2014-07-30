@@ -517,7 +517,7 @@ public:
  	 * \brief Returns pointer to nSpikeCnt, which is a 1D array of the number of spikes every neuron in the group
 	 *  has fired.  Takes the grpID and the simulation mode (CPU_MODE or GPU_MODE) as arguments.
 	 */
-	unsigned int* getSpikeCntPtr(int grpId=ALL);
+	int* getSpikeCntPtr(int grpId=ALL);
 
 	/*!
 	 * \brief return the number of spikes per neuron for a certain group
@@ -857,7 +857,7 @@ private:
 	int				numNPois;			//!< number of poisson neurons
 	float       	*voltage, *recovery, *Izh_a, *Izh_b, *Izh_c, *Izh_d, *current;
 	bool			*curSpike;
-	unsigned int         	*nSpikeCnt;     //!< spike counts per neuron
+	int         	*nSpikeCnt;     //!< spike counts per neuron
 	unsigned short       	*Npre;			//!< stores the number of input connections to the neuron
 	unsigned short			*Npre_plastic;	//!< stores the number of excitatory input connection to the input
 	unsigned short       	*Npost;			//!< stores the number of output connections from a neuron.
@@ -935,6 +935,8 @@ private:
 	FILE*	fpLog_;
 	int showStatusCycle_;	//!< how often to call showStatus (seconds)
 	int showStatusCnt_; //!< internal counter to implement fast version of !(simTimeSec%showStatusCycle_)
+	bool isRightAfterUpdateTime_; //!< flag indicating the next millisecond after updateTime
+	bool isRightAfterShowLog_; //!< flag indicating the next millisecond after showLog (to display ^ time=1s =====)
 
 
 	// keep track of number of SpikeMonitor/SpikeMonitorCore objects

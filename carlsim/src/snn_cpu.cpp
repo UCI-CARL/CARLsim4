@@ -102,7 +102,7 @@ CpuSNN::~CpuSNN() {
 	// last fraction of a second
 	if (simTimeMs) {
  	   updateSpikeMonitor();
- 	   CARLSIM_INFO("\n^ (time=%1.3fs) =================\n", (float) (simTimeSec+simTimeMs/1000.0));
+ 	   CARLSIM_INFO("^ (time=%1.3fs) =================\n", (float) (simTimeSec+simTimeMs/1000.0));
 	}
 
 	if (!simulatorDeleted)
@@ -645,6 +645,31 @@ int CpuSNN::runNetwork(int _nsec, int _nmsec, bool copyState) {
 	assert(_nsec  >= 0);
 	int runDuration = _nsec*1000 + _nmsec;
 
+	// first-time run
+	if (simTime==0) {
+		CARLSIM_INFO("\n*******************      Running %s Simulation      **************************\n",
+			simMode_==GPU_MODE?"GPU":"CPU");
+	}
+
+	// Some things need to be performed AFTER a certain simulation time is done, such as resetting spike
+	// counters. But, if we do this after a cycle (at the end of runNetwork), then the user cannot access
+	// the data, because the data structures have already been cleared.
+	// So a better idea is to do these things right BEFORE we continue the simulation after showLog.
+	if (isRightAfterUpdateTime_) {
+		// reset spikeCnt
+		if (simMode_==GPU_MODE)
+			resetSpikeCnt_GPU(0,numGrp);
+		else
+			resetSpikeCnt(ALL);
+
+		if (isRightAfterShowLog_) {
+			CARLSIM_INFO("\n^ (time=%1.3fs) =================\n", (float) (simTimeSec+simTimeMs/1000.0));
+			isRightAfterShowLog_ = false;
+		}
+
+		isRightAfterUpdateTime_ = false;
+	}
+
 	// store current start time for future reference
 	simTimeRunStart = simTime;
 	simTimeRunStop  = simTime+runDuration;
@@ -702,9 +727,36 @@ int CpuSNN::runNetwork(int _nsec, int _nmsec, bool copyState) {
 			if (showLog) {
 				showStatus();
 				showStatusCnt_=0; // reset counter
+
+				// to display a log-cycle separator: ^ (time=1s) ======
+				// we want that one to be printed after everything that happened at that time
+				// so simply display it the very next millisecond, before we move on
+				isRightAfterShowLog_ = true;
 			}
-			if (showLog || numSpikeMonitor)
-				CARLSIM_INFO("\n^ (time=%llds) =================\n", (unsigned long long) simTimeSec);
+			if (showLog && numSpikeMonitor) {
+				// if there are SpikeMonitors available and it's time to show the log, print basic spike stats
+				// for each group with SpikeMon on
+				for (int grpId=0; grpId<numGrp; grpId++) {
+					int monitorId = grp_Info[grpId].SpikeMonitorId;
+					if (monitorId==-1)
+						continue;
+
+					// in GPU mode, need to get data from device first
+					if (simMode_==GPU_MODE)
+						copyFiringStateFromGPU(grpId);
+
+					int grpSpk = 0;
+					for (int neurId=grp_Info[grpId].StartN; neurId<=grp_Info[grpId].EndN; neurId++)
+						grpSpk += nSpikeCnt[neurId]; // add up all neuronal spike counts
+
+					CARLSIM_INFO("Spike Monitor for Group %s(%d) has %d spikes in %ds (%.2f Hz)",
+						grp_Info2[grpId].Name.c_str(),
+						grpId,
+						grpSpk,
+						showStatusCycle_,
+						grpSpk*1.0/showStatusCycle_/grp_Info[grpId].SizeN);
+				}
+			}
 
 			if(simMode_ == CPU_MODE)
 				updateFiringTable();
@@ -719,6 +771,9 @@ int CpuSNN::runNetwork(int _nsec, int _nmsec, bool copyState) {
 		if(enableGPUSpikeCntPtr==true && simMode_ == GPU_MODE){
 			copyFiringStateFromGPU();
 		}
+
+		// to perform clean-up operations in the very next millisecond
+		isRightAfterUpdateTime_ = true;
 	}
 
 	// in GPU mode, copy info from device to host
@@ -816,6 +871,8 @@ void CpuSNN::reassignFixedWeights(short int connectId, float weightMatrix[], int
 		copyUpdateVariables_GPU();  
 }
 
+//! \deprecated right?
+//! but we do need resetSpikeCnt and resetSpikeCnt_GPU
 void CpuSNN::resetSpikeCntUtil(int my_grpId ) {
   int startGrp, endGrp;
 
@@ -844,13 +901,8 @@ void CpuSNN::resetSpikeCntUtil(int my_grpId ) {
     startGrp = my_grpId;
     endGrp   = my_grpId+nConfig_;
   }
-  
-  for( int grpId=startGrp; grpId < endGrp; grpId++) {
-    int startN = grp_Info[grpId].StartN;
-    int endN   = grp_Info[grpId].EndN+1;
-    for (int i=startN; i < endN; i++)
-      nSpikeCnt[i] = 0;
-  }
+
+  resetSpikeCnt(ALL);
 }
 
 // reset spike counter to zero
@@ -877,6 +929,8 @@ void CpuSNN::resetSpikeCounter(int grpId, int configId) {
 		// only update if SpikeMonRT is set for this group
 		if (!grp_Info[cGrpId].withSpikeCounter)
 			return;
+
+		grp_Info[cGrpId].spkCntRecordDurHelper = 0;
 
 		if (simMode_==GPU_MODE) {
 			// grpId and configId can no longer be ALL
@@ -1281,6 +1335,7 @@ void CpuSNN::writePopWeights(std::string fname, int grpPreId, int grpPostId, int
 void CpuSNN::setLogCycle(int showStatusCycle) {
 	showStatusCycle_ = showStatusCycle;
 	showStatusCnt_ = 0;
+	isRightAfterShowLog_ = false;
 }
 
 // set new file pointer for debug log file
@@ -1497,7 +1552,7 @@ void CpuSNN::getPopWeights(int grpPreId, int grpPostId, float*& weights, int& ma
 }
 
 // Returns pointer to nSpikeCnt, which is a 1D array of the number of spikes every neuron in the group
-unsigned int* CpuSNN::getSpikeCntPtr(int grpId) {
+int* CpuSNN::getSpikeCntPtr(int grpId) {
 	//! do check to make sure appropriate flag is set
 	if(simMode_ == GPU_MODE && enableGPUSpikeCntPtr == false){
 		CARLSIM_ERROR("Error: the enableGPUSpikeCntPtr flag must be set to true to use this function in GPU_MODE.");
@@ -1686,6 +1741,8 @@ void CpuSNN::CpuSNNinit() {
 
 	showStatusCycle_ = (loggerMode_==SILENT)? -1 : 1; // default: show network status every second
 	showStatusCnt_ = 0; // counter to implement fast version of !(simTimeSec%showStatusCycle_)
+	isRightAfterShowLog_ = false; // flag to show the separator bar between log cycles
+	isRightAfterUpdateTime_ = false; // flag to do cleanup right after updateTime
 
 	finishedPoissonGroup  = false;
 	connectBegin = NULL;
@@ -1889,7 +1946,8 @@ void CpuSNN::buildNetworkInit(unsigned int nNeur, unsigned int nPostSyn, unsigne
 	memset(lastSpikeTime, 0, sizeof(lastSpikeTime[0]) * numN);
 
 	curSpike   = new bool[numN];
-	nSpikeCnt  = new unsigned int[numN];
+	nSpikeCnt  = new int[numN];
+	CARLSIM_INFO("allocated nSpikeCnt");
 
 	//! homeostasis variables
 	if (sim_with_homeostasis) {
@@ -2000,8 +2058,6 @@ void CpuSNN::buildGroup(int grpId) {
 
 	CARLSIM_DEBUG("Allocation for %d(%s), St=%d, End=%d",
 				grpId, grp_Info2[grpId].Name.c_str(), grp_Info[grpId].StartN, grp_Info[grpId].EndN);
-
-	resetSpikeCnt(grpId);
 
 	resetNeuromodulator(grpId);
 
@@ -2197,7 +2253,6 @@ void CpuSNN::buildPoissonGroup(int grpId) {
 
 	CARLSIM_DEBUG("Allocation for %d(%s), St=%d, End=%d",
 				grpId, grp_Info2[grpId].Name.c_str(), grp_Info[grpId].StartN, grp_Info[grpId].EndN);
-	resetSpikeCnt(grpId);
 
 	allocatedN = allocatedN + grp_Info[grpId].SizeN;
 	assert(allocatedN <= numN);
@@ -2218,8 +2273,11 @@ void CpuSNN::buildPoissonGroup(int grpId) {
 
 /*!
  * \brief check whether Spike Counters need to be reset
+ *
  * A Spike Counter keeps track of all spikes per neuron for a certain time period (recordDur)
- * After this period of time, the spike buffers need to be reset
+ * After this period of time, the spike buffers need to be reset. The trick is to reset it in the very next
+ * millisecond, before continuing. For example, if recordDur=1000ms, we want to reset it right before we start
+ * executing the 1001st millisecond, so that at t=1000ms the user is able to access non-zero data.
  */
 void CpuSNN::checkSpikeCounterRecordDur() {
 	for (int g=0; g<numGrp; g++) {
@@ -2228,7 +2286,9 @@ void CpuSNN::checkSpikeCounterRecordDur() {
 			continue;
 
 		// skip if simTime doesn't need udpating
-		if (simTime != ++grp_Info[g].spkCntRecordDurHelper)
+		// we want to update in spkCntRecordDur + 1, because this function is called rigth at the beginning
+		// of each millisecond
+		if ( (simTime % ++grp_Info[g].spkCntRecordDurHelper) != 1)
 			continue;
 
  		if (simMode_==GPU_MODE)
@@ -3274,12 +3334,15 @@ void CpuSNN::reorganizeNetwork(bool removeTempMemory) {
 	//ensure that we dont do all the above optimizations again
 	doneReorganization = true;
 
-//	printParameters(fpDeb_);
+	// reset all spike cnt
+	resetSpikeCnt(ALL);
+
 	printTuningLog(fpDeb_);
 
 	makePtrInfo();
 
-	CARLSIM_INFO("\n*******************      Starting %s Simulation      *************************",
+	CARLSIM_INFO("");
+	CARLSIM_INFO("*****************      Initializing %s Simulation      ***********************",
 		simMode_==GPU_MODE?"GPU":"CPU");
 
 	if(removeTempMemory) {
@@ -3573,12 +3636,12 @@ void CpuSNN::resetPropogationBuffer() {
 
 // resets nSpikeCnt[]
 void CpuSNN::resetSpikeCnt(int grpId) {
-	 int startGrp, endGrp;
+	int startGrp, endGrp;
 
 	if (!doneReorganization)
 		return;
 
-	 if (grpId == -1) {
+	if (grpId == -1) {
 		startGrp = 0;
 		endGrp = numGrp;
 	} else {
@@ -3586,11 +3649,11 @@ void CpuSNN::resetSpikeCnt(int grpId) {
 		 endGrp = grpId + nConfig_;
 	}
 
-	for (int grpId = startGrp; grpId < endGrp; grpId++) {
-		int startN = grp_Info[grpId].StartN;
-		int endN   = grp_Info[grpId].EndN + 1;
-		for (int i = startN; i < endN; i++)
-		nSpikeCnt[i] = 0;
+	for (int g = startGrp; g<endGrp; g++) {
+		int startN = grp_Info[g].StartN;
+		int endN   = grp_Info[g].EndN;
+		for (int i=startN; i<=endN; i++)
+			nSpikeCnt[i] = 0;
 	}
 }
 
@@ -4243,11 +4306,8 @@ void CpuSNN::updateWeights() {
 	// update synaptic weights here for all the neurons..
 	for(int g = 0; g < numGrp; g++) {
 		// no changable weights so continue without changing..
-		if(grp_Info[g].FixedInputWts || !(grp_Info[g].WithSTDP)) {
-//			for(int i=grp_Info[g].StartN; i <= grp_Info[g].EndN; i++)
-//				nSpikeCnt[i]=0;
+		if(grp_Info[g].FixedInputWts || !(grp_Info[g].WithSTDP))
 			continue;
-		}
 
 		for(int i = grp_Info[g].StartN; i <= grp_Info[g].EndN; i++) {
 			assert(i < numNReg);

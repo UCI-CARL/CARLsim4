@@ -806,7 +806,7 @@ void CARLsim::getPopWeights(int gIDpre, int gIDpost, float*& weights, int& size,
 	snn_->getPopWeights(gIDpre,gIDpost,weights,size,configId);
 }
 
-unsigned int* CARLsim::getSpikeCntPtr(int grpId) {
+int* CARLsim::getSpikeCntPtr(int grpId) {
 	std::string funcName = "getSpikeCntPtr()";
 	UserErrors::assertTrue(carlsimState_ == EXE_STATE, UserErrors::INVALID_API_AT_CURRENT_STATE, funcName, funcName);
 

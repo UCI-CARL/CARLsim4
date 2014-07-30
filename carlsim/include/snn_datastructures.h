@@ -200,7 +200,7 @@ typedef struct network_ptr_s  {
 	int3*	groupIdInfo;			//!< .x , .y: the start and end index of neurons in a group, .z: gourd id, used for group Id calculations
 	short int*	synIdLimit;			//!<
 	float*	synMaxWts;				//!<
-	unsigned int*	nSpikeCnt;
+	int*	nSpikeCnt;
 
 	int** spkCntBuf; //!< for copying 2D array to GPU (see CpuSNN::allocateSNN_GPU)
 	int* spkCntBufChild[MAX_GRP_PER_SNN]; //!< child pointers for above

@@ -125,11 +125,19 @@ public:
 	float getMinFiringRate();
 
 	/*!
-	 * \brief returns the total number of spikes in the group
+	 * \brief returns the mean firing rate of a specific neuron in the group
 	 *
-	 * This function returns the total number of spikes in the group, which is equal to the number of elements
-	 * in the 2D spike vector.
-	 * Use getNeuronNumSpikes to find the number of spikes of a specific neuron in the group
+	 * This function returns the mean firing rate of a specific neuron in the group, averaged over the recording
+	 * period.
+	 */
+	float getNeuronMeanFiringRate(int neurId);
+
+	/*!
+	 * \brief returns the number of spikes of a specific neuron in the group
+	 *
+	 * This function returns the number of spikes of a specific neuron in the group, which is equal to the number of
+	 * elements of spikeVector2D[neurId].
+	 * Use getPopNumSpikes to find the total number of spikes in the group
 	 */
 	int getNeuronNumSpikes(int neurId);
 

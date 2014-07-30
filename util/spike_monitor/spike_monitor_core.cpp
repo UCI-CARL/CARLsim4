@@ -76,7 +76,7 @@ float SpikeMonitorCore::getPopMeanFiringRate() {
 	if (totalTime_==0)
 		return 0.0f;
 
-	return getPopNumSpikes()*1000.0/(totalTime_*nNeurons_);
+	return getPopNumSpikes()*1000.0/(getRecordingTotalTime()*nNeurons_);
 }
 
 int SpikeMonitorCore::getPopNumSpikes() {
@@ -101,19 +101,24 @@ std::vector<float> SpikeMonitorCore::getAllFiringRates() {
 float SpikeMonitorCore::getMaxFiringRate() {
 	assert(!isRecording());
 
-	// if necessary, get data structures up-to-date
-	sortFiringRates();
+	std::vector<float> rates = getAllFiringRatesSorted();
 
-	return firingRatesSorted_.back();
+	return rates.back();
 }
 
 float SpikeMonitorCore::getMinFiringRate(){
 	assert(!isRecording());
 
-	// if necessary, get data structures up-to-date
-	sortFiringRates();
+	std::vector<float> rates = getAllFiringRatesSorted();
 
-	return firingRatesSorted_.front();
+	return rates.front();
+}
+
+float SpikeMonitorCore::getNeuronMeanFiringRate(int neurId) {
+	assert(!isRecording());
+	assert(neurId>=0 && neurId<nNeurons_);
+
+	return getNeuronNumSpikes(neurId)*1000.0/getRecordingTotalTime();	
 }
 
 int SpikeMonitorCore::getNeuronNumSpikes(int neurId) {
@@ -179,16 +184,42 @@ std::vector<std::vector<int> > SpikeMonitorCore::getSpikeVector2D(){
 void SpikeMonitorCore::print() {
 	assert(!isRecording());
 
-	std::stringstream str;
-	str << "Group Firing (" << snn_->getGroupName(grpId_,0) << "):\n";
-	str << "Neur ID | Time (ms)\n";
+	int dispSpkTimPerRow = 7;
+
+	CARLSIM_INFO("Group Firing %s(%d)", snn_->getGroupName(grpId_,0).c_str(), grpId_);
+	CARLSIM_INFO("| Neur ID | Rate (Hz) | Spike Times (ms)");
+	CARLSIM_INFO("|- - - - -|- - - - - -|- - - - - - - - - - - - - - - - -- - - - - - - - - - - - -")
+
 	for (int i=0; i<nNeurons_; i++) {
-		str << " " << i << "\t| ";
+		char buffer[200];
+		snprintf(buffer, 200, "| %7d | % 9.2f | ", i, getNeuronMeanFiringRate(i));
+		int nSpk = spkVector_[i].size();
+		for (int j=0; j<nSpk; j++) {
+			char times[5];
+			snprintf(times, 10, "%8d", spkVector_[i][j]);
+			strcat(buffer, times);
+			if (j%dispSpkTimPerRow == dispSpkTimPerRow-1 && j<nSpk-1) {
+				CARLSIM_INFO("%s",buffer);
+				strcpy(buffer,"|         |           | ");
+			}
+		}
+		CARLSIM_INFO("%s",buffer);
+	}
+
+/*
+	std::stringstream str;
+	str.precision(2);
+	str << "Group Firing (" << snn_->getGroupName(grpId_,0) << "):\n";
+	str << "| Neur ID | Rate\t| Spike Times\n";
+	str << "|         | (Hz)\t| (ms)\n";
+	str << "|-       -|-     -|-\n";
+	for (int i=0; i<nNeurons_; i++) {
+		str << "| " << i << "\t\t| " << getNeuronMeanFiringRate(i) << "\t| ";
 		for (int j=0; j<spkVector_[i].size(); j++)
 			str << spkVector_[i][j] << "\t";
 		str << "\n";
 	}
-	CARLSIM_INFO("%s",str.str().c_str());
+	CARLSIM_INFO("%s",str.str().c_str());*/
 }
 
 void SpikeMonitorCore::pushAER(int time, int neurId) {

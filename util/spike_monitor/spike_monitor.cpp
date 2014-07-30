@@ -59,6 +59,14 @@ std::vector<float> SpikeMonitor::getAllFiringRates(){
 	return spikeMonitorCorePtr_->getAllFiringRates();
 }
 
+float SpikeMonitor::getNeuronMeanFiringRate(int neurId) {
+	std::string funcName = "getNeuronMeanFiringRate()";
+	UserErrors::assertTrue(!isRecording(), UserErrors::CANNOT_BE_ON, funcName, "Recording");
+
+	return spikeMonitorCorePtr_->getNeuronMeanFiringRate(neurId);
+
+}
+
 int SpikeMonitor::getNeuronNumSpikes(int neurId) {
 	std::string funcName = "getNeuronNumSpikes()";
 	UserErrors::assertTrue(!isRecording(), UserErrors::CANNOT_BE_ON, funcName, "Recording");

@@ -169,7 +169,21 @@ class SpikeMonitor {
 	float getMinFiringRate();
 
 	/*!
-	 * \brief returns the total number of spikes of a neuron
+	 * \brief returns the mean firing rate of a specific neuron in the group
+	 *
+	 * This function returns the average firing rate of a specific neuron in the group in spikes/sec (Hz), averaged over
+	 * the recording time window.
+	 * If PersistentMode is off, only the last recording period will be considered. If PersistentMode is on, all the
+	 * recording periods will be considered. By default, PersistentMode is off, and can be switched on by calling
+	 * setPersistentMode(bool). The total time over which the metric is calculated can be retrieved by calling
+	 * getRecordingTotalTime().
+	 * Use getPopMeanFiringRate to find the population mean firing rate.
+	 * \param[in] neurId the neuron ID (0-indexed, must be smaller than getNumNeurons)
+	 */
+	float getNeuronMeanFiringRate(int neurId);
+
+	/*!
+	 * \brief returns the total number of spikes of a specific neuron in the group
 	 *
 	 * This function returns the total number of spikes emitted by a specific neuron in the recording period, which is
 	 * equal to the number of elements in the 2D spike vector.
@@ -232,8 +246,8 @@ class SpikeMonitor {
 	/*!
 	 * \brief Returns the mean firing rate of the entire neuronal population
 	 *
-	 * This function returns the average firing rate of all the neurons in the group averaged over the recording time
-	 * window.
+	 * This function returns the average firing rate of all the neurons in the group in spikes/sec (Hz), averaged over
+	 * the recording time window.
 	 * If PersistentMode is off, only the last recording period will be considered. If PersistentMode is on, all the
 	 * recording periods will be considered. By default, PersistentMode is off, and can be switched on by calling
 	 * setPersistentMode(bool). The total time over which the metric is calculated can be retrieved by calling

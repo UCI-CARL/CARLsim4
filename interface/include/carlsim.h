@@ -413,7 +413,7 @@ public:
 	 * \param[in] nMsec 		number of milliseconds to run the network
 	 * \param[in] copyState 	enable copying of data from device to host
 	 */
-	int runNetwork(int nSec, int nMsec, bool copyState=false);
+	int runNetwork(int nSec, int nMsec=0, bool copyState=false);
 
 	/*!
 	 * \brief build the network 
@@ -794,7 +794,7 @@ public:
 	 * \deprecated deprecated
 	 * \STATE EXECUTION
 	 */
-	unsigned int* getSpikeCntPtr(int grpId);
+	int* getSpikeCntPtr(int grpId);
 
 	/*!
 	 * \brief return the number of spikes per neuron for a certain group
