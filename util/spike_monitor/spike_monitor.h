@@ -44,10 +44,9 @@
 #ifndef _SPIKE_MON_H_
 #define _SPIKE_MON_H_
 
-//#include <algorithm>
-#include <vector>
+#include <vector>		// std::vector
 
-class CpuSNN; // forward declaration of CpuSNN class
+class CpuSNN; 			// forward declaration of CpuSNN class
 class SpikeMonitorCore; // forward declaration of implementation
 
 /*!

@@ -154,24 +154,22 @@ int main()
 	spikeMonInh->stopRecording();
 
 	// get the output of our spike monitor
-	float inputFR = spikeMonInput->getGrpFiringRate();
+	float inputFR = spikeMonInput->getPopMeanFiringRate();
 	cout << "inputFR = " << inputFR << " Hz" << endl;
-	float excFR = spikeMonExc->getGrpFiringRate();
+	float excFR = spikeMonExc->getPopMeanFiringRate();
 	cout << "excFR = " << excFR << " Hz" << endl;
-	float inhFR = spikeMonInh->getGrpFiringRate();
+	float inhFR = spikeMonInh->getPopMeanFiringRate();
 	cout << "inhFR = " << inhFR << " Hz" << endl;
 
 	cout << "Printing individual neuron firing rates:\n";
-	vector<float> inputNFR;
-	inputNFR = spikeMonInput->getNeuronFiringRate();
+	vector<float> inputNFR = spikeMonInput->getAllFiringRates();
 	for(int i=0;i<inputNFR.size();i++){
 		cout << inputNFR.at(i) << " Hz" << endl;
 	}
 	cout << endl;
 	
 	cout << "Printing sorted individual neuron firing rates:\n";
-	vector<float> inputSNFR;
-	inputSNFR = spikeMonInput->getSortedNeuronFiringRate();
+	vector<float> inputSNFR = spikeMonInput->getAllFiringRatesSorted();
 	for(int i=0;i<inputSNFR.size();i++){
 		cout << inputSNFR.at(i) << " Hz" << endl;
 	}
@@ -197,14 +195,16 @@ int main()
 			 << endl << endl;
 
 	float inputMaxFR = 0;
-	inputMaxFR = spikeMonInput->getMaxNeuronFiringRate();
+	inputMaxFR = spikeMonInput->getMaxFiringRate();
 	cout << "Neuron with max. firing rate firing at: " << inputMaxFR \
 			 << " Hz." << endl << endl;
 
 	float inputMinFR = 0;
-	inputMinFR = spikeMonInput->getMinNeuronFiringRate();
+	inputMinFR = spikeMonInput->getMinFiringRate();
 	cout << "Neuron with min. firing rate firing at: " << inputMinFR	\
 			 << " Hz." << endl << endl;
+
+	spikeMonInput->print();
 
 	spikeMonInput->clear();
 	spikeMonExc->clear();
@@ -221,18 +221,17 @@ int main()
 	spikeMonInput->stopRecording();
 	spikeMonExc->stopRecording();
 	spikeMonInh->stopRecording();
-	vector<float> excNFR;
-	excNFR = spikeMonExc->getNeuronFiringRate();
+	vector<float> excNFR = spikeMonExc->getAllFiringRates();
 	for(int i=0;i< excNFR.size();i++){
 		cout << excNFR.at(i) << " Hz" << endl;
 	}
 
 	// get the output of our spike monitor
-	inputFR = spikeMonInput->getGrpFiringRate();
+	inputFR = spikeMonInput->getPopMeanFiringRate();
 	cout << "inputFR = " << inputFR << " Hz" << endl;
-	excFR = spikeMonExc->getGrpFiringRate();
+	excFR = spikeMonExc->getPopMeanFiringRate();
 	cout << "excFR = " << excFR << " Hz" << endl;
-	inhFR = spikeMonInh->getGrpFiringRate();
+	inhFR = spikeMonInh->getPopMeanFiringRate();
 	cout << "inhFR = " << inhFR << " Hz" << endl;
 
 	

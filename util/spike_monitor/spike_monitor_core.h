@@ -43,7 +43,7 @@
 #define _SPIKE_MON_CORE_H_
 
 #include <stdio.h>	// FILE
-#include <vector>
+#include <vector>	// std::vector
 
 class CpuSNN; // forward declaration of CpuSNN class
 

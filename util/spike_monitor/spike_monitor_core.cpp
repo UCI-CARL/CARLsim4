@@ -3,8 +3,7 @@
 #include <snn.h>				// CARLsim private implementation
 #include <snn_definitions.h>	// CARLSIM_ERROR, CARLSIM_INFO, ...
 
-#include <algorithm>
-#include <iostream>				// std::cout, std::endl
+#include <algorithm>			// std::sort
 #include <sstream>				// std::stringstream
 
 
@@ -181,7 +180,8 @@ void SpikeMonitorCore::print() {
 	assert(!isRecording());
 
 	std::stringstream str;
-	str << "Neuron ID\t| Time (ms)\n";
+	str << "Group Firing (" << snn_->getGroupName(grpId_,0) << "):\n";
+	str << "Neur ID | Time (ms)\n";
 	for (int i=0; i<nNeurons_; i++) {
 		str << " " << i << "\t| ";
 		for (int j=0; j<spkVector_[i].size(); j++)

@@ -3,7 +3,6 @@
 #include <spike_monitor_core.h>	// SpikeMonitor private implementation
 #include <user_errors.h>		// fancy user error messages
 
-#include <iostream>				// std::cout, std::endl
 #include <sstream>				// std::stringstream
 
 // we aren't using namespace std so pay attention!
