@@ -83,12 +83,12 @@ class CpuSNN; // forward-declaration of private implementation
  *  │     │     ├── Getters / setters
  *  │     │     └── Set defaults
  *  │     └── Public properties
- *  └── Private section 
+ *  └── Private section
  *        ├── Private methods
  *        └── Private properties
  * \endverbatim
  * Within these sections, methods and properties are ordered alphabetically.
- * 
+ *
  */
 class CARLsim {
 public:
@@ -138,12 +138,12 @@ public:
 	 * \brief Connects a presynaptic to a postsynaptic group using fixed/plastic weights and a range of delay values
 	 *
 	 * This function is a shortcut to create synaptic connections from a pre-synaptic group grpId1 to a post-synaptic
-	 * group grpId2 using a pre-defined primitive type (such as "full", "one-to-one", or "random"). Synapse weights 
+	 * group grpId2 using a pre-defined primitive type (such as "full", "one-to-one", or "random"). Synapse weights
 	 * will stay the same throughout the simulation (SYN_FIXED, no plasticity). All synapses will have the same delay.
 	 * For more flexibility, see the other connect() calls.
 	 * \param[in] grpId1	 ID of the pre-synaptic group
 	 * \param[in] grpId2 	 ID of the post-synaptic group
-	 * \param[in] connType 	 connection type. "random": random connectivity. "one-to-one": connect the i-th neuron in 
+	 * \param[in] connType 	 connection type. "random": random connectivity. "one-to-one": connect the i-th neuron in
 	 *						 pre to the i-th neuron in post. "full": connect all neurons in pre to all neurons in post.
 	 * 						 "full-no-direct": same as "full", but i-th neuron of grpId1 will not be connected to the
 	 *                       i-th neuron of grpId2.
@@ -178,7 +178,7 @@ public:
 	//! shortcut to make connections with custom connectivity profile but omit scaling factors for synaptic
 	//! conductances (default is 1.0 for both)
 	//! \note The method can be called at configuration state only
-	short int connect(int grpId1, int grpId2, ConnectionGenerator* conn, bool synWtType=SYN_FIXED, int maxM=0, 
+	short int connect(int grpId1, int grpId2, ConnectionGenerator* conn, bool synWtType=SYN_FIXED, int maxM=0,
 						int maxPreM=0);
 
 	//! make connections with custom connectivity profile
@@ -250,16 +250,70 @@ public:
 	void setConductances(bool isSet, int tdAMPA, int trNMDA, int tdNMDA, int tdGABAa, int trGABAb, int tdGABAb,
 		int configId=ALL);
 
-	//! Sets default homeostasis params for group
-	//! \note The method can be called at configuration state only
-	void setHomeostasis(int grpId, bool isSet, int configId=ALL);
 
-	//! Sets custom homeostasis params for group
-	//! \note The method can be called at configuration state only
+	/*!
+	 * \brief Sets custom values for implementation of homeostatic synaptic scaling
+	 *
+	 * This function allows the user to set homeostasis for a particular neuron group. All the neurons
+	 * in this group scale their weights in an attempt to attain a target base firing rate set with the
+	 * setHomeoBaseFiringRate function. Each neuron keeps track of their own average firing rate. The
+	 * time over which this average is computed should be on the scale of seconds to minutes hours as
+	 * opposed to ms if one is to claim it is biologically realistic. The homeoScale sets the scaling
+	 * factor applied to the weight change of the synapse due to homeostasis. If you want to make
+	 * homeostasis stronger than STDP, you increase this value. Scaling of the synaptic weights is
+	 * multiplicative. For more information on this implementation please see:
+	 * Carlson, et al. (2013). Proc. of IJCNN 2013.
+	 *
+	 * Reasonable values to start homeostasis with are:
+	 * homeoScale   = 0.1-1.0
+	 * avgTimeScale = 5-10 seconds
+	 *
+	 * Default values are:
+	 * homeoScale   = 0.1
+	 * avgTimeScale = 10 seconds
+	 *
+	 * \param[in] grpId        the group ID of group to which homeostasis is applied
+	 * \param[in] isSet        a boolean, setting it to true/false enables/disables homeostasis
+	 * \param[in] homeoScale   scaling factor multiplied to weight change due to homeostasis
+	 * \param[in] avgTimeScale time in seconds over which average firing rate for neurons in this group is
+	 *                         averaged
+	 * \param[in] configId     (deprecated) sets homeostasis for a particular configId
+	 * \note The method can be called at the configuration state only
+	 */
 	void setHomeostasis(int grpId, bool isSet, float homeoScale, float avgTimeScale, int configId=ALL);
 
-	//! Sets homeostatic target firing rate (enforced through homeostatic synaptic scaling)
-	//! \note The method can be called at configuration state only
+ /*!
+ * \brief Sets default values for implementation of homeostatic synaptic scaling
+ *
+ * This function allows the user to set homeostasis with default values for a particular neuron
+ * group. For more information, read the setHomeostasis function description above.
+ *
+ * Default values are:
+ * homeoScale   = 0.1
+ * avgTimeScale = 10 seconds
+ *
+ * \param[in] grpId        the group ID of group to which homeostasis is applied
+ * \param[in] isSet        a boolean, setting it to true/false enables/disables homeostasis
+ * \param[in] configId     (deprecated) sets homeostasis for a particular configId
+ * \note The method can be called at configuration state only
+ */
+	void setHomeostasis(int grpId, bool isSet, int configId=ALL);
+
+ /*!
+ * \brief Sets the homeostatic target firing rate (enforced through homeostatic synaptic scaling)
+ *
+ * This function allows the user to set the homeostatic target firing with or without a standard
+ * deviation. All neurons in the group will use homeostatic synaptic scaling to attain the target
+ * firing rate. You can have a standard deviation to the base firing rate or you can disable it
+ * by setting it to 0. For more information on this implementation please see:
+ * Carlson, et al. (2013). Proc. of IJCNN 2013.
+ *
+ * \param[in] grpId        the group ID of group for which these settings are applied
+ * \param[in] baseFiring   target firing rate of every neuron in this group
+ * \param[in] baseFiringSD standard deviation of target firing rate of every neuron in this group
+ * \param[in] configId     (deprecated) sets baseFiringRate for a particular configId
+ * \note The method can be called at configuration state only
+ */
 	void setHomeoBaseFiringRate(int grpId, float baseFiring, float baseFiringSD, int configId=ALL);
 
 	//! Sets Izhikevich params a, b, c, and d with as mean +- standard deviation
@@ -282,8 +336,8 @@ public:
 	 * \param tau5HT the decay time constant of Serotonin
 	 * \param baseACh  the baseline concentration of Acetylcholine
 	 * \param tauACh the decay time constant of Acetylcholine
-	 * \param baseNE  the baseline concentration of Noradrenaline 
-	 * \param tauNE the decay time constant of Noradrenaline 
+	 * \param baseNE  the baseline concentration of Noradrenaline
+	 * \param tauNE the decay time constant of Noradrenaline
 	 * \param configId (optional, deprecated) configuration id
 	 * \note The method can be called at configuration state only
 	 */
@@ -360,7 +414,7 @@ public:
 	int runNetwork(int nSec, int nMsec, bool copyState=false);
 
 	/*!
-	 * \brief build the network 
+	 * \brief build the network
 	 * \param[in] removeTempMemory 	remove temp memory after building network
 	 * \note The method can be called at configuration state only. Carlsim will change to setup state
 	 */
@@ -411,7 +465,7 @@ public:
 	/*!
 	 * \brief Reassigns fixed weights to values passed into the function in a single 1D float matrix (weightMatrix)
 	 *
-	 * The user passes the connection ID (connectID), the weightMatrix, the matrixSize, and 
+	 * The user passes the connection ID (connectID), the weightMatrix, the matrixSize, and
 	 * configuration ID (configID).  This function only works for fixed synapses and for connections of type
 	 * CONN_USER_DEFINED. Only the weights are changed, not the maxWts, delays, or connected values
 	 * \note The method can be called at setup state only
@@ -526,8 +580,8 @@ public:
 	/*!
 	 * \brief Writes weights from synaptic connections from gIDpre to gIDpost.  Returns a pointer to the weights
 	 *
-	 * and the size of the 1D array in size.  gIDpre(post) is the group ID for the pre(post)synaptic group, 
-	 * weights is a pointer to a single dimensional array of floats, size is the size of that array which is 
+	 * and the size of the 1D array in size.  gIDpre(post) is the group ID for the pre(post)synaptic group,
+	 * weights is a pointer to a single dimensional array of floats, size is the size of that array which is
 	 * returned to the user, and configID is the configuration ID of the SNN.  NOTE: user must free memory from
 	 * weights to avoid a memory leak.
 	 * \note The method can be called at setup state and execution state

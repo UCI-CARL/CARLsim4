@@ -1,4 +1,4 @@
-/* 
+/*
  * Copyright (c) 2014 Regents of the University of California. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -125,7 +125,7 @@ void CARLsim::CARLsimInit() {
 	setDefaultSTPparams(INHIBITORY_NEURON, 0.5f, 1000.0f, 800.0f);
 
 	// set default homeostasis params
-	// TODO: add ref
+	// Ref: Carlson, et al. (2013). Proc. of IJCNN 2013.
 	setDefaultHomeostasisParams(0.1f, 10.0f);
 
 	// set default save sim params
@@ -150,7 +150,7 @@ short int CARLsim::connect(int grpId1, int grpId2, const std::string& connType, 
 	std::stringstream grpId2str; grpId2str << "Group Id " << grpId2;
 	UserErrors::assertTrue(grpId1!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName, grpId1str.str()); // grpId can't be ALL
 	UserErrors::assertTrue(grpId2!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName, grpId2str.str());
-	UserErrors::assertTrue(!isPoissonGroup(grpId2), UserErrors::WRONG_NEURON_TYPE, funcName, grpId2str.str() + 
+	UserErrors::assertTrue(!isPoissonGroup(grpId2), UserErrors::WRONG_NEURON_TYPE, funcName, grpId2str.str() +
 		" is PoissonGroup, connect");
 	UserErrors::assertTrue(wt.max>0, UserErrors::MUST_BE_POSITIVE, funcName, "wt.max");
 	UserErrors::assertTrue(wt.min>=0, UserErrors::CANNOT_BE_NEGATIVE, funcName, "wt.min");
@@ -181,7 +181,7 @@ short int CARLsim::connect(int grpId1, int grpId2, ConnectionGenerator* conn, bo
 	std::stringstream grpId2str; grpId2str << ". Group Id " << grpId2;
 	UserErrors::assertTrue(grpId1!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName, grpId1str.str()); // grpId can't be ALL
 	UserErrors::assertTrue(grpId2!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName, grpId2str.str());
-	UserErrors::assertTrue(!isPoissonGroup(grpId2), UserErrors::WRONG_NEURON_TYPE, funcName, grpId2str.str() + 
+	UserErrors::assertTrue(!isPoissonGroup(grpId2), UserErrors::WRONG_NEURON_TYPE, funcName, grpId2str.str() +
 		" is PoissonGroup, connect");
 	UserErrors::assertTrue(conn!=NULL, UserErrors::CANNOT_BE_NULL, funcName);
 	UserErrors::assertTrue(carlsimState_ == CONFIG_STATE, UserErrors::INVALID_API_AT_CURRENT_STATE, funcName);
@@ -198,7 +198,7 @@ short int CARLsim::connect(int grpId1, int grpId2, ConnectionGenerator* conn, fl
 	std::stringstream grpId2str; grpId2str << ". Group Id " << grpId2;
 	UserErrors::assertTrue(grpId1!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName, grpId1str.str()); // grpId can't be ALL
 	UserErrors::assertTrue(grpId2!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName, grpId2str.str());
-	UserErrors::assertTrue(!isPoissonGroup(grpId2), UserErrors::WRONG_NEURON_TYPE, funcName, grpId2str.str() + 
+	UserErrors::assertTrue(!isPoissonGroup(grpId2), UserErrors::WRONG_NEURON_TYPE, funcName, grpId2str.str() +
 		" is PoissonGroup, connect");
 	UserErrors::assertTrue(conn!=NULL, UserErrors::CANNOT_BE_NULL, funcName);
 	UserErrors::assertTrue(carlsimState_ == CONFIG_STATE, UserErrors::INVALID_API_AT_CURRENT_STATE, funcName);
@@ -398,7 +398,7 @@ void CARLsim::setSTDP(int grpId, bool isSet, int configId) {
 			def_STDP_tauLTD_, configId);
 	} else { // disable STDP
 		snn_->setSTDP(grpId, false, UNKNOWN_STDP, 0.0f, 0.0f, 0.0f, 0.0f, configId);
-	}	
+	}
 }
 
 // set STDP, custom
@@ -439,7 +439,7 @@ void CARLsim::setSTP(int grpId, bool isSet, int configId) {
 		}
 	} else { // disable STDP
 		snn_->setSTP(grpId,false,0.0f,0.0f,0.0f,configId);
-	}		
+	}
 }
 
 // set STP, custom
@@ -456,7 +456,7 @@ void CARLsim::setSTP(int grpId, bool isSet, float STP_U, float STP_tau_u, float 
 		snn_->setSTP(grpId,true,STP_U,STP_tau_u,STP_tau_x,configId);
 	} else { // disable STDP
 		snn_->setSTP(grpId,false,0.0f,0.0f,0.0f,configId);
-	}		
+	}
 }
 
 void CARLsim::setWeightAndWeightChangeUpdate(updateInterval_t updateWtInterval, updateInterval_t updateWtChangeInterval,
@@ -484,7 +484,7 @@ int CARLsim::runNetwork(int nSec, int nMsec, bool copyState) {
 
 	carlsimState_ = EXE_STATE;
 
-	return snn_->runNetwork(nSec, nMsec, copyState);	
+	return snn_->runNetwork(nSec, nMsec, copyState);
 }
 
 // setup network with custom options
@@ -624,11 +624,11 @@ SpikeMonitor* CARLsim::setSpikeMonitor(int grpId, const std::string& fname, int 
 	// set the default string here
 	std::string fileName=fname;
 	if(fileName.empty()){
-		
-		fileName="results/spk"+snn_->getGroupName(grpId,configId)+".dat"; 
+
+		fileName="results/spk"+snn_->getGroupName(grpId,configId)+".dat";
 	}
 	// try to open spike file
-	FILE* fid = fopen(fileName.c_str(),"wb"); 
+	FILE* fid = fopen(fileName.c_str(),"wb");
 	if (fid==NULL) {
 		// file could not be opened
 
@@ -639,7 +639,7 @@ SpikeMonitor* CARLsim::setSpikeMonitor(int grpId, const std::string& fname, int 
 
 	SpikeMonitor* spkMonitor;
 	spkMonitor=snn_->setSpikeMonitor(grpId, fid, configId);
- 
+
 	return spkMonitor;
 }
 
@@ -843,9 +843,9 @@ void CARLsim::setCopyFiringStateFromGPU(bool enableGPUSpikeCntPtr) {
 // +++++++++ PUBLIC METHODS: SET DEFAULTS +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
 // set default values for conductance decay times
-void CARLsim::setDefaultConductanceTimeConstants(int tdAMPA, int trNMDA, int tdNMDA, int tdGABAa, int trGABAb, 
+void CARLsim::setDefaultConductanceTimeConstants(int tdAMPA, int trNMDA, int tdNMDA, int tdGABAa, int trGABAb,
 int tdGABAb) {
-	std::stringstream funcName;	funcName << "setDefaultConductanceTimeConstants(" << tdAMPA << "," << trNMDA << 
+	std::stringstream funcName;	funcName << "setDefaultConductanceTimeConstants(" << tdAMPA << "," << trNMDA <<
 		"," << tdNMDA << "," << tdGABAa << "," << trGABAb << "," << tdGABAb << ")";
 	UserErrors::assertTrue(tdAMPA>0, UserErrors::MUST_BE_POSITIVE, funcName.str(), "tdAMPA");
 	UserErrors::assertTrue(trNMDA>=0, UserErrors::CANNOT_BE_NEGATIVE, funcName.str(), "trNMDA");
