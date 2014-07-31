@@ -247,7 +247,7 @@ TEST(SPIKEMON, persistentMode) {
 	EXPECT_EQ(spkMon->getRecordingStopTime(), 1000);
 
 	// now switch persistent mode on
-	spkMon->setPersistentMode(true);
+	spkMon->setPersistentData(true);
 
 	// run for half a second, and expect persistent mode on
 	// start should now be what it was (500), and total time should have increased by 500
@@ -466,7 +466,7 @@ TEST(SPIKEMON, getGroupFiringRate){
 
 		// Note: Starting to record for 0 milliseconds at the end of a simulation is a little silly...but it should
 		// be allowed, and we just want to achieve that all spikes of the input group get written to the spike file
-		spikeMonInput->setPersistentMode(true);
+		spikeMonInput->setPersistentData(true);
 		spikeMonInput->startRecording();
 		spikeMonInput->stopRecording();
 

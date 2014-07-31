@@ -137,7 +137,7 @@ TEST(STP, internalCPUvsData) {
 
 	sim->setupNetwork(true);
 	for (int i=0; i<50; i++) {
-		sim->runNetwork(0,1,true); // enable copyState
+		sim->runNetwork(0,1,false,true); // enable copyState
 		EXPECT_NEAR(sim->stpu[1], stpu[i], abs_error);
 		EXPECT_NEAR(sim->stpx[1], stpx[i], abs_error);
 	}
@@ -181,7 +181,7 @@ TEST(STP, externalCPUvsData) {
 
 	sim->setupNetwork(true);
 	for (int i=0; i<50; i++) {
-		sim->runNetwork(0,1,true); // enable copyState
+		sim->runNetwork(0,1,false,true); // enable copyState
 		EXPECT_NEAR(sim->current[0], current[i], abs_error); // check post-synaptic current to see effect of pre-STP
 	}
 
@@ -225,7 +225,7 @@ TEST(STP, internalCPUvsGPU) {
 
 		sim->setupNetwork(true);
 		for (int i=0; i<300; i++) {
-			sim->runNetwork(0,1,true); // enable copyState
+			sim->runNetwork(0,1,false,true); // enable copyState
 			stpu[j*300+i] = sim->stpu[1];
 			stpx[j*300+i] = sim->stpx[1];
 		}
