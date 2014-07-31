@@ -204,10 +204,6 @@ int main()
 	s.connect(gV4oi, gV4o, new connectV4oitoV4o(inhibScale,-0.01*2), SYN_FIXED,1000,3000);
 
 
-	// show log every 1 sec (0 to disable logging). You can pass a file pointer or pass stdout to specify where the log output should go.
-	s.setLogCycle(1);
-
-
 	s.setConductances(true);
 	
 	s.setSTDP(ALL, false);

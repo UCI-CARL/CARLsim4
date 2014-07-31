@@ -57,6 +57,8 @@ void UserErrors::throwError(std::string errorFunc, errorType error, std::string 
 		std::cerr << " could not be created."; break;
 	case FILE_CANNOT_OPEN:
 		std::cerr << " could not be opened."; break;
+	case IS_DEPRECATED:
+		std::cerr << " is deprecated."; break;
 	case MUST_BE_IDENTICAL:
 		std::cerr << " must be identical.";
 	case MUST_BE_LOGGER_CUSTOM:
@@ -79,8 +81,6 @@ void UserErrors::throwError(std::string errorFunc, errorType error, std::string 
 		std::cerr << " is unknown."; break;
 	case WRONG_NEURON_TYPE:
 		std::cerr << " cannot be called on this neuron type."; break;
-	case INVALID_API_AT_CURRENT_STATE:
-		std::cerr << " cannot be called in the current CARLsim state."; break;
 	case UNKNOWN:
 	default:
 		std::cerr << ". An unknown error has occurred."; break;

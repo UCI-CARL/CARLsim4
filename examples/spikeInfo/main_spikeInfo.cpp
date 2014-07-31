@@ -86,9 +86,9 @@ int main()
 	int excGroup;
 	int inhGroup;
 	// input firing rate
-	float inputTargetFR=50;
-	float excTargetFR=10;
-	float inhTargetFR=20;
+	float inputTargetFR=5;
+//	float excTargetFR=10;
+//	float inhTargetFR=20;
 	
 	// poissonRate spiking input pointer
 	PoissonRate* input;
@@ -132,8 +132,6 @@ int main()
 	// still have to set the firing rates (need to double check)
 	snn->setSpikeRate(inputGroup,input);
 	
-	// set log stats 
-	snn->setLogCycle(2);
 	// -----------------------------------------------------------------------------
 	// END CARLsim initialization
 	// -----------------------------------------------------------------------------
@@ -144,8 +142,9 @@ int main()
 	spikeMonExc->startRecording();
 	spikeMonInh->startRecording();
 	// run network for 1 s
-	int runTimeMs = 1000;
-	snn->runNetwork(runTimeMs/1000,runTimeMs%1000);
+	int runTimeMs = 800;
+	bool printSummary = false;
+	snn->runNetwork(runTimeMs/1000,runTimeMs%1000,printSummary);
 	
 	// stop recording
 	spikeMonInput->stopRecording();
@@ -185,26 +184,26 @@ int main()
 	int numNeuronsInRange = 0;
 	numNeuronsInRange = spikeMonInput->getNumNeuronsWithFiringRate(0.0f,7.0f);
 	cout << "Number of neurons with firing range between 0 and 7 Hz: " \
-			 << numNeuronsInRange << endl << endl;
+			 << numNeuronsInRange << endl;
 
 	float percentNeuronsInRange = 0;
 	percentNeuronsInRange = spikeMonInput->getPercentNeuronsWithFiringRate(0.0f,7.0f);
 	cout << "Percentage of neurons with firing range between 0 and 7 Hz: " \
-			 << percentNeuronsInRange << endl << endl;
+			 << percentNeuronsInRange << endl;
 
 	int numSilent = 0;
 	numSilent = spikeMonInput->getNumSilentNeurons();
-	cout << "Number of silent neurons: " << numSilent << endl << endl;
+	cout << "Number of silent neurons: " << numSilent << endl;
 
 	int percentSilent = 0;
 	percentSilent = spikeMonInput->getPercentSilentNeurons();
 	cout << "Percentage of silent neurons: " << percentSilent << "%" \
-			 << endl << endl;
+			 << endl;
 
 	float inputMaxFR = 0;
 	inputMaxFR = spikeMonInput->getMaxFiringRate();
 	cout << "Neuron with max. firing rate firing at: " << inputMaxFR \
-			 << " Hz." << endl << endl;
+			 << " Hz." << endl;
 
 	float inputMinFR = 0;
 	inputMinFR = spikeMonInput->getMinFiringRate();
@@ -215,14 +214,15 @@ int main()
 	spikeMonExc->clear();
 	spikeMonInh->clear();
 
-	snn->runNetwork(runTimeMs/1000,runTimeMs%1000);
-	snn->runNetwork(runTimeMs/1000,runTimeMs%1000);
+	// run for a bunch without recording spike times
+	// show only brief spike summary by enabling printSummary
+	snn->runNetwork(2*runTimeMs/1000, (2*runTimeMs)%1000, true);
 
 	spikeMonInput->startRecording();
 	spikeMonExc->startRecording();
 	spikeMonInh->startRecording();
 	
-	snn->runNetwork(runTimeMs/1000,runTimeMs%1000);
+	snn->runNetwork(runTimeMs/1000,runTimeMs%1000,printSummary);
 	spikeMonInput->stopRecording();
 	spikeMonExc->stopRecording();
 	spikeMonInh->stopRecording();
@@ -248,22 +248,14 @@ int main()
 	fitness=fabs(excFR-excTargetFR)+fabs(inhFR-inhTargetFR);
 	printf("fitness = %f\n",fitness);
 	// associate the fitness values (CARLsim) with individual Id/associated parameter values (EO)
+
+*/
 	if (snn!=NULL) 
 		delete snn;
 	snn=NULL;
 	if(input!=NULL)
 		delete input;
 	input=NULL;
-	// if(spikeMonInput!=NULL)
-	// 	delete spikeMonInput;
-	// spikeMonInput=NULL;
-	// if(spikeMonExc!=NULL)
-	// 	delete spikeMonExc;
-	// spikeMonExc=NULL;
-	// if(spikeMonInh!=NULL)
-	// 	delete spikeMonInh;
-	// spikeMonInh=NULL;
-	*/
 
 	return 0;
 }

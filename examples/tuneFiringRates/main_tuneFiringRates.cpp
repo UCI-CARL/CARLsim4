@@ -212,8 +212,6 @@ int main()
 				// still have to set the firing rates (need to double check)
 				snn[configId]->setSpikeRate(inputGroup[configId],input[configId]);
 
-				// set log stats 
-				snn[configId]->setLogCycle(1);
 				// -----------------------------------------------------------------------------
 				// END CARLsim initialization
 				// -----------------------------------------------------------------------------

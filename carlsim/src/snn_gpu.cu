@@ -3347,7 +3347,7 @@ void CpuSNN::printSimSummary() {
 		etime = cpuExecutionTime;
 	}
 
-	CARLSIM_INFO("\n********************      %s Simulation Summary      *************************",
+	CARLSIM_INFO("\n********************      %s Simulation Summary      ***************************",
 		simMode_==GPU_MODE?"GPU":"CPU");
 
 	CARLSIM_INFO("Network Parameters: \n\tnumNeurons = %d (numNExcReg:numNInhReg = %2.1f:%2.1f)\n\tnumSynapses = %d\n\tmaxDelay = %d", numN, 100.0*numNExcReg/numN, 100.0*numNInhReg/numN, postSynCnt, D);
@@ -3357,7 +3357,7 @@ void CpuSNN::printSimSummary() {
 		spikeCountD2Host/(1.0*simTimeSec*numNExcReg), spikeCountD1Host/(1.0*simTimeSec*numNInhReg), spikeCountAll/(1.0*simTimeSec*numN));
 	CARLSIM_INFO("Overall Firing Count: \n\t2+ms delay = %d \n\t1ms delay = %d \n\tTotal = %d",
 		spikeCountD2Host, spikeCountD1Host, spikeCountAll );
-	CARLSIM_INFO("******************************************************************************\n");
+	CARLSIM_INFO("*********************************************************************************\n");
 }
 
 

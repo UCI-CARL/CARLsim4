@@ -409,11 +409,12 @@ public:
 	 * \brief run the simulation for time=(nSec*seconds + nMsec*milliseconds)
 	 *
 	 * \STATE SETUP, EXECUTION. First call to runNetwork will make CARLsim state switch from SETUP to EXECUTION.
-	 * \param[in] nSec 			number of seconds to run the network
-	 * \param[in] nMsec 		number of milliseconds to run the network
-	 * \param[in] copyState 	enable copying of data from device to host
+	 * \param[in] nSec 			  number of seconds to run the network
+	 * \param[in] nMsec 		  number of milliseconds to run the network
+	 * \param[in] printRunSummary enable the printing of a summary at the end of this run
+	 * \param[in] copyState 	  enable copying of data from device to host
 	 */
-	int runNetwork(int nSec, int nMsec=0, bool copyState=false);
+	int runNetwork(int nSec, int nMsec=0, bool printRunSummary=true, bool copyState=false);
 
 	/*!
 	 * \brief build the network 
@@ -437,23 +438,6 @@ public:
 	 * \STATE SETUP, EXECUTION
 	 */
 	void saveSimulation(std::string fileName, bool saveSynapseInfo=true);
-
-	/*!
-	 * \brief Sets update cycle for printing the network status (seconds)
-	 *
-	 * \FIXME: needs overhaul
-	 * Network status includes includes spiking and plasticity information (SpikeMonitor updates, weight changes, etc.).
-	 * Set cycle to -1 to disable.
-	 *
-	 * \param[in] showStatusCycle how often to print network state (seconds)
-	 */
-	void setLogCycle(int showStatusCycle);
-
-	/*!
-	 * \brief Sets show status
-	 * \TODO finish docu
-	 */
-	void setShowStatus(int showStatusCycle, int showStatusNeurons, int showStatusSynapses);
 
 	/*!
 	 * \brief Sets the file pointer of the debug log file

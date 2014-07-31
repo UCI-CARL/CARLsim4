@@ -205,7 +205,8 @@ void SpikeMonitorCore::print(bool printSpikeTimes) {
 	// how many spike times to display per row
 	int dispSpkTimPerRow = 7;
 
-	CARLSIM_INFO("Spike Monitor for Group %s(%d) has %d spikes in %ld ms (%.2f +- %.2f Hz)",
+	CARLSIM_INFO("(t=%.3fs) SpikeMonitor for group %s(%d) has %d spikes in %ld ms (%.2f +/- %.2f Hz)",
+		(float)(snn_->getSimTime()/1000.0),
 		snn_->getGroupName(grpId_,0).c_str(),
 		grpId_,
 		getPopNumSpikes(),

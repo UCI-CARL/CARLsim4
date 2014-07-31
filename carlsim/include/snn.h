@@ -306,9 +306,11 @@ public:
 
 	/*!
 	 * \brief run the simulation for n sec
+	 *
+	 * \param[in] printRunSummary whether to print a basic summary of the run at the end
 	 * \param[in] copyState 	enable copying of data from device to host
 	 */
-	int runNetwork(int _nsec, int _nmsec, bool copyState);
+	int runNetwork(int _nsec, int _nmsec, bool printRunSummary, bool copyState);
 
 	/*!
 	 * \brief build the network
@@ -442,12 +444,6 @@ public:
 	const FILE* getLogFpLog() { return fpLog_; }
 
 	/*!
-	 * \brief Sets the update cycle for log messages
-	 * \param showStatusCycle how often network status should be printed (seconds)
-	 */
-	void setLogCycle(int showStatusCycle);
-
-	/*!
 	 * \brief Sets the file pointer of the debug log file
 	 * \param[in] fpLog file pointer to new log file
 	 */
@@ -554,8 +550,7 @@ public:
 	 */
 	void setCopyFiringStateFromGPU(bool _enableGPUSpikeCntPtr);
 
-	void setGroupInfo(int groupId, group_info_t info, int configId=ALL);
-	void setPrintState(int grpId, bool _status);
+//	void setGroupInfo(int groupId, group_info_t info, int configId=ALL);
 
 
 /// **************************************************************************************************************** ///
@@ -933,11 +928,6 @@ private:
 	FILE*	fpErr_;			//!< fp of where to write all errors if not in silent mode
 	FILE*	fpDeb_;			//!< fp of where to write all debug info if not in silent mode
 	FILE*	fpLog_;
-	int showStatusCycle_;	//!< how often to call showStatus (seconds)
-	int showStatusCnt_; //!< internal counter to implement fast version of !(simTimeSec%showStatusCycle_)
-	bool isRightAfterUpdateTime_; //!< flag indicating the next millisecond after updateTime
-	bool isRightAfterShowLog_; //!< flag indicating the next millisecond after showLog (to display ^ time=1s =====)
-
 
 	// keep track of number of SpikeMonitor/SpikeMonitorCore objects
 	unsigned int numSpikeMonitor;

@@ -80,9 +80,6 @@ int main()
 	// build the network
 	sim.setupNetwork();
 
-	// show network status every 2 secs
-	sim.setLogCycle(2);
-
 	sim.setSpikeMonitor(g1,"examples/random/results/spikes.dat"); // put spike times into spikes.dat
 	sim.setSpikeMonitor(g2); // Show basic statistics about g2
 	sim.setSpikeMonitor(gin);
@@ -95,7 +92,7 @@ int main()
 		sim.setSpikeRate(gin,&in);
 
 	//run for 10 seconds
-	sim.runNetwork(10,0);
+	sim.runNetwork(10,0,false);
 
 	return 0;
 }

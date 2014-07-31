@@ -98,13 +98,6 @@ CpuSNN::CpuSNN(std::string& name, simMode_t simMode, loggerMode_t loggerMode, in
 
 // destructor
 CpuSNN::~CpuSNN() {
-	// if total simulation time is not divisible by 1000 ms, run updateSpikeMonitor again to get the spikes of the
-	// last fraction of a second
-	if (simTimeMs) {
- 	   updateSpikeMonitor();
- 	   CARLSIM_INFO("^ (time=%1.3fs) =================\n", (float) (simTimeSec+simTimeMs/1000.0));
-	}
-
 	if (!simulatorDeleted)
 		deleteObjects();
 }
@@ -639,36 +632,24 @@ void CpuSNN::setWeightAndWeightChangeUpdate(updateInterval_t wtUpdateInterval, u
 /// PUBLIC METHODS: RUNNING A SIMULATION
 /// ************************************************************************************************************ ///
 
-// Run the simulation for n sec
-int CpuSNN::runNetwork(int _nsec, int _nmsec, bool copyState) {
-	assert(_nmsec >= 0);
+// if 
+int CpuSNN::runNetwork(int _nsec, int _nmsec, bool printRunSummary, bool copyState) {
+	assert(_nmsec >= 0 && _nmsec < 1000);
 	assert(_nsec  >= 0);
 	int runDuration = _nsec*1000 + _nmsec;
 
-	// first-time run
+	// first-time run: inform the user the simulation is running now
 	if (simTime==0) {
-		CARLSIM_INFO("\n*******************      Running %s Simulation      **************************\n",
+		CARLSIM_INFO("");
+		CARLSIM_INFO("*******************      Running %s Simulation      ****************************\n",
 			simMode_==GPU_MODE?"GPU":"CPU");
 	}
 
-	// Some things need to be performed AFTER a certain simulation time is done, such as resetting spike
-	// counters. But, if we do this after a cycle (at the end of runNetwork), then the user cannot access
-	// the data, because the data structures have already been cleared.
-	// So a better idea is to do these things right BEFORE we continue the simulation after showLog.
-	if (isRightAfterUpdateTime_) {
-		if (isRightAfterShowLog_) {
-			// reset spikeCnt
-			if (simMode_==GPU_MODE)
-				resetSpikeCnt_GPU(0,numGrp);
-			else
-				resetSpikeCnt(ALL);
-
-			CARLSIM_INFO("\n^ (time=%1.3fs) =================\n", (float) (simTimeSec+simTimeMs/1000.0));
-			isRightAfterShowLog_ = false;
-		}
-
-		isRightAfterUpdateTime_ = false;
-	}
+	// reset all spike counters
+	if (simMode_==GPU_MODE)
+		resetSpikeCnt_GPU(0,numGrp);
+	else
+		resetSpikeCnt(ALL);
 
 	// store current start time for future reference
 	simTimeRunStart = simTime;
@@ -683,7 +664,7 @@ int CpuSNN::runNetwork(int _nsec, int _nmsec, bool copyState) {
 
 	// if nsec=0, simTimeMs=10, we need to run the simulator for 10 timeStep;
 	// if nsec=1, simTimeMs=10, we need to run the simulator for 1*1000+10, time Step;
-	for(int i=0; i < runDuration; i++) {
+	for(int i=0; i<runDuration; i++) {
 		if(simMode_ == CPU_MODE)
 			doSnnSim();
 		else
@@ -713,8 +694,6 @@ int CpuSNN::runNetwork(int _nsec, int _nmsec, bool copyState) {
 
 		if (updateTime()) {
 			// finished one sec of simulation...
-			bool showLog = showStatusCycle_ == ++showStatusCnt_; // fast way of !(simTimeSec%showStatusCycle_)
-
 			if (numSpikeMonitor) {
 				updateSpikeMonitor();
 			}
@@ -724,39 +703,6 @@ int CpuSNN::runNetwork(int _nsec, int _nmsec, bool copyState) {
 			if (numConnectionMonitor) {
 				updateConnectionMonitor();
 			}
-			if (showLog) {
-				showStatus();
-				showStatusCnt_=0; // reset counter
-
-				// to display a log-cycle separator: ^ (time=1s) ======
-				// we want that one to be printed after everything that happened at that time
-				// so simply display it the very next millisecond, before we move on
-				isRightAfterShowLog_ = true;
-			}
-			if (showLog && numSpikeMonitor) {
-				// if there are SpikeMonitors available and it's time to show the log, print basic spike stats
-				// for each group with SpikeMon on
-				for (int grpId=0; grpId<numGrp; grpId++) {
-					int monitorId = grp_Info[grpId].SpikeMonitorId;
-					if (monitorId==-1)
-						continue;
-
-					// in GPU mode, need to get data from device first
-					if (simMode_==GPU_MODE)
-						copyFiringStateFromGPU(grpId);
-
-					int grpSpk = 0;
-					for (int neurId=grp_Info[grpId].StartN; neurId<=grp_Info[grpId].EndN; neurId++)
-						grpSpk += nSpikeCnt[neurId]; // add up all neuronal spike counts
-
-					CARLSIM_INFO("Spike Monitor for Group %s(%d) has %d spikes in %ds (%.2f Hz)",
-						grp_Info2[grpId].Name.c_str(),
-						grpId,
-						grpSpk,
-						showStatusCycle_,
-						grpSpk*1.0/showStatusCycle_/grp_Info[grpId].SizeN);
-				}
-			}
 
 			if(simMode_ == CPU_MODE)
 				updateFiringTable();
@@ -764,6 +710,7 @@ int CpuSNN::runNetwork(int _nsec, int _nmsec, bool copyState) {
 				updateFiringTable_GPU();
 		}
 
+		// \deprecated remove this
 		if(enableGPUSpikeCntPtr==true && simMode_ == CPU_MODE){
 			CARLSIM_ERROR("Error: the enableGPUSpikeCntPtr flag cannot be set in CPU_MODE");
 			assert(simMode_==GPU_MODE);
@@ -771,9 +718,6 @@ int CpuSNN::runNetwork(int _nsec, int _nmsec, bool copyState) {
 		if(enableGPUSpikeCntPtr==true && simMode_ == GPU_MODE){
 			copyFiringStateFromGPU();
 		}
-
-		// to perform clean-up operations in the very next millisecond
-		isRightAfterUpdateTime_ = true;
 	}
 
 	// in GPU mode, copy info from device to host
@@ -790,6 +734,50 @@ int CpuSNN::runNetwork(int _nsec, int _nmsec, bool copyState) {
 			}
 		}
 	}
+
+	// user can opt to display some runNetwork summary
+	if (printRunSummary) {
+		showStatus();
+
+		if (numSpikeMonitor) {
+			// if there are SpikeMonitors available and it's time to show the log, print basic spike stats
+			// for each group with SpikeMon on
+			for (int grpId=0; grpId<numGrp; grpId++) {
+				int monitorId = grp_Info[grpId].SpikeMonitorId;
+				if (monitorId==-1)
+					continue;
+
+				// in GPU mode, need to get data from device first
+				if (simMode_==GPU_MODE)
+					copyFiringStateFromGPU(grpId);
+
+				// \TODO nSpikeCnt should really be a member of the SpikeMonitor object that gets populated if
+				// printRunSummary is true or mode==COUNT.....
+				// so then we can use spkMonObj->print(false); // showSpikeTimes==false
+				int grpSpk = 0;
+				for (int neurId=grp_Info[grpId].StartN; neurId<=grp_Info[grpId].EndN; neurId++)
+					grpSpk += nSpikeCnt[neurId]; // add up all neuronal spike counts
+
+				float meanRate = grpSpk*1000.0/runDuration/grp_Info[grpId].SizeN;
+				int std = 0;
+				for (int neurId=grp_Info[grpId].StartN; neurId<=grp_Info[grpId].EndN; neurId++)
+					std += (nSpikeCnt[neurId]-meanRate)*(nSpikeCnt[neurId]-meanRate);
+
+
+				CARLSIM_INFO("(t=%.3fs) SpikeMonitor for group %s(%d) has %d spikes in %dms (%.2f +/- %.2f Hz)",
+					(float)(simTime/1000.0),
+					grp_Info2[grpId].Name.c_str(),
+					grpId,
+					grpSpk,
+					runDuration,
+					meanRate,
+					sqrt(std/grp_Info[grpId].SizeN));
+			}
+		}
+	}
+
+	// call updateSpikeMonitor again to fetch all the missing spikes
+	updateSpikeMonitor();
 
 	// keep track of simulation time...
 	CUDA_STOP_TIMER(timer);
@@ -1331,13 +1319,6 @@ void CpuSNN::writePopWeights(std::string fname, int grpPreId, int grpPostId, int
 /// PUBLIC METHODS: PLOTTING / LOGGING
 /// ************************************************************************************************************ ///
 
-// how often to show network status (seconds), set to -1 to disable
-void CpuSNN::setLogCycle(int showStatusCycle) {
-	showStatusCycle_ = showStatusCycle;
-	showStatusCnt_ = 0;
-	isRightAfterShowLog_ = false;
-}
-
 // set new file pointer for debug log file
 void CpuSNN::setLogDebugFp(FILE* fpLog) {
 	assert(fpLog!=NULL);
@@ -1639,6 +1620,8 @@ void CpuSNN::setCopyFiringStateFromGPU(bool _enableGPUSpikeCntPtr) {
 	enableGPUSpikeCntPtr=_enableGPUSpikeCntPtr;
 }
 
+/*
+ * \deprecated this is not a good idea...
 void CpuSNN::setGroupInfo(int grpId, group_info_t info, int configId) {
 	if (configId == ALL) {
 		for(int c=0; c < nConfig_; c++)
@@ -1648,6 +1631,7 @@ void CpuSNN::setGroupInfo(int grpId, group_info_t info, int configId) {
 		grp_Info[cGrpId] = info;
 	}
 }
+*/
 
 
 /// **************************************************************************************************************** ///
@@ -1718,12 +1702,12 @@ void CpuSNN::CpuSNNinit() {
 	#endif
 	#endif
 
-	CARLSIM_INFO("*******************************************************************************");
-	CARLSIM_INFO("********************      Welcome to CARLsim %d.%d      *************************",
+	CARLSIM_INFO("*********************************************************************************");
+	CARLSIM_INFO("********************      Welcome to CARLsim %d.%d      ***************************",
 				MAJOR_VERSION,MINOR_VERSION);
-	CARLSIM_INFO("*******************************************************************************\n");
+	CARLSIM_INFO("*********************************************************************************\n");
 
-	CARLSIM_INFO("***************************** Setting Up Network ******************************");
+	CARLSIM_INFO("***************************** Setting Up Network ********************************");
 	CARLSIM_INFO("Starting CARLsim simulation \"%s\" in %s mode",networkName_.c_str(),
 		loggerMode_string[loggerMode_]);
 	CARLSIM_INFO("nConfig: %d, randSeed: %d",nConfig_,randSeed_);
@@ -1738,11 +1722,6 @@ void CpuSNN::CpuSNNinit() {
 	srand48(randSeed_);
 	getRand.seed(randSeed_*2);
 	getRandClosed.seed(randSeed_*3);
-
-	showStatusCycle_ = (loggerMode_==SILENT)? -1 : 1; // default: show network status every second
-	showStatusCnt_ = 0; // counter to implement fast version of !(simTimeSec%showStatusCycle_)
-	isRightAfterShowLog_ = false; // flag to show the separator bar between log cycles
-	isRightAfterUpdateTime_ = false; // flag to do cleanup right after updateTime
 
 	finishedPoissonGroup  = false;
 	connectBegin = NULL;
@@ -2101,7 +2080,7 @@ void CpuSNN::buildNetwork() {
 	assert(numPreSynapses > 0);
 
 	// display the evaluated network and delay length....
-	CARLSIM_INFO("\n**************************** Building Network *********************************");
+	CARLSIM_INFO("\n***************************** Building Network **********************************");
 	CARLSIM_INFO("numN = %d, numPostSynapses = %d, numPreSynapses = %d, maxDelay = %d", curN, numPostSynapses,
 					numPreSynapses, curD);
 
@@ -3342,7 +3321,7 @@ void CpuSNN::reorganizeNetwork(bool removeTempMemory) {
 	makePtrInfo();
 
 	CARLSIM_INFO("");
-	CARLSIM_INFO("*****************      Initializing %s Simulation      ***********************",
+	CARLSIM_INFO("*****************      Initializing %s Simulation      *************************",
 		simMode_==GPU_MODE?"GPU":"CPU");
 
 	if(removeTempMemory) {

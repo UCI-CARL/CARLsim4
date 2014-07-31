@@ -37,7 +37,7 @@ public:
 		CANNOT_BE_UNKNOWN, 		//!< parameter cannot be of type UNKNOWN
 		FILE_CANNOT_CREATE,		//!< could not create a file
 		FILE_CANNOT_OPEN,		//!< could not open file
-		INVALID_API_AT_CURRENT_STATE, //!< the api function (public method) can't be called at the current carlsim sate
+		IS_DEPRECATED,			//!< deprecated function
 		MUST_BE_LOGGER_CUSTOM,	//!< must be in custom logger mode
 		MUST_BE_IDENTICAL,      //!< parameters must be identical
 		MUST_BE_NEGATIVE,		//!< parameter must have negative value

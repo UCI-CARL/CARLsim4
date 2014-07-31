@@ -499,6 +499,7 @@ void CpuSNN::printWeights(int preGrpId, int postGrpId) {
 
 // show the status of the simulator...
 // when onlyCnt is set, we print the actual count instead of frequency of firing
+// \deprecated we don't really use this guy anymore...
 void CpuSNN::showStatus() {
 	if(simMode_ == GPU_MODE) {
 		showStatus_GPU();
