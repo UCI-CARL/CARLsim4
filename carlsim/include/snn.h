@@ -306,9 +306,11 @@ public:
 
 	/*!
 	 * \brief run the simulation for n sec
+	 *
+	 * \param[in] printRunSummary whether to print a basic summary of the run at the end
 	 * \param[in] copyState 	enable copying of data from device to host
 	 */
-	int runNetwork(int _nsec, int _nmsec, bool copyState);
+	int runNetwork(int _nsec, int _nmsec, bool printRunSummary, bool copyState);
 
 	/*!
 	 * \brief build the network
@@ -317,6 +319,9 @@ public:
 	void setupNetwork(bool removeTempMemory);
 
 	// +++++ PUBLIC METHODS: INTERACTING WITH A SIMULATION ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
+
+	//! deallocates all dynamical structures and exits
+	void exitSimulation(int val=1);
 
 	//! reads the network state from file
 	//! Reads a CARLsim network file. Such a file can be created using CpuSNN:writeNetwork.
@@ -401,6 +406,18 @@ public:
 	 */
 	void setSpikeRate(int grpId, PoissonRate* spikeRate, int refPeriod, int configId);
 
+	/*!
+	 * \brief copy required spikes from firing buffer to spike buffer
+	 *
+	 * This function is public in CpuSNN, but it should probably not be a public user function in CARLsim.
+	 * It is usually called once every 1000ms by the core to update spike binaries and SpikeMonitor objects. In GPU
+	 * mode, it will first copy the firing info to the host. The input argument can either be a specific group ID or
+	 * keyword ALL (for all groups).
+	 * Core and utility functions can call updateSpikeMonitor at any point in time. The function will automatically
+	 * determine the last time it was called, and update SpikeMonitor information only if necessary.
+	 */
+	void updateSpikeMonitor(int grpId=ALL);
+
 	//! Resets either the neuronal firing rate information by setting resetFiringRate = true and/or the
 	//! weight values back to their default values by setting resetWeights = true.
 	void updateNetwork(bool resetFiringInfo, bool resetWeights);
@@ -417,11 +434,14 @@ public:
 
 	// +++++ PUBLIC METHODS: LOGGING / PLOTTING +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
-	//! Set the update cycle for log messages
-	/*!
-	 * \param showStatusCycle how often network status should be printed (seconds)
-	 */
-	void setLogCycle(int showStatusCycle);
+	//! returns file pointer to info log
+	const FILE* getLogFpInf() { return fpInf_; }
+	//! returns file pointer to error log
+	const FILE* getLogFpErr() { return fpErr_; }
+	//! returns file pointer to debug log
+	const FILE* getLogFpDeb() { return fpDeb_; }
+	//! returns file pointer to log file
+	const FILE* getLogFpLog() { return fpLog_; }
 
 	/*!
 	 * \brief Sets the file pointer of the debug log file
@@ -431,12 +451,13 @@ public:
 
 	/*!
 	 * \brief Sets the file pointers for all log files
-	 * \param[in] fpOut file pointer for status info
+	 *
+	 * \param[in] fpInf file pointer for status info
 	 * \param[in] fpErr file pointer for errors/warnings
 	 * \param[in] fpDeb file pointer for debug info
 	 * \param[in] fpLog file pointer for debug log file that contains all the above info
 	 */
-	void setLogsFp(FILE* fpOut, FILE* fpErr, FILE* fpDeb, FILE* fpLog);
+	void setLogsFp(FILE* fpInf, FILE* fpErr, FILE* fpDeb, FILE* fpLog);
 
 
 	// +++++ PUBLIC METHODS: GETTERS / SETTERS ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
@@ -492,7 +513,7 @@ public:
  	 * \brief Returns pointer to nSpikeCnt, which is a 1D array of the number of spikes every neuron in the group
 	 *  has fired.  Takes the grpID and the simulation mode (CPU_MODE or GPU_MODE) as arguments.
 	 */
-	unsigned int* getSpikeCntPtr(int grpId=ALL);
+	int* getSpikeCntPtr(int grpId=ALL);
 
 	/*!
 	 * \brief return the number of spikes per neuron for a certain group
@@ -529,8 +550,7 @@ public:
 	 */
 	void setCopyFiringStateFromGPU(bool _enableGPUSpikeCntPtr);
 
-	void setGroupInfo(int groupId, group_info_t info, int configId=ALL);
-	void setPrintState(int grpId, bool _status);
+//	void setGroupInfo(int groupId, group_info_t info, int configId=ALL);
 
 
 /// **************************************************************************************************************** ///
@@ -570,8 +590,6 @@ private:
 	void doGPUSim();
 	void doSnnSim();
 	void doSTPUpdateAndDecayCond();
-
-	void exitSimulation(int val);	//!< deallocates all dynamical structures and exits
 
 	void findFiring();
 	int findGrpId(int nid);//!< For the given neuron nid, find the group id
@@ -670,24 +688,9 @@ private:
 	void updateSpikeGenerators();
 	void updateSpikeGeneratorsInit();
 
-	/*!
-	 * \brief copy required spikes from firing buffer to spike buffer
-	 * This function is usually called once every 1000ms. In GPU_MODE, it will first copy the firing info to the
-	 * host. numMs is an optional parameter specifying how long the time interval is (useful at the end of simulations
-	 * when a time interval < 1000ms must be parsed). Mean firing rate will still be converted to Hz.
-	 *
-	 * \param[in] numMs optional, size of time interval. Default: 1000 ms
-	 */
-	void updateSpikeMonitor(int numMs=1000);
-
 	int  updateSpikeTables();
 	//void updateStateAndFiringTable();
 	bool updateTime(); //!< updates simTime, returns true when a new second is started
-
-	// Function writes spikes to file given a particular group id and the file id.
-	// Used in updateSpikeMonitor
-	void writeSpikesToFile(int grpId, unsigned int* neurIds,
-												 unsigned int* timeCnts, int timeInterval, FILE* fid);
 
 	// +++++ GPU MODE +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 	// TODO: consider moving to snn_gpu.h
@@ -726,8 +729,9 @@ private:
 
 	void deleteObjects_GPU();		//!< deallocates all used data structures in snn_gpu.cu
 	void doCurrentUpdate_GPU();
+	void doSTPUpdateAndDecayCond_GPU(int gridSize=64, int blkSize=128);
 	void dumpSpikeBuffToFile_GPU(int gid);
-	void findFiring_GPU();
+	void findFiring_GPU(int gridSize=64, int blkSize=128);
 
 	/*!
 	 * \brief return the number of spikes per neuron for a certain group in GPU mode
@@ -764,7 +768,6 @@ private:
 	void updateFiringTable();
 	void updateFiringTable_GPU();
 	void updateNetwork_GPU(bool resetFiringInfo); //!< Allows parameters to be reset in the middle of the simulation
-	void updateSpikeMonitor_GPU();
 	void updateWeights();
 	void updateWeights_GPU();
 	//void updateStateAndFiringTable_GPU();
@@ -849,7 +852,7 @@ private:
 	int				numNPois;			//!< number of poisson neurons
 	float       	*voltage, *recovery, *Izh_a, *Izh_b, *Izh_c, *Izh_d, *current;
 	bool			*curSpike;
-	unsigned int         	*nSpikeCnt;     //!< spike counts per neuron
+	int         	*nSpikeCnt;     //!< spike counts per neuron
 	unsigned short       	*Npre;			//!< stores the number of input connections to the neuron
 	unsigned short			*Npre_plastic;	//!< stores the number of excitatory input connection to the input
 	unsigned short       	*Npost;			//!< stores the number of output connections from a neuron.
@@ -897,6 +900,10 @@ private:
 	unsigned int		maxSpikesD2;
 
 	//time and timestep
+
+	unsigned int    simTimeRunStart; //!< the start time of current/last runNetwork call
+	unsigned int    simTimeRunStop;  //!< the end time of current/last runNetwork call
+	
 	unsigned int	simTimeMs;
 	uint64_t        simTimeSec;		//!< this is used to store the seconds.
 	unsigned int	simTime;		//!< The absolute simulation time. The unit is millisecond. this value is not reset but keeps increasing to its max value.
@@ -917,18 +924,18 @@ private:
 		float		cumExecutionTime;
 		float		lastExecutionTime;
 
-	FILE*	fpOut_;			//!< fp of where to write all simulation output (status info) if not in silent mode
+	FILE*	fpInf_;			//!< fp of where to write all simulation output (status info) if not in silent mode
 	FILE*	fpErr_;			//!< fp of where to write all errors if not in silent mode
 	FILE*	fpDeb_;			//!< fp of where to write all debug info if not in silent mode
 	FILE*	fpLog_;
-	int showStatusCycle_;	//!< how often to call showStatus (seconds)
-	int showStatusCnt_; //!< internal counter to implement fast version of !(simTimeSec%showStatusCycle_)
-
 
 	// keep track of number of SpikeMonitor/SpikeMonitorCore objects
 	unsigned int numSpikeMonitor;
 	SpikeMonitorCore* spikeMonCoreList[MAX_GRP_PER_SNN];
 	SpikeMonitor*     spikeMonList[MAX_GRP_PER_SNN];
+
+	// \FIXME \DEPRECATED this one moved to group-based
+	long int    simTimeLastUpdSpkMon_; //!< last time we ran updateSpikeMonitor
 
 
 

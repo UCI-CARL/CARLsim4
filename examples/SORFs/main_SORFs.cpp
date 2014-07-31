@@ -583,9 +583,6 @@ int main_fitness_function(int argc, char *argv[])
   snn.setSpikeMonitor(inputOffGrp,"inputOffGrp_spikes.dat");
   */
 
-  // disable showstatus
-  snn.setLogCycle(-1);
-
   snn.setConductances(true,COND_tAMPA,COND_tNMDA,COND_tGABAa,COND_tGABAb, ALL);
   //snn.setSTDP(excGrp, true, ALPHA_LTP, TAU_LTP, ALPHA_LTD, TAU_LTD);
   //#define HOMEO_FACTOR                    (5.0)

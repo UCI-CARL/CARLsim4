@@ -613,9 +613,6 @@ int main()
 	snn.setNeuronParameters(gLIP, 0.02f, 0.2f, -65.0f, 8.0f);
 	snn.setNeuronParameters(gLIPi, 0.1f,  0.2f, -65.0f, 2.0f);
 
-
-	// show log every 1 sec
-	snn.setLogCycle(1);
 	snn.setConductances(true,5,150,6,150);
 	snn.setSTDP(ALL,false);
 	snn.setSTP(ALL,false);

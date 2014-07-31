@@ -449,7 +449,7 @@ void CpuSNN::printNeuronState(int grpId, FILE* const fp)
   fflush(fp);
 }
 
-// TODO: make CARLSIM_INFO(), don't write to fpOut_
+// TODO: make CARLSIM_INFO(), don't write to fpInf_
 void CpuSNN::printWeights(int preGrpId, int postGrpId) {
 	int preA, preZ, postA, postZ;
 	if (preGrpId==ALL) {
@@ -470,7 +470,7 @@ void CpuSNN::printWeights(int preGrpId, int postGrpId) {
 	for (int gPost=postA; gPost<postZ; gPost++) {
 		// for each postsynaptic group
 
-		fprintf(fpOut_,"Synapses from %s to %s (+- change in last %d ms)\n",
+		fprintf(fpInf_,"Synapses from %s to %s (+/- change in last %d ms)\n",
 			(preGrpId==ALL)?"ALL":grp_Info2[preGrpId].Name.c_str(), grp_Info2[gPost].Name.c_str(), wtUpdateInterval_);
 
 		if (simMode_ == GPU_MODE) {
@@ -487,18 +487,19 @@ void CpuSNN::printWeights(int preGrpId, int postGrpId) {
 			float wt  = cpuNetPtrs.wt[offset+j];
 			if (!grp_Info[gPost].FixedInputWts) {
 				float wtC = cpuNetPtrs.wtChange[offset+j];
-				fprintf(fpOut_, "%s%1.3f (%s%1.3f)\t", wt<0?"":" ", wt, wtC<0?"":"+", wtC);
+				fprintf(fpInf_, "%s%1.3f (%s%1.3f)\t", wt<0?"":" ", wt, wtC<0?"":"+", wtC);
 			} else {
-				fprintf(fpOut_, "%s%1.3f \t\t", wt<0?"":" ", wt);				
+				fprintf(fpInf_, "%s%1.3f \t\t", wt<0?"":" ", wt);				
 			}
 		}
-		fprintf(fpOut_,"\n");
+		fprintf(fpInf_,"\n");
 	}
 }
 
 
 // show the status of the simulator...
 // when onlyCnt is set, we print the actual count instead of frequency of firing
+// \deprecated we don't really use this guy anymore...
 void CpuSNN::showStatus() {
 	if(simMode_ == GPU_MODE) {
 		showStatus_GPU();

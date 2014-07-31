@@ -588,9 +588,6 @@ int main()
 
 	s.connect(gV4oi, gV4o, new connectV4oitoV4o(inhibScale,-0.01*2), SYN_FIXED,1000,3000);
 
-
-	// show log every 1 sec
-	s.setLogCycle(1);
 	s.setConductances(true,5,150,6,150);
 	s.setSTDP(ALL, false);
 	s.setSTP(ALL,false);

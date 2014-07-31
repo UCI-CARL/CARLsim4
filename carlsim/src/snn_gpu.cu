@@ -460,18 +460,17 @@ __device__ void measureFiringLoad(volatile int& fireCnt, volatile int& fireCntD1
 
 __device__ void resetFiredNeuron(unsigned int& nid, short int & grpId, int& simTime)
 {
-	// TODO: convert this to use coalesced access by grouping into a
+	// \FIXME \TODO: convert this to use coalesced access by grouping into a
 	// single 16 byte access. This might improve bandwidth performance
 	// This is fully uncoalsced access...need to convert to coalsced access..
 	gpuPtrs.voltage[nid] = gpuPtrs.Izh_c[nid];
 	gpuPtrs.recovery[nid] += gpuPtrs.Izh_d[nid];
 	if (gpuGrpInfo[grpId].WithSTDP)
 		gpuPtrs.lastSpikeTime[nid] = simTime;
-
+	
 	if (gpuNetInfo.sim_with_homeostasis) {
 		// with homeostasis flag can be used here.
 		gpuPtrs.avgFiring[nid] += 1000/(gpuGrpInfo[grpId].avgTimeScale*1000);
-		gpuPtrs.nSpikeCnt[nid]++;
 	}
 }
 
@@ -568,13 +567,13 @@ __shared__ volatile int blkErrCode;
 		if (gpuGrpInfo[fireGrpId[i]].WithSTP)
 			firingUpdateSTP(nid, simTime, fireGrpId[i]);
 
+		// keep track of number spikes per neuron
+		gpuPtrs.nSpikeCnt[nid]++;
+
 		// only neurons would do the remaining settings...
 		// pure poisson generators will return without changing anything else..
 		if (IS_REGULAR_NEURON(nid, gpuNetInfo.numNReg, gpuNetInfo.numNPois))
 			resetFiredNeuron(nid, fireGrpId[i], simTime);
-		else {
-			gpuPtrs.nSpikeCnt[nid]++;
-		}
 	}
 
 	__syncthreads();
@@ -1961,6 +1960,7 @@ void CpuSNN::copyNeuronState(network_ptr_t* dest, network_ptr_t* src,  cudaMemcp
 		assert(grpId == -1);
 
 	// Spike Cnt. Firing...
+	CARLSIM_INFO("allcoting nSpikeCnt");
 	if (allocateMem)
 		CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->nSpikeCnt, sizeof(int) * length2));
 	CUDA_CHECK_ERRORS(cudaMemcpy( &dest->nSpikeCnt[ptrPos], &src->nSpikeCnt[ptrPos], sizeof(int) * length2, kind));
@@ -2261,8 +2261,9 @@ void CpuSNN::copyState(network_ptr_t* dest, int allocateMem) {
 }
 
 // spikeGeneratorUpdate on GPUs..
-void CpuSNN::spikeGeneratorUpdate_GPU()
-{
+void CpuSNN::spikeGeneratorUpdate_GPU() {
+	assert(cpu_gpuNetPtrs.allocated);
+
 	// this part of the code is useful for poisson spike generator function..
 	if((numNPois > 0) && (gpuPoissonRand != NULL)) {
 		gpuPoissonRand->generate(numNPois, RNG_rand48::MAX_RANGE);
@@ -2270,7 +2271,6 @@ void CpuSNN::spikeGeneratorUpdate_GPU()
 
 	// this part of the code is invoked when we use spike generators
 	if (NgenFunc) {
-
 		resetCounters();
 
 		assert(cpuNetPtrs.spikeGenBits!=NULL);
@@ -2288,31 +2288,16 @@ void CpuSNN::spikeGeneratorUpdate_GPU()
 		CUDA_CHECK_ERRORS_MACRO( cudaMemcpy( cpu_gpuNetPtrs.spikeGenBits, cpuNetPtrs.spikeGenBits, sizeof(int)*(NgenFunc/32+1), cudaMemcpyHostToDevice));
 	}
 }
-	
-void CpuSNN::findFiring_GPU()
-{
 
-	int blkSize  = 128;
-	int gridSize = 64;
+void CpuSNN::findFiring_GPU(int gridSize, int blkSize) {
 	int errCode;
 		
 	assert(cpu_gpuNetPtrs.allocated);
-
-	if (sim_with_stp || sim_with_conductances) {
-		kernel_STPUpdateAndDecayConductances <<<gridSize, blkSize>>>(simTimeMs, simTimeSec, simTime);
-		CUDA_GET_LAST_ERROR("STP update\n");
-		errCode = checkErrors("gpu_STPUpdate", gridSize);
-		assert(errCode == NO_KERNEL_ERRORS);
-	}
-
-	spikeGeneratorUpdate_GPU();
 
 	kernel_findFiring <<<gridSize,blkSize >>> (simTimeMs, simTimeSec, simTime);
 	CUDA_GET_LAST_ERROR("findFiring kernel failed\n");
 	errCode = checkErrors("kernel_findFiring", gridSize);
 	assert(errCode == NO_KERNEL_ERRORS);
-
-
 
 	if(MEASURE_LOADING)
 		printGpuLoadBalance(false,MAX_BLOCKS);
@@ -2368,13 +2353,6 @@ void CpuSNN::resetSpikeCounter_GPU(int grpId, int configId) {
 }
 
 
-// copy the spike from the GPU to the CPU..
-void CpuSNN::updateSpikeMonitor_GPU()
-{
-	// copy the neuron firing information from the GPU to the CPU..
-	copyFiringInfo_GPU();
-}
-
 void CpuSNN::updateTimingTable_GPU()
 {
 
@@ -2412,6 +2390,20 @@ void CpuSNN::doCurrentUpdate_GPU()
 	errCode = checkErrors("kernel_updateCurrentI", gridSize);
 	assert(errCode == NO_KERNEL_ERRORS);
 }
+
+void CpuSNN::doSTPUpdateAndDecayCond_GPU(int gridSize, int blkSize) {
+	int errCode;
+		
+	assert(cpu_gpuNetPtrs.allocated);
+
+	if (sim_with_stp || sim_with_conductances) {
+		kernel_STPUpdateAndDecayConductances <<<gridSize, blkSize>>>(simTimeMs, simTimeSec, simTime);
+		CUDA_GET_LAST_ERROR("STP update\n");
+		errCode = checkErrors("gpu_STPUpdate", gridSize);
+		assert(errCode == NO_KERNEL_ERRORS);
+	}
+}
+
 
 __global__ void kernel_check_GPU_init2 (int simTime)
 {
@@ -2898,12 +2890,19 @@ void CpuSNN::doGPUSim() {
 		checkSpikeCounterRecordDur();
 	}
 	
+	int blkSize  = 128;
+	int gridSize = 64;
+
+	doSTPUpdateAndDecayCond_GPU(gridSize, blkSize);
+
+	// \TODO this should probably be in spikeGeneratorUpdate_GPU
 	if (spikeRateUpdated) {
 		assignPoissonFiringRate_GPU();
 		spikeRateUpdated = false;
 	}
+	spikeGeneratorUpdate_GPU();
 
-	findFiring_GPU();
+	findFiring_GPU(gridSize, blkSize);
 
 	updateTimingTable_GPU();
 
@@ -3006,8 +3005,10 @@ void CpuSNN::copyFiringInfo_GPU()
 	CUDA_CHECK_ERRORS( cudaMemcpy(firingTableD1, cpu_gpuNetPtrs.firingTableD1, sizeof(int)*gpu_secD1fireCnt, cudaMemcpyDeviceToHost));
 	CUDA_CHECK_ERRORS( cudaMemcpyFromSymbol(timeTableD2, timingTableD2, sizeof(int)*(1000+D+1), 0, cudaMemcpyDeviceToHost));
 	CUDA_CHECK_ERRORS( cudaMemcpyFromSymbol(timeTableD1, timingTableD1, sizeof(int)*(1000+D+1), 0, cudaMemcpyDeviceToHost));
-	CARLSIM_INFO("Total spikes Multiple Delays=%d, 1Ms Delay=%d", gpu_secD2fireCnt,gpu_secD1fireCnt);
-	//getchar();
+
+	// \TODO: why is this here? The CPU side doesn't have it. And if you can call updateSpikeMonitor() now at any time
+	// it might look weird without a time stamp.
+//	CARLSIM_INFO("Total spikes Multiple Delays=%d, 1Ms Delay=%d", gpu_secD2fireCnt,gpu_secD1fireCnt);
 }
 
 
@@ -3100,6 +3101,7 @@ void CpuSNN::copyWeightsGPU(unsigned int nid, int src_grp)
 
 // Allocates required memory and then initialize the GPU
 void CpuSNN::allocateSNN_GPU() {
+	// \FIXME why is this even here? shouldn't this be checked way earlier? and then in CPU_MODE, too...
 	if (D > MAX_SynapticDelay) {
 		CARLSIM_ERROR("You are using a synaptic delay (%d) greater than MAX_SynapticDelay defined in config.h",D);
 		exitSimulation(1);
@@ -3345,7 +3347,7 @@ void CpuSNN::printSimSummary() {
 		etime = cpuExecutionTime;
 	}
 
-	CARLSIM_INFO("********************      %s Simulation Summary      *************************",
+	CARLSIM_INFO("\n********************      %s Simulation Summary      ***************************",
 		simMode_==GPU_MODE?"GPU":"CPU");
 
 	CARLSIM_INFO("Network Parameters: \n\tnumNeurons = %d (numNExcReg:numNInhReg = %2.1f:%2.1f)\n\tnumSynapses = %d\n\tmaxDelay = %d", numN, 100.0*numNExcReg/numN, 100.0*numNInhReg/numN, postSynCnt, D);
@@ -3355,7 +3357,7 @@ void CpuSNN::printSimSummary() {
 		spikeCountD2Host/(1.0*simTimeSec*numNExcReg), spikeCountD1Host/(1.0*simTimeSec*numNInhReg), spikeCountAll/(1.0*simTimeSec*numN));
 	CARLSIM_INFO("Overall Firing Count: \n\t2+ms delay = %d \n\t1ms delay = %d \n\tTotal = %d",
 		spikeCountD2Host, spikeCountD1Host, spikeCountAll );
-	CARLSIM_INFO("******************************************************************************\n");
+	CARLSIM_INFO("*********************************************************************************\n");
 }
 
 

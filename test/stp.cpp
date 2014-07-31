@@ -8,7 +8,9 @@
 
 /*!
  * \brief testing setSTP to true
+ *
  * This function tests the information stored in the group info struct after enabling STP via setSTP
+ * \TODO use public user interface
  */
 TEST(STP, setSTPTrue) {
 	// create network by varying nConfig from 1...maxConfig, with
@@ -98,6 +100,7 @@ TEST(STP, setSTPdeath) {
 
 /*
  * \brief check whether CPU mode reproduces some pre-recorded stpu and stpx (internal variables)
+ *
  * This test ensures that CARLsim quantitatively reproduces STP behavior across machines. This exact network has been
  * run before, and STP variables (stpu and stpx) have been recorded for a time window of 50 ms. The network should
  * reproduce these values at all times and on all platforms.
@@ -120,7 +123,7 @@ TEST(STP, internalCPUvsData) {
 	int randSeed = rand() % 1000;	// randSeed must not interfere with STP
 	float abs_error = 1e-2f;		// allowed error margin
 
-	CpuSNN* sim = new CpuSNN(name,CPU_MODE,USER,0,1,randSeed);
+	CpuSNN* sim = new CpuSNN(name,CPU_MODE,SILENT,0,1,randSeed);
 	int g0=sim->createSpikeGeneratorGroup("input", 1, EXCITATORY_NEURON, ALL);
 	int g1=sim->createGroup("excit", 1, EXCITATORY_NEURON, ALL);
 	sim->setNeuronParameters(g1, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f, ALL);
@@ -128,12 +131,13 @@ TEST(STP, internalCPUvsData) {
 	sim->setConductances(true,5,10,15,20,25,30,ALL);
 	sim->setSTP(g0,true,0.19f,86,992,ALL); // the exact values are not important
 
-	PeriodicSpikeGeneratorCore* spk50 = new PeriodicSpikeGeneratorCore(50.0f); // periodic spiking @ 50 Hz
+	bool spikeAtZero = false;
+	PeriodicSpikeGeneratorCore* spk50 = new PeriodicSpikeGeneratorCore(50.0f,spikeAtZero); // periodic spiking @ 50 Hz
 	sim->setSpikeGenerator(g0, spk50, ALL);
 
 	sim->setupNetwork(true);
 	for (int i=0; i<50; i++) {
-		sim->runNetwork(0,1,true); // enable copyState
+		sim->runNetwork(0,1,false,true); // enable copyState
 		EXPECT_NEAR(sim->stpu[1], stpu[i], abs_error);
 		EXPECT_NEAR(sim->stpx[1], stpx[i], abs_error);
 	}
@@ -161,7 +165,7 @@ TEST(STP, externalCPUvsData) {
 
 	std::string name = "SNN";
 	int randSeed = rand() % 1000;	// randSeed must not interfere with STP
-	float abs_error = 1e-2f;		// allowed error margin
+	float abs_error = 5e-2f;		// allowed error margin
 
 	CpuSNN* sim = new CpuSNN(name,CPU_MODE,SILENT,0,1,randSeed);
 	int g0=sim->createSpikeGeneratorGroup("input", 1, EXCITATORY_NEURON, ALL);
@@ -171,12 +175,13 @@ TEST(STP, externalCPUvsData) {
 	sim->setConductances(true,5,10,15,20,25,30,ALL);
 	sim->setSTP(g0,true,0.19f,86,992,ALL); // the exact values are not important
 
-	PeriodicSpikeGeneratorCore* spk50 = new PeriodicSpikeGeneratorCore(50.0f); // periodic spiking @ 50 Hz
+	bool spikeAtZero = false;
+	PeriodicSpikeGeneratorCore* spk50 = new PeriodicSpikeGeneratorCore(50.0f,spikeAtZero); // periodic spiking @ 50 Hz
 	sim->setSpikeGenerator(g0, spk50, ALL);
 
 	sim->setupNetwork(true);
 	for (int i=0; i<50; i++) {
-		sim->runNetwork(0,1,true); // enable copyState
+		sim->runNetwork(0,1,false,true); // enable copyState
 		EXPECT_NEAR(sim->current[0], current[i], abs_error); // check post-synaptic current to see effect of pre-STP
 	}
 
@@ -206,7 +211,7 @@ TEST(STP, internalCPUvsGPU) {
 	float abs_error = 1e-2f; // error allowed for CPU<->GPU mode
 
 	for (int j=0; j<2; j++) {
-		sim = new CpuSNN(name,simModes[j],USER,0,nConfig,randSeed);
+		sim = new CpuSNN(name,simModes[j],SILENT,0,nConfig,randSeed);
 		int g0=sim->createSpikeGeneratorGroup("input", 1, EXCITATORY_NEURON, ALL);
 		int g1=sim->createGroup("excit", 1, EXCITATORY_NEURON, ALL);
 		sim->setNeuronParameters(g1, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f, ALL);
@@ -214,12 +219,13 @@ TEST(STP, internalCPUvsGPU) {
 		sim->setConductances(true,5,10,15,20,25,30,ALL);
 		sim->setSTP(g0,true,STP_U,STP_tD,STP_tF,ALL);
 
-		PeriodicSpikeGeneratorCore* spk20 = new PeriodicSpikeGeneratorCore(20.0f);
+		bool spikeAtZero = false;
+		PeriodicSpikeGeneratorCore* spk20 = new PeriodicSpikeGeneratorCore(20.0f,spikeAtZero);
 		sim->setSpikeGenerator(g0, spk20, ALL);
 
 		sim->setupNetwork(true);
 		for (int i=0; i<300; i++) {
-			sim->runNetwork(0,1,true); // enable copyState
+			sim->runNetwork(0,1,false,true); // enable copyState
 			stpu[j*300+i] = sim->stpu[1];
 			stpx[j*300+i] = sim->stpx[1];
 		}
@@ -235,10 +241,10 @@ TEST(STP, internalCPUvsGPU) {
 	}
 
 	// check init default values
-	EXPECT_FLOAT_EQ(stpu[0],0.0f);
-	EXPECT_FLOAT_EQ(stpx[0],1.0f);
-	EXPECT_FLOAT_EQ(stpu[300],0.0f);
-	EXPECT_FLOAT_EQ(stpx[300],1.0f);
+	EXPECT_FLOAT_EQ(stpu[0],0.0);
+	EXPECT_FLOAT_EQ(stpx[0],1.0);
+	EXPECT_FLOAT_EQ(stpu[300],0.0);
+	EXPECT_FLOAT_EQ(stpx[300],1.0);
 }
 
 #if ENABLE_CPU_GPU_TESTS
@@ -274,7 +280,8 @@ TEST(STP, externalCPUvsGPU) {
 		sim->setConductances(true,5,10,15,20,25,30,ALL);
 		sim->setSTP(g0,true,STP_U,STP_tD,STP_tF,ALL);
 
-		PeriodicSpikeGeneratorCore* spk20 = new PeriodicSpikeGeneratorCore(20.0f);
+		bool spikeAtZero = false;
+		PeriodicSpikeGeneratorCore* spk20 = new PeriodicSpikeGeneratorCore(20.0f,spikeAtZero);
 		sim->setSpikeGenerator(g0, spk20, ALL);
 
 		for (int i=0; i<300; i++) {

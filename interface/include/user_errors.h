@@ -23,26 +23,34 @@ public:
 	 */
 	enum errorType {
 		ALL_NOT_ALLOWED,		//!< keyword ALL is not allowed for this variable
+		CAN_ONLY_BE_CALLED_IN_MODE,	//!< function can only be called in certain mode
+		CAN_ONLY_BE_CALLED_IN_STATE,//!< function can only be called in certain state
+		CANNOT_BE_CALLED_IN_MODE,	//!< function cannot be called in certain mode
+		CANNOT_BE_CALLED_IN_STATE,	//!< function cannot be called in certain state
 		CANNOT_BE_IDENTICAL,	//!< parameters cannot be identical
 		CANNOT_BE_NEGATIVE,		//!< parameter cannot have negative value (opposite to "must be", but includes zero)
 		CANNOT_BE_NULL,			//!< parameter cannot have NULL value
 		CANNOT_BE_POSITIVE,		//!< parameter cannot have positive value (opposite to "must be", but includes zero)
 		CANNOT_BE_LARGER,		//!< parameter cannot have larger vaule than some vaule
+		CANNOT_BE_OFF,			//!< parameter cannot be off
+		CANNOT_BE_ON,			//!< parameter cannot be on
 		CANNOT_BE_UNKNOWN, 		//!< parameter cannot be of type UNKNOWN
 		FILE_CANNOT_CREATE,		//!< could not create a file
 		FILE_CANNOT_OPEN,		//!< could not open file
+		IS_DEPRECATED,			//!< deprecated function
 		MUST_BE_LOGGER_CUSTOM,	//!< must be in custom logger mode
 		MUST_BE_IDENTICAL,      //!< parameters must be identical
 		MUST_BE_NEGATIVE,		//!< parameter must have negative value
 		MUST_BE_POSITIVE,		//!< parameter must have positive value
+		MUST_BE_OFF,			//!< parameter must be off
+		MUST_BE_ON,				//!< parameter must be on
 		MUST_BE_ZERO,           //!< parameter must be 0
-		MUST_BE_WITHIN_RANGE,	//!< parameter must be within some range
+		MUST_BE_IN_RANGE,		//!< parameter must be in some range
 		MUST_HAVE_SAME_SIGN,	//!< some parameters must have the same sign
 		NETWORK_ALREADY_RUN,	//!< function cannot be called because network has already bun run
 		UNKNOWN_GROUP_ID,		//!< the specified group id is unknown
 		UNKNOWN,				//!< an unknown error
-		WRONG_NEURON_TYPE,		//!< function cannot be applied to neuron type
-		INVALID_API_AT_CURRENT_STATE //!< the api function (public method) can't be called at the current carlsim sate
+		WRONG_NEURON_TYPE		//!< function cannot be applied to neuron type
 	};
 
 

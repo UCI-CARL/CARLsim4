@@ -107,7 +107,7 @@ static const char* simMode_string[] = {
 	"CPU mode","GPU mode","Unknown mode"
 };
 
-// TODO: extend documentation, add relevant references
+// \TODO: extend documentation, add relevant references
 /*!
  * \brief STDP flavors
  *
@@ -122,20 +122,24 @@ static const char* stdpType_string[] = {
 	"Standard STDP","Dopamine-modulated STDP","Unknown mode"
 };
 
+
 /*!
- * \brief AER data structure
- * This data structure mimics the address-event representation (AER) of 
- * data storage by having an int to represent the time and an int to 
- * represent the neuron id (nid).
+ * \brief SpikeMonitor mode
  *
- * Binary spike files are written in this format: (time first, then nid).
- * So this data structure mimics that. Most of the time this data structure
- * will be found in a vector containting AER structures.
+ * SpikeMonitors can be run in different modes:
+ * COUNT:	Will collect only spike count information (such as number of spikes per neuron),
+ *          not the explicit spike times. COUNT mode cannot retrieve exact spike times per
+ *          neuron, and is thus not capable of computing spike train correlation etc.
+ * AER:     Will collect spike information in AER format (will collect both neuron IDs and
+ *          spike times).
  */
-typedef struct{
-	int time;
-	int nid;
-} AER;
+enum spikeMonMode_t {
+	COUNT,            AER
+};
+static const char* spikeMonMode_string[] = {
+	"SpikeCount Mode","SpikeTime Mode"
+};
+
 
 /*!
  * \brief Update frequency for weights
@@ -152,6 +156,18 @@ static const char* updateInterval_string[] = {
 	"10 ms interval", "100 ms interval", "1000 ms interval"
 };
 
+/*!
+ * \brief CARLsim states
+ *
+ * A CARLsim simulation goes through the following states:
+ * CONFIG 		configuration state, where the neural network is configured
+ * SETUP 		setup state, where the neural network is prepared for execution
+ * EXECUTION 	execution state, where the simulation is executed
+ * Certain methods can only be called in certain states. Check their documentation to see which method can be called
+ * in which state.
+ * Certain methods perform state transitions. CARLsim::setupNetwork will change the state from CONFIG to SETUP. The
+ * first call to CARLsim::runNetwork will change the state from SETUP to EXECUTION.
+ */
 enum carlsimState_t {
 	CONFIG_STATE, SETUP_STATE, EXE_STATE
 };

@@ -200,7 +200,7 @@ typedef struct network_ptr_s  {
 	int3*	groupIdInfo;			//!< .x , .y: the start and end index of neurons in a group, .z: gourd id, used for group Id calculations
 	short int*	synIdLimit;			//!<
 	float*	synMaxWts;				//!<
-	unsigned int*	nSpikeCnt;
+	int*	nSpikeCnt;
 
 	int** spkCntBuf; //!< for copying 2D array to GPU (see CpuSNN::allocateSNN_GPU)
 	int* spkCntBufChild[MAX_GRP_PER_SNN]; //!< child pointers for above
@@ -285,6 +285,8 @@ typedef struct group_info_s
 	float		decayACh;		//!< decay rate for Acetylcholine
 	float		decayNE;		//!< decay rate for Noradrenaline
 
+	bool 		writeSpikesToFile; 	//!< whether spikes should be written to file (needs SpikeMonitorId>-1)
+	bool 		writeSpikesToArray;	//!< whether spikes should be written to file (needs SpikeMonitorId>-1)
 	SpikeGeneratorCore*	spikeGen;
 	bool		newUpdates;  //!< FIXME this flag has mixed meaning and is not rechecked after the simulation is started
 } group_info_t;
