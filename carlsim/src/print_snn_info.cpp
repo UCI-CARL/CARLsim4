@@ -470,7 +470,7 @@ void CpuSNN::printWeights(int preGrpId, int postGrpId) {
 	for (int gPost=postA; gPost<postZ; gPost++) {
 		// for each postsynaptic group
 
-		fprintf(fpInf_,"Synapses from %s to %s (+- change in last %d ms)\n",
+		fprintf(fpInf_,"Synapses from %s to %s (+/- change in last %d ms)\n",
 			(preGrpId==ALL)?"ALL":grp_Info2[preGrpId].Name.c_str(), grp_Info2[gPost].Name.c_str(), wtUpdateInterval_);
 
 		if (simMode_ == GPU_MODE) {

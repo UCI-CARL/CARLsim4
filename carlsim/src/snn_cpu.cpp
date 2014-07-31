@@ -3929,7 +3929,9 @@ void CpuSNN::updateConnectionMonitor() {
 				avgWeight += weights[i];
 			avgWeight /= weightSzie;
 
-			CARLSIM_INFO("\nConnection Monitor for Group %s to Group %s has average weight %f",
+			CARLSIM_INFO("");
+			CARLSIM_INFO("(t=%.3fs) Connection Monitor for Group %s to Group %s has average weight %f",
+				(float)(simTime/1000.0),
 				grp_Info2[grpIdPre].Name.c_str(), grp_Info2[grpIdPost].Name.c_str(), avgWeight);
 
 			printWeights(grpIdPre,grpIdPost);
