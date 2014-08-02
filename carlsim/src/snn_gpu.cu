@@ -264,6 +264,12 @@ __device__ inline uint32_t* getFiringBitGroupPtr(unsigned int& nid, int& synGrpI
 	return tmp_ptr;
 }
 
+__device__ inline uint32_t getSTPBufPos(unsigned int nid, uint32_t t)
+{
+//  return (((t%STP_BUF_SIZE)*gpuNetInfo.STP_Pitch) + nid);
+  return ( (t%(gpuNetInfo.D+1))*gpuNetInfo.STP_Pitch + nid);
+}
+
 __device__ inline int2 getStaticThreadLoad(int& bufPos)
 {
 	return (gpuPtrs.neuronAllocation[bufPos]);
@@ -440,8 +446,16 @@ int CpuSNN::allocateStaticLoad(int bufSize) {
 /////////////////////////////////////////////////////////////////////////////////
 
 __device__ void firingUpdateSTP (unsigned int& nid, int& simTime, short int&  grpId) {
-	gpuPtrs.stpu[nid] += gpuGrpInfo[grpId].STP_U*(1.0f-gpuPtrs.stpu[nid]);
-	gpuPtrs.stpx[nid] -= gpuPtrs.stpu[nid]*gpuPtrs.stpx[nid];
+	// update the spike-dependent part of du/dt and dx/dt
+	// we need to retrieve the STP values from the right buffer position (right before vs. right after the spike)
+	int ind_plus  = getSTPBufPos(nid, simTime);
+	int ind_minus = getSTPBufPos(nid, (simTime-1)); // MDR -1 is correct, we use the value before the decay has been applied for the current time step.
+
+	// du/dt = -u/tau_F + U * (1-u^-) * \delta(t-t_{spk})
+	gpuPtrs.stpu[ind_plus] += gpuGrpInfo[grpId].STP_U*(1.0-gpuPtrs.stpu[ind_minus]);
+
+	// dx/dt = (1-x)/tau_D - u^+ * x^- * \delta(t-t_{spk})
+	gpuPtrs.stpx[ind_plus] -= gpuPtrs.stpu[ind_plus]*gpuPtrs.stpx[ind_minus];
 }
 
 __device__ void setFiringBit(unsigned int& nid)
@@ -912,9 +926,14 @@ __global__ void kernel_globalConductanceUpdate (int t, int sec, int simTime) {
 					uint32_t  pre_nid  = GET_CONN_NEURON_ID(pre_Id);
 					char type = gpuGrpInfo[pre_grpId].Type;
 
+
 					// Adjust the weight according to STP scaling
 					if(gpuGrpInfo[pre_grpId].WithSTP) {
-						wt *= gpuPtrs.stpx[pre_nid]*gpuPtrs.stpu[pre_nid];
+						// \FIXME I think pre_nid needs to be adjusted for the delay
+						int ind_plus = getSTPBufPos(pre_nid,simTime);
+						int ind_minus = getSTPBufPos(pre_nid,(simTime-1)); // \FIXME should be adjusted for delay
+						// dI/dt = -I/tau_S + A * u^+ * x^- * \delta(t-t_{spk})
+						wt *= gpuGrpInfo[pre_grpId].STP_A * gpuPtrs.stpx[ind_minus] * gpuPtrs.stpu[ind_plus];
 					}
 
 					if (gpuNetInfo.sim_with_conductances) {
@@ -1147,8 +1166,11 @@ __global__ void kernel_STPUpdateAndDecayConductances (int t, int sec, int simTim
 		assertSTPConditions();
 
 		if (gpuGrpInfo[grpId].WithSTP && (threadIdx.x < lastId) && (nid < gpuNetInfo.numN)) {
-			gpuPtrs.stpu[nid] -= gpuPtrs.stpu[nid]*gpuGrpInfo[grpId].STP_tau_u_inv;
-			gpuPtrs.stpx[nid] += (1.0f-gpuPtrs.stpx[nid])*gpuGrpInfo[grpId].STP_tau_x_inv;
+			int ind_plus  = getSTPBufPos(nid, simTime);
+			int ind_minus = getSTPBufPos(nid, (simTime-1)); // \FIXME sure?
+
+			gpuPtrs.stpu[ind_plus] -= gpuPtrs.stpu[ind_minus]*gpuGrpInfo[grpId].STP_tau_u_inv;
+			gpuPtrs.stpx[ind_plus] += (1.0f-gpuPtrs.stpx[ind_minus])*gpuGrpInfo[grpId].STP_tau_x_inv;
 		}
 	}
 }
@@ -1210,29 +1232,6 @@ __device__ void updateSynapticWeights(int& nid, unsigned int& jpos, int& grpId, 
 	gpuPtrs.wt[jpos] = t_wt;
 	gpuPtrs.wtChange[jpos] = t_wtChange;
 }
-
-
-// old version of updateSynapticWeights
-/*
-__device__ void updateSynapticWeights(int& nid, int& jpos, int& grpId)
-{
-  float t_wt   	  = gpuPtrs.wt[jpos];
-  float t_wtChange  = gpuPtrs.wtChange[jpos];
-  float t_maxWt 	  = gpuPtrs.maxSynWt[jpos];
-
-  t_wt += t_wtChange;
-
-  //MDR - don't decay weight cahnges, just set to 0
-  //t_wtChange*=0.90f;
-  t_wtChange = 0;
-
-  if (t_wt>t_maxWt) t_wt=t_maxWt;
-  if (t_wt<0)  	  t_wt=0.0f;
-
-  gpuPtrs.wt[jpos] = t_wt;
-  gpuPtrs.wtChange[jpos] = t_wtChange;
-}
-*/
 
 
 #define UPWTS_CLUSTERING_SZ	32
@@ -1905,31 +1904,25 @@ void CpuSNN::checkDestSrcPtrs(network_ptr_t* dest, network_ptr_t* src, cudaMemcp
 
 void CpuSNN::copyFiringStateFromGPU (int grpId)
 {
-	int ptrPos, length, length2;
+	int ptrPos, length;
 
 	if(grpId == -1) {
 		ptrPos  = 0;
-		length  = numNReg;
-		length2 = numN;
+		length = numN;
 	}
 	else {
 		ptrPos  = grp_Info[grpId].StartN;
 		length  = grp_Info[grpId].SizeN;
-		length2 = length;
 	}
 
-	assert(length  <= numNReg);
-	assert(length2 <= numN);
-	assert(length > 0);
-	assert(length2 > 0);
+	assert(length>0 && length <= numN);
 
 	network_ptr_t* dest = &cpuNetPtrs;
 	network_ptr_t* src  = &cpu_gpuNetPtrs;
-	cudaMemcpyKind kind = cudaMemcpyDeviceToHost;
 
 	// Spike Cnt. Firing...
-	CUDA_CHECK_ERRORS( cudaMemcpy( &dest->nSpikeCnt[ptrPos], &src->nSpikeCnt[ptrPos], sizeof(int)*length2, kind));
-
+	CUDA_CHECK_ERRORS( cudaMemcpy(&dest->nSpikeCnt[ptrPos], &src->nSpikeCnt[ptrPos], sizeof(int)*length, 
+		cudaMemcpyDeviceToHost) );
 }
 
 void CpuSNN::copyNeuronState(network_ptr_t* dest, network_ptr_t* src,  cudaMemcpyKind kind, int allocateMem, int grpId)
@@ -2120,11 +2113,59 @@ void CpuSNN::copySTPState(network_ptr_t* dest, network_ptr_t* src, cudaMemcpyKin
 	}
 	assert(src->stpu != NULL); assert(src->stpx != NULL);
 
-	if(allocateMem)		CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->stpu, sizeof(float)*numN));
-	CUDA_CHECK_ERRORS( cudaMemcpy( &dest->stpu[0], &src->stpu[0], sizeof(float)*numN, kind));
+	size_t STP_Pitch;
+	size_t widthInBytes = sizeof(float)*net_Info.numN;
 
-	if(allocateMem)		CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->stpx, sizeof(float)*numN));
-	CUDA_CHECK_ERRORS( cudaMemcpy( &dest->stpx[0], &src->stpx[0], sizeof(float)*numN, kind));
+//	if(allocateMem)		CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->stpu, sizeof(float)*numN));
+//	CUDA_CHECK_ERRORS( cudaMemcpy( &dest->stpu[0], &src->stpu[0], sizeof(float)*numN, kind));
+
+//	if(allocateMem)		CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->stpx, sizeof(float)*numN));
+//	CUDA_CHECK_ERRORS( cudaMemcpy( &dest->stpx[0], &src->stpx[0], sizeof(float)*numN, kind));
+
+	// allocate the stpu and stpx variable
+	if (allocateMem)
+		CUDA_CHECK_ERRORS( cudaMallocPitch ((void**) &dest->stpu, &net_Info.STP_Pitch, widthInBytes, net_Info.D+1));
+	if (allocateMem)
+		CUDA_CHECK_ERRORS( cudaMallocPitch ((void**) &dest->stpx, &STP_Pitch, widthInBytes, net_Info.D+1));
+
+	assert(net_Info.STP_Pitch > 0);
+	assert(STP_Pitch > 0);				// stp_pitch should be greater than zero
+	assert(STP_Pitch == net_Info.STP_Pitch);	// we want same Pitch for stpu and stpx
+	assert(net_Info.STP_Pitch >= widthInBytes);	// stp_pitch should be greater than the width
+	// convert the Pitch value to multiples of float
+	assert(net_Info.STP_Pitch % (sizeof(float)) == 0);
+	if (allocateMem)
+		net_Info.STP_Pitch = net_Info.STP_Pitch/sizeof(float);
+
+	fprintf(stderr, "STP_Pitch = %ld, STP_witdhInBytes = %d\n", net_Info.STP_Pitch, widthInBytes);
+
+	float* tmp_stp = new float[net_Info.numN];
+	// copy the already generated values of stpx and stpu to the GPU
+	for(int t=0; t<net_Info.D+1; t++) {
+		if (kind==cudaMemcpyHostToDevice) {
+			// stpu in the CPU might be mapped in a specific way. we want to change the format
+			// to something that is okay with the GPU STP_U and STP_X variable implementation..
+			for (int n=0; n < net_Info.numN; n++) {
+				tmp_stp[n]=stpu[STP_BUF_POS(n,t)];
+				assert(tmp_stp[n] == 0.0f);
+			}
+			CUDA_CHECK_ERRORS( cudaMemcpy( &dest->stpu[t*net_Info.STP_Pitch], tmp_stp, sizeof(float)*net_Info.numN, cudaMemcpyHostToDevice));
+			for (int n=0; n < net_Info.numN; n++) {
+				tmp_stp[n]=stpx[STP_BUF_POS(n,t)];
+				assert(tmp_stp[n] == 1.0f);
+			}
+			CUDA_CHECK_ERRORS( cudaMemcpy( &dest->stpx[t*net_Info.STP_Pitch], tmp_stp, sizeof(float)*net_Info.numN, cudaMemcpyHostToDevice));
+		}
+		else {
+			CUDA_CHECK_ERRORS( cudaMemcpy( tmp_stp, &dest->stpu[t*net_Info.STP_Pitch], sizeof(float)*net_Info.numN, cudaMemcpyDeviceToHost));
+			for (int n=0; n < net_Info.numN; n++)
+				stpu[STP_BUF_POS(n,t)]=tmp_stp[n];
+			CUDA_CHECK_ERRORS( cudaMemcpy( tmp_stp, &dest->stpx[t*net_Info.STP_Pitch], sizeof(float)*net_Info.numN, cudaMemcpyDeviceToHost));
+			for (int n=0; n < net_Info.numN; n++)
+				stpx[STP_BUF_POS(n,t)]=tmp_stp[n];
+		}
+	}
+	delete [] tmp_stp;
 }
 
 void CpuSNN::copyWeightState (network_ptr_t* dest, network_ptr_t* src,  cudaMemcpyKind kind, int allocateMem, int grpId)

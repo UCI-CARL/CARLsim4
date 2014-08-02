@@ -256,6 +256,8 @@ typedef struct group_info_s
 	int			Noffset;
 	int8_t		MaxDelay;
 
+	long int    lastSTPupdate;
+	float 		STP_A;
 	float		STP_U;
 	float		STP_tau_u_inv;
 	float		STP_tau_x_inv;
