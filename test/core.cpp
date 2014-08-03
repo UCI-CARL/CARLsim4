@@ -1,6 +1,7 @@
 #include <snn.h>
 
 #include "carlsim_tests.h"
+#include <vector>
 
 /// **************************************************************************************************************** ///
 /// CORE FUNCTIONALITY
@@ -236,12 +237,106 @@ TEST(CORE, setConductancesTrue) {
 	}
 }
 
-// TODO: set both mulSynFast and mulSynSlow to 0.0, observe no spiking
+// \TODO: set both mulSynFast and mulSynSlow to 0.0, observe no spiking
 
-// TODO: set mulSynSlow=0, have some pre-defined mulSynFast and check output rate via spkMonRT
-// TODO: set mulSynFast=0, have some pre-defined mulSynSlow and check output rate via spkMonRT
+// \TODO: set mulSynSlow=0, have some pre-defined mulSynFast and check output rate via spkMonRT
+// \TODO: set mulSynFast=0, have some pre-defined mulSynSlow and check output rate via spkMonRT
 
-// TODO: connect g0->g2 and g1->g2 with some pre-defined values, observe spike output
+// \TODO: connect g0->g2 and g1->g2 with some pre-defined values, observe spike output
 
 //! test all possible valid ways of setting conductances to true
-// FIXME: this could be interface level, but then there would be no way to test net_Info struct
+// \FIXME: this could be interface level, but then there would be no way to test net_Info struct
+
+
+TEST(CORE, spikingCPUvsGPU) {
+	int randSeed = rand() % 1000;	// randSeed must not interfere with STP
+
+	CARLsim *sim = NULL;
+	SpikeMonitor *spkMonG0 = NULL, *spkMonG1 = NULL, *spkMonG2 = NULL, *spkMonG3 = NULL;
+	PeriodicSpikeGenerator *spkGenG0 = NULL, *spkGenG1 = NULL;
+
+	for (int hasCOBA=0; hasCOBA<=0; hasCOBA++) {
+		float rateG0CPU = -1.0f;
+		float rateG1CPU = -1.0f;
+		float rateG2CPU = -1.0f;
+		float rateG3CPU = -1.0f;
+		std::vector<std::vector<int> > spkTimesG0, spkTimesG1, spkTimesG2, spkTimesG3;
+
+		int runTimeMs = 1000;//rand() % 9500 + 500;
+		float wt = hasCOBA ? 0.15f : 15.0f;
+
+PoissonRate in(1);
+
+		for (int isGPUmode=0; isGPUmode<=0; isGPUmode++) {
+			CARLsim* sim = new CARLsim("SNN",isGPUmode?GPU_MODE:CPU_MODE,USER,0,1,randSeed);
+			int g0=sim->createSpikeGeneratorGroup("input0", 1, EXCITATORY_NEURON);
+			int g1=sim->createSpikeGeneratorGroup("input1", 1, EXCITATORY_NEURON);
+			int g2=sim->createGroup("excit2", 1, EXCITATORY_NEURON);
+			int g3=sim->createGroup("excit3", 1, EXCITATORY_NEURON);
+			sim->setNeuronParameters(g2, 0.02f, 0.2f, -65.0f, 8.0f);
+			sim->setNeuronParameters(g3, 0.02f, 0.2f, -65.0f, 8.0f);
+
+			sim->connect(g0,g2,"full",RangeWeight(wt),1.0f,RangeDelay(1));
+			sim->connect(g1,g3,"full",RangeWeight(wt),1.0f,RangeDelay(1));
+
+			if (hasCOBA)
+				sim->setConductances(true,5, 0, 150, 6, 0, 150);
+
+			bool spikeAtZero = true;
+			spkGenG0 = new PeriodicSpikeGenerator(50.0f,spikeAtZero); // periodic spiking
+			sim->setSpikeGenerator(g0, spkGenG0);
+			spkGenG1 = new PeriodicSpikeGenerator(50.0f,spikeAtZero); // periodic spiking
+			sim->setSpikeGenerator(g1, spkGenG1);
+
+			sim->setupNetwork();
+
+//	for (int i=0;i<1;i++) in.rates[i] = 15;
+//		sim->setSpikeRate(g0,&in);
+//		sim->setSpikeRate(g1,&in);
+
+			spkMonG0 = sim->setSpikeMonitor(g0,"NULL");
+			spkMonG1 = sim->setSpikeMonitor(g1,"NULL");
+			spkMonG2 = sim->setSpikeMonitor(g2,"NULL");
+			spkMonG3 = sim->setSpikeMonitor(g3,"NULL");
+
+			spkMonG0->startRecording();
+			spkMonG1->startRecording();
+			spkMonG2->startRecording();
+			spkMonG3->startRecording();
+			sim->runNetwork(runTimeMs/1000, runTimeMs%1000);
+			spkMonG0->stopRecording();
+			spkMonG1->stopRecording();
+			spkMonG2->stopRecording();
+			spkMonG3->stopRecording();
+
+			if (!isGPUmode) {
+				// CPU mode: record rates, so that we can compare them with GPU mode
+				rateG0CPU = spkMonG0->getPopMeanFiringRate();
+				rateG1CPU = spkMonG1->getPopMeanFiringRate();
+				rateG2CPU = spkMonG2->getPopMeanFiringRate();
+				rateG3CPU = spkMonG3->getPopMeanFiringRate();
+				spkTimesG0 = spkMonG0->getSpikeVector2D();
+				spkTimesG1 = spkMonG1->getSpikeVector2D();
+				spkTimesG2 = spkMonG2->getSpikeVector2D();
+				spkTimesG3 = spkMonG3->getSpikeVector2D();
+				for (int i=0; i<spkTimesG2[0].size(); i++)
+					fprintf(stderr, "%d\n",spkTimesG2[0][i]);
+			} else {
+				// GPU mode: compare rates to CPU mode
+				EXPECT_FLOAT_EQ( spkMonG0->getPopMeanFiringRate(), rateG0CPU);
+				EXPECT_FLOAT_EQ( spkMonG1->getPopMeanFiringRate(), rateG1CPU);
+				EXPECT_FLOAT_EQ( spkMonG2->getPopMeanFiringRate(), rateG2CPU);
+				EXPECT_FLOAT_EQ( spkMonG3->getPopMeanFiringRate(), rateG3CPU);
+
+				fprintf(stderr,"Group 2:\n");				
+				std::vector<std::vector<int> > spkT = spkMonG2->getSpikeVector2D();
+				for (int i=0; i<max(spkTimesG2[0].size(),spkT[0].size()); i++)
+					fprintf(stderr, "%d\t%d\n",(i<spkTimesG2[0].size())?spkTimesG2[0][i]:-1, (i<spkT[0].size())?spkT[0][i]:-1);
+			}
+
+//			delete spkGenG0;
+//			delete spkGenG1;
+			delete sim;
+		}
+	}
+}

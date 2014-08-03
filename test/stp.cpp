@@ -136,9 +136,9 @@ TEST(STP, spikeRateSTDSTF) {
 					}
 
 					bool spikeAtZero = true;
-					spkGenG0 = new PeriodicSpikeGenerator(5.0f,spikeAtZero); // periodic spiking @ 15 Hz
+					spkGenG0 = new PeriodicSpikeGenerator(15.0f,spikeAtZero); // periodic spiking @ 15 Hz
 					sim->setSpikeGenerator(g0, spkGenG0);
-					spkGenG1 = new PeriodicSpikeGenerator(5.0f,spikeAtZero); // periodic spiking @ 15 Hz
+					spkGenG1 = new PeriodicSpikeGenerator(15.0f,spikeAtZero); // periodic spiking @ 15 Hz
 					sim->setSpikeGenerator(g1, spkGenG1);
 
 					sim->setupNetwork();

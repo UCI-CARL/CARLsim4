@@ -445,12 +445,14 @@ int CpuSNN::allocateStaticLoad(int bufSize) {
 // update the STPU and STPX variable after firing			      ///
 /////////////////////////////////////////////////////////////////////////////////
 
+// update the spike-dependent part of du/dt and dx/dt
 __device__ void firingUpdateSTP (unsigned int& nid, int& simTime, short int&  grpId) {
-	// update the spike-dependent part of du/dt and dx/dt
 	// we need to retrieve the STP values from the right buffer position (right before vs. right after the spike)
 	int ind_plus  = getSTPBufPos(nid, simTime);
-	int ind_minus = getSTPBufPos(nid, (simTime-1)); // MDR -1 is correct, we use the value before the decay has been applied for the current time step.
+	int ind_minus = getSTPBufPos(nid, (simTime-1));
 
+	// at this point, stpu[ind_plus] has already been assigned, and the decay applied
+	// so add the spike-dependent part to that
 	// du/dt = -u/tau_F + U * (1-u^-) * \delta(t-t_{spk})
 	gpuPtrs.stpu[ind_plus] += gpuGrpInfo[grpId].STP_U*(1.0-gpuPtrs.stpu[ind_minus]);
 
@@ -918,51 +920,51 @@ __global__ void kernel_globalConductanceUpdate (int t, int sec, int simTime) {
 					int wt_i = sh_tableQuickSynId[k];
 					int wtId = (j*32 + cnt*8 + wt_i);
 
-					// load the synaptic weight for the wtId'th input
-					float wt = gpuPtrs.wt[cum_pos + wtId];
-
 					post_info_t pre_Id   = gpuPtrs.preSynapticIds[cum_pos + wtId];
 					uint8_t  pre_grpId  = GET_CONN_GRP_ID(pre_Id);
 					uint32_t  pre_nid  = GET_CONN_NEURON_ID(pre_Id);
 					char type = gpuGrpInfo[pre_grpId].Type;
 
+					// load the synaptic weight for the wtId'th input
+					float change = gpuPtrs.wt[cum_pos + wtId];
 
 					// Adjust the weight according to STP scaling
 					if(gpuGrpInfo[pre_grpId].WithSTP) {
+						int tD = 1; // \FIXME find delay
 						// \FIXME I think pre_nid needs to be adjusted for the delay
-						int ind_plus = getSTPBufPos(pre_nid,simTime);
-						int ind_minus = getSTPBufPos(pre_nid,(simTime-1)); // \FIXME should be adjusted for delay
+						int ind_minus = getSTPBufPos(pre_nid,(simTime-tD-1)); // \FIXME should be adjusted for delay
+						int ind_plus = getSTPBufPos(pre_nid,(simTime-tD));
 						// dI/dt = -I/tau_S + A * u^+ * x^- * \delta(t-t_{spk})
-						wt *= gpuGrpInfo[pre_grpId].STP_A * gpuPtrs.stpx[ind_minus] * gpuPtrs.stpu[ind_plus];
+						change *= gpuGrpInfo[pre_grpId].STP_A * gpuPtrs.stpx[ind_minus] * gpuPtrs.stpu[ind_plus];
 					}
 
 					if (gpuNetInfo.sim_with_conductances) {
 						short int connId = gpuPtrs.cumConnIdPre[cum_pos+wtId];
 						if (type & TARGET_AMPA)
-							AMPA_sum += wt*gpuPtrs.mulSynFast[connId];
+							AMPA_sum += change*gpuPtrs.mulSynFast[connId];
 						if (type & TARGET_NMDA) {
 							if (gpuNetInfo.sim_with_NMDA_rise) {
-								NMDA_r_sum += wt*gpuPtrs.mulSynSlow[connId]*gpuNetInfo.sNMDA;
-								NMDA_d_sum += wt*gpuPtrs.mulSynSlow[connId]*gpuNetInfo.sNMDA;
+								NMDA_r_sum += change*gpuPtrs.mulSynSlow[connId]*gpuNetInfo.sNMDA;
+								NMDA_d_sum += change*gpuPtrs.mulSynSlow[connId]*gpuNetInfo.sNMDA;
 							} else {
-								NMDA_sum += wt*gpuPtrs.mulSynSlow[connId];
+								NMDA_sum += change*gpuPtrs.mulSynSlow[connId];
 							}
 						}
 						if (type & TARGET_GABAa)
-							GABAa_sum += wt*gpuPtrs.mulSynFast[connId];	// wt should be negative for GABAa and GABAb
+							GABAa_sum += change*gpuPtrs.mulSynFast[connId];	// wt should be negative for GABAa and GABAb
 						if (type & TARGET_GABAb) {						// but that is dealt with below
 							if (gpuNetInfo.sim_with_GABAb_rise) {
-								GABAb_r_sum += wt*gpuPtrs.mulSynSlow[connId]*gpuNetInfo.sGABAb;
-								GABAb_d_sum += wt*gpuPtrs.mulSynSlow[connId]*gpuNetInfo.sGABAb;
+								GABAb_r_sum += change*gpuPtrs.mulSynSlow[connId]*gpuNetInfo.sGABAb;
+								GABAb_d_sum += change*gpuPtrs.mulSynSlow[connId]*gpuNetInfo.sGABAb;
 							} else {
-								GABAb_sum += wt*gpuPtrs.mulSynSlow[connId];
+								GABAb_sum += change*gpuPtrs.mulSynSlow[connId];
 							}
 						}
 					}
 					else {
 						// current based model with STP (CUBA)
 						// updated current for neuron 'post_nid'
-						AMPA_sum +=  wt;
+						AMPA_sum +=  change;
 					}
 
 					tmp_I_cnt++;
@@ -1168,9 +1170,8 @@ __global__ void kernel_STPUpdateAndDecayConductances (int t, int sec, int simTim
 		if (gpuGrpInfo[grpId].WithSTP && (threadIdx.x < lastId) && (nid < gpuNetInfo.numN)) {
 			int ind_plus  = getSTPBufPos(nid, simTime);
 			int ind_minus = getSTPBufPos(nid, (simTime-1)); // \FIXME sure?
-
-			gpuPtrs.stpu[ind_plus] -= gpuPtrs.stpu[ind_minus]*gpuGrpInfo[grpId].STP_tau_u_inv;
-			gpuPtrs.stpx[ind_plus] += (1.0f-gpuPtrs.stpx[ind_minus])*gpuGrpInfo[grpId].STP_tau_x_inv;
+				gpuPtrs.stpu[ind_plus] = gpuPtrs.stpu[ind_minus]*(1.0-gpuGrpInfo[grpId].STP_tau_u_inv);
+				gpuPtrs.stpx[ind_plus] = gpuPtrs.stpx[ind_minus] + (1.0-gpuPtrs.stpx[ind_minus])*gpuGrpInfo[grpId].STP_tau_x_inv;
 		}
 	}
 }
@@ -2137,7 +2138,7 @@ void CpuSNN::copySTPState(network_ptr_t* dest, network_ptr_t* src, cudaMemcpyKin
 	if (allocateMem)
 		net_Info.STP_Pitch = net_Info.STP_Pitch/sizeof(float);
 
-	fprintf(stderr, "STP_Pitch = %ld, STP_witdhInBytes = %d\n", net_Info.STP_Pitch, widthInBytes);
+//	fprintf(stderr, "STP_Pitch = %ld, STP_witdhInBytes = %d\n", net_Info.STP_Pitch, widthInBytes);
 
 	float* tmp_stp = new float[net_Info.numN];
 	// copy the already generated values of stpx and stpu to the GPU
@@ -2969,9 +2970,6 @@ void CpuSNN::doGPUSim() {
 		CUDA_CHECK_ERRORS_MACRO(cudaMemcpyToSymbol(testVarCnt, &cnt, sizeof(int), 0, cudaMemcpyHostToDevice));
 		CUDA_CHECK_ERRORS_MACRO(cudaMemcpyToSymbol(testVarCnt2, &cnt, sizeof(int), 0, cudaMemcpyHostToDevice));
 	}
-
-
-	return;
 }
 
 void CpuSNN::updateFiringTable_GPU()

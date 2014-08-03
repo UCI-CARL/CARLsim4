@@ -585,7 +585,6 @@ void CpuSNN::setSTP(int grpId, bool isSet, float STP_U, float STP_tau_u, float S
 		grp_Info[cGrpId].STP_tau_u_inv	= 1.0f/STP_tau_u; // facilitatory
 		grp_Info[cGrpId].STP_tau_x_inv	= 1.0f/STP_tau_x; // depressive
 		grp_Info[cGrpId].newUpdates = true;
-		grp_Info[cGrpId].lastSTPupdate = -1;
 
 		CARLSIM_INFO("STP %s for %d (%s):\tA: %1.4f, U: %1.4f, tau_u: %4.0f, tau_x: %4.0f", isSet?"enabled":"disabled",
 					cGrpId, grp_Info2[cGrpId].Name.c_str(), grp_Info[cGrpId].STP_A, STP_U, STP_tau_u, STP_tau_x);
@@ -2795,29 +2794,6 @@ void CpuSNN::generatePostSpike(unsigned int pre_i, unsigned int idx_d, unsigned 
 					stpu[ind_minus], stpu[ind_plus], stpx[ind_minus], stpx[ind_plus], change, wt[pos_i]);
 
 	}
-
-/*
-	// update the spike-dependent part of du/dt, dI/dt, and dx/dt
-	// NOTE: Order is important! (Tsodyks & Markram, 1998; Mongillo, Barak, & Tsodyks, 2008)
-	// use u^+ (value right after spike-update) but x^- (value right before spike-update)
-	if (grp_Info[pre_grpId].WithSTP) {
-		// du/dt = -u/tau_F + U * (1-u^-) * \delta(t-t_{spk})
-		if (grp_Info[pre_grpId].lastSTPupdate < simTime)
-			stpu[pre_i] += grp_Info[pre_grpId].STP_U*(1.0-stpu[pre_i]);
-
-		// dI/dt = -I/tau_S + A * u^+ * x^- * \delta(t-t_{spk})
-		change *= grp_Info[pre_grpId].STP_A*stpu[pre_i]*stpx[pre_i];
-		fprintf(stderr,"%d[%d]: STP_A=%f, STP_U=%f, stpu=%f, stpx=%f, change=%f, wt=%f\n", simTime, pos_i,
-			grp_Info[pre_grpId].STP_A, grp_Info[pre_grpId].STP_U,
-			stpu[pre_i],stpx[pre_i],change,wt[pos_i]);
-
-		// dx/dt = (1-x)/tau_D - u^+ * x^- * \delta(t-t_{spk})
-		if (grp_Info[pre_grpId].lastSTPupdate < simTime)
-			stpx[pre_i] -= stpu[pre_i]*stpx[pre_i];
-	}
-
-	grp_Info[pre_grpId].lastSTPupdate = simTime;
-*/
 
 	// update currents
 	// NOTE: it's faster to += 0.0 rather than checking for zero and not updating
