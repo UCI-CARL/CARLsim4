@@ -248,7 +248,7 @@ TEST(CORE, setConductancesTrue) {
 // \FIXME: this could be interface level, but then there would be no way to test net_Info struct
 
 
-TEST(CORE, spikingCPUvsGPU) {
+TEST(CORE, spikeRateCPUvsGPU) {
 	int randSeed = rand() % 1000;	// randSeed must not interfere with STP
 
 	CARLsim *sim = NULL;

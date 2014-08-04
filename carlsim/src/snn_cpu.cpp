@@ -2788,11 +2788,10 @@ void CpuSNN::generatePostSpike(unsigned int pre_i, unsigned int idx_d, unsigned 
 
 		change *= grp_Info[pre_grpId].STP_A*stpu[ind_plus]*stpx[ind_minus];
 
-		fprintf(stderr,"%d: %d[%d], numN=%d, D=%d, ind-=%d, ind+=%d, stpu=[%f,%f], stpx=[%f,%f], change=%f, wt=%f\n", 
-			simTime, pre_grpId, pre_i,
-					numN, D, ind_minus, ind_plus,
-					stpu[ind_minus], stpu[ind_plus], stpx[ind_minus], stpx[ind_plus], change, wt[pos_i]);
-
+//		fprintf(stderr,"%d: %d[%d], numN=%d, D=%d, ind-=%d, ind+=%d, stpu=[%f,%f], stpx=[%f,%f], change=%f, wt=%f\n", 
+//			simTime, pre_grpId, pre_i,
+//					numN, D, ind_minus, ind_plus,
+//					stpu[ind_minus], stpu[ind_plus], stpx[ind_minus], stpx[ind_plus], change, wt[pos_i]);
 	}
 
 	// update currents

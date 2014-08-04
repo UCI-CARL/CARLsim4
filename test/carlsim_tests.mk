@@ -7,7 +7,7 @@ gtest_deps = $(GTEST_LIB_DIR)/libgtest.a $(GTEST_LIB_DIR)/libgtest_main.a \
 # e.g., file "test/coba.cpp" should appear here as "coba"
 # the prefix (directory "test") and suffix (".cpp") will be appended afterwards
 #carlsim_tests_cpps := coba core interface stdp stp spike_mon
-carlsim_tests_cpps := core
+carlsim_tests_cpps := stp
 
 local_dir := $(test_dir)
 local_deps := carlsim_tests.h $(addsuffix .cpp,$(carlsim_tests_cpps))
