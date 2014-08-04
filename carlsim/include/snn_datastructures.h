@@ -79,7 +79,7 @@ typedef struct network_info_s  {
 	size_t			STP_Pitch;		//!< numN rounded upwards to the nearest 256 boundary
 	unsigned int	numN;
 	unsigned int	numPostSynapses;
-	unsigned int	D;
+	unsigned int	maxDelay;
 	unsigned int	numNExcReg;
 	unsigned int	numNInhReg;
 	unsigned int	numNReg;

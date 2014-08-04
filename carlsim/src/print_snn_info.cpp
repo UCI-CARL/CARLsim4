@@ -264,9 +264,9 @@ int CpuSNN::printPostConnection2(int grpId, FILE* const fpg)
     fprintf(fpg, " id %d : group %d : postlength %d ", i, findGrpId(i), Npost[i]);
     // fetch the starting position
     post_info_t* postIds = &postSynapticIds[cumulativePost[i]];
-    for(int j=0; j <= D; j++) {
-      int len   = postDelayInfo[i*(D+1)+j].delay_length;
-      int start = postDelayInfo[i*(D+1)+j].delay_index_start;
+    for(int j=0; j <= maxDelay_; j++) {
+      int len   = postDelayInfo[i*(maxDelay_+1)+j].delay_length;
+      int start = postDelayInfo[i*(maxDelay_+1)+j].delay_index_start;
       for(int k=start; k < len; k++) {
 	int post_nid = GET_CONN_NEURON_ID((*postIds));
 	//					int post_gid = GET_CONN_GRP_ID((*postIds));
@@ -358,13 +358,13 @@ void CpuSNN::printPostConnection(int grpId, FILE* const fp)
       int post_nid = GET_CONN_NEURON_ID((*postIds));
       int post_gid = GET_CONN_GRP_ID((*postIds));
       assert( findGrpId(post_nid) == post_gid);
-      if(fp) fprintf(fp, " %3d ( D=%3d, Grp=%3d) ", post_nid, tmp_SynapticDelay[offset+j], post_gid);
+      if(fp) fprintf(fp, " %3d ( maxDelay_=%3d, Grp=%3d) ", post_nid, tmp_SynapticDelay[offset+j], post_gid);
     }
     if(fp) fprintf(fp, "\n");
     if(fp) fprintf(fp, " Delay ( %3d ) : ", i);
-    for(int j=0; j < D; j++) {
-      if(fp) fprintf(fp, " %d,%d ", postDelayInfo[i*(D+1)+j].delay_length,
-		     postDelayInfo[i*(D+1)+j].delay_index_start);
+    for(int j=0; j < maxDelay_; j++) {
+      if(fp) fprintf(fp, " %d,%d ", postDelayInfo[i*(maxDelay_+1)+j].delay_length,
+		     postDelayInfo[i*(maxDelay_+1)+j].delay_index_start);
     }
     if(fp) fprintf(fp, "\n");
   }
