@@ -3469,7 +3469,7 @@ void CpuSNN::resetNeuron(unsigned int neurId, int grpId) {
 	Izh_d[neurId] = grp_Info2[grpId].Izh_d + grp_Info2[grpId].Izh_d_sd*(float)getRandClosed();
 
 	voltage[neurId] = Izh_c[neurId];	// initial values for new_v
-	recovery[neurId] = 0.2f*voltage[neurId];   		// initial values for u
+	recovery[neurId] = Izh_b[neurId]*voltage[neurId]; // initial values for u
 
 
  	if (grp_Info[grpId].WithHomeostasis) {
