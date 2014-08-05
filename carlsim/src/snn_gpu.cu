@@ -1141,6 +1141,8 @@ __global__ void kernel_STPUpdateAndDecayConductances (int t, int sec, int simTim
 			} else {
 				gpuPtrs.gGABAb[nid]  *=  gpuNetInfo.dGABAb;
 			}
+		} else {
+			gpuPtrs.current[nid] = 0;
 		}
 
     // check various STP asserts here....
