@@ -9,30 +9,35 @@
 /*!
  * \brief testing of CUBA mode for CPU and GPU modes
  * For now this tests to make sure that the firing rates closely resemble a
- * Matlab implementation of an izhikevich CUBA neuron.
+ * Matlab implementation of an izhikevich CUBA neuron. The matlab script
+ * is found in tests/scripts and is called runCUBA.m. There are two test cases:
+ * a test case that produces lower firing (LF) rates in the output RS neuron
+ * (1 Hz) and a test case that produces higher firing rates (HF) in the output
+ * RS neuron (13 Hz). The parameters used as input to the Matlab script and
+ * this test script are as follows:
  *
+ * LF case: input firing rate: 50 Hz
+ *          weight value from input to output neuron: 15
+ *          run time: 1 second
+ *          resulting output neuron firing rate: 1 Hz
+ *
+ * HF case: input firing rate: 25 Hz
+ *          weight value from input to output neuron: 25
+ *          run time: 1 second
+ *          resulting output neuron firing rate: 13 Hz
+ *
+ * Note that the CARLsim cuba simulations should give the same number of spikes
+ * as the Matlab file but with slightly different spike times (offset by 2-3
+ * ms). This is probably due to differences in the execution order of simulation
+ * functions.
+ *
+ * Using the Matlab script: runCUBA(runMs, rate, wt)
+ * runMs is the number of ms to run the script for (1000 ms in this case)
+ * rate is the firing rate of the input neuron (15 or 25 Hz for our cases)
+ * wt is the strength of the weight between the input and output neuron (15 or
+ * 25 for our cases)
+ * The script returns the firing rate and spike times of the output RS neuron.
  */
-
-// FIXME: this could be at the interface-level, if we implemented the correct
-// neuron/connection monitors or if we implemented the required setters and
-// getters in the interface at least temporarily.
-TEST(CUBA, CPU_MODE) {
-
-	//EXPECT_TRUE(sim->sim_with_conductances);
-	//EXPECT_FLOAT_EQ(sim->dAMPA,1.0f-1.0f/tdAMPA);
-	//EXPECT_TRUE(sim->sim_with_NMDA_rise);
-	//EXPECT_FLOAT_EQ(sim->rNMDA,1.0f-1.0f/trNMDA);
-	//EXPECT_FLOAT_EQ(sim->sNMDA, 1.0/(exp(-tmax/tdNMDA)-exp(-tmax/trNMDA))); // scaling factor, 1 over max amplitude
-
-	//EXPECT_FLOAT_EQ(sim->dNMDA,1.0f-1.0f/tdNMDA);
-	//EXPECT_FLOAT_EQ(sim->dGABAa,1.0f-1.0f/tdGABAa);
-	//EXPECT_TRUE(sim->sim_with_GABAb_rise);
-	//EXPECT_FLOAT_EQ(sim->rGABAb,1.0f-1.0f/trGABAb);
-	//EXPECT_FLOAT_EQ(sim->sGABAb, 1.0/(exp(-tmax/tdGABAb)-exp(-tmax/trGABAb))); // scaling factor, 1 over max amplitude
-	//EXPECT_FALSE(sim->sim_with_GABAb_rise);
-	//EXPECT_FLOAT_EQ(sim->dGABAb,1.0f-1.0f/tdGABAb);
-
-}
 
 // Testing GPU version of CUBA mode with input that should result in a
 // low-firing rate (1 Hz)
@@ -253,7 +258,9 @@ TEST(CUBA, CPU_MODE_HF) {
 }
 
 // Testing fidelity of CPU and GPU versions of CUBA mode. They should have identical
-// spike patterns for identical inputs.
+// spike patterns for identical inputs. This test checks their response to a 25 Hz
+// input with a weight of 25. Both output RS neurons should have a firing rate of
+// 13 Hz and identical spike times.
 TEST(CUBA, CPUvsGPU) {
 	// simulation details
 	int N = 1;
