@@ -1018,8 +1018,12 @@ __device__ void updateNeuronState(unsigned int& nid, int& grpId) {
 			v = -90;
 		u += (gpuPtrs.Izh_a[nid]*(gpuPtrs.Izh_b[nid]*v-u)/COND_INTEGRATION_SCALE);
 	}
-
-	gpuPtrs.current[nid] = I_sum;
+	if(gpuNetInfo.sim_with_conductances)
+		gpuPtrs.current[nid] = I_sum;
+	else{
+		// current must be reset here for CUBA and not kernel_STPUpdateAndDecayConductances
+		gpuPtrs.current[nid] = 0;
+	}
 	gpuPtrs.voltage[nid] = v;
 	gpuPtrs.recovery[nid] = u;
 }
