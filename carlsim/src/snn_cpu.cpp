@@ -638,6 +638,9 @@ int CpuSNN::runNetwork(int _nsec, int _nmsec, bool printRunSummary, bool copySta
 	assert(_nsec  >= 0);
 	int runDuration = _nsec*1000 + _nmsec;
 
+	// setupNetwork() must have already been called
+	assert(doneReorganization);
+
 	// first-time run: inform the user the simulation is running now
 	if (simTime==0) {
 		CARLSIM_INFO("");
@@ -657,6 +660,7 @@ int CpuSNN::runNetwork(int _nsec, int _nmsec, bool printRunSummary, bool copySta
 	assert(simTimeRunStop>=simTimeRunStart); // check for arithmetic underflow
 
 	// set the Poisson generation time slice to be at the run duration up to PROPOGATED_BUFFER_SIZE ms.
+	// \TODO: should it be PROPAGATED_BUFFER_SIZE-1 or PROPAGATED_BUFFER_SIZE ? 
 	setGrpTimeSlice(ALL, MAX(1,MIN(runDuration,PROPAGATED_BUFFER_SIZE-1)));
 
 	CUDA_RESET_TIMER(timer);

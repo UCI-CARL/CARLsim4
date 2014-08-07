@@ -128,54 +128,6 @@ TEST(COBA, synRiseTime) {
 /// **************************************************************************************************************** ///
 
 
-/*!
- * \brief testing setConductances to true using default values
- * This function tests the information stored in the group info struct after calling setConductances and enabling COBA.
- * Actual conductance values are set via the interface function setDefaultConductanceDecay
- *
-TEST(COBA, setCondTrueDefault) {
-	// create network by varying nConfig from 1...maxConfig, with
-	// step size nConfigStep
-	int maxConfig = rand()%10 + 10;
-	int nConfigStep = rand()%3 + 2;
-	float tAMPA = 5.0f;		// the exact values don't matter
-	float tNMDA = 10.0f;
-	float tGABAa = 15.0f;
-	float tGABAb = 20.0f;
-	CARLsim* sim;
-	group_info_t grpInfo;
-	int grps[2] = {-1};
-
-	for (int mode=0; mode<=1; mode++) {
-		for (int nConfig=1; nConfig<=maxConfig; nConfig+=nConfigStep) {
-			sim = new CARLsim("SNN",mode?GPU_MODE:CPU_MODE,SILENT,0,nConfig,42);
-
-			sim->setDefaultConductanceDecay(tAMPA,tNMDA,tGABAa,tGABAb);
-
-			grps[0]=sim->createSpikeGeneratorGroup("spike", 10, EXCITATORY_NEURON);
-			grps[1]=sim->createGroup("excit", 10, EXCITATORY_NEURON);
-			sim->setNeuronParameters(grps[1], 0.02f, 0.2f, -65.0f, 8.0f);
-
-			sim->setConductances(grps[0],true);
-			sim->setConductances(grps[1],true);
-
-			for (int c=0; c<nConfig; c++) {
-				for (int g=0; g<=1; g++) {
-					grpInfo = sim->getGroupInfo(grps[g],c);
-					EXPECT_TRUE(grpInfo.WithConductances);
-					EXPECT_FLOAT_EQ(grpInfo.dAMPA,1.0-1.0/tAMPA);
-					EXPECT_FLOAT_EQ(grpInfo.dNMDA,1.0-1.0/tNMDA);
-					EXPECT_FLOAT_EQ(grpInfo.dGABAa,1.0-1.0/tGABAa);
-					EXPECT_FLOAT_EQ(grpInfo.dGABAb,1.0-1.0/tGABAb);
-				}
-			}
-			delete sim;
-		}
-	}
-}
-*/
-
-
 TEST(COBA, disableSynReceptors) {
 	// create network by varying nConfig from 1...maxConfig, with
 	// step size nConfigStep
