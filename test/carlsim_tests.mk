@@ -6,7 +6,8 @@ gtest_deps = $(GTEST_LIB_DIR)/libgtest.a $(GTEST_LIB_DIR)/libgtest_main.a \
 # list of all test cpp files, but without directory and file extension
 # e.g., file "test/coba.cpp" should appear here as "coba"
 # the prefix (directory "test") and suffix (".cpp") will be appended afterwards
-carlsim_tests_cpps := coba core cuba interface stdp stp spike_mon
+#carlsim_tests_cpps := coba core cuba interface stdp stp spike_mon
+carlsim_tests_cpps := cuba
 
 local_dir := $(test_dir)
 local_deps := carlsim_tests.h $(addsuffix .cpp,$(carlsim_tests_cpps))
