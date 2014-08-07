@@ -91,6 +91,8 @@ TEST(CUBA, GPU_MODE_LF) {
 
 	EXPECT_EQ(spikeNumG1,1);
 	EXPECT_EQ(spikeNumGin,50);
+
+	delete spkGenG0;
 }
 
 // Testing GPU version of CUBA mode with input that should result in a
@@ -146,6 +148,8 @@ TEST(CUBA, GPU_MODE_HF) {
 
 	EXPECT_EQ(spikeNumG1,13);
 	EXPECT_EQ(spikeNumGin,25);
+
+	delete spkGenG0;
 }
 
 // Testing CPU version of CUBA mode with input that should result in a
@@ -200,6 +204,8 @@ TEST(CUBA, CPU_MODE_LF) {
 
 	EXPECT_EQ(spikeNumG1,1);
 	EXPECT_EQ(spikeNumGin,50);
+
+	delete spkGenG0;
 }
 
 // Testing CPU version of CUBA mode with input that should result in a
@@ -255,6 +261,8 @@ TEST(CUBA, CPU_MODE_HF) {
 
 	EXPECT_EQ(spikeNumG1,13);
 	EXPECT_EQ(spikeNumGin,25);
+
+	delete spkGenG0;
 }
 
 // Testing fidelity of CPU and GPU versions of CUBA mode. They should have identical
@@ -303,6 +311,7 @@ TEST(CUBA, CPUvsGPU) {
 
 	cpuSpikeMonG1->print(true);
 	cpuSpikeMonGin->print(true);
+
 	//================END CPU COMPONENT==================================
 
 	//================BEGIN GPU COMPONENT================================
@@ -368,5 +377,8 @@ TEST(CUBA, CPUvsGPU) {
 	for(int i=0;i<cpuSpikeVectorGin[0].size();i++){
 		EXPECT_EQ(cpuSpikeVectorGin[0][i],gpuSpikeVectorGin[0][i]);
 	}
+
+	delete cpuSpkGenG0;
+	delete gpuSpkGenG0;
 }
 
