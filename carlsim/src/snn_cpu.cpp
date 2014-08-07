@@ -3016,7 +3016,7 @@ void  CpuSNN::globalStateUpdate() {
 					tmp_gNMDA = sim_with_NMDA_rise ? gNMDA_d[i]-gNMDA_r[i] : gNMDA[i];
 					tmp_gGABAb = sim_with_GABAb_rise ? gGABAb_d[i]-gGABAb_r[i] : gGABAb[i];
 
-					current[i] += -(   gAMPA[i]*(voltage[i]-0)
+					tmp_I = -(   gAMPA[i]*(voltage[i]-0)
 									 + tmp_gNMDA*tmp_iNMDA/(1+tmp_iNMDA)*(voltage[i]-0)
 									 + gGABAa[i]*(voltage[i]+70)
 									 + tmp_gGABAb*(voltage[i]+90)
@@ -3026,11 +3026,14 @@ void  CpuSNN::globalStateUpdate() {
 						double noiseI = -intrinsicWeight[i]*log(getRand());
 						if (isnan(noiseI) || isinf(noiseI))
 							noiseI = 0;
-						current[i] += noiseI;
+						tmp_I += noiseI;
 					#endif
 
-					voltage[i]+=((0.04*voltage[i]+5.0)*voltage[i]+140.0-recovery[i]+current[i])/COND_INTEGRATION_SCALE;
+					voltage[i]+=((0.04*voltage[i]+5.0)*voltage[i]+140.0-recovery[i]+tmp_I)/COND_INTEGRATION_SCALE;
 					assert(!isnan(voltage[i]) && !isinf(voltage[i]));
+
+					// keep track of total current
+					current[i] += tmp_I;
 
 					if (voltage[i] > 30) {
 						voltage[i] = 30;
