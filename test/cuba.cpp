@@ -7,9 +7,10 @@
 
 
 /*!
- * \brief testing of CUBA mode for CPU and GPU modes
- * For now this tests to make sure that the firing rates closely resemble a
- * Matlab implementation of an izhikevich CUBA neuron. The matlab script
+ * \brief testing CARLsim CUBA outputs vs data
+ *
+ * This tests to make sure that the firing rates closely resemble a
+ * Matlab implementation of an Izhikevich CUBA neuron. The matlab script
  * is found in tests/scripts and is called runCUBA.m. There are two test cases:
  * a test case that produces lower firing (LF) rates in the output RS neuron
  * (1 Hz) and a test case that produces higher firing rates (HF) in the output
@@ -38,335 +39,118 @@
  * 25 for our cases)
  * The script returns the firing rate and spike times of the output RS neuron.
  */
-
-// Testing GPU version of CUBA mode with input that should result in a
-// low-firing rate (1 Hz)
-TEST(CUBA, GPU_MODE_LF) {
-	int N = 1;
-	int NUM_INPUT  = N;
-	int NUM_OUTPUT = N;
-	int ithGPU = 0; // run on first GPU
-
-	// SpikeMonitor pointers to grab setSpikeMonitor output
-	SpikeMonitor* spikeMonG1;
-	SpikeMonitor* spikeMonGin;
-
-	// create a network
-	CARLsim sim("random",GPU_MODE,SILENT,ithGPU,1,42);
-
-	// create spike generator that produces periodic (deterministic) spike trains
-	PeriodicSpikeGenerator* spkGenG0 = NULL;
-
-	int g1=sim.createGroup("excit", NUM_INPUT, EXCITATORY_NEURON);
-	int gin=sim.createSpikeGeneratorGroup("input", NUM_OUTPUT ,EXCITATORY_NEURON);
-
-	// Regular spiking neuron parameters
-	sim.setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f);
-
-	// create our periodic spike generator
-	bool spikeAtZero = true;
-	spkGenG0 = new PeriodicSpikeGenerator(50.0f,spikeAtZero); // periodic spiking @ 50 Hz
-	sim.setSpikeGenerator(gin, spkGenG0);
-
-	sim.connect(gin,g1,"random", RangeWeight(15), 1.0f, RangeDelay(1), SYN_FIXED);
-
-	sim.setupNetwork();
-
-	spikeMonG1=sim.setSpikeMonitor(g1,"examples/random/results/spikes.dat"); // put spike times into spikes.dat
-	spikeMonGin=sim.setSpikeMonitor(gin);
-
-	spikeMonG1->startRecording();
-	spikeMonGin->startRecording();
-
-	sim.runNetwork(1,0,false);
-
-	spikeMonG1->stopRecording();
-	spikeMonGin->stopRecording();
-
-	spikeMonG1->print(true);
-	spikeMonGin->print(true);
-
-	int spikeNumG1=spikeMonG1->getPopNumSpikes();
-	int spikeNumGin=spikeMonGin->getPopNumSpikes();
-
-	EXPECT_EQ(spikeNumG1,1);
-	EXPECT_EQ(spikeNumGin,50);
-}
-
-// Testing GPU version of CUBA mode with input that should result in a
-// higher firing rate (13 Hz)
-TEST(CUBA, GPU_MODE_HF) {
-	// simulation details
-	int N = 1;
-	int NUM_INPUT  = N;
-	int NUM_OUTPUT = N;
-	int ithGPU = 0; // run on first GPU
-
-	// SpikeMonitor pointers to grab setSpikeMonitor output
-	SpikeMonitor* spikeMonG1;
-	SpikeMonitor* spikeMonGin;
-
-	// create a network
-	CARLsim sim("random",GPU_MODE,SILENT,ithGPU,1,42);
-
-	// create spike generator that produces periodic (deterministic) spike trains
-	PeriodicSpikeGenerator* spkGenG0 = NULL;
-
-	int g1=sim.createGroup("excit", NUM_INPUT, EXCITATORY_NEURON);
-	int gin=sim.createSpikeGeneratorGroup("input", NUM_OUTPUT ,EXCITATORY_NEURON);
-
-	// Regular spiking neuron parameters
-	sim.setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f);
-
-	// create our periodic spike generator
-	bool spikeAtZero = true;
-	spkGenG0 = new PeriodicSpikeGenerator(25.0f,spikeAtZero); // periodic spiking @ 50 Hz
-	sim.setSpikeGenerator(gin, spkGenG0);
-
-	sim.connect(gin,g1,"random", RangeWeight(25), 1.0f, RangeDelay(1), SYN_FIXED);
-
-	sim.setupNetwork();
-
-	spikeMonG1=sim.setSpikeMonitor(g1,"examples/random/results/spikes.dat"); // put spike times into spikes.dat
-	spikeMonGin=sim.setSpikeMonitor(gin);
-
-	spikeMonG1->startRecording();
-	spikeMonGin->startRecording();
-
-	sim.runNetwork(1,0,false);
-
-	spikeMonG1->stopRecording();
-	spikeMonGin->stopRecording();
-
-	spikeMonG1->print(true);
-	spikeMonGin->print(true);
-
-	int spikeNumG1=spikeMonG1->getPopNumSpikes();
-	int spikeNumGin=spikeMonGin->getPopNumSpikes();
-
-	EXPECT_EQ(spikeNumG1,13);
-	EXPECT_EQ(spikeNumGin,25);
-}
-
-// Testing CPU version of CUBA mode with input that should result in a
-// low-firing rate (1 Hz)
-TEST(CUBA, CPU_MODE_LF) {
-	int N = 1;
-	int NUM_INPUT  = N;
-	int NUM_OUTPUT = N;
-	int ithGPU = 0; // run on first GPU
-
-	// SpikeMonitor pointers to grab setSpikeMonitor output
-	SpikeMonitor* spikeMonG1;
-	SpikeMonitor* spikeMonGin;
-
-	// create a network
-	CARLsim sim("random",CPU_MODE,SILENT,ithGPU,1,42);
-
-	// create spike generator that produces periodic (deterministic) spike trains
-	PeriodicSpikeGenerator* spkGenG0 = NULL;
-
-	int g1=sim.createGroup("excit", NUM_INPUT, EXCITATORY_NEURON);
-	int gin=sim.createSpikeGeneratorGroup("input", NUM_OUTPUT ,EXCITATORY_NEURON);
-
-	// Regular spiking neuron parameters
-	sim.setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f);
-
-	// create our periodic spike generator
-	bool spikeAtZero = true;
-	spkGenG0 = new PeriodicSpikeGenerator(50.0f,spikeAtZero); // periodic spiking @ 50 Hz
-	sim.setSpikeGenerator(gin, spkGenG0);
-
-	sim.connect(gin,g1,"random", RangeWeight(15), 1.0f, RangeDelay(1), SYN_FIXED);
-
-	sim.setupNetwork();
-
-	spikeMonG1=sim.setSpikeMonitor(g1,"examples/random/results/spikes.dat"); // put spike times into spikes.dat
-	spikeMonGin=sim.setSpikeMonitor(gin);
-
-	spikeMonG1->startRecording();
-	spikeMonGin->startRecording();
-
-	sim.runNetwork(1,0,false);
-
-	spikeMonG1->stopRecording();
-	spikeMonGin->stopRecording();
-
-	spikeMonG1->print(true);
-	spikeMonGin->print(true);
-
-	int spikeNumG1=spikeMonG1->getPopNumSpikes();
-	int spikeNumGin=spikeMonGin->getPopNumSpikes();
-
-	EXPECT_EQ(spikeNumG1,1);
-	EXPECT_EQ(spikeNumGin,50);
-}
-
-// Testing CPU version of CUBA mode with input that should result in a
-// higher firing rate (13 Hz)
-TEST(CUBA, CPU_MODE_HF) {
-	// simulation details
-	int N = 1;
-	int NUM_INPUT  = N;
-	int NUM_OUTPUT = N;
-	int ithGPU = 0; // run on first GPU
-
-	// SpikeMonitor pointers to grab setSpikeMonitor output
-	SpikeMonitor* spikeMonG1;
-	SpikeMonitor* spikeMonGin;
-
-	// create a network
-	CARLsim sim("random",GPU_MODE,SILENT,ithGPU,1,42);
-
-	// create spike generator that produces periodic (deterministic) spike trains
-	PeriodicSpikeGenerator* spkGenG0 = NULL;
-
-	int g1=sim.createGroup("excit", NUM_INPUT, EXCITATORY_NEURON);
-	int gin=sim.createSpikeGeneratorGroup("input", NUM_OUTPUT ,EXCITATORY_NEURON);
-
-	// Regular spiking neuron parameters
-	sim.setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f);
-
-	// create our periodic spike generator
-	bool spikeAtZero = true;
-	spkGenG0 = new PeriodicSpikeGenerator(25.0f,spikeAtZero); // periodic spiking @ 50 Hz
-	sim.setSpikeGenerator(gin, spkGenG0);
-
-	sim.connect(gin,g1,"random", RangeWeight(25), 1.0f, RangeDelay(1), SYN_FIXED);
-
-	sim.setupNetwork();
-
-	spikeMonG1=sim.setSpikeMonitor(g1,"examples/random/results/spikes.dat"); // put spike times into spikes.dat
-	spikeMonGin=sim.setSpikeMonitor(gin);
-
-	spikeMonG1->startRecording();
-	spikeMonGin->startRecording();
-
-	sim.runNetwork(1,0,false);
-
-	spikeMonG1->stopRecording();
-	spikeMonGin->stopRecording();
-
-	spikeMonG1->print(true);
-	spikeMonGin->print(true);
-
-	int spikeNumG1=spikeMonG1->getPopNumSpikes();
-	int spikeNumGin=spikeMonGin->getPopNumSpikes();
-
-	EXPECT_EQ(spikeNumG1,13);
-	EXPECT_EQ(spikeNumGin,25);
-}
-
-// Testing fidelity of CPU and GPU versions of CUBA mode. They should have identical
-// spike patterns for identical inputs. This test checks their response to a 25 Hz
-// input with a weight of 25. Both output RS neurons should have a firing rate of
-// 13 Hz and identical spike times.
-TEST(CUBA, CPUvsGPU) {
-	// simulation details
-	int N = 1;
-	int NUM_INPUT  = N;
-	int NUM_OUTPUT = N;
-	int ithGPU = 0; // run on first GPU
-	//================BEGIN CPU COMPONENT==================================
-	SpikeMonitor* cpuSpikeMonG1;
-	SpikeMonitor* cpuSpikeMonGin;
-
-	CARLsim cpuSim("random",CPU_MODE,SILENT,ithGPU,1,42);
-
-	PeriodicSpikeGenerator* cpuSpkGenG0 = NULL;
-
-	int cpuG1=cpuSim.createGroup("excit", NUM_INPUT, EXCITATORY_NEURON);
-	int cpuGin=cpuSim.createSpikeGeneratorGroup("input", NUM_OUTPUT ,EXCITATORY_NEURON);
-
-	cpuSim.setNeuronParameters(cpuG1, 0.02f, 0.2f, -65.0f, 8.0f);
-
-	bool spikeAtZero = true;
-
-	cpuSpkGenG0 = new PeriodicSpikeGenerator(25.0f,spikeAtZero); // periodic spiking @ 50 Hz
-
-	cpuSim.setSpikeGenerator(cpuGin, cpuSpkGenG0);
-
-	cpuSim.connect(cpuGin,cpuG1,"random", RangeWeight(25), 1.0f, RangeDelay(1), SYN_FIXED);
-
-	cpuSim.setupNetwork();
-
-	cpuSpikeMonG1=cpuSim.setSpikeMonitor(cpuG1,"examples/random/results/cpuSpikes.dat"); // put spike times into spikes.dat
-	cpuSpikeMonGin=cpuSim.setSpikeMonitor(cpuGin);
-
-	cpuSpikeMonG1->startRecording();
-	cpuSpikeMonGin->startRecording();
-
-	cpuSim.runNetwork(1,0,false);
-
-	cpuSpikeMonG1->stopRecording();
-	cpuSpikeMonGin->stopRecording();
-
-	cpuSpikeMonG1->print(true);
-	cpuSpikeMonGin->print(true);
-	//================END CPU COMPONENT==================================
-
-	//================BEGIN GPU COMPONENT================================
-	SpikeMonitor* gpuSpikeMonG1;
-	SpikeMonitor* gpuSpikeMonGin;
-
-	CARLsim gpuSim("random",GPU_MODE,SILENT,ithGPU,1,42);
-
-	PeriodicSpikeGenerator* gpuSpkGenG0 = NULL;
-
-	int gpuG1=gpuSim.createGroup("excit", NUM_INPUT, EXCITATORY_NEURON);
-	int gpuGin=gpuSim.createSpikeGeneratorGroup("input", NUM_OUTPUT ,EXCITATORY_NEURON);
-
-	gpuSim.setNeuronParameters(gpuG1, 0.02f, 0.2f, -65.0f, 8.0f);
-
-	gpuSpkGenG0 = new PeriodicSpikeGenerator(25.0f,spikeAtZero); // periodic spiking @ 50 Hz
-
-	gpuSim.setSpikeGenerator(gpuGin, gpuSpkGenG0);
-
-	gpuSim.connect(gpuGin,gpuG1,"random", RangeWeight(25), 1.0f, RangeDelay(1), SYN_FIXED);
-
-	gpuSim.setupNetwork();
-
-	gpuSpikeMonG1=gpuSim.setSpikeMonitor(gpuG1,"examples/random/results/gpuSpikes.dat"); // put spike times into spikes.dat
-	gpuSpikeMonGin=gpuSim.setSpikeMonitor(gpuGin);
-
-	gpuSpikeMonG1->startRecording();
-	gpuSpikeMonGin->startRecording();
-
-	gpuSim.runNetwork(1,0,false);
-
-	gpuSpikeMonG1->stopRecording();
-	gpuSpikeMonGin->stopRecording();
-	//================FINAL CALC COMPONENT===============================
-	// calculate the number of spikes for CPU/GPU groups and make sure
-	// they are the same. Also compare the exact spike times and make
-	// sure they are the same.
-
-	// get number of spikes for both CPU/GPU groups
-	int cpuSpikeNumG1=cpuSpikeMonG1->getPopNumSpikes();
-	int cpuSpikeNumGin=cpuSpikeMonGin->getPopNumSpikes();
-	int gpuSpikeNumG1=gpuSpikeMonG1->getPopNumSpikes();
-	int gpuSpikeNumGin=gpuSpikeMonGin->getPopNumSpikes();
-
-	// get the spike times for both CPU/GPU groups
-	std::vector<std::vector<int> > cpuSpikeVectorG1 = cpuSpikeMonG1->getSpikeVector2D();
-	std::vector<std::vector<int> > cpuSpikeVectorGin = cpuSpikeMonGin->getSpikeVector2D();
-	std::vector<std::vector<int> > gpuSpikeVectorG1 = gpuSpikeMonG1->getSpikeVector2D();
-	std::vector<std::vector<int> > gpuSpikeVectorGin = gpuSpikeMonGin->getSpikeVector2D();
-
-	// check to make sure they have the same number of spikes
-	ASSERT_EQ(cpuSpikeNumG1,gpuSpikeNumG1);
-	ASSERT_EQ(cpuSpikeNumGin,gpuSpikeNumGin);
-
-	// check to make sure the spike times are identical
-	ASSERT_EQ(cpuSpikeVectorG1[0].size(),gpuSpikeVectorG1[0].size());
-	ASSERT_EQ(cpuSpikeVectorGin[0].size(),gpuSpikeVectorGin[0].size());
-
-	for(int i=0;i<cpuSpikeVectorG1[0].size();i++){
-		EXPECT_EQ(cpuSpikeVectorG1[0][i],gpuSpikeVectorG1[0][i]);
-	}
-
-	for(int i=0;i<cpuSpikeVectorGin[0].size();i++){
-		EXPECT_EQ(cpuSpikeVectorGin[0][i],gpuSpikeVectorGin[0][i]);
+TEST(CUBA, firingRateVsData) {
+	for (int hasHighFiring=0; hasHighFiring<=1; hasHighFiring++) {
+		for (int isGPUmode=0; isGPUmode<=1; isGPUmode++) {
+			CARLsim *sim;
+			SpikeMonitor *spkMonG0, *spkMonG1;
+			PeriodicSpikeGenerator *spkGenG0;
+			sim = new CARLsim("CUBA.firingRateVsData",isGPUmode?GPU_MODE:CPU_MODE,SILENT,0,1,42);
+			int g0=sim->createSpikeGeneratorGroup("input", 1 ,EXCITATORY_NEURON);
+			int g1=sim->createGroup("excit", 1, EXCITATORY_NEURON);
+			sim->setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f); // RS
+			sim->setConductances(false); // make CUBA explicit
+
+			// choose params appropriately (see comments above)
+			float wt = hasHighFiring ? 25.0f : 15.0f;
+			float inputRate = hasHighFiring ? 25.0f : 50.0f;
+			float outputRate = hasHighFiring ? 13.0f : 1.0f; // from Matlab script
+
+			sim->connect(g0, g1, "full", RangeWeight(wt), 1.0f, RangeDelay(1), SYN_FIXED);
+
+			bool spikeAtZero = true;
+			spkGenG0 = new PeriodicSpikeGenerator(inputRate,spikeAtZero);
+			sim->setSpikeGenerator(g0, spkGenG0);
+
+			sim->setupNetwork();
+
+			spkMonG0 = sim->setSpikeMonitor(g0,"NULL");
+			spkMonG1 = sim->setSpikeMonitor(g1,"NULL");
+
+			spkMonG0->startRecording();
+			spkMonG1->startRecording();
+			sim->runNetwork(1,0,false);
+			spkMonG0->stopRecording();
+			spkMonG1->stopRecording();
+
+			EXPECT_FLOAT_EQ(spkMonG0->getPopMeanFiringRate(), inputRate); // sanity check
+			EXPECT_FLOAT_EQ(spkMonG1->getPopMeanFiringRate(), outputRate); // output
+
+			delete spkGenG0;
+			delete sim;
+		}
 	}
 }
 
+
+/*
+ * \brief testing CARLsim CUBA output (spike rates) CPU vs GPU
+ *
+ * This test makes sure that whatever CUBA network is run, both CPU and GPU mode give the exact same output
+ * in terms of spike times and spike rates.
+ * The total simulation time, input rate, weight, and delay are chosen randomly.
+ * Afterwards we make sure that CPU and GPU mode produce the same spike times and spike rates. 
+ */
+TEST(CUBA, firingRateCPUvsGPU) {
+	CARLsim *sim = NULL;
+	SpikeMonitor *spkMonG0 = NULL, *spkMonG1 = NULL;
+	PeriodicSpikeGenerator *spkGenG0 = NULL;
+	std::vector<std::vector<int> > spkTimesG0CPU, spkTimesG1CPU, spkTimesG0GPU, spkTimesG1GPU;
+	float spkRateG0CPU = 0.0f, spkRateG1CPU = 0.0f;
+
+	int delay = rand() % 10 + 1;
+	float wt = rand()*1.0/RAND_MAX*20.0f + 5.0f;
+	float inputRate = rand() % 45 + 5.0f;
+	int runTimeMs = rand() % 800 + 200;
+//	fprintf(stderr,"runTime=%d, delay=%d, wt=%f, input=%f\n",runTimeMs,delay,wt,inputRate);
+
+	for (int isGPUmode=0; isGPUmode<=1; isGPUmode++) {
+		sim = new CARLsim("CUBA.firingRateCPUvsGPU",isGPUmode?GPU_MODE:CPU_MODE,SILENT,0,1,42);
+		int g0=sim->createSpikeGeneratorGroup("input", 1 ,EXCITATORY_NEURON);
+		int g1=sim->createGroup("excit", 1, EXCITATORY_NEURON);
+		sim->setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f); // RS
+		sim->setConductances(false); // make CUBA explicit
+
+		sim->connect(g0, g1, "full", RangeWeight(wt), 1.0f, RangeDelay(1,delay), SYN_FIXED);
+
+		bool spikeAtZero = true;
+		spkGenG0 = new PeriodicSpikeGenerator(inputRate,spikeAtZero);
+		sim->setSpikeGenerator(g0, spkGenG0);
+
+		sim->setupNetwork();
+
+		spkMonG0 = sim->setSpikeMonitor(g0,"NULL");
+		spkMonG1 = sim->setSpikeMonitor(g1,"NULL");
+
+		spkMonG0->startRecording();
+		spkMonG1->startRecording();
+		sim->runNetwork(runTimeMs/1000,runTimeMs%1000,false);
+		spkMonG0->stopRecording();
+		spkMonG1->stopRecording();
+
+		if (!isGPUmode) {
+			// CPU mode: store spike times and spike rate for future comparison
+			spkRateG0CPU = spkMonG0->getPopMeanFiringRate();
+			spkRateG1CPU = spkMonG1->getPopMeanFiringRate();
+			spkTimesG0CPU = spkMonG0->getSpikeVector2D();
+			spkTimesG1CPU = spkMonG1->getSpikeVector2D();
+		} else {
+			// GPU mode: compare to CPU results
+			// assert so that we do not display all spike time errors if the rates are wrong
+			EXPECT_FLOAT_EQ(spkMonG0->getPopMeanFiringRate(), spkRateG0CPU);
+			ASSERT_FLOAT_EQ(spkMonG1->getPopMeanFiringRate(), spkRateG1CPU);
+
+			spkTimesG0GPU = spkMonG0->getSpikeVector2D();
+			spkTimesG1GPU = spkMonG1->getSpikeVector2D();
+			ASSERT_EQ(spkTimesG0CPU[0].size(),spkTimesG0GPU[0].size());
+			ASSERT_EQ(spkTimesG1CPU[0].size(),spkTimesG1GPU[0].size());
+			for (int i=0; i<spkTimesG0CPU[0].size(); i++)
+				EXPECT_EQ(spkTimesG0CPU[0][i], spkTimesG0GPU[0][i]);
+			for (int i=0; i<spkTimesG1CPU[0].size(); i++)
+				EXPECT_EQ(spkTimesG1CPU[0][i], spkTimesG1GPU[0][i]);
+		}
+
+		delete spkGenG0;
+		delete sim;
+	}
+}
