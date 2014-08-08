@@ -3,53 +3,6 @@
 #include "carlsim_tests.h"
 
 
-// FIXME: this COULD be interface-level, but then there's no way to check sim->dNMDA, etc.
-// We should ensure everything gets set up correctly
-TEST(COBA, synRiseTimeSettings) {
-	std::string name = "SNN";
-	int maxConfig = rand()%10 + 10;
-	int nConfigStep = rand()%3 + 2;
-	CpuSNN* sim;
-
-	for (int mode=0; mode<=1; mode++) {
-		for (int nConfig=1; nConfig<=maxConfig; nConfig+=nConfigStep) {
-			int tdAMPA  = rand()%100 + 1;
-			int trNMDA  = (nConfig==1) ? 0 : rand()%100 + 1;
-			int tdNMDA  = rand()%100 + trNMDA + 1; // make sure it's larger than trNMDA
-			int tdGABAa = rand()%100 + 1;
-			int trGABAb = (nConfig==nConfigStep+1) ? 0 : rand()%100 + 1;
-			int tdGABAb = rand()%100 + trGABAb + 1; // make sure it's larger than trGABAb
-
-			sim = new CpuSNN(name,mode?GPU_MODE:CPU_MODE,SILENT,0,nConfig,42);
-			sim->setConductances(true,tdAMPA,trNMDA,tdNMDA,tdGABAa,trGABAb,tdGABAb,ALL);
-			EXPECT_TRUE(sim->sim_with_conductances);
-			EXPECT_FLOAT_EQ(sim->dAMPA,1.0f-1.0f/tdAMPA);
-			if (trNMDA) {
-				EXPECT_TRUE(sim->sim_with_NMDA_rise);
-				EXPECT_FLOAT_EQ(sim->rNMDA,1.0f-1.0f/trNMDA);
-				double tmax = (-tdNMDA*trNMDA*log(1.0*trNMDA/tdNMDA))/(tdNMDA-trNMDA); // t at which cond will be max
-				EXPECT_FLOAT_EQ(sim->sNMDA, 1.0/(exp(-tmax/tdNMDA)-exp(-tmax/trNMDA))); // scaling factor, 1 over max amplitude
-
-			} else {
-				EXPECT_FALSE(sim->sim_with_NMDA_rise);
-			}
-			EXPECT_FLOAT_EQ(sim->dNMDA,1.0f-1.0f/tdNMDA);
-			EXPECT_FLOAT_EQ(sim->dGABAa,1.0f-1.0f/tdGABAa);
-			if (trGABAb) {
-				EXPECT_TRUE(sim->sim_with_GABAb_rise);
-				EXPECT_FLOAT_EQ(sim->rGABAb,1.0f-1.0f/trGABAb);
-				double tmax = (-tdGABAb*trGABAb*log(1.0*trGABAb/tdGABAb))/(tdGABAb-trGABAb); // t at which cond will be max
-				EXPECT_FLOAT_EQ(sim->sGABAb, 1.0/(exp(-tmax/tdGABAb)-exp(-tmax/trGABAb))); // scaling factor, 1 over max amplitude
-			} else {
-				EXPECT_FALSE(sim->sim_with_GABAb_rise);
-			}
-			EXPECT_FLOAT_EQ(sim->dGABAb,1.0f-1.0f/tdGABAb);
-
-			delete sim;
-		}
-	}
-}
-
 //! This test assures that the conductance peak occurs as specified by tau_rise and tau_decay, and that the peak is
 //! equal to the specified weight value
 TEST(COBA, synRiseTime) {
@@ -60,8 +13,11 @@ TEST(COBA, synRiseTime) {
 
 	float abs_error = 0.05; // five percent error for wt
 
+	pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
+
 	for (int mode=0; mode<=1; mode++) {
 		for (int nConfig=1; nConfig<=maxConfig; nConfig+=nConfigStep) {
+			pthread_mutex_lock(&lock);
 			int tdAMPA  = rand()%100 + 1;
 			int trNMDA  = rand()%100 + 1;
 			int tdNMDA  = rand()%100 + trNMDA + 1; // make sure it's larger than trNMDA
@@ -99,13 +55,16 @@ TEST(COBA, synRiseTime) {
 			for (int i=0; i<nMsec; i++) {
 				sim->runNetwork(0,1,false,true); // copyNeuronState
 
-				if ((sim->gNMDA_d[sim->getGroupStartNeuronId(g1)]-sim->gNMDA_r[sim->getGroupStartNeuronId(g1)]) > maxNMDA) {
+				std::vector<float> gNMDA = sim->getConductanceNMDA();
+				std::vector<float> gGABAb = sim->getConductanceGABAb();
+
+				if (gNMDA[sim->getGroupStartNeuronId(g1)] > maxNMDA) {
 					tmaxNMDA=i;
-					maxNMDA=sim->gNMDA_d[sim->getGroupStartNeuronId(g1)]-sim->gNMDA_r[sim->getGroupStartNeuronId(g1)];
+					maxNMDA=gNMDA[sim->getGroupStartNeuronId(g1)];
 				}
-				if ((sim->gGABAb_d[sim->getGroupStartNeuronId(g3)]-sim->gGABAb_r[sim->getGroupStartNeuronId(g3)]) > maxGABAb) {
+				if (gGABAb[sim->getGroupStartNeuronId(g3)] > maxGABAb) {
 					tmaxGABAb=i;
-					maxGABAb=sim->gGABAb_d[sim->getGroupStartNeuronId(g3)]-sim->gGABAb_r[sim->getGroupStartNeuronId(g3)];
+					maxGABAb=gGABAb[sim->getGroupStartNeuronId(g3)];
 				}
 			}
 
@@ -119,6 +78,8 @@ TEST(COBA, synRiseTime) {
 
 			delete spk1;
 			delete sim;
+
+			pthread_mutex_unlock(&lock);
 		}
 	}
 }
@@ -185,48 +146,53 @@ TEST(COBA, disableSynReceptors) {
 			sim->setSpikeRate(g1,&poissIn2,1,ALL);
 
 			sim->setupNetwork(true);
-			sim->runNetwork(1,0,false,false);
+			sim->runNetwork(1,0,false,true);
 
-			if (mode) {
-				// GPU_MODE: copy from device to host
-				for (int g=0; g<4; g++)
-					sim->copyNeuronState(&(sim->cpuNetPtrs), &(sim->cpu_gpuNetPtrs), cudaMemcpyDeviceToHost, false, grps[g]);
-			}
+//			if (mode) {
+//				// GPU_MODE: copy from device to host
+//				for (int g=0; g<4; g++)
+//					sim->copyNeuronState(&(sim->cpuNetPtrs), &(sim->cpu_gpuNetPtrs), cudaMemcpyDeviceToHost, false, grps[g]);
+//			}
 
 			for (int c=0; c<nConfig; c++) {
 				for (int g=0; g<4; g++) { // all groups
 					grpInfo = sim->getGroupInfo(grps[g],c);
 
-					EXPECT_TRUE(sim->sim_with_conductances);
+					EXPECT_TRUE(sim->isSimulationWithCOBA());
 					for (int n=grpInfo.StartN; n<=grpInfo.EndN; n++) {
 //						printf("%d[%d]: AMPA=%f, NMDA=%f, GABAa=%f, GABAb=%f\n",g,n,sim->gAMPA[n],sim->gNMDA[n],sim->gGABAa[n],sim->gGABAb[n]);
+						std::vector<float> gAMPA  = sim->getConductanceAMPA();
+						std::vector<float> gNMDA  = sim->getConductanceNMDA();
+						std::vector<float> gGABAa = sim->getConductanceGABAa();
+						std::vector<float> gGABAb = sim->getConductanceGABAb();
+
 						if (expectCond[g]=="AMPA") {
-							EXPECT_GT(sim->gAMPA[n],0.0f);
-							EXPECT_NEAR(sim->gAMPA[n],expectCondVal[g],expectCondStd[g]);
+							EXPECT_GT(gAMPA[n],0.0f);
+							EXPECT_NEAR(gAMPA[n],expectCondVal[g],expectCondStd[g]);
 						}
 						else
-							EXPECT_FLOAT_EQ(sim->gAMPA[n],0.0f);
+							EXPECT_FLOAT_EQ(gAMPA[n],0.0f);
 
 						if (expectCond[g]=="NMDA") {
-							EXPECT_GT(sim->gNMDA[n],0.0f);
-							EXPECT_NEAR(sim->gNMDA[n],expectCondVal[g],expectCondStd[g]);
+							EXPECT_GT(gNMDA[n],0.0f);
+							EXPECT_NEAR(gNMDA[n],expectCondVal[g],expectCondStd[g]);
 						}
 						else
-							EXPECT_FLOAT_EQ(sim->gNMDA[n],0.0f);
+							EXPECT_FLOAT_EQ(gNMDA[n],0.0f);
 
 						if (expectCond[g]=="GABAa") {
-							EXPECT_GT(sim->gGABAa[n],0.0f);
-							EXPECT_NEAR(sim->gGABAa[n],expectCondVal[g],expectCondStd[g]);
+							EXPECT_GT(gGABAa[n],0.0f);
+							EXPECT_NEAR(gGABAa[n],expectCondVal[g],expectCondStd[g]);
 						}
 						else
-							EXPECT_FLOAT_EQ(sim->gGABAa[n],0.0f);
+							EXPECT_FLOAT_EQ(gGABAa[n],0.0f);
 
 						if (expectCond[g]=="GABAb") {
-							EXPECT_GT(sim->gGABAb[n],0.0f);
-							EXPECT_NEAR(sim->gGABAb[n],expectCondVal[g],expectCondStd[g]);
+							EXPECT_GT(gGABAb[n],0.0f);
+							EXPECT_NEAR(gGABAb[n],expectCondVal[g],expectCondStd[g]);
 						}
 						else
-							EXPECT_FLOAT_EQ(sim->gGABAb[n],0.0f);
+							EXPECT_FLOAT_EQ(gGABAb[n],0.0f);
 					}
 				}
 			}
