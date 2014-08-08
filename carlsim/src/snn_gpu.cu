@@ -930,7 +930,7 @@ __global__ void kernel_globalConductanceUpdate (int t, int sec, int simTime) {
 
 					// Adjust the weight according to STP scaling
 					if(gpuGrpInfo[pre_grpId].WithSTP) {
-						int tD = 1; // \FIXME find delay
+						int tD = 0; // \FIXME find delay
 						// \FIXME I think pre_nid needs to be adjusted for the delay
 						int ind_minus = getSTPBufPos(pre_nid,(simTime-tD-1)); // \FIXME should be adjusted for delay
 						int ind_plus = getSTPBufPos(pre_nid,(simTime-tD));
@@ -1039,8 +1039,12 @@ __device__ void updateNeuronState(unsigned int& nid, int& grpId) {
 			v = -90;
 		u += (gpuPtrs.Izh_a[nid]*(gpuPtrs.Izh_b[nid]*v-u)/COND_INTEGRATION_SCALE);
 	}
-
-	gpuPtrs.current[nid] = I_sum;
+	if(gpuNetInfo.sim_with_conductances)
+		gpuPtrs.current[nid] = I_sum;
+	else{
+		// current must be reset here for CUBA and not kernel_STPUpdateAndDecayConductances
+		gpuPtrs.current[nid] = 0;
+	}
 	gpuPtrs.voltage[nid] = v;
 	gpuPtrs.recovery[nid] = u;
 }

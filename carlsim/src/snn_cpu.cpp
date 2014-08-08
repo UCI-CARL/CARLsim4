@@ -639,6 +639,9 @@ int CpuSNN::runNetwork(int _nsec, int _nmsec, bool printRunSummary, bool copySta
 	assert(_nsec  >= 0);
 	int runDuration = _nsec*1000 + _nmsec;
 
+	// setupNetwork() must have already been called
+	assert(doneReorganization);
+
 	// first-time run: inform the user the simulation is running now
 	if (simTime==0) {
 		CARLSIM_INFO("");
@@ -658,6 +661,7 @@ int CpuSNN::runNetwork(int _nsec, int _nmsec, bool printRunSummary, bool copySta
 	assert(simTimeRunStop>=simTimeRunStart); // check for arithmetic underflow
 
 	// set the Poisson generation time slice to be at the run duration up to PROPOGATED_BUFFER_SIZE ms.
+	// \TODO: should it be PROPAGATED_BUFFER_SIZE-1 or PROPAGATED_BUFFER_SIZE ? 
 	setGrpTimeSlice(ALL, MAX(1,MIN(runDuration,PROPAGATED_BUFFER_SIZE-1)));
 
 	CUDA_RESET_TIMER(timer);
@@ -2788,15 +2792,15 @@ void CpuSNN::generatePostSpike(unsigned int pre_i, unsigned int idx_d, unsigned 
 		// use u^+ (value right after spike-update) but x^- (value right before spike-update)
 
 		// dI/dt = -I/tau_S + A * u^+ * x^- * \delta(t-t_{spk})
-		// \TODO test for correctness
+		// I noticed that for connect(.., RangeDelay(1), ..) tD will be 0
 		int ind_minus = STP_BUF_POS(pre_i,(simTime-tD-1));
 		int ind_plus  = STP_BUF_POS(pre_i,(simTime-tD));
 
 		change *= grp_Info[pre_grpId].STP_A*stpu[ind_plus]*stpx[ind_minus];
 
-//		fprintf(stderr,"%d: %d[%d], numN=%d, maxDelay_=%d, ind-=%d, ind+=%d, stpu=[%f,%f], stpx=[%f,%f], change=%f, wt=%f\n", 
+//		fprintf(stderr,"%d: %d[%d], numN=%d, td=%d, maxDelay_=%d, ind-=%d, ind+=%d, stpu=[%f,%f], stpx=[%f,%f], change=%f, wt=%f\n", 
 //			simTime, pre_grpId, pre_i,
-//					numN, maxDelay_, ind_minus, ind_plus,
+//					numN, tD, maxDelay_, ind_minus, ind_plus,
 //					stpu[ind_minus], stpu[ind_plus], stpx[ind_minus], stpx[ind_plus], change, wt[pos_i]);
 	}
 
@@ -3048,7 +3052,7 @@ void  CpuSNN::globalStateUpdate() {
 					tmp_gNMDA = sim_with_NMDA_rise ? gNMDA_d[i]-gNMDA_r[i] : gNMDA[i];
 					tmp_gGABAb = sim_with_GABAb_rise ? gGABAb_d[i]-gGABAb_r[i] : gGABAb[i];
 
-					current[i] += -(   gAMPA[i]*(voltage[i]-0)
+					tmp_I = -(   gAMPA[i]*(voltage[i]-0)
 									 + tmp_gNMDA*tmp_iNMDA/(1+tmp_iNMDA)*(voltage[i]-0)
 									 + gGABAa[i]*(voltage[i]+70)
 									 + tmp_gGABAb*(voltage[i]+90)
@@ -3058,11 +3062,14 @@ void  CpuSNN::globalStateUpdate() {
 						double noiseI = -intrinsicWeight[i]*log(getRand());
 						if (isnan(noiseI) || isinf(noiseI))
 							noiseI = 0;
-						current[i] += noiseI;
+						tmp_I += noiseI;
 					#endif
 
-					voltage[i]+=((0.04*voltage[i]+5.0)*voltage[i]+140.0-recovery[i]+current[i])/COND_INTEGRATION_SCALE;
+					voltage[i]+=((0.04*voltage[i]+5.0)*voltage[i]+140.0-recovery[i]+tmp_I)/COND_INTEGRATION_SCALE;
 					assert(!isnan(voltage[i]) && !isinf(voltage[i]));
+
+					// keep track of total current
+					current[i] += tmp_I;
 
 					if (voltage[i] > 30) {
 						voltage[i] = 30;

@@ -7,6 +7,10 @@ Legend:
 	- removed element
 	* changed element
 
+2014-08-06     Kristofor D. Carlson <kdcarlso@uci.edu>
+	* Fixed broken CUBA implementation in GPU mode.
+	+ Added CUBA tests for CPU/GPU mode.
+
 2014-07-31     Michael Beyeler <mbeyeler@uci.edu>
 	* Improved memory usage, execution time, and flexibility of SpikeMonitor
 	  utility.
@@ -99,7 +103,7 @@ Legend:
 	- removed config.h
 
 2014-04-03     Kristofor D. Carlson <kdcarlso@uci.edu>
-    * Fixed the tuneFiringRates example to work with the new CARLsim/pti
+  * Fixed the tuneFiringRates example to work with the new CARLsim/pti
 	  interface.
 	* Cleaned up Makefile and carlsim.mk a bit.
 

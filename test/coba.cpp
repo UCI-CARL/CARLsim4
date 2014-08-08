@@ -2,6 +2,7 @@
 
 #include "carlsim_tests.h"
 
+
 // FIXME: this COULD be interface-level, but then there's no way to check sim->dNMDA, etc.
 // We should ensure everything gets set up correctly
 TEST(COBA, synRiseTimeSettings) {
@@ -127,54 +128,6 @@ TEST(COBA, synRiseTime) {
 /// **************************************************************************************************************** ///
 
 
-/*!
- * \brief testing setConductances to true using default values
- * This function tests the information stored in the group info struct after calling setConductances and enabling COBA.
- * Actual conductance values are set via the interface function setDefaultConductanceDecay
- *
-TEST(COBA, setCondTrueDefault) {
-	// create network by varying nConfig from 1...maxConfig, with
-	// step size nConfigStep
-	int maxConfig = rand()%10 + 10;
-	int nConfigStep = rand()%3 + 2;
-	float tAMPA = 5.0f;		// the exact values don't matter
-	float tNMDA = 10.0f;
-	float tGABAa = 15.0f;
-	float tGABAb = 20.0f;
-	CARLsim* sim;
-	group_info_t grpInfo;
-	int grps[2] = {-1};
-
-	for (int mode=0; mode<=1; mode++) {
-		for (int nConfig=1; nConfig<=maxConfig; nConfig+=nConfigStep) {
-			sim = new CARLsim("SNN",mode?GPU_MODE:CPU_MODE,SILENT,0,nConfig,42);
-
-			sim->setDefaultConductanceDecay(tAMPA,tNMDA,tGABAa,tGABAb);
-
-			grps[0]=sim->createSpikeGeneratorGroup("spike", 10, EXCITATORY_NEURON);
-			grps[1]=sim->createGroup("excit", 10, EXCITATORY_NEURON);
-			sim->setNeuronParameters(grps[1], 0.02f, 0.2f, -65.0f, 8.0f);
-
-			sim->setConductances(grps[0],true);
-			sim->setConductances(grps[1],true);
-
-			for (int c=0; c<nConfig; c++) {
-				for (int g=0; g<=1; g++) {
-					grpInfo = sim->getGroupInfo(grps[g],c);
-					EXPECT_TRUE(grpInfo.WithConductances);
-					EXPECT_FLOAT_EQ(grpInfo.dAMPA,1.0-1.0/tAMPA);
-					EXPECT_FLOAT_EQ(grpInfo.dNMDA,1.0-1.0/tNMDA);
-					EXPECT_FLOAT_EQ(grpInfo.dGABAa,1.0-1.0/tGABAa);
-					EXPECT_FLOAT_EQ(grpInfo.dGABAb,1.0-1.0/tGABAb);
-				}
-			}
-			delete sim;
-		}
-	}
-}
-*/
-
-
 TEST(COBA, disableSynReceptors) {
 	// create network by varying nConfig from 1...maxConfig, with
 	// step size nConfigStep
@@ -280,4 +233,76 @@ TEST(COBA, disableSynReceptors) {
 			delete sim;
 		}
 	}	
+}
+
+
+/*
+ * \brief testing CARLsim CUBA output (spike rates) CPU vs GPU
+ *
+ * This test makes sure that whatever CUBA network is run, both CPU and GPU mode give the exact same output
+ * in terms of spike times and spike rates.
+ * The total simulation time, input rate, weight, and delay are chosen randomly.
+ * Afterwards we make sure that CPU and GPU mode produce the same spike times and spike rates. 
+ */
+TEST(COBA, firingRateCPUvsGPU) {
+	CARLsim *sim = NULL;
+	SpikeMonitor *spkMonG0 = NULL, *spkMonG1 = NULL;
+	PeriodicSpikeGenerator *spkGenG0 = NULL;
+	std::vector<std::vector<int> > spkTimesG0CPU, spkTimesG1CPU, spkTimesG0GPU, spkTimesG1GPU;
+	float spkRateG0CPU = 0.0f, spkRateG1CPU = 0.0f;
+
+	int delay = rand() % 10 + 1;
+	float wt = rand()*1.0/RAND_MAX*0.2f + 0.05f;
+	float inputRate = rand() % 45 + 5.0f;
+	int runTimeMs = rand() % 800 + 200;
+//		fprintf(stderr,"runTime=%d, delay=%d, wt=%f, input=%f\n",runTimeMs,delay,wt,inputRate);
+
+	for (int isGPUmode=0; isGPUmode<=1; isGPUmode++) {
+		sim = new CARLsim("COBA.firingRateCPUvsGPU",isGPUmode?GPU_MODE:CPU_MODE,SILENT,0,1,42);
+		int g0=sim->createSpikeGeneratorGroup("input", 1 ,EXCITATORY_NEURON);
+		int g1=sim->createGroup("excit", 1, EXCITATORY_NEURON);
+		sim->setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f); // RS
+		sim->setConductances(true); // make COBA explicit
+
+		sim->connect(g0, g1, "full", RangeWeight(wt), 1.0f, RangeDelay(1,delay), SYN_FIXED);
+
+		bool spikeAtZero = true;
+		spkGenG0 = new PeriodicSpikeGenerator(inputRate,spikeAtZero);
+		sim->setSpikeGenerator(g0, spkGenG0);
+
+		sim->setupNetwork();
+
+		spkMonG0 = sim->setSpikeMonitor(g0,"NULL");
+		spkMonG1 = sim->setSpikeMonitor(g1,"NULL");
+
+		spkMonG0->startRecording();
+		spkMonG1->startRecording();
+		sim->runNetwork(runTimeMs/1000,runTimeMs%1000,false);
+		spkMonG0->stopRecording();
+		spkMonG1->stopRecording();
+
+		if (!isGPUmode) {
+			// CPU mode: store spike times and spike rate for future comparison
+			spkRateG0CPU = spkMonG0->getPopMeanFiringRate();
+			spkRateG1CPU = spkMonG1->getPopMeanFiringRate();
+			spkTimesG0CPU = spkMonG0->getSpikeVector2D();
+			spkTimesG1CPU = spkMonG1->getSpikeVector2D();
+		} else {
+			// GPU mode: compare to CPU results
+			// assert so that we do not display all spike time errors if the rates are wrong
+			ASSERT_FLOAT_EQ(spkMonG0->getPopMeanFiringRate(), spkRateG0CPU);
+			ASSERT_FLOAT_EQ(spkMonG1->getPopMeanFiringRate(), spkRateG1CPU);
+
+			spkTimesG0GPU = spkMonG0->getSpikeVector2D();
+			spkTimesG1GPU = spkMonG1->getSpikeVector2D();
+			ASSERT_EQ(spkTimesG0CPU[0].size(),spkTimesG0GPU[0].size());
+			ASSERT_EQ(spkTimesG1CPU[0].size(),spkTimesG1GPU[0].size());
+			for (int i=0; i<spkTimesG0CPU[0].size(); i++)
+				EXPECT_EQ(spkTimesG0CPU[0][i], spkTimesG0GPU[0][i]);
+			for (int i=0; i<spkTimesG1CPU[0].size(); i++)
+				EXPECT_EQ(spkTimesG1CPU[0][i], spkTimesG1GPU[0][i]);
+		}
+		delete spkGenG0;
+		delete sim;
+	}
 }

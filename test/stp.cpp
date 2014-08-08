@@ -120,7 +120,7 @@ TEST(STP, spikeRateSTDvsSTF) {
 	PeriodicSpikeGenerator *spkGenG0 = NULL, *spkGenG1 = NULL;
 
 	for (int isRunLong=0; isRunLong<=1; isRunLong++) {
-		for (int hasCOBA=1; hasCOBA<=1; hasCOBA++) { // \FIXME: Once CUBA is fixed, re-enable it here
+		for (int hasCOBA=1; hasCOBA<=1; hasCOBA++) { // \FIXME: add CUBA back in
 			for (int isGPUmode=0; isGPUmode<=1; isGPUmode++) {
 			// compare 
 				float rateG2noSTP = -1.0f;
@@ -135,7 +135,7 @@ TEST(STP, spikeRateSTDvsSTF) {
 					sim->setNeuronParameters(g2, 0.02f, 0.2f, -65.0f, 8.0f);
 					sim->setNeuronParameters(g3, 0.02f, 0.2f, -65.0f, 8.0f);
 
-					float wt = hasCOBA ? 0.1f : 1.0f;
+					float wt = hasCOBA ? 0.2f : 25.0f;
 					sim->connect(g0,g2,"full",RangeWeight(wt),1.0f,RangeDelay(1));
 					sim->connect(g1,g3,"full",RangeWeight(wt),1.0f,RangeDelay(1));
 
@@ -148,9 +148,9 @@ TEST(STP, spikeRateSTDvsSTF) {
 					}
 
 					bool spikeAtZero = true;
-					spkGenG0 = new PeriodicSpikeGenerator(10.0f,spikeAtZero); // periodic spiking @ 15 Hz
+					spkGenG0 = new PeriodicSpikeGenerator(15.0f,spikeAtZero); // periodic spiking @ 15 Hz
 					sim->setSpikeGenerator(g0, spkGenG0);
-					spkGenG1 = new PeriodicSpikeGenerator(10.0f,spikeAtZero); // periodic spiking @ 15 Hz
+					spkGenG1 = new PeriodicSpikeGenerator(15.0f,spikeAtZero); // periodic spiking @ 15 Hz
 					sim->setSpikeGenerator(g1, spkGenG1);
 
 					sim->setupNetwork();
@@ -162,7 +162,7 @@ TEST(STP, spikeRateSTDvsSTF) {
 
 					spkMonG2->startRecording();
 					spkMonG3->startRecording();
-					int runTimeMs = isRunLong ? 2000 : 10;
+					int runTimeMs = isRunLong ? 2000 : 100;
 					sim->runNetwork(runTimeMs/1000, runTimeMs%1000);
 					spkMonG2->stopRecording();
 					spkMonG3->stopRecording();
@@ -173,8 +173,15 @@ TEST(STP, spikeRateSTDvsSTF) {
 						rateG2noSTP = spkMonG2->getPopMeanFiringRate();
 						rateG3noSTP = spkMonG3->getPopMeanFiringRate();
 					} else {
-//						fprintf(stderr,"%s %s, G2 w/o=%f, G2 w/=%f\n",isGPUmode?"GPU":"CPU",hasCOBA?"COBA":"CUBA", rateG2noSTP, spkMonG2->getPopMeanFiringRate());
-//						fprintf(stderr,"%s %s, G3 w/o=%f, G3 w/=%f\n",isGPUmode?"GPU":"CPU",hasCOBA?"COBA":"CUBA", rateG3noSTP, spkMonG3->getPopMeanFiringRate());
+						fprintf(stderr,"%s %s %s, G2 w/o=%f, G2 w/=%f\n", isRunLong?"long":"short", 
+							isGPUmode?"GPU":"CPU", 
+							hasCOBA?"COBA":"CUBA", 
+							rateG2noSTP, spkMonG2->getPopMeanFiringRate());
+						fprintf(stderr,"%s %s %s, G3 w/o=%f, G3 w/=%f\n", isRunLong?"long":"short",
+							isGPUmode?"GPU":"CPU",
+							hasCOBA?"COBA":"CUBA", 
+							rateG3noSTP, 
+							spkMonG3->getPopMeanFiringRate());
 						// if STP is on: compare spike rate to the one recorded without STP
 
 						if (isRunLong) {
@@ -365,6 +372,7 @@ TEST(STP, externalCPUvsGPU) {
 	CpuSNN* sim = NULL;
 	std::string name = "SNN";
 	simMode_t simModes[2] = {CPU_MODE, GPU_MODE};
+	PeriodicSpikeGeneratorCore* spk20;
 
 	float current[600] = {0.0f};
 
@@ -384,12 +392,14 @@ TEST(STP, externalCPUvsGPU) {
 		sim->setConductances(true,5,10,15,20,25,30,ALL);
 		sim->setSTP(g0,true,STP_U,STP_tD,STP_tF,ALL);
 
+		sim->setupNetwork(true);
+
 		bool spikeAtZero = false;
-		PeriodicSpikeGeneratorCore* spk20 = new PeriodicSpikeGeneratorCore(20.0f,spikeAtZero);
+		spk20 = new PeriodicSpikeGeneratorCore(20.0f,spikeAtZero);
 		sim->setSpikeGenerator(g0, spk20, ALL);
 
 		for (int i=0; i<300; i++) {
-			sim->runNetwork(0,1,true); // enable copyState
+			sim->runNetwork(0,1,false,true); // enable copyState
 			current[j*300+i] = sim->current[0];
 		}
 
