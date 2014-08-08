@@ -99,7 +99,7 @@ TEST(CUBA, firingRateCPUvsGPU) {
 	float spkRateG0CPU = 0.0f, spkRateG1CPU = 0.0f;
 
 	int delay = rand() % 10 + 1;
-	float wt = rand()*1.0/RAND_MAX*20.0f + 5.0f;
+	float wt = rand()*1.0/RAND_MAX*15.0f + 5.0f;
 	float inputRate = rand() % 45 + 5.0f;
 	int runTimeMs = rand() % 800 + 200;
 //	fprintf(stderr,"runTime=%d, delay=%d, wt=%f, input=%f\n",runTimeMs,delay,wt,inputRate);

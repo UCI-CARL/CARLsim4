@@ -49,11 +49,6 @@
 
 
 
-#ifdef __REGRESSION_TESTING__
-	#define private public
- 	#define protected public
-#endif
-
 
 // FIXME: 
 /////    !!!!!!! EVEN MORE IMPORTANT : IS THIS STILL BEING USED?? !!!!!!!!!!

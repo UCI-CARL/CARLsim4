@@ -21,9 +21,9 @@ TEST(CORE, CpuSNNinit) {
 			int randSeed = rand() % 1000;
 			sim = new CpuSNN(name,simModes[j],loggerModes[i],0,nConfig,randSeed);
 
-			EXPECT_EQ(sim->networkName_,name);
+			EXPECT_EQ(sim->getNetworkName(),name);
 			EXPECT_EQ(sim->getNumConfigurations(),nConfig);
-			EXPECT_EQ(sim->randSeed_,randSeed);
+			EXPECT_EQ(sim->getRandSeed(),randSeed);
 			EXPECT_EQ(sim->getSimMode(),simModes[j]);
 			EXPECT_EQ(sim->getLoggerMode(),loggerModes[i]);
 
@@ -32,13 +32,13 @@ TEST(CORE, CpuSNNinit) {
 	}
 
 	sim = new CpuSNN(name,CPU_MODE,SILENT,0,1,0);
-	EXPECT_EQ(sim->randSeed_,123);
+	EXPECT_EQ(sim->getRandSeed(),123);
 	delete sim;
 
 	// time(NULL)
 	sim = new CpuSNN(name,CPU_MODE,SILENT,0,1,-1);
-	EXPECT_NE(sim->randSeed_,-1);
-	EXPECT_NE(sim->randSeed_,0);
+	EXPECT_NE(sim->getRandSeed(),-1);
+	EXPECT_NE(sim->getRandSeed(),0);
 	delete sim;
 }
 
@@ -213,23 +213,24 @@ TEST(CORE, setConductancesTrue) {
 
 			sim = new CpuSNN(name,mode?GPU_MODE:CPU_MODE,SILENT,0,nConfig,42);
 			sim->setConductances(true,tdAMPA,trNMDA,tdNMDA,tdGABAa,trGABAb,tdGABAb,ALL);
-			EXPECT_TRUE(sim->sim_with_conductances);
-			EXPECT_FLOAT_EQ(sim->dAMPA,1.0f-1.0f/tdAMPA);
+			EXPECT_TRUE(sim->isSimulationWithCOBA());
+			EXPECT_FALSE(sim->isSimulationWithCUBA());
+//			EXPECT_FLOAT_EQ(sim->dAMPA,1.0f-1.0f/tdAMPA);
 			if (trNMDA) {
-				EXPECT_TRUE(sim->sim_with_NMDA_rise);
-				EXPECT_FLOAT_EQ(sim->rNMDA,1.0f-1.0f/trNMDA);
+				EXPECT_TRUE(sim->isSimulationWithNMDARise());
+//				EXPECT_FLOAT_EQ(sim->rNMDA,1.0f-1.0f/trNMDA);
 			} else {
-				EXPECT_FALSE(sim->sim_with_NMDA_rise);
+				EXPECT_FALSE(sim->isSimulationWithNMDARise());
 			}
-			EXPECT_FLOAT_EQ(sim->dNMDA,1.0f-1.0f/tdNMDA);
-			EXPECT_FLOAT_EQ(sim->dGABAa,1.0f-1.0f/tdGABAa);
+//			EXPECT_FLOAT_EQ(sim->dNMDA,1.0f-1.0f/tdNMDA);
+//			EXPECT_FLOAT_EQ(sim->dGABAa,1.0f-1.0f/tdGABAa);
 			if (trGABAb) {
-				EXPECT_TRUE(sim->sim_with_GABAb_rise);
-				EXPECT_FLOAT_EQ(sim->rGABAb,1.0f-1.0f/trGABAb);
+				EXPECT_TRUE(sim->isSimulationWithGABAbRise());
+//				EXPECT_FLOAT_EQ(sim->rGABAb,1.0f-1.0f/trGABAb);
 			} else {
-				EXPECT_FALSE(sim->sim_with_GABAb_rise);
+				EXPECT_FALSE(sim->isSimulationWithGABAbRise());
 			}
-			EXPECT_FLOAT_EQ(sim->dGABAb,1.0f-1.0f/tdGABAb);
+//			EXPECT_FLOAT_EQ(sim->dGABAb,1.0f-1.0f/tdGABAb);
 
 			delete sim;
 		}
