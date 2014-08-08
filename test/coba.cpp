@@ -235,95 +235,74 @@ TEST(COBA, disableSynReceptors) {
 	}	
 }
 
-TEST(COBA, spikeRateCPUvsGPU) {
-	int randSeed = rand() % 1000;	// randSeed must not interfere with STP
 
+/*
+ * \brief testing CARLsim CUBA output (spike rates) CPU vs GPU
+ *
+ * This test makes sure that whatever CUBA network is run, both CPU and GPU mode give the exact same output
+ * in terms of spike times and spike rates.
+ * The total simulation time, input rate, weight, and delay are chosen randomly.
+ * Afterwards we make sure that CPU and GPU mode produce the same spike times and spike rates. 
+ */
+TEST(COBA, firingRateCPUvsGPU) {
 	CARLsim *sim = NULL;
-	SpikeMonitor *spkMonG0 = NULL, *spkMonG1 = NULL, *spkMonG2 = NULL, *spkMonG3 = NULL;
-	PeriodicSpikeGenerator *spkGenG0 = NULL, *spkGenG1 = NULL;
+	SpikeMonitor *spkMonG0 = NULL, *spkMonG1 = NULL;
+	PeriodicSpikeGenerator *spkGenG0 = NULL;
+	std::vector<std::vector<int> > spkTimesG0CPU, spkTimesG1CPU, spkTimesG0GPU, spkTimesG1GPU;
+	float spkRateG0CPU = 0.0f, spkRateG1CPU = 0.0f;
 
-	float rateG0CPU = -1.0f;
-	float rateG1CPU = -1.0f;
-	float rateG2CPU = -1.0f;
-	float rateG3CPU = -1.0f;
-	std::vector<std::vector<int> > spkTimesG0, spkTimesG1, spkTimesG2, spkTimesG3;
-
-	int runTimeMs = 1000;//rand() % 9500 + 500;
-	float wt = 0.15f;
-
-//PoissonRate in(1);
+	int delay = rand() % 10 + 1;
+	float wt = rand()*1.0/RAND_MAX*0.2f + 0.05f;
+	float inputRate = rand() % 45 + 5.0f;
+	int runTimeMs = rand() % 800 + 200;
+//		fprintf(stderr,"runTime=%d, delay=%d, wt=%f, input=%f\n",runTimeMs,delay,wt,inputRate);
 
 	for (int isGPUmode=0; isGPUmode<=1; isGPUmode++) {
-		CARLsim* sim = new CARLsim("SNN",isGPUmode?GPU_MODE:CPU_MODE,USER,0,1,randSeed);
-		int g0=sim->createSpikeGeneratorGroup("input0", 1, EXCITATORY_NEURON);
-		int g1=sim->createSpikeGeneratorGroup("input1", 1, EXCITATORY_NEURON);
-		int g2=sim->createGroup("excit2", 1, EXCITATORY_NEURON);
-		int g3=sim->createGroup("excit3", 1, EXCITATORY_NEURON);
-		sim->setNeuronParameters(g2, 0.02f, 0.2f, -65.0f, 8.0f);
-		sim->setNeuronParameters(g3, 0.02f, 0.2f, -65.0f, 8.0f);
+		sim = new CARLsim("COBA.firingRateCPUvsGPU",isGPUmode?GPU_MODE:CPU_MODE,SILENT,0,1,42);
+		int g0=sim->createSpikeGeneratorGroup("input", 1 ,EXCITATORY_NEURON);
+		int g1=sim->createGroup("excit", 1, EXCITATORY_NEURON);
+		sim->setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f); // RS
+		sim->setConductances(true); // make COBA explicit
 
-		sim->connect(g0,g2,"full",RangeWeight(wt),1.0f,RangeDelay(1));
-		sim->connect(g1,g3,"full",RangeWeight(wt),1.0f,RangeDelay(1));
-
-		sim->setConductances(true,5, 0, 150, 6, 0, 150);
+		sim->connect(g0, g1, "full", RangeWeight(wt), 1.0f, RangeDelay(1,delay), SYN_FIXED);
 
 		bool spikeAtZero = true;
-		spkGenG0 = new PeriodicSpikeGenerator(50.0f,spikeAtZero); // periodic spiking
+		spkGenG0 = new PeriodicSpikeGenerator(inputRate,spikeAtZero);
 		sim->setSpikeGenerator(g0, spkGenG0);
-		spkGenG1 = new PeriodicSpikeGenerator(50.0f,spikeAtZero); // periodic spiking
-		sim->setSpikeGenerator(g1, spkGenG1);
 
 		sim->setupNetwork();
 
-//	for (int i=0;i<1;i++) in.rates[i] = 15;
-//		sim->setSpikeRate(g0,&in);
-//		sim->setSpikeRate(g1,&in);
-
 		spkMonG0 = sim->setSpikeMonitor(g0,"NULL");
 		spkMonG1 = sim->setSpikeMonitor(g1,"NULL");
-		spkMonG2 = sim->setSpikeMonitor(g2,"NULL");
-		spkMonG3 = sim->setSpikeMonitor(g3,"NULL");
 
 		spkMonG0->startRecording();
 		spkMonG1->startRecording();
-		spkMonG2->startRecording();
-		spkMonG3->startRecording();
-		sim->runNetwork(runTimeMs/1000, runTimeMs%1000);
+		sim->runNetwork(runTimeMs/1000,runTimeMs%1000,false);
 		spkMonG0->stopRecording();
 		spkMonG1->stopRecording();
-		spkMonG2->stopRecording();
-		spkMonG3->stopRecording();
 
 		if (!isGPUmode) {
-			// CPU mode: record rates, so that we can compare them with GPU mode
-			rateG0CPU = spkMonG0->getPopMeanFiringRate();
-			rateG1CPU = spkMonG1->getPopMeanFiringRate();
-			rateG2CPU = spkMonG2->getPopMeanFiringRate();
-			rateG3CPU = spkMonG3->getPopMeanFiringRate();
-			spkTimesG0 = spkMonG0->getSpikeVector2D();
-			spkTimesG1 = spkMonG1->getSpikeVector2D();
-			spkTimesG2 = spkMonG2->getSpikeVector2D();
-			spkTimesG3 = spkMonG3->getSpikeVector2D();
-//				for (int i=0; i<spkTimesG2[0].size(); i++)
-//					fprintf(stderr, "%d\n",spkTimesG2[0][i]);
+			// CPU mode: store spike times and spike rate for future comparison
+			spkRateG0CPU = spkMonG0->getPopMeanFiringRate();
+			spkRateG1CPU = spkMonG1->getPopMeanFiringRate();
+			spkTimesG0CPU = spkMonG0->getSpikeVector2D();
+			spkTimesG1CPU = spkMonG1->getSpikeVector2D();
 		} else {
-			// GPU mode: compare rates to CPU mode
-			// assert so if the rate is not the same, don't evaluate spike times
-			ASSERT_FLOAT_EQ( spkMonG0->getPopMeanFiringRate(), rateG0CPU);
-			ASSERT_FLOAT_EQ( spkMonG1->getPopMeanFiringRate(), rateG1CPU);
-			ASSERT_FLOAT_EQ( spkMonG2->getPopMeanFiringRate(), rateG2CPU);
-			ASSERT_FLOAT_EQ( spkMonG3->getPopMeanFiringRate(), rateG3CPU);
+			// GPU mode: compare to CPU results
+			// assert so that we do not display all spike time errors if the rates are wrong
+			ASSERT_FLOAT_EQ(spkMonG0->getPopMeanFiringRate(), spkRateG0CPU);
+			ASSERT_FLOAT_EQ(spkMonG1->getPopMeanFiringRate(), spkRateG1CPU);
 
-//				fprintf(stderr,"Group 2:\n");				
-			std::vector<std::vector<int> > spkT = spkMonG2->getSpikeVector2D();
-			for (int i=0; i<max(spkTimesG2[0].size(),spkT[0].size()); i++) {
-//					fprintf(stderr, "%d\t%d\n",(i<spkTimesG2[0].size())?spkTimesG2[0][i]:-1, (i<spkT[0].size())?spkT[0][i]:-1);
-				if (i<spkTimesG2[0].size() && i<spkT[0].size())
-					EXPECT_EQ( spkTimesG2[0][i], spkT[0][i]);
-			}
+			spkTimesG0GPU = spkMonG0->getSpikeVector2D();
+			spkTimesG1GPU = spkMonG1->getSpikeVector2D();
+			ASSERT_EQ(spkTimesG0CPU[0].size(),spkTimesG0GPU[0].size());
+			ASSERT_EQ(spkTimesG1CPU[0].size(),spkTimesG1GPU[0].size());
+			for (int i=0; i<spkTimesG0CPU[0].size(); i++)
+				EXPECT_EQ(spkTimesG0CPU[0][i], spkTimesG0GPU[0][i]);
+			for (int i=0; i<spkTimesG1CPU[0].size(); i++)
+				EXPECT_EQ(spkTimesG1CPU[0][i], spkTimesG1GPU[0][i]);
 		}
 		delete spkGenG0;
-		delete spkGenG1;
 		delete sim;
 	}
 }

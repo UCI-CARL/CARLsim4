@@ -40,13 +40,12 @@
  * The script returns the firing rate and spike times of the output RS neuron.
  */
 TEST(CUBA, firingRateVsData) {
-	CARLsim *sim;
-	SpikeMonitor *spkMonG0, *spkMonG1;
-	PeriodicSpikeGenerator *spkGenG0;
-
 	for (int hasHighFiring=0; hasHighFiring<=1; hasHighFiring++) {
 		for (int isGPUmode=0; isGPUmode<=1; isGPUmode++) {
-			sim = new CARLsim("firingRateVsData",isGPUmode?GPU_MODE:CPU_MODE,SILENT,0,1,42);
+			CARLsim *sim;
+			SpikeMonitor *spkMonG0, *spkMonG1;
+			PeriodicSpikeGenerator *spkGenG0;
+			sim = new CARLsim("CUBA.firingRateVsData",isGPUmode?GPU_MODE:CPU_MODE,SILENT,0,1,42);
 			int g0=sim->createSpikeGeneratorGroup("input", 1 ,EXCITATORY_NEURON);
 			int g1=sim->createGroup("excit", 1, EXCITATORY_NEURON);
 			sim->setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f); // RS
@@ -89,9 +88,8 @@ TEST(CUBA, firingRateVsData) {
  *
  * This test makes sure that whatever CUBA network is run, both CPU and GPU mode give the exact same output
  * in terms of spike times and spike rates.
- * For a number numRuns of simulation runs, a network is run on both CPU and GPU, and the output is compared.
- * For each of these runs, the input rate, weight, and delay are chosen randomly. Afterwards we make sure that
- * CPU and GPU mode produce the same spike times and spike rates. 
+ * The total simulation time, input rate, weight, and delay are chosen randomly.
+ * Afterwards we make sure that CPU and GPU mode produce the same spike times and spike rates. 
  */
 TEST(CUBA, firingRateCPUvsGPU) {
 	CARLsim *sim = NULL;
@@ -100,63 +98,59 @@ TEST(CUBA, firingRateCPUvsGPU) {
 	std::vector<std::vector<int> > spkTimesG0CPU, spkTimesG1CPU, spkTimesG0GPU, spkTimesG1GPU;
 	float spkRateG0CPU = 0.0f, spkRateG1CPU = 0.0f;
 
-	int numRuns = 5;
-	srand(time(NULL));
+	int delay = rand() % 10 + 1;
+	float wt = rand()*1.0/RAND_MAX*20.0f + 5.0f;
+	float inputRate = rand() % 45 + 5.0f;
+	int runTimeMs = rand() % 800 + 200;
+//	fprintf(stderr,"runTime=%d, delay=%d, wt=%f, input=%f\n",runTimeMs,delay,wt,inputRate);
 
-	for (int run=1; run<=numRuns; run++) {
-		int delay = rand() % 10 + 1;
-		float wt = rand()/RAND_MAX*20.0f + 5.0f;
-		float inputRate = rand() % 50;
-//		fprintf(stderr,"delay=%d, wt=%f, input=%f\n",delay,wt,inputRate);
+	for (int isGPUmode=0; isGPUmode<=1; isGPUmode++) {
+		sim = new CARLsim("CUBA.firingRateCPUvsGPU",isGPUmode?GPU_MODE:CPU_MODE,SILENT,0,1,42);
+		int g0=sim->createSpikeGeneratorGroup("input", 1 ,EXCITATORY_NEURON);
+		int g1=sim->createGroup("excit", 1, EXCITATORY_NEURON);
+		sim->setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f); // RS
+		sim->setConductances(false); // make CUBA explicit
 
-		for (int isGPUmode=0; isGPUmode<=1; isGPUmode++) {
-			sim = new CARLsim("firingRateCPUvsGPU",isGPUmode?GPU_MODE:CPU_MODE,SILENT,0,1,42);
-			int g0=sim->createSpikeGeneratorGroup("input", 1 ,EXCITATORY_NEURON);
-			int g1=sim->createGroup("excit", 1, EXCITATORY_NEURON);
-			sim->setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f); // RS
-			sim->setConductances(false); // make CUBA explicit
+		sim->connect(g0, g1, "full", RangeWeight(wt), 1.0f, RangeDelay(1,delay), SYN_FIXED);
 
-			sim->connect(g0, g1, "full", RangeWeight(wt), 1.0f, RangeDelay(1,delay), SYN_FIXED);
+		bool spikeAtZero = true;
+		spkGenG0 = new PeriodicSpikeGenerator(inputRate,spikeAtZero);
+		sim->setSpikeGenerator(g0, spkGenG0);
 
-			bool spikeAtZero = true;
-			spkGenG0 = new PeriodicSpikeGenerator(inputRate,spikeAtZero);
-			sim->setSpikeGenerator(g0, spkGenG0);
+		sim->setupNetwork();
 
-			sim->setupNetwork();
+		spkMonG0 = sim->setSpikeMonitor(g0,"NULL");
+		spkMonG1 = sim->setSpikeMonitor(g1,"NULL");
 
-			spkMonG0 = sim->setSpikeMonitor(g0,"NULL");
-			spkMonG1 = sim->setSpikeMonitor(g1,"NULL");
+		spkMonG0->startRecording();
+		spkMonG1->startRecording();
+		sim->runNetwork(runTimeMs/1000,runTimeMs%1000,false);
+		spkMonG0->stopRecording();
+		spkMonG1->stopRecording();
 
-			spkMonG0->startRecording();
-			spkMonG1->startRecording();
-			sim->runNetwork(1,0,false);
-			spkMonG0->stopRecording();
-			spkMonG1->stopRecording();
+		if (!isGPUmode) {
+			// CPU mode: store spike times and spike rate for future comparison
+			spkRateG0CPU = spkMonG0->getPopMeanFiringRate();
+			spkRateG1CPU = spkMonG1->getPopMeanFiringRate();
+			spkTimesG0CPU = spkMonG0->getSpikeVector2D();
+			spkTimesG1CPU = spkMonG1->getSpikeVector2D();
+		} else {
+			// GPU mode: compare to CPU results
+			// assert so that we do not display all spike time errors if the rates are wrong
+			EXPECT_FLOAT_EQ(spkMonG0->getPopMeanFiringRate(), spkRateG0CPU);
+			ASSERT_FLOAT_EQ(spkMonG1->getPopMeanFiringRate(), spkRateG1CPU);
 
-			if (!isGPUmode) {
-				// CPU mode: store spike times and spike rate for future comparison
-				spkRateG0CPU = spkMonG0->getPopMeanFiringRate();
-				spkRateG1CPU = spkMonG1->getPopMeanFiringRate();
-				spkTimesG0CPU = spkMonG0->getSpikeVector2D();
-				spkTimesG1CPU = spkMonG1->getSpikeVector2D();
-			} else {
-				// GPU mode: compare to CPU results
-				// assert so that we do not display all spike time errors if the rates are wrong
-				ASSERT_FLOAT_EQ(spkMonG0->getPopMeanFiringRate(), spkRateG0CPU);
-				ASSERT_FLOAT_EQ(spkMonG1->getPopMeanFiringRate(), spkRateG1CPU);
-
-				spkTimesG0GPU = spkMonG0->getSpikeVector2D();
-				spkTimesG1GPU = spkMonG1->getSpikeVector2D();
-				ASSERT_EQ(spkTimesG0CPU[0].size(),spkTimesG0GPU[0].size());
-				ASSERT_EQ(spkTimesG1CPU[0].size(),spkTimesG1GPU[0].size());
-				for (int i=0; i<spkTimesG0CPU[0].size(); i++)
-					EXPECT_EQ(spkTimesG0CPU[0][i], spkTimesG0GPU[0][i]);
-				for (int i=0; i<spkTimesG1CPU[0].size(); i++)
-					EXPECT_EQ(spkTimesG1CPU[0][i], spkTimesG1GPU[0][i]);
-			}
-
-			delete spkGenG0;
-			delete sim;
+			spkTimesG0GPU = spkMonG0->getSpikeVector2D();
+			spkTimesG1GPU = spkMonG1->getSpikeVector2D();
+			ASSERT_EQ(spkTimesG0CPU[0].size(),spkTimesG0GPU[0].size());
+			ASSERT_EQ(spkTimesG1CPU[0].size(),spkTimesG1GPU[0].size());
+			for (int i=0; i<spkTimesG0CPU[0].size(); i++)
+				EXPECT_EQ(spkTimesG0CPU[0][i], spkTimesG0GPU[0][i]);
+			for (int i=0; i<spkTimesG1CPU[0].size(); i++)
+				EXPECT_EQ(spkTimesG1CPU[0][i], spkTimesG1GPU[0][i]);
 		}
+
+		delete spkGenG0;
+		delete sim;
 	}
 }
