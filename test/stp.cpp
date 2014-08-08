@@ -110,9 +110,9 @@ TEST(STP, setSTPdeath) {
  * However, if the stimulation period is short (isRunLong==0, runTimeMs=10 ms), then the firing rate should not
  * change at all, because the first spike under STP should not make a difference (due to the scaling of STP_A).
  * We perform this procedure in CUBA and COBA mode.
- * \FIXME: Once CUBA is fixed, re-enable it here
+ * \TODO \FIXME: fix STP buffer and make sure test works for delays > 1 ms
  */
-TEST(STP, spikeRateSTDvsSTF) {
+TEST(STP, firingRateSTDvsSTF) {
 	int randSeed = rand() % 1000;	// randSeed must not interfere with STP
 
 	CARLsim *sim = NULL;
@@ -120,7 +120,7 @@ TEST(STP, spikeRateSTDvsSTF) {
 	PeriodicSpikeGenerator *spkGenG0 = NULL, *spkGenG1 = NULL;
 
 	for (int isRunLong=0; isRunLong<=1; isRunLong++) {
-		for (int hasCOBA=1; hasCOBA<=1; hasCOBA++) { // \FIXME: add CUBA back in
+		for (int hasCOBA=0; hasCOBA<=1; hasCOBA++) {
 			for (int isGPUmode=0; isGPUmode<=1; isGPUmode++) {
 			// compare 
 				float rateG2noSTP = -1.0f;
@@ -135,12 +135,14 @@ TEST(STP, spikeRateSTDvsSTF) {
 					sim->setNeuronParameters(g2, 0.02f, 0.2f, -65.0f, 8.0f);
 					sim->setNeuronParameters(g3, 0.02f, 0.2f, -65.0f, 8.0f);
 
-					float wt = hasCOBA ? 0.2f : 25.0f;
+					float wt = hasCOBA ? 0.2f : 18.0f;
 					sim->connect(g0,g2,"full",RangeWeight(wt),1.0f,RangeDelay(1));
 					sim->connect(g1,g3,"full",RangeWeight(wt),1.0f,RangeDelay(1));
 
 					if (hasCOBA)
-						sim->setConductances(true,5, 0, 150, 6, 0, 150);
+						sim->setConductances(true, 5, 0, 150, 6, 0, 150);
+					else
+						sim->setConductances(false);
 
 					if (hasSTP) {
 						sim->setSTP(g0, true, 0.45f, 50.0f,   750.0f); // depressive
@@ -148,9 +150,9 @@ TEST(STP, spikeRateSTDvsSTF) {
 					}
 
 					bool spikeAtZero = true;
-					spkGenG0 = new PeriodicSpikeGenerator(15.0f,spikeAtZero); // periodic spiking @ 15 Hz
+					spkGenG0 = new PeriodicSpikeGenerator(10.0f,spikeAtZero); // periodic spiking @ 15 Hz
 					sim->setSpikeGenerator(g0, spkGenG0);
-					spkGenG1 = new PeriodicSpikeGenerator(15.0f,spikeAtZero); // periodic spiking @ 15 Hz
+					spkGenG1 = new PeriodicSpikeGenerator(10.0f,spikeAtZero); // periodic spiking @ 15 Hz
 					sim->setSpikeGenerator(g1, spkGenG1);
 
 					sim->setupNetwork();
@@ -173,17 +175,17 @@ TEST(STP, spikeRateSTDvsSTF) {
 						rateG2noSTP = spkMonG2->getPopMeanFiringRate();
 						rateG3noSTP = spkMonG3->getPopMeanFiringRate();
 					} else {
-						fprintf(stderr,"%s %s %s, G2 w/o=%f, G2 w/=%f\n", isRunLong?"long":"short", 
-							isGPUmode?"GPU":"CPU", 
-							hasCOBA?"COBA":"CUBA", 
-							rateG2noSTP, spkMonG2->getPopMeanFiringRate());
-						fprintf(stderr,"%s %s %s, G3 w/o=%f, G3 w/=%f\n", isRunLong?"long":"short",
-							isGPUmode?"GPU":"CPU",
-							hasCOBA?"COBA":"CUBA", 
-							rateG3noSTP, 
-							spkMonG3->getPopMeanFiringRate());
+//						fprintf(stderr,"%s %s %s, G2 w/o=%f, G2 w/=%f\n", isRunLong?"long":"short", 
+//							isGPUmode?"GPU":"CPU", 
+//							hasCOBA?"COBA":"CUBA", 
+//							rateG2noSTP, spkMonG2->getPopMeanFiringRate());
+//						fprintf(stderr,"%s %s %s, G3 w/o=%f, G3 w/=%f\n", isRunLong?"long":"short",
+//							isGPUmode?"GPU":"CPU",
+//							hasCOBA?"COBA":"CUBA", 
+//							rateG3noSTP, 
+//							spkMonG3->getPopMeanFiringRate());
+						
 						// if STP is on: compare spike rate to the one recorded without STP
-
 						if (isRunLong) {
 							// the run time was relatively long, so STP should have its expected effect
 							EXPECT_TRUE( spkMonG2->getPopMeanFiringRate() < rateG2noSTP); // depressive

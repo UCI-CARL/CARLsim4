@@ -1958,9 +1958,9 @@ void CpuSNN::buildNetworkInit(unsigned int nNeur, unsigned int nPostSyn, unsigne
 	maxDelay_ = maxDelay;
 	numPreSynapses = nPreSyn;
 
-	// \FIXME: GPU bug in kernel_globalConductanceUpdate
-	if (sim_with_stp && simMode_==GPU_MODE && maxDelay>1) {
-		CARLSIM_ERROR("STP in GPU mode with delays > 1 ms is currently not supported.");
+	// \FIXME: need to figure out STP buffer for delays > 1
+	if (sim_with_stp && maxDelay>1) {
+		CARLSIM_ERROR("STP with delays > 1 ms is currently not supported.");
 		exitSimulation(1);
 	}
 
