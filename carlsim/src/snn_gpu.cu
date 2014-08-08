@@ -1930,7 +1930,133 @@ void CpuSNN::copyFiringStateFromGPU (int grpId)
 		cudaMemcpyDeviceToHost) );
 }
 
-void CpuSNN::copyNeuronState(network_ptr_t* dest, network_ptr_t* src,  cudaMemcpyKind kind, int allocateMem, int grpId)
+void CpuSNN::copyConductanceAMPA(network_ptr_t* dest, network_ptr_t* src, cudaMemcpyKind kind, int allocateMem, int grpId) {
+	assert(isSimulationWithCOBA());
+
+	int ptrPos, length;
+
+	// check that the destination pointer is properly allocated..
+	checkDestSrcPtrs(dest, src, kind, allocateMem, grpId);
+
+	if(grpId == -1) {
+		ptrPos  = 0;
+		length  = numNReg;
+	} else {
+		ptrPos  = grp_Info[grpId].StartN;
+		length  = grp_Info[grpId].SizeN;
+	}
+	assert(length  <= numNReg);
+	assert(length > 0);
+
+	//conductance information
+	assert(src->gAMPA  != NULL);
+	if(allocateMem)     CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->gAMPA, sizeof(float)*length));
+	CUDA_CHECK_ERRORS( cudaMemcpy( &dest->gAMPA[ptrPos], &src->gAMPA[ptrPos], sizeof(float)*length, kind));
+}
+
+void CpuSNN::copyConductanceNMDA(network_ptr_t* dest, network_ptr_t* src, cudaMemcpyKind kind, int allocateMem, int grpId) {
+	assert(isSimulationWithCOBA());
+
+	int ptrPos, length;
+
+	// check that the destination pointer is properly allocated..
+	checkDestSrcPtrs(dest, src, kind, allocateMem, grpId);
+
+	if(grpId == -1) {
+		ptrPos  = 0;
+		length  = numNReg;
+	} else {
+		ptrPos  = grp_Info[grpId].StartN;
+		length  = grp_Info[grpId].SizeN;
+	}
+	assert(length  <= numNReg);
+	assert(length > 0);
+
+	if (isSimulationWithNMDARise()) {
+		assert(src->gNMDA_r != NULL);
+		if(allocateMem)     CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->gNMDA_r, sizeof(float)*length));
+		CUDA_CHECK_ERRORS( cudaMemcpy( &dest->gNMDA_r[ptrPos], &src->gNMDA_r[ptrPos], sizeof(float)*length, kind));
+
+		assert(src->gNMDA_d != NULL);
+		if(allocateMem)     CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->gNMDA_d, sizeof(float)*length));
+		CUDA_CHECK_ERRORS( cudaMemcpy( &dest->gNMDA_d[ptrPos], &src->gNMDA_d[ptrPos], sizeof(float)*length, kind));
+	} else {
+		assert(src->gNMDA  != NULL);
+		if(allocateMem)     CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->gNMDA, sizeof(float)*length));
+		CUDA_CHECK_ERRORS( cudaMemcpy( &dest->gNMDA[ptrPos], &src->gNMDA[ptrPos], sizeof(float)*length, kind));
+	}
+}
+
+void CpuSNN::copyConductanceGABAa(network_ptr_t* dest, network_ptr_t* src, cudaMemcpyKind kind, int allocateMem, int grpId) {
+	assert(isSimulationWithCOBA());
+
+	int ptrPos, length;
+
+	// check that the destination pointer is properly allocated..
+	checkDestSrcPtrs(dest, src, kind, allocateMem, grpId);
+
+	if(grpId == -1) {
+		ptrPos  = 0;
+		length  = numNReg;
+	} else {
+		ptrPos  = grp_Info[grpId].StartN;
+		length  = grp_Info[grpId].SizeN;
+	}
+	assert(length  <= numNReg);
+	assert(length > 0);
+
+	assert(src->gGABAa != NULL);
+	if(allocateMem)     CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->gGABAa, sizeof(float)*length));
+	CUDA_CHECK_ERRORS( cudaMemcpy( &dest->gGABAa[ptrPos], &src->gGABAa[ptrPos], sizeof(float)*length, kind));
+}
+
+void CpuSNN::copyConductanceGABAb(network_ptr_t* dest, network_ptr_t* src, cudaMemcpyKind kind, int allocateMem, int grpId) {
+	assert(isSimulationWithCOBA());
+
+	int ptrPos, length;
+
+	// check that the destination pointer is properly allocated..
+	checkDestSrcPtrs(dest, src, kind, allocateMem, grpId);
+
+	if(grpId == -1) {
+		ptrPos  = 0;
+		length  = numNReg;
+	} else {
+		ptrPos  = grp_Info[grpId].StartN;
+		length  = grp_Info[grpId].SizeN;
+	}
+	assert(length  <= numNReg);
+	assert(length > 0);
+
+	if (isSimulationWithGABAbRise()) {
+		assert(src->gGABAb_r != NULL);
+		if(allocateMem)     CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->gGABAb_r, sizeof(float)*length));
+		CUDA_CHECK_ERRORS( cudaMemcpy(&dest->gGABAb_r[ptrPos],&src->gGABAb_r[ptrPos],sizeof(float)*length,kind) );
+
+		assert(src->gGABAb_d != NULL);
+		if(allocateMem)     CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->gGABAb_d, sizeof(float)*length));
+		CUDA_CHECK_ERRORS( cudaMemcpy(&dest->gGABAb_d[ptrPos],&src->gGABAb_d[ptrPos],sizeof(float)*length,kind) );
+	} else {
+		assert(src->gGABAb != NULL);
+		if(allocateMem)     CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->gGABAb, sizeof(float)*length));
+		CUDA_CHECK_ERRORS( cudaMemcpy( &dest->gGABAb[ptrPos], &src->gGABAb[ptrPos], sizeof(float)*length, kind));
+	}
+}
+
+void CpuSNN::copyConductanceState(network_ptr_t* dest, network_ptr_t* src, cudaMemcpyKind kind, int allocateMem, int grpId) {
+	assert(isSimulationWithCOBA());
+
+	// check that the destination pointer is properly allocated..
+	checkDestSrcPtrs(dest, src, kind, allocateMem, grpId);
+
+	copyConductanceAMPA( dest, src, kind, allocateMem, grpId);
+	copyConductanceNMDA( dest, src, kind, allocateMem, grpId);
+	copyConductanceGABAa(dest, src, kind, allocateMem, grpId);
+	copyConductanceGABAb(dest, src, kind, allocateMem, grpId);
+}
+
+
+void CpuSNN::copyNeuronState(network_ptr_t* dest, network_ptr_t* src, cudaMemcpyKind kind, int allocateMem, int grpId)
 {
 	int ptrPos, length, length2;
 
@@ -1976,42 +2102,7 @@ void CpuSNN::copyNeuronState(network_ptr_t* dest, network_ptr_t* src,  cudaMemcp
 
 	if (sim_with_conductances) {
 	    //conductance information
-		assert(src->gAMPA  != NULL);
-		if(allocateMem)     CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->gAMPA, sizeof(float)*length));
-		CUDA_CHECK_ERRORS( cudaMemcpy( &dest->gAMPA[ptrPos], &src->gAMPA[ptrPos], sizeof(float)*length, kind));
-
-		if (sim_with_NMDA_rise) {
-			assert(src->gNMDA_r != NULL);
-			if(allocateMem)     CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->gNMDA_r, sizeof(float)*length));
-			CUDA_CHECK_ERRORS( cudaMemcpy( &dest->gNMDA_r[ptrPos], &src->gNMDA_r[ptrPos], sizeof(float)*length, kind));
-
-			assert(src->gNMDA_d != NULL);
-			if(allocateMem)     CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->gNMDA_d, sizeof(float)*length));
-			CUDA_CHECK_ERRORS( cudaMemcpy( &dest->gNMDA_d[ptrPos], &src->gNMDA_d[ptrPos], sizeof(float)*length, kind));
-		} else {
-			assert(src->gNMDA  != NULL);
-			if(allocateMem)     CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->gNMDA, sizeof(float)*length));
-			CUDA_CHECK_ERRORS( cudaMemcpy( &dest->gNMDA[ptrPos], &src->gNMDA[ptrPos], sizeof(float)*length, kind));
-		}
-
-		assert(src->gGABAa != NULL);
-		if(allocateMem)     CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->gGABAa, sizeof(float)*length));
-		CUDA_CHECK_ERRORS( cudaMemcpy( &dest->gGABAa[ptrPos], &src->gGABAa[ptrPos], sizeof(float)*length, kind));
-
-		if (sim_with_GABAb_rise) {
-			assert(src->gGABAb_r != NULL);
-			if(allocateMem)     CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->gGABAb_r, sizeof(float)*length));
-			CUDA_CHECK_ERRORS( cudaMemcpy(&dest->gGABAb_r[ptrPos],&src->gGABAb_r[ptrPos],sizeof(float)*length,kind) );
-
-			assert(src->gGABAb_d != NULL);
-			if(allocateMem)     CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->gGABAb_d, sizeof(float)*length));
-			CUDA_CHECK_ERRORS( cudaMemcpy(&dest->gGABAb_d[ptrPos],&src->gGABAb_d[ptrPos],sizeof(float)*length,kind) );
-
-		} else {
-			assert(src->gGABAb != NULL);
-			if(allocateMem)     CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->gGABAb, sizeof(float)*length));
-			CUDA_CHECK_ERRORS( cudaMemcpy( &dest->gGABAb[ptrPos], &src->gGABAb[ptrPos], sizeof(float)*length, kind));
-		}
+	    copyConductanceState(dest, src, kind, allocateMem, grpId);
 	}
 
 	//neuron input current...

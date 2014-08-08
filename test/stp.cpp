@@ -246,9 +246,8 @@ TEST(STP, internalCPUvsData) {
 	sim->setupNetwork(true);
 	for (int i=0; i<50; i++) {
 		sim->runNetwork(0,1,false,true); // enable copyState
-		fprintf(stderr,"%.4f,",sim->stpu[1]);
-//		EXPECT_NEAR(sim->stpu[1], stpu[i], abs_error);
-//		EXPECT_NEAR(sim->stpx[1], stpx[i], abs_error);
+		EXPECT_NEAR(sim->getSTPu()[1], stpu[i], abs_error);
+		EXPECT_NEAR(sim->getSTPx()[1], stpx[i], abs_error);
 	}
 
 	delete spk50;
@@ -292,8 +291,7 @@ TEST(STP, externalCPUvsData) {
 	sim->setupNetwork(true);
 	for (int i=0; i<50; i++) {
 		sim->runNetwork(0,1,false,true); // enable copyState
-//		fprintf(stderr,"%.4f,",sim->current[0]);
-		EXPECT_NEAR(sim->current[0], current[i], abs_error); // check post-synaptic current to see effect of pre-STP
+		EXPECT_NEAR(sim->getCurrent()[0], current[i], abs_error); // check post-synaptic current to see effect of pre-STP
 	}
 
 	delete spk50;
@@ -338,8 +336,8 @@ TEST(STP, internalCPUvsGPU) {
 		sim->setupNetwork(true);
 		for (int i=0; i<300; i++) {
 			sim->runNetwork(0,1,false,true); // enable copyState
-			stpu[j*300+i] = sim->stpu[1];
-			stpx[j*300+i] = sim->stpx[1];
+			stpu[j*300+i] = sim->getSTPu()[1];
+			stpx[j*300+i] = sim->getSTPx()[1];
 		}
 
 		delete spk20;

@@ -486,6 +486,8 @@ public:
 	int getGroupEndNeuronId(int grpId)   { return grp_Info[grpId].EndN; }
 	int getGroupNumNeurons(int grpId)    { return grp_Info[grpId].SizeN; }
 
+	std::string getNetworkName() { return networkName_; }
+
 	int getNumConfigurations()	{ return nConfig_; }	//!< gets number of network configurations
 	int getNumConnections(short int connectionId);		//!< gets number of connections associated with a connection ID
 	int getNumGroups() { return numGrp; }
@@ -502,7 +504,9 @@ public:
 	 */
 	void getPopWeights(int gIDpre, int gIDpost, float*& weights, int& size, int configId = 0);
 
-	int getSimMode()		{ return simMode_; }
+	int getRandSeed() { return randSeed_; }
+
+	simMode_t getSimMode()		{ return simMode_; }
 	uint64_t getSimTime()		{ return simTime; }
 	unsigned int getSimTimeSec()	{ return simTimeSec; }
 	unsigned int getSimTimeMs()		{ return simTimeMs; }
@@ -524,6 +528,20 @@ public:
 	 */
 	int* getSpikeCounter(int grpId, int configId);
 
+	//! temporary getter to return pointer to current[] \TODO replace with NeuronMonitor
+	float* getCurrent() { return current; }
+
+	std::vector<float> getConductanceAMPA();
+	std::vector<float> getConductanceNMDA();
+	std::vector<float> getConductanceGABAa();
+	std::vector<float> getConductanceGABAb();
+
+	//! temporary getter to return pointer to stpu[] \TODO replace with NeuronMonitor or ConnectionMonitor
+	float* getSTPu() { return stpu; }
+
+	//! temporary getter to return pointer to stpx[] \TODO replace with NeuronMonitor or ConnectionMonitor
+	float* getSTPx() { return stpx; }
+
 	//! Returns the change in weight strength in the last second (due to plasticity) for all synaptic connections between a pre-synaptic and a post-synaptic neuron group.
 	/*!
 	 * \param grpIdPre ID of pre-synaptic group
@@ -536,12 +554,20 @@ public:
 	 float* getWeightChanges(int gIDpre, int gIDpost, int& Npre, int& Npost, float* weightChanges);
 
 
-
-
 	bool isExcitatoryGroup(int g) { return (grp_Info[g].Type&TARGET_AMPA) || (grp_Info[g].Type&TARGET_NMDA); }
 	bool isInhibitoryGroup(int g) { return (grp_Info[g].Type&TARGET_GABAa) || (grp_Info[g].Type&TARGET_GABAb); }
 	bool isPoissonGroup(int g) { return (grp_Info[g].Type&POISSON_NEURON); }
 	bool isDopaminergicGroup(int g) { return (grp_Info[g].Type&TARGET_DA); }
+
+	bool isSimulationWithCOBA() { return sim_with_conductances; }
+	bool isSimulationWithCUBA() { return !sim_with_conductances; }
+	bool isSimulationWithNMDARise() { return sim_with_NMDA_rise; }
+	bool isSimulationWithGABAbRise() { return sim_with_GABAb_rise; }
+	bool isSimulationWithFixedWeightsOnly() { return sim_with_fixedwts; }
+	bool isSimulationWithHomeostasis() { return sim_with_homeostasis; }
+	bool isSimulationWithPlasticWeights() { return !sim_with_fixedwts; }
+	bool isSimulationWithSTDP() { return sim_with_stdp; }
+	bool isSimulationWithSTP() { return sim_with_stp; }
 
 	/*!
 	 * \brief Sets enableGpuSpikeCntPtr to true or false.  True allows getSpikeCntPtr_GPU to copy firing
@@ -711,6 +737,11 @@ private:
 	void checkInitialization(char* testString=NULL);
 	void checkInitialization2(char* testString=NULL);
 
+	void copyConductanceAMPA(network_ptr_t* dest, network_ptr_t* src, cudaMemcpyKind kind, int allocateMem, int grpId=-1);
+	void copyConductanceNMDA(network_ptr_t* dest, network_ptr_t* src, cudaMemcpyKind kind, int allocateMem, int grpId=-1);
+	void copyConductanceGABAa(network_ptr_t* dest, network_ptr_t* src, cudaMemcpyKind kind, int allocateMem, int grpId=-1);
+	void copyConductanceGABAb(network_ptr_t* dest, network_ptr_t* src, cudaMemcpyKind kind, int allocateMem, int grpId=-1);
+	void copyConductanceState(network_ptr_t* dest, network_ptr_t* src, cudaMemcpyKind kind, int allocateMem, int grpId=-1);
 	void copyConnections(network_ptr_t* dest, int kind, int allocateMem);
 	void copyFiringInfo_GPU();
 	void copyFiringStateFromGPU (int grpId = -1);

@@ -1400,6 +1400,78 @@ int  CpuSNN::getConnectionId(short int connId, int configId) {
 	return connId;
 }
 
+std::vector<float> CpuSNN::getConductanceAMPA() {
+	assert(isSimulationWithCOBA());
+
+	// need to copy data from GPU first
+	if (getSimMode()==GPU_MODE)
+		copyConductanceAMPA(&cpuNetPtrs, &cpu_gpuNetPtrs, cudaMemcpyDeviceToHost, false, ALL);
+
+	std::vector<float> gAMPAvec;
+	int szAMPA = getNumNeurons();
+	for (int i=0; i<szAMPA; i++)
+		gAMPAvec.push_back(gAMPA[i]);
+	return gAMPAvec;
+}
+
+std::vector<float> CpuSNN::getConductanceNMDA() {
+	assert(isSimulationWithCOBA());
+
+	// need to copy data from GPU first
+	if (getSimMode()==GPU_MODE)
+		copyConductanceNMDA(&cpuNetPtrs, &cpu_gpuNetPtrs, cudaMemcpyDeviceToHost, false, ALL);
+
+	std::vector<float> gNMDAvec;
+	int szNMDA = getNumNeurons();
+
+	if (isSimulationWithNMDARise()) {
+		// need to construct conductance from rise and decay parts
+		for (int i=0; i<szNMDA; i++) {
+			gNMDAvec.push_back(gNMDA_d[i]-gNMDA_r[i]);
+		}
+	} else {
+		for (int i=0; i<szNMDA; i++)
+			gNMDAvec.push_back(gNMDA[i]);
+	}
+	return gNMDAvec;
+}
+
+std::vector<float> CpuSNN::getConductanceGABAa() {
+	assert(isSimulationWithCOBA());
+
+	// need to copy data from GPU first
+	if (getSimMode()==GPU_MODE)
+		copyConductanceGABAa(&cpuNetPtrs, &cpu_gpuNetPtrs, cudaMemcpyDeviceToHost, false, ALL);
+
+	std::vector<float> gGABAaVec;
+	int szGABAa = getNumNeurons();
+	for (int i=0; i<szGABAa; i++)
+		gGABAaVec.push_back(gGABAa[i]);
+	return gGABAaVec;
+}
+
+std::vector<float> CpuSNN::getConductanceGABAb() {
+	assert(isSimulationWithCOBA());
+
+	// need to copy data from GPU first
+	if (getSimMode()==GPU_MODE)
+		copyConductanceGABAb(&cpuNetPtrs, &cpu_gpuNetPtrs, cudaMemcpyDeviceToHost, false, ALL);
+
+	std::vector<float> gGABAbVec;
+	int szGABAb = getNumNeurons();
+
+	if (isSimulationWithNMDARise()) {
+		// need to construct conductance from rise and decay parts
+		for (int i=0; i<szGABAb; i++) {
+			gGABAbVec.push_back(gGABAb_d[i]-gGABAb_r[i]);
+		}
+	} else {
+		for (int i=0; i<szGABAb; i++)
+			gGABAbVec.push_back(gGABAb[i]);
+	}
+	return gGABAbVec;
+}
+
 // this is a user function
 // \FIXME: fix this
 uint8_t* CpuSNN::getDelays(int gIDpre, int gIDpost, int& Npre, int& Npost, uint8_t* delays) {

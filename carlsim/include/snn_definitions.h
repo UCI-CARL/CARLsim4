@@ -48,14 +48,6 @@
 // are stored as short int. 
 
 
-// hack to check private members in regression testing
-// \FIXME this should really be fixed by having proper getter functions
-#ifdef __REGRESSION_TESTING__
-	#define private public
- 	#define protected public
-#endif
-
-
 // FIXME: 
 /////    !!!!!!! EVEN MORE IMPORTANT : IS THIS STILL BEING USED?? !!!!!!!!!!
 
