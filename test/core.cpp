@@ -249,9 +249,7 @@ TEST(CORE, setConductancesTrue) {
 // \FIXME: this could be interface level, but then there would be no way to test net_Info struct
 
 
-TEST(CORE, spikeRateCPUvsGPU) {
-	int randSeed = rand() % 1000;	// randSeed must not interfere with STP
-
+TEST(CORE, firingRateCPUvsGPU) {
 	CARLsim *sim = NULL;
 	SpikeMonitor *spkMonG0 = NULL, *spkMonG1 = NULL, *spkMonG2 = NULL, *spkMonG3 = NULL;
 	PeriodicSpikeGenerator *spkGenG0 = NULL, *spkGenG1 = NULL;
@@ -269,7 +267,7 @@ TEST(CORE, spikeRateCPUvsGPU) {
 PoissonRate in(1);
 
 		for (int isGPUmode=0; isGPUmode<=0; isGPUmode++) {
-			CARLsim* sim = new CARLsim("SNN",isGPUmode?GPU_MODE:CPU_MODE,USER,0,1,randSeed);
+			CARLsim* sim = new CARLsim("SNN",isGPUmode?GPU_MODE:CPU_MODE,SILENT,0,1,42);
 			int g0=sim->createSpikeGeneratorGroup("input0", 1, EXCITATORY_NEURON);
 			int g1=sim->createSpikeGeneratorGroup("input1", 1, EXCITATORY_NEURON);
 			int g2=sim->createGroup("excit2", 1, EXCITATORY_NEURON);
@@ -320,19 +318,20 @@ PoissonRate in(1);
 				spkTimesG1 = spkMonG1->getSpikeVector2D();
 				spkTimesG2 = spkMonG2->getSpikeVector2D();
 				spkTimesG3 = spkMonG3->getSpikeVector2D();
-				for (int i=0; i<spkTimesG2[0].size(); i++)
-					fprintf(stderr, "%d\n",spkTimesG2[0][i]);
+//				for (int i=0; i<spkTimesG2[0].size(); i++)
+//					fprintf(stderr, "%d\n",spkTimesG2[0][i]);
 			} else {
 				// GPU mode: compare rates to CPU mode
-				EXPECT_FLOAT_EQ( spkMonG0->getPopMeanFiringRate(), rateG0CPU);
-				EXPECT_FLOAT_EQ( spkMonG1->getPopMeanFiringRate(), rateG1CPU);
-				EXPECT_FLOAT_EQ( spkMonG2->getPopMeanFiringRate(), rateG2CPU);
-				EXPECT_FLOAT_EQ( spkMonG3->getPopMeanFiringRate(), rateG3CPU);
+				ASSERT_FLOAT_EQ( spkMonG0->getPopMeanFiringRate(), rateG0CPU);
+				ASSERT_FLOAT_EQ( spkMonG1->getPopMeanFiringRate(), rateG1CPU);
+				ASSERT_FLOAT_EQ( spkMonG2->getPopMeanFiringRate(), rateG2CPU);
+				ASSERT_FLOAT_EQ( spkMonG3->getPopMeanFiringRate(), rateG3CPU);
 
-				fprintf(stderr,"Group 2:\n");				
 				std::vector<std::vector<int> > spkT = spkMonG2->getSpikeVector2D();
-				for (int i=0; i<max(spkTimesG2[0].size(),spkT[0].size()); i++)
-					fprintf(stderr, "%d\t%d\n",(i<spkTimesG2[0].size())?spkTimesG2[0][i]:-1, (i<spkT[0].size())?spkT[0][i]:-1);
+				ASSERT_EQ(spkTimesG2[0].size(), spkT[0].size());
+				for (int i=0; i<spkTimesG2[0].size(); i++)
+					EXPECT_EQ(spkTimesG2[0][i], spkT[0][i]);
+//					fprintf(stderr, "%d\t%d\n",(i<spkTimesG2[0].size())?spkTimesG2[0][i]:-1, (i<spkT[0].size())?spkT[0][i]:-1);
 			}
 
 //			delete spkGenG0;

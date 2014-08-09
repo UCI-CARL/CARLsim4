@@ -728,11 +728,7 @@ int CpuSNN::runNetwork(int _nsec, int _nmsec, bool printRunSummary, bool copySta
 	// in GPU mode, copy info from device to host
 	if (simMode_==GPU_MODE) {
 		if(copyState) {
-			for(int g=0; g < numGrp; g++) {
-				if ((!grp_Info[g].isSpikeGenerator) && (simMode_==GPU_MODE)) {
-					copyNeuronState(&cpuNetPtrs, &cpu_gpuNetPtrs, cudaMemcpyDeviceToHost, false, g);
-				}
-			}
+			copyNeuronState(&cpuNetPtrs, &cpu_gpuNetPtrs, cudaMemcpyDeviceToHost, false, ALL);
 
 			if (sim_with_stp) {
 				copySTPState(&cpuNetPtrs, &cpu_gpuNetPtrs, cudaMemcpyDeviceToHost, false);
@@ -995,6 +991,7 @@ void CpuSNN::setConnectionMonitor(int grpIdPre, int grpIdPost, ConnectionMonitor
 
 // sets up a spike generator
 void CpuSNN::setSpikeGenerator(int grpId, SpikeGeneratorCore* spikeGen, int configId) {
+	assert(!doneReorganization); // must be called before setupNetwork to work on GPU
 	if (configId == ALL) {
 		for(int c=0; c < nConfig_; c++)
 			setSpikeGenerator(grpId, spikeGen,c);
@@ -1064,7 +1061,6 @@ SpikeMonitor* CpuSNN::setSpikeMonitor(int grpId, FILE* fid, int configId) {
 			setSpikeMonitor(grpId, fid ,c);
 	} else {
 		int cGrpId = getGroupId(grpId, configId);
-
 
 		// create new SpikeMonitorCore object in any case and initialize analysis components
 		// spkMonObj destructor (see below) will deallocate it
@@ -1408,8 +1404,7 @@ std::vector<float> CpuSNN::getConductanceAMPA() {
 		copyConductanceAMPA(&cpuNetPtrs, &cpu_gpuNetPtrs, cudaMemcpyDeviceToHost, false, ALL);
 
 	std::vector<float> gAMPAvec;
-	int szAMPA = getNumNeurons();
-	for (int i=0; i<szAMPA; i++)
+	for (int i=0; i<numNReg; i++)
 		gAMPAvec.push_back(gAMPA[i]);
 	return gAMPAvec;
 }
@@ -1422,15 +1417,13 @@ std::vector<float> CpuSNN::getConductanceNMDA() {
 		copyConductanceNMDA(&cpuNetPtrs, &cpu_gpuNetPtrs, cudaMemcpyDeviceToHost, false, ALL);
 
 	std::vector<float> gNMDAvec;
-	int szNMDA = getNumNeurons();
-
 	if (isSimulationWithNMDARise()) {
 		// need to construct conductance from rise and decay parts
-		for (int i=0; i<szNMDA; i++) {
+		for (int i=0; i<numNReg; i++) {
 			gNMDAvec.push_back(gNMDA_d[i]-gNMDA_r[i]);
 		}
 	} else {
-		for (int i=0; i<szNMDA; i++)
+		for (int i=0; i<numNReg; i++)
 			gNMDAvec.push_back(gNMDA[i]);
 	}
 	return gNMDAvec;
@@ -1444,8 +1437,7 @@ std::vector<float> CpuSNN::getConductanceGABAa() {
 		copyConductanceGABAa(&cpuNetPtrs, &cpu_gpuNetPtrs, cudaMemcpyDeviceToHost, false, ALL);
 
 	std::vector<float> gGABAaVec;
-	int szGABAa = getNumNeurons();
-	for (int i=0; i<szGABAa; i++)
+	for (int i=0; i<numNReg; i++)
 		gGABAaVec.push_back(gGABAa[i]);
 	return gGABAaVec;
 }
@@ -1458,15 +1450,13 @@ std::vector<float> CpuSNN::getConductanceGABAb() {
 		copyConductanceGABAb(&cpuNetPtrs, &cpu_gpuNetPtrs, cudaMemcpyDeviceToHost, false, ALL);
 
 	std::vector<float> gGABAbVec;
-	int szGABAb = getNumNeurons();
-
 	if (isSimulationWithNMDARise()) {
 		// need to construct conductance from rise and decay parts
-		for (int i=0; i<szGABAb; i++) {
+		for (int i=0; i<numNReg; i++) {
 			gGABAbVec.push_back(gGABAb_d[i]-gGABAb_r[i]);
 		}
 	} else {
-		for (int i=0; i<szGABAb; i++)
+		for (int i=0; i<numNReg; i++)
 			gGABAbVec.push_back(gGABAb[i]);
 	}
 	return gGABAbVec;
@@ -1777,7 +1767,7 @@ void CpuSNN::CpuSNNinit() {
 		fpErr_ = fopen("nul","w");
 		fpDeb_ = fopen("nul","w");
 	#else
-//		fpInf_ = fopen("/dev/null","w");
+		fpInf_ = fopen("/dev/null","w");
 		fpErr_ = fopen("/dev/null","w");
 		fpDeb_ = fopen("/dev/null","w");
 	#endif

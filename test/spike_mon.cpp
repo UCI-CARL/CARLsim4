@@ -271,8 +271,7 @@ TEST(SPIKEMON, clear){
 	PoissonRate* input;
 	const int GRP_SIZE = 5;
 	const int inputTargetFR = 5.0f;
-	// use threadsafe version because we have deathtests
-	::testing::FLAGS_gtest_death_test_style = "threadsafe";
+	int runTimeMs = 2000;
 
 	// loop over both CPU and GPU mode.
 	for(int mode=0; mode<=1; mode++){
@@ -286,7 +285,6 @@ TEST(SPIKEMON, clear){
 		
 		sim->setConductances(true,COND_tAMPA,COND_tNMDA,COND_tGABAa,COND_tGABAb);
 		double initWeight = 0.05f;
-		
 
 		sim->setNeuronParameters(g1, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f, ALL);
 		sim->setNeuronParameters(g2, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f, ALL);
@@ -296,9 +294,12 @@ TEST(SPIKEMON, clear){
 		for(int i=0;i<GRP_SIZE;i++){
 			input->rates[i]=inputTargetFR;
 		}
-		sim->connect(inputGroup,g1,"random", RangeWeight(initWeight), 0.5f, RangeDelay(1), SYN_FIXED);
-		sim->connect(inputGroup,g2,"random", RangeWeight(initWeight), 0.5f, RangeDelay(1), SYN_FIXED);
-		sim->connect(g1,g2,"random", RangeWeight(initWeight), 0.5f, RangeDelay(1), SYN_FIXED);
+
+		// use full because random might give us a network that does not spike (depending on the random seed),
+		// leading to the EXPECTs below to fail
+		sim->connect(inputGroup,g1,"full", RangeWeight(initWeight), 1.0f, RangeDelay(1), SYN_FIXED);
+		sim->connect(inputGroup,g2,"full", RangeWeight(initWeight), 1.0f, RangeDelay(1), SYN_FIXED);
+		sim->connect(g1,g2,"full", RangeWeight(initWeight), 1.0f, RangeDelay(1), SYN_FIXED);
 
 		SpikeMonitor* spikeMonG1 = sim->setSpikeMonitor(g1);
 		sim->setupNetwork();
@@ -306,7 +307,6 @@ TEST(SPIKEMON, clear){
 		sim->setSpikeRate(inputGroup,input);
 		spikeMonG1->startRecording();
 		
-		int runTimeMs = 2000;
 		sim->runNetwork(runTimeMs/1000,runTimeMs%1000);
 	
 		spikeMonG1->stopRecording();
