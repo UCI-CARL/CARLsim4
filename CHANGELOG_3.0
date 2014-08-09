@@ -7,9 +7,29 @@ Legend:
 	- removed element
 	* changed element
 
+2014-08-08     Michael Beyeler <mbeyeler@uci.edu>
+	* Fixed broken COBA implementation in CPU mode.
+	+ Added COBA tests for firing rate comparison of CPU/GPU mode.
+	* Condensed CUBA test case.
+	* Fixed assertion in CpuSNN::runNetwork to make sure that the function is
+	  called only after CpuSNN::setupNetwork.
+	+ Added CpuSNN interface getters such as getCurrent(), getConductanceAMPA(),
+	  isSimulationWithCOBA(), etc.
+	* Refactored CpuSNN::copyNeuronState, so that it implicitly calls
+	  CpuSNN::copyConductances, which itself calls CpuSNN::copyConductanceAMPA,
+	  etc.
+	- Removed test COBA.synRiseTimeSettings.
+	* Fixed STP scaling factor, STP_A.
+	* Fixed and tested STP for delay=1ms in CUBA/COBA, CPU/GPU mode. Currently
+	  STP is not support with delay>1ms, because STP buffer is broken.
+	* Fixed CARLsim state of setSpikeGenerator.
+	* Fixed calculation of standard deviation in class SpikeMonitor.
+	* Fixed assertion statement in CpuSNN::copyFiringStateFromGPU.
+	* Fixed initial value of recovery variable in CpuSNN::resetNeuron.
+
 2014-08-06     Kristofor D. Carlson <kdcarlso@uci.edu>
 	* Fixed broken CUBA implementation in GPU mode.
-	+ Added CUBA tests for CPU/GPU mode.
+	+ Added CUBA tests for firing rate comparison of CPU/GPU mode.
 
 2014-07-31     Michael Beyeler <mbeyeler@uci.edu>
 	* Improved memory usage, execution time, and flexibility of SpikeMonitor
