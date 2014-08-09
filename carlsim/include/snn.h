@@ -709,7 +709,7 @@ private:
 	void updateAfterMaxTime();
 	void updateConnectionMonitor();
 	void updateGroupMonitor();
-	void updateParameters(int* numN, int* numPostSynapses, int* D, int nConfig=1);
+	void updateParameters(int* numN, int* numPostSynapses, int* maxDelay, int nConfig=1);
 	void updateSpikesFromGrp(int grpId);
 	void updateSpikeGenerators();
 	void updateSpikeGeneratorsInit();
@@ -874,7 +874,7 @@ private:
 	int	        	numN;				//!< number of neurons in the spiking neural network
 	int				numPostSynapses;	//!< maximum number of post-synaptic connections in groups
 	int				numPreSynapses;		//!< maximum number of pre-syanptic connections in groups
-	int				D;					//!< maximum axonal delay in groups
+	int				maxDelay_;					//!< maximum axonal delay in groups
 	int				numNReg;			//!< number of regular (spking) neurons
 	int				numNExcReg;			//!< number of regular excitatory neurons
 	int				numNInhReg;			//!< number of regular inhibitory neurons
@@ -996,7 +996,7 @@ private:
 
 	/* Tsodyks & Markram (1998), where the short-term dynamics of synapses is characterized by three parameters:
 	   U (which roughly models the release probability of a synaptic vesicle for the first spike in a train of spikes),
-	   D (time constant for recovery from depression), and F (time constant for recovery from facilitation). */
+	   maxDelay_ (time constant for recovery from depression), and F (time constant for recovery from facilitation). */
 	   float *stpu;
 	   float *stpx;
 

@@ -89,10 +89,13 @@ float SpikeMonitorCore::getPopStdFiringRate() {
 	float meanRate = getPopMeanFiringRate();
 	std::vector<float> rates = getAllFiringRates();
 	float std = 0.0f;
-	for (int i=0; i<nNeurons_; i++)
-		std += (rates[i]-meanRate)*(rates[i]-meanRate);
+	if (nNeurons_>1) {
+		for (int i=0; i<nNeurons_; i++)
+			std += (rates[i]-meanRate)*(rates[i]-meanRate);
+		std = sqrt(std/(nNeurons_-1));
+	}
 
-	return sqrt(std/nNeurons_);
+	return std;
 }
 
 int SpikeMonitorCore::getPopNumSpikes() {

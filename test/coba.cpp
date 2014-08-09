@@ -107,11 +107,15 @@ TEST(COBA, disableSynReceptors) {
 	int expectSpkCntStd = 10;
 
 	std::string expectCond[4] = {"AMPA","NMDA","GABAa","GABAb"};
-	float expectCondVal[4] = {0.14, 2.2, 0.17, 2.2};
-	float expectCondStd[4] = {0.025,0.2,0.025,0.2,};
+	float expectCondVal[4] = {0.134, 2.374, 0.194, 2.374};
+	float expectCondStd[4] = {0.001, 0.001, 0.001, 0.001,}; // yes, on carlculator it is that accurate!!
 
 	int nInput = 1000;
 	int nOutput = 10;
+
+	PeriodicSpikeGeneratorCore *spkGen1, *spkGen2;
+	float rate = 30.0f;
+	bool spikeAtZero = true;
 
 	for (int mode=0; mode<=1; mode++) {
 		for (int nConfig=1; nConfig<=maxConfig; nConfig+=nConfigStep) {
@@ -136,59 +140,51 @@ TEST(COBA, disableSynReceptors) {
 			sim->connect(g1, grps[2], "full", -0.001f, -0.001f, 1.0f, 1, 1, 1.0, 0.0, SYN_FIXED);
 			sim->connect(g1, grps[3], "full", -0.0005f, -0.0005f, 1.0f, 1, 1, 0.0, 1.0, SYN_FIXED);
 
-			PoissonRate poissIn1(nInput);
-			PoissonRate poissIn2(nInput);
-			for (int i=0; i<nInput; i++) {
-				poissIn1.rates[i] = 30.0f;
-				poissIn2.rates[i] = 30.0f;
-			}
-			sim->setSpikeRate(g0,&poissIn1,1,ALL);
-			sim->setSpikeRate(g1,&poissIn2,1,ALL);
+			spkGen1 = new PeriodicSpikeGeneratorCore(rate, spikeAtZero);
+			spkGen2 = new PeriodicSpikeGeneratorCore(rate, spikeAtZero);
+			sim->setSpikeGenerator(g0, spkGen1, ALL);
+			sim->setSpikeGenerator(g1, spkGen2, ALL);
 
 			sim->setupNetwork(true);
 			sim->runNetwork(1,0,false,true);
 
-//			if (mode) {
-//				// GPU_MODE: copy from device to host
-//				for (int g=0; g<4; g++)
-//					sim->copyNeuronState(&(sim->cpuNetPtrs), &(sim->cpu_gpuNetPtrs), cudaMemcpyDeviceToHost, false, grps[g]);
-//			}
+			ASSERT_TRUE(sim->isSimulationWithCOBA());
+			std::vector<float> gAMPA  = sim->getConductanceAMPA();
+			std::vector<float> gNMDA  = sim->getConductanceNMDA();
+			std::vector<float> gGABAa = sim->getConductanceGABAa();
+			std::vector<float> gGABAb = sim->getConductanceGABAb();
 
 			for (int c=0; c<nConfig; c++) {
 				for (int g=0; g<4; g++) { // all groups
 					grpInfo = sim->getGroupInfo(grps[g],c);
 
-					EXPECT_TRUE(sim->isSimulationWithCOBA());
 					for (int n=grpInfo.StartN; n<=grpInfo.EndN; n++) {
-//						printf("%d[%d]: AMPA=%f, NMDA=%f, GABAa=%f, GABAb=%f\n",g,n,sim->gAMPA[n],sim->gNMDA[n],sim->gGABAa[n],sim->gGABAb[n]);
-						std::vector<float> gAMPA  = sim->getConductanceAMPA();
-						std::vector<float> gNMDA  = sim->getConductanceNMDA();
-						std::vector<float> gGABAa = sim->getConductanceGABAa();
-						std::vector<float> gGABAb = sim->getConductanceGABAb();
+//						fprintf(stderr,"%d[%d]: AMPA=%f, NMDA=%f, GABAa=%f, GABAb=%f\n",g,n,
+//							gAMPA[n],gNMDA[n],gGABAa[n],gGABAb[n]);
 
 						if (expectCond[g]=="AMPA") {
-							EXPECT_GT(gAMPA[n],0.0f);
+							ASSERT_GT(gAMPA[n],0.0f);
 							EXPECT_NEAR(gAMPA[n],expectCondVal[g],expectCondStd[g]);
 						}
 						else
 							EXPECT_FLOAT_EQ(gAMPA[n],0.0f);
 
 						if (expectCond[g]=="NMDA") {
-							EXPECT_GT(gNMDA[n],0.0f);
+							ASSERT_GT(gNMDA[n],0.0f);
 							EXPECT_NEAR(gNMDA[n],expectCondVal[g],expectCondStd[g]);
 						}
 						else
 							EXPECT_FLOAT_EQ(gNMDA[n],0.0f);
 
 						if (expectCond[g]=="GABAa") {
-							EXPECT_GT(gGABAa[n],0.0f);
+							ASSERT_GT(gGABAa[n],0.0f);
 							EXPECT_NEAR(gGABAa[n],expectCondVal[g],expectCondStd[g]);
 						}
 						else
 							EXPECT_FLOAT_EQ(gGABAa[n],0.0f);
 
 						if (expectCond[g]=="GABAb") {
-							EXPECT_GT(gGABAb[n],0.0f);
+							ASSERT_GT(gGABAb[n],0.0f);
 							EXPECT_NEAR(gGABAb[n],expectCondVal[g],expectCondStd[g]);
 						}
 						else
@@ -196,6 +192,7 @@ TEST(COBA, disableSynReceptors) {
 					}
 				}
 			}
+			delete spkGen1, spkGen2;
 			delete sim;
 		}
 	}	

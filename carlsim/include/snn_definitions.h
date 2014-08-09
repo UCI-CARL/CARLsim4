@@ -48,8 +48,6 @@
 // are stored as short int. 
 
 
-
-
 // FIXME: 
 /////    !!!!!!! EVEN MORE IMPORTANT : IS THIS STILL BEING USED?? !!!!!!!!!!
 
@@ -94,10 +92,18 @@ inline bool isInhibitoryNeuron (unsigned int& nid, unsigned int& numNInhPois, un
 
 // Macros for STP
 // we keep a history of STP values to compute resource change over time
+// there are two problems to solve:
+// 1) parallelism. we update postsynaptic current changes in synapse parallelism, but stpu and stpx need to be updated
+//    only once for each pre-neuron (in neuron parallelism)
+// 2) non-zero delays. as a post-neuron you want the spike to be weighted by what the utility and resource
+//    variables were when pre spiked, not from the time at which the spike arrived at post.
 // the macro is slightly faster than an inline function, but we should consider changing it anyway because
 // it's unsafe
-#define STP_BUF_SIZE 32
-#define STP_BUF_POS(nid,t)  (nid*STP_BUF_SIZE+((t)%STP_BUF_SIZE))
+//#define STP_BUF_SIZE 32
+// \FIXME D is the CpuSNN member variable for the max delay in the network, give it a better name dammit!!
+// we actually need D+1 entries. Say D=1ms. Then to update the current we need u^+ (right after the pre-spike, so
+// at t) and x^- (right before the spike, so at t-1).
+#define STP_BUF_POS(nid,t) ( nid*(maxDelay_+1) + ((t)%(maxDelay_+1)) )
 
 
 // use these macros for logging / error printing

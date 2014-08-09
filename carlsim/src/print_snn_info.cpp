@@ -180,29 +180,30 @@ void CpuSNN::printGroupInfo(int grpId) {
 	CARLSIM_INFO("  - numPreSynapses             = %8d", grp_Info[grpId].numPreSynapses);
 
 	if (doneReorganization) {
-		CARLSIM_INFO("  - Avg post connections       =  %1.5f", 1.0*grp_Info2[grpId].numPostConn/grp_Info[grpId].SizeN);
-		CARLSIM_INFO("  - Avg pre connections        =  %1.5f",  1.0*grp_Info2[grpId].numPreConn/grp_Info[grpId].SizeN);
+		CARLSIM_INFO("  - Avg post connections       = %8.5f", 1.0*grp_Info2[grpId].numPostConn/grp_Info[grpId].SizeN);
+		CARLSIM_INFO("  - Avg pre connections        = %8.5f",  1.0*grp_Info2[grpId].numPreConn/grp_Info[grpId].SizeN);
 	}
 	
 	if(grp_Info[grpId].Type&POISSON_NEURON) {
-		CARLSIM_INFO("  - Refractory period          =  %1.5f", grp_Info[grpId].RefractPeriod);
+		CARLSIM_INFO("  - Refractory period          = %8.5f", grp_Info[grpId].RefractPeriod);
 	}
 
 	if (grp_Info[grpId].WithSTP) {
 		CARLSIM_INFO("  - STP:");
-		CARLSIM_INFO("      - STP_U                 =  %1.5f", grp_Info[grpId].STP_U);
-		CARLSIM_INFO("      - STP_tau_u_inv         =  %1.0f", grp_Info[grpId].STP_tau_u_inv);
-		CARLSIM_INFO("      - STP_tau_x_inv         =  %1.0f", grp_Info[grpId].STP_tau_x_inv);
+		CARLSIM_INFO("      - STP_A                  = %8.5f", grp_Info[grpId].STP_A);
+		CARLSIM_INFO("      - STP_U                  = %8.5f", grp_Info[grpId].STP_U);
+		CARLSIM_INFO("      - STP_tau_u              = %8d", (int) (1.0f/grp_Info[grpId].STP_tau_u_inv));
+		CARLSIM_INFO("      - STP_tau_x              = %8d", (int) (1.0f/grp_Info[grpId].STP_tau_x_inv));
 	}
 
 	if(grp_Info[grpId].WithSTDP) {
 		CARLSIM_INFO("  - STDP:")
 		CARLSIM_INFO("      - TYPE                   = %s",     grp_Info[grpId].WithSTDPtype==STANDARD? "STANDARD" :
 			(grp_Info[grpId].WithSTDPtype==DA_MOD?"  DA_MOD":" UNKNOWN"));
-		CARLSIM_INFO("      - ALPHA_LTP              =  %1.5f", grp_Info[grpId].ALPHA_LTP);
-		CARLSIM_INFO("      - ALPHA_LTD              =  %1.5f", grp_Info[grpId].ALPHA_LTD);
-		CARLSIM_INFO("      - TAU_LTP_INV            =  %1.5f", grp_Info[grpId].TAU_LTP_INV);
-		CARLSIM_INFO("      - TAU_LTD_INV            =  %1.5f", grp_Info[grpId].TAU_LTD_INV);
+		CARLSIM_INFO("      - ALPHA_LTP              = %8.5f", grp_Info[grpId].ALPHA_LTP);
+		CARLSIM_INFO("      - ALPHA_LTD              = %8.5f", grp_Info[grpId].ALPHA_LTD);
+		CARLSIM_INFO("      - TAU_LTP_INV            = %8.5f", grp_Info[grpId].TAU_LTP_INV);
+		CARLSIM_INFO("      - TAU_LTD_INV            = %8.5f", grp_Info[grpId].TAU_LTD_INV);
 	}
 }
 
@@ -263,9 +264,9 @@ int CpuSNN::printPostConnection2(int grpId, FILE* const fpg)
     fprintf(fpg, " id %d : group %d : postlength %d ", i, findGrpId(i), Npost[i]);
     // fetch the starting position
     post_info_t* postIds = &postSynapticIds[cumulativePost[i]];
-    for(int j=0; j <= D; j++) {
-      int len   = postDelayInfo[i*(D+1)+j].delay_length;
-      int start = postDelayInfo[i*(D+1)+j].delay_index_start;
+    for(int j=0; j <= maxDelay_; j++) {
+      int len   = postDelayInfo[i*(maxDelay_+1)+j].delay_length;
+      int start = postDelayInfo[i*(maxDelay_+1)+j].delay_index_start;
       for(int k=start; k < len; k++) {
 	int post_nid = GET_CONN_NEURON_ID((*postIds));
 	//					int post_gid = GET_CONN_GRP_ID((*postIds));
@@ -357,13 +358,13 @@ void CpuSNN::printPostConnection(int grpId, FILE* const fp)
       int post_nid = GET_CONN_NEURON_ID((*postIds));
       int post_gid = GET_CONN_GRP_ID((*postIds));
       assert( findGrpId(post_nid) == post_gid);
-      if(fp) fprintf(fp, " %3d ( D=%3d, Grp=%3d) ", post_nid, tmp_SynapticDelay[offset+j], post_gid);
+      if(fp) fprintf(fp, " %3d ( maxDelay_=%3d, Grp=%3d) ", post_nid, tmp_SynapticDelay[offset+j], post_gid);
     }
     if(fp) fprintf(fp, "\n");
     if(fp) fprintf(fp, " Delay ( %3d ) : ", i);
-    for(int j=0; j < D; j++) {
-      if(fp) fprintf(fp, " %d,%d ", postDelayInfo[i*(D+1)+j].delay_length,
-		     postDelayInfo[i*(D+1)+j].delay_index_start);
+    for(int j=0; j < maxDelay_; j++) {
+      if(fp) fprintf(fp, " %d,%d ", postDelayInfo[i*(maxDelay_+1)+j].delay_length,
+		     postDelayInfo[i*(maxDelay_+1)+j].delay_index_start);
     }
     if(fp) fprintf(fp, "\n");
   }
