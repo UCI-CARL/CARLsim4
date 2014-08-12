@@ -84,3 +84,39 @@ TEST(STDP, setSTDPFalse) {
 		}
 	}
 }
+
+TEST(STDP, setDASTDP) {
+}
+
+TEST(STDP, setNeuromodulator) {
+
+}
+
+TEST(STDP, dastdpSelectivity) {
+	std::string name="SNN";
+	float alphaLTP = 0.1f/100;		// the exact values don't matter
+	float alphaLTD = 0.12f/100;
+	float tauLTP = 20.0f;
+	float tauLTD = 20.0f;
+	CARLsim* sim;
+
+	for (int mode = 0; mode < 2; mode++) {
+		sim = new CARLsim("SNN",mode?GPU_MODE:CPU_MODE,SILENT,0,1,42);
+
+		int g1=sim->createGroup("pre-excit", 10, EXCITATORY_NEURON);
+		int g2=sim->createGroup("post-excit", 10, EXCITATORY_NEURON);
+
+		sim->setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f);
+		sim->setNeuronParameters(g2, 0.02f, 0.2f, -65.0f, 8.0f);
+		sim->setSTDP(g1,true,DA_MOD,alphaLTP,tauLTP,alphaLTD,tauLTD);
+
+		sim->connect(g1, g2, "full", RangeWeight(0.0, 0.25f/100, 0.5f/100), 1.0f, RangeDelay(1, 20), SYN_PLASTIC);
+
+		sim->setupNetwork();
+
+		for (int t = 0; t < 10; t++)
+			sim->runNetwork(1,0);
+
+		delete sim;
+	}
+}
