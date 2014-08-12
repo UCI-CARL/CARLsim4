@@ -184,7 +184,7 @@ public:
 	 * \TODO finish docu
 	 * \STATE CONFIG
 	 */
-	short int connect(int grpId1, int grpId2, ConnectionGenerator* conn, bool synWtType=SYN_FIXED, int maxM=0, 
+	short int connect(int grpId1, int grpId2, ConnectionGenerator* conn, bool synWtType=SYN_FIXED, int maxM=0,
 						int maxPreM=0);
 
 	/*!
@@ -321,8 +321,10 @@ public:
 	 * This function allows the user to set the homeostatic target firing with or without a standard
 	 * deviation. All neurons in the group will use homeostatic synaptic scaling to attain the target
 	 * firing rate. You can have a standard deviation to the base firing rate or you can disable it
-	 * by setting it to 0. For more information on this implementation please see:
-	 * Carlson, et al. (2013). Proc. of IJCNN 2013.
+	 * by setting it to 0. It should be noted that the baseFiringSD only sets the base firing rate
+	 * to a single value within that standard deviation. It does not vary the value of the base firing
+	 * rate from this value or within a particular range. For more information on this implementation
+	 * please see: Carlson, et al. (2013). Proc. of IJCNN 2013.
 	 *
 	 * \STATE CONFIG
 	 * \param[in] grpId        the group ID of group for which these settings are applied
@@ -458,7 +460,7 @@ public:
 	int runNetwork(int nSec, int nMsec=0, bool printRunSummary=true, bool copyState=false);
 
 	/*!
-	 * \brief build the network 
+	 * \brief build the network
 	 *
 	 * \STATE CONFIG. Will make CARLsim state switch from CONFIG to SETUP.
 	 * \param[in] removeTempMemory 	remove temp memory after building network
@@ -594,7 +596,7 @@ public:
 	 * To retrieve outputs, a spike-monitoring callback mechanism is used. This mechanism allows the user to calculate
 	 * basic statistics, store spike trains, or perform more complicated output monitoring. Spike monitors are
 	 * registered for a group and are called automatically by the simulator every second. Similar to an address event
-	 * representation (AER), the spike monitor indicates which neurons spiked by using the neuron ID within a group 
+	 * representation (AER), the spike monitor indicates which neurons spiked by using the neuron ID within a group
 	 * (0-indexed) and the time of the spike. Only one spike monitor is allowed per group.
 	 *
 	 * Every second, the SpikeMonitor will print to console the total and average number of spikes in the group.
@@ -606,7 +608,7 @@ public:
 	 * retrieved via CARLsim::getGroupName).
 	 * If no binary file shall be created, set fname equal to the string "NULL".
 	 *
-	 * The function returns a pointer to a SpikeMonitor object, which can be used to calculate spike statistics (such 
+	 * The function returns a pointer to a SpikeMonitor object, which can be used to calculate spike statistics (such
 	 * group firing rate, number of silent neurons, etc.) or retrieve all spikes from a particular time window. See
 	 * /util/spike_monitor/spike_monitor.h for more information on how to interact with the SpikeMonitor object.
 	 *
