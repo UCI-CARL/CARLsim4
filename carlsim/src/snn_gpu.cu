@@ -2084,7 +2084,6 @@ void CpuSNN::copyNeuronState(network_ptr_t* dest, network_ptr_t* src, cudaMemcpy
 		assert(grpId == -1);
 
 	// Spike Cnt. Firing...
-	CARLSIM_INFO("allcoting nSpikeCnt");
 	if (allocateMem)
 		CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->nSpikeCnt, sizeof(int) * length2));
 	CUDA_CHECK_ERRORS(cudaMemcpy( &dest->nSpikeCnt[ptrPos], &src->nSpikeCnt[ptrPos], sizeof(int) * length2, kind));
