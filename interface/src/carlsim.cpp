@@ -217,6 +217,9 @@ int CARLsim::createGroup(std::string grpName, int nNeur, int neurType, int confi
 int CARLsim::createGroup(std::string grpName, Grid3D grid, int neurType, int configId) {
 	std::string funcName = "createGroup(\""+grpName+"\")";
 	UserErrors::assertTrue(carlsimState_==CONFIG_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "CONFIG.");
+	UserErrors::assertTrue(grid.x>0, UserErrors::CANNOT_BE_NEGATIVE, funcName, "grid.x");
+	UserErrors::assertTrue(grid.y>0, UserErrors::CANNOT_BE_NEGATIVE, funcName, "grid.y");
+	UserErrors::assertTrue(grid.z>0, UserErrors::CANNOT_BE_NEGATIVE, funcName, "grid.z");
 
 	// if user has called any set functions with grpId=ALL, and is now adding another group, previously set properties
 	// will not apply to newly added group
@@ -244,6 +247,9 @@ int CARLsim::createSpikeGeneratorGroup(std::string grpName, int nNeur, int neurT
 int CARLsim::createSpikeGeneratorGroup(std::string grpName, Grid3D grid, int neurType, int configId) {
 	std::string funcName = "createSpikeGeneratorGroup(\""+grpName+"\")";
 	UserErrors::assertTrue(carlsimState_==CONFIG_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "CONFIG.");
+	UserErrors::assertTrue(grid.x>0, UserErrors::CANNOT_BE_NEGATIVE, funcName, "grid.x");
+	UserErrors::assertTrue(grid.y>0, UserErrors::CANNOT_BE_NEGATIVE, funcName, "grid.y");
+	UserErrors::assertTrue(grid.z>0, UserErrors::CANNOT_BE_NEGATIVE, funcName, "grid.z");
 
 	int grpId = snn_->createSpikeGeneratorGroup(grpName.c_str(),grid,neurType,configId);
 	grpIds_.push_back(grpId); // keep track of all groups

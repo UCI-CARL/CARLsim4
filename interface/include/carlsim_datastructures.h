@@ -251,8 +251,6 @@ struct RangeWeight {
  *   Grid3D(10,2,3)     => creates 10x2x3 neurons on a 3D grid, neurId=19 == (9,1,0), neurId=20 == (0,0,1)
  */
 struct Grid3D {
-//	Grid3D() : x(0), y(0), z(0), width(0), height(0), depth(0), columns(0), channels(0) {}
-	Grid3D() {}
     Grid3D(int w) : x(w), y(1), z(1), width(w), height(1), depth(1), columns(1), channels(1) {
         UserErrors::assertTrue(w>0, UserErrors::MUST_BE_POSITIVE, "Grid3D", "width");
     }
@@ -285,8 +283,6 @@ struct Grid3D {
  */
 struct Point3D {
 public:
-//	Point3D() : x(0.0), y(0.0), z(0.0) 
-	Point3D() {}
 	Point3D(int _x, int _y, int _z) : x(1.0*_x), y(1.0*_y), z(1.0*_z) {}
 	Point3D(double _x, double _y, double _z) : x(_x), y(_y), z(_z) {}
 
