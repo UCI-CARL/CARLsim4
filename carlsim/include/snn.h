@@ -177,20 +177,20 @@ public:
 	//! Creates a group of Izhikevich spiking neurons
 	/*!
 	 * \param name the symbolic name of a group
-	 * \param numN  nubmer of neurons in the group
+	 * \param grid  Grid3D struct to create neurons on a 3D grid (x,y,z)
 	 * \param nType the type of neuron
 	 * \param configId (optional, deprecated) configuration id
 	 */
-	int createGroup(const std::string& grpName, int nNeur, int neurType, int configId);
+	int createGroup(const std::string& grpName, Grid3D& grid, int neurType, int configId);
 
 	//! Creates a spike generator group (dummy-neurons, not Izhikevich spiking neurons)
 	/*!
 	 * \param name the symbolic name of a group
-	 * \param size_n  nubmer of neurons in the group
+	 * \param grid Grid3D struct to create neurons on a 3D grid (x,y,z)
 	 * \param nType the type of neuron, currently only support EXCITATORY NEURON
 	 * \param configId (optional, deprecated) configuration id
 	 */
-	int createSpikeGeneratorGroup(const std::string& grpName, int nNeur, int neurType, int configId);
+	int createSpikeGeneratorGroup(const std::string& grpName, Grid3D& grid, int neurType, int configId);
 
 
 	/*!
@@ -476,6 +476,7 @@ public:
 	 */
 	uint8_t* getDelays(int gIDpre, int gIDpost, int& Npre, int& Npost, uint8_t* delays);
 
+	Grid3D getGroupGrid3D(int grpId);
 	int  getGroupId(int groupId, int configId);
 	group_info_t getGroupInfo(int groupId, int configId);
 	std::string getGroupName(int grpId, int configId);
@@ -488,8 +489,11 @@ public:
 
 	std::string getNetworkName() { return networkName_; }
 
+	Point3D getNeuronLocation3D(int neurId);
+
 	int getNumConfigurations()	{ return nConfig_; }	//!< gets number of network configurations
-	int getNumConnections(short int connectionId);		//!< gets number of connections associated with a connection ID
+	int getNumConnections() { return numConnections; }
+	int getNumSynapticConnections(short int connectionId);		//!< gets number of connections associated with a connection ID
 	int getNumGroups() { return numGrp; }
 	int getNumNeurons() { return numN; }
 	int getNumPreSynapses() { return preSynCnt; }

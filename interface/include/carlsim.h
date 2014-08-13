@@ -198,10 +198,28 @@ public:
 
 	/*!
 	 * \brief creates a group of Izhikevich spiking neurons
-	 * \TODO finish docu
+	 * \TODO finish doc
 	 * \STATE CONFIG
 	 */
 	int createGroup(const std::string grpName, int nNeur, int neurType, int configId=ALL);
+	
+	/*!
+	 * \brief create a group of neurons on a 3D grid
+	 *
+	 * Neurons of a group can be arranged topographically, so that they virtually lie on a 3D grid. This simplifies
+	 * the creation of topographic connections in the network.
+	 * Each neuron thus gets assigned a (x,y,z) location on a 3D grid (integer coordinates). Neuron numbers will be
+	 * assigned to location in order; where the first dimension specifies the width, the second dimension is height,
+	 * and the third dimension is depth. Grid3D(2,2,2) would thus assign neurId 0 to location (0,0,0), neurId 1
+	 * to (1,0,0), neurId 3 to (0,1,0), neurId 6 to (2,2,1), and so on.
+	 * The third dimension can be thought of as a depth (z-coordinate in 3D), a cortical column (each of which consists
+	 * of a 2D arrangement of neurons on a plane), or a channel (such as RGB channels, each of which consists of a 2D
+	 * arrangements of neurons coding for (x,y) coordinates of an image). For the user's convenience, the struct thus
+	 * provides members Grid3D::depth, Grid3D::column, and Grid3D::channels, which differ only semantically.
+	 * \STATE CONFIG
+	 * \TODO finish doc
+	 */
+	int createGroup(const std::string grpName, Grid3D grid, int neurType, int configId=ALL);
 
 	/*!
 	 * \brief  creates a spike generator group
@@ -209,6 +227,24 @@ public:
 	 * \STATE CONFIG
 	 */
 	int createSpikeGeneratorGroup(const std::string grpName, int nNeur, int neurType, int configId=ALL);
+	
+	/*!
+	 * \brief create a group of spike generators on a 3D grid
+	 *
+	 * Neurons of a group can be arranged topographically, so that they virtually lie on a 3D grid. This simplifies
+	 * the creation of topographic connections in the network.
+	 * Each neuron thus gets assigned a (x,y,z) location on a 3D grid (integer coordinates). Neuron numbers will be
+	 * assigned to location in order; where the first dimension specifies the width, the second dimension is height,
+	 * and the third dimension is depth. Grid3D(2,2,2) would thus assign neurId 0 to location (0,0,0), neurId 1
+	 * to (1,0,0), neurId 3 to (0,1,0), neurId 6 to (2,2,1), and so on.
+	 * The third dimension can be thought of as a depth (z-coordinate in 3D), a cortical column (each of which consists
+	 * of a 2D arrangement of neurons on a plane), or a channel (such as RGB channels, each of which consists of a 2D
+	 * arrangements of neurons coding for (x,y) coordinates of an image). For the user's convenience, the struct thus
+	 * provides members Grid3D::depth, Grid3D::column, and Grid3D::channels, which differ only semantically.
+	 * \STATE CONFIG
+	 * \TODO finish doc
+	 */
+	int createSpikeGeneratorGroup(const std::string grpName, Grid3D grid, int neurType, int configId=ALL);
 
 
 	/*!
@@ -678,7 +714,7 @@ public:
 	 * \TODO finish docu
 	 * \STATE SETUP, EXECUTION
 	 */
-	int  getConnectionId(short int connId, int configId);
+	int  getConnectionId(short int connId, int configId=0);
 
 	/*!
 	 * \brief gets delays
@@ -689,7 +725,21 @@ public:
 	uint8_t* getDelays(int gIDpre, int gIDpost, int& Npre, int& Npost, uint8_t* delays=NULL);
 
 	/*!
-	 * \brief gets delays
+	 * \brief returns the 3D grid struct of a group
+	 *
+	 * This function returns the Grid3D struct of a particular neuron group.
+	 * Neurons of a group can be arranged topographically, so that they virtually lie on a 3D grid. This simplifies
+	 * the creation of topographic connections in the network. The dimensions of the grid can thus be retrieved by
+	 * calling Grid3D.width, Grid3D.height, and Grid3D.depth. The total number of neurons is given by Grid3D.N.
+	 * See CARLsim::createGroup and Grid3D for more information.
+	 * \STATE SETUP, EXECUTION
+	 * \param[in] grpId the group ID for which to get the Grid3D struct
+	 * \returns the 3D grid struct of a group
+	 */
+	Grid3D getGroupGrid3D(int grpId);
+
+	/*!
+	 * \brief gets group ID
 	 *
 	 * \TODO finish docu
 	 * \STATE SETUP, EXECUTION
@@ -699,7 +749,7 @@ public:
 	//group_info_t getGroupInfo(int grpId, int configId=0); // gets group info struct
 
 	/*!
-	 * \brief gets delays
+	 * \brief gets group name
 	 *
 	 * \TODO finish docu
 	 * \STATE SETUP, EXECUTION
@@ -707,24 +757,53 @@ public:
 	std::string getGroupName(int grpId, int configId=0);
 
 	/*!
+	 * \brief returns the 3D location a neuron codes for
+	 *
+	 * This function returns the (x,y,z) location that a neuron with ID neurID codes for.
+	 * The location is determined by the actual neuron ID (the first neuron in the group coding for the origin (0,0,0),
+	 * and by the dimensions of the 3D grid the group is allocated on (integer coordinates). Neuron numbers are
+	 * assigned to location in order; where the first dimension specifies the width, the second dimension is height,
+	 * and the third dimension is depth.
+	 * For more information see CARLsim::createGroup and the Grid3D struct.
+	 * \STATE CONFIG, SETUP, EXE
+	 * \param[in] neurId the neuron ID for which the 3D location should be returned
+	 * \returns the 3D location a neuron codes for as a Point3D struct
+	 */
+	Point3D getNeuronLocation3D(int neurId);
+
+	/*!
 	 * \brief Returns the number of network configrations
 	 *
+	 * \Note This number might change throughout CARLsim state CONFIG, up to calling CARLsim::setupNetwork).
 	 * \TODO finish docu
 	 * \STATE SETUP, EXECUTION
 	 */
 	int getNumConfigurations();
 
 	/*!
+	 * \brief Returns the number of connections (pairs of pre-post groups) in the network
+	 *
+	 * This function returns the number of connections (pairs of pre-post groups) in the network. Each pre-post
+	 * pair of neuronal groups has its own connection ID, which is returned by a call to CARLsim::connect.
+	 * \Note This number might change throughout CARLsim state CONFIG, up to calling CARLsim::setupNetwork).
+	 * \STATE CONFIG, SETUP, EXECUTION
+	 * \returns the number of connections (pairs of pre-post groups) in the network
+	 */
+	int getNumConnections();
+
+	/*!
 	 * \brief returns the number of connections associated with a connection ID
 	 *
+	 * \Note This number might change throughout CARLsim state CONFIG, up to calling CARLsim::setupNetwork).
 	 * \TODO finish docu
 	 * \STATE SETUP, EXECUTION
 	 */
-	int getNumConnections(short int connectionId);
+	int getNumSynapticConnections(short int connectionId);
 
 	/*!
 	 * \brief returns the number of groups in the network
 	 *
+	 * \Note This number might change throughout CARLsim state CONFIG, up to calling CARLsim::setupNetwork).
 	 * \TODO finish docu
 	 * \STATE SETUP, EXECUTION
 	 */
@@ -733,6 +812,7 @@ public:
 	/*!
 	 * \brief returns the total number of allocated neurons in the network
 	 *
+	 * \Note This number might change throughout CARLsim state CONFIG, up to calling CARLsim::setupNetwork).
 	 * \TODO finish docu
 	 * \STATE SETUP, EXECUTION
 	 */
@@ -774,7 +854,7 @@ public:
 	 * \brief returns the number of neurons of a group specified by grpId
 	 *
 	 * \TODO finish docu
-	 * \STATE SETUP, EXECUTION
+	 * \STATE CONFIG, SETUP, EXECUTION
 	 */
 	int getGroupNumNeurons(int grpId);
 

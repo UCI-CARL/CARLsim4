@@ -26,8 +26,8 @@ TEST(STP, setSTPTrue) {
 	for (int mode=0; mode<=1; mode++) {
 		for (int nConfig=1; nConfig<=maxConfig; nConfig+=nConfigStep) {
 			sim = new CpuSNN(name,mode?GPU_MODE:CPU_MODE,SILENT,0,nConfig,42);
-
-			int g1=sim->createGroup("excit", 10, EXCITATORY_NEURON,ALL);
+            Grid3D neurGrid(10,1,1);
+			int g1=sim->createGroup("excit", neurGrid, EXCITATORY_NEURON,ALL);
 			sim->setNeuronParameters(g1, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f, ALL);
 			sim->setSTP(g1,true,STP_U,STP_tF,STP_tD,ALL);					// exact values matter
 
@@ -57,8 +57,8 @@ TEST(STP, setSTPFalse) {
 	for (int mode=0; mode<=1; mode++) {
 		for (int nConfig=1; nConfig<=maxConfig; nConfig+=nConfigStep) {
 			sim = new CpuSNN(name,mode?GPU_MODE:CPU_MODE,SILENT,0,nConfig,42);
-
-			int g1=sim->createGroup("excit", 10, EXCITATORY_NEURON, ALL);
+            Grid3D neurGrid(10,1,1);
+			int g1=sim->createGroup("excit", neurGrid, EXCITATORY_NEURON, ALL);
 			sim->setNeuronParameters(g1, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f, ALL);
 			sim->setSTP(g1,false,0.1f,100,200, ALL); 					// exact values don't matter
 
