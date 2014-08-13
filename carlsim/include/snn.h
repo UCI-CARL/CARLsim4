@@ -476,6 +476,7 @@ public:
 	 */
 	uint8_t* getDelays(int gIDpre, int gIDpost, int& Npre, int& Npost, uint8_t* delays);
 
+	Grid3D getGroupGrid3D(int grpId);
 	int  getGroupId(int groupId, int configId);
 	group_info_t getGroupInfo(int groupId, int configId);
 	std::string getGroupName(int grpId, int configId);

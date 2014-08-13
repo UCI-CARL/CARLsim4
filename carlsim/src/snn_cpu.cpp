@@ -294,10 +294,12 @@ int CpuSNN::createGroup(const std::string& grpName, Grid3D& grid, int neurType, 
 			exitSimulation(1);
 		}
 
+		// We don't store the Grid3D struct in grp_Info so we don't have to deal with allocating structs on the GPU
 		grp_Info[numGrp].SizeN  			= grid.x * grid.y * grid.z; // number of neurons in the group
         grp_Info[numGrp].SizeX              = grid.x; // number of neurons in first dim of Grid3D
         grp_Info[numGrp].SizeY              = grid.y; // number of neurons in second dim of Grid3D
         grp_Info[numGrp].SizeZ              = grid.z; // number of neurons in third dim of Grid3D
+
 		grp_Info[numGrp].Type   			= neurType;
 		grp_Info[numGrp].WithSTP			= false;
 		grp_Info[numGrp].WithSTDP			= false;
@@ -1509,6 +1511,10 @@ uint8_t* CpuSNN::getDelays(int gIDpre, int gIDpost, int& Npre, int& Npost, uint8
 	return delays;
 }
 
+Grid3D CpuSNN::getGroupGrid3D(int grpId) {
+	assert(grpId>=0 && grpId<numGrp);
+	return Grid3D(grp_Info[grpId].SizeX, grp_Info[grpId].SizeY, grp_Info[grpId].SizeZ);	
+}
 
 int CpuSNN::getGroupId(int grpId, int configId) {
 	assert(grpId>=0 && grpId<numGrp);

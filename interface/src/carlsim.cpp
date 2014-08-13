@@ -727,6 +727,17 @@ uint8_t* CARLsim::getDelays(int gIDpre, int gIDpost, int& Npre, int& Npost, uint
 	return snn_->getDelays(gIDpre,gIDpost,Npre,Npost,delays);
 }
 
+Grid3D CARLsim::getGroupGrid3D(int grpId) {
+	std::stringstream funcName;	funcName << "getConnectInfo(" << grpId << ")";
+	UserErrors::assertTrue(grpId!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName.str(), "grpId");
+	UserErrors::assertTrue(carlsimState_ == SETUP_STATE || carlsimState_ == EXE_STATE,
+					UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName.str(), funcName.str(), "SETUP or EXECUTION.");
+	UserErrors::assertTrue(grpId>=0 && grpId<getNumGroups(), UserErrors::MUST_BE_IN_RANGE, funcName.str(), 
+		"grpId", "[0,getNumGroups()]");
+
+	return snn_->getGroupGrid3D(grpId);
+}
+
 int CARLsim::getGroupId(int grpId, int configId) {
 	std::stringstream funcName;	funcName << "getConnectInfo(" << grpId << "," << configId << ")";
 	UserErrors::assertTrue(grpId!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName.str(), "grpId");

@@ -54,10 +54,27 @@ TEST(Interface, createSpikeGeneratorGroupDeath) {
 		delete sim;
 }
 
+TEST(Interface, getGroupGrid3DDeath) {
+	CARLsim* sim = new CARLsim("Interface.getGroupGrid3D",CPU_MODE,SILENT,0,1,42);
+	Grid3D grid(2,3,4);
+	int g1=sim->createGroup("excit", grid, EXCITATORY_NEURON);
+	sim->setNeuronParameters(g1, 0.02f, 0.2f,-65.0f,8.0f);
+	sim->connect(g1, g1, "full", RangeWeight(0.01), 1.0f, RangeDelay(1));
+	sim->setupNetwork();
+
+	EXPECT_DEATH({sim->getGroupGrid3D(-1);},"");
+	EXPECT_DEATH({sim->getGroupGrid3D(1);},"");
+
+	delete sim;
+}
+
 TEST(Interface, getNeuronLocation3DDeath) {
 	CARLsim* sim = new CARLsim("Interface.createGroupDeath",CPU_MODE,SILENT,0,1,42);
 	Grid3D grid(2,3,4);
 	int g1=sim->createGroup("excit", grid, EXCITATORY_NEURON);
+	sim->setNeuronParameters(g1, 0.02f, 0.2f,-65.0f,8.0f);
+	sim->connect(g1, g1, "full", RangeWeight(0.01), 1.0f, RangeDelay(1));
+	sim->setupNetwork();
 
 	EXPECT_DEATH({sim->getNeuronLocation3D(-1);},"");
 	EXPECT_DEATH({sim->getNeuronLocation3D(grid.x*grid.y*grid.z);},"");

@@ -132,6 +132,24 @@ TEST(CORE, connect) {
 	}
 }
 
+TEST(CORE, getGroupGrid3D) {
+	CARLsim* sim = new CARLsim("Interface.createGroupDeath",CPU_MODE,USER,0,1,42);
+	Grid3D grid(2,3,4);
+	int g1=sim->createSpikeGeneratorGroup("excit", grid, EXCITATORY_NEURON);
+	int g2=sim->createGroup("excit2", grid, EXCITATORY_NEURON);
+	sim->setNeuronParameters(g2, 0.02f, 0.2f, -65.0f, 8.0f);
+	sim->connect(g1,g2,"full",RangeWeight(0.1), 1.0, RangeDelay(1));
+	sim->setupNetwork(); // need SETUP state for getNeuronLocation3D to work
+
+	for (int g=g1; g<g2; g++) {
+		Grid3D getGrid = sim->getGroupGrid3D(g);
+		EXPECT_EQ(getGrid.x, grid.x);
+		EXPECT_EQ(getGrid.y, grid.y);
+		EXPECT_EQ(getGrid.z, grid.z);
+		EXPECT_EQ(getGrid.N, grid.N);
+	}
+}
+
 // This test creates a group on a grid and makes sure that the returned 3D location of each neuron is correct
 TEST(CORE, getNeuronLocation3D) {
 	CARLsim* sim = new CARLsim("Interface.createGroupDeath",CPU_MODE,USER,0,1,42);

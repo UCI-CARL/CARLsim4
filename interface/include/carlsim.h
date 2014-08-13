@@ -723,10 +723,16 @@ public:
 	uint8_t* getDelays(int gIDpre, int gIDpost, int& Npre, int& Npost, uint8_t* delays=NULL);
 
 	/*!
-	 * \brief gets delays
+	 * \brief returns the 3D grid struct of a group
 	 *
-	 * \TODO finish docu
+	 * This function returns the Grid3D struct of a particular neuron group.
+	 * Neurons of a group can be arranged topographically, so that they virtually lie on a 3D grid. This simplifies
+	 * the creation of topographic connections in the network. The dimensions of the grid can thus be retrieved by
+	 * calling Grid3D.width, Grid3D.height, and Grid3D.depth. The total number of neurons is given by Grid3D.N.
+	 * See CARLsim::createGroup and Grid3D for more information.
 	 * \STATE SETUP, EXECUTION
+	 * \param[in] grpId the group ID for which to get the Grid3D struct
+	 * \returns the 3D grid struct of a group
 	 */
 	Grid3D getGroupGrid3D(int grpId);
 
