@@ -177,20 +177,20 @@ public:
 	//! Creates a group of Izhikevich spiking neurons
 	/*!
 	 * \param name the symbolic name of a group
-	 * \param numN  nubmer of neurons in the group
+	 * \param grid  Grid3D struct to create neurons on a 3D grid (x,y,z)
 	 * \param nType the type of neuron
 	 * \param configId (optional, deprecated) configuration id
 	 */
-	int createGroup(const std::string& grpName, int nNeur, int neurType, int configId);
+	int createGroup(const std::string& grpName, Grid3D& grid, int neurType, int configId);
 
 	//! Creates a spike generator group (dummy-neurons, not Izhikevich spiking neurons)
 	/*!
 	 * \param name the symbolic name of a group
-	 * \param size_n  nubmer of neurons in the group
+	 * \param grid Grid3D struct to create neurons on a 3D grid (x,y,z)
 	 * \param nType the type of neuron, currently only support EXCITATORY NEURON
 	 * \param configId (optional, deprecated) configuration id
 	 */
-	int createSpikeGeneratorGroup(const std::string& grpName, int nNeur, int neurType, int configId);
+	int createSpikeGeneratorGroup(const std::string& grpName, Grid3D& grid, int neurType, int configId);
 
 
 	/*!

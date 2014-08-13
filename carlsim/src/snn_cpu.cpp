@@ -278,11 +278,13 @@ short int CpuSNN::connect(int grpId1, int grpId2, ConnectionGeneratorCore* conn,
 
 // create group of Izhikevich neurons
 // use int for nNeur to avoid arithmetic underflow
-int CpuSNN::createGroup(const std::string& grpName, int nNeur, int neurType, int configId) {
-	assert(nNeur>0); assert(neurType>=0); assert(configId>=-1);	assert(configId<nConfig_);
+int CpuSNN::createGroup(const std::string& grpName, Grid3D& grid, int neurType, int configId) {
+	assert(grid.x*grid.y*grid.z>0);
+	assert(neurType>=0); assert(configId>=-1);	assert(configId<nConfig_);
 	if (configId == ALL) {
+        fprintf(stderr,"config ALL\n");
 		for(int c=0; c < nConfig_; c++)
-			createGroup(grpName, nNeur, neurType, c);
+			createGroup(grpName, grid, neurType, c);
 		return (numGrp-nConfig_);
 	} else {
 		assert(numGrp < MAX_GRP_PER_SNN);
@@ -293,7 +295,10 @@ int CpuSNN::createGroup(const std::string& grpName, int nNeur, int neurType, int
 			exitSimulation(1);
 		}
 
-		grp_Info[numGrp].SizeN  			= nNeur;
+		grp_Info[numGrp].SizeN  			= grid.x * grid.y * grid.z; // number of neurons in the group
+        grp_Info[numGrp].SizeX              = grid.x; // number of neurons in first dim
+        grp_Info[numGrp].SizeY              = grid.y; // number of neurons in second dim
+        grp_Info[numGrp].SizeZ              = grid.z; // number of neurons in third dim
 		grp_Info[numGrp].Type   			= neurType;
 		grp_Info[numGrp].WithSTP			= false;
 		grp_Info[numGrp].WithSTDP			= false;
@@ -325,14 +330,20 @@ int CpuSNN::createGroup(const std::string& grpName, int nNeur, int neurType, int
 
 // create spike generator group
 // use int for nNeur to avoid arithmetic underflow
-int CpuSNN::createSpikeGeneratorGroup(const std::string& grpName, int nNeur, int neurType, int configId) {
-	assert(nNeur>0); assert(neurType>=0); assert(configId>=-1);	assert(configId<nConfig_);
+int CpuSNN::createSpikeGeneratorGroup(const std::string& grpName, Grid3D& grid, int neurType, int configId) {
+		assert(grid.x*grid.y*grid.z>0);
+		assert(neurType>=0); assert(configId>=-1);	assert(configId<nConfig_);
 	if (configId == ALL) {
+        fprintf(stderr,"config ALL\n");
 		for(int c=0; c < nConfig_; c++)
-			createSpikeGeneratorGroup(grpName, nNeur, neurType, c);
+			createSpikeGeneratorGroup(grpName, grid, neurType, c);
 		return (numGrp-nConfig_);
 	} else {
-		grp_Info[numGrp].SizeN   		= nNeur;
+std::cerr << grid << std::endl;
+		grp_Info[numGrp].SizeN   		= grid.x * grid.y * grid.z;
+        grp_Info[numGrp].SizeX          = grid.x;
+        grp_Info[numGrp].SizeY          = grid.y;
+        grp_Info[numGrp].SizeZ          = grid.z;
 		grp_Info[numGrp].Type    		= neurType | POISSON_NEURON;
 		grp_Info[numGrp].WithSTP		= false;
 		grp_Info[numGrp].WithSTDP		= false;
@@ -1503,23 +1514,33 @@ uint8_t* CpuSNN::getDelays(int gIDpre, int gIDpost, int& Npre, int& Npost, uint8
 
 
 int CpuSNN::getGroupId(int grpId, int configId) {
-	assert(configId < nConfig_);
+	assert(grpId>=0 && grpId<numGrp);
+	assert(configId>=0 && configId<nConfig_);
+
 	int cGrpId = (grpId+configId);
 	assert(cGrpId  < numGrp);
 	return cGrpId;
 }
 
 group_info_t CpuSNN::getGroupInfo(int grpId, int configId) {
+	assert(grpId>=-1 && grpId<numGrp);
+	assert(configId>=-1 && configId<nConfig_);
+
 	int cGrpId = getGroupId(grpId, configId);
 	return grp_Info[cGrpId];
 }
 
 std::string CpuSNN::getGroupName(int grpId, int configId) {
+	assert(grpId>=-1 && grpId<numGrp);
+	assert(configId>=-1 && configId<nConfig_);
+
 	if (grpId==ALL)
 		return "ALL";
 
-	if (configId==ALL)
-		return grp_Info2[grpId].Name+",ALL";
+	if (configId==ALL) {
+        std::string name = grp_Info2[grpId].Name;
+		return name+",ALL";
+    }
 
 	int cGrpId = getGroupId(grpId, configId);
 	return grp_Info2[cGrpId].Name;

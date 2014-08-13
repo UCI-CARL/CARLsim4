@@ -198,10 +198,28 @@ public:
 
 	/*!
 	 * \brief creates a group of Izhikevich spiking neurons
-	 * \TODO finish docu
+	 * \TODO finish doc
 	 * \STATE CONFIG
 	 */
 	int createGroup(const std::string grpName, int nNeur, int neurType, int configId=ALL);
+	
+	/*!
+	 * \brief create a group of neurons on a 3D grid
+	 *
+	 * Neurons of a group can be arranged topographically, so that they virtually lie on a 3D grid. This simplifies
+	 * the creation of topographic connections in the network.
+	 * Each neuron thus gets assigned a (x,y,z) location on a 3D grid (integer coordinates). Neuron numbers will be
+	 * assigned in order to location; where the first dimension specifies the width, the second dimension is height,
+	 * and the third dimension is depth. Grid3D(2,2,2) would thus assign neurId 0 to location (0,0,0), neurId 1
+	 * to (1,0,0), neurId 3 to (0,1,0), neurId 6 to (2,2,1), and so on.
+	 * The third dimension can be thought of as a depth (z-coordinate in 3D), a cortical column (each of which consists
+	 * of a 2D arrangement of neurons on a plane), or a channel (such as RGB channels, each of which consists of a 2D
+	 * arrangements of neurons coding for (x,y) coordinates of an image). For the user's convenience, the struct thus
+	 * provides members Grid3D::depth, Grid3D::column, and Grid3D::channels, which differ only semantically.
+	 * \STATE CONFIG
+	 * \TODO finish doc
+	 */
+	int createGroup(const std::string grpName, Grid3D grid, int neurType, int configId=ALL);
 
 	/*!
 	 * \brief  creates a spike generator group
@@ -209,6 +227,24 @@ public:
 	 * \STATE CONFIG
 	 */
 	int createSpikeGeneratorGroup(const std::string grpName, int nNeur, int neurType, int configId=ALL);
+	
+	/*!
+	 * \brief create a group of spike generators on a 3D grid
+	 *
+	 * Neurons of a group can be arranged topographically, so that they virtually lie on a 3D grid. This simplifies
+	 * the creation of topographic connections in the network.
+	 * Each neuron thus gets assigned a (x,y,z) location on a 3D grid (integer coordinates). Neuron numbers will be
+	 * assigned in order to location; where the first dimension specifies the width, the second dimension is height,
+	 * and the third dimension is depth. Grid3D(2,2,2) would thus assign neurId 0 to location (0,0,0), neurId 1
+	 * to (1,0,0), neurId 3 to (0,1,0), neurId 6 to (2,2,1), and so on.
+	 * The third dimension can be thought of as a depth (z-coordinate in 3D), a cortical column (each of which consists
+	 * of a 2D arrangement of neurons on a plane), or a channel (such as RGB channels, each of which consists of a 2D
+	 * arrangements of neurons coding for (x,y) coordinates of an image). For the user's convenience, the struct thus
+	 * provides members Grid3D::depth, Grid3D::column, and Grid3D::channels, which differ only semantically.
+	 * \STATE CONFIG
+	 * \TODO finish doc
+	 */
+	int createSpikeGeneratorGroup(const std::string grpName, Grid3D grid, int neurType, int configId=ALL);
 
 
 	/*!

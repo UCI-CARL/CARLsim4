@@ -71,6 +71,7 @@ TEST(CORE, CpuSNNinitDeath) {
 }
 
 //! Death tests for createGroup (test all possible silly values)
+// \FIXME this should be interface-level
 TEST(CORE, createGroupDeath) {
 	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
@@ -80,16 +81,17 @@ TEST(CORE, createGroupDeath) {
 
 	// set silly values to all possible input arguments
 	// e.g., negative values for things>=0, values>numGrps or values>numConfig, etc.
-	EXPECT_DEATH({int N=-10; sim->createGroup("excit", N, EXCITATORY_NEURON, ALL);},"");
-	EXPECT_DEATH({sim->createGroup("excit", 10, -3, ALL);},"");
-	EXPECT_DEATH({sim->createGroup("excit", 10, EXCITATORY_NEURON, 2);},"");
-	EXPECT_DEATH({sim->createGroup("excit", 10, EXCITATORY_NEURON, -2);},"");
+	EXPECT_DEATH({Grid3D neur(-10,1,1); sim->createGroup("excit", neur, EXCITATORY_NEURON, ALL);},"");
+	EXPECT_DEATH({Grid3D neur(0,1,1); sim->createGroup("excit", neur, -3, ALL);},"");
+	EXPECT_DEATH({Grid3D neur(10,1,1); sim->createGroup("excit", neur, EXCITATORY_NEURON, 2);},"");
+	EXPECT_DEATH({Grid3D neur(10,1,1); sim->createGroup("excit", neur, EXCITATORY_NEURON, -2);},"");
 
 	if (sim!=NULL)
 		delete sim;
 }
 
 //! Death tests for createSpikeGenerator (test all possible silly values)
+// \FIXME make interface-level
 TEST(CORE, createSpikeGeneratorGroupDeath) {
 	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
@@ -99,10 +101,10 @@ TEST(CORE, createSpikeGeneratorGroupDeath) {
 
 	// set silly values to all possible input arguments
 	// e.g., negative values for things>=0, values>numGrps or values>numConfig, etc.
-	EXPECT_DEATH({int N=-10; sim->createSpikeGeneratorGroup("excit", N, EXCITATORY_NEURON, ALL);},"");
-	EXPECT_DEATH({sim->createSpikeGeneratorGroup("excit", 10, -3, ALL);},"");
-	EXPECT_DEATH({sim->createSpikeGeneratorGroup("excit", 10, EXCITATORY_NEURON, 2);},"");
-	EXPECT_DEATH({sim->createSpikeGeneratorGroup("excit", 10, EXCITATORY_NEURON, -2);},"");
+	EXPECT_DEATH({Grid3D neur(-10,1,1); sim->createSpikeGeneratorGroup("excit", neur, EXCITATORY_NEURON, ALL);},"");
+	EXPECT_DEATH({Grid3D neur(10,1,1); sim->createSpikeGeneratorGroup("excit", neur, -3, ALL);},"");
+	EXPECT_DEATH({Grid3D neur(10,1,1); sim->createSpikeGeneratorGroup("excit", neur, EXCITATORY_NEURON, 2);},"");
+	EXPECT_DEATH({Grid3D neur(10,1,1); sim->createSpikeGeneratorGroup("excit", neur, EXCITATORY_NEURON, -2);},"");
 
 	if (sim!=NULL)
 		delete sim;
@@ -116,7 +118,8 @@ TEST(CORE, setNeuronParametersDeath) {
 	CpuSNN* sim = NULL;
 	std::string name="SNN";
 	sim = new CpuSNN(name,CPU_MODE,SILENT,0,1,42);
-	int g0=sim->createGroup("excit", 10, EXCITATORY_NEURON, ALL);
+    Grid3D neur(10,1,1);
+	int g0=sim->createGroup("excit", neur, EXCITATORY_NEURON, ALL);
 
 	// set silly values to all possible input arguments
 	// e.g., negative values for things>=0, values>numGrps or values>numConfig, etc.
@@ -165,10 +168,11 @@ TEST(CORE, connect) {
 			for (int i=0; i<4; i++) {
 				sim = new CpuSNN(name,mode?GPU_MODE:CPU_MODE,SILENT,0,nConfig,42);
 
-				int g0=sim->createSpikeGeneratorGroup("spike", 10, EXCITATORY_NEURON, ALL);
-				int g1=sim->createGroup("excit0", 10, EXCITATORY_NEURON, ALL);
+                Grid3D neur(10,1,1);
+				int g0=sim->createSpikeGeneratorGroup("spike", neur, EXCITATORY_NEURON, ALL);
+				int g1=sim->createGroup("excit0", neur, EXCITATORY_NEURON, ALL);
 				sim->setNeuronParameters(g1, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f, ALL);
-				int g2=sim->createGroup("excit1", 10, EXCITATORY_NEURON, ALL);
+				int g2=sim->createGroup("excit1", neur, EXCITATORY_NEURON, ALL);
 				sim->setNeuronParameters(g2, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f, ALL);
 
 				if (type[i]==CONN_RANDOM) typeStr = "random";

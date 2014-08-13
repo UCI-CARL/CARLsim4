@@ -194,7 +194,7 @@ struct RangeDelay {
 	friend std::ostream& operator<<(std::ostream &strm, const RangeDelay &d) {
 		return strm << "delay=[" << d.min << "," << d.max << "]";
 	}
-	int min,max;
+	const int min,max;
 };
 
 /*!
@@ -228,5 +228,131 @@ struct RangeWeight {
 	}
 	double min, init, max; 
 };
+
+/*!
+ * \brief struct to assign 3D coordinates to neurons in a group
+ *
+ * Neurons of a group can be arranged topographically, so that they virtually lie on a 3D grid. This simplifies the
+ * creation of topographic connections in the network.
+ * Each neuron thus gets assigned a (x,y,z) location on a grid (integer coordinates). Neuron numbers will be
+ * assigned in order to location; where the first dimension specifies the width, the second dimension is height,
+ * and the third dimension is depth. Grid3D(2,2,2) would thus assign neurId 0 to location (0,0,0), neurId 1 to (1,0,0),
+ * neurId 3 to (0,1,0), neurId 6 to (2,2,1), and so on.
+ * The third dimension can be thought of as a depth (z-coordinate in 3D), a cortical column (each of which consists
+ * of a 2D arrangement of neurons on a plane), or a channel (such as RGB channels, each of which consists of a 2D
+ * arrangements of neurons coding for (x,y) coordinates of an image). For the user's convenience, the struct thus
+ * provides members Grid3D::depth, Grid3D::column, and Grid3D::channels, which differ only semantically.
+ * \param[in] w the width of the 3D grid (1st dim)
+ * \param[in] h the height of the 3D grid (2nd dim)
+ * \param[in] z the depth of the 3D grid (3rd dim; also called column or channel)
+ * Examples:
+ *   Grid3D(10)         => creates 10 neurons on a 1D line, neurId=2 == (2,0,0), neurId=9 == (9,0,0)
+ *   Grid3D(10,2)       => creates 10x2 neurons on a 2D plane, neurId=10 == (0,1,0), neurId=13 == (3,1,0)
+ *   Grid3D(10,2,3)     => creates 10x2x3 neurons on a 3D grid, neurId=19 == (9,1,0), neurId=20 == (0,0,1)
+ */
+struct Grid3D {
+//	Grid3D() : x(0), y(0), z(0), width(0), height(0), depth(0), columns(0), channels(0) {}
+	Grid3D() {}
+    Grid3D(int w) : x(w), y(1), z(1), width(w), height(1), depth(1), columns(1), channels(1) {
+        UserErrors::assertTrue(w>0, UserErrors::MUST_BE_POSITIVE, "Grid3D", "width");
+    }
+    Grid3D(int w, int h) : x(w), y(h), z(1), width(w), height(h), depth(1), columns(1), channels(1) {
+        UserErrors::assertTrue(w>0, UserErrors::MUST_BE_POSITIVE, "Grid3D", "width");
+        UserErrors::assertTrue(h>0, UserErrors::MUST_BE_POSITIVE, "Grid3D", "height");
+    }
+    Grid3D(int w, int h, int d) : x(w), y(h), z(d), width(w), height(h), depth(d), columns(d), channels(d) {
+         UserErrors::assertTrue(w>0, UserErrors::MUST_BE_POSITIVE, "Grid3D", "width");
+         UserErrors::assertTrue(h>0, UserErrors::MUST_BE_POSITIVE, "Grid3D", "height");
+         UserErrors::assertTrue(d>0, UserErrors::MUST_BE_POSITIVE, "Grid3D", "depth");
+    }
+
+    friend std::ostream& operator<<(std::ostream &strm, const Grid3D &g) {
+        return strm << "Grid3D=[" << g.x << "," << g.y << "," << g.z << "]";
+    }
+
+    int width, height, depth;
+    int columns, channels;
+    int x, y, z;
+};
+
+/*!
+ * \brief a point in 3D space
+ *
+ * A point in 3D space. Coordinates (x,y,z) are of double precision.
+ * \param[in] x x-coordinate
+ * \param[in] y y-coordinate
+ * \param[in] z z-coordinate
+ */
+struct Point3D {
+public:
+//	Point3D() : x(0.0), y(0.0), z(0.0) 
+	Point3D() {}
+	Point3D(int _x, int _y, int _z) : x(1.0*_x), y(1.0*_y), z(1.0*_z) {}
+	Point3D(double _x, double _y, double _z) : x(_x), y(_y), z(_z) {}
+
+    friend std::ostream& operator<<(std::ostream &strm, const Point3D &p) {
+		strm.precision(2);
+        return strm << "Point3D=(" << p.x << "," << p.y << "," << p.z << ")";
+    }
+	
+	// coordinates
+	double x, y, z;
+
+private:
+//	bool Equals(Point3D const& p) { return (p.x==this.x && p.y==this.y); }
+//	int CompareTo(Point3D const& p) { (this.x>p.x && this.y>p.y) ? 1 : ( (this.x<p.x && this.y<p.y) ? -1 : 0 ); }
+};
+
+	// overloaded operators
+/*	static Point3D operator+(Point3D const& lhs, Point3D const& rhs) { return new Point3D(lhs.x+rhs.x, lhs.y+rhs.y; }
+	static Point3D operator+(Point3D const& lhs, double rhs) { return new Point3D(lhs.x+rhs, lhs.y+rhs); }
+	static Point3D operator+(double lhs, Point3D const& rhs) { return new Point3D(lhs+rhs.x, lhs+rhs.y); }
+	static Point3D operator-(Point3D const& lhs, Point3D const& rhs) { return new Point3D(lhs.x-rhs.x, lhs.y-rhs.y; }
+	static Point3D operator-(Point3D const& lhs, double rhs) { return new Point3D(lhs.x-rhs, lhs.y-rhs); }
+	static Point3D operator-(double lhs, Point3D const& rhs) { return new Point3D(lhs-rhs.x, lhs-rhs.y); }
+	static Point3D operator*(Point3D const& lhs, Point3D const& rhs) { return new Point3D(lhs.x*rhs.x, lhs.y*rhs.y; }
+	static Point3D operator*(Point3D const& lhs, double rhs) { return new Point3D(lhs.x*rhs, lhs.y*rhs; }
+	static Point3D operator*(double lhs, Point3D const& rhs) { return new Point3D(lhs*rhs.x, lhs*rhs.y; }
+	static Point3D operator/(Point3D const& lhs, Point3D const& rhs) { return new Point3D(lhs.x/rhs.x, lhs.y/rhs.y; }
+	static Point3D operator/(Point3D const& lhs, double rhs) { return new Point3D(lhs.x/rhs, lhs.y/rhs; }
+	static Point3D operator/(double lhs, Point3D const& rhs) { return new Point3D(lhs/rhs.x, lhs/rhs.y; }
+	static bool operator ==(Point3D const& p1, Point3D const& p2) { return p1.Equals(p2); }
+    static bool operator !=(Point3D const& p1, Point3D const& p2) { return !p1.Equals(p2); }
+    static bool operator <(Point3D const& p1, Point3D const& p2) { return (p1.CompareTo(p2) < 0); }
+    static bool operator >(Point3D const& p1, Point3D const& p2) { return (p1.CompareTo(p2) > 0); }
+    static bool operator <=(Point3D const& p1, Point3D const& p2) { return (p1.CompareTo(p2) <= 0); }
+    static bool operator >=(Point3D const& p1, Point3D const& p2) { return (p1.CompareTo(p2) >= 0); }
+	*/
+
+	
+//! calculate distance between two points \FIXME maybe move to carlsim_helper.h or something...
+//double dist(Point3D p1, Point3D p2) {
+//	return sqrt((p1-p2)*(p1-p2));
+//return 0.0;
+//}
+
+//! calculate norm \FIXME maybe move to carlsim_helper.h or something...
+//double norm(Point3D p) {
+//	return dist(p, Point3D(0,0,0));
+//return 0.0;
+//}
+
+//! check whether certain point lies on certain grid \FIXME maybe move to carlsim_helper.h or something...
+/*bool isPointOnGrid(Point3D p, Grid3D g) {
+	// point needs to have non-negative coordinates
+	if (p.x<0 || p.y<0 || p.z<0)
+		return false;
+		
+	// point needs to have all integer coordinates
+	if (floor(p.x)!=p.x || floor(p.y)!=p.y || floor(p.z)!=p.z)
+		return false;
+		
+	// point needs to be within ranges
+	if (p.x>=g.x || p.y>=g.y || p.z>=g.z)
+		return false;
+		
+	// passed all tests
+	return true;
+}*/
 
 #endif

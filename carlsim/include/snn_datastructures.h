@@ -54,7 +54,6 @@
 	#include <helper_math.h>
 #endif
 
-
 //! connection types, used internally (externally it's a string)
 enum conType_t { CONN_RANDOM, CONN_ONE_TO_ONE, CONN_FULL, CONN_FULL_NO_DIRECT, CONN_USER_DEFINED, CONN_UNKNOWN};
 
@@ -232,6 +231,9 @@ typedef struct group_info_s
 	int			EndN;
 	unsigned int	Type;
 	int			SizeN;
+    int         SizeX;
+    int         SizeY;
+    int         SizeZ;
 	int			NumTraceN;
 	short int  	MaxFiringRate; //!< this is for the monitoring mechanism, it needs to know what is the maximum firing rate in order to allocate a buffer big enough to store spikes...
 	int			SpikeMonitorId;		//!< spike monitor id
@@ -243,7 +245,7 @@ typedef struct group_info_s
 	uint32_t 	SliceUpdateTime;
 	int 		FiringCount1sec;
 	int 		numPostSynapses;
-	int 		numPreSynapses;
+	int 		numPreSynapses; 
 	bool 		isSpikeGenerator;
 	bool 		WithSTP;
 	bool 		WithSTDP;
