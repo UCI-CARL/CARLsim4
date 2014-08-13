@@ -777,6 +777,22 @@ public:
 	int getGroupNumNeurons(int grpId);
 
 	/*!
+	 * \brief returns the stdp information of a group specified by grpId
+	 *
+	 * \TODO finish docu
+	 * \STATE SETUP, EXECUTION
+	 */
+	GroupSTDPInfo_t getGroupSTDPInfo(int grpId, int configId=0);
+
+	/*!
+	 * \brief returns the neuromodulator information of a group specified by grpId
+	 *
+	 * \TODO finish docu
+	 * \STATE SETUP, EXECUTION
+	 */
+	GroupNeuromodulatorInfo_t getGroupNeuromodulatorInfo(int grpId, int configId=0);
+
+	/*!
 	 * \brief Writes weights from synaptic connections from gIDpre to gIDpost.  Returns a pointer to the weights
 	 *
 	 * and the size of the 1D array in size.  gIDpre(post) is the group ID for the pre(post)synaptic group,

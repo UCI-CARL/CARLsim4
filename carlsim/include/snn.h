@@ -479,12 +479,15 @@ public:
 	int  getGroupId(int groupId, int configId);
 	group_info_t getGroupInfo(int groupId, int configId);
 	std::string getGroupName(int grpId, int configId);
+	GroupSTDPInfo_t getGroupSTDPInfo(int grpId, int configId);
+	GroupNeuromodulatorInfo_t getGroupNeuromodulatorInfo(int grpId, int configId);
 
 	loggerMode_t getLoggerMode() { return loggerMode_; }
 
-	int getGroupStartNeuronId(int grpId) { return grp_Info[grpId].StartN; }
-	int getGroupEndNeuronId(int grpId)   { return grp_Info[grpId].EndN; }
-	int getGroupNumNeurons(int grpId)    { return grp_Info[grpId].SizeN; }
+	// get functions for GroupInfo
+	int getGroupStartNeuronId(int grpId)  { return grp_Info[grpId].StartN; }
+	int getGroupEndNeuronId(int grpId)    { return grp_Info[grpId].EndN; }
+	int getGroupNumNeurons(int grpId)     { return grp_Info[grpId].SizeN; }
 
 	std::string getNetworkName() { return networkName_; }
 

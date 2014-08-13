@@ -153,7 +153,7 @@ int main()
 
 
 	// run for 1000 seconds
-	for (int t = 0; t < 10; t++) {
+	for (int t = 0; t < 1000; t++) {
 		spikeMon1->startRecording();
 		spikeMonIn->startRecording();
 		sim.runNetwork(1,0,true, true);

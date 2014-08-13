@@ -229,4 +229,24 @@ struct RangeWeight {
 	double min, init, max; 
 };
 
+typedef struct GroupSTDPInfo_s {
+	bool 		WithSTDP;
+	stdpType_t  WithSTDPtype;
+	float		TAU_LTP_INV;
+	float		TAU_LTD_INV;
+	float		ALPHA_LTP;
+	float		ALPHA_LTD;
+} GroupSTDPInfo_t;
+
+typedef struct GroupNeuromodulatorInfo_s {
+	float		baseDP;		//!< baseline concentration of Dopamine
+	float		base5HT;	//!< baseline concentration of Serotonin
+	float		baseACh;	//!< baseline concentration of Acetylcholine
+	float		baseNE;		//!< baseline concentration of Noradrenaline
+	float		decayDP;		//!< decay rate for Dopaamine
+	float		decay5HT;		//!< decay rate for Serotonin
+	float		decayACh;		//!< decay rate for Acetylcholine
+	float		decayNE;		//!< decay rate for Noradrenaline
+} GroupNeuromodulatorInfo_t;
+
 #endif

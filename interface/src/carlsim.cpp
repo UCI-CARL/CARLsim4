@@ -795,6 +795,22 @@ int CARLsim::getGroupNumNeurons(int grpId) {
 	return snn_->getGroupNumNeurons(grpId);
 }
 
+GroupSTDPInfo_t CARLsim::getGroupSTDPInfo(int grpId, int configId) {
+	std::string funcName = "getGroupSTDPInfo()";
+	//UserErrors::assertTrue(carlsimState_ == SETUP_STATE || carlsimState_ == EXE_STATE,
+	//				UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, "SETUP or EXECUTION.");
+
+	return snn_->getGroupSTDPInfo(grpId, configId);
+}
+
+GroupNeuromodulatorInfo_t CARLsim::getGroupNeuromodulatorInfo(int grpId, int configId) {
+	std::string funcName = "getGroupNeuromodulatorInfo()";
+	//UserErrors::assertTrue(carlsimState_ == SETUP_STATE || carlsimState_ == EXE_STATE,
+	//				UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, "SETUP or EXECUTION.");
+
+	return snn_->getGroupNeuromodulatorInfo(grpId, configId);
+}
+
 uint64_t CARLsim::getSimTime() { return snn_->getSimTime(); }
 uint32_t CARLsim::getSimTimeSec() { return snn_->getSimTimeSec(); }
 uint32_t CARLsim::getSimTimeMsec() { return snn_->getSimTimeMs(); }

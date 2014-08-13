@@ -1525,6 +1525,36 @@ std::string CpuSNN::getGroupName(int grpId, int configId) {
 	return grp_Info2[cGrpId].Name;
 }
 
+GroupSTDPInfo_t CpuSNN::getGroupSTDPInfo(int grpId, int configId) {
+	GroupSTDPInfo_t gInfo;
+	int cGrpId = getGroupId(grpId, configId);
+
+	gInfo.WithSTDP = grp_Info[cGrpId].WithSTDP;
+	gInfo.WithSTDPtype = grp_Info[cGrpId].WithSTDPtype;
+	gInfo.ALPHA_LTD = grp_Info[cGrpId].ALPHA_LTD;
+	gInfo.ALPHA_LTP = grp_Info[cGrpId].ALPHA_LTP;
+	gInfo.TAU_LTD_INV = grp_Info[cGrpId].TAU_LTD_INV;
+	gInfo.TAU_LTP_INV = grp_Info[cGrpId].TAU_LTP_INV;
+
+	return gInfo;
+}
+
+GroupNeuromodulatorInfo_t CpuSNN::getGroupNeuromodulatorInfo(int grpId, int configId) {
+	GroupNeuromodulatorInfo_t gInfo;
+	int cGrpId = getGroupId(grpId, configId);
+
+	gInfo.baseDP = grp_Info[cGrpId].baseDP;
+	gInfo.base5HT = grp_Info[cGrpId].base5HT;
+	gInfo.baseACh = grp_Info[cGrpId].baseACh;
+	gInfo.baseNE = grp_Info[cGrpId].baseNE;
+	gInfo.decayDP = grp_Info[cGrpId].decayDP;
+	gInfo.decay5HT = grp_Info[cGrpId].decay5HT;
+	gInfo.decayACh = grp_Info[cGrpId].decayACh;
+	gInfo.decayNE = grp_Info[cGrpId].decayNE;
+
+	return gInfo;
+}
+
 // returns the number of synaptic connections associated with this connection.
 int CpuSNN::getNumConnections(short int connectionId) {
   grpConnectInfo_t* connInfo;
