@@ -646,6 +646,7 @@ private:
 	void printConnection(const std::string& fname);
 	void printConnection(FILE* fp);
 	void printConnection(int grpId, FILE* fp); //!< print the connection info of grpId
+	void printConnectionInfo(short int connId);
 	void printConnectionInfo(FILE* fp);
 	void printConnectionInfo2(FILE *fpg);
 	void printCurrentInfo(FILE* fp); //!< for GPU debugging
