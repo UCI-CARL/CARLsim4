@@ -12,6 +12,7 @@ Legend:
     + Added way to create neurons on a grid via CARLsim::createGroup and
       CARLsim::createSpikeGeneratorGroup.
     * Fixed interface errors on boundary checks and CARLsim states.
+    * Fixed console output of connection setup.
 
 2014-08-08     Michael Beyeler <mbeyeler@uci.edu>
 	* Fixed broken COBA implementation in CPU mode.
