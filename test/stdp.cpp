@@ -6,7 +6,30 @@
 /// SPIKE-TIMING-DEPENDENT PLASTICITY STDP
 /// **************************************************************************************************************** ///
 
-// FIXME: this is missing dopamine-modulated STDP
+/*!
+ * \brief controller for spike timing
+ */
+class SpikeController: public SpikeGenerator {
+private:
+	int rewardQuota;
+public:
+	SpikeController() {
+		rewardQuota = 0;
+	}
+
+	unsigned int nextSpikeTime(CARLsim* s, int grpId, int nid, unsigned int currentTime, unsigned int lastScheduledSpikeTime) {
+		if (rewardQuota > 0 && lastScheduledSpikeTime < currentTime + 500) {
+			rewardQuota--;
+			return currentTime + 500;
+		}
+
+		return 0xFFFFFFFF;
+	}
+
+	void setReward(int quota) {
+		rewardQuota = quota;
+	}
+};
 
 /*!
  * \brief testing setSTDP to true
@@ -88,7 +111,7 @@ TEST(STDP, setSTDPFalse) {
 	}
 }
 
-TEST(STDP, setNeuromodulator) {
+TEST(STDP, setNeuromodulatorParameters) {
 	// create network by varying nConfig from 1...maxConfig, with step size nConfigStep
 	std::string name="SNN";
 	int maxConfig = rand()%10 + 10;
@@ -140,31 +163,104 @@ TEST(STDP, setNeuromodulator) {
 	}
 }
 
-TEST(STDP, dastdpSelectivity) {
-	std::string name="SNN";
-	float alphaLTP = 0.1f/100;		// the exact values don't matter
-	float alphaLTD = 0.12f/100;
+TEST(STDP, DASTDPweightBoost) {
 	float tauLTP = 20.0f;
 	float tauLTD = 20.0f;
 	CARLsim* sim;
+	int g1, gin, g1noise, gda;
+	SpikeController* spikeCtrl = new SpikeController();
+	std::vector<int> spikesPost;
+	std::vector<int> spikesPre;
+	float* weights;
+	int size;
+	SpikeMonitor* spikeMonPost;
+	SpikeMonitor* spikeMonPre;
+	float weightDAMod, weightNonDAMod;
 
 	for (int mode = 0; mode < 2; mode++) {
-		sim = new CARLsim("SNN",mode?GPU_MODE:CPU_MODE,SILENT,0,1,42);
+		for (int coba = 0; coba < 2; coba++) {
+			for (int damod = 0; damod < 2; damod++) {
+				sim = new CARLsim("SNN", mode?GPU_MODE:CPU_MODE, SILENT, 0, 1, 42);
 
-		int g1=sim->createGroup("pre-excit", 10, EXCITATORY_NEURON);
-		int g2=sim->createGroup("post-excit", 10, EXCITATORY_NEURON);
+				g1 = sim->createGroup("post-ex", 1, EXCITATORY_NEURON);
+				sim->setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f);
 
-		sim->setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f);
-		sim->setNeuronParameters(g2, 0.02f, 0.2f, -65.0f, 8.0f);
-		sim->setSTDP(g1,true,DA_MOD,alphaLTP,tauLTP,alphaLTD,tauLTD);
+				gin = sim->createSpikeGeneratorGroup("pre-ex", 1, EXCITATORY_NEURON);
+				g1noise = sim->createSpikeGeneratorGroup("post-ex-noise", 1, EXCITATORY_NEURON);
+				gda = sim->createSpikeGeneratorGroup("DA neurons", 500, DOPAMINERGIC_NEURON);
 
-		sim->connect(g1, g2, "full", RangeWeight(0.0, 0.25f/100, 0.5f/100), 1.0f, RangeDelay(1, 20), SYN_PLASTIC);
+				if (coba) {
+					sim->connect(gin,g1,"one-to-one", RangeWeight(0.0, 1.0f/100, 20.0f/100), 1.0f, RangeDelay(1), SYN_PLASTIC);
+					sim->connect(g1noise, g1, "one-to-one", RangeWeight(40.0f/100), 1.0f, RangeDelay(1), SYN_FIXED);
+					sim->connect(gda, g1, "full", RangeWeight(0.0), 1.0f, RangeDelay(1), SYN_FIXED);
+					// enable COBA, set up STDP, enable dopamine-modulated STDP
+					sim->setConductances(true,5,150,6,150);
+					sim->setSTDP(g1, true, DA_MOD, 0.1f/100, tauLTP, 0.123f/100, tauLTD);
+				} else {
+					sim->connect(gin,g1,"one-to-one", RangeWeight(0.0, 1.0f, 20.0f), 1.0f, RangeDelay(1), SYN_PLASTIC);
+					sim->connect(g1noise, g1, "one-to-one", RangeWeight(40.0f), 1.0f, RangeDelay(1), SYN_FIXED);
+					sim->connect(gda, g1, "full", RangeWeight(0.0), 1.0f, RangeDelay(1), SYN_FIXED);
+					// set up STDP, enable dopamine-modulated STDP
+					sim->setSTDP(g1, true, DA_MOD, 0.1f, tauLTP, 0.123f, tauLTD);
+				}
 
-		sim->setupNetwork();
+				sim->setWeightAndWeightChangeUpdate(INTERVAL_10MS, INTERVAL_10MS, 100);
 
-		for (int t = 0; t < 10; t++)
-			sim->runNetwork(1,0);
+				// set up spike controller on DA neurons
+				sim->setSpikeGenerator(gda, spikeCtrl);
 
-		delete sim;
+				sim->setupNetwork();
+
+				spikeMonPost = sim->setSpikeMonitor(g1);
+				spikeMonPre = sim->setSpikeMonitor(gin);
+				sim->setSpikeMonitor(gda);
+
+				//setup baseline firing rate
+				PoissonRate in(1);
+				in.rates[0] = 6; // 6Hz
+				sim->setSpikeRate(gin, &in);
+				sim->setSpikeRate(g1noise, &in);
+
+				for (int t = 0; t < 400; t++) {
+					spikeMonPost->startRecording();
+					spikeMonPre->startRecording();
+					sim->runNetwork(1, 0, false, false);
+					spikeMonPost->stopRecording();
+					spikeMonPre->stopRecording();
+
+					// get spike time of pre-synaptic neuron post-synaptic neuron
+					spikesPre = spikeMonPre->getSpikeVector2D()[0]; // pre-neuron spikes
+					spikesPost = spikeMonPost->getSpikeVector2D()[0]; // post-neuron in spikes
+
+					// detect LTP or LTD
+					for (int j = 0; j < spikesPre.size(); j++) { // j: index of the (j+1)-th spike
+						for (int k = 0; k < spikesPost.size(); k++) { // k: index of the (k+1)-th spike
+							int diff = spikesPost[k] - spikesPre[j]; // (post-spike time) - (pre-spike time)
+							// if LTP is detected, set up reward (activate DA neurons ) to reinforcement this synapse
+							if (diff > 0 && diff <= 20) {
+								//printf("LTP\n");
+								if (damod) spikeCtrl->setReward(500);
+							}
+
+							//if (diff < 0 && diff >= -20)
+							//printf("LTD\n");
+						}
+					}
+				}
+
+				sim->getPopWeights(gin, g1, weights, size);
+				//printf("%f\n",weights[0]);
+				if (damod)
+					weightDAMod = weights[0];
+				else
+					weightNonDAMod = weights[0];
+
+				delete sim;
+			}
+
+			EXPECT_TRUE(weightDAMod >= weightNonDAMod);
+		}
 	}
+
+	delete spikeCtrl;
 }
