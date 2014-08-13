@@ -489,7 +489,8 @@ public:
 	std::string getNetworkName() { return networkName_; }
 
 	int getNumConfigurations()	{ return nConfig_; }	//!< gets number of network configurations
-	int getNumConnections(short int connectionId);		//!< gets number of connections associated with a connection ID
+	int getNumConnections() { return numConnections; }
+	int getNumSynapticConnections(short int connectionId);		//!< gets number of connections associated with a connection ID
 	int getNumGroups() { return numGrp; }
 	int getNumNeurons() { return numN; }
 	int getNumPreSynapses() { return preSynCnt; }

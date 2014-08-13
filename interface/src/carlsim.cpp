@@ -363,7 +363,6 @@ void CARLsim::setNeuronParameters(int grpId, float izh_a, float izh_a_sd, float 
 
 // set neuron parameters for Izhikevich neuron
 void CARLsim::setNeuronParameters(int grpId, float izh_a, float izh_b, float izh_c, float izh_d, int configId) {
-	printf("setNeuronParams\n");
 	std::string funcName = "setNeuronParameters(\""+getGroupName(grpId,configId)+"\")";
 	UserErrors::assertTrue(carlsimState_==CONFIG_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "CONFIG.");
 
@@ -693,10 +692,6 @@ void CARLsim::writePopWeights(std::string fname, int gIDpre, int gIDpost, int co
 // +++++++++ PUBLIC METHODS: SETTERS / GETTERS ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
 int CARLsim::getNumConfigurations() {
-	std::string funcName = "getNumConfigurations()";
-	UserErrors::assertTrue(carlsimState_ == SETUP_STATE || carlsimState_ == EXE_STATE,
-					UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "SETUP or EXECUTION.");
-
 	return nConfig_;
 }
 
@@ -709,9 +704,13 @@ int CARLsim::getNumConfigurations() {
 //}
 
 int CARLsim::getConnectionId(short int connectId, int configId) {
-	std::string funcName = "getConnectionId()";
-	UserErrors::assertTrue(carlsimState_ == SETUP_STATE || carlsimState_ == EXE_STATE,
-					UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "SETUP or EXECUTION.");
+	std::stringstream funcName;	funcName << "getConnectId(" << connectId << "," << configId << ")";
+	UserErrors::assertTrue(connectId!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName.str(), "connectId");
+	UserErrors::assertTrue(configId!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName.str(), "configId");
+	UserErrors::assertTrue(connectId>=0 && connectId<getNumConnections(), UserErrors::MUST_BE_IN_RANGE, funcName.str(), 
+		"[-1,getNumConnections()]");
+	UserErrors::assertTrue(configId>=0 && configId<getNumGroups(), UserErrors::MUST_BE_IN_RANGE, funcName.str(),
+		"[-1,getNumConfigurations()]");
 
 	return snn_->getConnectionId(connectId,configId);
 }
@@ -753,8 +752,16 @@ std::string CARLsim::getGroupName(int grpId, int configId) {
 	return snn_->getGroupName(grpId, configId);
 }
 
-int CARLsim::getNumConnections(short int connectionId) {
-	return snn_->getNumConnections(connectionId);
+int CARLsim::getNumConnections() {
+	return snn_->getNumConnections();	
+}
+
+int CARLsim::getNumSynapticConnections(short int connectionId) {
+	std::stringstream funcName;	funcName << "getNumConnections(" << connectionId << ")";
+	UserErrors::assertTrue(connectionId!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName.str(), "connectionId");
+	UserErrors::assertTrue(connectionId>=0 && connectionId<getNumConnections(), UserErrors::MUST_BE_IN_RANGE, 
+		funcName.str(), "[-1,getNumSynapticConnections()]");
+	return snn_->getNumSynapticConnections(connectionId);
 }
 
 int CARLsim::getNumGroups() {

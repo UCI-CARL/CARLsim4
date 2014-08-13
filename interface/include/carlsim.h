@@ -743,22 +743,36 @@ public:
 	/*!
 	 * \brief Returns the number of network configrations
 	 *
+	 * \Note This number might change throughout CARLsim state CONFIG, up to calling CARLsim::setupNetwork).
 	 * \TODO finish docu
 	 * \STATE SETUP, EXECUTION
 	 */
 	int getNumConfigurations();
 
 	/*!
+	 * \brief Returns the number of connections (pairs of pre-post groups) in the network
+	 *
+	 * This function returns the number of connections (pairs of pre-post groups) in the network. Each pre-post
+	 * pair of neuronal groups has its own connection ID, which is returned by a call to CARLsim::connect.
+	 * \Note This number might change throughout CARLsim state CONFIG, up to calling CARLsim::setupNetwork).
+	 * \STATE CONFIG, SETUP, EXECUTION
+	 * \returns the number of connections (pairs of pre-post groups) in the network
+	 */
+	int getNumConnections();
+
+	/*!
 	 * \brief returns the number of connections associated with a connection ID
 	 *
+	 * \Note This number might change throughout CARLsim state CONFIG, up to calling CARLsim::setupNetwork).
 	 * \TODO finish docu
 	 * \STATE SETUP, EXECUTION
 	 */
-	int getNumConnections(short int connectionId);
+	int getNumSynapticConnections(short int connectionId);
 
 	/*!
 	 * \brief returns the number of groups in the network
 	 *
+	 * \Note This number might change throughout CARLsim state CONFIG, up to calling CARLsim::setupNetwork).
 	 * \TODO finish docu
 	 * \STATE SETUP, EXECUTION
 	 */
@@ -767,6 +781,7 @@ public:
 	/*!
 	 * \brief returns the total number of allocated neurons in the network
 	 *
+	 * \Note This number might change throughout CARLsim state CONFIG, up to calling CARLsim::setupNetwork).
 	 * \TODO finish docu
 	 * \STATE SETUP, EXECUTION
 	 */

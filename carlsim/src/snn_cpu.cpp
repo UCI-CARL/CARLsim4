@@ -282,7 +282,6 @@ int CpuSNN::createGroup(const std::string& grpName, Grid3D& grid, int neurType, 
 	assert(grid.x*grid.y*grid.z>0);
 	assert(neurType>=0); assert(configId>=-1);	assert(configId<nConfig_);
 	if (configId == ALL) {
-        fprintf(stderr,"config ALL\n");
 		for(int c=0; c < nConfig_; c++)
 			createGroup(grpName, grid, neurType, c);
 		return (numGrp-nConfig_);
@@ -296,9 +295,9 @@ int CpuSNN::createGroup(const std::string& grpName, Grid3D& grid, int neurType, 
 		}
 
 		grp_Info[numGrp].SizeN  			= grid.x * grid.y * grid.z; // number of neurons in the group
-        grp_Info[numGrp].SizeX              = grid.x; // number of neurons in first dim
-        grp_Info[numGrp].SizeY              = grid.y; // number of neurons in second dim
-        grp_Info[numGrp].SizeZ              = grid.z; // number of neurons in third dim
+        grp_Info[numGrp].SizeX              = grid.x; // number of neurons in first dim of Grid3D
+        grp_Info[numGrp].SizeY              = grid.y; // number of neurons in second dim of Grid3D
+        grp_Info[numGrp].SizeZ              = grid.z; // number of neurons in third dim of Grid3D
 		grp_Info[numGrp].Type   			= neurType;
 		grp_Info[numGrp].WithSTP			= false;
 		grp_Info[numGrp].WithSTDP			= false;
@@ -334,16 +333,14 @@ int CpuSNN::createSpikeGeneratorGroup(const std::string& grpName, Grid3D& grid, 
 		assert(grid.x*grid.y*grid.z>0);
 		assert(neurType>=0); assert(configId>=-1);	assert(configId<nConfig_);
 	if (configId == ALL) {
-        fprintf(stderr,"config ALL\n");
 		for(int c=0; c < nConfig_; c++)
 			createSpikeGeneratorGroup(grpName, grid, neurType, c);
 		return (numGrp-nConfig_);
 	} else {
-std::cerr << grid << std::endl;
-		grp_Info[numGrp].SizeN   		= grid.x * grid.y * grid.z;
-        grp_Info[numGrp].SizeX          = grid.x;
-        grp_Info[numGrp].SizeY          = grid.y;
-        grp_Info[numGrp].SizeZ          = grid.z;
+		grp_Info[numGrp].SizeN   		= grid.x * grid.y * grid.z; // number of neurons in the group
+        grp_Info[numGrp].SizeX          = grid.x; // number of neurons in first dim of Grid3D
+        grp_Info[numGrp].SizeY          = grid.y; // number of neurons in second dim of Grid3D
+        grp_Info[numGrp].SizeZ          = grid.z; // number of neurons in third dim of Grid3D
 		grp_Info[numGrp].Type    		= neurType | POISSON_NEURON;
 		grp_Info[numGrp].WithSTP		= false;
 		grp_Info[numGrp].WithSTDP		= false;
@@ -353,9 +350,9 @@ std::cerr << grid << std::endl;
 		grp_Info2[numGrp].ConfigId		= configId;
 		grp_Info2[numGrp].Name    		= grpName;
 		grp_Info[numGrp].MaxFiringRate 	= POISSON_MAX_FIRING_RATE;
+
 		std::stringstream outStr;
 		outStr << configId;
-
 		if (configId != 0)
 			grp_Info2[numGrp].Name = grpName + "_" + outStr.str();
 
@@ -1547,7 +1544,7 @@ std::string CpuSNN::getGroupName(int grpId, int configId) {
 }
 
 // returns the number of synaptic connections associated with this connection.
-int CpuSNN::getNumConnections(short int connectionId) {
+int CpuSNN::getNumSynapticConnections(short int connectionId) {
   grpConnectInfo_t* connInfo;
   grpConnectInfo_t* connIterator = connectBegin;
   while(connIterator){

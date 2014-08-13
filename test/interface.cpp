@@ -106,13 +106,7 @@ TEST(Interface, CarlsimState) {
 	EXPECT_DEATH({sim->reassignFixedWeights(0, wM, 4);},"");
 	EXPECT_DEATH({sim->setSpikeRate(g1, NULL);},"");
 	EXPECT_DEATH({sim->writePopWeights("test.dat", 0, 1);},"");
-	EXPECT_DEATH({i = sim->getConnectionId(0, 0);},"");
 	EXPECT_DEATH({sim->getDelays(0, 1, i, j);},"");
-	EXPECT_DEATH({i = sim->getGroupId(0);},"");
-	EXPECT_DEATH({i = sim->getNumConfigurations();},"");
-	EXPECT_DEATH({i = sim->getNumConnections(0);},"");
-	EXPECT_DEATH({i = sim->getNumGroups();},"");
-	EXPECT_DEATH({i = sim->getNumNeurons();},"");
 	EXPECT_DEATH({i = sim->getNumPreSynapses();},"");
 	EXPECT_DEATH({i = sim->getNumPostSynapses();},"");
 	EXPECT_DEATH({i = sim->getGroupStartNeuronId(0);},"");
@@ -132,8 +126,6 @@ TEST(Interface, CarlsimState) {
 	EXPECT_DEATH({g2 = sim->createGroup("excit", 800, EXCITATORY_NEURON);},"");
 	EXPECT_DEATH({g2 = sim->createSpikeGeneratorGroup("input", 100, EXCITATORY_NEURON);},"");
 	EXPECT_DEATH({sim->connect(g1,g1,"random", RangeWeight(0.0,0.001,0.005), 0.1f, RangeDelay(1,20), SYN_PLASTIC);},"");
-	//sim->connect
-	//sim->connect
 	EXPECT_DEATH({sim->setConductances(true);},"");
 	EXPECT_DEATH({sim->setConductances(true,1, 2, 3, 4);},"");
 	EXPECT_DEATH({sim->setConductances(true, 1, 2, 3, 4, 5, 6);},"");
