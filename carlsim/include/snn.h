@@ -488,6 +488,8 @@ public:
 
 	std::string getNetworkName() { return networkName_; }
 
+	Point3D getNeuronLocation3D(int neurId);
+
 	int getNumConfigurations()	{ return nConfig_; }	//!< gets number of network configurations
 	int getNumConnections() { return numConnections; }
 	int getNumSynapticConnections(short int connectionId);		//!< gets number of connections associated with a connection ID

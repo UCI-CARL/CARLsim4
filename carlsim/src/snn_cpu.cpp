@@ -1543,6 +1543,20 @@ std::string CpuSNN::getGroupName(int grpId, int configId) {
 	return grp_Info2[cGrpId].Name;
 }
 
+Point3D CpuSNN::getNeuronLocation3D(int neurId) {
+	assert(neurId>=0 && neurId<numN);
+	int grpId = grpIds[neurId];
+	assert(neurId>=grp_Info[grpId].StartN && neurId<=grp_Info[grpId].EndN);
+
+	// adjust neurId for neuron ID of first neuron in the group
+	neurId -= grp_Info[grpId].StartN;
+
+	int coord_x = neurId % grp_Info[grpId].SizeX;
+	int coord_y = (neurId/grp_Info[grpId].SizeX)%grp_Info[grpId].SizeY;
+	int coord_z = neurId/(grp_Info[grpId].SizeX*grp_Info[grpId].SizeY);
+	return Point3D(coord_x, coord_y, coord_z);
+}
+
 // returns the number of synaptic connections associated with this connection.
 int CpuSNN::getNumSynapticConnections(short int connectionId) {
   grpConnectInfo_t* connInfo;

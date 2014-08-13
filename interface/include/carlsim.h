@@ -209,7 +209,7 @@ public:
 	 * Neurons of a group can be arranged topographically, so that they virtually lie on a 3D grid. This simplifies
 	 * the creation of topographic connections in the network.
 	 * Each neuron thus gets assigned a (x,y,z) location on a 3D grid (integer coordinates). Neuron numbers will be
-	 * assigned in order to location; where the first dimension specifies the width, the second dimension is height,
+	 * assigned to location in order; where the first dimension specifies the width, the second dimension is height,
 	 * and the third dimension is depth. Grid3D(2,2,2) would thus assign neurId 0 to location (0,0,0), neurId 1
 	 * to (1,0,0), neurId 3 to (0,1,0), neurId 6 to (2,2,1), and so on.
 	 * The third dimension can be thought of as a depth (z-coordinate in 3D), a cortical column (each of which consists
@@ -234,7 +234,7 @@ public:
 	 * Neurons of a group can be arranged topographically, so that they virtually lie on a 3D grid. This simplifies
 	 * the creation of topographic connections in the network.
 	 * Each neuron thus gets assigned a (x,y,z) location on a 3D grid (integer coordinates). Neuron numbers will be
-	 * assigned in order to location; where the first dimension specifies the width, the second dimension is height,
+	 * assigned to location in order; where the first dimension specifies the width, the second dimension is height,
 	 * and the third dimension is depth. Grid3D(2,2,2) would thus assign neurId 0 to location (0,0,0), neurId 1
 	 * to (1,0,0), neurId 3 to (0,1,0), neurId 6 to (2,2,1), and so on.
 	 * The third dimension can be thought of as a depth (z-coordinate in 3D), a cortical column (each of which consists
@@ -712,7 +712,7 @@ public:
 	 * \TODO finish docu
 	 * \STATE SETUP, EXECUTION
 	 */
-	int  getConnectionId(short int connId, int configId);
+	int  getConnectionId(short int connId, int configId=0);
 
 	/*!
 	 * \brief gets delays
@@ -728,17 +728,40 @@ public:
 	 * \TODO finish docu
 	 * \STATE SETUP, EXECUTION
 	 */
+	Grid3D getGroupGrid3D(int grpId);
+
+	/*!
+	 * \brief gets group ID
+	 *
+	 * \TODO finish docu
+	 * \STATE SETUP, EXECUTION
+	 */
 	int getGroupId(int grpId, int configId=0);
 
 	//group_info_t getGroupInfo(int grpId, int configId=0); // gets group info struct
 
 	/*!
-	 * \brief gets delays
+	 * \brief gets group name
 	 *
 	 * \TODO finish docu
 	 * \STATE SETUP, EXECUTION
 	 */
 	std::string getGroupName(int grpId, int configId=0);
+
+	/*!
+	 * \brief returns the 3D location a neuron codes for
+	 *
+	 * This function returns the (x,y,z) location that a neuron with ID neurID codes for.
+	 * The location is determined by the actual neuron ID (the first neuron in the group coding for the origin (0,0,0),
+	 * and by the dimensions of the 3D grid the group is allocated on (integer coordinates). Neuron numbers are
+	 * assigned to location in order; where the first dimension specifies the width, the second dimension is height,
+	 * and the third dimension is depth.
+	 * For more information see CARLsim::createGroup and the Grid3D struct.
+	 * \STATE CONFIG, SETUP, EXE
+	 * \param[in] neurId the neuron ID for which the 3D location should be returned
+	 * \returns the 3D location a neuron codes for as a Point3D struct
+	 */
+	Point3D getNeuronLocation3D(int neurId);
 
 	/*!
 	 * \brief Returns the number of network configrations
@@ -823,7 +846,7 @@ public:
 	 * \brief returns the number of neurons of a group specified by grpId
 	 *
 	 * \TODO finish docu
-	 * \STATE SETUP, EXECUTION
+	 * \STATE CONFIG, SETUP, EXECUTION
 	 */
 	int getGroupNumNeurons(int grpId);
 

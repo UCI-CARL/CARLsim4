@@ -42,8 +42,9 @@
 #ifndef _CARLSIM_DATASTRUCTURES_H_
 #define _CARLSIM_DATASTRUCTURES_H_
 
-#include <ostream>
-#include <user_errors.h>
+#include <ostream>			// print struct info
+#include <user_errors.h>	// CARLsim user errors
+#include <cmath>			// sqrt
 
 /*!
  * \brief Logger modes
@@ -249,16 +250,21 @@ struct RangeWeight {
  *   Grid3D(10)         => creates 10 neurons on a 1D line, neurId=2 == (2,0,0), neurId=9 == (9,0,0)
  *   Grid3D(10,2)       => creates 10x2 neurons on a 2D plane, neurId=10 == (0,1,0), neurId=13 == (3,1,0)
  *   Grid3D(10,2,3)     => creates 10x2x3 neurons on a 3D grid, neurId=19 == (9,1,0), neurId=20 == (0,0,1)
+ * Members:
+ *   x, width	                   the width of the 3D grid (1st dim)
+ *   y, height                     the height of the 3D grid (2nd dim)
+ *   z, depth, columns, channels   the depth of the 3D grid (3rd dim)
+ *   N                             the total number of neurons on the grid, N=x*y*z
  */
 struct Grid3D {
-    Grid3D(int w) : x(w), y(1), z(1), width(w), height(1), depth(1), columns(1), channels(1) {
+    Grid3D(int w) : x(w), y(1), z(1), width(w), height(1), depth(1), columns(1), channels(1), N(w) {
         UserErrors::assertTrue(w>0, UserErrors::MUST_BE_POSITIVE, "Grid3D", "width");
     }
-    Grid3D(int w, int h) : x(w), y(h), z(1), width(w), height(h), depth(1), columns(1), channels(1) {
+    Grid3D(int w, int h) : x(w), y(h), z(1), width(w), height(h), depth(1), columns(1), channels(1), N(w*h) {
         UserErrors::assertTrue(w>0, UserErrors::MUST_BE_POSITIVE, "Grid3D", "width");
         UserErrors::assertTrue(h>0, UserErrors::MUST_BE_POSITIVE, "Grid3D", "height");
     }
-    Grid3D(int w, int h, int d) : x(w), y(h), z(d), width(w), height(h), depth(d), columns(d), channels(d) {
+    Grid3D(int w, int h, int d) : x(w), y(h), z(d), width(w), height(h), depth(d), columns(d), channels(d), N(w*h*d) {
          UserErrors::assertTrue(w>0, UserErrors::MUST_BE_POSITIVE, "Grid3D", "width");
          UserErrors::assertTrue(h>0, UserErrors::MUST_BE_POSITIVE, "Grid3D", "height");
          UserErrors::assertTrue(d>0, UserErrors::MUST_BE_POSITIVE, "Grid3D", "depth");
@@ -271,6 +277,7 @@ struct Grid3D {
     int width, height, depth;
     int columns, channels;
     int x, y, z;
+    int N;
 };
 
 /*!
@@ -316,7 +323,11 @@ private:
 	int CompareTo(const Point3D& p) const { return (x>p.x&&y>p.y) ? 1 : ( (x<p.x&&y<p.y) ? -1 : 0); }
 };
 
-	
+
+/*
+// \TODO not sure where to put the following... they're functional, but carlsim_datastructures.h is not the
+// right place...
+
 //! calculate distance between two points \FIXME maybe move to carlsim_helper.h or something...
 double dist(Point3D& p1, Point3D& p2) {
 	Point3D p( (p1-p2)*(p1-p2) );
@@ -346,5 +357,6 @@ bool isPointOnGrid(Point3D& p, Grid3D& g) {
 	// passed all tests
 	return true;
 }
+*/
 
 #endif

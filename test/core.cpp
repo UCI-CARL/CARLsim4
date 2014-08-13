@@ -132,6 +132,44 @@ TEST(CORE, connect) {
 	}
 }
 
+// This test creates a group on a grid and makes sure that the returned 3D location of each neuron is correct
+TEST(CORE, getNeuronLocation3D) {
+	CARLsim* sim = new CARLsim("Interface.createGroupDeath",CPU_MODE,USER,0,1,42);
+	Grid3D grid(2,3,4);
+	int g1=sim->createSpikeGeneratorGroup("excit", grid, EXCITATORY_NEURON);
+	int g2=sim->createGroup("excit2", grid, EXCITATORY_NEURON);
+	sim->setNeuronParameters(g2, 0.02f, 0.2f, -65.0f, 8.0f);
+	sim->connect(g1,g2,"full",RangeWeight(0.1), 1.0, RangeDelay(1));
+	sim->setupNetwork(); // need SETUP state for getNeuronLocation3D to work
+
+	// make sure the 3D location that is returned is correct
+	for (int grp=0; grp<=1; grp++) {
+		// do for both spike gen and RS group
+
+		int x=0,y=0,z=0;
+		for (int neurId=grp*grid.N; neurId<(grp+1)*grid.N; neurId++) {
+			Point3D loc = sim->getNeuronLocation3D(neurId);
+			EXPECT_EQ(loc.x, x);
+			EXPECT_EQ(loc.y, y);
+			EXPECT_EQ(loc.z, z);
+
+			x++;
+			if (x==grid.x) {
+				x=0;
+				y++;
+			}
+			if (y==grid.y) {
+				x=0;
+				y=0;
+				z++;
+			}
+		}
+	}
+
+	delete sim;
+}
+
+
 TEST(CORE, setConductancesTrue) {
 	std::string name = "SNN";
 	int maxConfig = rand()%10 + 10;

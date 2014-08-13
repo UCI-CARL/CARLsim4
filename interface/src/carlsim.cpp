@@ -697,10 +697,6 @@ void CARLsim::writePopWeights(std::string fname, int gIDpre, int gIDpost, int co
 
 // +++++++++ PUBLIC METHODS: SETTERS / GETTERS ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
-int CARLsim::getNumConfigurations() {
-	return nConfig_;
-}
-
 // \FIXME
 // get connection info struct
 //grpConnectInfo_t* CARLsim::getConnectInfo(short int connectId, int configId) {
@@ -713,10 +709,12 @@ int CARLsim::getConnectionId(short int connectId, int configId) {
 	std::stringstream funcName;	funcName << "getConnectId(" << connectId << "," << configId << ")";
 	UserErrors::assertTrue(connectId!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName.str(), "connectId");
 	UserErrors::assertTrue(configId!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName.str(), "configId");
+	UserErrors::assertTrue(carlsimState_ == SETUP_STATE || carlsimState_ == EXE_STATE,
+					UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName.str(), funcName.str(), "SETUP or EXECUTION.");
 	UserErrors::assertTrue(connectId>=0 && connectId<getNumConnections(), UserErrors::MUST_BE_IN_RANGE, funcName.str(), 
-		"[-1,getNumConnections()]");
+		"connectId", "[0,getNumConnections()]");
 	UserErrors::assertTrue(configId>=0 && configId<getNumGroups(), UserErrors::MUST_BE_IN_RANGE, funcName.str(),
-		"[-1,getNumConfigurations()]");
+		"configId", "[0,getNumConfigurations()]");
 
 	return snn_->getConnectionId(connectId,configId);
 }
@@ -733,10 +731,12 @@ int CARLsim::getGroupId(int grpId, int configId) {
 	std::stringstream funcName;	funcName << "getConnectInfo(" << grpId << "," << configId << ")";
 	UserErrors::assertTrue(grpId!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName.str(), "grpId");
 	UserErrors::assertTrue(configId!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName.str(), "configId");
+	UserErrors::assertTrue(carlsimState_ == SETUP_STATE || carlsimState_ == EXE_STATE,
+					UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName.str(), funcName.str(), "SETUP or EXECUTION.");
 	UserErrors::assertTrue(grpId>=0 && grpId<getNumGroups(), UserErrors::MUST_BE_IN_RANGE, funcName.str(), 
-		"[-1,getNumGroups()]");
+		"grpId", "[0,getNumGroups()]");
 	UserErrors::assertTrue(configId>=0 && configId<getNumGroups(), UserErrors::MUST_BE_IN_RANGE, funcName.str(),
-		"[-1,getNumConfigurations()]");
+		"configId", "[0,getNumConfigurations()]");
 
 	return snn_->getGroupId(grpId,configId);
 }
@@ -750,12 +750,53 @@ int CARLsim::getGroupId(int grpId, int configId) {
 
 std::string CARLsim::getGroupName(int grpId, int configId) {
 	std::stringstream funcName; funcName << "getGroupName(" << grpId << "," << configId << ")";
-	UserErrors::assertTrue(grpId>=-1 && grpId<getNumGroups(), UserErrors::MUST_BE_IN_RANGE, funcName.str(), 
-		"[-1,getNumGroups()]");
-	UserErrors::assertTrue(configId>=-1 && configId<getNumGroups(), UserErrors::MUST_BE_IN_RANGE, funcName.str(),
-		"[-1,getNumConfigurations()]");
+	UserErrors::assertTrue(grpId>=-1, UserErrors::MUST_BE_IN_RANGE, funcName.str(), 
+		"grpId", "[-1,getNumGroups()]");
 
 	return snn_->getGroupName(grpId, configId);
+}
+
+int CARLsim::getGroupStartNeuronId(int grpId) {
+	std::stringstream funcName; funcName << "getGroupStartNeuronId(" << grpId << ")";
+	UserErrors::assertTrue(carlsimState_ == SETUP_STATE || carlsimState_ == EXE_STATE,
+					UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName.str(), funcName.str(), "SETUP or EXECUTION.");
+	UserErrors::assertTrue(grpId>=0 && grpId<getNumGroups(), UserErrors::MUST_BE_IN_RANGE, funcName.str(), "grpId",
+		"[0,getNumGroups()]");
+
+	return snn_->getGroupStartNeuronId(grpId);
+}
+
+int CARLsim::getGroupEndNeuronId(int grpId) {
+	std::stringstream funcName; funcName << "getGroupEndNeuronId(" << grpId << ")";
+	UserErrors::assertTrue(carlsimState_ == SETUP_STATE || carlsimState_ == EXE_STATE,
+					UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName.str(), funcName.str(), "SETUP or EXECUTION.");
+	UserErrors::assertTrue(grpId>=0 && grpId<getNumGroups(), UserErrors::MUST_BE_IN_RANGE, funcName.str(), "grpId",
+		"[0,getNumGroups()]");
+
+	return snn_->getGroupEndNeuronId(grpId);
+}
+
+int CARLsim::getGroupNumNeurons(int grpId) {
+	std::stringstream funcName; funcName << "getGroupNumNeurons(" << grpId << ")";
+	UserErrors::assertTrue(grpId>=0 && grpId<getNumGroups(), UserErrors::MUST_BE_IN_RANGE, funcName.str(), "grpId",
+		"[0,getNumGroups()]");
+
+	return snn_->getGroupNumNeurons(grpId);
+}
+
+Point3D CARLsim::getNeuronLocation3D(int neurId) {
+	std::stringstream funcName;	funcName << "getNeuronLocation3D(" << neurId << ")";
+	UserErrors::assertTrue(neurId!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName.str(), "neurId");
+	UserErrors::assertTrue(carlsimState_ == SETUP_STATE || carlsimState_ == EXE_STATE,
+					UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName.str(), funcName.str(), "SETUP or EXECUTION.");
+	UserErrors::assertTrue(neurId>=0 && neurId<getNumNeurons(), UserErrors::MUST_BE_IN_RANGE, funcName.str(), 
+		"neurId", "[0,getNumNeurons()]");
+
+	return snn_->getNeuronLocation3D(neurId);
+}
+
+int CARLsim::getNumConfigurations() {
+	return nConfig_;
 }
 
 int CARLsim::getNumConnections() {
@@ -766,7 +807,7 @@ int CARLsim::getNumSynapticConnections(short int connectionId) {
 	std::stringstream funcName;	funcName << "getNumConnections(" << connectionId << ")";
 	UserErrors::assertTrue(connectionId!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName.str(), "connectionId");
 	UserErrors::assertTrue(connectionId>=0 && connectionId<getNumConnections(), UserErrors::MUST_BE_IN_RANGE, 
-		funcName.str(), "[-1,getNumSynapticConnections()]");
+		funcName.str(), "connectionId", "[0,getNumSynapticConnections()]");
 	return snn_->getNumSynapticConnections(connectionId);
 }
 
@@ -793,29 +834,6 @@ int CARLsim::getNumPostSynapses() {
 
 	return snn_->getNumPostSynapses(); }
 
-int CARLsim::getGroupStartNeuronId(int grpId) {
-	std::string funcName = "getGroupStartNeuronId()";
-	UserErrors::assertTrue(carlsimState_ == SETUP_STATE || carlsimState_ == EXE_STATE,
-					UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "SETUP or EXECUTION.");
-
-	return snn_->getGroupStartNeuronId(grpId);
-}
-
-int CARLsim::getGroupEndNeuronId(int grpId) {
-	std::string funcName = "getGroupEndNeuronId()";
-	UserErrors::assertTrue(carlsimState_ == SETUP_STATE || carlsimState_ == EXE_STATE,
-					UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "SETUP or EXECUTION.");
-
-	return snn_->getGroupEndNeuronId(grpId);
-}
-
-int CARLsim::getGroupNumNeurons(int grpId) {
-	std::string funcName = "getGroupNumNeurons()";
-	UserErrors::assertTrue(carlsimState_ == SETUP_STATE || carlsimState_ == EXE_STATE,
-					UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "SETUP or EXECUTION.");
-
-	return snn_->getGroupNumNeurons(grpId);
-}
 
 uint64_t CARLsim::getSimTime() { return snn_->getSimTime(); }
 uint32_t CARLsim::getSimTimeSec() { return snn_->getSimTimeSec(); }
