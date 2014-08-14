@@ -746,6 +746,14 @@ public:
 	 */
 	int getGroupId(int grpId, int configId=0);
 
+	/*!
+	 * \brief finds the ID of the group with name grpName
+	 *
+	 * \TODO finish docu
+	 * \STATE SETUP, EXECUTION
+	 */
+	int getGroupId(std::string grpName);
+
 	//group_info_t getGroupInfo(int grpId, int configId=0); // gets group info struct
 
 	/*!

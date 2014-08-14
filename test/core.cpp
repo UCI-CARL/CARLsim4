@@ -139,7 +139,7 @@ TEST(CORE, getGroupGrid3D) {
 	int g2=sim->createGroup("excit2", grid, EXCITATORY_NEURON);
 	sim->setNeuronParameters(g2, 0.02f, 0.2f, -65.0f, 8.0f);
 	sim->connect(g1,g2,"full",RangeWeight(0.1), 1.0, RangeDelay(1));
-	sim->setupNetwork(); // need SETUP state for getNeuronLocation3D to work
+	sim->setupNetwork(); // need SETUP state for this function to work
 
 	for (int g=g1; g<g2; g++) {
 		Grid3D getGrid = sim->getGroupGrid3D(g);
@@ -148,7 +148,25 @@ TEST(CORE, getGroupGrid3D) {
 		EXPECT_EQ(getGrid.z, grid.z);
 		EXPECT_EQ(getGrid.N, grid.N);
 	}
+
+	delete sim;
 }
+
+TEST(CORE, getGroupIdFromString) {
+	CARLsim* sim = new CARLsim("Interface.createGroupDeath",CPU_MODE,USER,0,1,42);
+	int g1=sim->createSpikeGeneratorGroup("excit", Grid3D(2,3,4), EXCITATORY_NEURON);
+	int g2=sim->createGroup("bananahama", Grid3D(1,2,3), INHIBITORY_NEURON);
+	sim->setNeuronParameters(g2, 0.02f, 0.2f, -65.0f, 8.0f);
+	sim->connect(g1,g2,"full",RangeWeight(0.1), 1.0, RangeDelay(1));
+	sim->setupNetwork(); // need SETUP state for this function to work
+
+	EXPECT_EQ(sim->getGroupId("excit"), g1);
+	EXPECT_EQ(sim->getGroupId("bananahama"), g2);
+	EXPECT_EQ(sim->getGroupId("invalid group name"), -1); // group not found
+
+	delete sim;
+}
+
 
 // This test creates a group on a grid and makes sure that the returned 3D location of each neuron is correct
 TEST(CORE, getNeuronLocation3D) {
