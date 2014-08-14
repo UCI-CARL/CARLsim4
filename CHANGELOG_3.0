@@ -13,6 +13,7 @@ Legend:
       CARLsim::createSpikeGeneratorGroup.
     * Fixed interface errors on boundary checks and CARLsim states.
     * Fixed console output of connection setup.
+    + Added CARLsim::getGroupId (from string)
 
 2014-08-08     Michael Beyeler <mbeyeler@uci.edu>
 	* Fixed broken COBA implementation in CPU mode.
