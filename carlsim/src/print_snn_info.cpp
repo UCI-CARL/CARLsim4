@@ -168,6 +168,26 @@ void CpuSNN::printConnectionInfo2(FILE * const fpg)
 	fflush(fpg);
 }
 
+// new print connection info, akin to printGroupInfo
+void CpuSNN::printConnectionInfo(short int connId) {
+	int configId = 0;
+	grpConnectInfo_t* connInfo = getConnectInfo(connId, configId);
+	
+	CARLSIM_INFO("Connection ID %d: %s(%d) => %s(%d)", connId, grp_Info2[connInfo->grpSrc].Name.c_str(), 
+		connInfo->grpSrc, grp_Info2[connInfo->grpDest].Name.c_str(), connInfo->grpDest);
+	CARLSIM_INFO("  - Type                       = %s", GET_FIXED_PLASTIC(connInfo->connProp)==SYN_PLASTIC?" PLASTIC":"   FIXED")
+	CARLSIM_INFO("  - Min     weight             = %8.5f", 0.0f); // \TODO
+	CARLSIM_INFO("  - Max     weight             = %8.5f", fabs(connInfo->maxWt));
+	CARLSIM_INFO("  - Initial weight             = %8.5f", fabs(connInfo->initWt));
+	CARLSIM_INFO("  - Min     delay              = %8d", connInfo->minDelay);
+	CARLSIM_INFO("  - Max     delay              = %8d", connInfo->maxDelay);
+
+	float avgPostM = connInfo->numberOfConnections/grp_Info[connInfo->grpSrc].SizeN;
+	float avgPreM  = connInfo->numberOfConnections/grp_Info[connInfo->grpDest].SizeN;
+	CARLSIM_INFO("  - Avg numPreSynapses         = %8d", (int)avgPreM );
+	CARLSIM_INFO("  - Avg numPostSynapses        = %8d", (int)avgPostM );
+}
+
 void CpuSNN::printGroupInfo(int grpId) {
 	CARLSIM_INFO("Group %s(%d): ", grp_Info2[grpId].Name.c_str(), grpId);
 	CARLSIM_INFO("  - Type                       =  %s", isExcitatoryGroup(grpId) ? "  EXCIT" :

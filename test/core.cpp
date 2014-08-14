@@ -70,72 +70,6 @@ TEST(CORE, CpuSNNinitDeath) {
 	if (sim!=NULL) delete sim; sim = NULL;
 }
 
-//! Death tests for createGroup (test all possible silly values)
-TEST(CORE, createGroupDeath) {
-	::testing::FLAGS_gtest_death_test_style = "threadsafe";
-
-	CpuSNN* sim = NULL;
-	std::string name="SNN";
-	sim = new CpuSNN(name,CPU_MODE,SILENT,0,1,42);
-
-	// set silly values to all possible input arguments
-	// e.g., negative values for things>=0, values>numGrps or values>numConfig, etc.
-	EXPECT_DEATH({int N=-10; sim->createGroup("excit", N, EXCITATORY_NEURON, ALL);},"");
-	EXPECT_DEATH({sim->createGroup("excit", 10, -3, ALL);},"");
-	EXPECT_DEATH({sim->createGroup("excit", 10, EXCITATORY_NEURON, 2);},"");
-	EXPECT_DEATH({sim->createGroup("excit", 10, EXCITATORY_NEURON, -2);},"");
-
-	if (sim!=NULL)
-		delete sim;
-}
-
-//! Death tests for createSpikeGenerator (test all possible silly values)
-TEST(CORE, createSpikeGeneratorGroupDeath) {
-	::testing::FLAGS_gtest_death_test_style = "threadsafe";
-
-	CpuSNN* sim = NULL;
-	std::string name="SNN";
-	sim = new CpuSNN(name,CPU_MODE,SILENT,0,1,42);
-
-	// set silly values to all possible input arguments
-	// e.g., negative values for things>=0, values>numGrps or values>numConfig, etc.
-	EXPECT_DEATH({int N=-10; sim->createSpikeGeneratorGroup("excit", N, EXCITATORY_NEURON, ALL);},"");
-	EXPECT_DEATH({sim->createSpikeGeneratorGroup("excit", 10, -3, ALL);},"");
-	EXPECT_DEATH({sim->createSpikeGeneratorGroup("excit", 10, EXCITATORY_NEURON, 2);},"");
-	EXPECT_DEATH({sim->createSpikeGeneratorGroup("excit", 10, EXCITATORY_NEURON, -2);},"");
-
-	if (sim!=NULL)
-		delete sim;
-}
-
-
-//! Death tests for setNeuronParameters (test all possible silly values)
-TEST(CORE, setNeuronParametersDeath) {
-	::testing::FLAGS_gtest_death_test_style = "threadsafe";
-
-	CpuSNN* sim = NULL;
-	std::string name="SNN";
-	sim = new CpuSNN(name,CPU_MODE,SILENT,0,1,42);
-	int g0=sim->createGroup("excit", 10, EXCITATORY_NEURON, ALL);
-
-	// set silly values to all possible input arguments
-	// e.g., negative values for things>=0, values>numGrps or values>numConfig, etc.
-	EXPECT_DEATH({sim->setNeuronParameters(-2, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f, ALL);},"");
-	EXPECT_DEATH({sim->setNeuronParameters(g0+1, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f, ALL);},"");
-	EXPECT_DEATH({sim->setNeuronParameters(g0, -0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f, ALL);},"");
-	EXPECT_DEATH({sim->setNeuronParameters(g0, 0.02f, -10.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f, ALL);},"");
-	EXPECT_DEATH({sim->setNeuronParameters(g0, 0.02f, 0.0f, -0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f, ALL);},"");
-	EXPECT_DEATH({sim->setNeuronParameters(g0, 0.02f, 0.0f, 0.2f, -10.0f, -65.0f, 0.0f, 8.0f, 0.0f, ALL);},"");
-	EXPECT_DEATH({sim->setNeuronParameters(g0, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, -2.0f, 8.0f, 0.0f, ALL);},"");
-	EXPECT_DEATH({sim->setNeuronParameters(g0, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, -8.0f, 0.0f, ALL);},"");
-	EXPECT_DEATH({sim->setNeuronParameters(g0, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, -10.0f, ALL);},"");
-	EXPECT_DEATH({sim->setNeuronParameters(g0, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f, 2);},"");
-	EXPECT_DEATH({sim->setNeuronParameters(g0, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f, -2);},"");
-
-	if (sim!=NULL)
-		delete sim;
-}
-
 
 //! connect with certain mulSynFast, mulSynSlow and observe connectInfo
 TEST(CORE, connect) {
@@ -165,10 +99,11 @@ TEST(CORE, connect) {
 			for (int i=0; i<4; i++) {
 				sim = new CpuSNN(name,mode?GPU_MODE:CPU_MODE,SILENT,0,nConfig,42);
 
-				int g0=sim->createSpikeGeneratorGroup("spike", 10, EXCITATORY_NEURON, ALL);
-				int g1=sim->createGroup("excit0", 10, EXCITATORY_NEURON, ALL);
+                Grid3D neur(10,1,1);
+				int g0=sim->createSpikeGeneratorGroup("spike", neur, EXCITATORY_NEURON, ALL);
+				int g1=sim->createGroup("excit0", neur, EXCITATORY_NEURON, ALL);
 				sim->setNeuronParameters(g1, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f, ALL);
-				int g2=sim->createGroup("excit1", 10, EXCITATORY_NEURON, ALL);
+				int g2=sim->createGroup("excit1", neur, EXCITATORY_NEURON, ALL);
 				sim->setNeuronParameters(g2, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f, ALL);
 
 				if (type[i]==CONN_RANDOM) typeStr = "random";
@@ -196,6 +131,80 @@ TEST(CORE, connect) {
 		}
 	}
 }
+
+TEST(CORE, getGroupGrid3D) {
+	CARLsim* sim = new CARLsim("Interface.createGroupDeath",CPU_MODE,USER,0,1,42);
+	Grid3D grid(2,3,4);
+	int g1=sim->createSpikeGeneratorGroup("excit", grid, EXCITATORY_NEURON);
+	int g2=sim->createGroup("excit2", grid, EXCITATORY_NEURON);
+	sim->setNeuronParameters(g2, 0.02f, 0.2f, -65.0f, 8.0f);
+	sim->connect(g1,g2,"full",RangeWeight(0.1), 1.0, RangeDelay(1));
+	sim->setupNetwork(); // need SETUP state for this function to work
+
+	for (int g=g1; g<g2; g++) {
+		Grid3D getGrid = sim->getGroupGrid3D(g);
+		EXPECT_EQ(getGrid.x, grid.x);
+		EXPECT_EQ(getGrid.y, grid.y);
+		EXPECT_EQ(getGrid.z, grid.z);
+		EXPECT_EQ(getGrid.N, grid.N);
+	}
+
+	delete sim;
+}
+
+TEST(CORE, getGroupIdFromString) {
+	CARLsim* sim = new CARLsim("Interface.createGroupDeath",CPU_MODE,USER,0,1,42);
+	int g1=sim->createSpikeGeneratorGroup("excit", Grid3D(2,3,4), EXCITATORY_NEURON);
+	int g2=sim->createGroup("bananahama", Grid3D(1,2,3), INHIBITORY_NEURON);
+	sim->setNeuronParameters(g2, 0.02f, 0.2f, -65.0f, 8.0f);
+	sim->connect(g1,g2,"full",RangeWeight(0.1), 1.0, RangeDelay(1));
+	sim->setupNetwork(); // need SETUP state for this function to work
+
+	EXPECT_EQ(sim->getGroupId("excit"), g1);
+	EXPECT_EQ(sim->getGroupId("bananahama"), g2);
+	EXPECT_EQ(sim->getGroupId("invalid group name"), -1); // group not found
+
+	delete sim;
+}
+
+
+// This test creates a group on a grid and makes sure that the returned 3D location of each neuron is correct
+TEST(CORE, getNeuronLocation3D) {
+	CARLsim* sim = new CARLsim("Interface.createGroupDeath",CPU_MODE,USER,0,1,42);
+	Grid3D grid(2,3,4);
+	int g1=sim->createSpikeGeneratorGroup("excit", grid, EXCITATORY_NEURON);
+	int g2=sim->createGroup("excit2", grid, EXCITATORY_NEURON);
+	sim->setNeuronParameters(g2, 0.02f, 0.2f, -65.0f, 8.0f);
+	sim->connect(g1,g2,"full",RangeWeight(0.1), 1.0, RangeDelay(1));
+	sim->setupNetwork(); // need SETUP state for getNeuronLocation3D to work
+
+	// make sure the 3D location that is returned is correct
+	for (int grp=0; grp<=1; grp++) {
+		// do for both spike gen and RS group
+
+		int x=0,y=0,z=0;
+		for (int neurId=grp*grid.N; neurId<(grp+1)*grid.N; neurId++) {
+			Point3D loc = sim->getNeuronLocation3D(neurId);
+			EXPECT_EQ(loc.x, x);
+			EXPECT_EQ(loc.y, y);
+			EXPECT_EQ(loc.z, z);
+
+			x++;
+			if (x==grid.x) {
+				x=0;
+				y++;
+			}
+			if (y==grid.y) {
+				x=0;
+				y=0;
+				z++;
+			}
+		}
+	}
+
+	delete sim;
+}
+
 
 TEST(CORE, setConductancesTrue) {
 	std::string name = "SNN";

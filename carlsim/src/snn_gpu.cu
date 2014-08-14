@@ -2084,7 +2084,6 @@ void CpuSNN::copyNeuronState(network_ptr_t* dest, network_ptr_t* src, cudaMemcpy
 		assert(grpId == -1);
 
 	// Spike Cnt. Firing...
-	CARLSIM_INFO("allcoting nSpikeCnt");
 	if (allocateMem)
 		CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->nSpikeCnt, sizeof(int) * length2));
 	CUDA_CHECK_ERRORS(cudaMemcpy( &dest->nSpikeCnt[ptrPos], &src->nSpikeCnt[ptrPos], sizeof(int) * length2, kind));
@@ -3464,7 +3463,6 @@ void CpuSNN::updateNetwork_GPU(bool resetFiringInfo)
 }
 
 void CpuSNN::printSimSummary() {
-	CARLSIM_DEBUG("printSimSummary()");
 	float etime;
 	if(simMode_ == GPU_MODE) {
 		stopGPUTiming();
@@ -3481,7 +3479,8 @@ void CpuSNN::printSimSummary() {
 		etime = cpuExecutionTime;
 	}
 
-	CARLSIM_INFO("\n********************      %s Simulation Summary      ***************************",
+	CARLSIM_INFO("\n");
+	CARLSIM_INFO("********************      %s Simulation Summary      ***************************",
 		simMode_==GPU_MODE?"GPU":"CPU");
 
 	CARLSIM_INFO("Network Parameters: \n\tnumNeurons = %d (numNExcReg:numNInhReg = %2.1f:%2.1f)\n\tnumSynapses = %d\n\tmaxDelay = %d", numN, 100.0*numNExcReg/numN, 100.0*numNInhReg/numN, postSynCnt, maxDelay_);

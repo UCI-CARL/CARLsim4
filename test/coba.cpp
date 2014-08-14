@@ -26,13 +26,15 @@ TEST(COBA, synRiseTime) {
 			int tdGABAb = rand()%100 + trGABAb + 1; // make sure it's larger than trGABAb
 
 			sim = new CpuSNN(name,mode?GPU_MODE:CPU_MODE,SILENT,0,nConfig,42);
-			int g0=sim->createSpikeGeneratorGroup("inputExc", 1, EXCITATORY_NEURON, ALL);
-			int g1=sim->createGroup("excit", 1, EXCITATORY_NEURON, ALL);
+            Grid3D neur(1);
+            Grid3D neur2(1);
+			int g0=sim->createSpikeGeneratorGroup("inputExc", neur, EXCITATORY_NEURON, ALL);
+			int g1=sim->createGroup("excit", neur2, EXCITATORY_NEURON, ALL);
 			sim->setNeuronParameters(g1, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f, ALL);
 			sim->connect(g0,g1,"full",0.5f,0.5f,1.0f,1,1,0.0f,1.0f,SYN_FIXED);
 
-			int g2=sim->createSpikeGeneratorGroup("inputInh", 1, INHIBITORY_NEURON, ALL);
-			int g3=sim->createGroup("inhib", 1, INHIBITORY_NEURON, ALL);
+			int g2=sim->createSpikeGeneratorGroup("inputInh", neur, INHIBITORY_NEURON, ALL);
+			int g3=sim->createGroup("inhib", neur, INHIBITORY_NEURON, ALL);
 			sim->setNeuronParameters(g3, 0.1f,  0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 2.0f, 0.0f, ALL);
 			sim->connect(g2,g3,"full",-0.5f,-0.5f,1.0f,1,1,0.0f,1.0f,SYN_FIXED);
 
@@ -120,13 +122,14 @@ TEST(COBA, disableSynReceptors) {
 	for (int mode=0; mode<=1; mode++) {
 		for (int nConfig=1; nConfig<=maxConfig; nConfig+=nConfigStep) {
 			sim = new CpuSNN(name,mode?GPU_MODE:CPU_MODE,SILENT,0,nConfig,42);
-
-			int g0=sim->createSpikeGeneratorGroup("spike", nInput, EXCITATORY_NEURON, ALL);
-			int g1=sim->createSpikeGeneratorGroup("spike", nInput, INHIBITORY_NEURON, ALL);
-			grps[0]=sim->createGroup("excitAMPA", nOutput, EXCITATORY_NEURON, ALL);
-			grps[1]=sim->createGroup("excitNMDA", nOutput, EXCITATORY_NEURON, ALL);
-			grps[2]=sim->createGroup("inhibGABAa", nOutput, INHIBITORY_NEURON, ALL);
-			grps[3]=sim->createGroup("inhibGABAb", nOutput, INHIBITORY_NEURON, ALL);
+            Grid3D neurInp(nInput);
+            Grid3D neurOup(nOutput);
+			int g0=sim->createSpikeGeneratorGroup("spike", neurInp, EXCITATORY_NEURON, ALL);
+			int g1=sim->createSpikeGeneratorGroup("spike", neurInp, INHIBITORY_NEURON, ALL);
+			grps[0]=sim->createGroup("excitAMPA", neurOup, EXCITATORY_NEURON, ALL);
+			grps[1]=sim->createGroup("excitNMDA", neurOup, EXCITATORY_NEURON, ALL);
+			grps[2]=sim->createGroup("inhibGABAa", neurOup, INHIBITORY_NEURON, ALL);
+			grps[3]=sim->createGroup("inhibGABAb", neurOup, INHIBITORY_NEURON, ALL);
 
 			sim->setNeuronParameters(grps[0], 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f, ALL);
 			sim->setNeuronParameters(grps[1], 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f, ALL);
