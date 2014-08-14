@@ -752,6 +752,14 @@ int CARLsim::getGroupId(int grpId, int configId) {
 	return snn_->getGroupId(grpId,configId);
 }
 
+int CARLsim::getGroupId(std::string grpName) {
+	std::string funcName = "getGroupId("+grpName+")";
+	UserErrors::assertTrue(carlsimState_ == SETUP_STATE || carlsimState_ == EXE_STATE,
+					UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "SETUP or EXECUTION.");
+
+	return snn_->getGroupId(grpName);
+}
+
 // get group info struct
 //group_info_t CARLsim::getGroupInfo(int grpId, int configId) {
 //	std::stringstream funcName;	funcName << "getConnectInfo(" << grpId << "," << configId << ")";

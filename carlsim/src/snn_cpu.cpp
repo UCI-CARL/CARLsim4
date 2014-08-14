@@ -1516,6 +1516,7 @@ Grid3D CpuSNN::getGroupGrid3D(int grpId) {
 	return Grid3D(grp_Info[grpId].SizeX, grp_Info[grpId].SizeY, grp_Info[grpId].SizeZ);	
 }
 
+// \FIXME the entire concept of this function is ridiculous
 int CpuSNN::getGroupId(int grpId, int configId) {
 	assert(grpId>=0 && grpId<numGrp);
 	assert(configId>=0 && configId<nConfig_);
@@ -1523,6 +1524,17 @@ int CpuSNN::getGroupId(int grpId, int configId) {
 	int cGrpId = (grpId+configId);
 	assert(cGrpId  < numGrp);
 	return cGrpId;
+}
+
+// find ID of group with name grpName
+int CpuSNN::getGroupId(std::string grpName) {
+	for (int grpId=0; grpId<numGrp; grpId++) {
+		if (grp_Info2[grpId].Name.compare(grpName)==0)
+			return grpId;
+	}
+
+	// group not found
+	return -1;
 }
 
 group_info_t CpuSNN::getGroupInfo(int grpId, int configId) {

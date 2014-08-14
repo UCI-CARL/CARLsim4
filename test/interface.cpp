@@ -207,6 +207,7 @@ TEST(Interface, CARLsimState) {
 	EXPECT_DEATH({sim->getConnectionId(0);},"");
 	EXPECT_DEATH({sim->getDelays(0, 1, i, j);},"");
 	EXPECT_DEATH({sim->getGroupId(0);},"");
+	EXPECT_DEATH({sim->getGroupId("hello");},"");
 	EXPECT_DEATH({sim->getGroupStartNeuronId(0);},"");
 	EXPECT_DEATH({sim->getGroupEndNeuronId(0);},"");
 	EXPECT_DEATH({sim->getNeuronLocation3D(0);},"");
