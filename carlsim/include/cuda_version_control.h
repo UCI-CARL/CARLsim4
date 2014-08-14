@@ -3,6 +3,8 @@
  *
  *  Created on: Nov 3, 2013
  *      Author: tingshuc
+ *  Modfied on: May, 27, 2013
+ *      Author: KDC
  */
 
 #ifndef _CUDAVERSIONCONTROL_H_
@@ -24,7 +26,7 @@
 
     #define CUDA_GET_MAXGFLOP_DEVICE_ID cutGetMaxGflopsDeviceId
     #define CUDA_DEVICE_RESET cudaThreadExit
-#elif __CUDA5__
+#elif defined(__CUDA5__) || defined(__CUDA6__)
     #define CUDA_CHECK_ERRORS(x) checkCudaErrors(x)
     #define CUDA_CHECK_ERRORS_MACRO(x) checkCudaErrors(x)
 
@@ -41,6 +43,5 @@
     #define CUDA_GET_MAXGFLOP_DEVICE_ID gpuGetMaxGflopsDeviceId
     #define CUDA_DEVICE_RESET cudaDeviceReset
 #endif
-
 
 #endif /* _CUDAVERSIONCONTROL_H_ */

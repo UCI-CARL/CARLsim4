@@ -53,7 +53,7 @@
 
 #if __CUDA3__
     #include <cutil_inline.h>
-#elif __CUDA5__
+#elif defined(__CUDA5__) || defined(__CUDA6__)
     #include <helper_cuda.h>
 #endif
 

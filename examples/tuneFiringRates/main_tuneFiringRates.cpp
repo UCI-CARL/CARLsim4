@@ -35,11 +35,9 @@
 
 // includes core CARLsim functionality
 #include <carlsim.h>
-// includes the callback function to output spike data to arrays
-#include "../common/writeSpikeToArray.h"
+#include <mtrand.h>
 // include the PTI framework classes and functions
 #include <pti.h>
-
 // TODO: Do away with globals.
 // TODO: put fitness in a separate file.
 
@@ -105,6 +103,10 @@ int main()
 	int inhGroup[NUM_CONFIGS];
 	// poissonRate spiking input pointer
 	PoissonRate* input[NUM_CONFIGS];
+	// create a SpikeInfo pointers
+	SpikeInfo* spikeInfoInput[NUM_CONFIGS];
+	SpikeInfo* spikeInfoExc[NUM_CONFIGS];
+	SpikeInfo* spikeInfoInh[NUM_CONFIGS];
 	
 	// -----------------------------------------------------------------------------
 	// BEGIN PTI initialization
@@ -184,16 +186,16 @@ int main()
 				double initWeight = ptiObj->getParam(indiId,"InputGroup-ExcGroup");
 				double maxWeight = initWeight;
 				// create the connections (with a dummy weight) and grab their connection id
-				snn[configId]->connect(inputGroup[configId],excGroup[configId],"random", initWeight, maxWeight, 0.5f, 1, 1, SYN_FIXED);
+				snn[configId]->connect(inputGroup[configId],excGroup[configId],"random", RangeWeight(0.0,initWeight,maxWeight), 0.5f, RangeDelay(1), SYN_FIXED);
 				initWeight = ptiObj->getParam(indiId,"ExcGroup-ExcGroup");
 				maxWeight = initWeight;
-				snn[configId]->connect(excGroup[configId],excGroup[configId],"random", initWeight, maxWeight, 0.5f, 1, 1, SYN_FIXED);
+				snn[configId]->connect(excGroup[configId],excGroup[configId],"random", RangeWeight(0.0,initWeight,maxWeight), 0.5f, RangeDelay(1), SYN_FIXED);
 				initWeight = ptiObj->getParam(indiId,"ExcGroup-InhGroup");
 				maxWeight = initWeight;
-				snn[configId]->connect(excGroup[configId],inhGroup[configId],"random", initWeight, maxWeight, 0.5f, 1, 1, SYN_FIXED);
+				snn[configId]->connect(excGroup[configId],inhGroup[configId],"random", RangeWeight(0.0,initWeight,maxWeight), 0.5f, RangeDelay(1), SYN_FIXED);
 				initWeight = ptiObj->getParam(indiId,"InhGroup-ExcGroup");
 				maxWeight = initWeight;
-				snn[configId]->connect(inhGroup[configId],excGroup[configId],"random", -1.0f*initWeight,-1.0f*maxWeight, 0.5f, 1, 1, SYN_FIXED);
+				snn[configId]->connect(inhGroup[configId],excGroup[configId],"random", RangeWeight(0.0,initWeight,maxWeight), 0.5f, RangeDelay(1), SYN_FIXED);
 
 				// initialize input
 				input[configId] = new PoissonRate(INPUT_SIZE);
@@ -201,16 +203,15 @@ int main()
 					input[configId]->rates[i]=inputTargetFR;
 				}
 	
+				// set out spike monitors here
+				printf("before assign SpikeInfo objects\n");
+				spikeInfoInput[configId]=snn[configId]->setSpikeMonitor(inputGroup[configId]);
+				spikeInfoExc[configId]=snn[configId]->setSpikeMonitor(excGroup[configId]);
+				spikeInfoInh[configId]=snn[configId]->setSpikeMonitor(inhGroup[configId]);
+				printf("after assign SpikeInfo objects\n");
 				// still have to set the firing rates (need to double check)
 				snn[configId]->setSpikeRate(inputGroup[configId],input[configId]);
 
-				// set log stats 
-				snn[configId]->setLogCycle(1);
-				snn[configId]->setSpikeCounter(excGroup[configId],-1);
-				snn[configId]->setSpikeCounter(inhGroup[configId],-1);
-				
-				// just build the network				
-				snn[configId]->runNetwork(0,0);
 				// -----------------------------------------------------------------------------
 				// END CARLsim initialization
 				// -----------------------------------------------------------------------------
@@ -221,29 +222,27 @@ int main()
 			for(int configId=0; configId < NUM_CONFIGS; configId++, indiId++){
 				// now run the simulations in parallel with these parameters and evaluate them
 				//evaluateFitnessV1(CARLsim **snn[],);
+				// we should start timing here too.
+				printf("before startRecording.\n");
+				spikeInfoInput[configId]->startRecording();
+				spikeInfoExc[configId]->startRecording();
+				spikeInfoInh[configId]->startRecording();
+				printf("after startRecording.\n");
 				// run network for 1 s
 				int runTime = 2;
+				printf("before run.\n");
 				snn[configId]->runNetwork(runTime,0);
-				// evaluate the fitness right here
-				int* excCount = snn[configId]->getSpikeCounter(excGroup[configId]);
-				int* inhCount = snn[configId]->getSpikeCounter(inhGroup[configId]);
-				// count all spikes as a sanity check
-				int excTotalCount = 0;
-				for(int neurId=0;neurId<EXC_SIZE; neurId++)
-					excTotalCount = excTotalCount + excCount[neurId];
-				int inhTotalCount = 0;
-				for(int neurId=0;neurId<INH_SIZE; neurId++)
-					inhTotalCount = inhTotalCount + inhCount[neurId];
-				printf("excTotalCount = %d\n",excTotalCount);
-				printf("inhTotalCount = %d\n",inhTotalCount);
-				double excFR = (double) (*excCount)/((double)EXC_SIZE*runTime);
-				double inhFR = (double) (*inhCount)/((double)INH_SIZE*runTime);
-				printf("excFR = %f Hz\n",excFR);
-				printf("inhFR = %f Hz\n",inhFR);
+				printf("after startRecording.\n");
+				// get the output of our spike monitor
+				float inputFR = spikeInfoInput[configId]->getGrpFiringRate(2,INPUT_SIZE);
+				cout << "inputFR = " << inputFR << " Hz" << endl;
+				float excFR = spikeInfoExc[configId]->getGrpFiringRate(2,EXC_SIZE);
+				cout << "excFR = " << excFR << " Hz" << endl;
+				float inhFR = spikeInfoInh[configId]->getGrpFiringRate(2,INH_SIZE);
+				cout << "inhFR = " << inhFR << " Hz" << endl;
+				
 				fitness[configId]=fabs(excFR-excTargetFR)+fabs(inhFR-inhTargetFR);
 				printf("fitness = %f\n",fitness[configId]);
-				// reset all spike counters
-				snn[configId]->resetSpikeCounter(-1);
 				// associate the fitness values (CARLsim) with individual Id/associated parameter values (EO)
 				ptiObj->setFitness(fitness[configId], indiId);
 				if (snn[configId]!=NULL) 
@@ -252,7 +251,17 @@ int main()
 				if(input[configId]!=NULL)
 					delete input[configId];
 				input[configId]=NULL;
+				// if(spikeInfoInput[configId]!=NULL)
+				// 	delete spikeInfoInput[configId];
+				// spikeInfoInput[configId]=NULL;
+				// if(spikeInfoExc[configId]!=NULL)
+				// 	delete spikeInfoExc[configId];
+				// spikeInfoExc[configId]=NULL;
+				// if(spikeInfoInh[configId]!=NULL)
+				// 	delete spikeInfoInh[configId];
+				// spikeInfoInh[configId]=NULL;
 			}
+			
 			
 		} // end loop over individuals
 	}while(ptiObj->runEA());// this takes care of all termination conditions specified in the EO param files

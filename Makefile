@@ -8,6 +8,11 @@ EO_INSTALL_DIR ?= /opt/eo
 # desired installation absolute path of pti 
 PTI_INSTALL_DIR ?= /opt/pti
 
+# cuda capability major version number
+CUDA_MAJOR_NUM ?= 1
+# cuda capability minor version number
+CUDA_MINOR_NUM ?= 3
+
 # if optional env vars do not exist, assign default values
 # $(OPT_LEVEL): set to 1, 2, or 3 if you want to use optimization.  Default: 0.
 # $(DEBUG_INFO): set to 1 to include debug info, set to 0 to not include 
@@ -26,7 +31,7 @@ CARLSIM_TEST ?= 0
 
 # these variables collect the information from the other modules
 all_targets :=
-carlsim_programs  := 
+carlsim_programs :=
 pti_programs :=
 sources   :=
 libraries := 
@@ -42,19 +47,22 @@ inc_dir = include
 carlsim_dir = carlsim
 lib_dir = libpti
 ex_dir  = examples
+proj_dir = projects
 interface_dir = interface
 test_dir = test
+util_dir = util
+spike_monitor_dir = $(util_dir)/spike_monitor
 
 # location of .cpp files
 vpath %.cpp $(EO_INSTALL_DIR)/src $(EO_INSTALL_DIR)/src/do \
 $(EO_INSTALL_DIR)/src/es $(EO_INSTALL_DIR)/src/utils $(lib_dir) \
-$(ex_dir)/common/ $(carlsim_dir)/src $(interface_dir)/src $(test_dir)
-
+$(ex_dir)/common/ $(carlsim_dir)/src $(interface_dir)/src $(test_dir) \
+$(spike_info_dir)
 # location of .cu files
 vpath %.cu $(carlsim_dir)/src
 # location of .h files
 vpath %.h $(EO_INSTALL_DIR)/src $(inc_dir) $(carlsim_dir)/include \
-	$(ex_dir)/common $(interface_dir)/include $(test_dir) \
+$(ex_dir)/common $(interface_dir)/include $(test_dir) $(spike_info_dir)
 
 # this blank 'all' is required
 all:
@@ -69,7 +77,9 @@ include test/carlsim_tests.mk
 # include all directories in examples
 example_includes := $(addsuffix /examples.mk, $(wildcard examples/*))
 include $(example_includes)
-
+# include all directories in projects
+project_includes := $(addsuffix /projects.mk, $(wildcard $(proj_dir)/*))
+include $(project_includes)
 
 .PHONY: all libraries examples pti_examples clean distclean tests
 all: $(all_targets)
@@ -89,4 +99,4 @@ distclean:
 	$(RM) $(objects) $(carlsim_programs) $(pti_programs) $(libraries) $(output_files)
 
 devtest:
-	@echo $(all_targets)
+	@echo $(CARLSIM_FLAGS) $(all_targets)

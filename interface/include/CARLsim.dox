@@ -1,0 +1,76 @@
+/*!
+ * \mainpage CARLsim - A GPU-accelerated SNN Simulator
+ *
+ * \tableofcontents
+ *
+ * \section intro Introduction
+ * CARLsim is an efficient C/C++-based Spiking Neural Network (SNN) simulator that allows execution on both generic 
+ * x86 CPUs and standard off-the-shelf GPUs. The simulator provides a PyNN-like programming interface, which allows 
+ * for details and parameters to be specified at the synapse, neuron, and network level.
+ *
+ * Currently CARLsim supports four-parameter Izhikevich spiking neurons in combination with current-based (CUBA) and 
+ * conductance-based (COBA) synapses. Also, the simulator provides standard equations for (nearest-neighbor) spike-
+ * timing-dependent plasticity (STDP), short-term plasticity (STP), and homeostatic synaptic scaling. CARLsim now 
+ * includes a parameter tuning interface (PTI) library that utilizes evolutionary algorithms (EAs) to construct 
+ * functional SNNs.
+ *
+ * CARLsim was originally written by Jayram Moorkanikara Nageswaran and Micah Richert. The code is now being 
+ * maintained and extended by Michael Beyeler, Kristofor Carlson, and Ting-Shuo Chou. For a full list of contributors, 
+ * see file AUTHORS.
+ *
+ * <b>Note:</b> These pages, whilst readable by themselves, are designed to be run through the
+ * <a href="http://www.doxygen.com"> Doxygen</a> code documentation engine which builds an entire local
+ * cross-referenced set of docs.
+ *
+ * \section bg Background
+ * The simulator—along with its various releases, computational studies, and sample code—has previously been published 
+ * in the following studies:
+ * - Carlson, K.D., Nageswaran, J.M., Dutt, N., and Krichmar, J.L. (2014). An efficient automated parameter tuning 
+ *   framework for spiking neural networks. Frontiers in Neuroscience 8(10). (CARLsim v2.2)
+ * - Beyeler, M., Richert, M., Dutt, N.D., and Krichmar, J.L. (2014). Efficient spiking neural network model of 
+ *   pattern motion selectivity in visual cortex. Neuroinformatics. (CARLsim v2.1)
+ * - Richert, M., Nageswaran, J.M., Dutt, N., and Krichmar, J.L. (2011). An efficient simulation environment for 
+ *   modeling large-scale cortical processing. Frontiers in Neuroinformatics 5, 1-15. (CARLsim v2.0)
+ * - Nageswaran, J.M., Dutt, N., Krichmar, J.L., Nicolau, A., and Veidenbaum, A.V. (2009). A configurable simulation 
+ *   environment for the efficient simulation of large-scale spiking neural networks on graphics processors. Neural 
+ *   Networks 22, 791-800. (CARLsim v1.0)
+ *
+ * \section ui User Interface
+ * blah.
+ * \subsection The first subsection
+ * \subsection The second subsection
+ *
+ * \section test Regression Suite
+ * We provide test cases to A) test core functionality of CARLsim, to B) test the reproducibility of published results,
+ * and C) to benchmark simulation speed.
+ *
+ * -A) TESTING CORE FUNCTIONALITY
+ * 	-# Test core data structures when some functionality is enabled.
+ *  	For example: Set STP to true for a specific group, check grp_Info to make sure all values are set accordingly.
+ * 	-# Test core data structures when some functionality is disabled.
+ *      For example: Set STP to false for a specific group, check grp_Info to make sure it's disabled.
+ * 	-# Test behavior when values for input arguments are chosen unreasonably.
+ *      For example: Create a group with N=-4 (number of neurons) and expect simulation to die. This is because each
+ *      core function should have assertion statements to prevent the simulation from running unreasonable input values
+ *      In some cases, it makes sense to catch this kind of error in the user interface as well (and display an
+ *      appropriate error message to the user), but these tests should be placed in the UserInterface test case.
+ * 	-# Test behavior of network when run with reasonable values.
+ *      For example: Run a sample network with STP enabled, and check stpu[nid] and stpx[nid] to make sure they behave.
+ *      as expected. You can use the PeriodicSpikeGenerator to be certain of specific spike times and thus run
+ *      reproducible sample networks.
+ * 	-# Test behavior of network when run in CPU mode vs. GPU mode.
+ *      For example: Run a sample network with STP enabled, once in CPU mode and once in GPU mode. Record stpu[nid] and
+ *      stpx[nid], and make sure that both simulation mode give the exact same result (except for some small error
+ *      margin that can account for rounding errors/etc.).
+ *
+ * -B) TESTING PUBLISHED RESULTS
+ *
+ * -C) BENCHMARK TESTS
+ */
+
+ /*!
+  * \page page1 My new page
+  * asd;'asd
+  *
+  * asdklas
+  */

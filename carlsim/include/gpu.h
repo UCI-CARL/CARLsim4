@@ -37,7 +37,7 @@
     // includes, project
     #include "cutil_inline.h"
     #include "cutil_math.h"
-#elif __CUDA5__
+#else
     #include <helper_cuda.h>
 #endif
 

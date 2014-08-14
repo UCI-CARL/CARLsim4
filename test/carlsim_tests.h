@@ -39,6 +39,9 @@
  * Ver 2/21/2014
  */ 
 
+#include <algorithm>		// std::find
+
+
 // FIXME: I added this flag, because as it stands now most CPUvsGPU comparisons fail. And they should, because the
 // order of execution in doSnnSim() and doGPUsim() is really different. No wonder we get, for example, different
 // spike counts in the end.
@@ -90,68 +93,138 @@
  *
  */
 
+#include <vector>
+#include <callback.h>
+#include <callback_core.h>
 
 /// **************************************************************************************************************** ///
 /// COMMON
 /// **************************************************************************************************************** ///
 
-// TODO: these should actually work on the user callback level... so don't inherit from *Core classes, but from the
+// \TODO: these should actually work on the user callback level... so don't inherit from *Core classes, but from the
 // user interface-equivalent...
 
 //! a periodic spike generator (constant ISI) creating spikes at a certain rate
-class PeriodicSpikeGeneratorCore : public SpikeGeneratorCore {
+class PeriodicSpikeGenerator : public SpikeGenerator {
 public:
-	PeriodicSpikeGeneratorCore(float rate) : SpikeGeneratorCore(NULL, NULL){
+	PeriodicSpikeGenerator(float rate, bool spikeAtZero=true) {
 		assert(rate>0);
 		rate_ = rate;	  // spike rate
 		isi_ = 1000/rate; // inter-spike interval in ms
+		spikeAtZero_ = spikeAtZero;
+	}
+
+	unsigned int nextSpikeTime(CARLsim* sim, int grpId, int nid, unsigned int currentTime, unsigned int lastScheduledSpikeTime) {
+//		fprintf(stderr,"currentTime: %u lastScheduled: %u\n",currentTime,lastScheduledSpikeTime);
+		if (spikeAtZero_) {
+			// insert spike at t=0 for each neuron (keep track of neuron IDs to avoid getting stuck in infinite loop)
+			if (std::find(nIdFiredAtZero_.begin(), nIdFiredAtZero_.end(), nid)==nIdFiredAtZero_.end()) {
+				// spike at t=0 has not been scheduled yet for this neuron
+				nIdFiredAtZero_.push_back(nid);
+				return 0;
+			}
+		}
+
+		// periodic spiking according to ISI
+		return lastScheduledSpikeTime+isi_;
+	}
+
+private:
+	float rate_;		// spike rate
+	int isi_;			// inter-spike interval that results in above spike rate
+	std::vector<int> nIdFiredAtZero_; // keep track of all neuron IDs for which a spike at t=0 has been scheduled
+	bool spikeAtZero_; // whether to emit a spike at t=0
+};
+
+//! a periodic spike generator (constant ISI) creating spikes at a certain rate
+//! \TODO \FIXME this one should be gone, use public interface instead
+class PeriodicSpikeGeneratorCore : public SpikeGeneratorCore {
+public:
+	PeriodicSpikeGeneratorCore(float rate, bool spikeAtZero=true) : SpikeGeneratorCore(NULL, NULL){
+		assert(rate>0);
+		rate_ = rate;	  // spike rate
+		isi_ = 1000/rate; // inter-spike interval in ms
+		spikeAtZero_ = spikeAtZero;
 	}
 
 	unsigned int nextSpikeTime(CpuSNN* snn, int grpId, int nid, unsigned int currentTime, unsigned int lastScheduledSpikeTime) {
+		if (spikeAtZero_) {
+			// insert spike at t=0 for each neuron (keep track of neuron IDs to avoid getting stuck in infinite loop)
+			if (std::find(nIdFiredAtZero_.begin(), nIdFiredAtZero_.end(), nid)==nIdFiredAtZero_.end()) {
+				// spike at t=0 has not been scheduled yet for this neuron
+				nIdFiredAtZero_.push_back(nid);
+				return 0;
+			}
+		}
+
+		// periodic spiking according to ISI
 		return lastScheduledSpikeTime+isi_; // periodic spiking according to ISI
 	}
 
 private:
 	float rate_;	// spike rate
 	int isi_;		// inter-spike interval that results in above spike rate
+	std::vector<int> nIdFiredAtZero_; // keep track of all neuron IDs for which a spike at t=0 has been scheduled
+	bool spikeAtZero_; // whether to spike at t=0
 };
 
+class SpecificTimeSpikeGeneratorCore : public SpikeGeneratorCore {
+public:
+	SpecificTimeSpikeGeneratorCore(std::vector<int> spkTimes) : SpikeGeneratorCore(NULL, NULL) {
+		spkTimes_ = spkTimes;
+		size_ = spkTimes.size();
+		currentIndex_ = 0;
+
+	}
+
+	unsigned int nextSpikeTime(CpuSNN* snn, int grpId, int nid, unsigned int currentTime, unsigned int lastScheduledSpikeTime) {
+		return (currentIndex_<size_) ? spkTimes_[currentIndex_++] : 0;
+	}
+
+private:
+	std::vector<int> spkTimes_;
+	int currentIndex_;
+	int size_;
+};
+
+// DEPRECATED: spikeInfo class replaces this functionality.
 
 //! a spike monitor that counts the number of spikes per neuron, and also the total number of spikes
 //! used to test the behavior of SpikeCounter
-class SpikeMonitorPerNeuronCore: public SpikeMonitorCore {
-private:
-	const int nNeur_; // number of neurons in the group
-	int* spkPerNeur_; // number of spikes per neuron
-	long long spkTotal_; // number of spikes in group (across all neurons)
+/* class SpikeMonitorPerNeuronCore: public SpikeMonitorCore { */
+/* private: */
+/* 	const int nNeur_; // number of neurons in the group */
+/* 	int* spkPerNeur_; // number of spikes per neuron */
+/* 	long long spkTotal_; // number of spikes in group (across all neurons) */
 
-public:
-	SpikeMonitorPerNeuronCore(int numNeur) : nNeur_(numNeur), SpikeMonitorCore(NULL, NULL) {
-		// we're gonna count the spikes each neuron emits
-		spkPerNeur_ = new int[nNeur_];
-		memset(spkPerNeur_,0,sizeof(int)*nNeur_);
-		spkTotal_ = 0;
-	}
+/* public: */
+/* 	SpikeMonitorPerNeuronCore(int numNeur) : nNeur_(numNeur), SpikeMonitorCore(NULL, NULL) { */
+/* 		// we're gonna count the spikes each neuron emits */
+/* 		spkPerNeur_ = new int[nNeur_]; */
+/* 		memset(spkPerNeur_,0,sizeof(int)*nNeur_); */
+/* 		spkTotal_ = 0; */
+/* 	} */
 		
-	// destructor, delete all dynamically allocated data structures
-	~SpikeMonitorPerNeuronCore() { delete spkPerNeur_; }
+/* 	// destructor, delete all dynamically allocated data structures */
+/* 	~SpikeMonitorPerNeuronCore() { delete spkPerNeur_; } */
 		
-	int* getSpikes() { return spkPerNeur_; }
-	long long getSpikesTotal() { return spkTotal_; }
+/* 	int* getSpikes() { return spkPerNeur_; } */
+/* 	long long getSpikesTotal() { return spkTotal_; } */
 
-	// the update function counts the spikes per neuron in the current second
-	void update(CpuSNN* s, int grpId, unsigned int* NeuronIds, unsigned int *timeCounts, int timeInterval) {
-		int pos = 0;
-		for (int t=0; t<1000; t++) {
-			for (int i=0; i<timeCounts[t]; i++,pos++) {
-				// turns out id will be enumerated between 0..numNeur_; it is NOT preSynIds[]
-				// or postSynIds[] or whatever...
-				int id = NeuronIds[pos];
-				assert(id>=0); assert(id<nNeur_);
-				spkPerNeur_[id]++;
-				spkTotal_++;
-			}
-		}
-	}
-};
+/* 	// the update function counts the spikes per neuron in the current second */
+/* 	void update(CpuSNN* s, int grpId, unsigned int* NeuronIds, unsigned int *timeCounts) { */
+/* 		int pos = 0; */
+/* 		for (int t=0; t<1000; t++) { */
+/* 			for (int i=0; i<timeCounts[t]; i++,pos++) { */
+/* 				// turns out id will be enumerated between 0..numNeur_; it is NOT preSynIds[] */
+/* 				// or postSynIds[] or whatever... */
+/* 				int id = NeuronIds[pos]; */
+/* 				assert(id>=0); assert(id<nNeur_); */
+/* 				spkPerNeur_[id]++; */
+/* 				spkTotal_++; */
+/* 			} */
+/* 		} */
+/* 	} */
+/* }; */
+
 

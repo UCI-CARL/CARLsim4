@@ -1,4 +1,4 @@
-/* 
+/*
  * Copyright (c) 2014 Regents of the University of California. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -45,7 +45,7 @@
     #include <cuda.h>
     #include <cutil_inline.h>
     #include <cutil_math.h>
-#elif __CUDA5__
+#else
     #include <cuda.h>
     #include <cuda_runtime.h>
     #include "helper_cuda.h"
@@ -63,7 +63,7 @@ PoissonRate::PoissonRate(float* _rates, uint32_t _len, bool _onGPU) {
 
 PoissonRate::PoissonRate(uint32_t _len, bool _onGPU) {
 	if (_onGPU) {
-		CUDA_CHECK_ERRORS(cudaMalloc((void**)&rates, _len * sizeof(float)));
+	    CUDA_CHECK_ERRORS(cudaMalloc((void**)&rates, _len * sizeof(float)));
 	} else {
 		rates = new float[_len];
 	}

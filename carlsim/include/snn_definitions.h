@@ -48,13 +48,6 @@
 // are stored as short int. 
 
 
-
-#ifdef __REGRESSION_TESTING__
-	#define private public
- 	#define protected public
-#endif
-
-
 // FIXME: 
 /////    !!!!!!! EVEN MORE IMPORTANT : IS THIS STILL BEING USED?? !!!!!!!!!!
 
@@ -99,10 +92,18 @@ inline bool isInhibitoryNeuron (unsigned int& nid, unsigned int& numNInhPois, un
 
 // Macros for STP
 // we keep a history of STP values to compute resource change over time
+// there are two problems to solve:
+// 1) parallelism. we update postsynaptic current changes in synapse parallelism, but stpu and stpx need to be updated
+//    only once for each pre-neuron (in neuron parallelism)
+// 2) non-zero delays. as a post-neuron you want the spike to be weighted by what the utility and resource
+//    variables were when pre spiked, not from the time at which the spike arrived at post.
 // the macro is slightly faster than an inline function, but we should consider changing it anyway because
 // it's unsafe
-#define STP_BUF_SIZE 32
-#define STP_BUF_POS(nid,t)  (nid*STP_BUF_SIZE+((t)%STP_BUF_SIZE))
+//#define STP_BUF_SIZE 32
+// \FIXME D is the CpuSNN member variable for the max delay in the network, give it a better name dammit!!
+// we actually need D+1 entries. Say D=1ms. Then to update the current we need u^+ (right after the pre-spike, so
+// at t) and x^- (right before the spike, so at t-1).
+#define STP_BUF_POS(nid,t) ( nid*(maxDelay_+1) + ((t)%(maxDelay_+1)) )
 
 
 // use these macros for logging / error printing
@@ -111,18 +112,19 @@ inline bool isInhibitoryNeuron (unsigned int& nid, unsigned int& numNInhPois, un
 // the case in which you want the two to be different (e.g., developer mode, in which you would like to
 // see all debug info (stdout) but also have it saved to a file
 #define CARLSIM_ERROR(formatc, ...) {	CARLSIM_ERROR_PRINT(fpErr_,formatc,##__VA_ARGS__); \
-										CARLSIM_DEBUG_PRINT(fpLog_,formatc,##__VA_ARGS__); }
+										CARLSIM_DEBUG_PRINT(fpLog_,"ERROR",formatc,##__VA_ARGS__); }
 #define CARLSIM_WARN(formatc, ...) {	CARLSIM_WARN_PRINT(fpErr_,formatc,##__VA_ARGS__); \
-										CARLSIM_DEBUG_PRINT(fpLog_,formatc,##__VA_ARGS__); }
-#define CARLSIM_INFO(formatc, ...) {	CARLSIM_INFO_PRINT(fpOut_,formatc,##__VA_ARGS__); \
-										CARLSIM_DEBUG_PRINT(fpLog_,formatc,##__VA_ARGS__); }
-#define CARLSIM_DEBUG(formatc, ...) {	CARLSIM_DEBUG_PRINT(fpDeb_,formatc,##__VA_ARGS__); \
-										CARLSIM_DEBUG_PRINT(fpLog_,formatc,##__VA_ARGS__); }
+										CARLSIM_DEBUG_PRINT(fpLog_,"WARN",formatc,##__VA_ARGS__); }
+#define CARLSIM_INFO(formatc, ...) {	CARLSIM_INFO_PRINT(fpInf_,formatc,##__VA_ARGS__); \
+										CARLSIM_DEBUG_PRINT(fpLog_,"INFO",formatc,##__VA_ARGS__); }
+#define CARLSIM_DEBUG(formatc, ...) {	CARLSIM_DEBUG_PRINT(fpDeb_,"DEBUG",formatc,##__VA_ARGS__); \
+										CARLSIM_DEBUG_PRINT(fpLog_,"DEBUG",formatc,##__VA_ARGS__); }
 
-#define CARLSIM_ERROR_PRINT(fp, formatc, ...) fprintf(fp,"\033[31;1m[ERROR %s:%d] " formatc "\033[0m \n",__FILE__,__LINE__,##__VA_ARGS__)
-#define CARLSIM_WARN_PRINT(fp, formatc, ...) fprintf(fp,"\033[33;1m[WARNING %s:%d] " formatc "\033[0m \n",__FILE__,__LINE__,##__VA_ARGS__)
-#define CARLSIM_INFO_PRINT(fp, formatc, ...) fprintf(fp,formatc "\n",##__VA_ARGS__)
-#define CARLSIM_DEBUG_PRINT(fp, formatc, ...) fprintf(fp,"[DEBUG %s:%d] " formatc "\n",__FILE__,__LINE__,##__VA_ARGS__)
+// cast to FILE* in case we're getting a const FILE* in
+#define CARLSIM_ERROR_PRINT(fp, formatc, ...) fprintf((FILE*)fp,"\033[31;1m[ERROR %s:%d] " formatc "\033[0m \n",__FILE__,__LINE__,##__VA_ARGS__)
+#define CARLSIM_WARN_PRINT(fp, formatc, ...) fprintf((FILE*)fp,"\033[33;1m[WARNING %s:%d] " formatc "\033[0m \n",__FILE__,__LINE__,##__VA_ARGS__)
+#define CARLSIM_INFO_PRINT(fp, formatc, ...) fprintf((FILE*)fp,formatc "\n",##__VA_ARGS__)
+#define CARLSIM_DEBUG_PRINT(fp, type, formatc, ...) fprintf((FILE*)fp,"[" type " %s:%d] " formatc "\n",__FILE__,__LINE__,##__VA_ARGS__)
 
 										
 

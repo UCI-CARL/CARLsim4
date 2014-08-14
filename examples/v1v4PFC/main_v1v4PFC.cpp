@@ -588,9 +588,6 @@ int main()
 
 	s.connect(gV4oi, gV4o, new connectV4oitoV4o(inhibScale,-0.01*2), SYN_FIXED,1000,3000);
 
-
-	// show log every 1 sec
-	s.setLogCycle(1);
 	s.setConductances(true,5,150,6,150);
 	s.setSTDP(ALL, false);
 	s.setSTP(ALL,false);
@@ -663,13 +660,7 @@ int main()
 		s.runNetwork(0,frameDur);
 
 		if (i==1) {
-			FILE* nid = fopen("examples/v1v4PFC/results/net.dat","wb");
-			if (nid==NULL) {
-				printf("ERROR: could not open network file\n");
-				exit(3);
-			}
-			s.writeNetwork(nid);
-			fclose(nid);
+			s.saveSimulation("examples/v1v4PFC/results/net.dat", true);
 		}
 	}
 	fclose(fid);

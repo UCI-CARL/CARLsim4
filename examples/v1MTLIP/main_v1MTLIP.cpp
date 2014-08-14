@@ -36,7 +36,7 @@
  *
  * CARLsim available from http://socsci.uci.edu/~jkrichma/CARL/CARLsim/
  * Ver 3/22/14
- */ 
+ */
 #include <carlsim.h>
 #include <mtrand.h>
 #include <string.h>
@@ -122,7 +122,7 @@ float fast_exp(float x) {
 	if (fast_exp_buf[0] == -1) {
 		for (int i=0;i<FAST_EXP_BUF_SIZE;i++)
 			fast_exp_buf[i] = expf(-2.0*i*FAST_EXP_MAX_STD/FAST_EXP_BUF_SIZE);
-	}	
+	}
 	x = -x;
 	return (x<FAST_EXP_MAX_STD)?fast_exp_buf[(int)(x/FAST_EXP_MAX_STD*FAST_EXP_BUF_SIZE)]:0;
 }
@@ -254,7 +254,7 @@ public:
 	int standDev;
 	float (*proj)[8];
 	bool usePosWts;
-	
+
 	void connect(CARLsim* net, int srcGrp, int i, int destGrp, int j, float& weight, float& maxWt, float& delay, bool& connected)
 	{
 		// pre (V1): get x,y coordinates, index of the space-time filter, and scale (0-2)
@@ -276,7 +276,7 @@ public:
 		int gaussY = abs(round(mtY-v1Y));
 		float gauss = ((gaussX<poolCDSsz)?poolCDSfilt[gaussX]:0.0f) * ((gaussY<poolCDSsz)?poolCDSfilt[gaussY]:0.0f);
 		bool connectGauss = v1X==mtX && v1Y==mtY;
-		
+
 		if (usePosWts) {
 			// use only the positive weights in motionProj[]
 			connected = connectGauss && (proj[spaceTimeInd][dir]>0);
@@ -287,7 +287,7 @@ public:
 			connected = connectGauss && (proj[spaceTimeInd][dir]<0);
 			weight = -proj[spaceTimeInd][dir]*weightScale;
 		}
-	
+
 		delay = 1;
 	}
 };
@@ -304,7 +304,7 @@ public:
 	float weightScale;
 	int standDev;
 	bool usePosWts;
-	
+
 	void connect(CARLsim* net, int srcGrp, int i, int destGrp, int j, float& weight, float& maxWt, float& delay, bool& connected)
 	{
 		int preX = i%(nrX);
@@ -352,7 +352,7 @@ public:
 
 	float weightScale;
 	int standDev;
-	
+
 	void connect(CARLsim* net, int srcGrp, int i, int destGrp, int j, float& weight, float& maxWt, float& delay, bool& connected)
 	{
 		int preX = i%(nrX);
@@ -390,7 +390,7 @@ public:
 	int standDev;
 	float weightScale;
 	bool stayWithinPool;
-	
+
 	void connect(CARLsim* net, int srcGrp, int i, int destGrp, int j, float& weight, float& maxWt, float& delay, bool& connected)
 	{
 		int preX = i%(nrX);
@@ -447,7 +447,7 @@ public:
 	int nrYpost;
 	float weight;
 	bool stayWithinPool;
-	
+
 	void connect(CARLsim* net, int srcGrp, int i, int destGrp, int j, float& weight, float& maxWt, float& delay, bool& connected)
 	{
 		// wrap around
@@ -476,7 +476,7 @@ public:
 
 	int num;
 	float weightScale;
-	
+
 	void connect(CARLsim* net, int srcGrp, int i, int destGrp, int j, float& weight, float& maxWt, float& delay, bool& connected)
 	{
 		int MTdir = i/(nrX*nrY);
@@ -498,7 +498,7 @@ public:
 
 	int num, numi;
 	float weightScale;
-	
+
 	void connect(CARLsim* net, int srcGrp, int i, int destGrp, int j, float& weight, float& maxWt, float& delay, bool& connected)
 	{
 		int PFCidir = i/numi;
@@ -522,13 +522,13 @@ int main()
 	// -------------------------------------------------------------------------------------------------------------- //
 	MTRand	      getRand(210499257);
 	time_t		  timer_start,timer_build,timer_end;
-	
+
 	time(&timer_start);
-	
+
 	// at the beginning of this file, set the experiment to run
 	// expected format of video: R1 G1 B1 R2 G2 B2 ... e[0,255]
 	#if defined RUN_DIRECTION_TUNING
-	char loadVideo[] 	 = "examples/v1MTLIP/videos/mkGratingPlaid_ctrst0.3_32x32x2400.dat";	
+	char loadVideo[] 	 = "examples/v1MTLIP/videos/mkGratingPlaid_ctrst0.3_32x32x2400.dat";
 	int vidLen			 = 2400; // number of frames
 	#elif defined RUN_SPEED_TUNING
 	char loadVideo[]	 = "examples/v1MTLIP/videos/mkBarSpeed_ctrst0.2_32x32x7520.dat";
@@ -545,8 +545,8 @@ int main()
 	printf("ERROR: NO EXPERIMENT SELECTED\n");
 	exit(1);
 	#endif
-		
-	
+
+
 	int startAtFrame	   = 0;                           // at which frame of movie to start
 	std::string saveFolder = "examples/v1MTLIP/results/"; // where to store all files
 	bool storeNetwork	   = false;	                      // store network? at beginning and end
@@ -613,10 +613,7 @@ int main()
 	snn.setNeuronParameters(gLIP, 0.02f, 0.2f, -65.0f, 8.0f);
 	snn.setNeuronParameters(gLIPi, 0.1f,  0.2f, -65.0f, 2.0f);
 
-
-	// show log every 1 sec
-	snn.setLogCycle(1);
-	snn.setConductances(true,5,150,6,150);	
+	snn.setConductances(true,5,150,6,150);
 	snn.setSTDP(ALL,false);
 	snn.setSTP(ALL,false);
 
@@ -653,9 +650,10 @@ int main()
 	snn.connect(gV1ME, gMT2CDSinh, cV1MT2CDSi, SYN_FIXED,1000,3000);
 	snn.connect(gV1ME, gMT3CDSinh, cV1MT3CDSi, SYN_FIXED,1000,3000);
 
-	float wt_MTi_MT1 = -synScale*15;
-	float wt_MTi_MT2 = -synScale*15;
-	float wt_MTi_MT3 = -synScale*15;
+    // change these values to be positive as CARLsim uses positive values for weights -- KDC
+    float wt_MTi_MT1 = synScale*15;
+	float wt_MTi_MT2 = synScale*15;
+	float wt_MTi_MT3 = synScale*15;
 	snn.connect(gMT1CDSinh, gMT1CDS, "one-to-one", wt_MTi_MT1, wt_MTi_MT1, 1.0, 1, 1, SYN_FIXED);
 	snn.connect(gMT2CDSinh, gMT2CDS, "one-to-one", wt_MTi_MT2, wt_MTi_MT2, 1.0, 1, 1, SYN_FIXED);
 	snn.connect(gMT3CDSinh, gMT3CDS, "one-to-one", wt_MTi_MT3, wt_MTi_MT3, 1.0, 1, 1, SYN_FIXED);
@@ -699,7 +697,8 @@ int main()
 	// tuned normalization
 	float wt_MT_MTpattInh_tunedNorm = synScale*5.0;
 	snn.connect(gMT1CDS, gMT1PDSinh, "one-to-one", wt_MT_MTpattInh_tunedNorm, wt_MT_MTpattInh_tunedNorm, 1.0, 1, 1, SYN_FIXED);
-	float wt_MTpattInh_MTpatt = -synScale*15.0;
+    // changed from negative to positive as CARLsim expects positive weights now. -- KDC
+    float wt_MTpattInh_MTpatt = synScale*15.0;
 	snn.connect(gMT1PDSinh, gMT1PDS, "one-to-one", wt_MTpattInh_MTpatt, wt_MTpattInh_MTpatt, 1.0, 1, 1, SYN_FIXED);
 
 	connectMTtoLIP* cMTLIP = new connectMTtoLIP(40,synScale*1.5);
@@ -749,7 +748,7 @@ int main()
 	}
 
 	// initialize the GPU/network, run on device with index ithGPU
-	snn.setupNetwork();	
+	snn.setupNetwork();
 	time(&timer_build);
 
 	PoissonRate me(nrX*nrY*28*3,onGPU);
@@ -777,18 +776,12 @@ int main()
 
 	// store network if bool is set
 	if (storeNetwork) {
-		nid = fopen((saveFolder+"net.dat").c_str(),"wb");
-		if (nid==NULL) {
-			printf("ERROR: could not open network file\n");
-			exit(4);
-		}
-		snn.writeNetwork(nid);
-		fclose(nid);
+		snn.saveSimulation(saveFolder+"net.dat", true);
 	}
 
 	fclose(fid); // close input video file
 	printf("DONE %s\n",saveFolder.c_str());
-	
+
 	time(&timer_end);
 
 	freeAllCUDA();
@@ -809,7 +802,7 @@ int main()
 	delete cMTLIP;
 	delete cMTLIPi;
 	delete cLIPiLIP;
-	
+
 	printf("Time to build: %.f seconds\n",difftime(timer_build,timer_start));
 	printf("Time to run: %.f seconds\n",difftime(timer_end,timer_build));
 }

@@ -36,7 +36,7 @@
  *
  * CARLsim available from http://socsci.uci.edu/~jkrichma/CARLsim/
  * Ver 4/7/2014
- */ 
+ */
 
 #ifndef _SNN_DATASTRUCTURES_H_
 #define _SNN_DATASTRUCTURES_H_
@@ -45,7 +45,7 @@
 	#include <cuda.h>
 	#include <cutil_inline.h>
 	#include <cutil_math.h>
-#elif __CUDA5__
+#else
 	#include <cuda.h>
 	#include <cuda_runtime.h>
 	#include <helper_cuda.h>
@@ -54,7 +54,6 @@
 	#include <helper_math.h>
 #endif
 
- 
 //! connection types, used internally (externally it's a string)
 enum conType_t { CONN_RANDOM, CONN_ONE_TO_ONE, CONN_FULL, CONN_FULL_NO_DIRECT, CONN_USER_DEFINED, CONN_UNKNOWN};
 
@@ -74,12 +73,12 @@ typedef struct {
  *	This structure contains network information that is required for GPU simulation.
  *	The data in this structure are copied to device memory when running GPU simulation.
  *	\sa CpuSNN
- */ 
+ */
 typedef struct network_info_s  {
 	size_t			STP_Pitch;		//!< numN rounded upwards to the nearest 256 boundary
 	unsigned int	numN;
 	unsigned int	numPostSynapses;
-	unsigned int	D;
+	unsigned int	maxDelay;
 	unsigned int	numNExcReg;
 	unsigned int	numNInhReg;
 	unsigned int	numNReg;
@@ -103,7 +102,7 @@ typedef struct network_info_s  {
 	bool 			sim_with_homeostasis;
 	bool 			sim_with_stp;
 	float 			stdpScaleFactor;
-	float 			wtChangeDecay; //!< the wtChange decay 
+	float 			wtChangeDecay; //!< the wtChange decay
 
 	bool 			sim_with_NMDA_rise;	//!< a flag to inform whether to compute NMDA rise time
 	bool 			sim_with_GABAb_rise;	//!< a flag to inform whether to compute GABAb rise time
@@ -200,7 +199,7 @@ typedef struct network_ptr_s  {
 	int3*	groupIdInfo;			//!< .x , .y: the start and end index of neurons in a group, .z: gourd id, used for group Id calculations
 	short int*	synIdLimit;			//!<
 	float*	synMaxWts;				//!<
-	unsigned int*	nSpikeCnt;
+	int*	nSpikeCnt;
 
 	int** spkCntBuf; //!< for copying 2D array to GPU (see CpuSNN::allocateSNN_GPU)
 	int* spkCntBufChild[MAX_GRP_PER_SNN]; //!< child pointers for above
@@ -232,6 +231,9 @@ typedef struct group_info_s
 	int			EndN;
 	unsigned int	Type;
 	int			SizeN;
+    int         SizeX;
+    int         SizeY;
+    int         SizeZ;
 	int			NumTraceN;
 	short int  	MaxFiringRate; //!< this is for the monitoring mechanism, it needs to know what is the maximum firing rate in order to allocate a buffer big enough to store spikes...
 	int			SpikeMonitorId;		//!< spike monitor id
@@ -243,7 +245,7 @@ typedef struct group_info_s
 	uint32_t 	SliceUpdateTime;
 	int 		FiringCount1sec;
 	int 		numPostSynapses;
-	int 		numPreSynapses;
+	int 		numPreSynapses; 
 	bool 		isSpikeGenerator;
 	bool 		WithSTP;
 	bool 		WithSTDP;
@@ -256,6 +258,8 @@ typedef struct group_info_s
 	int			Noffset;
 	int8_t		MaxDelay;
 
+	long int    lastSTPupdate;
+	float 		STP_A;
 	float		STP_U;
 	float		STP_tau_u_inv;
 	float		STP_tau_x_inv;
@@ -274,7 +278,7 @@ typedef struct group_info_s
 	float 	avgTimeScale_decay;
 	float	avgTimeScaleInv;
 	float	homeostasisScale;
-	
+
 	// parameters of neuromodulator
 	float		baseDP;		//!< baseline concentration of Dopamine
 	float		base5HT;	//!< baseline concentration of Serotonin
@@ -285,6 +289,8 @@ typedef struct group_info_s
 	float		decayACh;		//!< decay rate for Acetylcholine
 	float		decayNE;		//!< decay rate for Noradrenaline
 
+	bool 		writeSpikesToFile; 	//!< whether spikes should be written to file (needs SpikeMonitorId>-1)
+	bool 		writeSpikesToArray;	//!< whether spikes should be written to file (needs SpikeMonitorId>-1)
 	SpikeGeneratorCore*	spikeGen;
 	bool		newUpdates;  //!< FIXME this flag has mixed meaning and is not rechecked after the simulation is started
 } group_info_t;
