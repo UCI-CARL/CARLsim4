@@ -109,7 +109,7 @@ int main()
 	float TAU_LTD = 20.0f;
 
 	// create a network
-	CARLsim sim("random",GPU_MODE,USER,0,1,42);
+	CARLsim sim("dastdp",GPU_MODE,USER,0,1,42);
 
 	g1=sim.createGroup("excit", NUM_NEURON, EXCITATORY_NEURON);
 	sim.setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f);
