@@ -152,7 +152,7 @@ short int CARLsim::connect(int grpId1, int grpId2, const std::string& connType, 
 	UserErrors::assertTrue(grpId2!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName, grpId2str.str());
 	UserErrors::assertTrue(!isPoissonGroup(grpId2), UserErrors::WRONG_NEURON_TYPE, funcName, grpId2str.str() +
 		" is PoissonGroup, connect");
-	UserErrors::assertTrue(wt.max>0, UserErrors::MUST_BE_POSITIVE, funcName, "wt.max");
+	UserErrors::assertTrue(wt.max>=0, UserErrors::CANNOT_BE_NEGATIVE, funcName, "wt.max");
 	UserErrors::assertTrue(wt.min>=0, UserErrors::CANNOT_BE_NEGATIVE, funcName, "wt.min");
 	UserErrors::assertTrue(wt.init>=0, UserErrors::CANNOT_BE_NEGATIVE, funcName, "wt.init");
 	UserErrors::assertTrue(synWtType==SYN_PLASTIC || synWtType==SYN_FIXED && wt.init==wt.max,
@@ -857,6 +857,22 @@ int CARLsim::getNumPostSynapses() {
 
 	return snn_->getNumPostSynapses(); }
 
+
+GroupSTDPInfo_t CARLsim::getGroupSTDPInfo(int grpId, int configId) {
+	std::string funcName = "getGroupSTDPInfo()";
+	//UserErrors::assertTrue(carlsimState_ == SETUP_STATE || carlsimState_ == EXE_STATE,
+	//				UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, "SETUP or EXECUTION.");
+
+	return snn_->getGroupSTDPInfo(grpId, configId);
+}
+
+GroupNeuromodulatorInfo_t CARLsim::getGroupNeuromodulatorInfo(int grpId, int configId) {
+	std::string funcName = "getGroupNeuromodulatorInfo()";
+	//UserErrors::assertTrue(carlsimState_ == SETUP_STATE || carlsimState_ == EXE_STATE,
+	//				UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, "SETUP or EXECUTION.");
+
+	return snn_->getGroupNeuromodulatorInfo(grpId, configId);
+}
 
 uint64_t CARLsim::getSimTime() { return snn_->getSimTime(); }
 uint32_t CARLsim::getSimTimeSec() { return snn_->getSimTimeSec(); }

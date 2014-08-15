@@ -235,7 +235,7 @@ void SpikeMonitorCore::print(bool printSpikeTimes) {
 #if (WIN32 || WIN64)
 				_snprintf(times, 10, "%8d", spkVector_[i][j]);
 #else
-				_snprintf(times, 10, "%8d", spkVector_[i][j]);
+				snprintf(times, 10, "%8d", spkVector_[i][j]);
 #endif
 				strcat(buffer, times);
 				if (j%dispSpkTimPerRow == dispSpkTimPerRow-1 && j<nSpk-1) {

@@ -13,6 +13,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "random", "examples\random\r
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "util", "util\util.vcxproj", "{D85AA03B-0843-4389-845A-BF317C3E32AC}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "dastdp", "examples\dastdp\dastdp.vcxproj", "{A1C5FD96-3545-491D-81FA-64DF07F6FB82}"
+EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "carlsim_tests", "test\carlsim_tests.vcxproj", "{D55C5CBD-B843-4DF9-BB1E-683E2D78E9E1}"
 EndProject
 Global
@@ -73,6 +75,18 @@ Global
 		{D85AA03B-0843-4389-845A-BF317C3E32AC}.Release|Win32.Build.0 = Release|Win32
 		{D85AA03B-0843-4389-845A-BF317C3E32AC}.Release|x64.ActiveCfg = Release|x64
 		{D85AA03B-0843-4389-845A-BF317C3E32AC}.Release|x64.Build.0 = Release|x64
+		{A1C5FD96-3545-491D-81FA-64DF07F6FB82}.Debug|Mixed Platforms.ActiveCfg = Debug|Win32
+		{A1C5FD96-3545-491D-81FA-64DF07F6FB82}.Debug|Mixed Platforms.Build.0 = Debug|Win32
+		{A1C5FD96-3545-491D-81FA-64DF07F6FB82}.Debug|Win32.ActiveCfg = Debug|Win32
+		{A1C5FD96-3545-491D-81FA-64DF07F6FB82}.Debug|Win32.Build.0 = Debug|Win32
+		{A1C5FD96-3545-491D-81FA-64DF07F6FB82}.Debug|x64.ActiveCfg = Debug|x64
+		{A1C5FD96-3545-491D-81FA-64DF07F6FB82}.Debug|x64.Build.0 = Debug|x64
+		{A1C5FD96-3545-491D-81FA-64DF07F6FB82}.Release|Mixed Platforms.ActiveCfg = Release|Win32
+		{A1C5FD96-3545-491D-81FA-64DF07F6FB82}.Release|Mixed Platforms.Build.0 = Release|Win32
+		{A1C5FD96-3545-491D-81FA-64DF07F6FB82}.Release|Win32.ActiveCfg = Release|Win32
+		{A1C5FD96-3545-491D-81FA-64DF07F6FB82}.Release|Win32.Build.0 = Release|Win32
+		{A1C5FD96-3545-491D-81FA-64DF07F6FB82}.Release|x64.ActiveCfg = Release|x64
+		{A1C5FD96-3545-491D-81FA-64DF07F6FB82}.Release|x64.Build.0 = Release|x64
 		{D55C5CBD-B843-4DF9-BB1E-683E2D78E9E1}.Debug|Mixed Platforms.ActiveCfg = Debug|Win32
 		{D55C5CBD-B843-4DF9-BB1E-683E2D78E9E1}.Debug|Mixed Platforms.Build.0 = Debug|Win32
 		{D55C5CBD-B843-4DF9-BB1E-683E2D78E9E1}.Debug|Win32.ActiveCfg = Debug|Win32
