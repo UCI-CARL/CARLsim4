@@ -215,7 +215,7 @@ struct RangeDelay {
  *                               is inhibitory: all weights will be in range [-0.2,0.0], and wt.init=0.0.
  */
 struct RangeWeight {
-	RangeWeight(double _val) : init(_val), max(_val) {}
+	RangeWeight(double _val) : init(_val), max(_val), min(0) {}
 	RangeWeight(double _min, double _max) : min(_min), init(_min), max(_max) {
 		UserErrors::assertTrue(_min<=_max, UserErrors::CANNOT_BE_LARGER, "RangeWeight", "minWt", "maxWt");
 	}

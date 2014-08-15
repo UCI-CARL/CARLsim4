@@ -1,5 +1,5 @@
+#include "gtest/gtest.h"
 #include <snn.h>
-
 #include "carlsim_tests.h"
 
 // TODO: I should probably use a google tests figure for this to reduce the
@@ -300,8 +300,8 @@ TEST(SPIKEMON, clear){
 		sim->connect(inputGroup,g1,"full", RangeWeight(initWeight), 1.0f, RangeDelay(1), SYN_FIXED);
 		sim->connect(inputGroup,g2,"full", RangeWeight(initWeight), 1.0f, RangeDelay(1), SYN_FIXED);
 		sim->connect(g1,g2,"full", RangeWeight(initWeight), 1.0f, RangeDelay(1), SYN_FIXED);
-
 		SpikeMonitor* spikeMonG1 = sim->setSpikeMonitor(g1);
+
 		sim->setupNetwork();
 
 		sim->setSpikeRate(inputGroup,input);
@@ -398,8 +398,11 @@ TEST(SPIKEMON, spikeTimes) {
 			for (int j=0; j<spkVector[i].size(); j++)
 				EXPECT_EQ(spkVector[i][j] % isi, 0);
 
-
+#if (WIN32 || WIN64)
+		system("del spkG0.dat");
+#else
 		system("rm -rf spkG0.dat");
+#endif
 		if (inputArray!=NULL) delete[] inputArray;
 		delete spkGen;
 		delete sim;
@@ -491,8 +494,13 @@ TEST(SPIKEMON, getGroupFiringRate){
 		EXPECT_EQ(spikeMonG1->getPopNumSpikes(), g1Size/2);
 		EXPECT_FLOAT_EQ(spikeMonG1->getPopMeanFiringRate(), g1Size/(2.0*GRP_SIZE) * 1000.0/(runTimeMsOn+2*runTimeMsOff));
 
+#if (WIN32 || WIN64)
+		system("del spkInputGrp.dat");
+		system("del spkG1Grp.dat");
+#else
 		system("rm -rf spkInputGrp.dat");
 		system("rm -rf spkG1Grp.dat");
+#endif
 
 		if (inputArray!=NULL) delete[] inputArray;
 		if (g1Array!=NULL) delete[] g1Array;
@@ -528,8 +536,13 @@ TEST(SPIKEMON, getMaxMinNeuronFiringRate){
 		}
 		sim->setSpikeRate(inputGroup,input);
 
+#if (WIN32 || WIN64)
+		system("del spkInputGrp.dat");
+		system("del spkG1Grp.dat");
+#else
 		system("rm -rf spkInputGrp.dat");
 		system("rm -rf spkG1Grp.dat");
+#endif
 		SpikeMonitor* spikeMonInput = sim->setSpikeMonitor(inputGroup,"spkInputGrp.dat",0);
 		SpikeMonitor* spikeMonG1 = sim->setSpikeMonitor(g1,"spkG1Grp.dat",0);
 		

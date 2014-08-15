@@ -1,8 +1,10 @@
+#include "gtest/gtest.h"
 #include <snn.h>
-
 #include "carlsim_tests.h"
 
-
+#if (WIN32 || WIN64)
+#include <Windows.h>
+#endif
 //! This test assures that the conductance peak occurs as specified by tau_rise and tau_decay, and that the peak is
 //! equal to the specified weight value
 TEST(COBA, synRiseTime) {
@@ -13,11 +15,22 @@ TEST(COBA, synRiseTime) {
 
 	float abs_error = 0.05; // five percent error for wt
 
+#if (WIN32 || WIN64)
+	HANDLE hMutex = CreateMutex( 
+					NULL, // default security attributes
+					FALSE, // initially not owned
+					NULL);
+#else
 	pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
+#endif
 
 	for (int mode=0; mode<=1; mode++) {
 		for (int nConfig=1; nConfig<=maxConfig; nConfig+=nConfigStep) {
+#if (WIN32 || WIN64)
+			WaitForSingleObject(hMutex, INFINITE);
+#else
 			pthread_mutex_lock(&lock);
+#endif
 			int tdAMPA  = rand()%100 + 1;
 			int trNMDA  = rand()%100 + 1;
 			int tdNMDA  = rand()%100 + trNMDA + 1; // make sure it's larger than trNMDA
@@ -80,8 +93,11 @@ TEST(COBA, synRiseTime) {
 
 			delete spk1;
 			delete sim;
-
+#if (WIN32 || WIN64)
+			ReleaseMutex(hMutex);
+#else
 			pthread_mutex_unlock(&lock);
+#endif
 		}
 	}
 }
