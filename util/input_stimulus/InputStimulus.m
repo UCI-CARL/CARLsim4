@@ -1,18 +1,21 @@
 classdef InputStimulus < handle
     % IS = InputStimulus(varargin) creates a new instance of class
-    % VisualStimulus.
+    % InputStimulus.
     %
-    % IS = VisualStimulus(width,height,mode) initializes an empty VisualStimulus
+    % IS = InputStimulus(width,height,mode) initializes an empty InputStimulus
     % object of canvas size width*height and a given image mode. width and
     % height will be rounded to the nearest integer (number of pixels). Image
     % mode can be either 'gray' (grayscale) or 'rgb'.
     %
-    % IS = VisualStimulus(width,height) initializes an empty VisualStimulus
+    % IS = InputStimulus(width,height) initializes an empty InputStimulus
     % object of canvas size width*height in grayscale mode.
     %
-    % IS = VisualStimulus(fileName) loads a VisualStimulus object from file.
+    % IS = InputStimulus(width,height,'rgb') initializes an empty InputStimulus
+    % object of canvas size width*height in rgb mode.
+    %
+    % IS = InputStimulus(fileName) loads an InputStimulus object from file.
     % fileName must be a valid relative/absolute path to a binary file that has
-    % been saved using method VisualStimulus.saveToFile.
+    % been saved using method InputStimulus.saveToFile.
     %
     % Version 8/14/14
     % Author: Michael Beyeler <mbeyeler@uci.edu>
@@ -818,6 +821,17 @@ classdef InputStimulus < handle
             if nargin<3,frames=1:this.length;end
             if nargin<2,fileName='movie.avi';end
             
+            if ~isnumeric(frames) || ~isvector(frames)
+                error('Must specify a vector of frames')
+            end
+            if sum(frames>this.length)>0 || sum(frames<1)>0
+                error(['Specified frames must be in the range [1,' ...
+                    num2str(this.length) ']'])
+            end
+            if ~isnumeric(fps) || fps<=0
+                error('Invalid frame rate. fps must be an integer > 0.')
+            end
+            
             set(gcf,'color',bgColor);
             if sum(winSize>0)==2
                 set(gcf,'Position',[100 100 winSize]);
@@ -842,7 +856,7 @@ classdef InputStimulus < handle
         end
 
         function saveToFile(this, fileName)
-            % IS.saveToFile(fileName) saves a VisualStimulus object to fileName.
+            % IS.saveToFile(fileName) saves a InputStimulus object to fileName.
             % Later the stimulus can be loaded by creating a new object such as
             % IS = InputStimulus(fileName).
             %
@@ -976,13 +990,13 @@ classdef InputStimulus < handle
         end
         
         function privLoadFromFile(this, fileName, loadHeaderOnly)
-            % Private method to load a VisualStimulus object from fileName.
+            % Private method to load a InputStimulus object from fileName.
             % This file must have been created using method
-            % VisualStimulus.saveToFile.
+            % InputStimulus.saveToFile.
             % Make sure to have read access to the specified file.
             %
             % FILENAME       - relative or absolute path to a binary file
-            %                  containing a VisualStimulus object.
+            %                  containing a InputStimulus object.
             % LOADHEADERONLY - A flag to indicate whether only the header should
             %                  be read. This is helpful if one only cares about
             %                  the stimulus dimensions and such. Default: false.
