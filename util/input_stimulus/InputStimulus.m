@@ -14,7 +14,7 @@ classdef InputStimulus < handle
     % fileName must be a valid relative/absolute path to a binary file that has
     % been saved using method VisualStimulus.saveToFile.
     %
-    % Version 3/31/14
+    % Version 8/14/14
     % Author: Michael Beyeler <mbeyeler@uci.edu>
     %
     % This class uses some scripts from a MATLAB package of Simoncelli &
@@ -727,23 +727,25 @@ classdef InputStimulus < handle
         end
         
         
-        function displayFrames(this,frames)
+        function displayFrames(this,frames,dispFrameNr)
             % img = IS.displayFrames(frames) displays the specified frames in
             % the current figure/axes.
             %
-            % FRAMES    - A list of frame numbers. For example, requesting
-            %             frames=[1 2 8] will return the first, second, and
-            %             eighth frame in a width-by-height-by-3 matrix.
-            %             Default: display all frames.
+            % FRAMES       - A list of frame numbers. For example, requesting
+            %                frames=[1 2 8] will return the first, second, and
+            %                eighth frame in a width-by-height-by-3 matrix.
+            %                Default: display all frames.
+            % DISPFRAMENR  - A boolean flag that indicates whether to display
+            %                the frame number. Default: true.
             this.privLoadStimIfNecessary(); % need to load stim first
+            if nargin<3,dispFrameNr = true;end
             if nargin<2,frames = 1:this.length;end
             
             % reset abort flag, set up callback for key press events
             this.plotAbortPlotting = false;
             set(gcf,'KeyPressFcn',@this.privPauseOnKeyPressCallback)
-            
+                        
             % display frame in specified axes
-            img = this.getFrames(frames);
             for i=frames
                 if this.plotAbortPlotting
                     % user pressed button to quit plotting
@@ -753,9 +755,13 @@ classdef InputStimulus < handle
                 end
                 
                 colormap gray
-                imagesc(permute(img(:,:,i),[2 1 3]),[0 1])
-                text(2,this.height-1,num2str(find(frames==i)), ...
-                    'FontSize',10,'BackgroundColor','white')
+                imagesc(permute(this.stim(:,:,i),[2 1 3]),[0 1])
+                if dispFrameNr
+                    text(2,this.height-1,num2str(i), ...
+                        'FontSize',10,'BackgroundColor','white')
+%                     text(2,this.height-1,num2str(find(frames==i)), ...
+%                         'FontSize',10,'BackgroundColor','white')
+                end
                 axis image
                 drawnow
                 pause(0.1)
@@ -785,7 +791,56 @@ classdef InputStimulus < handle
             % return frames
             img = this.stim(:,:,frames);
         end
-        
+		
+        function recordMovie(this, fileName, frames, fps, winSize, bgColor)
+            % IS.recordMovie(movieFile, frames, fps, winSize, bgColor) takes an
+            % AVI movie of a list of frames using the VIDEOWRITER utility.
+            %
+            % FILENAME  - A string enclosed in single quotation marks that
+            %             specifies the name of the file to create.
+            %             Default: 'movie.avi'.
+            % FRAMES    - A list of frame numbers. For example, requesting
+            %             frames=[1 2 8] will return the first, second, and
+            %             eighth frame in a width-by-height-by-3 matrix.
+            %             Default: return all frames.
+            % FPS       - Rate of playback for the video in frames per second.
+            %             Default: 10.
+            % WINSIZE   - A 2-element vector specifying the window size of the
+            %             video as width x height in pixels. Set to [0 0] in
+            %             order to automatically make the movie window fit to
+            %             the size of the plot window. Default: [0 0].
+            % BGCOLOR   - The background color of the video. Must be of type 
+            %             ColorSpec (char such as 'w','b','k' or a 3-element 
+            %             vector for RGB channels). Default: 'w'.
+            if nargin<6,bgColor='w';end
+            if nargin<5,winSize=[0 0];end
+            if nargin<4,fps=10;end
+            if nargin<3,frames=1:this.length;end
+            if nargin<2,fileName='movie.avi';end
+            
+            set(gcf,'color',bgColor);
+            if sum(winSize>0)==2
+                set(gcf,'Position',[100 100 winSize]);
+            end
+            set(gcf,'PaperPositionMode','auto');
+            
+            % open video object
+            vidObj = VideoWriter(fileName);
+            vidObj.Quality = 100;
+            vidObj.FrameRate = fps;
+            open(vidObj);
+            
+            % display and record all frames
+            for i=frames
+                displayFrames(this,i);
+                writeVideo(vidObj, getframe(gcf));
+            end
+            close(gcf)
+            
+            close(vidObj);
+            disp(['created file "' fileName '"'])
+        end
+
         function saveToFile(this, fileName)
             % IS.saveToFile(fileName) saves a VisualStimulus object to fileName.
             % Later the stimulus can be loaded by creating a new object such as
