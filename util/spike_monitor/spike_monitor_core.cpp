@@ -224,11 +224,19 @@ void SpikeMonitorCore::print(bool printSpikeTimes) {
 
 		for (int i=0; i<nNeurons_; i++) {
 			char buffer[200];
+#if (WIN32 || WIN64)
+			_snprintf(buffer, 200, "| %7d | % 9.2f | ", i, getNeuronMeanFiringRate(i));
+#else
 			snprintf(buffer, 200, "| %7d | % 9.2f | ", i, getNeuronMeanFiringRate(i));
+#endif
 			int nSpk = spkVector_[i].size();
 			for (int j=0; j<nSpk; j++) {
 				char times[5];
-				snprintf(times, 10, "%8d", spkVector_[i][j]);
+#if (WIN32 || WIN64)
+				_snprintf(times, 10, "%8d", spkVector_[i][j]);
+#else
+				_snprintf(times, 10, "%8d", spkVector_[i][j]);
+#endif
 				strcat(buffer, times);
 				if (j%dispSpkTimPerRow == dispSpkTimPerRow-1 && j<nSpk-1) {
 					CARLSIM_INFO("%s",buffer);

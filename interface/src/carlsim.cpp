@@ -641,7 +641,11 @@ SpikeMonitor* CARLsim::setSpikeMonitor(int grpId, const std::string& fname, int 
 					UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "CONFIG or SETUP.");
 
 	// empty string: use default name for binary file
+#if (WIN32 || WIN64)
+	std::string fileName = fname.empty() ? "spk"+snn_->getGroupName(grpId,configId)+".dat" : fname;
+#else
 	std::string fileName = fname.empty() ? "results/spk"+snn_->getGroupName(grpId,configId)+".dat" : fname;
+#endif
 
 	FILE* fid;
 	if (fileName=="NULL") {
