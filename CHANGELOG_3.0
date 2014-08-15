@@ -7,6 +7,9 @@ Legend:
 	- removed element
 	* changed element
 
+2014-08-14     Michael Beyeler <mbeyeler@uci.edu>
+	+ Added recordMovie function to InputStimulus.m utility.
+
 2014-08-13     Michael Beyeler <mbeyeler@uci.edu>
     + Added Grid3D and Point3D structs.
     + Added way to create neurons on a grid via CARLsim::createGroup and
