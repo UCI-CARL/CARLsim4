@@ -166,6 +166,8 @@ TEST(STDP, setNeuromodulatorParameters) {
 TEST(STDP, DASTDPweightBoost) {
 	float tauLTP = 20.0f;
 	float tauLTD = 20.0f;
+	float alphaLTP = 0.1f;
+	float alphaLTD = 0.122f;
 	CARLsim* sim;
 	int g1, gin, g1noise, gda;
 	SpikeController* spikeCtrl = new SpikeController();
@@ -195,13 +197,13 @@ TEST(STDP, DASTDPweightBoost) {
 					sim->connect(gda, g1, "full", RangeWeight(0.0), 1.0f, RangeDelay(1), SYN_FIXED);
 					// enable COBA, set up STDP, enable dopamine-modulated STDP
 					sim->setConductances(true,5,150,6,150);
-					sim->setSTDP(g1, true, DA_MOD, 0.1f/100, tauLTP, 0.123f/100, tauLTD);
+					sim->setSTDP(g1, true, DA_MOD, alphaLTP/100, tauLTP, alphaLTD/100, tauLTD);
 				} else {
 					sim->connect(gin,g1,"one-to-one", RangeWeight(0.0, 1.0f, 20.0f), 1.0f, RangeDelay(1), SYN_PLASTIC);
 					sim->connect(g1noise, g1, "one-to-one", RangeWeight(40.0f), 1.0f, RangeDelay(1), SYN_FIXED);
 					sim->connect(gda, g1, "full", RangeWeight(0.0), 1.0f, RangeDelay(1), SYN_FIXED);
 					// set up STDP, enable dopamine-modulated STDP
-					sim->setSTDP(g1, true, DA_MOD, 0.1f, tauLTP, 0.123f, tauLTD);
+					sim->setSTDP(g1, true, DA_MOD, alphaLTP, tauLTP, alphaLTD, tauLTD);
 				}
 
 				sim->setWeightAndWeightChangeUpdate(INTERVAL_10MS, INTERVAL_10MS, 100);
@@ -221,7 +223,7 @@ TEST(STDP, DASTDPweightBoost) {
 				sim->setSpikeRate(gin, &in);
 				sim->setSpikeRate(g1noise, &in);
 
-				for (int t = 0; t < 400; t++) {
+				for (int t = 0; t < 200; t++) {
 					spikeMonPost->startRecording();
 					spikeMonPre->startRecording();
 					sim->runNetwork(1, 0, false, false);
