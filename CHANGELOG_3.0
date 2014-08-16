@@ -6,7 +6,8 @@ Legend:
 	+ added element
 	- removed element
 	* changed element
-
+2014-08-15     Ting-Shuo Chou <tingshuc@uci.edu>
+	+ Fixed cross-platform compatibility on gtest.
 2014-08-14     Michael Beyeler <mbeyeler@uci.edu>
 	+ Added recordMovie function to InputStimulus.m utility.
 
