@@ -145,13 +145,13 @@ public:
 	 * For more flexibility, see the other connect() calls.
 	 *
 	 * \STATE CONFIG
-	 * \param[in] grpId1	 ID of the pre-synaptic group
-	 * \param[in] grpId2 	 ID of the post-synaptic group
-	 * \param[in] connType 	 connection type. "random": random connectivity. "one-to-one": connect the i-th neuron in
-	 *						 pre to the i-th neuron in post. "full": connect all neurons in pre to all neurons in post.
-	 * 						 "full-no-direct": same as "full", but i-th neuron of grpId1 will not be connected to the
+	 * \param[in] grpId1     ID of the pre-synaptic group
+	 * \param[in] grpId2     ID of the post-synaptic group
+	 * \param[in] connType   connection type. "random": random connectivity. "one-to-one": connect the i-th neuron in
+	 *                       pre to the i-th neuron in post. "full": connect all neurons in pre to all neurons in post.
+	 *                       "full-no-direct": same as "full", but i-th neuron of grpId1 will not be connected to the
 	 *                       i-th neuron of grpId2.
-	 * \param[in] wt 		 a struct specifying the range of weight magnitudes (initial value and max value). Weights
+	 * \param[in] wt         a struct specifying the range of weight magnitudes (initial value and max value). Weights
 	 *                       range from 0 to maxWt, and are initialized with initWt. All weight values should be
 	 *                       non-negative (equivalent to weight *magnitudes*), even for inhibitory connections.
 	 *                       Examples:
@@ -162,12 +162,15 @@ public:
 	 *                         RangeWeight(0.0,0.1,0.2) => If pre is excitatory: all weights will be in range [0.0,0.2],
 	 *                                                     and wt.init=0.1. If pre is inhibitory: all weights will be in
 	 *                                                     range [-0.2,0.0], and wt.init=0.0.
-	 * \param[in] connProb	 connection probability
-	 * \param[in] delay 	 a struct specifying the range of delay values (ms). Synaptic delays must be greater than or
+	 * \param[in] connProb   connection probability
+	 * \param[in] delay      a struct specifying the range of delay values (ms). Synaptic delays must be greater than or
 	 *                       equal to 1 ms.
 	 *                       Examples:
 	 *                         RangeDelay(2) => all delays will be 2 (delay.min=2, delay.max=2)
 	 *                         RangeDelay(1,10) => delays will be in range [1,10]
+	 * \param[in] radRF      a struct specifying the radius of the receptive field (RF). A radius can be specified in 3
+	 *                       dimensions x, y, and z (following the topographic organization of neurons as specified by
+	 *                       Grid3D).
 	 * \param[in] synWtType  specifies whether the synapse should be of fixed value (SYN_FIXED) or plastic (SYN_PLASTIC)
 	 * \param[in] mulSynFast a multiplication factor to be applied to the fast synaptic current (AMPA in the case of
 	 *                       excitatory, and GABAa in the case of inhibitory connections). Default: 1.0
@@ -176,7 +179,8 @@ public:
 	 * \returns a unique ID associated with the newly created connection
 	 */
 	short int connect(int grpId1, int grpId2, const std::string& connType, RangeWeight wt, float connProb,
-		RangeDelay delay, bool synWtType=SYN_FIXED, float mulSynFast=1.0f, float mulSynSlow=1.0f);
+		RangeDelay delay=RangeDelay(1), RadiusRF radRF=RadiusRF(-1), bool synWtType=SYN_FIXED, float mulSynFast=1.0f, 
+		float mulSynSlow=1.0f);
 
 	/*!
 	 * \brief Shortcut to make connections with custom connectivity profile but omit scaling factors for synaptic
@@ -802,7 +806,6 @@ public:
 	/*!
 	 * \brief returns the number of connections associated with a connection ID
 	 *
-	 * \Note This number might change throughout CARLsim state CONFIG, up to calling CARLsim::setupNetwork).
 	 * \TODO finish docu
 	 * \STATE SETUP, EXECUTION
 	 */

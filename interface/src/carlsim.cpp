@@ -144,7 +144,7 @@ void CARLsim::CARLsimInit() {
 
 // Connects a presynaptic to a postsynaptic group using one of the primitive types
 short int CARLsim::connect(int grpId1, int grpId2, const std::string& connType, RangeWeight wt, float connProb,
-		RangeDelay delay, bool synWtType, float mulSynFast, float mulSynSlow) {
+		RangeDelay delay, RadiusRF radRF, bool synWtType, float mulSynFast, float mulSynSlow) {
 	std::string funcName = "connect(\""+getGroupName(grpId1,0)+"\",\""+getGroupName(grpId2,0)+"\")";
 	std::stringstream grpId1str; grpId1str << "Group Id " << grpId1;
 	std::stringstream grpId2str; grpId2str << "Group Id " << grpId2;
@@ -171,7 +171,7 @@ short int CARLsim::connect(int grpId1, int grpId2, const std::string& connType, 
 	double wtSign = isExcitatoryGroup(grpId1) ? 1.0 : -1.0;
 
 	return snn_->connect(grpId1, grpId2, connType, wtSign*wt.init, wtSign*wt.max, connProb, delay.min, delay.max,
-		mulSynFast,	mulSynSlow, synWtType);
+		radRF.radX, radRF.radY, radRF.radZ, mulSynFast,	mulSynSlow, synWtType);
 }
 
 // custom connectivity profile

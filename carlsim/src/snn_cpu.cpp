@@ -110,7 +110,8 @@ CpuSNN::~CpuSNN() {
 
 // make from each neuron in grpId1 to 'numPostSynapses' neurons in grpId2
 short int CpuSNN::connect(int grpId1, int grpId2, const std::string& _type, float initWt, float maxWt, float prob,
-						uint8_t minDelay, uint8_t maxDelay, float _mulSynFast, float _mulSynSlow, bool synWtType) {
+						uint8_t minDelay, uint8_t maxDelay, float radX, float radY, float radZ, 
+						float _mulSynFast, float _mulSynSlow, bool synWtType) {
 						//const std::string& wtType
 	int retId=-1;
 	for(int c=0; c < nConfig_; c++, grpId1++, grpId2++) {
@@ -130,19 +131,28 @@ short int CpuSNN::connect(int grpId1, int grpId2, const std::string& _type, floa
 //      | SET_INITWTS_RAMPDOWN(useRampDownWts);
 		uint32_t connProp = SET_CONN_PRESENT(1) | SET_FIXED_PLASTIC(synWtType);
 
-		grpConnectInfo_t* newInfo 	= (grpConnectInfo_t*) calloc(1, sizeof(grpConnectInfo_t));
-		newInfo->grpSrc   			= grpId1;
-		newInfo->grpDest  			= grpId2;
-		newInfo->initWt	  			= initWt;
-		newInfo->maxWt	  			= maxWt;
-		newInfo->maxDelay 			= maxDelay;
-		newInfo->minDelay 			= minDelay;
-		newInfo->mulSynFast			= _mulSynFast;
-		newInfo->mulSynSlow			= _mulSynSlow;
-		newInfo->connProp 			= connProp;
-		newInfo->p 					= prob;
-		newInfo->type	  			= CONN_UNKNOWN;
-		newInfo->numPostSynapses 	= 1;
+		Grid3D szPre = getGroupGrid3D(grpId1);
+		Grid3D szPost = getGroupGrid3D(grpId2);
+
+		grpConnectInfo_t* newInfo = (grpConnectInfo_t*) calloc(1, sizeof(grpConnectInfo_t));
+		newInfo->grpSrc   		  = grpId1;
+		newInfo->grpDest  		  = grpId2;
+		newInfo->initWt	  		  = initWt;
+		newInfo->maxWt	  		  = maxWt;
+		newInfo->maxDelay 		  = maxDelay;
+		newInfo->minDelay 		  = minDelay;
+//		newInfo->radX             = (radX<0) ? MAX(szPre.x,szPost.x) : radX; // <0 means full connectivity, so the
+//		newInfo->radY             = (radY<0) ? MAX(szPre.y,szPost.y) : radY; // effective group size is Grid3D.x. Grab
+//		newInfo->radZ             = (radZ<0) ? MAX(szPre.z,szPost.z) : radZ; // the larger of pre / post to connect all
+		newInfo->radX             = radX;
+		newInfo->radY             = radY;
+		newInfo->radZ             = radZ;
+		newInfo->mulSynFast       = _mulSynFast;
+		newInfo->mulSynSlow       = _mulSynSlow;
+		newInfo->connProp         = connProp;
+		newInfo->p                = prob;
+		newInfo->type             = CONN_UNKNOWN;
+		newInfo->numPostSynapses  = 1;
 
 		newInfo->next 				= connectBegin; //linked list of connection..
 		connectBegin 				= newInfo;
@@ -160,6 +170,32 @@ short int CpuSNN::connect(int grpId1, int grpId2, const std::string& _type, floa
 		}
 		else if ( _type.find("full") != std::string::npos) {
 			newInfo->type 	= CONN_FULL;
+
+/*			std::vector<double> nonZeroRadii;
+			if (radX!=0)
+				nonZeroRadii.push_back( (radX<0) ? grp_Info)
+
+			int numZeros = (radX==0) + (radY==0) + (radZ==0); // number of radii that are zero
+			if (numZeros==0) {
+				// ellipsoid
+				int nPost = 4.0/3.0*M_PI*( (radX<0)?grp_Info[grpId2].SizeX:radX )*( (radY<0)?grp_Info[grpId2].SizeY:radY )*( (radZ<0)?grp_Info[grpId2].SizeZ:radZ );
+				int nPre = 4.0/3.0*M_PI*( (radX<0)?grp_Info[grpId1].SizeX:radX )*( (radY<0)?grp_Info[grpId1].SizeY:radY )*( (radZ<0)?grp_Info[grpId1].SizeZ:radZ );
+				newInfo->numPostSynapses = nPost;
+				newInfo->numPreSynapses = nPre;
+			} else if (numZeros==1) {
+				// ellipse
+			} else if (numZeros==2) {
+				// line
+			} else {
+				// no connections
+				newInfo->numPostSynapses = 0;
+				newInfo->numPreSynapses = 0;
+				CARLSIM_WARN("Connection ID %d: %s(%d) => %s(%d) has zero connections. Increase RadiusRF()",
+					numConnections+1, grp_Info2[grpId1].Name.c_str(), grpId1,
+					grp_Info2[grpId2].Name.c_str(), grpId2);
+			}
+*/
+
 			newInfo->numPostSynapses	= grp_Info[grpId2].SizeN;
 			newInfo->numPreSynapses   = grp_Info[grpId1].SizeN;
 		}
@@ -2559,6 +2595,10 @@ void CpuSNN::compactConnections() {
 	postSynCnt	= tmp_postSynCnt;
 }
 
+// compute 2-norm of a point
+double norm(Point3D p) {
+	return sqrt(p.x*p.x+p.y*p.y+p.z*p.z);
+}
 
 // make 'C' full connections from grpSrc to grpDest
 void CpuSNN::connectFull(grpConnectInfo_t* info) {
@@ -2566,18 +2606,58 @@ void CpuSNN::connectFull(grpConnectInfo_t* info) {
 	int grpDest = info->grpDest;
 	bool noDirect = (info->type == CONN_FULL_NO_DIRECT);
 
-	for(int nid = grp_Info[grpSrc].StartN; nid <= grp_Info[grpSrc].EndN; nid++)  {
+	// inverse semi-principal axes of the ellipsoid
+	// avoid division by zero by working with inverse of semi-principal axes (set to large value)
+	double aa = (info->radX>0) ? 1.0/info->radX/info->radX : 1e+20;
+	double bb = (info->radY>0) ? 1.0/info->radY/info->radY : 1e+20;
+	double cc = (info->radZ>0) ? 1.0/info->radZ/info->radZ : 1e+20;
+
+	// how many semi-principal axes have negative value
+	int numNegRadii = (info->radX<0) + (info->radY<0) + (info->radZ<0);
+
+	for(int i = grp_Info[grpSrc].StartN; i <= grp_Info[grpSrc].EndN; i++)  {
+		Point3D loc_i = getNeuronLocation3D(i); // 3D coordinates of i
 		for(int j = grp_Info[grpDest].StartN; j <= grp_Info[grpDest].EndN; j++) { // j: the temp neuron id
-			if((noDirect) && (nid - grp_Info[grpSrc].StartN) == (j - grp_Info[grpDest].StartN))
+			// if flag is set, don't connect direct connections
+			if((noDirect) && (i - grp_Info[grpSrc].StartN) == (j - grp_Info[grpDest].StartN))
 				continue;
+
+			Point3D loc_j = getNeuronLocation3D(j); // 3D coordinates of j
+			if (numNegRadii==0) {
+				// 3D ellipsoid: connect if x^2/a^2 + y^2/b^2 + z^2/c^2 <= 1
+				if ( norm((loc_i-loc_j)*Point3D(aa,bb,cc)) > 1.0)
+					continue;
+			} else if (numNegRadii==1) {
+				// 2D ellipse: connect if x^2/a^2 + y^2/b^2 <= 1, 3 choose 2
+				if (info->radX<0 && norm((loc_i-loc_j)*Point3D(0.0,bb,cc)) > 1.0)
+					continue;
+				else if (info->radY<0 && norm((loc_i-loc_j)*Point3D(aa,0.0,cc)) > 1.0)
+					continue;
+				else if (info->radZ<0 && norm((loc_i-loc_j)*Point3D(aa,bb,0.0)) > 1.0)
+					continue;
+			} else if (numNegRadii==2) {
+				// 1D line: connect if x^2/a^2 <= 1, 3 choose 1
+				if (info->radX>=0 && (loc_i.x-loc_j.x)*(loc_i.x-loc_j.x)*aa > 1.0)
+					continue;
+				else if (info->radY>=0 && (loc_i.y-loc_j.y)*(loc_i.y-loc_j.y)*bb > 1.0)
+					continue;
+				else if (info->radZ>=0 && (loc_i.z-loc_j.z)*(loc_i.z-loc_j.z)*cc > 1.0)
+					continue;
+			}
+
+
+//std::cout << "connect("<<i<<","<<j<<") i: "<<loc_i<<", j: "<<loc_j<<std::endl;
+
 			uint8_t dVal = info->minDelay + (int)(0.5 + (getRandClosed() * (info->maxDelay - info->minDelay)));
 			assert((dVal >= info->minDelay) && (dVal <= info->maxDelay));
-			float synWt = getWeights(info->connProp, info->initWt, info->maxWt, nid, grpSrc);
+			float synWt = getWeights(info->connProp, info->initWt, info->maxWt, i, grpSrc);
 
-			setConnection(grpSrc, grpDest, nid, j, synWt, info->maxWt, dVal, info->connProp, info->connId);
+			setConnection(grpSrc, grpDest, i, j, synWt, info->maxWt, dVal, info->connProp, info->connId);
 			info->numberOfConnections++;
 		}
 	}
+
+//	printf("numConnections=%d\n",info->numberOfConnections);
 
 	grp_Info2[grpSrc].sumPostConn += info->numberOfConnections;
 	grp_Info2[grpDest].sumPreConn += info->numberOfConnections;
@@ -2839,7 +2919,6 @@ void CpuSNN::findFiring() {
 					int bufPos = grp_Info[g].spkCntBufPos; // retrieve buf pos
 					int bufNeur = i-grp_Info[g].StartN;
 					spkCntBuf[bufPos][bufNeur]++;
-//					printf("%d: %s[%d], nid=%d, %u spikes\n",simTimeMs,grp_Info2[g].Name.c_str(),g,i,spkMonRTbuf[bufPos][buffNeur]);
 				}
 				spikeBufferFull = addSpikeToTable(i, g);
 

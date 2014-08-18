@@ -227,7 +227,39 @@ struct RangeWeight {
 	friend std::ostream& operator<<(std::ostream &strm, const RangeWeight &w) {
 		return strm << "wt=[" << w.min << "," << w.init << "," << w.max << "]";
 	}
-	double min, init, max; 
+	const double min, init, max; 
+};
+
+/*!
+ * \brief a struct to specify the receptive field (RF) radius in 3 dimensions
+ *
+ * This struct can be used to specify the size of a receptive field (RF) radius in 3 dimensions x, y, and z.
+ * Receptive fields will be circular with radius as specified. The 3 dimensions follow the ones defined by Grid3D.
+ * If the radius in one dimension is 0, no connections will be made in this dimension.
+ * If the radius in one dimension is -1, then all possible connections will be made in this dimension (effectively
+ * making RF of infinite size).
+ * Otherwise, if the radius is a positive real number, the RF radius will be exactly this number.
+ * Call RadiusRF with only one argument to make that radius apply to all 3 dimensions.
+ * \param[in] rad_x the RF radius in the x (first) dimension
+ * \param[in] rad_y the RF radius in the y (second) dimension
+ * \param[in] rad_z the RF radius in the z (third) dimension
+ *
+ * Examples:
+ *   * Create a 2D Gaussian RF of radius 10: RadiusRF(10, 10, 0)
+ *   * Create a 2D heterogeneous Gaussian RF (an ellipse) with semi-axes 10 and 5: RadiusRF(10, 5, 0)
+ *   * Connect only the third dimension: RadiusRF(0, 0, 1)
+ *   * Don't connect anything (silly): RadiusRF(0, 0, 0)
+ *   * Connect all, no matter the RF (default): RadiusRF(-1, -1, -1)
+ */
+struct RadiusRF {
+	RadiusRF(double rad) : radX(rad), radY(rad), radZ(rad) {}
+	RadiusRF(double rad_x, double rad_y, double rad_z) : radX(rad_x), radY(rad_y), radZ(rad_z) {}
+
+	friend std::ostream& operator<<(std::ostream &strm, const RadiusRF &r) {
+        return strm << "RadiusRF=[" << r.radX << "," << r.radY << "," << r.radZ << "]";
+    }
+
+	const double radX, radY, radZ;
 };
 
 typedef struct GroupSTDPInfo_s {
@@ -351,13 +383,13 @@ private:
 //! calculate distance between two points \FIXME maybe move to carlsim_helper.h or something...
 double dist(Point3D& p1, Point3D& p2) {
 	Point3D p( (p1-p2)*(p1-p2) );
-	return sqrt(p.x*p.x+p.y*p.y);
+	return sqrt(p.x*p.x+p.y*p.y+p.z*p.z);
 //	return norm(p); // can't find norm
 }
 
 //! calculate norm \FIXME maybe move to carlsim_helper.h or something...
 double norm(Point3D& p) {
-	return sqrt(p.x*p.x+p.y*p.y);
+	return sqrt(p.x*p.x+p.y*p.y+p.z*p.z);
 }
 
 //! check whether certain point lies on certain grid \FIXME maybe move to carlsim_helper.h or something...

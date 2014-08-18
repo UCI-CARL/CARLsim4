@@ -158,8 +158,9 @@ public:
 	 * \param wtType: (optional) DEPRECATED
 	 * \return number of created synaptic projections
 	 */
-	short int connect(int gIDpre, int gIDpost, const std::string& _type, float initWt, float maxWt, float _C,
-		uint8_t minDelay, uint8_t maxDelay, float mulSynFast, float mulSynSlow, bool synWtType);
+	short int connect(int gIDpre, int gIDpost, const std::string& _type, float initWt, float maxWt, float prob,
+		uint8_t minDelay, uint8_t maxDelay, float radX, float radY, float radZ, 
+		float mulSynFast, float mulSynSlow, bool synWtType);
 
 	/* Creates synaptic projections using a callback mechanism.
 	 *

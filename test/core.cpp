@@ -71,6 +71,7 @@ TEST(CORE, CpuSNNinitDeath) {
 }
 
 
+// \TODO make CARLsim-level
 //! connect with certain mulSynFast, mulSynSlow and observe connectInfo
 TEST(CORE, connect) {
 	// create network by varying nConfig from 1...maxConfig, with
@@ -112,7 +113,7 @@ TEST(CORE, connect) {
 				else if (type[i]=CONN_FULL_NO_DIRECT) typeStr = "full-no-direct";
 
 				conn[i] = sim->connect(g0, g1, typeStr, initWt[i], maxWt[i], prob[i],
-					minDelay[i],maxDelay[i], mulSynFast[i], mulSynSlow[i], synType[i]);
+					minDelay[i], maxDelay[i], -1.0, -1.0, -1.0, mulSynFast[i], mulSynSlow[i], synType[i]);
 
 				for (int c=0; c<nConfig; c++) {
 					connInfo = sim->getConnectInfo(conn[i],c);
@@ -132,8 +133,47 @@ TEST(CORE, connect) {
 	}
 }
 
+TEST(CORE, connectRadiusRF) {
+	CARLsim* sim = new CARLsim("CORE.connectRadiusRF",CPU_MODE,SILENT,0,1,42);
+	Grid3D grid(2,3,4);
+	int g0=sim->createGroup("excit0", grid, EXCITATORY_NEURON);
+	int g1=sim->createGroup("excit1", grid, EXCITATORY_NEURON);
+	int g2=sim->createGroup("excit2", grid, EXCITATORY_NEURON);
+	int g3=sim->createGroup("excit3", grid, EXCITATORY_NEURON);
+	int g4=sim->createGroup("excit4", grid, EXCITATORY_NEURON);
+	int g5=sim->createGroup("excit5", grid, EXCITATORY_NEURON);
+	int g6=sim->createGroup("excit6", grid, EXCITATORY_NEURON);
+	sim->setNeuronParameters(g0, 0.02f, 0.2f, -65.0f, 8.0f);
+	sim->setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f);
+	sim->setNeuronParameters(g2, 0.02f, 0.2f, -65.0f, 8.0f);
+	sim->setNeuronParameters(g3, 0.02f, 0.2f, -65.0f, 8.0f);
+	sim->setNeuronParameters(g4, 0.02f, 0.2f, -65.0f, 8.0f);
+	sim->setNeuronParameters(g5, 0.02f, 0.2f, -65.0f, 8.0f);
+	sim->setNeuronParameters(g6, 0.02f, 0.2f, -65.0f, 8.0f);
+
+	int c0=sim->connect(g0,g0,"full",RangeWeight(0.1), 1.0, RangeDelay(1), RadiusRF(-1)); // full
+	int c1=sim->connect(g1,g1,"full",RangeWeight(0.1), 1.0, RangeDelay(1), RadiusRF(-1,0,0)); // all in x
+	int c2=sim->connect(g2,g2,"full",RangeWeight(0.1), 1.0, RangeDelay(1), RadiusRF(-1,0,-1)); // all in x and z
+	int c3=sim->connect(g3,g3,"full",RangeWeight(0.1), 1.0, RangeDelay(1), RadiusRF(0,0,0)); // 1-to-1
+	int c4=sim->connect(g4,g4,"full",RangeWeight(0.1), 1.0, RangeDelay(1), RadiusRF(2,3,0)); // 2D ellipse x,y
+	int c5=sim->connect(g5,g5,"full",RangeWeight(0.1), 1.0, RangeDelay(1), RadiusRF(0,2,3)); // 2D ellipse y,z
+	int c6=sim->connect(g6,g6,"full",RangeWeight(0.1), 1.0, RangeDelay(1), RadiusRF(2,2,2)); // 3D ellipsoid
+
+	sim->setupNetwork(); // need SETUP state for this function to work
+
+	EXPECT_EQ(sim->getNumSynapticConnections(c0), grid.N * grid.N);
+	EXPECT_EQ(sim->getNumSynapticConnections(c1), grid.N * grid.x);
+	EXPECT_EQ(sim->getNumSynapticConnections(c2), grid.N * grid.x * grid.z);
+	EXPECT_EQ(sim->getNumSynapticConnections(c3), grid.N);
+	EXPECT_EQ(sim->getNumSynapticConnections(c4), 144);
+	EXPECT_EQ(sim->getNumSynapticConnections(c5), 288);
+	EXPECT_EQ(sim->getNumSynapticConnections(c6), 576);
+
+	delete sim;
+}
+
 TEST(CORE, getGroupGrid3D) {
-	CARLsim* sim = new CARLsim("Interface.createGroupDeath",CPU_MODE,USER,0,1,42);
+	CARLsim* sim = new CARLsim("CORE.getGroupGrid3D",CPU_MODE,SILENT,0,1,42);
 	Grid3D grid(2,3,4);
 	int g1=sim->createSpikeGeneratorGroup("excit", grid, EXCITATORY_NEURON);
 	int g2=sim->createGroup("excit2", grid, EXCITATORY_NEURON);
