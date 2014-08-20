@@ -217,7 +217,7 @@ void SpikeMonitorCore::print(bool printSpikeTimes) {
 		getPopMeanFiringRate(),
 		getPopStdFiringRate());
 
-	if (mode_ == AER) {
+	if (printSpikeTimes && mode_==AER) {
 		// spike times only available in AER mode
 		CARLSIM_INFO("| Neur ID | Rate (Hz) | Spike Times (ms)");
 		CARLSIM_INFO("|- - - - -|- - - - - -|- - - - - - - - - - - - - - - - -- - - - - - - - - - - - -")
