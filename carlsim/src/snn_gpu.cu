@@ -61,9 +61,6 @@ RNG_rand48* gpuPoissonRand; // initialized in CpuSNNinitGPUparams
 #define MAX_NUM_BLOCKS 200
 #define LOOP_CNT		10
 
-#define GPU_LTP(t)   (gpuNetInfo.ALPHA_LTP*__expf(-(t)/gpuNetInfo.TAU_LTP))
-#define GPU_LTD(t)   (gpuNetInfo.ALPHA_LTD*__expf(-(t)/gpuNetInfo.TAU_LTD))
-
 ///////////////////////////////////////////////////////////////////
 // Some important ideas that explains the GPU execution are as follows:
 //  1. Each GPU block has a local firing table (called fireTable). The block of threads
@@ -663,6 +660,7 @@ __device__ void gpu_updateLTP(	int*     		fireTablePtr,
 		// pre: number of pre-neuron
 		// pre_exc: number of neuron had has plastic connections
 		short int grpId = fireGrpId[pos];
+		// STDP calculation (LTP)
 		if (gpuGrpInfo[grpId].WithSTDP) { // MDR, FIXME this probably will cause more thread divergence than need be...
 			int  nid   = fireTablePtr[pos];
 			unsigned int  end_p = gpuPtrs.cumulativePre[nid] + gpuPtrs.Npre_plastic[nid];
@@ -1420,6 +1418,7 @@ __device__ int generatePostSynapticSpike(int& simTime, int& firingId, int& myDel
 
 	gpuPtrs.synSpikeTime[pos_ns] = simTime;		  //uncoalesced access
 
+	// STDP calculation (LTD)
 	if (gpuGrpInfo[post_grpId].WithSTDP)  {
 		int stdp_tDiff = simTime-gpuPtrs.lastSpikeTime[nid];
 		if ((stdp_tDiff >= 0) && ((stdp_tDiff*gpuGrpInfo[post_grpId].TAU_LTD_INV)<25)) {

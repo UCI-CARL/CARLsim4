@@ -2846,6 +2846,7 @@ void CpuSNN::findFiring() {
 				if (spikeBufferFull)
 					break;
 
+				// STDP calculation (LTP)
 				if (grp_Info[g].WithSTDP) {
 					unsigned int pos_ij = cumulativePre[i];
 					for(int j=0; j < Npre_plastic[i]; pos_ij++, j++) {
@@ -2907,6 +2908,7 @@ void CpuSNN::generatePostSpike(unsigned int pre_i, unsigned int idx_d, unsigned 
 	short int post_grpId = grpIds[post_i];
 	short int pre_grpId = grpIds[pre_i];
 
+	// get type of pre-synaptic group
 	unsigned int pre_type = grp_Info[pre_grpId].Type;
 
 	// get connect info from the cumulative synapse index for mulSynFast/mulSynSlow (requires less memory than storing
@@ -2973,7 +2975,7 @@ void CpuSNN::generatePostSpike(unsigned int pre_i, unsigned int idx_d, unsigned 
 		cpuNetPtrs.grpDA[post_grpId] += 0.02;
 	}
 
-	// STDP calculation....
+	// STDP calculation (LTD)
 	if (grp_Info[post_grpId].WithSTDP) {
 		int stdp_tDiff = (simTime-lastSpikeTime[post_i]);
 
