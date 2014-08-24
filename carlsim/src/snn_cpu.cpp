@@ -2846,9 +2846,10 @@ void CpuSNN::findFiring() {
 				if (spikeBufferFull)
 					break;
 
-				// STDP calculation (LTP)
+				// FIXEME: STDP calculation: the post-synaptic neuron fires after firing of the pre-synaptic neuron ??!
+				// the post-synaptic neuron fires after the arrival of a pre-synaptic spike
 				if (grp_Info[g].WithSTDP) {
-					unsigned int pos_ij = cumulativePre[i];
+					unsigned int pos_ij = cumulativePre[i]; // the index of pre-synaptic neuron
 					for(int j=0; j < Npre_plastic[i]; pos_ij++, j++) {
 						int stdp_tDiff = (simTime-synSpikeTime[pos_ij]);
 						assert(!((stdp_tDiff < 0) && (synSpikeTime[pos_ij] != MAX_SIMULATION_TIME)));
@@ -2975,7 +2976,7 @@ void CpuSNN::generatePostSpike(unsigned int pre_i, unsigned int idx_d, unsigned 
 		cpuNetPtrs.grpDA[post_grpId] += 0.02;
 	}
 
-	// STDP calculation (LTD)
+	// STDP calculation: the post-synaptic neuron fires before the arrival of a pre-synaptic spike
 	if (grp_Info[post_grpId].WithSTDP) {
 		int stdp_tDiff = (simTime-lastSpikeTime[post_i]);
 
