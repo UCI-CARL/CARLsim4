@@ -2846,8 +2846,7 @@ void CpuSNN::findFiring() {
 				if (spikeBufferFull)
 					break;
 
-				// FIXEME: STDP calculation: the post-synaptic neuron fires after firing of the pre-synaptic neuron ??!
-				// the post-synaptic neuron fires after the arrival of a pre-synaptic spike
+				// STDP calculation: the post-synaptic neuron fires after the arrival of a pre-synaptic spike
 				if (grp_Info[g].WithSTDP) {
 					unsigned int pos_ij = cumulativePre[i]; // the index of pre-synaptic neuron
 					for(int j=0; j < Npre_plastic[i]; pos_ij++, j++) {
