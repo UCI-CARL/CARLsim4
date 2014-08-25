@@ -597,7 +597,8 @@ void CpuSNN::setISTDP(int grpId, bool isSet, stdpType_t type, float betaLTP, flo
 		grp_Info[cGrpId].LAMDA			= lamda;
 		grp_Info[cGrpId].DELTA			= delta;
 		// set flags for STDP function
-		grp_Info[cGrpId].WithSTDPtype	= type;
+		//TODO: separate STDPType to ESTDPType and ISTDPType, currently, only setESTDP() can change WithSTDPType
+		//grp_Info[cGrpId].WithSTDPtype	= type;
 		grp_Info[cGrpId].WithISTDP		= isSet;
 		grp_Info[cGrpId].WithSTDP		|= grp_Info[cGrpId].WithISTDP;
 		sim_with_stdp					|= grp_Info[cGrpId].WithSTDP;

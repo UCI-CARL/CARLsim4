@@ -45,6 +45,10 @@ TEST(STDP, setSTDPTrue) {
 	float alphaLTD = 10.0f;
 	float tauLTP = 15.0f;
 	float tauLTD = 20.0f;
+	float betaLTP = 1.0f;
+	float betaLTD = 1.2f;
+	float lamda = 12.0f;
+	float delta = 40.0f;
 	CARLsim* sim;
 
 	for (int mode=0; mode<=1; mode++) {
@@ -54,14 +58,19 @@ TEST(STDP, setSTDPTrue) {
 
 				int g1=sim->createGroup("excit", 10, EXCITATORY_NEURON);
 				sim->setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f);
-				if (stdpType == 0)
-					sim->setSTDP(g1,true,STANDARD,alphaLTP,tauLTP,alphaLTD,tauLTD);
-				else
-					sim->setSTDP(g1,true,DA_MOD,alphaLTP,tauLTP,alphaLTD,tauLTD);
+				if (stdpType == 0) {
+					sim->setESTDP(g1,true,STANDARD,alphaLTP,tauLTP,alphaLTD,tauLTD);
+					sim->setISTDP(g1,true,STANDARD,betaLTP,betaLTD,lamda,delta);
+				} else {
+					sim->setESTDP(g1,true,DA_MOD,alphaLTP,tauLTP,alphaLTD,tauLTD);
+					sim->setISTDP(g1,true,DA_MOD,betaLTP,betaLTD,lamda,delta);
+				}
 
 				for (int c=0; c<nConfig; c++) {
 					GroupSTDPInfo_t gInfo = sim->getGroupSTDPInfo(g1,c);
 					EXPECT_TRUE(gInfo.WithSTDP);
+					EXPECT_TRUE(gInfo.WithESTDP);
+					EXPECT_TRUE(gInfo.WithISTDP);
 					if (stdpType == 0)
 						EXPECT_TRUE(gInfo.WithSTDPtype == STANDARD);
 					else
@@ -70,6 +79,10 @@ TEST(STDP, setSTDPTrue) {
 					EXPECT_FLOAT_EQ(gInfo.ALPHA_LTD,alphaLTD);
 					EXPECT_FLOAT_EQ(gInfo.TAU_LTP_INV,1.0/tauLTP);
 					EXPECT_FLOAT_EQ(gInfo.TAU_LTD_INV,1.0/tauLTD);
+					EXPECT_FLOAT_EQ(gInfo.BETA_LTP,betaLTP);
+					EXPECT_FLOAT_EQ(gInfo.BETA_LTD,betaLTD);
+					EXPECT_FLOAT_EQ(gInfo.LAMDA,lamda);
+					EXPECT_FLOAT_EQ(gInfo.DELTA,delta);
 				}
 
 				delete sim;
@@ -91,6 +104,10 @@ TEST(STDP, setSTDPFalse) {
 	float alphaLTD = 10.0f;
 	float tauLTP = 15.0f;
 	float tauLTD = 20.0f;
+	float betaLTP = 1.0f;
+	float betaLTD = 2.0f;
+	float lamda = 3.0f;
+	float delta = 4.0f;
 	CARLsim* sim;
 
 	for (int mode=0; mode<=1; mode++) {
@@ -99,11 +116,14 @@ TEST(STDP, setSTDPFalse) {
 
 			int g1=sim->createGroup("excit", 10, EXCITATORY_NEURON);
 			sim->setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f);
-			sim->setSTDP(g1,false,STANDARD,alphaLTP,tauLTP,alphaLTD,tauLTD);
+			sim->setESTDP(g1,false,STANDARD,alphaLTP,tauLTP,alphaLTD,tauLTD);
+			sim->setISTDP(g1,false,STANDARD,betaLTP,betaLTD,lamda,delta);
 
 			for (int c=0; c<nConfig; c++) {
 				GroupSTDPInfo_t gInfo = sim->getGroupSTDPInfo(g1,c);
 				EXPECT_FALSE(gInfo.WithSTDP);
+				EXPECT_FALSE(gInfo.WithESTDP);
+				EXPECT_FALSE(gInfo.WithISTDP);
 			}
 
 			delete sim;

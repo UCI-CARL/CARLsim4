@@ -438,8 +438,10 @@ void CARLsim::setESTDP(int grpId, bool isSet, stdpType_t type, float alphaLTP, f
 	hasSetSTDPALL_ = grpId==ALL; // adding groups after this will not have conductances set
 
 	if (isSet) { // enable STDP, use custom values
-		assert(tauLTP>0); // TODO make nice
-		assert(tauLTD>0);
+		UserErrors::assertTrue(alphaLTP > 0, UserErrors::MUST_BE_POSITIVE, funcName);
+		UserErrors::assertTrue(alphaLTD > 0, UserErrors::MUST_BE_POSITIVE, funcName);
+		UserErrors::assertTrue(tauLTP > 0, UserErrors::MUST_BE_POSITIVE, funcName);
+		UserErrors::assertTrue(tauLTD > 0, UserErrors::MUST_BE_POSITIVE, funcName);
 		snn_->setESTDP(grpId, true, type, alphaLTP, tauLTP, alphaLTD, tauLTD, configId);
 	} else { // disable STDP and DA-STDP as well
 		snn_->setESTDP(grpId, false, UNKNOWN_STDP, 0.0f, 0.0f, 0.0f, 0.0f, configId);
@@ -469,8 +471,10 @@ void CARLsim::setISTDP(int grpId, bool isSet, stdpType_t type, float betaLTP, fl
 	hasSetSTDPALL_ = grpId==ALL; // adding groups after this will not have conductances set
 
 	if (isSet) { // enable STDP, use custom values
-		assert(lamda>0); // TODO make nice
-		assert(delta>0);
+		UserErrors::assertTrue(betaLTP > 0, UserErrors::MUST_BE_POSITIVE, funcName);
+		UserErrors::assertTrue(betaLTD > 0, UserErrors::MUST_BE_POSITIVE, funcName);
+		UserErrors::assertTrue(lamda > 0, UserErrors::MUST_BE_POSITIVE, funcName);
+		UserErrors::assertTrue(delta > 0, UserErrors::MUST_BE_POSITIVE, funcName);
 		snn_->setISTDP(grpId, true, type, betaLTP, betaLTD, lamda, delta, configId);
 	} else { // disable STDP and DA-STDP as well
 		snn_->setISTDP(grpId, false, UNKNOWN_STDP, 0.0f, 0.0f, 0.0f, 0.0f, configId);
@@ -1029,8 +1033,10 @@ void CARLsim::setDefaultSTDPparams(float alphaLTP, float tauLTP, float alphaLTD,
 void CARLsim::setDefaultESTDPparams(float alphaLTP, float tauLTP, float alphaLTD, float tauLTD) {
 	std::string funcName = "setDefaultESTDPparams()";
 	UserErrors::assertTrue(carlsimState_==CONFIG_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "CONFIG.");
-	assert(tauLTP>0); // TODO make nice
-	assert(tauLTD>0);
+	UserErrors::assertTrue(alphaLTP > 0, UserErrors::MUST_BE_POSITIVE, funcName);
+	UserErrors::assertTrue(alphaLTD > 0, UserErrors::MUST_BE_POSITIVE, funcName);
+	UserErrors::assertTrue(tauLTP > 0, UserErrors::MUST_BE_POSITIVE, funcName);
+	UserErrors::assertTrue(tauLTD > 0, UserErrors::MUST_BE_POSITIVE, funcName);
 	def_STDP_alphaLTP_ = alphaLTP;
 	def_STDP_tauLTP_ = tauLTP;
 	def_STDP_alphaLTD_ = alphaLTD;
@@ -1041,8 +1047,10 @@ void CARLsim::setDefaultESTDPparams(float alphaLTP, float tauLTP, float alphaLTD
 void CARLsim::setDefaultISTDPparams(float betaLTP, float betaLTD, float lamda, float delta) {
 	std::string funcName = "setDefaultISTDPparams()";
 	UserErrors::assertTrue(carlsimState_==CONFIG_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "CONFIG.");
-	assert(lamda>0); // TODO make nice
-	assert(delta>0);
+	UserErrors::assertTrue(betaLTP > 0, UserErrors::MUST_BE_POSITIVE, funcName);
+	UserErrors::assertTrue(betaLTD > 0, UserErrors::MUST_BE_POSITIVE, funcName);
+	UserErrors::assertTrue(lamda > 0, UserErrors::MUST_BE_POSITIVE, funcName);
+	UserErrors::assertTrue(delta > 0, UserErrors::MUST_BE_POSITIVE, funcName);
 	def_STDP_betaLTP_ = betaLTP;
 	def_STDP_betaLTD_ = betaLTD;
 	def_STDP_lamda_ = lamda;
