@@ -117,7 +117,8 @@ void CARLsim::CARLsimInit() {
 	// TODO: add ref
 	// TODO: make STDP type part of default func
 	def_STDP_type_      = STANDARD;
-	setDefaultSTDPparams(0.001f, 20.0f, 0.0012f, 20.0f);
+	setDefaultESTDPparams(0.001f, 20.0f, 0.0012f, 20.0f);
+	setDefaultISTDPparams(0.001f, 0.0012f, 12.0f, 40.0f);
 
 	// set default values for STP params
 	// TODO: add ref
@@ -409,6 +410,11 @@ void CARLsim::setSTDP(int grpId, bool isSet, int configId) {
 	setESTDP(grpId, isSet, configId);
 }
 
+// set STDP, custom, wrapper function
+void CARLsim::setSTDP(int grpId, bool isSet, stdpType_t type, float alphaLTP, float tauLTP, float alphaLTD, float tauLTD, int configId) {
+		setESTDP(grpId, isSet, type, alphaLTP, tauLTP, alphaLTD, tauLTD, configId);
+}
+
 // set ESTDP, default
 void CARLsim::setESTDP(int grpId, bool isSet, int configId) {
 	std::string funcName = "setESTDP(\""+getGroupName(grpId,configId)+"\")";
@@ -421,11 +427,6 @@ void CARLsim::setESTDP(int grpId, bool isSet, int configId) {
 	} else { // disable STDP
 		snn_->setESTDP(grpId, false, UNKNOWN_STDP, 0.0f, 0.0f, 0.0f, 0.0f, configId);
 	}
-}
-
-// set STDP, custom, wrapper function
-void CARLsim::setSTDP(int grpId, bool isSet, stdpType_t type, float alphaLTP, float tauLTP, float alphaLTD, float tauLTD, int configId) {
-		setESTDP(grpId, isSet, type, alphaLTP, tauLTP, alphaLTD, tauLTD, configId);
 }
 
 // set ESTDP, custom
@@ -442,6 +443,37 @@ void CARLsim::setESTDP(int grpId, bool isSet, stdpType_t type, float alphaLTP, f
 		snn_->setESTDP(grpId, true, type, alphaLTP, tauLTP, alphaLTD, tauLTD, configId);
 	} else { // disable STDP and DA-STDP as well
 		snn_->setESTDP(grpId, false, UNKNOWN_STDP, 0.0f, 0.0f, 0.0f, 0.0f, configId);
+	}
+}
+
+// set ISTDP, default
+void CARLsim::setISTDP(int grpId, bool isSet, int configId) {
+	std::string funcName = "setISTDP(\""+getGroupName(grpId,configId)+"\")";
+	UserErrors::assertTrue(carlsimState_==CONFIG_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "CONFIG.");
+
+	hasSetSTDPALL_ = grpId==ALL; // adding groups after this will not have conductances set
+
+	if (isSet) { // enable STDP, use default values and type
+		snn_->setISTDP(grpId, true, def_STDP_type_, def_STDP_betaLTP_, def_STDP_betaLTD_, def_STDP_lamda_, def_STDP_delta_, configId);
+	} else { // disable STDP
+		snn_->setISTDP(grpId, false, UNKNOWN_STDP, 0.0f, 0.0f, 0.0f, 0.0f, configId);
+	}
+}
+
+// set ISTDP, custom
+void CARLsim::setISTDP(int grpId, bool isSet, stdpType_t type, float betaLTP, float betaLTD, float lamda, float delta, int configId) {
+	std::string funcName = "setISTDP(\""+getGroupName(grpId,configId)+","+stdpType_string[type]+"\")";
+	UserErrors::assertTrue(type!=UNKNOWN_STDP, UserErrors::CANNOT_BE_UNKNOWN, funcName, "Mode");
+	UserErrors::assertTrue(carlsimState_==CONFIG_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "CONFIG.");
+
+	hasSetSTDPALL_ = grpId==ALL; // adding groups after this will not have conductances set
+
+	if (isSet) { // enable STDP, use custom values
+		assert(lamda>0); // TODO make nice
+		assert(delta>0);
+		snn_->setISTDP(grpId, true, type, betaLTP, betaLTD, lamda, delta, configId);
+	} else { // disable STDP and DA-STDP as well
+		snn_->setISTDP(grpId, false, UNKNOWN_STDP, 0.0f, 0.0f, 0.0f, 0.0f, configId);
 	}
 }
 
@@ -988,9 +1020,14 @@ void CARLsim::setDefaultSaveOptions(std::string fileName, bool saveSynapseInfo) 
 	fclose(fpTry);
 }
 
-// set default values for STDP params
+// wrapper function, set default values for E-STDP params
 void CARLsim::setDefaultSTDPparams(float alphaLTP, float tauLTP, float alphaLTD, float tauLTD) {
-	std::string funcName = "setDefaultSTDPparams()";
+	setDefaultESTDPparams(alphaLTP, tauLTP, alphaLTD, tauLTD);
+}
+
+// set default values for E-STDP params
+void CARLsim::setDefaultESTDPparams(float alphaLTP, float tauLTP, float alphaLTD, float tauLTD) {
+	std::string funcName = "setDefaultESTDPparams()";
 	UserErrors::assertTrue(carlsimState_==CONFIG_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "CONFIG.");
 	assert(tauLTP>0); // TODO make nice
 	assert(tauLTD>0);
@@ -998,6 +1035,18 @@ void CARLsim::setDefaultSTDPparams(float alphaLTP, float tauLTP, float alphaLTD,
 	def_STDP_tauLTP_ = tauLTP;
 	def_STDP_alphaLTD_ = alphaLTD;
 	def_STDP_tauLTD_ = tauLTD;
+}
+
+// set default values for I-STDP params
+void CARLsim::setDefaultISTDPparams(float betaLTP, float betaLTD, float lamda, float delta) {
+	std::string funcName = "setDefaultISTDPparams()";
+	UserErrors::assertTrue(carlsimState_==CONFIG_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "CONFIG.");
+	assert(lamda>0); // TODO make nice
+	assert(delta>0);
+	def_STDP_betaLTP_ = betaLTP;
+	def_STDP_betaLTD_ = betaLTD;
+	def_STDP_lamda_ = lamda;
+	def_STDP_delta_ = delta;
 }
 
 // set default STP values for an EXCITATORY_NEURON or INHIBITORY_NEURON
