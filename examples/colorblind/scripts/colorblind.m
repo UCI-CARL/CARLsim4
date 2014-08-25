@@ -1,6 +1,6 @@
 % Version 3/22/14
 
-addpath ../../common
+addpath ../../../util/scripts
 
 list={'R','G','B','C','M','Y'};
 nrX=64;

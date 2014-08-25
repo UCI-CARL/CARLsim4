@@ -1,6 +1,6 @@
 % Version 3/22/14
 
-addpath ../../common
+addpath ../../../util/scripts
 
 list={'R','M','B','C','G','Y'};
 R=struct;

@@ -94,7 +94,7 @@ int main()
 {
 	// simulation details
 #if (WIN32 || WIN64)
-	std::string saveFolder = "";
+	std::string saveFolder = "results/";
 #else
 	std::string saveFolder = "examples/dastdp/results/";
 #endif
@@ -187,7 +187,7 @@ int main()
 	// ToDo: replace weights write out by ConnectionMonitor
 	sim.getPopWeights(gin, g1, weights, size);
 #if (WIN32 || WIN64)
-	FILE* fid = fopen("weight.csv", "w");
+	FILE* fid = fopen("results/weight.csv", "w");
 #else
 	FILE* fid = fopen("examples/dastdp/results/weight.csv", "w");
 #endif
