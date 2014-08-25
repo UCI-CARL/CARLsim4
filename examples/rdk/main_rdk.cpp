@@ -268,8 +268,11 @@ public:
 int main()
 {
 	MTRand	      getRand(210499257);
-
+#if (WIN32 || WIN64)
+	std::string saveFolder = "results/";
+#else
 	std::string saveFolder = "examples/rdk/results/";
+#endif
 
 	float synscale = 1;
 	float stdpscale = 1;
@@ -351,7 +354,11 @@ int main()
 
 	for(long long i=0; i<VIDLEN; i++) {
 		if (i%VIDLEN==0) {
+#if (WIN32 || WIN64)
+			fid = fopen("videos/rdk3.dat","rb");
+#else
 			fid = fopen("examples/rdk/videos/rdk3.dat","rb");
+#endif
 			if (fid==NULL) {
 				printf("ERROR: could not open video file\n");
 				exit(1);

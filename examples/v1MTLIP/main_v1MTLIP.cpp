@@ -41,6 +41,12 @@
 #include <mtrand.h>
 #include <string.h>
 
+#if (WIN32 || WIN64)
+#define _USE_MATH_DEFINES
+#include <math.h>
+#include <time.h>
+#endif
+
 // stim must be a file of unsigned char in RGB, arranged as R1 G1 B1 R2 G2 B2 ...
 void calcColorME(int nrX, int nrY, unsigned char* stim, float* red_green, float* green_red, float* blue_yellow,
 					float* yellow_blue, float* ME, bool GPUpointers);
@@ -272,8 +278,10 @@ public:
 		// normpdf(-9:9,0,3) in Matlab. mtPoolFilt stores only the last 9 elements (starting at the peak). So if mtX
 		// and v1X are i pixel away from each other, the Gaussian contribution factor is mtPoolFilt[i]. Apply in X and Y
 		// to generate a 2-D Gaussian.
-		int gaussX = abs(round(mtX-v1X));
-		int gaussY = abs(round(mtY-v1Y));
+		//int gaussX = abs(round(mtX-v1X));
+		//int gaussY = abs(round(mtY-v1Y));
+		int gaussX = abs(mtX-v1X);
+		int gaussY = abs(mtY-v1Y);
 		float gauss = ((gaussX<poolCDSsz)?poolCDSfilt[gaussX]:0.0f) * ((gaussY<poolCDSsz)?poolCDSfilt[gaussY]:0.0f);
 		bool connectGauss = v1X==mtX && v1Y==mtY;
 
@@ -316,8 +324,10 @@ public:
 		int postPool = j/(nrX*nrY);
 
 		// fast_exp(x) is 1 at x=0, and decays such that at x=-1 it is 0
-		int gaussX = abs(round(postX-preX));
-		int gaussY = abs(round(postY-preY));
+		//int gaussX = abs(round(postX-preX));
+		//int gaussY = abs(round(postY-preY));
+		int gaussX = abs(postX-preX);
+		int gaussY = abs(postY-preY);
 
 		float gausPos = ((gaussX<poolPDSsz)?poolPDSfilt[gaussX]:0.0f) * ((gaussY<poolPDSsz)?poolPDSfilt[gaussY]:0.0f);
 		gausPos /= poolPDSfilt[0];
@@ -527,6 +537,26 @@ int main()
 
 	// at the beginning of this file, set the experiment to run
 	// expected format of video: R1 G1 B1 R2 G2 B2 ... e[0,255]
+#if (WIN32 || WIN64)
+	#if defined RUN_DIRECTION_TUNING
+	char loadVideo[] 	 = "videos/mkGratingPlaid_ctrst0.3_32x32x2400.dat";
+	int vidLen			 = 2400; // number of frames
+	#elif defined RUN_SPEED_TUNING
+	char loadVideo[]	 = "videos/mkBarSpeed_ctrst0.2_32x32x7520.dat";
+	int vidLen			 = 7520;
+	#elif defined RUN_CONTRAST_SENSITIVITY
+	char loadVideo[]	 = "videos/mkGratingContrast_32x32x1000.dat";
+	int vidLen			 = 1000;
+	#elif defined RUN_RDK
+	char loadVideo[]	 = "videos/mkRDK_32x32x14400.dat";
+	int vidLen 			 = 14400;
+	#else
+	char loadVideo[]	 = "";
+	int vidLen			 = 0;
+	printf("ERROR: NO EXPERIMENT SELECTED\n");
+	exit(1);
+	#endif
+#else
 	#if defined RUN_DIRECTION_TUNING
 	char loadVideo[] 	 = "examples/v1MTLIP/videos/mkGratingPlaid_ctrst0.3_32x32x2400.dat";
 	int vidLen			 = 2400; // number of frames
@@ -545,10 +575,15 @@ int main()
 	printf("ERROR: NO EXPERIMENT SELECTED\n");
 	exit(1);
 	#endif
+#endif
 
 
 	int startAtFrame	   = 0;                           // at which frame of movie to start
+#if (WIN32 || WIN64)
+	std::string saveFolder = "results/"; // where to store all files
+#else
 	std::string saveFolder = "examples/v1MTLIP/results/"; // where to store all files
+#endif
 	bool storeNetwork	   = false;	                      // store network? at beginning and end
 	bool onGPU			   = true;                        // run on GPU?
 	int ithGPU 			   = 0;	                          // on which GPU to run (in case of carlculator: 0-3)
