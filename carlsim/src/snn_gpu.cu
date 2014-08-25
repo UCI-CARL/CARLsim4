@@ -110,7 +110,6 @@ __device__ int  receiverId[1000];
 __device__ __constant__ network_ptr_t		gpuPtrs;
 __device__ __constant__ network_info_t		gpuNetInfo;
 __device__ __constant__ group_info_t		gpuGrpInfo[MAX_GRP_PER_SNN];
-//	__device__ __constant__ noiseGenProperty_t*	gpu_noiseGenGroup;
 
 __device__ __constant__ float				constData[256];
 
@@ -3378,6 +3377,10 @@ void CpuSNN::allocateSNN_GPU() {
 			CARLSIM_DEBUG("\t\tTAU_LTD_INV: %f",grp_Info[i].TAU_LTD_INV);
 			CARLSIM_DEBUG("\t\tALPHA_LTP: %f",grp_Info[i].ALPHA_LTP);
 			CARLSIM_DEBUG("\t\tALPHA_LTD: %f",grp_Info[i].ALPHA_LTD);
+			CARLSIM_DEBUG("\t\tLAMDA: %f",grp_Info[i].LAMDA);
+			CARLSIM_DEBUG("\t\tDELTA: %f",grp_Info[i].DELTA);
+			CARLSIM_DEBUG("\t\tBETA_LTP: %f",grp_Info[i].BETA_LTP);
+			CARLSIM_DEBUG("\t\tBETA_LTD: %f",grp_Info[i].BETA_LTD);
 		}
 		CARLSIM_DEBUG("\tWithSTP: %d",(int)grp_Info[i].WithSTP);
 		if (grp_Info[i].WithSTP) {

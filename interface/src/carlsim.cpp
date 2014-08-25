@@ -404,25 +404,33 @@ void CARLsim::setNeuromodulator(int grpId,float tauDP, float tau5HT, float tauAC
 	snn_->setNeuromodulator(grpId, 1.0f, tauDP, 1.0f, tau5HT, 1.0f, tauACh, 1.0f, tauNE, configId);
 }
 
-// set STDP, default
+// set STDP, default, wrapper function
 void CARLsim::setSTDP(int grpId, bool isSet, int configId) {
-	std::string funcName = "setSTDP(\""+getGroupName(grpId,configId)+"\")";
+	setESTDP(grpId, isSet, configId);
+}
+
+// set ESTDP, default
+void CARLsim::setESTDP(int grpId, bool isSet, int configId) {
+	std::string funcName = "setESTDP(\""+getGroupName(grpId,configId)+"\")";
 	UserErrors::assertTrue(carlsimState_==CONFIG_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "CONFIG.");
 
 	hasSetSTDPALL_ = grpId==ALL; // adding groups after this will not have conductances set
 
 	if (isSet) { // enable STDP, use default values and type
-		snn_->setSTDP(grpId, true, def_STDP_type_, def_STDP_alphaLTP_, def_STDP_tauLTP_, def_STDP_alphaLTD_,
-			def_STDP_tauLTD_, configId);
+		snn_->setESTDP(grpId, true, def_STDP_type_, def_STDP_alphaLTP_, def_STDP_tauLTP_, def_STDP_alphaLTD_, def_STDP_tauLTD_, configId);
 	} else { // disable STDP
-		snn_->setSTDP(grpId, false, UNKNOWN_STDP, 0.0f, 0.0f, 0.0f, 0.0f, configId);
+		snn_->setESTDP(grpId, false, UNKNOWN_STDP, 0.0f, 0.0f, 0.0f, 0.0f, configId);
 	}
 }
 
-// set STDP, custom
-void CARLsim::setSTDP(int grpId, bool isSet, stdpType_t type, float alphaLTP, float tauLTP, float alphaLTD,
-		float tauLTD, int configId) {
-	std::string funcName = "setSTDP(\""+getGroupName(grpId,configId)+","+stdpType_string[type]+"\")";
+// set STDP, custom, wrapper function
+void CARLsim::setSTDP(int grpId, bool isSet, stdpType_t type, float alphaLTP, float tauLTP, float alphaLTD, float tauLTD, int configId) {
+		setESTDP(grpId, isSet, type, alphaLTP, tauLTP, alphaLTD, tauLTD, configId);
+}
+
+// set ESTDP, custom
+void CARLsim::setESTDP(int grpId, bool isSet, stdpType_t type, float alphaLTP, float tauLTP, float alphaLTD, float tauLTD, int configId) {
+	std::string funcName = "setESTDP(\""+getGroupName(grpId,configId)+","+stdpType_string[type]+"\")";
 	UserErrors::assertTrue(type!=UNKNOWN_STDP, UserErrors::CANNOT_BE_UNKNOWN, funcName, "Mode");
 	UserErrors::assertTrue(carlsimState_==CONFIG_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "CONFIG.");
 
@@ -431,9 +439,9 @@ void CARLsim::setSTDP(int grpId, bool isSet, stdpType_t type, float alphaLTP, fl
 	if (isSet) { // enable STDP, use custom values
 		assert(tauLTP>0); // TODO make nice
 		assert(tauLTD>0);
-		snn_->setSTDP(grpId, true, type, alphaLTP, tauLTP, alphaLTD, tauLTD, configId);
+		snn_->setESTDP(grpId, true, type, alphaLTP, tauLTP, alphaLTD, tauLTD, configId);
 	} else { // disable STDP and DA-STDP as well
-		snn_->setSTDP(grpId, false, UNKNOWN_STDP, 0.0f, 0.0f, 0.0f, 0.0f, configId);
+		snn_->setESTDP(grpId, false, UNKNOWN_STDP, 0.0f, 0.0f, 0.0f, 0.0f, configId);
 	}
 }
 

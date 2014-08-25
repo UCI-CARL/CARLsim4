@@ -232,11 +232,17 @@ struct RangeWeight {
 
 typedef struct GroupSTDPInfo_s {
 	bool 		WithSTDP;
+	bool		WithESTDP;
+	bool		WithISTDP;
 	stdpType_t  WithSTDPtype;
 	float		TAU_LTP_INV;
 	float		TAU_LTD_INV;
 	float		ALPHA_LTP;
 	float		ALPHA_LTD;
+	float		BETA_LTP;
+	float		BETA_LTD;
+	float		LAMDA;
+	float		DELTA;
 } GroupSTDPInfo_t;
 
 typedef struct GroupNeuromodulatorInfo_s {

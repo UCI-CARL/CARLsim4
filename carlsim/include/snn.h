@@ -254,7 +254,7 @@ public:
 	void setNeuromodulator(int grpId, float baseDP, float tauDP, float base5HT, float tau5HT,
 							float baseACh, float tauACh, float baseNE, float tauNE, int configId);
 
-	//! Set the spike-timing-dependent plasticity (STDP) for a neuron group.
+	//! Set the excitatory spike-timing-dependent plasticity (STDP) for a neuron group.
 	/*
 	 * \brief STDP must be defined post-synaptically; that is, if STP should be implemented on the connections from group 0 to group 1,
 	 * call setSTP on group 1. Fore details on the phenomeon, see (for example) (Bi & Poo, 2001).
@@ -267,14 +267,23 @@ public:
 	 * \param[in] tauLTD decay time constant for LTD
 	 * \param[in] configId (optional, deprecated) configuration id
 	 */
-	void setSTDP(int grpId, bool isSet, stdpType_t type, float alphaLTP, float tauLTP, float alphaLTD, float tauLTD,
+	void setESTDP(int grpId, bool isSet, stdpType_t type, float alphaLTP, float tauLTP, float alphaLTD, float tauLTD,
 		int configId);
 
-	//! Set the excitatory spike-timing-dependent plasticity (STDP) for a neuron group.
+	//! Set the inhibitory spike-timing-dependent plasticity (STDP) with anti-hebbian curve for a neuron group
 	/*
-	 * \sa STDP
+	 * \brief STDP must be defined post-synaptically; that is, if STP should be implemented on the connections from group 0 to group 1,
+	 * call setSTP on group 1. Fore details on the phenomeon, see (for example) (Bi & Poo, 2001).
+	 * \param[in] grpId ID of the neuron group
+	 * \param[in] isSet_enable set to true to enable STDP for this group
+	 * \param[in] type STDP type (STANDARD, DA_MOD)
+	 * \param[in] betaLTP magnitude for LTP change
+	 * \param[in] betaLTD magnitude for LTD change (leave positive)
+	 * \param[in] lamda, the interval for LTP
+	 * \param[in] delta, the interval for LTD
+	 * \param[in] configId (optional, deprecated) configuration id
 	 */
-	void setESTDP(int grpId, bool isSet, stdpType_t type, float alphaLTP, float tauLTP, float alphaLTD, float tauLTD,
+	void setISTDP(int grpId, bool isSet, stdpType_t type, float betaLTP, float betaLTD, float lamda, float delta,
 		int configId);
 
 	/*!

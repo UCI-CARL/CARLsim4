@@ -154,7 +154,8 @@ inline bool isInhibitoryNeuron (unsigned int& nid, unsigned int& numNInhPois, un
 
 #define DEBUG_LEVEL		0
 
-#define MAX_GRP_PER_SNN 250
+//#define MAX_GRP_PER_SNN 250 // consume too much gloabl costant data area
+#define MAX_GRP_PER_SNN 128
 
 
 

@@ -224,6 +224,10 @@ void CpuSNN::printGroupInfo(int grpId) {
 		CARLSIM_INFO("      - ALPHA_LTD              = %8.5f", grp_Info[grpId].ALPHA_LTD);
 		CARLSIM_INFO("      - TAU_LTP_INV            = %8.5f", grp_Info[grpId].TAU_LTP_INV);
 		CARLSIM_INFO("      - TAU_LTD_INV            = %8.5f", grp_Info[grpId].TAU_LTD_INV);
+		CARLSIM_INFO("      - BETA_LTP               = %8.5f", grp_Info[grpId].BETA_LTP);
+		CARLSIM_INFO("      - BETA_LTD               = %8.5f", grp_Info[grpId].BETA_LTD);
+		CARLSIM_INFO("      - LAMDA                  = %8.5f", grp_Info[grpId].LAMDA);
+		CARLSIM_INFO("      - DELTA                  = %8.5f", grp_Info[grpId].DELTA);
 	}
 }
 

@@ -530,9 +530,8 @@ void CpuSNN::setNeuromodulator(int grpId, float baseDP, float tauDP, float base5
 	}
 }
 
-// set STDP params
-void CpuSNN::setSTDP(int grpId, bool isSet, stdpType_t type, float alphaLTP, float tauLTP, float alphaLTD, float tauLTD,
-	int configId) {
+// set ESTDP params
+void CpuSNN::setESTDP(int grpId, bool isSet, stdpType_t type, float alphaLTP, float tauLTP, float alphaLTD, float tauLTD, int configId) {
 	assert(grpId>=-1); assert(configId>=-1);
 	if (isSet) {
 		assert(type!=UNKNOWN_STDP);
@@ -541,31 +540,73 @@ void CpuSNN::setSTDP(int grpId, bool isSet, stdpType_t type, float alphaLTP, flo
 
 	if (grpId==ALL && configId==ALL) { // shortcut for all groups & configs
 		for(int g=0; g < numGrp; g++)
-			setSTDP(g, isSet, type, alphaLTP, tauLTP, alphaLTD, tauLTD, 0);
+			setESTDP(g, isSet, type, alphaLTP, tauLTP, alphaLTD, tauLTD, 0);
 	} else if (grpId == ALL) { // shortcut for all groups
 		for(int grpId1=0; grpId1 < numGrp; grpId1 += nConfig_) {
 			int g = getGroupId(grpId1, configId);
-			setSTDP(g, isSet, type, alphaLTP, tauLTP, alphaLTD, tauLTD, configId);
+			setESTDP(g, isSet, type, alphaLTP, tauLTP, alphaLTD, tauLTD, configId);
 		}
 	} else if (configId == ALL) { // shortcut for all configs
 		for(int c=0; c < nConfig_; c++)
-			setSTDP(grpId, isSet, type, alphaLTP, tauLTP, alphaLTD, tauLTD, c);
+			setESTDP(grpId, isSet, type, alphaLTP, tauLTP, alphaLTD, tauLTD, c);
 	} else {
 		// set STDP for a given group and configId
 		int cGrpId = getGroupId(grpId, configId);
-		sim_with_stdp 				   |= isSet;
-		grp_Info[cGrpId].WithSTDP 		= isSet;
-		grp_Info[cGrpId].WithSTDPtype	= type;
+		// set params for STDP curve
 		grp_Info[cGrpId].ALPHA_LTP 		= alphaLTP;
 		grp_Info[cGrpId].ALPHA_LTD 		= alphaLTD;
 		grp_Info[cGrpId].TAU_LTP_INV 	= 1.0f/tauLTP;
 		grp_Info[cGrpId].TAU_LTD_INV	= 1.0f/tauLTD;
+		// set flags for STDP function
+		grp_Info[cGrpId].WithSTDPtype	= type;
+		grp_Info[cGrpId].WithESTDP		= isSet;
+		grp_Info[cGrpId].WithSTDP		|= grp_Info[cGrpId].WithESTDP;
+		sim_with_stdp					|= grp_Info[cGrpId].WithSTDP;
+
 		grp_Info[cGrpId].newUpdates 	= true; // \FIXME whatsathiis?
 
-		CARLSIM_INFO("STDP %s for %s(%d)", isSet?"enabled":"disabled", grp_Info2[cGrpId].Name.c_str(), cGrpId);
+		CARLSIM_INFO("E-STDP %s for %s(%d)", isSet?"enabled":"disabled", grp_Info2[cGrpId].Name.c_str(), cGrpId);
 	}
 }
 
+// set ISTDP params
+void CpuSNN::setISTDP(int grpId, bool isSet, stdpType_t type, float betaLTP, float betaLTD, float lamda, float delta, int configId) {
+	assert(grpId>=-1); assert(configId>=-1);
+	if (isSet) {
+		assert(type!=UNKNOWN_STDP);
+		assert(betaLTP>=0); assert(betaLTD>=0); assert(lamda>=0); assert(delta>=0);
+	}
+
+	if (grpId==ALL && configId==ALL) { // shortcut for all groups & configs
+		for(int g=0; g < numGrp; g++)
+			setISTDP(g, isSet, type, betaLTP, betaLTD, lamda, delta, 0);
+	} else if (grpId == ALL) { // shortcut for all groups
+		for(int grpId1=0; grpId1 < numGrp; grpId1 += nConfig_) {
+			int g = getGroupId(grpId1, configId);
+			setISTDP(g, isSet, type, betaLTP, betaLTD, lamda, delta, configId);
+		}
+	} else if (configId == ALL) { // shortcut for all configs
+		for(int c=0; c < nConfig_; c++)
+			setISTDP(grpId, isSet, type, betaLTP, betaLTD, lamda, delta, c);
+	} else {
+		// set STDP for a given group and configId
+		int cGrpId = getGroupId(grpId, configId);
+		// set params for STDP curve
+		grp_Info[cGrpId].BETA_LTP 		= betaLTP;
+		grp_Info[cGrpId].BETA_LTD 		= betaLTD;
+		grp_Info[cGrpId].LAMDA			= lamda;
+		grp_Info[cGrpId].DELTA			= delta;
+		// set flags for STDP function
+		grp_Info[cGrpId].WithSTDPtype	= type;
+		grp_Info[cGrpId].WithISTDP		= isSet;
+		grp_Info[cGrpId].WithSTDP		|= grp_Info[cGrpId].WithISTDP;
+		sim_with_stdp					|= grp_Info[cGrpId].WithSTDP;
+
+		grp_Info[cGrpId].newUpdates 	= true; // \FIXME whatsathiis?
+
+		CARLSIM_INFO("I-STDP %s for %s(%d)", isSet?"enabled":"disabled", grp_Info2[cGrpId].Name.c_str(), cGrpId);
+	}
+}
 
 // set STP params
 void CpuSNN::setSTP(int grpId, bool isSet, float STP_U, float STP_tau_u, float STP_tau_x, int configId) {
@@ -1566,11 +1607,17 @@ GroupSTDPInfo_t CpuSNN::getGroupSTDPInfo(int grpId, int configId) {
 	int cGrpId = getGroupId(grpId, configId);
 
 	gInfo.WithSTDP = grp_Info[cGrpId].WithSTDP;
+	gInfo.WithESTDP = grp_Info[cGrpId].WithESTDP;
+	gInfo.WithISTDP = grp_Info[cGrpId].WithISTDP;
 	gInfo.WithSTDPtype = grp_Info[cGrpId].WithSTDPtype;
 	gInfo.ALPHA_LTD = grp_Info[cGrpId].ALPHA_LTD;
 	gInfo.ALPHA_LTP = grp_Info[cGrpId].ALPHA_LTP;
 	gInfo.TAU_LTD_INV = grp_Info[cGrpId].TAU_LTD_INV;
 	gInfo.TAU_LTP_INV = grp_Info[cGrpId].TAU_LTP_INV;
+	gInfo.BETA_LTP = grp_Info[cGrpId].BETA_LTP;
+	gInfo.BETA_LTD = grp_Info[cGrpId].BETA_LTD;
+	gInfo.LAMDA = grp_Info[cGrpId].LAMDA;
+	gInfo.DELTA = grp_Info[cGrpId].DELTA;
 
 	return gInfo;
 }
@@ -1962,6 +2009,8 @@ void CpuSNN::CpuSNNinit() {
 		grp_Info[i].numPreSynapses 	= 0;	// default value
 		grp_Info[i].WithSTP = false;
 		grp_Info[i].WithSTDP = false;
+		grp_Info[i].WithESTDP = false;
+		grp_Info[i].WithISTDP = false;
 		grp_Info[i].WithSTDPtype = UNKNOWN_STDP;
 		grp_Info[i].FixedInputWts = true; // Default is true. This value changed to false
 		// if any incoming  connections are plastic

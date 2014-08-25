@@ -420,18 +420,33 @@ public:
 	/*!
 	 * \brief Sets default STDP mode and params
 	 *
-	 * \TODO finish docu
-	 * \STATE CONFIG
+	 * \sa setESTDP
 	 */
 	void setSTDP(int grpId, bool isSet, int configId=ALL);
 
 	/*!
-	 * \brief Sets STDP params for a group, custom
+	 * \brief Sets default E-STDP mode and params
 	 *
 	 * \TODO finish docu
 	 * \STATE CONFIG
 	 */
+	void setESTDP(int grpId, bool isSet, int configId=ALL);
+
+	/*!
+	 * \brief Sets STDP params for a group, custom
+	 *
+	 * \sa setESTDP
+	 */
 	void setSTDP(int grpId, bool isSet, stdpType_t type, float alphaLTP, float tauLTP, float alphaLTD, float tauLTD,
+		int configId=ALL);
+
+	/*!
+	 * \brief Sets E-STDP params for a group, custom
+	 *
+	 * \TODO finish docu
+	 * \STATE CONFIG
+	 */
+	void setESTDP(int grpId, bool isSet, stdpType_t type, float alphaLTP, float tauLTP, float alphaLTD, float tauLTD,
 		int configId=ALL);
 
 	/*!
