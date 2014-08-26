@@ -9,25 +9,61 @@
 /*!
  * \brief controller for spike timing
  */
-class SpikeController: public SpikeGenerator {
+class QuotaSpikeController: public SpikeGenerator {
 private:
-	int rewardQuota;
+	int quota;
 public:
-	SpikeController() {
-		rewardQuota = 0;
+	QuotaSpikeController() {
+		quota = 0;
 	}
 
 	unsigned int nextSpikeTime(CARLsim* s, int grpId, int nid, unsigned int currentTime, unsigned int lastScheduledSpikeTime) {
-		if (rewardQuota > 0 && lastScheduledSpikeTime < currentTime + 500) {
-			rewardQuota--;
+		if (quota > 0 && lastScheduledSpikeTime < currentTime + 500) {
+			quota--;
 			return currentTime + 500;
 		}
 
 		return 0xFFFFFFFF;
 	}
 
-	void setReward(int quota) {
-		rewardQuota = quota;
+	void setQuota(int nQuota) {
+		quota = nQuota;
+	}
+};
+
+class TwoGroupsSpikeController: public SpikeGenerator {
+private:
+	int isi;
+	int offset;
+	int g1;
+	int g2;
+	bool setOffset;
+public:
+	TwoGroupsSpikeController(int interSpikeInterval, int offsetToFirstGroup, int firstGroup, int secondGroup) {
+		isi = interSpikeInterval;
+		offset = offsetToFirstGroup;
+		g1 = firstGroup;
+		g2 = secondGroup;
+		setOffset = false;
+	}
+
+	unsigned int nextSpikeTime(CARLsim* s, int grpId, int nid, unsigned int currentTime, unsigned int lastScheduledSpikeTime) {
+		if (grpId == g1) // gin
+			return lastScheduledSpikeTime + isi;
+		else if (grpId == g2) { // gex
+			if (!setOffset) {
+				setOffset = true;
+				return lastScheduledSpikeTime + isi + offset;
+			} else
+				return lastScheduledSpikeTime + isi;
+		}
+
+		return 0xFFFFFFFF;
+	}
+
+	void updateOffset(int newOffset) {
+		offset = newOffset;
+		setOffset = false;
 	}
 };
 
@@ -131,6 +167,10 @@ TEST(STDP, setSTDPFalse) {
 	}
 }
 
+/*!
+ * \brief testing setSTDPNeuromodulatorParameters
+ * This function tests the information stored in the group info struct after setting neuromodulator parameters
+ */
 TEST(STDP, setNeuromodulatorParameters) {
 	// create network by varying nConfig from 1...maxConfig, with step size nConfigStep
 	std::string name="SNN";
@@ -160,8 +200,6 @@ TEST(STDP, setNeuromodulatorParameters) {
 			sim->setNeuromodulator(g1, baseDP, tauDP, base5HT, tau5HT,
 									baseACh, tauACh, baseNE, tauNE);
 
-			// Temporarily mark out the testing code
-			// Discuss whether carlsim user interface needs to spport group_info_t
 			for (int c=0; c<nConfig; c++) {
 				GroupSTDPInfo_t gInfo = sim->getGroupSTDPInfo(g1,c);
 				EXPECT_TRUE(gInfo.WithSTDP);
@@ -183,14 +221,19 @@ TEST(STDP, setNeuromodulatorParameters) {
 	}
 }
 
-TEST(STDP, DASTDPweightBoost) {
+/*!
+ * \brief testing the effect of dopamine modulation
+ * This function tests the effect of dopamine modulation on a single synapse (reinforcement learning).
+ * The the synaptic weight modulated by dopamine is expected to be higher than that without dopamine modulation
+ */
+TEST(STDP, DASTDPWeightBoost) {
 	float tauLTP = 20.0f;
 	float tauLTD = 20.0f;
 	float alphaLTP = 0.1f;
 	float alphaLTD = 0.122f;
 	CARLsim* sim;
 	int g1, gin, g1noise, gda;
-	SpikeController* spikeCtrl = new SpikeController();
+	QuotaSpikeController* spikeCtrl = new QuotaSpikeController();
 	std::vector<int> spikesPost;
 	std::vector<int> spikesPre;
 	float* weights;
@@ -261,7 +304,7 @@ TEST(STDP, DASTDPweightBoost) {
 							// if LTP is detected, set up reward (activate DA neurons ) to reinforcement this synapse
 							if (diff > 0 && diff <= 20) {
 								//printf("LTP\n");
-								if (damod) spikeCtrl->setReward(500);
+								if (damod) spikeCtrl->setQuota(500);
 							}
 
 							//if (diff < 0 && diff >= -20)
@@ -285,4 +328,110 @@ TEST(STDP, DASTDPweightBoost) {
 	}
 
 	delete spikeCtrl;
+}
+
+/*!
+ * \brief testing the I-STDP fuction
+ * This function tests whether I-STDP change synaptic weight as expected
+ * Wtih control of pre- and post-neurons' spikes, the synaptic weight is expected to increase or decrease to
+ * maximum or minimum synaptic weith respectively.
+ */
+TEST(STDP, ISTDPWeightChange) {
+	// simulation details
+	float* weights = NULL;
+	int size;
+	SpikeMonitor* spikeMon1;
+	SpikeMonitor* spikeMonIn;
+	SpikeMonitor* spikeMonEx;
+	TwoGroupsSpikeController* spikeCtrl;
+	int gin, gex, g1;
+	float BETA_LTP = 0.10f;
+	float BETA_LTD = 0.14f;
+	float LAMDA = 9.0f;
+	float DELTA = 40.0f;
+	float maxInhWeight = 10.0f;
+	float initWeight = 5.0f;
+	float minInhWeight = 0.0f;
+	CARLsim* sim;
+
+	for (int mode = 0; mode < 1/*2*/; mode++) {
+		for (int coba = 0; coba < 2; coba++) {
+			for (int offset = -15; offset <= 15; offset += 10) {
+				//printf("mode:%d coda:%d offset:%d\n", mode, coba, offset);
+				// create a network
+				sim = new CARLsim("istdp", CPU_MODE/*mode?GPU_MODE:CPU_MODE*/, SILENT, 0, 1, 42);
+
+				g1 = sim->createGroup("excit", 1, EXCITATORY_NEURON);
+				sim->setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f);
+
+				gex = sim->createSpikeGeneratorGroup("input-ex", 1, EXCITATORY_NEURON);
+				gin = sim->createSpikeGeneratorGroup("input-in", 1, INHIBITORY_NEURON);
+
+				spikeCtrl = new TwoGroupsSpikeController(100, offset, gin, gex);
+
+				if (coba) { // conductance-based
+					sim->connect(gex, g1, "one-to-one", RangeWeight(40.0f/100), 1.0f, RangeDelay(1), SYN_FIXED);
+					sim->connect(gin, g1, "one-to-one", RangeWeight(minInhWeight, initWeight/100, maxInhWeight/100), 1.0f, RangeDelay(1), SYN_PLASTIC);
+
+					// enable COBA, set up ISTDP
+					sim->setConductances(true,5,150,6,150);
+					sim->setISTDP(g1, true, STANDARD, BETA_LTP/100, BETA_LTD/100, LAMDA, DELTA);
+				} else { // current-based
+					sim->connect(gex, g1, "one-to-one", RangeWeight(40.0f), 1.0f, RangeDelay(1), SYN_FIXED);
+					sim->connect(gin, g1, "one-to-one", RangeWeight(minInhWeight, initWeight, maxInhWeight), 1.0f, RangeDelay(1), SYN_PLASTIC);
+
+					// set up ISTDP
+					sim->setISTDP(g1, true, STANDARD, BETA_LTP, BETA_LTD, LAMDA, DELTA);
+				}
+
+				// set up spike controller on DA neurons
+				sim->setSpikeGenerator(gex, spikeCtrl);
+				sim->setSpikeGenerator(gin, spikeCtrl);
+
+				// build the network
+				sim->setupNetwork();
+
+				spikeMon1 = sim->setSpikeMonitor(g1);
+				spikeMonIn = sim->setSpikeMonitor(gin);
+				spikeMonEx = sim->setSpikeMonitor(gex);
+
+				// run for 10 seconds
+				for (int t = 0; t < 20; t++) {
+					spikeMon1->startRecording();
+					spikeMonIn->startRecording();
+					spikeMonEx->startRecording();
+					sim->runNetwork(1,0, true, true);
+					spikeMon1->stopRecording();
+					spikeMonIn->stopRecording();
+					spikeMonEx->stopRecording();
+
+					//spikeMonIn->print();
+					//spikeMonEx->print();
+					//spikeMon1->print();
+
+					//sim->getPopWeights(gin, g1, weights, size);
+					//printf("%f\n",weights[0]);
+				}
+
+				sim->getPopWeights(gin, g1, weights, size);
+
+				if (offset == -5 || offset == 5) { // I-STDP LTP
+					if (coba) {
+						EXPECT_NEAR(-maxInhWeight/100, weights[0], 0.005f);
+					} else {
+						EXPECT_NEAR(-maxInhWeight, weights[0], 0.5f);
+					}
+				} else { // I-STDP LTD
+					if (coba) {
+						EXPECT_NEAR(-minInhWeight/100, weights[0], 0.005f);
+					} else {
+						EXPECT_NEAR(-minInhWeight, weights[0], 0.5f);
+					}
+				}
+
+				delete spikeCtrl;
+				delete sim;
+			}
+		}
+	}
 }

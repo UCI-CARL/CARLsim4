@@ -48,22 +48,26 @@
 #define NUM_DA_NEURON 30
 #define NUM_NEURON 10
 
-class SpikeController: public SpikeGenerator {
+class TwoGroupsSpikeController: public SpikeGenerator {
 private:
 	int isi;
 	int offset;
+	int g1;
+	int g2;
 	bool setOffset;
 public:
-	SpikeController(int interSpikeInterval, int offsetOfSecondGroup) {
+	TwoGroupsSpikeController(int interSpikeInterval, int offsetToFirstGroup, int firstGroup, int secondGroup) {
 		isi = interSpikeInterval;
-		offset = offsetOfSecondGroup;
+		offset = offsetToFirstGroup;
+		g1 = firstGroup;
+		g2 = secondGroup;
 		setOffset = false;
 	}
 
 	unsigned int nextSpikeTime(CARLsim* s, int grpId, int nid, unsigned int currentTime, unsigned int lastScheduledSpikeTime) {
-		if (grpId == 2) // gin
+		if (grpId == g1) // gin
 			return lastScheduledSpikeTime + isi;
-		else if (grpId == 1) { // gex
+		else if (grpId == g2) { // gex
 			if (!setOffset) {
 				setOffset = true;
 				return lastScheduledSpikeTime + isi + offset;
@@ -91,22 +95,24 @@ int main()
 	SpikeMonitor* spikeMon1;
 	SpikeMonitor* spikeMonIn;
 	SpikeMonitor* spikeMonEx;
-	SpikeController* spikeCtrl = new SpikeController(100, 5);
+	TwoGroupsSpikeController* spikeCtrl;
 	int gin, gex, g1;
 	float BETA_LTP = 0.10f/100;
 	float BETA_LTD = 0.12f/100;
 	float LAMDA = 12.0f;
 	float DELTA = 40.0f;
-	FILE* fid = fopen("results/weight.csv", "w");
+	//FILE* fid = fopen("results/weight.csv", "w");
 
 	// create a network
-	CARLsim sim("istdp",CPU_MODE, USER,0,1,42);
+	CARLsim sim("istdp",GPU_MODE, USER,0,1,42);
 
 	g1=sim.createGroup("excit", 1, EXCITATORY_NEURON);
 	sim.setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f);
 
 	gex=sim.createSpikeGeneratorGroup("input-ex", 1, EXCITATORY_NEURON);
 	gin=sim.createSpikeGeneratorGroup("input-in", 1, INHIBITORY_NEURON);
+
+	spikeCtrl = new TwoGroupsSpikeController(100, 5, gin, gex);
 
 	sim.connect(gex, g1, "one-to-one", RangeWeight(40.0f/100), 1.0f, RangeDelay(1), SYN_FIXED);
 	sim.connect(gin, g1, "one-to-one", RangeWeight(0.0, 5.0f/100, 10.0f/100), 1.0f, RangeDelay(1), SYN_PLASTIC);
@@ -128,7 +134,7 @@ int main()
 
 
 	// run for 1000 seconds
-	for (int t = 0; t < 5; t++) {
+	for (int t = 0; t < 10; t++) {
 		spikeMon1->startRecording();
 		spikeMonIn->startRecording();
 		spikeMonEx->startRecording();
@@ -145,7 +151,7 @@ int main()
 		printf("%f\n",weights[0]);
 	}
 
-	fclose(fid);
+	//fclose(fid);
 
 	delete spikeCtrl;
 
