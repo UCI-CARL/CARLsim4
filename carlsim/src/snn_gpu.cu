@@ -1228,6 +1228,7 @@ __device__ void updateSynapticWeights(int& nid, unsigned int& jpos, int& grpId, 
 	t_wtChange *= gpuNetInfo.wtChangeDecay; // TSC - resume decay weight changes
 	//t_wtChange = 0; //MDR - don't decay weight changes, just set to 0
 
+	// Check the synapse is excitatory or inhibitory first
 	if (t_wt > t_maxWt) t_wt = t_maxWt;
 	if (t_wt < 0)  	  t_wt = 0.0f;
 

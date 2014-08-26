@@ -597,8 +597,8 @@ void CpuSNN::setISTDP(int grpId, bool isSet, stdpType_t type, float betaLTP, flo
 		grp_Info[cGrpId].LAMDA			= lamda;
 		grp_Info[cGrpId].DELTA			= delta;
 		// set flags for STDP function
-		//TODO: separate STDPType to ESTDPType and ISTDPType, currently, only setESTDP() can change WithSTDPType
-		//grp_Info[cGrpId].WithSTDPtype	= type;
+		//FIXME: separate STDPType to ESTDPType and ISTDPType
+		grp_Info[cGrpId].WithSTDPtype	= type;
 		grp_Info[cGrpId].WithISTDP		= isSet;
 		grp_Info[cGrpId].WithSTDP		|= grp_Info[cGrpId].WithISTDP;
 		sim_with_stdp					|= grp_Info[cGrpId].WithSTDP;
@@ -2904,19 +2904,26 @@ void CpuSNN::findFiring() {
 						assert(!((stdp_tDiff < 0) && (synSpikeTime[pos_ij] != MAX_SIMULATION_TIME)));
 
 						if (stdp_tDiff > 0) {
-							#ifdef INHIBITORY_STDP
-							// if this is an excitatory or inhibitory synapse
-							if (maxSynWt[pos_ij] >= 0)
-							#endif
-							if ((stdp_tDiff*grp_Info[g].TAU_LTP_INV)<25)
-								wtChange[pos_ij] += STDP(stdp_tDiff, grp_Info[g].ALPHA_LTP, grp_Info[g].TAU_LTP_INV);
-							#ifdef INHIBITORY_STDP
-							else
-								if ((stdp_tDiff > 0) && ((stdp_tDiff*grp_Info[g].TAU_LTD_INV)<25)) {
-									wtChange[pos_ij] -= (STDP(stdp_tDiff, grp_Info[g].ALPHA_LTP, grp_Info[g].TAU_LTP_INV)
-										- STDP(stdp_tDiff, grp_Info[g].ALPHA_LTD*1.5, grp_Info[g].TAU_LTD_INV));
-								}
-							#endif
+							// check this is an excitatory or inhibitory synapse
+							if (grp_Info[g].WithESTDP && maxSynWt[pos_ij] >= 0) { // excitatory synapse
+								if (stdp_tDiff * grp_Info[g].TAU_LTP_INV < 25)
+									wtChange[pos_ij] += STDP(stdp_tDiff, grp_Info[g].ALPHA_LTP, grp_Info[g].TAU_LTP_INV);
+							} else if (grp_Info[g].WithISTDP && maxSynWt[pos_ij] < 0) { // inhibitory synapse
+								// Anti-Hebbian STDP curve
+								//if (stdp_tDiff * grp_Info[g].TAU_LTD_INV < 25) {
+								//	wtChange[pos_ij] -= (STDP(stdp_tDiff, grp_Info[g].ALPHA_LTP, grp_Info[g].TAU_LTP_INV)
+								//		- STDP(stdp_tDiff, grp_Info[g].ALPHA_LTD*1.5, grp_Info[g].TAU_LTD_INV));
+								//}
+
+								// Symmetrical STDP curve
+								if (stdp_tDiff <= grp_Info[g].LAMDA) { // LTP of inhibitory synapse, which decreases synapse weight
+									wtChange[pos_ij] -= grp_Info[g].BETA_LTP;
+									//printf("I-STDP LTP\n");
+								} else if (stdp_tDiff <= grp_Info[g].DELTA) { // LTD of inhibitory syanpse, which increase sysnapse weight
+									wtChange[pos_ij] += grp_Info[g].BETA_LTD;
+									//printf("I-STDP LTD\n");
+								} else {/* Do nothing */}
+							}
 						}
 					}
 				}
@@ -3030,17 +3037,23 @@ void CpuSNN::generatePostSpike(unsigned int pre_i, unsigned int idx_d, unsigned 
 		int stdp_tDiff = (simTime-lastSpikeTime[post_i]);
 
 		if (stdp_tDiff >= 0) {
-			#ifdef INHIBITORY_STDP
-			if ((pre_type & TARGET_GABAa) || (pre_type & TARGET_GABAb))
-			{
-				if ((stdp_tDiff*grp_Info[post_grpId].TAU_LTD_INV)<25)
-					wtChange[pos_i] -= (STDP(stdp_tDiff, grp_Info[post_grpId].ALPHA_LTP, grp_Info[post_grpId].TAU_LTP_INV)
-			    					 - STDP(stdp_tDiff, grp_Info[post_grpId].ALPHA_LTD*1.5, grp_Info[post_grpId].TAU_LTD_INV));
-				}
-				else
-			#endif
-			{
-				if ((stdp_tDiff*grp_Info[post_grpId].TAU_LTD_INV)<25)
+			if (grp_Info[post_grpId].WithISTDP && ((pre_type & TARGET_GABAa) || (pre_type & TARGET_GABAb))) { // inhibitory syanpse
+				// Anit-Hebbian STDP curve
+				//if ((stdp_tDiff*grp_Info[post_grpId].TAU_LTD_INV)<25) {
+				//	wtChange[pos_i] -= (STDP(stdp_tDiff, grp_Info[post_grpId].ALPHA_LTP, grp_Info[post_grpId].TAU_LTP_INV)
+				// 					 - STDP(stdp_tDiff, grp_Info[post_grpId].ALPHA_LTD*1.5, grp_Info[post_grpId].TAU_LTD_INV));
+				//}
+
+				// Symmetrical STDP curve
+				if (stdp_tDiff <= grp_Info[post_grpId].LAMDA) { // LTP of inhibitory synapse, which decreases synapse weight
+					wtChange[pos_i] -= grp_Info[post_grpId].BETA_LTP;
+					//printf("I-STDP LTP\n");
+				} else if (stdp_tDiff <= grp_Info[post_grpId].DELTA) { // LTD of inhibitory syanpse, which increase sysnapse weight
+					wtChange[pos_i] += grp_Info[post_grpId].BETA_LTD;
+					//printf("I-STDP LTD\n");
+				} else {/* do nothing */}
+			} else if (grp_Info[post_grpId].WithESTDP && ((pre_type & TARGET_AMPA) || (pre_type & TARGET_NMDA))) { // excitatory synapse
+				if (stdp_tDiff * grp_Info[post_grpId].TAU_LTD_INV < 25)
 					wtChange[pos_i] -= STDP(stdp_tDiff, grp_Info[post_grpId].ALPHA_LTD, grp_Info[post_grpId].TAU_LTD_INV);
 			}
 		}
