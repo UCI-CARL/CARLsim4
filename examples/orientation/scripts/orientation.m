@@ -1,6 +1,6 @@
 % Version 3/22/14
 
-addpath ../../common
+addpath ../../../util/scripts
 FrameDur=3300;
 nrX=32;
 s = readSpikes('../results/spkV4o.dat',FrameDur);

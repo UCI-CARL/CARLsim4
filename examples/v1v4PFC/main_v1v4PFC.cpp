@@ -40,6 +40,13 @@
 
 #include <carlsim.h>
 #include <mtrand.h>
+
+#if (WIN32 || WIN64)
+#include <algorithm>
+#define fmin std::min
+#define fmax std::max
+#endif
+
 void calcColorME(int nrX, int nrY, unsigned char* stim, float* red_green, float* green_red, float* blue_yellow, float* yellow_blue, float* ME, bool GPUpointers);
 extern MTRand	      getRand;
 
@@ -592,6 +599,37 @@ int main()
 	s.setSTDP(ALL, false);
 	s.setSTP(ALL,false);
 
+#if (WIN32 || WIN64)
+	s.setSpikeMonitor(v1Cells[RED_GREEN],"results/V1RG.dat");
+	s.setSpikeMonitor(v1Cells[GREEN_RED],"results/V1GR.dat");
+	s.setSpikeMonitor(v1Cells[BLUE_YELLOW],"results/V1BY.dat");
+	s.setSpikeMonitor(v1Cells[YELLOW_BLUE],"results/V1YB.dat");
+
+	s.setSpikeMonitor(v4CellsExc[RED_V4],"results/V4R.dat");
+	s.setSpikeMonitor(v4CellsExc[GREEN_V4],"results/V4G.dat");
+	s.setSpikeMonitor(v4CellsExc[BLUE_V4],"results/V4B.dat");
+	s.setSpikeMonitor(v4CellsExc[YELLOW_V4],"results/V4Y.dat");
+	s.setSpikeMonitor(v4CellsExc[CYAN_V4],"results/V4C.dat");
+	s.setSpikeMonitor(v4CellsExc[MAGENTA_V4],"results/V4M.dat");
+
+	s.setSpikeMonitor(v4CellsInh[RED_V4],"results/V4Ri.dat");
+	s.setSpikeMonitor(v4CellsInh[GREEN_V4],"results/V4Gi.dat");
+	s.setSpikeMonitor(v4CellsInh[BLUE_V4],"results/V4Bi.dat");
+	s.setSpikeMonitor(v4CellsInh[YELLOW_V4],"results/V4Yi.dat");
+	s.setSpikeMonitor(v4CellsInh[CYAN_V4],"results/V4Ci.dat");
+	s.setSpikeMonitor(v4CellsInh[MAGENTA_V4],"results/V4Mi.dat");
+
+	s.setSpikeMonitor(gV1ME);
+	s.setSpikeMonitor(gMT1,"results/MT1.dat");
+	s.setSpikeMonitor(gMT2,"results/MT2.dat");
+	s.setSpikeMonitor(gMT3,"results/MT3.dat");
+	s.setSpikeMonitor(gPFC,"results/PFC.dat");
+	s.setSpikeMonitor(gMT1i,"results/MT1i.dat");
+	s.setSpikeMonitor(gPFCi,"results/PFCi.dat");
+
+	s.setSpikeMonitor(gV4o,"results/V4o.dat");
+	s.setSpikeMonitor(gV4oi,"results/V4oi.dat");
+#else
 	s.setSpikeMonitor(v1Cells[RED_GREEN],"examples/v1v4PFC/results/V1RG.dat");
 	s.setSpikeMonitor(v1Cells[GREEN_RED],"examples/v1v4PFC/results/V1GR.dat");
 	s.setSpikeMonitor(v1Cells[BLUE_YELLOW],"examples/v1v4PFC/results/V1BY.dat");
@@ -621,6 +659,7 @@ int main()
 
 	s.setSpikeMonitor(gV4o,"examples/v1v4PFC/results/V4o.dat");
 	s.setSpikeMonitor(gV4oi,"examples/v1v4PFC/results/V4oi.dat");
+#endif
 
 	// setup the network
 	s.setupNetwork();
@@ -635,7 +674,11 @@ int main()
 
 	for(long long i=0; i < VIDLEN; i++) {
 		if (i%VIDLEN==0) {
+#if (WIN32 || WIN64)
+			fid = fopen("videos/colorcycle.dat","rb");
+#else
 			fid = fopen("examples/v1v4PFC/videos/colorcycle.dat","rb");
+#endif
 			if (fid==NULL) {
 				printf("ERROR: could not open video file\n");
 				exit(1);
@@ -660,7 +703,11 @@ int main()
 		s.runNetwork(0,frameDur);
 
 		if (i==1) {
+#if (WIN32 || WIN64)
+			s.saveSimulation("results/net.dat", true);
+#else
 			s.saveSimulation("examples/v1v4PFC/results/net.dat", true);
+#endif
 		}
 	}
 	fclose(fid);
