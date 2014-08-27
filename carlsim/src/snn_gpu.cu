@@ -659,7 +659,7 @@ __device__ void gpu_updateLTP(	int*     		fireTablePtr,
 		// pre: number of pre-neuron
 		// pre_exc: number of neuron had has plastic connections
 		short int grpId = fireGrpId[pos];
-		// STDP calculation (LTP)
+		// STDP calculation: the post-synaptic neron fires after the arrival of pre-synaptic neuron's spike
 		if (gpuGrpInfo[grpId].WithSTDP) { // MDR, FIXME this probably will cause more thread divergence than need be...
 			int  nid   = fireTablePtr[pos];
 			unsigned int  end_p = gpuPtrs.cumulativePre[nid] + gpuPtrs.Npre_plastic[nid];
@@ -667,13 +667,26 @@ __device__ void gpu_updateLTP(	int*     		fireTablePtr,
 					p < end_p;
 					p+=LTP_GROUPING_SZ) {
 				int stdp_tDiff = (simTime - gpuPtrs.synSpikeTime[p]);
-				if ((stdp_tDiff > 0) && ((stdp_tDiff*gpuGrpInfo[grpId].TAU_LTP_INV)<25)) {
-					gpuPtrs.wtChange[p] += STDP(stdp_tDiff, gpuGrpInfo[grpId].ALPHA_LTP, gpuGrpInfo[grpId].TAU_LTP_INV);
-//						int val = atomicAdd(&testVarCnt, 4);
-//						gpuPtrs.testVar[val]   = 1+nid;
-//						gpuPtrs.testVar[val+1] = 1+p-gpuPtrs.cumulativePre[nid];
-//						gpuPtrs.testVar[val+2] = 1+gpuPtrs.wtChange[p];
-//						gpuPtrs.testVar[val+3] = 1+stdp_tDiff;
+//				if ((stdp_tDiff > 0) && ((stdp_tDiff*gpuGrpInfo[grpId].TAU_LTP_INV)<25)) {
+//					gpuPtrs.wtChange[p] += STDP(stdp_tDiff, gpuGrpInfo[grpId].ALPHA_LTP, gpuGrpInfo[grpId].TAU_LTP_INV);
+////						int val = atomicAdd(&testVarCnt, 4);
+////						gpuPtrs.testVar[val]   = 1+nid;
+////						gpuPtrs.testVar[val+1] = 1+p-gpuPtrs.cumulativePre[nid];
+////						gpuPtrs.testVar[val+2] = 1+gpuPtrs.wtChange[p];
+////						gpuPtrs.testVar[val+3] = 1+stdp_tDiff;
+//				}
+				if (stdp_tDiff > 0) {
+					if (gpuGrpInfo[grpId].WithESTDP && (stdp_tDiff * gpuGrpInfo[grpId].TAU_LTP_INV < 25)) {
+						gpuPtrs.wtChange[p] += STDP(stdp_tDiff, gpuGrpInfo[grpId].ALPHA_LTP, gpuGrpInfo[grpId].TAU_LTP_INV);
+					}
+					if (gpuGrpInfo[grpId].WithISTDP) {
+						// Symmetrical I-STDP curve
+						if (stdp_tDiff <= gpuGrpInfo[grpId].LAMDA) { // LTP of inhibitory synapse, which decreases synapse weight
+							gpuPtrs.wtChange[p] -= gpuGrpInfo[grpId].BETA_LTP;
+						} else if (stdp_tDiff <= gpuGrpInfo[grpId].DELTA) { // LTD of inhibitory syanpse, which increase sysnapse weight
+							gpuPtrs.wtChange[p] += gpuGrpInfo[grpId].BETA_LTD;
+						}
+					}
 				}
 			}
 		}
@@ -1229,8 +1242,16 @@ __device__ void updateSynapticWeights(int& nid, unsigned int& jpos, int& grpId, 
 	//t_wtChange = 0; //MDR - don't decay weight changes, just set to 0
 
 	// Check the synapse is excitatory or inhibitory first
-	if (t_wt > t_maxWt) t_wt = t_maxWt;
-	if (t_wt < 0)  	  t_wt = 0.0f;
+	//if (t_wt > t_maxWt) t_wt = t_maxWt;
+	//if (t_wt < 0)  	  t_wt = 0.0f;
+
+	if (t_maxWt >= 0) { // excitatory synapse
+		if (t_wt >= t_maxWt) t_wt = t_maxWt;
+		if (t_wt < 0) t_wt = 0.0;
+	} else { // inhibitory synapse
+		if (t_wt <= t_maxWt) t_wt = t_maxWt;
+		if (t_wt > 0) t_wt = 0.0;
+	}
 
 	gpuPtrs.wt[jpos] = t_wt;
 	gpuPtrs.wtChange[jpos] = t_wtChange;
@@ -1418,11 +1439,24 @@ __device__ int generatePostSynapticSpike(int& simTime, int& firingId, int& myDel
 
 	gpuPtrs.synSpikeTime[pos_ns] = simTime;		  //uncoalesced access
 
-	// STDP calculation (LTD)
+	// STDP calculation: the post-synaptic neuron fires before the arrival of pre-synaptic neuron's spike
 	if (gpuGrpInfo[post_grpId].WithSTDP)  {
 		int stdp_tDiff = simTime-gpuPtrs.lastSpikeTime[nid];
-		if ((stdp_tDiff >= 0) && ((stdp_tDiff*gpuGrpInfo[post_grpId].TAU_LTD_INV)<25)) {
-			gpuPtrs.wtChange[pos_ns] -= STDP( stdp_tDiff, gpuGrpInfo[post_grpId].ALPHA_LTD, gpuGrpInfo[post_grpId].TAU_LTD_INV); // uncoalesced access
+		//if ((stdp_tDiff >= 0) && ((stdp_tDiff*gpuGrpInfo[post_grpId].TAU_LTD_INV)<25)) {
+		//	gpuPtrs.wtChange[pos_ns] -= STDP( stdp_tDiff, gpuGrpInfo[post_grpId].ALPHA_LTD, gpuGrpInfo[post_grpId].TAU_LTD_INV); // uncoalesced access
+		//}
+		if (stdp_tDiff >= 0) {
+			if (gpuGrpInfo[post_grpId].WithESTDP && (stdp_tDiff * gpuGrpInfo[post_grpId].TAU_LTD_INV < 25)) {
+				gpuPtrs.wtChange[pos_ns] -= STDP( stdp_tDiff, gpuGrpInfo[post_grpId].ALPHA_LTD, gpuGrpInfo[post_grpId].TAU_LTD_INV); // uncoalesced access
+			}
+			if (gpuGrpInfo[post_grpId].WithISTDP) {
+				// Symmetrical I-STDP curve
+				if (stdp_tDiff <= gpuGrpInfo[post_grpId].LAMDA) { // LTP of inhibitory synapse, which decreases synapse weight
+					gpuPtrs.wtChange[pos_ns] -= gpuGrpInfo[post_grpId].BETA_LTP;
+				} else if (stdp_tDiff <= gpuGrpInfo[post_grpId].DELTA) { // LTD of inhibitory syanpse, which increase sysnapse weight
+					gpuPtrs.wtChange[pos_ns] += gpuGrpInfo[post_grpId].BETA_LTD;
+				}
+			}
 		}
 	}
 	

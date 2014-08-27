@@ -98,8 +98,8 @@ int main()
 	TwoGroupsSpikeController* spikeCtrl;
 	int gin, gex, g1;
 	float BETA_LTP = 0.10f/100;
-	float BETA_LTD = 0.12f/100;
-	float LAMDA = 12.0f;
+	float BETA_LTD = 0.14f/100;
+	float LAMDA = 10.0f;
 	float DELTA = 40.0f;
 	//FILE* fid = fopen("results/weight.csv", "w");
 
@@ -112,7 +112,7 @@ int main()
 	gex=sim.createSpikeGeneratorGroup("input-ex", 1, EXCITATORY_NEURON);
 	gin=sim.createSpikeGeneratorGroup("input-in", 1, INHIBITORY_NEURON);
 
-	spikeCtrl = new TwoGroupsSpikeController(100, 5, gin, gex);
+	spikeCtrl = new TwoGroupsSpikeController(100, 15, gin, gex);
 
 	sim.connect(gex, g1, "one-to-one", RangeWeight(40.0f/100), 1.0f, RangeDelay(1), SYN_FIXED);
 	sim.connect(gin, g1, "one-to-one", RangeWeight(0.0, 5.0f/100, 10.0f/100), 1.0f, RangeDelay(1), SYN_PLASTIC);
@@ -134,7 +134,7 @@ int main()
 
 
 	// run for 1000 seconds
-	for (int t = 0; t < 10; t++) {
+	for (int t = 0; t < 20; t++) {
 		spikeMon1->startRecording();
 		spikeMonIn->startRecording();
 		spikeMonEx->startRecording();

@@ -354,12 +354,12 @@ TEST(STDP, ISTDPWeightChange) {
 	float minInhWeight = 0.0f;
 	CARLsim* sim;
 
-	for (int mode = 0; mode < 1/*2*/; mode++) {
+	for (int mode = 0; mode < 2; mode++) {
 		for (int coba = 0; coba < 2; coba++) {
 			for (int offset = -15; offset <= 15; offset += 10) {
-				//printf("mode:%d coda:%d offset:%d\n", mode, coba, offset);
+				printf("mode:%d coda:%d offset:%d\n", mode, coba, offset);
 				// create a network
-				sim = new CARLsim("istdp", CPU_MODE/*mode?GPU_MODE:CPU_MODE*/, SILENT, 0, 1, 42);
+				sim = new CARLsim("istdp", mode?GPU_MODE:CPU_MODE, SILENT, 0, 1, 42);
 
 				g1 = sim->createGroup("excit", 1, EXCITATORY_NEURON);
 				sim->setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f);
@@ -409,8 +409,8 @@ TEST(STDP, ISTDPWeightChange) {
 					//spikeMonEx->print();
 					//spikeMon1->print();
 
-					//sim->getPopWeights(gin, g1, weights, size);
-					//printf("%f\n",weights[0]);
+					sim->getPopWeights(gin, g1, weights, size);
+					printf("%f\n",weights[0]);
 				}
 
 				sim->getPopWeights(gin, g1, weights, size);

@@ -2909,13 +2909,13 @@ void CpuSNN::findFiring() {
 								if (stdp_tDiff * grp_Info[g].TAU_LTP_INV < 25)
 									wtChange[pos_ij] += STDP(stdp_tDiff, grp_Info[g].ALPHA_LTP, grp_Info[g].TAU_LTP_INV);
 							} else if (grp_Info[g].WithISTDP && maxSynWt[pos_ij] < 0) { // inhibitory synapse
-								// Anti-Hebbian STDP curve
+								// Anti-Hebbian I-STDP curve
 								//if (stdp_tDiff * grp_Info[g].TAU_LTD_INV < 25) {
 								//	wtChange[pos_ij] -= (STDP(stdp_tDiff, grp_Info[g].ALPHA_LTP, grp_Info[g].TAU_LTP_INV)
 								//		- STDP(stdp_tDiff, grp_Info[g].ALPHA_LTD*1.5, grp_Info[g].TAU_LTD_INV));
 								//}
 
-								// Symmetrical STDP curve
+								// Symmetrical I-STDP curve
 								if (stdp_tDiff <= grp_Info[g].LAMDA) { // LTP of inhibitory synapse, which decreases synapse weight
 									wtChange[pos_ij] -= grp_Info[g].BETA_LTP;
 									//printf("I-STDP LTP\n");
@@ -3038,13 +3038,13 @@ void CpuSNN::generatePostSpike(unsigned int pre_i, unsigned int idx_d, unsigned 
 
 		if (stdp_tDiff >= 0) {
 			if (grp_Info[post_grpId].WithISTDP && ((pre_type & TARGET_GABAa) || (pre_type & TARGET_GABAb))) { // inhibitory syanpse
-				// Anit-Hebbian STDP curve
+				// Anit-Hebbian I-STDP curve
 				//if ((stdp_tDiff*grp_Info[post_grpId].TAU_LTD_INV)<25) {
 				//	wtChange[pos_i] -= (STDP(stdp_tDiff, grp_Info[post_grpId].ALPHA_LTP, grp_Info[post_grpId].TAU_LTP_INV)
 				// 					 - STDP(stdp_tDiff, grp_Info[post_grpId].ALPHA_LTD*1.5, grp_Info[post_grpId].TAU_LTD_INV));
 				//}
 
-				// Symmetrical STDP curve
+				// Symmetrical I-STDP curve
 				if (stdp_tDiff <= grp_Info[post_grpId].LAMDA) { // LTP of inhibitory synapse, which decreases synapse weight
 					wtChange[pos_i] -= grp_Info[post_grpId].BETA_LTP;
 					//printf("I-STDP LTP\n");
