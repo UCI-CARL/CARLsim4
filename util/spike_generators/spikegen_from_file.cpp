@@ -10,7 +10,7 @@
 SpikeGeneratorFromFile::SpikeGeneratorFromFile(std::string fileName) {
 	fileName_ = fileName;
 	fpBegin_ = NULL;
-	fpNeur_ = NULL;
+	fpOffsetNeur_ = NULL;
 	needToInit_ = true;
 
 	// move unsafe operations out of constructor
@@ -18,7 +18,7 @@ SpikeGeneratorFromFile::SpikeGeneratorFromFile(std::string fileName) {
 }
 
 SpikeGeneratorFromFile::~SpikeGeneratorFromFile() {
-	if (fpNeur_!=NULL) delete[] fpNeur_;
+	if (fpOffsetNeur_!=NULL) delete[] fpOffsetNeur_;
 	fclose(fpBegin_);
 }
 
@@ -37,31 +37,31 @@ unsigned int SpikeGeneratorFromFile::nextSpikeTime(CARLsim* sim, int grpId, int 
 	if (needToInit_) {
 		int nNeur = sim->getGroupNumNeurons(grpId);
 
-		// first time we call this function, create array to store file pointer of last read for each neuron
-		fpNeur_ = new FILE*[nNeur];
-		for (int i=0; i<nNeur; i++)
-			fpNeur_[i] = fpBegin_;
+		// for each neuron, store a file pointer offset in #bytes from the SEEK_SET
+		// this way we'll know exactly what the last spike was that we read per neuron
+		fpOffsetNeur_ = new long int[nNeur];
+		memset(fpOffsetNeur_, 0, sizeof(long int)*nNeur);
 
 		needToInit_ = false;
 	}
 
-	FILE* fp = fpNeur_[nid]; // current fp for this neuron
+	FILE* fp = fpBegin_;
+	fseek(fp, fpOffsetNeur_[nid], SEEK_SET);
+
 	int tmpTime = -1;
 	int tmpNeurId = -1;
 
 	// read the next time and neuron ID in the file
 	fread(&tmpTime, sizeof(int), 1, fp); // i-th time
 	fread(&tmpNeurId, sizeof(int), 1, fp); // i-th nid
+	fpOffsetNeur_[nid] += sizeof(int)*2;
 
 	// chances are this neuron ID is not the one we want, so we have to keep reading until we find the right one
 	while (tmpNeurId!=nid && !feof(fp)) {
 		fread(&tmpTime, sizeof(int), 1, fp); // j-th time
 		fread(&tmpNeurId, sizeof(int), 1, fp); // j-th nid
+		fpOffsetNeur_[nid] += sizeof(int)*2;
 	}
-
-	// once we found the right neuron ID, store the fp for the next iteration (so we don't schedule the
-	// same spike twice)
-	fpNeur_[nid] = fp;
 
 	// if eof was reached, there are no more spikes for this neuron ID
 	if (feof(fp))

@@ -81,5 +81,5 @@ private:
 	bool needToInit_;
 	std::string fileName_;		//!< file name
 	FILE* fpBegin_;				//!< pointer to beginning of file
-	FILE** fpNeur_;				//!< file pointer array to store last read for each neuron
+	long int* fpOffsetNeur_;	//!< file pointer array to store last read for each neuron
 };
