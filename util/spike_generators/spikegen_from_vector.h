@@ -76,6 +76,8 @@ public:
 		unsigned int lastScheduledSpikeTime);
 
 private:
+	void checkSpikeVector();
+	
 	std::vector<int> spkTimes_;	//!< vector of spike times
 	int currentIndex_;			//!< keeps track of current position in the vector
 	int size_;					//!< size of vector for fast access

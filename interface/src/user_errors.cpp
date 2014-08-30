@@ -53,6 +53,8 @@ void UserErrors::throwError(std::string errorFunc, errorType error, std::string 
 		std::cerr << " cannot be on at this point."; break;
 	case CANNOT_BE_UNKNOWN:
 		std::cerr << " cannot be of type UNKNOWN."; break;
+	case CANNOT_BE_ZERO:
+		std::cerr << " cannot be zero."; break;
 	case FILE_CANNOT_CREATE:
 		std::cerr << " could not be created."; break;
 	case FILE_CANNOT_OPEN:
