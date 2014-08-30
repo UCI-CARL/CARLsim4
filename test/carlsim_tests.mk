@@ -15,8 +15,9 @@ local_src := $(addprefix $(local_dir)/,$(local_deps))
 local_objs := $(addsuffix .o,$(addprefix $(local_dir)/,$(carlsim_tests_cpps)))
 
 # utilities used
-utility_src := $(util_dir)/spike_generators/periodic_spikegen.cpp
-utility_deps := $(util_dir)/spike_generators/periodic_spikegen.h $(utility_src)
+utility := $(addprefix spike_generators/,periodic_spikegen spikegen_from_vector)
+utility_src := $(addsuffix .cpp,$(addprefix $(util_dir)/,$(utility)))
+utility_deps := $(addsuffix .h,$(addprefix $(util_dir)/,$(utility))) $(utility_src)
 CARLSIM_INCLUDES += -I$(CURDIR)/$(util_dir)/spike_generators
 local_deps += $(utility_deps)
 

@@ -44,23 +44,21 @@
 class CARLsim; // forward-declaration
 
 /*!
- * \brief a periodic SpikeGenerator (constant ISI) creating spikes at a certain rate
+ * \brief a SpikeGenerator that schedules spikes from a vector of spike times
  *
- * This class implements a period SpikeGenerator that schedules spikes with a constant inter-spike-interval.
- * For example, a PeriodicSpikeGenerator with rate=10Hz will schedule spikes for each neuron in the group at t=100,
- * t=200, t=300, etc. If spikeAtZero is set to true, then the first spike will be scheduled at t=0.
+ * This class implements a SpikeGenerator that schedules spikes from a vector of spike times (ms).
+ * \TODO change to vector of AER or 2D vector, so that each neuron can have their own spike times.
  */
-class PeriodicSpikeGenerator : public SpikeGenerator {
+class SpikeGeneratorFromVector : public SpikeGenerator {
 public:
 	/*!
-	 * \brief PeriodicSpikeGenerator constructor
-	 * \param[in] rate the firing rate (Hz) at which to schedule spikes
-	 * \param[in] spikeAtZero a boolean flag to indicate whether to insert the first spike at t=0
+	 * \brief SpikeGeneratorFromVector constructor
+	 * \param[in] spkTimes a vector of all spike times
 	 */
-	PeriodicSpikeGenerator(float rate, bool spikeAtZero=true);
+	SpikeGeneratorFromVector(std::vector<int> spkTimes);
 
 	//! PeriodicSpikeGenerator destructor
-	~PeriodicSpikeGenerator() {}
+	~SpikeGeneratorFromVector() {}
 
 	/*!
 	 * \brief schedules the next spike time
@@ -78,8 +76,7 @@ public:
 		unsigned int lastScheduledSpikeTime);
 
 private:
-	float rate_;		//!< spike rate (Hz)
-	int isi_;			//!< inter-spike interval that results in above spike rate
-	std::vector<int> nIdFiredAtZero_; //!< keep track of all neuron IDs for which a spike at t=0 has been scheduled
-	bool spikeAtZero_; //!< whether to emit a spike at t=0
+	std::vector<int> spkTimes_;	//!< vector of spike times
+	int currentIndex_;			//!< keeps track of current position in the vector
+	int size_;					//!< size of vector for fast access
 };
