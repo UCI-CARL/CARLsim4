@@ -4,7 +4,7 @@
 //#include <user_errors.h>		// fancy user error messages
 
 #include <stdio.h>				// fopen, fread, fclose
-#include <string>				// std::string
+#include <string.h>				// std::string
 
 
 SpikeGeneratorFromFile::SpikeGeneratorFromFile(std::string fileName) {
