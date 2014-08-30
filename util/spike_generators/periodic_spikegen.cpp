@@ -2,8 +2,9 @@
 
 #include <algorithm>		// std::find
 #include <vector>			// std::vector
+#include <cassert>			// assert
 
-PeriodicSpikeGenerator::PeriodicSpikeGenerator(float rate, bool spikeAtZero=true) {
+PeriodicSpikeGenerator::PeriodicSpikeGenerator(float rate, bool spikeAtZero) {
 	assert(rate>0);
 	rate_ = rate;	  // spike rate
 	isi_ = 1000/rate; // inter-spike interval in ms

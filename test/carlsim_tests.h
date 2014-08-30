@@ -105,7 +105,7 @@
 // user interface-equivalent...
 
 //! a periodic spike generator (constant ISI) creating spikes at a certain rate
-class PeriodicSpikeGenerator : public SpikeGenerator {
+/*class PeriodicSpikeGenerator : public SpikeGenerator {
 public:
 	PeriodicSpikeGenerator(float rate, bool spikeAtZero=true) {
 		assert(rate>0);
@@ -134,7 +134,7 @@ private:
 	int isi_;			// inter-spike interval that results in above spike rate
 	std::vector<int> nIdFiredAtZero_; // keep track of all neuron IDs for which a spike at t=0 has been scheduled
 	bool spikeAtZero_; // whether to emit a spike at t=0
-};
+};*/
 
 //! a periodic spike generator (constant ISI) creating spikes at a certain rate
 //! \TODO \FIXME this one should be gone, use public interface instead

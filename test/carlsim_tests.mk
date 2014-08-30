@@ -1,4 +1,4 @@
-# module include file for CARLsim pti 
+# module include file for CARLsim gtest
 
 gtest_deps = $(GTEST_LIB_DIR)/libgtest.a $(GTEST_LIB_DIR)/libgtest_main.a \
 	$(GTEST_LIB_DIR)/libgtest_custom_main.a
@@ -14,6 +14,12 @@ local_deps := carlsim_tests.h $(addsuffix .cpp,$(carlsim_tests_cpps))
 local_src := $(addprefix $(local_dir)/,$(local_deps))
 local_objs := $(addsuffix .o,$(addprefix $(local_dir)/,$(carlsim_tests_cpps)))
 
+# utilities used
+utility_src := $(util_dir)/spike_generators/periodic_spikegen.cpp
+utility_deps := $(util_dir)/spike_generators/periodic_spikegen.h $(utility_src)
+CARLSIM_INCLUDES += -I$(CURDIR)/$(util_dir)/spike_generators
+local_deps += $(utility_deps)
+
 carlsim_tests_objs := $(local_objs)
 objects += $(carlsim_tests_objs)
 output_files += $(test_dir)/carlsim_tests
@@ -22,12 +28,11 @@ output_files += $(test_dir)/carlsim_tests
 .PHONY: carlsim_tests
 carlsim_tests: $(test_dir)/carlsim_tests $(local_objs)
 
-$(local_dir)/carlsim_tests: $(local_objs) $(gtest_deps) \
-	$(carlsim_objs)
+$(local_dir)/carlsim_tests: $(local_objs) $(gtest_deps) $(carlsim_objs)
 	$(NVCC) $(CARLSIM_INCLUDES) $(CARLSIM_LFLAGS) $(CARLSIM_LIBS) \
 	$(CARLSIM_FLAGS) $(carlsim_objs) $(spike_monitor_flags) \
 	$(GTEST_CPPFLAGS) -L$(GTEST_LIB_DIR) -lgtest_custom_main \
-	$(carlsim_tests_objs) -o $@
+	$(utility_src) $(carlsim_tests_objs) -o $@
 
 $(local_dir)/%.o: $(local_dir)/%.cpp $(local_deps)
 	$(NVCC) $(CARLSIM_INCLUDES) $(CARLSIM_FLAGS) $(spike_monitor_flags) \

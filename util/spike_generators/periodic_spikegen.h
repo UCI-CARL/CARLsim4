@@ -1,3 +1,5 @@
+#include <callback.h>
+
 #include <vector>
 class CARLsim; // forward-declaration
 
@@ -18,7 +20,7 @@ public:
 	PeriodicSpikeGenerator(float rate, bool spikeAtZero=true);
 
 	//! PeriodicSpikeGenerator destructor
-	~PeriodicSpikeGenerator {};
+	~PeriodicSpikeGenerator() {}
 
 	/*!
 	 * \brief schedules the next spike time

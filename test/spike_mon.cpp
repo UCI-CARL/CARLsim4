@@ -1,6 +1,8 @@
 #include "gtest/gtest.h"
-#include <snn.h>
 #include "carlsim_tests.h"
+
+#include <snn.h>
+#include <periodic_spikegen.h>
 
 // TODO: I should probably use a google tests figure for this to reduce the
 // amount of redundant code, but I don't need to do that right now. -- KDC
