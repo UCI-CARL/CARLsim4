@@ -57,12 +57,12 @@ spike_monitor_dir = $(util_dir)/spike_monitor
 vpath %.cpp $(EO_INSTALL_DIR)/src $(EO_INSTALL_DIR)/src/do \
 $(EO_INSTALL_DIR)/src/es $(EO_INSTALL_DIR)/src/utils $(lib_dir) \
 $(ex_dir)/common/ $(carlsim_dir)/src $(interface_dir)/src $(test_dir) \
-$(spike_info_dir)
+$(spike_monitor_dir)
 # location of .cu files
 vpath %.cu $(carlsim_dir)/src
 # location of .h files
 vpath %.h $(EO_INSTALL_DIR)/src $(inc_dir) $(carlsim_dir)/include \
-$(ex_dir)/common $(interface_dir)/include $(test_dir) $(spike_info_dir)
+$(ex_dir)/common $(interface_dir)/include $(test_dir) $(spike_monitor_dir)
 
 # this blank 'all' is required
 all:

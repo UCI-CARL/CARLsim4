@@ -35,6 +35,7 @@ public:
 		CANNOT_BE_OFF,			//!< parameter cannot be off
 		CANNOT_BE_ON,			//!< parameter cannot be on
 		CANNOT_BE_UNKNOWN, 		//!< parameter cannot be of type UNKNOWN
+		CANNOT_BE_ZERO,			//!< parameter cannot be zero
 		FILE_CANNOT_CREATE,		//!< could not create a file
 		FILE_CANNOT_OPEN,		//!< could not open file
 		IS_DEPRECATED,			//!< deprecated function
