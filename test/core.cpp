@@ -1,7 +1,9 @@
 #include "gtest/gtest.h"
-#include <snn.h>
 #include "carlsim_tests.h"
+
+#include <snn.h>
 #include <vector>
+#include <periodic_spikegen.h>
 
 /// **************************************************************************************************************** ///
 /// CORE FUNCTIONALITY

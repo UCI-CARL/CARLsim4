@@ -1,6 +1,8 @@
 #include "gtest/gtest.h"
-#include <snn.h>
 #include "carlsim_tests.h"
+
+#include <snn.h>
+#include <periodic_spikegen.h>
 
 /// ****************************************************************************
 /// current-based (cuba) model

@@ -286,6 +286,44 @@ classdef InputStimulus < handle
             % add frames to existing stimulus
             this.privAppendFrames(img);
         end
+        
+        function addCustomFrames(this, frames, prepend)
+            % IS.addCustomFrames(frames) adds a number of customly
+            % generated frames to the existing stimulus. FRAMES must be a
+            % 3D matrix with dims <IS.width x IS.height x number frames>.
+            % The range of values must be [0,1].
+            % By default, frames will be append to the existing stimulus.
+            % If flag PREPEND is set to true, then frames will be prepended
+            % instead.
+            %
+            % FRAMES       - A 3D matrix of customly generated frames to be
+            %                appended to the existing stimulus. Must be of
+            %                size <IS.width x IS.height x number frames>.
+            %
+            % PREPEND      - A boolean flag indicating whether to prepend
+            %                (true) or append (false) the frames to the
+            %                existing stimulus. Default: false.
+            if nargin<3,prepend=false;end
+            
+            if ~isnumeric(frames) || numel(size(frames))<2 ...
+                    || numel(size(frames))>3
+                error('Frames must be a numeric 3D matrix')
+            end
+            if size(frames,1)~=this.width || size(frames,2)~=this.height
+                error(['Frames must be of size <' num2str(this.width) ...
+                    ' x ' num2str(this.height) ' x number frames>'])
+            end
+            if max(frames(:))<0 || max(frames(:))>1
+                error('The range of values must be [0,1].')
+            end
+            
+            % add to existing frames
+            if prepend
+                this.privPrependFrames(frames);
+            else
+                this.privAppendFrames(frames);
+            end
+        end
                 
         function addDots(this, length, type, dotDirection, dotSpeed, ...
                 dotDensity, dotCoherence, dotRadius, ptCenter, densityStyle, ...
@@ -988,7 +1026,7 @@ classdef InputStimulus < handle
             this.needToLoad = false; % stim is up-to-date
             this.length = size(this.stim,3);
         end
-        
+
         function privLoadFromFile(this, fileName, loadHeaderOnly)
             % Private method to load a InputStimulus object from fileName.
             % This file must have been created using method
@@ -1429,6 +1467,17 @@ classdef InputStimulus < handle
                     close % close figure
                     this.plotAbortPlotting = true;
             end
+        end
+        
+        function privPrependFrames(this,frames)
+            % Private method to prepend a series of frames to the existing
+            % stimulus.
+            this.privLoadStimIfNecessary(); % need to load stim first
+            this.stim = cat(3, frames, this.stim);
+            
+            % update attributes
+            this.needToLoad = false; % stim is up-to-date
+            this.length = size(this.stim,3);
         end
         
         function privSetFrame(this,index,frame)

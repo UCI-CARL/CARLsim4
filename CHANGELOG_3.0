@@ -6,8 +6,18 @@ Legend:
 	+ added element
 	- removed element
 	* changed element
+
+2014-08-30     Michael Beyeler <mbeyeler@uci.edu>
+    + Added PeriodicSpikeGenerator utility.
+    + Added SpikeGeneratorFromVector utility.
+    + Added SpikeGeneratorFromFile utility.
+
+2014-08-29     Michael Beyeler <mbeyeler@uci.edu>
+	+ Added addCustomFrames function to InputStimulus.m utility.
+
 2014-08-15     Ting-Shuo Chou <tingshuc@uci.edu>
-	+ Fixed cross-platform compatibility on gtest.
+	* Fixed cross-platform compatibility on gtest.
+
 2014-08-14     Michael Beyeler <mbeyeler@uci.edu>
 	+ Added recordMovie function to InputStimulus.m utility.
 
@@ -17,7 +27,7 @@ Legend:
       CARLsim::createSpikeGeneratorGroup.
     * Fixed interface errors on boundary checks and CARLsim states.
     * Fixed console output of connection setup.
-    + Added CARLsim::getGroupId (from string)
+    + Added CARLsim::getGroupId (from string).
 
 2014-08-08     Michael Beyeler <mbeyeler@uci.edu>
 	* Fixed broken COBA implementation in CPU mode.
