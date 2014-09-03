@@ -87,17 +87,13 @@ void InputStimulus::readFramePrivate() {
 		// reset frame index
 		stimFrameNr_ = -1;
 
-		if (wrapAroundEOF_) {
-			// if this flag is set, we want to start reading from the top
+		if (!wrapAroundEOF_) {
+			// we've reached end of file, print a warning
 			fprintf(stderr,"WARNING: End of file reached, starting from the top\n");
-
-			// rewind position of file stream to first frame
-			fseek(fileId_, fileHeaderSize_, SEEK_SET);
-		} else {
-			// we don't wrap around, print a warning and exit
-			fprintf(stderr,"WARNING: End of file reached, cannot read further\n");
-			return;
 		}
+
+		// rewind position of file stream to first frame
+		rewind();
 	}
 
 	// read new frame
@@ -178,4 +174,9 @@ void InputStimulus::readHeader() {
 
 	// store the size of the header section (in bytes)
 	fileHeaderSize_ = ftell(fileId_);
+}
+
+// rewind position of file stream to first frame
+void InputStimulus::rewind() {
+	fseek(fileId_, fileHeaderSize_, SEEK_SET);
 }

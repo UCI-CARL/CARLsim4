@@ -47,7 +47,8 @@ public:
 	 * Instantiates an InputStimulus object.
 	 * \param[in] fileName        path to binary file that was created using InputStimulus.m
 	 * \param[in] wrapAroundEOF   after reaching the end of the file, whether to jump back to the top and start reading
-	 *                            the first frame again. Default: true.
+	 *                            the first frame again. If this flag is false and the EOF is reached, a warning will
+	 *                            be printed. Default: true.
 	 */
 	InputStimulus(std::string fileName, bool wrapAroundEOF=true);
 
@@ -98,6 +99,14 @@ public:
 	 * \returns  pointer to a PoissonRate object
 	 */
 	PoissonRate* readFrame(float maxPoisson);
+
+	/*!
+	 * \brief Rewinds the file pointer to the top
+	 *
+	 * This function rewinds the file pointer back to the beginning of the file, so that the user can re-start
+	 * reading the stimulus from the top.
+	 */
+	void rewind();
 
 
 	// +++++ PUBLIC METHODS: GETTERS / SETTERS ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //

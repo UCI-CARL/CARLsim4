@@ -1,6 +1,8 @@
 #include "gtest/gtest.h"
-#include <snn.h>
 #include "carlsim_tests.h"
+
+#include <snn.h>
+#include <periodic_spikegen.h>
 
 /// **************************************************************************************************************** ///
 /// SHORT-TERM PLASTICITY STP
@@ -11,6 +13,7 @@
  *
  * This function tests the information stored in the group info struct after enabling STP via setSTP
  * \TODO use public user interface
+
  */
 TEST(STP, setSTPTrue) {
 	// create network by varying nConfig from 1...maxConfig, with
