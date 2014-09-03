@@ -41,6 +41,12 @@
 #include <carlsim.h>
 #include <mtrand.h>
 
+#if (WIN32 || WIN64)
+#include <algorithm>
+#define fmin std::min
+#define fmax std::max
+#endif
+
 void calcColorME(int nrX, int nrY, unsigned char* stim, float* red_green, float* green_red, float* blue_yellow,
 						float* yellow_blue, float* ME, bool GPUpointers);
 extern MTRand	      getRand;
@@ -211,9 +217,13 @@ int main()
 	s.setSTP(ALL,false);
 
 	s.setSpikeMonitor(gV1ME);
-
+#if (WIN32 || WIN64)
+	s.setSpikeMonitor(gV4o,"results/spkV4o.dat");
+	s.setSpikeMonitor(gV4oi,"results/spkV4oi.dat");
+#else
 	s.setSpikeMonitor(gV4o,"examples/orientation/results/spkV4o.dat");
 	s.setSpikeMonitor(gV4oi,"examples/orientation/results/spkV4oi.dat");
+#endif
 
 	// setup the network
 	s.setupNetwork();
@@ -230,7 +240,11 @@ int main()
 
 	for(long long i=0; i < VIDLEN*1; i++) {
 		if (i%VIDLEN==0) {
+#if (WIN32 || WIN64)
+			fid = fopen("videos/orienR.dat","rb");
+#else
 			fid = fopen("examples/orientation/videos/orienR.dat","rb");
+#endif
 			if (fid==NULL) {
 				printf("ERROR: could not open video file\n");
 				exit(1);
@@ -251,7 +265,11 @@ int main()
 		s.runNetwork(0,frameDur);
 
 		if (i==1) {
+#if (WIN32 || WIN64)
+			s.saveSimulation("results/net.dat", true);
+#else
 			s.saveSimulation("examples/orientation/results/net.dat", true);
+#endif
 		}
 	}
 	fclose(fid);

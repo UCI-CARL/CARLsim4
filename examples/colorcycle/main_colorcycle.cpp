@@ -243,6 +243,26 @@ int main()
 
 	s.setSTP(ALL,false);
 
+#if (WIN32 || WIN64)
+	s.setSpikeMonitor(v1Cells[RED_GREEN],"results/spkV1RG.dat");
+	s.setSpikeMonitor(v1Cells[GREEN_RED],"results/spkV1GR.dat");
+	s.setSpikeMonitor(v1Cells[BLUE_YELLOW],"results/spkV1BY.dat");
+	s.setSpikeMonitor(v1Cells[YELLOW_BLUE],"results/spkV1YB.dat");
+
+	s.setSpikeMonitor(v4CellsExc[RED_V4],"results/spkV4R.dat");
+	s.setSpikeMonitor(v4CellsExc[GREEN_V4],"results/spkV4G.dat");
+	s.setSpikeMonitor(v4CellsExc[BLUE_V4],"results/spkV4B.dat");
+	s.setSpikeMonitor(v4CellsExc[YELLOW_V4],"results/spkV4Y.dat");
+	s.setSpikeMonitor(v4CellsExc[CYAN_V4],"results/spkV4C.dat");
+	s.setSpikeMonitor(v4CellsExc[MAGENTA_V4],"results/spkV4M.dat");
+
+	s.setSpikeMonitor(v4CellsInh[RED_V4],"results/spk4Ri.dat");
+	s.setSpikeMonitor(v4CellsInh[GREEN_V4],"results/spkV4Gi.dat");
+	s.setSpikeMonitor(v4CellsInh[BLUE_V4],"results/spkV4Bi.dat");
+	s.setSpikeMonitor(v4CellsInh[YELLOW_V4],"results/spkV4Yi.dat");
+	s.setSpikeMonitor(v4CellsInh[CYAN_V4],"results/spkV4Ci.dat");
+	s.setSpikeMonitor(v4CellsInh[MAGENTA_V4],"results/spkV4Mi.dat");
+#else
 	s.setSpikeMonitor(v1Cells[RED_GREEN],"examples/colorcycle/results/spkV1RG.dat");
 	s.setSpikeMonitor(v1Cells[GREEN_RED],"examples/colorcycle/results/spkV1GR.dat");
 	s.setSpikeMonitor(v1Cells[BLUE_YELLOW],"examples/colorcycle/results/spkV1BY.dat");
@@ -261,6 +281,7 @@ int main()
 	s.setSpikeMonitor(v4CellsInh[YELLOW_V4],"examples/colorcycle/results/spkV4Yi.dat");
 	s.setSpikeMonitor(v4CellsInh[CYAN_V4],"examples/colorcycle/results/spkV4Ci.dat");
 	s.setSpikeMonitor(v4CellsInh[MAGENTA_V4],"examples/colorcycle/results/spkV4Mi.dat");
+#endif
 
 	unsigned char* vid = new unsigned char[nrX*nrY*3];
 
@@ -278,7 +299,11 @@ int main()
 
 	for(long long i=0; i < VIDLEN; i++) {
 		if (i%VIDLEN==0) {
+#if (WIN32 || WIN64)
+			fid = fopen("videos/colorcycle.dat","rb");
+#else
 			fid = fopen("examples/colorcycle/videos/colorcycle.dat","rb");
+#endif
 			if (fid==NULL) {
 				printf("could not open video file\n");
 				exit(1);
@@ -302,7 +327,11 @@ int main()
 		s.runNetwork(0,frameDur);
 
 		if (i==1) {
+#if (WIN32 || WIN64)
+			s.saveSimulation("results/net.dat", true);
+#else
 			s.saveSimulation("examples/colorcycle/results/net.dat", true);
+#endif
 		}
 	}
 	fclose(fid);

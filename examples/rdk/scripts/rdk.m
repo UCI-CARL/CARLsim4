@@ -1,6 +1,6 @@
 % Version 3/22/14
 
-addpath ../../common
+addpath ../../../util/scripts
 
 ss = zeros(8,10,8);
 

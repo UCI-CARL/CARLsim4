@@ -19,10 +19,16 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="spike_generators\periodic_spikegen.cpp" />
+    <ClCompile Include="spike_generators\spikegen_from_file.cpp" />
+    <ClCompile Include="spike_generators\spikegen_from_vector.cpp" />
     <ClCompile Include="spike_monitor\spike_monitor.cpp" />
     <ClCompile Include="spike_monitor\spike_monitor_core.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="spike_generators\periodic_spikegen.h" />
+    <ClInclude Include="spike_generators\spikegen_from_file.h" />
+    <ClInclude Include="spike_generators\spikegen_from_vector.h" />
     <ClInclude Include="spike_monitor\spike_monitor.h" />
     <ClInclude Include="spike_monitor\spike_monitor_core.h" />
   </ItemGroup>
@@ -104,7 +110,7 @@ copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;WIN64;__CUDA5__;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(CudaToolkitIncludeDir);$(NVCUDASAMPLES_ROOT)\common\inc;$(SolutionDir)carlsim\include;$(SolutionDir)interface\include;$(ProjectDir)spike_monitor</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(CudaToolkitIncludeDir);$(NVCUDASAMPLES_ROOT)\common\inc;$(SolutionDir)carlsim\include;$(SolutionDir)interface\include;$(ProjectDir)spike_monitor;$(ProjectDir)spike_generators</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -143,7 +149,7 @@ copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;WIN64;__CUDA5__;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(CudaToolkitIncludeDir);$(NVCUDASAMPLES_ROOT)\common\inc;$(SolutionDir)carlsim\include;$(SolutionDir)interface\include;$(ProjectDir)spike_monitor</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(CudaToolkitIncludeDir);$(NVCUDASAMPLES_ROOT)\common\inc;$(SolutionDir)carlsim\include;$(SolutionDir)interface\include;$(ProjectDir)spike_monitor;$(ProjectDir)spike_generators</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>

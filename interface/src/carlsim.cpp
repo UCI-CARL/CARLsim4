@@ -130,8 +130,12 @@ void CARLsim::CARLsimInit() {
 
 	// set default save sim params
 	// TODO: when we run executable from local dir, put save file in results/
-//	setDefaultSaveOptions("results/sim_"+netName_+".dat",false);
+#if (WIN32 || WIN64)
 	setDefaultSaveOptions("sim_"+netName_+".dat",false);
+#else
+	setDefaultSaveOptions("results/sim_"+netName_+".dat",false);
+#endif
+	
 }
 
 
@@ -642,7 +646,7 @@ SpikeMonitor* CARLsim::setSpikeMonitor(int grpId, const std::string& fname, int 
 
 	// empty string: use default name for binary file
 #if (WIN32 || WIN64)
-	std::string fileName = fname.empty() ? "spk"+snn_->getGroupName(grpId,configId)+".dat" : fname;
+	std::string fileName = fname.empty() ? "NULL" : fname;
 #else
 	std::string fileName = fname.empty() ? "results/spk"+snn_->getGroupName(grpId,configId)+".dat" : fname;
 #endif
