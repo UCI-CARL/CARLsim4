@@ -68,6 +68,7 @@ int main()
 	float ALPHA_LTD = 0.12f/100;
 	float TAU_LTP = 20.0f;
 	float TAU_LTD = 20.0f;
+
 	//FILE* fid = fopen("results/weight.csv", "w");
 
 	// create a network
@@ -80,7 +81,6 @@ int main()
 	sim.setNeuronParameters(gInb, 0.1f,  0.2f, -65.0f, 2.0f);
 
 	gInput = sim.createSpikeGeneratorGroup("input", NUM_EXC_NEURON, EXCITATORY_NEURON);
-
 
 	sim.connect(gInput, gExc, "one-to-one", RangeWeight(10.0f/100), 1.0f, RangeDelay(1, 20), SYN_FIXED);
 	sim.connect(gExc, gExc, "random", RangeWeight(0.0, 1.0f/100, 4.0f/100), 0.12f, RangeDelay(1, 20), SYN_PLASTIC);
@@ -97,7 +97,7 @@ int main()
 
 	sim.setESTDP(gInb, true, STANDARD, ALPHA_LTP, TAU_LTP, ALPHA_LTD, TAU_LTD);
 	//sim.setISTDP(gInb, true, STANDARD, BETA_LTP, BETA_LTD, LAMDA, DELTA);
-
+	
 	// build the network
 	sim.setupNetwork();
 
@@ -120,10 +120,6 @@ int main()
 		spikeMon1->stopRecording();
 		spikeMon2->stopRecording();
 		spikeMon3->stopRecording();
-		
-		//spikeMonIn->print();
-		//spikeMonEx->print();
-		//spikeMon1->print();
 
 		sim.getPopWeights(gInput, gExc, weights, size);
 		sum = 0.0f;
@@ -155,8 +151,6 @@ int main()
 			sum += weights[i];
 		printf("inb-inb:%f\n", sum / size);
 	}
-
-	//fclose(fid);
 
 	return 0;
 }
