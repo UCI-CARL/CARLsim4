@@ -1,136 +1,112 @@
+# TODO: see if we still need the regression flag
 # module include file for CARLsim core
-# edited by KDC
 
 #---------------------------------------------------------------------------
-# CARLsim flags
+# CARLsim kernel variables
 #---------------------------------------------------------------------------
-
-ifeq (${strip ${CUDA_MAJOR_NUM}},1)
-	ifeq (${strip ${CUDA_MINOR_NUM}},2)
-		CARLSIM_FLAGS += -arch sm_12 -D__NO_ATOMIC_ADD__
-	else
-		CARLSIM_FLAGS += -arch sm_13 -D__NO_ATOMIC_ADD__
-	endif
-else ifeq (${strip ${CUDA_MAJOR_NUM}},2)
-	ifeq (${strip ${CUDA_MINOR_NUM}},0)
-		CARLSIM_FLAGS += -arch sm_20
-	else
-		CARLSIM_FLAGS += -arch sm_21
-	endif
-else ifeq (${strip ${CUDA_MAJOR_NUM}},3)
-	ifeq (${strip ${CUDA_MINOR_NUM}},0)
-		CARLSIM_FLAGS += -arch sm_30
-	else
-		CARLSIM_FLAGS += -arch sm_35
-	endif
-endif
-
-ifeq (${strip ${CARLSIM_CUDAVER}},3)
-	CARLSIM_INCLUDES = -I${NVIDIA_SDK}/C/common/inc/
-	CARLSIM_LFLAGS = -L${NVIDIA_SDK}/C/lib
-	CARLSIM_LIBS = -lcutil_x86_64
-	CARLSIM_FLAGS += -D__CUDA3__
-else ifeq (${strip ${CARLSIM_CUDAVER}},5)
-	CARLSIM_INCLUDES = -I/usr/local/cuda/samples/common/inc/
-	CARLSIM_LFLAGS =
-	CARLSIM_LIBS =
-	CARLSIM_FLAGS += -D__CUDA5__
-else ifeq (${strip ${CARLSIM_CUDAVER}},6)
-	CARLSIM_INCLUDES = -I/usr/local/cuda/samples/common/inc/
-	CARLSIM_LFLAGS =
-	CARLSIM_LIBS =
-	CARLSIM_FLAGS += -D__CUDA6__
-endif
-
-# use fast math
-ifeq (${strip ${CARLSIM_FASTMATH}},1)
-	CARLSIM_FLAGS += -use_fast_math
-endif
-
-# use CUDA optimization level
-ifneq (${strip ${CARLSIM_CUOPTLEVEL}},1)
-	CARLSIM_FLAGS += -O${CARLSIM_CUOPTLEVEL}
-endif
-
-# set debug flag
-ifeq (${strip ${CARLSIM_DEBUG}},1)
-	CARLSIM_FLAGS += -g
-endif
-
-# set regression flag
-ifeq (${strip ${CARLSIM_TEST}},1)
-	CARLSIM_FLAGS += -I$(CURDIR)/$(test_dir) -D__REGRESSION_TESTING__
-endif
-
-# append include path to CARLSIM_FLAGS
-CARLSIM_FLAGS += -I$(CURDIR)/$(carlsim_dir)/include \
-	-I$(CURDIR)/$(interface_dir)/include
-
-CARLSIM_FLAGS += -I$(spike_monitor_dir)
-
-#---------------------------------------------------------------------------
-# CARLsim local variables
-#---------------------------------------------------------------------------
-local_dir := $(carlsim_dir)
-local_deps := $(addprefix $(local_dir)/include/, snn.h mtrand.h gpu.h \
+# kernel variables
+kernel_inc := $(addprefix $(kernel_dir)/include/, snn.h mtrand.h gpu.h \
 	snn_definitions.h snn_datastructures.h \
 	gpu_random.h propagated_spike_buffer.h poisson_rate.h \
 	error_code.h cuda_version_control.h)
-local_src := $(addprefix $(local_dir)/src/, snn_cpu.cpp mtrand.cpp \
-	propagated_spike_buffer.cpp poisson_rate.cpp print_snn_info.cpp \
-	gpu_random.cu snn_gpu.cu)
-local_objs := $(addprefix $(local_dir)/src/,snn_cpu.o mtrand.o \
-	propagated_spike_buffer.o poisson_rate.o print_snn_info.o \
-	gpu_random.o snn_gpu.o)
+kernel_cpp := $(addprefix $(kernel_dir)/src/, snn_cpu.cpp mtrand.cpp \
+	propagated_spike_buffer.cpp poisson_rate.cpp print_snn_info.cpp)
+kernel_cu := $(addprefix $(kernel_dir)/src/, gpu_random.cu snn_gpu.cu)
+kernel_src := $(kernel_cpp) $(kernel_cu)
+kernel_cpp_objs := $(patsubst %.cpp, %.o, $(kernel_cpp))
+kernel_cu_objs := $(patsubst %.cu, %.o, $(kernel_cu))
+kernel_objs := $(kernel_cpp_objs) $(kernel_cu_objs)
 
+# interface variables
+interface_inc := $(addprefix $(interface_dir)/include/, carlsim.h \
+	user_errors.h callback.h callback_core.h carlsim_definitions.h \
+	carlsim_datastructures.h)
+interface_src := $(addprefix $(interface_dir)/src/,carlsim.cpp \
+	user_errors.cpp callback_core.cpp)
+interface_objs := $(patsubst %.cpp, %.o, $(interface_src))
 
-interface_deps := carlsim.h carlsim.cpp user_errors.h user_errors.cpp \
-	callback.h callback_core.h callback_core.cpp carlsim_definitions.h \
-	carlsim_datastructures.h
-interface_src := $(interface_dir)/src/carlsim.cpp \
-	$(interface_dir)/src/user_errors.cpp \
-	$(interface_dir)/src/callback_core.cpp
-interface_objs := $(interface_dir)/src/carlsim.o \
-	$(interface_dir)/src/user_errors.o \
-	$(interface_dir)/src/callback_core.o
-
-
-spike_monitor_deps := $(addprefix $(spike_monitor_dir)/,spike_monitor.h \
-	spike_monitor.cpp spike_monitor_core.h spike_monitor_core.cpp)
-spike_monitor_src := $(addprefix $(spike_monitor_dir)/, spike_monitor.cpp \
+# spike monitor variables
+spike_mon_inc := $(addprefix $(spike_mon_dir)/,spike_monitor.h \
+	spike_monitor_core.h)
+spike_mon_src := $(addprefix $(spike_mon_dir)/, spike_monitor.cpp \
 	spike_monitor_core.cpp)
-spike_monitor_objs := $(addprefix $(spike_monitor_dir)/,spike_monitor.o \
-	spike_monitor_core.o)
-spike_monitor_flags := -I$(spike_monitor_dir)
-# motion energy objects
-util_2_0_objs := $(addprefix $(local_dir)/,v1ColorME.2.0.o)
+spike_mon_objs := $(patsubst %.cpp, %.o, $(spike_mon_src))
+spike_mon_flags := -I$(spike_mon_dir)
 
-sources += $(local_src) $(interface_src) $(spike_monitor_src)
-carlsim_deps += $(local_deps) $(interface_deps) $(spike_monitor_deps)
-carlsim_objs += $(local_objs) $(interface_objs) $(spike_monitor_objs)
-carlsim_sources += $(local_src) $(interface_src) $(spike_monitor_src)
-objects += $(carlsim_objs) $(interface_objs) $(spike_monitor_objs)
-all_targets += carlsim
+# motion energy objects
+util_2_0_objs := $(addprefix $(kernel_dir)/,v1ColorME.2.0.o)
+
+# carlsim variables all together in one place
+carlsim_inc += $(kernel_inc) $(interface_inc) $(spike_mon_inc)
+carlsim_objs += $(kernel_objs) $(interface_objs) $(spike_mon_objs)
+carlsim_sources += $(kernel_src) $(interface_src) $(spike_mon_src)
+objects += $(carlsim_objs) $(interface_objs) $(spike_mon_objs)
+
+default_targets += carlsim libCARLsim
 
 #---------------------------------------------------------------------------
 # CARLsim rules
 #---------------------------------------------------------------------------
-.PHONY: carlsim
-carlsim: $(carlsim_sources) $(carlsim_objs)
+# put libcuda stuff here
+.PHONY: carlsim libCARLsim install
+carlsim: $(carlsim_sources) $(carlsim_inc) $(carlsim_objs)
 
 # interface
-$(interface_dir)/src/%.o: $(interface_dir)/src/%.cpp $(interface_deps)
+$(interface_dir)/src/%.o: $(interface_dir)/src/%.cpp $(interface_inc)
 	$(NVCC) -c $(CARLSIM_INCLUDES) $(CARLSIM_FLAGS) $< -o $@
 
-#util TODO: make sure deps are right
-$(spike_monitor_dir)/%.o: $(spike_monitor_dir)/%.cpp
-	$(NVCC) -c $(CARLSIM_INCLUDES) $(CARLSIM_FLAGS) $(spike_monitor_flags) \
+# spike_monitor
+$(spike_mon_dir)/%.o: $(spike_mon_dir)/%.cpp $(spike_mon_inc)
+	$(NVCC) -c $(CARLSIM_INCLUDES) $(CARLSIM_FLAGS) $(spike_mon_flags) \
 $< -o $@
 
-# local cpps
-$(local_dir)/src/%.o: $(local_dir)/src/%.cpp $(local_deps)
+# kernel carlsim cpps
+$(kernel_dir)/src/%.o: $(kernel_dir)/src/%.cpp $(kernel_inc)
 	$(NVCC) -c $(CARLSIM_INCLUDES) $(CARLSIM_FLAGS) $< -o $@
 
-# local cuda
-$(local_dir)/src/%.o: $(local_dir)/src/%.cu $(local_deps)
+# kernel carlsim cuda
+$(kernel_dir)/src/%.o: $(kernel_dir)/src/%.cu $(kernel_inc)
 	$(NVCC) -c $(CARLSIM_INCLUDES) $(CARLSIM_FLAGS) $< -o $@
+
+carlsim_lib := $(addprefix carlsim/,libCARLsim.a)
+# keep track of this so we can delete it later on distclean
+libraries += $(carlsim_lib)
+
+libCARLsim: $(carlsim_lib)
+
+$(carlsim_lib): $(carlsim_sources) $(carlsim_inc) $(carlsim_objs)
+	ar rcs $@ $(carlsim_objs)
+
+# TODO: in the readme tell the user how to uninstall the library (just delete the
+# TODO: Consider using the library naming convention on the CARLsim wiki to name the
+# library and use a symlink to it. Maybe add this as an issue.
+# $(CARLSIM_LIB_INSTALL_DIR))
+install: $(carlsim_lib)
+	@test -d $(CARLSIM_LIB_INSTALL_DIR) || \
+		mkdir $(CARLSIM_LIB_INSTALL_DIR)
+	@test -d $(CARLSIM_LIB_INSTALL_DIR)/lib || mkdir \
+		$(CARLSIM_LIB_INSTALL_DIR)/lib
+	@test -d $(CARLSIM_LIB_INSTALL_DIR)/include || mkdir \
+		$(CARLSIM_LIB_INSTALL_DIR)/include
+	@test -d $(CARLSIM_LIB_INSTALL_DIR)/include/kernel || mkdir \
+		$(CARLSIM_LIB_INSTALL_DIR)/include/kernel
+	@test -d $(CARLSIM_LIB_INSTALL_DIR)/include/interface || mkdir \
+		$(CARLSIM_LIB_INSTALL_DIR)/include/interface
+	@test -d $(CARLSIM_LIB_INSTALL_DIR)/include/spike_monitor || mkdir \
+		$(CARLSIM_LIB_INSTALL_DIR)/include/spike_monitor
+	@test -d $(CARLSIM_LIB_INSTALL_DIR)/include/spike_generator || mkdir \
+		$(CARLSIM_LIB_INSTALL_DIR)/include/spike_generator
+	@test -e $(CARLSIM_LIB_INSTALL_DIR)/lib/libCARLsim.a || install -m 0755 \
+		$(carlsim_lib) $(CARLSIM_LIB_INSTALL_DIR)/lib
+	@install -m 0644 $(kernel_dir)/include/cuda_version_control.h \
+		$(kernel_dir)/include/poisson_rate.h $(CARLSIM_LIB_INSTALL_DIR)/include/kernel
+	@install -m 0644 $(interface_dir)/include/callback.h \
+		$(interface_dir)/include/carlsim_datastructures.h \
+		$(interface_dir)/include/carlsim_definitions.h \
+		$(interface_dir)/include/carlsim.h $(interface_dir)/include/user_errors.h \
+		$(CARLSIM_LIB_INSTALL_DIR)/include/interface
+	@install -m 0644 $(spike_mon_dir)/spike_monitor.h \
+	$(CARLSIM_LIB_INSTALL_DIR)/include/spike_monitor
+	@install -m 0644 $(spike_gen_dir)/periodic_spikegen.h \
+		$(spike_gen_dir)/spikegen_from_file.h \
+		$(spike_gen_dir)/spikegen_from_vector.h

@@ -79,11 +79,7 @@ int main()
 
 	// build the network
 	sim.setupNetwork();
-#if (WIN32 || WIN64)
 	sim.setSpikeMonitor(g1,"results/spikes.dat"); // put spike times into spikes.dat
-#else
-	sim.setSpikeMonitor(g1,"examples/random/results/spikes.dat"); // put spike times into spikes.dat
-#endif
 	sim.setSpikeMonitor(g2); // Show basic statistics about g2
 	sim.setSpikeMonitor(gin);
 

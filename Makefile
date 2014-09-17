@@ -1,102 +1,101 @@
-# Makefile that includes modules for organization
-#-------------------------------------------------------------------------------
-# Begin user modifiable section
-#-------------------------------------------------------------------------------
-# absolute path of evolving objects installation 
-EO_INSTALL_DIR ?= /opt/eo
-
-# desired installation absolute path of pti 
-PTI_INSTALL_DIR ?= /opt/pti
-
-# cuda capability major version number
-CUDA_MAJOR_NUM ?= 1
-# cuda capability minor version number
-CUDA_MINOR_NUM ?= 3
-
-# if optional env vars do not exist, assign default values
-# $(OPT_LEVEL): set to 1, 2, or 3 if you want to use optimization.  Default: 0.
-# $(DEBUG_INFO): set to 1 to include debug info, set to 0 to not include 
-# debugging info.  Default: 0.
-CARLSIM_CUDAVER ?= 3
-CARLSIM_FASTMATH ?= 0
-CARLSIM_CUOPTLEVEL ?= 0
-CARLSIM_DEBUG ?= 0
-
-# whether to include flag for regression testing
-CARLSIM_TEST ?= 0
-
-#-------------------------------------------------------------------------------
-# End user modifiable section
-#-------------------------------------------------------------------------------
+# Main Makefile for compiling, testing, and installing CARLsim
 
 # these variables collect the information from the other modules
-all_targets :=
-carlsim_programs :=
-pti_programs :=
-sources   :=
-libraries := 
-carlsim_deps :=
-carlsim_sources :=
-carlsim_objs := 
+default_targets :=
 common_sources :=
 common_objs :=
 output_files :=
+libraries :=
 objects :=
 
-inc_dir = include
-carlsim_dir = carlsim
-lib_dir = libpti
-ex_dir  = examples
-proj_dir = projects
-interface_dir = interface
-test_dir = test
-util_dir = util
-spike_monitor_dir = $(util_dir)/spike_monitor
+# carlsim components
+kernel_dir     = carlsim/kernel
+interface_dir  = carlsim/interface
+spike_mon_dir  = carlsim/spike_monitor
+spike_gen_dir  = tools/carlsim_addons/spike_generators
+server_dir     = carlsim/server
+test_dir       = carlsim/test
+# carlsim tools
+input_stim_dir = tools/carlsim_addons/input_stimulus
+# additional directories
+ex_dir         = examples
+proj_dir       = projects
+
+# location of .h files
+vpath %.h $(EO_INSTALL_DIR)/src $(kernel_dir)/include \
+$(ex_dir)/common $(interface_dir)/include $(spike_mon_dir) $(test_dir)
 
 # location of .cpp files
-vpath %.cpp $(EO_INSTALL_DIR)/src $(EO_INSTALL_DIR)/src/do \
-$(EO_INSTALL_DIR)/src/es $(EO_INSTALL_DIR)/src/utils $(lib_dir) \
-$(ex_dir)/common/ $(carlsim_dir)/src $(interface_dir)/src $(test_dir) \
-$(spike_monitor_dir)
+vpath %.cpp $(kernel_dir)/src $(interface_dir)/src $(test_dir) \
+$(spike_info_dir) $(ex_dir)/common/
 # location of .cu files
-vpath %.cu $(carlsim_dir)/src
+vpath %.cu $(kernel_dir)/src $(test_dir)
 # location of .h files
-vpath %.h $(EO_INSTALL_DIR)/src $(inc_dir) $(carlsim_dir)/include \
-$(ex_dir)/common $(interface_dir)/include $(test_dir) $(spike_monitor_dir)
-
-# this blank 'all' is required
-all:
+# TODO: remove EO_INSTALL_DIR part when I'm done
+# TODO: add ECJ stuff here if I need to
+# TODO: remove $interface_dir)/include when you do the same patsubst
+# as spike_monitor
+# TODO: make the help in this makefile similar to the ECJ help. It is
+# formatted nicer.
+# TODO: Maybe put init.mk into common.mk or something like that?
+# TODO: Move spike_generator to carlsim folder and fix the makefile
 
 # core makefile includes
-include makefile.mk
-include libpti/libpti.mk
+include user.mk
+# TODO: maybe this should be moved to just carlsim folder and called carlsim.mk and then
+# we could have explicit kernel things in the carlsim.mk makefile. I think this is
+# what I will do.
 include carlsim/carlsim.mk
-include test/gtest.mk
-include test/carlsim_tests.mk
+include carlsim/test/gtest.mk
+include carlsim/test/carlsim_tests.mk
 
+output_files += *.dot *.log tmp* *.status
+
+# TODO: fix these eventually
 # include all directories in examples
-example_includes := $(addsuffix /examples.mk, $(wildcard examples/*))
-include $(example_includes)
+# TODO: remove this
+#example_includes := $(addsuffix /examples.mk, $(wildcard examples/*))
+#include $(example_includes)
 # include all directories in projects
-project_includes := $(addsuffix /projects.mk, $(wildcard $(proj_dir)/*))
-include $(project_includes)
+#project_includes := $(addsuffix /projects.mk, $(wildcard $(proj_dir)/*))
+#include $(project_includes)
 
-.PHONY: all libraries examples pti_examples clean distclean tests
-all: $(all_targets)
+# this blank 'default' is required
+default:
 
-tests: gtest carlsim_tests
+.PHONY: default clean distclean tests
+default: $(default_targets)
 
-libraries: $(libraries)
+# TODO: go back and include the test stuff
+#tests: gtest carlsim_tests
 
 examples: $(carlsim_programs)
 
 pti-examples: $(pti_programs)
 
+# TODO: eventually need to remove this
+#clean:
+#	$(RM) $(objects) $(carlsim_programs) $(pti_programs) $(output_files) $(GTEST_LIB_DIR)
+# TODO: include all the correct stuff in this one too
+# TODO: need to create a results directory in the main directory and delete later with
+# every carlsim_tests run. distclean/clean should take care of it.
 clean:
-	$(RM) $(objects) $(carlsim_programs) $(pti_programs) $(output_files) $(GTEST_LIB_DIR) \
-
+	$(RM) $(objects)
+# TODO: see what distclean should really do by convention
 distclean:
 	$(RM) $(objects) $(carlsim_programs) $(pti_programs) $(libraries) $(output_files)
 
 devtest:
-	@echo $(CARLSIM_FLAGS) $(all_targets)
+	@echo $(CARLSIM_SRC_DIR) $(carlsim_tests_objs)
+
+# TODO: rewrite help instructions
+help:
+	@echo -e '\n'Type \'make\' or \'make all\' to make CARLsim and CARLsim \
+	examples.'\n'
+	@echo -e Type \'make pti\' to make the pti library, install it, \
+	and make the pti examples.'\n'
+	@echo -e Type \'make uninstall\' to uninstall the pti library.'\n'
+	@echo -e To compile a specific example, type \'make \<example folder \
+	name\>\'.'\n'
+	@echo -e Note: simpleEA, tuneFiringRates, and SORFs examples \
+	require CARLsim PTI installation.'\n'
