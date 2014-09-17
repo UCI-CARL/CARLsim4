@@ -21,7 +21,6 @@ utility := $(addprefix $(spike_gen_dir)/,periodic_spikegen spikegen_from_file \
 utility_src := $(addsuffix .cpp, $(utility))
 utility_deps := $(addsuffix .h, $(utility)) $(utility_src)
 utility_objs := $(addsuffix .o, $(utility))
-#CARLSIM_INCLUDES += -I$(CURDIR)/$(spike_gen_dir)#TODO: add to this to fix it.
 local_deps += $(utility_deps)
 
 carlsim_tests_objs := $(local_objs) $(utility_objs)
@@ -29,6 +28,8 @@ objects += $(carlsim_tests_objs)
 output_files += $(test_dir)/carlsim_tests $(test_dir)/results/* \
 								$(test_dir)/*.log $(test_dir)/*.dat
 
+# we use this in our tests, so we need to include the headers
+CARLSIM_INCLUDES += -I$(CURDIR)/$(spike_gen_dir)
 
 .PHONY: carlsim_tests
 carlsim_tests: $(test_dir)/carlsim_tests $(carlsim_tests_objs)
@@ -42,8 +43,8 @@ $(local_dir)/carlsim_tests: $(local_objs) $(utility_objs) $(gtest_deps) \
 $(local_dir)/%.o: $(local_dir)/%.cpp $(local_deps)
 	$(NVCC) $(CARLSIM_INCLUDES) $(CARLSIM_FLAGS) $(GTEST_CPPFLAGS) -c $< -o $@
 
-#$(spike_gen_dir)/%.o: $(spike_gen_dir)/%.cpp $(utility_deps)
-#	$(NVCC) $(CARLSIM_INCLUDES) $(CARLSIM_FLAGS) $(GTEST_CPPFLAGS) -c $< -o $@
+$(spike_gen_dir)/%.o: $(spike_gen_dir)/%.cpp $(utility_deps)
+	$(NVCC) $(CARLSIM_INCLUDES) $(CARLSIM_FLAGS) $(GTEST_CPPFLAGS) -c $< -o $@
 
 
 # rule for our local custom gtest main

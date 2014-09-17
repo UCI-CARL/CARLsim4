@@ -83,7 +83,7 @@ $(carlsim_lib): $(carlsim_sources) $(carlsim_inc) $(carlsim_objs)
 # $(CARLSIM_LIB_INSTALL_DIR))
 install: $(carlsim_lib)
 	@test -d $(CARLSIM_LIB_INSTALL_DIR) || \
-		mkdir $(CARLSIM_LIB_INSTALL_DIR)
+		mkdir -p $(CARLSIM_LIB_INSTALL_DIR)
 	@test -d $(CARLSIM_LIB_INSTALL_DIR)/lib || mkdir \
 		$(CARLSIM_LIB_INSTALL_DIR)/lib
 	@test -d $(CARLSIM_LIB_INSTALL_DIR)/include || mkdir \
@@ -94,8 +94,8 @@ install: $(carlsim_lib)
 		$(CARLSIM_LIB_INSTALL_DIR)/include/interface
 	@test -d $(CARLSIM_LIB_INSTALL_DIR)/include/spike_monitor || mkdir \
 		$(CARLSIM_LIB_INSTALL_DIR)/include/spike_monitor
-	@test -d $(CARLSIM_LIB_INSTALL_DIR)/include/spike_generator || mkdir \
-		$(CARLSIM_LIB_INSTALL_DIR)/include/spike_generator
+	@test -d $(CARLSIM_LIB_INSTALL_DIR)/include/spike_generators || mkdir \
+		$(CARLSIM_LIB_INSTALL_DIR)/include/spike_generators
 	@test -e $(CARLSIM_LIB_INSTALL_DIR)/lib/libCARLsim.a || install -m 0755 \
 		$(carlsim_lib) $(CARLSIM_LIB_INSTALL_DIR)/lib
 	@install -m 0644 $(kernel_dir)/include/cuda_version_control.h \
@@ -109,4 +109,4 @@ install: $(carlsim_lib)
 	$(CARLSIM_LIB_INSTALL_DIR)/include/spike_monitor
 	@install -m 0644 $(spike_gen_dir)/periodic_spikegen.h \
 		$(spike_gen_dir)/spikegen_from_file.h \
-		$(spike_gen_dir)/spikegen_from_vector.h
+		$(spike_gen_dir)/spikegen_from_vector.h $(CARLSIM_LIB_INSTALL_DIR)/include/spike_generators

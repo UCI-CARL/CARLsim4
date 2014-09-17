@@ -41,11 +41,16 @@ EO_PTI_INSTALL_DIR ?= /opt/CARL/carlsim_eo_pti
 ECJ_INSTALL_DIR ?= /opt/ecj
 ECJ_PTI_INSTALL_DIR ?= /opt/CARL/carlsim_ecj_pti
 
+#------------------------------------------------------------------------------
+# CARLsim Developer Features: Running tests and compiling from sources
+#------------------------------------------------------------------------------
+
+
 # path of installation of Google test framework
 GTEST_DIR ?= /opt/gtest
 
 # whether to include flag for regression testing
-CARLSIM_TEST ?= 1
+CARLSIM_TEST ?= 0
 
 # If this is set to 1, compile from installed CARLsim lib, if 0 compile from
 # source. 1 is default. Compiling from source is mainly for devs.
@@ -54,7 +59,7 @@ CARLSIM_TEST ?= 1
 # use the Makefile in the example/project directory.
 # Explain why you need CARLSIM_SRC_DIR
 # TODO: explain that testing will always build from src
-USE_CARLSIM_SRC ?= 0
+USE_CARLSIM_SRC ?= 1
 CARLSIM_SRC_DIR ?= /home/kris/Project/CARLsim
 
 #------------------------------------------------------------------------------
@@ -122,12 +127,20 @@ ifeq (${strip ${CARLSIM_DEBUG}},1)
 	CARLSIM_FLAGS += -g
 endif
 
+# set regression flag
+ifeq (${strip ${CARLSIM_TEST}},1)
+	CARLSIM_FLAGS += -I$(CURDIR)/$(test_dir) -D__REGRESSION_TESTING__
+# if you are testing, you must compile from src
+	USE_CARLSIM_SRC = 1
+endif
+
 # set flags for compiling from CARLsim src or lib
 ifeq (${USE_CARLSIM_SRC},0)
 # carlsim components
 	kernel_dir     = $(CARLSIM_LIB_INSTALL_DIR)/kernel
 	interface_dir  = $(CARLSIM_LIB_INSTALL_DIR)/interface
 	spike_mon_dir  = $(CARLSIM_LIB_INSTALL_DIR)/spike_monitor
+	spike_gen_dir  = $(CARLSIM_LIB_INSTALL_DIR)/spike_generators
 # we are compiling from lib
 	CARLSIM_FLAGS += -I$(CARLSIM_LIB_INSTALL_DIR)/include/kernel \
 									 -I$(CARLSIM_LIB_INSTALL_DIR)/include/interface \
@@ -138,6 +151,7 @@ else
 	kernel_dir     = $(CARLSIM_SRC_DIR)/carlsim/kernel
 	interface_dir  = $(CARLSIM_SRC_DIR)/carlsim/interface
 	spike_mon_dir  = $(CARLSIM_SRC_DIR)/carlsim/spike_monitor
+	spike_gen_dir  = $(CARLSIM_SRC_DIR)/tools/carlsim_addons/spike_generators
 # we are compiling from src
 	CARLSIM_FLAGS += -I$(kernel_dir)/include -I$(interface_dir)/include -I$(spike_mon_dir)
 endif

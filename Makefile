@@ -23,13 +23,14 @@ proj_dir       = projects
 
 # location of .h files
 vpath %.h $(EO_INSTALL_DIR)/src $(kernel_dir)/include \
-$(ex_dir)/common $(interface_dir)/include $(spike_mon_dir) $(test_dir)
+$(ex_dir)/common $(interface_dir)/include $(spike_mon_dir) \
+$(spike_gen_dir) $(test_dir)
 
 # location of .cpp files
 vpath %.cpp $(kernel_dir)/src $(interface_dir)/src $(test_dir) \
-$(spike_info_dir) $(ex_dir)/common/
+$(spike_info_dir) $(spike_gen_dir) $(ex_dir)/common/
 # location of .cu files
-vpath %.cu $(kernel_dir)/src $(test_dir)
+vpath %.cu $(kernel_dir)/src $(spike_gen_dir) $(test_dir)
 # location of .h files
 # TODO: remove EO_INSTALL_DIR part when I'm done
 # TODO: add ECJ stuff here if I need to
