@@ -45,18 +45,7 @@
 	#define _CRT_SECURE_NO_WARNINGS
 #endif
 
-#define NUM_NEURON 50
-
-class SpikeController: public SpikeGenerator {
-public:
-	SpikeController() {
-	}
-
-	unsigned int nextSpikeTime(CARLsim* s, int grpId, int nid, unsigned int currentTime, unsigned int lastScheduledSpikeTime) {
-		if (currentTime > lastScheduledSpikeTime) return currentTime + (nid / 5) * 100 + rand() % 6 - 3;
-		return 0xFFFFFFFF;
-	}
-};
+#define NUM_EXC_NEURON 800
 
 int main()
 {
@@ -66,13 +55,11 @@ int main()
 	std::vector<int> spikesPre;
 	float* weights = NULL;
 	int size;
-	SpikeMonitor* spikeMonIn1;
-	SpikeMonitor* spikeMonIn2;
-	SpikeMonitor* spikeMonEx;
-	SpikeMonitor* spikeMonInput1;
-	SpikeMonitor* spikeMonInput2;
-	SpikeController* spikeCtrl = new SpikeController();
-	int gEx, gIn1, gIn2, gInput1, gInput2;
+	float sum;
+	SpikeMonitor* spikeMon1;
+	SpikeMonitor* spikeMon2;
+	SpikeMonitor* spikeMon3;
+	int gExc, gInb, gInput;
 	float BETA_LTP = 0.16f/100;
 	float BETA_LTD = 0.10f/100;
 	float LAMDA = 6.0f;
@@ -81,130 +68,89 @@ int main()
 	float ALPHA_LTD = 0.12f/100;
 	float TAU_LTP = 20.0f;
 	float TAU_LTD = 20.0f;
-	float sum;
 
 	//FILE* fid = fopen("results/weight.csv", "w");
 
 	// create a network
 	CARLsim sim("istdp",GPU_MODE, USER,0,1,42);
 
-	gEx = sim.createGroup("excit", 1, EXCITATORY_NEURON);
-	sim.setNeuronParameters(gEx, 0.02f, 0.2f, -65.0f, 8.0f);
+	gExc = sim.createGroup("excit", NUM_EXC_NEURON, EXCITATORY_NEURON);
+	sim.setNeuronParameters(gExc, 0.02f, 0.2f, -65.0f, 8.0f);
 
-	gIn1 = sim.createGroup("inhib", 50, INHIBITORY_NEURON);
-	sim.setNeuronParameters(gIn1, 0.1f,  0.2f, -65.0f, 2.0f);
+	gInb = sim.createGroup("inhib", 200, INHIBITORY_NEURON);
+	sim.setNeuronParameters(gInb, 0.1f,  0.2f, -65.0f, 2.0f);
 
-	gIn2 = sim.createGroup("inhib", 50, INHIBITORY_NEURON);
-	sim.setNeuronParameters(gIn2, 0.1f,  0.2f, -65.0f, 2.0f);
+	gInput = sim.createSpikeGeneratorGroup("input", NUM_EXC_NEURON, EXCITATORY_NEURON);
 
-	
-	gInput2=sim.createSpikeGeneratorGroup("input_2", 50, EXCITATORY_NEURON);
-	gInput1=sim.createSpikeGeneratorGroup("input_1", 50, EXCITATORY_NEURON);
+	sim.connect(gInput, gExc, "one-to-one", RangeWeight(10.0f/100), 1.0f, RangeDelay(1, 20), SYN_FIXED);
+	sim.connect(gExc, gExc, "random", RangeWeight(0.0, 1.0f/100, 4.0f/100), 0.12f, RangeDelay(1, 20), SYN_PLASTIC);
+	sim.connect(gExc, gInb, "random", RangeWeight(0.0, 1.0f/100, 4.0f/100), 0.12f, RangeDelay(1, 20), SYN_PLASTIC);
+	//sim.connect(gInb, gExc, "random", RangeWeight(0.0, 1.0f/100, 4.0f/100), 0.1f, RangeDelay(1), SYN_PLASTIC);
+	//sim.connect(gInb, gInb, "random", RangeWeight(0.0, 1.0f/100, 4.0f/100), 0.1f, RangeDelay(1), SYN_PLASTIC);
+	sim.connect(gInb, gExc, "random", RangeWeight(1.0f/100), 0.1f, RangeDelay(1), SYN_FIXED);
+	sim.connect(gInb, gInb, "random", RangeWeight(1.0f/100), 0.1f, RangeDelay(1), SYN_FIXED);
 
-	sim.connect(gInput1, gEx, "full", RangeWeight(0.0, 2.0f/100, 10.0f/100), 1.0f, RangeDelay(1, 5), SYN_PLASTIC);
-	sim.connect(gInput1, gIn1, "full", RangeWeight(0.0, 1.1f/100, 1.4f/100), 1.0f, RangeDelay(10, 15), SYN_PLASTIC);
-	sim.connect(gInput1, gIn2, "full", RangeWeight(0.0, 1.1f/100, 1.4f/100), 1.0f, RangeDelay(10, 15), SYN_PLASTIC);
-
-	sim.connect(gInput2, gEx, "full", RangeWeight(0.0, 2.0f/100, 10.0f/100), 1.0f, RangeDelay(1, 5), SYN_PLASTIC);
-	sim.connect(gInput2, gIn1, "full", RangeWeight(0.0, 1.1f/100, 1.4f/100), 1.0f, RangeDelay(10, 15), SYN_PLASTIC);
-	sim.connect(gInput2, gIn2, "full", RangeWeight(0.0, 1.1f/100, 1.4f/100), 1.0f, RangeDelay(10, 15), SYN_PLASTIC);
-
-	sim.connect(gIn1, gEx, "full", RangeWeight(0.0, 0.3f/100, 1.0f/100), 1.0f, RangeDelay(1), SYN_PLASTIC);
-	sim.connect(gIn2, gEx, "full", RangeWeight(0.0, 0.3f/100, 1.0f/100), 1.0f, RangeDelay(1), SYN_PLASTIC);
-
-	// enable COBA, set up STDP
+	// enable COBA, set up STDP, enable dopamine-modulated STDP
 	sim.setConductances(true, 5, 150, 6, 150);
-	sim.setESTDP(gEx, true, STANDARD, ALPHA_LTP, TAU_LTP, ALPHA_LTD, TAU_LTD);
-	sim.setISTDP(gEx, true, STANDARD, BETA_LTP, BETA_LTD, LAMDA, DELTA);
+	sim.setESTDP(gExc, true, STANDARD, ALPHA_LTP, TAU_LTP, ALPHA_LTD, TAU_LTD);
+	//sim.setISTDP(gExc, true, STANDARD, BETA_LTP, BETA_LTD, LAMDA, DELTA);
 
-	sim.setESTDP(gIn1, true, STANDARD, ALPHA_LTP, TAU_LTP, ALPHA_LTD, TAU_LTD);
-	sim.setESTDP(gIn2, true, STANDARD, ALPHA_LTP, TAU_LTP, ALPHA_LTD, TAU_LTD);
-
-	sim.setSpikeGenerator(gInput1, spikeCtrl);
-	//sim.setSpikeGenerator(gInput2, spikeCtrl);
+	sim.setESTDP(gInb, true, STANDARD, ALPHA_LTP, TAU_LTP, ALPHA_LTD, TAU_LTD);
+	//sim.setISTDP(gInb, true, STANDARD, BETA_LTP, BETA_LTD, LAMDA, DELTA);
+	
 	// build the network
 	sim.setupNetwork();
 
-	spikeMonEx = sim.setSpikeMonitor(gEx);
-	spikeMonIn1 = sim.setSpikeMonitor(gIn1);
-	spikeMonIn2 = sim.setSpikeMonitor(gIn2);
-	sim.setSpikeMonitor(gInput1);
-	sim.setSpikeMonitor(gInput2);
+	spikeMon1 = sim.setSpikeMonitor(gExc);
+	spikeMon2 = sim.setSpikeMonitor(gInb);
+	spikeMon3 = sim.setSpikeMonitor(gInput);
 
 	//setup some baseline input
-	//PoissonRate in1(NUM_NEURON);
-	//for (int i = 0; i < NUM_NEURON; i++) in1.rates[i] = 1;
-	//	sim.setSpikeRate(gInput1, &in1);
+	PoissonRate in(NUM_EXC_NEURON);
+	for (int i = 0; i < NUM_EXC_NEURON; i++) in.rates[i] = 2;
+		sim.setSpikeRate(gInput, &in);
 
-	PoissonRate in2(NUM_NEURON);
-	for (int i = 0; i < NUM_NEURON; i++) in2.rates[i] = 1;
-		sim.setSpikeRate(gInput2, &in2);
 
 	// run for 1000 seconds
-	for (int t = 0; t < 4000; t++) {
-		spikeMonIn1->startRecording();
-		spikeMonIn2->startRecording();
-		spikeMonEx->startRecording();
-		sim.runNetwork(1,0,true, true);
-		spikeMonIn1->stopRecording();
-		spikeMonIn2->stopRecording();
-		spikeMonEx->stopRecording();
-		
-		//spikeMonIn->print();
-		//spikeMonEx->print();
-		//spikeMon1->print();
+	for (int t = 0; t < 1000; t++) {
+		spikeMon1->startRecording();
+		spikeMon2->startRecording();
+		spikeMon3->startRecording();
+		sim.runNetwork(10,0,true, true);
+		spikeMon1->stopRecording();
+		spikeMon2->stopRecording();
+		spikeMon3->stopRecording();
 
-		sim.getPopWeights(gInput1, gEx, weights, size);
+		sim.getPopWeights(gInput, gExc, weights, size);
 		sum = 0.0f;
 		for (int i = 0; i < size; i++)
 			sum += weights[i];
-		printf("input 1 to ex %f\n", sum / size);
+		printf("input-exc:%f\n", sum / size);
 
-		sim.getPopWeights(gInput1, gIn1, weights, size);
+		sim.getPopWeights(gExc, gExc, weights, size);
 		sum = 0.0f;
 		for (int i = 0; i < size; i++)
 			sum += weights[i];
-		printf("input 1 to inb 1 %f\n", sum / size);
+		printf("exc-exc:%f\n", sum / size);
 
-		sim.getPopWeights(gInput1, gIn2, weights, size);
+		sim.getPopWeights(gExc, gInb, weights, size);
 		sum = 0.0f;
 		for (int i = 0; i < size; i++)
 			sum += weights[i];
-		printf("input 1 to inb 2 %f\n", sum / size);
-		
-		sim.getPopWeights(gInput2, gEx, weights, size);
-		sum = 0.0f;
-		for (int i = 0; i < size; i++)
-			sum += weights[i];
-		printf("input 2 to ex %f\n", sum / size);
+		printf("exc-inb:%f\n", sum / size);
 
-		sim.getPopWeights(gInput2, gIn1, weights, size);
+		sim.getPopWeights(gInb, gExc, weights, size);
 		sum = 0.0f;
 		for (int i = 0; i < size; i++)
 			sum += weights[i];
-		printf("input 2 to inb 1 %f\n", sum / size);
+		printf("inb-exc:%f\n", sum / size);
 
-		sim.getPopWeights(gInput2, gIn2, weights, size);
+		sim.getPopWeights(gInb, gInb, weights, size);
 		sum = 0.0f;
 		for (int i = 0; i < size; i++)
 			sum += weights[i];
-		printf("input 2 to inb 2 %f\n", sum / size);
-
-		sim.getPopWeights(gIn1, gEx, weights, size);
-		sum = 0.0f;
-		for (int i = 0; i < size; i++)
-			sum += weights[i];
-		printf("inb 1 to ex %f\n", sum / size);
-
-		sim.getPopWeights(gIn2, gEx, weights, size);
-		sum = 0.0f;
-		for (int i = 0; i < size; i++)
-			sum += weights[i];
-		printf("inb 2 to ex %f\n", sum / size);
+		printf("inb-inb:%f\n", sum / size);
 	}
-
-	//fclose(fid);
-	delete spikeCtrl;
 
 	return 0;
 }
