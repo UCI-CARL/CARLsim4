@@ -64,8 +64,8 @@ int main()
 	float BETA_LTD = 0.10f/100;
 	float LAMDA = 6.0f;
 	float DELTA = 20.0f;
-	float ALPHA_LTP = 0.10f/100;
-	float ALPHA_LTD = 0.12f/100;
+	float ALPHA_LTP_EXC = 0.10f/100;
+	float ALPHA_LTD_EXC = 0.12f/100;
 	float TAU_LTP = 20.0f;
 	float TAU_LTD = 20.0f;
 
@@ -92,10 +92,10 @@ int main()
 
 	// enable COBA, set up STDP, enable dopamine-modulated STDP
 	sim.setConductances(true, 5, 150, 6, 150);
-	sim.setESTDP(gExc, true, STANDARD, ALPHA_LTP, TAU_LTP, ALPHA_LTD, TAU_LTD);
+	sim.setESTDP(gExc, true, STANDARD, ALPHA_LTP_EXC, TAU_LTP, ALPHA_LTD_EXC, TAU_LTD);
 	//sim.setISTDP(gExc, true, STANDARD, BETA_LTP, BETA_LTD, LAMDA, DELTA);
 
-	sim.setESTDP(gInb, true, STANDARD, ALPHA_LTP, TAU_LTP, ALPHA_LTD, TAU_LTD);
+	sim.setESTDP(gInb, true, STANDARD, ALPHA_LTP_EXC, TAU_LTP, ALPHA_LTD_EXC, TAU_LTD);
 	//sim.setISTDP(gInb, true, STANDARD, BETA_LTP, BETA_LTD, LAMDA, DELTA);
 	
 	// build the network

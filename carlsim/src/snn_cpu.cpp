@@ -555,10 +555,10 @@ void CpuSNN::setESTDP(int grpId, bool isSet, stdpType_t type, float alphaLTP, fl
 		// set STDP for a given group and configId
 		int cGrpId = getGroupId(grpId, configId);
 		// set params for STDP curve
-		grp_Info[cGrpId].ALPHA_LTP 		= alphaLTP;
-		grp_Info[cGrpId].ALPHA_LTD 		= alphaLTD;
-		grp_Info[cGrpId].TAU_LTP_INV 	= 1.0f/tauLTP;
-		grp_Info[cGrpId].TAU_LTD_INV	= 1.0f/tauLTD;
+		grp_Info[cGrpId].ALPHA_LTP_EXC 		= alphaLTP;
+		grp_Info[cGrpId].ALPHA_LTD_EXC 		= alphaLTD;
+		grp_Info[cGrpId].TAU_LTP_INV_EXC 	= 1.0f/tauLTP;
+		grp_Info[cGrpId].TAU_LTD_INV_EXC	= 1.0f/tauLTD;
 		// set flags for STDP function
 		grp_Info[cGrpId].WithESTDPtype	= type;
 		grp_Info[cGrpId].WithESTDP		= isSet;
@@ -1614,10 +1614,10 @@ GroupSTDPInfo_t CpuSNN::getGroupSTDPInfo(int grpId, int configId) {
 	gInfo.WithISTDP = grp_Info[cGrpId].WithISTDP;
 	gInfo.WithESTDPtype = grp_Info[cGrpId].WithESTDPtype;
 	gInfo.WithISTDPtype = grp_Info[cGrpId].WithISTDPtype;
-	gInfo.ALPHA_LTD = grp_Info[cGrpId].ALPHA_LTD;
-	gInfo.ALPHA_LTP = grp_Info[cGrpId].ALPHA_LTP;
-	gInfo.TAU_LTD_INV = grp_Info[cGrpId].TAU_LTD_INV;
-	gInfo.TAU_LTP_INV = grp_Info[cGrpId].TAU_LTP_INV;
+	gInfo.ALPHA_LTD_EXC = grp_Info[cGrpId].ALPHA_LTD_EXC;
+	gInfo.ALPHA_LTP_EXC = grp_Info[cGrpId].ALPHA_LTP_EXC;
+	gInfo.TAU_LTD_INV_EXC = grp_Info[cGrpId].TAU_LTD_INV_EXC;
+	gInfo.TAU_LTP_INV_EXC = grp_Info[cGrpId].TAU_LTP_INV_EXC;
 	gInfo.BETA_LTP = grp_Info[cGrpId].BETA_LTP;
 	gInfo.BETA_LTD = grp_Info[cGrpId].BETA_LTD;
 	gInfo.LAMDA = grp_Info[cGrpId].LAMDA;
@@ -2910,13 +2910,13 @@ void CpuSNN::findFiring() {
 						if (stdp_tDiff > 0) {
 							// check this is an excitatory or inhibitory synapse
 							if (grp_Info[g].WithESTDP && maxSynWt[pos_ij] >= 0) { // excitatory synapse
-								if (stdp_tDiff * grp_Info[g].TAU_LTP_INV < 25)
-									wtChange[pos_ij] += STDP(stdp_tDiff, grp_Info[g].ALPHA_LTP, grp_Info[g].TAU_LTP_INV);
+								if (stdp_tDiff * grp_Info[g].TAU_LTP_INV_EXC < 25)
+									wtChange[pos_ij] += STDP(stdp_tDiff, grp_Info[g].ALPHA_LTP_EXC, grp_Info[g].TAU_LTP_INV_EXC);
 							} else if (grp_Info[g].WithISTDP && maxSynWt[pos_ij] < 0) { // inhibitory synapse
 								// Anti-Hebbian I-STDP curve
-								//if (stdp_tDiff * grp_Info[g].TAU_LTD_INV < 25) {
-								//	wtChange[pos_ij] -= (STDP(stdp_tDiff, grp_Info[g].ALPHA_LTP, grp_Info[g].TAU_LTP_INV)
-								//		- STDP(stdp_tDiff, grp_Info[g].ALPHA_LTD*1.5, grp_Info[g].TAU_LTD_INV));
+								//if (stdp_tDiff * grp_Info[g].TAU_LTD_INV_EXC < 25) {
+								//	wtChange[pos_ij] -= (STDP(stdp_tDiff, grp_Info[g].ALPHA_LTP_EXC, grp_Info[g].TAU_LTP_INV_EXC)
+								//		- STDP(stdp_tDiff, grp_Info[g].ALPHA_LTD_EXC*1.5, grp_Info[g].TAU_LTD_INV_EXC));
 								//}
 
 								// Symmetrical I-STDP curve
@@ -3043,9 +3043,9 @@ void CpuSNN::generatePostSpike(unsigned int pre_i, unsigned int idx_d, unsigned 
 		if (stdp_tDiff >= 0) {
 			if (grp_Info[post_grpId].WithISTDP && ((pre_type & TARGET_GABAa) || (pre_type & TARGET_GABAb))) { // inhibitory syanpse
 				// Anit-Hebbian I-STDP curve
-				//if ((stdp_tDiff*grp_Info[post_grpId].TAU_LTD_INV)<25) {
-				//	wtChange[pos_i] -= (STDP(stdp_tDiff, grp_Info[post_grpId].ALPHA_LTP, grp_Info[post_grpId].TAU_LTP_INV)
-				// 					 - STDP(stdp_tDiff, grp_Info[post_grpId].ALPHA_LTD*1.5, grp_Info[post_grpId].TAU_LTD_INV));
+				//if ((stdp_tDiff*grp_Info[post_grpId].TAU_LTD_INV_EXC)<25) {
+				//	wtChange[pos_i] -= (STDP(stdp_tDiff, grp_Info[post_grpId].ALPHA_LTP_EXC, grp_Info[post_grpId].TAU_LTP_INV_EXC)
+				// 					 - STDP(stdp_tDiff, grp_Info[post_grpId].ALPHA_LTD_EXC*1.5, grp_Info[post_grpId].TAU_LTD_INV_EXC));
 				//}
 
 				// Symmetrical I-STDP curve
@@ -3057,8 +3057,8 @@ void CpuSNN::generatePostSpike(unsigned int pre_i, unsigned int idx_d, unsigned 
 					//printf("I-STDP LTD\n");
 				} else {/* do nothing */}
 			} else if (grp_Info[post_grpId].WithESTDP && ((pre_type & TARGET_AMPA) || (pre_type & TARGET_NMDA))) { // excitatory synapse
-				if (stdp_tDiff * grp_Info[post_grpId].TAU_LTD_INV < 25)
-					wtChange[pos_i] -= STDP(stdp_tDiff, grp_Info[post_grpId].ALPHA_LTD, grp_Info[post_grpId].TAU_LTD_INV);
+				if (stdp_tDiff * grp_Info[post_grpId].TAU_LTD_INV_EXC < 25)
+					wtChange[pos_i] -= STDP(stdp_tDiff, grp_Info[post_grpId].ALPHA_LTD_EXC, grp_Info[post_grpId].TAU_LTD_INV_EXC);
 			}
 		}
 		assert(!((stdp_tDiff < 0) && (lastSpikeTime[post_i] != MAX_SIMULATION_TIME)));

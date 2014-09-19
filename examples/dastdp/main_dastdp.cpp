@@ -107,9 +107,9 @@ int main()
 	GroupController* grpCtrl = new GroupController(saveFolder);
 	SpikeController* spikeCtrl = new SpikeController();
 	int gin, g1, g1noise, gda;
-	float ALPHA_LTP = 0.10f/100;
+	float ALPHA_LTP_EXC = 0.10f/100;
 	float TAU_LTP = 20.0f;
-	float ALPHA_LTD = 0.132f/100;
+	float ALPHA_LTD_EXC = 0.132f/100;
 	float TAU_LTD = 20.0f;
 
 	// create a network
@@ -130,7 +130,7 @@ int main()
 
 	// enable COBA, set up STDP, enable dopamine-modulated STDP
 	sim.setConductances(true,5,150,6,150);
-	sim.setSTDP(g1, true, DA_MOD, ALPHA_LTP, TAU_LTP, ALPHA_LTD, TAU_LTD);
+	sim.setSTDP(g1, true, DA_MOD, ALPHA_LTP_EXC, TAU_LTP, ALPHA_LTD_EXC, TAU_LTD);
 	sim.setWeightAndWeightChangeUpdate(INTERVAL_10MS, INTERVAL_10MS, 100);
 
 	// set up spike controller on DA neurons

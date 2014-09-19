@@ -115,10 +115,10 @@ TEST(STDP, setSTDPTrue) {
 						EXPECT_TRUE(gInfo.WithISTDPtype == DA_MOD);
 					else
 						EXPECT_TRUE(gInfo.WithISTDPtype == STANDARD);
-					EXPECT_FLOAT_EQ(gInfo.ALPHA_LTP,alphaLTP);
-					EXPECT_FLOAT_EQ(gInfo.ALPHA_LTD,alphaLTD);
-					EXPECT_FLOAT_EQ(gInfo.TAU_LTP_INV,1.0/tauLTP);
-					EXPECT_FLOAT_EQ(gInfo.TAU_LTD_INV,1.0/tauLTD);
+					EXPECT_FLOAT_EQ(gInfo.ALPHA_LTP_EXC,alphaLTP);
+					EXPECT_FLOAT_EQ(gInfo.ALPHA_LTD_EXC,alphaLTD);
+					EXPECT_FLOAT_EQ(gInfo.TAU_LTP_INV_EXC,1.0/tauLTP);
+					EXPECT_FLOAT_EQ(gInfo.TAU_LTD_INV_EXC,1.0/tauLTD);
 					EXPECT_FLOAT_EQ(gInfo.BETA_LTP,betaLTP);
 					EXPECT_FLOAT_EQ(gInfo.BETA_LTD,betaLTD);
 					EXPECT_FLOAT_EQ(gInfo.LAMDA,lamda);

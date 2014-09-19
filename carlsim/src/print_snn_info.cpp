@@ -129,7 +129,7 @@ void CpuSNN::printConnectionInfo(FILE * const fp)
 
   //    fprintf(fp, "\nGlobal STDP Info: \n");
   //    fprintf(fp, "------------\n");
-  //    fprintf(fp, " alpha_ltp: %f\n tau_ltp: %f\n alpha_ldp: %f\n tau_ldp: %f\n", ALPHA_LTP, TAU_LTP, ALPHA_LTD, TAU_LTD);
+  //    fprintf(fp, " alpha_ltp: %f\n tau_ltp: %f\n alpha_ldp: %f\n tau_ldp: %f\n", ALPHA_LTP_EXC, TAU_LTP, ALPHA_LTD_EXC, TAU_LTD);
 
   fprintf(fp, "\nConnections: \n");
   fprintf(fp, "------------\n");
@@ -222,10 +222,10 @@ void CpuSNN::printGroupInfo(int grpId) {
 			(grp_Info[grpId].WithESTDPtype==DA_MOD?"  DA_MOD":" UNKNOWN"));
 		CARLSIM_INFO("      - I-STDP TYPE            = %s",     grp_Info[grpId].WithISTDPtype==STANDARD? "STANDARD" :
 			(grp_Info[grpId].WithISTDPtype==DA_MOD?"  DA_MOD":" UNKNOWN"));
-		CARLSIM_INFO("      - ALPHA_LTP              = %8.5f", grp_Info[grpId].ALPHA_LTP);
-		CARLSIM_INFO("      - ALPHA_LTD              = %8.5f", grp_Info[grpId].ALPHA_LTD);
-		CARLSIM_INFO("      - TAU_LTP_INV            = %8.5f", grp_Info[grpId].TAU_LTP_INV);
-		CARLSIM_INFO("      - TAU_LTD_INV            = %8.5f", grp_Info[grpId].TAU_LTD_INV);
+		CARLSIM_INFO("      - ALPHA_LTP_EXC              = %8.5f", grp_Info[grpId].ALPHA_LTP_EXC);
+		CARLSIM_INFO("      - ALPHA_LTD_EXC              = %8.5f", grp_Info[grpId].ALPHA_LTD_EXC);
+		CARLSIM_INFO("      - TAU_LTP_INV_EXC            = %8.5f", grp_Info[grpId].TAU_LTP_INV_EXC);
+		CARLSIM_INFO("      - TAU_LTD_INV_EXC            = %8.5f", grp_Info[grpId].TAU_LTD_INV_EXC);
 		CARLSIM_INFO("      - BETA_LTP               = %8.5f", grp_Info[grpId].BETA_LTP);
 		CARLSIM_INFO("      - BETA_LTD               = %8.5f", grp_Info[grpId].BETA_LTD);
 		CARLSIM_INFO("      - LAMDA                  = %8.5f", grp_Info[grpId].LAMDA);

@@ -667,8 +667,8 @@ __device__ void gpu_updateLTP(	int*     		fireTablePtr,
 					p < end_p;
 					p+=LTP_GROUPING_SZ) {
 				int stdp_tDiff = (simTime - gpuPtrs.synSpikeTime[p]);
-//				if ((stdp_tDiff > 0) && ((stdp_tDiff*gpuGrpInfo[grpId].TAU_LTP_INV)<25)) {
-//					gpuPtrs.wtChange[p] += STDP(stdp_tDiff, gpuGrpInfo[grpId].ALPHA_LTP, gpuGrpInfo[grpId].TAU_LTP_INV);
+//				if ((stdp_tDiff > 0) && ((stdp_tDiff*gpuGrpInfo[grpId].TAU_LTP_INV_EXC)<25)) {
+//					gpuPtrs.wtChange[p] += STDP(stdp_tDiff, gpuGrpInfo[grpId].ALPHA_LTP_EXC, gpuGrpInfo[grpId].TAU_LTP_INV_EXC);
 ////						int val = atomicAdd(&testVarCnt, 4);
 ////						gpuPtrs.testVar[val]   = 1+nid;
 ////						gpuPtrs.testVar[val+1] = 1+p-gpuPtrs.cumulativePre[nid];
@@ -676,8 +676,8 @@ __device__ void gpu_updateLTP(	int*     		fireTablePtr,
 ////						gpuPtrs.testVar[val+3] = 1+stdp_tDiff;
 //				}
 				if (stdp_tDiff > 0) {
-					if (gpuGrpInfo[grpId].WithESTDP && (stdp_tDiff * gpuGrpInfo[grpId].TAU_LTP_INV < 25)) {
-						gpuPtrs.wtChange[p] += STDP(stdp_tDiff, gpuGrpInfo[grpId].ALPHA_LTP, gpuGrpInfo[grpId].TAU_LTP_INV);
+					if (gpuGrpInfo[grpId].WithESTDP && (stdp_tDiff * gpuGrpInfo[grpId].TAU_LTP_INV_EXC < 25)) {
+						gpuPtrs.wtChange[p] += STDP(stdp_tDiff, gpuGrpInfo[grpId].ALPHA_LTP_EXC, gpuGrpInfo[grpId].TAU_LTP_INV_EXC);
 					}
 					if (gpuGrpInfo[grpId].WithISTDP) {
 						// Symmetrical I-STDP curve
@@ -1465,12 +1465,12 @@ __device__ int generatePostSynapticSpike(int& simTime, int& firingId, int& myDel
 	// STDP calculation: the post-synaptic neuron fires before the arrival of pre-synaptic neuron's spike
 	if (gpuGrpInfo[post_grpId].WithSTDP)  {
 		int stdp_tDiff = simTime-gpuPtrs.lastSpikeTime[nid];
-		//if ((stdp_tDiff >= 0) && ((stdp_tDiff*gpuGrpInfo[post_grpId].TAU_LTD_INV)<25)) {
-		//	gpuPtrs.wtChange[pos_ns] -= STDP( stdp_tDiff, gpuGrpInfo[post_grpId].ALPHA_LTD, gpuGrpInfo[post_grpId].TAU_LTD_INV); // uncoalesced access
+		//if ((stdp_tDiff >= 0) && ((stdp_tDiff*gpuGrpInfo[post_grpId].TAU_LTD_INV_EXC)<25)) {
+		//	gpuPtrs.wtChange[pos_ns] -= STDP( stdp_tDiff, gpuGrpInfo[post_grpId].ALPHA_LTD_EXC, gpuGrpInfo[post_grpId].TAU_LTD_INV_EXC); // uncoalesced access
 		//}
 		if (stdp_tDiff >= 0) {
-			if (gpuGrpInfo[post_grpId].WithESTDP && (stdp_tDiff * gpuGrpInfo[post_grpId].TAU_LTD_INV < 25)) {
-				gpuPtrs.wtChange[pos_ns] -= STDP( stdp_tDiff, gpuGrpInfo[post_grpId].ALPHA_LTD, gpuGrpInfo[post_grpId].TAU_LTD_INV); // uncoalesced access
+			if (gpuGrpInfo[post_grpId].WithESTDP && (stdp_tDiff * gpuGrpInfo[post_grpId].TAU_LTD_INV_EXC < 25)) {
+				gpuPtrs.wtChange[pos_ns] -= STDP( stdp_tDiff, gpuGrpInfo[post_grpId].ALPHA_LTD_EXC, gpuGrpInfo[post_grpId].TAU_LTD_INV_EXC); // uncoalesced access
 			}
 			if (gpuGrpInfo[post_grpId].WithISTDP) {
 				// Symmetrical I-STDP curve
@@ -3432,10 +3432,10 @@ void CpuSNN::allocateSNN_GPU() {
 		if (grp_Info[i].WithSTDP) {
 			CARLSIM_DEBUG("\t\tE-STDP type: %s",stdpType_string[grp_Info[i].WithESTDPtype]);
 			CARLSIM_DEBUG("\t\tI-STDP type: %s",stdpType_string[grp_Info[i].WithISTDPtype]);
-			CARLSIM_DEBUG("\t\tTAU_LTP_INV: %f",grp_Info[i].TAU_LTP_INV);
-			CARLSIM_DEBUG("\t\tTAU_LTD_INV: %f",grp_Info[i].TAU_LTD_INV);
-			CARLSIM_DEBUG("\t\tALPHA_LTP: %f",grp_Info[i].ALPHA_LTP);
-			CARLSIM_DEBUG("\t\tALPHA_LTD: %f",grp_Info[i].ALPHA_LTD);
+			CARLSIM_DEBUG("\t\tTAU_LTP_INV: %f",grp_Info[i].TAU_LTP_INV_EXC);
+			CARLSIM_DEBUG("\t\tTAU_LTD_INV: %f",grp_Info[i].TAU_LTD_INV_EXC);
+			CARLSIM_DEBUG("\t\tALPHA_LTP: %f",grp_Info[i].ALPHA_LTP_EXC);
+			CARLSIM_DEBUG("\t\tALPHA_LTD: %f",grp_Info[i].ALPHA_LTD_EXC);
 			CARLSIM_DEBUG("\t\tLAMDA: %f",grp_Info[i].LAMDA);
 			CARLSIM_DEBUG("\t\tDELTA: %f",grp_Info[i].DELTA);
 			CARLSIM_DEBUG("\t\tBETA_LTP: %f",grp_Info[i].BETA_LTP);
