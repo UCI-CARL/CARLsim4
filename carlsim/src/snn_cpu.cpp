@@ -303,7 +303,8 @@ int CpuSNN::createGroup(const std::string& grpName, Grid3D& grid, int neurType, 
 		grp_Info[numGrp].Type   			= neurType;
 		grp_Info[numGrp].WithSTP			= false;
 		grp_Info[numGrp].WithSTDP			= false;
-		grp_Info[numGrp].WithSTDPtype       = UNKNOWN_STDP;
+		grp_Info[numGrp].WithESTDPtype      = UNKNOWN_STDP;
+		grp_Info[numGrp].WithISTDPtype		= UNKNOWN_STDP;
 		grp_Info[numGrp].WithHomeostasis	= false;
 
 		if ( (neurType&TARGET_GABAa) || (neurType&TARGET_GABAb)) {
@@ -346,7 +347,8 @@ int CpuSNN::createSpikeGeneratorGroup(const std::string& grpName, Grid3D& grid, 
 		grp_Info[numGrp].Type    		= neurType | POISSON_NEURON;
 		grp_Info[numGrp].WithSTP		= false;
 		grp_Info[numGrp].WithSTDP		= false;
-		grp_Info[numGrp].WithSTDPtype   = UNKNOWN_STDP;
+		grp_Info[numGrp].WithESTDPtype  = UNKNOWN_STDP;
+		grp_Info[numGrp].WithISTDPtype	= UNKNOWN_STDP;
 		grp_Info[numGrp].WithHomeostasis	= false;
 		grp_Info[numGrp].isSpikeGenerator	= true;		// these belong to the spike generator class...
 		grp_Info2[numGrp].ConfigId		= configId;
@@ -558,7 +560,7 @@ void CpuSNN::setESTDP(int grpId, bool isSet, stdpType_t type, float alphaLTP, fl
 		grp_Info[cGrpId].TAU_LTP_INV 	= 1.0f/tauLTP;
 		grp_Info[cGrpId].TAU_LTD_INV	= 1.0f/tauLTD;
 		// set flags for STDP function
-		grp_Info[cGrpId].WithSTDPtype	= type;
+		grp_Info[cGrpId].WithESTDPtype	= type;
 		grp_Info[cGrpId].WithESTDP		= isSet;
 		grp_Info[cGrpId].WithSTDP		|= grp_Info[cGrpId].WithESTDP;
 		sim_with_stdp					|= grp_Info[cGrpId].WithSTDP;
@@ -598,7 +600,7 @@ void CpuSNN::setISTDP(int grpId, bool isSet, stdpType_t type, float betaLTP, flo
 		grp_Info[cGrpId].DELTA			= delta;
 		// set flags for STDP function
 		//FIXME: separate STDPType to ESTDPType and ISTDPType
-		grp_Info[cGrpId].WithSTDPtype	= type;
+		grp_Info[cGrpId].WithISTDPtype	= type;
 		grp_Info[cGrpId].WithISTDP		= isSet;
 		grp_Info[cGrpId].WithSTDP		|= grp_Info[cGrpId].WithISTDP;
 		sim_with_stdp					|= grp_Info[cGrpId].WithSTDP;
@@ -1610,7 +1612,8 @@ GroupSTDPInfo_t CpuSNN::getGroupSTDPInfo(int grpId, int configId) {
 	gInfo.WithSTDP = grp_Info[cGrpId].WithSTDP;
 	gInfo.WithESTDP = grp_Info[cGrpId].WithESTDP;
 	gInfo.WithISTDP = grp_Info[cGrpId].WithISTDP;
-	gInfo.WithSTDPtype = grp_Info[cGrpId].WithSTDPtype;
+	gInfo.WithESTDPtype = grp_Info[cGrpId].WithESTDPtype;
+	gInfo.WithISTDPtype = grp_Info[cGrpId].WithISTDPtype;
 	gInfo.ALPHA_LTD = grp_Info[cGrpId].ALPHA_LTD;
 	gInfo.ALPHA_LTP = grp_Info[cGrpId].ALPHA_LTP;
 	gInfo.TAU_LTD_INV = grp_Info[cGrpId].TAU_LTD_INV;
@@ -2012,7 +2015,8 @@ void CpuSNN::CpuSNNinit() {
 		grp_Info[i].WithSTDP = false;
 		grp_Info[i].WithESTDP = false;
 		grp_Info[i].WithISTDP = false;
-		grp_Info[i].WithSTDPtype = UNKNOWN_STDP;
+		grp_Info[i].WithESTDPtype = UNKNOWN_STDP;
+		grp_Info[i].WithISTDPtype = UNKNOWN_STDP;
 		grp_Info[i].FixedInputWts = true; // Default is true. This value changed to false
 		// if any incoming  connections are plastic
 		grp_Info[i].isSpikeGenerator = false;
@@ -4556,7 +4560,33 @@ void CpuSNN::updateWeights() {
 				float effectiveWtChange = stdpScaleFactor_ * wtChange[offset + j];
 
 				// homeostatic weight update
-				switch (grp_Info[g].WithSTDPtype) {
+				// FIXME: check WithESTDPtype and WithISTDPtype first and then do weight change update
+				switch (grp_Info[g].WithESTDPtype) {
+				case STANDARD:
+					if (grp_Info[g].WithHomeostasis) {
+						wt[offset+j] += (diff_firing*wt[offset+j]*homeostasisScale + wtChange[offset+j])*baseFiring[i]/grp_Info[g].avgTimeScale/(1+fabs(diff_firing)*50);
+					} else {
+						// just STDP weight update
+						wt[offset+j] += effectiveWtChange;
+					}
+					wtChange[offset+j] = 0.0f;
+					break;
+				case DA_MOD:
+					if (grp_Info[g].WithHomeostasis) {
+						effectiveWtChange = cpuNetPtrs.grpDA[g] * effectiveWtChange;
+						wt[offset+j] += (diff_firing*wt[offset+j]*homeostasisScale + effectiveWtChange)*baseFiring[i]/grp_Info[g].avgTimeScale/(1+fabs(diff_firing)*50);
+					} else {
+						wt[offset+j] += cpuNetPtrs.grpDA[g] * effectiveWtChange;
+					}
+					wtChange[offset+j] *= wtChangeDecay_;
+					break;
+				case UNKNOWN_STDP:
+				default:
+					// we shouldn't even be in here if !WithSTDP
+					break;
+				}
+
+				switch (grp_Info[g].WithISTDPtype) {
 				case STANDARD:
 					if (grp_Info[g].WithHomeostasis) {
 						wt[offset+j] += (diff_firing*wt[offset+j]*homeostasisScale + wtChange[offset+j])*baseFiring[i]/grp_Info[g].avgTimeScale/(1+fabs(diff_firing)*50);

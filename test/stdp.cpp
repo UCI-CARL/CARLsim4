@@ -96,10 +96,10 @@ TEST(STDP, setSTDPTrue) {
 				sim->setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f);
 				if (stdpType == 0) {
 					sim->setESTDP(g1,true,STANDARD,alphaLTP,tauLTP,alphaLTD,tauLTD);
-					sim->setISTDP(g1,true,STANDARD,betaLTP,betaLTD,lamda,delta);
+					sim->setISTDP(g1,true,DA_MOD,betaLTP,betaLTD,lamda,delta);
 				} else {
 					sim->setESTDP(g1,true,DA_MOD,alphaLTP,tauLTP,alphaLTD,tauLTD);
-					sim->setISTDP(g1,true,DA_MOD,betaLTP,betaLTD,lamda,delta);
+					sim->setISTDP(g1,true,STANDARD,betaLTP,betaLTD,lamda,delta);
 				}
 
 				for (int c=0; c<nConfig; c++) {
@@ -108,9 +108,13 @@ TEST(STDP, setSTDPTrue) {
 					EXPECT_TRUE(gInfo.WithESTDP);
 					EXPECT_TRUE(gInfo.WithISTDP);
 					if (stdpType == 0)
-						EXPECT_TRUE(gInfo.WithSTDPtype == STANDARD);
+						EXPECT_TRUE(gInfo.WithESTDPtype == STANDARD);
 					else
-						EXPECT_TRUE(gInfo.WithSTDPtype == DA_MOD);
+						EXPECT_TRUE(gInfo.WithESTDPtype == DA_MOD);
+					if (stdpType == 0)
+						EXPECT_TRUE(gInfo.WithISTDPtype == DA_MOD);
+					else
+						EXPECT_TRUE(gInfo.WithISTDPtype == STANDARD);
 					EXPECT_FLOAT_EQ(gInfo.ALPHA_LTP,alphaLTP);
 					EXPECT_FLOAT_EQ(gInfo.ALPHA_LTD,alphaLTD);
 					EXPECT_FLOAT_EQ(gInfo.TAU_LTP_INV,1.0/tauLTP);
@@ -203,7 +207,7 @@ TEST(STDP, setNeuromodulatorParameters) {
 			for (int c=0; c<nConfig; c++) {
 				GroupSTDPInfo_t gInfo = sim->getGroupSTDPInfo(g1,c);
 				EXPECT_TRUE(gInfo.WithSTDP);
-				EXPECT_TRUE(gInfo.WithSTDPtype == DA_MOD);
+				EXPECT_TRUE(gInfo.WithESTDPtype == DA_MOD);
 
 				GroupNeuromodulatorInfo_t gInfo2 = sim->getGroupNeuromodulatorInfo(g1, c);
 				EXPECT_FLOAT_EQ(gInfo2.baseDP, baseDP);

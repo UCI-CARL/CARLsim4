@@ -234,7 +234,8 @@ typedef struct GroupSTDPInfo_s {
 	bool 		WithSTDP;
 	bool		WithESTDP;
 	bool		WithISTDP;
-	stdpType_t  WithSTDPtype;
+	stdpType_t  WithESTDPtype;
+	stdpType_t  WithISTDPtype;
 	float		TAU_LTP_INV;
 	float		TAU_LTD_INV;
 	float		ALPHA_LTP;

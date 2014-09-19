@@ -1214,7 +1214,8 @@ __device__ void updateSynapticWeights(int& nid, unsigned int& jpos, int& grpId, 
 	float t_effectiveWtChange = gpuNetInfo.stdpScaleFactor * t_wtChange;
 	float t_maxWt = gpuPtrs.maxSynWt[jpos];
 
-	switch (gpuGrpInfo[grpId].WithSTDPtype) {
+	// FIXME: check WithESTDPtype and WithISTDPtype first and then do weight change update
+	switch (gpuGrpInfo[grpId].WithESTDPtype) {
 	case STANDARD:
 		if (gpuGrpInfo[grpId].WithHomeostasis) {
 			// this factor is slow
@@ -1236,7 +1237,29 @@ __device__ void updateSynapticWeights(int& nid, unsigned int& jpos, int& grpId, 
 		// we shouldn't even be here if !WithSTDP
 		break;
 	}
-	
+
+	switch (gpuGrpInfo[grpId].WithISTDPtype) {
+	case STANDARD:
+		if (gpuGrpInfo[grpId].WithHomeostasis) {
+			// this factor is slow
+			t_wt += (diff_firing*t_wt*homeostasisScale + t_effectiveWtChange) * baseFiring * avgTimeScaleInv / (1+fabs(diff_firing)*50);
+		} else {
+			t_wt += t_effectiveWtChange;
+		}
+		break;
+	case DA_MOD:
+		if (gpuGrpInfo[grpId].WithHomeostasis) {
+			t_effectiveWtChange = gpuPtrs.grpDA[grpId] * t_effectiveWtChange;
+			t_wt += (diff_firing*t_wt*homeostasisScale + t_effectiveWtChange) * baseFiring * avgTimeScaleInv / (1+fabs(diff_firing)*50);
+		} else {
+			t_wt += gpuPtrs.grpDA[grpId] * t_effectiveWtChange;
+		}
+		break;
+	case UNKNOWN_STDP:
+	default:
+		// we shouldn't even be here if !WithSTDP
+		break;
+	}
 	// FIXME: MB - I agree with MDR, I think this is wrong
 	t_wtChange *= gpuNetInfo.wtChangeDecay; // TSC - resume decay weight changes
 	//t_wtChange = 0; //MDR - don't decay weight changes, just set to 0
@@ -3407,7 +3430,8 @@ void CpuSNN::allocateSNN_GPU() {
 		CARLSIM_DEBUG("\tMaxDelay: %d",(int)grp_Info[i].MaxDelay);
 		CARLSIM_DEBUG("\tWithSTDP: %d",(int)grp_Info[i].WithSTDP);
 		if (grp_Info[i].WithSTDP) {
-			CARLSIM_DEBUG("\t\tSTDP type: %s",stdpType_string[grp_Info[i].WithSTDPtype]);
+			CARLSIM_DEBUG("\t\tE-STDP type: %s",stdpType_string[grp_Info[i].WithESTDPtype]);
+			CARLSIM_DEBUG("\t\tI-STDP type: %s",stdpType_string[grp_Info[i].WithISTDPtype]);
 			CARLSIM_DEBUG("\t\tTAU_LTP_INV: %f",grp_Info[i].TAU_LTP_INV);
 			CARLSIM_DEBUG("\t\tTAU_LTD_INV: %f",grp_Info[i].TAU_LTD_INV);
 			CARLSIM_DEBUG("\t\tALPHA_LTP: %f",grp_Info[i].ALPHA_LTP);

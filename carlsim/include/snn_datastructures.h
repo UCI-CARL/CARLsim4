@@ -251,7 +251,8 @@ typedef struct group_info_s
 	bool 		WithSTDP;
 	bool		WithESTDP;
 	bool		WithISTDP;
-	stdpType_t  WithSTDPtype;
+	stdpType_t  WithESTDPtype;
+	stdpType_t  WithISTDPtype;
 	bool 		WithHomeostasis;
 	int		homeoId;
 	bool		FixedInputWts;

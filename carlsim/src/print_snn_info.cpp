@@ -218,8 +218,10 @@ void CpuSNN::printGroupInfo(int grpId) {
 
 	if(grp_Info[grpId].WithSTDP) {
 		CARLSIM_INFO("  - STDP:")
-		CARLSIM_INFO("      - TYPE                   = %s",     grp_Info[grpId].WithSTDPtype==STANDARD? "STANDARD" :
-			(grp_Info[grpId].WithSTDPtype==DA_MOD?"  DA_MOD":" UNKNOWN"));
+		CARLSIM_INFO("      - E-STDP TYPE            = %s",     grp_Info[grpId].WithESTDPtype==STANDARD? "STANDARD" :
+			(grp_Info[grpId].WithESTDPtype==DA_MOD?"  DA_MOD":" UNKNOWN"));
+		CARLSIM_INFO("      - I-STDP TYPE            = %s",     grp_Info[grpId].WithISTDPtype==STANDARD? "STANDARD" :
+			(grp_Info[grpId].WithISTDPtype==DA_MOD?"  DA_MOD":" UNKNOWN"));
 		CARLSIM_INFO("      - ALPHA_LTP              = %8.5f", grp_Info[grpId].ALPHA_LTP);
 		CARLSIM_INFO("      - ALPHA_LTD              = %8.5f", grp_Info[grpId].ALPHA_LTD);
 		CARLSIM_INFO("      - TAU_LTP_INV            = %8.5f", grp_Info[grpId].TAU_LTP_INV);
