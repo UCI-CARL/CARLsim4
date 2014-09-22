@@ -5,11 +5,11 @@
 #------------------------------------------------------------------------------
 # TODO: Have default installation be CARL/CARLsim
 # desired installation path of libcarlsim and headers
-CARLSIM_LIB_INSTALL_DIR ?= /opt/CARL/carlsim
+CARLSIM_LIB_INSTALL_DIR ?= /opt/CARL/CARLsim
 
-# cuda capability major version number
+# cuda capability major version number for GPU device
 CUDA_MAJOR_NUM ?= 1
-# cuda capability minor version number
+# cuda capability minor version number for GPU device
 CUDA_MINOR_NUM ?= 3
 
 # $(OPT_LEVEL): set to 1, 2, or 3 if you want to use optimization.  Default: 0.
@@ -50,7 +50,7 @@ ECJ_PTI_INSTALL_DIR ?= /opt/CARL/carlsim_ecj_pti
 GTEST_DIR ?= /opt/gtest
 
 # whether to include flag for regression testing
-CARLSIM_TEST ?= 0
+CARLSIM_TEST ?= 1
 
 # If this is set to 1, compile from installed CARLsim lib, if 0 compile from
 # source. 1 is default. Compiling from source is mainly for devs.
@@ -61,7 +61,7 @@ CARLSIM_TEST ?= 0
 # TODO: explain that testing will always build from src
 USE_CARLSIM_SRC ?= 1
 CARLSIM_SRC_DIR ?= /home/kris/Project/CARLsim
-
+#CARLSIM_SRC_DIR ?= .
 #------------------------------------------------------------------------------
 # END OF USER-MODIFIABLE SECTION
 #------------------------------------------------------------------------------
@@ -127,12 +127,14 @@ ifeq (${strip ${CARLSIM_DEBUG}},1)
 	CARLSIM_FLAGS += -g
 endif
 
-# set regression flag
+# set USE_CARLSIM_SRC flag to 1 if we are running tests
 ifeq (${strip ${CARLSIM_TEST}},1)
-	CARLSIM_FLAGS += -I$(CURDIR)/$(test_dir) -D__REGRESSION_TESTING__
+	#TODO: output using recipe telling user you are setting USE_CARLSIM_SRC=1
 # if you are testing, you must compile from src
 	USE_CARLSIM_SRC = 1
 endif
+
+# TODO: Consider building support to test a particular library
 
 # set flags for compiling from CARLsim src or lib
 ifeq (${USE_CARLSIM_SRC},0)
@@ -141,6 +143,8 @@ ifeq (${USE_CARLSIM_SRC},0)
 	interface_dir  = $(CARLSIM_LIB_INSTALL_DIR)/interface
 	spike_mon_dir  = $(CARLSIM_LIB_INSTALL_DIR)/spike_monitor
 	spike_gen_dir  = $(CARLSIM_LIB_INSTALL_DIR)/spike_generators
+# TODO: add stuff so that we will install the correct headers for the server,
+# and input_stimulus
 # we are compiling from lib
 	CARLSIM_FLAGS += -I$(CARLSIM_LIB_INSTALL_DIR)/include/kernel \
 									 -I$(CARLSIM_LIB_INSTALL_DIR)/include/interface \
@@ -152,9 +156,18 @@ else
 	interface_dir  = $(CARLSIM_SRC_DIR)/carlsim/interface
 	spike_mon_dir  = $(CARLSIM_SRC_DIR)/carlsim/spike_monitor
 	spike_gen_dir  = $(CARLSIM_SRC_DIR)/tools/carlsim_addons/spike_generators
+	server_dir     = $(CARLSIM_SRC_DIR)/carlsim/server
+	test_dir       = $(CARLSIM_SRC_DIR)/carlsim/test
+	input_stim_dir = $(CARLSIM_SRC_DIR)/tools/carlsim_addons/input_stimulus
 # we are compiling from src
 	CARLSIM_FLAGS += -I$(kernel_dir)/include -I$(interface_dir)/include -I$(spike_mon_dir)
 endif
+
+# set correct debugging flag if we are testing: (runs bins in silent mode)
+ifeq (${strip ${CARLSIM_TEST}},1)
+	CARLSIM_FLAGS += -I$(test_dir) -D__REGRESSION_TESTING__ -I$(spike_gen_dir)
+endif
+
 
 # location of .h files
 vpath %.h $(EO_INSTALL_DIR)/src $(kernel_dir)/include \

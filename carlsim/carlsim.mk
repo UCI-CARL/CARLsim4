@@ -81,6 +81,8 @@ $(carlsim_lib): $(carlsim_sources) $(carlsim_inc) $(carlsim_objs)
 # TODO: Consider using the library naming convention on the CARLsim wiki to name the
 # library and use a symlink to it. Maybe add this as an issue.
 # $(CARLSIM_LIB_INSTALL_DIR))
+# TODO: replace the source files to be copied by their correct location for install like
+# $(CARLSIM_SRC_DIR)
 install: $(carlsim_lib)
 	@test -d $(CARLSIM_LIB_INSTALL_DIR) || \
 		mkdir -p $(CARLSIM_LIB_INSTALL_DIR)

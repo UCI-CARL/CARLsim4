@@ -5,8 +5,8 @@ output := *.dot *.dat *.log
 # set absolute path to configured user.mk file or just copy it to this
 # directory and leave USER_MK_PATH blank.
 USER_MK_PATH = /home/kris/Project/CARLsim/
-
 include $(USER_MK_PATH)user.mk
+
 # TODO: make it so that this doesn't have to be included in the directory.
 # It should be included relative to the library install path or something.
 # It could also be rolled into user.mk.

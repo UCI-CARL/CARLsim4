@@ -1,5 +1,6 @@
 # Main Makefile for compiling, testing, and installing CARLsim
-
+# TODO: make issue for automatically setting the correct CUDA
+# environment variables.
 # these variables collect the information from the other modules
 default_targets :=
 common_sources :=
@@ -9,15 +10,18 @@ libraries :=
 objects :=
 
 # carlsim components
-kernel_dir     = carlsim/kernel
-interface_dir  = carlsim/interface
-spike_mon_dir  = carlsim/spike_monitor
-spike_gen_dir  = tools/carlsim_addons/spike_generators
-server_dir     = carlsim/server
-test_dir       = carlsim/test
+#kernel_dir     = carlsim/kernel
+#interface_dir  = carlsim/interface
+#spike_mon_dir  = carlsim/spike_monitor
+#spike_gen_dir  = tools/carlsim_addons/spike_generators
+# TODO: comment the rest of these out to make sure we don't need them.
+#server_dir     = carlsim/server
+#test_dir       = carlsim/test
 # carlsim tools
-input_stim_dir = tools/carlsim_addons/input_stimulus
+#input_stim_dir = tools/carlsim_addons/input_stimulus
 # additional directories
+# TODO: double check that I don't need these any more. I shouldn't. Each one
+# will have it's own Makefile
 ex_dir         = examples
 proj_dir       = projects
 
@@ -50,7 +54,8 @@ include carlsim/carlsim.mk
 include carlsim/test/gtest.mk
 include carlsim/test/carlsim_tests.mk
 
-output_files += *.dot *.log tmp* *.status
+# *.dat and results files are generated during carlsim_tests execution
+output_files += *.dot *.log tmp* *.status *.dat results
 
 # TODO: fix these eventually
 # include all directories in examples
@@ -64,11 +69,8 @@ output_files += *.dot *.log tmp* *.status
 # this blank 'default' is required
 default:
 
-.PHONY: default clean distclean tests
+.PHONY: default clean distclean
 default: $(default_targets)
-
-# TODO: go back and include the test stuff
-#tests: gtest carlsim_tests
 
 examples: $(carlsim_programs)
 
