@@ -62,88 +62,31 @@ folder is located in $(CARLSIM_LIB_INSTALL_DIR).
 <pre>
 .
 ├── carlsim                    # CARLsim source code folder
-│   ├── interface              # CARLsim interface (public user interface) **
-│   ├── kernel                 # CARLsim core functionality
-|   ├── server                 # CARLsim server (Windows only)
-|   ├── spike_monitor          # CARLsim utility to record spiking activity
-|   └── test                   # regression suite (requires google test)
-├── examples                   # example networks
-│   ├── colorblind             # V1-V4 color opponency model applied to colorblind test
-│   ├── colorcycle             # V1-V4 color opponency model, spectrum of color responses
-│   ├── common                 # miscellaneous utilities, such as stimulus generator and motion energy model
-│   ├── dastdp                 # dopamine modulated STDP model
-│   ├── orientation            # V1-V4 orientation-selective cells (using motion energy model)
-│   ├── random                 # an 80-20 RAIN network with STDP
-│   ├── simpleEA               # simple evolutionary algorithm (EA) example with EO (deprecated)
-│   ├── SORFs                  # network that uses EA for self-organizing receptive fields
-│   ├── spikeInfo              # example network showing off Spike Monitor functionality
-│   ├── tuneFiringRates        # simple network on how to use EA to tune firing rates
-│   ├── v1MTLIP                # V1-MT-LIP motion energy model for direction/speed tuning and decision-making
-│   └── v1v4PFC                # V1-V4-PFC network combining color opponency and motion energy models
-├── include                    # PTI includes
-├── interface                  # CARLsim interface (public user interface) **
-│   ├── include
-│   └── src
-├── libpti                     # PTI source code
-├── projects                   # projects folder (put your project here) **
-├── server                     # CARLsim server (Windows only)
-├── test                       # regression suite
-└── util                       # utility functions
-    ├── input_stimulus         # create visual input stimuli
-    ├── scripts                # miscellaneous Matlab scripts
-    └── spike_monitor          # spike monitor utility
-  Main
-directory
-    │
-    │
-    ├── carlsim
-    │   ├── interface
-    │   ├── kernel
-    |   ├── server
-    |   ├── spike_monitor
-    |   └── test
-    ├── examples
-    │   ├── colorblind
-    │   │   ├── results
-    │   │   ├── scripts
-    │   │   └── videos
-    │   ├── colorcycle
-    │   │   ├── results
-    │   │   ├── scripts
-    │   │   └── videos
-    │   ├── common
-    │   │   └── scripts
-    │   ├── orientation
-    │   │   ├── results
-    │   │   ├── scripts
-    │   │   └── videos
-    │   ├── random
-    │   │   └── results
-    │   ├── rdk
-    │   │   ├── results
-    │   │   ├── scripts
-    │   │   └── videos
-    │   ├── simpleEA
-    │   │   └── results
-    │   ├── SORFs
-    │   │   └── results
-    │   ├── tuneFiringRates
-    │   │   └── results
-    │   ├── v1MTLIP
-    │   │   ├── results
-    │   │   ├── scripts
-    │   │   └── videos
-    │   └── v1v4PFC
-    │       ├── results
-    │       ├── scripts
-    │       └── videos
-    ├── include
-    ├── interface
-    │   ├── include
-    │   └── src
-    ├── libpti
-    ├── server
-    └── test
+│   ├── interface              # CARLsim interface (public user interface)
+│   ├── kernel                 # CARLsim core functionality
+│   ├── server                 # CARLsim server (Windows only)
+│   ├── spike_monitor          # CARLsim utility to record spiking activity
+│   └── test                   # regression suite (requires google test)
+├── doxygen                    # Doxygen documentation generation
+├── examples                   # example SNNs
+│   ├── colorblind             # V1-V4 color opponency model applied to colorblind test
+│   ├── colorcycle             # V1-V4 color opponency model, spectrum of color responses
+│   ├── common                 # miscellaneous utilities, such as stimulus generator and motion energy model
+│   ├── dastdp                 # dopamine modulated STDP model
+│   ├── orientation            # V1-V4 orientation-selective cells (using motion energy model)
+│   ├── random                 # an 80-20 RAIN network with STDP
+│   ├── simpleEA               # simple EA example using EO library (deprecated)
+│   ├── SORFs                  # network that uses EA for self-organizing receptive fields
+│   ├── spikeInfo              # example network showing off Spike Monitor functionality
+│   ├── tuneFiringRatesEO      # simple network on how to use EA to tune firing rates using EO (deprecated)
+│   └── v1MTLIP                # V1-MT-LIP motion energy model for direction/speed tuning and decision-making
+├── projects                   # projects folder (put your project here)
+└── tools                      # collection of CARLsim tools
+    ├── carlsim_addons         # tools for extending CARLsim functionality
+    │   ├── eo_pti             # paramter-tuning interface using EO (deprecated)
+    │   ├── input_stimulus     # matlab scripts/C++ code for input generation
+    │   └── spike_generators   # C++ code to generate advanced spike pattern inputs
+    └── matlab_scripts         # scripts used to analyze CARLsim SNN output
 </pre>
 
 * Main directory - contains the Makefile, documentation files, and other

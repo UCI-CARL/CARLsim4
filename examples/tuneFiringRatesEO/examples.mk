@@ -1,5 +1,5 @@
 # module include file for tuneFiringRates example program
-example := tuneFiringRates
+example := tuneFiringRatesEO
 output := *.o results/EA-Data results/*.txt
 
 #local info (vars can be overwritten)
