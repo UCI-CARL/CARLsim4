@@ -1,8 +1,6 @@
 # Main Makefile for compiling, testing, and installing CARLsim
 # these variables collect the information from the other modules
 # TODO: decide whether or not to allow uses to make examples etc.
-# TODO: name the library the correct number and update the wiki
-# with the approach for the library name.
 # TODO: Update User Guide on wiki with correct layout.
 
 carlsim_major_num := 3
@@ -45,10 +43,6 @@ default:
 .PHONY: default clean distclean
 default: $(default_targets)
 
-examples: $(carlsim_programs)
-
-pti-examples: $(pti_programs)
-
 # TODO: need to create a results directory in the main directory and delete later with
 # every carlsim_tests run. distclean/clean should take care of it.
 # TODO: create Makefile for devs that want to build from src
@@ -61,14 +55,19 @@ distclean:
 devtest:
 	@echo $(CARLSIM_SRC_DIR) $(carlsim_tests_objs)
 
-# TODO: rewrite help instructions to be similar to the ECJ approach; formatted nicer.
+# Print a help message
 help:
-	@echo -e '\n'Type \'make\' or \'make all\' to make CARLsim and CARLsim \
-	examples.'\n'
-	@echo -e Type \'make pti\' to make the pti library, install it, \
-	and make the pti examples.'\n'
-	@echo -e Type \'make uninstall\' to uninstall the pti library.'\n'
-	@echo -e To compile a specific example, type \'make \<example folder \
-	name\>\'.'\n'
-	@echo -e Note: simpleEA, tuneFiringRates, and SORFs examples \
-	require CARLsim PTI installation.'\n'
+	@ echo 
+	@ echo 'CARLsim Makefile options:'
+	@ echo 
+	@ echo "make            Compiles the CARLsim code using the default compiler"
+	@ echo "make all          (Same thing)"
+	@ echo "make install    Installs CARLsim library. (may need root privileges)"
+	@ echo "make clean      Cleans out all object files"
+	@ echo "make distclean  Cleans out all objects files and output files"
+	@ echo "make help       Brings up this message!"
+
+# TODO: add these to make our documentation and then add an issue
+#@ echo "make docs     Builds the class documentation, found in docs/classsdocs"
+#@ echo "make doc        (Same thing)"
+

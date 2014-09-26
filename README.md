@@ -18,7 +18,8 @@ For a description of added features please refer to the RELEASE_NOTES.
 If the NVIDIA CUDA drivers/toolkits/SDKs are installed and configured 
 correctly:
 
-Open the user.mk file and edit the following entries:
+Open the user.mk file and set the following entries to correct values.
+They come with default values that might not be correct for the user:
 
 <pre>
 # desired installation path of libcarlsim and headers
@@ -48,6 +49,8 @@ Evolutionary Computations in Java (ECJ) but is not yet ready for release.
 TO UNINSTALL:
 CARLsim: Remove the folder where you installed the CARLsim library. This
 folder is located in $(CARLSIM_LIB_INSTALL_DIR).
+
+Type ‘make help’ for additional information.
 
 ### SOURCE CODE DIRECTORY DESCRIPTION
 
@@ -111,3 +114,6 @@ program after the CARLsim library has been installed. To make an example
 program, change directories to the name of your example directory
 (e.g. examples/random) and type ‘make program_name’ where the ‘program_name’
 is the name of the directory (e.g. random).
+
+Example programs were written to be executed in the same directory as their
+source code.

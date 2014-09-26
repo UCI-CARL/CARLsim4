@@ -75,7 +75,7 @@ lib_name := libCARLsim.a
 
 carlsim_lib := $(addprefix carlsim/,$(lib_name))
 # keep track of this so we can delete it later on distclean
-libraries += $(carlsim_lib)
+libraries += $(carlsim_lib).$(lib_ver)
 
 libCARLsim: $(carlsim_lib)
 
@@ -102,10 +102,10 @@ install: $(carlsim_lib)
 		$(CARLSIM_LIB_INSTALL_DIR)/include/spike_monitor
 	@test -d $(CARLSIM_LIB_INSTALL_DIR)/include/spike_generators || mkdir \
 		$(CARLSIM_LIB_INSTALL_DIR)/include/spike_generators
-	@install -m 0755 $(carlsim_lib) $(CARLSIM_LIB_INSTALL_DIR)/lib
-	@ln -fs $(CARLSIM_LIB_INSTALL_DIR)/lib/$(lib_name).$(lib_ver) \
+	@install -m 0755 $(carlsim_lib).$(lib_ver) $(CARLSIM_LIB_INSTALL_DIR)/lib
+	@ln -Tfs $(CARLSIM_LIB_INSTALL_DIR)/lib/$(lib_name).$(lib_ver) \
 		$(CARLSIM_LIB_INSTALL_DIR)/lib/$(lib_name).$(num_ver)
-	@ln -fs $(CARLSIM_LIB_INSTALL_DIR)/lib/$(lib_name).$(num_ver) \
+	@ln -Tfs $(CARLSIM_LIB_INSTALL_DIR)/lib/$(lib_name).$(num_ver) \
 		$(CARLSIM_LIB_INSTALL_DIR)/lib/$(lib_name)
 	@install -m 0644 $(kernel_dir)/include/cuda_version_control.h \
 		$(kernel_dir)/include/poisson_rate.h $(CARLSIM_LIB_INSTALL_DIR)/include/kernel
