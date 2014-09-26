@@ -67,19 +67,26 @@ $(kernel_dir)/src/%.o: $(kernel_dir)/src/%.cpp $(kernel_inc)
 $(kernel_dir)/src/%.o: $(kernel_dir)/src/%.cu $(kernel_inc)
 	$(NVCC) -c $(CARLSIM_INCLUDES) $(CARLSIM_FLAGS) $< -o $@
 
-carlsim_lib := $(addprefix carlsim/,libCARLsim.a)
+num_ver := $(carlsim_major_num).$(carlsim_minor_num)
+
+lib_ver := $(num_ver).$(carlsim_build_num)
+
+lib_name := libCARLsim.a
+
+carlsim_lib := $(addprefix carlsim/,$(lib_name))
 # keep track of this so we can delete it later on distclean
 libraries += $(carlsim_lib)
 
 libCARLsim: $(carlsim_lib)
 
 $(carlsim_lib): $(carlsim_sources) $(carlsim_inc) $(carlsim_objs)
-	ar rcs $@ $(carlsim_objs)
+	ar rcs $@.$(lib_ver) $(carlsim_objs)
 
 # TODO: in the readme tell the user how to uninstall the library (just delete the
 # TODO: Consider using the library naming convention on the CARLsim wiki to name the
 # library and use a symlink to it. Maybe add this as an issue.
 # $(CARLSIM_LIB_INSTALL_DIR))
+# TODO: remove all the libraries in the src directory upon distclean
 install: $(carlsim_lib)
 	@test -d $(CARLSIM_LIB_INSTALL_DIR) || \
 		mkdir -p $(CARLSIM_LIB_INSTALL_DIR)
@@ -95,8 +102,11 @@ install: $(carlsim_lib)
 		$(CARLSIM_LIB_INSTALL_DIR)/include/spike_monitor
 	@test -d $(CARLSIM_LIB_INSTALL_DIR)/include/spike_generators || mkdir \
 		$(CARLSIM_LIB_INSTALL_DIR)/include/spike_generators
-	@test -e $(CARLSIM_LIB_INSTALL_DIR)/lib/libCARLsim.a || install -m 0755 \
-		$(carlsim_lib) $(CARLSIM_LIB_INSTALL_DIR)/lib
+	@install -m 0755 $(carlsim_lib) $(CARLSIM_LIB_INSTALL_DIR)/lib
+	@ln -fs $(CARLSIM_LIB_INSTALL_DIR)/lib/$(lib_name).$(lib_ver) \
+		$(CARLSIM_LIB_INSTALL_DIR)/lib/$(lib_name).$(num_ver)
+	@ln -fs $(CARLSIM_LIB_INSTALL_DIR)/lib/$(lib_name).$(num_ver) \
+		$(CARLSIM_LIB_INSTALL_DIR)/lib/$(lib_name)
 	@install -m 0644 $(kernel_dir)/include/cuda_version_control.h \
 		$(kernel_dir)/include/poisson_rate.h $(CARLSIM_LIB_INSTALL_DIR)/include/kernel
 	@install -m 0644 $(interface_dir)/include/callback.h \

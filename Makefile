@@ -5,6 +5,10 @@
 # with the approach for the library name.
 # TODO: Update User Guide on wiki with correct layout.
 
+carlsim_major_num := 3
+carlsim_minor_num := 0
+carlsim_build_num := 0
+
 default_targets :=
 common_sources :=
 common_objs :=

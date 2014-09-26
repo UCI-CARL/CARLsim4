@@ -13,7 +13,6 @@ For a log of source code changes, refer to CHANGELOG.
 
 For a description of added features please refer to the RELEASE_NOTES.
 
-
 ### QUICKSTART INSTALLATION
 
 If the NVIDIA CUDA drivers/toolkits/SDKs are installed and configured 
@@ -39,19 +38,12 @@ CARLSIM_CUOPTLEVEL ?= 0
 CARLSIM_DEBUG ?= 0
 </pre>
 
-Then type ‘make && sudo make install’. This will compile and install the
+CARLsim: Type ‘make && sudo make install’. This will compile and install the
 CARLsim library.
 
-TODO: fix the PTI installation instructions.
-
-If BOTH the NVIDIA CUDA drivers/toolkits/SDKs and the Evolving Objects 
-libraries are installed and configured correctly:
-
-Type 'make pti' to make the pti library.
-
-Type 'make install' to install the pti library.
-
-Type 'make pti_examples' to compile the pti examples.
+PTI: Currently the parameter tuning library that uses Evolving Objects (EO) is
+deprecated. The new version of the parameter tuning library will use 
+Evolutionary Computations in Java (ECJ) but is not yet ready for release.
 
 TO UNINSTALL:
 CARLsim: Remove the folder where you installed the CARLsim library. This
@@ -94,25 +86,28 @@ directories.
 
 * carlsim - contains the source code of CARLsim
 
+* doxygen -  contains doxygen code to generate documentation.
+
 * examples - contains all the examples for CARLsim and CARLsim PTI. Each
 example is in its own subfolder (along with input videos, scripts, and
 results). examples/common contains support files that multiple examples use.
 
-* include -  contains all the header files for the PTI.
+* projects - meant to contain user’s CARLsim projects, all it is not
+necessary to place project code here as long as the user.mk is configured
+correctly and the CARLsim library is installed.
 
-* libpti - contains the source code and Makefile includes for the PTI.
-
-* test - contains a regression suite
+* tools - contains additional tools to be used with CARLsim.
 
 
 ### MAKEFILE STRUCTURE DESCRIPTION
 
+The Makefile is composed of individual include files (.mk).  The user must
+configure their user.mk include file to tell CARLsim about the CUDA version,
+CUDA capability of the GPU, and the desired installation of the CARLsim
+library.
 
-Variable naming conventions - Environment variables that could be defined 
-outside the Makefile are all caps.  Variables that are used only in the 
-Makefile are not capitalized.
-
-The Makefile is composed of individual include files.  makefile.mk contains
-additional makefile definitions. carlsim.mk and libpti.mk contain specific
-build rules and definitions for CARLsim and the PTI library. Each example has
-a corresponding include file.
+Each example directory has it’s own Makefile that will build the example
+program after the CARLsim library has been installed. To make an example
+program, change directories to the name of your example directory
+(e.g. examples/random) and type ‘make program_name’ where the ‘program_name’
+is the name of the directory (e.g. random).
