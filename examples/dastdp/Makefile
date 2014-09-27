@@ -1,5 +1,7 @@
 # Makefile for building example program from the CARLsim source or library
-
+# TODO: this segfaults for some reason. Not due to library, probably meant to
+# executed from main.
+# TODO: add *.csv to rest of clean stuff.
 # NOTE: if you are compiling your code in a directory different from
 # examples/<example_name> or projects/<project_name> then you need to either
 # move the configured user.mk file to this directory or set the path to
@@ -7,8 +9,8 @@
 USER_MK_PATH = ../../
 include $(USER_MK_PATH)user.mk
 
-example := random
-output := *.dot *.dat *.log
+example := dastdp
+output := *.dot *.dat *.log *.csv
 
 # You should not need to edit the file beyond this point
 # ------------------------------------------------------
@@ -43,4 +45,4 @@ distclean:
 	$(RM) $(output_files) *.log *.dat results/*.dat
 
 devtest:
-	@echo $(output_files)
+	@echo $(USER_MK_PATH)

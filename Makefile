@@ -2,7 +2,7 @@
 # these variables collect the information from the other modules
 # TODO: decide whether or not to allow uses to make examples etc.
 # TODO: Update User Guide on wiki with correct layout.
-
+# TODO: add instructions about runninge examples and projects and that they go in same dir.results by default
 carlsim_major_num := 3
 carlsim_minor_num := 0
 carlsim_build_num := 0
@@ -50,7 +50,7 @@ clean:
 	$(RM) $(objects)
 # TODO: see what distclean should really do by convention
 distclean:
-	$(RM) $(objects) $(carlsim_programs) $(pti_programs) $(libraries) $(output_files)
+	$(RM) $(objects) $(carlsim_programs) $(pti_programs) $(libraries) $(output_files) doc/html
 
 devtest:
 	@echo $(CARLSIM_SRC_DIR) $(carlsim_tests_objs)
@@ -62,7 +62,7 @@ help:
 	@ echo 
 	@ echo "make            Compiles the CARLsim code using the default compiler"
 	@ echo "make all          (Same thing)"
-	@ echo "make install    Installs CARLsim library. (may need root privileges)"
+	@ echo "make install    Installs CARLsim library (may need root privileges)"
 	@ echo "make clean      Cleans out all object files"
 	@ echo "make distclean  Cleans out all objects files and output files"
 	@ echo "make help       Brings up this message!"

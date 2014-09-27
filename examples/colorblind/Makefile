@@ -7,7 +7,7 @@
 USER_MK_PATH = ../../
 include $(USER_MK_PATH)user.mk
 
-example := random
+example := colorblind
 output := *.dot *.dat *.log
 
 # You should not need to edit the file beyond this point
@@ -24,17 +24,22 @@ output := *.dot *.dat *.log
 	CARLSIM_FLAGS += -I$(CARLSIM_LIB_INSTALL_DIR)/include/kernel \
 									 -I$(CARLSIM_LIB_INSTALL_DIR)/include/interface \
 									 -I$(CARLSIM_LIB_INSTALL_DIR)/include/spike_monitor \
-									 $(CARLSIM_LIB_INSTALL_DIR)/lib/libCARLsim.a
+									 -L$(CARLSIM_LIB_INSTALL_DIR)/lib/libCARLsim.a
 
 local_src  := main_$(example).cpp
 local_prog := $(example)
-output_files += $(local_prog)
+common_objs:= ../common/v1ColorME.2.0.o
+output_files += $(local_prog) $(common_objs)
 
 .PHONY: clean distclean
 # compile from CARLsim lib
-$(local_prog): $(local_src)
+$(local_prog): $(local_src) $(common_objs)
 	$(NVCC) $(CARLSIM_INCLUDES) $(CARLSIM_FLAGS) $(CARLSIM_LFLAGS) \
-	$(CARLSIM_LIBS) $< -o $@
+	$(CARLSIM_LIBS) $(common_objs) $< -o $@
+
+# still compile common files from source for local cuda code
+../common/%.o: ../common/%.cu
+	$(NVCC) -c $(CARLSIM_INCLUDES) $(CARLSIM_FLAGS) $< -o $@
 
 clean:
 	$(RM) $(output_files)
@@ -42,5 +47,4 @@ clean:
 distclean:
 	$(RM) $(output_files) *.log *.dat results/*.dat
 
-devtest:
-	@echo $(output_files)
+devtest: @echo $(CARLSIM_FLAGS)

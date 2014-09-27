@@ -1,4 +1,5 @@
-
+# TODO: add instructions for writing your own code or add to wiki.
+# TODO: examples have to be compiled within their subdirectory.
 README for CARLsim SNN simulator
 -------------------------------------------------------------------------------
 

@@ -24,7 +24,7 @@ output := *.dot *.dat *.log
 	CARLSIM_FLAGS += -I$(CARLSIM_LIB_INSTALL_DIR)/include/kernel \
 									 -I$(CARLSIM_LIB_INSTALL_DIR)/include/interface \
 									 -I$(CARLSIM_LIB_INSTALL_DIR)/include/spike_monitor \
-									 $(CARLSIM_LIB_INSTALL_DIR)/lib/libCARLsim.a
+									 -L$(CARLSIM_LIB_INSTALL_DIR)/lib/libCARLsim.a
 
 local_src  := main_$(example).cpp
 local_prog := $(example)
