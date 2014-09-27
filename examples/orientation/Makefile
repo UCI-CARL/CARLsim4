@@ -7,7 +7,7 @@
 USER_MK_PATH = ../../
 include $(USER_MK_PATH)user.mk
 
-example := colorblind
+example := orientation
 output := *.dot *.dat *.log *.csv
 
 # You should not need to edit the file beyond this point

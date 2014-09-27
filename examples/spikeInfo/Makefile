@@ -7,8 +7,8 @@
 USER_MK_PATH = ../../
 include $(USER_MK_PATH)user.mk
 
-example := random
-output := *.dot *.dat *.log
+example := spikeInfo
+output := *.dot *.dat *.log *.csv
 
 # You should not need to edit the file beyond this point
 # ------------------------------------------------------
@@ -23,8 +23,8 @@ output := *.dot *.dat *.log
 # we are compiling from lib
 	CARLSIM_FLAGS += -I$(CARLSIM_LIB_INSTALL_DIR)/include/kernel \
 									 -I$(CARLSIM_LIB_INSTALL_DIR)/include/interface \
-									 -I$(CARLSIM_LIB_INSTALL_DIR)/include/spike_monitor \
-									 -L$(CARLSIM_LIB_INSTALL_DIR)/lib/libCARLsim.a
+									 -I$(CARLSIM_LIB_INSTALL_DIR)/include/spike_monitor
+	CARLSIM_LIBS  += $(CARLSIM_LIB_INSTALL_DIR)/lib/libCARLsim.a
 
 local_src  := main_$(example).cpp
 local_prog := $(example)
@@ -40,7 +40,7 @@ clean:
 	$(RM) $(output_files)
 
 distclean:
-	$(RM) $(output_files) *.log *.dat results/*.dat
+	$(RM) $(output_files) *.log *.dat results/*.dat results/*.csv
 
 devtest:
 	@echo $(output_files)

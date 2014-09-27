@@ -7,7 +7,7 @@
 USER_MK_PATH = ../../
 include $(USER_MK_PATH)user.mk
 
-example := colorblind
+example := v1MTLIP
 output := *.dot *.dat *.log *.csv
 
 # You should not need to edit the file beyond this point
@@ -26,17 +26,17 @@ output := *.dot *.dat *.log *.csv
 
 local_src  := main_$(example).cpp
 local_prog := $(example)
-common_objs:= ../common/v1ColorME.2.0.o
-output_files += $(local_prog) $(common_objs)
+local_objs:= v1ColorME.2.1.o
+output_files += $(local_prog) $(local_objs)
 
 .PHONY: clean distclean
 # compile from CARLsim lib
-$(local_prog): $(local_src) $(common_objs)
+$(local_prog): $(local_src) $(local_objs)
 	$(NVCC) $(CARLSIM_INCLUDES) $(CARLSIM_FLAGS) $(CARLSIM_LFLAGS) \
-	$(CARLSIM_LIBS) $(common_objs) $< -o $@
+	$(CARLSIM_LIBS) $(local_objs) $< -o $@
 
 # still compile common files from source for local cuda code
-../common/%.o: ../common/%.cu
+%.o: %.cu
 	$(NVCC) -c $(CARLSIM_INCLUDES) $(CARLSIM_FLAGS) $< -o $@
 
 clean:

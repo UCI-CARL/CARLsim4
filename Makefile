@@ -2,7 +2,15 @@
 # these variables collect the information from the other modules
 # TODO: decide whether or not to allow uses to make examples etc.
 # TODO: Update User Guide on wiki with correct layout.
-# TODO: add instructions about runninge examples and projects and that they go in same dir.results by default
+# TODO: add instructions about running examples and projects and that they go in same dir.results by default
+# TODO: make issue saying to make motion energy a library and remove mtrand.h include dependency.
+# TODO: make issue telling Ting to fix the visual studio stuff.
+# TODO: make issue about creating tutorials out of examples and linking with doxygen.
+# TODO: create Makefile for devs that want to build from src
+# TODO: add these to make our documentation and then add an issue
+#@ echo "make docs     Builds the class documentation, found in docs/classsdocs"
+#@ echo "make doc        (Same thing)"
+
 carlsim_major_num := 3
 carlsim_minor_num := 0
 carlsim_build_num := 0
@@ -43,12 +51,9 @@ default:
 .PHONY: default clean distclean
 default: $(default_targets)
 
-# TODO: need to create a results directory in the main directory and delete later with
-# every carlsim_tests run. distclean/clean should take care of it.
-# TODO: create Makefile for devs that want to build from src
 clean:
 	$(RM) $(objects)
-# TODO: see what distclean should really do by convention
+
 distclean:
 	$(RM) $(objects) $(carlsim_programs) $(pti_programs) $(libraries) $(output_files) doc/html
 
@@ -62,12 +67,7 @@ help:
 	@ echo 
 	@ echo "make            Compiles the CARLsim code using the default compiler"
 	@ echo "make all          (Same thing)"
-	@ echo "make install    Installs CARLsim library (may need root privileges)"
+	@ echo "make install    Installs CARLsim library (may require root privileges)"
 	@ echo "make clean      Cleans out all object files"
 	@ echo "make distclean  Cleans out all objects files and output files"
 	@ echo "make help       Brings up this message!"
-
-# TODO: add these to make our documentation and then add an issue
-#@ echo "make docs     Builds the class documentation, found in docs/classsdocs"
-#@ echo "make doc        (Same thing)"
-

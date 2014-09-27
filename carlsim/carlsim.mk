@@ -1,5 +1,6 @@
 # module include file for CARLsim core
-
+# TODO: put an issue about removing dependency on mtrand.h by removing motion
+# energy.
 #---------------------------------------------------------------------------
 # CARLsim kernel variables
 #---------------------------------------------------------------------------
@@ -108,7 +109,8 @@ install: $(carlsim_lib)
 	@ln -Tfs $(CARLSIM_LIB_INSTALL_DIR)/lib/$(lib_name).$(num_ver) \
 		$(CARLSIM_LIB_INSTALL_DIR)/lib/$(lib_name)
 	@install -m 0644 $(kernel_dir)/include/cuda_version_control.h \
-		$(kernel_dir)/include/poisson_rate.h $(CARLSIM_LIB_INSTALL_DIR)/include/kernel
+		$(kernel_dir)/include/poisson_rate.h $(kernel_dir)/include/mtrand.h \
+		$(CARLSIM_LIB_INSTALL_DIR)/include/kernel
 	@install -m 0644 $(interface_dir)/include/callback.h \
 		$(interface_dir)/include/carlsim_datastructures.h \
 		$(interface_dir)/include/carlsim_definitions.h \
