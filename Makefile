@@ -1,17 +1,5 @@
 # Main Makefile for compiling, testing, and installing CARLsim
 # these variables collect the information from the other modules
-# TODO: Update User Guide on wiki with correct layout.
-# TODO: add instructions about running examples and projects and that they go in same dir.results by default
-# TODO: make issue saying to make motion energy a library and remove mtrand.h include dependency.
-# TODO: make issue telling Ting to fix the visual studio stuff.
-# TODO: make issue about creating tutorials out of examples and linking with doxygen.
-# TODO: create Makefile for devs that want to build from src
-# TODO: add these to make our documentation and then add an issue
-#@ echo "make docs     Builds the class documentation, found in docs/classsdocs"
-#@ echo "make doc        (Same thing)"
-# TODO: put an issue about removing dependency on mtrand.h by removing motion
-# energy.
-# TODO: in the readme tell the user how to uninstall the library (just delete the
 
 carlsim_major_num := 3
 carlsim_minor_num := 0

@@ -1,5 +1,3 @@
-# TODO: add instructions for writing your own code or add to wiki.
-# TODO: examples have to be compiled within their subdirectory.
 README for CARLsim SNN simulator
 -------------------------------------------------------------------------------
 
@@ -38,6 +36,11 @@ CARLSIM_CUDAVER ?= 3
 CARLSIM_FASTMATH ?= 0
 CARLSIM_CUOPTLEVEL ?= 0
 CARLSIM_DEBUG ?= 0
+
+# CUDA Installation location. If your CUDA installation is not /usr/local/cuda,
+# please set CUDA_INSTALL_PATH to point to the correct location or set it as
+# an environment variable.
+CUDA_INSTALL_PATH ?= /usr/local/cuda
 </pre>
 
 CARLsim: Type ‘make && sudo make install’. This will compile and install the
@@ -118,3 +121,20 @@ is the name of the directory (e.g. random).
 
 Example programs were written to be executed in the same directory as their
 source code.
+
+### CARLSIM DEVELOPMENT
+
+To compile an example or project from the CARLsim source code, you can refer
+to the src.mk files found in each example subdirectory. Essentially, you have
+to set the CARLSIM_SRC_PATH and USER_MK_PATH variables in the src.mk files. To
+run make using these files simply type:
+
+‘make -f src.mk’
+
+and make will run the default targets for that src.mk file. If you want to
+run a specific target from src.mk (let’s call it ‘random’), then you would
+run the command:
+
+‘make -f src.mk random’
+
+This is mainly used by the devs who write CARLsim.

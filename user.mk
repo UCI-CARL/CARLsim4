@@ -19,6 +19,11 @@ CARLSIM_FASTMATH ?= 0
 CARLSIM_CUOPTLEVEL ?= 0
 CARLSIM_DEBUG ?= 0
 
+# CUDA Installation location. If your CUDA installation is not /usr/local/cuda,
+# please set CUDA_INSTALL_PATH to point to the correct location or set it as
+# an environment variable.
+CUDA_INSTALL_PATH ?= /usr/local/cuda
+
 #------------------------------------------------------------------------------
 # OPTIONAL FEATURES:
 #
@@ -48,7 +53,7 @@ ECJ_PTI_INSTALL_DIR ?= /opt/CARL/carlsim_ecj_pti
 GTEST_DIR ?= /opt/gtest
 
 # whether to include flag for regression testing
-CARLSIM_TEST ?= 0
+CARLSIM_TEST ?= 1
 
 #------------------------------------------------------------------------------
 # END OF USER-MODIFIABLE SECTION
@@ -89,12 +94,12 @@ ifeq (${strip ${CARLSIM_CUDAVER}},3)
 	CARLSIM_LIBS = -lcutil_x86_64
 	CARLSIM_FLAGS += -D__CUDA3__
 else ifeq (${strip ${CARLSIM_CUDAVER}},5)
-	CARLSIM_INCLUDES = -I/usr/local/cuda/samples/common/inc/
+	CARLSIM_INCLUDES = -I$(CUDA_INSTALL_PATH)/samples/common/inc/
 	CARLSIM_LFLAGS =
 	CARLSIM_LIBS =
 	CARLSIM_FLAGS += -D__CUDA5__
 else ifeq (${strip ${CARLSIM_CUDAVER}},6)
-	CARLSIM_INCLUDES = -I/usr/local/cuda/samples/common/inc/
+	CARLSIM_INCLUDES = -I$(CUDA_INSTALL_PATH)/samples/common/inc/
 	CARLSIM_LFLAGS =
 	CARLSIM_LIBS =
 	CARLSIM_FLAGS += -D__CUDA6__
