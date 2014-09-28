@@ -1,4 +1,4 @@
-# Makefile for building example program from the CARLsim source or library
+# Makefile for building example program from the CARLsim library
 
 # NOTE: if you are compiling your code in a directory different from
 # examples/<example_name> or projects/<project_name> then you need to either
@@ -8,7 +8,7 @@ USER_MK_PATH = ../../
 include $(USER_MK_PATH)user.mk
 
 example := v1MTLIP
-output := *.dot *.dat *.log *.csv
+output := *.dot *.dat *.log *.csv results/*
 
 # You should not need to edit the file beyond this point
 # ------------------------------------------------------
@@ -40,9 +40,7 @@ $(local_prog): $(local_src) $(local_objs)
 	$(NVCC) -c $(CARLSIM_INCLUDES) $(CARLSIM_FLAGS) $< -o $@
 
 clean:
-	$(RM) $(output_files)
+	$(RM) $(local_prog) $(local_objs)
 
 distclean:
-	$(RM) $(output_files) *.log *.dat results/*.dat
-
-devtest: @echo $(CARLSIM_FLAGS)
+	$(RM) $(local_prog) $(local_objs) $(output)

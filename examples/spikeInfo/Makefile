@@ -1,4 +1,4 @@
-# Makefile for building example program from the CARLsim source or library
+# Makefile for building example program from the CARLsim library
 
 # NOTE: if you are compiling your code in a directory different from
 # examples/<example_name> or projects/<project_name> then you need to either
@@ -8,7 +8,7 @@ USER_MK_PATH = ../../
 include $(USER_MK_PATH)user.mk
 
 example := spikeInfo
-output := *.dot *.dat *.log *.csv
+output := *.dot *.dat *.log *.csv results/*
 
 # You should not need to edit the file beyond this point
 # ------------------------------------------------------
@@ -18,8 +18,6 @@ output := *.dot *.dat *.log *.csv
 	interface_dir  = $(CARLSIM_LIB_INSTALL_DIR)/interface
 	spike_mon_dir  = $(CARLSIM_LIB_INSTALL_DIR)/spike_monitor
 	spike_gen_dir  = $(CARLSIM_LIB_INSTALL_DIR)/spike_generators
-# TODO: add stuff so that we will install the correct headers for the server,
-# and input_stimulus
 # we are compiling from lib
 	CARLSIM_FLAGS += -I$(CARLSIM_LIB_INSTALL_DIR)/include/kernel \
 									 -I$(CARLSIM_LIB_INSTALL_DIR)/include/interface \
@@ -28,7 +26,6 @@ output := *.dot *.dat *.log *.csv
 
 local_src  := main_$(example).cpp
 local_prog := $(example)
-output_files += $(local_prog)
 
 .PHONY: clean distclean
 # compile from CARLsim lib
@@ -37,10 +34,8 @@ $(local_prog): $(local_src)
 	$(CARLSIM_LIBS) $< -o $@
 
 clean:
-	$(RM) $(output_files)
+	$(RM) $(local_prog)
 
 distclean:
-	$(RM) $(output_files) *.log *.dat results/*.dat results/*.csv
+	$(RM) $(local_prog) *.log *.dat
 
-devtest:
-	@echo $(output_files)

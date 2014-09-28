@@ -1,4 +1,4 @@
-# Makefile for building example program from the CARLsim source or library
+# Makefile for building example program from the CARLsim library
 
 # NOTE: if you are compiling your code in a directory different from
 # examples/<example_name> or projects/<project_name> then you need to either
@@ -8,7 +8,7 @@ USER_MK_PATH = ../../
 include $(USER_MK_PATH)user.mk
 
 example := colorblind
-output := *.dot *.dat *.log *.csv
+output := *.dot *.dat *.log *.csv results/*
 
 # You should not need to edit the file beyond this point
 # ------------------------------------------------------
@@ -27,7 +27,6 @@ output := *.dot *.dat *.log *.csv
 local_src  := main_$(example).cpp
 local_prog := $(example)
 common_objs:= ../common/v1ColorME.2.0.o
-output_files += $(local_prog) $(common_objs)
 
 .PHONY: clean distclean
 # compile from CARLsim lib
@@ -40,9 +39,7 @@ $(local_prog): $(local_src) $(common_objs)
 	$(NVCC) -c $(CARLSIM_INCLUDES) $(CARLSIM_FLAGS) $< -o $@
 
 clean:
-	$(RM) $(output_files)
+	$(RM) $(local_prog) $(common_objs)
 
 distclean:
-	$(RM) $(output_files) *.log *.dat results/*.dat
-
-devtest: @echo $(CARLSIM_FLAGS)
+	$(RM) $(local_prog) $(common_objs) $(output)

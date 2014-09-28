@@ -1,4 +1,4 @@
-# Makefile for building example program from the CARLsim source or library
+# Makefile for building example program from the CARLsim library
 
 # NOTE: if you are compiling your code in a directory different from
 # examples/<example_name> or projects/<project_name> then you need to either
