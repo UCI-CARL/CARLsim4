@@ -7,10 +7,18 @@ Legend:
 	- removed element
 	* changed element
 
+2014-09-28     Kristofor D. Carlson <kdcarlso@uci.edu>
+  * Reorganized the CARLsim root directory.
+  + Made CARLsim into a statically linked library.
+  * Placed all user configuration in user.mk file.
+  + Added documentation.
+  + Added carlsim version numbers for releases.
+  - Removed broken examples.
+
 2014-08-30     Michael Beyeler <mbeyeler@uci.edu>
-    + Added PeriodicSpikeGenerator utility.
-    + Added SpikeGeneratorFromVector utility.
-    + Added SpikeGeneratorFromFile utility.
+  + Added PeriodicSpikeGenerator utility.
+  + Added SpikeGeneratorFromVector utility.
+  + Added SpikeGeneratorFromFile utility.
 
 2014-08-29     Michael Beyeler <mbeyeler@uci.edu>
 	+ Added addCustomFrames function to InputStimulus.m utility.
@@ -22,12 +30,12 @@ Legend:
 	+ Added recordMovie function to InputStimulus.m utility.
 
 2014-08-13     Michael Beyeler <mbeyeler@uci.edu>
-    + Added Grid3D and Point3D structs.
-    + Added way to create neurons on a grid via CARLsim::createGroup and
-      CARLsim::createSpikeGeneratorGroup.
-    * Fixed interface errors on boundary checks and CARLsim states.
-    * Fixed console output of connection setup.
-    + Added CARLsim::getGroupId (from string).
+  + Added Grid3D and Point3D structs.
+  + Added way to create neurons on a grid via CARLsim::createGroup and
+    CARLsim::createSpikeGeneratorGroup.
+  * Fixed interface errors on boundary checks and CARLsim states.
+  * Fixed console output of connection setup.
+  + Added CARLsim::getGroupId (from string).
 
 2014-08-08     Michael Beyeler <mbeyeler@uci.edu>
 	* Fixed broken COBA implementation in CPU mode.
@@ -50,7 +58,7 @@ Legend:
 	* Fixed initial value of recovery variable in CpuSNN::resetNeuron.
 
 2014-08-06     Kristofor D. Carlson <kdcarlso@uci.edu>
-	* Fixed broken CUBA implementation in GPU mode.
+  * Fixed broken CUBA implementation in GPU mode.
 	+ Added CUBA tests for firing rate comparison of CPU/GPU mode.
 
 2014-07-31     Michael Beyeler <mbeyeler@uci.edu>

@@ -36,7 +36,7 @@
  *
  * CARLsim available from http://socsci.uci.edu/~jkrichma/CARL/CARLsim/
  * Ver 3/22/14
- */ 
+ */
 
 #include <carlsim.h>
 #include <mtrand.h>
@@ -70,9 +70,9 @@ float fast_exp(float x)
 			fast_exp_buf[i] = expf(-i*FAST_EXP_MAX_STD/FAST_EXP_BUF_SIZE);
 		}
 	}
-	
+
 	x = -x;
-	
+
 	return (x<FAST_EXP_MAX_STD)?fast_exp_buf[(int)(x/FAST_EXP_MAX_STD*FAST_EXP_BUF_SIZE)]:0;
 }
 
@@ -119,9 +119,9 @@ public:
 
 	int spatialScale;
 	float weightScale;
-	float (*proj)[4];	
+	float (*proj)[4];
 	float* bias;
-	
+
 	void connect(CARLsim* net, int srcGrp, int i, int destGrp, int j, float& weight, float& maxWt, float& delay, bool& connected)
 	{
 		int v1X = i%nrX;
@@ -152,7 +152,7 @@ public:
 
 	int spatialScale;
 	float weightScale;
-	
+
 	void connect(CARLsim* net, int srcGrp, int i, int destGrp, int j, float& weight, float& maxWt, float& delay, bool& connected)
 	{
 		int X = j%nrX;
@@ -211,19 +211,14 @@ int main()
 
 
 	s.setConductances(true);
-	
+
 	s.setSTDP(ALL, false);
 
 	s.setSTP(ALL,false);
 
 	s.setSpikeMonitor(gV1ME);
-#if (WIN32 || WIN64)
 	s.setSpikeMonitor(gV4o,"results/spkV4o.dat");
 	s.setSpikeMonitor(gV4oi,"results/spkV4oi.dat");
-#else
-	s.setSpikeMonitor(gV4o,"examples/orientation/results/spkV4o.dat");
-	s.setSpikeMonitor(gV4oi,"examples/orientation/results/spkV4oi.dat");
-#endif
 
 	// setup the network
 	s.setupNetwork();
@@ -240,17 +235,13 @@ int main()
 
 	for(long long i=0; i < VIDLEN*1; i++) {
 		if (i%VIDLEN==0) {
-#if (WIN32 || WIN64)
 			fid = fopen("videos/orienR.dat","rb");
-#else
-			fid = fopen("examples/orientation/videos/orienR.dat","rb");
-#endif
 			if (fid==NULL) {
 				printf("ERROR: could not open video file\n");
 				exit(1);
 			}
 		}
-		
+
 		size_t result = fread(vid,1,nrX*nrY*3,fid);
 		if (result!=nrX*nrY*3) {
 			printf("ERROR: could not read from video file\n");
@@ -265,11 +256,7 @@ int main()
 		s.runNetwork(0,frameDur);
 
 		if (i==1) {
-#if (WIN32 || WIN64)
 			s.saveSimulation("results/net.dat", true);
-#else
-			s.saveSimulation("examples/orientation/results/net.dat", true);
-#endif
 		}
 	}
 	fclose(fid);
