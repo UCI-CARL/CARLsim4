@@ -1,0 +1,9 @@
+[INFO carlsim/kernel/src/snn_cpu.cpp:1856] *********************************************************************************
+[INFO carlsim/kernel/src/snn_cpu.cpp:1858] ********************      Welcome to CARLsim 2.2      ***************************
+[INFO carlsim/kernel/src/snn_cpu.cpp:1859] *********************************************************************************
+
+[INFO carlsim/kernel/src/snn_cpu.cpp:1861] ***************************** Configuring Network ********************************
+[INFO carlsim/kernel/src/snn_cpu.cpp:1863] Starting CARLsim simulation "tuneFiringRatesECJ" in SILENT mode
+[INFO carlsim/kernel/src/snn_cpu.cpp:1864] nConfig: 1, randSeed: 1412012336
+[DEBUG carlsim/kernel/src/snn_cpu.cpp:1870] Current local time and date: Mon Sep 29 10:38:56 2014
+

@@ -265,7 +265,7 @@ can run the google tests CARLsim code found in the test directory.
 
 You first need to install google tests:
 
-1)  Download google tests and unzip them to a location of your choice. 
+1)  Download google tests and unzip them to a location of your choice.
 
 2)  Edit the environment variables GTEST_DIR and GTEST_LIB_DIR 
     found in test/gtest.mk. GTEST_DIR should point to the location of the 

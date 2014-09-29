@@ -1,0 +1,41 @@
+<html>
+    <body>
+    <p>
+        The CARLsim-ECJ <code>ecjapp</code> package is a small layer of Java code
+        that extends the <a href="http://cs.gmu.edu/~eclab/projects/ecj/">ECJ</a>
+        evolutionary computation framework to launch an external simulation that
+        evaluates the phenotype of multiple individuals (a subset of a
+        population) simultaneously.  This is particularly useful for highly
+        parallel, GPU-based simulations, where we gain by evaluating more than
+        one individual per invocation of the simulator.
+        </p>
+        
+    <p>
+        Broadly speaking, ECJ and <code>ecjapp</code> handle the evolutionary
+        algorithm and the phenotype-to-fitness mapping, while the
+        genotype-to-phenotype mapping is performed by the external simulator. 
+        The public components of <code>ecjapp</code> are summarized in the
+        following UML diagram.  The package hierarchy mirrors the hierarchy
+        used to define the corresponding ECJ parameters.
+    </p>
+    <center><img src="doc-files/ecjapp_uml.png" width="600"/></center>
+        
+    <p>
+        {@link ecjapp.eval.SimpleGroupedEvaluator} is a modified version of
+        ECJ's <code>SimpleEvaluator</code> that splits the population into groups,
+        each of which will be evaluated by a single external simulation call.
+        ECJ parameter files are used to specify the number of individuals per
+        group and the external shell command that
+        {@link ecjapp.eval.problem.CommandController} will use to launch the
+        simulator. The simulator must accept a set of genomes in CSV format on
+        <code>stdin</code>, and it must output the simulation result (phenotypes)
+        to <code>stdout</code> in CSV format. Typically this means that an
+        experiment-specific script or executable is called, rather than the
+        actual simulator, to translate the genetic representation into
+        simulation parameters.  The user must also provide an experiment-specific
+        {@link ecjapp.eval.problem.objective.ObjectiveFunction}, which decodes the
+        results and uses them to compute a <code>SimpleFitness</code> for each
+        individual.
+    </p>
+    </body>
+</html>
