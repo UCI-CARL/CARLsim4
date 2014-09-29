@@ -53,7 +53,7 @@ ECJ_PTI_INSTALL_DIR ?= /opt/CARL/carlsim_ecj_pti
 GTEST_DIR ?= /opt/gtest
 
 # whether to include flag for regression testing
-CARLSIM_TEST ?= 1
+CARLSIM_TEST ?= 0
 
 #------------------------------------------------------------------------------
 # END OF USER-MODIFIABLE SECTION
