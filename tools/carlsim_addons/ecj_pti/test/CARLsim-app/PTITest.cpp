@@ -20,7 +20,7 @@ class PTITest : public ::testing::Test {
     std::stringstream defaultInputStream;
     std::stringstream outputStream;
     PTI sut;
-    
+
     PTITest():
         defaultInputStream(string("2.82, 6.51, 7.37, 7.67, 2.32, 3.95, 2.22, 5.21\n") +
                 string("2.81, 8.24, 5.11, 7.82, 3.62, 7.00, 1.98, 5.70\n") +
@@ -32,9 +32,9 @@ class PTITest : public ::testing::Test {
 class TestExperiment : public Experiment {
 public:
     TestExperiment() {}
-    
+
     void run(const ParameterInstances &parameters, std::ostream &outputStream) const {
-        for(unsigned int i = 0; i < parameters.getNumIndividuals(); i++) {
+        for(unsigned int i = 0; i < parameters.getNumInstances(); i++) {
             float sum = 0.0;
             for (unsigned int j = 0; j < parameters.getNumParameters(); j++) {
                 const float p = parameters.getParameter(i, j);

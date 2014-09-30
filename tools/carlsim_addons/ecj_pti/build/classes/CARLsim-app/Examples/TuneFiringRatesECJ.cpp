@@ -98,8 +98,8 @@ namespace CARLsim_PTI {
 					excMonitor[i]->stopRecording();
 					inhMonitor[i]->stopRecording();
 
-					excHz[i] = excMonitor[i]->getGrpFiringRate();
-					inhHz[i] = inhMonitor[i]->getGrpFiringRate();
+					excHz[i] = excMonitor[i]->getPopMeanFiringRate();
+					inhHz[i] = inhMonitor[i]->getPopMeanFiringRate();
 
 					excError[i] = fabs(excHz[i] - EXC_TARGET_HZ);
 					inhError[i] = fabs(inhHz[i] - INH_TARGET_HZ);

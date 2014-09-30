@@ -1,5 +1,5 @@
-/*! \brief 
- *  
+/*! \brief
+ *
  */
 #include "PTI.h"
 #include <carlsim.h>
@@ -17,14 +17,14 @@ namespace CARLsim_PTI {
     public:
         // Decay constants
         static const float COND_tAMPA=5.0, COND_tNMDA=150.0, COND_tGABAa=6.0, COND_tGABAb=150.0;
-        
+
         // Neurons
         static const int NUM_NEURONS = 1000;
         static const double RND_FRACTION = 0.1;
         static const double PYR_FRACTION = 0.9;
         static const double PTI_FRACTION = 0.05;
         static const double DTI_FRACTION = 0.05;
-        
+
         // Izhikevich parameters
         static const float PYR_PARAMS[];
         static const float PTI_PARAMS[];
@@ -44,11 +44,11 @@ namespace CARLsim_PTI {
         static const float PTI_TARGET_HZ_MAX = 21.0f;
         static const float DTI_TARGET_HZ_MIN = 6.0f;
         static const float DTI_TARGET_HZ_MAX = 11.0f;
-      
+
         const simMode_t simMode;
         const loggerMode_t verbosity;
         const int deviceID;
-        
+
         SimpleCA3Experiment(const simMode_t simMode, const loggerMode_t verbosity, const int deviceID) : simMode(simMode), verbosity(verbosity), deviceID(deviceID) {}
 
         void run(const ParameterInstances &parameters, std::ostream &outputStream) const {
@@ -66,9 +66,9 @@ namespace CARLsim_PTI {
                 network->ptiMonitor->stopRecording();
                 network->dtiMonitor->stopRecording();
 
-                const float pyrHz = network->pyramidalMonitor->getGrpFiringRate();
-                const float ptiHz = network->ptiMonitor->getGrpFiringRate();
-                const float dtiHz = network->dtiMonitor->getGrpFiringRate();
+                const float pyrHz = network->pyramidalMonitor->getPopMeanFiringRate();
+                const float ptiHz = network->ptiMonitor->getPopMeanFiringRate();
+                const float dtiHz = network->dtiMonitor->getPopMeanFiringRate();
 
                 const float pyrError = withinRange(pyrHz, PYR_TARGET_HZ_MIN, PYR_TARGET_HZ_MAX) ? 0 :
                   (pyrHz < PYR_TARGET_HZ_MIN) ? PYR_TARGET_HZ_MIN - pyrHz : pyrHz - PYR_TARGET_HZ_MAX;
@@ -81,7 +81,7 @@ namespace CARLsim_PTI {
                 outputStream << fitness << endl;
             }
         }
-        
+
     private:
         typedef struct SimpleCA3Network {
             const auto_ptr<CARLsim> network;
@@ -99,7 +99,7 @@ namespace CARLsim_PTI {
 	  /** Decode a genome and construct a CARLsim network on the heap. */
 	  static SimpleCA3Network * const createNetwork(const std::vector<double> parameters, const simMode_t simMode, const loggerMode_t verbosity, const int deviceID) {
 	      CARLsim * const network = new CARLsim("SimpleCA3", simMode, verbosity, deviceID);
-            
+
 	      network->setConductances(true,COND_tAMPA,COND_tNMDA,COND_tGABAa,COND_tGABAb);
 	      const int poissonGroup = network->createSpikeGeneratorGroup("poisson", RND_FRACTION*NUM_NEURONS, EXCITATORY_NEURON);
 	      const int pyramidalGroup = network->createGroup("pyramidal", PYR_FRACTION*NUM_NEURONS, EXCITATORY_NEURON);
@@ -108,7 +108,7 @@ namespace CARLsim_PTI {
 	      network->setNeuronParameters(ptiGroup, PTI_PARAMS[0], PTI_PARAMS[1], PTI_PARAMS[2], PTI_PARAMS[3]);
 	      const int dtiGroup = network->createGroup("DTI", DTI_FRACTION*NUM_NEURONS, INHIBITORY_NEURON);
 	      network->setNeuronParameters(dtiGroup, DTI_PARAMS[0], DTI_PARAMS[1], DTI_PARAMS[2], DTI_PARAMS[3]);
-            
+
 	      network->connect(poissonGroup, pyramidalGroup, "random", RangeWeight(parameters[0]), parameters[1], RangeDelay(1));
 	      network->connect(pyramidalGroup, pyramidalGroup, "random", RangeWeight(parameters[2]), parameters[3], RangeDelay(1));
 	      network->connect(pyramidalGroup, ptiGroup, "random", RangeWeight(parameters[4]), parameters[5], RangeDelay(1));
@@ -127,7 +127,7 @@ namespace CARLsim_PTI {
 	      SpikeMonitor * const pyramidalMonitor = network->setSpikeMonitor(pyramidalGroup, "/dev/null");
 	      SpikeMonitor * const ptiMonitor = network->setSpikeMonitor(ptiGroup, "/dev/null");
 	      SpikeMonitor * const dtiMonitor = network->setSpikeMonitor(dtiGroup, "/dev/null");
-	    
+
 	      return new SimpleCA3Network(network, pyramidalMonitor, ptiMonitor, dtiMonitor, in);
 	    }
 
@@ -183,7 +183,7 @@ int main(const int argc, const char * const argv[]) {
   const int deviceID = hasOpt(argc, argv, "device") ? atoi(getOpt(argc, argv, "device")) : 0;
   const SimpleCA3Experiment experiment(simMode, verbosity, deviceID);
   const PTI pti(argc, argv, std::cout, std::cin);
-    
+
   pti.runExperiment(experiment);
 
   return 0;

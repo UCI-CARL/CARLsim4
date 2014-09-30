@@ -10,7 +10,7 @@ CARLSIM_CUDAVER ?= 3
 CARLSIM_FASTMATH ?= 0
 CARLSIM_CUOPTLEVEL ?= 0
 CARLSIM_DEBUG ?= 0
-CARLSIM_ROOT ?= $(HOME)/Project/carlsim_lib_src/
+CARLSIM_ROOT ?= $(HOME)/Project/CARLsim/
 #-------------------------------------------------------------------------------
 # End user modifiable section
 #-------------------------------------------------------------------------------
