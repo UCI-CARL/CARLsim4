@@ -22,7 +22,7 @@ They come with default values that might not be correct for the user:
 
 <pre>
 # desired installation path of libcarlsim and headers
-CARLSIM_LIB_INSTALL_DIR ?= /opt/CARL/CARLsim
+CARLSIM_LIB_DIR ?= /opt/CARL/CARLsim
 
 # cuda capability major version number for GPU device
 CUDA_MAJOR_NUM ?= 1
@@ -52,7 +52,7 @@ Evolutionary Computations in Java (ECJ) but is not yet ready for release.
 
 TO UNINSTALL:
 CARLsim: Remove the folder where you installed the CARLsim library. This
-folder is located in $(CARLSIM_LIB_INSTALL_DIR).
+folder is located in $(CARLSIM_LIB_DIR).
 
 Type ‘make help’ for additional information.
 

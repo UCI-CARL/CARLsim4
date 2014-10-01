@@ -21,9 +21,10 @@ pti_programs += $(local_prog) $(addprefix $(local_dir)/, $(special_examples))
 all_targets += $(pti_programs)
 
 # carlsim information
-carlsim_main := $(CARLSIM_LIB_DIR)
-carlsim_includes := -I$(carlsim_main)/include/kernel -I$(carlsim_main)/include/interface -I$(carlsim_main)/include/spike_monitor
-carlsim_lib := $(carlsim_main)/lib/libCARLsim.a
+carlsim_main := $(CARLSIM_SRC_DIR)/carlsim
+carlsim_includes := -I$(carlsim_main)/kernel/include/ -I$(carlsim_main)/interface/include/ -I$(carlsim_main)/spike_monitor/
+carlsim_local_lib := libCARLsim.a
+carlsim_lib := $(addprefix $(carlsim_main)/,$(carlsim_local_lib))
 
 # Rules for example binaries that use EO/PTI
 .PHONY: $(example_names) $(special_examples)
@@ -38,9 +39,13 @@ $(local_dir)/IzkExample: $(local_dir)/IzkExample.cpp $(pti_deps) $(pti_objs)
 	$(CC) -g $(PTI_FLAGS) $< $(pti_objs) $(izk_lib) -o $@ $(LDFLAGS)
 
 $(local_dir)/SimpleCA3: $(local_dir)/SimpleCA3.cpp $(pti_deps) $(pti_objs)
+	$(MAKE) -C $(CARLSIM_SRC_DIR) libCARLsim
+	@cp $(CARLSIM_SRC_DIR)/carlsim/libCARLsim*.*.* $(CARLSIM_SRC_DIR)/carlsim/libCARLsim.a
 	nvcc -g $(PTI_FLAGS) $(carlsim_includes) $< $(pti_objs) $(carlsim_lib) -o $@ $(LDFLAGS)
 
 $(local_dir)/TuneFiringRatesECJ: $(local_dir)/TuneFiringRatesECJ.cpp $(pti_deps) $(pti_objs)
+	$(MAKE) -C $(CARLSIM_SRC_DIR) libCARLsim
+	@cp $(CARLSIM_SRC_DIR)/carlsim/libCARLsim*.*.* $(CARLSIM_SRC_DIR)/carlsim/libCARLsim.a
 	nvcc -g $(PTI_FLAGS) $(carlsim_includes) $(CARLSIM_LFLAGS) $(CARLSIM_FLAGS) \
 		$< $(pti_objs) $(carlsim_lib) -o $@ $(LDFLAGS)
 

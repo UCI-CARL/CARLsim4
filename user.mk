@@ -4,7 +4,7 @@
 # Note: all paths should be absolute (start with /)
 #------------------------------------------------------------------------------
 # desired installation path of libcarlsim and headers
-CARLSIM_LIB_INSTALL_DIR ?= /opt/CARL/CARLsim
+CARLSIM_LIB_DIR ?= /opt/CARL/CARLsim
 
 # cuda capability major version number for GPU device
 CUDA_MAJOR_NUM ?= 1
@@ -61,6 +61,7 @@ CARLSIM_TEST ?= 0
 
 # variable defintions
 CXX = g++
+CC  = g++
 NVCC = nvcc
 CPPFLAGS = $(DEBUG_FLAG) $(OPT_FLAG) -Wall -std=c++0x
 
@@ -117,7 +118,7 @@ endif
 
 # set debug flag
 ifeq (${strip ${CARLSIM_DEBUG}},1)
-	CARLSIM_FLAGS += -g
+
 endif
 
 # set correct debugging flag if we are testing: (runs bins in silent mode)

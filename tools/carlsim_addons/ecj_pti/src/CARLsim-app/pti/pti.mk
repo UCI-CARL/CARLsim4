@@ -14,7 +14,6 @@ pti_rel_ver   := 0
 
 #TODO: CARLSIM_FASTMATH and CARLSIM_CUOPTLEVEL should be just FASTMATH AND OPTLEVEL
 #TODO: Compile as library
-#TODO: rename libpti to pti
 #TODO: consider install/uninstall targets
 
 # use fast math
