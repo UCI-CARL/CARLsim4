@@ -1,0 +1,59 @@
+# Makefile to build CARLsim-PTI component
+# This Makefile will build our CARLSIM-PTI binary from the CARLsim library,
+# which should already be installed. It calls the Examples/examples.mk file
+# to compile the CARLSIM-ECJ PTI examples.
+
+# set this to wherever user.mk is located
+USER_MK_PATH ?= /home/kris/Project/CARLsim
+include $(USER_MK_PATH)/user.mk
+
+# -----------------------------------------------------------------------------
+# You should not need to edit the file beyond this point
+# -----------------------------------------------------------------------------
+
+all_targets :=
+pti_programs :=
+pti_deps :=
+pti_objs :=
+output_files :=
+libraries :=
+objects :=
+izk_build_files :=
+pti_dir := src/CARLsim-app/pti
+ex_dir := src/CARLsim-app/Examples
+iz_dir := src/izk
+
+# location of .cpp files
+vpath %.cpp $(pti_dir)
+# location of .h files
+vpath %.h $(pti_dir)
+
+# carlsim components
+	kernel_dir     = $(CARLSIM_LIB_DIR)/kernel
+	interface_dir  = $(CARLSIM_LIB_DIR)/interface
+	spike_mon_dir  = $(CARLSIM_LIB_DIR)/spike_monitor
+	spike_gen_dir  = $(CARLSIM_LIB_DIR)/spike_generators
+# we are compiling from lib
+	CARLSIM_FLAGS += -I$(CARLSIM_LIB_DIR)/include/kernel \
+									 -I$(CARLSIM_LIB_DIR)/include/interface \
+									 -I$(CARLSIM_LIB_DIR)/include/spike_monitor
+	CARLSIM_LIBS  += $(CARLSIM_LIB_DIR)/lib/libCARLsim.a
+
+all:
+
+include ecj_pti.mk
+include $(pti_dir)/pti.mk
+include $(pti_dir)/libCARLsimPTI.mk
+include $(ex_dir)/examples.mk
+include $(iz_dir)/izk.mk
+
+all: $(all_targets)
+
+clean:
+	$(RM) $(objects) $(libraries) $(pti_programs) $(izk_build_files)
+
+distclean:
+	$(RM) $(objects) $(libraries) $(pti_programs) $(output_files) $(izk_build_files)
+
+devTest:
+	@echo $(all_targets)

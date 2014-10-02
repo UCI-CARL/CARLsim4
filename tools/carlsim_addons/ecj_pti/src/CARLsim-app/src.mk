@@ -6,12 +6,17 @@ CARLSIM_SRC_DIR ?= /home/kris/Project/CARLsim
 USER_MK_PATH ?= $(CARLSIM_SRC_DIR)
 include $(USER_MK_PATH)/user.mk
 
+# -----------------------------------------------------------------------------
+# You should not need to edit the file beyond this point
+# -----------------------------------------------------------------------------
+
 all_targets :=
 pti_programs :=
 pti_deps :=
 pti_objs :=
 output_files :=
 objects :=
+libraries :=
 izk_build_files :=
 pti_dir = pti
 
@@ -41,5 +46,8 @@ include ../izk/izk.mk
 all: $(all_targets)
 
 clean:
-	$(RM) $(objects) $(pti_programs) $(output_files) $(izk_build_files)
+	$(RM) $(objects) $(libraries) $(pti_programs) $(izk_build_files)
+
+distclean:
+	$(RM) $(objects) $(libraries) $(pti_programs) $(output_files) $(izk_build_files)
 

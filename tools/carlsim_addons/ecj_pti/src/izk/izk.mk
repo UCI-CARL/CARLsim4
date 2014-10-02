@@ -1,5 +1,5 @@
 # module include makefile so CARLsim file can delete objects created by this program
-izk_deps := ../izk/network/Network.c ../izk/network/ConnectionGroup.c ../izk/network/CustomConnectionScheme.c ../izk/network/FullConnectionScheme.c ../izk/network/RandomConnectionScheme.c ../izk/network/NeuronGroup.c ../izk/neuron/Neuron.c ../izk/neuron/Izhikevich4Neuron.c ../izk/neuron/PoissonNeuron.c
+izk_deps := $(iz_dir)/network/Network.c $(iz_dir)/network/ConnectionGroup.c $(iz_dir)/network/CustomConnectionScheme.c $(iz_dir)/network/FullConnectionScheme.c $(iz_dir)/network/RandomConnectionScheme.c $(iz_dir)/network/NeuronGroup.c $(iz_dir)/neuron/Neuron.c $(iz_dir)/neuron/Izhikevich4Neuron.c $(iz_dir)/neuron/PoissonNeuron.c
 izk_objs := $(izk_deps:.c=.o)
 
-izk_build_files := $(izk_objs) ../izk/libizk.a
+izk_build_files := $(izk_objs) $(iz_dir)/libizk.a

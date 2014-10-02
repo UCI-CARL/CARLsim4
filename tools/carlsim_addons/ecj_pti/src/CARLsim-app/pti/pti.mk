@@ -27,7 +27,7 @@ PTI_FLAGS += -I$(CURDIR)/$(pti_dir)
 #-------------------------------------------------------------------------------
 # CARLsim pti local variables
 #-------------------------------------------------------------------------------
-local_dir := pti
+local_dir := $(pti_dir)
 local_deps := Logger.cpp PTI.cpp ParameterInstances.cpp Util.cpp
 local_src := $(addprefix $(local_dir)/,$(local_deps))
 local_objs := $(addprefix $(local_dir)/, Logger.o PTI.o ParameterInstances.o Util.o)
