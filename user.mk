@@ -34,16 +34,16 @@ CUDA_INSTALL_PATH ?= /usr/local/cuda
 # Deprecated: CARLsim/Evolving Objects Parameter Tuning Interface Options
 #------------------------------------------------------------------------------
 # path of evolving objects installation for EO-PTI CARLsim support (deprecated)
-EO_INSTALL_DIR ?= /opt/eo
-EO_PTI_INSTALL_DIR ?= /opt/CARL/carlsim_eo_pti
+EO_DIR ?= /opt/eo
+EO_PTI_DIR ?= /opt/CARL/carlsim_eo_pti
 
 #------------------------------------------------------------------------------
 # CARLsim/ECJ Parameter Tuning Interface Options
 #------------------------------------------------------------------------------
 # path of evolutionary computation in java installation for ECJ-PTI CARLsim
 # support
-ECJ_INSTALL_DIR ?= /opt/ecj
-ECJ_PTI_INSTALL_DIR ?= /opt/CARL/carlsim_ecj_pti
+ECJ_DIR ?= /opt/ecj
+ECJ_PTI_DIR ?= /opt/CARL/carlsim_ecj_pti
 
 #------------------------------------------------------------------------------
 # CARLsim Developer Features: Running tests and compiling from sources
@@ -127,9 +127,8 @@ ifeq (${strip ${CARLSIM_TEST}},1)
 endif
 
 # location of .h files
-vpath %.h $(EO_INSTALL_DIR)/src $(kernel_dir)/include \
-$(ex_dir)/common $(interface_dir)/include $(spike_mon_dir) $(test_dir)
-
+vpath %.h $(kernel_dir)/include $(ex_dir)/common $(interface_dir)/include \
+	$(spike_mon_dir) $(test_dir) $(ECJ_PTI_DIR)/include $(EO_DIR)/src
 # location of .cpp files
 vpath %.cpp $(kernel_dir)/src $(interface_dir)/src $(test_dir) \
 $(spike_info_dir) $(ex_dir)/common/

@@ -35,6 +35,7 @@ vpath %.h $(pti_dir)
 all:
 
 include pti/pti.mk
+include pti/libCARLsimPTI.mk
 include Examples/examples.mk
 include ../izk/izk.mk
 
