@@ -1,5 +1,0 @@
-#!/bin/bash
-
-# bashscript to remove junk from this directoy. Will be removed before release.
-
-rm -rf *.log *.stat results/*.dat

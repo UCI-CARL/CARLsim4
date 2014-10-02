@@ -1,5 +1,6 @@
-# Makefile to build CARLsim-PTI component
-# This Makefile will build our CARLSIM-PTI binary from CARLsim source.
+# Makefile to build CARLsim-ECJ PTI Examples from a CARLsim source folder.
+# This file includes $(ex_dir)/src.mk which builds the PTI example programs
+# from CARLsim source.
 
 # set this to wherever user.mk is located
 CARLSIM_SRC_DIR ?= /home/kris/Project/CARLsim
@@ -11,6 +12,7 @@ include $(USER_MK_PATH)/user.mk
 # -----------------------------------------------------------------------------
 
 all_targets :=
+install_targets :=
 pti_programs :=
 pti_deps :=
 pti_objs :=
@@ -18,7 +20,10 @@ output_files :=
 objects :=
 libraries :=
 izk_build_files :=
-pti_dir = pti
+pti_dir := src/CARLsim-app/pti
+ex_dir := src/CARLsim-app/Examples
+iz_dir := src/izk
+
 
 # location of .cpp files
 vpath %.cpp $(pti_dir)
@@ -39,11 +44,15 @@ vpath %.h $(pti_dir)
 
 all:
 
-include pti/pti.mk
-include Examples/src.mk
-include ../izk/izk.mk
+include ecj_pti.mk
+include $(pti_dir)/pti.mk
+include $(pti_dir)/libCARLsimPTI.mk
+include $(ex_dir)/src.mk
+include $(iz_dir)/izk.mk
 
 all: $(all_targets)
+
+install: $(install_targets)
 
 clean:
 	$(RM) $(objects) $(libraries) $(pti_programs) $(izk_build_files)

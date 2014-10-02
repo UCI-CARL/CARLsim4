@@ -1,7 +1,6 @@
-# Makefile to build CARLsim-PTI component
-# This Makefile will build our CARLSIM-PTI binary from the CARLsim library,
-# which should already be installed. It calls the Examples/examples.mk file
-# to compile the CARLSIM-ECJ PTI examples.
+# Makefile to build CARLsim-ECJ PTI Examples from installed CARLsim Library
+# (libCARLsim.a). This file includes $(ex_dir)/exampmles.mk which builds the
+# PTI exmaple programs from libCARLsim.a.
 
 # set this to wherever user.mk is located
 USER_MK_PATH ?= /home/kris/Project/CARLsim
@@ -12,12 +11,13 @@ include $(USER_MK_PATH)/user.mk
 # -----------------------------------------------------------------------------
 
 all_targets :=
+install_targets :=
 pti_programs :=
 pti_deps :=
 pti_objs :=
 output_files :=
-libraries :=
 objects :=
+libraries :=
 izk_build_files :=
 pti_dir := src/CARLsim-app/pti
 ex_dir := src/CARLsim-app/Examples
@@ -49,11 +49,11 @@ include $(iz_dir)/izk.mk
 
 all: $(all_targets)
 
+install: $(install_targets)
+
 clean:
 	$(RM) $(objects) $(libraries) $(pti_programs) $(izk_build_files)
 
 distclean:
 	$(RM) $(objects) $(libraries) $(pti_programs) $(output_files) $(izk_build_files)
 
-devTest:
-	@echo $(all_targets)
