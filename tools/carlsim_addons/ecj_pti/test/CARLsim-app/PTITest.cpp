@@ -1,7 +1,7 @@
-#include "PTI.h"
-#include "Experiment.h"
-#include "ParameterInstances.h"
-#include "Util.h"
+#include <PTI.h>
+#include <Experiment.h>
+#include <ParameterInstances.h>
+#include <Util.h>
 
 #include <gtest/gtest.h>
 #include <ostream>

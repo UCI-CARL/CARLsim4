@@ -36,7 +36,8 @@ CXXFLAGS += -g -Wall -Wextra -pthread
 
 # All tests produced by this Makefile.  Remember to add new tests you
 # created to the list.
-tests = sample1_unittest sample2_unittest sample3_unittest sample4_unittest \
+# These are the sample tests to make sure everything is working.
+#sample_tests = sample1_unittest sample2_unittest sample3_unittest sample4_unittest \
 sample5_unittest sample6_unittest sample7_unittest sample8_unittest \
 sample9_unittest sample10_unittest
 
@@ -51,18 +52,19 @@ vpath %.cpp $(pti_dir)
 vpath %.h $(pti_dir)
 
 all:
-# include rules for building samples in a separate include file
-#include samples.mk
+
 include PTI_tests.mk
 
+# commment this back in if you want to compile the sample tests to make sure
+# gtest is working correctly.
+#include samples.mk
 # House-keeping build targets.
-all : gtest $(tests) pti_tests
-
+all : pti_test $(sample_tests) gtest
 # For simplicity and to avoid depending on Google Test's
 # implementation details, the dependencies specified below are
 # conservative and not optimized.  This is fine as Google Test
 # compiles fast and for ordinary users its source rarely changes.
-gtest: $(GTEST_LIB_DIR)/libgtest.a $(GTEST_LIB_DIR)/libgtest_main.a 
+gtest: $(GTEST_LIB_DIR)/libgtest.a $(GTEST_LIB_DIR)/libgtest_main.a
 
 $(GTEST_LIB_DIR)/libgtest.a : $(GTEST_LIB_DIR)/gtest-all.o
 	$(AR) $(ARFLAGS) $@ $^
@@ -82,6 +84,7 @@ $(GTEST_LIB_DIR)/gtest_main.o : $(GTEST_SRCS_)
             $(GTEST_DIR)/src/gtest_main.cc -o $@ $^
 
 clean :
-	rm -rf $(tests) pti_test *.o $(GTEST_LIB_DIR) \
-	error.log debug.log
+	rm -rf pti_test *.o $(GTEST_LIB_DIR) $(sample_tests) error.log debug.log *.gcda *.gcno
 
+devTest:
+	@echo $(pti_objs)
