@@ -84,7 +84,5 @@ $(GTEST_LIB_DIR)/gtest_main.o : $(GTEST_SRCS_)
             $(GTEST_DIR)/src/gtest_main.cc -o $@ $^
 
 clean :
-	rm -rf pti_test *.o $(GTEST_LIB_DIR) $(sample_tests) error.log debug.log *.gcda *.gcno
+	rm -rf pti_test *.o $(GTEST_LIB_DIR) $(sample_tests) $(output_files) error.log debug.log *.gcda *.gcno
 
-devTest:
-	@echo $(pti_objs)

@@ -2,6 +2,9 @@
 
 pti_cpp := $(wildcard $(pti_dir)/*.cpp)
 pti_objs :=$(patsubst %.cpp,%.o,$(pti_cpp))
+output_files += $(patsubst %.o,%.gcda,$(pti_objs))
+output_files += $(patsubst %.o,%.gcno,$(pti_objs))
+
 
 gtest_deps = $(GTEST_LIB_DIR)/libgtest.a $(GTEST_LIB_DIR)/libgtest_main.a \
 	$(GTEST_LIB_DIR)/libgtest_custom_main.a
