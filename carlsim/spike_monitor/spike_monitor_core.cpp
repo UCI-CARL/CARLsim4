@@ -375,8 +375,23 @@ void SpikeMonitorCore::writeSpikeFileHeader() {
 		CARLSIM_ERROR("SpikeMonitorCore: writeSpikeFileHeader has fwrite error");
 
 	// write version number
-	if (!fwrite(&spikeFileVersion_,sizeof(int),1,spikeFileId_))
+	if (!fwrite(&spikeFileVersion_,sizeof(float),1,spikeFileId_))
 		CARLSIM_ERROR("SpikeMonitorCore: writeSpikeFileHeader has fwrite error");
+
+	// write grid dimensions
+	Grid3D grid = snn_->getGroupGrid3D(grpId_);
+	int tmpInt = grid.x;
+	if (!fwrite(&tmpInt,sizeof(int),1,spikeFileId_))
+		CARLSIM_ERROR("SpikeMonitorCore: writeSpikeFileHeader has fwrite error");
+
+	tmpInt = grid.y;
+	if (!fwrite(&tmpInt,sizeof(int),1,spikeFileId_))
+		CARLSIM_ERROR("SpikeMonitorCore: writeSpikeFileHeader has fwrite error");
+
+	tmpInt = grid.z;
+	if (!fwrite(&tmpInt,sizeof(int),1,spikeFileId_))
+		CARLSIM_ERROR("SpikeMonitorCore: writeSpikeFileHeader has fwrite error");
+
 
 	needToWriteFileHeader_ = false;
 }

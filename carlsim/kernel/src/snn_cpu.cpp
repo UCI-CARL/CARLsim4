@@ -174,14 +174,16 @@ short int CpuSNN::connect(int grpId1, int grpId2, const std::string& _type, floa
 		}
 
 		if (newInfo->numPostSynapses > MAX_nPostSynapses) {
-			CARLSIM_ERROR("Connection exceeded the maximum number of output synapses (%d), has %d.",
-						MAX_nPostSynapses,newInfo->numPostSynapses);
+			CARLSIM_ERROR("ConnID %d exceeded the maximum number of output synapses (%d), has %d.",
+				newInfo->connId,
+				MAX_nPostSynapses, newInfo->numPostSynapses);
 			assert(newInfo->numPostSynapses <= MAX_nPostSynapses);
 		}
 
 		if (newInfo->numPreSynapses > MAX_nPreSynapses) {
-			CARLSIM_ERROR("Connection exceeded the maximum number of input synapses (%d), has %d.",
-						MAX_nPreSynapses,newInfo->numPreSynapses);
+			CARLSIM_ERROR("ConnID %d exceeded the maximum number of input synapses (%d), has %d.",
+				newInfo->connId,
+				MAX_nPreSynapses, newInfo->numPreSynapses);
 			assert(newInfo->numPreSynapses <= MAX_nPreSynapses);
 		}
 
@@ -1112,7 +1114,8 @@ void CpuSNN::setSpikeRate(int grpId, PoissonRate* ratePtr, int refPeriod, int co
 
 		assert(ratePtr);
 		if (ratePtr->len != grp_Info[cGrpId].SizeN) {
-			CARLSIM_ERROR("The PoissonRate length did not match the number of neurons in group %s(%d).",
+			CARLSIM_ERROR("The PoissonRate length (%d) did not match the number of neurons (%d) in group %s(%d).",
+						ratePtr->len, grp_Info[cGrpId].SizeN,
 						grp_Info2[cGrpId].Name.c_str(),grpId);
 			exitSimulation(1);
 		}

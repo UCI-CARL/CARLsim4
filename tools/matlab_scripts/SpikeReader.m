@@ -22,6 +22,9 @@ classdef SpikeReader < handle
         fileVersionMinor;   % required minimum minor version number
         fileSizeByteHeader; % byte size of header section
 
+        grid3D;
+        numFrames;
+
         errorMode;          % program mode for error handling
         errorFlag;          % error flag (true if error occured)
         errorMsg;           % error message
@@ -91,6 +94,10 @@ classdef SpikeReader < handle
             errMsg = obj.errorMsg;
         end
 
+        function dims = getGrid3D(obj)
+            dims = obj.grid3D;
+        end
+
         function spk = readSpikes(obj, frameDur)
             % spk = readSpikes(frameDur) reads the spike file and arranges
             % spike times into bins of frameDur millisecond length.
@@ -152,6 +159,12 @@ classdef SpikeReader < handle
                     end
                 end
             end
+
+            % grow to right size
+            if size(spk,2) ~= prod(obj.grid3D)
+                spk(end,prod(obj.grid3D))=0;
+            end
+            obj.numFrames = size(spk,1);
         end
     end
     
@@ -167,7 +180,10 @@ classdef SpikeReader < handle
             obj.fileSignature = 206661989;
             obj.fileVersionMajor = 0;
             obj.fileVersionMinor = 2;
-            obj.fileSizeByteHeader = 8;
+            obj.fileSizeByteHeader = 5*4;
+
+            obj.grid3D = -1;
+            obj.numFrames = -1;
             
             obj.supportedErrorModes = {'standard', 'warning', 'silent'};
         end
@@ -207,6 +223,13 @@ classdef SpikeReader < handle
                     num2str(obj.fileVersionMajor) '.' ...
                     num2str(obj.fileVersionMinor) ' (Version ' ...
                     num2str(version) ' found)'])
+                return
+            end
+
+            % read Grid3D
+            obj.grid3D = fread(obj.fileId, 3, 'int32');
+            if prod(obj.grid3D)<=0
+                obj.throwError(['Could not find valid Grid3D dimensions.'])
                 return
             end
         end
