@@ -9,10 +9,14 @@ classdef SpikeReader < handle
     % Author: Michael Beyeler <mbeyeler@uci.edu>
     
     %% PROPERTIES
+    % public
     properties (SetAccess = private)
         fileStr;            % path to spike file
+    end
+
+    % private
+    properties (Hidden, Access = private)
         fileId;             % file ID of spike file
-        
         fileSignature;      % int signature of all spike files
         fileVersion;        % required version number
         fileSizeByteHeader; % byte size of header section
