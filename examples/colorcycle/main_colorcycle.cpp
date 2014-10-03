@@ -36,7 +36,7 @@
  *
  * CARLsim available from http://socsci.uci.edu/~jkrichma/CARL/CARLsim/
  * Ver 3/22/14
- */ 
+ */
 
 #include <carlsim.h>
 #include <mtrand.h>
@@ -62,9 +62,9 @@ float fast_exp(float x)
 			fast_exp_buf[i] = expf(-i*FAST_EXP_MAX_STD/FAST_EXP_BUF_SIZE);
 		}
 	}
-	
+
 	x = -x;
-	
+
 	return (x<FAST_EXP_MAX_STD)?fast_exp_buf[(int)(x/FAST_EXP_MAX_STD*FAST_EXP_BUF_SIZE)]:0;
 }
 
@@ -96,7 +96,7 @@ public:
 
 	int src_x; int src_y; int dest_x; int dest_y; int radius;
 	float weightScale;
-	
+
 	void connect(CARLsim* net, int srcGrp, int src_i, int destGrp, int dest_i, float& weight, float& maxWt, float& delay, bool& connected)
 	{
 		// extract x and y positions...
@@ -107,7 +107,7 @@ public:
 
 		float distance2 = ((dest_i_y-src_i_y)*(dest_i_y-src_i_y))+((dest_i_x-src_i_x)*(dest_i_x-src_i_x));
 		float gaus = fast_exp(-distance2/radius/radius*3);
-		
+
 		connected = gaus>0.1;
 		delay     = 1;
 		weight    = gaus*weightScale;
@@ -123,7 +123,7 @@ public:
 
 	float localRadius2;
 	float weightScale;
-	
+
 	void connect(CARLsim* net, int srcGrp, int src_i, int destGrp, int dest_i, float& weight, float& maxWt, float& delay, bool& connected)
 	{
 		// extract x and y position from the destination
@@ -162,7 +162,7 @@ int main()
 
 //		s.setSTP(v1Cells[i],true, 0.2, 800, 20);
 	}
-	
+
 	int   num_V4_groups = RED_V4+1;
 
 	int* v4CellsExc = new int[num_V4_groups];
@@ -178,7 +178,7 @@ int main()
 	float v1toV4w = 0.5;
 	float v1toV4iw = 0.5;
 	int radius2 = 3;
-	
+
 	v1v4Proj* projSecondary = new v1v4Proj(V1_LAYER_DIM, V1_LAYER_DIM, V4_LAYER_DIM, V4_LAYER_DIM, sqrt(radius2), v1toV4w*1.5);
 	v1v4Proj* projPrimary = new v1v4Proj(V1_LAYER_DIM, V1_LAYER_DIM, V4_LAYER_DIM, V4_LAYER_DIM, sqrt(radius2), v1toV4w);
 	v1v4Proj* projYellow = new v1v4Proj(V1_LAYER_DIM, V1_LAYER_DIM, V4_LAYER_DIM, V4_LAYER_DIM, sqrt(radius2), v1toV4w*2);
@@ -216,7 +216,7 @@ int main()
 
 	radius2 *= 4; // inhibition has a larger radius
 	simpleProjection* projInhToExc = new simpleProjection(sqrt(radius2), wtScale);
-	
+
 	s.connect(v4CellsInh[MAGENTA_V4], v4CellsExc[CYAN_V4], projInhToExc, SYN_FIXED, radius2*4, radius2*4);
 	s.connect(v4CellsInh[MAGENTA_V4], v4CellsExc[YELLOW_V4], projInhToExc, SYN_FIXED, radius2*4, radius2*4);
 
@@ -238,12 +238,11 @@ int main()
 */
 
 	s.setConductances(true,5,150,6,150);
-	
+
 	s.setSTDP(ALL, false);
 
 	s.setSTP(ALL,false);
 
-#if (WIN32 || WIN64)
 	s.setSpikeMonitor(v1Cells[RED_GREEN],"results/spkV1RG.dat");
 	s.setSpikeMonitor(v1Cells[GREEN_RED],"results/spkV1GR.dat");
 	s.setSpikeMonitor(v1Cells[BLUE_YELLOW],"results/spkV1BY.dat");
@@ -262,26 +261,6 @@ int main()
 	s.setSpikeMonitor(v4CellsInh[YELLOW_V4],"results/spkV4Yi.dat");
 	s.setSpikeMonitor(v4CellsInh[CYAN_V4],"results/spkV4Ci.dat");
 	s.setSpikeMonitor(v4CellsInh[MAGENTA_V4],"results/spkV4Mi.dat");
-#else
-	s.setSpikeMonitor(v1Cells[RED_GREEN],"examples/colorcycle/results/spkV1RG.dat");
-	s.setSpikeMonitor(v1Cells[GREEN_RED],"examples/colorcycle/results/spkV1GR.dat");
-	s.setSpikeMonitor(v1Cells[BLUE_YELLOW],"examples/colorcycle/results/spkV1BY.dat");
-	s.setSpikeMonitor(v1Cells[YELLOW_BLUE],"examples/colorcycle/results/spkV1YB.dat");
-
-	s.setSpikeMonitor(v4CellsExc[RED_V4],"examples/colorcycle/results/spkV4R.dat");
-	s.setSpikeMonitor(v4CellsExc[GREEN_V4],"examples/colorcycle/results/spkV4G.dat");
-	s.setSpikeMonitor(v4CellsExc[BLUE_V4],"examples/colorcycle/results/spkV4B.dat");
-	s.setSpikeMonitor(v4CellsExc[YELLOW_V4],"examples/colorcycle/results/spkV4Y.dat");
-	s.setSpikeMonitor(v4CellsExc[CYAN_V4],"examples/colorcycle/results/spkV4C.dat");
-	s.setSpikeMonitor(v4CellsExc[MAGENTA_V4],"examples/colorcycle/results/spkV4M.dat");
-
-	s.setSpikeMonitor(v4CellsInh[RED_V4],"examples/colorcycle/results/spk4Ri.dat");
-	s.setSpikeMonitor(v4CellsInh[GREEN_V4],"examples/colorcycle/results/spkV4Gi.dat");
-	s.setSpikeMonitor(v4CellsInh[BLUE_V4],"examples/colorcycle/results/spkV4Bi.dat");
-	s.setSpikeMonitor(v4CellsInh[YELLOW_V4],"examples/colorcycle/results/spkV4Yi.dat");
-	s.setSpikeMonitor(v4CellsInh[CYAN_V4],"examples/colorcycle/results/spkV4Ci.dat");
-	s.setSpikeMonitor(v4CellsInh[MAGENTA_V4],"examples/colorcycle/results/spkV4Mi.dat");
-#endif
 
 	unsigned char* vid = new unsigned char[nrX*nrY*3];
 
@@ -299,11 +278,7 @@ int main()
 
 	for(long long i=0; i < VIDLEN; i++) {
 		if (i%VIDLEN==0) {
-#if (WIN32 || WIN64)
 			fid = fopen("videos/colorcycle.dat","rb");
-#else
-			fid = fopen("examples/colorcycle/videos/colorcycle.dat","rb");
-#endif
 			if (fid==NULL) {
 				printf("could not open video file\n");
 				exit(1);
@@ -327,11 +302,7 @@ int main()
 		s.runNetwork(0,frameDur);
 
 		if (i==1) {
-#if (WIN32 || WIN64)
 			s.saveSimulation("results/net.dat", true);
-#else
-			s.saveSimulation("examples/colorcycle/results/net.dat", true);
-#endif
 		}
 	}
 	fclose(fid);

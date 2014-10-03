@@ -22,7 +22,7 @@ and 5.5 are supported.
 
 
 -------------------------------------------------------------------------------
-Installing Evolving Objects 
+Installing Evolving Objects (deprecated)
 (Optional: For use with CARLsim parameter tuning interface (PTI))
 -------------------------------------------------------------------------------
 
@@ -41,9 +41,13 @@ More instructions can be found in eo/INSTALL.
 -------------------------------------------------------------------------------
 Setting Up Environment Variables
 -------------------------------------------------------------------------------
-Once that has been accomplished, you need to setup an environment variable that 
-points to where the NVIDIA SDK is located. So, under most linux systems do 
-something like the following:
+
+-------------------------------------------------------------------------------
+A. CUDA
+-------------------------------------------------------------------------------
+Once that has been accomplished, you may need to setup an environment variable
+that points to where the NVIDIA SDK is located if you are using older CUDA 
+toolkits (3.x). Under most linux systems, you would do the following:
 
 $ export NVIDIA_SDK=(SOME PATH)/NVIDIA_GPU_Computing_SDK
 
@@ -57,11 +61,20 @@ system this could look like this (however, depends on your CUDA install path):
 
 $ export LD_LIBRARY_PATH=/usr/local/cuda/lib64
 
+Finally, if you are using, CUDA version 5 or 6, the Makefile assumes the CUDA
+header files are found in $(CUDA_INSTALL_PATH)/samples/common/inc/. Here, we
+assume CUDA_INSTALL_PATH=/usr/local/cuda. If this is incorrect, please change
+that variable in the user.mk file or set that environment variable.
+
+-------------------------------------------------------------------------------
+B. Evolving Objects (deprecated and optional)
+-------------------------------------------------------------------------------
 The environment variable named EO_INSTALL_DIR should point to where Evolving 
-Objects is installed.  This can be set in the .bashrc or in the user-modifiable 
+Objects is installed.  This can be set in the .bashrc or in the user-modifiable
 section of the Makefile.
 
 For example. to point to an installation in /opt/eo you would use:
+
 
 $ export EO_INSTALL_DIR = /opt/eo
 
@@ -84,11 +97,11 @@ don't have to type them every time you open up a new terminal.
 -------------------------------------------------------------------------------
 Compiling CARLsim and CARLsim Examples
 -------------------------------------------------------------------------------
-1. Type 'make' or 'make all' and CARLsim and the CARLsim examples will be
-   compiled automatically.
+1. Type 'make' to compile the CARLsim source code build the CARLsim library.
 
-2. The example networks can be compiled separately (See Compiling and Running
-   a Network with CARLsim).
+2. Type 'sudo make install' if you have require root access to install the
+   CARLsim library in the desired directory. or just 'make install' if you do
+	 not require root privileges.
 
 
 -------------------------------------------------------------------------------
