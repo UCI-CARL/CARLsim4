@@ -2,7 +2,7 @@ function [sim,groups,preIDs,postIDs,weights,delays,plastic,maxWeights] = loadSim
 % FILENAME       - relative or absolute path to a binary file
 %                  containing a VisualStimulus object.
 
-error('loadSimulation() is deprecated. Use SimulationReader class instead.')
+warning('loadSimulation() is deprecated. Use SimulationReader class instead.')
 
 if nargin<2,loadSynapseInfo=false;end
 if nargin<1,error('No filename given');end

@@ -12,7 +12,7 @@ function s = readSpikes( file, frameDur )
 % Currently maintained by: Michael Beyeler, Kristofor Carlson
 % Ver 05/31/12
 
-error('The function readSpikes is deprecated. Use SpikeReader class instead.')
+warning('The function readSpikes is deprecated. Use SpikeReader class instead.')
 
 % NARGIN is number of arguments passed to the function
 if nargin<2,frameDur=1000;end

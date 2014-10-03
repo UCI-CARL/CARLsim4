@@ -22,7 +22,7 @@ SpikeMonitorCore::SpikeMonitorCore(CpuSNN* snn, int monitorId, int grpId) {
 
 	needToWriteFileHeader_ = true;
 	spikeFileSignature_ = 206661989;
-	spikeFileVersion_ = 1.0f;
+	spikeFileVersion_ = 0.2f;
 
 	// defer all unsafe operations to init function
 	init();

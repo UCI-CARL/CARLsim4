@@ -12,6 +12,8 @@ function s = readSpikesAERtoFull( time,nIDs,frameDur,dim )
 % Created by: Michael Beyeler <mbeyeler@uci.edu>
 % Ver 05/31/12
 
+warning('readSpikesAERtoFull() is deprecated, use SpikeReader instead.')
+
 if nargin<4
     % dimensions not given, extract from input params
     dim = [max(floor(time/frameDur)+1) max(nIDs)+1];

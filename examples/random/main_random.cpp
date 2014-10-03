@@ -79,7 +79,7 @@ int main()
 
 	// build the network
 	sim.setupNetwork();
-	sim.setSpikeMonitor(g1,"results/spikes.dat"); // put spike times into spikes.dat
+	sim.setSpikeMonitor(g1); // put spike times into file
 	sim.setSpikeMonitor(g2); // Show basic statistics about g2
 	sim.setSpikeMonitor(gin);
 
