@@ -1079,6 +1079,7 @@ SpikeMonitor* CpuSNN::setSpikeMonitor(int grpId, FILE* fid, int configId) {
 
 		// assign spike file ID if we selected to write to a file, else it's NULL
 		// if file pointer exists, it has already been fopened
+		// this will also write the header section of the spike file
 		// spkMonCoreObj destructor will fclose it
 		spkMonCoreObj->setSpikeFileId(fid);
 

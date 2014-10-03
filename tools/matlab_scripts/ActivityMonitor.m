@@ -1,39 +1,11 @@
 classdef ActivityMonitor < handle
-    % AM = ActivityMonitor(saveFolder) creates a new instance of class
-    % ActivityMonitor.
-    %
-    % Help:
-    % properties ActivityMonitor         - show all public properties of class
-    % methods ActivityMonitor            - show all public methods of class
-    % help ActivityMonitor.addPopulation - show help for method addPopulation
-    % etc.
-    %
-    % Typical workflow:
-    %   % create ActivityMonitor for current dir
-    %   >> AM = ActivityMonitor();
-    %   % add MT population (32x32 grid, 8 subpopulations responding to
-    %   % 8 different directions of motion, plot as heatmap)
-    %   % a file named 'spkMT.dat' must exist in current dir
-    %   >> AM.addPopulation('V1',[32 32 8],'heatmap');
-    %   % record population activity and store in 'movie.avi'
-    %   >> AM.setPlottingAttributes('recordMovie',true);
-    %   % plot activity / record movie
-    %   >> AM.plotPopulations();
-    %
-    % SAVEFOLDER   - The relative/absolute path to results directory.
-    %                A trailing '/' is added if necessary. Default is
-    %                the current directory.
-    %                This directory must contain all relevant spike
-    %                files. The spike files must be named according to a
-    %                common pattern, such as "spk{name}.dat", where
-    %                "name" is the name of the population.
     %
     % Version 3/29/14
     % Author: Michael Beyeler <mbeyeler@uci.edu>
     
     %% PROPERTIES
     properties (SetAccess = private)
-        saveFolder;         % results directory where all spike files live
+        resultsFolder;      % results directory where all spike files live
         popNames;           % cell array of population names
         popDims;            % cell array of population dimensions
         popPlotTypes;       % cell array of population plot types
@@ -58,16 +30,16 @@ classdef ActivityMonitor < handle
     
     %% PUBLIC METHODS
     methods
-        function obj = ActivityMonitor(saveFolder)
+        function obj = ActivityMonitor(resultsFolder)
             % constructor
-            if nargin<1,saveFolder='./';end
+            if nargin<1,resultsFolder='./results/';end
             
             % add trailing '/' if necessary
-            if saveFolder(end)~='/'
-                saveFolder(end+1)='/';
+            if resultsFolder(end)~='/'
+                resultsFolder(end+1)='/';
             end
             
-            obj.saveFolder = saveFolder;
+            obj.resultsFolder = resultsFolder;
             obj.popNames = {};
             obj.popDims = {};
             obj.supportedPlotTypes = {'heatmap'};
@@ -84,7 +56,7 @@ classdef ActivityMonitor < handle
             %
             % NAME            - A string identifier that should also be
             %                   present in the population's spike file name
-            %                   (spkFile=[saveFolder prefix name suffix]).
+            %                   (spkFile=[resultsFolder prefix name suffix]).
             %                   See setSpikeFileAttributes for more
             %                   information.
             % DIMS            - A 3-element vector that specifies the width, the
@@ -234,7 +206,7 @@ classdef ActivityMonitor < handle
             %
             % NAME  - A string representing the name of a group that has been
             %         registered by calling AM.addPopulation.
-            spkFile = [ this.saveFolder ...     % the results folder
+            spkFile = [ this.resultsFolder ...     % the results folder
                 this.spkFilePrefix ...  % something like 'spk_'
                 name ...                % the name of the pop
                 this.spkFileSuffix ];   % something like '.dat'
@@ -353,11 +325,11 @@ classdef ActivityMonitor < handle
         function setSpikeFileAttributes(this,prefix,suffix)
             % obj.setSpikeFileAttributes(prefix,suffix)
             % Defines the naming conventions for spike files. They should
-            % all reside within SAVEFOLDER (specified in constructor), and
+            % all reside within resultsFolder (specified in constructor), and
             % be made of a common prefix, the population name (specified in
             % ADDPOPULATION), and a common suffix.
             % Example: files 'results/spkV1.dat', 'results/spkMT.dat'
-            %   -> saveFolder = 'results/'
+            %   -> resultsFolder = 'results/'
             %   -> prefix = 'spk'
             %   -> suffix = '.dat'
             %   -> name of population = 'V1' or 'MT'
