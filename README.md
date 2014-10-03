@@ -46,9 +46,20 @@ CUDA_INSTALL_PATH ?= /usr/local/cuda
 CARLsim: Type ‘make && sudo make install’. This will compile and install the
 CARLsim library.
 
-PTI: Currently the parameter tuning library that uses Evolving Objects (EO) is
-deprecated. The new version of the parameter tuning library will use 
-Evolutionary Computations in Java (ECJ) but is not yet ready for release.
+Parameter Tuning Interface (PTI): Currently the parameter tuning library
+that uses Evolving Objects (EO) is deprecated. The new version of the
+parameter tuning library will uses Evolutionary Computations in Java (ECJ)
+and can be installed as follows. Assuming ECJ version 22 or greater is
+installed:
+
+1) Set the ECJ_DIR and ECJ_PTI_DIR variables in user.mk.
+
+2) Change the current directory to ’tools/carlsim_addons/ecj_pti’.
+
+3) Type ‘make && sudo make install’
+
+4) Refer to the tuneFiringRatesECJ example found in examples/tuneFiringRatesECJ
+   for how to use CARLsim and ECJ to tune SNNs.
 
 TO UNINSTALL:
 CARLsim: Remove the folder where you installed the CARLsim library. This
