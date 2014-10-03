@@ -28,12 +28,6 @@ objects += $(carlsim_tests_objs)
 output_files += $(test_dir)/carlsim_tests $(test_dir)/results/* \
 								$(test_dir)/*.log $(test_dir)/*.dat
 
-# TODO: automatically create results folder in main or make sure to tell
-# people to descend into the correct directory (carlsim/test)
-# TODO: maybe we should just run it from the command line and when you run
-# the executable it creates the results directory automatically. I should
-# make sure to delete it with 'distclean'
-
 .PHONY: carlsim_tests
 carlsim_tests: $(test_dir)/carlsim_tests $(carlsim_tests_objs)
 

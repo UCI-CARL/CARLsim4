@@ -34,7 +34,7 @@ include carlsim/test/gtest.mk
 include carlsim/test/carlsim_tests.mk
 
 # *.dat and results files are generated during carlsim_tests execution
-output_files += *.dot *.log tmp* *.status *.dat results
+output_files += *.dot *.log tmp* *.status *.dat results carlsim/*.a
 
 # this blank 'default' is required
 default:
@@ -46,7 +46,7 @@ clean:
 	$(RM) $(objects)
 
 distclean:
-	$(RM) $(objects) $(carlsim_programs) $(pti_programs) $(libraries) $(output_files) doc/html
+	$(RM) $(objects) $(libraries) $(output_files) doc/html
 
 devtest:
 	@echo $(CARLSIM_SRC_DIR) $(carlsim_tests_objs)

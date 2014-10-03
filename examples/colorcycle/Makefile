@@ -14,15 +14,15 @@ output := *.dot *.dat *.log *.csv
 # ------------------------------------------------------
 
 # carlsim components
-	kernel_dir     = $(CARLSIM_LIB_INSTALL_DIR)/kernel
-	interface_dir  = $(CARLSIM_LIB_INSTALL_DIR)/interface
-	spike_mon_dir  = $(CARLSIM_LIB_INSTALL_DIR)/spike_monitor
-	spike_gen_dir  = $(CARLSIM_LIB_INSTALL_DIR)/spike_generators
+	kernel_dir     = $(CARLSIM_LIB_DIR)/kernel
+	interface_dir  = $(CARLSIM_LIB_DIR)/interface
+	spike_mon_dir  = $(CARLSIM_LIB_DIR)/spike_monitor
+	spike_gen_dir  = $(CARLSIM_LIB_DIR)/spike_generators
 # we are compiling from lib
-	CARLSIM_FLAGS += -I$(CARLSIM_LIB_INSTALL_DIR)/include/kernel \
-									 -I$(CARLSIM_LIB_INSTALL_DIR)/include/interface \
-									 -I$(CARLSIM_LIB_INSTALL_DIR)/include/spike_monitor
-	CARLSIM_LIBS  += $(CARLSIM_LIB_INSTALL_DIR)/lib/libCARLsim.a
+	CARLSIM_FLAGS += -I$(CARLSIM_LIB_DIR)/include/kernel \
+									 -I$(CARLSIM_LIB_DIR)/include/interface \
+									 -I$(CARLSIM_LIB_DIR)/include/spike_monitor
+	CARLSIM_LIBS  += $(CARLSIM_LIB_DIR)/lib/libCARLsim.a
 
 local_src  := main_$(example).cpp
 local_prog := $(example)
