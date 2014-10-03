@@ -1164,11 +1164,11 @@ void CpuSNN::saveSimulation(FILE* fid, bool saveSynapseInfo) {
 	// +++++ WRITE HEADER SECTION +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
 	// write file signature
-	tmpInt = 294338571;
+	tmpInt = 294338571; // some int used to identify saveSimulation files
 	if (!fwrite(&tmpInt,sizeof(int),1,fid)) CARLSIM_ERROR("saveSimulation fwrite error");
 
 	// write version number
-	tmpFloat = 1.0f;
+	tmpFloat = 0.2f;
 	if (!fwrite(&tmpFloat,sizeof(int),1,fid)) CARLSIM_ERROR("saveSimulation fwrite error");
 
 	// write simulation time so far (in seconds)
@@ -1198,6 +1198,10 @@ void CpuSNN::saveSimulation(FILE* fid, bool saveSynapseInfo) {
 	for (int g=0;g<numGrp;g++) {
 		if (!fwrite(&grp_Info[g].StartN,sizeof(int),1,fid)) CARLSIM_ERROR("saveSimulation fwrite error");
 		if (!fwrite(&grp_Info[g].EndN,sizeof(int),1,fid)) CARLSIM_ERROR("saveSimulation fwrite error");
+
+		if (!fwrite(&grp_Info[g].SizeX,sizeof(int),1,fid)) CARLSIM_ERROR("saveSimulation fwrite error");
+		if (!fwrite(&grp_Info[g].SizeY,sizeof(int),1,fid)) CARLSIM_ERROR("saveSimulation fwrite error");
+		if (!fwrite(&grp_Info[g].SizeZ,sizeof(int),1,fid)) CARLSIM_ERROR("saveSimulation fwrite error");
 
 		strncpy(name,grp_Info2[g].Name.c_str(),100);
 		if (!fwrite(name,1,100,fid)) CARLSIM_ERROR("saveSimulation fwrite error");

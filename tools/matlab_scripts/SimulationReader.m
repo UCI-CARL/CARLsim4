@@ -33,7 +33,8 @@ classdef SimulationReader < handle
     properties (Hidden, Access = private)
         fileId;             % file ID of spike file
         fileSignature;      % int signature of all spike files
-        fileVersion;        % required version number
+        fileVersionMajor;   % required major version number
+        fileVersionMinor;   % required minimum minor version number
         fileSizeByteHeader; % byte size of header section        
     end
     
@@ -74,7 +75,8 @@ classdef SimulationReader < handle
         function privLoadDefaultParams(obj)
             obj.fileId = -1;
             obj.fileSignature = 294338571;
-            obj.fileVersion = 1.0;
+            obj.fileVersionMajor = 0;
+            obj.fileVersionMinor = 2;
         end
         
         function privOpenFile(obj, loadSynapseInfo)
@@ -93,9 +95,19 @@ classdef SimulationReader < handle
             
             % read version number
             version = fread(fid, 1, 'float32');
-            if (version ~= obj.fileVersion)
-                error(['Unknown file version, must have Version 1.0 (Version ' ...
-                    num2str(version) ' found)'])
+            if floor(version) ~= obj.fileVersionMajor
+                % check major number: must match
+                error(['File must be of version ' ...
+                    num2str(obj.fileVersionMajor) '.x (Version ' ...
+                    num2str(version) ' found'])
+            end
+            if floor((version-obj.fileVersionMajor)*10.01)<obj.fileVersionMinor
+                % check minor number: extract first digit after decimal point
+                % multiply 10.01 instead of 10 to avoid float rounding errors
+                error(['File version must be >= ' ...
+                    num2str(obj.fileVersionMajor) '.' ...
+                    num2str(obj.fileVersionMinor) ' (Version ' ...
+                        num2str(version) ' found)'])
             end
             
             % read simulation info
@@ -127,11 +139,17 @@ classdef SimulationReader < handle
             
             
             %% READ GROUPS
-            groups = struct('name',{},'startN',{},'endN',{},'sizeN',{});
+            groups = struct('name',{},'startN',{},'endN',{},'sizeN',{},'grid3D',{});
             for g=1:sim.nGroups
                 groups(g).startN = fread(fid,1,'int32'); % start index at 0
                 groups(g).endN = fread(fid,1,'int32');
                 groups(g).sizeN = groups(g).endN-groups(g).startN+1;
+
+                sizeX = fread(fid,1,'int32');
+                sizeY = fread(fid,1,'int32');
+                sizeZ = fread(fid,1,'int32');
+                groups(g).grid3D = [sizeX sizeY sizeZ];
+
                 groups(g).name = char(fread(fid,100,'int8')');
                 groups(g).name = groups(g).name(groups(g).name>0);
             end
