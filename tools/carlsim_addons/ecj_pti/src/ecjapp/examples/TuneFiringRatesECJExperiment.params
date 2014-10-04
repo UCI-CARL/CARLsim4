@@ -55,7 +55,7 @@ es.lambda.0 =        5
 eval.problem.objective.idealFitnessValue = 0.333
 eval.problem =                          ecjapp.eval.problem.CommandProblem
 eval.problem.objective =                ecjapp.eval.problem.objective.StringToDoubleObjective
-eval.problem.simulationCommand =        $TuneFiringRatesECJ
+eval.problem.simulationCommand =        $src/CARLsim-app/Examples/TuneFiringRatesECJ
 
 # Output statistics options
 # =========================

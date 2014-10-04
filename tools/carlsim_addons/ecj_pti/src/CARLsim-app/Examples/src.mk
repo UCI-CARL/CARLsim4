@@ -6,7 +6,7 @@ local_dir := $(ex_dir)
 # Examples that don't have any special dependencies.
 example_names := ReprintExample SumExample
 example := $(addprefix $(local_dir)/, $(example_names))
-output := error.log
+output := error.log $(ex_dir)/results/*.dat $(ex_dir)/*.log
 local_prog := $(example)
 local_objs := $(addsuffix .o, $(example))
 
@@ -25,6 +25,7 @@ carlsim_main := $(CARLSIM_SRC_DIR)/carlsim
 carlsim_includes := -I$(carlsim_main)/kernel/include/ -I$(carlsim_main)/interface/include/ -I$(carlsim_main)/spike_monitor/
 carlsim_local_lib := libCARLsim.a
 carlsim_lib := $(addprefix $(carlsim_main)/,$(carlsim_local_lib))
+libraries += $(carlsim_lib) $(carlsim_main)/*.a.*
 
 # Rules for example binaries that use EO/PTI
 .PHONY: $(example_names) $(special_examples)

@@ -6,7 +6,7 @@ local_dir := $(ex_dir)
 # Examples that don't have any special dependencies.
 example_names := ReprintExample SumExample
 example := $(addprefix $(local_dir)/, $(example_names))
-output := error.log
+output := error.log $(ex_dir)/results/*.dat $(ex_dir)/*.log
 local_prog := $(example)
 local_objs := $(addsuffix .o, $(example))
 
