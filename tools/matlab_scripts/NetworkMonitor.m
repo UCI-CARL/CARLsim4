@@ -1,4 +1,4 @@
-classdef ActivityMonitor < handle
+classdef NetworkMonitor < handle
     % Version 10/3/2014
     % Author: Michael Beyeler <mbeyeler@uci.edu>
     
@@ -25,10 +25,10 @@ classdef ActivityMonitor < handle
         errorFlag;          % error flag (true if error occured)
         errorMsg;           % error message
 
-        groupSpkObj;        % cell array of SpikeReader objects
+        groupMonObj;        % cell array of GroupMonitor objects
+%         groupSpkObj;        % cell array of SpikeReader objects
         groupSubPlots;      % cell array of assigned subplot slots
 
-        supportedPlotTypes; % cell array of supported plot types
         supportedErrorModes;% supported error modes
     end
     
@@ -108,36 +108,23 @@ classdef ActivityMonitor < handle
                 return
             end
             
-            % check whether valid spike file found (run SpikeReader in silent)
-            spkFile = obj.getSpikeFileName(name);
-            Spk = SpikeReader(spkFile, errorMode);
-            [errFlag,errMsg] = Spk.getError();
-            if errFlag
-                obj.throwError(errMsg, errorMode);
-                return % make sure we exit after spike file could not be found
+            % create GroupMonitor object for this group
+            GM = GroupMonitor(name, obj.resultsFolder);
+            
+            % check whether valid spike file found, exit if not found
+            if ~GM.hasValidSpikeFile()
+                obj.throwError('No valid spike file found', errorMode);
+                return % make sure we exit after spike file not found
             end
             
-            % read Grid3D from Sim struct if necessary
-            if prod(grid3D)<0
-                grid3D = obj.Sim.groups(ind).grid3D;
+            % set plot type to specific type or find default type
+            GM.setPlotType(plotType);
+            
+            % set Grid3D if necessary
+            if ~ismepty(grid3D) && prod(grid3D>=1)
+                GM.setGrid3D(grid3D);
             end
             
-            % assign default plotType if necessary
-            if strcmpi(plotType,'default')
-                if grid3D(1)>1 && grid3D(2)>1 && grid3D(3)==1
-                    plotType = 'heatmap';
-                else
-                    plotType = 'raster';
-                end
-            end
-
-            % make sure plotType is supported
-            if ~obj.isPlotTypeSupported(plotType)
-                obj.throwError(['plotType "' plotType '" is currently not ' ...
-                    'supported. Choose from the following: ' ...
-                    strjoin(obj.supportedPlotTypes, ', ') '.'])
-            end
-
             % assign default subplots if necessary
             if isempty(subPlots) || prod(subPlots)<=0
                 subPlots = obj.numSubPlots+1;
@@ -148,9 +135,7 @@ classdef ActivityMonitor < handle
                 obj.throwWarning(['A population with name "' name '" has ' ...
                     'already been added. Replacing values...']);
                 id = obj.getGroupId(name);
-                obj.groupGrid3D{id}       = grid3D;
-                obj.groupPlotTypes{id}    = plotType;
-                obj.groupSpkObj{id}       = Spk;
+                obj.groupMonObj{id}       = GM;
                 obj.numSubPlots           = obj.numSubPlots ...
                                             - numel(obj.groupSubplots{id}) ...
                                             + numel(subPlots);
@@ -158,9 +143,7 @@ classdef ActivityMonitor < handle
             else
                 % else add new entry
                 obj.groupNames{end+1}     = name;
-                obj.groupGrid3D{end+1}    = grid3D;
-                obj.groupSpkObj{end+1}    = Spk;
-                obj.groupPlotTypes{end+1} = plotType;
+                obj.groupMonObj{end+1}    = GM;
                 obj.numSubPlots           = obj.numSubPlots + numel(subPlots);
                 obj.groupSubPlots{end+1}  = subPlots;
             end
@@ -182,11 +165,8 @@ classdef ActivityMonitor < handle
             %
             % NAME  - A string representing the name of a group that has been
             %         registered by calling AM.addPopulation.
-            spkFile = [ obj.resultsFolder ...  % the results folder
-                filesep ...                    % platform-specific separator
-                obj.spkFilePrefix ...          % something like 'spk_'
-                name ...                       % the name of the group
-                obj.spkFileSuffix ];           % something like '.dat'
+            gId = obj.getGroupId(name);
+            spkFile = obj.groupMonObj{gId}.getSpikeFileName();
         end
         
         function plot(obj, groupNames)
@@ -200,6 +180,24 @@ classdef ActivityMonitor < handle
 
             % prepare for plotting
             % for plotting we need to keep all extract spike files
+            frameDur = 100;
+            for i=1:numel(groupNames)
+                gId = obj.getGroupId(groupNames{i});
+                
+                % GM should know what default plot type is for the group
+                obj.groupMonObj{gId}.prepareForPlotting(frameDur);
+            end
+            
+            % plot all frames
+            for f=1:numFrames
+                for g=1:numel(groupNames)
+                    gId = obj.getGroupId(groupNames{g});
+                    subplot(nrR, nrC, obj.groupSubPlots{gId})
+                    obj.groupMonObj{gId}.plotFrame(f);
+                end
+            end
+            
+                    
             frameDur = 100;
             numFrames = ceil(obj.Sim.sim.simTimeSec*1000.0/frameDur);
             spkBuffer = cell(1,numel(groupNames));
@@ -248,7 +246,7 @@ classdef ActivityMonitor < handle
             
             for i=1:numel(obj.Sim.groups)
                 obj.addGroup(obj.Sim.groups(i).name, 'default', ...
-                    obj.Sim.groups(i).grid3D, [], errMode)
+                    [], [], errMode)
             end
         end
         
@@ -296,18 +294,12 @@ classdef ActivityMonitor < handle
             isSupported = sum(ismember(obj.supportedErrorModes,errMode))>0;
         end
 
-        function isSupported = isPlotTypeSupported(obj, plotType)
-            % determines whether a plot type is currently supported
-            isSupported = sum(ismember(obj.supportedPlotTypes,plotType))>0;
-        end
-
 
         function loadDefaultParams(obj)
             obj.spkFilePrefix = 'spk';
             obj.spkFileSuffix = '.dat';
             
             obj.supportedErrorModes = {'standard', 'warning', 'silent'};
-            obj.supportedPlotTypes = {'heatmap','raster'};
             
             obj.groupNames = {};
             obj.groupGrid3D = {};
