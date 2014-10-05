@@ -6,28 +6,28 @@ classdef NetworkMonitor < handle
     % public
     properties (SetAccess = private)
         resultsFolder;      % results directory where all spike files live
-        simFile;            % simulation file "sim_{simName}.dat"
+        ntwFile;            % network file "ntw_{ntwName}.dat"
         
         groupNames;         % cell array of population names
         groupGrid3D;        % cell array of population dimensions
         groupPlotTypes;     % cell array of population plot types
+
+        groupSubPlots;      % cell array of assigned subplot slots
+        simObj;                % instance of simObjulationReader class
 
         numSubPlots;
     end
     
     % private
     properties (Hidden, Access = private)
-        Sim;                % instance of SimulationReader class
-        spkFilePrefix;      % spike file prefix, e.g. "spk"
-        spkFileSuffix;      % spike file suffix, e.g. ".dat"
         
         errorMode;          % program mode for error handling
         errorFlag;          % error flag (true if error occured)
         errorMsg;           % error message
 
         groupMonObj;        % cell array of GroupMonitor objects
-%         groupSpkObj;        % cell array of SpikeReader objects
-        groupSubPlots;      % cell array of assigned subplot slots
+        
+        plotAbortPlotting;
 
         supportedErrorModes;% supported error modes
     end
@@ -35,7 +35,7 @@ classdef NetworkMonitor < handle
     
     %% PUBLIC METHODS
     methods
-        function obj = ActivityMonitor(simFile, loadGroupsFromFile, errorMode)
+        function obj = NetworkMonitor(ntwFile, loadGroupsFromFile, errorMode)
             obj.unsetError()
             obj.loadDefaultParams()
             
@@ -53,17 +53,17 @@ classdef NetworkMonitor < handle
             end
             if nargin<2,loadGroupsFromFile=true;end
             
-            [filePath,fileName,fileExt] = fileparts(simFile);
+            [filePath,fileName,fileExt] = fileparts(ntwFile);
             if strcmpi(fileExt,'')
-                obj.throwError(['Parameter simFile must be a file name, ' ...
+                obj.throwError(['Parameter ntwFile must be a file name, ' ...
                     'directory found.'])
             end
             
             obj.resultsFolder = filePath;
-            obj.simFile = [fileName fileExt];
+            obj.ntwFile = [fileName fileExt];
                         
             % try to read simulation file
-            obj.readSimulationFile()
+            obj.readsimulationFile()
             
             % if flag is set, add all groups for plotting from file
             if loadGroupsFromFile
@@ -90,7 +90,7 @@ classdef NetworkMonitor < handle
             %                                  colors mean higher firing rate
             % GRID3D          - A 3-element vector that specifies the width, the
             %                   height, and the depth of the 3D neuron grid.
-            %                   e Thproduct of these dimensions should equal the
+            %                   The product of these dimensions should equal the
             %                   total number of neurons in the population.
             %                   By default, this parameter will be read from
             %                   file, but can be overwritten by the user.
@@ -99,21 +99,22 @@ classdef NetworkMonitor < handle
             if nargin<4,grid3D=-1;end
             if nargin<3,plotType='default';end
 
-            % find index of group in Sim struct
+            % find index of group in simObj struct
             indStruct = obj.getGroupStructId(name);
             if indStruct<=0
-                obj.throwError(['Group "' name '" could not be found. ' ...
-                    'Choose from the following: ' ...
-                    strjoin({Random.groups(:).name}, ', ') '.'])
+                obj.throwError(['Group "' name '" could not be found. '])
+%                     'Choose from the following: ' ...
+%                     strjoin({obj.simObj.groups(:).name},', ') '.' ...
                 return
             end
             
             % create GroupMonitor object for this group
-            GM = GroupMonitor(name, obj.resultsFolder);
+            GM = GroupMonitor(name, obj.resultsFolder, errorMode);
             
             % check whether valid spike file found, exit if not found
-            if ~GM.hasValidSpikeFile()
-                obj.throwError('No valid spike file found', errorMode);
+            [errFlag,errMsg] = GM.getError();
+            if errFlag
+                obj.throwError(errMsg, errorMode);
                 return % make sure we exit after spike file not found
             end
             
@@ -121,7 +122,7 @@ classdef NetworkMonitor < handle
             GM.setPlotType(plotType);
             
             % set Grid3D if necessary
-            if ~ismepty(grid3D) && prod(grid3D>=1)
+            if ~isempty(grid3D) && prod(grid3D)>=1
                 GM.setGrid3D(grid3D);
             end
             
@@ -136,10 +137,10 @@ classdef NetworkMonitor < handle
                     'already been added. Replacing values...']);
                 id = obj.getGroupId(name);
                 obj.groupMonObj{id}       = GM;
-                obj.numSubPlots           = obj.numSubPlots ...
-                                            - numel(obj.groupSubplots{id}) ...
-                                            + numel(subPlots);
-                obj.groupSubPlots{id}     = subPlots;
+%                 obj.numSubPlots           = obj.numSubPlots ...
+%                                             - numel(obj.groupSubPlots{id}) ...
+%                                             + numel(subPlots);
+%                 obj.groupSubPlots{id}     = subPlots;
             else
                 % else add new entry
                 obj.groupNames{end+1}     = name;
@@ -158,83 +159,176 @@ classdef NetworkMonitor < handle
             errMsg = obj.errorMsg;
         end
         
-        function spkFile = getSpikeFileName(obj,name)
-            % spkFile = AM.getSpikeFileName(name) returns the name of the
-            % spike file according to specified prefix and suffix.
-            % Prefix and suffix can be set using AM.setSpikeFileAttributes.
-            %
-            % NAME  - A string representing the name of a group that has been
-            %         registered by calling AM.addPopulation.
-            gId = obj.getGroupId(name);
-            spkFile = obj.groupMonObj{gId}.getSpikeFileName();
-        end
-        
-        function plot(obj, groupNames)
+        function plot(obj, groupNames, frames, frameDur, stepFrames, fps, dispFrameNr)
+            if nargin<7,dispFrameNr=true;end
+            if nargin<6,fps=5;end
+            if nargin<5,stepFrames=false;end
+            if nargin<4,frameDur=1000;end
+            if nargin<3,frames=-1;end
             if nargin<2,groupNames={};end
+            obj.unsetError()
 
+            % reset abort flag, set up callback for key press events
+            obj.plotAbortPlotting = false;
+            set(gcf,'KeyPressFcn',@obj.pauseOnKeyPressCallback)
+
+            if ~iscell(groupNames)
+                obj.throwError('groupNames must be a cell array')
+                return
+            end
+            % set list of groups
             if isempty(groupNames)
                 groupNames = obj.groupNames;
             end
+            
+            % set range of frames
+            if isempty(frames) || frames==-1
+                frames = 1:ceil(obj.simObj.sim.simTimeSec*1000.0/frameDur);
+            end
 
+            % load data and reshape for plotting if necessary
+            for i=1:numel(groupNames)
+                gId = obj.getGroupId(groupNames{i});
+                obj.groupMonObj{gId}.loadDataForPlotting([],frameDur);
+            end
+            
+            % display frames in specified axes
             [nrR, nrC] = obj.findPlotLayout(obj.numSubPlots);
-
-            % prepare for plotting
-            % for plotting we need to keep all extract spike files
-            frameDur = 100;
-            for i=1:numel(groupNames)
-                gId = obj.getGroupId(groupNames{i});
-                
-                % GM should know what default plot type is for the group
-                obj.groupMonObj{gId}.prepareForPlotting(frameDur);
-            end
-            
-            % plot all frames
-            for f=1:numFrames
-                for g=1:numel(groupNames)
-                    gId = obj.getGroupId(groupNames{g});
-                    subplot(nrR, nrC, obj.groupSubPlots{gId})
-                    obj.groupMonObj{gId}.plotFrame(f);
+            for f=frames
+                if obj.plotAbortPlotting
+                    % user pressed button to quit plotting
+                    obj.plotAbortPlotting = false;
+                    close;
+                    return
                 end
-            end
-            
-                    
-            frameDur = 100;
-            numFrames = ceil(obj.Sim.sim.simTimeSec*1000.0/frameDur);
-            spkBuffer = cell(1,numel(groupNames));
-            for i=1:numel(groupNames)
-                gId = obj.getGroupId(groupNames{i});
-
-                % read spikes from file
-                spkBuffer{i} = obj.groupSpkObj{gId}.readSpikes(frameDur);
-
-                % reshape according to population dimensions
-                spkBuffer{i} = reshape(spkBuffer{i}, numFrames, ...
-                    obj.groupGrid3D{gId}(1), obj.groupGrid3D{gId}(2), ...
-                    obj.groupGrid3D{gId}(3));
-                spkBuffer{i} = permute(spkBuffer{i},[3 2 4 1]); % Matlab: Y, X
-                spkBuffer{i} = reshape(spkBuffer{i}, obj.groupGrid3D{gId}(2), [], numFrames);
-            end
-
-            % plot all frames
-            for f=1:numFrames
+                
                 for g=1:numel(groupNames)
                     gId = obj.getGroupId(groupNames{g});
                     subplot(nrR, nrC, obj.groupSubPlots{gId})
-
-                    if strcmpi(obj.groupPlotTypes{gId},'heatmap')
-                        obj.plotHeatMap(groupNames{g}, spkBuffer{g}(:,:,f))
-                    elseif strcmpi(obj.groupPlotTypes{gId},'raster')
-                        % obj.plotRaster(spkBuffer{g}(:,:,f))
-                        obj.plotHeatMap(groupNames{g}, spkBuffer{g}(:,:,f))
-                    else
-                        % we really shouldn't be here
-                        obj.throwError(['Unrecognized plotType ' obj.groupPlotTypes{gId}])
-                    end
+                    obj.groupMonObj{gId}.plotFrame(f,[],frameDur,dispFrameNr);
                 end
                 drawnow
                 
+                % wait for button press or pause
+                if stepFrames
+                    waitforbuttonpress;
+                else
+                    pause(1.0/fps)
+                end
             end
         end
+        
+        function setPlottingAttributes(this,varargin)
+            % AM.setPlottingAttributes(varargin) sets different plotting
+            % attributes, such as how many frames to plot per second, or
+            % whether to record video. Call function without input arguments to
+            % set default values.
+            % To take effect, this function must be called before
+            % AM.plotPopulations().
+            % AM.setPlottingAttributes('PropertyName',VALUE,...) sets the
+            % specified property values.
+            %
+            % BGCOLOR            - Set background color for figure. Must be of 
+            %                      type ColorSpec (char such as 'w','b','k' or a
+            %                      3-element vector for RGB channels). The
+            %                      default is white.
+            %
+            % FPS                - The frames per second for the plotting loop.
+            %                      The default is 5.
+            %
+            % RECORDMOVIE        - A boolean flag that indicates whether to
+            %                      record the plotting loop as an AVI movie. If
+            %                      flag is set to false, the following
+            %                      parameters with prefix "recordMovie" will not
+            %                      take effect.
+            %
+            % RECORDMOVIEFILE    - File name where movie will be stored.
+            %                      Currently the only supported file ending is
+            %                      ".avi".
+            %
+            % RECORDMOVIEFPS     - The frames per second for the movie. The
+            %                      default is 10.
+            %
+            % WAITFORBUTTONPRESS - A boolean flag that indicates whether to wait
+            %                      for user to pres key/button before plotting
+            %                      the next frame.
+            if isempty(varargin)
+                % set default values
+                this.plotBgColor = 'w';
+                this.plotFPS = 5;
+                this.plotWaitButton = false;
+                this.recordMovie = false;
+                this.recordMovieFile = 'movie.avi';
+                this.recordMovieFPS = 10;
+                return;
+            end
+            
+            % init error types
+            throwErrFileEnding = false;
+            throwErrNumeric = false;
+            throwErrOutOfRange = false;
+            
+            nextIndex = 1;
+            while nextIndex<length(varargin)
+                attr = varargin{nextIndex};   % this one is attribute name
+                val  = varargin{nextIndex+1}; % next is attribute value
+                
+                switch lower(attr)
+                    case 'bgcolor'
+                        % background color for figure
+                        this.plotBgColor = val;
+                    case 'fps'
+                        % frames per second
+                        throwErrNumeric = ~isnumeric(val);
+                        reqRange = [0.01 100];
+                        throwErrOutOfRange = val<reqRange(1) | val>reqRange(2);
+                        this.plotFPS = val;
+                    case 'recordmovie'
+                        % whether to record movie
+                        throwErrNumeric = ~isnumeric(val) & ~islogical(val);
+                        this.recordMovie = val;
+                    case 'recordmoviefile'
+                        % filename for recorded movie (must be .avi)
+                        reqFileEnding = '.avi';
+                        throwErrFileEnding = ~strcmpi(val(max(1,end-3):end), ...
+                            reqFileEnding);
+                        this.recordMovieFile = val;
+                    case 'recordmoviefps'
+                        % frames per second for recorded movie
+                        throwErrNumeric = ~isnumeric(val);
+                        reqRange = [0.01 10];
+                        throwErrOutOfRange = val<reqRange(1) | val>reqRange(2);
+                        this.recordMovieFPS = val;
+                    case 'waitforbuttonpress'
+                        % whether to wait for button press before next frame
+                        throwErrNumeric = ~isnumeric(val) & ~islogical(val);
+                        this.plotWaitButton = logical(val);
+                    otherwise
+                        % attribute does not exist
+                        if isnumeric(attr) || islogical(attr)
+                            attr = num2str(attr);
+                        end
+                        error(['Unknown attribute "' attr '"'])
+                end
+                
+                % throw errors
+                if throwErrFileEnding
+                    error(['File ending for attr "' attr '" must be ' ...
+                        '"' reqFileEnding '"'])
+                elseif throwErrNumeric
+                    error(['Value for attr "' attr '" must be ' ...
+                        'numeric'])
+                elseif throwErrOutOfRange
+                    error(['Value for attr "' attr '" must be in ' ...
+                        'range [' num2str(reqRange(1)) ',' ...
+                        num2str(reqRange(2)) ']'])
+                end
+                
+                % advance index to next attr
+                nextIndex = nextIndex + 2;
+            end
+        end
+        
     end
     
     %% PRIVATE METHODS
@@ -244,8 +338,8 @@ classdef NetworkMonitor < handle
             % all spike files are found
             errMode = 'silent';
             
-            for i=1:numel(obj.Sim.groups)
-                obj.addGroup(obj.Sim.groups(i).name, 'default', ...
+            for i=1:numel(obj.simObj.groups)
+                obj.addGroup(obj.simObj.groups(i).name, 'default', ...
                     [], [], errMode)
             end
         end
@@ -273,19 +367,19 @@ classdef NetworkMonitor < handle
         end
         
         function index = getGroupStructId(obj, name)
-            % finds the index in the Sim struct for a group name
+            % finds the index in the simObj struct for a group name
             
             % convert struct to flattened cell array
-            cellSim = reshape(struct2cell(obj.Sim.groups),1,[]);
+            cellsimObj = reshape(struct2cell(obj.simObj.groups),1,[]);
             
             % find index of group name
-            [~,j] = find(strcmpi(cellSim,name));
+            [~,j] = find(strcmpi(cellsimObj,name));
             if isempty(j)
                 % group not found
                 index = -1;
             else
                 % convert back to struct index
-                index = (j-1)/numel(fieldnames(obj.Sim.groups))+1;
+                index = (j-1)/numel(fieldnames(obj.simObj.groups))+1;
             end
         end
         
@@ -296,8 +390,6 @@ classdef NetworkMonitor < handle
 
 
         function loadDefaultParams(obj)
-            obj.spkFilePrefix = 'spk';
-            obj.spkFileSuffix = '.dat';
             
             obj.supportedErrorModes = {'standard', 'warning', 'silent'};
             
@@ -305,25 +397,27 @@ classdef NetworkMonitor < handle
             obj.groupGrid3D = {};
             obj.groupPlotTypes = {};
             obj.groupSubPlots = {};
-            obj.groupSpkObj = {};
+            obj.groupMonObj = {};
+            
+            obj.plotAbortPlotting = false;
 
             obj.numSubPlots = 0;
         end
 
-        function plotHeatMap(obj, group, data2D)
-            dims = obj.groupGrid3D{obj.getGroupId(group)};
-
-            imagesc(data2D)
-            axis image
-            title(group)
-            xlabel('nrX')
-            ylabel('nrY')
-            set(gca, 'XTick', 0:dims(2):dims(2)*dims(3))
+        function pauseOnKeyPressCallback(obj,~,eventData)
+            % Callback function to pause plotting
+            switch eventData.Key
+                case 'p'
+                    disp('Paused. Press any key to continue.');
+                    waitforbuttonpress;
+                case 'q'
+                    obj.plotAbortPlotting = true;
+            end
         end
         
-        function readSimulationFile(obj)
+        function readsimulationFile(obj)
             % try and read simulation file
-            obj.Sim = SimulationReader([obj.resultsFolder filesep obj.simFile]);
+            obj.simObj = SimulationReader([obj.resultsFolder filesep obj.ntwFile]);
         end
         
         function throwError(obj, errorMsg, errorMode)

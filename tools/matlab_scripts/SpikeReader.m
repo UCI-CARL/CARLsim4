@@ -26,7 +26,7 @@ classdef SpikeReader < handle
         fileVersionMinor;    % required minimum minor version number
         fileSizeByteHeader;  % byte size of header section
 
-        numFrames;
+        stimLengthMs;
         
         spkData;
         storeSpikes;
@@ -116,6 +116,12 @@ classdef SpikeReader < handle
         function dims = getGrid3D(obj)
             dims = obj.grid3D;
         end
+        
+        function stimLengthMs = getStimulusLengthMs(obj)
+            % read max spike time from file
+            fseek(obj.fileId, -8, 'eof');
+            stimLengthMs = fread(obj.fileId, 1, 'int32');
+        end
 
         function spk = readSpikes(obj, frameDur)
             % spk = readSpikes(frameDur) reads the spike file and arranges
@@ -196,13 +202,13 @@ classdef SpikeReader < handle
                 spk(end,prod(obj.grid3D))=0;
             end
             
-            % store stimulus length
-            obj.numFrames = size(spk,1);
-            
             % store spike data
             if obj.storeSpikes
                 obj.spkData = spk;
             end
+            
+            % extract stimulus length
+            obj.stimLengthMs = obj.getStimulusLengthMs();
         end
     end
     
@@ -221,9 +227,9 @@ classdef SpikeReader < handle
             obj.fileSizeByteHeader = -1; % to be set in openFile
 
             obj.grid3D = -1; % to be set in openFile
-            obj.numFrames = -1; % to be set in readSpikes
             
             obj.spkData = []; % to be set in readSpikes
+            obj.stimLengthMs = -1;
             
             obj.supportedErrorModes = {'standard', 'warning', 'silent'};
         end
