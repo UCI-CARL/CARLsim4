@@ -15,6 +15,8 @@ function writeFramesToRgbFile(createFile,frames,appendIt)
 % Author: Michael Beyeler <mbeyeler@uci.edu>
 % Ver 04/16/2013
 
+warning('writeFramesToRgbFile() is deprecated, use InputStimulus instead.')
+
 if nargin<3,appendIt=false;end
 if nargin<2,error('frames or folder not set');end
 

@@ -7,6 +7,10 @@ Legend:
 	- removed element
 	* changed element
 
+2014-10-06     Michael Beyeler <mbeyeler@uci.edu>
+  + Added MATLAB Offline Analysis Toolbox: NetworkMonitor, GroupMonitor,
+    SpikeReader, SimulationReader, Utilities.
+
 2014-10-03     Kristofor D. Carlson <kdcarlso@uci.edu>
   + Included CARLsim ECJ PTI tool
   + Added Makefiles for building and installation of CARLsim ECJ PTI tool.

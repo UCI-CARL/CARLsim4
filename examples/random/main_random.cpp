@@ -53,13 +53,13 @@ int main()
 	// create a network
 	CARLsim sim("random",GPU_MODE,USER,ithGPU,1,42);
 
-	int g1=sim.createGroup("excit", N*0.8, EXCITATORY_NEURON);
+	int g1=sim.createGroup("excit", 0.8*N, EXCITATORY_NEURON);
 	sim.setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f);
 
-	int g2=sim.createGroup("inhib", N*0.2, INHIBITORY_NEURON);
+	int g2=sim.createGroup("inhib", 0.2*N, INHIBITORY_NEURON);
 	sim.setNeuronParameters(g2, 0.1f,  0.2f, -65.0f, 2.0f);
 
-	int gin=sim.createSpikeGeneratorGroup("input",N*0.1,EXCITATORY_NEURON);
+	int gin=sim.createSpikeGeneratorGroup("input", 0.1*N, EXCITATORY_NEURON);
 
 	sim.setConductances(true,5,150,6,150);
 
@@ -79,7 +79,7 @@ int main()
 
 	// build the network
 	sim.setupNetwork();
-	sim.setSpikeMonitor(g1,"results/spikes.dat"); // put spike times into spikes.dat
+	sim.setSpikeMonitor(g1); // put spike times into file
 	sim.setSpikeMonitor(g2); // Show basic statistics about g2
 	sim.setSpikeMonitor(gin);
 

@@ -174,14 +174,16 @@ short int CpuSNN::connect(int grpId1, int grpId2, const std::string& _type, floa
 		}
 
 		if (newInfo->numPostSynapses > MAX_nPostSynapses) {
-			CARLSIM_ERROR("Connection exceeded the maximum number of output synapses (%d), has %d.",
-						MAX_nPostSynapses,newInfo->numPostSynapses);
+			CARLSIM_ERROR("ConnID %d exceeded the maximum number of output synapses (%d), has %d.",
+				newInfo->connId,
+				MAX_nPostSynapses, newInfo->numPostSynapses);
 			assert(newInfo->numPostSynapses <= MAX_nPostSynapses);
 		}
 
 		if (newInfo->numPreSynapses > MAX_nPreSynapses) {
-			CARLSIM_ERROR("Connection exceeded the maximum number of input synapses (%d), has %d.",
-						MAX_nPreSynapses,newInfo->numPreSynapses);
+			CARLSIM_ERROR("ConnID %d exceeded the maximum number of input synapses (%d), has %d.",
+				newInfo->connId,
+				MAX_nPreSynapses, newInfo->numPreSynapses);
 			assert(newInfo->numPreSynapses <= MAX_nPreSynapses);
 		}
 
@@ -1079,6 +1081,7 @@ SpikeMonitor* CpuSNN::setSpikeMonitor(int grpId, FILE* fid, int configId) {
 
 		// assign spike file ID if we selected to write to a file, else it's NULL
 		// if file pointer exists, it has already been fopened
+		// this will also write the header section of the spike file
 		// spkMonCoreObj destructor will fclose it
 		spkMonCoreObj->setSpikeFileId(fid);
 
@@ -1111,7 +1114,8 @@ void CpuSNN::setSpikeRate(int grpId, PoissonRate* ratePtr, int refPeriod, int co
 
 		assert(ratePtr);
 		if (ratePtr->len != grp_Info[cGrpId].SizeN) {
-			CARLSIM_ERROR("The PoissonRate length did not match the number of neurons in group %s(%d).",
+			CARLSIM_ERROR("The PoissonRate length (%d) did not match the number of neurons (%d) in group %s(%d).",
+						ratePtr->len, grp_Info[cGrpId].SizeN,
 						grp_Info2[cGrpId].Name.c_str(),grpId);
 			exitSimulation(1);
 		}
@@ -1163,11 +1167,11 @@ void CpuSNN::saveSimulation(FILE* fid, bool saveSynapseInfo) {
 	// +++++ WRITE HEADER SECTION +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
 	// write file signature
-	tmpInt = 294338571;
+	tmpInt = 294338571; // some int used to identify saveSimulation files
 	if (!fwrite(&tmpInt,sizeof(int),1,fid)) CARLSIM_ERROR("saveSimulation fwrite error");
 
 	// write version number
-	tmpFloat = 1.0f;
+	tmpFloat = 0.2f;
 	if (!fwrite(&tmpFloat,sizeof(int),1,fid)) CARLSIM_ERROR("saveSimulation fwrite error");
 
 	// write simulation time so far (in seconds)
@@ -1197,6 +1201,10 @@ void CpuSNN::saveSimulation(FILE* fid, bool saveSynapseInfo) {
 	for (int g=0;g<numGrp;g++) {
 		if (!fwrite(&grp_Info[g].StartN,sizeof(int),1,fid)) CARLSIM_ERROR("saveSimulation fwrite error");
 		if (!fwrite(&grp_Info[g].EndN,sizeof(int),1,fid)) CARLSIM_ERROR("saveSimulation fwrite error");
+
+		if (!fwrite(&grp_Info[g].SizeX,sizeof(int),1,fid)) CARLSIM_ERROR("saveSimulation fwrite error");
+		if (!fwrite(&grp_Info[g].SizeY,sizeof(int),1,fid)) CARLSIM_ERROR("saveSimulation fwrite error");
+		if (!fwrite(&grp_Info[g].SizeZ,sizeof(int),1,fid)) CARLSIM_ERROR("saveSimulation fwrite error");
 
 		strncpy(name,grp_Info2[g].Name.c_str(),100);
 		if (!fwrite(name,1,100,fid)) CARLSIM_ERROR("saveSimulation fwrite error");

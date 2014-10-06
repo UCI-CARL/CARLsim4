@@ -266,11 +266,17 @@ private:
 	//! reads AER vector and updates sorted firing rate member var
 	void sortFiringRates();
 
+	//! writes the header section (file signature, version number) of a spike file
+	void writeSpikeFileHeader();
+
 	//! whether we have to perform calculateFiringRates()
 	bool needToCalculateFiringRates_;
 
 	//! whether we have to perform sortFiringRates()
 	bool needToSortFiringRates_;
+
+	//! whether we have to write header section of spike file
+	bool needToWriteFileHeader_;
 
 	CpuSNN* snn_;	//!< private CARLsim implementation
 	int monitorId_;	//!< current SpikeMonitor ID
@@ -278,6 +284,8 @@ private:
 	int nNeurons_;	//!< number of neurons in the group
 
 	FILE* spikeFileId_;	//!< file pointer to the spike file or NULL
+	int spikeFileSignature_; //!< int signature of spike file
+	float spikeFileVersion_; //!< version number of spike file
 
 	//! Used to analyzed the spike information
 	std::vector<std::vector<int> > spkVector_;

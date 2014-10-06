@@ -20,6 +20,10 @@ SpikeMonitorCore::SpikeMonitorCore(CpuSNN* snn, int monitorId, int grpId) {
 	mode_ = AER;
 	persistentData_ = false;
 
+	needToWriteFileHeader_ = true;
+	spikeFileSignature_ = 206661989;
+	spikeFileVersion_ = 0.2f;
+
 	// defer all unsafe operations to init function
 	init();
 }
@@ -306,7 +310,15 @@ void SpikeMonitorCore::stopRecording() {
 void SpikeMonitorCore::setSpikeFileId(FILE* spikeFileId) {
 	assert(!isRecording());
 
+	// \TODO consider the case where this function is called more than once
+	if (spikeFileId_!=NULL)
+		CARLSIM_ERROR("SpikeMonitorCore: setSpikeFileId has already been called.");
+
 	spikeFileId_=spikeFileId;
+
+	// for now: file pointer has changed, so we need to write header (again)
+	needToWriteFileHeader_ = true;
+	writeSpikeFileHeader();
 }
 
 
@@ -324,7 +336,7 @@ void SpikeMonitorCore::calculateFiringRates() {
 
 	// this really shouldn't happen at this stage, but if recording time is zero, return all zeros
 	if (totalTime_==0) {
-		CARLSIM_WARN("SpikeMonitorCore:: calculateFiringRates has 0 totalTime");
+		CARLSIM_WARN("SpikeMonitorCore: calculateFiringRates has 0 totalTime");
 		return;
 	}
 
@@ -350,4 +362,36 @@ void SpikeMonitorCore::sortFiringRates() {
 	std::sort(firingRatesSorted_.begin(),firingRatesSorted_.end());
 
 	needToSortFiringRates_ = false;
+}
+
+// write the header section of the spike file
+// this should be done once per file, and should be the very first entries in the file
+void SpikeMonitorCore::writeSpikeFileHeader() {
+	if (!needToWriteFileHeader_)
+		return;
+
+	// write file signature
+	if (!fwrite(&spikeFileSignature_,sizeof(int),1,spikeFileId_))
+		CARLSIM_ERROR("SpikeMonitorCore: writeSpikeFileHeader has fwrite error");
+
+	// write version number
+	if (!fwrite(&spikeFileVersion_,sizeof(float),1,spikeFileId_))
+		CARLSIM_ERROR("SpikeMonitorCore: writeSpikeFileHeader has fwrite error");
+
+	// write grid dimensions
+	Grid3D grid = snn_->getGroupGrid3D(grpId_);
+	int tmpInt = grid.x;
+	if (!fwrite(&tmpInt,sizeof(int),1,spikeFileId_))
+		CARLSIM_ERROR("SpikeMonitorCore: writeSpikeFileHeader has fwrite error");
+
+	tmpInt = grid.y;
+	if (!fwrite(&tmpInt,sizeof(int),1,spikeFileId_))
+		CARLSIM_ERROR("SpikeMonitorCore: writeSpikeFileHeader has fwrite error");
+
+	tmpInt = grid.z;
+	if (!fwrite(&tmpInt,sizeof(int),1,spikeFileId_))
+		CARLSIM_ERROR("SpikeMonitorCore: writeSpikeFileHeader has fwrite error");
+
+
+	needToWriteFileHeader_ = false;
 }
