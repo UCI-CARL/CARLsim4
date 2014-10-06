@@ -7,6 +7,10 @@ Legend:
 	- removed element
 	* changed element
 
+2014-10-06     Michael Beyeler <mbeyeler@uci.edu>
+  + Added MATLAB Offline Analysis Toolbox: NetworkMonitor, GroupMonitor,
+    SpikeReader, SimulationReader, Utilities.
+
 2014-09-28     Kristofor D. Carlson <kdcarlso@uci.edu>
   * Reorganized the CARLsim root directory.
   + Made CARLsim into a statically linked library.
