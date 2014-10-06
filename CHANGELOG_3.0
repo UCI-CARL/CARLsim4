@@ -7,6 +7,15 @@ Legend:
 	- removed element
 	* changed element
 
+2014-10-03     Kristofor D. Carlson <kdcarlso@uci.edu>
+  + Included CARLsim ECJ PTI tool
+  + Added Makefiles for building and installation of CARLsim ECJ PTI tool.
+	* Fixed CARLsim ECJ PTI testing glitches.
+  * Updated installation instructions in README.md.
+
+2014-10-01     Kristofor D. Carlson <kdcarlso@uci.edu>
+  * Changed CARLSIM_LIB_INSTALL_DIR variable to CARLSIM_LIB_DIR in all files.
+
 2014-09-28     Kristofor D. Carlson <kdcarlso@uci.edu>
   * Reorganized the CARLsim root directory.
   + Made CARLsim into a statically linked library.

@@ -37,11 +37,11 @@
  * @author Kris Carlson (KDC)
  */
 GTEST_API_ int main(int argc, char **argv) {
-	//printf("Running main() from gtest_main.cc\n");
 
 	// set this flag to make all death tests thread-safe
 	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
+	// run google tests!
 	::testing::InitGoogleTest(&argc, argv);
 	return RUN_ALL_TESTS();
 }
