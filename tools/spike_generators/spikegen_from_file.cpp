@@ -27,8 +27,6 @@ void SpikeGeneratorFromFile::openFile() {
 	std::string funcName = "openFile("+fileName_+")";
 	fpBegin_ = fopen(fileName_.c_str(),"rb");
 	UserErrors::assertTrue(fpBegin_!=NULL, UserErrors::FILE_CANNOT_OPEN, funcName, fileName_);
-
-	// \TODO add signature to spike file so that we can make sure we have the right file
 }
 
 unsigned int SpikeGeneratorFromFile::nextSpikeTime(CARLsim* sim, int grpId, int nid, unsigned int currentTime, 
@@ -46,7 +44,12 @@ unsigned int SpikeGeneratorFromFile::nextSpikeTime(CARLsim* sim, int grpId, int 
 	}
 
 	FILE* fp = fpBegin_;
-	fseek(fp, fpOffsetNeur_[nid], SEEK_SET);
+	// \TODO there should be a common/standard way to read spike files
+	// \FIXME: this is a hack...to get the size of the header section
+	// needs to be updated every time header changes
+	int szByteHeader = 4*sizeof(int)+1*sizeof(float);
+	fseek(fpBegin_, szByteHeader, SEEK_SET);
+	fseek(fp, fpOffsetNeur_[nid], SEEK_CUR);
 
 	int tmpTime = -1;
 	int tmpNeurId = -1;

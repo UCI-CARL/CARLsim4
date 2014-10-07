@@ -239,7 +239,7 @@ TEST(COBA, firingRateCPUvsGPU) {
 	float wt = rand()*1.0/RAND_MAX*0.2f + 0.05f;
 	float inputRate = rand() % 45 + 5.0f;
 	int runTimeMs = rand() % 800 + 200;
-//		fprintf(stderr,"runTime=%d, delay=%d, wt=%f, input=%f\n",runTimeMs,delay,wt,inputRate);
+//	fprintf(stderr,"runTime=%d, delay=%d, wt=%f, input=%f\n",runTimeMs,delay,wt,inputRate);
 
 	for (int isGPUmode=0; isGPUmode<=1; isGPUmode++) {
 		sim = new CARLsim("COBA.firingRateCPUvsGPU",isGPUmode?GPU_MODE:CPU_MODE,SILENT,0,1,42);
