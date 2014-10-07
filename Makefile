@@ -24,7 +24,8 @@ test_dir       = carlsim/test
 input_stim_dir = tools/input_stimulus
 
 # CARLsim flags specific to the CARLsim installation
-CARLSIM_FLAGS += -I$(kernel_dir)/include -I$(interface_dir)/include -I$(spike_mon_dir)
+CARLSIM_FLAGS += -I$(kernel_dir)/include -I$(interface_dir)/include \
+				 -I$(spike_gen_dir) -I$(spike_mon_dir)
 
 # CAUTION: order of .mk includes matters!!!
 include user.mk
