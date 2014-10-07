@@ -16,12 +16,12 @@ objects :=
 kernel_dir     = carlsim/kernel
 interface_dir  = carlsim/interface
 spike_mon_dir  = carlsim/spike_monitor
-spike_gen_dir  = tools/carlsim_addons/spike_generators
+spike_gen_dir  = tools/spike_generators
 server_dir     = carlsim/server
 test_dir       = carlsim/test
 
 # carlsim tools
-input_stim_dir = tools/carlsim_addons/input_stimulus
+input_stim_dir = tools/input_stimulus
 
 # CARLsim flags specific to the CARLsim installation
 CARLSIM_FLAGS += -I$(kernel_dir)/include -I$(interface_dir)/include -I$(spike_mon_dir)
