@@ -1847,7 +1847,11 @@ void CpuSNN::CpuSNNinit() {
 		CARLSIM_ERROR("Unknown logger mode");
 		exit(1);
 	}
-	fpLog_ = fopen("debug.log","w");
+	#if (WIN32 || WIN64)
+		fpLog_= fopen("results\\debug.log","w");
+	#else
+		fpLog_ = fopen("results/debug.log","w");
+	#endif
 
 	#ifdef __REGRESSION_TESTING__
 	#if (WIN32 || WIN64)

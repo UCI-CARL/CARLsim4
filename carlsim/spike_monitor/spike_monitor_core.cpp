@@ -316,9 +316,13 @@ void SpikeMonitorCore::setSpikeFileId(FILE* spikeFileId) {
 
 	spikeFileId_=spikeFileId;
 
-	// for now: file pointer has changed, so we need to write header (again)
-	needToWriteFileHeader_ = true;
-	writeSpikeFileHeader();
+	if (spikeFileId_==NULL)
+		needToWriteFileHeader_ = false;
+	else {
+		// for now: file pointer has changed, so we need to write header (again)
+		needToWriteFileHeader_ = true;
+		writeSpikeFileHeader();
+	}
 }
 
 
