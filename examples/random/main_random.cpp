@@ -64,13 +64,13 @@ int main()
 	sim.setConductances(true,5,150,6,150);
 
 	// make random connections with 10% probability
-	sim.connect(g2,g1,"random", RangeWeight(0.003),0.1f);
+	sim.connect(g2,g1,"random", RangeWeight(0.003),0.1f,RangeDelay(1));
 	// make random connections with 10% probability, and random delays between 1 and 20
 	sim.connect(g1,g2,"random", RangeWeight(0.0,0.0025,0.005), 0.1f, RangeDelay(1,20), RadiusRF(-1), SYN_PLASTIC);
 	sim.connect(g1,g1,"random", RangeWeight(0.0,0.001,0.005), 0.1f, RangeDelay(1,20), RadiusRF(-1), SYN_PLASTIC);
 
 	// 5% probability of connection
-	sim.connect(gin,g1,"random", RangeWeight(0.5), 0.05f, RangeDelay(1,20));
+	sim.connect(gin,g1,"random", RangeWeight(0.5), 0.05f, RangeDelay(1,20), SYN_FIXED);
 
 
 	int g3=sim.createGroup("test", Grid3D(3,3,3), EXCITATORY_NEURON);
@@ -84,9 +84,7 @@ int main()
 
 	// build the network
 	sim.setupNetwork();
-	return 1;
-
-	sim.setSpikeMonitor(g1,"examples/random/results/spikes.dat"); // put spike times into spikes.dat
+	sim.setSpikeMonitor(g1); // put spike times into file
 	sim.setSpikeMonitor(g2); // Show basic statistics about g2
 	sim.setSpikeMonitor(gin);
 

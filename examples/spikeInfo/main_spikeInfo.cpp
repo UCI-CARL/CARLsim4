@@ -36,10 +36,7 @@
 // includes core CARLsim functionality
 #include <carlsim.h>
 #include <mtrand.h>
-// include the PTI framework classes and functions
-#include <pti.h>
-// TODO: Do away with globals.
-// TODO: put fitness in a separate file.
+#include <iostream>
 
 extern MTRand getRand;
 
@@ -89,16 +86,16 @@ int main()
 	float inputTargetFR=5;
 //	float excTargetFR=10;
 //	float inhTargetFR=20;
-	
+
 	// poissonRate spiking input pointer
 	PoissonRate* input;
 	// create a SpikeMonitor pointers
 	SpikeMonitor* spikeMonInput;
 	SpikeMonitor* spikeMonExc;
 	SpikeMonitor* spikeMonInh;
-	
+
 	snn = new CARLsim("TuningFixedWeightsSNN",onGPU?GPU_MODE:CPU_MODE,USER,ithGPU,numConfig,randSeed);
-			
+
 	float COND_tAMPA=5.0, COND_tNMDA=150.0, COND_tGABAa=6.0, COND_tGABAb=150.0;
 	inputGroup=snn->createSpikeGeneratorGroup("Input",INPUT_SIZE,EXCITATORY_NEURON);
 	excGroup=snn->createGroup("Exc",EXC_SIZE,EXCITATORY_NEURON);
@@ -107,7 +104,7 @@ int main()
 	snn->setConductances(true,COND_tAMPA,COND_tNMDA,COND_tGABAa,COND_tGABAb);
 	// set Izhikevich neuron parameter values
 	snn->setNeuronParameters(excGroup, 0.02f, 0.2f, -65.0f, 8.0f);
-	snn->setNeuronParameters(inhGroup, 0.1f, 0.2f, -65.0f, 2.0f); 
+	snn->setNeuronParameters(inhGroup, 0.1f, 0.2f, -65.0f, 2.0f);
 	double initWeight = 0.05f;
 
 	// create the connections (with a dummy weight) and grab their connection id
@@ -115,7 +112,7 @@ int main()
 	snn->connect(excGroup,excGroup,"random", RangeWeight(initWeight), 0.5f, RangeDelay(1), SYN_FIXED);
 	snn->connect(excGroup,inhGroup,"random", RangeWeight(initWeight), 0.5f, RangeDelay(1), SYN_FIXED);
 	snn->connect(inhGroup,excGroup,"random", RangeWeight(initWeight), 0.5f, RangeDelay(1), SYN_FIXED);
-	
+
 	snn->setupNetwork();
 
 	// initialize input
@@ -123,7 +120,7 @@ int main()
 	for(int i=0;i<INPUT_SIZE;i++){
 		input->rates[i]=inputTargetFR;
 	}
-	
+
 	// set out spike monitors here
 	spikeMonInput=snn->setSpikeMonitor(inputGroup);
 	spikeMonExc=snn->setSpikeMonitor(excGroup);
@@ -131,11 +128,11 @@ int main()
 
 	// still have to set the firing rates (need to double check)
 	snn->setSpikeRate(inputGroup,input);
-	
+
 	// -----------------------------------------------------------------------------
 	// END CARLsim initialization
 	// -----------------------------------------------------------------------------
-	
+
 	// now run the simulations in parallel with these parameters and evaluate them
 	// we should start timing here too.
 	spikeMonInput->startRecording();
@@ -145,7 +142,7 @@ int main()
 	int runTimeMs = 800;
 	bool printSummary = false;
 	snn->runNetwork(runTimeMs/1000,runTimeMs%1000,printSummary);
-	
+
 	// stop recording
 	spikeMonInput->stopRecording();
 	spikeMonExc->stopRecording();
@@ -155,31 +152,6 @@ int main()
 	spikeMonInput->print();
 	spikeMonExc->print();
 	spikeMonInh->print();
-
-	// \TODO clean up the following...
-
-	// get the output of our spike monitor
-/*	float inputFR = spikeMonInput->getPopMeanFiringRate();
-	cout << "inputFR = " << inputFR << " Hz" << endl;
-	float excFR = spikeMonExc->getPopMeanFiringRate();
-	cout << "excFR = " << excFR << " Hz" << endl;
-	float inhFR = spikeMonInh->getPopMeanFiringRate();
-	cout << "inhFR = " << inhFR << " Hz" << endl;
-
-	cout << "Input: Printing individual neuron firing rates:\n";
-	vector<float> inputNFR = spikeMonInput->getAllFiringRates();
-	for(int i=0;i<inputNFR.size();i++){
-		cout << inputNFR.at(i) << " Hz" << endl;
-	}
-	cout << endl;
-
-	cout << "Input: Printing sorted individual neuron firing rates:\n";
-	vector<float> inputSNFR = spikeMonInput->getAllFiringRatesSorted();
-	for(int i=0;i<inputSNFR.size();i++){
-		cout << inputSNFR.at(i) << " Hz" << endl;
-	}
-	cout << endl;
-	*/
 
 	int numNeuronsInRange = 0;
 	numNeuronsInRange = spikeMonInput->getNumNeuronsWithFiringRate(0.0f,7.0f);
@@ -219,9 +191,8 @@ int main()
 	snn->runNetwork(2*runTimeMs/1000, (2*runTimeMs)%1000, true);
 
 	spikeMonInput->startRecording();
-	spikeMonExc->startRecording();
-	spikeMonInh->startRecording();
-	
+	spikeMonExc->startRecording(); spikeMonInh->startRecording();
+
 	snn->runNetwork(runTimeMs/1000,runTimeMs%1000,printSummary);
 	spikeMonInput->stopRecording();
 	spikeMonExc->stopRecording();
@@ -231,26 +202,7 @@ int main()
 	spikeMonExc->print();
 	spikeMonInh->print();
 
-/*	vector<float> excNFR = spikeMonExc->getAllFiringRates();
-	for(int i=0;i< excNFR.size();i++){
-		cout << excNFR.at(i) << " Hz" << endl;
-	}
-
-	// get the output of our spike monitor
-	inputFR = spikeMonInput->getPopMeanFiringRate();
-	cout << "inputFR = " << inputFR << " Hz" << endl;
-	excFR = spikeMonExc->getPopMeanFiringRate();
-	cout << "excFR = " << excFR << " Hz" << endl;
-	inhFR = spikeMonInh->getPopMeanFiringRate();
-	cout << "inhFR = " << inhFR << " Hz" << endl;
-
-	// \FIXME what is this doing here? there's no EO in this
-	fitness=fabs(excFR-excTargetFR)+fabs(inhFR-inhTargetFR);
-	printf("fitness = %f\n",fitness);
-	// associate the fitness values (CARLsim) with individual Id/associated parameter values (EO)
-
-*/
-	if (snn!=NULL) 
+	if (snn!=NULL)
 		delete snn;
 	snn=NULL;
 	if(input!=NULL)

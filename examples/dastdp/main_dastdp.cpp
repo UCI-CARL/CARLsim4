@@ -93,7 +93,7 @@ public:
 int main()
 {
 	// simulation details
-	std::string saveFolder = "examples/dastdp/results/";
+	std::string saveFolder = "results/";
 	std::vector<int> spikesPost;
 	std::vector<int> spikesPre;
 	float* weights;
@@ -182,8 +182,7 @@ int main()
 
 	// ToDo: replace weights write out by ConnectionMonitor
 	sim.getPopWeights(gin, g1, weights, size);
-
-	FILE* fid = fopen("examples/dastdp/results/weight.csv", "w");
+	FILE* fid = fopen("results/weight.csv", "w");
 	for (int i = 0; i < size - 1; i++)
 		fprintf(fid, "%f,",weights[i]);
 	fprintf(fid, "%f\n", weights[size - 1]);

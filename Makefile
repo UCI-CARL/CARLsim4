@@ -1,102 +1,65 @@
-# Makefile that includes modules for organization
-#-------------------------------------------------------------------------------
-# Begin user modifiable section
-#-------------------------------------------------------------------------------
-# absolute path of evolving objects installation 
-EO_INSTALL_DIR ?= /opt/eo
-
-# desired installation absolute path of pti 
-PTI_INSTALL_DIR ?= /opt/pti
-
-# cuda capability major version number
-CUDA_MAJOR_NUM ?= 1
-# cuda capability minor version number
-CUDA_MINOR_NUM ?= 3
-
-# if optional env vars do not exist, assign default values
-# $(OPT_LEVEL): set to 1, 2, or 3 if you want to use optimization.  Default: 0.
-# $(DEBUG_INFO): set to 1 to include debug info, set to 0 to not include 
-# debugging info.  Default: 0.
-CARLSIM_CUDAVER ?= 3
-CARLSIM_FASTMATH ?= 0
-CARLSIM_CUOPTLEVEL ?= 0
-CARLSIM_DEBUG ?= 0
-
-# whether to include flag for regression testing
-CARLSIM_TEST ?= 0
-
-#-------------------------------------------------------------------------------
-# End user modifiable section
-#-------------------------------------------------------------------------------
-
+# Main Makefile for compiling, testing, and installing CARLsim
 # these variables collect the information from the other modules
-all_targets :=
-carlsim_programs :=
-pti_programs :=
-sources   :=
-libraries := 
-carlsim_deps :=
-carlsim_sources :=
-carlsim_objs := 
+
+carlsim_major_num := 3
+carlsim_minor_num := 0
+carlsim_build_num := 0
+
+default_targets :=
 common_sources :=
 common_objs :=
 output_files :=
+libraries :=
 objects :=
 
-inc_dir = include
-carlsim_dir = carlsim
-lib_dir = libpti
-ex_dir  = examples
-proj_dir = projects
-interface_dir = interface
-test_dir = test
-util_dir = util
-spike_monitor_dir = $(util_dir)/spike_monitor
+# carlsim components
+kernel_dir     = carlsim/kernel
+interface_dir  = carlsim/interface
+spike_mon_dir  = carlsim/spike_monitor
+spike_gen_dir  = tools/spike_generators
+server_dir     = carlsim/server
+test_dir       = carlsim/test
 
-# location of .cpp files
-vpath %.cpp $(EO_INSTALL_DIR)/src $(EO_INSTALL_DIR)/src/do \
-$(EO_INSTALL_DIR)/src/es $(EO_INSTALL_DIR)/src/utils $(lib_dir) \
-$(ex_dir)/common/ $(carlsim_dir)/src $(interface_dir)/src $(test_dir) \
-$(spike_monitor_dir)
-# location of .cu files
-vpath %.cu $(carlsim_dir)/src
-# location of .h files
-vpath %.h $(EO_INSTALL_DIR)/src $(inc_dir) $(carlsim_dir)/include \
-$(ex_dir)/common $(interface_dir)/include $(test_dir) $(spike_monitor_dir)
+# carlsim tools
+input_stim_dir = tools/input_stimulus
 
-# this blank 'all' is required
-all:
+# CARLsim flags specific to the CARLsim installation
+CARLSIM_FLAGS += -I$(kernel_dir)/include -I$(interface_dir)/include \
+				 -I$(spike_gen_dir) -I$(spike_mon_dir)
 
-# core makefile includes
-include makefile.mk
-include libpti/libpti.mk
+# CAUTION: order of .mk includes matters!!!
+include user.mk
 include carlsim/carlsim.mk
-include test/gtest.mk
-include test/carlsim_tests.mk
+include carlsim/libcarlsim.mk
+include carlsim/test/gtest.mk
+include carlsim/test/carlsim_tests.mk
 
-# include all directories in examples
-example_includes := $(addsuffix /examples.mk, $(wildcard examples/*))
-include $(example_includes)
-# include all directories in projects
-project_includes := $(addsuffix /projects.mk, $(wildcard $(proj_dir)/*))
-include $(project_includes)
+# *.dat and results files are generated during carlsim_tests execution
+output_files += *.dot *.log tmp* *.status *.dat results carlsim/*.a
 
-.PHONY: all libraries examples pti_examples clean distclean tests
-all: $(all_targets)
+# this blank 'default' is required
+default:
 
-tests: gtest carlsim_tests
-
-libraries: $(libraries)
-
-examples: $(carlsim_programs)
-
-pti-examples: $(pti_programs)
+.PHONY: default clean distclean
+default: $(default_targets)
 
 clean:
-	$(RM) $(objects) $(carlsim_programs) $(pti_programs) $(output_files) $(GTEST_LIB_DIR) \
+	$(RM) $(objects)
 
 distclean:
-	$(RM) $(objects) $(carlsim_programs) $(pti_programs) $(libraries) $(output_files)
+	$(RM) $(objects) $(libraries) $(output_files) doc/html
 
 devtest:
-	@echo $(CARLSIM_FLAGS) $(all_targets)
+	@echo $(CARLSIM_SRC_DIR) $(carlsim_tests_objs)
+
+# Print a help message
+help:
+	@ echo 
+	@ echo 'CARLsim Makefile options:'
+	@ echo 
+	@ echo "make            Compiles the CARLsim code using the default compiler"
+	@ echo "make all          (Same thing)"
+	@ echo "make install    Installs CARLsim library (may require root privileges)"
+	@ echo "make clean      Cleans out all object files"
+	@ echo "make distclean  Cleans out all objects files and output files"
+	@ echo "make help       Brings up this message!"
