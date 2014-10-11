@@ -2676,10 +2676,10 @@ bool CpuSNN::isPoint3DinRF(RadiusRF& radius, Point3D& pre, Point3D& post) {
 			CARLSIM_ERROR("Invalid number of negative semi-principal axes: %d",numNegRadii);
 	}
 
-	if (!isInRF) {
+//	if (!isInRF) {
 //		std::cout << "Skipping " << pre << " to " << post << " with " << radius << " and numNegRadii="
 //			<< numNegRadii << std::endl;
-	}
+//	}
 
 	return isInRF;
 }

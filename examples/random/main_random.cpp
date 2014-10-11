@@ -44,8 +44,7 @@
 	#define _CRT_SECURE_NO_WARNINGS
 #endif
 
-int main()
-{
+int main() {
 	// simulation details
 	int N = 1000; // number of neurons
 	int ithGPU = 0; // run on first GPU
@@ -71,7 +70,6 @@ int main()
 
 	// 5% probability of connection
 	sim.connect(gin, g1, "random", RangeWeight(1.0), 0.05f, RangeDelay(1,20), RadiusRF(-1));
-
 
 	int g3=sim.createGroup("test", Grid3D(3,3,3), EXCITATORY_NEURON);
 	sim.setNeuronParameters(g3, 0.1f,  0.2f, -65.0f, 2.0f);
