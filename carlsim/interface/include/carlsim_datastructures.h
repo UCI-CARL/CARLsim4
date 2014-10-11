@@ -247,8 +247,8 @@ struct RangeWeight {
  *   * Create a 2D Gaussian RF of radius 10: RadiusRF(10, 10, 0)
  *   * Create a 2D heterogeneous Gaussian RF (an ellipse) with semi-axes 10 and 5: RadiusRF(10, 5, 0)
  *   * Connect only the third dimension: RadiusRF(0, 0, 1)
- *   * Don't connect anything (silly): RadiusRF(0, 0, 0)
  *   * Connect all, no matter the RF (default): RadiusRF(-1, -1, -1)
+ *   * Don't connect anything (silly, not allowed): RadiusRF(0, 0, 0)
  */
 struct RadiusRF {
 	RadiusRF(double rad) : radX(rad), radY(rad), radZ(rad) {}

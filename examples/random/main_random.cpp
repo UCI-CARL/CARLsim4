@@ -64,13 +64,13 @@ int main()
 	sim.setConductances(true,5,150,6,150);
 
 	// make random connections with 10% probability
-	sim.connect(g2,g1,"random", RangeWeight(0.003),0.1f,RangeDelay(1));
+	sim.connect(g2,g1,"random", RangeWeight(0.01), 0.1f);
 	// make random connections with 10% probability, and random delays between 1 and 20
 	sim.connect(g1,g2,"random", RangeWeight(0.0,0.0025,0.005), 0.1f, RangeDelay(1,20), RadiusRF(-1), SYN_PLASTIC);
-	sim.connect(g1,g1,"random", RangeWeight(0.0,0.001,0.005), 0.1f, RangeDelay(1,20), RadiusRF(-1), SYN_PLASTIC);
+	sim.connect(g1,g1,"random", RangeWeight(0.0,0.06,0.1), 0.1f, RangeDelay(1,20), RadiusRF(-1), SYN_PLASTIC);
 
 	// 5% probability of connection
-	sim.connect(gin,g1,"random", RangeWeight(0.5), 0.05f, RangeDelay(1,20), SYN_FIXED);
+	sim.connect(gin, g1, "random", RangeWeight(1.0), 0.05f, RangeDelay(1,20), RadiusRF(-1));
 
 
 	int g3=sim.createGroup("test", Grid3D(3,3,3), EXCITATORY_NEURON);

@@ -2669,8 +2669,16 @@ bool CpuSNN::isPoint3DinRF(RadiusRF& radius, Point3D& pre, Point3D& post) {
 			else if (radius.radZ>=0 && (pre.z-post.z)*(pre.z-post.z)*cc > 1.0)
 				isInRF = false;
 			break;
+		case 3:
+			// 3D no restrictions
+			break;
 		default:
 			CARLSIM_ERROR("Invalid number of negative semi-principal axes: %d",numNegRadii);
+	}
+
+	if (!isInRF) {
+//		std::cout << "Skipping " << pre << " to " << post << " with " << radius << " and numNegRadii="
+//			<< numNegRadii << std::endl;
 	}
 
 	return isInRF;
@@ -2692,6 +2700,7 @@ void CpuSNN::connectFull(grpConnectInfo_t* info) {
 			if((noDirect) && (i - grp_Info[grpSrc].StartN) == (j - grp_Info[grpDest].StartN))
 				continue;
 
+			// check whether pre-neuron location is in RF of post-neuron
 			Point3D loc_j = getNeuronLocation3D(j); // 3D coordinates of j
 			if (!isPoint3DinRF(radius, loc_i, loc_j))
 				continue;
@@ -2716,11 +2725,22 @@ void CpuSNN::connectOneToOne (grpConnectInfo_t* info) {
 	int grpDest = info->grpDest;
 	assert( grp_Info[grpDest].SizeN == grp_Info[grpSrc].SizeN );
 
-	for(int nid=grp_Info[grpSrc].StartN,j=grp_Info[grpDest].StartN; nid<=grp_Info[grpSrc].EndN; nid++, j++)  {
+	// rebuild struct for easier handling
+	// \NOTE: RadiusRF should have no influence on connect one-to-one anyway...
+	// unless radius=0, which is non-sensical
+	RadiusRF radius(info->radX, info->radY, info->radZ);
+
+	for(int pre=grp_Info[grpSrc].StartN, post=grp_Info[grpDest].StartN; pre<=grp_Info[grpSrc].EndN; pre++, post++)  {
+		// check whether pre-neuron location is in RF of post-neuron
+		Point3D loc_pre = getNeuronLocation3D(pre);
+		Point3D loc_post = getNeuronLocation3D(post);
+		if (!isPoint3DinRF(radius, loc_pre, loc_post))
+			continue;
+
 		uint8_t dVal = info->minDelay + (int)(0.5+(getRandClosed()*(info->maxDelay-info->minDelay)));
 		assert((dVal >= info->minDelay) && (dVal <= info->maxDelay));
-		float synWt = getWeights(info->connProp, info->initWt, info->maxWt, nid, grpSrc);
-		setConnection(grpSrc, grpDest, nid, j, synWt, info->maxWt, dVal, info->connProp, info->connId);
+		float synWt = getWeights(info->connProp, info->initWt, info->maxWt, pre, grpSrc);
+		setConnection(grpSrc, grpDest, pre, post, synWt, info->maxWt, dVal, info->connProp, info->connId);
 		info->numberOfConnections++;
 	}
 
@@ -2733,8 +2753,18 @@ void CpuSNN::connectOneToOne (grpConnectInfo_t* info) {
 void CpuSNN::connectRandom (grpConnectInfo_t* info) {
 	int grpSrc = info->grpSrc;
 	int grpDest = info->grpDest;
+
+	// rebuild struct for easier handling
+	RadiusRF radius(info->radX, info->radY, info->radZ);
+
 	for(int pre_nid=grp_Info[grpSrc].StartN; pre_nid<=grp_Info[grpSrc].EndN; pre_nid++) {
+		Point3D loc_pre = getNeuronLocation3D(pre_nid); // 3D coordinates of i
 		for(int post_nid=grp_Info[grpDest].StartN; post_nid<=grp_Info[grpDest].EndN; post_nid++) {
+			// check whether pre-neuron location is in RF of post-neuron
+			Point3D loc_post = getNeuronLocation3D(post_nid); // 3D coordinates of j
+			if (!isPoint3DinRF(radius, loc_pre, loc_post))
+				continue;
+
 			if (getRand() < info->p) {
 				uint8_t dVal = info->minDelay + (int)(0.5+(getRandClosed()*(info->maxDelay-info->minDelay)));
 				assert((dVal >= info->minDelay) && (dVal <= info->maxDelay));
