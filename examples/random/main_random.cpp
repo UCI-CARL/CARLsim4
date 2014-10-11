@@ -75,7 +75,7 @@ int main()
 
 	int g3=sim.createGroup("test", Grid3D(3,3,3), EXCITATORY_NEURON);
 	sim.setNeuronParameters(g3, 0.1f,  0.2f, -65.0f, 2.0f);
-	sim.connect(g3,g3,"full",RangeWeight(0.01), 1.0f, RangeDelay(1,20), RadiusRF(-1,0,0));
+	sim.connect(g3, g3, "full", RangeWeight(0.01), 1.0f, RangeDelay(1,20), RadiusRF(-1,0,0));
 
 	// here we define and set the properties of the STDP.
 	float ALPHA_LTP = 0.10f/100, TAU_LTP = 20.0f, ALPHA_LTD = 0.12f/100, TAU_LTD = 20.0f;
@@ -87,6 +87,7 @@ int main()
 	sim.setSpikeMonitor(g1); // put spike times into file
 	sim.setSpikeMonitor(g2); // Show basic statistics about g2
 	sim.setSpikeMonitor(gin);
+	sim.setSpikeMonitor(g3);
 
 	sim.setConnectionMonitor(g1, g2);
 
@@ -95,8 +96,10 @@ int main()
 	for (int i=0;i<N*0.1;i++) in.rates[i] = 1;
 		sim.setSpikeRate(gin,&in);
 
-	//run for 10 seconds
-	sim.runNetwork(10,0,false);
+	// run for a total of 10 seconds
+	// at the end of each runNetwork call, SpikeMonitor stats will be printed
+	for (int i=0; i<10; i++)
+		sim.runNetwork(1,0);
 
 	return 0;
 }

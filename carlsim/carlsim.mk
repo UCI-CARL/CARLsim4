@@ -19,9 +19,9 @@ kernel_objs := $(kernel_cpp_objs) $(kernel_cu_objs)
 # interface variables
 interface_inc := $(addprefix $(interface_dir)/include/, carlsim.h \
 	user_errors.h callback.h callback_core.h carlsim_definitions.h \
-	carlsim_datastructures.h)
+	carlsim_datastructures.h linear_algebra.h)
 interface_src := $(addprefix $(interface_dir)/src/,carlsim.cpp \
-	user_errors.cpp callback_core.cpp)
+	user_errors.cpp callback_core.cpp linear_algebra.cpp)
 interface_objs := $(patsubst %.cpp, %.o, $(interface_src))
 
 # spike monitor variables

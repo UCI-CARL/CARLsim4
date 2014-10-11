@@ -2607,9 +2607,73 @@ void CpuSNN::compactConnections() {
 	postSynCnt	= tmp_postSynCnt;
 }
 
-// compute 2-norm of a point
-double norm(Point3D p) {
-	return sqrt(p.x*p.x+p.y*p.y+p.z*p.z);
+
+// \FIXME: not sure where this should go... maybe create some helper file?
+//! check whether certain point lies on certain grid \FIXME maybe move to carlsim_helper.h or something...
+bool CpuSNN::isPointOnGrid(Point3D& p, Grid3D& g) {
+	// point needs to have non-negative coordinates
+	if (p.x<0 || p.y<0 || p.z<0)
+		return false;
+		
+	// point needs to have all integer coordinates
+	if (floor(p.x)!=p.x || floor(p.y)!=p.y || floor(p.z)!=p.z)
+		return false;
+		
+	// point needs to be within ranges
+	if (p.x>=g.x || p.y>=g.y || p.z>=g.z)
+		return false;
+		
+	// passed all tests
+	return true;
+}
+
+// \FIXME: not sure where this should go... maybe create some helper file?
+bool CpuSNN::isPoint3DinRF(RadiusRF& radius, Point3D& pre, Point3D& post) {
+	// Note: RadiusRF rad is assumed to be the fanning in to the post neuron. So if the radius is 10 pixels, it means
+	// that if you look at the post neuron, it will receive input from neurons that code for locations no more than
+	// 10 pixels away.
+
+	// inverse semi-principal axes of the ellipsoid
+	// avoid division by zero by working with inverse of semi-principal axes (set to large value)
+	double aa = (radius.radX>0) ? 1.0/radius.radX/radius.radX : 1e+20;
+	double bb = (radius.radY>0) ? 1.0/radius.radY/radius.radY : 1e+20;
+	double cc = (radius.radZ>0) ? 1.0/radius.radZ/radius.radZ : 1e+20;
+
+	// ready output argument
+	// pre and post are connected, except if they fall in one of the following if-else cases
+	bool isInRF = true;
+
+	// how many semi-principal axes have negative value
+	int numNegRadii = (radius.radX<0) + (radius.radY<0) + (radius.radZ<0);
+	switch (numNegRadii) {
+		case 0:
+			// 3D ellipsoid: connect if x^2/a^2 + y^2/b^2 + z^2/c^2 <= 1
+			if ( norm((pre-post)*Point3D(aa,bb,cc)) > 1.0)
+				isInRF = false;
+			break;
+		case 1:
+			// 2D ellipse: connect if x^2/a^2 + y^2/b^2 <= 1, 3 choose 2
+			if (radius.radX<0 && norm((pre-post)*Point3D(0.0,bb,cc)) > 1.0)
+				isInRF = false;
+			else if (radius.radY<0 && norm((pre-post)*Point3D(aa,0.0,cc)) > 1.0)
+				isInRF = false;
+			else if (radius.radZ<0 && norm((pre-post)*Point3D(aa,bb,0.0)) > 1.0)
+				isInRF = false;
+			break;
+		case 2:
+			// 1D line: connect if x^2/a^2 <= 1, 3 choose 1
+			if (radius.radX>=0 && (pre.x-post.x)*(pre.x-post.x)*aa > 1.0)
+				isInRF = false;
+			else if (radius.radY>=0 && (pre.y-post.y)*(pre.y-post.y)*bb > 1.0)
+				isInRF = false;
+			else if (radius.radZ>=0 && (pre.z-post.z)*(pre.z-post.z)*cc > 1.0)
+				isInRF = false;
+			break;
+		default:
+			CARLSIM_ERROR("Invalid number of negative semi-principal axes: %d",numNegRadii);
+	}
+
+	return isInRF;
 }
 
 // make 'C' full connections from grpSrc to grpDest
@@ -2618,14 +2682,8 @@ void CpuSNN::connectFull(grpConnectInfo_t* info) {
 	int grpDest = info->grpDest;
 	bool noDirect = (info->type == CONN_FULL_NO_DIRECT);
 
-	// inverse semi-principal axes of the ellipsoid
-	// avoid division by zero by working with inverse of semi-principal axes (set to large value)
-	double aa = (info->radX>0) ? 1.0/info->radX/info->radX : 1e+20;
-	double bb = (info->radY>0) ? 1.0/info->radY/info->radY : 1e+20;
-	double cc = (info->radZ>0) ? 1.0/info->radZ/info->radZ : 1e+20;
-
-	// how many semi-principal axes have negative value
-	int numNegRadii = (info->radX<0) + (info->radY<0) + (info->radZ<0);
+	// rebuild struct for easier handling
+	RadiusRF radius(info->radX, info->radY, info->radZ);
 
 	for(int i = grp_Info[grpSrc].StartN; i <= grp_Info[grpSrc].EndN; i++)  {
 		Point3D loc_i = getNeuronLocation3D(i); // 3D coordinates of i
@@ -2635,30 +2693,8 @@ void CpuSNN::connectFull(grpConnectInfo_t* info) {
 				continue;
 
 			Point3D loc_j = getNeuronLocation3D(j); // 3D coordinates of j
-			if (numNegRadii==0) {
-				// 3D ellipsoid: connect if x^2/a^2 + y^2/b^2 + z^2/c^2 <= 1
-				if ( norm((loc_i-loc_j)*Point3D(aa,bb,cc)) > 1.0)
-					continue;
-			} else if (numNegRadii==1) {
-				// 2D ellipse: connect if x^2/a^2 + y^2/b^2 <= 1, 3 choose 2
-				if (info->radX<0 && norm((loc_i-loc_j)*Point3D(0.0,bb,cc)) > 1.0)
-					continue;
-				else if (info->radY<0 && norm((loc_i-loc_j)*Point3D(aa,0.0,cc)) > 1.0)
-					continue;
-				else if (info->radZ<0 && norm((loc_i-loc_j)*Point3D(aa,bb,0.0)) > 1.0)
-					continue;
-			} else if (numNegRadii==2) {
-				// 1D line: connect if x^2/a^2 <= 1, 3 choose 1
-				if (info->radX>=0 && (loc_i.x-loc_j.x)*(loc_i.x-loc_j.x)*aa > 1.0)
-					continue;
-				else if (info->radY>=0 && (loc_i.y-loc_j.y)*(loc_i.y-loc_j.y)*bb > 1.0)
-					continue;
-				else if (info->radZ>=0 && (loc_i.z-loc_j.z)*(loc_i.z-loc_j.z)*cc > 1.0)
-					continue;
-			}
-
-
-//std::cout << "connect("<<i<<","<<j<<") i: "<<loc_i<<", j: "<<loc_j<<std::endl;
+			if (!isPoint3DinRF(radius, loc_i, loc_j))
+				continue;
 
 			uint8_t dVal = info->minDelay + (int)(0.5 + (getRandClosed() * (info->maxDelay - info->minDelay)));
 			assert((dVal >= info->minDelay) && (dVal <= info->maxDelay));

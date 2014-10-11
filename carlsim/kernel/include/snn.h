@@ -642,6 +642,12 @@ private:
 
 	void initSynapticWeights(); //!< initialize all the synaptic weights to appropriate values. total size of the synaptic connection is 'length'
 
+	//! checks whether a point lies on a grid
+	bool isPointOnGrid(Point3D& p, Grid3D& g);
+
+	//! checks whether a point pre lies in the receptive field for point post
+	bool isPoint3DinRF(RadiusRF& radius, Point3D& pre, Point3D& post);
+
 	void makePtrInfo();				//!< creates CPU net ptrs
 
 	unsigned int poissonSpike(unsigned int currTime, float frate, int refractPeriod); //!< for generateSpikesFromRate

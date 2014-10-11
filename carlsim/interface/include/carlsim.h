@@ -56,6 +56,7 @@
 #include <carlsim_definitions.h>
 #include <carlsim_datastructures.h>
 
+#include <linear_algebra.h>
 #include <poisson_rate.h>
 #include <spike_monitor.h>
 
