@@ -2354,7 +2354,6 @@ void CpuSNN::copyState(network_ptr_t* dest, int allocateMem) {
 	CUDA_CHECK_ERRORS( cudaMemcpy( dest->synSpikeTime, synSpikeTime, sizeof(int)*preSynCnt, kind));
 	net_Info.preSynLength = preSynCnt;
 
-	assert(net_Info.maxSpikesD1 != 0);
 	if(allocateMem) {
 		assert(dest->firingTableD1 == NULL);
 		assert(dest->firingTableD2 == NULL);
