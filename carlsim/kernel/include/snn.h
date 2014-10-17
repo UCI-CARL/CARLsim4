@@ -122,7 +122,7 @@ public:
 	 * \param nConfig the number of configurations
 	 * \param randSeed randomize seed of the random number generator
 	 */
-	CpuSNN(std::string& name, simMode_t simMode, loggerMode_t loggerMode, int ithGPU, int nConfig, int randSeed);
+	CpuSNN(const std::string& name, simMode_t simMode, loggerMode_t loggerMode, int ithGPU, int nConfig, int randSeed);
 
 	//! SNN Destructor
 	/*!
@@ -568,6 +568,10 @@ public:
 	bool isPoissonGroup(int g) { return (grp_Info[g].Type&POISSON_NEURON); }
 	bool isDopaminergicGroup(int g) { return (grp_Info[g].Type&TARGET_DA); }
 
+	//! checks whether a point pre lies in the receptive field for point post
+	bool isPoint3DinRF(const RadiusRF& radius, const Point3D& pre, const Point3D& post);
+	bool isPoint3DonGrid(const Point3D& p, const Grid3D& g); //!< checks whether a point lies on a grid
+
 	bool isSimulationWithCOBA() { return sim_with_conductances; }
 	bool isSimulationWithCUBA() { return !sim_with_conductances; }
 	bool isSimulationWithNMDARise() { return sim_with_NMDA_rise; }
@@ -641,12 +645,6 @@ private:
 	void globalStateUpdate();
 
 	void initSynapticWeights(); //!< initialize all the synaptic weights to appropriate values. total size of the synaptic connection is 'length'
-
-	//! checks whether a point lies on a grid
-	bool isPointOnGrid(Point3D& p, Grid3D& g);
-
-	//! checks whether a point pre lies in the receptive field for point post
-	bool isPoint3DinRF(RadiusRF& radius, Point3D& pre, Point3D& post);
 
 	void makePtrInfo();				//!< creates CPU net ptrs
 

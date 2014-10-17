@@ -73,107 +73,6 @@ TEST(CORE, CpuSNNinitDeath) {
 }
 
 
-// \TODO make CARLsim-level
-//! connect with certain mulSynFast, mulSynSlow and observe connectInfo
-TEST(CORE, connect) {
-	// create network by varying nConfig from 1...maxConfig, with
-	// step size nConfigStep
-	int maxConfig = rand()%10 + 10;
-	int nConfigStep = rand()%3 + 2;
-
-	CpuSNN* sim = NULL;
-	grpConnectInfo_t* connInfo;
-	std::string typeStr;
-	std::string name="SNN";
-
-	int conn[4] 		= {-1};
-	conType_t type[4] 	= {CONN_RANDOM,CONN_ONE_TO_ONE,CONN_FULL,CONN_FULL_NO_DIRECT};
-	float initWt[4] 	= {0.05f, 0.1f, 0.21f, 0.42f};
-	float maxWt[4] 		= {0.05f, 0.1f, 0.21f, 0.42f};
-	float prob[4] 		= {0.1, 0.2, 0.3, 0.4};
-	int minDelay[4] 	= {1,2,3,4};
-	int maxDelay[4] 	= {1,2,3,4};
-	float mulSynFast[4] = {0.2f, 0.8f, 1.2f, 0.0};
-	float mulSynSlow[4] = {0.0f, 2.4f, 11.1f, 10.0f};
-	int synType[4] 		= {SYN_FIXED,SYN_PLASTIC,SYN_FIXED,SYN_PLASTIC};
-
-	for (int mode=0; mode<=1; mode++) {
-		for (int nConfig=1; nConfig<=maxConfig; nConfig+=nConfigStep) {
-			for (int i=0; i<4; i++) {
-				sim = new CpuSNN(name,mode?GPU_MODE:CPU_MODE,SILENT,0,nConfig,42);
-
-                Grid3D neur(10,1,1);
-				int g0=sim->createSpikeGeneratorGroup("spike", neur, EXCITATORY_NEURON, ALL);
-				int g1=sim->createGroup("excit0", neur, EXCITATORY_NEURON, ALL);
-				sim->setNeuronParameters(g1, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f, ALL);
-				int g2=sim->createGroup("excit1", neur, EXCITATORY_NEURON, ALL);
-				sim->setNeuronParameters(g2, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f, ALL);
-
-				if (type[i]==CONN_RANDOM) typeStr = "random";
-				else if (type[i]==CONN_ONE_TO_ONE) typeStr = "one-to-one";
-				else if (type[i]=CONN_FULL) typeStr = "full";
-				else if (type[i]=CONN_FULL_NO_DIRECT) typeStr = "full-no-direct";
-
-				conn[i] = sim->connect(g0, g1, typeStr, initWt[i], maxWt[i], prob[i],
-					minDelay[i], maxDelay[i], -1.0, -1.0, -1.0, mulSynFast[i], mulSynSlow[i], synType[i]);
-
-				for (int c=0; c<nConfig; c++) {
-					connInfo = sim->getConnectInfo(conn[i],c);
-					EXPECT_FLOAT_EQ(connInfo->initWt,initWt[i]);
-					EXPECT_FLOAT_EQ(connInfo->maxWt,maxWt[i]);
-					EXPECT_FLOAT_EQ(connInfo->p,prob[i]);
-					EXPECT_FLOAT_EQ(connInfo->mulSynFast,mulSynFast[i]);
-					EXPECT_FLOAT_EQ(connInfo->mulSynSlow,mulSynSlow[i]);
-					EXPECT_EQ(connInfo->minDelay,minDelay[i]);
-					EXPECT_EQ(connInfo->maxDelay,maxDelay[i]);
-					EXPECT_EQ(connInfo->type,type[i]);
-					EXPECT_EQ(GET_FIXED_PLASTIC(connInfo->connProp),synType[i]);
-				}
-				delete sim;
-			}
-		}
-	}
-}
-
-TEST(CORE, connectRadiusRF) {
-	CARLsim* sim = new CARLsim("CORE.connectRadiusRF",CPU_MODE,SILENT,0,1,42);
-	Grid3D grid(2,3,4);
-	int g0=sim->createGroup("excit0", grid, EXCITATORY_NEURON);
-	int g1=sim->createGroup("excit1", grid, EXCITATORY_NEURON);
-	int g2=sim->createGroup("excit2", grid, EXCITATORY_NEURON);
-	int g3=sim->createGroup("excit3", grid, EXCITATORY_NEURON);
-	int g4=sim->createGroup("excit4", grid, EXCITATORY_NEURON);
-	int g5=sim->createGroup("excit5", grid, EXCITATORY_NEURON);
-	int g6=sim->createGroup("excit6", grid, EXCITATORY_NEURON);
-	sim->setNeuronParameters(g0, 0.02f, 0.2f, -65.0f, 8.0f);
-	sim->setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f);
-	sim->setNeuronParameters(g2, 0.02f, 0.2f, -65.0f, 8.0f);
-	sim->setNeuronParameters(g3, 0.02f, 0.2f, -65.0f, 8.0f);
-	sim->setNeuronParameters(g4, 0.02f, 0.2f, -65.0f, 8.0f);
-	sim->setNeuronParameters(g5, 0.02f, 0.2f, -65.0f, 8.0f);
-	sim->setNeuronParameters(g6, 0.02f, 0.2f, -65.0f, 8.0f);
-
-	int c0=sim->connect(g0,g0,"full",RangeWeight(0.1), 1.0, RangeDelay(1), RadiusRF(-1)); // full
-	int c1=sim->connect(g1,g1,"full",RangeWeight(0.1), 1.0, RangeDelay(1), RadiusRF(-1,0,0)); // all in x
-	int c2=sim->connect(g2,g2,"full",RangeWeight(0.1), 1.0, RangeDelay(1), RadiusRF(-1,0,-1)); // all in x and z
-	int c3=sim->connect(g3,g3,"full",RangeWeight(0.1), 1.0, RangeDelay(1), RadiusRF(0,0,0)); // 1-to-1
-	int c4=sim->connect(g4,g4,"full",RangeWeight(0.1), 1.0, RangeDelay(1), RadiusRF(2,3,0)); // 2D ellipse x,y
-	int c5=sim->connect(g5,g5,"full",RangeWeight(0.1), 1.0, RangeDelay(1), RadiusRF(0,2,3)); // 2D ellipse y,z
-	int c6=sim->connect(g6,g6,"full",RangeWeight(0.1), 1.0, RangeDelay(1), RadiusRF(2,2,2)); // 3D ellipsoid
-
-	sim->setupNetwork(); // need SETUP state for this function to work
-
-	EXPECT_EQ(sim->getNumSynapticConnections(c0), grid.N * grid.N);
-	EXPECT_EQ(sim->getNumSynapticConnections(c1), grid.N * grid.x);
-	EXPECT_EQ(sim->getNumSynapticConnections(c2), grid.N * grid.x * grid.z);
-	EXPECT_EQ(sim->getNumSynapticConnections(c3), grid.N);
-	EXPECT_EQ(sim->getNumSynapticConnections(c4), 144);
-	EXPECT_EQ(sim->getNumSynapticConnections(c5), 288);
-	EXPECT_EQ(sim->getNumSynapticConnections(c6), 576);
-
-	delete sim;
-}
-
 TEST(CORE, getGroupGrid3D) {
 	CARLsim* sim = new CARLsim("CORE.getGroupGrid3D",CPU_MODE,SILENT,0,1,42);
 	Grid3D grid(2,3,4);
@@ -247,6 +146,19 @@ TEST(CORE, getNeuronLocation3D) {
 	delete sim;
 }
 
+// tests whether a point lies on a grid
+TEST(CORE, isPoint3DonGrid) {
+	CpuSNN snn("CORE.isPoint3DonGrid", CPU_MODE, USER, 0, 1, 42);
+	EXPECT_FALSE(snn.isPoint3DonGrid(Point3D(-1,-1,-1), Grid3D(10,5,2)));
+	EXPECT_FALSE(snn.isPoint3DonGrid(Point3D(0.5,0.5,0.5), Grid3D(10,5,2)));
+	EXPECT_FALSE(snn.isPoint3DonGrid(Point3D(10,5,2), Grid3D(10,5,2)));
+
+	EXPECT_TRUE(snn.isPoint3DonGrid(Point3D(0,0,0), Grid3D(10,5,2)));
+	EXPECT_TRUE(snn.isPoint3DonGrid(Point3D(0.0,0.0,0.0), Grid3D(10,5,2)));
+	EXPECT_TRUE(snn.isPoint3DonGrid(Point3D(1,1,1), Grid3D(10,5,2)));
+	EXPECT_TRUE(snn.isPoint3DonGrid(Point3D(9,4,1), Grid3D(10,5,2)));
+	EXPECT_TRUE(snn.isPoint3DonGrid(Point3D(9.0,4.0,1.0), Grid3D(10,5,2)));
+}
 
 TEST(CORE, setConductancesTrue) {
 	std::string name = "SNN";

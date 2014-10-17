@@ -5,11 +5,13 @@
 
 //! trigger all UserErrors
 // TODO: add more error checking
-TEST(Interface, connect) {
+TEST(Interface, connectDeath) {
 	CARLsim* sim = new CARLsim("SNN",CPU_MODE,SILENT,0,1,42);
 	int g1=sim->createSpikeGeneratorGroup("excit", 10, EXCITATORY_NEURON);
 	EXPECT_DEATH({sim->connect(g1,g1,"random",RangeWeight(0.01f,0.1f),0.1);},""); // g2 cannot be PoissonGroup
 	EXPECT_DEATH({sim->connect(g1,g1,"random",RangeWeight(-0.01f,0.1f),0.1);},""); // weight cannot be negative
+	EXPECT_DEATH({sim->connect(g1,g1,"random",RangeWeight(0.1f),0.1,RangeDelay(1),RadiusRF(0,0,0));},""); // radius=0
+	EXPECT_DEATH({sim->connect(g1,g1,"one-to-one",RangeWeight(0.1f),0.1,RangeDelay(1),RadiusRF(3,0,0));},""); // rad>0
 	delete sim;
 }
 

@@ -162,7 +162,11 @@ short int CARLsim::connect(int grpId1, int grpId2, const std::string& connType, 
 	UserErrors::assertTrue(synWtType==SYN_PLASTIC || synWtType==SYN_FIXED && wt.init==wt.max,
 		UserErrors::MUST_BE_IDENTICAL, funcName, "For fixed synapses, initWt and maxWt");
 	UserErrors::assertTrue(delay.min>0, UserErrors::MUST_BE_POSITIVE, funcName, "delay.min");
-	UserErrors::assertTrue(radRF.radX!=0 || radRF.radY!=0 || radRF.radZ!=0, UserErrors::CANNOT_BE_ZERO, funcName, "Receptive field radius");
+	UserErrors::assertTrue(radRF.radX!=0 || radRF.radY!=0 || radRF.radZ!=0, UserErrors::CANNOT_BE_ZERO, funcName,
+		"Receptive field radius");
+	UserErrors::assertTrue(connType.compare("one-to-one")!=0
+		|| connType.compare("one-to-one")==0 && radRF.radX<=0 && radRF.radY<=0 && radRF.radZ<=0,
+		UserErrors::CANNOT_BE_LARGER, funcName, "Receptive field radius", "zero for type \"one-to-one\".");
 	UserErrors::assertTrue(carlsimState_==CONFIG_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "CONFIG.");
 
 	// TODO: enable support for non-zero min

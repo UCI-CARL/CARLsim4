@@ -778,7 +778,7 @@ public:
 	 * assigned to location in order; where the first dimension specifies the width, the second dimension is height,
 	 * and the third dimension is depth.
 	 * For more information see CARLsim::createGroup and the Grid3D struct.
-	 * \STATE CONFIG, SETUP, EXE
+	 * \STATE SETUP, EXE
 	 * \param[in] neurId the neuron ID for which the 3D location should be returned
 	 * \returns the 3D location a neuron codes for as a Point3D struct
 	 */

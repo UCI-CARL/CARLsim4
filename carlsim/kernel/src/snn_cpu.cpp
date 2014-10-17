@@ -88,7 +88,8 @@ RNG_rand48* gpuRand48 = NULL;
 
 
 // TODO: consider moving unsafe computations out of constructor
-CpuSNN::CpuSNN(std::string& name, simMode_t simMode, loggerMode_t loggerMode, int ithGPU, int nConfig, int randSeed)
+CpuSNN::CpuSNN(const std::string& name, simMode_t simMode, loggerMode_t loggerMode,
+	int ithGPU, int nConfig, int randSeed)
 					: networkName_(name), simMode_(simMode), loggerMode_(loggerMode), ithGPU_(ithGPU),
 					  nConfig_(nConfig), randSeed_(CpuSNN::setRandSeed(randSeed)) // all of these are const
 {
@@ -2609,35 +2610,16 @@ void CpuSNN::compactConnections() {
 
 
 // \FIXME: not sure where this should go... maybe create some helper file?
-//! check whether certain point lies on certain grid \FIXME maybe move to carlsim_helper.h or something...
-bool CpuSNN::isPointOnGrid(Point3D& p, Grid3D& g) {
-	// point needs to have non-negative coordinates
-	if (p.x<0 || p.y<0 || p.z<0)
-		return false;
-		
-	// point needs to have all integer coordinates
-	if (floor(p.x)!=p.x || floor(p.y)!=p.y || floor(p.z)!=p.z)
-		return false;
-		
-	// point needs to be within ranges
-	if (p.x>=g.x || p.y>=g.y || p.z>=g.z)
-		return false;
-		
-	// passed all tests
-	return true;
-}
-
-// \FIXME: not sure where this should go... maybe create some helper file?
-bool CpuSNN::isPoint3DinRF(RadiusRF& radius, Point3D& pre, Point3D& post) {
+bool CpuSNN::isPoint3DinRF(const RadiusRF& radius, const Point3D& pre, const Point3D& post) {
 	// Note: RadiusRF rad is assumed to be the fanning in to the post neuron. So if the radius is 10 pixels, it means
 	// that if you look at the post neuron, it will receive input from neurons that code for locations no more than
 	// 10 pixels away.
 
 	// inverse semi-principal axes of the ellipsoid
 	// avoid division by zero by working with inverse of semi-principal axes (set to large value)
-	double aa = (radius.radX>0) ? 1.0/radius.radX/radius.radX : 1e+20;
-	double bb = (radius.radY>0) ? 1.0/radius.radY/radius.radY : 1e+20;
-	double cc = (radius.radZ>0) ? 1.0/radius.radZ/radius.radZ : 1e+20;
+	double aa = (radius.radX>0) ? 1.0/radius.radX : 1e+20;
+	double bb = (radius.radY>0) ? 1.0/radius.radY : 1e+20;
+	double cc = (radius.radZ>0) ? 1.0/radius.radZ : 1e+20;
 
 	// ready output argument
 	// pre and post are connected, except if they fall in one of the following if-else cases
@@ -2662,15 +2644,16 @@ bool CpuSNN::isPoint3DinRF(RadiusRF& radius, Point3D& pre, Point3D& post) {
 			break;
 		case 2:
 			// 1D line: connect if x^2/a^2 <= 1, 3 choose 1
-			if (radius.radX>=0 && (pre.x-post.x)*(pre.x-post.x)*aa > 1.0)
+			if (radius.radX>=0 && (pre.x-post.x)*(pre.x-post.x)*aa*aa > 1.0)
 				isInRF = false;
-			else if (radius.radY>=0 && (pre.y-post.y)*(pre.y-post.y)*bb > 1.0)
+			else if (radius.radY>=0 && (pre.y-post.y)*(pre.y-post.y)*bb*bb > 1.0)
 				isInRF = false;
-			else if (radius.radZ>=0 && (pre.z-post.z)*(pre.z-post.z)*cc > 1.0)
+			else if (radius.radZ>=0 && (pre.z-post.z)*(pre.z-post.z)*cc*cc > 1.0)
 				isInRF = false;
 			break;
 		case 3:
 			// 3D no restrictions
+			isInRF = true;
 			break;
 		default:
 			CARLSIM_ERROR("Invalid number of negative semi-principal axes: %d",numNegRadii);
@@ -2682,6 +2665,25 @@ bool CpuSNN::isPoint3DinRF(RadiusRF& radius, Point3D& pre, Point3D& post) {
 //	}
 
 	return isInRF;
+}
+
+// \FIXME: not sure where this should go... maybe create some helper file?
+//! check whether certain point lies on certain grid \FIXME maybe move to carlsim_helper.h or something...
+bool CpuSNN::isPoint3DonGrid(const Point3D& p, const Grid3D& g) {
+	// point needs to have non-negative coordinates
+	if (p.x<0 || p.y<0 || p.z<0)
+		return false;
+		
+	// point needs to have all integer coordinates
+	if (floor(p.x)!=p.x || floor(p.y)!=p.y || floor(p.z)!=p.z)
+		return false;
+		
+	// point needs to be within ranges
+	if (p.x>=g.x || p.y>=g.y || p.z>=g.z)
+		return false;
+		
+	// passed all tests
+	return true;
 }
 
 // make 'C' full connections from grpSrc to grpDest
@@ -2725,28 +2727,17 @@ void CpuSNN::connectOneToOne (grpConnectInfo_t* info) {
 	int grpDest = info->grpDest;
 	assert( grp_Info[grpDest].SizeN == grp_Info[grpSrc].SizeN );
 
-	// rebuild struct for easier handling
-	// \NOTE: RadiusRF should have no influence on connect one-to-one anyway...
-	// unless radius=0, which is non-sensical
-	RadiusRF radius(info->radX, info->radY, info->radZ);
-
-	for(int pre=grp_Info[grpSrc].StartN, post=grp_Info[grpDest].StartN; pre<=grp_Info[grpSrc].EndN; pre++, post++)  {
-		// check whether pre-neuron location is in RF of post-neuron
-		Point3D loc_pre = getNeuronLocation3D(pre);
-		Point3D loc_post = getNeuronLocation3D(post);
-		if (!isPoint3DinRF(radius, loc_pre, loc_post))
-			continue;
-
+	// NOTE: RadiusRF does not make a difference here. Radius>0 is not allowed
+	for(int nid=grp_Info[grpSrc].StartN,j=grp_Info[grpDest].StartN; nid<=grp_Info[grpSrc].EndN; nid++, j++)  {
 		uint8_t dVal = info->minDelay + (int)(0.5+(getRandClosed()*(info->maxDelay-info->minDelay)));
 		assert((dVal >= info->minDelay) && (dVal <= info->maxDelay));
-		float synWt = getWeights(info->connProp, info->initWt, info->maxWt, pre, grpSrc);
-		setConnection(grpSrc, grpDest, pre, post, synWt, info->maxWt, dVal, info->connProp, info->connId);
+		float synWt = getWeights(info->connProp, info->initWt, info->maxWt, nid, grpSrc);
+		setConnection(grpSrc, grpDest, nid, j, synWt, info->maxWt, dVal, info->connProp, info->connId);
 		info->numberOfConnections++;
 	}
 
 	grp_Info2[grpSrc].sumPostConn += info->numberOfConnections;
 	grp_Info2[grpDest].sumPreConn += info->numberOfConnections;
-
 }
 
 // make 'C' random connections from grpSrc to grpDest
