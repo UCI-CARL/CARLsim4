@@ -164,14 +164,28 @@ public:
 	 *                                                     and wt.init=0.1. If pre is inhibitory: all weights will be in
 	 *                                                     range [-0.2,0.0], and wt.init=0.0.
 	 * \param[in] connProb   connection probability
-	 * \param[in] delay      a struct specifying the range of delay values (ms). Synaptic delays must be greater than or
+	 * \param[in] delay      A struct specifying the range of delay values (ms). Synaptic delays must be greater than or
 	 *                       equal to 1 ms.
 	 *                       Examples:
 	 *                         RangeDelay(2) => all delays will be 2 (delay.min=2, delay.max=2)
 	 *                         RangeDelay(1,10) => delays will be in range [1,10]
-	 * \param[in] radRF      a struct specifying the radius of the receptive field (RF). A radius can be specified in 3
+	 * \param[in] radRF      A struct specifying the radius of the receptive field (RF). A radius can be specified in 3
 	 *                       dimensions x, y, and z (following the topographic organization of neurons as specified by
 	 *                       Grid3D).
+	 *                       Receptive fields will be circular with radius as specified. The 3 dimensions follow the 
+	 *                       ones defined by Grid3D.
+	 *                       If the radius in one dimension is 0, no connections will be made in this dimension.
+	 *                       If the radius in one dimension is -1, then all possible connections will be made in this 
+	 *                       dimension (effectively making RF of infinite size).
+	 *                       Otherwise, if the radius is a positive real number, the RF radius will be exactly this 
+	 *                       number. Call RadiusRF with only one argument to make that radius apply to all 3 dimensions.
+	 *                       Examples:
+	 *                         * Create a 2D Gaussian RF of radius 10: RadiusRF(10, 10, 0)
+	 *                         * Create a 2D heterogeneous Gaussian RF (an ellipse) with semi-axes 10 and 5:
+	 *                           RadiusRF(10, 5, 0)
+	 *                         * Connect only the third dimension: RadiusRF(0, 0, 1)
+	 *                         * Connect all, no matter the RF (default): RadiusRF(-1, -1, -1)
+	 *                         * Don't connect anything (silly, not allowed): RadiusRF(0, 0, 0)
 	 * \param[in] synWtType  specifies whether the synapse should be of fixed value (SYN_FIXED) or plastic (SYN_PLASTIC)
 	 * \param[in] mulSynFast a multiplication factor to be applied to the fast synaptic current (AMPA in the case of
 	 *                       excitatory, and GABAa in the case of inhibitory connections). Default: 1.0

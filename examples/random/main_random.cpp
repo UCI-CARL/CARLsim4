@@ -71,10 +71,6 @@ int main() {
 	// 5% probability of connection
 	sim.connect(gin, g1, "random", RangeWeight(1.0), 0.05f, RangeDelay(1,20), RadiusRF(-1));
 
-	int g3=sim.createGroup("test", Grid3D(3,3,3), EXCITATORY_NEURON);
-	sim.setNeuronParameters(g3, 0.1f,  0.2f, -65.0f, 2.0f);
-	sim.connect(g3, g3, "full", RangeWeight(0.01), 1.0f, RangeDelay(1,20), RadiusRF(-1,0,0));
-
 	// here we define and set the properties of the STDP.
 	float ALPHA_LTP = 0.10f/100, TAU_LTP = 20.0f, ALPHA_LTD = 0.12f/100, TAU_LTD = 20.0f;
 	sim.setSTDP(g1, true, STANDARD, ALPHA_LTP, TAU_LTP, ALPHA_LTD, TAU_LTD);
