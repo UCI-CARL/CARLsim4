@@ -778,7 +778,7 @@ public:
 	 * assigned to location in order; where the first dimension specifies the width, the second dimension is height,
 	 * and the third dimension is depth.
 	 * For more information see CARLsim::createGroup and the Grid3D struct.
-	 * \STATE SETUP, EXE
+	 * \STATE CONFIG, SETUP, EXE
 	 * \param[in] neurId the neuron ID for which the 3D location should be returned
 	 * \returns the 3D location a neuron codes for as a Point3D struct
 	 */
@@ -817,7 +817,7 @@ public:
 	 *
 	 * \Note This number might change throughout CARLsim state CONFIG, up to calling CARLsim::setupNetwork).
 	 * \TODO finish docu
-	 * \STATE SETUP, EXECUTION
+	 * \STATE CONFIG, SETUP, EXECUTION
 	 */
 	int getNumGroups();
 
@@ -826,15 +826,69 @@ public:
 	 *
 	 * \Note This number might change throughout CARLsim state CONFIG, up to calling CARLsim::setupNetwork).
 	 * \TODO finish docu
-	 * \STATE SETUP, EXECUTION
+	 * \STATE CONFIG, SETUP, EXECUTION
 	 */
 	int getNumNeurons();
+
+	/*!
+	 * \brief returns the total number of regular (Izhikevich) neurons
+	 *
+	 * \Note This number might change throughout CARLsim state CONFIG, up to calling CARLsim::setupNetwork).
+	 * \TODO finish docu
+	 * \STATE CONFIG, SETUP, EXECUTION
+	 */
+	int getNumNeuronsReg();
+
+	/*!
+	 * \brief returns the total number of regular (Izhikevich) excitatory neurons
+	 *
+	 * \Note This number might change throughout CARLsim state CONFIG, up to calling CARLsim::setupNetwork).
+	 * \TODO finish docu
+	 * \STATE CONFIG, SETUP, EXECUTION
+	 */
+	int getNumNeuronsRegExc();
+
+	/*!
+	 * \brief returns the total number of regular (Izhikevich) inhibitory neurons
+	 *
+	 * \Note This number might change throughout CARLsim state CONFIG, up to calling CARLsim::setupNetwork).
+	 * \TODO finish docu
+	 * \STATE CONFIG, SETUP, EXECUTION
+	 */
+	int getNumNeuronsRegInh();
+
+	/*!
+	 * \brief returns the total number of spike generator neurons
+	 *
+	 * \Note This number might change throughout CARLsim state CONFIG, up to calling CARLsim::setupNetwork).
+	 * \TODO finish docu
+	 * \STATE CONFIG, SETUP, EXECUTION
+	 */
+	int getNumNeuronsGen();
+
+	/*!
+	 * \brief returns the total number of excitatory spike generator neurons
+	 *
+	 * \Note This number might change throughout CARLsim state CONFIG, up to calling CARLsim::setupNetwork).
+	 * \TODO finish docu
+	 * \STATE CONFIG, SETUP, EXECUTION
+	 */
+	int getNumNeuronsGenExc();
+
+	/*!
+	 * \brief returns the total number of inhibitory spike generator neurons
+	 *
+	 * \Note This number might change throughout CARLsim state CONFIG, up to calling CARLsim::setupNetwork).
+	 * \TODO finish docu
+	 * \STATE CONFIG, SETUP, EXECUTION
+	 */
+	int getNumNeuronsGenInh();
 
 	/*!
 	 * \brief returns the total number of allocated pre-synaptic connections in the network
 	 *
 	 * \TODO finish docu
-	 * \STATE SETUP, EXECUTION
+	 * \STATE CONFIG, SETUP, EXECUTION
 	 */
 	int getNumPreSynapses();
 
@@ -842,7 +896,7 @@ public:
 	 * \brief returns the total number of allocated post-synaptic connections in the network
 	 *
 	 * \TODO finish docu
-	 * \STATE SETUP, EXECUTION
+	 * \STATE CONFIG, SETUP, EXECUTION
 	 */
 	int getNumPostSynapses();
 

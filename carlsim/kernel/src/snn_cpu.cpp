@@ -363,6 +363,14 @@ int CpuSNN::createGroup(const std::string& grpName, Grid3D& grid, int neurType, 
 		grp_Info2[numGrp].Name 				= (configId==0)?grpName:grpName+"_"+outStr.str();
 		finishedPoissonGroup				= true;
 
+		// update number of neuron counters
+		if ( (neurType&TARGET_GABAa) || (neurType&TARGET_GABAb))
+			numNInhReg += grid.N; // regular inhibitory neuron
+		else
+			numNExcReg += grid.N; // regular excitatory neuron
+		numNReg += grid.N;
+		numN += grid.N;
+
 		numGrp++;
 		return (numGrp-1);
 	}
@@ -396,6 +404,13 @@ int CpuSNN::createSpikeGeneratorGroup(const std::string& grpName, Grid3D& grid, 
 		outStr << configId;
 		if (configId != 0)
 			grp_Info2[numGrp].Name = grpName + "_" + outStr.str();
+
+		if ( (neurType&TARGET_GABAa) || (neurType&TARGET_GABAb))
+			numNInhPois += grid.N; // inh poisson group
+		else
+			numNExcPois += grid.N; // exc poisson group
+		numNPois += grid.N;
+		numN += grid.N;
 
 		numGrp++;
 		numSpikeGenGrps++;
@@ -1967,7 +1982,15 @@ void CpuSNN::CpuSNNinit() {
 	readNetworkFID = NULL;
 
 	numN = 0;
+	numNPois = 0;
+	numNExcPois = 0;
+	numNInhPois = 0;
+	numNReg = 0;
+	numNExcReg = 0;
+	numNInhReg = 0;
+
 	numPostSynapses = 0;
+	numPreSynapses = 0;
 	maxDelay_ = 0;
 
 	// conductance info struct for simulation
@@ -2285,23 +2308,29 @@ void CpuSNN::buildGroup(int grpId) {
  */
 void CpuSNN::buildNetwork() {
 	grpConnectInfo_t* newInfo = connectBegin;
-	int curN = 0, curD = 0, numPostSynapses = 0, numPreSynapses = 0;
+//	int curN = 0, curD = 0, numPostSynapses = 0, numPreSynapses = 0;
 
 	assert(nConfig_ > 0);
 
-	//update main set of parameters
-	// update (initialize) numNExcPois, numNInhPois, numNExcReg, numNInhReg, numNPois, numNReg
-	updateParameters(&curN, &numPostSynapses, &numPreSynapses, nConfig_);
+	// make sure number of neuron parameters have been accumulated correctly
+	// NOTE: this used to be updateParameters
+	assert(isNumNeuronsConsistent());
+	int curN = numN;
+
+	// find the maximum values for number of pre- and post-synaptic neurons
+	int numPostSynapses = 0, numPreSynapses = 0;
+	findMaxNumSynapses(&numPostSynapses, &numPreSynapses);
 
 	// update (initialize) maxSpikesD1, maxSpikesD2 and allocate sapce for firingTableD1 and firingTableD2
-	curD = updateSpikeTables();
+	int curD = updateSpikeTables();
 
 	assert((curN > 0) && (curN == numNExcReg + numNInhReg + numNPois));
 	assert(numPostSynapses > 0);
 	assert(numPreSynapses > 0);
 
 	// display the evaluated network and delay length....
-	CARLSIM_INFO("\n***************************** Setting up Network **********************************");
+	CARLSIM_INFO("\n");
+	CARLSIM_INFO("***************************** Setting up Network **********************************");
 	CARLSIM_INFO("numN = %d, numPostSynapses = %d, numPreSynapses = %d, maxDelay = %d", curN, numPostSynapses,
 					numPreSynapses, curD);
 
@@ -2606,84 +2635,6 @@ void CpuSNN::compactConnections() {
 
 	preSynCnt	= tmp_preSynCnt;
 	postSynCnt	= tmp_postSynCnt;
-}
-
-
-// \FIXME: not sure where this should go... maybe create some helper file?
-bool CpuSNN::isPoint3DinRF(const RadiusRF& radius, const Point3D& pre, const Point3D& post) {
-	// Note: RadiusRF rad is assumed to be the fanning in to the post neuron. So if the radius is 10 pixels, it means
-	// that if you look at the post neuron, it will receive input from neurons that code for locations no more than
-	// 10 pixels away.
-
-	// inverse semi-principal axes of the ellipsoid
-	// avoid division by zero by working with inverse of semi-principal axes (set to large value)
-	double aa = (radius.radX>0) ? 1.0/radius.radX : 1e+20;
-	double bb = (radius.radY>0) ? 1.0/radius.radY : 1e+20;
-	double cc = (radius.radZ>0) ? 1.0/radius.radZ : 1e+20;
-
-	// ready output argument
-	// pre and post are connected, except if they fall in one of the following if-else cases
-	bool isInRF = true;
-
-	// how many semi-principal axes have negative value
-	int numNegRadii = (radius.radX<0) + (radius.radY<0) + (radius.radZ<0);
-	switch (numNegRadii) {
-		case 0:
-			// 3D ellipsoid: connect if x^2/a^2 + y^2/b^2 + z^2/c^2 <= 1
-			if ( norm((pre-post)*Point3D(aa,bb,cc)) > 1.0)
-				isInRF = false;
-			break;
-		case 1:
-			// 2D ellipse: connect if x^2/a^2 + y^2/b^2 <= 1, 3 choose 2
-			if (radius.radX<0 && norm((pre-post)*Point3D(0.0,bb,cc)) > 1.0)
-				isInRF = false;
-			else if (radius.radY<0 && norm((pre-post)*Point3D(aa,0.0,cc)) > 1.0)
-				isInRF = false;
-			else if (radius.radZ<0 && norm((pre-post)*Point3D(aa,bb,0.0)) > 1.0)
-				isInRF = false;
-			break;
-		case 2:
-			// 1D line: connect if x^2/a^2 <= 1, 3 choose 1
-			if (radius.radX>=0 && (pre.x-post.x)*(pre.x-post.x)*aa*aa > 1.0)
-				isInRF = false;
-			else if (radius.radY>=0 && (pre.y-post.y)*(pre.y-post.y)*bb*bb > 1.0)
-				isInRF = false;
-			else if (radius.radZ>=0 && (pre.z-post.z)*(pre.z-post.z)*cc*cc > 1.0)
-				isInRF = false;
-			break;
-		case 3:
-			// 3D no restrictions
-			isInRF = true;
-			break;
-		default:
-			CARLSIM_ERROR("Invalid number of negative semi-principal axes: %d",numNegRadii);
-	}
-
-//	if (!isInRF) {
-//		std::cout << "Skipping " << pre << " to " << post << " with " << radius << " and numNegRadii="
-//			<< numNegRadii << std::endl;
-//	}
-
-	return isInRF;
-}
-
-// \FIXME: not sure where this should go... maybe create some helper file?
-//! check whether certain point lies on certain grid \FIXME maybe move to carlsim_helper.h or something...
-bool CpuSNN::isPoint3DonGrid(const Point3D& p, const Grid3D& g) {
-	// point needs to have non-negative coordinates
-	if (p.x<0 || p.y<0 || p.z<0)
-		return false;
-		
-	// point needs to have all integer coordinates
-	if (floor(p.x)!=p.x || floor(p.y)!=p.y || floor(p.z)!=p.z)
-		return false;
-		
-	// point needs to be within ranges
-	if (p.x>=g.x || p.y>=g.y || p.z>=g.z)
-		return false;
-		
-	// passed all tests
-	return true;
 }
 
 // make 'C' full connections from grpSrc to grpDest
@@ -3034,6 +2985,20 @@ int CpuSNN::findGrpId(int nid) {
 	exitSimulation(1);
 }
 
+void CpuSNN::findMaxNumSynapses(int* numPostSynapses, int* numPreSynapses) {
+	*numPostSynapses = 0;
+	*numPreSynapses = 0;
+
+	//  scan all the groups and find the required information
+	for (int g=0; g<numGrp; g++) {
+		// find the values for maximum postsynaptic length
+		// and maximum pre-synaptic length
+		if (grp_Info[g].numPostSynapses >= *numPostSynapses)
+			*numPostSynapses = grp_Info[g].numPostSynapses;
+		if (grp_Info[g].numPreSynapses >= *numPreSynapses)
+			*numPreSynapses = grp_Info[g].numPreSynapses;
+	}
+}
 
 void CpuSNN::generatePostSpike(unsigned int pre_i, unsigned int idx_d, unsigned int offset, unsigned int tD) {
 	// get synaptic info...
@@ -3256,19 +3221,6 @@ void CpuSNN::generateSpikesFromRate(int grpId) {
 	}
 }
 
-
-// initialize all the synaptic weights to appropriate values..
-// total size of the synaptic connection is 'length' ...
-void CpuSNN::initSynapticWeights() {
-	// Initialize the network wtChange, wt, synaptic firing time
-	wtChange         = new float[preSynCnt];
-	synSpikeTime     = new uint32_t[preSynCnt];
-	cpuSnnSz.synapticInfoSize = sizeof(float)*(preSynCnt*2);
-
-	resetSynapticConnections(false);
-}
-
-
 inline int CpuSNN::getPoissNeuronPos(int nid) {
 	int nPos = nid-numNReg;
 	assert(nid >= numNReg);
@@ -3378,6 +3330,131 @@ void  CpuSNN::globalStateUpdate() {
 	} // end numGrp
 }
 
+// initialize all the synaptic weights to appropriate values..
+// total size of the synaptic connection is 'length' ...
+void CpuSNN::initSynapticWeights() {
+	// Initialize the network wtChange, wt, synaptic firing time
+	wtChange         = new float[preSynCnt];
+	synSpikeTime     = new uint32_t[preSynCnt];
+	cpuSnnSz.synapticInfoSize = sizeof(float)*(preSynCnt*2);
+
+	resetSynapticConnections(false);
+}
+
+// checks whether the numN* class members are consistent and complete
+bool CpuSNN::isNumNeuronsConsistent() {
+	int nExcPois = 0;
+	int nInhPois = 0;
+	int nExcReg = 0;
+	int nInhReg = 0;
+
+	bool isValid = true;
+
+	//  scan all the groups and find the required information
+	//  about the group (numN, numPostSynapses, numPreSynapses and others).
+	for(int g=0; g<numGrp; g++)  {
+		if (grp_Info[g].Type==UNKNOWN_NEURON) {
+			CARLSIM_ERROR("Unknown group for %d (%s)", g, grp_Info2[g].Name.c_str());
+			exitSimulation(1);
+		}
+
+		if (IS_INHIBITORY_TYPE(grp_Info[g].Type) && !(grp_Info[g].Type & POISSON_NEURON))
+			nInhReg += grp_Info[g].SizeN;
+		else if (IS_EXCITATORY_TYPE(grp_Info[g].Type) && !(grp_Info[g].Type & POISSON_NEURON))
+			nExcReg += grp_Info[g].SizeN;
+		else if (IS_EXCITATORY_TYPE(grp_Info[g].Type) &&  (grp_Info[g].Type & POISSON_NEURON))
+			nExcPois += grp_Info[g].SizeN;
+		else if (IS_INHIBITORY_TYPE(grp_Info[g].Type) &&  (grp_Info[g].Type & POISSON_NEURON))
+			nInhPois += grp_Info[g].SizeN;
+	}
+
+	// check the newly gathered information with class members
+	isValid &= (numN == nExcReg+nInhReg+nExcPois+nInhPois);
+	isValid &= (numNReg == nExcReg+nInhReg);
+	isValid &= (numNPois == nExcPois+nInhPois);
+//	printf("numN=%d == %d\n",numN,nExcReg+nInhReg+nExcPois+nInhPois);
+//	printf("numNReg=%d == %d\n",numNReg, nExcReg+nInhReg);
+//	printf("numNPois=%d == %d\n",numNPois, nExcPois+nInhPois);
+
+	return isValid;
+}
+
+// \FIXME: not sure where this should go... maybe create some helper file?
+bool CpuSNN::isPoint3DinRF(const RadiusRF& radius, const Point3D& pre, const Point3D& post) {
+	// Note: RadiusRF rad is assumed to be the fanning in to the post neuron. So if the radius is 10 pixels, it means
+	// that if you look at the post neuron, it will receive input from neurons that code for locations no more than
+	// 10 pixels away.
+
+	// inverse semi-principal axes of the ellipsoid
+	// avoid division by zero by working with inverse of semi-principal axes (set to large value)
+	double aa = (radius.radX>0) ? 1.0/radius.radX : 1e+20;
+	double bb = (radius.radY>0) ? 1.0/radius.radY : 1e+20;
+	double cc = (radius.radZ>0) ? 1.0/radius.radZ : 1e+20;
+
+	// ready output argument
+	// pre and post are connected, except if they fall in one of the following if-else cases
+	bool isInRF = true;
+
+	// how many semi-principal axes have negative value
+	int numNegRadii = (radius.radX<0) + (radius.radY<0) + (radius.radZ<0);
+	switch (numNegRadii) {
+		case 0:
+			// 3D ellipsoid: connect if x^2/a^2 + y^2/b^2 + z^2/c^2 <= 1
+			if ( norm((pre-post)*Point3D(aa,bb,cc)) > 1.0)
+				isInRF = false;
+			break;
+		case 1:
+			// 2D ellipse: connect if x^2/a^2 + y^2/b^2 <= 1, 3 choose 2
+			if (radius.radX<0 && norm((pre-post)*Point3D(0.0,bb,cc)) > 1.0)
+				isInRF = false;
+			else if (radius.radY<0 && norm((pre-post)*Point3D(aa,0.0,cc)) > 1.0)
+				isInRF = false;
+			else if (radius.radZ<0 && norm((pre-post)*Point3D(aa,bb,0.0)) > 1.0)
+				isInRF = false;
+			break;
+		case 2:
+			// 1D line: connect if x^2/a^2 <= 1, 3 choose 1
+			if (radius.radX>=0 && (pre.x-post.x)*(pre.x-post.x)*aa*aa > 1.0)
+				isInRF = false;
+			else if (radius.radY>=0 && (pre.y-post.y)*(pre.y-post.y)*bb*bb > 1.0)
+				isInRF = false;
+			else if (radius.radZ>=0 && (pre.z-post.z)*(pre.z-post.z)*cc*cc > 1.0)
+				isInRF = false;
+			break;
+		case 3:
+			// 3D no restrictions
+			isInRF = true;
+			break;
+		default:
+			CARLSIM_ERROR("Invalid number of negative semi-principal axes: %d",numNegRadii);
+	}
+
+//	if (!isInRF) {
+//		std::cout << "Skipping " << pre << " to " << post << " with " << radius << " and numNegRadii="
+//			<< numNegRadii << std::endl;
+//	}
+
+	return isInRF;
+}
+
+// \FIXME: not sure where this should go... maybe create some helper file?
+//! check whether certain point lies on certain grid \FIXME maybe move to carlsim_helper.h or something...
+bool CpuSNN::isPoint3DonGrid(const Point3D& p, const Grid3D& g) {
+	// point needs to have non-negative coordinates
+	if (p.x<0 || p.y<0 || p.z<0)
+		return false;
+		
+	// point needs to have all integer coordinates
+	if (floor(p.x)!=p.x || floor(p.y)!=p.y || floor(p.z)!=p.z)
+		return false;
+		
+	// point needs to be within ranges
+	if (p.x>=g.x || p.y>=g.y || p.z>=g.z)
+		return false;
+		
+	// passed all tests
+	return true;
+}
 
 // creates the CPU net pointers
 // don't forget to cudaFree the device pointers if you make cpu_gpuNetPtrs
@@ -4289,53 +4366,6 @@ void CpuSNN::updateGroupMonitor() {
 				grpBufferCallback[monitorId]->update(this, grpId, grpDABuffer[monitorId], 100);
 		}
 	}
-}
-
-
-//! update CpuSNN::numNExcPois, CpuSNN::numNInhPois, CpuSNN::numNExcReg, CpuSNN::numNInhReg, CpuSNN::numNPois, CpuSNN::numNReg
-/*
- * \param _numN [out] current number of neurons
- * \param _numMaxPostSynapses [out] number of maximum post synapses in groups
- * \param _numMaxPreSynapses [out] number of maximum pre synapses in groups
- * \param _numConfig [in] (deprecated) number of configuration
- */
-void CpuSNN::updateParameters(int* curN, int* numPostSynapses, int* numPreSynapses, int nConfig) {
-	assert(nConfig > 0);
-	numNExcPois = 0;
-	numNInhPois = 0;
-	numNExcReg = 0;
-	numNInhReg = 0;
-	*numPostSynapses = 0;
-	*numPreSynapses = 0;
-
-	//  scan all the groups and find the required information
-	//  about the group (numN, numPostSynapses, numPreSynapses and others).
-	for(int g=0; g < numGrp; g++)  {
-		if (grp_Info[g].Type==UNKNOWN_NEURON) {
-			CARLSIM_ERROR("Unknown group for %d (%s)", g, grp_Info2[g].Name.c_str());
-			exitSimulation(1);
-		}
-
-		if (IS_INHIBITORY_TYPE(grp_Info[g].Type) && !(grp_Info[g].Type & POISSON_NEURON))
-			numNInhReg += grp_Info[g].SizeN;
-		else if (IS_EXCITATORY_TYPE(grp_Info[g].Type) && !(grp_Info[g].Type & POISSON_NEURON))
-			numNExcReg += grp_Info[g].SizeN;
-		else if (IS_EXCITATORY_TYPE(grp_Info[g].Type) &&  (grp_Info[g].Type & POISSON_NEURON))
-			numNExcPois += grp_Info[g].SizeN;
-		else if (IS_INHIBITORY_TYPE(grp_Info[g].Type) &&  (grp_Info[g].Type & POISSON_NEURON))
-			numNInhPois += grp_Info[g].SizeN;
-
-		// find the values for maximum postsynaptic length
-		// and maximum pre-synaptic length
-		if (grp_Info[g].numPostSynapses >= *numPostSynapses)
-			*numPostSynapses = grp_Info[g].numPostSynapses;
-		if (grp_Info[g].numPreSynapses >= *numPreSynapses)
-			*numPreSynapses = grp_Info[g].numPreSynapses;
-	}
-
-	*curN  = numNExcReg + numNInhReg + numNExcPois + numNInhPois;
-	numNPois = numNExcPois + numNInhPois;
-	numNReg = numNExcReg +numNInhReg;
 }
 
 void CpuSNN::updateSpikesFromGrp(int grpId) {

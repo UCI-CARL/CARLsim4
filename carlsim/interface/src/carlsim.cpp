@@ -820,37 +820,24 @@ int CARLsim::getGroupNumNeurons(int grpId) {
 Point3D CARLsim::getNeuronLocation3D(int neurId) {
 	std::stringstream funcName;	funcName << "getNeuronLocation3D(" << neurId << ")";
 	UserErrors::assertTrue(neurId!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName.str(), "neurId");
-	UserErrors::assertTrue(carlsimState_ == SETUP_STATE || carlsimState_ == EXE_STATE,
-					UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName.str(), funcName.str(), "SETUP or EXECUTION.");
 	UserErrors::assertTrue(neurId>=0 && neurId<getNumNeurons(), UserErrors::MUST_BE_IN_RANGE, funcName.str(), 
 		"neurId", "[0,getNumNeurons()]");
 
 	return snn_->getNeuronLocation3D(neurId);
 }
 
-int CARLsim::getNumConfigurations() {
-	return nConfig_;
-}
+int CARLsim::getNumConfigurations() { return nConfig_; }
 
-int CARLsim::getNumConnections() {
-	return snn_->getNumConnections();	
-}
+int CARLsim::getNumConnections() { return snn_->getNumConnections(); }
 
-int CARLsim::getNumSynapticConnections(short int connectionId) {
-	std::stringstream funcName;	funcName << "getNumConnections(" << connectionId << ")";
-	UserErrors::assertTrue(connectionId!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName.str(), "connectionId");
-	UserErrors::assertTrue(connectionId>=0 && connectionId<getNumConnections(), UserErrors::MUST_BE_IN_RANGE, 
-		funcName.str(), "connectionId", "[0,getNumSynapticConnections()]");
-	return snn_->getNumSynapticConnections(connectionId);
-}
-
-int CARLsim::getNumGroups() {
-	return snn_->getNumGroups();
-}
-
-int CARLsim::getNumNeurons() {
-	return snn_->getNumNeurons();
-}
+int CARLsim::getNumGroups() { return snn_->getNumGroups(); }
+int CARLsim::getNumNeurons() { return snn_->getNumNeurons(); }
+int CARLsim::getNumNeuronsReg() { return snn_->getNumNeuronsReg(); }
+int CARLsim::getNumNeuronsRegExc() { return snn_->getNumNeuronsRegExc(); }
+int CARLsim::getNumNeuronsRegInh() { return snn_->getNumNeuronsRegInh(); }
+int CARLsim::getNumNeuronsGen() { return snn_->getNumNeuronsGen(); }
+int CARLsim::getNumNeuronsGenExc() { return snn_->getNumNeuronsGenExc(); }
+int CARLsim::getNumNeuronsGenInh() { return snn_->getNumNeuronsGenInh(); }
 
 int CARLsim::getNumPreSynapses() {
 	std::string funcName = "getNumPreSynapses()";
@@ -860,6 +847,13 @@ int CARLsim::getNumPreSynapses() {
 	return snn_->getNumPreSynapses();
 }
 
+int CARLsim::getNumSynapticConnections(short int connectionId) {
+	std::stringstream funcName;	funcName << "getNumConnections(" << connectionId << ")";
+	UserErrors::assertTrue(connectionId!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName.str(), "connectionId");
+	UserErrors::assertTrue(connectionId>=0 && connectionId<getNumConnections(), UserErrors::MUST_BE_IN_RANGE, 
+		funcName.str(), "connectionId", "[0,getNumSynapticConnections()]");
+	return snn_->getNumSynapticConnections(connectionId);
+}
 int CARLsim::getNumPostSynapses() {
 	std::string funcName = "getNumPostSynapses()";
 	UserErrors::assertTrue(carlsimState_ == SETUP_STATE || carlsimState_ == EXE_STATE,

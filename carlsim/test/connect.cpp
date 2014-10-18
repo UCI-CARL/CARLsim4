@@ -13,7 +13,7 @@
 // make sure the function CpuSNN::isPoint3DinRF returns the right values for all cases
 // need to use CpuSNN, because function is not in user interface
 TEST(CORE, isPoint3DinRF) {
-	CpuSNN snn("CONNECT.isPoint3DinRF", CPU_MODE, USER, 0, 1, 42);
+	CpuSNN snn("CONNECT.isPoint3DinRF", CPU_MODE, SILENT, 0, 1, 42);
 	EXPECT_TRUE(snn.isPoint3DinRF(RadiusRF(10.0), Point3D(0,0,0), Point3D(0,0,0))); // same point
 	EXPECT_TRUE(snn.isPoint3DinRF(RadiusRF(10.0), Point3D(0,0,0), Point3D(10,0,0))); // on border
 	EXPECT_TRUE(snn.isPoint3DinRF(RadiusRF(10.0), Point3D(0,0,0), Point3D(0,10,0)));

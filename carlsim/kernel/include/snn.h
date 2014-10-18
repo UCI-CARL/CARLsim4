@@ -501,6 +501,12 @@ public:
 	int getNumSynapticConnections(short int connectionId);		//!< gets number of connections associated with a connection ID
 	int getNumGroups() { return numGrp; }
 	int getNumNeurons() { return numN; }
+	int getNumNeuronsReg() { return numNReg; }
+	int getNumNeuronsRegExc() { return numNExcReg; }
+	int getNumNeuronsRegInh() { return numNInhReg; }
+	int getNumNeuronsGen() { return numNPois; }
+	int getNumNeuronsGenExc() { return numNExcPois; }
+	int getNumNeuronsGenInh() { return numNInhPois; }
 	int getNumPreSynapses() { return preSynCnt; }
 	int getNumPostSynapses() { return postSynCnt; }
 
@@ -633,6 +639,10 @@ private:
 	void findFiring();
 	int findGrpId(int nid);//!< For the given neuron nid, find the group id
 
+	//! finds the maximum post-synaptic and pre-synaptic length
+	//! this used to be in updateParameters
+	void findMaxNumSynapses(int* numPostSynapses, int* numPreSynapses);
+
 	void generatePostSpike(unsigned int pre_i, unsigned int idx_d, unsigned int offset, unsigned int tD);
 	void generateSpikes();
 	void generateSpikes(int grpId);
@@ -645,6 +655,9 @@ private:
 	void globalStateUpdate();
 
 	void initSynapticWeights(); //!< initialize all the synaptic weights to appropriate values. total size of the synaptic connection is 'length'
+
+	//! performs a consistency check to see whether numN* class members have been accumulated correctly
+	bool isNumNeuronsConsistent();
 
 	void makePtrInfo();				//!< creates CPU net ptrs
 
@@ -723,7 +736,6 @@ private:
 	void updateAfterMaxTime();
 	void updateConnectionMonitor();
 	void updateGroupMonitor();
-	void updateParameters(int* numN, int* numPostSynapses, int* maxDelay, int nConfig=1);
 	void updateSpikesFromGrp(int grpId);
 	void updateSpikeGenerators();
 	void updateSpikeGeneratorsInit();
