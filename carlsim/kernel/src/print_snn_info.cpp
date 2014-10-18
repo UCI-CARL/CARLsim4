@@ -176,11 +176,14 @@ void CpuSNN::printConnectionInfo(short int connId) {
 	CARLSIM_INFO("Connection ID %d: %s(%d) => %s(%d)", connId, grp_Info2[connInfo->grpSrc].Name.c_str(), 
 		connInfo->grpSrc, grp_Info2[connInfo->grpDest].Name.c_str(), connInfo->grpDest);
 	CARLSIM_INFO("  - Type                       = %s", GET_FIXED_PLASTIC(connInfo->connProp)==SYN_PLASTIC?" PLASTIC":"   FIXED")
-	CARLSIM_INFO("  - Min     weight             = %8.5f", 0.0f); // \TODO
-	CARLSIM_INFO("  - Max     weight             = %8.5f", fabs(connInfo->maxWt));
+	CARLSIM_INFO("  - Min weight                 = %8.5f", 0.0f); // \TODO
+	CARLSIM_INFO("  - Max weight                 = %8.5f", fabs(connInfo->maxWt));
 	CARLSIM_INFO("  - Initial weight             = %8.5f", fabs(connInfo->initWt));
-	CARLSIM_INFO("  - Min     delay              = %8d", connInfo->minDelay);
-	CARLSIM_INFO("  - Max     delay              = %8d", connInfo->maxDelay);
+	CARLSIM_INFO("  - Min delay                  = %8d", connInfo->minDelay);
+	CARLSIM_INFO("  - Max delay                  = %8d", connInfo->maxDelay);
+  CARLSIM_INFO("  - Radius X                   = %8.2f", connInfo->radX);
+  CARLSIM_INFO("  - Radius Y                   = %8.2f", connInfo->radY);
+  CARLSIM_INFO("  - Radius Z                   = %8.2f", connInfo->radZ);
 
 	float avgPostM = connInfo->numberOfConnections/grp_Info[connInfo->grpSrc].SizeN;
 	float avgPreM  = connInfo->numberOfConnections/grp_Info[connInfo->grpDest].SizeN;

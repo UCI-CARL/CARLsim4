@@ -7,6 +7,11 @@ Legend:
 	- removed element
 	* changed element
 
+2014-10-17     Michael Beyeler <mbeyeler@uci.edu>
+  + Added 3D receptive fields.
+  + Added CARLsim::getNumNeurons{Reg|Gen}{Exc|Inh} and the like.
+  * Changed allowed states of CARLsim::getNeuronLocation3D to include CONFIG.
+
 2014-10-06     Michael Beyeler <mbeyeler@uci.edu>
   + Added MATLAB Offline Analysis Toolbox: NetworkMonitor, GroupMonitor,
     SpikeReader, SimulationReader, Utilities.

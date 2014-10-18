@@ -44,7 +44,6 @@
 
 #include <ostream>			// print struct info
 #include <user_errors.h>	// CARLsim user errors
-#include <cmath>			// sqrt
 
 /*!
  * \brief Logger modes
@@ -227,7 +226,39 @@ struct RangeWeight {
 	friend std::ostream& operator<<(std::ostream &strm, const RangeWeight &w) {
 		return strm << "wt=[" << w.min << "," << w.init << "," << w.max << "]";
 	}
-	double min, init, max; 
+	const double min, init, max; 
+};
+
+/*!
+ * \brief a struct to specify the receptive field (RF) radius in 3 dimensions
+ *
+ * This struct can be used to specify the size of a receptive field (RF) radius in 3 dimensions x, y, and z.
+ * Receptive fields will be circular with radius as specified. The 3 dimensions follow the ones defined by Grid3D.
+ * If the radius in one dimension is 0, no connections will be made in this dimension.
+ * If the radius in one dimension is -1, then all possible connections will be made in this dimension (effectively
+ * making RF of infinite size).
+ * Otherwise, if the radius is a positive real number, the RF radius will be exactly this number.
+ * Call RadiusRF with only one argument to make that radius apply to all 3 dimensions.
+ * \param[in] rad_x the RF radius in the x (first) dimension
+ * \param[in] rad_y the RF radius in the y (second) dimension
+ * \param[in] rad_z the RF radius in the z (third) dimension
+ *
+ * Examples:
+ *   * Create a 2D Gaussian RF of radius 10: RadiusRF(10, 10, 0)
+ *   * Create a 2D heterogeneous Gaussian RF (an ellipse) with semi-axes 10 and 5: RadiusRF(10, 5, 0)
+ *   * Connect only the third dimension: RadiusRF(0, 0, 1)
+ *   * Connect all, no matter the RF (default): RadiusRF(-1, -1, -1)
+ *   * Don't connect anything (silly, not allowed): RadiusRF(0, 0, 0)
+ */
+struct RadiusRF {
+	RadiusRF(double rad) : radX(rad), radY(rad), radZ(rad) {}
+	RadiusRF(double rad_x, double rad_y, double rad_z) : radX(rad_x), radY(rad_y), radZ(rad_z) {}
+
+	friend std::ostream& operator<<(std::ostream &strm, const RadiusRF &r) {
+        return strm << "RadiusRF=[" << r.radX << "," << r.radY << "," << r.radZ << "]";
+    }
+
+	const double radX, radY, radZ;
 };
 
 typedef struct GroupSTDPInfo_s {
@@ -299,84 +330,5 @@ struct Grid3D {
     int x, y, z;
     int N;
 };
-
-/*!
- * \brief a point in 3D space
- *
- * A point in 3D space. Coordinates (x,y,z) are of double precision.
- * \param[in] x x-coordinate
- * \param[in] y y-coordinate
- * \param[in] z z-coordinate
- */
-struct Point3D {
-public:
-	Point3D(int _x, int _y, int _z) : x(1.0*_x), y(1.0*_y), z(1.0*_z) {}
-	Point3D(double _x, double _y, double _z) : x(_x), y(_y), z(_z) {}
-
-	// print struct info
-    friend std::ostream& operator<<(std::ostream &strm, const Point3D &p) {
-		strm.precision(2);
-        return strm << "Point3D=(" << p.x << "," << p.y << "," << p.z << ")";
-    }
-
-    // overload operators
-    Point3D operator+(const double a) const { return Point3D(x+a,y+a,z+a); }
-    Point3D operator+(const Point3D& p) const { return Point3D(x+p.x,y+p.y,z+p.z); }
-    Point3D operator-(const double a) const { return Point3D(x-a,y-a,z-a); }
-    Point3D operator-(const Point3D& p) const { return Point3D(x-p.x,y-p.y,z-p.z); }
-    Point3D operator*(const double a) const { return Point3D(x*a,y*a,z*a); }
-    Point3D operator*(const Point3D& p) const { return Point3D(x*p.x,y*p.y,z*p.z); }
-    Point3D operator/(const double a) const { return Point3D(x/a,y/a,z/a); }
-    Point3D operator/(const Point3D& p) const { return Point3D(x/p.x,y/p.y,z/p.z); }
-    bool operator==(const Point3D& p) const { return Equals(p); }
-    bool operator!=(const Point3D& p) const { return !Equals(p); }
-    bool operator<(const Point3D& p) const { return (CompareTo(p)<0); }
-    bool operator>(const Point3D& p) const { return (CompareTo(p)>0); }
-    bool operator<=(const Point3D& p) const { return (CompareTo(p)<=0); }
-    bool operator>=(const Point3D& p) const { return (CompareTo(p)>=0); }
-	
-	// coordinates
-	double x, y, z;
-
-private:
-	bool Equals(const Point3D& p) const { return (x==p.x && y==p.y); }
-	int CompareTo(const Point3D& p) const { return (x>p.x&&y>p.y) ? 1 : ( (x<p.x&&y<p.y) ? -1 : 0); }
-};
-
-
-/*
-// \TODO not sure where to put the following... they're functional, but carlsim_datastructures.h is not the
-// right place...
-
-//! calculate distance between two points \FIXME maybe move to carlsim_helper.h or something...
-double dist(Point3D& p1, Point3D& p2) {
-	Point3D p( (p1-p2)*(p1-p2) );
-	return sqrt(p.x*p.x+p.y*p.y);
-//	return norm(p); // can't find norm
-}
-
-//! calculate norm \FIXME maybe move to carlsim_helper.h or something...
-double norm(Point3D& p) {
-	return sqrt(p.x*p.x+p.y*p.y);
-}
-
-//! check whether certain point lies on certain grid \FIXME maybe move to carlsim_helper.h or something...
-bool isPointOnGrid(Point3D& p, Grid3D& g) {
-	// point needs to have non-negative coordinates
-	if (p.x<0 || p.y<0 || p.z<0)
-		return false;
-		
-	// point needs to have all integer coordinates
-	if (floor(p.x)!=p.x || floor(p.y)!=p.y || floor(p.z)!=p.z)
-		return false;
-		
-	// point needs to be within ranges
-	if (p.x>=g.x || p.y>=g.y || p.z>=g.z)
-		return false;
-		
-	// passed all tests
-	return true;
-}
-*/
 
 #endif

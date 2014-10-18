@@ -148,7 +148,7 @@ void CARLsim::CARLsimInit() {
 
 // Connects a presynaptic to a postsynaptic group using one of the primitive types
 short int CARLsim::connect(int grpId1, int grpId2, const std::string& connType, RangeWeight wt, float connProb,
-		RangeDelay delay, bool synWtType, float mulSynFast, float mulSynSlow) {
+		RangeDelay delay, RadiusRF radRF, bool synWtType, float mulSynFast, float mulSynSlow) {
 	std::string funcName = "connect(\""+getGroupName(grpId1,0)+"\",\""+getGroupName(grpId2,0)+"\")";
 	std::stringstream grpId1str; grpId1str << "Group Id " << grpId1;
 	std::stringstream grpId2str; grpId2str << "Group Id " << grpId2;
@@ -162,6 +162,11 @@ short int CARLsim::connect(int grpId1, int grpId2, const std::string& connType, 
 	UserErrors::assertTrue(synWtType==SYN_PLASTIC || synWtType==SYN_FIXED && wt.init==wt.max,
 		UserErrors::MUST_BE_IDENTICAL, funcName, "For fixed synapses, initWt and maxWt");
 	UserErrors::assertTrue(delay.min>0, UserErrors::MUST_BE_POSITIVE, funcName, "delay.min");
+	UserErrors::assertTrue(radRF.radX!=0 || radRF.radY!=0 || radRF.radZ!=0, UserErrors::CANNOT_BE_ZERO, funcName,
+		"Receptive field radius");
+	UserErrors::assertTrue(connType.compare("one-to-one")!=0
+		|| connType.compare("one-to-one")==0 && radRF.radX<=0 && radRF.radY<=0 && radRF.radZ<=0,
+		UserErrors::CANNOT_BE_LARGER, funcName, "Receptive field radius", "zero for type \"one-to-one\".");
 	UserErrors::assertTrue(carlsimState_==CONFIG_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "CONFIG.");
 
 	// TODO: enable support for non-zero min
@@ -175,7 +180,7 @@ short int CARLsim::connect(int grpId1, int grpId2, const std::string& connType, 
 	double wtSign = isExcitatoryGroup(grpId1) ? 1.0 : -1.0;
 
 	return snn_->connect(grpId1, grpId2, connType, wtSign*wt.init, wtSign*wt.max, connProb, delay.min, delay.max,
-		mulSynFast,	mulSynSlow, synWtType);
+		radRF.radX, radRF.radY, radRF.radZ, mulSynFast,	mulSynSlow, synWtType);
 }
 
 // custom connectivity profile
@@ -190,6 +195,7 @@ short int CARLsim::connect(int grpId1, int grpId2, ConnectionGenerator* conn, bo
 	UserErrors::assertTrue(conn!=NULL, UserErrors::CANNOT_BE_NULL, funcName);
 	UserErrors::assertTrue(carlsimState_==CONFIG_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "CONFIG.");
 
+	printf("in custom connect\n");
 	// TODO: check for sign of weights
 	return snn_->connect(grpId1, grpId2, new ConnectionGeneratorCore(this, conn), 1.0f, 1.0f, synWtType, maxM, maxPreM);
 }
@@ -814,37 +820,24 @@ int CARLsim::getGroupNumNeurons(int grpId) {
 Point3D CARLsim::getNeuronLocation3D(int neurId) {
 	std::stringstream funcName;	funcName << "getNeuronLocation3D(" << neurId << ")";
 	UserErrors::assertTrue(neurId!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName.str(), "neurId");
-	UserErrors::assertTrue(carlsimState_ == SETUP_STATE || carlsimState_ == EXE_STATE,
-					UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName.str(), funcName.str(), "SETUP or EXECUTION.");
 	UserErrors::assertTrue(neurId>=0 && neurId<getNumNeurons(), UserErrors::MUST_BE_IN_RANGE, funcName.str(), 
 		"neurId", "[0,getNumNeurons()]");
 
 	return snn_->getNeuronLocation3D(neurId);
 }
 
-int CARLsim::getNumConfigurations() {
-	return nConfig_;
-}
+int CARLsim::getNumConfigurations() { return nConfig_; }
 
-int CARLsim::getNumConnections() {
-	return snn_->getNumConnections();	
-}
+int CARLsim::getNumConnections() { return snn_->getNumConnections(); }
 
-int CARLsim::getNumSynapticConnections(short int connectionId) {
-	std::stringstream funcName;	funcName << "getNumConnections(" << connectionId << ")";
-	UserErrors::assertTrue(connectionId!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName.str(), "connectionId");
-	UserErrors::assertTrue(connectionId>=0 && connectionId<getNumConnections(), UserErrors::MUST_BE_IN_RANGE, 
-		funcName.str(), "connectionId", "[0,getNumSynapticConnections()]");
-	return snn_->getNumSynapticConnections(connectionId);
-}
-
-int CARLsim::getNumGroups() {
-	return snn_->getNumGroups();
-}
-
-int CARLsim::getNumNeurons() {
-	return snn_->getNumNeurons();
-}
+int CARLsim::getNumGroups() { return snn_->getNumGroups(); }
+int CARLsim::getNumNeurons() { return snn_->getNumNeurons(); }
+int CARLsim::getNumNeuronsReg() { return snn_->getNumNeuronsReg(); }
+int CARLsim::getNumNeuronsRegExc() { return snn_->getNumNeuronsRegExc(); }
+int CARLsim::getNumNeuronsRegInh() { return snn_->getNumNeuronsRegInh(); }
+int CARLsim::getNumNeuronsGen() { return snn_->getNumNeuronsGen(); }
+int CARLsim::getNumNeuronsGenExc() { return snn_->getNumNeuronsGenExc(); }
+int CARLsim::getNumNeuronsGenInh() { return snn_->getNumNeuronsGenInh(); }
 
 int CARLsim::getNumPreSynapses() {
 	std::string funcName = "getNumPreSynapses()";
@@ -854,6 +847,13 @@ int CARLsim::getNumPreSynapses() {
 	return snn_->getNumPreSynapses();
 }
 
+int CARLsim::getNumSynapticConnections(short int connectionId) {
+	std::stringstream funcName;	funcName << "getNumConnections(" << connectionId << ")";
+	UserErrors::assertTrue(connectionId!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName.str(), "connectionId");
+	UserErrors::assertTrue(connectionId>=0 && connectionId<getNumConnections(), UserErrors::MUST_BE_IN_RANGE, 
+		funcName.str(), "connectionId", "[0,getNumSynapticConnections()]");
+	return snn_->getNumSynapticConnections(connectionId);
+}
 int CARLsim::getNumPostSynapses() {
 	std::string funcName = "getNumPostSynapses()";
 	UserErrors::assertTrue(carlsimState_ == SETUP_STATE || carlsimState_ == EXE_STATE,

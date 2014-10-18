@@ -192,16 +192,16 @@ TEST(STDP, DASTDPweightBoost) {
 				gda = sim->createSpikeGeneratorGroup("DA neurons", 500, DOPAMINERGIC_NEURON);
 
 				if (coba) {
-					sim->connect(gin,g1,"one-to-one", RangeWeight(0.0, 1.0f/100, 20.0f/100), 1.0f, RangeDelay(1), SYN_PLASTIC);
-					sim->connect(g1noise, g1, "one-to-one", RangeWeight(40.0f/100), 1.0f, RangeDelay(1), SYN_FIXED);
-					sim->connect(gda, g1, "full", RangeWeight(0.0), 1.0f, RangeDelay(1), SYN_FIXED);
+					sim->connect(gin,g1,"one-to-one", RangeWeight(0.0, 1.0f/100, 20.0f/100), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_PLASTIC);
+					sim->connect(g1noise, g1, "one-to-one", RangeWeight(40.0f/100), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
+					sim->connect(gda, g1, "full", RangeWeight(0.0), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
 					// enable COBA, set up STDP, enable dopamine-modulated STDP
 					sim->setConductances(true,5,150,6,150);
 					sim->setSTDP(g1, true, DA_MOD, alphaLTP/100, tauLTP, alphaLTD/100, tauLTD);
 				} else {
-					sim->connect(gin,g1,"one-to-one", RangeWeight(0.0, 1.0f, 20.0f), 1.0f, RangeDelay(1), SYN_PLASTIC);
-					sim->connect(g1noise, g1, "one-to-one", RangeWeight(40.0f), 1.0f, RangeDelay(1), SYN_FIXED);
-					sim->connect(gda, g1, "full", RangeWeight(0.0), 1.0f, RangeDelay(1), SYN_FIXED);
+					sim->connect(gin,g1,"one-to-one", RangeWeight(0.0, 1.0f, 20.0f), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_PLASTIC);
+					sim->connect(g1noise, g1, "one-to-one", RangeWeight(40.0f), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
+					sim->connect(gda, g1, "full", RangeWeight(0.0), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
 					// set up STDP, enable dopamine-modulated STDP
 					sim->setSTDP(g1, true, DA_MOD, alphaLTP, tauLTP, alphaLTD, tauLTD);
 				}
@@ -266,3 +266,4 @@ TEST(STDP, DASTDPweightBoost) {
 
 	delete spikeCtrl;
 }
+

@@ -59,7 +59,7 @@ TEST(CUBA, firingRateVsData) {
 			float inputRate = hasHighFiring ? 25.0f : 50.0f;
 			float outputRate = hasHighFiring ? 13.0f : 1.0f; // from Matlab script
 
-			sim->connect(g0, g1, "full", RangeWeight(wt), 1.0f, RangeDelay(1), SYN_FIXED);
+			sim->connect(g0, g1, "full", RangeWeight(wt), 1.0f);
 
 			bool spikeAtZero = true;
 			spkGenG0 = new PeriodicSpikeGenerator(inputRate,spikeAtZero);
@@ -114,7 +114,7 @@ TEST(CUBA, firingRateCPUvsGPU) {
 		sim->setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f); // RS
 		sim->setConductances(false); // make CUBA explicit
 
-		sim->connect(g0, g1, "full", RangeWeight(wt), 1.0f, RangeDelay(1,delay), SYN_FIXED);
+		sim->connect(g0, g1, "full", RangeWeight(wt), 1.0f, RangeDelay(1,delay));
 
 		bool spikeAtZero = true;
 		spkGenG0 = new PeriodicSpikeGenerator(inputRate,spikeAtZero);
