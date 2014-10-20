@@ -1126,6 +1126,13 @@ SpikeMonitor* CpuSNN::setSpikeMonitor(int grpId, FILE* fid, int configId) {
 	} else {
 		int cGrpId = getGroupId(grpId, configId);
 
+		// check whether group already has a SpikeMonitor
+		if (grp_Info[cGrpId].SpikeMonitorId >= 0) {
+			CARLSIM_ERROR("setSpikeMonitor has already been called on Group %d (%s).",
+				cGrpId, grp_Info2[cGrpId].Name.c_str());
+			exitSimulation(1);
+		}
+
 		// create new SpikeMonitorCore object in any case and initialize analysis components
 		// spkMonObj destructor (see below) will deallocate it
 		SpikeMonitorCore* spkMonCoreObj = new SpikeMonitorCore(this, numSpikeMonitor, cGrpId);
@@ -3574,10 +3581,20 @@ int CpuSNN::readNetwork_internal()
 		if (!fread(&endN,sizeof(int),1,readNetworkFID)) return -11;
 		if (startN != grp_Info[g].StartN) return -2;
 		if (endN != grp_Info[g].EndN) return -3;
+		
+		if (!fread(&tmpInt,sizeof(int),1,readNetworkFID)) return -11;
+		if (tmpInt != grp_Info[g].SizeX) return -2; // \FIXME all these error codes...
+		if (!fread(&tmpInt,sizeof(int),1,readNetworkFID)) return -11;
+		if (tmpInt != grp_Info[g].SizeY) return -2;
+		if (!fread(&tmpInt,sizeof(int),1,readNetworkFID)) return -11;
+		if (tmpInt != grp_Info[g].SizeZ) return -2;
+
 		if (!fread(name,1,100,readNetworkFID)) return -11;
 		if (strcmp(name,grp_Info2[g].Name.c_str()) != 0) return -4;
 	}
 
+	// \TODO: if saveSimulation was called with saveSynapseInfo==false, the following
+	// information will not be available
 	for (unsigned int i=0;i<nrCells;i++) {
 		unsigned int nrSynapses = 0;
 		if (!fread(&nrSynapses,sizeof(int),1,readNetworkFID)) return -11;
@@ -4129,6 +4146,10 @@ inline void CpuSNN::setConnection(int srcGrp,  int destGrp,  unsigned int src, u
 									float maxWt, uint8_t dVal, int connProp, short int connId) {
 	assert(dest<=CONN_SYN_NEURON_MASK);			// total number of neurons is less than 1 million within a GPU
 	assert((dVal >=1) && (dVal <= maxDelay_));
+
+	// adjust sign of weight based on pre-group (negative if pre is inhibitory)
+	synWt = isExcitatoryGroup(srcGrp) ? fabs(synWt) : -1.0*fabs(synWt);
+	maxWt = isExcitatoryGroup(srcGrp) ? fabs(maxWt) : -1.0*fabs(maxWt);
 
 	// we have exceeded the number of possible connection for one neuron
 	if(Npost[src] >= grp_Info[srcGrp].numPostSynapses)	{

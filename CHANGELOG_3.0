@@ -7,6 +7,11 @@ Legend:
 	- removed element
 	* changed element
 
+2014-10-20     Michael Beyeler <mbeyeler@uci.edu>
+  * Fixed weight signs for custom connection callbacks.
+  * Fixed readNetwork_internal parsing of header section.
+  + Added error message if setSpikeMonitor is called on same group twice.
+
 2014-10-17     Michael Beyeler <mbeyeler@uci.edu>
   + Added 3D receptive fields.
   + Added CARLsim::getNumNeurons{Reg|Gen}{Exc|Inh} and the like.
