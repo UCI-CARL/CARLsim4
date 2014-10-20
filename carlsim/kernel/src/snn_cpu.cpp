@@ -3574,10 +3574,20 @@ int CpuSNN::readNetwork_internal()
 		if (!fread(&endN,sizeof(int),1,readNetworkFID)) return -11;
 		if (startN != grp_Info[g].StartN) return -2;
 		if (endN != grp_Info[g].EndN) return -3;
+		
+		if (!fread(&tmpInt,sizeof(int),1,readNetworkFID)) return -11;
+		if (tmpInt != grp_Info[g].SizeX) return -2; // \FIXME all these error codes...
+		if (!fread(&tmpInt,sizeof(int),1,readNetworkFID)) return -11;
+		if (tmpInt != grp_Info[g].SizeY) return -2;
+		if (!fread(&tmpInt,sizeof(int),1,readNetworkFID)) return -11;
+		if (tmpInt != grp_Info[g].SizeZ) return -2;
+
 		if (!fread(name,1,100,readNetworkFID)) return -11;
 		if (strcmp(name,grp_Info2[g].Name.c_str()) != 0) return -4;
 	}
 
+	// \TODO: if saveSimulation was called with saveSynapseInfo==false, the following
+	// information will not be available
 	for (unsigned int i=0;i<nrCells;i++) {
 		unsigned int nrSynapses = 0;
 		if (!fread(&nrSynapses,sizeof(int),1,readNetworkFID)) return -11;

@@ -81,7 +81,6 @@ int main() {
 	sim.setSpikeMonitor(g1); // put spike times into file
 	sim.setSpikeMonitor(g2); // Show basic statistics about g2
 	sim.setSpikeMonitor(gin);
-	sim.setSpikeMonitor(g3);
 
 	sim.setConnectionMonitor(g1, g2);
 
