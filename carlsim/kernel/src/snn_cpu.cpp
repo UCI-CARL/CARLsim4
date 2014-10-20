@@ -1126,6 +1126,13 @@ SpikeMonitor* CpuSNN::setSpikeMonitor(int grpId, FILE* fid, int configId) {
 	} else {
 		int cGrpId = getGroupId(grpId, configId);
 
+		// check whether group already has a SpikeMonitor
+		if (grp_Info[cGrpId].SpikeMonitorId >= 0) {
+			CARLSIM_ERROR("setSpikeMonitor has already been called on Group %d (%s).",
+				cGrpId, grp_Info2[cGrpId].Name.c_str());
+			exitSimulation(1);
+		}
+
 		// create new SpikeMonitorCore object in any case and initialize analysis components
 		// spkMonObj destructor (see below) will deallocate it
 		SpikeMonitorCore* spkMonCoreObj = new SpikeMonitorCore(this, numSpikeMonitor, cGrpId);

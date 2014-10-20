@@ -116,9 +116,12 @@ TEST(SPIKEMON, interfaceDeath) {
 
 	sim->connect(g0,g1,"random", RangeWeight(0.01), 0.5f);
 
+	// call setSpikeMonitor again on group, should fail
+	EXPECT_DEATH({sim->setSpikeMonitor(g0);},"");
+
+	// set up network and test all API calls that are not valid in certain modes
 	sim->setupNetwork();
 
-	// test all APIS that cannot be called in certain modes
 	// \TODO SpikeMonitor mode COUNT not yet implemented
 	EXPECT_DEATH(spkMon->setMode(COUNT),"");
 	// after mode is implemented, make sure you cannot call getSpikeVector2D in COUNT mode, etc.
