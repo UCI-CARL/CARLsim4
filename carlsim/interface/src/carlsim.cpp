@@ -170,16 +170,12 @@ short int CARLsim::connect(int grpId1, int grpId2, const std::string& connType, 
 	UserErrors::assertTrue(carlsimState_==CONFIG_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "CONFIG.");
 
 	// TODO: enable support for non-zero min
-	if (abs(wt.min)>1e-15) {
+	if (fabs(wt.min)>1e-15) {
 		std::cerr << funcName << ": " << wt << ". Non-zero minimum weights are not yet supported.\n" << std::endl;
 		assert(false);
 	}
 
-	// TODO: clean up internal representation of inhibitory weights (minus sign is unnecessary)
-	// adjust weight struct depending on connection type (inh vs exc)
-	double wtSign = isExcitatoryGroup(grpId1) ? 1.0 : -1.0;
-
-	return snn_->connect(grpId1, grpId2, connType, wtSign*wt.init, wtSign*wt.max, connProb, delay.min, delay.max,
+	return snn_->connect(grpId1, grpId2, connType, wt.init, wt.max, connProb, delay.min, delay.max,
 		radRF.radX, radRF.radY, radRF.radZ, mulSynFast,	mulSynSlow, synWtType);
 }
 
