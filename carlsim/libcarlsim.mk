@@ -41,6 +41,7 @@ install: $(carlsim_lib)
 	@install -m 0644 $(interface_dir)/include/callback.h \
 		$(interface_dir)/include/carlsim_datastructures.h \
 		$(interface_dir)/include/carlsim_definitions.h \
+		$(interface_dir)/include/linear_algebra.h \
 		$(interface_dir)/include/carlsim.h $(interface_dir)/include/user_errors.h \
 		$(CARLSIM_LIB_DIR)/include/interface
 	@install -m 0644 $(spike_mon_dir)/spike_monitor.h \
