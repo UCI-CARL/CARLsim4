@@ -1672,6 +1672,16 @@ Point3D CpuSNN::getNeuronLocation3D(int neurId) {
 	return Point3D(coord_x, coord_y, coord_z);
 }
 
+Point3D CpuSNN::getNeuronLocation3D(int grpId, int relNeurId) {
+	assert(grpId>=0 && grpId<numGrp);
+	assert(relNeurId>=0 && relNeurId<getGroupNumNeurons(grpId));
+
+	int coord_x = relNeurId % grp_Info[grpId].SizeX;
+	int coord_y = (relNeurId/grp_Info[grpId].SizeX)%grp_Info[grpId].SizeY;
+	int coord_z = relNeurId/(grp_Info[grpId].SizeX*grp_Info[grpId].SizeY);
+	return Point3D(coord_x, coord_y, coord_z);
+}
+
 // returns the number of synaptic connections associated with this connection.
 int CpuSNN::getNumSynapticConnections(short int connectionId) {
   grpConnectInfo_t* connInfo;

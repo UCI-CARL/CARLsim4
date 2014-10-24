@@ -822,6 +822,17 @@ Point3D CARLsim::getNeuronLocation3D(int neurId) {
 	return snn_->getNeuronLocation3D(neurId);
 }
 
+Point3D CARLsim::getNeuronLocation3D(int grpId, int relNeurId) {
+	std::stringstream funcName;	funcName << "getNeuronLocation3D(" << grpId << "," << relNeurId << ")";
+	UserErrors::assertTrue(relNeurId!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName.str(), "neurId");
+	UserErrors::assertTrue(grpId>=0 && grpId<getNumGroups(), UserErrors::MUST_BE_IN_RANGE, funcName.str(), 
+		"grpId", "[0,getNumGroups()]");
+	UserErrors::assertTrue(relNeurId>=0 && relNeurId<getGroupNumNeurons(grpId), UserErrors::MUST_BE_IN_RANGE,
+		funcName.str(), "relNeurId", "[0,getGroupNumNeurons()]");
+
+	return snn_->getNeuronLocation3D(grpId, relNeurId);
+}
+
 int CARLsim::getNumConfigurations() { return nConfig_; }
 
 int CARLsim::getNumConnections() { return snn_->getNumConnections(); }

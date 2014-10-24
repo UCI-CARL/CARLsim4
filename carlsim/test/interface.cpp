@@ -82,6 +82,10 @@ TEST(Interface, getNeuronLocation3DDeath) {
 	EXPECT_DEATH({sim->getNeuronLocation3D(-1);},"");
 	EXPECT_DEATH({sim->getNeuronLocation3D(grid.x*grid.y*grid.z);},"");
 
+	EXPECT_DEATH({sim->getNeuronLocation3D(-1,-1);},"");
+	EXPECT_DEATH({sim->getNeuronLocation3D(g1, grid.x*grid.y*grid.z);},"");
+	EXPECT_DEATH({sim->getNeuronLocation3D(g1+1,0);},"");
+
 	delete sim;
 }
 
