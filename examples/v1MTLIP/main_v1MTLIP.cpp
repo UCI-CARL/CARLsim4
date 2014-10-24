@@ -663,9 +663,9 @@ int main()
     float wt_MTi_MT1 = synScale*15;
 	float wt_MTi_MT2 = synScale*15;
 	float wt_MTi_MT3 = synScale*15;
-	snn.connect(gMT1CDSinh, gMT1CDS, "one-to-one", wt_MTi_MT1, wt_MTi_MT1, 1.0, 1, 1, SYN_FIXED);
-	snn.connect(gMT2CDSinh, gMT2CDS, "one-to-one", wt_MTi_MT2, wt_MTi_MT2, 1.0, 1, 1, SYN_FIXED);
-	snn.connect(gMT3CDSinh, gMT3CDS, "one-to-one", wt_MTi_MT3, wt_MTi_MT3, 1.0, 1, 1, SYN_FIXED);
+	snn.connect(gMT1CDSinh, gMT1CDS, "one-to-one", RangeWeight(wt_MTi_MT1), 1.0, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
+	snn.connect(gMT2CDSinh, gMT2CDS, "one-to-one", RangeWeight(wt_MTi_MT2), 1.0, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
+	snn.connect(gMT3CDSinh, gMT3CDS, "one-to-one", RangeWeight(wt_MTi_MT3), 1.0, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
 
 	// MT normalization
 	// In the S&H model, neuron activity is normalized by the activity of ALL MT neurons. We normalize in a large
@@ -705,10 +705,10 @@ int main()
 
 	// tuned normalization
 	float wt_MT_MTpattInh_tunedNorm = synScale*5.0;
-	snn.connect(gMT1CDS, gMT1PDSinh, "one-to-one", wt_MT_MTpattInh_tunedNorm, wt_MT_MTpattInh_tunedNorm, 1.0, 1, 1, SYN_FIXED);
+	snn.connect(gMT1CDS, gMT1PDSinh, "one-to-one", RangeWeight(wt_MT_MTpattInh_tunedNorm), 1.0, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
     // changed from negative to positive as CARLsim expects positive weights now. -- KDC
     float wt_MTpattInh_MTpatt = synScale*15.0;
-	snn.connect(gMT1PDSinh, gMT1PDS, "one-to-one", wt_MTpattInh_MTpatt, wt_MTpattInh_MTpatt, 1.0, 1, 1, SYN_FIXED);
+	snn.connect(gMT1PDSinh, gMT1PDS, "one-to-one", RangeWeight(wt_MTpattInh_MTpatt), 1.0, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
 
 	connectMTtoLIP* cMTLIP = new connectMTtoLIP(40,synScale*1.5);
 	connectMTtoLIP* cMTLIPi = new connectMTtoLIP(10,synScale*1.0);

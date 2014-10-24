@@ -2821,7 +2821,7 @@ void CpuSNN::printTestVarInfo(FILE* fp, char* testString, bool test1, bool test2
 					firstPrint = false;
 				}
 				if(gcnt==0) CARLSIM_DEBUG("testVar[%d] -> ", i);
-				CARLSIM_DEBUG("%d\t", i, testVar[i]-subVal);
+				CARLSIM_DEBUG("%d %f\t", i, testVar[i]-subVal);
 				testVar[i] = 0.0;
 				if(++gcnt==grouping1) { CARLSIM_DEBUG("\n"); gcnt=0;}
 			}
@@ -2842,7 +2842,7 @@ void CpuSNN::printTestVarInfo(FILE* fp, char* testString, bool test1, bool test2
 					firstPrint = 0;
 				}
 				if(gcnt==0) CARLSIM_DEBUG("testVar2[%d] -> ", i);
-				CARLSIM_DEBUG("%d\t", i, testVar2[i]-subVal);
+				CARLSIM_DEBUG("%d %f\t", i, testVar2[i]-subVal);
 				testVar2[i] = 0.0;
 				if(++gcnt==grouping2) { CARLSIM_DEBUG("\n"); gcnt=0;}
 			}
