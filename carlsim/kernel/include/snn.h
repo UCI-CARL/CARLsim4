@@ -495,6 +495,7 @@ public:
 	std::string getNetworkName() { return networkName_; }
 
 	Point3D getNeuronLocation3D(int neurId);
+	Point3D getNeuronLocation3D(int grpId, int relNeurId);
 
 	int getNumConfigurations()	{ return nConfig_; }	//!< gets number of network configurations
 	int getNumConnections() { return numConnections; }

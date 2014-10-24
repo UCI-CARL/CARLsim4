@@ -223,7 +223,7 @@ classdef SpikeReader < handle
             
             % grow to right size
             if size(spk,2) ~= prod(obj.grid3D)
-                spk(end,prod(obj.grid3D))=0;
+                spk(max(1,end),prod(obj.grid3D))=0;
             end
             
             % store spike data

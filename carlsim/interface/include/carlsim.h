@@ -786,17 +786,44 @@ public:
 	/*!
 	 * \brief returns the 3D location a neuron codes for
 	 *
-	 * This function returns the (x,y,z) location that a neuron with ID neurID codes for.
+	 * This function returns the (x,y,z) location that a neuron with ID neurID (global) codes for.
+	 * Note that neurID is global; that is, the first neuron in the group does not necessarily have ID 0.
+	 *
 	 * The location is determined by the actual neuron ID (the first neuron in the group coding for the origin (0,0,0),
 	 * and by the dimensions of the 3D grid the group is allocated on (integer coordinates). Neuron numbers are
 	 * assigned to location in order; where the first dimension specifies the width, the second dimension is height,
 	 * and the third dimension is depth.
+	 *
 	 * For more information see CARLsim::createGroup and the Grid3D struct.
+ 	 * See also CARLsim::getNeuronLocation3D(int grpId, int relNeurId).
+	 *
 	 * \STATE CONFIG, SETUP, EXE
 	 * \param[in] neurId the neuron ID for which the 3D location should be returned
 	 * \returns the 3D location a neuron codes for as a Point3D struct
 	 */
 	Point3D getNeuronLocation3D(int neurId);
+
+	/*!
+	 * \brief returns the 3D location a neuron codes for
+	 *
+	 * This function returns the (x,y,z) location that a neuron with ID  relNeurId (relative to the group) codes for.
+	 * Note that neurID is relative to the ID of the first neuron in the group; that is, the first neuron in the group
+	 * has relNeurId 0, the second one has relNeurId 1, etc.
+	 * In other words: relNeurId = neurId - sim.getGroupStartNeuronId();
+	 *
+	 * The location is determined by the actual neuron ID (the first neuron in the group coding for the origin (0,0,0),
+	 * and by the dimensions of the 3D grid the group is allocated on (integer coordinates). Neuron numbers are
+	 * assigned to location in order; where the first dimension specifies the width, the second dimension is height,
+	 * and the third dimension is depth.
+	 *
+	 * For more information see CARLsim::createGroup and the Grid3D struct.
+	 * See also CARLsim::getNeuronLocation3D(int neurId).
+	 *
+	 * \STATE CONFIG, SETUP, EXE
+	 * \param[in] neurId the neuron ID for which the 3D location should be returned
+	 * \returns the 3D location a neuron codes for as a Point3D struct
+	 */
+	Point3D getNeuronLocation3D(int grpId, int relNeurId);
 
 	/*!
 	 * \brief Returns the number of network configrations

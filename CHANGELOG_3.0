@@ -7,6 +7,11 @@ Legend:
 	- removed element
 	* changed element
 
+2014-10-24     Michael Beyeler <mbeyeler@uci.edu>
+  * Fixed handling of empty spike files in SpikeReader.
+  * Updated simulation summary.
+  + Added CARLsim::getNeuronLocation3D(int grpId, int relNeurId).
+
 2014-10-20     Michael Beyeler <mbeyeler@uci.edu>
   * Fixed weight signs for custom connection callbacks.
   * Fixed readNetwork_internal parsing of header section.
