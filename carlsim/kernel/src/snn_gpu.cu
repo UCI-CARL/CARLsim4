@@ -3482,13 +3482,20 @@ void CpuSNN::printSimSummary() {
 	CARLSIM_INFO("********************      %s Simulation Summary      ***************************",
 		simMode_==GPU_MODE?"GPU":"CPU");
 
-	CARLSIM_INFO("Network Parameters: \n\tnumNeurons = %d (numNExcReg:numNInhReg = %2.1f:%2.1f)\n\tnumSynapses = %d\n\tmaxDelay = %d", numN, 100.0*numNExcReg/numN, 100.0*numNInhReg/numN, postSynCnt, maxDelay_);
-	CARLSIM_INFO("Random Seed: %d", randSeed_);
-	CARLSIM_INFO("Timing: \n\tModel Simulation Time = %lld sec \n\tActual Execution Time = %4.2f sec",  (unsigned long long)simTimeSec, etime/1000.0);
-	CARLSIM_INFO("Average Firing Rate:\n\t2+ms delay = %3.3f Hz \n\t1ms delay = %3.3f Hz \n\tOverall = %3.3f Hz",
-		spikeCountD2Host/(1.0*simTimeSec*numNExcReg), spikeCountD1Host/(1.0*simTimeSec*numNInhReg), spikeCountAll/(1.0*simTimeSec*numN));
-	CARLSIM_INFO("Overall Firing Count: \n\t2+ms delay = %d \n\t1ms delay = %d \n\tTotal = %d",
-		spikeCountD2Host, spikeCountD1Host, spikeCountAll );
+	CARLSIM_INFO("Network Parameters: \tnumNeurons = %d (numNExcReg:numNInhReg = %2.1f:%2.1f)", 
+		numN, 100.0*numNExcReg/numN, 100.0*numNInhReg/numN);
+	CARLSIM_INFO("\t\t\tnumSynapses = %d", postSynCnt);
+	CARLSIM_INFO("\t\t\tmaxDelay = %d", maxDelay_);
+	CARLSIM_INFO("Mode:\t\t\t%s",sim_with_conductances?"COBA":"CUBA");
+	CARLSIM_INFO("Random Seed:\t\t%d", randSeed_);
+	CARLSIM_INFO("Timing:\t\t\tModel Simulation Time = %lld sec", (unsigned long long)simTimeSec);
+	CARLSIM_INFO("\t\t\tActual Execution Time = %4.2f sec", etime/1000.0);
+	CARLSIM_INFO("Average Firing Rate:\t2+ms delay = %3.3f Hz", spikeCountD2Host/(1.0*simTimeSec*numNExcReg));
+	CARLSIM_INFO("\t\t\t1ms delay = %3.3f Hz", spikeCountD1Host/(1.0*simTimeSec*numNInhReg));
+	CARLSIM_INFO("\t\t\tOverall = %3.3f Hz", spikeCountAll/(1.0*simTimeSec*numN));
+	CARLSIM_INFO("Overall Firing Count:\t2+ms delay = %d", spikeCountD2Host);
+	CARLSIM_INFO("\t\t\t1ms delay = %d", spikeCountD1Host);
+	CARLSIM_INFO("\t\t\tTotal = %d", spikeCountAll);
 	CARLSIM_INFO("*********************************************************************************\n");
 }
 
