@@ -27,7 +27,7 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "spike_monitor", "carlsim\sp
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "carlsim_tests", "carlsim\test\carlsim_tests.vcxproj", "{D55C5CBD-B843-4DF9-BB1E-683E2D78E9E1}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "spike_generators", "tools\carlsim_addons\spike_generators\spike_generators.vcxproj", "{5C02490D-8C39-4C36-A3C9-CD683BDF43E0}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "spike_generators", "tools\spike_generators\spike_generators.vcxproj", "{5C02490D-8C39-4C36-A3C9-CD683BDF43E0}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
