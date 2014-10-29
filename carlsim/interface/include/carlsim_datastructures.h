@@ -186,15 +186,20 @@ static const char* carlsimState_string[] = {
  *   RangeDelay(1,10) => delays will be in range [1,10]
  */
 struct RangeDelay {
-	RangeDelay(int _val) : min(_val), max(_val) {}
-	RangeDelay(int _min, int _max) : min(_min), max(_max) {
+	RangeDelay(int _val) {
+		min = _val;
+		max = _val;
+	}
+	RangeDelay(int _min, int _max) {
 		UserErrors::assertTrue(_min<=_max, UserErrors::CANNOT_BE_LARGER, "RangeDelay", "minDelay", "maxDelay");
+		min = _min;
+		max = _max;
 	}
 
 	friend std::ostream& operator<<(std::ostream &strm, const RangeDelay &d) {
 		return strm << "delay=[" << d.min << "," << d.max << "]";
 	}
-	const int min,max;
+	int min,max;
 };
 
 /*!
@@ -214,19 +219,29 @@ struct RangeDelay {
  *                               is inhibitory: all weights will be in range [-0.2,0.0], and wt.init=0.0.
  */
 struct RangeWeight {
-	RangeWeight(double _val) : init(_val), max(_val), min(0) {}
-	RangeWeight(double _min, double _max) : min(_min), init(_min), max(_max) {
-		UserErrors::assertTrue(_min<=_max, UserErrors::CANNOT_BE_LARGER, "RangeWeight", "minWt", "maxWt");
+	RangeWeight(double _val) {
+		init = _val;
+		max = _val;
+		min = 0;
 	}
-	RangeWeight(double _min, double _init, double _max) : min(_min), init(_init), max(_max) {
+	RangeWeight(double _min, double _max) {
+		UserErrors::assertTrue(_min<=_max, UserErrors::CANNOT_BE_LARGER, "RangeWeight", "minWt", "maxWt");
+		min = _min;
+		init = _min;
+		max = _max;
+	}
+	RangeWeight(double _min, double _init, double _max) {
 		UserErrors::assertTrue(_min<=_init, UserErrors::CANNOT_BE_LARGER, "RangeWeight", "minWt", "initWt");
 		UserErrors::assertTrue(_init<=_max, UserErrors::CANNOT_BE_LARGER, "RangeWeight", "initWt", "maxWt");
+		min = _min;
+		init = _init;
+		max = _max;
 	}
 
 	friend std::ostream& operator<<(std::ostream &strm, const RangeWeight &w) {
 		return strm << "wt=[" << w.min << "," << w.init << "," << w.max << "]";
 	}
-	const double min, init, max; 
+	double min, init, max;
 };
 
 /*!
