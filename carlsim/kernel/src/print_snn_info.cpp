@@ -72,8 +72,8 @@ void CpuSNN::printConnection(int grpId, FILE* const fp) {
 
 void CpuSNN::printMemoryInfo(FILE* const fp) {
   if (!doneReorganization) {
-    CARLSIM_DEBUG("checkNetworkBuilt()");
-    CARLSIM_DEBUG("Network not yet elaborated and built...");
+    KERNEL_DEBUG("checkNetworkBuilt()");
+    KERNEL_DEBUG("Network not yet elaborated and built...");
   }
 
   fprintf(fp, "************* Memory Info ***************\n");
@@ -173,60 +173,60 @@ void CpuSNN::printConnectionInfo(short int connId) {
 	int configId = 0;
 	grpConnectInfo_t* connInfo = getConnectInfo(connId, configId);
 	
-	CARLSIM_INFO("Connection ID %d: %s(%d) => %s(%d)", connId, grp_Info2[connInfo->grpSrc].Name.c_str(), 
+	KERNEL_INFO("Connection ID %d: %s(%d) => %s(%d)", connId, grp_Info2[connInfo->grpSrc].Name.c_str(), 
 		connInfo->grpSrc, grp_Info2[connInfo->grpDest].Name.c_str(), connInfo->grpDest);
-	CARLSIM_INFO("  - Type                       = %s", GET_FIXED_PLASTIC(connInfo->connProp)==SYN_PLASTIC?" PLASTIC":"   FIXED")
-	CARLSIM_INFO("  - Min weight                 = %8.5f", 0.0f); // \TODO
-	CARLSIM_INFO("  - Max weight                 = %8.5f", fabs(connInfo->maxWt));
-	CARLSIM_INFO("  - Initial weight             = %8.5f", fabs(connInfo->initWt));
-	CARLSIM_INFO("  - Min delay                  = %8d", connInfo->minDelay);
-	CARLSIM_INFO("  - Max delay                  = %8d", connInfo->maxDelay);
-  CARLSIM_INFO("  - Radius X                   = %8.2f", connInfo->radX);
-  CARLSIM_INFO("  - Radius Y                   = %8.2f", connInfo->radY);
-  CARLSIM_INFO("  - Radius Z                   = %8.2f", connInfo->radZ);
+	KERNEL_INFO("  - Type                       = %s", GET_FIXED_PLASTIC(connInfo->connProp)==SYN_PLASTIC?" PLASTIC":"   FIXED")
+	KERNEL_INFO("  - Min weight                 = %8.5f", 0.0f); // \TODO
+	KERNEL_INFO("  - Max weight                 = %8.5f", fabs(connInfo->maxWt));
+	KERNEL_INFO("  - Initial weight             = %8.5f", fabs(connInfo->initWt));
+	KERNEL_INFO("  - Min delay                  = %8d", connInfo->minDelay);
+	KERNEL_INFO("  - Max delay                  = %8d", connInfo->maxDelay);
+  KERNEL_INFO("  - Radius X                   = %8.2f", connInfo->radX);
+  KERNEL_INFO("  - Radius Y                   = %8.2f", connInfo->radY);
+  KERNEL_INFO("  - Radius Z                   = %8.2f", connInfo->radZ);
 
 	float avgPostM = connInfo->numberOfConnections/grp_Info[connInfo->grpSrc].SizeN;
 	float avgPreM  = connInfo->numberOfConnections/grp_Info[connInfo->grpDest].SizeN;
-	CARLSIM_INFO("  - Avg numPreSynapses         = %8d", (int)avgPreM );
-	CARLSIM_INFO("  - Avg numPostSynapses        = %8d", (int)avgPostM );
+	KERNEL_INFO("  - Avg numPreSynapses         = %8d", (int)avgPreM );
+	KERNEL_INFO("  - Avg numPostSynapses        = %8d", (int)avgPostM );
 }
 
 void CpuSNN::printGroupInfo(int grpId) {
-	CARLSIM_INFO("Group %s(%d): ", grp_Info2[grpId].Name.c_str(), grpId);
-	CARLSIM_INFO("  - Type                       =  %s", isExcitatoryGroup(grpId) ? "  EXCIT" :
+	KERNEL_INFO("Group %s(%d): ", grp_Info2[grpId].Name.c_str(), grpId);
+	KERNEL_INFO("  - Type                       =  %s", isExcitatoryGroup(grpId) ? "  EXCIT" :
 		(isInhibitoryGroup(grpId) ? "  INHIB" : (isPoissonGroup(grpId)?" POISSON" : 
 		(isDopaminergicGroup(grpId) ? "  DOPAM" : " UNKNOWN"))) );
-	CARLSIM_INFO("  - Size                       = %8d", grp_Info[grpId].SizeN);
-	CARLSIM_INFO("  - Start Id                   = %8d", grp_Info[grpId].StartN);
-	CARLSIM_INFO("  - End Id                     = %8d", grp_Info[grpId].EndN);
-	CARLSIM_INFO("  - numPostSynapses            = %8d", grp_Info[grpId].numPostSynapses);
-	CARLSIM_INFO("  - numPreSynapses             = %8d", grp_Info[grpId].numPreSynapses);
+	KERNEL_INFO("  - Size                       = %8d", grp_Info[grpId].SizeN);
+	KERNEL_INFO("  - Start Id                   = %8d", grp_Info[grpId].StartN);
+	KERNEL_INFO("  - End Id                     = %8d", grp_Info[grpId].EndN);
+	KERNEL_INFO("  - numPostSynapses            = %8d", grp_Info[grpId].numPostSynapses);
+	KERNEL_INFO("  - numPreSynapses             = %8d", grp_Info[grpId].numPreSynapses);
 
 	if (doneReorganization) {
-		CARLSIM_INFO("  - Avg post connections       = %8.5f", 1.0*grp_Info2[grpId].numPostConn/grp_Info[grpId].SizeN);
-		CARLSIM_INFO("  - Avg pre connections        = %8.5f",  1.0*grp_Info2[grpId].numPreConn/grp_Info[grpId].SizeN);
+		KERNEL_INFO("  - Avg post connections       = %8.5f", 1.0*grp_Info2[grpId].numPostConn/grp_Info[grpId].SizeN);
+		KERNEL_INFO("  - Avg pre connections        = %8.5f",  1.0*grp_Info2[grpId].numPreConn/grp_Info[grpId].SizeN);
 	}
 	
 	if(grp_Info[grpId].Type&POISSON_NEURON) {
-		CARLSIM_INFO("  - Refractory period          = %8.5f", grp_Info[grpId].RefractPeriod);
+		KERNEL_INFO("  - Refractory period          = %8.5f", grp_Info[grpId].RefractPeriod);
 	}
 
 	if (grp_Info[grpId].WithSTP) {
-		CARLSIM_INFO("  - STP:");
-		CARLSIM_INFO("      - STP_A                  = %8.5f", grp_Info[grpId].STP_A);
-		CARLSIM_INFO("      - STP_U                  = %8.5f", grp_Info[grpId].STP_U);
-		CARLSIM_INFO("      - STP_tau_u              = %8d", (int) (1.0f/grp_Info[grpId].STP_tau_u_inv));
-		CARLSIM_INFO("      - STP_tau_x              = %8d", (int) (1.0f/grp_Info[grpId].STP_tau_x_inv));
+		KERNEL_INFO("  - STP:");
+		KERNEL_INFO("      - STP_A                  = %8.5f", grp_Info[grpId].STP_A);
+		KERNEL_INFO("      - STP_U                  = %8.5f", grp_Info[grpId].STP_U);
+		KERNEL_INFO("      - STP_tau_u              = %8d", (int) (1.0f/grp_Info[grpId].STP_tau_u_inv));
+		KERNEL_INFO("      - STP_tau_x              = %8d", (int) (1.0f/grp_Info[grpId].STP_tau_x_inv));
 	}
 
 	if(grp_Info[grpId].WithSTDP) {
-		CARLSIM_INFO("  - STDP:")
-		CARLSIM_INFO("      - TYPE                   = %s",     grp_Info[grpId].WithSTDPtype==STANDARD? "STANDARD" :
+		KERNEL_INFO("  - STDP:")
+		KERNEL_INFO("      - TYPE                   = %s",     grp_Info[grpId].WithSTDPtype==STANDARD? "STANDARD" :
 			(grp_Info[grpId].WithSTDPtype==DA_MOD?"  DA_MOD":" UNKNOWN"));
-		CARLSIM_INFO("      - ALPHA_LTP              = %8.5f", grp_Info[grpId].ALPHA_LTP);
-		CARLSIM_INFO("      - ALPHA_LTD              = %8.5f", grp_Info[grpId].ALPHA_LTD);
-		CARLSIM_INFO("      - TAU_LTP_INV            = %8.5f", grp_Info[grpId].TAU_LTP_INV);
-		CARLSIM_INFO("      - TAU_LTD_INV            = %8.5f", grp_Info[grpId].TAU_LTD_INV);
+		KERNEL_INFO("      - ALPHA_LTP              = %8.5f", grp_Info[grpId].ALPHA_LTP);
+		KERNEL_INFO("      - ALPHA_LTD              = %8.5f", grp_Info[grpId].ALPHA_LTD);
+		KERNEL_INFO("      - TAU_LTP_INV            = %8.5f", grp_Info[grpId].TAU_LTP_INV);
+		KERNEL_INFO("      - TAU_LTD_INV            = %8.5f", grp_Info[grpId].TAU_LTD_INV);
 	}
 }
 
@@ -253,7 +253,7 @@ void CpuSNN::printGroupInfo2(FILE* const fpg)
 
 //! \deprecated
 void CpuSNN::printParameters(FILE* const fp) {
-	CARLSIM_WARN("printParameters is deprecated");
+	KERNEL_WARN("printParameters is deprecated");
 /*	assert(fp!=NULL);
 	printGroupInfo(fp);
 	printConnectionInfo(fp);*/
@@ -473,7 +473,7 @@ void CpuSNN::printNeuronState(int grpId, FILE* const fp)
   fflush(fp);
 }
 
-// TODO: make CARLSIM_INFO(), don't write to fpInf_
+// TODO: make KERNEL_INFO(), don't write to fpInf_
 void CpuSNN::printWeights(int preGrpId, int postGrpId) {
 	int preA, preZ, postA, postZ;
 	if (preGrpId==ALL) {
