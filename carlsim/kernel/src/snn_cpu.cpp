@@ -191,7 +191,7 @@ short int CpuSNN::connect(int grpId1, int grpId2, const std::string& _type, floa
 				// no connections
 				newInfo->numPostSynapses = 0;
 				newInfo->numPreSynapses = 0;
-				CARLSIM_WARN("Connection ID %d: %s(%d) => %s(%d) has zero connections. Increase RadiusRF()",
+				KERNEL_WARN("Connection ID %d: %s(%d) => %s(%d) has zero connections. Increase RadiusRF()",
 					numConnections+1, grp_Info2[grpId1].Name.c_str(), grpId1,
 					grp_Info2[grpId2].Name.c_str(), grpId2);
 			}
@@ -206,19 +206,19 @@ short int CpuSNN::connect(int grpId1, int grpId2, const std::string& _type, floa
 			newInfo->numPreSynapses	= 1;
 		}
 		else {
-			CARLSIM_ERROR("Invalid connection type (should be 'random', 'full', 'one-to-one', or 'full-no-direct')");
+			KERNEL_ERROR("Invalid connection type (should be 'random', 'full', 'one-to-one', or 'full-no-direct')");
 			exitSimulation(-1);
 		}
 
 		if (newInfo->numPostSynapses > MAX_nPostSynapses) {
-			CARLSIM_ERROR("ConnID %d exceeded the maximum number of output synapses (%d), has %d.",
+			KERNEL_ERROR("ConnID %d exceeded the maximum number of output synapses (%d), has %d.",
 				newInfo->connId,
 				MAX_nPostSynapses, newInfo->numPostSynapses);
 			assert(newInfo->numPostSynapses <= MAX_nPostSynapses);
 		}
 
 		if (newInfo->numPreSynapses > MAX_nPreSynapses) {
-			CARLSIM_ERROR("ConnID %d exceeded the maximum number of input synapses (%d), has %d.",
+			KERNEL_ERROR("ConnID %d exceeded the maximum number of input synapses (%d), has %d.",
 				newInfo->connId,
 				MAX_nPreSynapses, newInfo->numPreSynapses);
 			assert(newInfo->numPreSynapses <= MAX_nPreSynapses);
@@ -231,7 +231,7 @@ short int CpuSNN::connect(int grpId1, int grpId2, const std::string& _type, floa
 		grp_Info[grpId1].numPostSynapses 	+= newInfo->numPostSynapses;
 		grp_Info[grpId2].numPreSynapses 	+= newInfo->numPreSynapses;
 
-		CARLSIM_DEBUG("grp_Info[%d, %s].numPostSynapses = %d, grp_Info[%d, %s].numPreSynapses = %d",
+		KERNEL_DEBUG("grp_Info[%d, %s].numPostSynapses = %d, grp_Info[%d, %s].numPreSynapses = %d",
 						grpId1,grp_Info2[grpId1].Name.c_str(),grp_Info[grpId1].numPostSynapses,grpId2,
 						grp_Info2[grpId2].Name.c_str(),grp_Info[grpId2].numPreSynapses);
 
@@ -241,7 +241,7 @@ short int CpuSNN::connect(int grpId1, int grpId2, const std::string& _type, floa
 		if(c==0)
 			retId = newInfo->connId;
 
-		CARLSIM_DEBUG("CONNECT SETUP: connId=%d, mulFast=%f, mulSlow=%f",newInfo->connId,newInfo->mulSynFast,
+		KERNEL_DEBUG("CONNECT SETUP: connId=%d, mulFast=%f, mulSlow=%f",newInfo->connId,newInfo->mulSynFast,
 							newInfo->mulSynSlow);
 	}
 	assert(retId != -1);
@@ -264,14 +264,14 @@ short int CpuSNN::connect(int grpId1, int grpId2, ConnectionGeneratorCore* conn,
 			maxPreM = grp_Info[grpId1].SizeN;
 
 		if (maxM > MAX_nPostSynapses) {
-			CARLSIM_ERROR("Connection from %s (%d) to %s (%d) exceeded the maximum number of output synapses (%d), "
+			KERNEL_ERROR("Connection from %s (%d) to %s (%d) exceeded the maximum number of output synapses (%d), "
 								"has %d.", grp_Info2[grpId1].Name.c_str(),grpId1,grp_Info2[grpId2].Name.c_str(),
 								grpId2,	MAX_nPostSynapses,maxM);
 			assert(maxM <= MAX_nPostSynapses);
 		}
 
 		if (maxPreM > MAX_nPreSynapses) {
-			CARLSIM_ERROR("Connection from %s (%d) to %s (%d) exceeded the maximum number of input synapses (%d), "
+			KERNEL_ERROR("Connection from %s (%d) to %s (%d) exceeded the maximum number of input synapses (%d), "
 								"has %d.\n", grp_Info2[grpId1].Name.c_str(), grpId1,grp_Info2[grpId2].Name.c_str(),
 								grpId2, MAX_nPreSynapses,maxPreM);
 			assert(maxPreM <= MAX_nPreSynapses);
@@ -300,7 +300,7 @@ short int CpuSNN::connect(int grpId1, int grpId2, ConnectionGeneratorCore* conn,
 		grp_Info[grpId1].numPostSynapses    += newInfo->numPostSynapses;
 		grp_Info[grpId2].numPreSynapses += newInfo->numPreSynapses;
 
-		CARLSIM_DEBUG("grp_Info[%d, %s].numPostSynapses = %d, grp_Info[%d, %s].numPreSynapses = %d",
+		KERNEL_DEBUG("grp_Info[%d, %s].numPostSynapses = %d, grp_Info[%d, %s].numPreSynapses = %d",
 						grpId1,grp_Info2[grpId1].Name.c_str(),grp_Info[grpId1].numPostSynapses,grpId2,
 						grp_Info2[grpId2].Name.c_str(),grp_Info[grpId2].numPreSynapses);
 
@@ -329,7 +329,7 @@ int CpuSNN::createGroup(const std::string& grpName, Grid3D& grid, int neurType, 
 
 		if ( (!(neurType&TARGET_AMPA) && !(neurType&TARGET_NMDA) &&
 			  !(neurType&TARGET_GABAa) && !(neurType&TARGET_GABAb)) || (neurType&POISSON_NEURON)) {
-			CARLSIM_ERROR("Invalid type using createGroup... Cannot create poisson generators here.");
+			KERNEL_ERROR("Invalid type using createGroup... Cannot create poisson generators here.");
 			exitSimulation(1);
 		}
 
@@ -423,7 +423,7 @@ int CpuSNN::createSpikeGeneratorGroup(const std::string& grpName, Grid3D& grid, 
 void CpuSNN::setConductances(bool isSet, int tdAMPA, int trNMDA, int tdNMDA, int tdGABAa,
 int trGABAb, int tdGABAb, int configId) {
 	if (configId!=ALL) {
-		CARLSIM_ERROR("Using setConductances with configId!=ALL is deprecated"); // \deprecated
+		KERNEL_ERROR("Using setConductances with configId!=ALL is deprecated"); // \deprecated
 		assert(configId==ALL);
 	}
 
@@ -468,14 +468,14 @@ int trGABAb, int tdGABAb, int configId) {
 //		grp_Info[cGrpId].newUpdates 		= true; // \deprecated
 
 	if (sim_with_conductances) {
-		CARLSIM_INFO("Running COBA mode:");
-		CARLSIM_INFO("  - AMPA decay time            = %5d ms", tdAMPA);
-		CARLSIM_INFO("  - NMDA rise time %s  = %5d ms", sim_with_NMDA_rise?"          ":"(disabled)", trNMDA);
-		CARLSIM_INFO("  - GABAa decay time           = %5d ms", tdGABAa);
-		CARLSIM_INFO("  - GABAb rise time %s = %5d ms", sim_with_GABAb_rise?"          ":"(disabled)",trGABAb);
-		CARLSIM_INFO("  - GABAb decay time           = %5d ms", tdGABAb);
+		KERNEL_INFO("Running COBA mode:");
+		KERNEL_INFO("  - AMPA decay time            = %5d ms", tdAMPA);
+		KERNEL_INFO("  - NMDA rise time %s  = %5d ms", sim_with_NMDA_rise?"          ":"(disabled)", trNMDA);
+		KERNEL_INFO("  - GABAa decay time           = %5d ms", tdGABAa);
+		KERNEL_INFO("  - GABAb rise time %s = %5d ms", sim_with_GABAb_rise?"          ":"(disabled)",trGABAb);
+		KERNEL_INFO("  - GABAb decay time           = %5d ms", tdGABAb);
 	} else {
-		CARLSIM_INFO("Running CUBA mode (all synaptic conductances disabled)");
+		KERNEL_INFO("Running CUBA mode (all synaptic conductances disabled)");
 	}
 }
 
@@ -503,7 +503,7 @@ void CpuSNN::setHomeostasis(int grpId, bool isSet, float homeoScale, float avgTi
 		grp_Info[cGrpId].avgTimeScale_decay = (avgTimeScale*1000.0f-1.0f)/(avgTimeScale*1000.0f);
 		grp_Info[cGrpId].newUpdates 		= true; // \FIXME: what's this?
 
-		CARLSIM_INFO("Homeostasis parameters %s for %d (%s):\thomeoScale: %f, avgTimeScale: %f",
+		KERNEL_INFO("Homeostasis parameters %s for %d (%s):\thomeoScale: %f, avgTimeScale: %f",
 					isSet?"enabled":"disabled",cGrpId,grp_Info2[cGrpId].Name.c_str(),homeoScale,avgTimeScale);
 	}
 }
@@ -530,7 +530,7 @@ void CpuSNN::setHomeoBaseFiringRate(int grpId, float baseFiring, float baseFirin
 		grp_Info2[cGrpId].baseFiringSD 	= baseFiringSD;
 		grp_Info[cGrpId].newUpdates 	= true; //TODO: I have to see how this is handled.  -- KDC
 
-		CARLSIM_INFO("Homeostatic base firing rate set for %d (%s):\tbaseFiring: %3.3f, baseFiringStd: %3.3f",
+		KERNEL_INFO("Homeostatic base firing rate set for %d (%s):\tbaseFiring: %3.3f, baseFiringStd: %3.3f",
 							cGrpId,grp_Info2[cGrpId].Name.c_str(),baseFiring,baseFiringSD);
 	}
 }
@@ -616,7 +616,7 @@ void CpuSNN::setSTDP(int grpId, bool isSet, stdpType_t type, float alphaLTP, flo
 		grp_Info[cGrpId].TAU_LTD_INV	= 1.0f/tauLTD;
 		grp_Info[cGrpId].newUpdates 	= true; // \FIXME whatsathiis?
 
-		CARLSIM_INFO("STDP %s for %s(%d)", isSet?"enabled":"disabled", grp_Info2[cGrpId].Name.c_str(), cGrpId);
+		KERNEL_INFO("STDP %s for %s(%d)", isSet?"enabled":"disabled", grp_Info2[cGrpId].Name.c_str(), cGrpId);
 	}
 }
 
@@ -650,7 +650,7 @@ void CpuSNN::setSTP(int grpId, bool isSet, float STP_U, float STP_tau_u, float S
 		grp_Info[cGrpId].STP_tau_x_inv	= 1.0f/STP_tau_x; // depressive
 		grp_Info[cGrpId].newUpdates = true;
 
-		CARLSIM_INFO("STP %s for %d (%s):\tA: %1.4f, U: %1.4f, tau_u: %4.0f, tau_x: %4.0f", isSet?"enabled":"disabled",
+		KERNEL_INFO("STP %s for %d (%s):\tA: %1.4f, U: %1.4f, tau_u: %4.0f, tau_x: %4.0f", isSet?"enabled":"disabled",
 					cGrpId, grp_Info2[cGrpId].Name.c_str(), grp_Info[cGrpId].STP_A, STP_U, STP_tau_u, STP_tau_x);
 	}
 }
@@ -688,8 +688,8 @@ void CpuSNN::setWeightAndWeightChangeUpdate(updateInterval_t wtUpdateInterval, u
 
 	wtChangeDecay_ = 1.0 - (1.0 / tauWeightChange);
 
-	CARLSIM_INFO("Update weight every %d ms, stdpScaleFactor = %1.3f", wtUpdateInterval_, stdpScaleFactor_);
-	CARLSIM_INFO("Update weight change every %d ms, wtChangeDecay = %1.3f", wtChangeUpdateInterval_, wtChangeDecay_);
+	KERNEL_INFO("Update weight every %d ms, stdpScaleFactor = %1.3f", wtUpdateInterval_, stdpScaleFactor_);
+	KERNEL_INFO("Update weight change every %d ms, wtChangeDecay = %1.3f", wtChangeUpdateInterval_, wtChangeDecay_);
 }
 
 
@@ -708,8 +708,8 @@ int CpuSNN::runNetwork(int _nsec, int _nmsec, bool printRunSummary, bool copySta
 
 	// first-time run: inform the user the simulation is running now
 	if (simTime==0) {
-		CARLSIM_INFO("");
-		CARLSIM_INFO("*******************      Running %s Simulation      ****************************\n",
+		KERNEL_INFO("");
+		KERNEL_INFO("*******************      Running %s Simulation      ****************************\n",
 			simMode_==GPU_MODE?"GPU":"CPU");
 	}
 
@@ -781,7 +781,7 @@ int CpuSNN::runNetwork(int _nsec, int _nmsec, bool printRunSummary, bool copySta
 
 		// \deprecated remove this
 		if(enableGPUSpikeCntPtr==true && simMode_ == CPU_MODE){
-			CARLSIM_ERROR("Error: the enableGPUSpikeCntPtr flag cannot be set in CPU_MODE");
+			KERNEL_ERROR("Error: the enableGPUSpikeCntPtr flag cannot be set in CPU_MODE");
 			assert(simMode_==GPU_MODE);
 		}
 		if(enableGPUSpikeCntPtr==true && simMode_ == GPU_MODE){
@@ -833,7 +833,7 @@ int CpuSNN::runNetwork(int _nsec, int _nmsec, bool printRunSummary, bool copySta
 				}
 
 
-				CARLSIM_INFO("(t=%.3fs) SpikeMonitor for group %s(%d) has %d spikes in %dms (%.2f +/- %.2f Hz)",
+				KERNEL_INFO("(t=%.3fs) SpikeMonitor for group %s(%d) has %d spikes in %dms (%.2f +/- %.2f Hz)",
 					(float)(simTime/1000.0),
 					grp_Info2[grpId].Name.c_str(),
 					grpId,
@@ -888,12 +888,12 @@ void CpuSNN::reassignFixedWeights(short int connectId, float weightMatrix[], int
 		//make sure that it is for fixed connections.
 		bool synWtType = GET_FIXED_PLASTIC(connInfo->connProp);
 		if(synWtType == SYN_PLASTIC){
-			CARLSIM_ERROR("The synapses in this connection must be SYN_FIXED in order to use this function.");
+			KERNEL_ERROR("The synapses in this connection must be SYN_FIXED in order to use this function.");
 			exitSimulation(1);
 		}
 		//make sure that the user passes the correctly sized matrix
 		if(connInfo->numberOfConnections != sizeMatrix){
-			CARLSIM_ERROR("The size of the input weight matrix and the number of synaptic connections in this "
+			KERNEL_ERROR("The size of the input weight matrix and the number of synaptic connections in this "
 							"connection do not match.");
 			exitSimulation(1);
 		}
@@ -1098,7 +1098,7 @@ void CpuSNN::setSpikeCounter(int grpId, int recordDur, int configId) {
 
 		// TODO: implement same for spike generators on GPU side (see CpuSNN::generateSpikes)
 		if (grp_Info[cGrpId].isSpikeGenerator) {
-			CARLSIM_ERROR("ERROR: Spike Counters for Spike Generators are currently not supported.");
+			KERNEL_ERROR("ERROR: Spike Counters for Spike Generators are currently not supported.");
 			exit(1);
 			return;
 		}
@@ -1113,7 +1113,7 @@ void CpuSNN::setSpikeCounter(int grpId, int recordDur, int configId) {
 
 		numSpkCnt++;
 
-		CARLSIM_INFO("SpikeCounter set for Group %d (%s): %d ms recording window",cGrpId,
+		KERNEL_INFO("SpikeCounter set for Group %d (%s): %d ms recording window",cGrpId,
 			grp_Info2[cGrpId].Name.c_str(),recordDur);
 	}
 }
@@ -1128,7 +1128,7 @@ SpikeMonitor* CpuSNN::setSpikeMonitor(int grpId, FILE* fid, int configId) {
 
 		// check whether group already has a SpikeMonitor
 		if (grp_Info[cGrpId].SpikeMonitorId >= 0) {
-			CARLSIM_ERROR("setSpikeMonitor has already been called on Group %d (%s).",
+			KERNEL_ERROR("setSpikeMonitor has already been called on Group %d (%s).",
 				cGrpId, grp_Info2[cGrpId].Name.c_str());
 			exitSimulation(1);
 		}
@@ -1157,7 +1157,7 @@ SpikeMonitor* CpuSNN::setSpikeMonitor(int grpId, FILE* fid, int configId) {
 		cpuSnnSz.monitorInfoSize += sizeof(SpikeMonitorCore*);
 
 		numSpikeMonitor++;
-		CARLSIM_INFO("SpikeMonitor set for group %d (%s)",cGrpId,grp_Info2[grpId].Name.c_str());
+		KERNEL_INFO("SpikeMonitor set for group %d (%s)",cGrpId,grp_Info2[grpId].Name.c_str());
 
 		return spkMonObj;
 	}
@@ -1173,7 +1173,7 @@ void CpuSNN::setSpikeRate(int grpId, PoissonRate* ratePtr, int refPeriod, int co
 
 		assert(ratePtr);
 		if (ratePtr->len != grp_Info[cGrpId].SizeN) {
-			CARLSIM_ERROR("The PoissonRate length (%d) did not match the number of neurons (%d) in group %s(%d).",
+			KERNEL_ERROR("The PoissonRate length (%d) did not match the number of neurons (%d) in group %s(%d).",
 						ratePtr->len, grp_Info[cGrpId].SizeN,
 						grp_Info2[cGrpId].Name.c_str(),grpId);
 			exitSimulation(1);
@@ -1190,7 +1190,7 @@ void CpuSNN::setSpikeRate(int grpId, PoissonRate* ratePtr, int refPeriod, int co
 // function used for parameter tuning interface
 void CpuSNN::updateNetwork(bool resetFiringInfo, bool resetWeights) {
 	if(!doneReorganization){
-		CARLSIM_ERROR("UpdateNetwork function was called but nothing was done because reorganizeNetwork must be "
+		KERNEL_ERROR("UpdateNetwork function was called but nothing was done because reorganizeNetwork must be "
 						"called first.");
 		return;
 	}
@@ -1227,15 +1227,15 @@ void CpuSNN::saveSimulation(FILE* fid, bool saveSynapseInfo) {
 
 	// write file signature
 	tmpInt = 294338571; // some int used to identify saveSimulation files
-	if (!fwrite(&tmpInt,sizeof(int),1,fid)) CARLSIM_ERROR("saveSimulation fwrite error");
+	if (!fwrite(&tmpInt,sizeof(int),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
 
 	// write version number
 	tmpFloat = 0.2f;
-	if (!fwrite(&tmpFloat,sizeof(int),1,fid)) CARLSIM_ERROR("saveSimulation fwrite error");
+	if (!fwrite(&tmpFloat,sizeof(int),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
 
 	// write simulation time so far (in seconds)
 	tmpFloat = ((float)simTimeSec) + ((float)simTimeMs)/1000.0f;
-	if (!fwrite(&tmpFloat,sizeof(float),1,fid)) CARLSIM_ERROR("saveSimulation fwrite error");
+	if (!fwrite(&tmpFloat,sizeof(float),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
 
 	// write execution time so far (in seconds)
 	if(simMode_ == GPU_MODE) {
@@ -1245,28 +1245,28 @@ void CpuSNN::saveSimulation(FILE* fid, bool saveSynapseInfo) {
 		stopCPUTiming();
 		tmpFloat = cpuExecutionTime/1000.0f;
 	}
-	if (!fwrite(&tmpFloat,sizeof(float),1,fid)) CARLSIM_ERROR("saveSimulation fwrite error");
+	if (!fwrite(&tmpFloat,sizeof(float),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
 
 	// TODO: add more params of interest
 
 	// write network info
-	if (!fwrite(&numN,sizeof(int),1,fid)) CARLSIM_ERROR("saveSimulation fwrite error");
-	if (!fwrite(&preSynCnt,sizeof(int),1,fid)) CARLSIM_ERROR("saveSimulation fwrite error");
-	if (!fwrite(&postSynCnt,sizeof(int),1,fid)) CARLSIM_ERROR("saveSimulation fwrite error");
-	if (!fwrite(&numGrp,sizeof(int),1,fid)) CARLSIM_ERROR("saveSimulation fwrite error");
+	if (!fwrite(&numN,sizeof(int),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
+	if (!fwrite(&preSynCnt,sizeof(int),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
+	if (!fwrite(&postSynCnt,sizeof(int),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
+	if (!fwrite(&numGrp,sizeof(int),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
 
 	// write group info
 	char name[100];
 	for (int g=0;g<numGrp;g++) {
-		if (!fwrite(&grp_Info[g].StartN,sizeof(int),1,fid)) CARLSIM_ERROR("saveSimulation fwrite error");
-		if (!fwrite(&grp_Info[g].EndN,sizeof(int),1,fid)) CARLSIM_ERROR("saveSimulation fwrite error");
+		if (!fwrite(&grp_Info[g].StartN,sizeof(int),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
+		if (!fwrite(&grp_Info[g].EndN,sizeof(int),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
 
-		if (!fwrite(&grp_Info[g].SizeX,sizeof(int),1,fid)) CARLSIM_ERROR("saveSimulation fwrite error");
-		if (!fwrite(&grp_Info[g].SizeY,sizeof(int),1,fid)) CARLSIM_ERROR("saveSimulation fwrite error");
-		if (!fwrite(&grp_Info[g].SizeZ,sizeof(int),1,fid)) CARLSIM_ERROR("saveSimulation fwrite error");
+		if (!fwrite(&grp_Info[g].SizeX,sizeof(int),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
+		if (!fwrite(&grp_Info[g].SizeY,sizeof(int),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
+		if (!fwrite(&grp_Info[g].SizeZ,sizeof(int),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
 
 		strncpy(name,grp_Info2[g].Name.c_str(),100);
-		if (!fwrite(name,1,100,fid)) CARLSIM_ERROR("saveSimulation fwrite error");
+		if (!fwrite(name,1,100,fid)) KERNEL_ERROR("saveSimulation fwrite error");
 	}
 
 
@@ -1285,7 +1285,7 @@ void CpuSNN::saveSimulation(FILE* fid, bool saveSynapseInfo) {
 					count++;
 			}
 
-			if (!fwrite(&count,sizeof(int),1,fid)) CARLSIM_ERROR("saveSimulation fwrite error");
+			if (!fwrite(&count,sizeof(int),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
 
 			for (int t=0;t<maxDelay_;t++) {
 				delay_info_t dPar = postDelayInfo[i*(maxDelay_+1)+t];
@@ -1310,13 +1310,13 @@ void CpuSNN::saveSimulation(FILE* fid, bool saveSynapseInfo) {
 					uint8_t delay = t+1;
 					uint8_t plastic = s_i < Npre_plastic[p_i]; // plastic or fixed.
 
-					if (!fwrite(&i,sizeof(int),1,fid)) CARLSIM_ERROR("saveSimulation fwrite error");
-					if (!fwrite(&p_i,sizeof(int),1,fid)) CARLSIM_ERROR("saveSimulation fwrite error");
-					if (!fwrite(&(wt[pos_i]),sizeof(float),1,fid)) CARLSIM_ERROR("saveSimulation fwrite error");
-					if (!fwrite(&(maxSynWt[pos_i]),sizeof(float),1,fid)) CARLSIM_ERROR("saveSimulation fwrite error");
-					if (!fwrite(&delay,sizeof(uint8_t),1,fid)) CARLSIM_ERROR("saveSimulation fwrite error");
-					if (!fwrite(&plastic,sizeof(uint8_t),1,fid)) CARLSIM_ERROR("saveSimulation fwrite error");
-					if (!fwrite(&(cumConnIdPre[pos_i]),sizeof(short int),1,fid)) CARLSIM_ERROR("saveSimulation fwrite error");
+					if (!fwrite(&i,sizeof(int),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
+					if (!fwrite(&p_i,sizeof(int),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
+					if (!fwrite(&(wt[pos_i]),sizeof(float),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
+					if (!fwrite(&(maxSynWt[pos_i]),sizeof(float),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
+					if (!fwrite(&delay,sizeof(uint8_t),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
+					if (!fwrite(&plastic,sizeof(uint8_t),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
+					if (!fwrite(&(cumConnIdPre[pos_i]),sizeof(short int),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
 				}
 			}
 		}
@@ -1336,7 +1336,7 @@ void CpuSNN::writePopWeights(std::string fname, int grpPreId, int grpPostId, int
 	assert(fid != NULL);
 
 	if(!doneReorganization){
-		CARLSIM_ERROR("Simulation has not been run yet, cannot output weights.");
+		KERNEL_ERROR("Simulation has not been run yet, cannot output weights.");
 		exitSimulation(1);
 	}
 
@@ -1459,8 +1459,8 @@ grpConnectInfo_t* CpuSNN::getConnectInfo(short int connectId, int configId) {
 		nextConn = nextConn->next;
 	}
 
-	CARLSIM_DEBUG("Total Connections = %d", numConnections);
-	CARLSIM_DEBUG("ConnectId (%d) cannot be recognized", connectId);
+	KERNEL_DEBUG("Total Connections = %d", numConnections);
+	KERNEL_DEBUG("ConnectId (%d) cannot be recognized", connectId);
 	return NULL;
 }
 
@@ -1695,7 +1695,7 @@ int CpuSNN::getNumSynapticConnections(short int connectionId) {
     connIterator=connIterator->next;
   }
   //we didn't find the connection.
-  CARLSIM_ERROR("Connection ID was not found.  Quitting.");
+  KERNEL_ERROR("Connection ID was not found.  Quitting.");
   exitSimulation(1);
 }
 
@@ -1764,7 +1764,7 @@ void CpuSNN::getPopWeights(int grpPreId, int grpPostId, float*& weights, int& ma
 int* CpuSNN::getSpikeCntPtr(int grpId) {
 	//! do check to make sure appropriate flag is set
 	if(simMode_ == GPU_MODE && enableGPUSpikeCntPtr == false){
-		CARLSIM_ERROR("Error: the enableGPUSpikeCntPtr flag must be set to true to use this function in GPU_MODE.");
+		KERNEL_ERROR("Error: the enableGPUSpikeCntPtr flag must be set to true to use this function in GPU_MODE.");
 		assert(enableGPUSpikeCntPtr);
 	}
     
@@ -1913,7 +1913,7 @@ void CpuSNN::CpuSNNinit() {
 		#endif
 	break;
 	default:
-		CARLSIM_ERROR("Unknown logger mode");
+		KERNEL_ERROR("Unknown logger mode");
 		exit(1);
 	}
 	#if (WIN32 || WIN64)
@@ -1934,21 +1934,21 @@ void CpuSNN::CpuSNNinit() {
 	#endif
 	#endif
 
-	CARLSIM_INFO("*********************************************************************************");
-	CARLSIM_INFO("********************      Welcome to CARLsim %d.%d      ***************************",
+	KERNEL_INFO("*********************************************************************************");
+	KERNEL_INFO("********************      Welcome to CARLsim %d.%d      ***************************",
 				MAJOR_VERSION,MINOR_VERSION);
-	CARLSIM_INFO("*********************************************************************************\n");
+	KERNEL_INFO("*********************************************************************************\n");
 
-	CARLSIM_INFO("***************************** Configuring Network ********************************");
-	CARLSIM_INFO("Starting CARLsim simulation \"%s\" in %s mode",networkName_.c_str(),
+	KERNEL_INFO("***************************** Configuring Network ********************************");
+	KERNEL_INFO("Starting CARLsim simulation \"%s\" in %s mode",networkName_.c_str(),
 		loggerMode_string[loggerMode_]);
-	CARLSIM_INFO("nConfig: %d, randSeed: %d",nConfig_,randSeed_);
+	KERNEL_INFO("nConfig: %d, randSeed: %d",nConfig_,randSeed_);
 
 	time_t rawtime;
 	struct tm * timeinfo;
 	time(&rawtime);
 	timeinfo = localtime(&rawtime);
-	CARLSIM_DEBUG("Current local time and date: %s", asctime(timeinfo));
+	KERNEL_DEBUG("Current local time and date: %s", asctime(timeinfo));
 
 	// init random seed
 	srand48(randSeed_);
@@ -2119,7 +2119,7 @@ void CpuSNN::buildNetworkInit(unsigned int nNeur, unsigned int nPostSyn, unsigne
 
 	// \FIXME: need to figure out STP buffer for delays > 1
 	if (sim_with_stp && maxDelay>1) {
-		CARLSIM_ERROR("STP with delays > 1 ms is currently not supported.");
+		KERNEL_ERROR("STP with delays > 1 ms is currently not supported.");
 		exitSimulation(1);
 	}
 
@@ -2172,7 +2172,7 @@ void CpuSNN::buildNetworkInit(unsigned int nNeur, unsigned int nPostSyn, unsigne
 
 	curSpike   = new bool[numN];
 	nSpikeCnt  = new int[numN];
-	CARLSIM_INFO("allocated nSpikeCnt");
+	KERNEL_INFO("allocated nSpikeCnt");
 
 	//! homeostasis variables
 	if (sim_with_homeostasis) {
@@ -2296,7 +2296,7 @@ void CpuSNN::buildGroup(int grpId) {
 	grp_Info[grpId].StartN = allocatedN;
 	grp_Info[grpId].EndN   = allocatedN + grp_Info[grpId].SizeN - 1;
 
-	CARLSIM_DEBUG("Allocation for %d(%s), St=%d, End=%d",
+	KERNEL_DEBUG("Allocation for %d(%s), St=%d, End=%d",
 				grpId, grp_Info2[grpId].Name.c_str(), grp_Info[grpId].StartN, grp_Info[grpId].EndN);
 
 	resetNeuromodulator(grpId);
@@ -2346,9 +2346,9 @@ void CpuSNN::buildNetwork() {
 	assert(numPreSynapses > 0);
 
 	// display the evaluated network and delay length....
-	CARLSIM_INFO("\n");
-	CARLSIM_INFO("***************************** Setting up Network **********************************");
-	CARLSIM_INFO("numN = %d, numPostSynapses = %d, numPreSynapses = %d, maxDelay = %d", curN, numPostSynapses,
+	KERNEL_INFO("\n");
+	KERNEL_INFO("***************************** Setting up Network **********************************");
+	KERNEL_INFO("numN = %d, numPostSynapses = %d, numPreSynapses = %d, maxDelay = %d", curN, numPostSynapses,
 					numPreSynapses, curD);
 
 	assert(curD != 0);
@@ -2359,7 +2359,7 @@ void CpuSNN::buildNetwork() {
 	if (numPostSynapses > MAX_nPostSynapses) {
 		for (int g=0;g<numGrp;g++) {
 			if (grp_Info[g].numPostSynapses>MAX_nPostSynapses)
-				CARLSIM_ERROR("Grp: %s(%d) has too many output synapses (%d), max %d.",grp_Info2[g].Name.c_str(),g,
+				KERNEL_ERROR("Grp: %s(%d) has too many output synapses (%d), max %d.",grp_Info2[g].Name.c_str(),g,
 							grp_Info[g].numPostSynapses,MAX_nPostSynapses);
 		}
 		assert(numPostSynapses <= MAX_nPostSynapses);
@@ -2367,7 +2367,7 @@ void CpuSNN::buildNetwork() {
 	if (numPreSynapses > MAX_nPreSynapses) {
 		for (int g=0;g<numGrp;g++) {
 			if (grp_Info[g].numPreSynapses>MAX_nPreSynapses)
-				CARLSIM_ERROR("Grp: %s(%d) has too many input synapses (%d), max %d.",grp_Info2[g].Name.c_str(),g,
+				KERNEL_ERROR("Grp: %s(%d) has too many input synapses (%d), max %d.",grp_Info2[g].Name.c_str(),g,
  							grp_Info[g].numPreSynapses,MAX_nPreSynapses);
 		}
 		assert(numPreSynapses <= MAX_nPreSynapses);
@@ -2473,7 +2473,7 @@ void CpuSNN::buildNetwork() {
 							connectUserDefined(newInfo);
 							break;
 						default:
-							CARLSIM_ERROR("Invalid connection type( should be 'random', or 'full')");
+							KERNEL_ERROR("Invalid connection type( should be 'random', or 'full')");
 							exitSimulation(-1);
 					}
 
@@ -2490,7 +2490,7 @@ void CpuSNN::buildPoissonGroup(int grpId) {
 	grp_Info[grpId].StartN 	= allocatedN;
 	grp_Info[grpId].EndN   	= allocatedN + grp_Info[grpId].SizeN - 1;
 
-	CARLSIM_DEBUG("Allocation for %d(%s), St=%d, End=%d",
+	KERNEL_DEBUG("Allocation for %d(%s), St=%d, End=%d",
 				grpId, grp_Info2[grpId].Name.c_str(), grp_Info[grpId].StartN, grp_Info[grpId].EndN);
 
 	allocatedN = allocatedN + grp_Info[grpId].SizeN;
@@ -2568,11 +2568,11 @@ void CpuSNN::compactConnections() {
 	assert(tmp_preSynCnt  <= allocatedPre);
 	assert(tmp_postSynCnt <= postSynCnt);
 	assert(tmp_preSynCnt  <= preSynCnt);
-	CARLSIM_DEBUG("******************");
-	CARLSIM_DEBUG("CompactConnection: ");
-	CARLSIM_DEBUG("******************");
-	CARLSIM_DEBUG("old_postCnt = %d, new_postCnt = %d", postSynCnt, tmp_postSynCnt);
-	CARLSIM_DEBUG("old_preCnt = %d,  new_postCnt = %d", preSynCnt,  tmp_preSynCnt);
+	KERNEL_DEBUG("******************");
+	KERNEL_DEBUG("CompactConnection: ");
+	KERNEL_DEBUG("******************");
+	KERNEL_DEBUG("old_postCnt = %d, new_postCnt = %d", postSynCnt, tmp_postSynCnt);
+	KERNEL_DEBUG("old_preCnt = %d,  new_postCnt = %d", preSynCnt,  tmp_preSynCnt);
 
 	// new buffer with required size + 100 bytes of additional space just to provide limited overflow
 	post_info_t* tmp_postSynapticIds   = new post_info_t[tmp_postSynCnt+100];
@@ -2992,13 +2992,13 @@ void CpuSNN::findFiring() {
 }
 
 int CpuSNN::findGrpId(int nid) {
-	CARLSIM_WARN("Using findGrpId is deprecated, use array grpIds[] instead...");
+	KERNEL_WARN("Using findGrpId is deprecated, use array grpIds[] instead...");
 	for(int g=0; g < numGrp; g++) {
 		if(nid >=grp_Info[g].StartN && (nid <=grp_Info[g].EndN)) {
 			return g;
 		}
 	}
-	CARLSIM_ERROR("findGrp(): cannot find the group for neuron %d", nid);
+	KERNEL_ERROR("findGrp(): cannot find the group for neuron %d", nid);
 	exitSimulation(1);
 }
 
@@ -3207,7 +3207,7 @@ void CpuSNN::generateSpikesFromRate(int grpId) {
 	if (rate == NULL) return;
 
 	if (rate->onGPU) {
-		CARLSIM_ERROR("Specifying rates on the GPU but using the CPU SNN is not supported.");
+		KERNEL_ERROR("Specifying rates on the GPU but using the CPU SNN is not supported.");
 		exitSimulation(1);
 	}
 
@@ -3326,8 +3326,8 @@ void  CpuSNN::globalStateUpdate() {
 					if (voltage[i] > 30) {
 						voltage[i] = 30;
 						j=COND_INTEGRATION_SCALE; // break the loop but evaluate u[i]
-//						if (gNMDA[i]>=10.0f) CARLSIM_WARN("High NMDA conductance (gNMDA>=10.0) may cause instability");
-//						if (gGABAb[i]>=2.0f) CARLSIM_WARN("High GABAb conductance (gGABAb>=2.0) may cause instability");
+//						if (gNMDA[i]>=10.0f) KERNEL_WARN("High NMDA conductance (gNMDA>=10.0) may cause instability");
+//						if (gGABAb[i]>=2.0f) KERNEL_WARN("High GABAb conductance (gGABAb>=2.0) may cause instability");
 					}
 					if (voltage[i] < -90)
 						voltage[i] = -90;
@@ -3371,7 +3371,7 @@ bool CpuSNN::isNumNeuronsConsistent() {
 	//  about the group (numN, numPostSynapses, numPreSynapses and others).
 	for(int g=0; g<numGrp; g++)  {
 		if (grp_Info[g].Type==UNKNOWN_NEURON) {
-			CARLSIM_ERROR("Unknown group for %d (%s)", g, grp_Info2[g].Name.c_str());
+			KERNEL_ERROR("Unknown group for %d (%s)", g, grp_Info2[g].Name.c_str());
 			exitSimulation(1);
 		}
 
@@ -3443,7 +3443,7 @@ bool CpuSNN::isPoint3DinRF(const RadiusRF& radius, const Point3D& pre, const Poi
 			isInRF = true;
 			break;
 		default:
-			CARLSIM_ERROR("Invalid number of negative semi-principal axes: %d",numNegRadii);
+			KERNEL_ERROR("Invalid number of negative semi-principal axes: %d",numNegRadii);
 	}
 
 //	if (!isInRF) {
@@ -3701,7 +3701,7 @@ void CpuSNN::reorganizeDelay()
 			for(unsigned int j=1; j < Npost[nid]; j++) {
 				unsigned int cumN=cumulativePost[nid]; // cumulativePost[] is unsigned int
 				if( tmp_SynapticDelay[cumN+j] < tmp_SynapticDelay[cumN+j-1]) {
-	  				CARLSIM_ERROR("Post-synaptic delays not sorted correctly... id=%d, delay[%d]=%d, delay[%d]=%d",
+	  				KERNEL_ERROR("Post-synaptic delays not sorted correctly... id=%d, delay[%d]=%d, delay[%d]=%d",
 						nid, j, tmp_SynapticDelay[cumN+j], j-1, tmp_SynapticDelay[cumN+j-1]);
 					assert( tmp_SynapticDelay[cumN+j] >= tmp_SynapticDelay[cumN+j-1]);
 				}
@@ -3717,7 +3717,7 @@ void CpuSNN::reorganizeNetwork(bool removeTempMemory) {
 	if(doneReorganization)
 		return;
 
-	CARLSIM_DEBUG("Beginning reorganization of network....");
+	KERNEL_DEBUG("Beginning reorganization of network....");
 
 	// time to build the complete network with relevant parameters..
 	buildNetwork();
@@ -3746,8 +3746,8 @@ void CpuSNN::reorganizeNetwork(bool removeTempMemory) {
 
 	makePtrInfo();
 
-	CARLSIM_INFO("");
-	CARLSIM_INFO("*****************      Initializing %s Simulation      *************************",
+	KERNEL_INFO("");
+	KERNEL_INFO("*****************      Initializing %s Simulation      *************************",
 		simMode_==GPU_MODE?"GPU":"CPU");
 
 	if(removeTempMemory) {
@@ -3859,7 +3859,7 @@ void CpuSNN::resetNeuromodulator(int grpId) {
 void CpuSNN::resetNeuron(unsigned int neurId, int grpId) {
 	assert(neurId < numNReg);
     if (grp_Info2[grpId].Izh_a == -1) {
-		CARLSIM_ERROR("setNeuronParameters must be called for group %s (%d)",grp_Info2[grpId].Name.c_str(),grpId);
+		KERNEL_ERROR("setNeuronParameters must be called for group %s (%d)",grp_Info2[grpId].Name.c_str(),grpId);
 		exitSimulation(1);
 	}
 
@@ -4077,9 +4077,9 @@ void CpuSNN::resetSynapticConnections(bool changeWeights) {
 	// Reset wt,wtChange,pre-firingtime values to default values...
 	for(int destGrp=0; destGrp < numGrp; destGrp++) {
 		const char* updateStr = (grp_Info[destGrp].newUpdates == true)?"(**)":"";
-		CARLSIM_DEBUG("Grp: %d:%s s=%d e=%d %s", destGrp, grp_Info2[destGrp].Name.c_str(), grp_Info[destGrp].StartN,
+		KERNEL_DEBUG("Grp: %d:%s s=%d e=%d %s", destGrp, grp_Info2[destGrp].Name.c_str(), grp_Info[destGrp].StartN,
 					grp_Info[destGrp].EndN,  updateStr);
-		CARLSIM_DEBUG("Grp: %d:%s s=%d e=%d  %s",  destGrp, grp_Info2[destGrp].Name.c_str(), grp_Info[destGrp].StartN,
+		KERNEL_DEBUG("Grp: %d:%s s=%d e=%d  %s",  destGrp, grp_Info2[destGrp].Name.c_str(), grp_Info[destGrp].StartN,
 					grp_Info[destGrp].EndN, updateStr);
 
 		for(int nid=grp_Info[destGrp].StartN; nid <= grp_Info[destGrp].EndN; nid++) {
@@ -4115,7 +4115,7 @@ void CpuSNN::resetSynapticConnections(bool changeWeights) {
 				if( prevPreGrp != srcGrp) {
 					if(nid==grp_Info[destGrp].StartN) {
 						const char* updateStr = (connInfo->newUpdates==true)? "(**)":"";
-						CARLSIM_DEBUG("\t%d (%s) start=%d, type=%s maxWts = %f %s", srcGrp,
+						KERNEL_DEBUG("\t%d (%s) start=%d, type=%s maxWts = %f %s", srcGrp,
 										grp_Info2[srcGrp].Name.c_str(), j, (j<Npre_plastic[nid]?"P":"F"),
 										connInfo->maxWt, updateStr);
 					}
@@ -4163,18 +4163,18 @@ inline void CpuSNN::setConnection(int srcGrp,  int destGrp,  unsigned int src, u
 
 	// we have exceeded the number of possible connection for one neuron
 	if(Npost[src] >= grp_Info[srcGrp].numPostSynapses)	{
-		CARLSIM_ERROR("setConnection(%d (Grp=%s), %d (Grp=%s), %f, %d)", src, grp_Info2[srcGrp].Name.c_str(),
+		KERNEL_ERROR("setConnection(%d (Grp=%s), %d (Grp=%s), %f, %d)", src, grp_Info2[srcGrp].Name.c_str(),
 					dest, grp_Info2[destGrp].Name.c_str(), synWt, dVal);
-		CARLSIM_ERROR("Large number of postsynaptic connections established");
-		CARLSIM_ERROR("Increase maxM param in connect(%s,%s)",grp_Info2[srcGrp].Name.c_str(),grp_Info2[destGrp].Name.c_str());
+		KERNEL_ERROR("Large number of postsynaptic connections established");
+		KERNEL_ERROR("Increase maxM param in connect(%s,%s)",grp_Info2[srcGrp].Name.c_str(),grp_Info2[destGrp].Name.c_str());
 		exitSimulation(1);
 	}
 
 	if(Npre[dest] >= grp_Info[destGrp].numPreSynapses) {
-		CARLSIM_ERROR("setConnection(%d (Grp=%s), %d (Grp=%s), %f, %d)", src, grp_Info2[srcGrp].Name.c_str(),
+		KERNEL_ERROR("setConnection(%d (Grp=%s), %d (Grp=%s), %f, %d)", src, grp_Info2[srcGrp].Name.c_str(),
 					dest, grp_Info2[destGrp].Name.c_str(), synWt, dVal);
-		CARLSIM_ERROR("Large number of presynaptic connections established");
-		CARLSIM_ERROR("Increase maxPreM param in connect(%s,%s)", grp_Info2[srcGrp].Name.c_str(), grp_Info2[destGrp].Name.c_str());
+		KERNEL_ERROR("Large number of presynaptic connections established");
+		KERNEL_ERROR("Increase maxPreM param in connect(%s,%s)", grp_Info2[srcGrp].Name.c_str(), grp_Info2[destGrp].Name.c_str());
 		exitSimulation(1);
 	}
 
@@ -4311,7 +4311,7 @@ void CpuSNN::swapConnections(int nid, int oldPos, int newPos) {
 
 
 void CpuSNN::updateAfterMaxTime() {
-  CARLSIM_WARN("Maximum Simulation Time Reached...Resetting simulation time");
+  KERNEL_WARN("Maximum Simulation Time Reached...Resetting simulation time");
 
 	// This will be our cut of time. All other time values
 	// that are less than cutOffTime will be set to zero
@@ -4365,8 +4365,8 @@ void CpuSNN::updateConnectionMonitor() {
 				avgWeight += weights[i];
 			avgWeight /= weightSzie;
 
-			CARLSIM_INFO("");
-			CARLSIM_INFO("(t=%.3fs) Connection Monitor for Group %s to Group %s has average weight %f",
+			KERNEL_INFO("");
+			KERNEL_INFO("(t=%.3fs) Connection Monitor for Group %s to Group %s has average weight %f",
 				(float)(simTime/1000.0),
 				grp_Info2[grpIdPre].Name.c_str(), grp_Info2[grpIdPost].Name.c_str(), avgWeight);
 
@@ -4390,7 +4390,7 @@ void CpuSNN::updateGroupMonitor() {
 		int monitorId = grp_Info[grpId].GroupMonitorId;
 
 		if(monitorId != -1) {
-			CARLSIM_INFO("Group Monitor for Group %s has DA(%f)", grp_Info2[grpId].Name.c_str(), grpDABuffer[monitorId][0]);
+			KERNEL_INFO("Group Monitor for Group %s has DA(%f)", grp_Info2[grpId].Name.c_str(), grpDABuffer[monitorId][0]);
 
 			// call the callback function
 			if (grpBufferCallback[monitorId])
@@ -4505,7 +4505,7 @@ int CpuSNN::updateSpikeTables() {
 	}
 
 	if ((maxSpikesD1 + maxSpikesD2) < (numNExcReg + numNInhReg + numNPois) * UNKNOWN_NEURON_MAX_FIRING_RATE) {
-		CARLSIM_ERROR("Insufficient amount of buffer allocated...");
+		KERNEL_ERROR("Insufficient amount of buffer allocated...");
 		exitSimulation(1);
 	}
 
@@ -4595,7 +4595,7 @@ void CpuSNN::updateSpikeMonitor(int grpId) {
 			return;
 
 		if ( ((long int)getSimTime()) - lastUpdate > 1000)
-			CARLSIM_ERROR("updateSpikeMonitor(grpId=%d) must be called at least once every second",grpId);
+			KERNEL_ERROR("updateSpikeMonitor(grpId=%d) must be called at least once every second",grpId);
 
 		if (simMode_ == GPU_MODE) {
 			// copy the neuron firing information from the GPU to the CPU..
@@ -4692,11 +4692,11 @@ void CpuSNN::updateWeights() {
 			}
 
 			if (i==grp_Info[g].StartN)
-				CARLSIM_DEBUG("Weights, Change at %lu (diff_firing: %f)", simTimeSec, diff_firing);
+				KERNEL_DEBUG("Weights, Change at %lu (diff_firing: %f)", simTimeSec, diff_firing);
 
 			for(int j = 0; j < Npre_plastic[i]; j++) {
 				//	if (i==grp_Info[g].StartN)
-				//		CARLSIM_DEBUG("%1.2f %1.2f \t", wt[offset+j]*10, wtChange[offset+j]*10);
+				//		KERNEL_DEBUG("%1.2f %1.2f \t", wt[offset+j]*10, wtChange[offset+j]*10);
 				float effectiveWtChange = stdpScaleFactor_ * wtChange[offset + j];
 
 				// homeostatic weight update

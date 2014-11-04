@@ -73,4 +73,7 @@
 #define IS_INHIBITORY_TYPE(type)	(((type) & TARGET_GABAa) || ((type) & TARGET_GABAb))
 #define IS_EXCITATORY_TYPE(type)	(!IS_INHIBITORY_TYPE(type))
 
+#define CARLSIM_ERROR(where, what) fprintf(stderr,"\033[31;1m[USER ERROR %s] %s\033[0m\n",where,what)
+#define CARLSIM_WARN(where, what) fprintf(stderr,"\033[33;1m[USER ERROR %s] %s\033[0m\n",where,what)
+
 #endif

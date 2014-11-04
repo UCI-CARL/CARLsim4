@@ -1160,11 +1160,11 @@ private:
 
 	std::vector<int> grpIds_;		//!< a list of all created group IDs
 
-	bool hasRunNetwork_;			//!< flag to inform that network has been run
 	bool hasSetHomeoALL_;			//!< informs that homeostasis have been set for ALL groups (can't add more groups)
 	bool hasSetHomeoBaseFiringALL_;	//!< informs that base firing has been set for ALL groups (can't add more groups)
 	bool hasSetSTDPALL_; 			//!< informs that STDP have been set for ALL groups (can't add more groups)
-	bool hasSetSTPALL_; 			//!< informsthat STP have been set for ALL groups (can't add more groups)
+	bool hasSetSTPALL_; 			//!< informs that STP have been set for ALL groups (can't add more groups)
+	bool hasSetConductances_;		//!< informs that setConductances has been called
 	carlsimState_t carlsimState_;	//!< the current state of carlsim
 
 	int def_tdAMPA_;				//!< default value for AMPA decay (ms)

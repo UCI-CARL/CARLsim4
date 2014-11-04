@@ -86,6 +86,7 @@ CARLsim::CARLsim(std::string netName, simMode_t simMode, loggerMode_t loggerMode
 	hasSetHomeoBaseFiringALL_ 	= false;
 	hasSetSTDPALL_ 				= false;
 	hasSetSTPALL_ 				= false;
+	hasSetConductances_			= false;
 	carlsimState_				= CONFIG_STATE;
 
 	snn_ = NULL;
@@ -230,13 +231,13 @@ int CARLsim::createGroup(std::string grpName, Grid3D grid, int neurType, int con
 	// if user has called any set functions with grpId=ALL, and is now adding another group, previously set properties
 	// will not apply to newly added group
 	if (hasSetSTPALL_)
-		userWarnings_.push_back("USER WARNING: Make sure to call setSTP on group "+grpName);
+		userWarnings_.push_back("Make sure to call setSTP on group "+grpName);
 	if (hasSetSTDPALL_)
-		userWarnings_.push_back("USER WARNING: Make sure to call setSTDP on group "+grpName);
+		userWarnings_.push_back("Make sure to call setSTDP on group "+grpName);
 	if (hasSetHomeoALL_)
-		userWarnings_.push_back("USER WARNING: Make sure to call setHomeostasis on group "+grpName);
+		userWarnings_.push_back("Make sure to call setHomeostasis on group "+grpName);
 	if (hasSetHomeoBaseFiringALL_)
-		userWarnings_.push_back("USER WARNING: Make sure to call setHomeoBaseFiringRate on group "+grpName);
+		userWarnings_.push_back("Make sure to call setHomeoBaseFiringRate on group "+grpName);
 
 	int grpId = snn_->createGroup(grpName.c_str(),grid,neurType,configId);
 	grpIds_.push_back(grpId); // keep track of all groups
@@ -268,7 +269,8 @@ int CARLsim::createSpikeGeneratorGroup(std::string grpName, Grid3D grid, int neu
 void CARLsim::setConductances(bool isSet, int configId) {
 	std::stringstream funcName; funcName << "setConductances(" << isSet << "," << configId << ")";
 	UserErrors::assertTrue(carlsimState_==CONFIG_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName.str(),
-		"CONFIG.");
+		funcName.str(), "CONFIG.");
+	hasSetConductances_ = true;
 
 	if (isSet) { // enable conductances, use default values
 		snn_->setConductances(true,def_tdAMPA_,0,def_tdNMDA_,def_tdGABAa_,0,def_tdGABAb_,configId);
@@ -287,7 +289,8 @@ void CARLsim::setConductances(bool isSet, int tdAMPA, int tdNMDA, int tdGABAa, i
 	UserErrors::assertTrue(!isSet||tdGABAa>0, UserErrors::MUST_BE_POSITIVE, funcName.str(), "tdGABAa");
 	UserErrors::assertTrue(!isSet||tdGABAb>0, UserErrors::MUST_BE_POSITIVE, funcName.str(), "trGABAb");
 	UserErrors::assertTrue(carlsimState_==CONFIG_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName.str(),
-		"CONFIG.");
+		funcName.str(),"CONFIG.");
+	hasSetConductances_ = true;
 
 	if (isSet) { // enable conductances, use custom values
 		snn_->setConductances(true,tdAMPA,0,tdNMDA,tdGABAa,0,tdGABAb,configId);
@@ -309,7 +312,9 @@ int configId) {
 	UserErrors::assertTrue(!isSet||tdGABAb>0, UserErrors::MUST_BE_POSITIVE, funcName.str(), "trGABAb");
 	UserErrors::assertTrue(trNMDA!=tdNMDA, UserErrors::CANNOT_BE_IDENTICAL, funcName.str(), "trNMDA and tdNMDA");
 	UserErrors::assertTrue(trGABAb!=tdGABAb, UserErrors::CANNOT_BE_IDENTICAL, funcName.str(), "trGABAb and tdGABAb");
-	UserErrors::assertTrue(carlsimState_==CONFIG_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName.str(), "CONFIG.");
+	UserErrors::assertTrue(carlsimState_==CONFIG_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName.str(), 
+		funcName.str(), "CONFIG.");
+	hasSetConductances_ = true;
 
 	if (isSet) { // enable conductances, use custom values
 		snn_->setConductances(true,tdAMPA,trNMDA,tdNMDA,tdGABAa,trGABAb,tdGABAb,configId);
@@ -328,7 +333,7 @@ void CARLsim::setHomeostasis(int grpId, bool isSet, int configId) {
 	if (isSet) { // enable homeostasis, use default values
 		snn_->setHomeostasis(grpId,true,def_homeo_scale_,def_homeo_avgTimeScale_,configId);
 		if (grpId!=ALL && hasSetHomeoBaseFiringALL_)
-			userWarnings_.push_back("USER WARNING: Make sure to call setHomeoBaseFiringRate on group "
+			userWarnings_.push_back("Make sure to call setHomeoBaseFiringRate on group "
 										+ getGroupName(grpId,configId));
 	} else { // disable conductances
 		snn_->setHomeostasis(grpId,false,0.0f,0.0f,configId);
@@ -345,7 +350,7 @@ void CARLsim::setHomeostasis(int grpId, bool isSet, float homeoScale, float avgT
 	if (isSet) { // enable homeostasis, use default values
 		snn_->setHomeostasis(grpId,true,homeoScale,avgTimeScale,configId);
 		if (grpId!=ALL && hasSetHomeoBaseFiringALL_)
-			userWarnings_.push_back("USER WARNING: Make sure to call setHomeoBaseFiringRate on group "
+			userWarnings_.push_back("Make sure to call setHomeoBaseFiringRate on group "
 										+ getGroupName(grpId,configId));
 	} else { // disable conductances
 		snn_->setHomeostasis(grpId,false,0.0f,0.0f,configId);
@@ -502,8 +507,15 @@ int CARLsim::runNetwork(int nSec, int nMsec, bool printRunSummary, bool copyStat
 	UserErrors::assertTrue(carlsimState_ == SETUP_STATE || carlsimState_ == EXE_STATE,
 				UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "SETUP or EXECUTION.");
 
+	// run some checks before running network for the first time
 	if (carlsimState_ != EXE_STATE) {
-		handleUserWarnings();	// before running network, make sure user didn't provoque any user warnings
+		// if user hasn't called setConductances, set to false and disp warning
+		if (!hasSetConductances_) {
+			userWarnings_.push_back("CARLsim::setConductances has not been called. Setting simulation mode to CUBA.");
+		}
+
+		// make sure user didn't provoque any user warnings
+		handleUserWarnings();
 	}
 
 	carlsimState_ = EXE_STATE;
@@ -1044,12 +1056,12 @@ bool CARLsim::existsGrpId(int grpId) {
 void CARLsim::handleUserWarnings() {
 	if (userWarnings_.size()) {
 		for (int i=0; i<userWarnings_.size(); i++)
-			fprintf(stdout,"%s\n",userWarnings_[i].c_str()); // print all user warnings
+			CARLSIM_WARN("runNetwork()",userWarnings_[i].c_str());
 
 		fprintf(stdout,"Ignore warnings and continue? Y/n ");
 		char ignoreWarn = std::cin.get();
 		if (std::cin.fail() || ignoreWarn!='y' && ignoreWarn!='Y') {
-			fprintf(stdout,"exiting...\n");
+			fprintf(stdout,"Exiting...\n");
 			exit(1);
 		}
 	}
