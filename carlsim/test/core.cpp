@@ -243,6 +243,8 @@ TEST(CORE, firingRateCPUvsGPU) {
 
 			if (hasCOBA)
 				sim->setConductances(true,5, 0, 150, 6, 0, 150);
+			else
+				sim->setConductances(false);
 
 			bool spikeAtZero = true;
 			spkGenG0 = new PeriodicSpikeGenerator(50.0f,spikeAtZero); // periodic spiking

@@ -204,6 +204,7 @@ TEST(STDP, DASTDPweightBoost) {
 					sim->connect(gda, g1, "full", RangeWeight(0.0), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
 					// set up STDP, enable dopamine-modulated STDP
 					sim->setSTDP(g1, true, DA_MOD, alphaLTP, tauLTP, alphaLTD, tauLTD);
+					sim->setConductances(false);
 				}
 
 				sim->setWeightAndWeightChangeUpdate(INTERVAL_10MS, INTERVAL_10MS, 100);

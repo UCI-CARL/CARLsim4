@@ -123,6 +123,7 @@ TEST(Interface, setConductancesDeath) {
 	EXPECT_DEATH({sim->setConductances(true,1,2,3,4,5,5);},""); // tdGABAb==trGABAb
 
 	// calling setConductances after runNetwork
+	sim->setConductances(false);
 	sim->setupNetwork();
 	sim->runNetwork(0,0);
 	EXPECT_DEATH({sim->setConductances(true);},"");
@@ -223,6 +224,8 @@ TEST(Interface, CARLsimState) {
 	EXPECT_DEATH({sim->getPopWeights(0, 1, w, i);},"");
 	EXPECT_DEATH({sim->getSpikeCounter(0);},"");
 	EXPECT_DEATH({sim->resetSpikeCounter(0);},"");
+
+	sim->setConductances(true);
 
 	// test buildNetwork(), change carlsimState_ from CONFIG_STATE to SETUP_STATE
 	EXPECT_TRUE(sim->getCarlsimState() == CONFIG_STATE);

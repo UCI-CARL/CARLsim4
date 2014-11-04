@@ -184,7 +184,7 @@ classdef SpikeReader < handle
                 % the neuron spiked. Row 2 contains the neuron id that
                 % spiked at this corresponding time.
                 d = fread(obj.fileId, [2 nrRead], 'int32');
-                
+
                 if ~isempty(d)
                     if obj.binWindow<0
                         % Return data in AER format, i.e.: [time;nID]
@@ -198,15 +198,7 @@ classdef SpikeReader < handle
                         % starting with 1.  FRAMEDUR effectively bins the
                         % data. FRAMEDUR=1 bins at 1 ms, FRAMEDUR=1000 bins
                         % at 1000 ms, etc.
-                        
-                        % Initialize the entire S matrix to 0 with the
-                        % correct dimensions.
-                        maxR = floor(d(1,end)/obj.binWindow)+1;
-                        maxC = max(d(2,:))+1;
-                        if size(spk,1)~=maxR || size(spk,2)~=maxC
-                            spk(maxR, maxC)=0;
-                        end
-                        
+
                         % Use sparse matrix to create a matrix S with
                         % correct dimensions. All firing events for each
                         % neuron id and time bin are summed automatically
@@ -216,6 +208,13 @@ classdef SpikeReader < handle
                         % faster than full(sparse(...)). Make sure the
                         % first two arguments are column vectors.
                         subs = [floor(d(1,:)/obj.binWindow)'+1,d(2,:)'+1];
+
+                        % Make sure spk has the right dimensions (defined
+                        % by the max values in subs)
+                        maxDim = max(subs);
+                        if size(spk,1)<maxDim(1) || size(spk,2)<maxDim(2)
+                            spk(maxDim(1),maxDim(2))=0;
+                        end
                         spk = spk + accumarray(subs, 1, size(spk));
                     end
                 end
