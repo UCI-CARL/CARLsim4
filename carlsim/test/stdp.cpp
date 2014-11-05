@@ -204,6 +204,8 @@ TEST(STDP, setNeuromodulatorParameters) {
 			sim->setNeuromodulator(g1, baseDP, tauDP, base5HT, tau5HT,
 									baseACh, tauACh, baseNE, tauNE);
 
+			// Temporarily mark out the testing code
+			// Discuss whether carlsim user interface needs to spport group_info_t
 			for (int c=0; c<nConfig; c++) {
 				GroupSTDPInfo_t gInfo = sim->getGroupSTDPInfo(g1,c);
 				EXPECT_TRUE(gInfo.WithSTDP);
@@ -259,17 +261,18 @@ TEST(STDP, DASTDPWeightBoost) {
 				gda = sim->createSpikeGeneratorGroup("DA neurons", 500, DOPAMINERGIC_NEURON);
 
 				if (coba) {
-					sim->connect(gin,g1,"one-to-one", RangeWeight(0.0, 1.0f/100, 20.0f/100), 1.0f, RangeDelay(1), SYN_PLASTIC);
-					sim->connect(g1noise, g1, "one-to-one", RangeWeight(40.0f/100), 1.0f, RangeDelay(1), SYN_FIXED);
-					sim->connect(gda, g1, "full", RangeWeight(0.0), 1.0f, RangeDelay(1), SYN_FIXED);
+					sim->connect(gin,g1,"one-to-one", RangeWeight(0.0, 1.0f/100, 20.0f/100), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_PLASTIC);
+					sim->connect(g1noise, g1, "one-to-one", RangeWeight(40.0f/100), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
+					sim->connect(gda, g1, "full", RangeWeight(0.0), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
 					// enable COBA, set up STDP, enable dopamine-modulated STDP
 					sim->setConductances(true,5,150,6,150);
 					sim->setSTDP(g1, true, DA_MOD, alphaLTP/100, tauLTP, alphaLTD/100, tauLTD);
-				} else {
-					sim->connect(gin,g1,"one-to-one", RangeWeight(0.0, 1.0f, 20.0f), 1.0f, RangeDelay(1), SYN_PLASTIC);
-					sim->connect(g1noise, g1, "one-to-one", RangeWeight(40.0f), 1.0f, RangeDelay(1), SYN_FIXED);
-					sim->connect(gda, g1, "full", RangeWeight(0.0), 1.0f, RangeDelay(1), SYN_FIXED);
+				} else { // cuba mode
+					sim->connect(gin,g1,"one-to-one", RangeWeight(0.0, 1.0f, 20.0f), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_PLASTIC);
+					sim->connect(g1noise, g1, "one-to-one", RangeWeight(40.0f), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
+					sim->connect(gda, g1, "full", RangeWeight(0.0), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
 					// set up STDP, enable dopamine-modulated STDP
+					sim->setConductances(false,0,0,0,0);
 					sim->setSTDP(g1, true, DA_MOD, alphaLTP, tauLTP, alphaLTD, tauLTD);
 				}
 
@@ -374,17 +377,18 @@ TEST(STDP, ISTDPWeightChange) {
 				spikeCtrl = new TwoGroupsSpikeController(100, offset, gin, gex);
 
 				if (coba) { // conductance-based
-					sim->connect(gex, g1, "one-to-one", RangeWeight(40.0f/100), 1.0f, RangeDelay(1), SYN_FIXED);
-					sim->connect(gin, g1, "one-to-one", RangeWeight(minInhWeight, initWeight/100, maxInhWeight/100), 1.0f, RangeDelay(1), SYN_PLASTIC);
+					sim->connect(gex, g1, "one-to-one", RangeWeight(40.0f/100), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
+					sim->connect(gin, g1, "one-to-one", RangeWeight(minInhWeight, initWeight/100, maxInhWeight/100), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_PLASTIC);
 
 					// enable COBA, set up ISTDP
 					sim->setConductances(true,5,150,6,150);
 					sim->setISTDP(g1, true, STANDARD, BETA_LTP/100, BETA_LTD/100, LAMDA, DELTA);
 				} else { // current-based
-					sim->connect(gex, g1, "one-to-one", RangeWeight(40.0f), 1.0f, RangeDelay(1), SYN_FIXED);
-					sim->connect(gin, g1, "one-to-one", RangeWeight(minInhWeight, initWeight, maxInhWeight), 1.0f, RangeDelay(1), SYN_PLASTIC);
+					sim->connect(gex, g1, "one-to-one", RangeWeight(40.0f), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
+					sim->connect(gin, g1, "one-to-one", RangeWeight(minInhWeight, initWeight, maxInhWeight), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_PLASTIC);
 
 					// set up ISTDP
+					sim->setConductances(false,0,0,0,0);
 					sim->setISTDP(g1, true, STANDARD, BETA_LTP, BETA_LTD, LAMDA, DELTA);
 				}
 

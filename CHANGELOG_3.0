@@ -7,6 +7,25 @@ Legend:
 	- removed element
 	* changed element
 
+2014-10-24     Michael Beyeler <mbeyeler@uci.edu>
+  * Fixed handling of empty spike files in SpikeReader.
+  * Updated simulation summary.
+  + Added CARLsim::getNeuronLocation3D(int grpId, int relNeurId).
+
+2014-10-20     Michael Beyeler <mbeyeler@uci.edu>
+  * Fixed weight signs for custom connection callbacks.
+  * Fixed readNetwork_internal parsing of header section.
+  + Added error message if setSpikeMonitor is called on same group twice.
+
+2014-10-17     Michael Beyeler <mbeyeler@uci.edu>
+  + Added 3D receptive fields.
+  + Added CARLsim::getNumNeurons{Reg|Gen}{Exc|Inh} and the like.
+  * Changed allowed states of CARLsim::getNeuronLocation3D to include CONFIG.
+
+2014-10-06     Michael Beyeler <mbeyeler@uci.edu>
+  + Added MATLAB Offline Analysis Toolbox: NetworkMonitor, GroupMonitor,
+    SpikeReader, SimulationReader, Utilities.
+
 2014-10-03     Kristofor D. Carlson <kdcarlso@uci.edu>
   + Included CARLsim ECJ PTI tool
   + Added Makefiles for building and installation of CARLsim ECJ PTI tool.

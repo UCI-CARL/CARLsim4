@@ -61,6 +61,9 @@ RNG_rand48* gpuPoissonRand; // initialized in CpuSNNinitGPUparams
 #define MAX_NUM_BLOCKS 200
 #define LOOP_CNT		10
 
+#define GPU_LTP(t)   (gpuNetInfo.ALPHA_LTP*__expf(-(t)/gpuNetInfo.TAU_LTP))
+#define GPU_LTD(t)   (gpuNetInfo.ALPHA_LTD*__expf(-(t)/gpuNetInfo.TAU_LTD))
+
 ///////////////////////////////////////////////////////////////////
 // Some important ideas that explains the GPU execution are as follows:
 //  1. Each GPU block has a local firing table (called fireTable). The block of threads
@@ -110,6 +113,7 @@ __device__ int  receiverId[1000];
 __device__ __constant__ network_ptr_t		gpuPtrs;
 __device__ __constant__ network_info_t		gpuNetInfo;
 __device__ __constant__ group_info_t		gpuGrpInfo[MAX_GRP_PER_SNN];
+//	__device__ __constant__ noiseGenProperty_t*	gpu_noiseGenGroup;
 
 __device__ __constant__ float				constData[256];
 
@@ -383,14 +387,14 @@ int CpuSNN::allocateStaticLoad(int bufSize) {
 	int   bufferCnt = 0;
 	for (int g = 0; g < net_Info.numGrp; g++) {
 		bufferCnt += (int) ceil(1.0 * grp_Info[g].SizeN / bufSize);
-		CARLSIM_DEBUG("Grp Size = %d, Total Buffer Cnt = %d, Buffer Cnt = %f", grp_Info[g].SizeN, bufferCnt, ceil(1.0*grp_Info[g].SizeN/bufSize));
+		KERNEL_DEBUG("Grp Size = %d, Total Buffer Cnt = %d, Buffer Cnt = %f", grp_Info[g].SizeN, bufferCnt, ceil(1.0*grp_Info[g].SizeN/bufSize));
 	}
 	assert(bufferCnt > 0);
 
 	int2*  tempNeuronAllocation = (int2*)malloc(sizeof(int2) * bufferCnt);
-	CARLSIM_DEBUG("STATIC THREAD ALLOCATION");
-	CARLSIM_DEBUG("------------------------");
-	CARLSIM_DEBUG("Buffer Size = %d, Buffer Count = %d", bufSize, bufferCnt);
+	KERNEL_DEBUG("STATIC THREAD ALLOCATION");
+	KERNEL_DEBUG("------------------------");
+	KERNEL_DEBUG("Buffer Size = %d, Buffer Count = %d", bufSize, bufferCnt);
 
 	bufferCnt = 0;
 	for (int g = 0; g < net_Info.numGrp; g++) {
@@ -408,7 +412,7 @@ int CpuSNN::allocateStaticLoad(int bufSize) {
 			// fill the static load distribution here...
 			int testg = STATIC_LOAD_GROUP(threadLoad);
 			tempNeuronAllocation[bufferCnt] = threadLoad;
-			CARLSIM_DEBUG("%d. Start=%d, size=%d grpId=%d:%s (SpikeMonId=%d) (GroupMonId=%d) (ConnMonId=%d)",
+			KERNEL_DEBUG("%d. Start=%d, size=%d grpId=%d:%s (SpikeMonId=%d) (GroupMonId=%d) (ConnMonId=%d)",
 					bufferCnt, STATIC_LOAD_START(threadLoad),
 					STATIC_LOAD_SIZE(threadLoad),
 					STATIC_LOAD_GROUP(threadLoad),
@@ -423,7 +427,7 @@ int CpuSNN::allocateStaticLoad(int bufSize) {
 	assert(cpu_gpuNetPtrs.allocated==false);
 	// Finally writeback the total bufferCnt
 	// Note down the buffer size for reference
-	CARLSIM_DEBUG("GPU loadBufferSize = %d, GPU loadBufferCount = %d", bufSize, bufferCnt);
+	KERNEL_DEBUG("GPU loadBufferSize = %d, GPU loadBufferCount = %d", bufSize, bufferCnt);
 	CUDA_CHECK_ERRORS_MACRO(cudaMemcpyToSymbol(loadBufferCount, &bufferCnt, sizeof(int), 0, cudaMemcpyHostToDevice));
 	CUDA_CHECK_ERRORS_MACRO(cudaMemcpyToSymbol(loadBufferSize, &bufSize, sizeof(int), 0, cudaMemcpyHostToDevice));
 	CUDA_CHECK_ERRORS(cudaMalloc((void**) &cpu_gpuNetPtrs.neuronAllocation, sizeof(int2) * bufferCnt));
@@ -1785,16 +1789,16 @@ int CpuSNN::checkErrors(std::string calledKernel, int numBlocks)
 
 	if (errCode != NO_KERNEL_ERRORS) {
 
-		CARLSIM_ERROR("(Error in Kernel <<< %s >>> , RETURN ERROR CODE = %x, total Errors = %d", calledKernel.c_str(), errCode, errCnt);
+		KERNEL_ERROR("(Error in Kernel <<< %s >>> , RETURN ERROR CODE = %x, total Errors = %d", calledKernel.c_str(), errCode, errCnt);
 
 		cudaGetSymbolAddress(&devPtr, CUDA_CONVERT_SYMBOL(retErrVal));
 		CUDA_CHECK_ERRORS( cudaMemcpy(&errVal, devPtr, sizeof(errVal), cudaMemcpyDeviceToHost));
 
 		for(int j=0; j < errCnt; j++) {
 			if (1) /*errVal[j][0]==0xdead) */ {
-				CARLSIM_ERROR("Block: %d, Err code = %x, Total err val is %f", j, (int)errVal[j][0]	, errVal[j][1]);
+				KERNEL_ERROR("Block: %d, Err code = %x, Total err val is %f", j, (int)errVal[j][0]	, errVal[j][1]);
 				for(int i=2; i < (errVal[j][1]); i++) {
-					CARLSIM_ERROR("ErrVal[%d][%d] = %f", j, i, errVal[j][i]);
+					KERNEL_ERROR("ErrVal[%d][%d] = %f", j, i, errVal[j][i]);
 					getchar();
 				}
 			}
@@ -2192,7 +2196,7 @@ void CpuSNN::copyNeuronParameters(network_ptr_t* dest, int kind, int allocateMem
 	int ptrPos, length;
 
 	if (dest->allocated && allocateMem) {
-		CARLSIM_ERROR("GPU Memory already allocated...");
+		KERNEL_ERROR("GPU Memory already allocated...");
 		return;
 	}
 
@@ -2373,7 +2377,7 @@ void CpuSNN::copyState(network_ptr_t* dest, int allocateMem) {
 	assert(preSynCnt !=0);
 
 	if (dest->allocated && allocateMem) {
-		CARLSIM_ERROR("GPU Memory already allocated..");
+		KERNEL_ERROR("GPU Memory already allocated..");
 		return;
 	}
 
@@ -2410,7 +2414,6 @@ void CpuSNN::copyState(network_ptr_t* dest, int allocateMem) {
 	CUDA_CHECK_ERRORS( cudaMemcpy( dest->synSpikeTime, synSpikeTime, sizeof(int)*preSynCnt, kind));
 	net_Info.preSynLength = preSynCnt;
 
-	assert(net_Info.maxSpikesD1 != 0);
 	if(allocateMem) {
 		assert(dest->firingTableD1 == NULL);
 		assert(dest->firingTableD2 == NULL);
@@ -2511,14 +2514,14 @@ void CpuSNN::printGpuLoadBalance(bool init, int numBlocks) {
 	CUDA_CHECK_ERRORS( cudaMemcpy(&cpu_tmp_val, devPtr, sizeof(cpu_tmp_val), cudaMemcpyDeviceToHost));
 	CUDA_CHECK_ERRORS( cudaMemset(devPtr, 0, sizeof(tmp_val)));
 
-	CARLSIM_DEBUG("GPU Load Balancing Information");
+	KERNEL_DEBUG("GPU Load Balancing Information");
 
 	for (int i=0; i < numBlocks; i++) {
 		if (cpu_tmp_val[i][0] != 0)
-			CARLSIM_DEBUG("[%d] Fired Neuron = %d \n", i, cpu_tmp_val[i][1]+cpu_tmp_val[i][2]);
+			KERNEL_DEBUG("[%d] Fired Neuron = %d \n", i, cpu_tmp_val[i][1]+cpu_tmp_val[i][2]);
 	}
 
-	CARLSIM_DEBUG("\n");
+	KERNEL_DEBUG("\n");
 }
 
 // get spikes from GPU SpikeCounter
@@ -2753,7 +2756,7 @@ void CpuSNN::initGPU(int gridSize, int blkSize) {
 
 void CpuSNN::checkInitialization(char* testString)
 {
-	CARLSIM_DEBUG("gpu_checkInitialization()");
+	KERNEL_DEBUG("gpu_checkInitialization()");
 	void *devPtr;
 
 	assert(cpu_gpuNetPtrs.allocated);
@@ -2774,21 +2777,21 @@ void CpuSNN::checkInitialization(char* testString)
 	CUDA_GET_LAST_ERROR("check GPU failed\n");
 
   // read back the intialization and ensure that they are okay
-  CARLSIM_DEBUG("%s Checking initialization of GPU...", testString?testString:"");
+  KERNEL_DEBUG("%s Checking initialization of GPU...", testString?testString:"");
   CUDA_CHECK_ERRORS( cudaMemcpy(&errVal, devPtr, sizeof(errVal), cudaMemcpyDeviceToHost));
   for(int i=0; i < 4; i++) {
     for(int j=0; j < (int)errVal[i][0]; j++) {
-      CARLSIM_DEBUG("val[%3d][%3d] = %f", i, j, errVal[i][j]);
+      KERNEL_DEBUG("val[%3d][%3d] = %f", i, j, errVal[i][j]);
     }
-    CARLSIM_DEBUG("******************");
+    KERNEL_DEBUG("******************");
   }
-  CARLSIM_DEBUG("Checking done...");
+  KERNEL_DEBUG("Checking done...");
   CUDA_CHECK_ERRORS(cudaMemcpyToSymbol(timingTableD2, timeTableD2, sizeof(int)*(10), 0, cudaMemcpyHostToDevice));
 }
 
 void CpuSNN::checkInitialization2(char* testString)
 {
-	CARLSIM_DEBUG("CheckInitialization2: Time = %d", simTime);
+	KERNEL_DEBUG("CheckInitialization2: Time = %d", simTime);
 	void *devPtr;
 	memset(errVal, 0, sizeof(errVal));
 	cudaGetSymbolAddress(&devPtr, retErrVal);
@@ -2802,25 +2805,25 @@ void CpuSNN::checkInitialization2(char* testString)
 	}
 
 	// read back the intialization and ensure that they are okay
-	CARLSIM_DEBUG("%s Checking Initialization of STP Variable Correctly in GPU...", (testString?testString:""));
+	KERNEL_DEBUG("%s Checking Initialization of STP Variable Correctly in GPU...", (testString?testString:""));
 	CUDA_CHECK_ERRORS( cudaMemcpy(&errVal, devPtr, sizeof(errVal), cudaMemcpyDeviceToHost));
 	for(int i=0; i < 4; i++) {
 		for(int j=0; j < (int)errVal[i][0]; j++) {
-			CARLSIM_DEBUG("val[%3d][%3d] = %f", i, j, errVal[i][j]);
+			KERNEL_DEBUG("val[%3d][%3d] = %f", i, j, errVal[i][j]);
 			}
-		CARLSIM_DEBUG("******************");
+		KERNEL_DEBUG("******************");
 	}
 }
 
 void CpuSNN::printCurrentInfo(FILE* fp)
 {
-	CARLSIM_WARN("Calling printCurrentInfo with fp is deprecated");
+	KERNEL_WARN("Calling printCurrentInfo with fp is deprecated");
 	// copy neuron input current...
-	CARLSIM_DEBUG("Total Synaptic updates:");
+	KERNEL_DEBUG("Total Synaptic updates:");
 	CUDA_CHECK_ERRORS( cudaMemcpy( current, cpu_gpuNetPtrs.current, sizeof(float)*numNReg, cudaMemcpyDeviceToHost));
 		for(int i=0; i < numNReg; i++) {
 			if (current[i] != 0.0 ) {
-				CARLSIM_DEBUG("I[%d] -> %f", i, current[i]);
+				KERNEL_DEBUG("I[%d] -> %f", i, current[i]);
 		}
 	}
 	fflush(fp);
@@ -2831,7 +2834,7 @@ void CpuSNN::printTestVarInfo(FILE* fp, char* testString, bool test1, bool test2
 {
 	int cnt=0;
 
-	CARLSIM_WARN("Calling printTestVarInfo with fp is deprecated");
+	KERNEL_WARN("Calling printTestVarInfo with fp is deprecated");
 //  fflush(fpOut_);
 
 	if(test1 || test12)
@@ -2846,14 +2849,14 @@ void CpuSNN::printTestVarInfo(FILE* fp, char* testString, bool test1, bool test2
 		for(int i=0; i < numN; i++) {
 			if ((testVar[i] != 0.0) || (testVar2[i] != 0.0)) {
 				if(firstPrint) {
-					CARLSIM_DEBUG("\ntime=%d: Testing Variable 1 and 2: %s", simTime, testString);
+					KERNEL_DEBUG("\ntime=%d: Testing Variable 1 and 2: %s", simTime, testString);
 					firstPrint = false;
 				}
-				CARLSIM_DEBUG("testVar12[%d] -> %f : %f", i, testVar[i]-subVal, testVar2[i]-subVal);
+				KERNEL_DEBUG("testVar12[%d] -> %f : %f", i, testVar[i]-subVal, testVar2[i]-subVal);
 				testVar[i]  = 0.0;
 				testVar2[i] = 0.0;
 				if(gcnt++==grouping1) {
-					CARLSIM_INFO("");
+					KERNEL_INFO("");
 					gcnt=0;
 				}
 			}
@@ -2874,13 +2877,13 @@ void CpuSNN::printTestVarInfo(FILE* fp, char* testString, bool test1, bool test2
 		for(int i=0; i < numN; i++) {
 			if (testVar[i] != 0.0 ) {
 				if(firstPrint) {
-					CARLSIM_DEBUG("\ntime=%d: Testing Variable 1 and 2: %s", simTime, testString);
+					KERNEL_DEBUG("\ntime=%d: Testing Variable 1 and 2: %s", simTime, testString);
 					firstPrint = false;
 				}
-				if(gcnt==0) CARLSIM_DEBUG("testVar[%d] -> ", i);
-				CARLSIM_DEBUG("%d\t", i, testVar[i]-subVal);
+				if(gcnt==0) KERNEL_DEBUG("testVar[%d] -> ", i);
+				KERNEL_DEBUG("%d %f\t", i, testVar[i]-subVal);
 				testVar[i] = 0.0;
-				if(++gcnt==grouping1) { CARLSIM_DEBUG("\n"); gcnt=0;}
+				if(++gcnt==grouping1) { KERNEL_DEBUG("\n"); gcnt=0;}
 			}
 		}
 		fflush(fp);
@@ -2895,13 +2898,13 @@ void CpuSNN::printTestVarInfo(FILE* fp, char* testString, bool test1, bool test2
 		for(int i=0; i < numN; i++) {
 			if (testVar2[i] != 0.0 ) {
 				if(firstPrint) {
-					CARLSIM_DEBUG("\ntime=%d: Testing Variable 1 and 2: %s", simTime, testString);
+					KERNEL_DEBUG("\ntime=%d: Testing Variable 1 and 2: %s", simTime, testString);
 					firstPrint = 0;
 				}
-				if(gcnt==0) CARLSIM_DEBUG("testVar2[%d] -> ", i);
-				CARLSIM_DEBUG("%d\t", i, testVar2[i]-subVal);
+				if(gcnt==0) KERNEL_DEBUG("testVar2[%d] -> ", i);
+				KERNEL_DEBUG("%d %f\t", i, testVar2[i]-subVal);
 				testVar2[i] = 0.0;
-				if(++gcnt==grouping2) { CARLSIM_DEBUG("\n"); gcnt=0;}
+				if(++gcnt==grouping2) { KERNEL_DEBUG("\n"); gcnt=0;}
 			}
 		}
 		fflush(fp);
@@ -2996,23 +2999,23 @@ void CpuSNN::deleteObjects_GPU() {
 
 void CpuSNN::testSpikeSenderReceiver(FILE* fpLog, int simTime)
 {
-	CARLSIM_WARN("Calling testSpikeSenderReceiver with fpLog is deprecated");
+	KERNEL_WARN("Calling testSpikeSenderReceiver with fpLog is deprecated");
 	if(0) {
 		int EnumFires = 0; int InumFires = 0;
 		CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &EnumFires, secD2fireCnt, sizeof(int), 0, cudaMemcpyDeviceToHost));
 		CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &InumFires, secD1fireCnt, sizeof(int), 0, cudaMemcpyDeviceToHost));
-		CARLSIM_DEBUG(" ***********( t = %d) FIRE COUNTS ************** %d %d", simTime, EnumFires, InumFires);
+		KERNEL_DEBUG(" ***********( t = %d) FIRE COUNTS ************** %d %d", simTime, EnumFires, InumFires);
 		int   numFires;
 		float fireCnt;
 		CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &numFires,  testFireCnt1, sizeof(int), 0, cudaMemcpyDeviceToHost));
-		CARLSIM_DEBUG("testFireCnt1 = %d", numFires);
+		KERNEL_DEBUG("testFireCnt1 = %d", numFires);
 		CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &numFires,  testFireCnt2, sizeof(int), 0, cudaMemcpyDeviceToHost));
-		CARLSIM_DEBUG("testFireCnt2 = %d", numFires);
+		KERNEL_DEBUG("testFireCnt2 = %d", numFires);
 		CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &fireCnt,  testFireCntf1, sizeof(int), 0, cudaMemcpyDeviceToHost));
-		CARLSIM_DEBUG("testFireCntFloat1 = %f", fireCnt);
+		KERNEL_DEBUG("testFireCntFloat1 = %f", fireCnt);
 		CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &fireCnt,  testFireCntf2, sizeof(int), 0, cudaMemcpyDeviceToHost));
-		CARLSIM_DEBUG("testFireCntFloat2 = %f", fireCnt);
-		CARLSIM_DEBUG(" *************************");
+		KERNEL_DEBUG("testFireCntFloat2 = %f", fireCnt);
+		KERNEL_DEBUG(" *************************");
 
 		if (sim_with_homeostasis) {
 			// MDR originally had this.
@@ -3022,12 +3025,12 @@ void CpuSNN::testSpikeSenderReceiver(FILE* fpLog, int simTime)
 			delete(baseFiringInv);
 			CUDA_CHECK_ERRORS( cudaMemcpy( avgFiring, cpu_gpuNetPtrs.avgFiring, sizeof(float)*numN, cudaMemcpyDeviceToHost));
 			for(int g=0; g < numGrp; g++) {
-				CARLSIM_DEBUG("Homeostasis values");
+				KERNEL_DEBUG("Homeostasis values");
 				if (!grp_Info[g].FixedInputWts) {
-					CARLSIM_DEBUG("Group %s:\t", grp_Info2[g].Name.c_str());
+					KERNEL_DEBUG("Group %s:\t", grp_Info2[g].Name.c_str());
 					for(int j=grp_Info[g].StartN; j <= grp_Info[g].EndN; j++) {
-						CARLSIM_DEBUG(" %d: Home =%f (Base =%f)  ", j, avgFiring[j], 1/baseFiringInv[j]);
-						CARLSIM_DEBUG(" %d: Home =%f (Base =%f)  ", j, avgFiring[j], 1/baseFiringInv[j]);
+						KERNEL_DEBUG(" %d: Home =%f (Base =%f)  ", j, avgFiring[j], 1/baseFiringInv[j]);
+						KERNEL_DEBUG(" %d: Home =%f (Base =%f)  ", j, avgFiring[j], 1/baseFiringInv[j]);
 					}
 				}
 			}
@@ -3106,7 +3109,7 @@ void CpuSNN::doGPUSim() {
 	CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &gpu_secD2fireCnt, CUDA_CONVERT_SYMBOL(secD2fireCnt), sizeof(int), 0, cudaMemcpyDeviceToHost));
 	CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &gpu_secD1fireCnt, CUDA_CONVERT_SYMBOL(secD1fireCnt), sizeof(int), 0, cudaMemcpyDeviceToHost));
 
-	CARLSIM_DEBUG("gpu_secD1fireCnt: %d max: %d gpu_secD2fireCnt: %d max: %d\n",gpu_secD1fireCnt,maxSpikesD1,gpu_secD2fireCnt,maxSpikesD2);
+	KERNEL_DEBUG("gpu_secD1fireCnt: %d max: %d gpu_secD2fireCnt: %d max: %d\n",gpu_secD1fireCnt,maxSpikesD1,gpu_secD2fireCnt,maxSpikesD2);
 
 	assert(gpu_secD1fireCnt<=maxSpikesD1);
 	assert(gpu_secD2fireCnt<=maxSpikesD2);
@@ -3197,7 +3200,7 @@ void CpuSNN::copyFiringInfo_GPU()
 
 	// \TODO: why is this here? The CPU side doesn't have it. And if you can call updateSpikeMonitor() now at any time
 	// it might look weird without a time stamp.
-//	CARLSIM_INFO("Total spikes Multiple Delays=%d, 1Ms Delay=%d", gpu_secD2fireCnt,gpu_secD1fireCnt);
+//	KERNEL_INFO("Total spikes Multiple Delays=%d, 1Ms Delay=%d", gpu_secD2fireCnt,gpu_secD1fireCnt);
 }
 
 
@@ -3246,11 +3249,11 @@ void CpuSNN::checkGPUDevice() {
 	int devCount;
 	cudaGetDeviceCount(&devCount);
 	CUDA_GET_LAST_ERROR("cudaGetDeviceCount failed\n");
-	CARLSIM_INFO("GPU Setup:");
-	CARLSIM_INFO("  - Number of CUDA devices     = %8d",devCount);
+	KERNEL_INFO("GPU Setup:");
+	KERNEL_INFO("  - Number of CUDA devices     = %8d",devCount);
 
 	int dev = CUDA_GET_MAXGFLOP_DEVICE_ID();
-	CARLSIM_INFO("  - Device ID with max GFLOPs  = %8d", dev);
+	KERNEL_INFO("  - Device ID with max GFLOPs  = %8d", dev);
 	cudaDeviceProp deviceProp;
 
 	// ithGPU gives an index number on which device to run the simulation
@@ -3258,18 +3261,18 @@ void CpuSNN::checkGPUDevice() {
 	if (ithGPU_>=0 && ithGPU_<devCount)
 		dev = ithGPU_;
 	else {
-		CARLSIM_WARN("Device index %d exceeds number of devices (%d), choose from [0,%d]. Defaulting to using device 0...",
+		KERNEL_WARN("Device index %d exceeds number of devices (%d), choose from [0,%d]. Defaulting to using device 0...",
 			ithGPU_,devCount,devCount-1);
 	dev = 0;
 }
 
 	CUDA_CHECK_ERRORS(cudaGetDeviceProperties(&deviceProp, dev));
-	CARLSIM_DEBUG("Device %d: \"%s\"", dev, deviceProp.name);
+	KERNEL_DEBUG("Device %d: \"%s\"", dev, deviceProp.name);
 	if (deviceProp.major == 1 && deviceProp.minor < 3) {
-		CARLSIM_ERROR("CARLsim does not support NVIDIA cards older than version 1.3");
+		KERNEL_ERROR("CARLsim does not support NVIDIA cards older than version 1.3");
 		exitSimulation(1);
 	}
-	CARLSIM_INFO("  - CUDA Compute Capability    =     %2d.%d\n", deviceProp.major, deviceProp.minor);
+	KERNEL_INFO("  - CUDA Compute Capability    =     %2d.%d\n", deviceProp.major, deviceProp.minor);
 	assert(deviceProp.major >= 1);
 	CUDA_DEVICE_RESET();
 	cudaSetDevice(dev);
@@ -3292,7 +3295,7 @@ void CpuSNN::copyWeightsGPU(unsigned int nid, int src_grp)
 void CpuSNN::allocateSNN_GPU() {
 	// \FIXME why is this even here? shouldn't this be checked way earlier? and then in CPU_MODE, too...
 	if (maxDelay_ > MAX_SynapticDelay) {
-		CARLSIM_ERROR("You are using a synaptic delay (%d) greater than MAX_SynapticDelay defined in config.h",maxDelay_);
+		KERNEL_ERROR("You are using a synaptic delay (%d) greater than MAX_SynapticDelay defined in config.h",maxDelay_);
 		exitSimulation(1);
 	}
 
@@ -3326,29 +3329,29 @@ void CpuSNN::allocateSNN_GPU() {
 	size_t avail, total, previous;
 	float toGB = 1024.0 * 1024.0 * 1024.0;
 	cudaMemGetInfo(&avail,&total);
-	CARLSIM_INFO("GPU Memory Management: (Total %2.3f GB)",(float)(total/toGB));
-	CARLSIM_INFO("Data\t\t\tSize\t\tTotal Used\tTotal Available");
-	CARLSIM_INFO("Init:\t\t\t%2.3f GB\t%2.3f GB\t%2.3f GB",(float)(total)/toGB,(float)((total-avail)/toGB),
+	KERNEL_INFO("GPU Memory Management: (Total %2.3f GB)",(float)(total/toGB));
+	KERNEL_INFO("Data\t\t\tSize\t\tTotal Used\tTotal Available");
+	KERNEL_INFO("Init:\t\t\t%2.3f GB\t%2.3f GB\t%2.3f GB",(float)(total)/toGB,(float)((total-avail)/toGB),
 		(float)(avail/toGB));
 	previous=avail;
 
 	// copy data to from CpuSNN:: to network_info_t CpuSNN::net_Info
 	allocateNetworkParameters();
 	cudaMemGetInfo(&avail,&total);
-	CARLSIM_INFO("Ntw Params:\t\t%2.3f GB\t%2.3f GB\t%2.3f GB",(float)(previous-avail)/toGB,(float)((total-avail)/toGB),
+	KERNEL_INFO("Ntw Params:\t\t%2.3f GB\t%2.3f GB\t%2.3f GB",(float)(previous-avail)/toGB,(float)((total-avail)/toGB),
 		(float)(avail/toGB));
 	previous=avail;
 
 	// initialize cpu_gpuNetPtrs.neuronAllocation, __device__ loadBufferCount, loadBufferSize
 	allocateStaticLoad(blkSize);
 	cudaMemGetInfo(&avail,&total);
-	CARLSIM_INFO("Static Load:\t\t%2.3f GB\t%2.3f GB\t%2.3f GB",(float)(previous-avail)/toGB,
+	KERNEL_INFO("Static Load:\t\t%2.3f GB\t%2.3f GB\t%2.3f GB",(float)(previous-avail)/toGB,
 		(float)((total-avail)/toGB),(float)(avail/toGB));
 	previous=avail;
 
 	allocateGroupId();
 	cudaMemGetInfo(&avail,&total);
-	CARLSIM_INFO("Group Id:\t\t%2.3f GB\t%2.3f GB\t%2.3f GB",(float)(previous-avail)/toGB,(float)((total-avail)/toGB),
+	KERNEL_INFO("Group Id:\t\t%2.3f GB\t%2.3f GB\t%2.3f GB",(float)(previous-avail)/toGB,(float)((total-avail)/toGB),
 		(float)(avail/toGB));
 	previous=avail;
 
@@ -3365,7 +3368,7 @@ void CpuSNN::allocateSNN_GPU() {
 	// copy data to CpuSNN:net_Info.postSynCnt, preSynCnt
 	copyConnections(&cpu_gpuNetPtrs,  cudaMemcpyHostToDevice, 1);
 	cudaMemGetInfo(&avail,&total);
-	CARLSIM_INFO("Conn Info:\t\t%2.3f GB\t%2.3f GB\t%2.3f GB",(float)(previous-avail)/toGB,(float)((total-avail)/toGB),
+	KERNEL_INFO("Conn Info:\t\t%2.3f GB\t%2.3f GB\t%2.3f GB",(float)(previous-avail)/toGB,(float)((total-avail)/toGB),
 		(float)(avail/toGB));
 	previous=avail;
 
@@ -3380,7 +3383,7 @@ void CpuSNN::allocateSNN_GPU() {
 	// initialize (copy from CpuSNN) cpu_gpuNetPtrs.grpDA, cpu_gpuNetPtrs.grp5HT, cpu_gpuNetPtrs.grpACh, cpu_gpuNetPtrs.grpNE
 	copyState(&cpu_gpuNetPtrs, 1);
 	cudaMemGetInfo(&avail,&total);
-	CARLSIM_INFO("State Info:\t\t%2.3f GB\t%2.3f GB\t%2.3f GB\n\n",(float)(previous-avail)/toGB,(float)((total-avail)/toGB),
+	KERNEL_INFO("State Info:\t\t%2.3f GB\t%2.3f GB\t%2.3f GB\n\n",(float)(previous-avail)/toGB,(float)((total-avail)/toGB),
 		(float)(avail/toGB));
 	previous=avail;
 
@@ -3415,47 +3418,47 @@ void CpuSNN::allocateSNN_GPU() {
 
 	CUDA_CHECK_ERRORS(cudaMemcpyToSymbol(gpuGrpInfo, grp_Info, (net_Info.numGrp) * sizeof(group_info_t), 0, cudaMemcpyHostToDevice));
 
-	CARLSIM_DEBUG("Transfering group settings to GPU:");
+	KERNEL_DEBUG("Transfering group settings to GPU:");
 	for (int i=0;i<numGrp;i++) {
-		CARLSIM_DEBUG("Settings for Group %s:", grp_Info2[i].Name.c_str());
+		KERNEL_DEBUG("Settings for Group %s:", grp_Info2[i].Name.c_str());
 		
-		CARLSIM_DEBUG("\tType: %d",(int)grp_Info[i].Type);
-		CARLSIM_DEBUG("\tSizeN: %d",grp_Info[i].SizeN);
-		CARLSIM_DEBUG("\tMaxFiringRate: %d",(int)grp_Info[i].MaxFiringRate);
-		CARLSIM_DEBUG("\tRefractPeriod: %f",grp_Info[i].RefractPeriod);
-		CARLSIM_DEBUG("\tM: %d",grp_Info[i].numPostSynapses);
-		CARLSIM_DEBUG("\tPreM: %d",grp_Info[i].numPreSynapses);
-		CARLSIM_DEBUG("\tspikeGenerator: %d",(int)grp_Info[i].isSpikeGenerator);
-		CARLSIM_DEBUG("\tFixedInputWts: %d",(int)grp_Info[i].FixedInputWts);
-		CARLSIM_DEBUG("\tMaxDelay: %d",(int)grp_Info[i].MaxDelay);
-		CARLSIM_DEBUG("\tWithSTDP: %d",(int)grp_Info[i].WithSTDP);
+		KERNEL_DEBUG("\tType: %d",(int)grp_Info[i].Type);
+		KERNEL_DEBUG("\tSizeN: %d",grp_Info[i].SizeN);
+		KERNEL_DEBUG("\tMaxFiringRate: %d",(int)grp_Info[i].MaxFiringRate);
+		KERNEL_DEBUG("\tRefractPeriod: %f",grp_Info[i].RefractPeriod);
+		KERNEL_DEBUG("\tM: %d",grp_Info[i].numPostSynapses);
+		KERNEL_DEBUG("\tPreM: %d",grp_Info[i].numPreSynapses);
+		KERNEL_DEBUG("\tspikeGenerator: %d",(int)grp_Info[i].isSpikeGenerator);
+		KERNEL_DEBUG("\tFixedInputWts: %d",(int)grp_Info[i].FixedInputWts);
+		KERNEL_DEBUG("\tMaxDelay: %d",(int)grp_Info[i].MaxDelay);
+		KERNEL_DEBUG("\tWithSTDP: %d",(int)grp_Info[i].WithSTDP);
 		if (grp_Info[i].WithSTDP) {
-			CARLSIM_DEBUG("\t\tE-STDP type: %s",stdpType_string[grp_Info[i].WithESTDPtype]);
-			CARLSIM_DEBUG("\t\tI-STDP type: %s",stdpType_string[grp_Info[i].WithISTDPtype]);
-			CARLSIM_DEBUG("\t\tTAU_LTP_INV: %f",grp_Info[i].TAU_LTP_INV_EXC);
-			CARLSIM_DEBUG("\t\tTAU_LTD_INV: %f",grp_Info[i].TAU_LTD_INV_EXC);
-			CARLSIM_DEBUG("\t\tALPHA_LTP: %f",grp_Info[i].ALPHA_LTP_EXC);
-			CARLSIM_DEBUG("\t\tALPHA_LTD: %f",grp_Info[i].ALPHA_LTD_EXC);
-			CARLSIM_DEBUG("\t\tLAMDA: %f",grp_Info[i].LAMDA);
-			CARLSIM_DEBUG("\t\tDELTA: %f",grp_Info[i].DELTA);
-			CARLSIM_DEBUG("\t\tBETA_LTP: %f",grp_Info[i].BETA_LTP);
-			CARLSIM_DEBUG("\t\tBETA_LTD: %f",grp_Info[i].BETA_LTD);
+			KERNEL_DEBUG("\t\tE-STDP type: %s",stdpType_string[grp_Info[i].WithESTDPtype]);
+			KERNEL_DEBUG("\t\tI-STDP type: %s",stdpType_string[grp_Info[i].WithISTDPtype]);
+			KERNEL_DEBUG("\t\tTAU_LTP_INV: %f",grp_Info[i].TAU_LTP_INV_EXC);
+			KERNEL_DEBUG("\t\tTAU_LTD_INV: %f",grp_Info[i].TAU_LTD_INV_EXC);
+			KERNEL_DEBUG("\t\tALPHA_LTP: %f",grp_Info[i].ALPHA_LTP_EXC);
+			KERNEL_DEBUG("\t\tALPHA_LTD: %f",grp_Info[i].ALPHA_LTD_EXC);
+			KERNEL_DEBUG("\t\tLAMDA: %f",grp_Info[i].LAMDA);
+			KERNEL_DEBUG("\t\tDELTA: %f",grp_Info[i].DELTA);
+			KERNEL_DEBUG("\t\tBETA_LTP: %f",grp_Info[i].BETA_LTP);
+			KERNEL_DEBUG("\t\tBETA_LTD: %f",grp_Info[i].BETA_LTD);
 		}
-		CARLSIM_DEBUG("\tWithSTP: %d",(int)grp_Info[i].WithSTP);
+		KERNEL_DEBUG("\tWithSTP: %d",(int)grp_Info[i].WithSTP);
 		if (grp_Info[i].WithSTP) {
-			CARLSIM_DEBUG("\t\tSTP_U: %f",grp_Info[i].STP_U);
-//				CARLSIM_DEBUG("\t\tSTP_tD: %f",grp_Info[i].STP_tD);
-//				CARLSIM_DEBUG("\t\tSTP_tF: %f",grp_Info[i].STP_tF);
+			KERNEL_DEBUG("\t\tSTP_U: %f",grp_Info[i].STP_U);
+//				KERNEL_DEBUG("\t\tSTP_tD: %f",grp_Info[i].STP_tD);
+//				KERNEL_DEBUG("\t\tSTP_tF: %f",grp_Info[i].STP_tF);
 		}
-		CARLSIM_DEBUG("\tspikeGen: %s",grp_Info[i].spikeGen==NULL?"Is Null":"Is set");
-		CARLSIM_DEBUG("\tspikeMonitorRT: %s",grp_Info[i].withSpikeCounter?"Is set":"Is Null");
+		KERNEL_DEBUG("\tspikeGen: %s",grp_Info[i].spikeGen==NULL?"Is Null":"Is set");
+		KERNEL_DEBUG("\tspikeMonitorRT: %s",grp_Info[i].withSpikeCounter?"Is set":"Is Null");
 		if (grp_Info[i].withSpikeCounter) {
 			int bufPos = grp_Info[i].spkCntBufPos;
 			for (int j=0; j<grp_Info[i].SizeN; j++)
-				CARLSIM_DEBUG("\t%d",spkCntBuf[bufPos][j]);
-			CARLSIM_DEBUG("\trecordDur: %d",grp_Info[i].spkCntRecordDur);
+				KERNEL_DEBUG("\t%d",spkCntBuf[bufPos][j]);
+			KERNEL_DEBUG("\trecordDur: %d",grp_Info[i].spkCntRecordDur);
 		} 	
-		CARLSIM_DEBUG("\tspikeGen: %s",grp_Info[i].spikeGen==NULL?"Is Null":"Is set");
+		KERNEL_DEBUG("\tspikeGen: %s",grp_Info[i].spikeGen==NULL?"Is Null":"Is set");
 	}
 
 	cpu_gpuNetPtrs.allocated = true;
@@ -3540,18 +3543,25 @@ void CpuSNN::printSimSummary() {
 		etime = cpuExecutionTime;
 	}
 
-	CARLSIM_INFO("\n");
-	CARLSIM_INFO("********************      %s Simulation Summary      ***************************",
+	KERNEL_INFO("\n");
+	KERNEL_INFO("********************      %s Simulation Summary      ***************************",
 		simMode_==GPU_MODE?"GPU":"CPU");
 
-	CARLSIM_INFO("Network Parameters: \n\tnumNeurons = %d (numNExcReg:numNInhReg = %2.1f:%2.1f)\n\tnumSynapses = %d\n\tmaxDelay = %d", numN, 100.0*numNExcReg/numN, 100.0*numNInhReg/numN, postSynCnt, maxDelay_);
-	CARLSIM_INFO("Random Seed: %d", randSeed_);
-	CARLSIM_INFO("Timing: \n\tModel Simulation Time = %lld sec \n\tActual Execution Time = %4.2f sec",  (unsigned long long)simTimeSec, etime/1000.0);
-	CARLSIM_INFO("Average Firing Rate:\n\t2+ms delay = %3.3f Hz \n\t1ms delay = %3.3f Hz \n\tOverall = %3.3f Hz",
-		spikeCountD2Host/(1.0*simTimeSec*numNExcReg), spikeCountD1Host/(1.0*simTimeSec*numNInhReg), spikeCountAll/(1.0*simTimeSec*numN));
-	CARLSIM_INFO("Overall Firing Count: \n\t2+ms delay = %d \n\t1ms delay = %d \n\tTotal = %d",
-		spikeCountD2Host, spikeCountD1Host, spikeCountAll );
-	CARLSIM_INFO("*********************************************************************************\n");
+	KERNEL_INFO("Network Parameters: \tnumNeurons = %d (numNExcReg:numNInhReg = %2.1f:%2.1f)", 
+		numN, 100.0*numNExcReg/numN, 100.0*numNInhReg/numN);
+	KERNEL_INFO("\t\t\tnumSynapses = %d", postSynCnt);
+	KERNEL_INFO("\t\t\tmaxDelay = %d", maxDelay_);
+	KERNEL_INFO("Simulation Mode:\t%s",sim_with_conductances?"COBA":"CUBA");
+	KERNEL_INFO("Random Seed:\t\t%d", randSeed_);
+	KERNEL_INFO("Timing:\t\t\tModel Simulation Time = %lld sec", (unsigned long long)simTimeSec);
+	KERNEL_INFO("\t\t\tActual Execution Time = %4.2f sec", etime/1000.0);
+	KERNEL_INFO("Average Firing Rate:\t2+ms delay = %3.3f Hz", spikeCountD2Host/(1.0*simTimeSec*numNExcReg));
+	KERNEL_INFO("\t\t\t1ms delay = %3.3f Hz", spikeCountD1Host/(1.0*simTimeSec*numNInhReg));
+	KERNEL_INFO("\t\t\tOverall = %3.3f Hz", spikeCountAll/(1.0*simTimeSec*numN));
+	KERNEL_INFO("Overall Firing Count:\t2+ms delay = %d", spikeCountD2Host);
+	KERNEL_INFO("\t\t\t1ms delay = %d", spikeCountD1Host);
+	KERNEL_INFO("\t\t\tTotal = %d", spikeCountAll);
+	KERNEL_INFO("*********************************************************************************\n");
 }
 
 

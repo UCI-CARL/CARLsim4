@@ -28,7 +28,7 @@ TEST(SpikeGen, PeriodicSpikeGenerator) {
 	sim.setConductances(true);
 
 	// add some dummy connections so we can actually run the network
-	sim.connect(g0,g2,"random", RangeWeight(0.01), 0.5f, RangeDelay(1), SYN_FIXED);
+	sim.connect(g0,g2,"random", RangeWeight(0.01), 0.5f, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
 
 	sim.setupNetwork();
 	sim.setSpikeMonitor(g0,"spkInputGrp0.dat"); // save spikes to file
@@ -75,7 +75,7 @@ TEST(SpikeGen, SpikeGeneratorFromFile) {
 	sim.setConductances(true);
 
 	// add some dummy connections so we can actually run the network
-	sim.connect(g0,g1,"random", RangeWeight(0.01), 0.5f, RangeDelay(1), SYN_FIXED);
+	sim.connect(g0,g1,"random", RangeWeight(0.01), 0.5f, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
 
 	sim.setupNetwork();
 	sim.setSpikeMonitor(g0,"spkInputGrp0.dat"); // save spikes to file
@@ -94,7 +94,7 @@ TEST(SpikeGen, SpikeGeneratorFromFile) {
 	sim2.setConductances(true);
 
 	// add some dummy connections so we can actually run the network
-	sim2.connect(g0,g1,"random", RangeWeight(0.01), 0.5f, RangeDelay(1), SYN_FIXED);
+	sim2.connect(g0,g1,"random", RangeWeight(0.01), 0.5f, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
 
 	sim2.setupNetwork();
 	sim2.setSpikeMonitor(g0,"spkInputFinal.dat"); // save spikes to file
@@ -136,7 +136,7 @@ TEST(SpikeGen, SpikeGeneratorFromVector) {
 	sim.setConductances(true);
 
 	// add some dummy connections so we can actually run the network
-	sim.connect(g0,g1,"random", RangeWeight(0.01), 0.5f, RangeDelay(1), SYN_FIXED);
+	sim.connect(g0,g1,"random", RangeWeight(0.01), 0.5f, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
 
 	sim.setupNetwork();
 	sim.setSpikeMonitor(g0,"spkInputGrp0.dat"); // save spikes to file

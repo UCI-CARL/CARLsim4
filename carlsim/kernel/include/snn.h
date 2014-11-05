@@ -122,7 +122,7 @@ public:
 	 * \param nConfig the number of configurations
 	 * \param randSeed randomize seed of the random number generator
 	 */
-	CpuSNN(std::string& name, simMode_t simMode, loggerMode_t loggerMode, int ithGPU, int nConfig, int randSeed);
+	CpuSNN(const std::string& name, simMode_t simMode, loggerMode_t loggerMode, int ithGPU, int nConfig, int randSeed);
 
 	//! SNN Destructor
 	/*!
@@ -158,8 +158,9 @@ public:
 	 * \param wtType: (optional) DEPRECATED
 	 * \return number of created synaptic projections
 	 */
-	short int connect(int gIDpre, int gIDpost, const std::string& _type, float initWt, float maxWt, float _C,
-		uint8_t minDelay, uint8_t maxDelay, float mulSynFast, float mulSynSlow, bool synWtType);
+	short int connect(int gIDpre, int gIDpost, const std::string& _type, float initWt, float maxWt, float prob,
+		uint8_t minDelay, uint8_t maxDelay, float radX, float radY, float radZ, 
+		float mulSynFast, float mulSynSlow, bool synWtType);
 
 	/* Creates synaptic projections using a callback mechanism.
 	 *
@@ -510,12 +511,19 @@ public:
 	std::string getNetworkName() { return networkName_; }
 
 	Point3D getNeuronLocation3D(int neurId);
+	Point3D getNeuronLocation3D(int grpId, int relNeurId);
 
 	int getNumConfigurations()	{ return nConfig_; }	//!< gets number of network configurations
 	int getNumConnections() { return numConnections; }
 	int getNumSynapticConnections(short int connectionId);		//!< gets number of connections associated with a connection ID
 	int getNumGroups() { return numGrp; }
 	int getNumNeurons() { return numN; }
+	int getNumNeuronsReg() { return numNReg; }
+	int getNumNeuronsRegExc() { return numNExcReg; }
+	int getNumNeuronsRegInh() { return numNInhReg; }
+	int getNumNeuronsGen() { return numNPois; }
+	int getNumNeuronsGenExc() { return numNExcPois; }
+	int getNumNeuronsGenInh() { return numNInhPois; }
 	int getNumPreSynapses() { return preSynCnt; }
 	int getNumPostSynapses() { return postSynCnt; }
 
@@ -583,6 +591,10 @@ public:
 	bool isPoissonGroup(int g) { return (grp_Info[g].Type&POISSON_NEURON); }
 	bool isDopaminergicGroup(int g) { return (grp_Info[g].Type&TARGET_DA); }
 
+	//! checks whether a point pre lies in the receptive field for point post
+	bool isPoint3DinRF(const RadiusRF& radius, const Point3D& pre, const Point3D& post);
+	bool isPoint3DonGrid(const Point3D& p, const Grid3D& g); //!< checks whether a point lies on a grid
+
 	bool isSimulationWithCOBA() { return sim_with_conductances; }
 	bool isSimulationWithCUBA() { return !sim_with_conductances; }
 	bool isSimulationWithNMDARise() { return sim_with_NMDA_rise; }
@@ -644,6 +656,10 @@ private:
 	void findFiring();
 	int findGrpId(int nid);//!< For the given neuron nid, find the group id
 
+	//! finds the maximum post-synaptic and pre-synaptic length
+	//! this used to be in updateParameters
+	void findMaxNumSynapses(int* numPostSynapses, int* numPreSynapses);
+
 	void generatePostSpike(unsigned int pre_i, unsigned int idx_d, unsigned int offset, unsigned int tD);
 	void generateSpikes();
 	void generateSpikes(int grpId);
@@ -656,6 +672,9 @@ private:
 	void globalStateUpdate();
 
 	void initSynapticWeights(); //!< initialize all the synaptic weights to appropriate values. total size of the synaptic connection is 'length'
+
+	//! performs a consistency check to see whether numN* class members have been accumulated correctly
+	bool isNumNeuronsConsistent();
 
 	void makePtrInfo();				//!< creates CPU net ptrs
 
@@ -734,7 +753,6 @@ private:
 	void updateAfterMaxTime();
 	void updateConnectionMonitor();
 	void updateGroupMonitor();
-	void updateParameters(int* numN, int* numPostSynapses, int* maxDelay, int nConfig=1);
 	void updateSpikesFromGrp(int grpId);
 	void updateSpikeGenerators();
 	void updateSpikeGeneratorsInit();

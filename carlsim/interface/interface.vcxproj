@@ -21,6 +21,7 @@
   <ItemGroup>
     <ClCompile Include="src\callback_core.cpp" />
     <ClCompile Include="src\carlsim.cpp" />
+    <ClCompile Include="src\linear_algebra.cpp" />
     <ClCompile Include="src\user_errors.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -29,6 +30,7 @@
     <ClInclude Include="include\carlsim.h" />
     <ClInclude Include="include\carlsim_datastructures.h" />
     <ClInclude Include="include\carlsim_definitions.h" />
+    <ClInclude Include="include\linear_algebra.h" />
     <ClInclude Include="include\user_errors.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">

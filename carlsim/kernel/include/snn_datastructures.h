@@ -119,21 +119,22 @@ typedef struct network_info_s  {
 
 //! connection infos...
 typedef struct connectData_s {
-	int 	  				grpSrc, grpDest;
-	uint8_t	  				maxDelay,  minDelay;
-	float	  				initWt, maxWt;
-	float 					mulSynFast;				//!< factor to be applied to either gAMPA or gGABAa
-	float 					mulSynSlow;				//!< factor to be applied to either gNMDA or gGABAb
-	int	  	  				numPostSynapses;
-	int	  	  				numPreSynapses;
-	uint32_t  				connProp;
-	ConnectionGeneratorCore*	conn;
-	conType_t 				type;
-	float					p; 						//!< connection probability
-	short int				connId;					//!< connectID of the element in the linked list
-	bool					newUpdates;
-	int		   				numberOfConnections;
-	struct connectData_s* next;
+	int 	  				 grpSrc, grpDest;
+	uint8_t	  				 maxDelay,  minDelay;
+	float	  				 initWt, maxWt;
+	float                    radX, radY, radZ;
+	float 					 mulSynFast;				//!< factor to be applied to either gAMPA or gGABAa
+	float 					 mulSynSlow;				//!< factor to be applied to either gNMDA or gGABAb
+	int	  	  				 numPostSynapses;
+	int	  	  				 numPreSynapses;
+	uint32_t  				 connProp;
+	ConnectionGeneratorCore* conn;
+	conType_t 				 type;
+	float					 p; 						//!< connection probability
+	short int				 connId;					//!< connectID of the element in the linked list
+	bool					 newUpdates;
+	int		   				 numberOfConnections;
+	struct connectData_s*    next;
 } grpConnectInfo_t;
 
 typedef struct network_ptr_s  {

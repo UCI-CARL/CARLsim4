@@ -1,5 +1,8 @@
 #include <user_errors.h>
 
+#include <carlsim_definitions.h>
+
+#include <stdio.h>
 #include <iostream>		// std::cerr, std::cerr, std::endl
 #include <stdlib.h>		// exit, EXIT_FAILURE
 #include <string>		// std::string
@@ -24,69 +27,73 @@ void UserErrors::assertTrue(bool statement, errorType errorIfAssertionFails, std
 // simple wrapper for displaying standard message per error type
 void UserErrors::throwError(std::string errorFunc, errorType error, std::string errorMsgPrefix,
 	std::string errorMsgSuffix) {
+
+	std::string errorMsg = errorMsgPrefix;
 	
-	std::cerr << "\033[31;1m[USER ERROR " << errorFunc << "] \033[0m" << errorMsgPrefix;
+//	std::cerr << "\033[31;1m[USER ERROR " << errorFunc << "] \033[0m" << errorMsgPrefix;
 	switch (error) {
 	case ALL_NOT_ALLOWED:
-		std::cerr << " cannot be ALL."; break;
+		errorMsg += " cannot be ALL."; break;
 	case CAN_ONLY_BE_CALLED_IN_MODE:
-		std::cerr << " can only be called in mode "; break;
+		errorMsg += " can only be called in mode "; break;
 	case CAN_ONLY_BE_CALLED_IN_STATE:
-		std::cerr << " can only be called in state "; break;
+		errorMsg += " can only be called in state "; break;
 	case CANNOT_BE_CALLED_IN_MODE:
-		std::cerr << " cannot be called in mode "; break;
+		errorMsg += " cannot be called in mode "; break;
 	case CANNOT_BE_CALLED_IN_STATE:
-		std::cerr << " cannot be called in state "; break;
+		errorMsg += " cannot be called in state "; break;
 	case CANNOT_BE_IDENTICAL:
-		std::cerr << " cannot be identical."; break;
+		errorMsg += " cannot be identical."; break;
 	case CANNOT_BE_LARGER:
-		std::cerr << " cannot be larger than "; break;
+		errorMsg += " cannot be larger than "; break;
 	case CANNOT_BE_NEGATIVE:
-		std::cerr << " cannot be negative."; break;
+		errorMsg += " cannot be negative."; break;
 	case CANNOT_BE_NULL:
-		std::cerr << " cannot be NULL."; break;
+		errorMsg += " cannot be NULL."; break;
 	case CANNOT_BE_POSITIVE:
-		std::cerr << " cannot be positive."; break;
+		errorMsg += " cannot be positive."; break;
 	case CANNOT_BE_OFF:
-		std::cerr << " cannot not be off at this point."; break;
+		errorMsg += " cannot not be off at this point."; break;
 	case CANNOT_BE_ON:
-		std::cerr << " cannot be on at this point."; break;
+		errorMsg += " cannot be on at this point."; break;
 	case CANNOT_BE_UNKNOWN:
-		std::cerr << " cannot be of type UNKNOWN."; break;
+		errorMsg += " cannot be of type UNKNOWN."; break;
 	case CANNOT_BE_ZERO:
-		std::cerr << " cannot be zero."; break;
+		errorMsg += " cannot be zero."; break;
 	case FILE_CANNOT_CREATE:
-		std::cerr << " could not be created."; break;
+		errorMsg += " could not be created."; break;
 	case FILE_CANNOT_OPEN:
-		std::cerr << " could not be opened."; break;
+		errorMsg += " could not be opened."; break;
 	case IS_DEPRECATED:
-		std::cerr << " is deprecated."; break;
+		errorMsg += " is deprecated."; break;
 	case MUST_BE_IDENTICAL:
-		std::cerr << " must be identical.";
+		errorMsg += " must be identical.";
 	case MUST_BE_LOGGER_CUSTOM:
-		std::cerr << " must be set to CUSTOM."; break;
+		errorMsg += " must be set to CUSTOM."; break;
 	case MUST_BE_NEGATIVE:
-		std::cerr << " must be negative."; break;
+		errorMsg += " must be negative."; break;
 	case MUST_BE_POSITIVE:
-		std::cerr << " must be positive."; break;
+		errorMsg += " must be positive."; break;
 	case MUST_BE_OFF:
-		std::cerr << " must be off at this point."; break;
+		errorMsg += " must be off at this point."; break;
 	case MUST_BE_ON:
-		std::cerr << " must be on at this point."; break;
+		errorMsg += " must be on at this point."; break;
 	case MUST_BE_IN_RANGE:
 		std:: cerr << " must be in the range"; break;
 	case MUST_HAVE_SAME_SIGN:
-		std::cerr << " must have the same sign."; break;
+		errorMsg += " must have the same sign."; break;
 	case NETWORK_ALREADY_RUN:
-		std::cerr << " cannot be called after network has been run."; break;
+		errorMsg += " cannot be called after network has been run."; break;
 	case UNKNOWN_GROUP_ID:
-		std::cerr << " is unknown."; break;
+		errorMsg += " is unknown."; break;
 	case WRONG_NEURON_TYPE:
-		std::cerr << " cannot be called on this neuron type."; break;
+		errorMsg += " cannot be called on this neuron type."; break;
 	case UNKNOWN:
 	default:
-		std::cerr << ". An unknown error has occurred."; break;
+		errorMsg += ". An unknown error has occurred."; break;
 	}
-	std::cerr << errorMsgSuffix << std::endl;
+	errorMsg += errorMsgSuffix;
+
+	CARLSIM_ERROR(errorFunc.c_str(), errorMsg.c_str());
 	exit(EXIT_FAILURE); // abort
 }

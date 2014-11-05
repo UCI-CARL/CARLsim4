@@ -86,6 +86,7 @@ CARLsim::CARLsim(std::string netName, simMode_t simMode, loggerMode_t loggerMode
 	hasSetHomeoBaseFiringALL_ 	= false;
 	hasSetSTDPALL_ 				= false;
 	hasSetSTPALL_ 				= false;
+	hasSetConductances_			= false;
 	carlsimState_				= CONFIG_STATE;
 
 	snn_ = NULL;
@@ -149,7 +150,7 @@ void CARLsim::CARLsimInit() {
 
 // Connects a presynaptic to a postsynaptic group using one of the primitive types
 short int CARLsim::connect(int grpId1, int grpId2, const std::string& connType, RangeWeight wt, float connProb,
-		RangeDelay delay, bool synWtType, float mulSynFast, float mulSynSlow) {
+		RangeDelay delay, RadiusRF radRF, bool synWtType, float mulSynFast, float mulSynSlow) {
 	std::string funcName = "connect(\""+getGroupName(grpId1,0)+"\",\""+getGroupName(grpId2,0)+"\")";
 	std::stringstream grpId1str; grpId1str << "Group Id " << grpId1;
 	std::stringstream grpId2str; grpId2str << "Group Id " << grpId2;
@@ -163,20 +164,21 @@ short int CARLsim::connect(int grpId1, int grpId2, const std::string& connType, 
 	UserErrors::assertTrue(synWtType==SYN_PLASTIC || synWtType==SYN_FIXED && wt.init==wt.max,
 		UserErrors::MUST_BE_IDENTICAL, funcName, "For fixed synapses, initWt and maxWt");
 	UserErrors::assertTrue(delay.min>0, UserErrors::MUST_BE_POSITIVE, funcName, "delay.min");
+	UserErrors::assertTrue(radRF.radX!=0 || radRF.radY!=0 || radRF.radZ!=0, UserErrors::CANNOT_BE_ZERO, funcName,
+		"Receptive field radius");
+	UserErrors::assertTrue(connType.compare("one-to-one")!=0
+		|| connType.compare("one-to-one")==0 && radRF.radX<=0 && radRF.radY<=0 && radRF.radZ<=0,
+		UserErrors::CANNOT_BE_LARGER, funcName, "Receptive field radius", "zero for type \"one-to-one\".");
 	UserErrors::assertTrue(carlsimState_==CONFIG_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "CONFIG.");
 
 	// TODO: enable support for non-zero min
-	if (abs(wt.min)>1e-15) {
+	if (fabs(wt.min)>1e-15) {
 		std::cerr << funcName << ": " << wt << ". Non-zero minimum weights are not yet supported.\n" << std::endl;
 		assert(false);
 	}
 
-	// TODO: clean up internal representation of inhibitory weights (minus sign is unnecessary)
-	// adjust weight struct depending on connection type (inh vs exc)
-	double wtSign = isExcitatoryGroup(grpId1) ? 1.0 : -1.0;
-
-	return snn_->connect(grpId1, grpId2, connType, wtSign*wt.init, wtSign*wt.max, connProb, delay.min, delay.max,
-		mulSynFast,	mulSynSlow, synWtType);
+	return snn_->connect(grpId1, grpId2, connType, wt.init, wt.max, connProb, delay.min, delay.max,
+		radRF.radX, radRF.radY, radRF.radZ, mulSynFast,	mulSynSlow, synWtType);
 }
 
 // custom connectivity profile
@@ -191,6 +193,7 @@ short int CARLsim::connect(int grpId1, int grpId2, ConnectionGenerator* conn, bo
 	UserErrors::assertTrue(conn!=NULL, UserErrors::CANNOT_BE_NULL, funcName);
 	UserErrors::assertTrue(carlsimState_==CONFIG_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "CONFIG.");
 
+	printf("in custom connect\n");
 	// TODO: check for sign of weights
 	return snn_->connect(grpId1, grpId2, new ConnectionGeneratorCore(this, conn), 1.0f, 1.0f, synWtType, maxM, maxPreM);
 }
@@ -229,13 +232,13 @@ int CARLsim::createGroup(std::string grpName, Grid3D grid, int neurType, int con
 	// if user has called any set functions with grpId=ALL, and is now adding another group, previously set properties
 	// will not apply to newly added group
 	if (hasSetSTPALL_)
-		userWarnings_.push_back("USER WARNING: Make sure to call setSTP on group "+grpName);
+		userWarnings_.push_back("Make sure to call setSTP on group "+grpName);
 	if (hasSetSTDPALL_)
-		userWarnings_.push_back("USER WARNING: Make sure to call setSTDP on group "+grpName);
+		userWarnings_.push_back("Make sure to call setSTDP on group "+grpName);
 	if (hasSetHomeoALL_)
-		userWarnings_.push_back("USER WARNING: Make sure to call setHomeostasis on group "+grpName);
+		userWarnings_.push_back("Make sure to call setHomeostasis on group "+grpName);
 	if (hasSetHomeoBaseFiringALL_)
-		userWarnings_.push_back("USER WARNING: Make sure to call setHomeoBaseFiringRate on group "+grpName);
+		userWarnings_.push_back("Make sure to call setHomeoBaseFiringRate on group "+grpName);
 
 	int grpId = snn_->createGroup(grpName.c_str(),grid,neurType,configId);
 	grpIds_.push_back(grpId); // keep track of all groups
@@ -267,7 +270,8 @@ int CARLsim::createSpikeGeneratorGroup(std::string grpName, Grid3D grid, int neu
 void CARLsim::setConductances(bool isSet, int configId) {
 	std::stringstream funcName; funcName << "setConductances(" << isSet << "," << configId << ")";
 	UserErrors::assertTrue(carlsimState_==CONFIG_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName.str(),
-		"CONFIG.");
+		funcName.str(), "CONFIG.");
+	hasSetConductances_ = true;
 
 	if (isSet) { // enable conductances, use default values
 		snn_->setConductances(true,def_tdAMPA_,0,def_tdNMDA_,def_tdGABAa_,0,def_tdGABAb_,configId);
@@ -286,7 +290,8 @@ void CARLsim::setConductances(bool isSet, int tdAMPA, int tdNMDA, int tdGABAa, i
 	UserErrors::assertTrue(!isSet||tdGABAa>0, UserErrors::MUST_BE_POSITIVE, funcName.str(), "tdGABAa");
 	UserErrors::assertTrue(!isSet||tdGABAb>0, UserErrors::MUST_BE_POSITIVE, funcName.str(), "trGABAb");
 	UserErrors::assertTrue(carlsimState_==CONFIG_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName.str(),
-		"CONFIG.");
+		funcName.str(),"CONFIG.");
+	hasSetConductances_ = true;
 
 	if (isSet) { // enable conductances, use custom values
 		snn_->setConductances(true,tdAMPA,0,tdNMDA,tdGABAa,0,tdGABAb,configId);
@@ -308,7 +313,9 @@ int configId) {
 	UserErrors::assertTrue(!isSet||tdGABAb>0, UserErrors::MUST_BE_POSITIVE, funcName.str(), "trGABAb");
 	UserErrors::assertTrue(trNMDA!=tdNMDA, UserErrors::CANNOT_BE_IDENTICAL, funcName.str(), "trNMDA and tdNMDA");
 	UserErrors::assertTrue(trGABAb!=tdGABAb, UserErrors::CANNOT_BE_IDENTICAL, funcName.str(), "trGABAb and tdGABAb");
-	UserErrors::assertTrue(carlsimState_==CONFIG_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName.str(), "CONFIG.");
+	UserErrors::assertTrue(carlsimState_==CONFIG_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName.str(), 
+		funcName.str(), "CONFIG.");
+	hasSetConductances_ = true;
 
 	if (isSet) { // enable conductances, use custom values
 		snn_->setConductances(true,tdAMPA,trNMDA,tdNMDA,tdGABAa,trGABAb,tdGABAb,configId);
@@ -327,7 +334,7 @@ void CARLsim::setHomeostasis(int grpId, bool isSet, int configId) {
 	if (isSet) { // enable homeostasis, use default values
 		snn_->setHomeostasis(grpId,true,def_homeo_scale_,def_homeo_avgTimeScale_,configId);
 		if (grpId!=ALL && hasSetHomeoBaseFiringALL_)
-			userWarnings_.push_back("USER WARNING: Make sure to call setHomeoBaseFiringRate on group "
+			userWarnings_.push_back("Make sure to call setHomeoBaseFiringRate on group "
 										+ getGroupName(grpId,configId));
 	} else { // disable conductances
 		snn_->setHomeostasis(grpId,false,0.0f,0.0f,configId);
@@ -344,7 +351,7 @@ void CARLsim::setHomeostasis(int grpId, bool isSet, float homeoScale, float avgT
 	if (isSet) { // enable homeostasis, use default values
 		snn_->setHomeostasis(grpId,true,homeoScale,avgTimeScale,configId);
 		if (grpId!=ALL && hasSetHomeoBaseFiringALL_)
-			userWarnings_.push_back("USER WARNING: Make sure to call setHomeoBaseFiringRate on group "
+			userWarnings_.push_back("Make sure to call setHomeoBaseFiringRate on group "
 										+ getGroupName(grpId,configId));
 	} else { // disable conductances
 		snn_->setHomeostasis(grpId,false,0.0f,0.0f,configId);
@@ -544,8 +551,15 @@ int CARLsim::runNetwork(int nSec, int nMsec, bool printRunSummary, bool copyStat
 	UserErrors::assertTrue(carlsimState_ == SETUP_STATE || carlsimState_ == EXE_STATE,
 				UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "SETUP or EXECUTION.");
 
+	// run some checks before running network for the first time
 	if (carlsimState_ != EXE_STATE) {
-		handleUserWarnings();	// before running network, make sure user didn't provoque any user warnings
+		// if user hasn't called setConductances, set to false and disp warning
+		if (!hasSetConductances_) {
+			userWarnings_.push_back("CARLsim::setConductances has not been called. Setting simulation mode to CUBA.");
+		}
+
+		// make sure user didn't provoque any user warnings
+		handleUserWarnings();
 	}
 
 	carlsimState_ = EXE_STATE;
@@ -858,37 +872,35 @@ int CARLsim::getGroupNumNeurons(int grpId) {
 Point3D CARLsim::getNeuronLocation3D(int neurId) {
 	std::stringstream funcName;	funcName << "getNeuronLocation3D(" << neurId << ")";
 	UserErrors::assertTrue(neurId!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName.str(), "neurId");
-	UserErrors::assertTrue(carlsimState_ == SETUP_STATE || carlsimState_ == EXE_STATE,
-					UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName.str(), funcName.str(), "SETUP or EXECUTION.");
 	UserErrors::assertTrue(neurId>=0 && neurId<getNumNeurons(), UserErrors::MUST_BE_IN_RANGE, funcName.str(), 
 		"neurId", "[0,getNumNeurons()]");
 
 	return snn_->getNeuronLocation3D(neurId);
 }
 
-int CARLsim::getNumConfigurations() {
-	return nConfig_;
+Point3D CARLsim::getNeuronLocation3D(int grpId, int relNeurId) {
+	std::stringstream funcName;	funcName << "getNeuronLocation3D(" << grpId << "," << relNeurId << ")";
+	UserErrors::assertTrue(relNeurId!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName.str(), "neurId");
+	UserErrors::assertTrue(grpId>=0 && grpId<getNumGroups(), UserErrors::MUST_BE_IN_RANGE, funcName.str(), 
+		"grpId", "[0,getNumGroups()]");
+	UserErrors::assertTrue(relNeurId>=0 && relNeurId<getGroupNumNeurons(grpId), UserErrors::MUST_BE_IN_RANGE,
+		funcName.str(), "relNeurId", "[0,getGroupNumNeurons()]");
+
+	return snn_->getNeuronLocation3D(grpId, relNeurId);
 }
 
-int CARLsim::getNumConnections() {
-	return snn_->getNumConnections();	
-}
+int CARLsim::getNumConfigurations() { return nConfig_; }
 
-int CARLsim::getNumSynapticConnections(short int connectionId) {
-	std::stringstream funcName;	funcName << "getNumConnections(" << connectionId << ")";
-	UserErrors::assertTrue(connectionId!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName.str(), "connectionId");
-	UserErrors::assertTrue(connectionId>=0 && connectionId<getNumConnections(), UserErrors::MUST_BE_IN_RANGE, 
-		funcName.str(), "connectionId", "[0,getNumSynapticConnections()]");
-	return snn_->getNumSynapticConnections(connectionId);
-}
+int CARLsim::getNumConnections() { return snn_->getNumConnections(); }
 
-int CARLsim::getNumGroups() {
-	return snn_->getNumGroups();
-}
-
-int CARLsim::getNumNeurons() {
-	return snn_->getNumNeurons();
-}
+int CARLsim::getNumGroups() { return snn_->getNumGroups(); }
+int CARLsim::getNumNeurons() { return snn_->getNumNeurons(); }
+int CARLsim::getNumNeuronsReg() { return snn_->getNumNeuronsReg(); }
+int CARLsim::getNumNeuronsRegExc() { return snn_->getNumNeuronsRegExc(); }
+int CARLsim::getNumNeuronsRegInh() { return snn_->getNumNeuronsRegInh(); }
+int CARLsim::getNumNeuronsGen() { return snn_->getNumNeuronsGen(); }
+int CARLsim::getNumNeuronsGenExc() { return snn_->getNumNeuronsGenExc(); }
+int CARLsim::getNumNeuronsGenInh() { return snn_->getNumNeuronsGenInh(); }
 
 int CARLsim::getNumPreSynapses() {
 	std::string funcName = "getNumPreSynapses()";
@@ -898,6 +910,13 @@ int CARLsim::getNumPreSynapses() {
 	return snn_->getNumPreSynapses();
 }
 
+int CARLsim::getNumSynapticConnections(short int connectionId) {
+	std::stringstream funcName;	funcName << "getNumConnections(" << connectionId << ")";
+	UserErrors::assertTrue(connectionId!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName.str(), "connectionId");
+	UserErrors::assertTrue(connectionId>=0 && connectionId<getNumConnections(), UserErrors::MUST_BE_IN_RANGE, 
+		funcName.str(), "connectionId", "[0,getNumSynapticConnections()]");
+	return snn_->getNumSynapticConnections(connectionId);
+}
 int CARLsim::getNumPostSynapses() {
 	std::string funcName = "getNumPostSynapses()";
 	UserErrors::assertTrue(carlsimState_ == SETUP_STATE || carlsimState_ == EXE_STATE,
@@ -1102,12 +1121,12 @@ bool CARLsim::existsGrpId(int grpId) {
 void CARLsim::handleUserWarnings() {
 	if (userWarnings_.size()) {
 		for (int i=0; i<userWarnings_.size(); i++)
-			fprintf(stdout,"%s\n",userWarnings_[i].c_str()); // print all user warnings
+			CARLSIM_WARN("runNetwork()",userWarnings_[i].c_str());
 
 		fprintf(stdout,"Ignore warnings and continue? Y/n ");
 		char ignoreWarn = std::cin.get();
 		if (std::cin.fail() || ignoreWarn!='y' && ignoreWarn!='Y') {
-			fprintf(stdout,"exiting...\n");
+			fprintf(stdout,"Exiting...\n");
 			exit(1);
 		}
 	}

@@ -17,6 +17,8 @@ function I = readFramesFromRgbFile( filename,dim,frames,plotIt,movieIt )
 % Author: Michael Beyeler <mbeyeler@uci.edu>
 % Ver 07/23/12
 
+warning('readFramesFromRgbFile() is deprecated, use InputStimulus instead.')
+
 if nargin<5,movieIt=false;end
 if nargin<4,plotIt=false;end
 if nargin<3,frames=-1;end % -1 means: read all frames

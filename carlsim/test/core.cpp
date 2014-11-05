@@ -73,69 +73,8 @@ TEST(CORE, CpuSNNinitDeath) {
 }
 
 
-//! connect with certain mulSynFast, mulSynSlow and observe connectInfo
-TEST(CORE, connect) {
-	// create network by varying nConfig from 1...maxConfig, with
-	// step size nConfigStep
-	int maxConfig = rand()%10 + 10;
-	int nConfigStep = rand()%3 + 2;
-
-	CpuSNN* sim = NULL;
-	grpConnectInfo_t* connInfo;
-	std::string typeStr;
-	std::string name="SNN";
-
-	int conn[4] 		= {-1};
-	conType_t type[4] 	= {CONN_RANDOM,CONN_ONE_TO_ONE,CONN_FULL,CONN_FULL_NO_DIRECT};
-	float initWt[4] 	= {0.05f, 0.1f, 0.21f, 0.42f};
-	float maxWt[4] 		= {0.05f, 0.1f, 0.21f, 0.42f};
-	float prob[4] 		= {0.1, 0.2, 0.3, 0.4};
-	int minDelay[4] 	= {1,2,3,4};
-	int maxDelay[4] 	= {1,2,3,4};
-	float mulSynFast[4] = {0.2f, 0.8f, 1.2f, 0.0};
-	float mulSynSlow[4] = {0.0f, 2.4f, 11.1f, 10.0f};
-	int synType[4] 		= {SYN_FIXED,SYN_PLASTIC,SYN_FIXED,SYN_PLASTIC};
-
-	for (int mode=0; mode<=1; mode++) {
-		for (int nConfig=1; nConfig<=maxConfig; nConfig+=nConfigStep) {
-			for (int i=0; i<4; i++) {
-				sim = new CpuSNN(name,mode?GPU_MODE:CPU_MODE,SILENT,0,nConfig,42);
-
-                Grid3D neur(10,1,1);
-				int g0=sim->createSpikeGeneratorGroup("spike", neur, EXCITATORY_NEURON, ALL);
-				int g1=sim->createGroup("excit0", neur, EXCITATORY_NEURON, ALL);
-				sim->setNeuronParameters(g1, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f, ALL);
-				int g2=sim->createGroup("excit1", neur, EXCITATORY_NEURON, ALL);
-				sim->setNeuronParameters(g2, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f, ALL);
-
-				if (type[i]==CONN_RANDOM) typeStr = "random";
-				else if (type[i]==CONN_ONE_TO_ONE) typeStr = "one-to-one";
-				else if (type[i]=CONN_FULL) typeStr = "full";
-				else if (type[i]=CONN_FULL_NO_DIRECT) typeStr = "full-no-direct";
-
-				conn[i] = sim->connect(g0, g1, typeStr, initWt[i], maxWt[i], prob[i],
-					minDelay[i],maxDelay[i], mulSynFast[i], mulSynSlow[i], synType[i]);
-
-				for (int c=0; c<nConfig; c++) {
-					connInfo = sim->getConnectInfo(conn[i],c);
-					EXPECT_FLOAT_EQ(connInfo->initWt,initWt[i]);
-					EXPECT_FLOAT_EQ(connInfo->maxWt,maxWt[i]);
-					EXPECT_FLOAT_EQ(connInfo->p,prob[i]);
-					EXPECT_FLOAT_EQ(connInfo->mulSynFast,mulSynFast[i]);
-					EXPECT_FLOAT_EQ(connInfo->mulSynSlow,mulSynSlow[i]);
-					EXPECT_EQ(connInfo->minDelay,minDelay[i]);
-					EXPECT_EQ(connInfo->maxDelay,maxDelay[i]);
-					EXPECT_EQ(connInfo->type,type[i]);
-					EXPECT_EQ(GET_FIXED_PLASTIC(connInfo->connProp),synType[i]);
-				}
-				delete sim;
-			}
-		}
-	}
-}
-
 TEST(CORE, getGroupGrid3D) {
-	CARLsim* sim = new CARLsim("Interface.createGroupDeath",CPU_MODE,USER,0,1,42);
+	CARLsim* sim = new CARLsim("CORE.getGroupGrid3D",CPU_MODE,SILENT,0,1,42);
 	Grid3D grid(2,3,4);
 	int g1=sim->createSpikeGeneratorGroup("excit", grid, EXCITATORY_NEURON);
 	int g2=sim->createGroup("excit2", grid, EXCITATORY_NEURON);
@@ -155,7 +94,7 @@ TEST(CORE, getGroupGrid3D) {
 }
 
 TEST(CORE, getGroupIdFromString) {
-	CARLsim* sim = new CARLsim("Interface.createGroupDeath",CPU_MODE,USER,0,1,42);
+	CARLsim* sim = new CARLsim("Interface.createGroupDeath",CPU_MODE,SILENT,0,1,42);
 	int g1=sim->createSpikeGeneratorGroup("excit", Grid3D(2,3,4), EXCITATORY_NEURON);
 	int g2=sim->createGroup("bananahama", Grid3D(1,2,3), INHIBITORY_NEURON);
 	sim->setNeuronParameters(g2, 0.02f, 0.2f, -65.0f, 8.0f);
@@ -172,7 +111,7 @@ TEST(CORE, getGroupIdFromString) {
 
 // This test creates a group on a grid and makes sure that the returned 3D location of each neuron is correct
 TEST(CORE, getNeuronLocation3D) {
-	CARLsim* sim = new CARLsim("Interface.createGroupDeath",CPU_MODE,USER,0,1,42);
+	CARLsim* sim = new CARLsim("Interface.createGroupDeath",CPU_MODE,SILENT,0,1,42);
 	Grid3D grid(2,3,4);
 	int g1=sim->createSpikeGeneratorGroup("excit", grid, EXCITATORY_NEURON);
 	int g2=sim->createGroup("excit2", grid, EXCITATORY_NEURON);
@@ -207,6 +146,19 @@ TEST(CORE, getNeuronLocation3D) {
 	delete sim;
 }
 
+// tests whether a point lies on a grid
+TEST(CORE, isPoint3DonGrid) {
+	CpuSNN snn("CORE.isPoint3DonGrid", CPU_MODE, SILENT, 0, 1, 42);
+	EXPECT_FALSE(snn.isPoint3DonGrid(Point3D(-1,-1,-1), Grid3D(10,5,2)));
+	EXPECT_FALSE(snn.isPoint3DonGrid(Point3D(0.5,0.5,0.5), Grid3D(10,5,2)));
+	EXPECT_FALSE(snn.isPoint3DonGrid(Point3D(10,5,2), Grid3D(10,5,2)));
+
+	EXPECT_TRUE(snn.isPoint3DonGrid(Point3D(0,0,0), Grid3D(10,5,2)));
+	EXPECT_TRUE(snn.isPoint3DonGrid(Point3D(0.0,0.0,0.0), Grid3D(10,5,2)));
+	EXPECT_TRUE(snn.isPoint3DonGrid(Point3D(1,1,1), Grid3D(10,5,2)));
+	EXPECT_TRUE(snn.isPoint3DonGrid(Point3D(9,4,1), Grid3D(10,5,2)));
+	EXPECT_TRUE(snn.isPoint3DonGrid(Point3D(9.0,4.0,1.0), Grid3D(10,5,2)));
+}
 
 TEST(CORE, setConductancesTrue) {
 	std::string name = "SNN";
@@ -275,7 +227,7 @@ TEST(CORE, firingRateCPUvsGPU) {
 		int runTimeMs = 1000;//rand() % 9500 + 500;
 		float wt = hasCOBA ? 0.15f : 15.0f;
 
-PoissonRate in(1);
+		PoissonRate in(1);
 
 		for (int isGPUmode=0; isGPUmode<=0; isGPUmode++) {
 			CARLsim* sim = new CARLsim("SNN",isGPUmode?GPU_MODE:CPU_MODE,SILENT,0,1,42);
@@ -291,6 +243,8 @@ PoissonRate in(1);
 
 			if (hasCOBA)
 				sim->setConductances(true,5, 0, 150, 6, 0, 150);
+			else
+				sim->setConductances(false);
 
 			bool spikeAtZero = true;
 			spkGenG0 = new PeriodicSpikeGenerator(50.0f,spikeAtZero); // periodic spiking
@@ -349,5 +303,83 @@ PoissonRate in(1);
 //			delete spkGenG1;
 			delete sim;
 		}
+	}
+}
+
+// make sure bookkeeping for number of groups is correct during CONFIG
+TEST(CORE, numGroups) {
+	CARLsim sim("CORE.numGroups", CPU_MODE, SILENT, 0, 1, 42);
+	EXPECT_EQ(sim.getNumGroups(), 0);
+
+	int nLoops = 4;
+	int nNeur = 10;
+	for (int i=0; i<nLoops; i++) {
+		sim.createGroup("regexc", nNeur, EXCITATORY_NEURON);
+		EXPECT_EQ(sim.getNumGroups(), i*4+1);
+		sim.createGroup("reginh", nNeur, INHIBITORY_NEURON);
+		EXPECT_EQ(sim.getNumGroups(), i*4+2);
+		sim.createSpikeGeneratorGroup("genexc", nNeur, EXCITATORY_NEURON);
+		EXPECT_EQ(sim.getNumGroups(), i*4+3);
+		sim.createSpikeGeneratorGroup("geninh", nNeur, INHIBITORY_NEURON);
+		EXPECT_EQ(sim.getNumGroups(), i*4+4);
+	}
+}
+
+// make sure bookkeeping for number of neurons is correct during CONFIG
+TEST(CORE, numNeurons) {
+	CARLsim sim("CORE.numNeurons", CPU_MODE, SILENT, 0, 1, 42);
+	EXPECT_EQ(sim.getNumNeurons(), 0);
+	EXPECT_EQ(sim.getNumNeuronsRegExc(), 0);
+	EXPECT_EQ(sim.getNumNeuronsRegInh(), 0);
+	EXPECT_EQ(sim.getNumNeuronsGenExc(), 0);
+	EXPECT_EQ(sim.getNumNeuronsGenInh(), 0);
+
+	int nLoops = 4;
+	int nNeur = 10;
+
+	for (int i=0; i<nLoops; i++) {
+		sim.createGroup("regexc", nNeur, EXCITATORY_NEURON);
+		EXPECT_EQ(sim.getNumNeurons(), i*4*nNeur + nNeur);
+		EXPECT_EQ(sim.getNumNeuronsRegExc(), i*nNeur + nNeur);
+		EXPECT_EQ(sim.getNumNeuronsRegInh(), i*nNeur);
+		EXPECT_EQ(sim.getNumNeuronsGenExc(), i*nNeur);
+		EXPECT_EQ(sim.getNumNeuronsGenInh(), i*nNeur);
+		EXPECT_EQ(sim.getNumNeurons(), sim.getNumNeuronsRegExc() + sim.getNumNeuronsRegInh()
+			+ sim.getNumNeuronsGenExc() + sim.getNumNeuronsGenInh());
+		EXPECT_EQ(sim.getNumNeuronsReg(), sim.getNumNeuronsRegExc() + sim.getNumNeuronsRegInh());
+		EXPECT_EQ(sim.getNumNeuronsGen(), sim.getNumNeuronsGenExc() + sim.getNumNeuronsGenInh());
+
+		sim.createGroup("reginh", nNeur, INHIBITORY_NEURON);
+		EXPECT_EQ(sim.getNumNeurons(), i*4*nNeur + 2*nNeur);
+		EXPECT_EQ(sim.getNumNeuronsRegExc(), i*nNeur + nNeur);
+		EXPECT_EQ(sim.getNumNeuronsRegInh(), i*nNeur + nNeur);
+		EXPECT_EQ(sim.getNumNeuronsGenExc(), i*nNeur);
+		EXPECT_EQ(sim.getNumNeuronsGenInh(), i*nNeur);
+		EXPECT_EQ(sim.getNumNeurons(), sim.getNumNeuronsRegExc() + sim.getNumNeuronsRegInh()
+			+ sim.getNumNeuronsGenExc() + sim.getNumNeuronsGenInh());
+		EXPECT_EQ(sim.getNumNeuronsReg(), sim.getNumNeuronsRegExc() + sim.getNumNeuronsRegInh());
+		EXPECT_EQ(sim.getNumNeuronsGen(), sim.getNumNeuronsGenExc() + sim.getNumNeuronsGenInh());
+
+		sim.createSpikeGeneratorGroup("genexc", nNeur, EXCITATORY_NEURON);
+		EXPECT_EQ(sim.getNumNeurons(), i*4*nNeur + 3*nNeur);
+		EXPECT_EQ(sim.getNumNeuronsRegExc(), i*nNeur + nNeur);
+		EXPECT_EQ(sim.getNumNeuronsRegInh(), i*nNeur + nNeur);
+		EXPECT_EQ(sim.getNumNeuronsGenExc(), i*nNeur + nNeur);
+		EXPECT_EQ(sim.getNumNeuronsGenInh(), i*nNeur);
+		EXPECT_EQ(sim.getNumNeurons(), sim.getNumNeuronsRegExc() + sim.getNumNeuronsRegInh()
+			+ sim.getNumNeuronsGenExc() + sim.getNumNeuronsGenInh());
+		EXPECT_EQ(sim.getNumNeuronsReg(), sim.getNumNeuronsRegExc() + sim.getNumNeuronsRegInh());
+		EXPECT_EQ(sim.getNumNeuronsGen(), sim.getNumNeuronsGenExc() + sim.getNumNeuronsGenInh());
+
+		sim.createSpikeGeneratorGroup("geninh", nNeur, INHIBITORY_NEURON);
+		EXPECT_EQ(sim.getNumNeurons(), i*4*nNeur + 4*nNeur);
+		EXPECT_EQ(sim.getNumNeuronsRegExc(), i*nNeur + nNeur);
+		EXPECT_EQ(sim.getNumNeuronsRegInh(), i*nNeur + nNeur);
+		EXPECT_EQ(sim.getNumNeuronsGenExc(), i*nNeur + nNeur);
+		EXPECT_EQ(sim.getNumNeuronsGenInh(), i*nNeur + nNeur);
+		EXPECT_EQ(sim.getNumNeurons(), sim.getNumNeuronsRegExc() + sim.getNumNeuronsRegInh()
+			+ sim.getNumNeuronsGenExc() + sim.getNumNeuronsGenInh());
+		EXPECT_EQ(sim.getNumNeuronsReg(), sim.getNumNeuronsRegExc() + sim.getNumNeuronsRegInh());
+		EXPECT_EQ(sim.getNumNeuronsGen(), sim.getNumNeuronsGenExc() + sim.getNumNeuronsGenInh());
 	}
 }

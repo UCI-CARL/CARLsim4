@@ -5,11 +5,13 @@
 
 //! trigger all UserErrors
 // TODO: add more error checking
-TEST(Interface, connect) {
+TEST(Interface, connectDeath) {
 	CARLsim* sim = new CARLsim("SNN",CPU_MODE,SILENT,0,1,42);
 	int g1=sim->createSpikeGeneratorGroup("excit", 10, EXCITATORY_NEURON);
-	EXPECT_DEATH({sim->connect(g1,g1,"random",0.01f,0.1f,1);},""); // g2 cannot be PoissonGroup
-	EXPECT_DEATH({sim->connect(g1,g1,"random",-0.01f,0.1f,1);},""); // weight cannot be negative
+	EXPECT_DEATH({sim->connect(g1,g1,"random",RangeWeight(0.01f,0.1f),0.1);},""); // g2 cannot be PoissonGroup
+	EXPECT_DEATH({sim->connect(g1,g1,"random",RangeWeight(-0.01f,0.1f),0.1);},""); // weight cannot be negative
+	EXPECT_DEATH({sim->connect(g1,g1,"random",RangeWeight(0.1f),0.1,RangeDelay(1),RadiusRF(0,0,0));},""); // radius=0
+	EXPECT_DEATH({sim->connect(g1,g1,"one-to-one",RangeWeight(0.1f),0.1,RangeDelay(1),RadiusRF(3,0,0));},""); // rad>0
 	delete sim;
 }
 
@@ -80,6 +82,10 @@ TEST(Interface, getNeuronLocation3DDeath) {
 	EXPECT_DEATH({sim->getNeuronLocation3D(-1);},"");
 	EXPECT_DEATH({sim->getNeuronLocation3D(grid.x*grid.y*grid.z);},"");
 
+	EXPECT_DEATH({sim->getNeuronLocation3D(-1,-1);},"");
+	EXPECT_DEATH({sim->getNeuronLocation3D(g1, grid.x*grid.y*grid.z);},"");
+	EXPECT_DEATH({sim->getNeuronLocation3D(g1+1,0);},"");
+
 	delete sim;
 }
 
@@ -117,6 +123,7 @@ TEST(Interface, setConductancesDeath) {
 	EXPECT_DEATH({sim->setConductances(true,1,2,3,4,5,5);},""); // tdGABAb==trGABAb
 
 	// calling setConductances after runNetwork
+	sim->setConductances(false);
 	sim->setupNetwork();
 	sim->runNetwork(0,0);
 	EXPECT_DEATH({sim->setConductances(true);},"");
@@ -196,7 +203,7 @@ TEST(Interface, CARLsimState) {
 
 	g1 = sim->createGroup("excit", 800, EXCITATORY_NEURON);
 	sim->setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f);
-	sim->connect(g1,g1,"random", RangeWeight(0.0,0.001,0.005), 0.1f, RangeDelay(1,20), SYN_PLASTIC);
+	sim->connect(g1,g1,"random", RangeWeight(0.0,0.001,0.005), 0.1f, RangeDelay(1,20), RadiusRF(-1), SYN_PLASTIC);
 
 
 	// test APIs that can't be called at CONFIG_STATE
@@ -218,6 +225,8 @@ TEST(Interface, CARLsimState) {
 	EXPECT_DEATH({sim->getSpikeCounter(0);},"");
 	EXPECT_DEATH({sim->resetSpikeCounter(0);},"");
 
+	sim->setConductances(true);
+
 	// test buildNetwork(), change carlsimState_ from CONFIG_STATE to SETUP_STATE
 	EXPECT_TRUE(sim->getCarlsimState() == CONFIG_STATE);
 	sim->setupNetwork();
@@ -227,7 +236,7 @@ TEST(Interface, CARLsimState) {
 	// test APIs that can't be called at SETUP_STATE
 	EXPECT_DEATH({g2 = sim->createGroup("excit", 800, EXCITATORY_NEURON);},"");
 	EXPECT_DEATH({g2 = sim->createSpikeGeneratorGroup("input", 100, EXCITATORY_NEURON);},"");
-	EXPECT_DEATH({sim->connect(g1,g1,"random", RangeWeight(0.0,0.001,0.005), 0.1f, RangeDelay(1,20), SYN_PLASTIC);},"");
+	EXPECT_DEATH({sim->connect(g1,g1,"random", RangeWeight(0.0,0.001,0.005), 0.1f, RangeDelay(1,20), RadiusRF(-1), SYN_PLASTIC);},"");
 	EXPECT_DEATH({sim->setConductances(true);},"");
 	EXPECT_DEATH({sim->setConductances(true,1, 2, 3, 4);},"");
 	EXPECT_DEATH({sim->setConductances(true, 1, 2, 3, 4, 5, 6);},"");
@@ -268,7 +277,7 @@ TEST(Interface, CARLsimState) {
 	EXPECT_DEATH({sim->reassignFixedWeights(0, wM, 4);},"");
 	EXPECT_DEATH({g2 = sim->createGroup("excit", 800, EXCITATORY_NEURON);},"");
 	EXPECT_DEATH({g2 = sim->createSpikeGeneratorGroup("input", 100, EXCITATORY_NEURON);},"");
-	EXPECT_DEATH({sim->connect(g1,g1,"random", RangeWeight(0.0,0.001,0.005), 0.1f, RangeDelay(1,20), SYN_PLASTIC);},"");
+	EXPECT_DEATH({sim->connect(g1,g1,"random", RangeWeight(0.0,0.001,0.005), 0.1f, RangeDelay(1,20), RadiusRF(-1), SYN_PLASTIC);},"");
 	//sim->connect
 	//sim->connect
 	EXPECT_DEATH({sim->setConductances(true);},"");

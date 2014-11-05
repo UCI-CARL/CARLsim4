@@ -5,7 +5,7 @@ output := *.dot *.txt *.log *.csv results/*
 
 # this must be included first because CARLSIM_SRC_DIR is set here
 # path of CARLsim root src folder (for compiling from source)
-CARLSIM_SRC_DIR ?= $(HOME)/Project/CARLsim
+CARLSIM_SRC_DIR ?= $(HOME)/CARLsim
 # set this to wherever user.mk is located
 USER_MK_PATH    ?= $(CARLSIM_SRC_DIR)
 
@@ -19,10 +19,10 @@ include $(USER_MK_PATH)/user.mk
 kernel_dir     = $(CARLSIM_SRC_DIR)/carlsim/kernel
 interface_dir  = $(CARLSIM_SRC_DIR)/carlsim/interface
 spike_mon_dir  = $(CARLSIM_SRC_DIR)/carlsim/spike_monitor
-spike_gen_dir  = $(CARLSIM_SRC_DIR)/carlsim/spike_generators
+spike_gen_dir  = $(CARLSIM_SRC_DIR)/tools/spike_generators
 server_dir     = $(CARLSIM_SRC_DIR)/carlsim/server
 # carlsim tools
-input_stim_dir = $(CARLSIM_SRC_DIR)/tools/carlsim_addons/input_stimulus
+input_stim_dir = $(CARLSIM_SRC_DIR)/tools/input_stimulus
 
 # we are compiling from lib
 CARLSIM_FLAGS += -I$(kernel_dir)/include -I$(interface_dir)/include \

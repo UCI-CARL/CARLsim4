@@ -128,10 +128,11 @@ endif
 
 # location of .h files
 vpath %.h $(kernel_dir)/include $(ex_dir)/common $(interface_dir)/include \
-	$(spike_mon_dir) $(test_dir) $(ECJ_PTI_DIR)/include $(EO_DIR)/src
+	$(spike_mon_dir) $(spike_gen_dir) $(test_dir) $(ECJ_PTI_DIR)/include \
+	$(input_stim_dir) $(EO_DIR)/src
 # location of .cpp files
 vpath %.cpp $(kernel_dir)/src $(interface_dir)/src $(test_dir) \
-$(spike_info_dir) $(ex_dir)/common/
+	$(spike_info_dir) $(spike_gen_dir) $(input_stim_dir) $(ex_dir)/common/
 
 # location of .cu files
 vpath %.cu $(kernel_dir)/src $(test_dir)

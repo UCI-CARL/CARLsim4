@@ -56,6 +56,7 @@
 #include <carlsim_definitions.h>
 #include <carlsim_datastructures.h>
 
+#include <linear_algebra.h>
 #include <poisson_rate.h>
 #include <spike_monitor.h>
 
@@ -145,13 +146,13 @@ public:
 	 * For more flexibility, see the other connect() calls.
 	 *
 	 * \STATE CONFIG
-	 * \param[in] grpId1	 ID of the pre-synaptic group
-	 * \param[in] grpId2 	 ID of the post-synaptic group
-	 * \param[in] connType 	 connection type. "random": random connectivity. "one-to-one": connect the i-th neuron in
-	 *						 pre to the i-th neuron in post. "full": connect all neurons in pre to all neurons in post.
-	 * 						 "full-no-direct": same as "full", but i-th neuron of grpId1 will not be connected to the
+	 * \param[in] grpId1     ID of the pre-synaptic group
+	 * \param[in] grpId2     ID of the post-synaptic group
+	 * \param[in] connType   connection type. "random": random connectivity. "one-to-one": connect the i-th neuron in
+	 *                       pre to the i-th neuron in post. "full": connect all neurons in pre to all neurons in post.
+	 *                       "full-no-direct": same as "full", but i-th neuron of grpId1 will not be connected to the
 	 *                       i-th neuron of grpId2.
-	 * \param[in] wt 		 a struct specifying the range of weight magnitudes (initial value and max value). Weights
+	 * \param[in] wt         a struct specifying the range of weight magnitudes (initial value and max value). Weights
 	 *                       range from 0 to maxWt, and are initialized with initWt. All weight values should be
 	 *                       non-negative (equivalent to weight *magnitudes*), even for inhibitory connections.
 	 *                       Examples:
@@ -162,12 +163,29 @@ public:
 	 *                         RangeWeight(0.0,0.1,0.2) => If pre is excitatory: all weights will be in range [0.0,0.2],
 	 *                                                     and wt.init=0.1. If pre is inhibitory: all weights will be in
 	 *                                                     range [-0.2,0.0], and wt.init=0.0.
-	 * \param[in] connProb	 connection probability
-	 * \param[in] delay 	 a struct specifying the range of delay values (ms). Synaptic delays must be greater than or
+	 * \param[in] connProb   connection probability
+	 * \param[in] delay      A struct specifying the range of delay values (ms). Synaptic delays must be greater than or
 	 *                       equal to 1 ms.
 	 *                       Examples:
 	 *                         RangeDelay(2) => all delays will be 2 (delay.min=2, delay.max=2)
 	 *                         RangeDelay(1,10) => delays will be in range [1,10]
+	 * \param[in] radRF      A struct specifying the radius of the receptive field (RF). A radius can be specified in 3
+	 *                       dimensions x, y, and z (following the topographic organization of neurons as specified by
+	 *                       Grid3D).
+	 *                       Receptive fields will be circular with radius as specified. The 3 dimensions follow the 
+	 *                       ones defined by Grid3D.
+	 *                       If the radius in one dimension is 0, no connections will be made in this dimension.
+	 *                       If the radius in one dimension is -1, then all possible connections will be made in this 
+	 *                       dimension (effectively making RF of infinite size).
+	 *                       Otherwise, if the radius is a positive real number, the RF radius will be exactly this 
+	 *                       number. Call RadiusRF with only one argument to make that radius apply to all 3 dimensions.
+	 *                       Examples:
+	 *                         * Create a 2D Gaussian RF of radius 10: RadiusRF(10, 10, 0)
+	 *                         * Create a 2D heterogeneous Gaussian RF (an ellipse) with semi-axes 10 and 5:
+	 *                           RadiusRF(10, 5, 0)
+	 *                         * Connect only the third dimension: RadiusRF(0, 0, 1)
+	 *                         * Connect all, no matter the RF (default): RadiusRF(-1, -1, -1)
+	 *                         * Don't connect anything (silly, not allowed): RadiusRF(0, 0, 0)
 	 * \param[in] synWtType  specifies whether the synapse should be of fixed value (SYN_FIXED) or plastic (SYN_PLASTIC)
 	 * \param[in] mulSynFast a multiplication factor to be applied to the fast synaptic current (AMPA in the case of
 	 *                       excitatory, and GABAa in the case of inhibitory connections). Default: 1.0
@@ -176,7 +194,8 @@ public:
 	 * \returns a unique ID associated with the newly created connection
 	 */
 	short int connect(int grpId1, int grpId2, const std::string& connType, RangeWeight wt, float connProb,
-		RangeDelay delay, bool synWtType=SYN_FIXED, float mulSynFast=1.0f, float mulSynSlow=1.0f);
+		RangeDelay delay=RangeDelay(1), RadiusRF radRF=RadiusRF(-1), bool synWtType=SYN_FIXED, float mulSynFast=1.0f, 
+		float mulSynSlow=1.0f);
 
 	/*!
 	 * \brief Shortcut to make connections with custom connectivity profile but omit scaling factors for synaptic
@@ -799,17 +818,44 @@ public:
 	/*!
 	 * \brief returns the 3D location a neuron codes for
 	 *
-	 * This function returns the (x,y,z) location that a neuron with ID neurID codes for.
+	 * This function returns the (x,y,z) location that a neuron with ID neurID (global) codes for.
+	 * Note that neurID is global; that is, the first neuron in the group does not necessarily have ID 0.
+	 *
 	 * The location is determined by the actual neuron ID (the first neuron in the group coding for the origin (0,0,0),
 	 * and by the dimensions of the 3D grid the group is allocated on (integer coordinates). Neuron numbers are
 	 * assigned to location in order; where the first dimension specifies the width, the second dimension is height,
 	 * and the third dimension is depth.
+	 *
 	 * For more information see CARLsim::createGroup and the Grid3D struct.
+ 	 * See also CARLsim::getNeuronLocation3D(int grpId, int relNeurId).
+	 *
 	 * \STATE CONFIG, SETUP, EXE
 	 * \param[in] neurId the neuron ID for which the 3D location should be returned
 	 * \returns the 3D location a neuron codes for as a Point3D struct
 	 */
 	Point3D getNeuronLocation3D(int neurId);
+
+	/*!
+	 * \brief returns the 3D location a neuron codes for
+	 *
+	 * This function returns the (x,y,z) location that a neuron with ID  relNeurId (relative to the group) codes for.
+	 * Note that neurID is relative to the ID of the first neuron in the group; that is, the first neuron in the group
+	 * has relNeurId 0, the second one has relNeurId 1, etc.
+	 * In other words: relNeurId = neurId - sim.getGroupStartNeuronId();
+	 *
+	 * The location is determined by the actual neuron ID (the first neuron in the group coding for the origin (0,0,0),
+	 * and by the dimensions of the 3D grid the group is allocated on (integer coordinates). Neuron numbers are
+	 * assigned to location in order; where the first dimension specifies the width, the second dimension is height,
+	 * and the third dimension is depth.
+	 *
+	 * For more information see CARLsim::createGroup and the Grid3D struct.
+	 * See also CARLsim::getNeuronLocation3D(int neurId).
+	 *
+	 * \STATE CONFIG, SETUP, EXE
+	 * \param[in] neurId the neuron ID for which the 3D location should be returned
+	 * \returns the 3D location a neuron codes for as a Point3D struct
+	 */
+	Point3D getNeuronLocation3D(int grpId, int relNeurId);
 
 	/*!
 	 * \brief Returns the number of network configrations
@@ -834,7 +880,6 @@ public:
 	/*!
 	 * \brief returns the number of connections associated with a connection ID
 	 *
-	 * \Note This number might change throughout CARLsim state CONFIG, up to calling CARLsim::setupNetwork).
 	 * \TODO finish docu
 	 * \STATE SETUP, EXECUTION
 	 */
@@ -845,7 +890,7 @@ public:
 	 *
 	 * \Note This number might change throughout CARLsim state CONFIG, up to calling CARLsim::setupNetwork).
 	 * \TODO finish docu
-	 * \STATE SETUP, EXECUTION
+	 * \STATE CONFIG, SETUP, EXECUTION
 	 */
 	int getNumGroups();
 
@@ -854,15 +899,69 @@ public:
 	 *
 	 * \Note This number might change throughout CARLsim state CONFIG, up to calling CARLsim::setupNetwork).
 	 * \TODO finish docu
-	 * \STATE SETUP, EXECUTION
+	 * \STATE CONFIG, SETUP, EXECUTION
 	 */
 	int getNumNeurons();
+
+	/*!
+	 * \brief returns the total number of regular (Izhikevich) neurons
+	 *
+	 * \Note This number might change throughout CARLsim state CONFIG, up to calling CARLsim::setupNetwork).
+	 * \TODO finish docu
+	 * \STATE CONFIG, SETUP, EXECUTION
+	 */
+	int getNumNeuronsReg();
+
+	/*!
+	 * \brief returns the total number of regular (Izhikevich) excitatory neurons
+	 *
+	 * \Note This number might change throughout CARLsim state CONFIG, up to calling CARLsim::setupNetwork).
+	 * \TODO finish docu
+	 * \STATE CONFIG, SETUP, EXECUTION
+	 */
+	int getNumNeuronsRegExc();
+
+	/*!
+	 * \brief returns the total number of regular (Izhikevich) inhibitory neurons
+	 *
+	 * \Note This number might change throughout CARLsim state CONFIG, up to calling CARLsim::setupNetwork).
+	 * \TODO finish docu
+	 * \STATE CONFIG, SETUP, EXECUTION
+	 */
+	int getNumNeuronsRegInh();
+
+	/*!
+	 * \brief returns the total number of spike generator neurons
+	 *
+	 * \Note This number might change throughout CARLsim state CONFIG, up to calling CARLsim::setupNetwork).
+	 * \TODO finish docu
+	 * \STATE CONFIG, SETUP, EXECUTION
+	 */
+	int getNumNeuronsGen();
+
+	/*!
+	 * \brief returns the total number of excitatory spike generator neurons
+	 *
+	 * \Note This number might change throughout CARLsim state CONFIG, up to calling CARLsim::setupNetwork).
+	 * \TODO finish docu
+	 * \STATE CONFIG, SETUP, EXECUTION
+	 */
+	int getNumNeuronsGenExc();
+
+	/*!
+	 * \brief returns the total number of inhibitory spike generator neurons
+	 *
+	 * \Note This number might change throughout CARLsim state CONFIG, up to calling CARLsim::setupNetwork).
+	 * \TODO finish docu
+	 * \STATE CONFIG, SETUP, EXECUTION
+	 */
+	int getNumNeuronsGenInh();
 
 	/*!
 	 * \brief returns the total number of allocated pre-synaptic connections in the network
 	 *
 	 * \TODO finish docu
-	 * \STATE SETUP, EXECUTION
+	 * \STATE CONFIG, SETUP, EXECUTION
 	 */
 	int getNumPreSynapses();
 
@@ -870,7 +969,7 @@ public:
 	 * \brief returns the total number of allocated post-synaptic connections in the network
 	 *
 	 * \TODO finish docu
-	 * \STATE SETUP, EXECUTION
+	 * \STATE CONFIG, SETUP, EXECUTION
 	 */
 	int getNumPostSynapses();
 
@@ -1108,11 +1207,11 @@ private:
 
 	std::vector<int> grpIds_;		//!< a list of all created group IDs
 
-	bool hasRunNetwork_;			//!< flag to inform that network has been run
 	bool hasSetHomeoALL_;			//!< informs that homeostasis have been set for ALL groups (can't add more groups)
 	bool hasSetHomeoBaseFiringALL_;	//!< informs that base firing has been set for ALL groups (can't add more groups)
 	bool hasSetSTDPALL_; 			//!< informs that STDP have been set for ALL groups (can't add more groups)
-	bool hasSetSTPALL_; 			//!< informsthat STP have been set for ALL groups (can't add more groups)
+	bool hasSetSTPALL_; 			//!< informs that STP have been set for ALL groups (can't add more groups)
+	bool hasSetConductances_;		//!< informs that setConductances has been called
 	carlsimState_t carlsimState_;	//!< the current state of carlsim
 
 	int def_tdAMPA_;				//!< default value for AMPA decay (ms)

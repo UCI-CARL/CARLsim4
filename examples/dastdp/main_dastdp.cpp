@@ -120,9 +120,9 @@ int main()
 
 	gda = sim.createSpikeGeneratorGroup("DA neurons", NUM_DA_NEURON, DOPAMINERGIC_NEURON);
 
-	sim.connect(gin,g1,"full", RangeWeight(0.0, 1.0f/100, 10.0f/100), 1.0f, RangeDelay(1,20), SYN_PLASTIC);
-	sim.connect(g1noise, g1, "one-to-one", RangeWeight(40.0f/100), 1.0f, RangeDelay(1), SYN_FIXED);
-	sim.connect(gda, g1, "full", RangeWeight(0.0), 1.0f, RangeDelay(1), SYN_FIXED);
+	sim.connect(gin, g1, "full", RangeWeight(0.0, 1.0f/100, 10.0f/100), 1.0f, RangeDelay(1,20), RadiusRF(-1), SYN_PLASTIC);
+	sim.connect(g1noise, g1, "one-to-one", RangeWeight(40.0f/100), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
+	sim.connect(gda, g1, "full", RangeWeight(0.0), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
 
 	// enable COBA, set up STDP, enable dopamine-modulated STDP
 	sim.setConductances(true,5,150,6,150);

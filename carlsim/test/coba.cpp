@@ -40,18 +40,21 @@ TEST(COBA, synRiseTime) {
 			int trGABAb = rand()%100 + 1;
 			int tdGABAb = rand()%100 + trGABAb + 1; // make sure it's larger than trGABAb
 
+			int delay = 1;
+			float radRF = -1.0f;
+
 			sim = new CpuSNN(name,mode?GPU_MODE:CPU_MODE,SILENT,0,nConfig,42);
             Grid3D neur(1);
             Grid3D neur2(1);
 			int g0=sim->createSpikeGeneratorGroup("inputExc", neur, EXCITATORY_NEURON, ALL);
 			int g1=sim->createGroup("excit", neur2, EXCITATORY_NEURON, ALL);
 			sim->setNeuronParameters(g1, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f, ALL);
-			sim->connect(g0,g1,"full",0.5f,0.5f,1.0f,1,1,0.0f,1.0f,SYN_FIXED);
+			sim->connect(g0,g1,"full",0.5f,0.5f,1.0f,delay,delay,radRF,radRF,radRF,0.0f,1.0f,SYN_FIXED);
 
 			int g2=sim->createSpikeGeneratorGroup("inputInh", neur, INHIBITORY_NEURON, ALL);
 			int g3=sim->createGroup("inhib", neur, INHIBITORY_NEURON, ALL);
 			sim->setNeuronParameters(g3, 0.1f,  0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 2.0f, 0.0f, ALL);
-			sim->connect(g2,g3,"full",-0.5f,-0.5f,1.0f,1,1,0.0f,1.0f,SYN_FIXED);
+			sim->connect(g2,g3,"full",-0.5f,-0.5f,1.0f,delay,delay,radRF,radRF,radRF,0.0f,1.0f,SYN_FIXED);
 
 			sim->setConductances(true,tdAMPA,trNMDA,tdNMDA,tdGABAa,trGABAb,tdGABAb,ALL);
 
@@ -156,10 +159,10 @@ TEST(COBA, disableSynReceptors) {
 
 			sim->setConductances(true, 5, 0, 150, 6, 0, 150, ALL);
 
-			sim->connect(g0, grps[0], "full", 0.001f, 0.001f, 1.0f, 1, 1, 1.0, 0.0, SYN_FIXED);
-			sim->connect(g0, grps[1], "full", 0.0005f, 0.0005f, 1.0f, 1, 1, 0.0, 1.0, SYN_FIXED);
-			sim->connect(g1, grps[2], "full", -0.001f, -0.001f, 1.0f, 1, 1, 1.0, 0.0, SYN_FIXED);
-			sim->connect(g1, grps[3], "full", -0.0005f, -0.0005f, 1.0f, 1, 1, 0.0, 1.0, SYN_FIXED);
+			sim->connect(g0, grps[0], "full", 0.001f, 0.001f, 1.0f, 1, 1, -1.0, -1.0, -1.0, 1.0, 0.0, SYN_FIXED);
+			sim->connect(g0, grps[1], "full", 0.0005f, 0.0005f, 1.0f, 1, 1, -1.0, -1.0, -1.0, 0.0, 1.0, SYN_FIXED);
+			sim->connect(g1, grps[2], "full", -0.001f, -0.001f, 1.0f, 1, 1, -1.0, -1.0, -1.0, 1.0, 0.0, SYN_FIXED);
+			sim->connect(g1, grps[3], "full", -0.0005f, -0.0005f, 1.0f, 1, 1, -1.0, -1.0, -1.0, 0.0, 1.0, SYN_FIXED);
 
 			spkGen1 = new PeriodicSpikeGeneratorCore(rate, spikeAtZero);
 			spkGen2 = new PeriodicSpikeGeneratorCore(rate, spikeAtZero);
@@ -239,7 +242,7 @@ TEST(COBA, firingRateCPUvsGPU) {
 	float wt = rand()*1.0/RAND_MAX*0.2f + 0.05f;
 	float inputRate = rand() % 45 + 5.0f;
 	int runTimeMs = rand() % 800 + 200;
-//		fprintf(stderr,"runTime=%d, delay=%d, wt=%f, input=%f\n",runTimeMs,delay,wt,inputRate);
+//	fprintf(stderr,"runTime=%d, delay=%d, wt=%f, input=%f\n",runTimeMs,delay,wt,inputRate);
 
 	for (int isGPUmode=0; isGPUmode<=1; isGPUmode++) {
 		sim = new CARLsim("COBA.firingRateCPUvsGPU",isGPUmode?GPU_MODE:CPU_MODE,SILENT,0,1,42);
@@ -248,7 +251,7 @@ TEST(COBA, firingRateCPUvsGPU) {
 		sim->setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f); // RS
 		sim->setConductances(true); // make COBA explicit
 
-		sim->connect(g0, g1, "full", RangeWeight(wt), 1.0f, RangeDelay(1,delay), SYN_FIXED);
+		sim->connect(g0, g1, "full", RangeWeight(wt), 1.0f, RangeDelay(1,delay));
 
 		bool spikeAtZero = true;
 		spkGenG0 = new PeriodicSpikeGenerator(inputRate,spikeAtZero);

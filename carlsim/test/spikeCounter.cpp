@@ -79,7 +79,7 @@ TEST(SpikeCounter, SpikeCntVsData) {
 		int g1=sim->createGroup("excit", 1, EXCITATORY_NEURON,ALL);
 		sim->setNeuronParameters(g1, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f, ALL);
 
-		sim->connect(g0,g1,"full",RangeWeight(0.0,0.001,0.001),1.0f,RangeDelay(1),SYN_FIXED,1.0f,1.0f);
+		sim->connect(g0,g1,"full",RangeWeight(0.0,0.001,0.001),1.0f);
 		sim->setConductances(true,5,0,150,6,0,150,ALL);
 
 		sim->setSpikeCounter(g1,recordDur,ALL);
@@ -156,7 +156,7 @@ TEST(SpikeCounter, SpikeCntvsSpikeMon) {
 			int g1=sim->createGroup("excit", 10, EXCITATORY_NEURON,ALL);
 			sim->setNeuronParameters(g1, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f, ALL);
 
-			sim->connect(g0,g1,"full",0.001f,0.001f,1.0f,1,1,1.0f,1.0f,SYN_FIXED);
+			sim->connect(g0,g1,"full",0.001f,0.001f,1.0f,1,1,-1.0,-1.0,-1.0,1.0f,1.0f,SYN_FIXED);
 			sim->setConductances(true,5,0,150,6,0,150,ALL);
 
 			sim->setSpikeCounter(g1,-1,ALL);
@@ -221,7 +221,7 @@ TEST(SpikeCounter, CPUvsGPU) {
 			int g1=sim->createGroup("excit", 1, EXCITATORY_NEURON,ALL);
 			sim->setNeuronParameters(g1, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f, ALL);
 
-			sim->connect(g0,g1,"full",0.001f,0.001f,1.0f,1,1,1.0f,1.0f,SYN_FIXED);
+			sim->connect(g0,g1,"full",0.001f,0.001f,1.0f,1,1,-1.0,-1.0,-1.0,1.0f,1.0f,SYN_FIXED);
 			sim->setConductances(true,5,0,150,6,0,150,ALL);
 
 			sim->setSpikeCounter(g1,recordDur,ALL);

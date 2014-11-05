@@ -111,20 +111,20 @@ inline bool isInhibitoryNeuron (unsigned int& nid, unsigned int& numNInhPois, un
 // Additionally, every message gets printed to some log file fpLog_. This is different from fpDeb_ for
 // the case in which you want the two to be different (e.g., developer mode, in which you would like to
 // see all debug info (stdout) but also have it saved to a file
-#define CARLSIM_ERROR(formatc, ...) {	CARLSIM_ERROR_PRINT(fpErr_,formatc,##__VA_ARGS__); \
-										CARLSIM_DEBUG_PRINT(fpLog_,"ERROR",formatc,##__VA_ARGS__); }
-#define CARLSIM_WARN(formatc, ...) {	CARLSIM_WARN_PRINT(fpErr_,formatc,##__VA_ARGS__); \
-										CARLSIM_DEBUG_PRINT(fpLog_,"WARN",formatc,##__VA_ARGS__); }
-#define CARLSIM_INFO(formatc, ...) {	CARLSIM_INFO_PRINT(fpInf_,formatc,##__VA_ARGS__); \
-										CARLSIM_DEBUG_PRINT(fpLog_,"INFO",formatc,##__VA_ARGS__); }
-#define CARLSIM_DEBUG(formatc, ...) {	CARLSIM_DEBUG_PRINT(fpDeb_,"DEBUG",formatc,##__VA_ARGS__); \
-										CARLSIM_DEBUG_PRINT(fpLog_,"DEBUG",formatc,##__VA_ARGS__); }
+#define KERNEL_ERROR(formatc, ...) {	KERNEL_ERROR_PRINT(fpErr_,formatc,##__VA_ARGS__); \
+										KERNEL_DEBUG_PRINT(fpLog_,"ERROR",formatc,##__VA_ARGS__); }
+#define KERNEL_WARN(formatc, ...) {		KERNEL_WARN_PRINT(fpErr_,formatc,##__VA_ARGS__); \
+										KERNEL_DEBUG_PRINT(fpLog_,"WARN",formatc,##__VA_ARGS__); }
+#define KERNEL_INFO(formatc, ...) {		KERNEL_INFO_PRINT(fpInf_,formatc,##__VA_ARGS__); \
+										KERNEL_DEBUG_PRINT(fpLog_,"INFO",formatc,##__VA_ARGS__); }
+#define KERNEL_DEBUG(formatc, ...) {	KERNEL_DEBUG_PRINT(fpDeb_,"DEBUG",formatc,##__VA_ARGS__); \
+										KERNEL_DEBUG_PRINT(fpLog_,"DEBUG",formatc,##__VA_ARGS__); }
 
 // cast to FILE* in case we're getting a const FILE* in
-#define CARLSIM_ERROR_PRINT(fp, formatc, ...) fprintf((FILE*)fp,"\033[31;1m[ERROR %s:%d] " formatc "\033[0m \n",__FILE__,__LINE__,##__VA_ARGS__)
-#define CARLSIM_WARN_PRINT(fp, formatc, ...) fprintf((FILE*)fp,"\033[33;1m[WARNING %s:%d] " formatc "\033[0m \n",__FILE__,__LINE__,##__VA_ARGS__)
-#define CARLSIM_INFO_PRINT(fp, formatc, ...) fprintf((FILE*)fp,formatc "\n",##__VA_ARGS__)
-#define CARLSIM_DEBUG_PRINT(fp, type, formatc, ...) fprintf((FILE*)fp,"[" type " %s:%d] " formatc "\n",__FILE__,__LINE__,##__VA_ARGS__)
+#define KERNEL_ERROR_PRINT(fp, formatc, ...) fprintf((FILE*)fp,"\033[31;1m[ERROR %s:%d] " formatc "\033[0m \n",__FILE__,__LINE__,##__VA_ARGS__)
+#define KERNEL_WARN_PRINT(fp, formatc, ...) fprintf((FILE*)fp,"\033[33;1m[WARNING %s:%d] " formatc "\033[0m \n",__FILE__,__LINE__,##__VA_ARGS__)
+#define KERNEL_INFO_PRINT(fp, formatc, ...) fprintf((FILE*)fp,formatc "\n",##__VA_ARGS__)
+#define KERNEL_DEBUG_PRINT(fp, type, formatc, ...) fprintf((FILE*)fp,"[" type " %s:%d] " formatc "\n",__FILE__,__LINE__,##__VA_ARGS__)
 
 										
 

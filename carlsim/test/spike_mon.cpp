@@ -114,11 +114,14 @@ TEST(SPIKEMON, interfaceDeath) {
 	sim->setNeuronParameters(g1, 0.02, 0.2, -65.0, 8.0);
 	sim->setConductances(true);
 
-	sim->connect(g0,g1,"random", RangeWeight(0.01), 0.5f, RangeDelay(1), SYN_FIXED);
+	sim->connect(g0,g1,"random", RangeWeight(0.01), 0.5f);
 
+	// call setSpikeMonitor again on group, should fail
+	EXPECT_DEATH({sim->setSpikeMonitor(g0);},"");
+
+	// set up network and test all API calls that are not valid in certain modes
 	sim->setupNetwork();
 
-	// test all APIS that cannot be called in certain modes
 	// \TODO SpikeMonitor mode COUNT not yet implemented
 	EXPECT_DEATH(spkMon->setMode(COUNT),"");
 	// after mode is implemented, make sure you cannot call getSpikeVector2D in COUNT mode, etc.
@@ -158,7 +161,7 @@ TEST(SPIKEMON, persistentMode) {
 	sim->setNeuronParameters(g1, 0.02, 0.2, -65.0, 8.0);
 	sim->setConductances(true);
 
-	sim->connect(g0,g1,"random", RangeWeight(0.01), 0.5f, RangeDelay(1), SYN_FIXED);
+	sim->connect(g0,g1,"random", RangeWeight(0.01), 0.5f);
 
 	sim->setupNetwork();
 
@@ -230,9 +233,9 @@ TEST(SPIKEMON, clear){
 
 		// use full because random might give us a network that does not spike (depending on the random seed),
 		// leading to the EXPECTs below to fail
-		sim->connect(inputGroup,g1,"full", RangeWeight(initWeight), 1.0f, RangeDelay(1), SYN_FIXED);
-		sim->connect(inputGroup,g2,"full", RangeWeight(initWeight), 1.0f, RangeDelay(1), SYN_FIXED);
-		sim->connect(g1,g2,"full", RangeWeight(initWeight), 1.0f, RangeDelay(1), SYN_FIXED);
+		sim->connect(inputGroup,g1,"full", RangeWeight(initWeight), 1.0f);
+		sim->connect(inputGroup,g2,"full", RangeWeight(initWeight), 1.0f);
+		sim->connect(g1,g2,"full", RangeWeight(initWeight), 1.0f);
 		SpikeMonitor* spikeMonG1 = sim->setSpikeMonitor(g1);
 
 		sim->setupNetwork();
@@ -290,7 +293,7 @@ TEST(SPIKEMON, spikeTimes) {
 		int g1 = sim->createGroup("g1", GRP_SIZE, EXCITATORY_NEURON, ALL);
 		sim->setNeuronParameters(g1, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f, ALL);
 		sim->setConductances(true,COND_tAMPA,COND_tNMDA,COND_tGABAa,COND_tGABAb);
-		sim->connect(g0,g1,"random", RangeWeight(0.27f), 1.0f, RangeDelay(1), SYN_FIXED);
+		sim->connect(g0,g1,"random", RangeWeight(0.27f), 1.0f);
 
 		// use periodic spike generator to know the exact spike times
 		PeriodicSpikeGenerator* spkGen = new PeriodicSpikeGenerator(rate);
@@ -371,7 +374,7 @@ TEST(SPIKEMON, getGroupFiringRate){
 		int g1 = sim->createGroup("g1", GRP_SIZE, EXCITATORY_NEURON, ALL);
 		sim->setConductances(true,COND_tAMPA,COND_tNMDA,COND_tGABAa,COND_tGABAb);
 		sim->setNeuronParameters(g1, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f, ALL);
-		sim->connect(g0,g1,"random", RangeWeight(0.27f), 1.0f, RangeDelay(1), SYN_FIXED);
+		sim->connect(g0,g1,"random", RangeWeight(0.27f), 1.0f);
 
 		PeriodicSpikeGenerator* spkGen = new PeriodicSpikeGenerator(rate);
 		sim->setSpikeGenerator(g0, spkGen);
@@ -459,7 +462,7 @@ TEST(SPIKEMON, getMaxMinNeuronFiringRate){
 		
 		sim->setConductances(true,COND_tAMPA,COND_tNMDA,COND_tGABAa,COND_tGABAb);
 		sim->setNeuronParameters(g1, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f, ALL);
-		sim->connect(inputGroup,g1,"random", RangeWeight(0.27f), 0.2f, RangeDelay(1), SYN_FIXED);
+		sim->connect(inputGroup,g1,"random", RangeWeight(0.27f), 0.2f);
 		sim->setupNetwork();
 
 		// input

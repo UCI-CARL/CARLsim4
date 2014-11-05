@@ -1,7 +1,7 @@
 #include <spike_monitor_core.h>
 
 #include <snn.h>				// CARLsim private implementation
-#include <snn_definitions.h>	// CARLSIM_ERROR, CARLSIM_INFO, ...
+#include <snn_definitions.h>	// KERNEL_ERROR, KERNEL_INFO, ...
 
 #include <algorithm>			// std::sort
 
@@ -20,6 +20,10 @@ SpikeMonitorCore::SpikeMonitorCore(CpuSNN* snn, int monitorId, int grpId) {
 	mode_ = AER;
 	persistentData_ = false;
 
+	needToWriteFileHeader_ = true;
+	spikeFileSignature_ = 206661989;
+	spikeFileVersion_ = 0.2f;
+
 	// defer all unsafe operations to init function
 	init();
 }
@@ -35,7 +39,7 @@ void SpikeMonitorCore::init() {
 
 	clear();
 
-	// use CARLSIM_{ERROR|WARNING|etc} typesetting (const FILE*)
+	// use KERNEL_{ERROR|WARNING|etc} typesetting (const FILE*)
 	fpInf_ = snn_->getLogFpInf();
 	fpErr_ = snn_->getLogFpErr();
 	fpDeb_ = snn_->getLogFpDeb();
@@ -208,7 +212,7 @@ void SpikeMonitorCore::print(bool printSpikeTimes) {
 	// how many spike times to display per row
 	int dispSpkTimPerRow = 7;
 
-	CARLSIM_INFO("(t=%.3fs) SpikeMonitor for group %s(%d) has %d spikes in %ld ms (%.2f +/- %.2f Hz)",
+	KERNEL_INFO("(t=%.3fs) SpikeMonitor for group %s(%d) has %d spikes in %ld ms (%.2f +/- %.2f Hz)",
 		(float)(snn_->getSimTime()/1000.0),
 		snn_->getGroupName(grpId_,0).c_str(),
 		grpId_,
@@ -219,8 +223,8 @@ void SpikeMonitorCore::print(bool printSpikeTimes) {
 
 	if (printSpikeTimes && mode_==AER) {
 		// spike times only available in AER mode
-		CARLSIM_INFO("| Neur ID | Rate (Hz) | Spike Times (ms)");
-		CARLSIM_INFO("|- - - - -|- - - - - -|- - - - - - - - - - - - - - - - -- - - - - - - - - - - - -")
+		KERNEL_INFO("| Neur ID | Rate (Hz) | Spike Times (ms)");
+		KERNEL_INFO("|- - - - -|- - - - - -|- - - - - - - - - - - - - - - - -- - - - - - - - - - - - -")
 
 		for (int i=0; i<nNeurons_; i++) {
 			char buffer[200];
@@ -239,11 +243,11 @@ void SpikeMonitorCore::print(bool printSpikeTimes) {
 #endif
 				strcat(buffer, times);
 				if (j%dispSpkTimPerRow == dispSpkTimPerRow-1 && j<nSpk-1) {
-					CARLSIM_INFO("%s",buffer);
+					KERNEL_INFO("%s",buffer);
 					strcpy(buffer,"|         |           | ");
 				}
 			}
-			CARLSIM_INFO("%s",buffer);
+			KERNEL_INFO("%s",buffer);
 		}
 	}
 }
@@ -306,7 +310,19 @@ void SpikeMonitorCore::stopRecording() {
 void SpikeMonitorCore::setSpikeFileId(FILE* spikeFileId) {
 	assert(!isRecording());
 
+	// \TODO consider the case where this function is called more than once
+	if (spikeFileId_!=NULL)
+		KERNEL_ERROR("SpikeMonitorCore: setSpikeFileId has already been called.");
+
 	spikeFileId_=spikeFileId;
+
+	if (spikeFileId_==NULL)
+		needToWriteFileHeader_ = false;
+	else {
+		// for now: file pointer has changed, so we need to write header (again)
+		needToWriteFileHeader_ = true;
+		writeSpikeFileHeader();
+	}
 }
 
 
@@ -324,7 +340,7 @@ void SpikeMonitorCore::calculateFiringRates() {
 
 	// this really shouldn't happen at this stage, but if recording time is zero, return all zeros
 	if (totalTime_==0) {
-		CARLSIM_WARN("SpikeMonitorCore:: calculateFiringRates has 0 totalTime");
+		KERNEL_WARN("SpikeMonitorCore: calculateFiringRates has 0 totalTime");
 		return;
 	}
 
@@ -350,4 +366,36 @@ void SpikeMonitorCore::sortFiringRates() {
 	std::sort(firingRatesSorted_.begin(),firingRatesSorted_.end());
 
 	needToSortFiringRates_ = false;
+}
+
+// write the header section of the spike file
+// this should be done once per file, and should be the very first entries in the file
+void SpikeMonitorCore::writeSpikeFileHeader() {
+	if (!needToWriteFileHeader_)
+		return;
+
+	// write file signature
+	if (!fwrite(&spikeFileSignature_,sizeof(int),1,spikeFileId_))
+		KERNEL_ERROR("SpikeMonitorCore: writeSpikeFileHeader has fwrite error");
+
+	// write version number
+	if (!fwrite(&spikeFileVersion_,sizeof(float),1,spikeFileId_))
+		KERNEL_ERROR("SpikeMonitorCore: writeSpikeFileHeader has fwrite error");
+
+	// write grid dimensions
+	Grid3D grid = snn_->getGroupGrid3D(grpId_);
+	int tmpInt = grid.x;
+	if (!fwrite(&tmpInt,sizeof(int),1,spikeFileId_))
+		KERNEL_ERROR("SpikeMonitorCore: writeSpikeFileHeader has fwrite error");
+
+	tmpInt = grid.y;
+	if (!fwrite(&tmpInt,sizeof(int),1,spikeFileId_))
+		KERNEL_ERROR("SpikeMonitorCore: writeSpikeFileHeader has fwrite error");
+
+	tmpInt = grid.z;
+	if (!fwrite(&tmpInt,sizeof(int),1,spikeFileId_))
+		KERNEL_ERROR("SpikeMonitorCore: writeSpikeFileHeader has fwrite error");
+
+
+	needToWriteFileHeader_ = false;
 }
