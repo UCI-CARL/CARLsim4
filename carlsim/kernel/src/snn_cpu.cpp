@@ -587,7 +587,7 @@ void CpuSNN::setNeuromodulator(int grpId, float baseDP, float tauDP, float base5
 }
 
 // set ESTDP params
-void CpuSNN::setESTDP(int grpId, bool isSet, stdpType_t type, float alphaLTP, float tauLTP, float alphaLTD, float tauLTD, int configId) {
+void CpuSNN::setESTDP(int grpId, bool isSet, stdpType_t type, stdpCurve_t curve, float alphaLTP, float tauLTP, float alphaLTD, float tauLTD, int configId) {
 	assert(grpId>=-1); assert(configId>=-1);
 	if (isSet) {
 		assert(type!=UNKNOWN_STDP);
@@ -596,15 +596,15 @@ void CpuSNN::setESTDP(int grpId, bool isSet, stdpType_t type, float alphaLTP, fl
 
 	if (grpId==ALL && configId==ALL) { // shortcut for all groups & configs
 		for(int g=0; g < numGrp; g++)
-			setESTDP(g, isSet, type, alphaLTP, tauLTP, alphaLTD, tauLTD, 0);
+			setESTDP(g, isSet, type, curve, alphaLTP, tauLTP, alphaLTD, tauLTD, 0);
 	} else if (grpId == ALL) { // shortcut for all groups
 		for(int grpId1=0; grpId1 < numGrp; grpId1 += nConfig_) {
 			int g = getGroupId(grpId1, configId);
-			setESTDP(g, isSet, type, alphaLTP, tauLTP, alphaLTD, tauLTD, configId);
+			setESTDP(g, isSet, type, curve, alphaLTP, tauLTP, alphaLTD, tauLTD, configId);
 		}
 	} else if (configId == ALL) { // shortcut for all configs
 		for(int c=0; c < nConfig_; c++)
-			setESTDP(grpId, isSet, type, alphaLTP, tauLTP, alphaLTD, tauLTD, c);
+			setESTDP(grpId, isSet, type, curve, alphaLTP, tauLTP, alphaLTD, tauLTD, c);
 	} else {
 		// set STDP for a given group and configId
 		int cGrpId = getGroupId(grpId, configId);
@@ -615,6 +615,7 @@ void CpuSNN::setESTDP(int grpId, bool isSet, stdpType_t type, float alphaLTP, fl
 		grp_Info[cGrpId].TAU_LTD_INV_EXC	= 1.0f/tauLTD;
 		// set flags for STDP function
 		grp_Info[cGrpId].WithESTDPtype	= type;
+		grp_Info[cGrpId].WithESTDPcurve = curve;
 		grp_Info[cGrpId].WithESTDP		= isSet;
 		grp_Info[cGrpId].WithSTDP		|= grp_Info[cGrpId].WithESTDP;
 		sim_with_stdp					|= grp_Info[cGrpId].WithSTDP;
@@ -626,7 +627,7 @@ void CpuSNN::setESTDP(int grpId, bool isSet, stdpType_t type, float alphaLTP, fl
 }
 
 // set ISTDP params
-void CpuSNN::setISTDP(int grpId, bool isSet, stdpType_t type, float betaLTP, float betaLTD, float lamda, float delta, int configId) {
+void CpuSNN::setISTDP(int grpId, bool isSet, stdpType_t type, stdpCurve_t curve, float betaLTP, float betaLTD, float lamda, float delta, int configId) {
 	assert(grpId>=-1); assert(configId>=-1);
 	if (isSet) {
 		assert(type!=UNKNOWN_STDP);
@@ -635,15 +636,15 @@ void CpuSNN::setISTDP(int grpId, bool isSet, stdpType_t type, float betaLTP, flo
 
 	if (grpId==ALL && configId==ALL) { // shortcut for all groups & configs
 		for(int g=0; g < numGrp; g++)
-			setISTDP(g, isSet, type, betaLTP, betaLTD, lamda, delta, 0);
+			setISTDP(g, isSet, type, curve, betaLTP, betaLTD, lamda, delta, 0);
 	} else if (grpId == ALL) { // shortcut for all groups
 		for(int grpId1=0; grpId1 < numGrp; grpId1 += nConfig_) {
 			int g = getGroupId(grpId1, configId);
-			setISTDP(g, isSet, type, betaLTP, betaLTD, lamda, delta, configId);
+			setISTDP(g, isSet, type, curve, betaLTP, betaLTD, lamda, delta, configId);
 		}
 	} else if (configId == ALL) { // shortcut for all configs
 		for(int c=0; c < nConfig_; c++)
-			setISTDP(grpId, isSet, type, betaLTP, betaLTD, lamda, delta, c);
+			setISTDP(grpId, isSet, type, curve, betaLTP, betaLTD, lamda, delta, c);
 	} else {
 		// set STDP for a given group and configId
 		int cGrpId = getGroupId(grpId, configId);
@@ -653,8 +654,8 @@ void CpuSNN::setISTDP(int grpId, bool isSet, stdpType_t type, float betaLTP, flo
 		grp_Info[cGrpId].LAMDA			= lamda;
 		grp_Info[cGrpId].DELTA			= delta;
 		// set flags for STDP function
-		//FIXME: separate STDPType to ESTDPType and ISTDPType
 		grp_Info[cGrpId].WithISTDPtype	= type;
+		grp_Info[cGrpId].WithISTDPcurve = curve;
 		grp_Info[cGrpId].WithISTDP		= isSet;
 		grp_Info[cGrpId].WithSTDP		|= grp_Info[cGrpId].WithISTDP;
 		sim_with_stdp					|= grp_Info[cGrpId].WithSTDP;
@@ -2106,6 +2107,8 @@ void CpuSNN::CpuSNNinit() {
 		grp_Info[i].WithISTDP = false;
 		grp_Info[i].WithESTDPtype = UNKNOWN_STDP;
 		grp_Info[i].WithISTDPtype = UNKNOWN_STDP;
+		grp_Info[i].WithESTDPcurve = UNKNOWN_CURVE;
+		grp_Info[i].WithISTDPcurve = UNKNOWN_CURVE;
 		grp_Info[i].FixedInputWts = true; // Default is true. This value changed to false
 		// if any incoming  connections are plastic
 		grp_Info[i].isSpikeGenerator = false;

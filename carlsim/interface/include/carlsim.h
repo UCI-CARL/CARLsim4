@@ -460,13 +460,12 @@ public:
 	void setESTDP(int grpId, bool isSet, int configId=ALL);
 
 	/*!
-	 * \brief Sets E-STDP params for a group, custom
+	 * \brief Sets E-STDP mode with hebbian curve
 	 *
 	 * \TODO finish docu
 	 * \STATE CONFIG
 	 */
-	void setESTDP(int grpId, bool isSet, stdpType_t type, float alphaLTP, float tauLTP, float alphaLTD, float tauLTD,
-		int configId=ALL);
+	void setESTDP(int grupId, bool isSet, stdpType_t type, HebbianCurve curve, int configId=ALL);
 
 	/*!
 	 * \brief Sets default I-STDP mode and params
@@ -477,13 +476,12 @@ public:
 	void setISTDP(int grpId, bool isSet, int configId=ALL);
 
 	/*!
-	 * \brief Sets I-STDP params for a group, custom
+	 * \brief Sets default I-STDP mode with constant symmetric curve
 	 *
 	 * \TODO finish docu
 	 * \STATE CONFIG
 	 */
-	void setISTDP(int grpId, bool isSet, stdpType_t type, float betaLTP, float betaLTD, float lamda, float delta,
-		int configId=ALL);
+	void setISTDP(int grpId, bool isSet, stdpType_t type, ConstantSymmetricCurve curve, int configId=ALL);
 
 	/*!
 	 * \brief Sets STP params U, tau_u, and tau_x of a neuron group (pre-synaptically)

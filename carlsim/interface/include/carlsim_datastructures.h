@@ -116,12 +116,41 @@ static const char* simMode_string[] = {
  * DA_MOD:      Dopamine-modulated STDP, nearest-neighbor.
  */
 enum stdpType_t {
-	 STANDARD,       DA_MOD,                   UNKNOWN_STDP
+	STANDARD,
+	DA_MOD,
+	UNKNOWN_STDP
 };
 static const char* stdpType_string[] = {
-	"Standard STDP","Dopamine-modulated STDP","Unknown mode"
+	"Standard STDP",
+	"Dopamine-modulated STDP",
+	"Unknown mode"
 };
 
+/*!
+ * \brief STDP curves
+ *
+ * CARLsim supports different STDP curves
+ */
+enum stdpCurve_t {
+	HEBBIAN,
+	//ANTI_HEBBIAN,
+	//SYMMETRIC,
+	//LINEAR_HEBBIAN,
+	//LINEAR_ANTI_HEBBIAN,
+	//LINEAR_SYMMETRIC,
+	CONSTANT_SYMMECTRIC,
+	UNKNOWN_CURVE
+};
+static const char* stdpCurve_string[] = {
+	"Hebbian curve",
+	//"Anti-Hebbian curve",
+	//"Symmetric curve",
+	//"Linear Hebbian curve",
+	//"Linear Anti-symmetric curve",
+	//"Linear symmetric cruve",
+	"Constant symmetric curve",
+	"Unknow curve"
+};
 
 /*!
  * \brief SpikeMonitor mode
@@ -351,6 +380,46 @@ struct Grid3D {
     int columns, channels;
     int x, y, z;
     int N;
+};
+
+/*!
+ * \brief struct to assign Hebbian STDP curve
+ */
+struct HebbianCurve {
+	HebbianCurve(float _alphaLTP, float _tauLTP, float _alphaLTD, float _tauLTD) : alphaLTP(_alphaLTP), tauLTP(_tauLTP), alphaLTD(_alphaLTD), tauLTD(_tauLTD) {
+		UserErrors::assertTrue(_alphaLTP > 0.0f, UserErrors::MUST_BE_POSITIVE, "HebbianCurve", "alphaLTP");
+		UserErrors::assertTrue(_alphaLTD > 0.0f, UserErrors::MUST_BE_POSITIVE, "HebbianCurve", "alphaLTD");
+		UserErrors::assertTrue(_tauLTP > 0.0f, UserErrors::MUST_BE_POSITIVE, "HebbianCurve", "tauLTP");
+		UserErrors::assertTrue(_tauLTD > 0.0f, UserErrors::MUST_BE_POSITIVE, "HebbianCurve", "tauLTD");
+
+		stdpCurve = HEBBIAN;
+	}
+
+	stdpCurve_t stdpCurve;
+	float alphaLTP;
+	float alphaLTD;
+	float tauLTP;
+	float tauLTD;
+};
+
+/*!
+ * \brief struct to assign constant symmetric I-STDP curve
+ */
+struct ConstantSymmetricCurve {
+	ConstantSymmetricCurve(float _betaLTP, float _betaLTD, float _lamda, float _delta) : betaLTP(_betaLTP), betaLTD(_betaLTD), lamda(_lamda), delta(_delta) {
+		UserErrors::assertTrue(_betaLTP > 0.0f, UserErrors::MUST_BE_POSITIVE, "ConstantSymmetricCurve", "betaLTP");
+		UserErrors::assertTrue(_betaLTD > 0.0f, UserErrors::MUST_BE_POSITIVE, "ConstantSymmetricCurve", "betaLTD");
+		UserErrors::assertTrue(_lamda > 0.0f, UserErrors::MUST_BE_POSITIVE, "ConstantSymmetricCurve", "lamda");
+		UserErrors::assertTrue(_delta > 0.0f, UserErrors::MUST_BE_POSITIVE, "ConstantSymmetricCurve", "delta");
+
+		stdpCurve = CONSTANT_SYMMECTRIC;
+	}
+
+	stdpCurve_t stdpCurve;
+	float betaLTP;
+	float betaLTD;
+	float lamda;
+	float delta;
 };
 
 #endif

@@ -254,6 +254,8 @@ typedef struct group_info_s
 	bool		WithISTDP;
 	stdpType_t  WithESTDPtype;
 	stdpType_t  WithISTDPtype;
+	stdpCurve_t WithESTDPcurve;
+	stdpCurve_t WithISTDPcurve;
 	bool 		WithHomeostasis;
 	int		homeoId;
 	bool		FixedInputWts;

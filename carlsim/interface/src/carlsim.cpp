@@ -423,7 +423,7 @@ void CARLsim::setSTDP(int grpId, bool isSet, int configId) {
 
 // set STDP, custom, wrapper function
 void CARLsim::setSTDP(int grpId, bool isSet, stdpType_t type, float alphaLTP, float tauLTP, float alphaLTD, float tauLTD, int configId) {
-		setESTDP(grpId, isSet, type, alphaLTP, tauLTP, alphaLTD, tauLTD, configId);
+	setESTDP(grpId, isSet, type, HebbianCurve(alphaLTP, tauLTP, alphaLTD, tauLTD), configId);
 }
 
 // set ESTDP, default
@@ -434,14 +434,14 @@ void CARLsim::setESTDP(int grpId, bool isSet, int configId) {
 	hasSetSTDPALL_ = grpId==ALL; // adding groups after this will not have conductances set
 
 	if (isSet) { // enable STDP, use default values and type
-		snn_->setESTDP(grpId, true, def_STDP_type_, def_STDP_alphaLTP_, def_STDP_tauLTP_, def_STDP_alphaLTD_, def_STDP_tauLTD_, configId);
+		snn_->setESTDP(grpId, true, def_STDP_type_, HEBBIAN, def_STDP_alphaLTP_, def_STDP_tauLTP_, def_STDP_alphaLTD_, def_STDP_tauLTD_, configId);
 	} else { // disable STDP
-		snn_->setESTDP(grpId, false, UNKNOWN_STDP, 0.0f, 0.0f, 0.0f, 0.0f, configId);
+		snn_->setESTDP(grpId, false, UNKNOWN_STDP, UNKNOWN_CURVE, 0.0f, 0.0f, 0.0f, 0.0f, configId);
 	}
 }
 
-// set ESTDP, custom
-void CARLsim::setESTDP(int grpId, bool isSet, stdpType_t type, float alphaLTP, float tauLTP, float alphaLTD, float tauLTD, int configId) {
+// set ESTDP by stdp curve
+void CARLsim::setESTDP(int grpId, bool isSet, stdpType_t type, HebbianCurve curve, int configId) {
 	std::string funcName = "setESTDP(\""+getGroupName(grpId,configId)+","+stdpType_string[type]+"\")";
 	UserErrors::assertTrue(type!=UNKNOWN_STDP, UserErrors::CANNOT_BE_UNKNOWN, funcName, "Mode");
 	UserErrors::assertTrue(carlsimState_==CONFIG_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "CONFIG.");
@@ -449,13 +449,9 @@ void CARLsim::setESTDP(int grpId, bool isSet, stdpType_t type, float alphaLTP, f
 	hasSetSTDPALL_ = grpId==ALL; // adding groups after this will not have conductances set
 
 	if (isSet) { // enable STDP, use custom values
-		UserErrors::assertTrue(alphaLTP > 0, UserErrors::MUST_BE_POSITIVE, funcName);
-		UserErrors::assertTrue(alphaLTD > 0, UserErrors::MUST_BE_POSITIVE, funcName);
-		UserErrors::assertTrue(tauLTP > 0, UserErrors::MUST_BE_POSITIVE, funcName);
-		UserErrors::assertTrue(tauLTD > 0, UserErrors::MUST_BE_POSITIVE, funcName);
-		snn_->setESTDP(grpId, true, type, alphaLTP, tauLTP, alphaLTD, tauLTD, configId);
+		snn_->setESTDP(grpId, true, type, curve.stdpCurve, curve.alphaLTP, curve.tauLTP, curve.alphaLTD, curve.tauLTD, configId);
 	} else { // disable STDP and DA-STDP as well
-		snn_->setESTDP(grpId, false, UNKNOWN_STDP, 0.0f, 0.0f, 0.0f, 0.0f, configId);
+		snn_->setESTDP(grpId, false, UNKNOWN_STDP, UNKNOWN_CURVE, 0.0f, 0.0f, 0.0f, 0.0f, configId);
 	}
 }
 
@@ -467,14 +463,14 @@ void CARLsim::setISTDP(int grpId, bool isSet, int configId) {
 	hasSetSTDPALL_ = grpId==ALL; // adding groups after this will not have conductances set
 
 	if (isSet) { // enable STDP, use default values and type
-		snn_->setISTDP(grpId, true, def_STDP_type_, def_STDP_betaLTP_, def_STDP_betaLTD_, def_STDP_lamda_, def_STDP_delta_, configId);
+		snn_->setISTDP(grpId, true, def_STDP_type_, CONSTANT_SYMMECTRIC, def_STDP_betaLTP_, def_STDP_betaLTD_, def_STDP_lamda_, def_STDP_delta_, configId);
 	} else { // disable STDP
-		snn_->setISTDP(grpId, false, UNKNOWN_STDP, 0.0f, 0.0f, 0.0f, 0.0f, configId);
+		snn_->setISTDP(grpId, false, UNKNOWN_STDP, UNKNOWN_CURVE, 0.0f, 0.0f, 0.0f, 0.0f, configId);
 	}
 }
 
-// set ISTDP, custom
-void CARLsim::setISTDP(int grpId, bool isSet, stdpType_t type, float betaLTP, float betaLTD, float lamda, float delta, int configId) {
+// set ISTDP by stdp curve
+void CARLsim::setISTDP(int grpId, bool isSet, stdpType_t type, ConstantSymmetricCurve curve, int configId) {
 	std::string funcName = "setISTDP(\""+getGroupName(grpId,configId)+","+stdpType_string[type]+"\")";
 	UserErrors::assertTrue(type!=UNKNOWN_STDP, UserErrors::CANNOT_BE_UNKNOWN, funcName, "Mode");
 	UserErrors::assertTrue(carlsimState_==CONFIG_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "CONFIG.");
@@ -482,13 +478,9 @@ void CARLsim::setISTDP(int grpId, bool isSet, stdpType_t type, float betaLTP, fl
 	hasSetSTDPALL_ = grpId==ALL; // adding groups after this will not have conductances set
 
 	if (isSet) { // enable STDP, use custom values
-		UserErrors::assertTrue(betaLTP > 0, UserErrors::MUST_BE_POSITIVE, funcName);
-		UserErrors::assertTrue(betaLTD > 0, UserErrors::MUST_BE_POSITIVE, funcName);
-		UserErrors::assertTrue(lamda > 0, UserErrors::MUST_BE_POSITIVE, funcName);
-		UserErrors::assertTrue(delta > 0, UserErrors::MUST_BE_POSITIVE, funcName);
-		snn_->setISTDP(grpId, true, type, betaLTP, betaLTD, lamda, delta, configId);
+		snn_->setISTDP(grpId, true, type, curve.stdpCurve, curve.betaLTP, curve.betaLTD, curve.lamda, curve.delta, configId);
 	} else { // disable STDP and DA-STDP as well
-		snn_->setISTDP(grpId, false, UNKNOWN_STDP, 0.0f, 0.0f, 0.0f, 0.0f, configId);
+		snn_->setISTDP(grpId, false, UNKNOWN_STDP, UNKNOWN_CURVE, 0.0f, 0.0f, 0.0f, 0.0f, configId);
 	}
 }
 

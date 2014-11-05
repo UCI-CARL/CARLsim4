@@ -262,13 +262,14 @@ public:
 	 * \param[in] grpId ID of the neuron group
 	 * \param[in] isSet_enable set to true to enable STDP for this group
 	 * \param[in] type STDP type (STANDARD, DA_MOD)
+	 * \param[in] curve STDP curve
 	 * \param[in] alphaLTP max magnitude for LTP change
 	 * \param[in] tauLTP decay time constant for LTP
 	 * \param[in] alphaLTD max magnitude for LTD change (leave positive)
 	 * \param[in] tauLTD decay time constant for LTD
 	 * \param[in] configId (optional, deprecated) configuration id
 	 */
-	void setESTDP(int grpId, bool isSet, stdpType_t type, float alphaLTP, float tauLTP, float alphaLTD, float tauLTD,
+	void setESTDP(int grpId, bool isSet, stdpType_t type, stdpCurve_t curve, float alphaLTP, float tauLTP, float alphaLTD, float tauLTD,
 		int configId);
 
 	//! Set the inhibitory spike-timing-dependent plasticity (STDP) with anti-hebbian curve for a neuron group
@@ -278,13 +279,14 @@ public:
 	 * \param[in] grpId ID of the neuron group
 	 * \param[in] isSet_enable set to true to enable STDP for this group
 	 * \param[in] type STDP type (STANDARD, DA_MOD)
+	 * \param[in] curve STDP curve
 	 * \param[in] betaLTP magnitude for LTP change
 	 * \param[in] betaLTD magnitude for LTD change (leave positive)
 	 * \param[in] lamda, the interval for LTP
 	 * \param[in] delta, the interval for LTD
 	 * \param[in] configId (optional, deprecated) configuration id
 	 */
-	void setISTDP(int grpId, bool isSet, stdpType_t type, float betaLTP, float betaLTD, float lamda, float delta,
+	void setISTDP(int grpId, bool isSet, stdpType_t type, stdpCurve_t curve, float betaLTP, float betaLTD, float lamda, float delta,
 		int configId);
 
 	/*!
