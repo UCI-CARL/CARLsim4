@@ -267,10 +267,11 @@ public:
 	 * \param[in] tauLTP decay time constant for LTP
 	 * \param[in] alphaLTD max magnitude for LTD change (leave positive)
 	 * \param[in] tauLTD decay time constant for LTD
+	 * \param[in] gama turnover point for pre-post side STPD curve
 	 * \param[in] configId (optional, deprecated) configuration id
 	 */
 	void setESTDP(int grpId, bool isSet, stdpType_t type, stdpCurve_t curve, float alphaLTP, float tauLTP, float alphaLTD, float tauLTD,
-		int configId);
+		float gama, int configId);
 
 	//! Set the inhibitory spike-timing-dependent plasticity (STDP) with anti-hebbian curve for a neuron group
 	/*

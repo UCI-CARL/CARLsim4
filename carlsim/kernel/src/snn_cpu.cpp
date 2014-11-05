@@ -587,24 +587,24 @@ void CpuSNN::setNeuromodulator(int grpId, float baseDP, float tauDP, float base5
 }
 
 // set ESTDP params
-void CpuSNN::setESTDP(int grpId, bool isSet, stdpType_t type, stdpCurve_t curve, float alphaLTP, float tauLTP, float alphaLTD, float tauLTD, int configId) {
+void CpuSNN::setESTDP(int grpId, bool isSet, stdpType_t type, stdpCurve_t curve, float alphaLTP, float tauLTP, float alphaLTD, float tauLTD, float gama, int configId) {
 	assert(grpId>=-1); assert(configId>=-1);
 	if (isSet) {
 		assert(type!=UNKNOWN_STDP);
-		assert(alphaLTP>=0); assert(tauLTP>=0); assert(alphaLTD>=0); assert(tauLTD>=0);
+		assert(alphaLTP>=0.0f); assert(tauLTP>0.0f); assert(alphaLTD>=0.0f); assert(tauLTD>=0.0f); assert(gama>=0.0f);
 	}
 
 	if (grpId==ALL && configId==ALL) { // shortcut for all groups & configs
 		for(int g=0; g < numGrp; g++)
-			setESTDP(g, isSet, type, curve, alphaLTP, tauLTP, alphaLTD, tauLTD, 0);
+			setESTDP(g, isSet, type, curve, alphaLTP, tauLTP, alphaLTD, tauLTD, gama, 0);
 	} else if (grpId == ALL) { // shortcut for all groups
 		for(int grpId1=0; grpId1 < numGrp; grpId1 += nConfig_) {
 			int g = getGroupId(grpId1, configId);
-			setESTDP(g, isSet, type, curve, alphaLTP, tauLTP, alphaLTD, tauLTD, configId);
+			setESTDP(g, isSet, type, curve, alphaLTP, tauLTP, alphaLTD, tauLTD, gama, configId);
 		}
 	} else if (configId == ALL) { // shortcut for all configs
 		for(int c=0; c < nConfig_; c++)
-			setESTDP(grpId, isSet, type, curve, alphaLTP, tauLTP, alphaLTD, tauLTD, c);
+			setESTDP(grpId, isSet, type, curve, alphaLTP, tauLTP, alphaLTD, tauLTD, gama, c);
 	} else {
 		// set STDP for a given group and configId
 		int cGrpId = getGroupId(grpId, configId);
@@ -613,6 +613,7 @@ void CpuSNN::setESTDP(int grpId, bool isSet, stdpType_t type, stdpCurve_t curve,
 		grp_Info[cGrpId].ALPHA_LTD_EXC 		= alphaLTD;
 		grp_Info[cGrpId].TAU_LTP_INV_EXC 	= 1.0f/tauLTP;
 		grp_Info[cGrpId].TAU_LTD_INV_EXC	= 1.0f/tauLTD;
+		grp_Info[cGrpId].GAMA				= gama;
 		// set flags for STDP function
 		grp_Info[cGrpId].WithESTDPtype	= type;
 		grp_Info[cGrpId].WithESTDPcurve = curve;
@@ -1682,10 +1683,13 @@ GroupSTDPInfo_t CpuSNN::getGroupSTDPInfo(int grpId, int configId) {
 	gInfo.WithISTDP = grp_Info[cGrpId].WithISTDP;
 	gInfo.WithESTDPtype = grp_Info[cGrpId].WithESTDPtype;
 	gInfo.WithISTDPtype = grp_Info[cGrpId].WithISTDPtype;
+	gInfo.WithESTDPcurve = grp_Info[cGrpId].WithESTDPcurve;
+	gInfo.WithISTDPcurve = grp_Info[cGrpId].WithISTDPcurve;
 	gInfo.ALPHA_LTD_EXC = grp_Info[cGrpId].ALPHA_LTD_EXC;
 	gInfo.ALPHA_LTP_EXC = grp_Info[cGrpId].ALPHA_LTP_EXC;
 	gInfo.TAU_LTD_INV_EXC = grp_Info[cGrpId].TAU_LTD_INV_EXC;
 	gInfo.TAU_LTP_INV_EXC = grp_Info[cGrpId].TAU_LTP_INV_EXC;
+	gInfo.GAMA = grp_Info[cGrpId].GAMA;
 	gInfo.BETA_LTP = grp_Info[cGrpId].BETA_LTP;
 	gInfo.BETA_LTD = grp_Info[cGrpId].BETA_LTD;
 	gInfo.LAMDA = grp_Info[cGrpId].LAMDA;

@@ -271,6 +271,7 @@ typedef struct group_info_s
 	float		TAU_LTD_INV_EXC;
 	float		ALPHA_LTP_EXC;
 	float		ALPHA_LTD_EXC;
+	float		GAMA;
 	//float		TAU_LTP_INV_In; //!< for furture use
 	//float		TAU_LTD_INV_In; //!< for furture use
 	//float		ALPHA_LTP_In; //!< for furture use

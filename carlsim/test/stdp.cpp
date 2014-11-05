@@ -1,5 +1,5 @@
 #include "gtest/gtest.h"
-#include <snn.h>
+#include "carlsim.h"
 #include "carlsim_tests.h"
 
 /// **************************************************************************************************************** ///
@@ -81,6 +81,7 @@ TEST(STDP, setSTDPTrue) {
 	float alphaLTD = 10.0f;
 	float tauLTP = 15.0f;
 	float tauLTD = 20.0f;
+	float gama = 10.0f;
 	float betaLTP = 1.0f;
 	float betaLTD = 1.2f;
 	float lamda = 12.0f;
@@ -90,42 +91,67 @@ TEST(STDP, setSTDPTrue) {
 	for (int mode=0; mode<=1; mode++) {
 		for (int nConfig=1; nConfig<=maxConfig; nConfig+=nConfigStep) {
 			for (int stdpType = 0; stdpType < 2; stdpType++) { // we have two stdp types {STANDARD, DA_MOD}
-				sim = new CARLsim(name,mode?GPU_MODE:CPU_MODE,SILENT,0,nConfig,42);
+				for(int stdpCurve = 0; stdpCurve < 2; stdpCurve++) { // we have four stdp curves, two for ESTDP, two for ISTDP
+					sim = new CARLsim(name,mode?GPU_MODE:CPU_MODE,SILENT,0,nConfig,42);
 
-				int g1=sim->createGroup("excit", 10, EXCITATORY_NEURON);
-				sim->setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f);
-				if (stdpType == 0) {
-					sim->setESTDP(g1,true,STANDARD,alphaLTP,tauLTP,alphaLTD,tauLTD);
-					sim->setISTDP(g1,true,DA_MOD,betaLTP,betaLTD,lamda,delta);
-				} else {
-					sim->setESTDP(g1,true,DA_MOD,alphaLTP,tauLTP,alphaLTD,tauLTD);
-					sim->setISTDP(g1,true,STANDARD,betaLTP,betaLTD,lamda,delta);
+					int g1=sim->createGroup("excit", 10, EXCITATORY_NEURON);
+					sim->setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f);
+					if (stdpType == 0) {
+						if (stdpCurve == 0) {
+							sim->setESTDP(g1, true, STANDARD, HebbianCurve(alphaLTP,tauLTP,alphaLTD,tauLTD));
+							sim->setISTDP(g1, true, STANDARD, ConstantSymmetricCurve(betaLTP,betaLTD,lamda,delta));
+						} else { //stdpCurve == 1
+							sim->setESTDP(g1, true, STANDARD, HalfHebbianCurve(alphaLTP,tauLTP,alphaLTD,tauLTD, gama));
+							sim->setISTDP(g1, true, STANDARD, LinearSymmetricCurve(betaLTP,betaLTD,lamda,delta));
+						}
+					} else { // stdpType == 1
+						if (stdpCurve == 0) {
+							sim->setESTDP(g1, true, DA_MOD, HebbianCurve(alphaLTP,tauLTP,alphaLTD,tauLTD));
+							sim->setISTDP(g1, true, DA_MOD, ConstantSymmetricCurve(betaLTP,betaLTD,lamda,delta));
+						} else { //stdpCurve == 1
+							sim->setESTDP(g1, true, DA_MOD, HalfHebbianCurve(alphaLTP,tauLTP,alphaLTD,tauLTD, gama));
+							sim->setISTDP(g1, true, DA_MOD, LinearSymmetricCurve(betaLTP,betaLTD,lamda,delta));
+						}
+					}
+
+					for (int c=0; c<nConfig; c++) {
+						GroupSTDPInfo_t gInfo = sim->getGroupSTDPInfo(g1,c);
+						EXPECT_TRUE(gInfo.WithSTDP);
+						EXPECT_TRUE(gInfo.WithESTDP);
+						EXPECT_TRUE(gInfo.WithISTDP);
+						if (stdpType == 0) {
+							EXPECT_TRUE(gInfo.WithESTDPtype == STANDARD);
+							EXPECT_TRUE(gInfo.WithESTDPtype == STANDARD);
+						} else { // stdpType == 1 
+							EXPECT_TRUE(gInfo.WithESTDPtype == DA_MOD);
+							EXPECT_TRUE(gInfo.WithISTDPtype == DA_MOD);
+						}
+
+						if (stdpCurve == 0) {
+							EXPECT_TRUE(gInfo.WithESTDPcurve == HEBBIAN);
+							EXPECT_TRUE(gInfo.WithISTDPcurve == CONSTANT_SYMMETRIC);
+						} else {
+							EXPECT_TRUE(gInfo.WithESTDPcurve == HALF_HEBBIAN);
+							EXPECT_TRUE(gInfo.WithISTDPcurve == LINEAR_SYMMETRIC);
+						}
+
+						EXPECT_FLOAT_EQ(gInfo.ALPHA_LTP_EXC,alphaLTP);
+						EXPECT_FLOAT_EQ(gInfo.ALPHA_LTD_EXC,alphaLTD);
+						EXPECT_FLOAT_EQ(gInfo.TAU_LTP_INV_EXC,1.0/tauLTP);
+						EXPECT_FLOAT_EQ(gInfo.TAU_LTD_INV_EXC,1.0/tauLTD);
+						EXPECT_FLOAT_EQ(gInfo.BETA_LTP,betaLTP);
+						EXPECT_FLOAT_EQ(gInfo.BETA_LTD,betaLTD);
+						EXPECT_FLOAT_EQ(gInfo.LAMDA,lamda);
+						EXPECT_FLOAT_EQ(gInfo.DELTA,delta);
+
+						if (stdpCurve == 0) {
+							EXPECT_FLOAT_EQ(gInfo.GAMA, 0.0f);
+						} else
+							EXPECT_FLOAT_EQ(gInfo.GAMA, gama);
+					}
+
+					delete sim;
 				}
-
-				for (int c=0; c<nConfig; c++) {
-					GroupSTDPInfo_t gInfo = sim->getGroupSTDPInfo(g1,c);
-					EXPECT_TRUE(gInfo.WithSTDP);
-					EXPECT_TRUE(gInfo.WithESTDP);
-					EXPECT_TRUE(gInfo.WithISTDP);
-					if (stdpType == 0)
-						EXPECT_TRUE(gInfo.WithESTDPtype == STANDARD);
-					else
-						EXPECT_TRUE(gInfo.WithESTDPtype == DA_MOD);
-					if (stdpType == 0)
-						EXPECT_TRUE(gInfo.WithISTDPtype == DA_MOD);
-					else
-						EXPECT_TRUE(gInfo.WithISTDPtype == STANDARD);
-					EXPECT_FLOAT_EQ(gInfo.ALPHA_LTP_EXC,alphaLTP);
-					EXPECT_FLOAT_EQ(gInfo.ALPHA_LTD_EXC,alphaLTD);
-					EXPECT_FLOAT_EQ(gInfo.TAU_LTP_INV_EXC,1.0/tauLTP);
-					EXPECT_FLOAT_EQ(gInfo.TAU_LTD_INV_EXC,1.0/tauLTD);
-					EXPECT_FLOAT_EQ(gInfo.BETA_LTP,betaLTP);
-					EXPECT_FLOAT_EQ(gInfo.BETA_LTD,betaLTD);
-					EXPECT_FLOAT_EQ(gInfo.LAMDA,lamda);
-					EXPECT_FLOAT_EQ(gInfo.DELTA,delta);
-				}
-
-				delete sim;
 			}
 		}
 	}
@@ -156,14 +182,24 @@ TEST(STDP, setSTDPFalse) {
 
 			int g1=sim->createGroup("excit", 10, EXCITATORY_NEURON);
 			sim->setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f);
-			sim->setESTDP(g1,false,STANDARD,alphaLTP,tauLTP,alphaLTD,tauLTD);
-			sim->setISTDP(g1,false,STANDARD,betaLTP,betaLTD,lamda,delta);
+			sim->setESTDP(g1,false,STANDARD, HebbianCurve(alphaLTP,tauLTP,alphaLTD,tauLTD));
+			sim->setISTDP(g1,false,STANDARD, ConstantSymmetricCurve(betaLTP,betaLTD,lamda,delta));
 
 			for (int c=0; c<nConfig; c++) {
 				GroupSTDPInfo_t gInfo = sim->getGroupSTDPInfo(g1,c);
 				EXPECT_FALSE(gInfo.WithSTDP);
 				EXPECT_FALSE(gInfo.WithESTDP);
 				EXPECT_FALSE(gInfo.WithISTDP);
+
+				EXPECT_FLOAT_EQ(gInfo.ALPHA_LTP_EXC, 0.0f);
+				EXPECT_FLOAT_EQ(gInfo.ALPHA_LTD_EXC, 0.0f);
+				EXPECT_FLOAT_EQ(gInfo.TAU_LTP_INV_EXC, 1.0f);
+				EXPECT_FLOAT_EQ(gInfo.TAU_LTD_INV_EXC, 1.0f);
+				EXPECT_FLOAT_EQ(gInfo.BETA_LTP, 0.0f);
+				EXPECT_FLOAT_EQ(gInfo.BETA_LTD, 0.0f);
+				EXPECT_FLOAT_EQ(gInfo.LAMDA, 0.0f);
+				EXPECT_FLOAT_EQ(gInfo.DELTA, 0.0f);
+				EXPECT_FLOAT_EQ(gInfo.GAMA, 0.0f);
 			}
 
 			delete sim;
@@ -382,14 +418,14 @@ TEST(STDP, ISTDPWeightChange) {
 
 					// enable COBA, set up ISTDP
 					sim->setConductances(true,5,150,6,150);
-					sim->setISTDP(g1, true, STANDARD, BETA_LTP/100, BETA_LTD/100, LAMDA, DELTA);
+					sim->setISTDP(g1, true, STANDARD, ConstantSymmetricCurve(BETA_LTP/100, BETA_LTD/100, LAMDA, DELTA));
 				} else { // current-based
 					sim->connect(gex, g1, "one-to-one", RangeWeight(40.0f), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
 					sim->connect(gin, g1, "one-to-one", RangeWeight(minInhWeight, initWeight, maxInhWeight), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_PLASTIC);
 
 					// set up ISTDP
 					sim->setConductances(false,0,0,0,0);
-					sim->setISTDP(g1, true, STANDARD, BETA_LTP, BETA_LTD, LAMDA, DELTA);
+					sim->setISTDP(g1, true, STANDARD, ConstantSymmetricCurve(BETA_LTP, BETA_LTD, LAMDA, DELTA));
 				}
 
 				// set up spike controller on DA neurons

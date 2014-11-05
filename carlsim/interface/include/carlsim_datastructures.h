@@ -133,21 +133,23 @@ static const char* stdpType_string[] = {
  */
 enum stdpCurve_t {
 	HEBBIAN,
+	HALF_HEBBIAN,
 	//ANTI_HEBBIAN,
 	//SYMMETRIC,
 	//LINEAR_HEBBIAN,
 	//LINEAR_ANTI_HEBBIAN,
-	//LINEAR_SYMMETRIC,
-	CONSTANT_SYMMECTRIC,
+	LINEAR_SYMMETRIC,
+	CONSTANT_SYMMETRIC,
 	UNKNOWN_CURVE
 };
 static const char* stdpCurve_string[] = {
 	"Hebbian curve",
+	"Half Hebbian curve",
 	//"Anti-Hebbian curve",
 	//"Symmetric curve",
 	//"Linear Hebbian curve",
 	//"Linear Anti-symmetric curve",
-	//"Linear symmetric cruve",
+	"Linear symmetric cruve",
 	"Constant symmetric curve",
 	"Unknow curve"
 };
@@ -311,10 +313,13 @@ typedef struct GroupSTDPInfo_s {
 	bool		WithISTDP;
 	stdpType_t  WithESTDPtype;
 	stdpType_t  WithISTDPtype;
+	stdpCurve_t WithESTDPcurve;
+	stdpCurve_t WithISTDPcurve;
 	float		TAU_LTP_INV_EXC;
 	float		TAU_LTD_INV_EXC;
 	float		ALPHA_LTP_EXC;
 	float		ALPHA_LTD_EXC;
+	float		GAMA;
 	float		BETA_LTP;
 	float		BETA_LTD;
 	float		LAMDA;
@@ -402,6 +407,25 @@ struct HebbianCurve {
 	float tauLTD;
 };
 
+struct HalfHebbianCurve {
+	HalfHebbianCurve(float _alphaLTP, float _tauLTP, float _alphaLTD, float _tauLTD, float _gama) : alphaLTP(_alphaLTP), tauLTP(_tauLTP), alphaLTD(_alphaLTD), tauLTD(_tauLTD) , gama(_gama) {
+		UserErrors::assertTrue(_alphaLTP > 0.0f, UserErrors::MUST_BE_POSITIVE, "HalfHebbianCurve", "alphaLTP");
+		UserErrors::assertTrue(_alphaLTD > 0.0f, UserErrors::MUST_BE_POSITIVE, "HalfHebbianCurve", "alphaLTD");
+		UserErrors::assertTrue(_tauLTP > 0.0f, UserErrors::MUST_BE_POSITIVE, "HalfHebbianCurve", "tauLTP");
+		UserErrors::assertTrue(_tauLTD > 0.0f, UserErrors::MUST_BE_POSITIVE, "HalfHebbianCurve", "tauLTD");
+		UserErrors::assertTrue(_gama > 0.0f, UserErrors::MUST_BE_POSITIVE, "HalfHebbianCurve", "gama");
+
+		stdpCurve = HALF_HEBBIAN;
+	}
+
+	stdpCurve_t stdpCurve;
+	float alphaLTP;
+	float alphaLTD;
+	float tauLTP;
+	float tauLTD;
+	float gama;
+};
+
 /*!
  * \brief struct to assign constant symmetric I-STDP curve
  */
@@ -412,7 +436,27 @@ struct ConstantSymmetricCurve {
 		UserErrors::assertTrue(_lamda > 0.0f, UserErrors::MUST_BE_POSITIVE, "ConstantSymmetricCurve", "lamda");
 		UserErrors::assertTrue(_delta > 0.0f, UserErrors::MUST_BE_POSITIVE, "ConstantSymmetricCurve", "delta");
 
-		stdpCurve = CONSTANT_SYMMECTRIC;
+		stdpCurve = CONSTANT_SYMMETRIC;
+	}
+
+	stdpCurve_t stdpCurve;
+	float betaLTP;
+	float betaLTD;
+	float lamda;
+	float delta;
+};
+
+/*!
+ * \brief struct to assign constant symmetric I-STDP curve
+ */
+struct LinearSymmetricCurve {
+	LinearSymmetricCurve(float _betaLTP, float _betaLTD, float _lamda, float _delta) : betaLTP(_betaLTP), betaLTD(_betaLTD), lamda(_lamda), delta(_delta) {
+		UserErrors::assertTrue(_betaLTP > 0.0f, UserErrors::MUST_BE_POSITIVE, "ConstantSymmetricCurve", "betaLTP");
+		UserErrors::assertTrue(_betaLTD > 0.0f, UserErrors::MUST_BE_POSITIVE, "ConstantSymmetricCurve", "betaLTD");
+		UserErrors::assertTrue(_lamda > 0.0f, UserErrors::MUST_BE_POSITIVE, "ConstantSymmetricCurve", "lamda");
+		UserErrors::assertTrue(_delta > 0.0f, UserErrors::MUST_BE_POSITIVE, "ConstantSymmetricCurve", "delta");
+
+		stdpCurve = LINEAR_SYMMETRIC;
 	}
 
 	stdpCurve_t stdpCurve;
