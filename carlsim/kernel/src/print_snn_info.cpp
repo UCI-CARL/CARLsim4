@@ -170,8 +170,7 @@ void CpuSNN::printConnectionInfo2(FILE * const fpg)
 
 // new print connection info, akin to printGroupInfo
 void CpuSNN::printConnectionInfo(short int connId) {
-	int configId = 0;
-	grpConnectInfo_t* connInfo = getConnectInfo(connId, configId);
+	grpConnectInfo_t* connInfo = getConnectInfo(connId);
 	
 	KERNEL_INFO("Connection ID %d: %s(%d) => %s(%d)", connId, grp_Info2[connInfo->grpSrc].Name.c_str(), 
 		connInfo->grpSrc, grp_Info2[connInfo->grpDest].Name.c_str(), connInfo->grpDest);

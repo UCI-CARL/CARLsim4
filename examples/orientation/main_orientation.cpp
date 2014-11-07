@@ -41,10 +41,15 @@
 #include <carlsim.h>
 #include <mtrand.h>
 
+
+#include <stdio.h>		// printf, fopen
+#include <math.h>		// expf, fmin
+#include <stdlib.h>		// exit
+
 #if (WIN32 || WIN64)
-#include <algorithm>
-#define fmin std::min
-#define fmax std::max
+	#include <algorithm>
+	#define fmin std::min
+	#define fmax std::max
 #endif
 
 void calcColorME(int nrX, int nrY, unsigned char* stim, float* red_green, float* green_red, float* blue_yellow,
@@ -189,39 +194,39 @@ int main()
 	bool onGPU = true;
 	int ithGPU = 0;
 
-	CARLsim s("orientation",onGPU?GPU_MODE:CPU_MODE,USER,ithGPU);
+	CARLsim sim("orientation",onGPU?GPU_MODE:CPU_MODE,USER,ithGPU);
 
 
-	int gV1ME = s.createSpikeGeneratorGroup("V1ME", nrX*nrY*28*3, EXCITATORY_NEURON);
+	int gV1ME = sim.createSpikeGeneratorGroup("V1ME", nrX*nrY*28*3, EXCITATORY_NEURON);
 
 	int inhibScale = 2;
 
-	int gV4o = s.createGroup("V4o", nrX*nrY*4, EXCITATORY_NEURON);
-	s.setNeuronParameters(gV4o, 0.02f, 0.2f, -65.0f, 8.0f);
-	int gV4oi = s.createGroup("V4oi", nrX*nrY*4/inhibScale/inhibScale, INHIBITORY_NEURON);
-	s.setNeuronParameters(gV4oi, 0.1f,  0.2f, -65.0f, 2.0f);
+	int gV4o = sim.createGroup("V4o", nrX*nrY*4, EXCITATORY_NEURON);
+	sim.setNeuronParameters(gV4o, 0.02f, 0.2f, -65.0f, 8.0f);
+	int gV4oi = sim.createGroup("V4oi", nrX*nrY*4/inhibScale/inhibScale, INHIBITORY_NEURON);
+	sim.setNeuronParameters(gV4oi, 0.1f,  0.2f, -65.0f, 2.0f);
 
 	float biasE[4] = {1, 1.2, 1.3, 1.2};
 	float biasI[4] = {1, 0.9, 1.3, 0.95};
 
-	s.connect(gV1ME, gV4o, new connectV1toV4o(1, synscale*4.5*2, orientation_proj, biasE), SYN_FIXED,1000,3000);
-	s.connect(gV1ME, gV4oi, new connectV1toV4o(inhibScale, synscale*1*2*2, orientation_proj, biasI), SYN_FIXED,1000,3000);
+	sim.connect(gV1ME, gV4o, new connectV1toV4o(1, synscale*4.5*2, orientation_proj, biasE), SYN_FIXED,1000,3000);
+	sim.connect(gV1ME, gV4oi, new connectV1toV4o(inhibScale, synscale*1*2*2, orientation_proj, biasI), SYN_FIXED,1000,3000);
 
-	s.connect(gV4oi, gV4o, new connectV4oitoV4o(inhibScale,-0.01*2), SYN_FIXED,1000,3000);
+	sim.connect(gV4oi, gV4o, new connectV4oitoV4o(inhibScale,-0.01*2), SYN_FIXED,1000,3000);
 
 
-	s.setConductances(true);
+	sim.setConductances(true);
 
-	s.setSTDP(ALL, false);
+	sim.setSTDP(ALL, false);
 
-	s.setSTP(ALL,false);
+	sim.setSTP(ALL,false);
 
-	s.setSpikeMonitor(gV1ME);
-	s.setSpikeMonitor(gV4o,"results/spkV4o.dat");
-	s.setSpikeMonitor(gV4oi,"results/spkV4oi.dat");
+	sim.setSpikeMonitor(gV1ME);
+	sim.setSpikeMonitor(gV4o,"results/spkV4o.dat");
+	sim.setSpikeMonitor(gV4oi,"results/spkV4oi.dat");
 
 	// setup the network
-	s.setupNetwork();
+	sim.setupNetwork();
 
 	unsigned char* vid = new unsigned char[nrX*nrY*3];
 
@@ -250,13 +255,13 @@ int main()
 
 		calcColorME(nrX, nrY, vid, red_green.rates, green_red.rates, blue_yellow.rates, yellow_blue.rates, me.rates, onGPU);
 
-		s.setSpikeRate(gV1ME, &me, 1);
+		sim.setSpikeRate(gV1ME, &me, 1);
 
 		// run the established network for 1 (sec)  and 0 (millisecond), in GPU_MODE
-		s.runNetwork(0,frameDur);
+		sim.runNetwork(0,frameDur);
 
 		if (i==1) {
-			s.saveSimulation("results/net.dat", true);
+			sim.saveSimulation("results/net.dat", true);
 		}
 	}
 	fclose(fid);

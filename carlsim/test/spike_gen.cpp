@@ -14,7 +14,7 @@ TEST(SpikeGen, PeriodicSpikeGenerator) {
 	int isi = 100; // ms
 	double rate = 1000.0/isi;
 	int nNeur = 5;
-	CARLsim sim("PeriodicSpikeGenerator",CPU_MODE,SILENT,0,1,42);
+	CARLsim sim("PeriodicSpikeGenerator",CPU_MODE,SILENT,0,42);
 
 	int g0 = sim.createSpikeGeneratorGroup("Input0",nNeur,EXCITATORY_NEURON);
 	int g1 = sim.createSpikeGeneratorGroup("Input1",nNeur,EXCITATORY_NEURON);
@@ -64,7 +64,7 @@ TEST(SpikeGen, SpikeGeneratorFromFile) {
 	int isi = 100; // ms
 	double rate = 1000.0/isi;
 	int nNeur = 5;
-	CARLsim sim("SpikeGeneratorFromFile",CPU_MODE,SILENT,0,1,42);
+	CARLsim sim("SpikeGeneratorFromFile",CPU_MODE,SILENT,0,42);
 
 	int g0 = sim.createSpikeGeneratorGroup("Input0",nNeur,EXCITATORY_NEURON);
 	PeriodicSpikeGenerator spkGen0(rate,true);
@@ -83,7 +83,7 @@ TEST(SpikeGen, SpikeGeneratorFromFile) {
 
 
 	// now that we have created the spike file, run a different network using the spike file from above
-	CARLsim sim2("SpikeGeneratorFromVector2",CPU_MODE,SILENT,0,1,42);
+	CARLsim sim2("SpikeGeneratorFromVector2",CPU_MODE,SILENT,0,42);
 
 	g0 = sim2.createSpikeGeneratorGroup("Input",nNeur,EXCITATORY_NEURON);
 	SpikeGeneratorFromFile spkGen2("spkInputGrp0.dat");
@@ -125,7 +125,7 @@ TEST(SpikeGen, SpikeGeneratorFromVector) {
 	std::vector<int> spkTimes(&spkTimesArr[0], &spkTimesArr[0]+11);
 
 	int nNeur = 5;
-	CARLsim sim("SpikeGeneratorFromVector",CPU_MODE,SILENT,0,1,42);
+	CARLsim sim("SpikeGeneratorFromVector",CPU_MODE,SILENT,0,42);
 
 	int g0 = sim.createSpikeGeneratorGroup("Input",nNeur,EXCITATORY_NEURON);
 	SpikeGeneratorFromVector spkGen(spkTimes);
