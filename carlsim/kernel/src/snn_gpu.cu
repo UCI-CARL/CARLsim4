@@ -1430,8 +1430,7 @@ __device__ int generatePostSynapticSpike(int& simTime, int& firingId, int& myDel
 	return errCode;
 }
 
-__device__ void CHECK_DELAY_ERROR (int& t_pos, volatile int& sh_blkErrCode)
-{
+__device__ void CHECK_DELAY_ERROR (int& t_pos, volatile int& sh_blkErrCode) {
 	if(ENABLE_MORE_CHECK) {
 		if (!((t_pos+(int)gpuNetInfo.maxDelay) >= 0)) {
 			int i=2;
@@ -2465,24 +2464,22 @@ void CpuSNN::printGpuLoadBalance(bool init, int numBlocks) {
 }
 
 // get spikes from GPU SpikeCounter
-// grpId and configId cannot be ALL (can only get 1 bufPos at a time)
-int* CpuSNN::getSpikeCounter_GPU(int grpId, int configId) {
-	assert(grpId>=0); assert(grpId<numGrp); assert(configId>=0); assert(configId<nConfig_);
+// grpId cannot be ALL (can only get 1 bufPos at a time)
+int* CpuSNN::getSpikeCounter_GPU(int grpId) {
+	assert(grpId>=0); assert(grpId<numGrp);
 
-	int cGrpId = getGroupId(grpId, configId);
-	int bufPos = grp_Info[cGrpId].spkCntBufPos;
+	int bufPos = grp_Info[grpId].spkCntBufPos;
 	CUDA_CHECK_ERRORS( cudaMemcpy(spkCntBuf[bufPos],cpu_gpuNetPtrs.spkCntBufChild[bufPos],
-		grp_Info[cGrpId].SizeN*sizeof(int),cudaMemcpyDeviceToHost) );
+		grp_Info[grpId].SizeN*sizeof(int),cudaMemcpyDeviceToHost) );
 
 	return spkCntBuf[bufPos];
 }
 
 // reset SpikeCounter
 // grpId and connectId cannot be ALL (this is handled by the CPU side)
-void CpuSNN::resetSpikeCounter_GPU(int grpId, int configId) {
-	assert(grpId>=0); assert(grpId<numGrp); assert(configId>=0); assert(configId<nConfig_);
+void CpuSNN::resetSpikeCounter_GPU(int grpId) {
+	assert(grpId>=0); assert(grpId<numGrp);
 
-	int cGrpId = getGroupId(grpId, configId);
 	int bufPos = grp_Info[grpId].spkCntBufPos;
 	CUDA_CHECK_ERRORS( cudaMemset(cpu_gpuNetPtrs.spkCntBufChild[bufPos],0,grp_Info[grpId].SizeN*sizeof(int)) );
 }

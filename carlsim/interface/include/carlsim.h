@@ -221,7 +221,7 @@ public:
 	 * \TODO finish doc
 	 * \STATE CONFIG
 	 */
-	int createGroup(const std::string grpName, int nNeur, int neurType, int configId=ALL);
+	int createGroup(const std::string grpName, int nNeur, int neurType);
 	
 	/*!
 	 * \brief create a group of neurons on a 3D grid
@@ -239,14 +239,14 @@ public:
 	 * \STATE CONFIG
 	 * \TODO finish doc
 	 */
-	int createGroup(const std::string grpName, Grid3D grid, int neurType, int configId=ALL);
+	int createGroup(const std::string grpName, Grid3D grid, int neurType);
 
 	/*!
 	 * \brief  creates a spike generator group
 	 * \TODO finish docu
 	 * \STATE CONFIG
 	 */
-	int createSpikeGeneratorGroup(const std::string grpName, int nNeur, int neurType, int configId=ALL);
+	int createSpikeGeneratorGroup(const std::string grpName, int nNeur, int neurType);
 	
 	/*!
 	 * \brief create a group of spike generators on a 3D grid
@@ -264,7 +264,7 @@ public:
 	 * \STATE CONFIG
 	 * \TODO finish doc
 	 */
-	int createSpikeGeneratorGroup(const std::string grpName, Grid3D grid, int neurType, int configId=ALL);
+	int createSpikeGeneratorGroup(const std::string grpName, Grid3D grid, int neurType);
 
 
 	/*!
@@ -280,7 +280,7 @@ public:
 	 * \STATE CONFIG
 	 * \param[in] isSet   a flag to inform whether to run simulation in COBA mode (true) or CUBA mode (false)
 	 */
-	void setConductances(bool isSet, int configId=ALL);
+	void setConductances(bool isSet);
 
 	/*!
 	 * \brief Sets custom values for conduction decay times (instantaneous rise time) or disables COBA alltogether
@@ -298,7 +298,7 @@ public:
 	 * \param[in] tdGABAa time constant for GABAa decay (ms)
 	 * \param[in] tdGABAb time constant for GABAb decay (ms)
 	 */
-	void setConductances(bool isSet, int tdAMPA, int tdNMDA, int tdGABAa, int tdGABAb, int configId=ALL);
+	void setConductances(bool isSet, int tdAMPA, int tdNMDA, int tdGABAa, int tdGABAb);
 
 	/*!
 	 * \brief Sets custom values for conduction rise and decay times or disables COBA alltogether
@@ -320,8 +320,7 @@ public:
 	 * \param[in] trGABAb time constant for GABAb rise (ms), must be smaller than tdGABAb
 	 * \param[in] tdGABAb time constant for GABAb decay (ms)
 	 */
-	void setConductances(bool isSet, int tdAMPA, int trNMDA, int tdNMDA, int tdGABAa, int trGABAb, int tdGABAb,
-		int configId=ALL);
+	void setConductances(bool isSet, int tdAMPA, int trNMDA, int tdNMDA, int tdGABAa, int trGABAb, int tdGABAb);
 
 	/*!
 	 * \brief Sets custom values for implementation of homeostatic synaptic scaling
@@ -350,9 +349,8 @@ public:
 	 * \param[in] homeoScale   scaling factor multiplied to weight change due to homeostasis
 	 * \param[in] avgTimeScale time in seconds over which average firing rate for neurons in this group is
 	 *                         averaged
-	 * \param[in] configId     (deprecated) sets homeostasis for a particular configId
 	 */
-	void setHomeostasis(int grpId, bool isSet, float homeoScale, float avgTimeScale, int configId=ALL);
+	void setHomeostasis(int grpId, bool isSet, float homeoScale, float avgTimeScale);
 
 	 /*!
 	 * \brief Sets default values for implementation of homeostatic synaptic scaling
@@ -367,9 +365,8 @@ public:
 	 * \STATE CONFIG
 	 * \param[in] grpId        the group ID of group to which homeostasis is applied
 	 * \param[in] isSet        a boolean, setting it to true/false enables/disables homeostasis
-	 * \param[in] configId     (deprecated) sets homeostasis for a particular configId
 	 */
-	void setHomeostasis(int grpId, bool isSet, int configId=ALL);
+	void setHomeostasis(int grpId, bool isSet);
 
 	 /*!
 	 * \brief Sets the homeostatic target firing rate (enforced through homeostatic synaptic scaling)
@@ -386,9 +383,8 @@ public:
 	 * \param[in] grpId        the group ID of group for which these settings are applied
 	 * \param[in] baseFiring   target firing rate of every neuron in this group
 	 * \param[in] baseFiringSD standard deviation of target firing rate of every neuron in this group
-	 * \param[in] configId     (deprecated) sets baseFiringRate for a particular configId
 	 */
-	void setHomeoBaseFiringRate(int grpId, float baseFiring, float baseFiringSD, int configId=ALL);
+	void setHomeoBaseFiringRate(int grpId, float baseFiring, float baseFiringSD);
 
 	/*!
 	 * \brief Sets Izhikevich params a, b, c, and d with as mean +- standard deviation
@@ -397,7 +393,7 @@ public:
 	 * \STATE CONFIG
 	 */
 	void setNeuronParameters(int grpId, float izh_a, float izh_a_sd, float izh_b, float izh_b_sd,
-							 float izh_c, float izh_c_sd, float izh_d, float izh_d_sd, int configId=ALL);
+							 float izh_c, float izh_c_sd, float izh_d, float izh_d_sd);
 
 	/*!
 	 * \brief Sets Izhikevich params a, b, c, and d of a neuron group.
@@ -405,7 +401,7 @@ public:
 	 * \TODO finish docu
 	 * \STATE CONFIG
 	 */
-	void setNeuronParameters(int grpId, float izh_a, float izh_b, float izh_c, float izh_d, int configId=ALL);
+	void setNeuronParameters(int grpId, float izh_a, float izh_b, float izh_c, float izh_d);
 
 	/*!
 	 * \brief Sets baseline concentration and decay time constant of neuromodulators (DP, 5HT, ACh, NE) for a neuron
@@ -421,10 +417,9 @@ public:
 	 * \param tauACh the decay time constant of Acetylcholine
 	 * \param baseNE  the baseline concentration of Noradrenaline
 	 * \param tauNE the decay time constant of Noradrenaline
-	 * \param configId (optional, deprecated) configuration id
 	 */
 	void setNeuromodulator(int grpId, float baseDP, float tauDP, float base5HT, float tau5HT,
-							float baseACh, float tauACh, float baseNE, float tauNE, int configId = ALL);
+							float baseACh, float tauACh, float baseNE, float tauNE);
 
 	/*!
 	 * \brief Sets default neuromodulators
@@ -435,7 +430,7 @@ public:
 	 * \STATE CONFIG
 	 */
 	void setNeuromodulator(int grpId, float tauDP = 100.0f, float tau5HT = 100.0f,
-							float tauACh = 100.0f, float tauNE = 100.0f, int configId = ALL);
+							float tauACh = 100.0f, float tauNE = 100.0f);
 
 	/*!
 	 * \brief Sets default STDP mode and params
@@ -443,7 +438,7 @@ public:
 	 * \TODO finish docu
 	 * \STATE CONFIG
 	 */
-	void setSTDP(int grpId, bool isSet, int configId=ALL);
+	void setSTDP(int grpId, bool isSet);
 
 	/*!
 	 * \brief Sets STDP params for a group, custom
@@ -451,8 +446,7 @@ public:
 	 * \TODO finish docu
 	 * \STATE CONFIG
 	 */
-	void setSTDP(int grpId, bool isSet, stdpType_t type, float alphaLTP, float tauLTP, float alphaLTD, float tauLTD,
-		int configId=ALL);
+	void setSTDP(int grpId, bool isSet, stdpType_t type, float alphaLTP, float tauLTP, float alphaLTD, float tauLTD);
 
 	/*!
 	 * \brief Sets STP params U, tau_u, and tau_x of a neuron group (pre-synaptically)
@@ -478,9 +472,8 @@ public:
 	 * \param[in] STP_U       increment of u induced by a spike
 	 * \param[in] STP_tau_u   decay constant of u (\tau_F)
 	 * \param[in] STP_tau_x   decay constant of x (\tau_D)
-	 * \param[in] configId    configuration ID of group
 	 */
-	void setSTP(int grpId, bool isSet, float STP_U, float STP_tau_u, float STP_tau_x, int configId=ALL);
+	void setSTP(int grpId, bool isSet, float STP_U, float STP_tau_u, float STP_tau_x);
 
 	/*!
 	 * \brief Sets STP params U, tau_u, and tau_x of a neuron group (pre-synaptically) using default values
@@ -488,7 +481,7 @@ public:
 	 * \TODO finish docu
 	 * \STATE CONFIG
 	 */
-	void setSTP(int grpId, bool isSet, int configId=ALL);
+	void setSTP(int grpId, bool isSet);
 
 	/*!
 	 * \brief Sets the weight and weight change update parameters
@@ -570,14 +563,14 @@ public:
 	/*!
 	 * \brief Reassigns fixed weights to values passed into the function in a single 1D float matrix (weightMatrix)
 	 *
-	 * The user passes the connection ID (connectID), the weightMatrix, the matrixSize, and
-	 * configuration ID (configID).  This function only works for fixed synapses and for connections of type
-	 * CONN_USER_DEFINED. Only the weights are changed, not the maxWts, delays, or connected values
+	 * The user passes the connection ID (connectID), the weightMatrix, and the matrixSize.
+	 * This function only works for fixed synapses and for connections of type CONN_USER_DEFINED. Only the weights are 
+	 * changed, not the maxWts, delays, or connected values
 	 * \TODO finish docu
 	 *
 	 * \STATE SETUP
 	 */
-	void reassignFixedWeights(short int connectId, float weightMatrix[], int matrixSize, int configId=ALL);
+	void reassignFixedWeights(short int connectId, float weightMatrix[], int matrixSize);
 
 	//! \deprecated Deprecated
 	void resetSpikeCntUtil(int grpId=ALL); //!< resets spike count for particular neuron group
@@ -591,9 +584,8 @@ public:
 	 *
 	 * \STATE EXECUTION
 	 * \param grpId the group for which to reset the spike counts. Set to ALL if you want to reset all Spike Counters.
-	 * \param configId the config id for which to reset the spike counts. Set to ALL if you want to reset all configIds
 	 */
-	void resetSpikeCounter(int grpId, int configId=ALL);
+	void resetSpikeCounter(int grpId);
 
 	/*!
 	 * \brief Sets a connection monitor for a group, custom ConnectionMonitor class
@@ -609,7 +601,7 @@ public:
 	 * \param[in] grpIdPost 	the post-synaptic group ID
 	 * \param[in] connectionMon an instance of class ConnectionMonitor (see callback.h)
 	 */
-	void setConnectionMonitor(int grpIdPre, int grpIdPost, ConnectionMonitor* connectionMon=NULL, int configId=ALL);
+	void setConnectionMonitor(int grpIdPre, int grpIdPost, ConnectionMonitor* connectionMon=NULL);
 
 	/*!
 	 * \brief Sets a group monitor for a group, custom GroupMonitor class
@@ -617,7 +609,7 @@ public:
 	 * \TODO finish docu
 	 * \STATE CONFIG, SETUP
 	 */
-	void setGroupMonitor(int grpId, GroupMonitor* groupMon=NULL, int configId=ALL);
+	void setGroupMonitor(int grpId, GroupMonitor* groupMon=NULL);
 
 	/*!
 	 * \brief A Spike Counter keeps track of the number of spikes per neuron in a group.
@@ -636,7 +628,7 @@ public:
 	 * \param[in] recordDur number of ms for which to record spike numbers. Spike numbers will be reset to zero after
 	 * this. Set frameDur to -1 to never reset spike counts. Default: -1.
 	 */
-	void setSpikeCounter(int grpId, int recordDur=-1, int configId=ALL);
+	void setSpikeCounter(int grpId, int recordDur=-1);
 
 	/*!
 	 * \brief Sets up a spike generator
@@ -644,7 +636,7 @@ public:
 	 * \TODO finish docu
 	 * \STATE CONFIG
 	 */
-	void setSpikeGenerator(int grpId, SpikeGenerator* spikeGen, int configId=ALL);
+	void setSpikeGenerator(int grpId, SpikeGenerator* spikeGen);
 
 	/*!
 	 * \brief Sets a Spike Monitor for a groups, prints spikes to binary file
@@ -672,12 +664,11 @@ public:
 	 * \param[in] grpId 		the group ID
 	 * \param[in] fname 		name of the binary file to be created. Leave empty for default name
 	 *                      	"results/spk{grpName}.dat". Set to string "NULL" to suppress file creation. Default: ""
-	 * \param[in] configId  	\deprecated config IDs are deprecated
 	 * \returns   SpikeMonitor*	pointer to a SpikeMonitor object, which can be used to calculate spike statistics
 	 *                          (such as group firing rate, number of silent neurons, etc.) or retrieve all spikes in
 	 * 							AER format
 	 */
-	SpikeMonitor* setSpikeMonitor(int grpId, const std::string& fname="", int configId=0);
+	SpikeMonitor* setSpikeMonitor(int grpId, const std::string& fname="");
 
 	/*!
 	 * \brief Sets a spike rate
@@ -685,7 +676,7 @@ public:
 	 *
 	 * \STATE SETUP, EXECUTION
 	 */
-	void setSpikeRate(int grpId, PoissonRate* spikeRate, int refPeriod=1, int configId=ALL);
+	void setSpikeRate(int grpId, PoissonRate* spikeRate, int refPeriod=1);
 
 	/*!
 	 * \brief Resets either the neuronal firing rate information by setting resetFiringRate = true and/or the
@@ -702,7 +693,7 @@ public:
 	 * \TODO finish docu
 	 * \STATE SETUP, EXECUTION
 	 */
-	void writePopWeights(std::string fname, int gIDpre, int gIDpost, int configId=0);
+	void writePopWeights(std::string fname, int gIDpre, int gIDpost);
 
 
 
@@ -724,17 +715,6 @@ public:
 	 * \returns current CARLsim state
 	 */
 	carlsimState_t getCarlsimState() { return carlsimState_; }
-
-// \FIXME grpConnectInfo is broken
-//	grpConnectInfo_t* getConnectInfo(short int connectId, int configId=0); //gets connection info struct
-
-	/*!
-	 * \brief returns connection ID
-	 *
-	 * \TODO finish docu
-	 * \STATE SETUP, EXECUTION
-	 */
-	int  getConnectionId(short int connId, int configId=0);
 
 	/*!
 	 * \brief gets delays
@@ -759,14 +739,6 @@ public:
 	Grid3D getGroupGrid3D(int grpId);
 
 	/*!
-	 * \brief gets group ID
-	 *
-	 * \TODO finish docu
-	 * \STATE SETUP, EXECUTION
-	 */
-	int getGroupId(int grpId, int configId=0);
-
-	/*!
 	 * \brief finds the ID of the group with name grpName
 	 *
 	 * \TODO finish docu
@@ -774,15 +746,13 @@ public:
 	 */
 	int getGroupId(std::string grpName);
 
-	//group_info_t getGroupInfo(int grpId, int configId=0); // gets group info struct
-
 	/*!
 	 * \brief gets group name
 	 *
 	 * \TODO finish docu
 	 * \STATE SETUP, EXECUTION
 	 */
-	std::string getGroupName(int grpId, int configId=0);
+	std::string getGroupName(int grpId);
 
 	/*!
 	 * \brief returns the 3D location a neuron codes for
@@ -972,7 +942,7 @@ public:
 	 * \TODO finish docu
 	 * \STATE SETUP, EXECUTION
 	 */
-	GroupSTDPInfo_t getGroupSTDPInfo(int grpId, int configId=0);
+	GroupSTDPInfo_t getGroupSTDPInfo(int grpId);
 
 	/*!
 	 * \brief returns the neuromodulator information of a group specified by grpId
@@ -980,20 +950,19 @@ public:
 	 * \TODO finish docu
 	 * \STATE SETUP, EXECUTION
 	 */
-	GroupNeuromodulatorInfo_t getGroupNeuromodulatorInfo(int grpId, int configId=0);
+	GroupNeuromodulatorInfo_t getGroupNeuromodulatorInfo(int grpId);
 
 	/*!
 	 * \brief Writes weights from synaptic connections from gIDpre to gIDpost.  Returns a pointer to the weights
 	 *
 	 * and the size of the 1D array in size.  gIDpre(post) is the group ID for the pre(post)synaptic group,
 	 * weights is a pointer to a single dimensional array of floats, size is the size of that array which is
-	 * returned to the user, and configID is the configuration ID of the SNN.  NOTE: user must free memory from
-	 * weights to avoid a memory leak.
+	 * returned to the user.  NOTE: user must free memory from weights to avoid a memory leak.
 	 * \TODO why not readPopWeight()?
 	 * \TODO finish docu
 	 * \STATE SETUP, EXECUTION
 	 */
-	void getPopWeights(int gIDpre, int gIDpost, float*& weights, int& size, int configId=0);
+	void getPopWeights(int gIDpre, int gIDpost, float*& weights, int& size);
 
 	/*!
 	 * \brief returns
@@ -1034,11 +1003,10 @@ public:
 	 *
 	 * \STATE EXECUTION
 	 * \param[in] grpId	   the group for which you want the spikes (cannot be ALL)
-	 * \param[in] configId the configuration ID (cannot be ALL)
 	 * \returns pointer to array of ints. Number of elements in array is the number of neurons in group.
 	 * Each entry is the number of spikes for this neuron (int) since the last reset.
 	 */
-	int* getSpikeCounter(int grpId, int configId=0);
+	int* getSpikeCounter(int grpId);
 
 	/*!
 	 * \brief returns pointer to weight array
