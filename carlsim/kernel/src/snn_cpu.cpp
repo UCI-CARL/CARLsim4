@@ -3058,7 +3058,7 @@ void CpuSNN::findFiring() {
 									if (stdp_tDiff * grp_Info[g].TAU_LTP_INV_EXC < 25)
 										wtChange[pos_ij] += STDP(stdp_tDiff, grp_Info[g].ALPHA_LTP_EXC, grp_Info[g].TAU_LTP_INV_EXC);
 									break;
-								case HALF_HEBBIAN: // Half-Hebbian curve
+								case HALF_HEBBIAN: // half-Hebbian curve
 									break;
 								default:
 									KERNEL_ERROR("Invalid E-STDP curve!");
@@ -3067,15 +3067,14 @@ void CpuSNN::findFiring() {
 							} else if (grp_Info[g].WithISTDP && maxSynWt[pos_ij] < 0) { // inhibitory synapse
 								// Handle I-STDP curve
 								switch (grp_Info[g].WithISTDPcurve) {
-								case ANTI_HEBBIAN: // Anti-Hebbian curve
+								case ANTI_HEBBIAN: // anti-Hebbian curve
 									if (stdp_tDiff * grp_Info[g].TAU_LTP_INV_INB < 25) { // LTP of inhibitory synapse, which decreases synapse weight
 										wtChange[pos_ij] -= STDP(stdp_tDiff, grp_Info[g].ALPHA_LTP_INB, grp_Info[g].TAU_LTP_INV_INB);
 									}
 									break;
-								case LINEAR_SYMMETRIC:
+								case LINEAR_SYMMETRIC: // linear symmetric curve
 									break;
-								case CONSTANT_SYMMETRIC:
-									// Constant symmetric curve
+								case CONSTANT_SYMMETRIC: // constant symmetric curve
 									if (stdp_tDiff <= grp_Info[g].LAMDA) { // LTP of inhibitory synapse, which decreases synapse weight
 										wtChange[pos_ij] -= grp_Info[g].BETA_LTP;
 										//printf("I-STDP LTP\n");
@@ -3219,17 +3218,17 @@ void CpuSNN::generatePostSpike(unsigned int pre_i, unsigned int idx_d, unsigned 
 			if (grp_Info[post_grpId].WithISTDP && ((pre_type & TARGET_GABAa) || (pre_type & TARGET_GABAb))) { // inhibitory syanpse
 				// Handle I-STDP curve
 				switch (grp_Info[post_grpId].WithISTDPcurve) {
-				case ANTI_HEBBIAN: // Anit-Hebbian curve
-					if ((stdp_tDiff*grp_Info[post_grpId].TAU_LTD_INV_INB)<25) { // LTD of inhibitory syanpse, which increase sysnapse weight
+				case ANTI_HEBBIAN: // anit-Hebbian curve
+					if ((stdp_tDiff*grp_Info[post_grpId].TAU_LTD_INV_INB)<25) { // LTD of inhibitory syanpse, which increase synapse weight
 						wtChange[pos_i] += STDP(stdp_tDiff, grp_Info[post_grpId].ALPHA_LTD_INB, grp_Info[post_grpId].TAU_LTD_INV_INB);
 					}
 					break;
-				case LINEAR_SYMMETRIC:
+				case LINEAR_SYMMETRIC: // linear symmetric curve
 					break;
-				case CONSTANT_SYMMETRIC: // Constant symmetric curve
+				case CONSTANT_SYMMETRIC: // constant symmetric curve
 					if (stdp_tDiff <= grp_Info[post_grpId].LAMDA) { // LTP of inhibitory synapse, which decreases synapse weight
 						wtChange[pos_i] -= grp_Info[post_grpId].BETA_LTP;
-					} else if (stdp_tDiff <= grp_Info[post_grpId].DELTA) { // LTD of inhibitory syanpse, which increase sysnapse weight
+					} else if (stdp_tDiff <= grp_Info[post_grpId].DELTA) { // LTD of inhibitory syanpse, which increase synapse weight
 						wtChange[pos_i] += grp_Info[post_grpId].BETA_LTD;
 					} else { /*do nothing*/ }
 					break;
@@ -3240,11 +3239,11 @@ void CpuSNN::generatePostSpike(unsigned int pre_i, unsigned int idx_d, unsigned 
 			} else if (grp_Info[post_grpId].WithESTDP && ((pre_type & TARGET_AMPA) || (pre_type & TARGET_NMDA))) { // excitatory synapse
 				// Handle E-STDP curve
 				switch (grp_Info[post_grpId].WithESTDPcurve) {
-				case HEBBIAN:
+				case HEBBIAN: // Hebbian curve
 					if (stdp_tDiff * grp_Info[post_grpId].TAU_LTD_INV_EXC < 25)
 						wtChange[pos_i] -= STDP(stdp_tDiff, grp_Info[post_grpId].ALPHA_LTD_EXC, grp_Info[post_grpId].TAU_LTD_INV_EXC);
 					break;
-				case HALF_HEBBIAN:
+				case HALF_HEBBIAN: // half-Hebbian curve
 					break;
 				default:
 					KERNEL_ERROR("Invalid E-STDP curve");

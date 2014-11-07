@@ -680,15 +680,38 @@ __device__ void gpu_updateLTP(	int*     		fireTablePtr,
 ////						gpuPtrs.testVar[val+3] = 1+stdp_tDiff;
 //				}
 				if (stdp_tDiff > 0) {
-					if (gpuGrpInfo[grpId].WithESTDP && (stdp_tDiff * gpuGrpInfo[grpId].TAU_LTP_INV_EXC < 25)) {
-						gpuPtrs.wtChange[p] += STDP(stdp_tDiff, gpuGrpInfo[grpId].ALPHA_LTP_EXC, gpuGrpInfo[grpId].TAU_LTP_INV_EXC);
+					if (gpuGrpInfo[grpId].WithESTDP) {
+						// Handle E-STDP curves
+						switch (gpuGrpInfo[grpId].WithESTDPcurve) {
+						case HEBBIAN: // Hebbian curve
+							if (stdp_tDiff * gpuGrpInfo[grpId].TAU_LTP_INV_EXC < 25)
+								gpuPtrs.wtChange[p] += STDP(stdp_tDiff, gpuGrpInfo[grpId].ALPHA_LTP_EXC, gpuGrpInfo[grpId].TAU_LTP_INV_EXC);
+							break;
+						case HALF_HEBBIAN: // half-Hebbian curve
+							break;
+						default:
+							break;
+						}
 					}
 					if (gpuGrpInfo[grpId].WithISTDP) {
-						// Symmetrical I-STDP curve
-						if (stdp_tDiff <= gpuGrpInfo[grpId].LAMDA) { // LTP of inhibitory synapse, which decreases synapse weight
-							gpuPtrs.wtChange[p] -= gpuGrpInfo[grpId].BETA_LTP;
-						} else if (stdp_tDiff <= gpuGrpInfo[grpId].DELTA) { // LTD of inhibitory syanpse, which increase sysnapse weight
-							gpuPtrs.wtChange[p] += gpuGrpInfo[grpId].BETA_LTD;
+						// Handle I-STDP curves
+						switch (gpuGrpInfo[grpId].WithISTDPcurve) {
+						case ANTI_HEBBIAN: // anti-Hebbian curve
+							if (stdp_tDiff * gpuGrpInfo[grpId].TAU_LTP_INV_INB < 25) { // LTP of inhibitory synapse, which decreases synapse weight
+								gpuPtrs.wtChange[p] -= STDP(stdp_tDiff, gpuGrpInfo[grpId].ALPHA_LTP_INB, gpuGrpInfo[grpId].TAU_LTP_INV_INB);
+							}
+							break;
+						case LINEAR_SYMMETRIC: // linear symmetric curve
+							break;
+						case CONSTANT_SYMMETRIC: // constant symmetric curve
+							if (stdp_tDiff <= gpuGrpInfo[grpId].LAMDA) { // LTP of inhibitory synapse, which decreases synapse weight
+								gpuPtrs.wtChange[p] -= gpuGrpInfo[grpId].BETA_LTP;
+							} else if (stdp_tDiff <= gpuGrpInfo[grpId].DELTA) { // LTD of inhibitory syanpse, which increase sysnapse weight
+								gpuPtrs.wtChange[p] += gpuGrpInfo[grpId].BETA_LTD;
+							}
+							break;
+						default:
+							break;
 						}
 					}
 				}
@@ -1473,15 +1496,38 @@ __device__ int generatePostSynapticSpike(int& simTime, int& firingId, int& myDel
 		//	gpuPtrs.wtChange[pos_ns] -= STDP( stdp_tDiff, gpuGrpInfo[post_grpId].ALPHA_LTD_EXC, gpuGrpInfo[post_grpId].TAU_LTD_INV_EXC); // uncoalesced access
 		//}
 		if (stdp_tDiff >= 0) {
-			if (gpuGrpInfo[post_grpId].WithESTDP && (stdp_tDiff * gpuGrpInfo[post_grpId].TAU_LTD_INV_EXC < 25)) {
-				gpuPtrs.wtChange[pos_ns] -= STDP( stdp_tDiff, gpuGrpInfo[post_grpId].ALPHA_LTD_EXC, gpuGrpInfo[post_grpId].TAU_LTD_INV_EXC); // uncoalesced access
+			if (gpuGrpInfo[post_grpId].WithESTDP) {
+				// Handle E-STDP curves
+				switch (gpuGrpInfo[post_grpId].WithESTDPcurve) {
+				case HEBBIAN: // Hebbian curve
+					if (stdp_tDiff * gpuGrpInfo[post_grpId].TAU_LTD_INV_EXC < 25)
+						gpuPtrs.wtChange[pos_ns] -= STDP( stdp_tDiff, gpuGrpInfo[post_grpId].ALPHA_LTD_EXC, gpuGrpInfo[post_grpId].TAU_LTD_INV_EXC); // uncoalesced access
+					break;
+				case HALF_HEBBIAN: // half-Hebbian curve
+					break;
+				default:
+					break;
+				}
 			}
 			if (gpuGrpInfo[post_grpId].WithISTDP) {
-				// Symmetrical I-STDP curve
-				if (stdp_tDiff <= gpuGrpInfo[post_grpId].LAMDA) { // LTP of inhibitory synapse, which decreases synapse weight
-					gpuPtrs.wtChange[pos_ns] -= gpuGrpInfo[post_grpId].BETA_LTP;
-				} else if (stdp_tDiff <= gpuGrpInfo[post_grpId].DELTA) { // LTD of inhibitory syanpse, which increase sysnapse weight
-					gpuPtrs.wtChange[pos_ns] += gpuGrpInfo[post_grpId].BETA_LTD;
+				// Handle I-STDP curves
+				switch (gpuGrpInfo[post_grpId].WithISTDPcurve) {
+				case ANTI_HEBBIAN: // anti-Hebbian curve
+					if ((stdp_tDiff * gpuGrpInfo[post_grpId].TAU_LTD_INV_INB) < 25) { // LTD of inhibitory syanpse, which increase synapse weight
+						gpuPtrs.wtChange[pos_ns] += STDP(stdp_tDiff, gpuGrpInfo[post_grpId].ALPHA_LTD_INB, gpuGrpInfo[post_grpId].TAU_LTD_INV_INB);
+					}
+					break;
+				case LINEAR_SYMMETRIC: // linear symmetric curve
+					break;
+				case CONSTANT_SYMMETRIC: // constant symmetric curve
+					if (stdp_tDiff <= gpuGrpInfo[post_grpId].LAMDA) { // LTP of inhibitory synapse, which decreases synapse weight
+						gpuPtrs.wtChange[pos_ns] -= gpuGrpInfo[post_grpId].BETA_LTP;
+					} else if (stdp_tDiff <= gpuGrpInfo[post_grpId].DELTA) { // LTD of inhibitory syanpse, which increase synapse weight
+						gpuPtrs.wtChange[pos_ns] += gpuGrpInfo[post_grpId].BETA_LTD;
+					}
+					break;
+				default:
+					break;
 				}
 			}
 		}

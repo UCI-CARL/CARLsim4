@@ -578,13 +578,12 @@ TEST(STDP, ISTDPAntiHebbianCurve) {
 	float minInhWeight = 0.0f;
 	CARLsim* sim;
 
-	//for (int mode = 0; mode < 2; mode++) {
+	for (int mode = 0; mode < 2; mode++) {
 		for (int coba = 0; coba < 2; coba++) {
 			for (int offset = -30; offset <= 30; offset += 5) {
 				if (offset == 0) continue; // skip offset == 0;
 				// create a network
-				//sim = new CARLsim("istdp", mode?GPU_MODE:CPU_MODE, SILENT, 0, 1, 42);
-				sim = new CARLsim("istdp", CPU_MODE, SILENT, 0, 1, 42);
+				sim = new CARLsim("istdp", mode?GPU_MODE:CPU_MODE, SILENT, 0, 1, 42);
 
 				g1 = sim->createGroup("excit", 1, EXCITATORY_NEURON);
 				sim->setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f);
@@ -636,7 +635,7 @@ TEST(STDP, ISTDPAntiHebbianCurve) {
 				sim->runNetwork(40, 0, true, true);
 
 				sim->getPopWeights(gin, g1, weights, size);
-				//printf("inb w %f\n", weights[0]);
+				printf("%d %d %d inb w %f\n", mode, coba, offset, weights[0]);
 
 				if (offset > 0) { // I-STDP LTP
 					if (coba) {
@@ -656,5 +655,5 @@ TEST(STDP, ISTDPAntiHebbianCurve) {
 				delete sim;
 			}
 		}
-	//}
+	}
 }
