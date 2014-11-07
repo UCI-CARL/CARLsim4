@@ -480,7 +480,22 @@ void CARLsim::setISTDP(int grpId, bool isSet, int configId) {
 	if (isSet) { // enable STDP, use default values and type
 		snn_->setISTDP(grpId, true, def_STDP_type_, CONSTANT_SYMMETRIC, def_STDP_betaLTP_, def_STDP_betaLTD_, def_STDP_lamda_, def_STDP_delta_, configId);
 	} else { // disable STDP
-		snn_->setISTDP(grpId, false, UNKNOWN_STDP, UNKNOWN_CURVE, 0.0f, 0.0f, 0.0f, 0.0f, configId);
+		snn_->setISTDP(grpId, false, UNKNOWN_STDP, UNKNOWN_CURVE, 0.0f, 0.0f, 1.0f, 1.0f, configId);
+	}
+}
+
+// set ISTDP by stdp curve
+void CARLsim::setISTDP(int grpId, bool isSet, stdpType_t type, AntiHebbianCurve curve, int configId) {
+	std::string funcName = "setISTDP(\""+getGroupName(grpId,configId)+","+stdpType_string[type]+"\")";
+	UserErrors::assertTrue(type!=UNKNOWN_STDP, UserErrors::CANNOT_BE_UNKNOWN, funcName, "Mode");
+	UserErrors::assertTrue(carlsimState_==CONFIG_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "CONFIG.");
+
+	hasSetSTDPALL_ = grpId==ALL; // adding groups after this will not have conductances set
+
+	if (isSet) { // enable STDP, use custom values
+		snn_->setISTDP(grpId, true, type, curve.stdpCurve, curve.alphaLTP, curve.alphaLTD, curve.tauLTP, curve.tauLTD, configId);
+	} else { // disable STDP and DA-STDP as well
+		snn_->setISTDP(grpId, false, UNKNOWN_STDP, UNKNOWN_CURVE, 0.0f, 0.0f, 1.0f, 1.0f, configId);
 	}
 }
 
@@ -495,7 +510,7 @@ void CARLsim::setISTDP(int grpId, bool isSet, stdpType_t type, ConstantSymmetric
 	if (isSet) { // enable STDP, use custom values
 		snn_->setISTDP(grpId, true, type, curve.stdpCurve, curve.betaLTP, curve.betaLTD, curve.lamda, curve.delta, configId);
 	} else { // disable STDP and DA-STDP as well
-		snn_->setISTDP(grpId, false, UNKNOWN_STDP, UNKNOWN_CURVE, 0.0f, 0.0f, 0.0f, 0.0f, configId);
+		snn_->setISTDP(grpId, false, UNKNOWN_STDP, UNKNOWN_CURVE, 0.0f, 0.0f, 1.0f, 1.0f, configId);
 	}
 }
 
@@ -510,7 +525,7 @@ void CARLsim::setISTDP(int grpId, bool isSet, stdpType_t type, LinearSymmetricCu
 	if (isSet) { // enable STDP, use custom values
 		snn_->setISTDP(grpId, true, type, curve.stdpCurve, curve.betaLTP, curve.betaLTD, curve.lamda, curve.delta, configId);
 	} else { // disable STDP and DA-STDP as well
-		snn_->setISTDP(grpId, false, UNKNOWN_STDP, UNKNOWN_CURVE, 0.0f, 0.0f, 0.0f, 0.0f, configId);
+		snn_->setISTDP(grpId, false, UNKNOWN_STDP, UNKNOWN_CURVE, 0.0f, 0.0f, 1.0f, 1.0f, configId);
 	}
 }
 

@@ -99,7 +99,7 @@ TEST(STDP, setSTDPTrue) {
 					if (stdpType == 0) {
 						if (stdpCurve == 0) {
 							sim->setESTDP(g1, true, STANDARD, HebbianCurve(alphaLTP,tauLTP,alphaLTD,tauLTD));
-							sim->setISTDP(g1, true, STANDARD, ConstantSymmetricCurve(betaLTP,betaLTD,lamda,delta));
+							sim->setISTDP(g1, true, STANDARD, AntiHebbianCurve(alphaLTP,tauLTP,alphaLTD,tauLTD));
 						} else { //stdpCurve == 1
 							sim->setESTDP(g1, true, STANDARD, HalfHebbianCurve(alphaLTP,tauLTP,alphaLTD,tauLTD, gama));
 							sim->setISTDP(g1, true, STANDARD, LinearSymmetricCurve(betaLTP,betaLTD,lamda,delta));
@@ -107,7 +107,7 @@ TEST(STDP, setSTDPTrue) {
 					} else { // stdpType == 1
 						if (stdpCurve == 0) {
 							sim->setESTDP(g1, true, DA_MOD, HebbianCurve(alphaLTP,tauLTP,alphaLTD,tauLTD));
-							sim->setISTDP(g1, true, DA_MOD, ConstantSymmetricCurve(betaLTP,betaLTD,lamda,delta));
+							sim->setISTDP(g1, true, DA_MOD, AntiHebbianCurve(alphaLTP,tauLTP,alphaLTD,tauLTD));
 						} else { //stdpCurve == 1
 							sim->setESTDP(g1, true, DA_MOD, HalfHebbianCurve(alphaLTP,tauLTP,alphaLTD,tauLTD, gama));
 							sim->setISTDP(g1, true, DA_MOD, LinearSymmetricCurve(betaLTP,betaLTD,lamda,delta));
@@ -129,7 +129,7 @@ TEST(STDP, setSTDPTrue) {
 
 						if (stdpCurve == 0) {
 							EXPECT_TRUE(gInfo.WithESTDPcurve == HEBBIAN);
-							EXPECT_TRUE(gInfo.WithISTDPcurve == CONSTANT_SYMMETRIC);
+							EXPECT_TRUE(gInfo.WithISTDPcurve == ANTI_HEBBIAN);
 						} else {
 							EXPECT_TRUE(gInfo.WithESTDPcurve == HALF_HEBBIAN);
 							EXPECT_TRUE(gInfo.WithISTDPcurve == LINEAR_SYMMETRIC);
@@ -139,15 +139,19 @@ TEST(STDP, setSTDPTrue) {
 						EXPECT_FLOAT_EQ(gInfo.ALPHA_LTD_EXC,alphaLTD);
 						EXPECT_FLOAT_EQ(gInfo.TAU_LTP_INV_EXC,1.0/tauLTP);
 						EXPECT_FLOAT_EQ(gInfo.TAU_LTD_INV_EXC,1.0/tauLTD);
-						EXPECT_FLOAT_EQ(gInfo.BETA_LTP,betaLTP);
-						EXPECT_FLOAT_EQ(gInfo.BETA_LTD,betaLTD);
-						EXPECT_FLOAT_EQ(gInfo.LAMDA,lamda);
-						EXPECT_FLOAT_EQ(gInfo.DELTA,delta);
-
 						if (stdpCurve == 0) {
+							EXPECT_FLOAT_EQ(gInfo.ALPHA_LTP_INB,alphaLTP);
+							EXPECT_FLOAT_EQ(gInfo.ALPHA_LTD_INB,alphaLTD);
+							EXPECT_FLOAT_EQ(gInfo.TAU_LTP_INV_INB,1.0/tauLTP);
+							EXPECT_FLOAT_EQ(gInfo.TAU_LTD_INV_INB,1.0/tauLTD);
 							EXPECT_FLOAT_EQ(gInfo.GAMA, 0.0f);
-						} else
+						} else {
+							EXPECT_FLOAT_EQ(gInfo.BETA_LTP,betaLTP);
+							EXPECT_FLOAT_EQ(gInfo.BETA_LTD,betaLTD);
+							EXPECT_FLOAT_EQ(gInfo.LAMDA,lamda);
+							EXPECT_FLOAT_EQ(gInfo.DELTA,delta);
 							EXPECT_FLOAT_EQ(gInfo.GAMA, gama);
+						}
 					}
 
 					delete sim;
@@ -195,10 +199,14 @@ TEST(STDP, setSTDPFalse) {
 				EXPECT_FLOAT_EQ(gInfo.ALPHA_LTD_EXC, 0.0f);
 				EXPECT_FLOAT_EQ(gInfo.TAU_LTP_INV_EXC, 1.0f);
 				EXPECT_FLOAT_EQ(gInfo.TAU_LTD_INV_EXC, 1.0f);
+				EXPECT_FLOAT_EQ(gInfo.ALPHA_LTP_EXC, 0.0f);
+				EXPECT_FLOAT_EQ(gInfo.ALPHA_LTD_EXC, 0.0f);
+				EXPECT_FLOAT_EQ(gInfo.TAU_LTP_INV_EXC, 1.0f);
+				EXPECT_FLOAT_EQ(gInfo.TAU_LTD_INV_EXC, 1.0f);
 				EXPECT_FLOAT_EQ(gInfo.BETA_LTP, 0.0f);
 				EXPECT_FLOAT_EQ(gInfo.BETA_LTD, 0.0f);
-				EXPECT_FLOAT_EQ(gInfo.LAMDA, 0.0f);
-				EXPECT_FLOAT_EQ(gInfo.DELTA, 0.0f);
+				EXPECT_FLOAT_EQ(gInfo.LAMDA, 1.0f);
+				EXPECT_FLOAT_EQ(gInfo.DELTA, 1.0f);
 				EXPECT_FLOAT_EQ(gInfo.GAMA, 0.0f);
 			}
 
@@ -379,7 +387,7 @@ TEST(STDP, DASTDPWeightBoost) {
  * Wtih control of pre- and post-neurons' spikes, the synaptic weight is expected to increase or decrease to
  * maximum or minimum synaptic weith respectively.
  */
-TEST(STDP, ISTDPWeightChange) {
+TEST(STDP, ISTDPConstantSymmetricCurve) {
 	// simulation details
 	float* weights = NULL;
 	int size;

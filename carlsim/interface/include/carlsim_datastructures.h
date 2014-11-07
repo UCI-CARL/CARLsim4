@@ -134,7 +134,7 @@ static const char* stdpType_string[] = {
 enum stdpCurve_t {
 	HEBBIAN,
 	HALF_HEBBIAN,
-	//ANTI_HEBBIAN,
+	ANTI_HEBBIAN,
 	//SYMMETRIC,
 	//LINEAR_HEBBIAN,
 	//LINEAR_ANTI_HEBBIAN,
@@ -145,7 +145,7 @@ enum stdpCurve_t {
 static const char* stdpCurve_string[] = {
 	"Hebbian curve",
 	"Half Hebbian curve",
-	//"Anti-Hebbian curve",
+	"Anti-Hebbian curve",
 	//"Symmetric curve",
 	//"Linear Hebbian curve",
 	//"Linear Anti-symmetric curve",
@@ -319,6 +319,10 @@ typedef struct GroupSTDPInfo_s {
 	float		TAU_LTD_INV_EXC;
 	float		ALPHA_LTP_EXC;
 	float		ALPHA_LTD_EXC;
+	float		TAU_LTP_INV_INB;
+	float		TAU_LTD_INV_INB;
+	float		ALPHA_LTP_INB;
+	float		ALPHA_LTD_INB;
 	float		GAMA;
 	float		BETA_LTP;
 	float		BETA_LTD;
@@ -424,6 +428,26 @@ struct HalfHebbianCurve {
 	float tauLTP;
 	float tauLTD;
 	float gama;
+};
+
+/*!
+ * \brief struct to assign Anti-Hebbian I-STDP curve
+ */
+struct AntiHebbianCurve {
+	AntiHebbianCurve(float _alphaLTP, float _tauLTP, float _alphaLTD, float _tauLTD) : alphaLTP(_alphaLTP), tauLTP(_tauLTP), alphaLTD(_alphaLTD), tauLTD(_tauLTD) {
+		UserErrors::assertTrue(_alphaLTP > 0.0f, UserErrors::MUST_BE_POSITIVE, "AntiHebbianCurve", "alphaLTP");
+		UserErrors::assertTrue(_alphaLTD > 0.0f, UserErrors::MUST_BE_POSITIVE, "AntiHebbianCurve", "alphaLTD");
+		UserErrors::assertTrue(_tauLTP > 0.0f, UserErrors::MUST_BE_POSITIVE, "AntiHebbianCurve", "tauLTP");
+		UserErrors::assertTrue(_tauLTD > 0.0f, UserErrors::MUST_BE_POSITIVE, "AntiHebbianCurve", "tauLTD");
+
+		stdpCurve = ANTI_HEBBIAN;
+	}
+
+	stdpCurve_t stdpCurve;
+	float alphaLTP;
+	float alphaLTD;
+	float tauLTP;
+	float tauLTD;
 };
 
 /*!

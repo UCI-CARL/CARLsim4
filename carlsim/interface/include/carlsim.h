@@ -489,6 +489,14 @@ public:
 	 * \TODO finish docu
 	 * \STATE CONFIG
 	 */
+	void setISTDP(int grpId, bool isSet, stdpType_t type, AntiHebbianCurve curve, int configId=ALL);
+	
+	/*!
+	 * \brief Sets default I-STDP mode with constant symmetric curve
+	 *
+	 * \TODO finish docu
+	 * \STATE CONFIG
+	 */
 	void setISTDP(int grpId, bool isSet, stdpType_t type, ConstantSymmetricCurve curve, int configId=ALL);
 
 	/*!

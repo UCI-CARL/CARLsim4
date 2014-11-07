@@ -281,13 +281,13 @@ public:
 	 * \param[in] isSet_enable set to true to enable STDP for this group
 	 * \param[in] type STDP type (STANDARD, DA_MOD)
 	 * \param[in] curve STDP curve
-	 * \param[in] betaLTP magnitude for LTP change
-	 * \param[in] betaLTD magnitude for LTD change (leave positive)
-	 * \param[in] lamda, the interval for LTP
-	 * \param[in] delta, the interval for LTD
+	 * \param[in] abLTP magnitude for LTP change
+	 * \param[in] abLTD magnitude for LTD change (leave positive)
+	 * \param[in] tau1, the interval for LTP
+	 * \param[in] tau2, the interval for LTD
 	 * \param[in] configId (optional, deprecated) configuration id
 	 */
-	void setISTDP(int grpId, bool isSet, stdpType_t type, stdpCurve_t curve, float betaLTP, float betaLTD, float lamda, float delta,
+	void setISTDP(int grpId, bool isSet, stdpType_t type, stdpCurve_t curve, float abLTP, float abLTD, float tau1, float tau2,
 		int configId);
 
 	/*!
