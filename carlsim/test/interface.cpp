@@ -6,7 +6,7 @@
 //! trigger all UserErrors
 // TODO: add more error checking
 TEST(Interface, connectDeath) {
-	CARLsim* sim = new CARLsim("SNN",CPU_MODE,SILENT,0,1,42);
+	CARLsim* sim = new CARLsim("SNN",CPU_MODE,SILENT,0,42);
 	int g1=sim->createSpikeGeneratorGroup("excit", 10, EXCITATORY_NEURON);
 	EXPECT_DEATH({sim->connect(g1,g1,"random",RangeWeight(0.01f,0.1f),0.1);},""); // g2 cannot be PoissonGroup
 	EXPECT_DEATH({sim->connect(g1,g1,"random",RangeWeight(-0.01f,0.1f),0.1);},""); // weight cannot be negative
@@ -18,19 +18,16 @@ TEST(Interface, connectDeath) {
 //! Death tests for createGroup (test all possible silly values)
 // \FIXME this should be interface-level
 TEST(Interface, createGroupDeath) {
-	CARLsim* sim = new CARLsim("Interface.createGroupDeath",CPU_MODE,SILENT,0,1,42);
+	CARLsim* sim = new CARLsim("Interface.createGroupDeath",CPU_MODE,SILENT,0,42);
 
 	// set silly values to all possible input arguments
-	// e.g., negative values for things>=0, values>numGrps or values>numConfig, etc.
+	// e.g., negative values for things>=0, values>numGrp, etc.
 	EXPECT_DEATH({sim->createGroup("excit", -10, EXCITATORY_NEURON);},"");
 	EXPECT_DEATH({sim->createGroup("excit", 10, -3);},"");
-	EXPECT_DEATH({sim->createGroup("excit", -10, EXCITATORY_NEURON, -2);},"");
 	EXPECT_DEATH({sim->createGroup("excit", Grid3D(-10,1,1), EXCITATORY_NEURON);},"");
 	EXPECT_DEATH({sim->createGroup("excit", Grid3D(1,-1,1), EXCITATORY_NEURON);},"");
 	EXPECT_DEATH({sim->createGroup("excit", Grid3D(10,1,-1), EXCITATORY_NEURON);},"");
 	EXPECT_DEATH({sim->createGroup("excit", Grid3D(1,1,1), -3);},"");
-	EXPECT_DEATH({sim->createGroup("excit", Grid3D(10,1,1), EXCITATORY_NEURON, 2);},"");
-	EXPECT_DEATH({sim->createGroup("excit", Grid3D(10,1,1), EXCITATORY_NEURON, -2);},"");
 
 	if (sim!=NULL)
 		delete sim;
@@ -39,26 +36,23 @@ TEST(Interface, createGroupDeath) {
 //! Death tests for createSpikeGenerator (test all possible silly values)
 // \FIXME make interface-level
 TEST(Interface, createSpikeGeneratorGroupDeath) {
-	CARLsim* sim = new CARLsim("Interface.createSpikeGeneratorGroupDeath",CPU_MODE,SILENT,0,1,42);
+	CARLsim* sim = new CARLsim("Interface.createSpikeGeneratorGroupDeath",CPU_MODE,SILENT,0,42);
 
 	// set silly values to all possible input arguments
-	// e.g., negative values for things>=0, values>numGrps or values>numConfig, etc.
+	// e.g., negative values for things>=0, values>numGrps, etc.
 	EXPECT_DEATH({sim->createSpikeGeneratorGroup("excit", -10, EXCITATORY_NEURON);},"");
 	EXPECT_DEATH({sim->createSpikeGeneratorGroup("excit", 10, -3);},"");
-	EXPECT_DEATH({sim->createSpikeGeneratorGroup("excit", -10, EXCITATORY_NEURON, -2);},"");
 	EXPECT_DEATH({sim->createSpikeGeneratorGroup("excit", Grid3D(-10,1,1), EXCITATORY_NEURON);},"");
 	EXPECT_DEATH({sim->createSpikeGeneratorGroup("excit", Grid3D(1,-1,1), EXCITATORY_NEURON);},"");
 	EXPECT_DEATH({sim->createSpikeGeneratorGroup("excit", Grid3D(10,1,-1), EXCITATORY_NEURON);},"");
 	EXPECT_DEATH({sim->createSpikeGeneratorGroup("excit", Grid3D(1,1,1), -3);},"");
-	EXPECT_DEATH({sim->createSpikeGeneratorGroup("excit", Grid3D(10,1,1), EXCITATORY_NEURON, 2);},"");
-	EXPECT_DEATH({sim->createSpikeGeneratorGroup("excit", Grid3D(10,1,1), EXCITATORY_NEURON, -2);},"");
 
 	if (sim!=NULL)
 		delete sim;
 }
 
 TEST(Interface, getGroupGrid3DDeath) {
-	CARLsim* sim = new CARLsim("Interface.getGroupGrid3D",CPU_MODE,SILENT,0,1,42);
+	CARLsim* sim = new CARLsim("Interface.getGroupGrid3D",CPU_MODE,SILENT,0,42);
 	Grid3D grid(2,3,4);
 	int g1=sim->createGroup("excit", grid, EXCITATORY_NEURON);
 	sim->setNeuronParameters(g1, 0.02f, 0.2f,-65.0f,8.0f);
@@ -72,7 +66,7 @@ TEST(Interface, getGroupGrid3DDeath) {
 }
 
 TEST(Interface, getNeuronLocation3DDeath) {
-	CARLsim* sim = new CARLsim("Interface.createGroupDeath",CPU_MODE,SILENT,0,1,42);
+	CARLsim* sim = new CARLsim("Interface.createGroupDeath",CPU_MODE,SILENT,0,42);
 	Grid3D grid(2,3,4);
 	int g1=sim->createGroup("excit", grid, EXCITATORY_NEURON);
 	sim->setNeuronParameters(g1, 0.02f, 0.2f,-65.0f,8.0f);
@@ -91,17 +85,16 @@ TEST(Interface, getNeuronLocation3DDeath) {
 
 //! trigger all UserErrors
 TEST(Interface, getSpikeCounterDeath) {
-	CARLsim* sim = new CARLsim("SNN",CPU_MODE,SILENT,0,1,42);
+	CARLsim* sim = new CARLsim("SNN",CPU_MODE,SILENT,0,42);
 	int g1=sim->createGroup("excit", 10, EXCITATORY_NEURON);
 	sim->setSpikeCounter(g1);
 	EXPECT_DEATH({sim->getSpikeCounter(ALL);},"");
-	EXPECT_DEATH({sim->getSpikeCounter(g1,ALL);},"");
 	delete sim;
 }
 
 //! trigger all UserErrors
 TEST(Interface, setConductancesDeath) {
-	CARLsim* sim = new CARLsim("SNN",CPU_MODE,SILENT,0,1,42);
+	CARLsim* sim = new CARLsim("SNN",CPU_MODE,SILENT,0,42);
 	int g1=sim->createGroup("excit", 10, EXCITATORY_NEURON);
 	sim->setNeuronParameters(g1, 0.02f, 0.2f,-65.0f,8.0f);
 	sim->connect(g1,g1,"random",RangeWeight(0.01),0.1f,RangeDelay(1));
@@ -137,30 +130,26 @@ TEST(Interface, setNeuronParametersDeath) {
 	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
 	CARLsim* sim = NULL;
-	sim = new CARLsim("Interface.setNeuronParametersDeath",CPU_MODE,SILENT,0,1,42);
-	int g0=sim->createGroup("excit", Grid3D(10,1,1), EXCITATORY_NEURON, ALL);
+	sim = new CARLsim("Interface.setNeuronParametersDeath",CPU_MODE,SILENT,0,42);
+	int g0=sim->createGroup("excit", Grid3D(10,1,1), EXCITATORY_NEURON);
 
 	// set silly values to all possible input arguments
-	// e.g., negative values for things>=0, values>numGrps or values>numConfig, etc.
+	// e.g., negative values for things>=0, values>numGrpsetc.
 	EXPECT_DEATH({sim->setNeuronParameters(-2, 0.02f, 0.2f, -65.0f, 8.0f);},"");
 	EXPECT_DEATH({sim->setNeuronParameters(g0+1, 0.02f, 0.2f, -65.0f, 8.0f);},"");
 	EXPECT_DEATH({sim->setNeuronParameters(g0, -0.02f, 0.2f, -65.0f, 8.0f);},"");
 	EXPECT_DEATH({sim->setNeuronParameters(g0, 0.02f, -0.2f, -65.0f, 8.0f);},"");
 	EXPECT_DEATH({sim->setNeuronParameters(g0, 0.02f, 0.2f, -65.0f, -8.0f);},"");
-	EXPECT_DEATH({sim->setNeuronParameters(g0, 0.02f, 0.2f, -65.0f, 8.0f, 2);},"");
-	EXPECT_DEATH({sim->setNeuronParameters(g0, 0.02f, 0.2f, -65.0f, 8.0f, -2);},"");
 
-	EXPECT_DEATH({sim->setNeuronParameters(-2, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f, ALL);},"");
-	EXPECT_DEATH({sim->setNeuronParameters(g0+1, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f, ALL);},"");
-	EXPECT_DEATH({sim->setNeuronParameters(g0, -0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f, ALL);},"");
-	EXPECT_DEATH({sim->setNeuronParameters(g0, 0.02f, -10.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f, ALL);},"");
-	EXPECT_DEATH({sim->setNeuronParameters(g0, 0.02f, 0.0f, -0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f, ALL);},"");
-	EXPECT_DEATH({sim->setNeuronParameters(g0, 0.02f, 0.0f, 0.2f, -10.0f, -65.0f, 0.0f, 8.0f, 0.0f, ALL);},"");
-	EXPECT_DEATH({sim->setNeuronParameters(g0, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, -2.0f, 8.0f, 0.0f, ALL);},"");
-	EXPECT_DEATH({sim->setNeuronParameters(g0, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, -8.0f, 0.0f, ALL);},"");
-	EXPECT_DEATH({sim->setNeuronParameters(g0, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, -10.0f, ALL);},"");
-	EXPECT_DEATH({sim->setNeuronParameters(g0, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f, 2);},"");
-	EXPECT_DEATH({sim->setNeuronParameters(g0, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f, -2);},"");
+	EXPECT_DEATH({sim->setNeuronParameters(-2, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f);},"");
+	EXPECT_DEATH({sim->setNeuronParameters(g0+1, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f);},"");
+	EXPECT_DEATH({sim->setNeuronParameters(g0, -0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f);},"");
+	EXPECT_DEATH({sim->setNeuronParameters(g0, 0.02f, -10.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f);},"");
+	EXPECT_DEATH({sim->setNeuronParameters(g0, 0.02f, 0.0f, -0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f);},"");
+	EXPECT_DEATH({sim->setNeuronParameters(g0, 0.02f, 0.0f, 0.2f, -10.0f, -65.0f, 0.0f, 8.0f, 0.0f);},"");
+	EXPECT_DEATH({sim->setNeuronParameters(g0, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, -2.0f, 8.0f, 0.0f);},"");
+	EXPECT_DEATH({sim->setNeuronParameters(g0, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, -8.0f, 0.0f);},"");
+	EXPECT_DEATH({sim->setNeuronParameters(g0, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, -10.0f);},"");
 
 	if (sim!=NULL)
 		delete sim;
@@ -170,7 +159,7 @@ TEST(Interface, setNeuronParametersDeath) {
 TEST(Interface, setSpikeCounter) {
 	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
-	CARLsim* sim = new CARLsim("SNN",CPU_MODE,SILENT,0,1,42);
+	CARLsim* sim = new CARLsim("SNN",CPU_MODE,SILENT,0,42);
 	int g1=sim->createGroup("excit", 10, EXCITATORY_NEURON);
 	EXPECT_DEATH({sim->setSpikeCounter(ALL);},"");
 	delete sim;
@@ -198,7 +187,7 @@ TEST(Interface, CARLsimState) {
 	int g1, g2, i, j;
 	float wM[4];
 	float* w;
-	CARLsim* sim = new CARLsim("SNN",CPU_MODE,SILENT,0,1,42);
+	CARLsim* sim = new CARLsim("SNN",CPU_MODE,SILENT,0,42);
 	//----- CONFIG_STATE zone -----
 
 	g1 = sim->createGroup("excit", 800, EXCITATORY_NEURON);
@@ -212,9 +201,7 @@ TEST(Interface, CARLsimState) {
 	EXPECT_DEATH({sim->reassignFixedWeights(0, wM, 4);},"");
 	EXPECT_DEATH({sim->setSpikeRate(g1, NULL);},"");
 	EXPECT_DEATH({sim->writePopWeights("test.dat", 0, 1);},"");
-	EXPECT_DEATH({sim->getConnectionId(0);},"");
 	EXPECT_DEATH({sim->getDelays(0, 1, i, j);},"");
-	EXPECT_DEATH({sim->getGroupId(0);},"");
 	EXPECT_DEATH({sim->getGroupId("hello");},"");
 	EXPECT_DEATH({sim->getGroupStartNeuronId(0);},"");
 	EXPECT_DEATH({sim->getGroupEndNeuronId(0);},"");

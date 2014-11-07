@@ -15,34 +15,26 @@
 
  */
 TEST(STP, setSTPTrue) {
-	// create network by varying nConfig from 1...maxConfig, with
-	// step size nConfigStep
 	std::string name = "SNN";
-	int maxConfig = rand()%10 + 10;
-	int nConfigStep = rand()%3 + 2;
 	float STP_U = 0.25f;		// the exact values don't matter
 	float STP_tF = 10.0f;
 	float STP_tD = 15.0f;
 	CpuSNN* sim;
 
 	for (int mode=0; mode<=1; mode++) {
-		for (int nConfig=1; nConfig<=maxConfig; nConfig+=nConfigStep) {
-			sim = new CpuSNN(name,mode?GPU_MODE:CPU_MODE,SILENT,0,nConfig,42);
-            Grid3D neurGrid(10,1,1);
-			int g1=sim->createGroup("excit", neurGrid, EXCITATORY_NEURON,ALL);
-			sim->setNeuronParameters(g1, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f, ALL);
-			sim->setSTP(g1,true,STP_U,STP_tF,STP_tD,ALL);					// exact values matter
+		sim = new CpuSNN(name,mode?GPU_MODE:CPU_MODE,SILENT,0,42);
+        Grid3D neurGrid(10,1,1);
+		int g1=sim->createGroup("excit", neurGrid, EXCITATORY_NEURON);
+		sim->setNeuronParameters(g1, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f);
+		sim->setSTP(g1,true,STP_U,STP_tF,STP_tD);					// exact values matter
 
-			for (int c=0; c<nConfig; c++) {
-				group_info_t grpInfo = sim->getGroupInfo(g1,c);
-				EXPECT_TRUE(grpInfo.WithSTP); 							// STP must be enabled
-				EXPECT_FLOAT_EQ(grpInfo.STP_A,1.0f/STP_U);
-				EXPECT_FLOAT_EQ(grpInfo.STP_U,STP_U); 					// check exact values
-				EXPECT_FLOAT_EQ(grpInfo.STP_tau_u_inv,1.0f/STP_tF);
-				EXPECT_FLOAT_EQ(grpInfo.STP_tau_x_inv,1.0f/STP_tD);
-			}
-			delete sim;
-		}
+		group_info_t grpInfo = sim->getGroupInfo(g1);
+		EXPECT_TRUE(grpInfo.WithSTP); 							// STP must be enabled
+		EXPECT_FLOAT_EQ(grpInfo.STP_A,1.0f/STP_U);
+		EXPECT_FLOAT_EQ(grpInfo.STP_U,STP_U); 					// check exact values
+		EXPECT_FLOAT_EQ(grpInfo.STP_tau_u_inv,1.0f/STP_tF);
+		EXPECT_FLOAT_EQ(grpInfo.STP_tau_x_inv,1.0f/STP_tD);
+		delete sim;
 	}
 }
 
@@ -51,49 +43,38 @@ TEST(STP, setSTPTrue) {
  * This function tests the information stored in the group info struct after disabling STP via setSTP
  */
 TEST(STP, setSTPFalse) {
-	int maxConfig = rand()%10 + 10;	// create network by varying nConfig from 1..maxConfig, with some
-	int nConfigStep = rand()%3 + 2; // step size nConfigStep
 	std::string name="STP.setSTPFalse";
 	CpuSNN* sim;
 
 	for (int mode=0; mode<=1; mode++) {
-		for (int nConfig=1; nConfig<=maxConfig; nConfig+=nConfigStep) {
-			sim = new CpuSNN(name,mode?GPU_MODE:CPU_MODE,SILENT,0,nConfig,42);
-            Grid3D neurGrid(10,1,1);
-			int g1=sim->createGroup("excit", neurGrid, EXCITATORY_NEURON, ALL);
-			sim->setNeuronParameters(g1, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f, ALL);
-			sim->setSTP(g1,false,0.1f,100,200, ALL); 					// exact values don't matter
+		sim = new CpuSNN(name,mode?GPU_MODE:CPU_MODE,SILENT,0,42);
+        Grid3D neurGrid(10,1,1);
+		int g1=sim->createGroup("excit", neurGrid, EXCITATORY_NEURON);
+		sim->setNeuronParameters(g1, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f);
+		sim->setSTP(g1,false,0.1f,100,200); 					// exact values don't matter
 
-			for (int c=0; c<nConfig; c++) {
-				group_info_t grpInfo = sim->getGroupInfo(g1,c);
-				EXPECT_FALSE(grpInfo.WithSTP);						// STP must be disabled
-			}
-			delete sim;
-		}
+		group_info_t grpInfo = sim->getGroupInfo(g1);
+		EXPECT_FALSE(grpInfo.WithSTP);						// STP must be disabled
+		delete sim;
 	}
 }
 
 
 //! expect CARLsim to die if setSTP is called with silly params
 TEST(STP, setSTPdeath) {
-	CARLsim* sim = new CARLsim("SNN",CPU_MODE,SILENT,0,1,42);
+	CARLsim* sim = new CARLsim("STP.setSTPdeath",CPU_MODE,SILENT,0,42);
 	int g1=sim->createSpikeGeneratorGroup("excit", 10, EXCITATORY_NEURON);
 
 	// grpId
-	EXPECT_DEATH({sim->setSTP(-2,true,0.1f,10,10,ALL);},"");
+	EXPECT_DEATH({sim->setSTP(-2,true,0.1f,10,10);},"");
 
 	// STP_U
-	EXPECT_DEATH({sim->setSTP(g1,true,0.0f,10,10,ALL);},"");
-	EXPECT_DEATH({sim->setSTP(g1,true,1.1f,10,10,ALL);},"");
+	EXPECT_DEATH({sim->setSTP(g1,true,0.0f,10,10);},"");
+	EXPECT_DEATH({sim->setSTP(g1,true,1.1f,10,10);},"");
 
 	// STP_tF / STP_tD
-	EXPECT_DEATH({sim->setSTP(g1,true,0.1f,-10,10,ALL);},"");
-	EXPECT_DEATH({sim->setSTP(g1,true,0.1f,10,-10,ALL);},"");
-
-	// configId
-	EXPECT_DEATH({sim->setSTP(g1,true,0.1f,10,10,-2);},"");
-	EXPECT_DEATH({sim->setSTP(g1,true,0.1f,10,10,2);},"");
-	EXPECT_DEATH({sim->setSTP(g1,true,0.1f,10,10,101);},"");
+	EXPECT_DEATH({sim->setSTP(g1,true,0.1f,-10,10);},"");
+	EXPECT_DEATH({sim->setSTP(g1,true,0.1f,10,-10);},"");
 }
 
 //! test the effect of short-term depression
@@ -124,7 +105,7 @@ TEST(STP, firingRateSTDvsSTF) {
 				float rateG3noSTP = -1.0f;
 
 				for (int hasSTP=0; hasSTP<=1; hasSTP++) {
-					CARLsim* sim = new CARLsim("SNN",isGPUmode?GPU_MODE:CPU_MODE,SILENT,0,1,randSeed);
+					CARLsim* sim = new CARLsim("STP.firingRateSTDvsSTF",isGPUmode?GPU_MODE:CPU_MODE,SILENT,0,randSeed);
 					int g0=sim->createSpikeGeneratorGroup("input0", 1, EXCITATORY_NEURON);
 					int g1=sim->createSpikeGeneratorGroup("input1", 1, EXCITATORY_NEURON);
 					int g2=sim->createGroup("STD", 1, EXCITATORY_NEURON);
@@ -172,15 +153,18 @@ TEST(STP, firingRateSTDvsSTF) {
 						rateG2noSTP = spkMonG2->getPopMeanFiringRate();
 						rateG3noSTP = spkMonG3->getPopMeanFiringRate();
 					} else {
-//						fprintf(stderr,"%s %s %s, G2 w/o=%f, G2 w/=%f\n", isRunLong?"long":"short",
-//							isGPUmode?"GPU":"CPU",
-//							hasCOBA?"COBA":"CUBA",
-//							rateG2noSTP, spkMonG2->getPopMeanFiringRate());
-//						fprintf(stderr,"%s %s %s, G3 w/o=%f, G3 w/=%f\n", isRunLong?"long":"short",
-//							isGPUmode?"GPU":"CPU",
-//							hasCOBA?"COBA":"CUBA",
-//							rateG3noSTP,
-//							spkMonG3->getPopMeanFiringRate());
+
+/*
+						fprintf(stderr,"%s %s %s, G2 w/o=%f, G2 w/=%f\n", isRunLong?"long":"short",
+							isGPUmode?"GPU":"CPU",
+							hasCOBA?"COBA":"CUBA",
+							rateG2noSTP, spkMonG2->getPopMeanFiringRate());
+						fprintf(stderr,"%s %s %s, G3 w/o=%f, G3 w/=%f\n", isRunLong?"long":"short",
+							isGPUmode?"GPU":"CPU",
+							hasCOBA?"COBA":"CUBA",
+							rateG3noSTP,
+							spkMonG3->getPopMeanFiringRate());
+*/
 
 						// if STP is on: compare spike rate to the one recorded without STP
 						if (isRunLong) {
@@ -215,7 +199,7 @@ TEST(STP, spikeTimesCPUvsGPU) {
 		// compare spike times cpu vs gpu
 
 		for (int isGPUmode=0; isGPUmode<=1; isGPUmode++) {
-			CARLsim* sim = new CARLsim("SNN",isGPUmode?GPU_MODE:CPU_MODE,SILENT,0,1,42);
+			CARLsim* sim = new CARLsim("SNN",isGPUmode?GPU_MODE:CPU_MODE,SILENT,0,42);
 			int g0=sim->createSpikeGeneratorGroup("input0", 1, EXCITATORY_NEURON);
 			int g1=sim->createSpikeGeneratorGroup("input1", 1, EXCITATORY_NEURON);
 			int g2=sim->createGroup("STD", 1, EXCITATORY_NEURON);
