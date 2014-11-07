@@ -54,6 +54,7 @@
 // carlsim.h
 #include <poisson_rate.h>
 #include <spike_monitor.h>
+#include <connection_monitor.h>
 
 #include <linear_algebra.h>
 
@@ -63,7 +64,6 @@
 
 
 class CpuSNN; // forward-declaration of implementation
-class SpikeMonitor;
 class GroupMonitorCore;
 class ConnectionMonitorCore;
 class ConnectionGeneratorCore;

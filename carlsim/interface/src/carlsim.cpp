@@ -42,6 +42,7 @@
 #include <carlsim.h>
 #include <user_errors.h>
 #include <callback_core.h>
+#include <connection_monitor_core.h>
 
 #include <iostream>		// std::cout, std::endl
 #include <sstream>		// std::stringstream
@@ -871,8 +872,6 @@ Point3D CARLsim::getNeuronLocation3D(int grpId, int relNeurId) {
 
 	return snn_->getNeuronLocation3D(grpId, relNeurId);
 }
-
-int CARLsim::getNumConfigurations() { return nConfig_; }
 
 int CARLsim::getNumConnections() { return snn_->getNumConnections(); }
 

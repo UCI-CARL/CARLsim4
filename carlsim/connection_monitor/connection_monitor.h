@@ -1,4 +1,4 @@
-/* 
+/*
  * Copyright (c) 2014 Regents of the University of California. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -28,7 +28,7 @@
  * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * *********************************************************************************************** *
+ * *************************************************************************
  * CARLsim
  * created by: 		(MDR) Micah Richert, (JN) Jayram M. Nageswaran
  * maintained by:	(MA) Mike Avery <averym@uci.edu>, (MB) Michael Beyeler <mbeyeler@uci.edu>,
@@ -36,58 +36,52 @@
  *					(TSC) Ting-Shuo Chou <tingshuc@uci.edu>
  *
  * CARLsim available from http://socsci.uci.edu/~jkrichma/CARLsim/
- * Ver 2/21/2014
+ * Ver 7/29/2014
  */
-#include <stdio.h>
-#include <callback_core.h>
-#include <callback.h>
 
-/// **************************************************************************************************************** ///
-/// Classes for relay callback
-/// **************************************************************************************************************** ///
+// paradigm shift: run this on spikes.
 
-SpikeGeneratorCore::SpikeGeneratorCore(CARLsim* c, SpikeGenerator* s) {
-	carlsim = c;
-	sGen = s;
-}
+#ifndef _CONN_MON_H_
+#define _CONN_MON_H_
 
-unsigned int SpikeGeneratorCore::nextSpikeTime(CpuSNN* s, int grpId, int i,
-											unsigned int currentTime, unsigned int lastScheduledSpikeTime) {
-	if (sGen != NULL)
-		return sGen->nextSpikeTime(carlsim, grpId, i, currentTime, lastScheduledSpikeTime);
-	else
-		return 0xFFFFFFFF;
-}
+#include <carlsim_datastructures.h> // spikeMonMode_t
+#include <vector>					// std::vector
 
-ConnectionGeneratorCore::ConnectionGeneratorCore(CARLsim* c, ConnectionGenerator* cg) {
-	carlsim = c;
-	cGen = cg;
-}
+//class CpuSNN; 			// forward declaration of CpuSNN class
+class ConnectionMonitorCore; // forward declaration of implementation
 
-void ConnectionGeneratorCore::connect(CpuSNN* s, int srcGrpId, int i, int destGrpId, int j, float& weight, float& maxWt,
-							float& delay, bool& connected) {
-	if (cGen != NULL)
-		cGen->connect(carlsim, srcGrpId, i, destGrpId, j, weight, maxWt, delay, connected);
-}
+/*!
+ * \brief Class ConnectionMonitor
+ *
+ *
+ * \TODO finish documentation
+ */
+class ConnectionMonitor {
+ public:
+	/*!
+	 * \brief ConnectionMonitor constructor
+	 *
+	 * Creates a new instance of the ConnectionMonitor class.
+	 *
+	 */
+	ConnectionMonitor(ConnectionMonitorCore* connMonCorePtr);
 
-/*
-ConnectionMonitorCore::ConnectionMonitorCore(CARLsim* c, ConnectionMonitor* n) {
-	carlsim = c;
-	nMon = n;
-}
+	/*!
+	 * \brief ConnectionMonitor destructor.
+	 *
+	 * Cleans up all the memory upon object deletion.
+	 *
+	 */
+	~ConnectionMonitor();
 
-void ConnectionMonitorCore::update(CpuSNN* s, int grpIdPre, int grpIdPost, float* weight, int numData) {
-	if (nMon != NULL)
-		nMon->update(carlsim, grpIdPre, grpIdPost, weight, numData);
-}
-*/
 
-GroupMonitorCore::GroupMonitorCore(CARLsim* c, GroupMonitor* g) {
-	carlsim = c;
-	gMon = g;
-}
+	// +++++ PUBLIC METHODS: +++++++++++++++++++++++++++++++++++++++++++++++//
 
-void GroupMonitorCore::update(CpuSNN* s, int grpID, float* grpDA, int numData) {
-	if (gMon != NULL)
-		gMon->update(carlsim, grpID, grpDA, numData);
-}
+
+ private:
+  //! This is a pointer to the actual implementation of the class. The user should never directly instantiate it.
+  ConnectionMonitorCore* connMonCorePtr_;
+
+};
+
+#endif

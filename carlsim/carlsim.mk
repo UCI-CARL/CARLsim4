@@ -24,6 +24,14 @@ interface_src := $(addprefix $(interface_dir)/src/,carlsim.cpp \
 	user_errors.cpp callback_core.cpp linear_algebra.cpp)
 interface_objs := $(patsubst %.cpp, %.o, $(interface_src))
 
+# connection monitor variables
+conn_mon_inc := $(addprefix $(conn_mon_dir)/,connection_monitor.h \
+	connection_monitor_core.h)
+conn_mon_src := $(addprefix $(conn_mon_dir)/, connection_monitor.cpp \
+	connection_monitor_core.cpp)
+conn_mon_objs := $(patsubst %.cpp, %.o, $(conn_mon_src))
+conn_mon_flags := -I$(conn_mon_dir)
+
 # spike monitor variables
 spike_mon_inc := $(addprefix $(spike_mon_dir)/,spike_monitor.h \
 	spike_monitor_core.h)
@@ -36,10 +44,10 @@ spike_mon_flags := -I$(spike_mon_dir)
 util_2_0_objs := $(addprefix $(kernel_dir)/,v1ColorME.2.0.o)
 
 # carlsim variables all together in one place
-carlsim_inc += $(kernel_inc) $(interface_inc) $(spike_mon_inc)
-carlsim_objs += $(kernel_objs) $(interface_objs) $(spike_mon_objs)
-carlsim_sources += $(kernel_src) $(interface_src) $(spike_mon_src)
-objects += $(carlsim_objs) $(interface_objs) $(spike_mon_objs)
+carlsim_inc += $(kernel_inc) $(interface_inc) $(spike_mon_inc) $(conn_mon_inc)
+carlsim_objs += $(kernel_objs) $(interface_objs) $(spike_mon_objs) $(conn_mon_objs)
+carlsim_sources += $(kernel_src) $(interface_src) $(spike_mon_src) $(conn_mon_src)
+objects += $(carlsim_objs) $(interface_objs) $(spike_mon_objs) $(conn_mon_objs)
 
 default_targets += carlsim
 
@@ -53,6 +61,11 @@ carlsim: $(carlsim_sources) $(carlsim_inc) $(carlsim_objs)
 # interface
 $(interface_dir)/src/%.o: $(interface_dir)/src/%.cpp $(interface_inc)
 	$(NVCC) -c $(CARLSIM_INCLUDES) $(CARLSIM_FLAGS) $< -o $@
+
+# connection monitor
+$(conn_mon_dir)/%.o: $(conn_mon_dir)/%.cpp $(conn_mon_inc)
+	$(NVCC) -c $(CARLSIM_INCLUDES) $(CARLSIM_FLAGS) $(conn_mon_flags) \
+$< -o $@
 
 # spike_monitor
 $(spike_mon_dir)/%.o: $(spike_mon_dir)/%.cpp $(spike_mon_inc)

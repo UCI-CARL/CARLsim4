@@ -41,6 +41,8 @@
 #include <snn.h>
 #include <sstream>
 
+#include <connection_monitor_core.h>
+
 #if (WIN32 || WIN64)
 	#include <float.h>
 	#include <time.h>
@@ -4216,8 +4218,8 @@ void CpuSNN::updateConnectionMonitor() {
 			printWeights(grpIdPre,grpIdPost);
 
 			// call the callback function
-			if (connBufferCallback[monitorId])
-				connBufferCallback[monitorId]->update(this, grpIdPre, grpIdPost, weights, weightSzie);
+//			if (connBufferCallback[monitorId])
+//				connBufferCallback[monitorId]->update(this, grpIdPre, grpIdPost, weights, weightSzie);
 
 			if (weights != NULL)
 				delete [] weights;

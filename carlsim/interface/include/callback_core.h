@@ -105,7 +105,7 @@ private:
  * Once the core invokes the callback method of the class, the class relays all parameter and invokes user-defined
  * callback function.
  * \sa ConnectionMonitor
- */
+ *
 class ConnectionMonitorCore {
 public:
 	ConnectionMonitorCore(CARLsim* c, ConnectionMonitor* n);
@@ -115,6 +115,7 @@ private:
 	CARLsim* carlsim;
 	ConnectionMonitor* nMon;
 };
+*/
 
 //! used for relaying callback to GroupMonitor
 /*!
