@@ -10,7 +10,6 @@
 //! This test assures that the conductance peak occurs as specified by tau_rise and tau_decay, and that the peak is
 //! equal to the specified weight value
 TEST(COBA, synRiseTime) {
-	std::string name = "SNN";
 	CpuSNN* sim;
 
 	float abs_error = 0.05; // five percent error for wt
@@ -40,7 +39,7 @@ TEST(COBA, synRiseTime) {
 		int delay = 1;
 		float radRF = -1.0f;
 
-		sim = new CpuSNN(name,mode?GPU_MODE:CPU_MODE,SILENT,0,42);
+		sim = new CpuSNN("COBA.synRiseTime",mode?GPU_MODE:CPU_MODE,SILENT,0,42);
         Grid3D neur(1);
         Grid3D neur2(1);
 		int g0=sim->createSpikeGeneratorGroup("inputExc", neur, EXCITATORY_NEURON);
@@ -109,7 +108,6 @@ TEST(COBA, synRiseTime) {
 
 
 TEST(COBA, disableSynReceptors) {
-	std::string name="SNN";
 	int maxConfig = 1; //rand()%10 + 10;
 	float tAMPA = 5.0f;		// the exact values don't matter
 	float tNMDA = 10.0f;
@@ -134,7 +132,7 @@ TEST(COBA, disableSynReceptors) {
 	bool spikeAtZero = true;
 
 	for (int mode=0; mode<=1; mode++) {
-		sim = new CpuSNN(name,mode?GPU_MODE:CPU_MODE,SILENT,0,42);
+		sim = new CpuSNN("COBA.disableSynReceptors",mode?GPU_MODE:CPU_MODE,SILENT,0,42);
         Grid3D neurInp(nInput);
         Grid3D neurOup(nOutput);
 		int g0=sim->createSpikeGeneratorGroup("spike", neurInp, EXCITATORY_NEURON);

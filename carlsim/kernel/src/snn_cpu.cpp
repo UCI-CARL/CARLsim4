@@ -311,7 +311,7 @@ short int CpuSNN::connect(int grpId1, int grpId2, ConnectionGeneratorCore* conn,
 
 // create group of Izhikevich neurons
 // use int for nNeur to avoid arithmetic underflow
-int CpuSNN::createGroup(const std::string& grpName, Grid3D& grid, int neurType) {
+int CpuSNN::createGroup(const std::string& grpName, const Grid3D& grid, int neurType) {
 	assert(grid.x*grid.y*grid.z>0);
 	assert(neurType>=0);
 	assert(numGrp < MAX_GRP_PER_SNN);
@@ -363,7 +363,7 @@ int CpuSNN::createGroup(const std::string& grpName, Grid3D& grid, int neurType) 
 
 // create spike generator group
 // use int for nNeur to avoid arithmetic underflow
-int CpuSNN::createSpikeGeneratorGroup(const std::string& grpName, Grid3D& grid, int neurType) {
+int CpuSNN::createSpikeGeneratorGroup(const std::string& grpName, const Grid3D& grid, int neurType) {
 	assert(grid.x*grid.y*grid.z>0);
 	assert(neurType>=0);
 	grp_Info[numGrp].SizeN   		= grid.x * grid.y * grid.z; // number of neurons in the group

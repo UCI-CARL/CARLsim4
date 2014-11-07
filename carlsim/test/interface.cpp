@@ -6,7 +6,7 @@
 //! trigger all UserErrors
 // TODO: add more error checking
 TEST(Interface, connectDeath) {
-	CARLsim* sim = new CARLsim("SNN",CPU_MODE,SILENT,0,42);
+	CARLsim* sim = new CARLsim("Interface.connectDeath",CPU_MODE,SILENT,0,42);
 	int g1=sim->createSpikeGeneratorGroup("excit", 10, EXCITATORY_NEURON);
 	EXPECT_DEATH({sim->connect(g1,g1,"random",RangeWeight(0.01f,0.1f),0.1);},""); // g2 cannot be PoissonGroup
 	EXPECT_DEATH({sim->connect(g1,g1,"random",RangeWeight(-0.01f,0.1f),0.1);},""); // weight cannot be negative
@@ -53,8 +53,7 @@ TEST(Interface, createSpikeGeneratorGroupDeath) {
 
 TEST(Interface, getGroupGrid3DDeath) {
 	CARLsim* sim = new CARLsim("Interface.getGroupGrid3D",CPU_MODE,SILENT,0,42);
-	Grid3D grid(2,3,4);
-	int g1=sim->createGroup("excit", grid, EXCITATORY_NEURON);
+	int g1=sim->createGroup("excit", Grid3D(2,3,4), EXCITATORY_NEURON);
 	sim->setNeuronParameters(g1, 0.02f, 0.2f,-65.0f,8.0f);
 	sim->connect(g1, g1, "full", RangeWeight(0.01), 1.0f, RangeDelay(1));
 	sim->setupNetwork();
@@ -85,7 +84,7 @@ TEST(Interface, getNeuronLocation3DDeath) {
 
 //! trigger all UserErrors
 TEST(Interface, getSpikeCounterDeath) {
-	CARLsim* sim = new CARLsim("SNN",CPU_MODE,SILENT,0,42);
+	CARLsim* sim = new CARLsim("Interface.getSpikeCounterDeath",CPU_MODE,SILENT,0,42);
 	int g1=sim->createGroup("excit", 10, EXCITATORY_NEURON);
 	sim->setSpikeCounter(g1);
 	EXPECT_DEATH({sim->getSpikeCounter(ALL);},"");
@@ -94,7 +93,7 @@ TEST(Interface, getSpikeCounterDeath) {
 
 //! trigger all UserErrors
 TEST(Interface, setConductancesDeath) {
-	CARLsim* sim = new CARLsim("SNN",CPU_MODE,SILENT,0,42);
+	CARLsim* sim = new CARLsim("Interface.setConductancesDeath",CPU_MODE,SILENT,0,42);
 	int g1=sim->createGroup("excit", 10, EXCITATORY_NEURON);
 	sim->setNeuronParameters(g1, 0.02f, 0.2f,-65.0f,8.0f);
 	sim->connect(g1,g1,"random",RangeWeight(0.01),0.1f,RangeDelay(1));
@@ -159,7 +158,7 @@ TEST(Interface, setNeuronParametersDeath) {
 TEST(Interface, setSpikeCounter) {
 	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
-	CARLsim* sim = new CARLsim("SNN",CPU_MODE,SILENT,0,42);
+	CARLsim* sim = new CARLsim("Interface.setSpikeCounter",CPU_MODE,SILENT,0,42);
 	int g1=sim->createGroup("excit", 10, EXCITATORY_NEURON);
 	EXPECT_DEATH({sim->setSpikeCounter(ALL);},"");
 	delete sim;
@@ -169,7 +168,7 @@ TEST(Interface, setSpikeCounter) {
 TEST(Interface, setDefaultConductanceTimeConstants) {
 	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
-	CARLsim* sim = new CARLsim("SNN",CPU_MODE,SILENT);
+	CARLsim* sim = new CARLsim("Interface.setDefaultConductanceTimeConstants",CPU_MODE,SILENT);
 	EXPECT_DEATH({sim->setDefaultConductanceTimeConstants(-1,2,3,4,5,6);},""); // negative values
 	EXPECT_DEATH({sim->setDefaultConductanceTimeConstants(1,-2,3,4,5,6);},"");
 	EXPECT_DEATH({sim->setDefaultConductanceTimeConstants(1,2,-3,4,5,6);},"");
@@ -187,7 +186,7 @@ TEST(Interface, CARLsimState) {
 	int g1, g2, i, j;
 	float wM[4];
 	float* w;
-	CARLsim* sim = new CARLsim("SNN",CPU_MODE,SILENT,0,42);
+	CARLsim* sim = new CARLsim("Interface.CARLsimState",CPU_MODE,SILENT,0,42);
 	//----- CONFIG_STATE zone -----
 
 	g1 = sim->createGroup("excit", 800, EXCITATORY_NEURON);

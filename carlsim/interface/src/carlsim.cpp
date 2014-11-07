@@ -69,7 +69,7 @@
 /// **************************************************************************************************************** ///
 
 // constructor
-CARLsim::CARLsim(std::string netName, simMode_t simMode, loggerMode_t loggerMode, int ithGPU,
+CARLsim::CARLsim(const std::string& netName, simMode_t simMode, loggerMode_t loggerMode, int ithGPU,
 						int randSeed)
 {
 	netName_ 					= netName;
@@ -169,8 +169,8 @@ void CARLsim::CARLsimInit() {
 // +++++++++ PUBLIC METHODS: SETTING UP A SIMULATION ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
 // Connects a presynaptic to a postsynaptic group using one of the primitive types
-short int CARLsim::connect(int grpId1, int grpId2, const std::string& connType, RangeWeight wt, float connProb,
-		RangeDelay delay, RadiusRF radRF, bool synWtType, float mulSynFast, float mulSynSlow) {
+short int CARLsim::connect(int grpId1, int grpId2, const std::string& connType, const RangeWeight& wt, float connProb,
+		const RangeDelay& delay, const RadiusRF& radRF, bool synWtType, float mulSynFast, float mulSynSlow) {
 	std::string funcName = "connect(\""+getGroupName(grpId1)+"\",\""+getGroupName(grpId2)+"\")";
 	std::stringstream grpId1str; grpId1str << "Group Id " << grpId1;
 	std::stringstream grpId2str; grpId2str << "Group Id " << grpId2;
@@ -241,12 +241,12 @@ short int CARLsim::connect(int grpId1, int grpId2, ConnectionGenerator* conn, fl
 }
 
 // create group of Izhikevich spiking neurons on 1D grid
-int CARLsim::createGroup(std::string grpName, int nNeur, int neurType) {
+int CARLsim::createGroup(const std::string& grpName, int nNeur, int neurType) {
 	return createGroup(grpName, Grid3D(nNeur,1,1), neurType);
 }
 
 // create group of Izhikevich spiking neurons on 3D grid
-int CARLsim::createGroup(std::string grpName, Grid3D grid, int neurType) {
+int CARLsim::createGroup(const std::string& grpName, const Grid3D& grid, int neurType) {
 	std::string funcName = "createGroup(\""+grpName+"\")";
 	UserErrors::assertTrue(carlsimState_==CONFIG_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "CONFIG.");
 	UserErrors::assertTrue(grid.x>0, UserErrors::CANNOT_BE_NEGATIVE, funcName, "grid.x");
@@ -271,12 +271,12 @@ int CARLsim::createGroup(std::string grpName, Grid3D grid, int neurType) {
 }
 
 // create group of spike generators on 1D grid
-int CARLsim::createSpikeGeneratorGroup(std::string grpName, int nNeur, int neurType) {
+int CARLsim::createSpikeGeneratorGroup(const std::string& grpName, int nNeur, int neurType) {
 	return createSpikeGeneratorGroup(grpName, Grid3D(nNeur,1,1), neurType);
 }
 
 // create group of spike generators on 3D grid
-int CARLsim::createSpikeGeneratorGroup(std::string grpName, Grid3D grid, int neurType) {
+int CARLsim::createSpikeGeneratorGroup(const std::string& grpName, const Grid3D& grid, int neurType) {
 	std::string funcName = "createSpikeGeneratorGroup(\""+grpName+"\")";
 	UserErrors::assertTrue(carlsimState_==CONFIG_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "CONFIG.");
 	UserErrors::assertTrue(grid.x>0, UserErrors::CANNOT_BE_NEGATIVE, funcName, "grid.x");
@@ -563,7 +563,7 @@ const FILE* CARLsim::getLogFpErr() { return snn_->getLogFpErr(); }
 const FILE* CARLsim::getLogFpDeb() { return snn_->getLogFpDeb(); }
 const FILE* CARLsim::getLogFpLog() { return snn_->getLogFpLog(); }
 
-void CARLsim::saveSimulation(std::string fileName, bool saveSynapseInfo) {
+void CARLsim::saveSimulation(const std::string& fileName, bool saveSynapseInfo) {
 	FILE* fpSave = fopen(fileName.c_str(),"wb");
 	std::string funcName = "saveSimulation()";
 	UserErrors::assertTrue(fpSave!=NULL,UserErrors::FILE_CANNOT_OPEN,fileName);

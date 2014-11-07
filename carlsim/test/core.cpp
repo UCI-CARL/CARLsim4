@@ -12,10 +12,10 @@
 //! check all possible (valid) ways of instantiating CpuSNN
 TEST(CORE, CpuSNNinit) {
 	CpuSNN* sim = NULL;
+	std::string name = "CORE.CpuSNNinit";
 
 	// Problem: The first two modes will print to stdout, and close it in the end; so all subsequent calls to sdout
 	// via GTEST fail
-	std::string name = "SNN";
 	simMode_t simModes[2] = {CPU_MODE, GPU_MODE};
 	loggerMode_t loggerModes[5] = {USER, DEVELOPER, SHOWTIME, SILENT, CUSTOM};
 	for (int i=0; i<5; i++) {
@@ -49,7 +49,7 @@ TEST(CORE, CpuSNNinitDeath) {
 	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
 	CpuSNN* sim = NULL;
-	std::string name="SNN";
+	std::string name="CORE.CpuSNNinitDeath";
 
 	// sim mode
 	EXPECT_DEATH({sim = new CpuSNN(name,UNKNOWN_SIM,USER,0,42);},"");
@@ -153,7 +153,6 @@ TEST(CORE, isPoint3DonGrid) {
 }
 
 TEST(CORE, setConductancesTrue) {
-	std::string name = "SNN";
 	CpuSNN* sim;
 
 	for (int mode=0; mode<=1; mode++) {
@@ -164,7 +163,7 @@ TEST(CORE, setConductancesTrue) {
 		int trGABAb = rand()%100 + 1;
 		int tdGABAb = rand()%100 + trGABAb + 1; // make sure it's larger than trGABAb
 
-		sim = new CpuSNN(name,mode?GPU_MODE:CPU_MODE,SILENT,0,42);
+		sim = new CpuSNN("CORE.setConductancesTrue",mode?GPU_MODE:CPU_MODE,SILENT,0,42);
 		sim->setConductances(true,tdAMPA,trNMDA,tdNMDA,tdGABAa,trGABAb,tdGABAb);
 		EXPECT_TRUE(sim->isSimulationWithCOBA());
 		EXPECT_FALSE(sim->isSimulationWithCUBA());
@@ -218,7 +217,7 @@ TEST(CORE, firingRateCPUvsGPU) {
 		PoissonRate in(1);
 
 		for (int isGPUmode=0; isGPUmode<=0; isGPUmode++) {
-			CARLsim* sim = new CARLsim("SNN",isGPUmode?GPU_MODE:CPU_MODE,SILENT,0,42);
+			CARLsim* sim = new CARLsim("CORE.firingRateCPUvsGPU",isGPUmode?GPU_MODE:CPU_MODE,SILENT,0,42);
 			int g0=sim->createSpikeGeneratorGroup("input0", 1, EXCITATORY_NEURON);
 			int g1=sim->createSpikeGeneratorGroup("input1", 1, EXCITATORY_NEURON);
 			int g2=sim->createGroup("excit2", 1, EXCITATORY_NEURON);

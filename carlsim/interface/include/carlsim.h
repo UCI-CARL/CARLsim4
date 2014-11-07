@@ -129,7 +129,7 @@ public:
 	 * \param[in] ithGPU 		on which GPU to establish a context (only relevant in GPU_MODE)
 	 * \param[in] randSeed 		random number generator seed
 	 */
-	CARLsim(std::string netName="SNN", simMode_t simMode=CPU_MODE, loggerMode_t loggerMode=USER, int ithGPU=0,
+	CARLsim(const std::string& netName="SNN", simMode_t simMode=CPU_MODE, loggerMode_t loggerMode=USER, int ithGPU=0,
 				int randSeed=-1);
 	~CARLsim();
 
@@ -193,9 +193,9 @@ public:
 	 *                       excitatory, and GABAb in the case of inhibitory connections). Default: 1.0
 	 * \returns a unique ID associated with the newly created connection
 	 */
-	short int connect(int grpId1, int grpId2, const std::string& connType, RangeWeight wt, float connProb,
-		RangeDelay delay=RangeDelay(1), RadiusRF radRF=RadiusRF(-1), bool synWtType=SYN_FIXED, float mulSynFast=1.0f, 
-		float mulSynSlow=1.0f);
+	short int connect(int grpId1, int grpId2, const std::string& connType, const RangeWeight& wt, float connProb,
+		const RangeDelay& delay=RangeDelay(1), const RadiusRF& radRF=RadiusRF(-1), bool synWtType=SYN_FIXED,
+		float mulSynFast=1.0f, float mulSynSlow=1.0f);
 
 	/*!
 	 * \brief Shortcut to make connections with custom connectivity profile but omit scaling factors for synaptic
@@ -220,7 +220,7 @@ public:
 	 * \TODO finish doc
 	 * \STATE CONFIG
 	 */
-	int createGroup(const std::string grpName, int nNeur, int neurType);
+	int createGroup(const std::string& grpName, int nNeur, int neurType);
 	
 	/*!
 	 * \brief create a group of neurons on a 3D grid
@@ -238,14 +238,14 @@ public:
 	 * \STATE CONFIG
 	 * \TODO finish doc
 	 */
-	int createGroup(const std::string grpName, Grid3D grid, int neurType);
+	int createGroup(const std::string& grpName, const Grid3D& grid, int neurType);
 
 	/*!
 	 * \brief  creates a spike generator group
 	 * \TODO finish docu
 	 * \STATE CONFIG
 	 */
-	int createSpikeGeneratorGroup(const std::string grpName, int nNeur, int neurType);
+	int createSpikeGeneratorGroup(const std::string& grpName, int nNeur, int neurType);
 	
 	/*!
 	 * \brief create a group of spike generators on a 3D grid
@@ -263,7 +263,7 @@ public:
 	 * \STATE CONFIG
 	 * \TODO finish doc
 	 */
-	int createSpikeGeneratorGroup(const std::string grpName, Grid3D grid, int neurType);
+	int createSpikeGeneratorGroup(const std::string& grpName, const Grid3D& grid, int neurType);
 
 
 	/*!
@@ -528,7 +528,7 @@ public:
 	 * \TODO finish docu
 	 * \STATE SETUP, EXECUTION
 	 */
-	void saveSimulation(std::string fileName, bool saveSynapseInfo=true);
+	void saveSimulation(const std::string& fileName, bool saveSynapseInfo=true);
 
 	/*!
 	 * \brief Sets the file pointer of the debug log file
