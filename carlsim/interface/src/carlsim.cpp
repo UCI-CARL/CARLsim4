@@ -593,11 +593,11 @@ void CARLsim::setLogsFp(FILE* fpInf, FILE* fpErr, FILE* fpDeb, FILE* fpLog) {
 // +++++++++ PUBLIC METHODS: INTERACTING WITH A SIMULATION ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
 // reads network state from file
-void CARLsim::readNetwork(FILE* fid) {
-	std::string funcName = "readNetwork()";
+void CARLsim::loadSimulation(FILE* fid) {
+	std::string funcName = "loadSimulation()";
 	UserErrors::assertTrue(carlsimState_==CONFIG_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "CONFIG.");
 
-	snn_->readNetwork(fid);
+	snn_->loadSimulation(fid);
 }
 
 void CARLsim::reassignFixedWeights(short int connectId, float weightMatrix[], int matrixSize) {

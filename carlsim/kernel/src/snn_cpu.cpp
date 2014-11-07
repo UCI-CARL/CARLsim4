@@ -791,8 +791,8 @@ void CpuSNN::exitSimulation(int val) {
 }
 
 // reads network state from file
-void CpuSNN::readNetwork(FILE* fid) {
-	readNetworkFID = fid;
+void CpuSNN::loadSimulation(FILE* fid) {
+	loadSimFID = fid;
 }
 
 // reassigns weights from the input weightMatrix to the weights between two
@@ -1789,7 +1789,7 @@ void CpuSNN::CpuSNNinit() {
 	sim_with_stp = false;
 
 	maxSpikesD2 = maxSpikesD1 = 0;
-	readNetworkFID = NULL;
+	loadSimFID = NULL;
 
 	numN = 0;
 	numNPois = 0;
@@ -2215,11 +2215,11 @@ void CpuSNN::buildNetwork() {
 		assert(grpIds[nid]!=-1);
 	}
 
-	if (readNetworkFID != NULL) {
-		// we the user specified readNetwork the synaptic weights will be restored here...
+	if (loadSimFID != NULL) {
+		// we the user specified loadSimulation the synaptic weights will be restored here...
 		#if READNETWORK_ADD_SYNAPSES_FROM_FILE
-			assert(readNetwork_internal(true) >= 0); // read the plastic synapses first
-			assert(readNetwork_internal(false) >= 0); // read the fixed synapses second
+			assert(loadSimulation_internal(true) >= 0); // read the plastic synapses first
+			assert(loadSimulation_internal(false) >= 0); // read the fixed synapses second
 		#endif
 	} else {
 		// build all the connections here...
@@ -3338,55 +3338,55 @@ unsigned int CpuSNN::poissonSpike(unsigned int currTime, float frate, int refrac
 
 // \FIXME: this guy is a mess
 #if READNETWORK_ADD_SYNAPSES_FROM_FILE
-int CpuSNN::readNetwork_internal(bool onlyPlastic)
+int CpuSNN::loadSimulation_internal(bool onlyPlastic)
 #else
-int CpuSNN::readNetwork_internal()
+int CpuSNN::loadSimulation_internal()
 #endif
 {
-	long file_position = ftell(readNetworkFID); // so that we can restore the file position later...
+	long file_position = ftell(loadSimFID); // so that we can restore the file position later...
 	int tmpInt;
 	float tmpFloat;
 
 	// read file signature
-	if (!fread(&tmpInt,sizeof(int),1,readNetworkFID)) return -11;
+	if (!fread(&tmpInt,sizeof(int),1,loadSimFID)) return -11;
 	if (tmpInt != 294338571) return -10;
 
 	// read version number
-	if (!fread(&tmpFloat,sizeof(float),1,readNetworkFID)) return -11;
+	if (!fread(&tmpFloat,sizeof(float),1,loadSimFID)) return -11;
 	if (tmpFloat > 1.0) return -10;
 
 	// read simulation and execution time
-	if (!fread(&tmpFloat,sizeof(float),2,readNetworkFID)) return -11;
+	if (!fread(&tmpFloat,sizeof(float),2,loadSimFID)) return -11;
 
 	// read number of neurons
-	if (!fread(&tmpInt,sizeof(int),1,readNetworkFID)) return -11;
+	if (!fread(&tmpInt,sizeof(int),1,loadSimFID)) return -11;
 	int nrCells = tmpInt;
 	if (nrCells != numN) return -5;
 
 	// read total synapse counts
-	if (!fread(&tmpInt,sizeof(int),2,readNetworkFID)) return -11;
+	if (!fread(&tmpInt,sizeof(int),2,loadSimFID)) return -11;
 
 	// read number of groups
-	if (!fread(&tmpInt,sizeof(int),1,readNetworkFID)) return -11;
+	if (!fread(&tmpInt,sizeof(int),1,loadSimFID)) return -11;
 	if (numGrp != tmpInt) return -1;
 
 	char name[100];
 	int startN, endN;
 
 	for (int g=0;g<numGrp;g++) {
-		if (!fread(&startN,sizeof(int),1,readNetworkFID)) return -11;
-		if (!fread(&endN,sizeof(int),1,readNetworkFID)) return -11;
+		if (!fread(&startN,sizeof(int),1,loadSimFID)) return -11;
+		if (!fread(&endN,sizeof(int),1,loadSimFID)) return -11;
 		if (startN != grp_Info[g].StartN) return -2;
 		if (endN != grp_Info[g].EndN) return -3;
 		
-		if (!fread(&tmpInt,sizeof(int),1,readNetworkFID)) return -11;
+		if (!fread(&tmpInt,sizeof(int),1,loadSimFID)) return -11;
 		if (tmpInt != grp_Info[g].SizeX) return -2; // \FIXME all these error codes...
-		if (!fread(&tmpInt,sizeof(int),1,readNetworkFID)) return -11;
+		if (!fread(&tmpInt,sizeof(int),1,loadSimFID)) return -11;
 		if (tmpInt != grp_Info[g].SizeY) return -2;
-		if (!fread(&tmpInt,sizeof(int),1,readNetworkFID)) return -11;
+		if (!fread(&tmpInt,sizeof(int),1,loadSimFID)) return -11;
 		if (tmpInt != grp_Info[g].SizeZ) return -2;
 
-		if (!fread(name,1,100,readNetworkFID)) return -11;
+		if (!fread(name,1,100,loadSimFID)) return -11;
 		if (strcmp(name,grp_Info2[g].Name.c_str()) != 0) return -4;
 	}
 
@@ -3394,7 +3394,7 @@ int CpuSNN::readNetwork_internal()
 	// information will not be available
 	for (unsigned int i=0;i<nrCells;i++) {
 		unsigned int nrSynapses = 0;
-		if (!fread(&nrSynapses,sizeof(int),1,readNetworkFID)) return -11;
+		if (!fread(&nrSynapses,sizeof(int),1,loadSimFID)) return -11;
 
 		for (int j=0;j<nrSynapses;j++) {
 			unsigned int nIDpre;
@@ -3404,11 +3404,11 @@ int CpuSNN::readNetwork_internal()
 			uint8_t plastic;
 			short int connId;
 
-			if (!fread(&nIDpre,sizeof(int),1,readNetworkFID)) return -11;
+			if (!fread(&nIDpre,sizeof(int),1,loadSimFID)) return -11;
 			if (nIDpre != i) return -6;
-			if (!fread(&nIDpost,sizeof(int),1,readNetworkFID)) return -11;
+			if (!fread(&nIDpost,sizeof(int),1,loadSimFID)) return -11;
 			if (nIDpost >= nrCells) return -7;
-			if (!fread(&weight,sizeof(float),1,readNetworkFID)) return -11;
+			if (!fread(&weight,sizeof(float),1,loadSimFID)) return -11;
 
 			short int gIDpre = grpIds[nIDpre];
 			if (IS_INHIBITORY_TYPE(grp_Info[gIDpre].Type) && (weight>0)
@@ -3416,16 +3416,16 @@ int CpuSNN::readNetwork_internal()
 				return -8;
 			}
 
-			if (!fread(&maxWeight,sizeof(float),1,readNetworkFID)) return -11;
+			if (!fread(&maxWeight,sizeof(float),1,loadSimFID)) return -11;
 			if (IS_INHIBITORY_TYPE(grp_Info[gIDpre].Type) && (maxWeight>=0)
 					|| !IS_INHIBITORY_TYPE(grp_Info[gIDpre].Type) && (maxWeight<=0)) {
 				return -8;
 			}
 
-			if (!fread(&delay,sizeof(uint8_t),1,readNetworkFID)) return -11;
+			if (!fread(&delay,sizeof(uint8_t),1,loadSimFID)) return -11;
 			if (delay > MAX_SynapticDelay) return -9;
-			if (!fread(&plastic,sizeof(uint8_t),1,readNetworkFID)) return -11;
-			if (!fread(&connId,sizeof(short int),1,readNetworkFID)) return -11;
+			if (!fread(&plastic,sizeof(uint8_t),1,loadSimFID)) return -11;
+			if (!fread(&connId,sizeof(short int),1,loadSimFID)) return -11;
 
 			#if READNETWORK_ADD_SYNAPSES_FROM_FILE
 				if ((plastic && onlyPlastic) || (!plastic && !onlyPlastic)) {
@@ -3443,7 +3443,7 @@ int CpuSNN::readNetwork_internal()
 		}
 	}
 	#if READNETWORK_ADD_SYNAPSES_FROM_FILE
-		fseek(readNetworkFID,file_position,SEEK_SET);
+		fseek(loadSimFID,file_position,SEEK_SET);
 	#endif
 	return 0;
 }

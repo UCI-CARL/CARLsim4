@@ -552,12 +552,12 @@ public:
 	// +++++ PUBLIC METHODS: INTERACTING WITH A SIMULATION ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
 	/*!
-	 * \brief reads the network state from file
+	 * \brief loads a simulation (and network state) from file
 	 *
 	 * \TODO finish docu
 	 * \STATE CONFIG
 	 */
-	void readNetwork(FILE* fid);
+	void loadSimulation(FILE* fid);
 
 	/*!
 	 * \brief Reassigns fixed weights to values passed into the function in a single 1D float matrix (weightMatrix)

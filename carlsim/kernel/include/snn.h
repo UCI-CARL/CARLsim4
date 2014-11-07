@@ -317,11 +317,11 @@ public:
 	//! reads the network state from file
 	//! Reads a CARLsim network file. Such a file can be created using CpuSNN:writeNetwork.
 	/*
-	 * \brief After calling CpuSNN::readNetwork, you should run CpuSNN::runNetwork before calling fclose(fp).
+	 * \brief After calling CpuSNN::loadSimulation, you should run CpuSNN::runNetwork before calling fclose(fp).
 	 * \param fid: file pointer
-	 * \sa CpuSNN::writeNetwork()
+	 * \sa CpuSNN::saveSimulation()
 	 */
-	 void readNetwork(FILE* fid);
+	 void loadSimulation(FILE* fid);
 
 	/*!
 	 * \brief Reassigns fixed weights to values passed into the function in a single 1D float matrix called
@@ -677,9 +677,9 @@ private:
 
 	// FIXME: difference between the options? is one deprecated or are both still used?
 	#if READNETWORK_ADD_SYNAPSES_FROM_FILE
-	int readNetwork_internal(bool onlyPlastic);
+	int loadSimulation_internal(bool onlyPlastic);
 	#else
-	int readNetwork_internal();
+	int loadSimulation_internal();
 	#endif
 
 	void reorganizeDelay();
@@ -812,7 +812,7 @@ private:
 
 
 	// +++++ PRIVATE PROPERTIES +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
-	FILE* readNetworkFID;
+	FILE* loadSimFID;
 
 	const std::string networkName_;	//!< network name
 	const simMode_t simMode_;		//!< current simulation mode (CPU_MODE or GPU_MODE) FIXME: give better name
