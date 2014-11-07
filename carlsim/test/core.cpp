@@ -12,20 +12,18 @@
 //! check all possible (valid) ways of instantiating CpuSNN
 TEST(CORE, CpuSNNinit) {
 	CpuSNN* sim = NULL;
+	std::string name = "CORE.CpuSNNinit";
 
 	// Problem: The first two modes will print to stdout, and close it in the end; so all subsequent calls to sdout
 	// via GTEST fail
-	std::string name = "SNN";
 	simMode_t simModes[2] = {CPU_MODE, GPU_MODE};
 	loggerMode_t loggerModes[5] = {USER, DEVELOPER, SHOWTIME, SILENT, CUSTOM};
 	for (int i=0; i<5; i++) {
 		for (int j=0; j<2; j++) {
-			int nConfig = rand() % 100 + 1;
 			int randSeed = rand() % 1000;
-			sim = new CpuSNN(name,simModes[j],loggerModes[i],0,nConfig,randSeed);
+			sim = new CpuSNN(name,simModes[j],loggerModes[i],0,randSeed);
 
 			EXPECT_EQ(sim->getNetworkName(),name);
-			EXPECT_EQ(sim->getNumConfigurations(),nConfig);
 			EXPECT_EQ(sim->getRandSeed(),randSeed);
 			EXPECT_EQ(sim->getSimMode(),simModes[j]);
 			EXPECT_EQ(sim->getLoggerMode(),loggerModes[i]);
@@ -34,12 +32,12 @@ TEST(CORE, CpuSNNinit) {
 		}
 	}
 
-	sim = new CpuSNN(name,CPU_MODE,SILENT,0,1,0);
+	sim = new CpuSNN(name,CPU_MODE,SILENT,0,0);
 	EXPECT_EQ(sim->getRandSeed(),123);
 	delete sim;
 
 	// time(NULL)
-	sim = new CpuSNN(name,CPU_MODE,SILENT,0,1,-1);
+	sim = new CpuSNN(name,CPU_MODE,SILENT,0,-1);
 	EXPECT_NE(sim->getRandSeed(),-1);
 	EXPECT_NE(sim->getRandSeed(),0);
 	delete sim;
@@ -51,30 +49,24 @@ TEST(CORE, CpuSNNinitDeath) {
 	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
 	CpuSNN* sim = NULL;
-	std::string name="SNN";
+	std::string name="CORE.CpuSNNinitDeath";
 
 	// sim mode
-	EXPECT_DEATH({sim = new CpuSNN(name,UNKNOWN_SIM,USER,0,1,42);},"");
+	EXPECT_DEATH({sim = new CpuSNN(name,UNKNOWN_SIM,USER,0,42);},"");
 	if (sim!=NULL) delete sim; sim = NULL;
 
 	// logger mode
-	EXPECT_DEATH({sim = new CpuSNN(name,CPU_MODE,UNKNOWN_LOGGER,0,1,42);},"");
+	EXPECT_DEATH({sim = new CpuSNN(name,CPU_MODE,UNKNOWN_LOGGER,0,42);},"");
 	if (sim!=NULL) delete sim; sim = NULL;
 
 	// ithGPU
-	EXPECT_DEATH({sim = new CpuSNN(name,CPU_MODE,USER,-1,1,42);},"");
-	if (sim!=NULL) delete sim; sim = NULL;
-
-	// nConfig
-	EXPECT_DEATH({sim = new CpuSNN(name,GPU_MODE,USER,0,0,42);},"");
-	if (sim!=NULL) delete sim; sim = NULL;
-	EXPECT_DEATH({sim = new CpuSNN(name,CPU_MODE,USER,0,101,42);},"");
+	EXPECT_DEATH({sim = new CpuSNN(name,CPU_MODE,USER,-1,42);},"");
 	if (sim!=NULL) delete sim; sim = NULL;
 }
 
 
 TEST(CORE, getGroupGrid3D) {
-	CARLsim* sim = new CARLsim("CORE.getGroupGrid3D",CPU_MODE,SILENT,0,1,42);
+	CARLsim* sim = new CARLsim("CORE.getGroupGrid3D",CPU_MODE,SILENT,0,42);
 	Grid3D grid(2,3,4);
 	int g1=sim->createSpikeGeneratorGroup("excit", grid, EXCITATORY_NEURON);
 	int g2=sim->createGroup("excit2", grid, EXCITATORY_NEURON);
@@ -94,7 +86,7 @@ TEST(CORE, getGroupGrid3D) {
 }
 
 TEST(CORE, getGroupIdFromString) {
-	CARLsim* sim = new CARLsim("Interface.createGroupDeath",CPU_MODE,SILENT,0,1,42);
+	CARLsim* sim = new CARLsim("Interface.createGroupDeath",CPU_MODE,SILENT,0,42);
 	int g1=sim->createSpikeGeneratorGroup("excit", Grid3D(2,3,4), EXCITATORY_NEURON);
 	int g2=sim->createGroup("bananahama", Grid3D(1,2,3), INHIBITORY_NEURON);
 	sim->setNeuronParameters(g2, 0.02f, 0.2f, -65.0f, 8.0f);
@@ -111,7 +103,7 @@ TEST(CORE, getGroupIdFromString) {
 
 // This test creates a group on a grid and makes sure that the returned 3D location of each neuron is correct
 TEST(CORE, getNeuronLocation3D) {
-	CARLsim* sim = new CARLsim("Interface.createGroupDeath",CPU_MODE,SILENT,0,1,42);
+	CARLsim* sim = new CARLsim("Interface.createGroupDeath",CPU_MODE,SILENT,0,42);
 	Grid3D grid(2,3,4);
 	int g1=sim->createSpikeGeneratorGroup("excit", grid, EXCITATORY_NEURON);
 	int g2=sim->createGroup("excit2", grid, EXCITATORY_NEURON);
@@ -148,7 +140,7 @@ TEST(CORE, getNeuronLocation3D) {
 
 // tests whether a point lies on a grid
 TEST(CORE, isPoint3DonGrid) {
-	CpuSNN snn("CORE.isPoint3DonGrid", CPU_MODE, SILENT, 0, 1, 42);
+	CpuSNN snn("CORE.isPoint3DonGrid", CPU_MODE, SILENT, 0, 42);
 	EXPECT_FALSE(snn.isPoint3DonGrid(Point3D(-1,-1,-1), Grid3D(10,5,2)));
 	EXPECT_FALSE(snn.isPoint3DonGrid(Point3D(0.5,0.5,0.5), Grid3D(10,5,2)));
 	EXPECT_FALSE(snn.isPoint3DonGrid(Point3D(10,5,2), Grid3D(10,5,2)));
@@ -161,43 +153,38 @@ TEST(CORE, isPoint3DonGrid) {
 }
 
 TEST(CORE, setConductancesTrue) {
-	std::string name = "SNN";
-	int maxConfig = rand()%10 + 10;
-	int nConfigStep = rand()%3 + 2;
 	CpuSNN* sim;
 
 	for (int mode=0; mode<=1; mode++) {
-		for (int nConfig=1; nConfig<=maxConfig; nConfig+=nConfigStep) {
-			int tdAMPA  = rand()%100 + 1;
-			int trNMDA  = (nConfig==1) ? 0 : rand()%100 + 1;
-			int tdNMDA  = rand()%100 + trNMDA + 1; // make sure it's larger than trNMDA
-			int tdGABAa = rand()%100 + 1;
-			int trGABAb = (nConfig==nConfigStep+1) ? 0 : rand()%100 + 1;
-			int tdGABAb = rand()%100 + trGABAb + 1; // make sure it's larger than trGABAb
+		int tdAMPA  = rand()%100 + 1;
+		int trNMDA  = rand()%100 + 1;
+		int tdNMDA  = rand()%100 + trNMDA + 1; // make sure it's larger than trNMDA
+		int tdGABAa = rand()%100 + 1;
+		int trGABAb = rand()%100 + 1;
+		int tdGABAb = rand()%100 + trGABAb + 1; // make sure it's larger than trGABAb
 
-			sim = new CpuSNN(name,mode?GPU_MODE:CPU_MODE,SILENT,0,nConfig,42);
-			sim->setConductances(true,tdAMPA,trNMDA,tdNMDA,tdGABAa,trGABAb,tdGABAb,ALL);
-			EXPECT_TRUE(sim->isSimulationWithCOBA());
-			EXPECT_FALSE(sim->isSimulationWithCUBA());
+		sim = new CpuSNN("CORE.setConductancesTrue",mode?GPU_MODE:CPU_MODE,SILENT,0,42);
+		sim->setConductances(true,tdAMPA,trNMDA,tdNMDA,tdGABAa,trGABAb,tdGABAb);
+		EXPECT_TRUE(sim->isSimulationWithCOBA());
+		EXPECT_FALSE(sim->isSimulationWithCUBA());
 //			EXPECT_FLOAT_EQ(sim->dAMPA,1.0f-1.0f/tdAMPA);
-			if (trNMDA) {
-				EXPECT_TRUE(sim->isSimulationWithNMDARise());
+		if (trNMDA) {
+			EXPECT_TRUE(sim->isSimulationWithNMDARise());
 //				EXPECT_FLOAT_EQ(sim->rNMDA,1.0f-1.0f/trNMDA);
-			} else {
-				EXPECT_FALSE(sim->isSimulationWithNMDARise());
-			}
+		} else {
+			EXPECT_FALSE(sim->isSimulationWithNMDARise());
+		}
 //			EXPECT_FLOAT_EQ(sim->dNMDA,1.0f-1.0f/tdNMDA);
 //			EXPECT_FLOAT_EQ(sim->dGABAa,1.0f-1.0f/tdGABAa);
-			if (trGABAb) {
-				EXPECT_TRUE(sim->isSimulationWithGABAbRise());
+		if (trGABAb) {
+			EXPECT_TRUE(sim->isSimulationWithGABAbRise());
 //				EXPECT_FLOAT_EQ(sim->rGABAb,1.0f-1.0f/trGABAb);
-			} else {
-				EXPECT_FALSE(sim->isSimulationWithGABAbRise());
-			}
+		} else {
+			EXPECT_FALSE(sim->isSimulationWithGABAbRise());
+		}
 //			EXPECT_FLOAT_EQ(sim->dGABAb,1.0f-1.0f/tdGABAb);
 
-			delete sim;
-		}
+		delete sim;
 	}
 }
 
@@ -230,7 +217,7 @@ TEST(CORE, firingRateCPUvsGPU) {
 		PoissonRate in(1);
 
 		for (int isGPUmode=0; isGPUmode<=0; isGPUmode++) {
-			CARLsim* sim = new CARLsim("SNN",isGPUmode?GPU_MODE:CPU_MODE,SILENT,0,1,42);
+			CARLsim* sim = new CARLsim("CORE.firingRateCPUvsGPU",isGPUmode?GPU_MODE:CPU_MODE,SILENT,0,42);
 			int g0=sim->createSpikeGeneratorGroup("input0", 1, EXCITATORY_NEURON);
 			int g1=sim->createSpikeGeneratorGroup("input1", 1, EXCITATORY_NEURON);
 			int g2=sim->createGroup("excit2", 1, EXCITATORY_NEURON);
@@ -308,7 +295,7 @@ TEST(CORE, firingRateCPUvsGPU) {
 
 // make sure bookkeeping for number of groups is correct during CONFIG
 TEST(CORE, numGroups) {
-	CARLsim sim("CORE.numGroups", CPU_MODE, SILENT, 0, 1, 42);
+	CARLsim sim("CORE.numGroups", CPU_MODE, SILENT, 0, 42);
 	EXPECT_EQ(sim.getNumGroups(), 0);
 
 	int nLoops = 4;
@@ -327,7 +314,7 @@ TEST(CORE, numGroups) {
 
 // make sure bookkeeping for number of neurons is correct during CONFIG
 TEST(CORE, numNeurons) {
-	CARLsim sim("CORE.numNeurons", CPU_MODE, SILENT, 0, 1, 42);
+	CARLsim sim("CORE.numNeurons", CPU_MODE, SILENT, 0, 42);
 	EXPECT_EQ(sim.getNumNeurons(), 0);
 	EXPECT_EQ(sim.getNumNeuronsRegExc(), 0);
 	EXPECT_EQ(sim.getNumNeuronsRegInh(), 0);

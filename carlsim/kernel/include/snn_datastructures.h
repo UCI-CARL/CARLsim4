@@ -313,7 +313,6 @@ typedef struct group_info_s
 typedef struct group_info2_s
 {
   std::string		Name;
-  short		ConfigId;
   // properties of group of neurons size, location, initial weights etc.
   //<! homeostatic plasticity variables
   float 		baseFiring;

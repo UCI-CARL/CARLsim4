@@ -72,11 +72,6 @@ public:
  * This function tests the information stored in the group info struct after enabling STDP via setSTDP
  */
 TEST(STDP, setSTDPTrue) {
-	// create network by varying nConfig from 1...maxConfig, with
-	// step size nConfigStep
-	std::string name="SNN";
-	int maxConfig = rand()%10 + 10;
-	int nConfigStep = rand()%3 + 2;
 	float alphaLTP = 5.0f;		// the exact values don't matter
 	float alphaLTD = 10.0f;
 	float tauLTP = 15.0f;
@@ -88,45 +83,41 @@ TEST(STDP, setSTDPTrue) {
 	CARLsim* sim;
 
 	for (int mode=0; mode<=1; mode++) {
-		for (int nConfig=1; nConfig<=maxConfig; nConfig+=nConfigStep) {
-			for (int stdpType = 0; stdpType < 2; stdpType++) { // we have two stdp types {STANDARD, DA_MOD}
-				sim = new CARLsim(name,mode?GPU_MODE:CPU_MODE,SILENT,0,nConfig,42);
+		for (int stdpType = 0; stdpType < 2; stdpType++) { // we have two stdp types {STANDARD, DA_MOD}
+			sim = new CARLsim("STDP.setSTDPTrue",mode?GPU_MODE:CPU_MODE,SILENT,0,42);
 
-				int g1=sim->createGroup("excit", 10, EXCITATORY_NEURON);
-				sim->setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f);
-				if (stdpType == 0) {
-					sim->setESTDP(g1,true,STANDARD,alphaLTP,tauLTP,alphaLTD,tauLTD);
-					sim->setISTDP(g1,true,DA_MOD,betaLTP,betaLTD,lamda,delta);
-				} else {
-					sim->setESTDP(g1,true,DA_MOD,alphaLTP,tauLTP,alphaLTD,tauLTD);
-					sim->setISTDP(g1,true,STANDARD,betaLTP,betaLTD,lamda,delta);
-				}
-
-				for (int c=0; c<nConfig; c++) {
-					GroupSTDPInfo_t gInfo = sim->getGroupSTDPInfo(g1,c);
-					EXPECT_TRUE(gInfo.WithSTDP);
-					EXPECT_TRUE(gInfo.WithESTDP);
-					EXPECT_TRUE(gInfo.WithISTDP);
-					if (stdpType == 0)
-						EXPECT_TRUE(gInfo.WithESTDPtype == STANDARD);
-					else
-						EXPECT_TRUE(gInfo.WithESTDPtype == DA_MOD);
-					if (stdpType == 0)
-						EXPECT_TRUE(gInfo.WithISTDPtype == DA_MOD);
-					else
-						EXPECT_TRUE(gInfo.WithISTDPtype == STANDARD);
-					EXPECT_FLOAT_EQ(gInfo.ALPHA_LTP_EXC,alphaLTP);
-					EXPECT_FLOAT_EQ(gInfo.ALPHA_LTD_EXC,alphaLTD);
-					EXPECT_FLOAT_EQ(gInfo.TAU_LTP_INV_EXC,1.0/tauLTP);
-					EXPECT_FLOAT_EQ(gInfo.TAU_LTD_INV_EXC,1.0/tauLTD);
-					EXPECT_FLOAT_EQ(gInfo.BETA_LTP,betaLTP);
-					EXPECT_FLOAT_EQ(gInfo.BETA_LTD,betaLTD);
-					EXPECT_FLOAT_EQ(gInfo.LAMDA,lamda);
-					EXPECT_FLOAT_EQ(gInfo.DELTA,delta);
-				}
-
-				delete sim;
+			int g1=sim->createGroup("excit", 10, EXCITATORY_NEURON);
+			sim->setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f);
+			if (stdpType == 0) {
+				sim->setESTDP(g1,true,STANDARD,alphaLTP,tauLTP,alphaLTD,tauLTD);
+				sim->setISTDP(g1,true,DA_MOD,betaLTP,betaLTD,lamda,delta);
+			} else {
+				sim->setESTDP(g1,true,DA_MOD,alphaLTP,tauLTP,alphaLTD,tauLTD);
+				sim->setISTDP(g1,true,STANDARD,betaLTP,betaLTD,lamda,delta);
 			}
+
+			GroupSTDPInfo_t gInfo = sim->getGroupSTDPInfo(g1);
+			EXPECT_TRUE(gInfo.WithSTDP);
+			EXPECT_TRUE(gInfo.WithESTDP);
+			EXPECT_TRUE(gInfo.WithISTDP);
+			if (stdpType == 0)
+				EXPECT_TRUE(gInfo.WithESTDPtype == STANDARD);
+			else
+				EXPECT_TRUE(gInfo.WithESTDPtype == DA_MOD);
+			if (stdpType == 0)
+				EXPECT_TRUE(gInfo.WithISTDPtype == DA_MOD);
+			else
+				EXPECT_TRUE(gInfo.WithISTDPtype == STANDARD);
+			EXPECT_FLOAT_EQ(gInfo.ALPHA_LTP_EXC,alphaLTP);
+			EXPECT_FLOAT_EQ(gInfo.ALPHA_LTD_EXC,alphaLTD);
+			EXPECT_FLOAT_EQ(gInfo.TAU_LTP_INV_EXC,1.0/tauLTP);
+			EXPECT_FLOAT_EQ(gInfo.TAU_LTD_INV_EXC,1.0/tauLTD);
+			EXPECT_FLOAT_EQ(gInfo.BETA_LTP,betaLTP);
+			EXPECT_FLOAT_EQ(gInfo.BETA_LTD,betaLTD);
+			EXPECT_FLOAT_EQ(gInfo.LAMDA,lamda);
+			EXPECT_FLOAT_EQ(gInfo.DELTA,delta);
+
+			delete sim;
 		}
 	}
 }
@@ -136,10 +127,6 @@ TEST(STDP, setSTDPTrue) {
  * This function tests the information stored in the group info struct after disabling STDP via setSTDP
  */
 TEST(STDP, setSTDPFalse) {
-	// create network by varying nConfig from 1...maxConfig, with
-	// step size nConfigStep
-	int maxConfig = rand()%10 + 10;
-	int nConfigStep = rand()%3 + 2;
 	float alphaLTP = 5.0f;		// the exact values don't matter
 	float alphaLTD = 10.0f;
 	float tauLTP = 15.0f;
@@ -151,23 +138,19 @@ TEST(STDP, setSTDPFalse) {
 	CARLsim* sim;
 
 	for (int mode=0; mode<=1; mode++) {
-		for (int nConfig=1; nConfig<=maxConfig; nConfig+=nConfigStep) {
-			sim = new CARLsim("SNN",mode?GPU_MODE:CPU_MODE,SILENT,0,nConfig,42);
+		sim = new CARLsim("STDP.setSTDPFalse",mode?GPU_MODE:CPU_MODE,SILENT,0,42);
 
-			int g1=sim->createGroup("excit", 10, EXCITATORY_NEURON);
-			sim->setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f);
-			sim->setESTDP(g1,false,STANDARD,alphaLTP,tauLTP,alphaLTD,tauLTD);
-			sim->setISTDP(g1,false,STANDARD,betaLTP,betaLTD,lamda,delta);
+		int g1=sim->createGroup("excit", 10, EXCITATORY_NEURON);
+		sim->setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f);
+		sim->setESTDP(g1,false,STANDARD,alphaLTP,tauLTP,alphaLTD,tauLTD);
+		sim->setISTDP(g1,false,STANDARD,betaLTP,betaLTD,lamda,delta);
 
-			for (int c=0; c<nConfig; c++) {
-				GroupSTDPInfo_t gInfo = sim->getGroupSTDPInfo(g1,c);
-				EXPECT_FALSE(gInfo.WithSTDP);
-				EXPECT_FALSE(gInfo.WithESTDP);
-				EXPECT_FALSE(gInfo.WithISTDP);
-			}
+		GroupSTDPInfo_t gInfo = sim->getGroupSTDPInfo(g1);
+		EXPECT_FALSE(gInfo.WithSTDP);
+		EXPECT_FALSE(gInfo.WithESTDP);
+		EXPECT_FALSE(gInfo.WithISTDP);
 
-			delete sim;
-		}
+		delete sim;
 	}
 }
 
@@ -176,10 +159,6 @@ TEST(STDP, setSTDPFalse) {
  * This function tests the information stored in the group info struct after setting neuromodulator parameters
  */
 TEST(STDP, setNeuromodulatorParameters) {
-	// create network by varying nConfig from 1...maxConfig, with step size nConfigStep
-	std::string name="SNN";
-	int maxConfig = rand()%10 + 10;
-	int nConfigStep = rand()%3 + 2;
 	float alphaLTP = 1.0f;		// the exact values don't matter
 	float alphaLTD = 1.2f;
 	float tauLTP = 20.0f;
@@ -195,35 +174,31 @@ TEST(STDP, setNeuromodulatorParameters) {
 	CARLsim* sim;
 
 	for (int mode=0; mode<=1; mode++) {
-		for (int nConfig=1; nConfig<=maxConfig; nConfig+=nConfigStep) {
-			sim = new CARLsim(name,mode?GPU_MODE:CPU_MODE,SILENT,0,nConfig,42);
+		sim = new CARLsim("STDP.setNeuromodulatorParameters",mode?GPU_MODE:CPU_MODE,SILENT,0,42);
 
-			int g1=sim->createGroup("excit", 10, EXCITATORY_NEURON);
-			sim->setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f);
-			sim->setSTDP(g1,true,DA_MOD,alphaLTP,tauLTP,alphaLTD,tauLTD);
-			sim->setNeuromodulator(g1, baseDP, tauDP, base5HT, tau5HT,
-									baseACh, tauACh, baseNE, tauNE);
+		int g1=sim->createGroup("excit", 10, EXCITATORY_NEURON);
+		sim->setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f);
+		sim->setSTDP(g1,true,DA_MOD,alphaLTP,tauLTP,alphaLTD,tauLTD);
+		sim->setNeuromodulator(g1, baseDP, tauDP, base5HT, tau5HT,
+								baseACh, tauACh, baseNE, tauNE);
 
-			// Temporarily mark out the testing code
-			// Discuss whether carlsim user interface needs to spport group_info_t
-			for (int c=0; c<nConfig; c++) {
-				GroupSTDPInfo_t gInfo = sim->getGroupSTDPInfo(g1,c);
-				EXPECT_TRUE(gInfo.WithSTDP);
-				EXPECT_TRUE(gInfo.WithESTDPtype == DA_MOD);
+		// Temporarily mark out the testing code
+		// Discuss whether carlsim user interface needs to spport group_info_t
+		GroupSTDPInfo_t gInfo = sim->getGroupSTDPInfo(g1);
+		EXPECT_TRUE(gInfo.WithSTDP);
+		EXPECT_TRUE(gInfo.WithESTDPtype == DA_MOD);
 
-				GroupNeuromodulatorInfo_t gInfo2 = sim->getGroupNeuromodulatorInfo(g1, c);
-				EXPECT_FLOAT_EQ(gInfo2.baseDP, baseDP);
-				EXPECT_FLOAT_EQ(gInfo2.base5HT, base5HT);
-				EXPECT_FLOAT_EQ(gInfo2.baseACh, baseACh);
-				EXPECT_FLOAT_EQ(gInfo2.baseNE, baseNE);
-				EXPECT_FLOAT_EQ(gInfo2.decayDP, 1.0 - 1.0 / tauDP);
-				EXPECT_FLOAT_EQ(gInfo2.decay5HT, 1.0 - 1.0 / tau5HT);
-				EXPECT_FLOAT_EQ(gInfo2.decayACh, 1.0 - 1.0 / tauACh);
-				EXPECT_FLOAT_EQ(gInfo2.decayNE, 1.0 - 1.0 / tauNE);
-			}
+		GroupNeuromodulatorInfo_t gInfo2 = sim->getGroupNeuromodulatorInfo(g1);
+		EXPECT_FLOAT_EQ(gInfo2.baseDP, baseDP);
+		EXPECT_FLOAT_EQ(gInfo2.base5HT, base5HT);
+		EXPECT_FLOAT_EQ(gInfo2.baseACh, baseACh);
+		EXPECT_FLOAT_EQ(gInfo2.baseNE, baseNE);
+		EXPECT_FLOAT_EQ(gInfo2.decayDP, 1.0 - 1.0 / tauDP);
+		EXPECT_FLOAT_EQ(gInfo2.decay5HT, 1.0 - 1.0 / tau5HT);
+		EXPECT_FLOAT_EQ(gInfo2.decayACh, 1.0 - 1.0 / tauACh);
+		EXPECT_FLOAT_EQ(gInfo2.decayNE, 1.0 - 1.0 / tauNE);
 
-			delete sim;
-		}
+		delete sim;
 	}
 }
 
@@ -251,7 +226,7 @@ TEST(STDP, DASTDPWeightBoost) {
 	for (int mode = 0; mode < 2; mode++) {
 		for (int coba = 0; coba < 2; coba++) {
 			for (int damod = 0; damod < 2; damod++) {
-				sim = new CARLsim("SNN", mode?GPU_MODE:CPU_MODE, SILENT, 0, 1, 42);
+				sim = new CARLsim("SNN", mode?GPU_MODE:CPU_MODE, SILENT, 0, 42);
 
 				g1 = sim->createGroup("post-ex", 1, EXCITATORY_NEURON);
 				sim->setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f);
@@ -274,6 +249,7 @@ TEST(STDP, DASTDPWeightBoost) {
 					// set up STDP, enable dopamine-modulated STDP
 					sim->setConductances(false,0,0,0,0);
 					sim->setSTDP(g1, true, DA_MOD, alphaLTP, tauLTP, alphaLTD, tauLTD);
+					sim->setConductances(false);
 				}
 
 				sim->setWeightAndWeightChangeUpdate(INTERVAL_10MS, INTERVAL_10MS, 100);
@@ -366,7 +342,7 @@ TEST(STDP, ISTDPWeightChange) {
 			for (int offset = -15; offset <= 15; offset += 10) {
 				//printf("mode:%d coba:%d offset:%d\n", mode, coba, offset);
 				// create a network
-				sim = new CARLsim("istdp", mode?GPU_MODE:CPU_MODE, SILENT, 0, 1, 42);
+				sim = new CARLsim("STDP.ISTDPWeightChange", mode?GPU_MODE:CPU_MODE, SILENT, 0, 42);
 
 				g1 = sim->createGroup("excit", 1, EXCITATORY_NEURON);
 				sim->setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f);

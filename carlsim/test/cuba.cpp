@@ -48,7 +48,7 @@ TEST(CUBA, firingRateVsData) {
 			CARLsim *sim;
 			SpikeMonitor *spkMonG0, *spkMonG1;
 			PeriodicSpikeGenerator *spkGenG0;
-			sim = new CARLsim("CUBA.firingRateVsData",isGPUmode?GPU_MODE:CPU_MODE,SILENT,0,1,42);
+			sim = new CARLsim("CUBA.firingRateVsData",isGPUmode?GPU_MODE:CPU_MODE,SILENT,0,42);
 			int g0=sim->createSpikeGeneratorGroup("input", 1 ,EXCITATORY_NEURON);
 			int g1=sim->createGroup("excit", 1, EXCITATORY_NEURON);
 			sim->setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f); // RS
@@ -108,7 +108,7 @@ TEST(CUBA, firingRateCPUvsGPU) {
 //	fprintf(stderr,"runTime=%d, delay=%d, wt=%f, input=%f\n",runTimeMs,delay,wt,inputRate);
 
 	for (int isGPUmode=0; isGPUmode<=1; isGPUmode++) {
-		sim = new CARLsim("CUBA.firingRateCPUvsGPU",isGPUmode?GPU_MODE:CPU_MODE,SILENT,0,1,42);
+		sim = new CARLsim("CUBA.firingRateCPUvsGPU",isGPUmode?GPU_MODE:CPU_MODE,SILENT,0,42);
 		int g0=sim->createSpikeGeneratorGroup("input", 1 ,EXCITATORY_NEURON);
 		int g1=sim->createGroup("excit", 1, EXCITATORY_NEURON);
 		sim->setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f); // RS

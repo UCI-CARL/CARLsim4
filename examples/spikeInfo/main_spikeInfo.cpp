@@ -70,7 +70,6 @@ using namespace std;
 int main()
 {
 	MTRand getRand(210499257);
-	const int numConfig = 1;// for the new version we run one at a time
 	const bool onGPU = false; //run on GPU
 	const int ithGPU =2; // which GPU to run (0-3)
 	// probably should put the rand seed here
@@ -94,7 +93,7 @@ int main()
 	SpikeMonitor* spikeMonExc;
 	SpikeMonitor* spikeMonInh;
 
-	snn = new CARLsim("TuningFixedWeightsSNN",onGPU?GPU_MODE:CPU_MODE,USER,ithGPU,numConfig,randSeed);
+	snn = new CARLsim("TuningFixedWeightsSNN",onGPU?GPU_MODE:CPU_MODE,USER,ithGPU,randSeed);
 
 	float COND_tAMPA=5.0, COND_tNMDA=150.0, COND_tGABAa=6.0, COND_tGABAb=150.0;
 	inputGroup=snn->createSpikeGeneratorGroup("Input",INPUT_SIZE,EXCITATORY_NEURON);
@@ -108,10 +107,10 @@ int main()
 	double initWeight = 0.05f;
 
 	// create the connections (with a dummy weight) and grab their connection id
-	snn->connect(inputGroup,excGroup,"random", RangeWeight(initWeight), 0.5f, RangeDelay(1), SYN_FIXED);
-	snn->connect(excGroup,excGroup,"random", RangeWeight(initWeight), 0.5f, RangeDelay(1), SYN_FIXED);
-	snn->connect(excGroup,inhGroup,"random", RangeWeight(initWeight), 0.5f, RangeDelay(1), SYN_FIXED);
-	snn->connect(inhGroup,excGroup,"random", RangeWeight(initWeight), 0.5f, RangeDelay(1), SYN_FIXED);
+	snn->connect(inputGroup,excGroup,"random", RangeWeight(initWeight), 0.5f, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
+	snn->connect(excGroup,excGroup,"random", RangeWeight(initWeight), 0.5f, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
+	snn->connect(excGroup,inhGroup,"random", RangeWeight(initWeight), 0.5f, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
+	snn->connect(inhGroup,excGroup,"random", RangeWeight(initWeight), 0.5f, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
 
 	snn->setupNetwork();
 

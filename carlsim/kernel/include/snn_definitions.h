@@ -132,7 +132,6 @@ inline bool isInhibitoryNeuron (unsigned int& nid, unsigned int& numNInhPois, un
 #define MAX_nPreSynapses 20000
 #define MAX_SynapticDelay 20
 #define MAX_nConnections 32768			//!< max allowed number of connect() calls by the user (used for mulSynFast)
-#define MAX_nConfig 100
 
 #define COND_INTEGRATION_SCALE	2
 

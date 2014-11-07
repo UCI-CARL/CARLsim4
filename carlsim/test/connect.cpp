@@ -13,7 +13,7 @@
 // make sure the function CpuSNN::isPoint3DinRF returns the right values for all cases
 // need to use CpuSNN, because function is not in user interface
 TEST(CORE, isPoint3DinRF) {
-	CpuSNN snn("CONNECT.isPoint3DinRF", CPU_MODE, SILENT, 0, 1, 42);
+	CpuSNN snn("CONNECT.isPoint3DinRF", CPU_MODE, SILENT, 0, 42);
 	EXPECT_TRUE(snn.isPoint3DinRF(RadiusRF(10.0), Point3D(0,0,0), Point3D(0,0,0))); // same point
 	EXPECT_TRUE(snn.isPoint3DinRF(RadiusRF(10.0), Point3D(0,0,0), Point3D(10,0,0))); // on border
 	EXPECT_TRUE(snn.isPoint3DinRF(RadiusRF(10.0), Point3D(0,0,0), Point3D(0,10,0)));
@@ -26,16 +26,12 @@ TEST(CORE, isPoint3DinRF) {
 	EXPECT_FALSE(snn.isPoint3DinRF(RadiusRF(10.0), Point3D(0,0,0), Point3D(10,0,10)));
 }
 
-// \TODO make CARLsim-level
+// \TODO make CARLsim-level, replace with ConnectionMonitor
 //! connect with certain mulSynFast, mulSynSlow and observe connectInfo
-TEST(CONNECT, connectInfo) {
-	// create network by varying nConfig from 1...maxConfig, with
-	// step size nConfigStep
-	int maxConfig = rand()%10 + 10;
-	int nConfigStep = rand()%3 + 2;
 
+/*
+TEST(CONNECT, connectInfo) {
 	CARLsim* sim = NULL;
-//	grpConnectInfo_t* connInfo;
 
 	int conn[4]            = {-1};
 	std::string typeStr[4] = {"random", "one-to-one", "full", "full-no-direct"};
@@ -49,22 +45,21 @@ TEST(CONNECT, connectInfo) {
 	int synType[4]         = {SYN_FIXED,SYN_PLASTIC,SYN_FIXED,SYN_PLASTIC};
 
 	for (int mode=0; mode<=1; mode++) {
-		for (int nConfig=1; nConfig<=maxConfig; nConfig+=nConfigStep) {
-			for (int i=0; i<4; i++) {
-				sim = new CARLsim("CONNECT.connectInfo",mode?GPU_MODE:CPU_MODE,SILENT,0,nConfig,42);
+		for (int i=0; i<4; i++) {
+			sim = new CARLsim("CONNECT.connectInfo",mode?GPU_MODE:CPU_MODE,SILENT,0,42);
 
-                Grid3D neur(10,1,1);
-				int g0=sim->createSpikeGeneratorGroup("spike", neur, EXCITATORY_NEURON);
-				int g1=sim->createGroup("excit0", neur, EXCITATORY_NEURON);
-				sim->setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f);
-				int g2=sim->createGroup("excit1", neur, EXCITATORY_NEURON);
-				sim->setNeuronParameters(g2, 0.02f, 0.2f, -65.0f, 8.0f);
+            Grid3D neur(10,1,1);
+			int g0=sim->createSpikeGeneratorGroup("spike", neur, EXCITATORY_NEURON);
+			int g1=sim->createGroup("excit0", neur, EXCITATORY_NEURON);
+			sim->setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f);
+			int g2=sim->createGroup("excit1", neur, EXCITATORY_NEURON);
+			sim->setNeuronParameters(g2, 0.02f, 0.2f, -65.0f, 8.0f);
 
-				conn[i] = sim->connect(g0, g1, typeStr[i], RangeWeight(0.0f,initWt[i],maxWt[i]), prob[i],
-					RangeDelay(minDelay[i],maxDelay[i]), RadiusRF(-1), synType[i], mulSynFast[i], mulSynSlow[i]);
+			conn[i] = sim->connect(g0, g1, typeStr[i], RangeWeight(0.0f,initWt[i],maxWt[i]), prob[i],
+				RangeDelay(minDelay[i],maxDelay[i]), RadiusRF(-1), synType[i], mulSynFast[i], mulSynSlow[i]);
 
 // \TODO: this should be replaced by ConnectionMonitor
-/*				for (int c=0; c<nConfig; c++) {
+				for (int c=0; c<nConfig; c++) {
 					connInfo = sim->getConnectInfo(conn[i],c);
 					EXPECT_FLOAT_EQ(connInfo->initWt,initWt[i]);
 					EXPECT_FLOAT_EQ(connInfo->maxWt,maxWt[i]);
@@ -75,16 +70,15 @@ TEST(CONNECT, connectInfo) {
 					EXPECT_EQ(connInfo->maxDelay,maxDelay[i]);
 					EXPECT_EQ(connInfo->type,type[i]);
 					EXPECT_EQ(GET_FIXED_PLASTIC(connInfo->connProp),synType[i]);
-				}*/
-				delete sim;
-			}
+				}
+			delete sim;
 		}
 	}
 }
-
+*/
 
 TEST(CONNECT, connectFull) {
-	CARLsim* sim = new CARLsim("CORE.connectRadiusRF",CPU_MODE,SILENT,0,1,42);
+	CARLsim* sim = new CARLsim("CORE.connectRadiusRF",CPU_MODE,SILENT,0,42);
 	Grid3D grid(2,3,4);
 	int g0=sim->createGroup("excit0", grid, EXCITATORY_NEURON);
 	int g1=sim->createGroup("excit1", grid, EXCITATORY_NEURON);
@@ -119,7 +113,7 @@ TEST(CONNECT, connectFull) {
 }
 
 TEST(CONNECT, connectFullNoDirect) {
-	CARLsim* sim = new CARLsim("CORE.connectRadiusRF",CPU_MODE,SILENT,0,1,42);
+	CARLsim* sim = new CARLsim("CORE.connectRadiusRF",CPU_MODE,SILENT,0,42);
 	Grid3D grid(2,3,4);
 	int g0=sim->createGroup("excit0", grid, EXCITATORY_NEURON);
 	int g1=sim->createGroup("excit1", grid, EXCITATORY_NEURON);
@@ -155,7 +149,7 @@ TEST(CONNECT, connectFullNoDirect) {
 }
 
 TEST(CONNECT, connectOneToOne) {
-	CARLsim* sim = new CARLsim("CORE.connectOneToOne",CPU_MODE,SILENT,0,1,42);
+	CARLsim* sim = new CARLsim("CORE.connectOneToOne",CPU_MODE,SILENT,0,42);
 	Grid3D grid(2,3,4);
 	int g0=sim->createGroup("excit0", grid, EXCITATORY_NEURON);
 	int g1=sim->createGroup("excit1", grid, EXCITATORY_NEURON);
@@ -179,7 +173,7 @@ TEST(CONNECT, connectOneToOne) {
 }
 
 TEST(CONNECT, connectRandom) {
-	CARLsim* sim = new CARLsim("CORE.connectRandom",CPU_MODE,SILENT,0,1,42);
+	CARLsim* sim = new CARLsim("CORE.connectRandom",CPU_MODE,SILENT,0,42);
 	Grid3D grid(2,3,4);
 	int g0=sim->createGroup("excit0", grid, EXCITATORY_NEURON);
 	int g1=sim->createGroup("excit1", grid, EXCITATORY_NEURON);

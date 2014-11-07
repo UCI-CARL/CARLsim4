@@ -45,7 +45,7 @@ int main() {
 	// create a network on GPU
 	int ithGPU = 0;
 	int randSeed = 42;
-	CARLsim sim("hello world",GPU_MODE,USER,ithGPU,1,randSeed);
+	CARLsim sim("hello world",GPU_MODE,USER,ithGPU,randSeed);
 
 	// configure the network
 	// set up a CUBA two-layer network with random connectivity

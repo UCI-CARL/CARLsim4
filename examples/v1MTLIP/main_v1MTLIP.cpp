@@ -41,10 +41,13 @@
 #include <mtrand.h>
 #include <string.h>
 
-#if (WIN32 || WIN64)
-#define _USE_MATH_DEFINES
+#include <stdio.h>		// printf
+#include <stdlib.h>		// exit
 #include <math.h>
-#include <time.h>
+#define _USE_MATH_DEFINES
+
+#if (WIN32 || WIN64)
+	#include <time.h>
 #endif
 
 // stim must be a file of unsigned char in RGB, arranged as R1 G1 B1 R2 G2 B2 ...
