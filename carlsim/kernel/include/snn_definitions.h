@@ -143,9 +143,6 @@ inline bool isInhibitoryNeuron (unsigned int& nid, unsigned int& numNInhPois, un
 
 #define STDP(t,a,b)       ((a)*exp(-(t)*(b)))
 
-#define GPU_LTP(t)   (gpuNetInfo.ALPHA_LTP*__expf(-(t)/gpuNetInfo.TAU_LTP))
-#define GPU_LTD(t)   (gpuNetInfo.ALPHA_LTD*__expf(-(t)/gpuNetInfo.TAU_LTD))
-
 #define PROPAGATED_BUFFER_SIZE  (1023)
 #define MAX_SIMULATION_TIME     ((uint32_t)(0x7fffffff))
 #define LARGE_NEGATIVE_VALUE    (-(1 << 30))
@@ -157,7 +154,8 @@ inline bool isInhibitoryNeuron (unsigned int& nid, unsigned int& numNInhPois, un
 
 #define DEBUG_LEVEL		0
 
-#define MAX_GRP_PER_SNN 250
+//#define MAX_GRP_PER_SNN 250 // consume too much gloabl costant data area
+#define MAX_GRP_PER_SNN 128
 
 
 

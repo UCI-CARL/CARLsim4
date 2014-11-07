@@ -250,10 +250,11 @@ typedef struct group_info_s
 	bool 		isSpikeGenerator;
 	bool 		WithSTP;
 	bool 		WithSTDP;
-	stdpType_t  WithSTDPtype;
-//	bool		WithModulatedSTDP;
+	bool		WithESTDP;
+	bool		WithISTDP;
+	stdpType_t  WithESTDPtype;
+	stdpType_t  WithISTDPtype;
 	bool 		WithHomeostasis;
-//	bool 		WithConductances;
 	int		homeoId;
 	bool		FixedInputWts;
 	int			Noffset;
@@ -264,10 +265,18 @@ typedef struct group_info_s
 	float		STP_U;
 	float		STP_tau_u_inv;
 	float		STP_tau_x_inv;
-	float		TAU_LTP_INV;
-	float		TAU_LTD_INV;
-	float		ALPHA_LTP;
-	float		ALPHA_LTD;
+	float		TAU_LTP_INV_EXC;
+	float		TAU_LTD_INV_EXC;
+	float		ALPHA_LTP_EXC;
+	float		ALPHA_LTD_EXC;
+	//float		TAU_LTP_INV_In; //!< for furture use
+	//float		TAU_LTD_INV_In; //!< for furture use
+	//float		ALPHA_LTP_In; //!< for furture use
+	//float		ALPHA_LTD_In; //!< for furture use
+	float		BETA_LTP;
+	float		BETA_LTD;
+	float		LAMDA;
+	float		DELTA;
 
 	bool withSpikeCounter; //!< if this flag is set, we want to keep track of how many spikes per neuron in the group
 	int spkCntRecordDur; //!< record duration, after which spike buffer gets reset

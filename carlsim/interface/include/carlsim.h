@@ -440,18 +440,50 @@ public:
 	/*!
 	 * \brief Sets default STDP mode and params
 	 *
-	 * \TODO finish docu
-	 * \STATE CONFIG
+	 * \sa setESTDP
 	 */
 	void setSTDP(int grpId, bool isSet, int configId=ALL);
 
 	/*!
 	 * \brief Sets STDP params for a group, custom
 	 *
+	 * \sa setESTDP
+	 */
+	void setSTDP(int grpId, bool isSet, stdpType_t type, float alphaLTP, float tauLTP, float alphaLTD, float tauLTD,
+		int configId=ALL);
+
+	/*!
+	 * \brief Sets default E-STDP mode and params
+	 *
 	 * \TODO finish docu
 	 * \STATE CONFIG
 	 */
-	void setSTDP(int grpId, bool isSet, stdpType_t type, float alphaLTP, float tauLTP, float alphaLTD, float tauLTD,
+	void setESTDP(int grpId, bool isSet, int configId=ALL);
+
+	/*!
+	 * \brief Sets E-STDP params for a group, custom
+	 *
+	 * \TODO finish docu
+	 * \STATE CONFIG
+	 */
+	void setESTDP(int grpId, bool isSet, stdpType_t type, float alphaLTP, float tauLTP, float alphaLTD, float tauLTD,
+		int configId=ALL);
+
+	/*!
+	 * \brief Sets default I-STDP mode and params
+	 *
+	 * \TODO finish docu
+	 * \STATE CONFIG
+	 */
+	void setISTDP(int grpId, bool isSet, int configId=ALL);
+
+	/*!
+	 * \brief Sets I-STDP params for a group, custom
+	 *
+	 * \TODO finish docu
+	 * \STATE CONFIG
+	 */
+	void setISTDP(int grpId, bool isSet, stdpType_t type, float betaLTP, float betaLTD, float lamda, float delta,
 		int configId=ALL);
 
 	/*!
@@ -1119,10 +1151,25 @@ public:
 	/*!
 	* \brief sets default values for STDP params
 	*
+	* \sa setDefaultESTDPparams
+	*/
+	void setDefaultSTDPparams(float alphaLTP, float tauLTP, float alphaLTD, float tauLTD);
+
+	/*!
+	* \brief sets default values for E-STDP params
+	*
 	* \TODO finish docu
 	* \STATE CONFIG
 	*/
-	void setDefaultSTDPparams(float alphaLTP, float tauLTP, float alphaLTD, float tauLTD);
+	void setDefaultESTDPparams(float alphaLTP, float tauLTP, float alphaLTD, float tauLTD);
+
+	/*!
+	* \brief sets default values for I-STDP params
+	*
+	* \TODO finish docu
+	* \STATE CONFIG
+	*/
+	void setDefaultISTDPparams(float betaLTP, float betaLTD, float lamda, float delta);
 
 	/*!
 	 * \brief sets default values for STP params (neurType either EXCITATORY_NEURON or INHIBITORY_NEURON)
@@ -1185,6 +1232,10 @@ private:
 	float def_STDP_tauLTP_;			//!< default value for LTP decay (ms)
 	float def_STDP_alphaLTD_;		//!< default value for LTD amplitude
 	float def_STDP_tauLTD_;			//!< default value for LTD decay (ms)
+	float def_STDP_betaLTP_;		//!< default value for LTP amplitude
+	float def_STDP_betaLTD_;		//!< default value for LTD amplitude
+	float def_STDP_lamda_;			//!< default value for interval of LTP
+	float def_STDP_delta_;			//!< default value for interval of LTD
 
 	// all default values for STP
 	float def_STP_U_exc_;			//!< default value for STP U excitatory

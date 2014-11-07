@@ -278,11 +278,18 @@ struct RadiusRF {
 
 typedef struct GroupSTDPInfo_s {
 	bool 		WithSTDP;
-	stdpType_t  WithSTDPtype;
-	float		TAU_LTP_INV;
-	float		TAU_LTD_INV;
-	float		ALPHA_LTP;
-	float		ALPHA_LTD;
+	bool		WithESTDP;
+	bool		WithISTDP;
+	stdpType_t  WithESTDPtype;
+	stdpType_t  WithISTDPtype;
+	float		TAU_LTP_INV_EXC;
+	float		TAU_LTD_INV_EXC;
+	float		ALPHA_LTP_EXC;
+	float		ALPHA_LTD_EXC;
+	float		BETA_LTP;
+	float		BETA_LTD;
+	float		LAMDA;
+	float		DELTA;
 } GroupSTDPInfo_t;
 
 typedef struct GroupNeuromodulatorInfo_s {

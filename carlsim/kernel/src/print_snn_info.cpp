@@ -221,12 +221,18 @@ void CpuSNN::printGroupInfo(int grpId) {
 
 	if(grp_Info[grpId].WithSTDP) {
 		KERNEL_INFO("  - STDP:")
-		KERNEL_INFO("      - TYPE                   = %s",     grp_Info[grpId].WithSTDPtype==STANDARD? "STANDARD" :
-			(grp_Info[grpId].WithSTDPtype==DA_MOD?"  DA_MOD":" UNKNOWN"));
-		KERNEL_INFO("      - ALPHA_LTP              = %8.5f", grp_Info[grpId].ALPHA_LTP);
-		KERNEL_INFO("      - ALPHA_LTD              = %8.5f", grp_Info[grpId].ALPHA_LTD);
-		KERNEL_INFO("      - TAU_LTP_INV            = %8.5f", grp_Info[grpId].TAU_LTP_INV);
-		KERNEL_INFO("      - TAU_LTD_INV            = %8.5f", grp_Info[grpId].TAU_LTD_INV);
+		KERNEL_INFO("      - E-STDP TYPE            = %s",     grp_Info[grpId].WithESTDPtype==STANDARD? "STANDARD" :
+			(grp_Info[grpId].WithESTDPtype==DA_MOD?"  DA_MOD":" UNKNOWN"));
+		KERNEL_INFO("      - I-STDP TYPE            = %s",     grp_Info[grpId].WithISTDPtype==STANDARD? "STANDARD" :
+			(grp_Info[grpId].WithISTDPtype==DA_MOD?"  DA_MOD":" UNKNOWN"));
+		KERNEL_INFO("      - ALPHA_LTP_EXC              = %8.5f", grp_Info[grpId].ALPHA_LTP_EXC);
+		KERNEL_INFO("      - ALPHA_LTD_EXC              = %8.5f", grp_Info[grpId].ALPHA_LTD_EXC);
+		KERNEL_INFO("      - TAU_LTP_INV_EXC            = %8.5f", grp_Info[grpId].TAU_LTP_INV_EXC);
+		KERNEL_INFO("      - TAU_LTD_INV_EXC            = %8.5f", grp_Info[grpId].TAU_LTD_INV_EXC);
+		KERNEL_INFO("      - BETA_LTP               = %8.5f", grp_Info[grpId].BETA_LTP);
+		KERNEL_INFO("      - BETA_LTD               = %8.5f", grp_Info[grpId].BETA_LTD);
+		KERNEL_INFO("      - LAMDA                  = %8.5f", grp_Info[grpId].LAMDA);
+		KERNEL_INFO("      - DELTA                  = %8.5f", grp_Info[grpId].DELTA);
 	}
 }
 
