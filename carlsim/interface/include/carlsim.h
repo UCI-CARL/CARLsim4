@@ -828,15 +828,6 @@ public:
 	Point3D getNeuronLocation3D(int grpId, int relNeurId);
 
 	/*!
-	 * \brief Returns the number of network configrations
-	 *
-	 * \Note This number might change throughout CARLsim state CONFIG, up to calling CARLsim::setupNetwork).
-	 * \TODO finish docu
-	 * \STATE SETUP, EXECUTION
-	 */
-	int getNumConfigurations();
-
-	/*!
 	 * \brief Returns the number of connections (pairs of pre-post groups) in the network
 	 *
 	 * This function returns the number of connections (pairs of pre-post groups) in the network. Each pre-post
