@@ -872,8 +872,6 @@ Point3D CARLsim::getNeuronLocation3D(int grpId, int relNeurId) {
 	return snn_->getNeuronLocation3D(grpId, relNeurId);
 }
 
-int CARLsim::getNumConfigurations() { return nConfig_; }
-
 int CARLsim::getNumConnections() { return snn_->getNumConnections(); }
 
 int CARLsim::getNumGroups() { return snn_->getNumGroups(); }

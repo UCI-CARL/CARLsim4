@@ -63,7 +63,6 @@
 
 
 class CpuSNN; // forward-declaration of implementation
-class SpikeMonitor;
 class GroupMonitorCore;
 class ConnectionMonitorCore;
 class ConnectionGeneratorCore;
