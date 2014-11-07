@@ -39,14 +39,15 @@
  * Ver 2/21/2014
  */
 
-#include <string>		// std::string
+#include <carlsim.h>
+#include <user_errors.h>
+#include <callback_core.h>
+
 #include <iostream>		// std::cout, std::endl
 #include <sstream>		// std::stringstream
 #include <algorithm>	// std::find
 
-#include <carlsim.h>
-#include <user_errors.h>
-#include <callback_core.h>
+
 
 #include <snn.h>
 
@@ -100,8 +101,29 @@ CARLsim::~CARLsim() {
 		saveSimulation(def_save_fileName_,def_save_synapseInfo_);
 
 	// deallocate all dynamically allocated structures
+	for (int i=0; i<groupMon_.size(); i++) {
+		if (groupMon_[i]!=NULL)
+			delete groupMon_[i];
+		groupMon_[i]=NULL;
+	}
+	for (int i=0; i<connMon_.size(); i++) {
+		if (connMon_[i]!=NULL)
+			delete connMon_[i];
+		connMon_[i]=NULL;
+	}
+	for (int i=0; i<spkGen_.size(); i++) {
+		if (spkGen_[i]!=NULL)
+			delete spkGen_[i];
+		spkGen_[i]=NULL;
+	}
+	for (int i=0; i<connGen_.size(); i++) {
+		if (connGen_[i]!=NULL)
+			delete connGen_[i];
+		connGen_[i]=NULL;
+	}
 	if (snn_!=NULL)
 		delete snn_;
+	snn_=NULL;
 }
 
 // unsafe computations that would otherwise go in constructor
@@ -194,7 +216,9 @@ short int CARLsim::connect(int grpId1, int grpId2, ConnectionGenerator* conn, bo
 
 	printf("in custom connect\n");
 	// TODO: check for sign of weights
-	return snn_->connect(grpId1, grpId2, new ConnectionGeneratorCore(this, conn), 1.0f, 1.0f, synWtType, maxM, maxPreM);
+	ConnectionGeneratorCore* CGC = new ConnectionGeneratorCore(this, conn);
+	connGen_.push_back(CGC);
+	return snn_->connect(grpId1, grpId2, CGC, 1.0f, 1.0f, synWtType, maxM, maxPreM);
 }
 
 // custom connectivity profile
@@ -211,7 +235,9 @@ short int CARLsim::connect(int grpId1, int grpId2, ConnectionGenerator* conn, fl
 	UserErrors::assertTrue(carlsimState_==CONFIG_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "CONFIG.");
 	assert(++numConnections_ <= MAX_nConnections);
 
-	return snn_->connect(grpId1, grpId2, new ConnectionGeneratorCore(this, conn), mulSynFast, mulSynSlow, synWtType,
+	ConnectionGeneratorCore* CGC = new ConnectionGeneratorCore(this, conn);
+	connGen_.push_back(CGC);
+	return snn_->connect(grpId1, grpId2, CGC, mulSynFast, mulSynSlow, synWtType,
 		maxM, maxPreM);
 }
 
@@ -614,7 +640,9 @@ void CARLsim::setConnectionMonitor(int grpIdPre, int grpIdPost, ConnectionMonito
 	UserErrors::assertTrue(carlsimState_==CONFIG_STATE || carlsimState_==SETUP_STATE,
 					UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "CONFIG or SETUP.");
 
-	snn_->setConnectionMonitor(grpIdPre, grpIdPost, new ConnectionMonitorCore(this, connectionMon),configId);
+	ConnectionMonitorCore* CMC = new ConnectionMonitorCore(this, connectionMon);
+	connMon_.push_back(CMC);
+	snn_->setConnectionMonitor(grpIdPre, grpIdPost, CMC,configId);
 }
 
 // set group monitor for a group
@@ -624,7 +652,9 @@ void CARLsim::setGroupMonitor(int grpId, GroupMonitor* groupMon, int configId) {
 	UserErrors::assertTrue(carlsimState_==CONFIG_STATE || carlsimState_==SETUP_STATE,
 					UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "CONFIG or SETUP.");
 
-	snn_->setGroupMonitor(grpId, new GroupMonitorCore(this, groupMon),configId);
+	GroupMonitorCore* GMC = new GroupMonitorCore(this, groupMon);
+	groupMon_.push_back(GMC);
+	snn_->setGroupMonitor(grpId, GMC,configId);
 }
 
 // sets a spike counter for a group
@@ -645,7 +675,9 @@ void CARLsim::setSpikeGenerator(int grpId, SpikeGenerator* spikeGen, int configI
 	UserErrors::assertTrue(spikeGen!=NULL, UserErrors::CANNOT_BE_NULL, funcName);
 	UserErrors::assertTrue(carlsimState_==CONFIG_STATE,	UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "CONFIG.");
 
-	snn_->setSpikeGenerator(grpId, new SpikeGeneratorCore(this, spikeGen),configId);
+	SpikeGeneratorCore* SGC = new SpikeGeneratorCore(this, spikeGen);
+	spkGen_.push_back(SGC);
+	snn_->setSpikeGenerator(grpId, SGC, configId);
 }
 
 // set spike monitor for group and write spikes to file

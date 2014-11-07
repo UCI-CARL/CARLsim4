@@ -42,13 +42,7 @@
 #ifndef _CARLSIM_H_
 #define _CARLSIM_H_
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <malloc.h>
-#include <assert.h>
-#include <math.h>
-#include <stdint.h>
-
+#include <stdint.h>		// uint64_t, uint32_t, etc.
 #include <string>		// std::string
 #include <vector>		// std::vector
 
@@ -56,16 +50,23 @@
 #include <carlsim_definitions.h>
 #include <carlsim_datastructures.h>
 
-#include <linear_algebra.h>
+// \FIXME We include PoissonRate here only so that the user doesn't have to include it in the main cpp
+// No better way to do this? As far as carlsim.h is concerned, a forward declaration would be sufficient
 #include <poisson_rate.h>
-#include <spike_monitor.h>
+
+#include <linear_algebra.h>
 
 // \TODO: complete documentation
 
 
 
 
-class CpuSNN; // forward-declaration of private implementation
+class CpuSNN; // forward-declaration of implementation
+class SpikeMonitor;
+class GroupMonitorCore;
+class ConnectionMonitorCore;
+class ConnectionGeneratorCore;
+class SpikeGeneratorCore;
 
 /*!
  * \brief CARLsim User Interface
@@ -1159,6 +1160,10 @@ private:
 	std::vector<std::string> userWarnings_; // !< an accumulated list of user warnings
 
 	std::vector<int> grpIds_;		//!< a list of all created group IDs
+	std::vector<ConnectionMonitorCore*> connMon_; //!< a list of all created connection monitors
+	std::vector<GroupMonitorCore*> groupMon_; //!< a list of all created group monitors
+	std::vector<SpikeGeneratorCore*> spkGen_; //!< a list of all created spike generators
+	std::vector<ConnectionGeneratorCore*> connGen_; //!< a list of all created connection generators
 
 	bool hasSetHomeoALL_;			//!< informs that homeostasis have been set for ALL groups (can't add more groups)
 	bool hasSetHomeoBaseFiringALL_;	//!< informs that base firing has been set for ALL groups (can't add more groups)
