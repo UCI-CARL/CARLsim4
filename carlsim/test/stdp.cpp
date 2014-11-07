@@ -48,9 +48,9 @@ public:
 	}
 
 	unsigned int nextSpikeTime(CARLsim* s, int grpId, int nid, unsigned int currentTime, unsigned int lastScheduledSpikeTime) {
-		if (grpId == g1) // gin
+		if (grpId == g1)
 			return lastScheduledSpikeTime + isi;
-		else if (grpId == g2) { // gex
+		else if (grpId == g2) {
 			if (!setOffset) {
 				setOffset = true;
 				return lastScheduledSpikeTime + isi + offset;
@@ -382,6 +382,91 @@ TEST(STDP, DASTDPWeightBoost) {
 }
 
 /*!
+ * \brief testing the Hebbian E-STDP curve
+ * This function tests whether E-STDP change synaptic weight as expected
+ * Wtih control of pre- and post-neurons' spikes, the synaptic weight is expected to increase or decrease to
+ * maximum or minimum synaptic weith respectively.
+ */
+TEST(STDP, ESTDPHebbianCurve) {
+	// simulation details
+	float* weights = NULL;
+	int size;
+	TwoGroupsSpikeController* spikeCtrl;
+	int gex1, gex2, g1;
+	float ALPHA_LTP = 0.10f;
+	float ALPHA_LTD = 0.14f;
+	float TAU_LTP = 20.0f;
+	float TAU_LTD = 20.0f;
+	float maxInhWeight = 10.0f;
+	float initWeight = 5.0f;
+	float minInhWeight = 0.0f;
+	CARLsim* sim;
+
+	for (int mode = 0; mode < 2; mode++) {
+		for (int coba = 0; coba < 2; coba++) {
+			for (int offset = -30; offset <= 30; offset += 5) {
+				if (offset == 0) continue; // skip offset == 0;
+				// create a network
+				sim = new CARLsim("istdp", mode?GPU_MODE:CPU_MODE, SILENT, 0, 1, 42);
+
+				g1 = sim->createGroup("excit", 1, EXCITATORY_NEURON);
+				sim->setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f);
+
+				gex1 = sim->createSpikeGeneratorGroup("input-ex1", 1, EXCITATORY_NEURON);
+				gex2 = sim->createSpikeGeneratorGroup("input-ex2", 1, EXCITATORY_NEURON);
+
+				spikeCtrl = new TwoGroupsSpikeController(100, offset, gex2, gex1);
+
+				if (coba) { // conductance-based
+					sim->connect(gex1, g1, "one-to-one", RangeWeight(40.0f/100), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
+					sim->connect(gex2, g1, "one-to-one", RangeWeight(minInhWeight, initWeight/100, maxInhWeight/100), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_PLASTIC);
+
+					// enable COBA, set up ESTDP
+					sim->setConductances(true,5,150,6,150);
+					sim->setESTDP(g1, true, STANDARD, HebbianCurve(ALPHA_LTP/100, TAU_LTP, ALPHA_LTD/100, TAU_LTP));
+				} else { // current-based
+					sim->connect(gex1, g1, "one-to-one", RangeWeight(40.0f), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
+					sim->connect(gex2, g1, "one-to-one", RangeWeight(minInhWeight, initWeight, maxInhWeight), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_PLASTIC);
+
+					// set up ESTDP
+					sim->setConductances(false,0,0,0,0);
+					sim->setESTDP(g1, true, STANDARD, HebbianCurve(ALPHA_LTP, TAU_LTP, ALPHA_LTD, TAU_LTP));
+				}
+
+				// set up spike controller on DA neurons
+				sim->setSpikeGenerator(gex1, spikeCtrl);
+				sim->setSpikeGenerator(gex2, spikeCtrl);
+
+				// build the network
+				sim->setupNetwork();
+
+				sim->runNetwork(55, 0, true, true);
+
+				sim->getPopWeights(gex2, g1, weights, size);
+				//printf("%d %d %d exc w %f\n", mode, coba, offset, weights[0]);
+
+				if (offset > 0) { // pre-post
+					if (coba) {
+						EXPECT_NEAR(maxInhWeight/100, weights[0], 0.005f);
+					} else {
+						EXPECT_NEAR(maxInhWeight, weights[0], 0.5f);
+					}
+				} else { // post-pre
+					if (coba) {
+						EXPECT_NEAR(minInhWeight/100, weights[0], 0.005f);
+					} else {
+						EXPECT_NEAR(minInhWeight, weights[0], 0.5f);
+					}
+				}
+
+				delete spikeCtrl;
+				delete sim;
+			}
+		}
+	}
+}
+
+/*!
  * \brief testing the constant symmetric I-STDP curve
  * This function tests whether I-STDP change synaptic weight as expected
  * Wtih control of pre- and post-neurons' spikes, the synaptic weight is expected to increase or decrease to
@@ -391,9 +476,6 @@ TEST(STDP, ISTDPConstantSymmetricCurve) {
 	// simulation details
 	float* weights = NULL;
 	int size;
-	SpikeMonitor* spikeMon1;
-	SpikeMonitor* spikeMonIn;
-	SpikeMonitor* spikeMonEx;
 	TwoGroupsSpikeController* spikeCtrl;
 	int gin, gex, g1;
 	float BETA_LTP = 0.10f;
@@ -442,22 +524,12 @@ TEST(STDP, ISTDPConstantSymmetricCurve) {
 				// build the network
 				sim->setupNetwork();
 
-				spikeMon1 = sim->setSpikeMonitor(g1);
-				spikeMonIn = sim->setSpikeMonitor(gin);
-				spikeMonEx = sim->setSpikeMonitor(gex);
+				sim->setSpikeMonitor(g1);
+				sim->setSpikeMonitor(gin);
+				sim->setSpikeMonitor(gex);
 
-				// run for 10 seconds
-				for (int t = 0; t < 20; t++) {
-					spikeMon1->startRecording();
-					spikeMonIn->startRecording();
-					spikeMonEx->startRecording();
-					sim->runNetwork(1,0, true, true);
-					spikeMon1->stopRecording();
-					spikeMonIn->stopRecording();
-					spikeMonEx->stopRecording();
-					//sim->getPopWeights(gin, g1, weights, size);
-					//printf("%f\n",weights[0]);
-				}
+				// run for 20 seconds
+				sim->runNetwork(20,0, true, true);
 
 				sim->getPopWeights(gin, g1, weights, size);
 
