@@ -50,9 +50,10 @@
 #include <carlsim_definitions.h>
 #include <carlsim_datastructures.h>
 
-// \FIXME We include PoissonRate here only so that the user doesn't have to include it in the main cpp
-// No better way to do this? As far as carlsim.h is concerned, a forward declaration would be sufficient
+// include the following core functionalities instead of forward-declaring, so that the user only needs to include
+// carlsim.h
 #include <poisson_rate.h>
+#include <spike_monitor.h>
 
 #include <linear_algebra.h>
 
@@ -62,7 +63,6 @@
 
 
 class CpuSNN; // forward-declaration of implementation
-class SpikeMonitor;
 class GroupMonitorCore;
 class ConnectionMonitorCore;
 class ConnectionGeneratorCore;
@@ -127,11 +127,10 @@ public:
 	 * \param[in] simMode		either CPU_MODE or GPU_MODE
 	 * \param[in] loggerMode    either USER, DEVELOPER, SILENT, or CUSTOM
 	 * \param[in] ithGPU 		on which GPU to establish a context (only relevant in GPU_MODE)
-	 * \param[in] nConfig 		number of network configurations 									// \TODO: explain
 	 * \param[in] randSeed 		random number generator seed
 	 */
 	CARLsim(std::string netName="SNN", simMode_t simMode=CPU_MODE, loggerMode_t loggerMode=USER, int ithGPU=0,
-				int nConfig=1, int randSeed=-1);
+				int randSeed=-1);
 	~CARLsim();
 
 
@@ -1116,7 +1115,6 @@ private:
 
 	CpuSNN* snn_;					//!< an instance of CARLsim core class
 	std::string netName_;			//!< network name
-	int nConfig_;					//!< number of configurations
 	int randSeed_;					//!< RNG seed
 	simMode_t simMode_;				//!< CPU_MODE or GPU_MODE
 	loggerMode_t loggerMode_;		//!< logger mode (USER, DEVELOPER, SILENT, CUSTOM)

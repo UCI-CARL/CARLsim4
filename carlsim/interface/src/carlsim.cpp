@@ -69,14 +69,13 @@
 /// **************************************************************************************************************** ///
 
 // constructor
-CARLsim::CARLsim(std::string netName, simMode_t simMode, loggerMode_t loggerMode, int ithGPU, int nConfig,
+CARLsim::CARLsim(std::string netName, simMode_t simMode, loggerMode_t loggerMode, int ithGPU,
 						int randSeed)
 {
 	netName_ 					= netName;
 	simMode_ 					= simMode;
 	loggerMode_ 				= loggerMode;
 	ithGPU_ 					= ithGPU;
-	nConfig_ 					= nConfig;
 	randSeed_					= randSeed;
 	enablePrint_ = false;
 	copyState_ = false;
@@ -130,7 +129,7 @@ CARLsim::~CARLsim() {
 void CARLsim::CARLsimInit() {
 	UserErrors::assertTrue(simMode_!=UNKNOWN_SIM,UserErrors::CANNOT_BE_UNKNOWN,"CARLsim()","Simulation mode");
 	UserErrors::assertTrue(loggerMode_!=UNKNOWN_LOGGER,UserErrors::CANNOT_BE_UNKNOWN,"CARLsim()","Logger mode");
-	snn_ = new CpuSNN(netName_, simMode_, loggerMode_, ithGPU_, nConfig_, randSeed_);
+	snn_ = new CpuSNN(netName_, simMode_, loggerMode_, ithGPU_, randSeed_);
 
 	// set default time constants for synaptic current decay
 	// TODO: add ref
@@ -828,8 +827,6 @@ Point3D CARLsim::getNeuronLocation3D(int grpId, int relNeurId) {
 
 	return snn_->getNeuronLocation3D(grpId, relNeurId);
 }
-
-int CARLsim::getNumConfigurations() { return nConfig_; }
 
 int CARLsim::getNumConnections() { return snn_->getNumConnections(); }
 

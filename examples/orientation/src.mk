@@ -5,7 +5,7 @@ output := *.dot *.txt *.log *.csv results/*
 
 # this must be included first because CARLSIM_SRC_DIR is set here
 # path of CARLsim root src folder (for compiling from source)
-CARLSIM_SRC_DIR ?= $(HOME)/Project/CARLsim
+CARLSIM_SRC_DIR ?= $(HOME)/CARLsim
 # set this to wherever user.mk is located
 USER_MK_PATH    ?= $(CARLSIM_SRC_DIR)
 

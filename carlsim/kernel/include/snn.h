@@ -119,10 +119,9 @@ public:
 	 * acceleration, default = CPU_MODE
 	 * \param loggerMode log mode
 	 * \param ithGPU
-	 * \param nConfig the number of configurations
 	 * \param randSeed randomize seed of the random number generator
 	 */
-	CpuSNN(const std::string& name, simMode_t simMode, loggerMode_t loggerMode, int ithGPU, int nConfig, int randSeed);
+	CpuSNN(const std::string& name, simMode_t simMode, loggerMode_t loggerMode, int ithGPU, int randSeed);
 
 	//! SNN Destructor
 	/*!
@@ -481,7 +480,6 @@ public:
 	Point3D getNeuronLocation3D(int neurId);
 	Point3D getNeuronLocation3D(int grpId, int relNeurId);
 
-	int getNumConfigurations()	{ return nConfig_; }	//!< gets number of network configurations
 	int getNumConnections() { return numConnections; }
 	int getNumSynapticConnections(short int connectionId);		//!< gets number of connections associated with a connection ID
 	int getNumGroups() { return numGrp; }
@@ -820,7 +818,6 @@ private:
 	const simMode_t simMode_;		//!< current simulation mode (CPU_MODE or GPU_MODE) FIXME: give better name
 	const loggerMode_t loggerMode_;	//!< current logger mode (USER, DEVELOPER, SILENT, CUSTOM)
 	const int ithGPU_;				//!< on which CUDA device to establish a context (only in GPU_MODE)
-	const int nConfig_;				//!< number of network configurations
 	const int randSeed_;			//!< random number seed to use
 
 

@@ -89,9 +89,9 @@ RNG_rand48* gpuRand48 = NULL;
 
 // TODO: consider moving unsafe computations out of constructor
 CpuSNN::CpuSNN(const std::string& name, simMode_t simMode, loggerMode_t loggerMode,
-	int ithGPU, int nConfig, int randSeed)
+	int ithGPU, int randSeed)
 					: networkName_(name), simMode_(simMode), loggerMode_(loggerMode), ithGPU_(ithGPU),
-					  nConfig_(nConfig), randSeed_(CpuSNN::setRandSeed(randSeed)) // all of these are const
+					  randSeed_(CpuSNN::setRandSeed(randSeed)) // all of these are const
 {
 	// move all unsafe operations out of constructor
 	CpuSNNinit();
@@ -115,11 +115,10 @@ short int CpuSNN::connect(int grpId1, int grpId2, const std::string& _type, floa
 						float _mulSynFast, float _mulSynSlow, bool synWtType) {
 						//const std::string& wtType
 	int retId=-1;
-	for(int c=0; c < nConfig_; c++, grpId1++, grpId2++) {
-		assert(grpId1 < numGrp);
-		assert(grpId2 < numGrp);
-		assert(minDelay <= maxDelay);
-		assert(!isPoissonGroup(grpId2));
+	assert(grpId1 < numGrp);
+	assert(grpId2 < numGrp);
+	assert(minDelay <= maxDelay);
+	assert(!isPoissonGroup(grpId2));
 
     //* \deprecated Do these ramp thingies still work?
 //    bool useRandWts = (wtType.find("random") != std::string::npos);
@@ -130,47 +129,47 @@ short int CpuSNN::connect(int grpId1, int grpId2, const std::string& _type, floa
 //      | SET_FIXED_PLASTIC(synWtType)
 //      | SET_INITWTS_RAMPUP(useRampUpWts)
 //      | SET_INITWTS_RAMPDOWN(useRampDownWts);
-		uint32_t connProp = SET_CONN_PRESENT(1) | SET_FIXED_PLASTIC(synWtType);
+	uint32_t connProp = SET_CONN_PRESENT(1) | SET_FIXED_PLASTIC(synWtType);
 
-		Grid3D szPre = getGroupGrid3D(grpId1);
-		Grid3D szPost = getGroupGrid3D(grpId2);
+	Grid3D szPre = getGroupGrid3D(grpId1);
+	Grid3D szPost = getGroupGrid3D(grpId2);
 
-		grpConnectInfo_t* newInfo = (grpConnectInfo_t*) calloc(1, sizeof(grpConnectInfo_t));
-		newInfo->grpSrc   		  = grpId1;
-		newInfo->grpDest  		  = grpId2;
-		newInfo->initWt	  		  = initWt;
-		newInfo->maxWt	  		  = maxWt;
-		newInfo->maxDelay 		  = maxDelay;
-		newInfo->minDelay 		  = minDelay;
+	grpConnectInfo_t* newInfo = (grpConnectInfo_t*) calloc(1, sizeof(grpConnectInfo_t));
+	newInfo->grpSrc   		  = grpId1;
+	newInfo->grpDest  		  = grpId2;
+	newInfo->initWt	  		  = initWt;
+	newInfo->maxWt	  		  = maxWt;
+	newInfo->maxDelay 		  = maxDelay;
+	newInfo->minDelay 		  = minDelay;
 //		newInfo->radX             = (radX<0) ? MAX(szPre.x,szPost.x) : radX; // <0 means full connectivity, so the
 //		newInfo->radY             = (radY<0) ? MAX(szPre.y,szPost.y) : radY; // effective group size is Grid3D.x. Grab
 //		newInfo->radZ             = (radZ<0) ? MAX(szPre.z,szPost.z) : radZ; // the larger of pre / post to connect all
-		newInfo->radX             = radX;
-		newInfo->radY             = radY;
-		newInfo->radZ             = radZ;
-		newInfo->mulSynFast       = _mulSynFast;
-		newInfo->mulSynSlow       = _mulSynSlow;
-		newInfo->connProp         = connProp;
-		newInfo->p                = prob;
-		newInfo->type             = CONN_UNKNOWN;
-		newInfo->numPostSynapses  = 1;
+	newInfo->radX             = radX;
+	newInfo->radY             = radY;
+	newInfo->radZ             = radZ;
+	newInfo->mulSynFast       = _mulSynFast;
+	newInfo->mulSynSlow       = _mulSynSlow;
+	newInfo->connProp         = connProp;
+	newInfo->p                = prob;
+	newInfo->type             = CONN_UNKNOWN;
+	newInfo->numPostSynapses  = 1;
 
-		newInfo->next 				= connectBegin; //linked list of connection..
-		connectBegin 				= newInfo;
+	newInfo->next 				= connectBegin; //linked list of connection..
+	connectBegin 				= newInfo;
 
-		if ( _type.find("random") != std::string::npos) {
-			newInfo->type 	= CONN_RANDOM;
-			newInfo->numPostSynapses	= MIN(grp_Info[grpId2].SizeN,((int) (prob*grp_Info[grpId2].SizeN +5*sqrt(prob*(1-prob)*grp_Info[grpId2].SizeN)+0.5))); // estimate the maximum number of connections we need.  This uses a binomial distribution at 5 stds.
-			newInfo->numPreSynapses   = MIN(grp_Info[grpId1].SizeN,((int) (prob*grp_Info[grpId1].SizeN +5*sqrt(prob*(1-prob)*grp_Info[grpId1].SizeN)+0.5))); // estimate the maximum number of connections we need.  This uses a binomial distribution at 5 stds.
-		}
-		//so you're setting the size to be prob*Number of synapses in group info + some standard deviation ...
-		else if ( _type.find("full-no-direct") != std::string::npos) {
-			newInfo->type 	= CONN_FULL_NO_DIRECT;
-			newInfo->numPostSynapses	= grp_Info[grpId2].SizeN-1;
-			newInfo->numPreSynapses	= grp_Info[grpId1].SizeN-1;
-		}
-		else if ( _type.find("full") != std::string::npos) {
-			newInfo->type 	= CONN_FULL;
+	if ( _type.find("random") != std::string::npos) {
+		newInfo->type 	= CONN_RANDOM;
+		newInfo->numPostSynapses	= MIN(grp_Info[grpId2].SizeN,((int) (prob*grp_Info[grpId2].SizeN +5*sqrt(prob*(1-prob)*grp_Info[grpId2].SizeN)+0.5))); // estimate the maximum number of connections we need.  This uses a binomial distribution at 5 stds.
+		newInfo->numPreSynapses   = MIN(grp_Info[grpId1].SizeN,((int) (prob*grp_Info[grpId1].SizeN +5*sqrt(prob*(1-prob)*grp_Info[grpId1].SizeN)+0.5))); // estimate the maximum number of connections we need.  This uses a binomial distribution at 5 stds.
+	}
+	//so you're setting the size to be prob*Number of synapses in group info + some standard deviation ...
+	else if ( _type.find("full-no-direct") != std::string::npos) {
+		newInfo->type 	= CONN_FULL_NO_DIRECT;
+		newInfo->numPostSynapses	= grp_Info[grpId2].SizeN-1;
+		newInfo->numPreSynapses	= grp_Info[grpId1].SizeN-1;
+	}
+	else if ( _type.find("full") != std::string::npos) {
+		newInfo->type 	= CONN_FULL;
 
 /*			std::vector<double> nonZeroRadii;
 			if (radX!=0)
@@ -197,53 +196,51 @@ short int CpuSNN::connect(int grpId1, int grpId2, const std::string& _type, floa
 			}
 */
 
-			newInfo->numPostSynapses	= grp_Info[grpId2].SizeN;
-			newInfo->numPreSynapses   = grp_Info[grpId1].SizeN;
-		}
-		else if ( _type.find("one-to-one") != std::string::npos) {
-			newInfo->type 	= CONN_ONE_TO_ONE;
-			newInfo->numPostSynapses	= 1;
-			newInfo->numPreSynapses	= 1;
-		}
-		else {
-			KERNEL_ERROR("Invalid connection type (should be 'random', 'full', 'one-to-one', or 'full-no-direct')");
-			exitSimulation(-1);
-		}
-
-		if (newInfo->numPostSynapses > MAX_nPostSynapses) {
-			KERNEL_ERROR("ConnID %d exceeded the maximum number of output synapses (%d), has %d.",
-				newInfo->connId,
-				MAX_nPostSynapses, newInfo->numPostSynapses);
-			assert(newInfo->numPostSynapses <= MAX_nPostSynapses);
-		}
-
-		if (newInfo->numPreSynapses > MAX_nPreSynapses) {
-			KERNEL_ERROR("ConnID %d exceeded the maximum number of input synapses (%d), has %d.",
-				newInfo->connId,
-				MAX_nPreSynapses, newInfo->numPreSynapses);
-			assert(newInfo->numPreSynapses <= MAX_nPreSynapses);
-		}
-
-		// update the pre and post size...
-		// Subtlety: each group has numPost/PreSynapses from multiple connections.
-		// The newInfo->numPost/PreSynapses are just for this specific connection.
-		// We are adding the synapses counted in this specific connection to the totals for both groups.
-		grp_Info[grpId1].numPostSynapses 	+= newInfo->numPostSynapses;
-		grp_Info[grpId2].numPreSynapses 	+= newInfo->numPreSynapses;
-
-		KERNEL_DEBUG("grp_Info[%d, %s].numPostSynapses = %d, grp_Info[%d, %s].numPreSynapses = %d",
-						grpId1,grp_Info2[grpId1].Name.c_str(),grp_Info[grpId1].numPostSynapses,grpId2,
-						grp_Info2[grpId2].Name.c_str(),grp_Info[grpId2].numPreSynapses);
-
-		newInfo->connId	= numConnections++;
-		assert(numConnections <= MAX_nConnections);	// make sure we don't overflow connId
-
-		if(c==0)
-			retId = newInfo->connId;
-
-		KERNEL_DEBUG("CONNECT SETUP: connId=%d, mulFast=%f, mulSlow=%f",newInfo->connId,newInfo->mulSynFast,
-							newInfo->mulSynSlow);
+		newInfo->numPostSynapses	= grp_Info[grpId2].SizeN;
+		newInfo->numPreSynapses   = grp_Info[grpId1].SizeN;
 	}
+	else if ( _type.find("one-to-one") != std::string::npos) {
+		newInfo->type 	= CONN_ONE_TO_ONE;
+		newInfo->numPostSynapses	= 1;
+		newInfo->numPreSynapses	= 1;
+	}
+	else {
+		KERNEL_ERROR("Invalid connection type (should be 'random', 'full', 'one-to-one', or 'full-no-direct')");
+		exitSimulation(-1);
+	}
+
+	if (newInfo->numPostSynapses > MAX_nPostSynapses) {
+		KERNEL_ERROR("ConnID %d exceeded the maximum number of output synapses (%d), has %d.",
+			newInfo->connId,
+			MAX_nPostSynapses, newInfo->numPostSynapses);
+		assert(newInfo->numPostSynapses <= MAX_nPostSynapses);
+	}
+
+	if (newInfo->numPreSynapses > MAX_nPreSynapses) {
+		KERNEL_ERROR("ConnID %d exceeded the maximum number of input synapses (%d), has %d.",
+			newInfo->connId,
+			MAX_nPreSynapses, newInfo->numPreSynapses);
+		assert(newInfo->numPreSynapses <= MAX_nPreSynapses);
+	}
+
+	// update the pre and post size...
+	// Subtlety: each group has numPost/PreSynapses from multiple connections.
+	// The newInfo->numPost/PreSynapses are just for this specific connection.
+	// We are adding the synapses counted in this specific connection to the totals for both groups.
+	grp_Info[grpId1].numPostSynapses 	+= newInfo->numPostSynapses;
+	grp_Info[grpId2].numPreSynapses 	+= newInfo->numPreSynapses;
+
+	KERNEL_DEBUG("grp_Info[%d, %s].numPostSynapses = %d, grp_Info[%d, %s].numPreSynapses = %d",
+					grpId1,grp_Info2[grpId1].Name.c_str(),grp_Info[grpId1].numPostSynapses,grpId2,
+					grp_Info2[grpId2].Name.c_str(),grp_Info[grpId2].numPreSynapses);
+
+	newInfo->connId	= numConnections++;
+	assert(numConnections <= MAX_nConnections);	// make sure we don't overflow connId
+
+	retId = newInfo->connId;
+
+	KERNEL_DEBUG("CONNECT SETUP: connId=%d, mulFast=%f, mulSlow=%f",newInfo->connId,newInfo->mulSynFast,
+						newInfo->mulSynSlow);
 	assert(retId != -1);
 	return retId;
 }
@@ -253,63 +250,60 @@ short int CpuSNN::connect(int grpId1, int grpId2, ConnectionGeneratorCore* conn,
 						bool synWtType, int maxM, int maxPreM) {
 	int retId=-1;
 
-	for(int c=0; c < nConfig_; c++, grpId1++, grpId2++) {
-		assert(grpId1 < numGrp);
-		assert(grpId2 < numGrp);
+	assert(grpId1 < numGrp);
+	assert(grpId2 < numGrp);
 
-		if (maxM == 0)
-			maxM = grp_Info[grpId2].SizeN;
+	if (maxM == 0)
+		maxM = grp_Info[grpId2].SizeN;
 
-		if (maxPreM == 0)
-			maxPreM = grp_Info[grpId1].SizeN;
+	if (maxPreM == 0)
+		maxPreM = grp_Info[grpId1].SizeN;
 
-		if (maxM > MAX_nPostSynapses) {
-			KERNEL_ERROR("Connection from %s (%d) to %s (%d) exceeded the maximum number of output synapses (%d), "
-								"has %d.", grp_Info2[grpId1].Name.c_str(),grpId1,grp_Info2[grpId2].Name.c_str(),
-								grpId2,	MAX_nPostSynapses,maxM);
-			assert(maxM <= MAX_nPostSynapses);
-		}
-
-		if (maxPreM > MAX_nPreSynapses) {
-			KERNEL_ERROR("Connection from %s (%d) to %s (%d) exceeded the maximum number of input synapses (%d), "
-								"has %d.\n", grp_Info2[grpId1].Name.c_str(), grpId1,grp_Info2[grpId2].Name.c_str(),
-								grpId2, MAX_nPreSynapses,maxPreM);
-			assert(maxPreM <= MAX_nPreSynapses);
-		}
-
-		grpConnectInfo_t* newInfo = (grpConnectInfo_t*) calloc(1, sizeof(grpConnectInfo_t));
-
-		newInfo->grpSrc   = grpId1;
-		newInfo->grpDest  = grpId2;
-		newInfo->initWt	  = 1;
-		newInfo->maxWt	  = 1;
-		newInfo->maxDelay = 1;
-		newInfo->minDelay = 1;
-		newInfo->mulSynFast = _mulSynFast;
-		newInfo->mulSynSlow = _mulSynSlow;
-		newInfo->connProp = SET_CONN_PRESENT(1) | SET_FIXED_PLASTIC(synWtType);
-		newInfo->type	  = CONN_USER_DEFINED;
-		newInfo->numPostSynapses	  	  = maxM;
-		newInfo->numPreSynapses	  = maxPreM;
-		newInfo->conn	= conn;
-
-		newInfo->next	= connectBegin;  // build a linked list
-		connectBegin      = newInfo;
-
-		// update the pre and post size...
-		grp_Info[grpId1].numPostSynapses    += newInfo->numPostSynapses;
-		grp_Info[grpId2].numPreSynapses += newInfo->numPreSynapses;
-
-		KERNEL_DEBUG("grp_Info[%d, %s].numPostSynapses = %d, grp_Info[%d, %s].numPreSynapses = %d",
-						grpId1,grp_Info2[grpId1].Name.c_str(),grp_Info[grpId1].numPostSynapses,grpId2,
-						grp_Info2[grpId2].Name.c_str(),grp_Info[grpId2].numPreSynapses);
-
-		newInfo->connId	= numConnections++;
-		assert(numConnections <= MAX_nConnections);	// make sure we don't overflow connId
-
-		if(c==0)
-			retId = newInfo->connId;
+	if (maxM > MAX_nPostSynapses) {
+		KERNEL_ERROR("Connection from %s (%d) to %s (%d) exceeded the maximum number of output synapses (%d), "
+							"has %d.", grp_Info2[grpId1].Name.c_str(),grpId1,grp_Info2[grpId2].Name.c_str(),
+							grpId2,	MAX_nPostSynapses,maxM);
+		assert(maxM <= MAX_nPostSynapses);
 	}
+
+	if (maxPreM > MAX_nPreSynapses) {
+		KERNEL_ERROR("Connection from %s (%d) to %s (%d) exceeded the maximum number of input synapses (%d), "
+							"has %d.\n", grp_Info2[grpId1].Name.c_str(), grpId1,grp_Info2[grpId2].Name.c_str(),
+							grpId2, MAX_nPreSynapses,maxPreM);
+		assert(maxPreM <= MAX_nPreSynapses);
+	}
+
+	grpConnectInfo_t* newInfo = (grpConnectInfo_t*) calloc(1, sizeof(grpConnectInfo_t));
+
+	newInfo->grpSrc   = grpId1;
+	newInfo->grpDest  = grpId2;
+	newInfo->initWt	  = 1;
+	newInfo->maxWt	  = 1;
+	newInfo->maxDelay = 1;
+	newInfo->minDelay = 1;
+	newInfo->mulSynFast = _mulSynFast;
+	newInfo->mulSynSlow = _mulSynSlow;
+	newInfo->connProp = SET_CONN_PRESENT(1) | SET_FIXED_PLASTIC(synWtType);
+	newInfo->type	  = CONN_USER_DEFINED;
+	newInfo->numPostSynapses	  	  = maxM;
+	newInfo->numPreSynapses	  = maxPreM;
+	newInfo->conn	= conn;
+
+	newInfo->next	= connectBegin;  // build a linked list
+	connectBegin      = newInfo;
+
+	// update the pre and post size...
+	grp_Info[grpId1].numPostSynapses    += newInfo->numPostSynapses;
+	grp_Info[grpId2].numPreSynapses += newInfo->numPreSynapses;
+
+	KERNEL_DEBUG("grp_Info[%d, %s].numPostSynapses = %d, grp_Info[%d, %s].numPreSynapses = %d",
+					grpId1,grp_Info2[grpId1].Name.c_str(),grp_Info[grpId1].numPostSynapses,grpId2,
+					grp_Info2[grpId2].Name.c_str(),grp_Info[grpId2].numPreSynapses);
+
+	newInfo->connId	= numConnections++;
+	assert(numConnections <= MAX_nConnections);	// make sure we don't overflow connId
+
+	retId = newInfo->connId;
 	assert(retId != -1);
 	return retId;
 }
@@ -456,7 +450,7 @@ int trGABAb, int tdGABAb) {
 // set homeostasis for group
 void CpuSNN::setHomeostasis(int grpId, bool isSet, float homeoScale, float avgTimeScale) {
 	if (grpId == ALL) { // shortcut for all groups
-		for(int grpId1=0; grpId1 < numGrp; grpId1 += nConfig_) {
+		for(int grpId1=0; grpId1<numGrp; grpId1++) {
 			setHomeostasis(grpId1, isSet, homeoScale, avgTimeScale);
 		}
 	} else {
@@ -477,7 +471,7 @@ void CpuSNN::setHomeostasis(int grpId, bool isSet, float homeoScale, float avgTi
 // set a homeostatic target firing rate (enforced through homeostatic synaptic scaling)
 void CpuSNN::setHomeoBaseFiringRate(int grpId, float baseFiring, float baseFiringSD) {
 	if (grpId == ALL) { // shortcut for all groups
-		for(int grpId1=0; grpId1 < numGrp; grpId1 += nConfig_) {
+		for(int grpId1=0; grpId1<numGrp; grpId1++) {
 			setHomeoBaseFiringRate(grpId1, baseFiring, baseFiringSD);
 		}
 	} else {
@@ -502,7 +496,7 @@ void CpuSNN::setNeuronParameters(int grpId, float izh_a, float izh_a_sd, float i
 	assert(izh_d>0); assert(izh_d_sd>=0);
 
 	if (grpId == ALL) { // shortcut for all groups
-		for(int grpId1=0; grpId1 < numGrp; grpId1 += nConfig_) {
+		for(int grpId1=0; grpId1<numGrp; grpId1++) {
 			setNeuronParameters(grpId1, izh_a, izh_a_sd, izh_b, izh_b_sd, izh_c, izh_c_sd, izh_d, izh_d_sd);
 		}
 	} else {
@@ -539,7 +533,7 @@ void CpuSNN::setSTDP(int grpId,bool isSet,stdpType_t type,float alphaLTP,float t
 	}
 
 	if (grpId == ALL) { // shortcut for all groups
-		for(int grpId1=0; grpId1 < numGrp; grpId1 += nConfig_) {
+		for(int grpId1=0; grpId1<numGrp; grpId1++) {
 			setSTDP(grpId1, isSet, type, alphaLTP, tauLTP, alphaLTD, tauLTD);
 		}
 	} else {
@@ -566,7 +560,7 @@ void CpuSNN::setSTP(int grpId, bool isSet, float STP_U, float STP_tau_u, float S
 	}
 
 	if (grpId == ALL) { // shortcut for all groups
-		for(int grpId1=0; grpId1 < numGrp; grpId1 += nConfig_) {
+		for(int grpId1=0; grpId1<numGrp; grpId1++) {
 			setSTP(grpId1, isSet, STP_U, STP_tau_u, STP_tau_x);
 		}
 	} else {
@@ -868,7 +862,7 @@ void CpuSNN::resetSpikeCntUtil(int my_grpId ) {
     }
     else {
       startGrp = my_grpId;
-      endGrp   = my_grpId+nConfig_;
+      endGrp   = my_grpId;
     }
     resetSpikeCnt_GPU(startGrp, endGrp);
     return;
@@ -880,7 +874,7 @@ void CpuSNN::resetSpikeCntUtil(int my_grpId ) {
   }
   else {
     startGrp = my_grpId;
-    endGrp   = my_grpId+nConfig_;
+    endGrp   = my_grpId;
   }
 
   resetSpikeCnt(ALL);
@@ -894,7 +888,7 @@ void CpuSNN::resetSpikeCounter(int grpId) {
 	assert(grpId>=-1); assert(grpId<numGrp);
 
 	if (grpId == ALL) { // shortcut for all groups
-		for(int grpId1=0; grpId1 < numGrp; grpId1 += nConfig_) {
+		for(int grpId1=0; grpId1<numGrp; grpId1 ++) {
 			resetSpikeCounter(grpId1);
 		}
 	} else {
@@ -1667,7 +1661,7 @@ void CpuSNN::setCopyFiringStateFromGPU(bool _enableGPUSpikeCntPtr) {
 
 // all unsafe operations of CpuSNN constructor
 void CpuSNN::CpuSNNinit() {
-	assert(nConfig_>0 && nConfig_<=MAX_nConfig); assert(ithGPU_>=0);
+	assert(ithGPU_>=0);
 	assert(simMode_!=UNKNOWN_SIM); assert(loggerMode_!=UNKNOWN_LOGGER);
 
 	// set logger mode (defines where to print all status, error, and debug messages)
@@ -1741,7 +1735,7 @@ void CpuSNN::CpuSNNinit() {
 	KERNEL_INFO("***************************** Configuring Network ********************************");
 	KERNEL_INFO("Starting CARLsim simulation \"%s\" in %s mode",networkName_.c_str(),
 		loggerMode_string[loggerMode_]);
-	KERNEL_INFO("nConfig: %d, randSeed: %d",nConfig_,randSeed_);
+	KERNEL_INFO("Random number seed: %d",randSeed_);
 
 	time_t rawtime;
 	struct tm * timeinfo;
@@ -2125,8 +2119,6 @@ void CpuSNN::buildGroup(int grpId) {
 void CpuSNN::buildNetwork() {
 	grpConnectInfo_t* newInfo = connectBegin;
 //	int curN = 0, curD = 0, numPostSynapses = 0, numPreSynapses = 0;
-
-	assert(nConfig_ > 0);
 
 	// make sure number of neuron parameters have been accumulated correctly
 	// NOTE: this used to be updateParameters
@@ -3852,7 +3844,7 @@ void CpuSNN::resetSpikeCnt(int grpId) {
 		endGrp = numGrp;
 	} else {
 		 startGrp = grpId;
-		 endGrp = grpId + nConfig_;
+		 endGrp = grpId;
 	}
 
 	for (int g = startGrp; g<endGrp; g++) {
