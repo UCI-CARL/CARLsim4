@@ -39,15 +39,11 @@
  * Ver 7/29/2014
  */
 
-// paradigm shift: run this on spikes.
-
 #ifndef _CONN_MON_H_
 #define _CONN_MON_H_
 
-#include <carlsim_datastructures.h> // spikeMonMode_t
 #include <vector>					// std::vector
 
-//class CpuSNN; 			// forward declaration of CpuSNN class
 class ConnectionMonitorCore; // forward declaration of implementation
 
 /*!
@@ -74,9 +70,18 @@ class ConnectionMonitor {
 	 */
 	~ConnectionMonitor();
 
-
 	// +++++ PUBLIC METHODS: +++++++++++++++++++++++++++++++++++++++++++++++//
 
+	/*!
+	 *\brief Truncates the 2D spike vector
+	 *
+	 * This function truncates all the data found in the 2D spike vector.
+	 * If PersistentMode is off, this function will be called automatically in startRecording(), such that all
+	 * spikes from previous recording periods will be discarded. By default, PersistentMode is off.
+	 * If PersistentMode is on, the user can call this function after any number of recordings. However, isRecording()
+	 * must always be off.
+	 */
+	void clear();
 
  private:
   //! This is a pointer to the actual implementation of the class. The user should never directly instantiate it.

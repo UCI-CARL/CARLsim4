@@ -42,11 +42,12 @@
 #include <carlsim.h>
 #include <user_errors.h>
 #include <callback_core.h>
-#include <connection_monitor_core.h>
 
 #include <iostream>		// std::cout, std::endl
 #include <sstream>		// std::stringstream
 #include <algorithm>	// std::find
+
+#include <connection_monitor_core.h>
 
 
 
@@ -674,6 +675,46 @@ void CARLsim::resetSpikeCounter(int grpId) {
 	snn_->resetSpikeCounter(grpId);
 }
 
+// set spike monitor for group and write spikes to file
+ConnectionMonitor* CARLsim::setConnectionMonitor(int grpIdPre, int grpIdPost, const std::string& fname) {
+	std::string funcName = "setConnectionMonitor(\"" + getGroupName(grpIdPre) + "\",\"" + getGroupName(grpIdPost)
+		+ "\",\"" + fname + "\")";
+	UserErrors::assertTrue(grpIdPre!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName, "grpIdPre"); // grpId can't be ALL
+	UserErrors::assertTrue(grpIdPost!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName, "grpIdPost");
+	UserErrors::assertTrue(grpIdPre>=0, UserErrors::CANNOT_BE_NEGATIVE, funcName, "grpIdPre");// grpId can't be negative
+	UserErrors::assertTrue(grpIdPost>=0, UserErrors::CANNOT_BE_NEGATIVE, funcName, "grpIdPost");
+	UserErrors::assertTrue(carlsimState_==CONFIG_STATE || carlsimState_==SETUP_STATE,
+					UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "CONFIG or SETUP.");
+
+	// empty string: use default name for binary file
+#if (WIN32 || WIN64)
+	std::string fileName = fname.empty() ? "NULL" : fname;
+#else
+	std::string fileName = fname.empty() ? "results/conn" + snn_->getGroupName(grpIdPre) + "_"
+		+ snn_->getGroupName(grpIdPost) + ".dat" : fname;
+#endif
+
+	FILE* fid;
+	if (fileName=="NULL") {
+		// user does not want a binary file created
+		fid = NULL;
+	} else {
+		// try to open spike file
+		fid = fopen(fileName.c_str(),"wb");
+		if (fid==NULL) {
+			// file could not be opened
+
+			// default case: print error and exit
+			std::string fileError = " Double-check file permissions and make sure directory exists.";
+			UserErrors::assertTrue(false, UserErrors::FILE_CANNOT_OPEN, funcName, fileName, fileError);
+		}
+	}
+
+	// return SpikeMonitor object
+	return snn_->setConnectionMonitor(grpIdPre, grpIdPost, fid);
+}
+
+/*
 // set network monitor for a group
 void CARLsim::setConnectionMonitor(int grpIdPre, int grpIdPost, ConnectionMonitor* connectionMon) {
 	std::string funcName = "setConnectionMonitor(\""+getGroupName(grpIdPre)+"\",ConnectionMonitor*)";
@@ -686,6 +727,7 @@ void CARLsim::setConnectionMonitor(int grpIdPre, int grpIdPost, ConnectionMonito
 	connMon_.push_back(CMC);
 	snn_->setConnectionMonitor(grpIdPre, grpIdPost, CMC);
 }
+*/
 
 // set group monitor for a group
 void CARLsim::setGroupMonitor(int grpId, GroupMonitor* groupMon) {

@@ -46,7 +46,7 @@ class CARLsim;
 class CpuSNN;
 
 class ConnectionGenerator;
-class ConnectionMonitor;
+//class ConnectionMonitor;
 class GroupMonitor;
 class SpikeGenerator;
 class SpikeMonitor;

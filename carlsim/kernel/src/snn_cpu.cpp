@@ -41,7 +41,10 @@
 #include <snn.h>
 #include <sstream>
 
+#include <connection_monitor.h>
 #include <connection_monitor_core.h>
+#include <spike_monitor.h>
+#include <spike_monitor_core.h>
 
 #if (WIN32 || WIN64)
 	#include <float.h>
@@ -154,6 +157,7 @@ short int CpuSNN::connect(int grpId1, int grpId2, const std::string& _type, floa
 	newInfo->p                = prob;
 	newInfo->type             = CONN_UNKNOWN;
 	newInfo->numPostSynapses  = 1;
+	newInfo->ConnectionMonitorId = -1;
 
 	newInfo->next 				= connectBegin; //linked list of connection..
 	connectBegin 				= newInfo;
@@ -727,9 +731,9 @@ int CpuSNN::runNetwork(int _nsec, int _nmsec, bool printRunSummary, bool copySta
 			if (numGroupMonitor) {
 				updateGroupMonitor();
 			}
-			if (numConnectionMonitor) {
-				updateConnectionMonitor();
-			}
+//			if (numConnectionMonitor) {
+//				updateConnectionMonitor();
+//			}
 
 			if(simMode_ == CPU_MODE)
 				updateFiringTable();
@@ -968,6 +972,53 @@ void CpuSNN::setGroupMonitor(int grpId, GroupMonitorCore* groupMon) {
 	cpuSnnSz.monitorInfoSize += sizeof(float) * 100 * 4;
 }
 
+ConnectionMonitor* CpuSNN::setConnectionMonitor(int grpIdPre, int grpIdPost, FILE* fid) {
+	// find connection based on pre-post pair
+	short int connId = getConnectId(grpIdPre,grpIdPost);
+	if (connId<0) {
+		KERNEL_ERROR("No connection found from group %d(%s) to group %d(%s)", grpIdPre, getGroupName(grpIdPre).c_str(),
+			grpIdPost, getGroupName(grpIdPost).c_str());
+		exitSimulation(1);
+	}
+
+	// check whether connection already has a connection monitor
+	grpConnectInfo_t* connInfo = getConnectInfo(connId);
+	if (connInfo->ConnectionMonitorId >= 0) {
+		KERNEL_ERROR("setConnectionMonitor has already been called on Connection %d", connId);
+		exitSimulation(1);
+	}
+
+	// create new ConnectionMonitorCore object in any case and initialize
+	// connMonObj destructor (see below) will deallocate it
+	ConnectionMonitorCore* connMonCoreObj = new ConnectionMonitorCore(this, numConnectionMonitor, connId);
+	connMonCoreList[numConnectionMonitor] = connMonCoreObj;
+
+	// assign conn file ID if we selected to write to a file, else it's NULL
+	// if file pointer exists, it has already been fopened
+	// this will also write the header section of the conn file
+	// connMonCoreObj destructor will fclose it
+	connMonCoreObj->setConnectFileId(fid);
+
+	// create a new ConnectionMonitor object for the user-interface
+	// CpuSNN::deleteObjects will deallocate it
+	ConnectionMonitor* connMonObj = new ConnectionMonitor(connMonCoreObj);
+	connMonList[numConnectionMonitor] = connMonObj;
+
+	// also inform the connection that it is being monitored...
+	connInfo->ConnectionMonitorId = numConnectionMonitor;
+
+    // not eating much memory anymore, got rid of all buffers
+	cpuSnnSz.monitorInfoSize += sizeof(ConnectionMonitor*);
+	cpuSnnSz.monitorInfoSize += sizeof(ConnectionMonitorCore*);
+
+	numConnectionMonitor++;
+	KERNEL_INFO("SpikeMonitor set for connection %d %d(%s) => %d(%s)", connId, grpIdPre, getGroupName(grpIdPre).c_str(),
+		grpIdPost, getGroupName(grpIdPost).c_str());
+
+	return connMonObj;
+}
+
+/*
 void CpuSNN::setConnectionMonitor(int grpIdPre, int grpIdPost, ConnectionMonitorCore* connectionMon) {
 	// store the grpId for further reference
 	connMonGrpIdPre[numConnectionMonitor] = grpIdPre;
@@ -980,6 +1031,7 @@ void CpuSNN::setConnectionMonitor(int grpIdPre, int grpIdPost, ConnectionMonitor
 
 	numConnectionMonitor++;
 }
+*/
 
 // sets up a spike generator
 void CpuSNN::setSpikeGenerator(int grpId, SpikeGeneratorCore* spikeGen) {
@@ -1321,6 +1373,25 @@ void CpuSNN::setLogsFp(FILE* fpInf, FILE* fpErr, FILE* fpDeb, FILE* fpLog) {
 /// **************************************************************************************************************** ///
 /// GETTERS / SETTERS
 /// **************************************************************************************************************** ///
+
+// loop over linked list entries to find a connection with the right pre-post pair, O(N)
+short int CpuSNN::getConnectId(int grpIdPre, int grpIdPost) {
+	grpConnectInfo_t* connInfo = connectBegin;
+
+	short int connId = -1;
+	while (connInfo) {
+		// check whether pre and post match
+		if (connInfo->grpSrc == grpIdPre && connInfo->grpDest == grpIdPost) {
+			connId = connInfo->connId;
+			break;
+		}
+
+		// otherwise, keep looking
+		connInfo = connInfo->next;
+	}
+
+	return connId;
+}
 
 //! used for parameter tuning functionality
 grpConnectInfo_t* CpuSNN::getConnectInfo(short int connectId) {
@@ -1878,7 +1949,7 @@ void CpuSNN::CpuSNNinit() {
 		grp_Info[i].MaxFiringRate = UNKNOWN_NEURON_MAX_FIRING_RATE;
 		grp_Info[i].SpikeMonitorId = -1;
 		grp_Info[i].GroupMonitorId = -1;
-		grp_Info[i].ConnectionMonitorId = -1;
+//		grp_Info[i].ConnectionMonitorId = -1;
 		grp_Info[i].FiringCount1sec=0;
 		grp_Info[i].numPostSynapses 		= 0;	// default value
 		grp_Info[i].numPreSynapses 	= 0;	// default value
@@ -4194,6 +4265,7 @@ void CpuSNN::updateAfterMaxTime() {
 	resetPropogationBuffer();
 }
 
+/*
 void CpuSNN::updateConnectionMonitor() {
 	for (int grpId = 0; grpId < numGrp; grpId++) {
 		int monitorId = grp_Info[grpId].ConnectionMonitorId;
@@ -4226,6 +4298,7 @@ void CpuSNN::updateConnectionMonitor() {
 		}
 	}
 }
+*/
 
 void CpuSNN::updateGroupMonitor() {
 	// TODO: build DA, 5HT, ACh, NE buffer in GPU memory and retrieve data every one second

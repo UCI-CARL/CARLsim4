@@ -30,7 +30,7 @@ input_stim_dir = $(CARLSIM_SRC_DIR)/tools/input_stimulus
 # we are compiling from lib
 CARLSIM_FLAGS += -I$(kernel_dir)/include -I$(interface_dir)/include \
 								 -I$(spike_mon_dir) -I$(spike_gen_dir) -I$(server_dir) \
-								 -I$(input_stim_dir)
+								 -I$(input_stim_dir) -I$(conn_mon_dir)
 
 # carlsim ecj components
 ECJ_PTI_FLAGS += -I$(ECJ_PTI_DIR)/include

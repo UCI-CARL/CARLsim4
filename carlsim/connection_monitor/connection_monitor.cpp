@@ -1,9 +1,9 @@
 #include <connection_monitor.h>
-
 #include <connection_monitor_core.h>	// ConnectionMonitor private implementation
-#include <user_errors.h>		// fancy user error messages
 
+#include <user_errors.h>		// fancy user error messages
 #include <sstream>				// std::stringstream
+
 
 // we aren't using namespace std so pay attention!
 ConnectionMonitor::ConnectionMonitor(ConnectionMonitorCore* connMonCorePtr){
@@ -16,3 +16,10 @@ ConnectionMonitor::~ConnectionMonitor() {
 }
 
 // +++++ PUBLIC METHODS: +++++++++++++++++++++++++++++++++++++++++++++++//
+
+void ConnectionMonitor::clear(){
+	std::string funcName = "clear()";
+//	UserErrors::assertTrue(!isRecording(), UserErrors::CANNOT_BE_ON, funcName, "Recording");
+
+	connMonCorePtr_->clear();
+}

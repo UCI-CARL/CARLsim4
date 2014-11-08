@@ -25,10 +25,10 @@ interface_src := $(addprefix $(interface_dir)/src/,carlsim.cpp \
 interface_objs := $(patsubst %.cpp, %.o, $(interface_src))
 
 # connection monitor variables
-conn_mon_inc := $(addprefix $(conn_mon_dir)/,connection_monitor.h \
-	connection_monitor_core.h)
-conn_mon_src := $(addprefix $(conn_mon_dir)/, connection_monitor.cpp \
-	connection_monitor_core.cpp)
+conn_mon_inc := $(addprefix $(conn_mon_dir)/,connection_monitor_core.h \
+	connection_monitor.h)
+conn_mon_src := $(addprefix $(conn_mon_dir)/, connection_monitor_core.cpp \
+	connection_monitor.cpp)
 conn_mon_objs := $(patsubst %.cpp, %.o, $(conn_mon_src))
 conn_mon_flags := -I$(conn_mon_dir)
 
@@ -44,10 +44,10 @@ spike_mon_flags := -I$(spike_mon_dir)
 util_2_0_objs := $(addprefix $(kernel_dir)/,v1ColorME.2.0.o)
 
 # carlsim variables all together in one place
-carlsim_inc += $(kernel_inc) $(interface_inc) $(spike_mon_inc) $(conn_mon_inc)
-carlsim_objs += $(kernel_objs) $(interface_objs) $(spike_mon_objs) $(conn_mon_objs)
-carlsim_sources += $(kernel_src) $(interface_src) $(spike_mon_src) $(conn_mon_src)
-objects += $(carlsim_objs) $(interface_objs) $(spike_mon_objs) $(conn_mon_objs)
+carlsim_inc += $(spike_mon_inc) $(conn_mon_inc) $(kernel_inc) $(interface_inc)
+carlsim_objs += $(spike_mon_objs) $(conn_mon_objs) $(kernel_objs) $(interface_objs)
+carlsim_sources += $(spike_mon_src) $(conn_mon_src) $(kernel_src) $(interface_src)
+objects += $(spike_mon_objs) $(conn_mon_objs) $(carlsim_objs) $(interface_objs)
 
 default_targets += carlsim
 
@@ -64,13 +64,11 @@ $(interface_dir)/src/%.o: $(interface_dir)/src/%.cpp $(interface_inc)
 
 # connection monitor
 $(conn_mon_dir)/%.o: $(conn_mon_dir)/%.cpp $(conn_mon_inc)
-	$(NVCC) -c $(CARLSIM_INCLUDES) $(CARLSIM_FLAGS) $(conn_mon_flags) \
-$< -o $@
+	$(NVCC) -c $(CARLSIM_INCLUDES) $(CARLSIM_FLAGS) $(conn_mon_flags) $< -o $@
 
 # spike_monitor
 $(spike_mon_dir)/%.o: $(spike_mon_dir)/%.cpp $(spike_mon_inc)
-	$(NVCC) -c $(CARLSIM_INCLUDES) $(CARLSIM_FLAGS) $(spike_mon_flags) \
-$< -o $@
+	$(NVCC) -c $(CARLSIM_INCLUDES) $(CARLSIM_FLAGS) $(spike_mon_flags) $< -o $@
 
 # kernel carlsim cpps
 $(kernel_dir)/src/%.o: $(kernel_dir)/src/%.cpp $(kernel_inc)

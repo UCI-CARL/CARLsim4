@@ -78,8 +78,11 @@
 #include <poisson_rate.h>
 #include <mtrand.h>
 #include <gpu_random.h>
-#include <spike_monitor.h>
-#include <spike_monitor_core.h>
+
+class SpikeMonitor;
+class SpikeMonitorCore;
+class ConnectionMonitorCore;
+class ConnectionMonitor;
 
 extern RNG_rand48* gpuRand48; //!< Used by all network to generate global random number
 
@@ -369,7 +372,8 @@ public:
 	 * \param[in] grpIdPost ID of the post-synaptic neuron group
 	 * \param[in] connectionMon ConnectionMonitorCore class
 	 */
-	void setConnectionMonitor(int grpIdPre, int grpIdPost, ConnectionMonitorCore* connectionMon);
+//	void setConnectionMonitor(int grpIdPre, int grpIdPost, ConnectionMonitorCore* connectionMon);
+	ConnectionMonitor* setConnectionMonitor(int grpIdPre, int grpIdPost, FILE* fid);
 
 	/*!
 	 * \brief A Spike Counter keeps track of the number of spikes per neuron in a group.
@@ -462,6 +466,7 @@ public:
 
 	// +++++ PUBLIC METHODS: GETTERS / SETTERS ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
+	short int getConnectId(int grpIdPre, int grpIdPost); //!< find connection ID based on pre-post group pair, O(N)
 	grpConnectInfo_t* getConnectInfo(short int connectId); //!< required for homeostasis
 
 	//! Returns the delay information for all synaptic connections between a pre-synaptic and a post-synaptic neuron group
@@ -1008,10 +1013,13 @@ private:
 	int numNeuronMonitor;
 
 	// network monitor variables
-	ConnectionMonitorCore	*connBufferCallback[MAX_GRP_PER_SNN];
-	unsigned int		connMonGrpIdPre[MAX_GRP_PER_SNN];
-	unsigned int		connMonGrpIdPost[MAX_GRP_PER_SNN];
-	unsigned int		numConnectionMonitor;
+//	ConnectionMonitorCore	*connBufferCallback[MAX_GRP_PER_SNN];
+//	unsigned int		connMonGrpIdPre[MAX_GRP_PER_SNN];
+//	unsigned int		connMonGrpIdPost[MAX_GRP_PER_SNN];
+	int numConnectionMonitor;
+	ConnectionMonitorCore* connMonCoreList[MAX_nConnections];
+	ConnectionMonitor*     connMonList[MAX_nConnections];
+
 
 	/* Tsodyks & Markram (1998), where the short-term dynamics of synapses is characterized by three parameters:
 	   U (which roughly models the release probability of a synaptic vesicle for the first spike in a train of spikes),

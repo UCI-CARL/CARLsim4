@@ -632,7 +632,7 @@ public:
 	 * \param[in] grpIdPost 	the post-synaptic group ID
 	 * \param[in] connectionMon an instance of class ConnectionMonitor (see callback.h)
 	 */
-	void setConnectionMonitor(int grpIdPre, int grpIdPost, ConnectionMonitor* connectionMon=NULL);
+	ConnectionMonitor* setConnectionMonitor(int grpIdPre, int grpIdPost, const std::string& fname="");
 
 	/*!
 	 * \brief Sets a group monitor for a group, custom GroupMonitor class

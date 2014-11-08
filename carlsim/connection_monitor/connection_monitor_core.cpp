@@ -8,36 +8,22 @@
 
 
 // we aren't using namespace std so pay attention!
-ConnectionMonitorCore::ConnectionMonitorCore(CpuSNN* snn, int monitorId, int grpId) {
+ConnectionMonitorCore::ConnectionMonitorCore(CpuSNN* snn, int monitorId, short int connId) {
 	snn_ = snn;
-	grpId_= grpId;
+	connId_= connId;
 	monitorId_ = monitorId;
-	nNeurons_ = -1;
-	spikeFileId_ = NULL;
-	recordSet_ = false;
-	spkMonLastUpdated_ = 0;
-
-	mode_ = AER;
-	persistentData_ = false;
+	connFileId_ = NULL;
 
 	needToWriteFileHeader_ = true;
-	spikeFileSignature_ = 206661989;
-	spikeFileVersion_ = 0.2f;
+	connFileSignature_ = 202029319;
+	connFileVersion_ = 0.1f;
 
 	// defer all unsafe operations to init function
 	init();
 }
 
 void ConnectionMonitorCore::init() {
-	nNeurons_ = snn_->getGroupNumNeurons(grpId_);
-	assert(nNeurons_>0);
-
-	// spike vector will be a 2D structure that holds a list of spike times for each neuron in the group
-	// so the first dimension is neuron ID, and each spkVector_[i] holds the list of spike times of that neuron
-	// fix the first dimension of spike vector
-	spkVector_.resize(nNeurons_);
-
-	clear();
+//	clear();
 
 	// use KERNEL_{ERROR|WARNING|etc} typesetting (const FILE*)
 	fpInf_ = snn_->getLogFpInf();
@@ -47,355 +33,49 @@ void ConnectionMonitorCore::init() {
 }
 
 ConnectionMonitorCore::~ConnectionMonitorCore() {
-	if (spikeFileId_!=NULL) {
-		fclose(spikeFileId_);
-		spikeFileId_ = NULL;
+	if (connFileId_!=NULL) {
+		fclose(connFileId_);
+		connFileId_ = NULL;
 	}
 }
 
 // +++++ PUBLIC METHODS: +++++++++++++++++++++++++++++++++++++++++++++++//
 
 void ConnectionMonitorCore::clear() {
-	assert(!isRecording());
-	recordSet_ = false;
-	startTime_ = -1;
-	startTimeLast_ = -1;
-	stopTime_ = -1;
-	accumTime_ = 0;
-	totalTime_ = -1;
-
-	for (int i=0; i<nNeurons_; i++)
-		spkVector_[i].clear();
-
-	needToCalculateFiringRates_ = true;
-	needToSortFiringRates_ = true;
-	firingRates_.clear();
-	firingRatesSorted_.clear();
-	firingRates_.assign(nNeurons_,0);
-	firingRatesSorted_.assign(nNeurons_,0);
+	
 }
 
-float ConnectionMonitorCore::getPopMeanFiringRate() {
-	assert(!isRecording());
 
-	if (totalTime_==0)
-		return 0.0f;
-
-	return getPopNumSpikes()*1000.0/(getRecordingTotalTime()*nNeurons_);
-}
-
-float ConnectionMonitorCore::getPopStdFiringRate() {
-	assert(!isRecording());
-
-	if (totalTime_==0)
-		return 0.0f;
-
-	float meanRate = getPopMeanFiringRate();
-	std::vector<float> rates = getAllFiringRates();
-	float std = 0.0f;
-	if (nNeurons_>1) {
-		for (int i=0; i<nNeurons_; i++)
-			std += (rates[i]-meanRate)*(rates[i]-meanRate);
-		std = sqrt(std/(nNeurons_-1));
-	}
-
-	return std;
-}
-
-int ConnectionMonitorCore::getPopNumSpikes() {
-	assert(!isRecording());
-
-	int nSpk = 0;
-	for (int i=0; i<nNeurons_; i++)
-		nSpk += getNeuronNumSpikes(i);
-
-	return nSpk;
-}
-
-std::vector<float> ConnectionMonitorCore::getAllFiringRates() {
-	assert(!isRecording());
-
-	// if necessary, get data structures up-to-date
-	calculateFiringRates();
-
-	return firingRates_;
-}
-
-float ConnectionMonitorCore::getMaxFiringRate() {
-	assert(!isRecording());
-
-	std::vector<float> rates = getAllFiringRatesSorted();
-
-	return rates.back();
-}
-
-float ConnectionMonitorCore::getMinFiringRate(){
-	assert(!isRecording());
-
-	std::vector<float> rates = getAllFiringRatesSorted();
-
-	return rates.front();
-}
-
-float ConnectionMonitorCore::getNeuronMeanFiringRate(int neurId) {
-	assert(!isRecording());
-	assert(neurId>=0 && neurId<nNeurons_);
-
-	return getNeuronNumSpikes(neurId)*1000.0/getRecordingTotalTime();	
-}
-
-int ConnectionMonitorCore::getNeuronNumSpikes(int neurId) {
-	assert(!isRecording());
-	assert(neurId>=0 && neurId<nNeurons_);
-	assert(getMode()==AER);
-
-	return spkVector_[neurId].size();
-}
-
-std::vector<float> ConnectionMonitorCore::getAllFiringRatesSorted() {
-	assert(!isRecording());
-
-	// if necessary, get data structures up-to-date
-	sortFiringRates();
-
-	return firingRatesSorted_;
-}
-
-int ConnectionMonitorCore::getNumNeuronsWithFiringRate(float min, float max){
-	assert(!isRecording());
-	assert(min>=0.0f && max>=0.0f);
-	assert(max>=min);
-
-	// if necessary, get data structures up-to-date
-	sortFiringRates();
-
-	int counter = 0;
-	std::vector<float>::const_iterator it_begin = firingRatesSorted_.begin();
-	std::vector<float>::const_iterator it_end = firingRatesSorted_.end();
-	for(std::vector<float>::const_iterator it=it_begin; it!=it_end; it++){
-		if((*it) >= min && (*it) <= max)
-			counter++;
-	}
-
-	return counter;
-}
-
-int ConnectionMonitorCore::getNumSilentNeurons() {
-	assert(!isRecording());
-
-	return getNumNeuronsWithFiringRate(0.0f, 0.0f);
-}
-
-// \TODO need to do error check on interface
-float ConnectionMonitorCore::getPercentNeuronsWithFiringRate(float min, float max) {
-	assert(!isRecording());
-
-	return getNumNeuronsWithFiringRate(min,max)*100.0/nNeurons_;
-}
-
-float ConnectionMonitorCore::getPercentSilentNeurons(){
-	assert(!isRecording());
-
-	return getNumNeuronsWithFiringRate(0,0)*100.0/nNeurons_;
-}
-
-std::vector<std::vector<int> > ConnectionMonitorCore::getSpikeVector2D(){
-	assert(!isRecording());
-	assert(mode_==AER);
-
-	return spkVector_;
-}
-
-void ConnectionMonitorCore::print(bool printSpikeTimes) {
-	assert(!isRecording());
-
-	// how many spike times to display per row
-	int dispSpkTimPerRow = 7;
-
-	KERNEL_INFO("(t=%.3fs) ConnectionMonitor for group %s(%d) has %d spikes in %ld ms (%.2f +/- %.2f Hz)",
-		(float)(snn_->getSimTime()/1000.0),
-		snn_->getGroupName(grpId_).c_str(),
-		grpId_,
-		getPopNumSpikes(),
-		getRecordingTotalTime(),
-		getPopMeanFiringRate(),
-		getPopStdFiringRate());
-
-	if (printSpikeTimes && mode_==AER) {
-		// spike times only available in AER mode
-		KERNEL_INFO("| Neur ID | Rate (Hz) | Spike Times (ms)");
-		KERNEL_INFO("|- - - - -|- - - - - -|- - - - - - - - - - - - - - - - -- - - - - - - - - - - - -")
-
-		for (int i=0; i<nNeurons_; i++) {
-			char buffer[200];
-#if (WIN32 || WIN64)
-			_snprintf(buffer, 200, "| %7d | % 9.2f | ", i, getNeuronMeanFiringRate(i));
-#else
-			snprintf(buffer, 200, "| %7d | % 9.2f | ", i, getNeuronMeanFiringRate(i));
-#endif
-			int nSpk = spkVector_[i].size();
-			for (int j=0; j<nSpk; j++) {
-				char times[5];
-#if (WIN32 || WIN64)
-				_snprintf(times, 10, "%8d", spkVector_[i][j]);
-#else
-				snprintf(times, 10, "%8d", spkVector_[i][j]);
-#endif
-				strcat(buffer, times);
-				if (j%dispSpkTimPerRow == dispSpkTimPerRow-1 && j<nSpk-1) {
-					KERNEL_INFO("%s",buffer);
-					strcpy(buffer,"|         |           | ");
-				}
-			}
-			KERNEL_INFO("%s",buffer);
-		}
-	}
-}
-
-void ConnectionMonitorCore::pushAER(int time, int neurId) {
-	assert(isRecording());
-	assert(getMode()==AER);
-
-	spkVector_[neurId].push_back(time);
-}
-
-void ConnectionMonitorCore::startRecording() {
-	assert(!isRecording());
-
-	if (!persistentData_) {
-		// if persistent mode is off (default behavior), automatically call clear() here
-		clear();
-	}
-
-	// call updateConnectionMonitor to make sure spike file and spike vector are up-to-date
-	// Caution: must be called before recordSet_ is set to true!
-	snn_->updateConnectionMonitor(grpId_);
-
-	needToCalculateFiringRates_ = true;
-	needToSortFiringRates_ = true;
-	recordSet_ = true;
-	long int currentTime = snn_->getSimTimeSec()*1000+snn_->getSimTimeMs();
-
-	if (persistentData_) {
-		// persistent mode on: accumulate all times
-		// change start time only if this is the first time running it
-		startTime_ = (startTime_<0) ? currentTime : startTime_;
-		startTimeLast_ = currentTime;
-		accumTime_ = (totalTime_>0) ? totalTime_ : 0;
-	}
-	else {
-		// persistent mode off: we only care about the last probe
-		startTime_ = currentTime;
-		startTimeLast_ = currentTime;
-		accumTime_ = 0;
-	}
-}
-
-void ConnectionMonitorCore::stopRecording() {
-	assert(isRecording());
-	assert(startTime_>-1 && startTimeLast_>-1 && accumTime_>-1);
-
-	// call updateConnectionMonitor to make sure spike file and spike vector are up-to-date
-	// Caution: must be called before recordSet_ is set to false!
-	snn_->updateConnectionMonitor(grpId_);
-
-	recordSet_ = false;
-	stopTime_ = snn_->getSimTimeSec()*1000+snn_->getSimTimeMs();
-
-	// total time is the amount of time of the last probe plus all accumulated time from previous probes
-	totalTime_ = stopTime_-startTimeLast_ + accumTime_;
-	assert(totalTime_>=0);
-}
-
-void ConnectionMonitorCore::setSpikeFileId(FILE* spikeFileId) {
-	assert(!isRecording());
-
+void ConnectionMonitorCore::setConnectFileId(FILE* connFileId) {
 	// \TODO consider the case where this function is called more than once
-	if (spikeFileId_!=NULL)
-		KERNEL_ERROR("ConnectionMonitorCore: setSpikeFileId has already been called.");
+	if (connFileId_!=NULL)
+		KERNEL_ERROR("ConnectionMonitorCore: setConnectFileId has already been called.");
 
-	spikeFileId_=spikeFileId;
+	connFileId_=connFileId;
 
-	if (spikeFileId_==NULL)
+	if (connFileId_==NULL)
 		needToWriteFileHeader_ = false;
 	else {
 		// for now: file pointer has changed, so we need to write header (again)
 		needToWriteFileHeader_ = true;
-		writeSpikeFileHeader();
+		writeConnectFileHeader();
 	}
 }
 
-
-// calculate average firing rate for every neuron if we haven't done so already
-void ConnectionMonitorCore::calculateFiringRates() {
-	// only update if we have to
-	if (!needToCalculateFiringRates_)
-		return;
-
-	assert(getMode()==AER);
-
-	// clear, so we get the same answer every time.
-	firingRates_.assign(nNeurons_,0);
-	firingRatesSorted_.assign(nNeurons_,0);
-
-	// this really shouldn't happen at this stage, but if recording time is zero, return all zeros
-	if (totalTime_==0) {
-		KERNEL_WARN("ConnectionMonitorCore: calculateFiringRates has 0 totalTime");
-		return;
-	}
-
-	// compute firing rate
-	assert(totalTime_>0); // avoid division by zero
-	for(int i=0;i<nNeurons_;i++) {
-		firingRates_[i]=spkVector_[i].size()*1000.0/totalTime_;
-	}
-
-	needToCalculateFiringRates_ = false;
-}
-
-// sort firing rates if we haven't done so already
-void ConnectionMonitorCore::sortFiringRates() {
-	// only sort if we have to
-	if (!needToSortFiringRates_)
-		return;
-
-	// first make sure firing rate vector is up-to-date
-	calculateFiringRates();
-
-	firingRatesSorted_=firingRates_;
-	std::sort(firingRatesSorted_.begin(),firingRatesSorted_.end());
-
-	needToSortFiringRates_ = false;
-}
 
 // write the header section of the spike file
 // this should be done once per file, and should be the very first entries in the file
-void ConnectionMonitorCore::writeSpikeFileHeader() {
+void ConnectionMonitorCore::writeConnectFileHeader() {
 	if (!needToWriteFileHeader_)
 		return;
 
 	// write file signature
-	if (!fwrite(&spikeFileSignature_,sizeof(int),1,spikeFileId_))
-		KERNEL_ERROR("ConnectionMonitorCore: writeSpikeFileHeader has fwrite error");
+	if (!fwrite(&connFileSignature_,sizeof(int),1,connFileId_))
+		KERNEL_ERROR("ConnectionMonitorCore: writeConnectFileHeader has fwrite error");
 
 	// write version number
-	if (!fwrite(&spikeFileVersion_,sizeof(float),1,spikeFileId_))
-		KERNEL_ERROR("ConnectionMonitorCore: writeSpikeFileHeader has fwrite error");
-
-	// write grid dimensions
-	Grid3D grid = snn_->getGroupGrid3D(grpId_);
-	int tmpInt = grid.x;
-	if (!fwrite(&tmpInt,sizeof(int),1,spikeFileId_))
-		KERNEL_ERROR("ConnectionMonitorCore: writeSpikeFileHeader has fwrite error");
-
-	tmpInt = grid.y;
-	if (!fwrite(&tmpInt,sizeof(int),1,spikeFileId_))
-		KERNEL_ERROR("ConnectionMonitorCore: writeSpikeFileHeader has fwrite error");
-
-	tmpInt = grid.z;
-	if (!fwrite(&tmpInt,sizeof(int),1,spikeFileId_))
-		KERNEL_ERROR("ConnectionMonitorCore: writeSpikeFileHeader has fwrite error");
-
+	if (!fwrite(&connFileVersion_,sizeof(float),1,connFileId_))
+		KERNEL_ERROR("ConnectionMonitorCore: writeConnectFileHeader has fwrite error");
 
 	needToWriteFileHeader_ = false;
 }
