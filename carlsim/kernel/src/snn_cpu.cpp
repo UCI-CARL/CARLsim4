@@ -293,6 +293,7 @@ short int CpuSNN::connect(int grpId1, int grpId2, ConnectionGeneratorCore* conn,
 	newInfo->numPostSynapses	  	  = maxM;
 	newInfo->numPreSynapses	  = maxPreM;
 	newInfo->conn	= conn;
+	newInfo->ConnectionMonitorId = -1;
 
 	newInfo->next	= connectBegin;  // build a linked list
 	connectBegin      = newInfo;
@@ -663,7 +664,7 @@ void CpuSNN::setWeightAndWeightChangeUpdate(updateInterval_t wtUpdateInterval, u
 int CpuSNN::runNetwork(int _nsec, int _nmsec, bool printRunSummary, bool copyState) {
 	assert(_nmsec >= 0 && _nmsec < 1000);
 	assert(_nsec  >= 0);
-	int runDuration = _nsec*1000 + _nmsec;
+	int runDurationMs = _nsec*1000 + _nmsec;
 
 	// setupNetwork() must have already been called
 	assert(doneReorganization);
@@ -683,19 +684,19 @@ int CpuSNN::runNetwork(int _nsec, int _nmsec, bool printRunSummary, bool copySta
 
 	// store current start time for future reference
 	simTimeRunStart = simTime;
-	simTimeRunStop  = simTime+runDuration;
+	simTimeRunStop  = simTime+runDurationMs;
 	assert(simTimeRunStop>=simTimeRunStart); // check for arithmetic underflow
 
 	// set the Poisson generation time slice to be at the run duration up to PROPOGATED_BUFFER_SIZE ms.
 	// \TODO: should it be PROPAGATED_BUFFER_SIZE-1 or PROPAGATED_BUFFER_SIZE ? 
-	setGrpTimeSlice(ALL, MAX(1,MIN(runDuration,PROPAGATED_BUFFER_SIZE-1)));
+	setGrpTimeSlice(ALL, MAX(1,MIN(runDurationMs,PROPAGATED_BUFFER_SIZE-1)));
 
 	CUDA_RESET_TIMER(timer);
 	CUDA_START_TIMER(timer);
 
 	// if nsec=0, simTimeMs=10, we need to run the simulator for 10 timeStep;
 	// if nsec=1, simTimeMs=10, we need to run the simulator for 1*1000+10, time Step;
-	for(int i=0; i<runDuration; i++) {
+	for(int i=0; i<runDurationMs; i++) {
 		if(simMode_ == CPU_MODE)
 			doSnnSim();
 		else
@@ -731,9 +732,9 @@ int CpuSNN::runNetwork(int _nsec, int _nmsec, bool printRunSummary, bool copySta
 			if (numGroupMonitor) {
 				updateGroupMonitor();
 			}
-//			if (numConnectionMonitor) {
-//				updateConnectionMonitor();
-//			}
+			if (numConnectionMonitor) {
+				updateConnectionMonitor();
+			}
 
 			if(simMode_ == CPU_MODE)
 				updateFiringTable();
@@ -766,44 +767,12 @@ int CpuSNN::runNetwork(int _nsec, int _nmsec, bool printRunSummary, bool copySta
 	if (printRunSummary) {
 		showStatus();
 
+		// if there are Monitors available and it's time to show the log, print status for each group
+		if (numConnectionMonitor) {
+			printStatusConnectionMonitor(ALL);
+		}
 		if (numSpikeMonitor) {
-			// if there are SpikeMonitors available and it's time to show the log, print basic spike stats
-			// for each group with SpikeMon on
-			for (int grpId=0; grpId<numGrp; grpId++) {
-				int monitorId = grp_Info[grpId].SpikeMonitorId;
-				if (monitorId==-1)
-					continue;
-
-				// in GPU mode, need to get data from device first
-				if (simMode_==GPU_MODE)
-					copyFiringStateFromGPU(grpId);
-
-				// \TODO nSpikeCnt should really be a member of the SpikeMonitor object that gets populated if
-				// printRunSummary is true or mode==COUNT.....
-				// so then we can use spkMonObj->print(false); // showSpikeTimes==false
-				int grpSpk = 0;
-				for (int neurId=grp_Info[grpId].StartN; neurId<=grp_Info[grpId].EndN; neurId++)
-					grpSpk += nSpikeCnt[neurId]; // add up all neuronal spike counts
-
-				float meanRate = grpSpk*1000.0/runDuration/grp_Info[grpId].SizeN;
-				float std = 0.0f;
-				if (grp_Info[grpId].SizeN > 1) {
-					for (int neurId=grp_Info[grpId].StartN; neurId<=grp_Info[grpId].EndN; neurId++)
-						std += (nSpikeCnt[neurId]-meanRate)*(nSpikeCnt[neurId]-meanRate);
-
-					std = sqrt(std/(grp_Info[grpId].SizeN-1.0));
-				}
-
-
-				KERNEL_INFO("(t=%.3fs) SpikeMonitor for group %s(%d) has %d spikes in %dms (%.2f +/- %.2f Hz)",
-					(float)(simTime/1000.0),
-					grp_Info2[grpId].Name.c_str(),
-					grpId,
-					grpSpk,
-					runDuration,
-					meanRate,
-					std);
-			}
+			printStatusSpikeMonitor(ALL, runDurationMs);
 		}
 	}
 
@@ -816,7 +785,6 @@ int CpuSNN::runNetwork(int _nsec, int _nmsec, bool printRunSummary, bool copySta
 	cumExecutionTime += lastExecutionTime;
 	return 0;
 }
-
 
 
 /// ************************************************************************************************************ ///
@@ -984,13 +952,14 @@ ConnectionMonitor* CpuSNN::setConnectionMonitor(int grpIdPre, int grpIdPost, FIL
 	// check whether connection already has a connection monitor
 	grpConnectInfo_t* connInfo = getConnectInfo(connId);
 	if (connInfo->ConnectionMonitorId >= 0) {
-		KERNEL_ERROR("setConnectionMonitor has already been called on Connection %d", connId);
+		KERNEL_ERROR("setConnectionMonitor has already been called on Connection %d (MonitorId=%d)", connId, connInfo->ConnectionMonitorId);
 		exitSimulation(1);
 	}
 
 	// create new ConnectionMonitorCore object in any case and initialize
 	// connMonObj destructor (see below) will deallocate it
-	ConnectionMonitorCore* connMonCoreObj = new ConnectionMonitorCore(this, numConnectionMonitor, connId);
+	ConnectionMonitorCore* connMonCoreObj = new ConnectionMonitorCore(this, numConnectionMonitor, connId, 
+		grpIdPre, grpIdPost);
 	connMonCoreList[numConnectionMonitor] = connMonCoreObj;
 
 	// assign conn file ID if we selected to write to a file, else it's NULL
@@ -1012,7 +981,7 @@ ConnectionMonitor* CpuSNN::setConnectionMonitor(int grpIdPre, int grpIdPost, FIL
 	cpuSnnSz.monitorInfoSize += sizeof(ConnectionMonitorCore*);
 
 	numConnectionMonitor++;
-	KERNEL_INFO("SpikeMonitor set for connection %d %d(%s) => %d(%s)", connId, grpIdPre, getGroupName(grpIdPre).c_str(),
+	KERNEL_INFO("ConnectionMonitor %d set for Connection %d: %d(%s) => %d(%s)", connInfo->ConnectionMonitorId, connId, grpIdPre, getGroupName(grpIdPre).c_str(),
 		grpIdPost, getGroupName(grpIdPost).c_str());
 
 	return connMonObj;
@@ -4265,40 +4234,46 @@ void CpuSNN::updateAfterMaxTime() {
 	resetPropogationBuffer();
 }
 
-/*
-void CpuSNN::updateConnectionMonitor() {
-	for (int grpId = 0; grpId < numGrp; grpId++) {
-		int monitorId = grp_Info[grpId].ConnectionMonitorId;
 
-		if(monitorId != -1) {
-			int grpIdPre = connMonGrpIdPre[monitorId];
-			int grpIdPost = connMonGrpIdPost[monitorId];
-			float* weights = NULL;
-			float avgWeight = 0.0f;
-			int weightSzie;
-			getPopWeights(grpIdPre, grpIdPost, weights, weightSzie);
+void CpuSNN::updateConnectionMonitor(int connId) {
+	grpConnectInfo_t* connInfo = connectBegin;
 
-			for (int i = 0; i < weightSzie; i++)
-				avgWeight += weights[i];
-			avgWeight /= weightSzie;
+	// loop over all connections and find the ones with Connection Monitors
+	while (connInfo) {
+		if (connInfo->ConnectionMonitorId>=0 && (connId==ALL || connInfo->connId==connId)) {
+			int monId = connInfo->ConnectionMonitorId;
+			int grpIdPre = connInfo->grpSrc;
+			int grpIdPost = connInfo->grpDest;
 
-			KERNEL_INFO("");
-			KERNEL_INFO("(t=%.3fs) Connection Monitor for Group %s to Group %s has average weight %f",
-				(float)(simTime/1000.0),
-				grp_Info2[grpIdPre].Name.c_str(), grp_Info2[grpIdPost].Name.c_str(), avgWeight);
+			// copy the weights for a given post-group from device
+			// \TODO: check if the weights for this grpIdPost have already been copied
+			// \TODO: even better, but tricky, make copyWeightState connection-based
+			if (simMode_ == GPU_MODE) {
+				copyWeightState(&cpuNetPtrs, &cpu_gpuNetPtrs, cudaMemcpyDeviceToHost, false, grpIdPost);
+			}
 
-			printWeights(grpIdPre,grpIdPost);
+			// clear weight matrix
+			connMonCoreList[monId]->clear();
 
-			// call the callback function
-//			if (connBufferCallback[monitorId])
-//				connBufferCallback[monitorId]->update(this, grpIdPre, grpIdPost, weights, weightSzie);
+			for (int postId=grp_Info[grpIdPost].StartN; postId<=grp_Info[grpIdPost].EndN; postId++) {
+				unsigned int pos_ij = cumulativePre[postId];
+				for (int i=0; i<Npre[postId]; i++, pos_ij++) {
+					// skip synapses that belong to a different connection ID
+					if (cumConnIdPre[pos_ij]!=connInfo->connId)
+						continue;
 
-			if (weights != NULL)
-				delete [] weights;
+					// find pre-neuron ID and update ConnectionMonitor container
+					int preId = GET_CONN_NEURON_ID(preSynapticIds[pos_ij]);
+					connMonCoreList[monId]->updateWeight(preId - getGroupStartNeuronId(grpIdPre), 
+						postId - getGroupStartNeuronId(grpIdPost), wt[pos_ij]);
+				}
+			}
 		}
+
+		connInfo = connInfo->next;
 	}
 }
-*/
+
 
 void CpuSNN::updateGroupMonitor() {
 	// TODO: build DA, 5HT, ACh, NE buffer in GPU memory and retrieve data every one second

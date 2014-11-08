@@ -410,6 +410,9 @@ public:
 	 */
 	void setSpikeRate(int grpId, PoissonRate* spikeRate, int refPeriod);
 
+	//! polls connection weights
+	void updateConnectionMonitor(int connId=ALL);
+
 	/*!
 	 * \brief copy required spikes from firing buffer to spike buffer
 	 *
@@ -688,11 +691,14 @@ private:
 	int  printPreConnection2(int grpId, FILE* fpg);
 	void printSimSummary(); 	//!< prints a simulation summary at the end of sim
 	void printState(FILE* fp);
+	void printStatusConnectionMonitor(int connId=ALL);
+	void printStatusSpikeMonitor(int grpId=ALL, int runDurationMs=1000);
 //	void printState(const char *str = "", const FILE* fp);
 	void printTestVarInfo(FILE* fp, char* testString, bool test1=true, bool test2=true, bool test12=false,
 							int subVal=0, int grouping1=0, int grouping2=0); //!< for GPU debugging
 	void printTuningLog(FILE* fp);
 	void printWeights(int preGrpId, int postGrpId=-1);
+
 
 	// FIXME: difference between the options? is one deprecated or are both still used?
 	#if READNETWORK_ADD_SYNAPSES_FROM_FILE
@@ -733,7 +739,6 @@ private:
 	void swapConnections(int nid, int oldPos, int newPos);
 
 	void updateAfterMaxTime();
-	void updateConnectionMonitor();
 	void updateGroupMonitor();
 	void updateSpikesFromGrp(int grpId);
 	void updateSpikeGenerators();

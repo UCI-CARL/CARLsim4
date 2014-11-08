@@ -83,6 +83,11 @@ class ConnectionMonitor {
 	 */
 	void clear();
 
+	void print();
+
+	// returns 2D connectivity matrix (first dim=pre, second dim=post)
+	std::vector< std::vector<float> > takeSnapshot();
+
  private:
   //! This is a pointer to the actual implementation of the class. The user should never directly instantiate it.
   ConnectionMonitorCore* connMonCorePtr_;

@@ -4,13 +4,16 @@
 #include <snn_definitions.h>	// KERNEL_ERROR, KERNEL_INFO, ...
 
 #include <algorithm>			// std::sort
+#include <iomanip>				// std::setfill, std::setw
 
 
 
 // we aren't using namespace std so pay attention!
-ConnectionMonitorCore::ConnectionMonitorCore(CpuSNN* snn, int monitorId, short int connId) {
+ConnectionMonitorCore::ConnectionMonitorCore(CpuSNN* snn,int monitorId,short int connId,int grpIdPre,int grpIdPost) {
 	snn_ = snn;
 	connId_= connId;
+	grpIdPre_ = grpIdPre;
+	grpIdPost_ = grpIdPost;
 	monitorId_ = monitorId;
 	connFileId_ = NULL;
 
@@ -23,7 +26,19 @@ ConnectionMonitorCore::ConnectionMonitorCore(CpuSNN* snn, int monitorId, short i
 }
 
 void ConnectionMonitorCore::init() {
-//	clear();
+	nNeurPre_ = snn_->getGroupNumNeurons(grpIdPre_);
+	nNeurPost_ = snn_->getGroupNumNeurons(grpIdPost_);
+
+	// init weight matrix with right dimensions
+	for (int i=0; i<nNeurPre_; i++) {
+		std::vector<float> wt;
+		for (int j=0; j<nNeurPost_; j++) {
+			wt.push_back(0.0f);
+		}
+		wtMat_.push_back(wt);
+	}
+
+	printf("created wtMat %dx%d\n",nNeurPre_,nNeurPost_);
 
 	// use KERNEL_{ERROR|WARNING|etc} typesetting (const FILE*)
 	fpInf_ = snn_->getLogFpInf();
@@ -42,9 +57,78 @@ ConnectionMonitorCore::~ConnectionMonitorCore() {
 // +++++ PUBLIC METHODS: +++++++++++++++++++++++++++++++++++++++++++++++//
 
 void ConnectionMonitorCore::clear() {
-	
+	// empty weight matrix
+	for (int i=0; i<nNeurPre_; i++) {
+		for (int j=0; j<nNeurPost_; j++) {
+			wtMat_[i][j] = NAN;
+		}
+	}
 }
 
+void ConnectionMonitorCore::print() {
+	takeSnapshot();
+
+	KERNEL_INFO("ConnectionMonitor ID=%d: %d(%s) => %d(%s)",connId_, grpIdPre_, snn_->getGroupName(grpIdPre_).c_str(),
+		grpIdPost_, snn_->getGroupName(grpIdPost_).c_str());
+
+	// generate header
+	std::stringstream header, header2;
+	header  << " pre\\post |";
+	header2 << "----------|";
+	for (int j=0; j<nNeurPost_; j++) {
+		header  << std::setw(9) << std::setfill(' ') << j << " |";
+		header2 << "-----------";
+	}
+	KERNEL_INFO("%s",header.str().c_str());
+	KERNEL_INFO("%s",header2.str().c_str());
+
+	for (int i=0; i<nNeurPre_; i++) {
+		std::stringstream line;
+		line << std::setw(9) << std::setfill(' ') << i << " |";
+		for (int j=0; j<nNeurPost_; j++) {
+			line << std::fixed << std::setprecision(4) << (isnan(wtMat_[i][j])?"      ":(wtMat_[i][j]>=0?"   ":"  ")) << wtMat_[i][j]  << "  ";
+		}
+		KERNEL_INFO("%s",line.str().c_str());
+	}
+}
+
+void ConnectionMonitorCore::printSparse() {
+	takeSnapshot();
+	KERNEL_INFO("ConnectionMonitor ID=%d: %d(%s) => %d(%s)",connId_, grpIdPre_, snn_->getGroupName(grpIdPre_).c_str(),
+		grpIdPost_, snn_->getGroupName(grpIdPost_).c_str());
+
+	std::stringstream line;
+	int nConn = 0;
+	int connPerLine = 30;
+	int maxIntDigits = ceil(log10((double)max(nNeurPre_,nNeurPost_)));
+	for (int i=0; i<nNeurPre_; i++) {
+		for (int j=0; j<nNeurPost_; j++) {
+			if (!isnan(wtMat_[i][j])) {
+				line << "(" << std::setw(maxIntDigits) << i << "=>" << std::setw(maxIntDigits) << j << ") " << std::fixed << std::setprecision(4) << wtMat_[i][j] << "   ";
+				if (!(++nConn % connPerLine)) {
+					KERNEL_INFO("%s",line.str().c_str());
+					line.str(std::string());
+				}
+			}
+		}
+	}
+	// flush
+	if (nConn % connPerLine)
+		KERNEL_INFO("%s",line.str().c_str());
+
+}
+
+std::vector< std::vector<float> > ConnectionMonitorCore::takeSnapshot() {
+	snn_->updateConnectionMonitor(connId_);
+	return wtMat_;
+}
+
+void ConnectionMonitorCore::updateWeight(int preId, int postId, float wt) {
+//	printf("updating wt[%d][%d]=%f\n",preId,postId,wt);
+	assert(preId < nNeurPre_);
+	assert(postId < nNeurPost_);
+	wtMat_[preId][postId] = wt;
+}
 
 void ConnectionMonitorCore::setConnectFileId(FILE* connFileId) {
 	// \TODO consider the case where this function is called more than once

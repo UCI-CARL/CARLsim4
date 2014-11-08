@@ -40,6 +40,8 @@
 
 #include <snn.h>
 
+#include <connection_monitor_core.h>
+
 #if ! (WIN32 || WIN64)
 	#include <string.h>
 	#define strcmpi(s1,s2) strcasecmp(s1,s2)
@@ -106,6 +108,65 @@ void CpuSNN::printMemoryInfo(FILE* const fp) {
 }
 
 
+void CpuSNN::printStatusConnectionMonitor(int connId) {
+  grpConnectInfo_t* connInfo = connectBegin;
+
+  while (connInfo) {
+    if (connInfo->ConnectionMonitorId>=0 && (connId==ALL || connInfo->connId==connId)) {
+      int grpIdPre = connInfo->grpSrc;
+      int grpIdPost = connInfo->grpDest;
+      KERNEL_INFO("ConnectionMonitor ID=%d: %d(%s) => %d(%s)",connInfo->connId, grpIdPre, 
+        getGroupName(grpIdPre).c_str(), grpIdPost, getGroupName(grpIdPost).c_str());
+
+      connMonCoreList[connInfo->ConnectionMonitorId]->printSparse();
+
+//      printWeights(grpIdPre, grpIdPost);
+    }
+    connInfo = connInfo->next;
+  }
+}
+
+void CpuSNN::printStatusSpikeMonitor(int grpId, int runDurationMs) {
+  if (grpId==ALL) {
+    for (int grpId1=0; grpId1<numGrp; grpId1++) {
+      printStatusSpikeMonitor(grpId1);
+    }
+  } else {
+    int monitorId = grp_Info[grpId].SpikeMonitorId;
+    if (monitorId==-1)
+      return;
+
+    // in GPU mode, need to get data from device first
+    if (simMode_==GPU_MODE)
+      copyFiringStateFromGPU(grpId);
+
+    // \TODO nSpikeCnt should really be a member of the SpikeMonitor object that gets populated if
+    // printRunSummary is true or mode==COUNT.....
+    // so then we can use spkMonObj->print(false); // showSpikeTimes==false
+    int grpSpk = 0;
+    for (int neurId=grp_Info[grpId].StartN; neurId<=grp_Info[grpId].EndN; neurId++)
+      grpSpk += nSpikeCnt[neurId]; // add up all neuronal spike counts
+
+    float meanRate = grpSpk*1000.0/runDurationMs/grp_Info[grpId].SizeN;
+    float std = 0.0f;
+    if (grp_Info[grpId].SizeN > 1) {
+      for (int neurId=grp_Info[grpId].StartN; neurId<=grp_Info[grpId].EndN; neurId++)
+        std += (nSpikeCnt[neurId]-meanRate)*(nSpikeCnt[neurId]-meanRate);
+
+      std = sqrt(std/(grp_Info[grpId].SizeN-1.0));
+    }
+
+
+    KERNEL_INFO("(t=%.3fs) SpikeMonitor for group %s(%d) has %d spikes in %dms (%.2f +/- %.2f Hz)",
+      (float)(simTime/1000.0),
+      grp_Info2[grpId].Name.c_str(),
+      grpId,
+      grpSpk,
+      runDurationMs,
+      meanRate,
+      std);
+  }
+}
 
 
 // This method allows us to print all information about the neuron.

@@ -690,7 +690,7 @@ ConnectionMonitor* CARLsim::setConnectionMonitor(int grpIdPre, int grpIdPost, co
 #if (WIN32 || WIN64)
 	std::string fileName = fname.empty() ? "NULL" : fname;
 #else
-	std::string fileName = fname.empty() ? "results/conn" + snn_->getGroupName(grpIdPre) + "_"
+	std::string fileName = fname.empty() ? "results/conn_" + snn_->getGroupName(grpIdPre) + "_"
 		+ snn_->getGroupName(grpIdPost) + ".dat" : fname;
 #endif
 

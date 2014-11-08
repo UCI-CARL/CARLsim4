@@ -17,9 +17,17 @@ ConnectionMonitor::~ConnectionMonitor() {
 
 // +++++ PUBLIC METHODS: +++++++++++++++++++++++++++++++++++++++++++++++//
 
-void ConnectionMonitor::clear(){
+void ConnectionMonitor::clear() {
 	std::string funcName = "clear()";
 //	UserErrors::assertTrue(!isRecording(), UserErrors::CANNOT_BE_ON, funcName, "Recording");
 
 	connMonCorePtr_->clear();
+}
+
+void ConnectionMonitor::print() {
+	connMonCorePtr_->print();
+}
+
+std::vector< std::vector<float> > ConnectionMonitor::takeSnapshot() {
+	return connMonCorePtr_->takeSnapshot();
 }

@@ -69,7 +69,7 @@ public:
 	 * \param[in] snn pointer to current CpuSNN object
 	 * \param[in] grpId the ID of the group we're monitoring
 	 */
-	ConnectionMonitorCore(CpuSNN* snn, int monitorId, short int connId); 
+	ConnectionMonitorCore(CpuSNN* snn, int monitorId, short int connId, int grpIdPre, int grpIdPost); 
 
 	//! destructor, cleans up all the memory upon object deletion
 	~ConnectionMonitorCore();
@@ -79,6 +79,12 @@ public:
 	//! deletes data from the 2D spike vector
 	void clear();
 
+	void print();
+	void printSparse();
+
+	std::vector< std::vector<float> > takeSnapshot();
+
+	void updateWeight(int preId, int postId, float wt);
 
 	
 	// +++++ PUBLIC SETTERS/GETTERS: +++++++++++++++++++++++++++++++++++++++//
@@ -105,6 +111,12 @@ private:
 	CpuSNN* snn_;	//!< private CARLsim implementation
 	int monitorId_;	//!< current ConnectionMonitor ID
 	short int connId_;	//!< current connection ID
+	int grpIdPre_;
+	int grpIdPost_;
+	int nNeurPre_;
+	int nNeurPost_;
+
+	std::vector< std::vector<float> > wtMat_;
 
 	//! whether we have to write header section of conn file
 	bool needToWriteFileHeader_;
