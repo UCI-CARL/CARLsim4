@@ -614,6 +614,8 @@ void CpuSNN::setESTDP(int grpId, bool isSet, stdpType_t type, stdpCurve_t curve,
 		grp_Info[cGrpId].TAU_LTP_INV_EXC 	= 1.0f/tauLTP;
 		grp_Info[cGrpId].TAU_LTD_INV_EXC	= 1.0f/tauLTD;
 		grp_Info[cGrpId].GAMA				= gama;
+		grp_Info[cGrpId].KAPA				= (1 + exp(-gama/tauLTP))/(1 - exp(-gama/tauLTP));
+		grp_Info[cGrpId].OMEGA				= alphaLTP * (1 - grp_Info[cGrpId].KAPA);
 		// set flags for STDP function
 		grp_Info[cGrpId].WithESTDPtype	= type;
 		grp_Info[cGrpId].WithESTDPcurve = curve;
@@ -3048,7 +3050,6 @@ void CpuSNN::findFiring() {
 					for(int j=0; j < Npre_plastic[i]; pos_ij++, j++) {
 						int stdp_tDiff = (simTime-synSpikeTime[pos_ij]);
 						assert(!((stdp_tDiff < 0) && (synSpikeTime[pos_ij] != MAX_SIMULATION_TIME)));
-
 						if (stdp_tDiff > 0) {
 							// check this is an excitatory or inhibitory synapse
 							if (grp_Info[g].WithESTDP && maxSynWt[pos_ij] >= 0) { // excitatory synapse
@@ -3059,6 +3060,12 @@ void CpuSNN::findFiring() {
 										wtChange[pos_ij] += STDP(stdp_tDiff, grp_Info[g].ALPHA_LTP_EXC, grp_Info[g].TAU_LTP_INV_EXC);
 									break;
 								case HALF_HEBBIAN: // half-Hebbian curve
+									if (stdp_tDiff * grp_Info[g].TAU_LTP_INV_EXC < 25) {
+										if (stdp_tDiff <= grp_Info[g].GAMA)
+											wtChange[pos_ij] += grp_Info[g].OMEGA + grp_Info[g].KAPA * STDP(stdp_tDiff, grp_Info[g].ALPHA_LTP_EXC, grp_Info[g].TAU_LTP_INV_EXC);
+										else // stdp_tDiff > GAMA
+											wtChange[pos_ij] -= STDP(stdp_tDiff, grp_Info[g].ALPHA_LTP_EXC, grp_Info[g].TAU_LTP_INV_EXC);
+									}
 									break;
 								default:
 									KERNEL_ERROR("Invalid E-STDP curve!");
@@ -3244,6 +3251,8 @@ void CpuSNN::generatePostSpike(unsigned int pre_i, unsigned int idx_d, unsigned 
 						wtChange[pos_i] -= STDP(stdp_tDiff, grp_Info[post_grpId].ALPHA_LTD_EXC, grp_Info[post_grpId].TAU_LTD_INV_EXC);
 					break;
 				case HALF_HEBBIAN: // half-Hebbian curve
+					if (stdp_tDiff * grp_Info[post_grpId].TAU_LTD_INV_EXC < 25)
+						wtChange[pos_i] -= STDP(stdp_tDiff, grp_Info[post_grpId].ALPHA_LTD_EXC, grp_Info[post_grpId].TAU_LTD_INV_EXC);
 					break;
 				default:
 					KERNEL_ERROR("Invalid E-STDP curve");
