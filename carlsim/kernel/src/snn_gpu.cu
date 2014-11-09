@@ -688,6 +688,12 @@ __device__ void gpu_updateLTP(	int*     		fireTablePtr,
 								gpuPtrs.wtChange[p] += STDP(stdp_tDiff, gpuGrpInfo[grpId].ALPHA_LTP_EXC, gpuGrpInfo[grpId].TAU_LTP_INV_EXC);
 							break;
 						case HALF_HEBBIAN: // half-Hebbian curve
+							if (stdp_tDiff * gpuGrpInfo[grpId].TAU_LTP_INV_EXC < 25) {
+									if (stdp_tDiff <= gpuGrpInfo[grpId].GAMA)
+										gpuPtrs.wtChange[p] += gpuGrpInfo[grpId].OMEGA + gpuGrpInfo[grpId].KAPA * STDP(stdp_tDiff, gpuGrpInfo[grpId].ALPHA_LTP_EXC, gpuGrpInfo[grpId].TAU_LTP_INV_EXC);
+									else // stdp_tDiff > GAMA
+										gpuPtrs.wtChange[p] -= STDP(stdp_tDiff, gpuGrpInfo[grpId].ALPHA_LTP_EXC, gpuGrpInfo[grpId].TAU_LTP_INV_EXC);
+							}
 							break;
 						default:
 							break;
@@ -1504,6 +1510,8 @@ __device__ int generatePostSynapticSpike(int& simTime, int& firingId, int& myDel
 						gpuPtrs.wtChange[pos_ns] -= STDP( stdp_tDiff, gpuGrpInfo[post_grpId].ALPHA_LTD_EXC, gpuGrpInfo[post_grpId].TAU_LTD_INV_EXC); // uncoalesced access
 					break;
 				case HALF_HEBBIAN: // half-Hebbian curve
+					if (stdp_tDiff * gpuGrpInfo[post_grpId].TAU_LTD_INV_EXC < 25)
+						gpuPtrs.wtChange[pos_ns] -= STDP( stdp_tDiff, gpuGrpInfo[post_grpId].ALPHA_LTD_EXC, gpuGrpInfo[post_grpId].TAU_LTD_INV_EXC); // uncoalesced access
 					break;
 				default:
 					break;

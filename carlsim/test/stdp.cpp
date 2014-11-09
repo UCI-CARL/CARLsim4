@@ -488,13 +488,13 @@ TEST(STDP, ESTDPHalfHebbianCurve) {
 	float minInhWeight = 0.0f;
 	CARLsim* sim;
 
-	//for (int mode = 0; mode < 2; mode++) {
+	for (int mode = 0; mode < 2; mode++) {
 		for (int coba = 0; coba < 2; coba++) {
 			for (int offset = -24; offset <= 24; offset += 3) {
 				if (offset == 0) continue; // skip offset == 0;
 				// create a network
-				//sim = new CARLsim("estdp", mode?GPU_MODE:CPU_MODE, SILENT, 0, 1, 42);
-				sim = new CARLsim("estdp", CPU_MODE, SILENT, 0, 1, 42);
+				sim = new CARLsim("estdp", mode?GPU_MODE:CPU_MODE, SILENT, 0, 1, 42);
+				//sim = new CARLsim("estdp", CPU_MODE, SILENT, 0, 1, 42);
 
 				g1 = sim->createGroup("excit", 1, EXCITATORY_NEURON);
 				sim->setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f);
@@ -556,7 +556,7 @@ TEST(STDP, ESTDPHalfHebbianCurve) {
 				delete sim;
 			}
 		}
-	//}
+	}
 }
 
 /*!
@@ -657,9 +657,6 @@ TEST(STDP, ISTDPAntiHebbianCurve) {
 	// simulation details
 	float* weights = NULL;
 	int size;
-	//SpikeMonitor* spikeMon1;
-	//SpikeMonitor* spikeMonIn;
-	//SpikeMonitor* spikeMonEx;
 	TwoGroupsSpikeController* spikeCtrl;
 	int gin, gex, g1;
 	float ALPHA_LTP = 0.10f;
@@ -709,26 +706,10 @@ TEST(STDP, ISTDPAntiHebbianCurve) {
 				// build the network
 				sim->setupNetwork();
 
-				//spikeMon1 = sim->setSpikeMonitor(g1);
-				//spikeMonIn = sim->setSpikeMonitor(gin);
-				//spikeMonEx = sim->setSpikeMonitor(gex);
-
-				// run for 10 seconds
-				//for (int t = 0; t < 20; t++) {
-				//	spikeMon1->startRecording();
-				//	spikeMonIn->startRecording();
-				//	spikeMonEx->startRecording();
-				//	sim->runNetwork(1,0, true, true);
-				//	spikeMon1->stopRecording();
-				//	spikeMonIn->stopRecording();
-				//	spikeMonEx->stopRecording();
-				//	sim->getPopWeights(gin, g1, weights, size);
-				//	printf("%f\n",weights[0]);
-				//}
 				sim->runNetwork(40, 0, true, true);
 
 				sim->getPopWeights(gin, g1, weights, size);
-				printf("%d %d %d inb w %f\n", mode, coba, offset, weights[0]);
+				//printf("%d %d %d inb w %f\n", mode, coba, offset, weights[0]);
 
 				if (offset > 0) { // I-STDP LTP
 					if (coba) {
