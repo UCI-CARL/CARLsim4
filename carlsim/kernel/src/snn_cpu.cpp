@@ -143,15 +143,15 @@ short int CpuSNN::connect(int grpId1, int grpId2, const std::string& _type, floa
 //		newInfo->radX             = (radX<0) ? MAX(szPre.x,szPost.x) : radX; // <0 means full connectivity, so the
 //		newInfo->radY             = (radY<0) ? MAX(szPre.y,szPost.y) : radY; // effective group size is Grid3D.x. Grab
 //		newInfo->radZ             = (radZ<0) ? MAX(szPre.z,szPost.z) : radZ; // the larger of pre / post to connect all
-	newInfo->radX             = radX;
-	newInfo->radY             = radY;
-	newInfo->radZ             = radZ;
-	newInfo->mulSynFast       = _mulSynFast;
-	newInfo->mulSynSlow       = _mulSynSlow;
-	newInfo->connProp         = connProp;
-	newInfo->p                = prob;
-	newInfo->type             = CONN_UNKNOWN;
-	newInfo->numPostSynapses  = 1;
+		newInfo->radX             = radX;
+		newInfo->radY             = radY;
+		newInfo->radZ             = radZ;
+		newInfo->mulSynFast       = _mulSynFast;
+		newInfo->mulSynSlow       = _mulSynSlow;
+		newInfo->connProp         = connProp;
+		newInfo->p                = prob;
+		newInfo->type             = CONN_UNKNOWN;
+		newInfo->numPostSynapses  = 1;
 
 	newInfo->next 				= connectBegin; //linked list of connection..
 	connectBegin 				= newInfo;
@@ -404,6 +404,7 @@ int trGABAb, int tdGABAb) {
 		assert(trNMDA!=tdNMDA); assert(trGABAb!=tdGABAb); // singularity
 	}
 
+	// we do not care about configId anymore
 	// set conductances globally for all connections
 	sim_with_conductances  |= isSet;
 	dAMPA  = 1.0-1.0/tdAMPA;
@@ -526,57 +527,76 @@ void CpuSNN::setNeuromodulator(int grpId, float baseDP, float tauDP, float base5
 	grp_Info[grpId].decayNE = 1.0 - (1.0 / tauNE);
 }
 
-// set STDP params
-void CpuSNN::setESTDP(int grpId,bool isSet,stdpType_t type,float alphaLTP,float tauLTP,float alphaLTD,float tauLTD) {
+// set ESTDP params
+void CpuSNN::setESTDP(int grpId, bool isSet, stdpType_t type, stdpCurve_t curve, float alphaLTP, float tauLTP, float alphaLTD, float tauLTD, float gama) {
 	assert(grpId>=-1);
 	if (isSet) {
 		assert(type!=UNKNOWN_STDP);
-		assert(alphaLTP>=0); assert(tauLTP>=0); assert(alphaLTD>=0); assert(tauLTD>=0);
+		assert(alphaLTP>=0.0f); assert(tauLTP>0.0f); assert(alphaLTD>=0.0f); assert(tauLTD>0.0f); assert(gama>=0.0f);
 	}
 
 	if (grpId == ALL) { // shortcut for all groups
 		for(int grpId1=0; grpId1<numGrp; grpId1++) {
-			setESTDP(grpId1, isSet, type, alphaLTP, tauLTP, alphaLTD, tauLTD);
+			setESTDP(grpId1, isSet, type, curve, alphaLTP, tauLTP, alphaLTD, tauLTD, gama);
 		}
 	} else {
 		// set STDP for a given group
-		grp_Info[grpId].WithSTDP         = isSet;
-		grp_Info[grpId].ALPHA_LTP_EXC    = alphaLTP;
-		grp_Info[grpId].ALPHA_LTD_EXC    = alphaLTD;
-		grp_Info[grpId].TAU_LTP_INV_EXC  = 1.0f/tauLTP;
-		grp_Info[grpId].TAU_LTD_INV_EXC  = 1.0f/tauLTD;
+		// set params for STDP curve
+		grp_Info[grpId].ALPHA_LTP_EXC 		= alphaLTP;
+		grp_Info[grpId].ALPHA_LTD_EXC 		= alphaLTD;
+		grp_Info[grpId].TAU_LTP_INV_EXC 	= 1.0f/tauLTP;
+		grp_Info[grpId].TAU_LTD_INV_EXC		= 1.0f/tauLTD;
+		grp_Info[grpId].GAMA				= gama;
+		grp_Info[grpId].KAPA				= (1 + exp(-gama/tauLTP))/(1 - exp(-gama/tauLTP));
+		grp_Info[grpId].OMEGA				= alphaLTP * (1 - grp_Info[grpId].KAPA);
 		// set flags for STDP function
-		grp_Info[grpId].WithESTDPtype    = type;
-		grp_Info[grpId].WithESTDP        = isSet;
-		grp_Info[grpId].WithSTDP        |= grp_Info[grpId].WithESTDP;
-		sim_with_stdp                   |= grp_Info[grpId].WithSTDP;
+		grp_Info[grpId].WithESTDPtype	= type;
+		grp_Info[grpId].WithESTDPcurve = curve;
+		grp_Info[grpId].WithESTDP		= isSet;
+		grp_Info[grpId].WithSTDP		|= grp_Info[grpId].WithESTDP;
+		sim_with_stdp					|= grp_Info[grpId].WithSTDP;
 
 		KERNEL_INFO("E-STDP %s for %s(%d)", isSet?"enabled":"disabled", grp_Info2[grpId].Name.c_str(), grpId);
 	}
 }
 
 // set ISTDP params
-void CpuSNN::setISTDP(int grpId, bool isSet, stdpType_t type, float betaLTP, float betaLTD, float lamda, float delta) {
+void CpuSNN::setISTDP(int grpId, bool isSet, stdpType_t type, stdpCurve_t curve, float abLTP, float abLTD, float tau1, float tau2) {
 	assert(grpId>=-1);
 	if (isSet) {
 		assert(type!=UNKNOWN_STDP);
-		assert(betaLTP>=0); assert(betaLTD>=0); assert(lamda>=0); assert(delta>=0);
+		assert(abLTP>=0); assert(abLTD>=0); assert(tau1>0); assert(tau2>0);
 	}
 
-	if (grpId == ALL) { // shortcut for all groups
-		for(int grpId1=0; grpId1<numGrp; grpId1++) {
-			setISTDP(grpId1, isSet, type, betaLTP, betaLTD, lamda, delta);
+	if (grpId==ALL) { // shortcut for all groups
+		for(int grpId1=0; grpId1 < numGrp; grpId1++) {
+			setISTDP(grpId1, isSet, type, curve, abLTP, abLTD, tau1, tau2);
 		}
 	} else {
-		// set STDP for a given group
+		// set STDP for a given group 
 		// set params for STDP curve
-		grp_Info[grpId].BETA_LTP 		= betaLTP;
-		grp_Info[grpId].BETA_LTD 		= betaLTD;
-		grp_Info[grpId].LAMDA			= lamda;
-		grp_Info[grpId].DELTA			= delta;
+		if (curve == ANTI_HEBBIAN) {
+			grp_Info[grpId].ALPHA_LTP_INB = abLTP;
+			grp_Info[grpId].ALPHA_LTD_INB = abLTD;
+			grp_Info[grpId].TAU_LTP_INV_INB = 1.0f / tau1;
+			grp_Info[grpId].TAU_LTD_INV_INB = 1.0f / tau2;
+			grp_Info[grpId].BETA_LTP 		= 0.0f;
+			grp_Info[grpId].BETA_LTD 		= 0.0f;
+			grp_Info[grpId].LAMDA			= 1.0f;
+			grp_Info[grpId].DELTA			= 1.0f;
+		} else {
+			grp_Info[grpId].ALPHA_LTP_INB = 0.0f;
+			grp_Info[grpId].ALPHA_LTD_INB = 0.0f;
+			grp_Info[grpId].TAU_LTP_INV_INB = 1.0f;
+			grp_Info[grpId].TAU_LTD_INV_INB = 1.0f;
+			grp_Info[grpId].BETA_LTP 		= abLTP;
+			grp_Info[grpId].BETA_LTD 		= abLTD;
+			grp_Info[grpId].LAMDA			= tau1;
+			grp_Info[grpId].DELTA			= tau2;
+		}
 		// set flags for STDP function
-		//FIXME: separate STDPType to ESTDPType and ISTDPType
 		grp_Info[grpId].WithISTDPtype	= type;
+		grp_Info[grpId].WithISTDPcurve = curve;
 		grp_Info[grpId].WithISTDP		= isSet;
 		grp_Info[grpId].WithSTDP		|= grp_Info[grpId].WithISTDP;
 		sim_with_stdp					|= grp_Info[grpId].WithSTDP;
@@ -1260,7 +1280,7 @@ void CpuSNN::writePopWeights(std::string fname, int grpIdPre, int grpIdPost) {
 			preId = &preSynapticIds[pos_ij];
 			pre_nid = GET_CONN_NEURON_ID((*preId)); // neuron id of pre
 			if (pre_nid<grp_Info[grpIdPre].StartN || pre_nid>grp_Info[grpIdPre].EndN)
-				continue; // connection does not belong to group grpIdPre
+				continue; // connection does not belong to group cGrpIdPre
 			weights[curr] = wt[pos_ij];
 			curr++;
 		}
@@ -1478,12 +1498,21 @@ GroupSTDPInfo_t CpuSNN::getGroupSTDPInfo(int grpId) {
 	GroupSTDPInfo_t gInfo;
 
 	gInfo.WithSTDP = grp_Info[grpId].WithSTDP;
+	gInfo.WithESTDP = grp_Info[grpId].WithESTDP;
+	gInfo.WithISTDP = grp_Info[grpId].WithISTDP;
 	gInfo.WithESTDPtype = grp_Info[grpId].WithESTDPtype;
 	gInfo.WithISTDPtype = grp_Info[grpId].WithISTDPtype;
+	gInfo.WithESTDPcurve = grp_Info[grpId].WithESTDPcurve;
+	gInfo.WithISTDPcurve = grp_Info[grpId].WithISTDPcurve;
 	gInfo.ALPHA_LTD_EXC = grp_Info[grpId].ALPHA_LTD_EXC;
 	gInfo.ALPHA_LTP_EXC = grp_Info[grpId].ALPHA_LTP_EXC;
 	gInfo.TAU_LTD_INV_EXC = grp_Info[grpId].TAU_LTD_INV_EXC;
 	gInfo.TAU_LTP_INV_EXC = grp_Info[grpId].TAU_LTP_INV_EXC;
+	gInfo.ALPHA_LTD_INB = grp_Info[grpId].ALPHA_LTD_INB;
+	gInfo.ALPHA_LTP_INB = grp_Info[grpId].ALPHA_LTP_INB;
+	gInfo.TAU_LTD_INV_INB = grp_Info[grpId].TAU_LTD_INV_INB;
+	gInfo.TAU_LTP_INV_INB = grp_Info[grpId].TAU_LTP_INV_INB;
+	gInfo.GAMA = grp_Info[grpId].GAMA;
 	gInfo.BETA_LTP = grp_Info[grpId].BETA_LTP;
 	gInfo.BETA_LTD = grp_Info[grpId].BETA_LTD;
 	gInfo.LAMDA = grp_Info[grpId].LAMDA;
@@ -1886,6 +1915,8 @@ void CpuSNN::CpuSNNinit() {
 		grp_Info[i].WithISTDP = false;
 		grp_Info[i].WithESTDPtype = UNKNOWN_STDP;
 		grp_Info[i].WithISTDPtype = UNKNOWN_STDP;
+		grp_Info[i].WithESTDPcurve = UNKNOWN_CURVE;
+		grp_Info[i].WithISTDPcurve = UNKNOWN_CURVE;
 		grp_Info[i].FixedInputWts = true; // Default is true. This value changed to false
 		// if any incoming  connections are plastic
 		grp_Info[i].isSpikeGenerator = false;
@@ -2796,27 +2827,50 @@ void CpuSNN::findFiring() {
 					for(int j=0; j < Npre_plastic[i]; pos_ij++, j++) {
 						int stdp_tDiff = (simTime-synSpikeTime[pos_ij]);
 						assert(!((stdp_tDiff < 0) && (synSpikeTime[pos_ij] != MAX_SIMULATION_TIME)));
-
 						if (stdp_tDiff > 0) {
 							// check this is an excitatory or inhibitory synapse
 							if (grp_Info[g].WithESTDP && maxSynWt[pos_ij] >= 0) { // excitatory synapse
-								if (stdp_tDiff * grp_Info[g].TAU_LTP_INV_EXC < 25)
-									wtChange[pos_ij] += STDP(stdp_tDiff, grp_Info[g].ALPHA_LTP_EXC, grp_Info[g].TAU_LTP_INV_EXC);
+								// Handle E-STDP curve
+								switch (grp_Info[g].WithESTDPcurve) {
+								case HEBBIAN: // Hebian curve
+									if (stdp_tDiff * grp_Info[g].TAU_LTP_INV_EXC < 25)
+										wtChange[pos_ij] += STDP(stdp_tDiff, grp_Info[g].ALPHA_LTP_EXC, grp_Info[g].TAU_LTP_INV_EXC);
+									break;
+								case HALF_HEBBIAN: // half-Hebbian curve
+									if (stdp_tDiff * grp_Info[g].TAU_LTP_INV_EXC < 25) {
+										if (stdp_tDiff <= grp_Info[g].GAMA)
+											wtChange[pos_ij] += grp_Info[g].OMEGA + grp_Info[g].KAPA * STDP(stdp_tDiff, grp_Info[g].ALPHA_LTP_EXC, grp_Info[g].TAU_LTP_INV_EXC);
+										else // stdp_tDiff > GAMA
+											wtChange[pos_ij] -= STDP(stdp_tDiff, grp_Info[g].ALPHA_LTP_EXC, grp_Info[g].TAU_LTP_INV_EXC);
+									}
+									break;
+								default:
+									KERNEL_ERROR("Invalid E-STDP curve!");
+									break;
+								}
 							} else if (grp_Info[g].WithISTDP && maxSynWt[pos_ij] < 0) { // inhibitory synapse
-								// Anti-Hebbian I-STDP curve
-								//if (stdp_tDiff * grp_Info[g].TAU_LTD_INV_EXC < 25) {
-								//	wtChange[pos_ij] -= (STDP(stdp_tDiff, grp_Info[g].ALPHA_LTP_EXC, grp_Info[g].TAU_LTP_INV_EXC)
-								//		- STDP(stdp_tDiff, grp_Info[g].ALPHA_LTD_EXC*1.5, grp_Info[g].TAU_LTD_INV_EXC));
-								//}
-
-								// Symmetrical I-STDP curve
-								if (stdp_tDiff <= grp_Info[g].LAMDA) { // LTP of inhibitory synapse, which decreases synapse weight
-									wtChange[pos_ij] -= grp_Info[g].BETA_LTP;
-									//printf("I-STDP LTP\n");
-								} else if (stdp_tDiff <= grp_Info[g].DELTA) { // LTD of inhibitory syanpse, which increase sysnapse weight
-									wtChange[pos_ij] += grp_Info[g].BETA_LTD;
-									//printf("I-STDP LTD\n");
-								} else {/* Do nothing */}
+								// Handle I-STDP curve
+								switch (grp_Info[g].WithISTDPcurve) {
+								case ANTI_HEBBIAN: // anti-Hebbian curve
+									if (stdp_tDiff * grp_Info[g].TAU_LTP_INV_INB < 25) { // LTP of inhibitory synapse, which decreases synapse weight
+										wtChange[pos_ij] -= STDP(stdp_tDiff, grp_Info[g].ALPHA_LTP_INB, grp_Info[g].TAU_LTP_INV_INB);
+									}
+									break;
+								case LINEAR_SYMMETRIC: // linear symmetric curve
+									break;
+								case CONSTANT_SYMMETRIC: // constant symmetric curve
+									if (stdp_tDiff <= grp_Info[g].LAMDA) { // LTP of inhibitory synapse, which decreases synapse weight
+										wtChange[pos_ij] -= grp_Info[g].BETA_LTP;
+										//printf("I-STDP LTP\n");
+									} else if (stdp_tDiff <= grp_Info[g].DELTA) { // LTD of inhibitory syanpse, which increase sysnapse weight
+										wtChange[pos_ij] += grp_Info[g].BETA_LTD;
+										//printf("I-STDP LTD\n");
+									} else { /*do nothing*/}
+									break;
+								default:
+									KERNEL_ERROR("Invalid I-STDP curve!");
+									break;
+								}
 							}
 						}
 					}
@@ -2946,24 +3000,42 @@ void CpuSNN::generatePostSpike(unsigned int pre_i, unsigned int idx_d, unsigned 
 
 		if (stdp_tDiff >= 0) {
 			if (grp_Info[post_grpId].WithISTDP && ((pre_type & TARGET_GABAa) || (pre_type & TARGET_GABAb))) { // inhibitory syanpse
-				// Anit-Hebbian I-STDP curve
-				//if ((stdp_tDiff*grp_Info[post_grpId].TAU_LTD_INV_EXC)<25) {
-				//	wtChange[pos_i] -= (STDP(stdp_tDiff, grp_Info[post_grpId].ALPHA_LTP_EXC, grp_Info[post_grpId].TAU_LTP_INV_EXC)
-				// 					 - STDP(stdp_tDiff, grp_Info[post_grpId].ALPHA_LTD_EXC*1.5, grp_Info[post_grpId].TAU_LTD_INV_EXC));
-				//}
-
-				// Symmetrical I-STDP curve
-				if (stdp_tDiff <= grp_Info[post_grpId].LAMDA) { // LTP of inhibitory synapse, which decreases synapse weight
-					wtChange[pos_i] -= grp_Info[post_grpId].BETA_LTP;
-					//printf("I-STDP LTP\n");
-				} else if (stdp_tDiff <= grp_Info[post_grpId].DELTA) { // LTD of inhibitory syanpse, which increase sysnapse weight
-					wtChange[pos_i] += grp_Info[post_grpId].BETA_LTD;
-					//printf("I-STDP LTD\n");
-				} else {/* do nothing */}
+				// Handle I-STDP curve
+				switch (grp_Info[post_grpId].WithISTDPcurve) {
+				case ANTI_HEBBIAN: // anit-Hebbian curve
+					if ((stdp_tDiff*grp_Info[post_grpId].TAU_LTD_INV_INB)<25) { // LTD of inhibitory syanpse, which increase synapse weight
+						wtChange[pos_i] += STDP(stdp_tDiff, grp_Info[post_grpId].ALPHA_LTD_INB, grp_Info[post_grpId].TAU_LTD_INV_INB);
+					}
+					break;
+				case LINEAR_SYMMETRIC: // linear symmetric curve
+					break;
+				case CONSTANT_SYMMETRIC: // constant symmetric curve
+					if (stdp_tDiff <= grp_Info[post_grpId].LAMDA) { // LTP of inhibitory synapse, which decreases synapse weight
+						wtChange[pos_i] -= grp_Info[post_grpId].BETA_LTP;
+					} else if (stdp_tDiff <= grp_Info[post_grpId].DELTA) { // LTD of inhibitory syanpse, which increase synapse weight
+						wtChange[pos_i] += grp_Info[post_grpId].BETA_LTD;
+					} else { /*do nothing*/ }
+					break;
+				default:
+					KERNEL_ERROR("Invalid I-STDP curve");
+					break;
+				}
 			} else if (grp_Info[post_grpId].WithESTDP && ((pre_type & TARGET_AMPA) || (pre_type & TARGET_NMDA))) { // excitatory synapse
-				if (stdp_tDiff * grp_Info[post_grpId].TAU_LTD_INV_EXC < 25)
-					wtChange[pos_i] -= STDP(stdp_tDiff, grp_Info[post_grpId].ALPHA_LTD_EXC, grp_Info[post_grpId].TAU_LTD_INV_EXC);
-			}
+				// Handle E-STDP curve
+				switch (grp_Info[post_grpId].WithESTDPcurve) {
+				case HEBBIAN: // Hebbian curve
+					if (stdp_tDiff * grp_Info[post_grpId].TAU_LTD_INV_EXC < 25)
+						wtChange[pos_i] -= STDP(stdp_tDiff, grp_Info[post_grpId].ALPHA_LTD_EXC, grp_Info[post_grpId].TAU_LTD_INV_EXC);
+					break;
+				case HALF_HEBBIAN: // half-Hebbian curve
+					if (stdp_tDiff * grp_Info[post_grpId].TAU_LTD_INV_EXC < 25)
+						wtChange[pos_i] -= STDP(stdp_tDiff, grp_Info[post_grpId].ALPHA_LTD_EXC, grp_Info[post_grpId].TAU_LTD_INV_EXC);
+					break;
+				default:
+					KERNEL_ERROR("Invalid E-STDP curve");
+					break;
+				}
+			} else { /*do nothing*/ }
 		}
 		assert(!((stdp_tDiff < 0) && (lastSpikeTime[post_i] != MAX_SIMULATION_TIME)));
 	}

@@ -254,6 +254,8 @@ typedef struct group_info_s
 	bool		WithISTDP;
 	stdpType_t  WithESTDPtype;
 	stdpType_t  WithISTDPtype;
+	stdpCurve_t WithESTDPcurve;
+	stdpCurve_t WithISTDPcurve;
 	bool 		WithHomeostasis;
 	int		homeoId;
 	bool		FixedInputWts;
@@ -269,10 +271,13 @@ typedef struct group_info_s
 	float		TAU_LTD_INV_EXC;
 	float		ALPHA_LTP_EXC;
 	float		ALPHA_LTD_EXC;
-	//float		TAU_LTP_INV_In; //!< for furture use
-	//float		TAU_LTD_INV_In; //!< for furture use
-	//float		ALPHA_LTP_In; //!< for furture use
-	//float		ALPHA_LTD_In; //!< for furture use
+	float		GAMA;
+	float		KAPA;
+	float		OMEGA;
+	float		TAU_LTP_INV_INB; //!< for furture use
+	float		TAU_LTD_INV_INB; //!< for furture use
+	float		ALPHA_LTP_INB; //!< for furture use
+	float		ALPHA_LTD_INB; //!< for furture use
 	float		BETA_LTP;
 	float		BETA_LTD;
 	float		LAMDA;
