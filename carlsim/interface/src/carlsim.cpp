@@ -511,14 +511,14 @@ void CARLsim::setSTP(int grpId, bool isSet, float STP_U, float STP_tau_u, float 
 	}
 }
 
-void CARLsim::setWeightAndWeightChangeUpdate(updateInterval_t updateWtInterval, updateInterval_t updateWtChangeInterval,
-											 int tauWeightChange) {
+void CARLsim::setWeightAndWeightChangeUpdate(updateInterval_t wtANDwtChangeUpdateInterval, bool enableWtChangeDecay,
+											 float wtChangeDecay) {
 	std::string funcName = "setWeightAndWeightChangeUpdate()";
-	UserErrors::assertTrue(updateWtChangeInterval <= updateWtInterval, UserErrors::CANNOT_BE_LARGER, funcName);
-	UserErrors::assertTrue(tauWeightChange > 0, UserErrors::MUST_BE_POSITIVE, funcName);
+	UserErrors::assertTrue(wtChangeDecay > 0.0f, UserErrors::MUST_BE_POSITIVE, funcName);
+	UserErrors::assertTrue(wtChangeDecay < 1.0f, UserErrors::CANNOT_BE_LARGER, funcName);
 	UserErrors::assertTrue(carlsimState_==CONFIG_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "CONFIG.");
 
-	snn_->setWeightAndWeightChangeUpdate(updateWtInterval, updateWtChangeInterval, tauWeightChange);
+	snn_->setWeightAndWeightChangeUpdate(wtANDwtChangeUpdateInterval, enableWtChangeDecay, wtChangeDecay);
 }
 
 

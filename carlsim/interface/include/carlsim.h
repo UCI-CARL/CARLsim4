@@ -486,12 +486,11 @@ public:
 	 * \brief Sets the weight and weight change update parameters
 	 *
 	 * \STATE CONFIG
-	 * \param[in] updateWeightInterval the interval between two weight update.
-	 * \param[in] updateWeightChangeInterval the interval between two weight update.
-	 * \param[in] tauWeightChange the decay time constant of weight change (wtChange)
+	 * \param[in] wtANDwtChangeUpdateInterval the interval between two wt (weight) and wtChange (weight change) update.
+	 * \param[in] enableWtChangeDecay enable weight change decay
+	 * \param[in] wtChangeDecay the decay ratio of weight change (wtChange)
 	 */
-	void setWeightAndWeightChangeUpdate(updateInterval_t updateWeightInterval = INTERVAL_1000MS,
-		updateInterval_t updateWeightChangeInterval = INTERVAL_1000MS, int tauWeightChange = 10);
+	void setWeightAndWeightChangeUpdate(updateInterval_t wtANDwtChangeUpdateInterval, bool enableWtChangeDecay, float wtChangeDecay=0.9f);
 
 
 	// +++++ PUBLIC METHODS: RUNNING A SIMULATION ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //

@@ -1227,9 +1227,9 @@ __device__ void updateSynapticWeights(int& nid, unsigned int& jpos, int& grpId, 
 		break;
 	}
 	
-	// FIXME: MB - I agree with MDR, I think this is wrong
-	t_wtChange *= gpuNetInfo.wtChangeDecay; // TSC - resume decay weight changes
-	//t_wtChange = 0; //MDR - don't decay weight changes, just set to 0
+	// It's user's choice to decay weight change or not
+	// see setWeightAndWeightChangeUpdate()
+	t_wtChange *= gpuNetInfo.wtChangeDecay;
 
 	if (t_wt > t_maxWt) t_wt = t_maxWt;
 	if (t_wt < 0)  	  t_wt = 0.0f;

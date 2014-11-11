@@ -184,7 +184,7 @@ TEST(STDP, DASTDPweightBoost) {
 					sim->setConductances(false);
 				}
 
-				sim->setWeightAndWeightChangeUpdate(INTERVAL_10MS, INTERVAL_10MS, 100);
+				sim->setWeightAndWeightChangeUpdate(INTERVAL_10MS, true, 0.99f);
 
 				// set up spike controller on DA neurons
 				sim->setSpikeGenerator(gda, spikeCtrl);
@@ -223,7 +223,7 @@ TEST(STDP, DASTDPweightBoost) {
 							}
 
 							//if (diff < 0 && diff >= -20)
-							//printf("LTD\n");
+							//	printf("LTD\n");
 						}
 					}
 				}
