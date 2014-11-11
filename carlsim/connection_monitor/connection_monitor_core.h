@@ -77,7 +77,7 @@ public:
 	
 	// +++++ PUBLIC METHODS: +++++++++++++++++++++++++++++++++++++++++++++++//
 
-	std::vector< std::vector<double> > calcWeightChanges();
+	std::vector< std::vector<float> > calcWeightChanges();
 
 	//! deletes data from the 2D spike vector
 	void clear();
@@ -102,7 +102,7 @@ public:
 	//! blah
 	void printSparse(int neurPostId=ALL, int maxConn=100, int connPerLine=4);
 
-	std::vector< std::vector<double> > takeSnapshot();
+	std::vector< std::vector<float> > takeSnapshot();
 
 	void updateWeight(int preId, int postId, float wt);
 
@@ -127,8 +127,13 @@ public:
 	void setConnectFileId(FILE* connFileId);
 	
 private:
+	bool needToWriteSnapshot();
+
 	//! writes the header section (file signature, version number) of a connect file
 	void writeConnectFileHeader();
+
+	//! writes each snapshot to connect file
+	void writeConnectFileSnapshot();
 
 	CpuSNN* snn_;	//!< private CARLsim implementation
 	int monitorId_;	//!< current ConnectionMonitor ID
@@ -141,10 +146,11 @@ private:
 
 	long int simTimeMs_;
 	long int simTimeSinceLastMs_;
+	long int simTimeMsLastWrite_;
 
 	bool isPlastic_; //!< whether this connection has plastic synapses
 
-	std::vector< std::vector<double> > wtMat_, wtLastMat_;
+	std::vector< std::vector<float> > wtMat_, wtLastMat_;
 
 	//! whether we have to write header section of conn file
 	bool needToWriteFileHeader_;

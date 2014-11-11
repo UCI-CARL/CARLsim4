@@ -3873,6 +3873,14 @@ void CpuSNN::resetPointers(bool deallocate) {
 		if (spikeMonList[i]!=NULL && deallocate) delete spikeMonList[i];
 		spikeMonList[i]=NULL;
 	}
+
+	// delete all ConnectionMonitor objects
+	// don't kill ConnectionMonitorCore objects, they will get killed automatically
+	for (int i=0; i<numConnectionMonitor; i++) {
+		if (connMonList[i]!=NULL && deallocate) delete connMonList[i];
+		connMonList[i]=NULL;
+	}
+	
 	// delete all Spike Counters
 	for (int i=0; i<numSpkCnt; i++) {
 		if (spkCntBuf[i]!=NULL && deallocate)

@@ -17,7 +17,7 @@ ConnectionMonitor::~ConnectionMonitor() {
 
 // +++++ PUBLIC METHODS: +++++++++++++++++++++++++++++++++++++++++++++++//
 
-std::vector< std::vector<double> > ConnectionMonitor::calcWeightChanges() {
+std::vector< std::vector<float> > ConnectionMonitor::calcWeightChanges() {
 	return connMonCorePtr_->calcWeightChanges();
 }
 
@@ -66,6 +66,6 @@ void ConnectionMonitor::printSparse(int neurPostId, int maxConn, int connPerLine
 }
 
 
-std::vector< std::vector<double> > ConnectionMonitor::takeSnapshot() {
+std::vector< std::vector<float> > ConnectionMonitor::takeSnapshot() {
 	return connMonCorePtr_->takeSnapshot();
 }

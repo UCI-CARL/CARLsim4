@@ -96,7 +96,7 @@ int main() {
 	sim.setSpikeMonitor(gin);
 
 //	sim.setConnectionMonitor(g1, g2);
-	ConnectionMonitor* CM = sim.setConnectionMonitor(g1,g1);
+	ConnectionMonitor* CM = sim.setConnectionMonitor(g1,g1,"myconnect.dat");
 
 //	CM->takeSnapshot();
 //	CM->print();

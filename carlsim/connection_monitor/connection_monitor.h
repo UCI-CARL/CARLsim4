@@ -79,7 +79,7 @@ class ConnectionMonitor {
 	 * blah.
 	 *
 	 */
-	std::vector< std::vector<double> > calcWeightChanges();
+	std::vector< std::vector<float> > calcWeightChanges();
 
 	short int getConnectId();
 
@@ -119,7 +119,7 @@ class ConnectionMonitor {
 	 * returns 2D connectivity matrix (first dim=pre, second dim=post)
 	 *
 	 */
-	std::vector< std::vector<double> > takeSnapshot();
+	std::vector< std::vector<float> > takeSnapshot();
 
 private:
 	//! This is a pointer to the actual implementation of the class. The user should never directly instantiate it.
