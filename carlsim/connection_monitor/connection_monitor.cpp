@@ -17,17 +17,55 @@ ConnectionMonitor::~ConnectionMonitor() {
 
 // +++++ PUBLIC METHODS: +++++++++++++++++++++++++++++++++++++++++++++++//
 
-void ConnectionMonitor::clear() {
-	std::string funcName = "clear()";
-//	UserErrors::assertTrue(!isRecording(), UserErrors::CANNOT_BE_ON, funcName, "Recording");
+std::vector< std::vector<double> > ConnectionMonitor::calcWeightChanges() {
+	return connMonCorePtr_->calcWeightChanges();
+}
 
-	connMonCorePtr_->clear();
+short int ConnectionMonitor::getConnectId() {
+	return connMonCorePtr_->getConnectId();
+}
+
+int ConnectionMonitor::getFanIn(int neurPostId) {
+	return connMonCorePtr_->getFanIn(neurPostId);
+}
+
+int ConnectionMonitor::getFanOut(int neurPreId) {
+	return connMonCorePtr_->getFanOut(neurPreId);
+}
+
+int ConnectionMonitor::getNumWeightsChanged(double minAbsChanged) {
+	return connMonCorePtr_->getNumWeightsChanged(minAbsChanged);
+}
+
+double ConnectionMonitor::getPercentWeightsChanged(double minAbsChanged) {
+	return connMonCorePtr_->getPercentWeightsChanged(minAbsChanged);
+}
+
+long int ConnectionMonitor::getTimeMsCurrentSnapshot() {
+	return connMonCorePtr_->getTimeMsCurrentSnapshot();
+}
+
+long int ConnectionMonitor::getTimeMsLastSnapshot() {
+	return connMonCorePtr_->getTimeMsLastSnapshot();
+}
+
+long int ConnectionMonitor::getTimeMsSinceLastSnapshot() {
+	return connMonCorePtr_->getTimeMsSinceLastSnapshot();
+}
+
+double ConnectionMonitor::getTotalAbsWeightChange() {
+	return connMonCorePtr_->getTotalAbsWeightChange();
 }
 
 void ConnectionMonitor::print() {
 	connMonCorePtr_->print();
 }
 
-std::vector< std::vector<float> > ConnectionMonitor::takeSnapshot() {
+void ConnectionMonitor::printSparse(int neurPostId, int maxConn, int connPerLine) {
+	connMonCorePtr_->printSparse(neurPostId,maxConn,connPerLine);
+}
+
+
+std::vector< std::vector<double> > ConnectionMonitor::takeSnapshot() {
 	return connMonCorePtr_->takeSnapshot();
 }

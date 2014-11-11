@@ -44,6 +44,7 @@
 
 #include <stdio.h>					// FILE
 #include <vector>					// std::vector
+#include <carlsim_definitions.h>	// ALL
 
 class CpuSNN; // forward declaration of CpuSNN class
 
@@ -56,7 +57,7 @@ class CpuSNN; // forward declaration of CpuSNN class
  * - getNeuron*: 	a neuron metric (single value), about a specific neuron (requires neurId); e.g., getNeuronNumSpikes. 
  * - getAll*: 		a metric (vector) that is based on all neurons in the group; e.g. getAllFiringRates.
  * - getNum*:		a number metric, returns an int
- * - getPercent*:	a percentage metric, returns a float
+ * - getPercent*:	a percentage metric, returns a double
  * - get*:			all the others
  */
 class ConnectionMonitorCore {
@@ -76,15 +77,36 @@ public:
 	
 	// +++++ PUBLIC METHODS: +++++++++++++++++++++++++++++++++++++++++++++++//
 
+	std::vector< std::vector<double> > calcWeightChanges();
+
 	//! deletes data from the 2D spike vector
 	void clear();
 
-	void print();
-	void printSparse();
+	int getFanIn(int neurPostId);
 
-	std::vector< std::vector<float> > takeSnapshot();
+	int getFanOut(int neurPreId);
+
+	int getNumWeightsChanged(double minAbsChanged=1e-5);
+
+	double getPercentWeightsChanged(double minAbsChanged=1e-5);
+
+
+	double getTotalAbsWeightChange();
+
+	//! initialization method
+	//! depends on several SNN data structures, so it has be to called at the end of setConnectionMonitor (or later)
+	void init();
+
+	void print();
+
+	//! blah
+	void printSparse(int neurPostId=ALL, int maxConn=100, int connPerLine=4);
+
+	std::vector< std::vector<double> > takeSnapshot();
 
 	void updateWeight(int preId, int postId, float wt);
+
+	void updateTime(unsigned int simTimeMs);
 
 	
 	// +++++ PUBLIC SETTERS/GETTERS: +++++++++++++++++++++++++++++++++++++++//
@@ -92,6 +114,9 @@ public:
 	short int getConnectId() { return connId_; }
 	int getMonitorId() { return monitorId_; }
 	FILE* getConnFileId() { return connFileId_; }
+	long int getTimeMsCurrentSnapshot() { return simTimeMs_; }
+	long int getTimeMsLastSnapshot() { return (simTimeMs_ - simTimeSinceLastMs_); }
+	long int getTimeMsSinceLastSnapshot() { return simTimeSinceLastMs_; }
 
 
 	/*!
@@ -102,9 +127,6 @@ public:
 	void setConnectFileId(FILE* connFileId);
 	
 private:
-	//! initialization method
-	void init();
-
 	//! writes the header section (file signature, version number) of a connect file
 	void writeConnectFileHeader();
 
@@ -115,15 +137,21 @@ private:
 	int grpIdPost_;
 	int nNeurPre_;
 	int nNeurPost_;
+	int nSynapses_;
 
-	std::vector< std::vector<float> > wtMat_;
+	long int simTimeMs_;
+	long int simTimeSinceLastMs_;
+
+	bool isPlastic_; //!< whether this connection has plastic synapses
+
+	std::vector< std::vector<double> > wtMat_, wtLastMat_;
 
 	//! whether we have to write header section of conn file
 	bool needToWriteFileHeader_;
 
 	FILE* connFileId_;		//!< file pointer to the conn file or NULL
 	int connFileSignature_; //!< int signature of conn file
-	float connFileVersion_; //!< version number of conn file
+	double connFileVersion_; //!< version number of conn file
 
 	// file pointers for error logging
 	const FILE* fpInf_;

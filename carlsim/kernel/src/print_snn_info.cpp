@@ -111,16 +111,12 @@ void CpuSNN::printMemoryInfo(FILE* const fp) {
 void CpuSNN::printStatusConnectionMonitor(int connId) {
   grpConnectInfo_t* connInfo = connectBegin;
 
+  // connId can be either ALL or a specific connection ID
   while (connInfo) {
     if (connInfo->ConnectionMonitorId>=0 && (connId==ALL || connInfo->connId==connId)) {
-      int grpIdPre = connInfo->grpSrc;
-      int grpIdPost = connInfo->grpDest;
-      KERNEL_INFO("ConnectionMonitor ID=%d: %d(%s) => %d(%s)",connInfo->connId, grpIdPre, 
-        getGroupName(grpIdPre).c_str(), grpIdPost, getGroupName(grpIdPost).c_str());
-
-      connMonCoreList[connInfo->ConnectionMonitorId]->printSparse();
-
-//      printWeights(grpIdPre, grpIdPost);
+      // print connection weights (sparse representation: show only actually connected synapses)
+      // show the first hundred connections: (pre=>post) weight
+      connMonCoreList[connInfo->ConnectionMonitorId]->printSparse(ALL, 100, 4);
     }
     connInfo = connInfo->next;
   }

@@ -36,13 +36,14 @@
  *					(TSC) Ting-Shuo Chou <tingshuc@uci.edu>
  *
  * CARLsim available from http://socsci.uci.edu/~jkrichma/CARLsim/
- * Ver 7/29/2014
+ * Ver 11/11/2014
  */
 
 #ifndef _CONN_MON_H_
 #define _CONN_MON_H_
 
 #include <vector>					// std::vector
+#include <carlsim_definitions.h>	// ALL
 
 class ConnectionMonitorCore; // forward declaration of implementation
 
@@ -73,24 +74,56 @@ class ConnectionMonitor {
 	// +++++ PUBLIC METHODS: +++++++++++++++++++++++++++++++++++++++++++++++//
 
 	/*!
-	 *\brief Truncates the 2D spike vector
+	 * \brief ConnectionMonitor 
 	 *
-	 * This function truncates all the data found in the 2D spike vector.
-	 * If PersistentMode is off, this function will be called automatically in startRecording(), such that all
-	 * spikes from previous recording periods will be discarded. By default, PersistentMode is off.
-	 * If PersistentMode is on, the user can call this function after any number of recordings. However, isRecording()
-	 * must always be off.
+	 * blah.
+	 *
 	 */
-	void clear();
+	std::vector< std::vector<double> > calcWeightChanges();
 
+	short int getConnectId();
+
+	int getFanIn(int neurPostId);
+
+	int getFanOut(int neurPreId);
+
+	int getNumWeightsChanged(double minAbsChanged=1e-5);
+
+	double getPercentWeightsChanged(double minAbsChanged=1e-5);
+
+	long int getTimeMsCurrentSnapshot();
+	long int getTimeMsLastSnapshot();
+	long int getTimeMsSinceLastSnapshot();
+
+	double getTotalAbsWeightChange();
+
+	/*!
+	 * \brief ConnectionMonitor 
+	 *
+	 * blah.
+	 *
+	 */
 	void print();
 
-	// returns 2D connectivity matrix (first dim=pre, second dim=post)
-	std::vector< std::vector<float> > takeSnapshot();
+	/*!
+	 * \brief ConnectionMonitor 
+	 *
+	 * blah.
+	 *
+	 */
+	void printSparse(int neurPostId=ALL, int maxConn=100, int connPerLine=4);
 
- private:
-  //! This is a pointer to the actual implementation of the class. The user should never directly instantiate it.
-  ConnectionMonitorCore* connMonCorePtr_;
+	/*!
+	 * \brief ConnectionMonitor 
+	 *
+	 * returns 2D connectivity matrix (first dim=pre, second dim=post)
+	 *
+	 */
+	std::vector< std::vector<double> > takeSnapshot();
+
+private:
+	//! This is a pointer to the actual implementation of the class. The user should never directly instantiate it.
+	ConnectionMonitorCore* connMonCorePtr_;
 
 };
 

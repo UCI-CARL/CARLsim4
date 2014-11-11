@@ -2350,18 +2350,18 @@ void CpuSNN::copyWeightState (network_ptr_t* dest, network_ptr_t* src,  cudaMemc
 		assert (cumPos_syn < preSynCnt);
 		assert (length_wt <= preSynCnt);
 
-    //MDR FIXME, allocateMem option is VERY wrong
-    // synaptic information based
+	    //MDR FIXME, allocateMem option is VERY wrong
+	    // synaptic information based
 
-    //if(allocateMem) CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->wt, sizeof(float)*length_wt));
+	    //if(allocateMem) CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->wt, sizeof(float)*length_wt));
 		CUDA_CHECK_ERRORS( cudaMemcpy( &dest->wt[cumPos_syn], &src->wt[cumPos_syn], sizeof(float)*length_wt,  kind));
 
-    // firing time for individual synapses
-    //if(allocateMem) CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->synSpikeTime, sizeof(int)*length_wt));
+	    // firing time for individual synapses
+	    //if(allocateMem) CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->synSpikeTime, sizeof(int)*length_wt));
 		CUDA_CHECK_ERRORS( cudaMemcpy( &dest->synSpikeTime[cumPos_syn], &src->synSpikeTime[cumPos_syn], sizeof(int)*length_wt, kind));
 
-    // added this to CARLsim 2.1 - 2.2 file merge -- KDC
-		if ((!sim_with_fixedwts) || (sim_with_stdp)) {
+	    // added this to CARLsim 2.1 - 2.2 file merge -- KDC
+		if ((!sim_with_fixedwts) || sim_with_stdp) {
 			// synaptic weight derivative
 			//if(allocateMem)		CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->wtChange, sizeof(float)*length_wt));
 			CUDA_CHECK_ERRORS( cudaMemcpy( &dest->wtChange[cumPos_syn], &src->wtChange[cumPos_syn], sizeof(float)*length_wt, kind));

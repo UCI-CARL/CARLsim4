@@ -572,6 +572,7 @@ public:
 	 */
 	 float* getWeightChanges(int gIDpre, int gIDpost, int& Npre, int& Npost, float* weightChanges);
 
+    bool isConnectionPlastic(short int connId);
 
 	bool isExcitatoryGroup(int g) { return (grp_Info[g].Type&TARGET_AMPA) || (grp_Info[g].Type&TARGET_NMDA); }
 	bool isInhibitoryGroup(int g) { return (grp_Info[g].Type&TARGET_GABAa) || (grp_Info[g].Type&TARGET_GABAb); }
@@ -1017,10 +1018,7 @@ private:
 //	NeuronMonitorCore* neurBufferCallback[MAX_]
 	int numNeuronMonitor;
 
-	// network monitor variables
-//	ConnectionMonitorCore	*connBufferCallback[MAX_GRP_PER_SNN];
-//	unsigned int		connMonGrpIdPre[MAX_GRP_PER_SNN];
-//	unsigned int		connMonGrpIdPost[MAX_GRP_PER_SNN];
+	// connection monitor variables
 	int numConnectionMonitor;
 	ConnectionMonitorCore* connMonCoreList[MAX_nConnections];
 	ConnectionMonitor*     connMonList[MAX_nConnections];

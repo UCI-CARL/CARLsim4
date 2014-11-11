@@ -44,6 +44,8 @@
 
 #include <ostream>			// print struct info
 
+unsigned long int get_time_ms64();
+
 /*!
  * \brief a point in 3D space
  *

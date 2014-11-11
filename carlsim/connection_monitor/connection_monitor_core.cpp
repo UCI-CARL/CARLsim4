@@ -15,36 +15,40 @@ ConnectionMonitorCore::ConnectionMonitorCore(CpuSNN* snn,int monitorId,short int
 	grpIdPre_ = grpIdPre;
 	grpIdPost_ = grpIdPost;
 	monitorId_ = monitorId;
-	connFileId_ = NULL;
+	simTimeMs_ = -1;
+	simTimeSinceLastMs_ = 0;
 
+	connFileId_ = NULL;
 	needToWriteFileHeader_ = true;
 	connFileSignature_ = 202029319;
 	connFileVersion_ = 0.1f;
-
-	// defer all unsafe operations to init function
-	init();
 }
 
 void ConnectionMonitorCore::init() {
 	nNeurPre_ = snn_->getGroupNumNeurons(grpIdPre_);
 	nNeurPost_ = snn_->getGroupNumNeurons(grpIdPost_);
-
-	// init weight matrix with right dimensions
-	for (int i=0; i<nNeurPre_; i++) {
-		std::vector<float> wt;
-		for (int j=0; j<nNeurPost_; j++) {
-			wt.push_back(0.0f);
-		}
-		wtMat_.push_back(wt);
-	}
-
-	printf("created wtMat %dx%d\n",nNeurPre_,nNeurPost_);
+	isPlastic_ = snn_->isConnectionPlastic(connId_);
+	nSynapses_ = snn_->getNumSynapticConnections(connId_);
 
 	// use KERNEL_{ERROR|WARNING|etc} typesetting (const FILE*)
 	fpInf_ = snn_->getLogFpInf();
 	fpErr_ = snn_->getLogFpErr();
 	fpDeb_ = snn_->getLogFpDeb();
 	fpLog_ = snn_->getLogFpLog();
+
+	// init weight matrix with right dimensions
+	for (int i=0; i<nNeurPre_; i++) {
+		std::vector<double> wt, wtChange;
+		for (int j=0; j<nNeurPost_; j++) {
+			wt.push_back(NAN);
+			wtChange.push_back(0.0f);
+		}
+		wtMat_.push_back(wt);
+		wtLastMat_.push_back(wtChange);
+	}
+
+	// then load current weigths from CpuSNN into weight matrix
+	takeSnapshot();
 }
 
 ConnectionMonitorCore::~ConnectionMonitorCore() {
@@ -56,8 +60,23 @@ ConnectionMonitorCore::~ConnectionMonitorCore() {
 
 // +++++ PUBLIC METHODS: +++++++++++++++++++++++++++++++++++++++++++++++//
 
+// calculate weight changes since last update (element-wise )
+std::vector< std::vector<double> > ConnectionMonitorCore::calcWeightChanges() {
+	std::vector< std::vector<double> > wtChange(nNeurPre_, vector<double>(nNeurPost_));
+
+	// take the naive approach for now
+	for (int i=0; i<nNeurPre_; i++) {
+		for (int j=0; j<nNeurPost_; j++) {
+			wtChange[i][j] = wtMat_[i][j] - wtLastMat_[i][j];
+		}
+	}
+
+	return wtChange;
+}
+
+
+// reset weight matrix
 void ConnectionMonitorCore::clear() {
-	// empty weight matrix
 	for (int i=0; i<nNeurPre_; i++) {
 		for (int j=0; j<nNeurPost_; j++) {
 			wtMat_[i][j] = NAN;
@@ -65,10 +84,74 @@ void ConnectionMonitorCore::clear() {
 	}
 }
 
+// find number of incoming synapses for a specific post neuron
+int ConnectionMonitorCore::getFanIn(int neurPostId) {
+	int nSyn = 0;
+	for (int i=0; i<nNeurPre_; i++) {
+		if (!isnan(wtMat_[i][neurPostId])) {
+			nSyn++;
+		}
+	}
+	return nSyn;
+}
+
+// find number of outgoing synapses of a specific pre neuron
+int ConnectionMonitorCore::getFanOut(int neurPreId) {
+	int nSyn = 0;
+	for (int j=0; j<nNeurPost_; j++) {
+		if (!isnan(wtMat_[neurPreId][j])) {
+			nSyn++;
+		}
+	}
+	return nSyn;
+}
+
+// calculate total absolute amount of weight change
+double ConnectionMonitorCore::getTotalAbsWeightChange() {
+	std::vector< std::vector<double> > wtChange = calcWeightChanges();
+	double wtTotalChange = 0.0;
+	for (int i=0; i<nNeurPre_; i++) {
+		for (int j=0; j<nNeurPost_; j++) {
+			// skip entries in matrix where no synapse exists
+			if (isnan(wtMat_[i][j]))
+				continue;
+			wtTotalChange += fabs(wtChange[i][j]);
+		}
+	}
+	return wtTotalChange;
+}
+
+// find (number of synapses whose weigths changed)/(total number synapses)
+double ConnectionMonitorCore::getPercentWeightsChanged(double minAbsChange) {
+	int nChanged = getNumWeightsChanged(minAbsChange);
+
+	return nChanged*100.0/nSynapses_;
+}
+
+// find number of synapses whose weights changed
+int ConnectionMonitorCore::getNumWeightsChanged(double minAbsChange) {
+	std::vector< std::vector<double> > wtChange = calcWeightChanges();
+
+	int nChanged = 0;
+	for (int i=0; i<nNeurPre_; i++) {
+		for (int j=0; j<nNeurPost_; j++) {
+			// skip entries in matrix where no synapse exists
+			if (isnan(wtMat_[i][j]))
+				continue;
+
+			if (fabs(wtChange[i][j]) >= minAbsChange) {
+				nChanged++;
+			}
+		}
+	}
+	return nChanged;
+}
+
 void ConnectionMonitorCore::print() {
 	takeSnapshot();
 
-	KERNEL_INFO("ConnectionMonitor ID=%d: %d(%s) => %d(%s)",connId_, grpIdPre_, snn_->getGroupName(grpIdPre_).c_str(),
+	KERNEL_INFO("(t=%.3fs) ConnectionMonitor ID=%d: %d(%s) => %d(%s)", (double)simTimeMs_/1000.0f, connId_,
+		grpIdPre_, snn_->getGroupName(grpIdPre_).c_str(),
 		grpIdPost_, snn_->getGroupName(grpIdPost_).c_str());
 
 	// generate header
@@ -86,25 +169,51 @@ void ConnectionMonitorCore::print() {
 		std::stringstream line;
 		line << std::setw(9) << std::setfill(' ') << i << " |";
 		for (int j=0; j<nNeurPost_; j++) {
-			line << std::fixed << std::setprecision(4) << (isnan(wtMat_[i][j])?"      ":(wtMat_[i][j]>=0?"   ":"  ")) << wtMat_[i][j]  << "  ";
+			line << std::fixed << std::setprecision(4) << (isnan(wtMat_[i][j])?"      ":(wtMat_[i][j]>=0?"   ":"  "))
+				<< wtMat_[i][j]  << "  ";
 		}
 		KERNEL_INFO("%s",line.str().c_str());
 	}
 }
 
-void ConnectionMonitorCore::printSparse() {
+void ConnectionMonitorCore::printSparse(int neurPostId, int maxConn, int connPerLine) {
 	takeSnapshot();
-	KERNEL_INFO("ConnectionMonitor ID=%d: %d(%s) => %d(%s)",connId_, grpIdPre_, snn_->getGroupName(grpIdPre_).c_str(),
-		grpIdPost_, snn_->getGroupName(grpIdPost_).c_str());
+	KERNEL_INFO("(t=%.3fs) ConnectionMonitor ID=%d %d(%s) => %d(%s): [preId,postId] wt (+/-wtChange in %ldms) "
+		"show first %d", (double)simTimeMs_/1000.0f, connId_,
+		grpIdPre_, snn_->getGroupName(grpIdPre_).c_str(), grpIdPost_, snn_->getGroupName(grpIdPost_).c_str(),
+		simTimeSinceLastMs_, maxConn);
+
+	int postA, postZ;
+	if (neurPostId==ALL) {
+		postA = 0;
+		postZ = nNeurPost_;
+	} else {
+		postA = neurPostId;
+		postZ = neurPostId;
+	}
+
+	std::vector< std::vector<double> > wtChange;
+	if (isPlastic_) {
+		wtChange = calcWeightChanges();
+	}
 
 	std::stringstream line;
 	int nConn = 0;
-	int connPerLine = 30;
 	int maxIntDigits = ceil(log10((double)max(nNeurPre_,nNeurPost_)));
 	for (int i=0; i<nNeurPre_; i++) {
-		for (int j=0; j<nNeurPost_; j++) {
+		for (int j=postA; j<postZ; j++) {
+			// display only so many connections
+			if (nConn>=maxConn)
+				break;
+
 			if (!isnan(wtMat_[i][j])) {
-				line << "(" << std::setw(maxIntDigits) << i << "=>" << std::setw(maxIntDigits) << j << ") " << std::fixed << std::setprecision(4) << wtMat_[i][j] << "   ";
+				line << "[" << std::setw(maxIntDigits) << i << "," << std::setw(maxIntDigits) << j << "] "
+					<< std::fixed << std::setprecision(4) << wtMat_[i][j];
+				if (isPlastic_) {
+					line << " (" << ((wtChange[i][j]<0)?"":"+");
+					line << std::setprecision(4) << wtChange[i][j] << ")";
+				}
+				line << "   ";
 				if (!(++nConn % connPerLine)) {
 					KERNEL_INFO("%s",line.str().c_str());
 					line.str(std::string());
@@ -118,13 +227,28 @@ void ConnectionMonitorCore::printSparse() {
 
 }
 
-std::vector< std::vector<float> > ConnectionMonitorCore::takeSnapshot() {
+std::vector< std::vector<double> > ConnectionMonitorCore::takeSnapshot() {
 	snn_->updateConnectionMonitor(connId_);
 	return wtMat_;
 }
 
+void ConnectionMonitorCore::updateTime(unsigned int simTimeMs) {
+	long int currTime = (long int)simTimeMs; // get rid of unsigned
+	if (currTime > simTimeMs_) {
+		// time has advances since last storage, copy wtMat_ to lastWtMat_ and set wtMat_=0
+		wtLastMat_.swap(wtMat_);
+		clear();
+
+		// update timers
+		simTimeSinceLastMs_ = currTime-simTimeMs_; // delta t since last update
+		simTimeMs_ = currTime;
+		assert(simTimeSinceLastMs_>0);
+	}
+}
+
+// CpuSNN uses float in weight matrix to save storage
+// We want to do arithmetic on them, so use double instead (standard)
 void ConnectionMonitorCore::updateWeight(int preId, int postId, float wt) {
-//	printf("updating wt[%d][%d]=%f\n",preId,postId,wt);
 	assert(preId < nNeurPre_);
 	assert(postId < nNeurPost_);
 	wtMat_[preId][postId] = wt;
@@ -158,7 +282,7 @@ void ConnectionMonitorCore::writeConnectFileHeader() {
 		KERNEL_ERROR("ConnectionMonitorCore: writeConnectFileHeader has fwrite error");
 
 	// write version number
-	if (!fwrite(&connFileVersion_,sizeof(float),1,connFileId_))
+	if (!fwrite(&connFileVersion_,sizeof(double),1,connFileId_))
 		KERNEL_ERROR("ConnectionMonitorCore: writeConnectFileHeader has fwrite error");
 
 	needToWriteFileHeader_ = false;

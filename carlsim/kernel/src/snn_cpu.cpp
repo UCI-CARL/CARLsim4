@@ -768,11 +768,11 @@ int CpuSNN::runNetwork(int _nsec, int _nmsec, bool printRunSummary, bool copySta
 		showStatus();
 
 		// if there are Monitors available and it's time to show the log, print status for each group
-		if (numConnectionMonitor) {
-			printStatusConnectionMonitor(ALL);
-		}
 		if (numSpikeMonitor) {
 			printStatusSpikeMonitor(ALL, runDurationMs);
+		}
+		if (numConnectionMonitor) {
+			printStatusConnectionMonitor(ALL);
 		}
 	}
 
@@ -973,8 +973,11 @@ ConnectionMonitor* CpuSNN::setConnectionMonitor(int grpIdPre, int grpIdPost, FIL
 	ConnectionMonitor* connMonObj = new ConnectionMonitor(connMonCoreObj);
 	connMonList[numConnectionMonitor] = connMonObj;
 
-	// also inform the connection that it is being monitored...
+	// inform the connection that it is being monitored...
 	connInfo->ConnectionMonitorId = numConnectionMonitor;
+
+	// now init core object (depends on several datastructures allocated above)
+	connMonCoreObj->init();
 
     // not eating much memory anymore, got rid of all buffers
 	cpuSnnSz.monitorInfoSize += sizeof(ConnectionMonitor*);
@@ -986,21 +989,6 @@ ConnectionMonitor* CpuSNN::setConnectionMonitor(int grpIdPre, int grpIdPost, FIL
 
 	return connMonObj;
 }
-
-/*
-void CpuSNN::setConnectionMonitor(int grpIdPre, int grpIdPost, ConnectionMonitorCore* connectionMon) {
-	// store the grpId for further reference
-	connMonGrpIdPre[numConnectionMonitor] = grpIdPre;
-	connMonGrpIdPost[numConnectionMonitor] = grpIdPost;
-
-	// also inform the grp that it is being monitored...
-	grp_Info[grpIdPre].ConnectionMonitorId = numConnectionMonitor;
-
-	connBufferCallback[numConnectionMonitor] = connectionMon; // Default value of _netMon is NULL
-
-	numConnectionMonitor++;
-}
-*/
 
 // sets up a spike generator
 void CpuSNN::setSpikeGenerator(int grpId, SpikeGeneratorCore* spikeGen) {
@@ -3243,6 +3231,27 @@ void CpuSNN::initSynapticWeights() {
 	resetSynapticConnections(false);
 }
 
+// checks whether a connection ID contains plastic synapses O(#connections)
+bool CpuSNN::isConnectionPlastic(short int connId) {
+	assert(connId!=ALL);
+	assert(connId<numConnections);
+
+	// search linked list for right connection ID
+	grpConnectInfo_t* connInfo = connectBegin;
+	bool isPlastic = false;
+	while (connInfo) {
+		if (connId == connInfo->connId) {
+			// get syn wt type from connection property
+			isPlastic = GET_FIXED_PLASTIC(connInfo->connProp);
+			break;
+		}
+
+		connInfo = connInfo->next;
+	}
+
+	return isPlastic;
+}
+
 // checks whether the numN* class members are consistent and complete
 bool CpuSNN::isNumNeuronsConsistent() {
 	int nExcPois = 0;
@@ -4234,9 +4243,10 @@ void CpuSNN::updateAfterMaxTime() {
 	resetPropogationBuffer();
 }
 
-
+// this function is usually called every second, but it can also be called via ConnectionMonitorCore::takeSnapshot
 void CpuSNN::updateConnectionMonitor(int connId) {
 	grpConnectInfo_t* connInfo = connectBegin;
+//	unsigned long int before = get_time_ms64();
 
 	// loop over all connections and find the ones with Connection Monitors
 	while (connInfo) {
@@ -4247,13 +4257,13 @@ void CpuSNN::updateConnectionMonitor(int connId) {
 
 			// copy the weights for a given post-group from device
 			// \TODO: check if the weights for this grpIdPost have already been copied
-			// \TODO: even better, but tricky, make copyWeightState connection-based
-			if (simMode_ == GPU_MODE) {
+			// \TODO: even better, but tricky because of ordering, make copyWeightState connection-based
+			if (simMode_==GPU_MODE) {
 				copyWeightState(&cpuNetPtrs, &cpu_gpuNetPtrs, cudaMemcpyDeviceToHost, false, grpIdPost);
 			}
 
-			// clear weight matrix
-			connMonCoreList[monId]->clear();
+			// update time stamp of connection monitor
+			connMonCoreList[monId]->updateTime(simTime);
 
 			for (int postId=grp_Info[grpIdPost].StartN; postId<=grp_Info[grpIdPost].EndN; postId++) {
 				unsigned int pos_ij = cumulativePre[postId];
@@ -4272,6 +4282,7 @@ void CpuSNN::updateConnectionMonitor(int connId) {
 
 		connInfo = connInfo->next;
 	}
+//	printf("updateConnectionMonitor: %lu ms\n",get_time_ms64()-before);
 }
 
 
@@ -4591,6 +4602,8 @@ void CpuSNN::updateWeights() {
 				//	if (i==grp_Info[g].StartN)
 				//		KERNEL_DEBUG("%1.2f %1.2f \t", wt[offset+j]*10, wtChange[offset+j]*10);
 				float effectiveWtChange = stdpScaleFactor_ * wtChange[offset + j];
+//				if (wtChange[offset+j])
+//					printf("connId=%d, wtChange[%d]=%f\n",cumConnIdPre[offset+j],offset+j,wtChange[offset+j]);
 
 				// homeostatic weight update
 				// FIXME: check WithESTDPtype and WithISTDPtype first and then do weight change update
