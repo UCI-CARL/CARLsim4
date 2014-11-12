@@ -286,12 +286,11 @@ public:
 
 	//! Sets the weight and weight change update parameters
 	/*!
-	 * \param[in] updateWeightInterval the interval between two weight update.
-	 * \param[in] updateWeightChangeInterval the interval between two weight update.
-	 * \param[in] tauWeightChange the decay time constant of weight change (wtChange)
+	 * \param[in] wtANDwtChangeUpdateInterval the interval between two wt (weight) and wtChange (weight change) update.
+	 * \param[in] enableWtChangeDecay enable weight change decay
+	 * \param[in] wtChangeDecay the decay ratio of weight change (wtChange)
 	 */
-	void setWeightAndWeightChangeUpdate(updateInterval_t updateWeightInterval, updateInterval_t updateWeightChangeInterval,
-										int tauWeightChange);
+	void setWeightAndWeightChangeUpdate(updateInterval_t wtANDwtChangeUpdateInterval, bool enableWtChangeDecay, float wtChangeDecay);
 
 	// +++++ PUBLIC METHODS: RUNNING A SIMULATION +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
@@ -1044,12 +1043,10 @@ private:
 	uint32_t*	spikeGenBits;
 
 	// weight update parameter
-	int wtUpdateInterval_;
-	int wtUpdateIntervalCnt_;
+	int wtANDwtChangeUpdateInterval_;
+	int wtANDwtChangeUpdateIntervalCnt_;
 	float stdpScaleFactor_;
-	int wtChangeUpdateInterval_;
 	float wtChangeDecay_; //!< the wtChange decay
-
 };
 
 #endif

@@ -237,9 +237,9 @@ TEST(Interface, CARLsimState) {
 	EXPECT_DEATH({sim->setSTDP(g1, true, STANDARD, 1.0, 2.0, 3.0, 4.0);},"");
 	EXPECT_DEATH({sim->setSTP(g1, true, 1.0, 2.0, 3.0);},"");
 	EXPECT_DEATH({sim->setSTP(g1, true);},"");
-	EXPECT_DEATH({sim->setWeightAndWeightChangeUpdate();},"");
+	EXPECT_DEATH({sim->setWeightAndWeightChangeUpdate(INTERVAL_1000MS, true, 0.9f);},"");
 	EXPECT_DEATH({sim->setupNetwork();},"");
-	EXPECT_DEATH({sim->readNetwork(NULL);},"");
+	EXPECT_DEATH({sim->loadSimulation(NULL);},"");
 	EXPECT_DEATH({sim->getSpikeCounter(0);},"");
 	EXPECT_DEATH({sim->setDefaultConductanceTimeConstants(1, 2, 3, 4, 5, 6);},"");
 	EXPECT_DEATH({sim->setDefaultHomeostasisParams(1.0, 2.0);},"");
@@ -255,7 +255,7 @@ TEST(Interface, CARLsimState) {
 
 	// test APIs that can't be called at EXE_STATE
 	EXPECT_DEATH({sim->setupNetwork();},"");
-	EXPECT_DEATH({sim->readNetwork(NULL);},"");
+	EXPECT_DEATH({sim->loadSimulation(NULL);},"");
 	EXPECT_DEATH({sim->reassignFixedWeights(0, wM, 4);},"");
 	EXPECT_DEATH({g2 = sim->createGroup("excit", 800, EXCITATORY_NEURON);},"");
 	EXPECT_DEATH({g2 = sim->createSpikeGeneratorGroup("input", 100, EXCITATORY_NEURON);},"");
@@ -276,7 +276,7 @@ TEST(Interface, CARLsimState) {
 	EXPECT_DEATH({sim->setSTDP(g1, true, STANDARD, 1.0, 2.0, 3.0, 4.0);},"");
 	EXPECT_DEATH({sim->setSTP(g1, true, 1.0, 2.0, 3.0);},"");
 	EXPECT_DEATH({sim->setSTP(g1, true);},"");
-	EXPECT_DEATH({sim->setWeightAndWeightChangeUpdate();},"");
+	EXPECT_DEATH({sim->setWeightAndWeightChangeUpdate(INTERVAL_1000MS, true, 0.9f);},"");
 	EXPECT_DEATH({sim->setConnectionMonitor(0, 1);},"");
 	EXPECT_DEATH({sim->setGroupMonitor(0);},"");
 	EXPECT_DEATH({sim->setSpikeCounter(0);},"");
