@@ -4499,7 +4499,6 @@ void CpuSNN::updateWeights() {
 						// just STDP weight update
 						wt[offset+j] += effectiveWtChange;
 					}
-					//wtChange[offset+j] = 0.0f;
 					break;
 				case DA_MOD:
 					if (grp_Info[g].WithHomeostasis) {
@@ -4508,7 +4507,6 @@ void CpuSNN::updateWeights() {
 					} else {
 						wt[offset+j] += cpuNetPtrs.grpDA[g] * effectiveWtChange;
 					}
-					//wtChange[offset+j] *= wtChangeDecay_;
 					break;
 				case UNKNOWN_STDP:
 				default:
