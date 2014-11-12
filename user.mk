@@ -42,7 +42,7 @@ EO_PTI_DIR ?= /opt/CARL/carlsim_eo_pti
 #------------------------------------------------------------------------------
 # path of evolutionary computation in java installation for ECJ-PTI CARLsim
 # support
-ECJ_DIR ?= /home/tingshuc/software/ecj
+ECJ_DIR ?= /opt/ecj
 ECJ_PTI_DIR ?= /opt/CARL/carlsim_ecj_pti
 
 #------------------------------------------------------------------------------
