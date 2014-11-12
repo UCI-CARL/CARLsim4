@@ -294,7 +294,7 @@ TEST(STDP, DASTDPWeightBoost) {
 					sim->setSTDP(g1, true, DA_MOD, alphaLTP, tauLTP, alphaLTD, tauLTD);
 				}
 
-				sim->setWeightAndWeightChangeUpdate(INTERVAL_10MS, INTERVAL_10MS, 100);
+				sim->setWeightAndWeightChangeUpdate(INTERVAL_10MS, true, 0.99f);
 
 				// set up spike controller on DA neurons
 				sim->setSpikeGenerator(gda, spikeCtrl);
@@ -333,7 +333,7 @@ TEST(STDP, DASTDPWeightBoost) {
 							}
 
 							//if (diff < 0 && diff >= -20)
-							//printf("LTD\n");
+							//	printf("LTD\n");
 						}
 					}
 				}

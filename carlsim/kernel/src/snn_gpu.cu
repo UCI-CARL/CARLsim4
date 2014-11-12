@@ -1247,7 +1247,6 @@ __device__ void updateSynapticWeights(int& nid, unsigned int& jpos, int& grpId, 
 	float t_effectiveWtChange = gpuNetInfo.stdpScaleFactor * t_wtChange;
 	float t_maxWt = gpuPtrs.maxSynWt[jpos];
 
-	// FIXME: check WithESTDPtype and WithISTDPtype first and then do weight change update
 	switch (gpuGrpInfo[grpId].WithESTDPtype) {
 	case STANDARD:
 		if (gpuGrpInfo[grpId].WithHomeostasis) {
@@ -1293,14 +1292,12 @@ __device__ void updateSynapticWeights(int& nid, unsigned int& jpos, int& grpId, 
 		// we shouldn't even be here if !WithSTDP
 		break;
 	}
-	// FIXME: MB - I agree with MDR, I think this is wrong
-	t_wtChange *= gpuNetInfo.wtChangeDecay; // TSC - resume decay weight changes
-	//t_wtChange = 0; //MDR - don't decay weight changes, just set to 0
+
+	// It's user's choice to decay weight change or not
+	// see setWeightAndWeightChangeUpdate()
+	t_wtChange *= gpuNetInfo.wtChangeDecay;
 
 	// Check the synapse is excitatory or inhibitory first
-	//if (t_wt > t_maxWt) t_wt = t_maxWt;
-	//if (t_wt < 0)  	  t_wt = 0.0f;
-
 	if (t_maxWt >= 0) { // excitatory synapse
 		if (t_wt >= t_maxWt) t_wt = t_maxWt;
 		if (t_wt < 0) t_wt = 0.0;
@@ -3485,11 +3482,15 @@ void CpuSNN::allocateSNN_GPU() {
 		KERNEL_DEBUG("\tWithSTDP: %d",(int)grp_Info[i].WithSTDP);
 		if (grp_Info[i].WithSTDP) {
 			KERNEL_DEBUG("\t\tE-STDP type: %s",stdpType_string[grp_Info[i].WithESTDPtype]);
+			KERNEL_DEBUG("\t\tTAU_LTP_INV_EXC: %f",grp_Info[i].TAU_LTP_INV_EXC);
+			KERNEL_DEBUG("\t\tTAU_LTD_INV_EXC: %f",grp_Info[i].TAU_LTD_INV_EXC);
+			KERNEL_DEBUG("\t\tALPHA_LTP_EXC: %f",grp_Info[i].ALPHA_LTP_EXC);
+			KERNEL_DEBUG("\t\tALPHA_LTD_EXC: %f",grp_Info[i].ALPHA_LTD_EXC);
 			KERNEL_DEBUG("\t\tI-STDP type: %s",stdpType_string[grp_Info[i].WithISTDPtype]);
-			KERNEL_DEBUG("\t\tTAU_LTP_INV: %f",grp_Info[i].TAU_LTP_INV_EXC);
-			KERNEL_DEBUG("\t\tTAU_LTD_INV: %f",grp_Info[i].TAU_LTD_INV_EXC);
-			KERNEL_DEBUG("\t\tALPHA_LTP: %f",grp_Info[i].ALPHA_LTP_EXC);
-			KERNEL_DEBUG("\t\tALPHA_LTD: %f",grp_Info[i].ALPHA_LTD_EXC);
+			KERNEL_DEBUG("\t\tTAU_LTP_INV_INB: %f",grp_Info[i].TAU_LTP_INV_INB);
+			KERNEL_DEBUG("\t\tTAU_LTD_INV_INB: %f",grp_Info[i].TAU_LTD_INV_INB);
+			KERNEL_DEBUG("\t\tALPHA_LTP_INB: %f",grp_Info[i].ALPHA_LTP_INB);
+			KERNEL_DEBUG("\t\tALPHA_LTD_INB: %f",grp_Info[i].ALPHA_LTD_INB);
 			KERNEL_DEBUG("\t\tLAMDA: %f",grp_Info[i].LAMDA);
 			KERNEL_DEBUG("\t\tDELTA: %f",grp_Info[i].DELTA);
 			KERNEL_DEBUG("\t\tBETA_LTP: %f",grp_Info[i].BETA_LTP);

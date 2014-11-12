@@ -130,7 +130,7 @@ int main()
 	// enable COBA, set up STDP, enable dopamine-modulated STDP
 	sim.setConductances(true,5,150,6,150);
 	sim.setSTDP(g1, true, DA_MOD, ALPHA_LTP_EXC, TAU_LTP, ALPHA_LTD_EXC, TAU_LTD);
-	sim.setWeightAndWeightChangeUpdate(INTERVAL_10MS, INTERVAL_10MS, 100);
+	sim.setWeightAndWeightChangeUpdate(INTERVAL_10MS, true, 0.99f);
 
 	// set up spike controller on DA neurons
 	sim.setSpikeGenerator(gda, spikeCtrl);

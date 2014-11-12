@@ -241,7 +241,7 @@ TEST(Interface, CARLsimState) {
 	EXPECT_DEATH({sim->setISTDP(g1, true, STANDARD, ConstantSymmetricCurve(1.0, 2.0, 3.0, 4.0));},"");
 	EXPECT_DEATH({sim->setSTP(g1, true, 1.0, 2.0, 3.0);},"");
 	EXPECT_DEATH({sim->setSTP(g1, true);},"");
-	EXPECT_DEATH({sim->setWeightAndWeightChangeUpdate();},"");
+	EXPECT_DEATH({sim->setWeightAndWeightChangeUpdate(INTERVAL_1000MS, true, 0.9f);},"");
 	EXPECT_DEATH({sim->setupNetwork();},"");
 	EXPECT_DEATH({sim->loadSimulation(NULL);},"");
 	EXPECT_DEATH({sim->getSpikeCounter(0);},"");
@@ -284,7 +284,7 @@ TEST(Interface, CARLsimState) {
 	EXPECT_DEATH({sim->setISTDP(g1, true, STANDARD, ConstantSymmetricCurve(1.0, 2.0, 3.0, 4.0));},"");
 	EXPECT_DEATH({sim->setSTP(g1, true, 1.0, 2.0, 3.0);},"");
 	EXPECT_DEATH({sim->setSTP(g1, true);},"");
-	EXPECT_DEATH({sim->setWeightAndWeightChangeUpdate();},"");
+	EXPECT_DEATH({sim->setWeightAndWeightChangeUpdate(INTERVAL_1000MS, true, 0.9f);},"");
 	EXPECT_DEATH({sim->setConnectionMonitor(0, 1);},"");
 	EXPECT_DEATH({sim->setGroupMonitor(0);},"");
 	EXPECT_DEATH({sim->setSpikeCounter(0);},"");

@@ -7,6 +7,7 @@
 #include <cstdlib>
 #include <cstdio>
 #include <vector>
+#include <cmath>
 
 using namespace std;
 using namespace CARLsim_PTI;

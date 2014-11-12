@@ -500,7 +500,7 @@ void CpuSNN::printWeights(int preGrpId, int postGrpId) {
 		// for each postsynaptic group
 
 		fprintf(fpInf_,"Synapses from %s to %s (+/- change in last %d ms)\n",
-			(preGrpId==ALL)?"ALL":grp_Info2[preGrpId].Name.c_str(), grp_Info2[gPost].Name.c_str(), wtUpdateInterval_);
+			(preGrpId==ALL)?"ALL":grp_Info2[preGrpId].Name.c_str(), grp_Info2[gPost].Name.c_str(), wtANDwtChangeUpdateInterval_);
 
 		if (simMode_ == GPU_MODE) {
 			copyWeightState (&cpuNetPtrs, &cpu_gpuNetPtrs, cudaMemcpyDeviceToHost, false, gPost);

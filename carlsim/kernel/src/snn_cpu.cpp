@@ -631,41 +631,46 @@ void CpuSNN::setSTP(int grpId, bool isSet, float STP_U, float STP_tau_u, float S
 	}
 }
 
-void CpuSNN::setWeightAndWeightChangeUpdate(updateInterval_t wtUpdateInterval, updateInterval_t wtChangeUpdateInterval,
-											int tauWeightChange) {
-	switch (wtUpdateInterval) {
+void CpuSNN::setWeightAndWeightChangeUpdate(updateInterval_t wtANDwtChangeUpdateInterval, bool enableWtChangeDecay, float wtChangeDecay) {
+	assert(wtChangeDecay > 0.0f && wtChangeDecay < 1.0f);
+	
+	switch (wtANDwtChangeUpdateInterval) {
 		case INTERVAL_10MS:
-			wtUpdateInterval_ = 10;
+			wtANDwtChangeUpdateInterval_ = 10;
+			break;
+		case INTERVAL_100MS:
+			wtANDwtChangeUpdateInterval_ = 100;
+			break;
+		case INTERVAL_1000MS:
+		default:
+			wtANDwtChangeUpdateInterval_ = 1000;
+			break;
+	}
+	
+	if (enableWtChangeDecay) {
+		// set up stdp factor according to update interval
+		switch (wtANDwtChangeUpdateInterval) {
+		case INTERVAL_10MS:
 			stdpScaleFactor_ = 0.005f;
 			break;
 		case INTERVAL_100MS:
-			wtUpdateInterval_ = 100;
 			stdpScaleFactor_ = 0.05f;
 			break;
 		case INTERVAL_1000MS:
 		default:
-			wtUpdateInterval_ = 1000;
 			stdpScaleFactor_ = 0.5f;
 			break;
+		}
+		// set up weight decay
+		wtChangeDecay_ = wtChangeDecay;
+	} else {
+		stdpScaleFactor_ = 1.0f;
+		wtChangeDecay_ = 0.0f;
 	}
 
-	switch (wtChangeUpdateInterval) {
-	case INTERVAL_10MS:
-		wtChangeUpdateInterval_ = 10;
-		break;
-	case INTERVAL_100MS:
-		wtChangeUpdateInterval_ = 100;
-		break;
-	case INTERVAL_1000MS:
-	default:
-		wtChangeUpdateInterval_ = 1000;
-		break;
-	}
-
-	wtChangeDecay_ = 1.0 - (1.0 / tauWeightChange);
-
-	KERNEL_INFO("Update weight every %d ms, stdpScaleFactor = %1.3f", wtUpdateInterval_, stdpScaleFactor_);
-	KERNEL_INFO("Update weight change every %d ms, wtChangeDecay = %1.3f", wtChangeUpdateInterval_, wtChangeDecay_);
+	KERNEL_INFO("Update weight and weight change every %d ms", wtANDwtChangeUpdateInterval_);
+	KERNEL_INFO("Weight Change Decay is %s", enableWtChangeDecay? "enabled" : "disable");
+	KERNEL_INFO("STDP scale factor = %1.3f, wtChangeDecay = %1.3f", stdpScaleFactor_, wtChangeDecay_);
 }
 
 
@@ -716,8 +721,8 @@ int CpuSNN::runNetwork(int _nsec, int _nmsec, bool printRunSummary, bool copySta
 			doGPUSim();
 
 		// update weight every updateInterval ms if plastic synapses present
-		if (!sim_with_fixedwts && (wtUpdateInterval_==++wtUpdateIntervalCnt_)) {
-			wtUpdateIntervalCnt_ = 0; // reset counter
+		if (!sim_with_fixedwts && (wtANDwtChangeUpdateInterval_==++wtANDwtChangeUpdateIntervalCnt_)) {
+			wtANDwtChangeUpdateIntervalCnt_ = 0; // reset counter
 
 			if (simMode_ == CPU_MODE) {
 				updateWeights();
@@ -731,7 +736,7 @@ int CpuSNN::runNetwork(int _nsec, int _nmsec, bool printRunSummary, bool copySta
 					for (int i = 0; i < numGrp; i++) {
 						int monitorId = grp_Info[i].GroupMonitorId;
 						if (monitorId != -1)
-							grpDABuffer[monitorId][simTimeMs / wtUpdateInterval_] = cpuNetPtrs.grpDA[i];
+							grpDABuffer[monitorId][simTimeMs / wtANDwtChangeUpdateInterval_] = cpuNetPtrs.grpDA[i];
 					}
 				}
 			}
@@ -1961,10 +1966,9 @@ void CpuSNN::CpuSNNinit() {
 	CUDA_RESET_TIMER(timer);
 
 	// default weight update parameter
-	wtUpdateInterval_ = 1000; // update weights every 1000 ms (default)
-	wtUpdateIntervalCnt_ = 0; // helper var to implement fast modulo
+	wtANDwtChangeUpdateInterval_ = 1000; // update weights every 1000 ms (default)
+	wtANDwtChangeUpdateIntervalCnt_ = 0; // helper var to implement fast modulo
 	stdpScaleFactor_ = 1.0f;
-	wtChangeUpdateInterval_ = 1000; // update weight change every 1000 ms (default)
 	wtChangeDecay_ = 0.0f;
 
 	// initialize parameters needed in snn_gpu.cu
@@ -4624,7 +4628,6 @@ void CpuSNN::updateWeights() {
 						// just STDP weight update
 						wt[offset+j] += effectiveWtChange;
 					}
-					wtChange[offset+j] = 0.0f;
 					break;
 				case DA_MOD:
 					if (grp_Info[g].WithHomeostasis) {
@@ -4633,7 +4636,6 @@ void CpuSNN::updateWeights() {
 					} else {
 						wt[offset+j] += cpuNetPtrs.grpDA[g] * effectiveWtChange;
 					}
-					wtChange[offset+j] *= wtChangeDecay_;
 					break;
 				case UNKNOWN_STDP:
 				default:
@@ -4649,7 +4651,6 @@ void CpuSNN::updateWeights() {
 						// just STDP weight update
 						wt[offset+j] += effectiveWtChange;
 					}
-					wtChange[offset+j] = 0.0f;
 					break;
 				case DA_MOD:
 					if (grp_Info[g].WithHomeostasis) {
@@ -4658,13 +4659,16 @@ void CpuSNN::updateWeights() {
 					} else {
 						wt[offset+j] += cpuNetPtrs.grpDA[g] * effectiveWtChange;
 					}
-					wtChange[offset+j] *= wtChangeDecay_;
 					break;
 				case UNKNOWN_STDP:
 				default:
 					// we shouldn't even be in here if !WithSTDP
 					break;
 				}
+
+				// It is users' choice to decay weight change or not
+				// see setWeightAndWeightChangeUpdate()
+				wtChange[offset+j] *= wtChangeDecay_;
 
 				// if this is an excitatory or inhibitory synapse
 				if (maxSynWt[offset + j] >= 0) {

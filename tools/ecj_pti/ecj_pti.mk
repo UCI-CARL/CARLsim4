@@ -12,7 +12,7 @@ PHONY: ecj_pti install_ecj_pti
 ecj_pti: $(ecj_pti_jar)
 
 $(ecj_pti_jar):
-	ant jar -Dendorsed.classpath=$(ECJ_DIR)/ecj.jar
+	ant jar -Dendorsed.classpath=$(ECJ_DIR)/jar/ecj.22.jar
 
 install_ecj_pti: $(ecj_pti_jar)
 	@test -d $(ECJ_PTI_DIR) || mkdir -p $(ECJ_PTI_DIR)

@@ -24,6 +24,7 @@
   <ItemGroup>
     <ClCompile Include="carlsim_tests_common.cpp" />
     <ClCompile Include="coba.cpp" />
+    <ClCompile Include="connect.cpp" />
     <ClCompile Include="core.cpp" />
     <ClCompile Include="cuba.cpp" />
     <ClCompile Include="interface.cpp" />
