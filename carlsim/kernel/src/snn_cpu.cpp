@@ -637,8 +637,8 @@ int CpuSNN::runNetwork(int _nsec, int _nmsec, bool printRunSummary, bool copySta
 	// first-time run: inform the user the simulation is running now
 	if (simTime==0) {
 		KERNEL_INFO("");
-		KERNEL_INFO("*******************      Running %s Simulation      ****************************\n",
-			simMode_==GPU_MODE?"GPU":"CPU");
+		KERNEL_INFO("*******************      Running %s Simulation on GPU%d     ****************************\n",
+			simMode_==GPU_MODE?"GPU":"CPU", ithGPU_);
 	}
 
 	// reset all spike counters

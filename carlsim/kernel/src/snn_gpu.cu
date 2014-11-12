@@ -346,8 +346,9 @@ __device__ float testFireCntf2;
 
 
 // Allocation of the group and its id..
-void CpuSNN::allocateGroupId()
-{
+void CpuSNN::allocateGroupId() {
+	checkAndSetGPUDevice();
+
 	assert (cpu_gpuNetPtrs.groupIdInfo == NULL);
 	int3* tempNeuronAllocation = (int3*)malloc(sizeof(int3) * net_Info.numGrp);
 	for (int g = 0; g < net_Info.numGrp; g++) {
@@ -383,6 +384,8 @@ void CpuSNN::allocateGroupId()
 // 1012  :   2    :    88
 //-----------------------
 int CpuSNN::allocateStaticLoad(int bufSize) {
+	checkAndSetGPUDevice();
+
 	// only one thread does the static load table
 	int   bufferCnt = 0;
 	for (int g = 0; g < net_Info.numGrp; g++) {
@@ -617,8 +620,9 @@ __global__ void gpu_resetSpikeCnt(int _startGrp, int _endGrp)
 }
 
 // wrapper to call resetSpikeCnt
-void CpuSNN::resetSpikeCnt_GPU(int _startGrp, int _endGrp)
-{
+void CpuSNN::resetSpikeCnt_GPU(int _startGrp, int _endGrp) {
+	checkAndSetGPUDevice();
+
 	int blkSize  = 128;
 	int gridSize = 64;
 	gpu_resetSpikeCnt<<<gridSize,blkSize>>> (_startGrp,_endGrp);
@@ -699,8 +703,9 @@ __device__ inline bool getSpikeGenBit_GPU (unsigned int& nidPos)
 }
 
 // setSpikeGenBit for given neuron and group..
-void CpuSNN::setSpikeGenBit_GPU(unsigned int nid, int grp)
-{
+void CpuSNN::setSpikeGenBit_GPU(unsigned int nid, int grp) {
+	checkAndSetGPUDevice();
+
 	unsigned int nidPos    = (nid - grp_Info[grp].StartN + grp_Info[grp].Noffset);
 	unsigned int nidBitPos = nidPos%32;
 	unsigned int nidIndex  = nidPos/32;
@@ -1709,16 +1714,16 @@ float errVal[MAX_NUM_BLOCKS][20];
 // the simulator kernel sets appropriate errors  and returns some important values in the 
 // array "retErrVal".
 /**********************************************************************************************/
-int CpuSNN::checkErrors(std::string calledKernel, int numBlocks)
-{
+int CpuSNN::checkErrors(std::string calledKernel, int numBlocks) {
+	checkAndSetGPUDevice();
+
 	int errCode = NO_KERNEL_ERRORS;
 	#if(!ENABLE_MORE_CHECK)
 	return errCode;
 	#else
 	void* devPtr;
 	int errCnt  = 0;
-	   
-	   
+
 	cudaThreadSynchronize();
 	cudaGetSymbolAddress(&devPtr, retErrCode);
 	CUDA_CHECK_ERRORS( cudaMemcpy(&errCode, devPtr, sizeof(int), cudaMemcpyDeviceToHost));
@@ -1758,8 +1763,9 @@ int CpuSNN::checkErrors(std::string calledKernel, int numBlocks)
 #endif
 }
 
-void CpuSNN::copyPostConnectionInfo(network_ptr_t* dest, int allocateMem)
-{
+void CpuSNN::copyPostConnectionInfo(network_ptr_t* dest, int allocateMem) {
+	checkAndSetGPUDevice();
+
 	assert(dest->memType == GPU_MODE);
 	if (allocateMem) {
 		assert(dest->allocated == false);
@@ -1796,8 +1802,8 @@ void CpuSNN::copyPostConnectionInfo(network_ptr_t* dest, int allocateMem)
 	net_Info.preSynCnt = preSynCnt;
 }
 
-void CpuSNN::copyConnections(network_ptr_t* dest, int kind, int allocateMem)
-{
+void CpuSNN::copyConnections(network_ptr_t* dest, int kind, int allocateMem) {
+	checkAndSetGPUDevice();
 	// void* devPtr;
 	// allocateMem memory only if destination memory is not allocated !!!
 	assert(allocateMem && (dest->allocated != 1));
@@ -1879,8 +1885,9 @@ void CpuSNN::copyConnections(network_ptr_t* dest, int kind, int allocateMem)
 	CUDA_CHECK_ERRORS(cudaMemset(dest->testVar2, 0, sizeof(float) * numN));
 }
 
-void CpuSNN::checkDestSrcPtrs(network_ptr_t* dest, network_ptr_t* src, cudaMemcpyKind kind, int allocateMem, int grpId)
-{
+void CpuSNN::checkDestSrcPtrs(network_ptr_t* dest, network_ptr_t* src, cudaMemcpyKind kind, int allocateMem, int grpId) {
+	checkAndSetGPUDevice();
+
 	if(kind==cudaMemcpyHostToDevice) {
 		assert(dest->memType == GPU_MODE);
 		assert(src->memType  == CPU_MODE);
@@ -1906,8 +1913,9 @@ void CpuSNN::checkDestSrcPtrs(network_ptr_t* dest, network_ptr_t* src, cudaMemcp
 	assert(src->allocated==true);
 }
 
-void CpuSNN::copyFiringStateFromGPU (int grpId)
-{
+void CpuSNN::copyFiringStateFromGPU (int grpId) {
+	checkAndSetGPUDevice();
+
 	int ptrPos, length;
 
 	if(grpId == -1) {
@@ -1930,6 +1938,8 @@ void CpuSNN::copyFiringStateFromGPU (int grpId)
 }
 
 void CpuSNN::copyConductanceAMPA(network_ptr_t* dest, network_ptr_t* src, cudaMemcpyKind kind, int allocateMem, int grpId) {
+	checkAndSetGPUDevice();
+
 	assert(isSimulationWithCOBA());
 
 	int ptrPos, length;
@@ -1954,6 +1964,8 @@ void CpuSNN::copyConductanceAMPA(network_ptr_t* dest, network_ptr_t* src, cudaMe
 }
 
 void CpuSNN::copyConductanceNMDA(network_ptr_t* dest, network_ptr_t* src, cudaMemcpyKind kind, int allocateMem, int grpId) {
+	checkAndSetGPUDevice();
+
 	assert(isSimulationWithCOBA());
 
 	int ptrPos, length;
@@ -1987,6 +1999,8 @@ void CpuSNN::copyConductanceNMDA(network_ptr_t* dest, network_ptr_t* src, cudaMe
 }
 
 void CpuSNN::copyConductanceGABAa(network_ptr_t* dest, network_ptr_t* src, cudaMemcpyKind kind, int allocateMem, int grpId) {
+	checkAndSetGPUDevice();
+
 	assert(isSimulationWithCOBA());
 
 	int ptrPos, length;
@@ -2010,6 +2024,8 @@ void CpuSNN::copyConductanceGABAa(network_ptr_t* dest, network_ptr_t* src, cudaM
 }
 
 void CpuSNN::copyConductanceGABAb(network_ptr_t* dest, network_ptr_t* src, cudaMemcpyKind kind, int allocateMem, int grpId) {
+	checkAndSetGPUDevice();
+
 	assert(isSimulationWithCOBA());
 
 	int ptrPos, length;
@@ -2043,6 +2059,8 @@ void CpuSNN::copyConductanceGABAb(network_ptr_t* dest, network_ptr_t* src, cudaM
 }
 
 void CpuSNN::copyConductanceState(network_ptr_t* dest, network_ptr_t* src, cudaMemcpyKind kind, int allocateMem, int grpId) {
+	checkAndSetGPUDevice();
+
 	assert(isSimulationWithCOBA());
 
 	// check that the destination pointer is properly allocated..
@@ -2055,8 +2073,9 @@ void CpuSNN::copyConductanceState(network_ptr_t* dest, network_ptr_t* src, cudaM
 }
 
 
-void CpuSNN::copyNeuronState(network_ptr_t* dest, network_ptr_t* src, cudaMemcpyKind kind, int allocateMem, int grpId)
-{
+void CpuSNN::copyNeuronState(network_ptr_t* dest, network_ptr_t* src, cudaMemcpyKind kind, int allocateMem, int grpId) {
+	checkAndSetGPUDevice();
+
 	int ptrPos, length, length2;
 
 	// check that the destination pointer is properly allocated..
@@ -2116,8 +2135,9 @@ void CpuSNN::copyNeuronState(network_ptr_t* dest, network_ptr_t* src, cudaMemcpy
 	}
 }
 
-void CpuSNN::copyGroupState(network_ptr_t* dest, network_ptr_t* src,  cudaMemcpyKind kind, int allocateMem, int grpId)
-{
+void CpuSNN::copyGroupState(network_ptr_t* dest, network_ptr_t* src,  cudaMemcpyKind kind, int allocateMem, int grpId) {
+	checkAndSetGPUDevice();
+
 	if (allocateMem) {
 		CUDA_CHECK_ERRORS(cudaMalloc((void**) &dest->grpDA, sizeof(float) * numGrp)); 
 		CUDA_CHECK_ERRORS(cudaMalloc((void**) &dest->grp5HT, sizeof(float) * numGrp)); 
@@ -2130,8 +2150,9 @@ void CpuSNN::copyGroupState(network_ptr_t* dest, network_ptr_t* src,  cudaMemcpy
 	CUDA_CHECK_ERRORS(cudaMemcpy(dest->grpNE, src->grpNE, sizeof(float) * numGrp, kind));
 }
 
-void CpuSNN::copyNeuronParameters(network_ptr_t* dest, int kind, int allocateMem, int grpId)
-{
+void CpuSNN::copyNeuronParameters(network_ptr_t* dest, int kind, int allocateMem, int grpId) {
+	checkAndSetGPUDevice();
+
 	int ptrPos, length;
 
 	if (dest->allocated && allocateMem) {
@@ -2198,6 +2219,8 @@ void CpuSNN::copyNeuronParameters(network_ptr_t* dest, int kind, int allocateMem
 }
 
 void CpuSNN::copySTPState(network_ptr_t* dest, network_ptr_t* src, cudaMemcpyKind kind, int allocateMem) {
+	checkAndSetGPUDevice();
+
 	if(allocateMem) {
 		assert(dest->stpu==NULL);
 		assert(dest->stpx==NULL);
@@ -2262,8 +2285,9 @@ void CpuSNN::copySTPState(network_ptr_t* dest, network_ptr_t* src, cudaMemcpyKin
 	delete [] tmp_stp;
 }
 
-void CpuSNN::copyWeightState (network_ptr_t* dest, network_ptr_t* src,  cudaMemcpyKind kind, int allocateMem, int grpId)
-{
+void CpuSNN::copyWeightState (network_ptr_t* dest, network_ptr_t* src,  cudaMemcpyKind kind, int allocateMem, int grpId) {
+	checkAndSetGPUDevice();
+
 	unsigned int length_wt, cumPos_syn;
 
 	assert(allocateMem==0);
@@ -2312,6 +2336,8 @@ void CpuSNN::copyWeightState (network_ptr_t* dest, network_ptr_t* src,  cudaMemc
 
 // allocate necessary memory for the GPU...
 void CpuSNN::copyState(network_ptr_t* dest, int allocateMem) {
+	checkAndSetGPUDevice();
+
 	assert(numN != 0);
 	assert(preSynCnt !=0);
 
@@ -2396,6 +2422,8 @@ void CpuSNN::copyState(network_ptr_t* dest, int allocateMem) {
 
 // spikeGeneratorUpdate on GPUs..
 void CpuSNN::spikeGeneratorUpdate_GPU() {
+	checkAndSetGPUDevice();
+
 	assert(cpu_gpuNetPtrs.allocated);
 
 	// this part of the code is useful for poisson spike generator function..
@@ -2424,6 +2452,8 @@ void CpuSNN::spikeGeneratorUpdate_GPU() {
 }
 
 void CpuSNN::findFiring_GPU(int gridSize, int blkSize) {
+	checkAndSetGPUDevice();
+
 	int errCode;
 		
 	assert(cpu_gpuNetPtrs.allocated);
@@ -2440,6 +2470,8 @@ void CpuSNN::findFiring_GPU(int gridSize, int blkSize) {
 }
 
 void CpuSNN::printGpuLoadBalance(bool init, int numBlocks) {
+	checkAndSetGPUDevice();
+
 	void* devPtr;
 	static int	 cpu_tmp_val[MAX_BLOCKS][LOOP_CNT];
 	cudaGetSymbolAddress(&devPtr, tmp_val);
@@ -2466,6 +2498,8 @@ void CpuSNN::printGpuLoadBalance(bool init, int numBlocks) {
 // get spikes from GPU SpikeCounter
 // grpId cannot be ALL (can only get 1 bufPos at a time)
 int* CpuSNN::getSpikeCounter_GPU(int grpId) {
+	checkAndSetGPUDevice();
+
 	assert(grpId>=0); assert(grpId<numGrp);
 
 	int bufPos = grp_Info[grpId].spkCntBufPos;
@@ -2478,6 +2512,8 @@ int* CpuSNN::getSpikeCounter_GPU(int grpId) {
 // reset SpikeCounter
 // grpId and connectId cannot be ALL (this is handled by the CPU side)
 void CpuSNN::resetSpikeCounter_GPU(int grpId) {
+	checkAndSetGPUDevice();
+
 	assert(grpId>=0); assert(grpId<numGrp);
 
 	int bufPos = grp_Info[grpId].spkCntBufPos;
@@ -2485,8 +2521,8 @@ void CpuSNN::resetSpikeCounter_GPU(int grpId) {
 }
 
 
-void CpuSNN::updateTimingTable_GPU()
-{
+void CpuSNN::updateTimingTable_GPU() {
+	checkAndSetGPUDevice();
 
 	assert(cpu_gpuNetPtrs.allocated);
 
@@ -2500,8 +2536,8 @@ void CpuSNN::updateTimingTable_GPU()
 	return;
 }
 
-void CpuSNN::doCurrentUpdate_GPU()
-{
+void CpuSNN::doCurrentUpdate_GPU() {
+	checkAndSetGPUDevice();
 
 	assert(cpu_gpuNetPtrs.allocated);
 
@@ -2524,6 +2560,8 @@ void CpuSNN::doCurrentUpdate_GPU()
 }
 
 void CpuSNN::doSTPUpdateAndDecayCond_GPU(int gridSize, int blkSize) {
+	checkAndSetGPUDevice();
+
 	int errCode;
 		
 	assert(cpu_gpuNetPtrs.allocated);
@@ -2677,6 +2715,8 @@ void CpuSNN::CpuSNNinit_GPU() {
 
 
 void CpuSNN::initGPU(int gridSize, int blkSize) {
+	checkAndSetGPUDevice();
+
 	assert(cpu_gpuNetPtrs.allocated);
 
 	kernel_init <<< gridSize, blkSize >>> ();
@@ -2691,8 +2731,9 @@ void CpuSNN::initGPU(int gridSize, int blkSize) {
 	checkInitialization2();
 }
 
-void CpuSNN::checkInitialization(char* testString)
-{
+void CpuSNN::checkInitialization(char* testString) {
+	checkAndSetGPUDevice();
+
 	KERNEL_DEBUG("gpu_checkInitialization()");
 	void *devPtr;
 
@@ -2726,8 +2767,9 @@ void CpuSNN::checkInitialization(char* testString)
   CUDA_CHECK_ERRORS(cudaMemcpyToSymbol(timingTableD2, timeTableD2, sizeof(int)*(10), 0, cudaMemcpyHostToDevice));
 }
 
-void CpuSNN::checkInitialization2(char* testString)
-{
+void CpuSNN::checkInitialization2(char* testString) {
+	checkAndSetGPUDevice();
+
 	KERNEL_DEBUG("CheckInitialization2: Time = %d", simTime);
 	void *devPtr;
 	memset(errVal, 0, sizeof(errVal));
@@ -2752,8 +2794,9 @@ void CpuSNN::checkInitialization2(char* testString)
 	}
 }
 
-void CpuSNN::printCurrentInfo(FILE* fp)
-{
+void CpuSNN::printCurrentInfo(FILE* fp) {
+	checkAndSetGPUDevice();
+
 	KERNEL_WARN("Calling printCurrentInfo with fp is deprecated");
 	// copy neuron input current...
 	KERNEL_DEBUG("Total Synaptic updates:");
@@ -2767,8 +2810,9 @@ void CpuSNN::printCurrentInfo(FILE* fp)
 }
 
 
-void CpuSNN::printTestVarInfo(FILE* fp, char* testString, bool test1, bool test2, bool test12, int subVal, int grouping1, int grouping2)
-{
+void CpuSNN::printTestVarInfo(FILE* fp, char* testString, bool test1, bool test2, bool test12, int subVal, int grouping1, int grouping2) {
+	checkAndSetGPUDevice();
+
 	int cnt=0;
 
 	KERNEL_WARN("Calling printTestVarInfo with fp is deprecated");
@@ -2855,6 +2899,8 @@ void CpuSNN::printTestVarInfo(FILE* fp, char* testString, bool test1, bool test2
 
 // TODO FIXME there's more...
 void CpuSNN::deleteObjects_GPU() {
+	checkAndSetGPUDevice();
+
 	// cudaFree all device pointers
 	CUDA_CHECK_ERRORS( cudaFree(cpu_gpuNetPtrs.voltage) );
 	CUDA_CHECK_ERRORS( cudaFree(cpu_gpuNetPtrs.recovery) );
@@ -2934,8 +2980,9 @@ void CpuSNN::deleteObjects_GPU() {
 }
 
 
-void CpuSNN::testSpikeSenderReceiver(FILE* fpLog, int simTime)
-{
+void CpuSNN::testSpikeSenderReceiver(FILE* fpLog, int simTime) {
+	checkAndSetGPUDevice();
+
 	KERNEL_WARN("Calling testSpikeSenderReceiver with fpLog is deprecated");
 	if(0) {
 		int EnumFires = 0; int InumFires = 0;
@@ -2976,6 +3023,8 @@ void CpuSNN::testSpikeSenderReceiver(FILE* fpLog, int simTime)
 }
 
 void CpuSNN::globalStateUpdate_GPU() {
+	checkAndSetGPUDevice();
+
 	int blkSize  = 128;
 	int gridSize = 64;
 
@@ -2996,8 +3045,9 @@ void CpuSNN::globalStateUpdate_GPU() {
 	assert(errCode == NO_KERNEL_ERRORS);
 }
 
-void CpuSNN::assignPoissonFiringRate_GPU()
-{
+void CpuSNN::assignPoissonFiringRate_GPU() {
+	checkAndSetGPUDevice();
+
 	assert(cpu_gpuNetPtrs.poissonFireRate != NULL);
 	for (int grpId=0; grpId < numGrp; grpId++) {
 		// given group of neurons belong to the poisson group....
@@ -3017,6 +3067,7 @@ void CpuSNN::assignPoissonFiringRate_GPU()
 }
 
 void CpuSNN::doGPUSim() {
+	checkAndSetGPUDevice();
 	// for all Spike Counters, reset their spike counts to zero if simTime % recordDur == 0
 	if (sim_with_spikecounters) {
 		checkSpikeCounterRecordDur();
@@ -3062,8 +3113,9 @@ void CpuSNN::doGPUSim() {
 	}
 }
 
-void CpuSNN::updateFiringTable_GPU()
-{			
+void CpuSNN::updateFiringTable_GPU() {
+	checkAndSetGPUDevice();
+
 	int blkSize  = 128;
 	int gridSize = 64;
 	//void* devPtr;
@@ -3074,8 +3126,9 @@ void CpuSNN::updateFiringTable_GPU()
 	kernel_updateFiring<<<gridSize, blkSize>>>();
 }
 
-void CpuSNN::updateWeights_GPU()
-{			
+void CpuSNN::updateWeights_GPU() {
+	checkAndSetGPUDevice();
+
 	int blkSize  = 128;
 	int gridSize = 64;
 
@@ -3083,6 +3136,8 @@ void CpuSNN::updateWeights_GPU()
 }
 
 void CpuSNN::showStatus_GPU() {
+	checkAndSetGPUDevice();
+
 	int gpu_secD1fireCnt, gpu_secD2fireCnt;
 	CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &gpu_secD2fireCnt, secD2fireCnt, sizeof(int), 0, cudaMemcpyDeviceToHost));
 	CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &gpu_secD1fireCnt, secD1fireCnt, sizeof(int), 0, cudaMemcpyDeviceToHost));
@@ -3112,17 +3167,20 @@ __global__ void gpu_resetFiringInformation()
 }
 
 
-void CpuSNN::resetFiringInformation_GPU()
-{
+void CpuSNN::resetFiringInformation_GPU() {
+	checkAndSetGPUDevice();
+
 	int blkSize  = 128;
 	int gridSize = 64;
+
 	gpu_resetFiringInformation<<<gridSize,blkSize>>>();
 }
 
 
 
-void CpuSNN::copyFiringInfo_GPU()
-{
+void CpuSNN::copyFiringInfo_GPU() {
+	checkAndSetGPUDevice();
+
 	unsigned int gpu_secD1fireCnt, gpu_secD2fireCnt;
 	CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &gpu_secD2fireCnt, secD2fireCnt, sizeof(int), 0, cudaMemcpyDeviceToHost));
 	CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &gpu_secD1fireCnt, secD1fireCnt, sizeof(int), 0, cudaMemcpyDeviceToHost));
@@ -3141,8 +3199,7 @@ void CpuSNN::copyFiringInfo_GPU()
 }
 
 
-void CpuSNN::allocateNetworkParameters()
-{
+void CpuSNN::allocateNetworkParameters() {
 	net_Info.numN  = numN;
 	net_Info.numPostSynapses  = numPostSynapses;
 	net_Info.maxDelay  = maxDelay_;
@@ -3211,13 +3268,24 @@ void CpuSNN::checkGPUDevice() {
 	}
 	KERNEL_INFO("  - CUDA Compute Capability    =     %2d.%d\n", deviceProp.major, deviceProp.minor);
 	assert(deviceProp.major >= 1);
-	CUDA_DEVICE_RESET();
-	cudaSetDevice(dev);
+	//CUDA_DEVICE_RESET();
+	//cudaSetDevice(dev);
 	CUDA_GET_LAST_ERROR("cudaSetDevice failed\n");
 }
 
-void CpuSNN::copyWeightsGPU(unsigned int nid, int src_grp)
-{
+void CpuSNN::checkAndSetGPUDevice() {
+	int currentDevice;
+	cudaGetDevice(&currentDevice);
+
+	if (currentDevice != ithGPU_) {
+		KERNEL_DEBUG("Inconsistent GPU context [%d %d]", currentDevice, ithGPU_);
+		cudaSetDevice(ithGPU_);
+	}
+}
+
+void CpuSNN::copyWeightsGPU(unsigned int nid, int src_grp) {
+	checkAndSetGPUDevice();
+
 	assert(nid < numNReg);
 	unsigned int    cumId   =  cumulativePre[nid];
 	float* synWts  = &wt[cumId];
@@ -3237,12 +3305,15 @@ void CpuSNN::allocateSNN_GPU() {
 	}
 
 	// if we have already allocated the GPU data.. dont do it again...
-	if(gpuPoissonRand != NULL)
+	if(gpuPoissonRand != NULL) {
+		KERNEL_INFO("gpuPoissonRam != NULL");
 		return;
+	}
 
 	int gridSize = 64; int blkSize  = 128;
 
 	checkGPUDevice();
+	checkAndSetGPUDevice();
 
 	int numN=0;
 	for (int g=0;g<numGrp;g++) {
@@ -3418,14 +3489,17 @@ void CpuSNN::allocateSNN_GPU() {
 //This gets called when updateNetwork is called so setSTDP, setSTP, or setHomeostasis
 //should now work in GPU_MODE.
 void CpuSNN::copyGrpInfo_GPU() {
+	checkAndSetGPUDevice();
+
 	CUDA_CHECK_ERRORS(cudaMemcpyToSymbol("gpuGrpInfo", grp_Info, (net_Info.numGrp)*sizeof(group_info_t), 0, cudaMemcpyHostToDevice));
 }
 
 //Copy all the appropriate state variables back to the GPU now that they have been
 //reset. TAGS:UPDATE -- KDC
-void CpuSNN::copyUpdateVariables_GPU()
-{
-  //we now copy all variables that get reset in updateNetwork.
+void CpuSNN::copyUpdateVariables_GPU() {
+	checkAndSetGPUDevice();
+
+	//we now copy all variables that get reset in updateNetwork.
 	CUDA_CHECK_ERRORS( cudaMemcpy( cpu_gpuNetPtrs.wt, wt, sizeof(float)*preSynCnt, cudaMemcpyHostToDevice));
 	if ((!sim_with_fixedwts) || (sim_with_stdp)){
 		CUDA_CHECK_ERRORS( cudaMemcpy( cpu_gpuNetPtrs.wtChange, wtChange, sizeof(float)*preSynCnt, cudaMemcpyHostToDevice));
@@ -3447,9 +3521,10 @@ void CpuSNN::copyUpdateVariables_GPU()
 
 //This gets called in updateNetwork to copy all the reset data back to the GPU.
 //TAGS:UPDATE -- KDC
-void CpuSNN::updateNetwork_GPU(bool resetFiringInfo)
-{
-  //need to copy this data so STDP, STP, conductances can be reset.
+void CpuSNN::updateNetwork_GPU(bool resetFiringInfo) {
+	checkAndSetGPUDevice();
+
+	//need to copy this data so STDP, STP, conductances can be reset.
 	copyGrpInfo_GPU();
 
 	if(resetFiringInfo)
@@ -3459,6 +3534,8 @@ void CpuSNN::updateNetwork_GPU(bool resetFiringInfo)
 }
 
 void CpuSNN::printSimSummary() {
+	checkAndSetGPUDevice();
+
 	float etime;
 	if(simMode_ == GPU_MODE) {
 		stopGPUTiming();

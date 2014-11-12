@@ -739,6 +739,7 @@ private:
 	int  checkErrors(std::string kernelName, int numBlocks);
 	int  checkErrors(int numBlocks);
 	void checkGPUDevice();
+	void checkAndSetGPUDevice();
 	void checkInitialization(char* testString=NULL);
 	void checkInitialization2(char* testString=NULL);
 
