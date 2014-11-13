@@ -2,14 +2,13 @@ classdef ConnectionReader < handle
     % A ConnectionReader can be used to read a connection file that was
     % generated with the ConnectionMonitor utility in CARLsim. The user can
     % directly act on the returned connection data, to access weights at
-    % specific times, and delays.
+    % specific times.
     %
     % To conveniently plot connection properties, please refer to
     % ConnectionMonitor.
     %
     % Example usage:
     % >> CR = ConnectionReader('results/conn_grp1_grp2.dat');
-    % >> delays = CR.readDelays();
     % >> [allTimeStamps, allWeights] = CR.readWeights();
     % >> hist(allWeights(end,:))
     % >> % etc.
@@ -34,7 +33,6 @@ classdef ConnectionReader < handle
         fileSizeByteHeader;    % byte size of header section
         fileSizeByteSnapshot;  % byte size of a single snapshot
 
-        delays;
         weights;
         timeStamps;
         nSnapshots;
@@ -115,14 +113,6 @@ classdef ConnectionReader < handle
             nNeurPost = obj.nNeurPost;
         end
         
-        function delays = readDelays(obj)
-            % delays = CR.readDelays() returns the synaptic delays in a 2D
-            % matrix, where the first dimension corresponds to the
-            % pre-neuron ID, and the second dimension corresponds to the
-            % post-neuron ID.
-            delays = obj.delays;
-        end
-        
         function [timeStamps, weights] = readWeights(obj, snapShots)
             if nargin<2 || isempty(snapShots) || snapShots==-1
                 snapShots = 1:obj.nSnapshots;
@@ -177,7 +167,6 @@ classdef ConnectionReader < handle
             obj.fileSizeByteHeader = -1;   % to be set in openFile
             obj.fileSizeByteSnapshot = -1; % to be set in openFile
             
-            obj.delays = [];      % to be set in readDelays
             obj.timeStamps = [];  % to be set in readWeights
             obj.weights = [];     % to be set in readWeights
             obj.connId = -1;
@@ -265,9 +254,6 @@ classdef ConnectionReader < handle
             
             % read isPlastic
             obj.isPlastic = fread(obj.fileId, 1, 'bool');
-            
-            % TODO: read delays
-            obj.delays = [];
             
             % store the size of the header section, so that we can skip it
             % when re-reading spikes

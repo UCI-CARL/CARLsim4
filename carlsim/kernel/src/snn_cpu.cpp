@@ -4271,19 +4271,20 @@ void CpuSNN::updateConnectionMonitor(int connId) {
 			}
 
 			// update time stamp of connection monitor
-			connMonCoreList[monId]->updateTime(simTime);
+			if (connMonCoreList[monId]->updateTime(simTime)) {
+				// only update weights if we haven't done so already for this timestamp
+				for (int postId=grp_Info[grpIdPost].StartN; postId<=grp_Info[grpIdPost].EndN; postId++) {
+					unsigned int pos_ij = cumulativePre[postId];
+					for (int i=0; i<Npre[postId]; i++, pos_ij++) {
+						// skip synapses that belong to a different connection ID
+						if (cumConnIdPre[pos_ij]!=connInfo->connId)
+							continue;
 
-			for (int postId=grp_Info[grpIdPost].StartN; postId<=grp_Info[grpIdPost].EndN; postId++) {
-				unsigned int pos_ij = cumulativePre[postId];
-				for (int i=0; i<Npre[postId]; i++, pos_ij++) {
-					// skip synapses that belong to a different connection ID
-					if (cumConnIdPre[pos_ij]!=connInfo->connId)
-						continue;
-
-					// find pre-neuron ID and update ConnectionMonitor container
-					int preId = GET_CONN_NEURON_ID(preSynapticIds[pos_ij]);
-					connMonCoreList[monId]->updateWeight(preId - getGroupStartNeuronId(grpIdPre), 
-						postId - getGroupStartNeuronId(grpIdPost), wt[pos_ij]);
+						// find pre-neuron ID and update ConnectionMonitor container
+						int preId = GET_CONN_NEURON_ID(preSynapticIds[pos_ij]);
+						connMonCoreList[monId]->updateWeight(preId - getGroupStartNeuronId(grpIdPre), 
+							postId - getGroupStartNeuronId(grpIdPost), wt[pos_ij]);
+					}
 				}
 			}
 		}

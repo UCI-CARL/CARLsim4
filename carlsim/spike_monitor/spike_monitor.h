@@ -54,7 +54,7 @@ class SpikeMonitorCore; // forward declaration of implementation
  * \brief Class SpikeMonitor
  *
  * The SpikeMonitor class allows a user record spike data from a particular neuron group. First
- * the carlsim function member setSpikeMonitor must be called with the group ID of the desired group as an
+ * the method CARLsim::setSpikeMonitor must be called with the group ID of the desired group as an
  * argument. The setSpikeMonitor call returns a pointer to a SpikeMonitor object which can be queried for spike data.
  *
  * There are two different modes that define what information is collected exactly.
@@ -87,7 +87,7 @@ class SpikeMonitorCore; // forward declaration of implementation
  * \code
  * // configure a network etc. ...
  *
- * sim->setupNetwork();
+ * sim.setupNetwork();
  *
  * // create a SpikeMonitor pointer to grab the pointer from setSpikeMonitor.
  * SpikeMonitor* spikeMonExc;
@@ -96,7 +96,7 @@ class SpikeMonitorCore; // forward declaration of implementation
  * // begin recording spike data for group excGrpId
  * spikeMonExc->startRecording();
  * // run simulation that generates spikes for 20 seconds.
- * sim->runNetwork(20);
+ * sim.runNetwork(20);
  * // stop recording data for group excGrpId so we can get spike statistics.
  * spikeMonExc->stopRecording();
  * // print a summary of the spike information

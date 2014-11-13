@@ -23,7 +23,6 @@ classdef ConnectionMonitor < handle
         connFileSuffix;     % conn file suffix, e.g. ".dat"
         connFileSeparator;  % conn file separator, e.g. '_'
         weights;
-        delays;
         
         needToInitCR;       % flag whether we need to init ConnectionReader
         needToLoadData;     % flag whether we need to load connect data

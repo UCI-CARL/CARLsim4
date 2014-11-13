@@ -36,7 +36,7 @@
  *					(TSC) Ting-Shuo Chou <tingshuc@uci.edu>
  *
  * CARLsim available from http://socsci.uci.edu/~jkrichma/CARLsim/
- * Ver 11/11/2014
+ * Ver 11/12/2014
  */
 
 #ifndef _CONN_MON_CORE_H_
@@ -53,23 +53,14 @@ class CpuSNN; // forward declaration of CpuSNN class
  * \brief ConnectionMonitor private core implementation
  *
  * Naming convention for methods:
- * - getPop*: 		a population metric (single value) that applies to the entire group; e.g., getPopMeanFiringRate.
- * - getNeuron*: 	a neuron metric (single value), about a specific neuron (requires neurId); e.g., getNeuronNumSpikes. 
- * - getAll*: 		a metric (vector) that is based on all neurons in the group; e.g. getAllFiringRates.
  * - getNum*:		a number metric, returns an int
+ * - getTime*:      a time metric, returns long int
  * - getPercent*:	a percentage metric, returns a double
  * - get*:			all the others
  */
 class ConnectionMonitorCore {
 public: 
-	/*! 
-	 * \brief constructor
-	 *
-	 * Creates a new instance of the analysis class. 
-	 * Takes a CpuSNN pointer to an object as an input and assigns it to a CpuSNN* member variable for easy reference.
-	 * \param[in] snn pointer to current CpuSNN object
-	 * \param[in] grpId the ID of the group we're monitoring
-	 */
+	//! constructor, created by CARLsim::setConnectionMonitor
 	ConnectionMonitorCore(CpuSNN* snn, int monitorId, short int connId, int grpIdPre, int grpIdPost); 
 
 	//! destructor, cleans up all the memory upon object deletion
@@ -78,55 +69,82 @@ public:
 
 	// +++++ PUBLIC METHODS: +++++++++++++++++++++++++++++++++++++++++++++++//
 
+	//! calculates weight changes since last snapshot and reports them in 2D weight change matrix
 	std::vector< std::vector<float> > calcWeightChanges();
 
-	//! deletes data from the 2D spike vector
-	void clear();
+	//! returns connection ID
+	short int getConnectId() { return connId_; }
 
+	//! returns pointer to connection file
+	FILE* getConnectFileId() { return connFileId_; }
+
+	//! returns number of incoming synapses to post-synaptic neuron
 	int getFanIn(int neurPostId);
 
+	//! returns number of outgoing synapses of pre-synaptic neuron
 	int getFanOut(int neurPreId);
 
+	//! returns ConnectionMonitor ID
+	int getMonitorId() { return monitorId_; }
+
+	//! returns number of neurons in pre-synaptic group
+	int getNumNeuronsPre() { return nNeurPre_; }
+
+	//! returns number of neurons in post-synaptic group
+	int getNumNeuronsPost() { return nNeurPost_; }
+
+	//! returns number of synapses that exist in the connection
+	int getNumSynapses() { return nSynapses_; }
+
+	//! returns number of weights with >=minAbsChanged weight change since last snapshot
 	int getNumWeightsChanged(double minAbsChanged=1e-5);
 
+	//! returns percentage of weights with >=minAbsChanged weight change since last snapshot
 	double getPercentWeightsChanged(double minAbsChanged=1e-5);
 
+	//! returns the timestamp of the current snapshot (not necessarily CARLsim::getSimTime)
+	long int getTimeMsCurrentSnapshot() { return simTimeMs_; }
+
+	//! returns the timestamp of the last snapshot
+	long int getTimeMsLastSnapshot() { return (simTimeMs_ - simTimeSinceLastMs_); }
+
+	//! returns the time passed between current and last snapshot
+	long int getTimeMsSinceLastSnapshot() { return simTimeSinceLastMs_; }
+
+	//! returns absolute sum of all weight changes since last snapshot
 	double getTotalAbsWeightChange();
+
+	//! prints current weight state as 2D matrix (non-existent synapses: NAN, existent but zero weigth: 0.0f)
+	void print();
+
+	//! prints current weight state as sparse list of (only allocated, existent) synapses
+	void printSparse(int neurPostId=ALL, int maxConn=100, int connPerLine=4);
+
+	//! takes snapshot of current weight state and returns 2D matrix (non-existent synapses: NAN, existent but zero
+	//! weight: 0.0f)
+	std::vector< std::vector<float> > takeSnapshot();
+
+
+	// +++++ PUBLIC METHODS THAT SHOULD NOT BE EXPOSED TO INTERFACE +++++++++//
+
+	//! deletes data from the 2D weight matrix
+	void clear();
 
 	//! initialization method
 	//! depends on several SNN data structures, so it has be to called at the end of setConnectionMonitor (or later)
 	void init();
 
-	void print();
-
-	//! blah
-	void printSparse(int neurPostId=ALL, int maxConn=100, int connPerLine=4);
-
-	std::vector< std::vector<float> > takeSnapshot();
-
+	//! updates an entry in the current weight matrix (called by CARLsim::updateConnectionMonitor)
 	void updateWeight(int preId, int postId, float wt);
 
-	void updateTime(unsigned int simTimeMs);
+	//! updates timestamp of the snapshots, returns true if update was needed
+	bool updateTime(unsigned int simTimeMs);
 
-	
-	// +++++ PUBLIC SETTERS/GETTERS: +++++++++++++++++++++++++++++++++++++++//
-
-	short int getConnectId() { return connId_; }
-	int getMonitorId() { return monitorId_; }
-	FILE* getConnFileId() { return connFileId_; }
-	long int getTimeMsCurrentSnapshot() { return simTimeMs_; }
-	long int getTimeMsLastSnapshot() { return (simTimeMs_ - simTimeSinceLastMs_); }
-	long int getTimeMsSinceLastSnapshot() { return simTimeSinceLastMs_; }
-
-
-	/*!
-	 * \brief returns the monBufferFid
-	 * \param void
-	 * \return unsigned int
-	 */
+	//! sets pointer to connection file
 	void setConnectFileId(FILE* connFileId);
 	
 private:
+	//! indicates whether writing the current snapshot is necessary (false it has already been written)
 	bool needToWriteSnapshot();
 
 	//! writes the header section (file signature, version number) of a connect file
@@ -135,35 +153,34 @@ private:
 	//! writes each snapshot to connect file
 	void writeConnectFileSnapshot();
 
-	CpuSNN* snn_;	//!< private CARLsim implementation
-	int monitorId_;	//!< current ConnectionMonitor ID
-	short int connId_;	//!< current connection ID
-	int grpIdPre_;
-	int grpIdPost_;
-	int nNeurPre_;
-	int nNeurPost_;
-	int nSynapses_;
+	CpuSNN* snn_;                   //!< private CARLsim implementation
+	int monitorId_;                 //!< current ConnectionMonitor ID
+	short int connId_;              //!< current connection ID
+	int grpIdPre_;                  //!< pre-synaptic group ID
+	int grpIdPost_;                 //!< post-synaptic group ID
+	int nNeurPre_;                  //!< number of neurons in pre
+	int nNeurPost_;                 //!< number of neurons in post
+	int nSynapses_;                 //!< number of synapses in connection
 
-	long int simTimeMs_;
-	long int simTimeSinceLastMs_;
-	long int simTimeMsLastWrite_;
+	long int simTimeMs_;            //!< timestamp of current snapshot
+	long int simTimeSinceLastMs_;   //!< time between current and last snapshot
+	long int simTimeMsLastWrite_;   //!< timestamp of last file write
 
 	bool isPlastic_; //!< whether this connection has plastic synapses
 
-	std::vector< std::vector<float> > wtMat_, wtLastMat_;
+	std::vector< std::vector<float> > wtMat_;      //!< current snapshot of weight matrix
+	std::vector< std::vector<float> > wtLastMat_;  //!< last snapshot of weight matrix
 
-	//! whether we have to write header section of conn file
-	bool needToWriteFileHeader_;
+	bool needToWriteFileHeader_;    //!< whether we have to write header section of conn file
 
-	FILE* connFileId_;		//!< file pointer to the conn file or NULL
-	int connFileSignature_; //!< int signature of conn file
-	double connFileVersion_; //!< version number of conn file
+	FILE* connFileId_;              //!< file pointer to the conn file or NULL
+	int connFileSignature_;         //!< int signature of conn file
+	double connFileVersion_;        //!< version number of conn file
 
-	// file pointers for error logging
-	const FILE* fpInf_;
-	const FILE* fpErr_;
-	const FILE* fpDeb_;
-	const FILE* fpLog_;
+	const FILE* fpInf_;             //!< file pointer for info logging
+	const FILE* fpErr_;             //!< file pointer for error logging
+	const FILE* fpDeb_;             //!< file pointer for debug logging
+	const FILE* fpLog_;             //!< file pointer of debug.log
 };
 
 #endif

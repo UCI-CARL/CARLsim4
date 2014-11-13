@@ -36,7 +36,7 @@
  *					(TSC) Ting-Shuo Chou <tingshuc@uci.edu>
  *
  * CARLsim available from http://socsci.uci.edu/~jkrichma/CARLsim/
- * Ver 7/29/2014
+ * Ver 11/12/2014
  */
 
 #ifndef _SPIKE_MON_CORE_H_
@@ -62,200 +62,124 @@ class CpuSNN; // forward declaration of CpuSNN class
  */
 class SpikeMonitorCore {
 public: 
-	/*! 
-	 * \brief constructor
-	 *
-	 * Creates a new instance of the analysis class. 
-	 * Takes a CpuSNN pointer to an object as an input and assigns it to a CpuSNN* member variable for easy reference.
-	 * \param[in] snn pointer to current CpuSNN object
-	 * \param[in] grpId the ID of the group we're monitoring
-	 */
+	//! constructor (called by CARLsim::setSpikeMonitor)
 	SpikeMonitorCore(CpuSNN* snn, int monitorId, int grpId); 
 
 	//! destructor, cleans up all the memory upon object deletion
 	~SpikeMonitorCore();
-	
+
+
 	// +++++ PUBLIC METHODS: +++++++++++++++++++++++++++++++++++++++++++++++//
 
-	//! deletes data from the 2D spike vector
-	void clear();
+	//! returns a list of firing rates for all neurons in the group (sorted by neuron ID ascending)
+	std::vector<float> getAllFiringRates();
+
+	//! returns a list of firing rates for all neurons in the group (sorted by firing rate ascending)
+	std::vector<float> getAllFiringRatesSorted();
+
+	//! returns the group ID
+	int getGrpId() { return grpId_; }
+
+	//! returns number of neurons in the group
+	int getGrpNumNeurons() { return nNeurons_; }
+
+	//! returns the largest recorded firing rate
+	float getMaxFiringRate();
 	
-	/*!
-	 * \brief returns the average firing rate for a certain group averaged
-	 * over the simulation time duration. The time duration over
-	 * which the neurons are averaged is calculated automatically when
-	 * the user calls startRecording()/stopRecording().
-	 * \param void.
-	 * \return float value for the average firing rate of the whole group. 
-	 */
+	//! returns the smallest recorded firing rate
+	float getMinFiringRate();
+
+	//! returns recording mode
+	spikeMonMode_t getMode() { return mode_; }
+
+	//! returns the SpikeMonitor ID
+	int getMonitorId() { return monitorId_; }
+
+	//! returns the recorded mean firing rate for a specific neuron
+	float getNeuronMeanFiringRate(int neurId);
+
+	//! returns the number of recorded spikes of a specific neuron
+	int getNeuronNumSpikes(int neurId);
+
+	//! returns number of neurons whose firing rate was in [min,max] during recording
+	int getNumNeuronsWithFiringRate(float min, float max);
+	
+	//! returns number of neurons that didn't spike while recording
+	int getNumSilentNeurons();
+
+	//! returns percentage of neurons whose firing rate was in [min,max] during recording
+	float getPercentNeuronsWithFiringRate(float min, float max);
+
+	//! returns percentage of neurons that didn't spike during recording
+	float getPercentSilentNeurons();
+
+	//! returns status of PersistentData mode	
+	bool getPersistentData() { return persistentData_; }
+
+	//! returns the recorded mean firing rate of the group
 	float getPopMeanFiringRate();
+
+	//! returns the total number of recorded spikes in the group
+	int getPopNumSpikes();
 
 	//! computes the standard deviation of firing rates in the group
 	float getPopStdFiringRate();
 
-	/*!
-	 * \brief returns the total number of spikes in the group
-	 *
-	 * This function returns the total number of spikes in the group, which is equal to the number of elements
-	 * in the 2D spike vector.
-	 * Use getNeuronNumSpikes to find the number of spikes of a specific neuron in the group
-	 */
-	int getPopNumSpikes();
+	//! returns the total recorded time in ms
+	long int getRecordingTotalTime() { return totalTime_; }
 
-	/*!
-	 * \brief return the average firing rate for each neuron in a group of
-	 * neurons over the simulation time duration. The time duration over
-	 * which the neurons are averaged is calculated automatically when
-	 * the user calls startRecording()/stopRecording().
-	 * \param void
-	 * \return float vector for the average firing rate of each neuron.
-	 */
-	std::vector<float> getAllFiringRates();
+	//! retunrs the timestamp of the first startRecording in ms
+	long int getRecordingStartTime() { return startTime_; }
 
-	/*!
-	 * \brief return the number of neurons that have exactly 0 Hz firing
-	 * rate.
-	 * \param void
-	 * \return int value of the number of silent neurons.
-	 */
-	float getMaxFiringRate();
-	
-	/*!
-	 * \brief return the number of neurons that have exactly 0 Hz firing
-	 * rate.
-	 * \param void
-	 * \return int value of the number of silent neurons.
-	 */
-	float getMinFiringRate();
+	//! returns the timestamp of the last startRecording in ms
+	long int getRecordingLastStartTime() { return startTimeLast_; }
 
-	/*!
-	 * \brief returns the mean firing rate of a specific neuron in the group
-	 *
-	 * This function returns the mean firing rate of a specific neuron in the group, averaged over the recording
-	 * period.
-	 */
-	float getNeuronMeanFiringRate(int neurId);
+	//! returns the timestamp of stopRecording
+	long int getRecordingStopTime() { return stopTime_; }
 
-	/*!
-	 * \brief returns the number of spikes of a specific neuron in the group
-	 *
-	 * This function returns the number of spikes of a specific neuron in the group, which is equal to the number of
-	 * elements of spikeVector2D[neurId].
-	 * Use getPopNumSpikes to find the total number of spikes in the group
-	 */
-	int getNeuronNumSpikes(int neurId);
-
-
-	/*!
-	 * \brief return the ascending sorted firing rate for a particular 
-	 * group of  neurons over the simulation time duration. The time 
-	 * duration over which the neurons are averaged is calculated 
-	 * automatically when the user calls startRecording()/stopRecording().
-	 * \param void
-	 * \return float value for the max firing rate of each neuron. The
-	 * firing rate is taken every second and the max firing rate is taken
-	 * from those values.
-	 */
-	std::vector<float> getAllFiringRatesSorted();
-	
-	/*!
-	 * \brief return the number of neurons that fall within this particular
-	 * min/max range (inclusive). The time duration over which the neurons 
-	 * are averaged is calculated automatically when the user calls 
-	 * startRecording()/stopRecording().
-	 * \param void
-	 * \return int value of the number of neurons that have a firing rate
-	 * within the min/max range.
-	 */
-	int getNumNeuronsWithFiringRate(float min, float max);
-	
-	/*!
-	 * \brief returns the number of neurons that are silent.
-	 *
-	 * \param min minimum value of range (inclusive) to be searched.
-	 * \param max maximum value of range (inclusive) to be searched.
-	 * \return int of the number of neurons that are silent.
-	 */
-	int getNumSilentNeurons();
-
-	/*!
-	 * \brief returns the percentage of total neurons in that are in the range
-	 * specified by the user, min/max (inclusive). 
-	 * \param min minimum value of range (inclusive) to be searched.
-	 * \param max maximum value of range (inclusive) to be searched.
-	 * \return float of the percentage of total neurons that are in this range.
-	 */
-	float getPercentNeuronsWithFiringRate(float min, float max);
-
-	/*!
-	 * \brief returns the percentage of total neurons in group that are silent.
-	 * \param void
-	 * \return float of the percentage of total neurons that are silent.
-	 */
-	float getPercentSilentNeurons();
-	
-	/*!
-	 *\brief returns the AER vector.
-	 *\param void.
-	 *\return AER vector is returned.
-	 */
+	//! returns the 2D AER vector
 	std::vector<std::vector<int> > getSpikeVector2D();
 
-	/*!
-	 *\brief prints the AER vector.
-	 *\param void.
-	 *\return AER vector is printed.
-	 */
+	//! returns recording status
+	bool isRecording() { return recordSet_; }
+
+	//! prints the AER vector in human-readable format
 	void print(bool printSpikeTimes);
 
 	//! inserts a (time,neurId) tupel into the 2D spike vector
 	void pushAER(int time, int neurId);
 
-	/*!
-	 * \brief starts copying AER data to AER data structure every second.
-	 * \param void
-	 * \return void
-	 */	
-	void startRecording();
-	
-	/*!
-	 * \brief stops copying AER data to AER data structure every second.
-	 * \param void
-	 * \return void
-	 */
-	void stopRecording();
-
-	
-	// +++++ PUBLIC SETTERS/GETTERS: +++++++++++++++++++++++++++++++++++++++//
-
-	int getGrpId() { return grpId_; }
-	int getGrpNumNeurons() { return nNeurons_; }
-	int getMonitorId() { return monitorId_; }
-	FILE* getSpikeFileId() { return spikeFileId_; }
-
-	long int getRecordingTotalTime() { return totalTime_; }
-	long int getRecordingStartTime() { return startTime_; }
-	long int getRecordingLastStartTime() { return startTimeLast_; }
-	long int getRecordingStopTime() { return stopTime_; }
-
-	bool isRecording() { return recordSet_; }
-
-	bool getPersistentData() { return persistentData_; }
-	void setPersistentData(bool persistentData) { persistentData_ = persistentData; }
-
-	spikeMonMode_t getMode() { return mode_; }
+	//! sets recording mode
 	void setMode(spikeMonMode_t mode) { mode_ = mode; }
 
-	long int getLastUpdated() { return spkMonLastUpdated_; }
-	void setLastUpdated(long int lastUpdate) { spkMonLastUpdated_ = lastUpdate; }
+	//! sets status of PersistentData mode
+	void setPersistentData(bool persistentData) { persistentData_ = persistentData; }
 
-	/*!
-	 * \brief returns the monBufferFid
-	 * \param void
-	 * \return unsigned int
-	 */
+	//! starts recording AER data
+	void startRecording();
+	
+	//! stops recording AER data
+	void stopRecording();
+
+
+	// +++++ PUBLIC METHODS THAT SHOULD NOT BE EXPOSED TO INTERFACE +++++++++//
+
+	//! deletes data from the 2D spike vector
+	void clear();
+
+	//! returns a pointer to the spike file
+	FILE* getSpikeFileId() { return spikeFileId_; }
+
+	//! sets pointer to spike file
 	void setSpikeFileId(FILE* spikeFileId);
 	
+	//! returns timestamp of last SpikeMonitor update
+	long int getLastUpdated() { return spkMonLastUpdated_; }
+
+	//! sets timestamp of last SpikeMonitor update
+	void setLastUpdated(long int lastUpdate) { spkMonLastUpdated_ = lastUpdate; }
+	
+
 private:
 	//! initialization method
 	void init();

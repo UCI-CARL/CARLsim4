@@ -688,6 +688,7 @@ ConnectionMonitor* CARLsim::setConnectionMonitor(int grpIdPre, int grpIdPost, co
 
 	// empty string: use default name for binary file
 #if (WIN32 || WIN64)
+	// \TODO make default path for Windows platform
 	std::string fileName = fname.empty() ? "NULL" : fname;
 #else
 	std::string fileName = fname.empty() ? "results/conn_" + snn_->getGroupName(grpIdPre) + "_"
@@ -714,20 +715,6 @@ ConnectionMonitor* CARLsim::setConnectionMonitor(int grpIdPre, int grpIdPost, co
 	return snn_->setConnectionMonitor(grpIdPre, grpIdPost, fid);
 }
 
-/*
-// set network monitor for a group
-void CARLsim::setConnectionMonitor(int grpIdPre, int grpIdPost, ConnectionMonitor* connectionMon) {
-	std::string funcName = "setConnectionMonitor(\""+getGroupName(grpIdPre)+"\",ConnectionMonitor*)";
-	UserErrors::assertTrue(grpIdPre!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName, "grpIdPre");	// groupId can't be ALL
-	UserErrors::assertTrue(grpIdPost!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName, "grpIdPost");	// groupId can't be ALL
-	UserErrors::assertTrue(carlsimState_==CONFIG_STATE || carlsimState_==SETUP_STATE,
-					UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "CONFIG or SETUP.");
-
-	ConnectionMonitorCore* CMC = new ConnectionMonitorCore(this, connectionMon);
-	connMon_.push_back(CMC);
-	snn_->setConnectionMonitor(grpIdPre, grpIdPost, CMC);
-}
-*/
 
 // set group monitor for a group
 void CARLsim::setGroupMonitor(int grpId, GroupMonitor* groupMon) {
@@ -774,6 +761,7 @@ SpikeMonitor* CARLsim::setSpikeMonitor(int grpId, const std::string& fname) {
 
 	// empty string: use default name for binary file
 #if (WIN32 || WIN64)
+	// \TODO make default path for Windows platform
 	std::string fileName = fname.empty() ? "NULL" : fname;
 #else
 	std::string fileName = fname.empty() ? "results/spk"+snn_->getGroupName(grpId)+".dat" : fname;
