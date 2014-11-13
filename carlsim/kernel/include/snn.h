@@ -81,8 +81,6 @@
 #include <spike_monitor.h>
 #include <spike_monitor_core.h>
 
-extern RNG_rand48* gpuRand48; //!< Used by all network to generate global random number
-
 //! nid=neuron id, sid=synapse id, grpId=group id.
 inline post_info_t SET_CONN_ID(int nid, int sid, int grpId) {
 	if (sid > CONN_SYN_MASK) {
@@ -1048,6 +1046,8 @@ private:
 	int wtANDwtChangeUpdateIntervalCnt_;
 	float stdpScaleFactor_;
 	float wtChangeDecay_; //!< the wtChange decay
+
+	RNG_rand48* gpuPoissonRand;
 };
 
 #endif

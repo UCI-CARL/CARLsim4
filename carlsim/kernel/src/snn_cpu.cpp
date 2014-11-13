@@ -68,9 +68,6 @@
 MTRand_closed getRandClosed;
 MTRand	      getRand;
 
-RNG_rand48* gpuRand48 = NULL;
-
-
 // \FIXME what are the following for? why were they all the way at the bottom of this file?
 
 #define COMPACTION_ALIGNMENT_PRE  16
@@ -1819,6 +1816,9 @@ void CpuSNN::CpuSNNinit() {
 	rGABAb = 1.0-1.0/100.0;
 	dGABAb = 1.0-1.0/150.0;
 	sGABAb = 1.0;
+
+	// each CpuSNN object hold its own random number object
+	gpuPoissonRand = NULL;
 
 	// reset all pointers, don't deallocate (false)
 	resetPointers(false);
@@ -3814,6 +3814,10 @@ void CpuSNN::resetPointers(bool deallocate) {
 		grpAChBuffer[i] = NULL;
 		grpNEBuffer[i] = NULL;
 	}
+
+	// clear poisson generator
+	if (gpuPoissonRand != NULL) delete gpuPoissonRand;
+	gpuPoissonRand = NULL;
 }
 
 

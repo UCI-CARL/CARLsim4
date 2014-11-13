@@ -49,8 +49,6 @@
 
 #endif
 
-RNG_rand48* gpuPoissonRand; // initialized in CpuSNNinitGPUparams
-
 #define ROUNDED_TIMING_COUNT  (((1000+MAX_SynapticDelay+1)+127) & ~(127))  // (1000+maxDelay_) rounded to multiple 128
 
 #define  FIRE_CHUNK_CNT    (512)
@@ -2688,7 +2686,6 @@ __global__ void kernel_check_GPU_init ()
 // up to now they were initialized outside any class member in snn_gpu.cu (as global variables), so if you were
 // to create two CpuSNN instances within the same .cpp file, then the second network would fail to run
 void CpuSNN::CpuSNNinit_GPU() {
-	gpuPoissonRand = NULL;
 	testVar=NULL;
 	testVar2=NULL;
 	
@@ -2971,10 +2968,6 @@ void CpuSNN::deleteObjects_GPU() {
 	CUDA_CHECK_ERRORS( cudaFree(cpu_gpuNetPtrs.spkCntBuf));
 	for (int i=0; i<numSpkCnt; i++)
 		CUDA_CHECK_ERRORS(cudaFree(cpu_gpuNetPtrs.spkCntBufChild[i]));
-
-	if (gpuPoissonRand!=NULL)
-		delete gpuPoissonRand;
-	gpuPoissonRand=NULL;
 
 	CUDA_DELETE_TIMER(timer);
 }
@@ -3305,10 +3298,7 @@ void CpuSNN::allocateSNN_GPU() {
 	}
 
 	// if we have already allocated the GPU data.. dont do it again...
-	if(gpuPoissonRand != NULL) {
-		KERNEL_INFO("gpuPoissonRam != NULL");
-		return;
-	}
+	if(gpuPoissonRand != NULL) return;
 
 	int gridSize = 64; int blkSize  = 128;
 
