@@ -81,20 +81,76 @@ class ConnectionMonitor {
 	 */
 	std::vector< std::vector<float> > calcWeightChanges();
 
+	/*!
+	 * \brief ConnectionMonitor 
+	 *
+	 * blah.
+	 *
+	 */
 	short int getConnectId();
 
+	/*!
+	 * \brief ConnectionMonitor 
+	 *
+	 * blah.
+	 *
+	 */
 	int getFanIn(int neurPostId);
 
+	/*!
+	 * \brief ConnectionMonitor 
+	 *
+	 * blah.
+	 *
+	 */
 	int getFanOut(int neurPreId);
 
+	/*!
+	 * \brief ConnectionMonitor 
+	 *
+	 * blah.
+	 *
+	 */
 	int getNumWeightsChanged(double minAbsChanged=1e-5);
 
+	/*!
+	 * \brief ConnectionMonitor 
+	 *
+	 * blah.
+	 *
+	 */
 	double getPercentWeightsChanged(double minAbsChanged=1e-5);
 
+	/*!
+	 * \brief ConnectionMonitor 
+	 *
+	 * blah.
+	 *
+	 */
 	long int getTimeMsCurrentSnapshot();
+
+	/*!
+	 * \brief ConnectionMonitor 
+	 *
+	 * blah.
+	 *
+	 */
 	long int getTimeMsLastSnapshot();
+
+	/*!
+	 * \brief ConnectionMonitor 
+	 *
+	 * blah.
+	 *
+	 */
 	long int getTimeMsSinceLastSnapshot();
 
+	/*!
+	 * \brief ConnectionMonitor 
+	 *
+	 * blah.
+	 *
+	 */
 	double getTotalAbsWeightChange();
 
 	/*!

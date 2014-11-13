@@ -36,7 +36,7 @@
  *					(TSC) Ting-Shuo Chou <tingshuc@uci.edu>
  *
  * CARLsim available from http://socsci.uci.edu/~jkrichma/CARLsim/
- * Ver 7/29/2014
+ * Ver 11/11/2014
  */
 
 #ifndef _CONN_MON_CORE_H_
@@ -75,6 +75,7 @@ public:
 	//! destructor, cleans up all the memory upon object deletion
 	~ConnectionMonitorCore();
 	
+
 	// +++++ PUBLIC METHODS: +++++++++++++++++++++++++++++++++++++++++++++++//
 
 	std::vector< std::vector<float> > calcWeightChanges();
@@ -89,7 +90,6 @@ public:
 	int getNumWeightsChanged(double minAbsChanged=1e-5);
 
 	double getPercentWeightsChanged(double minAbsChanged=1e-5);
-
 
 	double getTotalAbsWeightChange();
 

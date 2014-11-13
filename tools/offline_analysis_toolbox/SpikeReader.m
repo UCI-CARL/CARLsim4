@@ -7,7 +7,7 @@ classdef SpikeReader < handle
     % To conveniently plot group activity, please refer to GroupMonitor.
     %
     % Example usage:
-    % >> SR = SpikeReader('resutls/spk_group1.dat');
+    % >> SR = SpikeReader('results/spk_group1.dat');
     % >> binWinMs = 100;
     % >> spkData = SR.readSpikes(binWinMs);
     % >> % analyze spike data ...

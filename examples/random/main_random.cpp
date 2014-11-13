@@ -43,15 +43,6 @@
 #include <vector>
 #include <stdio.h>
 
-
-class MyConnection : public ConnectionGenerator {
-	void connect(CARLsim* net, int srcGrp, int i, int destGrp, int j, float& weight, float& maxWt, float& delay, bool& connected) {
-		connected = true;
-		weight = i;//(i*10.0f + j) / 10.0f;
-		delay = 1;
-	}
-};
-
 #if (WIN32 || WIN64)
 	#define _CRT_SECURE_NO_WARNINGS
 #endif
@@ -62,7 +53,7 @@ int main() {
 	int ithGPU = 0; // run on first GPU
 
 	// create a network
-	CARLsim sim("random",GPU_MODE,USER,ithGPU,42);
+	CARLsim sim("random", GPU_MODE, USER, ithGPU, 42);
 
 	int g1=sim.createGroup("excit", N*0.8, EXCITATORY_NEURON);
 	sim.setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f);
@@ -76,7 +67,6 @@ int main() {
 
 	// make random connections with 10% probability
 	sim.connect(g2,g1,"random", RangeWeight(0.01), 0.1f);
-//	sim.connect(gin,g1,new MyConnection(),SYN_FIXED, 1000, 1000);
 	// make random connections with 10% probability, and random delays between 1 and 20
 	sim.connect(g1,g2,"random", RangeWeight(0.0,0.0025,0.005), 0.1f, RangeDelay(1,20), RadiusRF(-1), SYN_PLASTIC);
 	sim.connect(g1,g1,"random", RangeWeight(0.0,0.06,0.1), 0.1f, RangeDelay(1,20), RadiusRF(-1), SYN_PLASTIC);
@@ -88,33 +78,30 @@ int main() {
 	float ALPHA_LTP_EXC = 0.10f/100, TAU_LTP = 20.0f, ALPHA_LTD_EXC = 0.12f/100, TAU_LTD = 20.0f;
 	sim.setSTDP(g1, true, STANDARD, ALPHA_LTP_EXC, TAU_LTP, ALPHA_LTD_EXC, TAU_LTD);
 
-
 	// build the network
 	sim.setupNetwork();
-	sim.setSpikeMonitor(g1); // put spike times into file
-	sim.setSpikeMonitor(g2); // Show basic statistics about g2
+
+	// record spike times, save to binary
+	sim.setSpikeMonitor(g1);
+	sim.setSpikeMonitor(g2);
 	sim.setSpikeMonitor(gin);
 
-//	sim.setConnectionMonitor(g1, g2);
-	ConnectionMonitor* CM = sim.setConnectionMonitor(g1,g1,"myconnect.dat");
-
-//	CM->takeSnapshot();
-//	CM->print();
-
-
+	// record weights of g1->g1 connection, save to binary
+	sim.setConnectionMonitor(g1,g1);
 
 	//setup some baseline input
 	PoissonRate in(N*0.1);
-	for (int i=0;i<N*0.1;i++) in.rates[i] = 1;
-		sim.setSpikeRate(gin,&in);
+	for (int i=0;i<N*0.1;i++) {
+		in.rates[i] = 1.0f;
+	}
+	sim.setSpikeRate(gin,&in);
 
 	// run for a total of 10 seconds
 	// at the end of each runNetwork call, Spike and Connection Monitor stats will be printed
+	bool printRunStats = true;
 	for (int i=0; i<10; i++) {
-		sim.runNetwork(1,0);
-		printf("%d weights changed (%f%%): +- %f\n",CM->getNumWeightsChanged(),CM->getPercentWeightsChanged(), CM->getTotalAbsWeightChange());
+		sim.runNetwork(1, 0, printRunStats);
 	}
-
 
 	return 0;
 }
