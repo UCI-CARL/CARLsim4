@@ -21,6 +21,20 @@
   <ItemGroup>
     <ClCompile Include="main_orientation.cpp" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\carlsim\interface\interface.vcxproj">
+      <Project>{fbd68119-1a8c-4a1a-96ce-522b651209bc}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\carlsim\kernel\carlsim.vcxproj">
+      <Project>{713714bd-0aff-4832-bf1b-29cb68f1ce39}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\carlsim\spike_monitor\spike_monitor.vcxproj">
+      <Project>{5aa9a99d-3439-4c97-9949-c4c0ae5b855a}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\common\common.vcxproj">
+      <Project>{dadffae1-9110-4433-9c03-05b7e4c4cddd}</Project>
+    </ProjectReference>
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{31BA5C2F-2085-4A5A-890D-A86374C8CFFF}</ProjectGuid>
     <RootNamespace>orientation</RootNamespace>
@@ -96,12 +110,13 @@ copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN64;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(CudaToolkitIncludeDir);$(SolutionDir)interface\include;$(SolutionDir)carlsim\include;$(SolutionDir)util\spike_monitor</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(CudaToolkitIncludeDir);$(SolutionDir)carlsim\interface\include;$(SolutionDir)carlsim\kernel\include;$(SolutionDir)carlsim\spike_monitor</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
-      <AdditionalDependencies>cudart.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;carlsim.lib;interface.lib;util.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>cudart.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;carlsim.lib;interface.lib;spike_monitor.lib;common.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories);$(CudaToolkitLibDir);$(OutDir)</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
       <Command>echo copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"
