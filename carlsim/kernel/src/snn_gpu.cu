@@ -3255,8 +3255,8 @@ void CpuSNN::checkGPUDevice() {
 
 	CUDA_CHECK_ERRORS(cudaGetDeviceProperties(&deviceProp, dev));
 	KERNEL_DEBUG("Device %d: \"%s\"", dev, deviceProp.name);
-	if (deviceProp.major == 1 && deviceProp.minor < 3) {
-		KERNEL_ERROR("CARLsim does not support NVIDIA cards older than version 1.3");
+	if (deviceProp.major < 2 || deviceProp.major == 2 && deviceProp.minor < 0) {
+		KERNEL_ERROR("CARLsim does not support NVIDIA cards older than version 2.0");
 		exitSimulation(1);
 	}
 	KERNEL_INFO("  - CUDA Compute Capability    =     %2d.%d\n", deviceProp.major, deviceProp.minor);
