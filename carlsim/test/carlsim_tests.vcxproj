@@ -33,6 +33,20 @@
     <ClCompile Include="stdp.cpp" />
     <ClCompile Include="stp.cpp" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\tools\spike_generators\spike_generators.vcxproj">
+      <Project>{5c02490d-8c39-4c36-a3c9-cd683bdf43e0}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\interface\interface.vcxproj">
+      <Project>{fbd68119-1a8c-4a1a-96ce-522b651209bc}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\kernel\carlsim.vcxproj">
+      <Project>{713714bd-0aff-4832-bf1b-29cb68f1ce39}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\spike_monitor\spike_monitor.vcxproj">
+      <Project>{5aa9a99d-3439-4c97-9949-c4c0ae5b855a}</Project>
+    </ProjectReference>
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{D55C5CBD-B843-4DF9-BB1E-683E2D78E9E1}</ProjectGuid>
     <RootNamespace>carlsim_test</RootNamespace>
@@ -150,7 +164,7 @@ copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;WIN64;__CUDA5__;__REGRESSION_TESTING__;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(CudaToolkitIncludeDir);$(NVCUDASAMPLES_ROOT)\common\inc;$(SolutionDir)interface\include;$(SolutionDir)carlsim\include;$(SolutionDir)util\spike_monitor;$(SolutionDir)util\spike_generators;$(SolutionDir)gtest\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(CudaToolkitIncludeDir);$(NVCUDASAMPLES_ROOT)\common\inc;$(SolutionDir)carlsim\interface\include;$(SolutionDir)carlsim\kernel\include;$(SolutionDir)carlsim\spike_monitor;$(SolutionDir)tools\spike_generators;$(SolutionDir)gtest\include</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
     </ClCompile>
     <Link>
@@ -158,7 +172,7 @@ copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <SubSystem>Console</SubSystem>
-      <AdditionalDependencies>cudart.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;carlsim.lib;interface.lib;util.lib;gtest.lib;gtest_main.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>cudart.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;carlsim.lib;interface.lib;spike_monitor.lib;spike_generators.lib;gtest.lib;gtest_main.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories);$(CudaToolkitLibDir);$(OutDir)</AdditionalLibraryDirectories>
       <OutputFile>$(ProjectDir)$(TargetName)$(TargetExt)</OutputFile>
     </Link>

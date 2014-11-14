@@ -43,8 +43,9 @@
 
 #include <stdio.h>		// printf
 #include <stdlib.h>		// exit
-#include <math.h>
+
 #define _USE_MATH_DEFINES
+#include <math.h>
 
 #if (WIN32 || WIN64)
 	#include <time.h>
