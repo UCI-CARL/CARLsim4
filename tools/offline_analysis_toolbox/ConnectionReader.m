@@ -2,13 +2,14 @@ classdef ConnectionReader < handle
     % A ConnectionReader can be used to read a connection file that was
     % generated with the ConnectionMonitor utility in CARLsim. The user can
     % directly act on the returned connection data, to access weights at
-    % specific times.
+    % specific times, and delays.
     %
     % To conveniently plot connection properties, please refer to
     % ConnectionMonitor.
     %
     % Example usage:
     % >> CR = ConnectionReader('results/conn_grp1_grp2.dat');
+    % >> delays = CR.readDelays();
     % >> [allTimeStamps, allWeights] = CR.readWeights();
     % >> hist(allWeights(end,:))
     % >> % etc.
@@ -22,10 +23,10 @@ classdef ConnectionReader < handle
         fileStr;             % path to connect file
         errorMode;           % program mode for error handling
         supportedErrorModes; % supported error modes
-%    end
+    end
     
     % private
-%    properties (Hidden, Access = private)
+    properties (Hidden, Access = private)
         fileId;                % file ID of spike file
         fileSignature;         % int signature of all spike files
         fileVersionMajor;      % required major version number
@@ -33,9 +34,10 @@ classdef ConnectionReader < handle
         fileSizeByteHeader;    % byte size of header section
         fileSizeByteSnapshot;  % byte size of a single snapshot
 
+        delays;
         weights;
         timeStamps;
-        nSnapshots;
+        nSnapshots;            % number of weight matrix snapshots
         
         connId;
         grpIdPre;
@@ -86,7 +88,6 @@ classdef ConnectionReader < handle
         
         function delete(obj)
             % destructor, implicitly called to fclose file
-            disp('CR destructor called, fclosing')
             if obj.fileId ~= -1
                 fclose(obj.fileId);
             end
@@ -111,6 +112,20 @@ classdef ConnectionReader < handle
             % nNeurPre = CR.getNumNeuronsPost() returns the number of
             % neurons in the postsynaptic group.
             nNeurPost = obj.nNeurPost;
+        end
+        
+        function nSnapshots = getNumSnapshots(obj)
+            % nSnapshots = CR.getNumSnapshots() returns the number of
+            % weight matrix snapshots.
+            nSnapshots = obj.nSnapshots;
+        end
+        
+        function delays = readDelays(obj)
+            % delays = CR.readDelays() returns the synaptic delays in a 2D
+            % matrix, where the first dimension corresponds to the
+            % pre-neuron ID, and the second dimension corresponds to the
+            % post-neuron ID.
+            delays = obj.delays;
         end
         
         function [timeStamps, weights] = readWeights(obj, snapShots)
@@ -167,6 +182,7 @@ classdef ConnectionReader < handle
             obj.fileSizeByteHeader = -1;   % to be set in openFile
             obj.fileSizeByteSnapshot = -1; % to be set in openFile
             
+            obj.delays = [];      % to be set in readDelays
             obj.timeStamps = [];  % to be set in readWeights
             obj.weights = [];     % to be set in readWeights
             obj.connId = -1;
@@ -254,6 +270,9 @@ classdef ConnectionReader < handle
             
             % read isPlastic
             obj.isPlastic = fread(obj.fileId, 1, 'bool');
+            
+            % TODO: read delays
+            obj.delays = [];
             
             % store the size of the header section, so that we can skip it
             % when re-reading spikes
