@@ -3250,8 +3250,8 @@ void CpuSNN::checkGPUDevice() {
 	else {
 		KERNEL_WARN("Device index %d exceeds number of devices (%d), choose from [0,%d]. Defaulting to using device 0...",
 			ithGPU_,devCount,devCount-1);
-	dev = 0;
-}
+		dev = 0;
+	}
 
 	CUDA_CHECK_ERRORS(cudaGetDeviceProperties(&deviceProp, dev));
 	KERNEL_DEBUG("Device %d: \"%s\"", dev, deviceProp.name);
@@ -3261,8 +3261,8 @@ void CpuSNN::checkGPUDevice() {
 	}
 	KERNEL_INFO("  - CUDA Compute Capability    =     %2d.%d\n", deviceProp.major, deviceProp.minor);
 	assert(deviceProp.major >= 1);
-	//CUDA_DEVICE_RESET();
-	//cudaSetDevice(dev);
+	cudaSetDevice(dev);
+	CUDA_DEVICE_RESET();
 	CUDA_GET_LAST_ERROR("cudaSetDevice failed\n");
 }
 
@@ -3291,6 +3291,7 @@ void CpuSNN::copyWeightsGPU(unsigned int nid, int src_grp) {
 
 // Allocates required memory and then initialize the GPU
 void CpuSNN::allocateSNN_GPU() {
+	checkAndSetGPUDevice();
 	// \FIXME why is this even here? shouldn't this be checked way earlier? and then in CPU_MODE, too...
 	if (maxDelay_ > MAX_SynapticDelay) {
 		KERNEL_ERROR("You are using a synaptic delay (%d) greater than MAX_SynapticDelay defined in config.h",maxDelay_);
@@ -3302,8 +3303,7 @@ void CpuSNN::allocateSNN_GPU() {
 
 	int gridSize = 64; int blkSize  = 128;
 
-	checkGPUDevice();
-	checkAndSetGPUDevice();
+	//checkGPUDevice();
 
 	int numN=0;
 	for (int g=0;g<numGrp;g++) {

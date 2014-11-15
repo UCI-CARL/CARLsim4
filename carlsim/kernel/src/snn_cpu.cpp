@@ -1,5 +1,4 @@
-/*
- * Copyright (c) 2014 Regents of the University of California. All rights reserved.
+/* * Copyright (c) 2014 Regents of the University of California. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -64,9 +63,6 @@
 	#include <string.h>
 	#define strcmpi(s1,s2) strcasecmp(s1,s2)
 #endif
-
-MTRand_closed getRandClosed;
-MTRand	      getRand;
 
 // \FIXME what are the following for? why were they all the way at the bottom of this file?
 
@@ -1747,8 +1743,8 @@ void CpuSNN::CpuSNNinit() {
 
 	// init random seed
 	srand48(randSeed_);
-	getRand.seed(randSeed_*2);
-	getRandClosed.seed(randSeed_*3);
+	//getRand.seed(randSeed_*2);
+	//getRandClosed.seed(randSeed_*3);
 
 	finishedPoissonGroup  = false;
 	connectBegin = NULL;
@@ -1902,6 +1898,9 @@ void CpuSNN::CpuSNNinit() {
 	// initialize parameters needed in snn_gpu.cu
 	// \FIXME: naming is terrible... so it's a CPU SNN on GPU...
 	CpuSNNinit_GPU();
+
+	if (simMode_ == GPU_MODE)
+		checkGPUDevice();
 }
 
 //! update (initialize) numN, numPostSynapses, numPreSynapses, maxDelay_, postSynCnt, preSynCnt
@@ -2466,7 +2465,8 @@ void CpuSNN::connectFull(grpConnectInfo_t* info) {
 			if (!isPoint3DinRF(radius, loc_i, loc_j))
 				continue;
 
-			uint8_t dVal = info->minDelay + (int)(0.5 + (getRandClosed() * (info->maxDelay - info->minDelay)));
+			//uint8_t dVal = info->minDelay + (int)(0.5 + (drand48() * (info->maxDelay - info->minDelay)));
+			uint8_t dVal = info->minDelay + rand() % (info->maxDelay - info->minDelay + 1);
 			assert((dVal >= info->minDelay) && (dVal <= info->maxDelay));
 			float synWt = getWeights(info->connProp, info->initWt, info->maxWt, i, grpSrc);
 
@@ -2488,7 +2488,8 @@ void CpuSNN::connectOneToOne (grpConnectInfo_t* info) {
 
 	// NOTE: RadiusRF does not make a difference here. Radius>0 is not allowed
 	for(int nid=grp_Info[grpSrc].StartN,j=grp_Info[grpDest].StartN; nid<=grp_Info[grpSrc].EndN; nid++, j++)  {
-		uint8_t dVal = info->minDelay + (int)(0.5+(getRandClosed()*(info->maxDelay-info->minDelay)));
+		//uint8_t dVal = info->minDelay + (int)(0.5+(drand48()*(info->maxDelay-info->minDelay)));
+		uint8_t dVal = info->minDelay + rand() % (info->maxDelay - info->minDelay + 1);
 		assert((dVal >= info->minDelay) && (dVal <= info->maxDelay));
 		float synWt = getWeights(info->connProp, info->initWt, info->maxWt, nid, grpSrc);
 		setConnection(grpSrc, grpDest, nid, j, synWt, info->maxWt, dVal, info->connProp, info->connId);
@@ -2515,8 +2516,9 @@ void CpuSNN::connectRandom (grpConnectInfo_t* info) {
 			if (!isPoint3DinRF(radius, loc_pre, loc_post))
 				continue;
 
-			if (getRand() < info->p) {
-				uint8_t dVal = info->minDelay + (int)(0.5+(getRandClosed()*(info->maxDelay-info->minDelay)));
+			if (drand48() < info->p) {
+				//uint8_t dVal = info->minDelay + (int)(0.5+(drand48()*(info->maxDelay-info->minDelay)));
+				uint8_t dVal = info->minDelay + rand() % (info->maxDelay - info->minDelay + 1);
 				assert((dVal >= info->minDelay) && (dVal <= info->maxDelay));
 				float synWt = getWeights(info->connProp, info->initWt, info->maxWt, pre_nid, grpSrc);
 				setConnection(grpSrc, grpDest, pre_nid, post_nid, synWt, info->maxWt, dVal, info->connProp, info->connId);
@@ -3102,7 +3104,7 @@ void  CpuSNN::globalStateUpdate() {
 								   );
 
 					#ifdef NEURON_NOISE
-						double noiseI = -intrinsicWeight[i]*log(getRand());
+						double noiseI = -intrinsicWeight[i]*log(drand48());
 						if (isnan(noiseI) || isinf(noiseI))
 							noiseI = 0;
 						tmp_I += noiseI;
@@ -3654,10 +3656,10 @@ void CpuSNN::resetNeuron(unsigned int neurId, int grpId) {
 		exitSimulation(1);
 	}
 
-	Izh_a[neurId] = grp_Info2[grpId].Izh_a + grp_Info2[grpId].Izh_a_sd*(float)getRandClosed();
-	Izh_b[neurId] = grp_Info2[grpId].Izh_b + grp_Info2[grpId].Izh_b_sd*(float)getRandClosed();
-	Izh_c[neurId] = grp_Info2[grpId].Izh_c + grp_Info2[grpId].Izh_c_sd*(float)getRandClosed();
-	Izh_d[neurId] = grp_Info2[grpId].Izh_d + grp_Info2[grpId].Izh_d_sd*(float)getRandClosed();
+	Izh_a[neurId] = grp_Info2[grpId].Izh_a + grp_Info2[grpId].Izh_a_sd*(float)drand48();
+	Izh_b[neurId] = grp_Info2[grpId].Izh_b + grp_Info2[grpId].Izh_b_sd*(float)drand48();
+	Izh_c[neurId] = grp_Info2[grpId].Izh_c + grp_Info2[grpId].Izh_c_sd*(float)drand48();
+	Izh_d[neurId] = grp_Info2[grpId].Izh_d + grp_Info2[grpId].Izh_d_sd*(float)drand48();
 
 	voltage[neurId] = Izh_c[neurId];	// initial values for new_v
 	recovery[neurId] = Izh_b[neurId]*voltage[neurId]; // initial values for u

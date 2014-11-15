@@ -94,7 +94,7 @@ void *runCARLsim(void* arg)
 	excMon = sim->setSpikeMonitor(gExc);
 	inbMon = sim->setSpikeMonitor(gInb);
 
-	for (int t = 0; t < 1000; t++) {
+	for (int t = 0; t < 100; t++) {
 		sim->runNetwork(1,0);
 	}
 
