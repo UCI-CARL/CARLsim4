@@ -37,5 +37,5 @@ clean:
 	$(RM) $(local_prog)
 
 distclean:
-	$(RM) $(local_prog) *.log *.dat
+	$(RM) $(local_prog) $(output) 
 

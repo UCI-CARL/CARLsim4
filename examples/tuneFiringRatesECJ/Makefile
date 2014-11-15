@@ -7,7 +7,6 @@
 USER_MK_PATH = ../../
 include $(USER_MK_PATH)user.mk
 
-
 example := tuneFiringRatesECJ
 
 # name of ECJ parameter file.
