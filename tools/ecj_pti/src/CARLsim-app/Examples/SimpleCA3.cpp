@@ -8,6 +8,8 @@
 #include <cstdio>
 #include <cstring>
 #include <vector>
+#include <math.h>
+#include <cassert>
 
 using namespace std;
 using namespace CARLsim_PTI;
