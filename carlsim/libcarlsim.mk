@@ -26,6 +26,8 @@ install: $(carlsim_lib)
 		$(CARLSIM_LIB_DIR)/include/kernel
 	@test -d $(CARLSIM_LIB_DIR)/include/interface || mkdir \
 		$(CARLSIM_LIB_DIR)/include/interface
+	@test -d $(CARLSIM_LIB_DIR)/include/connection_monitor || mkdir \
+		$(CARLSIM_LIB_DIR)/include/connection_monitor
 	@test -d $(CARLSIM_LIB_DIR)/include/spike_monitor || mkdir \
 		$(CARLSIM_LIB_DIR)/include/spike_monitor
 	@test -d $(CARLSIM_LIB_DIR)/include/spike_generators || mkdir \
@@ -44,6 +46,8 @@ install: $(carlsim_lib)
 		$(interface_dir)/include/linear_algebra.h \
 		$(interface_dir)/include/carlsim.h $(interface_dir)/include/user_errors.h \
 		$(CARLSIM_LIB_DIR)/include/interface
+	@install -m 0644 $(conn_mon_dir)/connection_monitor.h \
+	$(CARLSIM_LIB_DIR)/include/connection_monitor
 	@install -m 0644 $(spike_mon_dir)/spike_monitor.h \
 	$(CARLSIM_LIB_DIR)/include/spike_monitor
 	@install -m 0644 $(spike_gen_dir)/periodic_spikegen.h \

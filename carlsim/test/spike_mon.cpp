@@ -17,17 +17,14 @@
  * \brief testing to make sure grpId error is caught in setSpikeMonitor.
  *
  */
-TEST(SETSPIKEMON, grpId){
+TEST(setSpikeMon, grpId){
 	CARLsim* sim;
 	const int GRP_SIZE = 10;
 	
-	// use threadsafe version because we have deathtests
-	::testing::FLAGS_gtest_death_test_style = "threadsafe";
-
 	// loop over both CPU and GPU mode.
 	for(int mode=0; mode<=1; mode++){
 		// first iteration, test CPU mode, second test GPU mode
-		sim = new CARLsim("SNN",mode?GPU_MODE:CPU_MODE,SILENT,0,42);
+		sim = new CARLsim("setSpikeMon.grpId",mode?GPU_MODE:CPU_MODE,SILENT,0,42);
 		
 		int g1 = sim->createGroup("g1", GRP_SIZE, EXCITATORY_NEURON);
 		int g2 = sim->createGroup("g2", GRP_SIZE, EXCITATORY_NEURON);
@@ -47,17 +44,14 @@ TEST(SETSPIKEMON, grpId){
  * \brief testing to make sure file name error is caught in setSpikeMonitor.
  *
  */
-TEST(SETSPIKEMON, fname){
+TEST(setSpikeMon, fname){
 	CARLsim* sim;
 	const int GRP_SIZE = 10;
-	
-	// use threadsafe version because we have deathtests
-	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
 	// loop over both CPU and GPU mode.
 	for(int mode=0; mode<=1; mode++){
 		// first iteration, test CPU mode, second test GPU mode
-		sim = new CARLsim("SNN",mode?GPU_MODE:CPU_MODE,SILENT,0,42);
+		sim = new CARLsim("setSpikeMon.fname",mode?GPU_MODE:CPU_MODE,SILENT,0,42);
 		
 		int g1 = sim->createGroup("g1", GRP_SIZE, EXCITATORY_NEURON);
 		int g2 = sim->createGroup("g2", GRP_SIZE, EXCITATORY_NEURON);
@@ -72,11 +66,8 @@ TEST(SETSPIKEMON, fname){
 }
 
 
-TEST(SPIKEMON, interfaceDeath) {
-	// use threadsafe version because we have deathtests
-	::testing::FLAGS_gtest_death_test_style = "threadsafe";
-
-	CARLsim* sim = new CARLsim("SNN",CPU_MODE,SILENT,0,42);
+TEST(SpikeMon, interfaceDeath) {
+	CARLsim* sim = new CARLsim("SpikeMon.interfaceDeath",CPU_MODE,SILENT,0,42);
 	int g0 = sim->createSpikeGeneratorGroup("Input",5,EXCITATORY_NEURON);
 	SpikeMonitor* spkMon = sim->setSpikeMonitor(g0);
 
@@ -119,10 +110,7 @@ TEST(SPIKEMON, interfaceDeath) {
 }
 
 
-TEST(SPIKEMON, persistentMode) {
-	// use threadsafe version because we have deathtests
-	::testing::FLAGS_gtest_death_test_style = "threadsafe";
-
+TEST(SpikeMon, persistentMode) {
 	CARLsim* sim = new CARLsim("SNN",CPU_MODE,SILENT,0,42);
 	int g0 = sim->createSpikeGeneratorGroup("Input",5,EXCITATORY_NEURON);
 	SpikeMonitor* spkMon = sim->setSpikeMonitor(g0);
@@ -172,7 +160,7 @@ TEST(SPIKEMON, persistentMode) {
  * \brief testing to make sure clear() function works.
  *
  */
-TEST(SPIKEMON, clear){
+TEST(SpikeMon, clear){
 	CARLsim* sim;
 	PoissonRate* input;
 	const int GRP_SIZE = 5;
@@ -245,14 +233,11 @@ TEST(SPIKEMON, clear){
  * afterwards. We expect all spike times to be multiples of the inter-spike interval, and the total number of spikes
  * to be exactly what it should be. The same must apply to the AER struct from the SpikeMonitor object.
  */
-TEST(SPIKEMON, spikeTimes) {
+TEST(SpikeMon, spikeTimes) {
 	double rate = rand()%20 + 2.0;  // some random mean firing rate
 	int isi = 1000/rate; // inter-spike interval
 
 	const int GRP_SIZE = rand()%5 + 1; // some random group size
-
-	// use threadsafe version because we have deathtests
-	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
 	// loop over both CPU and GPU mode.
 	for(int mode=0; mode<=1; mode++){
@@ -324,7 +309,7 @@ TEST(SPIKEMON, spikeTimes) {
  * brief time window, whereas the spike file should contain all spikes. For the other group, both spike file and AER
  * struct should have the same number of spikes.
  */
-TEST(SPIKEMON, getGroupFiringRate){
+TEST(SpikeMon, getGroupFiringRate){
 	CARLsim* sim;
 
 	double rate = rand()%12 + 2.0f;  // some random mean firing rate
@@ -415,7 +400,7 @@ TEST(SPIKEMON, getGroupFiringRate){
 	}
 }
 
-TEST(SPIKEMON, getMaxMinNeuronFiringRate){
+TEST(SpikeMon, getMaxMinNeuronFiringRate){
 	const int GRP_SIZE = 5;
 	const int inputTargetFR = 5.0f;
 	// use threadsafe version because we have deathtests

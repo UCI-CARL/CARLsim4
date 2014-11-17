@@ -78,8 +78,11 @@
 #include <poisson_rate.h>
 #include <mtrand.h>
 #include <gpu_random.h>
-#include <spike_monitor.h>
-#include <spike_monitor_core.h>
+
+class SpikeMonitor;
+class SpikeMonitorCore;
+class ConnectionMonitorCore;
+class ConnectionMonitor;
 
 extern RNG_rand48* gpuRand48; //!< Used by all network to generate global random number
 
@@ -369,7 +372,8 @@ public:
 	 * \param[in] grpIdPost ID of the post-synaptic neuron group
 	 * \param[in] connectionMon ConnectionMonitorCore class
 	 */
-	void setConnectionMonitor(int grpIdPre, int grpIdPost, ConnectionMonitorCore* connectionMon);
+//	void setConnectionMonitor(int grpIdPre, int grpIdPost, ConnectionMonitorCore* connectionMon);
+	ConnectionMonitor* setConnectionMonitor(int grpIdPre, int grpIdPost, FILE* fid);
 
 	/*!
 	 * \brief A Spike Counter keeps track of the number of spikes per neuron in a group.
@@ -405,6 +409,9 @@ public:
 	 * \param refPeriod (optional) refractive period,  default = 1
 	 */
 	void setSpikeRate(int grpId, PoissonRate* spikeRate, int refPeriod);
+
+	//! polls connection weights
+	void updateConnectionMonitor(int connId=ALL);
 
 	/*!
 	 * \brief copy required spikes from firing buffer to spike buffer
@@ -462,6 +469,7 @@ public:
 
 	// +++++ PUBLIC METHODS: GETTERS / SETTERS ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
+	short int getConnectId(int grpIdPre, int grpIdPost); //!< find connection ID based on pre-post group pair, O(N)
 	grpConnectInfo_t* getConnectInfo(short int connectId); //!< required for homeostasis
 
 	//! Returns the delay information for all synaptic connections between a pre-synaptic and a post-synaptic neuron group
@@ -507,14 +515,6 @@ public:
 	int getNumPreSynapses() { return preSynCnt; }
 	int getNumPostSynapses() { return postSynCnt; }
 
-	/*!
-	 * \brief Writes weights from synaptic connections from gIDpre to gIDpost.  Returns a pointer to the weights
-	 * and the size of the 1D array in size.  gIDpre(post) is the group ID for the pre(post)synaptic group,
-	 * weights is a pointer to a single dimensional array of floats, size is the size of that array which is
-	 * returned to the user. NOTE: user must free memory from weights to avoid a memory leak.
-	 */
-	void getPopWeights(int gIDpre, int gIDpost, float*& weights, int& size);
-
 	int getRandSeed() { return randSeed_; }
 
 	simMode_t getSimMode()		{ return simMode_; }
@@ -553,17 +553,7 @@ public:
 	//! temporary getter to return pointer to stpx[] \TODO replace with NeuronMonitor or ConnectionMonitor
 	float* getSTPx() { return stpx; }
 
-	//! Returns the change in weight strength in the last second (due to plasticity) for all synaptic connections between a pre-synaptic and a post-synaptic neuron group.
-	/*!
-	 * \param grpIdPre ID of pre-synaptic group
-	 * \param grpIdPost ID of post-synaptic group
-	 * \param nPre return the number of pre-synaptic neurons
-	 * \param nPost retrun the number of post-synaptic neurons
-	 * \param weightChanges (optional) return changes in weight strength for all synapses, default = NULL
-	 * \return changes in weight strength for all synapses
-	 */
-	 float* getWeightChanges(int gIDpre, int gIDpost, int& Npre, int& Npost, float* weightChanges);
-
+    bool isConnectionPlastic(short int connId);
 
 	bool isExcitatoryGroup(int g) { return (grp_Info[g].Type&TARGET_AMPA) || (grp_Info[g].Type&TARGET_NMDA); }
 	bool isInhibitoryGroup(int g) { return (grp_Info[g].Type&TARGET_GABAa) || (grp_Info[g].Type&TARGET_GABAb); }
@@ -683,11 +673,14 @@ private:
 	int  printPreConnection2(int grpId, FILE* fpg);
 	void printSimSummary(); 	//!< prints a simulation summary at the end of sim
 	void printState(FILE* fp);
+	void printStatusConnectionMonitor(int connId=ALL);
+	void printStatusSpikeMonitor(int grpId=ALL, int runDurationMs=1000);
 //	void printState(const char *str = "", const FILE* fp);
 	void printTestVarInfo(FILE* fp, char* testString, bool test1=true, bool test2=true, bool test12=false,
 							int subVal=0, int grouping1=0, int grouping2=0); //!< for GPU debugging
 	void printTuningLog(FILE* fp);
 	void printWeights(int preGrpId, int postGrpId=-1);
+
 
 	// FIXME: difference between the options? is one deprecated or are both still used?
 	#if READNETWORK_ADD_SYNAPSES_FROM_FILE
@@ -728,7 +721,6 @@ private:
 	void swapConnections(int nid, int oldPos, int newPos);
 
 	void updateAfterMaxTime();
-	void updateConnectionMonitor();
 	void updateGroupMonitor();
 	void updateSpikesFromGrp(int grpId);
 	void updateSpikeGenerators();
@@ -1007,11 +999,11 @@ private:
 //	NeuronMonitorCore* neurBufferCallback[MAX_]
 	int numNeuronMonitor;
 
-	// network monitor variables
-	ConnectionMonitorCore	*connBufferCallback[MAX_GRP_PER_SNN];
-	unsigned int		connMonGrpIdPre[MAX_GRP_PER_SNN];
-	unsigned int		connMonGrpIdPost[MAX_GRP_PER_SNN];
-	unsigned int		numConnectionMonitor;
+	// connection monitor variables
+	int numConnectionMonitor;
+	ConnectionMonitorCore* connMonCoreList[MAX_nConnections];
+	ConnectionMonitor*     connMonList[MAX_nConnections];
+
 
 	/* Tsodyks & Markram (1998), where the short-term dynamics of synapses is characterized by three parameters:
 	   U (which roughly models the release probability of a synaptic vesicle for the first spike in a train of spikes),

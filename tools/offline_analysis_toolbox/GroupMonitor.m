@@ -13,7 +13,7 @@ classdef GroupMonitor < handle
     % >> GM.recordMovie; % plots heat map and saves as 'movie.avi'
     % >> % etc.
     %
-    % Version 10/5/2014
+    % Version 11/12/2014
     % Author: Michael Beyeler <mbeyeler@uci.edu>
     
     %% PROPERTIES
@@ -262,7 +262,7 @@ classdef GroupMonitor < handle
         end
         
         function recordMovie(obj, fileName, frames, binWindowMs, fps, winSize)
-            % NM.recordMovie(fileName, frames, frameDur, fps, winSize)
+            % NM.recordMovie(fileName, frames, binWindowMs, fps, winSize)
             % takes an AVI movie of a list of frames using the VIDEOWRITER
             % utility.
             %
@@ -779,8 +779,7 @@ classdef GroupMonitor < handle
             
             if strcmpi(obj.plotType,'heatmap')
                 maxD = max(obj.spkData(:));
-                frame = obj.spkData(:,:,frameNr);
-                imagesc(frame, [0 maxD])
+                imagesc(obj.spkData(:,:,frameNr), [0 maxD])
                 axis image square
                 title([obj.name ', rate = [0 , ' ...
                     num2str(maxD*1000/frameDur) ' Hz]'])

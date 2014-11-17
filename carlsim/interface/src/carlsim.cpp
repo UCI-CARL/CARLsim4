@@ -47,6 +47,8 @@
 #include <sstream>		// std::stringstream
 #include <algorithm>	// std::find
 
+#include <connection_monitor_core.h>
+
 
 
 #include <snn.h>
@@ -214,7 +216,6 @@ short int CARLsim::connect(int grpId1, int grpId2, ConnectionGenerator* conn, bo
 	UserErrors::assertTrue(conn!=NULL, UserErrors::CANNOT_BE_NULL, funcName);
 	UserErrors::assertTrue(carlsimState_==CONFIG_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "CONFIG.");
 
-	printf("in custom connect\n");
 	// TODO: check for sign of weights
 	ConnectionGeneratorCore* CGC = new ConnectionGeneratorCore(this, conn);
 	connGen_.push_back(CGC);
@@ -710,18 +711,46 @@ void CARLsim::resetSpikeCounter(int grpId) {
 	snn_->resetSpikeCounter(grpId);
 }
 
-// set network monitor for a group
-void CARLsim::setConnectionMonitor(int grpIdPre, int grpIdPost, ConnectionMonitor* connectionMon) {
-	std::string funcName = "setConnectionMonitor(\""+getGroupName(grpIdPre)+"\",ConnectionMonitor*)";
-	UserErrors::assertTrue(grpIdPre!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName, "grpIdPre");	// groupId can't be ALL
-	UserErrors::assertTrue(grpIdPost!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName, "grpIdPost");	// groupId can't be ALL
-	UserErrors::assertTrue(carlsimState_==CONFIG_STATE || carlsimState_==SETUP_STATE,
-					UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "CONFIG or SETUP.");
+// set spike monitor for group and write spikes to file
+ConnectionMonitor* CARLsim::setConnectionMonitor(int grpIdPre, int grpIdPost, const std::string& fname) {
+	std::string funcName = "setConnectionMonitor(\"" + getGroupName(grpIdPre) + "\",\"" + getGroupName(grpIdPost)
+		+ "\",\"" + fname + "\")";
+	UserErrors::assertTrue(grpIdPre!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName, "grpIdPre"); // grpId can't be ALL
+	UserErrors::assertTrue(grpIdPost!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName, "grpIdPost");
+	UserErrors::assertTrue(grpIdPre>=0, UserErrors::CANNOT_BE_NEGATIVE, funcName, "grpIdPre");// grpId can't be negative
+	UserErrors::assertTrue(grpIdPost>=0, UserErrors::CANNOT_BE_NEGATIVE, funcName, "grpIdPost");
+	UserErrors::assertTrue(carlsimState_==SETUP_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, 
+		funcName, "SETUP.");
 
-	ConnectionMonitorCore* CMC = new ConnectionMonitorCore(this, connectionMon);
-	connMon_.push_back(CMC);
-	snn_->setConnectionMonitor(grpIdPre, grpIdPost, CMC);
+	// empty string: use default name for binary file
+#if (WIN32 || WIN64)
+	// \TODO make default path for Windows platform
+	std::string fileName = fname.empty() ? "NULL" : fname;
+#else
+	std::string fileName = fname.empty() ? "results/conn_" + snn_->getGroupName(grpIdPre) + "_"
+		+ snn_->getGroupName(grpIdPost) + ".dat" : fname;
+#endif
+
+	FILE* fid;
+	if (fileName=="NULL") {
+		// user does not want a binary file created
+		fid = NULL;
+	} else {
+		// try to open spike file
+		fid = fopen(fileName.c_str(),"wb");
+		if (fid==NULL) {
+			// file could not be opened
+
+			// default case: print error and exit
+			std::string fileError = " Double-check file permissions and make sure directory exists.";
+			UserErrors::assertTrue(false, UserErrors::FILE_CANNOT_OPEN, funcName, fileName, fileError);
+		}
+	}
+
+	// return SpikeMonitor object
+	return snn_->setConnectionMonitor(grpIdPre, grpIdPost, fid);
 }
+
 
 // set group monitor for a group
 void CARLsim::setGroupMonitor(int grpId, GroupMonitor* groupMon) {
@@ -768,6 +797,7 @@ SpikeMonitor* CARLsim::setSpikeMonitor(int grpId, const std::string& fname) {
 
 	// empty string: use default name for binary file
 #if (WIN32 || WIN64)
+	// \TODO make default path for Windows platform
 	std::string fileName = fname.empty() ? "NULL" : fname;
 #else
 	std::string fileName = fname.empty() ? "results/spk"+snn_->getGroupName(grpId)+".dat" : fname;
@@ -963,16 +993,6 @@ uint64_t CARLsim::getSimTime() { return snn_->getSimTime(); }
 uint32_t CARLsim::getSimTimeSec() { return snn_->getSimTimeSec(); }
 uint32_t CARLsim::getSimTimeMsec() { return snn_->getSimTimeMs(); }
 
-// Writes weights from synaptic connections from gIDpre to gIDpost.  Returns a pointer to the weights
-// and the size of the 1D array in size.
-void CARLsim::getPopWeights(int gIDpre, int gIDpost, float*& weights, int& size) {
-	std::string funcName = "getPopWeights()";
-	UserErrors::assertTrue(carlsimState_ == SETUP_STATE || carlsimState_ == EXE_STATE,
-					UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "SETUP or EXECUTION.");
-
-	snn_->getPopWeights(gIDpre,gIDpost,weights,size);
-}
-
 int* CARLsim::getSpikeCntPtr(int grpId) {
 	std::string funcName = "getSpikeCntPtr()";
 	UserErrors::assertTrue(false, UserErrors::IS_DEPRECATED, funcName);
@@ -990,13 +1010,6 @@ int* CARLsim::getSpikeCounter(int grpId) {
 		"EXECUTION.");
 
 	return snn_->getSpikeCounter(grpId);
-}
-
-float* CARLsim::getWeightChanges(int gIDpre, int gIDpost, int& Npre, int& Npost, float* weightChanges) {
-	std::string funcName = "getWeightChanges()";
-	UserErrors::assertTrue(carlsimState_==EXE_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "EXECUTION.");
-
-	return snn_->getWeightChanges(gIDpre,gIDpost,Npre,Npost,weightChanges);
 }
 
 bool CARLsim::isExcitatoryGroup(int grpId) { return snn_->isExcitatoryGroup(grpId); }

@@ -96,13 +96,15 @@ public:
  * monitor connection status between groups (currently support weight distributions). Connection monitors are registered
  * for two groups (i.e., pre- and post- synaptic groups) and are called automatically by the simulator every second.
  * The parameter would be the pre- and post- synaptic group IDs, an array of data, number of elements in that array.
- */
+ *
 class ConnectionMonitor {
 public:
 	//NetworkMonitor() {};
 
 	virtual void update(CARLsim* s, int grpIdPre, int grpIdPost, float* weight, int numData) = 0;
 };
+*/
+
 
 /*! To retrieve group status, a group-monitoring callback mechanism is used. This mechanism allows the user to monitor
  * basic status of a group (currently support concentrations of neuromodulator). Group monitors are registered

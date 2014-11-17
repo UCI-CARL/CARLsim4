@@ -144,6 +144,9 @@ int main()
 
 	sim.setGroupMonitor(g1, grpCtrl);
 
+	// save weights to file periodically
+	sim.setConnectionMonitor(gin, g1);
+
 
 	//setup some baseline input
 	PoissonRate in(NUM_NEURON);
@@ -182,14 +185,6 @@ int main()
 			}
 		}
 	}
-
-	// ToDo: replace weights write out by ConnectionMonitor
-	sim.getPopWeights(gin, g1, weights, size);
-	FILE* fid = fopen("results/weight.csv", "w");
-	for (int i = 0; i < size - 1; i++)
-		fprintf(fid, "%f,",weights[i]);
-	fprintf(fid, "%f\n", weights[size - 1]);
-	fclose(fid);
 
 	delete grpCtrl;
 	delete spikeCtrl;

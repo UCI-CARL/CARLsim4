@@ -7,9 +7,15 @@ Legend:
 	- removed element
 	* changed element
 
+2014-11-17     Michael Beyeler <mbeyeler@uci.edu>
+  + Added improved ConnectionMonitor: Weight tracking and recording, on-line
+    and off-line (MATLAB) analysis.
+  - Removed CARLsim::getPopWeights and CARLsim::writePopWeights.
+  - Removed CARLsim::getWeightChanges.
+
 2014-11-07     Michael Beyeler <mbeyeler@uci.edu>
   - Removed support for configId.
-  - Removed getGroupId and getConnectionId.
+  - Removed CARLsim::getGroupId and CARLsim::getConnectionId.
   * Fixed memory leaks from setting up new monitors.
   + Added "Hello world" project template.
 
@@ -24,7 +30,7 @@ Legend:
 2014-10-20     Michael Beyeler <mbeyeler@uci.edu>
   * Fixed weight signs for custom connection callbacks.
   * Fixed readNetwork_internal parsing of header section.
-  + Added error message if setSpikeMonitor is called on same group twice.
+  + Added error message if CARLsim::setSpikeMonitor is called on same group twice.
 
 2014-10-17     Michael Beyeler <mbeyeler@uci.edu>
   + Added 3D receptive fields.
