@@ -2347,9 +2347,11 @@ void CpuSNN::copyWeightState (network_ptr_t* dest, network_ptr_t* src,  cudaMemc
 			cumPos_syn 	= dest->cumulativePre[id];
 		}
 
-//		fprintf(stderr,"cumPos_syn=%d, preSynCnt=%d\n",cumPos_syn,preSynCnt);
-
+		// \FIXME occasionally, the next assert fails... thread-safe?
+		if (cumPos_syn>=preSynCnt)
+			fprintf(stderr,"cumPos_syn=%d, preSynCnt=%d\n",cumPos_syn,preSynCnt);
 		assert (cumPos_syn < preSynCnt);
+
 		assert (length_wt <= preSynCnt);
 
 	    //MDR FIXME, allocateMem option is VERY wrong

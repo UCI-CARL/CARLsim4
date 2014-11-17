@@ -975,18 +975,6 @@ public:
 	GroupNeuromodulatorInfo_t getGroupNeuromodulatorInfo(int grpId);
 
 	/*!
-	 * \brief Writes weights from synaptic connections from gIDpre to gIDpost.  Returns a pointer to the weights
-	 *
-	 * and the size of the 1D array in size.  gIDpre(post) is the group ID for the pre(post)synaptic group,
-	 * weights is a pointer to a single dimensional array of floats, size is the size of that array which is
-	 * returned to the user.  NOTE: user must free memory from weights to avoid a memory leak.
-	 * \TODO why not readPopWeight()?
-	 * \TODO finish docu
-	 * \STATE SETUP, EXECUTION
-	 */
-	void getPopWeights(int gIDpre, int gIDpost, float*& weights, int& size);
-
-	/*!
 	 * \brief returns
 	 *
 	 * \TODO finish docu
@@ -1029,16 +1017,6 @@ public:
 	 * Each entry is the number of spikes for this neuron (int) since the last reset.
 	 */
 	int* getSpikeCounter(int grpId);
-
-	/*!
-	 * \brief returns pointer to weight array
-	 *
-	 * \STATE EXECUTION
-	 * \TODO: maybe consider renaming getPopWeightChanges
-	 * \FIXME fix this
-	 * \deprecated deprecated
-	 */
-	float* getWeightChanges(int gIDpre, int gIDpost, int& Npre, int& Npost, float* weightChanges=NULL);
 
 	/*!
 	 * \brief returns

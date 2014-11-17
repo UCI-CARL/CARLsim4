@@ -259,6 +259,8 @@ TEST(STDP, DASTDPWeightBoost) {
 
 				sim->setupNetwork();
 
+				ConnectionMonitor* CM = sim->setConnectionMonitor(gin, g1, "NULL");
+
 				spikeMonPost = sim->setSpikeMonitor(g1);
 				spikeMonPre = sim->setSpikeMonitor(gin);
 				sim->setSpikeMonitor(gda);
@@ -296,12 +298,14 @@ TEST(STDP, DASTDPWeightBoost) {
 					}
 				}
 
-				sim->getPopWeights(gin, g1, weights, size);
-				//printf("%f\n",weights[0]);
-				if (damod)
-					weightDAMod = weights[0];
-				else
-					weightNonDAMod = weights[0];
+				std::vector< std::vector<float> > weights = CM->takeSnapshot();
+
+//				sim->getPopWeights(gin, g1, weights, size);
+				if (damod) {
+					weightDAMod = weights[0][0];
+				} else {
+					weightNonDAMod = weights[0][0];
+				}
 
 				delete sim;
 			}
@@ -375,6 +379,8 @@ TEST(STDP, ISTDPWeightChange) {
 				// build the network
 				sim->setupNetwork();
 
+				ConnectionMonitor* CM = sim->setConnectionMonitor(gin, g1, "NULL");
+
 				spikeMon1 = sim->setSpikeMonitor(g1);
 				spikeMonIn = sim->setSpikeMonitor(gin);
 				spikeMonEx = sim->setSpikeMonitor(gex);
@@ -392,19 +398,20 @@ TEST(STDP, ISTDPWeightChange) {
 					//printf("%f\n",weights[0]);
 				}
 
-				sim->getPopWeights(gin, g1, weights, size);
+				std::vector< std::vector<float> > weights = CM->takeSnapshot();
+//				sim->getPopWeights(gin, g1, weights, size);
 
 				if (offset == -5 || offset == 5) { // I-STDP LTP
 					if (coba) {
-						EXPECT_NEAR(-maxInhWeight/100, weights[0], 0.005f);
+						EXPECT_NEAR(-maxInhWeight/100, weights[0][0], 0.005f);
 					} else {
-						EXPECT_NEAR(-maxInhWeight, weights[0], 0.5f);
+						EXPECT_NEAR(-maxInhWeight, weights[0][0], 0.5f);
 					}
 				} else { // I-STDP LTD
 					if (coba) {
-						EXPECT_NEAR(-minInhWeight/100, weights[0], 0.005f);
+						EXPECT_NEAR(-minInhWeight/100, weights[0][0], 0.005f);
 					} else {
-						EXPECT_NEAR(-minInhWeight, weights[0], 0.5f);
+						EXPECT_NEAR(-minInhWeight, weights[0][0], 0.5f);
 					}
 				}
 

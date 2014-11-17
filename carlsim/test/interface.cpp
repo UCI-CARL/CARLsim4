@@ -207,7 +207,6 @@ TEST(Interface, CARLsimState) {
 	EXPECT_DEATH({sim->getNeuronLocation3D(0);},"");
 	EXPECT_DEATH({sim->getNumPreSynapses();},"");
 	EXPECT_DEATH({sim->getNumPostSynapses();},"");
-	EXPECT_DEATH({sim->getPopWeights(0, 1, w, i);},"");
 	EXPECT_DEATH({sim->getSpikeCounter(0);},"");
 	EXPECT_DEATH({sim->resetSpikeCounter(0);},"");
 

@@ -1578,63 +1578,6 @@ int CpuSNN::getNumSynapticConnections(short int connectionId) {
   exitSimulation(1);
 }
 
-// gets weights from synaptic connections from gIDpre to gIDpost
-void CpuSNN::getPopWeights(int grpIdPre, int grpIdPost, float*& weights, int& matrixSize) {
-	assert(grpIdPre>=0); assert(grpIdPre<numGrp); assert(grpIdPost>=0); assert(grpIdPost<numGrp);
-	post_info_t* preId;
-	int pre_nid, pos_ij;
-	int numPre, numPost;
-
-	//population sizes
-	numPre = grp_Info[grpIdPre].SizeN;
-	numPost = grp_Info[grpIdPost].SizeN;
-
-	//first iteration gets the number of synaptic weights to place in our
-	//weight matrix.
-	matrixSize=0;
-	//iterate over all neurons in the post group
-	for (int i=grp_Info[grpIdPost].StartN; i<=grp_Info[grpIdPost].EndN; i++) {
-		// for every post-neuron, find all pre
-		pos_ij = cumulativePre[i]; // i-th post neuron, jth pre neuron
-		//iterate over all presynaptic synapses of the current postsynaptic neuron
-		for(int j=0; j<Npre[i]; pos_ij++,j++) {
-			preId = &preSynapticIds[pos_ij];
-			pre_nid = GET_CONN_NEURON_ID((*preId)); // neuron id of pre
-			if (pre_nid<grp_Info[grpIdPre].StartN || pre_nid>grp_Info[grpIdPre].EndN)
-				continue; // connection does not belong to group grpIdPre
-			matrixSize++;
-		}
-	}
-	//now we have the correct size matrix
-	weights = new float[matrixSize];
-
-	//second iteration assigns the weights
-	int curr = 0; // iterator for return array
-
-	//iterate over all neurons in the post group
-	for (int i=grp_Info[grpIdPost].StartN; i<=grp_Info[grpIdPost].EndN; i++) {
-		// for every post-neuron, find all pre
-		pos_ij = cumulativePre[i]; // i-th neuron, j=0th synapse
-		//do the GPU copy here.  Copy the current weights from GPU to CPU.
-		if(simMode_==GPU_MODE){
-			copyWeightsGPU(i,grpIdPre);
-		}
-		//iterate over all presynaptic synapses
-		for(int j=0; j<Npre[i]; pos_ij++,j++) {
-			//TAGS:TODO: We have to double check we have access to preSynapticIds in GPU_MODE.
-			//We can check where they were allocated and make sure that this occurs in
-			//both the CPU and GPU modes.
-			preId = &preSynapticIds[pos_ij];
-			pre_nid = GET_CONN_NEURON_ID((*preId)); // neuron id of pre
-			if (pre_nid<grp_Info[grpIdPre].StartN || pre_nid>grp_Info[grpIdPre].EndN)
-				continue; // connection does not belong to group grpIdPre
-			//the weights stored in wt were copied from the GPU in the above block
-			weights[curr] = wt[pos_ij];
-			curr++;
-		}
-	}
-}
-
 // Returns pointer to nSpikeCnt, which is a 1D array of the number of spikes every neuron in the group
 int* CpuSNN::getSpikeCntPtr(int grpId) {
 	//! do check to make sure appropriate flag is set
@@ -1664,57 +1607,6 @@ int* CpuSNN::getSpikeCounter(int grpId) {
 		return spkCntBuf[bufPos]; // return pointer to buffer
 	}
 }
-
-// this is a user function
-// TODO: fix this
-float* CpuSNN::getWeightChanges(int gIDpre, int gIDpost, int& Npre, int& Npost, float* weightChanges) {
-	 Npre = grp_Info[gIDpre].SizeN;
-	 Npost = grp_Info[gIDpost].SizeN;
-
-	if (weightChanges==NULL) weightChanges = new float[Npre*Npost];
-		memset(weightChanges,0,Npre*Npost*sizeof(float));
-
-	// copy the pre synaptic data from GPU, if needed
-	// note: this will not include wtChange[] and synSpikeTime[] if sim_with_fixedwts
-	if (simMode_ == GPU_MODE)
-    	copyWeightState(&cpuNetPtrs, &cpu_gpuNetPtrs, cudaMemcpyDeviceToHost, false, gIDpost);
-
-	for (int i=grp_Info[gIDpre].StartN;i<grp_Info[gIDpre].EndN;i++) {
-		unsigned int offset = cumulativePost[i];
-
-		for (int t=0;t<maxDelay_;t++) {
-			delay_info_t dPar = postDelayInfo[i*(maxDelay_+1)+t];
-
-			for(int idx_d = dPar.delay_index_start; idx_d < (dPar.delay_index_start + dPar.delay_length); idx_d = idx_d+1) {
-
-				// get synaptic info...
-				post_info_t post_info = postSynapticIds[offset + idx_d];
-
-				// get neuron id
-				//int p_i = (post_info&POST_SYN_NEURON_MASK);
-				int p_i = GET_CONN_NEURON_ID(post_info);
-				assert(p_i<numN);
-
-				if (p_i >= grp_Info[gIDpost].StartN && p_i <= grp_Info[gIDpost].EndN) {
-					// get syn id
-					int s_i = GET_CONN_SYN_ID(post_info);
-
-					// get the cumulative position for quick access...
-					unsigned int pos_i = cumulativePre[p_i] + s_i;
-
-					// if a group has fixed input weights, it will not have wtChange[] on the GPU side
-					if (grp_Info[gIDpost].FixedInputWts)
-						weightChanges[i+Npre*(p_i-grp_Info[gIDpost].StartN)] = 0.0f;
-					else
-						weightChanges[i+Npre*(p_i-grp_Info[gIDpost].StartN)] = wtChange[pos_i];
-				}
-			}
-		}
-	}
-
-	return weightChanges;
-}
-
 
 // True allows getSpikeCntPtr_GPU to copy firing state information from GPU kernel to cpuNetPtrs
 // Warning: setting this flag to true will slow down the simulation significantly.

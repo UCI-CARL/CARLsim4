@@ -515,14 +515,6 @@ public:
 	int getNumPreSynapses() { return preSynCnt; }
 	int getNumPostSynapses() { return postSynCnt; }
 
-	/*!
-	 * \brief Writes weights from synaptic connections from gIDpre to gIDpost.  Returns a pointer to the weights
-	 * and the size of the 1D array in size.  gIDpre(post) is the group ID for the pre(post)synaptic group,
-	 * weights is a pointer to a single dimensional array of floats, size is the size of that array which is
-	 * returned to the user. NOTE: user must free memory from weights to avoid a memory leak.
-	 */
-	void getPopWeights(int gIDpre, int gIDpost, float*& weights, int& size);
-
 	int getRandSeed() { return randSeed_; }
 
 	simMode_t getSimMode()		{ return simMode_; }
@@ -560,17 +552,6 @@ public:
 
 	//! temporary getter to return pointer to stpx[] \TODO replace with NeuronMonitor or ConnectionMonitor
 	float* getSTPx() { return stpx; }
-
-	//! Returns the change in weight strength in the last second (due to plasticity) for all synaptic connections between a pre-synaptic and a post-synaptic neuron group.
-	/*!
-	 * \param grpIdPre ID of pre-synaptic group
-	 * \param grpIdPost ID of post-synaptic group
-	 * \param nPre return the number of pre-synaptic neurons
-	 * \param nPost retrun the number of post-synaptic neurons
-	 * \param weightChanges (optional) return changes in weight strength for all synapses, default = NULL
-	 * \return changes in weight strength for all synapses
-	 */
-	 float* getWeightChanges(int gIDpre, int gIDpost, int& Npre, int& Npost, float* weightChanges);
 
     bool isConnectionPlastic(short int connId);
 

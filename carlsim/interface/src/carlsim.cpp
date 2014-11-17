@@ -956,16 +956,6 @@ uint64_t CARLsim::getSimTime() { return snn_->getSimTime(); }
 uint32_t CARLsim::getSimTimeSec() { return snn_->getSimTimeSec(); }
 uint32_t CARLsim::getSimTimeMsec() { return snn_->getSimTimeMs(); }
 
-// Writes weights from synaptic connections from gIDpre to gIDpost.  Returns a pointer to the weights
-// and the size of the 1D array in size.
-void CARLsim::getPopWeights(int gIDpre, int gIDpost, float*& weights, int& size) {
-	std::string funcName = "getPopWeights()";
-	UserErrors::assertTrue(carlsimState_ == SETUP_STATE || carlsimState_ == EXE_STATE,
-					UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "SETUP or EXECUTION.");
-
-	snn_->getPopWeights(gIDpre,gIDpost,weights,size);
-}
-
 int* CARLsim::getSpikeCntPtr(int grpId) {
 	std::string funcName = "getSpikeCntPtr()";
 	UserErrors::assertTrue(false, UserErrors::IS_DEPRECATED, funcName);
@@ -983,13 +973,6 @@ int* CARLsim::getSpikeCounter(int grpId) {
 		"EXECUTION.");
 
 	return snn_->getSpikeCounter(grpId);
-}
-
-float* CARLsim::getWeightChanges(int gIDpre, int gIDpost, int& Npre, int& Npost, float* weightChanges) {
-	std::string funcName = "getWeightChanges()";
-	UserErrors::assertTrue(carlsimState_==EXE_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "EXECUTION.");
-
-	return snn_->getWeightChanges(gIDpre,gIDpost,Npre,Npost,weightChanges);
 }
 
 bool CARLsim::isExcitatoryGroup(int grpId) { return snn_->isExcitatoryGroup(grpId); }
