@@ -39,7 +39,6 @@
  */
 
 #include <carlsim.h>
-#include <stdio.h>
 
 #define GPU0 0
 #define GPU1 1
@@ -103,29 +102,29 @@ void *runCARLsim(void* arg)
 
 int main() {
 
-	CARLsim* sims[2]; /** construct a CARLsim network on the heap. */
+	CARLsim* sims[NUM_GPU]; /* construct a CARLsim network on the heap. */
 	
 	sims[GPU0] = new CARLsim("multiGPU_0", GPU_MODE, USER, 0);
 	sims[GPU1] = new CARLsim("multiGPU_1", GPU_MODE, USER, 1);
 
 #if (WIN32 || WIN64)
-	HANDLE threads[2] = {0};
+	HANDLE threads[NUM_GPU] = {0};
 
-	threads[0] = CreateThread(NULL, 0, runCARLsim, (LPVOID)sims[GPU0], 0, NULL);
-	threads[1] = CreateThread(NULL, 0, runCARLsim, (LPVOID)sims[GPU1], 0, NULL);
+	threads[GPU0] = CreateThread(NULL, 0, runCARLsim, (LPVOID)sims[GPU0], 0, NULL);
+	threads[GPU1] = CreateThread(NULL, 0, runCARLsim, (LPVOID)sims[GPU1], 0, NULL);
 
 	WaitForSingleObject(threads[0], INFINITE);
 	WaitForSingleObject(threads[1], INFINITE);
 
-	CloseHandle(threads[0]);
-	CloseHandle(threads[1]);
+	CloseHandle(threads[GPU0]);
+	CloseHandle(threads[GPU1]);
 #else
-	pthread_t threads[2] = {0};
+	pthread_t threads[NUM_GPU] = {0};
 
-	pthread_create(&threads[0], NULL, runCARLsim, (void*)sims[GPU0]);
-	pthread_create(&threads[1], NULL, runCARLsim, (void*)sims[GPU1]);
-	pthread_join(threads[0], NULL);
-	pthread_join(threads[1], NULL);
+	pthread_create(&threads[GPU0], NULL, runCARLsim, (void*)sims[GPU0]);
+	pthread_create(&threads[GPU1], NULL, runCARLsim, (void*)sims[GPU1]);
+	pthread_join(threads[GPU0], NULL);
+	pthread_join(threads[GPU1], NULL);
 #endif
 
 	delete sims[GPU0];
