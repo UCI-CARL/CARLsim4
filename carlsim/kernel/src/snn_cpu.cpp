@@ -2331,7 +2331,7 @@ void CpuSNN::buildNetwork() {
 							connectUserDefined(newInfo);
 							break;
 						default:
-							KERNEL_ERROR("Invalid connection type( should be 'random', or 'full')");
+							KERNEL_ERROR("Invalid connection type( should be 'random', 'full', 'full-no-direct', or 'one-to-one')");
 							exitSimulation(-1);
 					}
 
