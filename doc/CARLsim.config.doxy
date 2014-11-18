@@ -588,7 +588,7 @@ FILE_VERSION_FILTER    =
 # You can optionally specify a file name after the option, if omitted
 # DoxygenLayout.xml will be used as the name of the layout file.
 
-LAYOUT_FILE            =
+LAYOUT_FILE            = CARLsimLayout.xml
 
 # The CITE_BIB_FILES tag can be used to specify one or more bib files
 # containing the references data. This must be a list of .bib files. The
@@ -660,10 +660,15 @@ WARN_LOGFILE           =
 # directories like "/usr/src/myproject". Separate the files or directories
 # with spaces.
 
-INPUT                  = interface/include interface/src \
-						 util/input_stimulus \
-						 util/spike_monitor \
-						 util/scripts
+INPUT                  = ../carlsim/interface/include interface/src \
+                         ../carlsim/spike_monitor/spike_monitor.h \
+                         ../carlsim/connection_monitor/connection_monitor.h \
+                         ../tools/ecj_pti \
+                         ../tools/eo_pti \
+                         ../tools/input_stimulus/input_stimulus.h \
+                         ../tools/offline_analysis_toolbox \
+                         ../tools/spike_generators \
+                         ../tutorial
 
 # This tag can be used to specify the character encoding of the source files
 # that doxygen parses. Internally doxygen uses the UTF-8 encoding, which is
@@ -686,7 +691,9 @@ FILE_PATTERNS          = *.c \
                          *.h \
                          *.cu \
                          *.hpp \
-                         *.dox
+                         *.dox \
+                         *.md \
+                         *.markdown
 
 # The RECURSIVE tag can be used to turn specify whether or not subdirectories
 # should be searched for input files as well. Possible values are YES and NO.
@@ -700,10 +707,11 @@ RECURSIVE              = NO
 # Note that relative paths are relative to the directory from which doxygen is
 # run.
 
-EXCLUDE               = interface/include/callback_core.h \
-						interface/src/callback_core.cpp \
-						util/spike_monitor/spike_monitor_core.h \
-						util/spike_monitor/spike_monitor_core.cpp
+EXCLUDE               =  ../carlsim/interface/include/callback_core.h \
+				     ../carlsim/interface/src/callback_core.cpp \
+                         ../tools/spike_generators/periodic_spikegen.cpp \
+                         ../tools/spike_generators/spikegen_from_file.cpp \
+                         ../tools/spike_generators/spikegen_from_vector.cpp
 
 # The EXCLUDE_SYMLINKS tag can be used to select whether or not files or
 # directories that are symbolic links (a Unix file system feature) are excluded
@@ -1142,7 +1150,7 @@ DISABLE_INDEX          = NO
 # Since the tree basically has the same information as the tab index you
 # could consider to set DISABLE_INDEX to NO when enabling this option.
 
-GENERATE_TREEVIEW      = NO
+GENERATE_TREEVIEW      = YES
 
 # The ENUM_VALUES_PER_LINE tag can be used to set the number of enum values
 # (range [0,1..20]) that doxygen will group on one line in the generated HTML
