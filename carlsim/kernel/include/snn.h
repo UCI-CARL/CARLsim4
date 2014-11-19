@@ -666,9 +666,7 @@ private:
 	int  printPreConnection2(int grpId, FILE* fpg);
 	void printSimSummary(); 	//!< prints a simulation summary at the end of sim
 	void printState(FILE* fp);
-//	void printState(const char *str = "", const FILE* fp);
-	void printTestVarInfo(FILE* fp, char* testString, bool test1=true, bool test2=true, bool test12=false,
-							int subVal=0, int grouping1=0, int grouping2=0); //!< for GPU debugging
+	//void printState(const char *str = "", const FILE* fp);
 	void printTuningLog(FILE* fp);
 	void printWeights(int preGrpId, int postGrpId=-1);
 
@@ -1038,7 +1036,6 @@ private:
 
 	group_info_t	  	grp_Info[MAX_GRP_PER_SNN];
 	group_info2_t		grp_Info2[MAX_GRP_PER_SNN];
-	float*			testVar, *testVar2;
 	uint32_t*	spikeGenBits;
 
 	// weight update parameter

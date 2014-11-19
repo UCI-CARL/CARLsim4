@@ -1867,20 +1867,6 @@ void CpuSNN::copyConnections(network_ptr_t* dest, int kind, int allocateMem) {
 	CUDA_CHECK_ERRORS(cudaMemset(dest->neuronFiring, 0, sizeof(int) * numN));
 
 	copyPostConnectionInfo(dest, allocateMem);
-
-	// neuron testing
-	// FIXME: which function is going to delete testVar, testVar2
-	testVar  = new float[numN];
-	testVar2 = new float[numN];
-	cpuSnnSz.addInfoSize += sizeof(float)*numN*2;
-
-	if(allocateMem)
-		CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->testVar, sizeof(float) * numN));
-	CUDA_CHECK_ERRORS(cudaMemset(dest->testVar, 0, sizeof(float) * numN));
-
-	if(allocateMem)
-		CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->testVar2, sizeof(float) * numN));
-	CUDA_CHECK_ERRORS(cudaMemset(dest->testVar2, 0, sizeof(float) * numN));
 }
 
 void CpuSNN::checkDestSrcPtrs(network_ptr_t* dest, network_ptr_t* src, cudaMemcpyKind kind, int allocateMem, int grpId) {
@@ -2681,36 +2667,6 @@ __global__ void kernel_check_GPU_init ()
 	}
 }
 
-
-// initializes all params needed in snn_gpu.cu
-// up to now they were initialized outside any class member in snn_gpu.cu (as global variables), so if you were
-// to create two CpuSNN instances within the same .cpp file, then the second network would fail to run
-void CpuSNN::CpuSNNinit_GPU() {
-	testVar=NULL;
-	testVar2=NULL;
-	
-	spikeCountD2=0;
-	spikeCountD1=0;
-	secD2fireCnt=0;
-	secD1fireCnt=0;
-
-	// I believe the following are all just test variables
-	testFireCnt1  = 0;
-	testFireCnt2  = 0;
-	testFireCntf1 = 0.0;
-	testFireCntf2 = 0.0;
-	testVarCnt=0;
-	testVarCnt2=0;
-	testVarCnt1=0;
-	secD2fireCntTest=0;
-	secD1fireCntTest=0;
-	generatedSpikesE=0;
-	generatedSpikesI=0;
-	receivedSpikesE=0;
-	receivedSpikesI=0;
-}
-
-
 void CpuSNN::initGPU(int gridSize, int blkSize) {
 	checkAndSetGPUDevice();
 
@@ -2806,94 +2762,6 @@ void CpuSNN::printCurrentInfo(FILE* fp) {
 	fflush(fp);
 }
 
-
-void CpuSNN::printTestVarInfo(FILE* fp, char* testString, bool test1, bool test2, bool test12, int subVal, int grouping1, int grouping2) {
-	checkAndSetGPUDevice();
-
-	int cnt=0;
-
-	KERNEL_WARN("Calling printTestVarInfo with fp is deprecated");
-//  fflush(fpOut_);
-
-	if(test1 || test12)
-		CUDA_CHECK_ERRORS( cudaMemcpy( testVar, cpu_gpuNetPtrs.testVar, sizeof(float)*numN, cudaMemcpyDeviceToHost));
-
-	if(test2 || test12)
-		CUDA_CHECK_ERRORS( cudaMemcpy( testVar2, cpu_gpuNetPtrs.testVar2, sizeof(float)*numN, cudaMemcpyDeviceToHost));
-
-	int gcnt=0;
-	bool firstPrint = true;
-	if(test12) {
-		for(int i=0; i < numN; i++) {
-			if ((testVar[i] != 0.0) || (testVar2[i] != 0.0)) {
-				if(firstPrint) {
-					KERNEL_DEBUG("\ntime=%d: Testing Variable 1 and 2: %s", simTime, testString);
-					firstPrint = false;
-				}
-				KERNEL_DEBUG("testVar12[%d] -> %f : %f", i, testVar[i]-subVal, testVar2[i]-subVal);
-				testVar[i]  = 0.0;
-				testVar2[i] = 0.0;
-				if(gcnt++==grouping1) {
-					KERNEL_INFO("");
-					gcnt=0;
-				}
-			}
-		}
-		fflush(fp);
-		test1 = false;
-		test2 = false;
-		CUDA_CHECK_ERRORS( cudaMemcpy( cpu_gpuNetPtrs.testVar,  testVar, sizeof(float)*numN, cudaMemcpyHostToDevice));
-		CUDA_CHECK_ERRORS_MACRO(cudaMemcpyToSymbol(testVarCnt, &cnt, sizeof(int), 0, cudaMemcpyHostToDevice));
-		CUDA_CHECK_ERRORS( cudaMemcpy( cpu_gpuNetPtrs.testVar2, testVar2, sizeof(float)*numN, cudaMemcpyHostToDevice));
-		CUDA_CHECK_ERRORS_MACRO(cudaMemcpyToSymbol(testVarCnt2, &cnt, sizeof(int), 0, cudaMemcpyHostToDevice));
-	}
-
-	gcnt=0;
-	firstPrint = true;
-	if(test1) {
-    // copy neuron input current...
-		for(int i=0; i < numN; i++) {
-			if (testVar[i] != 0.0 ) {
-				if(firstPrint) {
-					KERNEL_DEBUG("\ntime=%d: Testing Variable 1 and 2: %s", simTime, testString);
-					firstPrint = false;
-				}
-				if(gcnt==0) KERNEL_DEBUG("testVar[%d] -> ", i);
-				KERNEL_DEBUG("%d %f\t", i, testVar[i]-subVal);
-				testVar[i] = 0.0;
-				if(++gcnt==grouping1) { KERNEL_DEBUG("\n"); gcnt=0;}
-			}
-		}
-		fflush(fp);
-		cnt=0;
-		CUDA_CHECK_ERRORS( cudaMemcpy( cpu_gpuNetPtrs.testVar,  testVar, sizeof(float)*numN, cudaMemcpyHostToDevice));
-		CUDA_CHECK_ERRORS_MACRO(cudaMemcpyToSymbol(testVarCnt, &cnt, sizeof(int), 0, cudaMemcpyHostToDevice));
-	}
-
-	gcnt=0;
-	firstPrint = 1;
-	if(test2) {
-		for(int i=0; i < numN; i++) {
-			if (testVar2[i] != 0.0 ) {
-				if(firstPrint) {
-					KERNEL_DEBUG("\ntime=%d: Testing Variable 1 and 2: %s", simTime, testString);
-					firstPrint = 0;
-				}
-				if(gcnt==0) KERNEL_DEBUG("testVar2[%d] -> ", i);
-				KERNEL_DEBUG("%d %f\t", i, testVar2[i]-subVal);
-				testVar2[i] = 0.0;
-				if(++gcnt==grouping2) { KERNEL_DEBUG("\n"); gcnt=0;}
-			}
-		}
-		fflush(fp);
-
-		CUDA_CHECK_ERRORS( cudaMemcpy( cpu_gpuNetPtrs.testVar2, testVar2, sizeof(float)*numN, cudaMemcpyHostToDevice));
-		CUDA_CHECK_ERRORS_MACRO(cudaMemcpyToSymbol(testVarCnt2, &cnt, sizeof(int), 0, cudaMemcpyHostToDevice));
-	}
-	return;
-}
-
-
 // TODO FIXME there's more...
 void CpuSNN::deleteObjects_GPU() {
 	checkAndSetGPUDevice();
@@ -2957,12 +2825,6 @@ void CpuSNN::deleteObjects_GPU() {
 	CUDA_CHECK_ERRORS( cudaFree(cpu_gpuNetPtrs.poissonFireRate) );
 	CUDA_CHECK_ERRORS( cudaFree(cpu_gpuNetPtrs.lastSpikeTime) );
 	CUDA_CHECK_ERRORS( cudaFree(cpu_gpuNetPtrs.spikeGenBits) );
-
-	CUDA_CHECK_ERRORS( cudaFree(cpu_gpuNetPtrs.testVar) );
-	CUDA_CHECK_ERRORS( cudaFree(cpu_gpuNetPtrs.testVar2) );
-	if (testVar!=NULL) delete[] testVar;
-	if (testVar2!=NULL) delete[] testVar2;
-	testVar=NULL; testVar2=NULL;
 
 	// delete all real-time spike monitors
 	CUDA_CHECK_ERRORS( cudaFree(cpu_gpuNetPtrs.spkCntBuf));
@@ -3097,13 +2959,6 @@ void CpuSNN::doGPUSim() {
 #endif
 
 	globalStateUpdate_GPU();
-
-	if(0) {
-		int cnt=0;
-		testSpikeSenderReceiver(fpLog_, simTime);
-		CUDA_CHECK_ERRORS_MACRO(cudaMemcpyToSymbol(testVarCnt, &cnt, sizeof(int), 0, cudaMemcpyHostToDevice));
-		CUDA_CHECK_ERRORS_MACRO(cudaMemcpyToSymbol(testVarCnt2, &cnt, sizeof(int), 0, cudaMemcpyHostToDevice));
-	}
 }
 
 void CpuSNN::updateFiringTable_GPU() {
@@ -3359,7 +3214,6 @@ void CpuSNN::allocateSNN_GPU() {
 	initTableQuickSynId();
 
 	// initialize (cudaMemset) cpu_gpuNetPtrs.I_set, cpu_gpuNetPtrs.poissonFireRate, cpu_gpuNetPtrs.neuronFiring
-	// initialize (cudaMemset) cpu_gpuNetPtrs.testVar, cpu_gpuNetPtrs.testVar2
 	// initialize (copy from CpuSNN) cpu_gpuNetPtrs.Npre, cpu_gpuNetPtrs.Npre_plastic, cpu_gpuNetPtrs.Npre_plasticInv, cpu_gpuNetPtrs.cumulativePre
 	// initialize (copy from CpuSNN) cpu_gpuNetPtrs.cumulativePost, cpu_gpuNetPtrs.Npost, cpu_gpuNetPtrs.postDelayInfo
 	// initialize (copy from CpuSNN) cpu_gpuNetPtrs.postSynapticIds, cpu_gpuNetPtrs.preSynapticIds

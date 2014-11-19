@@ -218,8 +218,6 @@ typedef struct network_ptr_s  {
 	float		*grpACh;
 	float		*grpNE;
 
-	float* 		testVar;
-	float*		testVar2;
 	unsigned int*	spikeGenBits;
 	bool*		curSpike;
 } network_ptr_t;

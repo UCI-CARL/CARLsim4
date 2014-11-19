@@ -1895,10 +1895,6 @@ void CpuSNN::CpuSNNinit() {
 	stdpScaleFactor_ = 1.0f;
 	wtChangeDecay_ = 0.0f;
 
-	// initialize parameters needed in snn_gpu.cu
-	// \FIXME: naming is terrible... so it's a CPU SNN on GPU...
-	CpuSNNinit_GPU();
-
 	if (simMode_ == GPU_MODE)
 		checkGPUDevice();
 }

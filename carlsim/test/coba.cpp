@@ -239,7 +239,7 @@ TEST(COBA, firingRateCPUvsGPU) {
 		sim->setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f); // RS
 		sim->setConductances(true); // make COBA explicit
 
-		sim->connect(g0, g1, "full", RangeWeight(wt), 1.0f, RangeDelay(1,delay));
+		sim->connect(g0, g1, "full", RangeWeight(wt), 1.0f, RangeDelay(5));
 
 		bool spikeAtZero = true;
 		spkGenG0 = new PeriodicSpikeGenerator(inputRate,spikeAtZero);
