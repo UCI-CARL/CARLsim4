@@ -111,7 +111,7 @@ CpuSNN::~CpuSNN() {
 
 // make from each neuron in grpId1 to 'numPostSynapses' neurons in grpId2
 short int CpuSNN::connect(int grpId1, int grpId2, const std::string& _type, float initWt, float maxWt, float prob,
-						uint8_t minDelay, uint8_t maxDelay, float radX, float radY, float radZ, 
+						uint8_t minDelay, uint8_t maxDelay, float radX, float radY, float radZ,
 						float _mulSynFast, float _mulSynSlow, bool synWtType) {
 						//const std::string& wtType
 	int retId=-1;
@@ -511,7 +511,7 @@ void CpuSNN::setNeuronParameters(int grpId, float izh_a, float izh_a_sd, float i
 	}
 }
 
-void CpuSNN::setNeuromodulator(int grpId, float baseDP, float tauDP, float base5HT, float tau5HT, float baseACh, 
+void CpuSNN::setNeuromodulator(int grpId, float baseDP, float tauDP, float base5HT, float tau5HT, float baseACh,
 	float tauACh, float baseNE, float tauNE) {
 
 	grp_Info[grpId].baseDP	= baseDP;
@@ -580,7 +580,7 @@ void CpuSNN::setSTP(int grpId, bool isSet, float STP_U, float STP_tau_u, float S
 
 void CpuSNN::setWeightAndWeightChangeUpdate(updateInterval_t wtANDwtChangeUpdateInterval, bool enableWtChangeDecay, float wtChangeDecay) {
 	assert(wtChangeDecay > 0.0f && wtChangeDecay < 1.0f);
-	
+
 	switch (wtANDwtChangeUpdateInterval) {
 		case INTERVAL_10MS:
 			wtANDwtChangeUpdateInterval_ = 10;
@@ -593,7 +593,7 @@ void CpuSNN::setWeightAndWeightChangeUpdate(updateInterval_t wtANDwtChangeUpdate
 			wtANDwtChangeUpdateInterval_ = 1000;
 			break;
 	}
-	
+
 	if (enableWtChangeDecay) {
 		// set up stdp factor according to update interval
 		switch (wtANDwtChangeUpdateInterval) {
@@ -625,7 +625,7 @@ void CpuSNN::setWeightAndWeightChangeUpdate(updateInterval_t wtANDwtChangeUpdate
 /// PUBLIC METHODS: RUNNING A SIMULATION
 /// ************************************************************************************************************ ///
 
-// if 
+// if
 int CpuSNN::runNetwork(int _nsec, int _nmsec, bool printRunSummary, bool copyState) {
 	assert(_nmsec >= 0 && _nmsec < 1000);
 	assert(_nsec  >= 0);
@@ -653,7 +653,7 @@ int CpuSNN::runNetwork(int _nsec, int _nmsec, bool printRunSummary, bool copySta
 	assert(simTimeRunStop>=simTimeRunStart); // check for arithmetic underflow
 
 	// set the Poisson generation time slice to be at the run duration up to PROPOGATED_BUFFER_SIZE ms.
-	// \TODO: should it be PROPAGATED_BUFFER_SIZE-1 or PROPAGATED_BUFFER_SIZE ? 
+	// \TODO: should it be PROPAGATED_BUFFER_SIZE-1 or PROPAGATED_BUFFER_SIZE ?
 	setGrpTimeSlice(ALL, MAX(1,MIN(runDuration,PROPAGATED_BUFFER_SIZE-1)));
 
 	CUDA_RESET_TIMER(timer);
@@ -1418,7 +1418,7 @@ uint8_t* CpuSNN::getDelays(int gIDpre, int gIDpost, int& Npre, int& Npost, uint8
 
 Grid3D CpuSNN::getGroupGrid3D(int grpId) {
 	assert(grpId>=0 && grpId<numGrp);
-	return Grid3D(grp_Info[grpId].SizeX, grp_Info[grpId].SizeY, grp_Info[grpId].SizeZ);	
+	return Grid3D(grp_Info[grpId].SizeX, grp_Info[grpId].SizeY, grp_Info[grpId].SizeZ);
 }
 
 // find ID of group with name grpName
@@ -1579,11 +1579,11 @@ int* CpuSNN::getSpikeCntPtr(int grpId) {
 		KERNEL_ERROR("Error: the enableGPUSpikeCntPtr flag must be set to true to use this function in GPU_MODE.");
 		assert(enableGPUSpikeCntPtr);
 	}
-    
+
 	if(simMode_ == GPU_MODE){
 		assert(enableGPUSpikeCntPtr);
 	}
-    
+
 	return ((grpId == -1) ? nSpikeCnt : &nSpikeCnt[grp_Info[grpId].StartN]);
 }
 
@@ -2582,7 +2582,7 @@ void CpuSNN::deleteObjects() {
 		fclose(fpLog_);
 
 	resetPointers(true); // deallocate pointers
-		
+
 	// do the same as above, but for snn_gpu.cu
 	deleteObjects_GPU();
 	simulatorDeleted = true;
@@ -2854,7 +2854,7 @@ void CpuSNN::generatePostSpike(unsigned int pre_i, unsigned int idx_d, unsigned 
 
 		change *= grp_Info[pre_grpId].STP_A*stpu[ind_plus]*stpx[ind_minus];
 
-//		fprintf(stderr,"%d: %d[%d], numN=%d, td=%d, maxDelay_=%d, ind-=%d, ind+=%d, stpu=[%f,%f], stpx=[%f,%f], change=%f, wt=%f\n", 
+//		fprintf(stderr,"%d: %d[%d], numN=%d, td=%d, maxDelay_=%d, ind-=%d, ind+=%d, stpu=[%f,%f], stpx=[%f,%f], change=%f, wt=%f\n",
 //			simTime, pre_grpId, pre_i,
 //					numN, tD, maxDelay_, ind_minus, ind_plus,
 //					stpu[ind_minus], stpu[ind_plus], stpx[ind_minus], stpx[ind_plus], change, wt[pos_i]);
@@ -3251,15 +3251,15 @@ bool CpuSNN::isPoint3DonGrid(const Point3D& p, const Grid3D& g) {
 	// point needs to have non-negative coordinates
 	if (p.x<0 || p.y<0 || p.z<0)
 		return false;
-		
+
 	// point needs to have all integer coordinates
 	if (floor(p.x)!=p.x || floor(p.y)!=p.y || floor(p.z)!=p.z)
 		return false;
-		
+
 	// point needs to be within ranges
 	if (p.x>=g.x || p.y>=g.y || p.z>=g.z)
 		return false;
-		
+
 	// passed all tests
 	return true;
 }
@@ -3382,7 +3382,7 @@ int CpuSNN::loadSimulation_internal()
 		if (!fread(&endN,sizeof(int),1,loadSimFID)) return -11;
 		if (startN != grp_Info[g].StartN) return -2;
 		if (endN != grp_Info[g].EndN) return -3;
-		
+
 		if (!fread(&tmpInt,sizeof(int),1,loadSimFID)) return -11;
 		if (tmpInt != grp_Info[g].SizeX) return -2; // \FIXME all these error codes...
 		if (!fread(&tmpInt,sizeof(int),1,loadSimFID)) return -11;
@@ -3956,16 +3956,14 @@ inline void CpuSNN::setConnection(int srcGrp,  int destGrp,  unsigned int src, u
 	if(Npost[src] >= grp_Info[srcGrp].numPostSynapses)	{
 		KERNEL_ERROR("setConnection(%d (Grp=%s), %d (Grp=%s), %f, %d)", src, grp_Info2[srcGrp].Name.c_str(),
 					dest, grp_Info2[destGrp].Name.c_str(), synWt, dVal);
-		KERNEL_ERROR("Large number of postsynaptic connections established");
-		KERNEL_ERROR("Increase maxM param in connect(%s,%s)",grp_Info2[srcGrp].Name.c_str(),grp_Info2[destGrp].Name.c_str());
+		KERNEL_ERROR("Large number of postsynaptic connections established (%d), max for this group %d.", Npost[src], grp_Info[srcGrp].numPostSynapses);
 		exitSimulation(1);
 	}
 
 	if(Npre[dest] >= grp_Info[destGrp].numPreSynapses) {
 		KERNEL_ERROR("setConnection(%d (Grp=%s), %d (Grp=%s), %f, %d)", src, grp_Info2[srcGrp].Name.c_str(),
 					dest, grp_Info2[destGrp].Name.c_str(), synWt, dVal);
-		KERNEL_ERROR("Large number of presynaptic connections established");
-		KERNEL_ERROR("Increase maxPreM param in connect(%s,%s)", grp_Info2[srcGrp].Name.c_str(), grp_Info2[destGrp].Name.c_str());
+		KERNEL_ERROR("Large number of presynaptic connections established (%d), max for this group %d.", Npre[dest], grp_Info[destGrp].numPreSynapses);
 		exitSimulation(1);
 	}
 
