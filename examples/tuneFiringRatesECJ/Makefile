@@ -26,7 +26,12 @@ spike_gen_dir  = $(CARLSIM_LIB_DIR)/spike_generators
 CARLSIM_FLAGS += -I$(CARLSIM_LIB_DIR)/include/kernel \
 								 -I$(CARLSIM_LIB_DIR)/include/interface \
 								 -I$(CARLSIM_LIB_DIR)/include/spike_monitor
+
 CARLSIM_LIBS  += -L$(CARLSIM_LIB_DIR)/lib -lCARLsim
+									 -I$(CARLSIM_LIB_DIR)/include/spike_monitor \
+									 -I$(CARLSIM_LIB_DIR)/include/connection_monitor
+
+CARLSIM_LIBS  += $(CARLSIM_LIB_DIR)/lib/libCARLsim.a
 
 # carlsim ecj components
 ECJ_PTI_FLAGS += -I$(ECJ_PTI_DIR)/include

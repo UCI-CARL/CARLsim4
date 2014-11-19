@@ -19,6 +19,7 @@ include $(USER_MK_PATH)/user.mk
 kernel_dir     = $(CARLSIM_SRC_DIR)/carlsim/kernel
 interface_dir  = $(CARLSIM_SRC_DIR)/carlsim/interface
 spike_mon_dir  = $(CARLSIM_SRC_DIR)/carlsim/spike_monitor
+conn_mon_dir   = $(CARLSIM_SRC_DIR)/carlsim/connection_monitor
 spike_gen_dir  = $(CARLSIM_SRC_DIR)/tools/spike_generators
 server_dir     = $(CARLSIM_SRC_DIR)/carlsim/server
 # carlsim tools
@@ -27,7 +28,7 @@ input_stim_dir = $(CARLSIM_SRC_DIR)/tools/input_stimulus
 # we are compiling from lib
 CARLSIM_FLAGS += -I$(kernel_dir)/include -I$(interface_dir)/include \
 								 -I$(spike_mon_dir) -I$(spike_gen_dir) -I$(server_dir) \
-								 -I$(input_stim_dir)
+								 -I$(input_stim_dir) -I$(conn_mon_dir)
 
 # local info (vars can be overwritten)
 local_src := main_$(example).cpp

@@ -412,14 +412,13 @@ int CpuSNN::allocateStaticLoad(int bufSize) {
 			// fill the static load distribution here...
 			int testg = STATIC_LOAD_GROUP(threadLoad);
 			tempNeuronAllocation[bufferCnt] = threadLoad;
-			KERNEL_DEBUG("%d. Start=%d, size=%d grpId=%d:%s (SpikeMonId=%d) (GroupMonId=%d) (ConnMonId=%d)",
+			KERNEL_DEBUG("%d. Start=%d, size=%d grpId=%d:%s (SpikeMonId=%d) (GroupMonId=%d)",
 					bufferCnt, STATIC_LOAD_START(threadLoad),
 					STATIC_LOAD_SIZE(threadLoad),
 					STATIC_LOAD_GROUP(threadLoad),
 					grp_Info2[testg].Name.c_str(),
 					grp_Info[testg].SpikeMonitorId,
-					grp_Info[testg].GroupMonitorId,
-					grp_Info[testg].ConnectionMonitorId);
+					grp_Info[testg].GroupMonitorId);
 			bufferCnt++;
 		}
 	}
@@ -2399,21 +2398,25 @@ void CpuSNN::copyWeightState (network_ptr_t* dest, network_ptr_t* src,  cudaMemc
 			cumPos_syn 	= dest->cumulativePre[id];
 		}
 
+		// \FIXME occasionally, the next assert fails... thread-safe?
+		if (cumPos_syn>=preSynCnt)
+			fprintf(stderr,"cumPos_syn=%d, preSynCnt=%d\n",cumPos_syn,preSynCnt);
 		assert (cumPos_syn < preSynCnt);
+
 		assert (length_wt <= preSynCnt);
 
-    //MDR FIXME, allocateMem option is VERY wrong
-    // synaptic information based
+	    //MDR FIXME, allocateMem option is VERY wrong
+	    // synaptic information based
 
-    //if(allocateMem) CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->wt, sizeof(float)*length_wt));
+	    //if(allocateMem) CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->wt, sizeof(float)*length_wt));
 		CUDA_CHECK_ERRORS( cudaMemcpy( &dest->wt[cumPos_syn], &src->wt[cumPos_syn], sizeof(float)*length_wt,  kind));
 
-    // firing time for individual synapses
-    //if(allocateMem) CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->synSpikeTime, sizeof(int)*length_wt));
+	    // firing time for individual synapses
+	    //if(allocateMem) CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->synSpikeTime, sizeof(int)*length_wt));
 		CUDA_CHECK_ERRORS( cudaMemcpy( &dest->synSpikeTime[cumPos_syn], &src->synSpikeTime[cumPos_syn], sizeof(int)*length_wt, kind));
 
-    // added this to CARLsim 2.1 - 2.2 file merge -- KDC
-		if ((!sim_with_fixedwts) || (sim_with_stdp)) {
+	    // added this to CARLsim 2.1 - 2.2 file merge -- KDC
+		if ((!sim_with_fixedwts) || sim_with_stdp) {
 			// synaptic weight derivative
 			//if(allocateMem)		CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->wtChange, sizeof(float)*length_wt));
 			CUDA_CHECK_ERRORS( cudaMemcpy( &dest->wtChange[cumPos_syn], &src->wtChange[cumPos_syn], sizeof(float)*length_wt, kind));

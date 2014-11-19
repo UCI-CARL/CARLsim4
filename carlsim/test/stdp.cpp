@@ -290,8 +290,8 @@ TEST(STDP, DASTDPWeightBoost) {
 					sim->connect(g1noise, g1, "one-to-one", RangeWeight(40.0f), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
 					sim->connect(gda, g1, "full", RangeWeight(0.0), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
 					// set up STDP, enable dopamine-modulated STDP
-					sim->setConductances(false,0,0,0,0);
 					sim->setSTDP(g1, true, DA_MOD, alphaLTP, tauLTP, alphaLTD, tauLTD);
+					sim->setConductances(false);
 				}
 
 				sim->setWeightAndWeightChangeUpdate(INTERVAL_10MS, true, 0.99f);
@@ -300,6 +300,8 @@ TEST(STDP, DASTDPWeightBoost) {
 				sim->setSpikeGenerator(gda, spikeCtrl);
 
 				sim->setupNetwork();
+
+				ConnectionMonitor* CM = sim->setConnectionMonitor(gin, g1, "NULL");
 
 				spikeMonPost = sim->setSpikeMonitor(g1);
 				spikeMonPre = sim->setSpikeMonitor(gin);
@@ -333,17 +335,17 @@ TEST(STDP, DASTDPWeightBoost) {
 							}
 
 							//if (diff < 0 && diff >= -20)
-							//	printf("LTD\n");
+							//printf("LTD\n");
 						}
 					}
 				}
 
-				sim->getPopWeights(gin, g1, weights, size);
-				//printf("%f\n",weights[0]);
-				if (damod)
-					weightDAMod = weights[0];
-				else
-					weightNonDAMod = weights[0];
+				std::vector< std::vector<float> > weights = CM->takeSnapshot();
+				if (damod) {
+					weightDAMod = weights[0][0];
+				} else {
+					weightNonDAMod = weights[0][0];
+				}
 
 				delete sim;
 			}
@@ -403,7 +405,7 @@ TEST(STDP, ESTDPHebbianCurve) {
 					sim->connect(gex2, g1, "one-to-one", RangeWeight(minInhWeight, initWeight, maxInhWeight), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_PLASTIC);
 
 					// set up ESTDP
-					sim->setConductances(false,0,0,0,0);
+					sim->setConductances(false);
 					sim->setESTDP(g1, true, STANDARD, HebbianCurve(ALPHA_LTP, TAU_LTP, ALPHA_LTD, TAU_LTP));
 				}
 
@@ -414,22 +416,22 @@ TEST(STDP, ESTDPHebbianCurve) {
 				// build the network
 				sim->setupNetwork();
 
+				ConnectionMonitor* CM = sim->setConnectionMonitor(gex2, g1, "NULL");
+
 				sim->runNetwork(55, 0, true, true);
 
-				sim->getPopWeights(gex2, g1, weights, size);
-				//printf("%d %d %d exc w %f\n", mode, coba, offset, weights[0]);
-
+				std::vector< std::vector<float> > weights = CM->takeSnapshot();
 				if (offset > 0) { // pre-post
 					if (coba) {
-						EXPECT_NEAR(maxInhWeight/100, weights[0], 0.005f);
+						EXPECT_NEAR(maxInhWeight/100, weights[0][0], 0.005f);
 					} else {
-						EXPECT_NEAR(maxInhWeight, weights[0], 0.5f);
+						EXPECT_NEAR(maxInhWeight, weights[0][0], 0.5f);
 					}
 				} else { // post-pre
 					if (coba) {
-						EXPECT_NEAR(minInhWeight/100, weights[0], 0.005f);
+						EXPECT_NEAR(minInhWeight/100, weights[0][0], 0.005f);
 					} else {
-						EXPECT_NEAR(minInhWeight, weights[0], 0.5f);
+						EXPECT_NEAR(minInhWeight, weights[0][0], 0.5f);
 					}
 				}
 
@@ -500,28 +502,28 @@ TEST(STDP, ESTDPHalfHebbianCurve) {
 				// build the network
 				sim->setupNetwork();
 
+				ConnectionMonitor* CM = sim->setConnectionMonitor(gex2, g1, "NULL");
+
 				sim->runNetwork(75, 0, true, true);
 
-				sim->getPopWeights(gex2, g1, weights, size);
-				//printf("%d %d exc w %f\n", coba, offset, weights[0]);
-
+				std::vector< std::vector<float> > weights = CM->takeSnapshot();
 				if (offset > 0) { // pre-post
 					if (coba) {
 						if (offset == 3 || offset == 6)
-							EXPECT_NEAR(maxInhWeight/100, weights[0], 0.005f);
+							EXPECT_NEAR(maxInhWeight/100, weights[0][0], 0.005f);
 						else
-							EXPECT_NEAR(minInhWeight/100, weights[0], 0.005f);
+							EXPECT_NEAR(minInhWeight/100, weights[0][0], 0.005f);
 					} else {
 						if (offset == 3 || offset == 6 || offset == 9)
-							EXPECT_NEAR(maxInhWeight, weights[0], 0.5f);
+							EXPECT_NEAR(maxInhWeight, weights[0][0], 0.5f);
 						else
-							EXPECT_NEAR(minInhWeight, weights[0], 0.5f);
+							EXPECT_NEAR(minInhWeight, weights[0][0], 0.5f);
 					}
 				} else { // post-pre
 					if (coba) {
-						EXPECT_NEAR(minInhWeight/100, weights[0], 0.005f);
+						EXPECT_NEAR(minInhWeight/100, weights[0][0], 0.005f);
 					} else {
-						EXPECT_NEAR(minInhWeight, weights[0], 0.5f);
+						EXPECT_NEAR(minInhWeight, weights[0][0], 0.5f);
 					}
 				}
 
@@ -590,6 +592,8 @@ TEST(STDP, ISTDPConstantSymmetricCurve) {
 				// build the network
 				sim->setupNetwork();
 
+				ConnectionMonitor* CM = sim->setConnectionMonitor(gin, g1, "NULL");
+
 				sim->setSpikeMonitor(g1);
 				sim->setSpikeMonitor(gin);
 				sim->setSpikeMonitor(gex);
@@ -597,104 +601,18 @@ TEST(STDP, ISTDPConstantSymmetricCurve) {
 				// run for 20 seconds
 				sim->runNetwork(20,0, true, true);
 
-				sim->getPopWeights(gin, g1, weights, size);
-
+				std::vector< std::vector<float> > weights = CM->takeSnapshot();
 				if (offset == -5 || offset == 5) { // I-STDP LTP
 					if (coba) {
-						EXPECT_NEAR(-maxInhWeight/100, weights[0], 0.005f);
+						EXPECT_NEAR(-maxInhWeight/100, weights[0][0], 0.005f);
 					} else {
-						EXPECT_NEAR(-maxInhWeight, weights[0], 0.5f);
+						EXPECT_NEAR(-maxInhWeight, weights[0][0], 0.5f);
 					}
 				} else { // I-STDP LTD
 					if (coba) {
-						EXPECT_NEAR(-minInhWeight/100, weights[0], 0.005f);
+						EXPECT_NEAR(-minInhWeight/100, weights[0][0], 0.005f);
 					} else {
-						EXPECT_NEAR(-minInhWeight, weights[0], 0.5f);
-					}
-				}
-
-				delete spikeCtrl;
-				delete sim;
-			}
-		}
-	}
-}
-
-/*!
- * \brief testing the anti-Hebbian I-STDP curve
- * This function tests whether I-STDP change synaptic weight as expected
- * Wtih control of pre- and post-neurons' spikes, the synaptic weight is expected to increase or decrease to
- * maximum or minimum synaptic weith respectively.
- */
-TEST(STDP, ISTDPAntiHebbianCurve) {
-	// simulation details
-	float* weights = NULL;
-	int size;
-	TwoGroupsSpikeController* spikeCtrl;
-	int gin, gex, g1;
-	float ALPHA_LTP = 0.10f;
-	float ALPHA_LTD = 0.14f;
-	float TAU_LTP = 20.0f;
-	float TAU_LTD = 20.0f;
-	float maxInhWeight = 10.0f;
-	float initWeight = 5.0f;
-	float minInhWeight = 0.0f;
-	CARLsim* sim;
-
-	for (int mode = 0; mode < 2; mode++) {
-		for (int coba = 0; coba < 2; coba++) {
-			for (int offset = -30; offset <= 30; offset += 5) {
-				if (offset == 0) continue; // skip offset == 0;
-				// create a network
-				sim = new CARLsim("STDP.ISTDPAntiHebbianCurve", mode?GPU_MODE:CPU_MODE, SILENT, 0, 42);
-
-				g1 = sim->createGroup("excit", 1, EXCITATORY_NEURON);
-				sim->setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f);
-
-				gex = sim->createSpikeGeneratorGroup("input-ex", 1, EXCITATORY_NEURON);
-				gin = sim->createSpikeGeneratorGroup("input-in", 1, INHIBITORY_NEURON);
-
-				spikeCtrl = new TwoGroupsSpikeController(100, offset, gin, gex);
-
-				if (coba) { // conductance-based
-					sim->connect(gex, g1, "one-to-one", RangeWeight(40.0f/100), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
-					sim->connect(gin, g1, "one-to-one", RangeWeight(minInhWeight, initWeight/100, maxInhWeight/100), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_PLASTIC);
-
-					// enable COBA, set up ISTDP
-					sim->setConductances(true,5,150,6,150);
-					sim->setISTDP(g1, true, STANDARD, AntiHebbianCurve(ALPHA_LTP/100, TAU_LTP, ALPHA_LTD/100, TAU_LTP));
-				} else { // current-based
-					sim->connect(gex, g1, "one-to-one", RangeWeight(40.0f), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
-					sim->connect(gin, g1, "one-to-one", RangeWeight(minInhWeight, initWeight, maxInhWeight), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_PLASTIC);
-
-					// set up ISTDP
-					sim->setConductances(false,0,0,0,0);
-					sim->setISTDP(g1, true, STANDARD, AntiHebbianCurve(ALPHA_LTP, TAU_LTP, ALPHA_LTD, TAU_LTP));
-				}
-
-				// set up spike controller on DA neurons
-				sim->setSpikeGenerator(gex, spikeCtrl);
-				sim->setSpikeGenerator(gin, spikeCtrl);
-
-				// build the network
-				sim->setupNetwork();
-
-				sim->runNetwork(40, 0, true, true);
-
-				sim->getPopWeights(gin, g1, weights, size);
-				//printf("%d %d %d inb w %f\n", mode, coba, offset, weights[0]);
-
-				if (offset > 0) { // I-STDP LTP
-					if (coba) {
-						EXPECT_NEAR(-maxInhWeight/100, weights[0], 0.005f);
-					} else {
-						EXPECT_NEAR(-maxInhWeight, weights[0], 0.5f);
-					}
-				} else { // I-STDP LTD
-					if (coba) {
-						EXPECT_NEAR(-minInhWeight/100, weights[0], 0.005f);
-					} else {
-						EXPECT_NEAR(-minInhWeight, weights[0], 0.5f);
+						EXPECT_NEAR(-minInhWeight, weights[0][0], 0.5f);
 					}
 				}
 

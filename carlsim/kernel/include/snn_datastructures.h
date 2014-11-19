@@ -127,6 +127,7 @@ typedef struct connectData_s {
 	float 					 mulSynSlow;				//!< factor to be applied to either gNMDA or gGABAb
 	int	  	  				 numPostSynapses;
 	int	  	  				 numPreSynapses;
+	int                      ConnectionMonitorId;
 	uint32_t  				 connProp;
 	ConnectionGeneratorCore* conn;
 	conType_t 				 type;
@@ -239,7 +240,7 @@ typedef struct group_info_s
 	short int  	MaxFiringRate; //!< this is for the monitoring mechanism, it needs to know what is the maximum firing rate in order to allocate a buffer big enough to store spikes...
 	int			SpikeMonitorId;		//!< spike monitor id
 	int			GroupMonitorId; //!< group monitor id
-	int			ConnectionMonitorId; //!< connection monitor id
+//	int			ConnectionMonitorId; //!< connection monitor id
 	float   	RefractPeriod;
 	int			CurrTimeSlice; //!< timeSlice is used by the Poisson generators in order to note generate too many or too few spikes within a window of time
 	int			NewTimeSlice;
