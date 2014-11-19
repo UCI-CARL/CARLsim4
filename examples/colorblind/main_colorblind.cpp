@@ -46,10 +46,9 @@
 #include <math.h>		// expf
 #include <stdlib.h>		// exit
 
+MTRand getRand;
 // use calcColorME from v1ColorME.2.0.cu
 void calcColorME(int nrX, int nrY, unsigned char* stim, float* red_green, float* green_red, float* blue_yellow, float* yellow_blue, float* ME, bool GPUpointers);
-extern MTRand	      getRand;
-
 
 #define nrX (64)
 #define nrY (nrX)

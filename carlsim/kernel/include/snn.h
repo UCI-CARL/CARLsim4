@@ -76,7 +76,6 @@
 
 #include <propagated_spike_buffer.h>
 #include <poisson_rate.h>
-#include <mtrand.h>
 #include <gpu_random.h>
 #include <spike_monitor.h>
 #include <spike_monitor_core.h>

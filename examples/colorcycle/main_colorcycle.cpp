@@ -45,9 +45,9 @@
 #include <math.h>		// expf
 #include <stdlib.h>		// exit
 
-void calcColorME(int nrX, int nrY, unsigned char* stim, float* red_green, float* green_red, float* blue_yellow, float* yellow_blue, float* ME, bool GPUpointers);
-extern MTRand	      getRand;
+MTRand getRand;
 
+void calcColorME(int nrX, int nrY, unsigned char* stim, float* red_green, float* green_red, float* blue_yellow, float* yellow_blue, float* ME, bool GPUpointers);
 
 #define nrX (32)
 #define nrY (nrX)
