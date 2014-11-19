@@ -95,18 +95,8 @@ __device__ unsigned int spikeCountD2;
 __device__ unsigned int spikeCountD1;
 
 // I believe the following are all just test variables
-__device__ int	testVarCnt;
-__device__ int	testVarCnt2;
-__device__ int	testVarCnt1;
 __device__ unsigned int	secD2fireCntTest;
 __device__ unsigned int	secD1fireCntTest;
-__device__ int  generatedSpikesE;
-__device__ int  generatedSpikesI;
-__device__ int  receivedSpikesE;
-__device__ int  receivedSpikesI;
-__device__ int  senderIdE[1000];
-__device__ int  senderIdI[1000];
-__device__ int  receiverId[1000];
 
 __device__ __constant__ network_ptr_t		gpuPtrs;
 __device__ __constant__ network_info_t		gpuNetInfo;
@@ -255,10 +245,6 @@ __device__ inline void setFiringBitSynapses(unsigned int& nid, int& syn_id)
 __device__ inline uint32_t* getFiringBitGroupPtr(unsigned int& nid, int& synGrpId)
 {
 	uint32_t* tmp_ptr = (((uint32_t*)((char*) gpuPtrs.I_set + synGrpId*gpuNetInfo.I_setPitch)) + nid);
-//		int val=atomicAdd(&testVarCnt2, 3);
-//		gpuPtrs.testVar2[val]   = nid+1;
-//		gpuPtrs.testVar2[val+1] = synGrpId+1;
-//		gpuPtrs.testVar2[val+2] = *tmp_ptr+1;
 	return tmp_ptr;
 }
 
@@ -674,11 +660,6 @@ __device__ void gpu_updateLTP(	int*     		fireTablePtr,
 				int stdp_tDiff = (simTime - gpuPtrs.synSpikeTime[p]);
 				if ((stdp_tDiff > 0) && ((stdp_tDiff*gpuGrpInfo[grpId].TAU_LTP_INV)<25)) {
 					gpuPtrs.wtChange[p] += STDP(stdp_tDiff, gpuGrpInfo[grpId].ALPHA_LTP, gpuGrpInfo[grpId].TAU_LTP_INV);
-//						int val = atomicAdd(&testVarCnt, 4);
-//						gpuPtrs.testVar[val]   = 1+nid;
-//						gpuPtrs.testVar[val+1] = 1+p-gpuPtrs.cumulativePre[nid];
-//						gpuPtrs.testVar[val+2] = 1+gpuPtrs.wtChange[p];
-//						gpuPtrs.testVar[val+3] = 1+stdp_tDiff;
 				}
 			}
 		}
@@ -2580,14 +2561,6 @@ __global__ void kernel_check_GPU_init2_1 (int simTime)
 	 	for(int k=0; k < gpuNetInfo.numN; k++) {
 		if ( gpuPtrs.neuronFiring[k]) {
 			int i=1;
-//				int pos = atomicAdd(&testVarCnt2, 7);
-//				gpuPtrs.testVar2[pos]   = nid;
-//				gpuPtrs.testVar2[pos+1] = ind_1;
-//				gpuPtrs.testVar2[pos+2] = gpuPtrs.stpu[ind_1];
-//				gpuPtrs.testVar2[pos+3] = gpuPtrs.stpx[ind_1];
-//				gpuPtrs.testVar2[pos+4] = gpuPtrs.stpu[ind];
-//				gpuPtrs.testVar2[pos+5] = gpuPtrs.stpx[ind];
-//				gpuPtrs.testVar2[pos+6] = gpuPtrs.stpu[ind]*gpuPtrs.stpx[ind];
 			retErrVal[nid][i++]= k;
 			for(int t=0; t < 5; t++) {
 				float stp = gpuPtrs.stpu[k]*gpuPtrs.stpx[k];
