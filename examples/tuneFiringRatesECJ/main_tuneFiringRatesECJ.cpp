@@ -7,7 +7,8 @@
 #include <cstdlib>
 #include <cstdio>
 #include <vector>
-#include <cmath>
+#include <math.h>
+#include <cassert>
 
 using namespace std;
 using namespace CARLsim_PTI;

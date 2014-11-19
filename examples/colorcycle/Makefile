@@ -8,26 +8,25 @@ USER_MK_PATH = ../../
 include $(USER_MK_PATH)user.mk
 
 example := colorcycle
-output := *.dot *.dat *.log *.csv
+output := *.dot *.dat *.log *.csv results/*
 
 # You should not need to edit the file beyond this point
 # ------------------------------------------------------
 
 # carlsim components
-	kernel_dir     = $(CARLSIM_LIB_DIR)/kernel
-	interface_dir  = $(CARLSIM_LIB_DIR)/interface
-	spike_mon_dir  = $(CARLSIM_LIB_DIR)/spike_monitor
-	spike_gen_dir  = $(CARLSIM_LIB_DIR)/spike_generators
+kernel_dir     = $(CARLSIM_LIB_DIR)/kernel
+interface_dir  = $(CARLSIM_LIB_DIR)/interface
+spike_mon_dir  = $(CARLSIM_LIB_DIR)/spike_monitor
+spike_gen_dir  = $(CARLSIM_LIB_DIR)/spike_generators
 # we are compiling from lib
-	CARLSIM_FLAGS += -I$(CARLSIM_LIB_DIR)/include/kernel \
-									 -I$(CARLSIM_LIB_DIR)/include/interface \
-									 -I$(CARLSIM_LIB_DIR)/include/spike_monitor
-	CARLSIM_LIBS  += $(CARLSIM_LIB_DIR)/lib/libCARLsim.a
+CARLSIM_FLAGS += -I$(CARLSIM_LIB_DIR)/include/kernel \
+								 -I$(CARLSIM_LIB_DIR)/include/interface \
+								 -I$(CARLSIM_LIB_DIR)/include/spike_monitor
+CARLSIM_LIBS  += -L$(CARLSIM_LIB_DIR)/lib -lCARLsim
 
 local_src  := main_$(example).cpp
 local_prog := $(example)
 common_objs:= ../common/v1ColorME.2.0.o
-output_files += $(local_prog) $(common_objs)
 
 .PHONY: clean distclean
 # compile from CARLsim lib
@@ -40,9 +39,7 @@ $(local_prog): $(local_src) $(common_objs)
 	$(NVCC) -c $(CARLSIM_INCLUDES) $(CARLSIM_FLAGS) $< -o $@
 
 clean:
-	$(RM) $(output_files)
+	$(RM) $(local_prog) $(common_objs)
 
 distclean:
-	$(RM) $(output_files) *.log *.dat results/*.dat
-
-devtest: @echo $(CARLSIM_FLAGS)
+	$(RM) $(local_prog) $(common_objs) $(output) 

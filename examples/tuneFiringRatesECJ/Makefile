@@ -7,7 +7,6 @@
 USER_MK_PATH = ../../
 include $(USER_MK_PATH)user.mk
 
-
 example := tuneFiringRatesECJ
 
 # name of ECJ parameter file.
@@ -27,7 +26,7 @@ spike_gen_dir  = $(CARLSIM_LIB_DIR)/spike_generators
 CARLSIM_FLAGS += -I$(CARLSIM_LIB_DIR)/include/kernel \
 								 -I$(CARLSIM_LIB_DIR)/include/interface \
 								 -I$(CARLSIM_LIB_DIR)/include/spike_monitor
-CARLSIM_LIBS  += $(CARLSIM_LIB_DIR)/lib/libCARLsim.a
+CARLSIM_LIBS  += -L$(CARLSIM_LIB_DIR)/lib -lCARLsim
 
 # carlsim ecj components
 ECJ_PTI_FLAGS += -I$(ECJ_PTI_DIR)/include
@@ -47,7 +46,7 @@ $(local_prog): $(local_src) $(carlsim_prog)
 # compile from CARLsim lib
 $(carlsim_prog): $(local_src)
 	$(NVCC) $(CARLSIM_INCLUDES) $(ECJ_PTI_FLAGS) $(CARLSIM_FLAGS) \
-		$(CARLSIM_LFLAGS) $(CARLSIM_LIBS) $(ECJ_PTI_LIBS) $< -o $@
+	$(CARLSIM_LFLAGS) $(CARLSIM_LIBS) $(ECJ_PTI_LIBS) $< -o $@
 
 clean:
 	$(RM) $(local_prog) $(carlsim_prog)

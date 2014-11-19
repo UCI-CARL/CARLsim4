@@ -8,7 +8,7 @@
 #include <cstdio>
 #include <cstring>
 #include <vector>
-#include <assert.h>
+#include <math.h>
 
 using namespace std;
 using namespace CARLsim_PTI;
