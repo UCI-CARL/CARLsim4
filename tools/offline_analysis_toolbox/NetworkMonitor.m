@@ -460,7 +460,8 @@ classdef NetworkMonitor < handle
             disp(['created file "' fileName '"'])
         end
         
-        function setGroupGrid3D(obj, groupName, dim0, dim1, dim2)
+        function setGroupGrid3D(obj, groupName, dim0, dim1, dim2, ...
+                updDefPlotType)
             % NM.setGroupGrid3D(groupName,dim0,dim1,dim2) sets the Grid3D
             % topography of the group. The total number of neurons in the
             % group (width x height x depth) cannot change.
@@ -474,9 +475,13 @@ classdef NetworkMonitor < handle
             %                  dimension.
             % DIM2           - Number of neurons in thrid (z, depth)
             %                  dimension.
+            % UPDDEFPLOTTYPE - A flag whether to update the default plot
+            %                  type, given this new Grid3D topography
+            %                  arrangement. Default: false
             obj.unsetError()
+            if nargin<6,updDefPlotType=false;end
             gId = obj.getGroupId(groupName);
-            obj.groupMonObj{gId}.setGrid3D(dim0,dim1,dim2);
+            obj.groupMonObj{gId}.setGrid3D(dim0,dim1,dim2,updDefPlotType);
         end
         
         function setGroupPlotType(obj, groupName, plotType)

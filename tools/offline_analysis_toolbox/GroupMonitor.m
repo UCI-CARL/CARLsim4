@@ -110,6 +110,9 @@ classdef GroupMonitor < handle
                 obj.throwError('No group name given.');
                 return
             end
+            
+            % make sure spike file is valid
+            obj.initSpikeReader();
         end
                 
         function delete(obj)
@@ -361,7 +364,7 @@ classdef GroupMonitor < handle
             disp(['created file "' fileName '"'])
         end
         
-        function setGrid3D(obj, dim0, dim1, dim2)
+        function setGrid3D(obj, dim0, dim1, dim2, updDefPlotType)
             % GM.setGrid3D(dim0, dim1, dim2) sets the Grid3D topography of
             % the group. The total number of neurons in the group (width x
             % height x depth) cannot change.
@@ -374,9 +377,13 @@ classdef GroupMonitor < handle
             %                  dimension.
             % DIM2           - Number of neurons in thrid (z, depth)
             %                  dimension.
+            % UPDDEFPLOTTYPE - A flag whether to update the default plot
+            %                  type, given this new Grid3D topography
+            %                  arrangement. Default: false
             obj.unsetError()
             obj.initSpikeReader() % so we have accurate grid3D info
             
+            if nargin<5,updDefPlotType=false;end
             if nargin<4,dim2=1;end
             if nargin<3,dim1=1;end
             if nargin<2,dim0=obj.getNumNeurons();end
@@ -418,8 +425,10 @@ classdef GroupMonitor < handle
             end
             obj.grid3D = grid;
             
-            % set default plot type for this arrangement
-            obj.setPlotType('default');
+            if updDefPlotType
+                % set default plot type for this arrangement
+                obj.setPlotType('default');
+            end
         end
                 
         function setPlotType(obj, plotType)
@@ -788,6 +797,34 @@ classdef GroupMonitor < handle
                 % raster uses user-set frameDur just for plotting
                 % binning is not required, use AER instead
                 spkBuffer = obj.spkObj.readSpikes(-1);
+            elseif strcmpi(obj.plotType,'flowfield')
+                % flowfield uses 3D spike buffer to calc flow field
+                spkBuffer = obj.spkObj.readSpikes(plotBinWinMs);
+                
+                % reshape according to group dimensions
+                numFrames = size(spkBuffer,1);
+                spkBuffer = reshape(spkBuffer, numFrames, ...
+                    obj.grid3D(1), obj.grid3D(2), ...
+                    obj.grid3D(3));
+                
+                % find direction of vector component by looking at third
+                % dimension of grid, equally spaced in 0:2*pi
+                dir = (0:obj.grid3D(3)-1)*2*pi/obj.grid3D(3);
+                
+                % calc flow field
+                flowX = zeros(obj.grid3D(1),obj.grid3D(2),numFrames);
+                flowY = zeros(obj.grid3D(1),obj.grid3D(2),numFrames);
+                for f=1:numFrames
+                    for d=1:obj.grid3D(3)
+                        flowX(:,:,f) = flowX(:,:,f) ...
+                            + cos(dir(d)).*squeeze(spkBuffer(f,:,:,d));
+                        flowY(:,:,f) = flowY(:,:,f) ...
+                            + sin(dir(d)).*squeeze(spkBuffer(f,:,:,d));
+                    end
+                end
+                clear spkBuffer;
+                spkBuffer(:,:,1,:) = flowX;
+                spkBuffer(:,:,2,:) = flowY;
             else
                 obj.throwError(['Unrecognized plot type "' obj.plotType '".'])
                 return
@@ -813,7 +850,7 @@ classdef GroupMonitor < handle
             
             obj.grid3D = -1;
             
-            obj.supportedPlotTypes  = {'heatmap', 'raster'};
+            obj.supportedPlotTypes  = {'heatmap', 'raster', 'flowfield'};
             obj.supportedErrorModes = {'standard', 'warning', 'silent'};
         end
         
@@ -876,6 +913,23 @@ classdef GroupMonitor < handle
                     dY = prod(obj.grid3D)*0.05;
                     text(dX, dY, num2str(frameNr), ...
                         'FontSize',10, 'BackgroundColor','white')
+                end
+            elseif strcmpi(obj.plotType,'flowfield')
+                frame = obj.spkData(:,:,:,frameNr);
+                [x,y] = meshgrid(1:obj.grid3D(1),1:obj.grid3D(2));
+                quiver(x,y,frame(:,:,1),frame(:,:,2));
+                axis equal
+                axis([1 max(2,size(frame,1)) 1 max(2,size(frame,2))])
+                title(['Group ' obj.name])
+                xlabel('nrX')
+                ylabel('nrY')
+                set(gca, 'XTick', [1 obj.grid3D(1)/2 obj.grid3D(1)])
+                set(gca, 'YTick', [1 obj.grid3D(2)/2 obj.grid3D(2)])
+
+                % if enabled, display the frame number in lower left corner
+                if dispFrameNr
+                    text(2, 2, num2str(frameNr), 'FontSize', 10, ...
+                        'BackgroundColor','white')
                 end
             else
                 obj.throwError(['Unrecognized plot type "' obj.plotType '".'])
