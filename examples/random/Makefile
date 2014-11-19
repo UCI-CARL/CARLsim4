@@ -14,15 +14,10 @@ output := *.dot *.dat *.log *.csv results/*
 # You should not need to edit the file beyond this point
 # -----------------------------------------------------------------------------
 
-# carlsim components
-kernel_dir     = $(CARLSIM_LIB_DIR)/kernel
-interface_dir  = $(CARLSIM_LIB_DIR)/interface
-spike_mon_dir  = $(CARLSIM_LIB_DIR)/spike_monitor
-spike_gen_dir  = $(CARLSIM_LIB_DIR)/spike_generators
-# we are compiling from lib
+# we are compiling from carlsim lib
 CARLSIM_FLAGS += -I$(CARLSIM_LIB_DIR)/include/kernel \
-								 -I$(CARLSIM_LIB_DIR)/include/interface \
-								 -I$(CARLSIM_LIB_DIR)/include/spike_monitor
+				 -I$(CARLSIM_LIB_DIR)/include/interface \
+				 -I$(CARLSIM_LIB_DIR)/include/spike_monitor
 CARLSIM_LIBS  += -L$(CARLSIM_LIB_DIR)/lib -lCARLsim
 
 local_src  := main_$(example).cpp
