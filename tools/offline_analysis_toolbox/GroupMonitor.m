@@ -153,6 +153,27 @@ classdef GroupMonitor < handle
             errMsg = obj.errorMsg;
         end
         
+        function grid = getGrid3D(obj)
+            % grid = GM.getGrid3D() returns the current 3D grid dimensions
+            % of the group. Grid3D is a 3-element vector, where the first
+            % dimension corresponds to the number of neurons in x
+            % direction, the second dimension to y, and the third dimension
+            % to z.
+            obj.unsetError()
+            obj.initSpikeReader();
+            
+            grid = obj.grid3D;
+        end
+        
+        function nNeur = getNumNeurons(obj)
+            % nNeur = GM.getNumNeurons() returns the number of neurons in
+            % the group.
+            obj.unsetError()
+            obj.initSpikeReader();
+            
+            nNeur = prod(obj.grid3D);
+        end
+        
         function spkFile = getSpikeFileName(obj)
             % spkFile = GM.getSpikeFileName() returns the name of the
             % spike file according to specified prefix and suffix.
@@ -340,30 +361,65 @@ classdef GroupMonitor < handle
             disp(['created file "' fileName '"'])
         end
         
-        function setGrid3D(obj, grid3D)
-            % GM.setGrid3D(grid3D) sets the Grid3D topography of the group.
-            % The total number of neurons in the group (width x height x
-            % depth) cannot change.
-            % GRID3D         - A 3-element vector that specifies the width,
-            %                  the height, and the depth of the 3D neuron
-            %                  grid. The product of these dimensions should
-            %                  equal the total number of neurons in the
-            %                  group.
+        function setGrid3D(obj, dim0, dim1, dim2)
+            % GM.setGrid3D(dim0, dim1, dim2) sets the Grid3D topography of
+            % the group. The total number of neurons in the group (width x
+            % height x depth) cannot change.
+            % If one of the three arguments are set to -1, its value will
+            % be automatically adjusted so that the total number of neurons
+            % in the group stays the same.
+            % DIM0           - Number of neurons in first (x, width)
+            %                  dimension.
+            % DIM1           - Number of neurons in second (y, height)
+            %                  dimension.
+            % DIM2           - Number of neurons in thrid (z, depth)
+            %                  dimension.
             obj.unsetError()
+            obj.initSpikeReader() % so we have accurate grid3D info
             
-            % used to rearrange group layout
-            if prod(grid3D) ~= prod(obj.grid3D)
-                obj.throwError(['Population size cannot change when ' ...
-                    'assigning new Grid3D property (old: ' ...
-                    num2str(prod(obj.grid3D)) ', new: ' ...
-                    num2str(prod(grid3D)) '.'])
+            if nargin<4,dim2=1;end
+            if nargin<3,dim1=1;end
+            if nargin<2,dim0=obj.getNumNeurons();end
+            
+            if sum(mod([dim0 dim1 dim2],1)~=0) > 0
+                obj.throwError('Grid dimensions must be all integers.');
+                return
+            end
+            if sum([dim0 dim1 dim2]==-1) > 1
+                obj.throwError(['There can be at most one dimension ' ...
+                    'with value -1.'])
                 return
             end
             
-            if logical(sum(obj.grid3D~=grid3D))
+            if dim0==-1
+                dim0 = round(obj.getNumNeurons()/dim1/dim2);
+            elseif dim1==-1
+                dim1 = round(obj.getNumNeurons()/dim0/dim2);
+            elseif dim2==-1
+                dim2 = round(obj.getNumNeurons()/dim0/dim1);
+            end
+            
+            grid = [dim0 dim1 dim2];
+            
+            % used to rearrange group layout
+            if prod(grid) ~= prod(obj.grid3D)
+                obj.throwError(['Population size cannot change when ' ...
+                    'assigning new Grid3D property (old: ' ...
+                    num2str(prod(obj.grid3D)) ', new: ' ...
+                    num2str(prod(grid)) ').'])
+                return
+            end
+            
+            % if we rearranged the grid layout, we need to re-load the data
+            % for plotting (but don't init SpikeReader, otherwise the new
+            % setting will be overwritten)
+            if logical(sum(obj.grid3D~=grid))
                 obj.needToLoadData = true;
             end
-            obj.grid3D = grid3D;
+            obj.grid3D = grid;
+            
+            % set default plot type for this arrangement
+            obj.setPlotType('default');
         end
                 
         function setPlotType(obj, plotType)
@@ -642,6 +698,9 @@ classdef GroupMonitor < handle
     methods (Hidden, Access = private)
         function initSpikeReader(obj)
             % private method to initialize SpikeReader
+            if ~obj.needToInitSR
+                return
+            end
             obj.unsetError()
             
             spkFile = obj.getSpikeFileName();
@@ -652,6 +711,10 @@ classdef GroupMonitor < handle
             if errFlag
                 obj.throwError(errMsg)
                 return
+            end
+            if sum(obj.grid3D==-1)~=1
+                disp('in initSR')
+                obj.grid3D
             end
             obj.grid3D = obj.spkObj.getGrid3D();
             obj.needToInitSR = false;
@@ -781,7 +844,8 @@ classdef GroupMonitor < handle
                 maxD = max(obj.spkData(:));
                 frame = obj.spkData(:,:,frameNr);
                 imagesc(frame, [0 maxD])
-                axis image square
+                axis image equal
+                axis([1 obj.grid3D(1) 1 obj.grid3D(2)])
                 title([obj.name ', rate = [0 , ' ...
                     num2str(maxD*1000/frameDur) ' Hz]'])
                 xlabel('nrX')
@@ -800,7 +864,7 @@ classdef GroupMonitor < handle
                 times = obj.spkData(1,:)>=startTime & obj.spkData(1,:)<stopTime;
                 plot(obj.spkData(1,times),obj.spkData(2,times),'.k')
                 axis([startTime stopTime 1 prod(obj.grid3D)])
-                axis square
+                axis image square
                 title(['Group ' obj.name])
                 xlabel('Time (ms)')
                 ylabel('Neuron ID')
