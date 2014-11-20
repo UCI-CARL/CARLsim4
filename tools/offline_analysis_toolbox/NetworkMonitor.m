@@ -245,8 +245,6 @@ classdef NetworkMonitor < handle
             obj.numSubPlots = max(cell2mat(obj.groupSubPlots));
         end
         
-        
-        
         function [errFlag,errMsg] = getError(obj)
             % [errFlag,errMsg] = getError() returns the current error
             % status.
@@ -254,6 +252,24 @@ classdef NetworkMonitor < handle
             % message can be found in errMsg.
             errFlag = obj.errorFlag;
             errMsg = obj.errorMsg;
+        end
+        
+        function grid = getGroupGrid3D(obj, groupName)
+            % nNeur = NM.getGroupGrid3D(groupName) returns the Grid3D
+            % topography of a specific group.
+            % GROUPNAME      - Name of the group.
+            obj.unsetError()
+            gId = obj.getGroupId(groupName);
+            grid = obj.groupMonObj{gId}.getGrid3D();
+        end
+        
+        function nNeur = getGroupNumNeurons(obj, groupName)
+            % nNeur = NM.getGroupNumNeurons(groupName) returns the number
+            % of neurons in a specific group.
+            % GROUPNAME      - Name of the group.
+            obj.unsetError()
+            gId = obj.getGroupId(groupName);
+            nNeur = obj.groupMonObj{gId}.getNumNeurons();
         end
         
         function plot(obj, frames, binWindowMs, stepFrames)
@@ -442,6 +458,30 @@ classdef NetworkMonitor < handle
             close(gcf)
             close(vidObj);
             disp(['created file "' fileName '"'])
+        end
+        
+        function setGroupGrid3D(obj, groupName, dim0, dim1, dim2, ...
+                updDefPlotType)
+            % NM.setGroupGrid3D(groupName,dim0,dim1,dim2) sets the Grid3D
+            % topography of the group. The total number of neurons in the
+            % group (width x height x depth) cannot change.
+            % If one of the three arguments are set to -1, its value will
+            % be automatically adjusted so that the total number of neurons
+            % in the group stays the same.
+            % GROUPNAME      - Name of the group.
+            % DIM0           - Number of neurons in first (x, width)
+            %                  dimension.
+            % DIM1           - Number of neurons in second (y, height)
+            %                  dimension.
+            % DIM2           - Number of neurons in thrid (z, depth)
+            %                  dimension.
+            % UPDDEFPLOTTYPE - A flag whether to update the default plot
+            %                  type, given this new Grid3D topography
+            %                  arrangement. Default: false
+            obj.unsetError()
+            if nargin<6,updDefPlotType=false;end
+            gId = obj.getGroupId(groupName);
+            obj.groupMonObj{gId}.setGrid3D(dim0,dim1,dim2,updDefPlotType);
         end
         
         function setGroupPlotType(obj, groupName, plotType)

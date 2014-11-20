@@ -7,6 +7,9 @@ Legend:
 	- removed element
 	* changed element
 
+2014-11-19     Michael Beyeler <mbeyeler@uci.edu>
+  + Added plotting types 'histogram' and 'flowfield' in GroupMonitor.m
+
 2014-11-17     Michael Beyeler <mbeyeler@uci.edu>
   + Added improved ConnectionMonitor: Weight tracking and recording, on-line
     and off-line (MATLAB) analysis.
