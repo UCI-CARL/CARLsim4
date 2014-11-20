@@ -39,6 +39,9 @@ classdef GroupMonitor < handle
         grid3D;             % Grid3D topography of group
         plotType;           % current plot type
         
+        plotHistNumBins;    % number of histogram bins
+        plotHistShowRate;   % flag whether to plot mean rates (Hz) in hist
+
         plotAbortPlotting;  % flag whether to abort plotting (on-click)
         plotBgColor;        % bg color of plot (for plotting)
         plotDispFrameNr;    % flag whether to display frame number
@@ -110,6 +113,9 @@ classdef GroupMonitor < handle
                 obj.throwError('No group name given.');
                 return
             end
+            
+            % make sure spike file is valid
+            obj.initSpikeReader();
         end
                 
         function delete(obj)
@@ -151,6 +157,35 @@ classdef GroupMonitor < handle
             % message can be found in errMsg.
             errFlag = obj.errorFlag;
             errMsg = obj.errorMsg;
+        end
+        
+        function grid = getGrid3D(obj)
+            % grid = GM.getGrid3D() returns the current 3D grid dimensions
+            % of the group. Grid3D is a 3-element vector, where the first
+            % dimension corresponds to the number of neurons in x
+            % direction, the second dimension to y, and the third dimension
+            % to z.
+            obj.unsetError()
+            obj.initSpikeReader();
+            
+            grid = obj.grid3D;
+        end
+        
+        function nNeur = getNumNeurons(obj)
+            % nNeur = GM.getNumNeurons() returns the number of neurons in
+            % the group.
+            obj.unsetError()
+            obj.initSpikeReader();
+            
+            nNeur = prod(obj.grid3D);
+        end
+        
+        function simDurMs = getSimDurMs(obj)
+            % simDurMs = GM.getSimDurMs() returns the estimated simulation
+            % duration in milliseconds. This is equivalent to the time
+            % stamp of the last spike that occurred.
+            obj.unsetError()
+            simDurMs = obj.spkObj.getSimDurMs();
         end
         
         function spkFile = getSpikeFileName(obj)
@@ -340,30 +375,71 @@ classdef GroupMonitor < handle
             disp(['created file "' fileName '"'])
         end
         
-        function setGrid3D(obj, grid3D)
-            % GM.setGrid3D(grid3D) sets the Grid3D topography of the group.
-            % The total number of neurons in the group (width x height x
-            % depth) cannot change.
-            % GRID3D         - A 3-element vector that specifies the width,
-            %                  the height, and the depth of the 3D neuron
-            %                  grid. The product of these dimensions should
-            %                  equal the total number of neurons in the
-            %                  group.
+        function setGrid3D(obj, dim0, dim1, dim2, updDefPlotType)
+            % GM.setGrid3D(dim0, dim1, dim2) sets the Grid3D topography of
+            % the group. The total number of neurons in the group (width x
+            % height x depth) cannot change.
+            % If one of the three arguments are set to -1, its value will
+            % be automatically adjusted so that the total number of neurons
+            % in the group stays the same.
+            % DIM0           - Number of neurons in first (x, width)
+            %                  dimension.
+            % DIM1           - Number of neurons in second (y, height)
+            %                  dimension.
+            % DIM2           - Number of neurons in thrid (z, depth)
+            %                  dimension.
+            % UPDDEFPLOTTYPE - A flag whether to update the default plot
+            %                  type, given this new Grid3D topography
+            %                  arrangement. Default: false
             obj.unsetError()
+            obj.initSpikeReader() % so we have accurate grid3D info
             
-            % used to rearrange group layout
-            if prod(grid3D) ~= prod(obj.grid3D)
-                obj.throwError(['Population size cannot change when ' ...
-                    'assigning new Grid3D property (old: ' ...
-                    num2str(prod(obj.grid3D)) ', new: ' ...
-                    num2str(prod(grid3D)) '.'])
+            if nargin<5,updDefPlotType=false;end
+            if nargin<4,dim2=1;end
+            if nargin<3,dim1=1;end
+            if nargin<2,dim0=obj.getNumNeurons();end
+            
+            if sum(mod([dim0 dim1 dim2],1)~=0) > 0
+                obj.throwError('Grid dimensions must be all integers.');
+                return
+            end
+            if sum([dim0 dim1 dim2]==-1) > 1
+                obj.throwError(['There can be at most one dimension ' ...
+                    'with value -1.'])
                 return
             end
             
-            if logical(sum(obj.grid3D~=grid3D))
+            if dim0==-1
+                dim0 = round(obj.getNumNeurons()/dim1/dim2);
+            elseif dim1==-1
+                dim1 = round(obj.getNumNeurons()/dim0/dim2);
+            elseif dim2==-1
+                dim2 = round(obj.getNumNeurons()/dim0/dim1);
+            end
+            
+            grid = [dim0 dim1 dim2];
+            
+            % used to rearrange group layout
+            if prod(grid) ~= prod(obj.grid3D)
+                obj.throwError(['Population size cannot change when ' ...
+                    'assigning new Grid3D property (old: ' ...
+                    num2str(prod(obj.grid3D)) ', new: ' ...
+                    num2str(prod(grid)) ').'])
+                return
+            end
+            
+            % if we rearranged the grid layout, we need to re-load the data
+            % for plotting (but don't init SpikeReader, otherwise the new
+            % setting will be overwritten)
+            if logical(sum(obj.grid3D~=grid))
                 obj.needToLoadData = true;
             end
-            obj.grid3D = grid3D;
+            obj.grid3D = grid;
+            
+            if updDefPlotType
+                % set default plot type for this arrangement
+                obj.setPlotType('default');
+            end
         end
                 
         function setPlotType(obj, plotType)
@@ -425,6 +501,10 @@ classdef GroupMonitor < handle
             %                   display the frame number. Default: true.
             % FPS             - The frames per second for the plotting
             %                   loop. Default: 5.
+            % HISTNUMBINS     - Number of bins for histogram. Default: 10.
+            % HISTSHOWRATE    - A boolean flag to plot mean firing rates
+            %                   (Hz) for plotType='histogram' instead of
+            %                   mere number of spikes. Default: true.
             % INTERACTIVEMODE - A boolean flag to set InteractiveMode on or
             %                   off. If it is off, key events/FPS/stepping
             %                   will take no effect (helpful if you want to
@@ -440,6 +520,8 @@ classdef GroupMonitor < handle
                 obj.plotBgColor = 'w';
                 obj.plotFPS = 5;
                 obj.plotBinWinMs = 1000;
+                obj.plotHistNumBins = 10;
+                obj.plotHistShowRate = true;
                 obj.plotStepFrames = false;
                 obj.plotInteractiveMode = true;
                 return;
@@ -475,6 +557,16 @@ classdef GroupMonitor < handle
                         reqRange = [0.01 100];
                         throwErrOutOfRange = val<reqRange(1) | val>reqRange(2);
                         obj.plotFPS = val;
+                    case 'histnumbins'
+                        % number of bins
+                        throwErrNumeric = ~isnumeric(val);
+                        reqRange = [0 inf];
+                        throwErrOutOfRange = val<reqRange(1) | val>reqRange(2);
+                        obj.plotHistNumBins = val;
+                    case 'histshowrate'
+                        % whether to display frame number
+                        throwErrNumeric = ~isnumeric(val) & ~islogical(val);
+                        obj.plotHistShowRate = logical(val);
                     case 'interactivemode'
                         % interactive mode
                         throwErrNumeric = ~isnumeric(val) && ~islogical(val);
@@ -642,6 +734,9 @@ classdef GroupMonitor < handle
     methods (Hidden, Access = private)
         function initSpikeReader(obj)
             % private method to initialize SpikeReader
+            if ~obj.needToInitSR
+                return
+            end
             obj.unsetError()
             
             spkFile = obj.getSpikeFileName();
@@ -652,6 +747,10 @@ classdef GroupMonitor < handle
             if errFlag
                 obj.throwError(errMsg)
                 return
+            end
+            if sum(obj.grid3D==-1)~=1
+                disp('in initSR')
+                obj.grid3D
             end
             obj.grid3D = obj.spkObj.getGrid3D();
             obj.needToInitSR = false;
@@ -706,7 +805,35 @@ classdef GroupMonitor < handle
             
             % if plot type or bin has changed, we need to re-read and
             % re-format the spike data
-            if strcmpi(obj.plotType,'heatmap')
+            if strcmpi(obj.plotType,'flowfield')
+                % flowfield uses 3D spike buffer to calc flow field
+                spkBuffer = obj.spkObj.readSpikes(plotBinWinMs);
+                
+                % reshape according to group dimensions
+                numFrames = size(spkBuffer,1);
+                spkBuffer = reshape(spkBuffer, numFrames, ...
+                    obj.grid3D(1), obj.grid3D(2), ...
+                    obj.grid3D(3));
+                
+                % find direction of vector component by looking at third
+                % dimension of grid, equally spaced in 0:2*pi
+                dir = (0:obj.grid3D(3)-1)*2*pi/obj.grid3D(3);
+                
+                % calc flow field
+                flowX = zeros(obj.grid3D(1),obj.grid3D(2),numFrames);
+                flowY = zeros(obj.grid3D(1),obj.grid3D(2),numFrames);
+                for f=1:numFrames
+                    for d=1:obj.grid3D(3)
+                        flowX(:,:,f) = flowX(:,:,f) ...
+                            + cos(dir(d)).*squeeze(spkBuffer(f,:,:,d));
+                        flowY(:,:,f) = flowY(:,:,f) ...
+                            + sin(dir(d)).*squeeze(spkBuffer(f,:,:,d));
+                    end
+                end
+                clear spkBuffer;
+                spkBuffer(:,:,1,:) = flowX;
+                spkBuffer(:,:,2,:) = flowY;
+            elseif strcmpi(obj.plotType,'heatmap')
                 % heat map uses user-set frameDur for both binning and
                 % plotting
                 spkBuffer = obj.spkObj.readSpikes(plotBinWinMs);
@@ -721,6 +848,15 @@ classdef GroupMonitor < handle
                 % \TODO consider the case 1xNxM and Nx1xM
                 spkBuffer = permute(spkBuffer,[3 2 4 1]); % Matlab: Y, X
                 spkBuffer = reshape(spkBuffer,obj.grid3D(2),[],numFrames);
+            elseif strcmpi(obj.plotType,'histogram')
+                % hist uses smaller bin size than frameDur
+                histBinMs = plotBinWinMs/obj.plotHistNumBins;
+                spkBuffer = sum(obj.spkObj.readSpikes(histBinMs),2)';
+                
+                if obj.plotHistShowRate
+                    % compute firing rate (Hz) from number of spikes
+                    spkBuffer = 1000.0*spkBuffer/obj.getNumNeurons()/histBinMs;
+                end
             elseif strcmpi(obj.plotType,'raster')
                 % raster uses user-set frameDur just for plotting
                 % binning is not required, use AER instead
@@ -744,13 +880,14 @@ classdef GroupMonitor < handle
             obj.setSpikeFileAttributes()
             obj.setPlottingAttributes()
             obj.setRecordingAttributes()
-
+            
             obj.needToInitSR = true;
             obj.needToLoadData = true;
             
             obj.grid3D = -1;
             
-            obj.supportedPlotTypes  = {'heatmap', 'raster'};
+            obj.supportedPlotTypes  = {'flowfield', 'heatmap', ...
+                'histogram', 'raster'};
             obj.supportedErrorModes = {'standard', 'warning', 'silent'};
         end
         
@@ -777,12 +914,30 @@ classdef GroupMonitor < handle
             % load data and reshape for plotting if necessary
             obj.loadDataForPlotting(plotType, frameDur);
             
-            if strcmpi(obj.plotType,'heatmap')
+            if strcmpi(obj.plotType,'flowfield')
+                frame = obj.spkData(:,:,:,frameNr);
+                [x,y] = meshgrid(1:obj.grid3D(1),1:obj.grid3D(2));
+                quiver(x,y,frame(:,:,1),frame(:,:,2));
+                axis equal
+                axis([1 max(2,size(frame,1)) 1 max(2,size(frame,2))])
+                title(['Group ' obj.name])
+                xlabel('nrX')
+                ylabel('nrY')
+                set(gca, 'XTick', [1 obj.grid3D(1)/2 obj.grid3D(1)])
+                set(gca, 'YTick', [1 obj.grid3D(2)/2 obj.grid3D(2)])
+
+                % if enabled, display the frame number in lower left corner
+                if dispFrameNr
+                    text(2, 2, num2str(frameNr), 'FontSize', 10, ...
+                        'BackgroundColor','white')
+                end
+            elseif strcmpi(obj.plotType,'heatmap')
                 maxD = max(obj.spkData(:));
                 frame = obj.spkData(:,:,frameNr);
                 imagesc(frame, [0 maxD])
-                axis image square
-                title([obj.name ', rate = [0 , ' ...
+                axis image equal
+                axis([1 obj.grid3D(1) 1 obj.grid3D(2)])
+                title(['Group ' obj.name ', rate = [0 , ' ...
                     num2str(maxD*1000/frameDur) ' Hz]'])
                 xlabel('nrX')
                 ylabel('nrY')
@@ -793,18 +948,36 @@ classdef GroupMonitor < handle
                     text(2,size(obj.spkData,1)-1,num2str(frameNr), ...
                         'FontSize',10,'BackgroundColor','white')
                 end
+            elseif strcmpi(obj.plotType,'histogram')
+                histBinMs = frameDur/obj.plotHistNumBins;
+                edges = (frameNr-1)*frameDur + histBinMs/2 : histBinMs ...
+                    : frameNr*frameDur;
+                dataStart = (frameNr-1)*obj.plotHistNumBins+1;
+                dataEnd = frameNr*obj.plotHistNumBins;
+                data = obj.spkData(1, dataStart:dataEnd);
+                bar(edges, data, 1.0)
+                xlabel('time slice')
+                if obj.plotHistShowRate
+                    ylabel('Mean firing rate (Hz)')
+                else
+                    ylabel('number of spikes')
+                end
+                title(['Group ' obj.name])
+%                 axis square
+                a=axis; maxD = max(data(:))*1.2;
+                axis([a(1) a(2) 0 max(maxD,1)])
             elseif strcmpi(obj.plotType,'raster')
                 % find beginning and end of time bin to be displayed
                 startTime = (frameNr-1)*frameDur;
                 stopTime  = frameNr*frameDur;
                 times = obj.spkData(1,:)>=startTime & obj.spkData(1,:)<stopTime;
                 plot(obj.spkData(1,times),obj.spkData(2,times),'.k')
+                axis image square
                 axis([startTime stopTime 1 prod(obj.grid3D)])
-                axis square
                 title(['Group ' obj.name])
                 xlabel('Time (ms)')
                 ylabel('Neuron ID')
-                set(gca, 'YTick', 0:round(prod(obj.grid3D)/10):prod(obj.grid3D))
+                set(gca, 'YTick', 0:round(prod(obj.grid3D)/10):prod(obj.grid3D)+1)
 
                 % if enabled, display the frame number in lower left corner
                 if dispFrameNr
