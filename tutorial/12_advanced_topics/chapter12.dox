@@ -1,0 +1,40 @@
+/*!
+
+\page ch12_advanced_topics 12. Advanced Topics
+
+\section ch12s1_best_practices 12.1 Best Practices
+
+
+\subsection ch12s1s1_tips_tricks 12.1.1 Tips and Tricks, Do's and Don'ts
+
+Don't record all spikes forever. Tricks for doing training and testing.
+
+
+\subsection ch12s1s2_speed_up 12.1.2 Ways to Speed Up Your Simulation
+
+Don't record all spikes forever. Silent mode. Cost of using certain functions. Handling large-scale networks.
+
+
+\section ch12s2_multi_gpu 12.2 Multi-GPU
+
+Use threading to create a CARLsim simulation on every GPU. Say in the future we'll have a more advanced way of doing that.
+
+
+\section ch12s3_logging_errors 12.3 Logging and Errors
+\TODO MB
+
+Logger modes. Log files. User errors.
+
+
+\section ch12s4_numerical_integration 12.4 Numerical Integration
+
+Integration time step. Integration method. Weight update interval.
+
+
+\section ch12s5_technical_limitations 12.5 Technical Limitations
+
+Limitations on neuron/synapse/group/connection size, etc. Memory limitations (GPU memory). Max firing rate 520Hz. Handling large-scale networks.
+
+
+
+*/

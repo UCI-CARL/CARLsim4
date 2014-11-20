@@ -668,7 +668,20 @@ INPUT                  = ../carlsim/interface/include interface/src \
                          ../tools/input_stimulus/input_stimulus.h \
                          ../tools/offline_analysis_toolbox \
                          ../tools/spike_generators \
-                         ../tutorial
+                         ../tutorial \
+                         ../tutorial/1_getting_started \
+                         ../tutorial/2_basics \
+                         ../tutorial/3_neurons_synapses_groups \
+                         ../tutorial/4_connections \
+                         ../tutorial/5_synaptic_plasticity \
+                         ../tutorial/6_input \
+                         ../tutorial/7_monitoring \
+                         ../tutorial/8_saving_and_loading \
+                         ../tutorial/9_visualization \
+                         ../tutorial/10_ecj \
+                         ../tutorial/11_regression_suite \
+                         ../tutorial/12_advanced_topics \
+                         ../tutorial/13_example_networks
 
 # This tag can be used to specify the character encoding of the source files
 # that doxygen parses. Internally doxygen uses the UTF-8 encoding, which is
@@ -759,7 +772,21 @@ EXAMPLE_RECURSIVE      = NO
 # directories that contain image that are included in the documentation (see
 # the \image command).
 
-IMAGE_PATH             =
+IMAGE_PATH             = ../tutorial \
+                         ../tutorial/1_getting_started \
+                         ../tutorial/2_basics \
+                         ../tutorial/3_neurons_synapses_groups \
+                         ../tutorial/4_connections \
+                         ../tutorial/5_synaptic_plasticity \
+                         ../tutorial/6_input \
+                         ../tutorial/7_monitoring \
+                         ../tutorial/8_saving_and_loading \
+                         ../tutorial/9_visualization \
+                         ../tutorial/10_ecj \
+                         ../tutorial/11_regression_suite \
+                         ../tutorial/12_advanced_topics \
+                         ../tutorial/13_example_networks
+
 
 # The INPUT_FILTER tag can be used to specify a program that doxygen should
 # invoke to filter for each input file. Doxygen will invoke the filter program
@@ -772,7 +799,7 @@ IMAGE_PATH             =
 
 # the following line parses all instances of "FIXME" and "TODO" in the source
 # code and puts them in a "Todo List" in the doc under "Related Pages"
-INPUT_FILTER           = "sed -e 's/\/\/.*FIXME/\/\/\/ \\todo/'"
+INPUT_FILTER           = "sed -e 's/\/\/.*FIXME/\/\/\/ \\TODO/'"
 
 # The FILTER_PATTERNS tag can be used to specify filters on a per file pattern
 # basis.
@@ -925,7 +952,7 @@ HTML_FOOTER            =
 # the style sheet file to the HTML output directory, so don't put your own
 # style sheet in the HTML output directory as well, or it will be erased!
 
-HTML_STYLESHEET        =
+HTML_STYLESHEET        = CARLsimStyles.css
 
 # The HTML_EXTRA_FILES tag can be used to specify one or more extra images or
 # other source files which should be copied to the HTML output directory. Note

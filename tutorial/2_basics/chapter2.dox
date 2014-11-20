@@ -1,0 +1,22 @@
+/*!
+
+\page ch2_basics
+
+\section ch2s1_overview 2.1 Overview
+
+Very brief overview (1 paragraph): If you only had 2min to explain CARLsim to someone.
+What it is for. How you can use it effectively, what to use it for. Typical program workflow (high abstraction level). Mention that Test Suite exists, why you would use it, and point to it.
+
+\image html 2_test.jpg "This is an example image."
+
+
+\section ch2s2_carlsim_hello_world 2.2 CARLsim Hello World
+
+The simplest functional network. Maybe close to what is on the website tutorial. Maybe with current injection (if it's easier than PoissonRate).
+Briefly explain workflow (lower abstraction level), but still not in too much detail. 
+
+
+
+
+
+*/

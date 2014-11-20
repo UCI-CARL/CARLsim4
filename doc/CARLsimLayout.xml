@@ -3,8 +3,68 @@
 	<!-- Navigation index tabs for HTML output -->
 	<navindex>
 		<tab type="mainpage" visible="yes" title=""/>
-		<tab type="pages" visible="yes" title="" intro=""/>
-		<tab type="pages" visible="yes" title="blah" intro=""/>
+		<tab type="usergroup" visible="yes" title="Tutorial">
+			<tab type="usergroup" visible="yes" title="1. Getting Started" url="@ref ch1_getting_started">
+				<tab type="user" visible="no" title="1.1 Installation" url="@ref ch1s1_installation"/>
+				<tab type="user" visible="no" title="1.2 Configuration" url="@ref ch1s2_configuration"/>
+				<tab type="user" visible="no" title="1.3 Project Workflow" url="@ref ch1s3_project_workflow"/>
+			</tab>
+			<tab type="usergroup" visible="yes" title="2. Basics" url="@ref ch2_basics">
+				<tab type="user" visible="no" title="2.1 Overview" url="@ref ch2s1_overview"/>
+				<tab type="user" visible="no" title="2.2 CARLsim Hello World" url="@ref ch2s2_carlsim_hello_world"/>
+			</tab>
+			<tab type="usergroup" visible="yes" title="3. Neurons, Synapses, and Groups" url="@ref ch3_neurons_synapses_groups">
+				<tab type="user" visible="no" title="3.1 Neurons" url="@ref ch3s1_neurons"/>
+				<tab type="user" visible="no" title="3.2 Synapses" url="@ref ch3s2_synapses"/>
+				<tab type="user" visible="no" title="3.3 Groups" url="@ref ch3s3_groups"/>
+			</tab>
+			<tab type="usergroup" visible="yes" title="4. Connections" url="@ref ch4_connections">
+				<tab type="user" visible="no" title="4.1 Primitive Types" url="@ref ch4s1_primitive_types"/>
+				<tab type="user" visible="no" title="4.2 Library/Tools" url="@ref ch4s2_library_tools"/>
+				<tab type="user" visible="no" title="4.3 User-Defined" url="@ref ch4s3_user_defined"/>
+			</tab>
+			<tab type="usergroup" visible="yes" title="5. Synaptic Plasticity" url="@ref ch5_synaptic_plasticity">
+				<tab type="user" visible="no" title="5.1 Short-Term Plasticity" url="@ref ch5s1_short_term_plasticity"/>
+				<tab type="user" visible="no" title="5.2 Spike-Timing Dependent Plasticity" url="@ref ch5s2_spike_timing_dependent_plasticity"/>
+				<tab type="user" visible="no" title="5.3 Homeostasis" url="@ref ch5s3_homeostasis"/>
+				<tab type="user" visible="no" title="5.4 Neuromodulation" url="@ref ch5s4_neuromodulation"/>
+			</tab>
+			<tab type="usergroup" visible="yes" title="6. Input" url="@ref ch6_input">
+				<tab type="user" visible="no" title="6.1 Generating Spikes" url="@ref ch6s1_generating_spikes"/>
+				<tab type="user" visible="no" title="6.2 Generating Current" url="@ref ch6s2_generating_current"/>
+				<tab type="user" visible="no" title="6.3 Generating Noise" url="@ref ch6s3_generating_noise"/>
+			</tab>
+			<tab type="usergroup" visible="yes" title="7. Monitoring" url="@ref ch7_monitoring">
+				<tab type="user" visible="no" title="7.1 Spike Monitor" url="@ref ch7s1_spike_monitor"/>
+				<tab type="user" visible="no" title="7.2 Connection Monitor" url="@ref ch7s2_connection_monitor"/>
+				<tab type="user" visible="no" title="7.3 Group Monitor" url="@ref ch7s3_group_monitor"/>
+			</tab>
+			<tab type="usergroup" visible="yes" title="8. Saving and Loading" url="@ref ch8_saving_loading">
+				<tab type="user" visible="no" title="8.1 saveSimulation" url="@ref ch8s1_savesimulation"/>
+				<tab type="user" visible="no" title="8.2 loadSimulation" url="@ref ch8s2_loadsimulation"/>
+			</tab>
+			<tab type="usergroup" visible="yes" title="9. Visualization" url="@ref ch9_visualization">
+				<tab type="user" visible="no" title="9.1 MATLAB Offline Analysis Toolbox" url="@ref ch9s1_matlab_oat"/>
+			</tab>
+			<tab type="usergroup" visible="yes" title="10. ECJ" url="@ref ch10_ecj">
+				<tab type="user" visible="no" title="10.1 Installation" url="@ref ch10s1_installation"/>
+				<tab type="user" visible="no" title="10.2 etc" url="@ref ch10s2_etc"/>
+			</tab>
+			<tab type="usergroup" visible="yes" title="11. Regression Suite" url="@ref ch11_regression_suite"/>
+			<tab type="usergroup" visible="yes" title="12. Advanced Topics" url="@ref ch12_advanced_topics">
+				<tab type="user" visible="no" title="12.1 Best Practices" url="@ref ch12s1_best_practices"/>
+				<tab type="user" visible="no" title="12.2 Multi-GPU" url="@ref ch12s2_multi_gpu"/>
+				<tab type="user" visible="no" title="12.3 Logging and Errors" url="@ref ch12s3_logging_errors"/>
+				<tab type="user" visible="no" title="12.4 Numerical Integration" url="@ref ch12s4_numerical_integration"/>
+				<tab type="user" visible="no" title="12.5 Technical Limitations" url="@ref ch12s5_technical_limitations"/>
+			</tab>
+			<tab type="usergroup" visible="yes" title="13. Example Networks" url="@ref ch13_example_networks">
+				<tab type="user" visible="no" title="13.1 80-20 RAIN" url="@ref ch13s1_80_20_rain"/>
+				<tab type="user" visible="no" title="13.2 PTI STDPh" url="@ref ch13s2_pti_stdph"/>
+				<tab type="user" visible="no" title="13.3 Color Opponency" url="@ref ch13s3_color_opponency"/>
+				<tab type="user" visible="no" title="13.4 Motion Energy" url="@ref ch13s4_motion_energy"/>
+			</tab>
+		</tab>
 		<tab type="modules" visible="yes" title="" intro=""/>
 		<tab type="namespaces" visible="yes" title="">
 			<tab type="namespacelist" visible="yes" title="" intro=""/>
@@ -20,7 +80,6 @@
 			<tab type="filelist" visible="yes" title="" intro=""/>
 			<tab type="globals" visible="yes" title="" intro=""/>
 		</tab>
-		<tab type="examples" visible="yes" title="" intro=""/>  
 	</navindex>
 
 	<!-- Layout definition for a class page -->
