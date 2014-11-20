@@ -1,0 +1,57 @@
+/*!
+
+\page ch5_synaptic_plasticity Chapter 5: Synaptic Plasticity
+
+\tableofcontents
+
+
+
+\section ch5s1_short_term_plasticity 5.1 Short-Term Plasticity (STP)
+
+
+\section ch5s2_spike_timing_dependent_plasticity 5.2 Spike-Timing Dependent Plasticity (STDP)
+\TODO KDC and TS
+
+All things STDP.
+
+\bug Specified decay of the weight changes does not really correspond to milliseconds.
+\warning If you set STDP on a fixed connection, your computer might explode.
+
+
+\subsection ch5s2s1_e_stdp 5.2.1 Excitatory STDP (E-STDP)
+
+Explain E-STDP. Show curve. Show equations.
+
+\since v2.0
+\author Jaryam M. Nageswaran
+\author Micah D. Richert
+
+
+\subsection ch5s2s2_i_stdp 5.2.2 Inhibitory STDP (I-STDP)
+
+Explain I-STDP. Show curve. Show equations.
+
+\since v3.0
+\author Ting-Shuo Chou
+
+
+\subsection ch5s2s3_da_stdp 5.2.3 Dopamine-Modulated STDP (DA-STDP)
+
+Explain DA-STDP. Show curve. Show equations.
+
+\since v3.0
+\author Ting-Shuo Chou
+
+
+\section ch5s3_homeostasis 5.3 Homeostasis
+\TODO KDC
+
+\author Jayram M. Nageswaran
+\author Kristofor D. Carlson
+
+\section ch5s4_neuromodulation 5.4 Neuromodulation
+\TODO TS
+
+\author Ting-Shuo Chou
+
+*/

@@ -1,0 +1,23 @@
+/*!
+
+\page ch4_connections Chapter 4: Connections
+
+\tableofcontents
+
+
+
+\section ch4s1_primitive_types 4.1 Primitive Types
+
+random, full, full-no-direct, one-to-one, gaussian
+
+
+\section ch4s2_library_tools 4.2. Library Tools
+\TODO MB
+connectGauss
+
+
+\section ch4s3_user_defined 4.3 User-Defined Connections
+
+ConnectionGenerator
+
+*/

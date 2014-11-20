@@ -7,6 +7,9 @@ Legend:
 	- removed element
 	* changed element
 
+2014-11-20     Michael Beyeler <mbeyeler@uci.edu>
+  + Added tutorial folder structure skeleton.
+
 2014-11-19     Michael Beyeler <mbeyeler@uci.edu>
   + Added plotting types 'histogram' and 'flowfield' in GroupMonitor.m
 

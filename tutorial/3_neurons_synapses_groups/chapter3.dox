@@ -1,0 +1,57 @@
+/*!
+
+\page ch3_neurons_synapses_groups Chapter 3: Neurons, Synapses, and Groups
+
+\tableofcontents
+
+
+\section ch3s1_neurons 3.1 Neurons
+
+
+\subsection ch3s1s1_izhikevich_neurons 3.1.1 Izhikevich Neurons
+
+Izhikevich neuron types. setNeuronParameters. Talk about reasonable currents (regimes).
+
+
+\section ch3s2_synapses 3.2 Synapses
+
+Neurons are connected via synapses. Here's how synapses work. Mention weights and that weights can change (see Chapter 4).
+
+
+\subsection ch3s2s1_cuba 3.2.1 CUBA
+
+I is mA, blah. Talk about current decay.
+
+
+\subsection ch3s2s2_coba 3.2.2 COBA
+
+Equation with decay times. setConductances(dAMPA, dNMDA, dGABAa, dGABAb).
+
+
+\subsection ch3s2s3_rise_times 3.2.3 Rise Times
+\TODO MB
+
+Equation with both rise and decay times. setConductances(dAMPA, rNMDA, dNMDA, dGABAa, rGABAb, dGABAb).
+
+\since v3.0
+
+
+\section ch3s3_groups 3.3 Groups
+
+Neurons are worthless alone, so group them. Here's how you group them.
+
+
+\subsection ch3s3s1_creating_groups 3.3.1 Creating Groups
+
+createGroup
+
+
+\subsection ch3s3s2_topography 3.3.2 Topography
+\TODO TS
+
+Grid3D. Topographical arrangements.
+
+\since v3.0
+
+
+*/
