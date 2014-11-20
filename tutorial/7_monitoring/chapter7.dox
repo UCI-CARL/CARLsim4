@@ -1,6 +1,10 @@
 /*!
 
-\page ch7_monitoring 7. Monitoring
+\page ch7_monitoring Chapter 7: Monitoring
+
+\tableofcontents
+
+
 
 \section ch7s1_spike_monitor 7.1 Spike Monitor
 

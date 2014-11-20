@@ -1,12 +1,22 @@
 /*!
 
-\page ch10_ecj 10. ECJ
+\page ch10_ecj Chapter 10: ECJ
+
+\tableofcontents
+
+All things PTI and ECJ.
+
+\since v3.0
+
 
 \TODO KDC
 
 \section ch10s1_installation 10.1 Installation
 
 \section ch10s2_etc 10.2 etc.
+
+direct / indirect encoding
+tune firing rates
 
 
 */

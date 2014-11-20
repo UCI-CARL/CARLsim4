@@ -1,6 +1,9 @@
 /*!
 
-\page ch6_input 6. Generating Input
+\page ch6_input Chapter 6: Generating Input
+
+\tableofcontents
+
 
 All the ways to generate input...
 
@@ -23,6 +26,10 @@ All the ways to generate input...
 
 
 \section ch6s2_generating_current 6.2 Generating Current
+
+Current injection.
+
+\see \ref ch6s4_generating_noise
 
 
 \section ch6s3_visual_stimulus_toolbox 6.3 Visual Stimulus Toolbox

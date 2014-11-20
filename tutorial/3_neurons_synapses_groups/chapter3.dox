@@ -1,6 +1,8 @@
 /*!
 
-\page ch3_neurons_synapses_groups 3. Neurons, Synapses, and Groups
+\page ch3_neurons_synapses_groups Chapter 3: Neurons, Synapses, and Groups
+
+\tableofcontents
 
 
 \section ch3s1_neurons 3.1 Neurons
@@ -31,6 +33,8 @@ Equation with decay times. setConductances(dAMPA, dNMDA, dGABAa, dGABAb).
 
 Equation with both rise and decay times. setConductances(dAMPA, rNMDA, dNMDA, dGABAa, rGABAb, dGABAb).
 
+\since v3.0
+
 
 \section ch3s3_groups 3.3 Groups
 
@@ -46,6 +50,8 @@ createGroup
 \TODO TS
 
 Grid3D. Topographical arrangements.
+
+\since v3.0
 
 
 */

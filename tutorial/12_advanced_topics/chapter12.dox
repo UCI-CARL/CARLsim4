@@ -1,6 +1,10 @@
 /*!
 
-\page ch12_advanced_topics 12. Advanced Topics
+\page ch12_advanced_topics Chapter 12: Advanced Topics
+
+\tableofcontents
+
+
 
 \section ch12s1_best_practices 12.1 Best Practices
 
@@ -13,6 +17,9 @@ Don't record all spikes forever. Tricks for doing training and testing.
 \subsection ch12s1s2_speed_up 12.1.2 Ways to Speed Up Your Simulation
 
 Don't record all spikes forever. Silent mode. Cost of using certain functions. Handling large-scale networks.
+
+\see \ref ch7s1_spike_monitor
+\see \ref ch12s3_logging_errors
 
 
 \section ch12s2_multi_gpu 12.2 Multi-GPU
