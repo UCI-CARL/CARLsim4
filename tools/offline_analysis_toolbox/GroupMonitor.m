@@ -39,6 +39,9 @@ classdef GroupMonitor < handle
         grid3D;             % Grid3D topography of group
         plotType;           % current plot type
         
+        plotHistNumBins;    % number of histogram bins
+        plotHistShowRate;   % flag whether to plot mean rates (Hz) in hist
+
         plotAbortPlotting;  % flag whether to abort plotting (on-click)
         plotBgColor;        % bg color of plot (for plotting)
         plotDispFrameNr;    % flag whether to display frame number
@@ -175,6 +178,14 @@ classdef GroupMonitor < handle
             obj.initSpikeReader();
             
             nNeur = prod(obj.grid3D);
+        end
+        
+        function simDurMs = getSimDurMs(obj)
+            % simDurMs = GM.getSimDurMs() returns the estimated simulation
+            % duration in milliseconds. This is equivalent to the time
+            % stamp of the last spike that occurred.
+            obj.unsetError()
+            simDurMs = obj.spkObj.getSimDurMs();
         end
         
         function spkFile = getSpikeFileName(obj)
@@ -490,6 +501,10 @@ classdef GroupMonitor < handle
             %                   display the frame number. Default: true.
             % FPS             - The frames per second for the plotting
             %                   loop. Default: 5.
+            % HISTNUMBINS     - Number of bins for histogram. Default: 10.
+            % HISTSHOWRATE    - A boolean flag to plot mean firing rates
+            %                   (Hz) for plotType='histogram' instead of
+            %                   mere number of spikes. Default: true.
             % INTERACTIVEMODE - A boolean flag to set InteractiveMode on or
             %                   off. If it is off, key events/FPS/stepping
             %                   will take no effect (helpful if you want to
@@ -505,6 +520,8 @@ classdef GroupMonitor < handle
                 obj.plotBgColor = 'w';
                 obj.plotFPS = 5;
                 obj.plotBinWinMs = 1000;
+                obj.plotHistNumBins = 10;
+                obj.plotHistShowRate = true;
                 obj.plotStepFrames = false;
                 obj.plotInteractiveMode = true;
                 return;
@@ -540,6 +557,16 @@ classdef GroupMonitor < handle
                         reqRange = [0.01 100];
                         throwErrOutOfRange = val<reqRange(1) | val>reqRange(2);
                         obj.plotFPS = val;
+                    case 'histnumbins'
+                        % number of bins
+                        throwErrNumeric = ~isnumeric(val);
+                        reqRange = [0 inf];
+                        throwErrOutOfRange = val<reqRange(1) | val>reqRange(2);
+                        obj.plotHistNumBins = val;
+                    case 'histshowrate'
+                        % whether to display frame number
+                        throwErrNumeric = ~isnumeric(val) & ~islogical(val);
+                        obj.plotHistShowRate = logical(val);
                     case 'interactivemode'
                         % interactive mode
                         throwErrNumeric = ~isnumeric(val) && ~islogical(val);
@@ -778,26 +805,7 @@ classdef GroupMonitor < handle
             
             % if plot type or bin has changed, we need to re-read and
             % re-format the spike data
-            if strcmpi(obj.plotType,'heatmap')
-                % heat map uses user-set frameDur for both binning and
-                % plotting
-                spkBuffer = obj.spkObj.readSpikes(plotBinWinMs);
-                
-                % reshape according to group dimensions
-                numFrames = size(spkBuffer,1);
-                spkBuffer = reshape(spkBuffer, numFrames, ...
-                    obj.grid3D(1), obj.grid3D(2), ...
-                    obj.grid3D(3));
-                
-                % reshape for plotting
-                % \TODO consider the case 1xNxM and Nx1xM
-                spkBuffer = permute(spkBuffer,[3 2 4 1]); % Matlab: Y, X
-                spkBuffer = reshape(spkBuffer,obj.grid3D(2),[],numFrames);
-            elseif strcmpi(obj.plotType,'raster')
-                % raster uses user-set frameDur just for plotting
-                % binning is not required, use AER instead
-                spkBuffer = obj.spkObj.readSpikes(-1);
-            elseif strcmpi(obj.plotType,'flowfield')
+            if strcmpi(obj.plotType,'flowfield')
                 % flowfield uses 3D spike buffer to calc flow field
                 spkBuffer = obj.spkObj.readSpikes(plotBinWinMs);
                 
@@ -825,6 +833,34 @@ classdef GroupMonitor < handle
                 clear spkBuffer;
                 spkBuffer(:,:,1,:) = flowX;
                 spkBuffer(:,:,2,:) = flowY;
+            elseif strcmpi(obj.plotType,'heatmap')
+                % heat map uses user-set frameDur for both binning and
+                % plotting
+                spkBuffer = obj.spkObj.readSpikes(plotBinWinMs);
+                
+                % reshape according to group dimensions
+                numFrames = size(spkBuffer,1);
+                spkBuffer = reshape(spkBuffer, numFrames, ...
+                    obj.grid3D(1), obj.grid3D(2), ...
+                    obj.grid3D(3));
+                
+                % reshape for plotting
+                % \TODO consider the case 1xNxM and Nx1xM
+                spkBuffer = permute(spkBuffer,[3 2 4 1]); % Matlab: Y, X
+                spkBuffer = reshape(spkBuffer,obj.grid3D(2),[],numFrames);
+            elseif strcmpi(obj.plotType,'histogram')
+                % hist uses smaller bin size than frameDur
+                histBinMs = plotBinWinMs/obj.plotHistNumBins;
+                spkBuffer = sum(obj.spkObj.readSpikes(histBinMs),2)';
+                
+                if obj.plotHistShowRate
+                    % compute firing rate (Hz) from number of spikes
+                    spkBuffer = 1000.0*spkBuffer/obj.getNumNeurons()/histBinMs;
+                end
+            elseif strcmpi(obj.plotType,'raster')
+                % raster uses user-set frameDur just for plotting
+                % binning is not required, use AER instead
+                spkBuffer = obj.spkObj.readSpikes(-1);
             else
                 obj.throwError(['Unrecognized plot type "' obj.plotType '".'])
                 return
@@ -844,13 +880,14 @@ classdef GroupMonitor < handle
             obj.setSpikeFileAttributes()
             obj.setPlottingAttributes()
             obj.setRecordingAttributes()
-
+            
             obj.needToInitSR = true;
             obj.needToLoadData = true;
             
             obj.grid3D = -1;
             
-            obj.supportedPlotTypes  = {'heatmap', 'raster', 'flowfield'};
+            obj.supportedPlotTypes  = {'flowfield', 'heatmap', ...
+                'histogram', 'raster'};
             obj.supportedErrorModes = {'standard', 'warning', 'silent'};
         end
         
@@ -877,44 +914,7 @@ classdef GroupMonitor < handle
             % load data and reshape for plotting if necessary
             obj.loadDataForPlotting(plotType, frameDur);
             
-            if strcmpi(obj.plotType,'heatmap')
-                maxD = max(obj.spkData(:));
-                frame = obj.spkData(:,:,frameNr);
-                imagesc(frame, [0 maxD])
-                axis image equal
-                axis([1 obj.grid3D(1) 1 obj.grid3D(2)])
-                title([obj.name ', rate = [0 , ' ...
-                    num2str(maxD*1000/frameDur) ' Hz]'])
-                xlabel('nrX')
-                ylabel('nrY')
-%                 set(gca, 'XTick', 0:obj.grid3D(2):obj.grid3D(2)*obj.grid3D(3))
-                
-                % if enabled, display the frame number in lower left corner
-                if dispFrameNr
-                    text(2,size(obj.spkData,1)-1,num2str(frameNr), ...
-                        'FontSize',10,'BackgroundColor','white')
-                end
-            elseif strcmpi(obj.plotType,'raster')
-                % find beginning and end of time bin to be displayed
-                startTime = (frameNr-1)*frameDur;
-                stopTime  = frameNr*frameDur;
-                times = obj.spkData(1,:)>=startTime & obj.spkData(1,:)<stopTime;
-                plot(obj.spkData(1,times),obj.spkData(2,times),'.k')
-                axis([startTime stopTime 1 prod(obj.grid3D)])
-                axis image square
-                title(['Group ' obj.name])
-                xlabel('Time (ms)')
-                ylabel('Neuron ID')
-                set(gca, 'YTick', 0:round(prod(obj.grid3D)/10):prod(obj.grid3D))
-
-                % if enabled, display the frame number in lower left corner
-                if dispFrameNr
-                    dX = startTime+(stopTime-startTime)*0.05;
-                    dY = prod(obj.grid3D)*0.05;
-                    text(dX, dY, num2str(frameNr), ...
-                        'FontSize',10, 'BackgroundColor','white')
-                end
-            elseif strcmpi(obj.plotType,'flowfield')
+            if strcmpi(obj.plotType,'flowfield')
                 frame = obj.spkData(:,:,:,frameNr);
                 [x,y] = meshgrid(1:obj.grid3D(1),1:obj.grid3D(2));
                 quiver(x,y,frame(:,:,1),frame(:,:,2));
@@ -930,6 +930,61 @@ classdef GroupMonitor < handle
                 if dispFrameNr
                     text(2, 2, num2str(frameNr), 'FontSize', 10, ...
                         'BackgroundColor','white')
+                end
+            elseif strcmpi(obj.plotType,'heatmap')
+                maxD = max(obj.spkData(:));
+                frame = obj.spkData(:,:,frameNr);
+                imagesc(frame, [0 maxD])
+                axis image equal
+                axis([1 obj.grid3D(1) 1 obj.grid3D(2)])
+                title(['Group ' obj.name ', rate = [0 , ' ...
+                    num2str(maxD*1000/frameDur) ' Hz]'])
+                xlabel('nrX')
+                ylabel('nrY')
+%                 set(gca, 'XTick', 0:obj.grid3D(2):obj.grid3D(2)*obj.grid3D(3))
+                
+                % if enabled, display the frame number in lower left corner
+                if dispFrameNr
+                    text(2,size(obj.spkData,1)-1,num2str(frameNr), ...
+                        'FontSize',10,'BackgroundColor','white')
+                end
+            elseif strcmpi(obj.plotType,'histogram')
+                histBinMs = frameDur/obj.plotHistNumBins;
+                edges = (frameNr-1)*frameDur + histBinMs/2 : histBinMs ...
+                    : frameNr*frameDur;
+                dataStart = (frameNr-1)*obj.plotHistNumBins+1;
+                dataEnd = frameNr*obj.plotHistNumBins;
+                data = obj.spkData(1, dataStart:dataEnd);
+                bar(edges, data, 1.0)
+                xlabel('time slice')
+                if obj.plotHistShowRate
+                    ylabel('Mean firing rate (Hz)')
+                else
+                    ylabel('number of spikes')
+                end
+                title(['Group ' obj.name])
+%                 axis square
+                a=axis; maxD = max(data(:))*1.2;
+                axis([a(1) a(2) 0 max(maxD,1)])
+            elseif strcmpi(obj.plotType,'raster')
+                % find beginning and end of time bin to be displayed
+                startTime = (frameNr-1)*frameDur;
+                stopTime  = frameNr*frameDur;
+                times = obj.spkData(1,:)>=startTime & obj.spkData(1,:)<stopTime;
+                plot(obj.spkData(1,times),obj.spkData(2,times),'.k')
+                axis image square
+                axis([startTime stopTime 1 prod(obj.grid3D)])
+                title(['Group ' obj.name])
+                xlabel('Time (ms)')
+                ylabel('Neuron ID')
+                set(gca, 'YTick', 0:round(prod(obj.grid3D)/10):prod(obj.grid3D)+1)
+
+                % if enabled, display the frame number in lower left corner
+                if dispFrameNr
+                    dX = startTime+(stopTime-startTime)*0.05;
+                    dY = prod(obj.grid3D)*0.05;
+                    text(dX, dY, num2str(frameNr), ...
+                        'FontSize',10, 'BackgroundColor','white')
                 end
             else
                 obj.throwError(['Unrecognized plot type "' obj.plotType '".'])
