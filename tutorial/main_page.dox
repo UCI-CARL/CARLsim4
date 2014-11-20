@@ -1,0 +1,49 @@
+/*!
+\mainpage Overview
+
+\tableofcontents
+
+\section main_intro Introduction
+CARLsim is an efficient C/C++-based Spiking Neural Network (SNN) simulator that allows execution on both generic 
+x86 CPUs and standard off-the-shelf GPUs. The simulator provides a PyNN-like programming interface, which allows 
+for details and parameters to be specified at the synapse, neuron, and network level.
+
+Currently CARLsim supports four-parameter Izhikevich spiking neurons in combination with current-based (CUBA) 
+(see \ref ch3s2s1_cuba) and 
+conductance-based (COBA) (see \ref ch3s2s2_coba)
+synapses.
+Also, the simulator provides standard equations for (nearest-neighbor) spike-timing dependent plasticity (STDP)
+(see \ref ch5s2_spike_timing_dependent_plasticity),
+short-term plasticity (STP)
+(see \ref ch5s1_short_term_plasticity),
+homeostatic synaptic scaling
+(see \ref ch5s3_homeostasis),
+and neuromodulation
+(see \ref ch5s4_neuromodulation).
+
+CARLsim now includes a parameter tuning interface (PTI) library that utilizes evolutionary algorithms (EAs) to 
+construct functional SNNs (see \ref ch10_ecj).
+
+CARLsim was originally written by Jayram Moorkanikara Nageswaran and Micah Richert. The code is now being 
+maintained and extended by Michael Beyeler, Kristofor Carlson, and Ting-Shuo Chou. For a full list of contributors, 
+see file AUTHORS.
+
+\section main_getting_started Getting Started
+
+The best place to get started is \ref ch1_getting_started of our Tutorial.
+
+
+\section main_bg Background
+The simulator—along with its various releases, computational studies, and sample code—has previously been published 
+in the following studies:
+- Carlson, K.D., Nageswaran, J.M., Dutt, N., and Krichmar, J.L. (2014). An efficient automated parameter tuning 
+  framework for spiking neural networks. Frontiers in Neuroscience 8(10). (CARLsim v2.2)
+- Beyeler, M., Richert, M., Dutt, N.D., and Krichmar, J.L. (2014). Efficient spiking neural network model of 
+  pattern motion selectivity in visual cortex. Neuroinformatics. (CARLsim v2.1)
+- Richert, M., Nageswaran, J.M., Dutt, N., and Krichmar, J.L. (2011). An efficient simulation environment for 
+  modeling large-scale cortical processing. Frontiers in Neuroinformatics 5, 1-15. (CARLsim v2.0)
+- Nageswaran, J.M., Dutt, N., Krichmar, J.L., Nicolau, A., and Veidenbaum, A.V. (2009). A configurable simulation 
+  environment for the efficient simulation of large-scale spiking neural networks on graphics processors. Neural 
+  Networks 22, 791-800. (CARLsim v1.0)
+
+*/

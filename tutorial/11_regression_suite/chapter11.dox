@@ -1,0 +1,37 @@
+/*!
+
+\page ch11_regression_suite Chapter 11: Regression Suite
+
+\tableofcontents
+
+\since v3.0
+
+You should only be here if something's broken.
+Why you would use it, what is it good for?
+
+We provide test cases to A) test core functionality of CARLsim, to B) test the reproducibility of published results, and C) to benchmark simulation speed.
+
+-A) TESTING CORE FUNCTIONALITY
+	-# Test core data structures when some functionality is enabled.
+ 	For example: Set STP to true for a specific group, check grp_Info to make sure all values are set accordingly.
+	-# Test core data structures when some functionality is disabled.
+     For example: Set STP to false for a specific group, check grp_Info to make sure it's disabled.
+	-# Test behavior when values for input arguments are chosen unreasonably.
+     For example: Create a group with N=-4 (number of neurons) and expect simulation to die. This is because each
+     core function should have assertion statements to prevent the simulation from running unreasonable input values
+     In some cases, it makes sense to catch this kind of error in the user interface as well (and display an
+     appropriate error message to the user), but these tests should be placed in the UserInterface test case.
+	-# Test behavior of network when run with reasonable values.
+     For example: Run a sample network with STP enabled, and check stpu[nid] and stpx[nid] to make sure they behave.
+     as expected. You can use the PeriodicSpikeGenerator to be certain of specific spike times and thus run
+     reproducible sample networks.
+	-# Test behavior of network when run in CPU mode vs. GPU mode.
+     For example: Run a sample network with STP enabled, once in CPU mode and once in GPU mode. Record stpu[nid] and
+     stpx[nid], and make sure that both simulation mode give the exact same result (except for some small error
+     margin that can account for rounding errors/etc.).
+
+-B) TESTING PUBLISHED RESULTS
+
+-C) BENCHMARK TESTS
+
+*/
