@@ -146,6 +146,7 @@ typedef struct network_ptr_s  {
 	float*	Izh_c;
 	float*	Izh_d;
 	float*	current;
+	float*  extCurrent;
 
 	// conductances and stp values
 	float*	gNMDA;					//!< conductance of gNMDA

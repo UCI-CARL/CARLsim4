@@ -7,6 +7,9 @@ Legend:
 	- removed element
 	* changed element
 
+2014-11-21     Michael Beyeler <mbeyeler@uci.edu>
+  + Added current injection.
+
 2014-11-20     Michael Beyeler <mbeyeler@uci.edu>
   + Added tutorial folder structure skeleton.
 

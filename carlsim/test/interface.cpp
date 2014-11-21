@@ -124,6 +124,35 @@ TEST(Interface, setConductancesDeath) {
 	delete sim;
 }
 
+TEST(Interface, setExternalCurrentDeath) {
+	CARLsim* sim = new CARLsim("Interface.setExternalCurrentDeath",CPU_MODE,SILENT,0,42);
+	int g0=sim->createSpikeGeneratorGroup("input", 10, EXCITATORY_NEURON);
+	int g1=sim->createGroup("excit", 10, EXCITATORY_NEURON);
+	sim->setNeuronParameters(g1, 0.02f, 0.2f,-65.0f,8.0f);
+	sim->connect(g0,g1,"random",RangeWeight(0.01),0.1f,RangeDelay(1));
+
+	// calling setExternalCurrent in CONFIG
+	float current = 0.0f;
+	std::vector<float> vecCurrent(10, current);
+	EXPECT_DEATH({sim->setExternalCurrent(g1,vecCurrent);},"");
+	EXPECT_DEATH({sim->setExternalCurrent(g1,current);},"");
+
+	sim->setupNetwork();
+
+	// calling setExternalCurrent in correct state but with invalid input arguments
+	EXPECT_DEATH({sim->setExternalCurrent(100,vecCurrent);},""); // grpId out of bounds
+	EXPECT_DEATH({sim->setExternalCurrent(100,current);},""); // grpId out of bounds
+	EXPECT_DEATH({sim->setExternalCurrent(-1,vecCurrent);},""); // ALL not allowed
+	EXPECT_DEATH({sim->setExternalCurrent(-1,current);},""); // ALL not allowed
+	EXPECT_DEATH({sim->setExternalCurrent(g0,vecCurrent);},""); // calling on SpikeGen grp
+	EXPECT_DEATH({sim->setExternalCurrent(g0,current);},""); // calling on SpikeGen grp
+	std::vector<float> vecCurrent2(20, 0.1f);
+	EXPECT_DEATH({sim->setExternalCurrent(g1,vecCurrent2);},""); // current wrong size
+
+	delete sim;
+}
+
+
 //! Death tests for setNeuronParameters (test all possible silly values)
 TEST(Interface, setNeuronParametersDeath) {
 	::testing::FLAGS_gtest_death_test_style = "threadsafe";
@@ -189,7 +218,7 @@ TEST(Interface, CARLsimState) {
 	CARLsim* sim = new CARLsim("Interface.CARLsimState",CPU_MODE,SILENT,0,42);
 	//----- CONFIG_STATE zone -----
 
-	g1 = sim->createGroup("excit", 800, EXCITATORY_NEURON);
+	g1 = sim->createGroup("excit", 80, EXCITATORY_NEURON);
 	sim->setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f);
 	sim->connect(g1,g1,"random", RangeWeight(0.0,0.001,0.005), 0.1f, RangeDelay(1,20), RadiusRF(-1), SYN_PLASTIC);
 
@@ -219,8 +248,8 @@ TEST(Interface, CARLsimState) {
 	//----- SETUP_STATE zone -----
 
 	// test APIs that can't be called at SETUP_STATE
-	EXPECT_DEATH({g2 = sim->createGroup("excit", 800, EXCITATORY_NEURON);},"");
-	EXPECT_DEATH({g2 = sim->createSpikeGeneratorGroup("input", 100, EXCITATORY_NEURON);},"");
+	EXPECT_DEATH({g2 = sim->createGroup("excit", 80, EXCITATORY_NEURON);},"");
+	EXPECT_DEATH({g2 = sim->createSpikeGeneratorGroup("input", 10, EXCITATORY_NEURON);},"");
 	EXPECT_DEATH({sim->connect(g1,g1,"random", RangeWeight(0.0,0.001,0.005), 0.1f, RangeDelay(1,20), RadiusRF(-1), SYN_PLASTIC);},"");
 	EXPECT_DEATH({sim->setConductances(true);},"");
 	EXPECT_DEATH({sim->setConductances(true,1, 2, 3, 4);},"");
@@ -260,8 +289,8 @@ TEST(Interface, CARLsimState) {
 	EXPECT_DEATH({sim->setupNetwork();},"");
 	EXPECT_DEATH({sim->loadSimulation(NULL);},"");
 	EXPECT_DEATH({sim->reassignFixedWeights(0, wM, 4);},"");
-	EXPECT_DEATH({g2 = sim->createGroup("excit", 800, EXCITATORY_NEURON);},"");
-	EXPECT_DEATH({g2 = sim->createSpikeGeneratorGroup("input", 100, EXCITATORY_NEURON);},"");
+	EXPECT_DEATH({g2 = sim->createGroup("excit", 80, EXCITATORY_NEURON);},"");
+	EXPECT_DEATH({g2 = sim->createSpikeGeneratorGroup("input", 10, EXCITATORY_NEURON);},"");
 	EXPECT_DEATH({sim->connect(g1,g1,"random", RangeWeight(0.0,0.001,0.005), 0.1f, RangeDelay(1,20), RadiusRF(-1), SYN_PLASTIC);},"");
 	//sim->connect
 	//sim->connect

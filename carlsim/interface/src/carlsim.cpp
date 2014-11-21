@@ -751,6 +751,28 @@ ConnectionMonitor* CARLsim::setConnectionMonitor(int grpIdPre, int grpIdPost, co
 	return snn_->setConnectionMonitor(grpIdPre, grpIdPost, fid);
 }
 
+void CARLsim::setExternalCurrent(int grpId, const std::vector<float>& current) {
+	std::string funcName = "setExternalCurrent(\""+getGroupName(grpId)+"\")";
+	UserErrors::assertTrue(grpId!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName, "grpId");
+	UserErrors::assertTrue(current.size()==getGroupNumNeurons(grpId), UserErrors::MUST_BE_IDENTICAL, funcName,
+		"current.size()", "number of neurons in the group.");
+	UserErrors::assertTrue(!isPoissonGroup(grpId), UserErrors::WRONG_NEURON_TYPE, funcName, funcName);
+	UserErrors::assertTrue(carlsimState_==SETUP_STATE || carlsimState_==EXE_STATE, 
+		UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "SETUP or EXECUTION.");
+	
+	snn_->setExternalCurrent(grpId, current);
+}
+
+void CARLsim::setExternalCurrent(int grpId, float current) {
+	std::string funcName = "setExternalCurrent(\""+getGroupName(grpId)+"\")";
+	UserErrors::assertTrue(grpId!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName, "grpId");
+	UserErrors::assertTrue(!isPoissonGroup(grpId), UserErrors::WRONG_NEURON_TYPE, funcName, funcName);
+	UserErrors::assertTrue(carlsimState_==SETUP_STATE || carlsimState_==EXE_STATE, 
+		UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "SETUP or EXECUTION.");
+
+	std::vector<float> vecCurrent(getGroupNumNeurons(grpId), current);
+	snn_->setExternalCurrent(grpId, vecCurrent);
+}
 
 // set group monitor for a group
 void CARLsim::setGroupMonitor(int grpId, GroupMonitor* groupMon) {

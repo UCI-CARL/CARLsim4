@@ -68,8 +68,8 @@ public:
 	 * \param[in] statement					the logical statement to evaluate
 	 * \param[in] errorIfAssertionFails		the type of error to throw if assertion fails (from enum errorType)
 	 * \param[in] errorFunc					a string to indicate the location where the error occured
-	 * \param[in] errorsMsgPrefix			a prefix for the error message
-	 * \param[in] errorsMsgSuffix 			a suffix for the error message
+	 * \param[in] errorMsgPrefix			a prefix for the error message
+	 * \param[in] errorMsgSuffix 			a suffix for the error message
 	 */
 	static void assertTrue(bool statement, errorType errorIfAssertionFails, std::string errorFunc,
 								std::string errorMsgPrefix="", std::string errorMsgSuffix="");

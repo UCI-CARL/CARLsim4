@@ -442,7 +442,6 @@ int trGABAb, int tdGABAb) {
 		sGABAb = 1.0/(exp(-tmax/tdGABAb)-exp(-tmax/trGABAb)); // scaling factor, 1 over max amplitude
 		assert(!isinf(tmax) && !isnan(tmax)); assert(!isinf(sGABAb) && !isnan(sGABAb) && sGABAb>0);
 	}
-//		grp_Info[grpId].newUpdates 		= true; // \deprecated
 
 	if (sim_with_conductances) {
 		KERNEL_INFO("Running COBA mode:");
@@ -685,11 +684,12 @@ void CpuSNN::setWeightAndWeightChangeUpdate(updateInterval_t wtANDwtChangeUpdate
 /// PUBLIC METHODS: RUNNING A SIMULATION
 /// ************************************************************************************************************ ///
 
-// if
 int CpuSNN::runNetwork(int _nsec, int _nmsec, bool printRunSummary, bool copyState) {
 	assert(_nmsec >= 0 && _nmsec < 1000);
 	assert(_nsec  >= 0);
 	int runDurationMs = _nsec*1000 + _nmsec;
+	KERNEL_DEBUG("runNetwork: runDur=%dms, printRunSummary=%s, copyState=%s", runDurationMs, printRunSummary?"y":"n",
+		copyState?"y":"n");
 
 	// setupNetwork() must have already been called
 	assert(doneReorganization);
@@ -1014,6 +1014,30 @@ ConnectionMonitor* CpuSNN::setConnectionMonitor(int grpIdPre, int grpIdPost, FIL
 		grpIdPost, getGroupName(grpIdPost).c_str());
 
 	return connMonObj;
+}
+
+void CpuSNN::setExternalCurrent(int grpId, const std::vector<float>& current) {
+	assert(grpId>=0); assert(grpId<numGrp);
+	assert(!isPoissonGroup(grpId));
+	assert(current.size() == getGroupNumNeurons(grpId));
+
+	// // update flag for faster handling at run-time
+	// if (count_if(current.begin(), current.end(), isGreaterThanZero)) {
+	// 	grp_Info[grpId].WithCurrentInjection = true;
+	// } else {
+	// 	grp_Info[grpId].WithCurrentInjection = false;
+	// }
+
+	// store external current in array
+	for (int i=grp_Info[grpId].StartN, j=0; i<=grp_Info[grpId].EndN; i++, j++) {
+		extCurrent[i] = current[j];
+	}
+
+	// copy to GPU if necessary
+	// don't allocate; allocation done in buildNetwork
+	if (simMode_==GPU_MODE) {
+		copyExternalCurrent(&cpu_gpuNetPtrs, &cpuNetPtrs, false, grpId);
+	}
 }
 
 // sets up a spike generator
@@ -1915,14 +1939,17 @@ void CpuSNN::buildNetworkInit(unsigned int nNeur, unsigned int nPostSyn, unsigne
 		exitSimulation(1);
 	}
 
-	voltage	 = new float[numNReg];
-	recovery = new float[numNReg];
-	Izh_a	 = new float[numNReg];
-	Izh_b    = new float[numNReg];
-	Izh_c	 = new float[numNReg];
-	Izh_d	 = new float[numNReg];
-	current	 = new float[numNReg];
-	cpuSnnSz.neuronInfoSize += (sizeof(float)*numNReg*7);
+	voltage	   = new float[numNReg];
+	recovery   = new float[numNReg];
+	Izh_a	   = new float[numNReg];
+	Izh_b      = new float[numNReg];
+	Izh_c	   = new float[numNReg];
+	Izh_d	   = new float[numNReg];
+	current	   = new float[numNReg];
+	extCurrent = new float[numNReg];
+	memset(extCurrent, 0, sizeof(extCurrent[0])*numNReg);
+
+	cpuSnnSz.neuronInfoSize += (sizeof(float)*numNReg*8);
 
 	if (sim_with_conductances) {
 		gAMPA  = new float[numNReg];
@@ -2808,7 +2835,6 @@ void CpuSNN::findFiring() {
 	}
 }
 
-
 int CpuSNN::findGrpId(int nid) {
 	KERNEL_WARN("Using findGrpId is deprecated, use array grpIds[] instead...");
 	for(int g=0; g < numGrp; g++) {
@@ -3159,7 +3185,8 @@ void  CpuSNN::globalStateUpdate() {
 						tmp_I += noiseI;
 					#endif
 
-					voltage[i]+=((0.04*voltage[i]+5.0)*voltage[i]+140.0-recovery[i]+tmp_I)/COND_INTEGRATION_SCALE;
+					voltage[i] += ((0.04*voltage[i]+5.0)*voltage[i]+140.0-recovery[i]+tmp_I+extCurrent[i])
+						/ COND_INTEGRATION_SCALE;
 					assert(!isnan(voltage[i]) && !isinf(voltage[i]));
 
 					// keep track of total current
@@ -3177,8 +3204,10 @@ void  CpuSNN::globalStateUpdate() {
 				} // end COND_INTEGRATION_SCALE loop
 			} else {
 				// CUBA model
-				voltage[i]+=0.5*((0.04*voltage[i]+5.0)*voltage[i]+140.0-recovery[i]+current[i]); //for numerical stability
-				voltage[i]+=0.5*((0.04*voltage[i]+5.0)*voltage[i]+140.0-recovery[i]+current[i]); //time step is 0.5 ms
+				voltage[i] += 0.5*((0.04*voltage[i]+5.0)*voltage[i] + 140.0 - recovery[i]
+					+ current[i] + extCurrent[i]); //for numerical stability
+				voltage[i] += 0.5*((0.04*voltage[i]+5.0)*voltage[i] + 140.0 - recovery[i]
+					+ current[i] + extCurrent[i]); //time step is 0.5 ms
 				if (voltage[i] > 30)
 					voltage[i] = 30;
 				if (voltage[i] < -90)
@@ -3342,6 +3371,7 @@ void CpuSNN::makePtrInfo() {
 	cpuNetPtrs.voltage			= voltage;
 	cpuNetPtrs.recovery			= recovery;
 	cpuNetPtrs.current			= current;
+	cpuNetPtrs.extCurrent       = extCurrent;
 	cpuNetPtrs.Npre				= Npre;
 	cpuNetPtrs.Npost			= Npost;
 	cpuNetPtrs.cumulativePost 	= cumulativePost;
@@ -3767,7 +3797,8 @@ void CpuSNN::resetPointers(bool deallocate) {
 	if (voltage!=NULL && deallocate) delete[] voltage;
 	if (recovery!=NULL && deallocate) delete[] recovery;
 	if (current!=NULL && deallocate) delete[] current;
-	voltage=NULL; recovery=NULL; current=NULL;
+	if (extCurrent!=NULL && deallocate) delete[] extCurrent;
+	voltage=NULL; recovery=NULL; current=NULL; extCurrent=NULL;
 
 	if (Izh_a!=NULL && deallocate) delete[] Izh_a;
 	if (Izh_b!=NULL && deallocate) delete[] Izh_b;

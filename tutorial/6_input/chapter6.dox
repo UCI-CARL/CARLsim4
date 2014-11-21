@@ -29,14 +29,17 @@ All the ways to generate input...
 
 Current injection.
 
-\see \ref ch6s4_generating_noise
+\see \ref ch6s3_generating_noise
 
 
-\section ch6s3_visual_stimulus_toolbox 6.3 Visual Stimulus Toolbox
-\TODO MB
+\section ch6s3_generating_noise 6.3 Generating Noise
 
-\section ch6s4_generating_noise 6.4 Generating Noise
 \TODO TS
 Generate noise: Ting's description of how to do noise with weights.
+
+
+\section ch6s4_visual_stimulus_toolbox 6.3 Visual Stimulus Toolbox
+\TODO MB
+
 
 */
