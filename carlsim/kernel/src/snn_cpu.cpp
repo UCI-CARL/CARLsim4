@@ -630,6 +630,8 @@ int CpuSNN::runNetwork(int _nsec, int _nmsec, bool printRunSummary, bool copySta
 	assert(_nmsec >= 0 && _nmsec < 1000);
 	assert(_nsec  >= 0);
 	int runDuration = _nsec*1000 + _nmsec;
+	KERNEL_DEBUG("runNetwork: runDur=%dms, printRunSummary=%s, copyState=%s", runDuration, printRunSummary?"y":"n",
+		copyState?"y":"n");
 
 	// setupNetwork() must have already been called
 	assert(doneReorganization);
@@ -966,6 +968,12 @@ void CpuSNN::setExternalCurrent(int grpId, const std::vector<float>& current) {
 	// store external current in array
 	for (int i=grp_Info[grpId].StartN, j=0; i<=grp_Info[grpId].EndN; i++, j++) {
 		extCurrent[i] = current[j];
+	}
+
+	// copy to GPU if necessary
+	// don't allocate; allocation done in buildNetwork
+	if (simMode_==GPU_MODE) {
+		copyExternalCurrent(&cpu_gpuNetPtrs, &cpuNetPtrs, false, grpId);
 	}
 }
 
@@ -1946,6 +1954,8 @@ void CpuSNN::buildNetworkInit(unsigned int nNeur, unsigned int nPostSyn, unsigne
 	Izh_d	   = new float[numNReg];
 	current	   = new float[numNReg];
 	extCurrent = new float[numNReg];
+	memset(extCurrent, 0, sizeof(extCurrent[0])*numNReg);
+
 	cpuSnnSz.neuronInfoSize += (sizeof(float)*numNReg*8);
 
 	if (sim_with_conductances) {

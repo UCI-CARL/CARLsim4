@@ -2055,7 +2055,6 @@ void CpuSNN::copyConductanceState(network_ptr_t* dest, network_ptr_t* src, cudaM
 	copyConductanceGABAb(dest, src, kind, allocateMem, grpId);
 }
 
-
 void CpuSNN::copyNeuronState(network_ptr_t* dest, network_ptr_t* src, cudaMemcpyKind kind, int allocateMem, int grpId)
 {
 	int ptrPos, length, length2;
@@ -2108,6 +2107,12 @@ void CpuSNN::copyNeuronState(network_ptr_t* dest, network_ptr_t* src, cudaMemcpy
 	if(allocateMem)
 		CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->current, sizeof(float) * length));
 	CUDA_CHECK_ERRORS(cudaMemcpy(&dest->current[ptrPos], &src->current[ptrPos], sizeof(float) * length, kind));
+
+	// copying external current needs to be done separately because setExternalCurrent needs to call it, too
+	// do it only from host to device
+	if (kind==cudaMemcpyHostToDevice) {
+		copyExternalCurrent(dest, src, allocateMem, grpId);
+	}
 
 	if (sim_with_homeostasis) {
 		//Included to enable homeostasis in GPU_MODE.
@@ -2860,6 +2865,7 @@ void CpuSNN::deleteObjects_GPU() {
 	CUDA_CHECK_ERRORS( cudaFree(cpu_gpuNetPtrs.voltage) );
 	CUDA_CHECK_ERRORS( cudaFree(cpu_gpuNetPtrs.recovery) );
 	CUDA_CHECK_ERRORS( cudaFree(cpu_gpuNetPtrs.current) );
+	CUDA_CHECK_ERRORS( cudaFree(cpu_gpuNetPtrs.extCurrent) );
 	CUDA_CHECK_ERRORS( cudaFree(cpu_gpuNetPtrs.Npre) );
 	CUDA_CHECK_ERRORS( cudaFree(cpu_gpuNetPtrs.Npre_plastic) );
 	CUDA_CHECK_ERRORS( cudaFree(cpu_gpuNetPtrs.Npre_plasticInv) );
@@ -3120,6 +3126,38 @@ void CpuSNN::resetFiringInformation_GPU()
 	gpu_resetFiringInformation<<<gridSize,blkSize>>>();
 }
 
+
+void CpuSNN::copyExternalCurrent(network_ptr_t* dest, network_ptr_t* src, int allocateMem, int grpId) {
+	// copy external current from CPU to GPU
+	int ptrPos, length;
+
+	if(grpId == -1) {
+		ptrPos  = 0;
+		length  = numNReg;
+	}
+	else {
+		assert(grpId>=0);
+		assert(!isPoissonGroup(grpId));
+		ptrPos  = grp_Info[grpId].StartN;
+		length  = grp_Info[grpId].SizeN;
+	}
+	assert(length  <= numNReg);
+	assert(length > 0);
+
+	KERNEL_DEBUG("copyExternalCurrent: grpId=%d, ptrPos=%d, length=%d, allocate=%s", grpId, ptrPos, length, 
+		allocateMem?"y":"n");
+
+	// when allocating we are allocating the memory.. we need to do it completely... to avoid memory fragmentation..
+	if(allocateMem)
+		assert(grpId == -1);
+
+	if(allocateMem) {
+		CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->extCurrent, sizeof(float) * length));
+	}
+
+	CUDA_CHECK_ERRORS(cudaMemcpy(&(dest->extCurrent[ptrPos]), &(src->extCurrent[ptrPos]), sizeof(float) * length, 
+		cudaMemcpyHostToDevice));
+}
 
 
 void CpuSNN::copyFiringInfo_GPU()
@@ -3412,7 +3450,8 @@ void CpuSNN::allocateSNN_GPU() {
 
 	// initialize (memset) cpu_gpuNetPtrs.current
 	CUDA_CHECK_ERRORS(cudaMemset(cpu_gpuNetPtrs.current, 0, sizeof(float) * numNReg));
-
+//	CUDA_CHECK_ERRORS(cudaMemset(cpu_gpuNetPtrs.extCurrent, 0, sizeof(float)*numNReg));
+//	copyExternalCurrent(&cpu_gpuNetPtrs, &cpuNetPtrs, true);
 	initGPU(gridSize, blkSize);
 }
 

@@ -751,6 +751,7 @@ private:
 	void copyConductanceGABAb(network_ptr_t* dest, network_ptr_t* src, cudaMemcpyKind kind, int allocateMem, int grpId=-1);
 	void copyConductanceState(network_ptr_t* dest, network_ptr_t* src, cudaMemcpyKind kind, int allocateMem, int grpId=-1);
 	void copyConnections(network_ptr_t* dest, int kind, int allocateMem);
+	void copyExternalCurrent(network_ptr_t* dest, network_ptr_t* src, int allocateMem, int grpId=-1);
 	void copyFiringInfo_GPU();
 	void copyFiringStateFromGPU (int grpId = -1);
 	void copyGrpInfo_GPU(); //!< Used to copy grp_info to gpu for setSTDP, setSTP, and setHomeostasis
