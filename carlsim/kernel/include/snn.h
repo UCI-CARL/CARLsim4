@@ -356,6 +356,9 @@ public:
 	 */
 	void setConnectionMonitor(int grpIdPre, int grpIdPost, ConnectionMonitorCore* connectionMon);
 
+	//! injects current (mA) into the soma of every neuron in the group
+	void setExternalCurrent(int grpId, const std::vector<float>& current);
+
 	/*!
 	 * \brief A Spike Counter keeps track of the number of spikes per neuron in a group.
 	 * A Spike Counter keeps track of all spikes per neuron for a certain time period (recordDur).
@@ -748,6 +751,7 @@ private:
 	void copyConductanceGABAb(network_ptr_t* dest, network_ptr_t* src, cudaMemcpyKind kind, int allocateMem, int grpId=-1);
 	void copyConductanceState(network_ptr_t* dest, network_ptr_t* src, cudaMemcpyKind kind, int allocateMem, int grpId=-1);
 	void copyConnections(network_ptr_t* dest, int kind, int allocateMem);
+	void copyExternalCurrent(network_ptr_t* dest, network_ptr_t* src, int allocateMem, int grpId=-1);
 	void copyFiringInfo_GPU();
 	void copyFiringStateFromGPU (int grpId = -1);
 	void copyGrpInfo_GPU(); //!< Used to copy grp_info to gpu for setSTDP, setSTP, and setHomeostasis
@@ -885,7 +889,7 @@ private:
 	int   			numNExcPois;		//!< number of excitatory poisson neurons
 	int				numNInhPois;		//!< number of inhibitory poisson neurons
 	int				numNPois;			//!< number of poisson neurons
-	float       	*voltage, *recovery, *Izh_a, *Izh_b, *Izh_c, *Izh_d, *current;
+	float       	*voltage, *recovery, *Izh_a, *Izh_b, *Izh_c, *Izh_d, *current, *extCurrent;
 	bool			*curSpike;
 	int         	*nSpikeCnt;     //!< spike counts per neuron
 	unsigned short       	*Npre;			//!< stores the number of input connections to the neuron

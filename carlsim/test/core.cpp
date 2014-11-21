@@ -188,23 +188,82 @@ TEST(CORE, setConductancesTrue) {
 	}
 }
 
-// \TODO: set both mulSynFast and mulSynSlow to 0.0, observe no spiking
 
-// \TODO: set mulSynSlow=0, have some pre-defined mulSynFast and check output rate via spkMonRT
-// \TODO: set mulSynFast=0, have some pre-defined mulSynSlow and check output rate via spkMonRT
+// \TODO: using external current, make sure the Izhikevich model is correctly implemented
+// Run izhikevich.org MATLAB script to find number of spikes as a function of neuron type,
+// input current, and time period. Build test case to reproduce the exact numbers.
 
-// \TODO: connect g0->g2 and g1->g2 with some pre-defined values, observe spike output
+TEST(CORE, setExternalCurrent) {
+	CARLsim * sim;
+	int nNeur = 10;
 
-//! test all possible valid ways of setting conductances to true
-// \FIXME: this could be interface level, but then there would be no way to test net_Info struct
+	for (int hasCOBA=0; hasCOBA<=1; hasCOBA++) {
+		for (int isGPUmode=0; isGPUmode<=1; isGPUmode++) {
+			sim = new CARLsim("CORE.setExternalCurrent", isGPUmode?GPU_MODE:CPU_MODE, SILENT, 0, 42);
+			int g0=sim->createSpikeGeneratorGroup("input0", nNeur, EXCITATORY_NEURON);
+			int g1=sim->createGroup("excit1", nNeur, EXCITATORY_NEURON);
+			sim->setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f);
+			sim->connect(g0,g1,"full",RangeWeight(0.1),1.0f,RangeDelay(1));
+			sim->setConductances(hasCOBA>0);
+			sim->setupNetwork();
+//			fprintf(stderr, "setExternalCurrent %s %s\n",hasCOBA?"COBA":"CUBA",isGPUmode?"GPU":"CPU");
 
+			SpikeMonitor* SM = sim->setSpikeMonitor(g1,"NULL");
+
+			// run for a bunch, observe zero spikes since ext current should be zero by default
+			SM->startRecording();
+			sim->runNetwork(1,0);
+			SM->stopRecording();
+			EXPECT_EQ(SM->getPopNumSpikes(), 0);
+
+			// set current, observe spikes
+			std::vector<float> current(nNeur,7.0f);
+			sim->setExternalCurrent(g1, current);
+			SM->startRecording();
+			sim->runNetwork(0,500);
+			SM->stopRecording();
+			EXPECT_GT(SM->getPopNumSpikes(), 0); // should be >0 in all cases
+			for (int i=0; i<nNeur; i++) {
+				EXPECT_EQ(SM->getNeuronNumSpikes(i), 8); // but actually should be ==8
+			}
+
+			// (intentionally) forget to reset current, observe spikes
+			SM->startRecording();
+			sim->runNetwork(0,500);
+			SM->stopRecording();
+			EXPECT_GT(SM->getPopNumSpikes(), 0); // should be >0 in all cases
+			for (int i=0; i<nNeur; i++) {
+				EXPECT_EQ(SM->getNeuronNumSpikes(i), 8); // but actually should be ==8
+			}
+
+			// reset current to zero
+			sim->setExternalCurrent(g1, 0.0f);
+			SM->startRecording();
+			sim->runNetwork(0,500);
+			SM->stopRecording();
+			EXPECT_EQ(SM->getPopNumSpikes(), 0);
+
+			// use convenience function to achieve same result as above
+			sim->setExternalCurrent(g1, 7.0f);
+			SM->startRecording();
+			sim->runNetwork(0,500);
+			SM->stopRecording();
+			EXPECT_GT(SM->getPopNumSpikes(), 0); // should be >0 in all cases
+			for (int i=0; i<nNeur; i++) {
+				EXPECT_EQ(SM->getNeuronNumSpikes(i), 8); // but actually should be ==8
+			}
+
+			delete sim;
+		}
+	}
+}
 
 TEST(CORE, firingRateCPUvsGPU) {
 	CARLsim *sim = NULL;
 	SpikeMonitor *spkMonG0 = NULL, *spkMonG1 = NULL, *spkMonG2 = NULL, *spkMonG3 = NULL;
 	PeriodicSpikeGenerator *spkGenG0 = NULL, *spkGenG1 = NULL;
 
-	for (int hasCOBA=0; hasCOBA<=0; hasCOBA++) {
+	for (int hasCOBA=0; hasCOBA<=1; hasCOBA++) {
 		float rateG0CPU = -1.0f;
 		float rateG1CPU = -1.0f;
 		float rateG2CPU = -1.0f;
@@ -216,8 +275,8 @@ TEST(CORE, firingRateCPUvsGPU) {
 
 		PoissonRate in(1);
 
-		for (int isGPUmode=0; isGPUmode<=0; isGPUmode++) {
-			CARLsim* sim = new CARLsim("CORE.firingRateCPUvsGPU",isGPUmode?GPU_MODE:CPU_MODE,SILENT,0,42);
+		for (int isGPUmode=0; isGPUmode<=1; isGPUmode++) {
+			CARLsim* sim = new CARLsim("CORE.firingRateCPUvsGPU",isGPUmode?GPU_MODE:CPU_MODE,SILENT,42);
 			int g0=sim->createSpikeGeneratorGroup("input0", 1, EXCITATORY_NEURON);
 			int g1=sim->createSpikeGeneratorGroup("input1", 1, EXCITATORY_NEURON);
 			int g2=sim->createGroup("excit2", 1, EXCITATORY_NEURON);

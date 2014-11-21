@@ -602,6 +602,73 @@ public:
 	void setConnectionMonitor(int grpIdPre, int grpIdPost, ConnectionMonitor* connectionMon=NULL);
 
 	/*!
+	 * \brief Sets the amount of current (mA) to inject into a group
+	 *
+	 * This method injects current, specified on a per-neuron basis, into the soma of each neuron in the group, at 
+	 * each timestep of the simulation. current is a float vector of current amounts (mA), one element per neuron in 
+	 * the group.
+	 *
+	 * To input different currents into a neuron over time, the idea is to run short periods of CARLsim::runNetwork
+	 * and subsequently calling CARLsim::setExternalCurrent again with updated current values.
+	 *
+	 * For example: Inject 5mA for 50 ms, then 0mA for 10 sec
+	 * \code
+	 * // 5mA for 50 ms, 10 neurons in the group
+	 * std::vector<float> current(10, 5.0f);
+	 * snn.setExternalCurrent(g0, current);
+	 * snn.runNetwork(0,50);
+	 *
+	 * // 0mA for 10 sec, use convenience function for reset
+	 * snn.setExternalCurrent(g0, 0.0f);
+	 * snn.runNetwork(10,0);
+	 * \endcode
+	 *
+	 * \STATE SETUP, EXECUTION
+	 * \param[in] grpId    the group ID
+	 * \param[in] current  a float vector of current amounts (mA), one value per neuron in the group
+	 *
+	 * \note This method cannot be applied to SpikeGenerator groups.
+	 * \note If all neurons in the group should receive the same amount of current, you can use the convenience 
+	 * function CARLsim::setExternalCurrent(int grpId, float current).
+	 *
+	 * \attention Make sure to reset current after use (i.e., for the next call to CARLsim::runNetwork), otherwise
+	 * the current will keep getting applied to the group.
+	 * \see CARLsim::setExternalCurrent(int grpId, float current)
+	 * \see CARLsim::setSpikeRate
+	 * \see CARLsim::setSpikeGenerator
+	 */
+	void setExternalCurrent(int grpId, const std::vector<float>& current);
+
+	/*!
+	 * \brief Sets the amount of current (mA) to inject to each neuron in a group
+	 *
+	 * This methods injects a specific amount of current into the soma of every neuron in the group. current is a float
+	 * value in mA. The same current is applied to every neuron in the group.
+	 *
+	 * For example: inject 4.5 mA into every neuron in the group, for 500 ms
+	 * \code
+	 * // 4.5 mA for 500 ms
+	 * snn.setExternalCurrent(g0, 4.5f);
+	 * snn.runNetwork(0,500);
+	 *
+	 * // don't forget to reset current afterwards if necessary
+	 * snn.setExternalCurrent(g0, 0.0f);
+	 * snn.runNetwork(10,0); // zero external current
+	 * \endcode
+	 *
+	 * \note This method cannot be applied to SpikeGenerator groups.
+	 * \note If each neuron in the group should receive a different amount of current, you can use the method
+	 * CARLsim::setExternalCurrent(int grpId, const std::vector<float>& current) instead.
+	 *
+	 * \attention Make sure to reset current after use (i.e., for the next call to CARLsim::runNetwork), otherwise
+	 * the current will keep getting applied to the group.
+	 * \see CARLsim::setExternalCurrent(int grpId, const std::vector<float>& current)
+	 * \see CARLsim::setSpikeRate
+	 * \see CARLsim::setSpikeGenerator
+	 */
+	void setExternalCurrent(int grpId, float current);
+
+	/*!
 	 * \brief Sets a group monitor for a group, custom GroupMonitor class
 	 *
 	 * \TODO finish docu
@@ -665,6 +732,11 @@ public:
 	 * \returns   SpikeMonitor*	pointer to a SpikeMonitor object, which can be used to calculate spike statistics
 	 *                          (such as group firing rate, number of silent neurons, etc.) or retrieve all spikes in
 	 * 							AER format
+	 *
+	 * \note Only one SpikeMonitor is allowed per group.
+	 *
+	 * \attention Using SpikeMonitor::startRecording and SpikeMonitor::stopRecording might significantly slow down the
+	 * simulation. It is unwise to use this mechanism to record a large number of spikes over a long period of time.
 	 */
 	SpikeMonitor* setSpikeMonitor(int grpId, const std::string& fname="");
 
@@ -673,6 +745,16 @@ public:
 	 * \TODO finish docu
 	 *
 	 * \STATE SETUP, EXECUTION
+	 * \param[in] grpId      group ID
+	 * \param[in] spikeRate  pointer to PoissonRate object
+	 * \param[in] refPeriod  refactory period (ms). Default: 1ms.
+	 *
+	 * \note This method can only be applied to SpikeGenerator groups.
+	 *
+	 * \attention Make sure to reset spike rate after use (i.e., for the next call to CARLsim::runNetwork), otherwise
+	 * the rate will keep getting applied to the group.
+	 * \see CARLsim::setExternalCurrent
+	 * \see CARLsim::setSpikeGenerator
 	 */
 	void setSpikeRate(int grpId, PoissonRate* spikeRate, int refPeriod=1);
 
