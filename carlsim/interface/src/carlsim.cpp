@@ -654,6 +654,17 @@ void CARLsim::setExternalCurrent(int grpId, const std::vector<float>& current) {
 	snn_->setExternalCurrent(grpId, current);
 }
 
+void CARLsim::setExternalCurrent(int grpId, float current) {
+	std::string funcName = "setExternalCurrent(\""+getGroupName(grpId)+"\")";
+	UserErrors::assertTrue(grpId!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName, "grpId");
+	UserErrors::assertTrue(!isPoissonGroup(grpId), UserErrors::WRONG_NEURON_TYPE, funcName, funcName);
+	UserErrors::assertTrue(carlsimState_==SETUP_STATE || carlsimState_==EXE_STATE, 
+		UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "SETUP or EXECUTION.");
+
+	std::vector<float> vecCurrent(getGroupNumNeurons(grpId), current);
+	snn_->setExternalCurrent(grpId, vecCurrent);
+}
+
 // set group monitor for a group
 void CARLsim::setGroupMonitor(int grpId, GroupMonitor* groupMon) {
 	std::string funcName = "setGroupMonitor(\""+getGroupName(grpId)+"\",GroupMonitor*)";

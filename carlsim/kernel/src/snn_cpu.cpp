@@ -625,7 +625,6 @@ void CpuSNN::setWeightAndWeightChangeUpdate(updateInterval_t wtANDwtChangeUpdate
 /// PUBLIC METHODS: RUNNING A SIMULATION
 /// ************************************************************************************************************ ///
 
-// if
 int CpuSNN::runNetwork(int _nsec, int _nmsec, bool printRunSummary, bool copyState) {
 	assert(_nmsec >= 0 && _nmsec < 1000);
 	assert(_nsec  >= 0);
@@ -3108,6 +3107,7 @@ void  CpuSNN::globalStateUpdate() {
 
 		for(int i=grp_Info[g].StartN; i <= grp_Info[g].EndN; i++) {
 			assert(i < numNReg);
+
 			if (grp_Info[g].WithHomeostasis)
 				avgFiring[i] *= grp_Info[g].avgTimeScale_decay;
 
