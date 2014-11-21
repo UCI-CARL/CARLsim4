@@ -601,6 +601,34 @@ public:
 	 */
 	void setConnectionMonitor(int grpIdPre, int grpIdPost, ConnectionMonitor* connectionMon=NULL);
 
+	/*
+	 * \brief Sets the amount of current (mA) to inject into a group
+	 *
+	 * This function injects a specific amount of current into the soma of each neuron of the group, at each timestep
+	 * of the simulation. current is a float vector of current amounts (mA), one element per neuron in the group.
+	 * To input different currents into a neuron over time, the idea is to run short periods of CARLsim::runNetwork
+	 * and subsequently calling CARLsim::setExternalCurrent again with updated current values.
+	 * For example: Inject 5mA for 50 ms, then 0mA for 10 sec
+	 * \code
+	 * // 5mA for 50 ms, 10 neurons in the group
+	 * std::vector<float> current(10, 5.0f);
+	 * snn.setExternalCurrent(g0, current);
+	 * snn.runNetwork(0,50);
+	 *
+	 * // 0mA for 10 sec
+	 * std::fill(current.begin(), current.end(), 0);
+	 * snn.setExternalCurrent(g0, current);
+	 * snn.runNetwork(10,0);
+	 * \endcode
+	 *
+	 * This function is similar in functionality to CARLsim::setSpikeRate.
+	 *
+	 * \STATE SETUP, EXECUTION
+	 * \param[in] grpId    the group ID
+	 * \param[in] current  a float vector of current amounts (mA), one value per neuron in the group
+	 */
+	void setExternalCurrent(int grpId, const std::vector<float>& current);
+
 	/*!
 	 * \brief Sets a group monitor for a group, custom GroupMonitor class
 	 *

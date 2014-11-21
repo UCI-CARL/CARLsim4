@@ -951,6 +951,24 @@ void CpuSNN::setConnectionMonitor(int grpIdPre, int grpIdPost, ConnectionMonitor
 	numConnectionMonitor++;
 }
 
+void CpuSNN::setExternalCurrent(int grpId, const std::vector<float>& current) {
+	assert(grpId>=0); assert(grpId<numGrp);
+	assert(!isPoissonGroup(grpId));
+	assert(current.size() == getGroupNumNeurons(grpId));
+
+	// // update flag for faster handling at run-time
+	// if (count_if(current.begin(), current.end(), isGreaterThanZero)) {
+	// 	grp_Info[grpId].WithCurrentInjection = true;
+	// } else {
+	// 	grp_Info[grpId].WithCurrentInjection = false;
+	// }
+
+	// store external current in array
+	for (int i=grp_Info[grpId].StartN, j=0; i<=grp_Info[grpId].EndN; i++, j++) {
+		extCurrent[i] = current[j];
+	}
+}
+
 // sets up a spike generator
 void CpuSNN::setSpikeGenerator(int grpId, SpikeGeneratorCore* spikeGen) {
 	assert(!doneReorganization); // must be called before setupNetwork to work on GPU
@@ -1920,14 +1938,15 @@ void CpuSNN::buildNetworkInit(unsigned int nNeur, unsigned int nPostSyn, unsigne
 		exitSimulation(1);
 	}
 
-	voltage	 = new float[numNReg];
-	recovery = new float[numNReg];
-	Izh_a	 = new float[numNReg];
-	Izh_b    = new float[numNReg];
-	Izh_c	 = new float[numNReg];
-	Izh_d	 = new float[numNReg];
-	current	 = new float[numNReg];
-	cpuSnnSz.neuronInfoSize += (sizeof(float)*numNReg*7);
+	voltage	   = new float[numNReg];
+	recovery   = new float[numNReg];
+	Izh_a	   = new float[numNReg];
+	Izh_b      = new float[numNReg];
+	Izh_c	   = new float[numNReg];
+	Izh_d	   = new float[numNReg];
+	current	   = new float[numNReg];
+	extCurrent = new float[numNReg];
+	cpuSnnSz.neuronInfoSize += (sizeof(float)*numNReg*8);
 
 	if (sim_with_conductances) {
 		gAMPA  = new float[numNReg];
@@ -3108,7 +3127,8 @@ void  CpuSNN::globalStateUpdate() {
 						tmp_I += noiseI;
 					#endif
 
-					voltage[i]+=((0.04*voltage[i]+5.0)*voltage[i]+140.0-recovery[i]+tmp_I)/COND_INTEGRATION_SCALE;
+					voltage[i] += ((0.04*voltage[i]+5.0)*voltage[i]+140.0-recovery[i]+tmp_I+extCurrent[i])
+						/ COND_INTEGRATION_SCALE;
 					assert(!isnan(voltage[i]) && !isinf(voltage[i]));
 
 					// keep track of total current
@@ -3126,8 +3146,10 @@ void  CpuSNN::globalStateUpdate() {
 				} // end COND_INTEGRATION_SCALE loop
 			} else {
 				// CUBA model
-				voltage[i]+=0.5*((0.04*voltage[i]+5.0)*voltage[i]+140.0-recovery[i]+current[i]); //for numerical stability
-				voltage[i]+=0.5*((0.04*voltage[i]+5.0)*voltage[i]+140.0-recovery[i]+current[i]); //time step is 0.5 ms
+				voltage[i] += 0.5*((0.04*voltage[i]+5.0)*voltage[i] + 140.0 - recovery[i]
+					+ current[i] + extCurrent[i]); //for numerical stability
+				voltage[i] += 0.5*((0.04*voltage[i]+5.0)*voltage[i] + 140.0 - recovery[i]
+					+ current[i] + extCurrent[i]); //time step is 0.5 ms
 				if (voltage[i] > 30)
 					voltage[i] = 30;
 				if (voltage[i] < -90)
@@ -3270,6 +3292,7 @@ void CpuSNN::makePtrInfo() {
 	cpuNetPtrs.voltage			= voltage;
 	cpuNetPtrs.recovery			= recovery;
 	cpuNetPtrs.current			= current;
+	cpuNetPtrs.extCurrent       = extCurrent;
 	cpuNetPtrs.Npre				= Npre;
 	cpuNetPtrs.Npost			= Npost;
 	cpuNetPtrs.cumulativePost 	= cumulativePost;
@@ -3695,7 +3718,8 @@ void CpuSNN::resetPointers(bool deallocate) {
 	if (voltage!=NULL && deallocate) delete[] voltage;
 	if (recovery!=NULL && deallocate) delete[] recovery;
 	if (current!=NULL && deallocate) delete[] current;
-	voltage=NULL; recovery=NULL; current=NULL;
+	if (extCurrent!=NULL && deallocate) delete[] extCurrent;
+	voltage=NULL; recovery=NULL; current=NULL; extCurrent=NULL;
 
 	if (Izh_a!=NULL && deallocate) delete[] Izh_a;
 	if (Izh_b!=NULL && deallocate) delete[] Izh_b;
