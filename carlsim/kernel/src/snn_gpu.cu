@@ -1017,13 +1017,13 @@ __device__ void updateNeuronState(unsigned int& nid, int& grpId) {
 	for (int c=0; c<COND_INTEGRATION_SCALE; c++) {
 		I_sum = 0.0;
 		if (gpuNetInfo.sim_with_conductances) {
-			NMDAtmp = (v+80)*(v+80)/60/60;
+			NMDAtmp = (v+80.0)*(v+80.0)/60.0/60.0;
 			gNMDA = (gpuNetInfo.sim_with_NMDA_rise) ? (gpuPtrs.gNMDA_d[nid]-gpuPtrs.gNMDA_r[nid]) : gpuPtrs.gNMDA[nid];
 			gGABAb = (gpuNetInfo.sim_with_GABAb_rise) ? (gpuPtrs.gGABAb_d[nid]-gpuPtrs.gGABAb_r[nid]) : gpuPtrs.gGABAb[nid];
-			I_sum = -(   gpuPtrs.gAMPA[nid]*(v-0)
-					   + gNMDA*NMDAtmp/(1+NMDAtmp)*(v-0)
-					   + gpuPtrs.gGABAa[nid]*(v+70)
-					   + gGABAb*(v+90)
+			I_sum = -(   gpuPtrs.gAMPA[nid]*(v-0.0)
+					   + gNMDA*NMDAtmp/(1.0+NMDAtmp)*(v-0.0)
+					   + gpuPtrs.gGABAa[nid]*(v+70.0)
+					   + gGABAb*(v+90.0)
 					 );
 		}
 		else {
@@ -1031,20 +1031,20 @@ __device__ void updateNeuronState(unsigned int& nid, int& grpId) {
 		}
 
 		// update vpos and upos for the current neuron
-		v += ((0.04f*v+5)*v+140-u+I_sum+gpuPtrs.extCurrent[nid])/COND_INTEGRATION_SCALE;
-		if (v > 30) { 
-			v = 30; // break the loop but evaluate u[i]
+		v += ((0.04*v+5.0)*v+140.0-u+I_sum+gpuPtrs.extCurrent[nid])/COND_INTEGRATION_SCALE;
+		if (v > 30.0) { 
+			v = 30.0; // break the loop but evaluate u[i]
 			c=COND_INTEGRATION_SCALE;
 		}
-		if (v < -90)
-			v = -90;
+		if (v < -90.0)
+			v = -90.0;
 		u += (gpuPtrs.Izh_a[nid]*(gpuPtrs.Izh_b[nid]*v-u)/COND_INTEGRATION_SCALE);
 	}
 	if(gpuNetInfo.sim_with_conductances) {
 		gpuPtrs.current[nid] = I_sum;
 	} else {
 		// current must be reset here for CUBA and not kernel_STPUpdateAndDecayConductances
-		gpuPtrs.current[nid] = 0;
+		gpuPtrs.current[nid] = 0.0;
 	}
 	gpuPtrs.voltage[nid] = v;
 	gpuPtrs.recovery[nid] = u;
