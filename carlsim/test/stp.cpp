@@ -208,8 +208,8 @@ TEST(STP, spikeTimesCPUvsGPU) {
 			sim->setNeuronParameters(g3, 0.02f, 0.2f, -65.0f, 8.0f);
 
 			float wt = hasCOBA ? 0.2f : 18.0f;
-			sim->connect(g0,g2,"full",RangeWeight(wt),1.0f,RangeDelay(1));
-			sim->connect(g1,g3,"full",RangeWeight(wt),1.0f,RangeDelay(1));
+			sim->connect(g0,g2,"one-to-one",RangeWeight(wt),1.0f,RangeDelay(1));
+			sim->connect(g1,g3,"one-to-one",RangeWeight(wt),1.0f,RangeDelay(1));
 
 			if (hasCOBA)
 				sim->setConductances(true, 5, 0, 150, 6, 0, 150);
