@@ -276,7 +276,7 @@ TEST(CORE, firingRateCPUvsGPU) {
 		PoissonRate in(1);
 
 		for (int isGPUmode=0; isGPUmode<=1; isGPUmode++) {
-			CARLsim* sim = new CARLsim("CORE.firingRateCPUvsGPU",isGPUmode?GPU_MODE:CPU_MODE,SILENT,42);
+			CARLsim* sim = new CARLsim("CORE.firingRateCPUvsGPU",isGPUmode?GPU_MODE:CPU_MODE,SILENT,0,42);
 			int g0=sim->createSpikeGeneratorGroup("input0", 1, EXCITATORY_NEURON);
 			int g1=sim->createSpikeGeneratorGroup("input1", 1, EXCITATORY_NEURON);
 			int g2=sim->createGroup("excit2", 1, EXCITATORY_NEURON);

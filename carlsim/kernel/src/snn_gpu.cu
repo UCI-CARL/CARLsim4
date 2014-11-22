@@ -3098,38 +3098,34 @@ void CpuSNN::allocateNetworkParameters() {
 	return;
 }
 
-void CpuSNN::checkGPUDevice() {
-	int devCount;
-	cudaGetDeviceCount(&devCount);
-	CUDA_GET_LAST_ERROR("cudaGetDeviceCount failed\n");
-	KERNEL_INFO("GPU Setup:");
-	KERNEL_INFO("  - Number of CUDA devices     = %8d",devCount);
-
-	int dev = CUDA_GET_MAXGFLOP_DEVICE_ID();
-	KERNEL_INFO("  - Device ID with max GFLOPs  = %8d", dev);
+void CpuSNN::configGPUDevice() {
+	int devCount, devMax;
 	cudaDeviceProp deviceProp;
 
-	// ithGPU gives an index number on which device to run the simulation
-	// if index exceeds number of devices, use dev 0 instead
-	if (ithGPU_>=0 && ithGPU_<devCount)
-		dev = ithGPU_;
-	else {
-		KERNEL_WARN("Device index %d exceeds number of devices (%d), choose from [0,%d]. Defaulting to using device 0...",
-			ithGPU_,devCount,devCount-1);
-		dev = 0;
-	}
+	CUDA_CHECK_ERRORS(cudaGetDeviceCount(&devCount));
+	KERNEL_INFO("CUDA devices Configuration:");
+	KERNEL_INFO("  - Number of CUDA devices          = %8d", devCount);
 
-	CUDA_CHECK_ERRORS(cudaGetDeviceProperties(&deviceProp, dev));
-	KERNEL_DEBUG("Device %d: \"%s\"", dev, deviceProp.name);
-	if (deviceProp.major == 1 && deviceProp.minor < 3) {
-		KERNEL_ERROR("CARLsim does not support NVIDIA cards older than version 1.3");
+	devMax = CUDA_GET_MAXGFLOP_DEVICE_ID();
+	KERNEL_INFO("  - CUDA device ID with max GFLOPs  = %8d", devMax);
+
+	// ithGPU_ gives an index number on which device to run the simulation
+	if (ithGPU_ < 0 || ithGPU_ >= devCount) {
+		KERNEL_ERROR("CUDA device[%d] does not exist, please choose from [0,%d]", ithGPU_, devCount - 1);
 		exitSimulation(1);
 	}
-	KERNEL_INFO("  - CUDA Compute Capability    =     %2d.%d\n", deviceProp.major, deviceProp.minor);
-	assert(deviceProp.major >= 1);
-	cudaSetDevice(dev);
+
+	CUDA_CHECK_ERRORS(cudaGetDeviceProperties(&deviceProp, ithGPU_));
+	KERNEL_INFO("  - Use CUDA device[%d]: \"%s\"", ithGPU_, deviceProp.name);
+	KERNEL_INFO("  - CUDA Compute Capability         =     %2d.%d\n", deviceProp.major, deviceProp.minor);
+
+	if (deviceProp.major < 2) {
+		KERNEL_ERROR("CARLsim does not support CUDA devices older than version 2.0");
+		exitSimulation(1);
+	}
+
+	CUDA_CHECK_ERRORS(cudaSetDevice(ithGPU_));
 	CUDA_DEVICE_RESET();
-	CUDA_GET_LAST_ERROR("cudaSetDevice failed\n");
 }
 
 void CpuSNN::checkAndSetGPUDevice() {

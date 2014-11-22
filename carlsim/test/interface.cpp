@@ -183,6 +183,30 @@ TEST(Interface, setNeuronParametersDeath) {
 		delete sim;
 }
 
+TEST(Interface, CARLsimConstructorDeathGPU) {
+	::testing::FLAGS_gtest_death_test_style = "threadsafe";
+
+	CARLsim *sim1=NULL, *sim2=NULL, *sim3=NULL;
+	EXPECT_DEATH({sim1 = new CARLsim("Interface.CARLsimConstructorDeathGPU", GPU_MODE, SILENT, -1);},"");
+	EXPECT_DEATH({sim2 = new CARLsim("Interface.CARLsimConstructorDeathGPU", GPU_MODE, SILENT, 42);},"");
+	// This test will fail if the machine has 8 GPUs
+	EXPECT_DEATH({sim3 = new CARLsim("Interface.CARLsimConstructorDeathGPU", GPU_MODE, SILENT, 7);},"");
+	if (sim1 != NULL) delete sim1;
+	if (sim2 != NULL) delete sim2;
+	if (sim3 != NULL) delete sim3;
+}
+
+TEST(Interface, AllocateGPUConflict) {
+	::testing::FLAGS_gtest_death_test_style = "threadsafe";
+
+	CARLsim *sim1=NULL, *sim2=NULL;
+	
+	sim1 = new CARLsim("Interface.AllocateGPUConflict", GPU_MODE, SILENT, 0);
+	EXPECT_DEATH({sim2 = new CARLsim("Interface.AllocateGPUConflict", GPU_MODE, SILENT, 0);},"");
+	if (sim1 != NULL) delete sim1;
+	if (sim2 != NULL) delete sim2;
+}
+
 //! trigger all UserErrors
 TEST(Interface, setSpikeCounter) {
 	::testing::FLAGS_gtest_death_test_style = "threadsafe";

@@ -631,7 +631,7 @@ int CpuSNN::runNetwork(int _nsec, int _nmsec, bool printRunSummary, bool copySta
 	// first-time run: inform the user the simulation is running now
 	if (simTime==0) {
 		KERNEL_INFO("");
-		KERNEL_INFO("*******************      Running %s Simulation on GPU%d     ****************************\n",
+		KERNEL_INFO("*******************      Running %s Simulation on GPU %d     ****************************\n",
 			simMode_==GPU_MODE?"GPU":"CPU", ithGPU_);
 	}
 
@@ -1921,7 +1921,7 @@ void CpuSNN::CpuSNNinit() {
 	wtChangeDecay_ = 0.0f;
 
 	if (simMode_ == GPU_MODE)
-		checkGPUDevice();
+		configGPUDevice();
 }
 
 //! update (initialize) numN, numPostSynapses, numPreSynapses, maxDelay_, postSynCnt, preSynCnt
