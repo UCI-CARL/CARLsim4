@@ -183,7 +183,7 @@ void CARLsim::CARLsimInit() {
 
 	// Allocate GPU
 	if (simMode_ == GPU_MODE) {
-		if (ithGPU_ >= MAX_NUM_CUDA_DEVICES) {
+		if (ithGPU_ >= MAX_NUM_CUDA_DEVICES || ithGPU_ < 0) {
 			CARLSIM_ERROR(funcName.c_str(), "Maximum number of GPUs supported by CARLsim is 8");
 			exit(EXIT_FAILURE); // abort
 		}
@@ -205,7 +205,7 @@ void CARLsim::CARLsimInit() {
 
 	// Allocate GPU
 	if (simMode_ == GPU_MODE) {
-		if (ithGPU_ >= MAX_NUM_CUDA_DEVICES) {
+		if (ithGPU_ >= MAX_NUM_CUDA_DEVICES || ithGPU_ < 0) {
 			CARLSIM_ERROR(funcName.c_str(), "Maximum number of GPUs supported by CARLsim is 8");
 			exit(EXIT_FAILURE); // abort
 		}

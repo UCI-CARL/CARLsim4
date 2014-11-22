@@ -204,6 +204,10 @@ TEST(Interface, AllocateGPUConflict) {
 	sim1 = new CARLsim("Interface.AllocateGPUConflict", GPU_MODE, SILENT, 0);
 	EXPECT_DEATH({sim2 = new CARLsim("Interface.AllocateGPUConflict", GPU_MODE, SILENT, 0);},"");
 	if (sim1 != NULL) delete sim1;
+
+	sim1 = new CARLsim("Interface.AllocateGPUConflict", GPU_MODE, SILENT, 0);
+
+	if (sim1 != NULL) delete sim1;
 	if (sim2 != NULL) delete sim2;
 }
 
