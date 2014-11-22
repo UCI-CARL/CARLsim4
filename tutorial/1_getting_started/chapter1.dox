@@ -1,0 +1,44 @@
+/*!
+
+\page ch1_getting_started Chapter 1: Getting Started
+
+\tableofcontents
+
+
+After you downloaded the zip, what to do. Mention ECJ installation chapter. FYI, Google Test is installed 
+automatically (give path). If you want more info on testing, go to \ref ch11_regression_suite
+
+
+\section ch1s1_installation 1.1 Installation
+\TODO KDC
+
+A single \b bold word and <b>a few of them</b>. Also works for \c typewriter font even <tt>with multiple words</tt>.
+You should google "doxygen special commands" or similar to find out about the rest.
+
+\attention Dragons are dangerous.
+
+
+\subsection ch1s1s1_linux 1.1.1 Linux
+\TODO KDC
+
+\subsection ch1s1s1_windows 1.1.2 Windows
+\TODO TS or SL
+
+\warning Warnings are overrated.
+
+
+
+\section ch1s2_configuration 1.2 Configuration
+\TODO KDC
+Environment variables, user.mk, flags and stuff
+
+\remark A very small degree of hope is sufficient to cause the birth of love.
+
+
+\section ch1s3_project_workflow 1.3 Project Workflow
+\TODO KDC
+How to get started with your project. Project template, maybe user.mk.
+
+
+
+*/

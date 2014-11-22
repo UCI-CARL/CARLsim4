@@ -36,7 +36,7 @@ install: $(carlsim_lib)
 	@ln -Tfs $(CARLSIM_LIB_DIR)/lib/$(lib_name).$(num_ver) \
 		$(CARLSIM_LIB_DIR)/lib/$(lib_name)
 	@install -m 0644 $(kernel_dir)/include/cuda_version_control.h \
-		$(kernel_dir)/include/poisson_rate.h $(kernel_dir)/include/mtrand.h \
+		$(kernel_dir)/include/poisson_rate.h \
 		$(CARLSIM_LIB_DIR)/include/kernel
 	@install -m 0644 $(interface_dir)/include/callback.h \
 		$(interface_dir)/include/carlsim_datastructures.h \
