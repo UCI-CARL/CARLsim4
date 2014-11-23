@@ -47,9 +47,10 @@
 #include <stdlib.h>		// exit
 
 #if (WIN32 || WIN64)
-	#include <algorithm>
-	#define fmin std::min
-	#define fmax std::max
+#include <algorithm>
+#define fmin min
+#define fmax max
+using namespace std;
 #endif
 
 MTRand getRand;
