@@ -191,8 +191,8 @@ TEST(STDP, DASTDPweightBoost) {
 
 				sim->setupNetwork();
 
-				spikeMonPost = sim->setSpikeMonitor(g1);
-				spikeMonPre = sim->setSpikeMonitor(gin);
+				spikeMonPost = sim->setSpikeMonitor(g1,"NULL");
+				spikeMonPre = sim->setSpikeMonitor(gin,"NULL");
 				sim->setSpikeMonitor(gda);
 
 				//setup baseline firing rate
@@ -244,4 +244,3 @@ TEST(STDP, DASTDPweightBoost) {
 
 	delete spikeCtrl;
 }
-

@@ -7,6 +7,11 @@ Legend:
 	- removed element
 	* changed element
 
+2014-11-22     Michael Beyeler <mbeyeler@uci.edu>
+  * Fixed memory leaks on GPU side.
+  * Fixed CORE, CUBA, and COBA test cases.
+  * Fixed bug in CpuSNN::getConductanceGABAb.
+
 2014-11-21     Michael Beyeler <mbeyeler@uci.edu>
   + Added current injection.
 

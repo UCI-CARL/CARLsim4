@@ -16,6 +16,9 @@ TEST(SpikeGen, PeriodicSpikeGenerator) {
 	int nNeur = 5;
 	CARLsim sim("PeriodicSpikeGenerator",CPU_MODE,SILENT,0,42);
 
+	int g2 = sim.createGroup("g2", 1, EXCITATORY_NEURON);		
+	sim.setNeuronParameters(g2, 0.02, 0.2, -65.0, 8.0);
+
 	int g0 = sim.createSpikeGeneratorGroup("Input0",nNeur,EXCITATORY_NEURON);
 	int g1 = sim.createSpikeGeneratorGroup("Input1",nNeur,EXCITATORY_NEURON);
 	PeriodicSpikeGenerator spkGen0(rate,true);
@@ -23,8 +26,6 @@ TEST(SpikeGen, PeriodicSpikeGenerator) {
 	sim.setSpikeGenerator(g0, &spkGen0);
 	sim.setSpikeGenerator(g1, &spkGen1);
 
-	int g2 = sim.createGroup("g2", 1, EXCITATORY_NEURON);		
-	sim.setNeuronParameters(g2, 0.02, 0.2, -65.0, 8.0);
 	sim.setConductances(true);
 
 	// add some dummy connections so we can actually run the network
@@ -56,6 +57,8 @@ TEST(SpikeGen, PeriodicSpikeGenerator) {
 }
 
 TEST(SpikeGen, PeriodicSpikeGeneratorDeath) {
+	::testing::FLAGS_gtest_death_test_style = "threadsafe";
+
 	EXPECT_DEATH({PeriodicSpikeGenerator spkGen(0.0);},"");
 	EXPECT_DEATH({PeriodicSpikeGenerator spkGen(-10.0);},"");
 }
@@ -66,12 +69,13 @@ TEST(SpikeGen, SpikeGeneratorFromFile) {
 	int nNeur = 5;
 	CARLsim sim("SpikeGeneratorFromFile",CPU_MODE,SILENT,0,42);
 
+	int g1 = sim.createGroup("g1", 1, EXCITATORY_NEURON);		
+	sim.setNeuronParameters(g1, 0.02, 0.2, -65.0, 8.0);
+
 	int g0 = sim.createSpikeGeneratorGroup("Input0",nNeur,EXCITATORY_NEURON);
 	PeriodicSpikeGenerator spkGen0(rate,true);
 	sim.setSpikeGenerator(g0, &spkGen0);
 
-	int g1 = sim.createGroup("g1", 1, EXCITATORY_NEURON);		
-	sim.setNeuronParameters(g1, 0.02, 0.2, -65.0, 8.0);
 	sim.setConductances(true);
 
 	// add some dummy connections so we can actually run the network
@@ -114,6 +118,7 @@ TEST(SpikeGen, SpikeGeneratorFromFile) {
 }
 
 TEST(SpikeGen, SpikeGeneratorFromFileDeath) {
+	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 	EXPECT_DEATH({SpikeGeneratorFromFile spkGen("");},"");
 	EXPECT_DEATH({SpikeGeneratorFromFile spkGen("thisFile/doesNot/exist.dat");},"");
 }
@@ -127,12 +132,13 @@ TEST(SpikeGen, SpikeGeneratorFromVector) {
 	int nNeur = 5;
 	CARLsim sim("SpikeGeneratorFromVector",CPU_MODE,SILENT,0,42);
 
+	int g1 = sim.createGroup("g1", 1, EXCITATORY_NEURON);		
+	sim.setNeuronParameters(g1, 0.02, 0.2, -65.0, 8.0);
+
 	int g0 = sim.createSpikeGeneratorGroup("Input",nNeur,EXCITATORY_NEURON);
 	SpikeGeneratorFromVector spkGen(spkTimes);
 	sim.setSpikeGenerator(g0, &spkGen);
 
-	int g1 = sim.createGroup("g1", 1, EXCITATORY_NEURON);		
-	sim.setNeuronParameters(g1, 0.02, 0.2, -65.0, 8.0);
 	sim.setConductances(true);
 
 	// add some dummy connections so we can actually run the network
@@ -156,6 +162,8 @@ TEST(SpikeGen, SpikeGeneratorFromVector) {
 }
 
 TEST(SpikeGen, SpikeGeneratorFromVectorDeath) {
+	::testing::FLAGS_gtest_death_test_style = "threadsafe";
+
 	std::vector<int> emptyVec, negativeVec;
 	negativeVec.push_back(0);
 	negativeVec.push_back(-1);

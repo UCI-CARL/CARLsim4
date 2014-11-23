@@ -1390,7 +1390,7 @@ std::vector<float> CpuSNN::getConductanceGABAb() {
 		copyConductanceGABAb(&cpuNetPtrs, &cpu_gpuNetPtrs, cudaMemcpyDeviceToHost, false, ALL);
 
 	std::vector<float> gGABAbVec;
-	if (isSimulationWithNMDARise()) {
+	if (isSimulationWithGABAbRise()) {
 		// need to construct conductance from rise and decay parts
 		for (int i=0; i<numNReg; i++) {
 			gGABAbVec.push_back(gGABAb_d[i]-gGABAb_r[i]);
