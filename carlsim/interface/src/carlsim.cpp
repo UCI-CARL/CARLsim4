@@ -178,29 +178,6 @@ void CARLsim::CARLsimInit() {
 
 	// set default save sim params
 	// TODO: when we run executable from local dir, put save file in results/
-#if (WIN32 || WIN64)
-	setDefaultSaveOptions("sim_"+netName_+".dat",false);
-
-	// Allocate GPU
-	if (simMode_ == GPU_MODE) {
-		if (ithGPU_ >= MAX_NUM_CUDA_DEVICES || ithGPU_ < 0) {
-			CARLSIM_ERROR(funcName.c_str(), "Maximum number of GPUs supported by CARLsim is 8");
-			exit(EXIT_FAILURE); // abort
-		}
-
-		WaitForSingleObject(gpuAllocationLock, INFINITE);
-		if (!gpuAllocation[ithGPU_]) {
-			gpuAllocation[ithGPU_] = true;
-			gpuAllocationResult = true;
-		}
-		ReleaseMutex(gpuAllocationLock);
-
-		if (!gpuAllocationResult) {
-			CARLSIM_ERROR(funcName.c_str(), "GPU Allocation Conflict (GPU has been occupied by another CARLsim object)");
-			exit(EXIT_FAILURE); // abort
-		}
-	}
-#else
 	setDefaultSaveOptions("results/sim_"+netName_+".dat",false);
 
 	// Allocate GPU
@@ -209,20 +186,26 @@ void CARLsim::CARLsimInit() {
 			CARLSIM_ERROR(funcName.c_str(), "Maximum number of GPUs supported by CARLsim is 8");
 			exit(EXIT_FAILURE); // abort
 		}
-
+#if (WIN32 || WIN64)
+		WaitForSingleObject(gpuAllocationLock, INFINITE);
+		if (!gpuAllocation[ithGPU_]) {
+			gpuAllocation[ithGPU_] = true;
+			gpuAllocationResult = true;
+		}
+		ReleaseMutex(gpuAllocationLock);
+#else
 		pthread_mutex_lock(&gpuAllocationLock);
 		if (!gpuAllocation[ithGPU_]) {
 			gpuAllocation[ithGPU_] = true;
 			gpuAllocationResult = true;
 		}
 		pthread_mutex_unlock(&gpuAllocationLock);
-
+#endif
 		if (!gpuAllocationResult) {
 			CARLSIM_ERROR(funcName.c_str(), "GPU Allocation Conflict (GPU has been occupied by another CARLsim object)");
 			exit(EXIT_FAILURE); // abort
 		}
 	}
-#endif	
 }
 
 
