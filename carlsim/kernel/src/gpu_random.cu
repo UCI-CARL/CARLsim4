@@ -164,6 +164,7 @@ RNG_rand48::init(int seed)
 void
 RNG_rand48::cleanup() {
   CUDA_CHECK_ERRORS(cudaFree((void*) state));
+  CUDA_CHECK_ERRORS(cudaFree((void*) res));
 }
 
 void
