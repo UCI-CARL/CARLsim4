@@ -43,15 +43,20 @@
  * The script returns the firing rate and spike times of the output RS neuron.
  */
 TEST(CUBA, firingRateVsData) {
+	// set this flag to make all death tests thread-safe
+	::testing::FLAGS_gtest_death_test_style = "threadsafe";
+
 	for (int hasHighFiring=0; hasHighFiring<=1; hasHighFiring++) {
 		for (int isGPUmode=0; isGPUmode<=1; isGPUmode++) {
 			CARLsim *sim;
 			SpikeMonitor *spkMonG0, *spkMonG1;
 			PeriodicSpikeGenerator *spkGenG0;
 			sim = new CARLsim("CUBA.firingRateVsData",isGPUmode?GPU_MODE:CPU_MODE,SILENT,0,42);
-			int g0=sim->createSpikeGeneratorGroup("input", 1 ,EXCITATORY_NEURON);
 			int g1=sim->createGroup("excit", 1, EXCITATORY_NEURON);
 			sim->setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f); // RS
+
+			int g0=sim->createSpikeGeneratorGroup("input", 1 ,EXCITATORY_NEURON);
+
 			sim->setConductances(false); // make CUBA explicit
 
 			// choose params appropriately (see comments above)
@@ -95,23 +100,27 @@ TEST(CUBA, firingRateVsData) {
  * Afterwards we make sure that CPU and GPU mode produce the same spike times and spike rates. 
  */
 TEST(CUBA, firingRateCPUvsGPU) {
+	::testing::FLAGS_gtest_death_test_style = "threadsafe";
+
 	CARLsim *sim = NULL;
 	SpikeMonitor *spkMonG0 = NULL, *spkMonG1 = NULL;
 	PeriodicSpikeGenerator *spkGenG0 = NULL;
 	std::vector<std::vector<int> > spkTimesG0CPU, spkTimesG1CPU, spkTimesG0GPU, spkTimesG1GPU;
 	float spkRateG0CPU = 0.0f, spkRateG1CPU = 0.0f;
 
-	int delay = rand() % 10 + 1;
-	float wt = rand()*1.0/RAND_MAX*15.0f + 5.0f;
-	float inputRate = rand() % 45 + 5.0f;
-	int runTimeMs = rand() % 800 + 200;
+	int delay = 3;
+	float wt = 9.440475f;
+	float inputRate = 19.0f;
+	int runTimeMs = 767;
 //	fprintf(stderr,"runTime=%d, delay=%d, wt=%f, input=%f\n",runTimeMs,delay,wt,inputRate);
 
 	for (int isGPUmode=0; isGPUmode<=1; isGPUmode++) {
 		sim = new CARLsim("CUBA.firingRateCPUvsGPU",isGPUmode?GPU_MODE:CPU_MODE,SILENT,0,42);
-		int g0=sim->createSpikeGeneratorGroup("input", 1 ,EXCITATORY_NEURON);
 		int g1=sim->createGroup("excit", 1, EXCITATORY_NEURON);
 		sim->setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f); // RS
+
+		int g0=sim->createSpikeGeneratorGroup("input", 1 ,EXCITATORY_NEURON);
+
 		sim->setConductances(false); // make CUBA explicit
 
 		sim->connect(g0, g1, "full", RangeWeight(wt), 1.0f, RangeDelay(1,delay));
