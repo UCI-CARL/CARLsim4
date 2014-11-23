@@ -17,7 +17,7 @@
  * \brief testing to make sure grpId error is caught in setSpikeMonitor.
  *
  */
-TEST(SETSPIKEMON, grpId){
+TEST(setSpikeMon, grpId){
 	CARLsim* sim;
 	const int GRP_SIZE = 10;
 	
@@ -47,7 +47,7 @@ TEST(SETSPIKEMON, grpId){
  * \brief testing to make sure file name error is caught in setSpikeMonitor.
  *
  */
-TEST(SETSPIKEMON, fname){
+TEST(setSpikeMon, fname){
 	CARLsim* sim;
 	const int GRP_SIZE = 10;
 	
@@ -72,7 +72,7 @@ TEST(SETSPIKEMON, fname){
 }
 
 
-TEST(SPIKEMON, interfaceDeath) {
+TEST(SpikeMon, interfaceDeath) {
 	// use threadsafe version because we have deathtests
 	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
@@ -121,7 +121,7 @@ TEST(SPIKEMON, interfaceDeath) {
 }
 
 
-TEST(SPIKEMON, persistentMode) {
+TEST(SpikeMon, persistentMode) {
 	// use threadsafe version because we have deathtests
 	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
@@ -176,7 +176,7 @@ TEST(SPIKEMON, persistentMode) {
  * \brief testing to make sure clear() function works.
  *
  */
-TEST(SPIKEMON, clear){
+TEST(SpikeMon, clear){
 	CARLsim* sim;
 	PoissonRate* input;
 	const int GRP_SIZE = 5;
@@ -249,7 +249,7 @@ TEST(SPIKEMON, clear){
  * afterwards. We expect all spike times to be multiples of the inter-spike interval, and the total number of spikes
  * to be exactly what it should be. The same must apply to the AER struct from the SpikeMonitor object.
  */
-TEST(SPIKEMON, spikeTimes) {
+TEST(SpikeMon, spikeTimes) {
 	double rate = rand()%20 + 2.0;  // some random mean firing rate
 	int isi = 1000/rate; // inter-spike interval
 
@@ -330,7 +330,7 @@ TEST(SPIKEMON, spikeTimes) {
  * brief time window, whereas the spike file should contain all spikes. For the other group, both spike file and AER
  * struct should have the same number of spikes.
  */
-TEST(SPIKEMON, getGroupFiringRate){
+TEST(SpikeMon, getGroupFiringRate){
 	CARLsim* sim;
 
 	double rate = rand()%12 + 2.0f;  // some random mean firing rate
@@ -424,7 +424,7 @@ TEST(SPIKEMON, getGroupFiringRate){
 	}
 }
 
-TEST(SPIKEMON, getMaxMinNeuronFiringRate){
+TEST(SpikeMon, getMaxMinNeuronFiringRate){
 	const int GRP_SIZE = 5;
 	const int inputTargetFR = 5.0f;
 	// use threadsafe version because we have deathtests
