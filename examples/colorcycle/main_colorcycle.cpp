@@ -39,13 +39,10 @@
  */
 
 #include <carlsim.h>
-#include <mtrand.h>
 
 #include <stdio.h>		// printf, fopen
 #include <math.h>		// expf
 #include <stdlib.h>		// exit
-
-MTRand getRand;
 
 void calcColorME(int nrX, int nrY, unsigned char* stim, float* red_green, float* green_red, float* blue_yellow, float* yellow_blue, float* ME, bool GPUpointers);
 
@@ -148,10 +145,7 @@ public:
 	}
 };
 
-int main()
-{
-	MTRand	      getRand(210499257);
-
+int main() {
 	int frameDur = 100; // run for 100 ms
 
 	FILE* fid;
