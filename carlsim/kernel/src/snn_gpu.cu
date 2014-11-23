@@ -2879,13 +2879,21 @@ void CpuSNN::deleteObjects_GPU() {
 	CUDA_CHECK_ERRORS( cudaFree(cpu_gpuNetPtrs.mulSynFast) );
 	CUDA_CHECK_ERRORS( cudaFree(cpu_gpuNetPtrs.mulSynSlow) );
 	CUDA_CHECK_ERRORS( cudaFree(cpu_gpuNetPtrs.nSpikeCnt) );
-	CUDA_CHECK_ERRORS( cudaFree(cpu_gpuNetPtrs.curSpike) );
+	CUDA_CHECK_ERRORS( cudaFree(cpu_gpuNetPtrs.curSpike) ); // \FIXME exists but never used...
 	CUDA_CHECK_ERRORS( cudaFree(cpu_gpuNetPtrs.firingTableD2) );
 	CUDA_CHECK_ERRORS( cudaFree(cpu_gpuNetPtrs.firingTableD1) );
 	CUDA_CHECK_ERRORS( cudaFree(cpu_gpuNetPtrs.avgFiring) );
 	CUDA_CHECK_ERRORS( cudaFree(cpu_gpuNetPtrs.neuronFiring) );
 	CUDA_CHECK_ERRORS( cudaFree(cpu_gpuNetPtrs.baseFiring) );
 	CUDA_CHECK_ERRORS( cudaFree(cpu_gpuNetPtrs.baseFiringInv) );
+
+	CUDA_CHECK_ERRORS( cudaFree(cpu_gpuNetPtrs.grpDA) );
+	CUDA_CHECK_ERRORS( cudaFree(cpu_gpuNetPtrs.grp5HT) );
+	CUDA_CHECK_ERRORS( cudaFree(cpu_gpuNetPtrs.grpACh) );
+	CUDA_CHECK_ERRORS( cudaFree(cpu_gpuNetPtrs.grpNE) );
+
+	CUDA_CHECK_ERRORS( cudaFree(cpu_gpuNetPtrs.grpIds) );
+
 
 	CUDA_CHECK_ERRORS( cudaFree(cpu_gpuNetPtrs.Izh_a) );
 	CUDA_CHECK_ERRORS( cudaFree(cpu_gpuNetPtrs.Izh_b) );

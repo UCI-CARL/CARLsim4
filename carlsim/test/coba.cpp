@@ -4,10 +4,6 @@
 #include <snn.h>
 #include <periodic_spikegen.h>
 
-#if (WIN32 || WIN64)
-#include <Windows.h>
-#endif
-
 
 /// **************************************************************************************************************** ///
 /// CONDUCTANCE-BASED MODEL (COBA)
@@ -17,7 +13,6 @@
 //! This test assures that the conductance peak occurs as specified by tau_rise and tau_decay, and that the peak is
 //! equal to the specified weight value
 TEST(COBA, synRiseTime) {
-	// set this flag to make all death tests thread-safe
 	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
 	CpuSNN* sim;
@@ -25,21 +20,7 @@ TEST(COBA, synRiseTime) {
 	float time_abs_error = 2.0; // 2 ms
 	float wt_abs_error = 0.05; // five percent error for wt
 
-#if (WIN32 || WIN64)
-	HANDLE hMutex = CreateMutex( 
-					NULL, // default security attributes
-					FALSE, // initially not owned
-					NULL);
-#else
-	pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
-#endif
-
 	for (int mode=0; mode<=1; mode++) {
-#if (WIN32 || WIN64)
-		WaitForSingleObject(hMutex, INFINITE);
-#else
-		pthread_mutex_lock(&lock);
-#endif
 		int tdAMPA  = rand()%100 + 1;
 		int trNMDA  = rand()%100 + 1;
 		int tdNMDA  = rand()%100 + trNMDA + 1; // make sure it's larger than trNMDA
@@ -53,15 +34,19 @@ TEST(COBA, synRiseTime) {
 		sim = new CpuSNN("COBA.synRiseTime",mode?GPU_MODE:CPU_MODE,SILENT,0,42);
         Grid3D neur(1);
         Grid3D neur2(1);
-		int g0=sim->createSpikeGeneratorGroup("inputExc", neur, EXCITATORY_NEURON);
+
 		int g1=sim->createGroup("excit", neur2, EXCITATORY_NEURON);
 		sim->setNeuronParameters(g1, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f);
-		sim->connect(g0,g1,"full",0.5f,0.5f,1.0f,delay,delay,radRF,radRF,radRF,0.0f,1.0f,SYN_FIXED);
 
-		int g2=sim->createSpikeGeneratorGroup("inputInh", neur, INHIBITORY_NEURON);
 		int g3=sim->createGroup("inhib", neur, INHIBITORY_NEURON);
 		sim->setNeuronParameters(g3, 0.1f,  0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 2.0f, 0.0f);
+
+		int g0=sim->createSpikeGeneratorGroup("inputExc", neur, EXCITATORY_NEURON);
+		int g2=sim->createSpikeGeneratorGroup("inputInh", neur, INHIBITORY_NEURON);
+
+		sim->connect(g0,g1,"full",0.5f,0.5f,1.0f,delay,delay,radRF,radRF,radRF,0.0f,1.0f,SYN_FIXED);
 		sim->connect(g2,g3,"full",-0.5f,-0.5f,1.0f,delay,delay,radRF,radRF,radRF,0.0f,1.0f,SYN_FIXED);
+
 
 		sim->setConductances(true,tdAMPA,trNMDA,tdNMDA,tdGABAa,trGABAb,tdGABAb);
 
@@ -105,11 +90,6 @@ TEST(COBA, synRiseTime) {
 
 		delete spk1;
 		delete sim;
-#if (WIN32 || WIN64)
-		ReleaseMutex(hMutex);
-#else
-		pthread_mutex_unlock(&lock);
-#endif
 	}
 }
 
@@ -122,7 +102,6 @@ TEST(COBA, synRiseTime) {
  * receptors is tested (i.e., only AMPA, only NMDA, AMPA+NMDA, etc.). Synapses have non-zero rise and decay times.
  */
 TEST(COBA, condSingleNeuronCPUvsGPU) {
-	// set this flag to make all death tests thread-safe
 	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
 	CpuSNN* sim = NULL;
@@ -149,14 +128,14 @@ TEST(COBA, condSingleNeuronCPUvsGPU) {
 
 	for (int mode=0; mode<=1; mode++) {
 		sim = new CpuSNN("COBA.condCPUvsGPU",mode?GPU_MODE:CPU_MODE,SILENT,0,42);
-		int g0=sim->createSpikeGeneratorGroup("spike", Grid3D(nInput), EXCITATORY_NEURON);
-		int g1=sim->createSpikeGeneratorGroup("spike", Grid3D(nInput), INHIBITORY_NEURON);
 		grps[0]=sim->createGroup("excAMPA", Grid3D(nOutput), EXCITATORY_NEURON);
 		grps[1]=sim->createGroup("excNMDA", Grid3D(nOutput), EXCITATORY_NEURON);
 		grps[2]=sim->createGroup("excAMPA+NMDA", Grid3D(nOutput), EXCITATORY_NEURON);
 		grps[3]=sim->createGroup("inhGABAa", Grid3D(nOutput), INHIBITORY_NEURON);
 		grps[4]=sim->createGroup("inhGABAb", Grid3D(nOutput), INHIBITORY_NEURON);
 		grps[5]=sim->createGroup("inhGABAa+GABAb", Grid3D(nOutput), INHIBITORY_NEURON);
+		int g0=sim->createSpikeGeneratorGroup("spike0", Grid3D(nInput), EXCITATORY_NEURON);
+		int g1=sim->createSpikeGeneratorGroup("spike1", Grid3D(nInput), INHIBITORY_NEURON);
 
 		sim->setNeuronParameters(grps[0], 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f); // RS
 		sim->setNeuronParameters(grps[1], 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f); // RS
@@ -241,23 +220,25 @@ TEST(COBA, condSingleNeuronCPUvsGPU) {
  * Afterwards we make sure that CPU and GPU mode produce the same spike times and spike rates. 
  */
 TEST(COBA, firingRateCPUvsGPU) {
+	::testing::FLAGS_gtest_death_test_style = "threadsafe";
+
 	CARLsim *sim = NULL;
 	SpikeMonitor *spkMonG0 = NULL, *spkMonG1 = NULL;
 	PeriodicSpikeGenerator *spkGenG0 = NULL;
 	std::vector<std::vector<int> > spkTimesG0CPU, spkTimesG1CPU, spkTimesG0GPU, spkTimesG1GPU;
 	float spkRateG0CPU = 0.0f, spkRateG1CPU = 0.0f;
 
-	int delay = rand() % 10 + 1;
-	float wt = rand()*1.0/RAND_MAX*0.2f + 0.05f;
-	float inputRate = rand() % 45 + 5.0f;
-	int runTimeMs = rand() % 800 + 200;
+	int delay = 1;
+	float wt = 0.15268f;
+	float inputRate = 25.0f;
+	int runTimeMs = 526;
 //	fprintf(stderr,"runTime=%d, delay=%d, wt=%f, input=%f\n",runTimeMs,delay,wt,inputRate);
 
 	for (int isGPUmode=0; isGPUmode<=1; isGPUmode++) {
 		sim = new CARLsim("COBA.firingRateCPUvsGPU",isGPUmode?GPU_MODE:CPU_MODE,SILENT,0,42);
-		int g0=sim->createSpikeGeneratorGroup("input", 1 ,EXCITATORY_NEURON);
-		int g1=sim->createGroup("excit", 1, EXCITATORY_NEURON);
+		int g1=sim->createGroup("output", 1, EXCITATORY_NEURON);
 		sim->setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f); // RS
+		int g0=sim->createSpikeGeneratorGroup("input", 1 ,EXCITATORY_NEURON);
 		sim->setConductances(true); // make COBA explicit
 
 		sim->connect(g0, g1, "full", RangeWeight(wt), 1.0f, RangeDelay(1,delay));
@@ -276,6 +257,9 @@ TEST(COBA, firingRateCPUvsGPU) {
 		sim->runNetwork(runTimeMs/1000,runTimeMs%1000,false);
 		spkMonG0->stopRecording();
 		spkMonG1->stopRecording();
+
+//		fprintf(stderr,"input g0=%d, nid=%d\n",g0,sim->getGroupStartNeuronId(g0));
+//		fprintf(stderr,"excit g1=%d, nid=%d\n",g1,sim->getGroupStartNeuronId(g1));
 
 		if (!isGPUmode) {
 			// CPU mode: store spike times and spike rate for future comparison

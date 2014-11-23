@@ -62,6 +62,8 @@ TEST(STP, setSTPFalse) {
 
 //! expect CARLsim to die if setSTP is called with silly params
 TEST(STP, setSTPdeath) {
+	::testing::FLAGS_gtest_death_test_style = "threadsafe";
+
 	CARLsim* sim = new CARLsim("STP.setSTPdeath",CPU_MODE,SILENT,0,42);
 	int g1=sim->createSpikeGeneratorGroup("excit", 10, EXCITATORY_NEURON);
 
@@ -106,12 +108,12 @@ TEST(STP, firingRateSTDvsSTF) {
 
 				for (int hasSTP=0; hasSTP<=1; hasSTP++) {
 					CARLsim* sim = new CARLsim("STP.firingRateSTDvsSTF",isGPUmode?GPU_MODE:CPU_MODE,SILENT,0,randSeed);
-					int g0=sim->createSpikeGeneratorGroup("input0", 1, EXCITATORY_NEURON);
-					int g1=sim->createSpikeGeneratorGroup("input1", 1, EXCITATORY_NEURON);
 					int g2=sim->createGroup("STD", 1, EXCITATORY_NEURON);
 					int g3=sim->createGroup("STF", 1, EXCITATORY_NEURON);
 					sim->setNeuronParameters(g2, 0.02f, 0.2f, -65.0f, 8.0f);
 					sim->setNeuronParameters(g3, 0.02f, 0.2f, -65.0f, 8.0f);
+					int g0=sim->createSpikeGeneratorGroup("input0", 1, EXCITATORY_NEURON);
+					int g1=sim->createSpikeGeneratorGroup("input1", 1, EXCITATORY_NEURON);
 
 					float wt = hasCOBA ? 0.2f : 18.0f;
 					sim->connect(g0,g2,"full",RangeWeight(wt),1.0f,RangeDelay(1));
@@ -200,12 +202,12 @@ TEST(STP, spikeTimesCPUvsGPU) {
 
 		for (int isGPUmode=0; isGPUmode<=1; isGPUmode++) {
 			CARLsim* sim = new CARLsim("SNN",isGPUmode?GPU_MODE:CPU_MODE,SILENT,0,42);
-			int g0=sim->createSpikeGeneratorGroup("input0", 1, EXCITATORY_NEURON);
-			int g1=sim->createSpikeGeneratorGroup("input1", 1, EXCITATORY_NEURON);
 			int g2=sim->createGroup("STD", 1, EXCITATORY_NEURON);
 			int g3=sim->createGroup("STF", 1, EXCITATORY_NEURON);
 			sim->setNeuronParameters(g2, 0.02f, 0.2f, -65.0f, 8.0f);
 			sim->setNeuronParameters(g3, 0.02f, 0.2f, -65.0f, 8.0f);
+			int g0=sim->createSpikeGeneratorGroup("input0", 1, EXCITATORY_NEURON);
+			int g1=sim->createSpikeGeneratorGroup("input1", 1, EXCITATORY_NEURON);
 
 			float wt = hasCOBA ? 0.2f : 18.0f;
 			sim->connect(g0,g2,"one-to-one",RangeWeight(wt),1.0f,RangeDelay(1));

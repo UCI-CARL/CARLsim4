@@ -52,9 +52,11 @@ TEST(CUBA, firingRateVsData) {
 			SpikeMonitor *spkMonG0, *spkMonG1;
 			PeriodicSpikeGenerator *spkGenG0;
 			sim = new CARLsim("CUBA.firingRateVsData",isGPUmode?GPU_MODE:CPU_MODE,SILENT,0,42);
-			int g0=sim->createSpikeGeneratorGroup("input", 1 ,EXCITATORY_NEURON);
 			int g1=sim->createGroup("excit", 1, EXCITATORY_NEURON);
 			sim->setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f); // RS
+
+			int g0=sim->createSpikeGeneratorGroup("input", 1 ,EXCITATORY_NEURON);
+
 			sim->setConductances(false); // make CUBA explicit
 
 			// choose params appropriately (see comments above)
@@ -98,7 +100,6 @@ TEST(CUBA, firingRateVsData) {
  * Afterwards we make sure that CPU and GPU mode produce the same spike times and spike rates. 
  */
 TEST(CUBA, firingRateCPUvsGPU) {
-	// set this flag to make all death tests thread-safe
 	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
 	CARLsim *sim = NULL;
@@ -115,9 +116,11 @@ TEST(CUBA, firingRateCPUvsGPU) {
 
 	for (int isGPUmode=0; isGPUmode<=1; isGPUmode++) {
 		sim = new CARLsim("CUBA.firingRateCPUvsGPU",isGPUmode?GPU_MODE:CPU_MODE,SILENT,0,42);
-		int g0=sim->createSpikeGeneratorGroup("input", 1 ,EXCITATORY_NEURON);
 		int g1=sim->createGroup("excit", 1, EXCITATORY_NEURON);
 		sim->setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f); // RS
+
+		int g0=sim->createSpikeGeneratorGroup("input", 1 ,EXCITATORY_NEURON);
+
 		sim->setConductances(false); // make CUBA explicit
 
 		sim->connect(g0, g1, "full", RangeWeight(wt), 1.0f, RangeDelay(1,delay));

@@ -68,9 +68,9 @@ TEST(CORE, CpuSNNinitDeath) {
 TEST(CORE, getGroupGrid3D) {
 	CARLsim* sim = new CARLsim("CORE.getGroupGrid3D",CPU_MODE,SILENT,0,42);
 	Grid3D grid(2,3,4);
-	int g1=sim->createSpikeGeneratorGroup("excit", grid, EXCITATORY_NEURON);
 	int g2=sim->createGroup("excit2", grid, EXCITATORY_NEURON);
 	sim->setNeuronParameters(g2, 0.02f, 0.2f, -65.0f, 8.0f);
+	int g1=sim->createSpikeGeneratorGroup("excit", grid, EXCITATORY_NEURON);
 	sim->connect(g1,g2,"full",RangeWeight(0.1), 1.0, RangeDelay(1));
 	sim->setupNetwork(); // need SETUP state for this function to work
 
@@ -87,9 +87,9 @@ TEST(CORE, getGroupGrid3D) {
 
 TEST(CORE, getGroupIdFromString) {
 	CARLsim* sim = new CARLsim("Interface.createGroupDeath",CPU_MODE,SILENT,0,42);
-	int g1=sim->createSpikeGeneratorGroup("excit", Grid3D(2,3,4), EXCITATORY_NEURON);
 	int g2=sim->createGroup("bananahama", Grid3D(1,2,3), INHIBITORY_NEURON);
 	sim->setNeuronParameters(g2, 0.02f, 0.2f, -65.0f, 8.0f);
+	int g1=sim->createSpikeGeneratorGroup("excit", Grid3D(2,3,4), EXCITATORY_NEURON);
 	sim->connect(g1,g2,"full",RangeWeight(0.1), 1.0, RangeDelay(1));
 	sim->setupNetwork(); // need SETUP state for this function to work
 
@@ -105,9 +105,9 @@ TEST(CORE, getGroupIdFromString) {
 TEST(CORE, getNeuronLocation3D) {
 	CARLsim* sim = new CARLsim("Interface.createGroupDeath",CPU_MODE,SILENT,0,42);
 	Grid3D grid(2,3,4);
-	int g1=sim->createSpikeGeneratorGroup("excit", grid, EXCITATORY_NEURON);
 	int g2=sim->createGroup("excit2", grid, EXCITATORY_NEURON);
 	sim->setNeuronParameters(g2, 0.02f, 0.2f, -65.0f, 8.0f);
+	int g1=sim->createSpikeGeneratorGroup("excit", grid, EXCITATORY_NEURON);
 	sim->connect(g1,g2,"full",RangeWeight(0.1), 1.0, RangeDelay(1));
 	sim->setupNetwork(); // need SETUP state for getNeuronLocation3D to work
 
@@ -200,9 +200,9 @@ TEST(CORE, setExternalCurrent) {
 	for (int hasCOBA=0; hasCOBA<=1; hasCOBA++) {
 		for (int isGPUmode=0; isGPUmode<=1; isGPUmode++) {
 			sim = new CARLsim("CORE.setExternalCurrent", isGPUmode?GPU_MODE:CPU_MODE, SILENT, 0, 42);
-			int g0=sim->createSpikeGeneratorGroup("input0", nNeur, EXCITATORY_NEURON);
 			int g1=sim->createGroup("excit1", nNeur, EXCITATORY_NEURON);
 			sim->setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f);
+			int g0=sim->createSpikeGeneratorGroup("input0", nNeur, EXCITATORY_NEURON);
 			sim->connect(g0,g1,"full",RangeWeight(0.1),1.0f,RangeDelay(1));
 			sim->setConductances(hasCOBA>0);
 			sim->setupNetwork();
