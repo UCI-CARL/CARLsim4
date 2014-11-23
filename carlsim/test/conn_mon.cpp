@@ -42,7 +42,7 @@ TEST(setConnMon, interfaceDeath) {
 	// loop over both CPU and GPU mode.
 	for(int mode=0; mode<=1; mode++){
 		// first iteration, test CPU mode, second test GPU mode
-		sim = new CARLsim("ConnMon.setConnectionMonitorDeath",mode?GPU_MODE:CPU_MODE,SILENT,42);
+		sim = new CARLsim("ConnMon.setConnectionMonitorDeath",mode?GPU_MODE:CPU_MODE,SILENT,0,42);
 		
 		int g0 = sim->createGroup("g0", GRP_SIZE, EXCITATORY_NEURON);
 		int g1 = sim->createGroup("g1", GRP_SIZE, EXCITATORY_NEURON);
@@ -122,7 +122,7 @@ TEST(ConnMon, getters) {
 	// loop over both CPU and GPU mode.
 	for(int mode=0; mode<=1; mode++){
 		// first iteration, test CPU mode, second test GPU mode
-		sim = new CARLsim("ConnMon.setConnectionMonitorDeath",mode?GPU_MODE:CPU_MODE,SILENT,42);
+		sim = new CARLsim("ConnMon.setConnectionMonitorDeath",mode?GPU_MODE:CPU_MODE,SILENT,0,42);
 		
 		int g0 = sim->createGroup("g0", GRP_SIZE_PRE, EXCITATORY_NEURON);
 		int g1 = sim->createGroup("g1", GRP_SIZE_POST, EXCITATORY_NEURON);
@@ -167,7 +167,7 @@ TEST(ConnMon, takeSnapshot) {
 	// loop over both CPU and GPU mode.
 	for(int mode=0; mode<=1; mode++){
 		// first iteration, test CPU mode, second test GPU mode
-		sim = new CARLsim("ConnMon.setConnectionMonitorDeath",mode?GPU_MODE:CPU_MODE,SILENT,42);
+		sim = new CARLsim("ConnMon.setConnectionMonitorDeath",mode?GPU_MODE:CPU_MODE,SILENT,0,42);
 		
 		int g0 = sim->createGroup("g0", GRP_SIZE, EXCITATORY_NEURON);
 		int g1 = sim->createGroup("g1", GRP_SIZE, EXCITATORY_NEURON);
@@ -189,5 +189,7 @@ TEST(ConnMon, takeSnapshot) {
 				EXPECT_FLOAT_EQ(wt[i][j], wtScale*i);
 			}
 		}
+
+		delete sim;
 	}
 }

@@ -58,6 +58,12 @@
 
 #include <linear_algebra.h>
 
+#if (WIN32 || WIN64)
+#include <Windows.h>
+#else
+#include <pthread.h>
+#endif
+
 // \TODO: complete documentation
 
 
@@ -1232,6 +1238,13 @@ private:
 
 	void printSimulationSpecs();
 
+	// +++++ PRIVATE STATIC PROPERTIES ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
+	static bool gpuAllocation[MAX_NUM_CUDA_DEVICES];
+#if (WIN32 || WIN64)
+	static HANDLE gpuAllocationLock;
+#else
+	static pthread_mutex_t gpuAllocationLock;
+#endif
 	// +++++ PRIVATE PROPERTIES +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
 	CpuSNN* snn_;					//!< an instance of CARLsim core class

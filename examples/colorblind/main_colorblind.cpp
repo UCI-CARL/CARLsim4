@@ -40,7 +40,6 @@
 
 //Change this!
 #include <carlsim.h>
-#include <mtrand.h>
 
 #include <stdio.h>		// printf, fopen
 #include <math.h>		// expf
@@ -48,8 +47,6 @@
 
 // use calcColorME from v1ColorME.2.0.cu
 void calcColorME(int nrX, int nrY, unsigned char* stim, float* red_green, float* green_red, float* blue_yellow, float* yellow_blue, float* ME, bool GPUpointers);
-extern MTRand	      getRand;
-
 
 #define nrX (64)
 #define nrY (nrX)
@@ -150,10 +147,7 @@ public:
 	}
 };
 
-int main()
-{
-	MTRand	      getRand(210499257);
-
+int main() {
 	int frameDur = 100; // 100 ms
 
 	FILE* fid;

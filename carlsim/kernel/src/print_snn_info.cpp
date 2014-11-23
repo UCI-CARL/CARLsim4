@@ -47,12 +47,6 @@
 	#define strcmpi(s1,s2) strcasecmp(s1,s2)
 #endif
 
-
-extern MTRand_closed getRandClosed;
-extern MTRand	getRand;
-extern RNG_rand48* gpuRand48;
-
-
 void CpuSNN::printConnection(const std::string& fname) {
 	FILE *fp = fopen(fname.c_str(), "w");
 	printConnection(fp);
@@ -69,8 +63,6 @@ void CpuSNN::printConnection(int grpId, FILE* const fp) {
 	printPostConnection(grpId, fp);
 	printPreConnection(grpId, fp);
 }
-
-
 
 void CpuSNN::printMemoryInfo(FILE* const fp) {
   if (!doneReorganization) {
@@ -178,7 +170,6 @@ void CpuSNN::printTuningLog(FILE * const fp) {
 //		printParameters(fp);
 	}
 }
-
 
 void CpuSNN::printConnectionInfo(FILE * const fp)
 {
@@ -292,7 +283,6 @@ void CpuSNN::printGroupInfo(int grpId) {
 	}
 }
 
-
 void CpuSNN::printGroupInfo2(FILE* const fpg)
 {
   fprintf(fpg, "#Group Information\n");
@@ -312,7 +302,6 @@ void CpuSNN::printGroupInfo2(FILE* const fpg)
   fflush(fpg);
 }
 
-
 //! \deprecated
 void CpuSNN::printParameters(FILE* const fp) {
 	KERNEL_WARN("printParameters is deprecated");
@@ -320,8 +309,6 @@ void CpuSNN::printParameters(FILE* const fp) {
 	printGroupInfo(fp);
 	printConnectionInfo(fp);*/
 }
-
-
 
 // print all post-connections...
 void CpuSNN::printPostConnection(FILE * const fp)

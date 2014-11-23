@@ -73,6 +73,9 @@ TEST(setSpikeMon, fname){
 
 
 TEST(SpikeMon, interfaceDeath) {
+	// use threadsafe version because we have deathtests
+	::testing::FLAGS_gtest_death_test_style = "threadsafe";
+
 	CARLsim* sim = new CARLsim("SpikeMon.interfaceDeath",CPU_MODE,SILENT,0,42);
 
 	int g1 = sim->createGroup("g1", 5, EXCITATORY_NEURON);		

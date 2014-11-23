@@ -4,11 +4,11 @@
 # CARLsim kernel variables
 #---------------------------------------------------------------------------
 # kernel variables
-kernel_inc := $(addprefix $(kernel_dir)/include/, snn.h mtrand.h gpu.h \
+kernel_inc := $(addprefix $(kernel_dir)/include/, snn.h gpu.h \
 	snn_definitions.h snn_datastructures.h \
 	gpu_random.h propagated_spike_buffer.h poisson_rate.h \
 	error_code.h cuda_version_control.h)
-kernel_cpp := $(addprefix $(kernel_dir)/src/, snn_cpu.cpp mtrand.cpp \
+kernel_cpp := $(addprefix $(kernel_dir)/src/, snn_cpu.cpp \
 	propagated_spike_buffer.cpp poisson_rate.cpp print_snn_info.cpp)
 kernel_cu := $(addprefix $(kernel_dir)/src/, gpu_random.cu snn_gpu.cu)
 kernel_src := $(kernel_cpp) $(kernel_cu)
