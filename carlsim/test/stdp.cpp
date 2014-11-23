@@ -300,11 +300,11 @@ TEST(STDP, DASTDPWeightBoost) {
 				sim->setSpikeGenerator(gda, spikeCtrl);
 
 				sim->setupNetwork();
-
+				
 				ConnectionMonitor* CM = sim->setConnectionMonitor(gin, g1, "NULL");
 
-				spikeMonPost = sim->setSpikeMonitor(g1);
-				spikeMonPre = sim->setSpikeMonitor(gin);
+				spikeMonPost = sim->setSpikeMonitor(g1,"NULL");
+				spikeMonPre = sim->setSpikeMonitor(gin,"NULL");
 				sim->setSpikeMonitor(gda);
 
 				//setup baseline firing rate

@@ -59,9 +59,10 @@ TEST(SpikeCounter, SpikeCntVsData) {
 
 	int recordDur = -1;
 
-	int g0=sim->createSpikeGeneratorGroup("input", 100, EXCITATORY_NEURON,ALL);
 	int g1=sim->createGroup("excit", 1, EXCITATORY_NEURON,ALL);
 	sim->setNeuronParameters(g1, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f, ALL);
+
+	int g0=sim->createSpikeGeneratorGroup("input", 100, EXCITATORY_NEURON,ALL);
 
 	sim->connect(g0,g1,"full",RangeWeight(0.0,0.001,0.001),1.0f);
 	sim->setConductances(true,5,0,150,6,0,150,ALL);
@@ -112,9 +113,10 @@ TEST(SpikeCounter, SpikeCntvsSpikeMon) {
 	for (int mode=0; mode<=1; mode++) {
 		sim = new CpuSNN(name,mode?GPU_MODE:CPU_MODE,USER,0,42);
 
-		int g0=sim->createSpikeGeneratorGroup("input", 100, EXCITATORY_NEURON,ALL);
 		int g1=sim->createGroup("excit", 10, EXCITATORY_NEURON,ALL);
 		sim->setNeuronParameters(g1, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f, ALL);
+
+		int g0=sim->createSpikeGeneratorGroup("input", 100, EXCITATORY_NEURON,ALL);
 
 		sim->connect(g0,g1,"full",0.001f,0.001f,1.0f,1,1,-1.0,-1.0,-1.0,1.0f,1.0f,SYN_FIXED);
 		sim->setConductances(true,5,0,150,6,0,150,ALL);
@@ -163,9 +165,10 @@ TEST(SpikeCounter, CPUvsGPU) {
 
 		int recordDur = -1;
 
-		int g0=sim->createSpikeGeneratorGroup("input", 100, EXCITATORY_NEURON,ALL);
 		int g1=sim->createGroup("excit", 1, EXCITATORY_NEURON,ALL);
 		sim->setNeuronParameters(g1, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f, ALL);
+
+		int g0=sim->createSpikeGeneratorGroup("input", 100, EXCITATORY_NEURON,ALL);
 
 		sim->connect(g0,g1,"full",0.001f,0.001f,1.0f,1,1,-1.0,-1.0,-1.0,1.0f,1.0f,SYN_FIXED);
 		sim->setConductances(true,5,0,150,6,0,150,ALL);
