@@ -1777,8 +1777,8 @@ void CpuSNN::CpuSNNinit() {
 	simTimeLastUpdSpkMon_ = 0;
 	simTimeRunStart     = 0;    simTimeRunStop      = 0;
 	simTimeMs	 		= 0;    simTimeSec          = 0;    simTime = 0;
-	spikeCountAll1sec	= 0;    secD1fireCntHost    = 0;    secD2fireCntHost  = 0;
-	spikeCountAll 		= 0;    spikeCountD2Host    = 0;    spikeCountD1Host = 0;
+	spikeCountAll1secHost	= 0;    secD1fireCntHost    = 0;    secD2fireCntHost  = 0;
+	spikeCountAllHost 		= 0;    spikeCountD2Host    = 0;    spikeCountD1Host = 0;
 	nPoissonSpikes 		= 0;
 
 	numGrp   = 0;
@@ -2802,7 +2802,7 @@ void CpuSNN::findFiring() {
 						}
 					}
 				}
-				spikeCountAll1sec++;
+				spikeCountAll1secHost++;
 			}
 		}
 	}
@@ -2967,7 +2967,7 @@ void CpuSNN::generateSpikes() {
 			}
 */
 		addSpikeToTable (nid, g);
-		spikeCountAll1sec++;
+		spikeCountAll1secHost++;
 		nPoissonSpikes++;
 	}
 
@@ -3618,8 +3618,8 @@ void CpuSNN::resetFiringInformation() {
 	// Reset firing tables and time tables to default values..
 
 	// reset Various Times..
-	spikeCountAll	  = 0;
-	spikeCountAll1sec = 0;
+	spikeCountAllHost	  = 0;
+	spikeCountAll1secHost = 0;
 	spikeCountD2Host = 0;
 	spikeCountD1Host = 0;
 	secD1fireCntHost  = 0;
@@ -4358,12 +4358,12 @@ void CpuSNN::updateFiringTable() {
 
 	/* the code of weight update has been moved to CpuSNN::updateWeights() */
 
-	spikeCountAll	+= spikeCountAll1sec;
+	spikeCountAllHost	+= spikeCountAll1secHost;
 	spikeCountD2Host += (secD2fireCntHost-timeTableD2[maxDelay_]);
 	spikeCountD1Host += secD1fireCntHost;
 
 	secD1fireCntHost  = 0;
-	spikeCountAll1sec = 0;
+	spikeCountAll1secHost = 0;
 	secD2fireCntHost = timeTableD2[maxDelay_];
 
 	for (int i=0; i < numGrp; i++) {

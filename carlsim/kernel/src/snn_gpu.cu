@@ -2423,8 +2423,8 @@ void CpuSNN::showStatus_GPU() {
 	int gpu_secD1fireCnt, gpu_secD2fireCnt;
 	CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &gpu_secD2fireCnt, secD2fireCnt, sizeof(int), 0, cudaMemcpyDeviceToHost));
 	CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &gpu_secD1fireCnt, secD1fireCnt, sizeof(int), 0, cudaMemcpyDeviceToHost));
-	spikeCountAll1sec = gpu_secD1fireCnt + gpu_secD2fireCnt;
-	secD1fireCnt  = gpu_secD1fireCnt;
+	spikeCountAll1secHost = gpu_secD1fireCnt + gpu_secD2fireCnt;
+	secD1fireCntHost  = gpu_secD1fireCnt;
 	//printWeight(-1);
 }
 
@@ -2497,8 +2497,8 @@ void CpuSNN::copyFiringInfo_GPU()
 	unsigned int gpu_secD1fireCnt, gpu_secD2fireCnt;
 	CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &gpu_secD2fireCnt, secD2fireCnt, sizeof(int), 0, cudaMemcpyDeviceToHost));
 	CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &gpu_secD1fireCnt, secD1fireCnt, sizeof(int), 0, cudaMemcpyDeviceToHost));
-	spikeCountAll1sec = gpu_secD1fireCnt + gpu_secD2fireCnt;
-	secD1fireCnt  = gpu_secD1fireCnt;
+	spikeCountAll1secHost = gpu_secD1fireCnt + gpu_secD2fireCnt;
+	secD1fireCntHost  = gpu_secD1fireCnt;
 	assert(gpu_secD1fireCnt<=maxSpikesD1);
 	assert(gpu_secD2fireCnt<=maxSpikesD2);
 	CUDA_CHECK_ERRORS( cudaMemcpy(firingTableD2, cpu_gpuNetPtrs.firingTableD2, sizeof(int)*gpu_secD2fireCnt, cudaMemcpyDeviceToHost));
@@ -2844,10 +2844,10 @@ void CpuSNN::printSimSummary() {
 		etime = gpuExecutionTime;
 		CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &spikeCountD2Host, secD2fireCnt, sizeof(int), 0, cudaMemcpyDeviceToHost));
 		CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &spikeCountD1Host, secD1fireCnt, sizeof(int), 0, cudaMemcpyDeviceToHost));
-		spikeCountAll1sec = spikeCountD1 + spikeCountD2;
+		spikeCountAll1secHost = spikeCountD1Host + spikeCountD2Host;
 		CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &spikeCountD2Host, spikeCountD2, sizeof(int), 0, cudaMemcpyDeviceToHost));
 		CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &spikeCountD1Host, spikeCountD1, sizeof(int), 0, cudaMemcpyDeviceToHost));
-		spikeCountAll      = spikeCountD1Host + spikeCountD2Host;
+		spikeCountAllHost      = spikeCountD1Host + spikeCountD2Host;
 	}
 	else {
 		stopCPUTiming();
@@ -2868,10 +2868,10 @@ void CpuSNN::printSimSummary() {
 	KERNEL_INFO("\t\t\tActual Execution Time = %4.2f sec", etime/1000.0);
 	KERNEL_INFO("Average Firing Rate:\t2+ms delay = %3.3f Hz", spikeCountD2Host/(1.0*simTimeSec*numNExcReg));
 	KERNEL_INFO("\t\t\t1ms delay = %3.3f Hz", spikeCountD1Host/(1.0*simTimeSec*numNInhReg));
-	KERNEL_INFO("\t\t\tOverall = %3.3f Hz", spikeCountAll/(1.0*simTimeSec*numN));
+	KERNEL_INFO("\t\t\tOverall = %3.3f Hz", spikeCountAllHost/(1.0*simTimeSec*numN));
 	KERNEL_INFO("Overall Firing Count:\t2+ms delay = %d", spikeCountD2Host);
 	KERNEL_INFO("\t\t\t1ms delay = %d", spikeCountD1Host);
-	KERNEL_INFO("\t\t\tTotal = %d", spikeCountAll);
+	KERNEL_INFO("\t\t\tTotal = %d", spikeCountAllHost);
 	KERNEL_INFO("*********************************************************************************\n");
 }
 

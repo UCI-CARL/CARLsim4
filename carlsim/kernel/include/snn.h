@@ -937,10 +937,10 @@ private:
 	unsigned int	simTimeMs;
 	uint64_t        simTimeSec;		//!< this is used to store the seconds.
 	unsigned int	simTime;		//!< The absolute simulation time. The unit is millisecond. this value is not reset but keeps increasing to its max value.
-	unsigned int	spikeCountAll1sec;
+	unsigned int	spikeCountAll1secHost;
 	unsigned int	secD1fireCntHost;
 	unsigned int	secD2fireCntHost;	//!< firing counts for each second
-	unsigned int	spikeCountAll;
+	unsigned int	spikeCountAllHost;
 	unsigned int	spikeCountD1Host;
 	unsigned int	spikeCountD2Host;	//!< overall firing counts values
 	unsigned int	nPoissonSpikes;
