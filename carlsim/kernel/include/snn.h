@@ -652,8 +652,6 @@ private:
 	void printConnectionInfo2(FILE *fpg);
 	void printCurrentInfo(FILE* fp); //!< for GPU debugging
 	void printFiringRate(char *fname=NULL);
-	void printGpuLoadBalance(bool init, int numBlocks); //!< for GPU debugging
-//	void printGpuLoadBalance(bool init=false, int numBlocks = MAX_BLOCKS, const FILE* fp); //!< for GPU debugging
 	void printGroupInfo(int grpId);	//!< CARLSIM_INFO prints group info
 	void printGroupInfo2(FILE* fpg);
 	void printMemoryInfo(FILE* fp); //!< prints memory info to file

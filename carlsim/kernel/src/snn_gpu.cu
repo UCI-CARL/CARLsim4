@@ -172,15 +172,6 @@ __device__ float retErrVal[MAX_NUM_BLOCKS][20];
       }								\
     }								\
   }
-		
-#define	MEASURE_LOADING			0
-
-#define MEASURE_GPU(pos,val)			\
-  {						\
-    if(MEASURE_LOADING)				\
-      if (threadIdx.x==0)			\
-	tmp_val[blockIdx.x][pos] += val;	\
-  }
 
 // example of the quick synaptic table
 // index     cnt
@@ -444,15 +435,6 @@ __device__ void setFiringBit(unsigned int& nid)
 	gpuPtrs.neuronFiring[nid] |= 0x1;
 }
 
-__device__ void measureFiringLoad(volatile int& fireCnt, volatile int& fireCntD1)
-{
-	if (0==threadIdx.x) {
-		MEASURE_GPU(1, (fireCnt-fireCntD1));
-		MEASURE_GPU(2, fireCntD1);
-	}
-	__syncthreads();
-}
-
 __device__ void resetFiredNeuron(unsigned int& nid, short int & grpId, int& simTime)
 {
 	// \FIXME \TODO: convert this to use coalesced access by grouping into a
@@ -501,9 +483,6 @@ __device__ void updateFiringCounter(volatile unsigned int& fireCnt, volatile uns
 	// into the firing table
 	cntD2 = atomicAdd(&secD2fireCnt, fireCntD2);
 	cntD1 = atomicAdd(&secD1fireCnt, fireCntD1);
-
-	MEASURE_GPU(1, fireCntD2);
-	MEASURE_GPU(2, fireCntD1);
 }
 
 // update the firing table...
@@ -802,7 +781,6 @@ __global__ 	void kernel_findFiring (int t, int sec, int simTime) {
 					fireCntD1  = 0;
 					fireCnt   = 0;
 					fireCntTest = 0;
-					MEASURE_GPU(0, 1);
 				}
 			}
 		}
@@ -817,7 +795,6 @@ __global__ 	void kernel_findFiring (int t, int sec, int simTime) {
 
 		if (gpuNetInfo.sim_with_stdp)
 			gpu_updateLTP(fireTable, fireGrpId, fireCnt, simTime);
-		MEASURE_GPU(0, 1);
 	}
 }
 
@@ -1557,8 +1534,6 @@ __global__ void kernel_doCurrentUpdateD2(int simTimeMs, int simTimeSec, int simT
 
 	__syncthreads();
 
-	MEASURE_GPU(3, updateCnt);
-
 	if(ENABLE_MORE_CHECK)	
 		if (sh_blkErrCode) {
 			retErrCode = sh_blkErrCode;
@@ -1667,8 +1642,6 @@ __global__ void kernel_doCurrentUpdateD1(int simTimeMs, int simTimeSec, int simT
 
 		kPos = kPos + (gridDim.x*numSwarps);
 	}
-
-	MEASURE_GPU(4, computedNeurons);
 
 	if(ENABLE_MORE_CHECK) {
 	   if (sh_blkErrCode) {
@@ -2426,36 +2399,7 @@ void CpuSNN::findFiring_GPU(int gridSize, int blkSize) {
 	errCode = checkErrors("kernel_findFiring", gridSize);
 	assert(errCode == NO_KERNEL_ERRORS);
 
-	if(MEASURE_LOADING)
-		printGpuLoadBalance(false,MAX_BLOCKS);
-
 	return;
-}
-
-void CpuSNN::printGpuLoadBalance(bool init, int numBlocks) {
-	checkAndSetGPUDevice();
-
-	void* devPtr;
-	static int	 cpu_tmp_val[MAX_BLOCKS][LOOP_CNT];
-	cudaGetSymbolAddress(&devPtr, tmp_val);
-
-	if(init) {
-		// reset the load balance variable..
-		CUDA_CHECK_ERRORS( cudaMemset(devPtr, 0, sizeof(tmp_val)));
-		return;
-	}
-
-	CUDA_CHECK_ERRORS( cudaMemcpy(&cpu_tmp_val, devPtr, sizeof(cpu_tmp_val), cudaMemcpyDeviceToHost));
-	CUDA_CHECK_ERRORS( cudaMemset(devPtr, 0, sizeof(tmp_val)));
-
-	KERNEL_DEBUG("GPU Load Balancing Information");
-
-	for (int i=0; i < numBlocks; i++) {
-		if (cpu_tmp_val[i][0] != 0)
-			KERNEL_DEBUG("[%d] Fired Neuron = %d \n", i, cpu_tmp_val[i][1]+cpu_tmp_val[i][2]);
-	}
-
-	KERNEL_DEBUG("\n");
 }
 
 // get spikes from GPU SpikeCounter
@@ -2647,8 +2591,6 @@ void CpuSNN::initGPU(int gridSize, int blkSize) {
 	CUDA_GET_LAST_ERROR("initGPU kernel failed\n");
 	int errCode = checkErrors("kernel_init", gridSize);
 	assert(errCode == NO_KERNEL_ERRORS);
-
-	printGpuLoadBalance(true,false);
 
 	checkInitialization();
 
@@ -3382,69 +3324,3 @@ void CpuSNN::printSimSummary() {
 	KERNEL_INFO("*********************************************************************************\n");
 }
 
-
-
-/* MDR -- Deprecated
-/////////////////////////////////////////////////////////////////////////////////
-// Device Kernel Function:      Intialization  Noise  Input currents	      ///
-// KERNEL: This is useful for generating suitable thalamic inputs	      ///
-// to the network. The ids of neurons to be used is stored in the randId array and 
-// the kernel reads the randId array to initialize each input thalamic current
-// of the selected neurons to appropriate values..
-// future modification is to generate the random numbers using GPU itself instead of
-// creating the random number at the CPU side and doing a memcopy operation.  ///
-/////////////////////////////////////////////////////////////////////////////////
-__global__ void kernel_initThalInput(int setVoltage)
-{
-const int tid = threadIdx.x;
-const int bid = blockIdx.x;
-	   
-const int idBegin = bid*blockDim.x + tid;
-const int idStep  = blockDim.x*gridDim.x;	   
-int accPos = 0;
-noiseGenProperty_t*	gpu_noiseGenGroup = (noiseGenProperty_t *) gpuPtrs.noiseGenProp;
-for (int i=0; i < gpuNetInfo.numNoise; i++)
-{
-float  currentStrength = gpu_noiseGenGroup[i].currentStrength;
-int    nrands 		 	= gpu_noiseGenGroup[i].rand_ncount;
-
-int randCnt = accPos;
-for(int j=idBegin; j < nrands; j+=idStep) {
-int randId = gpuPtrs.randId[randCnt+j];
-// fprintf(fpLog, " %d %d \n", simTimeSec*1000+simTimeMs, randNeuronId[randCnt]);
-// assuming there is only one driver at a time.
-// More than one noise input is not correct... 			 
-if(setVoltage)
-gpuPtrs.voltage[randId] = currentStrength;
-else	
-gpuPtrs.current[randId] = currentStrength;
-}
-accPos += nrands;
-}
-__syncthreads();
-}
-	
-
-// Initialize the Thalamic input to network
-void CpuSNN::initThalInput_GPU()
-{
-DBG(2, fpLog, AT, "gpu_initThalInput()");
-
-assert(cpu_gpuNetPtrs.allocated);
-
-int blkSize  = 128;
-int gridSize = 64;
-bool setVoltage = true;
-
-// Initialize the Thalamic input current into the network
-if(numNoise) {
-// copy the generated random number into the randId array
-CUDA_CHECK_ERRORS( cudaMemcpy(cpu_gpuNetPtrs.randId, randNeuronId, sizeof(int)*numRandNeurons, cudaMemcpyHostToDevice));
-
-kernel_initThalInput <<<gridSize,blkSize >>> (setVoltage);
-CUDA_GET_LAST_ERROR("initThalInput kernel failed\n");
-int errCode = checkErrors("kernel_initThalInput", gridSize);
-}
-}
-
-*/
