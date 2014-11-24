@@ -800,7 +800,6 @@ private:
 	void spikeGeneratorUpdate_GPU();
 	void startGPUTiming();
 	void stopGPUTiming();
-	void testSpikeSenderReceiver(FILE* fpLog, int simTime);
 	void updateFiringTable();
 	void updateFiringTable_GPU();
 	void updateNetwork_GPU(bool resetFiringInfo); //!< Allows parameters to be reset in the middle of the simulation

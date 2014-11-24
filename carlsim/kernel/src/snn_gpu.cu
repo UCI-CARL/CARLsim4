@@ -321,14 +321,6 @@ __global__ void kernel_init ()
 	}
 }
 
-
-// following are initialized in CpuSNNinitGPUparams
-__device__ int 	 testFireCnt1;
-__device__ int 	 testFireCnt2;
-__device__ float testFireCntf1;
-__device__ float testFireCntf2;
-
-
 // Allocation of the group and its id..
 void CpuSNN::allocateGroupId() {
 	checkAndSetGPUDevice();
@@ -2820,49 +2812,6 @@ void CpuSNN::deleteObjects_GPU() {
 		CUDA_CHECK_ERRORS(cudaFree(cpu_gpuNetPtrs.spkCntBufChild[i]));
 
 	CUDA_DELETE_TIMER(timer);
-}
-
-
-void CpuSNN::testSpikeSenderReceiver(FILE* fpLog, int simTime) {
-	checkAndSetGPUDevice();
-
-	KERNEL_WARN("Calling testSpikeSenderReceiver with fpLog is deprecated");
-	if(0) {
-		int EnumFires = 0; int InumFires = 0;
-		CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &EnumFires, secD2fireCnt, sizeof(int), 0, cudaMemcpyDeviceToHost));
-		CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &InumFires, secD1fireCnt, sizeof(int), 0, cudaMemcpyDeviceToHost));
-		KERNEL_DEBUG(" ***********( t = %d) FIRE COUNTS ************** %d %d", simTime, EnumFires, InumFires);
-		int   numFires;
-		float fireCnt;
-		CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &numFires,  testFireCnt1, sizeof(int), 0, cudaMemcpyDeviceToHost));
-		KERNEL_DEBUG("testFireCnt1 = %d", numFires);
-		CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &numFires,  testFireCnt2, sizeof(int), 0, cudaMemcpyDeviceToHost));
-		KERNEL_DEBUG("testFireCnt2 = %d", numFires);
-		CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &fireCnt,  testFireCntf1, sizeof(int), 0, cudaMemcpyDeviceToHost));
-		KERNEL_DEBUG("testFireCntFloat1 = %f", fireCnt);
-		CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &fireCnt,  testFireCntf2, sizeof(int), 0, cudaMemcpyDeviceToHost));
-		KERNEL_DEBUG("testFireCntFloat2 = %f", fireCnt);
-		KERNEL_DEBUG(" *************************");
-
-		if (sim_with_homeostasis) {
-			// MDR originally had this.
-			float* baseFiringInv = new float[numN];
-			for (int i=0;i<numN;i++) baseFiringInv[i] = 1/baseFiring[i];
-				CUDA_CHECK_ERRORS( cudaMemcpy( baseFiringInv, cpu_gpuNetPtrs.baseFiringInv, sizeof(float)*numN, cudaMemcpyDeviceToHost));
-			delete(baseFiringInv);
-			CUDA_CHECK_ERRORS( cudaMemcpy( avgFiring, cpu_gpuNetPtrs.avgFiring, sizeof(float)*numN, cudaMemcpyDeviceToHost));
-			for(int g=0; g < numGrp; g++) {
-				KERNEL_DEBUG("Homeostasis values");
-				if (!grp_Info[g].FixedInputWts) {
-					KERNEL_DEBUG("Group %s:\t", grp_Info2[g].Name.c_str());
-					for(int j=grp_Info[g].StartN; j <= grp_Info[g].EndN; j++) {
-						KERNEL_DEBUG(" %d: Home =%f (Base =%f)  ", j, avgFiring[j], 1/baseFiringInv[j]);
-						KERNEL_DEBUG(" %d: Home =%f (Base =%f)  ", j, avgFiring[j], 1/baseFiringInv[j]);
-					}
-				}
-			}
-		}
-	}
 }
 
 void CpuSNN::globalStateUpdate_GPU() {
