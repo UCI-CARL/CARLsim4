@@ -166,12 +166,6 @@ inline bool isInhibitoryNeuron (unsigned int& nid, unsigned int& numNInhPois, un
 // however, it uses much less memory than setting it to 0.
 #define READNETWORK_ADD_SYNAPSES_FROM_FILE 1
 
-// useful during testing and development. carries out series of checks 
-// to ensure simulator is working correctly
-#ifndef TESTING
- #define TESTING 					(0)
-#endif
-
 // This flag is used when having a common poisson generator for both CPU and GPU simulation
 // We basically use the CPU poisson generator. Evaluate if there is any firing due to the
 // poisson neuron. Copy that curFiring status to the GPU which uses that for evaluation

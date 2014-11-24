@@ -463,10 +463,6 @@ __shared__ volatile int blkErrCode;
 		// Read the firing id from the local table.....
 		unsigned int nid  = fireTablePtr[i];
 
-		// set the LSB bit indicating the current neuron has
-		if(TESTING) {
-			setFiringBit(nid);
-		}
 		updateFiringTable(nid, fireGrpId[i], cntD2, cntD1);
 
 		if (gpuGrpInfo[fireGrpId[i]].WithSTP)
