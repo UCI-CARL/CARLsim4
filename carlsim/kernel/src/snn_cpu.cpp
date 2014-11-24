@@ -45,30 +45,6 @@
 #include <spike_monitor.h>
 #include <spike_monitor_core.h>
 
-#if (WIN32 || WIN64)
-	#include <float.h>
-	#include <time.h>
-
-	#ifndef isnan
-	#define isnan(x) _isnan(x)
-	#endif
-
-	#ifndef isinf
-	#define isinf(x) (!_finite(x))
-	#endif
-
-	#ifndef srand48
-	#define srand48(x) srand(x)
-	#endif
-
-	#ifndef drand48
-	#define drand48() (double(rand())/RAND_MAX)
-	#endif
-#else
-	#include <string.h>
-	#define strcmpi(s1,s2) strcasecmp(s1,s2)
-#endif
-
 // \FIXME what are the following for? why were they all the way at the bottom of this file?
 
 #define COMPACTION_ALIGNMENT_PRE  16
@@ -4254,7 +4230,6 @@ void CpuSNN::updateAfterMaxTime() {
 // this function is usually called every second, but it can also be called via ConnectionMonitorCore::takeSnapshot
 void CpuSNN::updateConnectionMonitor(int connId) {
 	grpConnectInfo_t* connInfo = connectBegin;
-//	unsigned long int before = get_time_ms64();
 
 	// loop over all connections and find the ones with Connection Monitors
 	while (connInfo) {
@@ -4291,7 +4266,6 @@ void CpuSNN::updateConnectionMonitor(int connId) {
 
 		connInfo = connInfo->next;
 	}
-//	printf("updateConnectionMonitor: %lu ms\n",get_time_ms64()-before);
 }
 
 void CpuSNN::updateGroupMonitor() {
