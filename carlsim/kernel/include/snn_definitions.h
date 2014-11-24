@@ -166,10 +166,6 @@ inline bool isInhibitoryNeuron (unsigned int& nid, unsigned int& numNInhPois, un
 // however, it uses much less memory than setting it to 0.
 #define READNETWORK_ADD_SYNAPSES_FROM_FILE 1
 
-#define INHIBITORY_STDP
-
-//#define NEURON_NOISE
-
 // useful during testing and development. carries out series of checks 
 // to ensure simulator is working correctly
 #ifndef TESTING

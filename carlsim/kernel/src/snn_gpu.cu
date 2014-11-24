@@ -57,7 +57,6 @@
 #define WARP_SIZE			(1 << LOG_WARP_SIZE)
 
 #define MAX_NUM_BLOCKS 200
-#define LOOP_CNT		10
 
 #define GPU_LTP(t)   (gpuNetInfo.ALPHA_LTP*__expf(-(t)/gpuNetInfo.TAU_LTP))
 #define GPU_LTD(t)   (gpuNetInfo.ALPHA_LTD*__expf(-(t)/gpuNetInfo.TAU_LTD))
@@ -101,7 +100,6 @@ __device__ unsigned int	secD1fireCntTest;
 __device__ __constant__ network_ptr_t		gpuPtrs;
 __device__ __constant__ network_info_t		gpuNetInfo;
 __device__ __constant__ group_info_t		gpuGrpInfo[MAX_GRP_PER_SNN];
-//	__device__ __constant__ noiseGenProperty_t*	gpu_noiseGenGroup;
 
 __device__ __constant__ float				constData[256];
 
@@ -119,59 +117,8 @@ __device__  int timingTableD2_tex_offset;
 
 	
 __device__ int generatedErrors = 0;
-__device__ int	 tmp_val[MAX_NUM_BLOCKS][LOOP_CNT];
 __device__ int	 retErrCode=NO_KERNEL_ERRORS;
 __device__ float retErrVal[MAX_NUM_BLOCKS][20];
-
-#define INIT_CHECK(enable, src, val)		\
-  {						\
-    if(enable)					\
-      if(threadIdx.x==0) 			\
-	src = val;				\
-  }
-
-
-#define ERROR_CHECK_COND(enable, src, val, cond, retVal)	\
-  {								\
-    if(enable)							\
-      if (!(cond)) {						\
-	src = val;						\
-	return retVal;						\
-      }								\
-  }
-
-#define ERROR_CHECK_COND_NORETURN(enable, src, val, cond)	\
-  {								\
-    if(enable)							\
-      if (!(cond)) {						\
-	src = val;						\
-	return;							\
-      }								\
-  }
-
-#define ERROR_CHECK(enable, src, val)		\
-  {						\
-    if(enable)					\
-      if( blockIdx.x >= MAX_NUM_BLOCKS) {	\
-	src = val;				\
-	return;					\
-      }						\
-  }
-
-#define UPDATE_ERROR_CHECK4(src, val1, val2, val3, val4)	\
-  {								\
-    if (src && (threadIdx.x==0))	 {			\
-      retErrCode = src;						\
-      if(ENABLE_MORE_CHECK) {					\
-	retErrVal[blockIdx.x][0]=0xdead;			\
-	retErrVal[blockIdx.x][1]=4;				\
-	retErrVal[blockIdx.x][2]=val1;				\
-	retErrVal[blockIdx.x][3]=val2;				\
-	retErrVal[blockIdx.x][4]=val3;				\
-	retErrVal[blockIdx.x][5]=val4;				\
-      }								\
-    }								\
-  }
 
 // example of the quick synaptic table
 // index     cnt
@@ -218,13 +165,7 @@ void initTableQuickSynId()
 
 __device__ inline bool isPoissonGroup(short int& grpId, unsigned int& nid)
 {
-	bool poiss = (gpuGrpInfo[grpId].Type & POISSON_NEURON);
-
-	if (poiss) {
-		ERROR_CHECK_COND(TESTING, retErrCode, ERROR_FIRING_2, (nid >= gpuNetInfo.numNReg), 0);
-	}
-
-	return poiss;
+	return (gpuGrpInfo[grpId].Type & POISSON_NEURON);
 }
 
 __device__ inline void setFiringBitSynapses(unsigned int& nid, int& syn_id)
@@ -255,7 +196,6 @@ __device__ inline bool getPoissonSpike_GPU (unsigned int& nid)
 	// Random number value is less than the poisson firing probability
 	// if poisson firing probability is say 1.0 then the random poisson ptr
 	// will always be less than 1.0 and hence it will continiously fire
-	ERROR_CHECK_COND(TESTING, retErrCode, POISSON_COUNT_ERROR_0, (nid >= gpuNetInfo.numNReg), 0);
 
 	return gpuPtrs.poissonRandPtr[nid-gpuNetInfo.numNReg]*(1000.0/RNG_rand48::MAX_RANGE) < gpuPtrs.poissonFireRate[nid-gpuNetInfo.numNReg];
 }
@@ -299,10 +239,6 @@ __global__ void kernel_init ()
 		int  	 nid        = STATIC_LOAD_START(threadLoad);
 		int  	 lastId      = STATIC_LOAD_SIZE(threadLoad);
 		short int grpId   	 = STATIC_LOAD_GROUP(threadLoad);
-
-		// errors...
-		ERROR_CHECK_COND_NORETURN(TESTING, retErrCode, KERNEL_INIT_ERROR0, (grpId   < gpuNetInfo.numGrp));
-		ERROR_CHECK_COND_NORETURN(TESTING, retErrCode, KERNEL_INIT_ERROR1, (lastId  < gpuNetInfo.numN));
 
 		while ((threadIdx.x < lastId) && (nid < gpuNetInfo.numN)) {
 //				int totCnt = gpuPtrs.Npre[nid];			// total synaptic count
@@ -517,8 +453,6 @@ __shared__ volatile int blkErrCode;
 
 	__syncthreads();
 
-	UPDATE_ERROR_CHECK4(blkErrCode,cntD2,fireCnt,cntD1,fireCntD1);
-
 	// if we overflow the spike buffer space that is available,
 	// then we return with an error here...
 	if (blkErrCode)
@@ -528,9 +462,6 @@ __shared__ volatile int blkErrCode;
 
 		// Read the firing id from the local table.....
 		unsigned int nid  = fireTablePtr[i];
-
-		//storeTestSpikedNeurons(gpuPtrs.testVar2, fireCnt, fireTablePtr, NULL);
-		ERROR_CHECK_COND (ENABLE_MORE_CHECK, blkErrCode, ERROR_FIRING_3, (nid < gpuNetInfo.numN), blkErrCode);
 
 		// set the LSB bit indicating the current neuron has
 		if(TESTING) {
@@ -638,13 +569,6 @@ __device__ void gpu_updateLTP(	int*     		fireTablePtr,
 	__syncthreads();
 }
 
-__device__ inline int assertionFiringParam(short int& grpId, int& lastId)
-{
-	ERROR_CHECK_COND(TESTING, retErrCode, ERROR_FIRING_0, (grpId   < gpuNetInfo.numGrp), 0);
-	ERROR_CHECK_COND(TESTING, retErrCode, ERROR_FIRING_1, (lastId  < gpuNetInfo.numN), 0);
-	return 0;
-}
-
 __device__ inline bool getSpikeGenBit_GPU (unsigned int& nidPos)
 {
 	const int nidBitPos = nidPos%32;
@@ -690,9 +614,6 @@ __global__ 	void kernel_findFiring (int t, int sec, int simTime) {
 		fireCntD1  = 0; // initialize inh. cnt to 0
 	}
 
-	// Ignore this unless you are doing real debugging gpu code...
-	INIT_CHECK(ENABLE_MORE_CHECK, retErrCode, NO_KERNEL_ERRORS);
-
 	const int totBuffers=loadBufferCount;
 
 	__syncthreads();
@@ -707,8 +628,6 @@ __global__ 	void kernel_findFiring (int t, int sec, int simTime) {
 		short int grpId   = STATIC_LOAD_GROUP(threadLoad);
 		bool needToWrite = false;	// used by all neuron to indicate firing condition
 		int  fireId      = 0;
-
-		assertionFiringParam(grpId, lastId);
 
 		// threadId is valid and lies within the lastId.....
 		if ((threadIdx.x < lastId) && (nid < gpuNetInfo.numN)) {
@@ -803,13 +722,6 @@ __global__ 	void kernel_findFiring (int t, int sec, int simTime) {
 #define LOG_CURRENT_GROUP 5
 #define CURRENT_GROUP	  (1 << LOG_CURRENT_GROUP)
 
-__device__ inline int assertConductanceStates()
-{
-	// error checking done here
-	ERROR_CHECK_COND(ENABLE_MORE_CHECK, retErrCode, GLOBAL_CONDUCTANCE_ERROR_0, (blockIdx.x < MAX_NUM_BLOCKS), 0);
-	return 0;
-}
-
 // Based on the bitvector used for indicating the presence of spike
 // the global conductance values are updated..
 __global__ void kernel_globalConductanceUpdate (int t, int sec, int simTime) {
@@ -833,9 +745,6 @@ __global__ void kernel_globalConductanceUpdate (int t, int sec, int simTime) {
 		unsigned int  post_nid        = (STATIC_LOAD_START(threadLoad) + threadIdx.x);
 		int  lastId      = STATIC_LOAD_SIZE(threadLoad);
 
-		// do some error checking...
-		assertConductanceStates();
-
 		if ((threadIdx.x < lastId) && (IS_REGULAR_NEURON(post_nid, gpuNetInfo.numNReg, gpuNetInfo.numNPois))) {
 			// load the initial current due to noise inputs for neuron 'post_nid'
 			// initial values of the conductances for neuron 'post_nid'
@@ -856,8 +765,6 @@ __global__ void kernel_globalConductanceUpdate (int t, int sec, int simTime) {
 				// actual position of the input current....
 				// int* tmp_I_set_p = ((int*)((char*)gpuPtrs.I_set + j * gpuNetInfo.I_setPitch) + post_nid);
 				uint32_t* tmp_I_set_p  = getFiringBitGroupPtr(post_nid, j);
-
-				ERROR_CHECK_COND_NORETURN(ENABLE_MORE_CHECK, retErrCode, GLOBAL_CONDUCTANCE_ERROR_1, (tmp_I_set_p!=0));
 
 				uint32_t  tmp_I_set     = *tmp_I_set_p;
 
@@ -1003,13 +910,6 @@ __device__ void updateNeuronState(unsigned int& nid, int& grpId) {
 	gpuPtrs.recovery[nid] = u;
 }
 
-__device__ inline int assertGlobalStates()
-{
-	// error checking done here
-	ERROR_CHECK_COND(ENABLE_MORE_CHECK, retErrCode, GLOBAL_STATE_ERROR_0, (blockIdx.x < MAX_NUM_BLOCKS), 0);
-	return 0;
-}
-
 // homeostasis in GPU_MODE
 __device__ inline void updateHomeoStaticState(unsigned int& pos, int& grpId)
 {
@@ -1036,9 +936,6 @@ __global__ void kernel_globalStateUpdate (int t, int sec, int simTime)
 		unsigned int nid = (STATIC_LOAD_START(threadLoad) + threadIdx.x);
 		int  lastId = STATIC_LOAD_SIZE(threadLoad);
 		int  grpId = STATIC_LOAD_GROUP(threadLoad);
-
-		// do some error checking...
-		assertGlobalStates();
 
 		if ((threadIdx.x < lastId) && (nid < gpuNetInfo.numN)) {
 
@@ -1072,18 +969,6 @@ __global__ void kernel_globalGroupStateUpdate (int t, int sec, int simTime)
 }
 
 //******************************** UPDATE STP STATE  EVERY TIME STEP **********************************************
-
-///////////////////////////////////////////////////////////
-// simple assertions for STP values..
-///////////////////////////////////////////////////////////
-__device__ inline int assertSTPConditions()
-{
-	// error checking done here
-	ERROR_CHECK_COND(ENABLE_MORE_CHECK, retErrCode, STP_ERROR, (blockDim.x < MAX_NUM_BLOCKS), 0);
-	return 0;
-}
-
-
 ///////////////////////////////////////////////////////////
 /// 	Global Kernel function: gpu_STPUpdate		///
 /// 	This function is called every time step			///
@@ -1121,9 +1006,6 @@ __global__ void kernel_STPUpdateAndDecayConductances (int t, int sec, int simTim
 				gpuPtrs.gGABAb[nid]  *=  gpuNetInfo.dGABAb;
 			}
 		}
-
-    // check various STP asserts here....
-		assertSTPConditions();
 
 		if (gpuGrpInfo[grpId].WithSTP && (threadIdx.x < lastId) && (nid < gpuNetInfo.numN)) {
 			int ind_plus  = getSTPBufPos(nid, simTime);
