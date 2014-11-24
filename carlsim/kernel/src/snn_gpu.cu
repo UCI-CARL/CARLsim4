@@ -1467,61 +1467,6 @@ __global__ void kernel_doCurrentUpdateD1(int simTimeMs, int simTimeSec, int simT
 }
 
 float errVal[MAX_NUM_BLOCKS][20];
-/**********************************************************************************************/
-// helper functions..
-// check what is the errors...that has happened during
-// the previous iteration. This part is useful in debug or test mode
-// the simulator kernel sets appropriate errors  and returns some important values in the 
-// array "retErrVal".
-/**********************************************************************************************/
-int CpuSNN::checkErrors(std::string calledKernel, int numBlocks) {
-	checkAndSetGPUDevice();
-
-	int errCode = NO_KERNEL_ERRORS;
-	#if(!ENABLE_MORE_CHECK)
-	return errCode;
-	#else
-	void* devPtr;
-	int errCnt  = 0;
-
-	cudaThreadSynchronize();
-	cudaGetSymbolAddress(&devPtr, retErrCode);
-	CUDA_CHECK_ERRORS( cudaMemcpy(&errCode, devPtr, sizeof(int), cudaMemcpyDeviceToHost));
-
-	cudaGetSymbolAddress(&devPtr, generatedErrors);
-	CUDA_CHECK_ERRORS( cudaMemcpy(&errCnt, devPtr, sizeof(int), cudaMemcpyDeviceToHost));
-
-	if (errCode != NO_KERNEL_ERRORS) {
-
-		KERNEL_ERROR("(Error in Kernel <<< %s >>> , RETURN ERROR CODE = %x, total Errors = %d", calledKernel.c_str(), errCode, errCnt);
-
-		cudaGetSymbolAddress(&devPtr, CUDA_CONVERT_SYMBOL(retErrVal));
-		CUDA_CHECK_ERRORS( cudaMemcpy(&errVal, devPtr, sizeof(errVal), cudaMemcpyDeviceToHost));
-
-		for(int j=0; j < errCnt; j++) {
-			if (1) /*errVal[j][0]==0xdead) */ {
-				KERNEL_ERROR("Block: %d, Err code = %x, Total err val is %f", j, (int)errVal[j][0]	, errVal[j][1]);
-				for(int i=2; i < (errVal[j][1]); i++) {
-					KERNEL_ERROR("ErrVal[%d][%d] = %f", j, i, errVal[j][i]);
-					getchar();
-				}
-			}
-		}
-
-		errCode = NO_KERNEL_ERRORS;
-		cudaGetSymbolAddress(&devPtr, retErrCode);
-		CUDA_CHECK_ERRORS( cudaMemcpy(devPtr, &errCode, sizeof(int), cudaMemcpyHostToDevice));
-
-		cudaGetSymbolAddress(&devPtr, generatedErrors);
-		CUDA_CHECK_ERRORS( cudaMemcpy(devPtr, &errCnt, sizeof(int), cudaMemcpyHostToDevice));
-
-	}
-
-	fflush(fpErr_);
-	fflush(fpOut_);
-	return errCode;
-#endif
-}
 
 void CpuSNN::copyPostConnectionInfo(network_ptr_t* dest, int allocateMem) {
 	checkAndSetGPUDevice();
@@ -2204,16 +2149,11 @@ void CpuSNN::spikeGeneratorUpdate_GPU() {
 
 void CpuSNN::findFiring_GPU(int gridSize, int blkSize) {
 	checkAndSetGPUDevice();
-
-	int errCode;
 		
 	assert(cpu_gpuNetPtrs.allocated);
 
 	kernel_findFiring <<<gridSize,blkSize >>> (simTimeMs, simTimeSec, simTime);
 	CUDA_GET_LAST_ERROR("findFiring kernel failed\n");
-	errCode = checkErrors("kernel_findFiring", gridSize);
-	assert(errCode == NO_KERNEL_ERRORS);
-
 	return;
 }
 
@@ -2252,8 +2192,6 @@ void CpuSNN::updateTimingTable_GPU() {
 	int gridSize = 64;
 	kernel_timingTableUpdate <<<gridSize,blkSize >>> (simTimeMs);
 	CUDA_GET_LAST_ERROR("timing Table update kernel failed\n");
-	int errCode = checkErrors("kernel_timingTableUpdate", gridSize);
-	assert(errCode == NO_KERNEL_ERRORS);
 
 	return;
 }
@@ -2265,34 +2203,25 @@ void CpuSNN::doCurrentUpdate_GPU() {
 
 	int blkSize  = 128;
 	int gridSize = 64;
-	int errCode;
 
 	if(maxDelay_ > 1) {
 		kernel_doCurrentUpdateD2 <<<gridSize, blkSize>>>(simTimeMs,simTimeSec,simTime);
 		CUDA_GET_LAST_ERROR_MACRO("Kernel execution failed");
-		errCode = checkErrors("kernel_updateCurrentE", gridSize);
-		assert(errCode == NO_KERNEL_ERRORS);
 	}
 
 
 	kernel_doCurrentUpdateD1 <<<gridSize, blkSize>>>(simTimeMs,simTimeSec,simTime);
 	CUDA_GET_LAST_ERROR_MACRO("Kernel execution failed");
-	errCode = checkErrors("kernel_updateCurrentI", gridSize);
-	assert(errCode == NO_KERNEL_ERRORS);
 }
 
 void CpuSNN::doSTPUpdateAndDecayCond_GPU(int gridSize, int blkSize) {
 	checkAndSetGPUDevice();
-
-	int errCode;
 		
 	assert(cpu_gpuNetPtrs.allocated);
 
 	if (sim_with_stp || sim_with_conductances) {
 		kernel_STPUpdateAndDecayConductances <<<gridSize, blkSize>>>(simTimeMs, simTimeSec, simTime);
 		CUDA_GET_LAST_ERROR("STP update\n");
-		errCode = checkErrors("gpu_STPUpdate", gridSize);
-		assert(errCode == NO_KERNEL_ERRORS);
 	}
 }
 
@@ -2404,8 +2333,6 @@ void CpuSNN::initGPU(int gridSize, int blkSize) {
 
 	kernel_init <<< gridSize, blkSize >>> ();
 	CUDA_GET_LAST_ERROR("initGPU kernel failed\n");
-	int errCode = checkErrors("kernel_init", gridSize);
-	assert(errCode == NO_KERNEL_ERRORS);
 
 	checkInitialization();
 
@@ -2460,8 +2387,6 @@ void CpuSNN::checkInitialization2(char* testString) {
 	if (sim_with_stp) {
 		kernel_check_GPU_init2 <<< 1, 128>>> (simTime);
 		CUDA_GET_LAST_ERROR("kernel_check_GPU_init2_1 failed\n");
-		int errCode = checkErrors("kernel_init2_1", 1);
-		assert(errCode == NO_KERNEL_ERRORS);
 	}
 
 	// read back the intialization and ensure that they are okay
@@ -2583,15 +2508,11 @@ void CpuSNN::globalStateUpdate_GPU() {
 	// update all neuron state (i.e., voltage and recovery)
 	kernel_globalStateUpdate <<<gridSize, blkSize>>> (simTimeMs, simTimeSec, simTime);
 	CUDA_GET_LAST_ERROR_MACRO("Kernel execution failed");
-	int errCode = checkErrors("kernel_globalStateUpdate", gridSize);
-	assert(errCode == NO_KERNEL_ERRORS);
 
 	// update all group state (i.e., concentration of neuronmodulators)
 	// currently support 4 x 128 groups
 	kernel_globalGroupStateUpdate <<<4, blkSize>>> (simTimeMs, simTimeSec, simTime);
 	CUDA_GET_LAST_ERROR_MACRO("Kernel execution failed");
-	errCode = checkErrors("kernel_globalGroupStateUpdate", 4);
-	assert(errCode == NO_KERNEL_ERRORS);
 }
 
 void CpuSNN::assignPoissonFiringRate_GPU() {
