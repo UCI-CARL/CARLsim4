@@ -35,6 +35,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "v1ColorME_2_0", "examples\c
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "connection_monitor", "carlsim\connection_monitor\connection_monitor.vcxproj", "{7488E13F-102A-4782-AE92-D4A8484FBACE}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "spikeInfo", "examples\spikeInfo\spikeInfo.vcxproj", "{2F1F9832-AB6F-4018-A6A7-EF34C50BA071}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Mixed Platforms = Debug|Mixed Platforms
@@ -225,6 +227,18 @@ Global
 		{7488E13F-102A-4782-AE92-D4A8484FBACE}.Release|Win32.Build.0 = Release|Win32
 		{7488E13F-102A-4782-AE92-D4A8484FBACE}.Release|x64.ActiveCfg = Release|x64
 		{7488E13F-102A-4782-AE92-D4A8484FBACE}.Release|x64.Build.0 = Release|x64
+		{2F1F9832-AB6F-4018-A6A7-EF34C50BA071}.Debug|Mixed Platforms.ActiveCfg = Debug|Win32
+		{2F1F9832-AB6F-4018-A6A7-EF34C50BA071}.Debug|Mixed Platforms.Build.0 = Debug|Win32
+		{2F1F9832-AB6F-4018-A6A7-EF34C50BA071}.Debug|Win32.ActiveCfg = Debug|Win32
+		{2F1F9832-AB6F-4018-A6A7-EF34C50BA071}.Debug|Win32.Build.0 = Debug|Win32
+		{2F1F9832-AB6F-4018-A6A7-EF34C50BA071}.Debug|x64.ActiveCfg = Debug|x64
+		{2F1F9832-AB6F-4018-A6A7-EF34C50BA071}.Debug|x64.Build.0 = Debug|x64
+		{2F1F9832-AB6F-4018-A6A7-EF34C50BA071}.Release|Mixed Platforms.ActiveCfg = Release|Win32
+		{2F1F9832-AB6F-4018-A6A7-EF34C50BA071}.Release|Mixed Platforms.Build.0 = Release|Win32
+		{2F1F9832-AB6F-4018-A6A7-EF34C50BA071}.Release|Win32.ActiveCfg = Release|Win32
+		{2F1F9832-AB6F-4018-A6A7-EF34C50BA071}.Release|Win32.Build.0 = Release|Win32
+		{2F1F9832-AB6F-4018-A6A7-EF34C50BA071}.Release|x64.ActiveCfg = Release|x64
+		{2F1F9832-AB6F-4018-A6A7-EF34C50BA071}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
