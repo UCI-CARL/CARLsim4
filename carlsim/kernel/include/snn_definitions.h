@@ -221,5 +221,34 @@ inline bool isInhibitoryNeuron (unsigned int& nid, unsigned int& numNInhPois, un
 #define GET_INITWTS_RAMPUP(a)		(((a) >> CONNECTION_INITWTS_RAMPUP) & 1)
 #define GET_INITWTS_RAMPDOWN(a)		(((a) >> CONNECTION_INITWTS_RAMPDOWN) & 1)
 
+// Cross-platform definition (Linux, Windows)
+#if (WIN32 || WIN64)
+	#include <float.h>
+	#include <time.h>
+
+	#ifndef isnan
+	#define isnan(x) _isnan(x)
+	#endif
+
+	#ifndef isinf
+	#define isinf(x) (!_finite(x))
+	#endif
+
+	#ifndef srand48
+	#define srand48(x) srand(x)
+	#endif
+
+	#ifndef drand48
+	#define drand48() (double(rand())/RAND_MAX)
+	#endif
+
+	#ifdef _MSC_VER
+	#define INFINITY (DBL_MAX+DBL_MAX)
+	#define NAN (INFINITY-INFINITY)
+	#endif
+#else
+	#include <string.h>
+	#define strcmpi(s1,s2) strcasecmp(s1,s2)
+#endif
 
 #endif

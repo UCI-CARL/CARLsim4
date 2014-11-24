@@ -39,13 +39,7 @@
  */ 
 
 #include <snn.h>
-
 #include <connection_monitor_core.h>
-
-#if ! (WIN32 || WIN64)
-	#include <string.h>
-	#define strcmpi(s1,s2) strcasecmp(s1,s2)
-#endif
 
 void CpuSNN::printConnection(const std::string& fname) {
 	FILE *fp = fopen(fname.c_str(), "w");
