@@ -1,5 +1,4 @@
-/*
- * Copyright (c) 2014 Regents of the University of California. All rights reserved.
+/* * Copyright (c) 2014 Regents of the University of California. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -64,12 +63,6 @@
 	#include <string.h>
 	#define strcmpi(s1,s2) strcasecmp(s1,s2)
 #endif
-
-MTRand_closed getRandClosed;
-MTRand	      getRand;
-
-RNG_rand48* gpuRand48 = NULL;
-
 
 // \FIXME what are the following for? why were they all the way at the bottom of this file?
 
@@ -159,8 +152,8 @@ short int CpuSNN::connect(int grpId1, int grpId2, const std::string& _type, floa
 
 	if ( _type.find("random") != std::string::npos) {
 		newInfo->type 	= CONN_RANDOM;
-		newInfo->numPostSynapses	= MIN(grp_Info[grpId2].SizeN,((int) (prob*grp_Info[grpId2].SizeN +5*sqrt(prob*(1-prob)*grp_Info[grpId2].SizeN)+0.5))); // estimate the maximum number of connections we need.  This uses a binomial distribution at 5 stds.
-		newInfo->numPreSynapses   = MIN(grp_Info[grpId1].SizeN,((int) (prob*grp_Info[grpId1].SizeN +5*sqrt(prob*(1-prob)*grp_Info[grpId1].SizeN)+0.5))); // estimate the maximum number of connections we need.  This uses a binomial distribution at 5 stds.
+		newInfo->numPostSynapses	= MIN(grp_Info[grpId2].SizeN,((int) (prob*grp_Info[grpId2].SizeN +6.5*sqrt(prob*(1-prob)*grp_Info[grpId2].SizeN)+0.5))); // estimate the maximum number of connections we need.  This uses a binomial distribution at 6.5 stds.
+		newInfo->numPreSynapses   = MIN(grp_Info[grpId1].SizeN,((int) (prob*grp_Info[grpId1].SizeN +6.5*sqrt(prob*(1-prob)*grp_Info[grpId1].SizeN)+0.5))); // estimate the maximum number of connections we need.  This uses a binomial distribution at 6.5 stds.
 	}
 	//so you're setting the size to be prob*Number of synapses in group info + some standard deviation ...
 	else if ( _type.find("full-no-direct") != std::string::npos) {
@@ -638,8 +631,8 @@ int CpuSNN::runNetwork(int _nsec, int _nmsec, bool printRunSummary, bool copySta
 	// first-time run: inform the user the simulation is running now
 	if (simTime==0) {
 		KERNEL_INFO("");
-		KERNEL_INFO("*******************      Running %s Simulation      ****************************\n",
-			simMode_==GPU_MODE?"GPU":"CPU");
+		KERNEL_INFO("*******************      Running %s Simulation on GPU %d     ****************************\n",
+			simMode_==GPU_MODE?"GPU":"CPU", ithGPU_);
 	}
 
 	// reset all spike counters
@@ -1775,8 +1768,8 @@ void CpuSNN::CpuSNNinit() {
 
 	// init random seed
 	srand48(randSeed_);
-	getRand.seed(randSeed_*2);
-	getRandClosed.seed(randSeed_*3);
+	//getRand.seed(randSeed_*2);
+	//getRandClosed.seed(randSeed_*3);
 
 	finishedPoissonGroup  = false;
 	connectBegin = NULL;
@@ -1844,6 +1837,9 @@ void CpuSNN::CpuSNNinit() {
 	rGABAb = 1.0-1.0/100.0;
 	dGABAb = 1.0-1.0/150.0;
 	sGABAb = 1.0;
+
+	// each CpuSNN object hold its own random number object
+	gpuPoissonRand = NULL;
 
 	// reset all pointers, don't deallocate (false)
 	resetPointers(false);
@@ -1924,9 +1920,8 @@ void CpuSNN::CpuSNNinit() {
 	stdpScaleFactor_ = 1.0f;
 	wtChangeDecay_ = 0.0f;
 
-	// initialize parameters needed in snn_gpu.cu
-	// \FIXME: naming is terrible... so it's a CPU SNN on GPU...
-	CpuSNNinit_GPU();
+	if (simMode_ == GPU_MODE)
+		configGPUDevice();
 }
 
 //! update (initialize) numN, numPostSynapses, numPreSynapses, maxDelay_, postSynCnt, preSynCnt
@@ -2494,7 +2489,8 @@ void CpuSNN::connectFull(grpConnectInfo_t* info) {
 			if (!isPoint3DinRF(radius, loc_i, loc_j))
 				continue;
 
-			uint8_t dVal = info->minDelay + (int)(0.5 + (getRandClosed() * (info->maxDelay - info->minDelay)));
+			//uint8_t dVal = info->minDelay + (int)(0.5 + (drand48() * (info->maxDelay - info->minDelay)));
+			uint8_t dVal = info->minDelay + rand() % (info->maxDelay - info->minDelay + 1);
 			assert((dVal >= info->minDelay) && (dVal <= info->maxDelay));
 			float synWt = getWeights(info->connProp, info->initWt, info->maxWt, i, grpSrc);
 
@@ -2516,7 +2512,8 @@ void CpuSNN::connectOneToOne (grpConnectInfo_t* info) {
 
 	// NOTE: RadiusRF does not make a difference here. Radius>0 is not allowed
 	for(int nid=grp_Info[grpSrc].StartN,j=grp_Info[grpDest].StartN; nid<=grp_Info[grpSrc].EndN; nid++, j++)  {
-		uint8_t dVal = info->minDelay + (int)(0.5+(getRandClosed()*(info->maxDelay-info->minDelay)));
+		//uint8_t dVal = info->minDelay + (int)(0.5+(drand48()*(info->maxDelay-info->minDelay)));
+		uint8_t dVal = info->minDelay + rand() % (info->maxDelay - info->minDelay + 1);
 		assert((dVal >= info->minDelay) && (dVal <= info->maxDelay));
 		float synWt = getWeights(info->connProp, info->initWt, info->maxWt, nid, grpSrc);
 		setConnection(grpSrc, grpDest, nid, j, synWt, info->maxWt, dVal, info->connProp, info->connId);
@@ -2543,8 +2540,9 @@ void CpuSNN::connectRandom (grpConnectInfo_t* info) {
 			if (!isPoint3DinRF(radius, loc_pre, loc_post))
 				continue;
 
-			if (getRand() < info->p) {
-				uint8_t dVal = info->minDelay + (int)(0.5+(getRandClosed()*(info->maxDelay-info->minDelay)));
+			if (drand48() < info->p) {
+				//uint8_t dVal = info->minDelay + (int)(0.5+(drand48()*(info->maxDelay-info->minDelay)));
+				uint8_t dVal = info->minDelay + rand() % (info->maxDelay - info->minDelay + 1);
 				assert((dVal >= info->minDelay) && (dVal <= info->maxDelay));
 				float synWt = getWeights(info->connProp, info->initWt, info->maxWt, pre_nid, grpSrc);
 				setConnection(grpSrc, grpDest, pre_nid, post_nid, synWt, info->maxWt, dVal, info->connProp, info->connId);
@@ -3131,7 +3129,7 @@ void  CpuSNN::globalStateUpdate() {
 								   );
 
 					#ifdef NEURON_NOISE
-						double noiseI = -intrinsicWeight[i]*log(getRand());
+						double noiseI = -intrinsicWeight[i]*log(drand48());
 						if (isnan(noiseI) || isinf(noiseI))
 							noiseI = 0;
 						tmp_I += noiseI;
@@ -3687,10 +3685,10 @@ void CpuSNN::resetNeuron(unsigned int neurId, int grpId) {
 		exitSimulation(1);
 	}
 
-	Izh_a[neurId] = grp_Info2[grpId].Izh_a + grp_Info2[grpId].Izh_a_sd*(float)getRandClosed();
-	Izh_b[neurId] = grp_Info2[grpId].Izh_b + grp_Info2[grpId].Izh_b_sd*(float)getRandClosed();
-	Izh_c[neurId] = grp_Info2[grpId].Izh_c + grp_Info2[grpId].Izh_c_sd*(float)getRandClosed();
-	Izh_d[neurId] = grp_Info2[grpId].Izh_d + grp_Info2[grpId].Izh_d_sd*(float)getRandClosed();
+	Izh_a[neurId] = grp_Info2[grpId].Izh_a + grp_Info2[grpId].Izh_a_sd*(float)drand48();
+	Izh_b[neurId] = grp_Info2[grpId].Izh_b + grp_Info2[grpId].Izh_b_sd*(float)drand48();
+	Izh_c[neurId] = grp_Info2[grpId].Izh_c + grp_Info2[grpId].Izh_c_sd*(float)drand48();
+	Izh_d[neurId] = grp_Info2[grpId].Izh_d + grp_Info2[grpId].Izh_d_sd*(float)drand48();
 
 	voltage[neurId] = Izh_c[neurId];	// initial values for new_v
 	recovery[neurId] = Izh_b[neurId]*voltage[neurId]; // initial values for u
@@ -3848,6 +3846,10 @@ void CpuSNN::resetPointers(bool deallocate) {
 		grpAChBuffer[i] = NULL;
 		grpNEBuffer[i] = NULL;
 	}
+
+	// clear poisson generator
+	if (gpuPoissonRand != NULL) delete gpuPoissonRand;
+	gpuPoissonRand = NULL;
 }
 
 

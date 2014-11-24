@@ -108,7 +108,7 @@ int main()
 	int gin, g1, g1noise, gda;
 	float ALPHA_LTP = 0.10f/100;
 	float TAU_LTP = 20.0f;
-	float ALPHA_LTD = 0.132f/100;
+	float ALPHA_LTD = 0.125f/100;
 	float TAU_LTD = 20.0f;
 
 	// create a network

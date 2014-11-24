@@ -47,15 +47,16 @@
 #include <stdlib.h>		// exit
 
 #if (WIN32 || WIN64)
-	#include <algorithm>
-	#define fmin std::min
-	#define fmax std::max
+#include <algorithm>
+#define fmin min
+#define fmax max
+using namespace std;
 #endif
+
+MTRand getRand;
 
 void calcColorME(int nrX, int nrY, unsigned char* stim, float* red_green, float* green_red, float* blue_yellow,
 						float* yellow_blue, float* ME, bool GPUpointers);
-extern MTRand	      getRand;
-
 
 #define nrX (32)
 #define nrY (nrX)

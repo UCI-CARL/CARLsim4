@@ -76,12 +76,9 @@
 
 #include <propagated_spike_buffer.h>
 #include <poisson_rate.h>
-#include <mtrand.h>
 #include <gpu_random.h>
 #include <spike_monitor.h>
 #include <spike_monitor_core.h>
-
-extern RNG_rand48* gpuRand48; //!< Used by all network to generate global random number
 
 //! nid=neuron id, sid=synapse id, grpId=group id.
 inline post_info_t SET_CONN_ID(int nid, int sid, int grpId) {
@@ -671,9 +668,7 @@ private:
 	int  printPreConnection2(int grpId, FILE* fpg);
 	void printSimSummary(); 	//!< prints a simulation summary at the end of sim
 	void printState(FILE* fp);
-//	void printState(const char *str = "", const FILE* fp);
-	void printTestVarInfo(FILE* fp, char* testString, bool test1=true, bool test2=true, bool test12=false,
-							int subVal=0, int grouping1=0, int grouping2=0); //!< for GPU debugging
+	//void printState(const char *str = "", const FILE* fp);
 	void printTuningLog(FILE* fp);
 	void printWeights(int preGrpId, int postGrpId=-1);
 
@@ -738,12 +733,13 @@ private:
 
 	void assignPoissonFiringRate_GPU();
 
+	void checkAndSetGPUDevice();
 	void checkDestSrcPtrs(network_ptr_t* dest, network_ptr_t* src, cudaMemcpyKind kind, int allocateMem, int grpId);
 	int  checkErrors(std::string kernelName, int numBlocks);
 	int  checkErrors(int numBlocks);
-	void checkGPUDevice();
 	void checkInitialization(char* testString=NULL);
 	void checkInitialization2(char* testString=NULL);
+	void configGPUDevice();
 
 	void copyConductanceAMPA(network_ptr_t* dest, network_ptr_t* src, cudaMemcpyKind kind, int allocateMem, int grpId=-1);
 	void copyConductanceNMDA(network_ptr_t* dest, network_ptr_t* src, cudaMemcpyKind kind, int allocateMem, int grpId=-1);
@@ -1043,7 +1039,6 @@ private:
 
 	group_info_t	  	grp_Info[MAX_GRP_PER_SNN];
 	group_info2_t		grp_Info2[MAX_GRP_PER_SNN];
-	float*			testVar, *testVar2;
 	uint32_t*	spikeGenBits;
 
 	// weight update parameter
@@ -1051,6 +1046,8 @@ private:
 	int wtANDwtChangeUpdateIntervalCnt_;
 	float stdpScaleFactor_;
 	float wtChangeDecay_; //!< the wtChange decay
+
+	RNG_rand48* gpuPoissonRand;
 };
 
 #endif

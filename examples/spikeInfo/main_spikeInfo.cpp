@@ -35,10 +35,7 @@
 
 // includes core CARLsim functionality
 #include <carlsim.h>
-#include <mtrand.h>
 #include <iostream>
-
-extern MTRand getRand;
 
 using namespace std;
 // -----------------------------------------------------------------------------
@@ -67,9 +64,7 @@ using namespace std;
 // END internal model global constants
 // -----------------------------------------------------------------------------
 
-int main()
-{
-	MTRand getRand(210499257);
+int main() {
 	const bool onGPU = false; //run on GPU
 	const int ithGPU =2; // which GPU to run (0-3)
 	// probably should put the rand seed here
