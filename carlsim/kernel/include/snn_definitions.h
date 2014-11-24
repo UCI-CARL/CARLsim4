@@ -172,12 +172,6 @@ inline bool isInhibitoryNeuron (unsigned int& nid, unsigned int& numNInhPois, un
  #define TESTING 					(0)
 #endif
 
-// does more kind of checking in the kernel to ensure nothing is screwed up...
-#ifndef ENABLE_MORE_CHECK
- #define ENABLE_MORE_CHECK				(0)
-#endif
-
-
 // This flag is used when having a common poisson generator for both CPU and GPU simulation
 // We basically use the CPU poisson generator. Evaluate if there is any firing due to the
 // poisson neuron. Copy that curFiring status to the GPU which uses that for evaluation

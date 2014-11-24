@@ -1237,12 +1237,6 @@ __device__ int generatePostSynapticSpike(int& simTime, int& firingId, int& myDel
 	if(post_grpId == -1)
 		return CURRENT_UPDATE_ERROR4;
 
-	if(ENABLE_MORE_CHECK) {
-		if (nid >= gpuNetInfo.numN)       	 errCode = (CURRENT_UPDATE_ERROR1|unitDelay);
-		if (syn_id >= gpuPtrs.Npre[nid]) errCode = (CURRENT_UPDATE_ERROR2|unitDelay);
-		if (errCode) return errCode;
-	}
-
 	// Got one spike from dopaminergic neuron, increase dopamine concentration in the target area
 	if (gpuGrpInfo[pre_grpId].Type & TARGET_DA) {
 #if defined(__CUDA3__) || defined(__NO_ATOMIC_ADD__)
@@ -1266,22 +1260,6 @@ __device__ int generatePostSynapticSpike(int& simTime, int& firingId, int& myDel
 	return errCode;
 }
 
-__device__ void CHECK_DELAY_ERROR (int& t_pos, volatile int& sh_blkErrCode) {
-	if(ENABLE_MORE_CHECK) {
-		if (!((t_pos+(int)gpuNetInfo.maxDelay) >= 0)) {
-			int i=2;
-			sh_blkErrCode = CURRENT_UPDATE_ERROR3;
-			retErrVal[blockIdx.x][0] = 0xdead;
-			/* retErrVal[blockIdx.x][i++] = simTimeMs;
-			retErrVal[blockIdx.x][i++] = t_pos;
-			retErrVal[blockIdx.x][i++] = fPos;
-			retErrVal[blockIdx.x][i++] = tex1Dfetch(timingTableD2_tex, t_pos+gpuNetInfo.maxDelay-1 + timingTableD2_tex_offset);
-			retErrVal[blockIdx.x][i++] = tex1Dfetch(timingTableD2_tex, t_pos+gpuNetInfo.maxDelay + timingTableD2_tex_offset);*/
-			retErrVal[blockIdx.x][1]   = i;
-		}
-	}
-}
-
 #define NUM_THREADS 			128
 #define EXCIT_READ_CHUNK_SZ		(NUM_THREADS>>1)
 
@@ -1302,11 +1280,6 @@ __global__ void kernel_doCurrentUpdateD2(int simTimeMs, int simTimeSec, int simT
 	int updateCnt	  	= 0;
 
 	__shared__ volatile int sh_blkErrCode;
-
-	if(ENABLE_MORE_CHECK) {			
-		if(threadIdx.x<=0) 
-			sh_blkErrCode = 0;		
-	}
 
 	// this variable is used to record the
 	// number of updates done by different blocks
@@ -1343,7 +1316,6 @@ __global__ void kernel_doCurrentUpdateD2(int simTimeMs, int simTimeSec, int simT
 				while ( !((fPos >= tex1Dfetch(timingTableD2_tex, t_pos+gpuNetInfo.maxDelay+timingTableD2_tex_offset)) 
 					&& (fPos <  tex1Dfetch(timingTableD2_tex, t_pos+gpuNetInfo.maxDelay+1+timingTableD2_tex_offset)))) {
 					t_pos = t_pos - 1;
-					CHECK_DELAY_ERROR(t_pos, sh_blkErrCode);
 				}
 
 				// find the time difference between firing of the neuron and the current time
@@ -1364,9 +1336,6 @@ __global__ void kernel_doCurrentUpdateD2(int simTimeMs, int simTimeSec, int simT
 		}
 
 		__syncthreads();
-
-		if(ENABLE_MORE_CHECK)
-			if (sh_blkErrCode) break;
 
 		// if cnt is zero than no more neurons need to generate
 		// post-synaptic firing, then we break the loop.
@@ -1393,10 +1362,6 @@ __global__ void kernel_doCurrentUpdateD2(int simTimeMs, int simTimeSec, int simT
 						sh_neuronOffsetTable[pos], 		// offset
 						false);							// false for unitDelay type..
 
-				if(ENABLE_MORE_CHECK) {
-					if (sh_blkErrCode) break;
-				}
-
 				delId += WARP_SIZE;
 			}
 		} //(for all excitory neurons in table)
@@ -1406,21 +1371,12 @@ __global__ void kernel_doCurrentUpdateD2(int simTimeMs, int simTimeSec, int simT
 		if(threadIdx.x==0)  
 			sh_NeuronCnt = 0;
 
-		if(ENABLE_MORE_CHECK) 
-			if(sh_blkErrCode) break;
-
 		k = k - (gridDim.x*EXCIT_READ_CHUNK_SZ);
 
 		__syncthreads();
 	}
 
 	__syncthreads();
-
-	if(ENABLE_MORE_CHECK)	
-		if (sh_blkErrCode) {
-			retErrCode = sh_blkErrCode;
-			return;
-		}	
 }
 
 //  KERNEL DESCRIPTION:-
@@ -1443,11 +1399,6 @@ __global__ void kernel_doCurrentUpdateD1(int simTimeMs, int simTimeSec, int simT
 	const int threadIdSwarp	= threadIdx.x%WARP_SIZE;  // thread id within swarp
 
 	__shared__ volatile int sh_blkErrCode;
-
-	if(ENABLE_MORE_CHECK) {			
-		if(threadIdx.x<=0) 
-			sh_blkErrCode = 0;		
-	}
 
 	// load the time table for neuron firing
 	int computedNeurons = 0;
@@ -1509,27 +1460,13 @@ __global__ void kernel_doCurrentUpdateD1(int simTimeMs, int simTimeSec, int simT
 						sh_neuronOffsetTable[swarpId], 		// offset
 						true);								// true for unit delay connection..
 
-				if(ENABLE_MORE_CHECK) {
-					if (sh_blkErrCode) break;
-				}
-
 				delId += WARP_SIZE;
 			}
 		}
 
-		__syncthreads();
-
-		if(ENABLE_MORE_CHECK)
-			if(sh_blkErrCode)  break;		
+		__syncthreads();		
 
 		kPos = kPos + (gridDim.x*numSwarps);
-	}
-
-	if(ENABLE_MORE_CHECK) {
-	   if (sh_blkErrCode) {
-		     retErrCode = sh_blkErrCode;
-		     return;
-	   }
 	}
 }
 
