@@ -56,8 +56,6 @@
 #define LOG_WARP_SIZE		(5)
 #define WARP_SIZE			(1 << LOG_WARP_SIZE)
 
-#define MAX_NUM_BLOCKS 200
-
 #define GPU_LTP(t)   (gpuNetInfo.ALPHA_LTP*__expf(-(t)/gpuNetInfo.TAU_LTP))
 #define GPU_LTD(t)   (gpuNetInfo.ALPHA_LTD*__expf(-(t)/gpuNetInfo.TAU_LTD))
 
@@ -114,11 +112,6 @@ texture <int,    1, cudaReadModeElementType>  timingTableD1_tex;
 texture <int,    1, cudaReadModeElementType>  groupIdInfo_tex; // groupIDInfo is allocated using cudaMalloc thus doesn't require an offset when using textures
 __device__  int timingTableD1_tex_offset;
 __device__  int timingTableD2_tex_offset;
-
-	
-__device__ int generatedErrors = 0;
-__device__ int	 retErrCode=NO_KERNEL_ERRORS;
-__device__ float retErrVal[MAX_NUM_BLOCKS][20];
 
 // example of the quick synaptic table
 // index     cnt
@@ -196,7 +189,6 @@ __device__ inline bool getPoissonSpike_GPU (unsigned int& nid)
 	// Random number value is less than the poisson firing probability
 	// if poisson firing probability is say 1.0 then the random poisson ptr
 	// will always be less than 1.0 and hence it will continiously fire
-
 	return gpuPtrs.poissonRandPtr[nid-gpuNetInfo.numNReg]*(1000.0/RNG_rand48::MAX_RANGE) < gpuPtrs.poissonFireRate[nid-gpuNetInfo.numNReg];
 }
 
@@ -218,7 +210,7 @@ __global__ void kernel_timingTableUpdate(int t)
 /////////////////////////////////////////////////////////////////////////////////
 // Device Kernel Function:  Intialization of the GPU side of the simulator    ///
 // KERNEL: This kernel is called after initialization of various parameters   ///
-// so that we can reset all required parameters. 			      ///
+// so that we can reset all required parameters.							  ///
 /////////////////////////////////////////////////////////////////////////////////
 __global__ void kernel_init ()
 {
@@ -342,13 +334,13 @@ int CpuSNN::allocateStaticLoad(int bufSize) {
 	return bufferCnt;
 }
 
-///////////////////////////////////////////////
+//////////////////////////////////////////////////
 // 1. KERNELS used when a specific neuron fires //
-///////////////////////////////////////////////
+//////////////////////////////////////////////////
 
 /////////////////////////////////////////////////////////////////////////////////
-// Device local function:      	Update the STP Variables		  ///
-// update the STPU and STPX variable after firing			      ///
+// Device local function:      	Update the STP Variables					  ///
+// update the STPU and STPX variable after firing							  ///
 /////////////////////////////////////////////////////////////////////////////////
 
 // update the spike-dependent part of du/dt and dx/dt
@@ -364,11 +356,6 @@ __device__ void firingUpdateSTP (unsigned int& nid, int& simTime, short int&  gr
 
 	// dx/dt = (1-x)/tau_D - u^+ * x^- * \delta(t-t_{spk})
 	gpuPtrs.stpx[ind_plus] -= gpuPtrs.stpu[ind_plus]*gpuPtrs.stpx[ind_minus];
-}
-
-__device__ void setFiringBit(unsigned int& nid)
-{
-	gpuPtrs.neuronFiring[nid] |= 0x1;
 }
 
 __device__ void resetFiredNeuron(unsigned int& nid, short int & grpId, int& simTime)
@@ -1466,8 +1453,6 @@ __global__ void kernel_doCurrentUpdateD1(int simTimeMs, int simTimeSec, int simT
 	}
 }
 
-float errVal[MAX_NUM_BLOCKS][20];
-
 void CpuSNN::copyPostConnectionInfo(network_ptr_t* dest, int allocateMem) {
 	checkAndSetGPUDevice();
 
@@ -2225,107 +2210,6 @@ void CpuSNN::doSTPUpdateAndDecayCond_GPU(int gridSize, int blkSize) {
 	}
 }
 
-
-__global__ void kernel_check_GPU_init2 (int simTime)
-{
-//	  	int gid=threadIdx.x + blockDim.x*blockIdx.x;
-  	int nid[]   = {0,1,2,3};
-
-  	for(int k=0; k < 4; k++) {
-  		int i=1;
-		for(int t=0; t < 5; t++) {
-			retErrVal[k][i++]= gpuPtrs.stpu[nid[k]]*gpuPtrs.stpx[nid[k]];
-		}
-	  	retErrVal[k][0] = i;
-  	}
-}
-
-__global__ void kernel_check_GPU_init2_1 (int simTime)
-{
-//  	int gid=threadIdx.x + blockDim.x*blockIdx.x;
-  	int nid=0;
-	 	for(int k=0; k < gpuNetInfo.numN; k++) {
-		if ( gpuPtrs.neuronFiring[k]) {
-			int i=1;
-			retErrVal[nid][i++]= k;
-			for(int t=0; t < 5; t++) {
-				float stp = gpuPtrs.stpu[k]*gpuPtrs.stpx[k];
-				retErrVal[nid][i++]= stp;
-			}
-			//gpuPtrs.neuronFiring[k]=0;
-		  	retErrVal[nid][0] = i;
-		  	nid++;
-		  	if(nid==(MAX_NUM_BLOCKS-1))
-		  		break;
-		}
-  	}
-}
-///////////////////////////////////////////////////////////////////////////
-/// Device local function:      check_GPU_initialization		///
-//  In this kernel we return some important parameters, data values of
-//  the initialized SNN network using the retErrVal array.
-//  This is to just to ensure that the initialization has been
-//  done correctly and we can concentrate on the actual kernel code
-//  for bugs rather than errors due to incorrect initialization.
-///////////////////////////////////////////////////////////////////////////
-__global__ void kernel_check_GPU_init ()
-{
-       	int i=1;
-
-//    		int gid=threadIdx.x + blockDim.x*blockIdx.x;
-
-	if(threadIdx.x==0 && blockIdx.x==0) {
-    	//float hstep = gpuNetInfo.maxWeight/(HISTOGRAM_SIZE);
-    	retErrVal[0][i++]= gpuNetInfo.numN;
-    	retErrVal[0][i++]= gpuNetInfo.numPostSynapses;
-    	retErrVal[0][i++]= gpuNetInfo.numNReg;
-    	retErrVal[0][i++]= gpuNetInfo.numNExcReg;
-    	retErrVal[0][i++]= gpuNetInfo.numNInhReg;
-    	retErrVal[0][i++]= gpuPtrs.wt[0];
-    	retErrVal[0][i++]= gpuNetInfo.numNPois;
-    	retErrVal[0][i++]= gpuPtrs.poissonRandPtr[0];
-    	retErrVal[0][i++]= gpuPtrs.poissonRandPtr[1];
-    	retErrVal[0][i++]= gpuNetInfo.maxSpikesD1;
-    	retErrVal[0][i++]= gpuNetInfo.maxSpikesD2;
-    	retErrVal[0][i++]= gpuNetInfo.sim_with_fixedwts;
-    	retErrVal[0][i++]= gpuNetInfo.sim_with_conductances;
-    	retErrVal[0][i++]= gpuNetInfo.sim_with_stdp;
-    	retErrVal[0][i++]= gpuNetInfo.sim_with_stp;
-    	retErrVal[0][i++]= gpuGrpInfo[0].SpikeMonitorId;
-    	retErrVal[0][i++]= gpuGrpInfo[1].SpikeMonitorId;
-    	retErrVal[0][i++]= gpuGrpInfo[0].WithSTP;
-    	retErrVal[0][i++]= gpuGrpInfo[1].WithSTP;
-		retErrVal[0][i++]= gpuGrpInfo[1].avgTimeScale;
-    	retErrVal[0][i++]= 123456789.0;
-    	retErrVal[0][0]  = i;
-    	i = 1;
-    	retErrVal[1][i++]= tex1Dfetch(timingTableD2_tex, 0+timingTableD2_tex_offset);
-    	retErrVal[1][i++]= tex1Dfetch(timingTableD2_tex, 1+timingTableD2_tex_offset);
-    	retErrVal[1][i++]= loadBufferCount;
-    	retErrVal[1][i++]= tex1Dfetch(groupIdInfo_tex, 0);
-    	retErrVal[1][i++]= tex1Dfetch(groupIdInfo_tex, 1);
-    	retErrVal[1][i++]= tex1Dfetch(groupIdInfo_tex, 2);
-    	retErrVal[1][i++]= gpuGrpInfo[0].WithSTDP;
-    	retErrVal[1][i++]= gpuGrpInfo[1].WithSTDP;
-    	retErrVal[1][i++]= gpuGrpInfo[2].WithSTDP;
-    	retErrVal[1][i++]= STATIC_LOAD_START(gpuPtrs.neuronAllocation[0]);
-    	retErrVal[1][i++]= STATIC_LOAD_GROUP(gpuPtrs.neuronAllocation[0]);
-    	retErrVal[1][i++]= STATIC_LOAD_SIZE(gpuPtrs.neuronAllocation[0]);
-    	retErrVal[1][i++]= gpuNetInfo.STP_Pitch;
-    	retErrVal[1][i++]= gpuGrpInfo[2].FixedInputWts;
-		retErrVal[1][i++]= gpuPtrs.baseFiringInv[gpuGrpInfo[1].StartN];
-		retErrVal[1][i++]= gpuPtrs.baseFiringInv[gpuGrpInfo[0].StartN];
-    	retErrVal[1][i++]= gpuGrpInfo[0].STP_U;
-    	//retErrVal[1][i++]= gpuGrpInfo[0].STP_tD;
-    	//retErrVal[1][i++]= gpuGrpInfo[0].STP_tF;
-    	retErrVal[1][i++]= gpuPtrs.stpu[0];
-    	retErrVal[1][i++]= gpuPtrs.stpx[0];
-    	retErrVal[1][i++]= 123456789.0;
-    	retErrVal[1][0]  = i;
-    	return;
-	}
-}
-
 void CpuSNN::initGPU(int gridSize, int blkSize) {
 	checkAndSetGPUDevice();
 
@@ -2333,71 +2217,6 @@ void CpuSNN::initGPU(int gridSize, int blkSize) {
 
 	kernel_init <<< gridSize, blkSize >>> ();
 	CUDA_GET_LAST_ERROR("initGPU kernel failed\n");
-
-	checkInitialization();
-
-	checkInitialization2();
-}
-
-void CpuSNN::checkInitialization(char* testString) {
-	checkAndSetGPUDevice();
-
-	KERNEL_DEBUG("gpu_checkInitialization()");
-	void *devPtr;
-
-	assert(cpu_gpuNetPtrs.allocated);
-
-	memset(errVal, 0, sizeof(errVal));
-	cudaGetSymbolAddress(&devPtr, retErrVal);
-	CUDA_CHECK_ERRORS(cudaMemcpy(devPtr, &errVal, sizeof(errVal), cudaMemcpyHostToDevice));
-
-	int testTable[10];
-	// we write some number in this table..
-	// write that to the GPU memory. Read it back
-	// using the texture access and check if everything is correctly initialized
-	testTable[0] = 11; testTable[1] = 12; testTable[2] = 13;
-	testTable[3] = 14; testTable[4] = 15; testTable[5] = 16;
-	CUDA_CHECK_ERRORS(cudaMemcpyToSymbol(timingTableD2, testTable, sizeof(int) * (10), 0, cudaMemcpyHostToDevice));
-//MDR this check fails because it assumes too much about the network...
-//		kernel_check_GPU_init <<< 1, 128 >>> ();
-	CUDA_GET_LAST_ERROR("check GPU failed\n");
-
-  // read back the intialization and ensure that they are okay
-  KERNEL_DEBUG("%s Checking initialization of GPU...", testString?testString:"");
-  CUDA_CHECK_ERRORS( cudaMemcpy(&errVal, devPtr, sizeof(errVal), cudaMemcpyDeviceToHost));
-  for(int i=0; i < 4; i++) {
-    for(int j=0; j < (int)errVal[i][0]; j++) {
-      KERNEL_DEBUG("val[%3d][%3d] = %f", i, j, errVal[i][j]);
-    }
-    KERNEL_DEBUG("******************");
-  }
-  KERNEL_DEBUG("Checking done...");
-  CUDA_CHECK_ERRORS(cudaMemcpyToSymbol(timingTableD2, timeTableD2, sizeof(int)*(10), 0, cudaMemcpyHostToDevice));
-}
-
-void CpuSNN::checkInitialization2(char* testString) {
-	checkAndSetGPUDevice();
-
-	KERNEL_DEBUG("CheckInitialization2: Time = %d", simTime);
-	void *devPtr;
-	memset(errVal, 0, sizeof(errVal));
-	cudaGetSymbolAddress(&devPtr, retErrVal);
-	CUDA_CHECK_ERRORS( cudaMemcpy(devPtr, &errVal, sizeof(errVal), cudaMemcpyHostToDevice));
-
-	if (sim_with_stp) {
-		kernel_check_GPU_init2 <<< 1, 128>>> (simTime);
-		CUDA_GET_LAST_ERROR("kernel_check_GPU_init2_1 failed\n");
-	}
-
-	// read back the intialization and ensure that they are okay
-	KERNEL_DEBUG("%s Checking Initialization of STP Variable Correctly in GPU...", (testString?testString:""));
-	CUDA_CHECK_ERRORS( cudaMemcpy(&errVal, devPtr, sizeof(errVal), cudaMemcpyDeviceToHost));
-	for(int i=0; i < 4; i++) {
-		for(int j=0; j < (int)errVal[i][0]; j++) {
-			KERNEL_DEBUG("val[%3d][%3d] = %f", i, j, errVal[i][j]);
-			}
-		KERNEL_DEBUG("******************");
-	}
 }
 
 void CpuSNN::printCurrentInfo(FILE* fp) {
@@ -2705,14 +2524,12 @@ void CpuSNN::allocateNetworkParameters() {
 	net_Info.numNExcPois = numNExcPois;		
 	net_Info.numNInhPois = numNInhPois;
 	assert(numNPois == (numNExcPois + numNInhPois));
-	//net_Info.numNoise  = numNoise;
 	net_Info.maxSpikesD2 = maxSpikesD2;
 	net_Info.maxSpikesD1 = maxSpikesD1;
 	net_Info.sim_with_fixedwts = sim_with_fixedwts;
 	net_Info.sim_with_conductances = sim_with_conductances;
 	net_Info.sim_with_homeostasis = sim_with_homeostasis;
 	net_Info.sim_with_stdp = sim_with_stdp;
-//	net_Info.sim_with_modulated_stdp = sim_with_modulated_stdp;
 	net_Info.sim_with_stp = sim_with_stp;
 	net_Info.numGrp = numGrp;
 	net_Info.stdpScaleFactor = stdpScaleFactor_;
@@ -2799,8 +2616,6 @@ void CpuSNN::allocateSNN_GPU() {
 	if(gpuPoissonRand != NULL) return;
 
 	int gridSize = 64; int blkSize  = 128;
-
-	//checkGPUDevice();
 
 	int numN=0;
 	for (int g=0;g<numGrp;g++) {
