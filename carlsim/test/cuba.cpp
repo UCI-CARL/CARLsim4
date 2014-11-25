@@ -99,8 +99,8 @@ TEST(CUBA, firingRateVsData) {
 TEST(CUBA, firingRateCPUvsGPU) {
 	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
+	std::vector<std::vector<int> > spkTimesG0CPU, spkTimesG1CPU, spkTimesG0GPU, spkTimesG1GPU;
 	float spkRateG0CPU = 0.0f, spkRateG1CPU = 0.0f;
-
 	int delay = 3;
 	float wt = 9.440475f;
 	float inputRate = 19.0f;
@@ -108,7 +108,6 @@ TEST(CUBA, firingRateCPUvsGPU) {
 //	fprintf(stderr,"runTime=%d, delay=%d, wt=%f, input=%f\n",runTimeMs,delay,wt,inputRate);
 
 	for (int isGPUmode=0; isGPUmode<=1; isGPUmode++) {
-		std::vector<std::vector<int> > spkTimesG0CPU, spkTimesG1CPU, spkTimesG0GPU, spkTimesG1GPU;
 		CARLsim* sim = new CARLsim("CUBA.firingRateCPUvsGPU",isGPUmode?GPU_MODE:CPU_MODE,SILENT,0,42);
 		int g1=sim->createGroup("excit", 1, EXCITATORY_NEURON);
 		sim->setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f); // RS
