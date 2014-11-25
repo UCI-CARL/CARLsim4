@@ -67,6 +67,7 @@
 /// INIT STATIC PROPERTIES
 /// **************************************************************************************************************** ///
 bool CARLsim::gpuAllocation[MAX_NUM_CUDA_DEVICES] = {false};
+std::string CARLsim::gpuOcuppiedBy[MAX_NUM_CUDA_DEVICES];
 
 #if (WIN32 || WIN64)
 HANDLE CARLsim::gpuAllocationLock = CreateMutex(NULL, FALSE, NULL);
@@ -191,6 +192,7 @@ void CARLsim::CARLsimInit() {
 		if (!gpuAllocation[ithGPU_]) {
 			gpuAllocation[ithGPU_] = true;
 			gpuAllocationResult = true;
+			gpuOcuppiedBy[ithGPU_] = netName_;
 		}
 		ReleaseMutex(gpuAllocationLock);
 #else
@@ -198,11 +200,13 @@ void CARLsim::CARLsimInit() {
 		if (!gpuAllocation[ithGPU_]) {
 			gpuAllocation[ithGPU_] = true;
 			gpuAllocationResult = true;
+			gpuOcuppiedBy[ithGPU_] = netName_;
 		}
 		pthread_mutex_unlock(&gpuAllocationLock);
 #endif
 		if (!gpuAllocationResult) {
-			CARLSIM_ERROR(funcName.c_str(), "GPU Allocation Conflict (GPU has been occupied by another CARLsim object)");
+			std::string errorMsg = "GPU Allocation Conflict, GPU has been occupied by CARLsim object " + gpuOcuppiedBy[ithGPU_];
+			CARLSIM_ERROR(funcName.c_str(), errorMsg.c_str());
 			exit(EXIT_FAILURE); // abort
 		}
 	}
