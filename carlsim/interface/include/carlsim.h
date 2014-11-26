@@ -1191,6 +1191,7 @@ private:
 
 	// +++++ PRIVATE STATIC PROPERTIES ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 	static bool gpuAllocation[MAX_NUM_CUDA_DEVICES];
+	static std::string gpuOccupiedBy[MAX_NUM_CUDA_DEVICES];
 #if (WIN32 || WIN64)
 	static HANDLE gpuAllocationLock;
 #else
