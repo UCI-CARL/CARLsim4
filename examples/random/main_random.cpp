@@ -40,6 +40,8 @@
 
 #include <carlsim.h>
 
+#include <stdio.h>
+
 #if (WIN32 || WIN64)
 	#define _CRT_SECURE_NO_WARNINGS
 #endif
@@ -48,9 +50,21 @@ int main() {
 	// simulation details
 	int N = 1000; // number of neurons
 	int ithGPU = 0; // run on first GPU
+	bool onGPU = true;
+
+	int nNeur = 10;
+	PoissonRate rate(nNeur, onGPU);
+
+	rate.setRates(1.5f);
+
+	for (int i=0; i<nNeur; i++)
+		printf("%f\n",rate.getRate(i));
+
+
+	return 1;
 
 	// create a network
-	CARLsim sim("random",GPU_MODE,USER,ithGPU,42);
+	CARLsim sim("random",onGPU?GPU_MODE:CPU_MODE,USER,ithGPU,42);
 
 	int g1=sim.createGroup("excit", N*0.8, EXCITATORY_NEURON);
 	sim.setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f);
@@ -85,9 +99,14 @@ int main() {
 	sim.setConnectionMonitor(g1, g2);
 
 	//setup some baseline input
-	PoissonRate in(N*0.1);
-	for (int i=0;i<N*0.1;i++) in.rates[i] = 1;
-		sim.setSpikeRate(gin,&in);
+	PoissonRate in(N*0.1, onGPU);
+	in.setRates(1.0f);
+
+//	PoissonRate in(N*0.1);
+//	for (int i=0;i<N*0.1;i++)
+//		in.rates[i] = 1;
+
+	sim.setSpikeRate(gin,&in);
 
 	// run for a total of 10 seconds
 	// at the end of each runNetwork call, SpikeMonitor stats will be printed

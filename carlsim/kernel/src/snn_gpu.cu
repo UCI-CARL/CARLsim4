@@ -2895,16 +2895,25 @@ void CpuSNN::assignPoissonFiringRate_GPU() {
 	for (int grpId=0; grpId < numGrp; grpId++) {
 		// given group of neurons belong to the poisson group....
 		if (grp_Info[grpId].isSpikeGenerator) {
-			int nid    = grp_Info[grpId].StartN;
+			int nid = grp_Info[grpId].StartN;
 			PoissonRate* rate = grp_Info[grpId].RatePtr;
 
-			// TODO::: what do we need to do with the refPeriod...
+			// \TODO: what do we need to do with the refPeriod...
 			// does GPU use the refPeriod ???
 			//float refPeriod = grp_Info[grpId].RefractPeriod;
 				
-			if (grp_Info[grpId].spikeGen || rate == NULL) return;
+			if (grp_Info[grpId].spikeGen || rate == NULL)
+				return;
 
-			CUDA_CHECK_ERRORS( cudaMemcpy( &cpu_gpuNetPtrs.poissonFireRate[nid-numNReg], rate->rates, sizeof(float)*rate->len, rate->onGPU?cudaMemcpyDeviceToDevice:cudaMemcpyHostToDevice));
+			if (rate->isOnGPU()) {
+				// rates allocated on GPU
+				CUDA_CHECK_ERRORS( cudaMemcpy( &cpu_gpuNetPtrs.poissonFireRate[nid-numNReg], rate->getRatePtrGPU(),
+					sizeof(float)*rate->getNumNeurons(), cudaMemcpyDeviceToDevice) );
+			} else {
+				// rates allocated on CPU
+				CUDA_CHECK_ERRORS( cudaMemcpy( &cpu_gpuNetPtrs.poissonFireRate[nid-numNReg], rate->getRatePtrCPU(),
+					sizeof(float)*rate->getNumNeurons(), cudaMemcpyHostToDevice) );
+			}
 		}
 	}
 }

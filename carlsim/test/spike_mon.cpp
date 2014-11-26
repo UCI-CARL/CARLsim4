@@ -201,9 +201,7 @@ TEST(SpikeMon, clear){
 
 		// input
 		input = new PoissonRate(GRP_SIZE);
-		for(int i=0;i<GRP_SIZE;i++){
-			input->rates[i]=inputTargetFR;
-		}
+		input->setRates(inputTargetFR);
 
 		// use full because random might give us a network that does not spike (depending on the random seed),
 		// leading to the EXPECTs below to fail
@@ -448,9 +446,7 @@ TEST(SpikeMon, getMaxMinNeuronFiringRate){
 
 		// input
 		PoissonRate* input = new PoissonRate(GRP_SIZE);
-		for(int i=0;i<GRP_SIZE;i++){
-			input->rates[i]=inputTargetFR;
-		}
+		input->setRates(inputTargetFR);
 		sim->setSpikeRate(inputGroup,input);
 
 #if (WIN32 || WIN64)

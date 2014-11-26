@@ -42,21 +42,43 @@
 #ifndef _POISSON_RATE_H_
 #define _POISSON_RATE_H_
 
-#include <stdint.h>
+//#include <stdint.h>
+
+#include <vector>
 
 class PoissonRate {
 public:
-	float* rates;
-	uint32_t len;
-	bool onGPU;
-	bool allocatedRatesInternally;
-
-	PoissonRate(float* _rates, uint32_t _len, bool _onGPU = false);
-
-	PoissonRate(uint32_t _len, bool _onGPU = false);
+	PoissonRate(int nNeur, bool onGPU=false, int refPeriod=1);
 
 	// destructor
 	~PoissonRate();
+
+	int getNumNeurons() { return nNeur_; }
+
+	float getRate(int neurId);
+
+	std::vector<float> getRates();
+
+	float* getRatePtrCPU();
+
+	float* getRatePtrGPU();
+
+	bool isOnGPU() { return onGPU_; }
+
+	void setRate(int neurId, float rate);
+
+	//! assigns same rate to all neurons
+	void setRates(float rate);
+
+	//! assigns rates from a vector
+	void setRates(const std::vector<float>& rates);
+
+
+//private:
+	float *h_rates_, *d_rates_;
+	const int nNeur_;
+	const bool onGPU_;
+	const int refPeriod_;
 };
 
 #endif
