@@ -77,6 +77,8 @@ TEST(STP, setSTPdeath) {
 	// STP_tF / STP_tD
 	EXPECT_DEATH({sim->setSTP(g1,true,0.1f,-10,10);},"");
 	EXPECT_DEATH({sim->setSTP(g1,true,0.1f,10,-10);},"");
+	
+	delete sim;
 }
 
 //! test the effect of short-term depression
