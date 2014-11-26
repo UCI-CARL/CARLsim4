@@ -85,8 +85,6 @@ typedef struct network_info_s  {
 	unsigned int	I_setLength;
 	size_t			I_setPitch;
 	unsigned int	preSynLength;
-//	unsigned int	numRandNeurons;
-//	unsigned int	numNoise;
 	unsigned int	postSynCnt;
 	unsigned int	preSynCnt;
 	unsigned int	maxSpikesD2;
@@ -120,9 +118,12 @@ typedef struct network_info_s  {
 //! connection infos...
 typedef struct connectData_s {
 	int 	  				 grpSrc, grpDest;
-	uint8_t	  				 maxDelay,  minDelay;
+	uint8_t	  				 maxDelay;
+	uint8_t					 minDelay;
 	float	  				 initWt, maxWt;
-	float                    radX, radY, radZ;
+	float                    radX;
+	float					 radY;
+	float					 radZ;
 	float 					 mulSynFast;				//!< factor to be applied to either gAMPA or gGABAa
 	float 					 mulSynSlow;				//!< factor to be applied to either gNMDA or gGABAb
 	int	  	  				 numPostSynapses;
@@ -137,7 +138,7 @@ typedef struct connectData_s {
 	struct connectData_s*    next;
 } grpConnectInfo_t;
 
-typedef struct network_ptr_s  {
+typedef struct network_ptr_s {
 	float*	voltage;
 	float*	recovery;
 	float*	Izh_a;
@@ -175,10 +176,11 @@ typedef struct network_ptr_s  {
 	unsigned int*	cumulativePost;
 	unsigned int*	cumulativePre;
 
-	float 	*mulSynFast, *mulSynSlow;
-	short int *cumConnIdPre;	//!< connectId, per synapse, presynaptic cumulative indexing
+	float* mulSynFast;
+	float* mulSynSlow;
+	short int* cumConnIdPre;	//!< connectId, per synapse, presynaptic cumulative indexing
 
-	short int *grpIds;
+	short int* grpIds;
 
 	/*!
 	 * \brief 10 bit syn id, 22 bit neuron id, ordered based on delay
@@ -189,11 +191,9 @@ typedef struct network_ptr_s  {
 	post_info_t*	postSynapticIds;
 
 	post_info_t*	preSynapticIds;
-	delay_info_t    *postDelayInfo;  	//!< delay information
+	delay_info_t*	postDelayInfo;  	//!< delay information
 	unsigned int*	firingTableD1;
 	unsigned int*	firingTableD2;
-
-
 
 	float*	poissonFireRate;
 	unsigned int*	poissonRandPtr;		//!< firing random number. max value is 10,000
@@ -223,8 +223,7 @@ typedef struct network_ptr_s  {
 	bool*		curSpike;
 } network_ptr_t;
 
-typedef struct group_info_s
-{
+typedef struct group_info_s {
 	// properties of group of neurons size, location, initial weights etc.
 	PoissonRate*	RatePtr;
 	int			StartN;
@@ -250,9 +249,7 @@ typedef struct group_info_s
 	bool 		WithSTP;
 	bool 		WithSTDP;
 	stdpType_t  WithSTDPtype;
-//	bool		WithModulatedSTDP;
 	bool 		WithHomeostasis;
-//	bool 		WithConductances;
 	int		homeoId;
 	bool		FixedInputWts;
 	int			Noffset;
@@ -300,21 +297,20 @@ typedef struct group_info_s
  * separate group which has unique properties of
  * neuron in the current group.
  */
-typedef struct group_info2_s
-{
-  std::string		Name;
-  // properties of group of neurons size, location, initial weights etc.
-  //<! homeostatic plasticity variables
-  float 		baseFiring;
-  float 		baseFiringSD;
-  float 		Izh_a;
-  float 		Izh_a_sd;
-  float 		Izh_b;
-  float 		Izh_b_sd;
-  float 		Izh_c;
-  float 		Izh_c_sd;
-  float 		Izh_d;
-  float 		Izh_d_sd;
+typedef struct group_info2_s {
+	std::string		Name;
+	// properties of group of neurons size, location, initial weights etc.
+	//<! homeostatic plasticity variables
+	float 		baseFiring;
+	float 		baseFiringSD;
+	float 		Izh_a;
+	float 		Izh_a_sd;
+	float 		Izh_b;
+	float 		Izh_b_sd;
+	float 		Izh_c;
+	float 		Izh_c_sd;
+	float 		Izh_d;
+	float 		Izh_d_sd;
 
 	/*!
 	 * \brief when we call print state, should the group properties be printed.
@@ -328,6 +324,5 @@ typedef struct group_info2_s
 	int			sumPostConn;
 	int			sumPreConn;
 } group_info2_t;
-
 
 #endif

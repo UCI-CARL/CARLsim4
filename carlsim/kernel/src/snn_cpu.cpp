@@ -2244,10 +2244,8 @@ void CpuSNN::buildNetwork() {
 
 	if (loadSimFID != NULL) {
 		// we the user specified loadSimulation the synaptic weights will be restored here...
-		#if READNETWORK_ADD_SYNAPSES_FROM_FILE
-			assert(loadSimulation_internal(true) >= 0); // read the plastic synapses first
-			assert(loadSimulation_internal(false) >= 0); // read the fixed synapses second
-		#endif
+		assert(loadSimulation_internal(true) >= 0); // read the plastic synapses first
+		assert(loadSimulation_internal(false) >= 0); // read the fixed synapses second
 	} else {
 		// build all the connections here...
 		// we run over the linked list two times...
@@ -3372,12 +3370,7 @@ unsigned int CpuSNN::poissonSpike(unsigned int currTime, float frate, int refrac
 }
 
 // \FIXME: this guy is a mess
-#if READNETWORK_ADD_SYNAPSES_FROM_FILE
-int CpuSNN::loadSimulation_internal(bool onlyPlastic)
-#else
-int CpuSNN::loadSimulation_internal()
-#endif
-{
+int CpuSNN::loadSimulation_internal(bool onlyPlastic) {
 	long file_position = ftell(loadSimFID); // so that we can restore the file position later...
 	int tmpInt;
 	float tmpFloat;
@@ -3462,24 +3455,22 @@ int CpuSNN::loadSimulation_internal()
 			if (!fread(&plastic,sizeof(uint8_t),1,loadSimFID)) return -11;
 			if (!fread(&connId,sizeof(short int),1,loadSimFID)) return -11;
 
-			#if READNETWORK_ADD_SYNAPSES_FROM_FILE
-				if ((plastic && onlyPlastic) || (!plastic && !onlyPlastic)) {
-					int gIDpost = grpIds[nIDpost];
-					int connProp = SET_FIXED_PLASTIC(plastic?SYN_PLASTIC:SYN_FIXED);
+			if ((plastic && onlyPlastic) || (!plastic && !onlyPlastic)) {
+				int gIDpost = grpIds[nIDpost];
+				int connProp = SET_FIXED_PLASTIC(plastic?SYN_PLASTIC:SYN_FIXED);
 
-					setConnection(gIDpre, gIDpost, nIDpre, nIDpost, weight, maxWeight, delay, connProp, connId);
-					grp_Info2[gIDpre].sumPostConn++;
-					grp_Info2[gIDpost].sumPreConn++;
+				setConnection(gIDpre, gIDpost, nIDpre, nIDpost, weight, maxWeight, delay, connProp, connId);
+				grp_Info2[gIDpre].sumPostConn++;
+				grp_Info2[gIDpost].sumPreConn++;
 
-					if (delay > grp_Info[gIDpre].MaxDelay)
-						grp_Info[gIDpre].MaxDelay = delay;
-				}
-			#endif
+				if (delay > grp_Info[gIDpre].MaxDelay)
+					grp_Info[gIDpre].MaxDelay = delay;
+			}
 		}
 	}
-	#if READNETWORK_ADD_SYNAPSES_FROM_FILE
-		fseek(loadSimFID,file_position,SEEK_SET);
-	#endif
+
+	fseek(loadSimFID,file_position,SEEK_SET);
+
 	return 0;
 }
 

@@ -670,12 +670,7 @@ private:
 	void printTuningLog(FILE* fp);
 	void printWeights(int preGrpId, int postGrpId=-1);
 
-	// FIXME: difference between the options? is one deprecated or are both still used?
-	#if READNETWORK_ADD_SYNAPSES_FROM_FILE
 	int loadSimulation_internal(bool onlyPlastic);
-	#else
-	int loadSimulation_internal();
-	#endif
 
 	void reorganizeDelay();
 	void reorganizeNetwork(bool removeTempMemory);
@@ -724,7 +719,6 @@ private:
 	void CpuSNNinit_GPU();	//!< initializes params needed in snn_gpu.cu (gets called in CpuSNN constructor)
 
 	void allocateGroupId();
-//	void allocateGroupParameters();
 	void allocateNetworkParameters();
 	void allocateSNN_GPU(); //!< allocates required memory and then initialize the GPU
 	int  allocateStaticLoad(int bufSize);
