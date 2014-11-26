@@ -1,64 +1,12 @@
 #include "gtest/gtest.h"
 #include "carlsim_tests.h"
-#include <snn.h>
+
+#include <carlsim.h>
 #include <periodic_spikegen.h>
 
 /// **************************************************************************************************************** ///
 /// SHORT-TERM PLASTICITY STP
 /// **************************************************************************************************************** ///
-
-/*!
- * \brief testing setSTP to true
- *
- * This function tests the information stored in the group info struct after enabling STP via setSTP
- * \TODO use public user interface
-
- */
-TEST(STP, setSTPTrue) {
-	std::string name = "SNN";
-	float STP_U = 0.25f;		// the exact values don't matter
-	float STP_tF = 10.0f;
-	float STP_tD = 15.0f;
-	CpuSNN* sim;
-
-	for (int mode=0; mode<=1; mode++) {
-		sim = new CpuSNN(name,mode?GPU_MODE:CPU_MODE,SILENT,0,42);
-        Grid3D neurGrid(10,1,1);
-		int g1=sim->createGroup("excit", neurGrid, EXCITATORY_NEURON);
-		sim->setNeuronParameters(g1, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f);
-		sim->setSTP(g1,true,STP_U,STP_tF,STP_tD);					// exact values matter
-
-		group_info_t grpInfo = sim->getGroupInfo(g1);
-		EXPECT_TRUE(grpInfo.WithSTP); 							// STP must be enabled
-		EXPECT_FLOAT_EQ(grpInfo.STP_A,1.0f/STP_U);
-		EXPECT_FLOAT_EQ(grpInfo.STP_U,STP_U); 					// check exact values
-		EXPECT_FLOAT_EQ(grpInfo.STP_tau_u_inv,1.0f/STP_tF);
-		EXPECT_FLOAT_EQ(grpInfo.STP_tau_x_inv,1.0f/STP_tD);
-		delete sim;
-	}
-}
-
-/*!
- * \brief testing setSTP to false
- * This function tests the information stored in the group info struct after disabling STP via setSTP
- */
-TEST(STP, setSTPFalse) {
-	std::string name="STP.setSTPFalse";
-	CpuSNN* sim;
-
-	for (int mode=0; mode<=1; mode++) {
-		sim = new CpuSNN(name,mode?GPU_MODE:CPU_MODE,SILENT,0,42);
-        Grid3D neurGrid(10,1,1);
-		int g1=sim->createGroup("excit", neurGrid, EXCITATORY_NEURON);
-		sim->setNeuronParameters(g1, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f);
-		sim->setSTP(g1,false,0.1f,100,200); 					// exact values don't matter
-
-		group_info_t grpInfo = sim->getGroupInfo(g1);
-		EXPECT_FALSE(grpInfo.WithSTP);						// STP must be disabled
-		delete sim;
-	}
-}
-
 
 //! expect CARLsim to die if setSTP is called with silly params
 TEST(STP, setSTPdeath) {
@@ -95,6 +43,8 @@ TEST(STP, setSTPdeath) {
  * \TODO \FIXME: fix STP buffer and make sure test works for delays > 1 ms
  */
 TEST(STP, firingRateSTDvsSTF) {
+	::testing::FLAGS_gtest_death_test_style = "threadsafe";
+
 	int randSeed = rand() % 1000;	// randSeed must not interfere with STP
 
 	CARLsim *sim = NULL;
@@ -192,6 +142,8 @@ TEST(STP, firingRateSTDvsSTF) {
 }
 
 TEST(STP, spikeTimesCPUvsGPU) {
+	::testing::FLAGS_gtest_death_test_style = "threadsafe";
+
 	CARLsim *sim = NULL;
 	SpikeMonitor *spkMonG2 = NULL, *spkMonG3 = NULL;
 	PeriodicSpikeGenerator *spkGenG0 = NULL, *spkGenG1 = NULL;
