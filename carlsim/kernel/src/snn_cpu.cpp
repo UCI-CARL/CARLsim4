@@ -1742,8 +1742,8 @@ void CpuSNN::CpuSNNinit() {
 	simTimeLastUpdSpkMon_ = 0;
 	simTimeRunStart     = 0;    simTimeRunStop      = 0;
 	simTimeMs	 		= 0;    simTimeSec          = 0;    simTime = 0;
-	spikeCountAll1sec	= 0;    secD1fireCntHost    = 0;    secD2fireCntHost  = 0;
-	spikeCountAll 		= 0;    spikeCountD2Host    = 0;    spikeCountD1Host = 0;
+	spikeCountAll1secHost	= 0;    secD1fireCntHost    = 0;    secD2fireCntHost  = 0;
+	spikeCountAllHost 		= 0;    spikeCountD2Host    = 0;    spikeCountD1Host = 0;
 	nPoissonSpikes 		= 0;
 
 	numGrp   = 0;
@@ -2214,10 +2214,8 @@ void CpuSNN::buildNetwork() {
 
 	if (loadSimFID != NULL) {
 		// we the user specified loadSimulation the synaptic weights will be restored here...
-		#if READNETWORK_ADD_SYNAPSES_FROM_FILE
-			assert(loadSimulation_internal(true) >= 0); // read the plastic synapses first
-			assert(loadSimulation_internal(false) >= 0); // read the fixed synapses second
-		#endif
+		assert(loadSimulation_internal(true) >= 0); // read the plastic synapses first
+		assert(loadSimulation_internal(false) >= 0); // read the fixed synapses second
 	} else {
 		// build all the connections here...
 		// we run over the linked list two times...
@@ -2803,7 +2801,7 @@ void CpuSNN::findFiring() {
 						}
 					}
 				}
-				spikeCountAll1sec++;
+				spikeCountAll1secHost++;
 			}
 		}
 	}
@@ -2992,7 +2990,7 @@ void CpuSNN::generateSpikes() {
 			}
 */
 		addSpikeToTable (nid, g);
-		spikeCountAll1sec++;
+		spikeCountAll1secHost++;
 		nPoissonSpikes++;
 	}
 
@@ -3417,12 +3415,7 @@ unsigned int CpuSNN::poissonSpike(unsigned int currTime, float frate, int refrac
 }
 
 // \FIXME: this guy is a mess
-#if READNETWORK_ADD_SYNAPSES_FROM_FILE
-int CpuSNN::loadSimulation_internal(bool onlyPlastic)
-#else
-int CpuSNN::loadSimulation_internal()
-#endif
-{
+int CpuSNN::loadSimulation_internal(bool onlyPlastic) {
 	long file_position = ftell(loadSimFID); // so that we can restore the file position later...
 	int tmpInt;
 	float tmpFloat;
@@ -3507,24 +3500,22 @@ int CpuSNN::loadSimulation_internal()
 			if (!fread(&plastic,sizeof(uint8_t),1,loadSimFID)) return -11;
 			if (!fread(&connId,sizeof(short int),1,loadSimFID)) return -11;
 
-			#if READNETWORK_ADD_SYNAPSES_FROM_FILE
-				if ((plastic && onlyPlastic) || (!plastic && !onlyPlastic)) {
-					int gIDpost = grpIds[nIDpost];
-					int connProp = SET_FIXED_PLASTIC(plastic?SYN_PLASTIC:SYN_FIXED);
+			if ((plastic && onlyPlastic) || (!plastic && !onlyPlastic)) {
+				int gIDpost = grpIds[nIDpost];
+				int connProp = SET_FIXED_PLASTIC(plastic?SYN_PLASTIC:SYN_FIXED);
 
-					setConnection(gIDpre, gIDpost, nIDpre, nIDpost, weight, maxWeight, delay, connProp, connId);
-					grp_Info2[gIDpre].sumPostConn++;
-					grp_Info2[gIDpost].sumPreConn++;
+				setConnection(gIDpre, gIDpost, nIDpre, nIDpost, weight, maxWeight, delay, connProp, connId);
+				grp_Info2[gIDpre].sumPostConn++;
+				grp_Info2[gIDpost].sumPreConn++;
 
-					if (delay > grp_Info[gIDpre].MaxDelay)
-						grp_Info[gIDpre].MaxDelay = delay;
-				}
-			#endif
+				if (delay > grp_Info[gIDpre].MaxDelay)
+					grp_Info[gIDpre].MaxDelay = delay;
+			}
 		}
 	}
-	#if READNETWORK_ADD_SYNAPSES_FROM_FILE
-		fseek(loadSimFID,file_position,SEEK_SET);
-	#endif
+
+	fseek(loadSimFID,file_position,SEEK_SET);
+
 	return 0;
 }
 
@@ -3663,8 +3654,8 @@ void CpuSNN::resetFiringInformation() {
 	// Reset firing tables and time tables to default values..
 
 	// reset Various Times..
-	spikeCountAll	  = 0;
-	spikeCountAll1sec = 0;
+	spikeCountAllHost	  = 0;
+	spikeCountAll1secHost = 0;
 	spikeCountD2Host = 0;
 	spikeCountD1Host = 0;
 	secD1fireCntHost  = 0;
@@ -4419,12 +4410,12 @@ void CpuSNN::updateFiringTable() {
 
 	/* the code of weight update has been moved to CpuSNN::updateWeights() */
 
-	spikeCountAll	+= spikeCountAll1sec;
+	spikeCountAllHost	+= spikeCountAll1secHost;
 	spikeCountD2Host += (secD2fireCntHost-timeTableD2[maxDelay_]);
 	spikeCountD1Host += secD1fireCntHost;
 
 	secD1fireCntHost  = 0;
-	spikeCountAll1sec = 0;
+	spikeCountAll1secHost = 0;
 	secD2fireCntHost = timeTableD2[maxDelay_];
 
 	for (int i=0; i < numGrp; i++) {

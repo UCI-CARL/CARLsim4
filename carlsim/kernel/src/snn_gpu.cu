@@ -56,12 +56,6 @@
 #define LOG_WARP_SIZE		(5)
 #define WARP_SIZE			(1 << LOG_WARP_SIZE)
 
-#define MAX_NUM_BLOCKS 200
-#define LOOP_CNT		10
-
-#define GPU_LTP(t)   (gpuNetInfo.ALPHA_LTP*__expf(-(t)/gpuNetInfo.TAU_LTP))
-#define GPU_LTD(t)   (gpuNetInfo.ALPHA_LTD*__expf(-(t)/gpuNetInfo.TAU_LTD))
-
 ///////////////////////////////////////////////////////////////////
 // Some important ideas that explains the GPU execution are as follows:
 //  1. Each GPU block has a local firing table (called fireTable). The block of threads
@@ -101,7 +95,6 @@ __device__ unsigned int	secD1fireCntTest;
 __device__ __constant__ network_ptr_t		gpuPtrs;
 __device__ __constant__ network_info_t		gpuNetInfo;
 __device__ __constant__ group_info_t		gpuGrpInfo[MAX_GRP_PER_SNN];
-//	__device__ __constant__ noiseGenProperty_t*	gpu_noiseGenGroup;
 
 __device__ __constant__ float				constData[256];
 
@@ -116,71 +109,6 @@ texture <int,    1, cudaReadModeElementType>  timingTableD1_tex;
 texture <int,    1, cudaReadModeElementType>  groupIdInfo_tex; // groupIDInfo is allocated using cudaMalloc thus doesn't require an offset when using textures
 __device__  int timingTableD1_tex_offset;
 __device__  int timingTableD2_tex_offset;
-
-	
-__device__ int generatedErrors = 0;
-__device__ int	 tmp_val[MAX_NUM_BLOCKS][LOOP_CNT];
-__device__ int	 retErrCode=NO_KERNEL_ERRORS;
-__device__ float retErrVal[MAX_NUM_BLOCKS][20];
-
-#define INIT_CHECK(enable, src, val)		\
-  {						\
-    if(enable)					\
-      if(threadIdx.x==0) 			\
-	src = val;				\
-  }
-
-
-#define ERROR_CHECK_COND(enable, src, val, cond, retVal)	\
-  {								\
-    if(enable)							\
-      if (!(cond)) {						\
-	src = val;						\
-	return retVal;						\
-      }								\
-  }
-
-#define ERROR_CHECK_COND_NORETURN(enable, src, val, cond)	\
-  {								\
-    if(enable)							\
-      if (!(cond)) {						\
-	src = val;						\
-	return;							\
-      }								\
-  }
-
-#define ERROR_CHECK(enable, src, val)		\
-  {						\
-    if(enable)					\
-      if( blockIdx.x >= MAX_NUM_BLOCKS) {	\
-	src = val;				\
-	return;					\
-      }						\
-  }
-
-#define UPDATE_ERROR_CHECK4(src, val1, val2, val3, val4)	\
-  {								\
-    if (src && (threadIdx.x==0))	 {			\
-      retErrCode = src;						\
-      if(ENABLE_MORE_CHECK) {					\
-	retErrVal[blockIdx.x][0]=0xdead;			\
-	retErrVal[blockIdx.x][1]=4;				\
-	retErrVal[blockIdx.x][2]=val1;				\
-	retErrVal[blockIdx.x][3]=val2;				\
-	retErrVal[blockIdx.x][4]=val3;				\
-	retErrVal[blockIdx.x][5]=val4;				\
-      }								\
-    }								\
-  }
-		
-#define	MEASURE_LOADING			0
-
-#define MEASURE_GPU(pos,val)			\
-  {						\
-    if(MEASURE_LOADING)				\
-      if (threadIdx.x==0)			\
-	tmp_val[blockIdx.x][pos] += val;	\
-  }
 
 // example of the quick synaptic table
 // index     cnt
@@ -227,13 +155,7 @@ void initTableQuickSynId()
 
 __device__ inline bool isPoissonGroup(short int& grpId, unsigned int& nid)
 {
-	bool poiss = (gpuGrpInfo[grpId].Type & POISSON_NEURON);
-
-	if (poiss) {
-		ERROR_CHECK_COND(TESTING, retErrCode, ERROR_FIRING_2, (nid >= gpuNetInfo.numNReg), 0);
-	}
-
-	return poiss;
+	return (gpuGrpInfo[grpId].Type & POISSON_NEURON);
 }
 
 __device__ inline void setFiringBitSynapses(unsigned int& nid, int& syn_id)
@@ -264,8 +186,6 @@ __device__ inline bool getPoissonSpike_GPU (unsigned int& nid)
 	// Random number value is less than the poisson firing probability
 	// if poisson firing probability is say 1.0 then the random poisson ptr
 	// will always be less than 1.0 and hence it will continiously fire
-	ERROR_CHECK_COND(TESTING, retErrCode, POISSON_COUNT_ERROR_0, (nid >= gpuNetInfo.numNReg), 0);
-
 	return gpuPtrs.poissonRandPtr[nid-gpuNetInfo.numNReg]*(1000.0/RNG_rand48::MAX_RANGE) < gpuPtrs.poissonFireRate[nid-gpuNetInfo.numNReg];
 }
 
@@ -287,7 +207,7 @@ __global__ void kernel_timingTableUpdate(int t)
 /////////////////////////////////////////////////////////////////////////////////
 // Device Kernel Function:  Intialization of the GPU side of the simulator    ///
 // KERNEL: This kernel is called after initialization of various parameters   ///
-// so that we can reset all required parameters. 			      ///
+// so that we can reset all required parameters.                              ///
 /////////////////////////////////////////////////////////////////////////////////
 __global__ void kernel_init ()
 {
@@ -309,10 +229,6 @@ __global__ void kernel_init ()
 		int  	 lastId      = STATIC_LOAD_SIZE(threadLoad);
 		short int grpId   	 = STATIC_LOAD_GROUP(threadLoad);
 
-		// errors...
-		ERROR_CHECK_COND_NORETURN(TESTING, retErrCode, KERNEL_INIT_ERROR0, (grpId   < gpuNetInfo.numGrp));
-		ERROR_CHECK_COND_NORETURN(TESTING, retErrCode, KERNEL_INIT_ERROR1, (lastId  < gpuNetInfo.numN));
-
 		while ((threadIdx.x < lastId) && (nid < gpuNetInfo.numN)) {
 //				int totCnt = gpuPtrs.Npre[nid];			// total synaptic count
 //				int nCum   = gpuPtrs.cumulativePre[nid];	// total pre-synaptic count
@@ -320,14 +236,6 @@ __global__ void kernel_init ()
 		}
 	}
 }
-
-
-// following are initialized in CpuSNNinitGPUparams
-__device__ int 	 testFireCnt1;
-__device__ int 	 testFireCnt2;
-__device__ float testFireCntf1;
-__device__ float testFireCntf2;
-
 
 // Allocation of the group and its id..
 void CpuSNN::allocateGroupId() {
@@ -422,13 +330,13 @@ int CpuSNN::allocateStaticLoad(int bufSize) {
 	return bufferCnt;
 }
 
-///////////////////////////////////////////////
+//////////////////////////////////////////////////
 // 1. KERNELS used when a specific neuron fires //
-///////////////////////////////////////////////
+//////////////////////////////////////////////////
 
 /////////////////////////////////////////////////////////////////////////////////
-// Device local function:      	Update the STP Variables		  ///
-// update the STPU and STPX variable after firing			      ///
+// Device local function:      	Update the STP Variables                      ///
+// update the STPU and STPX variable after firing                             ///
 /////////////////////////////////////////////////////////////////////////////////
 
 // update the spike-dependent part of du/dt and dx/dt
@@ -444,20 +352,6 @@ __device__ void firingUpdateSTP (unsigned int& nid, int& simTime, short int&  gr
 
 	// dx/dt = (1-x)/tau_D - u^+ * x^- * \delta(t-t_{spk})
 	gpuPtrs.stpx[ind_plus] -= gpuPtrs.stpu[ind_plus]*gpuPtrs.stpx[ind_minus];
-}
-
-__device__ void setFiringBit(unsigned int& nid)
-{
-	gpuPtrs.neuronFiring[nid] |= 0x1;
-}
-
-__device__ void measureFiringLoad(volatile int& fireCnt, volatile int& fireCntD1)
-{
-	if (0==threadIdx.x) {
-		MEASURE_GPU(1, (fireCnt-fireCntD1));
-		MEASURE_GPU(2, fireCntD1);
-	}
-	__syncthreads();
 }
 
 __device__ void resetFiredNeuron(unsigned int& nid, short int & grpId, int& simTime)
@@ -508,9 +402,6 @@ __device__ void updateFiringCounter(volatile unsigned int& fireCnt, volatile uns
 	// into the firing table
 	cntD2 = atomicAdd(&secD2fireCnt, fireCntD2);
 	cntD1 = atomicAdd(&secD1fireCnt, fireCntD1);
-
-	MEASURE_GPU(1, fireCntD2);
-	MEASURE_GPU(2, fireCntD1);
 }
 
 // update the firing table...
@@ -545,8 +436,6 @@ __shared__ volatile int blkErrCode;
 
 	__syncthreads();
 
-	UPDATE_ERROR_CHECK4(blkErrCode,cntD2,fireCnt,cntD1,fireCntD1);
-
 	// if we overflow the spike buffer space that is available,
 	// then we return with an error here...
 	if (blkErrCode)
@@ -557,13 +446,6 @@ __shared__ volatile int blkErrCode;
 		// Read the firing id from the local table.....
 		unsigned int nid  = fireTablePtr[i];
 
-		//storeTestSpikedNeurons(gpuPtrs.testVar2, fireCnt, fireTablePtr, NULL);
-		ERROR_CHECK_COND (ENABLE_MORE_CHECK, blkErrCode, ERROR_FIRING_3, (nid < gpuNetInfo.numN), blkErrCode);
-
-		// set the LSB bit indicating the current neuron has
-		if(TESTING) {
-			setFiringBit(nid);
-		}
 		updateFiringTable(nid, fireGrpId[i], cntD2, cntD1);
 
 		if (gpuGrpInfo[fireGrpId[i]].WithSTP)
@@ -706,13 +588,6 @@ __device__ void gpu_updateLTP(	int*     		fireTablePtr,
 	__syncthreads();
 }
 
-__device__ inline int assertionFiringParam(short int& grpId, int& lastId)
-{
-	ERROR_CHECK_COND(TESTING, retErrCode, ERROR_FIRING_0, (grpId   < gpuNetInfo.numGrp), 0);
-	ERROR_CHECK_COND(TESTING, retErrCode, ERROR_FIRING_1, (lastId  < gpuNetInfo.numN), 0);
-	return 0;
-}
-
 __device__ inline bool getSpikeGenBit_GPU (unsigned int& nidPos)
 {
 	const int nidBitPos = nidPos%32;
@@ -758,9 +633,6 @@ __global__ 	void kernel_findFiring (int t, int sec, int simTime) {
 		fireCntD1  = 0; // initialize inh. cnt to 0
 	}
 
-	// Ignore this unless you are doing real debugging gpu code...
-	INIT_CHECK(ENABLE_MORE_CHECK, retErrCode, NO_KERNEL_ERRORS);
-
 	const int totBuffers=loadBufferCount;
 
 	__syncthreads();
@@ -775,8 +647,6 @@ __global__ 	void kernel_findFiring (int t, int sec, int simTime) {
 		short int grpId   = STATIC_LOAD_GROUP(threadLoad);
 		bool needToWrite = false;	// used by all neuron to indicate firing condition
 		int  fireId      = 0;
-
-		assertionFiringParam(grpId, lastId);
 
 		// threadId is valid and lies within the lastId.....
 		if ((threadIdx.x < lastId) && (nid < gpuNetInfo.numN)) {
@@ -849,7 +719,6 @@ __global__ 	void kernel_findFiring (int t, int sec, int simTime) {
 					fireCntD1  = 0;
 					fireCnt   = 0;
 					fireCntTest = 0;
-					MEASURE_GPU(0, 1);
 				}
 			}
 		}
@@ -864,7 +733,6 @@ __global__ 	void kernel_findFiring (int t, int sec, int simTime) {
 
 		if (gpuNetInfo.sim_with_stdp)
 			gpu_updateLTP(fireTable, fireGrpId, fireCnt, simTime);
-		MEASURE_GPU(0, 1);
 	}
 }
 
@@ -872,13 +740,6 @@ __global__ 	void kernel_findFiring (int t, int sec, int simTime) {
 
 #define LOG_CURRENT_GROUP 5
 #define CURRENT_GROUP	  (1 << LOG_CURRENT_GROUP)
-
-__device__ inline int assertConductanceStates()
-{
-	// error checking done here
-	ERROR_CHECK_COND(ENABLE_MORE_CHECK, retErrCode, GLOBAL_CONDUCTANCE_ERROR_0, (blockIdx.x < MAX_NUM_BLOCKS), 0);
-	return 0;
-}
 
 // Based on the bitvector used for indicating the presence of spike
 // the global conductance values are updated..
@@ -903,9 +764,6 @@ __global__ void kernel_globalConductanceUpdate (int t, int sec, int simTime) {
 		unsigned int  post_nid        = (STATIC_LOAD_START(threadLoad) + threadIdx.x);
 		int  lastId      = STATIC_LOAD_SIZE(threadLoad);
 
-		// do some error checking...
-		assertConductanceStates();
-
 		if ((threadIdx.x < lastId) && (IS_REGULAR_NEURON(post_nid, gpuNetInfo.numNReg, gpuNetInfo.numNPois))) {
 			// load the initial current due to noise inputs for neuron 'post_nid'
 			// initial values of the conductances for neuron 'post_nid'
@@ -926,8 +784,6 @@ __global__ void kernel_globalConductanceUpdate (int t, int sec, int simTime) {
 				// actual position of the input current....
 				// int* tmp_I_set_p = ((int*)((char*)gpuPtrs.I_set + j * gpuNetInfo.I_setPitch) + post_nid);
 				uint32_t* tmp_I_set_p  = getFiringBitGroupPtr(post_nid, j);
-
-				ERROR_CHECK_COND_NORETURN(ENABLE_MORE_CHECK, retErrCode, GLOBAL_CONDUCTANCE_ERROR_1, (tmp_I_set_p!=0));
 
 				uint32_t  tmp_I_set     = *tmp_I_set_p;
 
@@ -1073,13 +929,6 @@ __device__ void updateNeuronState(unsigned int& nid, int& grpId) {
 	gpuPtrs.recovery[nid] = u;
 }
 
-__device__ inline int assertGlobalStates()
-{
-	// error checking done here
-	ERROR_CHECK_COND(ENABLE_MORE_CHECK, retErrCode, GLOBAL_STATE_ERROR_0, (blockIdx.x < MAX_NUM_BLOCKS), 0);
-	return 0;
-}
-
 // homeostasis in GPU_MODE
 __device__ inline void updateHomeoStaticState(unsigned int& pos, int& grpId)
 {
@@ -1106,9 +955,6 @@ __global__ void kernel_globalStateUpdate (int t, int sec, int simTime)
 		unsigned int nid = (STATIC_LOAD_START(threadLoad) + threadIdx.x);
 		int  lastId = STATIC_LOAD_SIZE(threadLoad);
 		int  grpId = STATIC_LOAD_GROUP(threadLoad);
-
-		// do some error checking...
-		assertGlobalStates();
 
 		if ((threadIdx.x < lastId) && (nid < gpuNetInfo.numN)) {
 
@@ -1142,18 +988,6 @@ __global__ void kernel_globalGroupStateUpdate (int t, int sec, int simTime)
 }
 
 //******************************** UPDATE STP STATE  EVERY TIME STEP **********************************************
-
-///////////////////////////////////////////////////////////
-// simple assertions for STP values..
-///////////////////////////////////////////////////////////
-__device__ inline int assertSTPConditions()
-{
-	// error checking done here
-	ERROR_CHECK_COND(ENABLE_MORE_CHECK, retErrCode, STP_ERROR, (blockDim.x < MAX_NUM_BLOCKS), 0);
-	return 0;
-}
-
-
 ///////////////////////////////////////////////////////////
 /// 	Global Kernel function: gpu_STPUpdate		///
 /// 	This function is called every time step			///
@@ -1191,9 +1025,6 @@ __global__ void kernel_STPUpdateAndDecayConductances (int t, int sec, int simTim
 				gpuPtrs.gGABAb[nid]  *=  gpuNetInfo.dGABAb;
 			}
 		}
-
-    // check various STP asserts here....
-		assertSTPConditions();
 
 		if (gpuGrpInfo[grpId].WithSTP && (threadIdx.x < lastId) && (nid < gpuNetInfo.numN)) {
 			int ind_plus  = getSTPBufPos(nid, simTime);
@@ -1454,12 +1285,6 @@ __device__ int generatePostSynapticSpike(int& simTime, int& firingId, int& myDel
 	if(post_grpId == -1)
 		return CURRENT_UPDATE_ERROR4;
 
-	if(ENABLE_MORE_CHECK) {
-		if (nid >= gpuNetInfo.numN)       	 errCode = (CURRENT_UPDATE_ERROR1|unitDelay);
-		if (syn_id >= gpuPtrs.Npre[nid]) errCode = (CURRENT_UPDATE_ERROR2|unitDelay);
-		if (errCode) return errCode;
-	}
-
 	// Got one spike from dopaminergic neuron, increase dopamine concentration in the target area
 	if (gpuGrpInfo[pre_grpId].Type & TARGET_DA) {
 #if defined(__CUDA3__) || defined(__NO_ATOMIC_ADD__)
@@ -1519,22 +1344,6 @@ __device__ int generatePostSynapticSpike(int& simTime, int& firingId, int& myDel
 	return errCode;
 }
 
-__device__ void CHECK_DELAY_ERROR (int& t_pos, volatile int& sh_blkErrCode) {
-	if(ENABLE_MORE_CHECK) {
-		if (!((t_pos+(int)gpuNetInfo.maxDelay) >= 0)) {
-			int i=2;
-			sh_blkErrCode = CURRENT_UPDATE_ERROR3;
-			retErrVal[blockIdx.x][0] = 0xdead;
-			/* retErrVal[blockIdx.x][i++] = simTimeMs;
-			retErrVal[blockIdx.x][i++] = t_pos;
-			retErrVal[blockIdx.x][i++] = fPos;
-			retErrVal[blockIdx.x][i++] = tex1Dfetch(timingTableD2_tex, t_pos+gpuNetInfo.maxDelay-1 + timingTableD2_tex_offset);
-			retErrVal[blockIdx.x][i++] = tex1Dfetch(timingTableD2_tex, t_pos+gpuNetInfo.maxDelay + timingTableD2_tex_offset);*/
-			retErrVal[blockIdx.x][1]   = i;
-		}
-	}
-}
-
 #define NUM_THREADS 			128
 #define EXCIT_READ_CHUNK_SZ		(NUM_THREADS>>1)
 
@@ -1555,11 +1364,6 @@ __global__ void kernel_doCurrentUpdateD2(int simTimeMs, int simTimeSec, int simT
 	int updateCnt	  	= 0;
 
 	__shared__ volatile int sh_blkErrCode;
-
-	if(ENABLE_MORE_CHECK) {			
-		if(threadIdx.x<=0) 
-			sh_blkErrCode = 0;		
-	}
 
 	// this variable is used to record the
 	// number of updates done by different blocks
@@ -1596,7 +1400,6 @@ __global__ void kernel_doCurrentUpdateD2(int simTimeMs, int simTimeSec, int simT
 				while ( !((fPos >= tex1Dfetch(timingTableD2_tex, t_pos+gpuNetInfo.maxDelay+timingTableD2_tex_offset)) 
 					&& (fPos <  tex1Dfetch(timingTableD2_tex, t_pos+gpuNetInfo.maxDelay+1+timingTableD2_tex_offset)))) {
 					t_pos = t_pos - 1;
-					CHECK_DELAY_ERROR(t_pos, sh_blkErrCode);
 				}
 
 				// find the time difference between firing of the neuron and the current time
@@ -1617,9 +1420,6 @@ __global__ void kernel_doCurrentUpdateD2(int simTimeMs, int simTimeSec, int simT
 		}
 
 		__syncthreads();
-
-		if(ENABLE_MORE_CHECK)
-			if (sh_blkErrCode) break;
 
 		// if cnt is zero than no more neurons need to generate
 		// post-synaptic firing, then we break the loop.
@@ -1646,10 +1446,6 @@ __global__ void kernel_doCurrentUpdateD2(int simTimeMs, int simTimeSec, int simT
 						sh_neuronOffsetTable[pos], 		// offset
 						false);							// false for unitDelay type..
 
-				if(ENABLE_MORE_CHECK) {
-					if (sh_blkErrCode) break;
-				}
-
 				delId += WARP_SIZE;
 			}
 		} //(for all excitory neurons in table)
@@ -1659,23 +1455,12 @@ __global__ void kernel_doCurrentUpdateD2(int simTimeMs, int simTimeSec, int simT
 		if(threadIdx.x==0)  
 			sh_NeuronCnt = 0;
 
-		if(ENABLE_MORE_CHECK) 
-			if(sh_blkErrCode) break;
-
 		k = k - (gridDim.x*EXCIT_READ_CHUNK_SZ);
 
 		__syncthreads();
 	}
 
 	__syncthreads();
-
-	MEASURE_GPU(3, updateCnt);
-
-	if(ENABLE_MORE_CHECK)	
-		if (sh_blkErrCode) {
-			retErrCode = sh_blkErrCode;
-			return;
-		}	
 }
 
 //  KERNEL DESCRIPTION:-
@@ -1698,11 +1483,6 @@ __global__ void kernel_doCurrentUpdateD1(int simTimeMs, int simTimeSec, int simT
 	const int threadIdSwarp	= threadIdx.x%WARP_SIZE;  // thread id within swarp
 
 	__shared__ volatile int sh_blkErrCode;
-
-	if(ENABLE_MORE_CHECK) {			
-		if(threadIdx.x<=0) 
-			sh_blkErrCode = 0;		
-	}
 
 	// load the time table for neuron firing
 	int computedNeurons = 0;
@@ -1764,86 +1544,14 @@ __global__ void kernel_doCurrentUpdateD1(int simTimeMs, int simTimeSec, int simT
 						sh_neuronOffsetTable[swarpId], 		// offset
 						true);								// true for unit delay connection..
 
-				if(ENABLE_MORE_CHECK) {
-					if (sh_blkErrCode) break;
-				}
-
 				delId += WARP_SIZE;
 			}
 		}
 
 		__syncthreads();
 
-		if(ENABLE_MORE_CHECK)
-			if(sh_blkErrCode)  break;		
-
 		kPos = kPos + (gridDim.x*numSwarps);
 	}
-
-	MEASURE_GPU(4, computedNeurons);
-
-	if(ENABLE_MORE_CHECK) {
-	   if (sh_blkErrCode) {
-		     retErrCode = sh_blkErrCode;
-		     return;
-	   }
-	}
-}
-
-float errVal[MAX_NUM_BLOCKS][20];
-/**********************************************************************************************/
-// helper functions..
-// check what is the errors...that has happened during
-// the previous iteration. This part is useful in debug or test mode
-// the simulator kernel sets appropriate errors  and returns some important values in the 
-// array "retErrVal".
-/**********************************************************************************************/
-int CpuSNN::checkErrors(std::string calledKernel, int numBlocks)
-{
-	int errCode = NO_KERNEL_ERRORS;
-	#if(!ENABLE_MORE_CHECK)
-	return errCode;
-	#else
-	void* devPtr;
-	int errCnt  = 0;
-
-	cudaThreadSynchronize();
-	cudaGetSymbolAddress(&devPtr, retErrCode);
-	CUDA_CHECK_ERRORS( cudaMemcpy(&errCode, devPtr, sizeof(int), cudaMemcpyDeviceToHost));
-
-	cudaGetSymbolAddress(&devPtr, generatedErrors);
-	CUDA_CHECK_ERRORS( cudaMemcpy(&errCnt, devPtr, sizeof(int), cudaMemcpyDeviceToHost));
-
-	if (errCode != NO_KERNEL_ERRORS) {
-
-		KERNEL_ERROR("(Error in Kernel <<< %s >>> , RETURN ERROR CODE = %x, total Errors = %d", calledKernel.c_str(), errCode, errCnt);
-
-		cudaGetSymbolAddress(&devPtr, CUDA_CONVERT_SYMBOL(retErrVal));
-		CUDA_CHECK_ERRORS( cudaMemcpy(&errVal, devPtr, sizeof(errVal), cudaMemcpyDeviceToHost));
-
-		for(int j=0; j < errCnt; j++) {
-			if (1) /*errVal[j][0]==0xdead) */ {
-				KERNEL_ERROR("Block: %d, Err code = %x, Total err val is %f", j, (int)errVal[j][0]	, errVal[j][1]);
-				for(int i=2; i < (errVal[j][1]); i++) {
-					KERNEL_ERROR("ErrVal[%d][%d] = %f", j, i, errVal[j][i]);
-					getchar();
-				}
-			}
-		}
-
-		errCode = NO_KERNEL_ERRORS;
-		cudaGetSymbolAddress(&devPtr, retErrCode);
-		CUDA_CHECK_ERRORS( cudaMemcpy(devPtr, &errCode, sizeof(int), cudaMemcpyHostToDevice));
-
-		cudaGetSymbolAddress(&devPtr, generatedErrors);
-		CUDA_CHECK_ERRORS( cudaMemcpy(devPtr, &errCnt, sizeof(int), cudaMemcpyHostToDevice));
-
-	}
-
-	fflush(fpErr_);
-	fflush(fpOut_);
-	return errCode;
-#endif
 }
 
 void CpuSNN::copyPostConnectionInfo(network_ptr_t* dest, int allocateMem) {
@@ -2386,11 +2094,7 @@ void CpuSNN::copyWeightState (network_ptr_t* dest, network_ptr_t* src,  cudaMemc
 			cumPos_syn 	= dest->cumulativePre[id];
 		}
 
-		// \FIXME occasionally, the next assert fails... thread-safe?
-		if (cumPos_syn>=preSynCnt)
-			fprintf(stderr,"cumPos_syn=%d, preSynCnt=%d\n",cumPos_syn,preSynCnt);
 		assert (cumPos_syn < preSynCnt);
-
 		assert (length_wt <= preSynCnt);
 
 	    //MDR FIXME, allocateMem option is VERY wrong
@@ -2531,46 +2235,12 @@ void CpuSNN::spikeGeneratorUpdate_GPU() {
 
 void CpuSNN::findFiring_GPU(int gridSize, int blkSize) {
 	checkAndSetGPUDevice();
-
-	int errCode;
 		
 	assert(cpu_gpuNetPtrs.allocated);
 
 	kernel_findFiring <<<gridSize,blkSize >>> (simTimeMs, simTimeSec, simTime);
 	CUDA_GET_LAST_ERROR("findFiring kernel failed\n");
-	errCode = checkErrors("kernel_findFiring", gridSize);
-	assert(errCode == NO_KERNEL_ERRORS);
-
-	if(MEASURE_LOADING)
-		printGpuLoadBalance(false,MAX_BLOCKS);
-
 	return;
-}
-
-void CpuSNN::printGpuLoadBalance(bool init, int numBlocks) {
-	checkAndSetGPUDevice();
-
-	void* devPtr;
-	static int	 cpu_tmp_val[MAX_BLOCKS][LOOP_CNT];
-	cudaGetSymbolAddress(&devPtr, tmp_val);
-
-	if(init) {
-		// reset the load balance variable..
-		CUDA_CHECK_ERRORS( cudaMemset(devPtr, 0, sizeof(tmp_val)));
-		return;
-	}
-
-	CUDA_CHECK_ERRORS( cudaMemcpy(&cpu_tmp_val, devPtr, sizeof(cpu_tmp_val), cudaMemcpyDeviceToHost));
-	CUDA_CHECK_ERRORS( cudaMemset(devPtr, 0, sizeof(tmp_val)));
-
-	KERNEL_DEBUG("GPU Load Balancing Information");
-
-	for (int i=0; i < numBlocks; i++) {
-		if (cpu_tmp_val[i][0] != 0)
-			KERNEL_DEBUG("[%d] Fired Neuron = %d \n", i, cpu_tmp_val[i][1]+cpu_tmp_val[i][2]);
-	}
-
-	KERNEL_DEBUG("\n");
 }
 
 // get spikes from GPU SpikeCounter
@@ -2608,8 +2278,6 @@ void CpuSNN::updateTimingTable_GPU() {
 	int gridSize = 64;
 	kernel_timingTableUpdate <<<gridSize,blkSize >>> (simTimeMs);
 	CUDA_GET_LAST_ERROR("timing Table update kernel failed\n");
-	int errCode = checkErrors("kernel_timingTableUpdate", gridSize);
-	assert(errCode == NO_KERNEL_ERRORS);
 
 	return;
 }
@@ -2621,135 +2289,25 @@ void CpuSNN::doCurrentUpdate_GPU() {
 
 	int blkSize  = 128;
 	int gridSize = 64;
-	int errCode;
 
 	if(maxDelay_ > 1) {
 		kernel_doCurrentUpdateD2 <<<gridSize, blkSize>>>(simTimeMs,simTimeSec,simTime);
 		CUDA_GET_LAST_ERROR_MACRO("Kernel execution failed");
-		errCode = checkErrors("kernel_updateCurrentE", gridSize);
-		assert(errCode == NO_KERNEL_ERRORS);
 	}
 
 
 	kernel_doCurrentUpdateD1 <<<gridSize, blkSize>>>(simTimeMs,simTimeSec,simTime);
 	CUDA_GET_LAST_ERROR_MACRO("Kernel execution failed");
-	errCode = checkErrors("kernel_updateCurrentI", gridSize);
-	assert(errCode == NO_KERNEL_ERRORS);
 }
 
 void CpuSNN::doSTPUpdateAndDecayCond_GPU(int gridSize, int blkSize) {
 	checkAndSetGPUDevice();
-
-	int errCode;
 		
 	assert(cpu_gpuNetPtrs.allocated);
 
 	if (sim_with_stp || sim_with_conductances) {
 		kernel_STPUpdateAndDecayConductances <<<gridSize, blkSize>>>(simTimeMs, simTimeSec, simTime);
 		CUDA_GET_LAST_ERROR("STP update\n");
-		errCode = checkErrors("gpu_STPUpdate", gridSize);
-		assert(errCode == NO_KERNEL_ERRORS);
-	}
-}
-
-
-__global__ void kernel_check_GPU_init2 (int simTime)
-{
-//	  	int gid=threadIdx.x + blockDim.x*blockIdx.x;
-  	int nid[]   = {0,1,2,3};
-
-  	for(int k=0; k < 4; k++) {
-  		int i=1;
-		for(int t=0; t < 5; t++) {
-			retErrVal[k][i++]= gpuPtrs.stpu[nid[k]]*gpuPtrs.stpx[nid[k]];
-		}
-	  	retErrVal[k][0] = i;
-  	}
-}
-
-__global__ void kernel_check_GPU_init2_1 (int simTime)
-{
-//  	int gid=threadIdx.x + blockDim.x*blockIdx.x;
-  	int nid=0;
-	 	for(int k=0; k < gpuNetInfo.numN; k++) {
-		if ( gpuPtrs.neuronFiring[k]) {
-			int i=1;
-			retErrVal[nid][i++]= k;
-			for(int t=0; t < 5; t++) {
-				float stp = gpuPtrs.stpu[k]*gpuPtrs.stpx[k];
-				retErrVal[nid][i++]= stp;
-			}
-			//gpuPtrs.neuronFiring[k]=0;
-		  	retErrVal[nid][0] = i;
-		  	nid++;
-		  	if(nid==(MAX_NUM_BLOCKS-1))
-		  		break;
-		}
-  	}
-}
-///////////////////////////////////////////////////////////////////////////
-/// Device local function:      check_GPU_initialization		///
-//  In this kernel we return some important parameters, data values of
-//  the initialized SNN network using the retErrVal array.
-//  This is to just to ensure that the initialization has been
-//  done correctly and we can concentrate on the actual kernel code
-//  for bugs rather than errors due to incorrect initialization.
-///////////////////////////////////////////////////////////////////////////
-__global__ void kernel_check_GPU_init ()
-{
-       	int i=1;
-
-//    		int gid=threadIdx.x + blockDim.x*blockIdx.x;
-
-	if(threadIdx.x==0 && blockIdx.x==0) {
-    	//float hstep = gpuNetInfo.maxWeight/(HISTOGRAM_SIZE);
-    	retErrVal[0][i++]= gpuNetInfo.numN;
-    	retErrVal[0][i++]= gpuNetInfo.numPostSynapses;
-    	retErrVal[0][i++]= gpuNetInfo.numNReg;
-    	retErrVal[0][i++]= gpuNetInfo.numNExcReg;
-    	retErrVal[0][i++]= gpuNetInfo.numNInhReg;
-    	retErrVal[0][i++]= gpuPtrs.wt[0];
-    	retErrVal[0][i++]= gpuNetInfo.numNPois;
-    	retErrVal[0][i++]= gpuPtrs.poissonRandPtr[0];
-    	retErrVal[0][i++]= gpuPtrs.poissonRandPtr[1];
-    	retErrVal[0][i++]= gpuNetInfo.maxSpikesD1;
-    	retErrVal[0][i++]= gpuNetInfo.maxSpikesD2;
-    	retErrVal[0][i++]= gpuNetInfo.sim_with_fixedwts;
-    	retErrVal[0][i++]= gpuNetInfo.sim_with_conductances;
-    	retErrVal[0][i++]= gpuNetInfo.sim_with_stdp;
-    	retErrVal[0][i++]= gpuNetInfo.sim_with_stp;
-    	retErrVal[0][i++]= gpuGrpInfo[0].SpikeMonitorId;
-    	retErrVal[0][i++]= gpuGrpInfo[1].SpikeMonitorId;
-    	retErrVal[0][i++]= gpuGrpInfo[0].WithSTP;
-    	retErrVal[0][i++]= gpuGrpInfo[1].WithSTP;
-		retErrVal[0][i++]= gpuGrpInfo[1].avgTimeScale;
-    	retErrVal[0][i++]= 123456789.0;
-    	retErrVal[0][0]  = i;
-    	i = 1;
-    	retErrVal[1][i++]= tex1Dfetch(timingTableD2_tex, 0+timingTableD2_tex_offset);
-    	retErrVal[1][i++]= tex1Dfetch(timingTableD2_tex, 1+timingTableD2_tex_offset);
-    	retErrVal[1][i++]= loadBufferCount;
-    	retErrVal[1][i++]= tex1Dfetch(groupIdInfo_tex, 0);
-    	retErrVal[1][i++]= tex1Dfetch(groupIdInfo_tex, 1);
-    	retErrVal[1][i++]= tex1Dfetch(groupIdInfo_tex, 2);
-    	retErrVal[1][i++]= gpuGrpInfo[0].WithSTDP;
-    	retErrVal[1][i++]= gpuGrpInfo[1].WithSTDP;
-    	retErrVal[1][i++]= gpuGrpInfo[2].WithSTDP;
-    	retErrVal[1][i++]= STATIC_LOAD_START(gpuPtrs.neuronAllocation[0]);
-    	retErrVal[1][i++]= STATIC_LOAD_GROUP(gpuPtrs.neuronAllocation[0]);
-    	retErrVal[1][i++]= STATIC_LOAD_SIZE(gpuPtrs.neuronAllocation[0]);
-    	retErrVal[1][i++]= gpuNetInfo.STP_Pitch;
-    	retErrVal[1][i++]= gpuGrpInfo[2].FixedInputWts;
-		retErrVal[1][i++]= gpuPtrs.baseFiringInv[gpuGrpInfo[1].StartN];
-		retErrVal[1][i++]= gpuPtrs.baseFiringInv[gpuGrpInfo[0].StartN];
-    	retErrVal[1][i++]= gpuGrpInfo[0].STP_U;
-    	//retErrVal[1][i++]= gpuGrpInfo[0].STP_tD;
-    	//retErrVal[1][i++]= gpuGrpInfo[0].STP_tF;
-    	retErrVal[1][i++]= gpuPtrs.stpu[0];
-    	retErrVal[1][i++]= gpuPtrs.stpx[0];
-    	retErrVal[1][i++]= 123456789.0;
-    	retErrVal[1][0]  = i;
-    	return;
 	}
 }
 
@@ -2760,77 +2318,6 @@ void CpuSNN::initGPU(int gridSize, int blkSize) {
 
 	kernel_init <<< gridSize, blkSize >>> ();
 	CUDA_GET_LAST_ERROR("initGPU kernel failed\n");
-	int errCode = checkErrors("kernel_init", gridSize);
-	assert(errCode == NO_KERNEL_ERRORS);
-
-	printGpuLoadBalance(true,false);
-
-	checkInitialization();
-
-	checkInitialization2();
-}
-
-void CpuSNN::checkInitialization(char* testString) {
-	checkAndSetGPUDevice();
-
-	KERNEL_DEBUG("gpu_checkInitialization()");
-	void *devPtr;
-
-	assert(cpu_gpuNetPtrs.allocated);
-
-	memset(errVal, 0, sizeof(errVal));
-	cudaGetSymbolAddress(&devPtr, retErrVal);
-	CUDA_CHECK_ERRORS(cudaMemcpy(devPtr, &errVal, sizeof(errVal), cudaMemcpyHostToDevice));
-
-	int testTable[10];
-	// we write some number in this table..
-	// write that to the GPU memory. Read it back
-	// using the texture access and check if everything is correctly initialized
-	testTable[0] = 11; testTable[1] = 12; testTable[2] = 13;
-	testTable[3] = 14; testTable[4] = 15; testTable[5] = 16;
-	CUDA_CHECK_ERRORS(cudaMemcpyToSymbol(timingTableD2, testTable, sizeof(int) * (10), 0, cudaMemcpyHostToDevice));
-//MDR this check fails because it assumes too much about the network...
-//		kernel_check_GPU_init <<< 1, 128 >>> ();
-	CUDA_GET_LAST_ERROR("check GPU failed\n");
-
-  // read back the intialization and ensure that they are okay
-  KERNEL_DEBUG("%s Checking initialization of GPU...", testString?testString:"");
-  CUDA_CHECK_ERRORS( cudaMemcpy(&errVal, devPtr, sizeof(errVal), cudaMemcpyDeviceToHost));
-  for(int i=0; i < 4; i++) {
-    for(int j=0; j < (int)errVal[i][0]; j++) {
-      KERNEL_DEBUG("val[%3d][%3d] = %f", i, j, errVal[i][j]);
-    }
-    KERNEL_DEBUG("******************");
-  }
-  KERNEL_DEBUG("Checking done...");
-  CUDA_CHECK_ERRORS(cudaMemcpyToSymbol(timingTableD2, timeTableD2, sizeof(int)*(10), 0, cudaMemcpyHostToDevice));
-}
-
-void CpuSNN::checkInitialization2(char* testString) {
-	checkAndSetGPUDevice();
-
-	KERNEL_DEBUG("CheckInitialization2: Time = %d", simTime);
-	void *devPtr;
-	memset(errVal, 0, sizeof(errVal));
-	cudaGetSymbolAddress(&devPtr, retErrVal);
-	CUDA_CHECK_ERRORS( cudaMemcpy(devPtr, &errVal, sizeof(errVal), cudaMemcpyHostToDevice));
-
-	if (sim_with_stp) {
-		kernel_check_GPU_init2 <<< 1, 128>>> (simTime);
-		CUDA_GET_LAST_ERROR("kernel_check_GPU_init2_1 failed\n");
-		int errCode = checkErrors("kernel_init2_1", 1);
-		assert(errCode == NO_KERNEL_ERRORS);
-	}
-
-	// read back the intialization and ensure that they are okay
-	KERNEL_DEBUG("%s Checking Initialization of STP Variable Correctly in GPU...", (testString?testString:""));
-	CUDA_CHECK_ERRORS( cudaMemcpy(&errVal, devPtr, sizeof(errVal), cudaMemcpyDeviceToHost));
-	for(int i=0; i < 4; i++) {
-		for(int j=0; j < (int)errVal[i][0]; j++) {
-			KERNEL_DEBUG("val[%3d][%3d] = %f", i, j, errVal[i][j]);
-			}
-		KERNEL_DEBUG("******************");
-	}
 }
 
 void CpuSNN::printCurrentInfo(FILE* fp) {
@@ -2929,49 +2416,6 @@ void CpuSNN::deleteObjects_GPU() {
 	CUDA_DELETE_TIMER(timer);
 }
 
-
-void CpuSNN::testSpikeSenderReceiver(FILE* fpLog, int simTime) {
-	checkAndSetGPUDevice();
-
-	KERNEL_WARN("Calling testSpikeSenderReceiver with fpLog is deprecated");
-	if(0) {
-		int EnumFires = 0; int InumFires = 0;
-		CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &EnumFires, secD2fireCnt, sizeof(int), 0, cudaMemcpyDeviceToHost));
-		CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &InumFires, secD1fireCnt, sizeof(int), 0, cudaMemcpyDeviceToHost));
-		KERNEL_DEBUG(" ***********( t = %d) FIRE COUNTS ************** %d %d", simTime, EnumFires, InumFires);
-		int   numFires;
-		float fireCnt;
-		CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &numFires,  testFireCnt1, sizeof(int), 0, cudaMemcpyDeviceToHost));
-		KERNEL_DEBUG("testFireCnt1 = %d", numFires);
-		CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &numFires,  testFireCnt2, sizeof(int), 0, cudaMemcpyDeviceToHost));
-		KERNEL_DEBUG("testFireCnt2 = %d", numFires);
-		CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &fireCnt,  testFireCntf1, sizeof(int), 0, cudaMemcpyDeviceToHost));
-		KERNEL_DEBUG("testFireCntFloat1 = %f", fireCnt);
-		CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &fireCnt,  testFireCntf2, sizeof(int), 0, cudaMemcpyDeviceToHost));
-		KERNEL_DEBUG("testFireCntFloat2 = %f", fireCnt);
-		KERNEL_DEBUG(" *************************");
-
-		if (sim_with_homeostasis) {
-			// MDR originally had this.
-			float* baseFiringInv = new float[numN];
-			for (int i=0;i<numN;i++) baseFiringInv[i] = 1/baseFiring[i];
-				CUDA_CHECK_ERRORS( cudaMemcpy( baseFiringInv, cpu_gpuNetPtrs.baseFiringInv, sizeof(float)*numN, cudaMemcpyDeviceToHost));
-			delete(baseFiringInv);
-			CUDA_CHECK_ERRORS( cudaMemcpy( avgFiring, cpu_gpuNetPtrs.avgFiring, sizeof(float)*numN, cudaMemcpyDeviceToHost));
-			for(int g=0; g < numGrp; g++) {
-				KERNEL_DEBUG("Homeostasis values");
-				if (!grp_Info[g].FixedInputWts) {
-					KERNEL_DEBUG("Group %s:\t", grp_Info2[g].Name.c_str());
-					for(int j=grp_Info[g].StartN; j <= grp_Info[g].EndN; j++) {
-						KERNEL_DEBUG(" %d: Home =%f (Base =%f)  ", j, avgFiring[j], 1/baseFiringInv[j]);
-						KERNEL_DEBUG(" %d: Home =%f (Base =%f)  ", j, avgFiring[j], 1/baseFiringInv[j]);
-					}
-				}
-			}
-		}
-	}
-}
-
 void CpuSNN::globalStateUpdate_GPU() {
 	checkAndSetGPUDevice();
 
@@ -2984,15 +2428,11 @@ void CpuSNN::globalStateUpdate_GPU() {
 	// update all neuron state (i.e., voltage and recovery)
 	kernel_globalStateUpdate <<<gridSize, blkSize>>> (simTimeMs, simTimeSec, simTime);
 	CUDA_GET_LAST_ERROR_MACRO("Kernel execution failed");
-	int errCode = checkErrors("kernel_globalStateUpdate", gridSize);
-	assert(errCode == NO_KERNEL_ERRORS);
 
 	// update all group state (i.e., concentration of neuronmodulators)
 	// currently support 4 x 128 groups
 	kernel_globalGroupStateUpdate <<<4, blkSize>>> (simTimeMs, simTimeSec, simTime);
 	CUDA_GET_LAST_ERROR_MACRO("Kernel execution failed");
-	errCode = checkErrors("kernel_globalGroupStateUpdate", 4);
-	assert(errCode == NO_KERNEL_ERRORS);
 }
 
 void CpuSNN::assignPoissonFiringRate_GPU() {
@@ -3084,8 +2524,8 @@ void CpuSNN::showStatus_GPU() {
 	int gpu_secD1fireCnt, gpu_secD2fireCnt;
 	CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &gpu_secD2fireCnt, secD2fireCnt, sizeof(int), 0, cudaMemcpyDeviceToHost));
 	CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &gpu_secD1fireCnt, secD1fireCnt, sizeof(int), 0, cudaMemcpyDeviceToHost));
-	spikeCountAll1sec = gpu_secD1fireCnt + gpu_secD2fireCnt;
-	secD1fireCnt  = gpu_secD1fireCnt;
+	spikeCountAll1secHost = gpu_secD1fireCnt + gpu_secD2fireCnt;
+	secD1fireCntHost  = gpu_secD1fireCnt;
 	//printWeight(-1);
 }
 
@@ -3158,8 +2598,8 @@ void CpuSNN::copyFiringInfo_GPU()
 	unsigned int gpu_secD1fireCnt, gpu_secD2fireCnt;
 	CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &gpu_secD2fireCnt, secD2fireCnt, sizeof(int), 0, cudaMemcpyDeviceToHost));
 	CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &gpu_secD1fireCnt, secD1fireCnt, sizeof(int), 0, cudaMemcpyDeviceToHost));
-	spikeCountAll1sec = gpu_secD1fireCnt + gpu_secD2fireCnt;
-	secD1fireCnt  = gpu_secD1fireCnt;
+	spikeCountAll1secHost = gpu_secD1fireCnt + gpu_secD2fireCnt;
+	secD1fireCntHost  = gpu_secD1fireCnt;
 	assert(gpu_secD1fireCnt<=maxSpikesD1);
 	assert(gpu_secD2fireCnt<=maxSpikesD2);
 	CUDA_CHECK_ERRORS( cudaMemcpy(firingTableD2, cpu_gpuNetPtrs.firingTableD2, sizeof(int)*gpu_secD2fireCnt, cudaMemcpyDeviceToHost));
@@ -3185,14 +2625,12 @@ void CpuSNN::allocateNetworkParameters() {
 	net_Info.numNExcPois = numNExcPois;		
 	net_Info.numNInhPois = numNInhPois;
 	assert(numNPois == (numNExcPois + numNInhPois));
-	//net_Info.numNoise  = numNoise;
 	net_Info.maxSpikesD2 = maxSpikesD2;
 	net_Info.maxSpikesD1 = maxSpikesD1;
 	net_Info.sim_with_fixedwts = sim_with_fixedwts;
 	net_Info.sim_with_conductances = sim_with_conductances;
 	net_Info.sim_with_homeostasis = sim_with_homeostasis;
 	net_Info.sim_with_stdp = sim_with_stdp;
-//	net_Info.sim_with_modulated_stdp = sim_with_modulated_stdp;
 	net_Info.sim_with_stp = sim_with_stp;
 	net_Info.numGrp = numGrp;
 	net_Info.stdpScaleFactor = stdpScaleFactor_;
@@ -3516,10 +2954,10 @@ void CpuSNN::printSimSummary() {
 		etime = gpuExecutionTime;
 		CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &spikeCountD2Host, secD2fireCnt, sizeof(int), 0, cudaMemcpyDeviceToHost));
 		CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &spikeCountD1Host, secD1fireCnt, sizeof(int), 0, cudaMemcpyDeviceToHost));
-		spikeCountAll1sec = spikeCountD1 + spikeCountD2;
+		spikeCountAll1secHost = spikeCountD1Host + spikeCountD2Host;
 		CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &spikeCountD2Host, spikeCountD2, sizeof(int), 0, cudaMemcpyDeviceToHost));
 		CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &spikeCountD1Host, spikeCountD1, sizeof(int), 0, cudaMemcpyDeviceToHost));
-		spikeCountAll      = spikeCountD1Host + spikeCountD2Host;
+		spikeCountAllHost      = spikeCountD1Host + spikeCountD2Host;
 	}
 	else {
 		stopCPUTiming();
@@ -3540,76 +2978,10 @@ void CpuSNN::printSimSummary() {
 	KERNEL_INFO("\t\t\tActual Execution Time = %4.2f sec", etime/1000.0);
 	KERNEL_INFO("Average Firing Rate:\t2+ms delay = %3.3f Hz", spikeCountD2Host/(1.0*simTimeSec*numNExcReg));
 	KERNEL_INFO("\t\t\t1ms delay = %3.3f Hz", spikeCountD1Host/(1.0*simTimeSec*numNInhReg));
-	KERNEL_INFO("\t\t\tOverall = %3.3f Hz", spikeCountAll/(1.0*simTimeSec*numN));
+	KERNEL_INFO("\t\t\tOverall = %3.3f Hz", spikeCountAllHost/(1.0*simTimeSec*numN));
 	KERNEL_INFO("Overall Firing Count:\t2+ms delay = %d", spikeCountD2Host);
 	KERNEL_INFO("\t\t\t1ms delay = %d", spikeCountD1Host);
-	KERNEL_INFO("\t\t\tTotal = %d", spikeCountAll);
+	KERNEL_INFO("\t\t\tTotal = %d", spikeCountAllHost);
 	KERNEL_INFO("*********************************************************************************\n");
 }
 
-
-
-/* MDR -- Deprecated
-/////////////////////////////////////////////////////////////////////////////////
-// Device Kernel Function:      Intialization  Noise  Input currents	      ///
-// KERNEL: This is useful for generating suitable thalamic inputs	      ///
-// to the network. The ids of neurons to be used is stored in the randId array and 
-// the kernel reads the randId array to initialize each input thalamic current
-// of the selected neurons to appropriate values..
-// future modification is to generate the random numbers using GPU itself instead of
-// creating the random number at the CPU side and doing a memcopy operation.  ///
-/////////////////////////////////////////////////////////////////////////////////
-__global__ void kernel_initThalInput(int setVoltage)
-{
-const int tid = threadIdx.x;
-const int bid = blockIdx.x;
-	   
-const int idBegin = bid*blockDim.x + tid;
-const int idStep  = blockDim.x*gridDim.x;	   
-int accPos = 0;
-noiseGenProperty_t*	gpu_noiseGenGroup = (noiseGenProperty_t *) gpuPtrs.noiseGenProp;
-for (int i=0; i < gpuNetInfo.numNoise; i++)
-{
-float  currentStrength = gpu_noiseGenGroup[i].currentStrength;
-int    nrands 		 	= gpu_noiseGenGroup[i].rand_ncount;
-
-int randCnt = accPos;
-for(int j=idBegin; j < nrands; j+=idStep) {
-int randId = gpuPtrs.randId[randCnt+j];
-// fprintf(fpLog, " %d %d \n", simTimeSec*1000+simTimeMs, randNeuronId[randCnt]);
-// assuming there is only one driver at a time.
-// More than one noise input is not correct... 			 
-if(setVoltage)
-gpuPtrs.voltage[randId] = currentStrength;
-else	
-gpuPtrs.current[randId] = currentStrength;
-}
-accPos += nrands;
-}
-__syncthreads();
-}
-	
-
-// Initialize the Thalamic input to network
-void CpuSNN::initThalInput_GPU()
-{
-DBG(2, fpLog, AT, "gpu_initThalInput()");
-
-assert(cpu_gpuNetPtrs.allocated);
-
-int blkSize  = 128;
-int gridSize = 64;
-bool setVoltage = true;
-
-// Initialize the Thalamic input current into the network
-if(numNoise) {
-// copy the generated random number into the randId array
-CUDA_CHECK_ERRORS( cudaMemcpy(cpu_gpuNetPtrs.randId, randNeuronId, sizeof(int)*numRandNeurons, cudaMemcpyHostToDevice));
-
-kernel_initThalInput <<<gridSize,blkSize >>> (setVoltage);
-CUDA_GET_LAST_ERROR("initThalInput kernel failed\n");
-int errCode = checkErrors("kernel_initThalInput", gridSize);
-}
-}
-
-*/

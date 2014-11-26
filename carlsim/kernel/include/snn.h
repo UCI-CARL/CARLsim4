@@ -658,8 +658,6 @@ private:
 	void printConnectionInfo2(FILE *fpg);
 	void printCurrentInfo(FILE* fp); //!< for GPU debugging
 	void printFiringRate(char *fname=NULL);
-	void printGpuLoadBalance(bool init, int numBlocks); //!< for GPU debugging
-//	void printGpuLoadBalance(bool init=false, int numBlocks = MAX_BLOCKS, const FILE* fp); //!< for GPU debugging
 	void printGroupInfo(int grpId);	//!< CARLSIM_INFO prints group info
 	void printGroupInfo2(FILE* fpg);
 	void printMemoryInfo(FILE* fp); //!< prints memory info to file
@@ -679,12 +677,7 @@ private:
 	void printTuningLog(FILE* fp);
 	void printWeights(int preGrpId, int postGrpId=-1);
 
-	// FIXME: difference between the options? is one deprecated or are both still used?
-	#if READNETWORK_ADD_SYNAPSES_FROM_FILE
 	int loadSimulation_internal(bool onlyPlastic);
-	#else
-	int loadSimulation_internal();
-	#endif
 
 	void reorganizeDelay();
 	void reorganizeNetwork(bool removeTempMemory);
@@ -732,7 +725,6 @@ private:
 	void CpuSNNinit_GPU();	//!< initializes params needed in snn_gpu.cu (gets called in CpuSNN constructor)
 
 	void allocateGroupId();
-//	void allocateGroupParameters();
 	void allocateNetworkParameters();
 	void allocateSNN_GPU(); //!< allocates required memory and then initialize the GPU
 	int  allocateStaticLoad(int bufSize);
@@ -741,8 +733,6 @@ private:
 
 	void checkAndSetGPUDevice();
 	void checkDestSrcPtrs(network_ptr_t* dest, network_ptr_t* src, cudaMemcpyKind kind, int allocateMem, int grpId);
-	int  checkErrors(std::string kernelName, int numBlocks);
-	int  checkErrors(int numBlocks);
 	void checkInitialization(char* testString=NULL);
 	void checkInitialization2(char* testString=NULL);
 	void configGPUDevice();
@@ -806,7 +796,6 @@ private:
 	void spikeGeneratorUpdate_GPU();
 	void startGPUTiming();
 	void stopGPUTiming();
-	void testSpikeSenderReceiver(FILE* fpLog, int simTime);
 	void updateFiringTable();
 	void updateFiringTable_GPU();
 	void updateNetwork_GPU(bool resetFiringInfo); //!< Allows parameters to be reset in the middle of the simulation
@@ -948,10 +937,10 @@ private:
 	unsigned int	simTimeMs;
 	uint64_t        simTimeSec;		//!< this is used to store the seconds.
 	unsigned int	simTime;		//!< The absolute simulation time. The unit is millisecond. this value is not reset but keeps increasing to its max value.
-	unsigned int	spikeCountAll1sec;
+	unsigned int	spikeCountAll1secHost;
 	unsigned int	secD1fireCntHost;
 	unsigned int	secD2fireCntHost;	//!< firing counts for each second
-	unsigned int	spikeCountAll;
+	unsigned int	spikeCountAllHost;
 	unsigned int	spikeCountD1Host;
 	unsigned int	spikeCountD2Host;	//!< overall firing counts values
 	unsigned int	nPoissonSpikes;

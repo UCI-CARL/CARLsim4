@@ -15,12 +15,11 @@
 TEST(COBA, synRiseTime) {
 	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
-	CpuSNN* sim;
-
 	float time_abs_error = 2.0; // 2 ms
 	float wt_abs_error = 0.05; // five percent error for wt
 
 	for (int mode=0; mode<=1; mode++) {
+		CpuSNN* sim;
 		int tdAMPA  = rand()%100 + 1;
 		int trNMDA  = rand()%100 + 1;
 		int tdNMDA  = rand()%100 + trNMDA + 1; // make sure it's larger than trNMDA
@@ -104,7 +103,6 @@ TEST(COBA, synRiseTime) {
 TEST(COBA, condSingleNeuronCPUvsGPU) {
 	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
-	CpuSNN* sim = NULL;
 	const int nGrps = 6;
 	const int runDurationMs = 2000;
 	int grps[nGrps] = {-1};
@@ -127,7 +125,7 @@ TEST(COBA, condSingleNeuronCPUvsGPU) {
 	bool spikeAtZero = true;
 
 	for (int mode=0; mode<=1; mode++) {
-		sim = new CpuSNN("COBA.condCPUvsGPU",mode?GPU_MODE:CPU_MODE,SILENT,0,42);
+		CpuSNN* sim = new CpuSNN("COBA.condCPUvsGPU",mode?GPU_MODE:CPU_MODE,SILENT,0,42);
 		grps[0]=sim->createGroup("excAMPA", Grid3D(nOutput), EXCITATORY_NEURON);
 		grps[1]=sim->createGroup("excNMDA", Grid3D(nOutput), EXCITATORY_NEURON);
 		grps[2]=sim->createGroup("excAMPA+NMDA", Grid3D(nOutput), EXCITATORY_NEURON);
@@ -222,7 +220,6 @@ TEST(COBA, condSingleNeuronCPUvsGPU) {
 TEST(COBA, firingRateCPUvsGPU) {
 	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
-	CARLsim *sim = NULL;
 	SpikeMonitor *spkMonG0 = NULL, *spkMonG1 = NULL;
 	PeriodicSpikeGenerator *spkGenG0 = NULL;
 	std::vector<std::vector<int> > spkTimesG0CPU, spkTimesG1CPU, spkTimesG0GPU, spkTimesG1GPU;
@@ -235,7 +232,7 @@ TEST(COBA, firingRateCPUvsGPU) {
 //	fprintf(stderr,"runTime=%d, delay=%d, wt=%f, input=%f\n",runTimeMs,delay,wt,inputRate);
 
 	for (int isGPUmode=0; isGPUmode<=1; isGPUmode++) {
-		sim = new CARLsim("COBA.firingRateCPUvsGPU",isGPUmode?GPU_MODE:CPU_MODE,SILENT,0,42);
+		CARLsim* sim = new CARLsim("COBA.firingRateCPUvsGPU",isGPUmode?GPU_MODE:CPU_MODE,SILENT,0,42);
 		int g1=sim->createGroup("output", 1, EXCITATORY_NEURON);
 		sim->setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f); // RS
 		int g0=sim->createSpikeGeneratorGroup("input", 1 ,EXCITATORY_NEURON);

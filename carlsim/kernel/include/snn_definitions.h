@@ -140,54 +140,19 @@ inline bool isInhibitoryNeuron (unsigned int& nid, unsigned int& numNInhPois, un
 #define EXCITATORY_NEURON_MAX_FIRING_RATE 	520
 #define POISSON_MAX_FIRING_RATE 	  		520
 
-#define STDP(t,a,b)       ((a)*exp(-(t)*(b)))
+#define STDP(t,a,b)       ((a)*exp(-(t)*(b))) // consider to use __expf(), which is accelerated by GPU hardware
 
 #define PROPAGATED_BUFFER_SIZE  (1023)
 #define MAX_SIMULATION_TIME     ((uint32_t)(0x7fffffff))
 #define LARGE_NEGATIVE_VALUE    (-(1 << 30))
 
-#define S_SCALING		 (1.0f)
-#define S_MAX			 (10.0f/S_SCALING)
-
-#define HISTOGRAM_SIZE		100
-
-#define DEBUG_LEVEL		0
-
-//#define MAX_GRP_PER_SNN 250 // consume too much gloabl costant data area
 #define MAX_GRP_PER_SNN 128
-
-
-
-// This option effects readNetwork()'s behavior.  Setting this option to 1 will cause 
-// the network file to be read twice, once for plastic synapses and then again for 
-// fixed synapses.  For large networks this could be a substantial speed reduction; 
-// however, it uses much less memory than setting it to 0.
-#define READNETWORK_ADD_SYNAPSES_FROM_FILE 1
-
-#define INHIBITORY_STDP
-
-//#define NEURON_NOISE
-
-// useful during testing and development. carries out series of checks 
-// to ensure simulator is working correctly
-#ifndef TESTING
- #define TESTING 					(0)
-#endif
-
-// does more kind of checking in the kernel to ensure nothing is screwed up...
-#ifndef ENABLE_MORE_CHECK
- #define ENABLE_MORE_CHECK				(0)
-#endif
-
 
 // This flag is used when having a common poisson generator for both CPU and GPU simulation
 // We basically use the CPU poisson generator. Evaluate if there is any firing due to the
 // poisson neuron. Copy that curFiring status to the GPU which uses that for evaluation
 // of poisson firing
 #define TESTING_CPU_GPU_POISSON 			(0)
-
-
-#define MAX_NEURON_CHUNK_SIZE 				   (750)
 
 #define MAX_GRPS_PER_BLOCK 		100
 #define MAX_BLOCKS         		120

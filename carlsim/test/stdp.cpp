@@ -86,7 +86,7 @@ TEST(STDP, setSTDPTrue) {
 	for (int mode=0; mode<=1; mode++) {
 		for (int stdpType = 0; stdpType < 2; stdpType++) { // we have two stdp types {STANDARD, DA_MOD}
 			for(int stdpCurve = 0; stdpCurve < 2; stdpCurve++) { // we have four stdp curves, two for ESTDP, two for ISTDP
-				sim = new CARLsim("setSTDPTrue",mode?GPU_MODE:CPU_MODE,SILENT,0,42);
+				sim = new CARLsim("STDP.setSTDPTrue",mode?GPU_MODE:CPU_MODE,SILENT,0,42);
 
 				int g1=sim->createGroup("excit", 10, EXCITATORY_NEURON);
 				sim->setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f);
@@ -168,7 +168,7 @@ TEST(STDP, setSTDPFalse) {
 	CARLsim* sim;
 
 	for (int mode=0; mode<=1; mode++) {
-		sim = new CARLsim("setSTDPFalse",mode?GPU_MODE:CPU_MODE,SILENT,0,42);
+		sim = new CARLsim("STDP.setSTDPFalse",mode?GPU_MODE:CPU_MODE,SILENT,0,42);
 
 		int g1=sim->createGroup("excit", 10, EXCITATORY_NEURON);
 		sim->setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f);
@@ -218,7 +218,7 @@ TEST(STDP, setNeuromodulatorParameters) {
 	CARLsim* sim;
 
 	for (int mode=0; mode<=1; mode++) {
-			sim = new CARLsim("STDP.setNeuromodulatorParameters",mode?GPU_MODE:CPU_MODE,SILENT,0,42);
+		sim = new CARLsim("STDP.setNeuromodulatorParameters",mode?GPU_MODE:CPU_MODE,SILENT,0,42);
 
 		int g1=sim->createGroup("excit", 10, EXCITATORY_NEURON);
 		sim->setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f);
@@ -255,7 +255,6 @@ TEST(STDP, DASTDPWeightBoost) {
 	float tauLTD = 20.0f;
 	float alphaLTP = 0.1f;
 	float alphaLTD = 0.122f;
-	CARLsim* sim;
 	int g1, gin, g1noise, gda;
 	QuotaSpikeController* spikeCtrl = new QuotaSpikeController();
 	std::vector<int> spikesPost;
@@ -269,7 +268,7 @@ TEST(STDP, DASTDPWeightBoost) {
 	for (int mode = 0; mode < 2; mode++) {
 		for (int coba = 0; coba < 2; coba++) {
 			for (int damod = 0; damod < 2; damod++) {
-				sim = new CARLsim("SNN", mode?GPU_MODE:CPU_MODE, SILENT, 0, 42);
+				CARLsim* sim = new CARLsim("STDP.DASTDPWeightBoost", mode?GPU_MODE:CPU_MODE, SILENT, 0, 42);
 
 				g1 = sim->createGroup("post-ex", 1, EXCITATORY_NEURON);
 				sim->setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f);
@@ -367,7 +366,6 @@ TEST(STDP, ESTDPHebbianCurve) {
 	// simulation details
 	float* weights = NULL;
 	int size;
-	TwoGroupsSpikeController* spikeCtrl;
 	int gex1, gex2, g1;
 	float ALPHA_LTP = 0.10f;
 	float ALPHA_LTD = 0.14f;
@@ -376,14 +374,13 @@ TEST(STDP, ESTDPHebbianCurve) {
 	float maxInhWeight = 10.0f;
 	float initWeight = 5.0f;
 	float minInhWeight = 0.0f;
-	CARLsim* sim;
 
 	for (int mode = 0; mode < 2; mode++) {
 		for (int coba = 0; coba < 2; coba++) {
 			for (int offset = -30; offset <= 30; offset += 5) {
 				if (offset == 0) continue; // skip offset == 0;
 				// create a network
-				sim = new CARLsim("STDP.ESTDPHebbianCurve", mode?GPU_MODE:CPU_MODE, SILENT, 0, 42);
+				CARLsim* sim = new CARLsim("STDP.ESTDPHebbianCurve", mode?GPU_MODE:CPU_MODE, SILENT, 0, 42);
 
 				g1 = sim->createGroup("excit", 1, EXCITATORY_NEURON);
 				sim->setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f);
@@ -391,7 +388,7 @@ TEST(STDP, ESTDPHebbianCurve) {
 				gex1 = sim->createSpikeGeneratorGroup("input-ex1", 1, EXCITATORY_NEURON);
 				gex2 = sim->createSpikeGeneratorGroup("input-ex2", 1, EXCITATORY_NEURON);
 
-				spikeCtrl = new TwoGroupsSpikeController(100, offset, gex2, gex1);
+				TwoGroupsSpikeController* spikeCtrl = new TwoGroupsSpikeController(100, offset, gex2, gex1);
 
 				if (coba) { // conductance-based
 					sim->connect(gex1, g1, "one-to-one", RangeWeight(40.0f/100), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
@@ -452,7 +449,6 @@ TEST(STDP, ESTDPHalfHebbianCurve) {
 	// simulation details
 	float* weights = NULL;
 	int size;
-	TwoGroupsSpikeController* spikeCtrl;
 	int gex1, gex2, g1;
 	float ALPHA_LTP = 0.10f;
 	float ALPHA_LTD = 0.14f;
@@ -462,14 +458,13 @@ TEST(STDP, ESTDPHalfHebbianCurve) {
 	float maxInhWeight = 10.0f;
 	float initWeight = 5.0f;
 	float minInhWeight = 0.0f;
-	CARLsim* sim;
 
 	for (int mode = 0; mode < 2; mode++) {
 		for (int coba = 0; coba < 2; coba++) {
 			for (int offset = -24; offset <= 24; offset += 3) {
 				if (offset == 0) continue; // skip offset == 0;
 				// create a network
-				sim = new CARLsim("STDP.ESTDPHalfHebbianCurve", mode?GPU_MODE:CPU_MODE, SILENT, 0, 42);
+				CARLsim* sim = new CARLsim("STDP.ESTDPHalfHebbianCurve", mode?GPU_MODE:CPU_MODE, SILENT, 0, 42);
 
 				g1 = sim->createGroup("excit", 1, EXCITATORY_NEURON);
 				sim->setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f);
@@ -477,7 +472,7 @@ TEST(STDP, ESTDPHalfHebbianCurve) {
 				gex1 = sim->createSpikeGeneratorGroup("input-ex1", 1, EXCITATORY_NEURON);
 				gex2 = sim->createSpikeGeneratorGroup("input-ex2", 1, EXCITATORY_NEURON);
 
-				spikeCtrl = new TwoGroupsSpikeController(100, offset, gex2, gex1);
+				TwoGroupsSpikeController* spikeCtrl = new TwoGroupsSpikeController(100, offset, gex2, gex1);
 
 				if (coba) { // conductance-based
 					sim->connect(gex1, g1, "one-to-one", RangeWeight(40.0f/100), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
@@ -544,7 +539,6 @@ TEST(STDP, ISTDPConstantSymmetricCurve) {
 	// simulation details
 	float* weights = NULL;
 	int size;
-	TwoGroupsSpikeController* spikeCtrl;
 	int gin, gex, g1;
 	float BETA_LTP = 0.10f;
 	float BETA_LTD = 0.14f;
@@ -553,13 +547,12 @@ TEST(STDP, ISTDPConstantSymmetricCurve) {
 	float maxInhWeight = 10.0f;
 	float initWeight = 5.0f;
 	float minInhWeight = 0.0f;
-	CARLsim* sim;
 
 	for (int mode = 0; mode < 2; mode++) {
 		for (int coba = 0; coba < 2; coba++) {
 			for (int offset = -15; offset <= 15; offset += 10) {
 				// create a network
-				sim = new CARLsim("STDP.ISTDPConstantSymmetricCurve", mode?GPU_MODE:CPU_MODE, SILENT, 0, 42);
+				CARLsim* sim = new CARLsim("STDP.ISTDPConstantSymmetricCurve", mode?GPU_MODE:CPU_MODE, SILENT, 0, 42);
 
 				g1 = sim->createGroup("excit", 1, EXCITATORY_NEURON);
 				sim->setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f);
@@ -567,7 +560,7 @@ TEST(STDP, ISTDPConstantSymmetricCurve) {
 				gex = sim->createSpikeGeneratorGroup("input-ex", 1, EXCITATORY_NEURON);
 				gin = sim->createSpikeGeneratorGroup("input-in", 1, INHIBITORY_NEURON);
 
-				spikeCtrl = new TwoGroupsSpikeController(100, offset, gin, gex);
+				TwoGroupsSpikeController* spikeCtrl = new TwoGroupsSpikeController(100, offset, gin, gex);
 
 				if (coba) { // conductance-based
 					sim->connect(gex, g1, "one-to-one", RangeWeight(40.0f/100), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
