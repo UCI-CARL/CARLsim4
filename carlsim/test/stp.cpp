@@ -15,7 +15,7 @@
 
  */
 TEST(STP, setSTPTrue) {
-	std::string name = "SNN";
+	std::string name = "STP.setSTPTrue";
 	float STP_U = 0.25f;		// the exact values don't matter
 	float STP_tF = 10.0f;
 	float STP_tD = 15.0f;
@@ -97,7 +97,6 @@ TEST(STP, setSTPdeath) {
 TEST(STP, firingRateSTDvsSTF) {
 	int randSeed = rand() % 1000;	// randSeed must not interfere with STP
 
-	CARLsim *sim = NULL;
 	SpikeMonitor *spkMonG2 = NULL, *spkMonG3 = NULL;
 	PeriodicSpikeGenerator *spkGenG0 = NULL, *spkGenG1 = NULL;
 
@@ -192,7 +191,6 @@ TEST(STP, firingRateSTDvsSTF) {
 }
 
 TEST(STP, spikeTimesCPUvsGPU) {
-	CARLsim *sim = NULL;
 	SpikeMonitor *spkMonG2 = NULL, *spkMonG3 = NULL;
 	PeriodicSpikeGenerator *spkGenG0 = NULL, *spkGenG1 = NULL;
 
@@ -203,7 +201,7 @@ TEST(STP, spikeTimesCPUvsGPU) {
 		// compare spike times cpu vs gpu
 
 		for (int isGPUmode=0; isGPUmode<=1; isGPUmode++) {
-			CARLsim* sim = new CARLsim("SNN",isGPUmode?GPU_MODE:CPU_MODE,SILENT,0,42);
+			CARLsim* sim = new CARLsim("STP.spikeTimesCPUvsGPU",isGPUmode?GPU_MODE:CPU_MODE,SILENT,0,42);
 			int g2=sim->createGroup("STD", 1, EXCITATORY_NEURON);
 			int g3=sim->createGroup("STF", 1, EXCITATORY_NEURON);
 			sim->setNeuronParameters(g2, 0.02f, 0.2f, -65.0f, 8.0f);

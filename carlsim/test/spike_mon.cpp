@@ -125,7 +125,7 @@ TEST(SpikeMon, persistentMode) {
 	// use threadsafe version because we have deathtests
 	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
-	CARLsim* sim = new CARLsim("SNN",CPU_MODE,SILENT,0,42);
+	CARLsim* sim = new CARLsim("SpikeMon.persistentMode",CPU_MODE,SILENT,0,42);
 
 	int g1 = sim->createGroup("g1", 5, EXCITATORY_NEURON);		
 	sim->setNeuronParameters(g1, 0.02, 0.2, -65.0, 8.0);
@@ -186,7 +186,7 @@ TEST(SpikeMon, clear){
 	// loop over both CPU and GPU mode.
 	for(int mode=0; mode<=1; mode++){
 		// first iteration, test CPU mode, second test GPU mode
-		sim = new CARLsim("SNN",mode?GPU_MODE:CPU_MODE,SILENT,0,42);
+		sim = new CARLsim("SpikeMon.clear",mode?GPU_MODE:CPU_MODE,SILENT,0,42);
 
 		float COND_tAMPA=5.0, COND_tNMDA=150.0, COND_tGABAa=6.0, COND_tGABAb=150.0;
 		int g1 = sim->createGroup("g1", GRP_SIZE, EXCITATORY_NEURON);
@@ -261,7 +261,7 @@ TEST(SpikeMon, spikeTimes) {
 	// loop over both CPU and GPU mode.
 	for(int mode=0; mode<=1; mode++){
 		// first iteration, test CPU mode, second test GPU mode
-		CARLsim* sim = new CARLsim("SNN",mode?GPU_MODE:CPU_MODE,SILENT,0,42);
+		CARLsim* sim = new CARLsim("SpikeMon.spikeTimes",mode?GPU_MODE:CPU_MODE,SILENT,0,42);
 		float COND_tAMPA=5.0, COND_tNMDA=150.0, COND_tGABAa=6.0, COND_tGABAb=150.0;
 		int g1 = sim->createGroup("g1", GRP_SIZE, EXCITATORY_NEURON);
 		sim->setNeuronParameters(g1, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f);
@@ -341,7 +341,7 @@ TEST(SpikeMon, getGroupFiringRate){
 	// loop over both CPU and GPU mode.
 	for(int mode=0; mode<=1; mode++){
 		// first iteration, test CPU mode, second test GPU mode
-		CARLsim* sim = new CARLsim("SNN",mode?GPU_MODE:CPU_MODE,SILENT,0,42);
+		CARLsim* sim = new CARLsim("SpikeMon.getGroupFiringRate",mode?GPU_MODE:CPU_MODE,SILENT,0,42);
 
 		float COND_tAMPA=5.0, COND_tNMDA=150.0, COND_tGABAa=6.0, COND_tGABAb=150.0;
 		int g1 = sim->createGroup("g1", GRP_SIZE, EXCITATORY_NEURON);
@@ -431,7 +431,7 @@ TEST(SpikeMon, getMaxMinNeuronFiringRate){
 	// loop over both CPU and GPU mode.
 	for(int mode=0; mode<1; mode++){
 		// first iteration, test CPU mode, second test GPU mode
-		CARLsim* sim = new CARLsim("SNN",mode?GPU_MODE:CPU_MODE,SILENT,0,42);
+		CARLsim* sim = new CARLsim("SpikeMon.getMaxMinNeuronFiringRate",mode?GPU_MODE:CPU_MODE,SILENT,0,42);
 
 		float COND_tAMPA=5.0, COND_tNMDA=150.0, COND_tGABAa=6.0, COND_tGABAb=150.0;
 		int g1 = sim->createGroup("g1", GRP_SIZE, EXCITATORY_NEURON);
