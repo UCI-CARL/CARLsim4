@@ -397,7 +397,7 @@ TEST(SpikeMon, getGroupFiringRate){
 		// activity in the input group was recorded only for a short period
 		// the SpikeMon object must thus compute the firing rate based on only a brief time window
 		EXPECT_EQ(spikeMonInput->getRecordingTotalTime(), runTimeMsOn);
-		EXPECT_NEAR(spikeMonInput->getPopMeanFiringRate(), rate, 0.12); // rate must match
+		EXPECT_NEAR(spikeMonInput->getPopMeanFiringRate(), rate, 0.15); // rate must match
 		EXPECT_EQ(spikeMonInput->getPopNumSpikes(), runTimeMsOn*GRP_SIZE/isi); // spikes only from brief window
 		EXPECT_EQ(inputSize/2, (runTimeMsOn+2*runTimeMsOff)*GRP_SIZE/isi); // but spike file must have all spikes
 
