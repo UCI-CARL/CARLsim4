@@ -331,8 +331,6 @@ TEST(SpikeMon, spikeTimes) {
  * struct should have the same number of spikes.
  */
 TEST(SpikeMon, getGroupFiringRate){
-	CARLsim* sim;
-
 	double rate = rand()%12 + 2.0f;  // some random mean firing rate
 	int isi = 1000/rate; // inter-spike interval
 
@@ -343,7 +341,7 @@ TEST(SpikeMon, getGroupFiringRate){
 	// loop over both CPU and GPU mode.
 	for(int mode=0; mode<=1; mode++){
 		// first iteration, test CPU mode, second test GPU mode
-		sim = new CARLsim("SNN",mode?GPU_MODE:CPU_MODE,SILENT,0,42);
+		CARLsim* sim = new CARLsim("SNN",mode?GPU_MODE:CPU_MODE,SILENT,0,42);
 
 		float COND_tAMPA=5.0, COND_tNMDA=150.0, COND_tGABAa=6.0, COND_tGABAb=150.0;
 		int g1 = sim->createGroup("g1", GRP_SIZE, EXCITATORY_NEURON);
@@ -399,7 +397,7 @@ TEST(SpikeMon, getGroupFiringRate){
 		// activity in the input group was recorded only for a short period
 		// the SpikeMon object must thus compute the firing rate based on only a brief time window
 		EXPECT_EQ(spikeMonInput->getRecordingTotalTime(), runTimeMsOn);
-		EXPECT_NEAR(spikeMonInput->getPopMeanFiringRate(), rate, 0.1); // rate must match
+		EXPECT_NEAR(spikeMonInput->getPopMeanFiringRate(), rate, 0.12); // rate must match
 		EXPECT_EQ(spikeMonInput->getPopNumSpikes(), runTimeMsOn*GRP_SIZE/isi); // spikes only from brief window
 		EXPECT_EQ(inputSize/2, (runTimeMsOn+2*runTimeMsOff)*GRP_SIZE/isi); // but spike file must have all spikes
 
