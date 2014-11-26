@@ -70,6 +70,7 @@ void ConnectionGeneratorCore::connect(CpuSNN* s, int srcGrpId, int i, int destGr
 		cGen->connect(carlsim, srcGrpId, i, destGrpId, j, weight, maxWt, delay, connected);
 }
 
+/*
 ConnectionMonitorCore::ConnectionMonitorCore(CARLsim* c, ConnectionMonitor* n) {
 	carlsim = c;
 	nMon = n;
@@ -79,6 +80,7 @@ void ConnectionMonitorCore::update(CpuSNN* s, int grpIdPre, int grpIdPost, float
 	if (nMon != NULL)
 		nMon->update(carlsim, grpIdPre, grpIdPost, weight, numData);
 }
+*/
 
 GroupMonitorCore::GroupMonitorCore(CARLsim* c, GroupMonitor* g) {
 	carlsim = c;

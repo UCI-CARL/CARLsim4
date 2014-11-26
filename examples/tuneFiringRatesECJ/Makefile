@@ -17,10 +17,12 @@ output := *.dot *.dat *.log *.stat results/*
 # You should not need to edit the file beyond this point
 # -----------------------------------------------------------------------------
 
-# we are compiling from carlsim lib
+# we are compiling from CARLsim lib
 CARLSIM_FLAGS += -I$(CARLSIM_LIB_DIR)/include/kernel \
-				 -I$(CARLSIM_LIB_DIR)/include/interface \
-				 -I$(CARLSIM_LIB_DIR)/include/spike_monitor
+								 -I$(CARLSIM_LIB_DIR)/include/interface \
+								 -I$(CARLSIM_LIB_DIR)/include/spike_monitor \
+								 -I$(CARLSIM_LIB_DIR)/include/connection_monitor
+
 CARLSIM_LIBS  += -L$(CARLSIM_LIB_DIR)/lib -lCARLsim
 
 # carlsim ecj components
@@ -35,7 +37,7 @@ carlsim_prog := carlsim_$(example)
 # create executable bash script for user to run
 $(local_prog): $(local_src) $(carlsim_prog)
 	@echo "#!/bin/bash" > $(local_prog)
-	@echo "java -cp \"$(ECJ_DIR)/ecj.jar:$(ECJ_PTI_DIR)/lib/CARLsim-ECJ.jar\" ecjapp.CARLsimEC ./$(ecj_param_file)" >> $(local_prog)
+	@echo "java -cp \"$(ECJ_DIR)/jar/ecj.22.jar:$(ECJ_PTI_DIR)/lib/CARLsim-ECJ.jar\" ecjapp.CARLsimEC ./$(ecj_param_file)" >> $(local_prog)
 	@chmod u+x $(local_prog)
 
 # compile from CARLsim lib

@@ -207,7 +207,7 @@ __global__ void kernel_timingTableUpdate(int t)
 /////////////////////////////////////////////////////////////////////////////////
 // Device Kernel Function:  Intialization of the GPU side of the simulator    ///
 // KERNEL: This kernel is called after initialization of various parameters   ///
-// so that we can reset all required parameters.							  ///
+// so that we can reset all required parameters.                              ///
 /////////////////////////////////////////////////////////////////////////////////
 __global__ void kernel_init ()
 {
@@ -307,14 +307,13 @@ int CpuSNN::allocateStaticLoad(int bufSize) {
 			// fill the static load distribution here...
 			int testg = STATIC_LOAD_GROUP(threadLoad);
 			tempNeuronAllocation[bufferCnt] = threadLoad;
-			KERNEL_DEBUG("%d. Start=%d, size=%d grpId=%d:%s (SpikeMonId=%d) (GroupMonId=%d) (ConnMonId=%d)",
+			KERNEL_DEBUG("%d. Start=%d, size=%d grpId=%d:%s (SpikeMonId=%d) (GroupMonId=%d)",
 					bufferCnt, STATIC_LOAD_START(threadLoad),
 					STATIC_LOAD_SIZE(threadLoad),
 					STATIC_LOAD_GROUP(threadLoad),
 					grp_Info2[testg].Name.c_str(),
 					grp_Info[testg].SpikeMonitorId,
-					grp_Info[testg].GroupMonitorId,
-					grp_Info[testg].ConnectionMonitorId);
+					grp_Info[testg].GroupMonitorId);
 			bufferCnt++;
 		}
 	}
@@ -336,8 +335,8 @@ int CpuSNN::allocateStaticLoad(int bufSize) {
 //////////////////////////////////////////////////
 
 /////////////////////////////////////////////////////////////////////////////////
-// Device local function:      	Update the STP Variables					  ///
-// update the STPU and STPX variable after firing							  ///
+// Device local function:      	Update the STP Variables                      ///
+// update the STPU and STPX variable after firing                             ///
 /////////////////////////////////////////////////////////////////////////////////
 
 // update the spike-dependent part of du/dt and dx/dt
@@ -533,6 +532,7 @@ __device__ void gpu_updateLTP(	int*     		fireTablePtr,
 		// pre: number of pre-neuron
 		// pre_exc: number of neuron had has plastic connections
 		short int grpId = fireGrpId[pos];
+		// STDP calculation: the post-synaptic neron fires after the arrival of pre-synaptic neuron's spike
 		if (gpuGrpInfo[grpId].WithSTDP) { // MDR, FIXME this probably will cause more thread divergence than need be...
 			int  nid   = fireTablePtr[pos];
 			unsigned int  end_p = gpuPtrs.cumulativePre[nid] + gpuPtrs.Npre_plastic[nid];
@@ -540,8 +540,47 @@ __device__ void gpu_updateLTP(	int*     		fireTablePtr,
 					p < end_p;
 					p+=LTP_GROUPING_SZ) {
 				int stdp_tDiff = (simTime - gpuPtrs.synSpikeTime[p]);
-				if ((stdp_tDiff > 0) && ((stdp_tDiff*gpuGrpInfo[grpId].TAU_LTP_INV)<25)) {
-					gpuPtrs.wtChange[p] += STDP(stdp_tDiff, gpuGrpInfo[grpId].ALPHA_LTP, gpuGrpInfo[grpId].TAU_LTP_INV);
+				if (stdp_tDiff > 0) {
+					if (gpuGrpInfo[grpId].WithESTDP) {
+						// Handle E-STDP curves
+						switch (gpuGrpInfo[grpId].WithESTDPcurve) {
+						case HEBBIAN: // Hebbian curve
+							if (stdp_tDiff * gpuGrpInfo[grpId].TAU_LTP_INV_EXC < 25)
+								gpuPtrs.wtChange[p] += STDP(stdp_tDiff, gpuGrpInfo[grpId].ALPHA_LTP_EXC, gpuGrpInfo[grpId].TAU_LTP_INV_EXC);
+							break;
+						case HALF_HEBBIAN: // half-Hebbian curve
+							if (stdp_tDiff * gpuGrpInfo[grpId].TAU_LTP_INV_EXC < 25) {
+									if (stdp_tDiff <= gpuGrpInfo[grpId].GAMA)
+										gpuPtrs.wtChange[p] += gpuGrpInfo[grpId].OMEGA + gpuGrpInfo[grpId].KAPA * STDP(stdp_tDiff, gpuGrpInfo[grpId].ALPHA_LTP_EXC, gpuGrpInfo[grpId].TAU_LTP_INV_EXC);
+									else // stdp_tDiff > GAMA
+										gpuPtrs.wtChange[p] -= STDP(stdp_tDiff, gpuGrpInfo[grpId].ALPHA_LTP_EXC, gpuGrpInfo[grpId].TAU_LTP_INV_EXC);
+							}
+							break;
+						default:
+							break;
+						}
+					}
+					if (gpuGrpInfo[grpId].WithISTDP) {
+						// Handle I-STDP curves
+						switch (gpuGrpInfo[grpId].WithISTDPcurve) {
+						case ANTI_HEBBIAN: // anti-Hebbian curve
+							if (stdp_tDiff * gpuGrpInfo[grpId].TAU_LTP_INV_INB < 25) { // LTP of inhibitory synapse, which decreases synapse weight
+								gpuPtrs.wtChange[p] -= STDP(stdp_tDiff, gpuGrpInfo[grpId].ALPHA_LTP_INB, gpuGrpInfo[grpId].TAU_LTP_INV_INB);
+							}
+							break;
+						case LINEAR_SYMMETRIC: // linear symmetric curve
+							break;
+						case CONSTANT_SYMMETRIC: // constant symmetric curve
+							if (stdp_tDiff <= gpuGrpInfo[grpId].LAMDA) { // LTP of inhibitory synapse, which decreases synapse weight
+								gpuPtrs.wtChange[p] -= gpuGrpInfo[grpId].BETA_LTP;
+							} else if (stdp_tDiff <= gpuGrpInfo[grpId].DELTA) { // LTD of inhibitory syanpse, which increase sysnapse weight
+								gpuPtrs.wtChange[p] += gpuGrpInfo[grpId].BETA_LTD;
+							}
+							break;
+						default:
+							break;
+						}
+					}
 				}
 			}
 		}
@@ -1020,7 +1059,7 @@ __device__ void updateSynapticWeights(int& nid, unsigned int& jpos, int& grpId, 
 	float t_effectiveWtChange = gpuNetInfo.stdpScaleFactor * t_wtChange;
 	float t_maxWt = gpuPtrs.maxSynWt[jpos];
 
-	switch (gpuGrpInfo[grpId].WithSTDPtype) {
+	switch (gpuGrpInfo[grpId].WithESTDPtype) {
 	case STANDARD:
 		if (gpuGrpInfo[grpId].WithHomeostasis) {
 			// this factor is slow
@@ -1042,13 +1081,42 @@ __device__ void updateSynapticWeights(int& nid, unsigned int& jpos, int& grpId, 
 		// we shouldn't even be here if !WithSTDP
 		break;
 	}
-	
+
+	switch (gpuGrpInfo[grpId].WithISTDPtype) {
+	case STANDARD:
+		if (gpuGrpInfo[grpId].WithHomeostasis) {
+			// this factor is slow
+			t_wt += (diff_firing*t_wt*homeostasisScale + t_effectiveWtChange) * baseFiring * avgTimeScaleInv / (1+fabs(diff_firing)*50);
+		} else {
+			t_wt += t_effectiveWtChange;
+		}
+		break;
+	case DA_MOD:
+		if (gpuGrpInfo[grpId].WithHomeostasis) {
+			t_effectiveWtChange = gpuPtrs.grpDA[grpId] * t_effectiveWtChange;
+			t_wt += (diff_firing*t_wt*homeostasisScale + t_effectiveWtChange) * baseFiring * avgTimeScaleInv / (1+fabs(diff_firing)*50);
+		} else {
+			t_wt += gpuPtrs.grpDA[grpId] * t_effectiveWtChange;
+		}
+		break;
+	case UNKNOWN_STDP:
+	default:
+		// we shouldn't even be here if !WithSTDP
+		break;
+	}
+
 	// It's user's choice to decay weight change or not
 	// see setWeightAndWeightChangeUpdate()
 	t_wtChange *= gpuNetInfo.wtChangeDecay;
 
-	if (t_wt > t_maxWt) t_wt = t_maxWt;
-	if (t_wt < 0)  	  t_wt = 0.0f;
+	// Check the synapse is excitatory or inhibitory first
+	if (t_maxWt >= 0) { // excitatory synapse
+		if (t_wt >= t_maxWt) t_wt = t_maxWt;
+		if (t_wt < 0) t_wt = 0.0;
+	} else { // inhibitory synapse
+		if (t_wt <= t_maxWt) t_wt = t_maxWt;
+		if (t_wt > 0) t_wt = 0.0;
+	}
 
 	gpuPtrs.wt[jpos] = t_wt;
 	gpuPtrs.wtChange[jpos] = t_wtChange;
@@ -1230,10 +1298,46 @@ __device__ int generatePostSynapticSpike(int& simTime, int& firingId, int& myDel
 
 	gpuPtrs.synSpikeTime[pos_ns] = simTime;		  //uncoalesced access
 
+	// STDP calculation: the post-synaptic neuron fires before the arrival of pre-synaptic neuron's spike
 	if (gpuGrpInfo[post_grpId].WithSTDP)  {
 		int stdp_tDiff = simTime-gpuPtrs.lastSpikeTime[nid];
-		if ((stdp_tDiff >= 0) && ((stdp_tDiff*gpuGrpInfo[post_grpId].TAU_LTD_INV)<25)) {
-			gpuPtrs.wtChange[pos_ns] -= STDP( stdp_tDiff, gpuGrpInfo[post_grpId].ALPHA_LTD, gpuGrpInfo[post_grpId].TAU_LTD_INV); // uncoalesced access
+		if (stdp_tDiff >= 0) {
+			if (gpuGrpInfo[post_grpId].WithESTDP) {
+				// Handle E-STDP curves
+				switch (gpuGrpInfo[post_grpId].WithESTDPcurve) {
+				case HEBBIAN: // Hebbian curve
+					if (stdp_tDiff * gpuGrpInfo[post_grpId].TAU_LTD_INV_EXC < 25)
+						gpuPtrs.wtChange[pos_ns] -= STDP( stdp_tDiff, gpuGrpInfo[post_grpId].ALPHA_LTD_EXC, gpuGrpInfo[post_grpId].TAU_LTD_INV_EXC); // uncoalesced access
+					break;
+				case HALF_HEBBIAN: // half-Hebbian curve
+					if (stdp_tDiff * gpuGrpInfo[post_grpId].TAU_LTD_INV_EXC < 25)
+						gpuPtrs.wtChange[pos_ns] -= STDP( stdp_tDiff, gpuGrpInfo[post_grpId].ALPHA_LTD_EXC, gpuGrpInfo[post_grpId].TAU_LTD_INV_EXC); // uncoalesced access
+					break;
+				default:
+					break;
+				}
+			}
+			if (gpuGrpInfo[post_grpId].WithISTDP) {
+				// Handle I-STDP curves
+				switch (gpuGrpInfo[post_grpId].WithISTDPcurve) {
+				case ANTI_HEBBIAN: // anti-Hebbian curve
+					if ((stdp_tDiff * gpuGrpInfo[post_grpId].TAU_LTD_INV_INB) < 25) { // LTD of inhibitory syanpse, which increase synapse weight
+						gpuPtrs.wtChange[pos_ns] += STDP(stdp_tDiff, gpuGrpInfo[post_grpId].ALPHA_LTD_INB, gpuGrpInfo[post_grpId].TAU_LTD_INV_INB);
+					}
+					break;
+				case LINEAR_SYMMETRIC: // linear symmetric curve
+					break;
+				case CONSTANT_SYMMETRIC: // constant symmetric curve
+					if (stdp_tDiff <= gpuGrpInfo[post_grpId].LAMDA) { // LTP of inhibitory synapse, which decreases synapse weight
+						gpuPtrs.wtChange[pos_ns] -= gpuGrpInfo[post_grpId].BETA_LTP;
+					} else if (stdp_tDiff <= gpuGrpInfo[post_grpId].DELTA) { // LTD of inhibitory syanpse, which increase synapse weight
+						gpuPtrs.wtChange[pos_ns] += gpuGrpInfo[post_grpId].BETA_LTD;
+					}
+					break;
+				default:
+					break;
+				}
+			}
 		}
 	}
 	
@@ -1444,7 +1548,7 @@ __global__ void kernel_doCurrentUpdateD1(int simTimeMs, int simTimeSec, int simT
 			}
 		}
 
-		__syncthreads();		
+		__syncthreads();
 
 		kPos = kPos + (gridDim.x*numSwarps);
 	}
@@ -1993,18 +2097,18 @@ void CpuSNN::copyWeightState (network_ptr_t* dest, network_ptr_t* src,  cudaMemc
 		assert (cumPos_syn < preSynCnt);
 		assert (length_wt <= preSynCnt);
 
-    //MDR FIXME, allocateMem option is VERY wrong
-    // synaptic information based
+	    //MDR FIXME, allocateMem option is VERY wrong
+	    // synaptic information based
 
-    //if(allocateMem) CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->wt, sizeof(float)*length_wt));
+	    //if(allocateMem) CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->wt, sizeof(float)*length_wt));
 		CUDA_CHECK_ERRORS( cudaMemcpy( &dest->wt[cumPos_syn], &src->wt[cumPos_syn], sizeof(float)*length_wt,  kind));
 
-    // firing time for individual synapses
-    //if(allocateMem) CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->synSpikeTime, sizeof(int)*length_wt));
+	    // firing time for individual synapses
+	    //if(allocateMem) CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->synSpikeTime, sizeof(int)*length_wt));
 		CUDA_CHECK_ERRORS( cudaMemcpy( &dest->synSpikeTime[cumPos_syn], &src->synSpikeTime[cumPos_syn], sizeof(int)*length_wt, kind));
 
-    // added this to CARLsim 2.1 - 2.2 file merge -- KDC
-		if ((!sim_with_fixedwts) || (sim_with_stdp)) {
+	    // added this to CARLsim 2.1 - 2.2 file merge -- KDC
+		if ((!sim_with_fixedwts) || sim_with_stdp) {
 			// synaptic weight derivative
 			//if(allocateMem)		CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->wtChange, sizeof(float)*length_wt));
 			CUDA_CHECK_ERRORS( cudaMemcpy( &dest->wtChange[cumPos_syn], &src->wtChange[cumPos_syn], sizeof(float)*length_wt, kind));
@@ -2739,11 +2843,20 @@ void CpuSNN::allocateSNN_GPU() {
 		KERNEL_DEBUG("\tMaxDelay: %d",(int)grp_Info[i].MaxDelay);
 		KERNEL_DEBUG("\tWithSTDP: %d",(int)grp_Info[i].WithSTDP);
 		if (grp_Info[i].WithSTDP) {
-			KERNEL_DEBUG("\t\tSTDP type: %s",stdpType_string[grp_Info[i].WithSTDPtype]);
-			KERNEL_DEBUG("\t\tTAU_LTP_INV: %f",grp_Info[i].TAU_LTP_INV);
-			KERNEL_DEBUG("\t\tTAU_LTD_INV: %f",grp_Info[i].TAU_LTD_INV);
-			KERNEL_DEBUG("\t\tALPHA_LTP: %f",grp_Info[i].ALPHA_LTP);
-			KERNEL_DEBUG("\t\tALPHA_LTD: %f",grp_Info[i].ALPHA_LTD);
+			KERNEL_DEBUG("\t\tE-STDP type: %s",stdpType_string[grp_Info[i].WithESTDPtype]);
+			KERNEL_DEBUG("\t\tTAU_LTP_INV_EXC: %f",grp_Info[i].TAU_LTP_INV_EXC);
+			KERNEL_DEBUG("\t\tTAU_LTD_INV_EXC: %f",grp_Info[i].TAU_LTD_INV_EXC);
+			KERNEL_DEBUG("\t\tALPHA_LTP_EXC: %f",grp_Info[i].ALPHA_LTP_EXC);
+			KERNEL_DEBUG("\t\tALPHA_LTD_EXC: %f",grp_Info[i].ALPHA_LTD_EXC);
+			KERNEL_DEBUG("\t\tI-STDP type: %s",stdpType_string[grp_Info[i].WithISTDPtype]);
+			KERNEL_DEBUG("\t\tTAU_LTP_INV_INB: %f",grp_Info[i].TAU_LTP_INV_INB);
+			KERNEL_DEBUG("\t\tTAU_LTD_INV_INB: %f",grp_Info[i].TAU_LTD_INV_INB);
+			KERNEL_DEBUG("\t\tALPHA_LTP_INB: %f",grp_Info[i].ALPHA_LTP_INB);
+			KERNEL_DEBUG("\t\tALPHA_LTD_INB: %f",grp_Info[i].ALPHA_LTD_INB);
+			KERNEL_DEBUG("\t\tLAMDA: %f",grp_Info[i].LAMDA);
+			KERNEL_DEBUG("\t\tDELTA: %f",grp_Info[i].DELTA);
+			KERNEL_DEBUG("\t\tBETA_LTP: %f",grp_Info[i].BETA_LTP);
+			KERNEL_DEBUG("\t\tBETA_LTD: %f",grp_Info[i].BETA_LTD);
 		}
 		KERNEL_DEBUG("\tWithSTP: %d",(int)grp_Info[i].WithSTP);
 		if (grp_Info[i].WithSTP) {

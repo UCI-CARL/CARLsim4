@@ -22,6 +22,7 @@ include $(USER_MK_PATH)/user.mk
 kernel_dir     = $(CARLSIM_SRC_DIR)/carlsim/kernel
 interface_dir  = $(CARLSIM_SRC_DIR)/carlsim/interface
 spike_mon_dir  = $(CARLSIM_SRC_DIR)/carlsim/spike_monitor
+conn_mon_dir   = $(CARLSIM_SRC_DIR)/carlsim/connection_monitor
 spike_gen_dir  = $(CARLSIM_SRC_DIR)/tools/spike_generators
 server_dir     = $(CARLSIM_SRC_DIR)/carlsim/server
 # carlsim tools
@@ -30,7 +31,7 @@ input_stim_dir = $(CARLSIM_SRC_DIR)/tools/input_stimulus
 # we are compiling from lib
 CARLSIM_FLAGS += -I$(kernel_dir)/include -I$(interface_dir)/include \
 								 -I$(spike_mon_dir) -I$(spike_gen_dir) -I$(server_dir) \
-								 -I$(input_stim_dir)
+								 -I$(input_stim_dir) -I$(conn_mon_dir)
 
 # carlsim ecj components
 ECJ_PTI_FLAGS += -I$(ECJ_PTI_DIR)/include
@@ -45,7 +46,7 @@ carlsim_prog := carlsim_$(example)
 # create executable bash script for user to run
 $(local_prog): $(local_src) $(carlsim_prog)
 	@echo "#!/bin/bash" > $(local_prog)
-	@echo "java -cp \"$(ECJ_DIR)/ecj.jar:$(ECJ_PTI_DIR)/lib/CARLsim-ECJ.jar\" ecjapp.CARLsimEC ./$(ecj_param_file)" >> $(local_prog)
+	@echo "java -cp \"$(ECJ_DIR)/jar/ecj.22.jar:$(ECJ_PTI_DIR)/lib/CARLsim-ECJ.jar\" ecjapp.CARLsimEC ./$(ecj_param_file)" >> $(local_prog)
 	@chmod u+x $(local_prog)
 # this must come after CARLSIM_FLAGS have been set
 include $(CARLSIM_SRC_DIR)/carlsim/carlsim.mk

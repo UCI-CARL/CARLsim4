@@ -13,10 +13,11 @@ output := *.dot *.dat *.log *.csv results/*
 # You should not need to edit the file beyond this point
 # ------------------------------------------------------
 
-# we are compiling from carlsim lib
+# we are compiling from CARLsim lib
 CARLSIM_FLAGS += -I$(CARLSIM_LIB_DIR)/include/kernel \
 				 -I$(CARLSIM_LIB_DIR)/include/interface \
 				 -I$(CARLSIM_LIB_DIR)/include/spike_monitor \
+				 -I$(CARLSIM_LIB_DIR)/include/connection_monitor \
 				 -I../common
 CARLSIM_LIBS  += -L$(CARLSIM_LIB_DIR)/lib -lCARLsim
 

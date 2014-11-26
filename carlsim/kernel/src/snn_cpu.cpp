@@ -40,29 +40,10 @@
 #include <snn.h>
 #include <sstream>
 
-#if (WIN32 || WIN64)
-	#include <float.h>
-	#include <time.h>
-
-	#ifndef isnan
-	#define isnan(x) _isnan(x)
-	#endif
-
-	#ifndef isinf
-	#define isinf(x) (!_finite(x))
-	#endif
-
-	#ifndef srand48
-	#define srand48(x) srand(x)
-	#endif
-
-	#ifndef drand48
-	#define drand48() (double(rand())/RAND_MAX)
-	#endif
-#else
-	#include <string.h>
-	#define strcmpi(s1,s2) strcasecmp(s1,s2)
-#endif
+#include <connection_monitor.h>
+#include <connection_monitor_core.h>
+#include <spike_monitor.h>
+#include <spike_monitor_core.h>
 
 // \FIXME what are the following for? why were they all the way at the bottom of this file?
 
@@ -81,8 +62,7 @@
 
 
 // TODO: consider moving unsafe computations out of constructor
-CpuSNN::CpuSNN(const std::string& name, simMode_t simMode, loggerMode_t loggerMode,
-	int ithGPU, int randSeed)
+CpuSNN::CpuSNN(const std::string& name, simMode_t simMode, loggerMode_t loggerMode, int ithGPU, int randSeed)
 					: networkName_(name), simMode_(simMode), loggerMode_(loggerMode), ithGPU_(ithGPU),
 					  randSeed_(CpuSNN::setRandSeed(randSeed)) // all of these are const
 {
@@ -146,6 +126,7 @@ short int CpuSNN::connect(int grpId1, int grpId2, const std::string& _type, floa
 	newInfo->p                = prob;
 	newInfo->type             = CONN_UNKNOWN;
 	newInfo->numPostSynapses  = 1;
+	newInfo->ConnectionMonitorId = -1;
 
 	newInfo->next 				= connectBegin; //linked list of connection..
 	connectBegin 				= newInfo;
@@ -281,6 +262,7 @@ short int CpuSNN::connect(int grpId1, int grpId2, ConnectionGeneratorCore* conn,
 	newInfo->numPostSynapses	  	  = maxM;
 	newInfo->numPreSynapses	  = maxPreM;
 	newInfo->conn	= conn;
+	newInfo->ConnectionMonitorId = -1;
 
 	newInfo->next	= connectBegin;  // build a linked list
 	connectBegin      = newInfo;
@@ -324,7 +306,8 @@ int CpuSNN::createGroup(const std::string& grpName, const Grid3D& grid, int neur
 	grp_Info[numGrp].Type   			= neurType;
 	grp_Info[numGrp].WithSTP			= false;
 	grp_Info[numGrp].WithSTDP			= false;
-	grp_Info[numGrp].WithSTDPtype       = UNKNOWN_STDP;
+	grp_Info[numGrp].WithESTDPtype      = UNKNOWN_STDP;
+	grp_Info[numGrp].WithISTDPtype		= UNKNOWN_STDP;
 	grp_Info[numGrp].WithHomeostasis	= false;
 
 	if ( (neurType&TARGET_GABAa) || (neurType&TARGET_GABAb)) {
@@ -366,7 +349,8 @@ int CpuSNN::createSpikeGeneratorGroup(const std::string& grpName, const Grid3D& 
 	grp_Info[numGrp].Type    		= neurType | POISSON_NEURON;
 	grp_Info[numGrp].WithSTP		= false;
 	grp_Info[numGrp].WithSTDP		= false;
-	grp_Info[numGrp].WithSTDPtype   = UNKNOWN_STDP;
+	grp_Info[numGrp].WithESTDPtype  = UNKNOWN_STDP;
+	grp_Info[numGrp].WithISTDPtype	= UNKNOWN_STDP;
 	grp_Info[numGrp].WithHomeostasis	= false;
 	grp_Info[numGrp].isSpikeGenerator	= true;		// these belong to the spike generator class...
 	grp_Info2[numGrp].Name    		= grpName;
@@ -517,33 +501,84 @@ void CpuSNN::setNeuromodulator(int grpId, float baseDP, float tauDP, float base5
 	grp_Info[grpId].decayNE = 1.0 - (1.0 / tauNE);
 }
 
-// set STDP params
-void CpuSNN::setSTDP(int grpId,bool isSet,stdpType_t type,float alphaLTP,float tauLTP,float alphaLTD,float tauLTD) {
+// set ESTDP params
+void CpuSNN::setESTDP(int grpId, bool isSet, stdpType_t type, stdpCurve_t curve, float alphaLTP, float tauLTP, float alphaLTD, float tauLTD, float gama) {
 	assert(grpId>=-1);
 	if (isSet) {
 		assert(type!=UNKNOWN_STDP);
-		assert(alphaLTP>=0); assert(tauLTP>=0); assert(alphaLTD>=0); assert(tauLTD>=0);
+		assert(alphaLTP>=0.0f); assert(tauLTP>0.0f); assert(alphaLTD>=0.0f); assert(tauLTD>0.0f); assert(gama>=0.0f);
 	}
 
 	if (grpId == ALL) { // shortcut for all groups
 		for(int grpId1=0; grpId1<numGrp; grpId1++) {
-			setSTDP(grpId1, isSet, type, alphaLTP, tauLTP, alphaLTD, tauLTD);
+			setESTDP(grpId1, isSet, type, curve, alphaLTP, tauLTP, alphaLTD, tauLTD, gama);
 		}
 	} else {
 		// set STDP for a given group
-		sim_with_stdp 				   |= isSet;
-		grp_Info[grpId].WithSTDP 		= isSet;
-		grp_Info[grpId].WithSTDPtype	= type;
-		grp_Info[grpId].ALPHA_LTP 		= alphaLTP;
-		grp_Info[grpId].ALPHA_LTD 		= alphaLTD;
-		grp_Info[grpId].TAU_LTP_INV 	= 1.0f/tauLTP;
-		grp_Info[grpId].TAU_LTD_INV	= 1.0f/tauLTD;
-		grp_Info[grpId].newUpdates 	= true; // \FIXME whatsathiis?
+		// set params for STDP curve
+		grp_Info[grpId].ALPHA_LTP_EXC 		= alphaLTP;
+		grp_Info[grpId].ALPHA_LTD_EXC 		= alphaLTD;
+		grp_Info[grpId].TAU_LTP_INV_EXC 	= 1.0f/tauLTP;
+		grp_Info[grpId].TAU_LTD_INV_EXC		= 1.0f/tauLTD;
+		grp_Info[grpId].GAMA				= gama;
+		grp_Info[grpId].KAPA				= (1 + exp(-gama/tauLTP))/(1 - exp(-gama/tauLTP));
+		grp_Info[grpId].OMEGA				= alphaLTP * (1 - grp_Info[grpId].KAPA);
+		// set flags for STDP function
+		grp_Info[grpId].WithESTDPtype	= type;
+		grp_Info[grpId].WithESTDPcurve = curve;
+		grp_Info[grpId].WithESTDP		= isSet;
+		grp_Info[grpId].WithSTDP		|= grp_Info[grpId].WithESTDP;
+		sim_with_stdp					|= grp_Info[grpId].WithSTDP;
 
-		KERNEL_INFO("STDP %s for %s(%d)", isSet?"enabled":"disabled", grp_Info2[grpId].Name.c_str(), grpId);
+		KERNEL_INFO("E-STDP %s for %s(%d)", isSet?"enabled":"disabled", grp_Info2[grpId].Name.c_str(), grpId);
 	}
 }
 
+// set ISTDP params
+void CpuSNN::setISTDP(int grpId, bool isSet, stdpType_t type, stdpCurve_t curve, float abLTP, float abLTD, float tau1, float tau2) {
+	assert(grpId>=-1);
+	if (isSet) {
+		assert(type!=UNKNOWN_STDP);
+		assert(abLTP>=0); assert(abLTD>=0); assert(tau1>0); assert(tau2>0);
+	}
+
+	if (grpId==ALL) { // shortcut for all groups
+		for(int grpId1=0; grpId1 < numGrp; grpId1++) {
+			setISTDP(grpId1, isSet, type, curve, abLTP, abLTD, tau1, tau2);
+		}
+	} else {
+		// set STDP for a given group
+		// set params for STDP curve
+		if (curve == ANTI_HEBBIAN) {
+			grp_Info[grpId].ALPHA_LTP_INB = abLTP;
+			grp_Info[grpId].ALPHA_LTD_INB = abLTD;
+			grp_Info[grpId].TAU_LTP_INV_INB = 1.0f / tau1;
+			grp_Info[grpId].TAU_LTD_INV_INB = 1.0f / tau2;
+			grp_Info[grpId].BETA_LTP 		= 0.0f;
+			grp_Info[grpId].BETA_LTD 		= 0.0f;
+			grp_Info[grpId].LAMDA			= 1.0f;
+			grp_Info[grpId].DELTA			= 1.0f;
+		} else {
+			grp_Info[grpId].ALPHA_LTP_INB = 0.0f;
+			grp_Info[grpId].ALPHA_LTD_INB = 0.0f;
+			grp_Info[grpId].TAU_LTP_INV_INB = 1.0f;
+			grp_Info[grpId].TAU_LTD_INV_INB = 1.0f;
+			grp_Info[grpId].BETA_LTP 		= abLTP;
+			grp_Info[grpId].BETA_LTD 		= abLTD;
+			grp_Info[grpId].LAMDA			= tau1;
+			grp_Info[grpId].DELTA			= tau2;
+		}
+		// set flags for STDP function
+		//FIXME: separate STDPType to ESTDPType and ISTDPType
+		grp_Info[grpId].WithISTDPtype	= type;
+		grp_Info[grpId].WithISTDPcurve = curve;
+		grp_Info[grpId].WithISTDP		= isSet;
+		grp_Info[grpId].WithSTDP		|= grp_Info[grpId].WithISTDP;
+		sim_with_stdp					|= grp_Info[grpId].WithSTDP;
+
+		KERNEL_INFO("I-STDP %s for %s(%d)", isSet?"enabled":"disabled", grp_Info2[grpId].Name.c_str(), grpId);
+	}
+}
 
 // set STP params
 void CpuSNN::setSTP(int grpId, bool isSet, float STP_U, float STP_tau_u, float STP_tau_x) {
@@ -621,8 +656,8 @@ void CpuSNN::setWeightAndWeightChangeUpdate(updateInterval_t wtANDwtChangeUpdate
 int CpuSNN::runNetwork(int _nsec, int _nmsec, bool printRunSummary, bool copyState) {
 	assert(_nmsec >= 0 && _nmsec < 1000);
 	assert(_nsec  >= 0);
-	int runDuration = _nsec*1000 + _nmsec;
-	KERNEL_DEBUG("runNetwork: runDur=%dms, printRunSummary=%s, copyState=%s", runDuration, printRunSummary?"y":"n",
+	int runDurationMs = _nsec*1000 + _nmsec;
+	KERNEL_DEBUG("runNetwork: runDur=%dms, printRunSummary=%s, copyState=%s", runDurationMs, printRunSummary?"y":"n",
 		copyState?"y":"n");
 
 	// setupNetwork() must have already been called
@@ -643,19 +678,19 @@ int CpuSNN::runNetwork(int _nsec, int _nmsec, bool printRunSummary, bool copySta
 
 	// store current start time for future reference
 	simTimeRunStart = simTime;
-	simTimeRunStop  = simTime+runDuration;
+	simTimeRunStop  = simTime+runDurationMs;
 	assert(simTimeRunStop>=simTimeRunStart); // check for arithmetic underflow
 
 	// set the Poisson generation time slice to be at the run duration up to PROPOGATED_BUFFER_SIZE ms.
 	// \TODO: should it be PROPAGATED_BUFFER_SIZE-1 or PROPAGATED_BUFFER_SIZE ?
-	setGrpTimeSlice(ALL, MAX(1,MIN(runDuration,PROPAGATED_BUFFER_SIZE-1)));
+	setGrpTimeSlice(ALL, MAX(1,MIN(runDurationMs,PROPAGATED_BUFFER_SIZE-1)));
 
 	CUDA_RESET_TIMER(timer);
 	CUDA_START_TIMER(timer);
 
 	// if nsec=0, simTimeMs=10, we need to run the simulator for 10 timeStep;
 	// if nsec=1, simTimeMs=10, we need to run the simulator for 1*1000+10, time Step;
-	for(int i=0; i<runDuration; i++) {
+	for(int i=0; i<runDurationMs; i++) {
 		if(simMode_ == CPU_MODE)
 			doSnnSim();
 		else
@@ -726,44 +761,12 @@ int CpuSNN::runNetwork(int _nsec, int _nmsec, bool printRunSummary, bool copySta
 	if (printRunSummary) {
 		showStatus();
 
+		// if there are Monitors available and it's time to show the log, print status for each group
 		if (numSpikeMonitor) {
-			// if there are SpikeMonitors available and it's time to show the log, print basic spike stats
-			// for each group with SpikeMon on
-			for (int grpId=0; grpId<numGrp; grpId++) {
-				int monitorId = grp_Info[grpId].SpikeMonitorId;
-				if (monitorId==-1)
-					continue;
-
-				// in GPU mode, need to get data from device first
-				if (simMode_==GPU_MODE)
-					copyFiringStateFromGPU(grpId);
-
-				// \TODO nSpikeCnt should really be a member of the SpikeMonitor object that gets populated if
-				// printRunSummary is true or mode==COUNT.....
-				// so then we can use spkMonObj->print(false); // showSpikeTimes==false
-				int grpSpk = 0;
-				for (int neurId=grp_Info[grpId].StartN; neurId<=grp_Info[grpId].EndN; neurId++)
-					grpSpk += nSpikeCnt[neurId]; // add up all neuronal spike counts
-
-				float meanRate = grpSpk*1000.0/runDuration/grp_Info[grpId].SizeN;
-				float std = 0.0f;
-				if (grp_Info[grpId].SizeN > 1) {
-					for (int neurId=grp_Info[grpId].StartN; neurId<=grp_Info[grpId].EndN; neurId++)
-						std += (nSpikeCnt[neurId]-meanRate)*(nSpikeCnt[neurId]-meanRate);
-
-					std = sqrt(std/(grp_Info[grpId].SizeN-1.0));
-				}
-
-
-				KERNEL_INFO("(t=%.3fs) SpikeMonitor for group %s(%d) has %d spikes in %dms (%.2f +/- %.2f Hz)",
-					(float)(simTime/1000.0),
-					grp_Info2[grpId].Name.c_str(),
-					grpId,
-					grpSpk,
-					runDuration,
-					meanRate,
-					std);
-			}
+			printStatusSpikeMonitor(ALL, runDurationMs);
+		}
+		if (numConnectionMonitor) {
+			printStatusConnectionMonitor(ALL);
 		}
 	}
 
@@ -932,17 +935,54 @@ void CpuSNN::setGroupMonitor(int grpId, GroupMonitorCore* groupMon) {
 	cpuSnnSz.monitorInfoSize += sizeof(float) * 100 * 4;
 }
 
-void CpuSNN::setConnectionMonitor(int grpIdPre, int grpIdPost, ConnectionMonitorCore* connectionMon) {
-	// store the grpId for further reference
-	connMonGrpIdPre[numConnectionMonitor] = grpIdPre;
-	connMonGrpIdPost[numConnectionMonitor] = grpIdPost;
+ConnectionMonitor* CpuSNN::setConnectionMonitor(int grpIdPre, int grpIdPost, FILE* fid) {
+	// find connection based on pre-post pair
+	short int connId = getConnectId(grpIdPre,grpIdPost);
+	if (connId<0) {
+		KERNEL_ERROR("No connection found from group %d(%s) to group %d(%s)", grpIdPre, getGroupName(grpIdPre).c_str(),
+			grpIdPost, getGroupName(grpIdPost).c_str());
+		exitSimulation(1);
+	}
 
-	// also inform the grp that it is being monitored...
-	grp_Info[grpIdPre].ConnectionMonitorId = numConnectionMonitor;
+	// check whether connection already has a connection monitor
+	grpConnectInfo_t* connInfo = getConnectInfo(connId);
+	if (connInfo->ConnectionMonitorId >= 0) {
+		KERNEL_ERROR("setConnectionMonitor has already been called on Connection %d (MonitorId=%d)", connId, connInfo->ConnectionMonitorId);
+		exitSimulation(1);
+	}
 
-	connBufferCallback[numConnectionMonitor] = connectionMon; // Default value of _netMon is NULL
+	// create new ConnectionMonitorCore object in any case and initialize
+	// connMonObj destructor (see below) will deallocate it
+	ConnectionMonitorCore* connMonCoreObj = new ConnectionMonitorCore(this, numConnectionMonitor, connId,
+		grpIdPre, grpIdPost);
+	connMonCoreList[numConnectionMonitor] = connMonCoreObj;
+
+	// assign conn file ID if we selected to write to a file, else it's NULL
+	// if file pointer exists, it has already been fopened
+	// this will also write the header section of the conn file
+	// connMonCoreObj destructor will fclose it
+	connMonCoreObj->setConnectFileId(fid);
+
+	// create a new ConnectionMonitor object for the user-interface
+	// CpuSNN::deleteObjects will deallocate it
+	ConnectionMonitor* connMonObj = new ConnectionMonitor(connMonCoreObj);
+	connMonList[numConnectionMonitor] = connMonObj;
+
+	// inform the connection that it is being monitored...
+	connInfo->ConnectionMonitorId = numConnectionMonitor;
+
+	// now init core object (depends on several datastructures allocated above)
+	connMonCoreObj->init();
+
+    // not eating much memory anymore, got rid of all buffers
+	cpuSnnSz.monitorInfoSize += sizeof(ConnectionMonitor*);
+	cpuSnnSz.monitorInfoSize += sizeof(ConnectionMonitorCore*);
 
 	numConnectionMonitor++;
+	KERNEL_INFO("ConnectionMonitor %d set for Connection %d: %d(%s) => %d(%s)", connInfo->ConnectionMonitorId, connId, grpIdPre, getGroupName(grpIdPre).c_str(),
+		grpIdPost, getGroupName(grpIdPost).c_str());
+
+	return connMonObj;
 }
 
 void CpuSNN::setExternalCurrent(int grpId, const std::vector<float>& current) {
@@ -1310,6 +1350,25 @@ void CpuSNN::setLogsFp(FILE* fpInf, FILE* fpErr, FILE* fpDeb, FILE* fpLog) {
 /// GETTERS / SETTERS
 /// **************************************************************************************************************** ///
 
+// loop over linked list entries to find a connection with the right pre-post pair, O(N)
+short int CpuSNN::getConnectId(int grpIdPre, int grpIdPost) {
+	grpConnectInfo_t* connInfo = connectBegin;
+
+	short int connId = -1;
+	while (connInfo) {
+		// check whether pre and post match
+		if (connInfo->grpSrc == grpIdPre && connInfo->grpDest == grpIdPost) {
+			connId = connInfo->connId;
+			break;
+		}
+
+		// otherwise, keep looking
+		connInfo = connInfo->next;
+	}
+
+	return connId;
+}
+
 //! used for parameter tuning functionality
 grpConnectInfo_t* CpuSNN::getConnectInfo(short int connectId) {
 	grpConnectInfo_t* nextConn = connectBegin;
@@ -1468,11 +1527,25 @@ GroupSTDPInfo_t CpuSNN::getGroupSTDPInfo(int grpId) {
 	GroupSTDPInfo_t gInfo;
 
 	gInfo.WithSTDP = grp_Info[grpId].WithSTDP;
-	gInfo.WithSTDPtype = grp_Info[grpId].WithSTDPtype;
-	gInfo.ALPHA_LTD = grp_Info[grpId].ALPHA_LTD;
-	gInfo.ALPHA_LTP = grp_Info[grpId].ALPHA_LTP;
-	gInfo.TAU_LTD_INV = grp_Info[grpId].TAU_LTD_INV;
-	gInfo.TAU_LTP_INV = grp_Info[grpId].TAU_LTP_INV;
+	gInfo.WithESTDP = grp_Info[grpId].WithESTDP;
+	gInfo.WithISTDP = grp_Info[grpId].WithISTDP;
+	gInfo.WithESTDPtype = grp_Info[grpId].WithESTDPtype;
+	gInfo.WithISTDPtype = grp_Info[grpId].WithISTDPtype;
+	gInfo.WithESTDPcurve = grp_Info[grpId].WithESTDPcurve;
+	gInfo.WithISTDPcurve = grp_Info[grpId].WithISTDPcurve;
+	gInfo.ALPHA_LTD_EXC = grp_Info[grpId].ALPHA_LTD_EXC;
+	gInfo.ALPHA_LTP_EXC = grp_Info[grpId].ALPHA_LTP_EXC;
+	gInfo.TAU_LTD_INV_EXC = grp_Info[grpId].TAU_LTD_INV_EXC;
+	gInfo.TAU_LTP_INV_EXC = grp_Info[grpId].TAU_LTP_INV_EXC;
+	gInfo.ALPHA_LTD_INB = grp_Info[grpId].ALPHA_LTD_INB;
+	gInfo.ALPHA_LTP_INB = grp_Info[grpId].ALPHA_LTP_INB;
+	gInfo.TAU_LTD_INV_INB = grp_Info[grpId].TAU_LTD_INV_INB;
+	gInfo.TAU_LTP_INV_INB = grp_Info[grpId].TAU_LTP_INV_INB;
+	gInfo.GAMA = grp_Info[grpId].GAMA;
+	gInfo.BETA_LTP = grp_Info[grpId].BETA_LTP;
+	gInfo.BETA_LTD = grp_Info[grpId].BETA_LTD;
+	gInfo.LAMDA = grp_Info[grpId].LAMDA;
+	gInfo.DELTA = grp_Info[grpId].DELTA;
 
 	return gInfo;
 }
@@ -1533,63 +1606,6 @@ int CpuSNN::getNumSynapticConnections(short int connectionId) {
   exitSimulation(1);
 }
 
-// gets weights from synaptic connections from gIDpre to gIDpost
-void CpuSNN::getPopWeights(int grpIdPre, int grpIdPost, float*& weights, int& matrixSize) {
-	assert(grpIdPre>=0); assert(grpIdPre<numGrp); assert(grpIdPost>=0); assert(grpIdPost<numGrp);
-	post_info_t* preId;
-	int pre_nid, pos_ij;
-	int numPre, numPost;
-
-	//population sizes
-	numPre = grp_Info[grpIdPre].SizeN;
-	numPost = grp_Info[grpIdPost].SizeN;
-
-	//first iteration gets the number of synaptic weights to place in our
-	//weight matrix.
-	matrixSize=0;
-	//iterate over all neurons in the post group
-	for (int i=grp_Info[grpIdPost].StartN; i<=grp_Info[grpIdPost].EndN; i++) {
-		// for every post-neuron, find all pre
-		pos_ij = cumulativePre[i]; // i-th post neuron, jth pre neuron
-		//iterate over all presynaptic synapses of the current postsynaptic neuron
-		for(int j=0; j<Npre[i]; pos_ij++,j++) {
-			preId = &preSynapticIds[pos_ij];
-			pre_nid = GET_CONN_NEURON_ID((*preId)); // neuron id of pre
-			if (pre_nid<grp_Info[grpIdPre].StartN || pre_nid>grp_Info[grpIdPre].EndN)
-				continue; // connection does not belong to group grpIdPre
-			matrixSize++;
-		}
-	}
-	//now we have the correct size matrix
-	weights = new float[matrixSize];
-
-	//second iteration assigns the weights
-	int curr = 0; // iterator for return array
-
-	//iterate over all neurons in the post group
-	for (int i=grp_Info[grpIdPost].StartN; i<=grp_Info[grpIdPost].EndN; i++) {
-		// for every post-neuron, find all pre
-		pos_ij = cumulativePre[i]; // i-th neuron, j=0th synapse
-		//do the GPU copy here.  Copy the current weights from GPU to CPU.
-		if(simMode_==GPU_MODE){
-			copyWeightsGPU(i,grpIdPre);
-		}
-		//iterate over all presynaptic synapses
-		for(int j=0; j<Npre[i]; pos_ij++,j++) {
-			//TAGS:TODO: We have to double check we have access to preSynapticIds in GPU_MODE.
-			//We can check where they were allocated and make sure that this occurs in
-			//both the CPU and GPU modes.
-			preId = &preSynapticIds[pos_ij];
-			pre_nid = GET_CONN_NEURON_ID((*preId)); // neuron id of pre
-			if (pre_nid<grp_Info[grpIdPre].StartN || pre_nid>grp_Info[grpIdPre].EndN)
-				continue; // connection does not belong to group grpIdPre
-			//the weights stored in wt were copied from the GPU in the above block
-			weights[curr] = wt[pos_ij];
-			curr++;
-		}
-	}
-}
-
 // Returns pointer to nSpikeCnt, which is a 1D array of the number of spikes every neuron in the group
 int* CpuSNN::getSpikeCntPtr(int grpId) {
 	//! do check to make sure appropriate flag is set
@@ -1619,57 +1635,6 @@ int* CpuSNN::getSpikeCounter(int grpId) {
 		return spkCntBuf[bufPos]; // return pointer to buffer
 	}
 }
-
-// this is a user function
-// TODO: fix this
-float* CpuSNN::getWeightChanges(int gIDpre, int gIDpost, int& Npre, int& Npost, float* weightChanges) {
-	 Npre = grp_Info[gIDpre].SizeN;
-	 Npost = grp_Info[gIDpost].SizeN;
-
-	if (weightChanges==NULL) weightChanges = new float[Npre*Npost];
-		memset(weightChanges,0,Npre*Npost*sizeof(float));
-
-	// copy the pre synaptic data from GPU, if needed
-	// note: this will not include wtChange[] and synSpikeTime[] if sim_with_fixedwts
-	if (simMode_ == GPU_MODE)
-    	copyWeightState(&cpuNetPtrs, &cpu_gpuNetPtrs, cudaMemcpyDeviceToHost, false, gIDpost);
-
-	for (int i=grp_Info[gIDpre].StartN;i<grp_Info[gIDpre].EndN;i++) {
-		unsigned int offset = cumulativePost[i];
-
-		for (int t=0;t<maxDelay_;t++) {
-			delay_info_t dPar = postDelayInfo[i*(maxDelay_+1)+t];
-
-			for(int idx_d = dPar.delay_index_start; idx_d < (dPar.delay_index_start + dPar.delay_length); idx_d = idx_d+1) {
-
-				// get synaptic info...
-				post_info_t post_info = postSynapticIds[offset + idx_d];
-
-				// get neuron id
-				//int p_i = (post_info&POST_SYN_NEURON_MASK);
-				int p_i = GET_CONN_NEURON_ID(post_info);
-				assert(p_i<numN);
-
-				if (p_i >= grp_Info[gIDpost].StartN && p_i <= grp_Info[gIDpost].EndN) {
-					// get syn id
-					int s_i = GET_CONN_SYN_ID(post_info);
-
-					// get the cumulative position for quick access...
-					unsigned int pos_i = cumulativePre[p_i] + s_i;
-
-					// if a group has fixed input weights, it will not have wtChange[] on the GPU side
-					if (grp_Info[gIDpost].FixedInputWts)
-						weightChanges[i+Npre*(p_i-grp_Info[gIDpost].StartN)] = 0.0f;
-					else
-						weightChanges[i+Npre*(p_i-grp_Info[gIDpost].StartN)] = wtChange[pos_i];
-				}
-			}
-		}
-	}
-
-	return weightChanges;
-}
-
 
 // True allows getSpikeCntPtr_GPU to copy firing state information from GPU kernel to cpuNetPtrs
 // Warning: setting this flag to true will slow down the simulation significantly.
@@ -1864,13 +1829,18 @@ void CpuSNN::CpuSNNinit() {
 		grp_Info[i].MaxFiringRate = UNKNOWN_NEURON_MAX_FIRING_RATE;
 		grp_Info[i].SpikeMonitorId = -1;
 		grp_Info[i].GroupMonitorId = -1;
-		grp_Info[i].ConnectionMonitorId = -1;
+//		grp_Info[i].ConnectionMonitorId = -1;
 		grp_Info[i].FiringCount1sec=0;
 		grp_Info[i].numPostSynapses 		= 0;	// default value
 		grp_Info[i].numPreSynapses 	= 0;	// default value
 		grp_Info[i].WithSTP = false;
 		grp_Info[i].WithSTDP = false;
-		grp_Info[i].WithSTDPtype = UNKNOWN_STDP;
+		grp_Info[i].WithESTDP = false;
+		grp_Info[i].WithISTDP = false;
+		grp_Info[i].WithESTDPtype = UNKNOWN_STDP;
+		grp_Info[i].WithISTDPtype = UNKNOWN_STDP;
+		grp_Info[i].WithESTDPcurve = UNKNOWN_CURVE;
+		grp_Info[i].WithISTDPcurve = UNKNOWN_CURVE;
 		grp_Info[i].FixedInputWts = true; // Default is true. This value changed to false
 		// if any incoming  connections are plastic
 		grp_Info[i].isSpikeGenerator = false;
@@ -2285,7 +2255,7 @@ void CpuSNN::buildNetwork() {
 							connectUserDefined(newInfo);
 							break;
 						default:
-							KERNEL_ERROR("Invalid connection type( should be 'random', or 'full')");
+							KERNEL_ERROR("Invalid connection type( should be 'random', 'full', 'full-no-direct', or 'one-to-one')");
 							exitSimulation(-1);
 					}
 
@@ -2748,7 +2718,6 @@ void CpuSNN::doSTPUpdateAndDecayCond() {
 	}
 }
 
-
 void CpuSNN::findFiring() {
 	int spikeBufferFull = 0;
 
@@ -2777,26 +2746,58 @@ void CpuSNN::findFiring() {
 				if (spikeBufferFull)
 					break;
 
+				// STDP calculation: the post-synaptic neuron fires after the arrival of a pre-synaptic spike
 				if (grp_Info[g].WithSTDP) {
-					unsigned int pos_ij = cumulativePre[i];
+					unsigned int pos_ij = cumulativePre[i]; // the index of pre-synaptic neuron
 					for(int j=0; j < Npre_plastic[i]; pos_ij++, j++) {
 						int stdp_tDiff = (simTime-synSpikeTime[pos_ij]);
 						assert(!((stdp_tDiff < 0) && (synSpikeTime[pos_ij] != MAX_SIMULATION_TIME)));
 
 						if (stdp_tDiff > 0) {
-							#ifdef INHIBITORY_STDP
-							// if this is an excitatory or inhibitory synapse
-							if (maxSynWt[pos_ij] >= 0)
-							#endif
-							if ((stdp_tDiff*grp_Info[g].TAU_LTP_INV)<25)
-								wtChange[pos_ij] += STDP(stdp_tDiff, grp_Info[g].ALPHA_LTP, grp_Info[g].TAU_LTP_INV);
-							#ifdef INHIBITORY_STDP
-							else
-								if ((stdp_tDiff > 0) && ((stdp_tDiff*grp_Info[g].TAU_LTD_INV)<25)) {
-									wtChange[pos_ij] -= (STDP(stdp_tDiff, grp_Info[g].ALPHA_LTP, grp_Info[g].TAU_LTP_INV)
-										- STDP(stdp_tDiff, grp_Info[g].ALPHA_LTD*1.5, grp_Info[g].TAU_LTD_INV));
+							// check this is an excitatory or inhibitory synapse
+							if (grp_Info[g].WithESTDP && maxSynWt[pos_ij] >= 0) { // excitatory synapse
+								// Handle E-STDP curve
+								switch (grp_Info[g].WithESTDPcurve) {
+								case HEBBIAN: // Hebian curve
+									if (stdp_tDiff * grp_Info[g].TAU_LTP_INV_EXC < 25)
+										wtChange[pos_ij] += STDP(stdp_tDiff, grp_Info[g].ALPHA_LTP_EXC, grp_Info[g].TAU_LTP_INV_EXC);
+									break;
+								case HALF_HEBBIAN: // half-Hebbian curve
+									if (stdp_tDiff * grp_Info[g].TAU_LTP_INV_EXC < 25) {
+										if (stdp_tDiff <= grp_Info[g].GAMA)
+											wtChange[pos_ij] += grp_Info[g].OMEGA + grp_Info[g].KAPA * STDP(stdp_tDiff, grp_Info[g].ALPHA_LTP_EXC, grp_Info[g].TAU_LTP_INV_EXC);
+										else // stdp_tDiff > GAMA
+											wtChange[pos_ij] -= STDP(stdp_tDiff, grp_Info[g].ALPHA_LTP_EXC, grp_Info[g].TAU_LTP_INV_EXC);
+									}
+									break;
+								default:
+									KERNEL_ERROR("Invalid E-STDP curve!");
+									break;
 								}
-							#endif
+							} else if (grp_Info[g].WithISTDP && maxSynWt[pos_ij] < 0) { // inhibitory synapse
+								// Handle I-STDP curve
+								switch (grp_Info[g].WithISTDPcurve) {
+								case ANTI_HEBBIAN: // anti-Hebbian curve
+									if (stdp_tDiff * grp_Info[g].TAU_LTP_INV_INB < 25) { // LTP of inhibitory synapse, which decreases synapse weight
+										wtChange[pos_ij] -= STDP(stdp_tDiff, grp_Info[g].ALPHA_LTP_INB, grp_Info[g].TAU_LTP_INV_INB);
+									}
+									break;
+								case LINEAR_SYMMETRIC: // linear symmetric curve
+									break;
+								case CONSTANT_SYMMETRIC: // constant symmetric curve
+									if (stdp_tDiff <= grp_Info[g].LAMDA) { // LTP of inhibitory synapse, which decreases synapse weight
+										wtChange[pos_ij] -= grp_Info[g].BETA_LTP;
+										//printf("I-STDP LTP\n");
+									} else if (stdp_tDiff <= grp_Info[g].DELTA) { // LTD of inhibitory syanpse, which increase sysnapse weight
+										wtChange[pos_ij] += grp_Info[g].BETA_LTD;
+										//printf("I-STDP LTD\n");
+									} else { /*do nothing*/}
+									break;
+								default:
+									KERNEL_ERROR("Invalid I-STDP curve!");
+									break;
+								}
+							}
 						}
 					}
 				}
@@ -2918,24 +2919,48 @@ void CpuSNN::generatePostSpike(unsigned int pre_i, unsigned int idx_d, unsigned 
 		cpuNetPtrs.grpDA[post_grpId] += 0.02;
 	}
 
-	// STDP calculation....
+	// STDP calculation: the post-synaptic neuron fires before the arrival of a pre-synaptic spike
 	if (grp_Info[post_grpId].WithSTDP) {
 		int stdp_tDiff = (simTime-lastSpikeTime[post_i]);
 
 		if (stdp_tDiff >= 0) {
-			#ifdef INHIBITORY_STDP
-			if ((pre_type & TARGET_GABAa) || (pre_type & TARGET_GABAb))
-			{
-				if ((stdp_tDiff*grp_Info[post_grpId].TAU_LTD_INV)<25)
-					wtChange[pos_i] -= (STDP(stdp_tDiff, grp_Info[post_grpId].ALPHA_LTP, grp_Info[post_grpId].TAU_LTP_INV)
-			    					 - STDP(stdp_tDiff, grp_Info[post_grpId].ALPHA_LTD*1.5, grp_Info[post_grpId].TAU_LTD_INV));
+			if (grp_Info[post_grpId].WithISTDP && ((pre_type & TARGET_GABAa) || (pre_type & TARGET_GABAb))) { // inhibitory syanpse
+				// Handle I-STDP curve
+				switch (grp_Info[post_grpId].WithISTDPcurve) {
+				case ANTI_HEBBIAN: // anit-Hebbian curve
+					if ((stdp_tDiff*grp_Info[post_grpId].TAU_LTD_INV_INB)<25) { // LTD of inhibitory syanpse, which increase synapse weight
+						wtChange[pos_i] += STDP(stdp_tDiff, grp_Info[post_grpId].ALPHA_LTD_INB, grp_Info[post_grpId].TAU_LTD_INV_INB);
+					}
+					break;
+				case LINEAR_SYMMETRIC: // linear symmetric curve
+					break;
+				case CONSTANT_SYMMETRIC: // constant symmetric curve
+					if (stdp_tDiff <= grp_Info[post_grpId].LAMDA) { // LTP of inhibitory synapse, which decreases synapse weight
+						wtChange[pos_i] -= grp_Info[post_grpId].BETA_LTP;
+					} else if (stdp_tDiff <= grp_Info[post_grpId].DELTA) { // LTD of inhibitory syanpse, which increase synapse weight
+						wtChange[pos_i] += grp_Info[post_grpId].BETA_LTD;
+					} else { /*do nothing*/ }
+					break;
+				default:
+					KERNEL_ERROR("Invalid I-STDP curve");
+					break;
 				}
-				else
-			#endif
-			{
-				if ((stdp_tDiff*grp_Info[post_grpId].TAU_LTD_INV)<25)
-					wtChange[pos_i] -= STDP(stdp_tDiff, grp_Info[post_grpId].ALPHA_LTD, grp_Info[post_grpId].TAU_LTD_INV);
-			}
+			} else if (grp_Info[post_grpId].WithESTDP && ((pre_type & TARGET_AMPA) || (pre_type & TARGET_NMDA))) { // excitatory synapse
+				// Handle E-STDP curve
+				switch (grp_Info[post_grpId].WithESTDPcurve) {
+				case HEBBIAN: // Hebbian curve
+					if (stdp_tDiff * grp_Info[post_grpId].TAU_LTD_INV_EXC < 25)
+						wtChange[pos_i] -= STDP(stdp_tDiff, grp_Info[post_grpId].ALPHA_LTD_EXC, grp_Info[post_grpId].TAU_LTD_INV_EXC);
+					break;
+				case HALF_HEBBIAN: // half-Hebbian curve
+					if (stdp_tDiff * grp_Info[post_grpId].TAU_LTD_INV_EXC < 25)
+						wtChange[pos_i] -= STDP(stdp_tDiff, grp_Info[post_grpId].ALPHA_LTD_EXC, grp_Info[post_grpId].TAU_LTD_INV_EXC);
+					break;
+				default:
+					KERNEL_ERROR("Invalid E-STDP curve");
+					break;
+				}
+			} else { /*do nothing*/ }
 		}
 		assert(!((stdp_tDiff < 0) && (lastSpikeTime[post_i] != MAX_SIMULATION_TIME)));
 	}
@@ -3103,7 +3128,6 @@ void  CpuSNN::globalStateUpdate() {
 
 		for(int i=grp_Info[g].StartN; i <= grp_Info[g].EndN; i++) {
 			assert(i < numNReg);
-
 			if (grp_Info[g].WithHomeostasis)
 				avgFiring[i] *= grp_Info[g].avgTimeScale_decay;
 
@@ -3175,6 +3199,27 @@ void CpuSNN::initSynapticWeights() {
 	cpuSnnSz.synapticInfoSize = sizeof(float)*(preSynCnt*2);
 
 	resetSynapticConnections(false);
+}
+
+// checks whether a connection ID contains plastic synapses O(#connections)
+bool CpuSNN::isConnectionPlastic(short int connId) {
+	assert(connId!=ALL);
+	assert(connId<numConnections);
+
+	// search linked list for right connection ID
+	grpConnectInfo_t* connInfo = connectBegin;
+	bool isPlastic = false;
+	while (connInfo) {
+		if (connId == connInfo->connId) {
+			// get syn wt type from connection property
+			isPlastic = GET_FIXED_PLASTIC(connInfo->connProp);
+			break;
+		}
+
+		connInfo = connInfo->next;
+	}
+
+	return isPlastic;
 }
 
 // checks whether the numN* class members are consistent and complete
@@ -3793,6 +3838,14 @@ void CpuSNN::resetPointers(bool deallocate) {
 		if (spikeMonList[i]!=NULL && deallocate) delete spikeMonList[i];
 		spikeMonList[i]=NULL;
 	}
+
+	// delete all ConnectionMonitor objects
+	// don't kill ConnectionMonitorCore objects, they will get killed automatically
+	for (int i=0; i<numConnectionMonitor; i++) {
+		if (connMonList[i]!=NULL && deallocate) delete connMonList[i];
+		connMonList[i]=NULL;
+	}
+
 	// delete all Spike Counters
 	for (int i=0; i<numSpkCnt; i++) {
 		if (spkCntBuf[i]!=NULL && deallocate)
@@ -4165,36 +4218,44 @@ void CpuSNN::updateAfterMaxTime() {
 	resetPropogationBuffer();
 }
 
-void CpuSNN::updateConnectionMonitor() {
-	for (int grpId = 0; grpId < numGrp; grpId++) {
-		int monitorId = grp_Info[grpId].ConnectionMonitorId;
+// this function is usually called every second, but it can also be called via ConnectionMonitorCore::takeSnapshot
+void CpuSNN::updateConnectionMonitor(int connId) {
+	grpConnectInfo_t* connInfo = connectBegin;
 
-		if(monitorId != -1) {
-			int grpIdPre = connMonGrpIdPre[monitorId];
-			int grpIdPost = connMonGrpIdPost[monitorId];
-			float* weights = NULL;
-			float avgWeight = 0.0f;
-			int weightSzie;
-			getPopWeights(grpIdPre, grpIdPost, weights, weightSzie);
+	// loop over all connections and find the ones with Connection Monitors
+	while (connInfo) {
+		if (connInfo->ConnectionMonitorId>=0 && (connId==ALL || connInfo->connId==connId)) {
+			int monId = connInfo->ConnectionMonitorId;
+			int grpIdPre = connInfo->grpSrc;
+			int grpIdPost = connInfo->grpDest;
 
-			for (int i = 0; i < weightSzie; i++)
-				avgWeight += weights[i];
-			avgWeight /= weightSzie;
+			// copy the weights for a given post-group from device
+			// \TODO: check if the weights for this grpIdPost have already been copied
+			// \TODO: even better, but tricky because of ordering, make copyWeightState connection-based
+			if (simMode_==GPU_MODE) {
+				copyWeightState(&cpuNetPtrs, &cpu_gpuNetPtrs, cudaMemcpyDeviceToHost, false, grpIdPost);
+			}
 
-			KERNEL_INFO("");
-			KERNEL_INFO("(t=%.3fs) Connection Monitor for Group %s to Group %s has average weight %f",
-				(float)(simTime/1000.0),
-				grp_Info2[grpIdPre].Name.c_str(), grp_Info2[grpIdPost].Name.c_str(), avgWeight);
+			// update time stamp of connection monitor
+			if (connMonCoreList[monId]->updateTime(simTime)) {
+				// only update weights if we haven't done so already for this timestamp
+				for (int postId=grp_Info[grpIdPost].StartN; postId<=grp_Info[grpIdPost].EndN; postId++) {
+					unsigned int pos_ij = cumulativePre[postId];
+					for (int i=0; i<Npre[postId]; i++, pos_ij++) {
+						// skip synapses that belong to a different connection ID
+						if (cumConnIdPre[pos_ij]!=connInfo->connId)
+							continue;
 
-			printWeights(grpIdPre,grpIdPost);
-
-			// call the callback function
-			if (connBufferCallback[monitorId])
-				connBufferCallback[monitorId]->update(this, grpIdPre, grpIdPost, weights, weightSzie);
-
-			if (weights != NULL)
-				delete [] weights;
+						// find pre-neuron ID and update ConnectionMonitor container
+						int preId = GET_CONN_NEURON_ID(preSynapticIds[pos_ij]);
+						connMonCoreList[monId]->updateWeight(preId - getGroupStartNeuronId(grpIdPre),
+							postId - getGroupStartNeuronId(grpIdPost), wt[pos_ij]);
+					}
+				}
+			}
 		}
+
+		connInfo = connInfo->next;
 	}
 }
 
@@ -4514,9 +4575,35 @@ void CpuSNN::updateWeights() {
 				//	if (i==grp_Info[g].StartN)
 				//		KERNEL_DEBUG("%1.2f %1.2f \t", wt[offset+j]*10, wtChange[offset+j]*10);
 				float effectiveWtChange = stdpScaleFactor_ * wtChange[offset + j];
+//				if (wtChange[offset+j])
+//					printf("connId=%d, wtChange[%d]=%f\n",cumConnIdPre[offset+j],offset+j,wtChange[offset+j]);
 
 				// homeostatic weight update
-				switch (grp_Info[g].WithSTDPtype) {
+				// FIXME: check WithESTDPtype and WithISTDPtype first and then do weight change update
+				switch (grp_Info[g].WithESTDPtype) {
+				case STANDARD:
+					if (grp_Info[g].WithHomeostasis) {
+						wt[offset+j] += (diff_firing*wt[offset+j]*homeostasisScale + wtChange[offset+j])*baseFiring[i]/grp_Info[g].avgTimeScale/(1+fabs(diff_firing)*50);
+					} else {
+						// just STDP weight update
+						wt[offset+j] += effectiveWtChange;
+					}
+					break;
+				case DA_MOD:
+					if (grp_Info[g].WithHomeostasis) {
+						effectiveWtChange = cpuNetPtrs.grpDA[g] * effectiveWtChange;
+						wt[offset+j] += (diff_firing*wt[offset+j]*homeostasisScale + effectiveWtChange)*baseFiring[i]/grp_Info[g].avgTimeScale/(1+fabs(diff_firing)*50);
+					} else {
+						wt[offset+j] += cpuNetPtrs.grpDA[g] * effectiveWtChange;
+					}
+					break;
+				case UNKNOWN_STDP:
+				default:
+					// we shouldn't even be in here if !WithSTDP
+					break;
+				}
+
+				switch (grp_Info[g].WithISTDPtype) {
 				case STANDARD:
 					if (grp_Info[g].WithHomeostasis) {
 						wt[offset+j] += (diff_firing*wt[offset+j]*homeostasisScale + wtChange[offset+j])*baseFiring[i]/grp_Info[g].avgTimeScale/(1+fabs(diff_firing)*50);

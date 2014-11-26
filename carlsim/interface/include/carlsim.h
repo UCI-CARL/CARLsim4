@@ -54,6 +54,7 @@
 // carlsim.h
 #include <poisson_rate.h>
 #include <spike_monitor.h>
+#include <connection_monitor.h>
 
 #include <linear_algebra.h>
 
@@ -133,6 +134,7 @@ public:
 	 * \param[in] simMode		either CPU_MODE or GPU_MODE
 	 * \param[in] loggerMode    either USER, DEVELOPER, SILENT, or CUSTOM
 	 * \param[in] ithGPU 		on which GPU to establish a context (only relevant in GPU_MODE)
+	 * \param[in] nConfig 		number of network configurations 									// \TODO: explain
 	 * \param[in] randSeed 		random number generator seed
 	 */
 	CARLsim(const std::string& netName="SNN", simMode_t simMode=CPU_MODE, loggerMode_t loggerMode=USER, int ithGPU=0,
@@ -440,18 +442,72 @@ public:
 	/*!
 	 * \brief Sets default STDP mode and params
 	 *
-	 * \TODO finish docu
-	 * \STATE CONFIG
+	 * \sa setESTDP
 	 */
 	void setSTDP(int grpId, bool isSet);
 
 	/*!
 	 * \brief Sets STDP params for a group, custom
 	 *
+	 * \sa setESTDP
+	 */
+	void setSTDP(int grpId, bool isSet, stdpType_t type, float alphaLTP, float tauLTP, float alphaLTD, float tauLTD);
+
+	/*!
+	 * \brief Sets default E-STDP mode and params
+	 *
 	 * \TODO finish docu
 	 * \STATE CONFIG
 	 */
-	void setSTDP(int grpId, bool isSet, stdpType_t type, float alphaLTP, float tauLTP, float alphaLTD, float tauLTD);
+	void setESTDP(int grpId, bool isSet);
+
+	/*!
+	 * \brief Sets E-STDP params for a group, custom
+	 *
+	 * \TODO finish docu
+	 * \STATE CONFIG
+	 */
+	void setESTDP(int grupId, bool isSet, stdpType_t type, HebbianCurve curve);
+
+	/*!
+	 * \brief Sets E-STDP mode with hebbian curve
+	 *
+	 * \TODO finish docu
+	 * \STATE CONFIG
+	 */
+	void setESTDP(int grupId, bool isSet, stdpType_t type, HalfHebbianCurve curve);
+
+	/*!
+	 * \brief Sets default I-STDP mode and params
+	 *
+	 * \TODO finish docu
+	 * \STATE CONFIG
+	 */
+	void setISTDP(int grpId, bool isSet);
+
+	/*!
+	 * \brief Sets I-STDP mode with constant symmetric curve
+	 *
+	 * \TODO finish docu
+	 * \STATE CONFIG
+	 */
+	void setISTDP(int grpId, bool isSet, stdpType_t type, AntiHebbianCurve curve);
+	
+	/*!
+	 * \brief Sets I-STDP mode with constant symmetric curve
+	 *
+	 * \TODO finish docu
+	 * \STATE CONFIG
+	 */
+	void setISTDP(int grpId, bool isSet, stdpType_t type, ConstantSymmetricCurve curve);
+
+	/*!
+	 * \brief Sets I-STDP mode with linear symmetric curve
+	 *
+	 * \TODO finish docu
+	 * \STATE CONFIG
+	 */
+	void setISTDP(int grpId, bool isSet, stdpType_t type, LinearSymmetricCurve curve);
 
 	/*!
 	 * \brief Sets STP params U, tau_u, and tau_x of a neuron group (pre-synaptically)
@@ -605,7 +661,7 @@ public:
 	 * \param[in] grpIdPost 	the post-synaptic group ID
 	 * \param[in] connectionMon an instance of class ConnectionMonitor (see callback.h)
 	 */
-	void setConnectionMonitor(int grpIdPre, int grpIdPost, ConnectionMonitor* connectionMon=NULL);
+	ConnectionMonitor* setConnectionMonitor(int grpIdPre, int grpIdPost, const std::string& fname="");
 
 	/*!
 	 * \brief Sets the amount of current (mA) to inject into a group
@@ -1030,18 +1086,6 @@ public:
 	GroupNeuromodulatorInfo_t getGroupNeuromodulatorInfo(int grpId);
 
 	/*!
-	 * \brief Writes weights from synaptic connections from gIDpre to gIDpost.  Returns a pointer to the weights
-	 *
-	 * and the size of the 1D array in size.  gIDpre(post) is the group ID for the pre(post)synaptic group,
-	 * weights is a pointer to a single dimensional array of floats, size is the size of that array which is
-	 * returned to the user.  NOTE: user must free memory from weights to avoid a memory leak.
-	 * \TODO why not readPopWeight()?
-	 * \TODO finish docu
-	 * \STATE SETUP, EXECUTION
-	 */
-	void getPopWeights(int gIDpre, int gIDpost, float*& weights, int& size);
-
-	/*!
 	 * \brief returns
 	 *
 	 * \TODO finish docu
@@ -1084,16 +1128,6 @@ public:
 	 * Each entry is the number of spikes for this neuron (int) since the last reset.
 	 */
 	int* getSpikeCounter(int grpId);
-
-	/*!
-	 * \brief returns pointer to weight array
-	 *
-	 * \STATE EXECUTION
-	 * \TODO: maybe consider renaming getPopWeightChanges
-	 * \FIXME fix this
-	 * \deprecated deprecated
-	 */
-	float* getWeightChanges(int gIDpre, int gIDpost, int& Npre, int& Npost, float* weightChanges=NULL);
 
 	/*!
 	 * \brief returns
@@ -1164,10 +1198,25 @@ public:
 	/*!
 	* \brief sets default values for STDP params
 	*
+	* \sa setDefaultESTDPparams
+	*/
+	void setDefaultSTDPparams(float alphaLTP, float tauLTP, float alphaLTD, float tauLTD);
+
+	/*!
+	* \brief sets default values for E-STDP params
+	*
 	* \TODO finish docu
 	* \STATE CONFIG
 	*/
-	void setDefaultSTDPparams(float alphaLTP, float tauLTP, float alphaLTD, float tauLTD);
+	void setDefaultESTDPparams(float alphaLTP, float tauLTP, float alphaLTD, float tauLTD);
+
+	/*!
+	* \brief sets default values for I-STDP params
+	*
+	* \TODO finish docu
+	* \STATE CONFIG
+	*/
+	void setDefaultISTDPparams(float betaLTP, float betaLTD, float lamda, float delta);
 
 	/*!
 	 * \brief sets default values for STP params (neurType either EXCITATORY_NEURON or INHIBITORY_NEURON)
@@ -1201,6 +1250,7 @@ private:
 
 	CpuSNN* snn_;					//!< an instance of CARLsim core class
 	std::string netName_;			//!< network name
+	int nConfig_;					//!< number of configurations
 	int randSeed_;					//!< RNG seed
 	simMode_t simMode_;				//!< CPU_MODE or GPU_MODE
 	loggerMode_t loggerMode_;		//!< logger mode (USER, DEVELOPER, SILENT, CUSTOM)
@@ -1237,6 +1287,10 @@ private:
 	float def_STDP_tauLTP_;			//!< default value for LTP decay (ms)
 	float def_STDP_alphaLTD_;		//!< default value for LTD amplitude
 	float def_STDP_tauLTD_;			//!< default value for LTD decay (ms)
+	float def_STDP_betaLTP_;		//!< default value for LTP amplitude
+	float def_STDP_betaLTD_;		//!< default value for LTD amplitude
+	float def_STDP_lamda_;			//!< default value for interval of LTP
+	float def_STDP_delta_;			//!< default value for interval of LTD
 
 	// all default values for STP
 	float def_STP_U_exc_;			//!< default value for STP U excitatory

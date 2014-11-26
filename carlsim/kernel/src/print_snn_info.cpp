@@ -39,11 +39,7 @@
  */ 
 
 #include <snn.h>
-
-#if ! (WIN32 || WIN64)
-	#include <string.h>
-	#define strcmpi(s1,s2) strcasecmp(s1,s2)
-#endif
+#include <connection_monitor_core.h>
 
 void CpuSNN::printConnection(const std::string& fname) {
 	FILE *fp = fopen(fname.c_str(), "w");
@@ -96,6 +92,64 @@ void CpuSNN::printMemoryInfo(FILE* const fp) {
   fprintf(fp, "**************************************\n\n");
 
 }
+
+
+void CpuSNN::printStatusConnectionMonitor(int connId) {
+  grpConnectInfo_t* connInfo = connectBegin;
+
+  // connId can be either ALL or a specific connection ID
+  while (connInfo) {
+    if (connInfo->ConnectionMonitorId>=0 && (connId==ALL || connInfo->connId==connId)) {
+      // print connection weights (sparse representation: show only actually connected synapses)
+      // show the first hundred connections: (pre=>post) weight
+      connMonCoreList[connInfo->ConnectionMonitorId]->printSparse(ALL, 100, 4);
+    }
+    connInfo = connInfo->next;
+  }
+}
+
+void CpuSNN::printStatusSpikeMonitor(int grpId, int runDurationMs) {
+  if (grpId==ALL) {
+    for (int grpId1=0; grpId1<numGrp; grpId1++) {
+      printStatusSpikeMonitor(grpId1);
+    }
+  } else {
+    int monitorId = grp_Info[grpId].SpikeMonitorId;
+    if (monitorId==-1)
+      return;
+
+    // in GPU mode, need to get data from device first
+    if (simMode_==GPU_MODE)
+      copyFiringStateFromGPU(grpId);
+
+    // \TODO nSpikeCnt should really be a member of the SpikeMonitor object that gets populated if
+    // printRunSummary is true or mode==COUNT.....
+    // so then we can use spkMonObj->print(false); // showSpikeTimes==false
+    int grpSpk = 0;
+    for (int neurId=grp_Info[grpId].StartN; neurId<=grp_Info[grpId].EndN; neurId++)
+      grpSpk += nSpikeCnt[neurId]; // add up all neuronal spike counts
+
+    float meanRate = grpSpk*1000.0/runDurationMs/grp_Info[grpId].SizeN;
+    float std = 0.0f;
+    if (grp_Info[grpId].SizeN > 1) {
+      for (int neurId=grp_Info[grpId].StartN; neurId<=grp_Info[grpId].EndN; neurId++)
+        std += (nSpikeCnt[neurId]-meanRate)*(nSpikeCnt[neurId]-meanRate);
+
+      std = sqrt(std/(grp_Info[grpId].SizeN-1.0));
+    }
+
+
+    KERNEL_INFO("(t=%.3fs) SpikeMonitor for group %s(%d) has %d spikes in %dms (%.2f +/- %.2f Hz)",
+      (float)(simTime/1000.0),
+      grp_Info2[grpId].Name.c_str(),
+      grpId,
+      grpSpk,
+      runDurationMs,
+      meanRate,
+      std);
+  }
+}
+
 
 // This method allows us to print all information about the neuron.
 // If the enablePrint is false for a specific group, we do not print its state.
@@ -208,12 +262,18 @@ void CpuSNN::printGroupInfo(int grpId) {
 
 	if(grp_Info[grpId].WithSTDP) {
 		KERNEL_INFO("  - STDP:")
-		KERNEL_INFO("      - TYPE                   = %s",     grp_Info[grpId].WithSTDPtype==STANDARD? "STANDARD" :
-			(grp_Info[grpId].WithSTDPtype==DA_MOD?"  DA_MOD":" UNKNOWN"));
-		KERNEL_INFO("      - ALPHA_LTP              = %8.5f", grp_Info[grpId].ALPHA_LTP);
-		KERNEL_INFO("      - ALPHA_LTD              = %8.5f", grp_Info[grpId].ALPHA_LTD);
-		KERNEL_INFO("      - TAU_LTP_INV            = %8.5f", grp_Info[grpId].TAU_LTP_INV);
-		KERNEL_INFO("      - TAU_LTD_INV            = %8.5f", grp_Info[grpId].TAU_LTD_INV);
+		KERNEL_INFO("      - E-STDP TYPE            = %s",     grp_Info[grpId].WithESTDPtype==STANDARD? "STANDARD" :
+			(grp_Info[grpId].WithESTDPtype==DA_MOD?"  DA_MOD":" UNKNOWN"));
+		KERNEL_INFO("      - I-STDP TYPE            = %s",     grp_Info[grpId].WithISTDPtype==STANDARD? "STANDARD" :
+			(grp_Info[grpId].WithISTDPtype==DA_MOD?"  DA_MOD":" UNKNOWN"));
+		KERNEL_INFO("      - ALPHA_LTP_EXC              = %8.5f", grp_Info[grpId].ALPHA_LTP_EXC);
+		KERNEL_INFO("      - ALPHA_LTD_EXC              = %8.5f", grp_Info[grpId].ALPHA_LTD_EXC);
+		KERNEL_INFO("      - TAU_LTP_INV_EXC            = %8.5f", grp_Info[grpId].TAU_LTP_INV_EXC);
+		KERNEL_INFO("      - TAU_LTD_INV_EXC            = %8.5f", grp_Info[grpId].TAU_LTD_INV_EXC);
+		KERNEL_INFO("      - BETA_LTP               = %8.5f", grp_Info[grpId].BETA_LTP);
+		KERNEL_INFO("      - BETA_LTD               = %8.5f", grp_Info[grpId].BETA_LTD);
+		KERNEL_INFO("      - LAMDA                  = %8.5f", grp_Info[grpId].LAMDA);
+		KERNEL_INFO("      - DELTA                  = %8.5f", grp_Info[grpId].DELTA);
 	}
 }
 

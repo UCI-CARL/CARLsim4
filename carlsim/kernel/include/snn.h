@@ -77,8 +77,12 @@
 #include <propagated_spike_buffer.h>
 #include <poisson_rate.h>
 #include <gpu_random.h>
-#include <spike_monitor.h>
-#include <spike_monitor_core.h>
+
+class SpikeMonitor;
+class SpikeMonitorCore;
+class ConnectionMonitorCore;
+class ConnectionMonitor;
+
 
 //! nid=neuron id, sid=synapse id, grpId=group id.
 inline post_info_t SET_CONN_ID(int nid, int sid, int grpId) {
@@ -257,7 +261,22 @@ public:
 	 * \param[in] alphaLTD max magnitude for LTD change (leave positive)
 	 * \param[in] tauLTD decay time constant for LTD
 	 */
-	void setSTDP(int grpId, bool isSet, stdpType_t type, float alphaLTP, float tauLTP, float alphaLTD, float tauLTD);
+	void setESTDP(int grpId, bool isSet, stdpType_t type, stdpCurve_t curve, float alphaLTP, float tauLTP, float alphaLTD, float tauLTD, float gama);
+
+	//! Set the inhibitory spike-timing-dependent plasticity (STDP) with anti-hebbian curve for a neuron group
+	/*
+	 * \brief STDP must be defined post-synaptically; that is, if STP should be implemented on the connections from group 0 to group 1,
+	 * call setSTP on group 1. Fore details on the phenomeon, see (for example) (Bi & Poo, 2001).
+	 * \param[in] grpId ID of the neuron group
+	 * \param[in] isSet_enable set to true to enable STDP for this group
+	 * \param[in] type STDP type (STANDARD, DA_MOD)
+	 * \param[in] curve STDP curve
+	 * \param[in] abLTP magnitude for LTP change
+	 * \param[in] abLTD magnitude for LTD change (leave positive)
+	 * \param[in] tau1, the interval for LTP
+	 * \param[in] tau2, the interval for LTD
+	 */
+	void setISTDP(int grpId, bool isSet, stdpType_t type, stdpCurve_t curve, float abLTP, float abLTD, float tau1, float tau2);
 
 	/*!
 	 * \brief Sets STP params U, tau_u, and tau_x of a neuron group (pre-synaptically)
@@ -351,7 +370,8 @@ public:
 	 * \param[in] grpIdPost ID of the post-synaptic neuron group
 	 * \param[in] connectionMon ConnectionMonitorCore class
 	 */
-	void setConnectionMonitor(int grpIdPre, int grpIdPost, ConnectionMonitorCore* connectionMon);
+//	void setConnectionMonitor(int grpIdPre, int grpIdPost, ConnectionMonitorCore* connectionMon);
+	ConnectionMonitor* setConnectionMonitor(int grpIdPre, int grpIdPost, FILE* fid);
 
 	//! injects current (mA) into the soma of every neuron in the group
 	void setExternalCurrent(int grpId, const std::vector<float>& current);
@@ -390,6 +410,9 @@ public:
 	 * \param refPeriod (optional) refractive period,  default = 1
 	 */
 	void setSpikeRate(int grpId, PoissonRate* spikeRate, int refPeriod);
+
+	//! polls connection weights
+	void updateConnectionMonitor(int connId=ALL);
 
 	/*!
 	 * \brief copy required spikes from firing buffer to spike buffer
@@ -447,6 +470,7 @@ public:
 
 	// +++++ PUBLIC METHODS: GETTERS / SETTERS ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
+	short int getConnectId(int grpIdPre, int grpIdPost); //!< find connection ID based on pre-post group pair, O(N)
 	grpConnectInfo_t* getConnectInfo(short int connectId); //!< required for homeostasis
 
 	//! Returns the delay information for all synaptic connections between a pre-synaptic and a post-synaptic neuron group
@@ -492,14 +516,6 @@ public:
 	int getNumPreSynapses() { return preSynCnt; }
 	int getNumPostSynapses() { return postSynCnt; }
 
-	/*!
-	 * \brief Writes weights from synaptic connections from gIDpre to gIDpost.  Returns a pointer to the weights
-	 * and the size of the 1D array in size.  gIDpre(post) is the group ID for the pre(post)synaptic group,
-	 * weights is a pointer to a single dimensional array of floats, size is the size of that array which is
-	 * returned to the user. NOTE: user must free memory from weights to avoid a memory leak.
-	 */
-	void getPopWeights(int gIDpre, int gIDpost, float*& weights, int& size);
-
 	int getRandSeed() { return randSeed_; }
 
 	simMode_t getSimMode()		{ return simMode_; }
@@ -538,17 +554,7 @@ public:
 	//! temporary getter to return pointer to stpx[] \TODO replace with NeuronMonitor or ConnectionMonitor
 	float* getSTPx() { return stpx; }
 
-	//! Returns the change in weight strength in the last second (due to plasticity) for all synaptic connections between a pre-synaptic and a post-synaptic neuron group.
-	/*!
-	 * \param grpIdPre ID of pre-synaptic group
-	 * \param grpIdPost ID of post-synaptic group
-	 * \param nPre return the number of pre-synaptic neurons
-	 * \param nPost retrun the number of post-synaptic neurons
-	 * \param weightChanges (optional) return changes in weight strength for all synapses, default = NULL
-	 * \return changes in weight strength for all synapses
-	 */
-	 float* getWeightChanges(int gIDpre, int gIDpost, int& Npre, int& Npost, float* weightChanges);
-
+    bool isConnectionPlastic(short int connId);
 
 	bool isExcitatoryGroup(int g) { return (grp_Info[g].Type&TARGET_AMPA) || (grp_Info[g].Type&TARGET_NMDA); }
 	bool isInhibitoryGroup(int g) { return (grp_Info[g].Type&TARGET_GABAa) || (grp_Info[g].Type&TARGET_GABAb); }
@@ -666,7 +672,8 @@ private:
 	int  printPreConnection2(int grpId, FILE* fpg);
 	void printSimSummary(); 	//!< prints a simulation summary at the end of sim
 	void printState(FILE* fp);
-	//void printState(const char *str = "", const FILE* fp);
+	void printStatusConnectionMonitor(int connId=ALL);
+	void printStatusSpikeMonitor(int grpId=ALL, int runDurationMs=1000);
 	void printTuningLog(FILE* fp);
 	void printWeights(int preGrpId, int postGrpId=-1);
 
@@ -704,7 +711,6 @@ private:
 	void swapConnections(int nid, int oldPos, int newPos);
 
 	void updateAfterMaxTime();
-	void updateConnectionMonitor();
 	void updateGroupMonitor();
 	void updateSpikesFromGrp(int grpId);
 	void updateSpikeGenerators();
@@ -981,11 +987,11 @@ private:
 //	NeuronMonitorCore* neurBufferCallback[MAX_]
 	int numNeuronMonitor;
 
-	// network monitor variables
-	ConnectionMonitorCore	*connBufferCallback[MAX_GRP_PER_SNN];
-	unsigned int		connMonGrpIdPre[MAX_GRP_PER_SNN];
-	unsigned int		connMonGrpIdPost[MAX_GRP_PER_SNN];
-	unsigned int		numConnectionMonitor;
+	// connection monitor variables
+	int numConnectionMonitor;
+	ConnectionMonitorCore* connMonCoreList[MAX_nConnections];
+	ConnectionMonitor*     connMonList[MAX_nConnections];
+
 
 	/* Tsodyks & Markram (1998), where the short-term dynamics of synapses is characterized by three parameters:
 	   U (which roughly models the release probability of a synaptic vesicle for the first spike in a train of spikes),

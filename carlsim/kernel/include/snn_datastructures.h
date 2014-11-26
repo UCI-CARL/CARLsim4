@@ -128,6 +128,7 @@ typedef struct connectData_s {
 	float 					 mulSynSlow;				//!< factor to be applied to either gNMDA or gGABAb
 	int	  	  				 numPostSynapses;
 	int	  	  				 numPreSynapses;
+	int                      ConnectionMonitorId;
 	uint32_t  				 connProp;
 	ConnectionGeneratorCore* conn;
 	conType_t 				 type;
@@ -237,7 +238,6 @@ typedef struct group_info_s {
 	short int  	MaxFiringRate; //!< this is for the monitoring mechanism, it needs to know what is the maximum firing rate in order to allocate a buffer big enough to store spikes...
 	int			SpikeMonitorId;		//!< spike monitor id
 	int			GroupMonitorId; //!< group monitor id
-	int			ConnectionMonitorId; //!< connection monitor id
 	float   	RefractPeriod;
 	int			CurrTimeSlice; //!< timeSlice is used by the Poisson generators in order to note generate too many or too few spikes within a window of time
 	int			NewTimeSlice;
@@ -248,7 +248,12 @@ typedef struct group_info_s {
 	bool 		isSpikeGenerator;
 	bool 		WithSTP;
 	bool 		WithSTDP;
-	stdpType_t  WithSTDPtype;
+	bool		WithESTDP;
+	bool		WithISTDP;
+	stdpType_t  WithESTDPtype;
+	stdpType_t  WithISTDPtype;
+	stdpCurve_t WithESTDPcurve;
+	stdpCurve_t WithISTDPcurve;
 	bool 		WithHomeostasis;
 	int		homeoId;
 	bool		FixedInputWts;
@@ -260,10 +265,21 @@ typedef struct group_info_s {
 	float		STP_U;
 	float		STP_tau_u_inv;
 	float		STP_tau_x_inv;
-	float		TAU_LTP_INV;
-	float		TAU_LTD_INV;
-	float		ALPHA_LTP;
-	float		ALPHA_LTD;
+	float		TAU_LTP_INV_EXC;
+	float		TAU_LTD_INV_EXC;
+	float		ALPHA_LTP_EXC;
+	float		ALPHA_LTD_EXC;
+	float		GAMA;
+	float		KAPA;
+	float		OMEGA;
+	float		TAU_LTP_INV_INB; //!< for furture use
+	float		TAU_LTD_INV_INB; //!< for furture use
+	float		ALPHA_LTP_INB; //!< for furture use
+	float		ALPHA_LTD_INB; //!< for furture use
+	float		BETA_LTP;
+	float		BETA_LTD;
+	float		LAMDA;
+	float		DELTA;
 
 	bool withSpikeCounter; //!< if this flag is set, we want to keep track of how many spikes per neuron in the group
 	int spkCntRecordDur; //!< record duration, after which spike buffer gets reset

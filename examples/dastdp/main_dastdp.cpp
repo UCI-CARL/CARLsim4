@@ -106,9 +106,9 @@ int main()
 	GroupController* grpCtrl = new GroupController(saveFolder);
 	SpikeController* spikeCtrl = new SpikeController();
 	int gin, g1, g1noise, gda;
-	float ALPHA_LTP = 0.10f/100;
+	float ALPHA_LTP_EXC = 0.10f/100;
 	float TAU_LTP = 20.0f;
-	float ALPHA_LTD = 0.125f/100;
+	float ALPHA_LTD_EXC = 0.125f/100;
 	float TAU_LTD = 20.0f;
 
 	// create a network
@@ -129,7 +129,7 @@ int main()
 
 	// enable COBA, set up STDP, enable dopamine-modulated STDP
 	sim.setConductances(true,5,150,6,150);
-	sim.setSTDP(g1, true, DA_MOD, ALPHA_LTP, TAU_LTP, ALPHA_LTD, TAU_LTD);
+	sim.setSTDP(g1, true, DA_MOD, ALPHA_LTP_EXC, TAU_LTP, ALPHA_LTD_EXC, TAU_LTD);
 	sim.setWeightAndWeightChangeUpdate(INTERVAL_10MS, true, 0.99f);
 
 	// set up spike controller on DA neurons
@@ -143,6 +143,9 @@ int main()
 	sim.setSpikeMonitor(gda);
 
 	sim.setGroupMonitor(g1, grpCtrl);
+
+	// save weights to file periodically
+	sim.setConnectionMonitor(gin, g1);
 
 
 	//setup some baseline input
@@ -182,14 +185,6 @@ int main()
 			}
 		}
 	}
-
-	// ToDo: replace weights write out by ConnectionMonitor
-	sim.getPopWeights(gin, g1, weights, size);
-	FILE* fid = fopen("results/weight.csv", "w");
-	for (int i = 0; i < size - 1; i++)
-		fprintf(fid, "%f,",weights[i]);
-	fprintf(fid, "%f\n", weights[size - 1]);
-	fclose(fid);
 
 	delete grpCtrl;
 	delete spikeCtrl;

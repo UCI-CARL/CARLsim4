@@ -27,7 +27,7 @@ TEST(setSpikeMon, grpId){
 	// loop over both CPU and GPU mode.
 	for(int mode=0; mode<=1; mode++){
 		// first iteration, test CPU mode, second test GPU mode
-		sim = new CARLsim("SNN",mode?GPU_MODE:CPU_MODE,SILENT,0,42);
+		sim = new CARLsim("setSpikeMon.grpId",mode?GPU_MODE:CPU_MODE,SILENT,0,42);
 		
 		int g1 = sim->createGroup("g1", GRP_SIZE, EXCITATORY_NEURON);
 		int g2 = sim->createGroup("g2", GRP_SIZE, EXCITATORY_NEURON);
@@ -57,7 +57,7 @@ TEST(setSpikeMon, fname){
 	// loop over both CPU and GPU mode.
 	for(int mode=0; mode<=1; mode++){
 		// first iteration, test CPU mode, second test GPU mode
-		sim = new CARLsim("SNN",mode?GPU_MODE:CPU_MODE,SILENT,0,42);
+		sim = new CARLsim("setSpikeMon.fname",mode?GPU_MODE:CPU_MODE,SILENT,0,42);
 		
 		int g1 = sim->createGroup("g1", GRP_SIZE, EXCITATORY_NEURON);
 		int g2 = sim->createGroup("g2", GRP_SIZE, EXCITATORY_NEURON);
@@ -76,7 +76,7 @@ TEST(SpikeMon, interfaceDeath) {
 	// use threadsafe version because we have deathtests
 	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
-	CARLsim* sim = new CARLsim("SNN",CPU_MODE,SILENT,0,42);
+	CARLsim* sim = new CARLsim("SpikeMon.interfaceDeath",CPU_MODE,SILENT,0,42);
 
 	int g1 = sim->createGroup("g1", 5, EXCITATORY_NEURON);		
 	sim->setNeuronParameters(g1, 0.02, 0.2, -65.0, 8.0);

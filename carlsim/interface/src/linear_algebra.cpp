@@ -2,7 +2,6 @@
 
 #include <cmath>			// sqrt
 
-
 double dist(Point3D& p1, Point3D& p2) {
 	return norm((p1-p2)*(p1-p2));
 }

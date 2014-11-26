@@ -22,8 +22,8 @@ all_targets += $(pti_programs)
 
 # carlsim information
 carlsim_main := $(CARLSIM_LIB_DIR)
-carlsim_includes := -I$(carlsim_main)/include/kernel -I$(carlsim_main)/include/interface -I$(carlsim_main)/include/spike_monitor
-carlsim_lib := $(carlsim_main)/lib/libCARLsim.a
+carlsim_includes := -I$(carlsim_main)/include/kernel -I$(carlsim_main)/include/interface -I$(carlsim_main)/include/spike_monitor -I$(carlsim_main)/include/connection_monitor
+carlsim_libs := -L$(carlsim_main)/lib -lCARLsim
 
 # Rules for example binaries that use EO/PTI
 .PHONY: $(example_names) $(special_examples)
@@ -38,11 +38,11 @@ $(local_dir)/IzkExample: $(local_dir)/IzkExample.cpp $(pti_deps) $(pti_objs)
 	$(CC) -g $(PTI_FLAGS) $< $(pti_objs) $(izk_lib) -o $@ $(LDFLAGS)
 
 $(local_dir)/SimpleCA3: $(local_dir)/SimpleCA3.cpp $(pti_deps) $(pti_objs)
-	nvcc -g $(PTI_FLAGS) $(carlsim_includes) $< $(pti_objs) $(carlsim_lib) -o $@ $(LDFLAGS)
+	nvcc -g $(PTI_FLAGS) $(carlsim_includes) $< $(pti_objs) $(carlsim_libs) -o $@ $(LDFLAGS)
 
 $(local_dir)/TuneFiringRatesECJ: $(local_dir)/TuneFiringRatesECJ.cpp $(pti_deps) $(pti_objs)
 	nvcc -g $(PTI_FLAGS) $(carlsim_includes) $(CARLSIM_LFLAGS) $(CARLSIM_FLAGS) \
-		$< $(pti_objs) $(carlsim_lib) -o $@ $(LDFLAGS)
+		$< $(pti_objs) $(carlsim_libs) -o $@ $(LDFLAGS)
 
 # these make it so you can type 'make <example_name>' with tab-complete
 ReprintExample: $(local_dir)/ReprintExample
