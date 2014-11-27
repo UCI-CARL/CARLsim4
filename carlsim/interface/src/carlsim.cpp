@@ -793,6 +793,10 @@ void CARLsim::setSpikeRate(int grpId, PoissonRate* spikeRate, int refPeriod) {
 	std::string funcName = "setSpikeRate()";
 	UserErrors::assertTrue(carlsimState_==SETUP_STATE || carlsimState_==EXE_STATE,
 					UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "SETUP or EXECUTION.");
+	UserErrors::assertTrue(spikeRate->getNumNeurons()==getGroupNumNeurons(grpId), UserErrors::MUST_BE_IDENTICAL,
+		funcName, "PoissonRate length", "the number of neurons in the group.");
+	UserErrors::assertTrue(!spikeRate->isOnGPU() || spikeRate->isOnGPU()&&getSimMode()==GPU_MODE,
+		UserErrors::CAN_ONLY_BE_CALLED_IN_MODE, funcName, "PoissonRate on GPU", "GPU_MODE.");
 
 	snn_->setSpikeRate(grpId, spikeRate, refPeriod);
 }
@@ -1001,6 +1005,8 @@ GroupNeuromodulatorInfo_t CARLsim::getGroupNeuromodulatorInfo(int grpId) {
 
 	return snn_->getGroupNeuromodulatorInfo(grpId);
 }
+
+simMode_t CARLsim::getSimMode() { return simMode_; }
 
 uint64_t CARLsim::getSimTime() { return snn_->getSimTime(); }
 uint32_t CARLsim::getSimTimeSec() { return snn_->getSimTimeSec(); }

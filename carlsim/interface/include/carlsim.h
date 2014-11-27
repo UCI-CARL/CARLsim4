@@ -1078,6 +1078,16 @@ public:
 	void getPopWeights(int gIDpre, int gIDpost, float*& weights, int& size);
 
 	/*!
+	 * \brief returns the current simulation mode
+	 *
+	 * This function returns the current simulation mode. Currently supported are CPU_MODE and GPU_MODE.
+	 * \STATE CONFIG, SETUP, EXECUTION
+	 * \return simulation mode
+	 * \since v3.0
+	 */
+	simMode_t getSimMode();
+
+	/*!
 	 * \brief returns
 	 *
 	 * \TODO finish docu

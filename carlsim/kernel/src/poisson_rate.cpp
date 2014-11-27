@@ -49,8 +49,8 @@
 #include <helper_cuda.h>
 
 // constructor
-PoissonRate::PoissonRate(int nNeur, bool onGPU, int refPeriod): nNeur_(nNeur), onGPU_(onGPU), refPeriod_(refPeriod) {
-	assert(nNeur>0); assert(refPeriod>=1);
+PoissonRate::PoissonRate(int nNeur, bool onGPU): nNeur_(nNeur), onGPU_(onGPU) {
+	assert(nNeur>0);
 
 	h_rates_ = NULL;
 	d_rates_ = NULL;
@@ -69,6 +69,7 @@ PoissonRate::PoissonRate(int nNeur, bool onGPU, int refPeriod): nNeur_(nNeur), o
 // destructor
 PoissonRate::~PoissonRate() {
 	if (isOnGPU()) {
+		fprintf(stderr,"~PoissonRate GPU\n");
 		// clean up device
 		if (d_rates_!=NULL) {
 			CUDA_CHECK_ERRORS(cudaThreadSynchronize()); // wait for kernel to complete
@@ -76,6 +77,7 @@ PoissonRate::~PoissonRate() {
 			d_rates_ = NULL;
 		}
 	} else {
+		fprintf(stderr,"~PoissonRate CPU\n");
 		// clean up host
 		if (h_rates_!=NULL)
 			delete[] h_rates_;
@@ -104,12 +106,16 @@ std::vector<float> PoissonRate::getRates() {
 	if (isOnGPU()) {
 		// get data from device
 		float *h_d_rates = (float*)malloc(sizeof(float)*getNumNeurons());
-		CUDA_CHECK_ERRORS( cudaMemcpy(h_d_rates, d_rates_, sizeof(float)*getNumNeurons(), cudaMemcpyHostToDevice) );
-		std::vector<float> rates(h_d_rates, h_d_rates + sizeof(h_d_rates)/sizeof(h_d_rates[0])); // copy to vec
+		CUDA_CHECK_ERRORS( cudaMemcpy(h_d_rates, d_rates_, sizeof(float)*getNumNeurons(), cudaMemcpyDeviceToHost) );
+
+		// copy data to vec
+		std::vector<float> rates(h_d_rates, h_d_rates + getNumNeurons());
+		free(h_d_rates);
+
 		return rates;
 	} else {
 		// data is on host
-		std::vector<float> rates(h_rates_, h_rates_ + sizeof(h_rates_)/sizeof(h_rates_[0])); // copy to vec
+		std::vector<float> rates(h_rates_, h_rates_ + getNumNeurons()); // copy to vec
 		return rates;
 	}
 }

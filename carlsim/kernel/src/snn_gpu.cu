@@ -2745,6 +2745,9 @@ void CpuSNN::printCurrentInfo(FILE* fp) {
 void CpuSNN::deleteObjects_GPU() {
 	checkAndSetGPUDevice();
 
+	// wait for kernels to complete
+	CUDA_CHECK_ERRORS(cudaThreadSynchronize());
+
 	// cudaFree all device pointers
 	CUDA_CHECK_ERRORS( cudaFree(cpu_gpuNetPtrs.voltage) );
 	CUDA_CHECK_ERRORS( cudaFree(cpu_gpuNetPtrs.recovery) );

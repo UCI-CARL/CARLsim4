@@ -1042,15 +1042,12 @@ SpikeMonitor* CpuSNN::setSpikeMonitor(int grpId, FILE* fid) {
 
 // assigns spike rate to group
 void CpuSNN::setSpikeRate(int grpId, PoissonRate* ratePtr, int refPeriod) {
+	assert(grpId>=0 && grpId<numGrp);
 	assert(ratePtr);
-	if (ratePtr->getNumNeurons() != grp_Info[grpId].SizeN) {
-		KERNEL_ERROR("The PoissonRate length (%d) did not match the number of neurons (%d) in group %s(%d).",
-					ratePtr->getNumNeurons(), grp_Info[grpId].SizeN,
-					grp_Info2[grpId].Name.c_str(),grpId);
-		exitSimulation(1);
-	}
+	assert(grp_Info[grpId].isSpikeGenerator);
+	assert(ratePtr->getNumNeurons()==grp_Info[grpId].SizeN);
+	assert(refPeriod>=1);
 
-	assert (grp_Info[grpId].isSpikeGenerator);
 	grp_Info[grpId].RatePtr = ratePtr;
 	grp_Info[grpId].RefractPeriod   = refPeriod;
 	spikeRateUpdated = true;

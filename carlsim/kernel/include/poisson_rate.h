@@ -48,7 +48,7 @@
 
 class PoissonRate {
 public:
-	PoissonRate(int nNeur, bool onGPU=false, int refPeriod=1);
+	PoissonRate(int nNeur, bool onGPU=false);
 
 	// destructor
 	~PoissonRate();
@@ -78,7 +78,6 @@ public:
 	float *h_rates_, *d_rates_;
 	const int nNeur_;
 	const bool onGPU_;
-	const int refPeriod_;
 };
 
 #endif

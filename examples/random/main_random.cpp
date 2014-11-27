@@ -52,17 +52,6 @@ int main() {
 	int ithGPU = 0; // run on first GPU
 	bool onGPU = true;
 
-	int nNeur = 10;
-	PoissonRate rate(nNeur, onGPU);
-
-	rate.setRates(1.5f);
-
-	for (int i=0; i<nNeur; i++)
-		printf("%f\n",rate.getRate(i));
-
-
-	return 1;
-
 	// create a network
 	CARLsim sim("random",onGPU?GPU_MODE:CPU_MODE,USER,ithGPU,42);
 
