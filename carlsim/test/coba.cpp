@@ -63,7 +63,9 @@ TEST(COBA, synRiseTime) {
 		double maxNMDA = -1;
 		int tmaxGABAb = -1;
 		double maxGABAb = -1;
-		int nMsec = std::max(trNMDA+tdNMDA,trGABAb+tdGABAb)+10;
+
+		int nMsec = (std::max)(trNMDA+tdNMDA,trGABAb+tdGABAb)+10;
+
 		for (int i=0; i<nMsec; i++) {
 			sim->runNetwork(0,1);
 
