@@ -12,6 +12,101 @@ All the ways to generate input...
 
 \subsection ch6s1s1_poisson_rate 6.1.1 Generating Poisson Spikes
 
+\subsubsection ch6s1s1s1 6.1.1.1 The PoissonRate Object
+
+The PoissonRate class allows a user create spike trains whose inter-spike interval follows a Poisson process.
+The object can then be linked to a spike generator group (created via CARLsim::createSpikeGeneratorGroup) by calling
+CARLsim::setSpikeRate.
+
+The easiest way to initialize a PoissonRate object is via the following:
+\code
+int nNeur = 50;                                       // # neurons
+PoissonRate poissRate(nNeur);
+\endcode
+
+This will generate a mean rate vector for 50 neurons.
+By default, these rates will be allocated on CPU. An optional second argument to the constructor allows allocation on
+GPU instead (`onGPU=true`). This allows the minimization of memory transfers when CARLsim is run in GPU_MODE:
+\code
+int nNeur = 50;                                       // # neurons
+bool onGPU = true;                                    // whether to allocate on GPU (true) or CPU (false)
+PoissonRate poissRate(nNeur, onGPU);
+\endcode
+
+
+\subsubsection ch6s1s1s2 6.1.1.2 Setting Mean Firing Rates
+
+At first, all the rates will be initialized to zero.
+The user then has several options to assign non-zero rates:
+\code
+// set all rates to 10 Hz
+poissRate.setRates(10.0f);
+
+// set rates according to some vector
+std::vector<float> someVector;
+for (int neurId=0; neurId<nNeur; neurId++)
+	someVector.push_back(neurId*2.0f);
+poissRate.setRates(someVector);
+
+// set rate of each neuron
+for (int neurId=0; neurId<nNeur; neurId++)
+	poissRate.setRate(neurId, neurId*2.0f);
+\endcode
+
+
+\subsubsection ch6s1s1s3 6.1.1.3 Retrieving Mean Firing Rates
+
+The mean firing rates can then be queried via the following getter functions:
+\code
+std::vector<float> rates = poissRate.getRates();      // get all rates in a vector
+float someRate = poissRate.getRate(17);               // get rate of neuron with ID=17
+\endcode
+
+
+\subsubsection ch6s1s1s4 6.1.1.4 Integrating PoissonRate with a CARLsim Simulation
+
+Finally, a PoissonRate object can be linked to a spike generator group (created via CARLsim::createSpikeGeneratorGroup)
+by calling CARLsim::setSpikeRate.
+For this to work, the number of neurons for the PoissonRate object must be the same as for the spike generator group.
+\code
+CARLsim sim("MyNet",GPU_MODE,0,42);                   // run simulation in GPU_MODE
+// configure network
+int nNeur = 10;                                       // # neurons in group
+int g0 = sim.createSpikeGeneratorGroup("grpPoiss", nNeur, EXCITATORY_NEURON);
+// ...
+sim.setupNetwork();
+
+// setup PoissonRate object
+PoissonRate poissRate(nNeur, true);                   // allocate on GPU for minimal memory copies
+poissRate.setRates(13.0f);                            // set all rates to 13 Hz
+
+// apply to neuron group g0
+// nNeur of PoissonRate must match that of createSpikeGeneratorGroup
+sim.setSpikeRate(g0, &poissRate);
+
+// run network
+// g0 will now produce Poisson spike trains with mean rate = 13 Hz
+sim.runNetwork(1,0);
+
+// note that spike rates will still be 13 Hz in subsequent runs ...
+sim.runNetwork(0,500);
+
+// ... until you reset the rates
+poissRate.setRates(0.0f);
+sim.setSpikeRate(g0, &poissRate);                     // need to call setSpikeRate again
+sim.runNetwork(0,10);                                 // no more input spikes
+\endcode
+
+\note This method can only be applied to SpikeGenerator groups.
+\attention CARLsim::setSpikeRate will *not* take over ownership of PoissonRate. In other words, if you allocate the
+PoissonRate object on the heap, you are responsible for correctly deallocating it.
+\attention Make sure to reset spike rate after use (i.e., for the next call to CARLsim::runNetwork), otherwise
+the rate will keep getting applied to the group.
+
+
+
+
+
 \subsection ch6s1s2_periodic 6.1.2 Periodically Generating Spikes
 \TODO MB.
 
@@ -25,6 +120,8 @@ All the ways to generate input...
 
 
 
+
+
 \section ch6s2_generating_current 6.2 Generating Current
 
 Current injection.
@@ -32,10 +129,17 @@ Current injection.
 \see \ref ch6s3_generating_noise
 
 
+
+
+
 \section ch6s3_generating_noise 6.3 Generating Noise
 
 \TODO TS
 Generate noise: Ting's description of how to do noise with weights.
+
+
+
+
 
 
 \section ch6s4_visual_stimulus_toolbox 6.3 Visual Stimulus Toolbox
