@@ -527,10 +527,10 @@ public:
 	//! temporary getter to return pointer to current[] \TODO replace with NeuronMonitor
 	float* getCurrent() { return current; }
 
-	std::vector<float> getConductanceAMPA();
-	std::vector<float> getConductanceNMDA();
-	std::vector<float> getConductanceGABAa();
-	std::vector<float> getConductanceGABAb();
+	std::vector<float> getConductanceAMPA(int grpId);
+	std::vector<float> getConductanceNMDA(int grpId);
+	std::vector<float> getConductanceGABAa(int grpId);
+	std::vector<float> getConductanceGABAb(int grpId);
 
 	//! temporary getter to return pointer to stpu[] \TODO replace with NeuronMonitor or ConnectionMonitor
 	float* getSTPu() { return stpu; }

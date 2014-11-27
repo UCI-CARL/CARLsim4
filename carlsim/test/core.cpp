@@ -1,7 +1,7 @@
 #include "gtest/gtest.h"
 #include "carlsim_tests.h"
 
-#include <snn.h>
+#include <carlsim.h>
 #include <vector>
 #include <periodic_spikegen.h>
 
@@ -9,63 +9,9 @@
 /// CORE FUNCTIONALITY
 /// **************************************************************************************************************** ///
 
-//! check all possible (valid) ways of instantiating CpuSNN
-TEST(CORE, CpuSNNinit) {
-	CpuSNN* sim = NULL;
-	std::string name = "CORE.CpuSNNinit";
-
-	// Problem: The first two modes will print to stdout, and close it in the end; so all subsequent calls to sdout
-	// via GTEST fail
-	simMode_t simModes[2] = {CPU_MODE, GPU_MODE};
-	loggerMode_t loggerModes[5] = {USER, DEVELOPER, SHOWTIME, SILENT, CUSTOM};
-	for (int i=0; i<5; i++) {
-		for (int j=0; j<2; j++) {
-			int randSeed = rand() % 1000;
-			sim = new CpuSNN(name,simModes[j],loggerModes[i],0,randSeed);
-
-			EXPECT_EQ(sim->getNetworkName(),name);
-			EXPECT_EQ(sim->getRandSeed(),randSeed);
-			EXPECT_EQ(sim->getSimMode(),simModes[j]);
-			EXPECT_EQ(sim->getLoggerMode(),loggerModes[i]);
-
-			delete sim;
-		}
-	}
-
-	sim = new CpuSNN(name,CPU_MODE,SILENT,0,0);
-	EXPECT_EQ(sim->getRandSeed(),123);
-	delete sim;
-
-	// time(NULL)
-	sim = new CpuSNN(name,CPU_MODE,SILENT,0,-1);
-	EXPECT_NE(sim->getRandSeed(),-1);
-	EXPECT_NE(sim->getRandSeed(),0);
-	delete sim;
-}
-
-// FIXME: enabling the following generates a segfault
-//! check all possible (invalid) ways of instantiating CpuSNN
-TEST(CORE, CpuSNNinitDeath) {
+TEST(CORE, getGroupGrid3D) {
 	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
-	CpuSNN* sim = NULL;
-	std::string name="CORE.CpuSNNinitDeath";
-
-	// sim mode
-	EXPECT_DEATH({sim = new CpuSNN(name,UNKNOWN_SIM,USER,0,42);},"");
-	if (sim!=NULL) delete sim; sim = NULL;
-
-	// logger mode
-	EXPECT_DEATH({sim = new CpuSNN(name,CPU_MODE,UNKNOWN_LOGGER,0,42);},"");
-	if (sim!=NULL) delete sim; sim = NULL;
-
-	// ithGPU
-	EXPECT_DEATH({sim = new CpuSNN(name,CPU_MODE,USER,-1,42);},"");
-	if (sim!=NULL) delete sim; sim = NULL;
-}
-
-
-TEST(CORE, getGroupGrid3D) {
 	CARLsim* sim = new CARLsim("CORE.getGroupGrid3D",CPU_MODE,SILENT,0,42);
 	Grid3D grid(2,3,4);
 	int g2=sim->createGroup("excit2", grid, EXCITATORY_NEURON);
@@ -86,7 +32,9 @@ TEST(CORE, getGroupGrid3D) {
 }
 
 TEST(CORE, getGroupIdFromString) {
-	CARLsim* sim = new CARLsim("Interface.createGroupDeath",CPU_MODE,SILENT,0,42);
+	::testing::FLAGS_gtest_death_test_style = "threadsafe";
+
+	CARLsim* sim = new CARLsim("CORE.getGroupIdFromString",CPU_MODE,SILENT,0,42);
 	int g2=sim->createGroup("bananahama", Grid3D(1,2,3), INHIBITORY_NEURON);
 	sim->setNeuronParameters(g2, 0.02f, 0.2f, -65.0f, 8.0f);
 	int g1=sim->createSpikeGeneratorGroup("excit", Grid3D(2,3,4), EXCITATORY_NEURON);
@@ -103,7 +51,9 @@ TEST(CORE, getGroupIdFromString) {
 
 // This test creates a group on a grid and makes sure that the returned 3D location of each neuron is correct
 TEST(CORE, getNeuronLocation3D) {
-	CARLsim* sim = new CARLsim("Interface.createGroupDeath",CPU_MODE,SILENT,0,42);
+	::testing::FLAGS_gtest_death_test_style = "threadsafe";
+
+	CARLsim* sim = new CARLsim("CORE.getNeuronLocation3D",CPU_MODE,SILENT,0,42);
 	Grid3D grid(2,3,4);
 	int g2=sim->createGroup("excit2", grid, EXCITATORY_NEURON);
 	sim->setNeuronParameters(g2, 0.02f, 0.2f, -65.0f, 8.0f);
@@ -138,6 +88,9 @@ TEST(CORE, getNeuronLocation3D) {
 	delete sim;
 }
 
+/*
+// \FIXME deactivate for now because we don't want to instantiate CpuSNN
+
 // tests whether a point lies on a grid
 TEST(CORE, isPoint3DonGrid) {
 	CpuSNN snn("CORE.isPoint3DonGrid", CPU_MODE, SILENT, 0, 42);
@@ -151,49 +104,15 @@ TEST(CORE, isPoint3DonGrid) {
 	EXPECT_TRUE(snn.isPoint3DonGrid(Point3D(9,4,1), Grid3D(10,5,2)));
 	EXPECT_TRUE(snn.isPoint3DonGrid(Point3D(9.0,4.0,1.0), Grid3D(10,5,2)));
 }
-
-TEST(CORE, setConductancesTrue) {
-	CpuSNN* sim;
-
-	for (int mode=0; mode<=1; mode++) {
-		int tdAMPA  = rand()%100 + 1;
-		int trNMDA  = rand()%100 + 1;
-		int tdNMDA  = rand()%100 + trNMDA + 1; // make sure it's larger than trNMDA
-		int tdGABAa = rand()%100 + 1;
-		int trGABAb = rand()%100 + 1;
-		int tdGABAb = rand()%100 + trGABAb + 1; // make sure it's larger than trGABAb
-
-		sim = new CpuSNN("CORE.setConductancesTrue",mode?GPU_MODE:CPU_MODE,SILENT,0,42);
-		sim->setConductances(true,tdAMPA,trNMDA,tdNMDA,tdGABAa,trGABAb,tdGABAb);
-		EXPECT_TRUE(sim->isSimulationWithCOBA());
-		EXPECT_FALSE(sim->isSimulationWithCUBA());
-//			EXPECT_FLOAT_EQ(sim->dAMPA,1.0f-1.0f/tdAMPA);
-		if (trNMDA) {
-			EXPECT_TRUE(sim->isSimulationWithNMDARise());
-//				EXPECT_FLOAT_EQ(sim->rNMDA,1.0f-1.0f/trNMDA);
-		} else {
-			EXPECT_FALSE(sim->isSimulationWithNMDARise());
-		}
-//			EXPECT_FLOAT_EQ(sim->dNMDA,1.0f-1.0f/tdNMDA);
-//			EXPECT_FLOAT_EQ(sim->dGABAa,1.0f-1.0f/tdGABAa);
-		if (trGABAb) {
-			EXPECT_TRUE(sim->isSimulationWithGABAbRise());
-//				EXPECT_FLOAT_EQ(sim->rGABAb,1.0f-1.0f/trGABAb);
-		} else {
-			EXPECT_FALSE(sim->isSimulationWithGABAbRise());
-		}
-//			EXPECT_FLOAT_EQ(sim->dGABAb,1.0f-1.0f/tdGABAb);
-
-		delete sim;
-	}
-}
-
+*/
 
 // \TODO: using external current, make sure the Izhikevich model is correctly implemented
 // Run izhikevich.org MATLAB script to find number of spikes as a function of neuron type,
 // input current, and time period. Build test case to reproduce the exact numbers.
 
 TEST(CORE, setExternalCurrent) {
+	::testing::FLAGS_gtest_death_test_style = "threadsafe";
+
 	CARLsim * sim;
 	int nNeur = 10;
 
@@ -260,6 +179,8 @@ TEST(CORE, setExternalCurrent) {
 
 // make sure bookkeeping for number of groups is correct during CONFIG
 TEST(CORE, numGroups) {
+	::testing::FLAGS_gtest_death_test_style = "threadsafe";
+
 	CARLsim sim("CORE.numGroups", CPU_MODE, SILENT, 0, 42);
 	EXPECT_EQ(sim.getNumGroups(), 0);
 
@@ -279,6 +200,8 @@ TEST(CORE, numGroups) {
 
 // make sure bookkeeping for number of neurons is correct during CONFIG
 TEST(CORE, numNeurons) {
+	::testing::FLAGS_gtest_death_test_style = "threadsafe";
+
 	CARLsim sim("CORE.numNeurons", CPU_MODE, SILENT, 0, 42);
 	EXPECT_EQ(sim.getNumNeurons(), 0);
 	EXPECT_EQ(sim.getNumNeuronsRegExc(), 0);

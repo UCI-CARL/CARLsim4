@@ -67,6 +67,7 @@
 /// INIT STATIC PROPERTIES
 /// **************************************************************************************************************** ///
 bool CARLsim::gpuAllocation[MAX_NUM_CUDA_DEVICES] = {false};
+std::string CARLsim::gpuOccupiedBy[MAX_NUM_CUDA_DEVICES];
 
 #if (WIN32 || WIN64)
 HANDLE CARLsim::gpuAllocationLock = CreateMutex(NULL, FALSE, NULL);
@@ -155,6 +156,37 @@ void CARLsim::CARLsimInit() {
 
 	UserErrors::assertTrue(simMode_!=UNKNOWN_SIM,UserErrors::CANNOT_BE_UNKNOWN,"CARLsim()","Simulation mode");
 	UserErrors::assertTrue(loggerMode_!=UNKNOWN_LOGGER,UserErrors::CANNOT_BE_UNKNOWN,"CARLsim()","Logger mode");
+
+	// Allocate GPU
+	if (simMode_ == GPU_MODE) {
+		if (ithGPU_ >= MAX_NUM_CUDA_DEVICES || ithGPU_ < 0) {
+			CARLSIM_ERROR(funcName.c_str(), "Maximum number of GPUs supported by CARLsim is 8");
+			exit(EXIT_FAILURE); // abort
+		}
+#if (WIN32 || WIN64)
+		WaitForSingleObject(gpuAllocationLock, INFINITE);
+		if (!gpuAllocation[ithGPU_]) {
+			gpuAllocation[ithGPU_] = true;
+			gpuAllocationResult = true;
+			gpuOccupiedBy[ithGPU_] = netName_;
+		}
+		ReleaseMutex(gpuAllocationLock);
+#else
+		pthread_mutex_lock(&gpuAllocationLock);
+		if (!gpuAllocation[ithGPU_]) {
+			gpuAllocation[ithGPU_] = true;
+			gpuAllocationResult = true;
+			gpuOccupiedBy[ithGPU_] = netName_;
+		}
+		pthread_mutex_unlock(&gpuAllocationLock);
+#endif
+		if (!gpuAllocationResult) {
+			std::string errorMsg = "GPU Allocation Conflict, GPU has been occupied by CARLsim object " + gpuOccupiedBy[ithGPU_];
+			CARLSIM_ERROR(funcName.c_str(), errorMsg.c_str());
+			exit(EXIT_FAILURE); // abort
+		}
+	}
+
 	snn_ = new CpuSNN(netName_, simMode_, loggerMode_, ithGPU_, randSeed_);
 
 	// set default time constants for synaptic current decay
@@ -179,33 +211,6 @@ void CARLsim::CARLsimInit() {
 	// set default save sim params
 	// TODO: when we run executable from local dir, put save file in results/
 	setDefaultSaveOptions("results/sim_"+netName_+".dat",false);
-
-	// Allocate GPU
-	if (simMode_ == GPU_MODE) {
-		if (ithGPU_ >= MAX_NUM_CUDA_DEVICES || ithGPU_ < 0) {
-			CARLSIM_ERROR(funcName.c_str(), "Maximum number of GPUs supported by CARLsim is 8");
-			exit(EXIT_FAILURE); // abort
-		}
-#if (WIN32 || WIN64)
-		WaitForSingleObject(gpuAllocationLock, INFINITE);
-		if (!gpuAllocation[ithGPU_]) {
-			gpuAllocation[ithGPU_] = true;
-			gpuAllocationResult = true;
-		}
-		ReleaseMutex(gpuAllocationLock);
-#else
-		pthread_mutex_lock(&gpuAllocationLock);
-		if (!gpuAllocation[ithGPU_]) {
-			gpuAllocation[ithGPU_] = true;
-			gpuAllocationResult = true;
-		}
-		pthread_mutex_unlock(&gpuAllocationLock);
-#endif
-		if (!gpuAllocationResult) {
-			CARLSIM_ERROR(funcName.c_str(), "GPU Allocation Conflict (GPU has been occupied by another CARLsim object)");
-			exit(EXIT_FAILURE); // abort
-		}
-	}
 }
 
 
@@ -816,10 +821,58 @@ void CARLsim::writePopWeights(std::string fname, int gIDpre, int gIDpost) {
 
 // +++++++++ PUBLIC METHODS: SETTERS / GETTERS ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
+std::vector<float> CARLsim::getConductanceAMPA(int grpId) {
+	std::string funcName = "getConductanceAMPA()";
+	UserErrors::assertTrue(carlsimState_ == EXE_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, 
+		funcName, funcName, "EXECUTION.");
+	UserErrors::assertTrue(grpId!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName, "grpId");
+	UserErrors::assertTrue(grpId>=0 && grpId<getNumGroups(), UserErrors::MUST_BE_IN_RANGE, funcName, "grpId",
+		"[0,getNumGroups()]");
+
+	return snn_->getConductanceAMPA(grpId);
+}
+
+std::vector<float> CARLsim::getConductanceNMDA(int grpId) {
+	std::string funcName = "getConductanceNMDA()";
+	UserErrors::assertTrue(carlsimState_ == EXE_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, 
+		funcName, funcName, "EXECUTION.");
+	UserErrors::assertTrue(grpId!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName, "grpId");
+	UserErrors::assertTrue(grpId>=0 && grpId<getNumGroups(), UserErrors::MUST_BE_IN_RANGE, funcName, "grpId",
+		"[0,getNumGroups()]");
+
+	return snn_->getConductanceNMDA(grpId);
+}
+
+std::vector<float> CARLsim::getConductanceGABAa(int grpId) {
+	std::string funcName = "getConductanceGABAa()";
+	UserErrors::assertTrue(carlsimState_ == EXE_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, 
+		funcName, funcName, "EXECUTION.");
+	UserErrors::assertTrue(grpId!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName, "grpId");
+	UserErrors::assertTrue(grpId>=0 && grpId<getNumGroups(), UserErrors::MUST_BE_IN_RANGE, funcName, "grpId",
+		"[0,getNumGroups()]");
+
+	return snn_->getConductanceGABAa(grpId);
+}
+
+std::vector<float> CARLsim::getConductanceGABAb(int grpId) {
+	std::string funcName = "getConductanceGABAb()";
+	UserErrors::assertTrue(carlsimState_ == EXE_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, 
+		funcName, funcName, "EXECUTION.");
+	UserErrors::assertTrue(grpId!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName, "grpId");
+	UserErrors::assertTrue(grpId>=0 && grpId<getNumGroups(), UserErrors::MUST_BE_IN_RANGE, funcName, "grpId",
+		"[0,getNumGroups()]");
+
+	return snn_->getConductanceGABAb(grpId);
+}
+
 uint8_t* CARLsim::getDelays(int gIDpre, int gIDpost, int& Npre, int& Npost, uint8_t* delays) {
 	std::string funcName = "getDelays()";
 	UserErrors::assertTrue(carlsimState_ == SETUP_STATE || carlsimState_ == EXE_STATE,
 					UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "SETUP or EXECUTION.");
+	UserErrors::assertTrue(gIDpre>=0 && gIDpre<getNumGroups(), UserErrors::MUST_BE_IN_RANGE, funcName, "gIDpre",
+		"[0,getNumGroups()]");
+	UserErrors::assertTrue(gIDpost>=0 && gIDpost<getNumGroups(), UserErrors::MUST_BE_IN_RANGE, funcName, "gIDpre",
+		"[0,getNumGroups()]");
 
 	return snn_->getDelays(gIDpre,gIDpost,Npre,Npost,delays);
 }
@@ -845,8 +898,8 @@ int CARLsim::getGroupId(std::string grpName) {
 
 std::string CARLsim::getGroupName(int grpId) {
 	std::stringstream funcName; funcName << "getGroupName(" << grpId << ")";
-	UserErrors::assertTrue(grpId>=-1, UserErrors::MUST_BE_IN_RANGE, funcName.str(), 
-		"grpId", "[-1,getNumGroups()]");
+	UserErrors::assertTrue(grpId>=0 && grpId<getNumGroups(), UserErrors::MUST_BE_IN_RANGE, funcName.str(), "grpId",
+		"[0,getNumGroups()]");
 
 	return snn_->getGroupName(grpId);
 }
