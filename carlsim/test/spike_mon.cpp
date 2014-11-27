@@ -202,9 +202,7 @@ TEST(SpikeMon, clear){
 
 		// input
 		input = new PoissonRate(GRP_SIZE);
-		for(int i=0;i<GRP_SIZE;i++){
-			input->rates[i]=inputTargetFR;
-		}
+		input->setRates(inputTargetFR);
 
 		// use full because random might give us a network that does not spike (depending on the random seed),
 		// leading to the EXPECTs below to fail
@@ -353,7 +351,7 @@ TEST(SpikeMon, getGroupFiringRate){
 
 		sim->setConductances(true,COND_tAMPA,COND_tNMDA,COND_tGABAa,COND_tGABAb);
 
-		sim->connect(g0,g1,"random", RangeWeight(0.27f), 1.0f);
+		sim->connect(g0, g1, "one-to-one", RangeWeight(0.27f), 1.0f);
 
 		PeriodicSpikeGenerator* spkGen = new PeriodicSpikeGenerator(rate);
 		sim->setSpikeGenerator(g0, spkGen);
@@ -448,9 +446,7 @@ TEST(SpikeMon, getMaxMinNeuronFiringRate){
 
 		// input
 		PoissonRate* input = new PoissonRate(GRP_SIZE);
-		for(int i=0;i<GRP_SIZE;i++){
-			input->rates[i]=inputTargetFR;
-		}
+		input->setRates(inputTargetFR);
 		sim->setSpikeRate(inputGroup,input);
 
 #if (WIN32 || WIN64)

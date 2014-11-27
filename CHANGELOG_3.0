@@ -7,6 +7,10 @@ Legend:
 	- removed element
 	* changed element
 
+2014-11-26     Michael Beyeler <mbeyeler@uci.edu>
+  * Improved PoissonRate class. Added documentation and tutorial chapter.
+  * Fixed PoissonRate segfault on GPU.
+ 
 2014-11-22     Ting-Shuo Chou <tingshuc@uci.edu>
   + Add GPU allocation mechanism, allow multiple CARLsim objecs to use
     different GPUs

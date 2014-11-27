@@ -21,7 +21,7 @@ TEST(COBA, synRiseTime) {
 	CARLsim* sim = NULL;
 
 	float time_abs_error = 2.0; // 2 ms
-	float wt_abs_error = 0.05; // error for wt
+	float wt_abs_error = 0.1; // error for wt
 
 	for (int mode=0; mode<=1; mode++) {
 		int tdAMPA  = 5;
@@ -219,7 +219,6 @@ TEST(COBA, condSingleNeuronCPUvsGPU) {
 TEST(COBA, firingRateCPUvsGPU) {
 	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
-	CARLsim *sim = NULL;
 	SpikeMonitor *spkMonG0 = NULL, *spkMonG1 = NULL;
 	PeriodicSpikeGenerator *spkGenG0 = NULL;
 	std::vector<std::vector<int> > spkTimesG0CPU, spkTimesG1CPU, spkTimesG0GPU, spkTimesG1GPU;
@@ -230,32 +229,32 @@ TEST(COBA, firingRateCPUvsGPU) {
 	int runTimeMs = 526;
 //	fprintf(stderr,"runTime=%d, delay=%d, wt=%f, input=%f\n",runTimeMs,delay,wt,inputRate);
 
-	for (int isGPUmode=0; isGPUmode<=1; isGPUmode++) {
-		sim = new CARLsim("COBA.firingRateCPUvsGPU",isGPUmode?GPU_MODE:CPU_MODE,SILENT,0,42);
-		int g1=sim->createGroup("output", 1, EXCITATORY_NEURON);
-		sim->setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f); // RS
-		int g0=sim->createSpikeGeneratorGroup("input", 1 ,EXCITATORY_NEURON);
-		sim->setConductances(true); // make COBA explicit
+for (int isGPUmode=0; isGPUmode<=1; isGPUmode++) {
+		CARLsim sim("COBA.firingRateCPUvsGPU",isGPUmode?GPU_MODE:CPU_MODE,SILENT,0,42);
+		int g1=sim.createGroup("output", 1, EXCITATORY_NEURON);
+		sim.setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f); // RS
+		int g0=sim.createSpikeGeneratorGroup("input", 1 ,EXCITATORY_NEURON);
+		sim.setConductances(true); // make COBA explicit
 
-		sim->connect(g0, g1, "full", RangeWeight(wt), 1.0f, RangeDelay(1));
+		sim.connect(g0, g1, "full", RangeWeight(wt), 1.0f, RangeDelay(1));
 
 		bool spikeAtZero = true;
-		spkGenG0 = new PeriodicSpikeGenerator(inputRate,spikeAtZero);
-		sim->setSpikeGenerator(g0, spkGenG0);
+		PeriodicSpikeGenerator spkGenG0(inputRate,spikeAtZero);
+		sim.setSpikeGenerator(g0, &spkGenG0);
 
-		sim->setupNetwork();
+		sim.setupNetwork();
 
-		spkMonG0 = sim->setSpikeMonitor(g0,"NULL");
-		spkMonG1 = sim->setSpikeMonitor(g1,"NULL");
+		spkMonG0 = sim.setSpikeMonitor(g0,"NULL");
+		spkMonG1 = sim.setSpikeMonitor(g1,"NULL");
 
 		spkMonG0->startRecording();
 		spkMonG1->startRecording();
-		sim->runNetwork(runTimeMs/1000,runTimeMs%1000,false);
+		sim.runNetwork(runTimeMs/1000,runTimeMs%1000,false);
 		spkMonG0->stopRecording();
 		spkMonG1->stopRecording();
 
-//		fprintf(stderr,"input g0=%d, nid=%d\n",g0,sim->getGroupStartNeuronId(g0));
-//		fprintf(stderr,"excit g1=%d, nid=%d\n",g1,sim->getGroupStartNeuronId(g1));
+//		fprintf(stderr,"input g0=%d, nid=%d\n",g0,sim.getGroupStartNeuronId(g0));
+//		fprintf(stderr,"excit g1=%d, nid=%d\n",g1,sim.getGroupStartNeuronId(g1));
 
 		if (!isGPUmode) {
 			// CPU mode: store spike times and spike rate for future comparison
@@ -278,7 +277,5 @@ TEST(COBA, firingRateCPUvsGPU) {
 			for (int i=0; i<spkTimesG1CPU[0].size(); i++)
 				EXPECT_EQ(spkTimesG1CPU[0][i], spkTimesG1GPU[0][i]);
 		}
-		delete spkGenG0;
-		delete sim;
 	}
 }

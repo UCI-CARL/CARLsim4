@@ -51,7 +51,7 @@ TEST(CUBA, firingRateVsData) {
 			int g1=sim->createGroup("excit", 1, EXCITATORY_NEURON);
 			sim->setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f); // RS
 
-			int g0=sim->createSpikeGeneratorGroup("input", 1 ,EXCITATORY_NEURON);
+			int g0=sim->createSpikeGeneratorGroup("input", 1 , EXCITATORY_NEURON);
 
 			sim->setConductances(false); // make CUBA explicit
 

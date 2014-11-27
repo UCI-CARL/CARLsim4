@@ -308,7 +308,7 @@ TEST(STDP, DASTDPWeightBoost) {
 
 				//setup baseline firing rate
 				PoissonRate in(1);
-				in.rates[0] = 6; // 6Hz
+				in.setRates(6.0f); // 6Hz
 				sim->setSpikeRate(gin, &in);
 				sim->setSpikeRate(g1noise, &in);
 
