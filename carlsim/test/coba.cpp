@@ -225,7 +225,6 @@ TEST(COBA, firingRateCPUvsGPU) {
 	std::vector<std::vector<int> > spkTimesG0CPU, spkTimesG1CPU, spkTimesG0GPU, spkTimesG1GPU;
 	float spkRateG0CPU = 0.0f, spkRateG1CPU = 0.0f;
 
-	int delay = 1;
 	float wt = 0.15268f;
 	float inputRate = 25.0f;
 	int runTimeMs = 526;
@@ -238,7 +237,7 @@ TEST(COBA, firingRateCPUvsGPU) {
 		int g0=sim->createSpikeGeneratorGroup("input", 1 ,EXCITATORY_NEURON);
 		sim->setConductances(true); // make COBA explicit
 
-		sim->connect(g0, g1, "full", RangeWeight(wt), 1.0f, RangeDelay(1,delay));
+		sim->connect(g0, g1, "full", RangeWeight(wt), 1.0f, RangeDelay(1));
 
 		bool spikeAtZero = true;
 		spkGenG0 = new PeriodicSpikeGenerator(inputRate,spikeAtZero);

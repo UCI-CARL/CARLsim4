@@ -100,35 +100,34 @@ TEST(CUBA, firingRateCPUvsGPU) {
 
 	std::vector<std::vector<int> > spkTimesG0CPU, spkTimesG1CPU, spkTimesG0GPU, spkTimesG1GPU;
 	float spkRateG0CPU = 0.0f, spkRateG1CPU = 0.0f;
-	int delay = 3;
 	float wt = 9.440475f;
 	float inputRate = 19.0f;
 	int runTimeMs = 767;
 //	fprintf(stderr,"runTime=%d, delay=%d, wt=%f, input=%f\n",runTimeMs,delay,wt,inputRate);
 
 	for (int isGPUmode=0; isGPUmode<=1; isGPUmode++) {
-		CARLsim* sim = new CARLsim("CUBA.firingRateCPUvsGPU",isGPUmode?GPU_MODE:CPU_MODE,SILENT,0,42);
-		int g1=sim->createGroup("excit", 1, EXCITATORY_NEURON);
-		sim->setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f); // RS
+		CARLsim sim("CUBA.firingRateCPUvsGPU",isGPUmode?GPU_MODE:CPU_MODE,SILENT,0,42);
+		int g1=sim.createGroup("excit", 1, EXCITATORY_NEURON);
+		sim.setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f); // RS
 
-		int g0=sim->createSpikeGeneratorGroup("input", 1 ,EXCITATORY_NEURON);
+		int g0=sim.createSpikeGeneratorGroup("input", 1 ,EXCITATORY_NEURON);
 
-		sim->setConductances(false); // make CUBA explicit
+		sim.setConductances(false); // make CUBA explicit
 
-		sim->connect(g0, g1, "full", RangeWeight(wt), 1.0f, RangeDelay(1,delay));
+		sim.connect(g0, g1, "full", RangeWeight(wt), 1.0f, RangeDelay(1));
 
 		bool spikeAtZero = true;
-		PeriodicSpikeGenerator *spkGenG0 = new PeriodicSpikeGenerator(inputRate,spikeAtZero);
-		sim->setSpikeGenerator(g0, spkGenG0);
+		PeriodicSpikeGenerator spkGenG0(inputRate,spikeAtZero);
+		sim.setSpikeGenerator(g0, &spkGenG0);
 
-		sim->setupNetwork();
+		sim.setupNetwork();
 
-		SpikeMonitor *spkMonG0 = sim->setSpikeMonitor(g0,"NULL");
-		SpikeMonitor *spkMonG1 = sim->setSpikeMonitor(g1,"NULL");
+		SpikeMonitor *spkMonG0 = sim.setSpikeMonitor(g0,"NULL");
+		SpikeMonitor *spkMonG1 = sim.setSpikeMonitor(g1,"NULL");
 
 		spkMonG0->startRecording();
 		spkMonG1->startRecording();
-		sim->runNetwork(runTimeMs/1000,runTimeMs%1000,false);
+		sim.runNetwork(runTimeMs/1000,runTimeMs%1000,false);
 		spkMonG0->stopRecording();
 		spkMonG1->stopRecording();
 
@@ -153,8 +152,5 @@ TEST(CUBA, firingRateCPUvsGPU) {
 			for (int i=0; i<spkTimesG1CPU[0].size(); i++)
 				EXPECT_EQ(spkTimesG1CPU[0][i], spkTimesG1GPU[0][i]);
 		}
-
-		delete spkGenG0;
-		delete sim;
 	}
 }
