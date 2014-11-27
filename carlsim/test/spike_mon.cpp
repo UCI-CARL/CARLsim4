@@ -1,8 +1,9 @@
 #include "gtest/gtest.h"
 #include "carlsim_tests.h"
 
-#include <snn.h>
+#include <carlsim.h>
 #include <periodic_spikegen.h>
+#include <snn_definitions.h> // MAX_GRP_PER_SNN
 
 // TODO: I should probably use a google tests figure for this to reduce the
 // amount of redundant code, but I don't need to do that right now. -- KDC
@@ -18,11 +19,10 @@
  *
  */
 TEST(setSpikeMon, grpId){
+	::testing::FLAGS_gtest_death_test_style = "threadsafe";
+
 	CARLsim* sim;
 	const int GRP_SIZE = 10;
-	
-	// use threadsafe version because we have deathtests
-	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
 	// loop over both CPU and GPU mode.
 	for(int mode=0; mode<=1; mode++){
@@ -48,11 +48,10 @@ TEST(setSpikeMon, grpId){
  *
  */
 TEST(setSpikeMon, fname){
+	::testing::FLAGS_gtest_death_test_style = "threadsafe";
+
 	CARLsim* sim;
 	const int GRP_SIZE = 10;
-	
-	// use threadsafe version because we have deathtests
-	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
 	// loop over both CPU and GPU mode.
 	for(int mode=0; mode<=1; mode++){
@@ -177,6 +176,8 @@ TEST(SpikeMon, persistentMode) {
  *
  */
 TEST(SpikeMon, clear){
+	::testing::FLAGS_gtest_death_test_style = "threadsafe";
+
 	CARLsim* sim;
 	PoissonRate* input;
 	const int GRP_SIZE = 5;
@@ -250,13 +251,12 @@ TEST(SpikeMon, clear){
  * to be exactly what it should be. The same must apply to the AER struct from the SpikeMonitor object.
  */
 TEST(SpikeMon, spikeTimes) {
+	::testing::FLAGS_gtest_death_test_style = "threadsafe";
+
 	double rate = rand()%20 + 2.0;  // some random mean firing rate
 	int isi = 1000/rate; // inter-spike interval
 
 	const int GRP_SIZE = rand()%5 + 1; // some random group size
-
-	// use threadsafe version because we have deathtests
-	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
 	// loop over both CPU and GPU mode.
 	for(int mode=0; mode<=1; mode++){
@@ -331,17 +331,19 @@ TEST(SpikeMon, spikeTimes) {
  * struct should have the same number of spikes.
  */
 TEST(SpikeMon, getGroupFiringRate){
+	::testing::FLAGS_gtest_death_test_style = "threadsafe";
+
+	CARLsim* sim = NULL;
+
 	double rate = rand()%12 + 2.0f;  // some random mean firing rate
 	int isi = 1000/rate; // inter-spike interval
 
 	const int GRP_SIZE = 1;//rand()%5 + 1;
-	// use threadsafe version because we have deathtests
-	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
 	// loop over both CPU and GPU mode.
 	for(int mode=0; mode<=1; mode++){
 		// first iteration, test CPU mode, second test GPU mode
-		CARLsim* sim = new CARLsim("SpikeMon.getGroupFiringRate",mode?GPU_MODE:CPU_MODE,SILENT,0,42);
+		sim = new CARLsim("SpikeMon.getGroupFiringRate",mode?GPU_MODE:CPU_MODE,SILENT,0,42);
 
 		float COND_tAMPA=5.0, COND_tNMDA=150.0, COND_tGABAa=6.0, COND_tGABAb=150.0;
 		int g1 = sim->createGroup("g1", GRP_SIZE, EXCITATORY_NEURON);
@@ -423,10 +425,10 @@ TEST(SpikeMon, getGroupFiringRate){
 }
 
 TEST(SpikeMon, getMaxMinNeuronFiringRate){
+	::testing::FLAGS_gtest_death_test_style = "threadsafe";
+
 	const int GRP_SIZE = 5;
 	const int inputTargetFR = 5.0f;
-	// use threadsafe version because we have deathtests
-	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
 	// loop over both CPU and GPU mode.
 	for(int mode=0; mode<1; mode++){

@@ -1,7 +1,7 @@
 #include "gtest/gtest.h"
 #include "carlsim_tests.h"
 
-#include <snn.h>
+#include <carlsim.h>
 #include <periodic_spikegen.h>
 
 /// ****************************************************************************
@@ -43,7 +43,6 @@
  * The script returns the firing rate and spike times of the output RS neuron.
  */
 TEST(CUBA, firingRateVsData) {
-	// set this flag to make all death tests thread-safe
 	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
 	for (int hasHighFiring=0; hasHighFiring<=1; hasHighFiring++) {

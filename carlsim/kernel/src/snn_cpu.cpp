@@ -1388,68 +1388,74 @@ grpConnectInfo_t* CpuSNN::getConnectInfo(short int connectId) {
 	return NULL;
 }
 
-std::vector<float> CpuSNN::getConductanceAMPA() {
+std::vector<float> CpuSNN::getConductanceAMPA(int grpId) {
 	assert(isSimulationWithCOBA());
 
 	// need to copy data from GPU first
-	if (getSimMode()==GPU_MODE)
-		copyConductanceAMPA(&cpuNetPtrs, &cpu_gpuNetPtrs, cudaMemcpyDeviceToHost, false, ALL);
+	if (getSimMode()==GPU_MODE) {
+		copyConductanceAMPA(&cpuNetPtrs, &cpu_gpuNetPtrs, cudaMemcpyDeviceToHost, false, grpId);
+	}
 
 	std::vector<float> gAMPAvec;
-	for (int i=0; i<numNReg; i++)
+	for (int i=grp_Info[grpId].StartN; i<=grp_Info[grpId].EndN; i++) {
 		gAMPAvec.push_back(gAMPA[i]);
+	}
 	return gAMPAvec;
 }
 
-std::vector<float> CpuSNN::getConductanceNMDA() {
+std::vector<float> CpuSNN::getConductanceNMDA(int grpId) {
 	assert(isSimulationWithCOBA());
 
 	// need to copy data from GPU first
 	if (getSimMode()==GPU_MODE)
-		copyConductanceNMDA(&cpuNetPtrs, &cpu_gpuNetPtrs, cudaMemcpyDeviceToHost, false, ALL);
+		copyConductanceNMDA(&cpuNetPtrs, &cpu_gpuNetPtrs, cudaMemcpyDeviceToHost, false, grpId);
 
 	std::vector<float> gNMDAvec;
 	if (isSimulationWithNMDARise()) {
 		// need to construct conductance from rise and decay parts
-		for (int i=0; i<numNReg; i++) {
+		for (int i=grp_Info[grpId].StartN; i<=grp_Info[grpId].EndN; i++) {
 			gNMDAvec.push_back(gNMDA_d[i]-gNMDA_r[i]);
 		}
 	} else {
-		for (int i=0; i<numNReg; i++)
+		for (int i=grp_Info[grpId].StartN; i<=grp_Info[grpId].EndN; i++) {
 			gNMDAvec.push_back(gNMDA[i]);
+		}
 	}
 	return gNMDAvec;
 }
 
-std::vector<float> CpuSNN::getConductanceGABAa() {
+std::vector<float> CpuSNN::getConductanceGABAa(int grpId) {
 	assert(isSimulationWithCOBA());
 
 	// need to copy data from GPU first
-	if (getSimMode()==GPU_MODE)
-		copyConductanceGABAa(&cpuNetPtrs, &cpu_gpuNetPtrs, cudaMemcpyDeviceToHost, false, ALL);
+	if (getSimMode()==GPU_MODE) {
+		copyConductanceGABAa(&cpuNetPtrs, &cpu_gpuNetPtrs, cudaMemcpyDeviceToHost, false, grpId);
+	}
 
 	std::vector<float> gGABAaVec;
-	for (int i=0; i<numNReg; i++)
+	for (int i=grp_Info[grpId].StartN; i<=grp_Info[grpId].EndN; i++) {
 		gGABAaVec.push_back(gGABAa[i]);
+	}
 	return gGABAaVec;
 }
 
-std::vector<float> CpuSNN::getConductanceGABAb() {
+std::vector<float> CpuSNN::getConductanceGABAb(int grpId) {
 	assert(isSimulationWithCOBA());
 
 	// need to copy data from GPU first
 	if (getSimMode()==GPU_MODE)
-		copyConductanceGABAb(&cpuNetPtrs, &cpu_gpuNetPtrs, cudaMemcpyDeviceToHost, false, ALL);
+		copyConductanceGABAb(&cpuNetPtrs, &cpu_gpuNetPtrs, cudaMemcpyDeviceToHost, false, grpId);
 
 	std::vector<float> gGABAbVec;
 	if (isSimulationWithGABAbRise()) {
 		// need to construct conductance from rise and decay parts
-		for (int i=0; i<numNReg; i++) {
+		for (int i=grp_Info[grpId].StartN; i<=grp_Info[grpId].EndN; i++) {
 			gGABAbVec.push_back(gGABAb_d[i]-gGABAb_r[i]);
 		}
 	} else {
-		for (int i=0; i<numNReg; i++)
+		for (int i=grp_Info[grpId].StartN; i<=grp_Info[grpId].EndN; i++) {
 			gGABAbVec.push_back(gGABAb[i]);
+		}
 	}
 	return gGABAbVec;
 }
