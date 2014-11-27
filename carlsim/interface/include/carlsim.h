@@ -839,7 +839,7 @@ public:
 
 
 
-	// +++++ PUBLIC METHODS: GETTER / SETTERS +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
+	// +++++ PUBLIC METHODS: GETTERS / SETTERS +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
 	/*!
 	 * \brief Returns the current CARLsim state
@@ -857,6 +857,42 @@ public:
 	 * \returns current CARLsim state
 	 */
 	carlsimState_t getCarlsimState() { return carlsimState_; }
+
+	/*!
+	 * \brief gets AMPA vector of a group
+	 *
+	 * \TODO finish docu
+	 * \STATE EXECUTION
+	 * \deprecated This function is deprecated. It will be replaced by NeuronMonitor.
+	 */
+	std::vector<float> getConductanceAMPA(int grpId);
+
+	/*!
+	 * \brief gets NMDA vector of a group
+	 *
+	 * \TODO finish docu
+	 * \STATE EXECUTION
+	 * \deprecated This function is deprecated. It will be replaced by NeuronMonitor.
+	 */
+	std::vector<float> getConductanceNMDA(int grpId);
+
+	/*!
+	 * \brief gets GABAa vector of a group
+	 *
+	 * \TODO finish docu
+	 * \STATE EXECUTION
+	 * \deprecated This function is deprecated. It will be replaced by NeuronMonitor.
+	 */
+	std::vector<float> getConductanceGABAa(int grpId);
+
+	/*!
+	 * \brief gets GABAb vector of a group
+	 *
+	 * \TODO finish docu
+	 * \STATE EXECUTION
+	 * \deprecated This function is deprecated. It will be replaced by NeuronMonitor.
+	 */
+	std::vector<float> getConductanceGABAb(int grpId);
 
 	/*!
 	 * \brief gets delays
