@@ -335,7 +335,7 @@ TEST(SpikeMon, getGroupFiringRate){
 
 	CARLsim* sim = NULL;
 
-	double rate = rand()%12 + 2.0f;  // some random mean firing rate
+	double rate = 25.0;  // some random mean firing rate
 	int isi = 1000/rate; // inter-spike interval
 
 	const int GRP_SIZE = 1;//rand()%5 + 1;
@@ -353,7 +353,7 @@ TEST(SpikeMon, getGroupFiringRate){
 
 		sim->setConductances(true,COND_tAMPA,COND_tNMDA,COND_tGABAa,COND_tGABAb);
 
-		sim->connect(g0,g1,"random", RangeWeight(0.27f), 1.0f);
+		sim->connect(g0, g1, "one-to-one", RangeWeight(0.27f), 1.0f);
 
 		PeriodicSpikeGenerator* spkGen = new PeriodicSpikeGenerator(rate);
 		sim->setSpikeGenerator(g0, spkGen);
@@ -399,7 +399,7 @@ TEST(SpikeMon, getGroupFiringRate){
 		// activity in the input group was recorded only for a short period
 		// the SpikeMon object must thus compute the firing rate based on only a brief time window
 		EXPECT_EQ(spikeMonInput->getRecordingTotalTime(), runTimeMsOn);
-		EXPECT_NEAR(spikeMonInput->getPopMeanFiringRate(), rate, 0.15); // rate must match
+		EXPECT_NEAR(spikeMonInput->getPopMeanFiringRate(), rate, 0.05); // rate must match
 		EXPECT_EQ(spikeMonInput->getPopNumSpikes(), runTimeMsOn*GRP_SIZE/isi); // spikes only from brief window
 		EXPECT_EQ(inputSize/2, (runTimeMsOn+2*runTimeMsOff)*GRP_SIZE/isi); // but spike file must have all spikes
 
