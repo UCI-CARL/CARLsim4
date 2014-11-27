@@ -2,13 +2,16 @@
 #include "carlsim_tests.h"
 
 #include <carlsim.h>
-#include <snn.h>
 #include <vector>
 #include <periodic_spikegen.h>
+#include <math.h> // sqrt
 
 /// **************************************************************************************************************** ///
 /// CONNECT FUNCTIONALITY
 /// **************************************************************************************************************** ///
+
+/*
+// \FIXME: deactivate for now, because we don't want to instantiate CpuSNN
 
 // make sure the function CpuSNN::isPoint3DinRF returns the right values for all cases
 // need to use CpuSNN, because function is not in user interface
@@ -25,6 +28,7 @@ TEST(CORE, isPoint3DinRF) {
 	EXPECT_FALSE(snn.isPoint3DinRF(RadiusRF(10.0), Point3D(0,0,0), Point3D(0,10,10)));
 	EXPECT_FALSE(snn.isPoint3DinRF(RadiusRF(10.0), Point3D(0,0,0), Point3D(10,0,10)));
 }
+*/
 
 // \TODO make CARLsim-level, replace with ConnectionMonitor
 //! connect with certain mulSynFast, mulSynSlow and observe connectInfo
@@ -78,7 +82,9 @@ TEST(CONNECT, connectInfo) {
 */
 
 TEST(CONNECT, connectFull) {
-	CARLsim* sim = new CARLsim("CORE.connectRadiusRF",CPU_MODE,SILENT,0,42);
+	::testing::FLAGS_gtest_death_test_style = "threadsafe";
+
+	CARLsim* sim = new CARLsim("CONNECT.connectFull",CPU_MODE,SILENT,0,42);
 	Grid3D grid(2,3,4);
 	int g0=sim->createGroup("excit0", grid, EXCITATORY_NEURON);
 	int g1=sim->createGroup("excit1", grid, EXCITATORY_NEURON);
@@ -113,6 +119,8 @@ TEST(CONNECT, connectFull) {
 }
 
 TEST(CONNECT, connectFullNoDirect) {
+	::testing::FLAGS_gtest_death_test_style = "threadsafe";
+
 	CARLsim* sim = new CARLsim("CORE.connectRadiusRF",CPU_MODE,SILENT,0,42);
 	Grid3D grid(2,3,4);
 	int g0=sim->createGroup("excit0", grid, EXCITATORY_NEURON);
@@ -149,7 +157,9 @@ TEST(CONNECT, connectFullNoDirect) {
 }
 
 TEST(CONNECT, connectOneToOne) {
-	CARLsim* sim = new CARLsim("CORE.connectOneToOne",CPU_MODE,SILENT,0,42);
+	::testing::FLAGS_gtest_death_test_style = "threadsafe";
+
+	CARLsim* sim = new CARLsim("CONNECT.connectOneToOne",CPU_MODE,SILENT,0,42);
 	Grid3D grid(2,3,4);
 	int g0=sim->createGroup("excit0", grid, EXCITATORY_NEURON);
 	int g1=sim->createGroup("excit1", grid, EXCITATORY_NEURON);
@@ -173,7 +183,9 @@ TEST(CONNECT, connectOneToOne) {
 }
 
 TEST(CONNECT, connectRandom) {
-	CARLsim* sim = new CARLsim("CORE.connectRandom",CPU_MODE,SILENT,0,42);
+	::testing::FLAGS_gtest_death_test_style = "threadsafe";
+
+	CARLsim* sim = new CARLsim("CONNECT.connectRandom",CPU_MODE,SILENT,0,42);
 	Grid3D grid(2,3,4);
 	int g0=sim->createGroup("excit0", grid, EXCITATORY_NEURON);
 	int g1=sim->createGroup("excit1", grid, EXCITATORY_NEURON);
