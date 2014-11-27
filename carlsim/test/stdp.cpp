@@ -355,3 +355,263 @@ TEST(STDP, DASTDPWeightBoost) {
 
 	delete spikeCtrl;
 }
+
+/*!
+ * \brief testing the Hebbian E-STDP curve
+ * This function tests whether E-STDP change synaptic weight as expected
+ * Wtih control of pre- and post-neurons' spikes, the synaptic weight is expected to increase or decrease to
+ * maximum or minimum synaptic weith respectively.
+ */
+TEST(STDP, ESTDPHebbianCurve) {
+	// simulation details
+	float* weights = NULL;
+	int size;
+	int gex1, gex2, g1;
+	float ALPHA_LTP = 0.10f;
+	float ALPHA_LTD = 0.14f;
+	float TAU_LTP = 20.0f;
+	float TAU_LTD = 20.0f;
+	float maxInhWeight = 10.0f;
+	float initWeight = 5.0f;
+	float minInhWeight = 0.0f;
+
+	for (int mode = 0; mode < 2; mode++) {
+		for (int coba = 0; coba < 2; coba++) {
+			for (int offset = -30; offset <= 30; offset += 5) {
+				if (offset == 0) continue; // skip offset == 0;
+				// create a network
+				CARLsim* sim = new CARLsim("STDP.ESTDPHebbianCurve", mode?GPU_MODE:CPU_MODE, SILENT, 0, 42);
+
+				g1 = sim->createGroup("excit", 1, EXCITATORY_NEURON);
+				sim->setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f);
+
+				gex1 = sim->createSpikeGeneratorGroup("input-ex1", 1, EXCITATORY_NEURON);
+				gex2 = sim->createSpikeGeneratorGroup("input-ex2", 1, EXCITATORY_NEURON);
+
+				TwoGroupsSpikeController* spikeCtrl = new TwoGroupsSpikeController(100, offset, gex2, gex1);
+
+				if (coba) { // conductance-based
+					sim->connect(gex1, g1, "one-to-one", RangeWeight(40.0f/100), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
+					sim->connect(gex2, g1, "one-to-one", RangeWeight(minInhWeight, initWeight/100, maxInhWeight/100), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_PLASTIC);
+
+					// enable COBA, set up ESTDP
+					sim->setConductances(true,5,150,6,150);
+					sim->setESTDP(g1, true, STANDARD, HebbianCurve(ALPHA_LTP/100, TAU_LTP, ALPHA_LTD/100, TAU_LTP));
+				} else { // current-based
+					sim->connect(gex1, g1, "one-to-one", RangeWeight(40.0f), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
+					sim->connect(gex2, g1, "one-to-one", RangeWeight(minInhWeight, initWeight, maxInhWeight), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_PLASTIC);
+
+					// set up ESTDP
+					sim->setConductances(false);
+					sim->setESTDP(g1, true, STANDARD, HebbianCurve(ALPHA_LTP, TAU_LTP, ALPHA_LTD, TAU_LTP));
+				}
+
+				// set up spike controller on DA neurons
+				sim->setSpikeGenerator(gex1, spikeCtrl);
+				sim->setSpikeGenerator(gex2, spikeCtrl);
+
+				// build the network
+				sim->setupNetwork();
+
+				ConnectionMonitor* CM = sim->setConnectionMonitor(gex2, g1, "NULL");
+
+				sim->runNetwork(55, 0, true, true);
+
+				std::vector< std::vector<float> > weights = CM->takeSnapshot();
+				if (offset > 0) { // pre-post
+					if (coba) {
+						EXPECT_NEAR(maxInhWeight/100, weights[0][0], 0.005f);
+					} else {
+						EXPECT_NEAR(maxInhWeight, weights[0][0], 0.5f);
+					}
+				} else { // post-pre
+					if (coba) {
+						EXPECT_NEAR(minInhWeight/100, weights[0][0], 0.005f);
+					} else {
+						EXPECT_NEAR(minInhWeight, weights[0][0], 0.5f);
+					}
+				}
+
+				delete spikeCtrl;
+				delete sim;
+			}
+		}
+	}
+}
+
+/*!
+ * \brief testing the half-Hebbian E-STDP curve
+ * This function tests whether E-STDP change synaptic weight as expected
+ * Wtih control of pre- and post-neurons' spikes, the synaptic weight is expected to increase or decrease to
+ * maximum or minimum synaptic weith respectively.
+ */
+TEST(STDP, ESTDPHalfHebbianCurve) {
+	// simulation details
+	float* weights = NULL;
+	int size;
+	int gex1, gex2, g1;
+	float ALPHA_LTP = 0.10f;
+	float ALPHA_LTD = 0.14f;
+	float TAU_LTP = 20.0f;
+	float TAU_LTD = 20.0f;
+	float GAMA = 20.0f;
+	float maxInhWeight = 10.0f;
+	float initWeight = 5.0f;
+	float minInhWeight = 0.0f;
+
+	for (int mode = 0; mode < 2; mode++) {
+		for (int coba = 0; coba < 2; coba++) {
+			for (int offset = -24; offset <= 24; offset += 3) {
+				if (offset == 0) continue; // skip offset == 0;
+				// create a network
+				CARLsim* sim = new CARLsim("STDP.ESTDPHalfHebbianCurve", mode?GPU_MODE:CPU_MODE, SILENT, 0, 42);
+
+				g1 = sim->createGroup("excit", 1, EXCITATORY_NEURON);
+				sim->setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f);
+
+				gex1 = sim->createSpikeGeneratorGroup("input-ex1", 1, EXCITATORY_NEURON);
+				gex2 = sim->createSpikeGeneratorGroup("input-ex2", 1, EXCITATORY_NEURON);
+
+				TwoGroupsSpikeController* spikeCtrl = new TwoGroupsSpikeController(100, offset, gex2, gex1);
+
+				if (coba) { // conductance-based
+					sim->connect(gex1, g1, "one-to-one", RangeWeight(40.0f/100), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
+					sim->connect(gex2, g1, "one-to-one", RangeWeight(minInhWeight, initWeight/100, maxInhWeight/100), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_PLASTIC);
+
+					// enable COBA, set up ESTDP
+					sim->setConductances(true,5,150,6,150);
+					sim->setESTDP(g1, true, STANDARD, HalfHebbianCurve(ALPHA_LTP/100, TAU_LTP, ALPHA_LTD/100, TAU_LTP, GAMA));
+				} else { // current-based
+					sim->connect(gex1, g1, "one-to-one", RangeWeight(40.0f), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
+					sim->connect(gex2, g1, "one-to-one", RangeWeight(minInhWeight, initWeight, maxInhWeight), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_PLASTIC);
+
+					// set up ESTDP
+					sim->setConductances(false,0,0,0,0);
+					sim->setESTDP(g1, true, STANDARD, HalfHebbianCurve(ALPHA_LTP, TAU_LTP, ALPHA_LTD, TAU_LTP, GAMA));
+				}
+
+				// set up spike controller on DA neurons
+				sim->setSpikeGenerator(gex1, spikeCtrl);
+				sim->setSpikeGenerator(gex2, spikeCtrl);
+
+				// build the network
+				sim->setupNetwork();
+
+				ConnectionMonitor* CM = sim->setConnectionMonitor(gex2, g1, "NULL");
+
+				sim->runNetwork(75, 0, true, true);
+
+				std::vector< std::vector<float> > weights = CM->takeSnapshot();
+				if (offset > 0) { // pre-post
+					if (coba) {
+						if (offset == 3 || offset == 6)
+							EXPECT_NEAR(maxInhWeight/100, weights[0][0], 0.005f);
+						else
+							EXPECT_NEAR(minInhWeight/100, weights[0][0], 0.005f);
+					} else {
+						if (offset == 3 || offset == 6 || offset == 9)
+							EXPECT_NEAR(maxInhWeight, weights[0][0], 0.5f);
+						else
+							EXPECT_NEAR(minInhWeight, weights[0][0], 0.5f);
+					}
+				} else { // post-pre
+					if (coba) {
+						EXPECT_NEAR(minInhWeight/100, weights[0][0], 0.005f);
+					} else {
+						EXPECT_NEAR(minInhWeight, weights[0][0], 0.5f);
+					}
+				}
+
+				delete spikeCtrl;
+				delete sim;
+			}
+		}
+	}
+}
+
+/*!
+ * \brief testing the constant symmetric I-STDP curve
+ * This function tests whether I-STDP change synaptic weight as expected
+ * Wtih control of pre- and post-neurons' spikes, the synaptic weight is expected to increase or decrease to
+ * maximum or minimum synaptic weith respectively.
+ */
+TEST(STDP, ISTDPConstantSymmetricCurve) {
+	// simulation details
+	float* weights = NULL;
+	int size;
+	int gin, gex, g1;
+	float BETA_LTP = 0.10f;
+	float BETA_LTD = 0.14f;
+	float LAMDA = 9.0f;
+	float DELTA = 40.0f;
+	float maxInhWeight = 10.0f;
+	float initWeight = 5.0f;
+	float minInhWeight = 0.0f;
+
+	for (int mode = 0; mode < 2; mode++) {
+		for (int coba = 0; coba < 2; coba++) {
+			for (int offset = -15; offset <= 15; offset += 10) {
+				// create a network
+				CARLsim* sim = new CARLsim("STDP.ISTDPConstantSymmetricCurve", mode?GPU_MODE:CPU_MODE, SILENT, 0, 42);
+
+				g1 = sim->createGroup("excit", 1, EXCITATORY_NEURON);
+				sim->setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f);
+
+				gex = sim->createSpikeGeneratorGroup("input-ex", 1, EXCITATORY_NEURON);
+				gin = sim->createSpikeGeneratorGroup("input-in", 1, INHIBITORY_NEURON);
+
+				TwoGroupsSpikeController* spikeCtrl = new TwoGroupsSpikeController(100, offset, gin, gex);
+
+				if (coba) { // conductance-based
+					sim->connect(gex, g1, "one-to-one", RangeWeight(40.0f/100), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
+					sim->connect(gin, g1, "one-to-one", RangeWeight(minInhWeight, initWeight/100, maxInhWeight/100), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_PLASTIC);
+
+					// enable COBA, set up ISTDP
+					sim->setConductances(true,5,150,6,150);
+					sim->setISTDP(g1, true, STANDARD, ConstantSymmetricCurve(BETA_LTP/100, BETA_LTD/100, LAMDA, DELTA));
+				} else { // current-based
+					sim->connect(gex, g1, "one-to-one", RangeWeight(40.0f), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
+					sim->connect(gin, g1, "one-to-one", RangeWeight(minInhWeight, initWeight, maxInhWeight), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_PLASTIC);
+
+					// set up ISTDP
+					sim->setConductances(false,0,0,0,0);
+					sim->setISTDP(g1, true, STANDARD, ConstantSymmetricCurve(BETA_LTP, BETA_LTD, LAMDA, DELTA));
+				}
+
+				// set up spike controller on DA neurons
+				sim->setSpikeGenerator(gex, spikeCtrl);
+				sim->setSpikeGenerator(gin, spikeCtrl);
+
+				// build the network
+				sim->setupNetwork();
+
+				ConnectionMonitor* CM = sim->setConnectionMonitor(gin, g1, "NULL");
+
+				sim->setSpikeMonitor(g1);
+				sim->setSpikeMonitor(gin);
+				sim->setSpikeMonitor(gex);
+
+				// run for 20 seconds
+				sim->runNetwork(20,0, true, true);
+
+				std::vector< std::vector<float> > weights = CM->takeSnapshot();
+				if (offset == -5 || offset == 5) { // I-STDP LTP
+					if (coba) {
+						EXPECT_NEAR(-maxInhWeight/100, weights[0][0], 0.005f);
+					} else {
+						EXPECT_NEAR(-maxInhWeight, weights[0][0], 0.5f);
+					}
+				} else { // I-STDP LTD
+					if (coba) {
+						EXPECT_NEAR(-minInhWeight/100, weights[0][0], 0.005f);
+					} else {
+						EXPECT_NEAR(-minInhWeight, weights[0][0], 0.5f);
+					}
+				}
+
+				delete spikeCtrl;
+				delete sim;
+			}
+		}
+	}
+}
