@@ -48,43 +48,157 @@
  * \brief Class for generating Poisson spike trains
  *
  * The PoissonRate class allows a user create spike trains whose inter-spike interval follows a Poisson process. The
- * object can then be linked to a neuron group of type SpikeGenerator via CARLsim::setSpikeRate.
+ * object can then be linked to a spike generator group (created via CARLsim::createSpikeGeneratorGroup) by calling
+ * CARLsim::setSpikeRate.
  *
- * A PoissonRate object can be allocated either on the CPU or the GPU. However, GPU allocation is only supported if the
- * CARLsim simulation is run in GPU_MODE.
+ * All firing rates will be initialized to zero. The user then has a number of options to manipulate the mean firing
+ * rate of each neuron. The same rate can be applied to all neurons by calling PoissonRate::setRates(float rate).
+ * Individual rates can be applied from a vector by calling PoissonRate::setRates(const std::vector<float>& rates).
+ * The rate of a single neuron can be manipulated by calling PoissonRate::setRate(int neurId, float rate).
+ *
+ * Example usage:
+ * \code
+ * // create a PoissonRate object on GPU for a group of 50 neurons
+ * PoissonRate myRate(50, true);
+ *
+ * // let all rates be zero except the one for neurId=42, set that to 20 Hz
+ * myRate.setRate(42, 20.0f);
+ *
+ * // apply to spike generator group (say, g0) of CARLsim object in SETUP or EXECUTION state
+ * // and run the network for a second
+ * sim.setSpikeRate(g0, &myRate);
+ * sim.runNetwork(1,0);
+ *
+ * // now change the rates of all neurons to 12 Hz
+ * myRate.setRates(12.0f);
+ * sim.setSpikeRate(g0, &myRate);
+ * sim.runNetwork(1,0);
+ * \endcode
+ * 
+ * \attention The mean firing rate will keep getting applied to any instances of CARLsim::runNetwork until the user
+ * changes the values and calls CARLsim::setSpikeRate again.
+ * \note A PoissonRate object can be allocated either on the CPU or the GPU. However, GPU allocation is only supported
+ * if the CARLsim simulation is run in GPU_MODE.
+ * \since v3.0
  */
 class PoissonRate {
 public:
+	/*!
+	 * \brief PoissonRate constructor
+	 *
+	 * Creates a new instance of class PoissonRate.
+	 * \param[in] nNeur the number of neurons for which to generate Poisson spike trains
+	 * \param[in] onGPU whether to allocate the rate vector on GPU (true) or CPU (false)
+	 * \since v2.0
+	 */
 	PoissonRate(int nNeur, bool onGPU=false);
 
-	// destructor
+	/*!
+	 * \brief PoissonRate destructor
+	 *
+	 * Cleans up all the memory upon object deletion.
+	 * \since v2.0
+	 */
 	~PoissonRate();
 
+	/*!
+	 * \brief Returns the number of neurons for which to generate Poisson spike trains
+	 *
+	 * This function returns the number of neurons for which to generate Poisson spike trains. This number is defined
+	 * at initialization and cannot be changed during the object lifetime.
+	 * \returns number of neurons
+	 * \since v3.0
+	 */
 	int getNumNeurons() { return nNeur_; }
 
+	/*!
+	 * \brief Returns the mean firing rate of a specific neuron ID
+	 *
+	 * This function returns the mean firing rate assigned to a specific neuron ID. The neuron ID is 0-indexed and
+	 * should thus be in the range [ 0 , getNumNeurons() ). It is completely independent from CARLsim neuron IDs.
+	 * \param[in] neurId the neuron ID (0-indexed)
+	 * \returns mean firing rate
+	 * \since v3.0
+	 */
 	float getRate(int neurId);
 
+	/*!
+	 * \brief Returns a vector of firing rates, one element per neuron
+	 *
+	 * This function returns all the mean firing rates in a vector, one vector element per neuron.
+	 * \returns vector of firing rates
+	 * \since v3.0
+	 */
 	std::vector<float> getRates();
 
+	/*!
+	 * \brief Returns pointer to CPU-allocated firing rate array (deprecated)
+	 *
+	 * This function returns a pointer to the underlying firing rate array if allocated on the CPU. This pointer does
+	 * not exist when the PoissonRate object is allocated on GPU.
+	 *
+	 * \deprecated This function is deprecated, as it should not be exposed to the high-level UI API. Use
+	 * PoissonRate::getRates instead.
+	 */
 	float* getRatePtrCPU();
 
+	/*!
+	 * \brief Returns pointer to GPU-allocated firing rate array (deprecated)
+	 *
+	 * This function returns a pointer to the underlying firing rate array if allocated on the GPU. This pointer does
+	 * not exist when the PoissonRate object is allocated on CPU. 
+	 *
+	 * \deprecated This function is deprecated, as it should not be exposed to the high-level UI API. Use
+	 * PoissonRate::getRates instead.
+	 */
 	float* getRatePtrGPU();
 
+	/*!
+	 * \brief Checks whether the firing rates are allocated on CPU or GPU
+	 *
+	 * This function checks whether the firing rates are allocated either on CPU or GPU.
+	 * \returns a flag whether allocated on GPU (true) or CPU (false)
+	 * \since v3.0
+	 */
 	bool isOnGPU() { return onGPU_; }
 
+	/*!
+	 * \brief Sets the mean firing rate of a particular neuron ID
+	 *
+	 * This function sets the firing rate of a particular neuron ID. The neuron ID is 0-indexed and should thus be in
+	 * the range [ 0 , getNumNeurons() ). It is completely independent from CARLsim neuron IDs.
+	 * \param[in] neurId the neuron ID (0-indexed)
+	 * \param[in] rate the firing rate to set
+	 * \since v3.0
+	 */
 	void setRate(int neurId, float rate);
 
-	//! assigns same rate to all neurons
+	/*!
+	 * \brief Assigns the same mean firing rate to all neurons
+	 *
+	 * This function assigns the same firing rate to all the neurons.
+	 *
+	 * \param[in] rate the firing rate to set
+	 * \since v3.0
+	 */
 	void setRates(float rate);
 
-	//! assigns rates from a vector
+	/*!
+	 * \brief Sets the mean firing rate of each neuron from a vector
+	 *
+	 * This function sets the firing rate of each neuron from a vector of firing rates, one rate per neuron.
+	 *
+	 * \param[in] rates vector of firing rates (size should be equivalent to PoissonRate::getNumNeurons())
+	 * \since v3.0
+	 */
 	void setRates(const std::vector<float>& rates);
 
 
 private:
-	float *h_rates_, *d_rates_;
-	const int nNeur_;
-	const bool onGPU_;
+	float *h_rates_;	//!< pointer to host allocation of underlying firing rate array
+	float *d_rates_;	//!< pointer to device allocation of underlying firing rate array
+	const int nNeur_;	//!< number of neurons to manage
+	const bool onGPU_;	//!< whether allocated on GPU (true) or CPU (false)
 };
 
 #endif
