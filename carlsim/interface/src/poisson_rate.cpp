@@ -69,7 +69,6 @@ PoissonRate::PoissonRate(int nNeur, bool onGPU): nNeur_(nNeur), onGPU_(onGPU) {
 // destructor
 PoissonRate::~PoissonRate() {
 	if (isOnGPU()) {
-		fprintf(stderr,"~PoissonRate GPU\n");
 		// clean up device
 		if (d_rates_!=NULL) {
 			CUDA_CHECK_ERRORS(cudaThreadSynchronize()); // wait for kernel to complete
@@ -77,7 +76,6 @@ PoissonRate::~PoissonRate() {
 			d_rates_ = NULL;
 		}
 	} else {
-		fprintf(stderr,"~PoissonRate CPU\n");
 		// clean up host
 		if (h_rates_!=NULL)
 			delete[] h_rates_;
@@ -92,7 +90,6 @@ float PoissonRate::getRate(int neurId) {
 	if (isOnGPU()) {
 		// get data from device (might have kernel launch overhead because float is small)
 		float h_d_rate = 0.0f;
-//		float *h_d_rate = (float*)malloc(sizeof(float));
 		CUDA_CHECK_ERRORS( cudaMemcpy(&h_d_rate, &(d_rates_[neurId]), sizeof(float), cudaMemcpyDeviceToHost) );
 		return h_d_rate;
 	} else {

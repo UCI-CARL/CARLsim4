@@ -36,16 +36,23 @@
  *					(TSC) Ting-Shuo Chou <tingshuc@uci.edu>
  *
  * CARLsim available from http://socsci.uci.edu/~jkrichma/CARLsim/
- * Ver 2/21/2014
+ * Ver 11/26/2014
  */
 
 #ifndef _POISSON_RATE_H_
 #define _POISSON_RATE_H_
 
-//#include <stdint.h>
-
 #include <vector>
 
+/*!
+ * \brief Class for generating Poisson spike trains
+ *
+ * The PoissonRate class allows a user create spike trains whose inter-spike interval follows a Poisson process. The
+ * object can then be linked to a neuron group of type SpikeGenerator via CARLsim::setSpikeRate.
+ *
+ * A PoissonRate object can be allocated either on the CPU or the GPU. However, GPU allocation is only supported if the
+ * CARLsim simulation is run in GPU_MODE.
+ */
 class PoissonRate {
 public:
 	PoissonRate(int nNeur, bool onGPU=false);
@@ -74,7 +81,7 @@ public:
 	void setRates(const std::vector<float>& rates);
 
 
-//private:
+private:
 	float *h_rates_, *d_rates_;
 	const int nNeur_;
 	const bool onGPU_;

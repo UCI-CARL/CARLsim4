@@ -923,7 +923,7 @@ public:
 	 *
 	 * This function returns the number of connections (pairs of pre-post groups) in the network. Each pre-post
 	 * pair of neuronal groups has its own connection ID, which is returned by a call to CARLsim::connect.
-	 * \Note This number might change throughout CARLsim state CONFIG, up to calling CARLsim::setupNetwork).
+	 * \note This number might change throughout CARLsim state CONFIG, up to calling CARLsim::setupNetwork).
 	 * \STATE CONFIG, SETUP, EXECUTION
 	 * \returns the number of connections (pairs of pre-post groups) in the network
 	 */
@@ -940,7 +940,7 @@ public:
 	/*!
 	 * \brief returns the number of groups in the network
 	 *
-	 * \Note This number might change throughout CARLsim state CONFIG, up to calling CARLsim::setupNetwork).
+	 * \note This number might change throughout CARLsim state CONFIG, up to calling CARLsim::setupNetwork).
 	 * \TODO finish docu
 	 * \STATE CONFIG, SETUP, EXECUTION
 	 */
@@ -949,7 +949,7 @@ public:
 	/*!
 	 * \brief returns the total number of allocated neurons in the network
 	 *
-	 * \Note This number might change throughout CARLsim state CONFIG, up to calling CARLsim::setupNetwork).
+	 * \note This number might change throughout CARLsim state CONFIG, up to calling CARLsim::setupNetwork).
 	 * \TODO finish docu
 	 * \STATE CONFIG, SETUP, EXECUTION
 	 */
@@ -958,7 +958,7 @@ public:
 	/*!
 	 * \brief returns the total number of regular (Izhikevich) neurons
 	 *
-	 * \Note This number might change throughout CARLsim state CONFIG, up to calling CARLsim::setupNetwork).
+	 * \note This number might change throughout CARLsim state CONFIG, up to calling CARLsim::setupNetwork).
 	 * \TODO finish docu
 	 * \STATE CONFIG, SETUP, EXECUTION
 	 */
@@ -967,7 +967,7 @@ public:
 	/*!
 	 * \brief returns the total number of regular (Izhikevich) excitatory neurons
 	 *
-	 * \Note This number might change throughout CARLsim state CONFIG, up to calling CARLsim::setupNetwork).
+	 * \note This number might change throughout CARLsim state CONFIG, up to calling CARLsim::setupNetwork).
 	 * \TODO finish docu
 	 * \STATE CONFIG, SETUP, EXECUTION
 	 */
@@ -976,7 +976,7 @@ public:
 	/*!
 	 * \brief returns the total number of regular (Izhikevich) inhibitory neurons
 	 *
-	 * \Note This number might change throughout CARLsim state CONFIG, up to calling CARLsim::setupNetwork).
+	 * \note This number might change throughout CARLsim state CONFIG, up to calling CARLsim::setupNetwork).
 	 * \TODO finish docu
 	 * \STATE CONFIG, SETUP, EXECUTION
 	 */
@@ -985,7 +985,7 @@ public:
 	/*!
 	 * \brief returns the total number of spike generator neurons
 	 *
-	 * \Note This number might change throughout CARLsim state CONFIG, up to calling CARLsim::setupNetwork).
+	 * \note This number might change throughout CARLsim state CONFIG, up to calling CARLsim::setupNetwork).
 	 * \TODO finish docu
 	 * \STATE CONFIG, SETUP, EXECUTION
 	 */
@@ -994,7 +994,7 @@ public:
 	/*!
 	 * \brief returns the total number of excitatory spike generator neurons
 	 *
-	 * \Note This number might change throughout CARLsim state CONFIG, up to calling CARLsim::setupNetwork).
+	 * \note This number might change throughout CARLsim state CONFIG, up to calling CARLsim::setupNetwork).
 	 * \TODO finish docu
 	 * \STATE CONFIG, SETUP, EXECUTION
 	 */
@@ -1003,7 +1003,7 @@ public:
 	/*!
 	 * \brief returns the total number of inhibitory spike generator neurons
 	 *
-	 * \Note This number might change throughout CARLsim state CONFIG, up to calling CARLsim::setupNetwork).
+	 * \note This number might change throughout CARLsim state CONFIG, up to calling CARLsim::setupNetwork).
 	 * \TODO finish docu
 	 * \STATE CONFIG, SETUP, EXECUTION
 	 */

@@ -6,10 +6,10 @@
 # kernel variables
 kernel_inc := $(addprefix $(kernel_dir)/include/, snn.h gpu.h \
 	snn_definitions.h snn_datastructures.h \
-	gpu_random.h propagated_spike_buffer.h poisson_rate.h \
+	gpu_random.h propagated_spike_buffer.h \
 	error_code.h cuda_version_control.h)
 kernel_cpp := $(addprefix $(kernel_dir)/src/, snn_cpu.cpp \
-	propagated_spike_buffer.cpp poisson_rate.cpp print_snn_info.cpp)
+	propagated_spike_buffer.cpp print_snn_info.cpp)
 kernel_cu := $(addprefix $(kernel_dir)/src/, gpu_random.cu snn_gpu.cu)
 kernel_src := $(kernel_cpp) $(kernel_cu)
 kernel_cpp_objs := $(patsubst %.cpp, %.o, $(kernel_cpp))
@@ -19,9 +19,9 @@ kernel_objs := $(kernel_cpp_objs) $(kernel_cu_objs)
 # interface variables
 interface_inc := $(addprefix $(interface_dir)/include/, carlsim.h \
 	user_errors.h callback.h callback_core.h carlsim_definitions.h \
-	carlsim_datastructures.h linear_algebra.h)
+	carlsim_datastructures.h poisson_rate.h linear_algebra.h)
 interface_src := $(addprefix $(interface_dir)/src/,carlsim.cpp \
-	user_errors.cpp callback_core.cpp linear_algebra.cpp)
+	user_errors.cpp callback_core.cpp poisson_rate.cpp linear_algebra.cpp)
 interface_objs := $(patsubst %.cpp, %.o, $(interface_src))
 
 # spike monitor variables
