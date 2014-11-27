@@ -34,13 +34,13 @@ TEST(SpikeCounter, setSpikeCounterDeath) {
 	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
 	std::string name = "SNN";
-	CpuSNN* sim = new CpuSNN(name,CPU_MODE,SILENT,0,42);
-	int g1=sim->createGroup("excit", 10, EXCITATORY_NEURON, ALL);
+	CARLsim* sim = new CARLsim(name,CPU_MODE,SILENT,0,42);
+	int g1=sim->createGroup("excit", 10, EXCITATORY_NEURON);
 
 	// grpId
-	EXPECT_DEATH({sim->setSpikeCounter(g1+1,1,ALL);},"");
-	EXPECT_DEATH({sim->setSpikeCounter(-1,1,ALL);},"");
-	EXPECT_DEATH({sim->setSpikeCounter(sim->numGrp,1,ALL);},"");
+	EXPECT_DEATH({sim->setSpikeCounter(g1+1,1);},"");
+	EXPECT_DEATH({sim->setSpikeCounter(-1,1);},"");
+	EXPECT_DEATH({sim->setSpikeCounter(2,1);},"");
 
 	delete sim;
 }
@@ -51,11 +51,11 @@ TEST(SpikeCounter, SpikeCntVsData) {
 	float STP_U = 0.25f;		// the exact values don't matter
 	float STP_tF = 10.0f;
 	float STP_tD = 15.0f;
-	CpuSNN* sim;
+	CARLsim* sim = NULL;
 
 	int* spikes;
 
-	sim = new CpuSNN(name,CPU_MODE,SILENT,0,42);
+	sim = new CARLsim(name,CPU_MODE,SILENT,0,42);
 
 	int recordDur = -1;
 
@@ -70,7 +70,7 @@ TEST(SpikeCounter, SpikeCntVsData) {
 	sim->setSpikeCounter(g1,recordDur,ALL);
 	sim->setSpikeMonitor(g1,NULL,ALL);
 
-	PeriodicSpikeGeneratorCore* spk50 = new PeriodicSpikeGeneratorCore(50.0f); // periodic spiking @ 50 Hz
+	PeriodicSpikeGenerator* spk50 = new PeriodicSpikeGenerator(50.0f); // periodic spiking @ 50 Hz
 	sim->setSpikeGenerator(g0, spk50, ALL);
 
 	// after some time expect some number of spikes
