@@ -756,7 +756,8 @@ public:
 	 * \param[in] refPeriod  refactory period (ms). Default: 1ms.
 	 *
 	 * \note This method can only be applied to SpikeGenerator groups.
-	 *
+	 * \note CARLsim::setSpikeRate will *not* take over ownership of PoissonRate. In other words, if you allocate the
+	 * PoissonRate object on the heap, you are responsible for correctly deallocating it.
 	 * \attention Make sure to reset spike rate after use (i.e., for the next call to CARLsim::runNetwork), otherwise
 	 * the rate will keep getting applied to the group.
 	 * \see CARLsim::setExternalCurrent
