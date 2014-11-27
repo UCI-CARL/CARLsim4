@@ -158,31 +158,6 @@ void CARLsim::CARLsimInit() {
 
 	UserErrors::assertTrue(simMode_!=UNKNOWN_SIM,UserErrors::CANNOT_BE_UNKNOWN,"CARLsim()","Simulation mode");
 	UserErrors::assertTrue(loggerMode_!=UNKNOWN_LOGGER,UserErrors::CANNOT_BE_UNKNOWN,"CARLsim()","Logger mode");
-	snn_ = new CpuSNN(netName_, simMode_, loggerMode_, ithGPU_, randSeed_);
-
-	// set default time constants for synaptic current decay
-	// TODO: add ref
-	setDefaultConductanceTimeConstants(5, 0, 150, 6, 0, 150);
-
-	// set default values for STDP params
-	// TODO: add ref
-	// TODO: make STDP type part of default func
-	def_STDP_type_      = STANDARD;
-	setDefaultESTDPparams(0.001f, 20.0f, 0.0012f, 20.0f);
-	setDefaultISTDPparams(0.001f, 0.0012f, 12.0f, 40.0f);
-
-	// set default values for STP params
-	// TODO: add ref
-	setDefaultSTPparams(EXCITATORY_NEURON, 0.2f, 20.0f, 700.0f);
-	setDefaultSTPparams(INHIBITORY_NEURON, 0.5f, 1000.0f, 800.0f);
-
-	// set default homeostasis params
-	// Ref: Carlson, et al. (2013). Proc. of IJCNN 2013.
-	setDefaultHomeostasisParams(0.1f, 10.0f);
-
-	// set default save sim params
-	// TODO: when we run executable from local dir, put save file in results/
-	setDefaultSaveOptions("results/sim_"+netName_+".dat",false);
 
 	// Allocate GPU
 	if (simMode_ == GPU_MODE) {
@@ -213,6 +188,32 @@ void CARLsim::CARLsimInit() {
 			exit(EXIT_FAILURE); // abort
 		}
 	}
+
+	snn_ = new CpuSNN(netName_, simMode_, loggerMode_, ithGPU_, randSeed_);
+
+	// set default time constants for synaptic current decay
+	// TODO: add ref
+	setDefaultConductanceTimeConstants(5, 0, 150, 6, 0, 150);
+
+	// set default values for STDP params
+	// TODO: add ref
+	// TODO: make STDP type part of default func
+	def_STDP_type_      = STANDARD;
+	setDefaultESTDPparams(0.001f, 20.0f, 0.0012f, 20.0f);
+	setDefaultISTDPparams(0.001f, 0.0012f, 12.0f, 40.0f);
+
+	// set default values for STP params
+	// TODO: add ref
+	setDefaultSTPparams(EXCITATORY_NEURON, 0.2f, 20.0f, 700.0f);
+	setDefaultSTPparams(INHIBITORY_NEURON, 0.5f, 1000.0f, 800.0f);
+
+	// set default homeostasis params
+	// Ref: Carlson, et al. (2013). Proc. of IJCNN 2013.
+	setDefaultHomeostasisParams(0.1f, 10.0f);
+
+	// set default save sim params
+	// TODO: when we run executable from local dir, put save file in results/
+	setDefaultSaveOptions("results/sim_"+netName_+".dat",false);
 }
 
 
