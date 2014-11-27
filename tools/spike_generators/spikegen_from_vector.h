@@ -38,9 +38,12 @@
  * CARLsim available from http://socsci.uci.edu/~jkrichma/CARLsim/
  * Ver 8/29/2014
  */ 
-#include <callback.h>
+#ifndef _SPIKEGEN_FROM_VECTOR_H_
+#define _SPIKEGEN_FROM_VECTOR_H_
 
+#include <callback.h>
 #include <vector>
+
 class CARLsim; // forward-declaration
 
 /*!
@@ -82,3 +85,5 @@ private:
 	int currentIndex_;			//!< keeps track of current position in the vector
 	int size_;					//!< size of vector for fast access
 };
+
+#endif

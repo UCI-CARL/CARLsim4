@@ -17,7 +17,7 @@ local_objs := $(addsuffix .o,$(addprefix $(local_dir)/,$(carlsim_tests_cpps)))
 
 # utilities used
 utility := $(addprefix $(spike_gen_dir)/,periodic_spikegen spikegen_from_file \
-	spikegen_from_vector)
+	spikegen_from_vector interactive_spikegen)
 utility_src := $(addsuffix .cpp, $(utility))
 utility_deps := $(addsuffix .h, $(utility)) $(utility_src)
 utility_objs := $(addsuffix .o, $(utility))
