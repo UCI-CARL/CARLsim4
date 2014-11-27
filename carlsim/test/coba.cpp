@@ -63,7 +63,11 @@ TEST(COBA, synRiseTime) {
 		double maxNMDA = -1;
 		int tmaxGABAb = -1;
 		double maxGABAb = -1;
+<<<<<<< Updated upstream
 		int nMsec = max(trNMDA+tdNMDA,trGABAb+tdGABAb)+10;
+=======
+		int nMsec = (std::max)(trNMDA+tdNMDA,trGABAb+tdGABAb)+10;
+>>>>>>> Stashed changes
 		for (int i=0; i<nMsec; i++) {
 			sim->runNetwork(0,1,false,true); // copyNeuronState
 
