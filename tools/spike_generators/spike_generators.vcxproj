@@ -19,12 +19,16 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="interactive_spikegen.cpp" />
     <ClCompile Include="periodic_spikegen.cpp" />
+    <ClCompile Include="pre_post_group_spikegen.cpp" />
     <ClCompile Include="spikegen_from_file.cpp" />
     <ClCompile Include="spikegen_from_vector.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="interactive_spikegen.h" />
     <ClInclude Include="periodic_spikegen.h" />
+    <ClInclude Include="pre_post_group_spikegen.h" />
     <ClInclude Include="spikegen_from_file.h" />
     <ClInclude Include="spikegen_from_vector.h" />
   </ItemGroup>
@@ -146,7 +150,7 @@ copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;WIN64;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(CudaToolkitIncludeDir);$(SolutionDir)carlsim\kernel\include;$(SolutionDir)carlsim\interface\include;$(SolutionDir)carlsim\spike_monitor;$(SolutionDir)carlsim\connection_monitor;$(ProjectDir)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(CudaToolkitIncludeDir);$(SolutionDir)carlsim\kernel\include;$(SolutionDir)carlsim\interface\include;$(SolutionDir)carlsim\spike_monitor;$(ProjectDir)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
