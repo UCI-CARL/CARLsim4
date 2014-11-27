@@ -7,7 +7,7 @@ gtest_deps = $(GTEST_LIB_DIR)/libgtest.a $(GTEST_LIB_DIR)/libgtest_main.a \
 # e.g., file "test/coba.cpp" should appear here as "coba"
 # the prefix (directory "test") and suffix (".cpp") will be appended afterwards
 # test cases will be run in inverse order (it seems)
-carlsim_tests_cpps := interface stdp stp spike_mon cuba core connect coba \
+carlsim_tests_cpps := interface stdp stp spike_mon conn_mon cuba core connect coba \
 	carlsim_tests_common spike_gen spike_counter poiss_rate
 
 local_dir := $(test_dir)
@@ -17,7 +17,7 @@ local_objs := $(addsuffix .o,$(addprefix $(local_dir)/,$(carlsim_tests_cpps)))
 
 # utilities used
 utility := $(addprefix $(spike_gen_dir)/,periodic_spikegen spikegen_from_file \
-	spikegen_from_vector)
+	spikegen_from_vector interactive_spikegen pre_post_group_spikegen)
 utility_src := $(addsuffix .cpp, $(utility))
 utility_deps := $(addsuffix .h, $(utility)) $(utility_src)
 utility_objs := $(addsuffix .o, $(utility))
