@@ -38,51 +38,38 @@
  * CARLsim available from http://socsci.uci.edu/~jkrichma/CARLsim/
  * Ver 11/26/2014
  */ 
-#ifndef _SPIKEGEN_FROM_FILE_H_
-#define _SPIKEGEN_FROM_FILE_H_
+#include <interactive_spikegen.h>
 
-#include <callback.h>
-#include <string>
+InteractiveSpikeGenerator::InteractiveSpikeGenerator(unsigned int numNeurons_, unsigned int isi_) {
+	numNeurons = numNeurons_;
+	isi = isi_;
+	quota = new int[numNeurons_];
+	for (int i = 0; i < numNeurons_; i++) quota[i] = 0;
+}
 
-/*!
- * \brief a SpikeGenerator that schedules spikes from a spike file binary
- *
- * This class implements a SpikeGenerator that schedules spikes from a spike file binary that has been created
- * with a SpikeMonitor.
- */
-class SpikeGeneratorFromFile : public SpikeGenerator {
-public:
-	/*!
-	 * \brief SpikeGeneratorFromFile constructor
-	 * \param[in] fileName file name of spike file (must be createde from SpikeMonitor)
-	 */
-	SpikeGeneratorFromFile(std::string fileName);
+InteractiveSpikeGenerator::~InteractiveSpikeGenerator() {
+	delete [] quota;
+}
 
-	//! PeriodicSpikeGenerator destructor
-	~SpikeGeneratorFromFile();
+unsigned int InteractiveSpikeGenerator::nextSpikeTime(CARLsim* s, int grpId, int nid, unsigned int currentTime, unsigned int lastScheduledSpikeTime) {
+	if (nid < numNeurons && quota[nid] > 0) {
+		quota[nid]--;
+		if (lastScheduledSpikeTime + isi < currentTime) {
+			return currentTime + isi;
+		} else {
+			return lastScheduledSpikeTime + isi;
+		}
+	}
 
-	/*!
-	 * \brief schedules the next spike time
-	 *
-	 * This function schedules the next spike time, given the currentTime and the lastScheduledSpikeTime. It implements
-	 * the virtual function of the base class.
-	 * \param[in] sim pointer to a CARLsim object
-	 * \param[in] grpId current group ID for which to schedule spikes
-	 * \param[in] nid current neuron ID for which to schedule spikes
-	 * \param[in] currentTime current time (ms) at which spike scheduler is called
-	 * \param[in] lastScheduledSpikeTime the last time (ms) at which a spike was scheduled for this nid, grpId
-	 * \returns the next spike time (ms)
-	 */
-	unsigned int nextSpikeTime(CARLsim* sim, int grpId, int nid, unsigned int currentTime, 
-		unsigned int lastScheduledSpikeTime);
+	return 0xFFFFFFFF;
+}
 
-private:
-	void openFile();
+void InteractiveSpikeGenerator::setQuota(int nid_, int quota_) {
+	if (nid_ < numNeurons)
+		quota[nid_] = quota_;
+}
 
-	bool needToInit_;
-	std::string fileName_;		//!< file name
-	FILE* fpBegin_;				//!< pointer to beginning of file
-	long int* fpOffsetNeur_;	//!< file pointer array to store last read for each neuron
-};
-
-#endif
+void InteractiveSpikeGenerator::setQuotaAll(int quota_) {
+	for (int i = 0; i < numNeurons; i++)
+		quota[i] = quota_;
+}

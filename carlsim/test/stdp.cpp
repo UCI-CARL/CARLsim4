@@ -1,71 +1,12 @@
 #include "gtest/gtest.h"
 #include "carlsim_tests.h"
 #include <carlsim.h>
+#include <interactive_spikegen.h>
+#include <pre_post_group_spikegen.h>
 
 /// **************************************************************************************************************** ///
 /// SPIKE-TIMING-DEPENDENT PLASTICITY STDP
 /// **************************************************************************************************************** ///
-
-/*!
- * \brief controller for spike timing
- */
-class QuotaSpikeController: public SpikeGenerator {
-private:
-	int quota;
-public:
-	QuotaSpikeController() {
-		quota = 0;
-	}
-
-	unsigned int nextSpikeTime(CARLsim* s, int grpId, int nid, unsigned int currentTime, unsigned int lastScheduledSpikeTime) {
-		if (quota > 0 && lastScheduledSpikeTime < currentTime + 500) {
-			quota--;
-			return currentTime + 500;
-		}
-
-		return 0xFFFFFFFF;
-	}
-
-	void setQuota(int nQuota) {
-		quota = nQuota;
-	}
-};
-
-class TwoGroupsSpikeController: public SpikeGenerator {
-private:
-	int isi;
-	int offset;
-	int g1;
-	int g2;
-	bool setOffset;
-public:
-	TwoGroupsSpikeController(int interSpikeInterval, int offsetToFirstGroup, int firstGroup, int secondGroup) {
-		isi = interSpikeInterval;
-		offset = offsetToFirstGroup;
-		g1 = firstGroup;
-		g2 = secondGroup;
-		setOffset = false;
-	}
-
-	unsigned int nextSpikeTime(CARLsim* s, int grpId, int nid, unsigned int currentTime, unsigned int lastScheduledSpikeTime) {
-		if (grpId == g1)
-			return lastScheduledSpikeTime + isi;
-		else if (grpId == g2) {
-			if (!setOffset) {
-				setOffset = true;
-				return lastScheduledSpikeTime + isi + offset;
-			} else
-				return lastScheduledSpikeTime + isi;
-		}
-
-		return 0xFFFFFFFF;
-	}
-
-	void updateOffset(int newOffset) {
-		offset = newOffset;
-		setOffset = false;
-	}
-};
 
 /*!
  * \brief testing setSTDP to true
@@ -256,7 +197,7 @@ TEST(STDP, DASTDPWeightBoost) {
 	float alphaLTP = 0.1f;
 	float alphaLTD = 0.122f;
 	int g1, gin, g1noise, gda;
-	QuotaSpikeController* spikeCtrl = new QuotaSpikeController();
+	InteractiveSpikeGenerator* iSpikeGen = new InteractiveSpikeGenerator(500, 500);
 	std::vector<int> spikesPost;
 	std::vector<int> spikesPre;
 	float* weights;
@@ -296,7 +237,7 @@ TEST(STDP, DASTDPWeightBoost) {
 				sim->setWeightAndWeightChangeUpdate(INTERVAL_10MS, true, 0.99f);
 
 				// set up spike controller on DA neurons
-				sim->setSpikeGenerator(gda, spikeCtrl);
+				sim->setSpikeGenerator(gda, iSpikeGen);
 
 				sim->setupNetwork();
 				
@@ -330,7 +271,7 @@ TEST(STDP, DASTDPWeightBoost) {
 							// if LTP is detected, set up reward (activate DA neurons ) to reinforcement this synapse
 							if (diff > 0 && diff <= 20) {
 								//printf("LTP\n");
-								if (damod) spikeCtrl->setQuota(500);
+								if (damod) iSpikeGen->setQuotaAll(1);
 							}
 
 							//if (diff < 0 && diff >= -20)
@@ -353,7 +294,7 @@ TEST(STDP, DASTDPWeightBoost) {
 		}
 	}
 
-	delete spikeCtrl;
+	delete iSpikeGen;
 }
 
 /*!
@@ -388,7 +329,7 @@ TEST(STDP, ESTDPHebbianCurve) {
 				gex1 = sim->createSpikeGeneratorGroup("input-ex1", 1, EXCITATORY_NEURON);
 				gex2 = sim->createSpikeGeneratorGroup("input-ex2", 1, EXCITATORY_NEURON);
 
-				TwoGroupsSpikeController* spikeCtrl = new TwoGroupsSpikeController(100, offset, gex2, gex1);
+				PrePostGroupSpikeGenerator* proPostSpikeGen = new PrePostGroupSpikeGenerator(100, offset, gex2, gex1);
 
 				if (coba) { // conductance-based
 					sim->connect(gex1, g1, "one-to-one", RangeWeight(40.0f/100), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
@@ -407,8 +348,8 @@ TEST(STDP, ESTDPHebbianCurve) {
 				}
 
 				// set up spike controller on DA neurons
-				sim->setSpikeGenerator(gex1, spikeCtrl);
-				sim->setSpikeGenerator(gex2, spikeCtrl);
+				sim->setSpikeGenerator(gex1, proPostSpikeGen);
+				sim->setSpikeGenerator(gex2, proPostSpikeGen);
 
 				// build the network
 				sim->setupNetwork();
@@ -432,7 +373,7 @@ TEST(STDP, ESTDPHebbianCurve) {
 					}
 				}
 
-				delete spikeCtrl;
+				delete proPostSpikeGen;
 				delete sim;
 			}
 		}
@@ -472,7 +413,7 @@ TEST(STDP, ESTDPHalfHebbianCurve) {
 				gex1 = sim->createSpikeGeneratorGroup("input-ex1", 1, EXCITATORY_NEURON);
 				gex2 = sim->createSpikeGeneratorGroup("input-ex2", 1, EXCITATORY_NEURON);
 
-				TwoGroupsSpikeController* spikeCtrl = new TwoGroupsSpikeController(100, offset, gex2, gex1);
+				PrePostGroupSpikeGenerator* proPostSpikeGen = new PrePostGroupSpikeGenerator(100, offset, gex2, gex1);
 
 				if (coba) { // conductance-based
 					sim->connect(gex1, g1, "one-to-one", RangeWeight(40.0f/100), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
@@ -490,9 +431,8 @@ TEST(STDP, ESTDPHalfHebbianCurve) {
 					sim->setESTDP(g1, true, STANDARD, HalfHebbianCurve(ALPHA_LTP, TAU_LTP, ALPHA_LTD, TAU_LTP, GAMA));
 				}
 
-				// set up spike controller on DA neurons
-				sim->setSpikeGenerator(gex1, spikeCtrl);
-				sim->setSpikeGenerator(gex2, spikeCtrl);
+				sim->setSpikeGenerator(gex1, proPostSpikeGen);
+				sim->setSpikeGenerator(gex2, proPostSpikeGen);
 
 				// build the network
 				sim->setupNetwork();
@@ -522,7 +462,7 @@ TEST(STDP, ESTDPHalfHebbianCurve) {
 					}
 				}
 
-				delete spikeCtrl;
+				delete proPostSpikeGen;
 				delete sim;
 			}
 		}
@@ -560,7 +500,7 @@ TEST(STDP, ISTDPConstantSymmetricCurve) {
 				gex = sim->createSpikeGeneratorGroup("input-ex", 1, EXCITATORY_NEURON);
 				gin = sim->createSpikeGeneratorGroup("input-in", 1, INHIBITORY_NEURON);
 
-				TwoGroupsSpikeController* spikeCtrl = new TwoGroupsSpikeController(100, offset, gin, gex);
+				PrePostGroupSpikeGenerator* proPostSpikeGen = new PrePostGroupSpikeGenerator(100, offset, gin, gex);
 
 				if (coba) { // conductance-based
 					sim->connect(gex, g1, "one-to-one", RangeWeight(40.0f/100), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
@@ -578,9 +518,8 @@ TEST(STDP, ISTDPConstantSymmetricCurve) {
 					sim->setISTDP(g1, true, STANDARD, ConstantSymmetricCurve(BETA_LTP, BETA_LTD, LAMDA, DELTA));
 				}
 
-				// set up spike controller on DA neurons
-				sim->setSpikeGenerator(gex, spikeCtrl);
-				sim->setSpikeGenerator(gin, spikeCtrl);
+				sim->setSpikeGenerator(gex, proPostSpikeGen);
+				sim->setSpikeGenerator(gin, proPostSpikeGen);
 
 				// build the network
 				sim->setupNetwork();
@@ -609,7 +548,7 @@ TEST(STDP, ISTDPConstantSymmetricCurve) {
 					}
 				}
 
-				delete spikeCtrl;
+				delete proPostSpikeGen;
 				delete sim;
 			}
 		}
