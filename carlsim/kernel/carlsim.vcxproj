@@ -23,7 +23,6 @@
     <ClInclude Include="include\error_code.h" />
     <ClInclude Include="include\gpu.h" />
     <ClInclude Include="include\gpu_random.h" />
-    <ClInclude Include="include\poisson_rate.h" />
     <ClInclude Include="include\propagated_spike_buffer.h" />
     <ClInclude Include="include\snn.h" />
     <ClInclude Include="include\snn_datastructures.h" />
@@ -34,7 +33,6 @@
     <CudaCompile Include="src\snn_gpu.cu" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\poisson_rate.cpp" />
     <ClCompile Include="src\print_snn_info.cpp" />
     <ClCompile Include="src\propagated_spike_buffer.cpp" />
     <ClCompile Include="src\snn_cpu.cpp" />
