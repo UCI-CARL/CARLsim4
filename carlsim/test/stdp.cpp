@@ -1,35 +1,11 @@
 #include "gtest/gtest.h"
 #include "carlsim_tests.h"
 #include <carlsim.h>
+#include <interactive_spikegen.h>
 
 /// **************************************************************************************************************** ///
 /// SPIKE-TIMING-DEPENDENT PLASTICITY STDP
 /// **************************************************************************************************************** ///
-
-/*!
- * \brief controller for spike timing
- */
-class SpikeController: public SpikeGenerator {
-private:
-	int rewardQuota;
-public:
-	SpikeController() {
-		rewardQuota = 0;
-	}
-
-	unsigned int nextSpikeTime(CARLsim* s, int grpId, int nid, unsigned int currentTime, unsigned int lastScheduledSpikeTime) {
-		if (rewardQuota > 0 && lastScheduledSpikeTime < currentTime + 500) {
-			rewardQuota--;
-			return currentTime + 500;
-		}
-
-		return 0xFFFFFFFF;
-	}
-
-	void setReward(int quota) {
-		rewardQuota = quota;
-	}
-};
 
 /*!
  * \brief testing setSTDP to true
@@ -147,7 +123,7 @@ TEST(STDP, DASTDPweightBoost) {
 	float alphaLTD = 0.122f;
 	CARLsim* sim;
 	int g1, gin, g1noise, gda;
-	SpikeController* spikeCtrl = new SpikeController();
+	InteractiveSpikeGenerator* iSpikeGen = new InteractiveSpikeGenerator(500, 500);
 	std::vector<int> spikesPost;
 	std::vector<int> spikesPre;
 	float* weights;
@@ -187,7 +163,7 @@ TEST(STDP, DASTDPweightBoost) {
 				sim->setWeightAndWeightChangeUpdate(INTERVAL_10MS, true, 0.99f);
 
 				// set up spike controller on DA neurons
-				sim->setSpikeGenerator(gda, spikeCtrl);
+				sim->setSpikeGenerator(gda, iSpikeGen);
 
 				sim->setupNetwork();
 
@@ -219,7 +195,7 @@ TEST(STDP, DASTDPweightBoost) {
 							// if LTP is detected, set up reward (activate DA neurons ) to reinforcement this synapse
 							if (diff > 0 && diff <= 20) {
 								//printf("LTP\n");
-								if (damod) spikeCtrl->setReward(500);
+								if (damod) iSpikeGen->setQuotaAll(1);
 							}
 
 							//if (diff < 0 && diff >= -20)
@@ -229,7 +205,7 @@ TEST(STDP, DASTDPweightBoost) {
 				}
 
 				sim->getPopWeights(gin, g1, weights, size);
-				//printf("%f\n",weights[0]);
+				//printf("%d %d %d %f\n", mode, coba, damod, weights[0]);
 				if (damod)
 					weightDAMod = weights[0];
 				else
@@ -242,5 +218,5 @@ TEST(STDP, DASTDPweightBoost) {
 		}
 	}
 
-	delete spikeCtrl;
+	delete iSpikeGen;
 }

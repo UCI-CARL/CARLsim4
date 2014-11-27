@@ -36,12 +36,13 @@
  *					(TSC) Ting-Shuo Chou <tingshuc@uci.edu>
  *
  * CARLsim available from http://socsci.uci.edu/~jkrichma/CARLsim/
- * Ver 8/29/2014
- */ 
-#include <callback.h>
+ * Ver 11/28/2014
+ */
+#ifndef _PERIODIC_SPIKEGEN_H_
+#define _PERIODIC_SPIKEGEN_H_
 
+#include <callback.h>
 #include <vector>
-class CARLsim; // forward-declaration
 
 /*!
  * \brief a periodic SpikeGenerator (constant ISI) creating spikes at a certain rate
@@ -85,3 +86,5 @@ private:
 	std::vector<int> nIdFiredAtZero_; //!< keep track of all neuron IDs for which a spike at t=0 has been scheduled
 	bool spikeAtZero_; //!< whether to emit a spike at t=0
 };
+
+#endif

@@ -19,11 +19,13 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="interactive_spikegen.cpp" />
     <ClCompile Include="periodic_spikegen.cpp" />
     <ClCompile Include="spikegen_from_file.cpp" />
     <ClCompile Include="spikegen_from_vector.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="interactive_spikegen.h" />
     <ClInclude Include="periodic_spikegen.h" />
     <ClInclude Include="spikegen_from_file.h" />
     <ClInclude Include="spikegen_from_vector.h" />

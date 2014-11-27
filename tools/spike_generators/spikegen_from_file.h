@@ -36,12 +36,13 @@
  *					(TSC) Ting-Shuo Chou <tingshuc@uci.edu>
  *
  * CARLsim available from http://socsci.uci.edu/~jkrichma/CARLsim/
- * Ver 8/29/2014
+ * Ver 11/26/2014
  */ 
-#include <callback.h>
+#ifndef _SPIKEGEN_FROM_FILE_H_
+#define _SPIKEGEN_FROM_FILE_H_
 
+#include <callback.h>
 #include <string>
-class CARLsim; // forward-declaration
 
 /*!
  * \brief a SpikeGenerator that schedules spikes from a spike file binary
@@ -83,3 +84,5 @@ private:
 	FILE* fpBegin_;				//!< pointer to beginning of file
 	long int* fpOffsetNeur_;	//!< file pointer array to store last read for each neuron
 };
+
+#endif
