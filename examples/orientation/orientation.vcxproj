@@ -23,7 +23,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\carlsim\connection_monitor\connection_monitor.vcxproj">
-      <Project>{7488e13f-102a-4782-ae92-d4a8484fbace}</Project>
+      <Project>{6b9e864c-a1b9-48ce-b88b-41ca17b4b1a9}</Project>
     </ProjectReference>
     <ProjectReference Include="..\..\carlsim\interface\interface.vcxproj">
       <Project>{fbd68119-1a8c-4a1a-96ce-522b651209bc}</Project>
