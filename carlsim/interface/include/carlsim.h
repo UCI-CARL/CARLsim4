@@ -756,7 +756,8 @@ public:
 	 * \param[in] refPeriod  refactory period (ms). Default: 1ms.
 	 *
 	 * \note This method can only be applied to SpikeGenerator groups.
-	 *
+	 * \note CARLsim::setSpikeRate will *not* take over ownership of PoissonRate. In other words, if you allocate the
+	 * PoissonRate object on the heap, you are responsible for correctly deallocating it.
 	 * \attention Make sure to reset spike rate after use (i.e., for the next call to CARLsim::runNetwork), otherwise
 	 * the rate will keep getting applied to the group.
 	 * \see CARLsim::setExternalCurrent
@@ -923,7 +924,7 @@ public:
 	 *
 	 * This function returns the number of connections (pairs of pre-post groups) in the network. Each pre-post
 	 * pair of neuronal groups has its own connection ID, which is returned by a call to CARLsim::connect.
-	 * \Note This number might change throughout CARLsim state CONFIG, up to calling CARLsim::setupNetwork).
+	 * \note This number might change throughout CARLsim state CONFIG, up to calling CARLsim::setupNetwork).
 	 * \STATE CONFIG, SETUP, EXECUTION
 	 * \returns the number of connections (pairs of pre-post groups) in the network
 	 */
@@ -940,7 +941,7 @@ public:
 	/*!
 	 * \brief returns the number of groups in the network
 	 *
-	 * \Note This number might change throughout CARLsim state CONFIG, up to calling CARLsim::setupNetwork).
+	 * \note This number might change throughout CARLsim state CONFIG, up to calling CARLsim::setupNetwork).
 	 * \TODO finish docu
 	 * \STATE CONFIG, SETUP, EXECUTION
 	 */
@@ -949,7 +950,7 @@ public:
 	/*!
 	 * \brief returns the total number of allocated neurons in the network
 	 *
-	 * \Note This number might change throughout CARLsim state CONFIG, up to calling CARLsim::setupNetwork).
+	 * \note This number might change throughout CARLsim state CONFIG, up to calling CARLsim::setupNetwork).
 	 * \TODO finish docu
 	 * \STATE CONFIG, SETUP, EXECUTION
 	 */
@@ -958,7 +959,7 @@ public:
 	/*!
 	 * \brief returns the total number of regular (Izhikevich) neurons
 	 *
-	 * \Note This number might change throughout CARLsim state CONFIG, up to calling CARLsim::setupNetwork).
+	 * \note This number might change throughout CARLsim state CONFIG, up to calling CARLsim::setupNetwork).
 	 * \TODO finish docu
 	 * \STATE CONFIG, SETUP, EXECUTION
 	 */
@@ -967,7 +968,7 @@ public:
 	/*!
 	 * \brief returns the total number of regular (Izhikevich) excitatory neurons
 	 *
-	 * \Note This number might change throughout CARLsim state CONFIG, up to calling CARLsim::setupNetwork).
+	 * \note This number might change throughout CARLsim state CONFIG, up to calling CARLsim::setupNetwork).
 	 * \TODO finish docu
 	 * \STATE CONFIG, SETUP, EXECUTION
 	 */
@@ -976,7 +977,7 @@ public:
 	/*!
 	 * \brief returns the total number of regular (Izhikevich) inhibitory neurons
 	 *
-	 * \Note This number might change throughout CARLsim state CONFIG, up to calling CARLsim::setupNetwork).
+	 * \note This number might change throughout CARLsim state CONFIG, up to calling CARLsim::setupNetwork).
 	 * \TODO finish docu
 	 * \STATE CONFIG, SETUP, EXECUTION
 	 */
@@ -985,7 +986,7 @@ public:
 	/*!
 	 * \brief returns the total number of spike generator neurons
 	 *
-	 * \Note This number might change throughout CARLsim state CONFIG, up to calling CARLsim::setupNetwork).
+	 * \note This number might change throughout CARLsim state CONFIG, up to calling CARLsim::setupNetwork).
 	 * \TODO finish docu
 	 * \STATE CONFIG, SETUP, EXECUTION
 	 */
@@ -994,7 +995,7 @@ public:
 	/*!
 	 * \brief returns the total number of excitatory spike generator neurons
 	 *
-	 * \Note This number might change throughout CARLsim state CONFIG, up to calling CARLsim::setupNetwork).
+	 * \note This number might change throughout CARLsim state CONFIG, up to calling CARLsim::setupNetwork).
 	 * \TODO finish docu
 	 * \STATE CONFIG, SETUP, EXECUTION
 	 */
@@ -1003,7 +1004,7 @@ public:
 	/*!
 	 * \brief returns the total number of inhibitory spike generator neurons
 	 *
-	 * \Note This number might change throughout CARLsim state CONFIG, up to calling CARLsim::setupNetwork).
+	 * \note This number might change throughout CARLsim state CONFIG, up to calling CARLsim::setupNetwork).
 	 * \TODO finish docu
 	 * \STATE CONFIG, SETUP, EXECUTION
 	 */
@@ -1076,6 +1077,16 @@ public:
 	 * \STATE SETUP, EXECUTION
 	 */
 	void getPopWeights(int gIDpre, int gIDpost, float*& weights, int& size);
+
+	/*!
+	 * \brief returns the current simulation mode
+	 *
+	 * This function returns the current simulation mode. Currently supported are CPU_MODE and GPU_MODE.
+	 * \STATE CONFIG, SETUP, EXECUTION
+	 * \return simulation mode
+	 * \since v3.0
+	 */
+	simMode_t getSimMode();
 
 	/*!
 	 * \brief returns

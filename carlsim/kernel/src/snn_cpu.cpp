@@ -1042,15 +1042,12 @@ SpikeMonitor* CpuSNN::setSpikeMonitor(int grpId, FILE* fid) {
 
 // assigns spike rate to group
 void CpuSNN::setSpikeRate(int grpId, PoissonRate* ratePtr, int refPeriod) {
+	assert(grpId>=0 && grpId<numGrp);
 	assert(ratePtr);
-	if (ratePtr->len != grp_Info[grpId].SizeN) {
-		KERNEL_ERROR("The PoissonRate length (%d) did not match the number of neurons (%d) in group %s(%d).",
-					ratePtr->len, grp_Info[grpId].SizeN,
-					grp_Info2[grpId].Name.c_str(),grpId);
-		exitSimulation(1);
-	}
+	assert(grp_Info[grpId].isSpikeGenerator);
+	assert(ratePtr->getNumNeurons()==grp_Info[grpId].SizeN);
+	assert(refPeriod>=1);
 
-	assert (grp_Info[grpId].isSpikeGenerator);
 	grp_Info[grpId].RatePtr = ratePtr;
 	grp_Info[grpId].RefractPeriod   = refPeriod;
 	spikeRateUpdated = true;
@@ -3027,19 +3024,26 @@ void CpuSNN::generateSpikesFromRate(int grpId) {
 	unsigned int currTime = simTime;
 	int spikeCnt = 0;
 
-	if (rate == NULL) return;
+	if (rate == NULL)
+		return;
 
-	if (rate->onGPU) {
+	if (rate->isOnGPU()) {
 		KERNEL_ERROR("Specifying rates on the GPU but using the CPU SNN is not supported.");
 		exitSimulation(1);
 	}
 
-	const float* ptr = rate->rates;
-	for (int cnt=0;cnt<rate->len;cnt++,ptr++) {
-		float frate = *ptr;
+	const int nNeur = rate->getNumNeurons();
+	if (nNeur != grp_Info[grpId].SizeN) {
+		KERNEL_ERROR("Length of PoissonRate array (%d) did not match number of neurons (%d) for group %d(%s).",
+			nNeur, grp_Info[grpId].SizeN, grpId, getGroupName(grpId).c_str());
+		exitSimulation(1);
+	}
+
+	for (int neurId=0; neurId<nNeur; neurId++) {
+		float frate = rate->getRate(neurId);
 
 		// start the time from the last time it spiked, that way we can ensure that the refractory period is maintained
-		unsigned int nextTime = lastSpikeTime[grp_Info[grpId].StartN+cnt];
+		unsigned int nextTime = lastSpikeTime[grp_Info[grpId].StartN + neurId];
 		if (nextTime == MAX_SIMULATION_TIME)
 			nextTime = 0;
 
@@ -3049,8 +3053,8 @@ void CpuSNN::generateSpikesFromRate(int grpId) {
 			// found a valid timeSlice
 			if (nextTime < (currTime+timeSlice)) {
 				if (nextTime >= currTime) {
-					int nid = grp_Info[grpId].StartN+cnt;
-					pbuf->scheduleSpikeTargetGroup(nid, nextTime-currTime);
+//					int nid = grp_Info[grpId].StartN+cnt;
+					pbuf->scheduleSpikeTargetGroup(grp_Info[grpId].StartN + neurId, nextTime-currTime);
 					spikeCnt++;
 				}
 			}

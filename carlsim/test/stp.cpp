@@ -155,7 +155,7 @@ TEST(STP, spikeTimesCPUvsGPU) {
 		// compare spike times cpu vs gpu
 
 		for (int isGPUmode=0; isGPUmode<=1; isGPUmode++) {
-			CARLsim* sim = new CARLsim("SNN",isGPUmode?GPU_MODE:CPU_MODE,SILENT,0,42);
+			sim = new CARLsim("SNN",isGPUmode?GPU_MODE:CPU_MODE,SILENT,0,42);
 			int g2=sim->createGroup("STD", 1, EXCITATORY_NEURON);
 			int g3=sim->createGroup("STF", 1, EXCITATORY_NEURON);
 			sim->setNeuronParameters(g2, 0.02f, 0.2f, -65.0f, 8.0f);
