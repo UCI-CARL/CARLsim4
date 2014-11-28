@@ -253,7 +253,7 @@ short int CpuSNN::connect(int grpId1, int grpId2, ConnectionGeneratorCore* conn,
 	newInfo->grpDest  = grpId2;
 	newInfo->initWt	  = 1;
 	newInfo->maxWt	  = 1;
-	newInfo->maxDelay = 1;
+	newInfo->maxDelay = MAX_SynapticDelay;
 	newInfo->minDelay = 1;
 	newInfo->mulSynFast = _mulSynFast;
 	newInfo->mulSynSlow = _mulSynSlow;
@@ -1176,7 +1176,9 @@ void CpuSNN::saveSimulation(FILE* fid, bool saveSynapseInfo) {
 		if (!fwrite(name,1,100,fid)) KERNEL_ERROR("saveSimulation fwrite error");
 	}
 
-
+	// +++++ Fetch WEIGHT DATA (GPU Mode only) ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
+	if (simMode_ == GPU_MODE)
+		copyWeightState(&cpuNetPtrs, &cpu_gpuNetPtrs, cudaMemcpyDeviceToHost, false);
 	// +++++ WRITE SYNAPSE INFO +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
 	// \FIXME: replace with faster version
@@ -2216,9 +2218,32 @@ void CpuSNN::buildNetwork() {
 	}
 
 	if (loadSimFID != NULL) {
+		int loadError;
 		// we the user specified loadSimulation the synaptic weights will be restored here...
-		assert(loadSimulation_internal(true) >= 0); // read the plastic synapses first
-		assert(loadSimulation_internal(false) >= 0); // read the fixed synapses second
+		KERNEL_DEBUG("Start to load simulation");
+		loadError = loadSimulation_internal(true); // read the plastic synapses first
+		KERNEL_DEBUG("readNetwork_internal() error number:%d", loadError);
+		loadError = loadSimulation_internal(false); // read the fixed synapses second
+		KERNEL_DEBUG("readNetwork_internal() error number:%d", loadError);
+		for(int con = 0; con < 2; con++) {
+			newInfo = connectBegin;
+			while(newInfo) {
+				bool synWtType = GET_FIXED_PLASTIC(newInfo->connProp);
+				if (synWtType == SYN_PLASTIC) {
+					// given group has plastic connection, and we need to apply STDP rule...
+					grp_Info[newInfo->grpDest].FixedInputWts = false;
+				}
+
+				// store scaling factors for synaptic currents in connection-centric array
+				mulSynFast[newInfo->connId] = newInfo->mulSynFast;
+				mulSynSlow[newInfo->connId] = newInfo->mulSynSlow;
+
+				if( ((con == 0) && (synWtType == SYN_PLASTIC)) || ((con == 1) && (synWtType == SYN_FIXED))) {
+					printConnectionInfo(newInfo->connId);
+				}
+				newInfo = newInfo->next;
+			}
+		}
 	} else {
 		// build all the connections here...
 		// we run over the linked list two times...
@@ -2544,14 +2569,13 @@ void CpuSNN::connectUserDefined (grpConnectInfo_t* info) {
 				if (GET_FIXED_PLASTIC(info->connProp) == SYN_FIXED)
 					maxWt = weight;
 
-				assert(delay>=1);
-				assert(delay<=MAX_SynapticDelay);
-				assert(weight<=maxWt);
+				assert(delay >= 1);
+				assert(delay <= MAX_SynapticDelay);
+				assert(abs(weight) <= abs(maxWt));
 
 				setConnection(grpSrc, grpDest, nid, nid2, weight, maxWt, delay, info->connProp, info->connId);
 				info->numberOfConnections++;
-				if(delay > info->maxDelay)
-				info->maxDelay = delay;
+				if(delay > info->maxDelay) info->maxDelay = delay;
 			}
 		}
 	}
@@ -3431,27 +3455,39 @@ int CpuSNN::loadSimulation_internal(bool onlyPlastic) {
 	float tmpFloat;
 
 	// read file signature
-	if (!fread(&tmpInt,sizeof(int),1,loadSimFID)) return -11;
+	if (!fread(&tmpInt, sizeof(int), 1, loadSimFID)) return -11;
 	if (tmpInt != 294338571) return -10;
+	//KERNEL_DEBUG("Signature:%d", tmpInt);
 
 	// read version number
-	if (!fread(&tmpFloat,sizeof(float),1,loadSimFID)) return -11;
+	if (!fread(&tmpFloat, sizeof(float), 1, loadSimFID)) return -11;
 	if (tmpFloat > 1.0) return -10;
+	//KERNEL_DEBUG("Version number:%f", tmpFloat);
 
 	// read simulation and execution time
-	if (!fread(&tmpFloat,sizeof(float),2,loadSimFID)) return -11;
+	if (!fread(&tmpFloat, sizeof(float), 1, loadSimFID)) return -11;
+	//KERNEL_DEBUG("Past simluation time:%f", tmpFloat);
+
+	if (!fread(&tmpFloat, sizeof(float), 1, loadSimFID)) return -11;
+	//KERNEL_DEBUG("Past execution time:%f", tmpFloat);
 
 	// read number of neurons
-	if (!fread(&tmpInt,sizeof(int),1,loadSimFID)) return -11;
+	if (!fread(&tmpInt,sizeof(int), 1, loadSimFID)) return -11;
 	int nrCells = tmpInt;
 	if (nrCells != numN) return -5;
+	//KERNEL_DEBUG("Number of neurons:%d %d", tmpInt, numN);
 
 	// read total synapse counts
-	if (!fread(&tmpInt,sizeof(int),2,loadSimFID)) return -11;
+	if (!fread(&tmpInt,sizeof(int), 1, loadSimFID)) return -11;
+	//KERNEL_DEBUG("Number of pre-synapses:%d", tmpInt);
+
+	if (!fread(&tmpInt,sizeof(int), 1, loadSimFID)) return -11;
+	//KERNEL_DEBUG("Number of post-synapses:%d", tmpInt);
 
 	// read number of groups
-	if (!fread(&tmpInt,sizeof(int),1,loadSimFID)) return -11;
+	if (!fread(&tmpInt,sizeof(int), 1, loadSimFID)) return -11;
 	if (numGrp != tmpInt) return -1;
+	//KERNEL_DEBUG("Number of groups:%d %d", tmpInt, numGrp);
 
 	char name[100];
 	int startN, endN;
@@ -3462,22 +3498,22 @@ int CpuSNN::loadSimulation_internal(bool onlyPlastic) {
 		if (startN != grp_Info[g].StartN) return -2;
 		if (endN != grp_Info[g].EndN) return -3;
 
-		if (!fread(&tmpInt,sizeof(int),1,loadSimFID)) return -11;
-		if (tmpInt != grp_Info[g].SizeX) return -2; // \FIXME all these error codes...
-		if (!fread(&tmpInt,sizeof(int),1,loadSimFID)) return -11;
-		if (tmpInt != grp_Info[g].SizeY) return -2;
-		if (!fread(&tmpInt,sizeof(int),1,loadSimFID)) return -11;
-		if (tmpInt != grp_Info[g].SizeZ) return -2;
+		if (!fread(&tmpInt,sizeof(int), 1, loadSimFID)) return -11;
+		//KERNEL_DEBUG("Size X:%d", tmpInt);
+		if (!fread(&tmpInt,sizeof(int), 1, loadSimFID)) return -11;
+		//KERNEL_DEBUG("Size Y:%d", tmpInt);
+		if (!fread(&tmpInt,sizeof(int), 1, loadSimFID)) return -11;
+		//KERNEL_DEBUG("Size Z:%d", tmpInt);
 
 		if (!fread(name,1,100,loadSimFID)) return -11;
 		if (strcmp(name,grp_Info2[g].Name.c_str()) != 0) return -4;
+		//KERNEL_DEBUG("Name(%s)[%d,%d]", name, startN, endN);
 	}
 
-	// \TODO: if saveSimulation was called with saveSynapseInfo==false, the following
-	// information will not be available
 	for (unsigned int i=0;i<nrCells;i++) {
 		unsigned int nrSynapses = 0;
-		if (!fread(&nrSynapses,sizeof(int),1,loadSimFID)) return -11;
+		if (!fread(&nrSynapses, sizeof(int), 1, loadSimFID)) return -11;
+		//KERNEL_DEBUG("Number of synapses:%d", nrSynapses);
 
 		for (int j=0;j<nrSynapses;j++) {
 			unsigned int nIDpre;
@@ -3489,9 +3525,12 @@ int CpuSNN::loadSimulation_internal(bool onlyPlastic) {
 
 			if (!fread(&nIDpre,sizeof(int),1,loadSimFID)) return -11;
 			if (nIDpre != i) return -6;
+			//KERNEL_DEBUG("nIDPre:%d", nIDpre);
 			if (!fread(&nIDpost,sizeof(int),1,loadSimFID)) return -11;
 			if (nIDpost >= nrCells) return -7;
+			//KERNEL_DEBUG("nIDpost:%d", nIDpost);
 			if (!fread(&weight,sizeof(float),1,loadSimFID)) return -11;
+			//KERNEL_DEBUG("weight:%f", weight);
 
 			short int gIDpre = grpIds[nIDpre];
 			if (IS_INHIBITORY_TYPE(grp_Info[gIDpre].Type) && (weight>0)
@@ -3500,15 +3539,19 @@ int CpuSNN::loadSimulation_internal(bool onlyPlastic) {
 			}
 
 			if (!fread(&maxWeight,sizeof(float),1,loadSimFID)) return -11;
+			//KERNEL_DEBUG("maxWeight:%f", maxWeight);
 			if (IS_INHIBITORY_TYPE(grp_Info[gIDpre].Type) && (maxWeight>=0)
 					|| !IS_INHIBITORY_TYPE(grp_Info[gIDpre].Type) && (maxWeight<=0)) {
 				return -8;
 			}
 
 			if (!fread(&delay,sizeof(uint8_t),1,loadSimFID)) return -11;
+			//KERNEL_DEBUG("delay:%d", delay);
 			if (delay > MAX_SynapticDelay) return -9;
 			if (!fread(&plastic,sizeof(uint8_t),1,loadSimFID)) return -11;
+			//KERNEL_DEBUG("plastic:%d", plastic);
 			if (!fread(&connId,sizeof(short int),1,loadSimFID)) return -11;
+			//KERNEL_DEBUG("connId:%d", connId);
 
 			if ((plastic && onlyPlastic) || (!plastic && !onlyPlastic)) {
 				int gIDpost = grpIds[nIDpost];
