@@ -2087,7 +2087,6 @@ void CpuSNN::copyWeightState (network_ptr_t* dest, network_ptr_t* src,  cudaMemc
 		if (grpId == -1) {
 			length_wt 	= preSynCnt;
 			cumPos_syn  = 0;
-			assert(0);
 		} else {
 			int id = grp_Info[grpId].StartN + i;
 			length_wt 	= dest->Npre[id];

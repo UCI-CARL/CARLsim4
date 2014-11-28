@@ -258,3 +258,100 @@ TEST(CORE, numNeurons) {
 		EXPECT_EQ(sim.getNumNeuronsGen(), sim.getNumNeuronsGenExc() + sim.getNumNeuronsGenInh());
 	}
 }
+
+TEST(CORE, saveLoadSimulation) {
+	::testing::FLAGS_gtest_death_test_style = "threadsafe";
+
+	float tauLTP = 20.0f;
+	float tauLTD = 20.0f;
+	float alphaLTP = 0.1f;
+	float alphaLTD = 0.15f;
+	int gPre, gPost;
+	ConnectionMonitor* cmSave;
+	ConnectionMonitor* cmLoad;
+	PoissonRate in(10);
+	std::vector<std::vector<float>> weightsSave;
+	std::vector<std::vector<float>> weightsLoad;
+	in.setRates(6.0f); // 6Hz
+
+	for (int mode = 0; mode < 2; mode++) {
+		for (int coba = 0; coba < 2; coba++) {
+			// Run and save simulation ------------------------------ //
+			CARLsim* sim = new CARLsim("CORE.saveSimulation", mode?GPU_MODE:CPU_MODE, SILENT, 0, 42);
+
+			gPost = sim->createGroup("pre-ex", 10, EXCITATORY_NEURON);
+			sim->setNeuronParameters(gPost, 0.02f, 0.2f, -65.0f, 8.0f);
+			gPre = sim->createSpikeGeneratorGroup("post-ex", 10, EXCITATORY_NEURON);
+
+			if (coba) {
+				sim->connect(gPre, gPost, "full", RangeWeight(0.0, 8.0f/100, 20.0f/100), 1.0f, RangeDelay(1, 5), RadiusRF(-1), SYN_PLASTIC);
+				sim->setSTDP(gPost, true, STANDARD, alphaLTP/100, tauLTP, alphaLTD/100, tauLTD);
+				sim->setConductances(true, 5, 150, 6, 150);
+			} else {
+				sim->connect(gPre, gPost, "full", RangeWeight(0.0, 8.0f, 20.0f), 1.0f, RangeDelay(1, 5), RadiusRF(-1), SYN_PLASTIC);
+				sim->setSTDP(gPost, true, STANDARD, alphaLTP, tauLTP, alphaLTD, tauLTD);
+				sim->setConductances(false);
+			}
+
+			sim->setupNetwork();
+			cmSave = sim->setConnectionMonitor(gPre, gPost, "NULL");
+			sim->setSpikeRate(gPre, &in);
+
+			sim->runNetwork(20, 0, false, false);
+			weightsSave = cmSave->takeSnapshot();
+
+			sim->saveSimulation("results/sim.dat", true);
+
+			delete sim;
+
+			// Load simulation and run ------------------------------//
+			sim = new CARLsim("CORE.loadSimulation", mode?GPU_MODE:CPU_MODE, SILENT, 0, 42);
+
+			// Repeat the same configuration
+			gPost = sim->createGroup("pre-ex", 10, EXCITATORY_NEURON);
+			sim->setNeuronParameters(gPost, 0.02f, 0.2f, -65.0f, 8.0f);
+			gPre = sim->createSpikeGeneratorGroup("post-ex", 10, EXCITATORY_NEURON);
+
+			if (coba) {
+				sim->connect(gPre, gPost, "full", RangeWeight(0.0, 8.0f/100, 20.0f/100), 1.0f, RangeDelay(1, 5), RadiusRF(-1), SYN_PLASTIC);
+				sim->setSTDP(gPost, true, STANDARD, alphaLTP/100, tauLTP, alphaLTD/100, tauLTD);
+				sim->setConductances(true, 5, 150, 6, 150);
+			} else {
+				sim->connect(gPre, gPost, "full", RangeWeight(0.0, 8.0f, 20.0f), 1.0f, RangeDelay(1, 5), RadiusRF(-1), SYN_PLASTIC);
+				sim->setSTDP(gPost, true, STANDARD, alphaLTP, tauLTP, alphaLTD, tauLTD);
+				sim->setConductances(false);
+			}
+
+			// load previous simulation
+			FILE* simFid = NULL;
+			simFid = fopen("results/sim.dat", "rb");
+			sim->loadSimulation(simFid);
+
+			sim->setupNetwork();
+			cmLoad = sim->setConnectionMonitor(gPre, gPost, "NULL");
+
+			// close sim.dat
+			if (simFid != NULL) fclose(simFid);
+
+			sim->setSpikeRate(gPre, &in);
+
+			sim->runNetwork(0, 2, false, false);
+			weightsLoad = cmLoad->takeSnapshot();
+
+			// test weights we saved are the same as weights we loaded
+			//printf("%d %d\n", mode, coba);
+			for (int i = 0; i < 10; i++) {
+				for (int j = 0; j < 10; j++) {
+					//printf("(%f,%f) ", weightsSave[i][j], weightsLoad[i][j]);
+					if (coba)
+						EXPECT_NEAR(weightsSave[i][j], weightsLoad[i][j], alphaLTD/100);
+					else
+						EXPECT_NEAR(weightsSave[i][j], weightsLoad[i][j], alphaLTD);
+				}
+				//printf("\n");
+			}
+
+			delete sim;
+		}
+	}
+}
