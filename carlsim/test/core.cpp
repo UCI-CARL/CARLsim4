@@ -270,8 +270,8 @@ TEST(CORE, saveLoadSimulation) {
 	ConnectionMonitor* cmSave;
 	ConnectionMonitor* cmLoad;
 	PoissonRate in(10);
-	std::vector<std::vector<float>> weightsSave;
-	std::vector<std::vector<float>> weightsLoad;
+	std::vector<std::vector<float> > weightsSave;
+	std::vector<std::vector<float> > weightsLoad;
 	in.setRates(6.0f); // 6Hz
 
 	for (int mode = 0; mode < 2; mode++) {
