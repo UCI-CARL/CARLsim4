@@ -179,12 +179,12 @@ public:
 	 * \param[in] radRF      A struct specifying the radius of the receptive field (RF). A radius can be specified in 3
 	 *                       dimensions x, y, and z (following the topographic organization of neurons as specified by
 	 *                       Grid3D).
-	 *                       Receptive fields will be circular with radius as specified. The 3 dimensions follow the 
+	 *                       Receptive fields will be circular with radius as specified. The 3 dimensions follow the
 	 *                       ones defined by Grid3D.
 	 *                       If the radius in one dimension is 0, no connections will be made in this dimension.
-	 *                       If the radius in one dimension is -1, then all possible connections will be made in this 
+	 *                       If the radius in one dimension is -1, then all possible connections will be made in this
 	 *                       dimension (effectively making RF of infinite size).
-	 *                       Otherwise, if the radius is a positive real number, the RF radius will be exactly this 
+	 *                       Otherwise, if the radius is a positive real number, the RF radius will be exactly this
 	 *                       number. Call RadiusRF with only one argument to make that radius apply to all 3 dimensions.
 	 *                       Examples:
 	 *                         * Create a 2D Gaussian RF of radius 10: RadiusRF(10, 10, 0)
@@ -228,7 +228,7 @@ public:
 	 * \STATE CONFIG
 	 */
 	int createGroup(const std::string& grpName, int nNeur, int neurType);
-	
+
 	/*!
 	 * \brief create a group of neurons on a 3D grid
 	 *
@@ -253,7 +253,7 @@ public:
 	 * \STATE CONFIG
 	 */
 	int createSpikeGeneratorGroup(const std::string& grpName, int nNeur, int neurType);
-	
+
 	/*!
 	 * \brief create a group of spike generators on a 3D grid
 	 *
@@ -334,7 +334,7 @@ public:
 	 * This function allows the user to set homeostasis for a particular neuron group. All the neurons
 	 * in this group scale their weights in an attempt to attain a target base firing rate set with the
 	 * setHomeoBaseFiringRate function. Each neuron keeps track of their own average firing rate. The
-	 * time over which this average is computed should be on the scale of seconds to minutes hours as
+	 * time over which this average is computed should be on the scale of seconds to minutes to hours as
 	 * opposed to ms if one is to claim it is biologically realistic. The homeoScale sets the scaling
 	 * factor applied to the weight change of the synapse due to homeostasis. If you want to make
 	 * homeostasis stronger than STDP, you increase this value. Scaling of the synaptic weights is
@@ -491,7 +491,7 @@ public:
 	 * \STATE CONFIG
 	 */
 	void setISTDP(int grpId, bool isSet, stdpType_t type, AntiHebbianCurve curve);
-	
+
 	/*!
 	 * \brief Sets I-STDP mode with constant symmetric curve
 	 *
@@ -620,21 +620,6 @@ public:
 	void loadSimulation(FILE* fid);
 
 	/*!
-	 * \brief Reassigns fixed weights to values passed into the function in a single 1D float matrix (weightMatrix)
-	 *
-	 * The user passes the connection ID (connectID), the weightMatrix, and the matrixSize.
-	 * This function only works for fixed synapses and for connections of type CONN_USER_DEFINED. Only the weights are 
-	 * changed, not the maxWts, delays, or connected values
-	 * \TODO finish docu
-	 *
-	 * \STATE SETUP
-	 */
-	void reassignFixedWeights(short int connectId, float weightMatrix[], int matrixSize);
-
-	//! \deprecated Deprecated
-	void resetSpikeCntUtil(int grpId=ALL); //!< resets spike count for particular neuron group
-
-	/*!
 	 * \brief reset Spike Counter to zero
 	 *
 	 * Manually resets the spike buffers of a Spike Counter to zero (for a specific group).
@@ -665,8 +650,8 @@ public:
 	/*!
 	 * \brief Sets the amount of current (mA) to inject into a group
 	 *
-	 * This method injects current, specified on a per-neuron basis, into the soma of each neuron in the group, at 
-	 * each timestep of the simulation. current is a float vector of current amounts (mA), one element per neuron in 
+	 * This method injects current, specified on a per-neuron basis, into the soma of each neuron in the group, at
+	 * each timestep of the simulation. current is a float vector of current amounts (mA), one element per neuron in
 	 * the group.
 	 *
 	 * To input different currents into a neuron over time, the idea is to run short periods of CARLsim::runNetwork
@@ -689,7 +674,7 @@ public:
 	 * \param[in] current  a float vector of current amounts (mA), one value per neuron in the group
 	 *
 	 * \note This method cannot be applied to SpikeGenerator groups.
-	 * \note If all neurons in the group should receive the same amount of current, you can use the convenience 
+	 * \note If all neurons in the group should receive the same amount of current, you can use the convenience
 	 * function CARLsim::setExternalCurrent(int grpId, float current).
 	 *
 	 * \attention Make sure to reset current after use (i.e., for the next call to CARLsim::runNetwork), otherwise
@@ -819,15 +804,6 @@ public:
 	 * \see CARLsim::setSpikeGenerator
 	 */
 	void setSpikeRate(int grpId, PoissonRate* spikeRate, int refPeriod=1);
-
-	/*!
-	 * \brief Resets either the neuronal firing rate information by setting resetFiringRate = true and/or the
-	 * weight values back to their default values by setting resetWeights = true.
-	 *
-	 * \STATE EXECUTION
-	 * \deprecated This function is deprecated.
-	 */
-	void updateNetwork(bool resetFiringInfo, bool resetWeights);
 
 	/*!
 	 * \brief function writes population weights from gIDpre to gIDpost to file fname in binary.
@@ -1156,14 +1132,6 @@ public:
 	uint32_t getSimTimeMsec();
 
 	/*!
-	 * \brief returns pointer to 1D array of the number of spikes every neuron in the group has fired
-	 *
-	 * \deprecated deprecated
-	 * \STATE EXECUTION
-	 */
-	int* getSpikeCntPtr(int grpId);
-
-	/*!
 	 * \brief return the number of spikes per neuron for a certain group
 	 *
 	 * A Spike Counter keeps track of all spikes per neuron for a certain time period (recordDur) at any point in time.
@@ -1198,17 +1166,6 @@ public:
 	 * \STATE SETUP, EXECUTION
 	 */
 	bool isPoissonGroup(int grpId);
-
-	/*!
-	 * \brief Sets enableGpuSpikeCntPtr to true or false.  True allows getSpikeCntPtr_GPU to copy firing
-	 *
-	 * state information from GPU kernel to cpuNetPtrs.  Warning: setting this flag to true will slow down
-	 * the simulation significantly.
-	 * \deprecated deprecated
-	 * \STATE EXECUTION
-	 */
-	void setCopyFiringStateFromGPU(bool enableGPUSpikeCntPtr);
-
 
 	// +++++ PUBLIC METHODS: SET DEFAULTS +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 

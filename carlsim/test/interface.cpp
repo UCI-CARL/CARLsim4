@@ -269,7 +269,6 @@ TEST(Interface, CARLsimState) {
 	// test APIs that can't be called at CONFIG_STATE
 	EXPECT_DEATH({sim->runNetwork(1, 0);},"");
 	EXPECT_DEATH({sim->saveSimulation("test.dat", true);},"");
-	EXPECT_DEATH({sim->reassignFixedWeights(0, wM, 4);},"");
 	EXPECT_DEATH({sim->setSpikeRate(g1, NULL);},"");
 	EXPECT_DEATH({sim->writePopWeights("test.dat", 0, 1);},"");
 	EXPECT_DEATH({sim->getDelays(0, 1, i, j);},"");
@@ -331,7 +330,6 @@ TEST(Interface, CARLsimState) {
 	// test APIs that can't be called at EXE_STATE
 	EXPECT_DEATH({sim->setupNetwork();},"");
 	EXPECT_DEATH({sim->loadSimulation(NULL);},"");
-	EXPECT_DEATH({sim->reassignFixedWeights(0, wM, 4);},"");
 	EXPECT_DEATH({g2 = sim->createGroup("excit", 80, EXCITATORY_NEURON);},"");
 	EXPECT_DEATH({g2 = sim->createSpikeGeneratorGroup("input", 10, EXCITATORY_NEURON);},"");
 	EXPECT_DEATH({sim->connect(g1,g1,"random", RangeWeight(0.0,0.001,0.005), 0.1f, RangeDelay(1,20), RadiusRF(-1), SYN_PLASTIC);},"");

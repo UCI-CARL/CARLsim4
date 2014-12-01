@@ -735,26 +735,6 @@ void CARLsim::loadSimulation(FILE* fid) {
 	snn_->loadSimulation(fid);
 }
 
-void CARLsim::reassignFixedWeights(short int connectId, float weightMatrix[], int matrixSize) {
-	std::string funcName = "reassignFixedWeights()";
-	UserErrors::assertTrue(loggerMode_==CUSTOM,UserErrors::MUST_BE_LOGGER_CUSTOM,"setLogsFp","Logger mode");
-	UserErrors::assertTrue(carlsimState_==SETUP_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "SETUP.");
-
-	snn_->reassignFixedWeights(connectId,weightMatrix,matrixSize);
-}
-
-
-// resets spike count for particular neuron group
-void CARLsim::resetSpikeCntUtil(int grpId) {
-	std::string funcName = "resetSpikeCntUtil()";
-	UserErrors::assertTrue(false, UserErrors::IS_DEPRECATED, funcName);
-
-	UserErrors::assertTrue(carlsimState_==SETUP_STATE||carlsimState_==EXE_STATE,
-		UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "SETUP or EXECUTION.");
-
-	snn_->resetSpikeCntUtil(grpId);
-}
-
 // resets spike counters
 void CARLsim::resetSpikeCounter(int grpId) {
 	std::string funcName = "resetSpikeCounter()";
@@ -909,17 +889,6 @@ void CARLsim::setSpikeRate(int grpId, PoissonRate* spikeRate, int refPeriod) {
 		UserErrors::CAN_ONLY_BE_CALLED_IN_MODE, funcName, "PoissonRate on GPU", "GPU_MODE.");
 
 	snn_->setSpikeRate(grpId, spikeRate, refPeriod);
-}
-
-// Resets either the neuronal firing rate information by setting resetFiringRate = true and/or the
-// weight values back to their default values by setting resetWeights = true.
-void CARLsim::updateNetwork(bool resetFiringInfo, bool resetWeights) {
-	std::string funcName = "updateNetwork()";
-	UserErrors::assertTrue(false, UserErrors::IS_DEPRECATED, funcName);
-
-	UserErrors::assertTrue(carlsimState_==EXE_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "EXECUTION.");
-
-	snn_->updateNetwork(resetFiringInfo,resetWeights);
 }
 
 // function writes population weights from gIDpre to gIDpost to file fname in binary.
@@ -1122,15 +1091,6 @@ uint64_t CARLsim::getSimTime() { return snn_->getSimTime(); }
 uint32_t CARLsim::getSimTimeSec() { return snn_->getSimTimeSec(); }
 uint32_t CARLsim::getSimTimeMsec() { return snn_->getSimTimeMs(); }
 
-int* CARLsim::getSpikeCntPtr(int grpId) {
-	std::string funcName = "getSpikeCntPtr()";
-	UserErrors::assertTrue(false, UserErrors::IS_DEPRECATED, funcName);
-
-	UserErrors::assertTrue(carlsimState_==EXE_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "EXECUTION.");
-
-	return snn_->getSpikeCntPtr(grpId);
-}
-
 // get spiking information out for a given group
 int* CARLsim::getSpikeCounter(int grpId) {
 	std::stringstream funcName;	funcName << "getSpikeCounter(" << grpId << ")";
@@ -1144,18 +1104,6 @@ int* CARLsim::getSpikeCounter(int grpId) {
 bool CARLsim::isExcitatoryGroup(int grpId) { return snn_->isExcitatoryGroup(grpId); }
 bool CARLsim::isInhibitoryGroup(int grpId) { return snn_->isInhibitoryGroup(grpId); }
 bool CARLsim::isPoissonGroup(int grpId) { return snn_->isPoissonGroup(grpId); }
-
-// Sets enableGpuSpikeCntPtr to true or false.
-void CARLsim::setCopyFiringStateFromGPU(bool enableGPUSpikeCntPtr) {
-	std::string funcName = "setCopyFiringStateFromGPU()";
-	UserErrors::assertTrue(false, UserErrors::IS_DEPRECATED, funcName);
-
-	UserErrors::assertTrue(carlsimState_==EXE_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "EXECUTION.");
-
-	snn_->setCopyFiringStateFromGPU(enableGPUSpikeCntPtr);
-}
-
-
 
 // +++++++++ PUBLIC METHODS: SET DEFAULTS +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
