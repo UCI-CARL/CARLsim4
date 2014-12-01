@@ -414,6 +414,9 @@ public:
 	//! polls connection weights
 	void updateConnectionMonitor(int connId=ALL);
 
+	//! access group status (currently the concentration of neuromodulator)
+	void updateGroupMonitor(int grpId);
+
 	/*!
 	 * \brief copy required spikes from firing buffer to spike buffer
 	 *
@@ -711,7 +714,6 @@ private:
 	void swapConnections(int nid, int oldPos, int newPos);
 
 	void updateAfterMaxTime();
-	void updateGroupMonitor();
 	void updateSpikesFromGrp(int grpId);
 	void updateSpikeGenerators();
 	void updateSpikeGeneratorsInit();

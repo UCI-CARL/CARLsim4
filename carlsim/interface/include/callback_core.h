@@ -46,10 +46,7 @@ class CARLsim;
 class CpuSNN;
 
 class ConnectionGenerator;
-//class ConnectionMonitor;
-class GroupMonitor;
 class SpikeGenerator;
-class SpikeMonitor;
 
 /// **************************************************************************************************************** ///
 /// Classes for relay callback
@@ -96,43 +93,6 @@ public:
 private:
 	CARLsim* carlsim;
 	ConnectionGenerator* cGen;
-};
-
-
-//! used for relaying callback to ConnectionMonitor
-/*!
- * \brief The class is used to store user-defined callback function and to be registered in core (i.e., snn_cpu.cpp)
- * Once the core invokes the callback method of the class, the class relays all parameter and invokes user-defined
- * callback function.
- * \sa ConnectionMonitor
- *
-class ConnectionMonitorCore {
-public:
-	ConnectionMonitorCore(CARLsim* c, ConnectionMonitor* n);
-
-	virtual void update(CpuSNN* s, int grpIdPre, int grpIdPost, float* weight, int numData);
-private:
-	CARLsim* carlsim;
-	ConnectionMonitor* nMon;
-};
-*/
-
-//! used for relaying callback to GroupMonitor
-/*!
- * \brief The class is used to store user-defined callback function and to be registered in core (i.e., snn_cpu.cpp)
- * Once the core invokes the callback method of the class, the class relays all parameter and invokes user-defined
- * callback function.
- * \sa GroupMonitor
- */
-class GroupMonitorCore {
-public:
-	GroupMonitorCore(CARLsim* c, GroupMonitor* g);
-
-	virtual void update(CpuSNN* s, int grpID, float* grpDA, int numData);
-
-private:
-	CARLsim* carlsim;
-	GroupMonitor* gMon;
 };
 
 #endif

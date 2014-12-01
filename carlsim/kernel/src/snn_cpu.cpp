@@ -44,6 +44,8 @@
 #include <connection_monitor_core.h>
 #include <spike_monitor.h>
 #include <spike_monitor_core.h>
+#include <group_monitor.h>
+#include <group_monitor_core.h>
 
 // \FIXME what are the following for? why were they all the way at the bottom of this file?
 
@@ -4312,20 +4314,101 @@ void CpuSNN::updateConnectionMonitor(int connId) {
 	}
 }
 
-void CpuSNN::updateGroupMonitor() {
+void CpuSNN::updateGroupMonitor(int grpId) {
 	// TODO: build DA, 5HT, ACh, NE buffer in GPU memory and retrieve data every one second
 	// Currently, there is no buffer in GPU side. data are retrieved at every 10 ms simulation time
 
-	for (int grpId = 0; grpId < numGrp; grpId++) {
+	// don't continue if no group monitors in the network
+	if (!numGroupMonitor)
+		return;
+
+	if (grpId==ALL) {
+		for (int g = 0; g < numGrp; g++)
+			updateSpikeMonitor(g);
+	} else {
+		// update group monitor of a specific group
+
+		// find index in spike monitor arrays
 		int monitorId = grp_Info[grpId].GroupMonitorId;
 
-		if(monitorId != -1) {
-			KERNEL_INFO("Group Monitor for Group %s has DA(%f)", grp_Info2[grpId].Name.c_str(), grpDABuffer[monitorId][0]);
+		// don't continue if no group monitor enabled for this group
+		if (monitorId < 0)
+			return;
 
-			// call the callback function
-			if (grpBufferCallback[monitorId])
-				grpBufferCallback[monitorId]->update(this, grpId, grpDABuffer[monitorId], 100);
+		// find last update time for this group
+		GroupMonitorCore* grpMonObj = groupMonCoreList[monitorId];
+		unsigned int lastUpdate = grpMonObj->getLastUpdated();
+
+		// don't continue if time interval is zero (nothing to update)
+		if (getSimTime() <= lastUpdate)
+			return;
+
+		if ( getSimTime() > lastUpdate + 1000)
+			KERNEL_ERROR("updateGroupMonitor(grpId=%d) must be called at least once every second", grpId);
+
+		if (simMode_ == GPU_MODE) {
+			// copy the group information (neuromodulators) from the GPU to the CPU..
+			//copyFiringInfo_GPU();
 		}
+
+		// find the time interval in which to update group status
+		// usually, we call updateGroupMonitor once every second, so the time interval is [0,1000)
+		// however, updateGroupMonitor can be called at any time t \in [0,1000)... so we can have the cases
+		// [0,t), [t,1000), and even [t1, t2)
+		int numMsMin = lastUpdate%1000; // lower bound is given by last time we called update
+		int numMsMax = getSimTimeMs(); // upper bound is given by current time
+		if (numMsMax == 0)
+			numMsMax = 1000; // special case: full second
+		assert(numMsMin < numMsMax);
+
+		// current time is last completed second in milliseconds (plus t to be added below)
+		// special case is after each completed second where !getSimTimeMs(): here we look 1s back
+		int currentTimeSec = getSimTimeSec();
+		if (!getSimTimeMs())
+			currentTimeSec--;
+
+		// save current time as last update time
+		grpMonObj->setLastUpdated(getSimTime());
+
+		// prepare fast access
+		FILE* grpFileId = groupMonCoreList[monitorId]->getGroupFileId();
+		bool writeGroupToFile = grpFileId!=NULL;
+		bool writeGroupToArray = grpMonObj->isRecording();
+
+		// Read one peice of data at a time from the buffer and put the data to an appopriate monitor buffer. Later the user
+		// may need need to dump these group data to an output file
+		for(int t = numMsMin; t < numMsMax; t++) {
+			if (simMode_ == GPU_MODE) {
+				// fectch group status
+			}
+						
+			assert(nid < numN);
+
+			// make sure neuron belongs to currently relevant group
+			int this_grpId = grpIds[nid];
+			if (this_grpId != grpId)
+				continue;
+
+			// adjust nid to be 0-indexed for each group
+			// this way, if a group has 10 neurons, their IDs in the spike file and spike monitor will be
+			// indexed from 0..9, no matter what their real nid is
+			nid -= grp_Info[grpId].StartN;
+			assert(nid>=0);
+
+			// current time is last completed second plus whatever is leftover in t
+			int time = currentTimeSec*1000 + t;
+
+			if (writeGroupToFile) {
+				// write to group status file
+			}
+
+			if (writeGroupToArray) {
+				//grpMonObj->pushData(time, data);
+			}
+		}
+
+		if (grpFileId!=NULL) // flush group status file
+			fflush(grpFileId);
 	}
 }
 

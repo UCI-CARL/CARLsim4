@@ -55,6 +55,7 @@
 #include <poisson_rate.h>
 #include <spike_monitor.h>
 #include <connection_monitor.h>
+#include <group_monitor.h>
 
 #include <linear_algebra.h>
 
