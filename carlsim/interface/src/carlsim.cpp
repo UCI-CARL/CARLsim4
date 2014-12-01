@@ -386,7 +386,7 @@ void CARLsim::setConductances(bool isSet, int tdAMPA, int trNMDA, int tdNMDA, in
 	UserErrors::assertTrue(!isSet||tdGABAb>0, UserErrors::MUST_BE_POSITIVE, funcName.str(), "trGABAb");
 	UserErrors::assertTrue(trNMDA!=tdNMDA, UserErrors::CANNOT_BE_IDENTICAL, funcName.str(), "trNMDA and tdNMDA");
 	UserErrors::assertTrue(trGABAb!=tdGABAb, UserErrors::CANNOT_BE_IDENTICAL, funcName.str(), "trGABAb and tdGABAb");
-	UserErrors::assertTrue(carlsimState_==CONFIG_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName.str(), 
+	UserErrors::assertTrue(carlsimState_==CONFIG_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName.str(),
 		funcName.str(), "CONFIG.");
 	hasSetConductances_ = true;
 
@@ -673,7 +673,7 @@ int CARLsim::runNetwork(int nSec, int nMsec, bool printRunSummary, bool copyStat
 
 	carlsimState_ = EXE_STATE;
 
-	return snn_->runNetwork(nSec, nMsec, printRunSummary, copyState);	
+	return snn_->runNetwork(nSec, nMsec, printRunSummary, copyState);
 }
 
 // setup network with custom options
@@ -730,26 +730,6 @@ void CARLsim::loadSimulation(FILE* fid) {
 	snn_->loadSimulation(fid);
 }
 
-void CARLsim::reassignFixedWeights(short int connectId, float weightMatrix[], int matrixSize) {
-	std::string funcName = "reassignFixedWeights()";
-	UserErrors::assertTrue(loggerMode_==CUSTOM,UserErrors::MUST_BE_LOGGER_CUSTOM,"setLogsFp","Logger mode");
-	UserErrors::assertTrue(carlsimState_==SETUP_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "SETUP.");
-
-	snn_->reassignFixedWeights(connectId,weightMatrix,matrixSize);
-}
-
-
-// resets spike count for particular neuron group
-void CARLsim::resetSpikeCntUtil(int grpId) {
-	std::string funcName = "resetSpikeCntUtil()";
-	UserErrors::assertTrue(false, UserErrors::IS_DEPRECATED, funcName);
-
-	UserErrors::assertTrue(carlsimState_==SETUP_STATE||carlsimState_==EXE_STATE,
-		UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "SETUP or EXECUTION.");
-
-	snn_->resetSpikeCntUtil(grpId);
-}
-
 // resets spike counters
 void CARLsim::resetSpikeCounter(int grpId) {
 	std::string funcName = "resetSpikeCounter()";
@@ -767,7 +747,7 @@ ConnectionMonitor* CARLsim::setConnectionMonitor(int grpIdPre, int grpIdPost, co
 	UserErrors::assertTrue(grpIdPost!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName, "grpIdPost");
 	UserErrors::assertTrue(grpIdPre>=0, UserErrors::CANNOT_BE_NEGATIVE, funcName, "grpIdPre");// grpId can't be negative
 	UserErrors::assertTrue(grpIdPost>=0, UserErrors::CANNOT_BE_NEGATIVE, funcName, "grpIdPost");
-	UserErrors::assertTrue(carlsimState_==SETUP_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, 
+	UserErrors::assertTrue(carlsimState_==SETUP_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName,
 		funcName, "SETUP.");
 
 	// empty string: use default name for binary file
@@ -805,9 +785,9 @@ void CARLsim::setExternalCurrent(int grpId, const std::vector<float>& current) {
 	UserErrors::assertTrue(current.size()==getGroupNumNeurons(grpId), UserErrors::MUST_BE_IDENTICAL, funcName,
 		"current.size()", "number of neurons in the group.");
 	UserErrors::assertTrue(!isPoissonGroup(grpId), UserErrors::WRONG_NEURON_TYPE, funcName, funcName);
-	UserErrors::assertTrue(carlsimState_==SETUP_STATE || carlsimState_==EXE_STATE, 
+	UserErrors::assertTrue(carlsimState_==SETUP_STATE || carlsimState_==EXE_STATE,
 		UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "SETUP or EXECUTION.");
-	
+
 	snn_->setExternalCurrent(grpId, current);
 }
 
@@ -815,7 +795,7 @@ void CARLsim::setExternalCurrent(int grpId, float current) {
 	std::string funcName = "setExternalCurrent(\""+getGroupName(grpId)+"\")";
 	UserErrors::assertTrue(grpId!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName, "grpId");
 	UserErrors::assertTrue(!isPoissonGroup(grpId), UserErrors::WRONG_NEURON_TYPE, funcName, funcName);
-	UserErrors::assertTrue(carlsimState_==SETUP_STATE || carlsimState_==EXE_STATE, 
+	UserErrors::assertTrue(carlsimState_==SETUP_STATE || carlsimState_==EXE_STATE,
 		UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "SETUP or EXECUTION.");
 
 	std::vector<float> vecCurrent(getGroupNumNeurons(grpId), current);
@@ -902,17 +882,6 @@ void CARLsim::setSpikeRate(int grpId, PoissonRate* spikeRate, int refPeriod) {
 	snn_->setSpikeRate(grpId, spikeRate, refPeriod);
 }
 
-// Resets either the neuronal firing rate information by setting resetFiringRate = true and/or the
-// weight values back to their default values by setting resetWeights = true.
-void CARLsim::updateNetwork(bool resetFiringInfo, bool resetWeights) {
-	std::string funcName = "updateNetwork()";
-	UserErrors::assertTrue(false, UserErrors::IS_DEPRECATED, funcName);
-
-	UserErrors::assertTrue(carlsimState_==EXE_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "EXECUTION.");
-
-	snn_->updateNetwork(resetFiringInfo,resetWeights);
-}
-
 // function writes population weights from gIDpre to gIDpost to file fname in binary.
 void CARLsim::writePopWeights(std::string fname, int gIDpre, int gIDpost) {
 	std::string funcName = "writePopWeights("+fname+")";
@@ -939,7 +908,7 @@ Grid3D CARLsim::getGroupGrid3D(int grpId) {
 	UserErrors::assertTrue(grpId!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName.str(), "grpId");
 	UserErrors::assertTrue(carlsimState_ == SETUP_STATE || carlsimState_ == EXE_STATE,
 					UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName.str(), funcName.str(), "SETUP or EXECUTION.");
-	UserErrors::assertTrue(grpId>=0 && grpId<getNumGroups(), UserErrors::MUST_BE_IN_RANGE, funcName.str(), 
+	UserErrors::assertTrue(grpId>=0 && grpId<getNumGroups(), UserErrors::MUST_BE_IN_RANGE, funcName.str(),
 		"grpId", "[0,getNumGroups()]");
 
 	return snn_->getGroupGrid3D(grpId);
@@ -955,7 +924,7 @@ int CARLsim::getGroupId(std::string grpName) {
 
 std::string CARLsim::getGroupName(int grpId) {
 	std::stringstream funcName; funcName << "getGroupName(" << grpId << ")";
-	UserErrors::assertTrue(grpId>=-1, UserErrors::MUST_BE_IN_RANGE, funcName.str(), 
+	UserErrors::assertTrue(grpId>=-1, UserErrors::MUST_BE_IN_RANGE, funcName.str(),
 		"grpId", "[-1,getNumGroups()]");
 
 	return snn_->getGroupName(grpId);
@@ -992,7 +961,7 @@ int CARLsim::getGroupNumNeurons(int grpId) {
 Point3D CARLsim::getNeuronLocation3D(int neurId) {
 	std::stringstream funcName;	funcName << "getNeuronLocation3D(" << neurId << ")";
 	UserErrors::assertTrue(neurId!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName.str(), "neurId");
-	UserErrors::assertTrue(neurId>=0 && neurId<getNumNeurons(), UserErrors::MUST_BE_IN_RANGE, funcName.str(), 
+	UserErrors::assertTrue(neurId>=0 && neurId<getNumNeurons(), UserErrors::MUST_BE_IN_RANGE, funcName.str(),
 		"neurId", "[0,getNumNeurons()]");
 
 	return snn_->getNeuronLocation3D(neurId);
@@ -1001,7 +970,7 @@ Point3D CARLsim::getNeuronLocation3D(int neurId) {
 Point3D CARLsim::getNeuronLocation3D(int grpId, int relNeurId) {
 	std::stringstream funcName;	funcName << "getNeuronLocation3D(" << grpId << "," << relNeurId << ")";
 	UserErrors::assertTrue(relNeurId!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName.str(), "neurId");
-	UserErrors::assertTrue(grpId>=0 && grpId<getNumGroups(), UserErrors::MUST_BE_IN_RANGE, funcName.str(), 
+	UserErrors::assertTrue(grpId>=0 && grpId<getNumGroups(), UserErrors::MUST_BE_IN_RANGE, funcName.str(),
 		"grpId", "[0,getNumGroups()]");
 	UserErrors::assertTrue(relNeurId>=0 && relNeurId<getGroupNumNeurons(grpId), UserErrors::MUST_BE_IN_RANGE,
 		funcName.str(), "relNeurId", "[0,getGroupNumNeurons()]");
@@ -1031,7 +1000,7 @@ int CARLsim::getNumPreSynapses() {
 int CARLsim::getNumSynapticConnections(short int connectionId) {
 	std::stringstream funcName;	funcName << "getNumConnections(" << connectionId << ")";
 	UserErrors::assertTrue(connectionId!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName.str(), "connectionId");
-	UserErrors::assertTrue(connectionId>=0 && connectionId<getNumConnections(), UserErrors::MUST_BE_IN_RANGE, 
+	UserErrors::assertTrue(connectionId>=0 && connectionId<getNumConnections(), UserErrors::MUST_BE_IN_RANGE,
 		funcName.str(), "connectionId", "[0,getNumSynapticConnections()]");
 	return snn_->getNumSynapticConnections(connectionId);
 }
@@ -1063,20 +1032,11 @@ uint64_t CARLsim::getSimTime() { return snn_->getSimTime(); }
 uint32_t CARLsim::getSimTimeSec() { return snn_->getSimTimeSec(); }
 uint32_t CARLsim::getSimTimeMsec() { return snn_->getSimTimeMs(); }
 
-int* CARLsim::getSpikeCntPtr(int grpId) {
-	std::string funcName = "getSpikeCntPtr()";
-	UserErrors::assertTrue(false, UserErrors::IS_DEPRECATED, funcName);
-
-	UserErrors::assertTrue(carlsimState_==EXE_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "EXECUTION.");
-
-	return snn_->getSpikeCntPtr(grpId);
-}
-
 // get spiking information out for a given group
 int* CARLsim::getSpikeCounter(int grpId) {
 	std::stringstream funcName;	funcName << "getSpikeCounter(" << grpId << ")";
 	UserErrors::assertTrue(grpId!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName.str(), "grpId");
-	UserErrors::assertTrue(carlsimState_==EXE_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName.str(), 
+	UserErrors::assertTrue(carlsimState_==EXE_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName.str(),
 		"EXECUTION.");
 
 	return snn_->getSpikeCounter(grpId);
@@ -1085,18 +1045,6 @@ int* CARLsim::getSpikeCounter(int grpId) {
 bool CARLsim::isExcitatoryGroup(int grpId) { return snn_->isExcitatoryGroup(grpId); }
 bool CARLsim::isInhibitoryGroup(int grpId) { return snn_->isInhibitoryGroup(grpId); }
 bool CARLsim::isPoissonGroup(int grpId) { return snn_->isPoissonGroup(grpId); }
-
-// Sets enableGpuSpikeCntPtr to true or false.
-void CARLsim::setCopyFiringStateFromGPU(bool enableGPUSpikeCntPtr) {
-	std::string funcName = "setCopyFiringStateFromGPU()";
-	UserErrors::assertTrue(false, UserErrors::IS_DEPRECATED, funcName);
-
-	UserErrors::assertTrue(carlsimState_==EXE_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "EXECUTION.");
-
-	snn_->setCopyFiringStateFromGPU(enableGPUSpikeCntPtr);
-}
-
-
 
 // +++++++++ PUBLIC METHODS: SET DEFAULTS +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
@@ -1113,7 +1061,7 @@ int tdGABAb) {
 	UserErrors::assertTrue(tdGABAb>0, UserErrors::MUST_BE_POSITIVE, funcName.str(), "tdGABAb");
 	UserErrors::assertTrue(trNMDA!=tdNMDA, UserErrors::CANNOT_BE_IDENTICAL, funcName.str(), "trNMDA and tdNMDA");
 	UserErrors::assertTrue(trGABAb!=tdGABAb, UserErrors::CANNOT_BE_IDENTICAL, funcName.str(), "trGABAb and tdGABAb");
-	UserErrors::assertTrue(carlsimState_==CONFIG_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName.str(), 
+	UserErrors::assertTrue(carlsimState_==CONFIG_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName.str(),
 		"CONFIG.");
 
 	def_tdAMPA_  = tdAMPA;

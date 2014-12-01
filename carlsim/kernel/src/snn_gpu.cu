@@ -3234,10 +3234,10 @@ void CpuSNN::configGPUDevice() {
 	KERNEL_INFO("  - Use CUDA device[%d]: \"%s\"", ithGPU_, deviceProp.name);
 	KERNEL_INFO("  - CUDA Compute Capability         =     %2d.%d\n", deviceProp.major, deviceProp.minor);
 
-	if (deviceProp.major < 2) {
-		KERNEL_ERROR("CARLsim does not support CUDA devices older than version 2.0");
-		exitSimulation(1);
-	}
+    if (deviceProp.major < 2) {
+        KERNEL_ERROR("CARLsim does not support CUDA devices older than version 2.0");
+        exitSimulation(1);
+    }
 
 	CUDA_CHECK_ERRORS(cudaSetDevice(ithGPU_));
 	CUDA_DEVICE_RESET();
@@ -3458,53 +3458,6 @@ void CpuSNN::allocateSNN_GPU() {
 //	CUDA_CHECK_ERRORS(cudaMemset(cpu_gpuNetPtrs.extCurrent, 0, sizeof(float)*numNReg));
 //	copyExternalCurrent(&cpu_gpuNetPtrs, &cpuNetPtrs, true);
 	initGPU(gridSize, blkSize);
-}
-
-//This gets called when updateNetwork is called so setSTDP, setSTP, or setHomeostasis
-//should now work in GPU_MODE.
-void CpuSNN::copyGrpInfo_GPU() {
-	checkAndSetGPUDevice();
-
-	CUDA_CHECK_ERRORS(cudaMemcpyToSymbol("gpuGrpInfo", grp_Info, (net_Info.numGrp)*sizeof(group_info_t), 0, cudaMemcpyHostToDevice));
-}
-
-//Copy all the appropriate state variables back to the GPU now that they have been
-//reset. TAGS:UPDATE -- KDC
-void CpuSNN::copyUpdateVariables_GPU() {
-	checkAndSetGPUDevice();
-
-	//we now copy all variables that get reset in updateNetwork.
-	CUDA_CHECK_ERRORS( cudaMemcpy( cpu_gpuNetPtrs.wt, wt, sizeof(float)*preSynCnt, cudaMemcpyHostToDevice));
-	if ((!sim_with_fixedwts) || (sim_with_stdp)){
-		CUDA_CHECK_ERRORS( cudaMemcpy( cpu_gpuNetPtrs.wtChange, wtChange, sizeof(float)*preSynCnt, cudaMemcpyHostToDevice));
-		CUDA_CHECK_ERRORS( cudaMemcpy( cpu_gpuNetPtrs.maxSynWt, maxSynWt, sizeof(float)*preSynCnt, cudaMemcpyHostToDevice));
-	}
-	CUDA_CHECK_ERRORS( cudaMemcpy( cpu_gpuNetPtrs.synSpikeTime, synSpikeTime, sizeof(int)*preSynCnt, cudaMemcpyHostToDevice));
-
-  // copy the neuron state information to the GPU..
-	copyNeuronState(&cpu_gpuNetPtrs, &cpuNetPtrs, cudaMemcpyHostToDevice, 0);
-	copyNeuronParameters(&cpu_gpuNetPtrs, cudaMemcpyHostToDevice, 0);
-	if(sim_with_stp){
-		copySTPState(&cpu_gpuNetPtrs, &cpuNetPtrs, cudaMemcpyHostToDevice, 0);
-	}
-
-//finally copy this to something the GPU can access.
-	CUDA_CHECK_ERRORS(cudaMemcpyToSymbol("gpuPtrs", &cpu_gpuNetPtrs, sizeof(network_ptr_t), 0, cudaMemcpyHostToDevice));
-
-}
-
-//This gets called in updateNetwork to copy all the reset data back to the GPU.
-//TAGS:UPDATE -- KDC
-void CpuSNN::updateNetwork_GPU(bool resetFiringInfo) {
-	checkAndSetGPUDevice();
-
-	//need to copy this data so STDP, STP, conductances can be reset.
-	copyGrpInfo_GPU();
-
-	if(resetFiringInfo)
-		resetFiringInformation_GPU();
-
-	copyUpdateVariables_GPU();
 }
 
 void CpuSNN::printSimSummary() {

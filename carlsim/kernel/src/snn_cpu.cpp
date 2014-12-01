@@ -736,12 +736,7 @@ int CpuSNN::runNetwork(int _nsec, int _nmsec, bool printRunSummary, bool copySta
 				updateFiringTable_GPU();
 		}
 
-		// \deprecated remove this
-		if(enableGPUSpikeCntPtr==true && simMode_ == CPU_MODE){
-			KERNEL_ERROR("Error: the enableGPUSpikeCntPtr flag cannot be set in CPU_MODE");
-			assert(simMode_==GPU_MODE);
-		}
-		if(enableGPUSpikeCntPtr==true && simMode_ == GPU_MODE){
+		if(simMode_ == GPU_MODE){
 			copyFiringStateFromGPU();
 		}
 	}
@@ -795,91 +790,6 @@ void CpuSNN::exitSimulation(int val) {
 // reads network state from file
 void CpuSNN::loadSimulation(FILE* fid) {
 	loadSimFID = fid;
-}
-
-// reassigns weights from the input weightMatrix to the weights between two
-// specified neuron groups.
-// TODO: figure out scope; is this a user function?
-void CpuSNN::reassignFixedWeights(short int connectId, float weightMatrix[], int sizeMatrix) {
-	int j;
-	//first find the correct connection
-	grpConnectInfo_t* connInfo; //connInfo = current connection information.
-	connInfo = getConnectInfo(connectId);
-	//make sure that it is for fixed connections.
-	bool synWtType = GET_FIXED_PLASTIC(connInfo->connProp);
-	if(synWtType == SYN_PLASTIC){
-		KERNEL_ERROR("The synapses in this connection must be SYN_FIXED in order to use this function.");
-		exitSimulation(1);
-	}
-	//make sure that the user passes the correctly sized matrix
-	if(connInfo->numberOfConnections != sizeMatrix){
-		KERNEL_ERROR("The size of the input weight matrix and the number of synaptic connections in this "
-						"connection do not match.");
-		exitSimulation(1);
-	}
-	//We have to iterate over all the presynaptic connections of each postsynaptic neuron
-	//and see if they are part of our srcGrp.  If they are,
-	int destGrp = connInfo->grpDest;
-	int srcGrp  = connInfo->grpSrc;
-	//iterate over all neurons in the destination group.
-	for(int postId=grp_Info[destGrp].StartN; postId <= grp_Info[destGrp].EndN; postId++) {
-		int offset            = cumulativePre[postId];
-		float* synWtPtr       = &wt[cumulativePre[postId]];
-		post_info_t *preIdPtr = &preSynapticIds[offset];
-		//iterate over all presynaptic connections in current postsynaptic neuron.
-		for (j=0; j < Npre[postId]; j++,preIdPtr++, synWtPtr++) {
-			int preId       = GET_CONN_NEURON_ID((*preIdPtr));
-			assert(preId < numN);
-			short int currentSrcId = grpIds[preId];
-			//if the neuron is part of the source group, assign it a value
-			//from the reassignment matrix.
-			if(currentSrcId == srcGrp){
-				//assign wt to reassignment matrix value
-				*synWtPtr = (*weightMatrix);
-				//iterate reassignment matrix
-				weightMatrix++;
-			}
-		}
-	}
-
-	//after all weights have been set, copy them back to the GPU if
-	//necessary:
-	if(simMode_ == GPU_MODE)
-		copyUpdateVariables_GPU();
-}
-
-//! \deprecated right?
-//! but we do need resetSpikeCnt and resetSpikeCnt_GPU
-void CpuSNN::resetSpikeCntUtil(int my_grpId ) {
-  int startGrp, endGrp;
-
-  if(!doneReorganization)
-    return;
-
-  if(simMode_ == GPU_MODE){
-    //call analogous function, return, else do CPU stuff
-    if (my_grpId == ALL) {
-      startGrp = 0;
-      endGrp   = numGrp;
-    }
-    else {
-      startGrp = my_grpId;
-      endGrp   = my_grpId;
-    }
-    resetSpikeCnt_GPU(startGrp, endGrp);
-    return;
-  }
-
-  if (my_grpId == -1) {
-    startGrp = 0;
-    endGrp   = numGrp;
-  }
-  else {
-    startGrp = my_grpId;
-    endGrp   = my_grpId;
-  }
-
-  resetSpikeCnt(ALL);
 }
 
 // reset spike counter to zero
@@ -1094,36 +1004,6 @@ void CpuSNN::setSpikeRate(int grpId, PoissonRate* ratePtr, int refPeriod) {
 	grp_Info[grpId].RatePtr = ratePtr;
 	grp_Info[grpId].RefractPeriod   = refPeriod;
 	spikeRateUpdated = true;
-}
-
-
-// function used for parameter tuning interface
-void CpuSNN::updateNetwork(bool resetFiringInfo, bool resetWeights) {
-	if(!doneReorganization){
-		KERNEL_ERROR("UpdateNetwork function was called but nothing was done because reorganizeNetwork must be "
-						"called first.");
-		return;
-	}
-
-	//change weights back to the default level for all the connections...
-	if(resetWeights)
-		resetSynapticConnections(true);
-	else
-		resetSynapticConnections(false);
-
-	// Reset v,u,firing time values to default values...
-	resetGroups();
-
-	if(resetFiringInfo)
-		resetFiringInformation();
-
-	if(simMode_==GPU_MODE){
-		//copyGrpInfo_GPU();
-		//do a call to updateNetwork_GPU()
-		updateNetwork_GPU(resetFiringInfo);
-	}
-
-	printTuningLog(fpDeb_);
 }
 
 // writes network state to file
@@ -1606,21 +1486,6 @@ int CpuSNN::getNumSynapticConnections(short int connectionId) {
   exitSimulation(1);
 }
 
-// Returns pointer to nSpikeCnt, which is a 1D array of the number of spikes every neuron in the group
-int* CpuSNN::getSpikeCntPtr(int grpId) {
-	//! do check to make sure appropriate flag is set
-	if(simMode_ == GPU_MODE && enableGPUSpikeCntPtr == false){
-		KERNEL_ERROR("Error: the enableGPUSpikeCntPtr flag must be set to true to use this function in GPU_MODE.");
-		assert(enableGPUSpikeCntPtr);
-	}
-
-	if(simMode_ == GPU_MODE){
-		assert(enableGPUSpikeCntPtr);
-	}
-
-	return ((grpId == -1) ? nSpikeCnt : &nSpikeCnt[grp_Info[grpId].StartN]);
-}
-
 // return spike buffer, which contains #spikes per neuron in the group
 int* CpuSNN::getSpikeCounter(int grpId) {
 	assert(grpId>=0); assert(grpId<numGrp);
@@ -1635,13 +1500,6 @@ int* CpuSNN::getSpikeCounter(int grpId) {
 		return spkCntBuf[bufPos]; // return pointer to buffer
 	}
 }
-
-// True allows getSpikeCntPtr_GPU to copy firing state information from GPU kernel to cpuNetPtrs
-// Warning: setting this flag to true will slow down the simulation significantly.
-void CpuSNN::setCopyFiringStateFromGPU(bool _enableGPUSpikeCntPtr) {
-	enableGPUSpikeCntPtr=_enableGPUSpikeCntPtr;
-}
-
 
 /// **************************************************************************************************************** ///
 /// PRIVATE METHODS
@@ -1751,7 +1609,6 @@ void CpuSNN::CpuSNNinit() {
 	numSpikeGenGrps  = 0;
 	NgenFunc = 0;
 	simulatorDeleted = false;
-	enableGPUSpikeCntPtr = false;
 
 	allocatedN      = 0;
 	allocatedPre    = 0;
