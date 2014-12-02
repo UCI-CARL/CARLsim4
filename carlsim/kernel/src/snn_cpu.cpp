@@ -1076,6 +1076,52 @@ void CpuSNN::setWeight(int connId, int neurIdPre, int neurIdPost, float weight, 
 	assert(neurIdPre>=0  && neurIdPre<getGroupNumNeurons(connInfo->grpSrc));
 	assert(neurIdPost>=0 && neurIdPost<getGroupNumNeurons(connInfo->grpDest));
 
+	// inform user of acton taken if weight is out of bounds
+//	bool needToPrintDebug = (weight>connInfo->maxWt || weight<connInfo->minWt);
+	bool needToPrintDebug = (weight>connInfo->maxWt || weight<0.0f);
+
+	if (updateWeightRange) {
+		// if this flag is set, we need to update minWt,maxWt accordingly
+		// will be saving new maxSynWt and copying to GPU below
+//		connInfo->minWt = fmin(connInfo->minWt, weight);
+		connInfo->maxWt = fmax(connInfo->maxWt, weight);
+		if (needToPrintDebug) {
+			KERNEL_DEBUG("setWeight(%d,%d,%d,%f,%s): updated weight ranges to [%f,%f]", connId, neurIdPre, neurIdPost,
+				weight, (updateWeightRange?"true":"false"), 0.0f, connInfo->maxWt);
+		}
+	} else {
+		// constrain weight to boundary values
+		// compared to above, we swap minWt/maxWt logic
+		weight = fmin(weight, connInfo->maxWt);
+//		weight = fmax(weight, connInfo->minWt);
+		weight = fmax(weight, 0.0f);
+		if (needToPrintDebug) {
+			KERNEL_DEBUG("setWeight(%d,%d,%d,%f,%s): constrained weight %f to [%f,%f]", connId, neurIdPre, neurIdPost,
+				weight, (updateWeightRange?"true":"false"), weight, 0.0f, connInfo->maxWt);
+		}
+	}
+
+	// find real ID of pre- and post-neuron
+	int neurIdPreReal = grp_Info[connInfo->grpSrc].StartN+neurIdPre;
+	int neurIdPostReal = grp_Info[connInfo->grpDest].StartN+neurIdPost;
+
+	// iterate over all presynaptic synapses until right one is found
+	int pos_ij = cumulativePre[neurIdPostReal];
+	for (int j=0; j<Npre[neurIdPostReal]; pos_ij++, j++) {
+		post_info_t* preId = &preSynapticIds[pos_ij];
+		int pre_nid = GET_CONN_NEURON_ID((*preId));
+		if (GET_CONN_NEURON_ID((*preId))==neurIdPreReal) {
+			wt[pos_ij] = weight;
+			maxSynWt[pos_ij] = connInfo->maxWt; // it's easier to update even if it hasn't changed
+
+			if (simMode_==GPU_MODE) {
+				// need to update datastructures on GPU
+				CUDA_CHECK_ERRORS( cudaMemcpy(&(cpu_gpuNetPtrs.wt[pos_ij]), &weight, sizeof(float), cudaMemcpyHostToDevice));
+				CUDA_CHECK_ERRORS( cudaMemcpy(&(cpu_gpuNetPtrs.maxSynWt[pos_ij]), &(connInfo->maxWt), sizeof(float), cudaMemcpyHostToDevice));
+			}
+			break;
+		}
+	}
 }
 
 // function used for parameter tuning interface
