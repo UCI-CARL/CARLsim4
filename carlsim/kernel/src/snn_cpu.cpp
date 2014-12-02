@@ -783,6 +783,13 @@ int CpuSNN::runNetwork(int _nsec, int _nmsec, bool printRunSummary, bool copySta
 /// PUBLIC METHODS: INTERACTING WITH A SIMULATION
 /// ************************************************************************************************************ ///
 
+// adds a bias to every weight in the connection
+void CpuSNN::biasWeights(int connId, float bias, bool updateWeightRange) {
+	assert(connId>=0 && connId<numConnections);
+	assert(bias!=0.0f);
+
+}
+
 // deallocates dynamical structures and exits
 void CpuSNN::exitSimulation(int val) {
 	deleteObjects();
@@ -905,6 +912,13 @@ void CpuSNN::resetSpikeCounter(int grpId) {
 			memset(spkCntBuf[bufPos],0,grp_Info[grpId].SizeN*sizeof(int)); // set all to 0
 		}
 	}
+}
+
+// multiplies every weight with a scaling factor
+void CpuSNN::scaleWeights(int connId, float scale, bool updateWeightRange) {
+	assert(connId>=0 && connId<numConnections);
+	assert(scale>0.0f);
+
 }
 
 void CpuSNN::setGroupMonitor(int grpId, GroupMonitorCore* groupMon) {
@@ -1053,6 +1067,16 @@ void CpuSNN::setSpikeRate(int grpId, PoissonRate* ratePtr, int refPeriod) {
 	spikeRateUpdated = true;
 }
 
+// sets the weight value of a specific synapse
+void CpuSNN::setWeight(int connId, int neurIdPre, int neurIdPost, float weight, bool updateWeightRange) {
+	assert(connId>=0 && connId<getNumConnections());
+	assert(weight>0.0f);
+
+	grpConnectInfo_t* connInfo = getConnectInfo(connId);
+	assert(neurIdPre>=0  && neurIdPre<getGroupNumNeurons(connInfo->grpSrc));
+	assert(neurIdPost>=0 && neurIdPost<getGroupNumNeurons(connInfo->grpDest));
+
+}
 
 // function used for parameter tuning interface
 void CpuSNN::updateNetwork(bool resetFiringInfo, bool resetWeights) {

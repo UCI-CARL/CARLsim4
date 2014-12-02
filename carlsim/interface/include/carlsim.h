@@ -557,6 +557,29 @@ public:
 	// +++++ PUBLIC METHODS: INTERACTING WITH A SIMULATION ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
 	/*!
+	 * \brief Adds a constant bias to the weight of every synapse in the connection
+	 *
+	 * This method adds a constant bias to the weight of every synapse in the connection specified by connId. The bias
+	 * can be positive or negative.
+	 * If a bias is specified that makes any weight+bias lie outside the range [minWt,maxWt] of this connection, the
+	 * range will be updated accordingly if the flag updateWeightRange is set to true.
+	 * If the flag is set to false, then the specified weight value will be corrected to lie on the boundary (either
+	 * minWt or maxWt).
+	 *
+	 * \STATE EXECUTION
+	 * \param[in] connId            the connection ID to manipulate
+	 * \param[in] bias              the bias value to add to every synapse
+	 * \param[in] updateWeightRange a flag specifying what to do when the specified weight+bias lies outside the range
+	 *                              [minWt,maxWt]. Set to true to update the range accordingly. Set to false to adjust
+	 *                              the weight to be either minWt or maxWt. Default: false.
+	 * 
+	 * \note A weight cannot drop below zero, no matter what.
+	 * \see CARLsim::setWeight
+	 * \see CARLsim::scaleWeights
+	 */
+	void biasWeights(int connId, float bias, bool updateWeightRange=false);
+	
+	/*!
 	 * \brief loads a simulation (and network state) from file
 	 *
 	 * \TODO finish docu
@@ -590,6 +613,29 @@ public:
 	 * \param grpId the group for which to reset the spike counts. Set to ALL if you want to reset all Spike Counters.
 	 */
 	void resetSpikeCounter(int grpId);
+
+	/*!
+	 * \brief Multiplies the weight of every synapse in the connection with a scaling factor
+	 *
+	 * This method scales the weight of every synapse in the connection specified by connId with a scaling factor.
+	 * The scaling factor must be positive.
+	 * If a scaling factor is specified that makes any weight*scale lie outside the range [minWt,maxWt] of this
+	 * connection, the range will be updated accordingly if the flag updateWeightRange is set to true.
+	 * If the flag is set to false, then the specified weight value will be corrected to lie on the boundary (either
+	 * minWt or maxWt).
+	 *
+	 * \STATE EXECUTION
+	 * \param[in] connId            the connection ID to manipulate
+	 * \param[in] scale             the scaling factor to apply to every synapse (must be positive)
+	 * \param[in] updateWeightRange a flag specifying what to do when the specified weight*scale lies outside the range
+	 *                              [minWt,maxWt]. Set to true to update the range accordingly. Set to false to adjust
+	 *                              the weight to be either minWt or maxWt. Default: false.
+	 * 
+	 * \note A weight cannot drop below zero, no matter what.
+	 * \see CARLsim::setWeight
+	 * \see CARLsim::biasWeights
+	 */
+	void scaleWeights(int connId, float scale, bool updateWeightRange=false);
 
 	/*!
 	 * \brief Sets a connection monitor for a group, custom ConnectionMonitor class
@@ -764,6 +810,32 @@ public:
 	 * \see CARLsim::setSpikeGenerator
 	 */
 	void setSpikeRate(int grpId, PoissonRate* spikeRate, int refPeriod=1);
+
+	/*!
+	 * \brief Sets the weight value of a specific synapse
+	 *
+	 * This method sets the weight value of the synapse that belongs to connection connId and connects pre-synaptic
+	 * neuron neurIdPre to post-synaptic neuron neurIdPost. Neuron IDs should be zero-indexed, so that the first
+	 * neuron in the group has ID 0.
+	 * If a weight value is specified that lies outside the range [minWt,maxWt] of this connection, the range will be
+	 * updated accordingly if the flag updateWeightRange is set to true. If the flag is set to false, then the
+	 * specified weight value will be corrected to lie on the boundary (either minWt or maxWt).
+	 *
+	 * \STATE EXECUTION
+	 * \param[in] connId            the connection ID to manipulate
+	 * \param[in] neurIdPre         pre-synaptic neuron ID (zero-indexed)
+	 * \param[in] neurIdPost        post-synaptic neuron ID (zero-indexed)
+	 * \param[in] weight            the weight value to set for this synapse
+	 * \param[in] updateWeightRange a flag specifying what to do when the specified weight lies outside the range
+	 *                              [minWt,maxWt]. Set to true to update the range accordingly. Set to false to adjust
+	 *                              the weight to be either minWt or maxWt. Default: false.
+	 * 
+	 * \note Neuron IDs should be zero-indexed (first neuron in the group should have ID 0).
+	 * \note A weight cannot drop below zero, no matter what.
+	 * \see CARLsim::biasWeights
+	 * \see CARLsim::scaleWeights
+	 */
+	void setWeight(int connId, int neurIdPre, int neurIdPost, float weight, bool updateWeightRange=false);
 
 	/*!
 	 * \brief Resets either the neuronal firing rate information by setting resetFiringRate = true and/or the

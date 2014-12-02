@@ -644,6 +644,16 @@ void CARLsim::setLogsFp(FILE* fpInf, FILE* fpErr, FILE* fpDeb, FILE* fpLog) {
 
 // +++++++++ PUBLIC METHODS: INTERACTING WITH A SIMULATION ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
+// adds a constant bias to the weight of every synapse in the connection
+void CARLsim::biasWeights(int connId, float bias, bool updateWeightRange) {
+	std::stringstream funcName;	funcName << "biasWeights(" << connId << "," << bias << "," << updateWeightRange << ")";
+	UserErrors::assertTrue(carlsimState_==EXE_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName.str(),
+		funcName.str(), "EXECUTION.");
+	UserErrors::assertTrue(bias!=0.0f, UserErrors::CANNOT_BE_ZERO, funcName.str(), "Bias");
+
+	snn_->biasWeights(connId, bias, updateWeightRange);
+}
+
 // reads network state from file
 void CARLsim::loadSimulation(FILE* fid) {
 	std::string funcName = "loadSimulation()";
@@ -679,6 +689,16 @@ void CARLsim::resetSpikeCounter(int grpId) {
 		UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "SETUP or EXECUTION.");
 
 	snn_->resetSpikeCounter(grpId);
+}
+
+// scales the weight of every synapse in the connection with a scaling factor
+void CARLsim::scaleWeights(int connId, float scale, bool updateWeightRange) {
+	std::stringstream funcName;	funcName << "scaleWeights(" << connId << "," << scale << "," << updateWeightRange << ")";
+	UserErrors::assertTrue(carlsimState_==EXE_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName.str(),
+		funcName.str(), "EXECUTION.");
+	UserErrors::assertTrue(scale>0.0f, UserErrors::MUST_BE_POSITIVE, funcName.str(), "Scaling factor");
+
+	snn_->scaleWeights(connId, scale, updateWeightRange);
 }
 
 // set network monitor for a group
@@ -798,6 +818,19 @@ void CARLsim::setSpikeRate(int grpId, PoissonRate* spikeRate, int refPeriod) {
 		UserErrors::CAN_ONLY_BE_CALLED_IN_MODE, funcName, "PoissonRate on GPU", "GPU_MODE.");
 
 	snn_->setSpikeRate(grpId, spikeRate, refPeriod);
+}
+
+// sets the weight of a specific synapse
+void CARLsim::setWeight(int connId, int neurIdPre, int neurIdPost, float weight, bool updateWeightRange) {
+	std::stringstream funcName;	funcName << "setWeight(" << connId << "," << neurIdPre << "," << neurIdPost << ","
+		<< updateWeightRange << ")";
+	UserErrors::assertTrue(carlsimState_==EXE_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName.str(),
+		funcName.str(), "EXECUTION.");
+	UserErrors::assertTrue(connId>=0 && connId<getNumConnections(), UserErrors::MUST_BE_IN_RANGE, 
+		funcName.str(), "connectionId", "[0,getNumSynapticConnections()]");
+	UserErrors::assertTrue(weight>0.0f, UserErrors::MUST_BE_POSITIVE, funcName.str(), "Weight value");
+
+	snn_->setWeight(connId, neurIdPre, neurIdPost, weight, updateWeightRange);
 }
 
 // Resets either the neuronal firing rate information by setting resetFiringRate = true and/or the

@@ -307,6 +307,9 @@ public:
 
 	// +++++ PUBLIC METHODS: INTERACTING WITH A SIMULATION ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
+	// adds a bias to every weight in the connection
+	void biasWeights(int connId, float bias, bool updateWeightRange=false);
+
 	//! deallocates all dynamical structures and exits
 	void exitSimulation(int val=1);
 
@@ -337,6 +340,9 @@ public:
 	 * \param grpId the group for which to reset the spike counts. Set to ALL if you want to reset all Spike Counters.
 	 */
 	void resetSpikeCounter(int grpId);
+
+	// multiplies every weight with a scaling factor
+	void scaleWeights(int connId, float scale, bool updateWeightRange=false);
 
 	//! sets up a group monitor registered with a callback to process the spikes.
 	/*!
@@ -390,6 +396,9 @@ public:
 	 * \param refPeriod (optional) refractive period,  default = 1
 	 */
 	void setSpikeRate(int grpId, PoissonRate* spikeRate, int refPeriod);
+
+	// sets the weight value of a specific synapse
+	void setWeight(int connId, int neurIdPre, int neurIdPost, float weight, bool updateWeightRange=false);
 
 	/*!
 	 * \brief copy required spikes from firing buffer to spike buffer
