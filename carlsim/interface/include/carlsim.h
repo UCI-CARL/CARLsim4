@@ -578,7 +578,7 @@ public:
 	 * \see CARLsim::scaleWeights
 	 * \since v3.0
 	 */
-	void biasWeights(int connId, float bias, bool updateWeightRange=false);
+	void biasWeights(short int connId, float bias, bool updateWeightRange=false);
 
 	/*!
 	 * \brief loads a simulation (and network state) from file
@@ -637,7 +637,7 @@ public:
 	 * \see CARLsim::biasWeights
 	 * \since v3.0
 	 */
-	void scaleWeights(int connId, float scale, bool updateWeightRange=false);
+	void scaleWeights(short int connId, float scale, bool updateWeightRange=false);
 
 	/*!
 	 * \brief Sets a connection monitor for a group, custom ConnectionMonitor class
@@ -839,7 +839,7 @@ public:
 	 * \see CARLsim::scaleWeights
 	 * \since v3.0
 	 */
-	void setWeight(int connId, int neurIdPre, int neurIdPost, float weight, bool updateWeightRange=false);
+	void setWeight(short int connId, int neurIdPre, int neurIdPost, float weight, bool updateWeightRange=false);
 
 	/*!
 	 * \brief Resets either the neuronal firing rate information by setting resetFiringRate = true and/or the
@@ -914,6 +914,19 @@ public:
 	 * \deprecated This function is deprecated. It will be replaced by NeuronMonitor.
 	 */
 	std::vector<float> getConductanceGABAb(int grpId);
+
+	/*!
+	 * \brief returns the RangeDelay struct for a specific connection ID
+	 *
+	 * This function returns the RangeDelay struct for a specific connection ID. The RangeDelay struct contains
+	 * fields for the minimum and maximum synaptic delay in the connection.
+	 *
+	 * \STATE CONFIG, SETUP, EXECUTION
+	 * \param[in] connId connection ID
+	 * \returns RangeDelay struct
+	 * \since v3.0
+	 */
+	RangeDelay getDelayRange(short int connId);
 
 	/*!
 	 * \brief gets delays
@@ -1217,6 +1230,19 @@ public:
 	 * \deprecated deprecated
 	 */
 	float* getWeightChanges(int gIDpre, int gIDpost, int& Npre, int& Npost, float* weightChanges=NULL);
+
+	/*!
+	 * \brief returns the RangeWeight struct for a specific connection ID
+	 *
+	 * This function returns the RangeWeight struct for a specific connection ID. The RangeWeight struct contains
+	 * fields for the minimum, initial, and maximum weight in the connection.
+	 *
+	 * \STATE CONFIG, SETUP, EXECUTION
+	 * \param[in] connId connection ID
+	 * \returns RangeWeight struct
+	 * \since v3.0
+	 */
+	RangeWeight getWeightRange(short int connId);
 
 	/*!
 	 * \brief returns

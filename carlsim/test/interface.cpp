@@ -145,6 +145,48 @@ TEST(Interface, setWeightDeath) {
 	EXPECT_DEATH({sim->setWeight(0,    0,  0, -1.0, false);},""); // weight<0
 }
 
+TEST(Interface, getDelayRangeDeath) {
+	::testing::FLAGS_gtest_death_test_style = "threadsafe";
+
+	CARLsim* sim = new CARLsim("Interface.getDelayRangeDeath",CPU_MODE,SILENT,0,42);
+	int g1=sim->createGroup("excit", Grid3D(10,10,1), EXCITATORY_NEURON);
+	sim->setNeuronParameters(g1, 0.02f, 0.2f,-65.0f,8.0f);
+	int c1=sim->connect(g1, g1, "full", RangeWeight(0.01), 1.0f, RangeDelay(1,10));
+	EXPECT_DEATH({sim->getDelayRange(c1+1);},"");
+	EXPECT_DEATH({sim->getDelayRange(-1);},"");
+
+	sim->setConductances(true);
+
+	sim->setupNetwork();
+	EXPECT_DEATH({sim->getDelayRange(c1+1);},"");
+	EXPECT_DEATH({sim->getDelayRange(-1);},"");
+
+	sim->runNetwork(0,20);
+	EXPECT_DEATH({sim->getDelayRange(c1+1);},"");
+	EXPECT_DEATH({sim->getDelayRange(-1);},"");
+}
+
+TEST(Interface, getWeightRangeDeath) {
+	::testing::FLAGS_gtest_death_test_style = "threadsafe";
+
+	CARLsim* sim = new CARLsim("Interface.getWeightRangeDeath",CPU_MODE,SILENT,0,42);
+	int g1=sim->createGroup("excit", Grid3D(10,10,1), EXCITATORY_NEURON);
+	sim->setNeuronParameters(g1, 0.02f, 0.2f,-65.0f,8.0f);
+	int c1=sim->connect(g1, g1, "full", RangeWeight(0.0, 0.1, 0.1), 1.0f, RangeDelay(1,10));
+	EXPECT_DEATH({sim->getWeightRange(c1+1);},"");
+	EXPECT_DEATH({sim->getWeightRange(-1);},"");
+
+	sim->setConductances(true);
+
+	sim->setupNetwork();
+	EXPECT_DEATH({sim->getWeightRange(c1+1);},"");
+	EXPECT_DEATH({sim->getWeightRange(-1);},"");
+
+	sim->runNetwork(0,20);
+	EXPECT_DEATH({sim->getWeightRange(c1+1);},"");
+	EXPECT_DEATH({sim->getWeightRange(-1);},"");
+}
+
 //! trigger all UserErrors
 TEST(Interface, getSpikeCounterDeath) {
 	::testing::FLAGS_gtest_death_test_style = "threadsafe";

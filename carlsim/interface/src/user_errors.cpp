@@ -67,7 +67,7 @@ void UserErrors::throwError(std::string errorFunc, errorType error, std::string 
 	case IS_DEPRECATED:
 		errorMsg += " is deprecated."; break;
 	case MUST_BE_IDENTICAL:
-		errorMsg += " must be identical.";
+		errorMsg += " must be identical."; break;
 	case MUST_BE_LOGGER_CUSTOM:
 		errorMsg += " must be set to CUSTOM."; break;
 	case MUST_BE_NEGATIVE:

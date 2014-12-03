@@ -784,9 +784,8 @@ int CpuSNN::runNetwork(int _nsec, int _nmsec, bool printRunSummary, bool copySta
 /// ************************************************************************************************************ ///
 
 // adds a bias to every weight in the connection
-void CpuSNN::biasWeights(int connId, float bias, bool updateWeightRange) {
+void CpuSNN::biasWeights(short int connId, float bias, bool updateWeightRange) {
 	assert(connId>=0 && connId<numConnections);
-	assert(bias!=0.0f);
 
 	grpConnectInfo_t* connInfo = getConnectInfo(connId);
 
@@ -972,7 +971,7 @@ void CpuSNN::resetSpikeCounter(int grpId) {
 }
 
 // multiplies every weight with a scaling factor
-void CpuSNN::scaleWeights(int connId, float scale, bool updateWeightRange) {
+void CpuSNN::scaleWeights(short int connId, float scale, bool updateWeightRange) {
 	assert(connId>=0 && connId<numConnections);
 	assert(scale>=0.0f);
 
@@ -1182,7 +1181,7 @@ void CpuSNN::setSpikeRate(int grpId, PoissonRate* ratePtr, int refPeriod) {
 }
 
 // sets the weight value of a specific synapse
-void CpuSNN::setWeight(int connId, int neurIdPre, int neurIdPost, float weight, bool updateWeightRange) {
+void CpuSNN::setWeight(short int connId, int neurIdPre, int neurIdPost, float weight, bool updateWeightRange) {
 	assert(connId>=0 && connId<getNumConnections());
 	assert(weight>=0.0f);
 
@@ -1597,6 +1596,14 @@ std::vector<float> CpuSNN::getConductanceGABAb(int grpId) {
 	return gGABAbVec;
 }
 
+// returns RangeDelay struct of a connection
+RangeDelay CpuSNN::getDelayRange(short int connId) {
+	assert(connId>=0 && connId<numConnections);
+	grpConnectInfo_t* connInfo = getConnectInfo(connId);
+	return RangeDelay(connInfo->minDelay, connInfo->maxDelay);
+}
+
+
 // this is a user function
 // \FIXME: fix this
 uint8_t* CpuSNN::getDelays(int gIDpre, int gIDpost, int& Npre, int& Npost, uint8_t* delays) {
@@ -1870,6 +1877,13 @@ float* CpuSNN::getWeightChanges(int gIDpre, int gIDpost, int& Npre, int& Npost, 
 	}
 
 	return weightChanges;
+}
+
+// returns RangeWeight struct of a connection
+RangeWeight CpuSNN::getWeightRange(short int connId) {
+	assert(connId>=0 && connId<numConnections);
+	grpConnectInfo_t* connInfo = getConnectInfo(connId);
+	return RangeWeight(0.0f, connInfo->initWt, connInfo->maxWt);
 }
 
 

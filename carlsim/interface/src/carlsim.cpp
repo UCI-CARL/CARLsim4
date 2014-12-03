@@ -645,11 +645,12 @@ void CARLsim::setLogsFp(FILE* fpInf, FILE* fpErr, FILE* fpDeb, FILE* fpLog) {
 // +++++++++ PUBLIC METHODS: INTERACTING WITH A SIMULATION ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
 // adds a constant bias to the weight of every synapse in the connection
-void CARLsim::biasWeights(int connId, float bias, bool updateWeightRange) {
+void CARLsim::biasWeights(short int connId, float bias, bool updateWeightRange) {
 	std::stringstream funcName;	funcName << "biasWeights(" << connId << "," << bias << "," << updateWeightRange << ")";
 	UserErrors::assertTrue(carlsimState_==EXE_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName.str(),
 		funcName.str(), "EXECUTION.");
-	UserErrors::assertTrue(bias!=0.0f, UserErrors::CANNOT_BE_ZERO, funcName.str(), "Bias");
+	UserErrors::assertTrue(connId>=0 && connId<getNumConnections(), UserErrors::MUST_BE_IN_RANGE, funcName.str(),
+		"connId", "[0,getNumConnections()]");
 
 	snn_->biasWeights(connId, bias, updateWeightRange);
 }
@@ -692,10 +693,12 @@ void CARLsim::resetSpikeCounter(int grpId) {
 }
 
 // scales the weight of every synapse in the connection with a scaling factor
-void CARLsim::scaleWeights(int connId, float scale, bool updateWeightRange) {
+void CARLsim::scaleWeights(short int connId, float scale, bool updateWeightRange) {
 	std::stringstream funcName;	funcName << "scaleWeights(" << connId << "," << scale << "," << updateWeightRange << ")";
 	UserErrors::assertTrue(carlsimState_==EXE_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName.str(),
 		funcName.str(), "EXECUTION.");
+	UserErrors::assertTrue(connId>=0 && connId<getNumConnections(), UserErrors::MUST_BE_IN_RANGE, funcName.str(),
+		"connId", "[0,getNumConnections()]");
 	UserErrors::assertTrue(scale>=0.0f, UserErrors::CANNOT_BE_NEGATIVE, funcName.str(), "Scaling factor");
 
 	snn_->scaleWeights(connId, scale, updateWeightRange);
@@ -821,13 +824,13 @@ void CARLsim::setSpikeRate(int grpId, PoissonRate* spikeRate, int refPeriod) {
 }
 
 // sets the weight of a specific synapse
-void CARLsim::setWeight(int connId, int neurIdPre, int neurIdPost, float weight, bool updateWeightRange) {
+void CARLsim::setWeight(short int connId, int neurIdPre, int neurIdPost, float weight, bool updateWeightRange) {
 	std::stringstream funcName;	funcName << "setWeight(" << connId << "," << neurIdPre << "," << neurIdPost << ","
 		<< updateWeightRange << ")";
 	UserErrors::assertTrue(carlsimState_==EXE_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName.str(),
 		funcName.str(), "EXECUTION.");
 	UserErrors::assertTrue(connId>=0 && connId<getNumConnections(), UserErrors::MUST_BE_IN_RANGE, 
-		funcName.str(), "connectionId", "[0,getNumSynapticConnections()]");
+		funcName.str(), "connectionId", "[0,getNumConnections()]");
 	UserErrors::assertTrue(weight>=0.0f, UserErrors::CANNOT_BE_NEGATIVE, funcName.str(), "Weight value");
 
 	snn_->setWeight(connId, neurIdPre, neurIdPost, weight, updateWeightRange);
@@ -899,6 +902,14 @@ std::vector<float> CARLsim::getConductanceGABAb(int grpId) {
 		"[0,getNumGroups()]");
 
 	return snn_->getConductanceGABAb(grpId);
+}
+
+RangeDelay CARLsim::getDelayRange(short int connId) {
+	std::stringstream funcName;	funcName << "getDelayRange(" << connId << ")";
+	UserErrors::assertTrue(connId>=0 && connId<getNumConnections(), UserErrors::MUST_BE_IN_RANGE, funcName.str(),
+		"connId", "[0,getNumConnections()]");
+
+	return snn_->getDelayRange(connId);
 }
 
 uint8_t* CARLsim::getDelays(int gIDpre, int gIDpost, int& Npre, int& Npost, uint8_t* delays) {
@@ -1078,6 +1089,14 @@ float* CARLsim::getWeightChanges(int gIDpre, int gIDpost, int& Npre, int& Npost,
 	UserErrors::assertTrue(carlsimState_==EXE_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "EXECUTION.");
 
 	return snn_->getWeightChanges(gIDpre,gIDpost,Npre,Npost,weightChanges);
+}
+
+RangeWeight CARLsim::getWeightRange(short int connId) {
+	std::stringstream funcName;	funcName << "getWeightRange(" << connId << ")";
+	UserErrors::assertTrue(connId>=0 && connId<getNumConnections(), UserErrors::MUST_BE_IN_RANGE, funcName.str(),
+		"connId", "[0,getNumConnections()]");
+
+	return snn_->getWeightRange(connId);
 }
 
 bool CARLsim::isExcitatoryGroup(int grpId) { return snn_->isExcitatoryGroup(grpId); }

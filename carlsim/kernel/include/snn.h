@@ -308,7 +308,7 @@ public:
 	// +++++ PUBLIC METHODS: INTERACTING WITH A SIMULATION ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
 	// adds a bias to every weight in the connection
-	void biasWeights(int connId, float bias, bool updateWeightRange=false);
+	void biasWeights(short int connId, float bias, bool updateWeightRange=false);
 
 	//! deallocates all dynamical structures and exits
 	void exitSimulation(int val=1);
@@ -342,7 +342,7 @@ public:
 	void resetSpikeCounter(int grpId);
 
 	// multiplies every weight with a scaling factor
-	void scaleWeights(int connId, float scale, bool updateWeightRange=false);
+	void scaleWeights(short int connId, float scale, bool updateWeightRange=false);
 
 	//! sets up a group monitor registered with a callback to process the spikes.
 	/*!
@@ -398,7 +398,7 @@ public:
 	void setSpikeRate(int grpId, PoissonRate* spikeRate, int refPeriod);
 
 	// sets the weight value of a specific synapse
-	void setWeight(int connId, int neurIdPre, int neurIdPost, float weight, bool updateWeightRange=false);
+	void setWeight(short int connId, int neurIdPre, int neurIdPost, float weight, bool updateWeightRange=false);
 
 	/*!
 	 * \brief copy required spikes from firing buffer to spike buffer
@@ -457,6 +457,9 @@ public:
 	// +++++ PUBLIC METHODS: GETTERS / SETTERS ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
 	grpConnectInfo_t* getConnectInfo(short int connectId); //!< required for homeostasis
+
+	//! returns the RangeDelay struct of a connection
+	RangeDelay getDelayRange(short int connId);
 
 	//! Returns the delay information for all synaptic connections between a pre-synaptic and a post-synaptic neuron group
 	/*!
@@ -558,6 +561,8 @@ public:
 	 */
 	 float* getWeightChanges(int gIDpre, int gIDpost, int& Npre, int& Npost, float* weightChanges);
 
+	//! returns RangeWeight struct of a connection
+	RangeWeight getWeightRange(short int connId);
 
 	bool isExcitatoryGroup(int g) { return (grp_Info[g].Type&TARGET_AMPA) || (grp_Info[g].Type&TARGET_NMDA); }
 	bool isInhibitoryGroup(int g) { return (grp_Info[g].Type&TARGET_GABAa) || (grp_Info[g].Type&TARGET_GABAb); }
