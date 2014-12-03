@@ -63,10 +63,9 @@
 			</tab>
 			<tab type="usergroup" visible="yes" title="13. Example Networks" url="@ref ch13_example_networks">
 				<tab type="user" visible="no" title="13.1 80-20 RAIN" url="@ref ch13s1_80_20_rain"/>
-				<tab type="user" visible="no" title="13.2 Simple Weight Tuner" url="@ref ch13s2_simple_weight_tuner"/>
-				<tab type="user" visible="no" title="13.3 PTI STDPh" url="@ref ch13s3_pti_stdph"/>
-				<tab type="user" visible="no" title="13.4 Color Opponency" url="@ref ch13s4_color_opponency"/>
-				<tab type="user" visible="no" title="13.5 Motion Energy" url="@ref ch13s5_motion_energy"/>
+				<tab type="user" visible="no" title="13.2 PTI STDPh" url="@ref ch13s2_pti_stdph"/>
+				<tab type="user" visible="no" title="13.3 Color Opponency" url="@ref ch13s3_color_opponency"/>
+				<tab type="user" visible="no" title="13.4 Motion Energy" url="@ref ch13s4_motion_energy"/>
 			</tab>
 		</tab>
 		<tab type="modules" visible="yes" title="" intro=""/>

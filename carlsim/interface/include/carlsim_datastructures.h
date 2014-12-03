@@ -176,7 +176,7 @@ static const char* carlsimState_string[] = {
 };
 
 /*!
- * \struct a range struct for synaptic delays
+ * \brief a range struct for synaptic delays
  *
  * Synaptic delays can range between 1 and 20 ms. The struct maintains two fields: min and max.
  * \param[in] min the lower bound for delay values
@@ -203,7 +203,7 @@ struct RangeDelay {
 };
 
 /*!
- * \struct a range struct for synaptic weight magnitudes
+ * \brief a range struct for synaptic weight magnitudes
  *
  * Plastic synaptic weights are initialized to initWt, and can range between some minWt and some maxWt. Fixed weights
  * will always have the same value. All weight values should be non-negative (equivalent to weight *magnitudes*), even
@@ -245,7 +245,7 @@ struct RangeWeight {
 };
 
 /*!
- * \struct a struct to specify the receptive field (RF) radius in 3 dimensions
+ * \brief a struct to specify the receptive field (RF) radius in 3 dimensions
  *
  * This struct can be used to specify the size of a receptive field (RF) radius in 3 dimensions x, y, and z.
  * Receptive fields will be circular with radius as specified. The 3 dimensions follow the ones defined by Grid3D.
@@ -297,7 +297,7 @@ typedef struct GroupNeuromodulatorInfo_s {
 } GroupNeuromodulatorInfo_t;
 
 /*!
- * \struct struct to assign 3D coordinates to neurons in a group
+ * \brief struct to assign 3D coordinates to neurons in a group
  *
  * Neurons of a group can be arranged topographically, so that they virtually lie on a 3D grid. This simplifies the
  * creation of topographic connections in the network.

@@ -32,6 +32,7 @@ Use threading to create a CARLsim simulation on every GPU. Say in the future we'
 
 CARLsim provides a range of handy functions to change weight values on the fly; that is, without having to recompile
 the network.
+The utility SimpleWeightTuner implements a simple weight search algorithm inspired by the bisection method.
 The function CARLsim::setWeight allows a user to change the weight of a single synapse.
 Alternatively, CARLsim::biasWeights can be used to add a constant bias to every weight of a certain connection ID,
 and CARLsim::scaleWeigths multiplies all the weights with a scaling factor.
@@ -46,7 +47,77 @@ They apply to weight values of already allocated synapses only.
 \see \ref ch10_ecj
 
 
-\subsection ch12s3s1_set_weight 12.3.1 Setting the Weight of a Single Synapse
+\subsection ch12s3s1_simple_weight_tuner 12.3.1 Simple Weight Tuner
+
+The SimpleWeightTuner utility is a class that implements a simple search algorithm inspired by the bisection method.
+
+The usage scenario is to tune the weights of a specific connection (collection of synapses) so that a specific
+neuron group fires at a predefined target firing rate---without having to recompile the network.
+A complete code example can be found in the subfolder <tt>simple_weight_tuner</tt>. 
+
+Consider the following CARLsim network:
+\code
+	int nNeur = 1000;    // number of neurons per group
+	float initWt = 0.1f; // initial weight for connection
+
+	CARLsim *sim = new CARLsim("SimpleWeightTuner", CPU_MODE, USER, 0, 42);
+	int gOut=sim->createGroup("out", nNeur, EXCITATORY_NEURON);
+	sim->setNeuronParameters(gOut, 0.02f, 0.2f, -65.0f, 8.0f);
+	int gIn=sim->createSpikeGeneratorGroup("in", nNeur, EXCITATORY_NEURON);
+	int c0=sim->connect(gIn, gOut, "random", RangeWeight(initWt), 0.1f, RangeDelay(1,10));
+	sim->setConductances(true);
+	sim->setupNetwork();
+\endcode
+
+Suppose our goal is to have group <tt>gOut</tt> fire at some target firing rate (say 27.4 Hz), given Poissonian
+inputs with 50 Hz mean rate.
+A conventional approach to solving this problem would be to set up the input firing:
+\code
+	PoissonRate PR(nNeur);
+	PR.setRates(50.0f);
+	sim->setSpikeRate(gIn, &PR);
+\endcode
+and then repeatedly build and run the network with different values for <tt>initWt</tt>, until <tt>gOut</tt>
+reaches the desired firing rate.
+This process can be tedious, especially when dealing with large-scale networks that take a long time to build.
+
+Instead, one can use a SimpleWeightTuner:
+\code
+	SimpleWeightTuner SWT(sim, 0.01, 100); // CARLsim object, error margin, max iterations
+	SWT.setConnectionToTune(c0, 0.0);      // connection to tune, initial weight
+	SWT.setTargetFiringRate(gOut, 27.4);   // output group to observe, target firing rate
+\endcode
+We pass a pointer to the above created network <tt>sim</tt> and specify the termination conditions:
+The algorithm will terminate if either the absolute error between observed firing rate and target firing rate
+is smaller than some error margin, or upon reaching the maximum number of iterations.
+We also tell the class which connection to tune and with which weight to start.
+The algorithm will repeatedly change the weights in a way that resembles the bisection method, until the mean firing
+rate of group <tt>gOut</tt> reaches 27.4 +- 0.01 Hz.
+
+All that is left to do is to execute the algorithm until finished:
+\code
+	while (!SWT.done()) {
+		SWT.iterate();
+	}
+\endcode
+This will run <tt>sim</tt> repeatedly for one second (for different time periods pass an optional argument) until
+one of the termination criteria is reached.
+
+One could now retrieve the tuned weights using a ConnectionMonitor, or run the network a bit more to verify
+correct firing:
+\code
+	for (int i=0; i<5; i++)
+		sim->runNetwork(1,0);
+	delete sim;
+\endcode
+
+\see SimpleWeightTuner
+\see \ref ch10_ecj
+\see Code example: <tt>tutorial/12_advanced_topics/simple_weight_tuner/main_simple_weight_tuner.cpp</tt>
+
+
+
+\subsection ch12s3s2_set_weight 12.3.2 Setting the Weight of a Single Synapse
 
 The easiest way to change the weight of a synapse is CARLsim::setWeight:
 \code
@@ -74,7 +145,7 @@ can be achieved, depending on a fifth optional argument <tt>updateWeightRange</t
 \since v3.0
 
 
-\subsection ch12s3s2_bias_weights 12.3.2 Add a Bias to All the Weights of a Connection
+\subsection ch12s3s3_bias_weights 12.3.3 Add a Bias to All the Weights of a Connection
 
 Alternatively, it is possible to change the weights of all the synapses that belong to a certain connection ID
 using CARLsim::biasWeights:
@@ -101,7 +172,7 @@ different behaviors can be achieved, depending on a third optional argument <tt>
 \since v3.0
 
 
-\subsection ch12s3s3_scale_weights 12.3.3 Scale All the Weigths of a Connection
+\subsection ch12s3s4_scale_weights 12.3.4 Scale All the Weigths of a Connection
 
 Alternatively, it is possible to change the weights of all the synapses that belong to a certain connection ID
 using CARLsim::scaleWeights:

@@ -42,7 +42,7 @@ public:
 	 *
 	 * If the initial weight is set to a negative value, the algorithm will start with whatever weights have been
 	 * specified when setting up the connection in CARLsim::connect. Otherwise a bias will be applied to all weights
-	 * such that #initWt matches the field <tt>initWt</tt> of the connection's RangeWeight struct.
+	 * such that <tt>initWt</tt> matches the field <tt>initWt</tt> of the connection's RangeWeight struct.
 	 *
 	 * If adjustRange is set to true, the [minWt,maxWt] ranges will be adjusted automatically should the weight go
 	 * out of bounds.
@@ -60,8 +60,8 @@ public:
 	 * connection specified in setConnectionToTune.
 	 *
 	 * A SpikeMonitor will be set up for the group if it does not already exist. SpikeMonitor::getPopMeanFiringRate
-	 * will be used to determine the group's firing activity, and compare it to #targetRate in order to compute the
-	 * error margin.
+	 * will be used to determine the group's firing activity, and compare it to <tt>targetRate</tt> in order to compute
+	 * the error margin.
 	 *
 	 * \param[in] grpId       the group ID
 	 * \param[in] targetRate  target firing rate (Hz) of the group
@@ -73,7 +73,7 @@ public:
 	/*!
 	 * \brief Performs an iteration step of the tuning algorithm
 	 *
-	 * This method runs the CARLsim network for a time period of #runDurationMs milliseconds, throughout which a
+	 * This method runs the CARLsim network for a time period of <tt>runDurationMs</tt> milliseconds, throughout which a
 	 * SpikeMonitor is recording the firing rate of the group ID specified in setTargetFiringRate.
 	 *
 	 * At the end of the iteration step the recorded firing rate is compared to the target firing rate, and the

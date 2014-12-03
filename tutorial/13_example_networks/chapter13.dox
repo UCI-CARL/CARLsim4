@@ -14,18 +14,13 @@ CUBA and PoissonRates, produce RAIN for different noise levels. Maybe for CARLsi
 
 
 
-\section ch13s2_simple_weight_tuner 13.2 Simple Weight Tuner
-
-The simplest way to tune weights on the fly is described in \ref ch12s3_online_weight_tuning.
-
-
-\section ch13s3_pti_stdph 13.3 PTI STDPh
+\section ch13s2_pti_stdph 13.2 PTI STDPh
 \TODO KDC
 
-\section ch13s4_color_opponency 13.4 Color Opponency
+\section ch13s3_color_opponency 13.3 Color Opponency
 \TODO MB
 
-\section ch13s5_motion_energy 13.5 Motion Energy
+\section ch13s4_motion_energy 13.4 Motion Energy
 \TODO MB
 
 InputStimulus -> random dot fields. Either V1 or MT direction selectivity. Matlab script to show activity. Refer to publication for more info.
