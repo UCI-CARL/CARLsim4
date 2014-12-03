@@ -18,7 +18,6 @@ output := *.dot *.dat *.log *.csv results/*
 CARLSIM_FLAGS += -I$(CARLSIM_LIB_DIR)/include/kernel \
 								 -I$(CARLSIM_LIB_DIR)/include/interface \
 								 -I$(CARLSIM_LIB_DIR)/include/spike_monitor \
-								 -I$(CARLSIM_LIB_DIR)/include/connection_monitor \
 								 -I$(CARLSIM_LIB_DIR)/include/spike_generators
 CARLSIM_LIBS  += -L$(CARLSIM_LIB_DIR)/lib -lCARLsim
 

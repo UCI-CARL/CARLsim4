@@ -13,19 +13,21 @@ libraries :=
 objects :=
 
 # carlsim components
-kernel_dir     = carlsim/kernel
-interface_dir  = carlsim/interface
-spike_mon_dir  = carlsim/spike_monitor
-spike_gen_dir  = tools/spike_generators
-server_dir     = carlsim/server
-test_dir       = carlsim/test
+kernel_dir          = carlsim/kernel
+interface_dir       = carlsim/interface
+spike_mon_dir       = carlsim/spike_monitor
+server_dir          = carlsim/server
+test_dir            = carlsim/test
 
 # carlsim tools
-input_stim_dir = tools/input_stimulus
+tools_dir           = tools
+tools_spikegen_dir  = $(tools_dir)/spike_generators
+tools_inputstim_dir = $(tools_dir)/input_stimulus
 
 # CARLsim flags specific to the CARLsim installation
 CARLSIM_FLAGS += -I$(kernel_dir)/include -I$(interface_dir)/include \
-				 -I$(spike_gen_dir) -I$(spike_mon_dir)
+				 -I$(tools_spikegen_dir) -I$(tools_inputstim_dir) \
+				 -I$(spike_mon_dir)
 
 # CAUTION: order of .mk includes matters!!!
 include user.mk

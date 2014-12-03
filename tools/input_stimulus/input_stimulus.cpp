@@ -60,7 +60,7 @@ PoissonRate* InputStimulus::readFrame(float maxPoisson) {
 	// create new Poisson object, assign 
 	stimFramePoiss_ = new PoissonRate(stimWidth_*stimHeight_*stimChannels_);
 	for (int i=0; i<stimWidth_*stimHeight_*stimChannels_; i++)
-		stimFramePoiss_->rates[i] = stimFrame_[i]*1.0/255.0*maxPoisson; // scale firing rates
+		stimFramePoiss_->setRate(i, stimFrame_[i]*1.0/255.0*maxPoisson); // scale firing rates
 
 	return stimFramePoiss_;
 }

@@ -30,6 +30,8 @@ install: $(carlsim_lib)
 		$(CARLSIM_LIB_DIR)/include/spike_monitor
 	@test -d $(CARLSIM_LIB_DIR)/include/spike_generators || mkdir \
 		$(CARLSIM_LIB_DIR)/include/spike_generators
+	@test -d $(CARLSIM_LIB_DIR)/include/input_stimulus || mkdir \
+		$(CARLSIM_LIB_DIR)/include/input_stimulus
 	@install -m 0755 $(carlsim_lib).$(lib_ver) $(CARLSIM_LIB_DIR)/lib
 	@ln -Tfs $(CARLSIM_LIB_DIR)/lib/$(lib_name).$(lib_ver) \
 		$(CARLSIM_LIB_DIR)/lib/$(lib_name).$(num_ver)
@@ -45,7 +47,11 @@ install: $(carlsim_lib)
 		$(interface_dir)/include/carlsim.h $(interface_dir)/include/user_errors.h \
 		$(CARLSIM_LIB_DIR)/include/interface
 	@install -m 0644 $(spike_mon_dir)/spike_monitor.h \
-	$(CARLSIM_LIB_DIR)/include/spike_monitor
-	@install -m 0644 $(spike_gen_dir)/periodic_spikegen.h \
-		$(spike_gen_dir)/spikegen_from_file.h \
-		$(spike_gen_dir)/spikegen_from_vector.h $(CARLSIM_LIB_DIR)/include/spike_generators
+		$(CARLSIM_LIB_DIR)/include/spike_monitor
+	@install -m 0644 $(tools_inputstim_dir)/input_stimulus.h \
+		$(CARLSIM_LIB_DIR)/include/input_stimulus
+	@install -m 0644 $(tools_spikegen_dir)/periodic_spikegen.h \
+		$(tools_spikegen_dir)/spikegen_from_file.h \
+		$(tools_spikegen_dir)/spikegen_from_vector.h \
+		$(tools_spikegen_dir)/interactive_spikegen.h \
+		$(CARLSIM_LIB_DIR)/include/spike_generators
