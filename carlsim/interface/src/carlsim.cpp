@@ -696,7 +696,7 @@ void CARLsim::scaleWeights(int connId, float scale, bool updateWeightRange) {
 	std::stringstream funcName;	funcName << "scaleWeights(" << connId << "," << scale << "," << updateWeightRange << ")";
 	UserErrors::assertTrue(carlsimState_==EXE_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName.str(),
 		funcName.str(), "EXECUTION.");
-	UserErrors::assertTrue(scale>0.0f, UserErrors::MUST_BE_POSITIVE, funcName.str(), "Scaling factor");
+	UserErrors::assertTrue(scale>=0.0f, UserErrors::CANNOT_BE_NEGATIVE, funcName.str(), "Scaling factor");
 
 	snn_->scaleWeights(connId, scale, updateWeightRange);
 }

@@ -578,7 +578,7 @@ public:
 	 * \see CARLsim::scaleWeights
 	 */
 	void biasWeights(int connId, float bias, bool updateWeightRange=false);
-	
+
 	/*!
 	 * \brief loads a simulation (and network state) from file
 	 *
@@ -618,7 +618,7 @@ public:
 	 * \brief Multiplies the weight of every synapse in the connection with a scaling factor
 	 *
 	 * This method scales the weight of every synapse in the connection specified by connId with a scaling factor.
-	 * The scaling factor must be positive.
+	 * The scaling factor cannot be negative.
 	 * If a scaling factor is specified that makes any weight*scale lie outside the range [minWt,maxWt] of this
 	 * connection, the range will be updated accordingly if the flag updateWeightRange is set to true.
 	 * If the flag is set to false, then the specified weight value will be corrected to lie on the boundary (either
@@ -626,7 +626,7 @@ public:
 	 *
 	 * \STATE EXECUTION
 	 * \param[in] connId            the connection ID to manipulate
-	 * \param[in] scale             the scaling factor to apply to every synapse (must be positive)
+	 * \param[in] scale             the scaling factor to apply to every synapse (cannot be negative)
 	 * \param[in] updateWeightRange a flag specifying what to do when the specified weight*scale lies outside the range
 	 *                              [minWt,maxWt]. Set to true to update the range accordingly. Set to false to adjust
 	 *                              the weight to be either minWt or maxWt. Default: false.

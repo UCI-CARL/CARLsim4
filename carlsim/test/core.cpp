@@ -177,6 +177,104 @@ TEST(CORE, setExternalCurrent) {
 	}
 }
 
+TEST(CORE, biasWeights) {
+	::testing::FLAGS_gtest_death_test_style = "threadsafe";
+
+	CARLsim* sim;
+	int nNeur = 10;
+	int *nSpkHighWt = new int[nNeur];
+	memset(nSpkHighWt, 0, nNeur*sizeof(int));
+
+	for (int isGPUmode=0; isGPUmode<=1; isGPUmode++) {
+		sim = new CARLsim("CORE.biasWeights",isGPUmode?GPU_MODE:CPU_MODE,SILENT,0,42);
+		int g1=sim->createGroup("excit", nNeur, EXCITATORY_NEURON);
+		sim->setNeuronParameters(g1, 0.02f, 0.2f,-65.0f,8.0f);
+		int c1=sim->connect(g1, g1, "one-to-one", RangeWeight(0.5f), 1.0f, RangeDelay(1));
+		sim->setConductances(true);
+		sim->setupNetwork();
+
+		// ---- run network for a while with input current and high weight
+		//      observe much spiking
+
+		SpikeMonitor* SM = sim->setSpikeMonitor(g1,"NULL");
+		sim->setExternalCurrent(g1, 7.0f);
+
+		SM->startRecording();
+		sim->runNetwork(2,0);
+		SM->stopRecording();
+
+		for (int neurId=0; neurId<nNeur; neurId++) {	
+			nSpkHighWt[neurId] = SM->getNeuronNumSpikes(neurId);
+		}
+
+
+		// ---- run network for a while with zero weight (but still current injection)
+		//      observe less spiking
+		sim->biasWeights(c1, -0.25f, false);
+
+		SM->startRecording();
+		sim->runNetwork(2,0);
+		SM->stopRecording();
+
+		for (int neurId=0; neurId<nNeur; neurId++) {
+			EXPECT_LT(SM->getNeuronNumSpikes(neurId), nSpkHighWt[neurId]);
+		}
+
+		delete sim;
+	}
+
+	delete[] nSpkHighWt;
+}
+
+TEST(CORE, scaleWeights) {
+	::testing::FLAGS_gtest_death_test_style = "threadsafe";
+
+	CARLsim* sim;
+	int nNeur = 10;
+	int *nSpkHighWt = new int[nNeur];
+	memset(nSpkHighWt, 0, nNeur*sizeof(int));
+
+	for (int isGPUmode=0; isGPUmode<=1; isGPUmode++) {
+		sim = new CARLsim("CORE.scaleWeights",isGPUmode?GPU_MODE:CPU_MODE,SILENT,0,42);
+		int g1=sim->createGroup("excit", nNeur, EXCITATORY_NEURON);
+		sim->setNeuronParameters(g1, 0.02f, 0.2f,-65.0f,8.0f);
+		int c1=sim->connect(g1, g1, "one-to-one", RangeWeight(0.5f), 1.0f, RangeDelay(1));
+		sim->setConductances(true);
+		sim->setupNetwork();
+
+		// ---- run network for a while with input current and high weight
+		//      observe much spiking
+
+		SpikeMonitor* SM = sim->setSpikeMonitor(g1,"NULL");
+		sim->setExternalCurrent(g1, 7.0f);
+
+		SM->startRecording();
+		sim->runNetwork(2,0);
+		SM->stopRecording();
+
+		for (int neurId=0; neurId<nNeur; neurId++) {	
+			nSpkHighWt[neurId] = SM->getNeuronNumSpikes(neurId);
+		}
+
+
+		// ---- run network for a while with zero weight (but still current injection)
+		//      observe less spiking
+		sim->scaleWeights(c1, 0.5f, false);
+
+		SM->startRecording();
+		sim->runNetwork(2,0);
+		SM->stopRecording();
+
+		for (int neurId=0; neurId<nNeur; neurId++) {
+			EXPECT_LT(SM->getNeuronNumSpikes(neurId), nSpkHighWt[neurId]);
+		}
+
+		delete sim;
+	}
+
+	delete[] nSpkHighWt;
+}
+
 TEST(CORE, setWeight) {
 	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
@@ -186,7 +284,7 @@ TEST(CORE, setWeight) {
 	memset(nSpkHighWt, 0, nNeur*sizeof(int));
 
 	for (int isGPUmode=0; isGPUmode<=1; isGPUmode++) {
-		sim = new CARLsim("Interface.biasWeightsDeath",isGPUmode?GPU_MODE:CPU_MODE,SILENT,0,42);
+		sim = new CARLsim("CORE.setWeight",isGPUmode?GPU_MODE:CPU_MODE,SILENT,0,42);
 		int g1=sim->createGroup("excit", nNeur, EXCITATORY_NEURON);
 		sim->setNeuronParameters(g1, 0.02f, 0.2f,-65.0f,8.0f);
 		int c1=sim->connect(g1, g1, "one-to-one", RangeWeight(0.5f), 1.0f, RangeDelay(1));

@@ -122,7 +122,6 @@ TEST(Interface, scaleWeightsDeath) {
 
 	EXPECT_DEATH({sim->scaleWeights(c1+1, 0.1, false);},""); // invalid connId
 	EXPECT_DEATH({sim->scaleWeights(-1,   0.1, false);},""); // invalid connId
-	EXPECT_DEATH({sim->scaleWeights(0,      0, false);},""); // scale==0
 	EXPECT_DEATH({sim->scaleWeights(0,   -1.0, false);},""); // scale<0
 }
 
