@@ -1111,8 +1111,15 @@ void CpuSNN::setWeight(int connId, int neurIdPre, int neurIdPost, float weight, 
 		post_info_t* preId = &preSynapticIds[pos_ij];
 		int pre_nid = GET_CONN_NEURON_ID((*preId));
 		if (GET_CONN_NEURON_ID((*preId))==neurIdPreReal) {
+			// make sure this synapse belongs to the right connectionID
+			if (cumConnIdPre[pos_ij]!=connId) {
+				KERNEL_ERROR("Synapse ID %d (neuron ID %d => neuron ID %d) belongs to connection ID %d, not %d",
+					pos_ij, neurIdPre, neurIdPost, cumConnIdPre[pos_ij], connId);
+				exitSimulation(1);
+			}
+
 			wt[pos_ij] = weight;
-			maxSynWt[pos_ij] = connInfo->maxWt; // it's easier to update even if it hasn't changed
+			maxSynWt[pos_ij] = connInfo->maxWt; // it's easier to just update, even if it hasn't changed
 
 			if (simMode_==GPU_MODE) {
 				// need to update datastructures on GPU
@@ -1123,7 +1130,9 @@ void CpuSNN::setWeight(int connId, int neurIdPre, int neurIdPost, float weight, 
 					CUDA_CHECK_ERRORS( cudaMemcpy(&(cpu_gpuNetPtrs.maxSynWt[pos_ij]), &(maxSynWt[pos_ij]), sizeof(float), cudaMemcpyHostToDevice));
 				}
 			}
-			break;
+
+			// synapse found and updated: we're done!
+			return;
 		}
 	}
 }

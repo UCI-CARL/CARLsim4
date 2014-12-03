@@ -203,7 +203,7 @@ TEST(CORE, setWeight) {
 		sim->runNetwork(2,0);
 		SM->stopRecording();
 
-		for (int neurId=0; neurId<nNeur; neurId++) {
+		for (int neurId=0; neurId<nNeur; neurId++) {	
 			nSpkHighWt[neurId] = SM->getNeuronNumSpikes(neurId);
 			sim->setWeight(c1, neurId, neurId, 0.0f, false);
 		}
