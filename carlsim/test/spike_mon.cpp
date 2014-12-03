@@ -11,7 +11,7 @@
 
 
 /// ****************************************************************************
-/// TESTS FOR SET SPIKE MON 
+/// TESTS FOR SET SPIKE MON
 /// ****************************************************************************
 
 /*!
@@ -28,17 +28,17 @@ TEST(setSpikeMon, grpId){
 	for(int mode=0; mode<=1; mode++){
 		// first iteration, test CPU mode, second test GPU mode
 		sim = new CARLsim("setSpikeMon.grpId",mode?GPU_MODE:CPU_MODE,SILENT,0,42);
-		
+
 		int g1 = sim->createGroup("g1", GRP_SIZE, EXCITATORY_NEURON);
 		int g2 = sim->createGroup("g2", GRP_SIZE, EXCITATORY_NEURON);
 		sim->setNeuronParameters(g1, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f);
 		sim->setNeuronParameters(g2, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f);
-		
-		EXPECT_DEATH(sim->setSpikeMonitor(ALL),"");  // grpId = ALL (-1) and less than 0 
+
+		EXPECT_DEATH(sim->setSpikeMonitor(ALL),"");  // grpId = ALL (-1) and less than 0
 		EXPECT_DEATH(sim->setSpikeMonitor(-4),"");  // less than 0
 		EXPECT_DEATH(sim->setSpikeMonitor(2),""); // greater than number of groups
 		EXPECT_DEATH(sim->setSpikeMonitor(MAX_GRP_PER_SNN),""); // greater than number of group & and greater than max groups
-		
+
 		delete sim;
 	}
 }
@@ -57,15 +57,15 @@ TEST(setSpikeMon, fname){
 	for(int mode=0; mode<=1; mode++){
 		// first iteration, test CPU mode, second test GPU mode
 		sim = new CARLsim("setSpikeMon.fname",mode?GPU_MODE:CPU_MODE,SILENT,0,42);
-		
+
 		int g1 = sim->createGroup("g1", GRP_SIZE, EXCITATORY_NEURON);
 		int g2 = sim->createGroup("g2", GRP_SIZE, EXCITATORY_NEURON);
 		sim->setNeuronParameters(g1, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f);
 		sim->setNeuronParameters(g2, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f);
 
 		// this directory doesn't exist.
-		EXPECT_DEATH(sim->setSpikeMonitor(1,"absentDirectory/testSpikes.dat"),"");  
-		
+		EXPECT_DEATH(sim->setSpikeMonitor(1,"absentDirectory/testSpikes.dat"),"");
+
 		delete sim;
 	}
 }
@@ -77,7 +77,7 @@ TEST(SpikeMon, interfaceDeath) {
 
 	CARLsim* sim = new CARLsim("SpikeMon.interfaceDeath",CPU_MODE,SILENT,0,42);
 
-	int g1 = sim->createGroup("g1", 5, EXCITATORY_NEURON);		
+	int g1 = sim->createGroup("g1", 5, EXCITATORY_NEURON);
 	sim->setNeuronParameters(g1, 0.02, 0.2, -65.0, 8.0);
 
 	int g0 = sim->createSpikeGeneratorGroup("Input",5,EXCITATORY_NEURON);
@@ -126,7 +126,7 @@ TEST(SpikeMon, persistentMode) {
 
 	CARLsim* sim = new CARLsim("SpikeMon.persistentMode",CPU_MODE,SILENT,0,42);
 
-	int g1 = sim->createGroup("g1", 5, EXCITATORY_NEURON);		
+	int g1 = sim->createGroup("g1", 5, EXCITATORY_NEURON);
 	sim->setNeuronParameters(g1, 0.02, 0.2, -65.0, 8.0);
 
 	int g0 = sim->createSpikeGeneratorGroup("Input",5,EXCITATORY_NEURON);
@@ -179,8 +179,8 @@ TEST(SpikeMon, clear){
 	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
 	CARLsim* sim;
-	PoissonRate* input;
-	const int GRP_SIZE = 5;
+
+    const int GRP_SIZE = 5;
 	const int inputTargetFR = 5.0f;
 	int runTimeMs = 2000;
 
@@ -196,13 +196,13 @@ TEST(SpikeMon, clear){
 		sim->setNeuronParameters(g2, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f);
 
 		int inputGroup = sim->createSpikeGeneratorGroup("Input",GRP_SIZE,EXCITATORY_NEURON);
-		
+
 		sim->setConductances(true,COND_tAMPA,COND_tNMDA,COND_tGABAa,COND_tGABAb);
 		double initWeight = 0.05f;
 
 		// input
-		input = new PoissonRate(GRP_SIZE);
-		input->setRates(inputTargetFR);
+        PeriodicSpikeGenerator spkGenG0(inputTargetFR);
+		sim->setSpikeGenerator(inputGroup, &spkGenG0);
 
 		// use full because random might give us a network that does not spike (depending on the random seed),
 		// leading to the EXPECTs below to fail
@@ -213,29 +213,27 @@ TEST(SpikeMon, clear){
 
 		sim->setupNetwork();
 
-		sim->setSpikeRate(inputGroup,input);
-		spikeMonG1->startRecording();
-		
+        spikeMonG1->startRecording();
+
 		sim->runNetwork(runTimeMs/1000,runTimeMs%1000);
-	
+
 		spikeMonG1->stopRecording();
-		
+
 		// we should have spikes!
 		EXPECT_TRUE(spikeMonG1->getPopNumSpikes() > 0);
-		
+
 		// now clear the spikes and run again
 		spikeMonG1->clear();
 		EXPECT_TRUE(spikeMonG1->getPopNumSpikes() == 0); // shouldn't have any spikes!
 		spikeMonG1->startRecording();
 		sim->runNetwork(runTimeMs/1000,runTimeMs%1000);
 		spikeMonG1->stopRecording();
-		
+
 		// we should have spikes again
 		EXPECT_TRUE(spikeMonG1->getPopNumSpikes() > 0);
 
-		
+
 		delete sim;
-		delete input;
 	}
 }
 
@@ -266,12 +264,12 @@ TEST(SpikeMon, spikeTimes) {
 
 		int g0 = sim->createSpikeGeneratorGroup("Input",GRP_SIZE,EXCITATORY_NEURON);
 
+		// use periodic spike generator to know the exact spike times
+        PeriodicSpikeGenerator spkGenG0(rate);
+		sim->setSpikeGenerator(g0, &spkGenG0);
+
 		sim->setConductances(true,COND_tAMPA,COND_tNMDA,COND_tGABAa,COND_tGABAb);
 		sim->connect(g0,g1,"random", RangeWeight(0.27f), 1.0f);
-
-		// use periodic spike generator to know the exact spike times
-		PeriodicSpikeGenerator* spkGen = new PeriodicSpikeGenerator(rate);
-		sim->setSpikeGenerator(g0, spkGen);
 
 		sim->setupNetwork();
 
@@ -314,7 +312,7 @@ TEST(SpikeMon, spikeTimes) {
 		system("rm -rf spkG0.dat");
 #endif
 		if (inputArray!=NULL) delete[] inputArray;
-		delete spkGen;
+		//delete spkGen;
 		delete sim;
 	}
 }
@@ -351,10 +349,10 @@ TEST(SpikeMon, getGroupFiringRate){
 
 		sim->setConductances(true,COND_tAMPA,COND_tNMDA,COND_tGABAa,COND_tGABAb);
 
-		sim->connect(g0, g1, "one-to-one", RangeWeight(0.27f), 1.0f);
+        PeriodicSpikeGenerator spkGenG0(rate);
+		sim->setSpikeGenerator(g0, &spkGenG0);
 
-		PeriodicSpikeGenerator* spkGen = new PeriodicSpikeGenerator(rate);
-		sim->setSpikeGenerator(g0, spkGen);
+		sim->connect(g0, g1, "one-to-one", RangeWeight(0.27f), 1.0f);
 
 		sim->setupNetwork();
 
@@ -417,7 +415,6 @@ TEST(SpikeMon, getGroupFiringRate){
 
 		if (inputArray!=NULL) delete[] inputArray;
 		if (g1Array!=NULL) delete[] g1Array;
-		delete spkGen;
 		delete sim;
 	}
 }
@@ -436,18 +433,17 @@ TEST(SpikeMon, getMaxMinNeuronFiringRate){
 		float COND_tAMPA=5.0, COND_tNMDA=150.0, COND_tGABAa=6.0, COND_tGABAb=150.0;
 		int g1 = sim->createGroup("g1", GRP_SIZE, EXCITATORY_NEURON);
 		sim->setNeuronParameters(g1, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f);
-		
+
 		int inputGroup = sim->createSpikeGeneratorGroup("Input",GRP_SIZE,EXCITATORY_NEURON);
 
 		sim->setConductances(true,COND_tAMPA,COND_tNMDA,COND_tGABAa,COND_tGABAb);
 
 		sim->connect(inputGroup,g1,"random", RangeWeight(0.27f), 0.2f);
-		sim->setupNetwork();
 
-		// input
-		PoissonRate* input = new PoissonRate(GRP_SIZE);
-		input->setRates(inputTargetFR);
-		sim->setSpikeRate(inputGroup,input);
+        PeriodicSpikeGenerator spkGenG0(inputTargetFR);
+		sim->setSpikeGenerator(inputGroup, &spkGenG0);
+
+        sim->setupNetwork();
 
 #if (WIN32 || WIN64)
 		system("del spkInputGrp.dat");
@@ -458,14 +454,14 @@ TEST(SpikeMon, getMaxMinNeuronFiringRate){
 #endif
 		SpikeMonitor* spikeMonInput = sim->setSpikeMonitor(inputGroup,"spkInputGrp.dat");
 		SpikeMonitor* spikeMonG1 = sim->setSpikeMonitor(g1,"spkG1Grp.dat");
-		
+
 		spikeMonInput->startRecording();
 		spikeMonG1->startRecording();
-	 		
+
 		int runTimeMs = 2000;
 		// run the network
 		sim->runNetwork(runTimeMs/1000,runTimeMs%1000);
-	
+
 		spikeMonInput->stopRecording();
 		spikeMonG1->stopRecording();
 
@@ -476,7 +472,7 @@ TEST(SpikeMon, getMaxMinNeuronFiringRate){
 		long g1Size;
 		readAndReturnSpikeFile("spkG1Grp.dat",g1Array,g1Size);
 
-		// divide both by two, because we are only counting spike events, for 
+		// divide both by two, because we are only counting spike events, for
 		// which there are two data elements (time, nid)
 		int inputSpkCount[GRP_SIZE];
 		int g1SpkCount[GRP_SIZE];
@@ -516,7 +512,6 @@ TEST(SpikeMon, getMaxMinNeuronFiringRate){
 
 		if (inputArray!=NULL) delete[] inputArray;
 		if (g1Array!=NULL) delete[] g1Array;
-		delete input;
 		delete sim;
 	}
 }

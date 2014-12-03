@@ -56,7 +56,7 @@ TEST(STDP, setSTDPTrue) {
 				if (stdpType == 0) {
 					EXPECT_TRUE(gInfo.WithESTDPtype == STANDARD);
 					EXPECT_TRUE(gInfo.WithESTDPtype == STANDARD);
-				} else { // stdpType == 1 
+				} else { // stdpType == 1
 					EXPECT_TRUE(gInfo.WithESTDPtype == DA_MOD);
 					EXPECT_TRUE(gInfo.WithISTDPtype == DA_MOD);
 				}
@@ -89,7 +89,7 @@ TEST(STDP, setSTDPTrue) {
 
 				delete sim;
 			}
-		}		
+		}
 	}
 }
 
@@ -240,7 +240,7 @@ TEST(STDP, DASTDPWeightBoost) {
 				sim->setSpikeGenerator(gda, iSpikeGen);
 
 				sim->setupNetwork();
-				
+
 				ConnectionMonitor* CM = sim->setConnectionMonitor(gin, g1, "NULL");
 
 				spikeMonPost = sim->setSpikeMonitor(g1,"NULL");
