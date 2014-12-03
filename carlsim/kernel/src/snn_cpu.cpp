@@ -1220,6 +1220,7 @@ void CpuSNN::setWeight(int connId, int neurIdPre, int neurIdPost, float weight, 
 	int neurIdPostReal = grp_Info[connInfo->grpDest].StartN+neurIdPost;
 
 	// iterate over all presynaptic synapses until right one is found
+	bool synapseFound = false;
 	int pos_ij = cumulativePre[neurIdPostReal];
 	for (int j=0; j<Npre[neurIdPostReal]; pos_ij++, j++) {
 		post_info_t* preId = &preSynapticIds[pos_ij];
@@ -1241,8 +1242,14 @@ void CpuSNN::setWeight(int connId, int neurIdPre, int neurIdPost, float weight, 
 			}
 
 			// synapse found and updated: we're done!
-			return;
+			synapseFound = true;
+			break;
 		}
+	}
+
+	if (!synapseFound) {
+		KERNEL_WARN("setWeight(%d,%d,%d,%f,%s): Synapse does not exist, not updated.", connId, neurIdPre, neurIdPost,
+			weight, (updateWeightRange?"true":"false"));
 	}
 }
 

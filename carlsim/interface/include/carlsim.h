@@ -576,6 +576,7 @@ public:
 	 * \note A weight cannot drop below zero, no matter what.
 	 * \see CARLsim::setWeight
 	 * \see CARLsim::scaleWeights
+	 * \since v3.0
 	 */
 	void biasWeights(int connId, float bias, bool updateWeightRange=false);
 
@@ -634,6 +635,7 @@ public:
 	 * \note A weight cannot drop below zero, no matter what.
 	 * \see CARLsim::setWeight
 	 * \see CARLsim::biasWeights
+	 * \since v3.0
 	 */
 	void scaleWeights(int connId, float scale, bool updateWeightRange=false);
 
@@ -832,8 +834,10 @@ public:
 	 * 
 	 * \note Neuron IDs should be zero-indexed (first neuron in the group should have ID 0).
 	 * \note A weight cannot drop below zero, no matter what.
+	 * \attention Make sure this function is called on a synapse that actually exists!
 	 * \see CARLsim::biasWeights
 	 * \see CARLsim::scaleWeights
+	 * \since v3.0
 	 */
 	void setWeight(int connId, int neurIdPre, int neurIdPost, float weight, bool updateWeightRange=false);
 
