@@ -877,7 +877,7 @@ public:
 	 * first call to CARLsim::runNetwork will change the state from SETUP to EXECUTION.
 	 * \returns current CARLsim state
 	 */
-	carlsimState_t getCarlsimState() { return carlsimState_; }
+	carlsimState_t getCARLsimState() { return carlsimState_; }
 
 	/*!
 	 * \brief gets AMPA vector of a group
@@ -1200,6 +1200,19 @@ public:
 	 * \STATE SETUP, EXECUTION
 	 */
 	uint32_t getSimTimeMsec();
+
+	/*!
+	 * \brief returns pointer to previously allocated SpikeMonitor object, NULL else
+	 *
+	 * This function returns a pointer to a SpikeMonitor object that has previously been created using the method
+	 * CARLsim::setSpikeMonitor. If the group does not have a SpikeMonitor, NULL is returned.
+	 *
+	 * \STATE SETUP, EXECUTION
+	 * \param[in] grpId the group ID
+	 * \returns pointer to SpikeMonitor object if exists, NULL else
+	 * \since v3.0
+	 */
+	SpikeMonitor* getSpikeMonitor(int grpId);
 
 	/*!
 	 * \brief returns pointer to 1D array of the number of spikes every neuron in the group has fired

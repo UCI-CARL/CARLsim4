@@ -69,7 +69,7 @@ int main() {
 
 	sim->setupNetwork();
 
-	// make input 50Hz Poissonian
+	// make input 50Hz
 	// apply to input group
 	PoissonRate PR(nNeur);
 	PR.setRates(50.0f);
@@ -78,15 +78,21 @@ int main() {
 
 	// ------------ EXE STATE --------------------------
 
-	SimpleWeightTuner SWT(sim, c0, 1e-3f, initWt);
-
-	SWT.setTargetFiringRate(gOut, 27.419f);
+	// use weight tuner to find the weights that give 27.4 Hz spiking
+	SimpleWeightTuner SWT(sim, 0.01, 100);
+	SWT.setConnectionToTune(c0, 0.0);
+	SWT.setTargetFiringRate(gOut, 27.4);
 
 	while (!SWT.done()) {
 		SWT.iterate();
 	}
 
-	printf("Done! Best weight=%f\n",SWT.getWeight());
+	// \TODO: Use ConnectionMonitor to retrieve the current set of weights
+
+	// verify result
+	for (int i=0; i<5; i++)
+		sim->runNetwork(1,0);
+
 	return 0;
 }
 

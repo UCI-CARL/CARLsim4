@@ -1799,6 +1799,16 @@ void CpuSNN::getPopWeights(int grpIdPre, int grpIdPost, float*& weights, int& ma
 	}
 }
 
+// returns pointer to existing SpikeMonitor object, NULL else
+SpikeMonitor* CpuSNN::getSpikeMonitor(int grpId) {
+	assert(grpId>=0 && grpId<getNumGroups());
+	if (grp_Info[grpId].SpikeMonitorId>=0) {
+		return spikeMonList[grp_Info[grpId].SpikeMonitorId];
+	} else {
+		return NULL;
+	}
+}
+
 // Returns pointer to nSpikeCnt, which is a 1D array of the number of spikes every neuron in the group
 int* CpuSNN::getSpikeCntPtr(int grpId) {
 	//! do check to make sure appropriate flag is set

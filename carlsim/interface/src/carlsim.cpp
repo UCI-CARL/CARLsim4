@@ -1065,6 +1065,15 @@ void CARLsim::getPopWeights(int gIDpre, int gIDpost, float*& weights, int& size)
 	snn_->getPopWeights(gIDpre,gIDpost,weights,size);
 }
 
+// returns pointer to existing SpikeMonitor object, NULL else
+SpikeMonitor* CARLsim::getSpikeMonitor(int grpId) {
+	std::stringstream funcName; funcName << "getSpikeMonitor(" << grpId << ")";
+	UserErrors::assertTrue(grpId>=0 && grpId<getNumGroups(), UserErrors::MUST_BE_IN_RANGE, funcName.str(),
+		"grpId", "[0,getNumGroups()]");
+
+	return snn_->getSpikeMonitor(grpId);
+}
+
 int* CARLsim::getSpikeCntPtr(int grpId) {
 	std::string funcName = "getSpikeCntPtr()";
 	UserErrors::assertTrue(false, UserErrors::IS_DEPRECATED, funcName);

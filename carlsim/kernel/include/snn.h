@@ -519,6 +519,9 @@ public:
 	unsigned int getSimTimeSec()	{ return simTimeSec; }
 	unsigned int getSimTimeMs()		{ return simTimeMs; }
 
+	//! returns pointer to existing SpikeMonitor object, NULL else
+	SpikeMonitor* getSpikeMonitor(int grpId);
+
 	// TODO: same as spikeMonRT
 	//TODO: may need to make it work for different configurations. -- KDC
 	/*!
