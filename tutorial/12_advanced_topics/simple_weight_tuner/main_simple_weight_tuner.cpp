@@ -35,7 +35,7 @@
  *					(KDC) Kristofor Carlson <kdcarlso@uci.edu>
  *
  * CARLsim available from http://socsci.uci.edu/~jkrichma/CARL/CARLsim/
- * Ver 12/1/2014
+ * Ver 12/3/2014
  */
 
 #include <carlsim.h>

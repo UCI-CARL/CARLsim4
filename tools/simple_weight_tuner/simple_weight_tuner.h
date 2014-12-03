@@ -5,6 +5,39 @@ class CARLsim;
 class SpikeMonitor;
 struct RangeWeight;
 
+/*!
+ * \brief Class SimpleWeightTuner
+ *
+ * The SimpleWeightTuner utility is a class that implements a simple search algorithm inspired by the bisection method.
+ *
+ * The usage scenario is to tune the weights of a specific connection (collection of synapses) so that a specific neuron
+ * group fires at a predefined target firing rate—without having to recompile the network.
+ * A complete code example can be found in the Tutorial subfolder 12_advanced_topics/simple_weight_tuner.
+ *
+ * Example usage:
+ * \code
+ *  // assume CARLsim object exists with the following components:
+ *	int gOut=sim->createGroup("out", nNeur, EXCITATORY_NEURON);
+ *	sim->setNeuronParameters(gOut, 0.02f, 0.2f, -65.0f, 8.0f);
+ *	int gIn=sim->createSpikeGeneratorGroup("in", nNeur, EXCITATORY_NEURON);
+ *	int c0=sim->connect(gIn, gOut, "random", RangeWeight(initWt), 0.1f, RangeDelay(1,10));
+ *  // etc.
+ *  sim->setupNetwork();
+ *
+ * 	// use weight tuner to find the weights that give 27.4 Hz spiking in gOut
+ *	SimpleWeightTuner SWT(sim, 0.01, 100);
+ *	SWT.setConnectionToTune(c0, 0.0);
+ *	SWT.setTargetFiringRate(gOut, 27.4);
+ *
+ *	while (!SWT.done()) {
+ *		SWT.iterate();
+ *	}
+ * \endcode
+ *
+ * \see Tutorial: \ref ch12s3s1_simple_weight_tuner
+ * \see Code example: <tt>tutorial/12_advanced_topics/simple_weight_tuner/main_simple_weight_tuner.cpp</tt>
+ * \since v3.0
+ */
 class SimpleWeightTuner {
 public:
 	/*!
