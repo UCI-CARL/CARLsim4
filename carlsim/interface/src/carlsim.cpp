@@ -828,7 +828,7 @@ void CARLsim::setWeight(int connId, int neurIdPre, int neurIdPost, float weight,
 		funcName.str(), "EXECUTION.");
 	UserErrors::assertTrue(connId>=0 && connId<getNumConnections(), UserErrors::MUST_BE_IN_RANGE, 
 		funcName.str(), "connectionId", "[0,getNumSynapticConnections()]");
-	UserErrors::assertTrue(weight>0.0f, UserErrors::MUST_BE_POSITIVE, funcName.str(), "Weight value");
+	UserErrors::assertTrue(weight>=0.0f, UserErrors::CANNOT_BE_NEGATIVE, funcName.str(), "Weight value");
 
 	snn_->setWeight(connId, neurIdPre, neurIdPost, weight, updateWeightRange);
 }

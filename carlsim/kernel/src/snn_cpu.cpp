@@ -1070,7 +1070,7 @@ void CpuSNN::setSpikeRate(int grpId, PoissonRate* ratePtr, int refPeriod) {
 // sets the weight value of a specific synapse
 void CpuSNN::setWeight(int connId, int neurIdPre, int neurIdPost, float weight, bool updateWeightRange) {
 	assert(connId>=0 && connId<getNumConnections());
-	assert(weight>0.0f);
+	assert(weight>=0.0f);
 
 	grpConnectInfo_t* connInfo = getConnectInfo(connId);
 	assert(neurIdPre>=0  && neurIdPre<getGroupNumNeurons(connInfo->grpSrc));
@@ -1117,7 +1117,11 @@ void CpuSNN::setWeight(int connId, int neurIdPre, int neurIdPost, float weight, 
 			if (simMode_==GPU_MODE) {
 				// need to update datastructures on GPU
 				CUDA_CHECK_ERRORS( cudaMemcpy(&(cpu_gpuNetPtrs.wt[pos_ij]), &weight, sizeof(float), cudaMemcpyHostToDevice));
-				CUDA_CHECK_ERRORS( cudaMemcpy(&(cpu_gpuNetPtrs.maxSynWt[pos_ij]), &(connInfo->maxWt), sizeof(float), cudaMemcpyHostToDevice));
+				if (cpu_gpuNetPtrs.maxSynWt!=NULL) {
+					// only copy maxSynWt if datastructure actually exists on the GPU
+					// (that logic should be done elsewhere though)
+					CUDA_CHECK_ERRORS( cudaMemcpy(&(cpu_gpuNetPtrs.maxSynWt[pos_ij]), &(maxSynWt[pos_ij]), sizeof(float), cudaMemcpyHostToDevice));
+				}
 			}
 			break;
 		}
