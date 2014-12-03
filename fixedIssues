@@ -1,0 +1,7 @@
+TODO:
+PoissonGenerator in test cases #161 - done
+Add default STDP mode in user interface #149
+Merge SpikeCounter and nSpikeCount #31
+CpuSNN:updateAfterMaxTime() #3
+SpikeMonitor: Display warning message when recording period is too long #313
+Clean up isPoissonGroup / grpInfo.isSpikeGenerator / grpInfo.Type&POISSON_GROUP business #56
