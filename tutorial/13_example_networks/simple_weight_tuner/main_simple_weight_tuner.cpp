@@ -39,7 +39,7 @@
  */
 
 #include <carlsim.h>
-#include "simple_weight_tuner.h"
+#include <simple_weight_tuner.h>
 
 #include <stdio.h>	// printf
 

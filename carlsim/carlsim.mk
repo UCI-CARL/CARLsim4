@@ -32,29 +32,34 @@ spike_mon_src := $(addprefix $(spike_mon_dir)/, spike_monitor.cpp \
 spike_mon_objs := $(patsubst %.cpp, %.o, $(spike_mon_src))
 
 # tools spikegen variables
-tools_spikegen_inc := $(addprefix $(tools_spikegen_dir)/,interactive_spikegen.h \
+tools_spikegen_inc  := $(addprefix $(tools_spikegen_dir)/,interactive_spikegen.h \
 	periodic_spikegen.h spikegen_from_file.h spikegen_from_vector.h)
-tools_spikegen_src := $(addprefix $(tools_spikegen_dir)/,interactive_spikegen.cpp \
+tools_spikegen_src  := $(addprefix $(tools_spikegen_dir)/,interactive_spikegen.cpp \
 	periodic_spikegen.cpp spikegen_from_file.cpp spikegen_from_vector.cpp)
 tools_spikegen_objs := $(patsubst %.cpp, %.o, $(tools_spikegen_src))
 
 # tools inputstim variables
-tools_inputstim_inc := $(addprefix $(tools_inputstim_dir)/,input_stimulus.h)
-tools_inputstim_src := $(addprefix $(tools_inputstim_dir)/,input_stimulus.cpp)
+tools_inputstim_inc  := $(addprefix $(tools_inputstim_dir)/,input_stimulus.h)
+tools_inputstim_src  := $(addprefix $(tools_inputstim_dir)/,input_stimulus.cpp)
 tools_inputstim_objs := $(patsubst %.cpp, %.o, $(tools_inputstim_src))
+
+# tools simple weight tuner variables
+tools_swt_inc  := $(addprefix $(tools_swt_dir)/,simple_weight_tuner.h)
+tools_swt_src  := $(addprefix $(tools_swt_dir)/,simple_weight_tuner.cpp)
+tools_swt_objs := $(patsubst %.cpp, %.o, $(tools_swt_src))
 
 # motion energy objects
 util_2_0_objs := $(addprefix $(kernel_dir)/,v1ColorME.2.0.o)
 
 # carlsim variables all together in one place
 carlsim_inc += $(kernel_inc) $(interface_inc) $(spike_mon_inc) $(tools_spikegen_inc) \
-	$(tools_inputstim_inc)
+	$(tools_inputstim_inc) $(tools_swt_inc)
 carlsim_objs += $(kernel_objs) $(interface_objs) $(spike_mon_objs) $(tools_spikegen_objs) \
-	$(tools_inputstim_objs)
+	$(tools_inputstim_objs) $(tools_swt_objs)
 carlsim_sources += $(kernel_src) $(interface_src) $(spike_mon_src) $(tools_spikegen_src) \
-	$(tools_inputstim_src)
+	$(tools_inputstim_src) $(tools_swt_src)
 objects += $(carlsim_objs) $(interface_objs) $(spike_mon_objs) $(tools_spikegen_objs) \
-	$(tools_inputstim_objs)
+	$(tools_inputstim_objs) $(tools_swt_objs)
 
 default_targets += carlsim
 
@@ -79,6 +84,10 @@ $(tools_spikegen_dir)/%.o: $(tools_spikegen_src) $(tools_spikegen_inc)
 
 # tools/input_stimulus
 $(tools_inputstim_dir)/%.o: $(tools_inputstim_src) $(tools_inputstim_inc)
+	$(NVCC) -c $(CARLSIM_INCLUDES) $(CARLSIM_FLAGS) $< -o $@
+
+# tools/simple_weight_tuner
+$(tools_swt_dir)/%.o: $(tools_swt_src) $(tools_swt_inc)
 	$(NVCC) -c $(CARLSIM_INCLUDES) $(CARLSIM_FLAGS) $< -o $@
 
 # kernel carlsim cpps

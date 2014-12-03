@@ -30,6 +30,8 @@ install: $(carlsim_lib)
 		$(CARLSIM_LIB_DIR)/include/spike_monitor
 	@test -d $(CARLSIM_LIB_DIR)/include/spike_generators || mkdir \
 		$(CARLSIM_LIB_DIR)/include/spike_generators
+	@test -d $(CARLSIM_LIB_DIR)/include/simple_weight_tuner || mkdir \
+		$(CARLSIM_LIB_DIR)/include/simple_weight_tuner
 	@test -d $(CARLSIM_LIB_DIR)/include/input_stimulus || mkdir \
 		$(CARLSIM_LIB_DIR)/include/input_stimulus
 	@install -m 0755 $(carlsim_lib).$(lib_ver) $(CARLSIM_LIB_DIR)/lib
@@ -55,3 +57,5 @@ install: $(carlsim_lib)
 		$(tools_spikegen_dir)/spikegen_from_vector.h \
 		$(tools_spikegen_dir)/interactive_spikegen.h \
 		$(CARLSIM_LIB_DIR)/include/spike_generators
+	@install -m 0644 $(tools_swt_dir)/simple_weight_tuner.h \
+		$(CARLSIM_LIB_DIR)/include/simple_weight_tuner

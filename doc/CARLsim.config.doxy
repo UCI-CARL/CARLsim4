@@ -668,6 +668,7 @@ INPUT                  = ../carlsim/interface/include interface/src \
                          ../tools/input_stimulus/input_stimulus.h \
                          ../tools/offline_analysis_toolbox \
                          ../tools/spike_generators \
+                         ../tools/simple_weight_tuner \
                          ../tutorial \
                          ../tutorial/1_getting_started \
                          ../tutorial/2_basics \
