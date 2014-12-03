@@ -383,9 +383,9 @@ TEST(Interface, CARLsimState) {
 	sim->setConductances(true);
 
 	// test buildNetwork(), change carlsimState_ from CONFIG_STATE to SETUP_STATE
-	EXPECT_TRUE(sim->getCarlsimState() == CONFIG_STATE);
+	EXPECT_TRUE(sim->getCARLsimState() == CONFIG_STATE);
 	sim->setupNetwork();
-	EXPECT_TRUE(sim->getCarlsimState() == SETUP_STATE);
+	EXPECT_TRUE(sim->getCARLsimState() == SETUP_STATE);
 	//----- SETUP_STATE zone -----
 
 	// test APIs that can't be called at SETUP_STATE
@@ -417,9 +417,9 @@ TEST(Interface, CARLsimState) {
 	EXPECT_DEATH({sim->setDefaultSTPparams(1, 1.0, 2.0, 3.0);},"");
 
 	// test runNetwork(), change carlsimState_ from SETUP_STATE to EXE_STATE
-	EXPECT_TRUE(sim->getCarlsimState() == SETUP_STATE);
+	EXPECT_TRUE(sim->getCARLsimState() == SETUP_STATE);
 	sim->runNetwork(1, 0);
-	EXPECT_TRUE(sim->getCarlsimState() == EXE_STATE);
+	EXPECT_TRUE(sim->getCARLsimState() == EXE_STATE);
 	//----- EXE_STATE zone -----
 
 	// test APIs that can't be called at EXE_STATE
