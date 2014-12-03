@@ -39,6 +39,9 @@
  */
 
 #include <carlsim.h>
+#include "simple_weight_tuner.h"
+
+#include <stdio.h>	// printf
 
 #if (WIN32 || WIN64)
 	#define _CRT_SECURE_NO_WARNINGS
@@ -47,106 +50,43 @@
 int main() {
 	// ------------ CONFIG STATE --------------------------
 
-	int nNeur = 10; // number of neurons per group
+	int nNeur = 1000; // number of neurons per group
 	float initWt = 0.1f; // initial weight for connection
 
-	CARLsim sim("SimpleWeightTuner", CPU_MODE, USER, 0, 42);
+	CARLsim *sim = new CARLsim("SimpleWeightTuner", CPU_MODE, USER, 0, 42);
 
-	int gOut=sim.createGroup("out", nNeur, EXCITATORY_NEURON);
-	sim.setNeuronParameters(gOut, 0.02f, 0.2f, -65.0f, 8.0f);
-	int gIn=sim.createSpikeGeneratorGroup("in", nNeur, EXCITATORY_NEURON);
+	int gOut=sim->createGroup("out", nNeur, EXCITATORY_NEURON);
+	sim->setNeuronParameters(gOut, 0.02f, 0.2f, -65.0f, 8.0f);
+	int gIn=sim->createSpikeGeneratorGroup("in", nNeur, EXCITATORY_NEURON);
 
 	// random connection with 10% probability
-	int c0=sim.connect(gIn, gOut, "random", RangeWeight(initWt), 0.1f, RangeDelay(1,10));
+	int c0=sim->connect(gIn, gOut, "random", RangeWeight(initWt), 0.1f, RangeDelay(1,10));
 
-	sim.setConductances(true);
+	sim->setConductances(true);
 
 
 	// ------------ SETUP STATE --------------------------
 
-	sim.setupNetwork();
+	sim->setupNetwork();
 
 	// make input 50Hz Poissonian
 	// apply to input group
 	PoissonRate PR(nNeur);
 	PR.setRates(50.0f);
-	sim.setSpikeRate(gIn, &PR);
-
-	// monitor spikes of output group
-	SpikeMonitor *SM = sim.setSpikeMonitor(gOut);
+	sim->setSpikeRate(gIn, &PR);
 
 
 	// ------------ EXE STATE --------------------------
 
-	float targetFiringRate = 15.47f;
-	float errorMargin = 1e-5f;
+	SimpleWeightTuner SWT(sim, c0, 1e-3f, initWt);
 
-	float wtStepSize = initWt/20.0f;
-	bool stepToTheRight = true;
+	SWT.setTargetFiringRate(gOut, 27.419f);
 
-	float wt = initWt;
-	float rate = 0.0f;
-
-	while ( (rate-targetFiringRate) > errorMargin) {
-		SM->startRecording();
-		sim.runNetwork(1,0);
-		SM->stopRecording();
-
-		if (rate < targetFiringRate) {
-			// need to increase weight
-			sim.biasWeights(c0, stepSize);
-		}
-
+	while (!SWT.done()) {
+		SWT.iterate();
 	}
-	// simulation details
-	int N = 1000; // number of neurons
-	int ithGPU = 0; // run on first GPU
 
-	// create a network
-	CARLsim sim("random",GPU_MODE,USER,ithGPU,42);
-
-	int g1=sim.createGroup("excit", N*0.8, EXCITATORY_NEURON);
-	sim.setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f);
-
-	int g2=sim.createGroup("inhib", N*0.2, INHIBITORY_NEURON);
-	sim.setNeuronParameters(g2, 0.1f,  0.2f, -65.0f, 2.0f);
-
-	int gin=sim.createSpikeGeneratorGroup("input",N*0.1,EXCITATORY_NEURON);
-
-	sim.setConductances(true,5,150,6,150);
-
-	// make random connections with 10% probability
-	sim.connect(g2,g1,"random", RangeWeight(0.01), 0.1f);
-	// make random connections with 10% probability, and random delays between 1 and 20
-	sim.connect(g1,g2,"random", RangeWeight(0.0,0.0025,0.005), 0.1f, RangeDelay(1,20), RadiusRF(-1), SYN_PLASTIC);
-	sim.connect(g1,g1,"random", RangeWeight(0.0,0.06,0.1), 0.1f, RangeDelay(1,20), RadiusRF(-1), SYN_PLASTIC);
-
-	// 5% probability of connection
-	sim.connect(gin, g1, "random", RangeWeight(1.0), 0.05f, RangeDelay(1,20), RadiusRF(-1));
-
-	// here we define and set the properties of the STDP.
-	float ALPHA_LTP = 0.10f/100, TAU_LTP = 20.0f, ALPHA_LTD = 0.12f/100, TAU_LTD = 20.0f;
-	sim.setSTDP(g1, true, STANDARD, ALPHA_LTP, TAU_LTP, ALPHA_LTD, TAU_LTD);
-
-
-	// build the network
-	sim.setupNetwork();
-	sim.setSpikeMonitor(g1); // put spike times into file
-	sim.setSpikeMonitor(g2); // Show basic statistics about g2
-	sim.setSpikeMonitor(gin);
-
-	sim.setConnectionMonitor(g1, g2);
-
-	//setup some baseline input
-	PoissonRate in(N*0.1);
-	for (int i=0;i<N*0.1;i++) in.rates[i] = 1;
-		sim.setSpikeRate(gin,&in);
-
-	// run for a total of 10 seconds
-	// at the end of each runNetwork call, SpikeMonitor stats will be printed
-	for (int i=0; i<10; i++)
-		sim.runNetwork(1,0);
-
+	printf("Done! Best weight=%f\n",SWT.getWeight());
 	return 0;
 }
 

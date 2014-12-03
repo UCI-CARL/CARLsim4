@@ -23,15 +23,19 @@ CARLSIM_LIBS  += -L$(CARLSIM_LIB_DIR)/lib -lCARLsim
 
 local_src  := main_$(example).cpp
 local_prog := $(example)
+local_objs := simple_weight_tuner.o
 
 .PHONY: clean distclean
 # compile from CARLsim lib
-$(local_prog): $(local_src)
+$(local_prog): $(local_src) $(local_objs)
 	$(NVCC) $(CARLSIM_INCLUDES) $(CARLSIM_FLAGS) $(CARLSIM_LFLAGS) \
-	$(CARLSIM_LIBS) $< -o $@
+	$(local_objs) $(CARLSIM_LIBS) $< -o $@
+
+%.o: %.cpp %.h
+	$(NVCC) -c $(CARLSIM_INCLUDES) $(CARLSIM_FLAGS) $< -o $@
 
 clean:
-	$(RM) $(local_prog)
+	$(RM) $(local_prog) $(local_objs)
 
 distclean:
 	$(RM) $(local_prog) $(output)
