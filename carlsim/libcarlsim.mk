@@ -32,12 +32,17 @@ install: $(carlsim_lib)
 		$(CARLSIM_LIB_DIR)/include/spike_monitor
 	@test -d $(CARLSIM_LIB_DIR)/include/spike_generators || mkdir \
 		$(CARLSIM_LIB_DIR)/include/spike_generators
+	@test -d $(CARLSIM_LIB_DIR)/include/simple_weight_tuner || mkdir \
+		$(CARLSIM_LIB_DIR)/include/simple_weight_tuner
+	@test -d $(CARLSIM_LIB_DIR)/include/input_stimulus || mkdir \
+		$(CARLSIM_LIB_DIR)/include/input_stimulus
 	@install -m 0755 $(carlsim_lib).$(lib_ver) $(CARLSIM_LIB_DIR)/lib
 	@ln -Tfs $(CARLSIM_LIB_DIR)/lib/$(lib_name).$(lib_ver) \
 		$(CARLSIM_LIB_DIR)/lib/$(lib_name).$(num_ver)
 	@ln -Tfs $(CARLSIM_LIB_DIR)/lib/$(lib_name).$(num_ver) \
 		$(CARLSIM_LIB_DIR)/lib/$(lib_name)
 	@install -m 0644 $(kernel_dir)/include/cuda_version_control.h \
+		$(kernel_dir)/include/snn_definitions.h \
 		$(CARLSIM_LIB_DIR)/include/kernel
 	@install -m 0644 $(interface_dir)/include/callback.h \
 		$(interface_dir)/include/carlsim_datastructures.h \
@@ -49,7 +54,13 @@ install: $(carlsim_lib)
 	@install -m 0644 $(conn_mon_dir)/connection_monitor.h \
 	$(CARLSIM_LIB_DIR)/include/connection_monitor
 	@install -m 0644 $(spike_mon_dir)/spike_monitor.h \
-	$(CARLSIM_LIB_DIR)/include/spike_monitor
-	@install -m 0644 $(spike_gen_dir)/periodic_spikegen.h \
-		$(spike_gen_dir)/spikegen_from_file.h \
-		$(spike_gen_dir)/spikegen_from_vector.h $(CARLSIM_LIB_DIR)/include/spike_generators
+		$(CARLSIM_LIB_DIR)/include/spike_monitor
+	@install -m 0644 $(tools_inputstim_dir)/input_stimulus.h \
+		$(CARLSIM_LIB_DIR)/include/input_stimulus
+	@install -m 0644 $(tools_spikegen_dir)/periodic_spikegen.h \
+		$(tools_spikegen_dir)/spikegen_from_file.h \
+		$(tools_spikegen_dir)/spikegen_from_vector.h \
+		$(tools_spikegen_dir)/interactive_spikegen.h \
+		$(CARLSIM_LIB_DIR)/include/spike_generators
+	@install -m 0644 $(tools_swt_dir)/simple_weight_tuner.h \
+		$(CARLSIM_LIB_DIR)/include/simple_weight_tuner

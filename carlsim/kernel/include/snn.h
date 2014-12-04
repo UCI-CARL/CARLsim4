@@ -326,6 +326,9 @@ public:
 
 	// +++++ PUBLIC METHODS: INTERACTING WITH A SIMULATION ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
+	// adds a bias to every weight in the connection
+	void biasWeights(short int connId, float bias, bool updateWeightRange=false);
+
 	//! deallocates all dynamical structures and exits
 	void exitSimulation(int val=1);
 
@@ -346,6 +349,9 @@ public:
 	 * \param grpId the group for which to reset the spike counts. Set to ALL if you want to reset all Spike Counters.
 	 */
 	void resetSpikeCounter(int grpId);
+
+	// multiplies every weight with a scaling factor
+	void scaleWeights(short int connId, float scale, bool updateWeightRange=false);
 
 	//! sets up a group monitor registered with a callback to process the spikes.
 	/*!
@@ -400,6 +406,9 @@ public:
 	 * \param refPeriod (optional) refractive period,  default = 1
 	 */
 	void setSpikeRate(int grpId, PoissonRate* spikeRate, int refPeriod);
+
+	// sets the weight value of a specific synapse
+	void setWeight(short int connId, int neurIdPre, int neurIdPost, float weight, bool updateWeightRange=false);
 
 	//! polls connection weights
 	void updateConnectionMonitor(int connId=ALL);
@@ -463,6 +472,9 @@ public:
 	short int getConnectId(int grpIdPre, int grpIdPost); //!< find connection ID based on pre-post group pair, O(N)
 	grpConnectInfo_t* getConnectInfo(short int connectId); //!< required for homeostasis
 
+	//! returns the RangeDelay struct of a connection
+	RangeDelay getDelayRange(short int connId);
+
 	//! Returns the delay information for all synaptic connections between a pre-synaptic and a post-synaptic neuron group
 	/*!
 	 * \param _grpIdPre ID of pre-synaptic group
@@ -513,6 +525,9 @@ public:
 	unsigned int getSimTimeSec()	{ return simTimeSec; }
 	unsigned int getSimTimeMs()		{ return simTimeMs; }
 
+	//! returns pointer to existing SpikeMonitor object, NULL else
+	SpikeMonitor* getSpikeMonitor(int grpId);
+
 	/*!
 	 * \brief return the number of spikes per neuron for a certain group
 	 * A Spike Counter keeps track of all spikes per neuron for a certain time period (recordDur) at any point in time.
@@ -537,6 +552,9 @@ public:
 	float* getSTPx() { return stpx; }
 
     bool isConnectionPlastic(short int connId);
+
+	//! returns RangeWeight struct of a connection
+	RangeWeight getWeightRange(short int connId);
 
 	bool isExcitatoryGroup(int g) { return (grp_Info[g].Type&TARGET_AMPA) || (grp_Info[g].Type&TARGET_NMDA); }
 	bool isInhibitoryGroup(int g) { return (grp_Info[g].Type&TARGET_GABAa) || (grp_Info[g].Type&TARGET_GABAb); }

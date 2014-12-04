@@ -150,12 +150,12 @@ int main()
 
 	//setup some baseline input
 	PoissonRate in(NUM_NEURON);
-	for (int i=0;i<NUM_NEURON;i++) in.rates[i] = 4;
-		sim.setSpikeRate(gin,&in);
+	in.setRates(4.0f);
+	sim.setSpikeRate(gin,&in);
 
 	PoissonRate noise(NUM_NEURON);
-	for (int i=0;i<NUM_NEURON;i++) noise.rates[i] = 4;
-		sim.setSpikeRate(g1noise,&noise);
+	noise.setRates(4.0f);
+	sim.setSpikeRate(g1noise,&noise);
 
 
 	// run for 1000 seconds

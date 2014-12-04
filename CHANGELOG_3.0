@@ -7,10 +7,20 @@ Legend:
 	- removed element
 	* changed element
 
+2014-12-03     Michael Beyeler <mbeyeler@uci.edu>
+  + Added SimpleWeightTuner to tools, to Tutorial Chapter 12 (explanation)
+    and Chapter 13 (example network).
+  + Added CARLsim::setWeight, CARLsim::biasWeights, and CARLsim::scaleWeights.
+  + Added Makefile for compiling test suite from libCARLsim.
+  * Included tools in CARLsim libcompile.
+  * Renamed CARLsim::getCARLsimState for consistency.
+  * Fixed display error bug in UserErrors class.
+
+
 2014-11-26     Michael Beyeler <mbeyeler@uci.edu>
   * Improved PoissonRate class. Added documentation and tutorial chapter.
   * Fixed PoissonRate segfault on GPU.
- 
+
 2014-11-22     Ting-Shuo Chou <tingshuc@uci.edu>
   + Add GPU allocation mechanism, allow multiple CARLsim objecs to use
     different GPUs

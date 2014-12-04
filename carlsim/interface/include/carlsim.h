@@ -56,6 +56,14 @@
 #include <spike_monitor.h>
 #include <connection_monitor.h>
 
+#include <interactive_spikegen.h>
+#include <periodic_spikegen.h>
+#include <spikegen_from_file.h>
+#include <spikegen_from_vector.h>
+
+#include <simple_weight_tuner.h>
+#include <input_stimulus.h>
+
 #include <linear_algebra.h>
 
 #if (WIN32 || WIN64)
@@ -612,6 +620,30 @@ public:
 	// +++++ PUBLIC METHODS: INTERACTING WITH A SIMULATION ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
 	/*!
+	 * \brief Adds a constant bias to the weight of every synapse in the connection
+	 *
+	 * This method adds a constant bias to the weight of every synapse in the connection specified by connId. The bias
+	 * can be positive or negative.
+	 * If a bias is specified that makes any weight+bias lie outside the range [minWt,maxWt] of this connection, the
+	 * range will be updated accordingly if the flag updateWeightRange is set to true.
+	 * If the flag is set to false, then the specified weight value will be corrected to lie on the boundary (either
+	 * minWt or maxWt).
+	 *
+	 * \STATE EXECUTION
+	 * \param[in] connId            the connection ID to manipulate
+	 * \param[in] bias              the bias value to add to every synapse
+	 * \param[in] updateWeightRange a flag specifying what to do when the specified weight+bias lies outside the range
+	 *                              [minWt,maxWt]. Set to true to update the range accordingly. Set to false to adjust
+	 *                              the weight to be either minWt or maxWt. Default: false.
+	 * 
+	 * \note A weight cannot drop below zero, no matter what.
+	 * \see CARLsim::setWeight
+	 * \see CARLsim::scaleWeights
+	 * \since v3.0
+	 */
+	void biasWeights(short int connId, float bias, bool updateWeightRange=false);
+
+	/*!
 	 * \brief loads a simulation (and network state) from file
 	 *
 	 * \TODO finish docu
@@ -630,6 +662,30 @@ public:
 	 * \param grpId the group for which to reset the spike counts. Set to ALL if you want to reset all Spike Counters.
 	 */
 	void resetSpikeCounter(int grpId);
+
+	/*!
+	 * \brief Multiplies the weight of every synapse in the connection with a scaling factor
+	 *
+	 * This method scales the weight of every synapse in the connection specified by connId with a scaling factor.
+	 * The scaling factor cannot be negative.
+	 * If a scaling factor is specified that makes any weight*scale lie outside the range [minWt,maxWt] of this
+	 * connection, the range will be updated accordingly if the flag updateWeightRange is set to true.
+	 * If the flag is set to false, then the specified weight value will be corrected to lie on the boundary (either
+	 * minWt or maxWt).
+	 *
+	 * \STATE EXECUTION
+	 * \param[in] connId            the connection ID to manipulate
+	 * \param[in] scale             the scaling factor to apply to every synapse (cannot be negative)
+	 * \param[in] updateWeightRange a flag specifying what to do when the specified weight*scale lies outside the range
+	 *                              [minWt,maxWt]. Set to true to update the range accordingly. Set to false to adjust
+	 *                              the weight to be either minWt or maxWt. Default: false.
+	 * 
+	 * \note A weight cannot drop below zero, no matter what.
+	 * \see CARLsim::setWeight
+	 * \see CARLsim::biasWeights
+	 * \since v3.0
+	 */
+	void scaleWeights(short int connId, float scale, bool updateWeightRange=false);
 
 	/*!
 	 * \brief Sets a connection monitor for a group, custom ConnectionMonitor class
@@ -806,6 +862,34 @@ public:
 	void setSpikeRate(int grpId, PoissonRate* spikeRate, int refPeriod=1);
 
 	/*!
+	 * \brief Sets the weight value of a specific synapse
+	 *
+	 * This method sets the weight value of the synapse that belongs to connection connId and connects pre-synaptic
+	 * neuron neurIdPre to post-synaptic neuron neurIdPost. Neuron IDs should be zero-indexed, so that the first
+	 * neuron in the group has ID 0.
+	 * If a weight value is specified that lies outside the range [minWt,maxWt] of this connection, the range will be
+	 * updated accordingly if the flag updateWeightRange is set to true. If the flag is set to false, then the
+	 * specified weight value will be corrected to lie on the boundary (either minWt or maxWt).
+	 *
+	 * \STATE EXECUTION
+	 * \param[in] connId            the connection ID to manipulate
+	 * \param[in] neurIdPre         pre-synaptic neuron ID (zero-indexed)
+	 * \param[in] neurIdPost        post-synaptic neuron ID (zero-indexed)
+	 * \param[in] weight            the weight value to set for this synapse
+	 * \param[in] updateWeightRange a flag specifying what to do when the specified weight lies outside the range
+	 *                              [minWt,maxWt]. Set to true to update the range accordingly. Set to false to adjust
+	 *                              the weight to be either minWt or maxWt. Default: false.
+	 * 
+	 * \note Neuron IDs should be zero-indexed (first neuron in the group should have ID 0).
+	 * \note A weight cannot drop below zero, no matter what.
+	 * \attention Make sure this function is called on a synapse that actually exists!
+	 * \see CARLsim::biasWeights
+	 * \see CARLsim::scaleWeights
+	 * \since v3.0
+	 */
+	void setWeight(short int connId, int neurIdPre, int neurIdPost, float weight, bool updateWeightRange=false);
+
+	/*!
 	 * \brief function writes population weights from gIDpre to gIDpost to file fname in binary.
 	 *
 	 * \TODO finish docu
@@ -832,7 +916,7 @@ public:
 	 * first call to CARLsim::runNetwork will change the state from SETUP to EXECUTION.
 	 * \returns current CARLsim state
 	 */
-	carlsimState_t getCarlsimState() { return carlsimState_; }
+	carlsimState_t getCARLsimState() { return carlsimState_; }
 
 	/*!
 	 * \brief gets AMPA vector of a group
@@ -869,6 +953,19 @@ public:
 	 * \deprecated This function is deprecated. It will be replaced by NeuronMonitor.
 	 */
 	std::vector<float> getConductanceGABAb(int grpId);
+
+	/*!
+	 * \brief returns the RangeDelay struct for a specific connection ID
+	 *
+	 * This function returns the RangeDelay struct for a specific connection ID. The RangeDelay struct contains
+	 * fields for the minimum and maximum synaptic delay in the connection.
+	 *
+	 * \STATE CONFIG, SETUP, EXECUTION
+	 * \param[in] connId connection ID
+	 * \returns RangeDelay struct
+	 * \since v3.0
+	 */
+	RangeDelay getDelayRange(short int connId);
 
 	/*!
 	 * \brief gets delays
@@ -990,7 +1087,7 @@ public:
 	/*!
 	 * \brief returns the total number of regular (Izhikevich) neurons
 	 *
-	 * \Note This number might change throughout CARLsim state CONFIG, up to calling CARLsim::setupNetwork).
+	 * \note This number might change throughout CARLsim state CONFIG, up to calling CARLsim::setupNetwork).
 	 * \TODO finish docu
 	 * \STATE CONFIG, SETUP, EXECUTION
 	 */
@@ -1142,6 +1239,32 @@ public:
 	 * Each entry is the number of spikes for this neuron (int) since the last reset.
 	 */
 	int* getSpikeCounter(int grpId);
+
+	/*!
+	 * \brief returns pointer to previously allocated SpikeMonitor object, NULL else
+	 *
+	 * This function returns a pointer to a SpikeMonitor object that has previously been created using the method
+	 * CARLsim::setSpikeMonitor. If the group does not have a SpikeMonitor, NULL is returned.
+	 *
+	 * \STATE SETUP, EXECUTION
+	 * \param[in] grpId the group ID
+	 * \returns pointer to SpikeMonitor object if exists, NULL else
+	 * \since v3.0
+	 */
+	SpikeMonitor* getSpikeMonitor(int grpId);
+
+	/*!
+	 * \brief returns the RangeWeight struct for a specific connection ID
+	 *
+	 * This function returns the RangeWeight struct for a specific connection ID. The RangeWeight struct contains
+	 * fields for the minimum, initial, and maximum weight in the connection.
+	 *
+	 * \STATE CONFIG, SETUP, EXECUTION
+	 * \param[in] connId connection ID
+	 * \returns RangeWeight struct
+	 * \since v3.0
+	 */
+	RangeWeight getWeightRange(short int connId);
 
 	/*!
 	 * \brief returns

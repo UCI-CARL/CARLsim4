@@ -13,16 +13,14 @@ output := *.dot *.dat *.log *.csv
 # You should not need to edit the file beyond this point
 # ------------------------------------------------------
 
-# carlsim components
-kernel_dir     = $(CARLSIM_LIB_DIR)/kernel
-interface_dir  = $(CARLSIM_LIB_DIR)/interface
-spike_mon_dir  = $(CARLSIM_LIB_DIR)/spike_monitor
-spike_gen_dir  = $(CARLSIM_LIB_DIR)/spike_generators
-
 # we are compiling from lib
 CARLSIM_FLAGS += -I$(CARLSIM_LIB_DIR)/include/kernel \
-	-I$(CARLSIM_LIB_DIR)/include/interface \
-	-I$(CARLSIM_LIB_DIR)/include/spike_monitor
+				 -I$(CARLSIM_LIB_DIR)/include/interface \
+				 -I$(CARLSIM_LIB_DIR)/include/spike_monitor \
+				 -I$(CARLSIM_LIB_DIR)/include/connection_monitor \
+				 -I$(CARLSIM_LIB_DIR)/include/spike_generators \
+				 -I$(CARLSIM_LIB_DIR)/include/input_stimulus \
+				 -I$(CARLSIM_LIB_DIR)/include/simple_weight_tuner
 CARLSIM_LIBS  += $(CARLSIM_LIB_DIR)/lib/libCARLsim.a
 
 local_src  := main_$(project).cpp

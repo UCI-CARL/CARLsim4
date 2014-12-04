@@ -85,8 +85,7 @@ void *runCARLsim(void* arg)
 
 	// it's unnecessary to do this in the loop
 	PoissonRate in = PoissonRate(NUM_NEURONS_EXC);
-	for (int k = 0; k < NUM_NEURONS_EXC; k++)
-		in.rates[k] = 2; // 2 Hz
+	in.setRates(2.0f); // 2 Hz
 
 	sim->setSpikeRate(gNoise, &in);
 	

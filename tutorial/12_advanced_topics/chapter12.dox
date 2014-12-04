@@ -19,7 +19,7 @@ Don't record all spikes forever. Tricks for doing training and testing.
 Don't record all spikes forever. Silent mode. Cost of using certain functions. Handling large-scale networks.
 
 \see \ref ch7s1_spike_monitor
-\see \ref ch12s3_logging_errors
+\see \ref ch12s4_logging_errors
 
 
 \section ch12s2_multi_gpu 12.2 Multi-GPU
@@ -27,18 +27,192 @@ Don't record all spikes forever. Silent mode. Cost of using certain functions. H
 Use threading to create a CARLsim simulation on every GPU. Say in the future we'll have a more advanced way of doing that.
 
 
-\section ch12s3_logging_errors 12.3 Logging and Errors
+
+\section ch12s3_online_weight_tuning 12.3 On-Line Weight Tuning
+
+CARLsim provides a range of handy functions to change weight values on the fly; that is, without having to recompile
+the network.
+The utility SimpleWeightTuner implements a simple weight search algorithm inspired by the bisection method.
+The function CARLsim::setWeight allows a user to change the weight of a single synapse.
+Alternatively, CARLsim::biasWeights can be used to add a constant bias to every weight of a certain connection ID,
+and CARLsim::scaleWeigths multiplies all the weights with a scaling factor.
+
+These functions are useful especially for tuning feedforward weights in large-scale networks that would otherwise take
+a lot of time to repeatedly build.
+For tuning in more complex situations please refer to \ref ch10_ecj.
+
+These functions are only valid in ::carlsimState_t <tt>EXE_STATE</tt> and do not alter the topography of the network.
+They apply to weight values of already allocated synapses only.
+
+\see \ref ch10_ecj
+
+
+\subsection ch12s3s1_simple_weight_tuner 12.3.1 Simple Weight Tuner
+
+The SimpleWeightTuner utility is a class that implements a simple search algorithm inspired by the bisection method.
+
+The usage scenario is to tune the weights of a specific connection (collection of synapses) so that a specific
+neuron group fires at a predefined target firing rate---without having to recompile the network.
+A complete code example can be found in the subfolder <tt>simple_weight_tuner</tt>. 
+
+Consider the following CARLsim network:
+\code
+	int nNeur = 1000;    // number of neurons per group
+	float initWt = 0.1f; // initial weight for connection
+
+	CARLsim *sim = new CARLsim("SimpleWeightTuner", CPU_MODE, USER, 0, 42);
+	int gOut=sim->createGroup("out", nNeur, EXCITATORY_NEURON);
+	sim->setNeuronParameters(gOut, 0.02f, 0.2f, -65.0f, 8.0f);
+	int gIn=sim->createSpikeGeneratorGroup("in", nNeur, EXCITATORY_NEURON);
+	int c0=sim->connect(gIn, gOut, "random", RangeWeight(initWt), 0.1f, RangeDelay(1,10));
+	sim->setConductances(true);
+	sim->setupNetwork();
+\endcode
+
+Suppose our goal is to have group <tt>gOut</tt> fire at some target firing rate (say 27.4 Hz), given Poissonian
+inputs with 50 Hz mean rate.
+A conventional approach to solving this problem would be to set up the input firing:
+\code
+	PoissonRate PR(nNeur);
+	PR.setRates(50.0f);
+	sim->setSpikeRate(gIn, &PR);
+\endcode
+and then repeatedly build and run the network with different values for <tt>initWt</tt>, until <tt>gOut</tt>
+reaches the desired firing rate.
+This process can be tedious, especially when dealing with large-scale networks that take a long time to build.
+
+Instead, one can use a SimpleWeightTuner:
+\code
+	SimpleWeightTuner SWT(sim, 0.01, 100); // CARLsim object, error margin, max iterations
+	SWT.setConnectionToTune(c0, 0.0);      // connection to tune, initial weight
+	SWT.setTargetFiringRate(gOut, 27.4);   // output group to observe, target firing rate
+\endcode
+We pass a pointer to the above created network <tt>sim</tt> and specify the termination conditions:
+The algorithm will terminate if either the absolute error between observed firing rate and target firing rate
+is smaller than some error margin, or upon reaching the maximum number of iterations.
+We also tell the class which connection to tune and with which weight to start.
+The algorithm will repeatedly change the weights in a way that resembles the bisection method, until the mean firing
+rate of group <tt>gOut</tt> reaches 27.4 +- 0.01 Hz.
+
+All that is left to do is to execute the algorithm until finished:
+\code
+	while (!SWT.done()) {
+		SWT.iterate();
+	}
+\endcode
+This will run <tt>sim</tt> repeatedly for one second (for different time periods pass an optional argument) until
+one of the termination criteria is reached.
+
+One could now retrieve the tuned weights using a ConnectionMonitor, or run the network a bit more to verify
+correct firing:
+\code
+	for (int i=0; i<5; i++)
+		sim->runNetwork(1,0);
+	delete sim;
+\endcode
+
+\see SimpleWeightTuner
+\see \ref ch10_ecj
+\see Code example: <tt>tutorial/12_advanced_topics/simple_weight_tuner/main_simple_weight_tuner.cpp</tt>
+
+
+
+\subsection ch12s3s2_set_weight 12.3.2 Setting the Weight of a Single Synapse
+
+The easiest way to change the weight of a synapse is CARLsim::setWeight:
+\code
+// must be in EXECUTION state
+sim.runNetwork(1,0);
+
+// remember connId from connect call
+// change the weight from first pre-neuron to fifth post-neuron to 0.25f
+// make sure this synapse this allocated!
+sim.setWeight(connId, 0, 4, 0.25f);
+\endcode
+This function will set the weight of a particular synapse of connection ID <tt>connId</tt>, namely
+the synapse connecting neuron <tt>neurIdPre</tt> to neuron <tt>neurIdPost</tt>, to value <tt>weight</tt>.
+Here, the connection ID is the return argument of the corresponding CARLsim::connect call.
+Also, neuron IDs should be zero-indexed, meaning that the first neuron in the group should have ID 0.
+
+If the specified weight lies outside the boundaries <tt>[minWt,maxWt]</tt> of RangeWeight, then two different behaviors
+can be achieved, depending on a fifth optional argument <tt>updateWeightRange</tt>.
+- If <tt>updateWeightRange</tt> is set to <tt>true</tt>, then the corresponding weight boundaries <tt>[minWt,maxWt]</tt>
+  will be updated should the specified weight lie outside those boundaries.
+- If <tt>updateWeightRange</tt> is set to <tt>false</tt>, then the corresponding weight will be clipped so that it stays
+  within the existing weight boundaries <tt>[minWt,maxWt]</tt>.
+
+\attention Make sure this function is called on a synapse that actually exists!
+\since v3.0
+
+
+\subsection ch12s3s3_bias_weights 12.3.3 Add a Bias to All the Weights of a Connection
+
+Alternatively, it is possible to change the weights of all the synapses that belong to a certain connection ID
+using CARLsim::biasWeights:
+\code
+// must be in EXECUTION state
+sim.runNetwork(1,0);
+
+// remember connId from connect call
+// add 0.125 to all allocated synapses of connId
+// set updateWeightRange flag to true in order to update [minWt,maxWt] if necessary
+sim.biasWeights(connId, 0.125f, true);
+\endcode
+This function will add a constant <tt>bias</tt> to the weight of every synapse of connection ID <tt>connId</tt>.
+Here, the connection ID is the return argument of the corresponding CARLsim::connect call.
+Also, neuron IDs should be zero-indexed, meaning that the first neuron in the group should have ID 0.
+
+If the new weight (old weight plus bias) lies outside the boundaries <tt>[minWt,maxWt]</tt> of RangeWeight, then two
+different behaviors can be achieved, depending on a third optional argument <tt>updateWeightRange</tt>.
+- If <tt>updateWeightRange</tt> is set to <tt>true</tt>, then the corresponding weight boundaries <tt>[minWt,maxWt]</tt>
+  will be updated should the new weight lie outside those boundaries.
+- If <tt>updateWeightRange</tt> is set to <tt>false</tt>, then the corresponding weight will be clipped so that it stays
+  within the existing weight boundaries <tt>[minWt,maxWt]</tt>.
+
+\since v3.0
+
+
+\subsection ch12s3s4_scale_weights 12.3.4 Scale All the Weigths of a Connection
+
+Alternatively, it is possible to change the weights of all the synapses that belong to a certain connection ID
+using CARLsim::scaleWeights:
+\code
+// must be in EXECUTION state
+sim.runNetwork(1,0);
+
+// remember connId from connect call
+// multiply all allocated synapses of connId with scaling factor 1.345
+// set updateWeightRange flag to true because it will be necessary to update [minWt,maxWt]
+sim.scaleWeights(connId, 1.345f, false);
+\endcode
+This function will multiply the weight of every synapse of connection ID <tt>connId</tt> with a scaling factor
+<tt>scale</tt>.
+Here, the connection ID is the return argument of the corresponding CARLsim::connect call.
+Also, neuron IDs should be zero-indexed, meaning that the first neuron in the group should have ID 0.
+
+If the new weight (old weight times scaling factor) lies outside the boundaries <tt>[minWt,maxWt]</tt> of RangeWeight,
+then two different behaviors can be achieved, depending on a third optional argument <tt>updateWeightRange</tt>.
+- If <tt>updateWeightRange</tt> is set to <tt>true</tt>, then the corresponding weight boundaries <tt>[minWt,maxWt]</tt>
+  will be updated should the new weight lie outside those boundaries.
+- If <tt>updateWeightRange</tt> is set to <tt>false</tt>, then the corresponding weight will be clipped so that it stays
+  within the existing weight boundaries <tt>[minWt,maxWt]</tt>.
+
+\since v3.0
+
+
+
+\section ch12s4_logging_errors 12.4 Logging and Errors
 \TODO MB
 
 Logger modes. Log files. User errors.
 
 
-\section ch12s4_numerical_integration 12.4 Numerical Integration
+\section ch12s5_numerical_integration 12.5 Numerical Integration
 
 Integration time step. Integration method. Weight update interval.
 
 
-\section ch12s5_technical_limitations 12.5 Technical Limitations
+\section ch12s6_technical_limitations 12.6 Technical Limitations
 
 Limitations on neuron/synapse/group/connection size, etc. Memory limitations (GPU memory). Max firing rate 520Hz. Handling large-scale networks.
 

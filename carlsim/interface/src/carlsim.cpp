@@ -727,6 +727,17 @@ void CARLsim::setLogsFp(FILE* fpInf, FILE* fpErr, FILE* fpDeb, FILE* fpLog) {
 
 // +++++++++ PUBLIC METHODS: INTERACTING WITH A SIMULATION ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
+// adds a constant bias to the weight of every synapse in the connection
+void CARLsim::biasWeights(short int connId, float bias, bool updateWeightRange) {
+	std::stringstream funcName;	funcName << "biasWeights(" << connId << "," << bias << "," << updateWeightRange << ")";
+	UserErrors::assertTrue(carlsimState_==EXE_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName.str(),
+		funcName.str(), "EXECUTION.");
+	UserErrors::assertTrue(connId>=0 && connId<getNumConnections(), UserErrors::MUST_BE_IN_RANGE, funcName.str(),
+		"connId", "[0,getNumConnections()]");
+
+	snn_->biasWeights(connId, bias, updateWeightRange);
+}
+
 // reads network state from file
 void CARLsim::loadSimulation(FILE* fid) {
 	std::string funcName = "loadSimulation()";
@@ -742,6 +753,18 @@ void CARLsim::resetSpikeCounter(int grpId) {
 		UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "SETUP or EXECUTION.");
 
 	snn_->resetSpikeCounter(grpId);
+}
+
+// scales the weight of every synapse in the connection with a scaling factor
+void CARLsim::scaleWeights(short int connId, float scale, bool updateWeightRange) {
+	std::stringstream funcName;	funcName << "scaleWeights(" << connId << "," << scale << "," << updateWeightRange << ")";
+	UserErrors::assertTrue(carlsimState_==EXE_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName.str(),
+		funcName.str(), "EXECUTION.");
+	UserErrors::assertTrue(connId>=0 && connId<getNumConnections(), UserErrors::MUST_BE_IN_RANGE, funcName.str(),
+		"connId", "[0,getNumConnections()]");
+	UserErrors::assertTrue(scale>=0.0f, UserErrors::CANNOT_BE_NEGATIVE, funcName.str(), "Scaling factor");
+
+	snn_->scaleWeights(connId, scale, updateWeightRange);
 }
 
 // set spike monitor for group and write spikes to file
@@ -891,6 +914,18 @@ void CARLsim::setSpikeRate(int grpId, PoissonRate* spikeRate, int refPeriod) {
 	snn_->setSpikeRate(grpId, spikeRate, refPeriod);
 }
 
+void CARLsim::setWeight(short int connId, int neurIdPre, int neurIdPost, float weight, bool updateWeightRange) {
+	std::stringstream funcName;	funcName << "setWeight(" << connId << "," << neurIdPre << "," << neurIdPost << ","
+		<< updateWeightRange << ")";
+	UserErrors::assertTrue(carlsimState_==EXE_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName.str(),
+		funcName.str(), "EXECUTION.");
+	UserErrors::assertTrue(connId>=0 && connId<getNumConnections(), UserErrors::MUST_BE_IN_RANGE, 
+		funcName.str(), "connectionId", "[0,getNumConnections()]");
+	UserErrors::assertTrue(weight>=0.0f, UserErrors::CANNOT_BE_NEGATIVE, funcName.str(), "Weight value");
+
+	snn_->setWeight(connId, neurIdPre, neurIdPost, weight, updateWeightRange);
+}
+
 // function writes population weights from gIDpre to gIDpost to file fname in binary.
 void CARLsim::writePopWeights(std::string fname, int gIDpre, int gIDpost) {
 	std::string funcName = "writePopWeights("+fname+")";
@@ -946,6 +981,14 @@ std::vector<float> CARLsim::getConductanceGABAb(int grpId) {
 		"[0,getNumGroups()]");
 
 	return snn_->getConductanceGABAb(grpId);
+}
+
+RangeDelay CARLsim::getDelayRange(short int connId) {
+	std::stringstream funcName;	funcName << "getDelayRange(" << connId << ")";
+	UserErrors::assertTrue(connId>=0 && connId<getNumConnections(), UserErrors::MUST_BE_IN_RANGE, funcName.str(),
+		"connId", "[0,getNumConnections()]");
+
+	return snn_->getDelayRange(connId);
 }
 
 uint8_t* CARLsim::getDelays(int gIDpre, int gIDpost, int& Npre, int& Npost, uint8_t* delays) {
@@ -1085,6 +1128,7 @@ GroupNeuromodulatorInfo_t CARLsim::getGroupNeuromodulatorInfo(int grpId) {
 	return snn_->getGroupNeuromodulatorInfo(grpId);
 }
 
+
 simMode_t CARLsim::getSimMode() { return simMode_; }
 
 uint64_t CARLsim::getSimTime() { return snn_->getSimTime(); }
@@ -1101,9 +1145,27 @@ int* CARLsim::getSpikeCounter(int grpId) {
 	return snn_->getSpikeCounter(grpId);
 }
 
+// returns pointer to existing SpikeMonitor object, NULL else
+SpikeMonitor* CARLsim::getSpikeMonitor(int grpId) {
+	std::stringstream funcName; funcName << "getSpikeMonitor(" << grpId << ")";
+	UserErrors::assertTrue(grpId>=0 && grpId<getNumGroups(), UserErrors::MUST_BE_IN_RANGE, funcName.str(),
+		"grpId", "[0,getNumGroups()]");
+
+	return snn_->getSpikeMonitor(grpId);
+}
+
+RangeWeight CARLsim::getWeightRange(short int connId) {
+	std::stringstream funcName;	funcName << "getWeightRange(" << connId << ")";
+	UserErrors::assertTrue(connId>=0 && connId<getNumConnections(), UserErrors::MUST_BE_IN_RANGE, funcName.str(),
+		"connId", "[0,getNumConnections()]");
+
+	return snn_->getWeightRange(connId);
+}
+
 bool CARLsim::isExcitatoryGroup(int grpId) { return snn_->isExcitatoryGroup(grpId); }
 bool CARLsim::isInhibitoryGroup(int grpId) { return snn_->isInhibitoryGroup(grpId); }
 bool CARLsim::isPoissonGroup(int grpId) { return snn_->isPoissonGroup(grpId); }
+
 
 // +++++++++ PUBLIC METHODS: SET DEFAULTS +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 

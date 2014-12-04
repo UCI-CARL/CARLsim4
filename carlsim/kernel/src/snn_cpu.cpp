@@ -664,10 +664,15 @@ int CpuSNN::runNetwork(int _nsec, int _nmsec, bool printRunSummary, bool copySta
 	assert(doneReorganization);
 
 	// first-time run: inform the user the simulation is running now
-	if (simTime==0) {
+	if (simTime==0 && printRunSummary) {
 		KERNEL_INFO("");
-		KERNEL_INFO("*******************      Running %s Simulation on GPU %d     ****************************\n",
-			simMode_==GPU_MODE?"GPU":"CPU", ithGPU_);
+		if (simMode_==GPU_MODE) {
+			KERNEL_INFO("******************** Running GPU Simulation on GPU %d ***************************",
+			ithGPU_);
+		} else {
+			KERNEL_INFO("********************      Running CPU Simulation      ***************************");
+		}
+		KERNEL_INFO("");
 	}
 
 	// reset all spike counters
@@ -781,6 +786,69 @@ int CpuSNN::runNetwork(int _nsec, int _nmsec, bool printRunSummary, bool copySta
 /// PUBLIC METHODS: INTERACTING WITH A SIMULATION
 /// ************************************************************************************************************ ///
 
+// adds a bias to every weight in the connection
+void CpuSNN::biasWeights(short int connId, float bias, bool updateWeightRange) {
+	assert(connId>=0 && connId<numConnections);
+
+	grpConnectInfo_t* connInfo = getConnectInfo(connId);
+
+	// iterate over all postsynaptic neurons
+	for (int i=grp_Info[connInfo->grpDest].StartN; i<=grp_Info[connInfo->grpDest].EndN; i++) {
+		unsigned int cumIdx = cumulativePre[i];
+
+		// iterate over all presynaptic neurons
+		unsigned int pos_ij = cumIdx;
+		for (int j=0; j<Npre[i]; pos_ij++, j++) {
+			if (cumConnIdPre[pos_ij]==connId) {
+				// apply bias to weight
+				float weight = wt[pos_ij] + bias;
+
+				// inform user of acton taken if weight is out of bounds
+//				bool needToPrintDebug = (weight+bias>connInfo->maxWt || weight+bias<connInfo->minWt);
+				bool needToPrintDebug = (weight>connInfo->maxWt || weight<0.0f);
+
+				if (updateWeightRange) {
+					// if this flag is set, we need to update minWt,maxWt accordingly
+					// will be saving new maxSynWt and copying to GPU below
+//					connInfo->minWt = fmin(connInfo->minWt, weight);
+					connInfo->maxWt = fmax(connInfo->maxWt, weight);
+					if (needToPrintDebug) {
+						KERNEL_DEBUG("biasWeights(%d,%f,%s): updated weight ranges to [%f,%f]", connId, bias,
+							(updateWeightRange?"true":"false"), 0.0f, connInfo->maxWt);
+					}
+				} else {
+					// constrain weight to boundary values
+					// compared to above, we swap minWt/maxWt logic
+					weight = fmin(weight, connInfo->maxWt);
+//					weight = fmax(weight, connInfo->minWt);
+					weight = fmax(weight, 0.0f);
+					if (needToPrintDebug) {
+						KERNEL_DEBUG("biasWeights(%d,%f,%s): constrained weight %f to [%f,%f]", connId, bias,
+							(updateWeightRange?"true":"false"), weight, 0.0f, connInfo->maxWt);
+					}
+				}
+
+				// update datastructures
+				wt[pos_ij] = weight;
+				maxSynWt[pos_ij] = connInfo->maxWt; // it's easier to just update, even if it hasn't changed
+			}
+		}
+
+		// update GPU datastructures in batches, grouped by post-neuron
+		if (simMode_==GPU_MODE) {
+			CUDA_CHECK_ERRORS( cudaMemcpy(&(cpu_gpuNetPtrs.wt[cumIdx]), &(wt[cumIdx]), sizeof(float)*Npre[i],
+				cudaMemcpyHostToDevice) );
+
+			if (cpu_gpuNetPtrs.maxSynWt!=NULL) {
+				// only copy maxSynWt if datastructure actually exists on the GPU
+				// (that logic should be done elsewhere though)
+				CUDA_CHECK_ERRORS( cudaMemcpy(&(cpu_gpuNetPtrs.maxSynWt[cumIdx]), &(maxSynWt[cumIdx]), 
+					sizeof(float)*Npre[i], cudaMemcpyHostToDevice) );
+			}
+		}
+	}
+}
+
 // deallocates dynamical structures and exits
 void CpuSNN::exitSimulation(int val) {
 	deleteObjects();
@@ -816,6 +884,70 @@ void CpuSNN::resetSpikeCounter(int grpId) {
 		else {
 			int bufPos = grp_Info[grpId].spkCntBufPos; // retrieve buf pos
 			memset(spkCntBuf[bufPos],0,grp_Info[grpId].SizeN*sizeof(int)); // set all to 0
+		}
+	}
+}
+
+// multiplies every weight with a scaling factor
+void CpuSNN::scaleWeights(short int connId, float scale, bool updateWeightRange) {
+	assert(connId>=0 && connId<numConnections);
+	assert(scale>=0.0f);
+
+	grpConnectInfo_t* connInfo = getConnectInfo(connId);
+
+	// iterate over all postsynaptic neurons
+	for (int i=grp_Info[connInfo->grpDest].StartN; i<=grp_Info[connInfo->grpDest].EndN; i++) {
+		unsigned int cumIdx = cumulativePre[i];
+
+		// iterate over all presynaptic neurons
+		unsigned int pos_ij = cumIdx;
+		for (int j=0; j<Npre[i]; pos_ij++, j++) {
+			if (cumConnIdPre[pos_ij]==connId) {
+				// apply bias to weight
+				float weight = wt[pos_ij]*scale;
+
+				// inform user of acton taken if weight is out of bounds
+//				bool needToPrintDebug = (weight>connInfo->maxWt || weight<connInfo->minWt);
+				bool needToPrintDebug = (weight>connInfo->maxWt || weight<0.0f);
+
+				if (updateWeightRange) {
+					// if this flag is set, we need to update minWt,maxWt accordingly
+					// will be saving new maxSynWt and copying to GPU below
+//					connInfo->minWt = fmin(connInfo->minWt, weight);
+					connInfo->maxWt = fmax(connInfo->maxWt, weight);
+					if (needToPrintDebug) {
+						KERNEL_DEBUG("scaleWeights(%d,%f,%s): updated weight ranges to [%f,%f]", connId, scale,
+							(updateWeightRange?"true":"false"), 0.0f, connInfo->maxWt);
+					}
+				} else {
+					// constrain weight to boundary values
+					// compared to above, we swap minWt/maxWt logic
+					weight = fmin(weight, connInfo->maxWt);
+//					weight = fmax(weight, connInfo->minWt);
+					weight = fmax(weight, 0.0f);
+					if (needToPrintDebug) {
+						KERNEL_DEBUG("scaleWeights(%d,%f,%s): constrained weight %f to [%f,%f]", connId, scale,
+							(updateWeightRange?"true":"false"), weight, 0.0f, connInfo->maxWt);
+					}
+				}
+
+				// update datastructures
+				wt[pos_ij] = weight;
+				maxSynWt[pos_ij] = connInfo->maxWt; // it's easier to just update, even if it hasn't changed
+			}
+		}
+
+		// update GPU datastructures in batches, grouped by post-neuron
+		if (simMode_==GPU_MODE) {
+			CUDA_CHECK_ERRORS( cudaMemcpy(&(cpu_gpuNetPtrs.wt[cumIdx]), &(wt[cumIdx]), sizeof(float)*Npre[i],
+				cudaMemcpyHostToDevice) );
+
+			if (cpu_gpuNetPtrs.maxSynWt!=NULL) {
+				// only copy maxSynWt if datastructure actually exists on the GPU
+				// (that logic should be done elsewhere though)
+				CUDA_CHECK_ERRORS( cudaMemcpy(&(cpu_gpuNetPtrs.maxSynWt[cumIdx]), &(maxSynWt[cumIdx]), 
+					sizeof(float)*Npre[i], cudaMemcpyHostToDevice));
+			}
 		}
 	}
 }
@@ -1001,6 +1133,78 @@ void CpuSNN::setSpikeRate(int grpId, PoissonRate* ratePtr, int refPeriod) {
 	grp_Info[grpId].RatePtr = ratePtr;
 	grp_Info[grpId].RefractPeriod   = refPeriod;
 	spikeRateUpdated = true;
+}
+
+// sets the weight value of a specific synapse
+void CpuSNN::setWeight(short int connId, int neurIdPre, int neurIdPost, float weight, bool updateWeightRange) {
+	assert(connId>=0 && connId<getNumConnections());
+	assert(weight>=0.0f);
+
+	grpConnectInfo_t* connInfo = getConnectInfo(connId);
+	assert(neurIdPre>=0  && neurIdPre<getGroupNumNeurons(connInfo->grpSrc));
+	assert(neurIdPost>=0 && neurIdPost<getGroupNumNeurons(connInfo->grpDest));
+
+	// inform user of acton taken if weight is out of bounds
+//	bool needToPrintDebug = (weight>connInfo->maxWt || weight<connInfo->minWt);
+	bool needToPrintDebug = (weight>connInfo->maxWt || weight<0.0f);
+
+	if (updateWeightRange) {
+		// if this flag is set, we need to update minWt,maxWt accordingly
+		// will be saving new maxSynWt and copying to GPU below
+//		connInfo->minWt = fmin(connInfo->minWt, weight);
+		connInfo->maxWt = fmax(connInfo->maxWt, weight);
+		if (needToPrintDebug) {
+			KERNEL_DEBUG("setWeight(%d,%d,%d,%f,%s): updated weight ranges to [%f,%f]", connId, neurIdPre, neurIdPost,
+				weight, (updateWeightRange?"true":"false"), 0.0f, connInfo->maxWt);
+		}
+	} else {
+		// constrain weight to boundary values
+		// compared to above, we swap minWt/maxWt logic
+		weight = fmin(weight, connInfo->maxWt);
+//		weight = fmax(weight, connInfo->minWt);
+		weight = fmax(weight, 0.0f);
+		if (needToPrintDebug) {
+			KERNEL_DEBUG("setWeight(%d,%d,%d,%f,%s): constrained weight %f to [%f,%f]", connId, neurIdPre, neurIdPost,
+				weight, (updateWeightRange?"true":"false"), weight, 0.0f, connInfo->maxWt);
+		}
+	}
+
+	// find real ID of pre- and post-neuron
+	int neurIdPreReal = grp_Info[connInfo->grpSrc].StartN+neurIdPre;
+	int neurIdPostReal = grp_Info[connInfo->grpDest].StartN+neurIdPost;
+
+	// iterate over all presynaptic synapses until right one is found
+	bool synapseFound = false;
+	int pos_ij = cumulativePre[neurIdPostReal];
+	for (int j=0; j<Npre[neurIdPostReal]; pos_ij++, j++) {
+		post_info_t* preId = &preSynapticIds[pos_ij];
+		int pre_nid = GET_CONN_NEURON_ID((*preId));
+		if (GET_CONN_NEURON_ID((*preId))==neurIdPreReal) {
+			assert(cumConnIdPre[pos_ij]==connId); // make sure we've got the right connection ID
+
+			wt[pos_ij] = weight;
+			maxSynWt[pos_ij] = connInfo->maxWt; // it's easier to just update, even if it hasn't changed
+
+			if (simMode_==GPU_MODE) {
+				// need to update datastructures on GPU
+				CUDA_CHECK_ERRORS( cudaMemcpy(&(cpu_gpuNetPtrs.wt[pos_ij]), &weight, sizeof(float), cudaMemcpyHostToDevice));
+				if (cpu_gpuNetPtrs.maxSynWt!=NULL) {
+					// only copy maxSynWt if datastructure actually exists on the GPU
+					// (that logic should be done elsewhere though)
+					CUDA_CHECK_ERRORS( cudaMemcpy(&(cpu_gpuNetPtrs.maxSynWt[pos_ij]), &(maxSynWt[pos_ij]), sizeof(float), cudaMemcpyHostToDevice));
+				}
+			}
+
+			// synapse found and updated: we're done!
+			synapseFound = true;
+			break;
+		}
+	}
+
+	if (!synapseFound) {
+		KERNEL_WARN("setWeight(%d,%d,%d,%f,%s): Synapse does not exist, not updated.", connId, neurIdPre, neurIdPost,
+			weight, (updateWeightRange?"true":"false"));
+	}
 }
 
 // writes network state to file
@@ -1339,6 +1543,14 @@ std::vector<float> CpuSNN::getConductanceGABAb(int grpId) {
 	return gGABAbVec;
 }
 
+// returns RangeDelay struct of a connection
+RangeDelay CpuSNN::getDelayRange(short int connId) {
+	assert(connId>=0 && connId<numConnections);
+	grpConnectInfo_t* connInfo = getConnectInfo(connId);
+	return RangeDelay(connInfo->minDelay, connInfo->maxDelay);
+}
+
+
 // this is a user function
 // \FIXME: fix this
 uint8_t* CpuSNN::getDelays(int gIDpre, int gIDpost, int& Npre, int& Npost, uint8_t* delays) {
@@ -1505,6 +1717,24 @@ int* CpuSNN::getSpikeCounter(int grpId) {
 		return spkCntBuf[bufPos]; // return pointer to buffer
 	}
 }
+
+// returns pointer to existing SpikeMonitor object, NULL else
+SpikeMonitor* CpuSNN::getSpikeMonitor(int grpId) {
+	assert(grpId>=0 && grpId<getNumGroups());
+	if (grp_Info[grpId].SpikeMonitorId>=0) {
+		return spikeMonList[grp_Info[grpId].SpikeMonitorId];
+	} else {
+		return NULL;
+	}
+}
+
+// returns RangeWeight struct of a connection
+RangeWeight CpuSNN::getWeightRange(short int connId) {
+	assert(connId>=0 && connId<numConnections);
+	grpConnectInfo_t* connInfo = getConnectInfo(connId);
+	return RangeWeight(0.0f, connInfo->initWt, connInfo->maxWt);
+}
+
 
 /// **************************************************************************************************************** ///
 /// PRIVATE METHODS

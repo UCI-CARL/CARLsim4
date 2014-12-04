@@ -4,51 +4,37 @@
 # examples/<example_name> or projects/<project_name> then you need to either
 # move the configured user.mk file to this directory or set the path to
 # where CARLsim can find the user.mk.
-USER_MK_PATH = ../../
+USER_MK_PATH = ../../../
 include $(USER_MK_PATH)user.mk
 
-example := tuneFiringRatesECJ
-
-# name of ECJ parameter file.
-ecj_param_file := $(example)Experiment.params
-output := *.dot *.dat *.log *.stat results/*
+example := simple_weight_tuner
+output := *.dot *.dat *.log *.csv results/*
 
 # -----------------------------------------------------------------------------
 # You should not need to edit the file beyond this point
 # -----------------------------------------------------------------------------
 
-# we are compiling from CARLsim lib
+# we are compiling from lib
 CARLSIM_FLAGS += -I$(CARLSIM_LIB_DIR)/include/kernel \
 				 -I$(CARLSIM_LIB_DIR)/include/interface \
 				 -I$(CARLSIM_LIB_DIR)/include/spike_monitor \
-				 -I$(CARLSIM_LIB_DIR)/include/connection_monitor \
 				 -I$(CARLSIM_LIB_DIR)/include/spike_generators \
 				 -I$(CARLSIM_LIB_DIR)/include/input_stimulus \
 				 -I$(CARLSIM_LIB_DIR)/include/simple_weight_tuner
 CARLSIM_LIBS  += -L$(CARLSIM_LIB_DIR)/lib -lCARLsim
 
-# carlsim ecj components
-ECJ_PTI_FLAGS += -I$(ECJ_PTI_DIR)/include
-ECJ_PTI_LIBS  += $(ECJ_PTI_DIR)/lib/libCARLsimPTI.a
-
 local_src  := main_$(example).cpp
 local_prog := $(example)
-carlsim_prog := carlsim_$(example)
+local_objs :=
 
 .PHONY: clean distclean
-# create executable bash script for user to run
-$(local_prog): $(local_src) $(carlsim_prog)
-	@echo "#!/bin/bash" > $(local_prog)
-	@echo "java -cp \"$(ECJ_DIR)/ecj.jar:$(ECJ_PTI_DIR)/lib/CARLsim-ECJ.jar\" ecjapp.CARLsimEC ./$(ecj_param_file)" >> $(local_prog)
-	@chmod u+x $(local_prog)
-
 # compile from CARLsim lib
-$(carlsim_prog): $(local_src)
-	$(NVCC) $(CARLSIM_INCLUDES) $(ECJ_PTI_FLAGS) $(CARLSIM_FLAGS) \
-	$(CARLSIM_LFLAGS) $(CARLSIM_LIBS) $(ECJ_PTI_LIBS) $< -o $@
+$(local_prog): $(local_src) $(local_objs)
+	$(NVCC) $(CARLSIM_INCLUDES) $(CARLSIM_FLAGS) $(CARLSIM_LFLAGS) \
+	$(local_objs) $(CARLSIM_LIBS) $< -o $@
 
 clean:
-	$(RM) $(local_prog) $(carlsim_prog)
+	$(RM) $(local_prog) $(local_objs)
 
 distclean:
-	$(RM) $(local_prog) $(carlsim_prog) $(output)
+	$(RM) $(local_prog) $(output)
