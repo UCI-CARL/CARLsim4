@@ -75,8 +75,7 @@ namespace CARLsim_PTI {
 
 				// it's unnecessary to do this in the loop
 				PoissonRate* const in = new PoissonRate(NUM_NEURONS);
-				for (int k=0;k<NUM_NEURONS;k++)
-					in->rates[k] = INPUT_TARGET_HZ;
+				in->setRates(INPUT_TARGET_HZ);
 
 				for(unsigned int i = 0; i < parameters.getNumInstances(); i++) {
 					network->setSpikeRate(poissonGroup[i],in);

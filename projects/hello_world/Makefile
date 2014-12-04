@@ -18,7 +18,8 @@ CARLSIM_FLAGS += -I$(CARLSIM_LIB_DIR)/include/kernel \
 				 -I$(CARLSIM_LIB_DIR)/include/interface \
 				 -I$(CARLSIM_LIB_DIR)/include/spike_monitor \
 				 -I$(CARLSIM_LIB_DIR)/include/spike_generators \
-				 -I$(CARLSIM_LIB_DIR)/include/input_stimulus
+				 -I$(CARLSIM_LIB_DIR)/include/input_stimulus \
+				 -I$(CARLSIM_LIB_DIR)/include/simple_weight_tuner
 CARLSIM_LIBS  += $(CARLSIM_LIB_DIR)/lib/libCARLsim.a
 
 local_src  := main_$(project).cpp

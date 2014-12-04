@@ -33,6 +33,7 @@ CARLSIM_LIBS  += -L$(CARLSIM_LIB_DIR)/lib -lCARLsim
 
 
 .PHONY: default clean distclean $(local_prog)
+# this must come before including gtest.mk
 default: $(local_prog)
 
 # overwrite $(test_dir)

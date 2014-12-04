@@ -18,19 +18,26 @@ USER_MK_PATH    ?= $(CARLSIM_SRC_DIR)
 
 include $(USER_MK_PATH)/user.mk
 
-# carlsim components
-kernel_dir     = $(CARLSIM_SRC_DIR)/carlsim/kernel
-interface_dir  = $(CARLSIM_SRC_DIR)/carlsim/interface
-spike_mon_dir  = $(CARLSIM_SRC_DIR)/carlsim/spike_monitor
-spike_gen_dir  = $(CARLSIM_SRC_DIR)/tools/spike_generators
-server_dir     = $(CARLSIM_SRC_DIR)/carlsim/server
-# carlsim tools
-input_stim_dir = $(CARLSIM_SRC_DIR)/tools/input_stimulus
+# The following is from the main Makefile and needs to be defined here again
+# with an updated path
 
-# we are compiling from lib
+# carlsim components
+kernel_dir          = $(CARLSIM_SRC_DIR)/carlsim/kernel
+interface_dir       = $(CARLSIM_SRC_DIR)/carlsim/interface
+spike_mon_dir       = $(CARLSIM_SRC_DIR)/carlsim/spike_monitor
+server_dir          = $(CARLSIM_SRC_DIR)/carlsim/server
+test_dir            = $(CARLSIM_SRC_DIR)/carlsim/test
+
+# carlsim tools
+tools_dir           = $(CARLSIM_SRC_DIR)/tools
+tools_spikegen_dir  = $(tools_dir)/spike_generators
+tools_inputstim_dir = $(tools_dir)/input_stimulus
+tools_swt_dir       = $(tools_dir)/simple_weight_tuner
+
+# CARLsim flags specific to the CARLsim installation
 CARLSIM_FLAGS += -I$(kernel_dir)/include -I$(interface_dir)/include \
-								 -I$(spike_mon_dir) -I$(spike_gen_dir) -I$(server_dir) \
-								 -I$(input_stim_dir)
+				 -I$(tools_spikegen_dir) -I$(tools_inputstim_dir) \
+				 -I$(spike_mon_dir) -I$(tools_swt_dir)
 
 # carlsim ecj components
 ECJ_PTI_FLAGS += -I$(ECJ_PTI_DIR)/include
