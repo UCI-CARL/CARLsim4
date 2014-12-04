@@ -1,7 +1,6 @@
 #include "gtest/gtest.h"
 #include "carlsim_tests.h"
 #include <carlsim.h>
-#include <interactive_spikegen.h>
 
 
 /// **************************************************************************************************************** ///

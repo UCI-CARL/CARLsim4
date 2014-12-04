@@ -43,10 +43,6 @@
 #include "carlsim_tests.h"
 
 #include <carlsim.h>
-#include <periodic_spikegen.h>
-#include <spikegen_from_file.h>
-#include <spikegen_from_vector.h>
-
 #include <vector>
 
 

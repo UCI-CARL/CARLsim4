@@ -2,7 +2,6 @@
 #include "carlsim_tests.h"
 
 #include <carlsim.h>
-#include <periodic_spikegen.h>
 
 /// ****************************************************************************
 /// current-based (cuba) model

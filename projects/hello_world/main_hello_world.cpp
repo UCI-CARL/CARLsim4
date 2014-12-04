@@ -64,8 +64,7 @@ int main() {
 
 	//setup some baseline input
 	PoissonRate in(10);
-	for (int i=0;i<10;i++)
-		in.rates[i] = 30.0f;
+	in.setRates(30.0f);
 	sim.setSpikeRate(gin,&in);
 
 	// run for a total of 10 seconds

@@ -2,7 +2,6 @@
 #include "carlsim_tests.h"
 
 #include <carlsim.h>
-#include <periodic_spikegen.h>
 #include <snn_definitions.h> // MAX_GRP_PER_SNN
 
 // TODO: I should probably use a google tests figure for this to reduce the

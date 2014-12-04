@@ -3,7 +3,6 @@
 
 #include <carlsim.h>
 #include <vector>
-#include <periodic_spikegen.h>
 
 /// **************************************************************************************************************** ///
 /// CORE FUNCTIONALITY

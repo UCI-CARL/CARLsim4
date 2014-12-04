@@ -55,6 +55,14 @@
 #include <poisson_rate.h>
 #include <spike_monitor.h>
 
+#include <interactive_spikegen.h>
+#include <periodic_spikegen.h>
+#include <spikegen_from_file.h>
+#include <spikegen_from_vector.h>
+
+#include <simple_weight_tuner.h>
+#include <input_stimulus.h>
+
 #include <linear_algebra.h>
 
 #if (WIN32 || WIN64)

@@ -39,8 +39,6 @@
  */
 
 #include <carlsim.h>
-#include <simple_weight_tuner.h>
-#include <periodic_spikegen.h>
 #include <stdio.h>
 
 #if (WIN32 || WIN64)
