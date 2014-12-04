@@ -11,6 +11,7 @@ Legend:
   + Added SimpleWeightTuner to tools, to Tutorial Chapter 12 (explanation)
     and Chapter 13 (example network).
   + Added CARLsim::setWeight, CARLsim::biasWeights, and CARLsim::scaleWeights.
+  + Added Makefile for compiling test suite from libCARLsim.
   * Included tools in CARLsim libcompile.
   * Renamed CARLsim::getCARLsimState for consistency.
   * Fixed display error bug in UserErrors class.
