@@ -80,15 +80,15 @@ $(spike_mon_dir)/%.o: $(spike_mon_dir)/%.cpp $(spike_mon_inc)
 
 # tools/spikegen
 $(tools_spikegen_dir)/%.o: $(tools_spikegen_src) $(tools_spikegen_inc)
-	$(NVCC) -c $(CARLSIM_INCLUDES) $(CARLSIM_FLAGS)	$< -o $@
+	$(NVCC) -c $(CARLSIM_INCLUDES) $(CARLSIM_FLAGS)	$(@D)/$*.cpp -o $@
 
 # tools/input_stimulus
 $(tools_inputstim_dir)/%.o: $(tools_inputstim_src) $(tools_inputstim_inc)
-	$(NVCC) -c $(CARLSIM_INCLUDES) $(CARLSIM_FLAGS) $< -o $@
+	$(NVCC) -c $(CARLSIM_INCLUDES) $(CARLSIM_FLAGS) $(@D)/$*.cpp -o $@
 
 # tools/simple_weight_tuner
 $(tools_swt_dir)/%.o: $(tools_swt_src) $(tools_swt_inc)
-	$(NVCC) -c $(CARLSIM_INCLUDES) $(CARLSIM_FLAGS) $< -o $@
+	$(NVCC) -c $(CARLSIM_INCLUDES) $(CARLSIM_FLAGS) $(@D)/$*.cpp  -o $@
 
 # kernel carlsim cpps
 $(kernel_dir)/src/%.o: $(kernel_dir)/src/%.cpp $(kernel_inc)

@@ -16,24 +16,21 @@ output := *.dot *.dat *.log *.csv results/*
 
 # we are compiling from lib
 CARLSIM_FLAGS += -I$(CARLSIM_LIB_DIR)/include/kernel \
-								 -I$(CARLSIM_LIB_DIR)/include/interface \
-								 -I$(CARLSIM_LIB_DIR)/include/spike_monitor \
-								 -I$(CARLSIM_LIB_DIR)/include/spike_generators \
-								 -I$(CARLSIM_LIB_DIR)/include/simple_weight_tuner
+				 -I$(CARLSIM_LIB_DIR)/include/interface \
+				 -I$(CARLSIM_LIB_DIR)/include/spike_monitor \
+				 -I$(CARLSIM_LIB_DIR)/include/spike_generators \
+				 -I$(CARLSIM_LIB_DIR)/include/simple_weight_tuner
 CARLSIM_LIBS  += -L$(CARLSIM_LIB_DIR)/lib -lCARLsim
 
 local_src  := main_$(example).cpp
 local_prog := $(example)
-local_objs := simple_weight_tuner.o
+local_objs :=
 
 .PHONY: clean distclean
 # compile from CARLsim lib
 $(local_prog): $(local_src) $(local_objs)
 	$(NVCC) $(CARLSIM_INCLUDES) $(CARLSIM_FLAGS) $(CARLSIM_LFLAGS) \
 	$(local_objs) $(CARLSIM_LIBS) $< -o $@
-
-%.o: %.cpp %.h
-	$(NVCC) -c $(CARLSIM_INCLUDES) $(CARLSIM_FLAGS) $< -o $@
 
 clean:
 	$(RM) $(local_prog) $(local_objs)

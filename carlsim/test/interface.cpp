@@ -106,7 +106,6 @@ TEST(Interface, biasWeightsDeath) {
 
 	EXPECT_DEATH({sim->biasWeights(c1+1, 0.1, false);},""); // invalid connId
 	EXPECT_DEATH({sim->biasWeights(-1,   0.1, false);},""); // invalid connId
-	EXPECT_DEATH({sim->biasWeights(0,      0, false);},""); // bias==0
 }
 
 TEST(Interface, scaleWeightsDeath) {

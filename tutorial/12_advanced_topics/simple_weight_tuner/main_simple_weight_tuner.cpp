@@ -40,61 +40,74 @@
 
 #include <carlsim.h>
 #include <simple_weight_tuner.h>
-
-#include <stdio.h>	// printf
+#include <periodic_spikegen.h>
+#include <stdio.h>
 
 #if (WIN32 || WIN64)
 	#define _CRT_SECURE_NO_WARNINGS
 #endif
 
 int main() {
-	// ------------ CONFIG STATE --------------------------
-
-	int nNeur = 1000; // number of neurons per group
-	float initWt = 0.1f; // initial weight for connection
-
+	// ---------------- CONFIG STATE -------------------
 	CARLsim *sim = new CARLsim("SimpleWeightTuner", CPU_MODE, USER, 0, 42);
 
-	int gOut=sim->createGroup("out", nNeur, EXCITATORY_NEURON);
+	// output layer should have some target firing rate
+	int gOut=sim->createGroup("out", 1000, EXCITATORY_NEURON);
 	sim->setNeuronParameters(gOut, 0.02f, 0.2f, -65.0f, 8.0f);
-	int gIn=sim->createSpikeGeneratorGroup("in", nNeur, EXCITATORY_NEURON);
+
+	// hidden layer to tune first
+	int gHid=sim->createGroup("hidden", 1000, EXCITATORY_NEURON);
+	sim->setNeuronParameters(gHid, 0.02f, 0.2f, -65.0f, 8.0f);
+
+	// input is a SpikeGenerator group that fires every 20 ms (50 Hz)
+	PeriodicSpikeGenerator PSG(50.0f);
+	int gIn=sim->createSpikeGeneratorGroup("in", 1000, EXCITATORY_NEURON);
+	sim->setSpikeGenerator(gIn, &PSG);
 
 	// random connection with 10% probability
-	int c0=sim->connect(gIn, gOut, "random", RangeWeight(initWt), 0.1f, RangeDelay(1,10));
+	int c0=sim->connect(gIn, gHid, "random", RangeWeight(0.005f), 0.1f, RangeDelay(1,10));
+	int c1=sim->connect(gHid, gOut, "random", RangeWeight(0.005f), 0.1f, RangeDelay(1,10));
 
 	sim->setConductances(true);
 
 
-	// ------------ SETUP STATE --------------------------
+	// ---------------- SETUP STATE -------------------
 
 	sim->setupNetwork();
 
-	// make input 50Hz
-	// apply to input group
-	PoissonRate PR(nNeur);
-	PR.setRates(50.0f);
-	sim->setSpikeRate(gIn, &PR);
+	// accept firing rates within this range of target firing
+	double targetFiringHid = 27.4;
+	double targetFiringOut = 42.8;
+	double errorMarginHz = 0.01;
+
+	// set up weight tuning from input -> hidden
+	SimpleWeightTuner SWTin2hid(sim, errorMarginHz);
+	SWTin2hid.setConnectionToTune(c0, 0.0); // start at 0
+	SWTin2hid.setTargetFiringRate(gHid, targetFiringHid);
+
+	// set up weight tuning from hidden -> output
+	SimpleWeightTuner SWThid2out(sim, errorMarginHz);
+	SWThid2out.setConnectionToTune(c1, 0.0); // start at 0
+	SWThid2out.setTargetFiringRate(gOut, targetFiringOut);
 
 
-	// ------------ EXE STATE --------------------------
+	// ---------------- RUN STATE -------------------
 
-	// use weight tuner to find the weights that give 27.4 Hz spiking
-	SimpleWeightTuner SWT(sim, 0.01, 100);
-	SWT.setConnectionToTune(c0, 0.0);
-	SWT.setTargetFiringRate(gOut, 27.4);
-
-	while (!SWT.done()) {
-		SWT.iterate();
+	printf("\nSimpleWeightTuner Demo\n");
+	printf("- Step 1: Tune weights from input layer to hidden layer\n");
+	while (!SWTin2hid.done()) {
+		SWTin2hid.iterate();
 	}
 
-	// \TODO: Use ConnectionMonitor to retrieve the current set of weights
+	printf("\n- Step 2: Tune weights from hidden layer to output layer\n");
+	while (!SWThid2out.done()) {
+		SWThid2out.iterate();
+	}
 
-	// verify result
-	for (int i=0; i<5; i++)
-		sim->runNetwork(1,0);
+	printf("\n- Step 3: Verify result (gHid=%.4fHz, gOut=%.4fHz, +/- %.4fHz)\n", targetFiringHid, targetFiringOut, 
+		errorMarginHz);
+	sim->runNetwork(1,0);
 
 	delete sim;
-	
 	return 0;
 }
-

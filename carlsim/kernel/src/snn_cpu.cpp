@@ -621,18 +621,23 @@ void CpuSNN::setWeightAndWeightChangeUpdate(updateInterval_t wtANDwtChangeUpdate
 int CpuSNN::runNetwork(int _nsec, int _nmsec, bool printRunSummary, bool copyState) {
 	assert(_nmsec >= 0 && _nmsec < 1000);
 	assert(_nsec  >= 0);
-	int runDuration = _nsec*1000 + _nmsec;
-	KERNEL_DEBUG("runNetwork: runDur=%dms, printRunSummary=%s, copyState=%s", runDuration, printRunSummary?"y":"n",
+	int runDurationMs = _nsec*1000 + _nmsec;
+	KERNEL_DEBUG("runNetwork: runDur=%dms, printRunSummary=%s, copyState=%s", runDurationMs, printRunSummary?"y":"n",
 		copyState?"y":"n");
 
 	// setupNetwork() must have already been called
 	assert(doneReorganization);
 
 	// first-time run: inform the user the simulation is running now
-	if (simTime==0) {
+	if (simTime==0 && printRunSummary) {
 		KERNEL_INFO("");
-		KERNEL_INFO("*******************      Running %s Simulation on GPU %d     ****************************\n",
-			simMode_==GPU_MODE?"GPU":"CPU", ithGPU_);
+		if (simMode_==GPU_MODE) {
+			KERNEL_INFO("******************** Running GPU Simulation on GPU %d ***************************",
+			ithGPU_);
+		} else {
+			KERNEL_INFO("********************      Running CPU Simulation      ***************************");
+		}
+		KERNEL_INFO("");
 	}
 
 	// reset all spike counters
@@ -643,19 +648,19 @@ int CpuSNN::runNetwork(int _nsec, int _nmsec, bool printRunSummary, bool copySta
 
 	// store current start time for future reference
 	simTimeRunStart = simTime;
-	simTimeRunStop  = simTime+runDuration;
+	simTimeRunStop  = simTime+runDurationMs;
 	assert(simTimeRunStop>=simTimeRunStart); // check for arithmetic underflow
 
 	// set the Poisson generation time slice to be at the run duration up to PROPOGATED_BUFFER_SIZE ms.
 	// \TODO: should it be PROPAGATED_BUFFER_SIZE-1 or PROPAGATED_BUFFER_SIZE ?
-	setGrpTimeSlice(ALL, MAX(1,MIN(runDuration,PROPAGATED_BUFFER_SIZE-1)));
+	setGrpTimeSlice(ALL, MAX(1,MIN(runDurationMs,PROPAGATED_BUFFER_SIZE-1)));
 
 	CUDA_RESET_TIMER(timer);
 	CUDA_START_TIMER(timer);
 
 	// if nsec=0, simTimeMs=10, we need to run the simulator for 10 timeStep;
 	// if nsec=1, simTimeMs=10, we need to run the simulator for 1*1000+10, time Step;
-	for(int i=0; i<runDuration; i++) {
+	for(int i=0; i<runDurationMs; i++) {
 		if(simMode_ == CPU_MODE)
 			doSnnSim();
 		else
@@ -745,7 +750,7 @@ int CpuSNN::runNetwork(int _nsec, int _nmsec, bool printRunSummary, bool copySta
 				for (int neurId=grp_Info[grpId].StartN; neurId<=grp_Info[grpId].EndN; neurId++)
 					grpSpk += nSpikeCnt[neurId]; // add up all neuronal spike counts
 
-				float meanRate = grpSpk*1000.0/runDuration/grp_Info[grpId].SizeN;
+				float meanRate = (runDurationMs>0) ? grpSpk*1000.0/runDurationMs/grp_Info[grpId].SizeN : 0.0f;
 				float std = 0.0f;
 				if (grp_Info[grpId].SizeN > 1) {
 					for (int neurId=grp_Info[grpId].StartN; neurId<=grp_Info[grpId].EndN; neurId++)
@@ -760,7 +765,7 @@ int CpuSNN::runNetwork(int _nsec, int _nmsec, bool printRunSummary, bool copySta
 					grp_Info2[grpId].Name.c_str(),
 					grpId,
 					grpSpk,
-					runDuration,
+					runDurationMs,
 					meanRate,
 					std);
 			}
@@ -3012,6 +3017,8 @@ void CpuSNN::findFiring() {
 						assert(!((stdp_tDiff < 0) && (synSpikeTime[pos_ij] != MAX_SIMULATION_TIME)));
 
 						if (stdp_tDiff > 0) {
+							// LTP
+
 							#ifdef INHIBITORY_STDP
 							// if this is an excitatory or inhibitory synapse
 							if (maxSynWt[pos_ij] >= 0)

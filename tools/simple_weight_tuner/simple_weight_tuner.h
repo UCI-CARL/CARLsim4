@@ -56,7 +56,7 @@ public:
 	 * \since v3.0
 	 * \see \ref ch10_ecj
 	 */
-	SimpleWeightTuner(CARLsim *sim, double errorMargin=1e-3, int maxIter=100, double stepSizeFraction=0.1);
+	SimpleWeightTuner(CARLsim *sim, double errorMargin=1e-3, int maxIter=100, double stepSizeFraction=0.5);
 
 	/*!
 	 * \brief Destructor
@@ -98,6 +98,8 @@ public:
 	 *
 	 * \param[in] grpId       the group ID
 	 * \param[in] targetRate  target firing rate (Hz) of the group
+	 * \attention If a SpikeMonitor already exists for this group, SimpleWeightTuner will use the same one and turn
+	 * PersistentMode off.
 	 * \since v3.0
 	 * \see SpikeMonitor
 	 */

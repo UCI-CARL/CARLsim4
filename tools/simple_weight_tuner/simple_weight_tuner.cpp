@@ -17,10 +17,11 @@ SimpleWeightTuner::SimpleWeightTuner(CARLsim *sim, double errorMargin, int maxIt
 	assert(stepSizeFraction>0.0f && stepSizeFraction<=1.0f);
 
 	sim_ = sim;
+	assert(sim_->getCARLsimState()!=EXE_STATE);
+
 	errorMargin_ = errorMargin;
 	stepSizeFraction_ = stepSizeFraction;
 	maxIter_ = maxIter;
-
 
 	connId_ = -1;
 	wtRange_ = NULL;
@@ -67,7 +68,7 @@ bool SimpleWeightTuner::done(bool printMessage) {
 	// success: margin reached
 	if (fabs(currentError_) < errorMargin_) {
 		if (printMessage) {
-			printf("SimpleWeightTuner successful: Error margin reached.\n");
+			printf("SimpleWeightTuner successful: Error margin reached in %d iterations.\n",cntIter_);
 		}
 		return true;
 	}
@@ -75,7 +76,7 @@ bool SimpleWeightTuner::done(bool printMessage) {
 	// failure: max iter reached
 	if (cntIter_ >= maxIter_) {
 		if (printMessage) {
-			printf("SimpleWeightTuner failed: Max number of iterations reached.\n");
+			printf("SimpleWeightTuner failed: Max number of iterations (%d) reached.\n",maxIter_);
 		}
 		return true;
 	}
@@ -125,15 +126,19 @@ void SimpleWeightTuner::iterate(int runDurationMs, bool printStatus) {
 	if (needToInitAlgo_)
 		initAlgo();
 
-	// else iterate
+	// in case the user has already been messing with the SpikeMonitor, we need to make sure that
+	// PersistentMode is off
+	SM_->setPersistentData(false);
+
+	// now iterate
 	SM_->startRecording();
 	sim_->runNetwork(runDurationMs/1000, runDurationMs%1000, false);
 	SM_->stopRecording();
 
 	double thisRate = SM_->getPopMeanFiringRate();
-
 	if (printStatus) {
-		printf("#%d: rate=%.4fHz, target=%.4fHz, error=%.4f, errorMargin=%.4f\n", cntIter_, thisRate, targetRate_, thisRate-targetRate_, errorMargin_);
+		printf("#%d: rate=%.4fHz, target=%.4fHz, error=%.7f, errorMargin=%.7f\n", cntIter_, thisRate, targetRate_,
+			thisRate-targetRate_, errorMargin_);
 	}
 
 	currentError_ = thisRate - targetRate_;
@@ -148,11 +153,13 @@ void SimpleWeightTuner::iterate(int runDurationMs, bool printStatus) {
 	if (wtStepSize_>0 && thisRate>targetRate_ || wtStepSize_<0 && thisRate<targetRate_) {
 		// we stepped too far to the right or too far to the left
 		// turn around and cut step size in half
+		// note that this should work for inhibitory connections, too: they have negative weights, so adding
+		// to the weight will actually decrease it (make it less negative)
 		wtStepSize_ = -wtStepSize_/2.0;
 	}
 
 	// find new weight
-	sim_->biasWeights(connId_, wtStepSize_);
+	sim_->biasWeights(connId_, wtStepSize_, adjustRange_);
 }
 
 
@@ -179,15 +186,15 @@ void SimpleWeightTuner::initAlgo() {
 	wtStepSize_ = stepSizeFraction_ * (wtRange_->max - wtRange_->min);
 	currentError_ = std::numeric_limits<double>::max();
 
+	// make sure we're in the right CARLsim state
+	if (sim_->getCARLsimState()!=EXE_STATE)
+		sim_->runNetwork(0,0,false);
+
 	// initialize weights
 	if (wtInit_>=0) {
 		// start at some specified initWt
 		if (wt.init != wtInit_) {
 			// specified starting point is not what is specified in connect
-
-			// make sure we're in the right CARLsim state
-			if (sim_->getCARLsimState()!=EXE_STATE)
-				sim_->runNetwork(0,0);
 
 			sim_->biasWeights(connId_, wtInit_ - wt.init, adjustRange_);
 		}
