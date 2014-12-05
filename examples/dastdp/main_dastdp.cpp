@@ -51,25 +51,25 @@
 #define NUM_DA_NEURON 30
 #define NUM_NEURON 10
 
-class GroupController: public GroupMonitor {
-private:
-	FILE* fid;
-public:
-	GroupController(std::string saveFolder) {
-		std::string fileName = saveFolder + "DA.csv";
-
-		fid = fopen(fileName.c_str(), "w");
-	}
-
-	~GroupController() {
-		fclose(fid);
-	}
-
-	void update(CARLsim* s, int grpId, float* daBuffer, int n) {
-		for (int i = 0; i < 100 /* n is 100 currently */; i++)
-			fprintf(fid, "%f ", daBuffer[i]);
-	}
-};
+//class GroupController: public GroupMonitor {
+//private:
+//	FILE* fid;
+//public:
+//	GroupController(std::string saveFolder) {
+//		std::string fileName = saveFolder + "DA.csv";
+//
+//		fid = fopen(fileName.c_str(), "w");
+//	}
+//
+//	~GroupController() {
+//		fclose(fid);
+//	}
+//
+//	void update(CARLsim* s, int grpId, float* daBuffer, int n) {
+//		for (int i = 0; i < 100 /* n is 100 currently */; i++)
+//			fprintf(fid, "%f ", daBuffer[i]);
+//	}
+//};
 
 class SpikeController: public SpikeGenerator {
 private:
@@ -103,7 +103,7 @@ int main()
 	int size;
 	SpikeMonitor* spikeMon1;
 	SpikeMonitor* spikeMonIn;
-	GroupController* grpCtrl = new GroupController(saveFolder);
+	//GroupController* grpCtrl = new GroupController(saveFolder);
 	SpikeController* spikeCtrl = new SpikeController();
 	int gin, g1, g1noise, gda;
 	float ALPHA_LTP_EXC = 0.10f/100;
@@ -142,7 +142,7 @@ int main()
 	spikeMonIn = sim.setSpikeMonitor(gin);
 	sim.setSpikeMonitor(gda);
 
-	sim.setGroupMonitor(g1, grpCtrl);
+	//sim.setGroupMonitor(g1, grpCtrl);
 
 	// save weights to file periodically
 	sim.setConnectionMonitor(gin, g1);
@@ -150,12 +150,12 @@ int main()
 
 	//setup some baseline input
 	PoissonRate in(NUM_NEURON);
-	for (int i=0;i<NUM_NEURON;i++) in.rates[i] = 4;
-		sim.setSpikeRate(gin,&in);
+	in.setRates(4.0f);
+	sim.setSpikeRate(gin,&in);
 
 	PoissonRate noise(NUM_NEURON);
-	for (int i=0;i<NUM_NEURON;i++) noise.rates[i] = 4;
-		sim.setSpikeRate(g1noise,&noise);
+	noise.setRates(4.0f);
+	sim.setSpikeRate(g1noise,&noise);
 
 
 	// run for 1000 seconds
@@ -186,7 +186,7 @@ int main()
 		}
 	}
 
-	delete grpCtrl;
+//	delete grpCtrl;
 	delete spikeCtrl;
 
 	return 0;

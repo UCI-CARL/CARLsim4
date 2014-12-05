@@ -726,7 +726,7 @@ int CpuSNN::runNetwork(int _nsec, int _nmsec, bool printRunSummary, bool copySta
 				updateSpikeMonitor();
 			}
 			if (numGroupMonitor) {
-				updateGroupMonitor();
+				//updateGroupMonitor();
 			}
 			if (numConnectionMonitor) {
 				updateConnectionMonitor();
@@ -1959,6 +1959,18 @@ void CpuSNN::buildNetworkInit(unsigned int nNeur, unsigned int nPostSyn, unsigne
 	grp5HT = new float[numGrp];
 	grpACh = new float[numGrp];
 	grpNE = new float[numGrp];
+
+	// init neuromodulators and their assistive buffers
+	for (int i = 0; i < numGrp; i++) {
+		grpDA[i] = grp_Info[i].baseDP;
+		grp5HT[i] = grp_Info[i].base5HT;
+		grpACh[i] = grp_Info[i].baseACh;
+		grpNE[i] = grp_Info[i].baseNE;
+		grpDABuffer[i] = new float[1000]; // 1 second DA buffer
+		grp5HTBuffer[i] = new float[1000];
+		grpAChBuffer[i] = new float[1000];
+		grpNEBuffer[i] = new float[1000];
+	}
 
 	resetCurrent();
 	resetConductances();
@@ -3424,6 +3436,12 @@ void CpuSNN::makePtrInfo() {
 	cpuNetPtrs.grp5HT			= grp5HT;
 	cpuNetPtrs.grpACh			= grpACh;
 	cpuNetPtrs.grpNE			= grpNE;
+	for (int i = 0; i < numGrp; i++) {
+		cpuNetPtrs.grpDABuffer[i]	= grpDABuffer[i];
+		cpuNetPtrs.grp5HTBuffer[i]	= grp5HTBuffer[i];
+		cpuNetPtrs.grpAChBuffer[i]	= grpAChBuffer[i];
+		cpuNetPtrs.grpNEBuffer[i]	= grpNEBuffer[i];
+	}
 	cpuNetPtrs.allocated    	= true;
 	cpuNetPtrs.memType      	= CPU_MODE;
 	cpuNetPtrs.stpu 			= stpu;
@@ -3935,7 +3953,7 @@ void CpuSNN::resetPointers(bool deallocate) {
 	grpNE = NULL;
 
 	// clear data buffer for group monitor
-	for (int i = 0; i < numGroupMonitor; i++) {
+	for (int i = 0; i < numGrp; i++) {
 		if (grpDABuffer != NULL && deallocate) delete [] grpDABuffer[i];
 		if (grp5HTBuffer != NULL && deallocate) delete [] grp5HTBuffer[i];
 		if (grpAChBuffer != NULL && deallocate) delete [] grpAChBuffer[i];
@@ -4315,101 +4333,101 @@ void CpuSNN::updateConnectionMonitor(int connId) {
 }
 
 void CpuSNN::updateGroupMonitor(int grpId) {
-	// TODO: build DA, 5HT, ACh, NE buffer in GPU memory and retrieve data every one second
-	// Currently, there is no buffer in GPU side. data are retrieved at every 10 ms simulation time
+	//// TODO: build DA, 5HT, ACh, NE buffer in GPU memory and retrieve data every one second
+	//// Currently, there is no buffer in GPU side. data are retrieved at every 10 ms simulation time
 
-	// don't continue if no group monitors in the network
-	if (!numGroupMonitor)
-		return;
+	//// don't continue if no group monitors in the network
+	//if (!numGroupMonitor)
+	//	return;
 
-	if (grpId==ALL) {
-		for (int g = 0; g < numGrp; g++)
-			updateSpikeMonitor(g);
-	} else {
-		// update group monitor of a specific group
+	//if (grpId==ALL) {
+	//	for (int g = 0; g < numGrp; g++)
+	//		updateSpikeMonitor(g);
+	//} else {
+	//	// update group monitor of a specific group
 
-		// find index in spike monitor arrays
-		int monitorId = grp_Info[grpId].GroupMonitorId;
+	//	// find index in spike monitor arrays
+	//	int monitorId = grp_Info[grpId].GroupMonitorId;
 
-		// don't continue if no group monitor enabled for this group
-		if (monitorId < 0)
-			return;
+	//	// don't continue if no group monitor enabled for this group
+	//	if (monitorId < 0)
+	//		return;
 
-		// find last update time for this group
-		GroupMonitorCore* grpMonObj = groupMonCoreList[monitorId];
-		unsigned int lastUpdate = grpMonObj->getLastUpdated();
+	//	// find last update time for this group
+	//	GroupMonitorCore* grpMonObj = groupMonCoreList[monitorId];
+	//	unsigned int lastUpdate = grpMonObj->getLastUpdated();
 
-		// don't continue if time interval is zero (nothing to update)
-		if (getSimTime() <= lastUpdate)
-			return;
+	//	// don't continue if time interval is zero (nothing to update)
+	//	if (getSimTime() <= lastUpdate)
+	//		return;
 
-		if ( getSimTime() > lastUpdate + 1000)
-			KERNEL_ERROR("updateGroupMonitor(grpId=%d) must be called at least once every second", grpId);
+	//	if ( getSimTime() > lastUpdate + 1000)
+	//		KERNEL_ERROR("updateGroupMonitor(grpId=%d) must be called at least once every second", grpId);
 
-		if (simMode_ == GPU_MODE) {
-			// copy the group information (neuromodulators) from the GPU to the CPU..
-			//copyFiringInfo_GPU();
-		}
+	//	if (simMode_ == GPU_MODE) {
+	//		// copy the group information (neuromodulators) from the GPU to the CPU..
+	//		//copyFiringInfo_GPU();
+	//	}
 
-		// find the time interval in which to update group status
-		// usually, we call updateGroupMonitor once every second, so the time interval is [0,1000)
-		// however, updateGroupMonitor can be called at any time t \in [0,1000)... so we can have the cases
-		// [0,t), [t,1000), and even [t1, t2)
-		int numMsMin = lastUpdate%1000; // lower bound is given by last time we called update
-		int numMsMax = getSimTimeMs(); // upper bound is given by current time
-		if (numMsMax == 0)
-			numMsMax = 1000; // special case: full second
-		assert(numMsMin < numMsMax);
+	//	// find the time interval in which to update group status
+	//	// usually, we call updateGroupMonitor once every second, so the time interval is [0,1000)
+	//	// however, updateGroupMonitor can be called at any time t \in [0,1000)... so we can have the cases
+	//	// [0,t), [t,1000), and even [t1, t2)
+	//	int numMsMin = lastUpdate%1000; // lower bound is given by last time we called update
+	//	int numMsMax = getSimTimeMs(); // upper bound is given by current time
+	//	if (numMsMax == 0)
+	//		numMsMax = 1000; // special case: full second
+	//	assert(numMsMin < numMsMax);
 
-		// current time is last completed second in milliseconds (plus t to be added below)
-		// special case is after each completed second where !getSimTimeMs(): here we look 1s back
-		int currentTimeSec = getSimTimeSec();
-		if (!getSimTimeMs())
-			currentTimeSec--;
+	//	// current time is last completed second in milliseconds (plus t to be added below)
+	//	// special case is after each completed second where !getSimTimeMs(): here we look 1s back
+	//	int currentTimeSec = getSimTimeSec();
+	//	if (!getSimTimeMs())
+	//		currentTimeSec--;
 
-		// save current time as last update time
-		grpMonObj->setLastUpdated(getSimTime());
+	//	// save current time as last update time
+	//	grpMonObj->setLastUpdated(getSimTime());
 
-		// prepare fast access
-		FILE* grpFileId = groupMonCoreList[monitorId]->getGroupFileId();
-		bool writeGroupToFile = grpFileId!=NULL;
-		bool writeGroupToArray = grpMonObj->isRecording();
+	//	// prepare fast access
+	//	FILE* grpFileId = groupMonCoreList[monitorId]->getGroupFileId();
+	//	bool writeGroupToFile = grpFileId!=NULL;
+	//	bool writeGroupToArray = grpMonObj->isRecording();
 
-		// Read one peice of data at a time from the buffer and put the data to an appopriate monitor buffer. Later the user
-		// may need need to dump these group data to an output file
-		for(int t = numMsMin; t < numMsMax; t++) {
-			if (simMode_ == GPU_MODE) {
-				// fectch group status
-			}
-						
-			assert(nid < numN);
+	//	// Read one peice of data at a time from the buffer and put the data to an appopriate monitor buffer. Later the user
+	//	// may need need to dump these group data to an output file
+	//	for(int t = numMsMin; t < numMsMax; t++) {
+	//		if (simMode_ == GPU_MODE) {
+	//			// fectch group status
+	//		}
+	//					
+	//		assert(nid < numN);
 
-			// make sure neuron belongs to currently relevant group
-			int this_grpId = grpIds[nid];
-			if (this_grpId != grpId)
-				continue;
+	//		// make sure neuron belongs to currently relevant group
+	//		int this_grpId = grpIds[nid];
+	//		if (this_grpId != grpId)
+	//			continue;
 
-			// adjust nid to be 0-indexed for each group
-			// this way, if a group has 10 neurons, their IDs in the spike file and spike monitor will be
-			// indexed from 0..9, no matter what their real nid is
-			nid -= grp_Info[grpId].StartN;
-			assert(nid>=0);
+	//		// adjust nid to be 0-indexed for each group
+	//		// this way, if a group has 10 neurons, their IDs in the spike file and spike monitor will be
+	//		// indexed from 0..9, no matter what their real nid is
+	//		nid -= grp_Info[grpId].StartN;
+	//		assert(nid>=0);
 
-			// current time is last completed second plus whatever is leftover in t
-			int time = currentTimeSec*1000 + t;
+	//		// current time is last completed second plus whatever is leftover in t
+	//		int time = currentTimeSec*1000 + t;
 
-			if (writeGroupToFile) {
-				// write to group status file
-			}
+	//		if (writeGroupToFile) {
+	//			// write to group status file
+	//		}
 
-			if (writeGroupToArray) {
-				//grpMonObj->pushData(time, data);
-			}
-		}
+	//		if (writeGroupToArray) {
+	//			//grpMonObj->pushData(time, data);
+	//		}
+	//	}
 
-		if (grpFileId!=NULL) // flush group status file
-			fflush(grpFileId);
-	}
+	//	if (grpFileId!=NULL) // flush group status file
+	//		fflush(grpFileId);
+	//}
 }
 
 void CpuSNN::updateSpikesFromGrp(int grpId) {

@@ -148,7 +148,7 @@ copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;WIN64;__CUDA5__;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(CudaToolkitIncludeDir);$(NVCUDASAMPLES_ROOT)\common\inc;$(SolutionDir)carlsim\kernel\include;$(SolutionDir)carlsim\interface\include;$(SolutionDir)carlsim\connection_monitor;$(ProjectDir)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(CudaToolkitIncludeDir);$(NVCUDASAMPLES_ROOT)\common\inc;$(SolutionDir)carlsim\kernel\include;$(SolutionDir)carlsim\interface\include;$(SolutionDir)carlsim\connection_monitor;$(SolutionDir)carlsim\group_monitor;$(ProjectDir)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>

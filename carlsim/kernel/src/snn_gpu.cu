@@ -1930,6 +1930,19 @@ void CpuSNN::copyGroupState(network_ptr_t* dest, network_ptr_t* src,  cudaMemcpy
 	CUDA_CHECK_ERRORS(cudaMemcpy(dest->grp5HT, src->grp5HT, sizeof(float) * numGrp, kind));
 	CUDA_CHECK_ERRORS(cudaMemcpy(dest->grpACh, src->grpACh, sizeof(float) * numGrp, kind));
 	CUDA_CHECK_ERRORS(cudaMemcpy(dest->grpNE, src->grpNE, sizeof(float) * numGrp, kind));
+
+	for (int i = 0; i < numGrp; i++) {
+		if (allocateMem) {
+			CUDA_CHECK_ERRORS(cudaMalloc((void**) &dest->grpDABuffer[i], sizeof(float) * 1000)); 
+			CUDA_CHECK_ERRORS(cudaMalloc((void**) &dest->grp5HTBuffer[i], sizeof(float) * 1000)); 
+			CUDA_CHECK_ERRORS(cudaMalloc((void**) &dest->grpAChBuffer[i], sizeof(float) * 1000)); 
+			CUDA_CHECK_ERRORS(cudaMalloc((void**) &dest->grpNEBuffer[i], sizeof(float) * 1000));
+		}
+		CUDA_CHECK_ERRORS(cudaMemcpy(dest->grpDABuffer[i], src->grpDABuffer[i], sizeof(float) * 1000, kind));
+		CUDA_CHECK_ERRORS(cudaMemcpy(dest->grp5HTBuffer[i], src->grp5HTBuffer[i], sizeof(float) * 1000, kind));
+		CUDA_CHECK_ERRORS(cudaMemcpy(dest->grpAChBuffer[i], src->grpAChBuffer[i], sizeof(float) * 1000, kind));
+		CUDA_CHECK_ERRORS(cudaMemcpy(dest->grpNEBuffer[i], src->grpNEBuffer[i], sizeof(float) * 1000, kind));
+	}
 }
 
 void CpuSNN::copyNeuronParameters(network_ptr_t* dest, int kind, int allocateMem, int grpId) {
@@ -2371,6 +2384,12 @@ void CpuSNN::deleteObjects_GPU() {
 	CUDA_CHECK_ERRORS( cudaFree(cpu_gpuNetPtrs.grp5HT) );
 	CUDA_CHECK_ERRORS( cudaFree(cpu_gpuNetPtrs.grpACh) );
 	CUDA_CHECK_ERRORS( cudaFree(cpu_gpuNetPtrs.grpNE) );
+	for (int i = 0; i < numGrp; i++) {
+		CUDA_CHECK_ERRORS( cudaFree(cpu_gpuNetPtrs.grpDABuffer[i]) );
+		CUDA_CHECK_ERRORS( cudaFree(cpu_gpuNetPtrs.grp5HTBuffer[i]) );
+		CUDA_CHECK_ERRORS( cudaFree(cpu_gpuNetPtrs.grpAChBuffer[i]) );
+		CUDA_CHECK_ERRORS( cudaFree(cpu_gpuNetPtrs.grpNEBuffer[i]) );
+	}
 
 	CUDA_CHECK_ERRORS( cudaFree(cpu_gpuNetPtrs.grpIds) );
 

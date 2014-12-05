@@ -976,14 +976,17 @@ private:
 	int numSpkCnt; //!< number of real-time spike monitors in the network
 	int* spkCntBuf[MAX_GRP_PER_SNN]; //!< the actual buffer of spike counts (per group, per neuron)
 
-	// group monitor variables
+	
 	GroupMonitorCore*	grpBufferCallback[MAX_GRP_PER_SNN];
+
+	unsigned int		groupMonitorGrpId[MAX_GRP_PER_SNN];
+	unsigned int		numGroupMonitor;
+
+	// group monitor assistive buffers
 	float*			grpDABuffer[MAX_GRP_PER_SNN];
 	float*			grp5HTBuffer[MAX_GRP_PER_SNN];
 	float*			grpAChBuffer[MAX_GRP_PER_SNN];
 	float*			grpNEBuffer[MAX_GRP_PER_SNN];
-	unsigned int		groupMonitorGrpId[MAX_GRP_PER_SNN];
-	unsigned int		numGroupMonitor;
 
 	// neuron monitor variables
 //	NeuronMonitorCore* neurBufferCallback[MAX_]

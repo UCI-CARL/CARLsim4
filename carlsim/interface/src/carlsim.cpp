@@ -829,14 +829,14 @@ void CARLsim::setExternalCurrent(int grpId, float current) {
 
 // set group monitor for a group
 void CARLsim::setGroupMonitor(int grpId, GroupMonitor* groupMon) {
-	std::string funcName = "setGroupMonitor(\""+getGroupName(grpId)+"\",GroupMonitor*)";
-	UserErrors::assertTrue(grpId!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName, "grpId");		// groupId can't be ALL
-	UserErrors::assertTrue(carlsimState_==CONFIG_STATE || carlsimState_==SETUP_STATE,
-					UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "CONFIG or SETUP.");
+	//std::string funcName = "setGroupMonitor(\""+getGroupName(grpId)+"\",GroupMonitor*)";
+	//UserErrors::assertTrue(grpId!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName, "grpId");		// groupId can't be ALL
+	//UserErrors::assertTrue(carlsimState_==CONFIG_STATE || carlsimState_==SETUP_STATE,
+	//				UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "CONFIG or SETUP.");
 
-	GroupMonitorCore* GMC = new GroupMonitorCore(this, groupMon);
-	groupMon_.push_back(GMC);
-	snn_->setGroupMonitor(grpId, GMC);
+	//GroupMonitorCore* GMC = new GroupMonitorCore(this, groupMon);
+	//groupMon_.push_back(GMC);
+	//snn_->setGroupMonitor(grpId, GMC);
 }
 
 // sets a spike counter for a group
