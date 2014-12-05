@@ -828,15 +828,39 @@ void CARLsim::setExternalCurrent(int grpId, float current) {
 }
 
 // set group monitor for a group
-void CARLsim::setGroupMonitor(int grpId, GroupMonitor* groupMon) {
-	//std::string funcName = "setGroupMonitor(\""+getGroupName(grpId)+"\",GroupMonitor*)";
-	//UserErrors::assertTrue(grpId!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName, "grpId");		// groupId can't be ALL
-	//UserErrors::assertTrue(carlsimState_==CONFIG_STATE || carlsimState_==SETUP_STATE,
-	//				UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "CONFIG or SETUP.");
+GroupMonitor* CARLsim::setGroupMonitor(int grpId, const std::string& fname) {
+	std::string funcName = "setGroupMonitor(\""+getGroupName(grpId)+"\",\""+fname+"\")";
+	UserErrors::assertTrue(grpId!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName, "grpId");		// grpId can't be ALL
+	UserErrors::assertTrue(grpId>=0, UserErrors::CANNOT_BE_NEGATIVE, funcName, "grpId"); // grpId can't be negative
+	UserErrors::assertTrue(carlsimState_==CONFIG_STATE || carlsimState_==SETUP_STATE,
+					UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "CONFIG or SETUP.");
 
-	//GroupMonitorCore* GMC = new GroupMonitorCore(this, groupMon);
-	//groupMon_.push_back(GMC);
-	//snn_->setGroupMonitor(grpId, GMC);
+	// empty string: use default name for binary file
+#if (WIN32 || WIN64)
+	// \TODO make default path for Windows platform
+	std::string fileName = fname.empty() ? "NULL" : fname;
+#else
+	std::string fileName = fname.empty() ? "results/grp_"+snn_->getGroupName(grpId)+".dat" : fname;
+#endif
+
+	FILE* fid;
+	if (fileName=="NULL") {
+		// user does not want a binary file created
+		fid = NULL;
+	} else {
+		// try to open spike file
+		fid = fopen(fileName.c_str(),"wb");
+		if (fid==NULL) {
+			// file could not be opened
+
+			// default case: print error and exit
+			std::string fileError = " Double-check file permissions and make sure directory exists.";
+			UserErrors::assertTrue(false, UserErrors::FILE_CANNOT_OPEN, funcName, fileName, fileError);
+		}
+	}
+
+	// return SpikeMonitor object
+	return snn_->setGroupMonitor(grpId, fid);
 }
 
 // sets a spike counter for a group

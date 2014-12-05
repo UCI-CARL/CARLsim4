@@ -736,7 +736,7 @@ public:
 	 * \TODO finish docu
 	 * \STATE CONFIG, SETUP
 	 */
-	void setGroupMonitor(int grpId, GroupMonitor* groupMon=NULL);
+	GroupMonitor* setGroupMonitor(int grpId, const std::string& fname="");
 
 	/*!
 	 * \brief A Spike Counter keeps track of the number of spikes per neuron in a group.

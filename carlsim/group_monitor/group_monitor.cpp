@@ -6,9 +6,9 @@
 #include <sstream>				// std::stringstream
 
 // we aren't using namespace std so pay attention!
-GroupMonitor::GroupMonitor(GroupMonitorCore* spikeMonitorCorePtr){
+GroupMonitor::GroupMonitor(GroupMonitorCore* groupMonitorCorePtr){
 	// make sure the pointer is NULL
-	groupMonitorCorePtr_ = spikeMonitorCorePtr;
+	groupMonitorCorePtr_ = groupMonitorCorePtr;
 }
 
 GroupMonitor::~GroupMonitor() {

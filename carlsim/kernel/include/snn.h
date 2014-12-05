@@ -359,10 +359,10 @@ public:
 
 	//! sets up a group monitor registered with a callback to process the spikes.
 	/*!
-	 * \param grpId ID of the neuron group
-	 * \param groupMon GroupMonitorCore class
+	 * \param[in] grpId ID of the neuron group
+	 * \param[in] fid file pointer for recording group status (neuromodulators)
 	 */
-	void setGroupMonitor(int grpId, GroupMonitorCore* groupMon);
+	GroupMonitor* setGroupMonitor(int grpId, FILE* fid);
 
 	//! sets up a network monitor registered with a callback to process the spikes.
 	/*!
@@ -415,7 +415,7 @@ public:
 	void updateConnectionMonitor(int connId=ALL);
 
 	//! access group status (currently the concentration of neuromodulator)
-	void updateGroupMonitor(int grpId);
+	void updateGroupMonitor(int grpId=ALL);
 
 	/*!
 	 * \brief copy required spikes from firing buffer to spike buffer
@@ -977,10 +977,9 @@ private:
 	int* spkCntBuf[MAX_GRP_PER_SNN]; //!< the actual buffer of spike counts (per group, per neuron)
 
 	
-	GroupMonitorCore*	grpBufferCallback[MAX_GRP_PER_SNN];
-
-	unsigned int		groupMonitorGrpId[MAX_GRP_PER_SNN];
 	unsigned int		numGroupMonitor;
+	GroupMonitorCore*	groupMonCoreList[MAX_GRP_PER_SNN];
+	GroupMonitor*		groupMonList[MAX_GRP_PER_SNN];
 
 	// group monitor assistive buffers
 	float*			grpDABuffer[MAX_GRP_PER_SNN];
