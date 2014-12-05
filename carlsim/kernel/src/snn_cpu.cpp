@@ -3171,8 +3171,10 @@ void  CpuSNN::globalStateUpdate() {
 		}
 
 		// decay dopamine concentration
-		if (cpuNetPtrs.grpDA[g] > grp_Info[g].baseDP)
+		if (cpuNetPtrs.grpDA[g] > grp_Info[g].baseDP) {
 			cpuNetPtrs.grpDA[g] *= grp_Info[g].decayDP;
+			cpuNetPtrs.grpDABuffer[g][simTimeMs] = cpuNetPtrs.grpDA[g];
+		}
 
 		for(int i=grp_Info[g].StartN; i <= grp_Info[g].EndN; i++) {
 			assert(i < numNReg);
