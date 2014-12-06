@@ -984,8 +984,8 @@ __global__ void kernel_globalGroupStateUpdate (int t, int sec, int simTime)
 		// decay dopamine concentration
 		if (gpuPtrs.grpDA[grpIdx] > gpuGrpInfo[grpIdx].baseDP) {
 			gpuPtrs.grpDA[grpIdx] *= gpuGrpInfo[grpIdx].decayDP;
-			gpuPtrs.grpDABuffer[grpIdx][t] = gpuPtrs.grpDA[grpIdx];
 		}
+		gpuPtrs.grpDABuffer[grpIdx][t] = gpuPtrs.grpDA[grpIdx]; // log dopamine concentration
 	}
 }
 

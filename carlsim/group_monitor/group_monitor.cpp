@@ -49,28 +49,28 @@ void GroupMonitor::stopRecording(){
 	groupMonitorCorePtr_->stopRecording();
 }
 
-unsigned int GroupMonitor::getRecordingTotalTime() {
+int GroupMonitor::getRecordingTotalTime() {
 	std::string funcName = "getRecordingTotalTime()";
 	UserErrors::assertTrue(!isRecording(), UserErrors::CANNOT_BE_ON, funcName, "Recording");
 
 	return groupMonitorCorePtr_->getRecordingTotalTime();
 }
 
-unsigned int GroupMonitor::getRecordingLastStartTime() {
+int GroupMonitor::getRecordingLastStartTime() {
 	std::string funcName = "getRecordingLastStartTime()";
 	UserErrors::assertTrue(!isRecording(), UserErrors::CANNOT_BE_ON, funcName, "Recording");
 
 	return groupMonitorCorePtr_->getRecordingLastStartTime();
 }
 
-unsigned int GroupMonitor::getRecordingStartTime() {
+int GroupMonitor::getRecordingStartTime() {
 	std::string funcName = "getRecordingStartTime()";
 	UserErrors::assertTrue(!isRecording(), UserErrors::CANNOT_BE_ON, funcName, "Recording");
 
 	return groupMonitorCorePtr_->getRecordingStartTime();
 }
 
-unsigned int GroupMonitor::getRecordingStopTime() {
+int GroupMonitor::getRecordingStopTime() {
 	std::string funcName = "getRecordingStopTime()";
 	UserErrors::assertTrue(!isRecording(), UserErrors::CANNOT_BE_ON, funcName, "Recording");
 
@@ -83,4 +83,28 @@ bool GroupMonitor::getPersistentData() {
 
 void GroupMonitor::setPersistentData(bool persistentData) {
 	groupMonitorCorePtr_->setPersistentData(persistentData);
+}
+
+std::vector<float> GroupMonitor::getDataVector(){
+	return groupMonitorCorePtr_->getDataVector();
+}
+
+std::vector<int> GroupMonitor::getTimeVector(){
+	return groupMonitorCorePtr_->getTimeVector();
+}
+
+std::vector<int> GroupMonitor::getPeakTimeVector() {
+	return groupMonitorCorePtr_->getPeakTimeVector();
+}
+
+std::vector<int> GroupMonitor::getSortedPeakTimeVector() {
+	return groupMonitorCorePtr_->getSortedPeakTimeVector();
+}
+
+std::vector<float> GroupMonitor::getPeakValueVector() {
+	return groupMonitorCorePtr_->getPeakValueVector();
+}
+
+std::vector<float> GroupMonitor::getSortedPeakValueVector() {
+	return groupMonitorCorePtr_->getSortedPeakValueVector();
 }

@@ -189,7 +189,7 @@ enum neuromodulator_t {
 	NM_UNKNOWN
 };
 static const char* neuromodulator_string[] = {
-	"Dopamine", "Serotonin", "Acetylcholine", "Noradrenaline"
+	"Dopamine", "Serotonin", "Acetylcholine", "Noradrenaline", "Unknown neuromodulator"
 };
 
 /*!

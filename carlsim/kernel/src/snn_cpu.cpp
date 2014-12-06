@@ -760,6 +760,9 @@ int CpuSNN::runNetwork(int _nsec, int _nmsec, bool printRunSummary, bool copySta
 		if (numConnectionMonitor) {
 			printStatusConnectionMonitor(ALL);
 		}
+		if (numGroupMonitor) {
+			printStatusGroupMonitor(ALL, runDurationMs);
+		}
 	}
 
 	// call updateSpike(Group)Monitor again to fetch all the left-over spikes and group status (neuromodulator)
@@ -1965,10 +1968,6 @@ void CpuSNN::buildNetworkInit(unsigned int nNeur, unsigned int nPostSyn, unsigne
 
 	// init neuromodulators and their assistive buffers
 	for (int i = 0; i < numGrp; i++) {
-		grpDA[i] = grp_Info[i].baseDP;
-		grp5HT[i] = grp_Info[i].base5HT;
-		grpACh[i] = grp_Info[i].baseACh;
-		grpNE[i] = grp_Info[i].baseNE;
 		grpDABuffer[i] = new float[1000]; // 1 second DA buffer
 		grp5HTBuffer[i] = new float[1000];
 		grpAChBuffer[i] = new float[1000];
@@ -3175,9 +3174,9 @@ void  CpuSNN::globalStateUpdate() {
 
 		// decay dopamine concentration
 		if (cpuNetPtrs.grpDA[g] > grp_Info[g].baseDP) {
-			cpuNetPtrs.grpDA[g] *= grp_Info[g].decayDP;
-			cpuNetPtrs.grpDABuffer[g][simTimeMs] = cpuNetPtrs.grpDA[g];
+			cpuNetPtrs.grpDA[g] *= grp_Info[g].decayDP;	
 		}
+		cpuNetPtrs.grpDABuffer[g][simTimeMs] = cpuNetPtrs.grpDA[g];
 
 		for(int i=grp_Info[g].StartN; i <= grp_Info[g].EndN; i++) {
 			assert(i < numNReg);
@@ -4364,14 +4363,14 @@ void CpuSNN::updateGroupMonitor(int grpId) {
 
 		// find last update time for this group
 		GroupMonitorCore* grpMonObj = groupMonCoreList[monitorId];
-		unsigned int lastUpdate = grpMonObj->getLastUpdated();
+		int lastUpdate = grpMonObj->getLastUpdated();
 
 		// don't continue if time interval is zero (nothing to update)
-		if (getSimTime() <= lastUpdate)
+		if (getSimTime() - lastUpdate <=0)
 			return;
 
-		if (getSimTime() > lastUpdate + 1000)
-			KERNEL_ERROR("updateGroupMonitor(grpId=%d) must be called at least once every second", grpId);
+		if (getSimTime() - lastUpdate > 1000)
+			KERNEL_ERROR("updateGroupMonitor(grpId=%d) must be called at least once every second",grpId);
 
 		if (simMode_ == GPU_MODE) {
 			// copy the group status (neuromodulators) from the GPU to the CPU..

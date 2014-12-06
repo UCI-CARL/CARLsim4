@@ -676,6 +676,7 @@ private:
 	void printSimSummary(); 	//!< prints a simulation summary at the end of sim
 	void printState(FILE* fp);
 	void printStatusConnectionMonitor(int connId=ALL);
+	void printStatusGroupMonitor(int grpId=ALL, int runDurationMs=1000);
 	void printStatusSpikeMonitor(int grpId=ALL, int runDurationMs=1000);
 	void printTuningLog(FILE* fp);
 	void printWeights(int preGrpId, int postGrpId=-1);

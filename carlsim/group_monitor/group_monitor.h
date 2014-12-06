@@ -44,7 +44,7 @@
 #ifndef _GROUP_MON_H_
 #define _GROUP_MON_H_
 
-#include <carlsim_datastructures.h> // spikeMonMode_t
+#include <carlsim_datastructures.h>
 #include <vector>					// std::vector
 
 class CpuSNN; 			// forward declaration of CpuSNN class
@@ -90,7 +90,7 @@ class GroupMonitor {
 	bool isRecording();
 
 	/*!
-	 *\brief prints the data (neuromodulator) data vector.
+	 *\brief prints the group status (neuromodulator) data vector.
 	 */
 	void print();
 
@@ -128,7 +128,7 @@ class GroupMonitor {
 	 * there might have been periods in between where recording was off.
 	 * \returns the total recording time (ms)
 	 */
-	unsigned int getRecordingTotalTime();
+	int getRecordingTotalTime();
 
 	/*!
 	 * \brief Returns the simulation time (ms) of the last call to startRecording()
@@ -137,7 +137,7 @@ class GroupMonitor {
 	 * If PersistentMode is off, this number is equivalent to getRecordingStartTime().
 	 * \returns the simulation time (ms) of the last call to startRecording()
 	 */
-	unsigned int getRecordingLastStartTime();
+	int getRecordingLastStartTime();
 
 	/*!
 	 * \brief Returns the simulation time (ms) of the first call to startRecording()
@@ -146,7 +146,7 @@ class GroupMonitor {
 	 * If PersistentMode is off, this number is equivalent to getRecordingLastStartTime().
 	 * \returns the simulation time (ms) of the first call to startRecording()
 	 */
-	unsigned int getRecordingStartTime();
+	int getRecordingStartTime();
 
 	/*!
 	 * \brief Returns the simulation time (ms) of the last call to stopRecording()
@@ -154,7 +154,7 @@ class GroupMonitor {
 	 * This function returns the simulation time (timestamp) of the last call to stopRecording().
 	 * \returns the simulation time (ms) of the last call to stopRecording()
 	 */
-	unsigned int getRecordingStopTime();
+	int getRecordingStopTime();
 
 	/*!
 	 * \brief Returns a flag that indicates whether PersistentMode is on (true) or off (false)
@@ -177,11 +177,23 @@ class GroupMonitor {
 	 */
 	void setPersistentData(bool persistentData);
 
+	//! get the group data
+	std::vector<float> getDataVector();
+
+	//! get the time stamp for group data
+	std::vector<int> getTimeVector();
+
+	std::vector<int> getPeakTimeVector();
+
+	std::vector<int> getSortedPeakTimeVector();
+
+	std::vector<float> getPeakValueVector();
+
+	std::vector<float> getSortedPeakValueVector();
 
  private:
 	//! This is a pointer to the actual implementation of the class. The user should never directly instantiate it.
 	GroupMonitorCore* groupMonitorCorePtr_;
-
 };
 
 #endif

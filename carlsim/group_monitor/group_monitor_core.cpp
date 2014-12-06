@@ -66,15 +66,74 @@ void GroupMonitorCore::print() {
 	assert(!isRecording());
 }
 
-void GroupMonitorCore::pushData(unsigned int time, float data) {
+void GroupMonitorCore::pushData(int time, float data) {
 	assert(isRecording());
 
 	timeVector_.push_back(time);
 	dataVector_.push_back(data);
 }
 
-void GroupMonitorCore::startRecording() {
+std::vector<float> GroupMonitorCore::getDataVector(){
 	assert(!isRecording());
+
+	return dataVector_;
+}
+
+std::vector<int> GroupMonitorCore::getTimeVector(){
+	assert(!isRecording());
+
+	return timeVector_;
+}
+
+std::vector<int> GroupMonitorCore::getPeakTimeVector() {
+	std::vector<int> peakTimeVector;
+
+	for (int i = 1; i < dataVector_.size() - 1; i++) {
+		if (dataVector_[i-1] < dataVector_[i] && dataVector_[i] > dataVector_[i+1])
+			peakTimeVector.push_back(timeVector_[i]);
+	}
+
+	return peakTimeVector;
+}
+
+std::vector<int> GroupMonitorCore::getSortedPeakTimeVector() {
+	std::vector<int> sortedPeakTimeVector;
+
+	for (int i = 1; i < dataVector_.size() - 1; i++) {
+		if (dataVector_[i-1] < dataVector_[i] && dataVector_[i] > dataVector_[i+1])
+			sortedPeakTimeVector.push_back(timeVector_[i]);
+	}
+
+	std::sort(sortedPeakTimeVector.begin(), sortedPeakTimeVector.end());
+	
+	return sortedPeakTimeVector;
+}
+
+std::vector<float> GroupMonitorCore::getPeakValueVector() {
+	std::vector<float> peakValueVector;
+
+	for (int i = 1; i < dataVector_.size() - 1; i++) {
+		if (dataVector_[i-1] < dataVector_[i] && dataVector_[i] > dataVector_[i+1])
+			peakValueVector.push_back(dataVector_[i]);
+	}
+
+	return peakValueVector;
+}
+
+std::vector<float> GroupMonitorCore::getSortedPeakValueVector() {
+	std::vector<float> sortedPeakValueVector;
+
+	for (int i = 1; i < dataVector_.size() - 1; i++) {
+		if (dataVector_[i-1] < dataVector_[i] && dataVector_[i] > dataVector_[i+1])
+			sortedPeakValueVector.push_back(dataVector_[i]);
+	}
+
+	std::sort(sortedPeakValueVector.begin(), sortedPeakValueVector.end());
+
+	return sortedPeakValueVector;
+}
+
+void GroupMonitorCore::startRecording() {
 
 	if (!persistentData_) {
 		// if persistent mode is off (default behavior), automatically call clear() here
@@ -86,7 +145,7 @@ void GroupMonitorCore::startRecording() {
 	snn_->updateGroupMonitor(grpId_);
 
 	recordSet_ = true;
-	unsigned int currentTime = snn_->getSimTimeSec()*1000+snn_->getSimTimeMs();
+	int currentTime = snn_->getSimTimeSec()*1000+snn_->getSimTimeMs();
 
 	if (persistentData_) {
 		// persistent mode on: accumulate all times
@@ -94,8 +153,7 @@ void GroupMonitorCore::startRecording() {
 		startTime_ = (startTime_<0) ? currentTime : startTime_;
 		startTimeLast_ = currentTime;
 		accumTime_ = (totalTime_>0) ? totalTime_ : 0;
-	}
-	else {
+	} else {
 		// persistent mode off: we only care about the last probe
 		startTime_ = currentTime;
 		startTimeLast_ = currentTime;

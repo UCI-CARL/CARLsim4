@@ -40,6 +40,7 @@
 
 #include <snn.h>
 #include <connection_monitor_core.h>
+#include <group_monitor_core.h>
 
 void CpuSNN::printConnection(const std::string& fname) {
 	FILE *fp = fopen(fname.c_str(), "w");
@@ -92,7 +93,6 @@ void CpuSNN::printMemoryInfo(FILE* const fp) {
   fprintf(fp, "**************************************\n\n");
 
 }
-
 
 void CpuSNN::printStatusConnectionMonitor(int connId) {
   grpConnectInfo_t* connInfo = connectBegin;
@@ -148,6 +148,32 @@ void CpuSNN::printStatusSpikeMonitor(int grpId, int runDurationMs) {
       meanRate,
       std);
   }
+}
+
+void CpuSNN::printStatusGroupMonitor(int grpId, int runDurationMs) {
+	if (grpId == ALL) {
+		for (int g = 0; g < numGrp; g++) {
+			printStatusGroupMonitor(g);
+		}
+	} else {
+		int monitorId = grp_Info[grpId].GroupMonitorId;
+		if (monitorId == -1)
+			return;
+
+		// in GPU mode, need to get data from device first
+		//if (simMode_ == GPU_MODE)
+		//	copyFiringStateFromGPU(grpId);
+		std::vector<int> peakTimeVector = groupMonCoreList[monitorId]->getSortedPeakTimeVector();
+		//std::vector<float> peakValueVector = groupMonCoreList[monitorId]->getSortedPeakValueVector ->getSortedTimeVector();
+		int numPeaks = peakTimeVector.size();
+
+		KERNEL_INFO("(t=%.3fs) GroupMonitor for group %s(%d) has %d peak(s) in %dms",
+			(float)(simTime/1000.0),
+			grp_Info2[grpId].Name.c_str(),
+			grpId,
+			numPeaks,
+			runDurationMs);
+	}
 }
 
 

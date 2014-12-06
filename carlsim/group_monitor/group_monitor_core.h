@@ -79,16 +79,16 @@ public:
 	bool getPersistentData() { return persistentData_; }
 
 	//! returns the total recorded time in ms
-	unsigned int getRecordingTotalTime() { return totalTime_; }
+	int getRecordingTotalTime() { return totalTime_; }
 
 	//! retunrs the timestamp of the first startRecording in ms
-	unsigned int getRecordingStartTime() { return startTime_; }
+	int getRecordingStartTime() { return startTime_; }
 
 	//! returns the timestamp of the last startRecording in ms
-	unsigned int getRecordingLastStartTime() { return startTimeLast_; }
+	int getRecordingLastStartTime() { return startTimeLast_; }
 
 	//! returns the timestamp of stopRecording
-	unsigned int getRecordingStopTime() { return stopTime_; }
+	int getRecordingStopTime() { return stopTime_; }
 
 	//! returns recording status
 	bool isRecording() { return recordSet_; }
@@ -97,7 +97,7 @@ public:
 	void print();
 
 	//! inserts a (time, data) tupel into the vectors
-	void pushData(unsigned int time, float data);
+	void pushData(int time, float data);
 
 	//! sets status of PersistentData mode
 	void setPersistentData(bool persistentData) { persistentData_ = persistentData; }
@@ -121,11 +121,24 @@ public:
 	void setGroupFileId(FILE* groupFileId);
 	
 	//! returns timestamp of last GroupMonitor update
-	unsigned int getLastUpdated() { return grpMonLastUpdated_; }
+	int getLastUpdated() { return grpMonLastUpdated_; }
 
 	//! sets timestamp of last GroupMonitor update
 	void setLastUpdated(unsigned int lastUpdate) { grpMonLastUpdated_ = lastUpdate; }
-	
+
+	//! get the group data
+	std::vector<float> getDataVector();
+
+	//! get the time stamp for group data
+	std::vector<int> getTimeVector();
+
+	std::vector<int> getPeakTimeVector();
+
+	std::vector<int> getSortedPeakTimeVector();
+
+	std::vector<float> getPeakValueVector();
+
+	std::vector<float> getSortedPeakValueVector();
 
 private:
 	//! initialization method
@@ -147,17 +160,17 @@ private:
 	float groupFileVersion_; //!< version number of group file
 
 	//! Used to analyzed the data of neuromodulators
-	std::vector<unsigned int> timeVector_;
+	std::vector<int> timeVector_;
 	std::vector<float> dataVector_;
 
 	bool recordSet_;			//!< flag that indicates whether we're currently recording
-	unsigned int startTime_;	 	//!< time (ms) of first call to startRecording
-	unsigned int startTimeLast_; 	//!< time (ms) of last call to startRecording
-	unsigned int stopTime_;		 	//!< time (ms) of stopRecording
-	unsigned int totalTime_;		//!< the total amount of recording time (over all recording periods)
-	unsigned int accumTime_;
+	int startTime_;	 			//!< time (ms) of first call to startRecording
+	int startTimeLast_; 		//!< time (ms) of last call to startRecording
+	int stopTime_;		 		//!< time (ms) of stopRecording
+	int totalTime_;				//!< the total amount of recording time (over all recording periods)
+	int accumTime_;
 
-	unsigned int grpMonLastUpdated_;//!< time (ms) when group was last run through updateGroupMonitor
+	int grpMonLastUpdated_;//!< time (ms) when group was last run through updateGroupMonitor
 
 	//! whether data should be persistent (true) or clear() should be automatically called by startRecording (false)
 	bool persistentData_;
