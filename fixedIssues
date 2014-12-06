@@ -1,7 +1,12 @@
 TODO:
 PoissonGenerator in test cases #161 - done
-Add default STDP mode in user interface #149
-Merge SpikeCounter and nSpikeCount #31
-CpuSNN:updateAfterMaxTime() #3
-SpikeMonitor: Display warning message when recording period is too long #313
+Add default STDP mode in user interface #149 - done
+CpuSNN:updateAfterMaxTime() #3 - done
 Clean up isPoissonGroup / grpInfo.isSpikeGenerator / grpInfo.Type&POISSON_GROUP business #56
+  - Search for these and figure out which ones we are using.
+  - grpInfo.isSpikeGenerator in snn_cpu.cpp and snn_datastructures.cpp
+
+
+Merge SpikeCounter and nSpikeCount #31
+SpikeMonitor: Display warning message when recording period is too long #313
+

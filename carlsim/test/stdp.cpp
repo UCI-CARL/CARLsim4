@@ -301,7 +301,7 @@ TEST(STDP, DASTDPWeightBoost) {
  * \brief testing the Hebbian E-STDP curve
  * This function tests whether E-STDP change synaptic weight as expected
  * Wtih control of pre- and post-neurons' spikes, the synaptic weight is expected to increase or decrease to
- * maximum or minimum synaptic weith respectively.
+ * maximum or minimum synaptic weight respectively.
  */
 TEST(STDP, ESTDPHebbianCurve) {
 	// simulation details

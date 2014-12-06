@@ -684,7 +684,6 @@ private:
 
 	void swapConnections(int nid, int oldPos, int newPos);
 
-	void updateAfterMaxTime();
 	void updateGroupMonitor();
 	void updateSpikesFromGrp(int grpId);
 	void updateSpikeGenerators();

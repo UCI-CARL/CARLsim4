@@ -2683,10 +2683,10 @@ void CpuSNN::configGPUDevice() {
 	KERNEL_INFO("  - Use CUDA device[%d]: \"%s\"", ithGPU_, deviceProp.name);
 	KERNEL_INFO("  - CUDA Compute Capability         =     %2d.%d\n", deviceProp.major, deviceProp.minor);
 
-    if (deviceProp.major < 2) {
-        KERNEL_ERROR("CARLsim does not support CUDA devices older than version 2.0");
-        exitSimulation(1);
-    }
+/*    if (deviceProp.major < 2) {*/
+        /*KERNEL_ERROR("CARLsim does not support CUDA devices older than version 2.0");*/
+        /*exitSimulation(1);*/
+    /*}*/
 
 	CUDA_CHECK_ERRORS(cudaSetDevice(ithGPU_));
 	CUDA_DEVICE_RESET();

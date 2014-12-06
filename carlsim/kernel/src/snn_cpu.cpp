@@ -4088,46 +4088,6 @@ void CpuSNN::swapConnections(int nid, int oldPos, int newPos) {
 	*preId = SET_CONN_ID( pre_nid, newPos, pre_gid);
 }
 
-
-void CpuSNN::updateAfterMaxTime() {
-  KERNEL_WARN("Maximum Simulation Time Reached...Resetting simulation time");
-
-	// This will be our cut of time. All other time values
-	// that are less than cutOffTime will be set to zero
-	unsigned int cutOffTime = (MAX_SIMULATION_TIME - 10*1000);
-
-	for(int g=0; g < numGrp; g++) {
-
-	if (grp_Info[g].isSpikeGenerator) {
-			int diffTime = (grp_Info[g].SliceUpdateTime - cutOffTime);
-			grp_Info[g].SliceUpdateTime = (diffTime < 0) ? 0 : diffTime;
-		}
-
-		// no STDP then continue...
-		if(!grp_Info[g].FixedInputWts) {
-			continue;
-		}
-
-		for(int k=0, nid = grp_Info[g].StartN; nid <= grp_Info[g].EndN; nid++,k++) {
-		assert(nid < numNReg);
-			// calculate the difference in time
-			signed diffTime = (lastSpikeTime[nid] - cutOffTime);
-			lastSpikeTime[nid] = (diffTime < 0) ? 0 : diffTime;
-
-			// do the same thing with all synaptic connections..
-			unsigned* synTime = &synSpikeTime[cumulativePre[nid]];
-			for(int i=0; i < Npre[nid]; i++, synTime++) {
-				// calculate the difference in time
-				signed diffTime = (synTime[0] - cutOffTime);
-				synTime[0]      = (diffTime < 0) ? 0 : diffTime;
-			}
-		}
-	}
-
-	simTime = MAX_SIMULATION_TIME - cutOffTime;
-	resetPropogationBuffer();
-}
-
 // this function is usually called every second, but it can also be called via ConnectionMonitorCore::takeSnapshot
 void CpuSNN::updateConnectionMonitor(int connId) {
 	grpConnectInfo_t* connInfo = connectBegin;
@@ -4347,8 +4307,8 @@ bool CpuSNN::updateTime() {
 
 	simTime++;
 	if(simTime >= MAX_SIMULATION_TIME){
-		// reached the maximum limit of the simulation time using 32 bit value...
-		updateAfterMaxTime();
+        // reached the maximum limit of the simulation time using 32 bit value...
+        KERNEL_WARN("Maximum Simulation Time Reached...Resetting simulation time");
 	}
 
 	return finishedOneSec;
