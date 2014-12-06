@@ -17,22 +17,8 @@ GroupMonitor::~GroupMonitor() {
 
 // +++++ PUBLIC METHODS: +++++++++++++++++++++++++++++++++++++++++++++++//
 
-void GroupMonitor::clear(){
-	std::string funcName = "clear()";
-	UserErrors::assertTrue(!isRecording(), UserErrors::CANNOT_BE_ON, funcName, "Recording");
-
-	groupMonitorCorePtr_->clear();
-}
-
 bool GroupMonitor::isRecording(){
 	return groupMonitorCorePtr_->isRecording();
-}
-
-void GroupMonitor::print() {
-	std::string funcName = "print()";
-	UserErrors::assertTrue(!isRecording(), UserErrors::CANNOT_BE_ON, funcName, "Recording");
-
-	groupMonitorCorePtr_->print();
 }
 
 void GroupMonitor::startRecording() {
@@ -86,25 +72,43 @@ void GroupMonitor::setPersistentData(bool persistentData) {
 }
 
 std::vector<float> GroupMonitor::getDataVector(){
+	std::string funcName = "getDataVector()";
+	UserErrors::assertTrue(!isRecording(), UserErrors::CANNOT_BE_ON, funcName, "Recording");
+
 	return groupMonitorCorePtr_->getDataVector();
 }
 
 std::vector<int> GroupMonitor::getTimeVector(){
+	std::string funcName = "getTimeVector()";
+	UserErrors::assertTrue(!isRecording(), UserErrors::CANNOT_BE_ON, funcName, "Recording");
+
 	return groupMonitorCorePtr_->getTimeVector();
 }
 
 std::vector<int> GroupMonitor::getPeakTimeVector() {
+	std::string funcName = "getPeakTimeVector()";
+	UserErrors::assertTrue(!isRecording(), UserErrors::CANNOT_BE_ON, funcName, "Recording");
+
 	return groupMonitorCorePtr_->getPeakTimeVector();
 }
 
 std::vector<int> GroupMonitor::getSortedPeakTimeVector() {
+	std::string funcName = "getSortedPeakTimeVector()";
+	UserErrors::assertTrue(!isRecording(), UserErrors::CANNOT_BE_ON, funcName, "Recording");
+
 	return groupMonitorCorePtr_->getSortedPeakTimeVector();
 }
 
 std::vector<float> GroupMonitor::getPeakValueVector() {
+	std::string funcName = "getPeakValueVector()";
+	UserErrors::assertTrue(!isRecording(), UserErrors::CANNOT_BE_ON, funcName, "Recording");
+
 	return groupMonitorCorePtr_->getPeakValueVector();
 }
 
 std::vector<float> GroupMonitor::getSortedPeakValueVector() {
+	std::string funcName = "getSortedPeakValueVector()";
+	UserErrors::assertTrue(!isRecording(), UserErrors::CANNOT_BE_ON, funcName, "Recording");
+
 	return groupMonitorCorePtr_->getSortedPeakValueVector();
 }

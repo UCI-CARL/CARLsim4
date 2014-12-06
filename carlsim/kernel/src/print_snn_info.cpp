@@ -160,11 +160,7 @@ void CpuSNN::printStatusGroupMonitor(int grpId, int runDurationMs) {
 		if (monitorId == -1)
 			return;
 
-		// in GPU mode, need to get data from device first
-		//if (simMode_ == GPU_MODE)
-		//	copyFiringStateFromGPU(grpId);
-		std::vector<int> peakTimeVector = groupMonCoreList[monitorId]->getSortedPeakTimeVector();
-		//std::vector<float> peakValueVector = groupMonCoreList[monitorId]->getSortedPeakValueVector ->getSortedTimeVector();
+		std::vector<int> peakTimeVector = groupMonCoreList[monitorId]->getPeakTimeVector();
 		int numPeaks = peakTimeVector.size();
 
 		KERNEL_INFO("(t=%.3fs) GroupMonitor for group %s(%d) has %d peak(s) in %dms",

@@ -41,9 +41,6 @@
 
 #include <carlsim.h>
 
-#include <stdio.h>		// printf, fopen
-#include <math.h>		// expf
-
 #if (WIN32 || WIN64)
 	#define _CRT_SECURE_NO_WARNINGS
 #endif
@@ -78,8 +75,6 @@ int main() {
 	std::string saveFolder = "results/";
 	std::vector<int> spikesPost;
 	std::vector<int> spikesPre;
-	float* weights;
-	int size;
 	SpikeMonitor* spikeMon1;
 	SpikeMonitor* spikeMonIn;
 	GroupMonitor* groupMon;

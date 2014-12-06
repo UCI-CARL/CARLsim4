@@ -5,8 +5,6 @@
 
 #include <algorithm>			// std::sort
 
-
-
 // we aren't using namespace std so pay attention!
 GroupMonitorCore::GroupMonitorCore(CpuSNN* snn, int monitorId, int grpId) {
 	snn_ = snn;
@@ -62,10 +60,6 @@ void GroupMonitorCore::clear() {
 	dataVector_.clear();
 }
 
-void GroupMonitorCore::print() {
-	assert(!isRecording());
-}
-
 void GroupMonitorCore::pushData(int time, float data) {
 	assert(isRecording());
 
@@ -74,14 +68,10 @@ void GroupMonitorCore::pushData(int time, float data) {
 }
 
 std::vector<float> GroupMonitorCore::getDataVector(){
-	assert(!isRecording());
-
 	return dataVector_;
 }
 
 std::vector<int> GroupMonitorCore::getTimeVector(){
-	assert(!isRecording());
-
 	return timeVector_;
 }
 
@@ -105,6 +95,7 @@ std::vector<int> GroupMonitorCore::getSortedPeakTimeVector() {
 	}
 
 	std::sort(sortedPeakTimeVector.begin(), sortedPeakTimeVector.end());
+	std::reverse(sortedPeakTimeVector.begin(), sortedPeakTimeVector.end());
 	
 	return sortedPeakTimeVector;
 }
@@ -129,18 +120,18 @@ std::vector<float> GroupMonitorCore::getSortedPeakValueVector() {
 	}
 
 	std::sort(sortedPeakValueVector.begin(), sortedPeakValueVector.end());
+	std::reverse(sortedPeakValueVector.begin(), sortedPeakValueVector.end());
 
 	return sortedPeakValueVector;
 }
 
 void GroupMonitorCore::startRecording() {
-
 	if (!persistentData_) {
 		// if persistent mode is off (default behavior), automatically call clear() here
 		clear();
 	}
 
-	// call updateGroupMonitor to make sure group file and data vector are up-to-date
+	// call updateGroupMonitor to make sure group data file and the data vector are up-to-date
 	// Caution: must be called before recordSet_ is set to true!
 	snn_->updateGroupMonitor(grpId_);
 
@@ -165,7 +156,7 @@ void GroupMonitorCore::stopRecording() {
 	assert(isRecording());
 	assert(startTime_>-1 && startTimeLast_>-1 && accumTime_>-1);
 
-	// call updateSpikeMonitor to make sure spike file and spike vector are up-to-date
+	// call updateGroupMonitor to make sure group data file and the data vector are up-to-date
 	// Caution: must be called before recordSet_ is set to false!
 	snn_->updateSpikeMonitor(grpId_);
 
@@ -195,7 +186,7 @@ void GroupMonitorCore::setGroupFileId(FILE* groupFileId) {
 	}
 }
 
-// write the header section of the spike file
+// write the header section of the group data file
 // this should be done once per file, and should be the very first entries in the file
 void GroupMonitorCore::writeGroupFileHeader() {
 	if (!needToWriteFileHeader_)

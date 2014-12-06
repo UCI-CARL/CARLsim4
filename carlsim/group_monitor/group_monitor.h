@@ -50,10 +50,48 @@
 class CpuSNN; 			// forward declaration of CpuSNN class
 class GroupMonitorCore; // forward declaration of implementation
 
-/*! To retrieve group status, a group-monitoring callback mechanism is used. This mechanism allows the user to monitor
- * basic status of a group (currently support concentrations of neuromodulator). Group monitors are registered
- * for a group and are called automatically by the simulator every second. The parameter would be the group ID, an
- * array of data, number of elements in that array.
+/*!
+ * \brief Class GroupMonitor
+ *
+ * The GroupMonitor class allows a user record group data (only support dopamine concentration for now) from a particular
+ * neuron group. First the method CARLsim::setGroupMonitor must be called with the group ID of the desired group as an
+ * argument. The setGroupMonitor call returns a pointer to a GroupMonitor object which can be queried for group data.
+ *
+ * Group data will not be recorded until the GroupMonitor member function startRecording() is called. 
+ * Before any metrics can be computed, the user must call stopRecording(). In general, a new recording period
+ * (the time period between startRecording and stopRecording calls) can be started at any point in time, and can
+ * last any number of milliseconds. The GroupMonitor has a PersistentMode, which is off by default. When
+ * PersistentMode is off, only the last recording period will be considered. When PersistentMode is on, all the
+ * recording periods will be considered. By default, PersistentMode can be switched on/off by calling
+ * setPersistentData(bool). The total time over which the metric is calculated can be retrieved by calling
+ * getRecordingTotalTime().
+ *
+ * GroupMonitor objects should only be used after setupNetwork has been called.
+ * GroupMonitor objects will be deallocated automatically. The caller should not delete(free) GroupMonitor objects
+ *
+ * Example usage:
+ * \code
+ * // configure a network etc. ...
+ *
+ * sim.setupNetwork();
+ *
+ * // create a GroupMonitor pointer to grab the pointer from setGroupMonitor.
+ * GroupMonitor* daGroupMon;
+ * // call setGroupMonitor with carlsim object, sim, with the group ID, daGrpId, as an argument.
+ * daGroupMon=sim.setGroupMonitor(daGrpId);
+ * // begin recording group data for DA group
+ * daGroupMon->startRecording();
+ * // run simulation that generates spikes for 20 seconds.
+ * sim.runNetwork(20);
+ * // stop recording group data for DA group so we can get spike statistics.
+ * daGroupMon->stopRecording();
+ * // print a summary of the group data information
+ * daGroupMon->print();
+ * // get the average value of group data (only support dopamine concentration for now) of DA group
+ * float avgDAValue = daGroupMon->getMeanValue();
+ * \endcode
+ *
+ * \TODO finish documentation
  */
 class GroupMonitor {
  public:
@@ -77,22 +115,12 @@ class GroupMonitor {
 	// +++++ PUBLIC METHODS: +++++++++++++++++++++++++++++++++++++++++++++++//
 
 	/*!
-	 *\brief Truncates the data vector
-	 */
-	void clear();
-
-	/*!
 	 * \brief Recording status (true=recording, false=not recording)
 	 *
 	 * Gets record status as a bool. True means it is recording, false means it is not recording.
 	 * \returns bool that is true if object is recording, false otherwise.
 	 */
 	bool isRecording();
-
-	/*!
-	 *\brief prints the group status (neuromodulator) data vector.
-	 */
-	void print();
 
 	/*!
 	 * \brief Starts a new recording period
@@ -177,19 +205,73 @@ class GroupMonitor {
 	 */
 	void setPersistentData(bool persistentData);
 
-	//! get the group data
+	/*!
+	 * \brief return the group data vector
+	 *
+	 * This function returns a vector containing all group data (only support dopamine concentration for now)
+	 * If PersistentMode is off, only the last recording period will be considered for calculating metrics.
+	 * If PersistentMode is on, all the recording periods will be considered. By default, PersistentMode is off, but
+	 * can be switched on at any point in time by calling setPersistentData(bool).
+	 * \returns 1D vector of float values presenting dopamine concentration
+	 */
 	std::vector<float> getDataVector();
 
-	//! get the time stamp for group data
+	/*!
+	 * \brief return a vector of the timestamps for group data
+	 *
+	 * This function returns a vector containing all timestamps for group data.
+	 * If PersistentMode is off, only the last recording period will be considered for calculating metrics.
+	 * If PersistentMode is on, all the recording periods will be considered. By default, PersistentMode is off, but
+	 * can be switched on at any point in time by calling setPersistentData(bool).
+	 * \returns 1D vector of int values presenting the timestamps
+	 */
 	std::vector<int> getTimeVector();
 
-	std::vector<int> getPeakTimeVector();
-
-	std::vector<int> getSortedPeakTimeVector();
-
+	/*!
+	 * \brief return a vector of peak values in group data
+	 *
+	 * This function returns a vector containing all peak values for group data.
+	 * If PersistentMode is off, only the last recording period will be considered for calculating metrics.
+	 * If PersistentMode is on, all the recording periods will be considered. By default, PersistentMode is off, but
+	 * can be switched on at any point in time by calling setPersistentData(bool).
+	 * \returns 1D vector of float values which are peaks (local maximum values) in group data
+	 */
 	std::vector<float> getPeakValueVector();
 
+	/*!
+	 * \brief return a vector of the timestamps for peak values in group data
+	 *
+	 * This function returns a vector containing all timestamps of peaks (local maximum value) in group data.
+	 * If PersistentMode is off, only the last recording period will be considered for calculating metrics.
+	 * If PersistentMode is on, all the recording periods will be considered. By default, PersistentMode is off, but
+	 * can be switched on at any point in time by calling setPersistentData(bool).
+	 * \returns 1D vector of int values presenting the timestamps of peaks
+	 */
+	std::vector<int> getPeakTimeVector();
+
+	/*!
+	 * \brief return a vector of peak values in group data (sorted in decending order)
+	 *
+	 * This function returns a vector containing all sorted peak values in group data (sorted in decending order).
+	 * In other word, the first element in the vector is the highest peak value in recording duration.
+	 * If PersistentMode is off, only the last recording period will be considered for calculating metrics.
+	 * If PersistentMode is on, all the recording periods will be considered. By default, PersistentMode is off, but
+	 * can be switched on at any point in time by calling setPersistentData(bool).
+	 * \returns 1D vector of float values presenting sorted peaks
+	 */
 	std::vector<float> getSortedPeakValueVector();
+
+	/*!
+	 * \brief return a vector of the timestamps for peak values in group data (sorted in decending order)
+	 *
+	 * This function returns a vector containing all timestamps for sorted peak values (sorted in decending order)
+	 * In other word, the first element in the vector is the timestamp of the highest peak in recording duration.
+	 * If PersistentMode is off, only the last recording period will be considered for calculating metrics.
+	 * If PersistentMode is on, all the recording periods will be considered. By default, PersistentMode is off, but
+	 * can be switched on at any point in time by calling setPersistentData(bool).
+	 * \returns 1D vector of int values presenting the timestamps of sorted peaks
+	 */
+	std::vector<int> getSortedPeakTimeVector();
 
  private:
 	//! This is a pointer to the actual implementation of the class. The user should never directly instantiate it.

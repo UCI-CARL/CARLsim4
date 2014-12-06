@@ -48,11 +48,9 @@
 
 class CpuSNN; // forward declaration of CpuSNN class
 
-//! used for relaying callback to GroupMonitor
 /*!
- * \brief The class is used to store user-defined callback function and to be registered in core (i.e., snn_cpu.cpp)
- * Once the core invokes the callback method of the class, the class relays all parameter and invokes user-defined
- * callback function.
+ * \brief GroupMonitor private core implementation
+ *
  * \sa GroupMonitor
  */
 class GroupMonitorCore {
@@ -93,31 +91,45 @@ public:
 	//! returns recording status
 	bool isRecording() { return recordSet_; }
 
-	//! prints the data vector in human-readable format
-	void print();
-
-	//! inserts a (time, data) tupel into the vectors
+	//! inserts group data (time, value) into the vectors
 	void pushData(int time, float data);
 
 	//! sets status of PersistentData mode
 	void setPersistentData(bool persistentData) { persistentData_ = persistentData; }
 
-	//! starts recording neuromodulator data
+	//! starts recording group data
 	void startRecording();
 	
-	//! stops recording neuromodulator data
+	//! stops recording group data
 	void stopRecording();
 
+	//! get the group data
+	std::vector<float> getDataVector();
+
+	//! get the timestamps for group data
+	std::vector<int> getTimeVector();
+
+	//! get the peak values of group data	
+	std::vector<float> getPeakValueVector();
+
+	//! get the timestamps for peak values
+	std::vector<int> getPeakTimeVector();
+
+	//! get the sorted peak values of group data
+	std::vector<float> getSortedPeakValueVector();
+
+	//! get the sorted timestamps for peak values
+	std::vector<int> getSortedPeakTimeVector();
 
 	// +++++ PUBLIC METHODS THAT SHOULD NOT BE EXPOSED TO INTERFACE +++++++++//
 
-	//! deletes data from the data vector
+	//! deletes the data vector
 	void clear();
 
-	//! returns a pointer to the group file
+	//! returns a pointer to the group data file
 	FILE* getGroupFileId() { return groupFileId_; }
 
-	//! sets pointer to group file
+	//! sets pointer to group data file
 	void setGroupFileId(FILE* groupFileId);
 	
 	//! returns timestamp of last GroupMonitor update
@@ -126,28 +138,14 @@ public:
 	//! sets timestamp of last GroupMonitor update
 	void setLastUpdated(unsigned int lastUpdate) { grpMonLastUpdated_ = lastUpdate; }
 
-	//! get the group data
-	std::vector<float> getDataVector();
-
-	//! get the time stamp for group data
-	std::vector<int> getTimeVector();
-
-	std::vector<int> getPeakTimeVector();
-
-	std::vector<int> getSortedPeakTimeVector();
-
-	std::vector<float> getPeakValueVector();
-
-	std::vector<float> getSortedPeakValueVector();
-
 private:
 	//! initialization method
 	void init();
 
-	//! writes the header section (file signature, version number) of a group file
+	//! writes the header section (file signature, version number) of a group data file
 	void writeGroupFileHeader();
 
-	//! whether we have to write header section of group file
+	//! whether we have to write header section of group data file
 	bool needToWriteFileHeader_;
 
 	CpuSNN* snn_;	//!< private CARLsim implementation
@@ -155,11 +153,11 @@ private:
 	int grpId_;		//!< current group ID
 	int nNeurons_;	//!< number of neurons in the group
 
-	FILE* groupFileId_;	//!< file pointer to the group file or NULL
-	int groupFileSignature_; //!< int signature of group file
-	float groupFileVersion_; //!< version number of group file
+	FILE* groupFileId_;	//!< file pointer to the group data file or NULL
+	int groupFileSignature_; //!< int signature of group data file
+	float groupFileVersion_; //!< version number of group data file
 
-	//! Used to analyzed the data of neuromodulators
+	//! Used for analyzing the group data (only support dopamine concentration for now)
 	std::vector<int> timeVector_;
 	std::vector<float> dataVector_;
 
@@ -170,7 +168,7 @@ private:
 	int totalTime_;				//!< the total amount of recording time (over all recording periods)
 	int accumTime_;
 
-	int grpMonLastUpdated_;//!< time (ms) when group was last run through updateGroupMonitor
+	int grpMonLastUpdated_;		//!< time (ms) when group was last run through updateGroupMonitor
 
 	//! whether data should be persistent (true) or clear() should be automatically called by startRecording (false)
 	bool persistentData_;
