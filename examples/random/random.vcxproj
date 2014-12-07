@@ -25,6 +25,9 @@
     <ProjectReference Include="..\..\carlsim\connection_monitor\connection_monitor.vcxproj">
       <Project>{6b9e864c-a1b9-48ce-b88b-41ca17b4b1a9}</Project>
     </ProjectReference>
+    <ProjectReference Include="..\..\carlsim\group_monitor\group_monitor.vcxproj">
+      <Project>{a0612f05-1613-4d4a-8be6-37fde1e33843}</Project>
+    </ProjectReference>
     <ProjectReference Include="..\..\carlsim\interface\interface.vcxproj">
       <Project>{fbd68119-1a8c-4a1a-96ce-522b651209bc}</Project>
     </ProjectReference>
@@ -155,7 +158,7 @@ copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;WIN64;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(CudaToolkitIncludeDir);$(SolutionDir)carlsim\interface\include;$(SolutionDir)carlsim\kernel\include;$(SolutionDir)carlsim\spike_monitor;$(SolutionDir)carlsim\connection_monitor</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(CudaToolkitIncludeDir);$(SolutionDir)carlsim\interface\include;$(SolutionDir)carlsim\kernel\include;$(SolutionDir)carlsim\spike_monitor;$(SolutionDir)carlsim\connection_monitor;$(SolutionDir)carlsim\group_monitor</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
