@@ -35,12 +35,10 @@
  *					(KDC) Kristofor Carlson <kdcarlso@uci.edu>
  *
  * CARLsim available from http://socsci.uci.edu/~jkrichma/CARL/CARLsim/
- * Ver 3/22/14
+ * Ver 12/3/2014
  */
 
 #include <carlsim.h>
-
-#include <vector>
 #include <stdio.h>
 
 #if (WIN32 || WIN64)
@@ -48,60 +46,66 @@
 #endif
 
 int main() {
-	// simulation details
-	int N = 1000; // number of neurons
-	int ithGPU = 0; // run on first GPU
+	// ---------------- CONFIG STATE -------------------
+	CARLsim *sim = new CARLsim("SimpleWeightTuner", CPU_MODE, USER, 0, 42);
 
-	// create a network
-	CARLsim sim("random", GPU_MODE, USER, ithGPU, 42);
+	// output layer should have some target firing rate
+	int gOut=sim->createGroup("out", 1000, EXCITATORY_NEURON);
+	sim->setNeuronParameters(gOut, 0.02f, 0.2f, -65.0f, 8.0f);
 
-	int g1=sim.createGroup("excit", N*0.8, EXCITATORY_NEURON);
-	sim.setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f);
+	// hidden layer to tune first
+	int gHid=sim->createGroup("hidden", 1000, EXCITATORY_NEURON);
+	sim->setNeuronParameters(gHid, 0.02f, 0.2f, -65.0f, 8.0f);
 
-	int g2=sim.createGroup("inhib", N*0.2, INHIBITORY_NEURON);
-	sim.setNeuronParameters(g2, 0.1f,  0.2f, -65.0f, 2.0f);
+	// input is a SpikeGenerator group that fires every 20 ms (50 Hz)
+	PeriodicSpikeGenerator PSG(50.0f);
+	int gIn=sim->createSpikeGeneratorGroup("in", 1000, EXCITATORY_NEURON);
+	sim->setSpikeGenerator(gIn, &PSG);
 
-	int gin=sim.createSpikeGeneratorGroup("input",N*0.1,EXCITATORY_NEURON);
+	// random connection with 10% probability
+	int c0=sim->connect(gIn, gHid, "random", RangeWeight(0.005f), 0.1f, RangeDelay(1,10));
+	int c1=sim->connect(gHid, gOut, "random", RangeWeight(0.005f), 0.1f, RangeDelay(1,10));
 
-	sim.setConductances(true,5,150,6,150);
+	sim->setConductances(true);
 
-	// make random connections with 10% probability
-	sim.connect(g2,g1,"random", RangeWeight(0.01), 0.1f);
-	// make random connections with 10% probability, and random delays between 1 and 20
-	sim.connect(g1,g2,"random", RangeWeight(0.0,0.0025,0.005), 0.1f, RangeDelay(1,20), RadiusRF(-1), SYN_PLASTIC);
-	sim.connect(g1,g1,"random", RangeWeight(0.0,0.06,0.1), 0.1f, RangeDelay(1,20), RadiusRF(-1), SYN_PLASTIC);
 
-	// 5% probability of connection
-	sim.connect(gin, g1, "random", RangeWeight(1.0), 0.05f, RangeDelay(1,20), RadiusRF(-1));
+	// ---------------- SETUP STATE -------------------
 
-	// here we define and set the properties of the STDP.
-	float ALPHA_LTP_EXC = 0.10f/100, TAU_LTP = 20.0f, ALPHA_LTD_EXC = 0.12f/100, TAU_LTD = 20.0f;
-	sim.setSTDP(g1, true, STANDARD, ALPHA_LTP_EXC, TAU_LTP, ALPHA_LTD_EXC, TAU_LTD);
-	sim.setSTDP(g2, true, STANDARD, ALPHA_LTP_EXC, TAU_LTP, ALPHA_LTD_EXC, TAU_LTD);
+	sim->setupNetwork();
 
-	// build the network
-	sim.setupNetwork();
+	// accept firing rates within this range of target firing
+	double targetFiringHid = 27.4;
+	double targetFiringOut = 42.8;
+	double errorMarginHz = 0.01;
 
-	// record spike times, save to binary
-	sim.setSpikeMonitor(g1);
-	sim.setSpikeMonitor(g2);
-	sim.setSpikeMonitor(gin);
+	// set up weight tuning from input -> hidden
+	SimpleWeightTuner SWTin2hid(sim, errorMarginHz);
+	SWTin2hid.setConnectionToTune(c0, 0.0); // start at 0
+	SWTin2hid.setTargetFiringRate(gHid, targetFiringHid);
 
-	// record weights of g1->g1 connection, save to binary
-	sim.setConnectionMonitor(g1,g1);
+	// set up weight tuning from hidden -> output
+	SimpleWeightTuner SWThid2out(sim, errorMarginHz);
+	SWThid2out.setConnectionToTune(c1, 0.0); // start at 0
+	SWThid2out.setTargetFiringRate(gOut, targetFiringOut);
 
-	//setup some baseline input
-	PoissonRate in(N*0.1);
-	in.setRates(1.0f);
-	sim.setSpikeRate(gin,&in);
 
-	// run for a total of 10 seconds
-	// at the end of each runNetwork call, Spike and Connection Monitor stats will be printed
-	bool printRunStats = true;
-	for (int i=0; i<10; i++) {
-		sim.runNetwork(1, 0, printRunStats);
+	// ---------------- RUN STATE -------------------
+
+	printf("\nSimpleWeightTuner Demo\n");
+	printf("- Step 1: Tune weights from input layer to hidden layer\n");
+	while (!SWTin2hid.done()) {
+		SWTin2hid.iterate();
 	}
 
+	printf("\n- Step 2: Tune weights from hidden layer to output layer\n");
+	while (!SWThid2out.done()) {
+		SWThid2out.iterate();
+	}
+
+	printf("\n- Step 3: Verify result (gHid=%.4fHz, gOut=%.4fHz, +/- %.4fHz)\n", targetFiringHid, targetFiringOut, 
+		errorMarginHz);
+	sim->runNetwork(1,0);
+
+	delete sim;
 	return 0;
 }
-

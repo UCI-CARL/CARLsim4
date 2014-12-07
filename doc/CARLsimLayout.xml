@@ -56,9 +56,10 @@
 			<tab type="usergroup" visible="yes" title="12. Advanced Topics" url="@ref ch12_advanced_topics">
 				<tab type="user" visible="no" title="12.1 Best Practices" url="@ref ch12s1_best_practices"/>
 				<tab type="user" visible="no" title="12.2 Multi-GPU" url="@ref ch12s2_multi_gpu"/>
-				<tab type="user" visible="no" title="12.3 Logging and Errors" url="@ref ch12s3_logging_errors"/>
-				<tab type="user" visible="no" title="12.4 Numerical Integration" url="@ref ch12s4_numerical_integration"/>
-				<tab type="user" visible="no" title="12.5 Technical Limitations" url="@ref ch12s5_technical_limitations"/>
+				<tab type="user" visible="no" title="12.3 On-Line Weight Tuning" url="@ref ch12s3_online_weight_tuning"/>
+				<tab type="user" visible="no" title="12.4 Logging and Errors" url="@ref ch12s4_logging_errors"/>
+				<tab type="user" visible="no" title="12.5 Numerical Integration" url="@ref ch12s5_numerical_integration"/>
+				<tab type="user" visible="no" title="12.6 Technical Limitations" url="@ref ch12s6_technical_limitations"/>
 			</tab>
 			<tab type="usergroup" visible="yes" title="13. Example Networks" url="@ref ch13_example_networks">
 				<tab type="user" visible="no" title="13.1 80-20 RAIN" url="@ref ch13s1_80_20_rain"/>

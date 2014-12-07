@@ -2,7 +2,6 @@
 #include "carlsim_tests.h"
 
 #include <carlsim.h>
-#include <poisson_rate.h>
 
 // trigger all UserErrors
 TEST(PoissRate, constructDeath) {

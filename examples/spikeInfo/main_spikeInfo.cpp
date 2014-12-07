@@ -111,9 +111,7 @@ int main() {
 
 	// initialize input
 	input = new PoissonRate(INPUT_SIZE);
-	for(int i=0;i<INPUT_SIZE;i++){
-		input->rates[i]=inputTargetFR;
-	}
+	input->setRates(inputTargetFR);
 
 	// set out spike monitors here
 	spikeMonInput=snn->setSpikeMonitor(inputGroup);

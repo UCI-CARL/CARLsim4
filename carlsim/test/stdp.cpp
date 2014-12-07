@@ -1,8 +1,6 @@
 #include "gtest/gtest.h"
 #include "carlsim_tests.h"
 #include <carlsim.h>
-#include <interactive_spikegen.h>
-#include <pre_post_group_spikegen.h>
 
 /// **************************************************************************************************************** ///
 /// SPIKE-TIMING-DEPENDENT PLASTICITY STDP

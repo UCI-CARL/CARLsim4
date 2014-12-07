@@ -57,6 +57,15 @@
 #include <connection_monitor.h>
 #include <group_monitor.h>
 
+#include <interactive_spikegen.h>
+#include <pre_post_group_spikegen.h>
+#include <periodic_spikegen.h>
+#include <spikegen_from_file.h>
+#include <spikegen_from_vector.h>
+
+#include <simple_weight_tuner.h>
+#include <input_stimulus.h>
+
 #include <linear_algebra.h>
 
 #if (WIN32 || WIN64)
@@ -180,12 +189,12 @@ public:
 	 * \param[in] radRF      A struct specifying the radius of the receptive field (RF). A radius can be specified in 3
 	 *                       dimensions x, y, and z (following the topographic organization of neurons as specified by
 	 *                       Grid3D).
-	 *                       Receptive fields will be circular with radius as specified. The 3 dimensions follow the 
+	 *                       Receptive fields will be circular with radius as specified. The 3 dimensions follow the
 	 *                       ones defined by Grid3D.
 	 *                       If the radius in one dimension is 0, no connections will be made in this dimension.
-	 *                       If the radius in one dimension is -1, then all possible connections will be made in this 
+	 *                       If the radius in one dimension is -1, then all possible connections will be made in this
 	 *                       dimension (effectively making RF of infinite size).
-	 *                       Otherwise, if the radius is a positive real number, the RF radius will be exactly this 
+	 *                       Otherwise, if the radius is a positive real number, the RF radius will be exactly this
 	 *                       number. Call RadiusRF with only one argument to make that radius apply to all 3 dimensions.
 	 *                       Examples:
 	 *                         * Create a 2D Gaussian RF of radius 10: RadiusRF(10, 10, 0)
@@ -229,7 +238,7 @@ public:
 	 * \STATE CONFIG
 	 */
 	int createGroup(const std::string& grpName, int nNeur, int neurType);
-	
+
 	/*!
 	 * \brief create a group of neurons on a 3D grid
 	 *
@@ -254,7 +263,7 @@ public:
 	 * \STATE CONFIG
 	 */
 	int createSpikeGeneratorGroup(const std::string& grpName, int nNeur, int neurType);
-	
+
 	/*!
 	 * \brief create a group of spike generators on a 3D grid
 	 *
@@ -335,7 +344,7 @@ public:
 	 * This function allows the user to set homeostasis for a particular neuron group. All the neurons
 	 * in this group scale their weights in an attempt to attain a target base firing rate set with the
 	 * setHomeoBaseFiringRate function. Each neuron keeps track of their own average firing rate. The
-	 * time over which this average is computed should be on the scale of seconds to minutes hours as
+	 * time over which this average is computed should be on the scale of seconds to minutes to hours as
 	 * opposed to ms if one is to claim it is biologically realistic. The homeoScale sets the scaling
 	 * factor applied to the weight change of the synapse due to homeostasis. If you want to make
 	 * homeostasis stronger than STDP, you increase this value. Scaling of the synaptic weights is
@@ -492,7 +501,7 @@ public:
 	 * \STATE CONFIG
 	 */
 	void setISTDP(int grpId, bool isSet, stdpType_t type, AntiHebbianCurve curve);
-	
+
 	/*!
 	 * \brief Sets I-STDP mode with constant symmetric curve
 	 *
@@ -613,27 +622,36 @@ public:
 	// +++++ PUBLIC METHODS: INTERACTING WITH A SIMULATION ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
 	/*!
+	 * \brief Adds a constant bias to the weight of every synapse in the connection
+	 *
+	 * This method adds a constant bias to the weight of every synapse in the connection specified by connId. The bias
+	 * can be positive or negative.
+	 * If a bias is specified that makes any weight+bias lie outside the range [minWt,maxWt] of this connection, the
+	 * range will be updated accordingly if the flag updateWeightRange is set to true.
+	 * If the flag is set to false, then the specified weight value will be corrected to lie on the boundary (either
+	 * minWt or maxWt).
+	 *
+	 * \STATE EXECUTION
+	 * \param[in] connId            the connection ID to manipulate
+	 * \param[in] bias              the bias value to add to every synapse
+	 * \param[in] updateWeightRange a flag specifying what to do when the specified weight+bias lies outside the range
+	 *                              [minWt,maxWt]. Set to true to update the range accordingly. Set to false to adjust
+	 *                              the weight to be either minWt or maxWt. Default: false.
+	 * 
+	 * \note A weight cannot drop below zero, no matter what.
+	 * \see CARLsim::setWeight
+	 * \see CARLsim::scaleWeights
+	 * \since v3.0
+	 */
+	void biasWeights(short int connId, float bias, bool updateWeightRange=false);
+
+	/*!
 	 * \brief loads a simulation (and network state) from file
 	 *
 	 * \TODO finish docu
 	 * \STATE CONFIG
 	 */
 	void loadSimulation(FILE* fid);
-
-	/*!
-	 * \brief Reassigns fixed weights to values passed into the function in a single 1D float matrix (weightMatrix)
-	 *
-	 * The user passes the connection ID (connectID), the weightMatrix, and the matrixSize.
-	 * This function only works for fixed synapses and for connections of type CONN_USER_DEFINED. Only the weights are 
-	 * changed, not the maxWts, delays, or connected values
-	 * \TODO finish docu
-	 *
-	 * \STATE SETUP
-	 */
-	void reassignFixedWeights(short int connectId, float weightMatrix[], int matrixSize);
-
-	//! \deprecated Deprecated
-	void resetSpikeCntUtil(int grpId=ALL); //!< resets spike count for particular neuron group
 
 	/*!
 	 * \brief reset Spike Counter to zero
@@ -646,6 +664,30 @@ public:
 	 * \param grpId the group for which to reset the spike counts. Set to ALL if you want to reset all Spike Counters.
 	 */
 	void resetSpikeCounter(int grpId);
+
+	/*!
+	 * \brief Multiplies the weight of every synapse in the connection with a scaling factor
+	 *
+	 * This method scales the weight of every synapse in the connection specified by connId with a scaling factor.
+	 * The scaling factor cannot be negative.
+	 * If a scaling factor is specified that makes any weight*scale lie outside the range [minWt,maxWt] of this
+	 * connection, the range will be updated accordingly if the flag updateWeightRange is set to true.
+	 * If the flag is set to false, then the specified weight value will be corrected to lie on the boundary (either
+	 * minWt or maxWt).
+	 *
+	 * \STATE EXECUTION
+	 * \param[in] connId            the connection ID to manipulate
+	 * \param[in] scale             the scaling factor to apply to every synapse (cannot be negative)
+	 * \param[in] updateWeightRange a flag specifying what to do when the specified weight*scale lies outside the range
+	 *                              [minWt,maxWt]. Set to true to update the range accordingly. Set to false to adjust
+	 *                              the weight to be either minWt or maxWt. Default: false.
+	 * 
+	 * \note A weight cannot drop below zero, no matter what.
+	 * \see CARLsim::setWeight
+	 * \see CARLsim::biasWeights
+	 * \since v3.0
+	 */
+	void scaleWeights(short int connId, float scale, bool updateWeightRange=false);
 
 	/*!
 	 * \brief Sets a connection monitor for a group, custom ConnectionMonitor class
@@ -666,8 +708,8 @@ public:
 	/*!
 	 * \brief Sets the amount of current (mA) to inject into a group
 	 *
-	 * This method injects current, specified on a per-neuron basis, into the soma of each neuron in the group, at 
-	 * each timestep of the simulation. current is a float vector of current amounts (mA), one element per neuron in 
+	 * This method injects current, specified on a per-neuron basis, into the soma of each neuron in the group, at
+	 * each timestep of the simulation. current is a float vector of current amounts (mA), one element per neuron in
 	 * the group.
 	 *
 	 * To input different currents into a neuron over time, the idea is to run short periods of CARLsim::runNetwork
@@ -690,7 +732,7 @@ public:
 	 * \param[in] current  a float vector of current amounts (mA), one value per neuron in the group
 	 *
 	 * \note This method cannot be applied to SpikeGenerator groups.
-	 * \note If all neurons in the group should receive the same amount of current, you can use the convenience 
+	 * \note If all neurons in the group should receive the same amount of current, you can use the convenience
 	 * function CARLsim::setExternalCurrent(int grpId, float current).
 	 *
 	 * \attention Make sure to reset current after use (i.e., for the next call to CARLsim::runNetwork), otherwise
@@ -822,13 +864,32 @@ public:
 	void setSpikeRate(int grpId, PoissonRate* spikeRate, int refPeriod=1);
 
 	/*!
-	 * \brief Resets either the neuronal firing rate information by setting resetFiringRate = true and/or the
-	 * weight values back to their default values by setting resetWeights = true.
+	 * \brief Sets the weight value of a specific synapse
+	 *
+	 * This method sets the weight value of the synapse that belongs to connection connId and connects pre-synaptic
+	 * neuron neurIdPre to post-synaptic neuron neurIdPost. Neuron IDs should be zero-indexed, so that the first
+	 * neuron in the group has ID 0.
+	 * If a weight value is specified that lies outside the range [minWt,maxWt] of this connection, the range will be
+	 * updated accordingly if the flag updateWeightRange is set to true. If the flag is set to false, then the
+	 * specified weight value will be corrected to lie on the boundary (either minWt or maxWt).
 	 *
 	 * \STATE EXECUTION
-	 * \deprecated This function is deprecated.
+	 * \param[in] connId            the connection ID to manipulate
+	 * \param[in] neurIdPre         pre-synaptic neuron ID (zero-indexed)
+	 * \param[in] neurIdPost        post-synaptic neuron ID (zero-indexed)
+	 * \param[in] weight            the weight value to set for this synapse
+	 * \param[in] updateWeightRange a flag specifying what to do when the specified weight lies outside the range
+	 *                              [minWt,maxWt]. Set to true to update the range accordingly. Set to false to adjust
+	 *                              the weight to be either minWt or maxWt. Default: false.
+	 * 
+	 * \note Neuron IDs should be zero-indexed (first neuron in the group should have ID 0).
+	 * \note A weight cannot drop below zero, no matter what.
+	 * \attention Make sure this function is called on a synapse that actually exists!
+	 * \see CARLsim::biasWeights
+	 * \see CARLsim::scaleWeights
+	 * \since v3.0
 	 */
-	void updateNetwork(bool resetFiringInfo, bool resetWeights);
+	void setWeight(short int connId, int neurIdPre, int neurIdPost, float weight, bool updateWeightRange=false);
 
 	/*!
 	 * \brief function writes population weights from gIDpre to gIDpost to file fname in binary.
@@ -857,7 +918,7 @@ public:
 	 * first call to CARLsim::runNetwork will change the state from SETUP to EXECUTION.
 	 * \returns current CARLsim state
 	 */
-	carlsimState_t getCarlsimState() { return carlsimState_; }
+	carlsimState_t getCARLsimState() { return carlsimState_; }
 
 	/*!
 	 * \brief gets AMPA vector of a group
@@ -894,6 +955,19 @@ public:
 	 * \deprecated This function is deprecated. It will be replaced by NeuronMonitor.
 	 */
 	std::vector<float> getConductanceGABAb(int grpId);
+
+	/*!
+	 * \brief returns the RangeDelay struct for a specific connection ID
+	 *
+	 * This function returns the RangeDelay struct for a specific connection ID. The RangeDelay struct contains
+	 * fields for the minimum and maximum synaptic delay in the connection.
+	 *
+	 * \STATE CONFIG, SETUP, EXECUTION
+	 * \param[in] connId connection ID
+	 * \returns RangeDelay struct
+	 * \since v3.0
+	 */
+	RangeDelay getDelayRange(short int connId);
 
 	/*!
 	 * \brief gets delays
@@ -1015,7 +1089,7 @@ public:
 	/*!
 	 * \brief returns the total number of regular (Izhikevich) neurons
 	 *
-	 * \Note This number might change throughout CARLsim state CONFIG, up to calling CARLsim::setupNetwork).
+	 * \note This number might change throughout CARLsim state CONFIG, up to calling CARLsim::setupNetwork).
 	 * \TODO finish docu
 	 * \STATE CONFIG, SETUP, EXECUTION
 	 */
@@ -1157,14 +1231,6 @@ public:
 	uint32_t getSimTimeMsec();
 
 	/*!
-	 * \brief returns pointer to 1D array of the number of spikes every neuron in the group has fired
-	 *
-	 * \deprecated deprecated
-	 * \STATE EXECUTION
-	 */
-	int* getSpikeCntPtr(int grpId);
-
-	/*!
 	 * \brief return the number of spikes per neuron for a certain group
 	 *
 	 * A Spike Counter keeps track of all spikes per neuron for a certain time period (recordDur) at any point in time.
@@ -1175,6 +1241,32 @@ public:
 	 * Each entry is the number of spikes for this neuron (int) since the last reset.
 	 */
 	int* getSpikeCounter(int grpId);
+
+	/*!
+	 * \brief returns pointer to previously allocated SpikeMonitor object, NULL else
+	 *
+	 * This function returns a pointer to a SpikeMonitor object that has previously been created using the method
+	 * CARLsim::setSpikeMonitor. If the group does not have a SpikeMonitor, NULL is returned.
+	 *
+	 * \STATE SETUP, EXECUTION
+	 * \param[in] grpId the group ID
+	 * \returns pointer to SpikeMonitor object if exists, NULL else
+	 * \since v3.0
+	 */
+	SpikeMonitor* getSpikeMonitor(int grpId);
+
+	/*!
+	 * \brief returns the RangeWeight struct for a specific connection ID
+	 *
+	 * This function returns the RangeWeight struct for a specific connection ID. The RangeWeight struct contains
+	 * fields for the minimum, initial, and maximum weight in the connection.
+	 *
+	 * \STATE CONFIG, SETUP, EXECUTION
+	 * \param[in] connId connection ID
+	 * \returns RangeWeight struct
+	 * \since v3.0
+	 */
+	RangeWeight getWeightRange(short int connId);
 
 	/*!
 	 * \brief returns
@@ -1199,17 +1291,6 @@ public:
 	 * \STATE SETUP, EXECUTION
 	 */
 	bool isPoissonGroup(int grpId);
-
-	/*!
-	 * \brief Sets enableGpuSpikeCntPtr to true or false.  True allows getSpikeCntPtr_GPU to copy firing
-	 *
-	 * state information from GPU kernel to cpuNetPtrs.  Warning: setting this flag to true will slow down
-	 * the simulation significantly.
-	 * \deprecated deprecated
-	 * \STATE EXECUTION
-	 */
-	void setCopyFiringStateFromGPU(bool enableGPUSpikeCntPtr);
-
 
 	// +++++ PUBLIC METHODS: SET DEFAULTS +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 

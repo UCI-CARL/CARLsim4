@@ -63,6 +63,7 @@ TEST(Interface, getGroupGrid3DDeath) {
 	int g1=sim->createGroup("excit", Grid3D(2,3,4), EXCITATORY_NEURON);
 	sim->setNeuronParameters(g1, 0.02f, 0.2f,-65.0f,8.0f);
 	sim->connect(g1, g1, "full", RangeWeight(0.01), 1.0f, RangeDelay(1));
+	sim->setConductances(true);
 	sim->setupNetwork();
 
 	EXPECT_DEATH({sim->getGroupGrid3D(-1);},"");
@@ -79,6 +80,7 @@ TEST(Interface, getNeuronLocation3DDeath) {
 	int g1=sim->createGroup("excit", grid, EXCITATORY_NEURON);
 	sim->setNeuronParameters(g1, 0.02f, 0.2f,-65.0f,8.0f);
 	sim->connect(g1, g1, "full", RangeWeight(0.01), 1.0f, RangeDelay(1));
+	sim->setConductances(true);
 	sim->setupNetwork();
 
 	EXPECT_DEATH({sim->getNeuronLocation3D(-1);},"");
@@ -89,6 +91,99 @@ TEST(Interface, getNeuronLocation3DDeath) {
 	EXPECT_DEATH({sim->getNeuronLocation3D(g1+1,0);},"");
 
 	delete sim;
+}
+
+TEST(Interface, biasWeightsDeath) {
+	::testing::FLAGS_gtest_death_test_style = "threadsafe";
+
+	CARLsim* sim = new CARLsim("Interface.biasWeightsDeath",CPU_MODE,SILENT,0,42);
+	int g1=sim->createGroup("excit", Grid3D(10,10,1), EXCITATORY_NEURON);
+	sim->setNeuronParameters(g1, 0.02f, 0.2f,-65.0f,8.0f);
+	int c1=sim->connect(g1, g1, "full", RangeWeight(0.01), 1.0f, RangeDelay(1));
+	sim->setConductances(true);
+	sim->setupNetwork();
+	sim->runNetwork(0,20);
+
+	EXPECT_DEATH({sim->biasWeights(c1+1, 0.1, false);},""); // invalid connId
+	EXPECT_DEATH({sim->biasWeights(-1,   0.1, false);},""); // invalid connId
+}
+
+TEST(Interface, scaleWeightsDeath) {
+	::testing::FLAGS_gtest_death_test_style = "threadsafe";
+
+	CARLsim* sim = new CARLsim("Interface.scaleWeightsDeath",CPU_MODE,SILENT,0,42);
+	int g1=sim->createGroup("excit", Grid3D(10,10,1), EXCITATORY_NEURON);
+	sim->setNeuronParameters(g1, 0.02f, 0.2f,-65.0f,8.0f);
+	int c1=sim->connect(g1, g1, "full", RangeWeight(0.01), 1.0f, RangeDelay(1));
+	sim->setConductances(true);
+	sim->setupNetwork();
+	sim->runNetwork(0,20);
+
+	EXPECT_DEATH({sim->scaleWeights(c1+1, 0.1, false);},""); // invalid connId
+	EXPECT_DEATH({sim->scaleWeights(-1,   0.1, false);},""); // invalid connId
+	EXPECT_DEATH({sim->scaleWeights(0,   -1.0, false);},""); // scale<0
+}
+
+TEST(Interface, setWeightDeath) {
+	::testing::FLAGS_gtest_death_test_style = "threadsafe";
+
+	CARLsim* sim = new CARLsim("Interface.setWeightDeath",CPU_MODE,SILENT,0,42);
+	int g1=sim->createGroup("excit", Grid3D(10,10,1), EXCITATORY_NEURON);
+	sim->setNeuronParameters(g1, 0.02f, 0.2f,-65.0f,8.0f);
+	int c1=sim->connect(g1, g1, "full", RangeWeight(0.01), 1.0f, RangeDelay(1));
+	sim->setConductances(true);
+	sim->setupNetwork();
+	sim->runNetwork(0,20);
+
+	EXPECT_DEATH({sim->setWeight(c1+1, 0,  0,  0.1, false);},""); // invalid connId
+	EXPECT_DEATH({sim->setWeight(-1,   0,  0,  0.1, false);},""); // connId<0
+	EXPECT_DEATH({sim->setWeight(0,   -1,  0,  0.1, false);},""); // neurIdPre<0
+	EXPECT_DEATH({sim->setWeight(0,  101,  0,  0.1, false);},""); // invalid neurIdPre
+	EXPECT_DEATH({sim->setWeight(0,    0, -1,  0.1, false);},""); // neurIdPost<0
+	EXPECT_DEATH({sim->setWeight(0,    0,101,  0.1, false);},""); // invalid neurIdPost
+	EXPECT_DEATH({sim->setWeight(0,    0,  0, -1.0, false);},""); // weight<0
+}
+
+TEST(Interface, getDelayRangeDeath) {
+	::testing::FLAGS_gtest_death_test_style = "threadsafe";
+
+	CARLsim* sim = new CARLsim("Interface.getDelayRangeDeath",CPU_MODE,SILENT,0,42);
+	int g1=sim->createGroup("excit", Grid3D(10,10,1), EXCITATORY_NEURON);
+	sim->setNeuronParameters(g1, 0.02f, 0.2f,-65.0f,8.0f);
+	int c1=sim->connect(g1, g1, "full", RangeWeight(0.01), 1.0f, RangeDelay(1,10));
+	EXPECT_DEATH({sim->getDelayRange(c1+1);},"");
+	EXPECT_DEATH({sim->getDelayRange(-1);},"");
+
+	sim->setConductances(true);
+
+	sim->setupNetwork();
+	EXPECT_DEATH({sim->getDelayRange(c1+1);},"");
+	EXPECT_DEATH({sim->getDelayRange(-1);},"");
+
+	sim->runNetwork(0,20);
+	EXPECT_DEATH({sim->getDelayRange(c1+1);},"");
+	EXPECT_DEATH({sim->getDelayRange(-1);},"");
+}
+
+TEST(Interface, getWeightRangeDeath) {
+	::testing::FLAGS_gtest_death_test_style = "threadsafe";
+
+	CARLsim* sim = new CARLsim("Interface.getWeightRangeDeath",CPU_MODE,SILENT,0,42);
+	int g1=sim->createGroup("excit", Grid3D(10,10,1), EXCITATORY_NEURON);
+	sim->setNeuronParameters(g1, 0.02f, 0.2f,-65.0f,8.0f);
+	int c1=sim->connect(g1, g1, "full", RangeWeight(0.0, 0.1, 0.1), 1.0f, RangeDelay(1,10));
+	EXPECT_DEATH({sim->getWeightRange(c1+1);},"");
+	EXPECT_DEATH({sim->getWeightRange(-1);},"");
+
+	sim->setConductances(true);
+
+	sim->setupNetwork();
+	EXPECT_DEATH({sim->getWeightRange(c1+1);},"");
+	EXPECT_DEATH({sim->getWeightRange(-1);},"");
+
+	sim->runNetwork(0,20);
+	EXPECT_DEATH({sim->getWeightRange(c1+1);},"");
+	EXPECT_DEATH({sim->getWeightRange(-1);},"");
 }
 
 //! trigger all UserErrors
@@ -152,6 +247,7 @@ TEST(Interface, setExternalCurrentDeath) {
 	EXPECT_DEATH({sim->setExternalCurrent(g1,vecCurrent);},"");
 	EXPECT_DEATH({sim->setExternalCurrent(g1,current);},"");
 
+	sim->setConductances(true);
 	sim->setupNetwork();
 
 	// calling setExternalCurrent in correct state but with invalid input arguments
@@ -269,7 +365,6 @@ TEST(Interface, CARLsimState) {
 	// test APIs that can't be called at CONFIG_STATE
 	EXPECT_DEATH({sim->runNetwork(1, 0);},"");
 	EXPECT_DEATH({sim->saveSimulation("test.dat", true);},"");
-	EXPECT_DEATH({sim->reassignFixedWeights(0, wM, 4);},"");
 	EXPECT_DEATH({sim->setSpikeRate(g1, NULL);},"");
 	EXPECT_DEATH({sim->writePopWeights("test.dat", 0, 1);},"");
 	EXPECT_DEATH({sim->getDelays(0, 1, i, j);},"");
@@ -285,9 +380,9 @@ TEST(Interface, CARLsimState) {
 	sim->setConductances(true);
 
 	// test buildNetwork(), change carlsimState_ from CONFIG_STATE to SETUP_STATE
-	EXPECT_TRUE(sim->getCarlsimState() == CONFIG_STATE);
+	EXPECT_TRUE(sim->getCARLsimState() == CONFIG_STATE);
 	sim->setupNetwork();
-	EXPECT_TRUE(sim->getCarlsimState() == SETUP_STATE);
+	EXPECT_TRUE(sim->getCARLsimState() == SETUP_STATE);
 	//----- SETUP_STATE zone -----
 
 	// test APIs that can't be called at SETUP_STATE
@@ -323,15 +418,14 @@ TEST(Interface, CARLsimState) {
 	EXPECT_DEATH({sim->setDefaultSTPparams(1, 1.0, 2.0, 3.0);},"");
 
 	// test runNetwork(), change carlsimState_ from SETUP_STATE to EXE_STATE
-	EXPECT_TRUE(sim->getCarlsimState() == SETUP_STATE);
+	EXPECT_TRUE(sim->getCARLsimState() == SETUP_STATE);
 	sim->runNetwork(1, 0);
-	EXPECT_TRUE(sim->getCarlsimState() == EXE_STATE);
+	EXPECT_TRUE(sim->getCARLsimState() == EXE_STATE);
 	//----- EXE_STATE zone -----
 
 	// test APIs that can't be called at EXE_STATE
 	EXPECT_DEATH({sim->setupNetwork();},"");
 	EXPECT_DEATH({sim->loadSimulation(NULL);},"");
-	EXPECT_DEATH({sim->reassignFixedWeights(0, wM, 4);},"");
 	EXPECT_DEATH({g2 = sim->createGroup("excit", 80, EXCITATORY_NEURON);},"");
 	EXPECT_DEATH({g2 = sim->createSpikeGeneratorGroup("input", 10, EXCITATORY_NEURON);},"");
 	EXPECT_DEATH({sim->connect(g1,g1,"random", RangeWeight(0.0,0.001,0.005), 0.1f, RangeDelay(1,20), RadiusRF(-1), SYN_PLASTIC);},"");

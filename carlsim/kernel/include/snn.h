@@ -159,7 +159,7 @@ public:
 	 * \return number of created synaptic projections
 	 */
 	short int connect(int gIDpre, int gIDpost, const std::string& _type, float initWt, float maxWt, float prob,
-		uint8_t minDelay, uint8_t maxDelay, float radX, float radY, float radZ, 
+		uint8_t minDelay, uint8_t maxDelay, float radX, float radY, float radZ,
 		float mulSynFast, float mulSynSlow, bool synWtType);
 
 	/* Creates synaptic projections using a callback mechanism.
@@ -326,6 +326,9 @@ public:
 
 	// +++++ PUBLIC METHODS: INTERACTING WITH A SIMULATION ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
+	// adds a bias to every weight in the connection
+	void biasWeights(short int connId, float bias, bool updateWeightRange=false);
+
 	//! deallocates all dynamical structures and exits
 	void exitSimulation(int val=1);
 
@@ -339,16 +342,6 @@ public:
 	 void loadSimulation(FILE* fid);
 
 	/*!
-	 * \brief Reassigns fixed weights to values passed into the function in a single 1D float matrix called
-	 * weightMatrix.  The user passes the connection ID (connectID), the weightMatrix, the matrixSize.
-	 * This function only works for fixed synapses and for connections of type CONN_USER_DEFINED. Only the weights are
-	 * changed, not the maxWts, delays, or connected values
-	 */
-	void reassignFixedWeights(short int connectId, float weightMatrix[], int matrixSize);
-
-	void resetSpikeCntUtil(int grpId = -1); //!< resets spike count for particular neuron group
-
-	/*!
 	 * \brief reset Spike Counter to zero
 	 * Manually resets the spike buffers of a Spike Counter to zero (for a specific group).
 	 * Buffers get reset to zero automatically after recordDur. However, you can reset the buffer manually at any
@@ -356,6 +349,9 @@ public:
 	 * \param grpId the group for which to reset the spike counts. Set to ALL if you want to reset all Spike Counters.
 	 */
 	void resetSpikeCounter(int grpId);
+
+	// multiplies every weight with a scaling factor
+	void scaleWeights(short int connId, float scale, bool updateWeightRange=false);
 
 	//! sets up a group monitor registered with a callback to process the spikes.
 	/*!
@@ -410,6 +406,9 @@ public:
 	 * \param refPeriod (optional) refractive period,  default = 1
 	 */
 	void setSpikeRate(int grpId, PoissonRate* spikeRate, int refPeriod);
+
+	// sets the weight value of a specific synapse
+	void setWeight(short int connId, int neurIdPre, int neurIdPost, float weight, bool updateWeightRange=false);
 
 	//! polls connection weights
 	void updateConnectionMonitor(int connId=ALL);
@@ -476,6 +475,9 @@ public:
 	short int getConnectId(int grpIdPre, int grpIdPost); //!< find connection ID based on pre-post group pair, O(N)
 	grpConnectInfo_t* getConnectInfo(short int connectId); //!< required for homeostasis
 
+	//! returns the RangeDelay struct of a connection
+	RangeDelay getDelayRange(short int connId);
+
 	//! Returns the delay information for all synaptic connections between a pre-synaptic and a post-synaptic neuron group
 	/*!
 	 * \param _grpIdPre ID of pre-synaptic group
@@ -526,13 +528,8 @@ public:
 	unsigned int getSimTimeSec()	{ return simTimeSec; }
 	unsigned int getSimTimeMs()		{ return simTimeMs; }
 
-	// TODO: same as spikeMonRT
-	//TODO: may need to make it work for different configurations. -- KDC
-	/*!
- 	 * \brief Returns pointer to nSpikeCnt, which is a 1D array of the number of spikes every neuron in the group
-	 *  has fired.  Takes the grpID and the simulation mode (CPU_MODE or GPU_MODE) as arguments.
-	 */
-	int* getSpikeCntPtr(int grpId=ALL);
+	//! returns pointer to existing SpikeMonitor object, NULL else
+	SpikeMonitor* getSpikeMonitor(int grpId);
 
 	/*!
 	 * \brief return the number of spikes per neuron for a certain group
@@ -559,6 +556,9 @@ public:
 
     bool isConnectionPlastic(short int connId);
 
+	//! returns RangeWeight struct of a connection
+	RangeWeight getWeightRange(short int connId);
+
 	bool isExcitatoryGroup(int g) { return (grp_Info[g].Type&TARGET_AMPA) || (grp_Info[g].Type&TARGET_NMDA); }
 	bool isInhibitoryGroup(int g) { return (grp_Info[g].Type&TARGET_GABAa) || (grp_Info[g].Type&TARGET_GABAb); }
 	bool isPoissonGroup(int g) { return (grp_Info[g].Type&POISSON_NEURON); }
@@ -577,14 +577,6 @@ public:
 	bool isSimulationWithPlasticWeights() { return !sim_with_fixedwts; }
 	bool isSimulationWithSTDP() { return sim_with_stdp; }
 	bool isSimulationWithSTP() { return sim_with_stp; }
-
-	/*!
-	 * \brief Sets enableGpuSpikeCntPtr to true or false.  True allows getSpikeCntPtr_GPU to copy firing
-	 * state information from GPU kernel to cpuNetPtrs.  Warning: setting this flag to true will slow down
-	 * the simulation significantly.
-	 */
-	void setCopyFiringStateFromGPU(bool _enableGPUSpikeCntPtr);
-
 
 /// **************************************************************************************************************** ///
 /// PRIVATE METHODS
@@ -749,7 +741,6 @@ private:
 	void copyExternalCurrent(network_ptr_t* dest, network_ptr_t* src, int allocateMem, int grpId=-1);
 	void copyFiringInfo_GPU();
 	void copyFiringStateFromGPU (int grpId = -1);
-	void copyGrpInfo_GPU(); //!< Used to copy grp_info to gpu for setSTDP, setSTP, and setHomeostasis
 	void copyGroupState(network_ptr_t* dest, network_ptr_t* src,  cudaMemcpyKind kind, int allocateMem, int grpId=-1);
 	void copyNeuronParameters(network_ptr_t* dest, int kind, int allocateMem, int grpId = -1);
 	void copyNeuronState(network_ptr_t* dest, network_ptr_t* src, cudaMemcpyKind kind, int allocateMem, int grpId=-1);
@@ -757,7 +748,6 @@ private:
 	void copyPostConnectionInfo(network_ptr_t* dest, int allocateMem);
 	void copyState(network_ptr_t* dest, int allocateMem);
 	void copySTPState(network_ptr_t* dest, network_ptr_t* src, cudaMemcpyKind kind, int allocateMem);
-	void copyUpdateVariables_GPU(); //!< copies wt / neuron state / STP state info from host to device
 	void copyWeightsGPU(unsigned int nid, int src_grp);
 	void copyWeightState(network_ptr_t* dest, network_ptr_t* src, cudaMemcpyKind kind, //!< copy presynaptic info
 		int allocateMem, int grpId=-1);
@@ -869,8 +859,6 @@ private:
 	bool sim_with_homeostasis;
 	bool sim_with_stp;
 	bool sim_with_spikecounters; //!< flag will be true if there are any spike counters around
-	//! flag to enable the copyFiringStateInfo from GPU to CPU
-	bool enableGPUSpikeCntPtr;
 
 	// spiking neural network related information, including neurons, synapses and network parameters
 	int	        	numN;				//!< number of neurons in the spiking neural network
@@ -936,7 +924,7 @@ private:
 
 	unsigned int    simTimeRunStart; //!< the start time of current/last runNetwork call
 	unsigned int    simTimeRunStop;  //!< the end time of current/last runNetwork call
-	
+
 	unsigned int	simTimeMs;
 	uint64_t        simTimeSec;		//!< this is used to store the seconds.
 	unsigned int	simTime;		//!< The absolute simulation time. The unit is millisecond. this value is not reset but keeps increasing to its max value.
