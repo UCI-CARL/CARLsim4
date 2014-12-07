@@ -7,6 +7,9 @@ Legend:
 	- removed element
 	* changed element
 
+2014-12-06     Ting-Shuo Chou <tingshuc@uci.edu>
+  + Added GroupMonitr object
+
 2014-12-03     Michael Beyeler <mbeyeler@uci.edu>
   + Added SimpleWeightTuner to tools, to Tutorial Chapter 12 (explanation)
     and Chapter 13 (example network).
