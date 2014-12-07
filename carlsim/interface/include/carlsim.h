@@ -56,21 +56,24 @@
 #include <spike_monitor.h>
 #include <connection_monitor.h>
 #include <group_monitor.h>
+#include <linear_algebra.h>
 
+#if (WIN32 || WIN64)
+#include <Windows.h>
+
+#include <algorithm>
+#define fmin (std::min)
+#define fmax (std::max)
+
+#else
 #include <interactive_spikegen.h>
 #include <pre_post_group_spikegen.h>
 #include <periodic_spikegen.h>
 #include <spikegen_from_file.h>
 #include <spikegen_from_vector.h>
-
 #include <simple_weight_tuner.h>
 #include <input_stimulus.h>
 
-#include <linear_algebra.h>
-
-#if (WIN32 || WIN64)
-#include <Windows.h>
-#else
 #include <pthread.h>
 #endif
 

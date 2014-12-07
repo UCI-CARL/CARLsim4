@@ -2,6 +2,12 @@
 #include "carlsim_tests.h"
 #include <carlsim.h>
 
+#if (WIN32 || WIN64)
+#include <periodic_spikegen.h>
+#include <interactive_spikegen.h>
+#include <pre_post_group_spikegen.h>
+#endif
+
 /// **************************************************************************************************************** ///
 /// SPIKE-TIMING-DEPENDENT PLASTICITY STDP
 /// **************************************************************************************************************** ///

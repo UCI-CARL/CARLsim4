@@ -45,6 +45,11 @@
 #include <carlsim.h>
 #include <vector>
 
+#if (WIN32 || WIN64)
+#include <periodic_spikegen.h>
+#include <spikegen_from_file.h>
+#include <spikegen_from_vector.h>
+#endif
 
 // tests whether the binary file created by setSpikeMonitor matches the specifications of PeriodicSpikeGenerator
 TEST(SpikeGen, PeriodicSpikeGenerator) {
