@@ -39,11 +39,18 @@ spike_mon_src := $(addprefix $(spike_mon_dir)/, spike_monitor.cpp \
 	spike_monitor_core.cpp)
 spike_mon_objs := $(patsubst %.cpp, %.o, $(spike_mon_src))
 
+# group monitor variables
+group_mon_inc := $(addprefix $(group_mon_dir)/, group_monitor.h \
+	group_monitor_core.h)
+group_mon_src := $(addprefix $(group_mon_dir)/, group_monitor.cpp \
+	group_monitor_core.cpp)
+group_mon_objs := $(patsubst %.cpp, %.o, $(group_mon_src))
+
 # tools spikegen variables
 tools_spikegen_inc  := $(addprefix $(tools_spikegen_dir)/,interactive_spikegen.h \
 	periodic_spikegen.h spikegen_from_file.h spikegen_from_vector.h)
 tools_spikegen_src  := $(addprefix $(tools_spikegen_dir)/,interactive_spikegen.cpp \
-	periodic_spikegen.cpp spikegen_from_file.cpp spikegen_from_vector.cpp)
+	periodic_spikegen.cpp spikegen_from_file.cpp spikegen_from_vector.cpp pre_post_group_spikegen.cpp)
 tools_spikegen_objs := $(patsubst %.cpp, %.o, $(tools_spikegen_src))
 
 # tools inputstim variables
@@ -60,14 +67,14 @@ tools_swt_objs := $(patsubst %.cpp, %.o, $(tools_swt_src))
 util_2_0_objs := $(addprefix $(kernel_dir)/,v1ColorME.2.0.o)
 
 # carlsim variables all together in one place
-carlsim_inc += $(kernel_inc) $(interface_inc) $(conn_mon_inc) $(spike_mon_inc) $(tools_spikegen_inc) \
-	$(tools_inputstim_inc) $(tools_swt_inc)
-carlsim_objs += $(kernel_objs) $(interface_objs) $(conn_mon_objs) $(spike_mon_objs) $(tools_spikegen_objs) \
-	$(tools_inputstim_objs) $(tools_swt_objs)
-carlsim_sources += $(kernel_src) $(interface_src) $(conn_mon_src) $(spike_mon_src) $(tools_spikegen_src) \
-	$(tools_inputstim_src) $(tools_swt_src)
-objects += $(carlsim_objs) $(interface_objs) $(conn_mon_objs) $(spike_mon_objs) $(tools_spikegen_objs) \
-	$(tools_inputstim_objs) $(tools_swt_objs)
+carlsim_inc += $(kernel_inc) $(interface_inc) $(conn_mon_inc) $(spike_mon_inc) $(group_mon_inc) \
+	$(tools_spikegen_inc) $(tools_inputstim_inc) $(tools_swt_inc)
+carlsim_objs += $(kernel_objs) $(interface_objs) $(conn_mon_objs) $(spike_mon_objs) $(group_mon_objs) \
+	$(tools_spikegen_objs) $(tools_inputstim_objs) $(tools_swt_objs)
+carlsim_sources += $(kernel_src) $(interface_src) $(conn_mon_src) $(spike_mon_src) $(group_mon_src) \
+	$(tools_spikegen_src) $(tools_inputstim_src) $(tools_swt_src)
+objects += $(carlsim_objs) $(interface_objs) $(conn_mon_objs) $(spike_mon_objs) $(group_mon_objs) \
+	$(tools_spikegen_objs) $(tools_inputstim_objs) $(tools_swt_objs)
 
 default_targets += carlsim
 
@@ -88,6 +95,10 @@ $(conn_mon_dir)/%.o: $(conn_mon_dir)/%.cpp $(conn_mon_inc)
 
 # spike_monitor
 $(spike_mon_dir)/%.o: $(spike_mon_dir)/%.cpp $(spike_mon_inc)
+	$(NVCC) -c $(CARLSIM_INCLUDES) $(CARLSIM_FLAGS)	$< -o $@
+
+# group_monitor
+$(group_mon_dir)/%.o: $(group_mon_dir)/%.cpp $(group_mon_inc)
 	$(NVCC) -c $(CARLSIM_INCLUDES) $(CARLSIM_FLAGS)	$< -o $@
 
 # tools/spikegen

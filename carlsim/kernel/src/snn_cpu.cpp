@@ -44,6 +44,8 @@
 #include <connection_monitor_core.h>
 #include <spike_monitor.h>
 #include <spike_monitor_core.h>
+#include <group_monitor.h>
+#include <group_monitor_core.h>
 
 // \FIXME what are the following for? why were they all the way at the bottom of this file?
 
@@ -709,20 +711,10 @@ int CpuSNN::runNetwork(int _nsec, int _nmsec, bool printRunSummary, bool copySta
 				updateWeights();
 			} else{
 				updateWeights_GPU();
-
-				if (copyState) {
-					// TODO: build DA buffer in GPU memory so that we can retrieve data every one second instead of 10ms
-					// Log dopamine concentration
-					copyGroupState(&cpuNetPtrs, &cpu_gpuNetPtrs, cudaMemcpyDeviceToHost, false, 0);
-					for (int i = 0; i < numGrp; i++) {
-						int monitorId = grp_Info[i].GroupMonitorId;
-						if (monitorId != -1)
-							grpDABuffer[monitorId][simTimeMs / wtANDwtChangeUpdateInterval_] = cpuNetPtrs.grpDA[i];
-					}
-				}
 			}
 		}
 
+		// Note: updateTime() advance simTime, simTimeMs, and simTimeSec accordingly
 		if (updateTime()) {
 			// finished one sec of simulation...
 			if (numSpikeMonitor) {
@@ -768,10 +760,14 @@ int CpuSNN::runNetwork(int _nsec, int _nmsec, bool printRunSummary, bool copySta
 		if (numConnectionMonitor) {
 			printStatusConnectionMonitor(ALL);
 		}
+		if (numGroupMonitor) {
+			printStatusGroupMonitor(ALL, runDurationMs);
+		}
 	}
 
-	// call updateSpikeMonitor again to fetch all the missing spikes
+	// call updateSpike(Group)Monitor again to fetch all the left-over spikes and group status (neuromodulator)
 	updateSpikeMonitor();
+	updateGroupMonitor();
 
 	// keep track of simulation time...
 	CUDA_STOP_TIMER(timer);
@@ -952,29 +948,41 @@ void CpuSNN::scaleWeights(short int connId, float scale, bool updateWeightRange)
 	}
 }
 
-void CpuSNN::setGroupMonitor(int grpId, GroupMonitorCore* groupMon) {
-	// store the grpId for further reference
-	groupMonitorGrpId[numGroupMonitor] = grpId;
+GroupMonitor* CpuSNN::setGroupMonitor(int grpId, FILE* fid) {
+	// check whether group already has a GroupMonitor
+	if (grp_Info[grpId].GroupMonitorId >= 0) {
+		KERNEL_ERROR("setGroupMonitor has already been called on Group %d (%s).",
+			grpId, grp_Info2[grpId].Name.c_str());
+		exitSimulation(1);
+	}
 
-	// also inform the grp that it is being monitored...
+	// create new GroupMonitorCore object in any case and initialize analysis components
+	// grpMonObj destructor (see below) will deallocate it
+	GroupMonitorCore* grpMonCoreObj = new GroupMonitorCore(this, numGroupMonitor, grpId);
+	groupMonCoreList[numGroupMonitor] = grpMonCoreObj;
+
+	// assign group status file ID if we selected to write to a file, else it's NULL
+	// if file pointer exists, it has already been fopened
+	// this will also write the header section of the group status file
+	// grpMonCoreObj destructor will fclose it
+	grpMonCoreObj->setGroupFileId(fid);
+
+	// create a new GroupMonitor object for the user-interface
+	// CpuSNN::deleteObjects will deallocate it
+	GroupMonitor* grpMonObj = new GroupMonitor(grpMonCoreObj);
+	groupMonList[numGroupMonitor] = grpMonObj;
+
+	// also inform the group that it is being monitored...
 	grp_Info[grpId].GroupMonitorId = numGroupMonitor;
 
-	grpBufferCallback[numGroupMonitor] = groupMon;
-
-	// create the new buffer for keeping track of group status in the system
-	grpDABuffer[numGroupMonitor] = new float[100]; // maximum resolution 10 ms
-	grp5HTBuffer[numGroupMonitor] = new float[100]; // maximum resolution 10 ms
-	grpAChBuffer[numGroupMonitor] = new float[100]; // maximum resolution 10 ms
-	grpNEBuffer[numGroupMonitor] = new float[100]; // maximum resolution 10 ms
-
-	memset(grpDABuffer[numGroupMonitor], 0, sizeof(float) * 100);
+    // not eating much memory anymore, got rid of all buffers
+	cpuSnnSz.monitorInfoSize += sizeof(GroupMonitor*);
+	cpuSnnSz.monitorInfoSize += sizeof(GroupMonitorCore*);
 
 	numGroupMonitor++;
+	KERNEL_INFO("GroupMonitor set for group %d (%s)",grpId,grp_Info2[grpId].Name.c_str());
 
-	// Finally update the size info that will be useful to see
-	// how much memory are we eating...
-	// \FIXME: when running on GPU mode??
-	cpuSnnSz.monitorInfoSize += sizeof(float) * 100 * 4;
+	return grpMonObj;
 }
 
 ConnectionMonitor* CpuSNN::setConnectionMonitor(int grpIdPre, int grpIdPost, FILE* fid) {
@@ -1901,7 +1909,6 @@ void CpuSNN::CpuSNNinit() {
 	// reset all pointers, don't deallocate (false)
 	resetPointers(false);
 
-
 	memset(&cpuSnnSz, 0, sizeof(cpuSnnSz));
 
 	showGrpFiringInfo = true;
@@ -2044,6 +2051,14 @@ void CpuSNN::buildNetworkInit(unsigned int nNeur, unsigned int nPostSyn, unsigne
 	grp5HT = new float[numGrp];
 	grpACh = new float[numGrp];
 	grpNE = new float[numGrp];
+
+	// init neuromodulators and their assistive buffers
+	for (int i = 0; i < numGrp; i++) {
+		grpDABuffer[i] = new float[1000]; // 1 second DA buffer
+		grp5HTBuffer[i] = new float[1000];
+		grpAChBuffer[i] = new float[1000];
+		grpNEBuffer[i] = new float[1000];
+	}
 
 	resetCurrent();
 	resetConductances();
@@ -3030,7 +3045,7 @@ void CpuSNN::generatePostSpike(unsigned int pre_i, unsigned int idx_d, unsigned 
 
 	// Got one spike from dopaminergic neuron, increase dopamine concentration in the target area
 	if (pre_type & TARGET_DA) {
-		cpuNetPtrs.grpDA[post_grpId] += 0.02;
+		cpuNetPtrs.grpDA[post_grpId] += 0.04;
 	}
 
 	// STDP calculation: the post-synaptic neuron fires before the arrival of a pre-synaptic spike
@@ -3244,8 +3259,10 @@ void  CpuSNN::globalStateUpdate() {
 		}
 
 		// decay dopamine concentration
-		if (cpuNetPtrs.grpDA[g] > grp_Info[g].baseDP)
-			cpuNetPtrs.grpDA[g] *= grp_Info[g].decayDP;
+		if (cpuNetPtrs.grpDA[g] > grp_Info[g].baseDP) {
+			cpuNetPtrs.grpDA[g] *= grp_Info[g].decayDP;	
+		}
+		cpuNetPtrs.grpDABuffer[g][simTimeMs] = cpuNetPtrs.grpDA[g];
 
 		for(int i=grp_Info[g].StartN; i <= grp_Info[g].EndN; i++) {
 			assert(i < numNReg);
@@ -3509,6 +3526,12 @@ void CpuSNN::makePtrInfo() {
 	cpuNetPtrs.grp5HT			= grp5HT;
 	cpuNetPtrs.grpACh			= grpACh;
 	cpuNetPtrs.grpNE			= grpNE;
+	for (int i = 0; i < numGrp; i++) {
+		cpuNetPtrs.grpDABuffer[i]	= grpDABuffer[i];
+		cpuNetPtrs.grp5HTBuffer[i]	= grp5HTBuffer[i];
+		cpuNetPtrs.grpAChBuffer[i]	= grpAChBuffer[i];
+		cpuNetPtrs.grpNEBuffer[i]	= grpNEBuffer[i];
+	}
 	cpuNetPtrs.allocated    	= true;
 	cpuNetPtrs.memType      	= CPU_MODE;
 	cpuNetPtrs.stpu 			= stpu;
@@ -3962,10 +3985,6 @@ void CpuSNN::resetPointers(bool deallocate) {
 	if (grpIds!=NULL && deallocate) delete[] grpIds;
 	grpIds=NULL;
 
-	#ifdef NEURON_NOISE
-	if (intrinsicWeight!=NULL && deallocate) delete[] intrinsicWeight;
-	#endif
-
 	if (firingTableD2!=NULL && deallocate) delete[] firingTableD2;
 	if (firingTableD1!=NULL && deallocate) delete[] firingTableD1;
 	if (timeTableD2!=NULL && deallocate) delete[] timeTableD2;
@@ -3977,6 +3996,13 @@ void CpuSNN::resetPointers(bool deallocate) {
 	for (int i=0; i<numSpikeMonitor; i++) {
 		if (spikeMonList[i]!=NULL && deallocate) delete spikeMonList[i];
 		spikeMonList[i]=NULL;
+	}
+
+	// delete all GroupMonitor objects
+	// don't kill GroupMonitorCore objects, they will get killed automatically
+	for (int i=0; i<numGroupMonitor; i++) {
+		if (groupMonList[i]!=NULL && deallocate) delete groupMonList[i];
+		groupMonList[i]=NULL;
 	}
 
 	// delete all ConnectionMonitor objects
@@ -4019,16 +4045,23 @@ void CpuSNN::resetPointers(bool deallocate) {
 	grpACh = NULL;
 	grpNE = NULL;
 
-	// clear data buffer for group monitor
-	for (int i = 0; i < numGroupMonitor; i++) {
-		if (grpDABuffer != NULL && deallocate) delete [] grpDABuffer[i];
-		if (grp5HTBuffer != NULL && deallocate) delete [] grp5HTBuffer[i];
-		if (grpAChBuffer != NULL && deallocate) delete [] grpAChBuffer[i];
-		if (grpNEBuffer != NULL && deallocate) delete [] grpNEBuffer[i];
-		grpDABuffer[i] = NULL;
-		grp5HTBuffer[i] = NULL;
-		grpAChBuffer[i] = NULL;
-		grpNEBuffer[i] = NULL;
+	// clear assistive data buffer for group monitor
+	if (deallocate) {
+		for (int i = 0; i < numGrp; i++) {
+			if (grpDABuffer[i] != NULL) delete [] grpDABuffer[i];
+			if (grp5HTBuffer[i] != NULL) delete [] grp5HTBuffer[i];
+			if (grpAChBuffer[i] != NULL) delete [] grpAChBuffer[i];
+			if (grpNEBuffer[i] != NULL) delete [] grpNEBuffer[i];
+			grpDABuffer[i] = NULL;
+			grp5HTBuffer[i] = NULL;
+			grpAChBuffer[i] = NULL;
+			grpNEBuffer[i] = NULL;
+		}
+	} else {
+		memset(grpDABuffer, 0, sizeof(float*) * MAX_GRP_PER_SNN);
+		memset(grp5HTBuffer, 0, sizeof(float*) * MAX_GRP_PER_SNN);
+		memset(grpAChBuffer, 0, sizeof(float*) * MAX_GRP_PER_SNN);
+		memset(grpNEBuffer, 0, sizeof(float*) * MAX_GRP_PER_SNN);
 	}
 
 	// clear poisson generator
@@ -4399,20 +4432,85 @@ void CpuSNN::updateConnectionMonitor(int connId) {
 	}
 }
 
-void CpuSNN::updateGroupMonitor() {
-	// TODO: build DA, 5HT, ACh, NE buffer in GPU memory and retrieve data every one second
-	// Currently, there is no buffer in GPU side. data are retrieved at every 10 ms simulation time
+void CpuSNN::updateGroupMonitor(int grpId) {
+	// don't continue if no group monitors in the network
+	if (!numGroupMonitor)
+		return;
 
-	for (int grpId = 0; grpId < numGrp; grpId++) {
+	if (grpId == ALL) {
+		for (int g = 0; g < numGrp; g++)
+			updateGroupMonitor(g);
+	} else {
+		// update group monitor of a specific group
+
+		// find index in group monitor arrays
 		int monitorId = grp_Info[grpId].GroupMonitorId;
 
-		if(monitorId != -1) {
-			KERNEL_INFO("Group Monitor for Group %s has DA(%f)", grp_Info2[grpId].Name.c_str(), grpDABuffer[monitorId][0]);
+		// don't continue if no group monitor enabled for this group
+		if (monitorId < 0)
+			return;
 
-			// call the callback function
-			if (grpBufferCallback[monitorId])
-				grpBufferCallback[monitorId]->update(this, grpId, grpDABuffer[monitorId], 100);
+		// find last update time for this group
+		GroupMonitorCore* grpMonObj = groupMonCoreList[monitorId];
+		int lastUpdate = grpMonObj->getLastUpdated();
+
+		// don't continue if time interval is zero (nothing to update)
+		if (getSimTime() - lastUpdate <=0)
+			return;
+
+		if (getSimTime() - lastUpdate > 1000)
+			KERNEL_ERROR("updateGroupMonitor(grpId=%d) must be called at least once every second",grpId);
+
+		if (simMode_ == GPU_MODE) {
+			// copy the group status (neuromodulators) from the GPU to the CPU..
+			copyGroupState(&cpuNetPtrs, &cpu_gpuNetPtrs, cudaMemcpyDeviceToHost, false);
 		}
+
+		// find the time interval in which to update group status
+		// usually, we call updateGroupMonitor once every second, so the time interval is [0,1000)
+		// however, updateGroupMonitor can be called at any time t \in [0,1000)... so we can have the cases
+		// [0,t), [t,1000), and even [t1, t2)
+		int numMsMin = lastUpdate%1000; // lower bound is given by last time we called update
+		int numMsMax = getSimTimeMs(); // upper bound is given by current time
+		if (numMsMax == 0)
+			numMsMax = 1000; // special case: full second
+		assert(numMsMin < numMsMax);
+
+		// current time is last completed second in milliseconds (plus t to be added below)
+		// special case is after each completed second where !getSimTimeMs(): here we look 1s back
+		int currentTimeSec = getSimTimeSec();
+		if (!getSimTimeMs())
+			currentTimeSec--;
+
+		// save current time as last update time
+		grpMonObj->setLastUpdated(getSimTime());
+
+		// prepare fast access
+		FILE* grpFileId = groupMonCoreList[monitorId]->getGroupFileId();
+		bool writeGroupToFile = grpFileId != NULL;
+		bool writeGroupToArray = grpMonObj->isRecording();
+		float data;
+
+		// Read one peice of data at a time from the buffer and put the data to an appopriate monitor buffer. Later the user
+		// may need need to dump these group status data to an output file
+		for(int t = numMsMin; t < numMsMax; t++) {
+			// fetch group status data, support dopamine concentration currently
+			data = grpDABuffer[grpId][t];
+
+			// current time is last completed second plus whatever is leftover in t
+			int time = currentTimeSec*1000 + t;
+
+			if (writeGroupToFile) {
+				// TODO: write to group status file
+			}
+
+			if (writeGroupToArray) {
+				grpMonObj->pushData(time, data);
+			}
+		}
+
+		if (grpFileId!=NULL) // flush group status file
+			fflush(grpFileId);
 	}
 }
 

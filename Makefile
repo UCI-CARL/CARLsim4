@@ -17,6 +17,7 @@ kernel_dir     = carlsim/kernel
 interface_dir  = carlsim/interface
 conn_mon_dir   = carlsim/connection_monitor
 spike_mon_dir  = carlsim/spike_monitor
+group_mon_dir  = carlsim/group_monitor
 server_dir     = carlsim/server
 test_dir       = carlsim/test
 
@@ -29,7 +30,7 @@ tools_swt_dir       = $(tools_dir)/simple_weight_tuner
 # CARLsim flags specific to the CARLsim installation
 CARLSIM_FLAGS += -I$(kernel_dir)/include -I$(interface_dir)/include \
 				 -I$(tools_spikegen_dir) -I$(tools_inputstim_dir) \
-				 -I$(spike_mon_dir) -I$(conn_mon_dir) -I$(tools_swt_dir)
+				 -I$(spike_mon_dir) -I$(conn_mon_dir) -I$(group_mon_dir) -I$(tools_swt_dir)
 
 # CAUTION: order of .mk includes matters!!!
 include user.mk

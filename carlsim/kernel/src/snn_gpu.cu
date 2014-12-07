@@ -982,8 +982,10 @@ __global__ void kernel_globalGroupStateUpdate (int t, int sec, int simTime)
 
 	if (grpIdx < gpuNetInfo.numGrp) {
 		// decay dopamine concentration
-		if (gpuPtrs.grpDA[grpIdx] > gpuGrpInfo[grpIdx].baseDP)
+		if (gpuPtrs.grpDA[grpIdx] > gpuGrpInfo[grpIdx].baseDP) {
 			gpuPtrs.grpDA[grpIdx] *= gpuGrpInfo[grpIdx].decayDP;
+		}
+		gpuPtrs.grpDABuffer[grpIdx][t] = gpuPtrs.grpDA[grpIdx]; // log dopamine concentration
 	}
 }
 
@@ -1930,6 +1932,32 @@ void CpuSNN::copyGroupState(network_ptr_t* dest, network_ptr_t* src,  cudaMemcpy
 	CUDA_CHECK_ERRORS(cudaMemcpy(dest->grp5HT, src->grp5HT, sizeof(float) * numGrp, kind));
 	CUDA_CHECK_ERRORS(cudaMemcpy(dest->grpACh, src->grpACh, sizeof(float) * numGrp, kind));
 	CUDA_CHECK_ERRORS(cudaMemcpy(dest->grpNE, src->grpNE, sizeof(float) * numGrp, kind));
+
+	if (grpId < 0) {
+		for (int i = 0; i < numGrp; i++) {
+			if (allocateMem) {
+				CUDA_CHECK_ERRORS(cudaMalloc((void**) &dest->grpDABuffer[i], sizeof(float) * 1000)); 
+				CUDA_CHECK_ERRORS(cudaMalloc((void**) &dest->grp5HTBuffer[i], sizeof(float) * 1000)); 
+				CUDA_CHECK_ERRORS(cudaMalloc((void**) &dest->grpAChBuffer[i], sizeof(float) * 1000)); 
+				CUDA_CHECK_ERRORS(cudaMalloc((void**) &dest->grpNEBuffer[i], sizeof(float) * 1000));
+			}
+			CUDA_CHECK_ERRORS(cudaMemcpy(dest->grpDABuffer[i], src->grpDABuffer[i], sizeof(float) * 1000, kind));
+			CUDA_CHECK_ERRORS(cudaMemcpy(dest->grp5HTBuffer[i], src->grp5HTBuffer[i], sizeof(float) * 1000, kind));
+			CUDA_CHECK_ERRORS(cudaMemcpy(dest->grpAChBuffer[i], src->grpAChBuffer[i], sizeof(float) * 1000, kind));
+			CUDA_CHECK_ERRORS(cudaMemcpy(dest->grpNEBuffer[i], src->grpNEBuffer[i], sizeof(float) * 1000, kind));
+		}
+	} else {
+		if (allocateMem) {
+			CUDA_CHECK_ERRORS(cudaMalloc((void**) &dest->grpDABuffer[grpId], sizeof(float) * 1000)); 
+			CUDA_CHECK_ERRORS(cudaMalloc((void**) &dest->grp5HTBuffer[grpId], sizeof(float) * 1000)); 
+			CUDA_CHECK_ERRORS(cudaMalloc((void**) &dest->grpAChBuffer[grpId], sizeof(float) * 1000)); 
+			CUDA_CHECK_ERRORS(cudaMalloc((void**) &dest->grpNEBuffer[grpId], sizeof(float) * 1000));
+		}
+		CUDA_CHECK_ERRORS(cudaMemcpy(dest->grpDABuffer[grpId], src->grpDABuffer[grpId], sizeof(float) * 1000, kind));
+		CUDA_CHECK_ERRORS(cudaMemcpy(dest->grp5HTBuffer[grpId], src->grp5HTBuffer[grpId], sizeof(float) * 1000, kind));
+		CUDA_CHECK_ERRORS(cudaMemcpy(dest->grpAChBuffer[grpId], src->grpAChBuffer[grpId], sizeof(float) * 1000, kind));
+		CUDA_CHECK_ERRORS(cudaMemcpy(dest->grpNEBuffer[grpId], src->grpNEBuffer[grpId], sizeof(float) * 1000, kind));
+	}
 }
 
 void CpuSNN::copyNeuronParameters(network_ptr_t* dest, int kind, int allocateMem, int grpId) {
@@ -2371,6 +2399,12 @@ void CpuSNN::deleteObjects_GPU() {
 	CUDA_CHECK_ERRORS( cudaFree(cpu_gpuNetPtrs.grp5HT) );
 	CUDA_CHECK_ERRORS( cudaFree(cpu_gpuNetPtrs.grpACh) );
 	CUDA_CHECK_ERRORS( cudaFree(cpu_gpuNetPtrs.grpNE) );
+	for (int i = 0; i < numGrp; i++) {
+		CUDA_CHECK_ERRORS( cudaFree(cpu_gpuNetPtrs.grpDABuffer[i]) );
+		CUDA_CHECK_ERRORS( cudaFree(cpu_gpuNetPtrs.grp5HTBuffer[i]) );
+		CUDA_CHECK_ERRORS( cudaFree(cpu_gpuNetPtrs.grpAChBuffer[i]) );
+		CUDA_CHECK_ERRORS( cudaFree(cpu_gpuNetPtrs.grpNEBuffer[i]) );
+	}
 
 	CUDA_CHECK_ERRORS( cudaFree(cpu_gpuNetPtrs.grpIds) );
 
@@ -2491,18 +2525,6 @@ void CpuSNN::doGPUSim() {
 	updateTimingTable_GPU();
 
 	doCurrentUpdate_GPU();
-
-#if (ENABLE_MORE_CHECK)
-	unsigned int gpu_secD2fireCnt, gpu_secD1fireCnt;
-
-	CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &gpu_secD2fireCnt, CUDA_CONVERT_SYMBOL(secD2fireCnt), sizeof(int), 0, cudaMemcpyDeviceToHost));
-	CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &gpu_secD1fireCnt, CUDA_CONVERT_SYMBOL(secD1fireCnt), sizeof(int), 0, cudaMemcpyDeviceToHost));
-
-	KERNEL_DEBUG("gpu_secD1fireCnt: %d max: %d gpu_secD2fireCnt: %d max: %d\n",gpu_secD1fireCnt,maxSpikesD1,gpu_secD2fireCnt,maxSpikesD2);
-
-	assert(gpu_secD1fireCnt<=maxSpikesD1);
-	assert(gpu_secD2fireCnt<=maxSpikesD2);
-#endif
 
 	globalStateUpdate_GPU();
 }

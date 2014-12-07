@@ -91,31 +91,4 @@ public:
 							float& delay, bool& connected) = 0;
 };
 
-
-/*! To retrieve connection status, a connection-monitoring callback mechanism is used. This mechanism allows the user to
- * monitor connection status between groups (currently support weight distributions). Connection monitors are registered
- * for two groups (i.e., pre- and post- synaptic groups) and are called automatically by the simulator every second.
- * The parameter would be the pre- and post- synaptic group IDs, an array of data, number of elements in that array.
- *
-class ConnectionMonitor {
-public:
-	//NetworkMonitor() {};
-
-	virtual void update(CARLsim* s, int grpIdPre, int grpIdPost, float* weight, int numData) = 0;
-};
-*/
-
-
-/*! To retrieve group status, a group-monitoring callback mechanism is used. This mechanism allows the user to monitor
- * basic status of a group (currently support concentrations of neuromodulator). Group monitors are registered
- * for a group and are called automatically by the simulator every second. The parameter would be the group ID, an
- * array of data, number of elements in that array.
- */
-class GroupMonitor {
-public:
-	//GroupMonitor() {};
-
-	virtual void update(CARLsim* s, int grpID, float* grpDA, int numData) = 0;
-};
-
 #endif

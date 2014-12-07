@@ -7,7 +7,7 @@ gtest_deps = $(GTEST_LIB_DIR)/libgtest.a $(GTEST_LIB_DIR)/libgtest_main.a \
 # e.g., file "test/coba.cpp" should appear here as "coba"
 # the prefix (directory "test") and suffix (".cpp") will be appended afterwards
 # test cases will be run in inverse order (it seems)
-carlsim_tests_cpps := interface stdp stp spike_mon conn_mon cuba core connect coba \
+carlsim_tests_cpps := interface stdp stp spike_mon conn_mon group_mon cuba core connect coba \
 	carlsim_tests_common spike_gen spike_counter poiss_rate
 
 local_dir := $(test_dir)

@@ -215,10 +215,16 @@ typedef struct network_ptr_s {
 	/*!
 	 * neuromodulator concentration for each group
 	 */
-	float		*grpDA;
-	float		*grp5HT;
-	float		*grpACh;
-	float		*grpNE;
+	float* grpDA;
+	float* grp5HT;
+	float* grpACh;
+	float* grpNE;
+
+	// group monitor assistive buffers
+	float* grpDABuffer[MAX_GRP_PER_SNN];
+	float* grp5HTBuffer[MAX_GRP_PER_SNN];
+	float* grpAChBuffer[MAX_GRP_PER_SNN];
+	float* grpNEBuffer[MAX_GRP_PER_SNN];
 
 	unsigned int*	spikeGenBits;
 	bool*		curSpike;

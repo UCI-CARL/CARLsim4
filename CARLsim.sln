@@ -37,6 +37,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "spikeInfo", "examples\spike
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "connection_monitor", "carlsim\connection_monitor\connection_monitor.vcxproj", "{6B9E864C-A1B9-48CE-B88B-41CA17B4B1A9}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "group_monitor", "carlsim\group_monitor\group_monitor.vcxproj", "{A0612F05-1613-4D4A-8BE6-37FDE1E33843}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Mixed Platforms = Debug|Mixed Platforms
@@ -239,6 +241,18 @@ Global
 		{6B9E864C-A1B9-48CE-B88B-41CA17B4B1A9}.Release|Win32.Build.0 = Release|Win32
 		{6B9E864C-A1B9-48CE-B88B-41CA17B4B1A9}.Release|x64.ActiveCfg = Release|x64
 		{6B9E864C-A1B9-48CE-B88B-41CA17B4B1A9}.Release|x64.Build.0 = Release|x64
+		{A0612F05-1613-4D4A-8BE6-37FDE1E33843}.Debug|Mixed Platforms.ActiveCfg = Debug|x64
+		{A0612F05-1613-4D4A-8BE6-37FDE1E33843}.Debug|Mixed Platforms.Build.0 = Debug|x64
+		{A0612F05-1613-4D4A-8BE6-37FDE1E33843}.Debug|Win32.ActiveCfg = Debug|Win32
+		{A0612F05-1613-4D4A-8BE6-37FDE1E33843}.Debug|Win32.Build.0 = Debug|Win32
+		{A0612F05-1613-4D4A-8BE6-37FDE1E33843}.Debug|x64.ActiveCfg = Debug|x64
+		{A0612F05-1613-4D4A-8BE6-37FDE1E33843}.Debug|x64.Build.0 = Debug|x64
+		{A0612F05-1613-4D4A-8BE6-37FDE1E33843}.Release|Mixed Platforms.ActiveCfg = Release|x64
+		{A0612F05-1613-4D4A-8BE6-37FDE1E33843}.Release|Mixed Platforms.Build.0 = Release|x64
+		{A0612F05-1613-4D4A-8BE6-37FDE1E33843}.Release|Win32.ActiveCfg = Release|Win32
+		{A0612F05-1613-4D4A-8BE6-37FDE1E33843}.Release|Win32.Build.0 = Release|Win32
+		{A0612F05-1613-4D4A-8BE6-37FDE1E33843}.Release|x64.ActiveCfg = Release|x64
+		{A0612F05-1613-4D4A-8BE6-37FDE1E33843}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

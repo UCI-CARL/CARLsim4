@@ -4,6 +4,10 @@
 #include <carlsim.h>
 #include <snn_definitions.h> // MAX_GRP_PER_SNN
 
+#if (WIN32 || WIN64)
+#include <periodic_spikegen.h>
+#endif
+
 // TODO: I should probably use a google tests figure for this to reduce the
 // amount of redundant code, but I don't need to do that right now. -- KDC
 

@@ -171,6 +171,26 @@ static const char* spikeMonMode_string[] = {
 	"SpikeCount Mode","SpikeTime Mode"
 };
 
+/*!
+ * \brief GroupMonitor flag
+ *
+ * To monitor concentration of neuromodulator through GroupMonitor
+ * following flags can be used
+ * NM_DA Dopamine
+ * NM_5HT Serotonin
+ * NM_ACh Acetylcholine
+ * NM_NE Noradrenaline
+ */
+enum neuromodulator_t {
+	NM_DA,
+	NM_5HT,
+	NM_ACh,
+	NM_NE,
+	NM_UNKNOWN
+};
+static const char* neuromodulator_string[] = {
+	"Dopamine", "Serotonin", "Acetylcholine", "Noradrenaline", "Unknown neuromodulator"
+};
 
 /*!
  * \brief Update frequency for weights

@@ -355,10 +355,10 @@ public:
 
 	//! sets up a group monitor registered with a callback to process the spikes.
 	/*!
-	 * \param grpId ID of the neuron group
-	 * \param groupMon GroupMonitorCore class
+	 * \param[in] grpId ID of the neuron group
+	 * \param[in] fid file pointer for recording group status (neuromodulators)
 	 */
-	void setGroupMonitor(int grpId, GroupMonitorCore* groupMon);
+	GroupMonitor* setGroupMonitor(int grpId, FILE* fid);
 
 	//! sets up a network monitor registered with a callback to process the spikes.
 	/*!
@@ -412,6 +412,9 @@ public:
 
 	//! polls connection weights
 	void updateConnectionMonitor(int connId=ALL);
+
+	//! access group status (currently the concentration of neuromodulator)
+	void updateGroupMonitor(int grpId=ALL);
 
 	/*!
 	 * \brief copy required spikes from firing buffer to spike buffer
@@ -665,6 +668,7 @@ private:
 	void printSimSummary(); 	//!< prints a simulation summary at the end of sim
 	void printState(FILE* fp);
 	void printStatusConnectionMonitor(int connId=ALL);
+	void printStatusGroupMonitor(int grpId=ALL, int runDurationMs=1000);
 	void printStatusSpikeMonitor(int grpId=ALL, int runDurationMs=1000);
 	void printTuningLog(FILE* fp);
 	void printWeights(int preGrpId, int postGrpId=-1);
@@ -703,7 +707,6 @@ private:
 	void swapConnections(int nid, int oldPos, int newPos);
 
 	void updateAfterMaxTime();
-	void updateGroupMonitor();
 	void updateSpikesFromGrp(int grpId);
 	void updateSpikeGenerators();
 	void updateSpikeGeneratorsInit();
@@ -962,14 +965,16 @@ private:
 	int numSpkCnt; //!< number of real-time spike monitors in the network
 	int* spkCntBuf[MAX_GRP_PER_SNN]; //!< the actual buffer of spike counts (per group, per neuron)
 
-	// group monitor variables
-	GroupMonitorCore*	grpBufferCallback[MAX_GRP_PER_SNN];
+	
+	unsigned int		numGroupMonitor;
+	GroupMonitorCore*	groupMonCoreList[MAX_GRP_PER_SNN];
+	GroupMonitor*		groupMonList[MAX_GRP_PER_SNN];
+
+	// group monitor assistive buffers
 	float*			grpDABuffer[MAX_GRP_PER_SNN];
 	float*			grp5HTBuffer[MAX_GRP_PER_SNN];
 	float*			grpAChBuffer[MAX_GRP_PER_SNN];
 	float*			grpNEBuffer[MAX_GRP_PER_SNN];
-	unsigned int		groupMonitorGrpId[MAX_GRP_PER_SNN];
-	unsigned int		numGroupMonitor;
 
 	// neuron monitor variables
 //	NeuronMonitorCore* neurBufferCallback[MAX_]

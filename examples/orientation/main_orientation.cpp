@@ -46,13 +46,6 @@
 #include <math.h>		// expf, fmin
 #include <stdlib.h>		// exit
 
-#if (WIN32 || WIN64)
-#include <algorithm>
-#define fmin min
-#define fmax max
-using namespace std;
-#endif
-
 MTRand getRand;
 
 void calcColorME(int nrX, int nrY, unsigned char* stim, float* red_green, float* green_red, float* blue_yellow,

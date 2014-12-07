@@ -41,35 +41,12 @@
 
 #include <carlsim.h>
 
-#include <stdio.h>		// printf, fopen
-#include <math.h>		// expf
-
 #if (WIN32 || WIN64)
 	#define _CRT_SECURE_NO_WARNINGS
 #endif
 
 #define NUM_DA_NEURON 30
 #define NUM_NEURON 10
-
-class GroupController: public GroupMonitor {
-private:
-	FILE* fid;
-public:
-	GroupController(std::string saveFolder) {
-		std::string fileName = saveFolder + "DA.csv";
-
-		fid = fopen(fileName.c_str(), "w");
-	}
-
-	~GroupController() {
-		fclose(fid);
-	}
-
-	void update(CARLsim* s, int grpId, float* daBuffer, int n) {
-		for (int i = 0; i < 100 /* n is 100 currently */; i++)
-			fprintf(fid, "%f ", daBuffer[i]);
-	}
-};
 
 class SpikeController: public SpikeGenerator {
 private:
@@ -93,17 +70,14 @@ public:
 	}
 };
 
-int main()
-{
+int main() {
 	// simulation details
 	std::string saveFolder = "results/";
 	std::vector<int> spikesPost;
 	std::vector<int> spikesPre;
-	float* weights;
-	int size;
 	SpikeMonitor* spikeMon1;
 	SpikeMonitor* spikeMonIn;
-	GroupController* grpCtrl = new GroupController(saveFolder);
+	GroupMonitor* groupMon;
 	SpikeController* spikeCtrl = new SpikeController();
 	int gin, g1, g1noise, gda;
 	float ALPHA_LTP_EXC = 0.10f/100;
@@ -142,7 +116,7 @@ int main()
 	spikeMonIn = sim.setSpikeMonitor(gin);
 	sim.setSpikeMonitor(gda);
 
-	sim.setGroupMonitor(g1, grpCtrl);
+	groupMon = sim.setGroupMonitor(g1);
 
 	// save weights to file periodically
 	sim.setConnectionMonitor(gin, g1);
@@ -157,14 +131,15 @@ int main()
 	noise.setRates(4.0f);
 	sim.setSpikeRate(g1noise,&noise);
 
-
 	// run for 1000 seconds
 	for (int t = 0; t < 1000; t++) {
 		spikeMon1->startRecording();
 		spikeMonIn->startRecording();
+		groupMon->startRecording();
 		sim.runNetwork(1,0,true, true);
 		spikeMon1->stopRecording();
 		spikeMonIn->stopRecording();
+		groupMon->stopRecording();
 
 		// get spike time of pre-synaptic neuron post-synaptic neuron
 		spikesPre = spikeMonIn->getSpikeVector2D()[0]; // first neuron in pre-synaptic group
@@ -186,7 +161,6 @@ int main()
 		}
 	}
 
-	delete grpCtrl;
 	delete spikeCtrl;
 
 	return 0;
