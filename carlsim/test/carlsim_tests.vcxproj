@@ -28,6 +28,7 @@
     <ClCompile Include="conn_mon.cpp" />
     <ClCompile Include="core.cpp" />
     <ClCompile Include="cuba.cpp" />
+    <ClCompile Include="group_mon.cpp" />
     <ClCompile Include="interface.cpp" />
     <ClCompile Include="poiss_rate.cpp" />
     <ClCompile Include="spike_counter.cpp" />
@@ -42,6 +43,9 @@
     </ProjectReference>
     <ProjectReference Include="..\connection_monitor\connection_monitor.vcxproj">
       <Project>{6b9e864c-a1b9-48ce-b88b-41ca17b4b1a9}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\group_monitor\group_monitor.vcxproj">
+      <Project>{a0612f05-1613-4d4a-8be6-37fde1e33843}</Project>
     </ProjectReference>
     <ProjectReference Include="..\interface\interface.vcxproj">
       <Project>{fbd68119-1a8c-4a1a-96ce-522b651209bc}</Project>
@@ -129,12 +133,12 @@ copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;WIN64;_DEBUG;__CUDA5__;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(CudaToolkitIncludeDir);$(NVCUDASAMPLES_ROOT)\common\inc;$(SolutionDir)carlsim\interface\include;$(SolutionDir)carlsim\kernel\include;$(SolutionDir)carlsim\spike_monitor;$(SolutionDir)carlsim\connection_monitor;$(SolutionDir)tools\spike_generators;$(SolutionDir)gtest\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(CudaToolkitIncludeDir);$(NVCUDASAMPLES_ROOT)\common\inc;$(SolutionDir)carlsim\interface\include;$(SolutionDir)carlsim\kernel\include;$(SolutionDir)carlsim\spike_monitor;$(SolutionDir)carlsim\connection_monitor;$(SolutionDir)carlsim\group_monitor;$(SolutionDir)tools\spike_generators;$(SolutionDir)gtest\include</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
-      <AdditionalDependencies>cudart.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;carlsim.lib;interface.lib;spike_monitor.lib;connection_monitor.lib;spike_generators.lib;gtest.lib;gtest_main.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>cudart.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;carlsim.lib;interface.lib;spike_monitor.lib;connection_monitor.lib;group_monitor.lib;spike_generators.lib;gtest.lib;gtest_main.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories);$(CudaToolkitLibDir);$(OutDir)</AdditionalLibraryDirectories>
       <OutputFile>$(ProjectDir)$(TargetName)$(TargetExt)</OutputFile>
     </Link>

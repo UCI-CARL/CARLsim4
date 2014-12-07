@@ -78,7 +78,8 @@ std::vector<int> GroupMonitorCore::getTimeVector(){
 std::vector<int> GroupMonitorCore::getPeakTimeVector() {
 	std::vector<int> peakTimeVector;
 
-	for (int i = 1; i < dataVector_.size() - 1; i++) {
+	int size = dataVector_.size() - 1;
+	for (int i = 1; i < size; i++) {
 		if (dataVector_[i-1] < dataVector_[i] && dataVector_[i] > dataVector_[i+1])
 			peakTimeVector.push_back(timeVector_[i]);
 	}
@@ -89,7 +90,8 @@ std::vector<int> GroupMonitorCore::getPeakTimeVector() {
 std::vector<int> GroupMonitorCore::getSortedPeakTimeVector() {
 	std::vector<int> sortedPeakTimeVector;
 
-	for (int i = 1; i < dataVector_.size() - 1; i++) {
+	int size = dataVector_.size() - 1;
+	for (int i = 1; i < size; i++) {
 		if (dataVector_[i-1] < dataVector_[i] && dataVector_[i] > dataVector_[i+1])
 			sortedPeakTimeVector.push_back(timeVector_[i]);
 	}
@@ -103,7 +105,8 @@ std::vector<int> GroupMonitorCore::getSortedPeakTimeVector() {
 std::vector<float> GroupMonitorCore::getPeakValueVector() {
 	std::vector<float> peakValueVector;
 
-	for (int i = 1; i < dataVector_.size() - 1; i++) {
+	int size = dataVector_.size() - 1;
+	for (int i = 1; i < size; i++) {
 		if (dataVector_[i-1] < dataVector_[i] && dataVector_[i] > dataVector_[i+1])
 			peakValueVector.push_back(dataVector_[i]);
 	}
@@ -114,7 +117,8 @@ std::vector<float> GroupMonitorCore::getPeakValueVector() {
 std::vector<float> GroupMonitorCore::getSortedPeakValueVector() {
 	std::vector<float> sortedPeakValueVector;
 
-	for (int i = 1; i < dataVector_.size() - 1; i++) {
+	int size = dataVector_.size() - 1;
+	for (int i = 1; i < size; i++) {
 		if (dataVector_[i-1] < dataVector_[i] && dataVector_[i] > dataVector_[i+1])
 			sortedPeakValueVector.push_back(dataVector_[i]);
 	}

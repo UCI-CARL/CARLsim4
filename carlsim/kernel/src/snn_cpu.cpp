@@ -1822,7 +1822,6 @@ void CpuSNN::CpuSNNinit() {
 	// reset all pointers, don't deallocate (false)
 	resetPointers(false);
 
-
 	memset(&cpuSnnSz, 0, sizeof(cpuSnnSz));
 
 	showGrpFiringInfo = true;
@@ -2959,7 +2958,7 @@ void CpuSNN::generatePostSpike(unsigned int pre_i, unsigned int idx_d, unsigned 
 
 	// Got one spike from dopaminergic neuron, increase dopamine concentration in the target area
 	if (pre_type & TARGET_DA) {
-		cpuNetPtrs.grpDA[post_grpId] += 0.02;
+		cpuNetPtrs.grpDA[post_grpId] += 0.04;
 	}
 
 	// STDP calculation: the post-synaptic neuron fires before the arrival of a pre-synaptic spike
@@ -3899,10 +3898,6 @@ void CpuSNN::resetPointers(bool deallocate) {
 	if (grpIds!=NULL && deallocate) delete[] grpIds;
 	grpIds=NULL;
 
-	#ifdef NEURON_NOISE
-	if (intrinsicWeight!=NULL && deallocate) delete[] intrinsicWeight;
-	#endif
-
 	if (firingTableD2!=NULL && deallocate) delete[] firingTableD2;
 	if (firingTableD1!=NULL && deallocate) delete[] firingTableD1;
 	if (timeTableD2!=NULL && deallocate) delete[] timeTableD2;
@@ -3963,16 +3958,23 @@ void CpuSNN::resetPointers(bool deallocate) {
 	grpACh = NULL;
 	grpNE = NULL;
 
-	// clear data buffer for group monitor
-	for (int i = 0; i < numGrp; i++) {
-		if (grpDABuffer != NULL && deallocate) delete [] grpDABuffer[i];
-		if (grp5HTBuffer != NULL && deallocate) delete [] grp5HTBuffer[i];
-		if (grpAChBuffer != NULL && deallocate) delete [] grpAChBuffer[i];
-		if (grpNEBuffer != NULL && deallocate) delete [] grpNEBuffer[i];
-		grpDABuffer[i] = NULL;
-		grp5HTBuffer[i] = NULL;
-		grpAChBuffer[i] = NULL;
-		grpNEBuffer[i] = NULL;
+	// clear assistive data buffer for group monitor
+	if (deallocate) {
+		for (int i = 0; i < numGrp; i++) {
+			if (grpDABuffer[i] != NULL) delete [] grpDABuffer[i];
+			if (grp5HTBuffer[i] != NULL) delete [] grp5HTBuffer[i];
+			if (grpAChBuffer[i] != NULL) delete [] grpAChBuffer[i];
+			if (grpNEBuffer[i] != NULL) delete [] grpNEBuffer[i];
+			grpDABuffer[i] = NULL;
+			grp5HTBuffer[i] = NULL;
+			grpAChBuffer[i] = NULL;
+			grpNEBuffer[i] = NULL;
+		}
+	} else {
+		memset(grpDABuffer, 0, sizeof(float*) * MAX_GRP_PER_SNN);
+		memset(grp5HTBuffer, 0, sizeof(float*) * MAX_GRP_PER_SNN);
+		memset(grpAChBuffer, 0, sizeof(float*) * MAX_GRP_PER_SNN);
+		memset(grpNEBuffer, 0, sizeof(float*) * MAX_GRP_PER_SNN);
 	}
 
 	// clear poisson generator
