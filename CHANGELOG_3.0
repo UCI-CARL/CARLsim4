@@ -7,6 +7,11 @@ Legend:
 	- removed element
 	* changed element
 
+2014-12-08     Michael Beyeler <mbeyeler@uci.edu>
+  + Added makedoc script to automatically generate doxygen files.
+  * Minor bug fixes: error message for getGroupName, GroupMonitorCore include
+    in carlsim.cpp, CUDA config info.
+
 2014-12-06     Ting-Shuo Chou <tingshuc@uci.edu>
   + Added GroupMonitr object
 
