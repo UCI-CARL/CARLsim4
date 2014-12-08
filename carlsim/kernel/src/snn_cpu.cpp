@@ -754,7 +754,7 @@ int CpuSNN::runNetwork(int _nsec, int _nmsec, bool printRunSummary, bool copySta
 
 	// user can opt to display some runNetwork summary
 	if (printRunSummary) {
-		showStatus();
+		showStatus(); // I don't think this does anything anymore. It should be removed -- KDC
 
 		// if there are Monitors available and it's time to show the log, print status for each group
 		if (numSpikeMonitor) {
@@ -2620,7 +2620,7 @@ void CpuSNN::findFiring() {
 				recovery[i] += Izh_d[i];
 
 				// if flag hasSpkMonRT is set, we want to keep track of how many spikes per neuron in the group
-				if (grp_Info[g].withSpikeCounter) {
+				if (grp_Info[g].withSpikeCounter) {// put the condition for runNetwork
 					int bufPos = grp_Info[g].spkCntBufPos; // retrieve buf pos
 					int bufNeur = i-grp_Info[g].StartN;
 					spkCntBuf[bufPos][bufNeur]++;

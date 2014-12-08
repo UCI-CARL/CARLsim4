@@ -36,7 +36,7 @@
  *
  * CARLsim available from http://socsci.uci.edu/~jkrichma/CARLsim/
  * Ver 07/13/2013
- */ 
+ */
 
 #include <snn.h>
 #include <connection_monitor_core.h>
@@ -213,8 +213,8 @@ void CpuSNN::printConnectionInfo2(FILE * const fpg)
 // new print connection info, akin to printGroupInfo
 void CpuSNN::printConnectionInfo(short int connId) {
 	grpConnectInfo_t* connInfo = getConnectInfo(connId);
-	
-	KERNEL_INFO("Connection ID %d: %s(%d) => %s(%d)", connId, grp_Info2[connInfo->grpSrc].Name.c_str(), 
+
+	KERNEL_INFO("Connection ID %d: %s(%d) => %s(%d)", connId, grp_Info2[connInfo->grpSrc].Name.c_str(),
 		connInfo->grpSrc, grp_Info2[connInfo->grpDest].Name.c_str(), connInfo->grpDest);
 	KERNEL_INFO("  - Type                       = %s", GET_FIXED_PLASTIC(connInfo->connProp)==SYN_PLASTIC?" PLASTIC":"   FIXED")
 	KERNEL_INFO("  - Min weight                 = %8.5f", 0.0f); // \TODO
@@ -235,7 +235,7 @@ void CpuSNN::printConnectionInfo(short int connId) {
 void CpuSNN::printGroupInfo(int grpId) {
 	KERNEL_INFO("Group %s(%d): ", grp_Info2[grpId].Name.c_str(), grpId);
 	KERNEL_INFO("  - Type                       =  %s", isExcitatoryGroup(grpId) ? "  EXCIT" :
-		(isInhibitoryGroup(grpId) ? "  INHIB" : (isPoissonGroup(grpId)?" POISSON" : 
+		(isInhibitoryGroup(grpId) ? "  INHIB" : (isPoissonGroup(grpId)?" POISSON" :
 		(isDopaminergicGroup(grpId) ? "  DOPAM" : " UNKNOWN"))) );
 	KERNEL_INFO("  - Size                       = %8d", grp_Info[grpId].SizeN);
 	KERNEL_INFO("  - Start Id                   = %8d", grp_Info[grpId].StartN);
@@ -247,7 +247,7 @@ void CpuSNN::printGroupInfo(int grpId) {
 		KERNEL_INFO("  - Avg post connections       = %8.5f", 1.0*grp_Info2[grpId].numPostConn/grp_Info[grpId].SizeN);
 		KERNEL_INFO("  - Avg pre connections        = %8.5f",  1.0*grp_Info2[grpId].numPreConn/grp_Info[grpId].SizeN);
 	}
-	
+
 	if(grp_Info[grpId].Type&POISSON_NEURON) {
 		KERNEL_INFO("  - Refractory period          = %8.5f", grp_Info[grpId].RefractPeriod);
 	}
@@ -556,7 +556,7 @@ void CpuSNN::printWeights(int preGrpId, int postGrpId) {
 				float wtC = cpuNetPtrs.wtChange[offset+j];
 				fprintf(fpInf_, "%s%1.3f (%s%1.3f)\t", wt<0?"":" ", wt, wtC<0?"":"+", wtC);
 			} else {
-				fprintf(fpInf_, "%s%1.3f \t\t", wt<0?"":" ", wt);				
+				fprintf(fpInf_, "%s%1.3f \t\t", wt<0?"":" ", wt);
 			}
 		}
 		fprintf(fpInf_,"\n");

@@ -3,6 +3,7 @@ PoissonGenerator in test cases #161 - done
 Add default STDP mode in user interface #149 - done
 CpuSNN:updateAfterMaxTime() #3 - done
 Clean up isPoissonGroup / grpInfo.isSpikeGenerator / grpInfo.Type&POISSON_GROUP business #56 - done (moved to carlsim 4.0 milestone)
-Merge SpikeCounter and nSpikeCount #31
+Merge SpikeCounter and nSpikeCount #31 - done (moved to carlsim 3.1 milestone)
 SpikeMonitor: Display warning message when recording period is too long #313
 Callback base classes should have virtual destructor #406
+Add an issue for the removal of the showStatus variable.
