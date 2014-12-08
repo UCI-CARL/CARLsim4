@@ -1048,7 +1048,7 @@ int CARLsim::getGroupId(std::string grpName) {
 
 std::string CARLsim::getGroupName(int grpId) {
 	std::stringstream funcName; funcName << "getGroupName(" << grpId << ")";
-	UserErrors::assertTrue(grpId>=0 && grpId<getNumGroups(), UserErrors::MUST_BE_IN_RANGE, funcName.str(), "grpId",
+	UserErrors::assertTrue(grpId>=0 && grpId<getNumGroups(), UserErrors::MUST_BE_IN_RANGE, funcName.str(), "gruuupId",
 		"[0,getNumGroups()]");
 
 	return snn_->getGroupName(grpId);

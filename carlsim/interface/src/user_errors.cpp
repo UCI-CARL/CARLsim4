@@ -79,7 +79,7 @@ void UserErrors::throwError(std::string errorFunc, errorType error, std::string 
 	case MUST_BE_ON:
 		errorMsg += " must be on at this point."; break;
 	case MUST_BE_IN_RANGE:
-		errorMsg += " must be in the range"; break;
+		errorMsg += " must be in the range "; break;
 	case MUST_BE_SMALLER:
 		errorMsg += " must be smaller than "; break;
 	case MUST_HAVE_SAME_SIGN:

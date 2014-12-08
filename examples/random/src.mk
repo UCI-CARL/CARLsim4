@@ -19,19 +19,19 @@ include $(USER_MK_PATH)/user.mk
 # with an updated path
 
 # carlsim components
-kernel_dir          = $(CARLSIM_SRC_DIR)/carlsim/kernel
-interface_dir       = $(CARLSIM_SRC_DIR)/carlsim/interface
-spike_mon_dir       = $(CARLSIM_SRC_DIR)/carlsim/spike_monitor
-group_mon_dir       = $(CARLSIM_SRC_DIR)/carlsim/group_monitor
-conn_mon_dir   = $(CARLSIM_SRC_DIR)/carlsim/connection_monitor
-server_dir          = $(CARLSIM_SRC_DIR)/carlsim/server
-test_dir            = $(CARLSIM_SRC_DIR)/carlsim/test
+kernel_dir          := $(CARLSIM_SRC_DIR)/carlsim/kernel
+interface_dir       := $(CARLSIM_SRC_DIR)/carlsim/interface
+spike_mon_dir       := $(CARLSIM_SRC_DIR)/carlsim/spike_monitor
+group_mon_dir       := $(CARLSIM_SRC_DIR)/carlsim/group_monitor
+conn_mon_dir        := $(CARLSIM_SRC_DIR)/carlsim/connection_monitor
+server_dir          := $(CARLSIM_SRC_DIR)/carlsim/server
+test_dir            := $(CARLSIM_SRC_DIR)/carlsim/test
 
 # carlsim tools
-tools_dir           = $(CARLSIM_SRC_DIR)/tools
-tools_spikegen_dir  = $(tools_dir)/spike_generators
-tools_inputstim_dir = $(tools_dir)/input_stimulus
-tools_swt_dir       = $(tools_dir)/simple_weight_tuner
+tools_dir           := $(CARLSIM_SRC_DIR)/tools
+tools_spikegen_dir  := $(tools_dir)/spike_generators
+tools_inputstim_dir := $(tools_dir)/input_stimulus
+tools_swt_dir       := $(tools_dir)/simple_weight_tuner
 
 # CARLsim flags specific to the CARLsim installation
 CARLSIM_FLAGS += -I$(kernel_dir)/include -I$(interface_dir)/include \
