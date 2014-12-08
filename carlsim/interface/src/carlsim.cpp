@@ -47,11 +47,6 @@
 #include <sstream>		// std::stringstream
 #include <algorithm>	// std::find
 
-#include <connection_monitor_core.h>
-#include <group_monitor_core.h>
-
-
-
 #include <snn.h>
 
 // includes for mkdir
@@ -113,16 +108,6 @@ CARLsim::~CARLsim() {
 		saveSimulation(def_save_fileName_,def_save_synapseInfo_);
 
 	// deallocate all dynamically allocated structures
-	for (int i=0; i<groupMon_.size(); i++) {
-		if (groupMon_[i]!=NULL)
-			delete groupMon_[i];
-		groupMon_[i]=NULL;
-	}
-	for (int i=0; i<connMon_.size(); i++) {
-		if (connMon_[i]!=NULL)
-			delete connMon_[i];
-		connMon_[i]=NULL;
-	}
 	for (int i=0; i<spkGen_.size(); i++) {
 		if (spkGen_[i]!=NULL)
 			delete spkGen_[i];
