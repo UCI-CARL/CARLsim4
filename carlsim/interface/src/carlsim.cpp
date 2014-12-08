@@ -48,6 +48,7 @@
 #include <algorithm>	// std::find
 
 #include <connection_monitor_core.h>
+#include <group_monitor_core.h>
 
 
 

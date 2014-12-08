@@ -227,7 +227,7 @@ __global__ void kernel_init ()
 		int2 	 threadLoad  = getStaticThreadLoad(bufPos);
 		int  	 nid        = STATIC_LOAD_START(threadLoad);
 		int  	 lastId      = STATIC_LOAD_SIZE(threadLoad);
-		short int grpId   	 = STATIC_LOAD_GROUP(threadLoad);
+//		short int grpId   	 = STATIC_LOAD_GROUP(threadLoad);
 
 		while ((threadIdx.x < lastId) && (nid < gpuNetInfo.numN)) {
 //				int totCnt = gpuPtrs.Npre[nid];			// total synaptic count
@@ -2690,10 +2690,10 @@ void CpuSNN::configGPUDevice() {
 
 	CUDA_CHECK_ERRORS(cudaGetDeviceCount(&devCount));
 	KERNEL_INFO("CUDA devices Configuration:");
-	KERNEL_INFO("  - Number of CUDA devices          = %8d", devCount);
+	KERNEL_INFO("  - Number of CUDA devices          = %9d", devCount);
 
 	devMax = CUDA_GET_MAXGFLOP_DEVICE_ID();
-	KERNEL_INFO("  - CUDA device ID with max GFLOPs  = %8d", devMax);
+	KERNEL_INFO("  - CUDA device ID with max GFLOPs  = %9d", devMax);
 
 	// ithGPU_ gives an index number on which device to run the simulation
 	if (ithGPU_ < 0 || ithGPU_ >= devCount) {
@@ -2702,8 +2702,8 @@ void CpuSNN::configGPUDevice() {
 	}
 
 	CUDA_CHECK_ERRORS(cudaGetDeviceProperties(&deviceProp, ithGPU_));
-	KERNEL_INFO("  - Use CUDA device[%d]: \"%s\"", ithGPU_, deviceProp.name);
-	KERNEL_INFO("  - CUDA Compute Capability         =     %2d.%d\n", deviceProp.major, deviceProp.minor);
+	KERNEL_INFO("  - Use CUDA device[%1d]              = %9s", ithGPU_, deviceProp.name);
+	KERNEL_INFO("  - CUDA Compute Capability         =      %2d.%d\n", deviceProp.major, deviceProp.minor);
 
     if (deviceProp.major < 2) {
         KERNEL_ERROR("CARLsim does not support CUDA devices older than version 2.0");
