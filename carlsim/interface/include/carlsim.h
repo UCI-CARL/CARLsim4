@@ -1392,8 +1392,6 @@ private:
 	std::vector<std::string> userWarnings_; // !< an accumulated list of user warnings
 
 	std::vector<int> grpIds_;		//!< a list of all created group IDs
-	std::vector<ConnectionMonitorCore*> connMon_; //!< a list of all created connection monitors
-	std::vector<GroupMonitorCore*> groupMon_; //!< a list of all created group monitors
 	std::vector<SpikeGeneratorCore*> spkGen_; //!< a list of all created spike generators
 	std::vector<ConnectionGeneratorCore*> connGen_; //!< a list of all created connection generators
 
