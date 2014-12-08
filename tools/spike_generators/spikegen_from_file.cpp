@@ -5,16 +5,23 @@
 
 #include <stdio.h>				// fopen, fread, fclose
 #include <string.h>				// std::string
+#include <assert.h>				// assert
 
 
 SpikeGeneratorFromFile::SpikeGeneratorFromFile(std::string fileName) {
 	fileName_ = fileName;
 	fpBegin_ = NULL;
 	fpOffsetNeur_ = NULL;
+
+	nNeur_ = -1;
+	szByteHeader_ = -1;
+
 	needToInit_ = true;
+	needToAllocate_ = true;
 
 	// move unsafe operations out of constructor
 	openFile();
+	init();
 }
 
 SpikeGeneratorFromFile::~SpikeGeneratorFromFile() {
@@ -22,33 +29,60 @@ SpikeGeneratorFromFile::~SpikeGeneratorFromFile() {
 	fclose(fpBegin_);
 }
 
+// rewind file pointers to beginning
+void SpikeGeneratorFromFile::rewind() {
+	needToInit_ = true;
+	init();
+}
 
 void SpikeGeneratorFromFile::openFile() {
 	std::string funcName = "openFile("+fileName_+")";
 	fpBegin_ = fopen(fileName_.c_str(),"rb");
 	UserErrors::assertTrue(fpBegin_!=NULL, UserErrors::FILE_CANNOT_OPEN, funcName, fileName_);
+
+	// \TODO there should be a common/standard way to read spike files
+	// \FIXME: this is a hack...to get the size of the header section
+	// needs to be updated every time header changes
+	szByteHeader_ = 4*sizeof(int)+1*sizeof(float);
+
+	// get number of neurons from header
+	nNeur_ = 1;
+	// \FIXME: same as above, this is a hack... use SpikeReader++
+	fseek(fpBegin_	, sizeof(int)+sizeof(float), SEEK_SET);
+	int grid;
+	for (int i=1; i<=3; i++) {
+		fread(&grid, sizeof(int), 1, fpBegin_);
+		nNeur_ *= grid;
+	}
+
+	// make sure number of neurons is now valid
+	assert(nNeur_>0);
+
+	// reset file pointer to beginning of file
+	fseek(fpBegin_, 0, SEEK_SET);
+}
+
+void SpikeGeneratorFromFile::init() {
+	assert(nNeur_>0);
+	if (needToAllocate_) {
+		// for each neuron, store a file pointer offset in #bytes from the SEEK_SET
+		// this way we'll know exactly what the last spike was that we read per neuron
+		fpOffsetNeur_ = new long int[nNeur_];
+		needToAllocate_ = false;
+	}
+	if (needToInit_) {
+		// init to zeros
+		memset(fpOffsetNeur_, 0, sizeof(long int)*nNeur_);
+		needToInit_ = false;
+	}
 }
 
 unsigned int SpikeGeneratorFromFile::nextSpikeTime(CARLsim* sim, int grpId, int nid, unsigned int currentTime, 
 	unsigned int lastScheduledSpikeTime) {
-
-	if (needToInit_) {
-		int nNeur = sim->getGroupNumNeurons(grpId);
-
-		// for each neuron, store a file pointer offset in #bytes from the SEEK_SET
-		// this way we'll know exactly what the last spike was that we read per neuron
-		fpOffsetNeur_ = new long int[nNeur];
-		memset(fpOffsetNeur_, 0, sizeof(long int)*nNeur);
-
-		needToInit_ = false;
-	}
+	assert(nNeur_>0);
 
 	FILE* fp = fpBegin_;
-	// \TODO there should be a common/standard way to read spike files
-	// \FIXME: this is a hack...to get the size of the header section
-	// needs to be updated every time header changes
-	int szByteHeader = 4*sizeof(int)+1*sizeof(float);
-	fseek(fpBegin_, szByteHeader, SEEK_SET);
+	fseek(fpBegin_, szByteHeader_, SEEK_SET);
 	fseek(fp, fpOffsetNeur_[nid], SEEK_CUR);
 
 	int tmpTime = -1;
