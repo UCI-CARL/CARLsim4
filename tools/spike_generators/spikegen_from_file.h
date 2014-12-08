@@ -44,6 +44,8 @@
 #include <callback.h>
 #include <string>
 
+class CARLsim;
+
 /*!
  * \brief a SpikeGenerator that schedules spikes from a spike file binary
  *
@@ -62,6 +64,13 @@ public:
 	~SpikeGeneratorFromFile();
 
 	/*!
+	 * \brief rewinds the spike file to beginning of file
+	 *
+	 * This function rewinds the spike file to the begining of file.
+	 */
+	void rewind();
+
+	/*!
 	 * \brief schedules the next spike time
 	 *
 	 * This function schedules the next spike time, given the currentTime and the lastScheduledSpikeTime. It implements
@@ -78,11 +87,17 @@ public:
 
 private:
 	void openFile();
+	void init();
 
-	bool needToInit_;
 	std::string fileName_;		//!< file name
 	FILE* fpBegin_;				//!< pointer to beginning of file
+	int szByteHeader_;          //!< number of bytes in header section
+                                //!< \FIXME: there should be a standardized SpikeReader++ utility
+
+	int nNeur_;                 //!< number of neurons in the group
 	long int* fpOffsetNeur_;	//!< file pointer array to store last read for each neuron
+	bool needToAllocate_;		//!< flag whether we need to allocate fpOffsetNeur_
+	bool needToInit_;			//!< flag whether we need to init fpOffsetNeur_
 };
 
 #endif
