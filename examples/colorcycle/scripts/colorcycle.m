@@ -1,17 +1,17 @@
-% Version 3/22/14
-
-addpath ../../../util/scripts
+% Version 12/8/2014
+addpath ../../../tools/offline_analysis_toolbox
 
 list={'R','M','B','C','G','Y'};
 R=struct;
 colors = [0:255,0:255,zeros(1,256); 255:-1:0,zeros(1,256),0:255; zeros(1,256),255:-1:0,255:-1:0]/255;
-FrameDur=100;
+frameDurMs=100;
 for j=1:length(list)
-    s = readSpikes(['../results/spkV4' list{j} '.dat'],FrameDur);
+	SR = SpikeReader(['../results/spkV4' list{j} '.dat']);
+	spkData = SR.readSpikes(frameDurMs);
+    if size(spkData,1) < size(colors,2), spkData(size(colors,2),1) = 0; end
     
-    if size(s,1) < size(colors,2), s(size(colors,2),1) = 0; end
-    
-    R.(list{j})=mean(s,2)*1000/FrameDur;
+    R.(list{j})=mean(spkData,2)*1000/frameDurMs;
+	clear SR;
 end
 
 figure,

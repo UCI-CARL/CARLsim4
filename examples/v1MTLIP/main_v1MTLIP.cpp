@@ -446,11 +446,11 @@ public:
  */
 class connectOneToOne: public ConnectionGenerator {
 public:
-	connectOneToOne(int preDim[3], int postDim[3], float weight, bool stayWithinPool) {
-		nrXpre  = preDim[0];
-		nrYpre  = preDim[1];
-		nrXpost = postDim[0];
-		nrYpost = postDim[1];
+	connectOneToOne(const Grid3D& preDim, const Grid3D& postDim, float weight, bool stayWithinPool) {
+		nrXpre  = preDim.width;
+		nrYpre  = preDim.height;
+		nrXpost = postDim.width;
+		nrYpost = postDim.height;
 		this->weight = weight;
 		this->stayWithinPool = stayWithinPool;
 	}
@@ -565,7 +565,7 @@ int main()
 	bool storeNetwork	   = false;	                      // store network? at beginning and end
 	bool onGPU			   = true;                        // run on GPU?
 	int ithGPU 			   = 0;	                          // on which GPU to run (in case of carlculator: 0-3)
-	int frameDur 		   = 50;                          // present each frame for .. ms
+	int frameDurMs 		   = 50;                          // present each frame for .. ms
 	int presentEachFrame   = 1;                           // present each frame .. times (> 1 to slow down motion patterns)
 	float synScale		   = 0.01;                        // some scaling factor for syn weights
 
@@ -590,27 +590,27 @@ int main()
 
 
 	// population sizes: {number of rows, number of columns, number of pools}
-	int V1MEdim[3]		= {nrX,nrY,28*3};	// 28 space-time filters at 3 scales
-	int MTdim[3]		= {nrX,nrY,8}; 		// goes for MT1, MT2, and MT3
-	int MTiDim[3]		= {nrX,nrY,8};		// 8 directions
-	int MTnormDim[3]	= {nrX,nrY,1};		// only 1 pool
-	int PFCdim[3]		= {40,1,8};
-	int PFCiDim[3]		= {40,1,8};			// for lateral inhibition
+	Grid3D V1MEdim(nrX,nrY,28*3);	// 28 space-time filters at 3 scales
+	Grid3D MTdim(nrX,nrY,8); 		// goes for MT1, MT2, and MT3
+	Grid3D MTiDim(nrX,nrY,8);		// 8 directions
+	Grid3D MTnormDim(nrX,nrY,1);		// only 1 pool
+	Grid3D LIPdim(40,1,8);
+	Grid3D LIPiDim(40,1,8);			// for lateral inhibition
 
 
-	int gV1ME      = snn.createSpikeGeneratorGroup("V1ME", prod(V1MEdim,3), EXCITATORY_NEURON);
-	int gMT1CDS    = snn.createGroup("MT1CDS", prod(MTdim,3), EXCITATORY_NEURON);
-	int gMT2CDS    = snn.createGroup("MT2CDS", prod(MTdim,3), EXCITATORY_NEURON);
-	int gMT3CDS    = snn.createGroup("MT3CDS", prod(MTdim,3), EXCITATORY_NEURON);
-	int gMT1CDSinh = snn.createGroup("MT1CDSi", prod(MTiDim,3), INHIBITORY_NEURON);
-	int gMT2CDSinh = snn.createGroup("MT2CDSi", prod(MTiDim,3), INHIBITORY_NEURON);
-	int gMT3CDSinh = snn.createGroup("MT3CDSi", prod(MTiDim,3), INHIBITORY_NEURON);
-	int gMTCDSnorm = snn.createGroup("MTCDSnorm", prod(MTnormDim,3), INHIBITORY_NEURON);
-	int gMT1PDS    = snn.createGroup("MT1PDS", prod(MTdim,3), EXCITATORY_NEURON);
-	int gMT1PDSinh = snn.createGroup("MT1PDSinh", prod(MTiDim,3), INHIBITORY_NEURON);
+	int gV1ME      = snn.createSpikeGeneratorGroup("V1ME", V1MEdim, EXCITATORY_NEURON);
+	int gMT1CDS    = snn.createGroup("MT1CDS", MTdim, EXCITATORY_NEURON);
+	int gMT2CDS    = snn.createGroup("MT2CDS", MTdim, EXCITATORY_NEURON);
+	int gMT3CDS    = snn.createGroup("MT3CDS", MTdim, EXCITATORY_NEURON);
+	int gMT1CDSinh = snn.createGroup("MT1CDSi", MTiDim, INHIBITORY_NEURON);
+	int gMT2CDSinh = snn.createGroup("MT2CDSi", MTiDim, INHIBITORY_NEURON);
+	int gMT3CDSinh = snn.createGroup("MT3CDSi", MTiDim, INHIBITORY_NEURON);
+	int gMTCDSnorm = snn.createGroup("MTCDSnorm", MTnormDim, INHIBITORY_NEURON);
+	int gMT1PDS    = snn.createGroup("MT1PDS", MTdim, EXCITATORY_NEURON);
+	int gMT1PDSinh = snn.createGroup("MT1PDSinh", MTiDim, INHIBITORY_NEURON);
 
-	int gLIP = snn.createGroup("LIP", prod(PFCdim,3), EXCITATORY_NEURON);
-	int gLIPi = snn.createGroup("LIPi", prod(PFCiDim,3), INHIBITORY_NEURON);
+	int gLIP = snn.createGroup("LIP", LIPdim, EXCITATORY_NEURON);
+	int gLIPi = snn.createGroup("LIPi", LIPiDim, INHIBITORY_NEURON);
 
 
 	snn.setNeuronParameters(gMT1CDS, 0.02f, 0.2f, -65.0f, 8.0f);
@@ -729,20 +729,20 @@ int main()
 	// Note: Disable all to speed up simulation
 
 	#if defined(RUN_DIRECTION_TUNING) || defined(RUN_CONTRAST_SENSITIVITY)
-	snn.setSpikeMonitor(gV1ME,saveFolder+"spkV1ME.dat");
+	snn.setSpikeMonitor(gV1ME);
 	#endif
 	#if defined(RUN_DIRECTION_TUNING) || defined(RUN_SPEED_TUNING)
-	snn.setSpikeMonitor(gMT1CDS,saveFolder+"spkMT1CDS.dat");
+	snn.setSpikeMonitor(gMT1CDS);
 	#endif
 	#if defined(RUN_SPEED_TUNING)
-	snn.setSpikeMonitor(gMT2CDS,saveFolder+"spkMT2CDS.dat");
-	snn.setSpikeMonitor(gMT3CDS,saveFolder+"spkMT3CDS.dat");
+	snn.setSpikeMonitor(gMT2CDS);
+	snn.setSpikeMonitor(gMT3CDS);
 	#endif
 	#if defined(RUN_DIRECTION_TUNING)
-	snn.setSpikeMonitor(gMT1PDS,saveFolder+"spkMT1PDS.dat");
+	snn.setSpikeMonitor(gMT1PDS);
 	#endif
 	#if defined(RUN_RDK)
-	snn.setSpikeMonitor(gLIP,saveFolder+"spkLIP.dat");
+	snn.setSpikeMonitor(gLIP);
 	snn.setSpikeMonitor(gLIPi);
 	#endif
 
@@ -779,11 +779,22 @@ int main()
 
 		for (int j=1;j<=presentEachFrame;j++) {
 			// run motion energy model and assign spike rates
-			calcColorME(nrX, nrY, vid, red_green.rates, green_red.rates, blue_yellow.rates, yellow_blue.rates, me.rates, onGPU);
+
+			// Note: Use of getRatePtr{CPU/GPU} is deprecated. It is used here to speed up the process of copying
+			// the rates calculated in calcColorME to the rate buffers via cudaMemcpyDeviceToDevice, which is faster
+			// than first copying from device to host, then copying from host to different device location
+			if (onGPU) {
+				calcColorME(nrX, nrY, vid, red_green.getRatePtrGPU(), green_red.getRatePtrGPU(), 
+					blue_yellow.getRatePtrGPU(), yellow_blue.getRatePtrGPU(), me.getRatePtrGPU(), true);
+			} else {
+				calcColorME(nrX, nrY, vid, red_green.getRatePtrCPU(), green_red.getRatePtrCPU(), 
+					blue_yellow.getRatePtrCPU(), yellow_blue.getRatePtrCPU(), me.getRatePtrCPU(), false);
+			}
 			snn.setSpikeRate(gV1ME, &me, onGPU);
 
 			// run the established network for 1 frame
-			snn.runNetwork(0,frameDur);
+			bool showRunSummary = !( ((i+1)*frameDurMs)%1000 );
+			snn.runNetwork(frameDurMs/1000, frameDurMs%1000, showRunSummary);
 		}
 	}
 

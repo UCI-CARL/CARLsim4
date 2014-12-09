@@ -888,7 +888,7 @@ SpikeMonitor* CARLsim::setSpikeMonitor(int grpId, const std::string& fname) {
 	// \TODO make default path for Windows platform
 	std::string fileName = fname.empty() ? "NULL" : fname;
 #else
-	std::string fileName = fname.empty() ? "results/spk"+snn_->getGroupName(grpId)+".dat" : fname;
+	std::string fileName = fname.empty() ? "results/spk_"+snn_->getGroupName(grpId)+".dat" : fname;
 #endif
 
 	FILE* fid;

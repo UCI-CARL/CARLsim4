@@ -148,7 +148,7 @@ public:
 };
 
 int main() {
-	int frameDur = 100; // 100 ms
+	int frameDurMs = 100; // 100 ms
 
 	FILE* fid;
 	bool onGPU = true; // run on GPU
@@ -159,7 +159,8 @@ int main() {
 	int v1Cells[5];
 	int num_V1_groups=6;
 	for (int i=RED_GREEN; i <= YELLOW_BLUE; i++) {
-		v1Cells[i] = sim.createSpikeGeneratorGroup(v1ImageName[i].c_str(), V1_LAYER_DIM*V1_LAYER_DIM, TARGET_AMPA);
+		v1Cells[i] = sim.createSpikeGeneratorGroup(v1ImageName[i].c_str(), Grid3D(V1_LAYER_DIM,V1_LAYER_DIM,1), 
+			TARGET_AMPA);
 	}
 
 	int   num_V4_groups = RED_V4+1;
@@ -167,9 +168,9 @@ int main() {
 	int* v4CellsExc = new int[num_V4_groups];
 	int* v4CellsInh = new int[num_V4_groups];
 	for (int i=0; i < num_V4_groups; i++) {
-		v4CellsExc[i] = sim.createGroup(v4CellNameExc[i].c_str(), V4_LAYER_DIM*V4_LAYER_DIM, TARGET_AMPA);
+		v4CellsExc[i] = sim.createGroup(v4CellNameExc[i].c_str(), Grid3D(V4_LAYER_DIM,V4_LAYER_DIM,1), TARGET_AMPA);
 		sim.setNeuronParameters(v4CellsExc[i], 0.02f, 0.2f, -65.0f, 8.0f);
-		v4CellsInh[i] = sim.createGroup(v4CellNameInh[i].c_str(), V4_LAYER_DIM*V4_LAYER_DIM, TARGET_GABAa);
+		v4CellsInh[i] = sim.createGroup(v4CellNameInh[i].c_str(), Grid3D(V4_LAYER_DIM,V4_LAYER_DIM,1), TARGET_GABAa);
 		sim.setNeuronParameters(v4CellsInh[i], 0.1f,  0.2f, -65.0f, 2.0f);
 	}
 
@@ -243,24 +244,24 @@ int main() {
 	//initialize the GPU/network
 	sim.setupNetwork();
 
-	sim.setSpikeMonitor(v1Cells[RED_GREEN],"results/spkV1RG.dat");
-	sim.setSpikeMonitor(v1Cells[GREEN_RED],"results/spkV1GR.dat");
-	sim.setSpikeMonitor(v1Cells[BLUE_YELLOW],"results/spkV1BY.dat");
-	sim.setSpikeMonitor(v1Cells[YELLOW_BLUE],"results/spkV1YB.dat");
+	sim.setSpikeMonitor(v1Cells[RED_GREEN]);
+	sim.setSpikeMonitor(v1Cells[GREEN_RED]);
+	sim.setSpikeMonitor(v1Cells[BLUE_YELLOW]);
+	sim.setSpikeMonitor(v1Cells[YELLOW_BLUE]);
 
-	sim.setSpikeMonitor(v4CellsExc[RED_V4],"results/spkV4R.dat");
-	sim.setSpikeMonitor(v4CellsExc[GREEN_V4],"results/spkV4G.dat");
-	sim.setSpikeMonitor(v4CellsExc[BLUE_V4],"results/spkV4B.dat");
-	sim.setSpikeMonitor(v4CellsExc[YELLOW_V4],"results/spkV4Y.dat");
-	sim.setSpikeMonitor(v4CellsExc[CYAN_V4],"results/spkV4C.dat");
-	sim.setSpikeMonitor(v4CellsExc[MAGENTA_V4],"results/spkV4M.dat");
+	sim.setSpikeMonitor(v4CellsExc[RED_V4]);
+	sim.setSpikeMonitor(v4CellsExc[GREEN_V4]);
+	sim.setSpikeMonitor(v4CellsExc[BLUE_V4]);
+	sim.setSpikeMonitor(v4CellsExc[YELLOW_V4]);
+	sim.setSpikeMonitor(v4CellsExc[CYAN_V4]);
+	sim.setSpikeMonitor(v4CellsExc[MAGENTA_V4]);
 
-	sim.setSpikeMonitor(v4CellsInh[RED_V4],"results/spkV4Ri.dat");
-	sim.setSpikeMonitor(v4CellsInh[GREEN_V4],"results/spkV4Gi.dat");
-	sim.setSpikeMonitor(v4CellsInh[BLUE_V4],"results/spkV4Bi.dat");
-	sim.setSpikeMonitor(v4CellsInh[YELLOW_V4],"results/spkV4Yi.dat");
-	sim.setSpikeMonitor(v4CellsInh[CYAN_V4],"results/spkV4Ci.dat");
-	sim.setSpikeMonitor(v4CellsInh[MAGENTA_V4],"results/spkV4Mi.dat");
+	sim.setSpikeMonitor(v4CellsInh[RED_V4]);
+	sim.setSpikeMonitor(v4CellsInh[GREEN_V4]);
+	sim.setSpikeMonitor(v4CellsInh[BLUE_V4]);
+	sim.setSpikeMonitor(v4CellsInh[YELLOW_V4]);
+	sim.setSpikeMonitor(v4CellsInh[CYAN_V4]);
+	sim.setSpikeMonitor(v4CellsInh[MAGENTA_V4]);
 
 	unsigned char* vid = new unsigned char[nrX*nrY*3];
 
@@ -294,7 +295,7 @@ int main() {
 				blue_yellow.getRatePtrGPU(), yellow_blue.getRatePtrGPU(), me.getRatePtrGPU(), true);
 		} else {
 			calcColorME(nrX, nrY, vid, red_green.getRatePtrCPU(), green_red.getRatePtrCPU(), 
-				blue_yellow.getRatePtrCPU(), yellow_blue.getRatePtrCPU(), me.getRatePtrCPU(), true);
+				blue_yellow.getRatePtrCPU(), yellow_blue.getRatePtrCPU(), me.getRatePtrCPU(), false);
 		}
 
 		sim.setSpikeRate(v1Cells[RED_GREEN], &red_green, 1);
@@ -303,7 +304,8 @@ int main() {
 		sim.setSpikeRate(v1Cells[YELLOW_BLUE], &yellow_blue, 1);
 
 		// run the established network for 1 (sec)  and 0 (millisecond), in GPU_MODE
-		sim.runNetwork(0,frameDur);
+		bool showRunSummary = !( ((i+1)*frameDurMs)%1000 );
+		sim.runNetwork(frameDurMs/1000, frameDurMs%1000, showRunSummary);
 
 		if (i==1) {
 			sim.saveSimulation("results/net.dat", true);

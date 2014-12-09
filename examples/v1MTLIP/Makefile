@@ -21,13 +21,13 @@ CARLSIM_FLAGS += -I$(CARLSIM_LIB_DIR)/include/kernel \
 				 -I$(CARLSIM_LIB_DIR)/include/connection_monitor \
 				 -I$(CARLSIM_LIB_DIR)/include/spike_generators \
 				 -I$(CARLSIM_LIB_DIR)/include/input_stimulus \
-				 -I$(CARLSIM_LIB_DIR)/include/simple_weight_tuner
+				 -I$(CARLSIM_LIB_DIR)/include/simple_weight_tuner \
 				 -I../common
 CARLSIM_LIBS  += -L$(CARLSIM_LIB_DIR)/lib -lCARLsim
 
 local_src  := main_$(example).cpp
 local_prog := $(example)
-local_objs:= v1ColorME.2.1.o
+local_objs:= v1ColorME.2.1.o ../common/mtrand.o
 output_files += $(local_prog) $(local_objs)
 
 .PHONY: clean distclean

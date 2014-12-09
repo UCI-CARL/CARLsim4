@@ -9,12 +9,12 @@ fclose(fid);
 
 inputs = reshape(permute(reshape(vid(:,1:6)/255,3,nrX,nrX,6),[3 2 4 1 ]),[nrX,nrX*6,3]);
 
-frameDur=100;
+frameDurMs=100;
 
 resp = zeros(0,nrX*6);
 for j=1:length(list)
     SR = SpikeReader(['../results/spkV4' list{j} '.dat']);
-	spkData = SR.readSpikes(frameDur);    
+	spkData = SR.readSpikes(frameDurMs);    
     resp = [resp; ...
 		reshape(permute(reshape(spkData(1:6,:),6,nrX,nrX),[3 2 1]), ...
 		[nrX nrX*6])];
