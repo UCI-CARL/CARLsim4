@@ -878,14 +878,6 @@ SpikeMonitor* CARLsim::setSpikeMonitor(int grpId, const std::string& fname) {
 	UserErrors::assertTrue(carlsimState_==CONFIG_STATE || carlsimState_==SETUP_STATE,
 					UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "CONFIG or SETUP.");
 
-	// empty string: use default name for binary file
-#if (WIN32 || WIN64)
-	// \TODO make default path for Windows platform
-	std::string fileName = fname.empty() ? "NULL" : fname;
-#else
-	std::string fileName = fname.empty() ? "results/spk"+snn_->getGroupName(grpId)+".dat" : fname;
-#endif
-
 	FILE* fid;
 	if (fname == "NULL") {
 		// user does not want a binary file created
@@ -899,7 +891,7 @@ SpikeMonitor* CARLsim::setSpikeMonitor(int grpId, const std::string& fname) {
 			fileName = fname;
 
 		fid = fopen(fileName.c_str(),"wb");
-		if (fid==NULL) {
+		if (fid == NULL) {
 			// file could not be opened
 
 			// default case: print error and exit
