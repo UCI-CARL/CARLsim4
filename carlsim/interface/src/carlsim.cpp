@@ -772,8 +772,10 @@ ConnectionMonitor* CARLsim::setConnectionMonitor(int grpIdPre, int grpIdPost, co
 		fid = NULL;
 	} else {
 		// try to open spike file
-		if (fileName  == "default")
+		if (fileName == "default")
 			fileName = "results/conn_" + snn_->getGroupName(grpIdPre) + "_" + snn_->getGroupName(grpIdPost) + ".dat";
+		else
+			fileName = fname;
 
 		fid = fopen(fileName.c_str(),"wb");
 		if (fid == NULL) {
@@ -828,8 +830,10 @@ GroupMonitor* CARLsim::setGroupMonitor(int grpId, const std::string& fname) {
 		fid = NULL;
 	} else {
 		// try to open spike file
-		if (fileName  == "default")
+		if (fileName == "default")
 			fileName = "results/grp_" + snn_->getGroupName(grpId) + ".dat";
+		else
+			fileName = fname;
 
 		fid = fopen(fileName.c_str(),"wb");
 		if (fid == NULL) {
@@ -884,8 +888,10 @@ SpikeMonitor* CARLsim::setSpikeMonitor(int grpId, const std::string& fname) {
 		fid = NULL;
 	} else {
 		// try to open spike file
-		if (fileName  == "default")
-			fileName = "results/spk" + snn_->getGroupName(grpId) + ".dat";
+		if (fileName == "default")
+			fileName = "results/spk_" + snn_->getGroupName(grpId) + ".dat";
+		else
+			fileName = fname;
 
 		fid = fopen(fileName.c_str(),"wb");
 		if (fid == NULL) {
@@ -1024,8 +1030,8 @@ int CARLsim::getGroupId(std::string grpName) {
 
 std::string CARLsim::getGroupName(int grpId) {
 	std::stringstream funcName; funcName << "getGroupName(" << grpId << ")";
-	UserErrors::assertTrue(grpId>=0 && grpId<getNumGroups(), UserErrors::MUST_BE_IN_RANGE, funcName.str(), "gruuupId",
-		"[0,getNumGroups()]");
+	UserErrors::assertTrue(grpId==ALL || grpId>=0 && grpId<getNumGroups(), UserErrors::MUST_BE_IN_RANGE, funcName.str(),
+		"grpId", "[0,getNumGroups()] or must be ALL.");
 
 	return snn_->getGroupName(grpId);
 }

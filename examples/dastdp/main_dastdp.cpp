@@ -132,7 +132,7 @@ int main() {
 	sim.setSpikeRate(g1noise,&noise);
 
 	// run for 1000 seconds
-	for (int t = 0; t < 1000; t++) {
+	for (int t = 0; t < 800; t++) {
 		spikeMon1->startRecording();
 		spikeMonIn->startRecording();
 		groupMon->startRecording();

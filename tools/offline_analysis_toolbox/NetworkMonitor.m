@@ -19,7 +19,7 @@ classdef NetworkMonitor < handle
     %    >> NM.plot(1:10,100); % frame=100ms, plot first ten frames
     %    >> % etc.
     %
-    % Version 10/5/2014
+    % Version 12/8/2014
     % Author: Michael Beyeler <mbeyeler@uci.edu>
     
     %% PROPERTIES
@@ -32,7 +32,10 @@ classdef NetworkMonitor < handle
         groupSubPlots;      % cell array of assigned subplot slots
         groupMonObj;        % cell array of GroupMonitor objects
 
-        errorMode;          % program mode for error handling
+        spkFilePrefix;      % spike file prefix, e.g. "spk_"
+        spkFileSuffix;      % spike file suffix, e.g. ".dat"
+
+		errorMode;          % program mode for error handling
         supportedErrorModes;% supported error modes
     end
     
@@ -73,7 +76,7 @@ classdef NetworkMonitor < handle
             %                       "sim_{simName}.dat")
             % LOADGROUPSFROMFILE  - A flag whether to automatically add all
             %                       groups in the network. Default: true.
-            % ERRORMODE           - Error Mode in which to run SpikeReader.
+            % ERRORMODE           - Error Mode in which to run this func.
             %                       The following modes are supported:
             %                         - 'standard' Errors will be fatal
             %                                      (returned via Matlab
@@ -118,14 +121,50 @@ classdef NetworkMonitor < handle
             
             % if flag is set, add all groups for plotting from file
             if loadGroupsFromFile
-                obj.addAllGroupsFromFile()
+	            % add groups in silent mode, so that no errors are thrown
+	            % if not all spike files are found
+                obj.addAllGroupsFromFile('silent')
+				
+				if numel(obj.groupNames)==0
+					disp 'meow'
+					obj.throwError(['No groups added. Make sure you ' ...
+						'have the right spike file attributes. Try ' ...
+						'calling NM.setSpikeFileAttributes(prefix,' ...
+						'suffix) with the right values, then call ' ...
+						'NM.addAllGroupsFromFile().'],'warning');
+				end
             end
         end
         function delete(obj)
             % destructor
         end
         
-        function addGroup(obj, name, plotType, grid3D, subPlots, errorMode)
+        function addAllGroupsFromFile(obj, errorMode)
+			% NM.addAllGroupsFromFile() adds all neuronal groups that are
+			% listed in the simulation info file.
+            % ERRORMODE           - Error Mode in which to run this func.
+            %                       The following modes are supported:
+            %                         - 'standard' Errors will be fatal
+            %                                      (returned via Matlab
+            %                                      function error())
+            %                         - 'warning'  Errors will be warnings
+            %                                      returned via Matlab
+            %                                      function warning())
+            %                         - 'silent'   No exceptions will be
+            %                                      thrown, but object will
+            %                                      populate the properties
+            %                                      errorFlag and errorMsg.
+            %                       Default: 'standard'.
+			obj.unsetError()
+			if nargin<2, errorMode='silent'; end
+			
+            for i=1:numel(obj.simObj.groups)
+                obj.addGroup(obj.simObj.groups(i).name, 'default', ...
+                    [], [], errorMode)
+            end
+		end
+		
+		function addGroup(obj, name, plotType, grid3D, subPlots, errorMode)
             % NM.addGroup(name,plotType,grid3D,subPlots,errorMode) adds a
             % specific neuronal group to the NetworkMonitor.
             % This function is implicitly called on all groups if a
@@ -180,21 +219,34 @@ classdef NetworkMonitor < handle
             end
             
             % create GroupMonitor object for this group
-            GM = GroupMonitor(name, obj.resultsFolder, errorMode);
+            GM = GroupMonitor(name, obj.resultsFolder, 'silent');
             
-            % check whether valid spike file found, exit if not found
-            [errFlag,errMsg] = GM.getError();
-            if errFlag
-                obj.throwError(errMsg, errorMode);
-                return % make sure we exit after spike file not found
-            end
+            % check whether valid spike file found
+			if ~GM.hasValidSpikeFile()
+				% if not found, try again with new spike file attributes
+				GM.setSpikeFileAttributes(obj.spkFilePrefix, obj.spkFileSuffix);
+				
+				% if again not found, exit
+				if ~GM.hasValidSpikeFile()
+		            [~,errMsg] = GM.getError();
+					obj.throwError(errMsg, errorMode);
+					return % make sure we exit after spike file not found
+				end
+			end
+			
+			% make sure GM is valid
+			[errFlag,errMsg] = GM.getError();
+			if errFlag
+				obj.throwError(errMsg, errorMode);
+				return
+			end
             
             % set plot type to specific type or find default type
             GM.setPlotType(plotType);
             
             % disable interactive mode to avoid press key events etc.
             GM.setPlottingAttributes('interactiveMode',false);
-            
+			
             % set Grid3D if necessary
             if ~isempty(grid3D) && prod(grid3D)>=1
                 GM.setGrid3D(grid3D);
@@ -480,6 +532,24 @@ classdef NetworkMonitor < handle
             %                  arrangement. Default: false
             obj.unsetError()
             if nargin<6,updDefPlotType=false;end
+            if ~Utilities.verify(groupName,'ischar')
+                obj.throwError('Group name must be a string');return
+            end
+			if ~Utilities.verify(dim0, {'isscalar',[0 inf]})
+				obj.throwError(['dim0 must be numeric and in the ' ...
+					'range [0 inf]']);return
+			end
+			if ~Utilities.verify(dim1, {'isscalar',[0 inf]})
+				obj.throwError(['dim1 must be numeric and in the ' ...
+					'range [0 inf]']);return
+			end
+			if ~Utilities.verify(dim1, {'isscalar',[0 inf]})
+				obj.throwError(['dim1 must be numeric and in the ' ...
+					'range [0 inf]']);return
+			end
+			if ~Utilities.verify(updDefPlotType,'islogical')
+				obj.throwError('updDefPlotType must be a boolean');return
+			end
             gId = obj.getGroupId(groupName);
             obj.groupMonObj{gId}.setGrid3D(dim0,dim1,dim2,updDefPlotType);
         end
@@ -502,9 +572,42 @@ classdef NetworkMonitor < handle
             %                               mean higher firing rate
             %                   - raster    a raster plot with binning
             %                               window: binWindowMs
+			obj.unsetError()
+			if ~Utilities.verify(groupName,'ischar')
+				obj.throwError('Group name must be a string');
+				return
+			end
             gId = obj.getGroupId(groupName);
             obj.groupMonObj{gId}.setPlotType(plotType);
-        end
+		end
+		
+		function setGroupSpikeFileAttributes(obj,groupName,prefix,suffix)
+            % NM.setGroupSpikeFileAttributes(groupName,prefix,suffix)
+            % Defines the naming conventions for spike files. They should
+            % all reside within SAVEFOLDER (specified in constructor), and
+            % be made of a common prefix, the population name (specified in
+            % ADDPOPULATION), and a common suffix.
+            % Example: files 'results/spk_V1.dat', 'results/spk_MT.dat'
+            %   -> saveFolder = 'results/'
+            %   -> prefix = 'spk_'
+            %   -> suffix = '.dat'
+            %   -> name of population = 'V1' or 'MT'
+			%
+			% If you want to change the spike file attributes for all
+			% groups, use NM.setSpikeFileAttributes instead.
+			obj.unsetError()
+            if ~Utilities.verify(groupName,'ischar')
+                obj.throwError('Group name must be a string');return
+            end
+            if ~Utilities.verify(prefix,'ischar')
+                obj.throwError('Prefix must be a string');return
+            end
+            if ~Utilities.verify(suffix,'ischar')
+                obj.throwError('Suffix must be a string');return
+            end
+            gId = obj.getGroupId(groupName);
+            obj.groupMonObj{gId}.setSpikeFileAttributes(prefix,suffix);
+		end
         
         function setGroupSubPlot(obj, groupName, subPlots)
             % NM.setGroupSubPlot(groupName, subPlots) specifies in which
@@ -735,23 +838,51 @@ classdef NetworkMonitor < handle
                 % advance index to next attr
                 nextIndex = nextIndex + 2;
             end
-        end
+		end
+		
+		function setSpikeFileAttributes(obj, prefix, suffix)
+            % NM.setSpikeFileAttributes(prefix,suffix)
+            % Defines the naming conventions for spike files. They should
+            % all reside within SAVEFOLDER (specified in constructor), and
+            % be made of a common prefix, the population name (specified in
+            % ADDPOPULATION), and a common suffix.
+            % Example: files 'results/spk_V1.dat', 'results/spk_MT.dat'
+            %   -> saveFolder = 'results/'
+            %   -> prefix = 'spk_'
+            %   -> suffix = '.dat'
+            %   -> name of population = 'V1' or 'MT'
+			%
+			% If you want to change the spike file attribute of only one
+			% specific group, use NM.setGroupSpikeFileAttributes instead.
+            if nargin<3,suffix='.dat';end
+            if nargin<2,prefix='spk_';end
+            obj.unsetError()
+
+			if ~Utilities.verify(prefix, 'ischar')
+				obj.throwError('Prefix must be a string');return
+			end
+			if ~Utilities.verify(suffix, 'ischar')
+				obj.throwError('Suffix must be a string');return
+			end
+			
+			% First: Store it in private member vars
+			% Reason is, in case attributes are wrong, we need to pass
+			% prefix and suffix to addGroup or addAllGroupsFromFile, which
+			% would otherwise not be possible
+			obj.spkFilePrefix = prefix;
+			obj.spkFileSuffix = suffix;
+			
+			% Second: Apply to all groups that have already been added
+			for i=1:numel(obj.groupNames)
+				obj.setGroupSpikeFileAttributes(obj.groupNames{i}, ...
+					prefix, suffix);
+			end
+		end
     end
     
     
     %% PRIVATE METHODS
     methods (Hidden, Access = private)
-        function addAllGroupsFromFile(obj)
-            % add groups in silent mode, so that no errors are thrown if not
-            % all spike files are found
-            errMode = 'silent';
-            
-            for i=1:numel(obj.simObj.groups)
-                obj.addGroup(obj.simObj.groups(i).name, 'default', ...
-                    [], [], errMode)
-            end
-        end
-        
         function bool = existsGroupName(obj,name)
             % bool = NM.existsGroupName(name) checks whether a group has
             % been registered under name NAME
@@ -766,13 +897,23 @@ classdef NetworkMonitor < handle
             nrC = ceil(numSubPlots*1.0/nrR);
         end
         
-        function id = getGroupId(obj,name)
+        function id = getGroupId(obj,name,errMode)
             % id = NM.getGroupId(name) returns the index of population with
             % name NAME
             %
             % NAME  - A string representing the name of a group that has
             %         been registered by calling NM.addPopulation.
+			obj.unsetError()
+			if nargin<3,errMode=obj.errorMode;end
+			id = -1;
+			
+			if ~Utilities.verify(name,'ischar')
+				obj.throwError('Name must be a string',errMode);return
+			end
             id = strcmpi(obj.groupNames,name);
+			if any(id)<=0
+				obj.throwError('Group name not found');return
+			end
         end
         
         function index = getGroupStructId(obj, name)
@@ -828,6 +969,7 @@ classdef NetworkMonitor < handle
             
             obj.setPlottingAttributes()
             obj.setRecordingAttributes()
+			obj.setSpikeFileAttributes()
             
             obj.numSubPlots = 0;
         end
