@@ -2703,12 +2703,14 @@ void CpuSNN::configGPUDevice() {
 
 	CUDA_CHECK_ERRORS(cudaGetDeviceProperties(&deviceProp, ithGPU_));
 	KERNEL_INFO("  - Use CUDA device[%1d]              = %9s", ithGPU_, deviceProp.name);
-	KERNEL_INFO("  - CUDA Compute Capability         =      %2d.%d\n", deviceProp.major, deviceProp.minor);
+	KERNEL_INFO("  - CUDA Compute Capability (CC)    =      %2d.%d\n", deviceProp.major, deviceProp.minor);
 
     if (deviceProp.major < 2) {
-        KERNEL_ERROR("CARLsim does not support CUDA devices older than version 2.0");
-        exitSimulation(1);
-    }
+		// Unmark this when CC 1.3 is deprecated
+		//KERNEL_ERROR("CARLsim does not support CUDA devices older than CC 2.0");
+		//exitSimulation(1);
+		KERNEL_WARN("CUDA device with CC 1.3 will be deprecated in a future release");
+	}
 
 	CUDA_CHECK_ERRORS(cudaSetDevice(ithGPU_));
 	CUDA_DEVICE_RESET();
