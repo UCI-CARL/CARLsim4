@@ -215,7 +215,7 @@ int main()
 
 	sim.setSTP(ALL,false);
 
-	sim.setSpikeMonitor(gV1ME);
+	sim.setSpikeMonitor(gV1ME,"default");
 	sim.setSpikeMonitor(gV4o,"results/spkV4o.dat");
 	sim.setSpikeMonitor(gV4oi,"results/spkV4oi.dat");
 

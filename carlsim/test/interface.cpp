@@ -450,11 +450,11 @@ TEST(Interface, CARLsimState) {
 	EXPECT_DEATH({sim->setSTP(g1, true, 1.0, 2.0, 3.0);},"");
 	EXPECT_DEATH({sim->setSTP(g1, true);},"");
 	EXPECT_DEATH({sim->setWeightAndWeightChangeUpdate(INTERVAL_1000MS, true, 0.9f);},"");
-	EXPECT_DEATH({sim->setConnectionMonitor(0, 1);},"");
-	EXPECT_DEATH({sim->setGroupMonitor(0);},"");
+	EXPECT_DEATH({sim->setConnectionMonitor(0, 1, "Default");},"");
+	EXPECT_DEATH({sim->setGroupMonitor(0, "Default");},"");
 	EXPECT_DEATH({sim->setSpikeCounter(0);},"");
 	//EXPECT_DEATH({sim->setSpikeGenerator(0, SpikeGenerator* spikeGen);},"");
-	EXPECT_DEATH({sim->setSpikeMonitor(0);},"");
+	EXPECT_DEATH({sim->setSpikeMonitor(0, "Default");},"");
 	//EXPECT_DEATH({sim->setSpikeMonitor(0, const std::string& fname, int configId=0);},"");
 	EXPECT_DEATH({sim->setDefaultConductanceTimeConstants(1, 2, 3, 4, 5, 6);},"");
 	EXPECT_DEATH({sim->setDefaultHomeostasisParams(1.0, 2.0);},"");

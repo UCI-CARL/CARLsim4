@@ -114,9 +114,9 @@ int main() {
 	input->setRates(inputTargetFR);
 
 	// set out spike monitors here
-	spikeMonInput=snn->setSpikeMonitor(inputGroup);
-	spikeMonExc=snn->setSpikeMonitor(excGroup);
-	spikeMonInh=snn->setSpikeMonitor(inhGroup);
+	spikeMonInput=snn->setSpikeMonitor(inputGroup,"Default");
+	spikeMonExc=snn->setSpikeMonitor(excGroup,"Default");
+	spikeMonInh=snn->setSpikeMonitor(inhGroup,"Default");
 
 	// still have to set the firing rates (need to double check)
 	snn->setSpikeRate(inputGroup,input);

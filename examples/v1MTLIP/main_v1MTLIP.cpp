@@ -729,21 +729,21 @@ int main()
 	// Note: Disable all to speed up simulation
 
 	#if defined(RUN_DIRECTION_TUNING) || defined(RUN_CONTRAST_SENSITIVITY)
-	snn.setSpikeMonitor(gV1ME);
+	snn.setSpikeMonitor(gV1ME,"default");
 	#endif
 	#if defined(RUN_DIRECTION_TUNING) || defined(RUN_SPEED_TUNING)
-	snn.setSpikeMonitor(gMT1CDS);
+	snn.setSpikeMonitor(gMT1CDS,"default");
 	#endif
 	#if defined(RUN_SPEED_TUNING)
-	snn.setSpikeMonitor(gMT2CDS);
-	snn.setSpikeMonitor(gMT3CDS);
+	snn.setSpikeMonitor(gMT2CDS,"default");
+	snn.setSpikeMonitor(gMT3CDS,"default");
 	#endif
 	#if defined(RUN_DIRECTION_TUNING)
-	snn.setSpikeMonitor(gMT1PDS);
+	snn.setSpikeMonitor(gMT1PDS,"default");
 	#endif
 	#if defined(RUN_RDK)
-	snn.setSpikeMonitor(gLIP);
-	snn.setSpikeMonitor(gLIPi);
+	snn.setSpikeMonitor(gLIP,"default");
+	snn.setSpikeMonitor(gLIPi,"default");
 	#endif
 
 

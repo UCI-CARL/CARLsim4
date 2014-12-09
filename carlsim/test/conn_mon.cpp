@@ -53,7 +53,7 @@ TEST(setConnMon, interfaceDeath) {
 
 		// ----- CONFIG ------- //
 		// calling setConnMon in CONFIG
-		EXPECT_DEATH({sim->setConnectionMonitor(g0,g1);},"");
+		EXPECT_DEATH({sim->setConnectionMonitor(g0,g1,"Default");},"");
 
 		// connect and advance to SETUP state
 		sim->connect(g0,g1,"full",RangeWeight(0.1),1.0);
@@ -62,18 +62,18 @@ TEST(setConnMon, interfaceDeath) {
 
 		// ----- SETUP ------- //
 		// calling setConnMon on non-existent connection
-		EXPECT_DEATH({sim->setConnectionMonitor(g1,g0);},"");
+		EXPECT_DEATH({sim->setConnectionMonitor(g1,g0,"Default");},"");
 
 		// calling setConnMon twice on same group
-		sim->setConnectionMonitor(g0,g1);
-		EXPECT_DEATH({sim->setConnectionMonitor(g0,g1);},"");
+		sim->setConnectionMonitor(g0,g1,"Default");
+		EXPECT_DEATH({sim->setConnectionMonitor(g0,g1,"Default");},"");
 
 		// advance to EXE state
 		sim->runNetwork(1,0);
 
 		// ----- EXE ------- //
 		// calling setConnMon in EXE
-		EXPECT_DEATH({sim->setConnectionMonitor(g0,g1);},"");
+		EXPECT_DEATH({sim->setConnectionMonitor(g0,g1,"Default");},"");
 		
 		delete sim;
 	}

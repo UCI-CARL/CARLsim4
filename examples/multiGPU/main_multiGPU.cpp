@@ -89,8 +89,8 @@ void *runCARLsim(void* arg)
 
 	sim->setSpikeRate(gNoise, &in);
 	
-	excMon = sim->setSpikeMonitor(gExc);
-	inbMon = sim->setSpikeMonitor(gInb);
+	excMon = sim->setSpikeMonitor(gExc, "NULL");
+	inbMon = sim->setSpikeMonitor(gInb, "NULL");
 
 	for (int t = 0; t < 100; t++) {
 		sim->runNetwork(1,0);

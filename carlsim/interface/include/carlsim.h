@@ -706,7 +706,7 @@ public:
 	 * \param[in] grpIdPost 	the post-synaptic group ID
 	 * \param[in] connectionMon an instance of class ConnectionMonitor (see callback.h)
 	 */
-	ConnectionMonitor* setConnectionMonitor(int grpIdPre, int grpIdPost, const std::string& fname="");
+	ConnectionMonitor* setConnectionMonitor(int grpIdPre, int grpIdPost, const std::string& fname);
 
 	/*!
 	 * \brief Sets the amount of current (mA) to inject into a group
@@ -781,7 +781,7 @@ public:
 	 * \TODO finish docu
 	 * \STATE CONFIG, SETUP
 	 */
-	GroupMonitor* setGroupMonitor(int grpId, const std::string& fname="");
+	GroupMonitor* setGroupMonitor(int grpId, const std::string& fname);
 
 	/*!
 	 * \brief A Spike Counter keeps track of the number of spikes per neuron in a group.
@@ -845,7 +845,7 @@ public:
 	 * \attention Using SpikeMonitor::startRecording and SpikeMonitor::stopRecording might significantly slow down the
 	 * simulation. It is unwise to use this mechanism to record a large number of spikes over a long period of time.
 	 */
-	SpikeMonitor* setSpikeMonitor(int grpId, const std::string& fname="");
+	SpikeMonitor* setSpikeMonitor(int grpId, const std::string& fname);
 
 	/*!
 	 * \brief Sets a spike rate

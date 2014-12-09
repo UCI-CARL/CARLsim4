@@ -247,9 +247,9 @@ TEST(STDP, DASTDPWeightBoost) {
 				
 				ConnectionMonitor* CM = sim->setConnectionMonitor(gin, g1, "NULL");
 
-				spikeMonPost = sim->setSpikeMonitor(g1,"NULL");
-				spikeMonPre = sim->setSpikeMonitor(gin,"NULL");
-				sim->setSpikeMonitor(gda);
+				spikeMonPost = sim->setSpikeMonitor(g1, "NULL");
+				spikeMonPre = sim->setSpikeMonitor(gin, "NULL");
+				sim->setSpikeMonitor(gda, "NULL");
 
 				//setup baseline firing rate
 				PoissonRate in(1);
@@ -530,9 +530,9 @@ TEST(STDP, ISTDPConstantSymmetricCurve) {
 
 				ConnectionMonitor* CM = sim->setConnectionMonitor(gin, g1, "NULL");
 
-				sim->setSpikeMonitor(g1);
-				sim->setSpikeMonitor(gin);
-				sim->setSpikeMonitor(gex);
+				sim->setSpikeMonitor(g1, "Default");
+				sim->setSpikeMonitor(gin, "Default");
+				sim->setSpikeMonitor(gex, "Default");
 
 				// run for 20 seconds
 				sim->runNetwork(20,0, true, true);

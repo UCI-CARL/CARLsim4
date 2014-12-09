@@ -764,23 +764,21 @@ ConnectionMonitor* CARLsim::setConnectionMonitor(int grpIdPre, int grpIdPost, co
 	UserErrors::assertTrue(carlsimState_==SETUP_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, 
 		funcName, "SETUP.");
 
-	// empty string: use default name for binary file
-#if (WIN32 || WIN64)
-	// \TODO make default path for Windows platform
-	std::string fileName = fname.empty() ? "NULL" : fname;
-#else
-	std::string fileName = fname.empty() ? "results/conn_" + snn_->getGroupName(grpIdPre) + "_"
-		+ snn_->getGroupName(grpIdPost) + ".dat" : fname;
-#endif
-
 	FILE* fid;
-	if (fileName=="NULL") {
+	std::string fileName = fname;
+	std::transform(fileName.begin(), fileName.end(), fileName.begin(), ::tolower);
+	if (fileName  == "null") {
 		// user does not want a binary file created
 		fid = NULL;
 	} else {
 		// try to open spike file
+		if (fileName == "default")
+			fileName = "results/conn_" + snn_->getGroupName(grpIdPre) + "_" + snn_->getGroupName(grpIdPost) + ".dat";
+		else
+			fileName = fname;
+
 		fid = fopen(fileName.c_str(),"wb");
-		if (fid==NULL) {
+		if (fid == NULL) {
 			// file could not be opened
 
 			// default case: print error and exit
@@ -789,7 +787,7 @@ ConnectionMonitor* CARLsim::setConnectionMonitor(int grpIdPre, int grpIdPost, co
 		}
 	}
 
-	// return SpikeMonitor object
+	// return ConnectionMonitor object
 	return snn_->setConnectionMonitor(grpIdPre, grpIdPost, fid);
 }
 
@@ -824,22 +822,21 @@ GroupMonitor* CARLsim::setGroupMonitor(int grpId, const std::string& fname) {
 	UserErrors::assertTrue(carlsimState_==CONFIG_STATE || carlsimState_==SETUP_STATE,
 					UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "CONFIG or SETUP.");
 
-	// empty string: use default name for binary file
-#if (WIN32 || WIN64)
-	// \TODO make default path for Windows platform
-	std::string fileName = fname.empty() ? "NULL" : fname;
-#else
-	std::string fileName = fname.empty() ? "results/grp_"+snn_->getGroupName(grpId)+".dat" : fname;
-#endif
-
 	FILE* fid;
-	if (fileName=="NULL") {
+	std::string fileName = fname;
+	std::transform(fileName.begin(), fileName.end(), fileName.begin(), ::tolower);
+	if (fileName  == "null") {
 		// user does not want a binary file created
 		fid = NULL;
 	} else {
 		// try to open spike file
+		if (fileName == "default")
+			fileName = "results/grp_" + snn_->getGroupName(grpId) + ".dat";
+		else
+			fileName = fname;
+
 		fid = fopen(fileName.c_str(),"wb");
-		if (fid==NULL) {
+		if (fid == NULL) {
 			// file could not be opened
 
 			// default case: print error and exit
@@ -848,7 +845,7 @@ GroupMonitor* CARLsim::setGroupMonitor(int grpId, const std::string& fname) {
 		}
 	}
 
-	// return SpikeMonitor object
+	// return GroupMonitor object
 	return snn_->setGroupMonitor(grpId, fid);
 }
 
@@ -883,22 +880,21 @@ SpikeMonitor* CARLsim::setSpikeMonitor(int grpId, const std::string& fname) {
 	UserErrors::assertTrue(carlsimState_==CONFIG_STATE || carlsimState_==SETUP_STATE,
 					UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "CONFIG or SETUP.");
 
-	// empty string: use default name for binary file
-#if (WIN32 || WIN64)
-	// \TODO make default path for Windows platform
-	std::string fileName = fname.empty() ? "NULL" : fname;
-#else
-	std::string fileName = fname.empty() ? "results/spk_"+snn_->getGroupName(grpId)+".dat" : fname;
-#endif
-
 	FILE* fid;
-	if (fileName=="NULL") {
+	std::string fileName = fname;
+	std::transform(fileName.begin(), fileName.end(), fileName.begin(), ::tolower);
+	if (fileName  == "null") {
 		// user does not want a binary file created
 		fid = NULL;
 	} else {
 		// try to open spike file
+		if (fileName == "default")
+			fileName = "results/spk_" + snn_->getGroupName(grpId) + ".dat";
+		else
+			fileName = fname;
+
 		fid = fopen(fileName.c_str(),"wb");
-		if (fid==NULL) {
+		if (fid == NULL) {
 			// file could not be opened
 
 			// default case: print error and exit

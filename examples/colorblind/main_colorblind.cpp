@@ -244,24 +244,24 @@ int main() {
 	//initialize the GPU/network
 	sim.setupNetwork();
 
-	sim.setSpikeMonitor(v1Cells[RED_GREEN]);
-	sim.setSpikeMonitor(v1Cells[GREEN_RED]);
-	sim.setSpikeMonitor(v1Cells[BLUE_YELLOW]);
-	sim.setSpikeMonitor(v1Cells[YELLOW_BLUE]);
+	sim.setSpikeMonitor(v1Cells[RED_GREEN],"default");
+	sim.setSpikeMonitor(v1Cells[GREEN_RED],"default");
+	sim.setSpikeMonitor(v1Cells[BLUE_YELLOW],"default");
+	sim.setSpikeMonitor(v1Cells[YELLOW_BLUE],"default");
 
-	sim.setSpikeMonitor(v4CellsExc[RED_V4]);
-	sim.setSpikeMonitor(v4CellsExc[GREEN_V4]);
-	sim.setSpikeMonitor(v4CellsExc[BLUE_V4]);
-	sim.setSpikeMonitor(v4CellsExc[YELLOW_V4]);
-	sim.setSpikeMonitor(v4CellsExc[CYAN_V4]);
-	sim.setSpikeMonitor(v4CellsExc[MAGENTA_V4]);
+	sim.setSpikeMonitor(v4CellsExc[RED_V4],"default");
+	sim.setSpikeMonitor(v4CellsExc[GREEN_V4],"default");
+	sim.setSpikeMonitor(v4CellsExc[BLUE_V4],"default");
+	sim.setSpikeMonitor(v4CellsExc[YELLOW_V4],"default");
+	sim.setSpikeMonitor(v4CellsExc[CYAN_V4],"default");
+	sim.setSpikeMonitor(v4CellsExc[MAGENTA_V4],"default");
 
-	sim.setSpikeMonitor(v4CellsInh[RED_V4]);
-	sim.setSpikeMonitor(v4CellsInh[GREEN_V4]);
-	sim.setSpikeMonitor(v4CellsInh[BLUE_V4]);
-	sim.setSpikeMonitor(v4CellsInh[YELLOW_V4]);
-	sim.setSpikeMonitor(v4CellsInh[CYAN_V4]);
-	sim.setSpikeMonitor(v4CellsInh[MAGENTA_V4]);
+	sim.setSpikeMonitor(v4CellsInh[RED_V4],"default");
+	sim.setSpikeMonitor(v4CellsInh[GREEN_V4],"default");
+	sim.setSpikeMonitor(v4CellsInh[BLUE_V4],"default");
+	sim.setSpikeMonitor(v4CellsInh[YELLOW_V4],"default");
+	sim.setSpikeMonitor(v4CellsInh[CYAN_V4],"default");
+	sim.setSpikeMonitor(v4CellsInh[MAGENTA_V4],"default");
 
 	unsigned char* vid = new unsigned char[nrX*nrY*3];
 
