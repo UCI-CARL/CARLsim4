@@ -146,7 +146,7 @@ public:
 };
 
 int main() {
-	int frameDur = 100; // run for 100 ms
+	int frameDurMs = 100; // run for 100 ms
 
 	FILE* fid;
 	bool onGPU = true;
@@ -157,7 +157,7 @@ int main() {
 	int v1Cells[5];
 	int num_V1_groups=6;
 	for (int i=RED_GREEN; i <= YELLOW_BLUE; i++) {
-		v1Cells[i] = sim.createSpikeGeneratorGroup(v1ImageName[i].c_str(), V1_LAYER_DIM*V1_LAYER_DIM, TARGET_AMPA);
+		v1Cells[i] = sim.createSpikeGeneratorGroup(v1ImageName[i].c_str(), Grid3D(V1_LAYER_DIM,V1_LAYER_DIM,1), TARGET_AMPA);
 
 //		sim.setSTP(v1Cells[i],true, 0.2, 800, 20);
 	}
@@ -167,9 +167,9 @@ int main() {
 	int* v4CellsExc = new int[num_V4_groups];
 	int* v4CellsInh = new int[num_V4_groups];
 	for (int i=0; i < num_V4_groups; i++) {
-		v4CellsExc[i] = sim.createGroup(v4CellNameExc[i].c_str(), V4_LAYER_DIM*V4_LAYER_DIM, TARGET_AMPA);
+		v4CellsExc[i] = sim.createGroup(v4CellNameExc[i].c_str(), Grid3D(V4_LAYER_DIM,V4_LAYER_DIM,1), TARGET_AMPA);
 		sim.setNeuronParameters(v4CellsExc[i], 0.02f, 0.2f, -65.0f, 8.0f);
-		v4CellsInh[i] = sim.createGroup(v4CellNameInh[i].c_str(), V4_LAYER_DIM*V4_LAYER_DIM, TARGET_GABAa);
+		v4CellsInh[i] = sim.createGroup(v4CellNameInh[i].c_str(), Grid3D(V4_LAYER_DIM,V4_LAYER_DIM,1), TARGET_GABAa);
 		sim.setNeuronParameters(v4CellsInh[i], 0.1f,  0.2f, -65.0f, 2.0f);
 	}
 
@@ -225,57 +225,44 @@ int main() {
 	sim.connect(v4CellsInh[YELLOW_V4], v4CellsExc[CYAN_V4], projInhToExc, SYN_FIXED, radius2*4, radius2*4);
 	sim.connect(v4CellsInh[YELLOW_V4], v4CellsExc[MAGENTA_V4], projInhToExc, SYN_FIXED, radius2*4, radius2*4);
 
-/*
-	sim.connect(v4CellsInh[RED_V4], v4CellsExc[GREEN_V4], projInhToExc, SYN_FIXED, radius2*4, radius2*4);
-	sim.connect(v4CellsInh[RED_V4], v4CellsExc[BLUE_V4], projInhToExc, SYN_FIXED, radius2*4, radius2*4);
-
-	sim.connect(v4CellsInh[BLUE_V4], v4CellsExc[RED_V4], projInhToExc, SYN_FIXED, radius2*4, radius2*4);
-	sim.connect(v4CellsInh[BLUE_V4], v4CellsExc[GREEN_V4], projInhToExc, SYN_FIXED, radius2*4, radius2*4);
-
-	sim.connect(v4CellsInh[GREEN_V4], v4CellsExc[RED_V4], projInhToExc, SYN_FIXED, radius2*4, radius2*4);
-	sim.connect(v4CellsInh[GREEN_V4], v4CellsExc[BLUE_V4], projInhToExc, SYN_FIXED, radius2*4, radius2*4);
-*/
-
-	sim.setConductances(true,5,150,6,150);
-
+	sim.setConductances(true);
 	sim.setSTDP(ALL, false);
-
 	sim.setSTP(ALL,false);
-
-	sim.setSpikeMonitor(v1Cells[RED_GREEN],"results/spkV1RG.dat");
-	sim.setSpikeMonitor(v1Cells[GREEN_RED],"results/spkV1GR.dat");
-	sim.setSpikeMonitor(v1Cells[BLUE_YELLOW],"results/spkV1BY.dat");
-	sim.setSpikeMonitor(v1Cells[YELLOW_BLUE],"results/spkV1YB.dat");
-
-	sim.setSpikeMonitor(v4CellsExc[RED_V4],"results/spkV4R.dat");
-	sim.setSpikeMonitor(v4CellsExc[GREEN_V4],"results/spkV4G.dat");
-	sim.setSpikeMonitor(v4CellsExc[BLUE_V4],"results/spkV4B.dat");
-	sim.setSpikeMonitor(v4CellsExc[YELLOW_V4],"results/spkV4Y.dat");
-	sim.setSpikeMonitor(v4CellsExc[CYAN_V4],"results/spkV4C.dat");
-	sim.setSpikeMonitor(v4CellsExc[MAGENTA_V4],"results/spkV4M.dat");
-
-	sim.setSpikeMonitor(v4CellsInh[RED_V4],"results/spk4Ri.dat");
-	sim.setSpikeMonitor(v4CellsInh[GREEN_V4],"results/spkV4Gi.dat");
-	sim.setSpikeMonitor(v4CellsInh[BLUE_V4],"results/spkV4Bi.dat");
-	sim.setSpikeMonitor(v4CellsInh[YELLOW_V4],"results/spkV4Yi.dat");
-	sim.setSpikeMonitor(v4CellsInh[CYAN_V4],"results/spkV4Ci.dat");
-	sim.setSpikeMonitor(v4CellsInh[MAGENTA_V4],"results/spkV4Mi.dat");
-
-	unsigned char* vid = new unsigned char[nrX*nrY*3];
 
 	// setup the network
 	sim.setupNetwork();
 
+	sim.setSpikeMonitor(v1Cells[RED_GREEN]);
+	sim.setSpikeMonitor(v1Cells[GREEN_RED]);
+	sim.setSpikeMonitor(v1Cells[BLUE_YELLOW]);
+	sim.setSpikeMonitor(v1Cells[YELLOW_BLUE]);
 
-	PoissonRate me(nrX*nrY*28*3,false);
-	PoissonRate red_green(nrX*nrY,false);
-	PoissonRate green_red(nrX*nrY,false);
-	PoissonRate yellow_blue(nrX*nrY,false);
-	PoissonRate blue_yellow(nrX*nrY,false);
+	sim.setSpikeMonitor(v4CellsExc[RED_V4]);
+	sim.setSpikeMonitor(v4CellsExc[GREEN_V4]);
+	sim.setSpikeMonitor(v4CellsExc[BLUE_V4]);
+	sim.setSpikeMonitor(v4CellsExc[YELLOW_V4]);
+	sim.setSpikeMonitor(v4CellsExc[CYAN_V4]);
+	sim.setSpikeMonitor(v4CellsExc[MAGENTA_V4]);
+
+	sim.setSpikeMonitor(v4CellsInh[RED_V4]);
+	sim.setSpikeMonitor(v4CellsInh[GREEN_V4]);
+	sim.setSpikeMonitor(v4CellsInh[BLUE_V4]);
+	sim.setSpikeMonitor(v4CellsInh[YELLOW_V4]);
+	sim.setSpikeMonitor(v4CellsInh[CYAN_V4]);
+	sim.setSpikeMonitor(v4CellsInh[MAGENTA_V4]);
+
+	unsigned char* vid = new unsigned char[nrX*nrY*3];
+
+
+	PoissonRate me(nrX*nrY*28*3,onGPU);
+	PoissonRate red_green(nrX*nrY,onGPU);
+	PoissonRate green_red(nrX*nrY,onGPU);
+	PoissonRate yellow_blue(nrX*nrY,onGPU);
+	PoissonRate blue_yellow(nrX*nrY,onGPU);
 
 	int VIDLEN = 256*3;
 
-	for(long long i=0; i < VIDLEN; i++) {
+	for(long long i=0; i<VIDLEN; i++) {
 		if (i%VIDLEN==0) {
 			fid = fopen("videos/colorcycle.dat","rb");
 			if (fid==NULL) {
@@ -290,7 +277,16 @@ int main() {
 			exit(2);
 		}
 
-		calcColorME(nrX, nrY, vid, red_green.rates, green_red.rates, blue_yellow.rates, yellow_blue.rates, me.rates, false);
+		// Note: Use of getRatePtr{CPU/GPU} is deprecated. It is used here to speed up the process of copying
+		// the rates calculated in calcColorME to the rate buffers via cudaMemcpyDeviceToDevice, which is faster
+		// than first copying from device to host, then copying from host to different device location
+		if (onGPU) {
+			calcColorME(nrX, nrY, vid, red_green.getRatePtrGPU(), green_red.getRatePtrGPU(), 
+				blue_yellow.getRatePtrGPU(), yellow_blue.getRatePtrGPU(), me.getRatePtrGPU(), true);
+		} else {
+			calcColorME(nrX, nrY, vid, red_green.getRatePtrCPU(), green_red.getRatePtrCPU(), 
+				blue_yellow.getRatePtrCPU(), yellow_blue.getRatePtrCPU(), me.getRatePtrCPU(), false);
+		}
 
 		sim.setSpikeRate(v1Cells[RED_GREEN], &red_green, 1);
 		sim.setSpikeRate(v1Cells[GREEN_RED], &green_red, 1);
@@ -298,7 +294,8 @@ int main() {
 		sim.setSpikeRate(v1Cells[YELLOW_BLUE], &yellow_blue, 1);
 
 		// run the established network for 1 (sec)  and 0 (millisecond), in GPU_MODE
-		sim.runNetwork(0,frameDur);
+		bool showRunSummary = !( ((i+1)*frameDurMs)%1000 );
+		sim.runNetwork(frameDurMs/1000, frameDurMs%1000, showRunSummary);
 
 		if (i==1) {
 			sim.saveSimulation("results/net.dat", true);

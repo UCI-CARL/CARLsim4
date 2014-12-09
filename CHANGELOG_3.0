@@ -10,11 +10,13 @@ Legend:
 2014-12-08     Michael Beyeler <mbeyeler@uci.edu>
   + Added makedoc script to automatically generate doxygen files.
   + Added SpikeGeneratorFromFile::rewind.
+  + Added setSpikeFileAttributes to NetworkMonitor.m (OAT).
+  * Moved loadAllGroupsFromFile to public interface NetworkMonitor.m (OAT).
   * Minor bug fixes: error message for getGroupName, GroupMonitorCore include
     in carlsim.cpp, CUDA config info.
 
 2014-12-06     Ting-Shuo Chou <tingshuc@uci.edu>
-  + Added GroupMonitr object
+  + Added GroupMonitor object.
 
 2014-12-03     Michael Beyeler <mbeyeler@uci.edu>
   + Added SimpleWeightTuner to tools, to Tutorial Chapter 12 (explanation)

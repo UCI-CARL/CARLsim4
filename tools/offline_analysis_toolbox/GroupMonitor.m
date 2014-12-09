@@ -29,7 +29,7 @@ classdef GroupMonitor < handle
     % private
     properties (Hidden, Access = private)
         spkObj;             % SpikeReader object
-        spkFilePrefix;      % spike file prefix, e.g. "spk"
+        spkFilePrefix;      % spike file prefix, e.g. "spk_"
         spkFileSuffix;      % spike file suffix, e.g. ".dat"
         spkData;            % buffer for spike data
         
@@ -115,7 +115,7 @@ classdef GroupMonitor < handle
             end
             
             % make sure spike file is valid
-            obj.initSpikeReader();
+%            obj.initSpikeReader();
         end
                 
         function delete(obj)
@@ -134,7 +134,7 @@ classdef GroupMonitor < handle
             % The plotting type can also be set manually using
             % GM.setPlotType.
             obj.unsetError()
-            obj.initSpikeReader() % required to access Grid3D prop
+	        obj.initSpikeReader() % required to access Grid3D prop
             plotType = 'default';
             
             % find dimensionality of Grid3D
@@ -710,18 +710,18 @@ classdef GroupMonitor < handle
             % all reside within SAVEFOLDER (specified in constructor), and
             % be made of a common prefix, the population name (specified in
             % ADDPOPULATION), and a common suffix.
-            % Example: files 'results/spkV1.dat', 'results/spkMT.dat'
+            % Example: files 'results/spk_V1.dat', 'results/spk_MT.dat'
             %   -> saveFolder = 'results/'
-            %   -> prefix = 'spk'
+            %   -> prefix = 'spk_'
             %   -> suffix = '.dat'
             %   -> name of population = 'V1' or 'MT'
             if nargin<3,suffix='.dat';end
-            if nargin<2,prefix='spk';end
+            if nargin<2,prefix='spk_';end
             obj.unsetError()
             
             % need to re-load if file name changes
             if ~strcmpi(obj.spkFilePrefix,prefix) ...
-                    || ~strcmpi(obj.spikeFileSuffix,suffix)
+                    || ~strcmpi(obj.spkFileSuffix,suffix)
                 obj.needToInitSR = true;
                 obj.needToLoadData = true;
             end
@@ -782,7 +782,7 @@ classdef GroupMonitor < handle
             if nargin<3,plotBinWinMs=obj.plotBinWinMs;end
             if nargin<2,plotType=obj.plotType;end
             obj.unsetError()
-            if obj.needToInitSR,obj.initSpikeReader();end
+            obj.initSpikeReader();
             
             % parse plot type and make it permanent
             if strcmpi(plotType,'default')
