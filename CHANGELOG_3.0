@@ -6,6 +6,11 @@ Legend:
 	+ added element
 	- removed element
 	* changed element
+2014-12-09     Ting-Shuo Chou <tingshuc@uci.edu>
+  * Resume support for CC 1.3, print out warning message
+
+2014-12-08
+  * Change set(Spike,Group,Connection)Monitor APIs
 
 2014-12-08     Michael Beyeler <mbeyeler@uci.edu>
   + Added makedoc script to automatically generate doxygen files.
