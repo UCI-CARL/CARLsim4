@@ -765,16 +765,15 @@ ConnectionMonitor* CARLsim::setConnectionMonitor(int grpIdPre, int grpIdPost, co
 		funcName, "SETUP.");
 
 	FILE* fid;
-	if (fname == "NULL") {
+	std::string fileName = fname;
+	std::transform(fileName.begin(), fileName.end(), fileName.begin(), ::tolower);
+	if (fileName  == "null") {
 		// user does not want a binary file created
 		fid = NULL;
 	} else {
-		std::string fileName;
 		// try to open spike file
-		if (fname  == "Default")
+		if (fileName  == "default")
 			fileName = "results/conn_" + snn_->getGroupName(grpIdPre) + "_" + snn_->getGroupName(grpIdPost) + ".dat";
-		else
-			fileName = fname;
 
 		fid = fopen(fileName.c_str(),"wb");
 		if (fid == NULL) {
@@ -822,16 +821,15 @@ GroupMonitor* CARLsim::setGroupMonitor(int grpId, const std::string& fname) {
 					UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "CONFIG or SETUP.");
 
 	FILE* fid;
-	if (fname == "NULL") {
+	std::string fileName = fname;
+	std::transform(fileName.begin(), fileName.end(), fileName.begin(), ::tolower);
+	if (fileName  == "null") {
 		// user does not want a binary file created
 		fid = NULL;
 	} else {
-		std::string fileName;
 		// try to open spike file
-		if (fname  == "Default")
+		if (fileName  == "default")
 			fileName = "results/grp_" + snn_->getGroupName(grpId) + ".dat";
-		else
-			fileName = fname;
 
 		fid = fopen(fileName.c_str(),"wb");
 		if (fid == NULL) {
@@ -879,16 +877,15 @@ SpikeMonitor* CARLsim::setSpikeMonitor(int grpId, const std::string& fname) {
 					UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "CONFIG or SETUP.");
 
 	FILE* fid;
-	if (fname == "NULL") {
+	std::string fileName = fname;
+	std::transform(fileName.begin(), fileName.end(), fileName.begin(), ::tolower);
+	if (fileName  == "null") {
 		// user does not want a binary file created
 		fid = NULL;
 	} else {
-		std::string fileName;
 		// try to open spike file
-		if (fname  == "Default")
+		if (fileName  == "default")
 			fileName = "results/spk" + snn_->getGroupName(grpId) + ".dat";
-		else
-			fileName = fname;
 
 		fid = fopen(fileName.c_str(),"wb");
 		if (fid == NULL) {

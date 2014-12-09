@@ -85,7 +85,7 @@ TEST(GroupMon, interfaceDeath) {
 	sim->connect(g0, g1 , "random", RangeWeight(0.01), 0.5f);
 
 	// call setSpikeMonitor again on group, should fail
-	EXPECT_DEATH({sim->setGroupMonitor(g0, "NUUL");},"");
+	EXPECT_DEATH({sim->setGroupMonitor(g0, "NULL");},"");
 
 	// set up network and test all API calls that are not valid in certain modes
 	sim->setupNetwork();
