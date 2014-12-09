@@ -160,8 +160,6 @@ int main() {
 	int num_V1_groups=6;
 	for (int i=RED_GREEN; i <= YELLOW_BLUE; i++) {
 		v1Cells[i] = sim.createSpikeGeneratorGroup(v1ImageName[i].c_str(), V1_LAYER_DIM*V1_LAYER_DIM, TARGET_AMPA);
-
-//		sim.setSTP(v1Cells[i],true, 0.2, 800, 20);
 	}
 
 	int   num_V4_groups = RED_V4+1;
@@ -238,11 +236,12 @@ int main() {
 */
 
 
-	sim.setConductances(true,5,150,6,150);
-
-	sim.setSTDP(ALL, false);
-
+	sim.setConductances(true);
+	sim.setSTDP(ALL,false);
 	sim.setSTP(ALL,false);
+
+	//initialize the GPU/network
+	sim.setupNetwork();
 
 	sim.setSpikeMonitor(v1Cells[RED_GREEN],"results/spkV1RG.dat");
 	sim.setSpikeMonitor(v1Cells[GREEN_RED],"results/spkV1GR.dat");
@@ -264,10 +263,6 @@ int main() {
 	sim.setSpikeMonitor(v4CellsInh[MAGENTA_V4],"results/spkV4Mi.dat");
 
 	unsigned char* vid = new unsigned char[nrX*nrY*3];
-
-
-	//initialize the GPU/network
-	sim.setupNetwork();
 
 	PoissonRate me(nrX*nrY*28*3,onGPU);
 	PoissonRate red_green(nrX*nrY,onGPU);
@@ -291,7 +286,16 @@ int main() {
 			exit(2);
 		}
 
-		calcColorME(nrX, nrY, vid, red_green.rates, green_red.rates, blue_yellow.rates, yellow_blue.rates, me.rates, onGPU);
+		// Note: Use of getRatePtr{CPU/GPU} is deprecated. It is used here to speed up the process of copying
+		// the rates calculated in calcColorME to the rate buffers via cudaMemcpyDeviceToDevice, which is faster
+		// than first copying from device to host, then copying from host to different device location
+		if (onGPU) {
+			calcColorME(nrX, nrY, vid, red_green.getRatePtrGPU(), green_red.getRatePtrGPU(), 
+				blue_yellow.getRatePtrGPU(), yellow_blue.getRatePtrGPU(), me.getRatePtrGPU(), true);
+		} else {
+			calcColorME(nrX, nrY, vid, red_green.getRatePtrCPU(), green_red.getRatePtrCPU(), 
+				blue_yellow.getRatePtrCPU(), yellow_blue.getRatePtrCPU(), me.getRatePtrCPU(), true);
+		}
 
 		sim.setSpikeRate(v1Cells[RED_GREEN], &red_green, 1);
 		sim.setSpikeRate(v1Cells[GREEN_RED], &green_red, 1);
