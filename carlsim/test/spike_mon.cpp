@@ -37,10 +37,10 @@ TEST(setSpikeMon, grpId){
 		sim->setNeuronParameters(g1, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f);
 		sim->setNeuronParameters(g2, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f);
 		
-		EXPECT_DEATH(sim->setSpikeMonitor(ALL),"");  // grpId = ALL (-1) and less than 0 
-		EXPECT_DEATH(sim->setSpikeMonitor(-4),"");  // less than 0
-		EXPECT_DEATH(sim->setSpikeMonitor(2),""); // greater than number of groups
-		EXPECT_DEATH(sim->setSpikeMonitor(MAX_GRP_PER_SNN),""); // greater than number of group & and greater than max groups
+		EXPECT_DEATH(sim->setSpikeMonitor(ALL,"Default"),"");  // grpId = ALL (-1) and less than 0 
+		EXPECT_DEATH(sim->setSpikeMonitor(-4,"Default"),"");  // less than 0
+		EXPECT_DEATH(sim->setSpikeMonitor(2,"Default"),""); // greater than number of groups
+		EXPECT_DEATH(sim->setSpikeMonitor(MAX_GRP_PER_SNN,"Default"),""); // greater than number of group & and greater than max groups
 		
 		delete sim;
 	}
@@ -84,14 +84,14 @@ TEST(SpikeMon, interfaceDeath) {
 	sim->setNeuronParameters(g1, 0.02, 0.2, -65.0, 8.0);
 
 	int g0 = sim->createSpikeGeneratorGroup("Input",5,EXCITATORY_NEURON);
-	SpikeMonitor* spkMon = sim->setSpikeMonitor(g0);
+	SpikeMonitor* spkMon = sim->setSpikeMonitor(g0,"Default");
 
 	sim->setConductances(true);
 
 	sim->connect(g0,g1,"random", RangeWeight(0.01), 0.5f);
 
 	// call setSpikeMonitor again on group, should fail
-	EXPECT_DEATH({sim->setSpikeMonitor(g0);},"");
+	EXPECT_DEATH({sim->setSpikeMonitor(g0,"Default");},"");
 
 	// set up network and test all API calls that are not valid in certain modes
 	sim->setupNetwork();
@@ -133,7 +133,7 @@ TEST(SpikeMon, persistentMode) {
 	sim->setNeuronParameters(g1, 0.02, 0.2, -65.0, 8.0);
 
 	int g0 = sim->createSpikeGeneratorGroup("Input",5,EXCITATORY_NEURON);
-	SpikeMonitor* spkMon = sim->setSpikeMonitor(g0);
+	SpikeMonitor* spkMon = sim->setSpikeMonitor(g0,"Default");
 
 	sim->setConductances(true);
 
@@ -212,7 +212,7 @@ TEST(SpikeMon, clear){
 		sim->connect(inputGroup,g1,"full", RangeWeight(initWeight), 1.0f);
 		sim->connect(inputGroup,g2,"full", RangeWeight(initWeight), 1.0f);
 		sim->connect(g1,g2,"full", RangeWeight(initWeight), 1.0f);
-		SpikeMonitor* spikeMonG1 = sim->setSpikeMonitor(g1);
+		SpikeMonitor* spikeMonG1 = sim->setSpikeMonitor(g1,"Default");
 
 		sim->setupNetwork();
 

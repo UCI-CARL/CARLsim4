@@ -32,10 +32,10 @@ TEST(setGroupMon, grpId){
 		sim->setNeuronParameters(g1, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f);
 		sim->setNeuronParameters(g2, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f);
 		
-		EXPECT_DEATH(sim->setGroupMonitor(ALL),"");  // grpId = ALL (-1) and less than 0 
-		EXPECT_DEATH(sim->setGroupMonitor(-4),"");  // less than 0
-		EXPECT_DEATH(sim->setGroupMonitor(2),""); // greater than number of groups
-		EXPECT_DEATH(sim->setGroupMonitor(MAX_GRP_PER_SNN),""); // greater than number of group & and greater than max groups
+		EXPECT_DEATH(sim->setGroupMonitor(ALL, "Default"),"");  // grpId = ALL (-1) and less than 0 
+		EXPECT_DEATH(sim->setGroupMonitor(-4, "Default"),"");  // less than 0
+		EXPECT_DEATH(sim->setGroupMonitor(2, "Default"),""); // greater than number of groups
+		EXPECT_DEATH(sim->setGroupMonitor(MAX_GRP_PER_SNN, "Default"),""); // greater than number of group & and greater than max groups
 		
 		delete sim;
 	}
@@ -78,14 +78,14 @@ TEST(GroupMon, interfaceDeath) {
 	sim->setNeuronParameters(g1, 0.02, 0.2, -65.0, 8.0);
 
 	int g0 = sim->createSpikeGeneratorGroup("Input", 5, EXCITATORY_NEURON);
-	GroupMonitor* grpMon = sim->setGroupMonitor(g0);
+	GroupMonitor* grpMon = sim->setGroupMonitor(g0, "NULL");
 
 	sim->setConductances(true);
 
 	sim->connect(g0, g1 , "random", RangeWeight(0.01), 0.5f);
 
 	// call setSpikeMonitor again on group, should fail
-	EXPECT_DEATH({sim->setGroupMonitor(g0);},"");
+	EXPECT_DEATH({sim->setGroupMonitor(g0, "NUUL");},"");
 
 	// set up network and test all API calls that are not valid in certain modes
 	sim->setupNetwork();
@@ -113,7 +113,7 @@ TEST(GroupMon, persistentMode) {
 	sim->setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f);
 
 	int g0 = sim->createSpikeGeneratorGroup("Input", 5, EXCITATORY_NEURON);
-	GroupMonitor* grpMon = sim->setGroupMonitor(g0);
+	GroupMonitor* grpMon = sim->setGroupMonitor(g0, "NULL");
 
 	sim->setConductances(true);
 
@@ -184,7 +184,7 @@ TEST(GroupMon, peakTimeAndValue) {
 		sim->setupNetwork();
 
 		// write all spikes to file
-		GroupMonitor* groupMon = sim->setGroupMonitor(g1);
+		GroupMonitor* groupMon = sim->setGroupMonitor(g1, "NULL");
 
 		groupMon->startRecording();
 		sim->runNetwork(1, 0);

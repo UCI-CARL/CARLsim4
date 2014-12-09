@@ -112,14 +112,14 @@ int main() {
 	// build the network
 	sim.setupNetwork();
 
-	spikeMon1 = sim.setSpikeMonitor(g1);
-	spikeMonIn = sim.setSpikeMonitor(gin);
-	sim.setSpikeMonitor(gda);
+	spikeMon1 = sim.setSpikeMonitor(g1, "NULL");
+	spikeMonIn = sim.setSpikeMonitor(gin, "NULL");
+	sim.setSpikeMonitor(gda, "NULL");
 
-	groupMon = sim.setGroupMonitor(g1);
+	groupMon = sim.setGroupMonitor(g1, "NULL");
 
 	// save weights to file periodically
-	sim.setConnectionMonitor(gin, g1);
+	sim.setConnectionMonitor(gin, g1, "NULL");
 
 
 	//setup some baseline input

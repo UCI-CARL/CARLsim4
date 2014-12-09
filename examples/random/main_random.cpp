@@ -83,12 +83,12 @@ int main() {
 	sim.setupNetwork();
 
 	// record spike times, save to binary
-	sim.setSpikeMonitor(g1);
-	sim.setSpikeMonitor(g2);
-	sim.setSpikeMonitor(gin);
+	sim.setSpikeMonitor(g1, "Default");
+	sim.setSpikeMonitor(g2, "Default");
+	sim.setSpikeMonitor(gin, "Default");
 
 	// record weights of g1->g1 connection, save to binary
-	sim.setConnectionMonitor(g1,g1);
+	sim.setConnectionMonitor(g1,g1, "Default");
 
 	//setup some baseline input
 	PoissonRate in(N*0.1);
