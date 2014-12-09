@@ -19,7 +19,7 @@ SpikeMonitorCore::SpikeMonitorCore(CpuSNN* snn, int monitorId, int grpId) {
 
 	mode_ = AER;
 	persistentData_ = false;
-
+    userHasBeenWarned_ = false;
 	needToWriteFileHeader_ = true;
 	spikeFileSignature_ = 206661989;
 	spikeFileVersion_ = 0.2f;
@@ -58,6 +58,7 @@ SpikeMonitorCore::~SpikeMonitorCore() {
 void SpikeMonitorCore::clear() {
 	assert(!isRecording());
 	recordSet_ = false;
+    userHasBeenWarned_ = false;
 	startTime_ = -1;
 	startTimeLast_ = -1;
 	stopTime_ = -1;
@@ -141,7 +142,7 @@ float SpikeMonitorCore::getNeuronMeanFiringRate(int neurId) {
 	assert(!isRecording());
 	assert(neurId>=0 && neurId<nNeurons_);
 
-	return getNeuronNumSpikes(neurId)*1000.0/getRecordingTotalTime();	
+	return getNeuronNumSpikes(neurId)*1000.0/getRecordingTotalTime();
 }
 
 int SpikeMonitorCore::getNeuronNumSpikes(int neurId) {
@@ -300,6 +301,7 @@ void SpikeMonitorCore::stopRecording() {
 	snn_->updateSpikeMonitor(grpId_);
 
 	recordSet_ = false;
+    userHasBeenWarned_ = false;
 	stopTime_ = snn_->getSimTimeSec()*1000+snn_->getSimTimeMs();
 
 	// total time is the amount of time of the last probe plus all accumulated time from previous probes
@@ -324,7 +326,6 @@ void SpikeMonitorCore::setSpikeFileId(FILE* spikeFileId) {
 		writeSpikeFileHeader();
 	}
 }
-
 
 // calculate average firing rate for every neuron if we haven't done so already
 void SpikeMonitorCore::calculateFiringRates() {
@@ -398,4 +399,32 @@ void SpikeMonitorCore::writeSpikeFileHeader() {
 
 
 	needToWriteFileHeader_ = false;
+}
+
+// Iterate through 2D spike vector and approximate size in memory.
+// This is not exact, we are not counting the buffer overhead, only
+// the size each subvector is memory.
+long int SpikeMonitorCore::getBufferSize(){
+    long int bufferSize=0; // in bytes
+    for(int i=0; i<spkVector_.size();i++){
+        bufferSize+=spkVector_[i].size()*sizeof(int);
+    }
+    return bufferSize;
+}
+
+// check if the spike vector is getting large. If it is, return true once until
+// stopRecording is called.
+bool SpikeMonitorCore::isBufferBig(){
+    if(userHasBeenWarned_)
+        return false;
+    else {
+        //check if buffer is too big
+        if(this->getBufferSize()>MAX_SPIKE_MON_BUFFER_SIZE){
+            userHasBeenWarned_=true;
+            return true;
+        }
+        else {
+            return false;
+        }
+    }
 }

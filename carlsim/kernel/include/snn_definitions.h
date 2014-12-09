@@ -36,7 +36,7 @@
  *
  * CARLsim available from http://socsci.uci.edu/~jkrichma/CARLsim/
  * Ver 4/7/2014
- */ 
+ */
 
 #ifndef _SNN_DEFINITIONS_H_
 #define _SNN_DEFINITIONS_H_
@@ -45,10 +45,10 @@
 // some_random_macros_and_hardware_limitation_dependent_param_checks.h ... for example, the MAX_... defines
 // should really be private members of CpuSNN. These ranges are limited by the data structures that implement
 // the corresponding functionality. For example, you can't just set MAX_nConnections > 32768, because connIds
-// are stored as short int. 
+// are stored as short int.
 
 
-// FIXME: 
+// FIXME:
 /////    !!!!!!! EVEN MORE IMPORTANT : IS THIS STILL BEING USED?? !!!!!!!!!!
 
 /////    !!!!!!! IMPORTANT : NEURON ORGANIZATION/ARRANGEMENT MAP !!!!!!!!!!
@@ -126,7 +126,7 @@ inline bool isInhibitoryNeuron (unsigned int& nid, unsigned int& numNInhPois, un
 #define KERNEL_INFO_PRINT(fp, formatc, ...) fprintf((FILE*)fp,formatc "\n",##__VA_ARGS__)
 #define KERNEL_DEBUG_PRINT(fp, type, formatc, ...) fprintf((FILE*)fp,"[" type " %s:%d] " formatc "\n",__FILE__,__LINE__,##__VA_ARGS__)
 
-										
+
 
 #define MAX_nPostSynapses 10000
 #define MAX_nPreSynapses 20000
@@ -147,6 +147,8 @@ inline bool isInhibitoryNeuron (unsigned int& nid, unsigned int& numNInhPois, un
 #define LARGE_NEGATIVE_VALUE    (-(1 << 30))
 
 #define MAX_GRP_PER_SNN 128
+
+#define MAX_SPIKE_MON_BUFFER_SIZE 52428800 // about 50 MB. size is in bytes. Max size of reduced AER vector in spikeMonitorCore objects.
 
 // This flag is used when having a common poisson generator for both CPU and GPU simulation
 // We basically use the CPU poisson generator. Evaluate if there is any firing due to the

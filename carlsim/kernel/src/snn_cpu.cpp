@@ -4344,6 +4344,14 @@ void CpuSNN::updateSpikeMonitor(int grpId) {
 		if ( ((long int)getSimTime()) - lastUpdate > 1000)
 			KERNEL_ERROR("updateSpikeMonitor(grpId=%d) must be called at least once every second",grpId);
 
+        // AER buffer max size warning here.
+        // Because of C++ short-circuit evaluation, the last condition should not be evaluated
+        // if the previous conditions are false.
+        if (spkMonObj->getAccumTime() > 600000 && grp_Info[grpId].getGroupNumNeurons() > 5000 && spkMonObj->printBufferStatus()){
+            // change this warning message to correct message
+            KERNEL_WARN("updateSpikeMonitor(grpId=%d) is becoming very large. ()",grpId);// make this better
+            KERNEL_WARN("Reduce the cumulative recording time (currently %d) or the group size (currently %d) to avoid this.",grpId,spkMonObj->getAccumTime(),grp_Info[grpId].getGroupNumNeurons());
+       }
 		if (simMode_ == GPU_MODE) {
 			// copy the neuron firing information from the GPU to the CPU..
 			copyFiringInfo_GPU();
