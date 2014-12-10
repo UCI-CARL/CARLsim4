@@ -754,7 +754,6 @@ int CpuSNN::runNetwork(int _nsec, int _nmsec, bool printRunSummary, bool copySta
 
 	// user can opt to display some runNetwork summary
 	if (printRunSummary) {
-		showStatus(); // I don't think this does anything anymore. It should be removed -- KDC
 
 		// if there are Monitors available and it's time to show the log, print status for each group
 		if (numSpikeMonitor) {

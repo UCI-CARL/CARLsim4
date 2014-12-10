@@ -7,4 +7,4 @@ Merge SpikeCounter and nSpikeCount #31 - done (moved to carlsim 3.1 milestone)
 SpikeMonitor: Display warning message when recording period is too long #313 - done (still should run test)
 in snn_cpu.cpp to use the right spikeMonitor function calls and test everything out.
 Callback base classes should have virtual destructor #406
-Add an issue for the removal of the showStatus variable.
+Remove showStatus() #433 - done
