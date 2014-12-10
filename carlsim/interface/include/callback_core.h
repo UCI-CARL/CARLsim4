@@ -1,4 +1,4 @@
-/* 
+/*
  * Copyright (c) 2014 Regents of the University of California. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -65,7 +65,6 @@ class SpikeMonitor;
 class SpikeGeneratorCore {
 public:
 	SpikeGeneratorCore(CARLsim* c, SpikeGenerator* s);
-
 	//! controls spike generation using a callback mechanism
 	/*! \attention The virtual method should never be called directly
 	 */
@@ -87,7 +86,6 @@ private:
 class ConnectionGeneratorCore {
 public:
 	ConnectionGeneratorCore(CARLsim* c, ConnectionGenerator* cg);
-
 	//! specifies which synaptic connections (per group, per neuron, per synapse) should be made
 	/*! \attention The virtual method should never be called directly */
 	virtual void connect(CpuSNN* s, int srcGrpId, int i, int destGrpId, int j, float& weight, float& maxWt,
