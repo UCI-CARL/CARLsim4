@@ -185,6 +185,9 @@ public:
     //! returns the approximate size of the spike vector in bytes
     long int getBufferSize();
 
+    //! returns the total accumulated time
+    long int getAccumTime();
+
 private:
 	//! initialization method
 	void init();

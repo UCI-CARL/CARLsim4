@@ -4347,10 +4347,12 @@ void CpuSNN::updateSpikeMonitor(int grpId) {
         // AER buffer max size warning here.
         // Because of C++ short-circuit evaluation, the last condition should not be evaluated
         // if the previous conditions are false.
-        if (spkMonObj->getAccumTime() > 600000 && grp_Info[grpId].getGroupNumNeurons() > 5000 && spkMonObj->printBufferStatus()){
+        if (spkMonObj->getAccumTime() > LONG_SPIKE_MON_DURATION \
+                && this->getGroupNumNeurons(grpId) > LARGE_SPIKE_MON_GRP_SIZE \
+                && spkMonObj->isBufferBig()){
             // change this warning message to correct message
-            KERNEL_WARN("updateSpikeMonitor(grpId=%d) is becoming very large. ()",grpId);// make this better
-            KERNEL_WARN("Reduce the cumulative recording time (currently %d) or the group size (currently %d) to avoid this.",grpId,spkMonObj->getAccumTime(),grp_Info[grpId].getGroupNumNeurons());
+            KERNEL_WARN("updateSpikeMonitor(grpId=%d) is becoming very large. (>%lu MB)",grpId,(long int) MAX_SPIKE_MON_BUFFER_SIZE/1024 );// make this better
+            KERNEL_WARN("Reduce the cumulative recording time (currently %lu minutes) or the group size (currently %d) to avoid this.",spkMonObj->getAccumTime()/(1000*60),this->getGroupNumNeurons(grpId));
        }
 		if (simMode_ == GPU_MODE) {
 			// copy the neuron firing information from the GPU to the CPU..

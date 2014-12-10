@@ -428,3 +428,9 @@ bool SpikeMonitorCore::isBufferBig(){
         }
     }
 }
+
+// returns the total accumulated time.
+long int SpikeMonitorCore::getAccumTime(){
+    return accumTime_;
+}
+
