@@ -60,7 +60,7 @@ TEST(STDP, setSTDPTrue) {
 				if (stdpType == 0) {
 					EXPECT_TRUE(gInfo.WithESTDPtype == STANDARD);
 					EXPECT_TRUE(gInfo.WithESTDPtype == STANDARD);
-				} else { // stdpType == 1 
+				} else { // stdpType == 1
 					EXPECT_TRUE(gInfo.WithESTDPtype == DA_MOD);
 					EXPECT_TRUE(gInfo.WithISTDPtype == DA_MOD);
 				}
@@ -93,7 +93,7 @@ TEST(STDP, setSTDPTrue) {
 
 				delete sim;
 			}
-		}		
+		}
 	}
 }
 
@@ -244,7 +244,7 @@ TEST(STDP, DASTDPWeightBoost) {
 				sim->setSpikeGenerator(gda, iSpikeGen);
 
 				sim->setupNetwork();
-				
+
 				ConnectionMonitor* CM = sim->setConnectionMonitor(gin, g1, "NULL");
 
 				spikeMonPost = sim->setSpikeMonitor(g1, "NULL");
@@ -305,7 +305,7 @@ TEST(STDP, DASTDPWeightBoost) {
  * \brief testing the Hebbian E-STDP curve
  * This function tests whether E-STDP change synaptic weight as expected
  * Wtih control of pre- and post-neurons' spikes, the synaptic weight is expected to increase or decrease to
- * maximum or minimum synaptic weith respectively.
+ * maximum or minimum synaptic weight respectively.
  */
 TEST(STDP, ESTDPHebbianCurve) {
 	// simulation details

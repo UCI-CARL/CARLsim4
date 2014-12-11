@@ -57,7 +57,7 @@ class GroupMonitorCore; // forward declaration of implementation
  * neuron group. First the method CARLsim::setGroupMonitor must be called with the group ID of the desired group as an
  * argument. The setGroupMonitor call returns a pointer to a GroupMonitor object which can be queried for group data.
  *
- * Group data will not be recorded until the GroupMonitor member function startRecording() is called. 
+ * Group data will not be recorded until the GroupMonitor member function startRecording() is called.
  * Before any metrics can be computed, the user must call stopRecording(). In general, a new recording period
  * (the time period between startRecording and stopRecording calls) can be started at any point in time, and can
  * last any number of milliseconds. The GroupMonitor has a PersistentMode, which is off by default. When
@@ -109,7 +109,7 @@ class GroupMonitor {
 	 * Cleans up all the memory upon object deletion.
 	 *
 	 */
-	~GroupMonitor();
+	virtual ~GroupMonitor();
 
 
 	// +++++ PUBLIC METHODS: +++++++++++++++++++++++++++++++++++++++++++++++//

@@ -54,16 +54,16 @@ class CpuSNN; // forward declaration of CpuSNN class
  *
  * Naming convention for methods:
  * - getPop*: 		a population metric (single value) that applies to the entire group; e.g., getPopMeanFiringRate.
- * - getNeuron*: 	a neuron metric (single value), about a specific neuron (requires neurId); e.g., getNeuronNumSpikes. 
+ * - getNeuron*: 	a neuron metric (single value), about a specific neuron (requires neurId); e.g., getNeuronNumSpikes.
  * - getAll*: 		a metric (vector) that is based on all neurons in the group; e.g. getAllFiringRates.
  * - getNum*:		a number metric, returns an int
  * - getPercent*:	a percentage metric, returns a float
  * - get*:			all the others
  */
 class SpikeMonitorCore {
-public: 
+public:
 	//! constructor (called by CARLsim::setSpikeMonitor)
-	SpikeMonitorCore(CpuSNN* snn, int monitorId, int grpId); 
+	SpikeMonitorCore(CpuSNN* snn, int monitorId, int grpId);
 
 	//! destructor, cleans up all the memory upon object deletion
 	~SpikeMonitorCore();
@@ -85,7 +85,7 @@ public:
 
 	//! returns the largest recorded firing rate
 	float getMaxFiringRate();
-	
+
 	//! returns the smallest recorded firing rate
 	float getMinFiringRate();
 
@@ -103,7 +103,7 @@ public:
 
 	//! returns number of neurons whose firing rate was in [min,max] during recording
 	int getNumNeuronsWithFiringRate(float min, float max);
-	
+
 	//! returns number of neurons that didn't spike while recording
 	int getNumSilentNeurons();
 
@@ -113,7 +113,7 @@ public:
 	//! returns percentage of neurons that didn't spike during recording
 	float getPercentSilentNeurons();
 
-	//! returns status of PersistentData mode	
+	//! returns status of PersistentData mode
 	bool getPersistentData() { return persistentData_; }
 
 	//! returns the recorded mean firing rate of the group
@@ -157,7 +157,7 @@ public:
 
 	//! starts recording AER data
 	void startRecording();
-	
+
 	//! stops recording AER data
 	void stopRecording();
 
@@ -172,13 +172,21 @@ public:
 
 	//! sets pointer to spike file
 	void setSpikeFileId(FILE* spikeFileId);
-	
+
 	//! returns timestamp of last SpikeMonitor update
 	long int getLastUpdated() { return spkMonLastUpdated_; }
 
 	//! sets timestamp of last SpikeMonitor update
 	void setLastUpdated(long int lastUpdate) { spkMonLastUpdated_ = lastUpdate; }
-	
+
+    //! returns true if spike buffer is close to maxAllowedBufferSize
+    bool isBufferBig();
+
+    //! returns the approximate size of the spike vector in bytes
+    long int getBufferSize();
+
+    //! returns the total accumulated time
+    long int getAccumTime();
 
 private:
 	//! initialization method
@@ -229,7 +237,9 @@ private:
 	//! whether data should be persistent (true) or clear() should be automatically called by startRecording (false)
 	bool persistentData_;
 
-	spikeMonMode_t mode_;
+    //! Indicates if we have returned true at least once in isBufferBig(). Gets reset in stopRecording(). Used to warn the user only once.
+	bool userHasBeenWarned_;
+    spikeMonMode_t mode_;
 
 	// file pointers for error logging
 	const FILE* fpInf_;

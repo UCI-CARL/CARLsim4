@@ -59,9 +59,9 @@ devtest:
 
 # Print a help message
 help:
-	@ echo 
+	@ echo
 	@ echo 'CARLsim Makefile options:'
-	@ echo 
+	@ echo
 	@ echo "make            Compiles the CARLsim code using the default compiler"
 	@ echo "make all          (Same thing)"
 	@ echo "make install    Installs CARLsim library (may require root privileges)"

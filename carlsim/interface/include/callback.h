@@ -1,4 +1,4 @@
-/* 
+/*
  * Copyright (c) 2014 Regents of the University of California. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -56,6 +56,7 @@ class CARLsim; // forward-declaration
 class SpikeGenerator {
 public:
 	//SpikeGenerator() {};
+    virtual ~SpikeGenerator() {}
 
 	/*!
 	 * \brief controls spike generation using a callback mechanism
@@ -82,7 +83,7 @@ public:
 class ConnectionGenerator {
 public:
 	//ConnectionGenerator() {};
-
+    virtual ~ConnectionGenerator() {}
 	/*!
 	 * \brief specifies which synaptic connections (per group, per neuron, per synapse) should be made
 	 *
@@ -90,5 +91,7 @@ public:
 	virtual void connect(CARLsim* s, int srcGrpId, int i, int destGrpId, int j, float& weight, float& maxWt,
 							float& delay, bool& connected) = 0;
 };
+
+
 
 #endif

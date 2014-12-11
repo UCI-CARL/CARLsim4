@@ -751,7 +751,6 @@ int CpuSNN::runNetwork(int _nsec, int _nmsec, bool printRunSummary, bool copySta
 
 	// user can opt to display some runNetwork summary
 	if (printRunSummary) {
-		showStatus();
 
 		// if there are Monitors available and it's time to show the log, print status for each group
 		if (numSpikeMonitor) {
@@ -2865,7 +2864,7 @@ void CpuSNN::findFiring() {
 				recovery[i] += Izh_d[i];
 
 				// if flag hasSpkMonRT is set, we want to keep track of how many spikes per neuron in the group
-				if (grp_Info[g].withSpikeCounter) {
+				if (grp_Info[g].withSpikeCounter) {// put the condition for runNetwork
 					int bufPos = grp_Info[g].spkCntBufPos; // retrieve buf pos
 					int bufNeur = i-grp_Info[g].StartN;
 					spkCntBuf[bufPos][bufNeur]++;
@@ -4351,46 +4350,6 @@ void CpuSNN::swapConnections(int nid, int oldPos, int newPos) {
 	*preId = SET_CONN_ID( pre_nid, newPos, pre_gid);
 }
 
-
-void CpuSNN::updateAfterMaxTime() {
-  KERNEL_WARN("Maximum Simulation Time Reached...Resetting simulation time");
-
-	// This will be our cut of time. All other time values
-	// that are less than cutOffTime will be set to zero
-	unsigned int cutOffTime = (MAX_SIMULATION_TIME - 10*1000);
-
-	for(int g=0; g < numGrp; g++) {
-
-	if (grp_Info[g].isSpikeGenerator) {
-			int diffTime = (grp_Info[g].SliceUpdateTime - cutOffTime);
-			grp_Info[g].SliceUpdateTime = (diffTime < 0) ? 0 : diffTime;
-		}
-
-		// no STDP then continue...
-		if(!grp_Info[g].FixedInputWts) {
-			continue;
-		}
-
-		for(int k=0, nid = grp_Info[g].StartN; nid <= grp_Info[g].EndN; nid++,k++) {
-		assert(nid < numNReg);
-			// calculate the difference in time
-			signed diffTime = (lastSpikeTime[nid] - cutOffTime);
-			lastSpikeTime[nid] = (diffTime < 0) ? 0 : diffTime;
-
-			// do the same thing with all synaptic connections..
-			unsigned* synTime = &synSpikeTime[cumulativePre[nid]];
-			for(int i=0; i < Npre[nid]; i++, synTime++) {
-				// calculate the difference in time
-				signed diffTime = (synTime[0] - cutOffTime);
-				synTime[0]      = (diffTime < 0) ? 0 : diffTime;
-			}
-		}
-	}
-
-	simTime = MAX_SIMULATION_TIME - cutOffTime;
-	resetPropogationBuffer();
-}
-
 // this function is usually called every second, but it can also be called via ConnectionMonitorCore::takeSnapshot
 void CpuSNN::updateConnectionMonitor(int connId) {
 	grpConnectInfo_t* connInfo = connectBegin;
@@ -4675,8 +4634,8 @@ bool CpuSNN::updateTime() {
 
 	simTime++;
 	if(simTime >= MAX_SIMULATION_TIME){
-		// reached the maximum limit of the simulation time using 32 bit value...
-		updateAfterMaxTime();
+        // reached the maximum limit of the simulation time using 32 bit value...
+        KERNEL_WARN("Maximum Simulation Time Reached...Resetting simulation time");
 	}
 
 	return finishedOneSec;
@@ -4712,6 +4671,16 @@ void CpuSNN::updateSpikeMonitor(int grpId) {
 		if ( ((long int)getSimTime()) - lastUpdate > 1000)
 			KERNEL_ERROR("updateSpikeMonitor(grpId=%d) must be called at least once every second",grpId);
 
+        // AER buffer max size warning here.
+        // Because of C++ short-circuit evaluation, the last condition should not be evaluated
+        // if the previous conditions are false.
+        if (spkMonObj->getAccumTime() > LONG_SPIKE_MON_DURATION \
+                && this->getGroupNumNeurons(grpId) > LARGE_SPIKE_MON_GRP_SIZE \
+                && spkMonObj->isBufferBig()){
+            // change this warning message to correct message
+            KERNEL_WARN("updateSpikeMonitor(grpId=%d) is becoming very large. (>%lu MB)",grpId,(long int) MAX_SPIKE_MON_BUFFER_SIZE/1024 );// make this better
+            KERNEL_WARN("Reduce the cumulative recording time (currently %lu minutes) or the group size (currently %d) to avoid this.",spkMonObj->getAccumTime()/(1000*60),this->getGroupNumNeurons(grpId));
+       }
 		if (simMode_ == GPU_MODE) {
 			// copy the neuron firing information from the GPU to the CPU..
 			copyFiringInfo_GPU();

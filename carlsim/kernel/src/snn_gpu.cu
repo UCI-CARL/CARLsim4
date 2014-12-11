@@ -2551,17 +2551,6 @@ void CpuSNN::updateWeights_GPU() {
 	kernel_updateWeights<<<gridSize, blkSize>>>();
 }
 
-void CpuSNN::showStatus_GPU() {
-	checkAndSetGPUDevice();
-
-	int gpu_secD1fireCnt, gpu_secD2fireCnt;
-	CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &gpu_secD2fireCnt, secD2fireCnt, sizeof(int), 0, cudaMemcpyDeviceToHost));
-	CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &gpu_secD1fireCnt, secD1fireCnt, sizeof(int), 0, cudaMemcpyDeviceToHost));
-	spikeCountAll1secHost = gpu_secD1fireCnt + gpu_secD2fireCnt;
-	secD1fireCntHost  = gpu_secD1fireCnt;
-	//printWeight(-1);
-}
-
 __global__ void gpu_resetFiringInformation()
 {
 	if(threadIdx.x==0 && blockIdx.x==0) {

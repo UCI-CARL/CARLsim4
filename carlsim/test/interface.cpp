@@ -311,7 +311,7 @@ TEST(Interface, AllocateGPUConflict) {
 	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
 	CARLsim *sim1=NULL, *sim2=NULL;
-	
+
 	sim1 = new CARLsim("Interface.AllocateGPUConflict_A", GPU_MODE, SILENT, 0);
 	EXPECT_DEATH({sim2 = new CARLsim("Interface.AllocateGPUConflict_B", GPU_MODE, SILENT, 0);},"");
 	if (sim1 != NULL) delete sim1;
@@ -414,7 +414,7 @@ TEST(Interface, CARLsimState) {
 	EXPECT_DEATH({sim->setDefaultConductanceTimeConstants(1, 2, 3, 4, 5, 6);},"");
 	EXPECT_DEATH({sim->setDefaultHomeostasisParams(1.0, 2.0);},"");
 	EXPECT_DEATH({sim->setDefaultSaveOptions("test.dat", true);},"");
-	EXPECT_DEATH({sim->setDefaultSTDPparams(1.0, 2.0, 3.0, 4.0);},"");
+	EXPECT_DEATH({sim->setDefaultSTDPparams(1.0, 2.0, 3.0, 4.0,STANDARD);},"");
 	EXPECT_DEATH({sim->setDefaultSTPparams(1, 1.0, 2.0, 3.0);},"");
 
 	// test runNetwork(), change carlsimState_ from SETUP_STATE to EXE_STATE
@@ -459,7 +459,7 @@ TEST(Interface, CARLsimState) {
 	EXPECT_DEATH({sim->setDefaultConductanceTimeConstants(1, 2, 3, 4, 5, 6);},"");
 	EXPECT_DEATH({sim->setDefaultHomeostasisParams(1.0, 2.0);},"");
 	EXPECT_DEATH({sim->setDefaultSaveOptions("test.dat", true);},"");
-	EXPECT_DEATH({sim->setDefaultSTDPparams(1.0, 2.0, 3.0, 4.0);},"");
+	EXPECT_DEATH({sim->setDefaultSTDPparams(1.0, 2.0, 3.0, 4.0,STANDARD);},"");
 	EXPECT_DEATH({sim->setDefaultSTPparams(1, 1.0, 2.0, 3.0);},"");
 
 	delete sim;
@@ -471,14 +471,16 @@ TEST(Interface, setDefaultSTDPparamsDeath) {
 	int	g1 = sim->createGroup("excit", 800, EXCITATORY_NEURON);
 	sim->setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f);
 
-	EXPECT_DEATH({sim->setDefaultESTDPparams(-1.0, 2.0, 3.0, 4.0);},"");
-	EXPECT_DEATH({sim->setDefaultESTDPparams(1.0, -2.0, 3.0, 4.0);},"");
-	EXPECT_DEATH({sim->setDefaultESTDPparams(1.0, 2.0, -3.0, 4.0);},"");
-	EXPECT_DEATH({sim->setDefaultESTDPparams(1.0, 2.0, 3.0, -4.0);},"");
-	EXPECT_DEATH({sim->setDefaultISTDPparams(-1.0, 2.0, 3.0, 4.0);},"");
-	EXPECT_DEATH({sim->setDefaultISTDPparams(1.0, -2.0, 3.0, 4.0);},"");
-	EXPECT_DEATH({sim->setDefaultISTDPparams(.0, 2.0, -3.0, 4.0);},"");
-	EXPECT_DEATH({sim->setDefaultISTDPparams(1.0, 2.0, 3.0, -4.0);},"");
+	EXPECT_DEATH({sim->setDefaultESTDPparams(-1.0, 2.0, 3.0, 4.0,STANDARD);},"");
+	EXPECT_DEATH({sim->setDefaultESTDPparams(1.0, -2.0, 3.0, 4.0,STANDARD);},"");
+	EXPECT_DEATH({sim->setDefaultESTDPparams(1.0, 2.0, -3.0, 4.0,STANDARD);},"");
+	EXPECT_DEATH({sim->setDefaultESTDPparams(1.0, 2.0, 3.0, -4.0,STANDARD);},"");
+	EXPECT_DEATH({sim->setDefaultESTDPparams(1.0, 2.0, 3.0, 4.0,UNKNOWN_STDP);},"");
+    EXPECT_DEATH({sim->setDefaultISTDPparams(-1.0, 2.0, 3.0, 4.0,STANDARD);},"");
+	EXPECT_DEATH({sim->setDefaultISTDPparams(1.0, -2.0, 3.0, 4.0,STANDARD);},"");
+	EXPECT_DEATH({sim->setDefaultISTDPparams(.0, 2.0, -3.0, 4.0,STANDARD);},"");
+	EXPECT_DEATH({sim->setDefaultISTDPparams(1.0, 2.0, 3.0, -4.0,STANDARD);},"");
+	EXPECT_DEATH({sim->setDefaultISTDPparams(1.0, 2.0, 3.0, 4.0,UNKNOWN_STDP);},"");
 
 	delete sim;
 }

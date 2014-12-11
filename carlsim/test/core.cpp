@@ -493,10 +493,10 @@ TEST(CORE, saveLoadSimulation) {
 	int gPre, gPost;
 	ConnectionMonitor* cmSave;
 	ConnectionMonitor* cmLoad;
-	PoissonRate in(10);
-	std::vector<std::vector<float> > weightsSave;
+    // all neurons get input of 6 Hz.
+	PeriodicSpikeGenerator spkGenG0(6.0f);
+    std::vector<std::vector<float> > weightsSave;
 	std::vector<std::vector<float> > weightsLoad;
-	in.setRates(6.0f); // 6Hz
 
 	for (int mode = 0; mode < 2; mode++) {
 		for (int coba = 0; coba < 2; coba++) {
@@ -506,6 +506,7 @@ TEST(CORE, saveLoadSimulation) {
 			gPost = sim->createGroup("pre-ex", 10, EXCITATORY_NEURON);
 			sim->setNeuronParameters(gPost, 0.02f, 0.2f, -65.0f, 8.0f);
 			gPre = sim->createSpikeGeneratorGroup("post-ex", 10, EXCITATORY_NEURON);
+			sim->setSpikeGenerator(gPre, &spkGenG0);
 
 			if (coba) {
 				sim->connect(gPre, gPost, "full", RangeWeight(0.0, 8.0f/100, 20.0f/100), 1.0f, RangeDelay(1, 5), RadiusRF(-1), SYN_PLASTIC);
@@ -519,7 +520,6 @@ TEST(CORE, saveLoadSimulation) {
 
 			sim->setupNetwork();
 			cmSave = sim->setConnectionMonitor(gPre, gPost, "NULL");
-			sim->setSpikeRate(gPre, &in);
 
 			sim->runNetwork(20, 0, false, false);
 			weightsSave = cmSave->takeSnapshot();
@@ -535,6 +535,7 @@ TEST(CORE, saveLoadSimulation) {
 			gPost = sim->createGroup("pre-ex", 10, EXCITATORY_NEURON);
 			sim->setNeuronParameters(gPost, 0.02f, 0.2f, -65.0f, 8.0f);
 			gPre = sim->createSpikeGeneratorGroup("post-ex", 10, EXCITATORY_NEURON);
+            sim->setSpikeGenerator(gPre, &spkGenG0);
 
 			if (coba) {
 				sim->connect(gPre, gPost, "full", RangeWeight(0.0, 8.0f/100, 20.0f/100), 1.0f, RangeDelay(1, 5), RadiusRF(-1), SYN_PLASTIC);
@@ -556,8 +557,6 @@ TEST(CORE, saveLoadSimulation) {
 
 			// close sim.dat
 			if (simFid != NULL) fclose(simFid);
-
-			sim->setSpikeRate(gPre, &in);
 
 			sim->runNetwork(0, 2, false, false);
 			weightsLoad = cmLoad->takeSnapshot();

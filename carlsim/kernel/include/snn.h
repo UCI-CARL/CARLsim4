@@ -699,8 +699,6 @@ private:
 	void setGrpTimeSlice(int grpId, int timeSlice); //!< used for the Poisson generator. TODO: further optimize
 	int setRandSeed(int seed);	//!< setter function for const member randSeed_
 
-	void showStatus();
-
 	void startCPUTiming();
 	void stopCPUTiming();
 
@@ -785,7 +783,6 @@ private:
 	void resetSpikeCounter_GPU(int grpId);
 
 	void setSpikeGenBit_GPU(unsigned int nid, int grp);
-	void showStatus_GPU();
 	void spikeGeneratorUpdate_GPU();
 	void startGPUTiming();
 	void stopGPUTiming();

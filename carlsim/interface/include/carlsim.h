@@ -1331,7 +1331,9 @@ public:
 	*
 	* \sa setDefaultESTDPparams
 	*/
-	void setDefaultSTDPparams(float alphaLTP, float tauLTP, float alphaLTD, float tauLTD);
+
+    // choosing between STANDARD and DA_MOD -- KDC
+	void setDefaultSTDPparams(float alphaLTP, float tauLTP, float alphaLTD, float tauLTD, stdpType_t stdpType);
 
 	/*!
 	* \brief sets default values for E-STDP params
@@ -1339,7 +1341,7 @@ public:
 	* \TODO finish docu
 	* \STATE CONFIG
 	*/
-	void setDefaultESTDPparams(float alphaLTP, float tauLTP, float alphaLTD, float tauLTD);
+	void setDefaultESTDPparams(float alphaLTP, float tauLTP, float alphaLTD, float tauLTD, stdpType_t stdpType);
 
 	/*!
 	* \brief sets default values for I-STDP params
@@ -1347,7 +1349,7 @@ public:
 	* \TODO finish docu
 	* \STATE CONFIG
 	*/
-	void setDefaultISTDPparams(float betaLTP, float betaLTD, float lamda, float delta);
+	void setDefaultISTDPparams(float betaLTP, float betaLTD, float lamda, float delta, stdpType_t stdpType);
 
 	/*!
 	 * \brief sets default values for STP params (neurType either EXCITATORY_NEURON or INHIBITORY_NEURON)

@@ -183,10 +183,8 @@ void CARLsim::CARLsimInit() {
 
 	// set default values for STDP params
 	// TODO: add ref
-	// TODO: make STDP type part of default func
-	def_STDP_type_      = STANDARD;
-	setDefaultESTDPparams(0.001f, 20.0f, 0.0012f, 20.0f);
-	setDefaultISTDPparams(0.001f, 0.0012f, 12.0f, 40.0f);
+	setDefaultESTDPparams(0.001f, 20.0f, 0.0012f, 20.0f, STANDARD);
+	setDefaultISTDPparams(0.001f, 0.0012f, 12.0f, 40.0f, STANDARD);
 
 	// set default values for STP params
 	// TODO: add ref
@@ -377,7 +375,7 @@ void CARLsim::setConductances(bool isSet, int tdAMPA, int trNMDA, int tdNMDA, in
 	UserErrors::assertTrue(!isSet||tdGABAb>0, UserErrors::MUST_BE_POSITIVE, funcName.str(), "trGABAb");
 	UserErrors::assertTrue(trNMDA!=tdNMDA, UserErrors::CANNOT_BE_IDENTICAL, funcName.str(), "trNMDA and tdNMDA");
 	UserErrors::assertTrue(trGABAb!=tdGABAb, UserErrors::CANNOT_BE_IDENTICAL, funcName.str(), "trGABAb and tdGABAb");
-	UserErrors::assertTrue(carlsimState_==CONFIG_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName.str(), 
+	UserErrors::assertTrue(carlsimState_==CONFIG_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName.str(),
 		funcName.str(), "CONFIG.");
 	hasSetConductances_ = true;
 
@@ -664,7 +662,7 @@ int CARLsim::runNetwork(int nSec, int nMsec, bool printRunSummary, bool copyStat
 
 	carlsimState_ = EXE_STATE;
 
-	return snn_->runNetwork(nSec, nMsec, printRunSummary, copyState);	
+	return snn_->runNetwork(nSec, nMsec, printRunSummary, copyState);
 }
 
 // setup network with custom options
@@ -761,7 +759,7 @@ ConnectionMonitor* CARLsim::setConnectionMonitor(int grpIdPre, int grpIdPost, co
 	UserErrors::assertTrue(grpIdPost!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName, "grpIdPost");
 	UserErrors::assertTrue(grpIdPre>=0, UserErrors::CANNOT_BE_NEGATIVE, funcName, "grpIdPre");// grpId can't be negative
 	UserErrors::assertTrue(grpIdPost>=0, UserErrors::CANNOT_BE_NEGATIVE, funcName, "grpIdPost");
-	UserErrors::assertTrue(carlsimState_==SETUP_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, 
+	UserErrors::assertTrue(carlsimState_==SETUP_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName,
 		funcName, "SETUP.");
 
 	FILE* fid;
@@ -797,9 +795,9 @@ void CARLsim::setExternalCurrent(int grpId, const std::vector<float>& current) {
 	UserErrors::assertTrue(current.size()==getGroupNumNeurons(grpId), UserErrors::MUST_BE_IDENTICAL, funcName,
 		"current.size()", "number of neurons in the group.");
 	UserErrors::assertTrue(!isPoissonGroup(grpId), UserErrors::WRONG_NEURON_TYPE, funcName, funcName);
-	UserErrors::assertTrue(carlsimState_==SETUP_STATE || carlsimState_==EXE_STATE, 
+	UserErrors::assertTrue(carlsimState_==SETUP_STATE || carlsimState_==EXE_STATE,
 		UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "SETUP or EXECUTION.");
-	
+
 	snn_->setExternalCurrent(grpId, current);
 }
 
@@ -807,7 +805,7 @@ void CARLsim::setExternalCurrent(int grpId, float current) {
 	std::string funcName = "setExternalCurrent(\""+getGroupName(grpId)+"\")";
 	UserErrors::assertTrue(grpId!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName, "grpId");
 	UserErrors::assertTrue(!isPoissonGroup(grpId), UserErrors::WRONG_NEURON_TYPE, funcName, funcName);
-	UserErrors::assertTrue(carlsimState_==SETUP_STATE || carlsimState_==EXE_STATE, 
+	UserErrors::assertTrue(carlsimState_==SETUP_STATE || carlsimState_==EXE_STATE,
 		UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "SETUP or EXECUTION.");
 
 	std::vector<float> vecCurrent(getGroupNumNeurons(grpId), current);
@@ -947,7 +945,7 @@ void CARLsim::writePopWeights(std::string fname, int gIDpre, int gIDpost) {
 
 std::vector<float> CARLsim::getConductanceAMPA(int grpId) {
 	std::string funcName = "getConductanceAMPA()";
-	UserErrors::assertTrue(carlsimState_ == EXE_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, 
+	UserErrors::assertTrue(carlsimState_ == EXE_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE,
 		funcName, funcName, "EXECUTION.");
 	UserErrors::assertTrue(grpId!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName, "grpId");
 	UserErrors::assertTrue(grpId>=0 && grpId<getNumGroups(), UserErrors::MUST_BE_IN_RANGE, funcName, "grpId",
@@ -958,7 +956,7 @@ std::vector<float> CARLsim::getConductanceAMPA(int grpId) {
 
 std::vector<float> CARLsim::getConductanceNMDA(int grpId) {
 	std::string funcName = "getConductanceNMDA()";
-	UserErrors::assertTrue(carlsimState_ == EXE_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, 
+	UserErrors::assertTrue(carlsimState_ == EXE_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE,
 		funcName, funcName, "EXECUTION.");
 	UserErrors::assertTrue(grpId!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName, "grpId");
 	UserErrors::assertTrue(grpId>=0 && grpId<getNumGroups(), UserErrors::MUST_BE_IN_RANGE, funcName, "grpId",
@@ -969,7 +967,7 @@ std::vector<float> CARLsim::getConductanceNMDA(int grpId) {
 
 std::vector<float> CARLsim::getConductanceGABAa(int grpId) {
 	std::string funcName = "getConductanceGABAa()";
-	UserErrors::assertTrue(carlsimState_ == EXE_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, 
+	UserErrors::assertTrue(carlsimState_ == EXE_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE,
 		funcName, funcName, "EXECUTION.");
 	UserErrors::assertTrue(grpId!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName, "grpId");
 	UserErrors::assertTrue(grpId>=0 && grpId<getNumGroups(), UserErrors::MUST_BE_IN_RANGE, funcName, "grpId",
@@ -980,7 +978,7 @@ std::vector<float> CARLsim::getConductanceGABAa(int grpId) {
 
 std::vector<float> CARLsim::getConductanceGABAb(int grpId) {
 	std::string funcName = "getConductanceGABAb()";
-	UserErrors::assertTrue(carlsimState_ == EXE_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, 
+	UserErrors::assertTrue(carlsimState_ == EXE_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE,
 		funcName, funcName, "EXECUTION.");
 	UserErrors::assertTrue(grpId!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName, "grpId");
 	UserErrors::assertTrue(grpId>=0 && grpId<getNumGroups(), UserErrors::MUST_BE_IN_RANGE, funcName, "grpId",
@@ -1014,7 +1012,7 @@ Grid3D CARLsim::getGroupGrid3D(int grpId) {
 	UserErrors::assertTrue(grpId!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName.str(), "grpId");
 	UserErrors::assertTrue(carlsimState_ == SETUP_STATE || carlsimState_ == EXE_STATE,
 					UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName.str(), funcName.str(), "SETUP or EXECUTION.");
-	UserErrors::assertTrue(grpId>=0 && grpId<getNumGroups(), UserErrors::MUST_BE_IN_RANGE, funcName.str(), 
+	UserErrors::assertTrue(grpId>=0 && grpId<getNumGroups(), UserErrors::MUST_BE_IN_RANGE, funcName.str(),
 		"grpId", "[0,getNumGroups()]");
 
 	return snn_->getGroupGrid3D(grpId);
@@ -1067,7 +1065,7 @@ int CARLsim::getGroupNumNeurons(int grpId) {
 Point3D CARLsim::getNeuronLocation3D(int neurId) {
 	std::stringstream funcName;	funcName << "getNeuronLocation3D(" << neurId << ")";
 	UserErrors::assertTrue(neurId!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName.str(), "neurId");
-	UserErrors::assertTrue(neurId>=0 && neurId<getNumNeurons(), UserErrors::MUST_BE_IN_RANGE, funcName.str(), 
+	UserErrors::assertTrue(neurId>=0 && neurId<getNumNeurons(), UserErrors::MUST_BE_IN_RANGE, funcName.str(),
 		"neurId", "[0,getNumNeurons()]");
 
 	return snn_->getNeuronLocation3D(neurId);
@@ -1076,7 +1074,7 @@ Point3D CARLsim::getNeuronLocation3D(int neurId) {
 Point3D CARLsim::getNeuronLocation3D(int grpId, int relNeurId) {
 	std::stringstream funcName;	funcName << "getNeuronLocation3D(" << grpId << "," << relNeurId << ")";
 	UserErrors::assertTrue(relNeurId!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName.str(), "neurId");
-	UserErrors::assertTrue(grpId>=0 && grpId<getNumGroups(), UserErrors::MUST_BE_IN_RANGE, funcName.str(), 
+	UserErrors::assertTrue(grpId>=0 && grpId<getNumGroups(), UserErrors::MUST_BE_IN_RANGE, funcName.str(),
 		"grpId", "[0,getNumGroups()]");
 	UserErrors::assertTrue(relNeurId>=0 && relNeurId<getGroupNumNeurons(grpId), UserErrors::MUST_BE_IN_RANGE,
 		funcName.str(), "relNeurId", "[0,getGroupNumNeurons()]");
@@ -1106,7 +1104,7 @@ int CARLsim::getNumPreSynapses() {
 int CARLsim::getNumSynapticConnections(short int connectionId) {
 	std::stringstream funcName;	funcName << "getNumConnections(" << connectionId << ")";
 	UserErrors::assertTrue(connectionId!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName.str(), "connectionId");
-	UserErrors::assertTrue(connectionId>=0 && connectionId<getNumConnections(), UserErrors::MUST_BE_IN_RANGE, 
+	UserErrors::assertTrue(connectionId>=0 && connectionId<getNumConnections(), UserErrors::MUST_BE_IN_RANGE,
 		funcName.str(), "connectionId", "[0,getNumSynapticConnections()]");
 	return snn_->getNumSynapticConnections(connectionId);
 }
@@ -1145,7 +1143,7 @@ uint32_t CARLsim::getSimTimeMsec() { return snn_->getSimTimeMs(); }
 int* CARLsim::getSpikeCounter(int grpId) {
 	std::stringstream funcName;	funcName << "getSpikeCounter(" << grpId << ")";
 	UserErrors::assertTrue(grpId!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName.str(), "grpId");
-	UserErrors::assertTrue(carlsimState_==EXE_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName.str(), 
+	UserErrors::assertTrue(carlsimState_==EXE_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName.str(),
 		"EXECUTION.");
 
 	return snn_->getSpikeCounter(grpId);
@@ -1188,7 +1186,7 @@ int tdGABAb) {
 	UserErrors::assertTrue(tdGABAb>0, UserErrors::MUST_BE_POSITIVE, funcName.str(), "tdGABAb");
 	UserErrors::assertTrue(trNMDA!=tdNMDA, UserErrors::CANNOT_BE_IDENTICAL, funcName.str(), "trNMDA and tdNMDA");
 	UserErrors::assertTrue(trGABAb!=tdGABAb, UserErrors::CANNOT_BE_IDENTICAL, funcName.str(), "trGABAb and tdGABAb");
-	UserErrors::assertTrue(carlsimState_==CONFIG_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName.str(), 
+	UserErrors::assertTrue(carlsimState_==CONFIG_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName.str(),
 		"CONFIG.");
 
 	def_tdAMPA_  = tdAMPA;
@@ -1223,32 +1221,56 @@ void CARLsim::setDefaultSaveOptions(std::string fileName, bool saveSynapseInfo) 
 }
 
 // wrapper function, set default values for E-STDP params
-void CARLsim::setDefaultSTDPparams(float alphaLTP, float tauLTP, float alphaLTD, float tauLTD) {
-	setDefaultESTDPparams(alphaLTP, tauLTP, alphaLTD, tauLTD);
+void CARLsim::setDefaultSTDPparams(float alphaLTP, float tauLTP, float alphaLTD, float tauLTD, stdpType_t stdpType) {
+	setDefaultESTDPparams(alphaLTP, tauLTP, alphaLTD, tauLTD, stdpType);
 }
 
 // set default values for E-STDP params
-void CARLsim::setDefaultESTDPparams(float alphaLTP, float tauLTP, float alphaLTD, float tauLTD) {
-	std::string funcName = "setDefaultESTDPparams()";
-	UserErrors::assertTrue(carlsimState_==CONFIG_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "CONFIG.");
+void CARLsim::setDefaultESTDPparams(float alphaLTP, float tauLTP, float alphaLTD, float tauLTD, stdpType_t stdpType) {
+    std::string funcName = "setDefaultESTDPparams()";
+    UserErrors::assertTrue(carlsimState_==CONFIG_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "CONFIG.");
 	UserErrors::assertTrue(alphaLTP > 0, UserErrors::MUST_BE_POSITIVE, funcName);
 	UserErrors::assertTrue(alphaLTD > 0, UserErrors::MUST_BE_POSITIVE, funcName);
 	UserErrors::assertTrue(tauLTP > 0, UserErrors::MUST_BE_POSITIVE, funcName);
 	UserErrors::assertTrue(tauLTD > 0, UserErrors::MUST_BE_POSITIVE, funcName);
-	def_STDP_alphaLTP_ = alphaLTP;
+    switch(stdpType) {
+        case STANDARD:
+            def_STDP_type_ = STANDARD;
+            break;
+        case DA_MOD:
+            def_STDP_type_ = DA_MOD;
+            break;
+        default:
+            stdpType=UNKNOWN_STDP;
+            UserErrors::assertTrue(stdpType != UNKNOWN_STDP,UserErrors::CANNOT_BE_UNKNOWN,funcName);
+            break;
+    }
+    def_STDP_alphaLTP_ = alphaLTP;
 	def_STDP_tauLTP_ = tauLTP;
 	def_STDP_alphaLTD_ = alphaLTD;
 	def_STDP_tauLTD_ = tauLTD;
 }
 
 // set default values for I-STDP params
-void CARLsim::setDefaultISTDPparams(float betaLTP, float betaLTD, float lamda, float delta) {
+void CARLsim::setDefaultISTDPparams(float betaLTP, float betaLTD, float lamda, float delta, stdpType_t stdpType) {
 	std::string funcName = "setDefaultISTDPparams()";
 	UserErrors::assertTrue(carlsimState_==CONFIG_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "CONFIG.");
 	UserErrors::assertTrue(betaLTP > 0, UserErrors::MUST_BE_POSITIVE, funcName);
 	UserErrors::assertTrue(betaLTD > 0, UserErrors::MUST_BE_POSITIVE, funcName);
 	UserErrors::assertTrue(lamda > 0, UserErrors::MUST_BE_POSITIVE, funcName);
 	UserErrors::assertTrue(delta > 0, UserErrors::MUST_BE_POSITIVE, funcName);
+    switch(stdpType) {
+        case STANDARD:
+            def_STDP_type_ = STANDARD;
+            break;
+        case DA_MOD:
+            def_STDP_type_ = DA_MOD;
+            break;
+        default:
+            stdpType=UNKNOWN_STDP;
+            UserErrors::assertTrue(stdpType != UNKNOWN_STDP,UserErrors::CANNOT_BE_UNKNOWN,funcName);
+            break;
+    }
 	def_STDP_betaLTP_ = betaLTP;
 	def_STDP_betaLTD_ = betaLTD;
 	def_STDP_lamda_ = lamda;
@@ -1278,7 +1300,8 @@ void CARLsim::setDefaultSTPparams(int neurType, float STP_U, float STP_tau_u, fl
 			break;
 		default:
 			// some error message instead of assert
-			break;
+			UserErrors::assertTrue((neurType == EXCITATORY_NEURON || neurType == INHIBITORY_NEURON),UserErrors::CANNOT_BE_UNKNOWN,funcName);
+            break;
 	}
 }
 
