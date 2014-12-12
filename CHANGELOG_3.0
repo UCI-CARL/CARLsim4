@@ -6,10 +6,17 @@ Legend:
 	+ added element
 	- removed element
 	* changed element
+
+2014-12-12     Michael Beyeler <mbeyeler@uci.edu>
+  * Fixed docs generation in Doxygen 1.7.
+  - Removed support for Doxygen <= 1.6.
+  + Added GroupMonitor to docs.
+  * Fixed deallocation issue in test suite by removing all ASSERT_{...} calls.
+
 2014-12-09     Ting-Shuo Chou <tingshuc@uci.edu>
   * Resume support for CC 1.3, print out warning message
 
-2014-12-08
+2014-12-08     Ting-Shuo Chou <tingshuc@uci.edu>
   * Change set(Spike,Group,Connection)Monitor APIs
 
 2014-12-08     Michael Beyeler <mbeyeler@uci.edu>
@@ -38,10 +45,10 @@ Legend:
   * Fixed PoissonRate segfault on GPU.
 
 2014-11-22     Ting-Shuo Chou <tingshuc@uci.edu>
-  + Add GPU allocation mechanism, allow multiple CARLsim objecs to use
+  + Added GPU allocation mechanism, allow multiple CARLsim objecs to use
     different GPUs
-  + Add multiGPU example
-  - Remove MTRand from carlsim kernel
+  + Added multiGPU example
+  - Removed MTRand from carlsim kernel
 
 2014-11-22     Michael Beyeler <mbeyeler@uci.edu>
   * Fixed memory leaks on GPU side.

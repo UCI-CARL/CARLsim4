@@ -142,18 +142,29 @@ TEST(CUBA, firingRateCPUvsGPU) {
 			spkTimesG1CPU = spkMonG1->getSpikeVector2D();
 		} else {
 			// GPU mode: compare to CPU results
-			// assert so that we do not display all spike time errors if the rates are wrong
-			EXPECT_FLOAT_EQ(spkMonG0->getPopMeanFiringRate(), spkRateG0CPU);
-			ASSERT_FLOAT_EQ(spkMonG1->getPopMeanFiringRate(), spkRateG1CPU);
 
-			spkTimesG0GPU = spkMonG0->getSpikeVector2D();
-			spkTimesG1GPU = spkMonG1->getSpikeVector2D();
-			ASSERT_EQ(spkTimesG0CPU[0].size(),spkTimesG0GPU[0].size());
-			ASSERT_EQ(spkTimesG1CPU[0].size(),spkTimesG1GPU[0].size());
-			for (int i=0; i<spkTimesG0CPU[0].size(); i++)
-				EXPECT_EQ(spkTimesG0CPU[0][i], spkTimesG0GPU[0][i]);
-			for (int i=0; i<spkTimesG1CPU[0].size(); i++)
-				EXPECT_EQ(spkTimesG1CPU[0][i], spkTimesG1GPU[0][i]);
+			// do not ASSERT_, otherwise CARLsim will not be correctly deallocated
+			// instead, use EXPECT_ and subsequent if-else condition
+			bool isRateCorrectG0 = spkMonG0->getPopMeanFiringRate() == spkRateG0CPU;
+			bool isRateCorrectG1 = spkMonG1->getPopMeanFiringRate() == spkRateG1CPU;
+			EXPECT_TRUE(isRateCorrectG0);
+			EXPECT_TRUE(isRateCorrectG1);
+
+			if (isRateCorrectG0 && isRateCorrectG1) {
+				spkTimesG0GPU = spkMonG0->getSpikeVector2D();
+				spkTimesG1GPU = spkMonG1->getSpikeVector2D();
+				bool isSpkSzCorrectG0 = spkTimesG0CPU[0].size() == spkTimesG0GPU[0].size();
+				bool isSpkSzCorrectG1 = spkTimesG1CPU[0].size() == spkTimesG1GPU[0].size();
+				EXPECT_TRUE(isSpkSzCorrectG0);
+				EXPECT_TRUE(isSpkSzCorrectG1);
+
+				if (isSpkSzCorrectG0 && isSpkSzCorrectG1) {
+					for (int i=0; i<spkTimesG0CPU[0].size(); i++)
+						EXPECT_EQ(spkTimesG0CPU[0][i], spkTimesG0GPU[0][i]);
+					for (int i=0; i<spkTimesG1CPU[0].size(); i++)
+						EXPECT_EQ(spkTimesG1CPU[0][i], spkTimesG1GPU[0][i]);
+				}
+			}
 		}
 	}
 }
