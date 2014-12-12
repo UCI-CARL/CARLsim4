@@ -34,9 +34,13 @@ TEST(PoissRate, getRates) {
 		PoissonRate rate(nNeur,true==onGPU);
 		std::vector<float> ratesVec = rate.getRates();
 
-		ASSERT_EQ(ratesVec.size(),nNeur);
-		for (int i=0; i<nNeur; i++) {
-			EXPECT_FLOAT_EQ(ratesVec[i], 0.0f);
+		bool isSizeCorrect = ratesVec.size() == nNeur;
+		EXPECT_TRUE(isSizeCorrect);
+
+		if (isSizeCorrect) {
+			for (int i=0; i<nNeur; i++) {
+				EXPECT_FLOAT_EQ(ratesVec[i], 0.0f);
+			}
 		}
 	}
 }
@@ -56,9 +60,12 @@ TEST(PoissRate, setRatesVector) {
 		rate.setRates(ratesVecIn);
 
 		std::vector<float> ratesVecOut = rate.getRates();
-		ASSERT_EQ(ratesVecOut.size(),nNeur);
-		for (int i=0; i<nNeur; i++) {
-			EXPECT_FLOAT_EQ(ratesVecOut[i], i);
+		bool isSizeCorrect = ratesVecOut.size() == nNeur;
+		EXPECT_TRUE(isSizeCorrect);
+		if (isSizeCorrect) {
+			for (int i=0; i<nNeur; i++) {
+				EXPECT_FLOAT_EQ(ratesVecOut[i], i);
+			}
 		}
 	}
 }
@@ -73,9 +80,12 @@ TEST(PoissRate, setRatesFloat) {
 		rate.setRates(42.0f);
 
 		std::vector<float> ratesVec = rate.getRates();
-		ASSERT_EQ(ratesVec.size(),nNeur);
-		for (int i=0; i<nNeur; i++) {
-			EXPECT_FLOAT_EQ(ratesVec[i], 42.0f);
+		bool isSizeCorrect = ratesVec.size() == nNeur;
+		EXPECT_TRUE(isSizeCorrect);
+		if (isSizeCorrect) {
+			for (int i=0; i<nNeur; i++) {
+				EXPECT_FLOAT_EQ(ratesVec[i], 42.0f);
+			}
 		}
 	}
 }
@@ -92,12 +102,16 @@ TEST(PoissRate, setRateNeurId) {
 		rate.setRate(neurId,neurIdRate);
 
 		std::vector<float> ratesVec = rate.getRates();
-		ASSERT_EQ(ratesVec.size(),nNeur);
-		for (int i=0; i<nNeur; i++) {
-			if (i!=neurId) {
-				EXPECT_FLOAT_EQ(ratesVec[i], 0.0f);
-			} else {
-				EXPECT_FLOAT_EQ(ratesVec[neurId],neurIdRate);
+		bool isSizeCorrect = ratesVec.size() == nNeur;
+		EXPECT_TRUE(isSizeCorrect);
+
+		if (isSizeCorrect) {
+			for (int i=0; i<nNeur; i++) {
+				if (i!=neurId) {
+					EXPECT_FLOAT_EQ(ratesVec[i], 0.0f);
+				} else {
+					EXPECT_FLOAT_EQ(ratesVec[neurId],neurIdRate);
+				}
 			}
 		}
 	}

@@ -84,14 +84,22 @@ TEST(SpikeGen, PeriodicSpikeGenerator) {
 	long inputSize0, inputSize1;
 	readAndReturnSpikeFile("spkInputGrp0.dat",inputArray0,inputSize0);
 	readAndReturnSpikeFile("spkInputGrp1.dat",inputArray1,inputSize1);
-	ASSERT_EQ(inputSize0/2, nNeur * (int)rate);
-	ASSERT_EQ(inputSize1/2, nNeur * ((int)rate-1));
 
-	for (int i=0; i<inputSize0; i+=2) {
-		EXPECT_EQ(inputArray0[i]%isi, 0);
+	bool isSize0Correct = inputSize0/2 == nNeur * (int)rate;
+	bool isSize1Correct = inputSize1/2 == nNeur * ((int)rate-1);
+	EXPECT_TRUE(isSize0Correct);
+	EXPECT_TRUE(isSize1Correct);
+
+	if (isSize0Correct) {
+		for (int i=0; i<inputSize0; i+=2) {
+			EXPECT_EQ(inputArray0[i]%isi, 0);
+		}
 	}
-	for (int i=0; i<inputSize1; i+=2) {
-		EXPECT_EQ(inputArray1[i]%isi, 0);
+
+	if (isSize1Correct) {
+		for (int i=0; i<inputSize1; i+=2) {
+			EXPECT_EQ(inputArray1[i]%isi, 0);
+		}
 	}
 
 	if (inputArray0!=NULL) delete[] inputArray0;
@@ -150,11 +158,15 @@ TEST(SpikeGen, SpikeGeneratorFromFile) {
 	int *inputArray0 = NULL;
 	long inputSize0;
 	readAndReturnSpikeFile("spkInputFinal.dat",inputArray0,inputSize0);
-	ASSERT_EQ(inputSize0/2, nNeur * (int)rate);
 
-	int j=0;
-	for (int i=0; i<inputSize0; i+=2)
-		EXPECT_EQ(inputArray0[i]%isi, 0);
+	bool isSize0Correct = inputSize0/2 == nNeur * (int)rate;
+	EXPECT_TRUE(isSize0Correct);
+
+	if (isSize0Correct) {
+		for (int i=0; i<inputSize0; i+=2) {
+			EXPECT_EQ(inputArray0[i]%isi, 0);
+		}
+	}
 
 	if (inputArray0!=NULL) delete[] inputArray0;
 }
@@ -194,10 +206,13 @@ TEST(SpikeGen, SpikeGeneratorFromVector) {
 	int *inputArray0 = NULL;
 	long inputSize0;
 	readAndReturnSpikeFile("spkInputGrp0.dat",inputArray0,inputSize0);
-	ASSERT_EQ(inputSize0/2, spkTimes.size());
+	bool isSize0Correct = inputSize0/2 == spkTimes.size();
+	EXPECT_TRUE(isSize0Correct);
 
-	for (int i=0; i<spkTimes.size(); i++) {
-		EXPECT_EQ(inputArray0[i*2], spkTimes[i]);
+	if (isSize0Correct) {
+		for (int i=0; i<spkTimes.size(); i++) {
+			EXPECT_EQ(inputArray0[i*2], spkTimes[i]);
+		}
 	}
 
 	if (inputArray0!=NULL) delete[] inputArray0;

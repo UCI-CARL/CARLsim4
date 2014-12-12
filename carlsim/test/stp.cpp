@@ -203,14 +203,22 @@ TEST(STP, spikeTimesCPUvsGPU) {
 				spkTG2GPU = spkMonG2->getSpikeVector2D();
 				spkTG3GPU = spkMonG3->getSpikeVector2D();
 
-				// assert so we skip the following for loop if sizes don't match
-				ASSERT_EQ(spkTG2CPU[0].size(), spkTG2GPU[0].size());
-				for (int i=0; i<spkTG2CPU[0].size(); i++)
-					EXPECT_EQ(spkTG2CPU[0][i], spkTG2GPU[0][i]);
+				// do not ASSERT_, otherwise CARLsim will not be correctly deallocated
+				// instead, use EXPECT_ and subsequent if-else condition
+				bool isSizeCorrectG2 = spkTG2CPU[0].size() == spkTG2GPU[0].size();
+				bool isSizeCorrectG3 = spkTG3CPU[0].size() == spkTG3GPU[0].size();
+				EXPECT_TRUE(isSizeCorrectG2);
+				EXPECT_TRUE(isSizeCorrectG3);
 
-				ASSERT_EQ(spkTG3CPU[0].size(), spkTG3GPU[0].size());
-				for (int i=0; i<spkTG3CPU[0].size(); i++)
-					EXPECT_EQ(spkTG3CPU[0][i], spkTG3GPU[0][i]);
+				if (isSizeCorrectG2) {
+					for (int i=0; i<spkTG2CPU[0].size(); i++)
+						EXPECT_EQ(spkTG2CPU[0][i], spkTG2GPU[0][i]);
+				}
+
+				if (isSizeCorrectG3) {
+					for (int i=0; i<spkTG3CPU[0].size(); i++)
+						EXPECT_EQ(spkTG3CPU[0][i], spkTG3GPU[0][i]);
+				}
 			}
 
 			delete spkGenG0, spkGenG1;
