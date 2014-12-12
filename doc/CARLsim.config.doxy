@@ -660,9 +660,10 @@ WARN_LOGFILE           =
 # directories like "/usr/src/myproject". Separate the files or directories
 # with spaces.
 
-INPUT                  = ../carlsim/interface/include interface/src \
+INPUT                  = ../carlsim/interface/include \
                          ../carlsim/spike_monitor/spike_monitor.h \
                          ../carlsim/connection_monitor/connection_monitor.h \
+                         ../carlsim/group_monitor/group_monitor.h \
                          ../tools/ecj_pti \
                          ../tools/eo_pti \
                          ../tools/input_stimulus/input_stimulus.h \
