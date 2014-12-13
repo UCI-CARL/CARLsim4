@@ -3,6 +3,47 @@ CARLSIM RELEASE NOTES
 ===============================================================================
 
 -------------------------------------------------------------------------------
+CARLsim 3.0
+-------------------------------------------------------------------------------
+
+Highlights:
+	Usability.
+	New features.
+	etc.
+
+Description:
+	tbd
+
+Publication:
+	tba
+
+Tested platforms and devices:
+	* Platforms:
+	   - Linux: Ubuntu 10.04, 12.04, 14.04
+	   - Windows: 7
+	   - Mac OS X: tbd
+	* NVIDIA Toolkits: CUDA 5.0, 5.5, 6.0, 6.5
+	* CUDA compute capabilities: 2.0, 2.1, 3.0
+	* CUDA devices: Tesla C1060, Tesla M2090, GTX 460, GTX 780, NVS 4200M,
+	  TITAN Z
+	* Doxygen: 1.7, 1.8
+
+Known bugs & issues:
+	* Currently, short-term plasticity (STP) can only be run in GPU mode if
+	  there are no synaptic delays greater than 1 ms. This is to prevent a
+	  known issue in kernel_globalConductanceUpdate, which will be fixed as
+	  soon as possible in a future release.
+	* Mistakingly calling CARLsim::setSTDP on a fixed connection will result
+	  in an unspecified launch failure in GPU mode.
+	* On some Linux platforsm, the order in which SpikeGenerator groups are
+	  allocated might affect spike activity in GPU mode. The issue is that the
+	  SpikeGenerators will generate no spikes at all under some circumstances.
+	  This bug can often be avoided by having all CARLsim::createGroup calls
+	  first in your main_project.cpp, followed by all calls to
+	  CARLsim::createSpikeGeneratorGroup.
+
+
+-------------------------------------------------------------------------------
 CARLsim 2.2
 -------------------------------------------------------------------------------
 
