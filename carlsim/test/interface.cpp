@@ -93,6 +93,22 @@ TEST(Interface, getNeuronLocation3DDeath) {
 	delete sim;
 }
 
+TEST(Interface, loggerDeath) {
+	::testing::FLAGS_gtest_death_test_style = "threadsafe";
+	CARLsim* sim = NULL;
+
+	sim = new CARLsim("Interface.loggerDeath",CPU_MODE,CUSTOM,0,42);
+	EXPECT_DEATH({sim->setLogFile("meow.log");},"");
+	if (sim!=NULL) delete sim; sim = NULL;
+
+	sim = new CARLsim("Interface.loggerDeath",CPU_MODE,SILENT,0,42);
+	EXPECT_DEATH({sim->setLogsFpCustom();},"");
+	if (sim!=NULL) delete sim; sim = NULL;
+
+	EXPECT_DEATH({CARLsim* sim = new CARLsim("Interface.loggerDeath",CPU_MODE,UNKNOWN_LOGGER,0,42);},"");
+	if (sim!=NULL) delete sim; sim = NULL;
+}
+
 TEST(Interface, biasWeightsDeath) {
 	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 

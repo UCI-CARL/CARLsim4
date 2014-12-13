@@ -56,6 +56,8 @@ void UserErrors::throwError(std::string errorFunc, errorType error, std::string 
 		errorMsg += " cannot not be off at this point."; break;
 	case CANNOT_BE_ON:
 		errorMsg += " cannot be on at this point."; break;
+	case CANNOT_BE_SET_TO:
+		errorMsg += " cannot be set to "; break;
 	case CANNOT_BE_UNKNOWN:
 		errorMsg += " cannot be of type UNKNOWN."; break;
 	case CANNOT_BE_ZERO:
@@ -68,8 +70,6 @@ void UserErrors::throwError(std::string errorFunc, errorType error, std::string 
 		errorMsg += " is deprecated."; break;
 	case MUST_BE_IDENTICAL:
 		errorMsg += " must be identical."; break;
-	case MUST_BE_LOGGER_CUSTOM:
-		errorMsg += " must be set to CUSTOM."; break;
 	case MUST_BE_NEGATIVE:
 		errorMsg += " must be negative."; break;
 	case MUST_BE_POSITIVE:
@@ -80,6 +80,8 @@ void UserErrors::throwError(std::string errorFunc, errorType error, std::string 
 		errorMsg += " must be on at this point."; break;
 	case MUST_BE_IN_RANGE:
 		errorMsg += " must be in the range "; break;
+	case MUST_BE_SET_TO:
+		errorMsg += " must be set to "; break;
 	case MUST_BE_SMALLER:
 		errorMsg += " must be smaller than "; break;
 	case MUST_HAVE_SAME_SIGN:

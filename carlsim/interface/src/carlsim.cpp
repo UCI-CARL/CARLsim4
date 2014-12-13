@@ -175,6 +175,7 @@ void CARLsim::CARLsimInit() {
 		}
 	}
 
+	// init CpuSNN object
 	snn_ = new CpuSNN(netName_, simMode_, loggerMode_, ithGPU_, randSeed_);
 
 	// set default time constants for synaptic current decay
@@ -694,16 +695,32 @@ void CARLsim::saveSimulation(const std::string& fileName, bool saveSynapseInfo) 
 	fclose(fpSave);
 }
 
-// set new file pointer for debug log file
-void CARLsim::setLogDebugFp(FILE* fpLog) {
-	UserErrors::assertTrue(fpLog!=NULL,UserErrors::CANNOT_BE_NULL,"setLogDebugFp","fpLog");
+void CARLsim::setLogFile(const std::string& fileName) {
+	std::string funcName = "setLogFile("+fileName+")";
+	UserErrors::assertTrue(loggerMode_!=CUSTOM,UserErrors::CANNOT_BE_SET_TO, funcName,
+		"Logger mode", "CUSTOM");
 
-	snn_->setLogDebugFp(fpLog);
+	FILE* fpLog = NULL;
+	std::string fileNameNonConst = fileName;
+	std::transform(fileNameNonConst.begin(), fileNameNonConst.end(), fileNameNonConst.begin(), ::tolower);
+	if (fileNameNonConst=="null") {
+#if (WIN32 || WIN64)
+		fpLog = fopen("nul","w");
+#else
+		fpLog = fopen("/dev/null","w");
+#endif
+	} else {
+		fpLog = fopen(fileName.c_str(),"w");
+	}
+	UserErrors::assertTrue(fpLog!=NULL, UserErrors::FILE_CANNOT_OPEN, funcName, fileName);
+
+	// change only CARLsim log file pointer (use NULL as code for leaving the others unchanged)
+	snn_->setLogsFp(NULL, NULL, NULL, fpLog);
 }
 
-// set new file pointer for all files
-void CARLsim::setLogsFp(FILE* fpInf, FILE* fpErr, FILE* fpDeb, FILE* fpLog) {
-	UserErrors::assertTrue(loggerMode_==CUSTOM,UserErrors::MUST_BE_LOGGER_CUSTOM,"setLogsFp","Logger mode");
+// set new file pointer for all files in CUSTOM mode
+void CARLsim::setLogsFpCustom(FILE* fpInf, FILE* fpErr, FILE* fpDeb, FILE* fpLog) {
+	UserErrors::assertTrue(loggerMode_==CUSTOM,UserErrors::MUST_BE_SET_TO,"setLogsFpCustom","Logger mode","CUSTOM");
 
 	snn_->setLogsFp(fpInf,fpErr,fpDeb,fpLog);
 }
