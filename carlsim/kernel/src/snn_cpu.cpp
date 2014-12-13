@@ -1397,27 +1397,18 @@ void CpuSNN::writePopWeights(std::string fname, int grpIdPre, int grpIdPost) {
 /// PUBLIC METHODS: PLOTTING / LOGGING
 /// ************************************************************************************************************ ///
 
-// set new file pointer for debug log file
-void CpuSNN::setLogDebugFp(FILE* fpLog) {
-	assert(fpLog!=NULL);
-
-	if (fpLog_!=NULL && fpLog!=stdout && fpLog!=stderr)
-		fclose(fpLog_);
-
-	fpLog_ = fpLog;
-}
-
 // set new file pointer for all files
+// fp==NULL is code for don't change it
+// can be called in all logger modes; however, the analogous interface function can only be called in CUSTOM
 void CpuSNN::setLogsFp(FILE* fpInf, FILE* fpErr, FILE* fpDeb, FILE* fpLog) {
-	assert(loggerMode_==CUSTOM); // only valid in custom mode
-	assert(fpInf!=NULL); // at least one of the must be non-NULL
-
-	if (fpInf_!=NULL && fpInf_!=stdout && fpInf_!=stderr)
-		fclose(fpInf_);
-	fpInf_ = fpInf;
+	if (fpInf!=NULL) {
+		if (fpInf_!=NULL && fpInf_!=stdout && fpInf_!=stderr)
+			fclose(fpInf_);
+		fpInf_ = fpInf;
+	}
 
 	if (fpErr!=NULL) {
-		if (fpErr_!=NULL && fpErr_!=stdout && fpErr_!=stderr)
+		if (fpErr_ != NULL && fpErr_!=stdout && fpErr_!=stderr)
 			fclose(fpErr_);
 		fpErr_ = fpErr;
 	}
@@ -1750,7 +1741,6 @@ RangeWeight CpuSNN::getWeightRange(short int connId) {
 // all unsafe operations of CpuSNN constructor
 void CpuSNN::CpuSNNinit() {
 	assert(ithGPU_>=0);
-	assert(simMode_!=UNKNOWN_SIM); assert(loggerMode_!=UNKNOWN_LOGGER);
 
 	// set logger mode (defines where to print all status, error, and debug messages)
 	switch (loggerMode_) {
@@ -1794,6 +1784,7 @@ void CpuSNN::CpuSNNinit() {
 		#endif
 	break;
 	default:
+		fpErr_ = stderr; // need to open file stream first
 		KERNEL_ERROR("Unknown logger mode");
 		exit(1);
 	}
@@ -2693,15 +2684,18 @@ void CpuSNN::deleteObjects() {
 
 	printSimSummary();
 
+	// fclose file streams, unless in custom mode
+	if (loggerMode_ != CUSTOM) {
 		// don't fclose if it's stdout or stderr, otherwise they're gonna stay closed for the rest of the process
-	if (fpInf_!=NULL && fpInf_!=stdout && fpInf_!=stderr)
-		fclose(fpInf_);
-	if (fpErr_!=NULL && fpErr_!=stdout && fpErr_!=stderr)
-		fclose(fpErr_);
-	if (fpDeb_!=NULL && fpDeb_!=stdout && fpDeb_!=stderr)
-		fclose(fpDeb_);
-	if (fpLog_!=NULL && fpLog_!=stdout && fpLog_!=stderr)
-		fclose(fpLog_);
+		if (fpInf_!=NULL && fpInf_!=stdout && fpInf_!=stderr)
+			fclose(fpInf_);
+		if (fpErr_!=NULL && fpErr_!=stdout && fpErr_!=stderr)
+			fclose(fpErr_);
+		if (fpDeb_!=NULL && fpDeb_!=stdout && fpDeb_!=stderr)
+			fclose(fpDeb_);
+		if (fpLog_!=NULL && fpLog_!=stdout && fpLog_!=stderr)
+			fclose(fpLog_);
+	}
 
 	resetPointers(true); // deallocate pointers
 

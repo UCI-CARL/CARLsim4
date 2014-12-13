@@ -7,6 +7,15 @@ Legend:
 	- removed element
 	* changed element
 
+2014-12-13     Michael Beyeler <mbeyeler@uci.edu>
+  + Added CARLsim::setLogFile(string).
+  - Removed CARLsim::setLogDebugFp(FILE*).
+  * Renamed CARLsim::setLogsFp to CARLsim::setLogsFpCustom, added documentation
+    and fixed underpinning.
+  * Fixed linking errors for Hello World project.
+  + Added list of tested platforms and devices to RELEASE_NOTES.
+  + Added list of known issues to RELEASE_NOTES.
+
 2014-12-12     Michael Beyeler <mbeyeler@uci.edu>
   * Fixed docs generation in Doxygen 1.7.
   - Removed support for Doxygen <= 1.6.

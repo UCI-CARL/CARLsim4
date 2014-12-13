@@ -30,10 +30,11 @@ public:
 		CANNOT_BE_IDENTICAL,	//!< parameters cannot be identical
 		CANNOT_BE_NEGATIVE,		//!< parameter cannot have negative value (opposite to "must be", but includes zero)
 		CANNOT_BE_NULL,			//!< parameter cannot have NULL value
-		CANNOT_BE_POSITIVE,		//!< parameter cannot have positive value (opposite to "must be", but includes zero)
 		CANNOT_BE_LARGER,		//!< parameter cannot have larger vaule than some vaule
 		CANNOT_BE_OFF,			//!< parameter cannot be off
 		CANNOT_BE_ON,			//!< parameter cannot be on
+		CANNOT_BE_POSITIVE,		//!< parameter cannot have positive value (opposite to "must be", but includes zero)
+		CANNOT_BE_SET_TO,		//!< parameter cannot be set to
 		CANNOT_BE_UNKNOWN, 		//!< parameter cannot be of type UNKNOWN
 		CANNOT_BE_ZERO,			//!< parameter cannot be zero
 		FILE_CANNOT_CREATE,		//!< could not create a file
@@ -41,13 +42,14 @@ public:
 		IS_DEPRECATED,			//!< deprecated function
 		MUST_BE_LOGGER_CUSTOM,	//!< must be in custom logger mode
 		MUST_BE_IDENTICAL,      //!< parameters must be identical
+		MUST_BE_IN_RANGE,		//!< parameter must be in some range
 		MUST_BE_NEGATIVE,		//!< parameter must have negative value
-		MUST_BE_POSITIVE,		//!< parameter must have positive value
 		MUST_BE_OFF,			//!< parameter must be off
 		MUST_BE_ON,				//!< parameter must be on
-		MUST_BE_ZERO,           //!< parameter must be 0
-		MUST_BE_IN_RANGE,		//!< parameter must be in some range
+		MUST_BE_POSITIVE,		//!< parameter must have positive value
+		MUST_BE_SET_TO,			//!< parameter must be set to
 		MUST_BE_SMALLER,		//!< parameter must be smaller than
+		MUST_BE_ZERO,           //!< parameter must be 0
 		MUST_HAVE_SAME_SIGN,	//!< some parameters must have the same sign
 		NETWORK_ALREADY_RUN,	//!< function cannot be called because network has already bun run
 		UNKNOWN_GROUP_ID,		//!< the specified group id is unknown

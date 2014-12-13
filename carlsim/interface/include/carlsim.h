@@ -140,14 +140,16 @@ public:
 	 * Debug msgs      | /dev/null  |   stdout   | /dev/null  | /dev/null  |    ?
 	 * All msgs        | debug.log  | debug.log  |  debug.log | debug.log  |    ?
 	 * \endverbatim
-	 * Location of the debug log file can be set in any mode using CARLsim::setLogDebugFp.
-	 * In mode CUSTOM, the other file pointers can be set using CARLsim::setLogsFp.
+	 * Location of the CARLsim log file can be set in any mode using setLogFile.
+	 * In mode CUSTOM, the other file pointers can be set using setLogsFpCustom.
 	 *
 	 * \param[in] netName 		network name
 	 * \param[in] simMode		either CPU_MODE or GPU_MODE
 	 * \param[in] loggerMode    either USER, DEVELOPER, SILENT, or CUSTOM
 	 * \param[in] ithGPU 		on which GPU to establish a context (only relevant in GPU_MODE)
 	 * \param[in] randSeed 		random number generator seed
+	 * \see setLogFile
+	 * \see setLogsFpCustom
 	 */
 	CARLsim(const std::string& netName="SNN", simMode_t simMode=CPU_MODE, loggerMode_t loggerMode=USER, int ithGPU=0,
 				int randSeed=-1);
@@ -604,21 +606,40 @@ public:
 	void saveSimulation(const std::string& fileName, bool saveSynapseInfo=true);
 
 	/*!
-	 * \brief Sets the file pointer of the debug log file
+	 * \brief Sets the name of the log file
 	 *
-	 * \param[in] fpLog file pointer to new log file
+	 * This function sets a new path/name for the CARLsim log file. By default, the log file name is given depending on
+	 * the loggerMode_t specified in #CARLsim.
+	 * However, it can be manually overridden using this function.
+	 * In order to disable the log file, pass string "NULL".
+	 *
+	 * \STATE CONFIG, SETUP, EXECUTION
+	 * \param fileName the name of the log file
+	 * \note This function cannot be called in loggerMode_t CUSTOM. In this case, use setLogsFpCustom instead
+	 * \attention Make sure the directory exists!
+	 * \see setLogsFpCustom
 	 */
-	void setLogDebugFp(FILE* fpLog);
+	void setLogFile(const std::string& fileName);
 
 	/*!
-	 * \brief Sets the file pointers for all log files
+	 * \brief Sets the file pointers for all log files in CUSTOM mode
 	 *
+	 * In loggerMode_t CUSTOM, custom file pointers can be used for the info, error, and debug log streams.
+	 * In this case, CARLsim does not take ownership of the file pointers; that is, the user should fclose them.
+	 * Setting a file pointer to NULL will not change the currently assigned file pointer (default value points to the
+	 * bit bucket).
+	 *
+	 * \STATE CONFIG, SETUP, EXECUTION
 	 * \param[in] fpInf file pointer for status info
 	 * \param[in] fpErr file pointer for errors/warnings
 	 * \param[in] fpDeb file pointer for debug info
 	 * \param[in] fpLog file pointer for debug log file that contains all the above info
+	 * \note This function can be called only in loggerMode_t CUSTOM.
+	 * \note Use NULL in order not to change current file pointers.
+	 * \attention Make sure to fclose the file pointers. But, do not fclose stdout or stderr, or they will remain
+	 * closed for the remainder of the process.
 	 */
-	void setLogsFp(FILE* fpInf, FILE* fpErr=NULL, FILE* fpDeb=NULL, FILE* fpLog=NULL);
+	void setLogsFpCustom(FILE* fpInf=NULL, FILE* fpErr=NULL, FILE* fpDeb=NULL, FILE* fpLog=NULL);
 
 
 
@@ -642,8 +663,8 @@ public:
 	 *                              the weight to be either minWt or maxWt. Default: false.
 	 * 
 	 * \note A weight cannot drop below zero, no matter what.
-	 * \see CARLsim::setWeight
-	 * \see CARLsim::scaleWeights
+	 * \see setWeight
+	 * \see scaleWeights
 	 * \since v3.0
 	 */
 	void biasWeights(short int connId, float bias, bool updateWeightRange=false);
@@ -661,7 +682,7 @@ public:
 	 *
 	 * Manually resets the spike buffers of a Spike Counter to zero (for a specific group).
 	 * Buffers get reset to zero automatically after recordDur. However, you can reset the buffer manually at any
-	 * point in time, as long as you call CARLsim::setupNetwork() first.
+	 * point in time, as long as you call setupNetwork() first.
 	 *
 	 * \STATE EXECUTION
 	 * \param grpId the group for which to reset the spike counts. Set to ALL if you want to reset all Spike Counters.
@@ -686,8 +707,8 @@ public:
 	 *                              the weight to be either minWt or maxWt. Default: false.
 	 * 
 	 * \note A weight cannot drop below zero, no matter what.
-	 * \see CARLsim::setWeight
-	 * \see CARLsim::biasWeights
+	 * \see setWeight
+	 * \see biasWeights
 	 * \since v3.0
 	 */
 	void scaleWeights(short int connId, float scale, bool updateWeightRange=false);
@@ -715,8 +736,8 @@ public:
 	 * each timestep of the simulation. current is a float vector of current amounts (mA), one element per neuron in
 	 * the group.
 	 *
-	 * To input different currents into a neuron over time, the idea is to run short periods of CARLsim::runNetwork
-	 * and subsequently calling CARLsim::setExternalCurrent again with updated current values.
+	 * To input different currents into a neuron over time, the idea is to run short periods of runNetwork and
+	 * subsequently calling setExternalCurrent again with updated current values.
 	 *
 	 * For example: Inject 5mA for 50 ms, then 0mA for 10 sec
 	 * \code
@@ -736,13 +757,13 @@ public:
 	 *
 	 * \note This method cannot be applied to SpikeGenerator groups.
 	 * \note If all neurons in the group should receive the same amount of current, you can use the convenience
-	 * function CARLsim::setExternalCurrent(int grpId, float current).
+	 * function setExternalCurrent(int grpId, float current).
 	 *
-	 * \attention Make sure to reset current after use (i.e., for the next call to CARLsim::runNetwork), otherwise
+	 * \attention Make sure to reset current after use (i.e., for the next call to runNetwork), otherwise
 	 * the current will keep getting applied to the group.
-	 * \see CARLsim::setExternalCurrent(int grpId, float current)
-	 * \see CARLsim::setSpikeRate
-	 * \see CARLsim::setSpikeGenerator
+	 * \see setExternalCurrent(int grpId, float current)
+	 * \see setSpikeRate
+	 * \see setSpikeGenerator
 	 */
 	void setExternalCurrent(int grpId, const std::vector<float>& current);
 
@@ -765,13 +786,13 @@ public:
 	 *
 	 * \note This method cannot be applied to SpikeGenerator groups.
 	 * \note If each neuron in the group should receive a different amount of current, you can use the method
-	 * CARLsim::setExternalCurrent(int grpId, const std::vector<float>& current) instead.
+	 * setExternalCurrent(int grpId, const std::vector<float>& current) instead.
 	 *
-	 * \attention Make sure to reset current after use (i.e., for the next call to CARLsim::runNetwork), otherwise
+	 * \attention Make sure to reset current after use (i.e., for the next call to runNetwork), otherwise
 	 * the current will keep getting applied to the group.
-	 * \see CARLsim::setExternalCurrent(int grpId, const std::vector<float>& current)
-	 * \see CARLsim::setSpikeRate
-	 * \see CARLsim::setSpikeGenerator
+	 * \see setExternalCurrent(int grpId, const std::vector<float>& current)
+	 * \see setSpikeRate
+	 * \see setSpikeGenerator
 	 */
 	void setExternalCurrent(int grpId, float current);
 
@@ -825,7 +846,7 @@ public:
 	 * by using readSpikes.m from /util/scripts. A file name can be specified via variable fname (specified directory
 	 * must exist). If no file name is specified, a default one will be created in the results directory:
 	 * "results/spk{group name}.dat", where group name is the name assigned to the group at initialization (can be
-	 * retrieved via CARLsim::getGroupName).
+	 * retrieved via getGroupName).
 	 * If no binary file shall be created, set fname equal to the string "NULL".
 	 *
 	 * The function returns a pointer to a SpikeMonitor object, which can be used to calculate spike statistics (such
@@ -857,12 +878,12 @@ public:
 	 * \param[in] refPeriod  refactory period (ms). Default: 1ms.
 	 *
 	 * \note This method can only be applied to SpikeGenerator groups.
-	 * \note CARLsim::setSpikeRate will *not* take over ownership of PoissonRate. In other words, if you allocate the
+	 * \note setSpikeRate will *not* take over ownership of PoissonRate. In other words, if you allocate the
 	 * PoissonRate object on the heap, you are responsible for correctly deallocating it.
-	 * \attention Make sure to reset spike rate after use (i.e., for the next call to CARLsim::runNetwork), otherwise
+	 * \attention Make sure to reset spike rate after use (i.e., for the next call to runNetwork), otherwise
 	 * the rate will keep getting applied to the group.
-	 * \see CARLsim::setExternalCurrent
-	 * \see CARLsim::setSpikeGenerator
+	 * \see setExternalCurrent
+	 * \see setSpikeGenerator
 	 */
 	void setSpikeRate(int grpId, PoissonRate* spikeRate, int refPeriod=1);
 
@@ -888,8 +909,8 @@ public:
 	 * \note Neuron IDs should be zero-indexed (first neuron in the group should have ID 0).
 	 * \note A weight cannot drop below zero, no matter what.
 	 * \attention Make sure this function is called on a synapse that actually exists!
-	 * \see CARLsim::biasWeights
-	 * \see CARLsim::scaleWeights
+	 * \see biasWeights
+	 * \see scaleWeights
 	 * \since v3.0
 	 */
 	void setWeight(short int connId, int neurIdPre, int neurIdPost, float weight, bool updateWeightRange=false);
@@ -917,8 +938,8 @@ public:
 	 * Certain methods can only be called in certain states. Check their documentation to see which method can be called
 	 * in which state.
 	 *
-	 * Certain methods perform state transitions. CARLsim::setupNetwork will change the state from CONFIG to SETUP. The
-	 * first call to CARLsim::runNetwork will change the state from SETUP to EXECUTION.
+	 * Certain methods perform state transitions. setupNetwork will change the state from CONFIG to SETUP. The
+	 * first call to runNetwork will change the state from SETUP to EXECUTION.
 	 * \returns current CARLsim state
 	 */
 	carlsimState_t getCARLsimState() { return carlsimState_; }
@@ -987,7 +1008,7 @@ public:
 	 * Neurons of a group can be arranged topographically, so that they virtually lie on a 3D grid. This simplifies
 	 * the creation of topographic connections in the network. The dimensions of the grid can thus be retrieved by
 	 * calling Grid3D.width, Grid3D.height, and Grid3D.depth. The total number of neurons is given by Grid3D.N.
-	 * See CARLsim::createGroup and Grid3D for more information.
+	 * See createGroup and Grid3D for more information.
 	 * \STATE SETUP, EXECUTION
 	 * \param[in] grpId the group ID for which to get the Grid3D struct
 	 * \returns the 3D grid struct of a group
@@ -1021,8 +1042,8 @@ public:
 	 * assigned to location in order; where the first dimension specifies the width, the second dimension is height,
 	 * and the third dimension is depth.
 	 *
-	 * For more information see CARLsim::createGroup and the Grid3D struct.
- 	 * See also CARLsim::getNeuronLocation3D(int grpId, int relNeurId).
+	 * For more information see createGroup and the Grid3D struct.
+ 	 * See also getNeuronLocation3D(int grpId, int relNeurId).
 	 *
 	 * \STATE CONFIG, SETUP, EXE
 	 * \param[in] neurId the neuron ID for which the 3D location should be returned
@@ -1043,8 +1064,8 @@ public:
 	 * assigned to location in order; where the first dimension specifies the width, the second dimension is height,
 	 * and the third dimension is depth.
 	 *
-	 * For more information see CARLsim::createGroup and the Grid3D struct.
-	 * See also CARLsim::getNeuronLocation3D(int neurId).
+	 * For more information see createGroup and the Grid3D struct.
+	 * See also getNeuronLocation3D(int neurId).
 	 *
 	 * \STATE CONFIG, SETUP, EXE
 	 * \param[in] neurId the neuron ID for which the 3D location should be returned
@@ -1056,8 +1077,8 @@ public:
 	 * \brief Returns the number of connections (pairs of pre-post groups) in the network
 	 *
 	 * This function returns the number of connections (pairs of pre-post groups) in the network. Each pre-post
-	 * pair of neuronal groups has its own connection ID, which is returned by a call to CARLsim::connect.
-	 * \note This number might change throughout CARLsim state CONFIG, up to calling CARLsim::setupNetwork).
+	 * pair of neuronal groups has its own connection ID, which is returned by a call to connect.
+	 * \note This number might change throughout CARLsim state CONFIG, up to calling setupNetwork).
 	 * \STATE CONFIG, SETUP, EXECUTION
 	 * \returns the number of connections (pairs of pre-post groups) in the network
 	 */
@@ -1074,7 +1095,7 @@ public:
 	/*!
 	 * \brief returns the number of groups in the network
 	 *
-	 * \note This number might change throughout CARLsim state CONFIG, up to calling CARLsim::setupNetwork).
+	 * \note This number might change throughout CARLsim state CONFIG, up to calling setupNetwork).
 	 * \TODO finish docu
 	 * \STATE CONFIG, SETUP, EXECUTION
 	 */
@@ -1083,7 +1104,7 @@ public:
 	/*!
 	 * \brief returns the total number of allocated neurons in the network
 	 *
-	 * \note This number might change throughout CARLsim state CONFIG, up to calling CARLsim::setupNetwork).
+	 * \note This number might change throughout CARLsim state CONFIG, up to calling setupNetwork).
 	 * \TODO finish docu
 	 * \STATE CONFIG, SETUP, EXECUTION
 	 */
@@ -1092,7 +1113,7 @@ public:
 	/*!
 	 * \brief returns the total number of regular (Izhikevich) neurons
 	 *
-	 * \note This number might change throughout CARLsim state CONFIG, up to calling CARLsim::setupNetwork).
+	 * \note This number might change throughout CARLsim state CONFIG, up to calling setupNetwork).
 	 * \TODO finish docu
 	 * \STATE CONFIG, SETUP, EXECUTION
 	 */
@@ -1101,7 +1122,7 @@ public:
 	/*!
 	 * \brief returns the total number of regular (Izhikevich) excitatory neurons
 	 *
-	 * \note This number might change throughout CARLsim state CONFIG, up to calling CARLsim::setupNetwork).
+	 * \note This number might change throughout CARLsim state CONFIG, up to calling setupNetwork).
 	 * \TODO finish docu
 	 * \STATE CONFIG, SETUP, EXECUTION
 	 */
@@ -1110,7 +1131,7 @@ public:
 	/*!
 	 * \brief returns the total number of regular (Izhikevich) inhibitory neurons
 	 *
-	 * \note This number might change throughout CARLsim state CONFIG, up to calling CARLsim::setupNetwork).
+	 * \note This number might change throughout CARLsim state CONFIG, up to calling setupNetwork).
 	 * \TODO finish docu
 	 * \STATE CONFIG, SETUP, EXECUTION
 	 */
@@ -1119,7 +1140,7 @@ public:
 	/*!
 	 * \brief returns the total number of spike generator neurons
 	 *
-	 * \note This number might change throughout CARLsim state CONFIG, up to calling CARLsim::setupNetwork).
+	 * \note This number might change throughout CARLsim state CONFIG, up to calling setupNetwork).
 	 * \TODO finish docu
 	 * \STATE CONFIG, SETUP, EXECUTION
 	 */
@@ -1128,7 +1149,7 @@ public:
 	/*!
 	 * \brief returns the total number of excitatory spike generator neurons
 	 *
-	 * \note This number might change throughout CARLsim state CONFIG, up to calling CARLsim::setupNetwork).
+	 * \note This number might change throughout CARLsim state CONFIG, up to calling setupNetwork).
 	 * \TODO finish docu
 	 * \STATE CONFIG, SETUP, EXECUTION
 	 */
@@ -1137,7 +1158,7 @@ public:
 	/*!
 	 * \brief returns the total number of inhibitory spike generator neurons
 	 *
-	 * \note This number might change throughout CARLsim state CONFIG, up to calling CARLsim::setupNetwork).
+	 * \note This number might change throughout CARLsim state CONFIG, up to calling setupNetwork).
 	 * \TODO finish docu
 	 * \STATE CONFIG, SETUP, EXECUTION
 	 */
@@ -1249,7 +1270,7 @@ public:
 	 * \brief returns pointer to previously allocated SpikeMonitor object, NULL else
 	 *
 	 * This function returns a pointer to a SpikeMonitor object that has previously been created using the method
-	 * CARLsim::setSpikeMonitor. If the group does not have a SpikeMonitor, NULL is returned.
+	 * setSpikeMonitor. If the group does not have a SpikeMonitor, NULL is returned.
 	 *
 	 * \STATE SETUP, EXECUTION
 	 * \param[in] grpId the group ID

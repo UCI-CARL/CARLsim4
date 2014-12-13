@@ -454,20 +454,10 @@ public:
 	const FILE* getLogFpLog() { return fpLog_; }
 
 	/*!
-	 * \brief Sets the file pointer of the debug log file
-	 * \param[in] fpLog file pointer to new log file
-	 */
-	void setLogDebugFp(FILE* fpLog);
-
-	/*!
 	 * \brief Sets the file pointers for all log files
-	 *
-	 * \param[in] fpInf file pointer for status info
-	 * \param[in] fpErr file pointer for errors/warnings
-	 * \param[in] fpDeb file pointer for debug info
-	 * \param[in] fpLog file pointer for debug log file that contains all the above info
+	 * file pointer NULL means don't change it.
 	 */
-	void setLogsFp(FILE* fpInf, FILE* fpErr, FILE* fpDeb, FILE* fpLog);
+	void setLogsFp(FILE* fpInf=NULL, FILE* fpErr=NULL, FILE* fpDeb=NULL, FILE* fpLog=NULL);
 
 
 	// +++++ PUBLIC METHODS: GETTERS / SETTERS ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
