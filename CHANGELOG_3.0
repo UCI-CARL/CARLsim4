@@ -15,6 +15,7 @@ Legend:
   * Fixed linking errors for Hello World project.
   + Added list of tested platforms and devices to RELEASE_NOTES.
   + Added list of known issues to RELEASE_NOTES.
+  + Added forward/backward stepping OAT plotting.
 
 2014-12-12     Michael Beyeler <mbeyeler@uci.edu>
   * Fixed docs generation in Doxygen 1.7.

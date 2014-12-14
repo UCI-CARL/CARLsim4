@@ -19,7 +19,7 @@ classdef NetworkMonitor < handle
     %    >> NM.plot(1:10,100); % frame=100ms, plot first ten frames
     %    >> % etc.
     %
-    % Version 12/8/2014
+    % Version 10/5/2014
     % Author: Michael Beyeler <mbeyeler@uci.edu>
     
     %% PROPERTIES
@@ -32,10 +32,7 @@ classdef NetworkMonitor < handle
         groupSubPlots;      % cell array of assigned subplot slots
         groupMonObj;        % cell array of GroupMonitor objects
 
-        spkFilePrefix;      % spike file prefix, e.g. "spk_"
-        spkFileSuffix;      % spike file suffix, e.g. ".dat"
-
-		errorMode;          % program mode for error handling
+        errorMode;          % program mode for error handling
         supportedErrorModes;% supported error modes
     end
     
@@ -52,7 +49,10 @@ classdef NetworkMonitor < handle
         plotDispFrameNr;    % flag whether to display frame number
         plotFPS;            % frames per second for plotting
         plotBinWinMs;       % binning window size (time)
+
         plotStepFrames;     % flag whether to waitforbuttonpress btw frames
+        plotStepFramesFW;    % flag whether to make a step forward
+        plotStepFramesBW;    % flag whether to make a step backward
         
         recordBgColor;      % bg color of plot (for recording)
         recordFile;         % filename for recording
@@ -76,7 +76,7 @@ classdef NetworkMonitor < handle
             %                       "sim_{simName}.dat")
             % LOADGROUPSFROMFILE  - A flag whether to automatically add all
             %                       groups in the network. Default: true.
-            % ERRORMODE           - Error Mode in which to run this func.
+            % ERRORMODE           - Error Mode in which to run SpikeReader.
             %                       The following modes are supported:
             %                         - 'standard' Errors will be fatal
             %                                      (returned via Matlab
@@ -121,50 +121,14 @@ classdef NetworkMonitor < handle
             
             % if flag is set, add all groups for plotting from file
             if loadGroupsFromFile
-	            % add groups in silent mode, so that no errors are thrown
-	            % if not all spike files are found
-                obj.addAllGroupsFromFile('silent')
-				
-				if numel(obj.groupNames)==0
-					disp 'meow'
-					obj.throwError(['No groups added. Make sure you ' ...
-						'have the right spike file attributes. Try ' ...
-						'calling NM.setSpikeFileAttributes(prefix,' ...
-						'suffix) with the right values, then call ' ...
-						'NM.addAllGroupsFromFile().'],'warning');
-				end
+                obj.addAllGroupsFromFile()
             end
         end
         function delete(obj)
             % destructor
         end
         
-        function addAllGroupsFromFile(obj, errorMode)
-			% NM.addAllGroupsFromFile() adds all neuronal groups that are
-			% listed in the simulation info file.
-            % ERRORMODE           - Error Mode in which to run this func.
-            %                       The following modes are supported:
-            %                         - 'standard' Errors will be fatal
-            %                                      (returned via Matlab
-            %                                      function error())
-            %                         - 'warning'  Errors will be warnings
-            %                                      returned via Matlab
-            %                                      function warning())
-            %                         - 'silent'   No exceptions will be
-            %                                      thrown, but object will
-            %                                      populate the properties
-            %                                      errorFlag and errorMsg.
-            %                       Default: 'standard'.
-			obj.unsetError()
-			if nargin<2, errorMode='silent'; end
-			
-            for i=1:numel(obj.simObj.groups)
-                obj.addGroup(obj.simObj.groups(i).name, 'default', ...
-                    [], [], errorMode)
-            end
-		end
-		
-		function addGroup(obj, name, plotType, grid3D, subPlots, errorMode)
+        function addGroup(obj, name, plotType, grid3D, subPlots, errorMode)
             % NM.addGroup(name,plotType,grid3D,subPlots,errorMode) adds a
             % specific neuronal group to the NetworkMonitor.
             % This function is implicitly called on all groups if a
@@ -219,34 +183,21 @@ classdef NetworkMonitor < handle
             end
             
             % create GroupMonitor object for this group
-            GM = GroupMonitor(name, obj.resultsFolder, 'silent');
+            GM = GroupMonitor(name, obj.resultsFolder, errorMode);
             
-            % check whether valid spike file found
-			if ~GM.hasValidSpikeFile()
-				% if not found, try again with new spike file attributes
-				GM.setSpikeFileAttributes(obj.spkFilePrefix, obj.spkFileSuffix);
-				
-				% if again not found, exit
-				if ~GM.hasValidSpikeFile()
-		            [~,errMsg] = GM.getError();
-					obj.throwError(errMsg, errorMode);
-					return % make sure we exit after spike file not found
-				end
-			end
-			
-			% make sure GM is valid
-			[errFlag,errMsg] = GM.getError();
-			if errFlag
-				obj.throwError(errMsg, errorMode);
-				return
-			end
+            % check whether valid spike file found, exit if not found
+            [errFlag,errMsg] = GM.getError();
+            if errFlag
+                obj.throwError(errMsg, errorMode);
+                return % make sure we exit after spike file not found
+            end
             
             % set plot type to specific type or find default type
             GM.setPlotType(plotType);
             
             % disable interactive mode to avoid press key events etc.
             GM.setPlottingAttributes('interactiveMode',false);
-			
+            
             % set Grid3D if necessary
             if ~isempty(grid3D) && prod(grid3D)>=1
                 GM.setGrid3D(grid3D);
@@ -324,7 +275,7 @@ classdef NetworkMonitor < handle
             nNeur = obj.groupMonObj{gId}.getNumNeurons();
         end
         
-        function plot(obj, frames, binWindowMs, stepFrames)
+        function plot(obj, frames, binWindowMs)
             % NM.plot(frames,binWindowMs,stepFrames) plots the specified
             % frames in the current figure/axes.
             % NM.plot will display all the groups the NetworkMonitor knows
@@ -332,6 +283,12 @@ classdef NetworkMonitor < handle
             % group from plots, call NM.removeGroup on it.
             % The plotting type of each group can be changed by calling
             % NM.setGroupPlotType.
+            %
+            % Press 's' at any time to enter stepping mode.
+            % In this mode, pressing the right arrow key will step forward
+            % to display the next frame in the list, whereas pressing the
+            % left arrow key will step backward to the last frame in the
+            % list. Exit stepping mode by pressing 's' again.
             %
             % A list of plotting attributes can be set directly as input
             % arguments. The full list of available attributes can be set
@@ -343,10 +300,6 @@ classdef NetworkMonitor < handle
             %                Default: display all frames.
             % BINWINDOWMS  - The binning window (ms) in which the data will
             %                be displayed. Default: 1000.
-            % STEPFRAMES   - A boolean flag that indicates whether to wait
-            %                for user input (button press) before
-            %                displaying the next frame. Default: false.
-            if nargin<4,stepFrames=obj.plotStepFrames;end
             if nargin<3,binWindowMs=obj.plotBinWinMs;end
             if nargin<2 || isempty(frames) || sum(frames==-1)
                 frames = 1:ceil(obj.simObj.sim.simTimeSec*1000.0/binWindowMs);
@@ -361,9 +314,6 @@ classdef NetworkMonitor < handle
             if ~Utilities.verify(binWindowMs,{{'isscalar',[1 inf]}})
                 obj.throwError('Frame duration must be a scalar e[1 inf]')
                 return
-            end
-            if ~Utilities.verify(stepFrames,{'islogical','isnumeric'})
-                obj.throwError('stepFrames must be true/false');return
             end
             
             % make sure we have something to plot
@@ -384,13 +334,16 @@ classdef NetworkMonitor < handle
             
             % reset abort flag, set up callback for key press events
             obj.plotAbortPlotting = false;
-            set(gcf,'KeyPressFcn',@obj.pauseOnKeyPressCallback)
+            set(gcf,'KeyPressFcn',@obj.ntwMonOnKeyPressCallback)
             
             % display frames in specified axes
             grpNames = obj.groupNames;
             set(gcf,'color',obj.plotBgColor);
             [nrR, nrC] = obj.findPlotLayout(obj.numSubPlots);
-            for f=frames
+            % use a while loop instead of a for loop so that we can
+            % implement stepping backward
+            idx = 1;
+            while idx <= numel(frames)
                 if obj.plotAbortPlotting
                     % user pressed button to quit plotting
                     obj.plotAbortPlotting = false;
@@ -401,15 +354,31 @@ classdef NetworkMonitor < handle
                 for g=1:numel(grpNames)
                     gId = obj.getGroupId(grpNames{g});
                     subplot(nrR, nrC, obj.groupSubPlots{gId})
-                    obj.groupMonObj{gId}.plot([], f,  binWindowMs);
+                    obj.groupMonObj{gId}.plot([],frames(idx),binWindowMs);
                 end
                 drawnow
                 
-                % wait for button press or pause
-                if stepFrames || f==frames(end)
-                    waitforbuttonpress;
+                if obj.plotStepFrames
+                    % stepping mode: wait for user input
+                    while ~obj.plotAbortPlotting ...
+                            && ~obj.plotStepFramesFW ...
+                            && ~obj.plotStepFramesBW
+                        pause(0.1)
+                    end
+                    if obj.plotStepFramesBW
+                        % step one frame backward
+                        idx = max(1, idx-1);
+                    else
+                        % step one frame forward
+                        idx = idx + 1;
+                    end
+                    obj.plotStepFramesBW = false;
+                    obj.plotStepFramesFW = false;
                 else
+                    % wait according to frames per second, then
+                    % step forward
                     pause(1.0/obj.plotFPS)
+                    idx = idx + 1;
                 end
             end
             close;
@@ -532,24 +501,6 @@ classdef NetworkMonitor < handle
             %                  arrangement. Default: false
             obj.unsetError()
             if nargin<6,updDefPlotType=false;end
-            if ~Utilities.verify(groupName,'ischar')
-                obj.throwError('Group name must be a string');return
-            end
-			if ~Utilities.verify(dim0, {'isscalar',[0 inf]})
-				obj.throwError(['dim0 must be numeric and in the ' ...
-					'range [0 inf]']);return
-			end
-			if ~Utilities.verify(dim1, {'isscalar',[0 inf]})
-				obj.throwError(['dim1 must be numeric and in the ' ...
-					'range [0 inf]']);return
-			end
-			if ~Utilities.verify(dim1, {'isscalar',[0 inf]})
-				obj.throwError(['dim1 must be numeric and in the ' ...
-					'range [0 inf]']);return
-			end
-			if ~Utilities.verify(updDefPlotType,'islogical')
-				obj.throwError('updDefPlotType must be a boolean');return
-			end
             gId = obj.getGroupId(groupName);
             obj.groupMonObj{gId}.setGrid3D(dim0,dim1,dim2,updDefPlotType);
         end
@@ -572,42 +523,9 @@ classdef NetworkMonitor < handle
             %                               mean higher firing rate
             %                   - raster    a raster plot with binning
             %                               window: binWindowMs
-			obj.unsetError()
-			if ~Utilities.verify(groupName,'ischar')
-				obj.throwError('Group name must be a string');
-				return
-			end
             gId = obj.getGroupId(groupName);
             obj.groupMonObj{gId}.setPlotType(plotType);
-		end
-		
-		function setGroupSpikeFileAttributes(obj,groupName,prefix,suffix)
-            % NM.setGroupSpikeFileAttributes(groupName,prefix,suffix)
-            % Defines the naming conventions for spike files. They should
-            % all reside within SAVEFOLDER (specified in constructor), and
-            % be made of a common prefix, the population name (specified in
-            % ADDPOPULATION), and a common suffix.
-            % Example: files 'results/spk_V1.dat', 'results/spk_MT.dat'
-            %   -> saveFolder = 'results/'
-            %   -> prefix = 'spk_'
-            %   -> suffix = '.dat'
-            %   -> name of population = 'V1' or 'MT'
-			%
-			% If you want to change the spike file attributes for all
-			% groups, use NM.setSpikeFileAttributes instead.
-			obj.unsetError()
-            if ~Utilities.verify(groupName,'ischar')
-                obj.throwError('Group name must be a string');return
-            end
-            if ~Utilities.verify(prefix,'ischar')
-                obj.throwError('Prefix must be a string');return
-            end
-            if ~Utilities.verify(suffix,'ischar')
-                obj.throwError('Suffix must be a string');return
-            end
-            gId = obj.getGroupId(groupName);
-            obj.groupMonObj{gId}.setSpikeFileAttributes(prefix,suffix);
-		end
+        end
         
         function setGroupSubPlot(obj, groupName, subPlots)
             % NM.setGroupSubPlot(groupName, subPlots) specifies in which
@@ -655,17 +573,14 @@ classdef NetworkMonitor < handle
             %                  type ColorSpec (char such as 'w','b','k' or
             %                  a 3-element vector for RGB channels). The
             %                  default is white.
-            %
-            % DISPFRAMENR    -
-            %
+            % BINWINDOWMS    - The binning window (ms) in which the data
+            %                  will be displayed. Default: 1000.
+            % DISPFRAMENR    - A boolean flag that indicates whether to
+            %                  display the frame number. Default: true.
             % FPS            - The frames per second for the plotting loop.
             %                  The default is 5.
-            %
-            % FRAMEDUR       -
-            %
-            % STEPFRAMES     - A boolean flag that indicates whether to
-            %                  wait for user to pres key/button before
-            %                  plotting the next frame.
+            % BINWINDOWMS    - The binning window (ms) in which the data
+            %                  will be displayed. Default: 1000.
             obj.unsetError()
             
             if isempty(varargin)
@@ -674,7 +589,6 @@ classdef NetworkMonitor < handle
                 obj.plotBgColor = 'w';
                 obj.plotFPS = 5;
                 obj.plotBinWinMs = 1000;
-                obj.plotStepFrames = false;
                 return;
             end
             
@@ -702,16 +616,12 @@ classdef NetworkMonitor < handle
                         reqRange = [0.01 100];
                         throwErrOutOfRange = val<reqRange(1) | val>reqRange(2);
                         obj.plotFPS = val;
-                    case 'framedur'
-                        % frame duration in ms
+                    case 'binwindowms'
+                        % binning window in ms
                         throwErrNumeric = ~isnumeric(val);
                         reqRange = [1 inf];
                         throwErrOutOfRange = val<reqRange(1) | val>reqRange(2);
                         obj.plotBinWinMs = val;
-                    case 'stepframes'
-                        % whether to wait for button press before next frame
-                        throwErrNumeric = ~isnumeric(val) & ~islogical(val);
-                        obj.plotStepFrames = logical(val);
                     otherwise
                         % attribute does not exist
                         if isnumeric(attr) || islogical(attr)
@@ -838,51 +748,23 @@ classdef NetworkMonitor < handle
                 % advance index to next attr
                 nextIndex = nextIndex + 2;
             end
-		end
-		
-		function setSpikeFileAttributes(obj, prefix, suffix)
-            % NM.setSpikeFileAttributes(prefix,suffix)
-            % Defines the naming conventions for spike files. They should
-            % all reside within SAVEFOLDER (specified in constructor), and
-            % be made of a common prefix, the population name (specified in
-            % ADDPOPULATION), and a common suffix.
-            % Example: files 'results/spk_V1.dat', 'results/spk_MT.dat'
-            %   -> saveFolder = 'results/'
-            %   -> prefix = 'spk_'
-            %   -> suffix = '.dat'
-            %   -> name of population = 'V1' or 'MT'
-			%
-			% If you want to change the spike file attribute of only one
-			% specific group, use NM.setGroupSpikeFileAttributes instead.
-            if nargin<3,suffix='.dat';end
-            if nargin<2,prefix='spk_';end
-            obj.unsetError()
-
-			if ~Utilities.verify(prefix, 'ischar')
-				obj.throwError('Prefix must be a string');return
-			end
-			if ~Utilities.verify(suffix, 'ischar')
-				obj.throwError('Suffix must be a string');return
-			end
-			
-			% First: Store it in private member vars
-			% Reason is, in case attributes are wrong, we need to pass
-			% prefix and suffix to addGroup or addAllGroupsFromFile, which
-			% would otherwise not be possible
-			obj.spkFilePrefix = prefix;
-			obj.spkFileSuffix = suffix;
-			
-			% Second: Apply to all groups that have already been added
-			for i=1:numel(obj.groupNames)
-				obj.setGroupSpikeFileAttributes(obj.groupNames{i}, ...
-					prefix, suffix);
-			end
-		end
+        end
     end
     
     
     %% PRIVATE METHODS
     methods (Hidden, Access = private)
+        function addAllGroupsFromFile(obj)
+            % add groups in silent mode, so that no errors are thrown if not
+            % all spike files are found
+            errMode = 'silent';
+            
+            for i=1:numel(obj.simObj.groups)
+                obj.addGroup(obj.simObj.groups(i).name, 'default', ...
+                    [], [], errMode)
+            end
+        end
+        
         function bool = existsGroupName(obj,name)
             % bool = NM.existsGroupName(name) checks whether a group has
             % been registered under name NAME
@@ -897,23 +779,13 @@ classdef NetworkMonitor < handle
             nrC = ceil(numSubPlots*1.0/nrR);
         end
         
-        function id = getGroupId(obj,name,errMode)
+        function id = getGroupId(obj,name)
             % id = NM.getGroupId(name) returns the index of population with
             % name NAME
             %
             % NAME  - A string representing the name of a group that has
             %         been registered by calling NM.addPopulation.
-			obj.unsetError()
-			if nargin<3,errMode=obj.errorMode;end
-			id = -1;
-			
-			if ~Utilities.verify(name,'ischar')
-				obj.throwError('Name must be a string',errMode);return
-			end
             id = strcmpi(obj.groupNames,name);
-			if any(id)<=0
-				obj.throwError('Group name not found');return
-			end
         end
         
         function index = getGroupStructId(obj, name)
@@ -969,19 +841,41 @@ classdef NetworkMonitor < handle
             
             obj.setPlottingAttributes()
             obj.setRecordingAttributes()
-			obj.setSpikeFileAttributes()
-            
+
+            obj.plotStepFrames = false;
+            obj.plotStepFramesFW = false;
+            obj.plotStepFramesBW = false;
+
             obj.numSubPlots = 0;
         end
         
-        function pauseOnKeyPressCallback(obj,~,eventData)
+        function ntwMonOnKeyPressCallback(obj,~,eventData)
             % Callback function to pause plotting
             switch eventData.Key
                 case 'p'
                     disp('Paused. Press any key to continue.');
                     waitforbuttonpress;
                 case 'q'
+                    obj.plotStepFrames = false;
                     obj.plotAbortPlotting = true;
+                case 's'
+                    obj.plotStepFrames = ~obj.plotStepFrames;
+                    if obj.plotStepFrames
+                        disp(['Entering Stepping mode. Step forward ' ...
+                            'with right arrow key, step backward with ' ...
+                            'left arrow key.']);
+                    end
+                case 'leftarrow'
+                    disp('left')
+                    if obj.plotStepFrames
+                        obj.plotStepFramesBW = true;
+                    end
+                case 'rightarrow'
+                    disp('right')
+                    if obj.plotStepFrames
+                        obj.plotStepFramesFW = true;
+                    end
+                otherwise
             end
         end
         

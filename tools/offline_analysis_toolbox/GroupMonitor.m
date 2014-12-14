@@ -13,7 +13,7 @@ classdef GroupMonitor < handle
     % >> GM.recordMovie; % plots heat map and saves as 'movie.avi'
     % >> % etc.
     %
-    % Version 11/12/2014
+    % Version 10/5/2014
     % Author: Michael Beyeler <mbeyeler@uci.edu>
     
     %% PROPERTIES
@@ -29,7 +29,7 @@ classdef GroupMonitor < handle
     % private
     properties (Hidden, Access = private)
         spkObj;             % SpikeReader object
-        spkFilePrefix;      % spike file prefix, e.g. "spk_"
+        spkFilePrefix;      % spike file prefix, e.g. "spk"
         spkFileSuffix;      % spike file suffix, e.g. ".dat"
         spkData;            % buffer for spike data
         
@@ -47,8 +47,11 @@ classdef GroupMonitor < handle
         plotDispFrameNr;    % flag whether to display frame number
         plotFPS;            % frames per second for plotting
         plotBinWinMs;       % binning window size (time)
-        plotStepFrames;     % flag whether to waitforbuttonpress btw frames
+        
         plotInteractiveMode;% flag whether to allow click/key events
+        plotStepFrames;     % flag whether to waitforbuttonpress btw frames
+        plotStepFramesFW;    % flag whether to make a step forward
+        plotStepFramesBW;    % flag whether to make a step backward
         
         recordBgColor;      % bg color of plot (for recording)
         recordFile;         % filename for recording
@@ -115,7 +118,7 @@ classdef GroupMonitor < handle
             end
             
             % make sure spike file is valid
-%            obj.initSpikeReader();
+            obj.initSpikeReader();
         end
                 
         function delete(obj)
@@ -134,7 +137,7 @@ classdef GroupMonitor < handle
             % The plotting type can also be set manually using
             % GM.setPlotType.
             obj.unsetError()
-	        obj.initSpikeReader() % required to access Grid3D prop
+            obj.initSpikeReader() % required to access Grid3D prop
             plotType = 'default';
             
             % find dimensionality of Grid3D
@@ -213,10 +216,17 @@ classdef GroupMonitor < handle
             hasValid = ~errFlag;
         end
                 
-        function plot(obj, plotType, frames, binWindowMs, stepFrames)
+        function plot(obj, plotType, frames, binWindowMs)
             % GM.plot(plotType, frames, binWindowMs, stepFrames) plots the
             % specified frames in the current figure/axes. A list of
             % plotting attributes can be set directly as input arguments.
+            %
+            % If InteractiveMode is on, press 's' at any time to enter
+            % stepping mode. In this mode, pressing the right arrow key
+            % will step forward to display the next frame in the list,
+            % whereas pressing the left arrow key will step backward to
+            % display the last frame in the list. Exit stepping mode by
+            % pressing 's' again.
             %
             % The full list of available attributes can be set using
             % GM.setPlottingAttributes.
@@ -238,10 +248,6 @@ classdef GroupMonitor < handle
             %                Default: display all frames.
             % BINWINDOWMS  - The binning window (ms) in which the data will
             %                be displayed. Default: 1000.
-            % STEPFRAMES   - A boolean flag that indicates whether to wait
-            %                for user input (button press) before
-            %                displaying the next frame. Default: false.
-            if nargin<5,stepFrames=obj.plotStepFrames;end
             if nargin<4,binWindowMs=obj.plotBinWinMs;end
             if nargin<3 || isempty(frames) || frames==-1
                 obj.initSpikeReader()
@@ -259,9 +265,6 @@ classdef GroupMonitor < handle
                 obj.throwError('Frame duration must be a scalar e[1 inf]')
                 return
             end
-            if ~Utilities.verify(stepFrames,{'islogical','isnumeric'})
-                obj.throwError('stepFrames must be true/false');return
-            end
             
             % reset abort flag, set up callback for key press events
             if obj.plotInteractiveMode
@@ -273,7 +276,10 @@ classdef GroupMonitor < handle
             obj.loadDataForPlotting(plotType, binWindowMs);
             
             % display frame in specified axes
-            for i=frames
+            % use a while loop instead of a for loop so that we can
+            % implement stepping backward
+            idx = 1;
+            while idx <= numel(frames)
                 if obj.plotInteractiveMode && obj.plotAbortPlotting
                     % user pressed button to quit plotting
                     obj.plotAbortPlotting = false;
@@ -281,23 +287,51 @@ classdef GroupMonitor < handle
                     return
                 end
                 
-                obj.plotFrame(i,plotType,binWindowMs,obj.plotDispFrameNr);
+                % plot the frame
+                obj.plotFrame(frames(idx), plotType, binWindowMs, ...
+                    obj.plotDispFrameNr);
                 drawnow
 
-                % wait for button press or pause
+                % in interactive mode, key press events are active
                 if obj.plotInteractiveMode
-                    if stepFrames || i==frames(end)
+                    if idx==numel(frames)
                         waitforbuttonpress;
                     else
-                        pause(1.0/obj.plotFPS)
+                        if obj.plotStepFrames
+                            % stepping mode: wait for user input
+                            while ~obj.plotAbortPlotting ...
+                                    && ~obj.plotStepFramesFW ...
+                                    && ~obj.plotStepFramesBW
+                                pause(0.1)
+                            end
+                            if obj.plotStepFramesBW
+                                % step one frame backward
+                                idx = max(1, idx-1);
+                            else
+                                % step one frame forward
+                                idx = idx + 1;
+                            end
+                            obj.plotStepFramesBW = false;
+                            obj.plotStepFramesFW = false;
+                        else
+                            % wait according to frames per second, then
+                            % step forward
+                            pause(1.0/obj.plotFPS)
+                            idx = idx + 1;
+                        end
                     end
+                else
+                    % wait according to frames per second, then
+                    % step forward
+                    pause(1.0/obj.plotFPS)
+                    idx = idx + 1;
                 end
             end
             if obj.plotInteractiveMode,close;end
         end
         
         function recordMovie(obj, fileName, frames, binWindowMs, fps, winSize)
-            % NM.recordMovie(fileName, frames, binWindowMs, fps, winSize)
+            % NM.recordMovie(fileName, frames, frameDur, fps, winSize)
             % takes an AVI movie of a list of frames using the VIDEOWRITER
             % utility.
             %
@@ -509,9 +543,6 @@ classdef GroupMonitor < handle
             %                   off. If it is off, key events/FPS/stepping
             %                   will take no effect (helpful if you want to
             %                   take over control yourself). Default: true.
-            % STEPFRAMES      - A boolean flag that indicates whether to
-            %                   wait for user input (button press) before
-            %                   displaying the next frame. Default: false.
             obj.unsetError()
             
             if isempty(varargin)
@@ -522,7 +553,6 @@ classdef GroupMonitor < handle
                 obj.plotBinWinMs = 1000;
                 obj.plotHistNumBins = 10;
                 obj.plotHistShowRate = true;
-                obj.plotStepFrames = false;
                 obj.plotInteractiveMode = true;
                 return;
             end
@@ -571,10 +601,6 @@ classdef GroupMonitor < handle
                         % interactive mode
                         throwErrNumeric = ~isnumeric(val) && ~islogical(val);
                         obj.plotInteractiveMode = logical(val);
-                    case 'stepframes'
-                        % whether to wait for button press before next frame
-                        throwErrNumeric = ~isnumeric(val) & ~islogical(val);
-                        obj.plotStepFrames = logical(val);
                     otherwise
                         % attribute does not exist
                         if isnumeric(attr) || islogical(attr)
@@ -710,18 +736,18 @@ classdef GroupMonitor < handle
             % all reside within SAVEFOLDER (specified in constructor), and
             % be made of a common prefix, the population name (specified in
             % ADDPOPULATION), and a common suffix.
-            % Example: files 'results/spk_V1.dat', 'results/spk_MT.dat'
+            % Example: files 'results/spkV1.dat', 'results/spkMT.dat'
             %   -> saveFolder = 'results/'
-            %   -> prefix = 'spk_'
+            %   -> prefix = 'spk'
             %   -> suffix = '.dat'
             %   -> name of population = 'V1' or 'MT'
             if nargin<3,suffix='.dat';end
-            if nargin<2,prefix='spk_';end
+            if nargin<2,prefix='spk';end
             obj.unsetError()
             
             % need to re-load if file name changes
             if ~strcmpi(obj.spkFilePrefix,prefix) ...
-                    || ~strcmpi(obj.spkFileSuffix,suffix)
+                    || ~strcmpi(obj.spikeFileSuffix,suffix)
                 obj.needToInitSR = true;
                 obj.needToLoadData = true;
             end
@@ -782,7 +808,7 @@ classdef GroupMonitor < handle
             if nargin<3,plotBinWinMs=obj.plotBinWinMs;end
             if nargin<2,plotType=obj.plotType;end
             obj.unsetError()
-            obj.initSpikeReader();
+            if obj.needToInitSR,obj.initSpikeReader();end
             
             % parse plot type and make it permanent
             if strcmpi(plotType,'default')
@@ -884,6 +910,10 @@ classdef GroupMonitor < handle
             obj.needToInitSR = true;
             obj.needToLoadData = true;
             
+            obj.plotStepFrames = false;
+            obj.plotStepFramesFW = false;
+            obj.plotStepFramesBW = false;
+            
             obj.grid3D = -1;
             
             obj.supportedPlotTypes  = {'flowfield', 'heatmap', ...
@@ -898,7 +928,24 @@ classdef GroupMonitor < handle
                     disp('Paused. Press any key to continue.');
                     waitforbuttonpress;
                 case 'q'
+                    obj.plotStepFrames = false;
                     obj.plotAbortPlotting = true;
+                case 's'
+                    obj.plotStepFrames = ~obj.plotStepFrames;
+                    if obj.plotStepFrames
+                        disp(['Entering Stepping mode. Step forward ' ...
+                            'with right arrow key, step backward with ' ...
+                            'left arrow key.']);
+                    end
+                case 'leftarrow'
+                    if obj.plotStepFrames
+                        obj.plotStepFramesBW = true;
+                    end
+                case 'rightarrow'
+                    if obj.plotStepFrames
+                        obj.plotStepFramesFW = true;
+                    end
+                otherwise
             end
         end
         
@@ -936,7 +983,7 @@ classdef GroupMonitor < handle
                 frame = obj.spkData(:,:,frameNr);
                 imagesc(frame, [0 maxD])
                 axis image equal
-                axis([1 obj.grid3D(1)*obj.grid3D(3) 1 obj.grid3D(2)])
+                axis([1 obj.grid3D(1) 1 obj.grid3D(2)])
                 title(['Group ' obj.name ', rate = [0 , ' ...
                     num2str(maxD*1000/frameDur) ' Hz]'])
                 xlabel('nrX')
