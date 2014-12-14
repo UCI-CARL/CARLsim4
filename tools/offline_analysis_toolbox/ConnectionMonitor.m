@@ -52,8 +52,11 @@ classdef ConnectionMonitor < handle
         plotBgColor;        % bg color of plot (for plotting)
         plotDispFrameNr;    % flag whether to display frame number
         plotFPS;            % frames per second for plotting
-        plotStepFrames;     % flag whether to waitforbuttonpress btw frames
+
         plotInteractiveMode;% flag whether to allow click/key events
+        plotStepFrames;     % flag whether to waitforbuttonpress btw frames
+        plotStepFramesFW;    % flag whether to make a step forward
+        plotStepFramesBW;    % flag whether to make a step backward
         
         recordBgColor;      % bg color of plot (for recording)
         recordFile;         % filename for recording
@@ -168,10 +171,17 @@ classdef ConnectionMonitor < handle
             hasValid = ~errFlag;
         end
         
-        function plot(obj, plotType, frames, stepFrames)
+        function plot(obj, plotType, frames)
             % CM.plot(plotType, frames, stepFrames) plots the specified
             % frames (or snapshots) in the current figure/axes. A list of
             % plotting attributes can be set directly as input arguments.
+            %
+            % If InteractiveMode is on, press 's' at any time to enter
+            % stepping mode. In this mode, pressing the right arrow key
+            % will step forward to display the next frame in the list,
+            % whereas pressing the left arrow key will step backward to
+            % display the last frame in the list. Exit stepping mode by
+            % pressing 's' again.
             %
             % The full list of available attributes can be set using the
             % method CM.setPlottingAttributes.
@@ -189,10 +199,6 @@ classdef ConnectionMonitor < handle
             %                example, requesting frames=[1 2 8] will
             %                display the first, second, and eighth frame.
             %                Default: display all frames.
-            % STEPFRAMES   - A boolean flag that indicates whether to wait
-            %                for user input (button press) before
-            %                displaying the next frame. Default: false.
-            if nargin<4,stepFrames=obj.plotStepFrames;end
             if nargin<3 || isempty(frames) || frames==-1
                 obj.initConnectionReader()
                 frames = 1:ceil(obj.CR.getNumSnapshots());
@@ -205,9 +211,6 @@ classdef ConnectionMonitor < handle
                 obj.throwError('Frames must be a numeric vector e[1,inf]')
                 return
             end
-            if ~Utilities.verify(stepFrames,{'islogical','isnumeric'})
-                obj.throwError('stepFrames must be true/false');return
-            end
             
             % reset abort flag, set up callback for key press events
             if obj.plotInteractiveMode
@@ -218,8 +221,11 @@ classdef ConnectionMonitor < handle
             % load data and reshape for plotting
             obj.loadDataForPlotting(plotType);
             
-            % display frames in specified axes
-            for i=frames
+            % display frame in specified axes
+            % use a while loop instead of a for loop so that we can
+            % implement stepping backward
+            idx = 1;
+            while idx <= numel(frames)
                 if obj.plotInteractiveMode && obj.plotAbortPlotting
                     % user pressed button to quit plotting
                     obj.plotAbortPlotting = false;
@@ -227,16 +233,43 @@ classdef ConnectionMonitor < handle
                     return
                 end
                 
-                obj.plotFrame(i,plotType,obj.plotDispFrameNr);
+                % plot the frame
+                obj.plotFrame(frames(idx), plotType, obj.plotDispFrameNr);
                 drawnow
 
-                % wait for button press or pause
+                % in interactive mode, key press events are active
                 if obj.plotInteractiveMode
-                    if stepFrames || i==frames(end)
+                    if idx==numel(frames)
                         waitforbuttonpress;
                     else
-                        pause(1.0/obj.plotFPS)
+                        if obj.plotStepFrames
+                            % stepping mode: wait for user input
+                            while ~obj.plotAbortPlotting ...
+                                    && ~obj.plotStepFramesFW ...
+                                    && ~obj.plotStepFramesBW
+                                pause(0.1)
+                            end
+                            if obj.plotStepFramesBW
+                                % step one frame backward
+                                idx = max(1, idx-1);
+                            else
+                                % step one frame forward
+                                idx = idx + 1;
+                            end
+                            obj.plotStepFramesBW = false;
+                            obj.plotStepFramesFW = false;
+                        else
+                            % wait according to frames per second, then
+                            % step forward
+                            pause(1.0/obj.plotFPS)
+                            idx = idx + 1;
+                        end
                     end
+                else
+                    % wait according to frames per second, then
+                    % step forward
+                    pause(1.0/obj.plotFPS)
+                    idx = idx + 1;
                 end
             end
             if obj.plotInteractiveMode,close;end
@@ -377,9 +410,6 @@ classdef ConnectionMonitor < handle
             %                   off. If it is off, key events/FPS/stepping
             %                   will take no effect (helpful if you want to
             %                   take over control yourself). Default: true.
-            % STEPFRAMES      - A boolean flag that indicates whether to
-            %                   wait for user input (button press) before
-            %                   displaying the next frame. Default: false.
             obj.unsetError()
             
             if isempty(varargin)
@@ -388,7 +418,6 @@ classdef ConnectionMonitor < handle
                 obj.plotBgColor = 'w';
                 obj.plotFPS = 5;
                 obj.plotHistNumBins = 20;
-                obj.plotStepFrames = false;
                 obj.plotInteractiveMode = true;
                 return;
             end
@@ -427,10 +456,6 @@ classdef ConnectionMonitor < handle
                         % interactive mode
                         throwErrNumeric = ~isnumeric(val) && ~islogical(val);
                         obj.plotInteractiveMode = logical(val);
-                    case 'stepframes'
-                        % whether to wait for button press before next frame
-                        throwErrNumeric = ~isnumeric(val) & ~islogical(val);
-                        obj.plotStepFrames = logical(val);
                     otherwise
                         % attribute does not exist
                         if isnumeric(attr) || islogical(attr)
@@ -704,7 +729,11 @@ classdef ConnectionMonitor < handle
             
             obj.plotHistData = [];
             obj.plotHistBins = [];
-            
+
+            obj.plotStepFrames = false;
+            obj.plotStepFramesFW = false;
+            obj.plotStepFramesBW = false;
+
             obj.needToInitCR = true;
             obj.needToLoadData = true;
             
@@ -719,7 +748,24 @@ classdef ConnectionMonitor < handle
                     disp('Paused. Press any key to continue.');
                     waitforbuttonpress;
                 case 'q'
+                    obj.plotStepFrames = false;
                     obj.plotAbortPlotting = true;
+                case 's'
+                    obj.plotStepFrames = ~obj.plotStepFrames;
+                    if obj.plotStepFrames
+                        disp(['Entering Stepping mode. Step forward ' ...
+                            'with right arrow key, step backward with ' ...
+                            'left arrow key.']);
+                    end
+                case 'leftarrow'
+                    if obj.plotStepFrames
+                        obj.plotStepFramesBW = true;
+                    end
+                case 'rightarrow'
+                    if obj.plotStepFrames
+                        obj.plotStepFramesFW = true;
+                    end
+                otherwise
             end
         end
         
