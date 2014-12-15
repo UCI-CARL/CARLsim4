@@ -243,7 +243,7 @@ class ConnectionMonitor {
 	 *
 	 * In order to get the current state of the weight matrix, this function will take a snapshot itself.
 	 *
-	 * \NOTE Please note that this will visualize a getNumNeuronsPre() x getNumNeuronsPost() matrix on screen. For
+	 * \note Please note that this will visualize a getNumNeuronsPre() x getNumNeuronsPost() matrix on screen. For
 	 * connections between large neuronal groups, use ConnectionMonitor::printSparse.
 	 */
 	void print();
@@ -258,7 +258,7 @@ class ConnectionMonitor {
 	 *
 	 * In order to get the current state of the weight matrix, this function will take a snapshot itself.
 	 *
-	 * \NOTE Please note that this is the preferred way to visualize connections between large neuronal groups. The
+	 * \note Please note that this is the preferred way to visualize connections between large neuronal groups. The
 	 * method ConnectionMonitor::print should primarily be used for small-sized groups.
 	 *
 	 * \param[in] neurPostId   The neuron ID of the post-synaptic group for which to generate the sparse weight list.

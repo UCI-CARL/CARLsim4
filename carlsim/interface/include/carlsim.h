@@ -429,7 +429,7 @@ public:
 	 * group.
 	 *
 	 * \STATE CONFIG
-	 * \param groupId the symbolic name of a group
+	 * \param grpId the symbolic name of a group
 	 * \param baseDP  the baseline concentration of Dopamine
 	 * \param tauDP the decay time constant of Dopamine
 	 * \param base5HT  the baseline concentration of Serotonin
@@ -538,23 +538,40 @@ public:
 	 * The STF effect is modeled by a utilization parameter u, representing the fraction of available resources ready for
 	 * use (release probability). Following a spike, (i) u increases due to spike-induced calcium influx to the
 	 * presynaptic terminal, after which (ii) a fraction u of available resources is consumed to produce the post-synaptic
-	 * current. Between spikes, u decays back to zero with time constant STP_tau_u (\tau_F), and x recovers to value one
-	 * with time constant STP_tau_x (\tau_D).
+	 * current. Between spikes, u decays back to zero with time constant STP_tau_u (tau_F), and x recovers to value one
+	 * with time constant STP_tau_x (tau_D).
+	 *
+	 * Source: Misha Tsodyks and Si Wu (2013) Short-term synaptic plasticity. Scholarpedia, 8(10):3153., rev #136920
 	 *
 	 * \STATE CONFIG
-	 * \param[in] grpId       pre-synaptic group id. STP will apply to all neurons of that group!
+	 * \param[in] grpId       pre-synaptic group ID
 	 * \param[in] isSet       a flag whether to enable/disable STP
 	 * \param[in] STP_U       increment of u induced by a spike
-	 * \param[in] STP_tau_u   decay constant of u (\tau_F)
-	 * \param[in] STP_tau_x   decay constant of x (\tau_D)
+	 * \param[in] STP_tau_u   decay constant of u (tau_F)
+	 * \param[in] STP_tau_x   decay constant of x (tau_D)
+	 * \note STP will be applied to all outgoing synapses of all neurons in this group.
 	 */
 	void setSTP(int grpId, bool isSet, float STP_U, float STP_tau_u, float STP_tau_x);
 
 	/*!
 	 * \brief Sets STP params U, tau_u, and tau_x of a neuron group (pre-synaptically) using default values
 	 *
-	 * \TODO finish docu
+	 * This function enables/disables STP on a specific pre-synaptic group and assign default values to all STP
+	 * parameters.
+	 * The default parameters for an excitatory neuron are U=0.45, tau_u=50.0, tau_f=750.0 (depressive).
+	 * The default parameters for an inhibitory neuron are U=0.15, tau_u=750.0, tau_f=50.0 (facilitative).
+	 *
+	 * Source: Misha Tsodyks and Si Wu (2013) Short-term synaptic plasticity. Scholarpedia, 8(10):3153., rev #136920
+	 *
+	 * These default values can be overridden using setDefaultSTPparams.
+	 *
 	 * \STATE CONFIG
+	 * \param[in] grpId   pre-synaptic group ID
+	 * \param[in] isSet   a flag whether to enable/disable STP
+	 * \note STP will be applied to all outgoing synapses of all neurons in this group.
+	 * \see setDefaultSTPparams
+	 * \see setSTP(int, bool, float, float, float)
+	 * \since v3.0
 	 */
 	void setSTP(int grpId, bool isSet);
 
@@ -725,7 +742,7 @@ public:
 	 * \STATE CONFIG, SETUP
 	 * \param[in] grpIdPre 		the pre-synaptic group ID
 	 * \param[in] grpIdPost 	the post-synaptic group ID
-	 * \param[in] connectionMon an instance of class ConnectionMonitor (see callback.h)
+	 * \param[in] fname         file name of the binary to be created
 	 */
 	ConnectionMonitor* setConnectionMonitor(int grpIdPre, int grpIdPost, const std::string& fname);
 
@@ -856,7 +873,7 @@ public:
 	 * \STATE CONFIG, SETUP
 	 * \param[in] grpId 		the group ID
 	 * \param[in] fname 		name of the binary file to be created. Leave empty for default name
-	 *                      	"results/spk{grpName}.dat". Set to string "NULL" to suppress file creation. Default: ""
+	 *                      	"results/spk_{grpName}.dat". Set to string "NULL" to suppress file creation. Default: ""
 	 * \returns   SpikeMonitor*	pointer to a SpikeMonitor object, which can be used to calculate spike statistics
 	 *                          (such as group firing rate, number of silent neurons, etc.) or retrieve all spikes in
 	 * 							AER format
@@ -1068,7 +1085,8 @@ public:
 	 * See also getNeuronLocation3D(int neurId).
 	 *
 	 * \STATE CONFIG, SETUP, EXE
-	 * \param[in] neurId the neuron ID for which the 3D location should be returned
+	 * \param[in] grpId       the group ID
+	 * \param[in] relNeurId   the neuron ID (relative to the group) for which the 3D location should be returned
 	 * \returns the 3D location a neuron codes for as a Point3D struct
 	 */
 	Point3D getNeuronLocation3D(int grpId, int relNeurId);
@@ -1373,12 +1391,27 @@ public:
 	void setDefaultISTDPparams(float betaLTP, float betaLTD, float lamda, float delta, stdpType_t stdpType);
 
 	/*!
-	 * \brief sets default values for STP params (neurType either EXCITATORY_NEURON or INHIBITORY_NEURON)
+	 * \brief Sets default values for STP params U, tau_u, and tau_x of a neuron group (pre-synaptically)
 	 *
-	 * \TODO finish docu
+	 * This function sets the default values for STP parameters U tau_u, and tau_x.
+	 * These values will then apply to all subsequent calls to setSTP(int, bool).
+	 *
+	 * CARLsim will automatically assign the following values, which can be changed at any time during CONFIG:
+	 * The default parameters for an excitatory neuron are U=0.45, tau_u=50.0, tau_f=750.0 (depressive).
+	 * The default parameters for an inhibitory neuron are U=0.15, tau_u=750.0, tau_f=50.0 (facilitative).
+	 *
+	 * Source: Misha Tsodyks and Si Wu (2013) Short-term synaptic plasticity. Scholarpedia, 8(10):3153., rev #136920
+	 *
 	 * \STATE CONFIG
+	 * \param[in] neurType   either EXCITATORY_NEURON or INHIBITORY_NEURON
+	 * \param[in] STP_U      default value for increment of u induced by a spike
+	 * \param[in] STP_tau_u  default value for decay constant of u
+	 * \param[in] STP_tau_x  default value for decay constant of x
+	 * \see setSTP(int, bool)
+	 * \see setSTP(int, bool, float, float, float)
+	 * \since v3.0
 	 */
-	void setDefaultSTPparams(int neurType, float STP_U, float STP_tau_U, float STP_tau_x);
+	void setDefaultSTPparams(int neurType, float STP_U, float STP_tau_u, float STP_tau_x);
 
 
 private:

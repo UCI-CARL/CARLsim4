@@ -188,9 +188,9 @@ void CARLsim::CARLsimInit() {
 	setDefaultISTDPparams(0.001f, 0.0012f, 12.0f, 40.0f, STANDARD);
 
 	// set default values for STP params
-	// TODO: add ref
-	setDefaultSTPparams(EXCITATORY_NEURON, 0.2f, 20.0f, 700.0f);
-	setDefaultSTPparams(INHIBITORY_NEURON, 0.5f, 1000.0f, 800.0f);
+	// Misha Tsodyks and Si Wu (2013) Short-term synaptic plasticity. Scholarpedia, 8(10):3153., revision #136920
+	setDefaultSTPparams(EXCITATORY_NEURON, 0.45f, 50.0f, 750.0f);
+	setDefaultSTPparams(INHIBITORY_NEURON, 0.15f, 750.0f, 50.0f);
 
 	// set default homeostasis params
 	// Ref: Carlson, et al. (2013). Proc. of IJCNN 2013.
