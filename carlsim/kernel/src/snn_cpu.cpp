@@ -3532,17 +3532,26 @@ void CpuSNN::makePtrInfo() {
 }
 
 // will be used in generateSpikesFromRate
+// The time between each pair of consecutive events has an exponential distribution with parameter \lambda and
+// each of these ISI values is assumed to be independent of other ISI values.
+// What follows a Poisson distribution is the actual number of spikes sent during a certain interval.
 unsigned int CpuSNN::poissonSpike(unsigned int currTime, float frate, int refractPeriod) {
-	bool done = false;
-	unsigned int nextTime = 0;
-
 	// refractory period must be 1 or greater, 0 means could have multiple spikes specified at the same time.
 	assert(refractPeriod>0);
-	static int cnt = 0;
-	while(!done) {
+	assert(frate>=0.0f);
+
+	bool done = false;
+	unsigned int nextTime = 0;
+	while (!done) {
+		// A Poisson process will always generate inter-spike-interval (ISI) values from an exponential distribution.
 		float randVal = drand48();
 		unsigned int tmpVal  = -log(randVal)/frate;
+
+		// add new ISI to current time
+		// this might be faster than keeping currTime fixed until drand48() returns a large enough value for the ISI
 		nextTime = currTime + tmpVal;
+
+		// reject new firing time if ISI is smaller than refractory period
 		if ((nextTime - currTime) >= (unsigned) refractPeriod)
 			done = true;
 	}

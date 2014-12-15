@@ -631,7 +631,25 @@ private:
 
 	void makePtrInfo();				//!< creates CPU net ptrs
 
-	unsigned int poissonSpike(unsigned int currTime, float frate, int refractPeriod); //!< for generateSpikesFromRate
+	/*!
+	 * \brief generates spike times according to a Poisson process
+	 *
+	 * This function generates the next spike time for a Poisson spike generator, given the current spike time
+	 * <tt>currTime</tt>. The function is used in generateSpikesFromRate.
+	 * A Poisson process will always generate inter-spike-interval (ISI) values from an exponential distribution.
+     * The time between each pair of consecutive events has an exponential distribution with parameter \lambda and
+     * each of these ISI values is assumed to be independent of other ISI values.
+     * What follows a Poisson distribution is the actual number of spikes sent during a certain interval.
+     *
+     * The refractory period (in ms) will assert that all spike pairs are at least <tt>refractPeriod</tt> milliseconds
+     * apart (inclusive). That is, the ISI generated from an exponential distribution will be discarded if it turns
+     * out that ISI < refractPeriod
+     * \param[in] currTime       time of current (or "last") spike
+     * \param[in] frate          mean firing rate to be achieved (same as \lambda of the exponential distribution)
+     * \param[in] refractPeriod  refractory period to be honored (in ms)
+     * \returns next spike time (current time plus generated ISI)
+     */
+	unsigned int poissonSpike(unsigned int currTime, float frate, int refractPeriod);
 
 	// NOTE: all these printer functions should be in printSNNInfo.cpp
 	// FIXME: are any of these actually supposed to be public?? they are not yet in carlsim.h
