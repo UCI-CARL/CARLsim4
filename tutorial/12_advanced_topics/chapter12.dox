@@ -29,6 +29,7 @@ Use threading to create a CARLsim simulation on every GPU. Say in the future we'
 
 
 \section ch12s3_online_weight_tuning 12.3 On-Line Weight Tuning
+\author Michael Beyeler
 
 CARLsim provides a range of handy functions to change weight values on the fly; that is, without having to recompile
 the network.
@@ -202,6 +203,8 @@ then two different behaviors can be achieved, depending on a third optional argu
 
 
 \section ch12s4_logging_errors 12.4 Logging and Errors
+\author Michael Beyeler
+
 \TODO MB
 
 Logger modes. Log files. User errors.

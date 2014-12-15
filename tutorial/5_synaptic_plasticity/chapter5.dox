@@ -7,9 +7,81 @@
 
 
 \section ch5s1_short_term_plasticity 5.1 Short-Term Plasticity (STP)
+\author Michael Beyeler
+
+CARLsim provides standard equations for short-term plasticity (STP) (also called dynamical synapses).
+STP is a synaptic plasticity rule that acts on a time scale on the order of 100ms, and contributes to
+short-term facilitation (STF) or short-term depression (STD) based on pre-synaptic activity.
+STD is caused by depletion of neurotransmitters consumed during the synaptic signaling process at the
+axon terminal of a pre-synaptic neuron, whereas STF is caused by influx of calcium into the axon terminal
+after spike generation, which increases the release probability of neurotransmitters
+(Tsodyks & Markram, 1998; Mongillo, Barak, & Tsodyks, 2008).
+
+
+\subsection ch5s1s1_model 5.1.1 Phenomenological Model
+
+CARLsim implements the phenomenological STP model of (Tsodyks & Markram, 1998; Mongillo, Barak, & Tsodyks, 2008):
+\f{eqnarray}
+\frac{du}{dt} & = & \frac{-u}{STP\_tau\_u} + STP\_U  (1-u^-)  \delta(t-t_{spk}) \\
+\frac{dx}{dt} & = & \frac{1-x}{STP\_tau\_x} - u^+  x^-  \delta(t-t_{spk}) \\
+\frac{dI}{dt} & = & \frac{-I}{\tau_S} + A  u^+  x-  \delta(t-t_{spk}) \f}
+where u- means value of variable u right before spike update, and x+ means value of variable x right after
+the spike update, and A is the synaptic weight.
+The STD effect is modeled by a normalized variable (0<=x<=1), denoting the fraction of resources that remain
+available after neurotransmitter depletion.
+The STF effect is modeled by a utilization parameter u, representing the fraction of available resources ready for
+use (release probability). Following a spike, (i) u increases due to spike-induced calcium influx to the
+presynaptic terminal, after which (ii) a fraction u of available resources is consumed to produce the post-synaptic
+current. Between spikes, u decays back to zero with time constant <tt>STP_tau_u</tt> (tau_F), and x recovers to value
+one with time constant <tt>STP_tau_x</tt> (tau_D).
+
+In CARLsim, the scaling factor <tt>A</tt> in (3) is automatically adjusted to the inverse of <tt>STP_U</tt>.
+The resulting effect is that the first spike under STP generates the same post-synaptic current as if STP were
+disabled on that synapse (governed by the synaptic weight set in CARLsim::connect).
+From there on forward the post-synaptic current will either increase (STF) or decrease (STD).
+
+\image html 5_stp.jpg "Traces of generated post-synaptic currents for STD and STF (generated with CARLsim 3)."
+
+Source: Misha Tsodyks and Si Wu (2013) Short-term synaptic plasticity. Scholarpedia, 8(10):3153., rev #136920
+
+
+\subsection ch5s1s2_usage_example 5.1.2 Usage Example
+
+In order to make use of STP in a simulation, STP must be enabled for a group (pre-synaptically):
+\code
+sim.setSTP(g0, true); // grpId, isSet
+\endcode
+
+This will enable STP on all outgoing synapses on all neurons in the group <tt>g0</tt>.
+STP parameters will be set to default value (according to the above citation).
+These default values can be overridden manually by using CARLsim::setDefaultSTPparams.
+
+Alternatively, values for the STP parameters can be specified explicitly:
+\code
+sim.setSTP(g0, true, 0.45f, 50.0f, 750.0f); // grpId, isSet, STP_U, STP_tau_u, STP_tau_x
+\endcode
+
+This will enable STP for group <tt>g0</tt>, set the increment of u induced by a spike to <tt>STP_U=0.45f</tt>,
+set the decay constant of <tt>u</tt> to <tt>STP_tau_u=50.0f</tt> ms (also called tau_F),
+and set the decay constant of <tt>x</tt> to <tt>STP_tau_x=750.0f</tt> ms (also called tau_D).
+
+
+
+By default, STP is disabled on all groups from the outset.
+
+\note STP will be applied to all outgoing synapses of all neurons in a (pre-synaptic) group.
+\note All outgoing synapses of a certain (pre-synaptic) neuron share the resources of that same neuron.
+\see CARLsim::setSTP(int, bool)
+\see CARLsim::setSTP(int, bool, float, float, float)
+\see CARLsim::setDefaultSTPparams
+
 
 
 \section ch5s2_spike_timing_dependent_plasticity 5.2 Spike-Timing Dependent Plasticity (STDP)
+\author Kristofor D. Carlson
+\author Ting-Shuo Chou
+
+
 \TODO KDC and TS
 
 All things STDP.
@@ -23,16 +95,12 @@ All things STDP.
 Explain E-STDP. Show curve. Show equations.
 
 \since v2.0
-\author Jaryam M. Nageswaran
-\author Micah D. Richert
-
 
 \subsection ch5s2s2_i_stdp 5.2.2 Inhibitory STDP (I-STDP)
 
 Explain I-STDP. Show curve. Show equations.
 
 \since v3.0
-\author Ting-Shuo Chou
 
 
 \subsection ch5s2s3_da_stdp 5.2.3 Dopamine-Modulated STDP (DA-STDP)
@@ -40,18 +108,26 @@ Explain I-STDP. Show curve. Show equations.
 Explain DA-STDP. Show curve. Show equations.
 
 \since v3.0
-\author Ting-Shuo Chou
+
+
+
 
 
 \section ch5s3_homeostasis 5.3 Homeostasis
-\TODO KDC
-
-\author Jayram M. Nageswaran
 \author Kristofor D. Carlson
 
+\TODO KDC
+
+
+
+
+
+
+
 \section ch5s4_neuromodulation 5.4 Neuromodulation
+\author Ting-Shuo Chou
+
 \TODO TS
 
-\author Ting-Shuo Chou
 
 */

@@ -9,6 +9,7 @@ All the ways to generate input...
 
 
 \section ch6s1_generating_spikes 6.1 Generating Spikes
+\author Michael Beyeler
 
 \subsection ch6s1s1_poisson_rate 6.1.1 Generating Poisson Spikes
 
@@ -123,6 +124,7 @@ the rate will keep getting applied to the group.
 
 
 \section ch6s2_generating_current 6.2 Generating Current
+\author Michael Beyeler
 
 Current injection.
 
@@ -133,6 +135,7 @@ Current injection.
 
 
 \section ch6s3_generating_noise 6.3 Generating Noise
+\author Ting-Shuo Chou
 
 \TODO TS
 Generate noise: Ting's description of how to do noise with weights.
@@ -143,6 +146,9 @@ Generate noise: Ting's description of how to do noise with weights.
 
 
 \section ch6s4_visual_stimulus_toolbox 6.3 Visual Stimulus Toolbox
+\author Michael Beyeler
+
+
 \TODO MB
 
 

@@ -550,6 +550,7 @@ public:
 	 * \param[in] STP_tau_u   decay constant of u (tau_F)
 	 * \param[in] STP_tau_x   decay constant of x (tau_D)
 	 * \note STP will be applied to all outgoing synapses of all neurons in this group.
+	 * \note All outgoing synapses of a certain (pre-synaptic) neuron share the resources of that same neuron.
 	 */
 	void setSTP(int grpId, bool isSet, float STP_U, float STP_tau_u, float STP_tau_x);
 
@@ -569,6 +570,7 @@ public:
 	 * \param[in] grpId   pre-synaptic group ID
 	 * \param[in] isSet   a flag whether to enable/disable STP
 	 * \note STP will be applied to all outgoing synapses of all neurons in this group.
+	 * \note All outgoing synapses of a certain (pre-synaptic) neuron share the resources of that same neuron.
 	 * \see setDefaultSTPparams
 	 * \see setSTP(int, bool, float, float, float)
 	 * \since v3.0
