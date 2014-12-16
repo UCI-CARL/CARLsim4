@@ -405,9 +405,9 @@ struct Grid3D {
         return strm << "Grid3D=[" << g.x << "," << g.y << "," << g.z << "]";
     }
 
+    int x, y, z;
     int width, height, depth;
     int columns, channels;
-    int x, y, z;
     int N;
 };
 
@@ -426,8 +426,8 @@ struct HebbianCurve {
 
 	stdpCurve_t stdpCurve;
 	float alphaLTP;
+        float tauLTP;
 	float alphaLTD;
-	float tauLTP;
 	float tauLTD;
 };
 
@@ -444,8 +444,8 @@ struct HalfHebbianCurve {
 
 	stdpCurve_t stdpCurve;
 	float alphaLTP;
+        float tauLTP;
 	float alphaLTD;
-	float tauLTP;
 	float tauLTD;
 	float gama;
 };
@@ -465,8 +465,8 @@ struct AntiHebbianCurve {
 
 	stdpCurve_t stdpCurve;
 	float alphaLTP;
+        float tauLTP;
 	float alphaLTD;
-	float tauLTP;
 	float tauLTD;
 };
 
