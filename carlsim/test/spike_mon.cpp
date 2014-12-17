@@ -118,6 +118,7 @@ TEST(SpikeMon, interfaceDeath) {
 	EXPECT_DEATH(spkMon->getSpikeVector2D(),"");
 	EXPECT_DEATH(spkMon->print(),"");
 	EXPECT_DEATH(spkMon->startRecording(),"");
+	EXPECT_DEATH(spkMon->setLogFile("meow.dat"),"");
 
 	delete sim;
 }
@@ -513,6 +514,89 @@ TEST(SpikeMon, getMaxMinNeuronFiringRate){
 
 		if (inputArray!=NULL) delete[] inputArray;
 		if (g1Array!=NULL) delete[] g1Array;
+		delete sim;
+	}
+}
+
+TEST(SpikeMon, setLogFile) {
+	double rate = 13.0f; // some input firing rate
+	int isi = 1000/rate; // inter-spike interval
+
+	const int GRP_SIZE = 15; // some group size
+
+	// loop over both CPU and GPU mode.
+	for(int mode=0; mode<=1; mode++){
+		// first iteration, test CPU mode, second test GPU mode
+		CARLsim* sim = new CARLsim("SpikeMon.setLogFile",mode?GPU_MODE:CPU_MODE,SILENT,0,42);
+		int g1 = sim->createGroup("g1", GRP_SIZE, EXCITATORY_NEURON);
+		sim->setNeuronParameters(g1, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f);
+
+		int g0 = sim->createSpikeGeneratorGroup("Input",GRP_SIZE,EXCITATORY_NEURON);
+
+		// use periodic spike generator to know the exact spike times
+        PeriodicSpikeGenerator spkGenG0(rate);
+		sim->setSpikeGenerator(g0, &spkGenG0);
+
+		sim->setConductances(true);
+		sim->connect(g0,g1,"random", RangeWeight(0.27f), 1.0f);
+
+		sim->setupNetwork();
+
+		// write all spikes to file
+		SpikeMonitor* spikeMonG0 = sim->setSpikeMonitor(g0,"spkG0.dat");
+		spikeMonG0->setPersistentData(false);
+		spikeMonG0->startRecording();
+
+		// run for a while
+		int runMs = 12 * isi;
+		sim->runNetwork(runMs/1000,runMs%1000);
+
+		spikeMonG0->stopRecording();
+
+		// the spike vector will now contain all the same spikes as the spike file
+		// we have already tested this above
+		// instead we want to change the log file (or even use the same name),
+		// triggering a fclose and redirecting to new file pointer
+		spikeMonG0->setLogFile("spkG0.dat");
+
+		// run again for a while and check spike output
+		spikeMonG0->startRecording();
+		runMs = 5 * isi;
+		sim->runNetwork(runMs/1000, runMs%1000);
+		spikeMonG0->stopRecording();
+
+		// get spike vector
+		std::vector<std::vector<int> > spkVector = spikeMonG0->getSpikeVector2D();
+
+		// read spike file
+		int* inputArray = NULL;
+		long inputSize;
+		readAndReturnSpikeFile("spkG0.dat",inputArray,inputSize);
+
+		// sanity-check the size of the arrays
+		EXPECT_EQ(inputSize/2, runMs/isi * GRP_SIZE);
+		for (int i=0; i<GRP_SIZE; i++)
+			EXPECT_EQ(spkVector[i].size(), runMs/isi);
+
+		// check the spike times of spike file and AER struct
+		// we expect all spike times to be a multiple of the ISI
+		for (int i=0; i<inputSize; i+=2) {
+			EXPECT_EQ(inputArray[i]%isi, 0);
+//			EXPECT_EQ(spkVector[i/2].time % isi, 0);
+		}
+		for (int i=0; i<GRP_SIZE; i++)
+			for (int j=0; j<spkVector[i].size(); j++)
+				EXPECT_EQ(spkVector[i][j] % isi, 0);
+
+		// make sure calling setLogFile with "NULL" doesn't break things
+		spikeMonG0->setLogFile("NULL");
+
+#if (WIN32 || WIN64)
+		system("del spkG0.dat");
+#else
+		system("rm -rf spkG0.dat");
+#endif
+		if (inputArray!=NULL) delete[] inputArray;
 		delete sim;
 	}
 }
