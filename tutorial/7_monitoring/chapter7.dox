@@ -8,6 +8,98 @@
 
 \section ch7s1_spike_monitor 7.1 Spike Monitor
 
+\author Michael Beyeler
+\author Kristofor D. Carlson
+
+
+SpikeMonitors can be used to record output spikes for different neuronal groups.
+
+CARLsim supports to different recording mechanisms: Recording to a spike file (binary) and
+recording to a SpikeMonitor object.
+The former is useful for off-line analysis of activity (e.g., using \ref ch9s1_matlab_oat).
+The latter is useful to calculate different spike metrics and statistics on-line, such as
+mean firing rate and standard deviation, or the number of neurons whose firing rate lies
+in a certain interval.
+
+
+\subsection ch7s1s1_setting_up 7.1.1 Setting Up a Spike Monitor
+
+The easiest way to start recording the spikes of a group <tt>g0</tt> to file is to call
+the following function in CARLsimState CONFIG or SETUP:
+\code
+sim.setSpikeMonitor(g0,"DEFAULT");
+\endcode
+This will dump all spikes of the group (in AER format) to a binary, over the timecourse
+of the entire simulation. The default file name is <tt>"results/spk_{grpName}.dat"</tt>,
+where <tt>{grpName}</tt> is the name that was assigned to the group <tt>g0</tt> in
+createGroup or createSpikeGeneratorGroup.
+
+The Offline Analysis Toolbox will automatically look for names created according to this
+template, so that group or network activity can be plotted right away.
+If a custom name is used, setSpikeFileAttributes must be called in the Matlab utilities
+GroupMonitor.m or NetworkMonitor.m
+
+A custom name is passed to the function like this:
+\code
+sim.setSpikeMonitor(g0,"myDirectory/myFile.ext");
+\endcode
+However, make sure that the directory <tt>myDirectory</tt> exists.
+
+If no binary shall be created, use:
+\code
+sim.setSpikeMonitor(g0,"NULL");
+\endcode
+
+
+\subsection ch7s1s2_spike_monitor_object 7.1.2 The SpikeMonitor Object
+
+A second way to record group activity is to use the SpikeMonitor object that is returned
+by setSpikeMonitor, and query it for spike data, metrics, and statistics.
+\code
+SpikeMonitor* spkMon = sim.setSpikeMonitor(g0,"DEFAULT");
+\endcode
+
+\TODO extend
+
+
+\subsubsection ch7s1s2s1_start_stop_recording 7.1.2.1 Start and Stop Recording
+Explain startRecording, stopRecording, PersistentData.
+
+
+\subsubsection ch7s1s2s3_spike_data 7.1.2.2 Spike Data
+Talk about the 2D Spike Vector. setMode AER or COUNT.
+
+\subsubsection ch7s1s2s3_spike_metrics 7.1.2.3 Spike Metrics
+Talk about all the getNum...
+
+\subsubsection ch7s1s2s4_spike_statistics 7.1.2.4 Spike Statistics
+Talk about spike statistics, such as mean, std, and (planned) spike time correlations.
+
+
+
+\subsection ch7s1s3_redirecting_file_streams 7.1.3 Redirecting File Streams
+
+Using SpikeMonitor::setSpikeFile it is possible to redirect the file streams
+over the timecourse of a simulation, without having to recompile the network.
+Say, a simulation consists of three phases: 1) an initial phase, 2) a training phase,
+and 3) a testing phase.
+In such a scenario it might be desirable to store the spikes in different files,
+or, maybe in some phases, not record spikes at all.
+This can be achieved with ease using the following code snippet:
+\code
+// initial phase (don't record to file)
+SpikeMonitor* spkMon = sim.setSpikeMonitor(g0, "NULL");
+sim.runNetwork(10,0);
+
+// training phase (record to file)
+spkMon->setLogFile("training.dat");
+sim.runNetwork(10,0);
+
+// testing phase (record to different spike file)
+spkMon->setLogFile("testing.dat");
+sim.runNetwork(10,0);
+\endcode
+
 
 \section ch7s2_connection_monitor 7.2 Connection Monitor
 \author Michael Beyeler
