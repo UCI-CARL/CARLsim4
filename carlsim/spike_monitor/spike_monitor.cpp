@@ -209,3 +209,26 @@ void SpikeMonitor::setMode(spikeMonMode_t mode) {
 
 	spikeMonitorCorePtr_->setMode(mode);
 }
+
+void SpikeMonitor::setLogFile(const std::string& fileName) {
+	std::string funcName = "setLogFile";
+
+	FILE* fid;
+	std::string fname = fileName;
+	std::transform(fname.begin(), fname.end(), fname.begin(), ::tolower);
+
+	if (fname == "null") {
+		// user does not want a binary created
+		fid = NULL;
+	} else {
+		fid = fopen(fname.c_str(),"wb");
+		if (fid==NULL) {
+			// default case: print error and exit
+			std::string fileError = " Double-check file permissions and make sure directory exists.";
+			UserErrors::assertTrue(false, UserErrors::FILE_CANNOT_OPEN, funcName, fname, fileError);
+		}
+	}
+
+	// tell new file id to core object
+	spikeMonitorCorePtr_->setSpikeFileId(fid);
+}

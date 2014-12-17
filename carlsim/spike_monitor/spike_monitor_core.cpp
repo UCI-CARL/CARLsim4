@@ -312,16 +312,19 @@ void SpikeMonitorCore::stopRecording() {
 void SpikeMonitorCore::setSpikeFileId(FILE* spikeFileId) {
 	assert(!isRecording());
 
-	// \TODO consider the case where this function is called more than once
-	if (spikeFileId_!=NULL)
-		KERNEL_ERROR("SpikeMonitorCore: setSpikeFileId has already been called.");
+	// close previous file pointer if exists
+	if (spikeFileId_!=NULL) {
+		fclose(spikeFileId_);
+		spikeFileId_ = NULL;
+	}
 
+	// set it to new file id
 	spikeFileId_=spikeFileId;
 
 	if (spikeFileId_==NULL)
 		needToWriteFileHeader_ = false;
 	else {
-		// for now: file pointer has changed, so we need to write header (again)
+		// file pointer has changed, so we need to write header (again)
 		needToWriteFileHeader_ = true;
 		writeSpikeFileHeader();
 	}

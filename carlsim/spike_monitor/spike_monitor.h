@@ -446,6 +446,24 @@ class SpikeMonitor {
 	 */
 	void setMode(spikeMonMode_t mode=AER);
 
+	/*!
+	 * \brief Sets the name of the spike file binary
+	 *
+	 * This function sets the name of the spike file binary. It can be called at any time during
+	 * the simulation, but must be called outside of startRecording / stopRecording periods.
+	 * The function will close the previous file stream (the one that was set in
+	 * CARLsim::setSpikeMonitor), and from that moment on direct new incoming spikes into a
+	 * new file.
+	 * This allows a user to record spikes to different files during a simulation, for example
+	 * to "training.dat" and "testing.dat".
+	 * In order to stop recording to file, pass string "NULL".
+	 *
+	 * \param[in] logFileName path to binary file or "NULL" (for not recording to file at all)
+	 * \attention Make sure the directory exists!
+	 * \since v3.0
+	 */
+	void setLogFile(const std::string& logFileName);
+
  private:
   //! This is a pointer to the actual implementation of the class. The user should never directly instantiate it.
   SpikeMonitorCore* spikeMonitorCorePtr_;
