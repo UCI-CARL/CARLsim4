@@ -45,7 +45,7 @@
 
 #include <iostream>		// std::cout, std::endl
 #include <sstream>		// std::stringstream
-#include <algorithm>	// std::find
+#include <algorithm>	// std::find, std::transform
 
 #include <snn.h>
 
@@ -888,33 +888,34 @@ void CARLsim::setSpikeGenerator(int grpId, SpikeGenerator* spikeGen) {
 }
 
 // set spike monitor for group and write spikes to file
-SpikeMonitor* CARLsim::setSpikeMonitor(int grpId, const std::string& fname) {
-	std::string funcName = "setSpikeMonitor(\""+getGroupName(grpId)+"\",\""+fname+"\")";
+SpikeMonitor* CARLsim::setSpikeMonitor(int grpId, const std::string& fileName) {
+	std::string funcName = "setSpikeMonitor(\""+getGroupName(grpId)+"\",\""+fileName+"\")";
 	UserErrors::assertTrue(grpId!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName, "grpId");		// grpId can't be ALL
 	UserErrors::assertTrue(grpId>=0, UserErrors::CANNOT_BE_NEGATIVE, funcName, "grpId"); // grpId can't be negative
 	UserErrors::assertTrue(carlsimState_==CONFIG_STATE || carlsimState_==SETUP_STATE,
 					UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "CONFIG or SETUP.");
 
 	FILE* fid;
-	std::string fileName = fname;
-	std::transform(fileName.begin(), fileName.end(), fileName.begin(), ::tolower);
-	if (fileName  == "null") {
+	std::string fileNameLower = fileName;
+	std::transform(fileNameLower.begin(), fileNameLower.end(), fileNameLower.begin(), ::tolower);
+	if (fileNameLower == "null") {
 		// user does not want a binary file created
 		fid = NULL;
 	} else {
 		// try to open spike file
-		if (fileName == "default")
-			fileName = "results/spk_" + snn_->getGroupName(grpId) + ".dat";
-		else
-			fileName = fname;
-
-		fid = fopen(fileName.c_str(),"wb");
-		if (fid == NULL) {
-			// file could not be opened
-
-			// default case: print error and exit
-			std::string fileError = " Double-check file permissions and make sure directory exists.";
-			UserErrors::assertTrue(false, UserErrors::FILE_CANNOT_OPEN, funcName, fileName, fileError);
+		if (fileNameLower == "default") {
+			std::string fileNameDefault = "results/spk_" + snn_->getGroupName(grpId) + ".dat";
+			fid = fopen(fileNameDefault.c_str(),"wb");
+			if (fid==NULL) {
+				std::string fileError = " Make sure results/ exists.";
+				UserErrors::assertTrue(false, UserErrors::FILE_CANNOT_OPEN, funcName, fileNameDefault, fileError);
+			}
+		} else {
+			fid = fopen(fileName.c_str(),"wb");
+			if (fid==NULL) {
+				std::string fileError = " Double-check file permissions and make sure directory exists.";
+				UserErrors::assertTrue(false, UserErrors::FILE_CANNOT_OPEN, funcName, fileName, fileError);
+			}
 		}
 	}
 

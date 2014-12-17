@@ -7,6 +7,9 @@ Legend:
 	- removed element
 	* changed element
 
+2014-12-17     Michael Beyeler <mbeyeler@uci.edu>
+  + Added SpikeMonitor::setLogFile.
+
 2014-12-13     Michael Beyeler <mbeyeler@uci.edu>
   + Added CARLsim::setLogFile(string).
   - Removed CARLsim::setLogDebugFp(FILE*).

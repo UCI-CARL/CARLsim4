@@ -874,7 +874,7 @@ public:
 	 *
 	 * \STATE CONFIG, SETUP
 	 * \param[in] grpId 		the group ID
-	 * \param[in] fname 		name of the binary file to be created. Leave empty for default name
+	 * \param[in] fileName 		name of the binary file to be created. Leave empty for default name
 	 *                      	"results/spk_{grpName}.dat". Set to string "NULL" to suppress file creation. Default: ""
 	 * \returns   SpikeMonitor*	pointer to a SpikeMonitor object, which can be used to calculate spike statistics
 	 *                          (such as group firing rate, number of silent neurons, etc.) or retrieve all spikes in
@@ -885,7 +885,7 @@ public:
 	 * \attention Using SpikeMonitor::startRecording and SpikeMonitor::stopRecording might significantly slow down the
 	 * simulation. It is unwise to use this mechanism to record a large number of spikes over a long period of time.
 	 */
-	SpikeMonitor* setSpikeMonitor(int grpId, const std::string& fname);
+	SpikeMonitor* setSpikeMonitor(int grpId, const std::string& fileName);
 
 	/*!
 	 * \brief Sets a spike rate

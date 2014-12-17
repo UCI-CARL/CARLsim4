@@ -4,6 +4,8 @@
 #include <user_errors.h>		// fancy user error messages
 
 #include <sstream>				// std::stringstream
+#include <algorithm>			// std::transform
+
 
 // we aren't using namespace std so pay attention!
 SpikeMonitor::SpikeMonitor(SpikeMonitorCore* spikeMonitorCorePtr){
@@ -208,4 +210,27 @@ void SpikeMonitor::setMode(spikeMonMode_t mode) {
 		"This function call is not yet supported.");
 
 	spikeMonitorCorePtr_->setMode(mode);
+}
+
+void SpikeMonitor::setLogFile(const std::string& fileName) {
+	std::string funcName = "setLogFile";
+
+	FILE* fid;
+	std::string fileNameLower = fileName;
+	std::transform(fileNameLower.begin(), fileNameLower.end(), fileNameLower.begin(), ::tolower);
+
+	if (fileNameLower == "null") {
+		// user does not want a binary created
+		fid = NULL;
+	} else {
+		fid = fopen(fileName.c_str(),"wb");
+		if (fid==NULL) {
+			// default case: print error and exit
+			std::string fileError = " Double-check file permissions and make sure directory exists.";
+			UserErrors::assertTrue(false, UserErrors::FILE_CANNOT_OPEN, funcName, fileName, fileError);
+		}
+	}
+
+	// tell new file id to core object
+	spikeMonitorCorePtr_->setSpikeFileId(fid);
 }
