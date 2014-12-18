@@ -59,8 +59,8 @@ int main() {
 	sim.setupNetwork();
 
 	// set some spike monitors
-	sim.setSpikeMonitor(gin);
-	sim.setSpikeMonitor(gout);
+	sim.setSpikeMonitor(gin,"NULL");
+	sim.setSpikeMonitor(gout,"NULL");
 
 	//setup some baseline input
 	PoissonRate in(10);

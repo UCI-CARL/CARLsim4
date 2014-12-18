@@ -53,7 +53,7 @@ int main() {
 	int ithGPU = 0; // run on first GPU
 
 	// create a network
-	CARLsim sim("random", GPU_MODE, CUSTOM, ithGPU, 42);
+	CARLsim sim("random", GPU_MODE, USER, ithGPU, 42);
 	sim.setLogFile("carlsim.log");
 
 	int g1=sim.createGroup("excit", N*0.8, EXCITATORY_NEURON);
