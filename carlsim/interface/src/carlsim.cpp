@@ -526,7 +526,7 @@ void CARLsim::setESTDP(int grpId, bool isSet, stdpType_t type, HalfHebbianCurve 
 	hasSetSTDPALL_ = grpId==ALL; // adding groups after this will not have conductances set
 
 	if (isSet) { // enable STDP, use custom values
-		snn_->setESTDP(grpId, true, type, curve.stdpCurve, curve.alphaLTP, curve.tauLTP, curve.alphaLTD, curve.tauLTD, curve.gama);
+		snn_->setESTDP(grpId, true, type, curve.stdpCurve, curve.alphaLTP, curve.tauLTP, curve.alphaLTD, curve.tauLTD, curve.gamma);
 	} else { // disable STDP and DA-STDP as well
 		snn_->setESTDP(grpId, false, UNKNOWN_STDP, UNKNOWN_CURVE, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f);
 	}
@@ -540,7 +540,7 @@ void CARLsim::setISTDP(int grpId, bool isSet) {
 	hasSetSTDPALL_ = grpId==ALL; // adding groups after this will not have conductances set
 
 	if (isSet) { // enable STDP, use default values and type
-		snn_->setISTDP(grpId, true, def_STDP_type_, CONSTANT_SYMMETRIC, def_STDP_betaLTP_, def_STDP_betaLTD_, def_STDP_lamda_, def_STDP_delta_);
+		snn_->setISTDP(grpId, true, def_STDP_type_, CONSTANT_SYMMETRIC, def_STDP_betaLTP_, def_STDP_betaLTD_, def_STDP_lambda_, def_STDP_delta_);
 	} else { // disable STDP
 		snn_->setISTDP(grpId, false, UNKNOWN_STDP, UNKNOWN_CURVE, 0.0f, 0.0f, 1.0f, 1.0f);
 	}
@@ -570,7 +570,7 @@ void CARLsim::setISTDP(int grpId, bool isSet, stdpType_t type, ConstantSymmetric
 	hasSetSTDPALL_ = grpId==ALL; // adding groups after this will not have conductances set
 
 	if (isSet) { // enable STDP, use custom values
-		snn_->setISTDP(grpId, true, type, curve.stdpCurve, curve.betaLTP, curve.betaLTD, curve.lamda, curve.delta);
+		snn_->setISTDP(grpId, true, type, curve.stdpCurve, curve.betaLTP, curve.betaLTD, curve.lambda, curve.delta);
 	} else { // disable STDP and DA-STDP as well
 		snn_->setISTDP(grpId, false, UNKNOWN_STDP, UNKNOWN_CURVE, 0.0f, 0.0f, 1.0f, 1.0f);
 	}
@@ -585,7 +585,7 @@ void CARLsim::setISTDP(int grpId, bool isSet, stdpType_t type, LinearSymmetricCu
 	hasSetSTDPALL_ = grpId==ALL; // adding groups after this will not have conductances set
 
 	if (isSet) { // enable STDP, use custom values
-		snn_->setISTDP(grpId, true, type, curve.stdpCurve, curve.betaLTP, curve.betaLTD, curve.lamda, curve.delta);
+		snn_->setISTDP(grpId, true, type, curve.stdpCurve, curve.betaLTP, curve.betaLTD, curve.lambda, curve.delta);
 	} else { // disable STDP and DA-STDP as well
 		snn_->setISTDP(grpId, false, UNKNOWN_STDP, UNKNOWN_CURVE, 0.0f, 0.0f, 1.0f, 1.0f);
 	}
@@ -940,7 +940,7 @@ void CARLsim::setWeight(short int connId, int neurIdPre, int neurIdPost, float w
 		<< updateWeightRange << ")";
 	UserErrors::assertTrue(carlsimState_==EXE_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName.str(),
 		funcName.str(), "EXECUTION.");
-	UserErrors::assertTrue(connId>=0 && connId<getNumConnections(), UserErrors::MUST_BE_IN_RANGE, 
+	UserErrors::assertTrue(connId>=0 && connId<getNumConnections(), UserErrors::MUST_BE_IN_RANGE,
 		funcName.str(), "connectionId", "[0,getNumConnections()]");
 	UserErrors::assertTrue(weight>=0.0f, UserErrors::CANNOT_BE_NEGATIVE, funcName.str(), "Weight value");
 
@@ -1269,12 +1269,12 @@ void CARLsim::setDefaultESTDPparams(float alphaLTP, float tauLTP, float alphaLTD
 }
 
 // set default values for I-STDP params
-void CARLsim::setDefaultISTDPparams(float betaLTP, float betaLTD, float lamda, float delta, stdpType_t stdpType) {
+void CARLsim::setDefaultISTDPparams(float betaLTP, float betaLTD, float lambda, float delta, stdpType_t stdpType) {
 	std::string funcName = "setDefaultISTDPparams()";
 	UserErrors::assertTrue(carlsimState_==CONFIG_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "CONFIG.");
 	UserErrors::assertTrue(betaLTP > 0, UserErrors::MUST_BE_POSITIVE, funcName);
 	UserErrors::assertTrue(betaLTD > 0, UserErrors::MUST_BE_POSITIVE, funcName);
-	UserErrors::assertTrue(lamda > 0, UserErrors::MUST_BE_POSITIVE, funcName);
+	UserErrors::assertTrue(lambda > 0, UserErrors::MUST_BE_POSITIVE, funcName);
 	UserErrors::assertTrue(delta > 0, UserErrors::MUST_BE_POSITIVE, funcName);
     switch(stdpType) {
         case STANDARD:
@@ -1290,7 +1290,7 @@ void CARLsim::setDefaultISTDPparams(float betaLTP, float betaLTD, float lamda, f
     }
 	def_STDP_betaLTP_ = betaLTP;
 	def_STDP_betaLTD_ = betaLTD;
-	def_STDP_lamda_ = lamda;
+	def_STDP_lambda_ = lambda;
 	def_STDP_delta_ = delta;
 }
 

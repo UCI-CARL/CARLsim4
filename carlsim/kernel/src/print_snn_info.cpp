@@ -294,7 +294,7 @@ void CpuSNN::printGroupInfo(int grpId) {
 		KERNEL_INFO("      - TAU_LTD_INV_EXC            = %8.5f", grp_Info[grpId].TAU_LTD_INV_EXC);
 		KERNEL_INFO("      - BETA_LTP               = %8.5f", grp_Info[grpId].BETA_LTP);
 		KERNEL_INFO("      - BETA_LTD               = %8.5f", grp_Info[grpId].BETA_LTD);
-		KERNEL_INFO("      - LAMDA                  = %8.5f", grp_Info[grpId].LAMDA);
+		KERNEL_INFO("      - LAMBDA                  = %8.5f", grp_Info[grpId].LAMBDA);
 		KERNEL_INFO("      - DELTA                  = %8.5f", grp_Info[grpId].DELTA);
 	}
 }

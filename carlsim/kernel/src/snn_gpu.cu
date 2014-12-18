@@ -550,9 +550,9 @@ __device__ void gpu_updateLTP(	int*     		fireTablePtr,
 							break;
 						case HALF_HEBBIAN: // half-Hebbian curve
 							if (stdp_tDiff * gpuGrpInfo[grpId].TAU_LTP_INV_EXC < 25) {
-									if (stdp_tDiff <= gpuGrpInfo[grpId].GAMA)
-										gpuPtrs.wtChange[p] += gpuGrpInfo[grpId].OMEGA + gpuGrpInfo[grpId].KAPA * STDP(stdp_tDiff, gpuGrpInfo[grpId].ALPHA_LTP_EXC, gpuGrpInfo[grpId].TAU_LTP_INV_EXC);
-									else // stdp_tDiff > GAMA
+									if (stdp_tDiff <= gpuGrpInfo[grpId].GAMMA)
+										gpuPtrs.wtChange[p] += gpuGrpInfo[grpId].OMEGA + gpuGrpInfo[grpId].KAPPA * STDP(stdp_tDiff, gpuGrpInfo[grpId].ALPHA_LTP_EXC, gpuGrpInfo[grpId].TAU_LTP_INV_EXC);
+									else // stdp_tDiff > GAMMA
 										gpuPtrs.wtChange[p] -= STDP(stdp_tDiff, gpuGrpInfo[grpId].ALPHA_LTP_EXC, gpuGrpInfo[grpId].TAU_LTP_INV_EXC);
 							}
 							break;
@@ -571,7 +571,7 @@ __device__ void gpu_updateLTP(	int*     		fireTablePtr,
 						case LINEAR_SYMMETRIC: // linear symmetric curve
 							break;
 						case CONSTANT_SYMMETRIC: // constant symmetric curve
-							if (stdp_tDiff <= gpuGrpInfo[grpId].LAMDA) { // LTP of inhibitory synapse, which decreases synapse weight
+							if (stdp_tDiff <= gpuGrpInfo[grpId].LAMBDA) { // LTP of inhibitory synapse, which decreases synapse weight
 								gpuPtrs.wtChange[p] -= gpuGrpInfo[grpId].BETA_LTP;
 							} else if (stdp_tDiff <= gpuGrpInfo[grpId].DELTA) { // LTD of inhibitory syanpse, which increase sysnapse weight
 								gpuPtrs.wtChange[p] += gpuGrpInfo[grpId].BETA_LTD;
@@ -1330,7 +1330,7 @@ __device__ int generatePostSynapticSpike(int& simTime, int& firingId, int& myDel
 				case LINEAR_SYMMETRIC: // linear symmetric curve
 					break;
 				case CONSTANT_SYMMETRIC: // constant symmetric curve
-					if (stdp_tDiff <= gpuGrpInfo[post_grpId].LAMDA) { // LTP of inhibitory synapse, which decreases synapse weight
+					if (stdp_tDiff <= gpuGrpInfo[post_grpId].LAMBDA) { // LTP of inhibitory synapse, which decreases synapse weight
 						gpuPtrs.wtChange[pos_ns] -= gpuGrpInfo[post_grpId].BETA_LTP;
 					} else if (stdp_tDiff <= gpuGrpInfo[post_grpId].DELTA) { // LTD of inhibitory syanpse, which increase synapse weight
 						gpuPtrs.wtChange[pos_ns] += gpuGrpInfo[post_grpId].BETA_LTD;
@@ -2877,7 +2877,7 @@ void CpuSNN::allocateSNN_GPU() {
 			KERNEL_DEBUG("\t\tTAU_LTD_INV_INB: %f",grp_Info[i].TAU_LTD_INV_INB);
 			KERNEL_DEBUG("\t\tALPHA_LTP_INB: %f",grp_Info[i].ALPHA_LTP_INB);
 			KERNEL_DEBUG("\t\tALPHA_LTD_INB: %f",grp_Info[i].ALPHA_LTD_INB);
-			KERNEL_DEBUG("\t\tLAMDA: %f",grp_Info[i].LAMDA);
+			KERNEL_DEBUG("\t\tLAMBDA: %f",grp_Info[i].LAMBDA);
 			KERNEL_DEBUG("\t\tDELTA: %f",grp_Info[i].DELTA);
 			KERNEL_DEBUG("\t\tBETA_LTP: %f",grp_Info[i].BETA_LTP);
 			KERNEL_DEBUG("\t\tBETA_LTD: %f",grp_Info[i].BETA_LTD);

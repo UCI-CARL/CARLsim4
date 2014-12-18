@@ -56,7 +56,7 @@
  *              status information goes to stdout. Debug information can only be found in the log file.
  *  DEVELOPER   Developer mode, for developing and debugging code. Same as user, but additionally,
  *              all debug information is printed to stdout.
- *  SHOWTIME    Showtime mode, will only output warnings and errors. 
+ *  SHOWTIME    Showtime mode, will only output warnings and errors.
  *  SILENT      Silent mode, no output is generated.
  *  CUSTOM      Custom mode, the user can set the location of all the file pointers.
  *
@@ -343,10 +343,10 @@ typedef struct GroupSTDPInfo_s {
 	float		TAU_LTD_INV_INB;
 	float		ALPHA_LTP_INB;
 	float		ALPHA_LTD_INB;
-	float		GAMA;
+	float		GAMMA;
 	float		BETA_LTP;
 	float		BETA_LTD;
-	float		LAMDA;
+	float		LAMBDA;
 	float		DELTA;
 } GroupSTDPInfo_t;
 
@@ -432,12 +432,12 @@ struct HebbianCurve {
 };
 
 struct HalfHebbianCurve {
-	HalfHebbianCurve(float _alphaLTP, float _tauLTP, float _alphaLTD, float _tauLTD, float _gama) : alphaLTP(_alphaLTP), tauLTP(_tauLTP), alphaLTD(_alphaLTD), tauLTD(_tauLTD) , gama(_gama) {
+	HalfHebbianCurve(float _alphaLTP, float _tauLTP, float _alphaLTD, float _tauLTD, float _gamma) : alphaLTP(_alphaLTP), tauLTP(_tauLTP), alphaLTD(_alphaLTD), tauLTD(_tauLTD) , gamma(_gamma) {
 		UserErrors::assertTrue(_alphaLTP > 0.0f, UserErrors::MUST_BE_POSITIVE, "HalfHebbianCurve", "alphaLTP");
 		UserErrors::assertTrue(_alphaLTD > 0.0f, UserErrors::MUST_BE_POSITIVE, "HalfHebbianCurve", "alphaLTD");
 		UserErrors::assertTrue(_tauLTP > 0.0f, UserErrors::MUST_BE_POSITIVE, "HalfHebbianCurve", "tauLTP");
 		UserErrors::assertTrue(_tauLTD > 0.0f, UserErrors::MUST_BE_POSITIVE, "HalfHebbianCurve", "tauLTD");
-		UserErrors::assertTrue(_gama > 0.0f, UserErrors::MUST_BE_POSITIVE, "HalfHebbianCurve", "gama");
+		UserErrors::assertTrue(_gamma > 0.0f, UserErrors::MUST_BE_POSITIVE, "HalfHebbianCurve", "gamma");
 
 		stdpCurve = HALF_HEBBIAN;
 	}
@@ -447,7 +447,7 @@ struct HalfHebbianCurve {
         float tauLTP;
 	float alphaLTD;
 	float tauLTD;
-	float gama;
+	float gamma;
 };
 
 /*!
@@ -474,10 +474,10 @@ struct AntiHebbianCurve {
  * \brief struct to assign constant symmetric I-STDP curve
  */
 struct ConstantSymmetricCurve {
-	ConstantSymmetricCurve(float _betaLTP, float _betaLTD, float _lamda, float _delta) : betaLTP(_betaLTP), betaLTD(_betaLTD), lamda(_lamda), delta(_delta) {
+	ConstantSymmetricCurve(float _betaLTP, float _betaLTD, float _lambda, float _delta) : betaLTP(_betaLTP), betaLTD(_betaLTD), lambda(_lambda), delta(_delta) {
 		UserErrors::assertTrue(_betaLTP > 0.0f, UserErrors::MUST_BE_POSITIVE, "ConstantSymmetricCurve", "betaLTP");
 		UserErrors::assertTrue(_betaLTD > 0.0f, UserErrors::MUST_BE_POSITIVE, "ConstantSymmetricCurve", "betaLTD");
-		UserErrors::assertTrue(_lamda > 0.0f, UserErrors::MUST_BE_POSITIVE, "ConstantSymmetricCurve", "lamda");
+		UserErrors::assertTrue(_lambda > 0.0f, UserErrors::MUST_BE_POSITIVE, "ConstantSymmetricCurve", "lambda");
 		UserErrors::assertTrue(_delta > 0.0f, UserErrors::MUST_BE_POSITIVE, "ConstantSymmetricCurve", "delta");
 
 		stdpCurve = CONSTANT_SYMMETRIC;
@@ -486,7 +486,7 @@ struct ConstantSymmetricCurve {
 	stdpCurve_t stdpCurve;
 	float betaLTP;
 	float betaLTD;
-	float lamda;
+	float lambda;
 	float delta;
 };
 
@@ -494,10 +494,10 @@ struct ConstantSymmetricCurve {
  * \brief struct to assign constant symmetric I-STDP curve
  */
 struct LinearSymmetricCurve {
-	LinearSymmetricCurve(float _betaLTP, float _betaLTD, float _lamda, float _delta) : betaLTP(_betaLTP), betaLTD(_betaLTD), lamda(_lamda), delta(_delta) {
+	LinearSymmetricCurve(float _betaLTP, float _betaLTD, float _lambda, float _delta) : betaLTP(_betaLTP), betaLTD(_betaLTD), lambda(_lambda), delta(_delta) {
 		UserErrors::assertTrue(_betaLTP > 0.0f, UserErrors::MUST_BE_POSITIVE, "ConstantSymmetricCurve", "betaLTP");
 		UserErrors::assertTrue(_betaLTD > 0.0f, UserErrors::MUST_BE_POSITIVE, "ConstantSymmetricCurve", "betaLTD");
-		UserErrors::assertTrue(_lamda > 0.0f, UserErrors::MUST_BE_POSITIVE, "ConstantSymmetricCurve", "lamda");
+		UserErrors::assertTrue(_lambda > 0.0f, UserErrors::MUST_BE_POSITIVE, "ConstantSymmetricCurve", "lambda");
 		UserErrors::assertTrue(_delta > 0.0f, UserErrors::MUST_BE_POSITIVE, "ConstantSymmetricCurve", "delta");
 
 		stdpCurve = LINEAR_SYMMETRIC;
@@ -506,7 +506,7 @@ struct LinearSymmetricCurve {
 	stdpCurve_t stdpCurve;
 	float betaLTP;
 	float betaLTD;
-	float lamda;
+	float lambda;
 	float delta;
 };
 

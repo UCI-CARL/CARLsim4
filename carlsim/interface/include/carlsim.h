@@ -680,7 +680,7 @@ public:
 	 * \param[in] updateWeightRange a flag specifying what to do when the specified weight+bias lies outside the range
 	 *                              [minWt,maxWt]. Set to true to update the range accordingly. Set to false to adjust
 	 *                              the weight to be either minWt or maxWt. Default: false.
-	 * 
+	 *
 	 * \note A weight cannot drop below zero, no matter what.
 	 * \see setWeight
 	 * \see scaleWeights
@@ -724,7 +724,7 @@ public:
 	 * \param[in] updateWeightRange a flag specifying what to do when the specified weight*scale lies outside the range
 	 *                              [minWt,maxWt]. Set to true to update the range accordingly. Set to false to adjust
 	 *                              the weight to be either minWt or maxWt. Default: false.
-	 * 
+	 *
 	 * \note A weight cannot drop below zero, no matter what.
 	 * \see setWeight
 	 * \see biasWeights
@@ -924,7 +924,7 @@ public:
 	 * \param[in] updateWeightRange a flag specifying what to do when the specified weight lies outside the range
 	 *                              [minWt,maxWt]. Set to true to update the range accordingly. Set to false to adjust
 	 *                              the weight to be either minWt or maxWt. Default: false.
-	 * 
+	 *
 	 * \note Neuron IDs should be zero-indexed (first neuron in the group should have ID 0).
 	 * \note A weight cannot drop below zero, no matter what.
 	 * \attention Make sure this function is called on a synapse that actually exists!
@@ -1390,7 +1390,7 @@ public:
 	* \TODO finish docu
 	* \STATE CONFIG
 	*/
-	void setDefaultISTDPparams(float betaLTP, float betaLTD, float lamda, float delta, stdpType_t stdpType);
+	void setDefaultISTDPparams(float betaLTP, float betaLTD, float lambda, float delta, stdpType_t stdpType);
 
 	/*!
 	 * \brief Sets default values for STP params U, tau_u, and tau_x of a neuron group (pre-synaptically)
@@ -1475,7 +1475,7 @@ private:
 	float def_STDP_tauLTD_;			//!< default value for LTD decay (ms)
 	float def_STDP_betaLTP_;		//!< default value for LTP amplitude
 	float def_STDP_betaLTD_;		//!< default value for LTD amplitude
-	float def_STDP_lamda_;			//!< default value for interval of LTP
+	float def_STDP_lambda_;			//!< default value for interval of LTP
 	float def_STDP_delta_;			//!< default value for interval of LTD
 
 	// all default values for STP
