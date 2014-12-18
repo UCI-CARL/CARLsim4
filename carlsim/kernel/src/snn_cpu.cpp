@@ -504,16 +504,16 @@ void CpuSNN::setNeuromodulator(int grpId, float baseDP, float tauDP, float base5
 }
 
 // set ESTDP params
-void CpuSNN::setESTDP(int grpId, bool isSet, stdpType_t type, stdpCurve_t curve, float alphaLTP, float tauLTP, float alphaLTD, float tauLTD, float gama) {
+void CpuSNN::setESTDP(int grpId, bool isSet, stdpType_t type, stdpCurve_t curve, float alphaLTP, float tauLTP, float alphaLTD, float tauLTD, float gamma) {
 	assert(grpId>=-1);
 	if (isSet) {
 		assert(type!=UNKNOWN_STDP);
-		assert(alphaLTP>=0.0f); assert(tauLTP>0.0f); assert(alphaLTD>=0.0f); assert(tauLTD>0.0f); assert(gama>=0.0f);
+		assert(alphaLTP>=0.0f); assert(tauLTP>0.0f); assert(alphaLTD>=0.0f); assert(tauLTD>0.0f); assert(gamma>=0.0f);
 	}
 
 	if (grpId == ALL) { // shortcut for all groups
 		for(int grpId1=0; grpId1<numGrp; grpId1++) {
-			setESTDP(grpId1, isSet, type, curve, alphaLTP, tauLTP, alphaLTD, tauLTD, gama);
+			setESTDP(grpId1, isSet, type, curve, alphaLTP, tauLTP, alphaLTD, tauLTD, gamma);
 		}
 	} else {
 		// set STDP for a given group
@@ -522,9 +522,9 @@ void CpuSNN::setESTDP(int grpId, bool isSet, stdpType_t type, stdpCurve_t curve,
 		grp_Info[grpId].ALPHA_LTD_EXC 		= alphaLTD;
 		grp_Info[grpId].TAU_LTP_INV_EXC 	= 1.0f/tauLTP;
 		grp_Info[grpId].TAU_LTD_INV_EXC		= 1.0f/tauLTD;
-		grp_Info[grpId].GAMA				= gama;
-		grp_Info[grpId].KAPA				= (1 + exp(-gama/tauLTP))/(1 - exp(-gama/tauLTP));
-		grp_Info[grpId].OMEGA				= alphaLTP * (1 - grp_Info[grpId].KAPA);
+		grp_Info[grpId].GAMMA				= gamma;
+		grp_Info[grpId].KAPPA				= (1 + exp(-gamma/tauLTP))/(1 - exp(-gamma/tauLTP));
+		grp_Info[grpId].OMEGA				= alphaLTP * (1 - grp_Info[grpId].KAPPA);
 		// set flags for STDP function
 		grp_Info[grpId].WithESTDPtype	= type;
 		grp_Info[grpId].WithESTDPcurve = curve;
@@ -558,7 +558,7 @@ void CpuSNN::setISTDP(int grpId, bool isSet, stdpType_t type, stdpCurve_t curve,
 			grp_Info[grpId].TAU_LTD_INV_INB = 1.0f / tau2;
 			grp_Info[grpId].BETA_LTP 		= 0.0f;
 			grp_Info[grpId].BETA_LTD 		= 0.0f;
-			grp_Info[grpId].LAMDA			= 1.0f;
+			grp_Info[grpId].LAMBDA			= 1.0f;
 			grp_Info[grpId].DELTA			= 1.0f;
 		} else {
 			grp_Info[grpId].ALPHA_LTP_INB = 0.0f;
@@ -567,7 +567,7 @@ void CpuSNN::setISTDP(int grpId, bool isSet, stdpType_t type, stdpCurve_t curve,
 			grp_Info[grpId].TAU_LTD_INV_INB = 1.0f;
 			grp_Info[grpId].BETA_LTP 		= abLTP;
 			grp_Info[grpId].BETA_LTD 		= abLTD;
-			grp_Info[grpId].LAMDA			= tau1;
+			grp_Info[grpId].LAMBDA			= tau1;
 			grp_Info[grpId].DELTA			= tau2;
 		}
 		// set flags for STDP function
@@ -837,7 +837,7 @@ void CpuSNN::biasWeights(short int connId, float bias, bool updateWeightRange) {
 			if (cpu_gpuNetPtrs.maxSynWt!=NULL) {
 				// only copy maxSynWt if datastructure actually exists on the GPU
 				// (that logic should be done elsewhere though)
-				CUDA_CHECK_ERRORS( cudaMemcpy(&(cpu_gpuNetPtrs.maxSynWt[cumIdx]), &(maxSynWt[cumIdx]), 
+				CUDA_CHECK_ERRORS( cudaMemcpy(&(cpu_gpuNetPtrs.maxSynWt[cumIdx]), &(maxSynWt[cumIdx]),
 					sizeof(float)*Npre[i], cudaMemcpyHostToDevice) );
 			}
 		}
@@ -940,7 +940,7 @@ void CpuSNN::scaleWeights(short int connId, float scale, bool updateWeightRange)
 			if (cpu_gpuNetPtrs.maxSynWt!=NULL) {
 				// only copy maxSynWt if datastructure actually exists on the GPU
 				// (that logic should be done elsewhere though)
-				CUDA_CHECK_ERRORS( cudaMemcpy(&(cpu_gpuNetPtrs.maxSynWt[cumIdx]), &(maxSynWt[cumIdx]), 
+				CUDA_CHECK_ERRORS( cudaMemcpy(&(cpu_gpuNetPtrs.maxSynWt[cumIdx]), &(maxSynWt[cumIdx]),
 					sizeof(float)*Npre[i], cudaMemcpyHostToDevice));
 			}
 		}
@@ -1636,10 +1636,10 @@ GroupSTDPInfo_t CpuSNN::getGroupSTDPInfo(int grpId) {
 	gInfo.ALPHA_LTP_INB = grp_Info[grpId].ALPHA_LTP_INB;
 	gInfo.TAU_LTD_INV_INB = grp_Info[grpId].TAU_LTD_INV_INB;
 	gInfo.TAU_LTP_INV_INB = grp_Info[grpId].TAU_LTP_INV_INB;
-	gInfo.GAMA = grp_Info[grpId].GAMA;
+	gInfo.GAMMA = grp_Info[grpId].GAMMA;
 	gInfo.BETA_LTP = grp_Info[grpId].BETA_LTP;
 	gInfo.BETA_LTD = grp_Info[grpId].BETA_LTD;
-	gInfo.LAMDA = grp_Info[grpId].LAMDA;
+	gInfo.LAMBDA = grp_Info[grpId].LAMBDA;
 	gInfo.DELTA = grp_Info[grpId].DELTA;
 
 	return gInfo;
@@ -2886,9 +2886,9 @@ void CpuSNN::findFiring() {
 									break;
 								case HALF_HEBBIAN: // half-Hebbian curve
 									if (stdp_tDiff * grp_Info[g].TAU_LTP_INV_EXC < 25) {
-										if (stdp_tDiff <= grp_Info[g].GAMA)
-											wtChange[pos_ij] += grp_Info[g].OMEGA + grp_Info[g].KAPA * STDP(stdp_tDiff, grp_Info[g].ALPHA_LTP_EXC, grp_Info[g].TAU_LTP_INV_EXC);
-										else // stdp_tDiff > GAMA
+										if (stdp_tDiff <= grp_Info[g].GAMMA)
+											wtChange[pos_ij] += grp_Info[g].OMEGA + grp_Info[g].KAPPA * STDP(stdp_tDiff, grp_Info[g].ALPHA_LTP_EXC, grp_Info[g].TAU_LTP_INV_EXC);
+										else // stdp_tDiff > GAMMA
 											wtChange[pos_ij] -= STDP(stdp_tDiff, grp_Info[g].ALPHA_LTP_EXC, grp_Info[g].TAU_LTP_INV_EXC);
 									}
 									break;
@@ -2907,7 +2907,7 @@ void CpuSNN::findFiring() {
 								case LINEAR_SYMMETRIC: // linear symmetric curve
 									break;
 								case CONSTANT_SYMMETRIC: // constant symmetric curve
-									if (stdp_tDiff <= grp_Info[g].LAMDA) { // LTP of inhibitory synapse, which decreases synapse weight
+									if (stdp_tDiff <= grp_Info[g].LAMBDA) { // LTP of inhibitory synapse, which decreases synapse weight
 										wtChange[pos_ij] -= grp_Info[g].BETA_LTP;
 										//printf("I-STDP LTP\n");
 									} else if (stdp_tDiff <= grp_Info[g].DELTA) { // LTD of inhibitory syanpse, which increase sysnapse weight
@@ -3057,7 +3057,7 @@ void CpuSNN::generatePostSpike(unsigned int pre_i, unsigned int idx_d, unsigned 
 				case LINEAR_SYMMETRIC: // linear symmetric curve
 					break;
 				case CONSTANT_SYMMETRIC: // constant symmetric curve
-					if (stdp_tDiff <= grp_Info[post_grpId].LAMDA) { // LTP of inhibitory synapse, which decreases synapse weight
+					if (stdp_tDiff <= grp_Info[post_grpId].LAMBDA) { // LTP of inhibitory synapse, which decreases synapse weight
 						wtChange[pos_i] -= grp_Info[post_grpId].BETA_LTP;
 					} else if (stdp_tDiff <= grp_Info[post_grpId].DELTA) { // LTD of inhibitory syanpse, which increase synapse weight
 						wtChange[pos_i] += grp_Info[post_grpId].BETA_LTD;
@@ -3253,7 +3253,7 @@ void  CpuSNN::globalStateUpdate() {
 
 		// decay dopamine concentration
 		if (cpuNetPtrs.grpDA[g] > grp_Info[g].baseDP) {
-			cpuNetPtrs.grpDA[g] *= grp_Info[g].decayDP;	
+			cpuNetPtrs.grpDA[g] *= grp_Info[g].decayDP;
 		}
 		cpuNetPtrs.grpDABuffer[g][simTimeMs] = cpuNetPtrs.grpDA[g];
 

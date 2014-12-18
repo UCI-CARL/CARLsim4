@@ -261,7 +261,7 @@ public:
 	 * \param[in] alphaLTD max magnitude for LTD change (leave positive)
 	 * \param[in] tauLTD decay time constant for LTD
 	 */
-	void setESTDP(int grpId, bool isSet, stdpType_t type, stdpCurve_t curve, float alphaLTP, float tauLTP, float alphaLTD, float tauLTD, float gama);
+	void setESTDP(int grpId, bool isSet, stdpType_t type, stdpCurve_t curve, float alphaLTP, float tauLTP, float alphaLTD, float tauLTD, float gamma);
 
 	//! Set the inhibitory spike-timing-dependent plasticity (STDP) with anti-hebbian curve for a neuron group
 	/*
@@ -892,8 +892,6 @@ private:
 	//added to include homeostasis. -- KDC
 	float					*baseFiring;
 	float                 *avgFiring;
-	unsigned int	        *nextTaste;
-	unsigned int	        *nextDeath;
 	unsigned int		*cumulativePost;
 	unsigned int		*cumulativePre;
 	post_info_t		*preSynapticIds;
@@ -970,7 +968,7 @@ private:
 	int numSpkCnt; //!< number of real-time spike monitors in the network
 	int* spkCntBuf[MAX_GRP_PER_SNN]; //!< the actual buffer of spike counts (per group, per neuron)
 
-	
+
 	unsigned int		numGroupMonitor;
 	GroupMonitorCore*	groupMonCoreList[MAX_GRP_PER_SNN];
 	GroupMonitor*		groupMonList[MAX_GRP_PER_SNN];

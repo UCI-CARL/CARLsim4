@@ -21,10 +21,10 @@ TEST(STDP, setSTDPTrue) {
 	float alphaLTD = 10.0f;
 	float tauLTP = 15.0f;
 	float tauLTD = 20.0f;
-	float gama = 10.0f;
+	float gamma = 10.0f;
 	float betaLTP = 1.0f;
 	float betaLTD = 1.2f;
-	float lamda = 12.0f;
+	float lambda = 12.0f;
 	float delta = 40.0f;
 	CARLsim* sim;
 
@@ -40,16 +40,16 @@ TEST(STDP, setSTDPTrue) {
 						sim->setESTDP(g1, true, STANDARD, HebbianCurve(alphaLTP,tauLTP,alphaLTD,tauLTD));
 						sim->setISTDP(g1, true, STANDARD, AntiHebbianCurve(alphaLTP,tauLTP,alphaLTD,tauLTD));
 					} else { //stdpCurve == 1
-						sim->setESTDP(g1, true, STANDARD, HalfHebbianCurve(alphaLTP,tauLTP,alphaLTD,tauLTD, gama));
-						sim->setISTDP(g1, true, STANDARD, LinearSymmetricCurve(betaLTP,betaLTD,lamda,delta));
+						sim->setESTDP(g1, true, STANDARD, HalfHebbianCurve(alphaLTP,tauLTP,alphaLTD,tauLTD, gamma));
+						sim->setISTDP(g1, true, STANDARD, LinearSymmetricCurve(betaLTP,betaLTD,lambda,delta));
 					}
 				} else { // stdpType == 1
 					if (stdpCurve == 0) {
 						sim->setESTDP(g1, true, DA_MOD, HebbianCurve(alphaLTP,tauLTP,alphaLTD,tauLTD));
 						sim->setISTDP(g1, true, DA_MOD, AntiHebbianCurve(alphaLTP,tauLTP,alphaLTD,tauLTD));
 					} else { //stdpCurve == 1
-						sim->setESTDP(g1, true, DA_MOD, HalfHebbianCurve(alphaLTP,tauLTP,alphaLTD,tauLTD, gama));
-						sim->setISTDP(g1, true, DA_MOD, LinearSymmetricCurve(betaLTP,betaLTD,lamda,delta));
+						sim->setESTDP(g1, true, DA_MOD, HalfHebbianCurve(alphaLTP,tauLTP,alphaLTD,tauLTD, gamma));
+						sim->setISTDP(g1, true, DA_MOD, LinearSymmetricCurve(betaLTP,betaLTD,lambda,delta));
 					}
 				}
 
@@ -82,13 +82,13 @@ TEST(STDP, setSTDPTrue) {
 					EXPECT_FLOAT_EQ(gInfo.ALPHA_LTD_INB,alphaLTD);
 					EXPECT_FLOAT_EQ(gInfo.TAU_LTP_INV_INB,1.0/tauLTP);
 					EXPECT_FLOAT_EQ(gInfo.TAU_LTD_INV_INB,1.0/tauLTD);
-					EXPECT_FLOAT_EQ(gInfo.GAMA, 0.0f);
+					EXPECT_FLOAT_EQ(gInfo.GAMMA, 0.0f);
 				} else {
 					EXPECT_FLOAT_EQ(gInfo.BETA_LTP,betaLTP);
 					EXPECT_FLOAT_EQ(gInfo.BETA_LTD,betaLTD);
-					EXPECT_FLOAT_EQ(gInfo.LAMDA,lamda);
+					EXPECT_FLOAT_EQ(gInfo.LAMBDA,lambda);
 					EXPECT_FLOAT_EQ(gInfo.DELTA,delta);
-					EXPECT_FLOAT_EQ(gInfo.GAMA, gama);
+					EXPECT_FLOAT_EQ(gInfo.GAMMA, gamma);
 				}
 
 				delete sim;
@@ -108,7 +108,7 @@ TEST(STDP, setSTDPFalse) {
 	float tauLTD = 20.0f;
 	float betaLTP = 1.0f;
 	float betaLTD = 2.0f;
-	float lamda = 3.0f;
+	float lambda = 3.0f;
 	float delta = 4.0f;
 	CARLsim* sim;
 
@@ -118,7 +118,7 @@ TEST(STDP, setSTDPFalse) {
 		int g1=sim->createGroup("excit", 10, EXCITATORY_NEURON);
 		sim->setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f);
 		sim->setESTDP(g1,false,STANDARD, HebbianCurve(alphaLTP,tauLTP,alphaLTD,tauLTD));
-		sim->setISTDP(g1,false,STANDARD, ConstantSymmetricCurve(betaLTP,betaLTD,lamda,delta));
+		sim->setISTDP(g1,false,STANDARD, ConstantSymmetricCurve(betaLTP,betaLTD,lambda,delta));
 
 		GroupSTDPInfo_t gInfo = sim->getGroupSTDPInfo(g1);
 		EXPECT_FALSE(gInfo.WithSTDP);
@@ -135,9 +135,9 @@ TEST(STDP, setSTDPFalse) {
 		EXPECT_FLOAT_EQ(gInfo.TAU_LTD_INV_EXC, 1.0f);
 		EXPECT_FLOAT_EQ(gInfo.BETA_LTP, 0.0f);
 		EXPECT_FLOAT_EQ(gInfo.BETA_LTD, 0.0f);
-		EXPECT_FLOAT_EQ(gInfo.LAMDA, 1.0f);
+		EXPECT_FLOAT_EQ(gInfo.LAMBDA, 1.0f);
 		EXPECT_FLOAT_EQ(gInfo.DELTA, 1.0f);
-		EXPECT_FLOAT_EQ(gInfo.GAMA, 0.0f);
+		EXPECT_FLOAT_EQ(gInfo.GAMMA, 0.0f);
 
 		delete sim;
 	}
@@ -399,7 +399,7 @@ TEST(STDP, ESTDPHalfHebbianCurve) {
 	float ALPHA_LTD = 0.14f;
 	float TAU_LTP = 20.0f;
 	float TAU_LTD = 20.0f;
-	float GAMA = 20.0f;
+	float GAMMA = 20.0f;
 	float maxInhWeight = 10.0f;
 	float initWeight = 5.0f;
 	float minInhWeight = 0.0f;
@@ -425,14 +425,14 @@ TEST(STDP, ESTDPHalfHebbianCurve) {
 
 					// enable COBA, set up ESTDP
 					sim->setConductances(true,5,150,6,150);
-					sim->setESTDP(g1, true, STANDARD, HalfHebbianCurve(ALPHA_LTP/100, TAU_LTP, ALPHA_LTD/100, TAU_LTP, GAMA));
+					sim->setESTDP(g1, true, STANDARD, HalfHebbianCurve(ALPHA_LTP/100, TAU_LTP, ALPHA_LTD/100, TAU_LTP, GAMMA));
 				} else { // current-based
 					sim->connect(gex1, g1, "one-to-one", RangeWeight(40.0f), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
 					sim->connect(gex2, g1, "one-to-one", RangeWeight(minInhWeight, initWeight, maxInhWeight), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_PLASTIC);
 
 					// set up ESTDP
 					sim->setConductances(false,0,0,0,0);
-					sim->setESTDP(g1, true, STANDARD, HalfHebbianCurve(ALPHA_LTP, TAU_LTP, ALPHA_LTD, TAU_LTP, GAMA));
+					sim->setESTDP(g1, true, STANDARD, HalfHebbianCurve(ALPHA_LTP, TAU_LTP, ALPHA_LTD, TAU_LTP, GAMMA));
 				}
 
 				sim->setSpikeGenerator(gex1, proPostSpikeGen);
@@ -486,7 +486,7 @@ TEST(STDP, ISTDPConstantSymmetricCurve) {
 	int gin, gex, g1;
 	float BETA_LTP = 0.10f;
 	float BETA_LTD = 0.14f;
-	float LAMDA = 9.0f;
+	float LAMBDA = 9.0f;
 	float DELTA = 40.0f;
 	float maxInhWeight = 10.0f;
 	float initWeight = 5.0f;
@@ -512,14 +512,14 @@ TEST(STDP, ISTDPConstantSymmetricCurve) {
 
 					// enable COBA, set up ISTDP
 					sim->setConductances(true,5,150,6,150);
-					sim->setISTDP(g1, true, STANDARD, ConstantSymmetricCurve(BETA_LTP/100, BETA_LTD/100, LAMDA, DELTA));
+					sim->setISTDP(g1, true, STANDARD, ConstantSymmetricCurve(BETA_LTP/100, BETA_LTD/100, LAMBDA, DELTA));
 				} else { // current-based
 					sim->connect(gex, g1, "one-to-one", RangeWeight(40.0f), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
 					sim->connect(gin, g1, "one-to-one", RangeWeight(minInhWeight, initWeight, maxInhWeight), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_PLASTIC);
 
 					// set up ISTDP
 					sim->setConductances(false,0,0,0,0);
-					sim->setISTDP(g1, true, STANDARD, ConstantSymmetricCurve(BETA_LTP, BETA_LTD, LAMDA, DELTA));
+					sim->setISTDP(g1, true, STANDARD, ConstantSymmetricCurve(BETA_LTP, BETA_LTD, LAMBDA, DELTA));
 				}
 
 				sim->setSpikeGenerator(gex, proPostSpikeGen);

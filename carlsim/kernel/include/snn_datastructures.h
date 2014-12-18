@@ -250,7 +250,7 @@ typedef struct group_info_s {
 	uint32_t 	SliceUpdateTime;
 	int 		FiringCount1sec;
 	int 		numPostSynapses;
-	int 		numPreSynapses; 
+	int 		numPreSynapses;
 	bool 		isSpikeGenerator;
 	bool 		WithSTP;
 	bool 		WithSTDP;
@@ -275,8 +275,8 @@ typedef struct group_info_s {
 	float		TAU_LTD_INV_EXC;
 	float		ALPHA_LTP_EXC;
 	float		ALPHA_LTD_EXC;
-	float		GAMA;
-	float		KAPA;
+	float		GAMMA;
+	float		KAPPA;
 	float		OMEGA;
 	float		TAU_LTP_INV_INB; //!< for furture use
 	float		TAU_LTD_INV_INB; //!< for furture use
@@ -284,7 +284,7 @@ typedef struct group_info_s {
 	float		ALPHA_LTD_INB; //!< for furture use
 	float		BETA_LTP;
 	float		BETA_LTD;
-	float		LAMDA;
+	float		LAMBDA;
 	float		DELTA;
 
 	bool withSpikeCounter; //!< if this flag is set, we want to keep track of how many spikes per neuron in the group
