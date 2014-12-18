@@ -43,10 +43,8 @@
 #include <assert.h>					// assert
 #include <carlsim_definitions.h> 	// ALL
 
+// include CUDA version-dependent macros and include files
 #include <cuda_version_control.h>
-#include <cuda.h>
-#include <cuda_runtime.h>
-#include <helper_cuda.h>
 
 // constructor
 PoissonRate::PoissonRate(int nNeur, bool onGPU): nNeur_(nNeur), onGPU_(onGPU) {
@@ -71,7 +69,7 @@ PoissonRate::~PoissonRate() {
 	if (isOnGPU()) {
 		// clean up device
 		if (d_rates_!=NULL) {
-			CUDA_CHECK_ERRORS(cudaThreadSynchronize()); // wait for kernel to complete
+//			CUDA_CHECK_ERRORS(cudaThreadSynchronize()); // wait for kernel to complete
 			CUDA_CHECK_ERRORS(cudaFree(d_rates_)); // free memory
 			d_rates_ = NULL;
 		}

@@ -3,6 +3,7 @@
 #include <snn.h>				// CARLsim private implementation
 #include <snn_definitions.h>	// KERNEL_ERROR, KERNEL_INFO, ...
 
+#include <sstream>				// std::stringstream
 #include <algorithm>			// std::sort
 #include <iomanip>				// std::setfill, std::setw
 

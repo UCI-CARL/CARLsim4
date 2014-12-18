@@ -41,18 +41,9 @@
 #ifndef _SNN_DATASTRUCTURES_H_
 #define _SNN_DATASTRUCTURES_H_
 
-#if __CUDA3__
-	#include <cuda.h>
-	#include <cutil_inline.h>
-	#include <cutil_math.h>
-#else
-	#include <cuda.h>
-	#include <cuda_runtime.h>
-	#include <helper_cuda.h>
-	#include <helper_functions.h>
-	#include <helper_timer.h>
-	#include <helper_math.h>
-#endif
+// include CUDA version-dependent macros and include files
+#include <cuda_version_control.h>
+
 
 //! connection types, used internally (externally it's a string)
 enum conType_t { CONN_RANDOM, CONN_ONE_TO_ONE, CONN_FULL, CONN_FULL_NO_DIRECT, CONN_USER_DEFINED, CONN_UNKNOWN};

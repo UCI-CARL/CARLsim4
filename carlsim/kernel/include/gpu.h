@@ -26,23 +26,14 @@
 */
 #ifndef _GPU_H_
 #define _GPU_H_
+
 #include <cstdio>
 #include <cstring>
 
+// include CUDA version-dependent macros and include files
+#include <cuda_version_control.h>
 
-#if __CUDA3__
-    // includes, library
-    #include "cudpp/cudpp.h"
-
-    // includes, project
-    #include "cutil_inline.h"
-    #include "cutil_math.h"
-#else
-    #include <helper_cuda.h>
-#endif
-
-
-/// initialize the GPU
+//! initialize the GPU
 void GPU_init();
 
 #endif
