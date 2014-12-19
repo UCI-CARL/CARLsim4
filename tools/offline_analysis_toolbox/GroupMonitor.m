@@ -13,7 +13,7 @@ classdef GroupMonitor < handle
     % >> GM.recordMovie; % plots heat map and saves as 'movie.avi'
     % >> % etc.
     %
-    % Version 10/5/2014
+    % Version 12/18/2014
     % Author: Michael Beyeler <mbeyeler@uci.edu>
     
     %% PROPERTIES
@@ -29,7 +29,7 @@ classdef GroupMonitor < handle
     % private
     properties (Hidden, Access = private)
         spkObj;             % SpikeReader object
-        spkFilePrefix;      % spike file prefix, e.g. "spk"
+        spkFilePrefix;      % spike file prefix, e.g. "spk_"
         spkFileSuffix;      % spike file suffix, e.g. ".dat"
         spkData;            % buffer for spike data
         
@@ -107,8 +107,8 @@ classdef GroupMonitor < handle
                 end
                 obj.errorMode = errorMode;
             end
-            if nargin<2
-                obj.resultsFolder = '';
+            if nargin<2 || nargin>=2 && strcmpi(resultsFolder,'')
+                obj.resultsFolder = '.';
             else
                 obj.resultsFolder = resultsFolder;
             end
@@ -736,13 +736,13 @@ classdef GroupMonitor < handle
             % all reside within SAVEFOLDER (specified in constructor), and
             % be made of a common prefix, the population name (specified in
             % ADDPOPULATION), and a common suffix.
-            % Example: files 'results/spkV1.dat', 'results/spkMT.dat'
+            % Example: files 'results/spk_V1.dat', 'results/spkMT.dat'
             %   -> saveFolder = 'results/'
-            %   -> prefix = 'spk'
+            %   -> prefix = 'spk_'
             %   -> suffix = '.dat'
             %   -> name of population = 'V1' or 'MT'
             if nargin<3,suffix='.dat';end
-            if nargin<2,prefix='spk';end
+            if nargin<2,prefix='spk_';end
             obj.unsetError()
             
             % need to re-load if file name changes
