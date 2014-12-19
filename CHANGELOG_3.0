@@ -7,6 +7,10 @@ Legend:
 	- removed element
 	* changed element
 
+2014-12-19     Michael Beyeler <mbeyeler@uci.edu>
+  + Added initOAT.m and demoOAT.m to scripts folder of projects.
+  * Fixed obj.resultsFolder='' issue in GroupMonitor.m (OAT).
+
 2014-12-17     Michael Beyeler <mbeyeler@uci.edu>
   + Added SpikeMonitor::setLogFile.
 
