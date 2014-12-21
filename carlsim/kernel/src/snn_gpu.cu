@@ -975,14 +975,14 @@ __global__ void kernel_globalStateUpdate (int t, int sec, int simTime)
  *  \brief update group state
  *  update the concentration of neuronmodulator
  */
-__global__ void kernel_globalGroupStateUpdate (int t, int sec, int simTime)
+__global__ void kernel_globalGroupStateUpdate (int t)
 {
 	// update group state
 	int grpIdx = blockIdx.x * blockDim.x + threadIdx.x;
 
 	if (grpIdx < gpuNetInfo.numGrp) {
 		// decay dopamine concentration
-		if (gpuPtrs.grpDA[grpIdx] > gpuGrpInfo[grpIdx].baseDP) {
+		if ((gpuGrpInfo[grpIdx].WithESTDPtype == DA_MOD || gpuGrpInfo[grpIdx].WithISTDPtype == DA_MOD) && gpuPtrs.grpDA[grpIdx] > gpuGrpInfo[grpIdx].baseDP) {
 			gpuPtrs.grpDA[grpIdx] *= gpuGrpInfo[grpIdx].decayDP;
 		}
 		gpuPtrs.grpDABuffer[grpIdx][t] = gpuPtrs.grpDA[grpIdx]; // log dopamine concentration
@@ -2467,7 +2467,7 @@ void CpuSNN::globalStateUpdate_GPU() {
 
 	// update all group state (i.e., concentration of neuronmodulators)
 	// currently support 4 x 128 groups
-	kernel_globalGroupStateUpdate <<<4, blkSize>>> (simTimeMs, simTimeSec, simTime);
+	kernel_globalGroupStateUpdate <<<4, blkSize>>> (simTimeMs);
 	CUDA_GET_LAST_ERROR_MACRO("Kernel execution failed");
 }
 
