@@ -72,7 +72,7 @@
 #include <spikegen_from_file.h>
 #include <spikegen_from_vector.h>
 #include <simple_weight_tuner.h>
-#include <input_stimulus.h>
+#include <visual_stimulus.h>
 
 #include <pthread.h>
 #endif
