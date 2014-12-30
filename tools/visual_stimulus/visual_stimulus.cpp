@@ -1,4 +1,4 @@
-#include <input_stimulus.h>
+#include <visual_stimulus.h>
 
 #include <poisson_rate.h>
 #include <string>
@@ -7,7 +7,7 @@
 #include <stdlib.h> // exit
 
 // constructor
-InputStimulus::InputStimulus(std::string fileName, bool wrapAroundEOF) {
+VisualStimulus::VisualStimulus(std::string fileName, bool wrapAroundEOF) {
 	fileId_ = NULL;
 	fileName_ = fileName;
 	wrapAroundEOF_ = wrapAroundEOF;
@@ -31,7 +31,7 @@ InputStimulus::InputStimulus(std::string fileName, bool wrapAroundEOF) {
 }
 
 // destructor
-InputStimulus::~InputStimulus() {
+VisualStimulus::~VisualStimulus() {
 	if (stimFrame_!=NULL)
 		delete[] stimFrame_;
 	stimFrame_=NULL;
@@ -45,13 +45,13 @@ InputStimulus::~InputStimulus() {
 }
 
 // reads the next frame and returns the char array
-unsigned char* InputStimulus::readFrame() {
+unsigned char* VisualStimulus::readFrame() {
 	readFramePrivate();
 	return stimFrame_;
 }
 
 // reads the next frame and returns the PoissonRate object
-PoissonRate* InputStimulus::readFrame(float maxPoisson) {
+PoissonRate* VisualStimulus::readFrame(float maxPoisson) {
 	assert(maxPoisson!=0);
 
 	// read next frame
@@ -60,14 +60,14 @@ PoissonRate* InputStimulus::readFrame(float maxPoisson) {
 	// create new Poisson object, assign 
 	stimFramePoiss_ = new PoissonRate(stimWidth_*stimHeight_*stimChannels_);
 	for (int i=0; i<stimWidth_*stimHeight_*stimChannels_; i++)
-		stimFramePoiss_->setRate(i, stimFrame_[i]*1.0/255.0*maxPoisson); // scale firing rates
+		stimFramePoiss_->setRate(i, stimFrame_[i]*1.0f/255.0f*maxPoisson); // scale firing rates
 
 	return stimFramePoiss_;
 }
 
 
 // private method: reads next frame and assigns char array and Poisson Rate
-void InputStimulus::readFramePrivate() {
+void VisualStimulus::readFramePrivate() {
 	// TODO: So far we only support grayscale images
 	assert(stimChannels_==1);
 	assert(stimType_==STIM_GRAY);
@@ -110,7 +110,7 @@ void InputStimulus::readFramePrivate() {
 }
 
 // reads the header section of the binary file
-void InputStimulus::readHeader() {
+void VisualStimulus::readHeader() {
 	fileId_ = fopen(fileName_.c_str(),"rb");
 	if (fileId_==NULL) {
 		fprintf(stderr,"INPUTSTIM ERROR: Could not open stimulus file %s\n",fileName_.c_str());
@@ -156,14 +156,11 @@ void InputStimulus::readHeader() {
 	}
 
 	// read stimulus dimensions
-	fread(&tmpInt, sizeof(int), 1, fileId_);
-	readErr |= (result!=1);
+	result = fread(&tmpInt, sizeof(int), 1, fileId_);		readErr |= (result!=1);
 	stimWidth_ = tmpInt;
-	fread(&tmpInt, sizeof(int), 1, fileId_);
-	readErr |= (result!=1);
+	result = fread(&tmpInt, sizeof(int), 1, fileId_);		readErr |= (result!=1);
 	stimHeight_ = tmpInt;
-	fread(&tmpInt, sizeof(int), 1, fileId_);
-	readErr |= (result!=1);
+	result = fread(&tmpInt, sizeof(int), 1, fileId_);		readErr |= (result!=1);
 	stimLength_ = tmpInt;
 
 	// any reading errors encountered?
@@ -177,6 +174,6 @@ void InputStimulus::readHeader() {
 }
 
 // rewind position of file stream to first frame
-void InputStimulus::rewind() {
+void VisualStimulus::rewind() {
 	fseek(fileId_, fileHeaderSize_, SEEK_SET);
 }

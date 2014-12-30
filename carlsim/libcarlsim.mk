@@ -36,8 +36,8 @@ install: $(carlsim_lib)
 		$(CARLSIM_LIB_DIR)/include/spike_generators
 	@test -d $(CARLSIM_LIB_DIR)/include/simple_weight_tuner || mkdir \
 		$(CARLSIM_LIB_DIR)/include/simple_weight_tuner
-	@test -d $(CARLSIM_LIB_DIR)/include/input_stimulus || mkdir \
-		$(CARLSIM_LIB_DIR)/include/input_stimulus
+	@test -d $(CARLSIM_LIB_DIR)/include/visual_stimulus || mkdir \
+		$(CARLSIM_LIB_DIR)/include/visual_stimulus
 	@install -m 0755 $(carlsim_lib).$(lib_ver) $(CARLSIM_LIB_DIR)/lib
 	@ln -Tfs $(CARLSIM_LIB_DIR)/lib/$(lib_name).$(lib_ver) \
 		$(CARLSIM_LIB_DIR)/lib/$(lib_name).$(num_ver)
@@ -59,8 +59,8 @@ install: $(carlsim_lib)
 		$(CARLSIM_LIB_DIR)/include/spike_monitor
 	@install -m 0644 $(group_mon_dir)/group_monitor.h \
 		$(CARLSIM_LIB_DIR)/include/group_monitor
-	@install -m 0644 $(tools_inputstim_dir)/input_stimulus.h \
-		$(CARLSIM_LIB_DIR)/include/input_stimulus
+	@install -m 0644 $(tools_visualstim_dir)/visual_stimulus.h \
+		$(CARLSIM_LIB_DIR)/include/visual_stimulus
 	@install -m 0644 $(tools_spikegen_dir)/periodic_spikegen.h \
 		$(tools_spikegen_dir)/spikegen_from_file.h \
 		$(tools_spikegen_dir)/spikegen_from_vector.h \
