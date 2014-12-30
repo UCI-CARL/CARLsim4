@@ -4196,6 +4196,18 @@ void CpuSNN::resetTimingTable() {
 }
 
 
+//! nid=neuron id, sid=synapse id, grpId=group id.
+inline post_info_t CpuSNN::SET_CONN_ID(int nid, int sid, int grpId) {
+	if (sid > CONN_SYN_MASK) {
+		KERNEL_ERROR("Error: Syn Id (%d) exceeds maximum limit (%d) for neuron %d (group %d)", sid, CONN_SYN_MASK, nid,
+			grpId);
+		exitSimulation(1);
+	}
+	post_info_t p;
+	p.postId = (((sid)<<CONN_SYN_NEURON_BITS)+((nid)&CONN_SYN_NEURON_MASK));
+	p.grpId  = grpId;
+	return p;
+}
 
 //! set one specific connection from neuron id 'src' to neuron id 'dest'
 inline void CpuSNN::setConnection(int srcGrp,  int destGrp,  unsigned int src, unsigned int dest, float synWt,

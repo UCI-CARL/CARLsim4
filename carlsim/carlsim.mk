@@ -53,10 +53,10 @@ tools_spikegen_src  := $(addprefix $(tools_spikegen_dir)/,interactive_spikegen.c
 	periodic_spikegen.cpp spikegen_from_file.cpp spikegen_from_vector.cpp pre_post_group_spikegen.cpp)
 tools_spikegen_objs := $(patsubst %.cpp, %.o, $(tools_spikegen_src))
 
-# tools inputstim variables
-tools_inputstim_inc  := $(addprefix $(tools_inputstim_dir)/,input_stimulus.h)
-tools_inputstim_src  := $(addprefix $(tools_inputstim_dir)/,input_stimulus.cpp)
-tools_inputstim_objs := $(patsubst %.cpp, %.o, $(tools_inputstim_src))
+# tools visualstim variables
+tools_visualstim_inc  := $(addprefix $(tools_visualstim_dir)/,visual_stimulus.h)
+tools_visualstim_src  := $(addprefix $(tools_visualstim_dir)/,visual_stimulus.cpp)
+tools_visualstim_objs := $(patsubst %.cpp, %.o, $(tools_visualstim_src))
 
 # tools simple weight tuner variables
 tools_swt_inc  := $(addprefix $(tools_swt_dir)/,simple_weight_tuner.h)
@@ -68,13 +68,13 @@ util_2_0_objs := $(addprefix $(kernel_dir)/,v1ColorME.2.0.o)
 
 # carlsim variables all together in one place
 carlsim_inc += $(kernel_inc) $(interface_inc) $(conn_mon_inc) $(spike_mon_inc) $(group_mon_inc) \
-	$(tools_spikegen_inc) $(tools_inputstim_inc) $(tools_swt_inc)
+	$(tools_spikegen_inc) $(tools_visualstim_inc) $(tools_swt_inc)
 carlsim_objs += $(kernel_objs) $(interface_objs) $(conn_mon_objs) $(spike_mon_objs) $(group_mon_objs) \
-	$(tools_spikegen_objs) $(tools_inputstim_objs) $(tools_swt_objs)
+	$(tools_spikegen_objs) $(tools_visualstim_objs) $(tools_swt_objs)
 carlsim_sources += $(kernel_src) $(interface_src) $(conn_mon_src) $(spike_mon_src) $(group_mon_src) \
-	$(tools_spikegen_src) $(tools_inputstim_src) $(tools_swt_src)
+	$(tools_spikegen_src) $(tools_visualstim_src) $(tools_swt_src)
 objects += $(carlsim_objs) $(interface_objs) $(conn_mon_objs) $(spike_mon_objs) $(group_mon_objs) \
-	$(tools_spikegen_objs) $(tools_inputstim_objs) $(tools_swt_objs)
+	$(tools_spikegen_objs) $(tools_visualstim_objs) $(tools_swt_objs)
 
 default_targets += carlsim
 
@@ -105,8 +105,8 @@ $(group_mon_dir)/%.o: $(group_mon_dir)/%.cpp $(group_mon_inc)
 $(tools_spikegen_dir)/%.o: $(tools_spikegen_src) $(tools_spikegen_inc)
 	$(NVCC) -c $(CARLSIM_INCLUDES) $(CARLSIM_FLAGS)	$(@D)/$*.cpp -o $@
 
-# tools/input_stimulus
-$(tools_inputstim_dir)/%.o: $(tools_inputstim_src) $(tools_inputstim_inc)
+# tools/visual_stimulus
+$(tools_visualstim_dir)/%.o: $(tools_visualstim_src) $(tools_visualstim_inc)
 	$(NVCC) -c $(CARLSIM_INCLUDES) $(CARLSIM_FLAGS) $(@D)/$*.cpp -o $@
 
 # tools/simple_weight_tuner

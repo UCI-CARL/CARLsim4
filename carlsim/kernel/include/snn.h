@@ -84,19 +84,6 @@ class ConnectionMonitorCore;
 class ConnectionMonitor;
 
 
-//! nid=neuron id, sid=synapse id, grpId=group id.
-inline post_info_t SET_CONN_ID(int nid, int sid, int grpId) {
-	if (sid > CONN_SYN_MASK) {
-		fprintf(stderr, "Error: Syn Id (%d) exceeds maximum limit (%d) for neuron %d\n", sid, CONN_SYN_MASK, nid);
-		assert(0);
-	}
-	post_info_t p;
-	p.postId = (((sid)<<CONN_SYN_NEURON_BITS)+((nid)&CONN_SYN_NEURON_MASK));
-	p.grpId  = grpId;
-	return p;
-}
-
-
 /// **************************************************************************************************************** ///
 /// CPUSNN CORE CLASS
 /// **************************************************************************************************************** ///
@@ -132,8 +119,8 @@ public:
 
 	// +++++ PUBLIC PROPERTIES ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
-	const static unsigned int MAJOR_VERSION = 2; //!< major release version, as in CARLsim X
-	const static unsigned int MINOR_VERSION = 2; //!< minor release version, as in CARLsim 2.X
+	const static unsigned int MAJOR_VERSION = 3; //!< major release version, as in CARLsim X
+	const static unsigned int MINOR_VERSION = 0; //!< minor release version, as in CARLsim 2.X
 
 
 
@@ -700,6 +687,8 @@ private:
 	void resetSpikeCnt(int grpId=ALL);					//!< Resets the spike count for a particular group.
 	void resetSynapticConnections(bool changeWeights=false);
 	void resetTimingTable();
+
+	post_info_t SET_CONN_ID(int nid, int sid, int grpId);
 
 	inline void setConnection(int srcGrpId, int destGrpId, unsigned int src, unsigned int dest, float synWt,
 		float maxWt, uint8_t dVal, int connProp, short int connId);

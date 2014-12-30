@@ -1,30 +1,32 @@
-classdef InputStimulus < handle
-    % IS = InputStimulus(varargin) creates a new instance of class
-    % InputStimulus.
+classdef VisualStimulus < handle
+    % VS = VisualStimulus(varargin) creates a new instance of class
+    % VisualStimulus.
     %
-    % IS = InputStimulus(width,height,mode) initializes an empty InputStimulus
+    % VS = VisualStimulus(width,height,mode) initializes an empty VisualStimulus
     % object of canvas size width*height and a given image mode. width and
     % height will be rounded to the nearest integer (number of pixels). Image
     % mode can be either 'gray' (grayscale) or 'rgb'.
     %
-    % IS = InputStimulus(width,height) initializes an empty InputStimulus
+    % VS = VisualStimulus(width,height) initializes an empty VisualStimulus
     % object of canvas size width*height in grayscale mode.
     %
-    % IS = InputStimulus(width,height,'rgb') initializes an empty InputStimulus
+    % VS = VisualStimulus(width,height,'rgb') initializes an empty VisualStimulus
     % object of canvas size width*height in rgb mode.
     %
-    % IS = InputStimulus(fileName) loads an InputStimulus object from file.
+    % VS = VisualStimulus(fileName) loads an VisualStimulus object from file.
     % fileName must be a valid relative/absolute path to a binary file that has
-    % been saved using method InputStimulus.saveToFile.
+    % been saved using method VisualStimulus.saveToFile.
     %
     % Version 8/14/14
     % Author: Michael Beyeler <mbeyeler@uci.edu>
     %
-    % This class uses some scripts from a MATLAB package of Simoncelli &
-    % Heeger's Motion Energy model, obtained from
-    % http://www.cns.nyu.edu/~lcv/MTmodel/, version 1.0 (10/14/05).
-    % Authors: Timothy Saint <saint@cns.nyu.edu> and Eero P. Simoncelli
-    % <eero.simoncelli@nyu.edu>
+    % This class is based on some scripts (to generate gratings and random dot
+    % fields) from the MATLAB package of Simoncelli & Heeger's Motion Energy
+    % model, released without a specific software license. It is publicly
+    % available from http://www.cns.nyu.edu/~lcv/MTmodel/, v1.0 (10/14/05).
+    % It has since been updated and greatly extended.
+    % Authors of the original code: Timothy Saint <saint@cns.nyu.edu> and
+    % Eero P. Simoncelli <eero.simoncelli@nyu.edu>
     
     %% PROPERTIES
     properties (SetAccess = private)
@@ -54,7 +56,7 @@ classdef InputStimulus < handle
     %% PUBLIC METHODS
     methods
         % Use varargin to mimick function overloading
-        function obj = InputStimulus(varargin)
+        function obj = VisualStimulus(varargin)
             obj.width = -1;
             obj.height = -1;
             obj.length = 0;
@@ -126,7 +128,7 @@ classdef InputStimulus < handle
         
         function addApertureToExistingFrames(this, frames, maskType, maskSize, ...
                 maskCenter, bgGrayVal)
-            % IS.addApertureToExistingFrames(frames, type, size, ptCenter,
+            % VS.addApertureToExistingFrames(frames, type, size, ptCenter,
             % bgGrayVal) adds an aperture window of a given MASKTYPE and
             % MASKSIZE to all specified FRAMES. The aperture will be drawn
             % around center pixel location MASKCENTER. At pixel positions that
@@ -204,7 +206,7 @@ classdef InputStimulus < handle
 
         function addBar(this, length, barDirection, barSpeed, barWidth, ...
                 barEdgeWidth, pixelsBetweenBars, barStartPos)
-            % IS.addBar(length, barDirection, barSpeed, barWidth, barEdgeWidth,
+            % VS.addBar(length, barDirection, barSpeed, barWidth, barEdgeWidth,
             % pixelsBetweenBar, barStartPos) creates a drifting bar stimulus of
             % LENGTH frames drifting in BARDIRECTION at BARSPEED.
             %
@@ -261,7 +263,7 @@ classdef InputStimulus < handle
         end
             
         function addBlankFrames(this, length, grayVal)
-            % IS.addBlankFrames(length) adds a total of LENGTH blank frames with
+            % VS.addBlankFrames(length) adds a total of LENGTH blank frames with
             % grayscale value GRAYVAL existing stimulus.
             %
             % LENGTH     - The number of blank frames to append. Default is 1.
@@ -288,9 +290,9 @@ classdef InputStimulus < handle
         end
         
         function addCustomFrames(this, frames, prepend)
-            % IS.addCustomFrames(frames) adds a number of customly
+            % VS.addCustomFrames(frames) adds a number of customly
             % generated frames to the existing stimulus. FRAMES must be a
-            % 3D matrix with dims <IS.width x IS.height x number frames>.
+            % 3D matrix with dims <VS.width x VS.height x number frames>.
             % The range of values must be [0,1].
             % By default, frames will be append to the existing stimulus.
             % If flag PREPEND is set to true, then frames will be prepended
@@ -298,7 +300,7 @@ classdef InputStimulus < handle
             %
             % FRAMES       - A 3D matrix of customly generated frames to be
             %                appended to the existing stimulus. Must be of
-            %                size <IS.width x IS.height x number frames>.
+            %                size <VS.width x VS.height x number frames>.
             %
             % PREPEND      - A boolean flag indicating whether to prepend
             %                (true) or append (false) the frames to the
@@ -328,7 +330,7 @@ classdef InputStimulus < handle
         function addDots(this, length, type, dotDirection, dotSpeed, ...
                 dotDensity, dotCoherence, dotRadius, ptCenter, densityStyle, ...
                 sampleFactor, interpMethod)
-            % IS.addDots(length, type, dotDirection, dotSpeed, dotCoherence,
+            % VS.addDots(length, type, dotDirection, dotSpeed, dotCoherence,
             % dotRadius, ptCenter, densityStyle, sampleFactor, interpMethod)
             % adds a field of drifting dots to the existing stimulus. The field
             % consists of roughly DOTDENSITY*imgWidth*imgHeight drifting dots,
@@ -504,7 +506,7 @@ classdef InputStimulus < handle
         end
         
         function addNoiseFrames(this, length, grayVal, type, varargin)
-            % IS.addNoiseFrames(length, grayVal, type, varargin) adds a total
+            % VS.addNoiseFrames(length, grayVal, type, varargin) adds a total
             % of LENGTH frames of a noise TYPE to the existing stimulus. The
             % background will have mean grayscale value GRAYVAL. TYPE is a
             % string that specifies a type of noise (generated using Matlab
@@ -572,7 +574,7 @@ classdef InputStimulus < handle
         end
 
         function addNoiseToExistingFrames(this, frames, type, varargin)
-            % IS.addNoiseToExistingFrames(frames, type, varargin) adds noise of
+            % VS.addNoiseToExistingFrames(frames, type, varargin) adds noise of
             % a given type to all specified frames. FRAMES is a vector of frame
             % numbers. TYPE is a string that specifies any of the following
             % types of noise: 'gaussian', 'localvar', 'poisson', 'salt &
@@ -627,15 +629,11 @@ classdef InputStimulus < handle
         
         function addPlaid(this, length, plaidDir, gratFreq, plaidAngle, ...
                 plaidContrast)
-            % IS.addPlaid(length, dir, freq, angle, contr, append) will add a
+            % VS.addPlaid(length, dir, freq, angle, contr, append) will add a
             % drifting plaid stimulus with mean intensity value 128 and a
             % contrast of value CONTR to your existing stimulus object.
             % The plaid stimulus is made of two sinusoidal gratings ("grating
             % components") separated by a specified ANGLE.
-            %
-            % This method is based on a script by Timothy Saint and Eero P.
-            % Simoncelli at NYU. It was adapted for coordinate system [x,y,t].
-            % For more information see beginning of this file.
             %
             % LENGTH        - The number of frames to create. Default is 10.
             %
@@ -695,7 +693,7 @@ classdef InputStimulus < handle
         
         function addSinGrating(this, length, sinDir, sinFreq, sinContrast, ...
                 sinPhase)
-            % IS.addSinGrating(length, sinDir, sinFreq, sinContrast, sinPhase)
+            % VS.addSinGrating(length, sinDir, sinFreq, sinContrast, sinPhase)
             % will add a drifting sinusoidal grating with mean intensity value
             % 128 and a contrast of sinContrast to the existing stimulus.
             %
@@ -713,10 +711,6 @@ classdef InputStimulus < handle
             %
             % PHASE        - The initial phase of the grating in periods.
             %                Default is 0.
-            %
-            % This method is based on a script by Timothy Saint and Eero P.
-            % Simoncelli at NYU. It was adapted for coordinate system [x,y,t].
-            % For more information see beginning of this file.
             %
             if nargin<6,sinPhase=0;end
             if nargin<5,sinContrast=1;end
@@ -756,7 +750,7 @@ classdef InputStimulus < handle
         end
         
         function clear(this)
-            % IS.clear() clears all added frames. If the stimulus was loaded
+            % VS.clear() clears all added frames. If the stimulus was loaded
             % from file, the object will be reset to the version from file.
             this.length = 0;
             this.stim = [];
@@ -769,7 +763,7 @@ classdef InputStimulus < handle
         
         
         function displayFrames(this,frames,dispFrameNr)
-            % img = IS.displayFrames(frames) displays the specified frames in
+            % img = VS.displayFrames(frames) displays the specified frames in
             % the current figure/axes.
             %
             % FRAMES       - A list of frame numbers. For example, requesting
@@ -810,7 +804,7 @@ classdef InputStimulus < handle
         end
         
         function img = getFrames(this,frames)
-            % img = IS.getFrames(frames) returns the specified frames of the
+            % img = VS.getFrames(frames) returns the specified frames of the
             % stimulus as a 3-D width-by-height-by-length(frames) matrix, where
             % the third argument is the length of the frames list.
             %
@@ -832,9 +826,9 @@ classdef InputStimulus < handle
             % return frames
             img = this.stim(:,:,frames);
         end
-		
+        
         function recordMovie(this, fileName, frames, fps, winSize, bgColor)
-            % IS.recordMovie(movieFile, frames, fps, winSize, bgColor) takes an
+            % VS.recordMovie(movieFile, frames, fps, winSize, bgColor) takes an
             % AVI movie of a list of frames using the VIDEOWRITER utility.
             %
             % FILENAME  - A string enclosed in single quotation marks that
@@ -894,9 +888,9 @@ classdef InputStimulus < handle
         end
 
         function saveToFile(this, fileName)
-            % IS.saveToFile(fileName) saves a InputStimulus object to fileName.
+            % VS.saveToFile(fileName) saves a VisualStimulus object to fileName.
             % Later the stimulus can be loaded by creating a new object such as
-            % IS = InputStimulus(fileName).
+            % VS = VisualStimulus(fileName).
             %
             % FILENAME       - The name of the file to create (optional).
             %                  Default is to use a name consisting of a stimulus
@@ -1028,13 +1022,13 @@ classdef InputStimulus < handle
         end
 
         function privLoadFromFile(this, fileName, loadHeaderOnly)
-            % Private method to load a InputStimulus object from fileName.
+            % Private method to load a VisualStimulus object from fileName.
             % This file must have been created using method
-            % InputStimulus.saveToFile.
+            % VisualStimulus.saveToFile.
             % Make sure to have read access to the specified file.
             %
             % FILENAME       - relative or absolute path to a binary file
-            %                  containing a InputStimulus object.
+            %                  containing a VisualStimulus object.
             % LOADHEADERONLY - A flag to indicate whether only the header should
             %                  be read. This is helpful if one only cares about
             %                  the stimulus dimensions and such. Default: false.
@@ -1168,7 +1162,9 @@ classdef InputStimulus < handle
             %
             % This method was initially authored by Timothy Saint and Eero
             % P. Simoncelli at NYU. It was adapted for coordinate system
-            % [x,y,t]. For more information see beginning of this file.
+            % [x,y,t], and extended to feature patterns of expansion,
+            % contraction, rotation, and deformation.
+            % For more information see beginning of this file.
             stimSz = [this.width this.height length];
             if dotDensity<0
                 if dotRadius<0
@@ -1407,53 +1403,43 @@ classdef InputStimulus < handle
             res(res>1) = 1;
         end
         
-        function res = privMakePlaid(this, length, dir, freq, angle, contr)
+        function plaid = privMakePlaid(this, length, dir, freq, angle, contr)
             % Private method to create a drifting plaid stimulus with mean
             % intensity value 128 and a contrast of contr. The plaid stimulus is
             % made of two sinusoidal gratings ("grating components") separated
             % by a specified angle.
-            %
-            % This method was initially authored by Timothy Saint and Eero
-            % P. Simoncelli at NYU. It was adapted for coordinate system
-            % [x,y,t]. For more information see beginning of this file.
-            firstDirection = mod(dir + angle/2, 2*pi);
-            secondDirection = mod(dir - angle/2, 2*pi);
-            firstGrating = this.privMakeSin(length, firstDirection, freq, ...
-                contr/2, 0);
-            secondGrating = this.privMakeSin(length, secondDirection, freq, ...
-                contr/2, 0);
-            res = firstGrating + secondGrating - 0.5;
+            dir1 = mod(dir-angle/2, 2*pi);
+            dir2 = mod(dir+angle/2, 2*pi);
+
+            grating1 = this.privMakeSin(length, mod(dir-angle/2,2*pi), ...
+                freq, contr/2, 0);
+            grating2 = this.privMakeSin(length, mod(dir+angle/2,2*pi), ...
+                freq, contr/2, 0);
+            plaid = grating1 + grating2 - 0.5;
         end
         
-        function res = privMakeSin(this, length, dir, freq, contr, phase)
+        function sinGrating = privMakeSin(this, length, dir, freq, contr, phase)
             % A private method that creates a drifting sinusoidal grating with
             % mean intensity value 128 and a contrast of CONTR.
-            %
-            % This method was initially authored by Timothy Saint and Eero
-            % P. Simoncelli at NYU. It was adapted for coordinate system
-            % [x,y,t]. For more information see beginning of this file.
             stimSz = [this.width, this.height, length];
             if numel(freq)~=2
                 error('Frequency must be [spatFreq tempFreq]')
             end
-            sf = freq(1);  % spatial frequency
-            tf = freq(2);  % temporal frequency
             
-            % Make a coordinate system
-            x = (1:stimSz(1)) - (floor(stimSz(1)/2)+1);
-            y = (1:stimSz(2)) - (floor(stimSz(2)/2)+1);
+            % create rectangular 3D grid
+            x = (1:stimSz(1)) - ceil(stimSz(1)/2);
+            y = (1:stimSz(2)) - ceil(stimSz(2)/2);
             t = (0:stimSz(3)-1);
-            [x, y, t] = ndgrid(x, y, t);
+            [x,y,t] = ndgrid(x,y,t);
             
             % adjust drift direction to make up for flipped y-axis in imagesc
             dir = mod(2*pi-dir,2*pi);
             
-            res = cos(2*pi*sf*cos(dir)*x + ...
-                2*pi*sf*sin(dir)*y - ...
-                2*pi*tf*t + ...
-                2*pi*phase);
-            
-            res = contr.*res./2 + .5;
+            sinGrating = cos(2*pi*freq(1)*cos(dir).*x ...
+                + 2*pi*freq(1)*sin(dir).*y ...
+                - 2*pi*freq(2).*t ...
+                + 2*pi*phase);
+            sinGrating = contr.*sinGrating/2 + 0.5;
         end
         
         function privPauseOnKeyPressCallback(this,~,eventData)
