@@ -2,6 +2,20 @@
 #include <carlsim.h>
 #include "carlsim_tests.h"
 
+class DummyCG: public ConnectionGenerator {
+public:
+	DummyCG() {}
+	~DummyCG() {}
+
+	void connect(CARLsim* net, int srcGrp, int i, int destGrp, int j, float& weight, float& maxWt, float& delay,
+		bool& connected) {
+		weight = 1.0f;
+		maxWt = 1.0f;
+		delay = 1;
+		connected = true;
+	}
+};
+
 //! trigger all UserErrors
 // TODO: add more error checking
 TEST(Interface, connectDeath) {
@@ -9,10 +23,38 @@ TEST(Interface, connectDeath) {
 
 	CARLsim* sim = new CARLsim("Interface.connectDeath",CPU_MODE,SILENT,0,42);
 	int g1=sim->createSpikeGeneratorGroup("excit", 10, EXCITATORY_NEURON);
-	EXPECT_DEATH({sim->connect(g1,g1,"random",RangeWeight(0.01f,0.1f),0.1);},""); // g2 cannot be PoissonGroup
-	EXPECT_DEATH({sim->connect(g1,g1,"random",RangeWeight(-0.01f,0.1f),0.1);},""); // weight cannot be negative
-	EXPECT_DEATH({sim->connect(g1,g1,"random",RangeWeight(0.1f),0.1,RangeDelay(1),RadiusRF(0,0,0));},""); // radius=0
-	EXPECT_DEATH({sim->connect(g1,g1,"one-to-one",RangeWeight(0.1f),0.1,RangeDelay(1),RadiusRF(3,0,0));},""); // rad>0
+	int g2=sim->createGroup("excit", Grid3D(2,3,4), EXCITATORY_NEURON);
+	sim->setNeuronParameters(g2, 0.02f, 0.2f,-65.0f,8.0f);
+
+	// regular connect call
+	EXPECT_DEATH(sim->connect(g1,g1,"random",RangeWeight(0.1f),0.1f),""); // g-post cannot be PoissonGroup
+	EXPECT_DEATH(sim->connect(g1,g2,"random",RangeWeight(-0.01f),0.1f),""); // weight cannot be negative
+	EXPECT_DEATH(sim->connect(g1,g2,"random",RangeWeight(0.01f,0.1f,0.1f),0.1f),""); // wt.min>0
+	EXPECT_DEATH(sim->connect(g1,g2,"random",RangeWeight(0.0f,0.01f,0.1f),0.1f),""); // SYN_FIXED wt.init!=wt.max
+	EXPECT_DEATH(sim->connect(g1,g2,"random",RangeWeight(0.0f,0.01f,0.1f),-0.1f),""); // prob<0
+	EXPECT_DEATH(sim->connect(g1,g2,"random",RangeWeight(0.0f,0.01f,0.1f),2.3f),""); // prob>1
+	EXPECT_DEATH(sim->connect(g1,g2,"random",RangeWeight(0.1f),0.1f,RangeDelay(1),RadiusRF(0,0,0)),""); // radius=0
+	EXPECT_DEATH(sim->connect(g1,g2,"one-to-one",RangeWeight(0.1f),0.1f,RangeDelay(1),RadiusRF(3,0,0)),""); // rad>0
+	EXPECT_DEATH(sim->connect(g1,g2,"random",RangeWeight(0.1f),0.1f,RangeDelay(1),RadiusRF(-1),SYN_FIXED,-1.0f,0.0f),""); // mulSynFast<0
+	EXPECT_DEATH(sim->connect(g1,g2,"random",RangeWeight(0.1f),0.1f,RangeDelay(1),RadiusRF(-1),SYN_FIXED,0.0f,-1.0f),""); // mulSynSlow<0
+
+	// custom ConnectionGenerator
+	ConnectionGenerator* CGNULL = NULL;
+	DummyCG* CG = new DummyCG;
+	EXPECT_DEATH({sim->connect(g1,g2,CGNULL);},""); // CG=NULL
+	EXPECT_DEATH({sim->connect(g1,g1,CG);},""); // g-post cannot be PoissonGroup
+	EXPECT_DEATH({sim->connect(g1,g2,CG,SYN_FIXED,-1,100);},""); // maxM<0
+	EXPECT_DEATH({sim->connect(g1,g2,CG,SYN_FIXED,100,-1);},""); // maxPreM<0
+
+	// custom ConnectionGenerator with mulSyns
+	EXPECT_DEATH({sim->connect(g1,g2,CGNULL,1.0f,1.0f);},""); // CG=NULL
+	EXPECT_DEATH({sim->connect(g1,g1,CG,1.0f,1.0f);},""); // g-post cannot be PoissonGroup
+	EXPECT_DEATH({sim->connect(g1,g2,CG,-1.0f,1.0f,SYN_FIXED,0,0);},""); // mulSynFast<0
+	EXPECT_DEATH({sim->connect(g1,g2,CG,1.0f,-1.0f,SYN_FIXED,0,0);},""); // mulSynSlow<0
+	EXPECT_DEATH({sim->connect(g1,g2,CG,1.0f,1.0f,SYN_FIXED,-2,0);},""); // maxM<0
+	EXPECT_DEATH({sim->connect(g1,g2,CG,1.0f,1.0f,SYN_FIXED,0,-4);},""); // maxPreM<0
+
+	delete CG;
 	delete sim;
 }
 
