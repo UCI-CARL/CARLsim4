@@ -84,6 +84,7 @@ typedef struct network_info_s  {
 	unsigned int	numNInhPois;
 	unsigned int	numNPois;
 	unsigned int	numGrp;
+	int             numConnections;
 	bool 			sim_with_fixedwts;
 	bool 			sim_with_conductances;
 	bool 			sim_with_stdp;
@@ -168,6 +169,8 @@ typedef struct network_ptr_s {
 	unsigned int*	cumulativePost;
 	unsigned int*	cumulativePre;
 
+	float* mulSynFast;
+	float* mulSynSlow;
 	short int* cumConnIdPre;	//!< connectId, per synapse, presynaptic cumulative indexing
 
 	short int* grpIds;

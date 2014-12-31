@@ -3482,6 +3482,8 @@ void CpuSNN::makePtrInfo() {
 	cpuNetPtrs.synSpikeTime		= synSpikeTime;
 	cpuNetPtrs.wt				= wt;
 	cpuNetPtrs.wtChange			= wtChange;
+	cpuNetPtrs.mulSynFast 		= mulSynFast;
+	cpuNetPtrs.mulSynSlow 		= mulSynSlow;
 	cpuNetPtrs.cumConnIdPre 	= cumConnIdPre;
 	cpuNetPtrs.nSpikeCnt		= nSpikeCnt;
 	cpuNetPtrs.curSpike 		= curSpike;
