@@ -96,7 +96,10 @@ __device__ __constant__ network_ptr_t		gpuPtrs;
 __device__ __constant__ network_info_t		gpuNetInfo;
 __device__ __constant__ group_info_t		gpuGrpInfo[MAX_GRP_PER_SNN];
 
-__device__ __constant__ float				constData[256];
+__device__ __constant__ float               d_mulSynFast[MAX_nConnections];
+__device__ __constant__ float               d_mulSynSlow[MAX_nConnections];
+
+//__device__ __constant__ float				constData[256];
 
 __device__  int	  loadBufferCount; 
 __device__  int   loadBufferSize;
@@ -739,17 +742,17 @@ __global__ 	void kernel_findFiring (int t, int sec, int simTime) {
 // the global conductance values are updated..
 __global__ void kernel_globalConductanceUpdate (int t, int sec, int simTime) {
 	__shared__ int sh_tableQuickSynId[256];
-	__shared__ int sh_mulSynFast[MAX_nConnections];
-	__shared__ int sh_mulSynSlow[MAX_nConnections];
+//	__shared__ int sh_mulSynFast[MAX_nConnections];
+//	__shared__ int sh_mulSynSlow[MAX_nConnections];
 
 	// Table for quick access
 	for(int i=0; i < 256; i+=blockDim.x){
 		if((i+threadIdx.x) < 256){
 			sh_tableQuickSynId[i+threadIdx.x]=gpu_tableQuickSynId[i+threadIdx.x];
-			if ((i+threadIdx.x) < gpuNetInfo.numConnections) {
-				sh_mulSynFast[i+threadIdx.x] = gpuPtrs.mulSynFast[i+threadIdx.x];
-				sh_mulSynSlow[i+threadIdx.x] = gpuPtrs.mulSynSlow[i+threadIdx.x];
-			}
+//			if ((i+threadIdx.x) < gpuNetInfo.numConnections) {
+//				sh_mulSynFast[i+threadIdx.x] = gpuPtrs.mulSynFast[i+threadIdx.x];
+//				sh_mulSynSlow[i+threadIdx.x] = gpuPtrs.mulSynSlow[i+threadIdx.x];
+//			}
 		}
 	}
 
@@ -820,23 +823,23 @@ __global__ void kernel_globalConductanceUpdate (int t, int sec, int simTime) {
 					if (gpuNetInfo.sim_with_conductances) {
 						short int connId = gpuPtrs.cumConnIdPre[cum_pos+wtId];
 						if (type & TARGET_AMPA)
-							AMPA_sum += change*sh_mulSynFast[connId];
+							AMPA_sum += change*d_mulSynFast[connId];
 						if (type & TARGET_NMDA) {
 							if (gpuNetInfo.sim_with_NMDA_rise) {
-								NMDA_r_sum += change*sh_mulSynSlow[connId]*gpuNetInfo.sNMDA;
-								NMDA_d_sum += change*sh_mulSynSlow[connId]*gpuNetInfo.sNMDA;
+								NMDA_r_sum += change*d_mulSynSlow[connId]*gpuNetInfo.sNMDA;
+								NMDA_d_sum += change*d_mulSynSlow[connId]*gpuNetInfo.sNMDA;
 							} else {
-								NMDA_sum += change*sh_mulSynSlow[connId];
+								NMDA_sum += change*d_mulSynSlow[connId];
 							}
 						}
 						if (type & TARGET_GABAa)
-							GABAa_sum += change*sh_mulSynFast[connId];	// wt should be negative for GABAa and GABAb
+							GABAa_sum += change*d_mulSynFast[connId];	// wt should be negative for GABAa and GABAb
 						if (type & TARGET_GABAb) {						// but that is dealt with below
 							if (gpuNetInfo.sim_with_GABAb_rise) {
-								GABAb_r_sum += change*sh_mulSynSlow[connId]*gpuNetInfo.sGABAb;
-								GABAb_d_sum += change*sh_mulSynSlow[connId]*gpuNetInfo.sGABAb;
+								GABAb_r_sum += change*d_mulSynSlow[connId]*gpuNetInfo.sGABAb;
+								GABAb_d_sum += change*d_mulSynSlow[connId]*gpuNetInfo.sGABAb;
 							} else {
-								GABAb_sum += change*sh_mulSynSlow[connId];
+								GABAb_sum += change*d_mulSynSlow[connId];
 							}
 						}
 					}
@@ -2166,11 +2169,6 @@ void CpuSNN::copyState(network_ptr_t* dest, int allocateMem) {
 	if(allocateMem)		CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->wt, sizeof(float)*preSynCnt));
 	CUDA_CHECK_ERRORS( cudaMemcpy( dest->wt, wt, sizeof(float)*preSynCnt, kind));
 
-	// conductance ratios
-	if(allocateMem)		CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->mulSynFast, sizeof(float)*numConnections));
-	CUDA_CHECK_ERRORS( cudaMemcpy( dest->mulSynFast, mulSynFast, sizeof(float)*numConnections, kind));
-	if(allocateMem)		CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->mulSynSlow, sizeof(float)*numConnections));
-	CUDA_CHECK_ERRORS( cudaMemcpy( dest->mulSynSlow, mulSynSlow, sizeof(float)*numConnections, kind));
 	if(allocateMem)		CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->cumConnIdPre, sizeof(short int)*preSynCnt));
 	CUDA_CHECK_ERRORS( cudaMemcpy( dest->cumConnIdPre, cumConnIdPre, sizeof(short int)*preSynCnt, kind));
 
@@ -2388,8 +2386,6 @@ void CpuSNN::deleteObjects_GPU() {
 	CUDA_CHECK_ERRORS( cudaFree(cpu_gpuNetPtrs.wt) );
 	CUDA_CHECK_ERRORS( cudaFree(cpu_gpuNetPtrs.wtChange) );
 	CUDA_CHECK_ERRORS( cudaFree(cpu_gpuNetPtrs.maxSynWt) );
-	CUDA_CHECK_ERRORS( cudaFree(cpu_gpuNetPtrs.mulSynFast) );
-	CUDA_CHECK_ERRORS( cudaFree(cpu_gpuNetPtrs.mulSynSlow) );
 	CUDA_CHECK_ERRORS( cudaFree(cpu_gpuNetPtrs.nSpikeCnt) );
 	CUDA_CHECK_ERRORS( cudaFree(cpu_gpuNetPtrs.curSpike) ); // \FIXME exists but never used...
 	CUDA_CHECK_ERRORS( cudaFree(cpu_gpuNetPtrs.firingTableD2) );
@@ -2854,6 +2850,9 @@ void CpuSNN::allocateSNN_GPU() {
 	CUDA_CHECK_ERRORS(cudaMemcpyToSymbol(gpuPtrs, &cpu_gpuNetPtrs, sizeof(network_ptr_t), 0, cudaMemcpyHostToDevice));
 	CUDA_CHECK_ERRORS(cudaMemcpyToSymbol(gpuNetInfo, &net_Info, sizeof(network_info_t), 0, cudaMemcpyHostToDevice));
 	// FIXME: we can change the group properties such as STDP as the network is running.  So, we need a way to updating the GPU when changes are made.
+
+	CUDA_CHECK_ERRORS(cudaMemcpyToSymbol(d_mulSynFast, mulSynFast, sizeof(float)*numConnections, 0, cudaMemcpyHostToDevice));
+	CUDA_CHECK_ERRORS(cudaMemcpyToSymbol(d_mulSynSlow, mulSynSlow, sizeof(float)*numConnections, 0, cudaMemcpyHostToDevice));
 
 	CUDA_CHECK_ERRORS(cudaMemcpyToSymbol(gpuGrpInfo, grp_Info, (net_Info.numGrp) * sizeof(group_info_t), 0, cudaMemcpyHostToDevice));
 

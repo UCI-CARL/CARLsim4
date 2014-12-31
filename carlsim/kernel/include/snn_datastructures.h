@@ -169,8 +169,6 @@ typedef struct network_ptr_s {
 	unsigned int*	cumulativePost;
 	unsigned int*	cumulativePre;
 
-	float* mulSynFast;
-	float* mulSynSlow;
 	short int* cumConnIdPre;	//!< connectId, per synapse, presynaptic cumulative indexing
 
 	short int* grpIds;
