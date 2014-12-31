@@ -127,11 +127,14 @@ inline bool isInhibitoryNeuron (unsigned int& nid, unsigned int& numNInhPois, un
 #define KERNEL_DEBUG_PRINT(fp, type, formatc, ...) fprintf((FILE*)fp,"[" type " %s:%d] " formatc "\n",__FILE__,__LINE__,##__VA_ARGS__)
 
 
-
 #define MAX_nPostSynapses 10000
 #define MAX_nPreSynapses 20000
 #define MAX_SynapticDelay 20
-#define MAX_nConnections 32768			//!< max allowed number of connect() calls by the user (used for mulSynFast)
+
+// increasing the following numbers will increase the load on constant memory
+// until a hard limit is reached, which is given by the datatype of the variable
+#define MAX_nConnections 256	// hard limit: 2^16
+#define MAX_GRP_PER_SNN 128		// hard limit: 2^16
 
 #define COND_INTEGRATION_SCALE	2
 
@@ -146,7 +149,6 @@ inline bool isInhibitoryNeuron (unsigned int& nid, unsigned int& numNInhPois, un
 #define MAX_SIMULATION_TIME     ((uint32_t)(0x7fffffff))
 #define LARGE_NEGATIVE_VALUE    (-(1 << 30))
 
-#define MAX_GRP_PER_SNN 128
 
 #define MAX_SPIKE_MON_BUFFER_SIZE 52428800 // about 50 MB. size is in bytes. Max size of reduced AER vector in spikeMonitorCore objects.
 #define LONG_SPIKE_MON_DURATION 600000 // about 10 minutes
