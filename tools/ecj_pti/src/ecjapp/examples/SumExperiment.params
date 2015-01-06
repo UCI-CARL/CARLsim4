@@ -3,9 +3,12 @@ parent.0 =                              @ec.simple.SimpleEvolutionState simple.p
 # Modifications to the Simple EA boiler plate
 # =========================
 eval =					ecjapp.eval.SimpleGroupedEvaluator
-generations =				51
+generations =				151
 pop.subpop.0.size =			100
+eval.measureEvalTimes =                   true
 
+# Termination condition
+quit-on-run-complete = true
 
 # Set up our evolutionary algorithm
 # =========================
@@ -41,11 +44,8 @@ breed.reevaluate-elites.0 =		false
 # =========================
 eval.problem =                          ecjapp.eval.problem.CommandProblem
 eval.problem.objective =                ecjapp.eval.problem.objective.StringToDoubleObjective
-eval.problem.objective.idealFitnessValue = 0.4
+eval.problem.objective.idealFitnessValue = 8.0
 eval.problem.simulationCommand =        $src/CARLsim-app/Examples/SumExample
-
-# Termination condition
-quit-on-run-complete = true
 
 # Statistics
 # =========================

@@ -32,7 +32,7 @@ public class StringToDoubleObjective implements ObjectiveFunction<SimpleFitness>
     @Override
     public SimpleFitness evaluate(final EvolutionState state, final String phenotype) {
         final double realFitness = Double.valueOf(phenotype);
-        final boolean isIdeal = idealFitnessValue.isDefined() ? Misc.doubleEquals(realFitness, idealFitnessValue.get()) : false;
+        final boolean isIdeal = idealFitnessValue.isDefined() ? Misc.doubleEquals(realFitness, idealFitnessValue.get()) || realFitness > idealFitnessValue.get() : false;
         
         final SimpleFitness fitness = new SimpleFitness();
         fitness.setFitness(state, realFitness, isIdeal);

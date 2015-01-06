@@ -40,7 +40,7 @@ carlsim_prog := carlsim_$(example)
 # create executable bash script for user to run
 $(local_prog): $(local_src) $(carlsim_prog)
 	@echo "#!/bin/bash" > $(local_prog)
-	@echo "java -cp \"$(ECJ_DIR)/ecj.jar:$(ECJ_PTI_DIR)/lib/CARLsim-ECJ.jar\" ecjapp.CARLsimEC ./$(ecj_param_file)" >> $(local_prog)
+	@echo "java -cp \"$(ECJ_DIR)/jar/ecj.22.jar:$(ECJ_PTI_DIR)/lib/CARLsim-ECJ.jar\" ecjapp.CARLsimEC -file ./$(ecj_param_file)" >> $(local_prog)
 	@chmod u+x $(local_prog)
 
 # compile from CARLsim lib

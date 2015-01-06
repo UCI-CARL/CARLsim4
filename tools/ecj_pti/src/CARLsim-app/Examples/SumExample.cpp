@@ -23,8 +23,9 @@ namespace CARLsim_PTI {
 	  const float p = parameters.getParameter(i, j);
 	  sum += p;
 	}
-	sum += ((float) (rand()%parameters.getNumParameters()))/9.0f;
-	outputStream << sum/10.0f << endl;
+	// Add some random noise
+	sum += ((float) (rand()%parameters.getNumParameters()))/10.0f;
+	outputStream << sum << endl;
       }
     }
   };
