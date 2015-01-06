@@ -6,7 +6,7 @@ local_dir := $(ex_dir)
 # Examples that don't have any special dependencies.
 example_names := ReprintExample SumExample
 example := $(addprefix $(local_dir)/, $(example_names))
-output := error.log $(ex_dir)/results/*.dat $(ex_dir)/*.log
+output := error.log
 local_prog := $(example)
 local_objs := $(addsuffix .o, $(example))
 
@@ -34,9 +34,9 @@ $(local_dir)/%.o: $(local_dir)/%.cpp $(pti_deps)
 $(local_prog): %: %.o $(pti_deps) $(pti_objs)
 	$(CC) $(PTI_FLAGS) $< $(pti_objs) -o $@ $(LDFLAGS)
 
-izk_lib := $(iz_dir)/libizk.a
+izk_lib := $(izk_dir)/libizk.a
 $(local_dir)/IzkExample: $(local_dir)/IzkExample.cpp $(pti_deps) $(pti_objs)
-	$(MAKE) -C $(iz_dir)/ libizk.a
+	$(MAKE) -C $(izk_dir)/ libizk.a
 	$(CC) -g $(PTI_FLAGS) $< $(pti_objs) $(izk_lib) -o $@ $(LDFLAGS)
 
 $(local_dir)/SimpleCA3: $(local_dir)/SimpleCA3.cpp $(pti_deps) $(pti_objs)

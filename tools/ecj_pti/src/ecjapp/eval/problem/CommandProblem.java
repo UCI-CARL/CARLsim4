@@ -17,7 +17,24 @@ import java.util.List;
  * An ECJ Problem that sends a population of DoubleVectorIndividuals to an
  * external command for simulation as an intermediate step in fitness evaluation.
  * 
- * Specify a custom ObjectiveFunction to use this class with arbitrary simulations.
+ * "simulationCommand" and "simulationCommandArguments" are used to specify
+ * the external command that launches the simulation.
+ * 
+ * If the external command requires arguments that depend on the state of the
+ * evolutionary run (such as a generation or thread number), they can be
+ * provided with a DynamicArguments object via the "dynamicArgument" parameter.
+ * The output of dynamicArguments.get() will be appended to the simulation
+ * command at runtime.
+ * 
+ * The external simulation needs to write the evaluation result for each
+ * individual to stout, one result per line.
+ * 
+ * How you specify the ObjectiveFunction for the "objective" parameter depends
+ * on the simulation result format.  If results come back as fitness values,
+ * then you'll want to set "objective" to ecjapp.eval.problem.objective.StringToDoubleObjective.
+ * If the results come back as some kind of complex phenotype (such as a
+ * simulation trace), you should specify a custom ObjectiveFunction that
+ * converts the phenotype into a fitness value.
  * 
  * @author Eric 'Siggy' Scott
  */
@@ -54,7 +71,7 @@ public class CommandProblem extends Problem implements SimpleGroupedProblemForm 
         
         this.objective = (ObjectiveFunction) Misc.getInstanceOfRequiredParameter(state, base.push(P_OBJECTIVE_FUNCTION), ObjectiveFunction.class);
         this.objective.setup(state, base.push(P_OBJECTIVE_FUNCTION));
-        if (state.parameters.getString(base.push(P_DYNAMIC_ARGUMENTS), null) != null) {
+        if (state.parameters.exists(base.push(P_DYNAMIC_ARGUMENTS), null)) {
             this.dynamicArguments = new Option<DynamicArguments>((DynamicArguments) Misc.getInstanceOfRequiredParameter(state, base.push(P_DYNAMIC_ARGUMENTS), DynamicArguments.class));
 	    this.dynamicArguments.get().setup(state, base.push(P_DYNAMIC_ARGUMENTS));
 	}

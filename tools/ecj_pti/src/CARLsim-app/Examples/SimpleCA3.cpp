@@ -8,7 +8,6 @@
 #include <cstdio>
 #include <cstring>
 #include <vector>
-#include <math.h>
 #include <cassert>
 
 using namespace std;
@@ -122,8 +121,9 @@ namespace CARLsim_PTI {
 	      network->setupNetwork();
 
 	      PoissonRate * const in = new PoissonRate(RND_FRACTION*NUM_NEURONS);
-	      for (int i=0;i<RND_FRACTION*NUM_NEURONS;i++)
-                in->rates[i] = IN_HZ;
+				/*for (int i=0;i<RND_FRACTION*NUM_NEURONS;i++)*/
+                /*in->rates[i] = IN_HZ;*/
+				in->setRates(IN_HZ);
 	      network->setSpikeRate(poissonGroup,in);
 
 	      SpikeMonitor * const pyramidalMonitor = network->setSpikeMonitor(pyramidalGroup, "/dev/null");
