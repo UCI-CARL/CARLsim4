@@ -21,16 +21,23 @@ ConnectionMonitorCore::ConnectionMonitorCore(CpuSNN* snn,int monitorId,short int
 	simTimeMsLastWrite_ = -1;
 
 	connFileId_ = NULL;
-	needToWriteFileHeader_ = false;
+	needToWriteFileHeader_ = true;
+	needToInit_ = true;
 	connFileSignature_ = 202029319;
 	connFileVersion_ = 0.1f;
 }
 
 void ConnectionMonitorCore::init() {
+	if (!needToInit_)
+		return;
+
 	nNeurPre_ = snn_->getGroupNumNeurons(grpIdPre_);
 	nNeurPost_ = snn_->getGroupNumNeurons(grpIdPost_);
 	isPlastic_ = snn_->isConnectionPlastic(connId_);
 	nSynapses_ = snn_->getNumSynapticConnections(connId_);
+
+	assert(nNeurPre_>0);
+	assert(nNeurPost_>0);
 
 	// use KERNEL_{ERROR|WARNING|etc} typesetting (const FILE*)
 	fpInf_ = snn_->getLogFpInf();
@@ -51,6 +58,8 @@ void ConnectionMonitorCore::init() {
 
 	// then load current weigths from CpuSNN into weight matrix
 	takeSnapshot();
+
+	needToInit_ = false;
 }
 
 ConnectionMonitorCore::~ConnectionMonitorCore() {
@@ -60,6 +69,8 @@ ConnectionMonitorCore::~ConnectionMonitorCore() {
 
 		fclose(connFileId_);
 		connFileId_ = NULL;
+		needToInit_ = true;
+		needToWriteFileHeader_ = true;
 	}
 }
 
@@ -316,6 +327,8 @@ void ConnectionMonitorCore::setConnectFileId(FILE* connFileId) {
 // write the header section of the spike file
 // this should be done once per file, and should be the very first entries in the file
 void ConnectionMonitorCore::writeConnectFileHeader() {
+	init();
+
 	if (!needToWriteFileHeader_)
 		return;
 
@@ -332,6 +345,7 @@ void ConnectionMonitorCore::writeConnectFileHeader() {
 		KERNEL_ERROR("ConnectionMonitor: writeConnectFileHeader has fwrite error");
 
 	// write pre group info: group id and # neurons
+	printf("grpIdPre=%d, nNeurPre=%d\n",grpIdPre_,nNeurPre_);
 	if (!fwrite(&grpIdPre_,sizeof(int),1,connFileId_))
 		KERNEL_ERROR("ConnectionMonitor: writeConnectFileHeader has fwrite error");
 	if (!fwrite(&nNeurPre_,sizeof(int),1,connFileId_))
