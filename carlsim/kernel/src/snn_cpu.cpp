@@ -200,19 +200,19 @@ short int CpuSNN::connect(int grpId1, int grpId2, const std::string& _type, floa
 				case 1:
 					// 2D ellipse: pi*a*b
 					if (radX<=0)
-						numSyn = ceil(M_PI*radY*radZ);
+						numSyn = ceil(M_PI*radY*radZ)*radX;
 					else if (radY<=0)
-						numSyn = ceil(M_PI*radX*radZ);
+						numSyn = ceil(M_PI*radX*radZ)*radY;
 					else if (radZ<=0)
-						numSyn = ceil(M_PI*radX*radY);
+						numSyn = ceil(M_PI*radX*radY)*radZ;
 					break;
 				case 2:
 					if (radX>0)
-						numSyn = ceil(2*radX);
+						numSyn = ceil(2*radX)*radY*radZ;
 					else if (radY>0)
-						numSyn = ceil(2*radY);
+						numSyn = ceil(2*radY)*radX*radZ;
 					else if (radZ>0)
-						numSyn = ceil(2*radZ);
+						numSyn = ceil(2*radZ)*radX*radY;
 					break;
 				case 3:
 					// 3D no restrictions
@@ -224,10 +224,10 @@ short int CpuSNN::connect(int grpId1, int grpId2, const std::string& _type, floa
 //printf("Radius=(%1.2f,%1.2f,%1.2f) -> numSyn=%d\n",radX,radY,radZ,numSyn);
 
 			// estimate the max number of synapses going out of each pre-synaptic neuron (maxM)
-			newInfo->numPostSynapses = max(7, min(numSyn+10, szPost.N));
+			newInfo->numPostSynapses = 1000;//max(7, min(numSyn+10, szPost.N));
 
 			// estimate the max number of synapses coming in to each post-synaptic neuron (maxPreM)
-			newInfo->numPreSynapses = max(7, min(numSyn+10, szPre.N));
+			newInfo->numPreSynapses = 1000;//max(7, min(numSyn+10, szPre.N));
 	} else {
 		KERNEL_ERROR("Invalid connection type (should be 'random', 'full', 'one-to-one', 'full-no-direct', or 'gaussian')");
 		exitSimulation(-1);
@@ -2666,7 +2666,7 @@ void CpuSNN::connectGaussian(grpConnectInfo_t* info) {
 
 			if (drand48() < info->p*gaussDist) {
 //			if (loc_i.x==3 && loc_i.y==3 && loc_i.z==3)
-			std::cout << "d=" << gaussDist << ": connecting " << i << " at " << loc_i << " to " << j << " at " << loc_j << std::endl;
+				std::cout << "d=" << gaussDist << ": connecting " << i << " at " << loc_i << " to " << j << " at " << loc_j << std::endl;
 				uint8_t dVal = info->minDelay + rand() % (info->maxDelay - info->minDelay + 1);
 				assert((dVal >= info->minDelay) && (dVal <= info->maxDelay));
 				float synWt = getWeights(info->connProp, info->initWt, info->maxWt, i, grpSrc);
@@ -3482,9 +3482,9 @@ bool CpuSNN::isNumNeuronsConsistent() {
 double CpuSNN::getRFDist3D(const RadiusRF& radius, const Point3D& pre, const Point3D& post) {
 	// inverse semi-principal axes of the ellipsoid
 	// avoid division by zero by working with inverse of semi-principal axes (set to large value)
-	double aa = (radius.radX>0) ? 1.0/radius.radX : 1e+20;
-	double bb = (radius.radY>0) ? 1.0/radius.radY : 1e+20;
-	double cc = (radius.radZ>0) ? 1.0/radius.radZ : 1e+20;
+	double aInv = (radius.radX>0) ? 1.0/radius.radX : 1e+20;
+	double bInv = (radius.radY>0) ? 1.0/radius.radY : 1e+20;
+	double cInv = (radius.radZ>0) ? 1.0/radius.radZ : 1e+20;
 
 	double rfDist = -1.0;
 
@@ -3493,25 +3493,25 @@ double CpuSNN::getRFDist3D(const RadiusRF& radius, const Point3D& pre, const Poi
 	switch (numNegRadii) {
 		case 0:
 			// 3D ellipsoid: connect if x^2/a^2 + y^2/b^2 + z^2/c^2 <= 1
-			rfDist = norm2((pre-post)*Point3D(aa,bb,cc));
+			rfDist = norm2((pre-post)*Point3D(aInv,bInv,cInv));
 			break;
 		case 1:
 			// 2D ellipse: connect if x^2/a^2 + y^2/b^2 <= 1, 3 choose 2
 			if (radius.radX<0)
-				rfDist = norm2((pre-post)*Point3D(0.0,bb,cc));
+				rfDist = norm2((pre-post)*Point3D(0.0,bInv,cInv));
 			else if (radius.radY<0)
-				rfDist = norm2((pre-post)*Point3D(aa,0.0,cc));
+				rfDist = norm2((pre-post)*Point3D(aInv,0.0,cInv));
 			else if (radius.radZ<0)
-				rfDist = norm2((pre-post)*Point3D(aa,bb,0.0));
+				rfDist = norm2((pre-post)*Point3D(aInv,bInv,0.0));
 			break;
 		case 2:
 			// 1D line: connect if x^2/a^2 <= 1, 3 choose 1
 			if (radius.radX>=0)
-				rfDist = (pre.x-post.x)*(pre.x-post.x)*aa*aa;
+				rfDist = (pre.x-post.x)*(pre.x-post.x)*aInv*aInv;
 			else if (radius.radY>=0)
-				rfDist = (pre.y-post.y)*(pre.y-post.y)*bb*bb;
+				rfDist = (pre.y-post.y)*(pre.y-post.y)*bInv*bInv;
 			else if (radius.radZ>=0)
-				rfDist = (pre.z-post.z)*(pre.z-post.z)*cc*cc;
+				rfDist = (pre.z-post.z)*(pre.z-post.z)*cInv*cInv;
 			break;
 		case 3:
 			// 3D no restrictions

@@ -234,7 +234,7 @@ short int CARLsim::connect(int grpId1, int grpId2, const std::string& connType, 
 		|| connType.compare("one-to-one")==0 && radRF.radX<=0 && radRF.radY<=0 && radRF.radZ<=0,
 		UserErrors::CANNOT_BE_LARGER, funcName, "Receptive field radius", "zero for type \"one-to-one\".");
 	UserErrors::assertTrue(connType.compare("gaussian")!=0
-		|| connType.compare("gaussian")==0 && radRF.radX>-1 && radRF.radY>-1 && radRF.radZ>-1,
+		|| connType.compare("gaussian")==0 && (radRF.radX>-1 || radRF.radY>-1 || radRF.radZ>-1),
 		UserErrors::CANNOT_BE_NEGATIVE, funcName, "Receptive field radius for type \"gaussian\"");
 	UserErrors::assertTrue(synWtType==SYN_PLASTIC || synWtType==SYN_FIXED && wt.init==wt.max,
 		UserErrors::MUST_BE_IDENTICAL, funcName, "For fixed synapses, initWt and maxWt");

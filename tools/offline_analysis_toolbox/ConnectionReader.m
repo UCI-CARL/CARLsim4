@@ -248,6 +248,8 @@ classdef ConnectionReader < handle
             % read pre-group info
             obj.grpIdPre = fread(obj.fileId, 1, 'int32');
             obj.nNeurPre = fread(obj.fileId, 1, 'int32');
+			obj.grpIdPre
+			obj.nNeurPre
             if obj.grpIdPre<0 || obj.nNeurPre<=0
                 obj.throwError('Could not find valid pre-group info.')
                 return

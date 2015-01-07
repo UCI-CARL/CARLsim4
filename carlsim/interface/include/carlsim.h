@@ -202,7 +202,7 @@ public:
 	 *                       Otherwise, if the radius is a positive real number, the RF radius will be exactly this
 	 *                       number. Call RadiusRF with only one argument to make that radius apply to all 3 dimensions.
 	 *                       Examples:
-	 *                         * Create a 2D Gaussian RF of radius 10: RadiusRF(10, 10, 0)
+	 *                         * Create a 2D Gaussian RF of radius 10 in x and y: RadiusRF(10, 10, 0)
 	 *                         * Create a 2D heterogeneous Gaussian RF (an ellipse) with semi-axes 10 and 5:
 	 *                           RadiusRF(10, 5, 0)
 	 *                         * Connect only the third dimension: RadiusRF(0, 0, 1)

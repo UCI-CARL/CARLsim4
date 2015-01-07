@@ -222,6 +222,49 @@ TEST(CONNECT, connectRandom) {
 	delete sim;
 }
 
+
+// testing all ways to create a 1D Gaussian
+TEST(CONNECT, connectGaussian1D) {
+	CARLsim* sim = new CARLsim("CORE.connectGaussian1D",CPU_MODE,USER,0,42);
+	Grid3D grid(14,15,16);
+	int g0=sim->createGroup("excit0", grid, EXCITATORY_NEURON);
+	int g1=sim->createGroup("excit1", grid, EXCITATORY_NEURON);
+	int g2=sim->createGroup("excit2", grid, EXCITATORY_NEURON);
+	int g3=sim->createGroup("excit3", grid, EXCITATORY_NEURON);
+	int g4=sim->createGroup("excit4", grid, EXCITATORY_NEURON);
+	int g5=sim->createGroup("excit5", grid, EXCITATORY_NEURON);
+	sim->setNeuronParameters(g0, 0.02f, 0.2f, -65.0f, 8.0f);
+	sim->setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f);
+	sim->setNeuronParameters(g2, 0.02f, 0.2f, -65.0f, 8.0f);
+	sim->setNeuronParameters(g3, 0.02f, 0.2f, -65.0f, 8.0f);
+	sim->setNeuronParameters(g4, 0.02f, 0.2f, -65.0f, 8.0f);
+	sim->setNeuronParameters(g5, 0.02f, 0.2f, -65.0f, 8.0f);
+
+	double prob = 1.0;
+	int c0=sim->connect(g0,g0,"gaussian",RangeWeight(0.1), prob, RangeDelay(1), RadiusRF(4.0, 0.0, 0.0));
+//	int c1=sim->connect(g1,g1,"gaussian",RangeWeight(0.1), prob, RangeDelay(1), RadiusRF(0.0, 4.0, 0.0));
+//	int c2=sim->connect(g2,g2,"gaussian",RangeWeight(0.1), prob, RangeDelay(1), RadiusRF(0.0, 0.0, 4.0));
+
+	sim->setupNetwork(); // need SETUP state for this function to work
+
+	ConnectionMonitor* CM0 = sim->setConnectionMonitor(g0,g0,"default");
+//	ConnectionMonitor* CM1 = sim->setConnectionMonitor(g1,g1,"NULL");
+//	ConnectionMonitor* CM2 = sim->setConnectionMonitor(g2,g2,"NULL");
+
+	std::vector< std::vector<float> > wt0 = CM0->takeSnapshot();
+	EXPECT_EQ(wt0.size(), grid.N);
+	EXPECT_EQ(wt0[0].size(), grid.N);
+	for (int i=0; i<wt0.size(); i++) {
+		Point3D preNeurPos = sim->getNeuronLocation3D(g0, i);
+		for (int j=0; j<wt0[0].size(); j++) {
+			Point3D postNeurPos = sim->getNeuronLocation3D(g0, j);
+		}
+	}
+
+	delete sim;
+}
+
+
 TEST(CONNECT, connectGaussian) {
 	CARLsim* sim = new CARLsim("CORE.connectGaussian",CPU_MODE,USER,0,42);
 	Grid3D grid(5,6,7);
@@ -240,7 +283,7 @@ TEST(CONNECT, connectGaussian) {
 
 	double prob = 1.0;
 	int c0=sim->connect(g0,g0,"gaussian",RangeWeight(0.1), prob, RangeDelay(1), RadiusRF(0.4,0.4,0.4));
-	int c1=sim->connect(g1,g1,"gaussian",RangeWeight(0.1), prob, RangeDelay(1), RadiusRF(2,2,0));
+//	int c1=sim->connect(g1,g1,"gaussian",RangeWeight(0.1), prob, RangeDelay(1), RadiusRF(2,2,0));
 //	int c2=sim->connect(g2,g2,"gaussian",RangeWeight(0.1), prob, RangeDelay(1), RadiusRF(1,0,10));
 //	int c3=sim->connect(g3,g3,"gaussian",RangeWeight(0.1), prob, RangeDelay(1), RadiusRF(2,3,0));
 //	int c4=sim->connect(g4,g4,"gaussian",RangeWeight(0.1), prob, RangeDelay(1), RadiusRF(0,2,3));
@@ -248,7 +291,35 @@ TEST(CONNECT, connectGaussian) {
 
 	sim->setupNetwork(); // need SETUP state for this function to work
 
+	ConnectionMonitor* CM0 = sim->setConnectionMonitor(g0,g0,"NULL");
+//	ConnectionMonitor* CM1 = sim->setConnectionMonitor(g1,g1,"NULL");
+//	ConnectionMonitor* CM2 = sim->setConnectionMonitor(g2,g2,"NULL");
+//	ConnectionMonitor* CM3 = sim->setConnectionMonitor(g3,g3,"NULL");
+//	ConnectionMonitor* CM4 = sim->setConnectionMonitor(g4,g4,"NULL");
+//	ConnectionMonitor* CM5 = sim->setConnectionMonitor(g5,g5,"NULL");
+
+	// --------- c0: RadiusRF(0.4, 0.4, 0.4) ----------------- //
 	EXPECT_EQ(sim->getNumSynapticConnections(c0), grid.N);
+
+	std::vector< std::vector<float> > wt0 = CM0->takeSnapshot();
+	EXPECT_EQ(wt0.size(), grid.N);
+	EXPECT_EQ(wt0[0].size(), grid.N);
+
+	for (int i=0; i<wt0.size(); i++) {
+		Point3D preNeurPos = sim->getNeuronLocation3D(g0, i);
+		for (int j=0; j<wt0[0].size(); j++) {
+			Point3D postNeurPos = sim->getNeuronLocation3D(g0, j);
+
+			double distance = dist(preNeurPos, postNeurPos);
+
+
+		}
+	}
+
+
+	// --------- c1: RadiusRF(2, 2, 0) ----------------- //
+
+
 
 	// from CpuSNN::connect: estimate max number of connections needed using binomial distribution
 	// at 5 standard deviations
