@@ -175,7 +175,7 @@ private:
 
 	FILE* connFileId_;              //!< file pointer to the conn file or NULL
 	int connFileSignature_;         //!< int signature of conn file
-	double connFileVersion_;        //!< version number of conn file
+	float connFileVersion_;        //!< version number of conn file
 
 	const FILE* fpInf_;             //!< file pointer for info logging
 	const FILE* fpErr_;             //!< file pointer for error logging

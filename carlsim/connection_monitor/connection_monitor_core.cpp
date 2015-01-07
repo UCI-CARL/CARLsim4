@@ -324,7 +324,7 @@ void ConnectionMonitorCore::writeConnectFileHeader() {
 		KERNEL_ERROR("ConnectionMonitorCore: writeConnectFileHeader has fwrite error");
 
 	// write version number
-	if (!fwrite(&connFileVersion_,sizeof(double),1,connFileId_))
+	if (!fwrite(&connFileVersion_,sizeof(float),1,connFileId_))
 		KERNEL_ERROR("ConnectionMonitorCore: writeConnectFileHeader has fwrite error");
 
 	// write connection id
