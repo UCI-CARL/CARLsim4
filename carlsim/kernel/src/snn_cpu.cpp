@@ -179,9 +179,57 @@ short int CpuSNN::connect(int grpId1, int grpId2, const std::string& _type, floa
 		newInfo->type 	= CONN_ONE_TO_ONE;
 		newInfo->numPostSynapses	= 1;
 		newInfo->numPreSynapses	= 1;
-	}
-	else {
-		KERNEL_ERROR("Invalid connection type (should be 'random', 'full', 'one-to-one', or 'full-no-direct')");
+	} else if ( _type.find("gaussian") != std::string::npos) {
+			newInfo->type   = CONN_GAUSSIAN;
+
+			// we need to estimate the number of connections per neuron
+			// the exact solution would be to solve the integral
+			// \int_0^radZ \int_0^radY \int_0^radX p * exp(- x^2/(2*radX^2) - y^2/(2*radY^2) - z^2/(2*radZ^2) dx dy dz
+			// 3D ellipsoid: ( pi^3/2*a*b*c*erf^3(1/sqrt(2)) ) / (2*sqrt(2))
+			// 2D ellipse: pi/2*a*b*erf^2(1/sqrt(2))
+			// 1D line: sqrt(pi/2)*a*erf(1/sqrt(2))
+
+			// here we assume that p=1.0 (worst-case scenario) and compute the volume (3D), area (2D) or length (1D)
+			int numSyn = -1;
+			int numZeroRadii = (radX<=0) + (radY<=0) + (radZ<=0);
+			switch (numZeroRadii) {
+				case 0:
+					// 3D ellipsoid: 4/3*pi*a*b*c
+					numSyn = ceil(4.1887902*radX*radY*radZ);
+					break;
+				case 1:
+					// 2D ellipse: pi*a*b
+					if (radX<=0)
+						numSyn = ceil(M_PI*radY*radZ);
+					else if (radY<=0)
+						numSyn = ceil(M_PI*radX*radZ);
+					else if (radZ<=0)
+						numSyn = ceil(M_PI*radX*radY);
+					break;
+				case 2:
+					if (radX>0)
+						numSyn = ceil(2*radX);
+					else if (radY>0)
+						numSyn = ceil(2*radY);
+					else if (radZ>0)
+						numSyn = ceil(2*radZ);
+					break;
+				case 3:
+					// 3D no restrictions
+					break;
+				default:
+					KERNEL_ERROR("Invalid number of negative semi-principal axes: %d",numZeroRadii);
+			}
+
+//printf("Radius=(%1.2f,%1.2f,%1.2f) -> numSyn=%d\n",radX,radY,radZ,numSyn);
+
+			// estimate the max number of synapses going out of each pre-synaptic neuron (maxM)
+			newInfo->numPostSynapses = max(7, min(numSyn+10, szPost.N));
+
+			// estimate the max number of synapses coming in to each post-synaptic neuron (maxPreM)
+			newInfo->numPreSynapses = max(7, min(numSyn+10, szPre.N));
+	} else {
+		KERNEL_ERROR("Invalid connection type (should be 'random', 'full', 'one-to-one', 'full-no-direct', or 'gaussian')");
 		exitSimulation(-1);
 	}
 
@@ -2371,6 +2419,9 @@ void CpuSNN::buildNetwork() {
 						case CONN_ONE_TO_ONE:
 							connectOneToOne(newInfo);
 							break;
+						case CONN_GAUSSIAN:
+							connectGaussian(newInfo);
+							break;
 						case CONN_USER_DEFINED:
 							connectUserDefined(newInfo);
 							break;
@@ -2588,6 +2639,42 @@ void CpuSNN::connectFull(grpConnectInfo_t* info) {
 	}
 
 //	printf("numConnections=%d\n",info->numberOfConnections);
+
+	grp_Info2[grpSrc].sumPostConn += info->numberOfConnections;
+	grp_Info2[grpDest].sumPreConn += info->numberOfConnections;
+}
+
+void CpuSNN::connectGaussian(grpConnectInfo_t* info) {
+	int grpSrc = info->grpSrc;
+	int grpDest = info->grpDest;
+
+	// rebuild struct for easier handling
+	// adjust with sqrt(2) in order to make the Gaussian kernel depend on 2*sigma^2
+	RadiusRF radius(info->radX, info->radY, info->radZ);
+
+	for(int i = grp_Info[grpSrc].StartN; i <= grp_Info[grpSrc].EndN; i++)  {
+		Point3D loc_i = getNeuronLocation3D(i); // 3D coordinates of i
+		for(int j = grp_Info[grpDest].StartN; j <= grp_Info[grpDest].EndN; j++) { // j: the temp neuron id
+
+			// check whether pre-neuron location is in RF of post-neuron
+			Point3D loc_j = getNeuronLocation3D(j); // 3D coordinates of j
+
+			double gaussDist = exp( -0.5*getRFDist3D(radius,loc_i,loc_j) );
+			if (gaussDist < 0.1)
+				continue;
+
+
+			if (drand48() < info->p*gaussDist) {
+//			if (loc_i.x==3 && loc_i.y==3 && loc_i.z==3)
+			std::cout << "d=" << gaussDist << ": connecting " << i << " at " << loc_i << " to " << j << " at " << loc_j << std::endl;
+				uint8_t dVal = info->minDelay + rand() % (info->maxDelay - info->minDelay + 1);
+				assert((dVal >= info->minDelay) && (dVal <= info->maxDelay));
+				float synWt = getWeights(info->connProp, info->initWt, info->maxWt, i, grpSrc);
+				setConnection(grpSrc, grpDest, i, j, synWt, info->maxWt, dVal, info->connProp, info->connId);
+				info->numberOfConnections++;
+			}
+		}
+	}
 
 	grp_Info2[grpSrc].sumPostConn += info->numberOfConnections;
 	grp_Info2[grpDest].sumPreConn += info->numberOfConnections;
@@ -3391,62 +3478,58 @@ bool CpuSNN::isNumNeuronsConsistent() {
 	return isValid;
 }
 
-// \FIXME: not sure where this should go... maybe create some helper file?
-bool CpuSNN::isPoint3DinRF(const RadiusRF& radius, const Point3D& pre, const Point3D& post) {
-	// Note: RadiusRF rad is assumed to be the fanning in to the post neuron. So if the radius is 10 pixels, it means
-	// that if you look at the post neuron, it will receive input from neurons that code for locations no more than
-	// 10 pixels away.
-
+// returns distance squared
+double CpuSNN::getRFDist3D(const RadiusRF& radius, const Point3D& pre, const Point3D& post) {
 	// inverse semi-principal axes of the ellipsoid
 	// avoid division by zero by working with inverse of semi-principal axes (set to large value)
 	double aa = (radius.radX>0) ? 1.0/radius.radX : 1e+20;
 	double bb = (radius.radY>0) ? 1.0/radius.radY : 1e+20;
 	double cc = (radius.radZ>0) ? 1.0/radius.radZ : 1e+20;
 
-	// ready output argument
-	// pre and post are connected, except if they fall in one of the following if-else cases
-	bool isInRF = true;
+	double rfDist = -1.0;
 
 	// how many semi-principal axes have negative value
 	int numNegRadii = (radius.radX<0) + (radius.radY<0) + (radius.radZ<0);
 	switch (numNegRadii) {
 		case 0:
 			// 3D ellipsoid: connect if x^2/a^2 + y^2/b^2 + z^2/c^2 <= 1
-			if ( norm((pre-post)*Point3D(aa,bb,cc)) > 1.0)
-				isInRF = false;
+			rfDist = norm2((pre-post)*Point3D(aa,bb,cc));
 			break;
 		case 1:
 			// 2D ellipse: connect if x^2/a^2 + y^2/b^2 <= 1, 3 choose 2
-			if (radius.radX<0 && norm((pre-post)*Point3D(0.0,bb,cc)) > 1.0)
-				isInRF = false;
-			else if (radius.radY<0 && norm((pre-post)*Point3D(aa,0.0,cc)) > 1.0)
-				isInRF = false;
-			else if (radius.radZ<0 && norm((pre-post)*Point3D(aa,bb,0.0)) > 1.0)
-				isInRF = false;
+			if (radius.radX<0)
+				rfDist = norm2((pre-post)*Point3D(0.0,bb,cc));
+			else if (radius.radY<0)
+				rfDist = norm2((pre-post)*Point3D(aa,0.0,cc));
+			else if (radius.radZ<0)
+				rfDist = norm2((pre-post)*Point3D(aa,bb,0.0));
 			break;
 		case 2:
 			// 1D line: connect if x^2/a^2 <= 1, 3 choose 1
-			if (radius.radX>=0 && (pre.x-post.x)*(pre.x-post.x)*aa*aa > 1.0)
-				isInRF = false;
-			else if (radius.radY>=0 && (pre.y-post.y)*(pre.y-post.y)*bb*bb > 1.0)
-				isInRF = false;
-			else if (radius.radZ>=0 && (pre.z-post.z)*(pre.z-post.z)*cc*cc > 1.0)
-				isInRF = false;
+			if (radius.radX>=0)
+				rfDist = (pre.x-post.x)*(pre.x-post.x)*aa*aa;
+			else if (radius.radY>=0)
+				rfDist = (pre.y-post.y)*(pre.y-post.y)*bb*bb;
+			else if (radius.radZ>=0)
+				rfDist = (pre.z-post.z)*(pre.z-post.z)*cc*cc;
 			break;
 		case 3:
 			// 3D no restrictions
-			isInRF = true;
 			break;
 		default:
 			KERNEL_ERROR("Invalid number of negative semi-principal axes: %d",numNegRadii);
 	}
 
-//	if (!isInRF) {
-//		std::cout << "Skipping " << pre << " to " << post << " with " << radius << " and numNegRadii="
-//			<< numNegRadii << std::endl;
-//	}
+	return rfDist;
+}
 
-	return isInRF;
+// \FIXME: not sure where this should go... maybe create some helper file?
+bool CpuSNN::isPoint3DinRF(const RadiusRF& radius, const Point3D& pre, const Point3D& post) {
+	// Note: RadiusRF rad is assumed to be the fanning in to the post neuron. So if the radius is 10 pixels, it means
+	// that if you look at the post neuron, it will receive input from neurons that code for locations no more than
+	// 10 pixels away. (The opposite is called a response/stimulus field.)
+
+	return (getRFDist3D(radius, pre, post) <= 1.0);
 }
 
 // \FIXME: not sure where this should go... maybe create some helper file?

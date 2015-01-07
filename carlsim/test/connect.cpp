@@ -221,3 +221,49 @@ TEST(CONNECT, connectRandom) {
 
 	delete sim;
 }
+
+TEST(CONNECT, connectGaussian) {
+	CARLsim* sim = new CARLsim("CORE.connectGaussian",CPU_MODE,USER,0,42);
+	Grid3D grid(5,6,7);
+	int g0=sim->createGroup("excit0", grid, EXCITATORY_NEURON);
+	int g1=sim->createGroup("excit1", grid, EXCITATORY_NEURON);
+	int g2=sim->createGroup("excit2", grid, EXCITATORY_NEURON);
+	int g3=sim->createGroup("excit3", grid, EXCITATORY_NEURON);
+	int g4=sim->createGroup("excit4", grid, EXCITATORY_NEURON);
+	int g5=sim->createGroup("excit5", grid, EXCITATORY_NEURON);
+	sim->setNeuronParameters(g0, 0.02f, 0.2f, -65.0f, 8.0f);
+	sim->setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f);
+	sim->setNeuronParameters(g2, 0.02f, 0.2f, -65.0f, 8.0f);
+	sim->setNeuronParameters(g3, 0.02f, 0.2f, -65.0f, 8.0f);
+	sim->setNeuronParameters(g4, 0.02f, 0.2f, -65.0f, 8.0f);
+	sim->setNeuronParameters(g5, 0.02f, 0.2f, -65.0f, 8.0f);
+
+	double prob = 1.0;
+	int c0=sim->connect(g0,g0,"gaussian",RangeWeight(0.1), prob, RangeDelay(1), RadiusRF(0.4,0.4,0.4));
+	int c1=sim->connect(g1,g1,"gaussian",RangeWeight(0.1), prob, RangeDelay(1), RadiusRF(2,2,0));
+//	int c2=sim->connect(g2,g2,"gaussian",RangeWeight(0.1), prob, RangeDelay(1), RadiusRF(1,0,10));
+//	int c3=sim->connect(g3,g3,"gaussian",RangeWeight(0.1), prob, RangeDelay(1), RadiusRF(2,3,0));
+//	int c4=sim->connect(g4,g4,"gaussian",RangeWeight(0.1), prob, RangeDelay(1), RadiusRF(0,2,3));
+//	int c5=sim->connect(g5,g5,"gaussian",RangeWeight(0.1), prob, RangeDelay(1), RadiusRF(2,2,2));
+
+	sim->setupNetwork(); // need SETUP state for this function to work
+
+	EXPECT_EQ(sim->getNumSynapticConnections(c0), grid.N);
+
+	// from CpuSNN::connect: estimate max number of connections needed using binomial distribution
+	// at 5 standard deviations
+	int errorMargin = 5*sqrt(prob*(1-prob)*grid.N)+0.5;
+//	EXPECT_LT(sim->getNumSynapticConnections(c0), 1);
+//	EXPECT_NEAR(sim->getNumSynapticConnections(c1), grid.N + 0.5*grid.N, 2);
+//	EXPECT_LT(sim->getNumSynapticConnections(c0), 0*grid.N*1.74);
+//	EXPECT_LT(sim->getNumSynapticConnections(c1), 0*grid.N*1.74);
+//	EXPECT_LT(sim->getNumSynapticConnections(c2), 0*grid.N*1.74);
+//	EXPECT_NEAR(sim->getNumSynapticConnections(c0), prob * grid.N * grid.N, errorMargin);
+//	EXPECT_NEAR(sim->getNumSynapticConnections(c1), prob * grid.N * grid.x, errorMargin);
+//	EXPECT_NEAR(sim->getNumSynapticConnections(c2), prob * grid.N * grid.x * grid.z, errorMargin);
+//	EXPECT_NEAR(sim->getNumSynapticConnections(c3), prob*144, errorMargin); // these numbers are less than what the 
+//	EXPECT_NEAR(sim->getNumSynapticConnections(c4), prob*224, errorMargin); // grid would say because of edge effects
+//	EXPECT_NEAR(sim->getNumSynapticConnections(c5), prob*320, errorMargin);
+
+	delete sim;	
+}

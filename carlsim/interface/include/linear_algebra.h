@@ -91,8 +91,11 @@ private:
 
 double dist(Point3D& p1, Point3D& p2);
 
+//! calculate norm^2
+double norm2(const Point3D& p);
+
 //! calculate norm \FIXME maybe move to carlsim_helper.h or something...
-double norm(Point3D p);
+double norm(const Point3D& p);
 
 //! check whether certain point lies on certain grid \FIXME maybe move to carlsim_helper.h or something...
 //bool isPointOnGrid(Point3D& p, Grid3D& g);
