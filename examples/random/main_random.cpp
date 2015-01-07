@@ -88,7 +88,6 @@ int main() {
 
 	// create a network
 	CARLsim sim("random", GPU_MODE, SILENT, ithGPU, 42);
-	sim.setLogFile("results/carlsim.log");
 
 	int g1=sim.createGroup("excit", N*0.8, EXCITATORY_NEURON);
 	sim.setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f);
@@ -113,7 +112,7 @@ int main() {
 	// here we define and set the properties of the STDP.
 	float ALPHA_LTP_EXC = 0.10f/100, TAU_LTP = 20.0f, ALPHA_LTD_EXC = 0.12f/100, TAU_LTD = 20.0f;
 	sim.setSTDP(g1, true, STANDARD, ALPHA_LTP_EXC, TAU_LTP, ALPHA_LTD_EXC, TAU_LTD);
-	sim.setSTDP(g2, true, STANDARD, ALPHA_LTP_EXC, TAU_LTP, ALPHA_LTD_EXC, TAU_LTD);
+//	sim.setSTDP(g2, true, STANDARD, ALPHA_LTP_EXC, TAU_LTP, ALPHA_LTD_EXC, TAU_LTD);
 
 	// build the network
 	sim.setupNetwork();

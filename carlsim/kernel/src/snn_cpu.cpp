@@ -1789,9 +1789,9 @@ void CpuSNN::CpuSNNinit() {
 		exit(1);
 	}
 	#if (WIN32 || WIN64)
-		fpLog_= fopen("results\\debug.log","w");
+		fpLog_= fopen("results\\carlsim.log","w");
 	#else
-		fpLog_ = fopen("results/debug.log","w");
+		fpLog_ = fopen("results/carlsim.log","w");
 	#endif
 
 	#ifdef __REGRESSION_TESTING__
