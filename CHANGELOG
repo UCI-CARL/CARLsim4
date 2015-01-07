@@ -11,6 +11,7 @@ Release 3.0
   * Moved synaptic receptors (mulSynFast, mulSynSlow) to constant GPU memory
     for better speedup.
   * Changed all GPU code to exclusively use float literals for better speedup.
+  - Removed CUDA 3 support.
 
 2014-12-30     Michael Beyeler <mbeyeler@uci.edu>
   * Fixed SET_CONN_ID behavior.

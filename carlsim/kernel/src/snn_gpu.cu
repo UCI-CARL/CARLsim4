@@ -135,7 +135,7 @@ void initTableQuickSynId()
 	}
 	   
 	cudaGetSymbolAddress(&devPtr, gpu_tableQuickSynId);
-	CUDA_CHECK_ERRORS_MACRO( cudaMemcpy( devPtr, tableQuickSynId, sizeof(tableQuickSynId), cudaMemcpyHostToDevice));
+	CUDA_CHECK_ERRORS( cudaMemcpy( devPtr, tableQuickSynId, sizeof(tableQuickSynId), cudaMemcpyHostToDevice));
 }
 	
 #if defined(__CUDA3__) || defined(__NO_ATOMIC_ADD__)
@@ -253,8 +253,8 @@ void CpuSNN::allocateGroupId() {
 	}
 
 	CUDA_CHECK_ERRORS(cudaMalloc((void**)&cpu_gpuNetPtrs.groupIdInfo, sizeof(int3) * net_Info.numGrp));
-	CUDA_CHECK_ERRORS_MACRO(cudaMemcpy(cpu_gpuNetPtrs.groupIdInfo, tempNeuronAllocation, sizeof(int3) * net_Info.numGrp, cudaMemcpyHostToDevice));
-	CUDA_CHECK_ERRORS_MACRO(cudaBindTexture(NULL, groupIdInfo_tex, cpu_gpuNetPtrs.groupIdInfo, sizeof(int3) * net_Info.numGrp));
+	CUDA_CHECK_ERRORS(cudaMemcpy(cpu_gpuNetPtrs.groupIdInfo, tempNeuronAllocation, sizeof(int3) * net_Info.numGrp, cudaMemcpyHostToDevice));
+	CUDA_CHECK_ERRORS(cudaBindTexture(NULL, groupIdInfo_tex, cpu_gpuNetPtrs.groupIdInfo, sizeof(int3) * net_Info.numGrp));
 
 	free(tempNeuronAllocation);
 }
@@ -325,10 +325,10 @@ int CpuSNN::allocateStaticLoad(int bufSize) {
 	// Finally writeback the total bufferCnt
 	// Note down the buffer size for reference
 	KERNEL_DEBUG("GPU loadBufferSize = %d, GPU loadBufferCount = %d", bufSize, bufferCnt);
-	CUDA_CHECK_ERRORS_MACRO(cudaMemcpyToSymbol(loadBufferCount, &bufferCnt, sizeof(int), 0, cudaMemcpyHostToDevice));
-	CUDA_CHECK_ERRORS_MACRO(cudaMemcpyToSymbol(loadBufferSize, &bufSize, sizeof(int), 0, cudaMemcpyHostToDevice));
+	CUDA_CHECK_ERRORS(cudaMemcpyToSymbol(loadBufferCount, &bufferCnt, sizeof(int), 0, cudaMemcpyHostToDevice));
+	CUDA_CHECK_ERRORS(cudaMemcpyToSymbol(loadBufferSize, &bufSize, sizeof(int), 0, cudaMemcpyHostToDevice));
 	CUDA_CHECK_ERRORS(cudaMalloc((void**) &cpu_gpuNetPtrs.neuronAllocation, sizeof(int2) * bufferCnt));
-	CUDA_CHECK_ERRORS_MACRO(cudaMemcpy(cpu_gpuNetPtrs.neuronAllocation, tempNeuronAllocation, sizeof(int2) * bufferCnt, cudaMemcpyHostToDevice));
+	CUDA_CHECK_ERRORS(cudaMemcpy(cpu_gpuNetPtrs.neuronAllocation, tempNeuronAllocation, sizeof(int2) * bufferCnt, cudaMemcpyHostToDevice));
 	free(tempNeuronAllocation);
 	return bufferCnt;
 }
@@ -2250,7 +2250,7 @@ void CpuSNN::spikeGeneratorUpdate_GPU() {
 		generateSpikes();
 
 		// copy the spikeGenBits from the CPU to the GPU..
-		CUDA_CHECK_ERRORS_MACRO( cudaMemcpy( cpu_gpuNetPtrs.spikeGenBits, cpuNetPtrs.spikeGenBits, sizeof(int)*(NgenFunc/32+1), cudaMemcpyHostToDevice));
+		CUDA_CHECK_ERRORS( cudaMemcpy( cpu_gpuNetPtrs.spikeGenBits, cpuNetPtrs.spikeGenBits, sizeof(int)*(NgenFunc/32+1), cudaMemcpyHostToDevice));
 	}
 }
 
@@ -2313,12 +2313,12 @@ void CpuSNN::doCurrentUpdate_GPU() {
 
 	if(maxDelay_ > 1) {
 		kernel_doCurrentUpdateD2 <<<gridSize, blkSize>>>(simTimeMs,simTimeSec,simTime);
-		CUDA_GET_LAST_ERROR_MACRO("Kernel execution failed");
+		CUDA_GET_LAST_ERROR("Kernel execution failed");
 	}
 
 
 	kernel_doCurrentUpdateD1 <<<gridSize, blkSize>>>(simTimeMs,simTimeSec,simTime);
-	CUDA_GET_LAST_ERROR_MACRO("Kernel execution failed");
+	CUDA_GET_LAST_ERROR("Kernel execution failed");
 }
 
 void CpuSNN::doSTPUpdateAndDecayCond_GPU(int gridSize, int blkSize) {
@@ -2451,16 +2451,16 @@ void CpuSNN::globalStateUpdate_GPU() {
 	int gridSize = 64;
 
 	kernel_globalConductanceUpdate <<<gridSize, blkSize>>> (simTimeMs, simTimeSec, simTime);
-	CUDA_GET_LAST_ERROR_MACRO("kernel_globalConductanceUpdate failed");
+	CUDA_GET_LAST_ERROR("kernel_globalConductanceUpdate failed");
 
 	// update all neuron state (i.e., voltage and recovery)
 	kernel_globalStateUpdate <<<gridSize, blkSize>>> (simTimeMs, simTimeSec, simTime);
-	CUDA_GET_LAST_ERROR_MACRO("Kernel execution failed");
+	CUDA_GET_LAST_ERROR("Kernel execution failed");
 
 	// update all group state (i.e., concentration of neuronmodulators)
 	// currently support 4 x 128 groups
 	kernel_globalGroupStateUpdate <<<4, blkSize>>> (simTimeMs);
-	CUDA_GET_LAST_ERROR_MACRO("Kernel execution failed");
+	CUDA_GET_LAST_ERROR("Kernel execution failed");
 }
 
 void CpuSNN::assignPoissonFiringRate_GPU() {
@@ -2610,8 +2610,8 @@ void CpuSNN::copyExternalCurrent(network_ptr_t* dest, network_ptr_t* src, int al
 void CpuSNN::copyFiringInfo_GPU()
 {
 	unsigned int gpu_secD1fireCnt, gpu_secD2fireCnt;
-	CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &gpu_secD2fireCnt, secD2fireCnt, sizeof(int), 0, cudaMemcpyDeviceToHost));
-	CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &gpu_secD1fireCnt, secD1fireCnt, sizeof(int), 0, cudaMemcpyDeviceToHost));
+	CUDA_CHECK_ERRORS( cudaMemcpyFromSymbol( &gpu_secD2fireCnt, secD2fireCnt, sizeof(int), 0, cudaMemcpyDeviceToHost));
+	CUDA_CHECK_ERRORS( cudaMemcpyFromSymbol( &gpu_secD1fireCnt, secD1fireCnt, sizeof(int), 0, cudaMemcpyDeviceToHost));
 	spikeCountAll1secHost = gpu_secD1fireCnt + gpu_secD2fireCnt;
 	secD1fireCntHost  = gpu_secD1fireCnt;
 	assert(gpu_secD1fireCnt<=maxSpikesD1);
@@ -2898,17 +2898,17 @@ void CpuSNN::allocateSNN_GPU() {
 	cpu_gpuNetPtrs.allocated = true;
 
 	// map the timing table to texture.. saves a lot of headache in using shared memory
-	CUDA_CHECK_ERRORS_MACRO(cudaGetSymbolAddress(&devPtr, timingTableD2));
+	CUDA_CHECK_ERRORS(cudaGetSymbolAddress(&devPtr, timingTableD2));
 	size_t offset;
-	CUDA_CHECK_ERRORS_MACRO(cudaBindTexture(&offset, timingTableD2_tex, devPtr, sizeof(int) * ROUNDED_TIMING_COUNT));
+	CUDA_CHECK_ERRORS(cudaBindTexture(&offset, timingTableD2_tex, devPtr, sizeof(int) * ROUNDED_TIMING_COUNT));
 	offset = offset / sizeof(int);
-	CUDA_CHECK_ERRORS_MACRO (cudaGetSymbolAddress(&devPtr, timingTableD2_tex_offset));
+	CUDA_CHECK_ERRORS(cudaGetSymbolAddress(&devPtr, timingTableD2_tex_offset));
 	CUDA_CHECK_ERRORS(cudaMemcpy(devPtr, &offset, sizeof(int), cudaMemcpyHostToDevice));
 		
-	CUDA_CHECK_ERRORS_MACRO(cudaGetSymbolAddress(&devPtr, timingTableD1));
-	CUDA_CHECK_ERRORS_MACRO(cudaBindTexture(&offset, timingTableD1_tex, devPtr, sizeof(int) * ROUNDED_TIMING_COUNT));
+	CUDA_CHECK_ERRORS(cudaGetSymbolAddress(&devPtr, timingTableD1));
+	CUDA_CHECK_ERRORS(cudaBindTexture(&offset, timingTableD1_tex, devPtr, sizeof(int) * ROUNDED_TIMING_COUNT));
 	offset = offset / sizeof(int);
-	CUDA_CHECK_ERRORS_MACRO(cudaGetSymbolAddress(&devPtr, timingTableD1_tex_offset));
+	CUDA_CHECK_ERRORS(cudaGetSymbolAddress(&devPtr, timingTableD1_tex_offset));
 	CUDA_CHECK_ERRORS(cudaMemcpy(devPtr, &offset, sizeof(int), cudaMemcpyHostToDevice));
 
 	// initialize (memset) cpu_gpuNetPtrs.current
@@ -2925,11 +2925,11 @@ void CpuSNN::printSimSummary() {
 	if(simMode_ == GPU_MODE) {
 		stopGPUTiming();
 		etime = gpuExecutionTime;
-		CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &spikeCountD2Host, secD2fireCnt, sizeof(int), 0, cudaMemcpyDeviceToHost));
-		CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &spikeCountD1Host, secD1fireCnt, sizeof(int), 0, cudaMemcpyDeviceToHost));
+		CUDA_CHECK_ERRORS( cudaMemcpyFromSymbol( &spikeCountD2Host, secD2fireCnt, sizeof(int), 0, cudaMemcpyDeviceToHost));
+		CUDA_CHECK_ERRORS( cudaMemcpyFromSymbol( &spikeCountD1Host, secD1fireCnt, sizeof(int), 0, cudaMemcpyDeviceToHost));
 		spikeCountAll1secHost = spikeCountD1Host + spikeCountD2Host;
-		CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &spikeCountD2Host, spikeCountD2, sizeof(int), 0, cudaMemcpyDeviceToHost));
-		CUDA_CHECK_ERRORS_MACRO( cudaMemcpyFromSymbol( &spikeCountD1Host, spikeCountD1, sizeof(int), 0, cudaMemcpyDeviceToHost));
+		CUDA_CHECK_ERRORS( cudaMemcpyFromSymbol( &spikeCountD2Host, spikeCountD2, sizeof(int), 0, cudaMemcpyDeviceToHost));
+		CUDA_CHECK_ERRORS( cudaMemcpyFromSymbol( &spikeCountD1Host, spikeCountD1, sizeof(int), 0, cudaMemcpyDeviceToHost));
 		spikeCountAllHost      = spikeCountD1Host + spikeCountD2Host;
 	}
 	else {
