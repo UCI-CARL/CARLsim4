@@ -35,7 +35,7 @@ Known bugs & issues:
 	  soon as possible in a future release.
 	* Mistakingly calling CARLsim::setSTDP on a fixed connection will result
 	  in an unspecified launch failure in GPU mode.
-	* On some Linux platforsm, the order in which SpikeGenerator groups are
+	* On some Linux platforms, the order in which SpikeGenerator groups are
 	  allocated might affect spike activity in GPU mode. The issue is that the
 	  SpikeGenerators will generate no spikes at all under some circumstances.
 	  This bug can often be avoided by having all CARLsim::createGroup calls
