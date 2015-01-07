@@ -99,8 +99,6 @@ __device__ __constant__ group_info_t		gpuGrpInfo[MAX_GRP_PER_SNN];
 __device__ __constant__ float               d_mulSynFast[MAX_nConnections];
 __device__ __constant__ float               d_mulSynSlow[MAX_nConnections];
 
-//__device__ __constant__ float				constData[256];
-
 __device__  int	  loadBufferCount; 
 __device__  int   loadBufferSize;
 
@@ -742,17 +740,11 @@ __global__ 	void kernel_findFiring (int t, int sec, int simTime) {
 // the global conductance values are updated..
 __global__ void kernel_globalConductanceUpdate (int t, int sec, int simTime) {
 	__shared__ int sh_tableQuickSynId[256];
-//	__shared__ int sh_mulSynFast[MAX_nConnections];
-//	__shared__ int sh_mulSynSlow[MAX_nConnections];
 
 	// Table for quick access
 	for(int i=0; i < 256; i+=blockDim.x){
 		if((i+threadIdx.x) < 256){
 			sh_tableQuickSynId[i+threadIdx.x]=gpu_tableQuickSynId[i+threadIdx.x];
-//			if ((i+threadIdx.x) < gpuNetInfo.numConnections) {
-//				sh_mulSynFast[i+threadIdx.x] = gpuPtrs.mulSynFast[i+threadIdx.x];
-//				sh_mulSynSlow[i+threadIdx.x] = gpuPtrs.mulSynSlow[i+threadIdx.x];
-//			}
 		}
 	}
 
