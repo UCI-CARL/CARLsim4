@@ -157,6 +157,48 @@ classdef ConnectionMonitor < handle
                 obj.connFileSuffix ];         % something like '.dat'
         end
         
+        function nSnap = getNumSnapshots(obj)
+            % nSnap = CM.getNumSnapshots() returns the number of snapshots
+            % that have been recorded.
+            obj.unsetError()
+            obj.initConnectionReader()
+            nSnap = obj.CR.getNumSnapshots();
+        end
+        
+        function snapshots = getSnapshots(obj, frames)
+            % snapshots = CM.getSnapshots(frames) returns all the snapshots
+            % specified by the list FRAMES in a 3D weight matrix: where the
+            % first dimension is the number of presynaptic neurons, the
+            % second dimension is the number of postsynaptic neurons, and
+            % the third dimension is the snapshot number. For example,
+            % snapshots(3,4,1) will return the weight from preNeurId==3 to
+            % postNeurId==4 for the first recorded snapshot.
+            %
+            % FRAMES       - A list of frame (or snapshot) numbers. For
+            %                example, requesting frames=[1 2 8] will
+            %                display the first, second, and eighth frame.
+            %                Default: display all frames.
+            if nargin<2 || isempty(frames) || frames==-1
+                obj.initConnectionReader()
+                frames = 1:ceil(obj.CR.getNumSnapshots());
+            end
+            obj.unsetError()
+            
+            % verify input
+            if ~Utilities.verify(frames,{{'isvector','isnumeric',[1 inf]}})
+                obj.throwError('Frames must be a numeric vector e[1,inf]')
+                return
+            end
+            if sum(frames>=1)~=numel(frames) ...
+                    || sum(frames<=obj.CR.getNumSnapshots())~=numel(frames)
+                obj.throwError(['Frame number must be e[1,' ...
+                    num2str(obj.CR.getNumSnapshots()) ']'])
+                return
+            end
+            
+            snapshots = obj.weights(:,:,frames);
+        end
+        
         function hasValid = hasValidConnectFile(obj)
             % hasValid = CM.hasValidConnectFile() determines whether a
             % valid connect file can be found for the connection.
@@ -241,6 +283,7 @@ classdef ConnectionMonitor < handle
                 if obj.plotInteractiveMode
                     if idx==numel(frames)
                         waitforbuttonpress;
+                        idx = idx + 1; % needed to exit
                     else
                         if obj.plotStepFrames
                             % stepping mode: wait for user input
