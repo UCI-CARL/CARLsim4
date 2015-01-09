@@ -19,7 +19,7 @@ CARLSIM_FLAGS += -I$(CARLSIM_LIB_DIR)/include/kernel \
 				 -I$(CARLSIM_LIB_DIR)/include/spike_monitor \
 				 -I$(CARLSIM_LIB_DIR)/include/connection_monitor \
 				 -I$(CARLSIM_LIB_DIR)/include/spike_generators \
-				 -I$(CARLSIM_LIB_DIR)/include/input_stimulus \
+				 -I$(CARLSIM_LIB_DIR)/include/visual_stimulus \
 				 -I$(CARLSIM_LIB_DIR)/include/simple_weight_tuner \
 				 -I$(CARLSIM_LIB_DIR)/include/group_monitor
 CARLSIM_LIBS  += -L$(CARLSIM_LIB_DIR)/lib -lCARLsim
@@ -42,6 +42,6 @@ clean:
 	$(RM) $(output_files)
 
 distclean:
-	$(RM) $(output_files) *.log *.dat results/*.dat
+	$(RM) $(output_files) results/*
 
 devtest: @echo $(CARLSIM_FLAGS)
