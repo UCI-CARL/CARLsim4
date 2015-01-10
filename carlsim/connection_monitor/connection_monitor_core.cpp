@@ -345,7 +345,6 @@ void ConnectionMonitorCore::writeConnectFileHeader() {
 		KERNEL_ERROR("ConnectionMonitor: writeConnectFileHeader has fwrite error");
 
 	// write pre group info: group id and # neurons
-	printf("grpIdPre=%d, nNeurPre=%d\n",grpIdPre_,nNeurPre_);
 	if (!fwrite(&grpIdPre_,sizeof(int),1,connFileId_))
 		KERNEL_ERROR("ConnectionMonitor: writeConnectFileHeader has fwrite error");
 	if (!fwrite(&nNeurPre_,sizeof(int),1,connFileId_))
