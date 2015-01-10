@@ -7,6 +7,12 @@ Legend:
 Release 3.0
 ===============================================================================
 
+2015-01-10     Michael Beyeler <mbeyeler@uci.edu>
+  + Added SpikeCounter support for SpikeGenerator groups.
+  * Fixed the bug in GPU mode where Poisson groups cannot generate spikes if
+    there is another SpikeGenerator group (using the callback mechanism) with
+    a lower-number group ID.
+
 2015-01-07     Michael Beyeler <mbeyeler@uci.edu>
   + Added getSnapshots() and getNumSnapshots() to ConnectionMonitor.m
   * Miscellaneous fixes in ConnectionMonitor.m
