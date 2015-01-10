@@ -828,7 +828,7 @@ public:
 	 *
 	 * A Spike Counter keeps track of all spikes per neuron for a certain time period (recordDur).
 	 * After that, the spike buffers get reset to zero number of spikes.
-	 * Works for excitatory/inhibitory neurons.
+	 * Works for Izhikevich neurons as well as Spike Generators.
 	 * The recording time can be set to any x number of ms, so that after x ms the spike counts will be reset
 	 * to zero. If x==-1, then the spike counts will never be reset (should only overflow after 97 days of sim).
 	 * Also, spike counts can be manually reset at any time by calling snn->resetSpikeCounter(group);

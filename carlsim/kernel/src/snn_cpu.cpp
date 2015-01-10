@@ -1070,13 +1070,6 @@ void CpuSNN::setSpikeGenerator(int grpId, SpikeGeneratorCore* spikeGen) {
 void CpuSNN::setSpikeCounter(int grpId, int recordDur) {
 	assert(grpId>=0); assert(grpId<numGrp);
 
-	// TODO: implement same for spike generators on GPU side (see CpuSNN::generateSpikes)
-	if (grp_Info[grpId].isSpikeGenerator) {
-		KERNEL_ERROR("ERROR: Spike Counters for Spike Generators are currently not supported.");
-		exit(1);
-		return;
-	}
-
 	sim_with_spikecounters = true; // inform simulation
 	grp_Info[grpId].withSpikeCounter = true; // inform the group
 	grp_Info[grpId].spkCntRecordDur = (recordDur>0)?recordDur:-1; // set record duration, after which spike buf will be reset
@@ -1708,9 +1701,26 @@ int* CpuSNN::getSpikeCounter(int grpId) {
 	if (!grp_Info[grpId].withSpikeCounter)
 		return NULL;
 
-	if (simMode_==GPU_MODE)
+	// determine whether spike counts are currently stored on CPU or GPU side
+	bool retrieveSpikesFromGPU = simMode_==GPU_MODE;
+	if (grp_Info[grpId].isSpikeGenerator) {
+		// this flag should be set if group was created via CARLsim::createSpikeGeneratorGroup
+		// could be SpikeGen callback or PoissonRate
+		if (grp_Info[grpId].RatePtr != NULL) {
+			// group is Poisson group
+			// even though mean rates might be on either CPU or GPU (RatePtr->isOnGPU()), in GPU mode the
+			// actual random numbers will always be generated on the GPU
+//			retrieveSpikesFromGPU = simMode_==GPU_MODE;
+		} else {
+			// group is generator with callback, CPU only
+			retrieveSpikesFromGPU = false;
+		}
+	}
+
+	// retrieve spikes from either CPU or GPU
+	if (retrieveSpikesFromGPU) {
 		return getSpikeCounter_GPU(grpId);
-	else {
+	} else {
 		int bufPos = grp_Info[grpId].spkCntBufPos; // retrieve buf pos
 		return spkCntBuf[bufPos]; // return pointer to buffer
 	}
@@ -3099,18 +3109,6 @@ void CpuSNN::generateSpikes() {
 		//generate a spike to all the target neurons from source neuron nid with a delay of del
 		short int g = grpIds[nid];
 
-/*
-// MB: Uncomment this if you want to activate real-time spike monitors for SpikeGenerators
-// However, the GPU version of this is not implemented... Need to implement it for the case 1) GPU mode
-// and generators on CPU side, 2) GPU mode and generators on GPU side
-			// if flag hasSpkCnt is set, we want to keep track of how many spikes per neuron in the group
-			if (grp_Info[g].withSpikeCounter) {
-				int bufPos = grp_Info[g].spkCntBufPos; // retrieve buf pos
-				int bufNeur = nid-grp_Info[g].StartN;
-				spkCntBuf[bufPos][bufNeur]++;
-				printf("%d: %s[%d], nid=%d, %u spikes\n",simTimeMs,grp_Info2[g].Name.c_str(),g,nid,spkCntBuf[bufPos][bufNeur]);
-			}
-*/
 		addSpikeToTable (nid, g);
 		spikeCountAll1secHost++;
 		nPoissonSpikes++;
@@ -3150,6 +3148,13 @@ void CpuSNN::generateSpikesFromFuncPtr(int grpId) {
 					// check how GPU mode does it, then do the same here.
 					pbuf->scheduleSpikeTargetGroup(i, nextTime - currTime);
 					spikeCnt++;
+
+					// update number of spikes if SpikeCounter set
+					if (grp_Info[grpId].withSpikeCounter) {
+						int bufPos = grp_Info[grpId].spkCntBufPos; // retrieve buf pos
+						int bufNeur = i-grp_Info[grpId].StartN;
+						spkCntBuf[bufPos][bufNeur]++;
+					}
 				}
 			} else {
 				done = true;
@@ -3198,6 +3203,12 @@ void CpuSNN::generateSpikesFromRate(int grpId) {
 //					int nid = grp_Info[grpId].StartN+cnt;
 					pbuf->scheduleSpikeTargetGroup(grp_Info[grpId].StartN + neurId, nextTime-currTime);
 					spikeCnt++;
+
+					// update number of spikes if SpikeCounter set
+					if (grp_Info[grpId].withSpikeCounter) {
+						int bufPos = grp_Info[grpId].spkCntBufPos; // retrieve buf pos
+						spkCntBuf[bufPos][neurId]++;
+					}
 				}
 			}
 			else {
