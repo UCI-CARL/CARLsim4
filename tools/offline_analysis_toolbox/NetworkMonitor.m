@@ -16,10 +16,10 @@ classdef NetworkMonitor < handle
     % B) Add groups one-by-one
     %    >> NM = NetworkMonitor('results/sim_random.dat',false);
     %    >> NM.addGroup('input','raster');
-    %    >> NM.plot(1:10,100); % frame=100ms, plot first ten frames
+    %    >> NM.1:10,100); % frame=100ms, plot first ten frames
     %    >> % etc.
     %
-    % Version 10/5/2014
+    % Version 1/19/2015
     % Author: Michael Beyeler <mbeyeler@uci.edu>
     
     %% PROPERTIES
@@ -314,7 +314,11 @@ classdef NetworkMonitor < handle
             if ~Utilities.verify(binWindowMs,{{'isscalar',[1 inf]}})
                 obj.throwError('Frame duration must be a scalar e[1 inf]')
                 return
-            end
+			end
+			
+			% start plotting in regular mode
+			obj.plotAbortPlotting = false;
+			obj.plotStepFrames = false;
             
             % make sure we have something to plot
             if obj.numSubPlots==0
@@ -346,7 +350,6 @@ classdef NetworkMonitor < handle
             while idx <= numel(frames)
                 if obj.plotAbortPlotting
                     % user pressed button to quit plotting
-                    obj.plotAbortPlotting = false;
                     close;
                     return
                 end
@@ -517,12 +520,29 @@ classdef NetworkMonitor < handle
             %                  default plotting type will be used, which
             %                  is determined by the Grid3D topography of
             %                  the group.
-            %                  The following types are currently supported:
-            %                   - heatmap   a topological map of group
-            %                               activity where hotter colors
-            %                               mean higher firing rate
-            %                   - raster    a raster plot with binning
-            %                               window: binWindowMs
+			%                 - flowfield A 2D vector field where the
+			%                             length of the vector is given as
+			%                             the firing rate of the neuron
+			%                             times the corresponding vector
+			%                             orientation. The latter is given
+			%                             by the third grid dimension, z.
+			%                             For example Grid3D(10,10,4) plots
+			%                             a 10x10 vector flow field,
+			%                             assuming that neurons with z=0
+			%                             code for direction=0deg, z=1 is
+			%                             90deg, z=2 is 180deg, z=3 is
+			%                             270deg. Vectors with length
+			%                             smaller than 10 % of the max in
+			%                             each frame are not shown.
+            %                 - heatmap   A topological map of group
+            %                             activity where hotter colors mean
+            %                             higher firing rate. 
+			%                 - histogram A histogram of firing rates.
+            %                             Histogram options ('histNumBins'
+            %                             and 'histShowRate') can be set
+            %                             via GM.setPlottingAttributes.
+            %                 - raster    A raster plot with binning window
+            %                             binWindowMs
             gId = obj.getGroupId(groupName);
             obj.groupMonObj{gId}.setPlotType(plotType);
         end

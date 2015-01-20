@@ -13,7 +13,7 @@ classdef GroupMonitor < handle
     % >> GM.recordMovie; % plots heat map and saves as 'movie.avi'
     % >> % etc.
     %
-    % Version 12/18/2014
+    % Version 1/19/2015
     % Author: Michael Beyeler <mbeyeler@uci.edu>
     
     %% PROPERTIES
@@ -230,16 +230,37 @@ classdef GroupMonitor < handle
             %
             % The full list of available attributes can be set using
             % GM.setPlottingAttributes.
+			%
+			% For a list of supported plot types see member variable
+			% GM.supportedPlotTypes.
             %
             % PLOTTYPE     - The plotting type to use. If not set, the
             %                default plotting type will be used, which is
             %                determined by the Grid3D topography of the
             %                group.
             %                The following types are currently supported:
-            %                 - heatmap   a topological map of group
+			%                 - flowfield A 2D vector field where the
+			%                             length of the vector is given as
+			%                             the firing rate of the neuron
+			%                             times the corresponding vector
+			%                             orientation. The latter is given
+			%                             by the third grid dimension, z.
+			%                             For example Grid3D(10,10,4) plots
+			%                             a 10x10 vector flow field,
+			%                             assuming that neurons with z=0
+			%                             code for direction=0deg, z=1 is
+			%                             90deg, z=2 is 180deg, z=3 is
+			%                             270deg. Vectors with length
+			%                             smaller than 10 % of the max in
+			%                             each frame are not shown.
+            %                 - heatmap   A topological map of group
             %                             activity where hotter colors mean
-            %                             higher firing rate
-            %                 - raster    a raster plot with binning window
+            %                             higher firing rate. 
+			%                 - histogram A histogram of firing rates.
+            %                             Histogram options ('histNumBins'
+            %                             and 'histShowRate') can be set
+            %                             via GM.setPlottingAttributes.
+            %                 - raster    A raster plot with binning window
             %                             binWindowMs
             %                Default: 'default'.
             % FRAMES       - A list of frame numbers. For example,
@@ -249,7 +270,7 @@ classdef GroupMonitor < handle
             % BINWINDOWMS  - The binning window (ms) in which the data will
             %                be displayed. Default: 1000.
             if nargin<4,binWindowMs=obj.plotBinWinMs;end
-            if nargin<3 || isempty(frames) || frames==-1
+            if nargin<3 || isempty(frames) || numel(frames)==1 && frames==-1
                 obj.initSpikeReader()
                 frames = 1:ceil(obj.spkObj.getSimDurMs()/binWindowMs);
             end
@@ -264,7 +285,11 @@ classdef GroupMonitor < handle
             if ~Utilities.verify(binWindowMs,{{'isscalar',[1 inf]}})
                 obj.throwError('Frame duration must be a scalar e[1 inf]')
                 return
-            end
+			end
+			
+			% start plotting in regular mode
+			obj.plotAbortPlotting = false;
+			obj.plotStepFrames = false;
             
             % reset abort flag, set up callback for key press events
             if obj.plotInteractiveMode
@@ -279,56 +304,56 @@ classdef GroupMonitor < handle
             % use a while loop instead of a for loop so that we can
             % implement stepping backward
             idx = 1;
-            while idx <= numel(frames)
-                if obj.plotInteractiveMode && obj.plotAbortPlotting
-                    % user pressed button to quit plotting
-                    obj.plotAbortPlotting = false;
-                    close;
-                    return
-                end
-                
-                % plot the frame
-                obj.plotFrame(frames(idx), plotType, binWindowMs, ...
-                    obj.plotDispFrameNr);
-                drawnow
-
-                % in interactive mode, key press events are active
-                if obj.plotInteractiveMode
-                    if idx==numel(frames)
-                        waitforbuttonpress;
-                    else
-                        if obj.plotStepFrames
-                            % stepping mode: wait for user input
-                            while ~obj.plotAbortPlotting ...
-                                    && ~obj.plotStepFramesFW ...
-                                    && ~obj.plotStepFramesBW
-                                pause(0.1)
-                            end
-                            if obj.plotStepFramesBW
-                                % step one frame backward
-                                idx = max(1, idx-1);
-                            else
-                                % step one frame forward
-                                idx = idx + 1;
-                            end
-                            obj.plotStepFramesBW = false;
-                            obj.plotStepFramesFW = false;
-                        else
-                            % wait according to frames per second, then
-                            % step forward
-                            pause(1.0/obj.plotFPS)
-                            idx = idx + 1;
-                        end
-                    end
-                else
-                    % wait according to frames per second, then
-                    % step forward
-                    pause(1.0/obj.plotFPS)
-                    idx = idx + 1;
-                end
-            end
-            if obj.plotInteractiveMode,close;end
-        end
+			while idx <= numel(frames)
+				if obj.plotInteractiveMode && obj.plotAbortPlotting
+					% user pressed button to quit plotting
+					close;
+					return;
+				end
+				
+				% plot the frame
+				obj.plotFrame(frames(idx), plotType, binWindowMs, ...
+					obj.plotDispFrameNr);
+				drawnow
+				
+				% in interactive mode, key press events are active
+				if obj.plotInteractiveMode
+					if idx>=numel(frames)
+						waitforbuttonpress;
+						close;
+						return;
+					else
+						if obj.plotStepFrames
+							% stepping mode: wait for user input
+							while ~obj.plotAbortPlotting ...
+									&& ~obj.plotStepFramesFW ...
+									&& ~obj.plotStepFramesBW
+								pause(0.1)
+							end
+							if obj.plotStepFramesBW
+								% step one frame backward
+								idx = max(1, idx-1);
+							else
+								% step one frame forward
+								idx = idx + 1;
+							end
+							obj.plotStepFramesBW = false;
+							obj.plotStepFramesFW = false;
+						else
+							% wait according to frames per second, then
+							% step forward
+							pause(1.0/obj.plotFPS)
+							idx = idx + 1;
+						end
+					end
+				else
+					% wait according to frames per second, then
+					% step forward
+					pause(1.0/obj.plotFPS)
+					idx = idx + 1;
+				end
+			end
+		end
         
         function recordMovie(obj, fileName, frames, binWindowMs, fps, winSize)
             % NM.recordMovie(fileName, frames, frameDur, fps, winSize)
@@ -355,7 +380,7 @@ classdef GroupMonitor < handle
             if nargin<6,winSize=obj.recordWinSize;end
             if nargin<5,fps=obj.recordFPS;end
             if nargin<4,binWindowMs=obj.plotBinWinMs;end
-            if nargin<3 || isempty(frames) || frames==-1
+            if nargin<3 || isempty(frames) || numel(frames)==1 && frames==-1
                 obj.initSpikeReader()
                 frames = 1:ceil(obj.spkObj.getSimDurMs()/binWindowMs);
             end
@@ -849,12 +874,22 @@ classdef GroupMonitor < handle
                 flowX = zeros(obj.grid3D(1),obj.grid3D(2),numFrames);
                 flowY = zeros(obj.grid3D(1),obj.grid3D(2),numFrames);
                 for f=1:numFrames
+					tmpX = flowX(:,:,f);
+					tmpY = flowY(:,:,f);
                     for d=1:obj.grid3D(3)
-                        flowX(:,:,f) = flowX(:,:,f) ...
-                            + cos(dir(d)).*squeeze(spkBuffer(f,:,:,d));
-                        flowY(:,:,f) = flowY(:,:,f) ...
-                            + sin(dir(d)).*squeeze(spkBuffer(f,:,:,d));
-                    end
+						tmpX = tmpX + cos(dir(d)) ...
+							.* squeeze(spkBuffer(f,:,:,d));
+						tmpY = tmpY + sin(dir(d)) ...
+							.* squeeze(spkBuffer(f,:,:,d));
+					end
+					
+					% don't show vector if len < 10 % of max
+					maxLen = max(max( sqrt(tmpX.^2+tmpY.^2) ));
+					indTooShort = sqrt(tmpX.^2+tmpY.^2) < 0.1*maxLen;
+					tmpX(indTooShort) = 0;
+					tmpY(indTooShort) = 0;
+					flowX(:,:,f) = tmpX;
+					flowY(:,:,f) = tmpY;
                 end
                 clear spkBuffer;
                 spkBuffer(:,:,1,:) = flowX;
@@ -960,11 +995,17 @@ classdef GroupMonitor < handle
             
             % load data and reshape for plotting if necessary
             obj.loadDataForPlotting(plotType, frameDur);
+			if frameNr > size(obj.spkData,4)
+				warning(['frameNr=' num2str(frameNr) ' exceeds ' ...
+					'number of frames (' num2str(size(obj.spkData,4)) ...
+					')'])
+				return;
+			end
             
             if strcmpi(obj.plotType,'flowfield')
                 frame = obj.spkData(:,:,:,frameNr);
                 [x,y] = meshgrid(1:obj.grid3D(1),1:obj.grid3D(2));
-                quiver(x,y,frame(:,:,1),frame(:,:,2));
+                quiver(x',y',frame(:,:,1),frame(:,:,2));
                 axis equal
                 axis([1 max(2,size(frame,1)) 1 max(2,size(frame,2))])
                 title(['Group ' obj.name])
