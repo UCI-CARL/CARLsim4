@@ -221,8 +221,8 @@ classdef ConnectionMonitor < handle
 			hasValid = ~errFlag;
 		end
 		
-		function plot(obj, plotType, frames)
-			% CM.plot(plotType, frames, stepFrames) plots the specified
+		function plot(obj, plotType, frames, neurons)
+			% CM.plot(plotType, frames, neurons) plots the specified
 			% frames (or snapshots) in the current figure/axes. A list of
 			% plotting attributes can be set directly as input arguments.
 			%
@@ -249,6 +249,7 @@ classdef ConnectionMonitor < handle
 			%                example, requesting frames=[1 2 8] will
 			%                display the first, second, and eighth frame.
 			%                Default: display all frames.
+			if nargin<4,neurons=1;end
 			if nargin<3 || isempty(frames) || frames==-1
 				obj.initConnectionReader()
 				frames = 1:ceil(obj.CR.getNumSnapshots());
@@ -284,7 +285,7 @@ classdef ConnectionMonitor < handle
 				end
 				
 				% plot the frame
-				obj.plotFrame(frames(idx), plotType, obj.plotDispFrameNr);
+				obj.plotFrame(frames(idx), plotType, neurons, obj.plotDispFrameNr);
 				drawnow
 				
 				% in interactive mode, key press events are active
@@ -324,45 +325,6 @@ classdef ConnectionMonitor < handle
 				end
 			end
 			if obj.plotInteractiveMode,close;end
-		end
-		
-		function wts = plotReceptiveField(obj, postNeurId, frames)
-			% FRAMES       - A list of frame (or snapshot) numbers. For
-			%                example, requesting frames=[1 2 8] will
-			%                display the first, second, and eighth frame.
-			%                Default: display all frames.
-			if nargin<3 || isempty(frames) || frames==-1
-				obj.initConnectionReader()
-				frames = 1:ceil(obj.CR.getNumSnapshots());
-			end
-			if nargin<2,postNeurId=1;end
-			obj.unsetError()
-			
-			% verify input
-			if ~Utilities.verify(frames,{{'isvector','isnumeric',[1 inf]}})
-				obj.throwError('Frames must be a numeric vector e[1,inf]')
-				return
-			end
-			if ~Utilities.verify(postNeurId,{'isscalar',[1 inf]})
-				obj.throwError('postNeurId must be a scalar >= 1')
-				return
-			end
-			
-			% load data and reshape for plotting
-			% assume we use heatmap, so we get a 2D weight matrix out
-			obj.loadDataForPlotting('heatmap');
-			
-			% find the 3D grid dimensions of the pre-group
-			grid3D = obj.CR.getGrid3DPre();
-
-			
-			% do only one frame for now
-			wts = squeeze(obj.weights(postNeurId,:,frames(1)));
-			wts = reshape(wts, grid3D);
-			
-			for z=1:grid3D(3)
-				
-			end
 		end
 		
 		function xyz = getNeuronLocation3DPre(obj,neurId)
@@ -716,6 +678,14 @@ classdef ConnectionMonitor < handle
 	
 	%% PRIVATE METHODS
 	methods (Hidden, Access = private)
+        function [nrR, nrC] = findPlotLayout(obj, numSubPlots)
+            % given a total number of subplots, what should be optimal
+            % number of rows and cols in the figure?
+            % \TODO could be static or in Utilities class
+            nrR = floor(sqrt(numSubPlots));
+            nrC = ceil(numSubPlots*1.0/nrR);
+		end
+		
 		function initConnectionReader(obj)
 			% private method to initialize ConnectionReader
 			obj.unsetError()
@@ -789,7 +759,9 @@ classdef ConnectionMonitor < handle
 			obj.plotMaxWt = max(obj.weights(:));
 			
 			% re-format the data
-			if strcmpi(obj.plotType,'heatmap')
+			if strcmpi(obj.plotType,'heatmap') ...
+					|| strcmpi(obj.plotType,'receptivefield') ...
+					|| strcmpi(obj.plotType,'responsefield')
 				% reshape to 3-D matrix
 				obj.weights = reshape(obj.weights, ...
 					obj.CR.getNumSnapshots(), ...
@@ -835,7 +807,8 @@ classdef ConnectionMonitor < handle
 			obj.needToInitCR = true;
 			obj.needToLoadData = true;
 			
-			obj.supportedPlotTypes = {'heatmap','histogram'};
+			obj.supportedPlotTypes = {'heatmap', 'histogram', ...
+				'receptivefield', 'responsefield'};
 			obj.supportedErrorModes = {'standard','warning','silent'};
 		end
 		
@@ -867,11 +840,12 @@ classdef ConnectionMonitor < handle
 			end
 		end
 		
-		function plotFrame(obj, frameNr, plotType, dispFrameNr)
+		function plotFrame(obj, frameNr, plotType, neurons, dispFrameNr)
 			% Private method to display a single frame depending on
 			% plotType. This is where the raster plots and heat maps are
 			% implemented.
-			if nargin<4,dispFrameNr=obj.plotDispFrameNr;end
+			if nargin<5,dispFrameNr=obj.plotDispFrameNr;end
+			if nargin<4,neurons=-1;end
 			if nargin<3,plotType=obj.plotType;end
 			obj.unsetError()
 			
@@ -893,6 +867,114 @@ classdef ConnectionMonitor < handle
 				bar(obj.plotHistBins, obj.plotHistData(frameNr,:))
 				xlabel('weight value')
 				ylabel('number of synapses')
+			elseif strcmpi(obj.plotType,'responsefield')
+				% plot the connections from one pre-neuron to all
+				% corresponding post-neurons
+				grid3DPre = obj.CR.getGrid3DPre();
+				grid3DPost = obj.CR.getGrid3DPost();
+				
+				% make sure neuron list is valid: show for all pre-neurons
+				if numel(neurons)==1 || sum(neurons<=0)>0
+					neurons = 1:prod(obj.CR.getGrid3DPre());
+				end
+				nPlots = numel(neurons);
+				[nRows, nCols] = obj.findPlotLayout(nPlots);
+				for r=1:nRows
+					for c=1:nCols
+						idx = (r-1)*nCols+c;
+						if idx > numel(neurons)
+							break;
+						end
+						
+						% get all incoming weights to that neuron
+						neurIdPre = neurons(idx);
+						wts = obj.weights(:,neurIdPre,frameNr); % Y X T
+						wts = reshape(wts,grid3DPost);
+
+						% find RF in same z-plane
+						zPre = floor( (neurIdPre-1)/grid3DPre(1)/grid3DPre(2) );
+						
+						% plot RF
+						subplot(nRows,nCols,idx)
+						imagesc(wts(:,:,zPre+1)', [0 obj.plotMaxWt])
+						if grid3DPost(1)>1
+							set(gca,'XTick',[1 grid3DPost(1)/2.0 grid3DPost(1)])
+							set(gca,'XTickLabel',[-grid3DPost(1)/2.0 0 grid3DPost(1)/2.0])
+						else
+							set(gca,'XTick',grid3DPost(1))
+							set(gca,'XTickLabel',0)
+						end
+						if grid3DPost(2)>1
+							set(gca,'YTick',[1 grid3DPost(2)/2.0 grid3DPost(2)])
+							set(gca,'YTickLabel',[-grid3DPost(2)/2.0 0 grid3DPost(2)/2.0])
+						else
+							set(gca,'YTick',grid3DPost(2))
+							set(gca,'YTickLabel',0)
+						end
+						xlabel('x')
+						ylabel('y')
+						
+						% if enabled, display the frame number in lower left corner
+						if dispFrameNr
+							text(2,size(wts,2)-1,num2str(frameNr), ...
+								'FontSize',10,'BackgroundColor','white')
+						end
+					end
+				end
+			elseif strcmpi(obj.plotType,'receptivefield')
+				% plot the connections from all corresponding pre-neurons
+				% to one post-neuron
+				grid3DPre = obj.CR.getGrid3DPre();
+				grid3DPost = obj.CR.getGrid3DPost();
+				
+				% make sure neuron list is valid: show for all post-neurons
+				if numel(neurons)==1 || sum(neurons<=0)>0
+					neurons = 1:prod(grid3DPost);
+				end
+				nPlots = numel(neurons);
+				[nRows, nCols] = obj.findPlotLayout(nPlots);
+				for r=1:nRows
+					for c=1:nCols
+						idx = (r-1)*nCols+c;
+						if idx > numel(neurons)
+							break;
+						end
+						
+						% get all incoming weights to that neuron
+						neurIdPost = neurons(idx);
+						wts = obj.weights(neurIdPost,:,frameNr); % Y X T
+						wts = reshape(wts,grid3DPre);
+
+						% find RF in same z-plane
+						zPost = floor( (neurIdPost-1)/grid3DPost(1)/grid3DPost(2) );
+						
+						% plot RF
+						subplot(nRows,nCols,idx)
+						imagesc(wts(:,:,zPost+1)', [0 obj.plotMaxWt])
+						if grid3DPre(1)>1
+							set(gca,'XTick',[1 grid3DPre(1)/2.0 grid3DPre(1)])
+							set(gca,'XTickLabel',[-grid3DPre(1)/2.0 0 grid3DPre(1)/2.0])
+						else
+							set(gca,'XTick',grid3DPre(1))
+							set(gca,'XTickLabel',0)
+						end
+						if grid3DPre(2)>1
+							set(gca,'YTick',[1 grid3DPre(2)/2.0 grid3DPre(2)])
+							set(gca,'YTickLabel',[-grid3DPre(2)/2.0 0 grid3DPre(2)/2.0])
+						else
+							set(gca,'YTick',grid3DPre(2))
+							set(gca,'YTickLabel',0)
+						end
+						xlabel('x')
+						ylabel('y')
+
+						% if enabled, display the frame number in lower left corner
+						if dispFrameNr
+							text(2,size(wts,2)-1,num2str(frameNr), ...
+								'FontSize',10,'BackgroundColor','white')
+						end
+					end
+				end
 			else
 				obj.throwError(['Unrecognized plot type "' obj.plotType '".'])
 				return
