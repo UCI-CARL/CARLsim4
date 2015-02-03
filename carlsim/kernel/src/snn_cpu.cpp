@@ -1661,20 +1661,24 @@ Point3D CpuSNN::getNeuronLocation3D(int neurId) {
 	// adjust neurId for neuron ID of first neuron in the group
 	neurId -= grp_Info[grpId].StartN;
 
-	int coord_x = neurId % grp_Info[grpId].SizeX;
-	int coord_y = (neurId/grp_Info[grpId].SizeX)%grp_Info[grpId].SizeY;
-	int coord_z = neurId/(grp_Info[grpId].SizeX*grp_Info[grpId].SizeY);
-	return Point3D(coord_x, coord_y, coord_z);
+	return getNeuronLocation3D(grpId, neurId);
 }
 
 Point3D CpuSNN::getNeuronLocation3D(int grpId, int relNeurId) {
 	assert(grpId>=0 && grpId<numGrp);
 	assert(relNeurId>=0 && relNeurId<getGroupNumNeurons(grpId));
 
-	int coord_x = relNeurId % grp_Info[grpId].SizeX;
-	int coord_y = (relNeurId/grp_Info[grpId].SizeX)%grp_Info[grpId].SizeY;
-	int coord_z = relNeurId/(grp_Info[grpId].SizeX*grp_Info[grpId].SizeY);
-	return Point3D(coord_x, coord_y, coord_z);
+	// coordinates are in x e[-SizeX/2,SizeX/2], y e[-SizeY/2,SizeY/2], z e[-SizeZ/2,SizeZ/2]
+	// instead of x e[0,SizeX], etc.
+	int intX = relNeurId % grp_Info[grpId].SizeX;
+	int intY = (relNeurId/grp_Info[grpId].SizeX)%grp_Info[grpId].SizeY;
+	int intZ = relNeurId/(grp_Info[grpId].SizeX*grp_Info[grpId].SizeY);
+
+	// so subtract SizeX/2, etc. to get coordinates center around origin
+	double coordX = 1.0*intX - (grp_Info[grpId].SizeX-1)/2.0;
+	double coordY = 1.0*intY - (grp_Info[grpId].SizeY-1)/2.0;
+	double coordZ = 1.0*intZ - (grp_Info[grpId].SizeZ-1)/2.0;
+	return Point3D(coordX, coordY, coordZ);
 }
 
 // returns the number of synaptic connections associated with this connection.
