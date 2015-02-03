@@ -245,20 +245,25 @@ public:
 	int createGroup(const std::string& grpName, int nNeur, int neurType);
 
 	/*!
-	 * \brief create a group of neurons on a 3D grid
+	 * \brief Create a group of Izhikevich spiking neurons on a 3D grid (a primitive cubic Bravais lattice with cubic
+	 * side length 1)
 	 *
-	 * Neurons of a group can be arranged topographically, so that they virtually lie on a 3D grid. This simplifies
-	 * the creation of topographic connections in the network.
-	 * Each neuron thus gets assigned a (x,y,z) location on a 3D grid (integer coordinates). Neuron numbers will be
-	 * assigned to location in order; where the first dimension specifies the width, the second dimension is height,
-	 * and the third dimension is depth. Grid3D(2,2,2) would thus assign neurId 0 to location (0,0,0), neurId 1
-	 * to (1,0,0), neurId 3 to (0,1,0), neurId 6 to (2,2,1), and so on.
-	 * The third dimension can be thought of as a depth (z-coordinate in 3D), a cortical column (each of which consists
-	 * of a 2D arrangement of neurons on a plane), or a channel (such as RGB channels, each of which consists of a 2D
-	 * arrangements of neurons coding for (x,y) coordinates of an image). For the user's convenience, the struct thus
-	 * provides members Grid3D::depth, Grid3D::column, and Grid3D::channels, which differ only semantically.
+	 * Neurons of a group can be arranged topographically, so that they virtually lie on a 3D grid.
+	 * Connections can then be specified depending on the relative placement of neurons via CARLsim::connect. This allows
+	 * for the creation of networks with complex spatial structure.
+	 * 
+	 * Each neuron in the group gets assigned a (x,y,z) location on a 3D grid centered around the origin, so that calling
+	 * Grid3D(Nx,Ny,Nz) creates coordinates that fall in the range [-(Nx-1)/2, (Nx-1)/2], [-(Ny-1)/2, (Ny-1)/2], and
+	 * [-(Nz-1)/2, (Nz-1)/2].
+	 * The resulting grid is a primitive cubic Bravais lattice with cubic side length 1 (arbitrary units).
+	 * The primitive (or simple) cubic crystal system consists of one lattice point (neuron) on each corner of the cube.
+	 * Each neuron at a lattice point is then shared equally between eight adjacent cubes.
+	 *
 	 * \STATE CONFIG
-	 * \TODO finish doc
+	 * \param[in] grpName    the group name
+	 * \param[in] grid       a Grid3D struct specifying the dimensions of the 3D lattice
+	 * \param[in] neurType   either EXCITATORY_NEURON, INHIBITORY_NEURON or DOPAMINERGIC_NEURON
+	 * \since v3.0
 	 */
 	int createGroup(const std::string& grpName, const Grid3D& grid, int neurType);
 

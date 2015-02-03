@@ -1,21 +1,62 @@
 /*!
 
-\page ch3_neurons_synapses_groups Chapter 3: Neurons, Synapses, and Groups
-
 \tableofcontents
 
+\page ch3_neurons_synapses_groups Chapter 3: Neurons, Synapses, and Groups
 
 \section ch3s1_neurons 3.1 Neurons
+\author Michael Beyeler
 
+CARLsim currently supports Izhikevich spiking neurons with either current-based or conductance-based synapses
+(see \ref ch3s2_synapses), but more neuron types are planned for the future.
+Different groups of neurons can be created from a one-dimensional array to a three-dimensional grid (see
+\ref ch3s3s2_topography) via <tt>createSpikeGeneratorGroup</tt> and <tt>createGroup</tt>.
+
+\TODO add more stuff
 
 \subsection ch3s1s1_izhikevich_neurons 3.1.1 Izhikevich Neurons
 
-Izhikevich neuron types. setNeuronParameters. Talk about reasonable currents (regimes).
+The Izhikevich neuron is a dynamical systems model that can be described by a two-dimensional system of ordinary
+differential equations:
+\f{eqnarray}
+\frac{dv}{dt} & = & 0.04v^2 + 5v + 140 - u + i_{syn} \\
+\frac{du}{dt} & = & a (bv - u) \f}
+Here, (1) describes the membrane potential \f$v\f$ for a given synaptic current \f$i_{syn}\f$ (see \ref ch3s2_synapses),
+whereas (2) describes a recovery variable \f$u\f$;
+the parameter \f$a\f$ is the rate constant of the recovery variable,
+and the parameter \f$b\f$ describes the sensitivity of the recovery variable to the subthreshold fluctuations of the
+membrane potneital.
+All parameters in (1) and (2) are dimensionless; however, the right-hand side of (1) is in a form such that the 
+membrane potential \f$v\f$ has mV scale and the time \f$t\f$ has ms scale.
+is voltage, \f$u\f$ is the recovery variable, \f$I\f$ is the input current, and \f$a, b, c, d\f$ are
+open parameters that have different values for different neuron types.
+
+In contrast to other simple models such as the leaky integrate-and-fire (LIF) neuron, the Izhikevich neuron is able
+to generate the upstroke of the spike itself. Thus the voltage reset occurs not at the threshold, but at the peak
+(\f$v_{cutoff}=+30\f$) of the spike.
+The action potential downstroke is modeled using an instantaneous reset of the membrane potential whenever \f$v\f$
+reaches the spike cutoff, plus a stepping of the recovery variable:
+\f{eqnarray}
+ v(v>30) & = & c \\
+ u(v>30) & = & u + d \f}
+
+The inclusion of \f$u\f$ in the model allows for the simulation of typical spike patterns observed in biological
+neurons. The four parameters \f$a, b, c, d\f$ can be set to simulate different types of neurons.
+For example, regular spiking (RS) neurons (class 1 excitable) have \f$a=0.02, b=0.2, c=-65, d=8\f$.
+Fast spiking (FS) neurons (class 2 excitable) have \f$a=0.1, b=0.2, c=-65, d=2)\f$.
+For more information on different neuron types, see Izhikevich (2003, 2004).
+
+
+\subsection ch3s1s2_other_neurons 3.1.2 Other Neuron Types
+In the future, we plan to include other types of neuron models, such as the full 9-parameter Izhikevich model,
+a compartmental model, the leaky integrate-and-fire model, and the adaptive exponential integrate-and-fire model.
 
 
 \section ch3s2_synapses 3.2 Synapses
 
-Neurons are connected via synapses. Here's how synapses work. Mention weights and that weights can change (see Chapter 4).
+Neurons are connected via synapses. Here's how synapses work. Mention weights and that weights can change
+(see \ref ch4_connections).
+\TODO give equations for \f$i_{syn}\f$ and explain synapses
 
 
 \subsection ch3s2s1_cuba 3.2.1 CUBA
@@ -37,20 +78,85 @@ Equation with both rise and decay times. setConductances(dAMPA, rNMDA, dNMDA, dG
 
 
 \section ch3s3_groups 3.3 Groups
-
-Neurons are worthless alone, so group them. Here's how you group them.
+\author Michael Beyeler
 
 
 \subsection ch3s3s1_creating_groups 3.3.1 Creating Groups
 
-createGroup
+To create a group of Izhikevich neurons, simply specify a name (e.g., "output"), the number of neurons
+(e.g., 100), and a type:
+\code
+int gOut = sim.createGroup("output", 100, EXCITATORY_NEURON);
+\endcode
+Here, ::EXCITATORY_NEURON denotes that the neurons in the group are glutamatergic. Neurons with GABAergic
+synapses are supported with the ::INHIBITORY_NEURON keyword.
+Neuromodulators such as dopamine, acetylcholine, serotonin, and noradrenaline are also supported
+(see \ref ch5s4_neuromodulation).
+To refer to this group in later method calls, the CARLsim::createGroup method returns a group ID, <tt>gEx</tt>.
+
+Next, specify the Izhikevich parameters, in this case for class 1 excitability (regular spiking) neurons
+(see \ref ch3s1s1_izhikevich_neurons):
+\code
+sim.setNeuronParameters(gOut, 0.02f, 0.2f, -65.0f, 8.0f);
+\endcode
+where 0.02f, 0.2f, -65.0f, and 8.0f correspond respectively to the a, b, c, and d parameters of the Izhikevich
+neuron. Note we used <tt>gOut</tt> from the <tt>createGroup</tt> call above to reference the group ID.
+
+To create a group of spike generators, the user also specifies a name, size, and type:
+\code
+int gIn = sim.createSpikeGeneratorGroup("input", 10, EXCITATORY_NEURON);
+\endcode
 
 
 \subsection ch3s3s2_topography 3.3.2 Topography
-\TODO TS
 
-Grid3D. Topographical arrangements.
+Neurons in a group can be arranged into a (up to) three-dimensional (primitive cubic) grid using the ::Grid3D struct,
+and connections can be specified depending on the relative placement of neurons via CARLsim::connect.
+This allows for the creation of networks with complex spatial structure.
 
+Each neuron in the group gets assigned a (x,y,z) location on a 3D grid centered around the origin, so that calling
+Grid3D(Nx,Ny,Nz) creates coordinates that fall in the range [-(Nx-1)/2, (Nx-1)/2], [-(Ny-1)/2, (Ny-1)/2], and
+[-(Nz-1)/2, (Nz-1)/2].
+The resulting grid is a primitive cubic Bravais lattice with cubic side length 1 (arbitrary units).
+The primitive (or simple) cubic crystal system consists of one lattice point (neuron) on each corner of the cube.
+Each neuron at a lattice point is then shared equally between eight adjacent cubes. 
+An example is shown in the figure below.
+
+\image html 3_grid3D.jpg "The 3D grid generated by Grid3D(2,2,2). Black circles indicate the 3D coordinates of all the neurons (with corresponding neuron IDs) in the group."
+
+Examples:
+- Grid3D(1,1,1) will create a single neuron with location (0,0,0).
+- Grid3D(2,1,1) will create two neurons, where the first neuron (ID 0) has location (-0.5,0,0), and the
+  second neuron (ID 1) has location (0.5,0,0).
+- Grid3D(1,1,2) will create two neurons, where the first neuron (ID 0) has location (0,0,-0.5), and the second neuron
+  (ID 1) has location (0,0,0.5).
+- Grid3D(2,2,2) will create eight neurons, where the first neuron (ID 0) has location (-0.5,-0.5,-0.5), the second
+  neuron has location (0.5,-0.5,-0.5), the third has (-0.5,0.5,-0.5), and so forth (see figure below).
+- Grid3D(3,3,3) will create 3x3x3=27 neurons, where the first neuron (ID 0) has location (-1,-1,-1), the second neuron
+  has location (0,-1,-1), the third has (1,-1,-1), the fourth has (-1,0,-1), ..., and the last one has (1,1,1).
+- etc.
+
+The 3D location of a neuron can be queried in all CARLsim states using the method CARLsim::getNeuronLocation3D.
+This allows, for example, for user-defined connections to be built based on 3D location (see \ref ch4s3_user_defined).
+
+The following code snippet creates a group of 500 excitatory neurons arranged on a 10x10x5 three-dimensional
+(primitive cubic) grid:
+\code
+int gOut = sim.createGroup("output", Grid3D(10,10,5), EXCITATORY_NEURON);
+\endcode
+
+Note that in this example, the ::Grid3D parameter replaces the integer values (for number of neurons) used for
+CARLsim::createGroup in \ref ch3s3s1_creating_groups.
+In fact, creating a group with N neurons is the same as arranging N neurons on a Nx1x1 grid:
+\code
+int gOut = sim.createGroup("output", N, EXCITATORY_NEURON);             // these two function calls
+int gOut = sim.createGroup("output", Grid3D(N,1,1), EXCITATORY_NEURON); // are equivalent
+\endcode
+
+\see \ref ch4s1s4_gaussian
+\see \ref ch4s1s5_radiusRF
+\see ::Grid3D
+\see ::RadiusRF
 \since v3.0
 
 
