@@ -1,41 +1,125 @@
 /*!
 
+After you downloaded the zip, what to do. Mention ECJ installation chapter. FYI, Google Test is installed 
+automatically (give path). If you want more info on testing, go to \ref ch11_regression_suite
+
 \page ch1_getting_started Chapter 1: Getting Started
 
 \tableofcontents
 
 
-After you downloaded the zip, what to do. Mention ECJ installation chapter. FYI, Google Test is installed 
-automatically (give path). If you want more info on testing, go to \ref ch11_regression_suite
+\section ch1s1_preinstallation 1.1 Pre-Installation
+\author Kristofor D. Carlson
+
+CARLsim currently requires the NVIDIA CUDA parallel computing platform to be installed
+even if one does not plan to use the GPU implementation of CARLsim. Future versions of CARLsim
+that allow users to run the CPU impmlementation of CARLsim without installing CUDA are planned.
+CARLsim requires GPUs with a compute capability of 2.0 or higher. To see find the compute
+capability of your device you can check <a href="http://en.wikipedia.org/wiki/CUDA">here</a>.
+CARLsim also requires CUDA Toolkit 5.0 and up. For CUDA installation instructrions for your 
+platform, please navigate to the NVIDIA <a href="https://developer.nvidia.com/cuda-zone">CUDA Zone</a>.
+The rest of the chapter assumes you have successfully installed CUDA and have the 
+appropriate hardware.
 
 
-\section ch1s1_installation 1.1 Installation
+\subsection ch1s1s1_os 1.1.2 Supported OS's
+CARLsim has been tested on Windows 7 and a variety of Linux platforms. CARLsim has been tested on
+the following Linux platforms:
+- Ubuntu 12.04
+- Ubuntu 12.10
+- Ubuntu 13.04
+- Ubuntu 13.10
+- Ubuntu 14.04
+- Arch Linux
+- CentOS 6
+
+\section ch1s2_installation 1.2 Installation
+\author Kristofor D. Carlson
+
+To install CARLsim, first download and unzip the zip file from our
+<a href="http://www.socsci.uci.edu/~jkrichma/CARLsim/index.html"> website </a>. The
+installation instructrions differ depending on your OS, so please reference the
+appropriate subsection.
+
+\subsection ch1s2s1_linux 1.2.1 Linux
 \TODO KDC
+quickstart?
 
-A single \b bold word and <b>a few of them</b>. Also works for \c typewriter font even <tt>with multiple words</tt>.
-You should google "doxygen special commands" or similar to find out about the rest.
+Instructions for Linux installation assume you are using the Bash shell. Enter the unzipped
+CARLsim directory. This directory will be referred to as the 'CARLsim root
+directory' for the remainder of the install instructions. CARLsim users next have to modify
+the <tt>user.mk</tt> file that sets installation specific variables such as information about GPU
+devices, CUDA Toolkit version, and desired location of installation.
 
-\attention Dragons are dangerous.
+The desired installation location of the CARLsim library is specified with the 
+<tt>CARLSIM_LIB_DIR</tt> variable. The major and minor compute capability numbers of your
+CUDA-capable GPU device must be specified by setting the <tt>CUDA_MAJOR_NUM</tt> and
+<tt>CUDA_MINOR_NUM</tt> variables. Next <tt>CUDA_INSTALL_PATH</tt> variable must be set. This
+variable points to where CUDA is installed. Finally, the CUDA Toolkit version must be set with 
+the <tt>CARLSIM_CUDAVER</tt> variable. <tt>CARLSIM_FASTMATH</tt>, <tt>CARLSIM_CUOPTLEVEL</tt>, and
+<tt>CARLSIM_DEBUG</tt> are optional settings. These settings affect the degree of fastmath 
+optimization (off by default), the degree of CUDA optimization (off by default), and whether or
+not to include debugging information (off by default). Below is a code snippet from the user.mk
+file.
+
+\code
+#------------------------------------------------------------------------------
+# USER-MODIFIABLE COMPONENT OF MAKEFILE
+#
+# Note: all paths should be absolute (start with /)
+#------------------------------------------------------------------------------
+# desired installation path of libcarlsim and headers
+CARLSIM_LIB_DIR ?= /opt/CARL/CARLsim
+
+# cuda capability major version number for GPU device
+CUDA_MAJOR_NUM ?= 2
+# cuda capability minor version number for GPU device
+CUDA_MINOR_NUM ?= 0
+# cuda toolkit version (major number only)
+CARLSIM_CUDAVER ?= 5
+
+# CUDA Installation location. If your CUDA installation is not /usr/local/cuda,
+# please set CUDA_INSTALL_PATH to point to the correct location or set it as
+# an environment variable.
+CUDA_INSTALL_PATH ?= /usr/local/cuda
+
+# $(OPT_LEVEL): set to 1, 2, or 3 if you want to use optimization.  Default: 0.
+# $(DEBUG_INFO): set to 1 to include debug info, set to 0 to not include
+# debugging info.  Default: 0.
+CARLSIM_FASTMATH ?= 0
+CARLSIM_CUOPTLEVEL ?= 0
+CARLSIM_DEBUG ?= 0
+\endcode
+
+An alternative to modifying the user.mk file is to add these environment variables to your
+.bashrc file. This may be preferable if you are running CARLsim on different machines and
+don't want to change your user.mk configuration for each installation. The '=?' sign in 
+the user.mk file indicates the value the variable will be assigned if it is not already
+defined. Therefore, the environment variables you define in your .bashrc file will overide these
+values.
+
+To compile and install the CARLsim library, type:
+
+\code
+make && sudo make install
+\endcode
 
 
-\subsection ch1s1s1_linux 1.1.1 Linux
-\TODO KDC
-
-\subsection ch1s1s1_windows 1.1.2 Windows
+\subsection ch1s2s2_windows 1.2.2 Windows
 \TODO TS or SL
 
 \warning Warnings are overrated.
+\see \ref ch10_ecj
+\see \ref ch11_regression_suite
 
-
-
-\section ch1s2_configuration 1.2 Configuration
+\section ch1s3_configuration 1.3 Configuration
 \TODO KDC
 Environment variables, user.mk, flags and stuff
 
 \remark A very small degree of hope is sufficient to cause the birth of love.
 
 
-\section ch1s3_project_workflow 1.3 Project Workflow
+\section ch1s4_project_workflow 1.4 Project Workflow
 \TODO KDC
 How to get started with your project. Project template, maybe user.mk.
 
