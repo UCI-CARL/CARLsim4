@@ -368,18 +368,12 @@ typedef struct GroupNeuromodulatorInfo_s {
  * Connections can then be specified depending on the relative placement of neurons via CARLsim::connect. This allows
  * for the creation of networks with complex spatial structure.
  * 
- *
- * Neurons in a group can be arranged into a (up to) three-dimensional (primitive cubic) grid using the ::Grid3D struct,
- * and connections can be specified depending on the relative placement of neurons via CARLsim::connect.
- * This allows for the creation of networks with complex spatial structure.
- * 
  * Each neuron in the group gets assigned a (x,y,z) location on a 3D grid centered around the origin, so that calling
  * Grid3D(Nx,Ny,Nz) creates coordinates that fall in the range [-(Nx-1)/2, (Nx-1)/2], [-(Ny-1)/2, (Ny-1)/2], and
  * [-(Nz-1)/2, (Nz-1)/2].
  * The resulting grid is a primitive cubic Bravais lattice with cubic side length 1 (arbitrary units).
  * The primitive (or simple) cubic crystal system consists of one lattice point (neuron) on each corner of the cube.
  * Each neuron at a lattice point is then shared equally between eight adjacent cubes. 
- * An example is shown in the figure below.
  * 
  * \param[in] w the width of the 3D grid (1st dim)
  * \param[in] h the height of the 3D grid (2nd dim)

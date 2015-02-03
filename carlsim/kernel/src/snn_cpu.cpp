@@ -1675,9 +1675,9 @@ Point3D CpuSNN::getNeuronLocation3D(int grpId, int relNeurId) {
 	int intZ = relNeurId/(grp_Info[grpId].SizeX*grp_Info[grpId].SizeY);
 
 	// so subtract SizeX/2, etc. to get coordinates center around origin
-	double coordX = 1.0*intX - grp_Info[grpId].SizeX/2.0;
-	double coordY = 1.0*intY - grp_Info[grpId].SizeY/2.0;
-	double coordZ = 1.0*intZ - grp_Info[grpId].SizeZ/2.0;
+	double coordX = 1.0*intX - (grp_Info[grpId].SizeX-1)/2.0;
+	double coordY = 1.0*intY - (grp_Info[grpId].SizeY-1)/2.0;
+	double coordZ = 1.0*intZ - (grp_Info[grpId].SizeZ-1)/2.0;
 	return Point3D(coordX, coordY, coordZ);
 }
 
