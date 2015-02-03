@@ -13,7 +13,7 @@ classdef ConnectionMonitor < handle
 	% >> CM.recordMovie; % plots hist and saves as 'movie.avi'
 	% >> % etc.
 	%
-	% Version 11/12/2014
+	% Version 2/2/2015
 	% Author: Michael Beyeler <mbeyeler@uci.edu>
 	
 	%% PROPERTIES
@@ -324,6 +324,53 @@ classdef ConnectionMonitor < handle
 				end
 			end
 			if obj.plotInteractiveMode,close;end
+		end
+		
+		function wts = plotReceptiveField(obj, postNeurId, frames)
+			% FRAMES       - A list of frame (or snapshot) numbers. For
+			%                example, requesting frames=[1 2 8] will
+			%                display the first, second, and eighth frame.
+			%                Default: display all frames.
+			if nargin<3 || isempty(frames) || frames==-1
+				obj.initConnectionReader()
+				frames = 1:ceil(obj.CR.getNumSnapshots());
+			end
+			if nargin<2,postNeurId=1;end
+			obj.unsetError()
+			
+			% verify input
+			if ~Utilities.verify(frames,{{'isvector','isnumeric',[1 inf]}})
+				obj.throwError('Frames must be a numeric vector e[1,inf]')
+				return
+			end
+			if ~Utilities.verify(postNeurId,{'isscalar',[1 inf]})
+				obj.throwError('postNeurId must be a scalar >= 1')
+				return
+			end
+			
+			% load data and reshape for plotting
+			% assume we use heatmap, so we get a 2D weight matrix out
+			obj.loadDataForPlotting('heatmap');
+			
+			% find the 3D grid dimensions of the pre-group
+			grid3D = obj.CR.getGrid3DPre();
+
+			
+			% do only one frame for now
+			wts = squeeze(obj.weights(postNeurId,:,frames(1)));
+			wts = reshape(wts, grid3D);
+			
+			for z=1:grid3D(3)
+				
+			end
+		end
+		
+		function xyz = getNeuronLocation3DPre(obj,neurId)
+			neurId = neurId - 1;
+			grid3D = obj.CR.getGrid3DPre();
+			xyz(1) = mod(neurId, grid3D(1));
+			xyz(2) = mod( floor(neurId/grid3D(1)), grid3D(2) );
+			xyz(3) = floor(neurId / (grid3D(1)*grid3D(2)));
 		end
 		
 		function recordMovie(obj, fileName, frames, fps, winSize)

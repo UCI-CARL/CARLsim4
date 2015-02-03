@@ -49,36 +49,25 @@
 
 int main() {
 	// simulation details
-	int N = 10000; // number of neurons
+	int N = 100; // number of neurons
 	int ithGPU = 0; // run on first GPU
 
 	// create a network
 	CARLsim sim("random", GPU_MODE, USER, ithGPU, 42);
 
-	int g1=sim.createGroup("excit", N*0.8, EXCITATORY_NEURON);
+	int g1=sim.createGroup("excit", Grid3D(3,3,3), EXCITATORY_NEURON);
 	sim.setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f);
 
 	int g2=sim.createGroup("inhib", N*0.2, INHIBITORY_NEURON);
 	sim.setNeuronParameters(g2, 0.1f,  0.2f, -65.0f, 2.0f);
 
-	int gin=sim.createSpikeGeneratorGroup("input",N*0.1,EXCITATORY_NEURON);
+	int gin=sim.createSpikeGeneratorGroup("input",Grid3D(5,5,5),EXCITATORY_NEURON);
 
 	sim.setConductances(true,5,150,6,150);
 
-	float prob = 100.0f/N;
-	// make random connections with 10% probability
-	sim.connect(g2,g1,"random", RangeWeight(0.01), prob);
-	// make random connections with 10% probability, and random delays between 1 and 20
-	sim.connect(g1,g2,"random", RangeWeight(0.0,0.0025,0.005), prob, RangeDelay(1,20), RadiusRF(-1), SYN_PLASTIC);
-	sim.connect(g1,g1,"random", RangeWeight(0.0,0.06,0.1), prob, RangeDelay(1,20), RadiusRF(-1), SYN_PLASTIC);
 
 	// 5% probability of connection
-	sim.connect(gin, g1, "random", RangeWeight(1.0), prob/10.0f, RangeDelay(1,20), RadiusRF(-1));
-
-	// here we define and set the properties of the STDP.
-	float ALPHA_LTP_EXC = 0.10f/100, TAU_LTP = 20.0f, ALPHA_LTD_EXC = 0.12f/100, TAU_LTD = 20.0f;
-	sim.setSTDP(g1, true, STANDARD, ALPHA_LTP_EXC, TAU_LTP, ALPHA_LTD_EXC, TAU_LTD);
-//	sim.setSTDP(g2, true, STANDARD, ALPHA_LTP_EXC, TAU_LTP, ALPHA_LTD_EXC, TAU_LTD);
+	sim.connect(gin, g1, "full", RangeWeight(0.25), 1.0f, RangeDelay(1,20), RadiusRF(3,3,3));
 
 	// build the network
 	sim.setupNetwork();
@@ -89,12 +78,12 @@ int main() {
 	sim.setSpikeMonitor(gin, "Default");
 
 	// record weights of g1->g1 connection, save to binary
-	sim.setConnectionMonitor(g1,g1, "Default");
+	sim.setConnectionMonitor(gin,g1,"Default");
 
 	//setup some baseline input
 	PoissonRate in(N*0.1);
 	in.setRates(1.0f);
-	sim.setSpikeRate(gin,&in);
+//	sim.setSpikeRate(gin,&in);
 
 	// run for a total of 10 seconds
 	// at the end of each runNetwork call, Spike and Connection Monitor stats will be printed

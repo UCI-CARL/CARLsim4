@@ -42,6 +42,8 @@ classdef ConnectionReader < handle
         connId;
         grpIdPre;
         grpIdPost;
+		gridPre;
+		gridPost;
         nNeurPre;
         nNeurPost;
         nSynapses;
@@ -100,9 +102,21 @@ classdef ConnectionReader < handle
             % message can be found in errMsg.
             errFlag = obj.errorFlag;
             errMsg = obj.errorMsg;
-        end
+		end
+		
+		function grid3D = getGrid3DPre(obj)
+			% grid3D = CR.getGrid3DPre() returns the 3D grid dimensions for
+			% the pre-synaptic group (1x3 vector)
+			grid3D = obj.gridPre;
+		end
         
-        function nNeurPre = getNumNeuronsPre(obj)
+		function grid3D = getGrid3DPost(obj)
+			% grid3D = CR.getGrid3DPost() returns the 3D grid dimensions
+			% for the post-synaptic group (1x3 vector)
+			grid3D = obj.gridPost;
+		end
+		
+		function nNeurPre = getNumNeuronsPre(obj)
             % nNeurPre = CR.getNumNeuronsPre() returns the number of
             % neurons in the presynaptic group.
             nNeurPre = obj.nNeurPre;
@@ -178,7 +192,7 @@ classdef ConnectionReader < handle
             obj.fileId = -1;
             obj.fileSignature = 202029319;
             obj.fileVersionMajor = 0;
-            obj.fileVersionMinor = 1;
+            obj.fileVersionMinor = 2;
             obj.fileSizeByteHeader = -1;   % to be set in openFile
             obj.fileSizeByteSnapshot = -1; % to be set in openFile
             
@@ -247,16 +261,18 @@ classdef ConnectionReader < handle
             
             % read pre-group info
             obj.grpIdPre = fread(obj.fileId, 1, 'int32');
-            obj.nNeurPre = fread(obj.fileId, 1, 'int32');
-            if obj.grpIdPre<0 || obj.nNeurPre<=0
+			obj.gridPre  = fread(obj.fileId, [1 3],'int32');
+            obj.nNeurPre = prod(obj.gridPre);
+            if obj.grpIdPre<0 || obj.nNeurPre<=0 || sum(obj.gridPre<=0)>0
                 obj.throwError('Could not find valid pre-group info.')
                 return
             end
             
             % read post-group info
             obj.grpIdPost = fread(obj.fileId, 1, 'int32');
-            obj.nNeurPost = fread(obj.fileId, 1, 'int32');
-            if obj.grpIdPost<0 || obj.nNeurPost<=0
+			obj.gridPost  = fread(obj.fileId, [1 3],'int32');
+            obj.nNeurPost = prod(obj.gridPost);
+            if obj.grpIdPost<0 || obj.nNeurPost<=0 || sum(obj.gridPost<=0)>0
                 obj.throwError('Could not find valid post-group info.')
                 return
             end
