@@ -946,11 +946,17 @@ classdef ConnectionMonitor < handle
 						wts = reshape(wts,grid3DPre);
 
 						% find RF in same z-plane
-						zPost = floor( (neurIdPost-1)/grid3DPost(1)/grid3DPost(2) );
+						% for this: find z-coordinate of post, compare to
+						% all z-coordinates of pre, find the match
+						zPool = floor( (neurIdPost-1)/grid3DPost(1)/grid3DPost(2) );
+						zPost = zPool - (grid3DPost(3)-1.0)/2.0;
+						zPre = (0:grid3DPre(3)-1) - (grid3DPre(3)-1.0)/2.0;
+						zPreIdx = zPre==zPost; % find post-coord in all pre
+						% TODO: what if zPreIdx is empty?
 						
 						% plot RF
 						subplot(nRows,nCols,idx)
-						imagesc(wts(:,:,zPost+1)', [0 obj.plotMaxWt])
+						imagesc(wts(:,:,zPreIdx)', [0 obj.plotMaxWt])
 						if grid3DPre(1)>1
 							set(gca,'XTick',[1 grid3DPre(1)/2.0 grid3DPre(1)])
 							set(gca,'XTickLabel',[-grid3DPre(1)/2.0 0 grid3DPre(1)/2.0])
