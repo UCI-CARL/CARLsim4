@@ -1,24 +1,23 @@
 /*!
 
-After you downloaded the zip, what to do. Mention ECJ installation chapter. FYI, Google Test is installed 
+After you downloaded the zip, what to do. Mention ECJ installation chapter. FYI, Google Test is installed
 automatically (give path). If you want more info on testing, go to \ref ch11_regression_suite
 
 \page ch1_getting_started Chapter 1: Getting Started
 
 \tableofcontents
 
-
 \section ch1s1_preinstallation 1.1 Pre-Installation
 \author Kristofor D. Carlson
 
 CARLsim currently requires the NVIDIA CUDA parallel computing platform to be installed
 even if one does not plan to use the GPU implementation of CARLsim. Future versions of CARLsim
-that allow users to run the CPU impmlementation of CARLsim without installing CUDA are planned.
+that allow users to run the CPU implementation of CARLsim without installing CUDA are planned.
 CARLsim requires GPUs with a compute capability of 2.0 or higher. To see find the compute
 capability of your device you can check <a href="http://en.wikipedia.org/wiki/CUDA">here</a>.
-CARLsim also requires CUDA Toolkit 5.0 and up. For CUDA installation instructrions for your 
+CARLsim also requires CUDA Toolkit 5.0 and up. For CUDA installation instructrions for your
 platform, please navigate to the NVIDIA <a href="https://developer.nvidia.com/cuda-zone">CUDA Zone</a>.
-The rest of the chapter assumes you have successfully installed CUDA and have the 
+The rest of the chapter assumes you have successfully installed CUDA and have the
 appropriate hardware.
 
 
@@ -35,8 +34,14 @@ CARLsim has been tested on the following platforms:
 
 \subsection ch1s1s2_os 1.1.2 Source Directory Layout
 Below is the directory layout of the CARLsim source code. The <tt>carlsim</tt> folder contains
-the source code for carlsim. The subfolders are key components to the CARLsim simulation library.
-The <tt>doc</tt> folder contains doxygen-related files and the generated documentation.
+the source code for carlsim. The sub-folders are key components to the CARLsim simulation library.
+The <tt>doc</tt> folder contains doxygen-related files and the generated documentation. The
+<tt>examples</tt> folder contains example code for a number of CARLsim examples. The
+<tt>projects</tt> folder contains a template for writing your first CARLsim program. Users will
+start here when they begin writing their first program. The <tt>tools</tt> directory contains a
+number of CARLsim plugins that may be useful to users such as parameter tuning frameworks, MATLAB
+scripts, spike generators, and tools for visual stimuli. Finally, the <tt>tutorial</tt> directory
+contains the source code documentation for generating the tutorials.
 
 \code
 ├── carlsim
@@ -86,7 +91,7 @@ The <tt>doc</tt> folder contains doxygen-related files and the generated documen
     └── 9_visualization
 \endcode
 
-
+\since v3.0
 
 \section ch1s2_installation 1.2 Installation
 \author Kristofor D. Carlson
@@ -97,8 +102,6 @@ installation instructrions differ depending on your OS, so please reference the
 appropriate subsection.
 
 \subsection ch1s2s1_linux 1.2.1 Linux
-\TODO KDC
-quickstart?
 
 Instructions for Linux installation assume you are using the Bash shell. Enter the unzipped
 CARLsim directory. This directory will be referred to as the 'CARLsim root
@@ -115,10 +118,10 @@ the <tt>CARLSIM_CUDAVER</tt> variable. <tt>CARLSIM_FASTMATH</tt>, <tt>CARLSIM_CU
 <tt>CARLSIM_DEBUG</tt> are optional settings. These settings affect the degree of fastmath
 optimization (off by default), the degree of CUDA optimization (off by default), and whether or
 not to include debugging information (off by default).
-file.
 
 The easiest way to set these environment variables is to set them in your .bashrc file. The code
-snippet below shows the lines to be added to your .bashrc file.
+snippet below shows the lines to be added to the end of your .bashrc file. If the variables are
+not defined in the .bashrc file, the values defined in the <tt>user.mk</tt> file will be used.
 
 \code
 # set CARLsim variables
@@ -128,13 +131,26 @@ export CUDA_MINOR_NUM=5
 export CARLSIM_SRC_DIR=~/Project/CARLsim
 \endcode
 
-To make sure these settings go into effect, you can either type \code source ~/.bashrc \endcode or
-close the shell and open another one. To make sure.
+To make sure these settings go into effect, you can either type: \code source ~/.bashrc \endcode or
+close the shell and open another one. To find the CUDA Toolkit version you are using you can type:
 
-file that sets installation specific variables such as information about GPU
-devices, CUDA Toolkit version, and desired location of installation.
+\code nvcc --version \endcode
+
+You need only input the major number of the toolkit version
+(e.g. 6 for 6.5). To find compute capability of your GPU device can be found by running:
+
+\code deviceQuery \endcode
+
+which can usually be found in the following directory (for a 64-bit Linux distribution):
+
+\code <cuda_installation_directory>/cuda/samples/bin/x86_64/linux/release \endcode
 
 
+An alternative way to set the required environment variable is to edit the <tt>user.mk</tt> file
+found in the CARLsim root directory. The '=?' sign in the user.mk file indicates the value the
+variable will be assigned if it is not already defined. Therefore, the environment variables you
+define in your .bashrc file will overide these values. This is shown in the code snippet below
+of the <tt>user.mk</tt> file.
 
 \code
 #------------------------------------------------------------------------------
@@ -165,26 +181,18 @@ CARLSIM_CUOPTLEVEL ?= 0
 CARLSIM_DEBUG ?= 0
 \endcode
 
-An alternative to modifying the user.mk file is to add these environment variables to your
-.bashrc file. This may be preferable if you are running CARLsim on different machines and
-don't want to change your user.mk configuration for each installation. The '=?' sign in 
-the user.mk file indicates the value the variable will be assigned if it is not already
-defined. Therefore, the environment variables you define in your .bashrc file will overide these
-values.
-
-To compile and install the CARLsim library, type:
+After the environment variables have been set, CARLsim can be compiled and installed. To compile
+and install the CARLsim library, type:
 
 \code
 make && sudo make install
 \endcode
 
-This is wil install the CARLsim library in the location pointed to by <tt>CARLSIM_LIB_DIR</tt>.
-For more information on how to write makefiles to that link to the CARLsim library please see:
-\ref ch1s4_project_workflow. CARLsim comes with an optional automated parameter tuning framework.
-For more information  about how to install the framework please see \ref ch10_ecj. Additionally,
-CARLsim now comes with a regression suite that uses
-<a href="https://code.google.com/p/googletest/">googletest</a>. For more information on how to use
-the regression suite, please see \ref ch11_regression_suite.
+This is will install the CARLsim library in the location pointed to by <tt>CARLSIM_LIB_DIR</tt>.
+CARLsim comes with an optional automated parameter tuning framework. For more information about
+how to install the framework please see \ref ch10_ecj. Additionally, CARLsim now comes with a
+regression suite that uses <a href="https://code.google.com/p/googletest/">googletest</a>.
+For more information on how to use the regression suite, please see \ref ch11_regression_suite.
 
 \since v3.0
 
@@ -196,25 +204,28 @@ the regression suite, please see \ref ch11_regression_suite.
 \see \ref ch11_regression_suite
 
 \section ch1s3_configuration 1.3 Configuration
+\author Kristofor D. Carlson
+
 This section discusses further configuration options with the user.mk file.
 
 
-
 \subsection ch1s3s1_linux_config 1.3.1 Linux Configuration
-\author Kristofor D. Carlson
-
 \subsection ch1s3s1_windows_config 1.3.1 Windows Configuration
 
+\since v3.0
 
 \section ch1s4_generating_documentation 1.4 Generating Documentation
+\author Kristofor D. Carlson
+
 
 \section ch1s5_project_workflow 1.5 Project Workflow
+
 \TODO KDC
 How to get started with your project. Project template, maybe user.mk.
 
 \TODO Kristofor
 Makefile talk
 
-
+\since v3.0
 
 */
