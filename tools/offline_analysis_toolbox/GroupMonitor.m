@@ -1005,7 +1005,7 @@ classdef GroupMonitor < handle
             if strcmpi(obj.plotType,'flowfield')
                 frame = obj.spkData(:,:,:,frameNr);
                 [x,y] = meshgrid(1:obj.grid3D(1),1:obj.grid3D(2));
-                quiver(x',y',frame(:,:,1),frame(:,:,2));
+                quiver(x',y',frame(:,:,1)',frame(:,:,2)');
                 axis equal
                 axis([1 max(2,size(frame,1)) 1 max(2,size(frame,2))])
                 title(['Group ' obj.name])
