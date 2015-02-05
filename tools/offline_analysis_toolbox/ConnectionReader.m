@@ -218,7 +218,7 @@ classdef ConnectionReader < handle
             
             % try to open spike file
             obj.fileId = fopen(obj.fileStr,'r');
-            if obj.fileId==-1
+            if feof(obj.fileId) || obj.fileId==-1
                 obj.throwError(['Could not open file "' obj.fileStr ...
                     '" with read permission'])
                 return
@@ -226,21 +226,22 @@ classdef ConnectionReader < handle
             
             % read signature
             sign = fread(obj.fileId, 1, 'int32');
-            if sign~=obj.fileSignature
-                obj.throwError('Unknown file type');
+            if feof(obj.fileId) || sign~=obj.fileSignature
+                obj.throwError(['Unknown file type: ' num2str(sign)]);
                 return
             end
             
             % read version number
             version = fread(obj.fileId, 1, 'float32');
-            if floor(version) ~= obj.fileVersionMajor
+            if feof(obj.fileId) || floor(version) ~= obj.fileVersionMajor
                 % check major number: must match
                 obj.throwError(['File must be of version ' ...
                     num2str(obj.fileVersionMajor) '.x (Version ' ...
                     num2str(version) ' found'])
                 return
             end
-            if floor((version-obj.fileVersionMajor)*10.01)<obj.fileVersionMinor
+            if feof(obj.fileId) ...
+					|| floor((version-obj.fileVersionMajor)*10.01)<obj.fileVersionMinor
                 % check minor number: extract first digit after decimal
                 % point
                 % multiply 10.01 instead of 10 to avoid float rounding
@@ -254,8 +255,8 @@ classdef ConnectionReader < handle
             
             % read connection ID
             obj.connId = fread(obj.fileId, 1, 'int16');
-            if obj.connId<0
-                obj.throwError('Could not find valid connection ID.')
+            if feof(obj.fileId) || obj.connId<0
+                obj.throwError(['Could not find valid connection ID.'])
                 return
             end
             
@@ -263,8 +264,12 @@ classdef ConnectionReader < handle
             obj.grpIdPre = fread(obj.fileId, 1, 'int32');
 			obj.gridPre  = fread(obj.fileId, [1 3],'int32');
             obj.nNeurPre = prod(obj.gridPre);
-            if obj.grpIdPre<0 || obj.nNeurPre<=0 || sum(obj.gridPre<=0)>0
-                obj.throwError('Could not find valid pre-group info.')
+            if feof(obj.fileId) || obj.grpIdPre<0 || obj.nNeurPre<=0 || sum(obj.gridPre<=0)>0
+                obj.throwError(['Could not find valid pre-group info ' ...
+					'(grpId=' num2str(obj.grpIdPre) ', nNeur=' ...
+					num2str(obj.nNeurPre) ', grid=[' ...
+					num2str(obj.gridPre(1)) ' ' num2str(obj.gridPre(2)) ...
+					' ' num2str(obj.gridPre(3)) '])'])
                 return
             end
             
@@ -272,15 +277,20 @@ classdef ConnectionReader < handle
             obj.grpIdPost = fread(obj.fileId, 1, 'int32');
 			obj.gridPost  = fread(obj.fileId, [1 3],'int32');
             obj.nNeurPost = prod(obj.gridPost);
-            if obj.grpIdPost<0 || obj.nNeurPost<=0 || sum(obj.gridPost<=0)>0
-                obj.throwError('Could not find valid post-group info.')
+            if feof(obj.fileId) || obj.grpIdPost<0 || obj.nNeurPost<=0 || sum(obj.gridPost<=0)>0
+                obj.throwError(['Could not find valid post-group info ' ...
+					'(grpId=' num2str(obj.grpIdPost) ', nNeur=' ...
+					num2str(obj.nNeurPost) ', grid=[' ...
+					num2str(obj.gridPost(1)) ' ' num2str(obj.gridPost(2)) ...
+					' ' num2str(obj.gridPost(3)) '])'])
                 return
             end
             
             % read number of synapses
             obj.nSynapses = fread(obj.fileId, 1, 'int32');
-            if obj.nSynapses<=0
-                obj.throwError('Could not find valid number of synapses.')
+            if feof(obj.fileId) || obj.nSynapses<=0
+                obj.throwError(['Could not find valid number of ' ...
+					'synapses (' num2str(obj.nSynapses) ')'])
                 return
             end
             
