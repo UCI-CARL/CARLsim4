@@ -1,8 +1,5 @@
 /*!
 
-After you downloaded the zip, what to do. Mention ECJ installation chapter. FYI, Google Test is installed
-automatically (give path). If you want more info on testing, go to \ref ch11_regression_suite
-
 \page ch1_getting_started Chapter 1: Getting Started
 
 \tableofcontents
@@ -103,19 +100,17 @@ appropriate subsection.
 
 \subsection ch1s2s1_linux 1.2.1 Linux
 
-Instructions for Linux installation assume you are using the Bash shell. Enter the unzipped
-CARLsim directory. This directory will be referred to as the 'CARLsim root
-directory' for the remainder of the install instructions. CARLsim users next have to set
-installation specific variables such as information about GPU devices, CUDA Toolkit version, and
-desired installation location.
+Instructions for Linux installation assume you are using the Bash shell. After you have unzipped
+the downloaded CARLsim files, you next have to set installation specific environment-variables such
+as information about GPU devices, CUDA Toolkit version, and the desired installation location.
 
 The desired installation location of the CARLsim library is specified with the
 <tt>CARLSIM_LIB_DIR</tt> variable. The major and minor compute capability numbers of your
 CUDA-capable GPU device must be specified by setting the <tt>CUDA_MAJOR_NUM</tt> and
-<tt>CUDA_MINOR_NUM</tt> variables. Next <tt>CUDA_INSTALL_PATH</tt> variable must be set. This
-variable points to where CUDA is installed. Finally, the CUDA Toolkit version must be set with
-the <tt>CARLSIM_CUDAVER</tt> variable. <tt>CARLSIM_FASTMATH</tt>, <tt>CARLSIM_CUOPTLEVEL</tt>, and
-<tt>CARLSIM_DEBUG</tt> are optional settings. These settings affect the degree of fastmath
+<tt>CUDA_MINOR_NUM</tt> variables, respectively. Next <tt>CUDA_INSTALL_PATH</tt> variable must be
+set. This variable points to where CUDA is installed. Finally, the CUDA Toolkit version must be set
+with the <tt>CARLSIM_CUDAVER</tt> variable. <tt>CARLSIM_FASTMATH</tt>, <tt>CARLSIM_CUOPTLEVEL</tt>,
+and <tt>CARLSIM_DEBUG</tt> are optional settings. These settings affect the degree of fastmath
 optimization (off by default), the degree of CUDA optimization (off by default), and whether or
 not to include debugging information (off by default).
 
@@ -125,10 +120,11 @@ not defined in the .bashrc file, the values defined in the <tt>user.mk</tt> file
 
 \code
 # set CARLsim variables
+export CARLSIM_LIB_DIR=/opt/CARL/CARLsim
 export CARLSIM_CUDAVER=6
 export CUDA_MAJOR_NUM=3
 export CUDA_MINOR_NUM=5
-export CARLSIM_SRC_DIR=~/Project/CARLsim
+export CUDA_INSTALL_PATH=/usr/local/cuda
 \endcode
 
 To make sure these settings go into effect, you can either type: \code source ~/.bashrc \endcode or
@@ -203,28 +199,77 @@ For more information on how to use the regression suite, please see \ref ch11_re
 \see \ref ch10_ecj
 \see \ref ch11_regression_suite
 
-\section ch1s3_configuration 1.3 Configuration
+\section ch1s3_documentation 1.3 Documentation
 \author Kristofor D. Carlson
 
-This section discusses further configuration options with the user.mk file.
+CARLsim uses <a href="http://www.stack.nl/~dimitri/doxygen/">doxygen</a> to automatically generate
+HTML documentation for the C/C++ source code. Additionally, the user-guide you are reading and the
+tutorial are written in doxygen. To generate the documentation in Linux, enter the <tt>doc</tt>
+directory found in the CARLsim root directory and run the documentation generation script:
 
+\code ./makedoc \endcode
 
-\subsection ch1s3s1_linux_config 1.3.1 Linux Configuration
-\subsection ch1s3s1_windows_config 1.3.1 Windows Configuration
+\TODO Windows doc gen - TS or SL
 
-\since v3.0
+\since 3.0
 
-\section ch1s4_generating_documentation 1.4 Generating Documentation
+\section ch1s4_project_workflow 1.4 Project Workflow
 \author Kristofor D. Carlson
 
+\section ch1s4s1_linux_project_workflow 1.4.1
 
-\section ch1s5_project_workflow 1.5 Project Workflow
+The project workflow is as follows. New users should start with the hello_world project found in the
+<tt>projects</tt> directory. The Makefile provided in the directory was made so that users would
+only have to modify a small portion of Makefile to build their own custom project. Below is the
+modifiable portion of the Makefile:
 
-\TODO KDC
-How to get started with your project. Project template, maybe user.mk.
+\code
+# Makefile for building project program from the CARLsim library
 
-\TODO Kristofor
-Makefile talk
+# NOTE: if you are compiling your code in a directory different from
+# examples/<example_name> or projects/<project_name> then you need to either
+# move the configured user.mk file to this directory or set the path to
+# where CARLsim can find the user.mk.
+USER_MK_PATH = ../../
+include $(USER_MK_PATH)user.mk
+
+project := hello_world
+output := *.dot *.dat *.log *.csv
+\endcode
+
+You have to first point to <tt>USER_MK_PATH</tt> variable to the correct location of the <tt>
+user.mk</tt> file. This is because the <tt>user.mk</tt> file has the correct compilation and
+linking flags. If the user creates their own project, they need only copy their <tt>user.mk</tt>
+file to the same directory or point to the location of the <tt>user.mk file</tt>. Next, you can
+change the name of the project by changing the <tt>project</tt> variable. You should not have
+to change any other variables in the Makefile to get the CARLsim program to compile.
+
+\warning You must name your .cpp file 'main_<project_name>.cpp' for the Makefile to compile
+correctly
+
+Finally, you can add files or file extensions that will be deleted with the 'make clean' or 'make
+distclean' commands by adding to the <tt>output</tt> variable.
+
+When a CARLsim program is run, it outputs any spike or synaptic weight data to the results folder in
+the directory in which it was run by default. When 'make clean' is run, the binary and output files
+are deleted by default, but the contents of the results directory are not deleted. When 'make
+distclean' is run, the binary, output files, and contents of the results directory are deleted.
+
+\warning When 'make distclean' is called. All data files in the results directory will be deleted!
+
+In general, users may find themselves most productive creating their own project directory in the
+<tt>projects</tt> directory and running their simulations with that folder. At the same time, users
+use the CARLsim Offline Analysis Toolkit (OAT) MATLAB scripts to analyze the data files output to
+the <tt>results</tt> directory after every simulation. This provides users with information about
+their simulation. Often times, it makes the most sense to run CARLsim simulations for small amounts
+of time while designing the spiking neural networks as the OAT scripts can provide valuable feedback
+as to how the network is behaving. For more information about CARLsim data files or the OAT, please
+see \ref ch7_monitoring or \ref ch9_visualization
+
+\section ch1s4s2_windows_project_workflow 1.4.2
+
+\TODO Windows project workflow - TS or SL
+
 
 \since v3.0
 

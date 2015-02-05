@@ -2,23 +2,89 @@
 CARLsim Installation
 ===============================================================================
 
-Use of CARLsim requires that the NVIDIA CUDA driver and NVIDIA CUDA SDK are 
-installed and functional.
-
-This code has been predominately developed under Linux and the build 
-instructions reflect that. While the code should function under MS Windows 
-these instructions are not applicable. We will hopefully release instructions 
-in the future on how to setup the code base under Visual Studio on Windows 
-based systems.
+-------------------------------------------------------------------------------
+A. Supported OS's
+-------------------------------------------------------------------------------
+CARLsim has been tested on the following platforms:
+- Windows 7
+- Ubuntu 12.04
+- Ubuntu 12.10
+- Ubuntu 13.04
+- Ubuntu 13.10
+- Ubuntu 14.04
+- Arch Linux
+- CentOS 6
 
 -------------------------------------------------------------------------------
-Installing NVIDIA CUDA SDK (For GPU support in CARLsim)
+B. NVIDIA CUDA and GPU Device Requirements
+-------------------------------------------------------------------------------
+CARLsim currently requires the NVIDIA CUDA parallel computing platform to be
+installed even if one does not plan to use the GPU implementation of CARLsim.
+Future versions of CARLsim that allow users to run the CPU implementation of
+CARLsim without installing CUDA are planned. CARLsim requires a CUDA-capable
+GPU with a compute capability of 2.0 or higher. To see the compute capability of
+your device you can check http://en.wikipedia.org/wiki/CUDA. CARLsim also
+requires CUDA Driver/Toolkit 5.0 or greater. For CUDA installation instructrions
+for your platform, please see https://developer.nvidia.com/cuda-zone.
+
+After CUDA has been installed, you can check the Driver/Toolkit version by
+running the command 'nvcc --version'. You can check the compute capability of
+your GPU device by running the command 'deviceQuery' located in the installed
+CUDA samples. The following instructions assume CUDA has been installed.
+
+-------------------------------------------------------------------------------
+C. Linux Install Instructions
+-------------------------------------------------------------------------------
+Instructions for Linux installation assume you are using the Bash shell.
+
+1) Download and unzip the CARLsim zipped files.
+
+2) Set installation specific environment-variables such as information about
+GPU devices, CUDA Toolkit version, and the desired installation location. The
+variables are described below:
+
+required variables:
+-------------------
+CARLSIM_LIB_DIR: desired installation location of the CARLsim library
+CUDA_INSTALL_PATH: location of CUDA installation
+CARLSIM_CUDAVER: CUDA driver/toolkit version number (major only e.g. 6.5 is 6.0)
+CUDA_MAJOR_NUM: Major number of CUDA GPU device
+CUDA_MINOR_NUM: Minor number of CUDA GPU device
+
+optional variables:
+-------------------
+CARLSIM_FASTMATH: fast-math optimization level (0-4). Default is 0 (off)
+CARLSIM_CUOPTLEVEL: CUDA optimization level (0-4). Default is 0 (off)
+CARLSIM_DEBUG: includes debugging info. 1=enabled, 0=disabled. Default is 0
+
+The easiest way to set these environment variables is to set them in your
+.bashrc file. The code snippet below shows the lines to be added to the end of
+your .bashrc file.
+
+\code
+# set CARLsim variables
+export CARLSIM_LIB_DIR=/opt/CARL/CARLsim
+export CUDA_INSTALL_PATH=/usr/local/cuda
+export CARLSIM_CUDAVER=6
+export CUDA_MAJOR_NUM=3
+export CUDA_MINOR_NUM=5
+\endcode
+
+To make sure these settings go into effect, you can either type: \code source ~/.bashrc \endcode or
+close the shell and open another one. To find the CUDA Toolkit version you are using you can type:
+
+
+Navigate to the CARLsim root directory (the directory in which this file is
+located).
+
+
+-------------------------------------------------------------------------------
+D. Windows Install Instructions
 -------------------------------------------------------------------------------
 
-Download and install NVIDIA CUDA SDK from: 
-https://developer.nvidia.com/cuda-downloads (see website for platform-dependent 
-installation instructions).  Currently NVIDIA SDK versions 3.1, 3.2, 5.0, 
-and 5.5 are supported.
+-------------------------------------------------------------------------------
+Generating Documentation
+-------------------------------------------------------------------------------
 
 
 -------------------------------------------------------------------------------
@@ -301,3 +367,30 @@ link your testing code to the static google test library files.
 For more information on how to compile code with google tests, please read the
 google tests README file found in the main directory of the google test source
 code or on the web at: https://code.google.com/p/googletest/.
+
+
+FAQ
+-------------------------------------------------------------------------------
+A. CUDA
+-------------------------------------------------------------------------------
+Once that has been accomplished, you may need to setup an environment variable
+that points to where the NVIDIA SDK is located if you are using older CUDA 
+toolkits (3.x). Under most linux systems, you would do the following:
+
+$ export NVIDIA_SDK=(SOME PATH)/NVIDIA_GPU_Computing_SDK
+
+where (SOME PATH) is the actual path to the SDK on your system. The environment 
+variable $NVIDIA_SDK will then be used in the CARLsim Makefile to compile your 
+network.
+
+Also, make sure that the environment variable $LD_LIBRARY_PATH exists 
+(should have been created during the installation of CUDA SDK). On a 64-bit 
+system this could look like this (however, depends on your CUDA install path):
+
+$ export LD_LIBRARY_PATH=/usr/local/cuda/lib64
+
+Finally, if you are using, CUDA version 5 or 6, the Makefile assumes the CUDA
+header files are found in $(CUDA_INSTALL_PATH)/samples/common/inc/. Here, we
+assume CUDA_INSTALL_PATH=/usr/local/cuda. If this is incorrect, please change
+that variable in the user.mk file or set that environment variable.
+
