@@ -764,12 +764,12 @@ classdef ConnectionMonitor < handle
 					|| strcmpi(obj.plotType,'responsefield')
 				% reshape to 3-D matrix
 				obj.weights = reshape(obj.weights, ...
-					obj.CR.getNumSnapshots(), ...
+					obj.CR.getNumNeuronsPost(), ...
 					obj.CR.getNumNeuronsPre(), ...
-					obj.CR.getNumNeuronsPost());
+					obj.CR.getNumSnapshots());
 				
 				% reshape for plotting
-				obj.weights = permute(obj.weights,[3 2 1]); % Y X T
+% 				obj.weights = permute(obj.weights,[2 1 3]); % Y X T
 			elseif strcmpi(obj.plotType,'histogram')
 				obj.plotHistBins = linspace(0, obj.plotMaxWt, ...
 					obj.plotHistNumBins);
@@ -892,11 +892,24 @@ classdef ConnectionMonitor < handle
 						wts = reshape(wts,grid3DPost);
 
 						% find RF in same z-plane
-						zPre = floor( (neurIdPre-1)/grid3DPre(1)/grid3DPre(2) );
+						% for this: find z-coordinate of post, compare to
+						% all z-coordinates of pre, find the match
+						zPool = floor( (neurIdPre-1)/grid3DPre(1)/grid3DPre(2) );
+						zPre = zPool - (grid3DPre(3)-1.0)/2.0;
+						zPost = (0:grid3DPost(3)-1) - (grid3DPost(3)-1.0)/2.0;
+						zPostIdx = zPre==zPost; % find post-coord in all pre
+						
+						if sum(zPostIdx)==0
+							% this pre-neuron does not connect to any
+							% post-neurons in the same plane
+							continue;
+						end
 						
 						% plot RF
 						subplot(nRows,nCols,idx)
-						imagesc(wts(:,:,zPre+1)', [0 obj.plotMaxWt])
+						imagesc(wts(:,:,zPostIdx)', [0 obj.plotMaxWt])
+						axis equal
+ 						axis([1 grid3DPost(1) 1 grid3DPost(2)])
 						if grid3DPost(1)>1
 							set(gca,'XTick',[1 grid3DPost(1)/2.0 grid3DPost(1)])
 							set(gca,'XTickLabel',[-grid3DPost(1)/2.0 0 grid3DPost(1)/2.0])
@@ -913,6 +926,9 @@ classdef ConnectionMonitor < handle
 						end
 						xlabel('x')
 						ylabel('y')
+						title({[obj.grpPreName '->' obj.grpPostName ', t=' ...
+							num2str(obj.timeStamps(frameNr)) 'ms'],['wt = [0 , ' ...
+							num2str(obj.plotMaxWt) '], z=' num2str(zPre)]})
 						
 						% if enabled, display the frame number in lower left corner
 						if dispFrameNr
@@ -952,11 +968,18 @@ classdef ConnectionMonitor < handle
 						zPost = zPool - (grid3DPost(3)-1.0)/2.0;
 						zPre = (0:grid3DPre(3)-1) - (grid3DPre(3)-1.0)/2.0;
 						zPreIdx = zPre==zPost; % find post-coord in all pre
-						% TODO: what if zPreIdx is empty?
+						
+						if sum(zPreIdx)==0
+							% this pre-neuron does not connect to any
+							% post-neurons in the same plane
+							continue;
+						end
 						
 						% plot RF
 						subplot(nRows,nCols,idx)
 						imagesc(wts(:,:,zPreIdx)', [0 obj.plotMaxWt])
+						axis equal
+ 						axis([1 grid3DPre(1) 1 grid3DPre(2)])
 						if grid3DPre(1)>1
 							set(gca,'XTick',[1 grid3DPre(1)/2.0 grid3DPre(1)])
 							set(gca,'XTickLabel',[-grid3DPre(1)/2.0 0 grid3DPre(1)/2.0])
@@ -973,7 +996,10 @@ classdef ConnectionMonitor < handle
 						end
 						xlabel('x')
 						ylabel('y')
-
+						title({[obj.grpPreName '->' obj.grpPostName ', t=' ...
+							num2str(obj.timeStamps(frameNr)) 'ms'],['wt = [0 , ' ...
+							num2str(obj.plotMaxWt) '], z=' num2str(zPost)]})
+						
 						% if enabled, display the frame number in lower left corner
 						if dispFrameNr
 							text(2,size(wts,2)-1,num2str(frameNr), ...
@@ -985,10 +1011,6 @@ classdef ConnectionMonitor < handle
 				obj.throwError(['Unrecognized plot type "' obj.plotType '".'])
 				return
 			end
-			
-			title([obj.grpPreName '->' obj.grpPostName ', t=' ...
-				num2str(obj.timeStamps(frameNr)) 'ms, wt = [0 , ' ...
-				num2str(obj.plotMaxWt) ']'])
 		end
 		
 		function throwError(obj, errorMsg, errorMode)
