@@ -37,9 +37,7 @@ C. Linux Install Instructions
 -------------------------------------------------------------------------------
 Instructions for Linux installation assume you are using the Bash shell.
 
-1) Download and unzip the CARLsim zipped files.
-
-2) Set installation specific environment-variables such as information about
+1) Set installation specific environment-variables such as information about
 GPU devices, CUDA Toolkit version, and the desired installation location. The
 variables are described below:
 
@@ -70,14 +68,29 @@ export CUDA_MAJOR_NUM=3
 export CUDA_MINOR_NUM=5
 \endcode
 
-To make sure these settings go into effect, you can either type: \code source ~/.bashrc \endcode or
-close the shell and open another one. To find the CUDA Toolkit version you are using you can type:
+To make sure these settings go into effect, you can either type:
 
+'source ~/.bashrc'
 
-Navigate to the CARLsim root directory (the directory in which this file is
-located).
+or close the shell and open another one. To find the CUDA Toolkit version you
+are using you can type:
 
+'nvcc --version'
 
+To fined the compute capability of yoru GPU device, you can run the
+'deviceQuery' binary found in the installed CUDA samples.
+
+2) Once the environment variables have been set, enter the unzipped directory and
+run:
+
+'make && sudo make install'
+
+(sudo should only required if CARLSIM_LIB_DIR points to a location outside of
+your home directory)
+
+The CARLsim library should now be installed and ready to use. Please read the
+user-guide for tips on getting started building spiking neural networks with
+CARLsim.
 -------------------------------------------------------------------------------
 D. Windows Install Instructions
 -------------------------------------------------------------------------------

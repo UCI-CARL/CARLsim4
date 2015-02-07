@@ -121,10 +121,10 @@ not defined in the .bashrc file, the values defined in the <tt>user.mk</tt> file
 \code
 # set CARLsim variables
 export CARLSIM_LIB_DIR=/opt/CARL/CARLsim
+export CUDA_INSTALL_PATH=/usr/local/cuda
 export CARLSIM_CUDAVER=6
 export CUDA_MAJOR_NUM=3
 export CUDA_MINOR_NUM=5
-export CUDA_INSTALL_PATH=/usr/local/cuda
 \endcode
 
 To make sure these settings go into effect, you can either type: \code source ~/.bashrc \endcode or
