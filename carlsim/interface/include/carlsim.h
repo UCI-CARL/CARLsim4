@@ -173,7 +173,9 @@ public:
 	 * \param[in] connType   connection type. "random": random connectivity. "one-to-one": connect the i-th neuron in
 	 *                       pre to the i-th neuron in post. "full": connect all neurons in pre to all neurons in post.
 	 *                       "full-no-direct": same as "full", but i-th neuron of grpId1 will not be connected to the
-	 *                       i-th neuron of grpId2.
+	 *                       i-th neuron of grpId2. "gaussian": distance-dependent weights depending on the RadiusRF
+	 *                       struct, where neurons coding for the same location have weight initWt, and neurons lying
+	 *                       on the border of the RF have weight 0.1*initWt. 
 	 * \param[in] wt         a struct specifying the range of weight magnitudes (initial value and max value). Weights
 	 *                       range from 0 to maxWt, and are initialized with initWt. All weight values should be
 	 *                       non-negative (equivalent to weight *magnitudes*), even for inhibitory connections.
@@ -202,12 +204,18 @@ public:
 	 *                       Otherwise, if the radius is a positive real number, the RF radius will be exactly this
 	 *                       number. Call RadiusRF with only one argument to make that radius apply to all 3 dimensions.
 	 *                       Examples:
-	 *                         * Create a 2D Gaussian RF of radius 10 in x and y: RadiusRF(10, 10, 0)
+	 *                         * Create a 2D Gaussian RF of radius 10 in z-plane: RadiusRF(10, 10, 0)
+	 *                           Neuron pre will be connected to neuron post iff (pre.x-post.x)^2+(pre.y-post.y)^2<=100
+	 *                           and pre.z==post.z.
 	 *                         * Create a 2D heterogeneous Gaussian RF (an ellipse) with semi-axes 10 and 5:
 	 *                           RadiusRF(10, 5, 0)
-	 *                         * Connect only the third dimension: RadiusRF(0, 0, 1)
+	 *                           Neuron pre will be connected to neuron post iff
+	 *                           (pre.x-post.x)/100 + (pre.y-post.y)^2/25 <= 1 and pre.z==post.z.
 	 *                         * Connect all, no matter the RF (default): RadiusRF(-1, -1, -1)
-	 *                         * Don't connect anything (silly, not allowed): RadiusRF(0, 0, 0)
+	 *                         * Connect one-to-one: RadiusRF(0, 0, 0)
+	 *                           Neuron pre will be connected to neuron post iff pre.x==post.x, pre.y==post.y,
+	 *                           pre.z==post.z.
+	 *                           Note: Use CARLsim::connect with type "one-to-one" instead.
 	 * \param[in] synWtType  specifies whether the synapse should be of fixed value (SYN_FIXED) or plastic (SYN_PLASTIC)
 	 * \param[in] mulSynFast a multiplication factor to be applied to the fast synaptic current (AMPA in the case of
 	 *                       excitatory, and GABAa in the case of inhibitory connections). Default: 1.0

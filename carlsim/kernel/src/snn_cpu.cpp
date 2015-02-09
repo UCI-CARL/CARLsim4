@@ -147,31 +147,6 @@ short int CpuSNN::connect(int grpId1, int grpId2, const std::string& _type, floa
 	else if ( _type.find("full") != std::string::npos) {
 		newInfo->type 	= CONN_FULL;
 
-/*			std::vector<double> nonZeroRadii;
-			if (radX!=0)
-				nonZeroRadii.push_back( (radX<0) ? grp_Info)
-
-			int numZeros = (radX==0) + (radY==0) + (radZ==0); // number of radii that are zero
-			if (numZeros==0) {
-				// ellipsoid
-				int nPost = 4.0/3.0*M_PI*( (radX<0)?grp_Info[grpId2].SizeX:radX )*( (radY<0)?grp_Info[grpId2].SizeY:radY )*( (radZ<0)?grp_Info[grpId2].SizeZ:radZ );
-				int nPre = 4.0/3.0*M_PI*( (radX<0)?grp_Info[grpId1].SizeX:radX )*( (radY<0)?grp_Info[grpId1].SizeY:radY )*( (radZ<0)?grp_Info[grpId1].SizeZ:radZ );
-				newInfo->numPostSynapses = nPost;
-				newInfo->numPreSynapses = nPre;
-			} else if (numZeros==1) {
-				// ellipse
-			} else if (numZeros==2) {
-				// line
-			} else {
-				// no connections
-				newInfo->numPostSynapses = 0;
-				newInfo->numPreSynapses = 0;
-				KERNEL_WARN("Connection ID %d: %s(%d) => %s(%d) has zero connections. Increase RadiusRF()",
-					numConnections+1, grp_Info2[grpId1].Name.c_str(), grpId1,
-					grp_Info2[grpId2].Name.c_str(), grpId2);
-			}
-*/
-
 		newInfo->numPostSynapses	= grp_Info[grpId2].SizeN;
 		newInfo->numPreSynapses   = grp_Info[grpId1].SizeN;
 	}
@@ -180,54 +155,10 @@ short int CpuSNN::connect(int grpId1, int grpId2, const std::string& _type, floa
 		newInfo->numPostSynapses	= 1;
 		newInfo->numPreSynapses	= 1;
 	} else if ( _type.find("gaussian") != std::string::npos) {
-			newInfo->type   = CONN_GAUSSIAN;
-
-			// we need to estimate the number of connections per neuron
-			// the exact solution would be to solve the integral
-			// \int_0^radZ \int_0^radY \int_0^radX p * exp(- x^2/(2*radX^2) - y^2/(2*radY^2) - z^2/(2*radZ^2) dx dy dz
-			// 3D ellipsoid: ( pi^3/2*a*b*c*erf^3(1/sqrt(2)) ) / (2*sqrt(2))
-			// 2D ellipse: pi/2*a*b*erf^2(1/sqrt(2))
-			// 1D line: sqrt(pi/2)*a*erf(1/sqrt(2))
-
-			// here we assume that p=1.0 (worst-case scenario) and compute the volume (3D), area (2D) or length (1D)
-			int numSyn = -1;
-			int numZeroRadii = (radX<=0) + (radY<=0) + (radZ<=0);
-			switch (numZeroRadii) {
-				case 0:
-					// 3D ellipsoid: 4/3*pi*a*b*c
-					numSyn = ceil(4.1887902*radX*radY*radZ);
-					break;
-				case 1:
-					// 2D ellipse: pi*a*b
-					if (radX<=0)
-						numSyn = ceil(M_PI*radY*radZ)*radX;
-					else if (radY<=0)
-						numSyn = ceil(M_PI*radX*radZ)*radY;
-					else if (radZ<=0)
-						numSyn = ceil(M_PI*radX*radY)*radZ;
-					break;
-				case 2:
-					if (radX>0)
-						numSyn = ceil(2*radX)*radY*radZ;
-					else if (radY>0)
-						numSyn = ceil(2*radY)*radX*radZ;
-					else if (radZ>0)
-						numSyn = ceil(2*radZ)*radX*radY;
-					break;
-				case 3:
-					// 3D no restrictions
-					break;
-				default:
-					KERNEL_ERROR("Invalid number of negative semi-principal axes: %d",numZeroRadii);
-			}
-
-//printf("Radius=(%1.2f,%1.2f,%1.2f) -> numSyn=%d\n",radX,radY,radZ,numSyn);
-
-			// estimate the max number of synapses going out of each pre-synaptic neuron (maxM)
-			newInfo->numPostSynapses = 1000;//max(7, min(numSyn+10, szPost.N));
-
-			// estimate the max number of synapses coming in to each post-synaptic neuron (maxPreM)
-			newInfo->numPreSynapses = 1000;//max(7, min(numSyn+10, szPre.N));
+		newInfo->type   = CONN_GAUSSIAN;
+		// the following will soon go away, just assume the worst case for now
+		newInfo->numPostSynapses	= grp_Info[grpId2].SizeN;
+		newInfo->numPreSynapses   = grp_Info[grpId1].SizeN;
 	} else {
 		KERNEL_ERROR("Invalid connection type (should be 'random', 'full', 'one-to-one', 'full-no-direct', or 'gaussian')");
 		exitSimulation(-1);
@@ -2685,11 +2616,13 @@ void CpuSNN::connectGaussian(grpConnectInfo_t* info) {
 			if (gauss < 0.1)
 				continue;
 
-			uint8_t dVal = info->minDelay + rand() % (info->maxDelay - info->minDelay + 1);
-			assert((dVal >= info->minDelay) && (dVal <= info->maxDelay));
-			float synWt = gauss * info->initWt; // scale weight according to gauss distance
-			setConnection(grpSrc, grpDest, i, j, synWt, info->maxWt, dVal, info->connProp, info->connId);
-			info->numberOfConnections++;
+			if (drand48() < info->p) {
+				uint8_t dVal = info->minDelay + rand() % (info->maxDelay - info->minDelay + 1);
+				assert((dVal >= info->minDelay) && (dVal <= info->maxDelay));
+				float synWt = gauss * info->initWt; // scale weight according to gauss distance
+				setConnection(grpSrc, grpDest, i, j, synWt, info->maxWt, dVal, info->connProp, info->connId);
+				info->numberOfConnections++;
+			}
 		}
 	}
 
@@ -3510,141 +3443,22 @@ double CpuSNN::getRFDist3D(const RadiusRF& radius, const Point3D& pre, const Poi
 	// that if you look at the post neuron, it will receive input from neurons that code for locations no more than
 	// 10 pixels away.
 
-	// inverse semi-principal axes of the ellipsoid
-	// avoid division by zero by working with inverse of semi-principal axes (set to large value)
-	double aInv = (radius.radX>0) ? 1.0/radius.radX : 1e+20;
-	double bInv = (radius.radY>0) ? 1.0/radius.radY : 1e+20;
-	double cInv = (radius.radZ>0) ? 1.0/radius.radZ : 1e+20;
-
 	// ready output argument
 	// CpuSNN::isPoint3DinRF() will return true (connected) if rfDist e[0.0, 1.0]
 	double rfDist = -1.0;
 
-	// there are 27 different cases to consider
-	// we might be able to collapse some of them, but for now it's more important that it simply works
 	// pre and post are connected in a generic 3D ellipsoid RF if x^2/a^2 + y^2/b^2 + z^2/c^2 <= 1.0, where
 	// x = pre.x-post.x, y = pre.y-post.y, z = pre.z-post.z
 	// x < 0 means:  connect if y and z satisfy some constraints, but ignore x
 	// x == 0 means: connect if y and z satisfy some constraints, and enforce pre.x == post.x
-	if (radius.radX < 0) {
-		// x < 0
-		if (radius.radY < 0) {
-			// x < 0 && y < 0
-			if (radius.radZ < 0) {
-				// x < 0 && y < 0 && z < 0
-				rfDist = 0.0; // always true
-			} else if (radius.radZ == 0) {
-				// x < 0 && y < 0 && z == 0
-				rfDist = (pre.z == post.z) ? 0.0 : -1.0;
-			} else {
-				// x < 0 && y < 0 && z > 0
-				rfDist = (pre.z-post.z)*(pre.z-post.z)*cInv*cInv;
-			}
-		} else if (radius.radY == 0) {
-			// x < 0 && y == 0
-			if (radius.radZ < 0) {
-				// x < 0 && y == 0 && z < 0
-				rfDist = (pre.y == post.y) ? 0.0 : -1.0;
-			} else if (radius.radZ == 0) {
-				// x < 0 && y == 0 && z == 0
-				rfDist = (pre.y == post.y && pre.z == post.z) ? 0.0 : -1.0;
-			} else {
-				// x < 0 && y == 0 && z > 0
-				rfDist = (pre.y == post.y) ? (pre.z-post.z)*(pre.z-post.z)*cInv*cInv : -1.0;
-			}
-		} else {
-			// x < 0 && y > 0
-			if (radius.radZ < 0) {
-				// x < 0 && y > 0 && z < 0
-				rfDist = (pre.y-post.y)*(pre.y-post.y)*bInv*bInv;
-			} else if (radius.radZ == 0) {
-				// x < 0 && y > 0 && z == 0
-				rfDist = (pre.z == post.z) ? (pre.y-post.y)*(pre.y-post.y)*bInv*bInv : -1.0;
-			} else {
-				// x < 0 && y > 0 && z > 0
-				rfDist = norm((pre-post)*Point3D(0.0,bInv,cInv));
-			}
-		}
-	} else if (radius.radX == 0) {
-		// x == 0
-		if (radius.radY < 0) {
-			// x == 0 && y < 0
-			if (radius.radZ < 0) {
-				// x == 0 && y < 0 && z < 0
-				rfDist = (pre.x == post.x) ? 0.0 : -1.0;
-			} else if (radius.radZ == 0) {
-				// x == 0 && y < 0 && z == 0
-				rfDist = (pre.x == post.x && pre.z == post.z) ? 0.0 : -1.0;
-			} else {
-				// x == 0 && y < 0 && z > 0
-				rfDist = (pre.x == post.x) ? (pre.z-post.z)*(pre.z-post.z)*cInv*cInv : -1.0;
-			}
-		} else if (radius.radY == 0) {
-			// x == 0 && y == 0
-			if (radius.radZ < 0) {
-				// x == 0 && y == 0 && z < 0
-				rfDist = (pre.x == post.x && pre.y == post.y) ? 0.0 : -1.0;
-			} else if (radius.radZ == 0) {
-				// x == 0 && y == 0 && z == 0
-				rfDist = (pre.x == post.x && pre.y == post.y && pre.z == post.z) ? 0.0 : -1.0;
-			} else {
-				// x == 0 && y == 0 && z > 0
-				rfDist = (pre.x == post.x && pre.y == post.y) ? (pre.z-post.z)*(pre.z-post.z)*cInv*cInv : -1.0;
-			}
-		} else {
-			// x == 0 && y > 0
-			if (radius.radZ < 0) {
-				// x == 0 && y > 0 && z < 0
-				rfDist = (pre.x == post.x) ? (pre.y-post.y)*(pre.y-post.y)*bInv*bInv : -1.0;
-			} else if (radius.radZ == 0) {
-				// x == 0 && y > 0 && z == 0
-				rfDist = (pre.x == post.x && pre.z == post.z) ? (pre.y-post.y)*(pre.y-post.y)*bInv*bInv : -1.0;
-			} else {
-				// x == 0 && y > 0 && z > 0
-				rfDist = (pre.x == post.x) ? norm((pre-post)*Point3D(0.0,bInv,cInv)) : -1.0;
-			}
-		}
+	if (radius.radX==0 && pre.x!=post.x || radius.radY==0 && pre.y!=post.y || radius.radZ==0 && pre.z!=post.z) {
+		rfDist = -1.0;
 	} else {
-		// x > 0
-		if (radius.radY < 0) {
-			// x > 0 && y < 0
-			if (radius.radZ < 0) {
-				// x > 0 && y < 0 && z < 0
-				rfDist = (pre.x-post.x)*(pre.x-post.x)*aInv*aInv;
-			} else if (radius.radZ == 0) {
-				// x > 0 && y < 0 && z == 0
-				rfDist = (pre.z == post.z) ? (pre.x-post.x)*(pre.x-post.x)*aInv*aInv : -1.0;
-			} else {
-				// x > 0 && y < 0 && z > 0
-				rfDist = norm((pre-post)*Point3D(aInv,0.0,cInv));
-			}
-		} else if (radius.radY == 0) {
-			// x > 0 && y == 0
-			if (radius.radZ < 0) {
-				// x > 0 && y == 0 && z < 0
-				rfDist = (pre.y == post.y) ? (pre.x-post.x)*(pre.x-post.x)*aInv*aInv : -1.0;
-			} else if (radius.radZ == 0) {
-				// x > 0 && y == 0 && z == 0
-				rfDist = (pre.y == post.y && pre.z == post.z) ? (pre.x-post.x)*(pre.x-post.x)*aInv*aInv : -1.0;
-			} else {
-				// x > 0 && y == 0 && z > 0
-				rfDist = (pre.y == post.y) ? norm((pre-post)*Point3D(aInv,0.0,cInv)) : -1.0;
-			}
-		} else {
-			// x > 0 && y > 0
-			if (radius.radZ < 0) {
-				// x > 0 && y > 0 && z < 0
-				rfDist = norm((pre-post)*Point3D(aInv,bInv,0.0));
-			} else if (radius.radZ == 0) {
-				// x > 0 && y > 0 && z == 0
-				rfDist = (pre.z == post.z) ? norm((pre-post)*Point3D(aInv,bInv,0.0)) : -1.0;
-//				if (pre.z == post.z && post.x==0 && post.y==0 && post.z==0)
-//					std::cout << "x>0, y>0, z==0: " << pre << " " << post << " rfDist=" << rfDist << std::endl;
-			} else {
-				// x > 0 && y > 0 && z > 0
-				rfDist = norm((pre-post)*Point3D(aInv,bInv,cInv));
-			}
-		}
+		// 3D ellipsoid: x^2/a^2 + y^2/b^2 + z^2/c^2 <= 1.0
+		double xTerm = (radius.radX<=0) ? 0.0 : pow(pre.x-post.x,2)/pow(radius.radX,2);
+		double yTerm = (radius.radY<=0) ? 0.0 : pow(pre.y-post.y,2)/pow(radius.radY,2);
+		double zTerm = (radius.radZ<=0) ? 0.0 : pow(pre.z-post.z,2)/pow(radius.radZ,2);
+		rfDist = xTerm + yTerm + zTerm;
 	}
 
 	return rfDist;

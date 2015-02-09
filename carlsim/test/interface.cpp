@@ -33,7 +33,6 @@ TEST(Interface, connectDeath) {
 	EXPECT_DEATH(sim->connect(g1,g2,"random",RangeWeight(0.0f,0.01f,0.1f),0.1f),""); // SYN_FIXED wt.init!=wt.max
 	EXPECT_DEATH(sim->connect(g1,g2,"random",RangeWeight(0.0f,0.01f,0.1f),-0.1f),""); // prob<0
 	EXPECT_DEATH(sim->connect(g1,g2,"random",RangeWeight(0.0f,0.01f,0.1f),2.3f),""); // prob>1
-	EXPECT_DEATH(sim->connect(g1,g2,"random",RangeWeight(0.1f),0.1f,RangeDelay(1),RadiusRF(0,0,0)),""); // radius=0
 	EXPECT_DEATH(sim->connect(g1,g2,"one-to-one",RangeWeight(0.1f),0.1f,RangeDelay(1),RadiusRF(3,0,0)),""); // rad>0
 	EXPECT_DEATH(sim->connect(g1,g2,"random",RangeWeight(0.1f),0.1f,RangeDelay(1),RadiusRF(-1),SYN_FIXED,-1.0f,0.0f),""); // mulSynFast<0
 	EXPECT_DEATH(sim->connect(g1,g2,"random",RangeWeight(0.1f),0.1f,RangeDelay(1),RadiusRF(-1),SYN_FIXED,0.0f,-1.0f),""); // mulSynSlow<0
