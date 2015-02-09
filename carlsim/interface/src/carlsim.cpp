@@ -219,17 +219,18 @@ short int CARLsim::connect(int grpId1, int grpId2, const std::string& connType, 
 	UserErrors::assertTrue(grpId2!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName, grpId2str.str());
 	UserErrors::assertTrue(!isPoissonGroup(grpId2), UserErrors::WRONG_NEURON_TYPE, funcName, grpId2str.str() +
 		" is PoissonGroup, connect");
-	UserErrors::assertTrue(connType.compare("one-to-one")!=0
-		|| connType.compare("one-to-one")==0 && radRF.radX<=0 && radRF.radY<=0 && radRF.radZ<=0,
-		UserErrors::CANNOT_BE_LARGER, funcName, "Receptive field radius", "zero for type \"one-to-one\".");
 	UserErrors::assertTrue(wt.max>=0.0f, UserErrors::CANNOT_BE_NEGATIVE, funcName, "wt.max");
 	UserErrors::assertTrue(wt.min>=0.0f, UserErrors::CANNOT_BE_NEGATIVE, funcName, "wt.min");
 	UserErrors::assertTrue(wt.init>=0.0f, UserErrors::CANNOT_BE_NEGATIVE, funcName, "wt.init");
 	UserErrors::assertTrue(connProb>=0.0f && connProb<=1.0f, UserErrors::MUST_BE_IN_RANGE, funcName, 
 		"Connection Probability connProb", "[0,1]");
 	UserErrors::assertTrue(delay.min>0, UserErrors::MUST_BE_POSITIVE, funcName, "delay.min");
-	UserErrors::assertTrue(radRF.radX!=0 || radRF.radY!=0 || radRF.radZ!=0, UserErrors::CANNOT_BE_ZERO, funcName,
-		"Receptive field radius");
+	UserErrors::assertTrue(connType.compare("one-to-one")!=0
+		|| connType.compare("one-to-one")==0 && getGroupNumNeurons(grpId1) == getGroupNumNeurons(grpId2),
+		UserErrors::MUST_BE_IDENTICAL, funcName, "For type \"one-to-one\", number of neurons in pre and post");
+	UserErrors::assertTrue(connType.compare("gaussian")!=0
+		|| connType.compare("gaussian")==0 && (radRF.radX>-1 || radRF.radY>-1 || radRF.radZ>-1),
+		UserErrors::CANNOT_BE_NEGATIVE, funcName, "Receptive field radius for type \"gaussian\"");
 	UserErrors::assertTrue(synWtType==SYN_PLASTIC || synWtType==SYN_FIXED && wt.init==wt.max,
 		UserErrors::MUST_BE_IDENTICAL, funcName, "For fixed synapses, initWt and maxWt");
 	UserErrors::assertTrue(mulSynFast>=0.0f, UserErrors::CANNOT_BE_NEGATIVE, funcName, "mulSynFast");
@@ -238,6 +239,11 @@ short int CARLsim::connect(int grpId1, int grpId2, const std::string& connType, 
 	UserErrors::assertTrue(carlsimState_==CONFIG_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName,
 	 "CONFIG.");
 	assert(++numConnections_ <= MAX_nConnections);
+
+	// throw a warning if "one-to-one" is used in combination with a non-zero RF
+	if (connType.compare("one-to-one")==0 && (radRF.radX>0 || radRF.radY>0 || radRF.radZ>0)) {
+		userWarnings_.push_back("RadiusRF>0 will be ignored for connection type \"one-to-one\"");
+	}
 
 	// TODO: enable support for non-zero min
 	if (fabs(wt.min)>1e-15) {

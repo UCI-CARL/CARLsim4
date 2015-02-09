@@ -147,31 +147,6 @@ short int CpuSNN::connect(int grpId1, int grpId2, const std::string& _type, floa
 	else if ( _type.find("full") != std::string::npos) {
 		newInfo->type 	= CONN_FULL;
 
-/*			std::vector<double> nonZeroRadii;
-			if (radX!=0)
-				nonZeroRadii.push_back( (radX<0) ? grp_Info)
-
-			int numZeros = (radX==0) + (radY==0) + (radZ==0); // number of radii that are zero
-			if (numZeros==0) {
-				// ellipsoid
-				int nPost = 4.0/3.0*M_PI*( (radX<0)?grp_Info[grpId2].SizeX:radX )*( (radY<0)?grp_Info[grpId2].SizeY:radY )*( (radZ<0)?grp_Info[grpId2].SizeZ:radZ );
-				int nPre = 4.0/3.0*M_PI*( (radX<0)?grp_Info[grpId1].SizeX:radX )*( (radY<0)?grp_Info[grpId1].SizeY:radY )*( (radZ<0)?grp_Info[grpId1].SizeZ:radZ );
-				newInfo->numPostSynapses = nPost;
-				newInfo->numPreSynapses = nPre;
-			} else if (numZeros==1) {
-				// ellipse
-			} else if (numZeros==2) {
-				// line
-			} else {
-				// no connections
-				newInfo->numPostSynapses = 0;
-				newInfo->numPreSynapses = 0;
-				KERNEL_WARN("Connection ID %d: %s(%d) => %s(%d) has zero connections. Increase RadiusRF()",
-					numConnections+1, grp_Info2[grpId1].Name.c_str(), grpId1,
-					grp_Info2[grpId2].Name.c_str(), grpId2);
-			}
-*/
-
 		newInfo->numPostSynapses	= grp_Info[grpId2].SizeN;
 		newInfo->numPreSynapses   = grp_Info[grpId1].SizeN;
 	}
@@ -179,9 +154,13 @@ short int CpuSNN::connect(int grpId1, int grpId2, const std::string& _type, floa
 		newInfo->type 	= CONN_ONE_TO_ONE;
 		newInfo->numPostSynapses	= 1;
 		newInfo->numPreSynapses	= 1;
-	}
-	else {
-		KERNEL_ERROR("Invalid connection type (should be 'random', 'full', 'one-to-one', or 'full-no-direct')");
+	} else if ( _type.find("gaussian") != std::string::npos) {
+		newInfo->type   = CONN_GAUSSIAN;
+		// the following will soon go away, just assume the worst case for now
+		newInfo->numPostSynapses	= grp_Info[grpId2].SizeN;
+		newInfo->numPreSynapses   = grp_Info[grpId1].SizeN;
+	} else {
+		KERNEL_ERROR("Invalid connection type (should be 'random', 'full', 'one-to-one', 'full-no-direct', or 'gaussian')");
 		exitSimulation(-1);
 	}
 
@@ -2385,6 +2364,9 @@ void CpuSNN::buildNetwork() {
 						case CONN_ONE_TO_ONE:
 							connectOneToOne(newInfo);
 							break;
+						case CONN_GAUSSIAN:
+							connectGaussian(newInfo);
+							break;
 						case CONN_USER_DEFINED:
 							connectUserDefined(newInfo);
 							break;
@@ -2601,7 +2583,48 @@ void CpuSNN::connectFull(grpConnectInfo_t* info) {
 		}
 	}
 
-//	printf("numConnections=%d\n",info->numberOfConnections);
+	grp_Info2[grpSrc].sumPostConn += info->numberOfConnections;
+	grp_Info2[grpDest].sumPreConn += info->numberOfConnections;
+}
+
+void CpuSNN::connectGaussian(grpConnectInfo_t* info) {
+	int grpSrc = info->grpSrc;
+	int grpDest = info->grpDest;
+
+	// rebuild struct for easier handling
+	// adjust with sqrt(2) in order to make the Gaussian kernel depend on 2*sigma^2
+	RadiusRF radius(info->radX, info->radY, info->radZ);
+
+	for(int i = grp_Info[grpSrc].StartN; i <= grp_Info[grpSrc].EndN; i++)  {
+		Point3D loc_i = getNeuronLocation3D(i); // 3D coordinates of i
+		for(int j = grp_Info[grpDest].StartN; j <= grp_Info[grpDest].EndN; j++) { // j: the temp neuron id
+
+			// check whether pre-neuron location is in RF of post-neuron
+			Point3D loc_j = getNeuronLocation3D(j); // 3D coordinates of j
+
+			// make sure point is in RF
+			double rfDist = getRFDist3D(radius,loc_i,loc_j);
+			if (rfDist < 0.0 || rfDist > 1.0)
+				continue;
+
+			// if rfDist is valid, it returns a number between 0 and 1
+			// we want these numbers to fit to Gaussian weigths, so that rfDist=0 corresponds to max Gaussian weight
+			// and rfDist=1 corresponds to 0.1 times max Gaussian weight
+			// so we're looking at gauss = exp(-a*rfDist), where a such that exp(-a)=0.1
+			// solving for a, we find that a = 2.3026
+			double gauss = exp(-2.3026*rfDist);
+			if (gauss < 0.1)
+				continue;
+
+			if (drand48() < info->p) {
+				uint8_t dVal = info->minDelay + rand() % (info->maxDelay - info->minDelay + 1);
+				assert((dVal >= info->minDelay) && (dVal <= info->maxDelay));
+				float synWt = gauss * info->initWt; // scale weight according to gauss distance
+				setConnection(grpSrc, grpDest, i, j, synWt, info->maxWt, dVal, info->connProp, info->connId);
+				info->numberOfConnections++;
+			}
+		}
+	}
 
 	grp_Info2[grpSrc].sumPostConn += info->numberOfConnections;
 	grp_Info2[grpDest].sumPreConn += info->numberOfConnections;
@@ -2612,9 +2635,8 @@ void CpuSNN::connectOneToOne (grpConnectInfo_t* info) {
 	int grpDest = info->grpDest;
 	assert( grp_Info[grpDest].SizeN == grp_Info[grpSrc].SizeN );
 
-	// NOTE: RadiusRF does not make a difference here. Radius>0 is not allowed
+	// NOTE: RadiusRF does not make a difference here: ignore
 	for(int nid=grp_Info[grpSrc].StartN,j=grp_Info[grpDest].StartN; nid<=grp_Info[grpSrc].EndN; nid++, j++)  {
-		//uint8_t dVal = info->minDelay + (int)(0.5+(drand48()*(info->maxDelay-info->minDelay)));
 		uint8_t dVal = info->minDelay + rand() % (info->maxDelay - info->minDelay + 1);
 		assert((dVal >= info->minDelay) && (dVal <= info->maxDelay));
 		float synWt = getWeights(info->connProp, info->initWt, info->maxWt, nid, grpSrc);
@@ -3410,163 +3432,36 @@ bool CpuSNN::isNumNeuronsConsistent() {
 bool CpuSNN::isPoint3DinRF(const RadiusRF& radius, const Point3D& pre, const Point3D& post) {
 	// Note: RadiusRF rad is assumed to be the fanning in to the post neuron. So if the radius is 10 pixels, it means
 	// that if you look at the post neuron, it will receive input from neurons that code for locations no more than
+	// 10 pixels away. (The opposite is called a response/stimulus field.)
+
+	double rfDist = getRFDist3D(radius, pre, post);
+	return (rfDist >= 0.0 && rfDist <= 1.0);
+}
+
+double CpuSNN::getRFDist3D(const RadiusRF& radius, const Point3D& pre, const Point3D& post) {
+	// Note: RadiusRF rad is assumed to be the fanning in to the post neuron. So if the radius is 10 pixels, it means
+	// that if you look at the post neuron, it will receive input from neurons that code for locations no more than
 	// 10 pixels away.
 
-	// inverse semi-principal axes of the ellipsoid
-	// avoid division by zero by working with inverse of semi-principal axes (set to large value)
-	double aInv = (radius.radX>0) ? 1.0/radius.radX : 1e+20;
-	double bInv = (radius.radY>0) ? 1.0/radius.radY : 1e+20;
-	double cInv = (radius.radZ>0) ? 1.0/radius.radZ : 1e+20;
-
 	// ready output argument
-	// pre and post are connected, except if they fall in one of the following if-else cases
-	bool isInRF = false;
+	// CpuSNN::isPoint3DinRF() will return true (connected) if rfDist e[0.0, 1.0]
+	double rfDist = -1.0;
 
-	// there are 27 different cases to consider
-	// we might be able to collapse some of them, but for now it's more important that it simply works
 	// pre and post are connected in a generic 3D ellipsoid RF if x^2/a^2 + y^2/b^2 + z^2/c^2 <= 1.0, where
 	// x = pre.x-post.x, y = pre.y-post.y, z = pre.z-post.z
 	// x < 0 means:  connect if y and z satisfy some constraints, but ignore x
 	// x == 0 means: connect if y and z satisfy some constraints, and enforce pre.x == post.x
-	if (radius.radX < 0) {
-		// x < 0
-		if (radius.radY < 0) {
-			// x < 0 && y < 0
-			if (radius.radZ < 0) {
-				// x < 0 && y < 0 && z < 0
-				isInRF = true; // always true
-			} else if (radius.radZ == 0) {
-				// x < 0 && y < 0 && z == 0
-				isInRF = pre.z == post.z;
-			} else {
-				// x < 0 && y < 0 && z > 0
-				isInRF = (pre.z-post.z)*(pre.z-post.z)*cInv*cInv <= 1.0;
-			}
-		} else if (radius.radY == 0) {
-			// x < 0 && y == 0
-			if (radius.radZ < 0) {
-				// x < 0 && y == 0 && z < 0
-				isInRF = pre.y == post.y;
-			} else if (radius.radZ == 0) {
-				// x < 0 && y == 0 && z == 0
-				isInRF = pre.y == post.y && pre.z == post.z;
-			} else {
-				// x < 0 && y == 0 && z > 0
-				isInRF = pre.y == post.y && (pre.z-post.z)*(pre.z-post.z)*cInv*cInv <= 1.0;
-			}
-		} else {
-			// x < 0 && y > 0
-			if (radius.radZ < 0) {
-				// x < 0 && y > 0 && z < 0
-				isInRF = (pre.y-post.y)*(pre.y-post.y)*bInv*bInv <= 1.0;
-			} else if (radius.radZ == 0) {
-				// x < 0 && y > 0 && z == 0
-				isInRF = pre.z == post.z && (pre.y-post.y)*(pre.y-post.y)*bInv*bInv <= 1.0;
-			} else {
-				// x < 0 && y > 0 && z > 0
-				isInRF = norm((pre-post)*Point3D(0.0,bInv,cInv)) <= 1.0;
-			}
-		}
-	} else if (radius.radX ==0) {
-		// x == 0
-		if (radius.radY < 0) {
-			// x == 0 && y < 0
-			if (radius.radZ < 0) {
-				// x == 0 && y < 0 && z < 0
-				isInRF = pre.x == post.x;
-			} else if (radius.radZ == 0) {
-				// x == 0 && y < 0 && z == 0
-				isInRF = pre.x == post.x && pre.z == post.z;
-			} else {
-				// x == 0 && y < 0 && z > 0
-				isInRF = pre.x == post.x && (pre.z-post.z)*(pre.z-post.z)*cInv*cInv <= 1.0;
-			}
-		} else if (radius.radY == 0) {
-			// x == 0 && y == 0
-			if (radius.radZ < 0) {
-				// x == 0 && y == 0 && z < 0
-				isInRF = pre.x == post.x && pre.y == post.y;
-			} else if (radius.radZ == 0) {
-				// x == 0 && y == 0 && z == 0
-				isInRF = pre.x == post.x && pre.y == post.y && pre.z == post.z;
-			} else {
-				// x == 0 && y == 0 && z > 0
-				isInRF = pre.x == post.x && pre.y == post.y && (pre.z-post.z)*(pre.z-post.z)*cInv*cInv <= 1.0;
-			}
-		} else {
-			// x == 0 && y > 0
-			if (radius.radZ < 0) {
-				// x == 0 && y > 0 && z < 0
-				isInRF = pre.x == post.x && (pre.y-post.y)*(pre.y-post.y)*bInv*bInv <= 1.0;
-			} else if (radius.radZ == 0) {
-				// x == 0 && y > 0 && z == 0
-				isInRF = pre.x == post.x && (pre.y-post.y)*(pre.y-post.y)*bInv*bInv <= 1.0 && pre.z == post.z;
-			} else {
-				// x == 0 && y > 0 && z > 0
-				isInRF = pre.x == post.x && norm((pre-post)*Point3D(0.0,bInv,cInv)) <= 1.0;
-			}
-		}
+	if (radius.radX==0 && pre.x!=post.x || radius.radY==0 && pre.y!=post.y || radius.radZ==0 && pre.z!=post.z) {
+		rfDist = -1.0;
 	} else {
-		// x > 0
-		if (radius.radY < 0) {
-			// x > 0 && y < 0
-			if (radius.radZ < 0) {
-				// x > 0 && y < 0 && z < 0
-				isInRF = (pre.x-post.x)*(pre.x-post.x)*aInv*aInv <= 1.0;
-			} else if (radius.radZ == 0) {
-				// x > 0 && y < 0 && z == 0
-				isInRF = (pre.x-post.x)*(pre.x-post.x)*aInv*aInv <= 1.0 && pre.z == post.z;
-			} else {
-				// x > 0 && y < 0 && z > 0
-				isInRF = norm((pre-post)*Point3D(aInv,0.0,cInv)) <= 1.0;
-			}
-		} else if (radius.radY == 0) {
-			// x > 0 && y == 0
-			if (radius.radZ < 0) {
-				// x > 0 && y == 0 && z < 0
-				isInRF = (pre.x-post.x)*(pre.x-post.x)*aInv*aInv <= 1.0 && pre.y == post.y;
-			} else if (radius.radZ == 0) {
-				// x > 0 && y == 0 && z == 0
-				isInRF = (pre.x-post.x)*(pre.x-post.x)*aInv*aInv <= 1.0 && pre.y == post.y && pre.z == post.z;
-			} else {
-				// x > 0 && y == 0 && z > 0
-				isInRF = norm((pre-post)*Point3D(aInv,0.0,cInv)) <= 1.0 && pre.y == post.y;
-			}
-		} else {
-			// x > 0 && y > 0
-			if (radius.radZ < 0) {
-				// x > 0 && y > 0 && z < 0
-				isInRF = norm((pre-post)*Point3D(aInv,bInv,0.0)) <= 1.0;
-			} else if (radius.radZ == 0) {
-				// x > 0 && y > 0 && z == 0
-				isInRF = norm((pre-post)*Point3D(aInv,bInv,0.0)) <= 1.0 && pre.z == post.z;
-			} else {
-				// x > 0 && y > 0 && z > 0
-				isInRF = norm((pre-post)*Point3D(aInv,bInv,cInv)) <= 1.0;
-			}
-		}
+		// 3D ellipsoid: x^2/a^2 + y^2/b^2 + z^2/c^2 <= 1.0
+		double xTerm = (radius.radX<=0) ? 0.0 : pow(pre.x-post.x,2)/pow(radius.radX,2);
+		double yTerm = (radius.radY<=0) ? 0.0 : pow(pre.y-post.y,2)/pow(radius.radY,2);
+		double zTerm = (radius.radZ<=0) ? 0.0 : pow(pre.z-post.z,2)/pow(radius.radZ,2);
+		rfDist = xTerm + yTerm + zTerm;
 	}
 
-	return isInRF;
-}
-
-// \FIXME: not sure where this should go... maybe create some helper file?
-//! check whether certain point lies on certain grid \FIXME maybe move to carlsim_helper.h or something...
-bool CpuSNN::isPoint3DonGrid(const Point3D& p, const Grid3D& g) {
-	// point needs to have non-negative coordinates
-	if (p.x<0 || p.y<0 || p.z<0)
-		return false;
-
-	// point needs to have all integer coordinates
-	if (floor(p.x)!=p.x || floor(p.y)!=p.y || floor(p.z)!=p.z)
-		return false;
-
-	// point needs to be within ranges
-	if (p.x>=g.x || p.y>=g.y || p.z>=g.z)
-		return false;
-
-	// passed all tests
-	return true;
+	return rfDist;
 }
 
 // creates the CPU net pointers

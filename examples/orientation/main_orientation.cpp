@@ -247,8 +247,16 @@ int main()
 			exit(2);
 		}
 
-		calcColorME(nrX, nrY, vid, red_green.rates, green_red.rates, blue_yellow.rates, yellow_blue.rates, me.rates, onGPU);
-
+		// Note: Use of getRatePtr{CPU/GPU} is deprecated. It is used here to speed up the process of copying
+		// the rates calculated in calcColorME to the rate buffers via cudaMemcpyDeviceToDevice, which is faster
+		// than first copying from device to host, then copying from host to different device location
+		if (onGPU) {
+			calcColorME(nrX, nrY, vid, red_green.getRatePtrGPU(), green_red.getRatePtrGPU(), 
+				blue_yellow.getRatePtrGPU(), yellow_blue.getRatePtrGPU(), me.getRatePtrGPU(), true);
+		} else {
+			calcColorME(nrX, nrY, vid, red_green.getRatePtrCPU(), green_red.getRatePtrCPU(), 
+				blue_yellow.getRatePtrCPU(), yellow_blue.getRatePtrCPU(), me.getRatePtrCPU(), false);
+		}
 		sim.setSpikeRate(gV1ME, &me, 1);
 
 		// run the established network for 1 (sec)  and 0 (millisecond), in GPU_MODE

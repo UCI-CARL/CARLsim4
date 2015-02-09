@@ -291,7 +291,7 @@ classdef ConnectionReader < handle
             
             % read number of synapses
             obj.nSynapses = fread(obj.fileId, 1, 'int32');
-            if feof(obj.fileId) || obj.nSynapses<=0
+            if feof(obj.fileId) || obj.nSynapses<0
                 obj.throwError(['Could not find valid number of ' ...
 					'synapses (' num2str(obj.nSynapses) ')'])
                 return

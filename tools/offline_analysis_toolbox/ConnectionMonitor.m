@@ -27,10 +27,10 @@ classdef ConnectionMonitor < handle
 		errorMode;          % program mode for error handling
 		supportedErrorModes;% supported error modes
 		supportedPlotTypes; % cell array of supported plot types
-	end
+%	end
 	
 	% private
-	properties (Hidden, Access = private)
+%	properties (Hidden, Access = private)
 		CR;                 % ConnectionReader object
 		connFilePrefix;     % conn file prefix, e.g. "conn"
 		connFileSuffix;     % conn file suffix, e.g. ".dat"
@@ -267,9 +267,10 @@ classdef ConnectionMonitor < handle
 			%                display the receptive (response) field of the
 			%                first, second, and eight neuron in post (pre).
 			%                Default: display all neurons.
+			obj.unsetError()
+			obj.initConnectionReader()
 			if nargin<2,plotType=obj.plotType;end
 			if nargin<3 || isempty(frames) || numel(frames)==1&&frames==-1
-				obj.initConnectionReader()
 				frames = 1:ceil(obj.CR.getNumSnapshots());
 			end
 			if nargin<4 || isempty(neurons) ...
@@ -278,21 +279,24 @@ classdef ConnectionMonitor < handle
 					neurons = 1:obj.CR.getNumNeuronsPost();
 				elseif strcmpi(plotType,'responsefield')
 					neurons = 1:obj.CR.getNumNeuronsPre();
+				else
+					neurons = -1;
 				end
 			end
-			obj.unsetError()
 			
 			% verify input
 			if strcmpi(plotType,'receptivefield')
 				if ~Utilities.verify(neurons,{{'isvector','isnumeric', ...
 						[1 obj.CR.getNumNeuronsPost()]}})
-					obj.throwError('Neurons must be a numeric vector e[1,inf]')
+					obj.throwError(['Neurons must be a numeric vector ' ...
+						'e[1,' num2str(obj.CR.getNumNeuronsPost()) ']'])
 					return
 				end
 			elseif strcmpi(plotType,'responsefield')
 				if ~Utilities.verify(neurons,{{'isvector','isnumeric', ...
 						[1 obj.CR.getNumNeuronsPre()]}})
-					obj.throwError('Neurons must be a numeric vector e[1,inf]')
+					obj.throwError(['Neurons must be a numeric vector ' ...
+						'e[1,' num2str(obj.CR.getNumNeuronsPre()) ']'])
 					return
 				end
 			end
@@ -898,10 +902,11 @@ classdef ConnectionMonitor < handle
 			obj.loadDataForPlotting(plotType);
 			
 			if strcmpi(obj.plotType,'heatmap')
-				imagesc(obj.weights(:,:,frameNr), [0 obj.plotMaxWt])
+				imagesc(obj.weights(:,:,frameNr), [0 max(obj.plotMaxWt,1e-10)])
 				axis image square
 				xlabel('nrPre')
 				ylabel('nrPost')
+				title(['wt = [0, ' num2str(obj.plotMaxWt) ']'])
 				
 				% if enabled, display the frame number in lower left corner
 				if dispFrameNr
@@ -948,7 +953,7 @@ classdef ConnectionMonitor < handle
 						
 						% plot RF
 						subplot(nRows,nCols,idx)
-						imagesc(wts(:,:,zPostIdx)', [0 obj.plotMaxWt])
+						imagesc(wts(:,:,zPostIdx)', [0 max(obj.plotMaxWt,1e-10)])
 						axis equal
  						axis([1 grid3DPost(1) 1 grid3DPost(2)])
 						if grid3DPost(1)>1
@@ -984,7 +989,6 @@ classdef ConnectionMonitor < handle
 				grid3DPre = obj.CR.getGrid3DPre();
 				grid3DPost = obj.CR.getGrid3DPost();
 
-				neurons
 				nPlots = numel(neurons);
 				[nRows, nCols] = obj.findPlotLayout(nPlots);
 				for r=1:nRows
@@ -1015,7 +1019,7 @@ classdef ConnectionMonitor < handle
 						
 						% plot RF
 						subplot(nRows,nCols,idx)
-						imagesc(wts(:,:,zPreIdx)', [0 obj.plotMaxWt])
+						imagesc(wts(:,:,zPreIdx)', [0 max(obj.plotMaxWt,1e-10)])
 						axis equal
  						axis([1 grid3DPre(1) 1 grid3DPre(2)])
 						if grid3DPre(1)>1

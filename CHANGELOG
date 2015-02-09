@@ -7,6 +7,15 @@ Legend:
 Release 3.0
 ===============================================================================
 
+2015-02-09     Michael Beyeler <mbeyeler@uci.edu>
+  + Added CARLsim::connect type "gaussian" for the generation of 1D, 2D, and 3D
+    Gaussian receptive fields.
+  * Fixed generation of CARLsim::connect user errors.
+  * Improved CpuSNN::getRFDist3D.
+  - Removed CpuSNN::isPoint3DOnGrid.
+  * Fixed refactoring issue in "orientation" example.
+  * Fixed ConnectionMonitor.m issue when connection has no synapses (OAT).
+
 2015-02-08     Michael Beyeler <mbeyeler@uci.edu>
   + Added plot types "receptivefield", "responsfield" in ConnectionMonitor.m
     (OAT).
