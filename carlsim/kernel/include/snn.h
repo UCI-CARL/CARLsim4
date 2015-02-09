@@ -544,7 +544,6 @@ public:
 	//! checks whether a point pre lies in the receptive field for point post
 	double getRFDist3D(const RadiusRF& radius, const Point3D& pre, const Point3D& post);
 	bool isPoint3DinRF(const RadiusRF& radius, const Point3D& pre, const Point3D& post);
-	bool isPoint3DonGrid(const Point3D& p, const Grid3D& g); //!< checks whether a point lies on a grid
 
 	bool isSimulationWithCOBA() { return sim_with_conductances; }
 	bool isSimulationWithCUBA() { return !sim_with_conductances; }

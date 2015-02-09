@@ -3650,25 +3650,6 @@ double CpuSNN::getRFDist3D(const RadiusRF& radius, const Point3D& pre, const Poi
 	return rfDist;
 }
 
-// \FIXME: not sure where this should go... maybe create some helper file?
-//! check whether certain point lies on certain grid \FIXME maybe move to carlsim_helper.h or something...
-bool CpuSNN::isPoint3DonGrid(const Point3D& p, const Grid3D& g) {
-	// point needs to have non-negative coordinates
-	if (p.x<0 || p.y<0 || p.z<0)
-		return false;
-
-	// point needs to have all integer coordinates
-	if (floor(p.x)!=p.x || floor(p.y)!=p.y || floor(p.z)!=p.z)
-		return false;
-
-	// point needs to be within ranges
-	if (p.x>=g.x || p.y>=g.y || p.z>=g.z)
-		return false;
-
-	// passed all tests
-	return true;
-}
-
 // creates the CPU net pointers
 // don't forget to cudaFree the device pointers if you make cpu_gpuNetPtrs
 void CpuSNN::makePtrInfo() {

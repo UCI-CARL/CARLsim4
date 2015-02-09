@@ -12,22 +12,7 @@
 /*
 // \FIXME: deactivate for now, because we don't want to instantiate CpuSNN
 
-// make sure the function CpuSNN::isPoint3DinRF returns the right values for all cases
-// need to use CpuSNN, because function is not in user interface
-TEST(CORE, isPoint3DinRF) {
-	CpuSNN snn("CONNECT.isPoint3DinRF", CPU_MODE, SILENT, 0, 42);
-	EXPECT_TRUE(snn.isPoint3DinRF(RadiusRF(10.0), Point3D(0,0,0), Point3D(0,0,0))); // same point
-	EXPECT_TRUE(snn.isPoint3DinRF(RadiusRF(10.0), Point3D(0,0,0), Point3D(10,0,0))); // on border
-	EXPECT_TRUE(snn.isPoint3DinRF(RadiusRF(10.0), Point3D(0,0,0), Point3D(0,10,0)));
-	EXPECT_TRUE(snn.isPoint3DinRF(RadiusRF(10.0), Point3D(0,0,0), Point3D(0,0,10)));
-	EXPECT_FALSE(snn.isPoint3DinRF(RadiusRF(10.0), Point3D(0,0,0), Point3D(10.0001, 0.0, 0.0))); // a little too far
-	EXPECT_FALSE(snn.isPoint3DinRF(RadiusRF(10.0), Point3D(0,0,0), Point3D(0.0, 10.001, 0.0)));
-	EXPECT_FALSE(snn.isPoint3DinRF(RadiusRF(10.0), Point3D(0,0,0), Point3D(0.0, 0.0, 10.001)));
-	EXPECT_FALSE(snn.isPoint3DinRF(RadiusRF(10.0), Point3D(0,0,0), Point3D(10,10,0))); // way too far
-	EXPECT_FALSE(snn.isPoint3DinRF(RadiusRF(10.0), Point3D(0,0,0), Point3D(0,10,10)));
-	EXPECT_FALSE(snn.isPoint3DinRF(RadiusRF(10.0), Point3D(0,0,0), Point3D(10,0,10)));
-}
-*/
+
 
 // \TODO make CARLsim-level, replace with ConnectionMonitor
 //! connect with certain mulSynFast, mulSynSlow and observe connectInfo
