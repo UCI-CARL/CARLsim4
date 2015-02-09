@@ -296,7 +296,7 @@ struct RangeWeight {
 };
 
 /*!
- * \brief a struct to specify the receptive field (RF) radius in 3 dimensions
+ * \brief A struct to specify the receptive field (RF) radius in 3 dimensions
  *
  * This struct can be used to specify the size of a receptive field (RF) radius in 3 dimensions x, y, and z.
  * Receptive fields will be circular with radius as specified. The 3 dimensions follow the ones defined by Grid3D.
@@ -315,6 +315,8 @@ struct RangeWeight {
  *   * Connect only the third dimension: RadiusRF(0, 0, 1)
  *   * Connect all, no matter the RF (default): RadiusRF(-1, -1, -1)
  *   * Don't connect anything (silly, not allowed): RadiusRF(0, 0, 0)
+ *
+ * \note A receptive field is defined from the point of view of a post-neuron.
  */
 struct RadiusRF {
 	RadiusRF(double rad) : radX(rad), radY(rad), radZ(rad) {}
@@ -362,25 +364,34 @@ typedef struct GroupNeuromodulatorInfo_s {
 } GroupNeuromodulatorInfo_t;
 
 /*!
- * \brief struct to assign 3D coordinates to neurons in a group
+ * \brief A struct to arrange neurons on a 3D grid (a primitive cubic Bravais lattice with cubic side length 1)
  *
- * Neurons of a group can be arranged topographically, so that they virtually lie on a 3D grid. This simplifies the
- * creation of topographic connections in the network.
- * Each neuron thus gets assigned a (x,y,z) location on a grid (integer coordinates). Neuron numbers will be
- * assigned in order to location; where the first dimension specifies the width, the second dimension is height,
- * and the third dimension is depth. Grid3D(2,2,2) would thus assign neurId 0 to location (0,0,0), neurId 1 to (1,0,0),
- * neurId 3 to (0,1,0), neurId 6 to (2,2,1), and so on.
- * The third dimension can be thought of as a depth (z-coordinate in 3D), a cortical column (each of which consists
- * of a 2D arrangement of neurons on a plane), or a channel (such as RGB channels, each of which consists of a 2D
- * arrangements of neurons coding for (x,y) coordinates of an image). For the user's convenience, the struct thus
- * provides members Grid3D::depth, Grid3D::column, and Grid3D::channels, which differ only semantically.
+ * Neurons of a group can be arranged topographically, so that they virtually lie on a 3D grid.
+ * Connections can then be specified depending on the relative placement of neurons via CARLsim::connect. This allows
+ * for the creation of networks with complex spatial structure.
+ * 
+ * Each neuron in the group gets assigned a (x,y,z) location on a 3D grid centered around the origin, so that calling
+ * Grid3D(Nx,Ny,Nz) creates coordinates that fall in the range [-(Nx-1)/2, (Nx-1)/2], [-(Ny-1)/2, (Ny-1)/2], and
+ * [-(Nz-1)/2, (Nz-1)/2].
+ * The resulting grid is a primitive cubic Bravais lattice with cubic side length 1 (arbitrary units).
+ * The primitive (or simple) cubic crystal system consists of one lattice point (neuron) on each corner of the cube.
+ * Each neuron at a lattice point is then shared equally between eight adjacent cubes. 
+ * 
  * \param[in] w the width of the 3D grid (1st dim)
  * \param[in] h the height of the 3D grid (2nd dim)
  * \param[in] z the depth of the 3D grid (3rd dim; also called column or channel)
  * Examples:
- *   Grid3D(10)         => creates 10 neurons on a 1D line, neurId=2 == (2,0,0), neurId=9 == (9,0,0)
- *   Grid3D(10,2)       => creates 10x2 neurons on a 2D plane, neurId=10 == (0,1,0), neurId=13 == (3,1,0)
- *   Grid3D(10,2,3)     => creates 10x2x3 neurons on a 3D grid, neurId=19 == (9,1,0), neurId=20 == (0,0,1)
+ *  - Grid3D(1,1,1) will create a single neuron with location (0,0,0).
+ *  - Grid3D(2,1,1) will create two neurons, where the first neuron (ID 0) has location (-0.5,0,0), and the
+ *    second neuron (ID 1) has location (0.5,0,0).
+ *  - Grid3D(1,1,2) will create two neurons, where the first neuron (ID 0) has location (0,0,-0.5), and the second neuron
+ *    (ID 1) has location (0,0,0.5).
+ *  - Grid3D(2,2,2) will create eight neurons, where the first neuron (ID 0) has location (-0.5,-0.5,-0.5), the second
+ *    neuron has location (0.5,-0.5,-0.5), the third has (-0.5,0.5,-0.5), and so forth (see figure below).
+ *  - Grid3D(3,3,3) will create 3x3x3=27 neurons, where the first neuron (ID 0) has location (-1,-1,-1), the second neuron
+ *    has location (0,-1,-1), the third has (1,-1,-1), the fourth has (-1,0,-1), ..., and the last one has (1,1,1).
+ *  - etc.
+ *
  * Members:
  *   x, width	                   the width of the 3D grid (1st dim)
  *   y, height                     the height of the 3D grid (2nd dim)

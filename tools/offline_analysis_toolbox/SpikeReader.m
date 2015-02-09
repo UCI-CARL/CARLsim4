@@ -256,6 +256,9 @@ classdef SpikeReader < handle
             obj.stimLengthMs = -1;
             
             obj.supportedErrorModes = {'standard', 'warning', 'silent'};
+
+			% disable backtracing for warnings and errors
+			warning off backtrace
         end
         
         function openFile(obj)
@@ -273,21 +276,22 @@ classdef SpikeReader < handle
             
             % read signature
             sign = fread(obj.fileId, 1, 'int32');
-            if sign~=obj.fileSignature
-                obj.throwError('Unknown file type');
+            if feof(obj.fileId) || sign~=obj.fileSignature
+                obj.throwError(['Unknown file type (' num2str(sign) ')']);
                 return
             end
             
             % read version number
             version = fread(obj.fileId, 1, 'float32');
-            if floor(version) ~= obj.fileVersionMajor
+            if feof(obj.fileId) || floor(version) ~= obj.fileVersionMajor
                 % check major number: must match
                 obj.throwError(['File must be of version ' ...
                     num2str(obj.fileVersionMajor) '.x (Version ' ...
                     num2str(version) ' found'])
                 return
             end
-            if floor((version-obj.fileVersionMajor)*10.01)<obj.fileVersionMinor
+            if feof(obj.fileId) ...
+					|| floor((version-obj.fileVersionMajor)*10.01)<obj.fileVersionMinor
                 % check minor number: extract first digit after decimal
                 % point
                 % multiply 10.01 instead of 10 to avoid float rounding
@@ -301,8 +305,11 @@ classdef SpikeReader < handle
             
             % read Grid3D
             obj.grid3D = fread(obj.fileId, [1 3], 'int32');
-            if prod(obj.grid3D)<=0
-                obj.throwError(['Could not find valid Grid3D dimensions.'])
+            if feof(obj.fileId) || prod(obj.grid3D)<=0
+                obj.throwError(['Could not find valid Grid3D ' ...
+					'dimensions (grid=[' num2str(obj.grid3D(1)) ' ' ...
+					num2str(obj.grid3D(2)) ' ' num2str(obj.grid3D(3)) ...
+					'])'])
                 return
             end
             

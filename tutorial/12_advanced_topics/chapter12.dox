@@ -36,13 +36,13 @@ the network.
 The utility SimpleWeightTuner implements a simple weight search algorithm inspired by the bisection method.
 The function CARLsim::setWeight allows a user to change the weight of a single synapse.
 Alternatively, CARLsim::biasWeights can be used to add a constant bias to every weight of a certain connection ID,
-and CARLsim::scaleWeigths multiplies all the weights with a scaling factor.
+and CARLsim::scaleWeights multiplies all the weights with a scaling factor.
 
 These functions are useful especially for tuning feedforward weights in large-scale networks that would otherwise take
 a lot of time to repeatedly build.
 For tuning in more complex situations please refer to \ref ch10_ecj.
 
-These functions are only valid in ::carlsimState_t <tt>EXE_STATE</tt> and do not alter the topography of the network.
+These functions are only valid in ::carlsimState_t ::EXE_STATE and do not alter the topography of the network.
 They apply to weight values of already allocated synapses only.
 
 \see \ref ch10_ecj

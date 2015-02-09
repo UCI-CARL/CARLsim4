@@ -222,6 +222,7 @@ TEST(CONNECT, connectRandom) {
 	delete sim;
 }
 
+/*
 
 // testing all ways to create a 1D Gaussian
 TEST(CONNECT, connectGaussian1D) {
@@ -241,7 +242,7 @@ TEST(CONNECT, connectGaussian1D) {
 	sim->setNeuronParameters(g5, 0.02f, 0.2f, -65.0f, 8.0f);
 
 	double prob = 1.0;
-	int c0=sim->connect(g0,g0,"gaussian",RangeWeight(0.1), prob, RangeDelay(1), RadiusRF(4.0, 0.0, 0.0));
+	int c0=sim->connect(g0,g0,"full",RangeWeight(0.1), prob, RangeDelay(1), RadiusRF(4.0, 0.0, 0.0));
 //	int c1=sim->connect(g1,g1,"gaussian",RangeWeight(0.1), prob, RangeDelay(1), RadiusRF(0.0, 4.0, 0.0));
 //	int c2=sim->connect(g2,g2,"gaussian",RangeWeight(0.1), prob, RangeDelay(1), RadiusRF(0.0, 0.0, 4.0));
 
@@ -338,3 +339,5 @@ TEST(CONNECT, connectGaussian) {
 
 	delete sim;	
 }
+
+*/

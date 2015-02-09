@@ -71,9 +71,9 @@ TEST(CORE, getNeuronLocation3D) {
 		int x=0,y=0,z=0;
 		for (int neurId=grp*grid.N; neurId<(grp+1)*grid.N; neurId++) {
 			Point3D loc = sim->getNeuronLocation3D(neurId);
-			EXPECT_EQ(loc.x, x);
-			EXPECT_EQ(loc.y, y);
-			EXPECT_EQ(loc.z, z);
+			EXPECT_FLOAT_EQ(loc.x, x-(grid.x-1)/2.0f);
+			EXPECT_FLOAT_EQ(loc.y, y-(grid.y-1)/2.0f);
+			EXPECT_FLOAT_EQ(loc.z, z-(grid.z-1)/2.0f);
 
 			x++;
 			if (x==grid.x) {

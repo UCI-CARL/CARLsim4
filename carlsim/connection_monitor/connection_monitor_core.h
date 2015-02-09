@@ -171,6 +171,7 @@ private:
 	std::vector< std::vector<float> > wtMat_;      //!< current snapshot of weight matrix
 	std::vector< std::vector<float> > wtLastMat_;  //!< last snapshot of weight matrix
 
+	bool needToInit_;				//!< whether we have to initialize first
 	bool needToWriteFileHeader_;    //!< whether we have to write header section of conn file
 
 	FILE* connFileId_;              //!< file pointer to the conn file or NULL

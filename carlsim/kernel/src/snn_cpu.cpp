@@ -1118,13 +1118,6 @@ void CpuSNN::setSpikeGenerator(int grpId, SpikeGeneratorCore* spikeGen) {
 void CpuSNN::setSpikeCounter(int grpId, int recordDur) {
 	assert(grpId>=0); assert(grpId<numGrp);
 
-	// TODO: implement same for spike generators on GPU side (see CpuSNN::generateSpikes)
-	if (grp_Info[grpId].isSpikeGenerator) {
-		KERNEL_ERROR("ERROR: Spike Counters for Spike Generators are currently not supported.");
-		exit(1);
-		return;
-	}
-
 	sim_with_spikecounters = true; // inform simulation
 	grp_Info[grpId].withSpikeCounter = true; // inform the group
 	grp_Info[grpId].spkCntRecordDur = (recordDur>0)?recordDur:-1; // set record duration, after which spike buf will be reset
@@ -1716,20 +1709,24 @@ Point3D CpuSNN::getNeuronLocation3D(int neurId) {
 	// adjust neurId for neuron ID of first neuron in the group
 	neurId -= grp_Info[grpId].StartN;
 
-	int coord_x = neurId % grp_Info[grpId].SizeX;
-	int coord_y = (neurId/grp_Info[grpId].SizeX)%grp_Info[grpId].SizeY;
-	int coord_z = neurId/(grp_Info[grpId].SizeX*grp_Info[grpId].SizeY);
-	return Point3D(coord_x, coord_y, coord_z);
+	return getNeuronLocation3D(grpId, neurId);
 }
 
 Point3D CpuSNN::getNeuronLocation3D(int grpId, int relNeurId) {
 	assert(grpId>=0 && grpId<numGrp);
 	assert(relNeurId>=0 && relNeurId<getGroupNumNeurons(grpId));
 
-	int coord_x = relNeurId % grp_Info[grpId].SizeX;
-	int coord_y = (relNeurId/grp_Info[grpId].SizeX)%grp_Info[grpId].SizeY;
-	int coord_z = relNeurId/(grp_Info[grpId].SizeX*grp_Info[grpId].SizeY);
-	return Point3D(coord_x, coord_y, coord_z);
+	// coordinates are in x e[-SizeX/2,SizeX/2], y e[-SizeY/2,SizeY/2], z e[-SizeZ/2,SizeZ/2]
+	// instead of x e[0,SizeX], etc.
+	int intX = relNeurId % grp_Info[grpId].SizeX;
+	int intY = (relNeurId/grp_Info[grpId].SizeX)%grp_Info[grpId].SizeY;
+	int intZ = relNeurId/(grp_Info[grpId].SizeX*grp_Info[grpId].SizeY);
+
+	// so subtract SizeX/2, etc. to get coordinates center around origin
+	double coordX = 1.0*intX - (grp_Info[grpId].SizeX-1)/2.0;
+	double coordY = 1.0*intY - (grp_Info[grpId].SizeY-1)/2.0;
+	double coordZ = 1.0*intZ - (grp_Info[grpId].SizeZ-1)/2.0;
+	return Point3D(coordX, coordY, coordZ);
 }
 
 // returns the number of synaptic connections associated with this connection.
@@ -1756,9 +1753,26 @@ int* CpuSNN::getSpikeCounter(int grpId) {
 	if (!grp_Info[grpId].withSpikeCounter)
 		return NULL;
 
-	if (simMode_==GPU_MODE)
+	// determine whether spike counts are currently stored on CPU or GPU side
+	bool retrieveSpikesFromGPU = simMode_==GPU_MODE;
+	if (grp_Info[grpId].isSpikeGenerator) {
+		// this flag should be set if group was created via CARLsim::createSpikeGeneratorGroup
+		// could be SpikeGen callback or PoissonRate
+		if (grp_Info[grpId].RatePtr != NULL) {
+			// group is Poisson group
+			// even though mean rates might be on either CPU or GPU (RatePtr->isOnGPU()), in GPU mode the
+			// actual random numbers will always be generated on the GPU
+//			retrieveSpikesFromGPU = simMode_==GPU_MODE;
+		} else {
+			// group is generator with callback, CPU only
+			retrieveSpikesFromGPU = false;
+		}
+	}
+
+	// retrieve spikes from either CPU or GPU
+	if (retrieveSpikesFromGPU) {
 		return getSpikeCounter_GPU(grpId);
-	else {
+	} else {
 		int bufPos = grp_Info[grpId].spkCntBufPos; // retrieve buf pos
 		return spkCntBuf[bufPos]; // return pointer to buffer
 	}
@@ -2659,10 +2673,19 @@ void CpuSNN::connectGaussian(grpConnectInfo_t* info) {
 			// check whether pre-neuron location is in RF of post-neuron
 			Point3D loc_j = getNeuronLocation3D(j); // 3D coordinates of j
 
-			double gaussDist = exp( -0.5*getRFDist3D(radius,loc_i,loc_j) );
-			if (gaussDist < 0.1)
+			// make sure point is in RF
+			double rfDist = getRFDist3D(radius,loc_i,loc_j);
+			if (rfDist < 0.0 || rfDist > 1.0)
 				continue;
 
+			// if rfDist is valid, it returns a number between 0 and 1
+			// we want these numbers to fit to Gaussian weigths, so that rfDist=0 corresponds to max Gaussian weight
+			// and rfDist=1 corresponds to 0.1 times max Gaussian weight
+			// so we're looking at gaussDist = exp(-a*rfDist), where a such that exp(-a)=0.1
+			// solving for a, we find that a = 2.3026
+			double gaussDist = exp(-2.3026*rfDist);
+			if (gaussDist < 0.1)
+				continue;
 
 			if (drand48() < info->p*gaussDist) {
 //			if (loc_i.x==3 && loc_i.y==3 && loc_i.z==3)
@@ -3186,18 +3209,6 @@ void CpuSNN::generateSpikes() {
 		//generate a spike to all the target neurons from source neuron nid with a delay of del
 		short int g = grpIds[nid];
 
-/*
-// MB: Uncomment this if you want to activate real-time spike monitors for SpikeGenerators
-// However, the GPU version of this is not implemented... Need to implement it for the case 1) GPU mode
-// and generators on CPU side, 2) GPU mode and generators on GPU side
-			// if flag hasSpkCnt is set, we want to keep track of how many spikes per neuron in the group
-			if (grp_Info[g].withSpikeCounter) {
-				int bufPos = grp_Info[g].spkCntBufPos; // retrieve buf pos
-				int bufNeur = nid-grp_Info[g].StartN;
-				spkCntBuf[bufPos][bufNeur]++;
-				printf("%d: %s[%d], nid=%d, %u spikes\n",simTimeMs,grp_Info2[g].Name.c_str(),g,nid,spkCntBuf[bufPos][bufNeur]);
-			}
-*/
 		addSpikeToTable (nid, g);
 		spikeCountAll1secHost++;
 		nPoissonSpikes++;
@@ -3237,6 +3248,13 @@ void CpuSNN::generateSpikesFromFuncPtr(int grpId) {
 					// check how GPU mode does it, then do the same here.
 					pbuf->scheduleSpikeTargetGroup(i, nextTime - currTime);
 					spikeCnt++;
+
+					// update number of spikes if SpikeCounter set
+					if (grp_Info[grpId].withSpikeCounter) {
+						int bufPos = grp_Info[grpId].spkCntBufPos; // retrieve buf pos
+						int bufNeur = i-grp_Info[grpId].StartN;
+						spkCntBuf[bufPos][bufNeur]++;
+					}
 				}
 			} else {
 				done = true;
@@ -3285,6 +3303,12 @@ void CpuSNN::generateSpikesFromRate(int grpId) {
 //					int nid = grp_Info[grpId].StartN+cnt;
 					pbuf->scheduleSpikeTargetGroup(grp_Info[grpId].StartN + neurId, nextTime-currTime);
 					spikeCnt++;
+
+					// update number of spikes if SpikeCounter set
+					if (grp_Info[grpId].withSpikeCounter) {
+						int bufPos = grp_Info[grpId].spkCntBufPos; // retrieve buf pos
+						spkCntBuf[bufPos][neurId]++;
+					}
 				}
 			}
 			else {
@@ -3478,58 +3502,157 @@ bool CpuSNN::isNumNeuronsConsistent() {
 	return isValid;
 }
 
-// returns distance squared
-double CpuSNN::getRFDist3D(const RadiusRF& radius, const Point3D& pre, const Point3D& post) {
-	// inverse semi-principal axes of the ellipsoid
-	// avoid division by zero by working with inverse of semi-principal axes (set to large value)
-	double aInv = (radius.radX>0) ? 1.0/radius.radX : 1e+20;
-	double bInv = (radius.radY>0) ? 1.0/radius.radY : 1e+20;
-	double cInv = (radius.radZ>0) ? 1.0/radius.radZ : 1e+20;
-
-	double rfDist = -1.0;
-
-	// how many semi-principal axes have negative value
-	int numNegRadii = (radius.radX<0) + (radius.radY<0) + (radius.radZ<0);
-	switch (numNegRadii) {
-		case 0:
-			// 3D ellipsoid: connect if x^2/a^2 + y^2/b^2 + z^2/c^2 <= 1
-			rfDist = norm2((pre-post)*Point3D(aInv,bInv,cInv));
-			break;
-		case 1:
-			// 2D ellipse: connect if x^2/a^2 + y^2/b^2 <= 1, 3 choose 2
-			if (radius.radX<0)
-				rfDist = norm2((pre-post)*Point3D(0.0,bInv,cInv));
-			else if (radius.radY<0)
-				rfDist = norm2((pre-post)*Point3D(aInv,0.0,cInv));
-			else if (radius.radZ<0)
-				rfDist = norm2((pre-post)*Point3D(aInv,bInv,0.0));
-			break;
-		case 2:
-			// 1D line: connect if x^2/a^2 <= 1, 3 choose 1
-			if (radius.radX>=0)
-				rfDist = (pre.x-post.x)*(pre.x-post.x)*aInv*aInv;
-			else if (radius.radY>=0)
-				rfDist = (pre.y-post.y)*(pre.y-post.y)*bInv*bInv;
-			else if (radius.radZ>=0)
-				rfDist = (pre.z-post.z)*(pre.z-post.z)*cInv*cInv;
-			break;
-		case 3:
-			// 3D no restrictions
-			break;
-		default:
-			KERNEL_ERROR("Invalid number of negative semi-principal axes: %d",numNegRadii);
-	}
-
-	return rfDist;
-}
-
 // \FIXME: not sure where this should go... maybe create some helper file?
 bool CpuSNN::isPoint3DinRF(const RadiusRF& radius, const Point3D& pre, const Point3D& post) {
 	// Note: RadiusRF rad is assumed to be the fanning in to the post neuron. So if the radius is 10 pixels, it means
 	// that if you look at the post neuron, it will receive input from neurons that code for locations no more than
 	// 10 pixels away. (The opposite is called a response/stimulus field.)
 
-	return (getRFDist3D(radius, pre, post) <= 1.0);
+	double rfDist = getRFDist3D(radius, pre, post);
+	return (rfDist >= 0.0 && rfDist <= 1.0);
+}
+
+double CpuSNN::getRFDist3D(const RadiusRF& radius, const Point3D& pre, const Point3D& post) {
+	// Note: RadiusRF rad is assumed to be the fanning in to the post neuron. So if the radius is 10 pixels, it means
+	// that if you look at the post neuron, it will receive input from neurons that code for locations no more than
+	// 10 pixels away.
+
+	// inverse semi-principal axes of the ellipsoid
+	// avoid division by zero by working with inverse of semi-principal axes (set to large value)
+	double aInv = (radius.radX>0) ? 1.0/radius.radX : 1e+20;
+	double bInv = (radius.radY>0) ? 1.0/radius.radY : 1e+20;
+	double cInv = (radius.radZ>0) ? 1.0/radius.radZ : 1e+20;
+
+	// ready output argument
+	// CpuSNN::isPoint3DinRF() will return true (connected) if rfDist e[0.0, 1.0]
+	double rfDist = -1.0;
+
+	// there are 27 different cases to consider
+	// we might be able to collapse some of them, but for now it's more important that it simply works
+	// pre and post are connected in a generic 3D ellipsoid RF if x^2/a^2 + y^2/b^2 + z^2/c^2 <= 1.0, where
+	// x = pre.x-post.x, y = pre.y-post.y, z = pre.z-post.z
+	// x < 0 means:  connect if y and z satisfy some constraints, but ignore x
+	// x == 0 means: connect if y and z satisfy some constraints, and enforce pre.x == post.x
+	if (radius.radX < 0) {
+		// x < 0
+		if (radius.radY < 0) {
+			// x < 0 && y < 0
+			if (radius.radZ < 0) {
+				// x < 0 && y < 0 && z < 0
+				rfDist = 0.0; // always true
+			} else if (radius.radZ == 0) {
+				// x < 0 && y < 0 && z == 0
+				rfDist = (pre.z == post.z) ? 0.0 : -1.0;
+			} else {
+				// x < 0 && y < 0 && z > 0
+				rfDist = (pre.z-post.z)*(pre.z-post.z)*cInv*cInv;
+			}
+		} else if (radius.radY == 0) {
+			// x < 0 && y == 0
+			if (radius.radZ < 0) {
+				// x < 0 && y == 0 && z < 0
+				rfDist = (pre.y == post.y) ? 0.0 : -1.0;
+			} else if (radius.radZ == 0) {
+				// x < 0 && y == 0 && z == 0
+				rfDist = (pre.y == post.y && pre.z == post.z) ? 0.0 : -1.0;
+			} else {
+				// x < 0 && y == 0 && z > 0
+				rfDist = (pre.y == post.y) ? (pre.z-post.z)*(pre.z-post.z)*cInv*cInv : -1.0;
+			}
+		} else {
+			// x < 0 && y > 0
+			if (radius.radZ < 0) {
+				// x < 0 && y > 0 && z < 0
+				rfDist = (pre.y-post.y)*(pre.y-post.y)*bInv*bInv;
+			} else if (radius.radZ == 0) {
+				// x < 0 && y > 0 && z == 0
+				rfDist = (pre.z == post.z) ? (pre.y-post.y)*(pre.y-post.y)*bInv*bInv : -1.0;
+			} else {
+				// x < 0 && y > 0 && z > 0
+				rfDist = norm((pre-post)*Point3D(0.0,bInv,cInv));
+			}
+		}
+	} else if (radius.radX ==0) {
+		// x == 0
+		if (radius.radY < 0) {
+			// x == 0 && y < 0
+			if (radius.radZ < 0) {
+				// x == 0 && y < 0 && z < 0
+				rfDist = (pre.x == post.x) ? 0.0 : -1.0;
+			} else if (radius.radZ == 0) {
+				// x == 0 && y < 0 && z == 0
+				rfDist = (pre.x == post.x && pre.z == post.z) ? 0.0 : -1.0;
+			} else {
+				// x == 0 && y < 0 && z > 0
+				rfDist = (pre.x == post.x) ? (pre.z-post.z)*(pre.z-post.z)*cInv*cInv : -1.0;
+			}
+		} else if (radius.radY == 0) {
+			// x == 0 && y == 0
+			if (radius.radZ < 0) {
+				// x == 0 && y == 0 && z < 0
+				rfDist = (pre.x == post.x && pre.y == post.y) ? 0.0 : -1.0;
+			} else if (radius.radZ == 0) {
+				// x == 0 && y == 0 && z == 0
+				rfDist = (pre.x == post.x && pre.y == post.y && pre.z == post.z) ? 0.0 : -1.0;
+			} else {
+				// x == 0 && y == 0 && z > 0
+				rfDist = (pre.x == post.x && pre.y == post.y) ? (pre.z-post.z)*(pre.z-post.z)*cInv*cInv : -1.0;
+			}
+		} else {
+			// x == 0 && y > 0
+			if (radius.radZ < 0) {
+				// x == 0 && y > 0 && z < 0
+				rfDist = (pre.x == post.x) ? (pre.y-post.y)*(pre.y-post.y)*bInv*bInv : -1.0;
+			} else if (radius.radZ == 0) {
+				// x == 0 && y > 0 && z == 0
+				rfDist = (pre.x == post.x && pre.z == post.z) ? (pre.y-post.y)*(pre.y-post.y)*bInv*bInv : -1.0;
+			} else {
+				// x == 0 && y > 0 && z > 0
+				rfDist = (pre.x == post.x) ? norm((pre-post)*Point3D(0.0,bInv,cInv)) : -1.0;
+			}
+		}
+	} else {
+		// x > 0
+		if (radius.radY < 0) {
+			// x > 0 && y < 0
+			if (radius.radZ < 0) {
+				// x > 0 && y < 0 && z < 0
+				rfDist = (pre.x-post.x)*(pre.x-post.x)*aInv*aInv;
+			} else if (radius.radZ == 0) {
+				// x > 0 && y < 0 && z == 0
+				rfDist = (pre.z == post.z) ? (pre.x-post.x)*(pre.x-post.x)*aInv*aInv : -1.0;
+			} else {
+				// x > 0 && y < 0 && z > 0
+				rfDist = norm((pre-post)*Point3D(aInv,0.0,cInv));
+			}
+		} else if (radius.radY == 0) {
+			// x > 0 && y == 0
+			if (radius.radZ < 0) {
+				// x > 0 && y == 0 && z < 0
+				rfDist = (pre.y == post.y) ? (pre.x-post.x)*(pre.x-post.x)*aInv*aInv : -1.0;
+			} else if (radius.radZ == 0) {
+				// x > 0 && y == 0 && z == 0
+				rfDist = (pre.y == post.y && pre.z == post.z) ? (pre.x-post.x)*(pre.x-post.x)*aInv*aInv : -1.0;
+			} else {
+				// x > 0 && y == 0 && z > 0
+				rfDist = (pre.y == post.y) ? norm((pre-post)*Point3D(aInv,0.0,cInv)) : -1.0;
+			}
+		} else {
+			// x > 0 && y > 0
+			if (radius.radZ < 0) {
+				// x > 0 && y > 0 && z < 0
+				rfDist = norm((pre-post)*Point3D(aInv,bInv,0.0));
+			} else if (radius.radZ == 0) {
+				// x > 0 && y > 0 && z == 0
+				rfDist = (pre.z == post.z) ? norm((pre-post)*Point3D(aInv,bInv,0.0)) : -1.0;
+			} else {
+				// x > 0 && y > 0 && z > 0
+				rfDist = norm((pre-post)*Point3D(aInv,bInv,cInv));
+			}
+		}
+	}
+
+	return rfDist;
 }
 
 // \FIXME: not sure where this should go... maybe create some helper file?

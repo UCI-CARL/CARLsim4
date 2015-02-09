@@ -660,8 +660,15 @@ __global__ 	void kernel_findFiring (int t, int sec, int simTime) {
 					unsigned int  offset      = nid-gpuGrpInfo[grpId].StartN+gpuGrpInfo[grpId].Noffset;
 					needToWrite = getSpikeGenBit_GPU(offset);
 				}
-				else
+				else {
 					needToWrite = getPoissonSpike_GPU(nid);
+					// meow
+					if (needToWrite && gpuGrpInfo[grpId].withSpikeCounter) {
+						int bufPos = gpuGrpInfo[grpId].spkCntBufPos;
+						int bufNeur = nid-gpuGrpInfo[grpId].StartN;
+						gpuPtrs.spkCntBuf[bufPos][bufNeur]++;
+					}
+				}
 			}
 			else {
 				if (gpuPtrs.voltage[nid] >= 30.0f) {
@@ -2197,7 +2204,7 @@ void CpuSNN::copyState(network_ptr_t* dest, int allocateMem) {
 
 	// we don't need this data structure if the network doesn't have any plastic synapses at all
 	if (!sim_with_fixedwts) {
-		// neuron firing time..
+		// neuron firing time
 		if(allocateMem)     CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->lastSpikeTime, sizeof(int)*numNReg));
 		CUDA_CHECK_ERRORS( cudaMemcpy( dest->lastSpikeTime, lastSpikeTime, sizeof(int)*numNReg, kind));
 	}
@@ -2473,12 +2480,9 @@ void CpuSNN::assignPoissonFiringRate_GPU() {
 			int nid = grp_Info[grpId].StartN;
 			PoissonRate* rate = grp_Info[grpId].RatePtr;
 
-			// \TODO: what do we need to do with the refPeriod...
-			// does GPU use the refPeriod ???
-			//float refPeriod = grp_Info[grpId].RefractPeriod;
-				
+			// if SpikeGen group does not have a Poisson pointer, skip
 			if (grp_Info[grpId].spikeGen || rate == NULL)
-				return;
+				continue;
 
 			if (rate->isOnGPU()) {
 				// rates allocated on GPU
