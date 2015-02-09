@@ -256,6 +256,9 @@ classdef SpikeReader < handle
             obj.stimLengthMs = -1;
             
             obj.supportedErrorModes = {'standard', 'warning', 'silent'};
+
+			% disable backtracing for warnings and errors
+			warning off backtrace
         end
         
         function openFile(obj)

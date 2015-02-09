@@ -93,19 +93,11 @@ classdef GroupMonitor < handle
             obj.name = name;
             obj.unsetError()
             obj.loadDefaultParams();
-            
-            if nargin<3
-                obj.errorMode = 'standard';
-            else
-                if ~obj.isErrorModeSupported(errorMode)
-                    obj.throwError(['errorMode "' errorMode '" is ' ...
-                        'currently not supported. Choose from the ' ...
-                        'following: ' ...
-                        strjoin(obj.supportedErrorModes,', ') ...
-                        '.'], 'standard')
-                    return
-                end
-                obj.errorMode = errorMode;
+			
+			if nargin<3
+				obj.setErrorMode('standard');
+			else
+				obj.setErrorMode(errorMode);
             end
             if nargin<2 || nargin>=2 && strcmpi(resultsFolder,'')
                 obj.resultsFolder = '.';
@@ -118,7 +110,13 @@ classdef GroupMonitor < handle
             end
             
             % make sure spike file is valid
-            obj.initSpikeReader();
+			if ~obj.hasValidSpikeFile()
+				obj.throwWarning(['Could not find valid spike file "' ...
+					obj.getSpikeFileName() '". Use ' ...
+					'setSpikeFileAttributes to set a proper spike ' ...
+					'file prefix/suffix'])
+				return
+			end
         end
                 
         function delete(obj)
@@ -188,6 +186,7 @@ classdef GroupMonitor < handle
             % duration in milliseconds. This is equivalent to the time
             % stamp of the last spike that occurred.
             obj.unsetError()
+			obj.initSpikeReader()
             simDurMs = obj.spkObj.getSimDurMs();
         end
         
@@ -276,6 +275,7 @@ classdef GroupMonitor < handle
             end
             if nargin<2,plotType=obj.plotType;end
             obj.unsetError()
+			obj.initSpikeReader()
             
             % verify input
             if ~Utilities.verify(frames,{{'isvector','isnumeric',[1 inf]}})
@@ -386,6 +386,7 @@ classdef GroupMonitor < handle
             end
             if nargin<2,fileName=obj.recordFile;end
             obj.unsetError()
+			obj.initSpikeReader()
             
             % verify input
             if ~Utilities.verify(fileName,'ischar')
@@ -432,7 +433,25 @@ classdef GroupMonitor < handle
             close(gcf)
             close(vidObj);
             disp(['created file "' fileName '"'])
-        end
+		end
+		
+		function setErrorMode(obj, errMode)
+			% GM.setErrorMode(errMode) sets the default error mode of the
+			% GroupMonitor object to errMode.
+			%
+			% For a list of supported error mode, see the property
+			% GM.supportedErrorModes.
+			if nargin<2,errMode='standard';end
+			
+			if ~obj.isErrorModeSupported(errMode)
+				obj.throwError(['errorMode "' errMode '" is ' ...
+					'currently not supported. Choose from the ' ...
+					'following: ' ...
+					strjoin(obj.supportedErrorModes,', ') ...
+					'.'], 'standard')
+				return
+			end
+		end
         
         function setGrid3D(obj, dim0, dim1, dim2, updDefPlotType)
             % GM.setGrid3D(dim0, dim1, dim2) sets the Grid3D topography of
@@ -756,11 +775,27 @@ classdef GroupMonitor < handle
         end
         
         function setSpikeFileAttributes(obj,prefix,suffix)
-            % obj.setSpikeFileAttributes(prefix,suffix)
-            % Defines the naming conventions for spike files. They should
-            % all reside within SAVEFOLDER (specified in constructor), and
-            % be made of a common prefix, the population name (specified in
-            % ADDPOPULATION), and a common suffix.
+            % GM.setSpikeFileAttributes(prefix,suffix) defines the naming
+            % conventions for the spike file. The file should reside within
+            % resultsFolder, be made of a prefix, the population name, and
+            % a suffix.
+			% The default will be something like 'results/spk_{group}.dat"
+			%
+			% This function can be helpful if there is a mismatch in the
+			% spike file attributes. For example, assume you want to add a
+			% group "output" with corresponding spike file "output.dat",
+			% but NM is looking for the default name, "spk_output.dat". So
+			% you can run:
+			% >> NM.setSpikeFileAttributes('','.dat')
+			% >> NM.addAllGroupsFromFile()
+			% and the missing groups will now be found.
+			%
+			% PREFIX         - A prefix string for the file name. Default:
+			%                  'spk_'.
+			% SUFFIX         - A suffix string for the file name,
+			%                  containing the file extension. Default:
+			%                  '.dat'
+			%
             % Example: files 'results/spk_V1.dat', 'results/spkMT.dat'
             %   -> saveFolder = 'results/'
             %   -> prefix = 'spk_'
@@ -772,7 +807,7 @@ classdef GroupMonitor < handle
             
             % need to re-load if file name changes
             if ~strcmpi(obj.spkFilePrefix,prefix) ...
-                    || ~strcmpi(obj.spikeFileSuffix,suffix)
+                    || ~strcmpi(obj.spkFileSuffix,suffix)
                 obj.needToInitSR = true;
                 obj.needToLoadData = true;
             end
@@ -799,10 +834,6 @@ classdef GroupMonitor < handle
                 obj.throwError(errMsg)
                 return
             end
-            if sum(obj.grid3D==-1)~=1
-                disp('in initSR')
-                obj.grid3D
-            end
             obj.grid3D = obj.spkObj.getGrid3D();
             obj.needToInitSR = false;
             obj.needToLoadData = true;
@@ -810,6 +841,7 @@ classdef GroupMonitor < handle
         
         function isSupported = isErrorModeSupported(obj, errMode)
             % determines whether an error mode is currently supported
+			if nargin<2,errMode='standard';end
             isSupported = sum(ismember(obj.supportedErrorModes,errMode))>0;
         end
         
@@ -954,6 +986,9 @@ classdef GroupMonitor < handle
             obj.supportedPlotTypes  = {'flowfield', 'heatmap', ...
                 'histogram', 'raster'};
             obj.supportedErrorModes = {'standard', 'warning', 'silent'};
+			
+			% disable backtracing for warnings and errors
+			warning off backtrace
         end
         
         function pauseOnKeyPressCallback(obj,~,eventData)
@@ -995,7 +1030,7 @@ classdef GroupMonitor < handle
             
             % load data and reshape for plotting if necessary
             obj.loadDataForPlotting(plotType, frameDur);
-			if frameNr > size(obj.spkData,4)
+			if numel(size(obj.spkData))==4 && frameNr > size(obj.spkData,4)
 				warning(['frameNr=' num2str(frameNr) ' exceeds ' ...
 					'number of frames (' num2str(size(obj.spkData,4)) ...
 					')'])
@@ -1097,7 +1132,20 @@ classdef GroupMonitor < handle
             end
         end
         
-        function unsetError(obj)
+        function throwWarning(obj, errorMsg, errorMode)
+            % THROWWARNING(errorMsg, errorMode) throws a warning with a
+            % specific severity (errorMode).
+            % If errorMode is not given, obj.errorMode is used.
+            if nargin<3,errorMode=obj.errorMode;end
+            
+            if strcmpi(errorMode,'standard')
+                warning(errorMsg)
+            elseif strcmpi(errorMode,'warning')
+                disp(errorMsg)
+            end
+		end
+		
+		function unsetError(obj)
             % unsets error message and flag
             obj.errorFlag = false;
             obj.errorMsg = '';

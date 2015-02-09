@@ -49,7 +49,7 @@
 
 int main() {
 	// simulation details
-	int N = 10000; // number of neurons
+	int N = 1000; // number of neurons
 	int ithGPU = 0; // run on first GPU
 
 	// create a network

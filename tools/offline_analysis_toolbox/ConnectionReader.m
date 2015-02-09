@@ -209,6 +209,9 @@ classdef ConnectionReader < handle
             obj.nSnapshots = -1;
             
             obj.supportedErrorModes = {'standard', 'warning', 'silent'};
+
+			% disable backtracing for warnings and errors
+			warning off backtrace
         end
         
         function openFile(obj)

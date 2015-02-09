@@ -810,6 +810,9 @@ classdef ConnectionMonitor < handle
 			obj.supportedPlotTypes = {'heatmap', 'histogram', ...
 				'receptivefield', 'responsefield'};
 			obj.supportedErrorModes = {'standard','warning','silent'};
+
+			% disable backtracing for warnings and errors
+			warning off backtrace
 		end
 		
 		function pauseOnKeyPressCallback(obj,~,eventData)

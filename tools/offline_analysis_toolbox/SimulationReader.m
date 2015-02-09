@@ -77,6 +77,9 @@ classdef SimulationReader < handle
             obj.fileSignature = 294338571;
             obj.fileVersionMajor = 0;
             obj.fileVersionMinor = 2;
+
+			% disable backtracing for warnings and errors
+			warning off backtrace
         end
         
         function privOpenFile(obj, loadSynapseInfo)
