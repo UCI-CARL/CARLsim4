@@ -27,7 +27,8 @@ CARLSIM_LIBS  += -L$(CARLSIM_LIB_DIR)/lib -lCARLsim
 
 local_src  := main_$(example).cpp
 local_prog := $(example)
-common_objs:= ../common/v1ColorME.2.0.o
+common_objs:= ../common/v1ColorME.2.0.o ../common/mtrand.o
+output_files += $(local_prog) $(local_objs)
 
 .PHONY: clean distclean
 # compile from CARLsim lib
