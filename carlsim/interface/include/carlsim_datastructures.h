@@ -315,6 +315,8 @@ struct RangeWeight {
  *   * Connect only the third dimension: RadiusRF(0, 0, 1)
  *   * Connect all, no matter the RF (default): RadiusRF(-1, -1, -1)
  *   * Don't connect anything (silly, not allowed): RadiusRF(0, 0, 0)
+ *
+ * \note A receptive field is defined from the point of view of a post-neuron.
  */
 struct RadiusRF {
 	RadiusRF(double rad) : radX(rad), radY(rad), radZ(rad) {}

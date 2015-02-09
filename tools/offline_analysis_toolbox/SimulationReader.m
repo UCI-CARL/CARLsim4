@@ -77,6 +77,9 @@ classdef SimulationReader < handle
             obj.fileSignature = 294338571;
             obj.fileVersionMajor = 0;
             obj.fileVersionMinor = 2;
+
+			% disable backtracing for warnings and errors
+			warning off backtrace
         end
         
         function privOpenFile(obj, loadSynapseInfo)
@@ -89,19 +92,20 @@ classdef SimulationReader < handle
             
             % read signature
             sign = fread(fid, 1, 'int32');
-            if sign~=obj.fileSignature
-                error('Unknown file type')
+            if feof(fid) || sign~=obj.fileSignature
+                error(['Unknown file type (' num2str(sign) ')'])
             end
             
             % read version number
             version = fread(fid, 1, 'float32');
-            if floor(version) ~= obj.fileVersionMajor
+            if feof(fid) || floor(version) ~= obj.fileVersionMajor
                 % check major number: must match
                 error(['File must be of version ' ...
                     num2str(obj.fileVersionMajor) '.x (Version ' ...
                     num2str(version) ' found'])
             end
-            if floor((version-obj.fileVersionMajor)*10.01)<obj.fileVersionMinor
+            if feof(fid) ...
+					|| floor((version-obj.fileVersionMajor)*10.01)<obj.fileVersionMinor
                 % check minor number: extract first digit after decimal point
                 % multiply 10.01 instead of 10 to avoid float rounding errors
                 error(['File version must be >= ' ...
@@ -136,7 +140,7 @@ classdef SimulationReader < handle
             % sim_with_homeostasis
             % sim_with_stp
             obj.sim = sim;
-            
+			
             
             %% READ GROUPS
             groups = struct('name',{},'startN',{},'endN',{},'sizeN',{},'grid3D',{});

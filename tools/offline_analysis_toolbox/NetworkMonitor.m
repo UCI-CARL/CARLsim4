@@ -2,9 +2,11 @@ classdef NetworkMonitor < handle
     % A NetworkMonitor can be used to monitor properties as well as the
     % activity of a number of neuronal groups in a network.
     %
+    % NM = NetworkMonitor(simFile,loadGroupsFromFile,errorMode) creates a
+    % new instance of class NetworkMonitor.
     % A NetworkMonitor will assume that the corresponding spike file for
     % each group has been created during the CARLsim simulation.
-    %
+	%
     % Example usage:
     % A) Automatically add all groups in the network
     %    >> NM = NetworkMonitor('results/sim_random.dat'); % read sim file
@@ -16,10 +18,15 @@ classdef NetworkMonitor < handle
     % B) Add groups one-by-one
     %    >> NM = NetworkMonitor('results/sim_random.dat',false);
     %    >> NM.addGroup('input','raster');
-    %    >> NM.plot(1:10,100); % frame=100ms, plot first ten frames
+    %    >> NM.plot(1:10,100); % frame=100ms, plot first 10 frames
     %    >> % etc.
+	% C) Add groups whose spike files don't follow the default file name,
+	%    say 'spikeFile_{groupName}.ext' instead of 'spk_{groupName}.dat'
+	%    >> NM = NetworkMonitor('results/sim_random.dat',false);
+	%    >> NM.setSpikeFileAttributes('spikeFile_','.ext')
+	%    >> NM.addAllGroupsFromFile()
     %
-    % Version 10/5/2014
+    % Version 1/19/2015
     % Author: Michael Beyeler <mbeyeler@uci.edu>
     
     %% PROPERTIES
@@ -58,7 +65,10 @@ classdef NetworkMonitor < handle
         recordFile;         % filename for recording
         recordFPS;          % frames per second for recording
         recordWinSize;      % window size of plot for recording
-    end
+
+        spkFilePrefix;      % spike file prefix, e.g. "spk_"
+        spkFileSuffix;      % spike file suffix, e.g. ".dat"
+	end
     
     
     %% PUBLIC METHODS
@@ -94,16 +104,9 @@ classdef NetworkMonitor < handle
             
             % parse input arguments
             if nargin<3
-                obj.errorMode = 'standard';
-            else
-                if ~obj.isErrorModeSupported(errorMode)
-                    obj.throwError(['errorMode "' errorMode '" is currently' ...
-                        ' not supported. Choose from the following: ' ...
-                        strjoin(obj.supportedErrorModes, ', ') '.'], ...
-                        'standard')
-                else
-                    obj.errorMode = errorMode;
-                end
+				obj.setErrorMode('standard');
+			else
+				obj.setErrorMode(errorMode);
             end
             if nargin<2,loadGroupsFromFile=true;end
             
@@ -121,14 +124,37 @@ classdef NetworkMonitor < handle
             
             % if flag is set, add all groups for plotting from file
             if loadGroupsFromFile
-                obj.addAllGroupsFromFile()
+                obj.addAllGroupsFromFile('silent')
             end
         end
         function delete(obj)
             % destructor
         end
         
-        function addGroup(obj, name, plotType, grid3D, subPlots, errorMode)
+        function addAllGroupsFromFile(obj, errMode)
+			% NM.addAllGroupsFromFile() adds all groups found in the
+			% simulation file (see NM constructor). This function is
+			% implicitly run if the flag loadGroupsFromFile in the NM
+			% constructor is set to true.
+			%
+			% This function can be helpful if there is a mismatch in the
+			% spike file attributes. For example, assume you want to add a
+			% group "output" with corresponding spike file "output.dat",
+			% but NM is looking for the default name, "spk_output.dat". So
+			% you can run:
+			% >> NM.setSpikeFileAttributes('','.dat')
+			% >> NM.addAllGroupsFromFile()
+			% and the missing groups will now be found.
+			obj.unsetError()
+			if nargin<2,errMode=obj.errorMode;end
+
+            for i=1:numel(obj.simObj.groups)
+                obj.addGroup(obj.simObj.groups(i).name, 'default', ...
+                    [], [], errMode)
+            end
+		end
+		
+		function addGroup(obj, name, plotType, grid3D, subPlots, errorMode)
             % NM.addGroup(name,plotType,grid3D,subPlots,errorMode) adds a
             % specific neuronal group to the NetworkMonitor.
             % This function is implicitly called on all groups if a
@@ -183,11 +209,17 @@ classdef NetworkMonitor < handle
             end
             
             % create GroupMonitor object for this group
-            GM = GroupMonitor(name, obj.resultsFolder, errorMode);
+			% create in silent to suppress "spike file not found" warning
+			% but set proper error mode right after
+            GM = GroupMonitor(name, obj.resultsFolder, 'silent');
+			GM.setErrorMode(errorMode);
+			
+			% set spike file attributes
+			GM.setSpikeFileAttributes(obj.spkFilePrefix,obj.spkFileSuffix)
             
             % check whether valid spike file found, exit if not found
-            [errFlag,errMsg] = GM.getError();
-            if errFlag
+            if ~GM.hasValidSpikeFile()
+	            [~,errMsg] = GM.getError();
                 obj.throwError(errMsg, errorMode);
                 return % make sure we exit after spike file not found
             end
@@ -314,11 +346,16 @@ classdef NetworkMonitor < handle
             if ~Utilities.verify(binWindowMs,{{'isscalar',[1 inf]}})
                 obj.throwError('Frame duration must be a scalar e[1 inf]')
                 return
-            end
+			end
+			
+			% start plotting in regular mode
+			obj.plotAbortPlotting = false;
+			obj.plotStepFrames = false;
             
             % make sure we have something to plot
             if obj.numSubPlots==0
-                disp('Nothing to plot. Try adding some groups first.')
+                obj.throwWarning(['Nothing to plot. Try adding some ' ...
+					'groups first.'])
                 return
             end
             
@@ -346,7 +383,6 @@ classdef NetworkMonitor < handle
             while idx <= numel(frames)
                 if obj.plotAbortPlotting
                     % user pressed button to quit plotting
-                    obj.plotAbortPlotting = false;
                     close;
                     return
                 end
@@ -358,28 +394,34 @@ classdef NetworkMonitor < handle
                 end
                 drawnow
                 
-                if obj.plotStepFrames
-                    % stepping mode: wait for user input
-                    while ~obj.plotAbortPlotting ...
-                            && ~obj.plotStepFramesFW ...
-                            && ~obj.plotStepFramesBW
-                        pause(0.1)
-                    end
-                    if obj.plotStepFramesBW
-                        % step one frame backward
-                        idx = max(1, idx-1);
-                    else
-                        % step one frame forward
-                        idx = idx + 1;
-                    end
-                    obj.plotStepFramesBW = false;
-                    obj.plotStepFramesFW = false;
-                else
-                    % wait according to frames per second, then
-                    % step forward
-                    pause(1.0/obj.plotFPS)
-                    idx = idx + 1;
-                end
+				if idx>=numel(frames)
+					waitforbuttonpress;
+					close;
+					return;
+				else
+					if obj.plotStepFrames
+						% stepping mode: wait for user input
+						while ~obj.plotAbortPlotting ...
+								&& ~obj.plotStepFramesFW ...
+								&& ~obj.plotStepFramesBW
+							pause(0.1)
+						end
+						if obj.plotStepFramesBW
+							% step one frame backward
+							idx = max(1, idx-1);
+						else
+							% step one frame forward
+							idx = idx + 1;
+						end
+						obj.plotStepFramesBW = false;
+						obj.plotStepFramesFW = false;
+					else
+						% wait according to frames per second, then
+						% step forward
+						pause(1.0/obj.plotFPS)
+						idx = idx + 1;
+					end
+				end
             end
             close;
         end
@@ -481,7 +523,28 @@ classdef NetworkMonitor < handle
             disp(['created file "' fileName '"'])
         end
         
-        function setGroupGrid3D(obj, groupName, dim0, dim1, dim2, ...
+		function setErrorMode(obj, errMode)
+			% NM.setErrorMode(errMode) sets the default error mode of the
+			% NetworkMonitor object to errMode.
+			%
+			% For a list of supported error mode, see the property
+			% NM.supportedErrorModes.
+			if nargin<2 || isempty(errMode) || strcmpi(errMode,'default')
+				errMode='standard';
+			end
+			
+			if ~obj.isErrorModeSupported(errMode)
+				obj.throwError(['errorMode "' errMode '" is ' ...
+					'currently not supported. Choose from the ' ...
+					'following: ' ...
+					strjoin(obj.supportedErrorModes,', ') ...
+					'.'], 'standard')
+				return
+			end
+			obj.errorMode = errMode;
+		end
+		
+		function setGroupGrid3D(obj, groupName, dim0, dim1, dim2, ...
                 updDefPlotType)
             % NM.setGroupGrid3D(groupName,dim0,dim1,dim2) sets the Grid3D
             % topography of the group. The total number of neurons in the
@@ -517,12 +580,29 @@ classdef NetworkMonitor < handle
             %                  default plotting type will be used, which
             %                  is determined by the Grid3D topography of
             %                  the group.
-            %                  The following types are currently supported:
-            %                   - heatmap   a topological map of group
-            %                               activity where hotter colors
-            %                               mean higher firing rate
-            %                   - raster    a raster plot with binning
-            %                               window: binWindowMs
+			%                 - flowfield A 2D vector field where the
+			%                             length of the vector is given as
+			%                             the firing rate of the neuron
+			%                             times the corresponding vector
+			%                             orientation. The latter is given
+			%                             by the third grid dimension, z.
+			%                             For example Grid3D(10,10,4) plots
+			%                             a 10x10 vector flow field,
+			%                             assuming that neurons with z=0
+			%                             code for direction=0deg, z=1 is
+			%                             90deg, z=2 is 180deg, z=3 is
+			%                             270deg. Vectors with length
+			%                             smaller than 10 % of the max in
+			%                             each frame are not shown.
+            %                 - heatmap   A topological map of group
+            %                             activity where hotter colors mean
+            %                             higher firing rate. 
+			%                 - histogram A histogram of firing rates.
+            %                             Histogram options ('histNumBins'
+            %                             and 'histShowRate') can be set
+            %                             via GM.setPlottingAttributes.
+            %                 - raster    A raster plot with binning window
+            %                             binWindowMs
             gId = obj.getGroupId(groupName);
             obj.groupMonObj{gId}.setPlotType(plotType);
         end
@@ -748,23 +828,41 @@ classdef NetworkMonitor < handle
                 % advance index to next attr
                 nextIndex = nextIndex + 2;
             end
-        end
+		end
+		
+		function setSpikeFileAttributes(obj,prefix,suffix)
+            % NM.setSpikeFileAttributes(prefix,suffix)
+            % Defines the naming conventions for spike files. They should
+            % all reside within the same folder as the simulation file, and
+            % be made of a common prefix, the population name (specified in
+            % NM.addGroup), and a common suffix.
+			%
+			% This function can be helpful if there is a mismatch in the
+			% spike file attributes. For example, assume you want to add a
+			% group "output" with corresponding spike file "output.dat",
+			% but NM is looking for the default name, "spk_output.dat". So
+			% you can run:
+			% >> NM.setSpikeFileAttributes('','.dat')
+			% >> NM.addAllGroupsFromFile()
+			% and the missing groups will now be found.
+			%
+            % Example: files 'results/spk_V1.dat', 'results/spkMT.dat'
+            %   -> saveFolder = 'results/'
+            %   -> prefix = 'spk_'
+            %   -> suffix = '.dat'
+            %   -> name of population = 'V1' or 'MT'
+            if nargin<3,suffix='.dat';end
+            if nargin<2,prefix='spk_';end
+            obj.unsetError()
+
+            obj.spkFilePrefix=prefix;
+            obj.spkFileSuffix=suffix;
+		end
     end
     
     
     %% PRIVATE METHODS
     methods (Hidden, Access = private)
-        function addAllGroupsFromFile(obj)
-            % add groups in silent mode, so that no errors are thrown if not
-            % all spike files are found
-            errMode = 'silent';
-            
-            for i=1:numel(obj.simObj.groups)
-                obj.addGroup(obj.simObj.groups(i).name, 'default', ...
-                    [], [], errMode)
-            end
-        end
-        
         function bool = existsGroupName(obj,name)
             % bool = NM.existsGroupName(name) checks whether a group has
             % been registered under name NAME
@@ -841,12 +939,17 @@ classdef NetworkMonitor < handle
             
             obj.setPlottingAttributes()
             obj.setRecordingAttributes()
+			obj.setSpikeFileAttributes()
+			obj.setErrorMode()
 
             obj.plotStepFrames = false;
             obj.plotStepFramesFW = false;
             obj.plotStepFramesBW = false;
 
             obj.numSubPlots = 0;
+
+			% disable backtracing for warnings and errors
+			warning off backtrace
         end
         
         function ntwMonOnKeyPressCallback(obj,~,eventData)

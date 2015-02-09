@@ -3414,52 +3414,138 @@ bool CpuSNN::isPoint3DinRF(const RadiusRF& radius, const Point3D& pre, const Poi
 
 	// inverse semi-principal axes of the ellipsoid
 	// avoid division by zero by working with inverse of semi-principal axes (set to large value)
-	double aa = (radius.radX>0) ? 1.0/radius.radX : 1e+20;
-	double bb = (radius.radY>0) ? 1.0/radius.radY : 1e+20;
-	double cc = (radius.radZ>0) ? 1.0/radius.radZ : 1e+20;
+	double aInv = (radius.radX>0) ? 1.0/radius.radX : 1e+20;
+	double bInv = (radius.radY>0) ? 1.0/radius.radY : 1e+20;
+	double cInv = (radius.radZ>0) ? 1.0/radius.radZ : 1e+20;
 
 	// ready output argument
 	// pre and post are connected, except if they fall in one of the following if-else cases
-	bool isInRF = true;
+	bool isInRF = false;
 
-	// how many semi-principal axes have negative value
-	int numNegRadii = (radius.radX<0) + (radius.radY<0) + (radius.radZ<0);
-	switch (numNegRadii) {
-		case 0:
-			// 3D ellipsoid: connect if x^2/a^2 + y^2/b^2 + z^2/c^2 <= 1
-			if ( norm((pre-post)*Point3D(aa,bb,cc)) > 1.0)
-				isInRF = false;
-			break;
-		case 1:
-			// 2D ellipse: connect if x^2/a^2 + y^2/b^2 <= 1, 3 choose 2
-			if (radius.radX<0 && norm((pre-post)*Point3D(0.0,bb,cc)) > 1.0)
-				isInRF = false;
-			else if (radius.radY<0 && norm((pre-post)*Point3D(aa,0.0,cc)) > 1.0)
-				isInRF = false;
-			else if (radius.radZ<0 && norm((pre-post)*Point3D(aa,bb,0.0)) > 1.0)
-				isInRF = false;
-			break;
-		case 2:
-			// 1D line: connect if x^2/a^2 <= 1, 3 choose 1
-			if (radius.radX>=0 && (pre.x-post.x)*(pre.x-post.x)*aa*aa > 1.0)
-				isInRF = false;
-			else if (radius.radY>=0 && (pre.y-post.y)*(pre.y-post.y)*bb*bb > 1.0)
-				isInRF = false;
-			else if (radius.radZ>=0 && (pre.z-post.z)*(pre.z-post.z)*cc*cc > 1.0)
-				isInRF = false;
-			break;
-		case 3:
-			// 3D no restrictions
-			isInRF = true;
-			break;
-		default:
-			KERNEL_ERROR("Invalid number of negative semi-principal axes: %d",numNegRadii);
+	// there are 27 different cases to consider
+	// we might be able to collapse some of them, but for now it's more important that it simply works
+	// pre and post are connected in a generic 3D ellipsoid RF if x^2/a^2 + y^2/b^2 + z^2/c^2 <= 1.0, where
+	// x = pre.x-post.x, y = pre.y-post.y, z = pre.z-post.z
+	// x < 0 means:  connect if y and z satisfy some constraints, but ignore x
+	// x == 0 means: connect if y and z satisfy some constraints, and enforce pre.x == post.x
+	if (radius.radX < 0) {
+		// x < 0
+		if (radius.radY < 0) {
+			// x < 0 && y < 0
+			if (radius.radZ < 0) {
+				// x < 0 && y < 0 && z < 0
+				isInRF = true; // always true
+			} else if (radius.radZ == 0) {
+				// x < 0 && y < 0 && z == 0
+				isInRF = pre.z == post.z;
+			} else {
+				// x < 0 && y < 0 && z > 0
+				isInRF = (pre.z-post.z)*(pre.z-post.z)*cInv*cInv <= 1.0;
+			}
+		} else if (radius.radY == 0) {
+			// x < 0 && y == 0
+			if (radius.radZ < 0) {
+				// x < 0 && y == 0 && z < 0
+				isInRF = pre.y == post.y;
+			} else if (radius.radZ == 0) {
+				// x < 0 && y == 0 && z == 0
+				isInRF = pre.y == post.y && pre.z == post.z;
+			} else {
+				// x < 0 && y == 0 && z > 0
+				isInRF = pre.y == post.y && (pre.z-post.z)*(pre.z-post.z)*cInv*cInv <= 1.0;
+			}
+		} else {
+			// x < 0 && y > 0
+			if (radius.radZ < 0) {
+				// x < 0 && y > 0 && z < 0
+				isInRF = (pre.y-post.y)*(pre.y-post.y)*bInv*bInv <= 1.0;
+			} else if (radius.radZ == 0) {
+				// x < 0 && y > 0 && z == 0
+				isInRF = pre.z == post.z && (pre.y-post.y)*(pre.y-post.y)*bInv*bInv <= 1.0;
+			} else {
+				// x < 0 && y > 0 && z > 0
+				isInRF = norm((pre-post)*Point3D(0.0,bInv,cInv)) <= 1.0;
+			}
+		}
+	} else if (radius.radX ==0) {
+		// x == 0
+		if (radius.radY < 0) {
+			// x == 0 && y < 0
+			if (radius.radZ < 0) {
+				// x == 0 && y < 0 && z < 0
+				isInRF = pre.x == post.x;
+			} else if (radius.radZ == 0) {
+				// x == 0 && y < 0 && z == 0
+				isInRF = pre.x == post.x && pre.z == post.z;
+			} else {
+				// x == 0 && y < 0 && z > 0
+				isInRF = pre.x == post.x && (pre.z-post.z)*(pre.z-post.z)*cInv*cInv <= 1.0;
+			}
+		} else if (radius.radY == 0) {
+			// x == 0 && y == 0
+			if (radius.radZ < 0) {
+				// x == 0 && y == 0 && z < 0
+				isInRF = pre.x == post.x && pre.y == post.y;
+			} else if (radius.radZ == 0) {
+				// x == 0 && y == 0 && z == 0
+				isInRF = pre.x == post.x && pre.y == post.y && pre.z == post.z;
+			} else {
+				// x == 0 && y == 0 && z > 0
+				isInRF = pre.x == post.x && pre.y == post.y && (pre.z-post.z)*(pre.z-post.z)*cInv*cInv <= 1.0;
+			}
+		} else {
+			// x == 0 && y > 0
+			if (radius.radZ < 0) {
+				// x == 0 && y > 0 && z < 0
+				isInRF = pre.x == post.x && (pre.y-post.y)*(pre.y-post.y)*bInv*bInv <= 1.0;
+			} else if (radius.radZ == 0) {
+				// x == 0 && y > 0 && z == 0
+				isInRF = pre.x == post.x && (pre.y-post.y)*(pre.y-post.y)*bInv*bInv <= 1.0 && pre.z == post.z;
+			} else {
+				// x == 0 && y > 0 && z > 0
+				isInRF = pre.x == post.x && norm((pre-post)*Point3D(0.0,bInv,cInv)) <= 1.0;
+			}
+		}
+	} else {
+		// x > 0
+		if (radius.radY < 0) {
+			// x > 0 && y < 0
+			if (radius.radZ < 0) {
+				// x > 0 && y < 0 && z < 0
+				isInRF = (pre.x-post.x)*(pre.x-post.x)*aInv*aInv <= 1.0;
+			} else if (radius.radZ == 0) {
+				// x > 0 && y < 0 && z == 0
+				isInRF = (pre.x-post.x)*(pre.x-post.x)*aInv*aInv <= 1.0 && pre.z == post.z;
+			} else {
+				// x > 0 && y < 0 && z > 0
+				isInRF = norm((pre-post)*Point3D(aInv,0.0,cInv)) <= 1.0;
+			}
+		} else if (radius.radY == 0) {
+			// x > 0 && y == 0
+			if (radius.radZ < 0) {
+				// x > 0 && y == 0 && z < 0
+				isInRF = (pre.x-post.x)*(pre.x-post.x)*aInv*aInv <= 1.0 && pre.y == post.y;
+			} else if (radius.radZ == 0) {
+				// x > 0 && y == 0 && z == 0
+				isInRF = (pre.x-post.x)*(pre.x-post.x)*aInv*aInv <= 1.0 && pre.y == post.y && pre.z == post.z;
+			} else {
+				// x > 0 && y == 0 && z > 0
+				isInRF = norm((pre-post)*Point3D(aInv,0.0,cInv)) <= 1.0 && pre.y == post.y;
+			}
+		} else {
+			// x > 0 && y > 0
+			if (radius.radZ < 0) {
+				// x > 0 && y > 0 && z < 0
+				isInRF = norm((pre-post)*Point3D(aInv,bInv,0.0)) <= 1.0;
+			} else if (radius.radZ == 0) {
+				// x > 0 && y > 0 && z == 0
+				isInRF = norm((pre-post)*Point3D(aInv,bInv,0.0)) <= 1.0 && pre.z == post.z;
+			} else {
+				// x > 0 && y > 0 && z > 0
+				isInRF = norm((pre-post)*Point3D(aInv,bInv,cInv)) <= 1.0;
+			}
+		}
 	}
-
-//	if (!isInRF) {
-//		std::cout << "Skipping " << pre << " to " << post << " with " << radius << " and numNegRadii="
-//			<< numNegRadii << std::endl;
-//	}
 
 	return isInRF;
 }

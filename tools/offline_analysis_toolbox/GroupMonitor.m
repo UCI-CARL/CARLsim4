@@ -13,7 +13,7 @@ classdef GroupMonitor < handle
     % >> GM.recordMovie; % plots heat map and saves as 'movie.avi'
     % >> % etc.
     %
-    % Version 12/18/2014
+    % Version 1/19/2015
     % Author: Michael Beyeler <mbeyeler@uci.edu>
     
     %% PROPERTIES
@@ -93,19 +93,11 @@ classdef GroupMonitor < handle
             obj.name = name;
             obj.unsetError()
             obj.loadDefaultParams();
-            
-            if nargin<3
-                obj.errorMode = 'standard';
-            else
-                if ~obj.isErrorModeSupported(errorMode)
-                    obj.throwError(['errorMode "' errorMode '" is ' ...
-                        'currently not supported. Choose from the ' ...
-                        'following: ' ...
-                        strjoin(obj.supportedErrorModes,', ') ...
-                        '.'], 'standard')
-                    return
-                end
-                obj.errorMode = errorMode;
+			
+			if nargin<3
+				obj.setErrorMode('standard');
+			else
+				obj.setErrorMode(errorMode);
             end
             if nargin<2 || nargin>=2 && strcmpi(resultsFolder,'')
                 obj.resultsFolder = '.';
@@ -118,7 +110,13 @@ classdef GroupMonitor < handle
             end
             
             % make sure spike file is valid
-            obj.initSpikeReader();
+			if ~obj.hasValidSpikeFile()
+				obj.throwWarning(['Could not find valid spike file "' ...
+					obj.getSpikeFileName() '". Use ' ...
+					'setSpikeFileAttributes to set a proper spike ' ...
+					'file prefix/suffix'])
+				return
+			end
         end
                 
         function delete(obj)
@@ -188,6 +186,7 @@ classdef GroupMonitor < handle
             % duration in milliseconds. This is equivalent to the time
             % stamp of the last spike that occurred.
             obj.unsetError()
+			obj.initSpikeReader()
             simDurMs = obj.spkObj.getSimDurMs();
         end
         
@@ -230,16 +229,37 @@ classdef GroupMonitor < handle
             %
             % The full list of available attributes can be set using
             % GM.setPlottingAttributes.
+			%
+			% For a list of supported plot types see member variable
+			% GM.supportedPlotTypes.
             %
             % PLOTTYPE     - The plotting type to use. If not set, the
             %                default plotting type will be used, which is
             %                determined by the Grid3D topography of the
             %                group.
             %                The following types are currently supported:
-            %                 - heatmap   a topological map of group
+			%                 - flowfield A 2D vector field where the
+			%                             length of the vector is given as
+			%                             the firing rate of the neuron
+			%                             times the corresponding vector
+			%                             orientation. The latter is given
+			%                             by the third grid dimension, z.
+			%                             For example Grid3D(10,10,4) plots
+			%                             a 10x10 vector flow field,
+			%                             assuming that neurons with z=0
+			%                             code for direction=0deg, z=1 is
+			%                             90deg, z=2 is 180deg, z=3 is
+			%                             270deg. Vectors with length
+			%                             smaller than 10 % of the max in
+			%                             each frame are not shown.
+            %                 - heatmap   A topological map of group
             %                             activity where hotter colors mean
-            %                             higher firing rate
-            %                 - raster    a raster plot with binning window
+            %                             higher firing rate. 
+			%                 - histogram A histogram of firing rates.
+            %                             Histogram options ('histNumBins'
+            %                             and 'histShowRate') can be set
+            %                             via GM.setPlottingAttributes.
+            %                 - raster    A raster plot with binning window
             %                             binWindowMs
             %                Default: 'default'.
             % FRAMES       - A list of frame numbers. For example,
@@ -249,12 +269,13 @@ classdef GroupMonitor < handle
             % BINWINDOWMS  - The binning window (ms) in which the data will
             %                be displayed. Default: 1000.
             if nargin<4,binWindowMs=obj.plotBinWinMs;end
-            if nargin<3 || isempty(frames) || frames==-1
+            if nargin<3 || isempty(frames) || numel(frames)==1 && frames==-1
                 obj.initSpikeReader()
                 frames = 1:ceil(obj.spkObj.getSimDurMs()/binWindowMs);
             end
             if nargin<2,plotType=obj.plotType;end
             obj.unsetError()
+			obj.initSpikeReader()
             
             % verify input
             if ~Utilities.verify(frames,{{'isvector','isnumeric',[1 inf]}})
@@ -264,7 +285,11 @@ classdef GroupMonitor < handle
             if ~Utilities.verify(binWindowMs,{{'isscalar',[1 inf]}})
                 obj.throwError('Frame duration must be a scalar e[1 inf]')
                 return
-            end
+			end
+			
+			% start plotting in regular mode
+			obj.plotAbortPlotting = false;
+			obj.plotStepFrames = false;
             
             % reset abort flag, set up callback for key press events
             if obj.plotInteractiveMode
@@ -279,56 +304,56 @@ classdef GroupMonitor < handle
             % use a while loop instead of a for loop so that we can
             % implement stepping backward
             idx = 1;
-            while idx <= numel(frames)
-                if obj.plotInteractiveMode && obj.plotAbortPlotting
-                    % user pressed button to quit plotting
-                    obj.plotAbortPlotting = false;
-                    close;
-                    return
-                end
-                
-                % plot the frame
-                obj.plotFrame(frames(idx), plotType, binWindowMs, ...
-                    obj.plotDispFrameNr);
-                drawnow
-
-                % in interactive mode, key press events are active
-                if obj.plotInteractiveMode
-                    if idx==numel(frames)
-                        waitforbuttonpress;
-                    else
-                        if obj.plotStepFrames
-                            % stepping mode: wait for user input
-                            while ~obj.plotAbortPlotting ...
-                                    && ~obj.plotStepFramesFW ...
-                                    && ~obj.plotStepFramesBW
-                                pause(0.1)
-                            end
-                            if obj.plotStepFramesBW
-                                % step one frame backward
-                                idx = max(1, idx-1);
-                            else
-                                % step one frame forward
-                                idx = idx + 1;
-                            end
-                            obj.plotStepFramesBW = false;
-                            obj.plotStepFramesFW = false;
-                        else
-                            % wait according to frames per second, then
-                            % step forward
-                            pause(1.0/obj.plotFPS)
-                            idx = idx + 1;
-                        end
-                    end
-                else
-                    % wait according to frames per second, then
-                    % step forward
-                    pause(1.0/obj.plotFPS)
-                    idx = idx + 1;
-                end
-            end
-            if obj.plotInteractiveMode,close;end
-        end
+			while idx <= numel(frames)
+				if obj.plotInteractiveMode && obj.plotAbortPlotting
+					% user pressed button to quit plotting
+					close;
+					return;
+				end
+				
+				% plot the frame
+				obj.plotFrame(frames(idx), plotType, binWindowMs, ...
+					obj.plotDispFrameNr);
+				drawnow
+				
+				% in interactive mode, key press events are active
+				if obj.plotInteractiveMode
+					if idx>=numel(frames)
+						waitforbuttonpress;
+						close;
+						return;
+					else
+						if obj.plotStepFrames
+							% stepping mode: wait for user input
+							while ~obj.plotAbortPlotting ...
+									&& ~obj.plotStepFramesFW ...
+									&& ~obj.plotStepFramesBW
+								pause(0.1)
+							end
+							if obj.plotStepFramesBW
+								% step one frame backward
+								idx = max(1, idx-1);
+							else
+								% step one frame forward
+								idx = idx + 1;
+							end
+							obj.plotStepFramesBW = false;
+							obj.plotStepFramesFW = false;
+						else
+							% wait according to frames per second, then
+							% step forward
+							pause(1.0/obj.plotFPS)
+							idx = idx + 1;
+						end
+					end
+				else
+					% wait according to frames per second, then
+					% step forward
+					pause(1.0/obj.plotFPS)
+					idx = idx + 1;
+				end
+			end
+		end
         
         function recordMovie(obj, fileName, frames, binWindowMs, fps, winSize)
             % NM.recordMovie(fileName, frames, frameDur, fps, winSize)
@@ -355,12 +380,13 @@ classdef GroupMonitor < handle
             if nargin<6,winSize=obj.recordWinSize;end
             if nargin<5,fps=obj.recordFPS;end
             if nargin<4,binWindowMs=obj.plotBinWinMs;end
-            if nargin<3 || isempty(frames) || frames==-1
+            if nargin<3 || isempty(frames) || numel(frames)==1 && frames==-1
                 obj.initSpikeReader()
                 frames = 1:ceil(obj.spkObj.getSimDurMs()/binWindowMs);
             end
             if nargin<2,fileName=obj.recordFile;end
             obj.unsetError()
+			obj.initSpikeReader()
             
             % verify input
             if ~Utilities.verify(fileName,'ischar')
@@ -407,7 +433,25 @@ classdef GroupMonitor < handle
             close(gcf)
             close(vidObj);
             disp(['created file "' fileName '"'])
-        end
+		end
+		
+		function setErrorMode(obj, errMode)
+			% GM.setErrorMode(errMode) sets the default error mode of the
+			% GroupMonitor object to errMode.
+			%
+			% For a list of supported error mode, see the property
+			% GM.supportedErrorModes.
+			if nargin<2,errMode='standard';end
+			
+			if ~obj.isErrorModeSupported(errMode)
+				obj.throwError(['errorMode "' errMode '" is ' ...
+					'currently not supported. Choose from the ' ...
+					'following: ' ...
+					strjoin(obj.supportedErrorModes,', ') ...
+					'.'], 'standard')
+				return
+			end
+		end
         
         function setGrid3D(obj, dim0, dim1, dim2, updDefPlotType)
             % GM.setGrid3D(dim0, dim1, dim2) sets the Grid3D topography of
@@ -731,11 +775,27 @@ classdef GroupMonitor < handle
         end
         
         function setSpikeFileAttributes(obj,prefix,suffix)
-            % obj.setSpikeFileAttributes(prefix,suffix)
-            % Defines the naming conventions for spike files. They should
-            % all reside within SAVEFOLDER (specified in constructor), and
-            % be made of a common prefix, the population name (specified in
-            % ADDPOPULATION), and a common suffix.
+            % GM.setSpikeFileAttributes(prefix,suffix) defines the naming
+            % conventions for the spike file. The file should reside within
+            % resultsFolder, be made of a prefix, the population name, and
+            % a suffix.
+			% The default will be something like 'results/spk_{group}.dat"
+			%
+			% This function can be helpful if there is a mismatch in the
+			% spike file attributes. For example, assume you want to add a
+			% group "output" with corresponding spike file "output.dat",
+			% but NM is looking for the default name, "spk_output.dat". So
+			% you can run:
+			% >> NM.setSpikeFileAttributes('','.dat')
+			% >> NM.addAllGroupsFromFile()
+			% and the missing groups will now be found.
+			%
+			% PREFIX         - A prefix string for the file name. Default:
+			%                  'spk_'.
+			% SUFFIX         - A suffix string for the file name,
+			%                  containing the file extension. Default:
+			%                  '.dat'
+			%
             % Example: files 'results/spk_V1.dat', 'results/spkMT.dat'
             %   -> saveFolder = 'results/'
             %   -> prefix = 'spk_'
@@ -747,7 +807,7 @@ classdef GroupMonitor < handle
             
             % need to re-load if file name changes
             if ~strcmpi(obj.spkFilePrefix,prefix) ...
-                    || ~strcmpi(obj.spikeFileSuffix,suffix)
+                    || ~strcmpi(obj.spkFileSuffix,suffix)
                 obj.needToInitSR = true;
                 obj.needToLoadData = true;
             end
@@ -774,10 +834,6 @@ classdef GroupMonitor < handle
                 obj.throwError(errMsg)
                 return
             end
-            if sum(obj.grid3D==-1)~=1
-                disp('in initSR')
-                obj.grid3D
-            end
             obj.grid3D = obj.spkObj.getGrid3D();
             obj.needToInitSR = false;
             obj.needToLoadData = true;
@@ -785,6 +841,7 @@ classdef GroupMonitor < handle
         
         function isSupported = isErrorModeSupported(obj, errMode)
             % determines whether an error mode is currently supported
+			if nargin<2,errMode='standard';end
             isSupported = sum(ismember(obj.supportedErrorModes,errMode))>0;
         end
         
@@ -849,12 +906,22 @@ classdef GroupMonitor < handle
                 flowX = zeros(obj.grid3D(1),obj.grid3D(2),numFrames);
                 flowY = zeros(obj.grid3D(1),obj.grid3D(2),numFrames);
                 for f=1:numFrames
+					tmpX = flowX(:,:,f);
+					tmpY = flowY(:,:,f);
                     for d=1:obj.grid3D(3)
-                        flowX(:,:,f) = flowX(:,:,f) ...
-                            + cos(dir(d)).*squeeze(spkBuffer(f,:,:,d));
-                        flowY(:,:,f) = flowY(:,:,f) ...
-                            + sin(dir(d)).*squeeze(spkBuffer(f,:,:,d));
-                    end
+						tmpX = tmpX + cos(dir(d)) ...
+							.* squeeze(spkBuffer(f,:,:,d));
+						tmpY = tmpY + sin(dir(d)) ...
+							.* squeeze(spkBuffer(f,:,:,d));
+					end
+					
+					% don't show vector if len < 10 % of max
+					maxLen = max(max( sqrt(tmpX.^2+tmpY.^2) ));
+					indTooShort = sqrt(tmpX.^2+tmpY.^2) < 0.1*maxLen;
+					tmpX(indTooShort) = 0;
+					tmpY(indTooShort) = 0;
+					flowX(:,:,f) = tmpX;
+					flowY(:,:,f) = tmpY;
                 end
                 clear spkBuffer;
                 spkBuffer(:,:,1,:) = flowX;
@@ -919,6 +986,9 @@ classdef GroupMonitor < handle
             obj.supportedPlotTypes  = {'flowfield', 'heatmap', ...
                 'histogram', 'raster'};
             obj.supportedErrorModes = {'standard', 'warning', 'silent'};
+			
+			% disable backtracing for warnings and errors
+			warning off backtrace
         end
         
         function pauseOnKeyPressCallback(obj,~,eventData)
@@ -960,11 +1030,17 @@ classdef GroupMonitor < handle
             
             % load data and reshape for plotting if necessary
             obj.loadDataForPlotting(plotType, frameDur);
+			if numel(size(obj.spkData))==4 && frameNr > size(obj.spkData,4)
+				warning(['frameNr=' num2str(frameNr) ' exceeds ' ...
+					'number of frames (' num2str(size(obj.spkData,4)) ...
+					')'])
+				return;
+			end
             
             if strcmpi(obj.plotType,'flowfield')
                 frame = obj.spkData(:,:,:,frameNr);
                 [x,y] = meshgrid(1:obj.grid3D(1),1:obj.grid3D(2));
-                quiver(x,y,frame(:,:,1),frame(:,:,2));
+                quiver(x',y',frame(:,:,1)',frame(:,:,2)');
                 axis equal
                 axis([1 max(2,size(frame,1)) 1 max(2,size(frame,2))])
                 title(['Group ' obj.name])
@@ -1056,7 +1132,20 @@ classdef GroupMonitor < handle
             end
         end
         
-        function unsetError(obj)
+        function throwWarning(obj, errorMsg, errorMode)
+            % THROWWARNING(errorMsg, errorMode) throws a warning with a
+            % specific severity (errorMode).
+            % If errorMode is not given, obj.errorMode is used.
+            if nargin<3,errorMode=obj.errorMode;end
+            
+            if strcmpi(errorMode,'standard')
+                warning(errorMsg)
+            elseif strcmpi(errorMode,'warning')
+                disp(errorMsg)
+            end
+		end
+		
+		function unsetError(obj)
             % unsets error message and flag
             obj.errorFlag = false;
             obj.errorMsg = '';

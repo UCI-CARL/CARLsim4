@@ -24,14 +24,14 @@ ConnectionMonitorCore::ConnectionMonitorCore(CpuSNN* snn,int monitorId,short int
 	needToWriteFileHeader_ = true;
 	needToInit_ = true;
 	connFileSignature_ = 202029319;
-	connFileVersion_ = 0.1f;
+	connFileVersion_ = 0.2f;
 }
 
 void ConnectionMonitorCore::init() {
 	if (!needToInit_)
 		return;
 
-	nNeurPre_ = snn_->getGroupNumNeurons(grpIdPre_);
+	nNeurPre_  = snn_->getGroupNumNeurons(grpIdPre_);
 	nNeurPost_ = snn_->getGroupNumNeurons(grpIdPost_);
 	isPlastic_ = snn_->isConnectionPlastic(connId_);
 	nSynapses_ = snn_->getNumSynapticConnections(connId_);
@@ -344,16 +344,26 @@ void ConnectionMonitorCore::writeConnectFileHeader() {
 	if (!fwrite(&connId_,sizeof(short int),1,connFileId_))
 		KERNEL_ERROR("ConnectionMonitor: writeConnectFileHeader has fwrite error");
 
-	// write pre group info: group id and # neurons
+	// write pre group info: group id and Grid3D dimensions
+	Grid3D gridPre = snn_->getGroupGrid3D(grpIdPre_);
 	if (!fwrite(&grpIdPre_,sizeof(int),1,connFileId_))
 		KERNEL_ERROR("ConnectionMonitor: writeConnectFileHeader has fwrite error");
-	if (!fwrite(&nNeurPre_,sizeof(int),1,connFileId_))
+	if (!fwrite(&(gridPre.x),sizeof(int),1,connFileId_))
+		KERNEL_ERROR("ConnectionMonitor: writeConnectFileHeader has fwrite error");
+	if (!fwrite(&(gridPre.y),sizeof(int),1,connFileId_))
+		KERNEL_ERROR("ConnectionMonitor: writeConnectFileHeader has fwrite error");
+	if (!fwrite(&(gridPre.z),sizeof(int),1,connFileId_))
 		KERNEL_ERROR("ConnectionMonitor: writeConnectFileHeader has fwrite error");
 
 	// write post group info: group id and # neurons
+	Grid3D gridPost = snn_->getGroupGrid3D(grpIdPost_);
 	if (!fwrite(&grpIdPost_,sizeof(int),1,connFileId_))
 		KERNEL_ERROR("ConnectionMonitor: writeConnectFileHeader has fwrite error");
-	if (!fwrite(&nNeurPost_,sizeof(int),1,connFileId_))
+	if (!fwrite(&(gridPost.x),sizeof(int),1,connFileId_))
+		KERNEL_ERROR("ConnectionMonitor: writeConnectFileHeader has fwrite error");
+	if (!fwrite(&(gridPost.y),sizeof(int),1,connFileId_))
+		KERNEL_ERROR("ConnectionMonitor: writeConnectFileHeader has fwrite error");
+	if (!fwrite(&(gridPost.z),sizeof(int),1,connFileId_))
 		KERNEL_ERROR("ConnectionMonitor: writeConnectFileHeader has fwrite error");
 
 	// write number of synapses
