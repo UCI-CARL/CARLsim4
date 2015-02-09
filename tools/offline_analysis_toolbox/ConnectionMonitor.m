@@ -239,28 +239,70 @@ classdef ConnectionMonitor < handle
 			% PLOTTYPE     - The plotting type to use. If not set, the
 			%                default plotting type will be used.
 			%                The following types are currently supported:
-			%                 - heatmap   a topological map of the weight
-			%                             matrix where hotter colors mean
-			%                             higher firing rate (first dim=pre
-			%                             and second dim=post).
-			%                 - histogram a histogram of all weight values
+			%                 - heatmap         A topological map of the
+			%                                   weight matrix where hotter
+			%                                   colors mean higher firing
+			%                                   rate (first dim=pre and
+			%                                   second dim=post).
+			%                 - histogram       A histogram of all weight
+			%                                   values.
+			%                 - receptivefield  A spatial map of a neuron's
+			%                                   receptive field (post
+			%                                   group). Use input argument
+			%                                   NEURONS to specify a list
+			%                                   of post-neurons.
+			%                 - responsefield   A spatial map of a neuron's
+			%                                   response field (pre group).
+			%                                   Use input argument NEURONS
+			%                                   to specify a list of
+			%                                   pre-neurons.
 			%                Default: 'default'.
 			% FRAMES       - A list of frame (or snapshot) numbers. For
 			%                example, requesting frames=[1 2 8] will
 			%                display the first, second, and eighth frame.
 			%                Default: display all frames.
-			if nargin<4,neurons=1;end
-			if nargin<3 || isempty(frames) || frames==-1
+			% NEURONS      - A list of neuron IDs for which to generate
+			%                receptive fields or response fields. For
+			%                example, requestion neurons=[1 2 8] will
+			%                display the receptive (response) field of the
+			%                first, second, and eight neuron in post (pre).
+			%                Default: display all neurons.
+			if nargin<2,plotType=obj.plotType;end
+			if nargin<3 || isempty(frames) || numel(frames)==1&&frames==-1
 				obj.initConnectionReader()
 				frames = 1:ceil(obj.CR.getNumSnapshots());
 			end
-			if nargin<2,plotType=obj.plotType;end
+			if nargin<4 || isempty(neurons) ...
+					|| numel(neurons)==1 && neurons==-1
+				if strcmpi(plotType,'receptivefield')
+					neurons = 1:obj.CR.getNumNeuronsPost();
+				elseif strcmpi(plotType,'responsefield')
+					neurons = 1:obj.CR.getNumNeuronsPre();
+				end
+			end
 			obj.unsetError()
 			
 			% verify input
+			if strcmpi(plotType,'receptivefield')
+				if ~Utilities.verify(neurons,{{'isvector','isnumeric', ...
+						[1 obj.CR.getNumNeuronsPost()]}})
+					obj.throwError('Neurons must be a numeric vector e[1,inf]')
+					return
+				end
+			elseif strcmpi(plotType,'responsefield')
+				if ~Utilities.verify(neurons,{{'isvector','isnumeric', ...
+						[1 obj.CR.getNumNeuronsPre()]}})
+					obj.throwError('Neurons must be a numeric vector e[1,inf]')
+					return
+				end
+			end
 			if ~Utilities.verify(frames,{{'isvector','isnumeric',[1 inf]}})
 				obj.throwError('Frames must be a numeric vector e[1,inf]')
 				return
+			end
+			if ~obj.isPlotTypeSupported(plotType)
+				obj.throwError(['Plot type "' plotType '" is not ' ...
+					'supported. See variable CM.supportedPlotTypes.'])
 			end
 			
 			% reset abort flag, set up callback for key press events
@@ -286,7 +328,7 @@ classdef ConnectionMonitor < handle
 				
 				% plot the frame
 				obj.plotFrame(frames(idx), plotType, neurons, obj.plotDispFrameNr);
-				drawnow
+				drawnow 
 				
 				% in interactive mode, key press events are active
 				if obj.plotInteractiveMode
@@ -876,10 +918,6 @@ classdef ConnectionMonitor < handle
 				grid3DPre = obj.CR.getGrid3DPre();
 				grid3DPost = obj.CR.getGrid3DPost();
 				
-				% make sure neuron list is valid: show for all pre-neurons
-				if numel(neurons)==1 || sum(neurons<=0)>0
-					neurons = 1:prod(obj.CR.getGrid3DPre());
-				end
 				nPlots = numel(neurons);
 				[nRows, nCols] = obj.findPlotLayout(nPlots);
 				for r=1:nRows
@@ -945,11 +983,8 @@ classdef ConnectionMonitor < handle
 				% to one post-neuron
 				grid3DPre = obj.CR.getGrid3DPre();
 				grid3DPost = obj.CR.getGrid3DPost();
-				
-				% make sure neuron list is valid: show for all post-neurons
-				if numel(neurons)==1 || sum(neurons<=0)>0
-					neurons = 1:prod(grid3DPost);
-				end
+
+				neurons
 				nPlots = numel(neurons);
 				[nRows, nCols] = obj.findPlotLayout(nPlots);
 				for r=1:nRows

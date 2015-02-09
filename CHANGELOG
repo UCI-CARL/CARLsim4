@@ -7,6 +7,18 @@ Legend:
 Release 3.0
 ===============================================================================
 
+2015-02-08     Michael Beyeler <mbeyeler@uci.edu>
+  + Added plot types "receptivefield", "responsfield" in ConnectionMonitor.m
+    (OAT).
+  * Fixed RadiusRF issues when one or more coordinates are zero.
+  * Fixed flow fields in GroupMonitor.m (OAT).
+  * Fixed setSpikeFileAttributes() issue in NetworkMonitor.m (OAT).
+  * Cleaned up OAT.
+
+2015-02-02     Michael Beyeler <mbeyeler@uci.edu>
+  * Fixed 3D coordinate calculation in Grid3D.
+  + Added Tutorial and code documentation on 3D topography.
+
 2015-01-10     Michael Beyeler <mbeyeler@uci.edu>
   + Added SpikeCounter support for SpikeGenerator groups.
   * Fixed the bug in GPU mode where Poisson groups cannot generate spikes if
