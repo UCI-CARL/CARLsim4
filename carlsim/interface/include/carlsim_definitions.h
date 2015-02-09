@@ -74,7 +74,7 @@
 #define IS_EXCITATORY_TYPE(type)	(!IS_INHIBITORY_TYPE(type))
 
 #define CARLSIM_ERROR(where, what) fprintf(stderr,"\033[31;1m[USER ERROR %s] %s\033[0m\n",where,what)
-#define CARLSIM_WARN(where, what) fprintf(stderr,"\033[33;1m[USER ERROR %s] %s\033[0m\n",where,what)
+#define CARLSIM_WARN(where, what) fprintf(stderr,"\033[33;1m[USER WARNING %s] %s\033[0m\n",where,what)
 #define CARLSIM_INFO(where, what) fprintf(stdout,"\033[%s] %s\n",where,what)
 
 #define MAX_NUM_CUDA_DEVICES 8

@@ -2652,8 +2652,6 @@ void CpuSNN::connectFull(grpConnectInfo_t* info) {
 		}
 	}
 
-//	printf("numConnections=%d\n",info->numberOfConnections);
-
 	grp_Info2[grpSrc].sumPostConn += info->numberOfConnections;
 	grp_Info2[grpDest].sumPreConn += info->numberOfConnections;
 }
@@ -2681,21 +2679,17 @@ void CpuSNN::connectGaussian(grpConnectInfo_t* info) {
 			// if rfDist is valid, it returns a number between 0 and 1
 			// we want these numbers to fit to Gaussian weigths, so that rfDist=0 corresponds to max Gaussian weight
 			// and rfDist=1 corresponds to 0.1 times max Gaussian weight
-			// so we're looking at gaussDist = exp(-a*rfDist), where a such that exp(-a)=0.1
+			// so we're looking at gauss = exp(-a*rfDist), where a such that exp(-a)=0.1
 			// solving for a, we find that a = 2.3026
-			double gaussDist = exp(-2.3026*rfDist);
-			if (gaussDist < 0.1)
+			double gauss = exp(-2.3026*rfDist);
+			if (gauss < 0.1)
 				continue;
 
-			if (drand48() < info->p*gaussDist) {
-//			if (loc_i.x==3 && loc_i.y==3 && loc_i.z==3)
-				std::cout << "d=" << gaussDist << ": connecting " << i << " at " << loc_i << " to " << j << " at " << loc_j << std::endl;
-				uint8_t dVal = info->minDelay + rand() % (info->maxDelay - info->minDelay + 1);
-				assert((dVal >= info->minDelay) && (dVal <= info->maxDelay));
-				float synWt = getWeights(info->connProp, info->initWt, info->maxWt, i, grpSrc);
-				setConnection(grpSrc, grpDest, i, j, synWt, info->maxWt, dVal, info->connProp, info->connId);
-				info->numberOfConnections++;
-			}
+			uint8_t dVal = info->minDelay + rand() % (info->maxDelay - info->minDelay + 1);
+			assert((dVal >= info->minDelay) && (dVal <= info->maxDelay));
+			float synWt = gauss * info->initWt; // scale weight according to gauss distance
+			setConnection(grpSrc, grpDest, i, j, synWt, info->maxWt, dVal, info->connProp, info->connId);
+			info->numberOfConnections++;
 		}
 	}
 
@@ -2708,9 +2702,8 @@ void CpuSNN::connectOneToOne (grpConnectInfo_t* info) {
 	int grpDest = info->grpDest;
 	assert( grp_Info[grpDest].SizeN == grp_Info[grpSrc].SizeN );
 
-	// NOTE: RadiusRF does not make a difference here. Radius>0 is not allowed
+	// NOTE: RadiusRF does not make a difference here: ignore
 	for(int nid=grp_Info[grpSrc].StartN,j=grp_Info[grpDest].StartN; nid<=grp_Info[grpSrc].EndN; nid++, j++)  {
-		//uint8_t dVal = info->minDelay + (int)(0.5+(drand48()*(info->maxDelay-info->minDelay)));
 		uint8_t dVal = info->minDelay + rand() % (info->maxDelay - info->minDelay + 1);
 		assert((dVal >= info->minDelay) && (dVal <= info->maxDelay));
 		float synWt = getWeights(info->connProp, info->initWt, info->maxWt, nid, grpSrc);
@@ -3572,7 +3565,7 @@ double CpuSNN::getRFDist3D(const RadiusRF& radius, const Point3D& pre, const Poi
 				rfDist = norm((pre-post)*Point3D(0.0,bInv,cInv));
 			}
 		}
-	} else if (radius.radX ==0) {
+	} else if (radius.radX == 0) {
 		// x == 0
 		if (radius.radY < 0) {
 			// x == 0 && y < 0
@@ -3645,6 +3638,8 @@ double CpuSNN::getRFDist3D(const RadiusRF& radius, const Point3D& pre, const Poi
 			} else if (radius.radZ == 0) {
 				// x > 0 && y > 0 && z == 0
 				rfDist = (pre.z == post.z) ? norm((pre-post)*Point3D(aInv,bInv,0.0)) : -1.0;
+//				if (pre.z == post.z && post.x==0 && post.y==0 && post.z==0)
+//					std::cout << "x>0, y>0, z==0: " << pre << " " << post << " rfDist=" << rfDist << std::endl;
 			} else {
 				// x > 0 && y > 0 && z > 0
 				rfDist = norm((pre-post)*Point3D(aInv,bInv,cInv));

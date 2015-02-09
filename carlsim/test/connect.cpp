@@ -222,49 +222,6 @@ TEST(CONNECT, connectRandom) {
 	delete sim;
 }
 
-/*
-
-// testing all ways to create a 1D Gaussian
-TEST(CONNECT, connectGaussian1D) {
-	CARLsim* sim = new CARLsim("CORE.connectGaussian1D",CPU_MODE,USER,0,42);
-	Grid3D grid(14,15,16);
-	int g0=sim->createGroup("excit0", grid, EXCITATORY_NEURON);
-	int g1=sim->createGroup("excit1", grid, EXCITATORY_NEURON);
-	int g2=sim->createGroup("excit2", grid, EXCITATORY_NEURON);
-	int g3=sim->createGroup("excit3", grid, EXCITATORY_NEURON);
-	int g4=sim->createGroup("excit4", grid, EXCITATORY_NEURON);
-	int g5=sim->createGroup("excit5", grid, EXCITATORY_NEURON);
-	sim->setNeuronParameters(g0, 0.02f, 0.2f, -65.0f, 8.0f);
-	sim->setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f);
-	sim->setNeuronParameters(g2, 0.02f, 0.2f, -65.0f, 8.0f);
-	sim->setNeuronParameters(g3, 0.02f, 0.2f, -65.0f, 8.0f);
-	sim->setNeuronParameters(g4, 0.02f, 0.2f, -65.0f, 8.0f);
-	sim->setNeuronParameters(g5, 0.02f, 0.2f, -65.0f, 8.0f);
-
-	double prob = 1.0;
-	int c0=sim->connect(g0,g0,"full",RangeWeight(0.1), prob, RangeDelay(1), RadiusRF(4.0, 0.0, 0.0));
-//	int c1=sim->connect(g1,g1,"gaussian",RangeWeight(0.1), prob, RangeDelay(1), RadiusRF(0.0, 4.0, 0.0));
-//	int c2=sim->connect(g2,g2,"gaussian",RangeWeight(0.1), prob, RangeDelay(1), RadiusRF(0.0, 0.0, 4.0));
-
-	sim->setupNetwork(); // need SETUP state for this function to work
-
-	ConnectionMonitor* CM0 = sim->setConnectionMonitor(g0,g0,"default");
-//	ConnectionMonitor* CM1 = sim->setConnectionMonitor(g1,g1,"NULL");
-//	ConnectionMonitor* CM2 = sim->setConnectionMonitor(g2,g2,"NULL");
-
-	std::vector< std::vector<float> > wt0 = CM0->takeSnapshot();
-	EXPECT_EQ(wt0.size(), grid.N);
-	EXPECT_EQ(wt0[0].size(), grid.N);
-	for (int i=0; i<wt0.size(); i++) {
-		Point3D preNeurPos = sim->getNeuronLocation3D(g0, i);
-		for (int j=0; j<wt0[0].size(); j++) {
-			Point3D postNeurPos = sim->getNeuronLocation3D(g0, j);
-		}
-	}
-
-	delete sim;
-}
-
 
 TEST(CONNECT, connectGaussian) {
 	CARLsim* sim = new CARLsim("CORE.connectGaussian",CPU_MODE,USER,0,42);
@@ -339,5 +296,3 @@ TEST(CONNECT, connectGaussian) {
 
 	delete sim;	
 }
-
-*/

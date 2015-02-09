@@ -267,9 +267,10 @@ classdef ConnectionMonitor < handle
 			%                display the receptive (response) field of the
 			%                first, second, and eight neuron in post (pre).
 			%                Default: display all neurons.
+			obj.unsetError()
+			obj.initConnectionReader()
 			if nargin<2,plotType=obj.plotType;end
 			if nargin<3 || isempty(frames) || numel(frames)==1&&frames==-1
-				obj.initConnectionReader()
 				frames = 1:ceil(obj.CR.getNumSnapshots());
 			end
 			if nargin<4 || isempty(neurons) ...
@@ -282,7 +283,6 @@ classdef ConnectionMonitor < handle
 					neurons = -1;
 				end
 			end
-			obj.unsetError()
 			
 			% verify input
 			if strcmpi(plotType,'receptivefield')

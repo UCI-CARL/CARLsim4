@@ -55,13 +55,13 @@ int main() {
 	// create a network
 	CARLsim sim("random", GPU_MODE, USER, ithGPU, 42);
 
-	int g1=sim.createGroup("excit", Grid3D(3,3,3), EXCITATORY_NEURON);
+	int g1=sim.createGroup("excit", N*0.8, EXCITATORY_NEURON);
 	sim.setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f);
 
 	int g2=sim.createGroup("inhib", N*0.2, INHIBITORY_NEURON);
 	sim.setNeuronParameters(g2, 0.1f,  0.2f, -65.0f, 2.0f);
 
-	int gin=sim.createSpikeGeneratorGroup("input",Grid3D(5,5,5),EXCITATORY_NEURON);
+	int gin=sim.createSpikeGeneratorGroup("input",N*0.1,EXCITATORY_NEURON);
 
 	sim.setConductances(true,5,150,6,150);
 
@@ -73,7 +73,7 @@ int main() {
 	sim.connect(g1,g1,"random", RangeWeight(0.0,0.06,0.1), prob, RangeDelay(1,20), RadiusRF(-1), SYN_PLASTIC);
 
 	// 5% probability of connection
-	sim.connect(gin, g1, "gaussian", RangeWeight(1.0), prob/10.0f, RangeDelay(1,20), RadiusRF(5,5,0));
+	sim.connect(gin, g1, "random", RangeWeight(1.0), prob/10.0f, RangeDelay(1,20), RadiusRF(-1));
 
 	// here we define and set the properties of the STDP.
 	float ALPHA_LTP_EXC = 0.10f/100, TAU_LTP = 20.0f, ALPHA_LTD_EXC = 0.12f/100, TAU_LTD = 20.0f;

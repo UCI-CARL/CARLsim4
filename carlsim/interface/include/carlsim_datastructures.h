@@ -300,9 +300,9 @@ struct RangeWeight {
  *
  * This struct can be used to specify the size of a receptive field (RF) radius in 3 dimensions x, y, and z.
  * Receptive fields will be circular with radius as specified. The 3 dimensions follow the ones defined by Grid3D.
- * If the radius in one dimension is 0, no connections will be made in this dimension.
- * If the radius in one dimension is -1, then all possible connections will be made in this dimension (effectively
- * making RF of infinite size).
+ * If the radius in one dimension is 0, say x==0, then pre.x must be equal to post.x in order to be connected.
+ * If the radius in one dimension is -1, say x==-1, then pre and post will be connected no matter their x coordinate
+ * (effectively making an RF of infinite size).
  * Otherwise, if the radius is a positive real number, the RF radius will be exactly this number.
  * Call RadiusRF with only one argument to make that radius apply to all 3 dimensions.
  * \param[in] rad_x the RF radius in the x (first) dimension
@@ -310,11 +310,14 @@ struct RangeWeight {
  * \param[in] rad_z the RF radius in the z (third) dimension
  *
  * Examples:
- *   * Create a 2D Gaussian RF of radius 10: RadiusRF(10, 10, 0)
+ *   * Create a 2D Gaussian RF of radius 10 in z-plane: RadiusRF(10, 10, 0)
+ *     Neuron pre will be connected to neuron post iff (pre.x-post.x)^2 + (pre.y-post.y)^2 <= 100 and pre.z==post.z.
  *   * Create a 2D heterogeneous Gaussian RF (an ellipse) with semi-axes 10 and 5: RadiusRF(10, 5, 0)
- *   * Connect only the third dimension: RadiusRF(0, 0, 1)
+ *     Neuron pre will be connected to neuron post iff (pre.x-post.x)/100 + (pre.y-post.y)^2/25 <= 1 and pre.z==post.z.
  *   * Connect all, no matter the RF (default): RadiusRF(-1, -1, -1)
- *   * Don't connect anything (silly, not allowed): RadiusRF(0, 0, 0)
+ *   * Connect one-to-one: RadiusRF(0, 0, 0)
+ *     Neuron pre will be connected to neuron post iff pre.x==post.x, pre.y==post.y, pre.z==post.z.
+ *     Note: Use CARLsim::connect with type "one-to-one" instead.
  *
  * \note A receptive field is defined from the point of view of a post-neuron.
  */
