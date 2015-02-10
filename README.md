@@ -108,14 +108,18 @@ can refer to the to the src.mk files found in the project’s subdirectory.
 Essentially, you have to set the CARLSIM_SRC_PATH and USER_MK_PATH variables
 in the src.mk files. To run make using these files simply type:
 
-‘make -f src.mk’
+```
+make -f src.mk
+
+```
 
 and make will run the default targets for that src.mk file. If you want to
 run a specific target from src.mk (let’s call it ‘hello_world’), then you would
 run the command:
 
-‘make -f src.mk hello_world’
-
+```
+make -f src.mk hello_world
+```
 This is mainly used by the devs who write CARLsim.
 
 ### Documentation
@@ -140,18 +144,23 @@ After google tests has been installed:
 
 1) From the main directory of the CARLsim installation, type:
 
-
-‘make carlsim_tests’
+```
+make carlsim_tests
+```
 
 which compiles the carlsim tests
 
 2) To run the tests, enter the test directory and run ‘carlsim_tests’:
 
-‘cd test’
+```
+cd test
 
+```
 and
 
-‘./test/carlsim_tests’
+```
+./test/carlsim_tests
+```
 
 This runs the CARLsim tests which should all pass. If they do not pass,
 you may have inadvertantly modified the source code and should probably
