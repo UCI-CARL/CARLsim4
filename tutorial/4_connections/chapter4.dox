@@ -4,33 +4,181 @@
 
 \tableofcontents
 
+Once the neuron groups have been defined, the synaptic connections between them can be defined via CARLsim::connect.
+CARLsim provides a set of primitive connection topologies for building networks as well as a means to specify
+arbitrary connectivity using a callback mechanism.
+The following sections will explain this functionality in detail.
 
 
 \section ch4s1_primitive_types 4.1 Primitive Types
+\author Michael Beyeler
 
-\subsection ch4s1s1_full 4.1.1 All-to-All Connectivity
-full and full-no-direct
+CARLsim provides a number of pre-defined connection types: All-to-all, random, one-to-one, and Gaussian connectivity.
+All-to-all (also known as "full") connectivity connects all neurons in the pre-synaptic group to all neurons in the
+post-synaptic group (with or without self-connections).
+One-to-one connectivity connects neuron i in the pre-synaptic group to neuron j in the post-synaptic group (both groups
+should have the same number of neurons).
+Random connectivity connects a group of pre-synaptic neurons randomly to a group of post-synaptic neurons with a
+user-specified probability p.
+Gaussian connectivity uses topographic information from the ::Grid3D struct to connects neurons based on their relative
+distance in 3D space.
+
+Pre-defined connection types are specified using CARLsim::connect, which in their complete form look like the following:
+\code
+short int cId = sim.connect(grpIdPre, grpIdPost, type, RangeWeight(0.0f,0.1f,0.2f), 0.5f, RangeDelay(1,10),
+	RadiusRF(3,3,0), SYN_PLASTIC, 1.5f, 0.5f);
+\endcode
+Here, a pre-synaptic group with ID <tt>grpIdPre</tt> is connected to a post-synaptic group with ID <tt>grpIdPost</tt>
+following a given connection probability of 50% (0.5f) and a specific connection <tt>type</tt>,
+the latter being a string such as "full", "one-to-one", "random", etc.
+The synapse type (either fixed or plastic) can be indicated with the keyword <tt>SYN_FIXED</tt> or <tt>SYN_PLASTIC</tt>.
+In COBA Mode, receptor-specific gain factors can be specified for fast (1.5f) and slow channels (0.5f),
+which map either to AMPA and NMDA for excitatory connections,
+or GABAa and GABAb for inhibitory connections (see \ref ch4s1s4_receptor_gain).
+
+Also, this method makes use of three different structs that aim to simplify the specification of weight ranges
+(::RangeWeight, explained in \ref ch4s1s1_range_weight), delay ranges (::RangeDelay, explained in
+\ref ch4s1s2_range_delay), and spatial receptive fields (::RadiusRF, explained in \ref ch4s1s3_radiusRF).
+
+The simplest CARLsim::connect call that uses default values for all optional arguments reads as follows:
+\code
+sim.connect(grpIdPre, grpIdPost, type, RangeWeight(wt), prob);
+\endcode
+This will connect <tt>grpIdPre</tt> to <tt>grpIdPost</tt> with connection type <tt>type</tt> and connection probability
+<tt>prob</tt>, using fixed synapses, 1ms delay, no spatial receptive fields, and synaptic gain factor 1.0f.
 
 
-\subsection ch4s1s2_random 4.1.2 Random Connectivity
+\subsection ch4s1s1_range_weight 4.1.1 The RangeWeight Struct
+::RangeWeight is a struct that simplifies the specification of the lower bound (::RangeWeight.min) and upper bound
+(::RangeWeight.max) of the weights as well as an initial weight value (::RangeWeight.init).
+For fixed synapses (no plasticity) these three values are all the same.
+In this case, it is sufficient to call the struct with a single value <tt>wt</tt>: <tt>RangeWeight(wt)</tt>.
+This will set all fields of the struct to value <tt>wt</tt>.
+
+On the other hand, plastic synapses are initialized to ::RangeWeight.init, and can range between ::RangeWeight.min and
+::RangeWeight.max.
+
+\note All weight values should be non-negative (equivalent to weight <i>magnitudes</i>),
+even for inhibitory connections.
+\note The lower bound for weight values (::RangeWeight.min) must be zero.
 
 
-\subsection ch4s1s3_1to1 4.1.3 One-to-One Connectivity
+\subsection ch4s1s2_range_delay 4.1.2 The RangeDelay Struct
+
+Similar to ::RangeWeight, ::RangeDelay is a struct to specify the lower bound (::RangeDelay.min) and upper bound
+(::RangeDelay.max) of a synaptic delay range.
+Synaptic delays are measured in milliseconds, and can only take integer values.
+
+\note Delays have to be in the range [1ms, 20ms].
 
 
-\subsection ch4s1s4_gaussian 4.1.4 Gaussian Connectivity
+\subsection ch4s1s3_radiusRF 4.1.3 The RadiusRF Struct
+
+Each connection type can make use of an optional ::RadiusRF struct to specify circular receptive fields (RFs)
+in 1D, 2D, or 3D, following the topographic organization of the ::Grid3D struct (see \ref ch3s3s2_topography).
+This allows for the creation of networks with complex spatial structure.
+
+Spatial RFs are always specified from the point of view of a post-synaptic neuron at location (post.x,post.y,post.z),
+looking back on all the pre-synaptic neurons at location (pre.x,pre.y,pre.z) it is connected to.
+
+The struct takes up to three arguments, which specify the radius of a circular receptive field in x, y, and z.
+The 3 dimensions follow the grid dimensions established by ::Grid3D, which associates every neuron in the population
+with a (x,y,z) location on a 3D grid centered around the origin.
+If the radius in one dimension is 0, say ::RadiusRF.radX==0, then pre.x must be equal to post.x in order to be
+connected.
+If the radius in one dimension is -1, say ::RadiusRF.radX==-1, then pre and post will be connected no matter their
+specific pre.x and post.x
+Otherwise, if the radius in one dimension is a positive real number, the RF radius will be exactly that number.
+
+Examples:
+- Create a 2D Gaussian RF of radius 10 in z-plane: RadiusRF(10, 10, 0)
+  Neuron pre will be connected to neuron post iff (pre.x-post.x)^2 + (pre.y-post.y)^2 <= 100 and pre.z==post.z.
+- Create a 2D heterogeneous Gaussian RF (an ellipse) with semi-axes 10 and 5: RadiusRF(10, 5, 0)
+  Neuron pre will be connected to neuron post iff (pre.x-post.x)/100 + (pre.y-post.y)^2/25 <= 1 and pre.z==post.z.
+- Connect all, no matter the RF (default): RadiusRF(-1, -1, -1)
+- Connect one-to-one: RadiusRF(0, 0, 0)
+  Neuron pre will be connected to neuron post iff pre.x==post.x, pre.y==post.y, pre.z==post.z.
+  Note: Use CARLsim::connect with type "one-to-one" instead.
+
+\image html 4_radiusRF.jpg "Examples of 2D receptive fields (topographic heatmap of weight strengths) generated with RadiusRF and CARLsim::connect."
 
 
-\subsection ch4s1s5_radiusRF 4.1.5 Receptive Fields
+\subsection ch4s1s4_receptor_gain 4.1.4 Synaptic Receptor-Specific Gain Factors
 
-Explain the ::RadiusRF struct...
+In COBA Mode (see \ref ch3s2s2_coba), synaptic receptor-specific gain factors can be specified to vary the AMPA-NMDA
+and GABAa-GABAb ratios.
+
+The CARLsim::connect method takes two additional parameters at the very end, which indicate a multiplicative gain
+factor for fast and slow synaptic channels.
+The following code snippet would fully connect neuron group <tt>grpIdPre</tt> to <tt>grpIdPost</tt> with fixed synapses
+(weight is 0.2f, all delays are 1ms) and gain factor 1.5f for fast and 0.5f for slow synaptic channels:
+\code
+short int cId = sim.connect(grpIdPre, grpIdPost, "full", RangeWeight(0.2f), 1.0f, RangeDelay(1),
+	RadiusRF(-1), SYN_FIXED, 1.5f, 0.5f);
+\endcode
+
+If the post-synaptic neuron is of type ::EXCITATORY_NEURON (::INHIBITORY_NEURON), then the fast channel will refer
+to AMPA (GABAa) and the slow channel will refer to NMDA (GABAb).
+
+\note The default gain factors (if not specified) are 1.0f for both fast and slow channels.
+
+
+\subsection ch4s1s5_full 4.1.5 All-to-All Connectivity
+
+All-to-all (also known as "full") connectivity connects all neurons in the pre-synaptic group to all neurons in the
+post-synaptic group (with or without self-connections).
+
+The easiest way to achieve all-to-all connectivity with a fixed weight (e.g., 0.25f), a fixed connection probability
+(e.g., 0.1f or 10%), and 1ms synaptic delay is via the following CARLsim::connect command:
+\code
+short int cId = sim.connect(gIn, gOut, "full", RangeWeight(0.1f), 0.1f);
+\endcode
+Here, <tt>gIn</tt> and <tt>gOut</tt> are group IDs returned from a call to CARLsim::createSpikeGeneratorGroup or
+CARLsim::createGroup (see \ref ch3s3_groups).
+The keyword "full" indicates all-to-all connectivity.
+::RangeWeight is a struct that simplifies the specification of minimum, initial, and maximum weight values.
+The last parameter, <tt>0.1f</tt>, sets the connection probability to 10 %.
+The function returns a connection ID, <tt>cId</tt>, which can be used to reference the connection in subsequent
+calls; for example, when setting up a ConnectionMonitor (see \ref ch7s2_connection_monitor).
+
+Alternatively, one can use the "full-no-direct" keyword to indicate that no self-connections shall be made:
+\code
+short int cId = sim.connect(gIn, gOut, "full-no-direct", RangeWeight(0.1f), 0.1f);
+\endcode
+This will prevent neuron <tt>i</tt> in the pre-synaptic group to be connected to neuron <tt>i</tt> in the post-synaptic
+group.
+
+
+\subsection ch4s1s6_random 4.1.6 Random Connectivity
+Random connectivity connects a group of pre-synaptic neurons randomly to a group of post-synaptic neurons with a
+user-specified probability p.
+
+The easiest way to achieve uniform random connectivity with a fixed weight (e.g., 0.25f), a fixed connection probability
+(e.g., 0.1f or 10%), and 1ms synaptic delay is via the following CARLsim::connect command:
+\code
+short int cId = sim.connect(gIn, gOut, "random", RangeWeight(0.1f), 0.1f);
+\endcode
+Here, <tt>gIn</tt> and <tt>gOut</tt> are group IDs returned from a call to CARLsim::createSpikeGeneratorGroup or
+CARLsim::createGroup (see \ref ch3s3_groups).
+The keyword "full" indicates all-to-all connectivity.
+::RangeWeight is a struct that simplifies the specification of minimum, initial, and maximum weight values.
+The last parameter, <tt>0.1f</tt>, sets the connection probability to 10 %.
+The function returns a connection ID, <tt>cId</tt>, which can be used to reference the connection in subsequent
+calls; for example, when setting up a ConnectionMonitor (see \ref ch7s2_connection_monitor).
+
+
+\subsection ch4s1s7_1to1 4.1.7 One-to-One Connectivity
+
+
+\subsection ch4s1s8_gaussian 4.1.8 Gaussian Connectivity
+
 
 
 
 
 \section ch4s2_library_tools 4.2. Library Tools
-\TODO MB
-connectGauss
+
+A library of useful ConnectionGenerator subclasses will be added in a future release.
 
 
 \section ch4s3_user_defined 4.3 User-Defined Connections

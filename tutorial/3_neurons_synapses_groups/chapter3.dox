@@ -68,6 +68,11 @@ I is mA, blah. Talk about current decay.
 
 Equation with decay times. setConductances(dAMPA, dNMDA, dGABAa, dGABAb).
 
+\note A pre-synaptic spike increases both post-synaptic AMPA and NMDA (GABAa and GABAb) for excitatory
+(inhibitory) connections.
+\note Receptor-specific gain factors can be speficied to vary the AMPA-NMDA and GABAa-GABA ratio
+(see \ref ch4s1s4_receptor_gain).
+
 
 \subsection ch3s2s3_rise_times 3.2.3 Rise Times
 \TODO MB
@@ -153,8 +158,8 @@ int gOut = sim.createGroup("output", N, EXCITATORY_NEURON);             // these
 int gOut = sim.createGroup("output", Grid3D(N,1,1), EXCITATORY_NEURON); // are equivalent
 \endcode
 
-\see \ref ch4s1s4_gaussian
-\see \ref ch4s1s5_radiusRF
+\see \ref ch4s1s8_gaussian
+\see \ref ch4s1s3_radiusRF
 \see ::Grid3D
 \see ::RadiusRF
 \since v3.0
