@@ -54,7 +54,7 @@ testvercomp () {
 doxVer="$(doxygen --version | grep ^[0-9]\.[0-9])"
 
 # require min version
-minVer=1.7
+minVer=1.8
 testvercomp $doxVer $minVer '>'
 
 doxygen CARLsim.config.doxy

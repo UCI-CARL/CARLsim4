@@ -979,6 +979,10 @@ ConnectionMonitor* CpuSNN::setConnectionMonitor(int grpIdPre, int grpIdPost, FIL
 		exitSimulation(1);
 	}
 
+	// inform the connection that it is being monitored...
+	// this needs to be called before new ConnectionMonitorCore
+	connInfo->ConnectionMonitorId = numConnectionMonitor;
+
 	// create new ConnectionMonitorCore object in any case and initialize
 	// connMonObj destructor (see below) will deallocate it
 	ConnectionMonitorCore* connMonCoreObj = new ConnectionMonitorCore(this, numConnectionMonitor, connId,
@@ -995,9 +999,6 @@ ConnectionMonitor* CpuSNN::setConnectionMonitor(int grpIdPre, int grpIdPost, FIL
 	// CpuSNN::deleteObjects will deallocate it
 	ConnectionMonitor* connMonObj = new ConnectionMonitor(connMonCoreObj);
 	connMonList[numConnectionMonitor] = connMonObj;
-
-	// inform the connection that it is being monitored...
-	connInfo->ConnectionMonitorId = numConnectionMonitor;
 
 	// now init core object (depends on several datastructures allocated above)
 	connMonCoreObj->init();

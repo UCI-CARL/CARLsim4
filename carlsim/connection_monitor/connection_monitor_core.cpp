@@ -25,6 +25,10 @@ ConnectionMonitorCore::ConnectionMonitorCore(CpuSNN* snn,int monitorId,short int
 	needToInit_ = true;
 	connFileSignature_ = 202029319;
 	connFileVersion_ = 0.2f;
+
+	tookSnapshot_ = false;
+
+	connFileTimeIntervalSec_ = 1;
 }
 
 void ConnectionMonitorCore::init() {
@@ -64,7 +68,7 @@ void ConnectionMonitorCore::init() {
 
 ConnectionMonitorCore::~ConnectionMonitorCore() {
 	if (connFileId_!=NULL) {
-		// flush: advance timestep so we the last weight snapshot will be written to file
+		// flush: advance timestep so that the last weight snapshot will be written to file
 		updateTime(simTimeMs_+1);
 
 		fclose(connFileId_);
@@ -181,6 +185,14 @@ bool ConnectionMonitorCore::needToWriteSnapshot() {
 	if (simTimeMs_==simTimeMsLastWrite_)
 		return false;
 
+	if (tookSnapshot_) {
+		// we just took a manual snapshot, so we need to store it in binary
+		return true;
+	} else {
+		// no manual snapshot taken, check interval
+		return (connFileTimeIntervalSec_ != -1);
+	}
+
 	return true;
 }
 
@@ -268,8 +280,32 @@ void ConnectionMonitorCore::printSparse(int neurPostId, int maxConn, int connPer
 
 }
 
+void ConnectionMonitorCore::setConnectFileId(FILE* connFileId) {
+	// \TODO consider the case where this function is called more than once
+	if (connFileId_!=NULL)
+		KERNEL_ERROR("ConnectionMonitorCore: setConnectFileId has already been called.");
+
+	connFileId_=connFileId;
+
+	if (connFileId_==NULL) {
+		needToWriteFileHeader_ = false;
+	}
+	else {
+		// for now: file pointer has changed, so we need to write header (again)
+		needToWriteFileHeader_ = true;
+		writeConnectFileHeader();
+	}
+}
+
+void ConnectionMonitorCore::setUpdateTimeIntervalSec(int intervalSec) {
+	assert(intervalSec==-1 || intervalSec==1);
+	connFileTimeIntervalSec_ = intervalSec;
+}
+
 std::vector< std::vector<float> > ConnectionMonitorCore::takeSnapshot() {
+	tookSnapshot_ = true;
 	snn_->updateConnectionMonitor(connId_);
+
 	return wtMat_;
 }
 
@@ -279,11 +315,15 @@ bool ConnectionMonitorCore::updateTime(unsigned int simTimeMs) {
 
 	bool needToUpdate = false;
 	if (currTime > simTimeMs_) {
+		fprintf(stderr,"in updateTime if, currTime=%ld, simTimeMs_=%ld\n",currTime,simTimeMs_);
 		// time has advances since last storage
 		needToUpdate = true;
 
 		// write weights of last timestep to file
+		// currently time interval can only be 1 or -1
 		writeConnectFileSnapshot();
+
+		tookSnapshot_ = false;
 
 		// copy wtMat_ to lastWtMat_ and set wtMat_=0
 		wtLastMat_.swap(wtMat_);
@@ -305,24 +345,6 @@ void ConnectionMonitorCore::updateWeight(int preId, int postId, float wt) {
 	assert(postId < nNeurPost_);
 	wtMat_[preId][postId] = wt;
 }
-
-void ConnectionMonitorCore::setConnectFileId(FILE* connFileId) {
-	// \TODO consider the case where this function is called more than once
-	if (connFileId_!=NULL)
-		KERNEL_ERROR("ConnectionMonitorCore: setConnectFileId has already been called.");
-
-	connFileId_=connFileId;
-
-	if (connFileId_==NULL) {
-		needToWriteFileHeader_ = false;
-	}
-	else {
-		// for now: file pointer has changed, so we need to write header (again)
-		needToWriteFileHeader_ = true;
-		writeConnectFileHeader();
-	}
-}
-
 
 // write the header section of the spike file
 // this should be done once per file, and should be the very first entries in the file
@@ -380,10 +402,14 @@ void ConnectionMonitorCore::writeConnectFileHeader() {
 }
 
 void ConnectionMonitorCore::writeConnectFileSnapshot() {
+	fprintf(stderr,"t=%ld, tookSnap=%s, needToWrite=%s\n",simTimeMs_,tookSnapshot_?"y":"n",needToWriteSnapshot()?"y":"n");
 	if (!needToWriteSnapshot())
 		return;
 
+	tookSnapshot_ = false;
+
 	simTimeMsLastWrite_ = simTimeMs_;
+	fprintf(stderr,"writing to file at t=%ld\n",simTimeMs_);
 
 	// write time stamp
 	if (!fwrite(&simTimeMs_,sizeof(long int),1,connFileId_))

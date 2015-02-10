@@ -50,43 +50,91 @@ class ConnectionMonitorCore; // forward declaration of implementation
 /*!
  * \brief Class ConnectionMonitor
  *
- * The ConnectionMonitor class allows a user record weights from a particular connection. First, the user must call the
- * method CARLsim::setConnectionMonitor must be called on a specific pair of pre-synaptic and post-synaptic group. This
+ * The ConnectionMonitor class allows a user record weights from a particular connection. First, the method
+ * CARLsim::setConnectionMonitor must be called on a specific pair of pre-synaptic and post-synaptic group. This
  * method then returns a pointer to a ConnectionMonitor object, which can be queried for connection data.
  *
- * By default, a snapshot of all the weights will be taken once per second and dumped to file. The default path to this
- * file is "results/conn_{name of pre-group}_{name of post-group}.dat". Weights can be visualized int the Matlab Offline
- * Analysis Toolbox using the ConnectionMonitor utility.
+ * By default, a snapshot of all the weights will be taken once per second and dumped to file.
+ * The easiest way is to call CARLsim::setConnectionMonitor with file string "default". This will create a file with
+ * path "results/conn_{name of pre-group}_{name of post-group}.dat".
+ * It is also possible to specify a custom file string instead.
+ * Alternatively, the user may suppress creation of the binary file by using file string "null" instead.
+ *
+ * Periodic storing can be disabled by calling ConnectionMonitor::setUpdateTimeInterval with argument intervalSec=-1.
  *
  * Additionally, during a CARLsim simulation, the ConnectionMonitor object returned by CARLsim::setConnectionMonitor can
  * be queried for connection data. The user may take a snapshot of the weights at any point in time using the method
- * ConnectionMonitor::takeSnapshot. If at least two snapshots have been taken, the method
- * ConnectionMonitor::calcWeightChanges will calculate the weight changes since the last snapshot.
- * Weights can also be visualized using ConnectionMonitor::print and ConnectionMonitor::printSparse.
+ * ConnectionMonitor::takeSnapshot.
+ * Note that a snapshot taken with this method will also be stored in the binary file.
+ * However, the binary file will never contain the same snapshot (captured with a certain timestamp) twice.
  *
- * Example usage:
+ * If at least two snapshots have been taken, the method ConnectionMonitor::calcWeightChanges will calculate the weight
+ * changes since the last snapshot.
+ *
+ * Weights can be visualized in the Matlab Offline Analysis Toolbox (OAT) using the ConnectionMonitor utility.
+ * The OAT offers ways to plot 2D weight matrices, as well as receptive fields and response fields.
+ *
+ * Weights can also be visualized in C++ using ConnectionMonitor::print and ConnectionMonitor::printSparse.
+ *
+ * Example to store weights in binary every second:
  * \code
- * // configure a network etc. ...
- *
+ * // configure a network, etc. ...
  * sim.setupNetwork();
  *
- * // create a ConnectionMonitor pointer to grab the pointer from setConnectionMonitor.
- * ConnectionMonitor* connMon = sim.setConnectionMonitor(grp0,grp1);
- * // run the network for a bit
- * sim.runNetwork(4,200);
- * // take a snapshot of the weights
- * wt = connMon->takeSnapshot();
- * // run network some more and take another snapshot
- * sim.runNetwork(1,500);
- * connMon->takeSnapshot();
- * // calculate and store the weight changes
- * std::vector< std::vector<float> > wtChanges = connMon->calcWeightChanges();
- * printf("The weight from pre-neuron ID 3 to post-neuron ID 7 is: %f\n",wtChanges[3][7]);
- * // or print all the weights and weight changes
- * connMon->printSparse();
+ * // direct storing of snapshots to default file "results/conn_{name of pre}_{name of post}.dat".
+ * sim.setConnectionMonitor(grp0, grp1, "default");
+ *
+ * // run the network for 10 seconds
+ * sim.runNetwork(10,0);
  * \endcode
-
- * \TODO finish documentation
+ * 
+ * Example that stores weight at the beginning and end of a simulation:
+ * \code
+ * // configure a network, etc. ...
+ * sim.setupNetwork();
+ *
+ * // direct storing of snapshots to default file "results/conn_{name of pre}_{name of post}.dat".
+ * // additionally, grab the pointer to the monitor object
+ * ConnectionMonitor* CM = sim.setConnectionMonitor(grp0, grp1, "default");
+ *
+ * // disable periodid storing of snapshots in binary ...
+ * CM->setUpdateTimeIntervalSec(-1);
+ *
+ * // ... and instead take a snapshot yourself and put it in the binary
+ * CM->takeSnapshot();
+ *
+ * // run the network for 10 seconds
+ * sim.runNetwork(10,0);
+ *
+ * // take another snapshot at the end and put it in the binary
+ * CM->takeSnapshot();
+ * \endcode
+ *
+ * Example that periodically stores to binary and does some analysis on returned weight vector
+ * \code
+ * // configure a network, etc. ...
+ * sim.setupNetwork();
+ *
+ * // direct storing of snapshots to default file "results/conn_{name of pre}_{name of post}.dat".
+ * // additionally, grab the pointer to the monitor object
+ * ConnectionMonitor* CM = sim.setConnectionMonitor(grp0, grp1, "default");
+ *
+ * // retrieve initial weights (this snapshot will also end up in the binary)
+ * std::vector< std::vector<float> > wt = CM->takeSnapshot();
+ * printf("The weight from pre-neuron ID 3 to post-neuron ID 7 is: %f\n",wt[3][7]);
+ *
+ * // run the network for 5 seconds and print 2D weight matrix
+ * sim.runNetwork(5,0);
+ * CM->print();
+ *
+ * // run the network for an additional 5 seconds and retrieve weight changes between last snapshot
+ * // (at the beginning) and now (after 10 seconds)
+ * sim.runNetwork(5,0);
+ * std::vector< std::vector<float> > wtChanges = CM->calcWeightChanges();
+ * \endcode
+ *
+ * \note A snapshot taken programmatically with ConnectionMonitor::takeSnapshot can be put in the binary file by
+ * setting an optional input flag <tt>writeToFile</tt> to true.
  */
 class ConnectionMonitor {
  public:
@@ -269,10 +317,27 @@ class ConnectionMonitor {
 	void printSparse(int neurPostId=ALL, int maxConn=100, int connPerLine=4);
 
 	/*!
+	 * \brief Sets the time interval (seconds) for writing snapshots to file
+	 *
+	 * This function sets the time interval (seconds) for writing weight snapshots to file.
+	 * The first snapshot will be written at time t=0, and every intervalSec seconds later.
+	 *
+	 * In order to disable the periodic storing of weights to file alltogether, set intervalSec to -1.
+	 * In this case, only weight snapshots acquired via ConnectionMonitor::takeSnapshots will end up in the binary.
+	 *
+	 * \param[in] intervalSec  The update time interval (number of seconds) for writing snapshots to file.
+	 *                         Set to -1 to disable periodic weight storing. Default: 1 (every second).
+	 *
+	 * \attention Currently, only values 1 (store every second) and -1 (disable periodic storing) are supported.
+	 */
+	void setUpdateTimeIntervalSec(int intervalSec);
+
+	/*!
 	 * \brief Takes a snapshot of the current weight state
 	 *
-	 * This function takes a snapshot of the current weight matrix, and returns it as a 2D vector where the first
-	 * dimension corresponds to pre-synaptic neuron ID and the second dimension corresponds to post-synaptic neuron ID.
+	 * This function takes a snapshot of the current weight matrix, stores it in the binary as well as returns it as a
+	 * 2D vector where the first dimension corresponds to pre-synaptic neuron ID and the second dimension corresponds 
+	 * to post-synaptic neuron ID.
 	 * For example, element wtChange[3][8] of the return argumentr will indicate the signed weight change since the last
 	 * snapshot for the synapse that connects preNeurId=3 to postNeurId=8.
 	 * Synapses that are not allocated (i.e., that do not exist) are marked as float value NAN in the weight matrix.
@@ -280,6 +345,7 @@ class ConnectionMonitor {
 	 *
 	 * \returns a 2D vector of weights, where the first dimension is pre-synaptic neuron ID and the second dimension
 	 * is post-synaptic neuron ID. Non-existent synapses are marked with NAN.
+	 * \note Every snapshot taken will also be stored in the binary file.
 	 */
 	std::vector< std::vector<float> > takeSnapshot();
 

@@ -666,7 +666,7 @@ INPUT                  = ../carlsim/interface/include \
                          ../carlsim/group_monitor/group_monitor.h \
                          ../tools/ecj_pti \
                          ../tools/eo_pti \
-                         ../tools/input_stimulus/input_stimulus.h \
+                         ../tools/visual_stimulus/visual_stimulus.h \
                          ../tools/offline_analysis_toolbox \
                          ../tools/spike_generators \
                          ../tools/simple_weight_tuner \

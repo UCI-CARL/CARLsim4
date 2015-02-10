@@ -121,7 +121,7 @@ public:
 	void printSparse(int neurPostId=ALL, int maxConn=100, int connPerLine=4);
 
 	//! takes snapshot of current weight state and returns 2D matrix (non-existent synapses: NAN, existent but zero
-	//! weight: 0.0f)
+	//! weight: 0.0f).
 	std::vector< std::vector<float> > takeSnapshot();
 
 
@@ -142,6 +142,9 @@ public:
 
 	//! sets pointer to connection file
 	void setConnectFileId(FILE* connFileId);
+
+	//! sets time update interval (seconds) for periodically storing weights to file
+	void setUpdateTimeIntervalSec(int intervalSec);
 	
 private:
 	//! indicates whether writing the current snapshot is necessary (false it has already been written)
@@ -174,9 +177,12 @@ private:
 	bool needToInit_;				//!< whether we have to initialize first
 	bool needToWriteFileHeader_;    //!< whether we have to write header section of conn file
 
+	bool tookSnapshot_;
+
 	FILE* connFileId_;              //!< file pointer to the conn file or NULL
 	int connFileSignature_;         //!< int signature of conn file
-	float connFileVersion_;        //!< version number of conn file
+	float connFileVersion_;         //!< version number of conn file
+	int connFileTimeIntervalSec_;   //!< time update interval (seconds) for storing weights to file
 
 	const FILE* fpInf_;             //!< file pointer for info logging
 	const FILE* fpErr_;             //!< file pointer for error logging
