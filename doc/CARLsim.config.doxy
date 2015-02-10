@@ -670,20 +670,20 @@ INPUT                  = ../carlsim/interface/include \
                          ../tools/offline_analysis_toolbox \
                          ../tools/spike_generators \
                          ../tools/simple_weight_tuner \
-                         ../tutorial \
-                         ../tutorial/1_getting_started \
-                         ../tutorial/2_basics \
-                         ../tutorial/3_neurons_synapses_groups \
-                         ../tutorial/4_connections \
-                         ../tutorial/5_synaptic_plasticity \
-                         ../tutorial/6_input \
-                         ../tutorial/7_monitoring \
-                         ../tutorial/8_saving_and_loading \
-                         ../tutorial/9_visualization \
-                         ../tutorial/10_ecj \
-                         ../tutorial/11_regression_suite \
-                         ../tutorial/12_advanced_topics \
-                         ../tutorial/13_example_networks
+                         source/user_guide \
+                         source/user_guide/1_getting_started \
+                         source/user_guide/2_basics \
+                         source/user_guide/3_neurons_synapses_groups \
+                         source/user_guide/4_connections \
+                         source/user_guide/5_synaptic_plasticity \
+                         source/user_guide/6_input \
+                         source/user_guide/7_monitoring \
+                         source/user_guide/8_saving_and_loading \
+                         source/user_guide/9_visualization \
+                         source/user_guide/10_ecj \
+                         source/user_guide/11_regression_suite \
+                         source/user_guide/12_advanced_topics \
+                         source/user_guide/13_example_networks
 
 # This tag can be used to specify the character encoding of the source files
 # that doxygen parses. Internally doxygen uses the UTF-8 encoding, which is
@@ -723,7 +723,7 @@ RECURSIVE              = NO
 # run.
 
 EXCLUDE               =  ../carlsim/interface/include/callback_core.h \
-				     ../carlsim/interface/src/callback_core.cpp \
+                         ../carlsim/interface/src/callback_core.cpp \
                          ../tools/spike_generators/periodic_spikegen.cpp \
                          ../tools/spike_generators/spikegen_from_file.cpp \
                          ../tools/spike_generators/spikegen_from_vector.cpp
@@ -774,20 +774,20 @@ EXAMPLE_RECURSIVE      = NO
 # directories that contain image that are included in the documentation (see
 # the \image command).
 
-IMAGE_PATH             = ../tutorial \
-                         ../tutorial/1_getting_started \
-                         ../tutorial/2_basics \
-                         ../tutorial/3_neurons_synapses_groups \
-                         ../tutorial/4_connections \
-                         ../tutorial/5_synaptic_plasticity \
-                         ../tutorial/6_input \
-                         ../tutorial/7_monitoring \
-                         ../tutorial/8_saving_and_loading \
-                         ../tutorial/9_visualization \
-                         ../tutorial/10_ecj \
-                         ../tutorial/11_regression_suite \
-                         ../tutorial/12_advanced_topics \
-                         ../tutorial/13_example_networks
+IMAGE_PATH             = source/user_guide \
+                         source/user_guide/1_getting_started \
+                         source/user_guide/2_basics \
+                         source/user_guide/3_neurons_synapses_groups \
+                         source/user_guide/4_connections \
+                         source/user_guide/5_synaptic_plasticity \
+                         source/user_guide/6_input \
+                         source/user_guide/7_monitoring \
+                         source/user_guide/8_saving_and_loading \
+                         source/user_guide/9_visualization \
+                         source/user_guide/10_ecj \
+                         source/user_guide/11_regression_suite \
+                         source/user_guide/12_advanced_topics \
+                         source/user_guide/13_example_networks
 
 
 # The INPUT_FILTER tag can be used to specify a program that doxygen should

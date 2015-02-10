@@ -3,41 +3,56 @@ README for CARLsim-ECJ Project
 
 Here are some notes for the CARLsim-ECJ Project.
 
+### Quickstart
+
+The current version of the CARLsim paramter-tuning framework uses Evolutionary
+Computations in Java (ECJ) (version 22 or greater is required). For information
+on how to install ECJ, please go [here](http://cs.gmu.edu/~eclab/projects/ecj/).
+
+
+
+1) Set the ECJ_DIR and ECJ_PTI_DIR variables in user.mk.
+
+2) Change the current directory to ’tools/carlsim_addons/ecj_pti’.
+
+3) Type ‘make && sudo make install’
+
+4) Refer to the tuneFiringRatesECJ example found in examples/tuneFiringRatesECJ
+   for how to use CARLsim and ECJ to tune SNNs.
+
+TO UNINSTALL:
+CARLsim: Remove the folder where you installed the CARLsim library. This
+folder is located in $(CARLSIM_LIB_DIR).
+
+Type ‘make help’ for additional information.
+
+
 ### SOURCE CODE DIRECTORY DESCRIPTION
 
 <pre>
-  Main
-directory
-    ├── AUTHORS
-    ├── C++.gitignore
-    ├── README.md
-    ├── src
-    │   └── ecjapp
-    │       ├── CARLsimEC.java
-    │       ├── eval
-    │       │   ├── problem
-    │       │   │   ├── CARLsimController.java
-    │       │   │   ├── CARLsimProblem.java
-    │       │   │   ├── PopulationToFile.java
-    │       │   │   └── RemoteLoginInfo.java
-    │       │   ├── SimpleGroupedEvaluator.java
-    │       │   └── SimpleGroupedProblemForm.java
-    │       └── util
-    │           ├── Misc.java
-    │           └── Option.java
-    └── test
-    	├── CARLsim-app
-    	│   └── Makefile
-    	└── ecjapp
-            ├── doubles
-            │   ├── TestIndividual.java
-            │   ├── TestSimpleGroupedProblem.java
-            │   └── TestSimpleProblem.java
-            ├── eval
-            │   └── SimpleGroupedEvaluatorTest.java
-            ├── PopulationToFileTest.java
-            └── util
-            	└── MiscTest.java
+├── AUTHORS
+├── build.xml
+├── C++.gitignore
+├── ecj_pti.mk
+├── Makefile
+├── nbproject
+│   ├── build-impl.xml
+│   ├── genfiles.properties
+│   ├── project.properties
+│   └── project.xml
+├── README.md
+├── results
+├── src
+│   ├── CARLsim-app
+│   ├── doc-files
+│   ├── ecjapp
+│   ├── izk
+│   └── overview.html
+├── src.mk
+├── test
+│   ├── CARLsim-app
+│   └── ecjapp
+└── user.mk
 </pre>
 
 

@@ -59,7 +59,6 @@ your home directory.
 
 **For Windows**:
 
-
 TODO: TS
 
 
@@ -76,42 +75,17 @@ Below is the directory layout of the CARLsim source code.
 │   ├── spike_monitor               # Utility to record neuron spike data
 │   └── test                        # Google test regression suite tests
 ├── doc                           # CARLsim documentation generation folder
-│   └── html                        # Generated documentation in html
+│   ├── html                        # Generated documentation in html
+│   └── source                      # Documentation source code
 ├── projects                      # User projects directory
 │   └── hello_world                 # Project template for new users
-├── tools                         # CARLsim tools that are not built-in
-│   ├── ecj_pti                     # Automated parameter-tuning interface using ECJ
-│   ├── eo_pti                      # Automated parameter-tuning interface using EO (deprecated)
-│   ├── offline_analysis_toolbox    # Collection of MATLAB scripts for data analysis
-│   ├── simple_weight_tuner         # Simple weight parameter-tuning tool
-│   ├── spike_generators            # Collection of input spike generation tools
-│   └── visual_stimulus             # Collection of MATLAB/CARLsim tools for visual stimuli
-├── tutorial                      # Source code for CARLsim tutorials
-│   ├── colorblind
-│   ├── colorcycle
-│   ├── common
-│   ├── dastdp
-│   ├── istdp
-│   ├── multiGPU
-│   ├── orientation
-│   ├── random
-│   ├── spikeInfo
-│   ├── tuneFiringRatesECJ
-│   └── v1MTLIP
-└── user-guide                    # Source code for user-guide documentation
-    ├── 10_ecj                      # Chapter 10: Paramter-tuning with ECJ
-    ├── 11_regression_suite         # Chapter 11: Regression Suite Testing with Google Tests
-    ├── 12_advanced_topics          # Chapter 12: Advanced Topics
-    ├── 13_example_networks         # Chapter 13: Example SNNs
-    ├── 1_getting_started           # Chapter 01: Getting Started with CARLsim
-    ├── 2_basics                    # Chapter 02: Basics
-    ├── 3_neurons_synapses_groups   # Chapter 03: Neurons, Synapses, and Groups
-    ├── 4_connections               # Chapter 04: Connections
-    ├── 5_synaptic_plasticity       # Chapter 05: Synaptic Plasticity and Learning
-    ├── 6_input                     # Chapter 06: Getting Input into CARLsim
-    ├── 7_monitoring                # Chapter 07: Data Monitoring
-    ├── 8_saving_and_loading        # Chapter 08: Saving and Loading CARLsim Simulations
-    └── 9_visualization             # Chapter 09: Visualization with the Offline Analysis Toolbox (OAT)
+└── tools                         # CARLsim tools that are not built-in
+    ├── ecj_pti                     # Automated parameter-tuning interface using ECJ
+    ├── eo_pti                      # Automated parameter-tuning interface using EO (deprecated)
+    ├── offline_analysis_toolbox    # Collection of MATLAB scripts for data analysis
+    ├── simple_weight_tuner         # Simple weight parameter-tuning tool
+    ├── spike_generators            # Collection of input spike generation tools
+    └── visual_stimulus             # Collection of MATLAB/CARLsim tools for visual stimuli
 </pre>
 
 
@@ -120,7 +94,7 @@ directories.
 
 * carlsim - contains the source code of CARLsim.
 
-* doc - location of generated documentation.
+* doc - location of user-guide, tutorial, and source code for documentation.
 
 * projects - meant to contain user’s CARLsim projects, all it is not
 necessary to place project code here as long as the user.mk is configured
@@ -128,82 +102,108 @@ correctly and the CARLsim library is installed.
 
 * tools - contains additional tools to be used with CARLsim.
 
-* tutorial - a collection of CARLsim example SNNs with explanation and
-documentation.
-
-### MAKEFILE STRUCTURE DESCRIPTION
-
-The Makefile is composed of individual include files (.mk).  The user must
-configure their user.mk include file to tell CARLsim about the CUDA version,
-CUDA capability of the GPU, and the desired installation of the CARLsim
-library.
-
-Each example directory has it’s own Makefile that will build the example
-program after the CARLsim library has been installed. To make an example
-program, change directories to the name of your example directory
-(e.g. examples/random) and type ‘make program_name’ where the ‘program_name’
-is the name of the directory (e.g. random).
-
-Example programs were written to be executed in the same directory as their
-source code.
-
 ### CARLSIM DEVELOPMENT
-
-To compile an example or project from the CARLsim source code, you can refer
-to the src.mk files found in each example subdirectory. Essentially, you have
-to set the CARLSIM_SRC_PATH and USER_MK_PATH variables in the src.mk files. To
-run make using these files simply type:
+To compile a project from the CARLsim source code instead of the library, you
+can refer to the to the src.mk files found in the project’s subdirectory.
+Essentially, you have to set the CARLSIM_SRC_PATH and USER_MK_PATH variables
+in the src.mk files. To run make using these files simply type:
 
 ‘make -f src.mk’
 
 and make will run the default targets for that src.mk file. If you want to
-run a specific target from src.mk (let’s call it ‘random’), then you would
+run a specific target from src.mk (let’s call it ‘hello_world’), then you would
 run the command:
 
-‘make -f src.mk random’
+‘make -f src.mk hello_world’
 
 This is mainly used by the devs who write CARLsim.
 
-### Generating Documentation
-To generate documentation, doxygen must be installed. In Linux, documentation
-can be generated by entering the ‘doc’ directory and typing `./makedoc`. The
-documentation will be generated in the ‘tutorials’ directory.
+### Documentation
+The documentation is already generated and can be found in doc/html. It can be
+accessed by opening index.html in a web browswer. In Linux, documentation
+can be generated by entering the ‘doc’ directory and typing `./makedoc`.
+Currently, we have a user-guide, a tutorial, an FAQ, and doxygen-generated
+source code documentation.
+
+### Using the CARLsim testing framework
+CARLsim uses the googletest framework v1.7 for testing. For more information
+on googltest please visit the website at https://code.google.com/p/googletest/.
+For a quick primer, visit: https://code.google.com/p/googletest/wiki/Primer.
+
+To use the googletest framework, you must first download googletests and
+point to the googletest directory. One must link to the correct library (either
+gtest.a or gtest_main.a) and include the correct headers during compilation.
+Please see the test/CARLsim-app/Makefile for examples of how to compile your
+tests.
+
+After google tests has been installed:
+
+1) From the main directory of the CARLsim installation, type:
+
+
+‘make carlsim_tests’
+
+which compiles the carlsim tests
+
+2) To run the tests, enter the test directory and run ‘carlsim_tests’:
+
+‘cd test’
+
+and
+
+‘./test/carlsim_tests’
+
+This runs the CARLsim tests which should all pass. If they do not pass,
+you may have inadvertantly modified the source code and should probably
+redownload CARLsim.
+
 
 ### FAQ
-
-1. Why do I need to have CUDA installed for CARLsim’s CPU mode?
+1. **Why do I need to have CUDA installed for CARLsim’s CPU mode?**
 
 CARLsim was written primarily as a GPU SNN simulator with the CPU mode being
 used mainly for validation and prototyping. Because of this, code for the CPU
 and GPU mode is intermingled. CARLsim v4.0 will separate these code-bases
 completely.
 
-2. How do I install the parameter-tuning tools?
+2. **I’m having trouble installing CUDA in Linux. Any tips?**
+
+As of the writing of this README (2/2015) the CUDA driver/toolkit/SDK are all
+installed with the same installation script/package.  Once ‘./deviceQuery’
+returns valid information about your runtime and driver CUDA installation, you
+are in business. There are often problems with NVIDIA driver conflicts and
+other video drivers in a Linux install. Often times people purge all NVIDIA
+packages before attempting to install CUDA.
+
+Usually you have to add a few key environment variables to your .bashrc file.
+Below I set the CUDA_HOME variable to where CUDA is installed. I then set my
+LD_LIBRARY_PATH variable to the CUDA_HOME/lib64 directory. Finally, I point to
+the location of the CUDA tools/compiler (nvcc) by setting the PATH variable to
+the CUDA_HOME/bin directory.
+
+```
+# set CUDA variables
+export CUDA_HOME=/usr/local/cuda
+export LD_LIBRARY_PATH=${CUDA_HOME}/lib64
+export PATH=$PATH:${CUDA_HOME}/bin
+```
+
+3. **How do I install the parameter-tuning tools?**
 
 Instructions for installing the parameter-tuning tools can be found in their
 respective directories in the tools directory. For example, if you want to
 install the automated parameter-tuning interface using ECJ,the installation
 instructions are located in tools/ecj_pti.
 
-### PTI to be moved somewhere else
-Parameter Tuning Interface (PTI): Currently the parameter tuning library
-that uses Evolving Objects (EO) is deprecated. The new version of the
-parameter tuning library will uses Evolutionary Computations in Java (ECJ)
-and can be installed as follows. Assuming ECJ version 22 or greater is
-installed:
+4. **How do I install Google Tests?**
 
-1) Set the ECJ_DIR and ECJ_PTI_DIR variables in user.mk.
+In general you should:
 
-2) Change the current directory to ’tools/carlsim_addons/ecj_pti’.
+1)  Download google tests and unzip them to a location of your choice.
 
-3) Type ‘make && sudo make install’
-
-4) Refer to the tuneFiringRatesECJ example found in examples/tuneFiringRatesECJ
-   for how to use CARLsim and ECJ to tune SNNs.
-
-TO UNINSTALL:
-CARLsim: Remove the folder where you installed the CARLsim library. This
-folder is located in $(CARLSIM_LIB_DIR).
-
-Type ‘make help’ for additional information.
+2)  Edit the environment variables GTEST_DIR and GTEST_LIB_DIR
+    found in test/gtest.mk. GTEST_DIR should point to the location of the
+    unzipped google test source code that you  downloaded. GTEST_LIB_DIR
+    should point to the location you want the compiled google test libraries
+    to which you will be linking should be installed.
 

@@ -37,8 +37,7 @@ The <tt>doc</tt> folder contains doxygen-related files and the generated documen
 <tt>projects</tt> folder contains a template for writing your first CARLsim program. Users will
 start here when they begin writing their first program. The <tt>tools</tt> directory contains a
 number of CARLsim plugins that may be useful to users such as parameter tuning frameworks, MATLAB
-scripts, spike generators, and tools for visual stimuli. Finally, the <tt>tutorial</tt> directory
-contains the source code documentation for generating the tutorials.
+scripts, spike generators, and tools for visual stimuli.
 
 \code
 ├── carlsim
@@ -50,7 +49,8 @@ contains the source code documentation for generating the tutorials.
 │   ├── spike_monitor
 │   └── test
 ├── doc
-│   └── html
+│   ├── html
+│   └── source
 ├── examples
 │   ├── colorblind
 │   ├── colorcycle
@@ -65,27 +65,13 @@ contains the source code documentation for generating the tutorials.
 │   └── v1MTLIP
 ├── projects
 │   └── hello_world
-├── tools
-│   ├── ecj_pti
-│   ├── eo_pti
-│   ├── offline_analysis_toolbox
-│   ├── simple_weight_tuner
-│   ├── spike_generators
-│   └── visual_stimulus
-└── tutorial
-    ├── 10_ecj
-    ├── 11_regression_suite
-    ├── 12_advanced_topics
-    ├── 13_example_networks
-    ├── 1_getting_started
-    ├── 2_basics
-    ├── 3_neurons_synapses_groups
-    ├── 4_connections
-    ├── 5_synaptic_plasticity
-    ├── 6_input
-    ├── 7_monitoring
-    ├── 8_saving_and_loading
-    └── 9_visualization
+└── tools
+    ├── ecj_pti
+    ├── eo_pti
+    ├── offline_analysis_toolbox
+    ├── simple_weight_tuner
+    ├── spike_generators
+    └── visual_stimulus
 \endcode
 
 \since v3.0
@@ -219,9 +205,9 @@ directory found in the CARLsim root directory and run the documentation generati
 \section ch1s4s1_linux_project_workflow 1.4.1
 
 The project workflow is as follows. New users should start with the hello_world project found in the
-<tt>projects</tt> directory. The Makefile provided in the directory was made so that users would
-only have to modify a small portion of Makefile to build their own custom project. Below is the
-modifiable portion of the Makefile:
+<tt>projects</tt> directory. The Makefile provided in the directory was made so that usersonly have
+to modify a small portion of Makefile to build their own custom project. Below is the modifiable
+portion of the Makefile:
 
 \code
 # Makefile for building project program from the CARLsim library
