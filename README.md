@@ -153,13 +153,13 @@ which compiles the carlsim tests
 2) To run the tests, enter the test directory and run ‘carlsim_tests’:
 
 ```
-cd test
+cd carlsim/test
 
 ```
 and
 
 ```
-./test/carlsim_tests
+./carlsim_tests
 ```
 
 This runs the CARLsim tests which should all pass. If they do not pass,
