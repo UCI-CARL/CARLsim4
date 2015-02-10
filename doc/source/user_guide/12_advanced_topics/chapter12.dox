@@ -114,7 +114,7 @@ correct firing:
 
 \see SimpleWeightTuner
 \see \ref ch10_ecj
-\see Code example: <tt>tutorial/12_advanced_topics/simple_weight_tuner/main_simple_weight_tuner.cpp</tt>
+\see Code example: <tt>user_guide/12_advanced_topics/simple_weight_tuner/main_simple_weight_tuner.cpp</tt>
 
 
 

@@ -7,22 +7,24 @@
 CARLSIM_LIB_DIR ?= /opt/CARL/CARLsim
 
 # cuda capability major version number for GPU device
-CUDA_MAJOR_NUM ?= 1
+CUDA_MAJOR_NUM ?= 2
 # cuda capability minor version number for GPU device
-CUDA_MINOR_NUM ?= 3
-
-# $(OPT_LEVEL): set to 1, 2, or 3 if you want to use optimization.  Default: 0.
-# $(DEBUG_INFO): set to 1 to include debug info, set to 0 to not include
-# debugging info.  Default: 0.
-CARLSIM_CUDAVER ?= 3
-CARLSIM_FASTMATH ?= 0
-CARLSIM_CUOPTLEVEL ?= 0
-CARLSIM_DEBUG ?= 0
+CUDA_MINOR_NUM ?= 0
+# cuda toolkit version (major number only)
+CARLSIM_CUDAVER ?= 5
 
 # CUDA Installation location. If your CUDA installation is not /usr/local/cuda,
 # please set CUDA_INSTALL_PATH to point to the correct location or set it as
 # an environment variable.
 CUDA_INSTALL_PATH ?= /usr/local/cuda
+
+# $(OPT_LEVEL): set to 1, 2, or 3 if you want to use optimization.  Default: 0.
+# $(DEBUG_INFO): set to 1 to include debug info, set to 0 to not include
+# debugging info.  Default: 0.
+CARLSIM_FASTMATH ?= 0
+CARLSIM_CUOPTLEVEL ?= 0
+CARLSIM_DEBUG ?= 0
+
 
 #------------------------------------------------------------------------------
 # OPTIONAL FEATURES:
