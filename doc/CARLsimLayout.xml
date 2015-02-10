@@ -3,7 +3,7 @@
 	<!-- Navigation index tabs for HTML output -->
 	<navindex>
 		<tab type="mainpage" visible="yes" title=""/>
-		<tab type="usergroup" visible="yes" title="Tutorial">
+		<tab type="usergroup" visible="yes" title="User-Manual">
 			<tab type="usergroup" visible="yes" title="1. Getting Started" url="@ref ch1_getting_started">
 				<tab type="user" visible="no" title="1.1 Pre-Installation" url="@ref ch1s1_preinstallation"/>
 				<tab type="user" visible="no" title="1.2 Installation" url="@ref ch1s2_installation"/>
