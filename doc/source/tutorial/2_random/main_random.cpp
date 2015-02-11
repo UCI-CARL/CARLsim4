@@ -94,7 +94,7 @@ int main() {
 	//setup some baseline input
 	PoissonRate in(N*0.1);
 	in.setRates(1.0f);
-//	sim.setSpikeRate(gin,&in);
+	sim.setSpikeRate(gin,&in);
 
 	// run for a total of 10 seconds
 	// at the end of each runNetwork call, Spike and Connection Monitor stats will be printed

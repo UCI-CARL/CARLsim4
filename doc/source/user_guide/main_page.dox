@@ -39,7 +39,7 @@ see file AUTHORS.
 \section main_getting_started Getting Started
 
 The best place to get started is \ref ch1_getting_started of the User Guide, which will walk you through the
-installation procedure. \ref ch2_basics will explain the basic concepts of CARLsim.
+installation procedure. \ref ch2_basic_concepts will explain the basic concepts of CARLsim.
 
 For a more example-driven approach, please refer to our Tutorials (e.g., \ref tut1_basic_concepts).
 

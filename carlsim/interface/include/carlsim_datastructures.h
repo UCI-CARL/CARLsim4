@@ -220,7 +220,7 @@ static const char* updateInterval_string[] = {
  * first call to CARLsim::runNetwork will change the state from SETUP to EXECUTION.
  */
 enum carlsimState_t {
-	CONFIG_STATE, SETUP_STATE, EXE_STATE
+	CONFIG_STATE, SETUP_STATE, RUN_STATE
 };
 static const char* carlsimState_string[] = {
 	"Configuration state", "Setup state", "Execution state"

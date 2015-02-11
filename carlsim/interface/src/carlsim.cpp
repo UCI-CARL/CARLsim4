@@ -104,7 +104,7 @@ CARLsim::CARLsim(const std::string& netName, simMode_t simMode, loggerMode_t log
 
 CARLsim::~CARLsim() {
 	// save simulation
-	if (carlsimState_ == SETUP_STATE || carlsimState_ == EXE_STATE)
+	if (carlsimState_ == SETUP_STATE || carlsimState_ == RUN_STATE)
 		saveSimulation(def_save_fileName_,def_save_synapseInfo_);
 
 	// deallocate all dynamically allocated structures
@@ -669,11 +669,11 @@ void CARLsim::setWeightAndWeightChangeUpdate(updateInterval_t wtANDwtChangeUpdat
 // run network with custom options
 int CARLsim::runNetwork(int nSec, int nMsec, bool printRunSummary, bool copyState) {
 	std::string funcName = "runNetwork()";
-	UserErrors::assertTrue(carlsimState_ == SETUP_STATE || carlsimState_ == EXE_STATE,
+	UserErrors::assertTrue(carlsimState_ == SETUP_STATE || carlsimState_ == RUN_STATE,
 				UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "SETUP or EXECUTION.");
 
 	// run some checks before running network for the first time
-	if (carlsimState_ != EXE_STATE) {
+	if (carlsimState_ != RUN_STATE) {
 		// if user hasn't called setConductances, set to false and disp warning
 		if (!hasSetConductances_) {
 			userWarnings_.push_back("CARLsim::setConductances has not been called. Setting simulation mode to CUBA.");
@@ -683,7 +683,7 @@ int CARLsim::runNetwork(int nSec, int nMsec, bool printRunSummary, bool copyStat
 		handleUserWarnings();
 	}
 
-	carlsimState_ = EXE_STATE;
+	carlsimState_ = RUN_STATE;
 
 	return snn_->runNetwork(nSec, nMsec, printRunSummary, copyState);
 }
@@ -709,7 +709,7 @@ void CARLsim::saveSimulation(const std::string& fileName, bool saveSynapseInfo) 
 	FILE* fpSave = fopen(fileName.c_str(),"wb");
 	std::string funcName = "saveSimulation()";
 	UserErrors::assertTrue(fpSave!=NULL,UserErrors::FILE_CANNOT_OPEN,fileName);
-	UserErrors::assertTrue(carlsimState_ == SETUP_STATE || carlsimState_ == EXE_STATE,
+	UserErrors::assertTrue(carlsimState_ == SETUP_STATE || carlsimState_ == RUN_STATE,
 					UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "SETUP or EXECUTION.");
 
 	snn_->saveSimulation(fpSave,saveSynapseInfo);
@@ -753,7 +753,7 @@ void CARLsim::setLogsFpCustom(FILE* fpInf, FILE* fpErr, FILE* fpDeb, FILE* fpLog
 // adds a constant bias to the weight of every synapse in the connection
 void CARLsim::biasWeights(short int connId, float bias, bool updateWeightRange) {
 	std::stringstream funcName;	funcName << "biasWeights(" << connId << "," << bias << "," << updateWeightRange << ")";
-	UserErrors::assertTrue(carlsimState_==EXE_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName.str(),
+	UserErrors::assertTrue(carlsimState_==RUN_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName.str(),
 		funcName.str(), "EXECUTION.");
 	UserErrors::assertTrue(connId>=0 && connId<getNumConnections(), UserErrors::MUST_BE_IN_RANGE, funcName.str(),
 		"connId", "[0,getNumConnections()]");
@@ -772,7 +772,7 @@ void CARLsim::loadSimulation(FILE* fid) {
 // resets spike counters
 void CARLsim::resetSpikeCounter(int grpId) {
 	std::string funcName = "resetSpikeCounter()";
-	UserErrors::assertTrue(carlsimState_==SETUP_STATE||carlsimState_==EXE_STATE,
+	UserErrors::assertTrue(carlsimState_==SETUP_STATE||carlsimState_==RUN_STATE,
 		UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "SETUP or EXECUTION.");
 
 	snn_->resetSpikeCounter(grpId);
@@ -781,7 +781,7 @@ void CARLsim::resetSpikeCounter(int grpId) {
 // scales the weight of every synapse in the connection with a scaling factor
 void CARLsim::scaleWeights(short int connId, float scale, bool updateWeightRange) {
 	std::stringstream funcName;	funcName << "scaleWeights(" << connId << "," << scale << "," << updateWeightRange << ")";
-	UserErrors::assertTrue(carlsimState_==EXE_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName.str(),
+	UserErrors::assertTrue(carlsimState_==RUN_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName.str(),
 		funcName.str(), "EXECUTION.");
 	UserErrors::assertTrue(connId>=0 && connId<getNumConnections(), UserErrors::MUST_BE_IN_RANGE, funcName.str(),
 		"connId", "[0,getNumConnections()]");
@@ -834,7 +834,7 @@ void CARLsim::setExternalCurrent(int grpId, const std::vector<float>& current) {
 	UserErrors::assertTrue(current.size()==getGroupNumNeurons(grpId), UserErrors::MUST_BE_IDENTICAL, funcName,
 		"current.size()", "number of neurons in the group.");
 	UserErrors::assertTrue(!isPoissonGroup(grpId), UserErrors::WRONG_NEURON_TYPE, funcName, funcName);
-	UserErrors::assertTrue(carlsimState_==SETUP_STATE || carlsimState_==EXE_STATE,
+	UserErrors::assertTrue(carlsimState_==SETUP_STATE || carlsimState_==RUN_STATE,
 		UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "SETUP or EXECUTION.");
 
 	snn_->setExternalCurrent(grpId, current);
@@ -844,7 +844,7 @@ void CARLsim::setExternalCurrent(int grpId, float current) {
 	std::string funcName = "setExternalCurrent(\""+getGroupName(grpId)+"\")";
 	UserErrors::assertTrue(grpId!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName, "grpId");
 	UserErrors::assertTrue(!isPoissonGroup(grpId), UserErrors::WRONG_NEURON_TYPE, funcName, funcName);
-	UserErrors::assertTrue(carlsimState_==SETUP_STATE || carlsimState_==EXE_STATE,
+	UserErrors::assertTrue(carlsimState_==SETUP_STATE || carlsimState_==RUN_STATE,
 		UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "SETUP or EXECUTION.");
 
 	std::vector<float> vecCurrent(getGroupNumNeurons(grpId), current);
@@ -948,7 +948,7 @@ SpikeMonitor* CARLsim::setSpikeMonitor(int grpId, const std::string& fileName) {
 // assign spike rate to poisson group
 void CARLsim::setSpikeRate(int grpId, PoissonRate* spikeRate, int refPeriod) {
 	std::string funcName = "setSpikeRate()";
-	UserErrors::assertTrue(carlsimState_==SETUP_STATE || carlsimState_==EXE_STATE,
+	UserErrors::assertTrue(carlsimState_==SETUP_STATE || carlsimState_==RUN_STATE,
 					UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "SETUP or EXECUTION.");
 	UserErrors::assertTrue(spikeRate->getNumNeurons()==getGroupNumNeurons(grpId), UserErrors::MUST_BE_IDENTICAL,
 		funcName, "PoissonRate length and the number of neurons in the group");
@@ -961,7 +961,7 @@ void CARLsim::setSpikeRate(int grpId, PoissonRate* spikeRate, int refPeriod) {
 void CARLsim::setWeight(short int connId, int neurIdPre, int neurIdPost, float weight, bool updateWeightRange) {
 	std::stringstream funcName;	funcName << "setWeight(" << connId << "," << neurIdPre << "," << neurIdPost << ","
 		<< updateWeightRange << ")";
-	UserErrors::assertTrue(carlsimState_==EXE_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName.str(),
+	UserErrors::assertTrue(carlsimState_==RUN_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName.str(),
 		funcName.str(), "EXECUTION.");
 	UserErrors::assertTrue(connId>=0 && connId<getNumConnections(), UserErrors::MUST_BE_IN_RANGE,
 		funcName.str(), "connectionId", "[0,getNumConnections()]");
@@ -973,7 +973,7 @@ void CARLsim::setWeight(short int connId, int neurIdPre, int neurIdPost, float w
 // function writes population weights from gIDpre to gIDpost to file fname in binary.
 void CARLsim::writePopWeights(std::string fname, int gIDpre, int gIDpost) {
 	std::string funcName = "writePopWeights("+fname+")";
-	UserErrors::assertTrue(carlsimState_ == SETUP_STATE || carlsimState_ == EXE_STATE,
+	UserErrors::assertTrue(carlsimState_ == SETUP_STATE || carlsimState_ == RUN_STATE,
 					UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "SETUP or EXECUTION.");
 
 	snn_->writePopWeights(fname,gIDpre,gIDpost);
@@ -985,7 +985,7 @@ void CARLsim::writePopWeights(std::string fname, int gIDpre, int gIDpost) {
 
 std::vector<float> CARLsim::getConductanceAMPA(int grpId) {
 	std::string funcName = "getConductanceAMPA()";
-	UserErrors::assertTrue(carlsimState_ == EXE_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE,
+	UserErrors::assertTrue(carlsimState_ == RUN_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE,
 		funcName, funcName, "EXECUTION.");
 	UserErrors::assertTrue(grpId!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName, "grpId");
 	UserErrors::assertTrue(grpId>=0 && grpId<getNumGroups(), UserErrors::MUST_BE_IN_RANGE, funcName, "grpId",
@@ -996,7 +996,7 @@ std::vector<float> CARLsim::getConductanceAMPA(int grpId) {
 
 std::vector<float> CARLsim::getConductanceNMDA(int grpId) {
 	std::string funcName = "getConductanceNMDA()";
-	UserErrors::assertTrue(carlsimState_ == EXE_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE,
+	UserErrors::assertTrue(carlsimState_ == RUN_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE,
 		funcName, funcName, "EXECUTION.");
 	UserErrors::assertTrue(grpId!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName, "grpId");
 	UserErrors::assertTrue(grpId>=0 && grpId<getNumGroups(), UserErrors::MUST_BE_IN_RANGE, funcName, "grpId",
@@ -1007,7 +1007,7 @@ std::vector<float> CARLsim::getConductanceNMDA(int grpId) {
 
 std::vector<float> CARLsim::getConductanceGABAa(int grpId) {
 	std::string funcName = "getConductanceGABAa()";
-	UserErrors::assertTrue(carlsimState_ == EXE_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE,
+	UserErrors::assertTrue(carlsimState_ == RUN_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE,
 		funcName, funcName, "EXECUTION.");
 	UserErrors::assertTrue(grpId!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName, "grpId");
 	UserErrors::assertTrue(grpId>=0 && grpId<getNumGroups(), UserErrors::MUST_BE_IN_RANGE, funcName, "grpId",
@@ -1018,7 +1018,7 @@ std::vector<float> CARLsim::getConductanceGABAa(int grpId) {
 
 std::vector<float> CARLsim::getConductanceGABAb(int grpId) {
 	std::string funcName = "getConductanceGABAb()";
-	UserErrors::assertTrue(carlsimState_ == EXE_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE,
+	UserErrors::assertTrue(carlsimState_ == RUN_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE,
 		funcName, funcName, "EXECUTION.");
 	UserErrors::assertTrue(grpId!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName, "grpId");
 	UserErrors::assertTrue(grpId>=0 && grpId<getNumGroups(), UserErrors::MUST_BE_IN_RANGE, funcName, "grpId",
@@ -1037,7 +1037,7 @@ RangeDelay CARLsim::getDelayRange(short int connId) {
 
 uint8_t* CARLsim::getDelays(int gIDpre, int gIDpost, int& Npre, int& Npost, uint8_t* delays) {
 	std::string funcName = "getDelays()";
-	UserErrors::assertTrue(carlsimState_ == SETUP_STATE || carlsimState_ == EXE_STATE,
+	UserErrors::assertTrue(carlsimState_ == SETUP_STATE || carlsimState_ == RUN_STATE,
 					UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "SETUP or EXECUTION.");
 	UserErrors::assertTrue(gIDpre>=0 && gIDpre<getNumGroups(), UserErrors::MUST_BE_IN_RANGE, funcName, "gIDpre",
 		"[0,getNumGroups()]");
@@ -1050,7 +1050,7 @@ uint8_t* CARLsim::getDelays(int gIDpre, int gIDpost, int& Npre, int& Npost, uint
 Grid3D CARLsim::getGroupGrid3D(int grpId) {
 	std::stringstream funcName;	funcName << "getConnectInfo(" << grpId << ")";
 	UserErrors::assertTrue(grpId!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName.str(), "grpId");
-	UserErrors::assertTrue(carlsimState_ == SETUP_STATE || carlsimState_ == EXE_STATE,
+	UserErrors::assertTrue(carlsimState_ == SETUP_STATE || carlsimState_ == RUN_STATE,
 					UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName.str(), funcName.str(), "SETUP or EXECUTION.");
 	UserErrors::assertTrue(grpId>=0 && grpId<getNumGroups(), UserErrors::MUST_BE_IN_RANGE, funcName.str(),
 		"grpId", "[0,getNumGroups()]");
@@ -1060,7 +1060,7 @@ Grid3D CARLsim::getGroupGrid3D(int grpId) {
 
 int CARLsim::getGroupId(std::string grpName) {
 	std::string funcName = "getGroupId("+grpName+")";
-	UserErrors::assertTrue(carlsimState_ == SETUP_STATE || carlsimState_ == EXE_STATE,
+	UserErrors::assertTrue(carlsimState_ == SETUP_STATE || carlsimState_ == RUN_STATE,
 					UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "SETUP or EXECUTION.");
 
 	return snn_->getGroupId(grpName);
@@ -1076,7 +1076,7 @@ std::string CARLsim::getGroupName(int grpId) {
 
 int CARLsim::getGroupStartNeuronId(int grpId) {
 	std::stringstream funcName; funcName << "getGroupStartNeuronId(" << grpId << ")";
-	UserErrors::assertTrue(carlsimState_ == SETUP_STATE || carlsimState_ == EXE_STATE,
+	UserErrors::assertTrue(carlsimState_ == SETUP_STATE || carlsimState_ == RUN_STATE,
 					UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName.str(), funcName.str(), "SETUP or EXECUTION.");
 	UserErrors::assertTrue(grpId>=0 && grpId<getNumGroups(), UserErrors::MUST_BE_IN_RANGE, funcName.str(), "grpId",
 		"[0,getNumGroups()]");
@@ -1086,7 +1086,7 @@ int CARLsim::getGroupStartNeuronId(int grpId) {
 
 int CARLsim::getGroupEndNeuronId(int grpId) {
 	std::stringstream funcName; funcName << "getGroupEndNeuronId(" << grpId << ")";
-	UserErrors::assertTrue(carlsimState_ == SETUP_STATE || carlsimState_ == EXE_STATE,
+	UserErrors::assertTrue(carlsimState_ == SETUP_STATE || carlsimState_ == RUN_STATE,
 					UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName.str(), funcName.str(), "SETUP or EXECUTION.");
 	UserErrors::assertTrue(grpId>=0 && grpId<getNumGroups(), UserErrors::MUST_BE_IN_RANGE, funcName.str(), "grpId",
 		"[0,getNumGroups()]");
@@ -1135,7 +1135,7 @@ int CARLsim::getNumNeuronsGenInh() { return snn_->getNumNeuronsGenInh(); }
 
 int CARLsim::getNumPreSynapses() {
 	std::string funcName = "getNumPreSynapses()";
-	UserErrors::assertTrue(carlsimState_ == SETUP_STATE || carlsimState_ == EXE_STATE,
+	UserErrors::assertTrue(carlsimState_ == SETUP_STATE || carlsimState_ == RUN_STATE,
 					UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "SETUP or EXECUTION.");
 
 	return snn_->getNumPreSynapses();
@@ -1150,7 +1150,7 @@ int CARLsim::getNumSynapticConnections(short int connectionId) {
 }
 int CARLsim::getNumPostSynapses() {
 	std::string funcName = "getNumPostSynapses()";
-	UserErrors::assertTrue(carlsimState_ == SETUP_STATE || carlsimState_ == EXE_STATE,
+	UserErrors::assertTrue(carlsimState_ == SETUP_STATE || carlsimState_ == RUN_STATE,
 					UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "SETUP or EXECUTION.");
 
 	return snn_->getNumPostSynapses(); }
@@ -1158,7 +1158,7 @@ int CARLsim::getNumPostSynapses() {
 
 GroupSTDPInfo_t CARLsim::getGroupSTDPInfo(int grpId) {
 	std::string funcName = "getGroupSTDPInfo()";
-	//UserErrors::assertTrue(carlsimState_ == SETUP_STATE || carlsimState_ == EXE_STATE,
+	//UserErrors::assertTrue(carlsimState_ == SETUP_STATE || carlsimState_ == RUN_STATE,
 	//				UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, "SETUP or EXECUTION.");
 
 	return snn_->getGroupSTDPInfo(grpId);
@@ -1166,7 +1166,7 @@ GroupSTDPInfo_t CARLsim::getGroupSTDPInfo(int grpId) {
 
 GroupNeuromodulatorInfo_t CARLsim::getGroupNeuromodulatorInfo(int grpId) {
 	std::string funcName = "getGroupNeuromodulatorInfo()";
-	//UserErrors::assertTrue(carlsimState_ == SETUP_STATE || carlsimState_ == EXE_STATE,
+	//UserErrors::assertTrue(carlsimState_ == SETUP_STATE || carlsimState_ == RUN_STATE,
 	//				UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, "SETUP or EXECUTION.");
 
 	return snn_->getGroupNeuromodulatorInfo(grpId);
@@ -1183,7 +1183,7 @@ uint32_t CARLsim::getSimTimeMsec() { return snn_->getSimTimeMs(); }
 int* CARLsim::getSpikeCounter(int grpId) {
 	std::stringstream funcName;	funcName << "getSpikeCounter(" << grpId << ")";
 	UserErrors::assertTrue(grpId!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName.str(), "grpId");
-	UserErrors::assertTrue(carlsimState_==EXE_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName.str(),
+	UserErrors::assertTrue(carlsimState_==RUN_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName.str(),
 		"EXECUTION.");
 
 	return snn_->getSpikeCounter(grpId);
