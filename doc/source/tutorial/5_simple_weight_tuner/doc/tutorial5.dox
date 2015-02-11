@@ -22,5 +22,59 @@ This tutorial assumes you know:
 
 \section tut5s3_two 5.2 The second part
 
+\code
+SimpleWeightTuner Demo
+- Step 1: Tune weights from input layer to hidden layer
+#0: rate=0.0000Hz, target=27.4000Hz, error=-27.4000000, errorMargin=0.0100000
+#1: rate=26.4430Hz, target=27.4000Hz, error=-0.9569992, errorMargin=0.0100000
+#2: rate=51.7540Hz, target=27.4000Hz, error=24.3540016, errorMargin=0.0100000
+#3: rate=40.6780Hz, target=27.4000Hz, error=13.2780014, errorMargin=0.0100000
+#4: rate=27.1590Hz, target=27.4000Hz, error=-0.2409996, errorMargin=0.0100000
+#5: rate=33.2920Hz, target=27.4000Hz, error=5.8919998, errorMargin=0.0100000
+#8: rate=28.5820Hz, target=27.4000Hz, error=1.1820007, errorMargin=0.0100000
+#9: rate=27.7840Hz, target=27.4000Hz, error=0.3840004, errorMargin=0.0100000
+#10: rate=26.9060Hz, target=27.4000Hz, error=-0.4939999, errorMargin=0.0100000
+#11: rate=27.3400Hz, target=27.4000Hz, error=-0.0599998, errorMargin=0.0100000
+#12: rate=27.7650Hz, target=27.4000Hz, error=0.3649994, errorMargin=0.0100000
+#13: rate=27.5420Hz, target=27.4000Hz, error=0.1419998, errorMargin=0.0100000
+#14: rate=27.3450Hz, target=27.4000Hz, error=-0.0550007, errorMargin=0.0100000
+#15: rate=27.4410Hz, target=27.4000Hz, error=0.0410000, errorMargin=0.0100000
+#16: rate=27.3840Hz, target=27.4000Hz, error=-0.0159992, errorMargin=0.0100000
+#17: rate=27.4070Hz, target=27.4000Hz, error=0.0069996, errorMargin=0.0100000
+SimpleWeightTuner successful: Error margin reached in 18 iterations.
+
+- Step 2: Tune weights from hidden layer to output layer
+#0: rate=1.1540Hz, target=42.8000Hz, error=-41.6460000, errorMargin=0.0100000
+#1: rate=15.4940Hz, target=42.8000Hz, error=-27.3059996, errorMargin=0.0100000
+#2: rate=28.0930Hz, target=42.8000Hz, error=-14.7069996, errorMargin=0.0100000
+#3: rate=42.7080Hz, target=42.8000Hz, error=-0.0919998, errorMargin=0.0100000
+#4: rate=54.4490Hz, target=42.8000Hz, error=11.6490013, errorMargin=0.0100000
+#5: rate=49.4270Hz, target=42.8000Hz, error=6.6269981, errorMargin=0.0100000
+#6: rate=43.5590Hz, target=42.8000Hz, error=0.7589981, errorMargin=0.0100000
+#7: rate=36.3550Hz, target=42.8000Hz, error=-6.4450005, errorMargin=0.0100000
+#8: rate=39.5930Hz, target=42.8000Hz, error=-3.2070015, errorMargin=0.0100000
+#9: rate=43.1410Hz, target=42.8000Hz, error=0.3409988, errorMargin=0.0100000
+#10: rate=41.6410Hz, target=42.8000Hz, error=-1.1590012, errorMargin=0.0100000
+#11: rate=42.3660Hz, target=42.8000Hz, error=-0.4339989, errorMargin=0.0100000
+#12: rate=43.2860Hz, target=42.8000Hz, error=0.4859993, errorMargin=0.0100000
+#13: rate=42.9020Hz, target=42.8000Hz, error=0.1020004, errorMargin=0.0100000
+#14: rate=42.4910Hz, target=42.8000Hz, error=-0.3089989, errorMargin=0.0100000
+#15: rate=42.6160Hz, target=42.8000Hz, error=-0.1839989, errorMargin=0.0100000
+#16: rate=42.8750Hz, target=42.8000Hz, error=0.0750000, errorMargin=0.0100000
+#17: rate=42.7680Hz, target=42.8000Hz, error=-0.0319984, errorMargin=0.0100000
+#18: rate=42.8310Hz, target=42.8000Hz, error=0.0310013, errorMargin=0.0100000
+#19: rate=42.7700Hz, target=42.8000Hz, error=-0.0299995, errorMargin=0.0100000
+#20: rate=42.7790Hz, target=42.8000Hz, error=-0.0210007, errorMargin=0.0100000
+#21: rate=42.8660Hz, target=42.8000Hz, error=0.0660011, errorMargin=0.0100000
+#22: rate=42.8190Hz, target=42.8000Hz, error=0.0190002, errorMargin=0.0100000
+#23: rate=42.7750Hz, target=42.8000Hz, error=-0.0249985, errorMargin=0.0100000
+#24: rate=42.7970Hz, target=42.8000Hz, error=-0.0029991, errorMargin=0.0100000
+SimpleWeightTuner successful: Error margin reached in 25 iterations.
+
+- Step 3: Verify result (gHid=27.4000Hz, gOut=42.8000Hz, +/- 0.0100Hz)
+(t=44.000s) SpikeMonitor for group out(0) has 42783 spikes in 1000ms (42.78 +/- 4.17 Hz)
+(t=44.000s) SpikeMonitor for group hidden(1) has 27412 spikes in 1000ms (27.41 +/- 2.72 Hz)
+\endcode
+
 
 */
