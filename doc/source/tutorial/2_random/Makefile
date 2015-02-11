@@ -1,15 +1,12 @@
-# Makefile for building example program from the CARLsim library
+# Makefile for building Tutorial code from the CARLsim library
 
 # NOTE: need to tell CARLsim where to find the user.mk
 USER_MK_PATH = ../../../../
 include $(USER_MK_PATH)user.mk
 
-example := random
+# list all targets in this directory
+local_targets := random
 output := *.dot *.dat *.log *.csv results/*
-
-# -----------------------------------------------------------------------------
-# You should not need to edit the file beyond this point
-# -----------------------------------------------------------------------------
 
 # we are compiling from carlsim lib
 CARLSIM_FLAGS += -I$(CARLSIM_LIB_DIR)/include/kernel \
@@ -22,17 +19,16 @@ CARLSIM_FLAGS += -I$(CARLSIM_LIB_DIR)/include/kernel \
 				 -I$(CARLSIM_LIB_DIR)/include/simple_weight_tuner
 CARLSIM_LIBS  += -L$(CARLSIM_LIB_DIR)/lib -lCARLsim
 
-local_src  := main_$(example).cpp
-local_prog := $(example)
-
-.PHONY: clean distclean
+.PHONY: all clean distclean
+all: $(local_targets)
 # compile from CARLsim lib
-$(local_prog): $(local_src)
-	$(NVCC) $(CARLSIM_INCLUDES) $(CARLSIM_FLAGS) $(CARLSIM_LFLAGS) \
-	$(CARLSIM_LIBS) $< -o $@
+
+# list all rules, one per target
+random: main_random.cpp
+	$(NVCC) $(CARLSIM_INCLUDES) $(CARLSIM_FLAGS) $(CARLSIM_LFLAGS) $< -o $@ $(CARLSIM_LIBS)
 
 clean:
-	$(RM) $(local_prog)
+	$(RM) $(local_targets)
 
 distclean:
-	$(RM) $(local_prog) $(output)
+	$(RM) $(local_targets) $(output)
