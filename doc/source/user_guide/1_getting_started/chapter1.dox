@@ -11,9 +11,10 @@ CARLsim currently requires the NVIDIA CUDA parallel computing platform to be ins
 even if one does not plan to use the GPU implementation of CARLsim. Future versions of CARLsim
 that allow users to run the CPU implementation of CARLsim without installing CUDA are planned.
 CARLsim requires GPUs with a compute capability of 2.0 or higher. To see find the compute
-capability of your device you can check <a href="http://en.wikipedia.org/wiki/CUDA">here</a>.
+capability of your device you can check <a href="http://en.wikipedia.org/wiki/CUDA" target="_blank"><b>here</b></a>.
 CARLsim also requires CUDA Toolkit 5.0 and up. For CUDA installation instructrions for your
-platform, please navigate to the NVIDIA <a href="https://developer.nvidia.com/cuda-zone">CUDA Zone</a>.
+platform, please navigate to the NVIDIA
+<a href="https://developer.nvidia.com/cuda-zone" target="_blank"><b>CUDA Zone</b></a>.
 The rest of the chapter assumes you have successfully installed CUDA and have the
 appropriate hardware.
 

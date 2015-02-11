@@ -1,6 +1,6 @@
 /*!
 
-\page tut1_basic_concepts 1. Basic Concepts
+\page tut1_basic_concepts Tutorial 1: Basic Concepts
 
 \tableofcontents
 
@@ -23,47 +23,32 @@ This tutorial assumes you know:
 \section s2_simplest 1.1 The simplest CARLsim program
 
 
-\section s3_else 1.2 Something else
+\TODO
+
+The objective of this tutorial is to hook up a Poisson spike generator to a single Izhikevich neuron and look
+at the output activity.
 
 
 \code
-#include "snn.h"
-CpuSNN sim("My network");
-bool onGPU = true; // run network on GPU
-int ithGPU = 1; // run on 2nd device in a multi-GPU system
+#include <carlsim.h>
+CARLsim sim("Hello World", CPU_MODE, USER);
 
-// create topology
-int gIn=sim.createSpikeGeneratorGroup("input", 100, EXCITATORY_NEURON);
-int gEx=sim.createGroup("excitatory", 100, EXCITATORY_NEURON);
-sim.setNeuronParameters(gEx, 0.02f, 0.2f, -65.0f, 8.0f); // RS neurons
-sim.connect(gIn, gEx, "random", 1.0, 1.0, 0.10f, 1, 20, SYN_FIXED);
+int gIn = sim.createSpikeGeneratorGroup("input", 1, EXCITATORY_NEURON);
+int gOut = sim.createGroup("output", 1, EXCITATORY_NEURON);
+sim.setNeuronParameters(gOut, 0.1f, 0.2f, -65.0f, 2.0f);
+sim.setConductances(true);
 
-// run in COBA mode
-sim.setConductances(ALL, true, 5.0, 150.0, 6.0, 150.0);
+sim.connect(gIn, gOut, "one-to-one", RangeWeight(0.1f), 1.0f);
 
-// set log cycle to 1sec and print to stdout
-sim.setLogCycle(1, 1, stdout);
+sim.setupNetwork();
+sim.setSpikeMonitor(gOut,"DEFAULT");
 
-// set up where to store the spikes
-sim.setSpikeMonitor(gEx, "spkEx.dat"); // write spike times to file
-
-// initialize the GPU / network
-sim.runNetwork(0,0, onGPU?GPU_MODE:CPU_MODE,ithGPU);
-
-// set Poisson rates for all neurons
-PoissonRate inSpikes(100);
-for (int i=0; i<100; i++)
-	inSpikes.rates[i] = 50.0f;
-sim.setSpikeRate(gIn, &inSpikes);
-
-// run the network for 1 s and 0 ms
-sim.runNetwork(1,0, onGPU?GPU_MODE:CPU_MODE,ithGPU);
-
-// store the network state
-FILE* nid = fopen("network.dat","wb");
-sim.writeNetwork(nid);
-fclose(nid);
+PoissonRate in(1);
+in.setRates(20.0f);
+sim.setSpikeRate(gIn, &in);
+sim.runNetwork(1,0);
 \endcode
+
 
 
 */

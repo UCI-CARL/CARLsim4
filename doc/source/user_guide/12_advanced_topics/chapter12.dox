@@ -42,7 +42,7 @@ These functions are useful especially for tuning feedforward weights in large-sc
 a lot of time to repeatedly build.
 For tuning in more complex situations please refer to \ref ch10_ecj.
 
-These functions are only valid in ::carlsimState_t ::EXE_STATE and do not alter the topography of the network.
+These functions are only valid in ::carlsimState_t ::RUN_STATE and do not alter the topography of the network.
 They apply to weight values of already allocated synapses only.
 
 \see \ref ch10_ecj
@@ -206,8 +206,17 @@ then two different behaviors can be achieved, depending on a third optional argu
 \author Michael Beyeler
 
 \TODO MB
-
 Logger modes. Log files. User errors.
+
+\code
+*                 |    USER    | DEVELOPER  |  SHOWTIME  |   SILENT   |  CUSTOM
+* ----------------|------------|------------|------------|------------|---------
+* Status msgs     |   stdout   |   stdout   | /dev/null  | /dev/null  |    ?
+* Errors/warnings |   stderr   |   stderr   |   stderr   | /dev/null  |    ?
+* Debug msgs      | /dev/null  |   stdout   | /dev/null  | /dev/null  |    ?
+* All msgs        | debug.log  | debug.log  |  debug.log | debug.log  |    ?
+* 
+\endcode
 
 
 \section ch12s5_numerical_integration 12.5 Numerical Integration
