@@ -211,7 +211,6 @@ TEST(ConnMon, weightFile) {
 		for (int interval=-1; interval<=1; interval+=2) {
 			sim = new CARLsim("ConnMon.setConnectionMonitorDeath",mode?GPU_MODE:CPU_MODE,SILENT,0,42);
 		
-		fprintf(stderr,"\nmode=%d, interval=%d\n",mode,interval);
 			int g0 = sim->createGroup("g0", GRP_SIZE, EXCITATORY_NEURON);
 			sim->setNeuronParameters(g0, 0.02f, 0.2f, -65.0f, 8.0f);
 
@@ -226,6 +225,9 @@ TEST(ConnMon, weightFile) {
 				sim->runNetwork(10,0);
 				CM->takeSnapshot();
 			} else {
+				// taking a snapshot in the beginning should not matter, because that snapshot is already
+				// being recorded automatically
+				CM->takeSnapshot();
 				sim->runNetwork(10,0);
 			}
 
@@ -233,13 +235,14 @@ TEST(ConnMon, weightFile) {
 
 			// make sure file size for CM binary is correct
 			std::ifstream wtFile("results/weights.dat", std::ios::binary | std::ios::ate);
-			if (!wtFile)
-				fprintf(stderr,"not opened\n");
-			wtFile.seekg( 0, std::ios::end );
-			if (interval==-1) {
-				fileLength[0] = wtFile.tellg(); // should contain 2 snapshots
-			} else {
-				fileLength[1] = wtFile.tellg(); // should contain 10 snapshots
+			EXPECT_TRUE(wtFile!=0);
+			if (wtFile) {
+				wtFile.seekg( 0, std::ios::end );
+				if (interval==-1) {
+					fileLength[0] = wtFile.tellg(); // should contain 2 snapshots
+				} else {
+					fileLength[1] = wtFile.tellg(); // should contain 10 snapshots
+				}
 			}
 		}
 

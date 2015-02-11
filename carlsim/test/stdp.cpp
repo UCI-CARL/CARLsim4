@@ -333,7 +333,7 @@ TEST(STDP, ESTDPHebbianCurve) {
 				gex1 = sim->createSpikeGeneratorGroup("input-ex1", 1, EXCITATORY_NEURON);
 				gex2 = sim->createSpikeGeneratorGroup("input-ex2", 1, EXCITATORY_NEURON);
 
-				PrePostGroupSpikeGenerator* proPostSpikeGen = new PrePostGroupSpikeGenerator(100, offset, gex2, gex1);
+				PrePostGroupSpikeGenerator* prePostSpikeGen = new PrePostGroupSpikeGenerator(100, offset, gex2, gex1);
 
 				if (coba) { // conductance-based
 					sim->connect(gex1, g1, "one-to-one", RangeWeight(40.0f/100), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
@@ -352,8 +352,8 @@ TEST(STDP, ESTDPHebbianCurve) {
 				}
 
 				// set up spike controller on DA neurons
-				sim->setSpikeGenerator(gex1, proPostSpikeGen);
-				sim->setSpikeGenerator(gex2, proPostSpikeGen);
+				sim->setSpikeGenerator(gex1, prePostSpikeGen);
+				sim->setSpikeGenerator(gex2, prePostSpikeGen);
 
 				// build the network
 				sim->setupNetwork();
@@ -377,7 +377,7 @@ TEST(STDP, ESTDPHebbianCurve) {
 					}
 				}
 
-				delete proPostSpikeGen;
+				delete prePostSpikeGen;
 				delete sim;
 			}
 		}

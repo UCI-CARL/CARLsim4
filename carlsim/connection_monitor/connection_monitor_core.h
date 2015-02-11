@@ -36,7 +36,7 @@
  *					(TSC) Ting-Shuo Chou <tingshuc@uci.edu>
  *
  * CARLsim available from http://socsci.uci.edu/~jkrichma/CARLsim/
- * Ver 11/12/2014
+ * Ver 2/10/2015
  */
 
 #ifndef _CONN_MON_CORE_H_

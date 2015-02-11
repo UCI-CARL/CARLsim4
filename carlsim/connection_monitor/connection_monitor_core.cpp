@@ -315,7 +315,6 @@ bool ConnectionMonitorCore::updateTime(unsigned int simTimeMs) {
 
 	bool needToUpdate = false;
 	if (currTime > simTimeMs_) {
-		fprintf(stderr,"in updateTime if, currTime=%ld, simTimeMs_=%ld\n",currTime,simTimeMs_);
 		// time has advances since last storage
 		needToUpdate = true;
 
@@ -402,14 +401,11 @@ void ConnectionMonitorCore::writeConnectFileHeader() {
 }
 
 void ConnectionMonitorCore::writeConnectFileSnapshot() {
-	fprintf(stderr,"t=%ld, tookSnap=%s, needToWrite=%s\n",simTimeMs_,tookSnapshot_?"y":"n",needToWriteSnapshot()?"y":"n");
 	if (!needToWriteSnapshot())
 		return;
 
 	tookSnapshot_ = false;
-
 	simTimeMsLastWrite_ = simTimeMs_;
-	fprintf(stderr,"writing to file at t=%ld\n",simTimeMs_);
 
 	// write time stamp
 	if (!fwrite(&simTimeMs_,sizeof(long int),1,connFileId_))

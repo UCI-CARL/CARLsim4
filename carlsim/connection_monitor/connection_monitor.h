@@ -36,7 +36,7 @@
  *					(TSC) Ting-Shuo Chou <tingshuc@uci.edu>
  *
  * CARLsim available from http://socsci.uci.edu/~jkrichma/CARLsim/
- * Ver 11/12/2014
+ * Ver 2/10/2015
  */
 
 #ifndef _CONN_MON_H_
@@ -55,8 +55,8 @@ class ConnectionMonitorCore; // forward declaration of implementation
  * method then returns a pointer to a ConnectionMonitor object, which can be queried for connection data.
  *
  * By default, a snapshot of all the weights will be taken once per second and dumped to file.
- * The easiest way is to call CARLsim::setConnectionMonitor with file string "default". This will create a file with
- * path "results/conn_{name of pre-group}_{name of post-group}.dat".
+ * The easiest way to use a ConnectionMonitor is to call CARLsim::setConnectionMonitor with file string "default".
+ * This will create a file with path "results/conn_{name of pre-group}_{name of post-group}.dat".
  * It is also possible to specify a custom file string instead.
  * Alternatively, the user may suppress creation of the binary file by using file string "null" instead.
  *
@@ -220,8 +220,8 @@ class ConnectionMonitor {
 	/*!
 	 * \brief Returns the number of weights that have changed since the last snapshot
 	 *
-	 * This function returns the number of weights whose absolute has changed at least minAbsChanged (inclusive) since
-	 * the last snapshot was taken.
+	 * This function returns the number of weights whose absolute value has changed at least minAbsChanged (inclusive)
+	 * since the last snapshot was taken.
 	 *
 	 * In order to get the current state of the weight matrix, this function will take a snapshot itself.
 	 *
