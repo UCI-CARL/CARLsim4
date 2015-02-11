@@ -1,6 +1,6 @@
 /*!
 
-\page tut5_color_opponency Tutorial 5: Color Opponency
+\page tut6_multi_gpu Tutorial 6: Multi-GPU
 
 \tableofcontents
 
@@ -17,10 +17,10 @@ This tutorial assumes you know:
 - Item B
 
 
-\section s2_one 5.1 The first part
+\section tut6s2_one 6.1 The first part
 
 
-\section s3_two 5.2 The second part
+\section tut6s3_two 6.2 The second part
 
 
 */

@@ -1,6 +1,6 @@
 /*!
 
-\page tut6_motion_energy Tutorial 6: Motion Energy
+\page tut5_simple_weight_tuner Tutorial 5: Simple Weight Tuner
 
 \tableofcontents
 
@@ -17,10 +17,10 @@ This tutorial assumes you know:
 - Item B
 
 
-\section s2_one 6.1 The first part
+\section tut5s2_one 5.1 The first part
 
 
-\section s3_two 6.2 The second part
+\section tut5s3_two 5.2 The second part
 
 
 */
