@@ -28,7 +28,6 @@ spike_mon_dir       = $(CARLSIM_SRC_DIR)/carlsim/spike_monitor
 group_mon_dir       = $(CARLSIM_SRC_DIR)/carlsim/group_monitor
 conn_mon_dir   = $(CARLSIM_SRC_DIR)/carlsim/connection_monitor
 server_dir          = $(CARLSIM_SRC_DIR)/carlsim/server
-test_dir            = $(CARLSIM_SRC_DIR)/carlsim/test
 
 # carlsim tools
 tools_dir           = $(CARLSIM_SRC_DIR)/tools

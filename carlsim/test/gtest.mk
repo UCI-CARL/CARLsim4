@@ -1,7 +1,7 @@
 # Makefile to build Google Test
 
 # Our local, project-specific compilation of Google Test
-GTEST_LIB_DIR = $(test_dir)/lib
+GTEST_LIB_DIR = lib
 
 # Where to find user code.
 USER_DIR = $(GTEST_DIR)/samples

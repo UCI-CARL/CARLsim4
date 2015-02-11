@@ -36,8 +36,6 @@ CARLSIM_FLAGS += -I$(kernel_dir)/include -I$(interface_dir)/include \
 include user.mk
 include carlsim/carlsim.mk
 include carlsim/libcarlsim.mk
-include carlsim/test/gtest.mk
-include carlsim/test/carlsim_tests.mk
 
 # *.dat and results files are generated during carlsim_tests execution
 output_files += *.dot *.log tmp* *.status *.dat results carlsim/*.a
@@ -55,7 +53,7 @@ distclean:
 	$(RM) $(objects) $(libraries) $(output_files) doc/html
 
 devtest:
-	@echo $(CARLSIM_SRC_DIR) $(carlsim_tests_objs)
+	@echo $(objects) $(libraries) $(output_files) doc/html
 
 # Print a help message
 help:

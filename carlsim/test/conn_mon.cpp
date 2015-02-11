@@ -1,8 +1,7 @@
 #include "gtest/gtest.h"
 #include "carlsim_tests.h"
-
-#include <snn.h>
 #include <periodic_spikegen.h>
+#include <carlsim.h>
 
 // TODO: I should probably use a google tests figure for this to reduce the
 // amount of redundant code, but I don't need to do that right now. -- KDC
@@ -29,7 +28,7 @@ private:
 
 
 /// ****************************************************************************
-/// TESTS FOR CONNECTION MONITOR 
+/// TESTS FOR CONNECTION MONITOR
 /// ****************************************************************************
 
 TEST(setConnMon, interfaceDeath) {
@@ -43,7 +42,7 @@ TEST(setConnMon, interfaceDeath) {
 	for(int mode=0; mode<=1; mode++){
 		// first iteration, test CPU mode, second test GPU mode
 		sim = new CARLsim("ConnMon.setConnectionMonitorDeath",mode?GPU_MODE:CPU_MODE,SILENT,0,42);
-		
+
 		int g0 = sim->createGroup("g0", GRP_SIZE, EXCITATORY_NEURON);
 		int g1 = sim->createGroup("g1", GRP_SIZE, EXCITATORY_NEURON);
 		int g2 = sim->createGroup("g2", GRP_SIZE, EXCITATORY_NEURON);
@@ -74,7 +73,7 @@ TEST(setConnMon, interfaceDeath) {
 		// ----- EXE ------- //
 		// calling setConnMon in EXE
 		EXPECT_DEATH({sim->setConnectionMonitor(g0,g1,"Default");},"");
-		
+
 		delete sim;
 	}
 }
@@ -85,7 +84,7 @@ TEST(setConnMon, fname) {
 
 	CARLsim* sim;
 	const int GRP_SIZE = 10;
-	
+
 	// use threadsafe version because we have deathtests
 	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
@@ -93,7 +92,7 @@ TEST(setConnMon, fname) {
 	for(int mode=0; mode<=1; mode++){
 		// first iteration, test CPU mode, second test GPU mode
 		sim = new CARLsim("setConnMon.fname",mode?GPU_MODE:CPU_MODE,SILENT,0,42);
-		
+
 		int g1 = sim->createGroup("g1", GRP_SIZE, EXCITATORY_NEURON);
 		int g2 = sim->createGroup("g2", GRP_SIZE, EXCITATORY_NEURON);
 		sim->setNeuronParameters(g1, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f);
@@ -104,7 +103,7 @@ TEST(setConnMon, fname) {
 
 		// this directory doesn't exist.
 		EXPECT_DEATH({sim->setConnectionMonitor(g1,g2,"absentDirectory/testSpikes.dat");},"");
-		
+
 		delete sim;
 	}
 }
@@ -123,7 +122,7 @@ TEST(ConnMon, getters) {
 	for(int mode=0; mode<=1; mode++){
 		// first iteration, test CPU mode, second test GPU mode
 		sim = new CARLsim("ConnMon.setConnectionMonitorDeath",mode?GPU_MODE:CPU_MODE,SILENT,0,42);
-		
+
 		int g0 = sim->createGroup("g0", GRP_SIZE_PRE, EXCITATORY_NEURON);
 		int g1 = sim->createGroup("g1", GRP_SIZE_POST, EXCITATORY_NEURON);
 		int g2 = sim->createGroup("g2", GRP_SIZE_POST, EXCITATORY_NEURON);
@@ -168,7 +167,7 @@ TEST(ConnMon, takeSnapshot) {
 	for(int mode=0; mode<=1; mode++){
 		// first iteration, test CPU mode, second test GPU mode
 		sim = new CARLsim("ConnMon.setConnectionMonitorDeath",mode?GPU_MODE:CPU_MODE,SILENT,0,42);
-		
+
 		int g0 = sim->createGroup("g0", GRP_SIZE, EXCITATORY_NEURON);
 		int g1 = sim->createGroup("g1", GRP_SIZE, EXCITATORY_NEURON);
 		int g2 = sim->createGroup("g2", GRP_SIZE, EXCITATORY_NEURON);
