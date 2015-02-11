@@ -111,9 +111,9 @@ and GABAa-GABAb ratios.
 The CARLsim::connect method takes two additional parameters at the very end, which indicate a multiplicative gain
 factor for fast and slow synaptic channels.
 The following code snippet would fully connect neuron group <tt>grpIdPre</tt> to <tt>grpIdPost</tt> with fixed synapses
-(weight is 0.2f, all delays are 1ms) and gain factor 1.5f for fast and 0.5f for slow synaptic channels:
+(weight is 0.25f, all delays are 1ms) and gain factor 1.5f for fast and 0.5f for slow synaptic channels:
 \code
-short int cId = sim.connect(grpIdPre, grpIdPost, "full", RangeWeight(0.2f), 1.0f, RangeDelay(1),
+short int cId = sim.connect(grpIdPre, grpIdPost, "full", RangeWeight(0.25f), 1.0f, RangeDelay(1),
 	RadiusRF(-1), SYN_FIXED, 1.5f, 0.5f);
 \endcode
 
@@ -131,19 +131,21 @@ post-synaptic group (with or without self-connections).
 The easiest way to achieve all-to-all connectivity with a fixed weight (e.g., 0.25f), a fixed connection probability
 (e.g., 0.1f or 10%), and 1ms synaptic delay is via the following CARLsim::connect command:
 \code
-short int cId = sim.connect(gIn, gOut, "full", RangeWeight(0.1f), 0.1f);
+short int cId = sim.connect(gIn, gOut, "full", RangeWeight(0.25f), 0.1f);
 \endcode
 Here, <tt>gIn</tt> and <tt>gOut</tt> are group IDs returned from a call to CARLsim::createSpikeGeneratorGroup or
 CARLsim::createGroup (see \ref ch3s3_groups).
 The keyword "full" indicates all-to-all connectivity.
 ::RangeWeight is a struct that simplifies the specification of minimum, initial, and maximum weight values.
-The last parameter, <tt>0.1f</tt>, sets the connection probability to 10 %.
+The last parameter, <tt>0.1f</tt>, sets the connection probability to 10%.
+All other parameters (such as synaptic delays, receptive field structure, and synapse type) are optional---thus
+by omitting them default values are used.
 The function returns a connection ID, <tt>cId</tt>, which can be used to reference the connection in subsequent
 calls; for example, when setting up a ConnectionMonitor (see \ref ch7s2_connection_monitor).
 
 Alternatively, one can use the "full-no-direct" keyword to indicate that no self-connections shall be made:
 \code
-short int cId = sim.connect(gIn, gOut, "full-no-direct", RangeWeight(0.1f), 0.1f);
+short int cId = sim.connect(gIn, gOut, "full-no-direct", RangeWeight(0.25f), 0.1f);
 \endcode
 This will prevent neuron <tt>i</tt> in the pre-synaptic group to be connected to neuron <tt>i</tt> in the post-synaptic
 group.
@@ -156,23 +158,105 @@ user-specified probability p.
 The easiest way to achieve uniform random connectivity with a fixed weight (e.g., 0.25f), a fixed connection probability
 (e.g., 0.1f or 10%), and 1ms synaptic delay is via the following CARLsim::connect command:
 \code
-short int cId = sim.connect(gIn, gOut, "random", RangeWeight(0.1f), 0.1f);
+short int cId = sim.connect(gIn, gOut, "random", RangeWeight(0.25f), 0.1f);
 \endcode
 Here, <tt>gIn</tt> and <tt>gOut</tt> are group IDs returned from a call to CARLsim::createSpikeGeneratorGroup or
 CARLsim::createGroup (see \ref ch3s3_groups).
-The keyword "full" indicates all-to-all connectivity.
+The keyword "random" indicates uniform random connectivity.
 ::RangeWeight is a struct that simplifies the specification of minimum, initial, and maximum weight values.
-The last parameter, <tt>0.1f</tt>, sets the connection probability to 10 %.
+The last parameter, <tt>0.1f</tt>, sets the connection probability to 10%.
+All other parameters (such as synaptic delays, receptive field structure, and synapse type) are optional---thus
+by omitting them default values are used.
 The function returns a connection ID, <tt>cId</tt>, which can be used to reference the connection in subsequent
 calls; for example, when setting up a ConnectionMonitor (see \ref ch7s2_connection_monitor).
 
 
 \subsection ch4s1s7_1to1 4.1.7 One-to-One Connectivity
 
+One-to-one connectivity connects neuron i in the pre-synaptic group to neuron j in the post-synaptic group (both groups
+should have the same number of neurons).
+
+The easiest way to achieve one-to-one connectivity with a fixed weight (e.g., 0.25f), connection probability 1 (100%),
+and 1ms synaptic delay is via the following CARLsim::connect command:
+\code
+short ind cId = sim.connect(gIn, gOut, "one-to-one", RangeWeight(0.25f), 1.0f);
+\endcode
+Here, <tt>gIn</tt> and <tt>gOut</tt> are group IDs returned from a call to CARLsim::createSpikeGeneratorGroup or
+CARLsim::createGroup (see \ref ch3s3_groups).
+The keyword "one-to-one" indicates one-to-one connectivity.
+::RangeWeight is a struct that simplifies the specification of minimum, initial, and maximum weight values.
+The last parameter, <tt>1.0f</tt>, sets the connection probability to 100%.
+All other parameters (such as synaptic delays, receptive field structure, and synapse type) are optional---thus
+by omitting them default values are used.
+The function returns a connection ID, <tt>cId</tt>, which can be used to reference the connection in subsequent
+calls; for example, when setting up a ConnectionMonitor (see \ref ch7s2_connection_monitor).
+
+\note In order to achieve topographic one-to-one connectivity (i.e., connect two neurons only if they code for the
+same spatial location), use Gaussian connectivity with RadiusRF(0,0,0).
+
 
 \subsection ch4s1s8_gaussian 4.1.8 Gaussian Connectivity
 
+Gaussian connectivity uses topographic information from the ::Grid3D struct to connects neurons based on their relative
+distance in 3D space.
 
+The easiest way to achieve Gaussian connectivity where synaptic weights decrease with distance (and maximum weight equal
+to, e.g., 0.25f), connection probability 1 (100%), and 1ms synaptic delay is via the following CARLsim::connect command:
+\code
+short int cId = sim.connect(gIn, gOut, "gaussian", RangeWeight(0.25f), 1.0f);
+\endcode
+Here, <tt>gIn</tt> and <tt>gOut</tt> are group IDs returned from a call to CARLsim::createSpikeGeneratorGroup or
+CARLsim::createGroup (see \ref ch3s3_groups).
+The keyword "gaussian" indicates Gaussian connectivity.
+::RangeWeight is a struct that simplifies the specification of minimum, initial, and maximum weight values.
+The last parameter, <tt>1.0f</tt>, sets the connection probability to 100%.
+All other parameters (such as synaptic delays, receptive field structure, and synapse type) are optional---thus
+by omitting them default values are used.
+The function returns a connection ID, <tt>cId</tt>, which can be used to reference the connection in subsequent
+calls; for example, when setting up a ConnectionMonitor (see \ref ch7s2_connection_monitor).
+
+A few things should be noted about the implementation.
+Usually, one specifies the Gaussian width or standard deviation of the normal distribution
+(i.e., the parameter \f$\sigma\f$).
+Here, in order to standardize CARLsim::connect calls across connection types, the Gaussian width is instead inferred
+from the ::RadiusRF structs, such that neurons at the very border of the receptive field are connected with a weight
+that is 10% of the maximum specified weight.
+Within the receptive field, weights drop with distance squared, as is the case with a regular normal distribution.
+
+<b>Example:</b>
+Consider a 2D receptive field RadiusRF(a,b,0).
+Here, two neurons "pre" and "post", coding for spatial locations (pre.x,pre.y,pre.z) and (post.x,post.y,post.z),
+will be connected iff \f$ (pre.x-post.x)^2/a^2 + (pre.y-post.y)/b^2 <= 1 \f$ (which is the ellipse inequality)
+and \f$pre.z==post.z\f$.
+The weight will be maximal (i.e., <tt>RangeWeight.max</tt>) if "pre" and "post" code for the same (x,y) location.
+Within the receptive field, the weights drop with distance squared, so that neurons for which
+\f$ (pre.x-post.x)^2/a^2 + (pre.y-post.y)/b^2 == 1\f$ (exactly equal to 1) are connected with
+<tt>0.1*RangeWeight.max</tt>.
+Outside the receptive field, weights are zero.
+
+The following figures shows some of examples of a 2D Gaussian receptive field created with RadiusRF(9,9,0).
+Each panel shows the receptive field of a particular post-synaptic neuron (coding for different spatial locations)
+looking back at its pre-synaptic connections.
+The figure was generated with an OAT Connection Monitor (see \ref ch9s1_matlab_oat).
+
+\image html 4_gauss2D.jpg "Examples of 2D Gaussian receptive fields (topographic heatmap of weight strengths)."
+
+By making use of the flexibility that is provided by the ::RadiusRF struct, it is possible to create any 1D, 2D,
+or 3D Gaussian receptive field. A few examples that are easy to visualize are shown in the figure below.
+The first panel is essentially a one-to-one connection by using RadiusRF(0,0,0).
+But, assume you would want to connect neurons only if their (x,y) location is the same, but did not care about their
+z-coordinates. This could simply be achieved by using RadiusRF(0,0,-1).
+Similary, it is possible to permute the x, y, and z dimensions in the logic.
+You could connect neurons according to distance in y, only if their z-coordinate was the same, no matter the
+x-coordinate: RadiusRF(-1,y,0). 
+Or, you could connect neurons in a 3D ellipsoid: RadiusRF(a,b,c).
+
+\image html 4_gaussVariety.jpg "Examples of Gaussian receptive fields with complex RadiusRF."
+
+\note Any 1D, 2D, or 3D Gaussian receptive field is possible. However, visualization is currently limited to 2D planes.
+\attention Since the Gaussian width is inferred from receptive field dimensions, using "gaussian" connectivity in
+\attention combination with RadiusRF(-1,-1,-1) is not allowed.
+\since v3.0
 
 
 
@@ -181,8 +265,93 @@ calls; for example, when setting up a ConnectionMonitor (see \ref ch7s2_connecti
 A library of useful ConnectionGenerator subclasses will be added in a future release.
 
 
+
 \section ch4s3_user_defined 4.3 User-Defined Connections
 
-ConnectionGenerator
+The pre-defined topologies described above are useful for many simulations, but are insufficient for constructing
+networks with arbitrary connectivity.
+Thus, if one is not satisfied with the built-in connection types, a callback mechanism is available for user-specified
+connectivity.
+
+In the callback mechanism, the simulator calls a method on a user-defined class in order to determine whether a
+synaptic connection should be made or not.
+The user simply needs to define a method that specifies whether a connection should be made between a pre-synaptic
+neuron and a post-synaptic neuron and the simulator will automatically call the method for all possible pre- and
+post-synaptic pairs.
+The user can then specify the connection's delay, initial weight, maximum weight, and whether or not it is plastic.
+
+To make a user-defined connection, the user starts by making a new class that derives from the ConnectionGenerator
+class. Inside this new class, the user defines a connect method.
+
+The following code snippet shows a simple example that creates a one-to-one connection with 10% connection probability:
+\code
+// FILE: main.cpp
+
+#include <stdlib.h>     // srand, rand
+
+// custom ConnectionGenerator
+class MyConnection : public ConnectionGenerator {
+	MyConnection() {}
+	~MyConnection() {}
+
+	// the pure virtual function inherited from base class
+	// note that weight, maxWt, delay, and connected are passed by reference
+	void connect(CARLsim* sim, int srcGrp, int i, int destGrp, int j, float& weight, float& maxWt,
+			float& delay, bool& connected)) {
+		// connect n-th neuron in pre to n-th neuron in post (with 10% prob)
+		connected = (i==j) && (rand()/RAND_MAX < 0.1f);
+		weight = 1.0f;
+		maxWt = 1.0f;
+		delay = 1;
+	}
+}
+
+int main() {
+	// initialize random seed
+	srand (time(NULL));
+
+	// config some network
+	CARLsim sim("example", CPU_MODE, USER);
+	int g0 = sim.createGroup("g0", 10, EXCITATORY_NEURON);
+	int g1 = sim.createGroup("g1", 10, EXCITATORY_NEURON);
+	// ... etc. ...
+
+	// create an instance of MyConnection class and pass it to CARLsim::connect
+	MyConnection myConn;
+	sim.connect(g0, g1, myConn, SYN_PLASTIC);
+
+	sim.setupNetwork();
+	// etc.
+}
+\endcode
+
+Note that within ConnectionGenerator::connect it is possible to access any public methods of the CARLsim class.
+This makes it possible to, for example, create a custom connection function that takes into account the relative
+position of neurons.
+The following code snippet slightly adjusts the above code snippet to produce topographic one-to-one connectivity;
+that is, neurons are only connected if their 3D coordinates are exactly the same.
+\code
+// custom ConnectionGenerator
+class MyConnection : public ConnectionGenerator {
+
+// ...
+
+	// 
+	void connect(CARLsim* sim, int srcGrp, int i, int destGrp, int j, float& weight, float& maxWt,
+			float& delay, bool& connected)) {
+		Point3D pre = sim->getNeuronLocation3D(srcGrp, i);
+		Point3D post = sim->getNeuronLocation3D(destGrp, j);
+
+		// connect only if pre and post coordinates are identical (with 10% prob)
+		connected = (pre == post) && (rand()/RAND_MAX < 0.1f);
+		weight = 1.0f;
+		maxWt = 1.0f;
+		delay = 1;
+	}
+}
+\endcode
+
+\see CARLsim::connect(int, int, ConnectionGenerator*, bool, int, int)
+\see CARLsim::connect(int, int, ConnectionGenerator*, float, float, bool, int, int)
 
 */

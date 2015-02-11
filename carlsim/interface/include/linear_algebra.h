@@ -85,8 +85,8 @@ public:
 	const double x, y, z;
 
 private:
-	bool Equals(const Point3D& p) const { return (x==p.x && y==p.y); }
-	int CompareTo(const Point3D& p) const { return (x>p.x&&y>p.y) ? 1 : ( (x<p.x&&y<p.y) ? -1 : 0); }
+	bool Equals(const Point3D& p) const { return (x==p.x && y==p.y && z==p.z); }
+	int CompareTo(const Point3D& p) const { return (x>p.x&&y>p.y&&z>p.z) ? 1 : ( (x<p.x&&y<p.y&&z<p.z) ? -1 : 0); }
 };
 
 double dist(Point3D& p1, Point3D& p2);
