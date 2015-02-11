@@ -7,6 +7,10 @@ Legend:
 Release 3.0
 ===============================================================================
 
+2015-02-10     Michael Beyeler <mbeyeler@uci.edu>
+  + Added ConnectionMonitor::setUpdateTimeIntervalSec.
+  * Improved documentation on ConnectionMonitor.
+  
 2015-02-09     Michael Beyeler <mbeyeler@uci.edu>
   + Added CARLsim::connect type "gaussian" for the generation of 1D, 2D, and 3D
     Gaussian receptive fields.

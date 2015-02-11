@@ -3,11 +3,10 @@
 
 #include <snn.h>
 #include <periodic_spikegen.h>
-
-// TODO: I should probably use a google tests figure for this to reduce the
-// amount of redundant code, but I don't need to do that right now. -- KDC
+#include <fstream>                // std::ifstream
 
 
+// connect such that the weight of the synapse is proportional to the pre-neuron ID
 class ConnectPropToPreNeurId : public ConnectionGenerator {
 public:
 	ConnectPropToPreNeurId(float wtScale) {
@@ -178,6 +177,7 @@ TEST(ConnMon, takeSnapshot) {
 
 		connPre = new ConnectPropToPreNeurId(wtScale);
 		sim->connect(g0,g1,connPre,SYN_FIXED,1000,1000);
+		sim->setConductances(true);
 		sim->setupNetwork();
 
 		ConnectionMonitor* CM = sim->setConnectionMonitor(g0,g1,"NULL");
@@ -191,5 +191,67 @@ TEST(ConnMon, takeSnapshot) {
 		}
 
 		delete sim;
+	}
+}
+
+TEST(ConnMon, weightFile) {
+	// set this flag to make all death tests thread-safe
+	::testing::FLAGS_gtest_death_test_style = "threadsafe";
+
+	CARLsim* sim;
+	ConnectPropToPreNeurId* connPre;
+
+	const int GRP_SIZE = 10;
+	float wtScale = 0.01f;
+
+	// loop over both CPU and GPU mode.
+	for (int mode=0; mode<=1; mode++) {
+		// loop over time interval options
+		long fileLength[2] = {0,0};
+		for (int interval=-1; interval<=1; interval+=2) {
+			sim = new CARLsim("ConnMon.setConnectionMonitorDeath",mode?GPU_MODE:CPU_MODE,SILENT,0,42);
+		
+			int g0 = sim->createGroup("g0", GRP_SIZE, EXCITATORY_NEURON);
+			sim->setNeuronParameters(g0, 0.02f, 0.2f, -65.0f, 8.0f);
+
+			sim->connect(g0,g0,"full",RangeWeight(0.1f),0.1f);
+			sim->setConductances(true);
+			sim->setupNetwork();
+
+			ConnectionMonitor* CM = sim->setConnectionMonitor(g0,g0,"results/weights.dat");
+			CM->setUpdateTimeIntervalSec(interval);
+			if (interval==-1) {
+				CM->takeSnapshot();
+				sim->runNetwork(10,0);
+				CM->takeSnapshot();
+			} else {
+				// taking a snapshot in the beginning should not matter, because that snapshot is already
+				// being recorded automatically
+				CM->takeSnapshot();
+				sim->runNetwork(10,0);
+			}
+
+			delete sim;
+
+			// make sure file size for CM binary is correct
+			std::ifstream wtFile("results/weights.dat", std::ios::binary | std::ios::ate);
+			EXPECT_TRUE(wtFile!=0);
+			if (wtFile) {
+				wtFile.seekg( 0, std::ios::end );
+				if (interval==-1) {
+					fileLength[0] = wtFile.tellg(); // should contain 2 snapshots
+				} else {
+					fileLength[1] = wtFile.tellg(); // should contain 10 snapshots
+				}
+			}
+		}
+
+		// we want to check the file size, but that might vary depending on the header section
+		// (which might change over the course of time)
+		// so choose a portable approach: estimate header size for both interval modes, and make
+		// sure they're the same
+		// file should have header+(number of snapshots)*((number of weights)+(timestamp as long int))*(bytes per word)
+		int headerSize = fileLength[0] - 2*(GRP_SIZE*GRP_SIZE+2)*4;
+		EXPECT_EQ(headerSize, fileLength[1] - 11*(GRP_SIZE*GRP_SIZE+2)*4);
 	}
 }
