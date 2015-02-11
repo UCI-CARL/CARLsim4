@@ -64,8 +64,8 @@
 			</tab>
 		</tab>
 		<tab type="usergroup" visible="yes" title="Tutorial">
-			<tab type="usergroup" visible="yes" title="1. Hello World" url="@ref tut1_hello_world"/>
-			<tab type="usergroup" visible="yes" title="2. 80-20 RAIN Network" url="@ref tut2_80_20_rain"/>
+			<tab type="usergroup" visible="yes" title="1. Basic Concepts" url="@ref tut1_basic_concepts"/>
+			<tab type="usergroup" visible="yes" title="2. Random Network" url="@ref tut2_random"/>
 			<tab type="usergroup" visible="yes" title="3. STDP" url="@ref tut3_stdp"/>
 			<tab type="usergroup" visible="yes" title="4. Parameter Tuning Interface (PTI)" url="@ref tut4_pti"/>
 			<tab type="usergroup" visible="yes" title="5. Color Opponency" url="@ref tut5_color_opponency"/>

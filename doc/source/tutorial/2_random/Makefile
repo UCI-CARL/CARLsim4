@@ -1,10 +1,7 @@
 # Makefile for building example program from the CARLsim library
 
-# NOTE: if you are compiling your code in a directory different from
-# examples/<example_name> or projects/<project_name> then you need to either
-# move the configured user.mk file to this directory or set the path to
-# where CARLsim can find the user.mk.
-USER_MK_PATH = ../../
+# NOTE: need to tell CARLsim where to find the user.mk
+USER_MK_PATH = ../../../../
 include $(USER_MK_PATH)user.mk
 
 example := random

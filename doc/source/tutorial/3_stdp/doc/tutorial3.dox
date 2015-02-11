@@ -1,11 +1,26 @@
 /*!
 
-\page tut3_stdp 3. STDP
+\page tut3_stdp 3. Spike-Timing Dependent Plasticity (STDP)
 
 \tableofcontents
 
-\section s1_introduction 1. Introduction
+In this tutorial, we introduce a random network and do the following with it:
+- Item A
+- Item B
 
-blah.
+At the end of the tutorial, you will have achieved the following:
+- Item A
+- Item B
+
+This tutorial assumes you know:
+- Item A
+- Item B
+
+
+\section s2_one 3.1 The first part
+
+
+\section s3_two 3.2 The second part
+
 
 */

@@ -1,0 +1,69 @@
+/*!
+
+\page tut1_basic_concepts 1. Basic Concepts
+
+\tableofcontents
+
+In this tutorial, we introduce some of the basic concepts of a CARLsim simulation:
+- Importing the CARLsim library
+- Creating a group of neurons
+- Defining the network structure by connecting neurons
+- Running a network
+- Looking at the output of the network
+
+At the end of the tutorial, you will have:
+- built a simple CARLsim program
+- learned about stuff
+
+This tutorial assumes you know:
+- The very basics of C/C++
+- The Izhikevich neuron model
+
+
+\section s2_simplest 1.1 The simplest CARLsim program
+
+
+\section s3_else 1.2 Something else
+
+
+\code
+#include "snn.h"
+CpuSNN sim("My network");
+bool onGPU = true; // run network on GPU
+int ithGPU = 1; // run on 2nd device in a multi-GPU system
+
+// create topology
+int gIn=sim.createSpikeGeneratorGroup("input", 100, EXCITATORY_NEURON);
+int gEx=sim.createGroup("excitatory", 100, EXCITATORY_NEURON);
+sim.setNeuronParameters(gEx, 0.02f, 0.2f, -65.0f, 8.0f); // RS neurons
+sim.connect(gIn, gEx, "random", 1.0, 1.0, 0.10f, 1, 20, SYN_FIXED);
+
+// run in COBA mode
+sim.setConductances(ALL, true, 5.0, 150.0, 6.0, 150.0);
+
+// set log cycle to 1sec and print to stdout
+sim.setLogCycle(1, 1, stdout);
+
+// set up where to store the spikes
+sim.setSpikeMonitor(gEx, "spkEx.dat"); // write spike times to file
+
+// initialize the GPU / network
+sim.runNetwork(0,0, onGPU?GPU_MODE:CPU_MODE,ithGPU);
+
+// set Poisson rates for all neurons
+PoissonRate inSpikes(100);
+for (int i=0; i<100; i++)
+	inSpikes.rates[i] = 50.0f;
+sim.setSpikeRate(gIn, &inSpikes);
+
+// run the network for 1 s and 0 ms
+sim.runNetwork(1,0, onGPU?GPU_MODE:CPU_MODE,ithGPU);
+
+// store the network state
+FILE* nid = fopen("network.dat","wb");
+sim.writeNetwork(nid);
+fclose(nid);
+\endcode
+
+
+*/
