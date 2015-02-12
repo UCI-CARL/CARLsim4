@@ -74,17 +74,20 @@ int main() {
 	sim->setupNetwork();
 
 	// accept firing rates within this range of target firing
-	double targetFiringHid = 27.4;
-	double targetFiringOut = 42.8;
-	double errorMarginHz = 0.01;
+	double targetFiringHid = 27.4;	// target firing rate for gHid
+	double targetFiringOut = 42.8;	// target firing rate for gOut
+
+	// algorithm will terminate when at least one of the termination conditions is reached
+	double errorMarginHz = 0.015;	// error margin
+	int maxIter = 100;				// max number of iterations
 
 	// set up weight tuning from input -> hidden
-	SimpleWeightTuner SWTin2hid(sim, errorMarginHz);
+	SimpleWeightTuner SWTin2hid(sim, errorMarginHz, maxIter);
 	SWTin2hid.setConnectionToTune(c0, 0.0); // start at 0
 	SWTin2hid.setTargetFiringRate(gHid, targetFiringHid);
 
 	// set up weight tuning from hidden -> output
-	SimpleWeightTuner SWThid2out(sim, errorMarginHz);
+	SimpleWeightTuner SWThid2out(sim, errorMarginHz, maxIter);
 	SWThid2out.setConnectionToTune(c1, 0.0); // start at 0
 	SWThid2out.setTargetFiringRate(gOut, targetFiringOut);
 
