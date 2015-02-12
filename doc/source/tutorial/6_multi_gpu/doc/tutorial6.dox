@@ -1,0 +1,26 @@
+/*!
+
+\page tut6_multi_gpu Tutorial 6: Multi-GPU
+
+\tableofcontents
+
+In this tutorial, we introduce a random network and do the following with it:
+- Item A
+- Item B
+
+At the end of the tutorial, you will have achieved the following:
+- Item A
+- Item B
+
+This tutorial assumes you know:
+- Item A
+- Item B
+
+
+\section tut6s2_one 6.1 The first part
+
+
+\section tut6s3_two 6.2 The second part
+
+
+*/
