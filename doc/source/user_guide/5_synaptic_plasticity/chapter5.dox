@@ -39,10 +39,9 @@ The resulting effect is that the first spike under STP generates the same post-s
 disabled on that synapse (governed by the synaptic weight set in CARLsim::connect).
 From there on forward the post-synaptic current will either increase (STF) or decrease (STD).
 
-\image html 5_stp.jpg "Traces of generated post-synaptic currents for STD and STF (generated with CARLsim 3)."
+\image html 5_stp.jpg "Fig. 1. Traces of generated post-synaptic currents for STD and STF (generated with CARLsim 3)."
 
-Source: Misha Tsodyks and Si Wu (2013) Short-term synaptic plasticity. Scholarpedia, 8(10):3153., rev #136920
-
+Source Tsodyks and Wu, 2013.
 
 \subsection ch5s1s2_usage_example 5.1.2 Usage Example
 
@@ -81,31 +80,55 @@ By default, STP is disabled on all groups from the outset.
 \author Ting-Shuo Chou
 
 CARLsim supports a popular spike-based learning phenomenon called spike-timing dependent plasticity
-(STDP). STDP is an important assymetric form of Hebbian learning where the precise timing of the pre
-and postsynaptic spike times influence synaptic weight changes. Mention CAUSAL STUFF and
-correlations.
+(STDP). STDP is an important form of Hebbian learning where the precise timing of the pre
+and postsynaptic spike times influence synaptic weight changes. STDP is important because it
+operates on correlations between spikes and suggests a potential causal (or anti-causal)
+relationship between pre and postsynaptic spikes (Sjöström and Gerstner, 2010).
+
+The prototypical form of STDP acts as follows: spike-timings where the presynaptic spike
+arrival precedes postsynaptic spikes by a few milliseconds results in an increase in the synaptic
+weight, also referred to as long-term potentiation (LTP). Spike-timings where the presynaptic spike
+arrival follows postsynaptic spikes by a few milliseconds result in a decrease in the syanptic
+weight. (Bi and Poo, 1998). Fig. 2 shows a variety of 'STDP Curves' possible using CARLsim. In each
+subfigure, the horizontal axis represents the time difference between the time of the presynaptic
+spike arrival and the time of the postsynaptic arrival or \f$ \Delta t = t_{pre} - t_{post} \f$.
+Therefore, \f$ \Delta t \f$'s to the right of the vertical axis are \f$ \Delta t < 0 \f$
+(pre-before-post) while \f$ \Delta t \f$'s to the left of the vertical axis are 
+\f$ \Delta t>0 \f$ (pre-after-post).
+
+The vertical axis represents the weight change on the magnitude of the synaptic weight at that
+synapse.
+
+Fig. 2(a). shows the increase in synaptic efficacy versus pre-post
+timings. Repeated pairings of pre before postsynaptic spike events result in a large increase in
+synaptic efficacy when the time difference is a few milliseconds and decays exponentially as the
+time difference grows. The opposite change occurs for pre after postsynaptic spike events, resulting
+in a decrease in the syanptic efficacy. There are a variety of STDP rules found at different synapse
+types (Caporale and Dan, 2008). Fig. 2. shows the possible types of STDP possible in CARLsim.
+
+\image html 5_stdp_curves.jpg "Fig. 2. Examples of possible STDP curves possible in CARLsim. Green curves can be  applied to glutamatergic synapses, whereas red curves can be applied to GABAergic (inhibitory) synapses "
+
+Source: Beyeler, et al. 2015.
 
 
-The prototypical form of STDP acts
-as follows: spike-timings where the presynaptic spike arrival precedes postsynaptic spikes by a few
-milliseconds results in an increase in the synaptic weight, also referred to as long-term
-potentiation (LTP). Spike-timings where the presynaptic spike arrival follows postsynaptic spikes by
-a few milliseconds result in a decrease in the syanptic weight. (Bi and Poo, 1998). Fig. X. shows
-the increase in synaptic efficacy versus pre-post timings. Repeated pairings of pre before
-postsynaptic spike events result in a large increase in synaptic efficacy when the time difference
-is a few milliseconds and decays exponentially as the time difference grows. The opposite change
-occurs for pre after postsynaptic spike events, resulting in a decrease in the syanptic efficacy.
-There are a variety of STDP rules found at different synapse types (Caporale and Dan, 2008). Fig. Y.
-shows the possible types of STDP possible in CARLsim.
+\subsection ch5s2s1_phenemological_model 5.2.1 STDP Phenomenological Model
+CARLsim implements a variety of different STDP variants. The phenomenological form of the
+prototypical excitatory glutamatergic form of STDP is a simple system of decaying exponentials. if
+we take \f$ \Delta t = t_{pre} - t_{post} \f$ where \f$ t_{pre} \f$ is the time of arrival of the
+presynaptic spike and \f$ t_{post} \f$ is the time of the postsynaptic spike the following is true for
+the how the synaptic weight changes in response to the spike timing. if \f$ \Delta t > 0 \f$,
+then \f$ \Delta w = A_{+} \exp(-\Delta t/\tau_{+}) \f$ else if
+\f$ \Delta t <= 0 \f$, then \f$ \Delta w = A_{-} \exp(-\Delta t/\tau_{-}) \f$. It is important to
+note that CARLsim uses nearest neighbor STDP where each presynaptic spike is paired with the last
+postsynaptic spike and each postsynaptic spike is paired with the last presynaptic
+spike to calculate the final weight change due to STDP.
 
+\image html 5_stdp_types.jpg "Fig. 3. The types of STDP"
 
-
-
-\TODO KDC and TS
+\note CARLsim keeps track of the weight change every ms, but updates the weights every second.
 
 Put these in the correct place.
-Bi, G. Q. and Poo, M. M. (1998). Synaptic modifications in cultured Hippocampal neurons: dependence on spike timing, synaptic strength, and postsynaptic cell type. J Neurosci, 18:10464-72.
-Bi, G. and Poo, M. (2001). Synaptic modification of correlated activity: Hebb's postulate revisited. Ann. Rev. Neurosci., 24:139-166.
+
 
 All things STDP.
 
@@ -113,44 +136,62 @@ All things STDP.
 \warning If you set STDP on a fixed connection, your computer might explode.
 
 
-\subsection ch5s2s1_e_stdp 5.2.1 Excitatory STDP (E-STDP)
+\subsection ch5s2s2_e_stdp 5.2.1 Excitatory STDP (E-STDP)
 
 Explain E-STDP. Show curve. Show equations.
 
 \since v2.0
 
-\subsection ch5s2s2_i_stdp 5.2.2 Inhibitory STDP (I-STDP)
+\subsection ch5s2s3_i_stdp 5.2.2 Inhibitory STDP (I-STDP)
 
 Explain I-STDP. Show curve. Show equations.
 
 \since v3.0
 
 
-\subsection ch5s2s3_da_stdp 5.2.3 Dopamine-Modulated STDP (DA-STDP)
+\subsection ch5s2s4_da_stdp 5.2.3 Dopamine-Modulated STDP (DA-STDP)
 
 Explain DA-STDP. Show curve. Show equations.
 
 \since v3.0
 
 
-
-
-
 \section ch5s3_homeostasis 5.3 Homeostasis
 \author Kristofor D. Carlson
+
+\subsection ch5s3s1_phenomenological_model 5.3.1 Homeostasis Phenomenological Model
+
+\since v2.0
+
+\subsection ch5s3s2_usage_example 5.3.1 Homeostasis Usage Example
+
+\since v2.0
 
 \TODO KDC
 
 
 
-
-
-
-
 \section ch5s4_neuromodulation 5.4 Neuromodulation
 \author Ting-Shuo Chou
-
 \TODO TS
 
+
+\section ch5s5_references 5.5 References
+\author Kristofor D. Carlson
+
+Beyeler, M., Carlson, K. D., Chou, T. S., Dutt, N., Krichmar, J. L., CARLsim 3: A
+user-friendly and highly optimized library for the creation of neurobiologically detailed spiking
+neural networks. (Submitted)
+
+Bi, G. Q. and Poo, M. M. (1998). Synaptic modifications in cultured Hippocampal neurons: dependence
+on spike timing, synaptic strength, and postsynaptic cell type. J Neurosci, 18:10464-72.
+
+Bi, G. Q. and Poo, M. M. (2001). Synaptic modification of correlated activity: Hebb's postulate
+revisited. Ann. Rev. Neurosci., 24:139-166.
+
+Sjöström, J. and Gerstner, W. (2010) Spike-timing dependent plasticity. Scholarpedia, 5(2):1362.,
+revision #142314
+
+Tsodyks, M. and Wu, S. (2013) Short-term synaptic plasticity. Scholarpedia, 8(10):3153., rev #136920
 
 */

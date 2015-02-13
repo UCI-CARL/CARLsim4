@@ -175,7 +175,7 @@ public:
 	 *                       "full-no-direct": same as "full", but i-th neuron of grpId1 will not be connected to the
 	 *                       i-th neuron of grpId2. "gaussian": distance-dependent weights depending on the RadiusRF
 	 *                       struct, where neurons coding for the same location have weight initWt, and neurons lying
-	 *                       on the border of the RF have weight 0.1*initWt. 
+	 *                       on the border of the RF have weight 0.1*initWt.
 	 * \param[in] wt         a struct specifying the range of weight magnitudes (initial value and max value). Weights
 	 *                       range from 0 to maxWt, and are initialized with initWt. All weight values should be
 	 *                       non-negative (equivalent to weight *magnitudes*), even for inhibitory connections.
@@ -259,7 +259,7 @@ public:
 	 * Neurons of a group can be arranged topographically, so that they virtually lie on a 3D grid.
 	 * Connections can then be specified depending on the relative placement of neurons via CARLsim::connect. This allows
 	 * for the creation of networks with complex spatial structure.
-	 * 
+	 *
 	 * Each neuron in the group gets assigned a (x,y,z) location on a 3D grid centered around the origin, so that calling
 	 * Grid3D(Nx,Ny,Nz) creates coordinates that fall in the range [-(Nx-1)/2, (Nx-1)/2], [-(Ny-1)/2, (Ny-1)/2], and
 	 * [-(Nz-1)/2, (Nz-1)/2].
@@ -494,7 +494,7 @@ public:
 	 * \TODO finish docu
 	 * \STATE CONFIG
 	 */
-	void setESTDP(int grupId, bool isSet, stdpType_t type, HebbianCurve curve);
+	void setESTDP(int grpId, bool isSet, stdpType_t type, HebbianCurve curve);
 
 	/*!
 	 * \brief Sets E-STDP mode with hebbian curve
@@ -502,7 +502,7 @@ public:
 	 * \TODO finish docu
 	 * \STATE CONFIG
 	 */
-	void setESTDP(int grupId, bool isSet, stdpType_t type, HalfHebbianCurve curve);
+	void setESTDP(int grpId, bool isSet, stdpType_t type, HalfHebbianCurve curve);
 
 	/*!
 	 * \brief Sets default I-STDP mode and params
