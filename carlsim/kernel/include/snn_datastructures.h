@@ -251,7 +251,7 @@ typedef struct group_info_s {
 	stdpCurve_t WithESTDPcurve;
 	stdpCurve_t WithISTDPcurve;
 	bool 		WithHomeostasis;
-	int		homeoId;
+	int			homeoId;
 	bool		FixedInputWts;
 	int			Noffset;
 	int8_t		MaxDelay;
@@ -261,17 +261,17 @@ typedef struct group_info_s {
 	float		STP_U;
 	float		STP_tau_u_inv;
 	float		STP_tau_x_inv;
-	float		TAU_LTP_INV_EXC;
-	float		TAU_LTD_INV_EXC;
-	float		ALPHA_LTP_EXC;
-	float		ALPHA_LTD_EXC;
+	float		TAU_PLUS_INV_EXC;
+	float		TAU_MINUS_INV_EXC;
+	float		ALPHA_PLUS_EXC;
+	float		ALPHA_MINUS_EXC;
 	float		GAMMA;
 	float		KAPPA;
 	float		OMEGA;
-	float		TAU_LTP_INV_INB; //!< for furture use
-	float		TAU_LTD_INV_INB; //!< for furture use
-	float		ALPHA_LTP_INB; //!< for furture use
-	float		ALPHA_LTD_INB; //!< for furture use
+	float		TAU_PLUS_INV_INB; //!< for furture use
+	float		TAU_MINUS_INV_INB; //!< for furture use
+	float		ALPHA_PLUS_INB; //!< for furture use
+	float		ALPHA_MINUS_INB; //!< for furture use
 	float		BETA_LTP;
 	float		BETA_LTD;
 	float		LAMBDA;

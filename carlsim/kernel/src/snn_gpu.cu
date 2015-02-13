@@ -547,16 +547,16 @@ __device__ void gpu_updateLTP(	int*     		fireTablePtr,
 					if (gpuGrpInfo[grpId].WithESTDP) {
 						// Handle E-STDP curves
 						switch (gpuGrpInfo[grpId].WithESTDPcurve) {
-						case HEBBIAN: // Hebbian curve
-							if (stdp_tDiff * gpuGrpInfo[grpId].TAU_LTP_INV_EXC < 25)
-								gpuPtrs.wtChange[p] += STDP(stdp_tDiff, gpuGrpInfo[grpId].ALPHA_LTP_EXC, gpuGrpInfo[grpId].TAU_LTP_INV_EXC);
+						case EXP_CURVE: // exponential curve
+							if (stdp_tDiff * gpuGrpInfo[grpId].TAU_PLUS_INV_EXC < 25)
+								gpuPtrs.wtChange[p] += STDP(stdp_tDiff, gpuGrpInfo[grpId].ALPHA_PLUS_EXC, gpuGrpInfo[grpId].TAU_PLUS_INV_EXC);
 							break;
-						case HALF_HEBBIAN: // half-Hebbian curve
-							if (stdp_tDiff * gpuGrpInfo[grpId].TAU_LTP_INV_EXC < 25) {
+						case TIMING_BASED_CURVE: // sc curve
+							if (stdp_tDiff * gpuGrpInfo[grpId].TAU_PLUS_INV_EXC < 25) {
 									if (stdp_tDiff <= gpuGrpInfo[grpId].GAMMA)
-										gpuPtrs.wtChange[p] += gpuGrpInfo[grpId].OMEGA + gpuGrpInfo[grpId].KAPPA * STDP(stdp_tDiff, gpuGrpInfo[grpId].ALPHA_LTP_EXC, gpuGrpInfo[grpId].TAU_LTP_INV_EXC);
+										gpuPtrs.wtChange[p] += gpuGrpInfo[grpId].OMEGA + gpuGrpInfo[grpId].KAPPA * STDP(stdp_tDiff, gpuGrpInfo[grpId].ALPHA_PLUS_EXC, gpuGrpInfo[grpId].TAU_PLUS_INV_EXC);
 									else // stdp_tDiff > GAMMA
-										gpuPtrs.wtChange[p] -= STDP(stdp_tDiff, gpuGrpInfo[grpId].ALPHA_LTP_EXC, gpuGrpInfo[grpId].TAU_LTP_INV_EXC);
+										gpuPtrs.wtChange[p] -= STDP(stdp_tDiff, gpuGrpInfo[grpId].ALPHA_PLUS_EXC, gpuGrpInfo[grpId].TAU_PLUS_INV_EXC);
 							}
 							break;
 						default:
@@ -566,18 +566,16 @@ __device__ void gpu_updateLTP(	int*     		fireTablePtr,
 					if (gpuGrpInfo[grpId].WithISTDP) {
 						// Handle I-STDP curves
 						switch (gpuGrpInfo[grpId].WithISTDPcurve) {
-						case ANTI_HEBBIAN: // anti-Hebbian curve
-							if (stdp_tDiff * gpuGrpInfo[grpId].TAU_LTP_INV_INB < 25) { // LTP of inhibitory synapse, which decreases synapse weight
-								gpuPtrs.wtChange[p] -= STDP(stdp_tDiff, gpuGrpInfo[grpId].ALPHA_LTP_INB, gpuGrpInfo[grpId].TAU_LTP_INV_INB);
+						case EXP_CURVE: // exponential curve
+							if (stdp_tDiff * gpuGrpInfo[grpId].TAU_PLUS_INV_INB < 25) { // LTP of inhibitory synapse, which decreases synapse weight
+								gpuPtrs.wtChange[p] -= STDP(stdp_tDiff, gpuGrpInfo[grpId].ALPHA_PLUS_INB, gpuGrpInfo[grpId].TAU_PLUS_INV_INB);
 							}
 							break;
-						case LINEAR_SYMMETRIC: // linear symmetric curve
-							break;
-						case CONSTANT_SYMMETRIC: // constant symmetric curve
+						case PULSE_CURVE: // pulse curve
 							if (stdp_tDiff <= gpuGrpInfo[grpId].LAMBDA) { // LTP of inhibitory synapse, which decreases synapse weight
 								gpuPtrs.wtChange[p] -= gpuGrpInfo[grpId].BETA_LTP;
 							} else if (stdp_tDiff <= gpuGrpInfo[grpId].DELTA) { // LTD of inhibitory syanpse, which increase sysnapse weight
-								gpuPtrs.wtChange[p] += gpuGrpInfo[grpId].BETA_LTD;
+								gpuPtrs.wtChange[p] -= gpuGrpInfo[grpId].BETA_LTD;
 							}
 							break;
 						default:
@@ -1309,13 +1307,10 @@ __device__ int generatePostSynapticSpike(int& simTime, int& firingId, int& myDel
 			if (gpuGrpInfo[post_grpId].WithESTDP) {
 				// Handle E-STDP curves
 				switch (gpuGrpInfo[post_grpId].WithESTDPcurve) {
-				case HEBBIAN: // Hebbian curve
-					if (stdp_tDiff * gpuGrpInfo[post_grpId].TAU_LTD_INV_EXC < 25.0f)
-						gpuPtrs.wtChange[pos_ns] -= STDP( stdp_tDiff, gpuGrpInfo[post_grpId].ALPHA_LTD_EXC, gpuGrpInfo[post_grpId].TAU_LTD_INV_EXC); // uncoalesced access
-					break;
-				case HALF_HEBBIAN: // half-Hebbian curve
-					if (stdp_tDiff * gpuGrpInfo[post_grpId].TAU_LTD_INV_EXC < 25.0f)
-						gpuPtrs.wtChange[pos_ns] -= STDP( stdp_tDiff, gpuGrpInfo[post_grpId].ALPHA_LTD_EXC, gpuGrpInfo[post_grpId].TAU_LTD_INV_EXC); // uncoalesced access
+				case EXP_CURVE: // exponential curve
+				case TIMING_BASED_CURVE: // sc curve
+					if (stdp_tDiff * gpuGrpInfo[post_grpId].TAU_MINUS_INV_EXC < 25.0f)
+						gpuPtrs.wtChange[pos_ns] += STDP( stdp_tDiff, gpuGrpInfo[post_grpId].ALPHA_MINUS_EXC, gpuGrpInfo[post_grpId].TAU_MINUS_INV_EXC); // uncoalesced access
 					break;
 				default:
 					break;
@@ -1324,18 +1319,16 @@ __device__ int generatePostSynapticSpike(int& simTime, int& firingId, int& myDel
 			if (gpuGrpInfo[post_grpId].WithISTDP) {
 				// Handle I-STDP curves
 				switch (gpuGrpInfo[post_grpId].WithISTDPcurve) {
-				case ANTI_HEBBIAN: // anti-Hebbian curve
-					if ((stdp_tDiff * gpuGrpInfo[post_grpId].TAU_LTD_INV_INB) < 25.0f) { // LTD of inhibitory syanpse, which increase synapse weight
-						gpuPtrs.wtChange[pos_ns] += STDP(stdp_tDiff, gpuGrpInfo[post_grpId].ALPHA_LTD_INB, gpuGrpInfo[post_grpId].TAU_LTD_INV_INB);
+				case EXP_CURVE: // exponential curve
+					if ((stdp_tDiff * gpuGrpInfo[post_grpId].TAU_MINUS_INV_INB) < 25.0f) { // LTD of inhibitory syanpse, which increase synapse weight
+						gpuPtrs.wtChange[pos_ns] -= STDP(stdp_tDiff, gpuGrpInfo[post_grpId].ALPHA_MINUS_INB, gpuGrpInfo[post_grpId].TAU_MINUS_INV_INB);
 					}
 					break;
-				case LINEAR_SYMMETRIC: // linear symmetric curve
-					break;
-				case CONSTANT_SYMMETRIC: // constant symmetric curve
+				case PULSE_CURVE: // pulse curve
 					if (stdp_tDiff <= gpuGrpInfo[post_grpId].LAMBDA) { // LTP of inhibitory synapse, which decreases synapse weight
 						gpuPtrs.wtChange[pos_ns] -= gpuGrpInfo[post_grpId].BETA_LTP;
 					} else if (stdp_tDiff <= gpuGrpInfo[post_grpId].DELTA) { // LTD of inhibitory syanpse, which increase synapse weight
-						gpuPtrs.wtChange[pos_ns] += gpuGrpInfo[post_grpId].BETA_LTD;
+						gpuPtrs.wtChange[pos_ns] -= gpuGrpInfo[post_grpId].BETA_LTD;
 					}
 					break;
 				default:
@@ -2868,15 +2861,15 @@ void CpuSNN::allocateSNN_GPU() {
 		KERNEL_DEBUG("\tWithSTDP: %d",(int)grp_Info[i].WithSTDP);
 		if (grp_Info[i].WithSTDP) {
 			KERNEL_DEBUG("\t\tE-STDP type: %s",stdpType_string[grp_Info[i].WithESTDPtype]);
-			KERNEL_DEBUG("\t\tTAU_LTP_INV_EXC: %f",grp_Info[i].TAU_LTP_INV_EXC);
-			KERNEL_DEBUG("\t\tTAU_LTD_INV_EXC: %f",grp_Info[i].TAU_LTD_INV_EXC);
-			KERNEL_DEBUG("\t\tALPHA_LTP_EXC: %f",grp_Info[i].ALPHA_LTP_EXC);
-			KERNEL_DEBUG("\t\tALPHA_LTD_EXC: %f",grp_Info[i].ALPHA_LTD_EXC);
+			KERNEL_DEBUG("\t\tTAU_PLUS_INV_EXC: %f",grp_Info[i].TAU_PLUS_INV_EXC);
+			KERNEL_DEBUG("\t\tTAU_MINUS_INV_EXC: %f",grp_Info[i].TAU_MINUS_INV_EXC);
+			KERNEL_DEBUG("\t\tALPHA_PLUS_EXC: %f",grp_Info[i].ALPHA_PLUS_EXC);
+			KERNEL_DEBUG("\t\tALPHA_MINUS_EXC: %f",grp_Info[i].ALPHA_MINUS_EXC);
 			KERNEL_DEBUG("\t\tI-STDP type: %s",stdpType_string[grp_Info[i].WithISTDPtype]);
-			KERNEL_DEBUG("\t\tTAU_LTP_INV_INB: %f",grp_Info[i].TAU_LTP_INV_INB);
-			KERNEL_DEBUG("\t\tTAU_LTD_INV_INB: %f",grp_Info[i].TAU_LTD_INV_INB);
-			KERNEL_DEBUG("\t\tALPHA_LTP_INB: %f",grp_Info[i].ALPHA_LTP_INB);
-			KERNEL_DEBUG("\t\tALPHA_LTD_INB: %f",grp_Info[i].ALPHA_LTD_INB);
+			KERNEL_DEBUG("\t\tTAU_PLUS_INV_INB: %f",grp_Info[i].TAU_PLUS_INV_INB);
+			KERNEL_DEBUG("\t\tTAU_MINUS_INV_INB: %f",grp_Info[i].TAU_MINUS_INV_INB);
+			KERNEL_DEBUG("\t\tALPHA_PLUS_INB: %f",grp_Info[i].ALPHA_PLUS_INB);
+			KERNEL_DEBUG("\t\tALPHA_MINUS_INB: %f",grp_Info[i].ALPHA_MINUS_INB);
 			KERNEL_DEBUG("\t\tLAMBDA: %f",grp_Info[i].LAMBDA);
 			KERNEL_DEBUG("\t\tDELTA: %f",grp_Info[i].DELTA);
 			KERNEL_DEBUG("\t\tBETA_LTP: %f",grp_Info[i].BETA_LTP);
