@@ -17,13 +17,13 @@
  * This function tests the information stored in the group info struct after enabling STDP via setSTDP
  */
 TEST(STDP, setSTDPTrue) {
-	float alphaLTP = 5.0f;		// the exact values don't matter
-	float alphaLTD = 10.0f;
-	float tauLTP = 15.0f;
-	float tauLTD = 20.0f;
+	float alphaPlus = 5.0f;		// the exact values don't matter
+	float alphaMinus = -10.0f;
+	float tauPlus = 15.0f;
+	float tauMinus = 20.0f;
 	float gamma = 10.0f;
 	float betaLTP = 1.0f;
-	float betaLTD = 1.2f;
+	float betaLTD = -1.2f;
 	float lambda = 12.0f;
 	float delta = 40.0f;
 	CARLsim* sim;
@@ -37,19 +37,19 @@ TEST(STDP, setSTDPTrue) {
 				sim->setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f);
 				if (stdpType == 0) {
 					if (stdpCurve == 0) {
-						sim->setESTDP(g1, true, STANDARD, HebbianCurve(alphaLTP,tauLTP,alphaLTD,tauLTD));
-						sim->setISTDP(g1, true, STANDARD, AntiHebbianCurve(alphaLTP,tauLTP,alphaLTD,tauLTD));
+						sim->setESTDP(g1, true, STANDARD, ExpCurve(alphaPlus,tauPlus,alphaMinus,tauMinus));
+						sim->setISTDP(g1, true, STANDARD, ExpCurve(alphaPlus,tauPlus,alphaMinus,tauMinus));
 					} else { //stdpCurve == 1
-						sim->setESTDP(g1, true, STANDARD, HalfHebbianCurve(alphaLTP,tauLTP,alphaLTD,tauLTD, gamma));
-						sim->setISTDP(g1, true, STANDARD, LinearSymmetricCurve(betaLTP,betaLTD,lambda,delta));
+						sim->setESTDP(g1, true, STANDARD, TimingBasedCurve(alphaPlus,tauPlus,alphaMinus,tauMinus, gamma));
+						sim->setISTDP(g1, true, STANDARD, PulseCurve(betaLTP,betaLTD,lambda,delta));
 					}
 				} else { // stdpType == 1
 					if (stdpCurve == 0) {
-						sim->setESTDP(g1, true, DA_MOD, HebbianCurve(alphaLTP,tauLTP,alphaLTD,tauLTD));
-						sim->setISTDP(g1, true, DA_MOD, AntiHebbianCurve(alphaLTP,tauLTP,alphaLTD,tauLTD));
+						sim->setESTDP(g1, true, DA_MOD, ExpCurve(alphaPlus,tauPlus,alphaMinus,tauMinus));
+						sim->setISTDP(g1, true, DA_MOD, ExpCurve(alphaPlus,tauPlus,alphaMinus,tauMinus));
 					} else { //stdpCurve == 1
-						sim->setESTDP(g1, true, DA_MOD, HalfHebbianCurve(alphaLTP,tauLTP,alphaLTD,tauLTD, gamma));
-						sim->setISTDP(g1, true, DA_MOD, LinearSymmetricCurve(betaLTP,betaLTD,lambda,delta));
+						sim->setESTDP(g1, true, DA_MOD, TimingBasedCurve(alphaPlus,tauPlus,alphaMinus,tauMinus, gamma));
+						sim->setISTDP(g1, true, DA_MOD, PulseCurve(betaLTP,betaLTD,lambda,delta));
 					}
 				}
 
@@ -66,22 +66,22 @@ TEST(STDP, setSTDPTrue) {
 				}
 
 				if (stdpCurve == 0) {
-					EXPECT_TRUE(gInfo.WithESTDPcurve == HEBBIAN);
-					EXPECT_TRUE(gInfo.WithISTDPcurve == ANTI_HEBBIAN);
+					EXPECT_TRUE(gInfo.WithESTDPcurve == EXP_CURVE);
+					EXPECT_TRUE(gInfo.WithISTDPcurve == EXP_CURVE);
 				} else {
-					EXPECT_TRUE(gInfo.WithESTDPcurve == HALF_HEBBIAN);
-					EXPECT_TRUE(gInfo.WithISTDPcurve == LINEAR_SYMMETRIC);
+					EXPECT_TRUE(gInfo.WithESTDPcurve == TIMING_BASED_CURVE);
+					EXPECT_TRUE(gInfo.WithISTDPcurve == PULSE_CURVE);
 				}
 
-				EXPECT_FLOAT_EQ(gInfo.ALPHA_LTP_EXC,alphaLTP);
-				EXPECT_FLOAT_EQ(gInfo.ALPHA_LTD_EXC,alphaLTD);
-				EXPECT_FLOAT_EQ(gInfo.TAU_LTP_INV_EXC,1.0/tauLTP);
-				EXPECT_FLOAT_EQ(gInfo.TAU_LTD_INV_EXC,1.0/tauLTD);
+				EXPECT_FLOAT_EQ(gInfo.ALPHA_PLUS_EXC,alphaPlus);
+				EXPECT_FLOAT_EQ(gInfo.ALPHA_MINUS_EXC,alphaMinus);
+				EXPECT_FLOAT_EQ(gInfo.TAU_PLUS_INV_EXC,1.0/tauPlus);
+				EXPECT_FLOAT_EQ(gInfo.TAU_MINUS_INV_EXC,1.0/tauMinus);
 				if (stdpCurve == 0) {
-					EXPECT_FLOAT_EQ(gInfo.ALPHA_LTP_INB,alphaLTP);
-					EXPECT_FLOAT_EQ(gInfo.ALPHA_LTD_INB,alphaLTD);
-					EXPECT_FLOAT_EQ(gInfo.TAU_LTP_INV_INB,1.0/tauLTP);
-					EXPECT_FLOAT_EQ(gInfo.TAU_LTD_INV_INB,1.0/tauLTD);
+					EXPECT_FLOAT_EQ(gInfo.ALPHA_PLUS_INB,alphaPlus);
+					EXPECT_FLOAT_EQ(gInfo.ALPHA_MINUS_INB,alphaMinus);
+					EXPECT_FLOAT_EQ(gInfo.TAU_PLUS_INV_INB,1.0/tauPlus);
+					EXPECT_FLOAT_EQ(gInfo.TAU_MINUS_INV_INB,1.0/tauMinus);
 					EXPECT_FLOAT_EQ(gInfo.GAMMA, 0.0f);
 				} else {
 					EXPECT_FLOAT_EQ(gInfo.BETA_LTP,betaLTP);
@@ -102,12 +102,12 @@ TEST(STDP, setSTDPTrue) {
  * This function tests the information stored in the group info struct after disabling STDP via setSTDP
  */
 TEST(STDP, setSTDPFalse) {
-	float alphaLTP = 5.0f;		// the exact values don't matter
-	float alphaLTD = 10.0f;
-	float tauLTP = 15.0f;
-	float tauLTD = 20.0f;
+	float alphaPlus = 5.0f;		// the exact values don't matter
+	float alphaMinus = -10.0f;
+	float tauPlus = 15.0f;
+	float tauMinus = 20.0f;
 	float betaLTP = 1.0f;
-	float betaLTD = 2.0f;
+	float betaLTD = -2.0f;
 	float lambda = 3.0f;
 	float delta = 4.0f;
 	CARLsim* sim;
@@ -117,22 +117,22 @@ TEST(STDP, setSTDPFalse) {
 
 		int g1=sim->createGroup("excit", 10, EXCITATORY_NEURON);
 		sim->setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f);
-		sim->setESTDP(g1,false,STANDARD, HebbianCurve(alphaLTP,tauLTP,alphaLTD,tauLTD));
-		sim->setISTDP(g1,false,STANDARD, ConstantSymmetricCurve(betaLTP,betaLTD,lambda,delta));
+		sim->setESTDP(g1,false,STANDARD, ExpCurve(alphaPlus,tauPlus,alphaMinus,tauMinus));
+		sim->setISTDP(g1,false,STANDARD, PulseCurve(betaLTP,betaLTD,lambda,delta));
 
 		GroupSTDPInfo_t gInfo = sim->getGroupSTDPInfo(g1);
 		EXPECT_FALSE(gInfo.WithSTDP);
 		EXPECT_FALSE(gInfo.WithESTDP);
 		EXPECT_FALSE(gInfo.WithISTDP);
 
-		EXPECT_FLOAT_EQ(gInfo.ALPHA_LTP_EXC, 0.0f);
-		EXPECT_FLOAT_EQ(gInfo.ALPHA_LTD_EXC, 0.0f);
-		EXPECT_FLOAT_EQ(gInfo.TAU_LTP_INV_EXC, 1.0f);
-		EXPECT_FLOAT_EQ(gInfo.TAU_LTD_INV_EXC, 1.0f);
-		EXPECT_FLOAT_EQ(gInfo.ALPHA_LTP_EXC, 0.0f);
-		EXPECT_FLOAT_EQ(gInfo.ALPHA_LTD_EXC, 0.0f);
-		EXPECT_FLOAT_EQ(gInfo.TAU_LTP_INV_EXC, 1.0f);
-		EXPECT_FLOAT_EQ(gInfo.TAU_LTD_INV_EXC, 1.0f);
+		EXPECT_FLOAT_EQ(gInfo.ALPHA_PLUS_EXC, 0.0f);
+		EXPECT_FLOAT_EQ(gInfo.ALPHA_MINUS_EXC, 0.0f);
+		EXPECT_FLOAT_EQ(gInfo.TAU_PLUS_INV_EXC, 1.0f);
+		EXPECT_FLOAT_EQ(gInfo.TAU_MINUS_INV_EXC, 1.0f);
+		EXPECT_FLOAT_EQ(gInfo.ALPHA_PLUS_EXC, 0.0f);
+		EXPECT_FLOAT_EQ(gInfo.ALPHA_MINUS_EXC, 0.0f);
+		EXPECT_FLOAT_EQ(gInfo.TAU_PLUS_INV_EXC, 1.0f);
+		EXPECT_FLOAT_EQ(gInfo.TAU_MINUS_INV_EXC, 1.0f);
 		EXPECT_FLOAT_EQ(gInfo.BETA_LTP, 0.0f);
 		EXPECT_FLOAT_EQ(gInfo.BETA_LTD, 0.0f);
 		EXPECT_FLOAT_EQ(gInfo.LAMBDA, 1.0f);
@@ -148,10 +148,10 @@ TEST(STDP, setSTDPFalse) {
  * This function tests the information stored in the group info struct after setting neuromodulator parameters
  */
 TEST(STDP, setNeuromodulatorParameters) {
-	float alphaLTP = 1.0f;		// the exact values don't matter
-	float alphaLTD = 1.2f;
-	float tauLTP = 20.0f;
-	float tauLTD = 20.0f;
+	float alphaPlus = 1.0f;		// the exact values don't matter
+	float alphaMinus = 1.2f;
+	float tauPlus = 20.0f;
+	float tauMinus = 20.0f;
 	float baseDP = 1.0f;
 	float base5HT = 2.0f;
 	float baseACh = 3.0f;
@@ -167,7 +167,7 @@ TEST(STDP, setNeuromodulatorParameters) {
 
 		int g1=sim->createGroup("excit", 10, EXCITATORY_NEURON);
 		sim->setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f);
-		sim->setSTDP(g1,true,DA_MOD,alphaLTP,tauLTP,alphaLTD,tauLTD);
+		sim->setSTDP(g1,true,DA_MOD,alphaPlus,tauPlus,alphaMinus,tauMinus);
 		sim->setNeuromodulator(g1, baseDP, tauDP, base5HT, tau5HT, baseACh, tauACh, baseNE, tauNE);
 
 		// Temporarily mark out the testing code
@@ -196,10 +196,10 @@ TEST(STDP, setNeuromodulatorParameters) {
  * The the synaptic weight modulated by dopamine is expected to be higher than that without dopamine modulation
  */
 TEST(STDP, DASTDPWeightBoost) {
-	float tauLTP = 20.0f;
-	float tauLTD = 20.0f;
-	float alphaLTP = 0.1f;
-	float alphaLTD = 0.122f;
+	float tauPlus = 20.0f;
+	float tauMinus = 20.0f;
+	float alphaPlus = 0.1f;
+	float alphaMinus = -0.122f;
 	int g1, gin, g1noise, gda;
 	InteractiveSpikeGenerator* iSpikeGen = new InteractiveSpikeGenerator(500, 500);
 	std::vector<int> spikesPost;
@@ -228,13 +228,13 @@ TEST(STDP, DASTDPWeightBoost) {
 					sim->connect(gda, g1, "full", RangeWeight(0.0), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
 					// enable COBA, set up STDP, enable dopamine-modulated STDP
 					sim->setConductances(true,5,150,6,150);
-					sim->setSTDP(g1, true, DA_MOD, alphaLTP/100, tauLTP, alphaLTD/100, tauLTD);
+					sim->setSTDP(g1, true, DA_MOD, alphaPlus/100, tauPlus, alphaMinus/100, tauMinus);
 				} else { // cuba mode
 					sim->connect(gin,g1,"one-to-one", RangeWeight(0.0, 1.0f, 20.0f), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_PLASTIC);
 					sim->connect(g1noise, g1, "one-to-one", RangeWeight(40.0f), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
 					sim->connect(gda, g1, "full", RangeWeight(0.0), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
 					// set up STDP, enable dopamine-modulated STDP
-					sim->setSTDP(g1, true, DA_MOD, alphaLTP, tauLTP, alphaLTD, tauLTD);
+					sim->setSTDP(g1, true, DA_MOD, alphaPlus, tauPlus, alphaMinus, tauMinus);
 					sim->setConductances(false);
 				}
 
@@ -302,18 +302,18 @@ TEST(STDP, DASTDPWeightBoost) {
 }
 
 /*!
- * \brief testing the Hebbian E-STDP curve
+ * \brief testing the exponential E-STDP curve
  * This function tests whether E-STDP change synaptic weight as expected
  * Wtih control of pre- and post-neurons' spikes, the synaptic weight is expected to increase or decrease to
  * maximum or minimum synaptic weight respectively.
  */
-TEST(STDP, ESTDPHebbianCurve) {
+TEST(STDP, ESTDPExpCurve) {
 	// simulation details
 	float* weights = NULL;
 	int size;
 	int gex1, gex2, g1;
 	float ALPHA_LTP = 0.10f;
-	float ALPHA_LTD = 0.14f;
+	float ALPHA_LTD = -0.14f;
 	float TAU_LTP = 20.0f;
 	float TAU_LTD = 20.0f;
 	float maxInhWeight = 10.0f;
@@ -325,7 +325,7 @@ TEST(STDP, ESTDPHebbianCurve) {
 			for (int offset = -30; offset <= 30; offset += 5) {
 				if (offset == 0) continue; // skip offset == 0;
 				// create a network
-				CARLsim* sim = new CARLsim("STDP.ESTDPHebbianCurve", mode?GPU_MODE:CPU_MODE, SILENT, 0, 42);
+				CARLsim* sim = new CARLsim("STDP.ESTDPExpCurve", mode?GPU_MODE:CPU_MODE, SILENT, 0, 42);
 
 				g1 = sim->createGroup("excit", 1, EXCITATORY_NEURON);
 				sim->setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f);
@@ -333,7 +333,7 @@ TEST(STDP, ESTDPHebbianCurve) {
 				gex1 = sim->createSpikeGeneratorGroup("input-ex1", 1, EXCITATORY_NEURON);
 				gex2 = sim->createSpikeGeneratorGroup("input-ex2", 1, EXCITATORY_NEURON);
 
-				PrePostGroupSpikeGenerator* proPostSpikeGen = new PrePostGroupSpikeGenerator(100, offset, gex2, gex1);
+				PrePostGroupSpikeGenerator* prePostSpikeGen = new PrePostGroupSpikeGenerator(100, offset, gex2, gex1);
 
 				if (coba) { // conductance-based
 					sim->connect(gex1, g1, "one-to-one", RangeWeight(40.0f/100), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
@@ -341,19 +341,19 @@ TEST(STDP, ESTDPHebbianCurve) {
 
 					// enable COBA, set up ESTDP
 					sim->setConductances(true,5,150,6,150);
-					sim->setESTDP(g1, true, STANDARD, HebbianCurve(ALPHA_LTP/100, TAU_LTP, ALPHA_LTD/100, TAU_LTP));
+					sim->setESTDP(g1, true, STANDARD, ExpCurve(ALPHA_LTP/100, TAU_LTP, ALPHA_LTD/100, TAU_LTP));
 				} else { // current-based
 					sim->connect(gex1, g1, "one-to-one", RangeWeight(40.0f), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
 					sim->connect(gex2, g1, "one-to-one", RangeWeight(minInhWeight, initWeight, maxInhWeight), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_PLASTIC);
 
 					// set up ESTDP
 					sim->setConductances(false);
-					sim->setESTDP(g1, true, STANDARD, HebbianCurve(ALPHA_LTP, TAU_LTP, ALPHA_LTD, TAU_LTP));
+					sim->setESTDP(g1, true, STANDARD, ExpCurve(ALPHA_LTP, TAU_LTP, ALPHA_LTD, TAU_LTP));
 				}
 
 				// set up spike controller on DA neurons
-				sim->setSpikeGenerator(gex1, proPostSpikeGen);
-				sim->setSpikeGenerator(gex2, proPostSpikeGen);
+				sim->setSpikeGenerator(gex1, prePostSpikeGen);
+				sim->setSpikeGenerator(gex2, prePostSpikeGen);
 
 				// build the network
 				sim->setupNetwork();
@@ -377,7 +377,7 @@ TEST(STDP, ESTDPHebbianCurve) {
 					}
 				}
 
-				delete proPostSpikeGen;
+				delete prePostSpikeGen;
 				delete sim;
 			}
 		}
@@ -385,18 +385,18 @@ TEST(STDP, ESTDPHebbianCurve) {
 }
 
 /*!
- * \brief testing the half-Hebbian E-STDP curve
+ * \brief testing the timing-based E-STDP curve
  * This function tests whether E-STDP change synaptic weight as expected
  * Wtih control of pre- and post-neurons' spikes, the synaptic weight is expected to increase or decrease to
  * maximum or minimum synaptic weith respectively.
  */
-TEST(STDP, ESTDPHalfHebbianCurve) {
+TEST(STDP, ESTDPTimingBasedCurve) {
 	// simulation details
 	float* weights = NULL;
 	int size;
 	int gex1, gex2, g1;
 	float ALPHA_LTP = 0.10f;
-	float ALPHA_LTD = 0.14f;
+	float ALPHA_LTD = -0.14f;
 	float TAU_LTP = 20.0f;
 	float TAU_LTD = 20.0f;
 	float GAMMA = 20.0f;
@@ -409,7 +409,7 @@ TEST(STDP, ESTDPHalfHebbianCurve) {
 			for (int offset = -24; offset <= 24; offset += 3) {
 				if (offset == 0) continue; // skip offset == 0;
 				// create a network
-				CARLsim* sim = new CARLsim("STDP.ESTDPHalfHebbianCurve", mode?GPU_MODE:CPU_MODE, SILENT, 0, 42);
+				CARLsim* sim = new CARLsim("STDP.ESTDTimingBasedCurve", mode?GPU_MODE:CPU_MODE, SILENT, 0, 42);
 
 				g1 = sim->createGroup("excit", 1, EXCITATORY_NEURON);
 				sim->setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f);
@@ -425,14 +425,14 @@ TEST(STDP, ESTDPHalfHebbianCurve) {
 
 					// enable COBA, set up ESTDP
 					sim->setConductances(true,5,150,6,150);
-					sim->setESTDP(g1, true, STANDARD, HalfHebbianCurve(ALPHA_LTP/100, TAU_LTP, ALPHA_LTD/100, TAU_LTP, GAMMA));
+					sim->setESTDP(g1, true, STANDARD, TimingBasedCurve(ALPHA_LTP/100, TAU_LTP, ALPHA_LTD/100, TAU_LTP, GAMMA));
 				} else { // current-based
 					sim->connect(gex1, g1, "one-to-one", RangeWeight(40.0f), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
 					sim->connect(gex2, g1, "one-to-one", RangeWeight(minInhWeight, initWeight, maxInhWeight), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_PLASTIC);
 
 					// set up ESTDP
 					sim->setConductances(false,0,0,0,0);
-					sim->setESTDP(g1, true, STANDARD, HalfHebbianCurve(ALPHA_LTP, TAU_LTP, ALPHA_LTD, TAU_LTP, GAMMA));
+					sim->setESTDP(g1, true, STANDARD, TimingBasedCurve(ALPHA_LTP, TAU_LTP, ALPHA_LTD, TAU_LTP, GAMMA));
 				}
 
 				sim->setSpikeGenerator(gex1, proPostSpikeGen);
@@ -474,18 +474,18 @@ TEST(STDP, ESTDPHalfHebbianCurve) {
 }
 
 /*!
- * \brief testing the constant symmetric I-STDP curve
+ * \brief testing the pulse I-STDP curve
  * This function tests whether I-STDP change synaptic weight as expected
  * Wtih control of pre- and post-neurons' spikes, the synaptic weight is expected to increase or decrease to
  * maximum or minimum synaptic weith respectively.
  */
-TEST(STDP, ISTDPConstantSymmetricCurve) {
+TEST(STDP, ISTDPPulseCurve) {
 	// simulation details
 	float* weights = NULL;
 	int size;
 	int gin, gex, g1;
 	float BETA_LTP = 0.10f;
-	float BETA_LTD = 0.14f;
+	float BETA_LTD = -0.14f;
 	float LAMBDA = 9.0f;
 	float DELTA = 40.0f;
 	float maxInhWeight = 10.0f;
@@ -496,7 +496,7 @@ TEST(STDP, ISTDPConstantSymmetricCurve) {
 		for (int coba = 0; coba < 2; coba++) {
 			for (int offset = -15; offset <= 15; offset += 10) {
 				// create a network
-				CARLsim* sim = new CARLsim("STDP.ISTDPConstantSymmetricCurve", mode?GPU_MODE:CPU_MODE, SILENT, 0, 42);
+				CARLsim* sim = new CARLsim("STDP.ISTDPPulseCurve", mode?GPU_MODE:CPU_MODE, SILENT, 0, 42);
 
 				g1 = sim->createGroup("excit", 1, EXCITATORY_NEURON);
 				sim->setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f);
@@ -512,14 +512,14 @@ TEST(STDP, ISTDPConstantSymmetricCurve) {
 
 					// enable COBA, set up ISTDP
 					sim->setConductances(true,5,150,6,150);
-					sim->setISTDP(g1, true, STANDARD, ConstantSymmetricCurve(BETA_LTP/100, BETA_LTD/100, LAMBDA, DELTA));
+					sim->setISTDP(g1, true, STANDARD, PulseCurve(BETA_LTP/100, BETA_LTD/100, LAMBDA, DELTA));
 				} else { // current-based
 					sim->connect(gex, g1, "one-to-one", RangeWeight(40.0f), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
 					sim->connect(gin, g1, "one-to-one", RangeWeight(minInhWeight, initWeight, maxInhWeight), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_PLASTIC);
 
 					// set up ISTDP
 					sim->setConductances(false,0,0,0,0);
-					sim->setISTDP(g1, true, STANDARD, ConstantSymmetricCurve(BETA_LTP, BETA_LTD, LAMBDA, DELTA));
+					sim->setISTDP(g1, true, STANDARD, PulseCurve(BETA_LTP, BETA_LTD, LAMBDA, DELTA));
 				}
 
 				sim->setSpikeGenerator(gex, proPostSpikeGen);

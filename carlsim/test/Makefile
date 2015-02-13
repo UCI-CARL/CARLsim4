@@ -22,6 +22,7 @@ output := *.dot *.dat *.log *.csv results/* lib/*
 # -----------------------------------------------------------------------------
 # You should not need to edit the file beyond this point
 # -----------------------------------------------------------------------------
+
 # we are compiling from lib
 CARLSIM_FLAGS += -I$(CARLSIM_LIB_DIR)/include/kernel \
 				 -I$(CARLSIM_LIB_DIR)/include/interface \

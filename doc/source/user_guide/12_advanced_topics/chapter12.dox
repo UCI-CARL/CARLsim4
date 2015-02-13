@@ -42,7 +42,7 @@ These functions are useful especially for tuning feedforward weights in large-sc
 a lot of time to repeatedly build.
 For tuning in more complex situations please refer to \ref ch10_ecj.
 
-These functions are only valid in ::carlsimState_t ::EXE_STATE and do not alter the topography of the network.
+These functions are only valid in ::carlsimState_t ::RUN_STATE and do not alter the topography of the network.
 They apply to weight values of already allocated synapses only.
 
 \see \ref ch10_ecj
@@ -50,50 +50,35 @@ They apply to weight values of already allocated synapses only.
 
 \subsection ch12s3s1_simple_weight_tuner 12.3.1 Simple Weight Tuner
 
-The SimpleWeightTuner utility is a class that implements a simple search algorithm inspired by the bisection method.
+The SimpleWeightTuner utility is a class that allows tuning of weight values of a specific connection (i.e., a
+collection of synapses), so that a specific neuron group fires at a predefined target firing rate---without having
+to recompile the CARLsim network.
 
-The usage scenario is to tune the weights of a specific connection (collection of synapses) so that a specific
-neuron group fires at a predefined target firing rate---without having to recompile the network.
-A complete code example can be found in the subfolder <tt>simple_weight_tuner</tt>. 
+A complete example is explained in \ref tut5_simple_weight_tuner.
 
-Consider the following CARLsim network:
-\code
-	int nNeur = 1000;    // number of neurons per group
-	float initWt = 0.1f; // initial weight for connection
-
-	CARLsim *sim = new CARLsim("SimpleWeightTuner", CPU_MODE, USER, 0, 42);
-	int gOut=sim->createGroup("out", nNeur, EXCITATORY_NEURON);
-	sim->setNeuronParameters(gOut, 0.02f, 0.2f, -65.0f, 8.0f);
-	int gIn=sim->createSpikeGeneratorGroup("in", nNeur, EXCITATORY_NEURON);
-	int c0=sim->connect(gIn, gOut, "random", RangeWeight(initWt), 0.1f, RangeDelay(1,10));
-	sim->setConductances(true);
-	sim->setupNetwork();
-\endcode
-
-Suppose our goal is to have group <tt>gOut</tt> fire at some target firing rate (say 27.4 Hz), given Poissonian
-inputs with 50 Hz mean rate.
-A conventional approach to solving this problem would be to set up the input firing:
-\code
-	PoissonRate PR(nNeur);
-	PR.setRates(50.0f);
-	sim->setSpikeRate(gIn, &PR);
-\endcode
-and then repeatedly build and run the network with different values for <tt>initWt</tt>, until <tt>gOut</tt>
-reaches the desired firing rate.
+Consider a CARLsim network with an input group (<tt>gIn</tt>) connected to an output group (<tt>gOut</tt>).
+Suppose the goal is to find weight values that lead to some desired output activity (say, 27.4Hz), in response
+to some Poissonian input.
+A conventional approach to solving this problem would be to repeatedly build and run the network with different
+weight values, until some values are found that let <tt>gOut</tt> approach the desired target firing rate.
 This process can be tedious, especially when dealing with large-scale networks that take a long time to build.
 
 Instead, one can use a SimpleWeightTuner:
 \code
 	SimpleWeightTuner SWT(sim, 0.01, 100); // CARLsim object, error margin, max iterations
 	SWT.setConnectionToTune(c0, 0.0);      // connection to tune, initial weight
-	SWT.setTargetFiringRate(gOut, 27.4);   // output group to observe, target firing rate
+	SWT.setTargetFiringRate(gOut, 27.4);   // output group to observe, target firing rate (Hz)
 \endcode
-We pass a pointer to the above created network <tt>sim</tt> and specify the termination conditions:
+The SimpleWeightTuner constructor accepts a pointer to the above created network <tt>sim</tt> and some
+termination conditions:
 The algorithm will terminate if either the absolute error between observed firing rate and target firing rate
 is smaller than some error margin, or upon reaching the maximum number of iterations.
-We also tell the class which connection to tune and with which weight to start.
+Calling SimpleWeightTuner::setConnectionToTune informs the class about which connection to tune and with which
+weight to start.
 The algorithm will repeatedly change the weights in a way that resembles the bisection method, until the mean firing
-rate of group <tt>gOut</tt> reaches 27.4 +- 0.01 Hz.
+rate of group <tt>gOut</tt> reaches 27.4 +- 0.01 Hz (specified via SimpleWeightTuner::setTargetFiringRate).
+Note that the here involved connection (<tt>c0</tt>) and neuron group (<tt>gOut</tt>) can be completely independent
+from each other.
 
 All that is left to do is to execute the algorithm until finished:
 \code
@@ -104,17 +89,11 @@ All that is left to do is to execute the algorithm until finished:
 This will run <tt>sim</tt> repeatedly for one second (for different time periods pass an optional argument) until
 one of the termination criteria is reached.
 
-One could now retrieve the tuned weights using a ConnectionMonitor, or run the network a bit more to verify
-correct firing:
-\code
-	for (int i=0; i<5; i++)
-		sim->runNetwork(1,0);
-	delete sim;
-\endcode
-
-\see SimpleWeightTuner
+\note The connection to tune and the neuron group for which a target firing rate are found do not have to be associated
+with each other.
 \see \ref ch10_ecj
-\see Code example: <tt>user_guide/12_advanced_topics/simple_weight_tuner/main_simple_weight_tuner.cpp</tt>
+\see \ref tut5_simple_weight_tuner
+\since v3.0
 
 
 
@@ -206,8 +185,17 @@ then two different behaviors can be achieved, depending on a third optional argu
 \author Michael Beyeler
 
 \TODO MB
-
 Logger modes. Log files. User errors.
+
+\code
+*                 |    USER    | DEVELOPER  |  SHOWTIME  |   SILENT   |  CUSTOM
+* ----------------|------------|------------|------------|------------|---------
+* Status msgs     |   stdout   |   stdout   | /dev/null  | /dev/null  |    ?
+* Errors/warnings |   stderr   |   stderr   |   stderr   | /dev/null  |    ?
+* Debug msgs      | /dev/null  |   stdout   | /dev/null  | /dev/null  |    ?
+* All msgs        | debug.log  | debug.log  |  debug.log | debug.log  |    ?
+* 
+\endcode
 
 
 \section ch12s5_numerical_integration 12.5 Numerical Integration

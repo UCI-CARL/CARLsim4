@@ -8,6 +8,16 @@
 \section ch9s1_matlab_oat 9.1 MATLAB Offline Analysis Toolbox
 \author Michael Beyeler
 
+\subsection ch9s1s1_network_monitor 9.1.1 Network Monitor
+
+\subsection ch9s1s2_group_monitor 9.1.2 Group Monitor
+
+\subsection ch9s1s3_connection_monitor 9.1.3 Connection Monitor
+
+\subsection ch9s1s4_spike_reader 9.1.4 Spike Reader
+
+\subsection ch9s1s5_connection_reader 9.1.4 Connection Reader
+
 
 \TODO MB
 

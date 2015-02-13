@@ -11,9 +11,10 @@ CARLsim currently requires the NVIDIA CUDA parallel computing platform to be ins
 even if one does not plan to use the GPU implementation of CARLsim. Future versions of CARLsim
 that allow users to run the CPU implementation of CARLsim without installing CUDA are planned.
 CARLsim requires GPUs with a compute capability of 2.0 or higher. To see find the compute
-capability of your device you can check <a href="http://en.wikipedia.org/wiki/CUDA">here</a>.
+capability of your device you can check <a href="http://en.wikipedia.org/wiki/CUDA" target="_blank"><b>here</b></a>.
 CARLsim also requires CUDA Toolkit 5.0 and up. For CUDA installation instructrions for your
-platform, please navigate to the NVIDIA <a href="https://developer.nvidia.com/cuda-zone">CUDA Zone</a>.
+platform, please navigate to the NVIDIA
+<a href="https://developer.nvidia.com/cuda-zone" target="_blank"><b>CUDA Zone</b></a>.
 The rest of the chapter assumes you have successfully installed CUDA and have the
 appropriate hardware.
 
@@ -56,7 +57,6 @@ scripts, spike generators, and tools for visual stimuli.
 │   ├── colorcycle
 │   ├── common
 │   ├── dastdp
-│   ├── istdp
 │   ├── multiGPU
 │   ├── orientation
 │   ├── random
@@ -78,6 +78,7 @@ scripts, spike generators, and tools for visual stimuli.
 
 \section ch1s2_installation 1.2 Installation
 \author Kristofor D. Carlson
+\author Ting-Shuo Chou
 
 To install CARLsim, first download and unzip the zip file from our
 <a href="http://www.socsci.uci.edu/~jkrichma/CARLsim/index.html"> website </a>. The
@@ -179,9 +180,17 @@ For more information on how to use the regression suite, please see \ref ch11_re
 \since v3.0
 
 \subsection ch1s2s2_windows 1.2.2 Windows
-\TODO TS or SL
+On Windows platform, CARLsim 3 includes a solution file and project files for each examples and 
+regression suite. For more information, please see \ref ch11_regression_suite. The solution file 
+was created by Visual Studio (VS) 2012 with CUDA 5.5. If you happened to use the same version, 
+<tt>Build Solution</tt> in VS 2012 will generate all executables (.exe) and static library 
+(.lib) for you. Before buiding the solution or projects, please make sure <tt>Configuration</tt> 
+is set to <tt>x64</tt> and <tt>Release</tt> for example executables and <tt>Debug</tt> for 
+regression suite. For higher version of VS, <tt>CARLsim.sln</tt> and <tt>*.vcxproj</tt> will be 
+automatically upgraded by VS. For higher version of CUDA toolkit, please replace <tt>5.5</tt> 
+with <tt>YOUR_CUDA_VERSION</tt> in every <tt>*.vcxproj</tt> file and add them back to 
+<tt>CARLsim.sln</tt>.
 
-\warning Warnings are overrated.
 \see \ref ch10_ecj
 \see \ref ch11_regression_suite
 
@@ -195,12 +204,13 @@ directory found in the CARLsim root directory and run the documentation generati
 
 \code ./makedoc \endcode
 
-\TODO Windows doc gen - TS or SL
+\note Currently, CARLsim 3 does not support automatically generated documentation on Windows platform.
 
 \since 3.0
 
 \section ch1s4_project_workflow 1.4 Project Workflow
 \author Kristofor D. Carlson
+\author Ting-Shuo Chou
 
 \section ch1s4s1_linux_project_workflow 1.4.1
 
@@ -254,8 +264,11 @@ see \ref ch7_monitoring or \ref ch9_visualization
 
 \section ch1s4s2_windows_project_workflow 1.4.2
 
-\TODO Windows project workflow - TS or SL
-
+On Windows platform, four steps are required to build your own project. First, create your own 
+project folder. Second,copy the template project file <tt>hello_world.vcxproj</tt> and 
+<tt>main_hello_world.cpp</tt> in projects directory into your folder. Third, rename the .cpp
+and .vcxproj file to <tt>YOUR_PROJECT_NAME</tt>. Forth, add your project to <tt>CARLsim.sln</tt>.
+Finally, you can build, rebuild, or clean the project through MS Visual Studio.
 
 \since v3.0
 

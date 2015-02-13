@@ -4,6 +4,13 @@
 
 \tableofcontents
 
+Once a network has reached ::CONFIG_STATE or ::RUN_STATE, the network state can be stored in a file for later
+processing or for restoring a specific network (see \ref ch8_saving_loading).
+The network state consists of all the synaptic connections, weights, delays, and whether the connections are plastic
+or fixed.
+Furthermore, the network can be stored after synaptic learning has occurred in order to externally analyze the
+learned synaptic patterns (for example, via a MATLAB ConnectionMonitor; see ch9s1s3_connection_monitor).
+
 
 \section ch8s1_savesimulation 8.1 saveSimulation
 

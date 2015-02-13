@@ -177,7 +177,7 @@ TEST(GroupMon, peakTimeAndValue) {
 		// we are testing dopamine values of the post-synaptic group, not spikes. Set weight close to zero
 		sim->connect(g0, g1, "one-to-one", RangeWeight(1.0f), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_PLASTIC);
 
-		sim->setESTDP(g1, true, DA_MOD, HebbianCurve(0.1f/100, 20, 0.12f/100, 20));
+		sim->setESTDP(g1, true, DA_MOD, ExpCurve(0.1f/100, 20, -0.12f/100, 20));
 
 		// use periodic spike generator to know the exact dopamine delivery
 		PeriodicSpikeGenerator* spkGen = new PeriodicSpikeGenerator(10, false);

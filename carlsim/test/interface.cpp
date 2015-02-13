@@ -459,9 +459,9 @@ TEST(Interface, CARLsimState) {
 	EXPECT_DEATH({sim->setSTDP(g1, true);},"");
 	EXPECT_DEATH({sim->setSTDP(g1, true, STANDARD, 1.0, 2.0, 3.0, 4.0);},"");
 	EXPECT_DEATH({sim->setESTDP(g1, true);},"");
-	EXPECT_DEATH({sim->setESTDP(g1, true, STANDARD, HebbianCurve(1.0, 2.0, 3.0, 4.0));},"");
+	EXPECT_DEATH({sim->setESTDP(g1, true, STANDARD, ExpCurve(1.0, 2.0, 3.0, 4.0));},"");
 	EXPECT_DEATH({sim->setISTDP(g1, true);},"");
-	EXPECT_DEATH({sim->setISTDP(g1, true, STANDARD, ConstantSymmetricCurve(1.0, 2.0, 3.0, 4.0));},"");
+	EXPECT_DEATH({sim->setISTDP(g1, true, STANDARD, PulseCurve(1.0, 2.0, 3.0, 4.0));},"");
 	EXPECT_DEATH({sim->setSTP(g1, true, 1.0, 2.0, 3.0);},"");
 	EXPECT_DEATH({sim->setSTP(g1, true);},"");
 	EXPECT_DEATH({sim->setWeightAndWeightChangeUpdate(INTERVAL_1000MS, true, 0.9f);},"");
@@ -474,13 +474,13 @@ TEST(Interface, CARLsimState) {
 	EXPECT_DEATH({sim->setDefaultSTDPparams(1.0, 2.0, 3.0, 4.0,STANDARD);},"");
 	EXPECT_DEATH({sim->setDefaultSTPparams(1, 1.0, 2.0, 3.0);},"");
 
-	// test runNetwork(), change carlsimState_ from SETUP_STATE to EXE_STATE
+	// test runNetwork(), change carlsimState_ from SETUP_STATE to RUN_STATE
 	EXPECT_TRUE(sim->getCARLsimState() == SETUP_STATE);
 	sim->runNetwork(1, 0);
-	EXPECT_TRUE(sim->getCARLsimState() == EXE_STATE);
-	//----- EXE_STATE zone -----
+	EXPECT_TRUE(sim->getCARLsimState() == RUN_STATE);
+	//----- RUN_STATE zone -----
 
-	// test APIs that can't be called at EXE_STATE
+	// test APIs that can't be called at RUN_STATE
 	EXPECT_DEATH({sim->setupNetwork();},"");
 	EXPECT_DEATH({sim->loadSimulation(NULL);},"");
 	EXPECT_DEATH({g2 = sim->createGroup("excit", 80, EXCITATORY_NEURON);},"");
@@ -501,9 +501,9 @@ TEST(Interface, CARLsimState) {
 	EXPECT_DEATH({sim->setSTDP(g1, true);},"");
 	EXPECT_DEATH({sim->setSTDP(g1, true, STANDARD, 1.0, 2.0, 3.0, 4.0);},"");
 	EXPECT_DEATH({sim->setESTDP(g1, true);},"");
-	EXPECT_DEATH({sim->setESTDP(g1, true, STANDARD, HebbianCurve(1.0, 2.0, 3.0, 4.0));},"");
+	EXPECT_DEATH({sim->setESTDP(g1, true, STANDARD, ExpCurve(1.0, 2.0, 3.0, 4.0));},"");
 	EXPECT_DEATH({sim->setISTDP(g1, true);},"");
-	EXPECT_DEATH({sim->setISTDP(g1, true, STANDARD, ConstantSymmetricCurve(1.0, 2.0, 3.0, 4.0));},"");
+	EXPECT_DEATH({sim->setISTDP(g1, true, STANDARD, PulseCurve(1.0, 2.0, 3.0, 4.0));},"");
 	EXPECT_DEATH({sim->setSTP(g1, true, 1.0, 2.0, 3.0);},"");
 	EXPECT_DEATH({sim->setSTP(g1, true);},"");
 	EXPECT_DEATH({sim->setWeightAndWeightChangeUpdate(INTERVAL_1000MS, true, 0.9f);},"");
@@ -548,23 +548,17 @@ TEST(Interface, setSTDPDeath) {
 	int	g1 = sim->createGroup("excit", 800, EXCITATORY_NEURON);
 	sim->setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f);
 
-	EXPECT_DEATH({sim->setESTDP(g1, true, STANDARD, HebbianCurve(-1.0, 2.0, 3.0, 4.0));},"");
-	EXPECT_DEATH({sim->setESTDP(g1, true, STANDARD, HebbianCurve(1.0, -2.0, 3.0, 4.0));},"");
-	EXPECT_DEATH({sim->setESTDP(g1, true, STANDARD, HebbianCurve(1.0, 2.0, -3.0, 4.0));},"");
-	EXPECT_DEATH({sim->setESTDP(g1, true, STANDARD, HebbianCurve(1.0, 2.0, 3.0, -4.0));},"");
-	EXPECT_DEATH({sim->setISTDP(g1, true, STANDARD, ConstantSymmetricCurve(-1.0, 2.0, 3.0, 4.0));},"");
-	EXPECT_DEATH({sim->setISTDP(g1, true, STANDARD, ConstantSymmetricCurve(1.0, -2.0, 3.0, 4.0));},"");
-	EXPECT_DEATH({sim->setISTDP(g1, true, STANDARD, ConstantSymmetricCurve(1.0, 2.0, -3.0, 4.0));},"");
-	EXPECT_DEATH({sim->setISTDP(g1, true, STANDARD, ConstantSymmetricCurve(1.0, 2.0, 3.0, -4.0));},"");
-	EXPECT_DEATH({sim->setESTDP(g1, true, STANDARD, HalfHebbianCurve(-1.0, 2.0, 3.0, 4.0, 5.0));},"");
-	EXPECT_DEATH({sim->setESTDP(g1, true, STANDARD, HalfHebbianCurve(1.0, -2.0, 3.0, 4.0, 5.0));},"");
-	EXPECT_DEATH({sim->setESTDP(g1, true, STANDARD, HalfHebbianCurve(1.0, 2.0, -3.0, 4.0, 5.0));},"");
-	EXPECT_DEATH({sim->setESTDP(g1, true, STANDARD, HalfHebbianCurve(1.0, 2.0, 3.0, -4.0, 5.0));},"");
-	EXPECT_DEATH({sim->setESTDP(g1, true, STANDARD, HalfHebbianCurve(1.0, 2.0, 3.0, -4.0, -5.0));},"");
-	EXPECT_DEATH({sim->setISTDP(g1, true, STANDARD, LinearSymmetricCurve(-1.0, 2.0, 3.0, 4.0));},"");
-	EXPECT_DEATH({sim->setISTDP(g1, true, STANDARD, LinearSymmetricCurve(1.0, -2.0, 3.0, 4.0));},"");
-	EXPECT_DEATH({sim->setISTDP(g1, true, STANDARD, LinearSymmetricCurve(1.0, 2.0, -3.0, 4.0));},"");
-	EXPECT_DEATH({sim->setISTDP(g1, true, STANDARD, LinearSymmetricCurve(1.0, 2.0, 3.0, -4.0));},"");
+	EXPECT_DEATH({sim->setESTDP(g1, true, STANDARD, ExpCurve(1.0, -2.0, 3.0, 4.0));},"");
+	EXPECT_DEATH({sim->setESTDP(g1, true, STANDARD, ExpCurve(1.0, 2.0, 3.0, -4.0));},"");
+	EXPECT_DEATH({sim->setISTDP(g1, true, STANDARD, PulseCurve(-1.0, -2.0, 3.0, 4.0));},"");
+	EXPECT_DEATH({sim->setISTDP(g1, true, STANDARD, PulseCurve(1.0, 2.0, 3.0, 4.0));},"");
+	EXPECT_DEATH({sim->setISTDP(g1, true, STANDARD, PulseCurve(1.0, -2.0, -3.0, 4.0));},"");
+	EXPECT_DEATH({sim->setISTDP(g1, true, STANDARD, PulseCurve(1.0, -2.0, 3.0, -4.0));},"");
+	EXPECT_DEATH({sim->setESTDP(g1, true, STANDARD, TimingBasedCurve(-1.0, 2.0, -3.0, 4.0, 5.0));},"");
+	EXPECT_DEATH({sim->setESTDP(g1, true, STANDARD, TimingBasedCurve(1.0, -2.0, -3.0, 4.0, 5.0));},"");
+	EXPECT_DEATH({sim->setESTDP(g1, true, STANDARD, TimingBasedCurve(1.0, 2.0, 3.0, 4.0, 5.0));},"");
+	EXPECT_DEATH({sim->setESTDP(g1, true, STANDARD, TimingBasedCurve(1.0, 2.0, -3.0, -4.0, 5.0));},"");
+	EXPECT_DEATH({sim->setESTDP(g1, true, STANDARD, TimingBasedCurve(1.0, 2.0, -3.0, -4.0, -5.0));},"");
 
 	delete sim;
 }

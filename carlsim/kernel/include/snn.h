@@ -243,12 +243,12 @@ public:
 	 * \param[in] grpId ID of the neuron group
 	 * \param[in] isSet_enable set to true to enable STDP for this group
 	 * \param[in] type STDP type (STANDARD, DA_MOD)
-	 * \param[in] alphaLTP max magnitude for LTP change
-	 * \param[in] tauLTP decay time constant for LTP
-	 * \param[in] alphaLTD max magnitude for LTD change (leave positive)
-	 * \param[in] tauLTD decay time constant for LTD
+	 * \param[in] alphaPlus max magnitude for LTP change
+	 * \param[in] tauPlus decay time constant for LTP
+	 * \param[in] alphaMinus max magnitude for LTD change (leave positive)
+	 * \param[in] tauMinus decay time constant for LTD
 	 */
-	void setESTDP(int grpId, bool isSet, stdpType_t type, stdpCurve_t curve, float alphaLTP, float tauLTP, float alphaLTD, float tauLTD, float gamma);
+	void setESTDP(int grpId, bool isSet, stdpType_t type, stdpCurve_t curve, float alphaPlus, float tauPlus, float alphaMinus, float tauMinus, float gamma);
 
 	//! Set the inhibitory spike-timing-dependent plasticity (STDP) with anti-hebbian curve for a neuron group
 	/*
@@ -258,12 +258,12 @@ public:
 	 * \param[in] isSet_enable set to true to enable STDP for this group
 	 * \param[in] type STDP type (STANDARD, DA_MOD)
 	 * \param[in] curve STDP curve
-	 * \param[in] abLTP magnitude for LTP change
-	 * \param[in] abLTD magnitude for LTD change (leave positive)
+	 * \param[in] ab1 magnitude for LTP change
+	 * \param[in] ab2 magnitude for LTD change (leave positive)
 	 * \param[in] tau1, the interval for LTP
 	 * \param[in] tau2, the interval for LTD
 	 */
-	void setISTDP(int grpId, bool isSet, stdpType_t type, stdpCurve_t curve, float abLTP, float abLTD, float tau1, float tau2);
+	void setISTDP(int grpId, bool isSet, stdpType_t type, stdpCurve_t curve, float ab1, float ab2, float tau1, float tau2);
 
 	/*!
 	 * \brief Sets STP params U, tau_u, and tau_x of a neuron group (pre-synaptically)

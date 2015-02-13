@@ -10,9 +10,9 @@
 				<tab type="user" visible="no" title="1.3 Documentation" url="@ref ch1s3_documentation"/>
 				<tab type="user" visible="no" title="1.4 Project Workflow" url="@ref ch1s4_project_workflow"/>
 			</tab>
-			<tab type="usergroup" visible="yes" title="2. Basics" url="@ref ch2_basics">
-				<tab type="user" visible="no" title="2.1 Overview" url="@ref ch2s1_overview"/>
-				<tab type="user" visible="no" title="2.2 CARLsim Hello World" url="@ref ch2s2_carlsim_hello_world"/>
+			<tab type="usergroup" visible="yes" title="2. Basic Concepts" url="@ref ch2_basic_concepts">
+				<tab type="user" visible="no" title="2.1 General Workflow" url="@ref ch2s1_general_workflow"/>
+				<tab type="user" visible="no" title="2.2 CARLsim Hello World" url="@ref ch2s2_hello_world"/>
 			</tab>
 			<tab type="usergroup" visible="yes" title="3. Neurons, Synapses, and Groups" url="@ref ch3_neurons_synapses_groups">
 				<tab type="user" visible="no" title="3.1 Neurons" url="@ref ch3s1_neurons"/>
@@ -62,12 +62,14 @@
 				<tab type="user" visible="no" title="12.5 Numerical Integration" url="@ref ch12s5_numerical_integration"/>
 				<tab type="user" visible="no" title="12.6 Technical Limitations" url="@ref ch12s6_technical_limitations"/>
 			</tab>
-			<tab type="usergroup" visible="yes" title="13. Example Networks" url="@ref ch13_example_networks">
-				<tab type="user" visible="no" title="13.1 80-20 RAIN" url="@ref ch13s1_80_20_rain"/>
-				<tab type="user" visible="no" title="13.2 PTI STDPh" url="@ref ch13s2_pti_stdph"/>
-				<tab type="user" visible="no" title="13.3 Color Opponency" url="@ref ch13s3_color_opponency"/>
-				<tab type="user" visible="no" title="13.4 Motion Energy" url="@ref ch13s4_motion_energy"/>
-			</tab>
+		</tab>
+		<tab type="usergroup" visible="yes" title="Tutorial">
+			<tab type="usergroup" visible="yes" title="1. Basic Concepts" url="@ref tut1_basic_concepts"/>
+			<tab type="usergroup" visible="yes" title="2. Random Network" url="@ref tut2_random"/>
+			<tab type="usergroup" visible="yes" title="3. STDP" url="@ref tut3_stdp"/>
+			<tab type="usergroup" visible="yes" title="4. Parameter Tuning Interface (PTI)" url="@ref tut4_pti"/>
+			<tab type="usergroup" visible="yes" title="5. Simple Weight Tuner" url="@ref tut5_simple_weight_tuner"/>
+			<tab type="usergroup" visible="yes" title="6. Multi-GPU" url="@ref tut6_multi_gpu"/>
 		</tab>
 		<tab type="modules" visible="yes" title="" intro=""/>
 		<tab type="namespaces" visible="yes" title="">

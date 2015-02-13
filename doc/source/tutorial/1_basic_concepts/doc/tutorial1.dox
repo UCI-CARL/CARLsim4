@@ -1,0 +1,54 @@
+/*!
+
+\page tut1_basic_concepts Tutorial 1: Basic Concepts
+
+\tableofcontents
+
+In this tutorial, we introduce some of the basic concepts of a CARLsim simulation:
+- Importing the CARLsim library
+- Creating a group of neurons
+- Defining the network structure by connecting neurons
+- Running a network
+- Looking at the output of the network
+
+At the end of the tutorial, you will have:
+- built a simple CARLsim program
+- learned about stuff
+
+This tutorial assumes you know:
+- The very basics of C/C++
+- The Izhikevich neuron model
+
+
+\section tut1s1 1.1 The simplest CARLsim program
+
+
+\TODO
+
+The objective of this tutorial is to hook up a Poisson spike generator to a single Izhikevich neuron and look
+at the output activity.
+
+
+\code
+#include <carlsim.h>
+CARLsim sim("Hello World", CPU_MODE, USER);
+
+int gIn = sim.createSpikeGeneratorGroup("input", 1, EXCITATORY_NEURON);
+int gOut = sim.createGroup("output", 1, EXCITATORY_NEURON);
+sim.setNeuronParameters(gOut, 0.1f, 0.2f, -65.0f, 2.0f);
+sim.setConductances(true);
+
+sim.connect(gIn, gOut, "one-to-one", RangeWeight(0.1f), 1.0f);
+
+sim.setupNetwork();
+sim.setSpikeMonitor(gOut,"DEFAULT");
+
+PoissonRate in(1);
+in.setRates(20.0f);
+sim.setSpikeRate(gIn, &in);
+sim.runNetwork(1,0);
+\endcode
+
+
+
+*/

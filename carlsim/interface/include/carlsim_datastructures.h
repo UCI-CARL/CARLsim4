@@ -132,25 +132,15 @@ static const char* stdpType_string[] = {
  * CARLsim supports different STDP curves
  */
 enum stdpCurve_t {
-	HEBBIAN,
-	HALF_HEBBIAN,
-	ANTI_HEBBIAN,
-	//SYMMETRIC,
-	//LINEAR_HEBBIAN,
-	//LINEAR_ANTI_HEBBIAN,
-	LINEAR_SYMMETRIC,
-	CONSTANT_SYMMETRIC,
+	EXP_CURVE,
+	PULSE_CURVE,
+	TIMING_BASED_CURVE,
 	UNKNOWN_CURVE
 };
 static const char* stdpCurve_string[] = {
-	"Hebbian curve",
-	"Half Hebbian curve",
-	"Anti-Hebbian curve",
-	//"Symmetric curve",
-	//"Linear Hebbian curve",
-	//"Linear Anti-symmetric curve",
-	"Linear symmetric cruve",
-	"Constant symmetric curve",
+	"exponential curve",
+	"pulse curve",
+	"timing-based curve",
 	"Unknow curve"
 };
 
@@ -220,10 +210,10 @@ static const char* updateInterval_string[] = {
  * first call to CARLsim::runNetwork will change the state from SETUP to EXECUTION.
  */
 enum carlsimState_t {
-	CONFIG_STATE, SETUP_STATE, EXE_STATE
+	CONFIG_STATE, SETUP_STATE, RUN_STATE
 };
 static const char* carlsimState_string[] = {
-	"Configuration state", "Setup state", "Execution state"
+	"Configuration state", "Setup state", "Run state"
 };
 
 /*!
@@ -340,14 +330,14 @@ typedef struct GroupSTDPInfo_s {
 	stdpType_t  WithISTDPtype;
 	stdpCurve_t WithESTDPcurve;
 	stdpCurve_t WithISTDPcurve;
-	float		TAU_LTP_INV_EXC;
-	float		TAU_LTD_INV_EXC;
-	float		ALPHA_LTP_EXC;
-	float		ALPHA_LTD_EXC;
-	float		TAU_LTP_INV_INB;
-	float		TAU_LTD_INV_INB;
-	float		ALPHA_LTP_INB;
-	float		ALPHA_LTD_INB;
+	float		TAU_PLUS_INV_EXC;
+	float		TAU_MINUS_INV_EXC;
+	float		ALPHA_PLUS_EXC;
+	float		ALPHA_MINUS_EXC;
+	float		TAU_PLUS_INV_INB;
+	float		TAU_MINUS_INV_INB;
+	float		ALPHA_PLUS_INB;
+	float		ALPHA_MINUS_INB;
 	float		GAMMA;
 	float		BETA_LTP;
 	float		BETA_LTD;
@@ -426,95 +416,53 @@ struct Grid3D {
 };
 
 /*!
- * \brief struct to assign Hebbian STDP curve
+ * \brief struct to assign exponential curve
  */
-struct HebbianCurve {
-	HebbianCurve(float _alphaLTP, float _tauLTP, float _alphaLTD, float _tauLTD) : alphaLTP(_alphaLTP), tauLTP(_tauLTP), alphaLTD(_alphaLTD), tauLTD(_tauLTD) {
-		UserErrors::assertTrue(_alphaLTP > 0.0f, UserErrors::MUST_BE_POSITIVE, "HebbianCurve", "alphaLTP");
-		UserErrors::assertTrue(_alphaLTD > 0.0f, UserErrors::MUST_BE_POSITIVE, "HebbianCurve", "alphaLTD");
-		UserErrors::assertTrue(_tauLTP > 0.0f, UserErrors::MUST_BE_POSITIVE, "HebbianCurve", "tauLTP");
-		UserErrors::assertTrue(_tauLTD > 0.0f, UserErrors::MUST_BE_POSITIVE, "HebbianCurve", "tauLTD");
+struct ExpCurve {
+	ExpCurve(float _alphaPlus, float _tauPlus, float _alphaMinus, float _tauMinus) : alphaPlus(_alphaPlus), tauPlus(_tauPlus), alphaMinus(_alphaMinus), tauMinus(_tauMinus) {
+		UserErrors::assertTrue(_tauPlus > 0.0f, UserErrors::MUST_BE_POSITIVE, "ExpCurve", "tauPlus");
+		UserErrors::assertTrue(_tauMinus > 0.0f, UserErrors::MUST_BE_POSITIVE, "ExpCurve", "tauMinus");
 
-		stdpCurve = HEBBIAN;
+		stdpCurve = EXP_CURVE;
 	}
 
 	stdpCurve_t stdpCurve;
-	float alphaLTP;
-        float tauLTP;
-	float alphaLTD;
-	float tauLTD;
+	float alphaPlus;
+	float tauPlus;
+	float alphaMinus;
+	float tauMinus;
 };
 
-struct HalfHebbianCurve {
-	HalfHebbianCurve(float _alphaLTP, float _tauLTP, float _alphaLTD, float _tauLTD, float _gamma) : alphaLTP(_alphaLTP), tauLTP(_tauLTP), alphaLTD(_alphaLTD), tauLTD(_tauLTD) , gamma(_gamma) {
-		UserErrors::assertTrue(_alphaLTP > 0.0f, UserErrors::MUST_BE_POSITIVE, "HalfHebbianCurve", "alphaLTP");
-		UserErrors::assertTrue(_alphaLTD > 0.0f, UserErrors::MUST_BE_POSITIVE, "HalfHebbianCurve", "alphaLTD");
-		UserErrors::assertTrue(_tauLTP > 0.0f, UserErrors::MUST_BE_POSITIVE, "HalfHebbianCurve", "tauLTP");
-		UserErrors::assertTrue(_tauLTD > 0.0f, UserErrors::MUST_BE_POSITIVE, "HalfHebbianCurve", "tauLTD");
-		UserErrors::assertTrue(_gamma > 0.0f, UserErrors::MUST_BE_POSITIVE, "HalfHebbianCurve", "gamma");
+struct TimingBasedCurve {
+	TimingBasedCurve(float _alphaPlus, float _tauPlus, float _alphaMinus, float _tauMinus, float _gamma) : alphaPlus(_alphaPlus), tauPlus(_tauPlus), alphaMinus(_alphaMinus), tauMinus(_tauMinus) , gamma(_gamma) {
+		UserErrors::assertTrue(_alphaPlus > 0.0f, UserErrors::MUST_BE_POSITIVE, "TimingBasedCurve", "alphaPlus");
+		UserErrors::assertTrue(_alphaMinus < 0.0f, UserErrors::MUST_BE_NEGATIVE, "TimingBasedCurve", "alphaMinus");
+		UserErrors::assertTrue(_tauPlus > 0.0f, UserErrors::MUST_BE_POSITIVE, "TimingBasedCurve", "tauPlus");
+		UserErrors::assertTrue(_tauMinus > 0.0f, UserErrors::MUST_BE_POSITIVE, "TimingBasedCurve", "tauMinus");
+		UserErrors::assertTrue(_gamma > 0.0f, UserErrors::MUST_BE_POSITIVE, "TimingBasedCurve", "gamma");
 
-		stdpCurve = HALF_HEBBIAN;
+		stdpCurve = TIMING_BASED_CURVE;
 	}
 
 	stdpCurve_t stdpCurve;
-	float alphaLTP;
-        float tauLTP;
-	float alphaLTD;
-	float tauLTD;
+	float alphaPlus;
+	float tauPlus;
+	float alphaMinus;
+	float tauMinus;
 	float gamma;
 };
 
 /*!
- * \brief struct to assign Anti-Hebbian I-STDP curve
+ * \brief struct to assign pulse I-STDP curve
  */
-struct AntiHebbianCurve {
-	AntiHebbianCurve(float _alphaLTP, float _tauLTP, float _alphaLTD, float _tauLTD) : alphaLTP(_alphaLTP), tauLTP(_tauLTP), alphaLTD(_alphaLTD), tauLTD(_tauLTD) {
-		UserErrors::assertTrue(_alphaLTP > 0.0f, UserErrors::MUST_BE_POSITIVE, "AntiHebbianCurve", "alphaLTP");
-		UserErrors::assertTrue(_alphaLTD > 0.0f, UserErrors::MUST_BE_POSITIVE, "AntiHebbianCurve", "alphaLTD");
-		UserErrors::assertTrue(_tauLTP > 0.0f, UserErrors::MUST_BE_POSITIVE, "AntiHebbianCurve", "tauLTP");
-		UserErrors::assertTrue(_tauLTD > 0.0f, UserErrors::MUST_BE_POSITIVE, "AntiHebbianCurve", "tauLTD");
+struct PulseCurve {
+	PulseCurve(float _betaLTP, float _betaLTD, float _lambda, float _delta) : betaLTP(_betaLTP), betaLTD(_betaLTD), lambda(_lambda), delta(_delta) {
+		UserErrors::assertTrue(_betaLTP > 0.0f, UserErrors::MUST_BE_POSITIVE, "PulseCurve", "betaLTP");
+		UserErrors::assertTrue(_betaLTD < 0.0f, UserErrors::MUST_BE_NEGATIVE, "PulseCurve", "betaLTD");
+		UserErrors::assertTrue(_lambda > 0.0f, UserErrors::MUST_BE_POSITIVE, "PulseCurve", "lambda");
+		UserErrors::assertTrue(_delta > 0.0f, UserErrors::MUST_BE_POSITIVE, "PulseCurve", "delta");
 
-		stdpCurve = ANTI_HEBBIAN;
-	}
-
-	stdpCurve_t stdpCurve;
-	float alphaLTP;
-        float tauLTP;
-	float alphaLTD;
-	float tauLTD;
-};
-
-/*!
- * \brief struct to assign constant symmetric I-STDP curve
- */
-struct ConstantSymmetricCurve {
-	ConstantSymmetricCurve(float _betaLTP, float _betaLTD, float _lambda, float _delta) : betaLTP(_betaLTP), betaLTD(_betaLTD), lambda(_lambda), delta(_delta) {
-		UserErrors::assertTrue(_betaLTP > 0.0f, UserErrors::MUST_BE_POSITIVE, "ConstantSymmetricCurve", "betaLTP");
-		UserErrors::assertTrue(_betaLTD > 0.0f, UserErrors::MUST_BE_POSITIVE, "ConstantSymmetricCurve", "betaLTD");
-		UserErrors::assertTrue(_lambda > 0.0f, UserErrors::MUST_BE_POSITIVE, "ConstantSymmetricCurve", "lambda");
-		UserErrors::assertTrue(_delta > 0.0f, UserErrors::MUST_BE_POSITIVE, "ConstantSymmetricCurve", "delta");
-
-		stdpCurve = CONSTANT_SYMMETRIC;
-	}
-
-	stdpCurve_t stdpCurve;
-	float betaLTP;
-	float betaLTD;
-	float lambda;
-	float delta;
-};
-
-/*!
- * \brief struct to assign constant symmetric I-STDP curve
- */
-struct LinearSymmetricCurve {
-	LinearSymmetricCurve(float _betaLTP, float _betaLTD, float _lambda, float _delta) : betaLTP(_betaLTP), betaLTD(_betaLTD), lambda(_lambda), delta(_delta) {
-		UserErrors::assertTrue(_betaLTP > 0.0f, UserErrors::MUST_BE_POSITIVE, "ConstantSymmetricCurve", "betaLTP");
-		UserErrors::assertTrue(_betaLTD > 0.0f, UserErrors::MUST_BE_POSITIVE, "ConstantSymmetricCurve", "betaLTD");
-		UserErrors::assertTrue(_lambda > 0.0f, UserErrors::MUST_BE_POSITIVE, "ConstantSymmetricCurve", "lambda");
-		UserErrors::assertTrue(_delta > 0.0f, UserErrors::MUST_BE_POSITIVE, "ConstantSymmetricCurve", "delta");
-
-		stdpCurve = LINEAR_SYMMETRIC;
+		stdpCurve = PULSE_CURVE;
 	}
 
 	stdpCurve_t stdpCurve;

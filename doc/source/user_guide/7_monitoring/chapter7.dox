@@ -14,7 +14,7 @@
 
 SpikeMonitors can be used to record output spikes for different neuronal groups.
 
-CARLsim supports to different recording mechanisms: Recording to a spike file (binary) and
+CARLsim supports two different recording mechanisms: Recording to a spike file (binary) and
 recording to a SpikeMonitor object.
 The former is useful for off-line analysis of activity (e.g., using \ref ch9s1_matlab_oat).
 The latter is useful to calculate different spike metrics and statistics on-line, such as
@@ -25,7 +25,7 @@ in a certain interval.
 \subsection ch7s1s1_setting_up 7.1.1 Setting Up a Spike Monitor
 
 The easiest way to start recording the spikes of a group <tt>g0</tt> to file is to call
-the following function in CARLsimState CONFIG or SETUP:
+the following function in CARLsim state ::CONFIG_STATE or ::SETUP_STATE:
 \code
 sim.setSpikeMonitor(g0,"DEFAULT");
 \endcode
@@ -104,7 +104,152 @@ sim.runNetwork(10,0);
 \section ch7s2_connection_monitor 7.2 Connection Monitor
 \author Michael Beyeler
 
-\TODO MB
+ConnectionMonitors can be used to record synaptic weights from a specific connection.
+Instantaneous recordings of a 2D weight matrix ("snapshots") can be taken either programmatically
+or automatically every second.
+
+CARLsim supports two different recording mechanisms: Recording to a weight file (binary) and
+recording to a ConnectionMonitor object.
+The former is useful for off-line analysis of synaptic weights (e.g., using \ref ch9s1_matlab_oat).
+The latter is useful to calculate different weight metrics and statistics on-line, such as
+the percentage of weight values that fall in a certain weight range, or the number of weights
+that have been changed since the last snapshot.
+
+\subsection ch7s2s1_setting_up 7.2.1 Setting up a Connection Monitor
+
+The easiest way to start recording weights of a connection between pre-synaptic group <tt>grpIdPre</tt>
+and <tt>grpIdPost</tt> is to call the following function in CARLsim state ::CONFIG_STATE or ::SETUP_STATE:
+\code
+sim.setConnectionMonitor(grpIdPre,grpIdPost,"DEFAULT");
+\endcode
+This will take a snapshot of the 2D weight matrix every 1000 ms and dump the data to file.
+The default file name will be "results/conn_{name of pre-group}_{name of post-group}.dat".
+The first snapshot will be taken at t=0ms, the next one at t=1000ms, etc., until the end of the simulation
+is reached.
+
+It is also possible to specify a custom file name instead of using the "DEFAULT" name.
+Alternatively, the user may suppress creation of the binary file by using file string "NULL" instead.
+
+Periodic storing can be disabled by calling ConnectionMonitor::setUpdateTimeInterval with argument
+<tt>intervalSec=-1</tt>.
+
+\since v3.0
+
+
+\subsection ch7s2s2_connection_monitor_object 7.2.2 The Connection Monitor Object
+
+An additional way to record weights is by quering the ConnectionMonitor object that is returned by
+CARLsim::setConnectionMonitor for connection data:
+\code
+ConnectionMonitor * CM = sim.setConnectionMonitor(grpIdPre,grpIdPost,"DEFAULT");
+\endcode
+where <tt>grpIdPre</tt> and <tt>grpIdPost</tt> are the IDs of the pre-synaptic and post-synaptic group, respectively.
+
+\since v3.0
+
+
+\subsubsection ch7s2s2s1_taking_snapshots 7.2.2.1 Taking Weight Snapshots
+
+Weight snapshots can also be taken programmatically, by quering the ConnectionMonitor object:
+\code
+ConnectionMonitor * CM = sim.setConnectionMonitor(grpIdPre,grpIdPost,"DEFAULT");
+std::vector< std::vector<float> > weights = CM->takeSnapshot();
+printf("The weight from pre-neuron ID 3 to post-neuron ID 7 is: %f\n",weights[3][7]);
+\endcode
+This will take an instantaneous snapshot of the weights (at the current simulation time) and return it in a 2D
+weight matrix.
+The first dimension of the matrix will be of size CARLsim::getGroupNumNeurons(grpIdPre), and the second dimension
+of the matrix will be of size CARLsim::getGroupNumNeurons(grpIdPost).
+Synaptic connections in the matrix that do not exist will have value NAN and can be queried with
+<tt>isnan(wt[i][j])</tt>.
+
+Note that every snapshot taken with this method will also be dumped to file.
+If the user wants the binary file to contain only distinct snapshots as opposed to a periodic ones taken every
+second, the recording interval can be adjusted as follows:
+\code
+ConnectionMonitor * CM = sim.setConnectionMonitor(grpIdPre,grpIdPost,"DEFAULT");
+CM->setUpdateTimeInterval(-1); // disable periodic recording
+
+// disable periodid storing of snapshots in binary ...
+CM->setUpdateTimeIntervalSec(-1);
+
+// ... and instead take a snapshot yourself and put it in the binary
+CM->takeSnapshot();
+
+// run the network for 10 seconds
+sim.runNetwork(10,0);
+
+// take another snapshot at the end and put it in the binary
+CM->takeSnapshot();
+\endcode
+
+\note Every snapshot taken with this method will also be dumped to file.
+\since v3.0
+
+
+\subsubsection ch7s2s2s2_printing_weights 7.2.2.2 Printing Weights
+
+Weights can be printed in two ways: Either as a 2D weight matrix (pre x post) using ConnectionMonitor::print
+or as a sparse list of only existing synapses using ConnectionMonitor::printSparse:
+\code
+ConnectionMonitor * CM = sim.setConnectionMonitor(grpIdPre,grpIdPost,"DEFAULT");
+CM->print(); // print 2D weight matrix
+CM->printSparse(); // print sparse list
+\endcode
+
+ConnectionMonitor::printSparse also accepts up to three optional parameters that allow for formatting options.
+For more information see its code documentation.
+
+For more sophisticated visualization options please refer to \ref ch9s1_matlab_oat.
+
+\since v3.0
+
+
+\subsubsection ch7s2s2s3_weight_metrics 7.2.2.3 Weight Metrics
+
+The ConnectionMonitor class provides a number of methods useful to compute a variety of weight metrics and
+statistics.
+
+Metrics can be calculated either for the current snapshot (e.g., fan-in, fan-out)
+or by considering differences between the last two snapshots (e.g., number or percentage of weights that changed).
+
+Fan-in is the number of incoming synapses for a specific post-synaptic neuron, and can be calculated with
+ConnectionMonitor::getFanIn.
+Alternatively, ConnectionMonitor::getFanOut returns the number of outgoing synapses for a specific pre-synaptic
+neuron.
+
+Weight changes since the last snapshot can be calculated in a number of different ways.
+The number of weights whose absolute value has changed at least <tt>minAbsChanged</tt> (inclusive) since the
+last snapshot was taken can be calculated with ConnectionMonitor::getNumWeightsChanged.
+The same metric can be obtained as a percentage using ConnectionMonitor::getPercentWeightsChanged.
+
+The absolute sum of weight changes since the last snapshot can be calculated with
+ConnectionMonitor::getTotalAbsWeightChanged.
+This function might be useful (for example) to run a network with plastic synapses until learning has saturated:
+\code
+// configure a network with plastic synapses
+int g0 = sim.createGroup("g0", 10, EXCITATORY_NEURON);
+int g1 = sim.createGroup("g1", 10, EXCITATORY_NEURON);
+sim.connect(g0, g1, "random", RangeWeight(0.0f,1.0f), 0.1f, RangeDelay(1,10), RadiusRF(-1), SYN_PLASTIC);
+// ... etc. ...
+sim.setupNetwork();
+
+// set a Connection Monitor
+ConnectionMonitor * CM = sim.setConnectionMonitor(g0,g1,"DEFAULT");
+
+// run network until absolute weight change is lower than some threshold value
+float threshold = 1e-2f;
+while (CM->getTotalAbsWeightChanged() > threshold) {
+	sim.runNetwork(1,0); // run for a second
+}
+
+// learning has saturated: do testing
+// etc.
+\endcode
+
+\since v3.0
+
+
 
 \section ch7s3_group_monitor 7.3 Group Monitor
 \author Ting-Shuo Chou
