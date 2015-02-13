@@ -478,7 +478,7 @@ public:
 	 *
 	 * \sa setESTDP
 	 */
-	void setSTDP(int grpId, bool isSet, stdpType_t type, float alphaLTP, float tauLTP, float alphaLTD, float tauLTD);
+	void setSTDP(int grpId, bool isSet, stdpType_t type, float alphaPlus, float tauPlus, float alphaMinus, float tauMinus);
 
 	/*!
 	 * \brief Sets default E-STDP mode and params
@@ -494,7 +494,7 @@ public:
 	 * \TODO finish docu
 	 * \STATE CONFIG
 	 */
-	void setESTDP(int grupId, bool isSet, stdpType_t type, HebbianCurve curve);
+	void setESTDP(int grupId, bool isSet, stdpType_t type, ExpCurve curve);
 
 	/*!
 	 * \brief Sets E-STDP mode with hebbian curve
@@ -502,7 +502,7 @@ public:
 	 * \TODO finish docu
 	 * \STATE CONFIG
 	 */
-	void setESTDP(int grupId, bool isSet, stdpType_t type, HalfHebbianCurve curve);
+	void setESTDP(int grupId, bool isSet, stdpType_t type, TimingBasedCurve curve);
 
 	/*!
 	 * \brief Sets default I-STDP mode and params
@@ -518,7 +518,7 @@ public:
 	 * \TODO finish docu
 	 * \STATE CONFIG
 	 */
-	void setISTDP(int grpId, bool isSet, stdpType_t type, AntiHebbianCurve curve);
+	void setISTDP(int grpId, bool isSet, stdpType_t type, ExpCurve curve);
 
 	/*!
 	 * \brief Sets I-STDP mode with constant symmetric curve
@@ -526,15 +526,7 @@ public:
 	 * \TODO finish docu
 	 * \STATE CONFIG
 	 */
-	void setISTDP(int grpId, bool isSet, stdpType_t type, ConstantSymmetricCurve curve);
-
-	/*!
-	 * \brief Sets I-STDP mode with linear symmetric curve
-	 *
-	 * \TODO finish docu
-	 * \STATE CONFIG
-	 */
-	void setISTDP(int grpId, bool isSet, stdpType_t type, LinearSymmetricCurve curve);
+	void setISTDP(int grpId, bool isSet, stdpType_t type, PulseCurve curve);
 
 	/*!
 	 * \brief Sets STP params U, tau_u, and tau_x of a neuron group (pre-synaptically)
@@ -1387,7 +1379,7 @@ public:
 	*/
 
     // choosing between STANDARD and DA_MOD -- KDC
-	void setDefaultSTDPparams(float alphaLTP, float tauLTP, float alphaLTD, float tauLTD, stdpType_t stdpType);
+	void setDefaultSTDPparams(float alphaPlus, float tauPlus, float alphaMinus, float tauMinus, stdpType_t stdpType);
 
 	/*!
 	* \brief sets default values for E-STDP params
@@ -1395,7 +1387,7 @@ public:
 	* \TODO finish docu
 	* \STATE CONFIG
 	*/
-	void setDefaultESTDPparams(float alphaLTP, float tauLTP, float alphaLTD, float tauLTD, stdpType_t stdpType);
+	void setDefaultESTDPparams(float alphaPlus, float tauPlus, float alphaMinus, float tauMinus, stdpType_t stdpType);
 
 	/*!
 	* \brief sets default values for I-STDP params

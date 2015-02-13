@@ -376,13 +376,21 @@ TEST(CONNECT, connectGaussian) {
 
 						if (rfDist < 0.0 || rfDist > 1.0) {
 							// RF distance is not valid or too large
+#if (WIN32 || WIN64)
+							EXPECT_TRUE(_isnan(wt0[i][j]));
+#else
 							EXPECT_TRUE(isnan(wt0[i][j]));
+#endif
 						} else {
 							// RF distance seems ok, compute gaussian weight
 							double gaussWt = exp(-2.3026*rfDist);
 							if (gaussWt < 0.1) {
 								// gaussian cut-off, weight would be < 10 % of max
+#if (WIN32 || WIN64)
+								EXPECT_TRUE(_isnan(wt0[i][j]));
+#else
 								EXPECT_TRUE(isnan(wt0[i][j]));
+#endif
 							} else {
 								// check weight and update synapse number
 								nSyn++;

@@ -490,10 +490,10 @@ TEST(CORE, numNeurons) {
 TEST(CORE, saveLoadSimulation) {
 	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
-	float tauLTP = 20.0f;
-	float tauLTD = 20.0f;
-	float alphaLTP = 0.1f;
-	float alphaLTD = 0.15f;
+	float tauPlus = 20.0f;
+	float tauMinus = 20.0f;
+	float alphaPlus = 0.1f;
+	float alphaMinus = 0.15f;
 	int gPre, gPost;
 	ConnectionMonitor* cmSave;
 	ConnectionMonitor* cmLoad;
@@ -514,11 +514,11 @@ TEST(CORE, saveLoadSimulation) {
 
 			if (coba) {
 				sim->connect(gPre, gPost, "full", RangeWeight(0.0, 8.0f/100, 20.0f/100), 1.0f, RangeDelay(1, 5), RadiusRF(-1), SYN_PLASTIC);
-				sim->setSTDP(gPost, true, STANDARD, alphaLTP/100, tauLTP, alphaLTD/100, tauLTD);
+				sim->setSTDP(gPost, true, STANDARD, alphaPlus/100, tauPlus, alphaMinus/100, tauMinus);
 				sim->setConductances(true, 5, 150, 6, 150);
 			} else {
 				sim->connect(gPre, gPost, "full", RangeWeight(0.0, 8.0f, 20.0f), 1.0f, RangeDelay(1, 5), RadiusRF(-1), SYN_PLASTIC);
-				sim->setSTDP(gPost, true, STANDARD, alphaLTP, tauLTP, alphaLTD, tauLTD);
+				sim->setSTDP(gPost, true, STANDARD, alphaPlus, tauPlus, alphaMinus, tauMinus);
 				sim->setConductances(false);
 			}
 
@@ -543,11 +543,11 @@ TEST(CORE, saveLoadSimulation) {
 
 			if (coba) {
 				sim->connect(gPre, gPost, "full", RangeWeight(0.0, 8.0f/100, 20.0f/100), 1.0f, RangeDelay(1, 5), RadiusRF(-1), SYN_PLASTIC);
-				sim->setSTDP(gPost, true, STANDARD, alphaLTP/100, tauLTP, alphaLTD/100, tauLTD);
+				sim->setSTDP(gPost, true, STANDARD, alphaPlus/100, tauPlus, alphaMinus/100, tauMinus);
 				sim->setConductances(true, 5, 150, 6, 150);
 			} else {
 				sim->connect(gPre, gPost, "full", RangeWeight(0.0, 8.0f, 20.0f), 1.0f, RangeDelay(1, 5), RadiusRF(-1), SYN_PLASTIC);
-				sim->setSTDP(gPost, true, STANDARD, alphaLTP, tauLTP, alphaLTD, tauLTD);
+				sim->setSTDP(gPost, true, STANDARD, alphaPlus, tauPlus, alphaMinus, tauMinus);
 				sim->setConductances(false);
 			}
 
@@ -571,9 +571,9 @@ TEST(CORE, saveLoadSimulation) {
 				for (int j = 0; j < 10; j++) {
 					//printf("(%f,%f) ", weightsSave[i][j], weightsLoad[i][j]);
 					if (coba)
-						EXPECT_NEAR(weightsSave[i][j], weightsLoad[i][j], alphaLTD/100);
+						EXPECT_NEAR(weightsSave[i][j], weightsLoad[i][j], alphaMinus/100);
 					else
-						EXPECT_NEAR(weightsSave[i][j], weightsLoad[i][j], alphaLTD);
+						EXPECT_NEAR(weightsSave[i][j], weightsLoad[i][j], alphaMinus);
 				}
 				//printf("\n");
 			}
