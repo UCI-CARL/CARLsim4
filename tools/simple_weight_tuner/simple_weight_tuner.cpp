@@ -17,7 +17,7 @@ SimpleWeightTuner::SimpleWeightTuner(CARLsim *sim, double errorMargin, int maxIt
 	assert(stepSizeFraction>0.0f && stepSizeFraction<=1.0f);
 
 	sim_ = sim;
-	assert(sim_->getCARLsimState()!=EXE_STATE);
+	assert(sim_->getCARLsimState()!=RUN_STATE);
 
 	errorMargin_ = errorMargin;
 	stepSizeFraction_ = stepSizeFraction;
@@ -187,7 +187,7 @@ void SimpleWeightTuner::initAlgo() {
 	currentError_ = std::numeric_limits<double>::max();
 
 	// make sure we're in the right CARLsim state
-	if (sim_->getCARLsimState()!=EXE_STATE)
+	if (sim_->getCARLsimState()!=RUN_STATE)
 		sim_->runNetwork(0,0,false);
 
 	// initialize weights
