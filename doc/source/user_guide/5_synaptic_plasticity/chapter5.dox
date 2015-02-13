@@ -88,33 +88,21 @@ relationship between pre and postsynaptic spikes (Sjöström and Gerstner, 2010)
 The prototypical form of STDP acts as follows: spike-timings where the presynaptic spike
 arrival precedes postsynaptic spikes by a few milliseconds results in an increase in the synaptic
 weight, also referred to as long-term potentiation (LTP). Spike-timings where the presynaptic spike
-arrival follows postsynaptic spikes by a few milliseconds result in a decrease in the syanptic
-weight. (Bi and Poo, 1998). Fig. 2 shows a variety of 'STDP Curves' possible using CARLsim. In each
-subfigure, the horizontal axis represents the time difference between the time of the presynaptic
-spike arrival and the time of the postsynaptic arrival or \f$ \Delta t = t_{pre} - t_{post} \f$.
-Therefore, \f$ \Delta t \f$'s to the right of the vertical axis are \f$ \Delta t < 0 \f$
-(pre-before-post) while \f$ \Delta t \f$'s to the left of the vertical axis are 
-\f$ \Delta t>0 \f$ (pre-after-post).
-
-The vertical axis represents the weight change on the magnitude of the synaptic weight at that
-synapse.
-
-Fig. 2(a). shows the increase in synaptic efficacy versus pre-post
-timings. Repeated pairings of pre before postsynaptic spike events result in a large increase in
-synaptic efficacy when the time difference is a few milliseconds and decays exponentially as the
-time difference grows. The opposite change occurs for pre after postsynaptic spike events, resulting
-in a decrease in the syanptic efficacy. There are a variety of STDP rules found at different synapse
-types (Caporale and Dan, 2008). Fig. 2. shows the possible types of STDP possible in CARLsim.
-
-\image html 5_stdp_curves.jpg "Fig. 2. Examples of possible STDP curves possible in CARLsim. Green curves can be  applied to glutamatergic synapses, whereas red curves can be applied to GABAergic (inhibitory) synapses "
-
-Source: Beyeler, et al. 2015.
+arrival follows postsynaptic spikes by a few milliseconds result in a decrease in the synaptic
+weight. (Bi and Poo, 1998). STDP of this type was observed at glutamatergic (excitatory) synapses.
 
 
 \subsection ch5s2s1_phenemological_model 5.2.1 STDP Phenomenological Model
-CARLsim implements a variety of different STDP variants. The phenomenological form of the
-prototypical excitatory glutamatergic form of STDP is a simple system of decaying exponentials. if
-we take \f$ \Delta t = t_{pre} - t_{post} \f$ where \f$ t_{pre} \f$ is the time of arrival of the
+Fig. 2 shows a variety of 'STDP Curves' possible using CARLsim. In each
+subfigure, the horizontal axis represents the time difference between the time of the presynaptic
+spike arrival and the time of the postsynaptic arrival or \f$ \Delta t = t_{pre} - t_{post} \f$.
+Therefore, \f$ \Delta t \f$'s to the left of the vertical axis are \f$ \Delta t < 0 \f$
+(pre-before-post) while \f$ \Delta t \f$'s to the right of the vertical axis are
+\f$ \Delta t>0 \f$ (pre-after-post). The vertical axis represents the weight change of the synaptic
+weight magnitude (\f$ \Delta \vert w \vert \f$) at that synapse.
+
+The phenomenological form of prototypical excitatory glutamatergic STDP is a simple system of decaying
+exponentials. if we take \f$ \Delta t = t_{pre} - t_{post} \f$ where \f$ t_{pre} \f$ is the time of arrival of the
 presynaptic spike and \f$ t_{post} \f$ is the time of the postsynaptic spike the following is true for
 the how the synaptic weight changes in response to the spike timing. if \f$ \Delta t > 0 \f$,
 then \f$ \Delta w = A_{+} \exp(-\Delta t/\tau_{+}) \f$ else if
@@ -122,6 +110,13 @@ then \f$ \Delta w = A_{+} \exp(-\Delta t/\tau_{+}) \f$ else if
 note that CARLsim uses nearest neighbor STDP where each presynaptic spike is paired with the last
 postsynaptic spike and each postsynaptic spike is paired with the last presynaptic
 spike to calculate the final weight change due to STDP.
+
+
+\image html 5_stdp_curves.png "Fig. 2. Examples of possible STDP curves possible in CARLsim. Green curves can be applied to glutamatergic synapses, whereas red curves can be applied to GABAergic (inhibitory) synapses.STDP subplots (2(a)-2(d)) and (2(f)-2(i))are referred to as STDP type ExpCurve as they consist of two decaying exponentials. Subplot 2(e) is referred to as STDP type PulseCurve and subplot 2(j) is referred as STDP type TimingBasedCurve."
+
+Source: Beyeler, et al. 2015.
+
+
 
 \image html 5_stdp_types.jpg "Fig. 3. The types of STDP"
 
@@ -189,9 +184,16 @@ on spike timing, synaptic strength, and postsynaptic cell type. J Neurosci, 18:1
 Bi, G. Q. and Poo, M. M. (2001). Synaptic modification of correlated activity: Hebb's postulate
 revisited. Ann. Rev. Neurosci., 24:139-166.
 
-Sjöström, J. and Gerstner, W. (2010) Spike-timing dependent plasticity. Scholarpedia, 5(2):1362.,
+Mongillo, G, Barak, O., and Tsodyks, M. (2008) Synaptic theory of working memory. Science.,
+319 (5869): 1543-1546.
+
+Sjöström, J. and Gerstner, W. (2010) Spike-timing dependent plasticity. Scholarpedia, 5 (2):1362.,
 revision #142314
 
+Tsodyks, M., Pawelzik, K., and Markram, H. (1998) Neural networks with dynamic synapses. Neural
+Comput., 10 (4):821-835.
+
 Tsodyks, M. and Wu, S. (2013) Short-term synaptic plasticity. Scholarpedia, 8(10):3153., rev #136920
+
 
 */
