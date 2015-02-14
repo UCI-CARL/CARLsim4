@@ -12,7 +12,7 @@ classdef NetworkMonitor < handle
     %    >> NM = NetworkMonitor('results/sim_random.dat'); % read sim file
     %    >> NM.plot; % hit 'p' to pause, 'q' to quit
     %    >> NM.recordMovie; % plots all groups and saves as 'movie.avi'
-    %    >> NM.setPlotType('inhib','raster'); % switch that group to raster
+    %    >> NM.setGroupPlotType('inhib','raster'); % switch that group to raster
     %    >> NM.removeGroup('input'); % exclude this group from plotting    
     %    >> % etc.
     % B) Add groups one-by-one
@@ -969,12 +969,10 @@ classdef NetworkMonitor < handle
                             'left arrow key.']);
                     end
                 case 'leftarrow'
-                    disp('left')
                     if obj.plotStepFrames
                         obj.plotStepFramesBW = true;
                     end
                 case 'rightarrow'
-                    disp('right')
                     if obj.plotStepFrames
                         obj.plotStepFramesFW = true;
                     end

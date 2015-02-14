@@ -108,7 +108,7 @@ sim.runNetwork(sec, msec);
 Input can be generated via current injection (see \ref ch6s2_generating_current)
 or spike injection (see \ref ch6s1_generating_spikes).
 We also provide plug-in code to create Poisson spike trains from animated visual stimuli such as sinusoidal
-gratings, plaids, and random dot fiels via the VisualStimulus MATLAB toolbox (see \ref ch6s4_visual_stimulus_toolbox).
+gratings, plaids, and random dot fiels via the VisualStimulus MATLAB toolbox (see \ref ch6s3_visual_stimulus_toolbox).
 
 Once a network has reached ::CONFIG_STATE or ::RUN_STATE, the network state can be stored in a file for later
 processing or for restoring a specific network (see \ref ch8_saving_loading).

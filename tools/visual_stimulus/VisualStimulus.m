@@ -17,7 +17,17 @@ classdef VisualStimulus < handle
     % fileName must be a valid relative/absolute path to a binary file that has
     % been saved using method VisualStimulus.saveToFile.
     %
-    % Version 8/14/14
+    % Usage example:
+    % >> VS = VisualStimulus(32,32);
+    % >> VS.addSinGrating; % add 10 frames of a sinusoidal grating
+    % >> VS.addBlankFrames; % blank frame for delay period
+    % >> VS.addPlaid; % add 10 frames of a plaid stimulus
+    % >> VS.addApertureToExistingFrames; % confine frames to aperture
+    % >> VS.displayFrames; % plot them!
+    % >> VS.recordMovie; % record an AVI movie
+    % >> VS.saveToFile; % store the created stimulus to binary
+    %
+    % Version 2/13/15
     % Author: Michael Beyeler <mbeyeler@uci.edu>
     %
     % This class is based on some scripts (to generate gratings and random dot

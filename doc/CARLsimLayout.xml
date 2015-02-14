@@ -33,9 +33,8 @@
 			<tab type="usergroup" visible="yes" title="6. Input" url="@ref ch6_input">
 				<tab type="user" visible="no" title="6.1 Generating Spikes" url="@ref ch6s1_generating_spikes"/>
 				<tab type="user" visible="no" title="6.2 Generating Current" url="@ref ch6s2_generating_current"/>
-				<tab type="user" visible="no" title="6.3 Generating Noise" url="@ref ch6s3_generating_noise"/>
-				<tab type="user" visible="no" title="6.4 Visual Stimulus Toolbox"
-					url="@ref ch6s4_visual_stimulus_toolbox"/>
+				<tab type="user" visible="no" title="6.3 Visual Stimulus Toolbox"
+					url="@ref ch6s3_visual_stimulus_toolbox"/>
 			</tab>
 			<tab type="usergroup" visible="yes" title="7. Monitoring" url="@ref ch7_monitoring">
 				<tab type="user" visible="no" title="7.1 Spike Monitor" url="@ref ch7s1_spike_monitor"/>
@@ -65,11 +64,9 @@
 		</tab>
 		<tab type="usergroup" visible="yes" title="Tutorial">
 			<tab type="usergroup" visible="yes" title="1. Basic Concepts" url="@ref tut1_basic_concepts"/>
-			<tab type="usergroup" visible="yes" title="2. Random Network" url="@ref tut2_random"/>
+			<tab type="usergroup" visible="yes" title="2. Simple Weight Tuner" url="@ref tut2_simple_weight_tuner"/>
 			<tab type="usergroup" visible="yes" title="3. STDP" url="@ref tut3_stdp"/>
 			<tab type="usergroup" visible="yes" title="4. Parameter Tuning Interface (PTI)" url="@ref tut4_pti"/>
-			<tab type="usergroup" visible="yes" title="5. Simple Weight Tuner" url="@ref tut5_simple_weight_tuner"/>
-			<tab type="usergroup" visible="yes" title="6. Multi-GPU" url="@ref tut6_multi_gpu"/>
 		</tab>
 		<tab type="modules" visible="yes" title="" intro=""/>
 		<tab type="namespaces" visible="yes" title="">
