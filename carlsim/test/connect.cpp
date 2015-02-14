@@ -200,7 +200,7 @@ TEST(CONNECT, connectRandom) {
 	EXPECT_NEAR(sim->getNumSynapticConnections(c0), prob * grid.N * grid.N, errorMargin);
 	EXPECT_NEAR(sim->getNumSynapticConnections(c1), prob * grid.N * grid.x, errorMargin);
 	EXPECT_NEAR(sim->getNumSynapticConnections(c2), prob * grid.N * grid.x * grid.z, errorMargin);
-	EXPECT_NEAR(sim->getNumSynapticConnections(c3), prob*144, errorMargin); // these numbers are less than what the 
+	EXPECT_NEAR(sim->getNumSynapticConnections(c3), prob*144, errorMargin); // these numbers are less than what the
 	EXPECT_NEAR(sim->getNumSynapticConnections(c4), prob*224, errorMargin); // grid would say because of edge effects
 	EXPECT_NEAR(sim->getNumSynapticConnections(c5), prob*320, errorMargin);
 

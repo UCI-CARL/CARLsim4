@@ -5,7 +5,6 @@
 \tableofcontents
 
 
-
 \section ch5s1_short_term_plasticity 5.1 Short-Term Plasticity (STP)
 \author Michael Beyeler
 
@@ -15,12 +14,13 @@ short-term facilitation (STF) or short-term depression (STD) based on pre-synapt
 STD is caused by depletion of neurotransmitters consumed during the synaptic signaling process at the
 axon terminal of a pre-synaptic neuron, whereas STF is caused by influx of calcium into the axon terminal
 after spike generation, which increases the release probability of neurotransmitters
-(Tsodyks & Markram, 1998; Mongillo, Barak, & Tsodyks, 2008).
+(Senn, Tsodyks, & Markram, 2001; Mongillo, Barak, & Tsodyks, 2008).
 
 
-\subsection ch5s1s1_model 5.1.1 Phenomenological Model
+\subsection ch5s1s1_model 5.1.1 Phenomenological Model of STP
 
-CARLsim implements the phenomenological STP model of (Tsodyks & Markram, 1998; Mongillo, Barak, & Tsodyks, 2008):
+CARLsim implements the phenomenological STP model of (Senn, Tsodyks, & Markram, 2001; Mongillo,
+Barak, & Tsodyks, 2008):
 \f{eqnarray}
 \frac{du}{dt} & = & \frac{-u}{STP\_tau\_u} + STP\_U  (1-u^-)  \delta(t-t_{spk}) \\
 \frac{dx}{dt} & = & \frac{1-x}{STP\_tau\_x} - u^+  x^-  \delta(t-t_{spk}) \\
@@ -40,12 +40,11 @@ The resulting effect is that the first spike under STP generates the same post-s
 disabled on that synapse (governed by the synaptic weight set in CARLsim::connect).
 From there on forward the post-synaptic current will either increase (STF) or decrease (STD).
 
-\image html 5_stp.jpg "Traces of generated post-synaptic currents for STD and STF (generated with CARLsim 3)."
+\image html 5_stp.jpg "Fig. 1. Traces of generated post-synaptic currents for STD and STF (generated with CARLsim 3)."
 
-Source: Misha Tsodyks and Si Wu (2013) Short-term synaptic plasticity. Scholarpedia, 8(10):3153., rev #136920
+Source Tsodyks and Wu, 2013.
 
-
-\subsection ch5s1s2_usage_example 5.1.2 Usage Example
+\subsection ch5s1s2_usage_example 5.1.2 STP Usage Example
 
 In order to make use of STP in a simulation, STP must be enabled for a group (pre-synaptically):
 \code
@@ -81,24 +80,96 @@ By default, STP is disabled on all groups from the outset.
 \author Kristofor D. Carlson
 \author Ting-Shuo Chou
 
+CARLsim supports a popular spike-based learning phenomenon called spike-timing dependent plasticity
+(STDP). STDP is an important form of Hebbian learning where the precise timing of the pre
+and postsynaptic spike times influence synaptic weight changes. STDP is important because it
+operates on correlations between spikes and suggests a potential causal (or anti-causal)
+relationship between pre and postsynaptic spikes (Sjöström and Gerstner, 2010).
 
-\TODO KDC and TS
+The prototypical form of STDP acts as follows: spike-timings where the presynaptic spike
+arrival precedes postsynaptic spikes by a few milliseconds results in an increase in the synaptic
+weight, also referred to as long-term potentiation (LTP). Spike-timings where the presynaptic spike
+arrival follows postsynaptic spikes by a few milliseconds result in a decrease in the synaptic
+weight. (Bi and Poo, 1998). STDP of this type was observed at glutamatergic (excitatory) synapses.
 
-All things STDP.
+
+\subsection ch5s2s1_phenemological_model 5.2.1 Phenomenological Model of STDP
+Fig. 2 shows a variety of 'STDP Curves' possible using CARLsim. In each
+sub-figure, the horizontal axis represents the time difference between the time of the presynaptic
+spike arrival and the time of the postsynaptic arrival or \f$ \Delta t = t_{post} - t_{pre} \f$.
+Therefore, \f$ \Delta t \f$'s to the left of the vertical axis are \f$ \Delta t < 0 \f$
+(pre-after-post) while \f$ \Delta t \f$'s to the right of the vertical axis are
+\f$ \Delta t>0 \f$ (pre-before-post). The vertical axis represents the weight change of the synaptic
+weight magnitude (\f$ \Delta \vert w \vert \f$) at that synapse.
+
+\image html 5_stdp_curves.png "Fig. 2. Examples of possible STDP curves possible in CARLsim. Green curves can be applied to glutamatergic synapses, whereas red curves can be applied to GABAergic (inhibitory) synapses.STDP (2(a)-2(d)) and (2(f)-2(i)). are referred to as STDP type ExpCurve as they consist of two decaying exponentials. 2(e) is referred to as STDP type PulseCurve 2(j). is referred as STDP type TimingBasedCurve."
+
+Source: Beyeler, et al. 2015.
+
+CARLsim has 3 types of STDP: ExpCurve, PulseCurve, and TimingBasedCurve. The phenomenological model
+for STDP of type ExpCurve found in 2(a-d) and 2(f-i) is as follows.If \f$ \Delta t > 0 \f$,
+then \f$ \Delta w = A_{+} \exp(-\Delta t/\tau_{+}) \f$ else if
+\f$ \Delta t <= 0 \f$, then \f$ \Delta w = A_{-} \exp(-\Delta t/\tau_{-}) \f$. The TimeBasedCurve
+STDP type shown in 2(e) and the PulseCurve STDP type have a similar mathematical structure.
+
+Users can select the
+specific version of STDP ExpCurve by choosing the \f$ A_{+}\f$ and \f$ A_{-}\f$ parameters
+appropriately as these parameters are allowed to take both positive and negative values. Users also
+select the \f$ \tau_{+} \f$ and \f$\tau_{-}\f$ exponential decay parameters. Configuration of the
+PulseCurve and TimingBasedCurve is similar only it should be noted that none of the parameter values
+may be negative.
+
+CARLsim calculates the change in weight in two components, the pre-before-post component and the
+pre-after-post component. The change in weights is calculate with the following equation:
+
+\f[
+\frac{dw_{i,j}}{dt}  =  \delta + \beta(\mbox{pre-before-post}_{i,j} +
+\mbox{pre-after-post}_{i,j})
+\f]
+
+where \f$ w_{i,j} \f$ is the weight from presynaptic neuron \a i, to postsynaptic neuron \a j,
+\f$ \delta \f$ is a bias with a default value of 0, and \f$ \beta \f$ is the learning rate with a
+default value of 1. Additionally, \f$ \mbox{pre-before-post}_{i,j} \f$ is the pre-before-post
+weight change contribution and  \f$ \mbox{pre-after-post}_{i,j} \f$ is the pre-after-post weight
+change contribution.
+
+It is important to note that CARLsim uses nearest neighbor STDP (Morrison et al. 2008) where each
+presynaptic spike is paired with the last postsynaptic spike and each postsynaptic spike is paired
+with the last presynaptic spike to calculate the final weight change due to STDP.
+
+
+\image html 5_stdp_types.jpg "Fig. 3. The types of STDP"
+
+CARLsim characterizes STDP type by both STDP weight change curve (as shown in Fig. 2) and by type of
+synaptic connection (e.g. excitatory or inhibitory). As mentioned in previous chapters, excitatory
+synapses bring the postsynaptic neuron closer to its firing threshold while inhibitory
+synapses bring the postsynaptic neuron away from its firing threshold. The combination of STDP
+weight change curve and synapse type have functional implications for the neural circuit being
+constructed. E-STDP is defined as STDP on a connection where the presynaptic neuron groups are
+excitatory in nature. This is true for E to E and E to I connections. I-STDP is defined as STDP on a
+connection where the presynaptic neuron groups are inhibitory in nature. Fig. 3 shows illustrates
+how E-STDP and I-STDP are defined.
+
+\note CARLsim keeps track of the weight change every ms, but updates the weights every second by
+default. The update frequency of the weights can be changed with the
+CARLsim::setWeightAndWeightChangeUpdate CARLsim function.
+
 
 \bug Specified decay of the weight changes does not really correspond to milliseconds.
-\warning If you set STDP on a fixed connection, your computer might explode.
 
+\warning A common user error is trying to allow for STDP on connections that are fixed, instead of
+plastic.
 
-\subsection ch5s2s1_e_stdp 5.2.1 Excitatory STDP (E-STDP)
+\subsection ch5s2s2_stdp_types 5.2.2 Excitatory STDP (E-STDP) and Inhibitory STDP (I-STDP)
 
-Explain E-STDP. Show curve. Show equations.
-
-\since v2.0
-
-\subsection ch5s2s2_i_stdp 5.2.2 Inhibitory STDP (I-STDP)
-
-Explain I-STDP. Show curve. Show equations.
+The possible types of E-STDP curves are shown in the top row of Fig. 2. The presynaptic group
+determines the identity of the STDP type (E-STDP or I-STDP). Currently CARLsim supports one set of
+unique STDP parameters for per STDP type. Therefore, in Fig. 3, the I to E and E to E plastic
+connections to the exctiatory neuron on the left could have completely different STDP curves (shown
+in Fig. 2). However, if a third connection were added, like another E to E connection, then
+STDP parameter values for that E to E connection must be identical to that of the other E to E
+connection. Users are responsible for choosing realistic STDP parameters all there are reasonable
+default parameters supplied by CARLsim.
 
 \since v3.0
 
@@ -109,25 +180,77 @@ Explain DA-STDP. Show curve. Show equations.
 
 \since v3.0
 
+\subsection ch5s2s4_usage_example 5.2.4 STDP Usage Example
 
+In order for STDP to be used, the connection between two groups must be plastic as indicated by the
+SYN_PLASTIC keyword:
+
+\code
+sim.connect(g1,g2,"one-to-one",RangeWeight(0.0,1.0f/100, 20.0f/100),1.0f, RangeDelay(1), RadiusRF(-1),SYN_PLASTIC);
+\endcode
+
+Assuming g1 and g2 are excitatory neurons, we should then set the E-STDP parameters:
+
+\code
+sim->setESTDP(g1, true, STANDARD, ExpCurve(ALPHA_LTP/100, TAU_LTP, ALPHA_LTD/100, TAU_LTP));
+\endcode
+
+Notice that the E-STDP call was done on the postsynaptic neuron group (g1) as the first argument.
+The second argument determines whether or STDP will be enabled and could be set to false as well.
+The third argument refers to the neuromodulatory effect present at this synapse. STDP without a
+neuromodulatory influence is referred to by the STANDARD keyword while STDP that is modulated by
+dopamine is referred to as DA_MOD. Dopamine-modulated STDP is discussed in \ref
+ch5s4_neuromodulation. Finally, the ExpCurve structure must be filled and passed as the fourth
+argument. Here, we are using the ExpCurve STDP curve.
 
 
 
 \section ch5s3_homeostasis 5.3 Homeostasis
 \author Kristofor D. Carlson
 
+\subsection ch5s3s1_phenomenological_model 5.3.1 Homeostasis Phenomenological Model
+
+\since v2.0
+
+\subsection ch5s3s2_usage_example 5.3.1 Homeostasis Usage Example
+
+\since v2.0
+
 \TODO KDC
-
-
-
-
 
 
 
 \section ch5s4_neuromodulation 5.4 Neuromodulation
 \author Ting-Shuo Chou
-
 \TODO TS
+
+
+\section ch5s5_references 5.5 References
+\author Kristofor D. Carlson
+
+Beyeler, M., Carlson, K. D., Chou, T. S., Dutt, N., Krichmar, J. L., CARLsim 3: A
+user-friendly and highly optimized library for the creation of neurobiologically detailed spiking
+neural networks. (Submitted)
+
+Bi, G. Q. and Poo, M. M. (1998). Synaptic modifications in cultured Hippocampal neurons: dependence
+on spike timing, synaptic strength, and postsynaptic cell type. J Neurosci, 18:10464-72.
+
+Bi, G. Q. and Poo, M. M. (2001). Synaptic modification of correlated activity: Hebb's postulate
+revisited. Ann. Rev. Neurosci., 24:139-166.
+
+Mongillo, G, Barak, O., and Tsodyks, M. (2008) Synaptic theory of working memory. Science.,
+319 (5869): 1543-1546.
+
+Morrison, A., Markus D., and Gerstner, W. (2008). Phenomenological models of synaptic plasticity
+based on spike timing." Biological Cybernetics 98: 459-478.
+
+Senn, W., Markram, H., and Tsodyks, M. (2001). An algorithm for modifying neurotransmitter release
+probability based on pre- and post-synaptic spike timing. Neural Comput, 13:35-67.
+
+Sjöström, J. and Gerstner, W. (2010) Spike-timing dependent plasticity. Scholarpedia, 5 (2):1362.,
+revision #142314
+
+Tsodyks, M. and Wu, S. (2013) Short-term synaptic plasticity. Scholarpedia, 8(10):3153., rev #136920
 
 
 */

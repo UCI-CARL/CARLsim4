@@ -123,18 +123,14 @@ ifeq (${strip ${CARLSIM_DEBUG}},1)
 
 endif
 
-# set correct debugging flag if we are testing: (runs bins in silent mode)
-ifeq (${strip ${CARLSIM_TEST}},1)
-	CARLSIM_FLAGS += -I$(test_dir) -D__REGRESSION_TESTING__
-endif
-
 # location of .h files
 vpath %.h $(kernel_dir)/include $(ex_dir)/common $(interface_dir)/include \
-	$(spike_mon_dir) $(tools_spikegen_dir) $(test_dir) $(ECJ_PTI_DIR)/include \
+	$(spike_mon_dir) $(tools_spikegen_dir) $(ECJ_PTI_DIR)/include \
 	$(input_stim_dir) $(EO_DIR)/src
+
 # location of .cpp files
-vpath %.cpp $(kernel_dir)/src $(interface_dir)/src $(test_dir) \
+vpath %.cpp $(kernel_dir)/src $(interface_dir)/src \
 	$(spike_info_dir) $(tools_spikegen_dir) $(input_stim_dir) $(ex_dir)/common/
 
 # location of .cu files
-vpath %.cu $(kernel_dir)/src $(test_dir)
+vpath %.cu $(kernel_dir)/src
