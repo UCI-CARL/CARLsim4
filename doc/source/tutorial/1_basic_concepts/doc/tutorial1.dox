@@ -20,35 +20,93 @@ This tutorial assumes you know:
 - The Izhikevich neuron model
 
 
-\section tut1s1 1.1 The simplest CARLsim program
+\section tut1s1_simple_prog 1.1 A Simple CARLsim program
 
-
-\TODO
 
 The objective of this tutorial is to hook up a Poisson spike generator to a single Izhikevich neuron and look
 at the output activity.
 
+CARLsim is broken into 3 different states: CONFIG, SETUP, and RUN
+
+Before we discuss code in each state, note that we have included the carlsim.h header file which is
+required for every CARLsim simulation.
 
 \code
 #include <carlsim.h>
-CARLsim sim("Hello World", CPU_MODE, USER);
-
-int gIn = sim.createSpikeGeneratorGroup("input", 1, EXCITATORY_NEURON);
-int gOut = sim.createGroup("output", 1, EXCITATORY_NEURON);
-sim.setNeuronParameters(gOut, 0.1f, 0.2f, -65.0f, 2.0f);
-sim.setConductances(true);
-
-sim.connect(gIn, gOut, "one-to-one", RangeWeight(0.1f), 1.0f);
-
-sim.setupNetwork();
-sim.setSpikeMonitor(gOut,"DEFAULT");
-
-PoissonRate in(1);
-in.setRates(20.0f);
-sim.setSpikeRate(gIn, &in);
-sim.runNetwork(1,0);
 \endcode
 
+Inside the main function we have the following. First we begin with the CONFIG state code. Here we
+create a CARLsim object named 'Hello World'  that runs on the CPU and outputs data to the console in
+USER mode. Next, we create a Poisson Group named 'input' with 1 neuron in the group and create a
+single regular spiking (RS) izhikevich neuron named 'output'. We set the neuron parameters with a
+call to setNeuronParameters. Additionally, we give the output neuron NMDA and AMPA conductances by
+setting conductances to be true. Finally we connect the input neuron to the output neuron with a
+weight of 0.1 and a delay of 1.
 
+\code
+	// ---------------- CONFIG STATE -------------------
+	CARLsim sim("Hello World", CPU_MODE, USER);
+	int gIn = sim.createSpikeGeneratorGroup("input", 1, EXCITATORY_NEURON);
+	int gOut = sim.createGroup("output", 1, EXCITATORY_NEURON);
+	sim.setNeuronParameters(gOut, 0.1f, 0.2f, -65.0f, 2.0f);
+	sim.setConductances(true);
+	// connect our groups
+	sim.connect(gIn, gOut, "one-to-one", RangeWeight(0.05f), 1.0f);
+\endcode
+
+A call to setupNetwork takes our simulation state from CONFIG to SETUP. This must be done before
+runNetwork can be called. In the setupState we create a SpikeMonitor object to monitor the spike
+data from the output neuron.
+
+\code
+	// ---------------- SETUP STATE -------------------
+	sim.setupNetwork();
+	sim.setSpikeMonitor(gOut,"DEFAULT");
+\endcode
+
+Finally set the firing rate rates of the input neuron to 20 Hz an run the network for 10 seconds.
+\code
+	// ---------------- RUN STATE -------------------
+	PoissonRate in(1);
+	in.setRates(20.0f);
+	sim.setSpikeRate(gIn, &in);
+	sim.runNetwork(10,0);
+\endcode
+
+\section tut1s2_output 1.2 CARLsim Output
+
+Some of the CARLsim output is shown below:
+
+\code
+*****************      Initializing CPU Simulation      *************************
+SpikeMonitor set for group 1 (output)
+
+********************      Running CPU Simulation      ***************************
+
+(t=10.000s) SpikeMonitor for group output(1) has 22 spikes in 1000ms (22.00 +/- 0.00 Hz)
+
+
+********************      CPU Simulation Summary      ***************************
+Network Parameters: 	numNeurons = 2 (numNExcReg:numNInhReg = 50.0:0.0)
+			numSynapses = 1
+			maxDelay = 1
+Simulation Mode:	COBA
+Random Seed:		1423948616
+Timing:			Model Simulation Time = 10 sec
+			Actual Execution Time = 0.00 sec
+Average Firing Rate:	2+ms delay = 0.000 Hz
+			1ms delay = inf Hz
+			Overall = 11.850 Hz
+Overall Firing Count:	2+ms delay = 0
+			1ms delay = 237
+			Total = 237
+*********************************************************************************
+\endcode
+
+The SpikeMonitor reports it has run for 10 seconds and recorded 22 spikes in most recent 1000 ms for
+an average firing rate of 22 Hz.
+
+Additionally, spike files and log files have been written to the results folder and can be easily
+visualized with the offline analysis toolkit (OAT).
 
 */
