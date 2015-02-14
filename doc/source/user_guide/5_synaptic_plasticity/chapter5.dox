@@ -199,9 +199,7 @@ Notice that the E-STDP call was done on the postsynaptic neuron group (g1) as th
 The second argument determines whether or STDP will be enabled and could be set to false as well.
 The third argument refers to the neuromodulatory effect present at this synapse. STDP without a
 neuromodulatory influence is referred to by the STANDARD keyword while STDP that is modulated by
-dopamine is referred to as DA_MOD. Dopamine-modulated STDP is discussed in \ref
-ch5s4_neuromodulation. Finally, the ExpCurve structure must be filled and passed as the fourth
-argument. Here, we are using the ExpCurve STDP curve.
+dopamine is referred to as DA_MOD. Here, we are using the ExpCurve STDP curve.
 
 
 
@@ -219,13 +217,7 @@ argument. Here, we are using the ExpCurve STDP curve.
 \TODO KDC
 
 
-
-\section ch5s4_neuromodulation 5.4 Neuromodulation
-\author Ting-Shuo Chou
-\TODO TS
-
-
-\section ch5s5_references 5.5 References
+\section ch5s4_references 5.5 References
 \author Kristofor D. Carlson
 
 Beyeler, M., Carlson, K. D., Chou, T. S., Dutt, N., Krichmar, J. L., CARLsim 3: A
