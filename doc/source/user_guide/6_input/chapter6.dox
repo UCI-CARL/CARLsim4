@@ -299,18 +299,8 @@ the current will keep getting applied to the group.
 \since v3.0
 
 
-\section ch6s3_generating_noise 6.3 Generating Noise
-\author Ting-Shuo Chou
 
-\TODO TS
-Generate noise: Ting's description of how to do noise with weights.
-
-
-
-
-
-
-\section ch6s4_visual_stimulus_toolbox 6.3 Visual Stimulus Toolbox
+\section ch6s3_visual_stimulus_toolbox 6.3 Visual Stimulus Toolbox
 \author Michael Beyeler
 
 The VisualStimulus utility consists of a MATLAB Toolbox that allows for the generation of 2D visual stimuli such
