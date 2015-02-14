@@ -63,19 +63,96 @@ SpikeMonitor* spkMon = sim.setSpikeMonitor(g0,"DEFAULT");
 
 
 \subsubsection ch7s1s2s1_start_stop_recording 7.1.2.1 Start and Stop Recording
-Explain startRecording, stopRecording, PersistentData.
+Spike data will not be recorded until the SpikeMonitor member function SpikeMonitor::startRecording
+is called. Before any metrics can be computed, the user must call SpikeMonitor::stopRecording. In
+general, a new recording period (the time period between startRecording and stopRecording calls)
+can be started at any point in time, and can last any number of milliseconds. The SpikeMonitor
+has a PersistentMode, which is off by default. When PersistentMode is off, only the last recording
+period will be considered. When PersistentMode is on, all the recording periods will be
+considered. By default, PersistentMode can be switched on/off by calling
+SpikeMonitor::setPersistentData(bool). The total time over which the metric is calculated can be
+retrieved by calling SpikeMonitor::getRecordingTotalTime().
 
+The following code starts recording spikes for the first second of the simulation then stops
+recording the spikes. The next second of simulation time is not recorded:
+
+\code
+// start recording spikes associated with spkMon object
+spkMon->startRecording();
+// run the network for one second
+sim.ruNetwork(1,0,0);
+// stop recording the spike data
+spkMon->stopRecording();
+// now run the network for two seconds
+sim.runNetwork(1,0,0);
+\endcode
+
+\warning running a SpikeMonitor in PersistentMode could use a lot of memory if your SNNs are large
+and/or your simulations are for long durations. You have been warned!
 
 \subsubsection ch7s1s2s3_spike_data 7.1.2.2 Spike Data
-Talk about the 2D Spike Vector. setMode AER or COUNT.
+There are two different modes that define what information is collected exactly, AER and COUNT mode.
+
+AER mode:   AER mode will collect the exact spike times of all neurons in the group and store them
+in a 2D spike spike vector. The first dimension of the vector is neuron id, the second dimension is
+spike times. Each element spkVector[i] is thus a vector of all spike times for the i-th neuron in
+the group. This mode is activated by default.
+
+\warning  Because of the sheer amount of information, it is unwise to run this mode for extended
+periods of time.
+
+\warning Recording in this mode may significantly slow down your simulation!
+
+COUNT mode: SpikeCount mode will only collect spike count information, such as the number of spikes
+per neuron. This mode cannot retrieve exact spike times. Thus it is not possible to calculate some
+of the more elaborate metrics, such as spike-time correlations.
 
 \subsubsection ch7s1s2s3_spike_metrics 7.1.2.3 Spike Metrics
-Talk about all the getNum...
+SpikeMonitor objects come with a number of useful metrics that allows the user to query CARLsim
+simulations programmatically. Users can get the total of number of spikes for the entire group using
+SpikeMonitor::getPopNumSpikes or the number of spikes per neuron in the group using
+SpikeMonitor::getNeuronNumSpikes. To get the maximum or minimum average firing rate of the group,
+SpikeMonitor::getMaxFiringRate or SpikeMonitor::getMinFiringRate can be used. An entire vector of
+firing rates is available using the function call SpikeMonitor::getAllFiringRates. Additionally,
+SpikeMonitor::getAllFiringRatesSorted returns the vector of firing rates for every neuron sorted.
+Another useful function is SpikeMonitor::getNumNeuronsWithFiringRate which allows users to find out
+how many neurons had an average firing rate within a specific user-specified range. These metrics
+become particularly useful when we begin to tune SNNs as we will see in \ref ch10_ecj and \ref
+ch12s3_online_weight_tuning.
+
+
+Users may want to get the AER 2D spike vector described in AER mode to do their own metrics or
+statistics, to do this, they can call SpikeMonitor::getSpikeVector2D. Users can manually clear
+the spike data stored in SpikeMonitor objects by calling SpikeMonitor::clear(). If PersistentMode
+is off this function is automatically called at the beginning of the SpikeMonitor::startRecording
+function call. Users can also print all the spiking informationin the group in legible format to the
+console with the SpikeMonitor::print call with an option for including the list of spike times for
+each neuron.
+
+Below is an example of a user printing data generated during a simulation. After that, the average
+firing rates for every neuron are output to a vector.
+
+\code
+// print a summary of the spike information
+spikeMon->print();
+// get the average firing rate of each of the neurons in group excGrpId
+vector<float> excFRs = spikeMon->getAllFiringRates();
+\endcode
 
 \subsubsection ch7s1s2s4_spike_statistics 7.1.2.4 Spike Statistics
-Talk about spike statistics, such as mean, std, and (planned) spike time correlations.
+The average firing rate of the group as whole can be found using SpikeMonitor::getPopMeanFiringRate
+and the standard deviation can be calculated using SpikeMonitor::getPopStdFiringRate.
+A useful metric in characterizing neural activity can be found with
+SpikeMonitor::getPercentNeuronsWithFiringRate which returns the percentage of neurons found within a
+user-defined range. Code for this function is shown below.
 
+\code
+// return the percent of neurons with firing rates from 0 to 5 Hz
+spikeMon->getPercentNeuronsWithFiringRate(0.0,5.0);
+\endcode
 
+There are currently plans to include functions that calculate more in-depth statistics related to
+spike correlations and information theoretic measures in future CARLsim versions.
 
 \subsection ch7s1s3_redirecting_file_streams 7.1.3 Redirecting File Streams
 
@@ -248,13 +325,5 @@ while (CM->getTotalAbsWeightChanged() > threshold) {
 \endcode
 
 \since v3.0
-
-
-
-\section ch7s3_group_monitor 7.3 Group Monitor
-\author Ting-Shuo Chou
-
-\TODO TS
-
 
 */
