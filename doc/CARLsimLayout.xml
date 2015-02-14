@@ -64,11 +64,9 @@
 		</tab>
 		<tab type="usergroup" visible="yes" title="Tutorial">
 			<tab type="usergroup" visible="yes" title="1. Basic Concepts" url="@ref tut1_basic_concepts"/>
-			<tab type="usergroup" visible="yes" title="2. Random Network" url="@ref tut2_random"/>
+			<tab type="usergroup" visible="yes" title="2. Simple Weight Tuner" url="@ref tut2_simple_weight_tuner"/>
 			<tab type="usergroup" visible="yes" title="3. STDP" url="@ref tut3_stdp"/>
 			<tab type="usergroup" visible="yes" title="4. Parameter Tuning Interface (PTI)" url="@ref tut4_pti"/>
-			<tab type="usergroup" visible="yes" title="5. Simple Weight Tuner" url="@ref tut5_simple_weight_tuner"/>
-			<tab type="usergroup" visible="yes" title="6. Multi-GPU" url="@ref tut6_multi_gpu"/>
 		</tab>
 		<tab type="modules" visible="yes" title="" intro=""/>
 		<tab type="namespaces" visible="yes" title="">
