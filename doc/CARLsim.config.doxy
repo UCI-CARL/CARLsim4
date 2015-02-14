@@ -686,8 +686,7 @@ INPUT                  = ../carlsim/interface/include \
                          source/user_guide/13_example_networks \
                          source/tutorial/1_basic_concepts/doc \
                          source/tutorial/2_simple_weight_tuner/doc \
-                         source/tutorial/3_stdp/doc \
-                         source/tutorial/4_pti/doc
+                         source/tutorial/3_pti/doc
 
 # This tag can be used to specify the character encoding of the source files
 # that doxygen parses. Internally doxygen uses the UTF-8 encoding, which is
