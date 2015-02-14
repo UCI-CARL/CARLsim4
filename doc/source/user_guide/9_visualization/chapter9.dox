@@ -7,8 +7,48 @@
 
 \section ch9s1_matlab_oat 9.1 MATLAB Offline Analysis Toolbox
 \author Michael Beyeler
+In addition to the real-time monitors (see \ref ch7_monitoring), CARLsim provides a versatile Offline Analysis
+Toolbox (OAT) written in MATLAB for the visualization and analysis of neuronal, synaptic, and network information.
+
+The OAT is built to work straight out of the box, by operating on binary files that the CARLsim simulation creates
+by default.
+The easiest way to visualize network activity is to run a Network Monitor.
+
+However, it is also possible to look at specific groups or connections, and to access the associated spike and
+weight binaries directly.
+
+Before the OAT can be used, the folder "tools/offline_analysis_toolbox" must be added to the MATLAB path:
+\code
+addpath "%%CARLSIM_ROOT_DIR/tools/offline_analysis_toolbox"
+\endcode
+In projects and tutorials, this can be easily achieved by running the script "initOAT.m" present in those directories.
+
 
 \subsection ch9s1s1_network_monitor 9.1.1 Network Monitor
+A Network Monitor can be used to monitor properties as well as the activity of a number of neuronal groups in a
+network.
+
+\code
+Example usage:
+  A) Automatically add all groups in the network
+     >> NM = NetworkMonitor('results/sim_random.dat'); % read sim file
+     >> NM.plot; % hit 'p' to pause, 'q' to quit
+     >> NM.recordMovie; % plots all groups and saves as 'movie.avi'
+     >> NM.setPlotType('inhib','raster'); % switch that group to raster
+     >> NM.removeGroup('input'); % exclude this group from plotting    
+     >> % etc.
+  B) Add groups one-by-one
+     >> NM = NetworkMonitor('results/sim_random.dat',false);
+     >> NM.addGroup('input','raster');
+     >> NM.plot(1:10,100); % frame=100ms, plot first 10 frames
+     >> % etc.
+  C) Add groups whose spike files don't follow the default file name,
+     say 'spikeFile_{groupName}.ext' instead of 'spk_{groupName}.dat'
+     >> NM = NetworkMonitor('results/sim_random.dat',false);
+     >> NM.setSpikeFileAttributes('spikeFile_','.ext')
+     >> NM.addAllGroupsFromFile()
+\endcode
+
 
 \subsection ch9s1s2_group_monitor 9.1.2 Group Monitor
 
