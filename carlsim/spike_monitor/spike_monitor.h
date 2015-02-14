@@ -68,7 +68,7 @@ class SpikeMonitorCore; // forward declaration of implementation
  *          mode cannot retrieve exact spike times. Thus it is not possible to calculate some of the more elaborate
  *          metrics, such as spike-time correlations.
  *
- * Spike data will not be recorded until the SpikeMonitor member function startRecording() is called. 
+ * Spike data will not be recorded until the SpikeMonitor member function startRecording() is called.
  * Before any metrics can be computed, the user must call stopRecording(). In general, a new recording period
  * (the time period between startRecording and stopRecording calls) can be started at any point in time, and can
  * last any number of milliseconds. The SpikeMonitor has a PersistentMode, which is off by default. When
@@ -174,7 +174,7 @@ class SpikeMonitor {
 	 * recording periods will be considered. By default, PersistentMode is off, and can be switched on by calling
 	 * setPersistentData(bool). The total time over which the metric is calculated can be retrieved by calling
 	 * getRecordingTotalTime().
-	 * \returns float value of the number of silent neurons.
+	 * \returns float value of the largest neuronal firing rate of the group.
 	 */
 	float getMaxFiringRate();
 
@@ -185,7 +185,7 @@ class SpikeMonitor {
 	 * recording periods will be considered. By default, PersistentMode is off, and can be switched on by calling
 	 * setPersistentData(bool). The total time over which the metric is calculated can be retrieved by calling
 	 * getRecordingTotalTime().
-	 * \returns int value of the number of silent neurons.
+	 * \returns float value of the smallest neuronal firing rate of the group.
 	 */
 	float getMinFiringRate();
 
