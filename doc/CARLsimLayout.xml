@@ -28,7 +28,7 @@
 				<tab type="user" visible="no" title="5.1 Short-Term Plasticity" url="@ref ch5s1_short_term_plasticity"/>
 				<tab type="user" visible="no" title="5.2 Spike-Timing Dependent Plasticity" url="@ref ch5s2_spike_timing_dependent_plasticity"/>
 				<tab type="user" visible="no" title="5.3 Homeostasis" url="@ref ch5s3_homeostasis"/>
-				<tab type="user" visible="no" title="5.4 Neuromodulation" url="@ref ch5s4_neuromodulation"/>
+				<tab type="user" visible="no" title="5.4 References" url="@ref ch5s4_references"/>
 			</tab>
 			<tab type="usergroup" visible="yes" title="6. Input" url="@ref ch6_input">
 				<tab type="user" visible="no" title="6.1 Generating Spikes" url="@ref ch6s1_generating_spikes"/>
@@ -39,7 +39,6 @@
 			<tab type="usergroup" visible="yes" title="7. Monitoring" url="@ref ch7_monitoring">
 				<tab type="user" visible="no" title="7.1 Spike Monitor" url="@ref ch7s1_spike_monitor"/>
 				<tab type="user" visible="no" title="7.2 Connection Monitor" url="@ref ch7s2_connection_monitor"/>
-				<tab type="user" visible="no" title="7.3 Group Monitor" url="@ref ch7s3_group_monitor"/>
 			</tab>
 			<tab type="usergroup" visible="yes" title="8. Saving and Loading" url="@ref ch8_saving_loading">
 				<tab type="user" visible="no" title="8.1 saveSimulation" url="@ref ch8s1_savesimulation"/>
@@ -49,8 +48,10 @@
 				<tab type="user" visible="no" title="9.1 MATLAB Offline Analysis Toolbox" url="@ref ch9s1_matlab_oat"/>
 			</tab>
 			<tab type="usergroup" visible="yes" title="10. ECJ" url="@ref ch10_ecj">
-				<tab type="user" visible="no" title="10.1 Installation" url="@ref ch10s1_installation"/>
-				<tab type="user" visible="no" title="10.2 etc" url="@ref ch10s2_etc"/>
+				<tab type="user" visible="no" title="10.1 Overview" url="@ref ch10s1_overview"/>
+				<tab type="user" visible="no" title="10.2 Installation" url="@ref ch10s2_installation"/>
+				<tab type="user" visible="no" title="10.3 Usage" url="@ref ch10s3_usage"/>
+				<tab type="user" visible="no" title="10.4 References" url="@ref ch10s4_references"/>
 			</tab>
 			<tab type="usergroup" visible="yes" title="11. Regression Suite" url="@ref ch11_regression_suite"/>
 			<tab type="usergroup" visible="yes" title="12. Advanced Topics" url="@ref ch12_advanced_topics">

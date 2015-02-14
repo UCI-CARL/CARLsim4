@@ -48,7 +48,7 @@ es.lambda.0 =        5
 
 
 # Termination condition
-#quit-on-run-complete = true
+quit-on-run-complete = true
 
 # Set up external fitness evaluation
 # =========================

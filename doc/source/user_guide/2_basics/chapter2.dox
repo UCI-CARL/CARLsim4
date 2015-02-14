@@ -64,9 +64,8 @@ This allows for the creation of networks with complex spatial structure.
 The present release allows users to choose from a number of synaptic plasticity mechanisms
 (see \ref ch5_synaptic_plasticity).
 These include standard equations for STP (see \ref ch5s1_short_term_plasticity),
-various forms of nearest-neighbor STDP (see \ref ch5s2_spike_timing_dependent_plasticity),
-homeostatic synaptic plasticity in the form of synaptic scaling (see \ref ch5s3_homeostasis),
-and neuromodulation (see \ref ch5s4_neuromodulation).
+various forms of nearest-neighbor STDP (see \ref ch5s2_spike_timing_dependent_plasticity), and
+homeostatic synaptic plasticity in the form of synaptic scaling (see \ref ch5s3_homeostasis).
 
 For a selective list of available function calls in ::CONFIG_STATE, please refer to the left-hand side of the
 above figure.
@@ -90,9 +89,8 @@ The latter is useful to calculate different spike metrics and statistics on-line
 mean firing rate and standard deviation, or the number of neurons whose firing rate lies
 in a certain interval.
 
-Similar monitors exist to record weights (see \ref ch7s2_connection_monitor) and group variables
-(see \ref ch7s3_group_monitor).
-More monitors will be added in the future.
+Similar monitors exist to record weights (see \ref ch7s2_connection_monitor). More monitors will
+be added in the future.
 
 
 \subsection ch2s1s3_run 2.1.3 The RUN State
