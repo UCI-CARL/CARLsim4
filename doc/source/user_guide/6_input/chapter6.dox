@@ -367,5 +367,15 @@ for (int i=0; i<videoLength; i++) {
 }
 \endcode
 
+The following figures shows a number of different stimulus frames created with the MATLAB Visual Stimulus toolbox.
+The Toolbox provides methods to compose stimuli made of sinusoidal gratings, bars, dots, noise, and custom frames.
+Apertures can be rectangular or circular.
+Noise can be white, Gaussian, Poissonian, salt & pepper, or speckle.
+Random dots can exhibit translatory motion, rotations, expansions, contractions, and mixtures of those types.
+
+\image html 6_visualstimulus.jpg "VisualStimulus Toolbox examples: sinusoidal gratings, plaids, random dot fields, confined to apertures, with added noise."
+
+\note Currently only grayscale stimuli are supported. However, a near-future release will add support for RGB stimuli.
+
 
 */
