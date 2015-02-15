@@ -12,8 +12,6 @@ CARLsim currently supports Izhikevich spiking neurons with either current-based 
 Different groups of neurons can be created from a one-dimensional array to a three-dimensional grid (see
 \ref ch3s3s2_topography) via <tt>createSpikeGeneratorGroup</tt> and <tt>createGroup</tt>.
 
-\TODO add more stuff
-
 \subsection ch3s1s1_izhikevich_neurons 3.1.1 Izhikevich Neurons
 
 The Izhikevich neuron is a dynamical systems model that can be described by a two-dimensional system of ordinary
@@ -56,30 +54,24 @@ a compartmental model, the leaky integrate-and-fire model, and the adaptive expo
 
 Neurons are connected via synapses. Here's how synapses work. Mention weights and that weights can change
 (see \ref ch4_connections).
-\TODO give equations for \f$i_{syn}\f$ and explain synapses
-
 
 \subsection ch3s2s1_cuba 3.2.1 CUBA
 
-I is mA, blah. Talk about current decay.
-
+When current based (CUBA) mode is used, no conductances are present. The strength of the resulting current is
+directly proportional to the synaptic weight.
 
 \subsection ch3s2s2_coba 3.2.2 COBA
 
-Equation with decay times. setConductances(dAMPA, dNMDA, dGABAa, dGABAb).
+When conductance-based (COBA) mode is used, there are conductances with exponential decays present.
+If the synaptic connection is excitatory then AMPA and NMDA decay values are used.
+If the synaptic connection is inhibitory then GABA A and GABA B decay values are
+used. Users can specify the decay time constants for the synaptic decay constants by calling
+CARLsim::setConductances.
+
 
 \note A pre-synaptic spike increases both post-synaptic AMPA and NMDA (GABAa and GABAb) for excitatory
 (inhibitory) connections.
 \note Receptor-specific gain factors can be speficied to vary the AMPA-NMDA and GABAa-GABA ratio
-(see \ref ch4s1s4_receptor_gain).
-
-
-\subsection ch3s2s3_rise_times 3.2.3 Rise Times
-\TODO MB
-
-Equation with both rise and decay times. setConductances(dAMPA, rNMDA, dNMDA, dGABAa, rGABAb, dGABAb).
-
-\since v3.0
 
 
 \section ch3s3_groups 3.3 Groups
