@@ -176,7 +176,30 @@ default parameters supplied by CARLsim.
 
 \subsection ch5s2s3_da_stdp 5.2.3 Dopamine-Modulated STDP (DA-STDP)
 
-Explain DA-STDP. Show curve. Show equations.
+The CARLsim dopamine-modulated STDP implementation allows users to easily implement
+reinforcement learning applications. Dopamine acts as a training signal in the sense that STDP only
+takes place in the presence of elevated dopamine concentrations. Below is a code snippet that
+implements dopamine-modulated STDP.
+
+\code
+// create groups
+int gDA = sim.createSpikeGeneratorGroup("DA input", 100,
+DOPAMINERGIC_NEURON);
+int gRS = Sim.createGroup(“RS”, 10, EXCITATORY_NEURON);
+Sim.setNeuronParameters(gRS, 0.02f, 0.2f, -65.0f, 8.0f);
+
+// “all-to-all” connectivity with plastic synapses
+// weights initialized to 0.01f, range is [0.0f, 0.1f]
+// receptive field struct is ignored
+Sim.connect(gDA, gRS, “full”,
+RangeWeight(0.0f, 0.01f, 0.1f), 1.0f,
+RangeDelay(1,10), RadiusRF(-1), SYN_PLASTIC);
+// set DA-STDP on all plastic synapses to gRS
+// alpha_LTP=0.001f, tau_LTP=20.0f
+// alpha_LTD=0.0015f, tau_LTD=20.0f
+Sim.setSTDP(gRS, DA_MOD, 0.001f, 20.0f, 0.0015f, 20.0f);
+
+\endcode
 
 \since v3.0
 
@@ -208,16 +231,57 @@ dopamine is referred to as DA_MOD. Here, we are using the ExpCurve STDP curve.
 
 \subsection ch5s3s1_phenomenological_model 5.3.1 Homeostasis Phenomenological Model
 
+Homeostatic synaptic scaling has been observed experimentally and may serve to stabilize plasticity
+mechanisms that can otherwise undergo run-away behaviors. CARLsim implements a version of
+homeostatic synaptic scaling that helps stabilize STDP. Additionally, the synaptic plasticity model
+implemented by CARLsim is multiplicative in nature, preserving the relative synaptic weight
+differences between all synapses on a single neuron. Using the same mathematical conventions as
+in the phenomenological model of STDP discussion, the mathematical model for the synaptic weight
+update combining both STDP and homeostasis is as follows:
+
+
+\f[
+\frac{dw_{i,j}}{dt}  =  \bigg[ \alpha \cdot w_{i,j} \Big(1-\frac{R_{avg}}{R_{target}} \Big) + \beta(\mbox{pre-before-post}_{i,j} +
+\mbox{pre-after-post}_{i,j}) \bigg] \cdot K
+\f]
+
+where \f$ \alpha \f$ is the homeostatic scaling factor, \f$ R_{avg} \f$ is the average firing rate
+of the neuron over a long period of time, \f$ R_{target} \f$ is a predetermined target firing rate
+for the neuron, and \f$ K \f$ is:
+
+\f[
+K=\frac{R_{avg}}{T \cdot \Big( 1 + \vert 1- R_{avg}/R_{target} \vert \cdot \gamma  \Big) }
+\f]
+
+Here, \f$T\f$ is the time over which the firing rate is being averaged and \f$ \gamma \f$ is a
+tuning factor.
+
 \since v2.0
 
 \subsection ch5s3s2_usage_example 5.3.1 Homeostasis Usage Example
 
+Some example code below sets the homeostatic scaling factor \f$ \gamma \f$ and the time constant
+\f$ T \f$ for grp1. The first argument specifies grp1 as the group to enable homeostasis on. The second
+argument sets the 'enable homeostatis flag' to be true. Finally, the target firing rate for each
+neuron in grp1 needs to be set with the setHomeoBaseFiringRate function. The first argument
+specifies the group for which the target firing rate is being set, the second argument is the value
+of the target firing rate, and the third argument is the standard deviation of the target firing
+rate.
+
+\note When the standard deviation argument is used in this function, the target firing rate still
+gets a single value that is constant for the entire simulation.
+
+\code
+float gamma =             0.1;
+float T     =            10.0;
+float targetFiringRate = 10.0;
+sim.setHomeostasis(grp1, true, gamma, T);
+sim.setHomeoBaseFiringRate(grp1, targetFiringRate,0);
+\endcode
+
 \since v2.0
 
-\TODO KDC
-
-
-\section ch5s4_references 5.5 References
+\section ch5s4_references 5.4 References
 \author Kristofor D. Carlson
 
 Beyeler, M., Carlson, K. D., Chou, T. S., Dutt, N., Krichmar, J. L., CARLsim 3: A
