@@ -15,6 +15,7 @@ Release 3.0
 	+ Added documentation for Synaptic Plasticity.
 	+ Added documentation for Saving and Loading.
 	+ Cleaned up installation files.
+	+ Added documentation for Regression Suite.
 
 2015-02-10     Michael Beyeler <mbeyeler@uci.edu>
   + Added ConnectionMonitor::setUpdateTimeIntervalSec.

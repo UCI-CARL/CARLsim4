@@ -27,7 +27,6 @@ and specifies the verbosity of the status reporting mechanism
 (::USER indicating the default logger mode that will print info and error messages to console and save debug messages
 in a text file). Other logger modes are available that print only error messages (::SHOWTIME), suppress console
 output alltogether (::SILENT), or allow to set custom file pointers for each message type (::CUSTOM).
-For a complete list of logger modes, please refer to \ref ch12s4_logging_errors.
 
 The ability to run a network either on standard x86 CPUs (::CPU_MODE) or off-the-shelf NVIDIA GPUs (::GPU_MODE)
 allow the user to exploit the advantages of both architectures.

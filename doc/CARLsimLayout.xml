@@ -58,9 +58,6 @@
 				<tab type="user" visible="no" title="12.1 Best Practices" url="@ref ch12s1_best_practices"/>
 				<tab type="user" visible="no" title="12.2 Multi-GPU" url="@ref ch12s2_multi_gpu"/>
 				<tab type="user" visible="no" title="12.3 On-Line Weight Tuning" url="@ref ch12s3_online_weight_tuning"/>
-				<tab type="user" visible="no" title="12.4 Logging and Errors" url="@ref ch12s4_logging_errors"/>
-				<tab type="user" visible="no" title="12.5 Numerical Integration" url="@ref ch12s5_numerical_integration"/>
-				<tab type="user" visible="no" title="12.6 Technical Limitations" url="@ref ch12s6_technical_limitations"/>
 			</tab>
 		</tab>
 		<tab type="usergroup" visible="yes" title="Tutorial">
