@@ -222,7 +222,7 @@ short int CARLsim::connect(int grpId1, int grpId2, const std::string& connType, 
 	UserErrors::assertTrue(wt.max>=0.0f, UserErrors::CANNOT_BE_NEGATIVE, funcName, "wt.max");
 	UserErrors::assertTrue(wt.min>=0.0f, UserErrors::CANNOT_BE_NEGATIVE, funcName, "wt.min");
 	UserErrors::assertTrue(wt.init>=0.0f, UserErrors::CANNOT_BE_NEGATIVE, funcName, "wt.init");
-	UserErrors::assertTrue(connProb>=0.0f && connProb<=1.0f, UserErrors::MUST_BE_IN_RANGE, funcName, 
+	UserErrors::assertTrue(connProb>=0.0f && connProb<=1.0f, UserErrors::MUST_BE_IN_RANGE, funcName,
 		"Connection Probability connProb", "[0,1]");
 	UserErrors::assertTrue(delay.min>0, UserErrors::MUST_BE_POSITIVE, funcName, "delay.min");
 	UserErrors::assertTrue(connType.compare("one-to-one")!=0

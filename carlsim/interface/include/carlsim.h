@@ -622,10 +622,17 @@ public:
 	const FILE* getLogFpLog();	//!< returns file pointer to log file
 
 	/*!
-	 * \brief Saves important simulation and network infos to file
+	 * \brief Saves important simulation and network infos to file. The network state consists of all
+	 * the synaptic connections, weights, delays, and whether the connections are plastic or fixed. As an
+	 * option, the user can choose whether or not to save the synaptic weight information (which could be
+	 * a large amount of data) with the saveSynapseInfo argument. The value of this argument is true by
+	 * default which causes the synaptic weight values to be output by default along with the rest of the
+	 * network information.
 	 *
-	 * \TODO finish docu
-	 * \STATE SETUP, EXECUTION
+	 * \param[in] fileName			string of filename of saved simulation data.
+	 * \param[in] saveSynapseInfo			boolean value that determines if the weight values are written to
+	 * the data file or not. The weight values are written if the boolean value is true.
+	 * \STATE SETUP, RUN
 	 */
 	void saveSimulation(const std::string& fileName, bool saveSynapseInfo=true);
 
@@ -694,9 +701,10 @@ public:
 	void biasWeights(short int connId, float bias, bool updateWeightRange=false);
 
 	/*!
-	 * \brief loads a simulation (and network state) from file
+	 * \brief loads a simulation (and network state) from file. The file pointer fid must point to a
+	 * valid carlsim network save file.
 	 *
-	 * \TODO finish docu
+	 *
 	 * \STATE CONFIG
 	 */
 	void loadSimulation(FILE* fid);

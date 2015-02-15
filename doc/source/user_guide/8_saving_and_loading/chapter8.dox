@@ -4,18 +4,37 @@
 
 \tableofcontents
 
-Once a network has reached ::CONFIG_STATE or ::RUN_STATE, the network state can be stored in a file for later
-processing or for restoring a specific network (see \ref ch8_saving_loading).
-The network state consists of all the synaptic connections, weights, delays, and whether the connections are plastic
-or fixed.
-Furthermore, the network can be stored after synaptic learning has occurred in order to externally analyze the
-learned synaptic patterns (for example, via a MATLAB ConnectionMonitor; see ch9s1s3_connection_monitor).
+Once a network has reached ::SETUP_STATE or ::RUN_STATE, the network state can be stored in a file
+for later processing or for restoring a specific network using the CARLsim::saveSimulation function.
+The network state consists of all the synaptic connections, weights, delays, and whether the
+connections are plastic or fixed. The network state data can be analyzed with the MATLAB
+ConnectionMonitor.
 
+Furthermore, the network state can be loaded from a file using the CARLsim::loadSimulation function
+call. However, this function can only be called in the ::CONFIG_STATE.
+
+Saving and loading network state data can be especially time-saving when an SNN must be trained for
+a long period of time. After training for the first run is completed and saved to file, subsequent
+testing runs will be much faster.
 
 \section ch8s1_savesimulation 8.1 saveSimulation
+Users can choose to either save the simulation with or without the synaptic weight values. For
+instance if a user has a simulation that has been training for a long period of time, the state of
+the system (including the weight values) can be saved to a file named 'sim.dat' with the following
+code:
+
+\code
+sim.saveSimulation("results/sim.dat", true);
+\endcode
 
 \section ch8s2_loadsimulation 8.2 loadSimulation
+Past CARLsim networks can be loaded from file by first opening the binary file for reading and the
+entering the file pointer as an argument to the CARLsim::loadSimulation function as shown below:
 
-
+\code
+FILE* simFid = NULL;
+simFid = fopen("results/sim.dat", "rb");
+sim->loadSimulation(simFid);
+\endcode
 
 */
