@@ -1,0 +1,28 @@
+var annotated =
+[
+    [ "CARLsim", "classCARLsim.html", "classCARLsim" ],
+    [ "ConnectionGenerator", "classConnectionGenerator.html", "classConnectionGenerator" ],
+    [ "ConnectionMonitor", "classConnectionMonitor.html", "classConnectionMonitor" ],
+    [ "ExpCurve", "structExpCurve.html", "structExpCurve" ],
+    [ "Grid3D", "structGrid3D.html", "structGrid3D" ],
+    [ "GroupMonitor", "classGroupMonitor.html", "classGroupMonitor" ],
+    [ "GroupNeuromodulatorInfo_s", "structGroupNeuromodulatorInfo__s.html", "structGroupNeuromodulatorInfo__s" ],
+    [ "GroupSTDPInfo_s", "structGroupSTDPInfo__s.html", "structGroupSTDPInfo__s" ],
+    [ "InteractiveSpikeGenerator", "classInteractiveSpikeGenerator.html", "classInteractiveSpikeGenerator" ],
+    [ "PeriodicSpikeGenerator", "classPeriodicSpikeGenerator.html", "classPeriodicSpikeGenerator" ],
+    [ "Point3D", "structPoint3D.html", "structPoint3D" ],
+    [ "PoissonRate", "classPoissonRate.html", "classPoissonRate" ],
+    [ "PrePostGroupSpikeGenerator", "classPrePostGroupSpikeGenerator.html", "classPrePostGroupSpikeGenerator" ],
+    [ "PulseCurve", "structPulseCurve.html", "structPulseCurve" ],
+    [ "RadiusRF", "structRadiusRF.html", "structRadiusRF" ],
+    [ "RangeDelay", "structRangeDelay.html", "structRangeDelay" ],
+    [ "RangeWeight", "structRangeWeight.html", "structRangeWeight" ],
+    [ "SimpleWeightTuner", "classSimpleWeightTuner.html", "classSimpleWeightTuner" ],
+    [ "SpikeGenerator", "classSpikeGenerator.html", "classSpikeGenerator" ],
+    [ "SpikeGeneratorFromFile", "classSpikeGeneratorFromFile.html", "classSpikeGeneratorFromFile" ],
+    [ "SpikeGeneratorFromVector", "classSpikeGeneratorFromVector.html", "classSpikeGeneratorFromVector" ],
+    [ "SpikeMonitor", "classSpikeMonitor.html", "classSpikeMonitor" ],
+    [ "TimingBasedCurve", "structTimingBasedCurve.html", "structTimingBasedCurve" ],
+    [ "UserErrors", "classUserErrors.html", "classUserErrors" ],
+    [ "VisualStimulus", "classVisualStimulus.html", "classVisualStimulus" ]
+];
