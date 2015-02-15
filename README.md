@@ -143,15 +143,9 @@ CARLsim uses the googletest framework v1.7 for testing. For more information
 on googltest please visit the website at https://code.google.com/p/googletest/.
 For a quick primer, visit: https://code.google.com/p/googletest/wiki/Primer.
 
-To use the googletest framework, you must first download googletests and
-point to the googletest directory. One must link to the correct library (either
-gtest.a or gtest_main.a) and include the correct headers during compilation.
-Please see the test/CARLsim-app/Makefile for examples of how to compile your
-tests.
-
 After google tests has been installed:
 
-1) From the main directory of the CARLsim installation, type:
+1) From the carlsim/test directory of the CARLsim installation, type:
 
 ```
 make carlsim_tests
@@ -159,13 +153,7 @@ make carlsim_tests
 
 which compiles the carlsim tests
 
-2) To run the tests, enter the test directory and run ‘carlsim_tests’:
-
-```
-cd carlsim/test
-
-```
-and
+2) To run the tests, run ‘carlsim_tests’:
 
 ```
 ./carlsim_tests
@@ -175,6 +163,11 @@ This runs the CARLsim tests which should all pass. If they do not pass,
 you may have inadvertantly modified the source code and should probably
 redownload CARLsim.
 
+3) To delete all testing output files type:
+
+...
+make distclean
+...
 
 ### FAQ
 1. **Why do I need to have CUDA installed for CARLsim’s CPU mode?**

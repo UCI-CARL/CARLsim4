@@ -11,21 +11,30 @@
 
 \subsection ch12s1s1_tips_tricks 12.1.1 Tips and Tricks, Do's and Don'ts
 
-Don't record all spikes forever. Tricks for doing training and testing.
+SpikeMonitors and ConnectionMonitors, while very useful, can easily slow simulations down. They
+should be used for brief periods of time as opposed to the entire duration of the simulation.
+Additonally, it makes sense to target the exact group or connection you care about as opposed to all
+neurons or synapses in the simulation.
 
 
 \subsection ch12s1s2_speed_up 12.1.2 Ways to Speed Up Your Simulation
 
-Don't record all spikes forever. Silent mode. Cost of using certain functions. Handling large-scale networks.
+As mentioned above, leaving Spike or ConnectionMonitors on running for a long period of time or over
+a large group of neurons will slow the simulation down dramatically. Although many state variables
+are updated every timestep (ms), CARLsim performs more calculations as the number of spikes grow.
+Therefore simulations with high firing rates will necessarily slow the simulation down as well. A
+common trick to speed up simulations that have a training and testing phase is to train the SNN and
+then output the network state (with synaptic weights) to preserve the training using saveSimulation.
+The network state can then be reloaded using loadSimulation. In this way, users can load a
+pre-trained network anytime they wish without incurring the cost of training.
 
 \see \ref ch7s1_spike_monitor
-\see \ref ch12s4_logging_errors
 
 
 \section ch12s2_multi_gpu 12.2 Multi-GPU
 
-Use threading to create a CARLsim simulation on every GPU. Say in the future we'll have a more advanced way of doing that.
-
+CARLsim is now threadsafe so a distinct CARLsim simulation can be run on every GPU device on the
+machine.
 
 
 \section ch12s3_online_weight_tuning 12.3 On-Line Weight Tuning
@@ -96,12 +105,11 @@ with each other.
 \since v3.0
 
 
-
 \subsection ch12s3s2_set_weight 12.3.2 Setting the Weight of a Single Synapse
 
 The easiest way to change the weight of a synapse is CARLsim::setWeight:
 \code
-// must be in EXECUTION state
+// must be in RUN state
 sim.runNetwork(1,0);
 
 // remember connId from connect call
@@ -130,7 +138,7 @@ can be achieved, depending on a fifth optional argument <tt>updateWeightRange</t
 Alternatively, it is possible to change the weights of all the synapses that belong to a certain connection ID
 using CARLsim::biasWeights:
 \code
-// must be in EXECUTION state
+// must be in RUN state
 sim.runNetwork(1,0);
 
 // remember connId from connect call
@@ -157,7 +165,7 @@ different behaviors can be achieved, depending on a third optional argument <tt>
 Alternatively, it is possible to change the weights of all the synapses that belong to a certain connection ID
 using CARLsim::scaleWeights:
 \code
-// must be in EXECUTION state
+// must be in RUN state
 sim.runNetwork(1,0);
 
 // remember connId from connect call
@@ -178,35 +186,5 @@ then two different behaviors can be achieved, depending on a third optional argu
   within the existing weight boundaries <tt>[minWt,maxWt]</tt>.
 
 \since v3.0
-
-
-
-\section ch12s4_logging_errors 12.4 Logging and Errors
-\author Michael Beyeler
-
-\TODO MB
-Logger modes. Log files. User errors.
-
-\code
-*                 |    USER    | DEVELOPER  |  SHOWTIME  |   SILENT   |  CUSTOM
-* ----------------|------------|------------|------------|------------|---------
-* Status msgs     |   stdout   |   stdout   | /dev/null  | /dev/null  |    ?
-* Errors/warnings |   stderr   |   stderr   |   stderr   | /dev/null  |    ?
-* Debug msgs      | /dev/null  |   stdout   | /dev/null  | /dev/null  |    ?
-* All msgs        | debug.log  | debug.log  |  debug.log | debug.log  |    ?
-* 
-\endcode
-
-
-\section ch12s5_numerical_integration 12.5 Numerical Integration
-
-Integration time step. Integration method. Weight update interval.
-
-
-\section ch12s6_technical_limitations 12.6 Technical Limitations
-
-Limitations on neuron/synapse/group/connection size, etc. Memory limitations (GPU memory). Max firing rate 520Hz. Handling large-scale networks.
-
-
 
 */
