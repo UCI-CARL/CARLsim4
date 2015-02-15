@@ -59,7 +59,16 @@ your home directory.
 
 **For Windows**:
 
-TODO: TS
+On Windows platform, CARLsim 3 includes a solution file and project files for each examples and
+regression suite. For more information, please see \ref ch11_regression_suite. The solution file
+was created by Visual Studio (VS) 2012 with CUDA 5.5. If you happen to use the same version,
+<tt>Build Solution</tt> in VS 2012 will generate all executables (.exe) and static library
+(.lib) for you. Before buiding the solution or projects, please make sure <tt>Configuration</tt>
+is set to <tt>x64</tt> and <tt>Release</tt> for example executables and <tt>Debug</tt> for
+regression suite. For higher version of VS, <tt>CARLsim.sln</tt> and <tt>.vcxproj </tt> will be
+automatically upgraded by VS. For higher version of CUDA toolkit, please replace <tt>5.5</tt>
+with <tt>YOUR_CUDA_VERSION</tt> in every <tt>.vcxproj</tt> file and add them back to
+<tt>CARLsim.sln</tt>.
 
 
 ### SOURCE CODE DIRECTORY DESCRIPTION

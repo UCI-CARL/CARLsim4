@@ -29,6 +29,7 @@ CARLsim has been tested on the following platforms:
 - Ubuntu 14.04
 - Arch Linux
 - CentOS 6
+- Mac OS X
 
 \subsection ch1s1s2_os 1.1.2 Source Directory Layout
 Below is the directory layout of the CARLsim source code. The <tt>carlsim</tt> folder contains
@@ -41,37 +42,26 @@ number of CARLsim plugins that may be useful to users such as parameter tuning f
 scripts, spike generators, and tools for visual stimuli.
 
 \code
-├── carlsim
-│   ├── connection_monitor
-│   ├── group_monitor
-│   ├── interface
-│   ├── kernel
-│   ├── server
-│   ├── spike_monitor
-│   └── test
-├── doc
-│   ├── html
-│   └── source
-├── examples
-│   ├── colorblind
-│   ├── colorcycle
-│   ├── common
-│   ├── dastdp
-│   ├── multiGPU
-│   ├── orientation
-│   ├── random
-│   ├── spikeInfo
-│   ├── tuneFiringRatesECJ
-│   └── v1MTLIP
-├── projects
-│   └── hello_world
-└── tools
-    ├── ecj_pti
-    ├── eo_pti
-    ├── offline_analysis_toolbox
-    ├── simple_weight_tuner
-    ├── spike_generators
-    └── visual_stimulus
+├── carlsim                       # CARLsim source code folder
+│   ├── connection_monitor          # Utility to record synaptic data
+│   ├── group_monitor               # Utility to record neuron group data
+│   ├── interface                   # CARLsim interface (public user interface)
+│   ├── kernel                      # CARLsim core functionality
+│   ├── server                      # Utility to implement real-time server functionality
+│   ├── spike_monitor               # Utility to record neuron spike data
+│   └── test                        # Google test regression suite tests
+├── doc                           # CARLsim documentation generation folder
+│   ├── html                        # Generated documentation in html
+│   └── source                      # Documentation source code
+├── projects                      # User projects directory
+│   └── hello_world                 # Project template for new users
+└── tools                         # CARLsim tools that are not built-in
+    ├── ecj_pti                     # Automated parameter-tuning interface using ECJ
+    ├── eo_pti                      # Automated parameter-tuning interface using EO (deprecated)
+    ├── offline_analysis_toolbox    # Collection of MATLAB scripts for data analysis
+    ├── simple_weight_tuner         # Simple weight parameter-tuning tool
+    ├── spike_generators            # Collection of input spike generation tools
+    └── visual_stimulus             # Collection of MATLAB/CARLsim tools for visual stimuli
 \endcode
 
 \since v3.0
@@ -85,11 +75,13 @@ To install CARLsim, first download and unzip the zip file from our
 installation instructrions differ depending on your OS, so please reference the
 appropriate subsection.
 
-\subsection ch1s2s1_linux 1.2.1 Linux
+\subsection ch1s2s1_linux 1.2.1 Linux/Mac OS X
 
-Instructions for Linux installation assume you are using the Bash shell. After you have unzipped
-the downloaded CARLsim files, you next have to set installation specific environment-variables such
-as information about GPU devices, CUDA Toolkit version, and the desired installation location.
+Instructions for Linux/Mac OS X installation assume you are using the Bash shell. Additionally, the
+GNU GCC compiler collection and GNU Make build environment should be installed. After you have
+unzipped the downloaded CARLsim files, you next have to set installation specific environment
+variables such as information about GPU devices, CUDA Toolkit version, and the desired installation
+location.
 
 The desired installation location of the CARLsim library is specified with the
 <tt>CARLSIM_LIB_DIR</tt> variable. The major and minor compute capability numbers of your

@@ -6,6 +6,15 @@ Legend:
 ===============================================================================
 Release 3.0
 ===============================================================================
+2014-02-14     Kristofor D. Carlson <kdcarlso@uci.edu>
+  + Added documentation for SpikeMonitor.
+	+ Added documentation for Installation.
+	+ Added documentation for Getting Started.
+	+ Added tutorial for Basic Concepts.
+	+ Added tutorial for CARLsim-ECJ PTI.
+	+ Added documentation for Synaptic Plasticity.
+	+ Added documentation for Saving and Loading.
+	+ Cleaned up installation files.
 
 2015-02-10     Michael Beyeler <mbeyeler@uci.edu>
   + Added ConnectionMonitor::setUpdateTimeIntervalSec.
