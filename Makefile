@@ -53,7 +53,7 @@ distclean:
 	$(RM) $(objects) $(libraries) $(output_files) doc/html
 
 devtest:
-	@echo $(objects) $(libraries) $(output_files) doc/html
+	@echo $(OS_SIZE) $(OS_UPPER) $(OS_LOWER) $(DARWIN)
 
 # Print a help message
 help:

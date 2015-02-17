@@ -59,6 +59,12 @@ CARLSIM_TEST ?= 0
 # END OF USER-MODIFIABLE SECTION
 #------------------------------------------------------------------------------
 
+# OS name (Linux or Darwin) and architecture (32 bit or 64 bit).
+OS_SIZE 	:=$(shell uname -m | sed -e "s/i.86/32/" -e "s/x86_64/64/")
+OS_LOWER 	:=$(shell uname -s 2>/dev/null | tr [:upper:] [:lower:])
+OS_UPPER 	:=$(shell uname -s 2>/dev/null | tr [:lower:] [:upper:])
+DARWIN  	:=$(strip $(findstring DARWIN, $(OS_UPPER)))
+
 # variable defintions
 CXX = g++
 CC  = g++
@@ -67,6 +73,11 @@ CPPFLAGS = $(DEBUG_FLAG) $(OPT_FLAG) -Wall -std=c++0x
 
 MV := mv -f
 RM := rm -rf
+
+# if Mac OS X, include these flags
+ifeq ($(DARWIN),DARWIN)
+	CARLSIM_FLAGS +=-Xlinker -lstdc++ -lc++
+endif
 
 # set up CARLSIM/CUDA variables
 ifeq (${strip ${CUDA_MAJOR_NUM}},1)
