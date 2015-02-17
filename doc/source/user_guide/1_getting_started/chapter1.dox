@@ -131,9 +131,9 @@ An alternative way to set the required environment variable is to edit the <tt>u
 found in the CARLsim root directory.
 This can be helpful in case multiple users share the same CARLsim installation and want to use
 global configuration settings.
-The '=?' sign in "user.mk" indicates the value the variable will be assigned if it is not
-already defined in the ".bashrc".
-For example, the following line from "user.mk" would assign value 5 to environment variable
+The '=?' sign in <tt>user.mk</tt> indicates the value the variable will be assigned if it is not
+already defined in the <tt>~/.bashrc</tt>.
+For example, the following line from <tt>user.mk</tt> would assign value 5 to environment variable
 <tt>CARLSIM_CUDAVER</tt> if the variable does not already exist:
 \code
 CARLSIM_CUDAVER ?= 5
@@ -177,7 +177,7 @@ This is will install the CARLsim library in the location pointed to by <tt>CARLS
 
 CARLsim comes with an optional automated parameter tuning framework. For more information about
 how to install the framework please see \ref ch10_ecj. Additionally, CARLsim now comes with a
-regression suite that uses <a href="https://code.google.com/p/googletest/">googletest</a>.
+regression suite that uses <a href="https://code.google.com/p/googletest/">Google Test</a>.
 For more information on how to use the regression suite, please see \ref ch11_regression_suite.
 
 \since v3.0
@@ -203,7 +203,7 @@ every .vcxproj file have to be manually updated to reflect the right CUDA Toolki
 
 CARLsim comes with an optional automated parameter tuning framework. For more information about
 how to install the framework please see \ref ch10_ecj. Additionally, CARLsim now comes with a
-regression suite that uses <a href="https://code.google.com/p/googletest/">googletest</a>.
+regression suite that uses <a href="https://code.google.com/p/googletest/">Google Test</a>.
 For more information on how to use the regression suite, please see \ref ch11_regression_suite.
 
 
@@ -212,18 +212,64 @@ For more information on how to use the regression suite, please see \ref ch11_re
 \author Kristofor D. Carlson
 \author Ting-Shuo Chou
 
-\section ch1s3s1_linux_project_workflow 1.3.1 Linux / Mac OS X
+A sample "Hello World" project is provided in the <tt>projects/hello_world</tt> directory.
+The project includes a single source file <tt>main_hello_world.cpp</tt> that creates a network with two groups,
+connected with random weights, and can be used as a skeleton to create new projects.
 
-The easiest way to create a new project is to make a copy of the directory "projects/hello_world/" and all
-its corresponding subdirectories.
+Any output files created by the simulation will be automatically placed in the <tt>results/</tt> directory.
 
-The Hello World project comes with 
+All MATLAB scripts should be placed in the <tt>scripts/</tt> directory.
+This directory already contains two MATLAB scripts to aid in using the OAT (see \ref ch9s1_matlab_oat).
+The script <tt>initOAT.m</tt> adds the OAT directory to the MATLAB path, whereas <tt>demoOAT.m</tt> will open a
+NetworkMonitor to visualize network activity.
+Note that for <tt>demoOAT.m</tt> to work, the executable must be run first
+(see \ref ch1s3s1s1_linux_hello_world_compile and \ref ch1s3s2s1_win_hello_world_compile below).
+In order to run the OAT, open MATLAB, change to <tt>projects/hello_world/scripts/</tt>, then type:
+\code
+>> initOAT     % adds OAT relative path to MATLAB paths
+>> demoOAT     % opens a NetworkMonitor on the simulation file
+\endcode
 
-The project workflow is as follows. New users should start with the hello_world project found in the
-<tt>projects</tt> directory. The Makefile provided in the directory was made so that usersonly have
-to modify a small portion of Makefile to build their own custom project. Below is the modifiable
-portion of the Makefile:
 
+\subsection ch1s3s1_linux_project_workflow 1.3.1 Linux / Mac OS X
+
+\subsubsection ch1s3s1s1_linux_hello_world_compile 1.3.1.1 Compiling and Running the "Hello World" Project in Linux / Mac OS X
+
+The "Hello World" project comes with its own Makefile that compiles the file <tt>main_hello_world.cpp</tt> and links
+it with the CARLsim library. The project can be compiled and run with the following set of commands:
+\code
+$ cd projects/hello_world
+$ make
+$ ./hello_world
+\endcode
+
+Any output files created by the simulation will be automatically placed in the <tt>results/</tt> directory.
+This may include any spike files created by SpikeMonitor, a debug log file, and a network structure file.
+
+All local objects and executables can be deleted via:
+\code
+$ make clean
+\endcode
+
+All output files, including local objects, executables, and files in the <tt>results/</tt> directory can be deleted via:
+\code
+$ make distclean
+\endcode
+
+\warning When <tt>make distclean</tt> is called, all data files in the results directory will be deleted!
+
+
+\subsubsection ch1s3s1s2_linux_create_new 1.3.1.2 Creating a New Project in Linux / Mac OS X
+
+The easiest way to create a new project in Linux/Mac OS X is to make a copy of the
+<tt>projects/hello_world/</tt> directory
+and all its corresponding subdirectories, rename the directory accordingly, and place it alongside
+<tt>hello_world/</tt> in the <tt>projects/</tt> directory.
+Then only minimal changes to the Makefile must be made in order for the project to compile correctly.
+
+The Makefile provided in the directory was made so that users only have to modify a small portion of the file
+to build a custom project.
+Below is the modifiable portion of the Makefile:
 \code
 # Makefile for building project program from the CARLsim library
 
@@ -237,43 +283,49 @@ include $(USER_MK_PATH)user.mk
 project := hello_world
 output := *.dot *.dat *.log *.csv
 \endcode
+The <tt>USER_MK_PATH</tt> variable points to the <tt>user.mk</tt> file in the CARLsim root directory.
+This file is needed because it contains all necessary compilation and linking flags.
+If the <tt>user.mk</tt> is moved to a different location, the <tt>USER_MK_PATH</tt> needs to be updated
+accordingly.
 
-You have to first point to <tt>USER_MK_PATH</tt> variable to the correct location of the <tt>
-user.mk</tt> file. This is because the <tt>user.mk</tt> file has the correct compilation and
-linking flags. If the user creates their own project, they need only copy their <tt>user.mk</tt>
-file to the same directory or point to the location of the <tt>user.mk file</tt>. Next, you can
-change the name of the project by changing the <tt>project</tt> variable. You should not have
-to change any other variables in the Makefile to get the CARLsim program to compile.
+The name of the project can be changed via variable <tt>project</tt>.
+Whatever string is assigned here will influence the name of the Makefile target as well as the name of
+the C++ source file. For example, setting <tt>project</tt> to "hello_world" will assume that a source
+file <tt>main_hello_world.cpp</tt> exists, and will create an executable called <tt>hello_world</tt>.
 
-\warning You must name your .cpp file 'main_<project_name>.cpp' for the Makefile to compile
-correctly
+Finally, files and/or file extensions to be deleted with the <tt>make clean</tt> and <tt>make distclean</tt>
+commands can be edited by changing the <tt>output</tt> variable.
 
-Finally, you can add files or file extensions that will be deleted with the 'make clean' or 'make
-distclean' commands by adding to the <tt>output</tt> variable.
+\note The C++ source file must be named <tt>main_{project name}.cpp</tt> for the Makefile to compile correctly,
+where <tt>{project_name}</tt> is the string assigned to the <tt>project</tt> variable in the Makefile.
 
-When a CARLsim program is run, it outputs any spike or synaptic weight data to the results directory in
-the directory in which it was run by default. When 'make clean' is run, the binary and output files
-are deleted by default, but the contents of the results directory are not deleted. When 'make
-distclean' is run, the binary, output files, and contents of the results directory are deleted.
 
-\warning When 'make distclean' is called. All data files in the results directory will be deleted!
 
-In general, users may find themselves most productive creating their own project directory in the
-<tt>projects</tt> directory and running their simulations with that directory. At the same time, users
-use the CARLsim Offline Analysis Toolkit (OAT) MATLAB scripts to analyze the data files output to
-the <tt>results</tt> directory after every simulation. This provides users with information about
-their simulation. Often times, it makes the most sense to run CARLsim simulations for small amounts
-of time while designing the spiking neural networks as the OAT scripts can provide valuable feedback
-as to how the network is behaving. For more information about CARLsim data files or the OAT, please
-see \ref ch7_monitoring or \ref ch9_visualization
+\subsection ch1s3s2_windows_project_workflow 1.3.2 Windows
 
-\section ch1s3s2_windows_project_workflow 1.3.2 Windows
+\subsubsection ch1s3s2s1_win_hello_world_compile 1.3.2.1 Compiling and Running the "Hello World" Project in Windows
 
-On Windows platform, four steps are required to build your own project. First, create your own 
-project directory. Second,copy the template project file <tt>hello_world.vcxproj</tt> and 
-<tt>main_hello_world.cpp</tt> in projects directory into your directory. Third, rename the .cpp
-and .vcxproj file to <tt>YOUR_PROJECT_NAME</tt>. Forth, add your project to <tt>CARLsim.sln</tt>.
-Finally, you can build, rebuild, or clean the project through MS Visual Studio.
+The "Hello World" project comes with its own <tt>.vcxproj</tt> project file that has already been added
+to the <tt>CARLsim.sln</tt> solution file.
+Thus the project can be built simply by opening the <tt>CARLsim.sln</tt> solution file in VS, right-clicking the
+project directory and choosing "Build project".
+
+
+\subsubsection ch1s3s2s1_win_create_new 1.3.2.2 Creating a New Project in Windows
+
+The easiest way to create new project in Windows is to make a copy of the directory <tt>projects/hello_world</tt>
+and all its corresponding subdirectories, to rename the directory accordingly, and to place it alongside
+<tt>hello_world/</tt> in the <tt>projects/</tt> directory.
+Then only minimal changes to the project and solution file need to be made in order for the project to
+compile correctly.
+
+First, the project file in the new project directory needs to be named according to the new project name:
+<tt>{project name}.vcxproj</tt>.
+The C++ source file should be renamed for consistency: <tt>main_{project name}.cpp</tt>.
+
+Second, the projects file needs to be added to the <tt>CARLsim.sln</tt> solution file.
+
+Then the new project is ready to be built, rebuilt, or cleaned directly through VS.
 
 \since v3.0
 

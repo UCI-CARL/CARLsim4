@@ -107,7 +107,7 @@ $(document).ready(function(){initNavTree('ch1_getting_started.html','');});
 <li class="level2"><a href="#ch1s1s2_os">1.1.2 Source Directory Layout</a></li>
 </ul>
 </li>
-<li class="level1"><a href="#ch1s2_installation">1.2 Installation</a><ul><li class="level2"><a href="#ch1s2s1_linux">1.2.1 Linux/Mac OS X</a><ul><li class="level3"><a href="#ch1s2s1s1_environment_variables">1.2.1.1 Environment Variables</a></li>
+<li class="level1"><a href="#ch1s2_installation">1.2 Installation</a><ul><li class="level2"><a href="#ch1s2s1_linux">1.2.1 Linux / Mac OS X</a><ul><li class="level3"><a href="#ch1s2s1s1_environment_variables">1.2.1.1 Environment Variables</a></li>
 <li class="level3"><a href="#ch1s2s1s2_cuda_version">1.2.1.2 Finding CUDA Toolkit Version and Compute Capability</a></li>
 <li class="level3"><a href="#ch1s2s1s3_compiling">1.2.1.3 Compiling the CARLsim Library</a></li>
 </ul>
@@ -115,9 +115,16 @@ $(document).ready(function(){initNavTree('ch1_getting_started.html','');});
 <li class="level2"><a href="#ch1s2s2_windows">1.2.2 Windows</a></li>
 </ul>
 </li>
-<li class="level1"><a href="#ch1s3_project_workflow">1.3 Project Workflow</a></li>
-<li class="level1"><a href="#ch1s3s1_linux_project_workflow">1.3.1</a></li>
-<li class="level1"><a href="#ch1s3s2_windows_project_workflow">1.3.2</a></li>
+<li class="level1"><a href="#ch1s3_project_workflow">1.3 Project Workflow</a><ul><li class="level2"><a href="#ch1s3s1_linux_project_workflow">1.3.1 Linux / Mac OS X</a><ul><li class="level3"><a href="#ch1s3s1s1_linux_hello_world_compile">1.3.1.1 Compiling and Running the "Hello World" Project in Linux / Mac OS X</a></li>
+<li class="level3"><a href="#ch1s3s1s2_linux_create_new">1.3.1.2 Creating a New Project in Linux / Mac OS X</a></li>
+</ul>
+</li>
+<li class="level2"><a href="#ch1s3s2_windows_project_workflow">1.3.2 Windows</a><ul><li class="level3"><a href="#ch1s3s2s1_win_hello_world_compile">1.3.2.1 Compiling and Running the "Hello World" Project in Windows</a></li>
+<li class="level3"><a href="#ch1s3s2s1_win_create_new">1.3.2.2 Creating a New Project in Windows</a></li>
+</ul>
+</li>
+</ul>
+</li>
 </ul>
 </div>
 <div class="textblock"><h1><a class="anchor" id="ch1s1_preinstallation"></a>
@@ -175,9 +182,9 @@ $(document).ready(function(){initNavTree('ch1_getting_started.html','');});
 Ting-Shuo Chou </dd>
 <dd>
 Michael Beyeler</dd></dl>
-<p>To install <a class="el" href="classCARLsim.html" title="CARLsim User Interface This class provides a user interface to the public sections of CARLsimCore sou...">CARLsim</a>, first download and unzip the zip file from the <a href="http://www.socsci.uci.edu/~jkrichma/CARLsim/index.html">CARL website</a>. For installation instructions on Linux and Mac OS X platforms, please refer to <a class="el" href="ch1_getting_started.html#ch1s2s1_linux">1.2.1 Linux/Mac OS X</a> below. For installation instructions on Windows platforms, please refer to <a class="el" href="ch1_getting_started.html#ch1s2s2_windows">1.2.2 Windows</a> below.</p>
+<p>To install <a class="el" href="classCARLsim.html" title="CARLsim User Interface This class provides a user interface to the public sections of CARLsimCore sou...">CARLsim</a>, first download and unzip the zip file from the <a href="http://www.socsci.uci.edu/~jkrichma/CARLsim/index.html">CARL website</a>. For installation instructions on Linux and Mac OS X platforms, please refer to <a class="el" href="ch1_getting_started.html#ch1s2s1_linux">1.2.1 Linux / Mac OS X</a> below. For installation instructions on Windows platforms, please refer to <a class="el" href="ch1_getting_started.html#ch1s2s2_windows">1.2.2 Windows</a> below.</p>
 <h2><a class="anchor" id="ch1s2s1_linux"></a>
-1.2.1 Linux/Mac OS X</h2>
+1.2.1 Linux / Mac OS X</h2>
 <p>Instructions for Linux/Mac OS X installation assume you are using the Bash shell. Additionally, the GNU GCC compiler collection and GNU Make build environment should be installed. On most platforms, these are already installed by default. After you have unzipped the downloaded <a class="el" href="classCARLsim.html" title="CARLsim User Interface This class provides a user interface to the public sections of CARLsimCore sou...">CARLsim</a> files, you next have to set installation-specific environment variables such as information about GPU devices, CUDA Toolkit version, and the desired installation location.</p>
 <h3><a class="anchor" id="ch1s2s1s1_environment_variables"></a>
 1.2.1.1 Environment Variables</h3>
@@ -196,7 +203,7 @@ Michael Beyeler</dd></dl>
 <p>To make sure these settings go into effect, you can either type: </p>
 <div class="fragment"><div class="line">$ source ~/.bashrc</div>
 </div><!-- fragment --><p> or close the shell and open another one.</p>
-<p>An alternative way to set the required environment variable is to edit the <code>user.mk</code> file found in the <a class="el" href="classCARLsim.html" title="CARLsim User Interface This class provides a user interface to the public sections of CARLsimCore sou...">CARLsim</a> root directory. This can be helpful in case multiple users share the same <a class="el" href="classCARLsim.html" title="CARLsim User Interface This class provides a user interface to the public sections of CARLsimCore sou...">CARLsim</a> installation and want to use global configuration settings. The '=?' sign in "user.mk" indicates the value the variable will be assigned if it is not already defined in the ".bashrc". For example, the following line from "user.mk" would assign value 5 to environment variable <code>CARLSIM_CUDAVER</code> if the variable does not already exist: </p>
+<p>An alternative way to set the required environment variable is to edit the <code>user.mk</code> file found in the <a class="el" href="classCARLsim.html" title="CARLsim User Interface This class provides a user interface to the public sections of CARLsimCore sou...">CARLsim</a> root directory. This can be helpful in case multiple users share the same <a class="el" href="classCARLsim.html" title="CARLsim User Interface This class provides a user interface to the public sections of CARLsimCore sou...">CARLsim</a> installation and want to use global configuration settings. The '=?' sign in <code>user.mk</code> indicates the value the variable will be assigned if it is not already defined in the <code>~/.bashrc</code>. For example, the following line from <code>user.mk</code> would assign value 5 to environment variable <code>CARLSIM_CUDAVER</code> if the variable does not already exist: </p>
 <div class="fragment"><div class="line">CARLSIM_CUDAVER ?= 5</div>
 </div><!-- fragment --><h3><a class="anchor" id="ch1s2s1s2_cuda_version"></a>
 1.2.1.2 Finding CUDA Toolkit Version and Compute Capability</h3>
@@ -219,7 +226,7 @@ Michael Beyeler</dd></dl>
 <div class="fragment"><div class="line">$ make</div>
 <div class="line">$ sudo make install</div>
 </div><!-- fragment --><p>This is will install the <a class="el" href="classCARLsim.html" title="CARLsim User Interface This class provides a user interface to the public sections of CARLsimCore sou...">CARLsim</a> library in the location pointed to by <code>CARLSIM_LIB_DIR</code> (see <a class="el" href="ch1_getting_started.html#ch1s2s1s1_environment_variables">1.2.1.1 Environment Variables</a> above).</p>
-<p><a class="el" href="classCARLsim.html" title="CARLsim User Interface This class provides a user interface to the public sections of CARLsimCore sou...">CARLsim</a> comes with an optional automated parameter tuning framework. For more information about how to install the framework please see <a class="el" href="ch10_ecj.html">Chapter 10: ECJ</a>. Additionally, <a class="el" href="classCARLsim.html" title="CARLsim User Interface This class provides a user interface to the public sections of CARLsimCore sou...">CARLsim</a> now comes with a regression suite that uses <a href="https://code.google.com/p/googletest/">googletest</a>. For more information on how to use the regression suite, please see <a class="el" href="ch11_regression_suite.html">Chapter 11: Regression Suite</a>.</p>
+<p><a class="el" href="classCARLsim.html" title="CARLsim User Interface This class provides a user interface to the public sections of CARLsimCore sou...">CARLsim</a> comes with an optional automated parameter tuning framework. For more information about how to install the framework please see <a class="el" href="ch10_ecj.html">Chapter 10: ECJ</a>. Additionally, <a class="el" href="classCARLsim.html" title="CARLsim User Interface This class provides a user interface to the public sections of CARLsimCore sou...">CARLsim</a> now comes with a regression suite that uses <a href="https://code.google.com/p/googletest/">Google Test</a>. For more information on how to use the regression suite, please see <a class="el" href="ch11_regression_suite.html">Chapter 11: Regression Suite</a>.</p>
 <dl class="section since"><dt>Since</dt><dd>v3.0</dd></dl>
 <h2><a class="anchor" id="ch1s2s2_windows"></a>
 1.2.2 Windows</h2>
@@ -227,15 +234,35 @@ Michael Beyeler</dd></dl>
 <p>Before building the solution, <code>Configuration</code> should be set to <code>x64</code>. <code>Release</code> should be selected for project executables, and <code>Debug</code> should be selected for compiling the regression suite.</p>
 <p>VS 2012 will then generate all executables (.exe) and the static library (.lib) via "Build Solution".</p>
 <p>Newer VS versions will automatically upgrade the solution file (<code>CARLsim.sln</code>) and all project files (<code>*.vcxproj</code>). For newer CUDA Toolkit versions, the strings "CUDA 5.5.props" and "CUDA 5.5.targets" that are present in every .vcxproj file have to be manually updated to reflect the right CUDA Toolkit version number.</p>
-<p><a class="el" href="classCARLsim.html" title="CARLsim User Interface This class provides a user interface to the public sections of CARLsimCore sou...">CARLsim</a> comes with an optional automated parameter tuning framework. For more information about how to install the framework please see <a class="el" href="ch10_ecj.html">Chapter 10: ECJ</a>. Additionally, <a class="el" href="classCARLsim.html" title="CARLsim User Interface This class provides a user interface to the public sections of CARLsimCore sou...">CARLsim</a> now comes with a regression suite that uses <a href="https://code.google.com/p/googletest/">googletest</a>. For more information on how to use the regression suite, please see <a class="el" href="ch11_regression_suite.html">Chapter 11: Regression Suite</a>.</p>
+<p><a class="el" href="classCARLsim.html" title="CARLsim User Interface This class provides a user interface to the public sections of CARLsimCore sou...">CARLsim</a> comes with an optional automated parameter tuning framework. For more information about how to install the framework please see <a class="el" href="ch10_ecj.html">Chapter 10: ECJ</a>. Additionally, <a class="el" href="classCARLsim.html" title="CARLsim User Interface This class provides a user interface to the public sections of CARLsimCore sou...">CARLsim</a> now comes with a regression suite that uses <a href="https://code.google.com/p/googletest/">Google Test</a>. For more information on how to use the regression suite, please see <a class="el" href="ch11_regression_suite.html">Chapter 11: Regression Suite</a>.</p>
 <h1><a class="anchor" id="ch1s3_project_workflow"></a>
 1.3 Project Workflow</h1>
 <dl class="section author"><dt>Author</dt><dd>Kristofor D. Carlson </dd>
 <dd>
 Ting-Shuo Chou</dd></dl>
-<h1><a class="anchor" id="ch1s3s1_linux_project_workflow"></a>
-1.3.1</h1>
-<p>The project workflow is as follows. New users should start with the hello_world project found in the <code>projects</code> directory. The Makefile provided in the directory was made so that usersonly have to modify a small portion of Makefile to build their own custom project. Below is the modifiable portion of the Makefile:</p>
+<p>A sample "Hello World" project is provided in the <code>projects/hello_world</code> directory. The project includes a single source file <code>main_hello_world.cpp</code> that creates a network with two groups, connected with random weights, and can be used as a skeleton to create new projects.</p>
+<p>Any output files created by the simulation will be automatically placed in the <code>results/</code> directory.</p>
+<p>All MATLAB scripts should be placed in the <code>scripts/</code> directory. This directory already contains two MATLAB scripts to aid in using the OAT (see <a class="el" href="ch9_visualization.html#ch9s1_matlab_oat">9.1 MATLAB Offline Analysis Toolbox</a>). The script <code>initOAT.m</code> adds the OAT directory to the MATLAB path, whereas <code>demoOAT.m</code> will open a NetworkMonitor to visualize network activity. Note that for <code>demoOAT.m</code> to work, the executable must be run first (see <a class="el" href="ch1_getting_started.html#ch1s3s1s1_linux_hello_world_compile">1.3.1.1 Compiling and Running the "Hello World" Project in Linux / Mac OS X</a> and <a class="el" href="ch1_getting_started.html#ch1s3s2s1_win_hello_world_compile">1.3.2.1 Compiling and Running the "Hello World" Project in Windows</a> below). In order to run the OAT, open MATLAB, change to <code>projects/hello_world/scripts/</code>, then type: </p>
+<div class="fragment"><div class="line">&gt;&gt; initOAT     % adds OAT relative path to MATLAB paths</div>
+<div class="line">&gt;&gt; demoOAT     % opens a NetworkMonitor on the simulation file</div>
+</div><!-- fragment --><h2><a class="anchor" id="ch1s3s1_linux_project_workflow"></a>
+1.3.1 Linux / Mac OS X</h2>
+<h3><a class="anchor" id="ch1s3s1s1_linux_hello_world_compile"></a>
+1.3.1.1 Compiling and Running the "Hello World" Project in Linux / Mac OS X</h3>
+<p>The "Hello World" project comes with its own Makefile that compiles the file <code>main_hello_world.cpp</code> and links it with the <a class="el" href="classCARLsim.html" title="CARLsim User Interface This class provides a user interface to the public sections of CARLsimCore sou...">CARLsim</a> library. The project can be compiled and run with the following set of commands: </p>
+<div class="fragment"><div class="line">$ cd projects/hello_world</div>
+<div class="line">$ make</div>
+<div class="line">$ ./hello_world</div>
+</div><!-- fragment --><p>Any output files created by the simulation will be automatically placed in the <code>results/</code> directory. This may include any spike files created by <a class="el" href="classSpikeMonitor.html" title="Class SpikeMonitor. ">SpikeMonitor</a>, a debug log file, and a network structure file.</p>
+<p>All local objects and executables can be deleted via: </p>
+<div class="fragment"><div class="line">$ make clean</div>
+</div><!-- fragment --><p>All output files, including local objects, executables, and files in the <code>results/</code> directory can be deleted via: </p>
+<div class="fragment"><div class="line">$ make distclean</div>
+</div><!-- fragment --><dl class="section warning"><dt>Warning</dt><dd>When <code>make distclean</code> is called, all data files in the results directory will be deleted!</dd></dl>
+<h3><a class="anchor" id="ch1s3s1s2_linux_create_new"></a>
+1.3.1.2 Creating a New Project in Linux / Mac OS X</h3>
+<p>The easiest way to create a new project in Linux/Mac OS X is to make a copy of the <code>projects/hello_world/</code> directory and all its corresponding subdirectories, rename the directory accordingly, and place it alongside <code>hello_world/</code> in the <code>projects/</code> directory. Then only minimal changes to the Makefile must be made in order for the project to compile correctly.</p>
+<p>The Makefile provided in the directory was made so that users only have to modify a small portion of the file to build a custom project. Below is the modifiable portion of the Makefile: </p>
 <div class="fragment"><div class="line"><span class="preprocessor"># Makefile for building project program from the CARLsim library</span></div>
 <div class="line"><span class="preprocessor"></span></div>
 <div class="line"><span class="preprocessor"># NOTE: if you are compiling your code in a directory different from</span></div>
@@ -247,22 +274,28 @@ Ting-Shuo Chou</dd></dl>
 <div class="line"></div>
 <div class="line">project := hello_world</div>
 <div class="line">output := *.dot *.dat *.log *.csv</div>
-</div><!-- fragment --><p>You have to first point to <code>USER_MK_PATH</code> variable to the correct location of the <code> user.mk</code> file. This is because the <code>user.mk</code> file has the correct compilation and linking flags. If the user creates their own project, they need only copy their <code>user.mk</code> file to the same directory or point to the location of the <code>user.mk file</code>. Next, you can change the name of the project by changing the <code>project</code> variable. You should not have to change any other variables in the Makefile to get the <a class="el" href="classCARLsim.html" title="CARLsim User Interface This class provides a user interface to the public sections of CARLsimCore sou...">CARLsim</a> program to compile.</p>
-<dl class="section warning"><dt>Warning</dt><dd>You must name your .cpp file 'main_&lt;project_name&gt;.cpp' for the Makefile to compile correctly</dd></dl>
-<p>Finally, you can add files or file extensions that will be deleted with the 'make clean' or 'make distclean' commands by adding to the <code>output</code> variable.</p>
-<p>When a <a class="el" href="classCARLsim.html" title="CARLsim User Interface This class provides a user interface to the public sections of CARLsimCore sou...">CARLsim</a> program is run, it outputs any spike or synaptic weight data to the results directory in the directory in which it was run by default. When 'make clean' is run, the binary and output files are deleted by default, but the contents of the results directory are not deleted. When 'make distclean' is run, the binary, output files, and contents of the results directory are deleted.</p>
-<dl class="section warning"><dt>Warning</dt><dd>When 'make distclean' is called. All data files in the results directory will be deleted!</dd></dl>
-<p>In general, users may find themselves most productive creating their own project directory in the <code>projects</code> directory and running their simulations with that directory. At the same time, users use the <a class="el" href="classCARLsim.html" title="CARLsim User Interface This class provides a user interface to the public sections of CARLsimCore sou...">CARLsim</a> Offline Analysis Toolkit (OAT) MATLAB scripts to analyze the data files output to the <code>results</code> directory after every simulation. This provides users with information about their simulation. Often times, it makes the most sense to run <a class="el" href="classCARLsim.html" title="CARLsim User Interface This class provides a user interface to the public sections of CARLsimCore sou...">CARLsim</a> simulations for small amounts of time while designing the spiking neural networks as the OAT scripts can provide valuable feedback as to how the network is behaving. For more information about <a class="el" href="classCARLsim.html" title="CARLsim User Interface This class provides a user interface to the public sections of CARLsimCore sou...">CARLsim</a> data files or the OAT, please see <a class="el" href="ch7_monitoring.html">Chapter 7: Monitoring</a> or <a class="el" href="ch9_visualization.html">Chapter 9: Visualization</a></p>
-<h1><a class="anchor" id="ch1s3s2_windows_project_workflow"></a>
-1.3.2</h1>
-<p>On Windows platform, four steps are required to build your own project. First, create your own project directory. Second,copy the template project file <code>hello_world.vcxproj</code> and <code>main_hello_world.cpp</code> in projects directory into your directory. Third, rename the .cpp and .vcxproj file to <code>YOUR_PROJECT_NAME</code>. Forth, add your project to <code>CARLsim.sln</code>. Finally, you can build, rebuild, or clean the project through MS Visual Studio.</p>
+</div><!-- fragment --><p> The <code>USER_MK_PATH</code> variable points to the <code>user.mk</code> file in the <a class="el" href="classCARLsim.html" title="CARLsim User Interface This class provides a user interface to the public sections of CARLsimCore sou...">CARLsim</a> root directory. This file is needed because it contains all necessary compilation and linking flags. If the <code>user.mk</code> is moved to a different location, the <code>USER_MK_PATH</code> needs to be updated accordingly.</p>
+<p>The name of the project can be changed via variable <code>project</code>. Whatever string is assigned here will influence the name of the Makefile target as well as the name of the C++ source file. For example, setting <code>project</code> to "hello_world" will assume that a source file <code>main_hello_world.cpp</code> exists, and will create an executable called <code>hello_world</code>.</p>
+<p>Finally, files and/or file extensions to be deleted with the <code>make clean</code> and <code>make distclean</code> commands can be edited by changing the <code>output</code> variable.</p>
+<dl class="section note"><dt>Note</dt><dd>The C++ source file must be named <code>main_{project name}.cpp</code> for the Makefile to compile correctly, where <code>{project_name}</code> is the string assigned to the <code>project</code> variable in the Makefile.</dd></dl>
+<h2><a class="anchor" id="ch1s3s2_windows_project_workflow"></a>
+1.3.2 Windows</h2>
+<h3><a class="anchor" id="ch1s3s2s1_win_hello_world_compile"></a>
+1.3.2.1 Compiling and Running the "Hello World" Project in Windows</h3>
+<p>The "Hello World" project comes with its own <code>.vcxproj</code> project file that has already been added to the <code>CARLsim.sln</code> solution file. Thus the project can be built simply by opening the <code>CARLsim.sln</code> solution file in VS, right-clicking the project directory and choosing "Build project".</p>
+<h3><a class="anchor" id="ch1s3s2s1_win_create_new"></a>
+1.3.2.2 Creating a New Project in Windows</h3>
+<p>The easiest way to create new project in Windows is to make a copy of the directory <code>projects/hello_world</code> and all its corresponding subdirectories, to rename the directory accordingly, and to place it alongside <code>hello_world/</code> in the <code>projects/</code> directory. Then only minimal changes to the project and solution file need to be made in order for the project to compile correctly.</p>
+<p>First, the project file in the new project directory needs to be named according to the new project name: <code>{project name}.vcxproj</code>. The C++ source file should be renamed for consistency: <code>main_{project name}.cpp</code>.</p>
+<p>Second, the projects file needs to be added to the <code>CARLsim.sln</code> solution file.</p>
+<p>Then the new project is ready to be built, rebuilt, or cleaned directly through VS.</p>
 <dl class="section since"><dt>Since</dt><dd>v3.0 </dd></dl>
 </div></div><!-- contents -->
 </div><!-- doc-content -->
 <!-- start footer part -->
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
   <ul>
-    <li class="footer">Generated on Tue Feb 17 2015 11:55:17 for CARLsim by
+    <li class="footer">Generated on Tue Feb 17 2015 13:18:39 for CARLsim by
     <a href="http://www.doxygen.org/index.html">
     <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.8.6 </li>
   </ul>
