@@ -7,26 +7,38 @@ CARLsim 3.0
 -------------------------------------------------------------------------------
 
 Highlights:
-	Usability.
-	New features.
-	etc.
+	New user interface.
+	Platform compatibility (Linux, Windows, and Mac OS X).
+	Shared library build. CUDA6 support.
+	E-STDP, I-STDP, DA-STDP.
+	Plugin for Evolutionary Computations in Java (ECJ).
+	Improved SpikeMonitor, ConnectionMonitor, and GroupMonitor.
+	3D Topography.
+	Current injection.
+	On-line weight tuning.
+	MATLAB Offline Analysis Toolbox.
+	MATLAB Visual Stimulus Toolbox.
+	Regression suite.
+	User Guide and Tutorial.
+	Bugfixes.
 
 Description:
 	tbd
 
 Publication:
-	tba
+	tbd
 
 Tested platforms and devices:
 	* Platforms:
-	   - Linux: Ubuntu 10.04, 12.04, 14.04
+	   - Linux: Ubuntu 10.04, 12.04, 12.10, 13.04, 13.10, 14.04, Arch Linux,
+	     CentOS 6
 	   - Windows: 7
-	   - Mac OS X: tbd
+	   - Mac OS: X
 	* NVIDIA Toolkits: CUDA 5.0, 5.5, 6.0, 6.5
-	* CUDA compute capabilities: 2.0, 2.1, 3.0
+	* CUDA compute capabilities: 2.0, 2.1, 3.0, 3.5
 	* CUDA devices: Tesla C1060, Tesla M2090, GTX 460, GTX 780, Quadro 600,
 	  NVS 4200M, TITAN Z
-	* Doxygen: 1.7, 1.8
+	* Doxygen: 1.8
 
 Known bugs & issues:
 	* Currently, short-term plasticity (STP) can only be run in GPU mode if

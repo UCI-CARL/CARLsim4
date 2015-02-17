@@ -6,16 +6,23 @@ Legend:
 ===============================================================================
 Release 3.0
 ===============================================================================
+
+---------------------
+Build 3.0.1
+---------------------
+
+2014-02-14     Ting-Shuo Chou <tingshuc@uci.edu>
+  * Quickfix for Windows solution files.
+
+
+---------------------
+Build 3.0.0
+---------------------
+
 2014-02-14     Kristofor D. Carlson <kdcarlso@uci.edu>
-  + Added documentation for SpikeMonitor.
-	+ Added documentation for Installation.
-	+ Added documentation for Getting Started.
 	+ Added tutorial for Basic Concepts.
 	+ Added tutorial for CARLsim-ECJ PTI.
-	+ Added documentation for Synaptic Plasticity.
-	+ Added documentation for Saving and Loading.
-	+ Cleaned up installation files.
-	+ Added documentation for Regression Suite.
+	* Cleaned up installation files.
 
 2015-02-10     Michael Beyeler <mbeyeler@uci.edu>
   + Added ConnectionMonitor::setUpdateTimeIntervalSec.
