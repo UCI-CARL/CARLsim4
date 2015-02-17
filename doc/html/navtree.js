@@ -10,8 +10,7 @@ var NAVTREE =
       [ "1. Getting Started", "ch1_getting_started.html", [
         [ "1.1 Pre-Installation", "ch1_getting_started.html#ch1s1_preinstallation", null ],
         [ "1.2 Installation", "ch1_getting_started.html#ch1s2_installation", null ],
-        [ "1.3 Documentation", "ch1_getting_started.html#ch1s3_documentation", null ],
-        [ "1.4 Project Workflow", "ch1_getting_started.html#ch1s4_project_workflow", null ]
+        [ "1.3 Project Workflow", "ch1_getting_started.html#ch1s3_project_workflow", null ]
       ] ],
       [ "2. Basic Concepts", "ch2_basic_concepts.html", [
         [ "2.1 General Workflow", "ch2_basic_concepts.html#ch2s1_general_workflow", null ],
@@ -63,15 +62,17 @@ var NAVTREE =
       ] ]
     ] ],
     [ "Tutorial", "usergroup1.html", [
-      [ "1. Basic Concepts", "tut1_basic_concepts.html", null ],
-      [ "1.1 A Simple CARLsim Program", "tut1_basic_concepts.html#tut1s1_simple_prog", null ],
-      [ "1.2 CARLsim Output", "tut1_basic_concepts.html#tut1s2_output", null ],
+      [ "1. Basic Concepts", "tut1_basic_concepts.html", [
+        [ "1.1 A Simple CARLsim Program", "tut1_basic_concepts.html#tut1s1_simple_prog", null ],
+        [ "1.2 CARLsim Output", "tut1_basic_concepts.html#tut1s2_output", null ]
+      ] ],
       [ "2. Simple Weight Tuner", "tut2_simple_weight_tuner.html", null ],
-      [ "3. Parameter Tuning Interface (PTI)", "tut3_pti.html", null ],
-      [ "3.1 Introducton", "tut3_pti.html#tut3s1_intro", null ],
-      [ "3.2 ECJ Parameter File", "tut3_pti.html#tut3s2_parameter_file", null ],
-      [ "3.3 Parameter Tuning Interface (PTI)", "tut3_pti.html#tut3s3_experiment_class", null ],
-      [ "3.4 Output Files", "tut3_pti.html#tut3s4_output_files", null ]
+      [ "3. Parameter Tuning Interface (PTI)", "tut3_pti.html", [
+        [ "3.1 Introducton", "tut3_pti.html#tut3s1_intro", null ],
+        [ "3.2 ECJ Parameter File", "tut3_pti.html#tut3s2_parameter_file", null ],
+        [ "3.3 Parameter Tuning Interface (PTI)", "tut3_pti.html#tut3s3_experiment_class", null ],
+        [ "3.4 Output Files", "tut3_pti.html#tut3s4_output_files", null ]
+      ] ]
     ] ],
     [ "Classes", null, [
       [ "Class List", "annotated.html", "annotated" ],
@@ -104,8 +105,8 @@ var NAVTREE =
 var NAVTREEINDEX =
 [
 "annotated.html",
-"classGroupMonitor.html#a2e2b6c27b006ddd754a7d6de56130d25",
-"structGrid3D.html#a0a2f84ed7838f07779ae24c5a9086d33"
+"classGroupMonitor.html#a3a3ffdb35b09328d22e5d72503ed1f55",
+"structGrid3D.html#a14f94e529dff0b8bfba8e16fbe9755d6"
 ];
 
 var SYNCONMSG = 'click to disable panel synchronisation';

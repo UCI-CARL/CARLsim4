@@ -93,8 +93,7 @@ var NAVTREEINDEX0 =
 "ch1_getting_started.html":[1,0],
 "ch1_getting_started.html#ch1s1_preinstallation":[1,0,0],
 "ch1_getting_started.html#ch1s2_installation":[1,0,1],
-"ch1_getting_started.html#ch1s3_documentation":[1,0,2],
-"ch1_getting_started.html#ch1s4_project_workflow":[1,0,3],
+"ch1_getting_started.html#ch1s3_project_workflow":[1,0,2],
 "ch2_basic_concepts.html":[1,1],
 "ch2_basic_concepts.html#ch2s1_general_workflow":[1,1,0],
 "ch2_basic_concepts.html#ch2s2_hello_world":[1,1,1],
@@ -249,5 +248,6 @@ var NAVTREEINDEX0 =
 "classGroupMonitor.html":[3,0,5],
 "classGroupMonitor.html#a189831c344b8c7ed69234a62b6c25634":[3,0,5,11],
 "classGroupMonitor.html#a219899d7deb62081f61a2f59e1bbcad8":[3,0,5,8],
-"classGroupMonitor.html#a25e0e98dd4519eaaa6b258f0dcb91ac7":[3,0,5,16]
+"classGroupMonitor.html#a25e0e98dd4519eaaa6b258f0dcb91ac7":[3,0,5,16],
+"classGroupMonitor.html#a2e2b6c27b006ddd754a7d6de56130d25":[3,0,5,7]
 };
