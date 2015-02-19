@@ -202,10 +202,9 @@ int g0 = sim.createSpikeGeneratorGroup("input", 10, EXCITATORY_NEURON);
 // etc.
 
 // create spike gen from file
-SpikeGenerator
 SpikeGeneratorFromFile SGF("results/spk_input.dat");
 
-// associate group g0 with PSG
+// associate group g0 with SGF
 sim.setSpikeGenerator(g0, &SGF);
 
 sim.setupNetwork();
@@ -237,6 +236,27 @@ unsigned int nextSpikeTime(CARLsim* sim, int grpId, int nid, unsigned int curren
 		return (lastScheduledSpikeTime + 100);
 }
 \endcode
+
+In order for a custom SpikeGenerator to be associated with a SpikeGenerator group, CARLsim::setSpikeGenerator
+must be called on the group in ::CONFIG_STATE:
+\code
+#include <carlsim.h>
+
+// configure network
+CARLsim sim("custom SG example",CPU_MODE,USER);
+int g0 = sim.createSpikeGeneratorGroup("input", 10, EXCITATORY_NEURON);
+// etc.
+
+// create custom spike generator
+MySpikes CSG;
+
+// associate group g0 with CSG
+sim.setSpikeGenerator(g0, &CSG);
+
+sim.setupNetwork();
+// etc.
+\endcode
+
 
 \since v2.0
 

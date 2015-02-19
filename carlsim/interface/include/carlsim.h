@@ -768,12 +768,30 @@ public:
 	 * to monitor connection status between groups. Connection monitors are registered for two groups (i.e., pre- and
 	 * post- synaptic groups) and are called automatically by the simulator every second.
 	 *
-	 * Use setConnectionMonitor(grpIdPre,grpIdPost) to use a ConnectionMonitor with default settings.
+	 * CARLsim supports two different recording mechanisms: Recording to a weight file (binary) and recording to a
+	 * ConnectionMonitor object. The former is useful for off-line analysis of synaptic weights (e.g., using 
+	 * \ref ch9s1_matlab_oat).
+	 * The latter is useful to calculate different weight metrics and statistics on-line, such as the percentage of
+	 * weight values that fall in a certain weight range, or the number of weights that have been changed since the
+	 * last snapshot.
+	 *
+	 * A file name can be specified via variable fileName (make sure the specified directory exists). The easiest way
+	 * is to set fileName to string "DEFAULT", in which case a default file name will be created in the results
+	 * directory: "results/conn_{preGrpName}_{postGrpName}.dat", where preGrpName is the name assigned to the
+	 * pre-synaptic group at initialization, and postGrpName is the name assigned to the post-synaptic group at
+	 * initialization.
+	 * If no binary file shall be created, set fileName equal to the string "NULL".
+	 *
+	 * The function returns a pointer to a ConnectionMonitor object, which can be used to calculate weight changes
+	 * and other connection stats.
+	 * See \ref ch7s2_connection_monitor of the User Guide for more information on how to use ConnectionMonitor.
 	 *
 	 * \STATE ::CONFIG_STATE, ::SETUP_STATE
 	 * \param[in] grpIdPre 		the pre-synaptic group ID
 	 * \param[in] grpIdPost 	the post-synaptic group ID
 	 * \param[in] fname         file name of the binary to be created
+	 * \see ch7s2_connection_monitor
+	 * \see ch9s1_matlab_oat
 	 */
 	ConnectionMonitor* setConnectionMonitor(int grpIdPre, int grpIdPost, const std::string& fname);
 
@@ -812,6 +830,7 @@ public:
 	 * \see setExternalCurrent(int grpId, float current)
 	 * \see setSpikeRate
 	 * \see setSpikeGenerator
+	 * \see \ref ch6s2_generating_current
 	 */
 	void setExternalCurrent(int grpId, const std::vector<float>& current);
 
@@ -841,6 +860,7 @@ public:
 	 * \see setExternalCurrent(int grpId, const std::vector<float>& current)
 	 * \see setSpikeRate
 	 * \see setSpikeGenerator
+	 * \see \ref ch6s2_generating_current
 	 */
 	void setExternalCurrent(int grpId, float current);
 
@@ -872,10 +892,23 @@ public:
 	void setSpikeCounter(int grpId, int recordDur=-1);
 
 	/*!
-	 * \brief Sets up a spike generator
+	 * \brief Associates a SpikeGenerator object with a group
 	 *
-	 * \TODO finish docu
+	 * A custom SpikeGenerator object can be used to allow for more fine-grained control overs spike generation by
+	 * specifying individual spike times for each neuron in a group.
+	 *
+	 * In order to specify spike times, a new class must be defined first that derives from the SpikeGenerator class
+	 * and implements the virtual method SpikeGenerator::nextSpikeTime.
+	 * Then, in order for a custom SpikeGenerator to be associated with a SpikeGenerator group,
+	 * CARLsim::setSpikeGenerator must be called on the group in ::CONFIG_STATE:.
+	 *
+	 * A number of interesting Spike Generators is provided in the <tt>tools/spike_generators</tt> directory, such
+	 * as PeriodicSpikeGenerator, SpikeGeneratorFromVector, and SpikeGeneratorFromFile.
+	 *
 	 * \STATE ::CONFIG_STATE
+	 * \param[in] grpId           the group with which to associate a SpikeGenerator object
+	 * \param[in] SpikeGenerator* pointer to a custom SpikeGenerator object
+	 * \see \ref ch6s1_generating_spikes
 	 */
 	void setSpikeGenerator(int grpId, SpikeGenerator* spikeGen);
 
@@ -888,18 +921,20 @@ public:
 	 * representation (AER), the spike monitor indicates which neurons spiked by using the neuron ID within a group
 	 * (0-indexed) and the time of the spike. Only one spike monitor is allowed per group.
 	 *
-	 * Every second, the SpikeMonitor will print to console the total and average number of spikes in the group.
+	 * CARLsim supports two different recording mechanisms: Recording to a spike file (binary) and recording to a
+	 * SpikeMonitor object. The former is useful for off-line analysis of activity (e.g., using \ref ch9s1_matlab_oat).
+	 * The latter is useful to calculate different spike metrics and statistics on-line, such as mean firing rate and
+	 * standard deviation, or the number of neurons whose firing rate lies in a certain interval.
 	 *
-	 * In addition, all spikes will be stored in a binary file (in AER format). This file can be read off-line in Matlab
-	 * by using readSpikes.m from /util/scripts. A file name can be specified via variable fname (specified directory
-	 * must exist). If no file name is specified, a default one will be created in the results directory:
-	 * "results/spk{group name}.dat", where group name is the name assigned to the group at initialization (can be
-	 * retrieved via getGroupName).
-	 * If no binary file shall be created, set fname equal to the string "NULL".
+	 * A file name can be specified via variable fileName (make sure the specified directory exists). The easiest way
+	 * is to set fileName to string "DEFAULT", in which case a default file name will be created in the results
+	 * directory: "results/spk_{group name}.dat", where group name is the name assigned to the group at initialization
+	 * (can be retrieved via getGroupName).
+	 * If no binary file shall be created, set fileName equal to the string "NULL".
 	 *
 	 * The function returns a pointer to a SpikeMonitor object, which can be used to calculate spike statistics (such
-	 * group firing rate, number of silent neurons, etc.) or retrieve all spikes from a particular time window. See
-	 * /util/spike_monitor/spike_monitor.h for more information on how to interact with the SpikeMonitor object.
+	 * group firing rate, number of silent neurons, etc.) or retrieve all spikes from a particular time window.
+	 * See \ref ch7s1_spike_monitor of the User Guide for more information on how to use SpikeMonitor.
 	 *
 	 * \STATE ::CONFIG_STATE, ::SETUP_STATE
 	 * \param[in] grpId 		the group ID
@@ -910,9 +945,10 @@ public:
 	 * 							AER format
 	 *
 	 * \note Only one SpikeMonitor is allowed per group.
-	 *
 	 * \attention Using SpikeMonitor::startRecording and SpikeMonitor::stopRecording might significantly slow down the
 	 * simulation. It is unwise to use this mechanism to record a large number of spikes over a long period of time.
+	 * \see ch7s1_spike_monitor
+	 * \see ch9s1_matlab_oat
 	 */
 	SpikeMonitor* setSpikeMonitor(int grpId, const std::string& fileName);
 
