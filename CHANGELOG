@@ -11,6 +11,12 @@ Release 3.0
 Build 3.0.1
 ---------------------
 
+2014-02-18     Michael Beyeler <mbeyeler@uci.edu>
+  * Updated Chapter 8 of User Guide.
+  * Improved code documentation on CARLsim::loadSimulation and
+    CARLsim::saveSimulation.
+  * Improved code documentation on CARLsim datastructures and CARLsim states.
+
 2014-02-17     Michael Beyeler <mbeyeler@uci.edu>
   * Updated Chapter 1 of User Guide.
 
