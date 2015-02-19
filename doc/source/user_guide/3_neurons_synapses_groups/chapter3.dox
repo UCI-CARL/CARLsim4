@@ -51,14 +51,45 @@ a compartmental model, the leaky integrate-and-fire model, and the adaptive expo
 
 
 \section ch3s2_synapses 3.2 Synapses
+\author Kristofor D. Carlson
 
-Neurons are connected via synapses. Here's how synapses work. Mention weights and that weights can change
+Spiking neural networks deliver information using spikes via structures called synapses. In biology,
+synapses pass information from one neuron to another via a chemical signal (electrical synapses also
+exist but are not modeled in CARLsim). Communication between
+synapses is, in general, unidirectional. Synapses are broken into two components: one component
+located on the neuron sending the information (the presynaptic neuron) and one component located
+on the neuron receiving the information (the postsynaptic neuron). The two synapse components are
+separated by a physical gap between the pre and postsynaptic neurons called the synaptic cleft.
+Information is passed from the presynaptic neuron to the postsynaptic neuron when the presynaptic
+component of the synapse releases neurotransmitters that cross the synaptic cleft and bind to
+postsynaptic receptors that result in a current influx into the postsynaptic neuron. It is the sum
+of many synaptic current contributions that change the postsynaptic neuron voltage, causing it to
+spike if the voltage threshold is crossed.
+
+CARLsim supports two descriptions of synapses. The current-based (CUBA) description uses a single
+synaptic current term while the conductance-based (COBA) description calculates
+the synaptic current using more complex conductance equations for each synaptic receptor-type. Both
+CUBA and COBA current contributions are influenced by the synaptic weight of the synapse. We next
+discuss each synapse model specifically.
+
 (see \ref ch4_connections).
 
 \subsection ch3s2s1_cuba 3.2.1 CUBA
 
-When current based (CUBA) mode is used, no conductances are present. The strength of the resulting current is
-directly proportional to the synaptic weight.
+When current based (CUBA) mode is used, no conductances are present. The strength of the resulting
+current is directly proportional to the synaptic weight. Additionally, the total synaptic current at
+postsynaptic neuron j, \f$ I_{j}^{syn} \f$, due to a spike from presynaptic neuron i is given at any
+point in time by:
+
+\f[
+I_{j}^{syn} = \sum \limits_{i=1}^{N} s_{ij}w_{ij}
+\f]
+
+
+
+\note Because CUBA mode has synaptic currents that last for a single time step, and COBA mode has
+synaptic currents that decay over time, switching from CUBA mode to COBA mode usually requires the
+user to reduce the synaptic weights and the resulting currents will be much larger in COBA mode.
 
 \subsection ch3s2s2_coba 3.2.2 COBA
 
@@ -67,6 +98,42 @@ If the synaptic connection is excitatory then AMPA and NMDA decay values are use
 If the synaptic connection is inhibitory then GABA A and GABA B decay values are
 used. Users can specify the decay time constants for the synaptic decay constants by calling
 CARLsim::setConductances.
+
+
+\f[
+I_{j}^{syn} = \sum \limits_{i=1}^{N} i_{ij}w_{ij}
+\f]
+
+Here we drop the i,j notation and assume the i ang g values pertain to a specific synapse and the v
+values pertain to a specific postsynaptic neuron.
+
+\f[
+i = i_{NMDA} + i_{AMPA} + i_{GABA_{A}} + i_{GABA_{B}}
+\f]
+
+\f[
+i_{NMDA} = g_{NMDA}\frac{\Big[\frac{v+80}{60} \Big]^{2}}{1+\Big[\frac{v+80}{60} \Big]^{2}}
+
+(v-v^{rev}_{NMDA})
+\f]
+
+\f[
+i_{AMPA} = g_{AMPA}(v-v^{rev}_{AMPA})
+\f]
+
+\f[
+i_{GABA_{A}} = g_{GABA_{A}}(v-v^{rev}_{GABA_{A}})
+\f]
+
+\f[
+i_{GABA_{B}} = g_{GABA_{B}}(v-v^{rev}_{GABA_{B}})
+\f]
+
+The conductance, g, for each receptor is given in the general form as:
+
+\f[
+g_{k} = \sum \limits_{f} e^{t-t_{f}/ \tau} \Theta(t-t_f)
+\f]
 
 
 \note A pre-synaptic spike increases both post-synaptic AMPA and NMDA (GABAa and GABAb) for excitatory
@@ -154,6 +221,14 @@ int gOut = sim.createGroup("output", Grid3D(N,1,1), EXCITATORY_NEURON); // are e
 \see ::Grid3D
 \see ::RadiusRF
 \since v3.0
+
+
+\section ch3s4_refs 3.4 References
+
+Izhikevich 2003 neuron reference.
+
+Izhikevich 2004 neuron reference.
+
 
 
 */

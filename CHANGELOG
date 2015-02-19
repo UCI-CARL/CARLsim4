@@ -11,10 +11,13 @@ Release 3.0
 Build 3.0.1
 ---------------------
 
-2014-02-17     Michael Beyeler <mbeyeler@uci.edu>
+2015-02-19     Kristofor D. Carlson <kdcarlso@uci.edu>
+  * Updated Chapter 3 of User Guide.
+
+2015-02-17     Michael Beyeler <mbeyeler@uci.edu>
   * Updated Chapter 1 of User Guide.
 
-2014-02-14     Ting-Shuo Chou <tingshuc@uci.edu>
+2015-02-14     Ting-Shuo Chou <tingshuc@uci.edu>
   * Quickfix for Windows solution files.
 
 
@@ -22,7 +25,7 @@ Build 3.0.1
 Build 3.0.0
 ---------------------
 
-2014-02-14     Kristofor D. Carlson <kdcarlso@uci.edu>
+2015-02-14     Kristofor D. Carlson <kdcarlso@uci.edu>
 	+ Added tutorial for Basic Concepts.
 	+ Added tutorial for CARLsim-ECJ PTI.
 	* Cleaned up installation files.
