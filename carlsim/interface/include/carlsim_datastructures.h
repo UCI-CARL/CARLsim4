@@ -81,7 +81,12 @@
  * In mode CUSTOM, the other file pointers can be set using CARLsim::setLogsFp.
  */
 enum loggerMode_t {
-	 USER,  DEVELOPER,  SHOWTIME,  SILENT,  CUSTOM,  UNKNOWN_LOGGER
+	 USER,            //!< User mode, for experiment-oriented simulations.
+	 DEVELOPER,       //!< Developer mode, for developing and debugging code.
+	 SHOWTIME,        //!< Showtime mode, will only output warnings and errors.
+	 SILENT,          //!< Silent mode, no output is generated.
+	 CUSTOM,          //!< Custom mode, the user can set the location of all the file pointers.
+	 UNKNOWN_LOGGER
 };
 static const char* loggerMode_string[] = {
 	"USER","DEVELOPER","SHOWTIME","SILENT","CUSTOM","Unknown mode"
@@ -101,7 +106,9 @@ static const char* loggerMode_string[] = {
  * The simulation mode will be fixed throughout the lifetime of a CpuSNN object.
  */
 enum simMode_t {
-	 CPU_MODE,  GPU_MODE,  UNKNOWN_SIM
+	 CPU_MODE,     //!< model is run on a single CPU core
+	 GPU_MODE,     //!< model is run on a single GPU card
+	 UNKNOWN_SIM
 };
 static const char* simMode_string[] = {
 	"CPU mode","GPU mode","Unknown mode"
@@ -116,8 +123,8 @@ static const char* simMode_string[] = {
  * DA_MOD:      Dopamine-modulated STDP, nearest-neighbor.
  */
 enum stdpType_t {
-	STANDARD,
-	DA_MOD,
+	STANDARD,         //!< standard STDP of Bi & Poo (2001), nearest-neighbor
+	DA_MOD,           //!< dopamine-modulated STDP, nearest-neighbor
 	UNKNOWN_STDP
 };
 static const char* stdpType_string[] = {
@@ -132,10 +139,10 @@ static const char* stdpType_string[] = {
  * CARLsim supports different STDP curves
  */
 enum stdpCurve_t {
-	EXP_CURVE,
-	PULSE_CURVE,
-	TIMING_BASED_CURVE,
-	UNKNOWN_CURVE
+	EXP_CURVE,           //!< standard exponential curve
+	PULSE_CURVE,         //!< symmetric pulse curve
+	TIMING_BASED_CURVE,  //!< timing-based curve
+	UNKNOWN_CURVE        //!< unknown curve type
 };
 static const char* stdpCurve_string[] = {
 	"exponential curve",
@@ -155,7 +162,8 @@ static const char* stdpCurve_string[] = {
  *          spike times).
  */
 enum spikeMonMode_t {
-	COUNT,            AER
+	COUNT,      //!< mode in which only spike count information is collected
+	AER,        //!< mode in which spike information is collected in AER format
 };
 static const char* spikeMonMode_string[] = {
 	"SpikeCount Mode","SpikeTime Mode"
@@ -172,11 +180,11 @@ static const char* spikeMonMode_string[] = {
  * NM_NE Noradrenaline
  */
 enum neuromodulator_t {
-	NM_DA,
-	NM_5HT,
-	NM_ACh,
-	NM_NE,
-	NM_UNKNOWN
+	NM_DA,		//!< dopamine
+	NM_5HT,		//!< serotonin
+	NM_ACh,		//!< acetylcholine
+	NM_NE,		//!< noradrenaline
+	NM_UNKNOWN	//!< unknown type
 };
 static const char* neuromodulator_string[] = {
 	"Dopamine", "Serotonin", "Acetylcholine", "Noradrenaline", "Unknown neuromodulator"
@@ -191,7 +199,9 @@ static const char* neuromodulator_string[] = {
  * INTERVAL_1000MS: the update interval will be 1000 ms, which is 1Hz update frequency
  */
 enum updateInterval_t {
-	INTERVAL_10MS, INTERVAL_100MS, INTERVAL_1000MS
+	INTERVAL_10MS,		//!< the update interval will be 10 ms, which is 100Hz update frequency
+	INTERVAL_100MS,		//!< the update interval will be 100 ms, which is 10Hz update frequency
+	INTERVAL_1000MS		//!< the update interval will be 1000 ms, which is 1Hz update frequency
 };
 static const char* updateInterval_string[] = {
 	"10 ms interval", "100 ms interval", "1000 ms interval"
@@ -201,16 +211,19 @@ static const char* updateInterval_string[] = {
  * \brief CARLsim states
  *
  * A CARLsim simulation goes through the following states:
- * CONFIG 		configuration state, where the neural network is configured
- * SETUP 		setup state, where the neural network is prepared for execution
- * EXECUTION 	execution state, where the simulation is executed
+ * ::CONFIG_STATE   configuration state, where the neural network is configured
+ * ::SETUP_STATE    setup state, where the neural network is prepared for execution
+ * ::RUN_STATE      run state, where the simulation is executed
  * Certain methods can only be called in certain states. Check their documentation to see which method can be called
  * in which state.
- * Certain methods perform state transitions. CARLsim::setupNetwork will change the state from CONFIG to SETUP. The
- * first call to CARLsim::runNetwork will change the state from SETUP to EXECUTION.
+ * 
+ * Certain methods perform state transitions. CARLsim::setupNetwork will change the state from ::CONFIG_STATE to
+ * ::SETUP_STATE. The first call to CARLsim::runNetwork will change the state from ::SETUP_STATE to ::RUN_STATE.
  */
 enum carlsimState_t {
-	CONFIG_STATE, SETUP_STATE, RUN_STATE
+	CONFIG_STATE,		//!< configuration state, where the neural network is configured
+	SETUP_STATE,		//!< setup state, where the neural network is prepared for execution and monitors are set
+	RUN_STATE			//!< run state, where the model is stepped
 };
 static const char* carlsimState_string[] = {
 	"Configuration state", "Setup state", "Run state"

@@ -167,7 +167,7 @@ public:
 	 * will stay the same throughout the simulation (SYN_FIXED, no plasticity). All synapses will have the same delay.
 	 * For more flexibility, see the other connect() calls.
 	 *
-	 * \STATE CONFIG
+	 * \STATE ::CONFIG_STATE
 	 * \param[in] grpId1     ID of the pre-synaptic group
 	 * \param[in] grpId2     ID of the post-synaptic group
 	 * \param[in] connType   connection type. "random": random connectivity. "one-to-one": connect the i-th neuron in
@@ -231,7 +231,7 @@ public:
 	 * \brief Shortcut to make connections with custom connectivity profile but omit scaling factors for synaptic
 	 * conductances (default is 1.0 for both)
 	 * \TODO finish docu
-	 * \STATE CONFIG
+	 * \STATE ::CONFIG_STATE
 	 */
 	short int connect(int grpId1, int grpId2, ConnectionGenerator* conn, bool synWtType=SYN_FIXED, int maxM=0,
 						int maxPreM=0);
@@ -239,7 +239,7 @@ public:
 	/*!
 	 * \brief make connections with custom connectivity profile
 	 * \TODO finish docu
-	 * \STATE CONFIG
+	 * \STATE ::CONFIG_STATE
 	 */
 	short int connect(int grpId1, int grpId2, ConnectionGenerator* conn, float mulSynFast, float mulSynSlow,
 						bool synWtType=SYN_FIXED, int maxM=0,int maxPreM=0);
@@ -248,7 +248,7 @@ public:
 	/*!
 	 * \brief creates a group of Izhikevich spiking neurons
 	 * \TODO finish doc
-	 * \STATE CONFIG
+	 * \STATE ::CONFIG_STATE
 	 */
 	int createGroup(const std::string& grpName, int nNeur, int neurType);
 
@@ -267,7 +267,7 @@ public:
 	 * The primitive (or simple) cubic crystal system consists of one lattice point (neuron) on each corner of the cube.
 	 * Each neuron at a lattice point is then shared equally between eight adjacent cubes.
 	 *
-	 * \STATE CONFIG
+	 * \STATE ::CONFIG_STATE
 	 * \param[in] grpName    the group name
 	 * \param[in] grid       a Grid3D struct specifying the dimensions of the 3D lattice
 	 * \param[in] neurType   either EXCITATORY_NEURON, INHIBITORY_NEURON or DOPAMINERGIC_NEURON
@@ -278,7 +278,7 @@ public:
 	/*!
 	 * \brief  creates a spike generator group
 	 * \TODO finish docu
-	 * \STATE CONFIG
+	 * \STATE ::CONFIG_STATE
 	 */
 	int createSpikeGeneratorGroup(const std::string& grpName, int nNeur, int neurType);
 
@@ -295,7 +295,7 @@ public:
 	 * of a 2D arrangement of neurons on a plane), or a channel (such as RGB channels, each of which consists of a 2D
 	 * arrangements of neurons coding for (x,y) coordinates of an image). For the user's convenience, the struct thus
 	 * provides members Grid3D::depth, Grid3D::column, and Grid3D::channels, which differ only semantically.
-	 * \STATE CONFIG
+	 * \STATE ::CONFIG_STATE
 	 * \TODO finish doc
 	 */
 	int createSpikeGeneratorGroup(const std::string& grpName, const Grid3D& grid, int neurType);
@@ -311,7 +311,7 @@ public:
 	 * If you call this function without setting your own defaults, then the following defaults will be used:
 	 * tdAMPA=5ms, trNMDA=0, tdNMDA=150ms, tdGABAa=6ms, trGABAb=0, tdGABAb=150ms (instantaneous rise time).
 	 *
-	 * \STATE CONFIG
+	 * \STATE ::CONFIG_STATE
 	 * \param[in] isSet   a flag to inform whether to run simulation in COBA mode (true) or CUBA mode (false)
 	 */
 	void setConductances(bool isSet);
@@ -325,7 +325,7 @@ public:
 	 * Use setConductances(true) to use default decay values.
 	 * Use the other setConductances to enable non-zero rise times for NMDA and GABAb.
 	 *
-	 * \STATE CONFIG
+	 * \STATE ::CONFIG_STATE
 	 * \param[in] isSet   a flag to inform whether to run simulation in COBA mode (true) or CUBA mode (false)
 	 * \param[in] tdAMPA  time constant for AMPA decay (ms)
 	 * \param[in] tdNMDA  time constant for NMDA decay (ms)
@@ -345,7 +345,7 @@ public:
 	 * The NMDA current is voltage dependent (see Izhikevich et al., 2004).
 	 * Use setConductances(true) to use default decay values.
 	 *
-	 * \STATE CONFIG
+	 * \STATE ::CONFIG_STATE
 	 * \param[in] isSet   a flag to inform whether to run simulation in COBA mode (true) or CUBA mode (false)
 	 * \param[in] tdAMPA  time constant for AMPA decay (ms)
 	 * \param[in] trNMDA  time constant for NMDA rise (ms), must be smaller than tdNMDA
@@ -377,7 +377,7 @@ public:
 	 * homeoScale   = 0.1
 	 * avgTimeScale = 10 seconds
 	 *
-	 * \STATE CONFIG
+	 * \STATE ::CONFIG_STATE
 	 * \param[in] grpId        the group ID of group to which homeostasis is applied
 	 * \param[in] isSet        a boolean, setting it to true/false enables/disables homeostasis
 	 * \param[in] homeoScale   scaling factor multiplied to weight change due to homeostasis
@@ -396,7 +396,7 @@ public:
 	 * homeoScale   = 0.1
 	 * avgTimeScale = 10 seconds
 	 *
-	 * \STATE CONFIG
+	 * \STATE ::CONFIG_STATE
 	 * \param[in] grpId        the group ID of group to which homeostasis is applied
 	 * \param[in] isSet        a boolean, setting it to true/false enables/disables homeostasis
 	 */
@@ -413,7 +413,7 @@ public:
 	 * rate from this value or within a particular range. For more information on this implementation
 	 * please see: Carlson, et al. (2013). Proc. of IJCNN 2013.
 	 *
-	 * \STATE CONFIG
+	 * \STATE ::CONFIG_STATE
 	 * \param[in] grpId        the group ID of group for which these settings are applied
 	 * \param[in] baseFiring   target firing rate of every neuron in this group
 	 * \param[in] baseFiringSD standard deviation of target firing rate of every neuron in this group
@@ -424,7 +424,7 @@ public:
 	 * \brief Sets Izhikevich params a, b, c, and d with as mean +- standard deviation
 	 *
 	 * \TODO finish docu
-	 * \STATE CONFIG
+	 * \STATE ::CONFIG_STATE
 	 */
 	void setNeuronParameters(int grpId, float izh_a, float izh_a_sd, float izh_b, float izh_b_sd,
 							 float izh_c, float izh_c_sd, float izh_d, float izh_d_sd);
@@ -433,7 +433,7 @@ public:
 	 * \brief Sets Izhikevich params a, b, c, and d of a neuron group.
 	 *
 	 * \TODO finish docu
-	 * \STATE CONFIG
+	 * \STATE ::CONFIG_STATE
 	 */
 	void setNeuronParameters(int grpId, float izh_a, float izh_b, float izh_c, float izh_d);
 
@@ -441,7 +441,7 @@ public:
 	 * \brief Sets baseline concentration and decay time constant of neuromodulators (DP, 5HT, ACh, NE) for a neuron
 	 * group.
 	 *
-	 * \STATE CONFIG
+	 * \STATE ::CONFIG_STATE
 	 * \param grpId the symbolic name of a group
 	 * \param baseDP  the baseline concentration of Dopamine
 	 * \param tauDP the decay time constant of Dopamine
@@ -461,7 +461,7 @@ public:
 	 * \TODO: this should be implemented via default arguments as members of the class, so that the user can call
 	 * setDefaultNeuromodulators()
 	 *
-	 * \STATE CONFIG
+	 * \STATE ::CONFIG_STATE
 	 */
 	void setNeuromodulator(int grpId, float tauDP = 100.0f, float tau5HT = 100.0f,
 							float tauACh = 100.0f, float tauNE = 100.0f);
@@ -484,7 +484,7 @@ public:
 	 * \brief Sets default E-STDP mode and params
 	 *
 	 * \TODO finish docu
-	 * \STATE CONFIG
+	 * \STATE ::CONFIG_STATE
 	 */
 	void setESTDP(int grpId, bool isSet);
 
@@ -492,7 +492,7 @@ public:
 	 * \brief Sets E-STDP params for a group, custom
 	 *
 	 * \TODO finish docu
-	 * \STATE CONFIG
+	 * \STATE ::CONFIG_STATE
 	 */
 	void setESTDP(int grupId, bool isSet, stdpType_t type, ExpCurve curve);
 
@@ -500,7 +500,7 @@ public:
 	 * \brief Sets E-STDP mode with hebbian curve
 	 *
 	 * \TODO finish docu
-	 * \STATE CONFIG
+	 * \STATE ::CONFIG_STATE
 	 */
 	void setESTDP(int grupId, bool isSet, stdpType_t type, TimingBasedCurve curve);
 
@@ -508,7 +508,7 @@ public:
 	 * \brief Sets default I-STDP mode and params
 	 *
 	 * \TODO finish docu
-	 * \STATE CONFIG
+	 * \STATE ::CONFIG_STATE
 	 */
 	void setISTDP(int grpId, bool isSet);
 
@@ -516,7 +516,7 @@ public:
 	 * \brief Sets I-STDP mode with constant symmetric curve
 	 *
 	 * \TODO finish docu
-	 * \STATE CONFIG
+	 * \STATE ::CONFIG_STATE
 	 */
 	void setISTDP(int grpId, bool isSet, stdpType_t type, ExpCurve curve);
 
@@ -524,7 +524,7 @@ public:
 	 * \brief Sets I-STDP mode with constant symmetric curve
 	 *
 	 * \TODO finish docu
-	 * \STATE CONFIG
+	 * \STATE ::CONFIG_STATE
 	 */
 	void setISTDP(int grpId, bool isSet, stdpType_t type, PulseCurve curve);
 
@@ -548,7 +548,7 @@ public:
 	 *
 	 * Source: Misha Tsodyks and Si Wu (2013) Short-term synaptic plasticity. Scholarpedia, 8(10):3153., rev #136920
 	 *
-	 * \STATE CONFIG
+	 * \STATE ::CONFIG_STATE
 	 * \param[in] grpId       pre-synaptic group ID
 	 * \param[in] isSet       a flag whether to enable/disable STP
 	 * \param[in] STP_U       increment of u induced by a spike
@@ -571,7 +571,7 @@ public:
 	 *
 	 * These default values can be overridden using setDefaultSTPparams.
 	 *
-	 * \STATE CONFIG
+	 * \STATE ::CONFIG_STATE
 	 * \param[in] grpId   pre-synaptic group ID
 	 * \param[in] isSet   a flag whether to enable/disable STP
 	 * \note STP will be applied to all outgoing synapses of all neurons in this group.
@@ -585,7 +585,7 @@ public:
 	/*!
 	 * \brief Sets the weight and weight change update parameters
 	 *
-	 * \STATE CONFIG
+	 * \STATE ::CONFIG_STATE
 	 * \param[in] wtANDwtChangeUpdateInterval the interval between two wt (weight) and wtChange (weight change) update.
 	 * \param[in] enableWtChangeDecay enable weight change decay
 	 * \param[in] wtChangeDecay the decay ratio of weight change (wtChange)
@@ -598,7 +598,7 @@ public:
 	/*!
 	 * \brief run the simulation for time=(nSec*seconds + nMsec*milliseconds)
 	 *
-	 * \STATE SETUP, EXECUTION. First call to runNetwork will make CARLsim state switch from SETUP to EXECUTION.
+	 * \STATE ::SETUP_STATE, ::RUN_STATE. First call to runNetwork will make CARLsim state switch from ::SETUP_STATE to ::RUN_STATE.
 	 * \param[in] nSec 			  number of seconds to run the network
 	 * \param[in] nMsec 		  number of milliseconds to run the network
 	 * \param[in] printRunSummary enable the printing of a summary at the end of this run
@@ -609,7 +609,7 @@ public:
 	/*!
 	 * \brief build the network
 	 *
-	 * \STATE CONFIG. Will make CARLsim state switch from CONFIG to SETUP.
+	 * \STATE ::CONFIG_STATE. Will make CARLsim state switch from ::CONFIG_STATE to ::SETUP_STATE.
 	 * \param[in] removeTempMemory 	remove temp memory after building network
 	 */
 	void setupNetwork(bool removeTempMemory = true);
@@ -622,17 +622,21 @@ public:
 	const FILE* getLogFpLog();	//!< returns file pointer to log file
 
 	/*!
-	 * \brief Saves important simulation and network infos to file. The network state consists of all
+	 * \brief Saves important simulation and network infos to file.
+	 *
+	 * The network state consists of all
 	 * the synaptic connections, weights, delays, and whether the connections are plastic or fixed. As an
 	 * option, the user can choose whether or not to save the synaptic weight information (which could be
 	 * a large amount of data) with the saveSynapseInfo argument. The value of this argument is true by
 	 * default which causes the synaptic weight values to be output by default along with the rest of the
 	 * network information.
 	 *
-	 * \param[in] fileName			string of filename of saved simulation data.
-	 * \param[in] saveSynapseInfo			boolean value that determines if the weight values are written to
-	 * the data file or not. The weight values are written if the boolean value is true.
-	 * \STATE SETUP, RUN
+	 * \STATE ::SETUP_STATE, ::RUN_STATE
+	 * \param[in] fileName          string of filename of saved simulation data.
+	 * \param[in] saveSynapseInfo   boolean value that determines if the weight values are written to
+	 *                              the data file or not. The weight values are written if the boolean value is true.
+	 * \see CARLsim::loadSimulation
+	 * \since v2.0
 	 */
 	void saveSimulation(const std::string& fileName, bool saveSynapseInfo=true);
 
@@ -644,7 +648,7 @@ public:
 	 * However, it can be manually overridden using this function.
 	 * In order to disable the log file, pass string "NULL".
 	 *
-	 * \STATE CONFIG, SETUP, EXECUTION
+	 * \STATE ::CONFIG_STATE, ::SETUP_STATE, ::RUN_STATE
 	 * \param fileName the name of the log file
 	 * \note This function cannot be called in loggerMode_t CUSTOM. In this case, use setLogsFpCustom instead
 	 * \attention Make sure the directory exists!
@@ -660,7 +664,7 @@ public:
 	 * Setting a file pointer to NULL will not change the currently assigned file pointer (default value points to the
 	 * bit bucket).
 	 *
-	 * \STATE CONFIG, SETUP, EXECUTION
+	 * \STATE ::CONFIG_STATE, ::SETUP_STATE, ::RUN_STATE
 	 * \param[in] fpInf file pointer for status info
 	 * \param[in] fpErr file pointer for errors/warnings
 	 * \param[in] fpDeb file pointer for debug info
@@ -686,7 +690,7 @@ public:
 	 * If the flag is set to false, then the specified weight value will be corrected to lie on the boundary (either
 	 * minWt or maxWt).
 	 *
-	 * \STATE EXECUTION
+	 * \STATE ::RUN_STATE
 	 * \param[in] connId            the connection ID to manipulate
 	 * \param[in] bias              the bias value to add to every synapse
 	 * \param[in] updateWeightRange a flag specifying what to do when the specified weight+bias lies outside the range
@@ -701,11 +705,23 @@ public:
 	void biasWeights(short int connId, float bias, bool updateWeightRange=false);
 
 	/*!
-	 * \brief loads a simulation (and network state) from file. The file pointer fid must point to a
-	 * valid carlsim network save file.
+	 * \brief Loads a simulation (and network state) from file. The file pointer fid must point to a
+	 * valid CARLsim network save file (created with CARLsim::saveSimulation).
 	 *
+	 * Past CARLsim networks can be loaded from file by setting up the same number of groups, connections, and neurons
+	 * as was used to store the network via CARLsim::saveSimulation, and then calling CARLsim::loadSimulation to
+	 * overwrite all corresponding synaptic weight and delay values from file.
 	 *
-	 * \STATE CONFIG
+	 * \STATE ::CONFIG_STATE
+	 * \param[in] fid       file pointer to a save file created with CARLsim::saveSimulation
+	 *
+	 *\note In order for CARLsim::loadSimulation to work, the configured network must have the identical number of
+	 * groups, connections, and neurons as the one stored with CARLsim::saveSimulation.
+	 * \note In addition, CARLsim::saveSimulation must have been called with flag <tt>saveSynapseInfo</tt> set to
+	 * <tt>true</tt>.
+	 * \attention Wait with calling fclose on the file pointer until ::SETUP_STATE!
+	 * \see CARLsim::saveSimulation
+	 * \since v2.0
 	 */
 	void loadSimulation(FILE* fid);
 
@@ -716,7 +732,7 @@ public:
 	 * Buffers get reset to zero automatically after recordDur. However, you can reset the buffer manually at any
 	 * point in time, as long as you call setupNetwork() first.
 	 *
-	 * \STATE EXECUTION
+	 * \STATE ::RUN_STATE
 	 * \param grpId the group for which to reset the spike counts. Set to ALL if you want to reset all Spike Counters.
 	 */
 	void resetSpikeCounter(int grpId);
@@ -731,7 +747,7 @@ public:
 	 * If the flag is set to false, then the specified weight value will be corrected to lie on the boundary (either
 	 * minWt or maxWt).
 	 *
-	 * \STATE EXECUTION
+	 * \STATE ::RUN_STATE
 	 * \param[in] connId            the connection ID to manipulate
 	 * \param[in] scale             the scaling factor to apply to every synapse (cannot be negative)
 	 * \param[in] updateWeightRange a flag specifying what to do when the specified weight*scale lies outside the range
@@ -752,12 +768,30 @@ public:
 	 * to monitor connection status between groups. Connection monitors are registered for two groups (i.e., pre- and
 	 * post- synaptic groups) and are called automatically by the simulator every second.
 	 *
-	 * Use setConnectionMonitor(grpIdPre,grpIdPost) to use a ConnectionMonitor with default settings.
+	 * CARLsim supports two different recording mechanisms: Recording to a weight file (binary) and recording to a
+	 * ConnectionMonitor object. The former is useful for off-line analysis of synaptic weights (e.g., using 
+	 * \ref ch9s1_matlab_oat).
+	 * The latter is useful to calculate different weight metrics and statistics on-line, such as the percentage of
+	 * weight values that fall in a certain weight range, or the number of weights that have been changed since the
+	 * last snapshot.
 	 *
-	 * \STATE CONFIG, SETUP
+	 * A file name can be specified via variable fileName (make sure the specified directory exists). The easiest way
+	 * is to set fileName to string "DEFAULT", in which case a default file name will be created in the results
+	 * directory: "results/conn_{preGrpName}_{postGrpName}.dat", where preGrpName is the name assigned to the
+	 * pre-synaptic group at initialization, and postGrpName is the name assigned to the post-synaptic group at
+	 * initialization.
+	 * If no binary file shall be created, set fileName equal to the string "NULL".
+	 *
+	 * The function returns a pointer to a ConnectionMonitor object, which can be used to calculate weight changes
+	 * and other connection stats.
+	 * See \ref ch7s2_connection_monitor of the User Guide for more information on how to use ConnectionMonitor.
+	 *
+	 * \STATE ::CONFIG_STATE, ::SETUP_STATE
 	 * \param[in] grpIdPre 		the pre-synaptic group ID
 	 * \param[in] grpIdPost 	the post-synaptic group ID
 	 * \param[in] fname         file name of the binary to be created
+	 * \see ch7s2_connection_monitor
+	 * \see ch9s1_matlab_oat
 	 */
 	ConnectionMonitor* setConnectionMonitor(int grpIdPre, int grpIdPost, const std::string& fname);
 
@@ -783,7 +817,7 @@ public:
 	 * snn.runNetwork(10,0);
 	 * \endcode
 	 *
-	 * \STATE SETUP, EXECUTION
+	 * \STATE ::SETUP_STATE, ::RUN_STATE
 	 * \param[in] grpId    the group ID
 	 * \param[in] current  a float vector of current amounts (mA), one value per neuron in the group
 	 *
@@ -796,6 +830,7 @@ public:
 	 * \see setExternalCurrent(int grpId, float current)
 	 * \see setSpikeRate
 	 * \see setSpikeGenerator
+	 * \see \ref ch6s2_generating_current
 	 */
 	void setExternalCurrent(int grpId, const std::vector<float>& current);
 
@@ -825,6 +860,7 @@ public:
 	 * \see setExternalCurrent(int grpId, const std::vector<float>& current)
 	 * \see setSpikeRate
 	 * \see setSpikeGenerator
+	 * \see \ref ch6s2_generating_current
 	 */
 	void setExternalCurrent(int grpId, float current);
 
@@ -832,7 +868,7 @@ public:
 	 * \brief Sets a group monitor for a group, custom GroupMonitor class
 	 *
 	 * \TODO finish docu
-	 * \STATE CONFIG, SETUP
+	 * \STATE ::CONFIG_STATE, ::SETUP_STATE
 	 */
 	GroupMonitor* setGroupMonitor(int grpId, const std::string& fname);
 
@@ -848,7 +884,7 @@ public:
 	 * At any time, you can call getSpikeCounter to get the spiking information out.
 	 * You can have only one spike counter per group. However, a group can have both a SpikeMonitor and a SpikeCounter.
 	 *
-	 * \STATE CONFIG, SETUP
+	 * \STATE ::CONFIG_STATE, ::SETUP_STATE
 	 * \param[in] grpId the group for which you want to enable a SpikeCounter
 	 * \param[in] recordDur number of ms for which to record spike numbers. Spike numbers will be reset to zero after
 	 * this. Set frameDur to -1 to never reset spike counts. Default: -1.
@@ -856,10 +892,23 @@ public:
 	void setSpikeCounter(int grpId, int recordDur=-1);
 
 	/*!
-	 * \brief Sets up a spike generator
+	 * \brief Associates a SpikeGenerator object with a group
 	 *
-	 * \TODO finish docu
-	 * \STATE CONFIG
+	 * A custom SpikeGenerator object can be used to allow for more fine-grained control overs spike generation by
+	 * specifying individual spike times for each neuron in a group.
+	 *
+	 * In order to specify spike times, a new class must be defined first that derives from the SpikeGenerator class
+	 * and implements the virtual method SpikeGenerator::nextSpikeTime.
+	 * Then, in order for a custom SpikeGenerator to be associated with a SpikeGenerator group,
+	 * CARLsim::setSpikeGenerator must be called on the group in ::CONFIG_STATE:.
+	 *
+	 * A number of interesting Spike Generators is provided in the <tt>tools/spike_generators</tt> directory, such
+	 * as PeriodicSpikeGenerator, SpikeGeneratorFromVector, and SpikeGeneratorFromFile.
+	 *
+	 * \STATE ::CONFIG_STATE
+	 * \param[in] grpId           the group with which to associate a SpikeGenerator object
+	 * \param[in] SpikeGenerator* pointer to a custom SpikeGenerator object
+	 * \see \ref ch6s1_generating_spikes
 	 */
 	void setSpikeGenerator(int grpId, SpikeGenerator* spikeGen);
 
@@ -872,20 +921,22 @@ public:
 	 * representation (AER), the spike monitor indicates which neurons spiked by using the neuron ID within a group
 	 * (0-indexed) and the time of the spike. Only one spike monitor is allowed per group.
 	 *
-	 * Every second, the SpikeMonitor will print to console the total and average number of spikes in the group.
+	 * CARLsim supports two different recording mechanisms: Recording to a spike file (binary) and recording to a
+	 * SpikeMonitor object. The former is useful for off-line analysis of activity (e.g., using \ref ch9s1_matlab_oat).
+	 * The latter is useful to calculate different spike metrics and statistics on-line, such as mean firing rate and
+	 * standard deviation, or the number of neurons whose firing rate lies in a certain interval.
 	 *
-	 * In addition, all spikes will be stored in a binary file (in AER format). This file can be read off-line in Matlab
-	 * by using readSpikes.m from /util/scripts. A file name can be specified via variable fname (specified directory
-	 * must exist). If no file name is specified, a default one will be created in the results directory:
-	 * "results/spk{group name}.dat", where group name is the name assigned to the group at initialization (can be
-	 * retrieved via getGroupName).
-	 * If no binary file shall be created, set fname equal to the string "NULL".
+	 * A file name can be specified via variable fileName (make sure the specified directory exists). The easiest way
+	 * is to set fileName to string "DEFAULT", in which case a default file name will be created in the results
+	 * directory: "results/spk_{group name}.dat", where group name is the name assigned to the group at initialization
+	 * (can be retrieved via getGroupName).
+	 * If no binary file shall be created, set fileName equal to the string "NULL".
 	 *
 	 * The function returns a pointer to a SpikeMonitor object, which can be used to calculate spike statistics (such
-	 * group firing rate, number of silent neurons, etc.) or retrieve all spikes from a particular time window. See
-	 * /util/spike_monitor/spike_monitor.h for more information on how to interact with the SpikeMonitor object.
+	 * group firing rate, number of silent neurons, etc.) or retrieve all spikes from a particular time window.
+	 * See \ref ch7s1_spike_monitor of the User Guide for more information on how to use SpikeMonitor.
 	 *
-	 * \STATE CONFIG, SETUP
+	 * \STATE ::CONFIG_STATE, ::SETUP_STATE
 	 * \param[in] grpId 		the group ID
 	 * \param[in] fileName 		name of the binary file to be created. Leave empty for default name
 	 *                      	"results/spk_{grpName}.dat". Set to string "NULL" to suppress file creation. Default: ""
@@ -894,9 +945,10 @@ public:
 	 * 							AER format
 	 *
 	 * \note Only one SpikeMonitor is allowed per group.
-	 *
 	 * \attention Using SpikeMonitor::startRecording and SpikeMonitor::stopRecording might significantly slow down the
 	 * simulation. It is unwise to use this mechanism to record a large number of spikes over a long period of time.
+	 * \see ch7s1_spike_monitor
+	 * \see ch9s1_matlab_oat
 	 */
 	SpikeMonitor* setSpikeMonitor(int grpId, const std::string& fileName);
 
@@ -904,7 +956,7 @@ public:
 	 * \brief Sets a spike rate
 	 * \TODO finish docu
 	 *
-	 * \STATE SETUP, EXECUTION
+	 * \STATE ::SETUP_STATE, ::RUN_STATE
 	 * \param[in] grpId      group ID
 	 * \param[in] spikeRate  pointer to PoissonRate object
 	 * \param[in] refPeriod  refactory period (ms). Default: 1ms.
@@ -929,7 +981,7 @@ public:
 	 * updated accordingly if the flag updateWeightRange is set to true. If the flag is set to false, then the
 	 * specified weight value will be corrected to lie on the boundary (either minWt or maxWt).
 	 *
-	 * \STATE EXECUTION
+	 * \STATE ::RUN_STATE
 	 * \param[in] connId            the connection ID to manipulate
 	 * \param[in] neurIdPre         pre-synaptic neuron ID (zero-indexed)
 	 * \param[in] neurIdPost        post-synaptic neuron ID (zero-indexed)
@@ -951,7 +1003,7 @@ public:
 	 * \brief function writes population weights from gIDpre to gIDpost to file fname in binary.
 	 *
 	 * \TODO finish docu
-	 * \STATE SETUP, EXECUTION
+	 * \STATE ::SETUP_STATE, ::RUN_STATE
 	 */
 	void writePopWeights(std::string fname, int gIDpre, int gIDpost);
 
@@ -963,15 +1015,15 @@ public:
 	 * \brief Returns the current CARLsim state
 	 *
 	 * A CARLsim simulation goes through the following states:
-	 * - CONFIG 	configuration state, where the neural network is configured
-	 * - SETUP 		setup state, where the neural network is prepared for execution
-	 * - EXECUTION 	execution state, where the simulation is executed
+	 * - ::CONFIG_STATE 	configuration state, where the neural network is configured
+	 * - ::SETUP_STATE 		setup state, where the neural network is prepared for execution
+	 * - ::RUN_STATE 	execution state, where the simulation is executed
 	 *
 	 * Certain methods can only be called in certain states. Check their documentation to see which method can be called
 	 * in which state.
 	 *
-	 * Certain methods perform state transitions. setupNetwork will change the state from CONFIG to SETUP. The
-	 * first call to runNetwork will change the state from SETUP to EXECUTION.
+	 * Certain methods perform state transitions. setupNetwork will change the state from ::CONFIG_STATE to ::SETUP_STATE. The
+	 * first call to runNetwork will change the state from ::SETUP_STATE to ::RUN_STATE.
 	 * \returns current CARLsim state
 	 */
 	carlsimState_t getCARLsimState() { return carlsimState_; }
@@ -980,7 +1032,7 @@ public:
 	 * \brief gets AMPA vector of a group
 	 *
 	 * \TODO finish docu
-	 * \STATE EXECUTION
+	 * \STATE ::RUN_STATE
 	 * \deprecated This function is deprecated. It will be replaced by NeuronMonitor.
 	 */
 	std::vector<float> getConductanceAMPA(int grpId);
@@ -989,7 +1041,7 @@ public:
 	 * \brief gets NMDA vector of a group
 	 *
 	 * \TODO finish docu
-	 * \STATE EXECUTION
+	 * \STATE ::RUN_STATE
 	 * \deprecated This function is deprecated. It will be replaced by NeuronMonitor.
 	 */
 	std::vector<float> getConductanceNMDA(int grpId);
@@ -998,7 +1050,7 @@ public:
 	 * \brief gets GABAa vector of a group
 	 *
 	 * \TODO finish docu
-	 * \STATE EXECUTION
+	 * \STATE ::RUN_STATE
 	 * \deprecated This function is deprecated. It will be replaced by NeuronMonitor.
 	 */
 	std::vector<float> getConductanceGABAa(int grpId);
@@ -1007,7 +1059,7 @@ public:
 	 * \brief gets GABAb vector of a group
 	 *
 	 * \TODO finish docu
-	 * \STATE EXECUTION
+	 * \STATE ::RUN_STATE
 	 * \deprecated This function is deprecated. It will be replaced by NeuronMonitor.
 	 */
 	std::vector<float> getConductanceGABAb(int grpId);
@@ -1018,7 +1070,7 @@ public:
 	 * This function returns the RangeDelay struct for a specific connection ID. The RangeDelay struct contains
 	 * fields for the minimum and maximum synaptic delay in the connection.
 	 *
-	 * \STATE CONFIG, SETUP, EXECUTION
+	 * \STATE ::CONFIG_STATE, ::SETUP_STATE, ::RUN_STATE
 	 * \param[in] connId connection ID
 	 * \returns RangeDelay struct
 	 * \since v3.0
@@ -1029,7 +1081,7 @@ public:
 	 * \brief gets delays
 	 *
 	 * \TODO finish docu
-	 * \STATE SETUP, EXECUTION
+	 * \STATE ::SETUP_STATE, ::RUN_STATE
 	 */
 	uint8_t* getDelays(int gIDpre, int gIDpost, int& Npre, int& Npost, uint8_t* delays=NULL);
 
@@ -1041,7 +1093,7 @@ public:
 	 * the creation of topographic connections in the network. The dimensions of the grid can thus be retrieved by
 	 * calling Grid3D.width, Grid3D.height, and Grid3D.depth. The total number of neurons is given by Grid3D.N.
 	 * See createGroup and Grid3D for more information.
-	 * \STATE SETUP, EXECUTION
+	 * \STATE ::SETUP_STATE, ::RUN_STATE
 	 * \param[in] grpId the group ID for which to get the Grid3D struct
 	 * \returns the 3D grid struct of a group
 	 */
@@ -1051,7 +1103,7 @@ public:
 	 * \brief finds the ID of the group with name grpName
 	 *
 	 * \TODO finish docu
-	 * \STATE SETUP, EXECUTION
+	 * \STATE ::SETUP_STATE, ::RUN_STATE
 	 */
 	int getGroupId(std::string grpName);
 
@@ -1059,7 +1111,7 @@ public:
 	 * \brief gets group name
 	 *
 	 * \TODO finish docu
-	 * \STATE SETUP, EXECUTION
+	 * \STATE ::SETUP_STATE, ::RUN_STATE
 	 */
 	std::string getGroupName(int grpId);
 
@@ -1077,7 +1129,7 @@ public:
 	 * For more information see createGroup and the Grid3D struct.
  	 * See also getNeuronLocation3D(int grpId, int relNeurId).
 	 *
-	 * \STATE CONFIG, SETUP, EXE
+	 * \STATE ::CONFIG_STATE, ::SETUP_STATE, EXE
 	 * \param[in] neurId the neuron ID for which the 3D location should be returned
 	 * \returns the 3D location a neuron codes for as a Point3D struct
 	 */
@@ -1099,7 +1151,7 @@ public:
 	 * For more information see createGroup and the Grid3D struct.
 	 * See also getNeuronLocation3D(int neurId).
 	 *
-	 * \STATE CONFIG, SETUP, EXE
+	 * \STATE ::CONFIG_STATE, ::SETUP_STATE, EXE
 	 * \param[in] grpId       the group ID
 	 * \param[in] relNeurId   the neuron ID (relative to the group) for which the 3D location should be returned
 	 * \returns the 3D location a neuron codes for as a Point3D struct
@@ -1111,8 +1163,8 @@ public:
 	 *
 	 * This function returns the number of connections (pairs of pre-post groups) in the network. Each pre-post
 	 * pair of neuronal groups has its own connection ID, which is returned by a call to connect.
-	 * \note This number might change throughout CARLsim state CONFIG, up to calling setupNetwork).
-	 * \STATE CONFIG, SETUP, EXECUTION
+	 * \note This number might change throughout CARLsim state ::CONFIG_STATE, up to calling setupNetwork).
+	 * \STATE ::CONFIG_STATE, ::SETUP_STATE, ::RUN_STATE
 	 * \returns the number of connections (pairs of pre-post groups) in the network
 	 */
 	int getNumConnections();
@@ -1121,79 +1173,79 @@ public:
 	 * \brief returns the number of connections associated with a connection ID
 	 *
 	 * \TODO finish docu
-	 * \STATE SETUP, EXECUTION
+	 * \STATE ::SETUP_STATE, ::RUN_STATE
 	 */
 	int getNumSynapticConnections(short int connectionId);
 
 	/*!
 	 * \brief returns the number of groups in the network
 	 *
-	 * \note This number might change throughout CARLsim state CONFIG, up to calling setupNetwork).
+	 * \note This number might change throughout CARLsim state ::CONFIG_STATE, up to calling setupNetwork).
 	 * \TODO finish docu
-	 * \STATE CONFIG, SETUP, EXECUTION
+	 * \STATE ::CONFIG_STATE, ::SETUP_STATE, ::RUN_STATE
 	 */
 	int getNumGroups();
 
 	/*!
 	 * \brief returns the total number of allocated neurons in the network
 	 *
-	 * \note This number might change throughout CARLsim state CONFIG, up to calling setupNetwork).
+	 * \note This number might change throughout CARLsim state ::CONFIG_STATE, up to calling setupNetwork).
 	 * \TODO finish docu
-	 * \STATE CONFIG, SETUP, EXECUTION
+	 * \STATE ::CONFIG_STATE, ::SETUP_STATE, ::RUN_STATE
 	 */
 	int getNumNeurons();
 
 	/*!
 	 * \brief returns the total number of regular (Izhikevich) neurons
 	 *
-	 * \note This number might change throughout CARLsim state CONFIG, up to calling setupNetwork).
+	 * \note This number might change throughout CARLsim state ::CONFIG_STATE, up to calling setupNetwork).
 	 * \TODO finish docu
-	 * \STATE CONFIG, SETUP, EXECUTION
+	 * \STATE ::CONFIG_STATE, ::SETUP_STATE, ::RUN_STATE
 	 */
 	int getNumNeuronsReg();
 
 	/*!
 	 * \brief returns the total number of regular (Izhikevich) excitatory neurons
 	 *
-	 * \note This number might change throughout CARLsim state CONFIG, up to calling setupNetwork).
+	 * \note This number might change throughout CARLsim state ::CONFIG_STATE, up to calling setupNetwork).
 	 * \TODO finish docu
-	 * \STATE CONFIG, SETUP, EXECUTION
+	 * \STATE ::CONFIG_STATE, ::SETUP_STATE, ::RUN_STATE
 	 */
 	int getNumNeuronsRegExc();
 
 	/*!
 	 * \brief returns the total number of regular (Izhikevich) inhibitory neurons
 	 *
-	 * \note This number might change throughout CARLsim state CONFIG, up to calling setupNetwork).
+	 * \note This number might change throughout CARLsim state ::CONFIG_STATE, up to calling setupNetwork).
 	 * \TODO finish docu
-	 * \STATE CONFIG, SETUP, EXECUTION
+	 * \STATE ::CONFIG_STATE, ::SETUP_STATE, ::RUN_STATE
 	 */
 	int getNumNeuronsRegInh();
 
 	/*!
 	 * \brief returns the total number of spike generator neurons
 	 *
-	 * \note This number might change throughout CARLsim state CONFIG, up to calling setupNetwork).
+	 * \note This number might change throughout CARLsim state ::CONFIG_STATE, up to calling setupNetwork).
 	 * \TODO finish docu
-	 * \STATE CONFIG, SETUP, EXECUTION
+	 * \STATE ::CONFIG_STATE, ::SETUP_STATE, ::RUN_STATE
 	 */
 	int getNumNeuronsGen();
 
 	/*!
 	 * \brief returns the total number of excitatory spike generator neurons
 	 *
-	 * \note This number might change throughout CARLsim state CONFIG, up to calling setupNetwork).
+	 * \note This number might change throughout CARLsim state ::CONFIG_STATE, up to calling setupNetwork).
 	 * \TODO finish docu
-	 * \STATE CONFIG, SETUP, EXECUTION
+	 * \STATE ::CONFIG_STATE, ::SETUP_STATE, ::RUN_STATE
 	 */
 	int getNumNeuronsGenExc();
 
 	/*!
 	 * \brief returns the total number of inhibitory spike generator neurons
 	 *
-	 * \note This number might change throughout CARLsim state CONFIG, up to calling setupNetwork).
+	 * \note This number might change throughout CARLsim state ::CONFIG_STATE, up to calling setupNetwork).
 	 * \TODO finish docu
-	 * \STATE CONFIG, SETUP, EXECUTION
+	 * \STATE ::CONFIG_STATE, ::SETUP_STATE, ::RUN_STATE
 	 */
 	int getNumNeuronsGenInh();
 
@@ -1201,7 +1253,7 @@ public:
 	 * \brief returns the total number of allocated pre-synaptic connections in the network
 	 *
 	 * \TODO finish docu
-	 * \STATE CONFIG, SETUP, EXECUTION
+	 * \STATE ::CONFIG_STATE, ::SETUP_STATE, ::RUN_STATE
 	 */
 	int getNumPreSynapses();
 
@@ -1209,7 +1261,7 @@ public:
 	 * \brief returns the total number of allocated post-synaptic connections in the network
 	 *
 	 * \TODO finish docu
-	 * \STATE CONFIG, SETUP, EXECUTION
+	 * \STATE ::CONFIG_STATE, ::SETUP_STATE, ::RUN_STATE
 	 */
 	int getNumPostSynapses();
 
@@ -1217,7 +1269,7 @@ public:
 	 * \brief returns the first neuron id of a groupd specified by grpId
 	 *
 	 * \TODO finish docu
-	 * \STATE SETUP, EXECUTION
+	 * \STATE ::SETUP_STATE, ::RUN_STATE
 	 */
 	int getGroupStartNeuronId(int grpId);
 
@@ -1225,7 +1277,7 @@ public:
 	 * \brief returns the last neuron id of a groupd specified by grpId
 	 *
 	 * \TODO finish docu
-	 * \STATE SETUP, EXECUTION
+	 * \STATE ::SETUP_STATE, ::RUN_STATE
 	 */
 	int getGroupEndNeuronId(int grpId);
 
@@ -1233,7 +1285,7 @@ public:
 	 * \brief returns the number of neurons of a group specified by grpId
 	 *
 	 * \TODO finish docu
-	 * \STATE CONFIG, SETUP, EXECUTION
+	 * \STATE ::CONFIG_STATE, ::SETUP_STATE, ::RUN_STATE
 	 */
 	int getGroupNumNeurons(int grpId);
 
@@ -1241,7 +1293,7 @@ public:
 	 * \brief returns the stdp information of a group specified by grpId
 	 *
 	 * \TODO finish docu
-	 * \STATE SETUP, EXECUTION
+	 * \STATE ::SETUP_STATE, ::RUN_STATE
 	 */
 	GroupSTDPInfo_t getGroupSTDPInfo(int grpId);
 
@@ -1249,7 +1301,7 @@ public:
 	 * \brief returns the neuromodulator information of a group specified by grpId
 	 *
 	 * \TODO finish docu
-	 * \STATE SETUP, EXECUTION
+	 * \STATE ::SETUP_STATE, ::RUN_STATE
 	 */
 	GroupNeuromodulatorInfo_t getGroupNeuromodulatorInfo(int grpId);
 
@@ -1257,7 +1309,7 @@ public:
 	 * \brief returns the current simulation mode
 	 *
 	 * This function returns the current simulation mode. Currently supported are CPU_MODE and GPU_MODE.
-	 * \STATE CONFIG, SETUP, EXECUTION
+	 * \STATE ::CONFIG_STATE, ::SETUP_STATE, ::RUN_STATE
 	 * \return simulation mode
 	 * \since v3.0
 	 */
@@ -1267,7 +1319,7 @@ public:
 	 * \brief returns
 	 *
 	 * \TODO finish docu
-	 * \STATE SETUP, EXECUTION
+	 * \STATE ::SETUP_STATE, ::RUN_STATE
 	 */
 	uint64_t getSimTime();
 
@@ -1275,7 +1327,7 @@ public:
 	 * \brief returns
 	 *
 	 * \TODO finish docu
-	 * \STATE SETUP, EXECUTION
+	 * \STATE ::SETUP_STATE, ::RUN_STATE
 	 */
 	uint32_t getSimTimeSec();
 
@@ -1283,7 +1335,7 @@ public:
 	 * \brief returns
 	 *
 	 * \TODO finish docu
-	 * \STATE SETUP, EXECUTION
+	 * \STATE ::SETUP_STATE, ::RUN_STATE
 	 */
 	uint32_t getSimTimeMsec();
 
@@ -1292,7 +1344,7 @@ public:
 	 *
 	 * A Spike Counter keeps track of all spikes per neuron for a certain time period (recordDur) at any point in time.
 	 *
-	 * \STATE EXECUTION
+	 * \STATE ::RUN_STATE
 	 * \param[in] grpId	   the group for which you want the spikes (cannot be ALL)
 	 * \returns pointer to array of ints. Number of elements in array is the number of neurons in group.
 	 * Each entry is the number of spikes for this neuron (int) since the last reset.
@@ -1305,7 +1357,7 @@ public:
 	 * This function returns a pointer to a SpikeMonitor object that has previously been created using the method
 	 * setSpikeMonitor. If the group does not have a SpikeMonitor, NULL is returned.
 	 *
-	 * \STATE SETUP, EXECUTION
+	 * \STATE ::SETUP_STATE, ::RUN_STATE
 	 * \param[in] grpId the group ID
 	 * \returns pointer to SpikeMonitor object if exists, NULL else
 	 * \since v3.0
@@ -1318,7 +1370,7 @@ public:
 	 * This function returns the RangeWeight struct for a specific connection ID. The RangeWeight struct contains
 	 * fields for the minimum, initial, and maximum weight in the connection.
 	 *
-	 * \STATE CONFIG, SETUP, EXECUTION
+	 * \STATE ::CONFIG_STATE, ::SETUP_STATE, ::RUN_STATE
 	 * \param[in] connId connection ID
 	 * \returns RangeWeight struct
 	 * \since v3.0
@@ -1329,7 +1381,7 @@ public:
 	 * \brief returns
 	 *
 	 * \TODO finish docu
-	 * \STATE SETUP, EXECUTION
+	 * \STATE ::SETUP_STATE, ::RUN_STATE
 	 */
 	bool isExcitatoryGroup(int grpId);
 
@@ -1337,7 +1389,7 @@ public:
 	 * \brief returns
 	 *
 	 * \TODO finish docu
-	 * \STATE SETUP, EXECUTION
+	 * \STATE ::SETUP_STATE, ::RUN_STATE
 	 */
 	bool isInhibitoryGroup(int grpId);
 
@@ -1345,7 +1397,7 @@ public:
 	 * \brief returns
 	 *
 	 * \TODO finish docu
-	 * \STATE SETUP, EXECUTION
+	 * \STATE ::SETUP_STATE, ::RUN_STATE
 	 */
 	bool isPoissonGroup(int grpId);
 
@@ -1354,7 +1406,7 @@ public:
 	/*!
 	 * \brief Sets default values for conductance time constants
 	 *
-	 * \STATE CONFIG
+	 * \STATE ::CONFIG_STATE
 	 * \param[in] tdAMPA   time constant for AMPA decay (ms)
 	 * \param[in] trNMDA   time constant for NMDA rise (ms)
 	 * \param[in] tdNMDA   time constant for NMDA decay (ms)
@@ -1368,7 +1420,7 @@ public:
 	 * \brief Sets default homeostasis params
 	 *
 	 * \TODO finish docu
-	 * \STATE CONFIG
+	 * \STATE ::CONFIG_STATE
 	 */
 	void setDefaultHomeostasisParams(float homeoScale, float avgTimeScale);
 
@@ -1376,7 +1428,7 @@ public:
 	 * \brief Sets default options for save file
 	 *
 	 * \TODO finish docu
-	 * \STATE CONFIG
+	 * \STATE ::CONFIG_STATE
 	 */
 	void setDefaultSaveOptions(std::string fileName, bool saveSynapseInfo);
 
@@ -1393,7 +1445,7 @@ public:
 	* \brief sets default values for E-STDP params
 	*
 	* \TODO finish docu
-	* \STATE CONFIG
+	* \STATE ::CONFIG_STATE
 	*/
 	void setDefaultESTDPparams(float alphaPlus, float tauPlus, float alphaMinus, float tauMinus, stdpType_t stdpType);
 
@@ -1401,7 +1453,7 @@ public:
 	* \brief sets default values for I-STDP params
 	*
 	* \TODO finish docu
-	* \STATE CONFIG
+	* \STATE ::CONFIG_STATE
 	*/
 	void setDefaultISTDPparams(float betaLTP, float betaLTD, float lambda, float delta, stdpType_t stdpType);
 
@@ -1411,13 +1463,13 @@ public:
 	 * This function sets the default values for STP parameters U tau_u, and tau_x.
 	 * These values will then apply to all subsequent calls to setSTP(int, bool).
 	 *
-	 * CARLsim will automatically assign the following values, which can be changed at any time during CONFIG:
+	 * CARLsim will automatically assign the following values, which can be changed at any time during ::CONFIG_STATE:
 	 * The default parameters for an excitatory neuron are U=0.45, tau_u=50.0, tau_f=750.0 (depressive).
 	 * The default parameters for an inhibitory neuron are U=0.15, tau_u=750.0, tau_f=50.0 (facilitative).
 	 *
 	 * Source: Misha Tsodyks and Si Wu (2013) Short-term synaptic plasticity. Scholarpedia, 8(10):3153., rev #136920
 	 *
-	 * \STATE CONFIG
+	 * \STATE ::CONFIG_STATE
 	 * \param[in] neurType   either EXCITATORY_NEURON or INHIBITORY_NEURON
 	 * \param[in] STP_U      default value for increment of u induced by a spike
 	 * \param[in] STP_tau_u  default value for decay constant of u

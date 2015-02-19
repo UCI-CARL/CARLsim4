@@ -11,6 +11,12 @@ Release 3.0
 Build 3.0.1
 ---------------------
 
+2014-02-18     Michael Beyeler <mbeyeler@uci.edu>
+  * Updated Chapters 6 and 8 of User Guide.
+  * Fixed CpuSNN::copyNeuronParametersFromHostToDevice.
+  * Improved code documentation on a number of CARLsim methods, datastructures
+    and CARLsim states.
+
 2014-02-17     Michael Beyeler <mbeyeler@uci.edu>
   * Updated Chapter 1 of User Guide.
 
