@@ -1557,7 +1557,7 @@ __global__ void kernel_doCurrentUpdateD1(int simTimeMs, int simTimeSec, int simT
 	}
 }
 
-void CpuSNN::copyPostConnectionInfo(network_ptr_t* dest, int allocateMem) {
+void CpuSNN::copyPostConnectionInfo(network_ptr_t* dest, bool allocateMem) {
 	checkAndSetGPUDevice();
 
 	assert(dest->memType == GPU_MODE);
@@ -1595,7 +1595,7 @@ void CpuSNN::copyPostConnectionInfo(network_ptr_t* dest, int allocateMem) {
 	net_Info.preSynCnt = preSynCnt;
 }
 
-void CpuSNN::copyConnections(network_ptr_t* dest, int kind, int allocateMem) {
+void CpuSNN::copyConnections(network_ptr_t* dest, int kind, bool allocateMem) {
 	checkAndSetGPUDevice();
 	// void* devPtr;
 	// allocateMem memory only if destination memory is not allocated !!!
@@ -1663,7 +1663,7 @@ void CpuSNN::copyConnections(network_ptr_t* dest, int kind, int allocateMem) {
 	copyPostConnectionInfo(dest, allocateMem);
 }
 
-void CpuSNN::checkDestSrcPtrs(network_ptr_t* dest, network_ptr_t* src, cudaMemcpyKind kind, int allocateMem, int grpId) {
+void CpuSNN::checkDestSrcPtrs(network_ptr_t* dest, network_ptr_t* src, cudaMemcpyKind kind, bool allocateMem, int grpId) {
 	checkAndSetGPUDevice();
 
 	if(kind==cudaMemcpyHostToDevice) {
@@ -1715,7 +1715,7 @@ void CpuSNN::copyFiringStateFromGPU (int grpId) {
 		cudaMemcpyDeviceToHost) );
 }
 
-void CpuSNN::copyConductanceAMPA(network_ptr_t* dest, network_ptr_t* src, cudaMemcpyKind kind, int allocateMem, int grpId) {
+void CpuSNN::copyConductanceAMPA(network_ptr_t* dest, network_ptr_t* src, cudaMemcpyKind kind, bool allocateMem, int grpId) {
 	checkAndSetGPUDevice();
 
 	assert(isSimulationWithCOBA());
@@ -1741,7 +1741,7 @@ void CpuSNN::copyConductanceAMPA(network_ptr_t* dest, network_ptr_t* src, cudaMe
 	CUDA_CHECK_ERRORS( cudaMemcpy( &dest->gAMPA[ptrPos], &src->gAMPA[ptrPos], sizeof(float)*length, kind));
 }
 
-void CpuSNN::copyConductanceNMDA(network_ptr_t* dest, network_ptr_t* src, cudaMemcpyKind kind, int allocateMem, int grpId) {
+void CpuSNN::copyConductanceNMDA(network_ptr_t* dest, network_ptr_t* src, cudaMemcpyKind kind, bool allocateMem, int grpId) {
 	checkAndSetGPUDevice();
 
 	assert(isSimulationWithCOBA());
@@ -1776,7 +1776,7 @@ void CpuSNN::copyConductanceNMDA(network_ptr_t* dest, network_ptr_t* src, cudaMe
 	}
 }
 
-void CpuSNN::copyConductanceGABAa(network_ptr_t* dest, network_ptr_t* src, cudaMemcpyKind kind, int allocateMem, int grpId) {
+void CpuSNN::copyConductanceGABAa(network_ptr_t* dest, network_ptr_t* src, cudaMemcpyKind kind, bool allocateMem, int grpId) {
 	checkAndSetGPUDevice();
 
 	assert(isSimulationWithCOBA());
@@ -1801,7 +1801,7 @@ void CpuSNN::copyConductanceGABAa(network_ptr_t* dest, network_ptr_t* src, cudaM
 	CUDA_CHECK_ERRORS( cudaMemcpy( &dest->gGABAa[ptrPos], &src->gGABAa[ptrPos], sizeof(float)*length, kind));
 }
 
-void CpuSNN::copyConductanceGABAb(network_ptr_t* dest, network_ptr_t* src, cudaMemcpyKind kind, int allocateMem, int grpId) {
+void CpuSNN::copyConductanceGABAb(network_ptr_t* dest, network_ptr_t* src, cudaMemcpyKind kind, bool allocateMem, int grpId) {
 	checkAndSetGPUDevice();
 
 	assert(isSimulationWithCOBA());
@@ -1836,7 +1836,7 @@ void CpuSNN::copyConductanceGABAb(network_ptr_t* dest, network_ptr_t* src, cudaM
 	}
 }
 
-void CpuSNN::copyConductanceState(network_ptr_t* dest, network_ptr_t* src, cudaMemcpyKind kind, int allocateMem, int grpId) {
+void CpuSNN::copyConductanceState(network_ptr_t* dest, network_ptr_t* src, cudaMemcpyKind kind, bool allocateMem, int grpId) {
 	checkAndSetGPUDevice();
 
 	assert(isSimulationWithCOBA());
@@ -1850,7 +1850,7 @@ void CpuSNN::copyConductanceState(network_ptr_t* dest, network_ptr_t* src, cudaM
 	copyConductanceGABAb(dest, src, kind, allocateMem, grpId);
 }
 
-void CpuSNN::copyNeuronState(network_ptr_t* dest, network_ptr_t* src, cudaMemcpyKind kind, int allocateMem, int grpId) {
+void CpuSNN::copyNeuronState(network_ptr_t* dest, network_ptr_t* src, cudaMemcpyKind kind, bool allocateMem, int grpId) {
 	checkAndSetGPUDevice();
 
 	int ptrPos, length, length2;
@@ -1918,7 +1918,7 @@ void CpuSNN::copyNeuronState(network_ptr_t* dest, network_ptr_t* src, cudaMemcpy
 	}
 }
 
-void CpuSNN::copyGroupState(network_ptr_t* dest, network_ptr_t* src,  cudaMemcpyKind kind, int allocateMem, int grpId) {
+void CpuSNN::copyGroupState(network_ptr_t* dest, network_ptr_t* src,  cudaMemcpyKind kind, bool allocateMem, int grpId) {
 	checkAndSetGPUDevice();
 
 	if (allocateMem) {
@@ -1959,18 +1959,30 @@ void CpuSNN::copyGroupState(network_ptr_t* dest, network_ptr_t* src,  cudaMemcpy
 	}
 }
 
-void CpuSNN::copyNeuronParameters(network_ptr_t* dest, int kind, int allocateMem, int grpId) {
+// copy neuron parameters from host to device
+void CpuSNN::copyNeuronParametersFromHostToDevice(network_ptr_t* dest, bool allocateMem, int grpId) {
 	checkAndSetGPUDevice();
 
 	int ptrPos, length;
 
+	// check that the destination pointer is properly allocated..
+	// cannot use checkDestSrcPtrs here because src pointer would be NULL
 	if (dest->allocated && allocateMem) {
 		KERNEL_ERROR("GPU Memory already allocated...");
-		return;
+		exitSimulation(1);
 	}
 
-	// for neuron parameter the copy is one-directional...
-	assert(kind == cudaMemcpyHostToDevice);
+	// when allocating we are allocating the memory.. we need to do it completely... to avoid memory fragmentation..
+	if (allocateMem) {
+		assert(grpId == -1);
+		assert(dest->Izh_a == NULL);
+		assert(dest->Izh_b == NULL);
+		assert(dest->Izh_c == NULL);
+		assert(dest->Izh_d == NULL);
+	}
+
+	// copy is always from host to device
+	cudaMemcpyKind kind = cudaMemcpyHostToDevice;
 
 	if(grpId == -1) {
 		ptrPos = 0;
@@ -1981,29 +1993,21 @@ void CpuSNN::copyNeuronParameters(network_ptr_t* dest, int kind, int allocateMem
 		length = grp_Info[grpId].SizeN;
 	}
 
-	// when allocating we are allocating the memory.. we need to do it completely... to avoid memory fragmentation..
-	if(allocateMem)
-		assert(grpId == -1);
-
-	//neuron information...
-	if(allocateMem)
-		assert(dest->Izh_a == NULL);
-
 	if(allocateMem)
 		CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->Izh_a, sizeof(float) * length));
-	CUDA_CHECK_ERRORS(cudaMemcpy(&dest->Izh_a[ptrPos], &Izh_a[ptrPos], sizeof(float) * length, cudaMemcpyHostToDevice));
+	CUDA_CHECK_ERRORS(cudaMemcpy(&dest->Izh_a[ptrPos], &Izh_a[ptrPos], sizeof(float) * length, kind));
 
 	if(allocateMem)
 		CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->Izh_b, sizeof(float) * length));
-	CUDA_CHECK_ERRORS(cudaMemcpy(&dest->Izh_b[ptrPos], &Izh_b[ptrPos], sizeof(float) * length, cudaMemcpyHostToDevice));
+	CUDA_CHECK_ERRORS(cudaMemcpy(&dest->Izh_b[ptrPos], &Izh_b[ptrPos], sizeof(float) * length, kind));
 
 	if(allocateMem)
 		CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->Izh_c, sizeof(float) * length));
-	CUDA_CHECK_ERRORS(cudaMemcpy(&dest->Izh_c[ptrPos], &Izh_c[ptrPos], sizeof(float) * length, cudaMemcpyHostToDevice));
+	CUDA_CHECK_ERRORS(cudaMemcpy(&dest->Izh_c[ptrPos], &Izh_c[ptrPos], sizeof(float) * length, kind));
 
 	if(allocateMem)
 		CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->Izh_d, sizeof(float) * length));
-	CUDA_CHECK_ERRORS(cudaMemcpy(&dest->Izh_d[ptrPos], &Izh_d[ptrPos], sizeof(float) * length, cudaMemcpyHostToDevice));
+	CUDA_CHECK_ERRORS(cudaMemcpy(&dest->Izh_d[ptrPos], &Izh_d[ptrPos], sizeof(float) * length, kind));
 
 	if (sim_with_homeostasis) {
 		//Included to enable homeostatic plasticity in GPU_MODE. 
@@ -2018,16 +2022,16 @@ void CpuSNN::copyNeuronParameters(network_ptr_t* dest, int kind, int allocateMem
 		}
 
 		if(allocateMem) CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->baseFiringInv, sizeof(float)*length));
-		CUDA_CHECK_ERRORS( cudaMemcpy( &dest->baseFiringInv[ptrPos], baseFiringInv, sizeof(float)*length, cudaMemcpyHostToDevice));
+		CUDA_CHECK_ERRORS( cudaMemcpy( &dest->baseFiringInv[ptrPos], baseFiringInv, sizeof(float)*length, kind));
 
 		if(allocateMem) CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->baseFiring, sizeof(float)*length));
-		CUDA_CHECK_ERRORS( cudaMemcpy( &dest->baseFiring[ptrPos], baseFiring, sizeof(float)*length, cudaMemcpyHostToDevice));
+		CUDA_CHECK_ERRORS( cudaMemcpy( &dest->baseFiring[ptrPos], baseFiring, sizeof(float)*length, kind));
 
 		delete [] baseFiringInv;
 	}
 }
 
-void CpuSNN::copySTPState(network_ptr_t* dest, network_ptr_t* src, cudaMemcpyKind kind, int allocateMem) {
+void CpuSNN::copySTPState(network_ptr_t* dest, network_ptr_t* src, cudaMemcpyKind kind, bool allocateMem) {
 	checkAndSetGPUDevice();
 
 	if(allocateMem) {
@@ -2094,7 +2098,7 @@ void CpuSNN::copySTPState(network_ptr_t* dest, network_ptr_t* src, cudaMemcpyKin
 	delete [] tmp_stp;
 }
 
-void CpuSNN::copyWeightState (network_ptr_t* dest, network_ptr_t* src,  cudaMemcpyKind kind, int allocateMem, int grpId) {
+void CpuSNN::copyWeightState (network_ptr_t* dest, network_ptr_t* src,  cudaMemcpyKind kind, bool allocateMem, int grpId) {
 	checkAndSetGPUDevice();
 
 	unsigned int length_wt, cumPos_syn;
@@ -2143,7 +2147,7 @@ void CpuSNN::copyWeightState (network_ptr_t* dest, network_ptr_t* src,  cudaMemc
 }
 
 // allocate necessary memory for the GPU...
-void CpuSNN::copyState(network_ptr_t* dest, int allocateMem) {
+void CpuSNN::copyState(network_ptr_t* dest, bool allocateMem) {
 	checkAndSetGPUDevice();
 
 	assert(numN != 0);
@@ -2216,7 +2220,8 @@ void CpuSNN::copyState(network_ptr_t* dest, int allocateMem) {
 	// copy the neuron state information to the GPU..
 	copyNeuronState(dest, &cpuNetPtrs, kind, allocateMem);
 
-	copyNeuronParameters(dest, kind, allocateMem);
+	// copy neuron parameters Izh_a, Izh_b, etc., baseFiring, baseFiringInv from host vars to device pointer
+	copyNeuronParametersFromHostToDevice(dest, allocateMem);
 
 	if (sim_with_stp) {
 		copySTPState(dest, &cpuNetPtrs, kind, allocateMem);
@@ -2571,7 +2576,7 @@ void CpuSNN::resetFiringInformation_GPU() {
 }
 
 
-void CpuSNN::copyExternalCurrent(network_ptr_t* dest, network_ptr_t* src, int allocateMem, int grpId) {
+void CpuSNN::copyExternalCurrent(network_ptr_t* dest, network_ptr_t* src, bool allocateMem, int grpId) {
 	// copy external current from CPU to GPU
 	int ptrPos, length;
 

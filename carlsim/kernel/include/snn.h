@@ -723,30 +723,49 @@ private:
 	void assignPoissonFiringRate_GPU();
 
 	void checkAndSetGPUDevice();
-	void checkDestSrcPtrs(network_ptr_t* dest, network_ptr_t* src, cudaMemcpyKind kind, int allocateMem, int grpId);
+	void checkDestSrcPtrs(network_ptr_t* dest, network_ptr_t* src, cudaMemcpyKind kind, bool allocateMem, int grpId);
 	void checkInitialization(char* testString=NULL);
 	void checkInitialization2(char* testString=NULL);
 	void configGPUDevice();
 
-	void copyConductanceAMPA(network_ptr_t* dest, network_ptr_t* src, cudaMemcpyKind kind, int allocateMem, int grpId=-1);
-	void copyConductanceNMDA(network_ptr_t* dest, network_ptr_t* src, cudaMemcpyKind kind, int allocateMem, int grpId=-1);
-	void copyConductanceGABAa(network_ptr_t* dest, network_ptr_t* src, cudaMemcpyKind kind, int allocateMem, int grpId=-1);
-	void copyConductanceGABAb(network_ptr_t* dest, network_ptr_t* src, cudaMemcpyKind kind, int allocateMem, int grpId=-1);
-	void copyConductanceState(network_ptr_t* dest, network_ptr_t* src, cudaMemcpyKind kind, int allocateMem, int grpId=-1);
-	void copyConnections(network_ptr_t* dest, int kind, int allocateMem);
-	void copyExternalCurrent(network_ptr_t* dest, network_ptr_t* src, int allocateMem, int grpId=-1);
+	void copyConductanceAMPA(network_ptr_t* dest, network_ptr_t* src, cudaMemcpyKind kind, bool allocateMem, int grpId=-1);
+	void copyConductanceNMDA(network_ptr_t* dest, network_ptr_t* src, cudaMemcpyKind kind, bool allocateMem, int grpId=-1);
+	void copyConductanceGABAa(network_ptr_t* dest, network_ptr_t* src, cudaMemcpyKind kind, bool allocateMem, int grpId=-1);
+	void copyConductanceGABAb(network_ptr_t* dest, network_ptr_t* src, cudaMemcpyKind kind, bool allocateMem, int grpId=-1);
+	void copyConductanceState(network_ptr_t* dest, network_ptr_t* src, cudaMemcpyKind kind, bool allocateMem, int grpId=-1);
+	void copyConnections(network_ptr_t* dest, int kind, bool allocateMem);
+	void copyExternalCurrent(network_ptr_t* dest, network_ptr_t* src, bool allocateMem, int grpId=-1);
 	void copyFiringInfo_GPU();
 	void copyFiringStateFromGPU (int grpId = -1);
-	void copyGroupState(network_ptr_t* dest, network_ptr_t* src,  cudaMemcpyKind kind, int allocateMem, int grpId=-1);
-	void copyNeuronParameters(network_ptr_t* dest, int kind, int allocateMem, int grpId = -1);
-	void copyNeuronState(network_ptr_t* dest, network_ptr_t* src, cudaMemcpyKind kind, int allocateMem, int grpId=-1);
+	void copyGroupState(network_ptr_t* dest, network_ptr_t* src,  cudaMemcpyKind kind, bool allocateMem, int grpId=-1);
+
+	/*!
+	 * \brief Copy neuron parameters (Izhikevich params, baseFiring) from host to device pointer
+	 *
+	 * This function copies the neuron parameters (Izh_a, Izh_b, Izh_c, Izh_d, baseFiring, baseFiringInv) from the
+	 * host variables to a device pointer.
+	 *
+	 * In contrast to other copy methods, this one does not need the source pointer or a cudaMemcpyKind, because the
+	 * copy process can only go from host to device. Thus, the source is always Izh_a, Izh_b, etc. variables, and
+	 * cudaMemcpyKind is always cudaMemcpyHostToDevice.
+	 *
+	 * If allocateMem is set to true, then cudaMalloc is called first on the data structures, before contents are
+	 * copied. If allocateMem is false, only the contents will be copied.
+	 *
+	 * If grpId is set to -1, then the information of all groups will be copied. Otherwise the information of only
+	 * a single group will be copied. If allocateMem is set to true, grpId must be set to -1 (must allocate all groups
+	 * at the same time in order to avoid memory fragmentation).
+	 */
+	void copyNeuronParametersFromHostToDevice(network_ptr_t* dest, bool allocateMem, int grpId=-1);
+
+	void copyNeuronState(network_ptr_t* dest, network_ptr_t* src, cudaMemcpyKind kind, bool allocateMem, int grpId=-1);
 	void copyParameters();
-	void copyPostConnectionInfo(network_ptr_t* dest, int allocateMem);
-	void copyState(network_ptr_t* dest, int allocateMem);
-	void copySTPState(network_ptr_t* dest, network_ptr_t* src, cudaMemcpyKind kind, int allocateMem);
+	void copyPostConnectionInfo(network_ptr_t* dest, bool allocateMem);
+	void copyState(network_ptr_t* dest, bool allocateMem);
+	void copySTPState(network_ptr_t* dest, network_ptr_t* src, cudaMemcpyKind kind, bool allocateMem);
 	void copyWeightsGPU(unsigned int nid, int src_grp);
 	void copyWeightState(network_ptr_t* dest, network_ptr_t* src, cudaMemcpyKind kind, //!< copy presynaptic info
-		int allocateMem, int grpId=-1);
+		bool allocateMem, int grpId=-1);
 
 	void deleteObjects_GPU();		//!< deallocates all used data structures in snn_gpu.cu
 	void doCurrentUpdate_GPU();
