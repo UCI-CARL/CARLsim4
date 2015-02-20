@@ -7,6 +7,7 @@
 
 \section ch9s1_matlab_oat 9.1 MATLAB Offline Analysis Toolbox
 \author Michael Beyeler
+
 In addition to the real-time monitors (see \ref ch7_monitoring), CARLsim provides a versatile Offline Analysis
 Toolbox (OAT) written in MATLAB for the visualization and analysis of neuronal, synaptic, and network information.
 
@@ -17,9 +18,14 @@ The easiest way to visualize network activity is to run a Network Monitor.
 However, it is also possible to look at specific groups or connections, and to access the associated spike and
 weight binaries directly.
 
-Before the OAT can be used, the folder "tools/offline_analysis_toolbox" must be added to the MATLAB path:
+Before the OAT can be used, the directory "tools/offline_analysis_toolbox" must be added to the MATLAB path.
+This can be done either permanently, by adding using the MATLAB path tool:
 \code
-addpath "%%CARLSIM_ROOT_DIR/tools/offline_analysis_toolbox"
+>> pathtool
+\endcode
+or for the current session, by explicitly running:
+\code
+>> addpath "%%CARLSIM_ROOT_DIR/tools/offline_analysis_toolbox"
 \endcode
 In projects and tutorials, this can be easily achieved by running the script "initOAT.m" present in those directories.
 
