@@ -13,7 +13,6 @@ In this tutorial, we introduce some of the basic concepts of a CARLsim simulatio
 
 At the end of the tutorial, you will have:
 - built a simple CARLsim program
-- learned about stuff
 
 This tutorial assumes you know:
 - The very basics of C/C++
@@ -26,19 +25,19 @@ This tutorial assumes you know:
 The objective of this tutorial is to hook up a Poisson spike generator to a single Izhikevich neuron and look
 at the output activity.
 
-CARLsim is broken into 3 different states: CONFIG, SETUP, and RUN
+CARLsim is broken into 3 different states: ::CONFIG_STATE, ::SETUP_STATE, and ::RUN_STATE.
 
-Before we discuss code in each state, note that we have included the carlsim.h header file which is
+Before we discuss code in each state, note that we have included the <tt>carlsim.h</tt> header file, which is
 required for every CARLsim simulation.
 
 \code
 #include <carlsim.h>
 \endcode
 
-Inside the main function we have the following. First we begin with the CONFIG state code. Here we
-create a CARLsim object named 'Hello World'  that runs on the CPU and outputs data to the console in
-USER mode. Next, we create a Poisson Group named 'input' with 1 neuron in the group and create a
-single regular spiking (RS) izhikevich neuron named 'output'. We set the neuron parameters with a
+Inside the main function we have the following. First we begin with the ::CONFIG_STATE state code. Here we
+create a CARLsim object named "Hello World"  that runs on the CPU and outputs data to the console in
+USER mode. Next, we create a Poisson Group named "input" with 1 neuron in the group and create a
+single regular spiking (RS) izhikevich neuron named "output". We set the neuron parameters with a
 call to setNeuronParameters. Additionally, we give the output neuron NMDA and AMPA conductances by
 setting conductances to be true. Finally we connect the input neuron to the output neuron with a
 weight of 0.1 and a delay of 1.
@@ -54,9 +53,9 @@ weight of 0.1 and a delay of 1.
 	sim.connect(gIn, gOut, "one-to-one", RangeWeight(0.05f), 1.0f);
 \endcode
 
-A call to setupNetwork takes our simulation state from CONFIG to SETUP. This must be done before
-runNetwork can be called. In the setupState we create a SpikeMonitor object to monitor the spike
-data from the output neuron.
+A call to CARLsim::setupNetwork takes the simulation from ::CONFIG_STATE to ::SETUP_STATE.
+This must be done before CARLsim::runNetwork can be called.
+In the setup state we create a SpikeMonitor object to monitor spike data from the output neuron.
 
 \code
 	// ---------------- SETUP STATE -------------------
@@ -64,7 +63,8 @@ data from the output neuron.
 	sim.setSpikeMonitor(gOut,"DEFAULT");
 \endcode
 
-Finally set the firing rate rates of the input neuron to 20 Hz an run the network for 10 seconds.
+Finally, the first call to CARLsim::runNetwork will take the simulation to ::RUN_STATE.
+Set the firing rate rate of the input neuron to 20 Hz and run the network for 10 seconds:
 \code
 	// ---------------- RUN STATE -------------------
 	PoissonRate in(1);
@@ -73,9 +73,10 @@ Finally set the firing rate rates of the input neuron to 20 Hz an run the networ
 	sim.runNetwork(10,0);
 \endcode
 
+
 \section tut1s2_output 1.2 CARLsim Output
 
-Some of the CARLsim output is shown below:
+Some of the CARLsim console output is shown below:
 
 \code
 *****************      Initializing CPU Simulation      *************************
@@ -104,9 +105,9 @@ Overall Firing Count:	2+ms delay = 0
 \endcode
 
 The SpikeMonitor reports it has run for 10 seconds and recorded 22 spikes in most recent 1000 ms for
-an average firing rate of 22 Hz.
+an average firing rate of 22 Hz (since there is only one neuron in the group).
 
 Additionally, spike files and log files have been written to the results folder and can be easily
-visualized with the offline analysis toolkit (OAT).
+visualized with the offline analysis toolbox (see \ref ch9s1_matlab_oat).
 
 */
