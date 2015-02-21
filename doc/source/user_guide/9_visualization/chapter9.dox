@@ -53,8 +53,7 @@ passed to the CARLsim constructor; make sure the file exists) and extract all re
 number and names of groups. For each of these groups, NetworkMonitor will look for spike files created via
 SpikeMonitor that follow the default file name pattern (i.e., "spk_{name of group}.dat").
 
-An example output is shown in the figure below, of a network that consisted of a randomly connected 80-20
-network.
+An example output of a randomly connected 80-20 network is shown in the figure below.
 
 \image html 9_networkmonitor.jpg "NetworkMonitor example output."
 
@@ -69,8 +68,8 @@ The plot type of each group can be set using setGroupPlotType:
             groupMonObj: {[1x1 GroupMonitor]  [1x1 GroupMonitor]  [1x1 GroupMonitor]}
               errorMode: 'standard'
     supportedErrorModes: {'standard'  'warning'  'silent'}
->> NM.setGroupPlotType('excit', 'histogram');
->> NM.setGroupPlotType('inhib', 'flowfield');
+>> NM.setGroupPlotType('excit', 'histogram'); % set plot type of group 'excit' to histogram
+>> NM.setGroupPlotType('inhib', 'flowfield'); % set plot type of group 'inhib' to flowfield
 \endcode
 The result is shown in the figure below.
 
@@ -96,6 +95,13 @@ Example usage:
      >> NM.setSpikeFileAttributes('spikeFile_','.ext')
      >> NM.addAllGroupsFromFile()
 \endcode
+
+
+\subsection ch9s1s2_group_monitor 9.1.2 Group Monitor
+
+A Group Monitor can be used to monitor properties as well as the activity of a specific neuronal group in a network.
+
+
 
 \since v3.0
 
