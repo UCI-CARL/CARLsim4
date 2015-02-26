@@ -907,7 +907,7 @@ public:
 	 *
 	 * \STATE ::CONFIG_STATE
 	 * \param[in] grpId           the group with which to associate a SpikeGenerator object
-	 * \param[in] SpikeGenerator* pointer to a custom SpikeGenerator object
+	 * \param[in] spikeGen pointer to a custom SpikeGenerator object
 	 * \see \ref ch6s1_generating_spikes
 	 */
 	void setSpikeGenerator(int grpId, SpikeGenerator* spikeGen);

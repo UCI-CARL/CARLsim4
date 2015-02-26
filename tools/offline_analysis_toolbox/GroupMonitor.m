@@ -2,7 +2,7 @@ classdef GroupMonitor < handle
     % A GroupMonitor can be used to monitor properties as well as the
     % activity of a specific neuronal group.
     %
-    % A GroupMonitor will assume that a corresponding spike file has been
+    % A GroupMonitor will assume that a corresponding spike file was
     % created during the CARLsim simulation. 
     %
     % Example usage:

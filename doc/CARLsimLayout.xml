@@ -43,7 +43,7 @@
 				<tab type="user" visible="no" title="8.1 saveSimulation" url="@ref ch8s1_savesimulation"/>
 				<tab type="user" visible="no" title="8.2 loadSimulation" url="@ref ch8s2_loadsimulation"/>
 			</tab>
-			<tab type="usergroup" visible="yes" title="9. Visualization" url="@ref ch9_visualization">
+			<tab type="usergroup" visible="yes" title="9. MATLAB Offline Analysis Toolbox (OAT)" url="@ref ch9_matlab_oat">
 				<tab type="user" visible="no" title="9.1 MATLAB Offline Analysis Toolbox" url="@ref ch9s1_matlab_oat"/>
 			</tab>
 			<tab type="usergroup" visible="yes" title="10. ECJ" url="@ref ch10_ecj">

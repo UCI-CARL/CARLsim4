@@ -1,43 +1,62 @@
 /*!
 
-\page ch9_visualization Chapter 9: Visualization
+\page ch9_matlab_oat Chapter 9: MATLAB Offline Analysis Toolbox (OAT)
 
-\tableofcontents
-
-
-\section ch9s1_matlab_oat 9.1 MATLAB Offline Analysis Toolbox
 \author Michael Beyeler
+\tableofcontents
 
 In addition to the real-time monitors (see \ref ch7_monitoring), CARLsim provides a versatile Offline Analysis
 Toolbox (OAT) written in MATLAB for the visualization and analysis of neuronal, synaptic, and network information.
 
 The OAT is built to work straight out of the box, by operating on binary files that the CARLsim simulation creates
 by default.
-The easiest way to visualize network activity is to run a Network Monitor.
+The easiest way to visualize network activity is to run a Network Monitor (see \ref ch9s2_network_monitor).
+However, it is also possible to look at specific groups (see \ref ch9s3_group_monitor) 
+or connections (see \ref ch9s4_connection_monitor), and to access the associated spike file binaries
+weight file binaries directly.
 
-However, it is also possible to look at specific groups or connections, and to access the associated spike and
-weight binaries directly.
+Every Monitor comes with an InteractiveMode for plotting activity and weights over time,
+which allows the use of keyboard commands to step through frames, pause or quit (see \ref ch9s6_interactive_mode).
+
+Every Monitor also provides a whole range of settings to customize the plotting (see \ref ch9s7_customize_plotting)
+or recording (see \ref ch9s8_customize_recording) of activity and weights.
+
+For users migrating from CARLsim 2.2, please note that <tt>readNetwork.m</tt> has been replaced with 
+Network Monitors (see \ref ch9s2_network_monitor) and <tt>readSpikes.m</tt> has been replaced with
+Spike Readers (see \ref ch9s5s2_spike_reader).
+For more information please refer to \ref ch9s9_migrating_scripts.
+
+
+\section ch9s1_getting_started 9.1 Getting Started
+\author Michael Beyeler
 
 Before the OAT can be used, the directory "tools/offline_analysis_toolbox" must be added to the MATLAB path.
-This can be done either permanently, by adding using the MATLAB path tool:
+
+The "Hello World" project (see \ref ch1s3_project_workflow) provides a short MATLAB script for this
+in the <tt>scripts</tt> subdirectory:
+\code
+>> initOAT     % adds OAT relative path to MATLAB paths
+\endcode
+
+Alternatively, the path can be added manually, making changes either permanent by using the MATLAB path tool:
 \code
 >> pathtool
 \endcode
-or for the current session, by explicitly running:
+and selecting the directory <tt>%%%CARLSIM_ROOT_DIR%%/tools/offline_analysis_toolbox</tt>,
+or just for the current session by explicitly running:
 \code
->> addpath "%%CARLSIM_ROOT_DIR/tools/offline_analysis_toolbox"
+>> addpath "%%CARLSIM_ROOT_DIR%%/tools/offline_analysis_toolbox"
 \endcode
-In projects and tutorials, this can be easily achieved by running the script "initOAT.m" present in those directories.
 
-Every Monitor comes with an InteractiveMode for plotting activity and weights.
-By default, plotting will occur at a predefined speed (5 frames per second), unless otherwise specified using the
-method setPlottingAttributes of MATLAB monitors.
-At any time, the user can hit key 'p' to pause plotting, or 'q' to quit.
-Hitting key 's' will enter stepping mode, which will freeze the current frame until the user either hits the
-'right arrow' key (in order to step one frame forward) or the 'left arrow' key (in order to step one frame backward).
+Now it should be possible to display the code documentation for different classes by using MATLAB's help browser:
+\code
+>> doc NetworkMonitor       % open help browser for NetworkMonitor class
+\endcode
 
 
-\subsection ch9s1s1_network_monitor 9.1.1 Network Monitor
+\section ch9s2_network_monitor 9.2 Network Monitor
+\author Michael Beyeler
+
 A Network Monitor can be used to monitor properties as well as the activity of a number of neuronal groups in a
 network.
 
@@ -96,13 +115,96 @@ Example usage:
      >> NM.addAllGroupsFromFile()
 \endcode
 
+\note The raw data of a simulation file can also be read directly using a SimulationReader (see \ref ch9s5s1_simulation_reader).
+\see \ref ch9s5s1_simulation_reader
+\since v3.0
 
-\subsection ch9s1s2_group_monitor 9.1.2 Group Monitor
+
+\section ch9s3_group_monitor 9.3 Group Monitor
+\author Michael Beyeler
 
 A Group Monitor can be used to monitor properties as well as the activity of a specific neuronal group in a network.
 
+A Group Monitor will assume that a corresponding spike file was created via SpikeMonitor during the CARLsim simulation.
 
+Example usage:
+\code
+>> GM = GroupMonitor('excit','results/');
+>> GM.plot; % hit 'p' to pause, 'q' to quit
+>> GM.setPlotType('heatmap'); % switch to heat map
+>> GM.setRecordingAttributes('fps',10); % set recording FPS
+>> GM.recordMovie; % plots heat map and saves as 'movie.avi'
+>> % etc.
+\endcode
 
+\note The raw data of a spike file can also be read directly using a SpikeReader (see \ref ch9s5s2_spike_reader).
+\see \ref ch9s5s2_spike_reader
 \since v3.0
+
+
+\section ch9s4_connection_monitor 9.4 Connection Monitor
+\author Michael Beyeler
+
+A Connection Monitor can be used to monitor weights.
+
+\note The raw data of a weight file can also be read directly using a ConnectionReader (see \ref ch9s5s3_connection_reader).
+\see \ref ch9s5s3_connection_reader
+\since v3.0
+
+
+\section ch9s5_reading_raw_data 9.5 Reading Raw Data
+\author Michael Beyeler
+
+Although the OAT provides a variety of functions to simplify the visualization and analysis of network activity
+or topology, there might be cases in which the user might like to have complete control over the process.
+Therefore, CARLsim also provides a means to directly read the simulation, spike, and weight file binaries
+generated during a simulation.
+
+
+\subsection ch9s5s1_simulation_reader 9.5.1 Simulation Reader
+
+
+% SimulationReader can be used to read a simulation log file that is
+    % created by default ("results/sim_[netName].dat") or by specifically
+    % calling method CARLsim::saveSimulation.
+    % The returned object contains essential information about the
+    % simulation and the network setup.
+
+\subsection ch9s5s2_spike_reader 9.5.2 Spike Reader
+
+
+\subsection ch9s5s3_connection_reader 9.5.3 Connection Reader
+
+
+
+\section ch9s6_interactive_mode 9.6 Interactive Mode
+\author Michael Beyeler
+
+Every Monitor comes with an InteractiveMode for plotting activity and weights.
+By default, plotting will occur at a predefined speed (5 frames per second), unless otherwise specified using the
+method setPlottingAttributes of MATLAB monitors.
+At any time, the user can hit key 'p' to pause plotting, or 'q' to quit.
+Hitting key 's' will enter stepping mode, which will freeze the current frame until the user either hits the
+'right arrow' key (in order to step one frame forward) or the 'left arrow' key (in order to step one frame backward).
+
+
+\section ch9s7_customize_plotting 9.7 Customizing Plotting
+\author Michael Beyeler
+
+
+\section ch9s8_customize_recording 9.8 Customizing the Recording
+\author Michael Beyeler
+
+
+\section ch9s9_migrating_scripts 9.9 Migrating from CARLsim 2.2
+\author Michael Beyeler
+
+Please note that the following scripts from CARLsim 2.2 (from former directory <tt>scripts/common/</tt>) are no
+longer available:
+- <tt>readFramesFromRgbFile.m</tt>: replaced with VisualStimulus Toolbox (see \ref ch6s3_visual_stimulus_toolbox)
+- <tt>readNetwork.m</tt>: replaced with Network Monitors (see \ref ch9s2_network_monitor)
+- <tt>readSpikes.m</tt>: replaced with Spike Readers (see \ref ch9s5s2_spike_reader)
+- <tt>readSpikesAERtoFull.m</tt>: no longer available
+- <tt>writeFramesToRgbFile.m</tt>: replaced with VisualStimulus Toolbox (see \ref ch6s3_visual_stimulus_toolbox)
 
 */
