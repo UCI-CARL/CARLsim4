@@ -149,10 +149,8 @@ int gOut = sim.createGroup("output", N, EXCITATORY_NEURON);             // these
 int gOut = sim.createGroup("output", Grid3D(N,1,1), EXCITATORY_NEURON); // are equivalent
 \endcode
 
-\see \ref ch4s1s8_gaussian
 \see \ref ch4s1s3_radiusRF
-\see ::Grid3D
-\see ::RadiusRF
+\see \ref ch4s1s8_gaussian
 \since v3.0
 
 
