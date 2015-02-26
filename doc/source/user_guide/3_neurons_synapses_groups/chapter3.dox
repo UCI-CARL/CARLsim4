@@ -1,8 +1,9 @@
 /*!
 
+\page ch3_neurons_synapses_groups Chapter 3: Neurons, Synapses, and Groups
+
 \tableofcontents
 
-\page ch3_neurons_synapses_groups Chapter 3: Neurons, Synapses, and Groups
 
 \section ch3s1_neurons 3.1 Neurons
 \author Michael Beyeler
@@ -149,10 +150,8 @@ int gOut = sim.createGroup("output", N, EXCITATORY_NEURON);             // these
 int gOut = sim.createGroup("output", Grid3D(N,1,1), EXCITATORY_NEURON); // are equivalent
 \endcode
 
-\see \ref ch4s1s8_gaussian
 \see \ref ch4s1s3_radiusRF
-\see ::Grid3D
-\see ::RadiusRF
+\see \ref ch4s1s8_gaussian
 \since v3.0
 
 
