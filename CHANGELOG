@@ -14,6 +14,7 @@ Build 3.0.1
 2015-02-24     Michael Beyeler <mbeyeler@uci.edu>
   * Updated Chapter 4 of User Guide.
   + Added OpenSUSE to list of supported platforms.
+  * Fixed values for CARLsim::setNeuronParameters in Tutorial 1.
 
 2015-02-18     Michael Beyeler <mbeyeler@uci.edu>
   * Updated Chapters 6 and 8 of User Guide.
