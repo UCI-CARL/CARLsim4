@@ -204,6 +204,12 @@ Analogously, for a spike file following the naming convention <tt>spike_{group n
 <tt>spike_</tt> and the suffix would be <tt>.ext</tt>. After prefix/suffix have been set accordingly, the spike
 file will be found and activity can be plotted:
 \code
+>> GM.hasValidSpikeFile()
+
+ans =
+
+     0
+
 >> GM.setSpikeFileAttributes('spike_','.ext');
 >> GM.hasValidSpikeFile()
 
@@ -237,6 +243,7 @@ time data is plotted or recorded:
 \code
 >> GM.setDefaultPlotType('histogram')
 \endcode
+For a list of available plot types, please refer to \ref ch9s3s4_plot_types.
 
 A number of additional plotting attributes can be set via <tt>setPlottingAttributes</tt>, such as the
 background color of the figure and the number of frames to be displayed per second
@@ -253,19 +260,27 @@ But, the grid dimensions can be reshaped on-the-fly, to make them easier to visu
 Note that the overall number of neurons must not change when specifying new grid dimensions.
 
 The raw data of a spike file can also be read directly using a SpikeReader (see \ref ch9s5s2_spike_reader).
+\see \ref ch9s3s4_plot_types
 \see \ref ch9s5s2_spike_reader
 \since v3.0
 
 
 \subsection ch9s3s4_plot_types 9.3.4 Group Monitor Plot Types
 
-A specific plot type can be set using <tt>setDefaultPlotType</tt>:
+The following image illustrates the different plot types that are available (applied to an arbitrary network):
+
+\image html 9_gm_plottypes.jpg "Supported GroupMonitor plot types: 'raster', 'heatmap', 'histogram', and 'flowfield'."
+
+A specific default plot type can be set using <tt>setDefaultPlotType</tt>:
 \code
 >> GM.setDefaultPlotType(str);
 \endcode
 where <tt>str</tt> is either <tt>'flowfield'</tt>, <tt>'heatmap'</tt>, <tt>'histogram'</tt>, or <tt>'raster'</tt>.
 This type will then apply to all subsequent plotting and recording commands, unless it is overwritten explicitly
 with one of the method's input arguments.
+
+This value can be overwritten by explicitly specifying a plot type when using the methods
+<tt>plot</tt> (see \ref ch9s3s3_plot) or <tt>recordMovie</tt> (see \ref ch9s3s6_record_movie).
 
 Plot type <tt>'flowfield'</tt> will plot a 2D vector field where the length of the vector is given as the firing
 rsate of the neuron times the corresponding vector orientation. The latter is inferred from the third ::Grid3D
@@ -282,7 +297,8 @@ The number of bins and whether to plot firing rates (Hz) instead of number of sp
 
 Plot type <tt>'raster'</tt> will output the data as a raster plot with bin window <tt>binWindowMs</tt>.
 
-\see \ref ch3s3s2_topography
+\note Make sure the Grid3D dimensions are appropriate for the current plot type (change dimensions via
+<tt>setGrid3D</tt>).
 \since v3.0
 
 
@@ -343,7 +359,15 @@ Activity plots can be directly saved to AVI movie files via the following comman
 This will generate a default Group Monitor plot (see \ref ch9s3s3_plot) and save the frames to an <tt>.avi</tt>
 binary using the MATLAB <tt>VideoWriter</tt> utility.
 
-THERE IS NO WAY TO SPECIFY A PLOT TYPE!!!
+The following command will generate file called <tt>myMovie.avi</tt> that shows a heat map of group activity
+with binning window 500 ms, and display the first, second, and eighth frame at a playback rate of 1 fps:
+\code
+>> GM.recordMovie('myMovie.avi', 'heatmap', [1 2 8], 500, 1);
+created file "myMovie.avi"
+\endcode
+
+\note Make sure the Grid3D dimensions are appropriate for the current plot type (change dimensions via
+<tt>setGrid3D</tt>).
 \since v3.0
 
 
@@ -395,7 +419,8 @@ WINSIZE        - A 2-element vector specifying the window
 
 A Connection Monitor can be used to monitor weights.
 
-\note The raw data of a weight file can also be read directly using a ConnectionReader (see \ref ch9s5s3_connection_reader).
+\note The raw data of a weight file can also be read directly using a ConnectionReader
+(see \ref ch9s5s3_connection_reader).
 \see \ref ch9s5s3_connection_reader
 \since v3.0
 

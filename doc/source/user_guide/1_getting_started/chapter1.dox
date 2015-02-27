@@ -220,7 +220,7 @@ connected with random weights, and can be used as a skeleton to create new proje
 Any output files created by the simulation will be automatically placed in the <tt>results/</tt> directory.
 
 All MATLAB scripts should be placed in the <tt>scripts/</tt> directory.
-This directory already contains two MATLAB scripts to aid in using the OAT (see \ref ch9s1_matlab_oat).
+This directory already contains two MATLAB scripts to aid in using the OAT (see \ref ch9_matlab_oat).
 The script <tt>initOAT.m</tt> adds the OAT directory to the MATLAB path, whereas <tt>demoOAT.m</tt> will open a
 NetworkMonitor to visualize network activity.
 Note that for <tt>demoOAT.m</tt> to work, the executable must be run first

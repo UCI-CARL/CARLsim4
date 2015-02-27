@@ -52,7 +52,7 @@
 				<tab type="user" visible="no" title="9.5 Reading Raw Data" url="@ref ch9s5_reading_raw_data"/>
 				<tab type="user" visible="no" title="9.6 Interactive Mode" url="@ref ch9s6_interactive_mode"/>
 				<tab type="user" visible="no" title="9.7 Customizing Plotting" url="@ref ch9s7_customize_plotting"/>
-				<tab type="user" visible="no" title="9.8 Customizing Recording" url="@ref ch9s7_customize_recording"/>
+				<tab type="user" visible="no" title="9.8 Customizing Recording" url="@ref ch9s8_customize_recording"/>
 				<tab type="user" visible="no" title="9.9 Migrating from CARLsim 2.2" url="@ref ch9s9_migrating_scripts"/>
 			</tab>
 			<tab type="usergroup" visible="yes" title="10. ECJ" url="@ref ch10_ecj">

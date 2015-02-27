@@ -400,7 +400,7 @@ classdef ConnectionMonitor < handle
 			%                requesting frames=[1 2 8] will return the
 			%                first, second, and eighth frame in a
 			%                width-by-height-by-3 matrix.
-			%                Default: return all frames.
+			%                Default: -1 (return all frames).
 			% FPS          - Rate of playback for the video in frames per
 			%                second. Default: 10.
 			% WINSIZE      - A 2-element vector specifying the window size

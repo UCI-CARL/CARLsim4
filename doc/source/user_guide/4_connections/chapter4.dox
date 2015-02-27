@@ -282,7 +282,7 @@ Outside the receptive field, weights are zero.
 The following figures shows some of examples of a 2D Gaussian receptive field created with RadiusRF(9,9,0).
 Each panel shows the receptive field of a particular post-synaptic neuron (coding for different spatial locations)
 looking back at its pre-synaptic connections.
-The figure was generated with an OAT Connection Monitor (see \ref ch9s1_matlab_oat).
+The figure was generated with an OAT Connection Monitor (see \ref ch9_matlab_oat).
 
 \image html 4_gauss2D.jpg "Examples of 2D Gaussian receptive fields (topographic heatmap of weight strengths)."
 

@@ -375,7 +375,7 @@ classdef GroupMonitor < handle
             %                requesting frames=[1 2 8] will return the
             %                first, second, and eighth frame in a
             %                width-by-height-by-3 matrix.
-            %                Default: return all frames.
+            %                Default: -1 (return all frames).
             % BINWINDOWMS  - The binning window (ms) in which the data will
             %                be displayed. Default: 1000.
             % FPS          - Rate of playback for the video in frames per

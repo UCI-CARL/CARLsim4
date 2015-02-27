@@ -16,7 +16,7 @@ SpikeMonitors can be used to record output spikes for different neuronal groups.
 
 CARLsim supports two different recording mechanisms: Recording to a spike file (binary) and
 recording to a SpikeMonitor object.
-The former is useful for off-line analysis of activity (e.g., using \ref ch9s1_matlab_oat).
+The former is useful for off-line analysis of activity (e.g., using \ref ch9_matlab_oat).
 The latter is useful to calculate different spike metrics and statistics on-line, such as
 mean firing rate and standard deviation, or the number of neurons whose firing rate lies
 in a certain interval.
@@ -187,7 +187,7 @@ or automatically every second.
 
 CARLsim supports two different recording mechanisms: Recording to a weight file (binary) and
 recording to a ConnectionMonitor object.
-The former is useful for off-line analysis of synaptic weights (e.g., using \ref ch9s1_matlab_oat).
+The former is useful for off-line analysis of synaptic weights (e.g., using \ref ch9_matlab_oat).
 The latter is useful to calculate different weight metrics and statistics on-line, such as
 the percentage of weight values that fall in a certain weight range, or the number of weights
 that have been changed since the last snapshot.
@@ -277,7 +277,7 @@ CM->printSparse(); // print sparse list
 ConnectionMonitor::printSparse also accepts up to three optional parameters that allow for formatting options.
 For more information see its code documentation.
 
-For more sophisticated visualization options please refer to \ref ch9s1_matlab_oat.
+For more sophisticated visualization options please refer to \ref ch9_matlab_oat.
 
 \since v3.0
 
