@@ -127,6 +127,37 @@ Example usage:
 A Group Monitor can be used to monitor properties as well as the activity of a specific neuronal group in a network.
 The monitor will assume that a corresponding spike file was created via SpikeMonitor during the CARLsim simulation.
 
+The following methods are available:
+\code
+>> methods GroupMonitor
+
+getDefaultPlotType        % returns the default plot type for the group
+getError                  % returns the current error status (flag and message)
+getGrid3D                 % returns the Grid3D dimensions of the group
+getNumNeurons             % returns the number of neurons in the group
+getSimDurMs               % returns the estimated simulation duration (ms)
+getSpikeFileName          % returns spike file name created from template
+hasValidSpikeFile         % returns a flag whether valid spike file was found
+plot                      % plots data in current figure/axes
+recordMovie               % records data from current figure/axes to AVI movie file
+setDefaultPlotType        % set default plot type of a group (raster plot, flow field, etc.)
+setErrorMode              % set error mode ('standard', 'warning', 'silent')
+setGrid3D                 % set the Grid3D dimensions of the group (for plotting and recording)
+setPlottingAttributes     % settings for customizing the plotting process
+setRecordingAttributes    % settings for customizing the recording process (to AVI file)
+setSpikeFileAttributes    % set prefix/suffix of spike file naming template
+\endcode
+
+The following public members (properties) are available:
+\code
+>> properties GroupMonitor
+
+name                      % name of the group
+resultsFolder             % path to results folder
+supportedErrorModes       % list of supported error modes
+supportedPlotTypes        % list of supported plot types
+\endcode
+
 
 \subsection ch9s3s1_create 9.3.1 Creating a Group Monitor
 
@@ -200,9 +231,26 @@ first, second, and eighth frame as a heat map:
 \code
 >> GM.plot('heatmap',[1 2 8],500);
 \endcode
+
+It is also possible to set the default plot type directly, so it does not have to be specified each
+time data is plotted or recorded:
+\code
+>> GM.setDefaultPlotType('histogram')
+\endcode
+
 A number of additional plotting attributes can be set via <tt>setPlottingAttributes</tt>, such as the
 background color of the figure and the number of frames to be displayed per second
 (see \ref ch9s3s5_plot_attributes).
+
+Certain plot types, such as <tt>'heatmap'</tt> or <tt>'flowfield'</tt> depend on appropriate ::Grid3D
+dimensions (2D for the former, 3D for the latter).
+For example, the heatmap of a population with 100 neurons on a 100x1x1 grid will be a single row.
+But, the grid dimensions can be reshaped on-the-fly, to make them easier to visualize:
+\code
+>> GM.setGrid3D(10,10,1);   % reshape 100x1x1 grid into 10x10x1 grid
+>> GM.plot('heatmap')
+\endcode
+Note that the overall number of neurons must not change when specifying new grid dimensions.
 
 The raw data of a spike file can also be read directly using a SpikeReader (see \ref ch9s5s2_spike_reader).
 \see \ref ch9s5s2_spike_reader
@@ -211,11 +259,13 @@ The raw data of a spike file can also be read directly using a SpikeReader (see 
 
 \subsection ch9s3s4_plot_types 9.3.4 Group Monitor Plot Types
 
-A specific plot type can be set using <tt>setPlotType</tt>:
+A specific plot type can be set using <tt>setDefaultPlotType</tt>:
 \code
->> GM.setPlotType(str);
+>> GM.setDefaultPlotType(str);
 \endcode
 where <tt>str</tt> is either <tt>'flowfield'</tt>, <tt>'heatmap'</tt>, <tt>'histogram'</tt>, or <tt>'raster'</tt>.
+This type will then apply to all subsequent plotting and recording commands, unless it is overwritten explicitly
+with one of the method's input arguments.
 
 Plot type <tt>'flowfield'</tt> will plot a 2D vector field where the length of the vector is given as the firing
 rsate of the neuron times the corresponding vector orientation. The latter is inferred from the third ::Grid3D
@@ -238,7 +288,7 @@ Plot type <tt>'raster'</tt> will output the data as a raster plot with bin windo
 
 \subsection ch9s3s5_plot_attributes 9.3.5 Group Monitor Plotting Attributes
 
-The method <tt>setSpikeFileAttributes(varargin)</tt> can be used to set default plotting attributes.
+The method <tt>setPlottingAttributes(varargin)</tt> can be used to set default plotting attributes.
 These default settings will apply to all activity plots, unless their values are overwritten explicitly in the
 <tt>plot</tt> method (see \ref ch9s3s3_plot).
 
@@ -250,6 +300,35 @@ Additional variables can be flexibly appended; order or capitalization does not 
 A list of available attributes can be displayed via:
 \code
 >> help GroupMonitor.setPlottingAttributes
+
+GM.setPlottingAttributes(varargin) can be used to set default
+settings that will apply to all activity plots.
+This function provides control over additional attributes
+that are not available as input arguments to GM.plot.
+GM.setPlottingAttributes('propertyName1',value1,...) sets the
+value of 'propertyName1' to value1.
+ 
+Calling the function without input arguments will restore the
+default settings.
+ 
+BGCOLOR         - Set background color for figure. Must be of
+                  type ColorSpec (char such as 'w','b','k' or
+                  a 3-element vector for RGB channels).
+                  Default: 'w'.
+BINWINDOWMS     - The binning window (ms) in which the data
+                  will be displayed. Default: 1000.
+DISPFRAMENR     - A boolean flag that indicates whether to
+                  display the frame number. Default: true.
+FPS             - The frames per second for the plotting
+                  loop. Default: 5.
+HISTNUMBINS     - Number of bins for histogram. Default: 10.
+HISTSHOWRATE    - A boolean flag to plot mean firing rates
+                  (Hz) for plotType='histogram' instead of
+                  mere number of spikes. Default: true.
+INTERACTIVEMODE - A boolean flag to set InteractiveMode on or
+                  off. If it is off, key events/FPS/stepping
+                  will take no effect (helpful if you want to
+                  take over control yourself). Default: true.
 \endcode
 \since v3.0
 
@@ -269,9 +348,46 @@ THERE IS NO WAY TO SPECIFY A PLOT TYPE!!!
 
 
 \subsection ch9s3s7_record_attributes 9.3.7 Group Monitor Recording Attributes
+
+The method <tt>setRecordingAttributes(varargin)</tt> can be used to set default recording attributes.
+These default settings will apply to all recordings, unless their values are overwritten explicitly in the
+<tt>recordMovie</tt> method (see \ref ch9s3s6_record_movie).
+
+The following command sets the value of variable <tt>propertyName1</tt> to value <tt>value1</tt>:
+\code
+>> GM.setRecordingAttributes('propertyName1',value1);
+\endcode
+Additional variables can be flexibly appended; order or capitalization does not matter.
+A list of available attributes can be displayed via:
+\code
+>> help GroupMonitor.setRecordingAttributes
+
+GM.setRecordingAttributes(varargin) can be used to set
+default settings that will apply to all activity recordings.
+This function provides control over additional attributes
+that are not available as input arguments to GM.recordMovie.
+GM.setRecordingAttributes('propertyName1',value1,...) sets
+the value of 'propertyName1' to value1.
+ 
+Calling the function without input arguments will restore the
+default settings.
+ 
+BGCOLOR        - Set background color for figure. Must be of
+                 type ColorSpec (char such as 'w','b','k' or
+                 a 3-element vector for RGB channels). The
+                 default is white.
+FILENAME       - File name where movie will be stored.
+                 Currently the only supported file ending is
+                 ".avi".
+FPS            - The frames per second for the movie. The
+                 default is 10.
+WINSIZE        - A 2-element vector specifying the window
+                 size of the video as width x height in
+                 pixels.Set to [0 0] in order to
+                 automatically make the movie window fit to
+                 the size of the plot window.
+\endcode
 \since v3.0
-
-
 
 
 \section ch9s4_connection_monitor 9.4 Connection Monitor

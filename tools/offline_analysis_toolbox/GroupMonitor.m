@@ -7,8 +7,8 @@ classdef GroupMonitor < handle
     %
     % Example usage:
     % >> GM = GroupMonitor('excit','results/');
-    % >> GM.plot; % hit 'p' to pause, 'q' to quit
-    % >> GM.setPlotType('heatmap'); % switch to heat map
+    % >> GM.plot; % default plotting mode. hit 'p' to pause, 'q' to quit
+    % >> GM.plot('heatmap'); % switch to heat map
     % >> GM.setRecordingAttributes('fps',10); % set recording FPS
     % >> GM.recordMovie; % plots heat map and saves as 'movie.avi'
     % >> % etc.
@@ -136,7 +136,7 @@ classdef GroupMonitor < handle
             % See a list of all currently supported plot types in the help
             % section of GM.plot and in the variable GM.supportedPlotTypes.
             % The plotting type can also be set manually using
-            % GM.setPlotType.
+            % GM.setDefaultPlotType.
             obj.unsetError()
             obj.initSpikeReader() % required to access Grid3D prop
             plotType = 'default';
@@ -520,12 +520,12 @@ classdef GroupMonitor < handle
             
             if updDefPlotType
                 % set default plot type for this arrangement
-                obj.setPlotType('default');
+                obj.setDefaultPlotType('default');
             end
         end
                 
-        function setPlotType(obj, plotType)
-            % GM.setPlotType(plotType) applies a certain plotting type to
+        function setDefaultPlotType(obj, plotType)
+            % GM.setDefaultPlotType(plotType) applies a certain plotting type to
             % the group. The default plot type is determined by the Grid3D
             % topography of the group. For example, a 1D topography will
             % prefer a raster plot, whereas a 2D topography will prefer a
@@ -896,7 +896,7 @@ classdef GroupMonitor < handle
                 % use current plot type
                 plotType = obj.plotType;
             end
-            obj.setPlotType(plotType);
+            obj.setDefaultPlotType(plotType);
             
             % if plotting has not changed since last time, we do not need
             % to do any more work, just reload data from private property

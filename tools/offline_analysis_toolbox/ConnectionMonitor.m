@@ -8,7 +8,7 @@ classdef ConnectionMonitor < handle
 	% Example usage:
 	% >> CM = ConnectionMonitor('excit','inhib','results/');
 	% >> CM.plot; % hit 'p' to pause, 'q' to quit
-	% >> CM.setPlotType('histogram'); % switch to hist mode
+	% >> CM.setDefaultPlotType('histogram'); % switch to hist mode
 	% >> CM.setRecordingAttributes('fps',2); % set recording FPS
 	% >> CM.recordMovie; % plots hist and saves as 'movie.avi'
 	% >> % etc.
@@ -117,7 +117,7 @@ classdef ConnectionMonitor < handle
 			% See a list of all currently supported plot types in the help
 			% section of CM.plot and in the variable CM.supportedPlotTypes.
 			% The plotting type can also be set manually using the method
-			% CM.setPlotType.
+			% CM.setDefaultPlotType.
 			obj.unsetError()
 			obj.initConnectionReader() % required to access dimensions
 			
@@ -455,8 +455,8 @@ classdef ConnectionMonitor < handle
 			disp(['created file "' fileName '"'])
 		end
 		
-		function setPlotType(obj, plotType)
-			% GM.setPlotType(plotType) applies a certain plotting type to
+		function setDefaultPlotType(obj, plotType)
+			% GM.setDefaultPlotType(plotType) applies a certain plotting type to
 			% the group. The default plot type is determined by the Grid3D
 			% topography of the group. For example, a 1D topography will
 			% prefer a raster plot, whereas a 2D topography will prefer a
@@ -801,7 +801,7 @@ classdef ConnectionMonitor < handle
 					plotType = obj.plotType;
 				end
 			end
-			obj.setPlotType(plotType);
+			obj.setDefaultPlotType(plotType);
 			
 			% read all the timestamps and weights
 			[obj.timeStamps,obj.weights] = obj.CR.readWeights();
