@@ -219,9 +219,9 @@ classdef GroupMonitor < handle
         end
                 
         function plot(obj, plotType, frames, binWindowMs)
-            % GM.plot(plotType, frames, binWindowMs, stepFrames) plots the
-            % specified frames in the current figure/axes. A list of
-            % plotting attributes can be set directly as input arguments.
+            % GM.plot(plotType, frames, binWindowMs) plots the specified
+            % frames in the current figure/axes. A list of plotting
+            % attributes can be set directly as input arguments.
             %
             % If InteractiveMode is on, press 's' at any time to enter
             % stepping mode. In this mode, pressing the right arrow key
@@ -533,11 +533,29 @@ classdef GroupMonitor < handle
             %
             % PLOTTYPE    - The plotting type to apply.
             %               The following types are currently supported:
-            %                   - heatmap   a topological map of group
-            %                               activity where hotter colors
-            %                               mean higher firing rate
-            %                   - raster    a raster plot with binning
-            %                               window: binWindowMs
+            %                 - flowfield A 2D vector field where the
+            %                             length of the vector is given as
+            %                             the firing rate of the neuron
+            %                             times the corresponding vector
+            %                             orientation. The latter is given
+            %                             by the third grid dimension, z.
+            %                             For example Grid3D(10,10,4) plots
+            %                             a 10x10 vector flow field,
+            %                             assuming that neurons with z=0
+            %                             code for direction=0deg, z=1 is
+            %                             90deg, z=2 is 180deg, z=3 is
+            %                             270deg. Vectors with length
+            %                             smaller than 10 % of the max in
+            %                             each frame are not shown.
+            %                 - heatmap   A topological map of group
+            %                             activity where hotter colors mean
+            %                             higher firing rate. 
+            %                 - histogram A histogram of firing rates.
+            %                             Histogram options ('histNumBins'
+            %                             and 'histShowRate') can be set
+            %                             via GM.setPlottingAttributes.
+            %                 - raster    A raster plot with binning window
+            %                             binWindowMs
             obj.unsetError()
             
             % find default plot type if necessary
@@ -565,8 +583,7 @@ classdef GroupMonitor < handle
             % GM.setPlottingAttributes(varargin) can be used to set default
             % settings that will apply to all activity plots.
             % This function provides control over additional attributes
-            % that are not available as input arguments to GM.plot or
-            % GM.plotFrame.
+            % that are not available as input arguments to GM.plot.
             % GM.setPlottingAttributes('propertyName1',value1,...) sets the
             % value of 'propertyName1' to value1.
             %

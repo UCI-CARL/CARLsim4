@@ -77,7 +77,8 @@ An example output of a randomly connected 80-20 network is shown in the figure b
 \image html 9_networkmonitor.jpg "NetworkMonitor example output."
 
 Other plot types such as histograms, heat maps, and flow fields are available and can be mixed-and-matched.
-The plot type of each group can be set using setGroupPlotType:
+The plot type of each group can be set using <tt>setGroupPlotType</tt> and must be one of the plot types
+supported by Group Monitors (see \ref ch9s3_group_monitor).
 \code
 >> NM = NetworkMonitor('results/sim_myNetwork.dat')
                  simObj: [1x1 SimulationReader]
@@ -124,22 +125,153 @@ Example usage:
 \author Michael Beyeler
 
 A Group Monitor can be used to monitor properties as well as the activity of a specific neuronal group in a network.
+The monitor will assume that a corresponding spike file was created via SpikeMonitor during the CARLsim simulation.
 
-A Group Monitor will assume that a corresponding spike file was created via SpikeMonitor during the CARLsim simulation.
 
-Example usage:
+\subsection ch9s3s1_create 9.3.1 Creating a Group Monitor
+
+In order to open a Group Monitor, specify the name of the group (given during a CARLsim simulation via
+CARLsim::createGroup or CARLsim::createSpikeGeneratorGroup) and the directory in which the spike file resides
+(<tt>results/</tt> by default):
 \code
 >> GM = GroupMonitor('excit','results/');
->> GM.plot; % hit 'p' to pause, 'q' to quit
->> GM.setPlotType('heatmap'); % switch to heat map
->> GM.setRecordingAttributes('fps',10); % set recording FPS
->> GM.recordMovie; % plots heat map and saves as 'movie.avi'
->> % etc.
+
+GM =
+
+  GroupMonitor with properties:
+
+                   name: 'excit'
+          resultsFolder: 'results/'
+              errorMode: []
+    supportedErrorModes: {'standard'  'warning'  'silent'}
+     supportedPlotTypes: {'flowfield'  'heatmap'  'histogram'  'raster'}
+\endcode
+By default, this will look for a spike file named <tt>spk_{group name}.dat</tt> in the <tt>results/</tt> directory,
+which is the default name pattern for spike files created with CARLsim::setSpikeMonitor.
+\since v3.0
+
+
+\subsection ch9s3s2_setspikefileattributes 9.3.2 Setting the Spike File Attributes
+
+In case the spike file does not follow the default pattern, creating a Group Monitor will result in the following
+warning:
+\code
+>> GM = GroupMonitor('excit','results/');
+Warning: Could not find valid spike file "results/spk_excit.dat". Use setSpikeFileAttributes to
+set a proper spike file prefix/suffix
+\endcode
+and trying to call the plot method will result in an error message:
+\code
+>> GM.plot
+Error using GroupMonitor/throwError (line 1133)
+Could not open file "results/spk_excit.dat" with read permission
 \endcode
 
-\note The raw data of a spike file can also be read directly using a SpikeReader (see \ref ch9s5s2_spike_reader).
+In this case, the method <tt>setSpikeFileAttributes</tt> can be used to change the default prefix and suffix of
+the spike file name. In the above case, the prefix would be <tt>spk_</tt> and the suffix would be <tt>.dat</tt>.
+Analogously, for a spike file following the naming convention <tt>spike_{group name}.ext</tt> the prefix would be 
+<tt>spike_</tt> and the suffix would be <tt>.ext</tt>. After prefix/suffix have been set accordingly, the spike
+file will be found and activity can be plotted:
+\code
+>> GM.setSpikeFileAttributes('spike_','.ext');
+>> GM.hasValidSpikeFile()
+
+ans =
+
+     1
+
+>> GM.plot
+\endcode
+\since v3.0
+
+
+\subsection ch9s3s3_plot 9.3.3 Plotting Activity
+
+Once a Group Monitor has been set up, activity can be plotted using the <tt>plot</tt> method:
+\code
+>> GM.plot
+\endcode
+This will plot the data in bins of 1000 ms in the current figure/axes using a default plot type,
+which is determined by the ::Grid3D dimensions of the group (see \ref ch9s3s4_plot_types).
+
+A list of frames to be plotted as well as the histogram bin window (ms) can be specified directly.
+For example, the following command would bin the data into frames 500 ms length, and display the
+first, second, and eighth frame as a heat map:
+\code
+>> GM.plot('heatmap',[1 2 8],500);
+\endcode
+A number of additional plotting attributes can be set via <tt>setPlottingAttributes</tt>, such as the
+background color of the figure and the number of frames to be displayed per second
+(see \ref ch9s3s5_plot_attributes).
+
+The raw data of a spike file can also be read directly using a SpikeReader (see \ref ch9s5s2_spike_reader).
 \see \ref ch9s5s2_spike_reader
 \since v3.0
+
+
+\subsection ch9s3s4_plot_types 9.3.4 Group Monitor Plot Types
+
+A specific plot type can be set using <tt>setPlotType</tt>:
+\code
+>> GM.setPlotType(str);
+\endcode
+where <tt>str</tt> is either <tt>'flowfield'</tt>, <tt>'heatmap'</tt>, <tt>'histogram'</tt>, or <tt>'raster'</tt>.
+
+Plot type <tt>'flowfield'</tt> will plot a 2D vector field where the length of the vector is given as the firing
+rsate of the neuron times the corresponding vector orientation. The latter is inferred from the third ::Grid3D
+dimension, z. For example, Grid3D(10,10,4) plots a 10x10 vector flow field, assuming that neurons with z=0 code
+for direction=0deg, z=1 corresponds to direction=90deg, z=2 is 180deg, and z=3 is 270deg.
+Vectors with length smaller than 10% of the max in each frame are not shown.
+
+Plot type <tt>'heatmap'</tt> will plot a topographical map of group activity (based on ::Grid3D) where hotter
+colors mean higher firing rate.
+
+Plot type <tt>'histogram'</tt> will plot a histogram of firing rates in the group.
+The number of bins and whether to plot firing rates (Hz) instead of number of spikes can be set with options
+<tt>'histNumBins'</tt> and <tt>'histShowRate'</tt> in method <tt>setPlottingAttributes</tt>.
+
+Plot type <tt>'raster'</tt> will output the data as a raster plot with bin window <tt>binWindowMs</tt>.
+
+\see \ref ch3s3s2_topography
+\since v3.0
+
+
+\subsection ch9s3s5_plot_attributes 9.3.5 Group Monitor Plotting Attributes
+
+The method <tt>setSpikeFileAttributes(varargin)</tt> can be used to set default plotting attributes.
+These default settings will apply to all activity plots, unless their values are overwritten explicitly in the
+<tt>plot</tt> method (see \ref ch9s3s3_plot).
+
+The following command sets the value of variable <tt>propertyName1</tt> to value <tt>value1</tt>:
+\code
+>> GM.setPlottingAttributes('propertyName1',value1);
+\endcode
+Additional variables can be flexibly appended; order or capitalization does not matter.
+A list of available attributes can be displayed via:
+\code
+>> help GroupMonitor.setPlottingAttributes
+\endcode
+\since v3.0
+
+
+\subsection ch9s3s6_record_movie 9.3.6 Recording a Movie
+
+Activity plots can be directly saved to AVI movie files via the following command:
+\code
+>> GM.recordMovie;
+\endcode
+
+This will generate a default Group Monitor plot (see \ref ch9s3s3_plot) and save the frames to an <tt>.avi</tt>
+binary using the MATLAB <tt>VideoWriter</tt> utility.
+
+THERE IS NO WAY TO SPECIFY A PLOT TYPE!!!
+\since v3.0
+
+
+\subsection ch9s3s7_record_attributes 9.3.7 Group Monitor Recording Attributes
+\since v3.0
+
+
 
 
 \section ch9s4_connection_monitor 9.4 Connection Monitor
