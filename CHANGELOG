@@ -11,16 +11,21 @@ Release 3.0
 Build 3.0.1
 ---------------------
 
-2014-02-18     Michael Beyeler <mbeyeler@uci.edu>
+2015-02-24     Michael Beyeler <mbeyeler@uci.edu>
+  * Updated Chapter 4 of User Guide.
+  + Added OpenSUSE to list of supported platforms.
+  * Fixed values for CARLsim::setNeuronParameters in Tutorial 1.
+
+2015-02-18     Michael Beyeler <mbeyeler@uci.edu>
   * Updated Chapters 6 and 8 of User Guide.
   * Fixed CpuSNN::copyNeuronParametersFromHostToDevice.
   * Improved code documentation on a number of CARLsim methods, datastructures
     and CARLsim states.
 
-2014-02-17     Michael Beyeler <mbeyeler@uci.edu>
+2015-02-17     Michael Beyeler <mbeyeler@uci.edu>
   * Updated Chapter 1 of User Guide.
 
-2014-02-14     Ting-Shuo Chou <tingshuc@uci.edu>
+2015-02-14     Ting-Shuo Chou <tingshuc@uci.edu>
   * Quickfix for Windows solution files.
 
 
@@ -28,7 +33,7 @@ Build 3.0.1
 Build 3.0.0
 ---------------------
 
-2014-02-14     Kristofor D. Carlson <kdcarlso@uci.edu>
+2015-02-14     Kristofor D. Carlson <kdcarlso@uci.edu>
 	+ Added tutorial for Basic Concepts.
 	+ Added tutorial for CARLsim-ECJ PTI.
 	* Cleaned up installation files.

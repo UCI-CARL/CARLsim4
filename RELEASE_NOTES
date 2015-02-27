@@ -31,7 +31,7 @@ Publication:
 Tested platforms and devices:
 	* Platforms:
 	   - Linux: Ubuntu 10.04, 12.04, 12.10, 13.04, 13.10, 14.04, Arch Linux,
-	     CentOS 6
+	     CentOS 6, OpenSUSE 13.1
 	   - Windows: 7
 	   - Mac OS: X
 	* NVIDIA Toolkits: CUDA 5.0, 5.5, 6.0, 6.5

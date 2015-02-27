@@ -22,6 +22,7 @@
 				<tab type="user" visible="no" title="4.1 Primitive Types" url="@ref ch4s1_primitive_types"/>
 				<tab type="user" visible="no" title="4.2 Library/Tools" url="@ref ch4s2_library_tools"/>
 				<tab type="user" visible="no" title="4.3 User-Defined" url="@ref ch4s3_user_defined"/>
+				<tab type="user" visible="no" title="4.4 Migrating from CARLsim 2.2" url="@ref ch4s4_migrating_connect"/>
 			</tab>
 			<tab type="usergroup" visible="yes" title="5. Synaptic Plasticity" url="@ref ch5_synaptic_plasticity">
 				<tab type="user" visible="no" title="5.1 Short-Term Plasticity" url="@ref ch5s1_short_term_plasticity"/>

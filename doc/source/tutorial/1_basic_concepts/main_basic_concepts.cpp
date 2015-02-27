@@ -50,7 +50,7 @@ int main() {
 	CARLsim sim("Hello World", CPU_MODE, USER);
 	int gIn = sim.createSpikeGeneratorGroup("input", 1, EXCITATORY_NEURON);
 	int gOut = sim.createGroup("output", 1, EXCITATORY_NEURON);
-	sim.setNeuronParameters(gOut, 0.1f, 0.2f, -65.0f, 2.0f);
+	sim.setNeuronParameters(gOut, 0.02f, 0.2f, -65.0f, 8.0f);
 	sim.setConductances(true);
 	// connect our groups
 	sim.connect(gIn, gOut, "one-to-one", RangeWeight(0.05f), 1.0f);
