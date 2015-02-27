@@ -13,7 +13,7 @@ classdef ConnectionMonitor < handle
 	% >> CM.recordMovie; % plots hist and saves as 'movie.avi'
 	% >> % etc.
 	%
-	% Version 2/26/2015
+	% Version 2/27/2015
 	% Author: Michael Beyeler <mbeyeler@uci.edu>
 	
 	%% PROPERTIES
@@ -384,13 +384,18 @@ classdef ConnectionMonitor < handle
 			xyz(3) = floor(neurId / (grid3D(1)*grid3D(2)));
 		end
 		
-		function recordMovie(obj, fileName, frames, fps, winSize)
+		function recordMovie(obj, fileName, plotType, frames, fps, winSize)
 			% CM.recordMovie(fileName, frames, fps, winSize) takes an AVI
 			% movie of a list of frames using the VIDEOWRITER utility.
 			%
 			% FILENAME     - A string enclosed in single quotation marks
 			%                that specifies the name of the file to create.
 			%                Default: 'movie.avi'.
+            % PLOTTYPE     - The plotting type to use. If not set, the
+            %                default plotting type will be used, which is
+            %                determined by the Grid3D topography of the
+            %                group. For a list of supported plot types see
+            %                member variable GM.supportedPlotTypes.
 			% FRAMES       - A list of frame numbers. For example,
 			%                requesting frames=[1 2 8] will return the
 			%                first, second, and eighth frame in a
@@ -403,12 +408,13 @@ classdef ConnectionMonitor < handle
 			%                to [0 0] in order to automatically make the
 			%                movie window fit to the size of the plot
 			%                window. Default: [0 0].
-			if nargin<5,winSize=obj.recordWinSize;end
-			if nargin<4,fps=obj.recordFPS;end
-			if nargin<3 || isempty(frames) || frames==-1
+			if nargin<6,winSize=obj.recordWinSize;end
+			if nargin<5,fps=obj.recordFPS;end
+			if nargin<4 || isempty(frames) || frames==-1
 				obj.initConnectionReader()
 				frames = 1:ceil(obj.CR.getNumSnapshots);
 			end
+			if nargin<3,plotType=obj.plotType;end
 			if nargin<2,fileName=obj.recordFile;end
 			obj.unsetError()
 			
@@ -429,7 +435,7 @@ classdef ConnectionMonitor < handle
 			end
 			
 			% load data and reshape for plotting if necessary
-			obj.loadDataForPlotting(obj.plotType);
+			obj.loadDataForPlotting(plotType);
 			
 			% display frames in specified axes
 			set(gcf,'color',obj.plotBgColor);
@@ -446,7 +452,7 @@ classdef ConnectionMonitor < handle
 			
 			% display frame in specified axes
 			for i=frames
-				obj.plotFrame(i,obj.plotType,obj.plotDispFrameNr);
+				obj.plotFrame(i,plotType,obj.plotDispFrameNr);
 				drawnow
 				writeVideo(vidObj, getframe(gcf));
 			end

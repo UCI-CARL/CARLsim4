@@ -26,7 +26,7 @@ classdef NetworkMonitor < handle
 	%    >> NM.setSpikeFileAttributes('spikeFile_','.ext')
 	%    >> NM.addAllGroupsFromFile()
     %
-    % Version 1/19/2015
+    % Version 2/27/2015
     % Author: Michael Beyeler <mbeyeler@uci.edu>
     
     %% PROPERTIES
@@ -430,6 +430,8 @@ classdef NetworkMonitor < handle
             % NM.recordMovie(fileName, frames, frameDur, fps, winSize)
             % takes an AVI movie of a list of frames using the VIDEOWRITER
             % utility.
+            % The activity of each group will be recorded according to the
+            % plot types specified by default or via NM.setGroupPlotType.
             %
             % FILENAME     - A string enclosed in single quotation marks
             %                that specifies the name of the file to create.

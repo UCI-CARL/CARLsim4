@@ -13,7 +13,7 @@ classdef GroupMonitor < handle
     % >> GM.recordMovie; % plots heat map and saves as 'movie.avi'
     % >> % etc.
     %
-    % Version 2/26/2015
+    % Version 2/27/2015
     % Author: Michael Beyeler <mbeyeler@uci.edu>
     
     %% PROPERTIES
@@ -358,14 +358,19 @@ classdef GroupMonitor < handle
 			end
 		end
         
-        function recordMovie(obj, fileName, frames, binWindowMs, fps, winSize)
-            % NM.recordMovie(fileName, frames, frameDur, fps, winSize)
+        function recordMovie(obj, fileName, plotType, frames, binWindowMs, fps, winSize)
+            % GM.recordMovie(fileName, frames, frameDur, fps, winSize)
             % takes an AVI movie of a list of frames using the VIDEOWRITER
             % utility.
             %
             % FILENAME     - A string enclosed in single quotation marks
             %                that specifies the name of the file to create.
             %                Default: 'movie.avi'.
+            % PLOTTYPE     - The plotting type to use. If not set, the
+            %                default plotting type will be used, which is
+            %                determined by the Grid3D topography of the
+            %                group. For a list of supported plot types see
+            %                member variable GM.supportedPlotTypes.
             % FRAMES       - A list of frame numbers. For example,
             %                requesting frames=[1 2 8] will return the
             %                first, second, and eighth frame in a
@@ -380,13 +385,14 @@ classdef GroupMonitor < handle
             %                to [0 0] in order to automatically make the 
             %                movie window fit to the size of the plot
             %                window. Default: [0 0].
-            if nargin<6,winSize=obj.recordWinSize;end
-            if nargin<5,fps=obj.recordFPS;end
-            if nargin<4,binWindowMs=obj.plotBinWinMs;end
-            if nargin<3 || isempty(frames) || numel(frames)==1 && frames==-1
+            if nargin<7,winSize=obj.recordWinSize;end
+            if nargin<6,fps=obj.recordFPS;end
+            if nargin<5,binWindowMs=obj.plotBinWinMs;end
+            if nargin<4 || isempty(frames) || numel(frames)==1 && frames==-1
                 obj.initSpikeReader()
                 frames = 1:ceil(obj.spkObj.getSimDurMs()/binWindowMs);
             end
+            if nargin<3,plotType=obj.plotType;end
             if nargin<2,fileName=obj.recordFile;end
             obj.unsetError()
 			obj.initSpikeReader()
@@ -412,7 +418,7 @@ classdef GroupMonitor < handle
             end
             
             % load data and reshape for plotting if necessary
-            obj.loadDataForPlotting(obj.plotType, binWindowMs);
+            obj.loadDataForPlotting(plotType, binWindowMs);
             
             % display frames in specified axes
             set(gcf,'color',obj.plotBgColor);
@@ -429,7 +435,7 @@ classdef GroupMonitor < handle
             
             % display frame in specified axes
             for i=frames
-                obj.plotFrame(i,obj.plotType,binWindowMs,obj.plotDispFrameNr);
+                obj.plotFrame(i,plotType,binWindowMs,obj.plotDispFrameNr);
                 drawnow
                 writeVideo(vidObj, getframe(gcf));
             end
