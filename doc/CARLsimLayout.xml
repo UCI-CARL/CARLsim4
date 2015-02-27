@@ -44,7 +44,15 @@
 				<tab type="user" visible="no" title="8.2 loadSimulation" url="@ref ch8s2_loadsimulation"/>
 			</tab>
 			<tab type="usergroup" visible="yes" title="9. MATLAB Offline Analysis Toolbox (OAT)" url="@ref ch9_matlab_oat">
-				<tab type="user" visible="no" title="9.1 MATLAB Offline Analysis Toolbox" url="@ref ch9s1_matlab_oat"/>
+				<tab type="user" visible="no" title="9.1 Getting Started" url="@ref ch9s1_getting_started"/>
+				<tab type="user" visible="no" title="9.2 Network Monitor" url="@ref ch9s2_network_monitor"/>
+				<tab type="user" visible="no" title="9.3 Group Monitor" url="@ref ch9s3_group_monitor"/>
+				<tab type="user" visible="no" title="9.4 Connection Monitor" url="@ref ch9s4_connection_monitor"/>
+				<tab type="user" visible="no" title="9.5 Reading Raw Data" url="@ref ch9s5_reading_raw_data"/>
+				<tab type="user" visible="no" title="9.6 Interactive Mode" url="@ref ch9s6_interactive_mode"/>
+				<tab type="user" visible="no" title="9.7 Customizing Plotting" url="@ref ch9s7_customize_plotting"/>
+				<tab type="user" visible="no" title="9.8 Customizing Recording" url="@ref ch9s7_customize_recording"/>
+				<tab type="user" visible="no" title="9.9 Migrating from CARLsim 2.2" url="@ref ch9s9_migrating_scripts"/>
 			</tab>
 			<tab type="usergroup" visible="yes" title="10. ECJ" url="@ref ch10_ecj">
 				<tab type="user" visible="no" title="10.1 Overview" url="@ref ch10s1_overview"/>

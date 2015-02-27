@@ -13,7 +13,7 @@ by default.
 The easiest way to visualize network activity is to run a Network Monitor (see \ref ch9s2_network_monitor).
 However, it is also possible to look at specific groups (see \ref ch9s3_group_monitor) 
 or connections (see \ref ch9s4_connection_monitor), and to access the associated spike file binaries
-weight file binaries directly.
+(see \ref ch9s5s2_spike_reader) and weight file binaries (see \ref ch9s5s3_connection_reader) directly.
 
 Every Monitor comes with an InteractiveMode for plotting activity and weights over time,
 which allows the use of keyboard commands to step through frames, pause or quit (see \ref ch9s6_interactive_mode).

@@ -13,7 +13,7 @@ classdef GroupMonitor < handle
     % >> GM.recordMovie; % plots heat map and saves as 'movie.avi'
     % >> % etc.
     %
-    % Version 1/19/2015
+    % Version 2/26/2015
     % Author: Michael Beyeler <mbeyeler@uci.edu>
     
     %% PROPERTIES
@@ -102,6 +102,9 @@ classdef GroupMonitor < handle
             if nargin<2 || nargin>=2 && strcmpi(resultsFolder,'')
                 obj.resultsFolder = '.';
             else
+                if strcmpi(resultsFolder(end),filesep)
+                    resultsFolder = resultsFolder(1:end-1);
+                end
                 obj.resultsFolder = resultsFolder;
             end
             if nargin<1
@@ -451,6 +454,7 @@ classdef GroupMonitor < handle
 					'.'], 'standard')
 				return
 			end
+            obj.errorMode = errMode;
 		end
         
         function setGrid3D(obj, dim0, dim1, dim2, updDefPlotType)

@@ -13,7 +13,7 @@ classdef ConnectionMonitor < handle
 	% >> CM.recordMovie; % plots hist and saves as 'movie.avi'
 	% >> % etc.
 	%
-	% Version 2/2/2015
+	% Version 2/26/2015
 	% Author: Michael Beyeler <mbeyeler@uci.edu>
 	
 	%% PROPERTIES
@@ -27,10 +27,10 @@ classdef ConnectionMonitor < handle
 		errorMode;          % program mode for error handling
 		supportedErrorModes;% supported error modes
 		supportedPlotTypes; % cell array of supported plot types
-%	end
+	end
 	
 	% private
-%	properties (Hidden, Access = private)
+	properties (Hidden, Access = private)
 		CR;                 % ConnectionReader object
 		connFilePrefix;     % conn file prefix, e.g. "conn"
 		connFileSuffix;     % conn file suffix, e.g. ".dat"
@@ -93,6 +93,9 @@ classdef ConnectionMonitor < handle
 			if nargin<3
 				obj.resultsFolder = '';
 			else
+				if strcmpi(resultsFolder(end),filesep)
+					resultsFolder = resultsFolder(1:end-1);
+				end
 				obj.resultsFolder = resultsFolder;
 			end
 			if nargin<1
