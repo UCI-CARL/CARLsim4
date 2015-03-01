@@ -13,7 +13,7 @@ classdef ConnectionMonitor < handle
 	% >> CM.recordMovie; % plots hist and saves as 'movie.avi'
 	% >> % etc.
 	%
-	% Version 2/27/2015
+	% Version 2/28/2015
 	% Author: Michael Beyeler <mbeyeler@uci.edu>
 	
 	%% PROPERTIES
@@ -279,7 +279,7 @@ classdef ConnectionMonitor < handle
 			
 			connFile = obj.getConnectFileName();
 			CR = ConnectionReader(connFile, 'silent');
-			[errFlag,~] = SR.getError();
+			[errFlag,~] = CR.getError();
 			hasValid = ~errFlag;
 		end
 		
@@ -446,7 +446,7 @@ classdef ConnectionMonitor < handle
             %                default plotting type will be used, which is
             %                determined by the Grid3D topography of the
             %                group. For a list of supported plot types see
-            %                member variable GM.supportedPlotTypes.
+            %                member variable CM.supportedPlotTypes.
 			% FRAMES       - A list of frame numbers. For example,
 			%                requesting frames=[1 2 8] will return the
 			%                first, second, and eighth frame in a
@@ -513,7 +513,7 @@ classdef ConnectionMonitor < handle
 		end
 		
 		function setDefaultPlotType(obj, plotType)
-			% GM.setDefaultPlotType(plotType) applies a certain plotting type to
+			% CM.setDefaultPlotType(plotType) applies a certain plotting type to
 			% the group. The default plot type is determined by the Grid3D
 			% topography of the group. For example, a 1D topography will
 			% prefer a raster plot, whereas a 2D topography will prefer a
@@ -550,12 +550,12 @@ classdef ConnectionMonitor < handle
 		end
 		
 		function setPlottingAttributes(obj, varargin)
-			% GM.setPlottingAttributes(varargin) can be used to set default
+			% CM.setPlottingAttributes(varargin) can be used to set default
 			% settings that will apply to all activity plots.
 			% This function provides control over additional attributes
-			% that are not available as input arguments to GM.plot or
-			% GM.plotFrame.
-			% GM.setPlottingAttributes('propertyName1',value1,...) sets the
+			% that are not available as input arguments to CM.plot or
+			% CM.plotFrame.
+			% CM.setPlottingAttributes('propertyName1',value1,...) sets the
 			% value of 'propertyName1' to value1.
 			%
 			% Calling the function without input arguments will restore the
@@ -653,11 +653,11 @@ classdef ConnectionMonitor < handle
 		end
 		
 		function setRecordingAttributes(obj, varargin)
-			% GM.setRecordingAttributes(varargin) can be used to set
+			% CM.setRecordingAttributes(varargin) can be used to set
 			% default settings that will apply to all activity recordings.
 			% This function provides control over additional attributes
-			% that are not available as input arguments to GM.recordMovie.
-			% GM.setRecordingAttributes('propertyName1',value1,...) sets
+			% that are not available as input arguments to CM.recordMovie.
+			% CM.setRecordingAttributes('propertyName1',value1,...) sets
 			% the value of 'propertyName1' to value1.
 			%
 			% Calling the function without input arguments will restore the
@@ -1132,6 +1132,19 @@ classdef ConnectionMonitor < handle
 			end
 		end
 		
+        function throwWarning(obj, errorMsg, errorMode)
+            % THROWWARNING(errorMsg, errorMode) throws a warning with a
+            % specific severity (errorMode).
+            % If errorMode is not given, obj.errorMode is used.
+            if nargin<3,errorMode=obj.errorMode;end
+            
+            if strcmpi(errorMode,'standard')
+                warning(errorMsg)
+            elseif strcmpi(errorMode,'warning')
+                disp(errorMsg)
+            end
+		end
+
 		function unsetError(obj)
 			% unsets error message and flag
 			obj.errorFlag = false;

@@ -210,7 +210,7 @@ classdef ConnectionReader < handle
             
             % try to open connect file
             obj.fileId = fopen(obj.fileStr,'r');
-            if feof(obj.fileId) || obj.fileId==-1
+            if obj.fileId==-1
                 obj.throwError(['Could not open file "' obj.fileStr ...
                     '" with read permission'])
                 return
