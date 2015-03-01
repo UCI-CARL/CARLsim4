@@ -833,60 +833,62 @@ which is the default name pattern for connect files created with CARLsim::setCon
 In case the connect file does not follow the default pattern, creating a ConnectionMonitor will result in the following
 warning:
 \code
->> GM = GroupMonitor('excit','results/');
-Warning: Could not find valid spike file "results/spk_excit.dat". Use setSpikeFileAttributes to
-set a proper spike file prefix/suffix
+>> CM = ConnectionMonitor('input,'output','results/');
+Warning: Could not find valid connect file "results/conn_input_output.dat". Use
+setConnectFileAttributes to set a proper connect file prefix/suffix/separator
 \endcode
 and trying to call the plot method will result in an error message:
 \code
 >> GM.plot
-Error using GroupMonitor/throwError (line 1133)
-Could not open file "results/spk_excit.dat" with read permission
+Error using ConnectionMonitor/throwError (line 1129)
+Could not open file "results/conn_input_output.dat" with read permission
 \endcode
 
-In this case, the method <tt>setSpikeFileAttributes</tt> can be used to change the default prefix and suffix of
-the spike file name. In the above case, the prefix would be <tt>spk_</tt> and the suffix would be <tt>.dat</tt>.
-Analogously, for a spike file following the naming convention <tt>spike_{group name}.ext</tt> the prefix would be 
-<tt>spike_</tt> and the suffix would be <tt>.ext</tt>. After prefix/suffix have been set accordingly, the spike
-file will be found and activity can be plotted:
+In this case, the method <tt>setConnectFileAttributes</tt> can be used to change the default prefix, suffix, and
+separator of the connect file name.
+In the above case, the prefix would be <tt>conn_</tt>, the separator would be <tt>_</tt>, and the suffix would
+be <tt>.dat</tt>. Note that only the "_" between group names counts as the separator.
+Analogously, for a connect file following the naming convention
+<tt>connect_{pre-group name}-{post-group name}.ext</tt> the prefix would be 
+<tt>connect_</tt>, the separator would be <tt>-</tt>, and the suffix would be <tt>.ext</tt>.
+After prefix/suffix/separator have been set accordingly, the connect file will be found and weights can be plotted:
 \code
->> GM.hasValidSpikeFile()
+>> CM.hasValidConnectFile()
 
 ans =
 
      0
 
->> GM.setSpikeFileAttributes('spike_','.ext');
->> GM.hasValidSpikeFile()
+>> CM.setSpikeFileAttributes('connect_','-','.ext');
+>> CM.hasValidConnectFile()
 
 ans =
 
      1
 
->> GM.plot
+>> CM.plot
 \endcode
 \since v3.0
 
 
-\subsection ch9s3s3_plot 9.3.3 Plotting Activity
+\subsection ch9s4s3_plot 9.4.3 Plotting Weights
 
-Once a GroupMonitor has been set up, activity can be plotted using the <tt>plot</tt> method:
+Once a ConnectionMonitor has been set up, synaptic weights can be plotted using the <tt>plot</tt> method:
 \code
->> GM.plot
+>> CM.plot
 \endcode
-This will plot the data in bins of 1000 ms in the current figure/axes using a default plot type,
-which is determined by the ::Grid3D dimensions of the group (see \ref ch9s3s4_plot_types).
+This will plot each weight snapshot (or frame) in the current figure/axes using a default plot type,
+which is determined by the size of the weight matrix (see \ref ch9s4s4_plot_types).
 
-A list of frames to be plotted as well as the histogram bin window (ms) can be specified directly.
-For example, the following command would bin the data into frames 500 ms length, and display the
-first, second, and eighth frame as a heat map:
+A list of frames (or snapshots) and neurons to be plotted can be specified directly.
+For example, the following command would display the first, second, and eighth weight snapshot as a 2D heat map:
 \code
->> GM.plot('heatmap',[1 2 8],500);
+>> CM.plot('heatmap',[1 2 8]);
 \endcode
 
 Every Monitor comes with an InteractiveMode for plotting activity and weights.
 By default, plotting will occur at a predefined speed (5 frames per second), unless otherwise specified using the
-method <tt>setPlottingAttributes</tt> (see \ref ch9s3s5_plot_attributes).
+method <tt>setPlottingAttributes</tt> (see \ref ch9s4s5_plot_attributes).
 At any time, the user can hit key 'p' to pause plotting, or 'q' to quit.
 Hitting key 's' will enter stepping mode, which will freeze the current frame until the user either hits the
 'right arrow' key (in order to step one frame forward) or the 'left arrow' key (in order to step one frame backward).
@@ -894,47 +896,41 @@ Hitting key 's' will enter stepping mode, which will freeze the current frame un
 It is also possible to set the default plot type directly, so it does not have to be specified each
 time data is plotted or recorded:
 \code
->> GM.setDefaultPlotType('histogram')
+>> CM.setDefaultPlotType('histogram')
 \endcode
-For a list of available plot types, please refer to \ref ch9s3s4_plot_types.
+For a list of available plot types, please refer to \ref ch9s4s4_plot_types.
 
 A number of additional plotting attributes can be set via <tt>setPlottingAttributes</tt>, such as the
 background color of the figure and the number of frames to be displayed per second
-(see \ref ch9s3s5_plot_attributes).
+(see \ref ch9s4s5_plot_attributes).
 
-Certain plot types, such as <tt>'heatmap'</tt> or <tt>'flowfield'</tt> depend on appropriate ::Grid3D
-dimensions (2D for the former, 3D for the latter).
-For example, the heatmap of a population with 100 neurons on a 100x1x1 grid will be a single row.
-But, the grid dimensions can be reshaped on-the-fly, to make them easier to visualize:
-\code
->> GM.setGrid3D(10,10,1);   % reshape 100x1x1 grid into 10x10x1 grid
->> GM.plot('heatmap')
-\endcode
-Note that the overall number of neurons must not change when specifying new grid dimensions.
+It is also possible to display weight data only for a subset of pre-synaptic or post-synaptic neurons.
+This makes it possible to visualize the receptive field of a post-synaptic neuron, or the response field
+of a pre-synaptic neuron.
 
-The raw data of a spike file can also be read directly using a SpikeReader (see \ref ch9s5s2_spike_reader).
-\see \ref ch9s3s4_plot_types
-\see \ref ch9s3s5_plot_attributes
-\see \ref ch9s5s2_spike_reader
+The raw data of a connect file can also be read directly using a ConnectionReader (see \ref ch9s5s3_connection_reader).
+\see \ref ch9s4s4_plot_types
+\see \ref ch9s4s5_plot_attributes
+\see \ref ch9s5s3_connection_reader
 \since v3.0
 
 
-\subsection ch9s3s4_plot_types 9.3.4 GroupMonitor Plot Types
+\subsection ch9s4s4_plot_types 9.4.4 ConnectionMonitor Plot Types
 
 The following image illustrates the different plot types that are available (applied to an arbitrary network):
 
-\image html 9_gm_plottypes.jpg "Supported GroupMonitor plot types: 'raster', 'heatmap', 'histogram', and 'flowfield'."
+\image html 9_gm_plottypes.jpg "Supported ConnectionMonitor plot types: 'heatmap', 'histogram', 'receptivefield', and 'responsefield'."
 
 A specific default plot type can be set using <tt>setDefaultPlotType</tt>:
 \code
->> GM.setDefaultPlotType(str);
+>> CM.setDefaultPlotType(str);
 \endcode
-where <tt>str</tt> is either <tt>'flowfield'</tt>, <tt>'heatmap'</tt>, <tt>'histogram'</tt>, or <tt>'raster'</tt>.
+where <tt>str</tt> is either <tt>'heatmap'</tt>, <tt>'histogram'</tt>, <tt>'receptivefield'</tt>, or <tt>'responsefield'</tt>.
 This type will then apply to all subsequent plotting and recording commands, unless it is overwritten explicitly
 with one of the method's input arguments.
 
 This value can be overwritten by explicitly specifying a plot type when using the methods
-<tt>plot</tt> (see \ref ch9s3s3_plot) or <tt>recordMovie</tt> (see \ref ch9s3s6_record_movie).
+<tt>plot</tt> (see \ref ch9s4s3_plot) or <tt>recordMovie</tt> (see \ref ch9s4s6_record_movie).
 
 Plot type <tt>'flowfield'</tt> will plot a 2D vector field where the length of the vector is given as the firing
 rsate of the neuron times the corresponding vector orientation. The latter is inferred from the third ::Grid3D
@@ -951,31 +947,30 @@ The number of bins and whether to plot firing rates (Hz) instead of number of sp
 
 Plot type <tt>'raster'</tt> will output the data as a raster plot with bin window <tt>binWindowMs</tt>.
 
-\note Make sure the Grid3D dimensions are appropriate for the current plot type (change dimensions via
-<tt>setGrid3D</tt>).
 \since v3.0
 
 
-\subsection ch9s3s5_plot_attributes 9.3.5 GroupMonitor Plotting Attributes
+\subsection ch9s4s5_plot_attributes 9.4.5 ConnectionMonitor Plotting Attributes
 
 The method <tt>setPlottingAttributes(varargin)</tt> can be used to set default plotting attributes.
 These default settings will apply to all activity plots, unless their values are overwritten explicitly in the
-<tt>plot</tt> method (see \ref ch9s3s3_plot).
+<tt>plot</tt> method (see \ref ch9s4s3_plot).
 
 The following command sets the value of variable <tt>propertyName1</tt> to value <tt>value1</tt>:
 \code
->> GM.setPlottingAttributes('propertyName1',value1);
+>> CM.setPlottingAttributes('propertyName1',value1);
 \endcode
 Additional variables can be flexibly appended; order or capitalization does not matter.
 A list of available attributes can be displayed via:
 \code
->> help GroupMonitor.setPlottingAttributes
+>> help ConnectionMonitor.setPlottingAttributes
 
-GM.setPlottingAttributes(varargin) can be used to set default
+CM.setPlottingAttributes(varargin) can be used to set default
 settings that will apply to all activity plots.
 This function provides control over additional attributes
-that are not available as input arguments to GM.plot.
-GM.setPlottingAttributes('propertyName1',value1,...) sets the
+that are not available as input arguments to CM.plot or
+CM.plotFrame.
+CM.setPlottingAttributes('propertyName1',value1,...) sets the
 value of 'propertyName1' to value1.
  
 Calling the function without input arguments will restore the
@@ -991,10 +986,7 @@ DISPFRAMENR     - A boolean flag that indicates whether to
                   display the frame number. Default: true.
 FPS             - The frames per second for the plotting
                   loop. Default: 5.
-HISTNUMBINS     - Number of bins for histogram. Default: 10.
-HISTSHOWRATE    - A boolean flag to plot mean firing rates
-                  (Hz) for plotType='histogram' instead of
-                  mere number of spikes. Default: true.
+HISTNUMBINS     - Number of bins for histogram. Default: 20.
 INTERACTIVEMODE - A boolean flag to set InteractiveMode on or
                   off. If it is off, key events/FPS/stepping
                   will take no effect (helpful if you want to
@@ -1003,50 +995,46 @@ INTERACTIVEMODE - A boolean flag to set InteractiveMode on or
 \since v3.0
 
 
-\subsection ch9s3s6_record_movie 9.3.6 Recording a Movie
+\subsection ch9s4s6_record_movie 9.4.6 Recording a Movie
 
 Activity plots can be directly saved to AVI movie files via the following command:
 \code
->> GM.recordMovie;
+>> CM.recordMovie;
 \endcode
 
-This will generate a default GroupMonitor plot (see \ref ch9s3s3_plot) and save the frames to an <tt>.avi</tt>
+This will generate a default ConnectionMonitor plot (see \ref ch9s4s3_plot) and save the frames to an <tt>.avi</tt>
 binary using the MATLAB <tt>VideoWriter</tt> utility.
 
-The following command will generate file called <tt>myMovie.avi</tt> that shows a heat map of group activity
-with binning window 500 ms, and display the first, second, and eighth frame at a playback rate of 1 fps:
+The following command will generate file called <tt>myMovie.avi</tt> that shows a heat map of the weight matrix,
+and display the first, second, and eighth frame (or snapshot) at a playback rate of 1 fps:
 \code
->> GM.recordMovie('myMovie.avi', 'heatmap', [1 2 8], 500, 1);
+>> CM.recordMovie('myMovie.avi', 'heatmap', [1 2 8], 1);
 created file "myMovie.avi"
 \endcode
 
-\note Make sure the Grid3D dimensions are appropriate for the current plot type (change dimensions via
-<tt>setGrid3D</tt>).
-\see \ref ch9s3s7_record_attributes
+\see \ref ch9s4s7_record_attributes
 \since v3.0
 
 
-\subsection ch9s3s7_record_attributes 9.3.7 GroupMonitor Recording Attributes
+\subsection ch9s4s7_record_attributes 9.4.7 ConnectionMonitor Recording Attributes
 
 The method <tt>setRecordingAttributes(varargin)</tt> can be used to set default recording attributes.
 These default settings will apply to all recordings, unless their values are overwritten explicitly in the
-<tt>recordMovie</tt> method (see \ref ch9s3s6_record_movie).
+<tt>recordMovie</tt> method (see \ref ch9s4s6_record_movie).
 
 The following command sets the value of variable <tt>propertyName1</tt> to value <tt>value1</tt>:
 \code
->> GM.setRecordingAttributes('propertyName1',value1);
+>> CM.setRecordingAttributes('propertyName1',value1);
 \endcode
 Additional variables can be flexibly appended; order or capitalization does not matter.
 A list of available attributes can be displayed via:
 \code
->> help GroupMonitor.setRecordingAttributes
-
-GM.setRecordingAttributes(varargin) can be used to set
+>> help ConnectionMonitor.setRecordingAttributes
+CM.setRecordingAttributes(varargin) can be used to set
 default settings that will apply to all activity recordings.
 This function provides control over additional attributes
-that are not available as input arguments to GM.recordMovie.
-GM.setRecordingAttributes('propertyName1',value1,...) sets
-the value of 'propertyName1' to value1.
+that are not available as input arguments to CM.recordMovie.
+CM.setRecordingAttributes('propertyName1',value1,...) sets
  
 Calling the function without input arguments will restore the
 default settings.
