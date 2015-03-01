@@ -214,8 +214,8 @@ classdef GroupMonitor < handle
             
             spkFile = obj.getSpikeFileName();
             SR = SpikeReader(spkFile, false, 'silent');
-            [errFlag,~] = SR.getError();
-            hasValid = ~errFlag;
+            [obj.errorFlag,obj.errorMsg] = SR.getError();
+            hasValid = ~obj.errorFlag;
         end
                 
         function plot(obj, plotType, frames, binWindowMs)
@@ -856,9 +856,9 @@ classdef GroupMonitor < handle
             obj.spkObj = SpikeReader(spkFile, false, 'silent');
             
             % make sure spike file is valid
-            [errFlag,errMsg] = obj.spkObj.getError();
-            if errFlag
-                obj.throwError(errMsg)
+            [obj.errorFlag,obj.errorMsg] = obj.spkObj.getError();
+            if obj.errorFlag
+                obj.throwError(obj.errorMsg)
                 return
             end
             obj.grid3D = obj.spkObj.getGrid3D();

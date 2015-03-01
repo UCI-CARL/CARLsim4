@@ -219,13 +219,13 @@ classdef NetworkMonitor < handle
             
             % check whether valid spike file found, exit if not found
             if ~GM.hasValidSpikeFile()
-	            [~,errMsg] = GM.getError();
-                obj.throwError(errMsg, errorMode);
+	            [obj.errorFlag,obj.errorMsg] = GM.getError();
+                obj.throwError(obj.errorMsg, errorMode);
                 return % make sure we exit after spike file not found
             end
             
             % set plot type to specific type or find default type
-            GM.setPlotType(plotType);
+            GM.setDefaultPlotType(plotType);
             
             % disable interactive mode to avoid press key events etc.
             GM.setPlottingAttributes('interactiveMode',false);
@@ -602,11 +602,11 @@ classdef NetworkMonitor < handle
 			%                 - histogram A histogram of firing rates.
             %                             Histogram options ('histNumBins'
             %                             and 'histShowRate') can be set
-            %                             via GM.setPlottingAttributes.
+            %                             via NM.setPlottingAttributes.
             %                 - raster    A raster plot with binning window
             %                             binWindowMs
             gId = obj.getGroupId(groupName);
-            obj.groupMonObj{gId}.setPlotType(plotType);
+            obj.groupMonObj{gId}.setDefaultPlotType(plotType);
         end
         
         function setGroupSubPlot(obj, groupName, subPlots)
@@ -643,7 +643,7 @@ classdef NetworkMonitor < handle
             % NM.setPlottingAttributes(varargin) can be used to set default
             % settings that will apply to all activity plots.
             % This function provides control over additional attributes
-            % that are not available as input arguments to GM.plot or
+            % that are not available as input arguments to NM.plot or
             % NM.plotFrame.
             % NM.setPlottingAttributes('propertyName1',value1,...) sets the
             % value of 'propertyName1' to value1.
@@ -735,11 +735,11 @@ classdef NetworkMonitor < handle
         end
         
         function setRecordingAttributes(obj, varargin)
-            % GM.setRecordingAttributes(varargin) can be used to set
+            % NM.setRecordingAttributes(varargin) can be used to set
             % default settings that will apply to all activity recordings.
             % This function provides control over additional attributes
-            % that are not available as input arguments to GM.recordMovie.
-            % GM.setRecordingAttributes('propertyName1',value1,...) sets
+            % that are not available as input arguments to NM.recordMovie.
+            % NM.setRecordingAttributes('propertyName1',value1,...) sets
             % the value of 'propertyName1' to value1.
             %
             % Calling the function without input arguments will restore the
@@ -988,7 +988,7 @@ classdef NetworkMonitor < handle
         end
         
         function throwError(obj, errorMsg, errorMode)
-            % GM.throwError(errorMsg, errorMode) throws an error with a
+            % NM.throwError(errorMsg, errorMode) throws an error with a
             % specific severity (errorMode). In all cases, obj.errorFlag is
             % set to true and the error message is stored in obj.errorMsg.
             % Depending on errorMode, an error is either thrown as fatal,
