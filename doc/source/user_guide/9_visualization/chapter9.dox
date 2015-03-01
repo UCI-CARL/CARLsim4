@@ -436,18 +436,185 @@ generated during a simulation.
 
 \subsection ch9s5s1_simulation_reader 9.5.1 Simulation Reader
 
+A SimulationReader can be used to read a simulation log file that is created by default by every CARLsim
+simulation, or by explicitly calling CARLsim::saveSimulation.
+This allows to directly access important properties of the simulation run or the spiking network, without
+the need of a NetworkMonitor.
 
-% SimulationReader can be used to read a simulation log file that is
-    % created by default ("results/sim_[netName].dat") or by specifically
-    % calling method CARLsim::saveSimulation.
-    % The returned object contains essential information about the
-    % simulation and the network setup.
+The following public members (properties) are available:
+\code
+>> properties SimulationReader
+
+fileStr              % path to simulation file
+sim                  % struct containing viable simulation/network information
+groups               % struct containing all group info
+syn_preIDs           % pre-synaptic ID for every synapse in the network
+syn_postIDs          % post-synaptic ID for every synapse in the network
+syn_weights          % weight value for every synapse in the network
+syn_maxWeights       % max weight value for every synapse in the network
+syn_plastic          % type for every synapse in the network
+syn_delays           % delay value for every synapse in the network
+\endcode
+
+The following code snippet points a SimulationReader to a simulation file <tt>results/sim_myNet.dat</tt>
+and populates the public member structs <tt>sim</tt> and <tt>groups</tt> with viable simulation/network information:
+\code
+>> SimR = SimulationReader('results/sim_myNet.dat');
+\endcode
+
+The <tt>sim</tt> struct can then be queried for values such as simulation time or execution time:
+\code
+>> SimR.sim.simTimeSec      % print simulation time (sec)
+>> SimR.sim.exeTimeSec      % print execution time (sec)
+>> SimR.sim.nGroups         % print number of groups in network
+>> SimR.sim.nNeurons        % print number of neurons in network
+>> % etc.
+\endcode
+
+The <tt>groups</tt> struct can then be queried for values such as the Grid3D dimensions or neuron IDs:
+\code
+>> SimR.groups(1).sizeN        % print number of neurons in first group
+>> SimR.groups(1).startN       % print ID of first neuron in first group
+>> SimR.groups(1).grid3D       % print Grid3D dimensions of first group
+>> % etc.
+\endcode
+
+By default, the deprecated <tt>syn_*</tt> properties will not be populated by the constructor call.
+In order to access these properties, the constructor needs to be called with an additional flag
+<tt>loadSynapseInfo</tt>:
+\code
+>> SimR = SimulationReader('results/sim_myNet.dat',true);
+\endcode
+Note that for this to work, the simulation must have been saved with CARLsim::saveSimulation input
+argument <tt>saveSynapseInfo</tt> set to true.
+
+\note Use of the <tt>syn_*</tt> properties above is deprecated. Use ConnectionMonitor or ConnectionReader 
+to access synapse information instead.
+\since v3.0
+
 
 \subsection ch9s5s2_spike_reader 9.5.2 Spike Reader
+
+A SpikeReader can be used to read raw spike file data that was generated with the SpikeMonitor
+utility in CARLsim.
+This allows to directly access the spike data, be it in AER format or binned in suitable time windows,
+without the need of a GroupMonitor or NetworkMonitor.
+
+The following methods are available:
+\code
+>> methods SpikeReader
+
+getError               % returns the current error status (flag and message)
+getGrid3D              % returns the Grid3D dimensions of the group
+getSimDurMs            % returns the estimated simulation duration (ms)
+readSpikes             % reads spike files and returns data binned or in AER format
+\endcode
+
+The following public members (properties) are available:
+\code
+>> properties SpikeReader
+
+fileStr                % path to spike file
+errorMode              % current error mode
+supportedErrorModes    % list of supported error modes
+\endcode
+
+The following code snippet points a SpikeReader object to a spike file
+<tt>results/spk_group1.dat</tt> (generated with the SpikeMonitor utility in CARLsim)
+and returns the spike data binned into 100 ms time windows:
+\code
+>> SR = SpikeReader('results/spk_group1.dat');
+>> spkData = SR.readSpikes(100); % binWindowMs
+\endcode
+
+The variable <tt>spkData</tt> will return spike data in a 2D matrix, where the first dimension
+corresponds to the bin windows and the second dimension corresponds to the number of neurons
+in the group (1-indexed).
+For example, with a binning window of 100ms, <tt>spkData(1,1)</tt> would contain the number of
+spikes that the first neuron in the group emitted in the first 100ms (t = 0 .. 99ms) of the simulation.
+
+Alternatively, spike data can be returned in AER format (as <tt>[times;neurIds]</tt>) if the
+<tt>binWindowMs</tt> input argument to <tt>readSpikes</tt> is set to -1:
+\code
+>> SR = SpikeReader('results/spk_group1.dat');
+>> spkData = SR.readSpikes(-1); % binWindowMs
+\endcode 
+
+The generation of a raster plot is then as easy as:
+\code
+>> plot(spkData(1,:), spkData(2,:), '.k');
+>> xlabel('time (ms)')
+>> ylabel('neuron ID')
+\endcode
+
+The SpikeReader can also be queried for an estimate about the total simulation duration via:
+\code
+>> simDur = SR.getSimDurMs();
+\endcode
+Note that this is only an estimate, based on the last spike time in the group.
+Other than that, a SpikeReader object does not know about any simulation procedures.
+\since v3.0
 
 
 \subsection ch9s5s3_connection_reader 9.5.3 Connection Reader
 
+A ConnectionReader can be used to read raw connection file data that was generated with the
+ConnectionMonitor utility in CARLsim.
+This allows to directly access the weight data, at specific times, without the need of a 
+ConnectionMonitor.
+
+The following methods are available:
+\code
+>> methods ConnectionReader
+
+getError               % returns the current error status (flag and message)
+getGrid3DPre           % returns the Grid3D dimensions of the pre-synaptic group
+getGrid3DPost          % returns the Grid3D dimensions of the post-synaptic group
+getNumNeuronsPre       % returns the number of neurons in the pre-synaptic group
+getNumNeuronsPost      % returns the number of neurons in the post-synaptic group
+getNumSnapshots        % returns the number of snapshots in the connection file
+readWeights            % returns the weights of a connection at specific simulation times
+\endcode
+
+The following public members (properties) are available:
+\code
+>> properties ConnectionReader
+
+fileStr                % path to connection file
+errorMode              % current error mode
+supportedErrorModes    % list of supported error modes
+\endcode
+
+The following code snippet points a ConnectionReader object to a connection file
+<tt>results/conn_group1_group2.dat</tt> (generated with the ConnectionMonitor utility in CARLsim)
+and returns the weight data for all recorded snapshots:
+\code
+>> CR = ConnectionReader('results/conn_group1_group2.dat');
+>> [allTimestamps, allWeights] = CR.readWeights();
+\endcode
+The variable <tt>allTimestamps</tt> will contain a list of timestamps (ms) at which the corresponding
+weights were recorded.
+The variable <tt>allWeights</tt> will return the weight data in a 2D matrix, where the first dimension
+specifies the snapshot number and the second dimension corresponds to all synaptic weights for that
+specific snapshot.
+For example, <tt>allWeights(1,:)</tt> would contain all synaptic weights recorded during the first snapshot.
+The timestamp of the first snapshot can be retrieved via <tt>allTimestamps(1)</tt>.
+
+Plotting a histogram of all weights is then as easy as:
+\code
+>> hist(allWeights(1,:));
+>> xlabel('weight value')
+>> ylabel('number of occurrences')
+\endcode
+
+Alternatively, the weight vector can be reshaped as a 2D weight matrix according to the population dimensions
+and plotted as a heatmap:
+\code
+>> imagesc( reshape(allWeights(1,:), CR.getNumNeuronsPost(), CR.getNumNeuronsPre()) );
+>> xlabel('nrPre')
+>> ylabel('nrPost')
+\endcode
+\since v3.0
 
 
 \section ch9s6_interactive_mode 9.6 Interactive Mode

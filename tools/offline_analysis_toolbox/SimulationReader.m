@@ -7,10 +7,16 @@ classdef SimulationReader < handle
     % calling method CARLsim::saveSimulation.
     % The returned object contains essential information about the
     % simulation and the network setup.
-    % \TODO expand
     %
+    % Usage example:
+    % >> SR = SimulationReader('results/sim_random.dat');
+    % >> SR.sim.simTimeSec % print number of simulated seconds
+    % >> SR.sim.exeTimeSec % print execution time in seconds
     %
-    % Version 10/2/2014
+    % Note: Use of syn_* properties is deprecated. Use ConnectionMonitor or
+    % ConnectionReader instead.
+    %
+    % Version 2/28/2015
     % Author: Michael Beyeler <mbeyeler@uci.edu>
     
     %% PROPERTIES
