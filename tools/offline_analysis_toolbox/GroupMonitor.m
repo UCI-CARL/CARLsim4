@@ -104,9 +104,9 @@ classdef GroupMonitor < handle
             else
                 if strcmpi(resultsFolder(end),filesep)
                     resultsFolder = resultsFolder(1:end-1);
-                end
-                obj.resultsFolder = resultsFolder;
-            end
+				end
+				obj.resultsFolder = resultsFolder;
+			end
             if nargin<1
                 obj.throwError('No group name given.');
                 return

@@ -78,7 +78,7 @@ classdef ConnectionReader < handle
             
             [~,~,fileExt] = fileparts(connectFile);
             if strcmpi(fileExt,'')
-                obj.throwError(['Parameter spikeFile must be a file ' ...
+                obj.throwError(['Parameter connectFile must be a file ' ...
                     'name, directory found.'])
             end
             
@@ -208,7 +208,7 @@ classdef ConnectionReader < handle
             % sets class properties appropriately.
             obj.unsetError()
             
-            % try to open spike file
+            % try to open connect file
             obj.fileId = fopen(obj.fileStr,'r');
             if feof(obj.fileId) || obj.fileId==-1
                 obj.throwError(['Could not open file "' obj.fileStr ...

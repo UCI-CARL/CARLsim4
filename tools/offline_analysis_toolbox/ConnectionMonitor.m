@@ -102,6 +102,15 @@ classdef ConnectionMonitor < handle
 				obj.throwError('No group name given.');
 				return
 			end
+
+            % make sure connect file is valid
+			if ~obj.hasValidConnectFile()
+				obj.throwWarning(['Could not find valid connect file "' ...
+					obj.getConnectFileName() '". Use ' ...
+					'setConnectFileAttributes to set a proper connect ' ...
+					'file prefix/suffix/separator'])
+				return
+			end
 		end
 		
 		function delete(obj)
@@ -160,6 +169,56 @@ classdef ConnectionMonitor < handle
 				obj.connFileSuffix ];         % something like '.dat'
 		end
 		
+		function grid = getGrid3DPre(obj)
+            % grid = CM.getGrid3DPre() returns the current 3D grid dimensions
+            % of the pre-synaptic group.
+            % Grid3D is a 3-element vector, where the first
+            % dimension corresponds to the number of neurons in x
+            % direction, the second dimension to y, and the third dimension
+            % to z.
+            obj.unsetError()
+            obj.initConnectionReader()
+            
+            grid = obj.CR.getGrid3DPre();
+        end
+
+		function grid = getGrid3DPost(obj)
+            % grid = CM.getGrid3DPost() returns the current 3D grid dimensions
+            % of the pre-synaptic group.
+            % Grid3D is a 3-element vector, where the first
+            % dimension corresponds to the number of neurons in x
+            % direction, the second dimension to y, and the third dimension
+            % to z.
+            obj.unsetError()
+            obj.initConnectionReader()
+            
+            grid = obj.CR.getGrid3DPost();
+        end
+
+		function xyz = getNeuronLocation3DPre(obj,neurId)
+			% xyz = CM.getNeronLocation3DPre(neurId) returns the 3D coordinates
+			% of the neurId-th neuron in the pre-synaptic group (1-indexed).
+			% The 3D coordinates of the neuron are determined by the Grid3D
+			% dimensions of the group.
+			neurId = neurId - 1;
+			grid3D = obj.CR.getGrid3DPre();
+			xyz(1) = mod(neurId, grid3D(1));
+			xyz(2) = mod( floor(neurId/grid3D(1)), grid3D(2) );
+			xyz(3) = floor(neurId / (grid3D(1)*grid3D(2)));
+		end
+
+		function xyz = getNeuronLocation3DPost(obj,neurId)
+			% xyz = CM.getNeronLocation3DPre(neurId) returns the 3D coordinates
+			% of the neurId-th neuron in the pre-synaptic group (1-indexed).
+			% The 3D coordinates of the neuron are determined by the Grid3D
+			% dimensions of the group.
+			neurId = neurId - 1;
+			grid3D = obj.CR.getGrid3DPost();
+			xyz(1) = mod(neurId, grid3D(1));
+			xyz(2) = mod( floor(neurId/grid3D(1)), grid3D(2) );
+			xyz(3) = floor(neurId / (grid3D(1)*grid3D(2)));
+		end
+
 		function nSnap = getNumSnapshots(obj)
 			% nSnap = CM.getNumSnapshots() returns the number of snapshots
 			% that have been recorded.
@@ -375,15 +434,7 @@ classdef ConnectionMonitor < handle
 			end
 			if obj.plotInteractiveMode,close;end
 		end
-		
-		function xyz = getNeuronLocation3DPre(obj,neurId)
-			neurId = neurId - 1;
-			grid3D = obj.CR.getGrid3DPre();
-			xyz(1) = mod(neurId, grid3D(1));
-			xyz(2) = mod( floor(neurId/grid3D(1)), grid3D(2) );
-			xyz(3) = floor(neurId / (grid3D(1)*grid3D(2)));
-		end
-		
+				
 		function recordMovie(obj, fileName, plotType, frames, fps, winSize)
 			% CM.recordMovie(fileName, frames, fps, winSize) takes an AVI
 			% movie of a list of frames using the VIDEOWRITER utility.
