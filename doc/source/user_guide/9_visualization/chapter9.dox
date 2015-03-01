@@ -16,15 +16,19 @@ or connections (see \ref ch9s4_connection_monitor), and to access the associated
 (see \ref ch9s5s2_spike_reader) and weight file binaries (see \ref ch9s5s3_connection_reader) directly.
 
 Every Monitor comes with an InteractiveMode for plotting activity and weights over time,
-which allows the use of keyboard commands to step through frames, pause or quit (see \ref ch9s6_interactive_mode).
+which allows the use of keyboard commands to step through frames, pause or quit
+(see \ref ch9s2s3_plot, \ref ch9s3s3_plot, and \ref ch9s4s3_plot).
 
-Every Monitor also provides a whole range of settings to customize the plotting (see \ref ch9s7_customize_plotting)
-or recording (see \ref ch9s8_customize_recording) of activity and weights.
+Every Monitor also provides a whole range of settings to customize the plotting
+(see \ref ch9s2s5_plot_attributes, \ref ch9s3s5_plot_attributes, and \ref ch9s4s5_plot_attributes)
+or recording
+(see \ref ch9s2s7_record_attributes, \ref ch9s3s7_record_attributes, or \ref ch9s4s7_record_attributes)
+of activity and weights.
 
 For users migrating from CARLsim 2.2, please note that <tt>readNetwork.m</tt> has been replaced with 
 Network Monitors (see \ref ch9s2_network_monitor) and <tt>readSpikes.m</tt> has been replaced with
 Spike Readers (see \ref ch9s5s2_spike_reader).
-For more information please refer to \ref ch9s9_migrating_scripts.
+For more information please refer to \ref ch9s6_migrating_scripts.
 
 
 \section ch9s1_getting_started 9.1 Getting Started
@@ -237,6 +241,13 @@ first, second, and eighth frame as a heat map:
 \code
 >> GM.plot('heatmap',[1 2 8],500);
 \endcode
+
+Every Monitor comes with an InteractiveMode for plotting activity and weights.
+By default, plotting will occur at a predefined speed (5 frames per second), unless otherwise specified using the
+method <tt>setPlottingAttributes</tt> (see \ref ch9s3s5_plot_attributes).
+At any time, the user can hit key 'p' to pause plotting, or 'q' to quit.
+Hitting key 's' will enter stepping mode, which will freeze the current frame until the user either hits the
+'right arrow' key (in order to step one frame forward) or the 'left arrow' key (in order to step one frame backward).
 
 It is also possible to set the default plot type directly, so it does not have to be specified each
 time data is plotted or recorded:
@@ -617,26 +628,7 @@ and plotted as a heatmap:
 \since v3.0
 
 
-\section ch9s6_interactive_mode 9.6 Interactive Mode
-\author Michael Beyeler
-
-Every Monitor comes with an InteractiveMode for plotting activity and weights.
-By default, plotting will occur at a predefined speed (5 frames per second), unless otherwise specified using the
-method setPlottingAttributes of MATLAB monitors.
-At any time, the user can hit key 'p' to pause plotting, or 'q' to quit.
-Hitting key 's' will enter stepping mode, which will freeze the current frame until the user either hits the
-'right arrow' key (in order to step one frame forward) or the 'left arrow' key (in order to step one frame backward).
-
-
-\section ch9s7_customize_plotting 9.7 Customizing Plotting
-\author Michael Beyeler
-
-
-\section ch9s8_customize_recording 9.8 Customizing the Recording
-\author Michael Beyeler
-
-
-\section ch9s9_migrating_scripts 9.9 Migrating from CARLsim 2.2
+\section ch9s6_migrating_scripts 9.6 Migrating from CARLsim 2.2
 \author Michael Beyeler
 
 Please note that the following scripts from CARLsim 2.2 (from former directory <tt>scripts/common/</tt>) are no
