@@ -16,9 +16,11 @@ Different groups of neurons can be created from a one-dimensional array to a thr
 
 The Izhikevich neuron is a dynamical systems model that can be described by a two-dimensional system of ordinary
 differential equations:
-\f{eqnarray}
-\frac{dv}{dt} & = & 0.04v^2 + 5v + 140 - u + i_{syn} \\
-\frac{du}{dt} & = & a (bv - u) \f}
+
+\f{align*}{
+\frac{dv}{dt}  = & ~ 0.04v^2 + 5v + 140 - u + i_{syn} & \text{(1)}\\
+\frac{du}{dt}  = & ~ a (bv - u) & \text{(2)} \f}
+
 Here, (1) describes the membrane potential \f$v\f$ for a given synaptic current \f$i_{syn}\f$ (see \ref ch3s2_synapses),
 whereas (2) describes a recovery variable \f$u\f$;
 the parameter \f$a\f$ is the rate constant of the recovery variable,
@@ -34,9 +36,10 @@ to generate the upstroke of the spike itself. Thus the voltage reset occurs not 
 (\f$v_{cutoff}=+30\f$) of the spike.
 The action potential downstroke is modeled using an instantaneous reset of the membrane potential whenever \f$v\f$
 reaches the spike cutoff, plus a stepping of the recovery variable:
-\f{eqnarray}
- v(v>30) & = & c \\
- u(v>30) & = & u + d \f}
+
+\f{align*}{
+ v(v>30)  = & ~ c & \text{(3)}\\
+ u(v>30)  = & ~ u + d & \text{(4)}\f}
 
 The inclusion of \f$u\f$ in the model allows for the simulation of typical spike patterns observed in biological
 neurons. The four parameters \f$a, b, c, d\f$ can be set to simulate different types of neurons.
@@ -81,9 +84,9 @@ current is directly proportional to the synaptic weight. Additionally, the total
 postsynaptic neuron j, \f$ I_{j}^{syn} \f$, due to a spike from presynaptic neuron i is given at any
 point in time by:
 
-\f[
-I_{j}^{syn} = \sum \limits_{i=1}^{N} s_{ij}w_{ij}
-\f]
+\f{align*}{
+I_{j}^{syn} =  & ~ \sum \limits_{i=1}^{N} s_{ij}w_{ij} & \text{(5)}
+\f}
 
 
 
@@ -100,40 +103,40 @@ used. Users can specify the decay time constants for the synaptic decay constant
 CARLsim::setConductances.
 
 
-\f[
-I_{j}^{syn} = \sum \limits_{i=1}^{N} i_{ij}w_{ij}
-\f]
+\f{align*}{
+I_{j}^{syn} = & ~ \sum \limits_{i=1}^{N} i_{ij}w_{ij} & \text{(6)}
+\f}
 
 Here we drop the i,j notation and assume the i ang g values pertain to a specific synapse and the v
 values pertain to a specific postsynaptic neuron.
 
-\f[
-i = i_{NMDA} + i_{AMPA} + i_{GABA_{A}} + i_{GABA_{B}}
-\f]
+\f{align*}{
+i = & ~ i_{NMDA} + i_{AMPA} + i_{GABA_{A}} + i_{GABA_{B}} & \text{(7)}
+\f}
 
-\f[
-i_{NMDA} = g_{NMDA}\frac{\Big[\frac{v+80}{60} \Big]^{2}}{1+\Big[\frac{v+80}{60} \Big]^{2}}
+\f{align*}{
+i_{NMDA} = & ~ g_{NMDA}\frac{\Big[\frac{v+80}{60} \Big]^{2}}{1+\Big[\frac{v+80}{60} \Big]^{2}}
 
-(v-v^{rev}_{NMDA})
-\f]
+(v-v^{rev}_{NMDA}) & \text{(8)} \\
 
-\f[
-i_{AMPA} = g_{AMPA}(v-v^{rev}_{AMPA})
-\f]
 
-\f[
-i_{GABA_{A}} = g_{GABA_{A}}(v-v^{rev}_{GABA_{A}})
-\f]
 
-\f[
-i_{GABA_{B}} = g_{GABA_{B}}(v-v^{rev}_{GABA_{B}})
-\f]
+i_{AMPA} = & ~ g_{AMPA}(v-v^{rev}_{AMPA}) & \text{(9)} \\
+
+
+
+i_{GABA_{A}} = & ~ g_{GABA_{A}}(v-v^{rev}_{GABA_{A}}) & \text{(10)} \\
+
+
+
+i_{GABA_{B}} = & ~ g_{GABA_{B}}(v-v^{rev}_{GABA_{B}}) & \text{(11)}
+\f}
 
 The conductance, g, for each receptor is given in the general form as:
 
-\f[
-g_{k} = \sum \limits_{f} e^{t-t_{f}/ \tau} \Theta(t-t_f)
-\f]
+\f{align*}
+g_{k} = & ~ \sum \limits_{f} e^{t-t_{f}/ \tau} \Theta(t-t_f) & \text{(12)}
+\f}
 
 
 \note A pre-synaptic spike increases both post-synaptic AMPA and NMDA (GABAa and GABAb) for excitatory
