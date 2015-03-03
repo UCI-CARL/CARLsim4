@@ -18,7 +18,7 @@ that enable and simplify the creation, tuning, and simulation of complex network
 
 New features include:
 - improved platform compatibility (Linux, Mac OS X, and Windows)
-- real-time and offline data analysis tools (see \ref ch7_monitoring and \ref ch9_visualization)
+- real-time and offline data analysis tools (see \ref ch7_monitoring and \ref ch9_matlab_oat)
 - a more complete STDP implementation which includes neuromodulatory mechanisms (see \ref ch5_synaptic_plasticity)
 - an automated parameter tuning interface that utilizes evolutionary algorithms to construct functional SNNs
   (see \ref ch10_ecj)

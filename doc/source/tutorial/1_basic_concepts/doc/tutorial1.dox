@@ -108,6 +108,6 @@ The SpikeMonitor reports it has run for 10 seconds and recorded 22 spikes in mos
 an average firing rate of 22 Hz (since there is only one neuron in the group).
 
 Additionally, spike files and log files have been written to the results folder and can be easily
-visualized with the offline analysis toolbox (see \ref ch9s1_matlab_oat).
+visualized with the offline analysis toolbox (see \ref ch9_matlab_oat).
 
 */

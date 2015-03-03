@@ -77,13 +77,13 @@ Once the spiking network has been specified, the function CARLsim::setupNetwork 
 the chosen back-end (CPU or GPU) and moves the simulation into ::SETUP_STATE.
 
 In this state, a number of monitors (see \ref ch7_monitoring) can be set up to record variables of interest 
-(e.g., spikes, weights, state variables) in binary files for off-line analysis (see \ref ch9s1_matlab_oat).
+(e.g., spikes, weights, state variables) in binary files for off-line analysis (see \ref ch9_matlab_oat).
 New in CARLsim 3 is a means to make these data available at run-time (without the computational overhead of
 writing data to disk), which can be queried for data in the ::RUN_STATE.
 
 For example, Spike Monitors can be used to record output spikes for different neuronal groups
 (see \ref ch7s1_spike_monitor) either to a spike file (binary) or to a SpikeMonitor object.
-The former is useful for off-line analysis of activity (e.g., using \ref ch9s1_matlab_oat).
+The former is useful for off-line analysis of activity (e.g., using \ref ch9_matlab_oat).
 The latter is useful to calculate different spike metrics and statistics on-line, such as
 mean firing rate and standard deviation, or the number of neurons whose firing rate lies
 in a certain interval.
@@ -112,7 +112,7 @@ processing or for restoring a specific network (see \ref ch8_saving_loading).
 The network state consists of all the synaptic connections, weights, delays, and whether the connections are plastic
 or fixed.
 Furthermore, the network can be stored after synaptic learning has occurred in order to externally analyze the
-learned synaptic patterns (for example, via a MATLAB ConnectionMonitor; see ch9s1s3_connection_monitor).
+learned synaptic patterns (for example, via a MATLAB ConnectionMonitor; see ch9s4_connection_monitor).
 
 As more complex biological features are integrated into spiking network models, it becomes increasingly important
 to provide users with a method of tuning the large number of open parameters.
@@ -122,7 +122,7 @@ A more modest approach is to use the SimpleWeightTuner utility that changes weig
 group fires at a predefined target firing rate (see \ref ch12s3_online_weight_tuning).
 
 As mentioned before, once a network has been run, its activity and structure can be visualized using an
-Offline Analysis Toolbox (OAT) written in MATLAB (see \ref ch9s1_matlab_oat).
+Offline Analysis Toolbox (OAT) written in MATLAB (see \ref ch9_matlab_oat).
 In addition, the OAT provides means to access the saved data programmatically, and to store generated sequences of
 plots as an AVI file.
 

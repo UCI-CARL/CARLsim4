@@ -2,18 +2,18 @@ classdef GroupMonitor < handle
     % A GroupMonitor can be used to monitor properties as well as the
     % activity of a specific neuronal group.
     %
-    % A GroupMonitor will assume that a corresponding spike file has been
+    % A GroupMonitor will assume that a corresponding spike file was
     % created during the CARLsim simulation. 
     %
     % Example usage:
     % >> GM = GroupMonitor('excit','results/');
-    % >> GM.plot; % hit 'p' to pause, 'q' to quit
-    % >> GM.setPlotType('heatmap'); % switch to heat map
+    % >> GM.plot; % default plotting mode. hit 'p' to pause, 'q' to quit
+    % >> GM.plot('heatmap'); % switch to heat map
     % >> GM.setRecordingAttributes('fps',10); % set recording FPS
     % >> GM.recordMovie; % plots heat map and saves as 'movie.avi'
     % >> % etc.
     %
-    % Version 1/19/2015
+    % Version 2/27/2015
     % Author: Michael Beyeler <mbeyeler@uci.edu>
     
     %% PROPERTIES
@@ -102,8 +102,11 @@ classdef GroupMonitor < handle
             if nargin<2 || nargin>=2 && strcmpi(resultsFolder,'')
                 obj.resultsFolder = '.';
             else
-                obj.resultsFolder = resultsFolder;
-            end
+                if strcmpi(resultsFolder(end),filesep)
+                    resultsFolder = resultsFolder(1:end-1);
+				end
+				obj.resultsFolder = resultsFolder;
+			end
             if nargin<1
                 obj.throwError('No group name given.');
                 return
@@ -133,7 +136,7 @@ classdef GroupMonitor < handle
             % See a list of all currently supported plot types in the help
             % section of GM.plot and in the variable GM.supportedPlotTypes.
             % The plotting type can also be set manually using
-            % GM.setPlotType.
+            % GM.setDefaultPlotType.
             obj.unsetError()
             obj.initSpikeReader() % required to access Grid3D prop
             plotType = 'default';
@@ -211,14 +214,14 @@ classdef GroupMonitor < handle
             
             spkFile = obj.getSpikeFileName();
             SR = SpikeReader(spkFile, false, 'silent');
-            [errFlag,~] = SR.getError();
-            hasValid = ~errFlag;
+            [obj.errorFlag,obj.errorMsg] = SR.getError();
+            hasValid = ~obj.errorFlag;
         end
                 
         function plot(obj, plotType, frames, binWindowMs)
-            % GM.plot(plotType, frames, binWindowMs, stepFrames) plots the
-            % specified frames in the current figure/axes. A list of
-            % plotting attributes can be set directly as input arguments.
+            % GM.plot(plotType, frames, binWindowMs) plots the specified
+            % frames in the current figure/axes. A list of plotting
+            % attributes can be set directly as input arguments.
             %
             % If InteractiveMode is on, press 's' at any time to enter
             % stepping mode. In this mode, pressing the right arrow key
@@ -355,19 +358,24 @@ classdef GroupMonitor < handle
 			end
 		end
         
-        function recordMovie(obj, fileName, frames, binWindowMs, fps, winSize)
-            % NM.recordMovie(fileName, frames, frameDur, fps, winSize)
+        function recordMovie(obj, fileName, plotType, frames, binWindowMs, fps, winSize)
+            % GM.recordMovie(fileName, frames, frameDur, fps, winSize)
             % takes an AVI movie of a list of frames using the VIDEOWRITER
             % utility.
             %
             % FILENAME     - A string enclosed in single quotation marks
             %                that specifies the name of the file to create.
             %                Default: 'movie.avi'.
+            % PLOTTYPE     - The plotting type to use. If not set, the
+            %                default plotting type will be used, which is
+            %                determined by the Grid3D topography of the
+            %                group. For a list of supported plot types see
+            %                member variable GM.supportedPlotTypes.
             % FRAMES       - A list of frame numbers. For example,
             %                requesting frames=[1 2 8] will return the
             %                first, second, and eighth frame in a
             %                width-by-height-by-3 matrix.
-            %                Default: return all frames.
+            %                Default: -1 (return all frames).
             % BINWINDOWMS  - The binning window (ms) in which the data will
             %                be displayed. Default: 1000.
             % FPS          - Rate of playback for the video in frames per
@@ -377,13 +385,14 @@ classdef GroupMonitor < handle
             %                to [0 0] in order to automatically make the 
             %                movie window fit to the size of the plot
             %                window. Default: [0 0].
-            if nargin<6,winSize=obj.recordWinSize;end
-            if nargin<5,fps=obj.recordFPS;end
-            if nargin<4,binWindowMs=obj.plotBinWinMs;end
-            if nargin<3 || isempty(frames) || numel(frames)==1 && frames==-1
+            if nargin<7,winSize=obj.recordWinSize;end
+            if nargin<6,fps=obj.recordFPS;end
+            if nargin<5,binWindowMs=obj.plotBinWinMs;end
+            if nargin<4 || isempty(frames) || numel(frames)==1 && frames==-1
                 obj.initSpikeReader()
                 frames = 1:ceil(obj.spkObj.getSimDurMs()/binWindowMs);
             end
+            if nargin<3,plotType=obj.plotType;end
             if nargin<2,fileName=obj.recordFile;end
             obj.unsetError()
 			obj.initSpikeReader()
@@ -409,7 +418,7 @@ classdef GroupMonitor < handle
             end
             
             % load data and reshape for plotting if necessary
-            obj.loadDataForPlotting(obj.plotType, binWindowMs);
+            obj.loadDataForPlotting(plotType, binWindowMs);
             
             % display frames in specified axes
             set(gcf,'color',obj.plotBgColor);
@@ -426,7 +435,7 @@ classdef GroupMonitor < handle
             
             % display frame in specified axes
             for i=frames
-                obj.plotFrame(i,obj.plotType,binWindowMs,obj.plotDispFrameNr);
+                obj.plotFrame(i,plotType,binWindowMs,obj.plotDispFrameNr);
                 drawnow
                 writeVideo(vidObj, getframe(gcf));
             end
@@ -451,6 +460,7 @@ classdef GroupMonitor < handle
 					'.'], 'standard')
 				return
 			end
+            obj.errorMode = errMode;
 		end
         
         function setGrid3D(obj, dim0, dim1, dim2, updDefPlotType)
@@ -516,12 +526,12 @@ classdef GroupMonitor < handle
             
             if updDefPlotType
                 % set default plot type for this arrangement
-                obj.setPlotType('default');
+                obj.setDefaultPlotType('default');
             end
         end
                 
-        function setPlotType(obj, plotType)
-            % GM.setPlotType(plotType) applies a certain plotting type to
+        function setDefaultPlotType(obj, plotType)
+            % GM.setDefaultPlotType(plotType) applies a certain plotting type to
             % the group. The default plot type is determined by the Grid3D
             % topography of the group. For example, a 1D topography will
             % prefer a raster plot, whereas a 2D topography will prefer a
@@ -529,11 +539,29 @@ classdef GroupMonitor < handle
             %
             % PLOTTYPE    - The plotting type to apply.
             %               The following types are currently supported:
-            %                   - heatmap   a topological map of group
-            %                               activity where hotter colors
-            %                               mean higher firing rate
-            %                   - raster    a raster plot with binning
-            %                               window: binWindowMs
+            %                 - flowfield A 2D vector field where the
+            %                             length of the vector is given as
+            %                             the firing rate of the neuron
+            %                             times the corresponding vector
+            %                             orientation. The latter is given
+            %                             by the third grid dimension, z.
+            %                             For example Grid3D(10,10,4) plots
+            %                             a 10x10 vector flow field,
+            %                             assuming that neurons with z=0
+            %                             code for direction=0deg, z=1 is
+            %                             90deg, z=2 is 180deg, z=3 is
+            %                             270deg. Vectors with length
+            %                             smaller than 10 % of the max in
+            %                             each frame are not shown.
+            %                 - heatmap   A topological map of group
+            %                             activity where hotter colors mean
+            %                             higher firing rate. 
+            %                 - histogram A histogram of firing rates.
+            %                             Histogram options ('histNumBins'
+            %                             and 'histShowRate') can be set
+            %                             via GM.setPlottingAttributes.
+            %                 - raster    A raster plot with binning window
+            %                             binWindowMs
             obj.unsetError()
             
             % find default plot type if necessary
@@ -561,8 +589,7 @@ classdef GroupMonitor < handle
             % GM.setPlottingAttributes(varargin) can be used to set default
             % settings that will apply to all activity plots.
             % This function provides control over additional attributes
-            % that are not available as input arguments to GM.plot or
-            % GM.plotFrame.
+            % that are not available as input arguments to GM.plot.
             % GM.setPlottingAttributes('propertyName1',value1,...) sets the
             % value of 'propertyName1' to value1.
             %
@@ -829,9 +856,9 @@ classdef GroupMonitor < handle
             obj.spkObj = SpikeReader(spkFile, false, 'silent');
             
             % make sure spike file is valid
-            [errFlag,errMsg] = obj.spkObj.getError();
-            if errFlag
-                obj.throwError(errMsg)
+            [obj.errorFlag,obj.errorMsg] = obj.spkObj.getError();
+            if obj.errorFlag
+                obj.throwError(obj.errorMsg)
                 return
             end
             obj.grid3D = obj.spkObj.getGrid3D();
@@ -875,7 +902,7 @@ classdef GroupMonitor < handle
                 % use current plot type
                 plotType = obj.plotType;
             end
-            obj.setPlotType(plotType);
+            obj.setDefaultPlotType(plotType);
             
             % if plotting has not changed since last time, we do not need
             % to do any more work, just reload data from private property

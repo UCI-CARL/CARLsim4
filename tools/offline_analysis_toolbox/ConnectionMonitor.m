@@ -8,12 +8,12 @@ classdef ConnectionMonitor < handle
 	% Example usage:
 	% >> CM = ConnectionMonitor('excit','inhib','results/');
 	% >> CM.plot; % hit 'p' to pause, 'q' to quit
-	% >> CM.setPlotType('histogram'); % switch to hist mode
+	% >> CM.setDefaultPlotType('histogram'); % switch to hist mode
 	% >> CM.setRecordingAttributes('fps',2); % set recording FPS
 	% >> CM.recordMovie; % plots hist and saves as 'movie.avi'
 	% >> % etc.
 	%
-	% Version 2/2/2015
+	% Version 3/2/2015
 	% Author: Michael Beyeler <mbeyeler@uci.edu>
 	
 	%% PROPERTIES
@@ -27,10 +27,10 @@ classdef ConnectionMonitor < handle
 		errorMode;          % program mode for error handling
 		supportedErrorModes;% supported error modes
 		supportedPlotTypes; % cell array of supported plot types
-%	end
+	end
 	
 	% private
-%	properties (Hidden, Access = private)
+	properties (Hidden, Access = private)
 		CR;                 % ConnectionReader object
 		connFilePrefix;     % conn file prefix, e.g. "conn"
 		connFileSuffix;     % conn file suffix, e.g. ".dat"
@@ -93,10 +93,22 @@ classdef ConnectionMonitor < handle
 			if nargin<3
 				obj.resultsFolder = '';
 			else
+				if strcmpi(resultsFolder(end),filesep)
+					resultsFolder = resultsFolder(1:end-1);
+				end
 				obj.resultsFolder = resultsFolder;
 			end
 			if nargin<1
 				obj.throwError('No group name given.');
+				return
+			end
+
+            % make sure connect file is valid
+			if ~obj.hasValidConnectFile()
+				obj.throwWarning(['Could not find valid connect file "' ...
+					obj.getConnectFileName() '". Use ' ...
+					'setConnectFileAttributes to set a proper connect ' ...
+					'file prefix/suffix/separator'])
 				return
 			end
 		end
@@ -114,7 +126,7 @@ classdef ConnectionMonitor < handle
 			% See a list of all currently supported plot types in the help
 			% section of CM.plot and in the variable CM.supportedPlotTypes.
 			% The plotting type can also be set manually using the method
-			% CM.setPlotType.
+			% CM.setDefaultPlotType.
 			obj.unsetError()
 			obj.initConnectionReader() % required to access dimensions
 			
@@ -157,6 +169,56 @@ classdef ConnectionMonitor < handle
 				obj.connFileSuffix ];         % something like '.dat'
 		end
 		
+		function grid = getGrid3DPre(obj)
+            % grid = CM.getGrid3DPre() returns the current 3D grid dimensions
+            % of the pre-synaptic group.
+            % Grid3D is a 3-element vector, where the first
+            % dimension corresponds to the number of neurons in x
+            % direction, the second dimension to y, and the third dimension
+            % to z.
+            obj.unsetError()
+            obj.initConnectionReader()
+            
+            grid = obj.CR.getGrid3DPre();
+        end
+
+		function grid = getGrid3DPost(obj)
+            % grid = CM.getGrid3DPost() returns the current 3D grid dimensions
+            % of the pre-synaptic group.
+            % Grid3D is a 3-element vector, where the first
+            % dimension corresponds to the number of neurons in x
+            % direction, the second dimension to y, and the third dimension
+            % to z.
+            obj.unsetError()
+            obj.initConnectionReader()
+            
+            grid = obj.CR.getGrid3DPost();
+        end
+
+		function xyz = getNeuronLocation3DPre(obj,neurId)
+			% xyz = CM.getNeronLocation3DPre(neurId) returns the 3D coordinates
+			% of the neurId-th neuron in the pre-synaptic group (1-indexed).
+			% The 3D coordinates of the neuron are determined by the Grid3D
+			% dimensions of the group.
+			neurId = neurId - 1;
+			grid3D = obj.CR.getGrid3DPre();
+			xyz(1) = mod(neurId, grid3D(1));
+			xyz(2) = mod( floor(neurId/grid3D(1)), grid3D(2) );
+			xyz(3) = floor(neurId / (grid3D(1)*grid3D(2)));
+		end
+
+		function xyz = getNeuronLocation3DPost(obj,neurId)
+			% xyz = CM.getNeronLocation3DPre(neurId) returns the 3D coordinates
+			% of the neurId-th neuron in the pre-synaptic group (1-indexed).
+			% The 3D coordinates of the neuron are determined by the Grid3D
+			% dimensions of the group.
+			neurId = neurId - 1;
+			grid3D = obj.CR.getGrid3DPost();
+			xyz(1) = mod(neurId, grid3D(1));
+			xyz(2) = mod( floor(neurId/grid3D(1)), grid3D(2) );
+			xyz(3) = floor(neurId / (grid3D(1)*grid3D(2)));
+		end
+
 		function nSnap = getNumSnapshots(obj)
 			% nSnap = CM.getNumSnapshots() returns the number of snapshots
 			% that have been recorded.
@@ -217,7 +279,7 @@ classdef ConnectionMonitor < handle
 			
 			connFile = obj.getConnectFileName();
 			CR = ConnectionReader(connFile, 'silent');
-			[errFlag,~] = SR.getError();
+			[errFlag,~] = CR.getError();
 			hasValid = ~errFlag;
 		end
 		
@@ -304,10 +366,6 @@ classdef ConnectionMonitor < handle
 				obj.throwError('Frames must be a numeric vector e[1,inf]')
 				return
 			end
-			if ~obj.isPlotTypeSupported(plotType)
-				obj.throwError(['Plot type "' plotType '" is not ' ...
-					'supported. See variable CM.supportedPlotTypes.'])
-			end
 			
 			% reset abort flag, set up callback for key press events
 			if obj.plotInteractiveMode
@@ -372,27 +430,24 @@ classdef ConnectionMonitor < handle
 			end
 			if obj.plotInteractiveMode,close;end
 		end
-		
-		function xyz = getNeuronLocation3DPre(obj,neurId)
-			neurId = neurId - 1;
-			grid3D = obj.CR.getGrid3DPre();
-			xyz(1) = mod(neurId, grid3D(1));
-			xyz(2) = mod( floor(neurId/grid3D(1)), grid3D(2) );
-			xyz(3) = floor(neurId / (grid3D(1)*grid3D(2)));
-		end
-		
-		function recordMovie(obj, fileName, frames, fps, winSize)
+				
+		function recordMovie(obj, fileName, plotType, frames, fps, winSize)
 			% CM.recordMovie(fileName, frames, fps, winSize) takes an AVI
 			% movie of a list of frames using the VIDEOWRITER utility.
 			%
 			% FILENAME     - A string enclosed in single quotation marks
 			%                that specifies the name of the file to create.
 			%                Default: 'movie.avi'.
+            % PLOTTYPE     - The plotting type to use. If not set, the
+            %                default plotting type will be used, which is
+            %                determined by the Grid3D topography of the
+            %                group. For a list of supported plot types see
+            %                member variable CM.supportedPlotTypes.
 			% FRAMES       - A list of frame numbers. For example,
 			%                requesting frames=[1 2 8] will return the
 			%                first, second, and eighth frame in a
 			%                width-by-height-by-3 matrix.
-			%                Default: return all frames.
+			%                Default: -1 (return all frames).
 			% FPS          - Rate of playback for the video in frames per
 			%                second. Default: 10.
 			% WINSIZE      - A 2-element vector specifying the window size
@@ -400,12 +455,13 @@ classdef ConnectionMonitor < handle
 			%                to [0 0] in order to automatically make the
 			%                movie window fit to the size of the plot
 			%                window. Default: [0 0].
-			if nargin<5,winSize=obj.recordWinSize;end
-			if nargin<4,fps=obj.recordFPS;end
-			if nargin<3 || isempty(frames) || frames==-1
+			if nargin<6,winSize=obj.recordWinSize;end
+			if nargin<5,fps=obj.recordFPS;end
+			if nargin<4 || isempty(frames) || frames==-1
 				obj.initConnectionReader()
 				frames = 1:ceil(obj.CR.getNumSnapshots);
 			end
+			if nargin<3,plotType=obj.plotType;end
 			if nargin<2,fileName=obj.recordFile;end
 			obj.unsetError()
 			
@@ -426,7 +482,7 @@ classdef ConnectionMonitor < handle
 			end
 			
 			% load data and reshape for plotting if necessary
-			obj.loadDataForPlotting(obj.plotType);
+			obj.loadDataForPlotting(plotType);
 			
 			% display frames in specified axes
 			set(gcf,'color',obj.plotBgColor);
@@ -443,7 +499,7 @@ classdef ConnectionMonitor < handle
 			
 			% display frame in specified axes
 			for i=frames
-				obj.plotFrame(i,obj.plotType,obj.plotDispFrameNr);
+				obj.plotFrame(i,plotType,obj.plotDispFrameNr);
 				drawnow
 				writeVideo(vidObj, getframe(gcf));
 			end
@@ -452,8 +508,8 @@ classdef ConnectionMonitor < handle
 			disp(['created file "' fileName '"'])
 		end
 		
-		function setPlotType(obj, plotType)
-			% GM.setPlotType(plotType) applies a certain plotting type to
+		function setDefaultPlotType(obj, plotType)
+			% CM.setDefaultPlotType(plotType) applies a certain plotting type to
 			% the group. The default plot type is determined by the Grid3D
 			% topography of the group. For example, a 1D topography will
 			% prefer a raster plot, whereas a 2D topography will prefer a
@@ -467,6 +523,7 @@ classdef ConnectionMonitor < handle
 			%                   - raster    a raster plot with binning
 			%                               window: binWindowMs
 			obj.unsetError()
+			if nargin<2,plotType='default';end
 			
 			% find default plot type if necessary
 			if strcmpi(plotType,'default')
@@ -490,12 +547,12 @@ classdef ConnectionMonitor < handle
 		end
 		
 		function setPlottingAttributes(obj, varargin)
-			% GM.setPlottingAttributes(varargin) can be used to set default
+			% CM.setPlottingAttributes(varargin) can be used to set default
 			% settings that will apply to all activity plots.
 			% This function provides control over additional attributes
-			% that are not available as input arguments to GM.plot or
-			% GM.plotFrame.
-			% GM.setPlottingAttributes('propertyName1',value1,...) sets the
+			% that are not available as input arguments to CM.plot or
+			% CM.plotFrame.
+			% CM.setPlottingAttributes('propertyName1',value1,...) sets the
 			% value of 'propertyName1' to value1.
 			%
 			% Calling the function without input arguments will restore the
@@ -593,11 +650,11 @@ classdef ConnectionMonitor < handle
 		end
 		
 		function setRecordingAttributes(obj, varargin)
-			% GM.setRecordingAttributes(varargin) can be used to set
+			% CM.setRecordingAttributes(varargin) can be used to set
 			% default settings that will apply to all activity recordings.
 			% This function provides control over additional attributes
-			% that are not available as input arguments to GM.recordMovie.
-			% GM.setRecordingAttributes('propertyName1',value1,...) sets
+			% that are not available as input arguments to CM.recordMovie.
+			% CM.setRecordingAttributes('propertyName1',value1,...) sets
 			% the value of 'propertyName1' to value1.
 			%
 			% Calling the function without input arguments will restore the
@@ -798,24 +855,24 @@ classdef ConnectionMonitor < handle
 					plotType = obj.plotType;
 				end
 			end
-			obj.setPlotType(plotType);
+			obj.setDefaultPlotType(plotType);
 			
 			% read all the timestamps and weights
 			[obj.timeStamps,obj.weights] = obj.CR.readWeights();
 			obj.plotMaxWt = max(obj.weights(:));
-			
+
 			% re-format the data
 			if strcmpi(obj.plotType,'heatmap') ...
 					|| strcmpi(obj.plotType,'receptivefield') ...
 					|| strcmpi(obj.plotType,'responsefield')
 				% reshape to 3-D matrix
 				obj.weights = reshape(obj.weights, ...
+					obj.CR.getNumSnapshots(), ...
 					obj.CR.getNumNeuronsPost(), ...
-					obj.CR.getNumNeuronsPre(), ...
-					obj.CR.getNumSnapshots());
+					obj.CR.getNumNeuronsPre());
 				
 				% reshape for plotting
-% 				obj.weights = permute(obj.weights,[2 1 3]); % Y X T
+ 				obj.weights = permute(obj.weights,[2 3 1]); % Y X T
 			elseif strcmpi(obj.plotType,'histogram')
 				obj.plotHistBins = linspace(0, obj.plotMaxWt, ...
 					obj.plotHistNumBins);
@@ -956,14 +1013,14 @@ classdef ConnectionMonitor < handle
 						imagesc(wts(:,:,zPostIdx)', [0 max(obj.plotMaxWt,1e-10)])
 						axis equal
  						axis([1 grid3DPost(1) 1 grid3DPost(2)])
-						if grid3DPost(1)>1
+						if grid3DPost(1)>2
 							set(gca,'XTick',[1 grid3DPost(1)/2.0 grid3DPost(1)])
 							set(gca,'XTickLabel',[-grid3DPost(1)/2.0 0 grid3DPost(1)/2.0])
 						else
 							set(gca,'XTick',grid3DPost(1))
 							set(gca,'XTickLabel',0)
 						end
-						if grid3DPost(2)>1
+						if grid3DPost(2)>2
 							set(gca,'YTick',[1 grid3DPost(2)/2.0 grid3DPost(2)])
 							set(gca,'YTickLabel',[-grid3DPost(2)/2.0 0 grid3DPost(2)/2.0])
 						else
@@ -1072,6 +1129,19 @@ classdef ConnectionMonitor < handle
 			end
 		end
 		
+        function throwWarning(obj, errorMsg, errorMode)
+            % THROWWARNING(errorMsg, errorMode) throws a warning with a
+            % specific severity (errorMode).
+            % If errorMode is not given, obj.errorMode is used.
+            if nargin<3,errorMode=obj.errorMode;end
+            
+            if strcmpi(errorMode,'standard')
+                warning(errorMsg)
+            elseif strcmpi(errorMode,'warning')
+                disp(errorMsg)
+            end
+		end
+
 		function unsetError(obj)
 			% unsets error message and flag
 			obj.errorFlag = false;
