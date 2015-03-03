@@ -11,11 +11,12 @@ Release 3.0
 Build 3.0.1
 ---------------------
 
-2015-02-28     Michael Beyeler <mbeyeler@uci.edu>
+2015-03-02     Michael Beyeler <mbeyeler@uci.edu>
   * Updated Chapter 9 of User Guide.
   * Fixed setErrorMode in OAT monitors.
   * Fixed file separator in OAT monitors.
   * Fixed setDefaultPlotType in OAT monitors.
+  * Fixed plotting bug in ConnectionMonitor.m of OAT.
   + Added plotType argument to recordMovie in OAT monitors.
 
 2015-02-24     Michael Beyeler <mbeyeler@uci.edu>
