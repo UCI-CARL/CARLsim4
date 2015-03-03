@@ -917,9 +917,10 @@ The raw data of a connect file can also be read directly using a ConnectionReade
 
 \subsection ch9s4s4_plot_types 9.4.4 ConnectionMonitor Plot Types
 
-The following image illustrates the different plot types that are available (applied to an arbitrary network):
+The following image illustrates the different plot types that are available (applied to the small "Hello World"
+network, which consists of 13x9 neurons projecting to 3x3 neurons with Gaussian connectivity):
 
-\image html 9_gm_plottypes.jpg "Supported ConnectionMonitor plot types: 'heatmap', 'histogram', 'receptivefield', and 'responsefield'."
+\image html 9_cm_plottypes.jpg "Supported ConnectionMonitor plot types: 'heatmap', 'histogram', 'receptivefield', and 'responsefield'."
 
 A specific default plot type can be set using <tt>setDefaultPlotType</tt>:
 \code
@@ -932,20 +933,30 @@ with one of the method's input arguments.
 This value can be overwritten by explicitly specifying a plot type when using the methods
 <tt>plot</tt> (see \ref ch9s4s3_plot) or <tt>recordMovie</tt> (see \ref ch9s4s6_record_movie).
 
-Plot type <tt>'flowfield'</tt> will plot a 2D vector field where the length of the vector is given as the firing
-rsate of the neuron times the corresponding vector orientation. The latter is inferred from the third ::Grid3D
-dimension, z. For example, Grid3D(10,10,4) plots a 10x10 vector flow field, assuming that neurons with z=0 code
-for direction=0deg, z=1 corresponds to direction=90deg, z=2 is 180deg, and z=3 is 270deg.
-Vectors with length smaller than 10% of the max in each frame are not shown.
+Plot type <tt>'heatmap'</tt> will plot a 2D weight matrix where the first dimension corresponds to the number of
+neurons in the pre-synaptic group (labeled <tt>nrPre</tt> in the image above),
+and the second dimension corresponds to the number of neurons in the post-synaptic group (labeled <tt>nrPost</tt>
+in the image above).
 
-Plot type <tt>'heatmap'</tt> will plot a topographical map of group activity (based on ::Grid3D) where hotter
-colors mean higher firing rate.
+Plot type <tt>'histogram'</tt> will plot a histogram of all weight values in the connection.
 
-Plot type <tt>'histogram'</tt> will plot a histogram of firing rates in the group.
-The number of bins and whether to plot firing rates (Hz) instead of number of spikes can be set with options
-<tt>'histNumBins'</tt> and <tt>'histShowRate'</tt> in method <tt>setPlottingAttributes</tt>.
+Plot type <tt>'receptivefield'</tt> will plot the spatial receptive field of post-synaptic neurons (looking back
+on all connected pre-synaptic neurons). By default, the receptive field of all neurons will be shown.
+An additional argument to <tt>plot</tt> allows to specify a list of neurons for which to show the receptive field.
+For example, the receptive field in the above image (third panel) was generated with:
+\code
+CM.plot('receptivefield',1,5); % plotType, frames, neurons
+\endcode
+shown for the first frame and the fifth neuron in the post-synaptic group (which is located at (0,0,0)).
 
-Plot type <tt>'raster'</tt> will output the data as a raster plot with bin window <tt>binWindowMs</tt>.
+Plot type <tt>'responsefield'</tt> will plot the spatial response field of pre-synaptic neurons (looking forward
+on all connected post-synaptic neurons). By default, the response field of all neurons will be shown.
+An additional argument to <tt>plot</tt> allows to specify a list of neurons for which to show the response field.
+For example, the response field in the above image (fourth panel) was generated with:
+\code
+CM.plot('responsefield',1,59); % plotType, frames, neurons
+\endcode
+shown for the first frame and the 59th neuron in the pre-synaptic group (which is located at (0,0,0)).
 
 \since v3.0
 
