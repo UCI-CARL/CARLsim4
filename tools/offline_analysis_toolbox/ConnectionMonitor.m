@@ -13,7 +13,7 @@ classdef ConnectionMonitor < handle
 	% >> CM.recordMovie; % plots hist and saves as 'movie.avi'
 	% >> % etc.
 	%
-	% Version 2/28/2015
+	% Version 3/2/2015
 	% Author: Michael Beyeler <mbeyeler@uci.edu>
 	
 	%% PROPERTIES
@@ -366,10 +366,6 @@ classdef ConnectionMonitor < handle
 				obj.throwError('Frames must be a numeric vector e[1,inf]')
 				return
 			end
-			if ~obj.isPlotTypeSupported(plotType)
-				obj.throwError(['Plot type "' plotType '" is not ' ...
-					'supported. See variable CM.supportedPlotTypes.'])
-			end
 			
 			% reset abort flag, set up callback for key press events
 			if obj.plotInteractiveMode
@@ -527,6 +523,7 @@ classdef ConnectionMonitor < handle
 			%                   - raster    a raster plot with binning
 			%                               window: binWindowMs
 			obj.unsetError()
+			if nargin<2,plotType='default';end
 			
 			% find default plot type if necessary
 			if strcmpi(plotType,'default')
@@ -863,19 +860,19 @@ classdef ConnectionMonitor < handle
 			% read all the timestamps and weights
 			[obj.timeStamps,obj.weights] = obj.CR.readWeights();
 			obj.plotMaxWt = max(obj.weights(:));
-			
+
 			% re-format the data
 			if strcmpi(obj.plotType,'heatmap') ...
 					|| strcmpi(obj.plotType,'receptivefield') ...
 					|| strcmpi(obj.plotType,'responsefield')
 				% reshape to 3-D matrix
 				obj.weights = reshape(obj.weights, ...
+					obj.CR.getNumSnapshots(), ...
 					obj.CR.getNumNeuronsPost(), ...
-					obj.CR.getNumNeuronsPre(), ...
-					obj.CR.getNumSnapshots());
+					obj.CR.getNumNeuronsPre());
 				
 				% reshape for plotting
-% 				obj.weights = permute(obj.weights,[2 1 3]); % Y X T
+ 				obj.weights = permute(obj.weights,[2 3 1]); % Y X T
 			elseif strcmpi(obj.plotType,'histogram')
 				obj.plotHistBins = linspace(0, obj.plotMaxWt, ...
 					obj.plotHistNumBins);
@@ -1016,14 +1013,14 @@ classdef ConnectionMonitor < handle
 						imagesc(wts(:,:,zPostIdx)', [0 max(obj.plotMaxWt,1e-10)])
 						axis equal
  						axis([1 grid3DPost(1) 1 grid3DPost(2)])
-						if grid3DPost(1)>1
+						if grid3DPost(1)>2
 							set(gca,'XTick',[1 grid3DPost(1)/2.0 grid3DPost(1)])
 							set(gca,'XTickLabel',[-grid3DPost(1)/2.0 0 grid3DPost(1)/2.0])
 						else
 							set(gca,'XTick',grid3DPost(1))
 							set(gca,'XTickLabel',0)
 						end
-						if grid3DPost(2)>1
+						if grid3DPost(2)>2
 							set(gca,'YTick',[1 grid3DPost(2)/2.0 grid3DPost(2)])
 							set(gca,'YTickLabel',[-grid3DPost(2)/2.0 0 grid3DPost(2)/2.0])
 						else
