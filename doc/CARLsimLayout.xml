@@ -11,7 +11,6 @@
 			</tab>
 			<tab type="usergroup" visible="yes" title="2. Basic Concepts" url="@ref ch2_basic_concepts">
 				<tab type="user" visible="no" title="2.1 General Workflow" url="@ref ch2s1_general_workflow"/>
-				<tab type="user" visible="no" title="2.2 CARLsim Hello World" url="@ref ch2s2_hello_world"/>
 			</tab>
 			<tab type="usergroup" visible="yes" title="3. Neurons, Synapses, and Groups" url="@ref ch3_neurons_synapses_groups">
 				<tab type="user" visible="no" title="3.1 Neurons" url="@ref ch3s1_neurons"/>

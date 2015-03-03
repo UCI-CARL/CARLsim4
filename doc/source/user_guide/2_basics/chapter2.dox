@@ -126,47 +126,6 @@ Offline Analysis Toolbox (OAT) written in MATLAB (see \ref ch9_matlab_oat).
 In addition, the OAT provides means to access the saved data programmatically, and to store generated sequences of
 plots as an AVI file.
 
-
-\section ch2s2_hello_world 2.2 Hello World Example
-
-The smallest functional CARLsim network contains just two neurons, connected with a single synapse.
-Such a network can be created with the following code snippet:
-\code
-#include <carlsim.h>
-CARLsim sim("Hello World", CPU_MODE, USER);
-
-int gIn = sim.createSpikeGeneratorGroup("input", 1, EXCITATORY_NEURON);
-int gOut = sim.createGroup("output", 1, EXCITATORY_NEURON);
-sim.setNeuronParameters(gOut, 0.1f, 0.2f, -65.0f, 2.0f);
-sim.setConductances(true);
-
-sim.connect(gIn, gOut, "one-to-one", RangeWeight(0.1f), 1.0f);
-
-sim.setupNetwork();
-
-PoissonRate in(1);
-in.setRates(20.0f);
-sim.setSpikeRate(gIn, &in);
-sim.runNetwork(1,0);
-\endcode
-Here, the pre-synaptic neuron generates Poisson spike trains with 20Hz mean firing rate, and the post-synaptic neuron is
-a regular spiking Izhikevich neuron. The two neurons are connected with a single conductance-based synapses with
-weight 0.1f, probably 1.0f, and synaptic delay 1ms (not shown; default value).
-
-If the code snippets is modified to feature a SpikeMonitor on the post-synaptic neuron <tt>gOut</tt>:
-\code
-sim.setupNetwork();
-sim.setSpikeMonitor(gOut,"DEFAULT");
-\endcode
-then the neuron's activity can be easily visualized off-line using the MATLAB OAT:
-
-\code
-initOAT                      % add OAT directory to the path
-GM = GroupMonitor('output'); % create a Group Monitor on post-synaptic neuron
-GM.plot('rasterplot');       % plots the data as a raster plot
-GM.record('histogram');      % plots the data as a histogram and stores it to AVI file
-\endcode
-
-This example will be discussed in detail in \ref tut1_basic_concepts.
+\see \ref tut1_basic_concepts
 
 */

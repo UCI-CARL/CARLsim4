@@ -181,7 +181,7 @@ In this case, the method <tt>setSpikeFileAttributes</tt> can be used to change t
 the spike file names.
 By default, spike files follow the pattern <tt>spk_{group name}.dat</tt>, so the prefix would be <tt>spk_</tt>
 and the suffix would be <tt>.dat</tt>, as dictated by the GroupMonitor object
-(see \ref ch9s4s2_setspikefileattributes).
+(see \ref ch9s3s2_setspikefileattributes).
 Analogously, for spike files following the naming convention <tt>spike_{group name}.ext</tt> the prefix would be 
 <tt>spike_</tt> and the suffix would be <tt>.ext</tt>. After prefix/suffix have been set accordingly, the spike
 file will be found and activity can be plotted:
@@ -239,7 +239,7 @@ The default plot type for each group can be changed via <tt>setGroupPlotType</tt
 >> NM.setGroupPlotType('inhib','heatmap'); % plotting activity of group "inhib" as heat map
 \endcode
 Plot types are managed by the GroupMonitor object. 
-For a list of available plot types, please refer to \ref ch9s3s_plot_types.
+For a list of available plot types, please refer to \ref ch9s2s4_plot_types.
 
 Every Monitor comes with an InteractiveMode for plotting activity and weights.
 By default, plotting will occur at a predefined speed (5 frames per second), unless otherwise specified using the
@@ -353,35 +353,6 @@ FPS            - The frames per second for the plotting loop.
                  The default is 5.
 BINWINDOWMS    - The binning window (ms) in which the data
                  will be displayed. Default: 1000.
-\endcode
-GM.setPlottingAttributes(varargin) can be used to set default
-settings that will apply to all activity plots.
-This function provides control over additional attributes
-that are not available as input arguments to GM.plot.
-GM.setPlottingAttributes('propertyName1',value1,...) sets the
-value of 'propertyName1' to value1.
- 
-Calling the function without input arguments will restore the
-default settings.
- 
-BGCOLOR         - Set background color for figure. Must be of
-                  type ColorSpec (char such as 'w','b','k' or
-                  a 3-element vector for RGB channels).
-                  Default: 'w'.
-BINWINDOWMS     - The binning window (ms) in which the data
-                  will be displayed. Default: 1000.
-DISPFRAMENR     - A boolean flag that indicates whether to
-                  display the frame number. Default: true.
-FPS             - The frames per second for the plotting
-                  loop. Default: 5.
-HISTNUMBINS     - Number of bins for histogram. Default: 10.
-HISTSHOWRATE    - A boolean flag to plot mean firing rates
-                  (Hz) for plotType='histogram' instead of
-                  mere number of spikes. Default: true.
-INTERACTIVEMODE - A boolean flag to set InteractiveMode on or
-                  off. If it is off, key events/FPS/stepping
-                  will take no effect (helpful if you want to
-                  take over control yourself). Default: true.
 \endcode
 \since v3.0
 
