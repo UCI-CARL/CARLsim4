@@ -10,6 +10,9 @@ Release 3.0
 ---------------------
 Build 3.0.1
 ---------------------
+2015-03-02     Kristofor D. Carlson <kdcarlso@uci.edu>
+  * Updated Chapter 3 of User Guide.
+	* Fixed LaTeX/Doxygen configuration problems.
 
 2015-03-02     Michael Beyeler <mbeyeler@uci.edu>
   * Fixed Chapter 2 of User Guide and removed superfluous source code.

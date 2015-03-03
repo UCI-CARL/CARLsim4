@@ -17,9 +17,11 @@ Different groups of neurons can be created from a one-dimensional array to a thr
 
 The Izhikevich neuron is a dynamical systems model that can be described by a two-dimensional system of ordinary
 differential equations:
-\f{eqnarray}
-\frac{dv}{dt} & = & 0.04v^2 + 5v + 140 - u + i_{syn} \\
-\frac{du}{dt} & = & a (bv - u) \f}
+
+\f{align*}{
+\frac{dv}{dt}  = & ~ 0.04v^2 + 5v + 140 - u + i_{syn} & \text{(1)}\\
+\frac{du}{dt}  = & ~ a (bv - u) & \text{(2)} \f}
+
 Here, (1) describes the membrane potential \f$v\f$ for a given synaptic current \f$i_{syn}\f$ (see \ref ch3s2_synapses),
 whereas (2) describes a recovery variable \f$u\f$;
 the parameter \f$a\f$ is the rate constant of the recovery variable,
@@ -35,9 +37,10 @@ to generate the upstroke of the spike itself. Thus the voltage reset occurs not 
 (\f$v_{cutoff}=+30\f$) of the spike.
 The action potential downstroke is modeled using an instantaneous reset of the membrane potential whenever \f$v\f$
 reaches the spike cutoff, plus a stepping of the recovery variable:
-\f{eqnarray}
- v(v>30) & = & c \\
- u(v>30) & = & u + d \f}
+
+\f{align*}{
+ v(v>30)  = & ~ c & \text{(3)}\\
+ u(v>30)  = & ~ u + d & \text{(4)}\f}
 
 The inclusion of \f$u\f$ in the model allows for the simulation of typical spike patterns observed in biological
 neurons. The four parameters \f$a, b, c, d\f$ can be set to simulate different types of neurons.
@@ -52,28 +55,147 @@ a compartmental model, the leaky integrate-and-fire model, and the adaptive expo
 
 
 \section ch3s2_synapses 3.2 Synapses
+\author Kristofor D. Carlson
 
-Neurons are connected via synapses. Here's how synapses work. Mention weights and that weights can change
+Spiking neural networks deliver information using spikes via structures called synapses. In biology,
+synapses pass information from one neuron to another via a chemical signal (electrical synapses also
+exist but are not modeled in CARLsim). Communication between
+synapses is, in general, unidirectional. Synapses are broken into two components: one component
+located on the neuron sending the information (the presynaptic neuron) and one component located
+on the neuron receiving the information (the postsynaptic neuron). The two synapse components are
+separated by a physical gap between the pre and postsynaptic neurons called the synaptic cleft.
+Information is passed from the presynaptic neuron to the postsynaptic neuron when the presynaptic
+component of the synapse releases neurotransmitters that cross the synaptic cleft and bind to
+postsynaptic receptors that result in a current influx into the postsynaptic neuron. The sum
+of many synaptic current contributions change the postsynaptic neuron voltage, causing it to
+spike if the voltage threshold is crossed.
+
+CARLsim supports two synapse model descriptions. The current-based (CUBA) description uses a single
+synaptic current term while the conductance-based (COBA) description calculates
+the synaptic current using more complex conductance equations for each synaptic receptor-type. Both
+CUBA and COBA current contributions are influenced by the synaptic weight of the synapse. We next
+discuss each synapse model specifically.
+
 (see \ref ch4_connections).
 
 \subsection ch3s2s1_cuba 3.2.1 CUBA
 
-When current based (CUBA) mode is used, no conductances are present. The strength of the resulting current is
-directly proportional to the synaptic weight.
+When current based (CUBA) mode is used, no conductances are present. The strength of the resulting
+current is directly proportional to the synaptic weight. Additionally, the total synaptic current at
+postsynaptic neuron \f$j\f$, \f$ I_{j}^{syn} \f$, due to a spike from presynaptic neuron \f$i\f$ is
+given at any point in time by (5):
+
+\f{align*}{
+I_{j}^{syn} =  & ~ \sum \limits_{i=1}^{N} s_{ij}w_{ij} & \text{(5)}
+\f}
+
+where \f$s_{ij}\f$ is 1 if the neuron is spiking and 0 otherwise, \f$w_{ij}\f$ is the strength
+of the synaptic weight between postsynaptic neuron \f$j\f$ and presynaptic neuron \f$i\f$, and
+N is the total amount of presynaptic connections onto postsynaptic neuron \f$j\f$.
+
+CUBA mode is the default behavior of all neurons. CARLsim does not currently support mixed modes
+consisting of some neurons with conductances and others without conductances in the same simulation.
+
+\note Because CUBA mode has synaptic currents that last for a single time step, and COBA mode has
+synaptic currents that decay over time, switching from CUBA mode to COBA mode usually requires the
+user to reduce the synaptic weights as the resulting currents will be much larger in COBA mode.
 
 \subsection ch3s2s2_coba 3.2.2 COBA
 
 When conductance-based (COBA) mode is used, there are conductances with exponential decays present.
 If the synaptic connection is excitatory then AMPA and NMDA decay values are used.
 If the synaptic connection is inhibitory then GABA A and GABA B decay values are
-used. Users can specify the decay time constants for the synaptic decay constants by calling
-CARLsim::setConductances.
+used. Equation (6) shows the corresponding current, \f$I_{ij}\f$ in postsynaptic neuron \f$j\f$,
+due to inputs from N presynaptic neurons (denoted by \f$i\f$).
 
+\f{align*}{
+I_{j}^{syn} = & ~ \sum \limits_{i=1}^{N} i_{ij}w_{ij} & \text{(6)}
+\f}
+
+Here we drop the \f$i,j\f$ notation and assume the \f$g\f$ values pertain to a specific synapse
+(\f$i,j\f$) and the \f$v\f$ values pertain to a specific postsynaptic neuron, \f$j\f$. The total
+current from a particular synapse can either be excitatory (\f$i_{e}\f$) or inhibitory (\f$i_{i}\f$).
+They are described in equations (7) and (8), below:
+
+
+\f{align*}{
+i_{e} = & ~ i_{NMDA} + i_{AMPA}  & \text{(7)} \\
+
+i_{i} = & ~ i_{GABA_{A}} + i_{GABA_{B}} & \text{(8)}
+\f}
+
+The excitatory current is comprised of an AMPA current (\f$i_{AMPA}\f$) and a voltage dependent NMDA
+current (\f$i_{NMDA}\f$). They are described in equations (9) and (10).
+
+
+\f{align*}{
+i_{AMPA} = & ~ g_{AMPA}(v-v^{rev}_{AMPA}) & \text{(9)} \\
+
+
+i_{NMDA} = & ~ g_{NMDA}\frac{\Big[\frac{v+80}{60} \Big]^{2}}{1+\Big[\frac{v+80}{60} \Big]^{2}}
+
+(v-v^{rev}_{NMDA}) & \text{(10)}
+\f}
+
+Here, \f$g\f$ is the conductance, \f$v\f$ is the postsynaptic voltage, and \f$v^{rev}\f$ is the
+reversal potential. Both \f$g\f$ and \f$v^{rev}\f$ are specific to a particular ion
+channel/receptor. The inhibitory current is comprised of a GABA A current (\f$i_{GABA_A}\f$) and a
+GABA B current (\f$i_{GABA_B}\f$) shown in equations (11) and (12).
+
+\f{align*}{
+i_{GABA_{A}} = & ~ g_{GABA_{A}}(v-v^{rev}_{GABA_{A}}) & \text{(11)} \\
+
+i_{GABA_{B}} = & ~ g_{GABA_{B}}(v-v^{rev}_{GABA_{B}}) & \text{(12)}
+\f}
+
+The conductance, \f$g\f$, for each ion channel/receptor, \f$k\f$ is given in the general form
+equation (13).
+
+\f{align*}
+g_{k} = & ~ \sum \limits_{f} e^{t-t_{f}/ \tau} \Theta(t-t_f) & \text{(13)}
+\f}
+
+Where \f$f\f$ indicates a particular spike event, \f$t_f\f$ represents the time of this spike event,
+and \f$ \Theta \f$ is the Heaviside function.
+
+The code snippet below shows how a user would first set a simulation that uses conductances using
+the CARLsim::setConductances function. If the CARLsim::setConductances is called with just the true
+argument:
+
+\code
+sim.setConductances(true);
+\endcode
+
+then, the default decay constant values will be used for the conductances (tdAMPA=5ms, tdNMDA=150ms,
+tdGABAa=6ms, tdGABAb=150ms) (instantaneous rise time).
+
+
+The user can also specify the decay constant times themselves:
+
+\code
+sim.setConductances(true,tdAMPA,tdNMDA,tdGABAa,tdGABAb);
+\endcode
+
+It should be noted that users can specify a rise time constant for the slow the synaptic
+conductances (NMDA and GABAb) in addition to specifying a decay time constant. The rise
+time constants are set to zero by default. Below we show a user setting the rise times:
+
+\code
+sim.setConductances(true,tdAMPA,tdNMDA,trNMDA,tdGABAa,tdGABAb,trGABAb);
+\endcode
+
+Users can also explicitly set the default conductance time constant parameters to be used in the
+simulation with the command CARLsim::setDefaultConductanceTimeConstants.
+
+\code
+sim.setDefaultConductanceTimeConstants(tdAMPA,tdNMDA,trNMDA,tdGABAa,tdGABAb,trGABAb);
+\endcode
 
 \note A pre-synaptic spike increases both post-synaptic AMPA and NMDA (GABAa and GABAb) for excitatory
 (inhibitory) connections.
 \note Receptor-specific gain factors can be speficied to vary the AMPA-NMDA and GABAa-GABA ratio
 
+see \ref ch4s1s4_receptor_gain
 
 \section ch3s3_groups 3.3 Groups
 \author Michael Beyeler
@@ -154,5 +276,13 @@ int gOut = sim.createGroup("output", Grid3D(N,1,1), EXCITATORY_NEURON); // are e
 \see \ref ch4s1s8_gaussian
 \since v3.0
 
+
+\section ch3s4_refs 3.4 References
+
+Izhikevich E.M. (2003) Simple Model of Spiking Neurons. IEEE Transactions on Neural Networks,
+14:1569-1572.
+
+Izhikevich E.M. (2004) Which Model to Use for Cortical Spiking Neurons? IEEE Transactions on Neural
+Networks, 15:1063-1070.
 
 */
