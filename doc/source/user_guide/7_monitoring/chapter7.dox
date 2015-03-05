@@ -207,7 +207,7 @@ is reached.
 It is also possible to specify a custom file name instead of using the "DEFAULT" name.
 Alternatively, the user may suppress creation of the binary file by using file string "NULL" instead.
 
-Periodic storing can be disabled by calling ConnectionMonitor::setUpdateTimeInterval with argument
+Periodic storing can be disabled by calling ConnectionMonitor::setUpdateTimeIntervalSec with argument
 <tt>intervalSec=-1</tt>.
 
 \since v3.0
@@ -235,8 +235,8 @@ printf("The weight from pre-neuron ID 3 to post-neuron ID 7 is: %f\n",weights[3]
 \endcode
 This will take an instantaneous snapshot of the weights (at the current simulation time) and return it in a 2D
 weight matrix.
-The first dimension of the matrix will be of size CARLsim::getGroupNumNeurons(grpIdPre), and the second dimension
-of the matrix will be of size CARLsim::getGroupNumNeurons(grpIdPost).
+The first dimension of the matrix will be of size ConnectionMonitor::getNumNeuronsPre(), and the second dimension
+of the matrix will be of size ConnectionMonitor::getNumNeuronsPost().
 Synaptic connections in the matrix that do not exist will have value NAN and can be queried with
 <tt>isnan(wt[i][j])</tt>.
 
@@ -245,8 +245,6 @@ If the user wants the binary file to contain only distinct snapshots as opposed 
 second, the recording interval can be adjusted as follows:
 \code
 ConnectionMonitor * CM = sim.setConnectionMonitor(grpIdPre,grpIdPost,"DEFAULT");
-CM->setUpdateTimeInterval(-1); // disable periodic recording
-
 // disable periodid storing of snapshots in binary ...
 CM->setUpdateTimeIntervalSec(-1);
 
@@ -301,7 +299,7 @@ last snapshot was taken can be calculated with ConnectionMonitor::getNumWeightsC
 The same metric can be obtained as a percentage using ConnectionMonitor::getPercentWeightsChanged.
 
 The absolute sum of weight changes since the last snapshot can be calculated with
-ConnectionMonitor::getTotalAbsWeightChanged.
+ConnectionMonitor::getTotalAbsWeightChange.
 This function might be useful (for example) to run a network with plastic synapses until learning has saturated:
 \code
 // configure a network with plastic synapses
