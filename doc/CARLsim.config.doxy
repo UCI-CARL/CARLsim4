@@ -685,6 +685,7 @@ INPUT                  = ../carlsim/interface/include \
                          source/user_guide/12_advanced_topics \
                          source/user_guide/13_example_networks \
                          source/tutorial/1_basic_concepts/doc \
+                         source/tutorial/3_plasticity/doc \
                          source/tutorial/4_simple_weight_tuner/doc \
                          source/tutorial/5_pti/doc
 
