@@ -69,12 +69,12 @@
 				<tab type="user" visible="no" title="1.1 A Simple CARLsim Program" url="@ref tut1s1_simple_prog"/>
 				<tab type="user" visible="no" title="1.2 CARLsim Output" url="@ref tut1s2_output"/>
 			</tab>
-			<tab type="usergroup" visible="yes" title="2. Simple Weight Tuner" url="@ref tut2_simple_weight_tuner"/>
-			<tab type="usergroup" visible="yes" title="3. Parameter Tuning Interface (PTI)" url="@ref tut3_pti">
-				<tab type="user" visible="no" title="3.1 Introducton" url="@ref tut3s1_intro"/>
-				<tab type="user" visible="no" title="3.2 ECJ Parameter File" url="@ref tut3s2_parameter_file"/>
-				<tab type="user" visible="no" title="3.3 Parameter Tuning Interface (PTI)" url="@ref tut3s3_experiment_class"/>
-				<tab type="user" visible="no" title="3.4 Output Files" url="@ref tut3s4_output_files"/>
+			<tab type="usergroup" visible="yes" title="4. Simple Weight Tuner" url="@ref tut4_simple_weight_tuner"/>
+			<tab type="usergroup" visible="yes" title="5. Parameter Tuning Interface (PTI)" url="@ref tut5_pti">
+				<tab type="user" visible="no" title="5.1 Introducton" url="@ref tut5s1_intro"/>
+				<tab type="user" visible="no" title="5.2 ECJ Parameter File" url="@ref tut5s2_parameter_file"/>
+				<tab type="user" visible="no" title="5.3 Parameter Tuning Interface (PTI)" url="@ref tut5s3_experiment_class"/>
+				<tab type="user" visible="no" title="5.4 Output Files" url="@ref tut5s4_output_files"/>
 			</tab>
 		</tab>
 		<tab type="modules" visible="yes" title="" intro=""/>

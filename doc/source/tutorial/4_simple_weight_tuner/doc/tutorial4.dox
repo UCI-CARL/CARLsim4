@@ -1,6 +1,6 @@
 /*!
 
-\page tut2_simple_weight_tuner Tutorial 2: Simple Weight Tuner
+\page tut4_simple_weight_tuner Tutorial 4: Simple Weight Tuner
 \author Michael Beyeler
 \see \ref ch12s3_online_weight_tuning
 \see \ref ch12s3s1_simple_weight_tuner
@@ -35,7 +35,7 @@ $ ./simple_weight_tuner
 \endcode
 
 
-\section tut2s1_problem 2.1 Problem
+\section tut4s1_problem 4.1 Problem
 
 Suppose we are given a feedforward network of a certain topology, and we are interested in finding the synaptic
 weight values that lead to neuronal firing at a specific target firing rate.
@@ -59,7 +59,7 @@ Repeat until activity is within some error margin of the target firing rate, or 
 was reached.
 
 
-\section tut2s2_solution 2.2 Solution
+\section tut4s2_solution 4.2 Solution
 
 Consider the following three-layer feedforward network:
 \code

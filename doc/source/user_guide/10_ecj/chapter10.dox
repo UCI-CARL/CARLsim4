@@ -92,7 +92,7 @@ This will install the CARLsim-ECJ PTI static library into the location pointed t
 
 \section ch10s3_usage 10.3 ECJ Usage
 In general, users will create their own project directory and model it after the tutorial program
-found in \ref tut3_pti. Users configure a ECJ parameter file and implement a CARLsim fitness
+found in \ref tut5_pti. Users configure a ECJ parameter file and implement a CARLsim fitness
 evaluation function. ECJ performs the EA utilizing the user-defined parameter file and runs the
 CARLsim 'main' program every generation to evaluate the fitness for all individuals in parallel.
 Each individual represents a different SNN with a unique set of parameter values. ECJ outputs the
@@ -225,7 +225,7 @@ outputStream << fitness[i] << endl;
 }
 \endcode
 
-\see \ref tut3_pti
+\see \ref tut5_pti
 
 \since v3.0
 
