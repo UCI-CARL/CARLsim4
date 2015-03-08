@@ -5,7 +5,7 @@ USER_MK_PATH = ../../../../
 include $(USER_MK_PATH)user.mk
 
 # list all targets in this directory
-local_targets := basic_concepts
+local_targets := plasticity
 output := *.dot *.dat *.log *.csv results/*
 
 # we are compiling from carlsim lib
@@ -24,7 +24,7 @@ all: $(local_targets)
 # compile from CARLsim lib
 
 # list all rules, one per target
-basic_concepts: main_basic_concepts.cpp
+$(local_targets): main_$(local_targets).cpp
 	$(NVCC) $(CARLSIM_INCLUDES) $(CARLSIM_FLAGS) $(CARLSIM_LFLAGS) $< -o $@ $(CARLSIM_LIBS)
 
 clean:
