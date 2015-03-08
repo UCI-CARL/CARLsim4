@@ -2,6 +2,7 @@
 
 \page tut2_random_spnet Tutorial 2: 80-20 Random Spiking Network
 \tableofcontents
+
 \author Michael Beyeler
 \see \ref ch5s2_spike_timing_dependent_plasticity
 \see <a href="http://izhikevich.org/publications/spnet.htm" target="_blank"><b>Polychronization: Computation with Spikes</b></a> (Izhikevich, 2006)
@@ -24,12 +25,51 @@ This tutorial assumes you know how to:
 
 \section tut2s1_8020_networks 2.1 80-20 Networks
 
-80-20 networks are cool.
-The network is supposed to exhibit sleeplike oscillations, gamma (40 Hz) rhythms,
+80-20 networks get their name from the ratio of excitatory (80%) to inhibitory (20%) neurons in the network,
+which is thought to preserve a ratio found in the mammalian cortex (Braitenberg & Schuz, 1991), although these
+numbers might not be exact.
+
+Such networks are supposed to exhibit sleeplike oscillations, gamma (40 Hz) rhythms,
 conversion of firing rates to spike timings, and other interesting regimes.
 
 
 \section tut2s2_network_setup 2.2 Network Setup
+
+As always, the first step in setting up a CARLsim program is to include the <tt>libCARLsim</tt> library
+and to instantiate the main simulation object:
+\code
+#include <carlsim.h>
+#include <vector>
+
+
+int main(int argc, const char* argv[]) {
+	CARLsim sim("spnet", GPU_MODE, USER);
+\endcode
+
+From then on, the simulation is in ::CONFIG_STATE, allowing the properties of the neural network to be specified.
+
+
+From then on, the simulation is in ::CONFIG_STATE, allowing the properties of the neural network to be specified.
+Here, we consider a network of 800 excitatory and 200 inhibitory neurons. 
+\code
+	int nNeur = 1000;			// number of neurons
+	int nNeurExc = 0.8*nNeur;	// number of excitatory neurons
+	int nNeurInh = 0.2*nNeur;	// number of inhibitory neurons
+	int nSynPerNeur = 100;  	// number of synpases per neuron
+	int maxDelay = 20;      	// maximal conduction delay
+
+	// create 80-20 network with 80% RS and 20% FS neurons
+	int gExc = sim.createGroup("exc", nNeurExc, EXCITATORY_NEURON);
+	sim.setNeuronParameters(gExc, 0.02f, 0.2f, -65.0f, 8.0f); // RS
+	int gInh = sim.createGroup("inh", nNeurInh, INHIBITORY_NEURON);
+	sim.setNeuronParameters(gInh, 0.1f, 0.2f, -65.0f, 2.0f); // FS
+\endcode
+The network considered here is sparse with 10% probability of connection between any two neurons.
+Behavior of each neuron is described by the Izhikevich model, where excitatory neurons are regular spiking
+and inhibitory neurons are fast spiking (see \ref ch3s1s1_izhikevich_neurons).
+Synaptic connections among neurons ave fixed conduction delays, which are random integers between 1 and 20 ms.
+
+
 Here's how to set it up.
 
 \section tut2s3_network_activity 2.3. Network Activity
