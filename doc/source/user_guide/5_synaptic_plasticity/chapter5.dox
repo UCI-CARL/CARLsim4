@@ -152,13 +152,11 @@ how E-STDP and I-STDP are defined.
 
 \note CARLsim keeps track of the weight change every ms, but updates the weights every second by
 default. The update frequency of the weights can be changed with the
-CARLsim::setWeightAndWeightChangeUpdate CARLsim function.
-
-
-\bug Specified decay of the weight changes does not really correspond to milliseconds.
+CARLsim::setWeightAndWeightChangeUpdate function.
 
 \warning A common user error is trying to allow for STDP on connections that are fixed, instead of
 plastic.
+
 
 \subsection ch5s2s2_stdp_types 5.2.2 Excitatory STDP (E-STDP) and Inhibitory STDP (I-STDP)
 

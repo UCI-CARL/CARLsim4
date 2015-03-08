@@ -1,0 +1,40 @@
+/*!
+
+\page tut2_random_spnet Tutorial 2: 80-20 Random Spiking Network
+\tableofcontents
+\author Michael Beyeler
+\see \ref ch5s2_spike_timing_dependent_plasticity
+\see <a href="http://izhikevich.org/publications/spnet.htm" target="_blank"><b>Polychronization: Computation with Spikes</b></a> (Izhikevich, 2006)
+
+In this tutorial we will implement an 80-20 random spiking neural network with synapses of varying axonal
+delay that are subject to spike-timing dependent plasticity (STDP).
+We follow the MATLAB implementation <tt>spnet.m</tt>, which can be obtained from
+<a href="http://izhikevich.org/publications/spnet.htm" target="_blank">Izhikevich's Website</a>.
+
+At the end of the tutorial, you will know how to:
+- set up a 80-20 network of Izhikevich spiking neurons
+- inject current into the network
+- set up E-STDP and I-STDP for specific groups
+- run a network in CUBA mode
+- use a SpikeMonitor to visualize network activity
+
+This tutorial assumes you know how to:
+- run a simple CARLsim program (see \ref tut1_basic_concepts)
+
+
+\section tut2s1_8020_networks 2.1 80-20 Networks
+
+80-20 networks are cool.
+The network is supposed to exhibit sleeplike oscillations, gamma (40 Hz) rhythms,
+conversion of firing rates to spike timings, and other interesting regimes.
+
+
+\section tut2s2_network_setup 2.2 Network Setup
+Here's how to set it up.
+
+\section tut2s3_network_activity 2.3. Network Activity
+Here's how to look at the activity.
+
+
+
+*/
