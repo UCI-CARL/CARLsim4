@@ -107,19 +107,19 @@ All of this is accomplished with the following code snippet:
 
 	// gInh receives input from nSynPerNeur neurons from gExc, all delays are 1ms
 	// every neuron in gInh should receive ~nSynPerNeur synapses
-	sim.connect(gExc, gInh, "random", RangeWeight(wtExc), pConn*nNeur/nNeurExc, RangeDelay(1), RadiusRF(-1), SYN_PLASTIC);
+	sim.connect(gExc, gInh, "random", RangeWeight(0.0f, wtExc, wtMax), pConn*nNeur/nNeurExc, RangeDelay(1), RadiusRF(-1), SYN_PLASTIC);
 \endcode
 
 What remains to be done is to enable STDP on the connections above.
 STDP is enabled post-synaptically: Setting E-STDP will enable STDP on all incoming excitatory synapses (where the
 pre-synaptic group is excitatory), whereas setting I-STDP will enable STDP on all incoming inhibitory synapses
-(where the pre-synaptic group is inhibitory) (see \ref ch5s2s2_stdp_types).
-We enable both types and set the shape of the STDP curve to the standard exponential curve (see \ref 5_stdp_types):
+(where the pre-synaptic group is inhibitory).
+We enable both types and set the shape of the STDP curve to the standard exponential curve (see \ref ch5s2s2_stdp_types):
 \code
 	// enable STDP on all incoming synapses to gExc
-	float ALPHA_PLUS = 0.1f, TAU_PLUS = 20.0f, ALPHA_MINUS = 0.1f, TAU_MINUS = 20.0f;
-	sim.setESTDP(gExc, true, STANDARD, ExpCurve(ALPHA_PLUS, TAU_PLUS, ALPHA_MINUS, TAU_MINUS));
-	sim.setISTDP(gExc, true, STANDARD, ExpCurve(ALPHA_PLUS, TAU_PLUS, ALPHA_MINUS, TAU_MINUS));
+	float alphaPlus = 0.1f, tauPlus = 20.0f, alphaMinus = 0.1f, tauMinus = 20.0f;
+	sim.setESTDP(gExc, true, STANDARD, ExpCurve(alphaPlus, tauPlus, alphaMinus, tauMinus));
+	sim.setISTDP(gExc, true, STANDARD, ExpCurve(alphaPlus, tauPlus, alphaMinus, tauMinus));
 \endcode
 
 Finally, we disable synaptic conductances so that the network is run in CUBA mode (see \ref ch3s2s1_cuba):
@@ -166,6 +166,7 @@ group (see \ref ch7s1s2s1_start_stop_recording):
 	SMexc->startRecording();
 	SMinh->startRecording();
 	for (int t=0; t<1000; t++) {
+		// main simulation loop
 		// etc.
 	}
 	SMexc->stopRecording();
@@ -221,7 +222,7 @@ at the end:
 \section tut2s3_network_output 2.3. Network Output
 
 After navigating to <tt>%%CARLSIM_ROOT_DIR%%/doc/source/tutorial/2_random_spnet</tt>, the network can be
-compiled and run with the following commands (on Linux):
+compiled and run with the following commands (on Unix):
 \code
 $ make
 $ ./random_spnet
@@ -233,43 +234,43 @@ project directory and choosing "Build project".
 Some of the CARLsim output is shown below:
 \code
 * ****************      Initializing GPU Simulation      *************************
-GPU Memory Management: (Total 1.000 GB)
-Data				Size		Total Used	Total Available
-Init:				1.000 GB	0.013 GB	0.986 GB
-Ntw Params:			0.000 GB	0.013 GB	0.986 GB
-Static Load:		0.001 GB	0.014 GB	0.985 GB
-Group Id:			0.000 GB	0.014 GB	0.985 GB
-Conn Info:			0.004 GB	0.018 GB	0.981 GB
-State Info:			0.004 GB	0.022 GB	0.978 GB
+  GPU Memory Management: (Total 2.999 GB)
+  Data			Size		Total Used	Total Available
+  Init:			2.999 GB	0.221 GB	2.779 GB
+  Ntw Params:	0.000 GB	0.221 GB	2.779 GB
+  Static Load:	0.001 GB	0.222 GB	2.778 GB
+  Group Id:		0.000 GB	0.222 GB	2.778 GB
+  Conn Info:	0.004 GB	0.226 GB	2.774 GB
+  State Info:	0.004 GB	0.229 GB	2.770 GB
 
-
-SpikeMonitor set for group 0 (exc)
-SpikeMonitor set for group 1 (inh)
-ConnectionMonitor 0 set for Connection 0: 0(exc) => 0(exc)
-ConnectionMonitor 1 set for Connection 1: 1(inh) => 0(exc)
-(t=1.000s) SpikeMonitor for group exc(0) has 3656 spikes in 1000 ms (4.57 +/- 1.51 Hz)
-(t=1.000s) SpikeMonitor for group inh(1) has 5321 spikes in 1000 ms (26.60 +/- 3.85 Hz)
+  SpikeMonitor set for group 0 (exc)
+  SpikeMonitor set for group 1 (inh)
+  ConnectionMonitor 0 set for Connection 0: 0(exc) => 0(exc)
+  ConnectionMonitor 1 set for Connection 1: 1(inh) => 0(exc)
+  (t=1.000s) SpikeMonitor for group exc(0) has 3969 spikes in 1000 ms (4.96 +/- 1.54 Hz)
+  (t=1.000s) SpikeMonitor for group inh(1) has 5723 spikes in 1000 ms (28.61 +/- 4.39 Hz)
 
 
 * *******************      GPU Simulation Summary      ***************************
-Network Parameters: 	numNeurons = 1000 (numNExcReg:numNInhReg = 80.0:20.0)
-						numSynapses = 100266
+  Network Parameters: 	numNeurons = 1000 (numNExcReg:numNInhReg = 80.0:20.0)
+						numSynapses = 100111
 						maxDelay = 20
-Simulation Mode:		CUBA
-Random Seed:			1425848794
-Timing:					Model Simulation Time = 1 sec
-						Actual Execution Time = 0.38 sec
-Average Firing Rate:	2+ms delay = 11.221 Hz
+  Simulation Mode:		CUBA
+  Random Seed:			1425918981
+  Timing:				Model Simulation Time = 1 sec
+						Actual Execution Time = 0.30 sec
+  Average Firing Rate:	2+ms delay = 12.115 Hz
 						1ms delay = 0.000 Hz
-						Overall = 8.977 Hz
-Overall Firing Count:	2+ms delay = 8977
+						Overall = 9.692 Hz
+  Overall Firing Count:	2+ms delay = 9692
 						1ms delay = 0
-						Total = 8977
+						Total = 9692
 * ********************************************************************************
 \endcode
 
 Since the network was run in ::GPU_MODE, the simulation will print a summary of the GPU memory
 management. This indicates the amount of GPU memory that each important data structure occupies.
+The above was generated on a GTX 780 with 3GB of GPU memory.
 
 Both SpikeMonitor objects produced one line of output each at the end of the simulation via
 SpikeMonitor::print.
@@ -278,10 +279,10 @@ with corresponding mean firing rate (in Hz) and standard deviation given in pare
 
 At the end of the simulation, a summary is printed that confirms the 80-20 ratio of
 excitatory to inhibitory neurons.
-A total number of 100,266 synapses were created, confirming the attempted number of (roughly)
+A total number of 100,111 synapses were created, confirming the attempted number of (roughly)
 100 synapses per neuron.
-The network was simulated for 1000ms, yet its execution took only 380ms of wall-clock time,
-which means the network was run 2.63 times faster than real-time.
+The network was simulated for 1000ms, yet its execution took only 300ms of wall-clock time,
+which means the network was run 3.33 times faster than real-time.
 
 
 

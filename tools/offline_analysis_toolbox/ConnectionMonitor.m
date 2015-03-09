@@ -874,10 +874,10 @@ classdef ConnectionMonitor < handle
 				% reshape for plotting
  				obj.weights = permute(obj.weights,[2 3 1]); % Y X T
 			elseif strcmpi(obj.plotType,'histogram')
-				obj.plotHistBins = linspace(0, obj.plotMaxWt, ...
+				obj.plotHistBins = linspace(0, abs(obj.plotMaxWt), ...
 					obj.plotHistNumBins);
 				for i=1:numel(obj.timeStamps)
-					obj.plotHistData(i,:) = histc(obj.weights(i,:), ...
+					obj.plotHistData(i,:) = histc(abs(obj.weights(i,:)), ...
 						obj.plotHistBins);
 				end
 			else
@@ -972,8 +972,13 @@ classdef ConnectionMonitor < handle
 				end
 			elseif strcmpi(obj.plotType,'histogram')
 				bar(obj.plotHistBins, obj.plotHistData(frameNr,:))
-				xlabel('weight value')
+				xlabel('weight value (magnitude)')
 				ylabel('number of synapses')
+				% if enabled, display the frame number in lower left corner
+				if dispFrameNr
+					text(0,0.1*max(obj.plotHistData(frameNr,:)),num2str(frameNr), ...
+						'FontSize',10,'BackgroundColor','white')
+				end
 			elseif strcmpi(obj.plotType,'responsefield')
 				% plot the connections from one pre-neuron to all
 				% corresponding post-neurons
@@ -1078,7 +1083,9 @@ classdef ConnectionMonitor < handle
 						subplot(nRows,nCols,idx)
 						imagesc(wts(:,:,zPreIdx)', [0 max(obj.plotMaxWt,1e-10)])
 						axis equal
- 						axis([1 grid3DPre(1) 1 grid3DPre(2)])
+						if grid3DPre(1)>1 && grid3DPre(2)>1
+	 						axis([1 grid3DPre(1) 1 grid3DPre(2)])
+						end
 						if grid3DPre(1)>1
 							set(gca,'XTick',[1 grid3DPre(1)/2.0 grid3DPre(1)])
 							set(gca,'XTickLabel',[-grid3DPre(1)/2.0 0 grid3DPre(1)/2.0])
@@ -1098,12 +1105,6 @@ classdef ConnectionMonitor < handle
 						title({[obj.grpPreName '->' obj.grpPostName ', t=' ...
 							num2str(obj.timeStamps(frameNr)) 'ms'],['wt = [0 , ' ...
 							num2str(obj.plotMaxWt) '], z=' num2str(zPost)]})
-						
-						% if enabled, display the frame number in lower left corner
-						if dispFrameNr
-							text(2,size(wts,2)-1,num2str(frameNr), ...
-								'FontSize',10,'BackgroundColor','white')
-						end
 					end
 				end
 			else
