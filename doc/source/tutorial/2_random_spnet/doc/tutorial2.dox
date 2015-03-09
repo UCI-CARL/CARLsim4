@@ -22,6 +22,8 @@ At the end of the tutorial, you will know how to:
 This tutorial assumes you know how to:
 - run a simple CARLsim program (see \ref tut1_basic_concepts)
 
+The source code of this tutorial can be found in <tt>%%%CARLSIM_ROOT_DIR%%/doc/source/tutorial/2_random_spnet</tt>.
+
 
 \section tut2s1_8020_networks 2.1 80-20 Networks
 
@@ -41,38 +43,249 @@ and to instantiate the main simulation object:
 #include <carlsim.h>
 #include <vector>
 
-
 int main(int argc, const char* argv[]) {
 	CARLsim sim("spnet", GPU_MODE, USER);
 \endcode
 
-From then on, the simulation is in ::CONFIG_STATE, allowing the properties of the neural network to be specified.
 
+\subsection tut2s2s1_config 2.2.1 CONFIG State
 
 From then on, the simulation is in ::CONFIG_STATE, allowing the properties of the neural network to be specified.
-Here, we consider a network of 800 excitatory and 200 inhibitory neurons. 
+In this tutorial, we consider a network of 800 excitatory (regular spiking; RS)
+and 200 inhibitory neurons (fast spiking; FS) (see \ref ch3s1s1_izhikevich_neurons).
+Each neuron shall have roughly 100 incoming synapses (<tt>nSynPerNeur</tt>) with axonal delays
+between 1ms and 20ms (<tt>maxDelay</tt>).
+We first set a number of parameters:
 \code
 	int nNeur = 1000;			// number of neurons
 	int nNeurExc = 0.8*nNeur;	// number of excitatory neurons
 	int nNeurInh = 0.2*nNeur;	// number of inhibitory neurons
 	int nSynPerNeur = 100;  	// number of synpases per neuron
 	int maxDelay = 20;      	// maximal conduction delay
-
+\endcode
+and then create the groups of regular spiking and fast spiking neurons with appropriate Izhikevich parameters
+a, b, c, and d:
+\code
 	// create 80-20 network with 80% RS and 20% FS neurons
 	int gExc = sim.createGroup("exc", nNeurExc, EXCITATORY_NEURON);
 	sim.setNeuronParameters(gExc, 0.02f, 0.2f, -65.0f, 8.0f); // RS
 	int gInh = sim.createGroup("inh", nNeurInh, INHIBITORY_NEURON);
 	sim.setNeuronParameters(gInh, 0.1f, 0.2f, -65.0f, 2.0f); // FS
 \endcode
-The network considered here is sparse with 10% probability of connection between any two neurons.
-Behavior of each neuron is described by the Izhikevich model, where excitatory neurons are regular spiking
-and inhibitory neurons are fast spiking (see \ref ch3s1s1_izhikevich_neurons).
-Synaptic connections among neurons ave fixed conduction delays, which are random integers between 1 and 20 ms.
+
+The network considered here is sparse with 10% probability of connection between any two neurons
+(the probability is found by dividing the number of synpases per neuron by the number of neurons):
+\code
+	float pConn = nSynPerNeur*1.0f/nNeur; // connection probability
+\endcode
+
+We also set the synaptic weight magnitudes to be <tt>6.0f</tt> for excitatory synapses and
+<tt>5.0f</tt> for inhibitory synapses, and make sure weight magnitudes never get larger than <tt>10.0f</tt>:
+\code
+	// specify connectivity
+	float wtExc = 6.0f;                   // synaptic weight magnitude if pre is exc
+	float wtInh = 5.0f;                   // synaptic weight magnitude if pre is inh (no negative sign)
+	float wtMax = 10.0f;                  // maximum synaptic weight magnitude
+\endcode
+
+Then the synaptic connections can be specified.
+Groups are connected with the <tt>"random"</tt> primitive type of CARLsim::connect that sparsely connects groups
+with a fixed connection probability. Weights are initialized to <tt>wtExc</tt> and <tt>wtInh</tt> for excitatory
+and inhibitory synapses, respectively.
+Note that the weight of inhibitory synapses in ::RangeWeight is to be understood as a weight <i>magnitude</i>,
+and therefore does <i>not</i> have a negative sign.
+Weights are bounded by the interval <tt>[0, wtMax]</tt>.
+Axonal delays are uniformly distributed in the range <tt>[1, 20] ms</tt>.
+Connections should not be further confined to a spatial receptive field, which is denoted by <tt>RadiusRF(-1)</tt>.
+::SYN_PLASTIC denotes that the synapses will be subject to plasticity.
+All of this is accomplished with the following code snippet:
+\code
+	// gExc receives input from nSynPerNeur neurons from both gExc and gInh
+	// every neuron in gExc should receive ~nSynPerNeur synapses
+	sim.connect(gExc, gExc, "random", RangeWeight(0.0f, wtExc, wtMax), pConn, RangeDelay(1,20), RadiusRF(-1), SYN_PLASTIC);
+	sim.connect(gInh, gExc, "random", RangeWeight(0.0f, wtInh, wtMax), pConn, RangeDelay(1,20), RadiusRF(-1), SYN_PLASTIC);
+
+	// gInh receives input from nSynPerNeur neurons from gExc, all delays are 1ms
+	// every neuron in gInh should receive ~nSynPerNeur synapses
+	sim.connect(gExc, gInh, "random", RangeWeight(wtExc), pConn*nNeur/nNeurExc, RangeDelay(1), RadiusRF(-1), SYN_PLASTIC);
+\endcode
+
+What remains to be done is to enable STDP on the connections above.
+STDP is enabled post-synaptically: Setting E-STDP will enable STDP on all incoming excitatory synapses (where the
+pre-synaptic group is excitatory), whereas setting I-STDP will enable STDP on all incoming inhibitory synapses
+(where the pre-synaptic group is inhibitory) (see \ref ch5s2s2_stdp_types).
+We enable both types and set the shape of the STDP curve to the standard exponential curve (see \ref 5_stdp_types):
+\code
+	// enable STDP on all incoming synapses to gExc
+	float ALPHA_PLUS = 0.1f, TAU_PLUS = 20.0f, ALPHA_MINUS = 0.1f, TAU_MINUS = 20.0f;
+	sim.setESTDP(gExc, true, STANDARD, ExpCurve(ALPHA_PLUS, TAU_PLUS, ALPHA_MINUS, TAU_MINUS));
+	sim.setISTDP(gExc, true, STANDARD, ExpCurve(ALPHA_PLUS, TAU_PLUS, ALPHA_MINUS, TAU_MINUS));
+\endcode
+
+Finally, we disable synaptic conductances so that the network is run in CUBA mode (see \ref ch3s2s1_cuba):
+\code
+	// run CUBA mode
+	sim.setConductances(false);
+\endcode
 
 
-Here's how to set it up.
+\subsection tut2s2s2_setup 2.2.2 SETUP State
 
-\section tut2s3_network_activity 2.3. Network Activity
+Once the spiking network has been specified, the function CARLsim::setupNetwork optimizes the network state for the
+chosen back-end (CPU or GPU) and moves the simulation into ::SETUP_STATE:
+\code
+	// ---------------- SETUP STATE -------------------
+	sim.setupNetwork();
+\endcode
+
+In this state, we specify a number of SpikeMonitor and ConnectionMonitor objects to record network activity and
+synaptic weights to a <tt>"DEFAULT"</tt> binary file (see \ref ch7_monitoring):
+\code
+	SpikeMonitor* SMexc = sim.setSpikeMonitor(gExc, "DEFAULT");
+	SpikeMonitor* SMinh = sim.setSpikeMonitor(gInh, "DEFAULT");
+	sim.setConnectionMonitor(gExc, gExc, "DEFAULT");
+	sim.setConnectionMonitor(gInh, gExc, "DEFAULT");
+\endcode
+This will dump all spikes of group <tt>gExc</tt> (in AER format) to a binary with default file name
+<tt>"results/spk_exc.dat"</tt>, where <tt>"exc"</tt> is the name that was assigned to the group <tt>gExc</tt>
+in the call to CARLsim::createGroup above. The same is true for group <tt>gInh</tt>.
+Analogously, two weight files <tt>"results/conn_exc_exc.dat"</tt> and <tt>"results/conn_inh_exc.dat"</tt> will
+be created that contain snapshots of the synaptic weights taken every 1000ms.
+
+
+\subsection tut2s2s3_run 2.2.3 RUN State
+
+The first call to CARLsim::runNetwork will take the simulation into ::RUN_STATE.
+The simulation will be repeatedly run (or "stepped") for 1ms, up to the point at which a total of 1000ms are simulated.
+
+The main simulation loop is encapsulated by a pair of SpikeMonitor::startRecording and SpikeMonitor::stopRecording
+calls, which instruct the SpikeMonitor objects to keep track of all spikes emitted by the neurons in their monitored
+group (see \ref ch7s1s2s1_start_stop_recording):
+\code
+	// ---------------- RUN STATE -------------------
+	SMexc->startRecording();
+	SMinh->startRecording();
+	for (int t=0; t<1000; t++) {
+		// etc.
+	}
+	SMexc->stopRecording();
+	SMinh->stopRecording();
+\endcode
+
+After (or during) the simulation these objects could be queried for more detailed spike metrics
+(see \ref ch7s1s2s3_spike_metrics), but for the sake of simplicity we will only print a condensed version of
+spike statistics at the end:
+\code
+	// print firing stats (but not the exact spike times)
+	SMexc->print(false);
+	SMinh->print(false);
+\endcode
+
+Finally, the main simulation loop consists of repeatedly stepping the model for 1ms.
+At every step we randomly choose a single neuron in the network to receive an external (thalamic) input current
+of <tt>20.0f</tt>.
+To achieve this, we maintain a vector of external currents for every neuron in the group, initialized to zero:
+\code
+		// random thalamic input to a single neuron from either gExc or gInh
+		std::vector<float> thalamCurrExc(nNeurExc, 0.0f);
+		std::vector<float> thalamCurrInh(nNeurInh, 0.0f);
+\endcode
+Then, a neuron ID is chosen randomly, and the corresponding input current for the identified neuron is adjusted:
+\code
+		int randNeurId = round( drand48()*(nNeur-1) );
+		float thCurr = 20.0f;
+		if (randNeurId < nNeurExc) {
+			// neurId belongs to gExc
+			thalamCurrExc[randNeurId] = thCurr;
+		} else {
+			// neurId belongs to gInh
+			thalamCurrInh[randNeurId - nNeurExc] = thCurr;
+		}
+\endcode
+Finally, the resulting vectors are applied to both groups.
+Note that we explicitly set the unaffected input currents to zero every time step. This is because otherwise the
+non-zero input current from previous iterations will keep getting applied until manually reset to zero:
+\code
+		sim.setExternalCurrent(gExc, thalamCurrExc);
+		sim.setExternalCurrent(gInh, thalamCurrInh);
+\endcode
+
+After that is accomplished, the model is stepped for 1ms while explicitly disabling printing the run summary
+at the end:
+\code
+		// run for 1 ms, don't generate run stats
+		sim.runNetwork(0,1,false);
+\endcode
+
+
+\section tut2s3_network_output 2.3. Network Output
+
+After navigating to <tt>%%CARLSIM_ROOT_DIR%%/doc/source/tutorial/2_random_spnet</tt>, the network can be
+compiled and run with the following commands (on Linux):
+\code
+$ make
+$ ./random_spnet
+\endcode
+On Windows, the <tt>.vcxproj</tt> file is already added to the <tt>CARLsim.sln</tt> solution file.
+Thus the project can be built simply by opening the solution file in Visual Studio, by right-clicking the
+project directory and choosing "Build project".
+
+Some of the CARLsim output is shown below:
+\code
+* ****************      Initializing GPU Simulation      *************************
+GPU Memory Management: (Total 1.000 GB)
+Data				Size		Total Used	Total Available
+Init:				1.000 GB	0.013 GB	0.986 GB
+Ntw Params:			0.000 GB	0.013 GB	0.986 GB
+Static Load:		0.001 GB	0.014 GB	0.985 GB
+Group Id:			0.000 GB	0.014 GB	0.985 GB
+Conn Info:			0.004 GB	0.018 GB	0.981 GB
+State Info:			0.004 GB	0.022 GB	0.978 GB
+
+
+SpikeMonitor set for group 0 (exc)
+SpikeMonitor set for group 1 (inh)
+ConnectionMonitor 0 set for Connection 0: 0(exc) => 0(exc)
+ConnectionMonitor 1 set for Connection 1: 1(inh) => 0(exc)
+(t=1.000s) SpikeMonitor for group exc(0) has 3656 spikes in 1000 ms (4.57 +/- 1.51 Hz)
+(t=1.000s) SpikeMonitor for group inh(1) has 5321 spikes in 1000 ms (26.60 +/- 3.85 Hz)
+
+
+* *******************      GPU Simulation Summary      ***************************
+Network Parameters: 	numNeurons = 1000 (numNExcReg:numNInhReg = 80.0:20.0)
+						numSynapses = 100266
+						maxDelay = 20
+Simulation Mode:		CUBA
+Random Seed:			1425848794
+Timing:					Model Simulation Time = 1 sec
+						Actual Execution Time = 0.38 sec
+Average Firing Rate:	2+ms delay = 11.221 Hz
+						1ms delay = 0.000 Hz
+						Overall = 8.977 Hz
+Overall Firing Count:	2+ms delay = 8977
+						1ms delay = 0
+						Total = 8977
+* ********************************************************************************
+\endcode
+
+Since the network was run in ::GPU_MODE, the simulation will print a summary of the GPU memory
+management. This indicates the amount of GPU memory that each important data structure occupies.
+
+Both SpikeMonitor objects produced one line of output each at the end of the simulation via
+SpikeMonitor::print.
+This line includes the number of spikes each group emitted over the time course of 1000ms,
+with corresponding mean firing rate (in Hz) and standard deviation given in parentheses.
+
+At the end of the simulation, a summary is printed that confirms the 80-20 ratio of
+excitatory to inhibitory neurons.
+A total number of 100,266 synapses were created, confirming the attempted number of (roughly)
+100 synapses per neuron.
+The network was simulated for 1000ms, yet its execution took only 380ms of wall-clock time,
+which means the network was run 2.63 times faster than real-time.
+
+
+
+\section tut2s4_network_activity 2.4. Visualizing Network Activity
 Here's how to look at the activity.
 
 

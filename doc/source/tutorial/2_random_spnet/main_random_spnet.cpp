@@ -69,7 +69,7 @@ int main(int argc, const char* argv[]) {
 	sim.connect(gExc, gExc, "random", RangeWeight(0.0f, wtExc, wtMax), pConn, RangeDelay(1,20), RadiusRF(-1), SYN_PLASTIC);
 	sim.connect(gInh, gExc, "random", RangeWeight(0.0f, wtInh, wtMax), pConn, RangeDelay(1,20), RadiusRF(-1), SYN_PLASTIC);
 
-	// gInh receives input from nSynPerNeur neurons from gExc
+	// gInh receives input from nSynPerNeur neurons from gExc, all delays are 1ms
 	// every neuron in gInh should receive ~nSynPerNeur synapses
 	sim.connect(gExc, gInh, "random", RangeWeight(wtExc), pConn*nNeur/nNeurExc, RangeDelay(1), RadiusRF(-1), SYN_PLASTIC);
 
@@ -83,7 +83,6 @@ int main(int argc, const char* argv[]) {
 
 
 	// ---------------- SETUP STATE -------------------
-
 	sim.setupNetwork();
 
 	SpikeMonitor* SMexc = sim.setSpikeMonitor(gExc, "DEFAULT");
@@ -93,7 +92,6 @@ int main(int argc, const char* argv[]) {
 
 
 	// ---------------- RUN STATE -------------------
-
 	SMexc->startRecording();
 	SMinh->startRecording();
 	for (int t=0; t<1000; t++) {
@@ -113,7 +111,7 @@ int main(int argc, const char* argv[]) {
 		sim.setExternalCurrent(gExc, thalamCurrExc);
 		sim.setExternalCurrent(gInh, thalamCurrInh);
 	
-		// run for 1 ms
+		// run for 1 ms, don't generate run stats
 		sim.runNetwork(0,1,false);
 	}
 	SMexc->stopRecording();
