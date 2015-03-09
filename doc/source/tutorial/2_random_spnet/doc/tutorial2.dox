@@ -5,6 +5,7 @@
 
 \author Michael Beyeler
 \see \ref ch5s2_spike_timing_dependent_plasticity
+\see \ref ch9_matlab_oat
 \see <a href="http://izhikevich.org/publications/spnet.htm" target="_blank"><b>Polychronization: Computation with Spikes</b></a> (Izhikevich, 2006)
 
 In this tutorial we will implement an 80-20 random spiking neural network with synapses of varying axonal
@@ -18,6 +19,7 @@ At the end of the tutorial, you will know how to:
 - set up E-STDP and I-STDP for specific groups
 - run a network in CUBA mode
 - use a SpikeMonitor to visualize network activity
+- use a ConnectionMonitor to visualize weight changes
 
 This tutorial assumes you know how to:
 - run a simple CARLsim program (see \ref tut1_basic_concepts)
