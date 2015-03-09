@@ -37,21 +37,30 @@ int main() {
 	// create a network with nPois Poisson neurons and nExc excitatory output
 	// neurons
 	CARLsim sim("plasticity simulation", GPU_MODE, USER);
-	int nPois = 100;
-	int nExc  = 1;
+	int nPois = 100; // 100 input neurons
+	int nExc  = 1;   // 1 output neuron
 
-	PoissonRate poissRate(nPois, true); // allocate on GPU for minimal memory copies
+	// set up our neuron groups
 	int gPois = sim.createSpikeGeneratorGroup("input", nPois, EXCITATORY_POISSON);
 	int gExc  = sim.createGroup("output", nExc, EXCITATORY_NEURON);
 	sim.setNeuronParameters(gExc, 0.02f, 0.2f, -65.0f, 8.0f);
-	sim.connect(gPois, gExc,  "full", 0.01f, 0.03f, 1.0, 1, 1, SYN_PLASTIC);
+
+	// connect our groups with SYN_PLASTIC as the final argument.
+	sim.connect(gPois,gExc,"full",RangeWeight(0.0,1.0f/100, 20.0f/100), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_PLASTIC);
 
 	// set conductances with default values
 	sim.setConductances(true);
 
-	sim.connect(gPois,gExc,"full",RangeWeight(0.0,1.0f/100, 20.0f/100), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_PLASTIC);
-	sim.setSTDP(gExc, true);
-	sim.setESTDP(gExc, true);
+	// create PoissonRate object of size nPoiss.
+	PoissonRate poissRate(nPois, true); // allocate on GPU for minimal memory copies
+
+	// set E-STDP parameters.
+	float alpha_LTP=0.001f; float tau_LTP=20.0f;
+	float alpha_LTD=0.0015f; float tau_LTD=20.0f;
+
+	// set E-STDP to be STANDARD (without neuromodulatory influence) with an
+	// EXP_CURVE type.
+	sim.setESTDP(gExc, true, STANDARD, ExpCurve(alpha_LTP/100, tau_LTP, alpha_LTD/100, tau_LTP));
 
 	// homeostasis constants
 	float homeoScale= 1.0; // homeostatic scaling factor
@@ -76,12 +85,15 @@ int main() {
 	sim.setSpikeRate(gPois, &poissRate);
 
 	// run the established network for 1 sec
-	int runTimeSec = 1000; // seconds
+	int runTimeSec = 10; // seconds
 	int runTimeMs  = 0; // milliseconds
-	SpikeMonOutput->startRecording();
+	SpikeMonInput->startRecording();
 	sim.runNetwork(runTimeSec, runTimeMs);
-	SpikeMonOutput->stopRecording();
+	SpikeMonInput->stopRecording();
+	std::vector<float> inputFRs = SpikeMonInput->getAllFiringRates();
 
+	//for(int i=0;i<inputFRs.size();i++)
+		//std::cout << inputFRs[i] << std::endl;
 
   return 0;
 }

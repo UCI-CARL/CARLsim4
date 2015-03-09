@@ -21,6 +21,7 @@ This tutorial assumes you know:
 
 \section tut1s1_simple_prog 1.1 A Simple CARLsim program
 
+\author Kristofor D. Carlson
 
 The objective of this tutorial is to hook up a Poisson spike generator to a single Izhikevich neuron and look
 at the output activity.
@@ -75,6 +76,8 @@ Set the firing rate rate of the input neuron to 20 Hz and run the network for 10
 
 
 \section tut1s2_output 1.2 CARLsim Output
+
+\author Kristofor D. Carlson
 
 Some of the CARLsim console output is shown below:
 

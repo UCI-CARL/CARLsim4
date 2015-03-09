@@ -4,110 +4,139 @@
 
 \tableofcontents
 
-In this tutorial, we introduce some of the basic concepts of a CARLsim simulation:
-- Importing the CARLsim library
-- Creating a group of neurons
-- Defining the network structure by connecting neurons
-- Running a network
-- Looking at the output of the network
+In this tutorial, we introduce how to use some plasticity mechanisms in CARLsim.
+We will cover:
+- Setting up connections with plasticity enabled.
+- Enabling E-STDP on a specific connection.
+- Adding homeostatic synaptic scaling to stabilize E-STDP.
+- Using SpikeMonitor and ConnectionMonitor to get spike and weight information.
 
 At the end of the tutorial, you will have:
-- built a simple CARLsim program
+- Built a simple CARLsim program with E-STDP and homeostatic synaptic scaling.
+- Used SpikeMonitor and ConnectionMonitor to get spike and weight information.
 
-This tutorial assumes you know:
-- The very basics of C/C++
-- The Izhikevich neuron model
-
-
-\section tut3s1_simple_prog 1.1 A Simple CARLsim program
+This tutorial assumes you have covered:
+- Tutorials 1 & 2
 
 
-The objective of this tutorial is to hook up a Poisson spike generator to a single Izhikevich neuron and look
-at the output activity.
+\section tut3s1_config 3.1 CARLsim Program CONFIG State
 
-CARLsim is broken into 3 different states: ::CONFIG_STATE, ::SETUP_STATE, and ::RUN_STATE.
 
-Before we discuss code in each state, note that we have included the <tt>carlsim.h</tt> header file, which is
-required for every CARLsim simulation.
+\author Kristofor D. Carlson
 
-\code
-#include <carlsim.h>
-\endcode
+The objective of this tutorial is become familiar with using STDP in CARLsim. This tutorial does
+not currently cover using short-term plasticity (STP). For more information on STP, please see:
+\ref ch5s1_short_term_plasticity. This tutorial creates 100 input neurons all connected to a single
+ouptut neuron with plastic connections. STDP and homestasis are used. The source code discussed is
+found in doc/source/tutorial/3_plasticity/main_plasticity.cpp.
 
-Inside the main function we have the following. First we begin with the ::CONFIG_STATE state code. Here we
-create a CARLsim object named "Hello World"  that runs on the CPU and outputs data to the console in
-USER mode. Next, we create a Poisson Group named "input" with 1 neuron in the group and create a
-single regular spiking (RS) izhikevich neuron named "output". We set the neuron parameters with a
-call to setNeuronParameters. Additionally, we give the output neuron NMDA and AMPA conductances by
-setting conductances to be true. Finally we connect the input neuron to the output neuron with a
-weight of 0.1 and a delay of 1.
+We first construct a simple SNN that has 100 Poisson input neurons (group ID = gPoiss) all connected
+to a single regular spiking (RS) Izhikevich output neuron (group ID = gExc) as shown below. Notice
+we passed the GPU_MODE argument in our CARLsim constructor call. This means our simulation will take
+place on the GPU. Also notice that the last argument for CARLsim::createSpikeGeneratorGroup is
+EXCITATORY_POISSON and not EXCITATORY_NEURON. The setNeuronParameters call assigns the RS spiking
+neuron parameter values to all neurons in the gExc group.
 
 \code
-	// ---------------- CONFIG STATE -------------------
-	CARLsim sim("Hello World", CPU_MODE, USER);
-	int gIn = sim.createSpikeGeneratorGroup("input", 1, EXCITATORY_NEURON);
-	int gOut = sim.createGroup("output", 1, EXCITATORY_NEURON);
-	sim.setNeuronParameters(gOut, 0.02f, 0.2f, -65.0f, 8.0f);
-	sim.setConductances(true);
-	// connect our groups
-	sim.connect(gIn, gOut, "one-to-one", RangeWeight(0.05f), 1.0f);
+CARLsim sim("plasticity simulation", GPU_MODE, USER);
+int nPois = 100; // 100 input neurons
+int nExc  = 1;   // 1 output neuron
+
+// set up our neuron groups
+int gPois = sim.createSpikeGeneratorGroup("input", nPois, EXCITATORY_POISSON);
+int gExc  = sim.createGroup("output", nExc, EXCITATORY_NEURON);
+sim.setNeuronParameters(gExc, 0.02f, 0.2f, -65.0f, 8.0f);
 \endcode
 
-A call to CARLsim::setupNetwork takes the simulation from ::CONFIG_STATE to ::SETUP_STATE.
-This must be done before CARLsim::runNetwork can be called.
-In the setup state we create a SpikeMonitor object to monitor spike data from the output neuron.
+We next connect neurons from the gPoiss group to neurons (just one for now) in the gExc group with
+full connectivity with a minimum weight value of 0.0, an initial value of 1.0f/100, and a maximum
+value of 20.0f/100. The connection probability is given as 1.0f, a delay of 1 is used for all
+synapses, and no receptive fields are specified (-1). Finally, the keyword 'SYN_PLASTIC' is used
+instead of 'SYN_FIXED' to enable plasticity for this connection. This is required. Also, set this
+simulation to use conductances with default parameter values with the CARLsim::setConductances call.
 
 \code
-	// ---------------- SETUP STATE -------------------
-	sim.setupNetwork();
-	sim.setSpikeMonitor(gOut,"DEFAULT");
+// connect our groups with SYN_PLASTIC as the final argument.
+sim.connect(gPois, gExc,  "full", 0.01f, 0.03f, 1.0, 1, 1, SYN_PLASTIC);
+
+// set conductances with default values
+sim.setConductances(true);
 \endcode
 
-Finally, the first call to CARLsim::runNetwork will take the simulation to ::RUN_STATE.
-Set the firing rate rate of the input neuron to 20 Hz and run the network for 10 seconds:
-\code
-	// ---------------- RUN STATE -------------------
-	PoissonRate in(1);
-	in.setRates(20.0f);
-	sim.setSpikeRate(gIn, &in);
-	sim.runNetwork(10,0);
-\endcode
-
-
-\section tut3s2_output 1.2 CARLsim Output
-
-Some of the CARLsim console output is shown below:
+A PoissonRate object is then created to use as an input to a SpikeGenerator group. It is the same
+size of as the SpikeGenerator group and is allocated on the GPU for efficiency.
 
 \code
-*****************      Initializing CPU Simulation      *************************
-SpikeMonitor set for group 1 (output)
-
-********************      Running CPU Simulation      ***************************
-
-(t=10.000s) SpikeMonitor for group output(1) has 22 spikes in 1000ms (22.00 +/- 0.00 Hz)
-
-
-********************      CPU Simulation Summary      ***************************
-Network Parameters: 	numNeurons = 2 (numNExcReg:numNInhReg = 50.0:0.0)
-			numSynapses = 1
-			maxDelay = 1
-Simulation Mode:	COBA
-Random Seed:		1423948616
-Timing:			Model Simulation Time = 10 sec
-			Actual Execution Time = 0.00 sec
-Average Firing Rate:	2+ms delay = 0.000 Hz
-			1ms delay = inf Hz
-			Overall = 11.850 Hz
-Overall Firing Count:	2+ms delay = 0
-			1ms delay = 237
-			Total = 237
-*********************************************************************************
+// create PoissonRate object of size nPoiss.
+PoissonRate poissRate(nPois, true); // allocate on GPU for minimal memory copies
 \endcode
 
-The SpikeMonitor reports it has run for 10 seconds and recorded 22 spikes in most recent 1000 ms for
-an average firing rate of 22 Hz (since there is only one neuron in the group).
+Next, enable excitatory STDP (E-STDP) with a call to CARLsim::setESTDP pass the postsynaptic group
+you want to enable it for and 'true' to enable it. Additionally, the 'STANDARD' keyword indicates
+that there will not be a neuromodulatory influence at this synapse. Finally, the STDP curve type is
+specified by passing the stdpCurve_t data type with the desired STDP parameters.
+alpha_LTP(alpha_LTD) represents the magnitude of the increase(decrease) in synaptic weight while
+tau_LTP(tau_LTD) represents the time constant, which defines the width of the LTP(LTD) curve with
+respect to time.
 
-Additionally, spike files and log files have been written to the results folder and can be easily
-visualized with the offline analysis toolbox (see \ref ch9_matlab_oat).
+\code
+// set E-STDP parameters.
+float alpha_LTP=0.001f; float tau_LTP=20.0f;
+float alpha_LTD=0.0015f; float tau_LTD=20.0f;
+
+// set E-STDP to be STANDARD (without neuromodulatory influence) with an
+// EXP_CURVE type.
+sim.setESTDP(gExc, true, STANDARD, ExpCurve(alpha_LTP/100, tau_LTP, alpha_LTD/100, tau_LTP));
+\endcode
+
+It should be noted that the function call CARLsim::setSTDP could have replaced the CARLsim::setESTDP
+function call, as it is a wrapper for this function call. However, the CARLsim::setESTDP is
+unambiguous and is therefore the preferred method.
+
+Homeostatic synaptic scaling parameters are next defined. The homeostatic scaling factor
+(homeoScale) defines how large the effect of homeostasis will have the synaptic weight change.
+The synaptic weight change is composed of two terms, the homeostatic term and the STDP term. Each
+term has a scaling factor associated with it. The STDP scaling term has a value of 1. Therefore,
+to give the homeostatic term a larger influence than the STDP term, increase the homeostatic
+scaling factor to a value greater than 1. The homeostatic time constant (avgTimeScale) term defines
+the length of time over which the average firing rate of neurons in this group are calculated during
+the homeostasis calculation. Finally the target firing rate (targetFiringRate) term defines the
+firing rate the neurons in the group will attempt to attain.
+
+\code
+// homeostasis constants
+float homeoScale= 1.0; // homeostatic scaling factor
+float avgTimeScale = 5.0; // homeostatic time constant
+float targetFiringRate = 35.0;
+\endcode
+
+To enable homeostasis, the CARLsim::setHomeostasis function is called with the postsynaptic group as
+the first argument, a boolean flag that enables/disables homeostasis as a the second argument, the
+homeostatic synaptic scaling constant as the third argument, and the homeostatic time constant as
+the fourth argument. The CARLsim::setHomeostasis function can be called with just the first two
+arguments, in which case the default values of homeoScale = 0.1 and avgTimeScale = 10 will be used.
+When homeostasis is enabled, users must also define the target firing rate neurons in the group.
+This is done with a call to CARLsim::setHomeoBaseFiringRate, where the postsynaptic group, value of
+the targetFiringRate, and the standard deviation of the targetFiringRate are specified by the user.
+Please note that the target firing rate is calculated once at the beginning of the simulation and
+remains the same throughout the simulation.
+
+\code
+sim.setHomeostasis(gExc,true,homeoScale,avgTimeScale);
+sim.setHomeoBaseFiringRate(gExc,targetFiringRate,0);
+\endcode
+
+\ref ch5_synaptic_plasticity
+
+
+\section tut3s2_setup 3.2 CARLsim Program SETUP State
+
+During the SETUP state of CARLsim, CARLsim::setupNetwork is called. Two SpikeMonitor pointers are
+called and assigned SpikeMonitor objects created with the CARLsim::setSpikeMonitor function call.
+The first argument to these functions are the group for which the spike data will be recorded while
+the second argument is the filename of the spike data files. The argument of "DEFAULT" denotes that
+the default filename conventions will be used, namely: "results/spk_{group name}.dat".
+
+//consider including ConnectionMonitor here.
 
 */
