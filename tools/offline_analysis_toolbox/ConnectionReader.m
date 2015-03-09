@@ -36,6 +36,9 @@ classdef ConnectionReader < handle
         weights;
         timeStamps;
         nSnapshots;            % number of weight matrix snapshots
+
+        minWt;                 % minimum weight magnitude of the connection
+        maxWt;                 % maximum weight magnitude of the connection
         
         connId;
         grpIdPre;
@@ -113,6 +116,18 @@ classdef ConnectionReader < handle
 			% for the post-synaptic group (1x3 vector)
 			grid3D = obj.gridPost;
 		end
+
+        function maxWt = getMaxWeight(obj)
+            % minWt = getMaxWeight() returns the maximum weight magnitude
+            % of the connection
+            maxWt = obj.maxWt;
+        end
+
+        function minWt = getMinWeight(obj)
+            % minWt = getMinWeight() returns the minimum weight magnitude
+            % of the connection
+            minWt = obj.minWt;
+        end
 		
 		function nNeurPre = getNumNeuronsPre(obj)
             % nNeurPre = CR.getNumNeuronsPre() returns the number of
@@ -182,7 +197,7 @@ classdef ConnectionReader < handle
             obj.fileId = -1;
             obj.fileSignature = 202029319;
             obj.fileVersionMajor = 0;
-            obj.fileVersionMinor = 2;
+            obj.fileVersionMinor = 3;
             obj.fileSizeByteHeader = -1;   % to be set in openFile
             obj.fileSizeByteSnapshot = -1; % to be set in openFile
             
@@ -288,6 +303,15 @@ classdef ConnectionReader < handle
             
             % read isPlastic
             obj.isPlastic = fread(obj.fileId, 1, 'bool');
+
+            % read minWt and maxWt
+            obj.minWt = fread(obj.fileId, 1, 'float32');
+            obj.maxWt = fread(obj.fileId, 1, 'float32');
+            if (obj.minWt<0) || (obj.maxWt<0)
+                obj.throwError(['Could not find valid minWt/maxWt ' ...
+                    'magnitudes (min=' num2str(obj.minWt) ',max=' ...
+                        num2str(obj.maxWt) ')'])
+            end
             
             % store the size of the header section, so that we can skip it
             % when re-reading spikes

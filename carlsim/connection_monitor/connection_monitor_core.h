@@ -165,6 +165,9 @@ private:
 	int nNeurPost_;                 //!< number of neurons in post
 	int nSynapses_;                 //!< number of synapses in connection
 
+	float minWt_;					//!< minimum weight magnitude of the connection
+	float maxWt_;					//!< maximum weight magnitude of the connection
+
 	long int simTimeMs_;            //!< timestamp of current snapshot
 	long int simTimeSinceLastMs_;   //!< time between current and last snapshot
 	long int simTimeMsLastWrite_;   //!< timestamp of last file write

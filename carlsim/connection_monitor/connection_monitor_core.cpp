@@ -24,7 +24,10 @@ ConnectionMonitorCore::ConnectionMonitorCore(CpuSNN* snn,int monitorId,short int
 	needToWriteFileHeader_ = true;
 	needToInit_ = true;
 	connFileSignature_ = 202029319;
-	connFileVersion_ = 0.2f;
+	connFileVersion_ = 0.3f;
+
+	minWt_ = -1.0f;
+	maxWt_ = -1.0f;
 
 	tookSnapshot_ = false;
 
@@ -39,6 +42,10 @@ void ConnectionMonitorCore::init() {
 	nNeurPost_ = snn_->getGroupNumNeurons(grpIdPost_);
 	isPlastic_ = snn_->isConnectionPlastic(connId_);
 	nSynapses_ = snn_->getNumSynapticConnections(connId_);
+
+	grpConnectInfo_t* connInfo = snn_->getConnectInfo(connId_);
+	minWt_ = 0.0f; // for now, no non-zero min weights allowed
+	maxWt_ = fabs(connInfo->maxWt);
 
 	assert(nNeurPre_>0);
 	assert(nNeurPost_>0);
@@ -394,6 +401,13 @@ void ConnectionMonitorCore::writeConnectFileHeader() {
 	// write synapse type (fixed=false, plastic=true)
 	if (!fwrite(&isPlastic_,sizeof(bool),1,connFileId_))
 		KERNEL_ERROR("ConnectionMonitor: writeConnectFileHeader has fwrite error");
+
+	// write minWt and maxWt
+	if (!fwrite(&minWt_,sizeof(float),1,connFileId_))
+		KERNEL_ERROR("ConnectionMonitorCore: writeConnectFileHeader has fwrite error");
+	if (!fwrite(&maxWt_,sizeof(float),1,connFileId_))
+		KERNEL_ERROR("ConnectionMonitorCore: writeConnectFileHeader has fwrite error");
+
 
 	// \TODO: write delays
 
