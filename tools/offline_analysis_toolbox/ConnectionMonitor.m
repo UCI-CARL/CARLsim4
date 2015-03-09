@@ -47,7 +47,6 @@ classdef ConnectionMonitor < handle
 		plotHistBins;       % edges for hist
 		plotHistNumBins;    % number of histogram bins
 		
-		plotMaxWt;          % uper bound for weight plotting
 		plotAbortPlotting;  % flag whether to abort plotting (on-click)
 		plotBgColor;        % bg color of plot (for plotting)
 		plotDispFrameNr;    % flag whether to display frame number
@@ -859,7 +858,6 @@ classdef ConnectionMonitor < handle
 			
 			% read all the timestamps and weights
 			[obj.timeStamps,obj.weights] = obj.CR.readWeights();
-			obj.plotMaxWt = max(obj.weights(:));
 
 			% re-format the data
 			if strcmpi(obj.plotType,'heatmap') ...
@@ -896,7 +894,6 @@ classdef ConnectionMonitor < handle
 			obj.timeStamps = [];
 			
 			obj.plotType = 'default';
-			obj.plotMaxWt = -1;
 			obj.setConnectFileAttributes()
 			obj.setPlottingAttributes()
 			obj.setRecordingAttributes()
@@ -959,12 +956,13 @@ classdef ConnectionMonitor < handle
 			% load data and reshape for plotting if necessary
 			obj.loadDataForPlotting(plotType);
 			
+			subTitle = '';
 			if strcmpi(obj.plotType,'heatmap')
-				imagesc(obj.weights(:,:,frameNr), [0 max(obj.plotMaxWt,1e-10)])
+				imagesc(obj.weights(:,:,frameNr), [0 max(obj.CR.getMaxWeight(),1e-10)])
 				axis image square
 				xlabel('nrPre')
 				ylabel('nrPost')
-				title(['wt = [0, ' num2str(obj.plotMaxWt) ']'])
+				subTitle = ['wt = [0 , ' num2str(obj.CR.getMaxWeight()) ']'];
 				
 				% if enabled, display the frame number in lower left corner
 				if dispFrameNr
@@ -975,6 +973,7 @@ classdef ConnectionMonitor < handle
 				bar(obj.plotHistBins, obj.plotHistData(frameNr,:))
 				xlabel('weight value (magnitude)')
 				ylabel('number of synapses')
+				subTitle = ['wt = [0 , ' num2str(obj.CR.getMaxWeight()) ']'];
 				% if enabled, display the frame number in lower left corner
 				if dispFrameNr
 					text(0,0.1*max(obj.plotHistData(frameNr,:)),num2str(frameNr), ...
@@ -1016,7 +1015,7 @@ classdef ConnectionMonitor < handle
 						
 						% plot RF
 						subplot(nRows,nCols,idx)
-						imagesc(wts(:,:,zPostIdx)', [0 max(obj.plotMaxWt,1e-10)])
+						imagesc(wts(:,:,zPostIdx)', [0 max(obj.CR.getMaxWeight(),1e-10)])
 						axis equal
  						axis([1 grid3DPost(1) 1 grid3DPost(2)])
 						if grid3DPost(1)>2
@@ -1035,9 +1034,8 @@ classdef ConnectionMonitor < handle
 						end
 						xlabel('x')
 						ylabel('y')
-						title({[obj.grpPreName '->' obj.grpPostName ', t=' ...
-							num2str(obj.timeStamps(frameNr)) 'ms'],['wt = [0 , ' ...
-							num2str(obj.plotMaxWt) '], z=' num2str(zPre)]})
+						subTitle = ['wt = [0 , ' num2str(obj.CR.getMaxWeight()) ...
+							'], z=' num2str(zPre)];
 						
 						% if enabled, display the frame number in lower left corner
 						if dispFrameNr
@@ -1082,7 +1080,7 @@ classdef ConnectionMonitor < handle
 						
 						% plot RF
 						subplot(nRows,nCols,idx)
-						imagesc(wts(:,:,zPreIdx)', [0 max(obj.plotMaxWt,1e-10)])
+						imagesc(wts(:,:,zPreIdx)', [0 max(obj.CR.getMaxWeight(),1e-10)])
 						axis equal
 						if grid3DPre(1)>1 && grid3DPre(2)>1
 	 						axis([1 grid3DPre(1) 1 grid3DPre(2)])
@@ -1103,15 +1101,16 @@ classdef ConnectionMonitor < handle
 						end
 						xlabel('x')
 						ylabel('y')
-						title({[obj.grpPreName '->' obj.grpPostName ', t=' ...
-							num2str(obj.timeStamps(frameNr)) 'ms'],['wt = [0 , ' ...
-							num2str(obj.plotMaxWt) '], z=' num2str(zPost)]})
+						subTitle = ['wt = [0 , ' num2str(obj.CR.getMaxWeight()) ...
+							'], z=' num2str(zPost)];
 					end
 				end
 			else
 				obj.throwError(['Unrecognized plot type "' obj.plotType '".'])
 				return
 			end
+			title({[obj.grpPreName '->' obj.grpPostName ', t=' ...
+							num2str(obj.timeStamps(frameNr)) 'ms'],subTitle})
 		end
 		
 		function throwError(obj, errorMsg, errorMode)

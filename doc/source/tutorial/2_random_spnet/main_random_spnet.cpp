@@ -69,9 +69,9 @@ int main(int argc, const char* argv[]) {
 	sim.connect(gExc, gExc, "random", RangeWeight(0.0f, wtExc, wtMax), pConn, RangeDelay(1,20), RadiusRF(-1), SYN_PLASTIC);
 	sim.connect(gInh, gExc, "random", RangeWeight(0.0f, wtInh, wtMax), pConn, RangeDelay(1,20), RadiusRF(-1), SYN_PLASTIC);
 
-	// gInh receives input from nSynPerNeur neurons from gExc, all delays are 1ms
+	// gInh receives input from nSynPerNeur neurons from gExc, all delays are 1ms, no plasticity
 	// every neuron in gInh should receive ~nSynPerNeur synapses
-	sim.connect(gExc, gInh, "random", RangeWeight(0.0f, wtExc, wtMax), pConn*nNeur/nNeurExc, RangeDelay(1), RadiusRF(-1), SYN_PLASTIC);
+	sim.connect(gExc, gInh, "random", RangeWeight(wtExc), pConn*nNeur/nNeurExc);
 
 	// enable STDP on all incoming synapses to gExc
 	float alphaPlus = 0.1f, tauPlus = 20.0f, alphaMinus = 0.1f, tauMinus = 20.0f;
@@ -89,13 +89,12 @@ int main(int argc, const char* argv[]) {
 	SpikeMonitor* SMinh = sim.setSpikeMonitor(gInh, "DEFAULT");
 	sim.setConnectionMonitor(gExc, gExc, "DEFAULT");
 	sim.setConnectionMonitor(gInh, gExc, "DEFAULT");
-	sim.setConnectionMonitor(gExc, gInh, "DEFAULT");
 
 
 	// ---------------- RUN STATE -------------------
 	SMexc->startRecording();
 	SMinh->startRecording();
-	for (int t=0; t<20000; t++) {
+	for (int t=0; t<10000; t++) {
 		// random thalamic input to a single neuron from either gExc or gInh
 		std::vector<float> thalamCurrExc(nNeurExc, 0.0f);
 		std::vector<float> thalamCurrInh(nNeurInh, 0.0f);
