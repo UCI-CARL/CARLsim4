@@ -10,6 +10,12 @@ Release 3.0
 ---------------------
 Build 3.0.1
 ---------------------
+
+2015-03-09     Michael Beyler <mbeyeler@uci.edu>
+  + Added Tutorial 2 on 80-20 random networks.
+  * Fixed histogram plotting and plot titles in ConnectionMonitor.m (OAT).
+  + Added minWt/maxWt to connect file (file version 0.3).
+
 2015-03-02     Kristofor D. Carlson <kdcarlso@uci.edu>
   * Updated Chapter 3 of User Guide.
 	* Fixed LaTeX/Doxygen configuration problems.

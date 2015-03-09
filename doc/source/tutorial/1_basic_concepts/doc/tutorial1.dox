@@ -18,6 +18,8 @@ This tutorial assumes you know:
 - The very basics of C/C++
 - The Izhikevich neuron model
 
+The source code of this tutorial can be found in <tt>%%%CARLSIM_ROOT_DIR%%/doc/source/tutorial/1_basic_concepts</tt>.
+
 
 \section tut1s1_simple_prog 1.1 A Simple CARLsim program
 
@@ -76,18 +78,28 @@ Set the firing rate rate of the input neuron to 20 Hz and run the network for 10
 
 \section tut1s2_output 1.2 CARLsim Output
 
+After navigating to <tt>%%CARLSIM_ROOT_DIR%%/doc/source/tutorial/1_basic_concepts</tt>, the network can be
+compiled and run with the following commands (on Linux):
+\code
+$ make
+$ ./basic_concepts
+\endcode
+On Windows, the <tt>.vcxproj</tt> file is already added to the <tt>CARLsim.sln</tt> solution file.
+Thus the project can be built simply by opening the solution file in Visual Studio, by right-clicking the
+project directory and choosing "Build project".
+
 Some of the CARLsim console output is shown below:
 
 \code
 *****************      Initializing CPU Simulation      *************************
 SpikeMonitor set for group 1 (output)
 
-********************      Running CPU Simulation      ***************************
+* *******************      Running CPU Simulation      ***************************
 
 (t=10.000s) SpikeMonitor for group output(1) has 22 spikes in 1000ms (22.00 +/- 0.00 Hz)
 
 
-********************      CPU Simulation Summary      ***************************
+* *******************      CPU Simulation Summary      ***************************
 Network Parameters: 	numNeurons = 2 (numNExcReg:numNInhReg = 50.0:0.0)
 			numSynapses = 1
 			maxDelay = 1
@@ -101,7 +113,7 @@ Average Firing Rate:	2+ms delay = 0.000 Hz
 Overall Firing Count:	2+ms delay = 0
 			1ms delay = 237
 			Total = 237
-*********************************************************************************
+* ********************************************************************************
 \endcode
 
 The SpikeMonitor reports it has run for 10 seconds and recorded 22 spikes in most recent 1000 ms for

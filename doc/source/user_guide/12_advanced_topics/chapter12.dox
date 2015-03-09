@@ -63,7 +63,7 @@ The SimpleWeightTuner utility is a class that allows tuning of weight values of 
 collection of synapses), so that a specific neuron group fires at a predefined target firing rate---without having
 to recompile the CARLsim network.
 
-A complete example is explained in \ref tut2_simple_weight_tuner.
+A complete example is explained in \ref tut3_simple_weight_tuner.
 
 Consider a CARLsim network with an input group (<tt>gIn</tt>) connected to an output group (<tt>gOut</tt>).
 Suppose the goal is to find weight values that lead to some desired output activity (say, 27.4Hz), in response
@@ -101,7 +101,7 @@ one of the termination criteria is reached.
 \note The connection to tune and the neuron group for which a target firing rate are found do not have to be associated
 with each other.
 \see \ref ch10_ecj
-\see \ref tut2_simple_weight_tuner
+\see \ref tut3_simple_weight_tuner
 \since v3.0
 
 

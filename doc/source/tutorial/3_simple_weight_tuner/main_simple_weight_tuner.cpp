@@ -45,7 +45,7 @@
 	#define _CRT_SECURE_NO_WARNINGS
 #endif
 
-int main() {
+int main(int argc, const char* argv[]) {
 	// ---------------- CONFIG STATE -------------------
 	CARLsim *sim = new CARLsim("SimpleWeightTuner", CPU_MODE, USER, 0, 42);
 
