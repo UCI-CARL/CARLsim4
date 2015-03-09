@@ -120,4 +120,6 @@ int main(int argc, const char* argv[]) {
 	// print firing stats (but not the exact spike times)
 	SMexc->print(false);
 	SMinh->print(false);
+
+	return 0;
 }

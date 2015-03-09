@@ -935,6 +935,7 @@ void CARLsim::setSpikeRate(int grpId, PoissonRate* spikeRate, int refPeriod) {
 	std::string funcName = "setSpikeRate()";
 	UserErrors::assertTrue(carlsimState_==SETUP_STATE || carlsimState_==RUN_STATE,
 					UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "SETUP or EXECUTION.");
+	UserErrors::assertTrue(isPoissonGroup(grpId), UserErrors::WRONG_NEURON_TYPE, funcName, funcName);
 	UserErrors::assertTrue(spikeRate->getNumNeurons()==getGroupNumNeurons(grpId), UserErrors::MUST_BE_IDENTICAL,
 		funcName, "PoissonRate length and the number of neurons in the group");
 	UserErrors::assertTrue(!spikeRate->isOnGPU() || spikeRate->isOnGPU()&&getSimMode()==GPU_MODE,

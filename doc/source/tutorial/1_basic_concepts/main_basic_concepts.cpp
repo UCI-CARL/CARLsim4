@@ -35,35 +35,46 @@
  *					(KDC) Kristofor Carlson <kdcarlso@uci.edu>
  *
  * CARLsim available from http://socsci.uci.edu/~jkrichma/CARL/CARLsim/
- * Ver 12/3/2014
+ * Ver 3/9/2015
  */
-
 #include <carlsim.h>
-#include <stdio.h>
 
-#if (WIN32 || WIN64)
-	#define _CRT_SECURE_NO_WARNINGS
-#endif
-
-int main() {
+int main(int argc, const char* argv[]) {
 	// ---------------- CONFIG STATE -------------------
-	CARLsim sim("Hello World", CPU_MODE, USER);
-	int gIn = sim.createSpikeGeneratorGroup("input", 1, EXCITATORY_NEURON);
-	int gOut = sim.createGroup("output", 1, EXCITATORY_NEURON);
-	sim.setNeuronParameters(gOut, 0.02f, 0.2f, -65.0f, 8.0f);
+	CARLsim sim("basics", CPU_MODE, USER);
+
+	int nNeur = 1; 				// number of neurons in each group
+	PoissonRate in(nNeur);		// PoissonRate containter for SpikeGenerator group
+
+	// create groups
+	int gIn = sim.createSpikeGeneratorGroup("input", nNeur, EXCITATORY_NEURON);
+	int gOut = sim.createGroup("output", nNeur, EXCITATORY_NEURON);
+	sim.setNeuronParameters(gOut, 0.02f, 0.2f, -65.0f, 8.0f); // RS
+
+	// connect input to output group
+	sim.connect(gIn, gOut, "one-to-one", RangeWeight(0.1f), 1.0f);
+
+	// enable COBA mode
 	sim.setConductances(true);
-	// connect our groups
-	sim.connect(gIn, gOut, "one-to-one", RangeWeight(0.05f), 1.0f);
 
 	// ---------------- SETUP STATE -------------------
 	sim.setupNetwork();
-	sim.setSpikeMonitor(gOut,"DEFAULT");
+	sim.setSpikeMonitor(gOut, "DEFAULT");
+
+	// associate PoissonRate container with gIn
+	sim.setSpikeRate(gIn, &in);
 
 	// ---------------- RUN STATE -------------------
-	PoissonRate in(1);
-	in.setRates(20.0f);
-	sim.setSpikeRate(gIn, &in);
-	sim.runNetwork(10,0);
+	// run the network repeatedly for 1 second (1*1000 + 0 ms)
+	// with different Poisson input
+	for (int i=1; i<=10; i++) {
+		// update Poisson mean firing rate
+		float inputRateHz = i*10.0f;
+		in.setRates(inputRateHz);
+
+		// run for 1 second
+		sim.runNetwork(1,0);
+	}
 
 	return 0;
 }
