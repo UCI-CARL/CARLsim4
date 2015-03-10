@@ -58,12 +58,37 @@
 #include <group_monitor.h>
 #include <linear_algebra.h>
 
+// Cross-platform definition (Linux, Windows)
 #if (WIN32 || WIN64)
 #include <Windows.h>
 
 #include <algorithm>
 #define fmin (std::min)
 #define fmax (std::max)
+
+#include <float.h>
+#include <time.h>
+
+#ifndef isnan
+#define isnan(x) _isnan(x)
+#endif
+
+#ifndef isinf
+#define isinf(x) (!_finite(x))
+#endif
+
+#ifndef srand48
+#define srand48(x) srand(x)
+#endif
+
+#ifndef drand48
+#define drand48() (double(rand())/RAND_MAX)
+#endif
+
+#ifdef _MSC_VER
+#define INFINITY (DBL_MAX+DBL_MAX)
+#define NAN (INFINITY-INFINITY)
+#endif
 
 #else
 #include <interactive_spikegen.h>

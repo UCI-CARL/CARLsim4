@@ -184,7 +184,11 @@ void SimpleWeightTuner::initAlgo() {
 	// reset algo
 	wtShouldIncrease_ = true;
 	wtStepSize_ = stepSizeFraction_ * (wtRange_->max - wtRange_->min);
+#if (WIN32 || WIN64)
+	currentError_ = DBL_MAX;
+#else
 	currentError_ = std::numeric_limits<double>::max();
+#endif
 
 	// make sure we're in the right CARLsim state
 	if (sim_->getCARLsimState()!=RUN_STATE)

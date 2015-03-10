@@ -98,7 +98,7 @@ int main(int argc, const char* argv[]) {
 		// random thalamic input to a single neuron from either gExc or gInh
 		std::vector<float> thalamCurrExc(nNeurExc, 0.0f);
 		std::vector<float> thalamCurrInh(nNeurInh, 0.0f);
-		int randNeurId = round( drand48()*(nNeur-1) );
+		int randNeurId = floor(drand48()*(nNeur-1) + 0.5);
 		float thCurr = 20.0f;
 		if (randNeurId < nNeurExc) {
 			// neurId belongs to gExc
