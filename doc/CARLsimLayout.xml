@@ -70,9 +70,11 @@
 				<tab type="user" visible="no" title="1.2 CARLsim Output" url="@ref tut1s2_output"/>
 			</tab>
 			<tab type="usergroup" visible="yes" title="3. Plasticity" url="@ref tut3_plasticity">
-				<tab type="user" visible="no" title="3.1 CARLsim Program CONFIG State" url="@ref tut3s1_config"/>
+				<tab type="user" visible="no" title="3.1 STDP and Homeostatic Synaptic Scaling" url="@ref tut3s1_overview"/>
+				<tab type="user" visible="no" title="3.2 Network Setup" url="@ref tut3s2_network_setup"/>
+				<tab type="user" visible="no" title="3.3 Network Output" url="@ref tut3s3_network_output"/>
+				<tab type="user" visible="no" title="3.4 Network Visualization" url="@ref tut3s4_network_vis"/>
 			</tab>
-
 			<tab type="usergroup" visible="yes" title="4. Simple Weight Tuner" url="@ref tut4_simple_weight_tuner"/>
 			<tab type="usergroup" visible="yes" title="5. Parameter Tuning Interface (PTI)" url="@ref tut5_pti">
 				<tab type="user" visible="no" title="5.1 Introducton" url="@ref tut5s1_intro"/>

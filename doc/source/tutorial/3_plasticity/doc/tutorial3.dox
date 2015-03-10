@@ -4,6 +4,21 @@
 
 \tableofcontents
 
+\author Kristofor D. Carlson
+\see \ref ch5_synaptic_plasticity
+\see \ref ch5s2_spike_timing_dependent_plasticity
+\see \ref ch5s3_homeostasis
+\see \ref ch6_input
+\see \ref ch7_monitoring
+\see \ref ch9_matlab_oat
+\see <a
+href="http://www.scholarpedia.org/article/Spike-timing_dependent_plasticity"
+target="_blank"><b>Jesper Sjöström and Wulfram Gerstner (2010) Spike-timing dependent plasticity.
+Scholarpedia, 5(2):1362., revision #142314</b></a>
+\see <a href="http://www.socsci.uci.edu/~jkrichma/publications.html" target="_blank"><b>Biologically
+Plausible Models of Homeostasis and STDP: Stability and Learning in Spiking Neural Networks</b></a>
+(Carlson, et al., 2013)
+
 In this tutorial, we introduce how to use some plasticity mechanisms in CARLsim.
 We will cover:
 - Setting up connections with plasticity enabled.
@@ -16,19 +31,53 @@ At the end of the tutorial, you will have:
 - Used SpikeMonitor and ConnectionMonitor to get spike and weight information.
 
 This tutorial assumes you have covered:
-- Tutorials 1 & 2
+- Tutorials \ref tut1_basic_concepts & \ref tut2_random_spnet
 
 
-\section tut3s1_config 3.1 CARLsim Program CONFIG State
+The source code of this tutorial can be found in
+<tt>%%%CARLSIM_ROOT_DIR%%/doc/source/tutorial/3_plasticity</tt>.
+
+\section tut3s1_overview 3.1 Overview
+Spike timing-dependent plasticity (STDP) is a popular learning rule in spiking neural networks
+(SNNs). STDP was first found in neurons in 1997 and is still under intense study (Sjöström
+Gerstner (2010)). SNNs are a unique class of neural network (NN) models that capture the
+temporal dynamics (spike times) of the network. Because of this, they are ideally sutied to
+implement STDP. However, STDP can often undergo 'runaway potentiation' or 'runaaway depotentiation'
+where the synaptic weights increase or decrease without bound, respectively. To avoid this, CARLsim
+users can utilize a model of homeostatic synaptic scaling implemented in CARLsim. The homeostatic
+synaptic scaling model (Carlson et al., 2014) is biologically plausible and works as follows. The
+average firing rate of each neuron is calculated over a time period on the scale of minutes to
+hours. This average firing rate is compared to a user-defined target firing rate and the difference
+between these firing rates is used to scale all synapses on that neuron up or down multiplicatively.
+For instance, if a neuron has an average firing rate of 10 Hz and a target firing rate of 20 Hz, it
+will scale up all postsynaptic weights on that neuron in an effort to attain the target firing rate.
+
+In this tutorial, we will show users how to configure and enable both STDP and homeostasis in a
+simple model. This tutorial does not currently cover using short-term plasticity (STP). For more
+information on STP, please see: \ref ch5s1_short_term_plasticity. The network we construct will have
+100 Poisson input neurons connected to a single regular spiking (RS) output neuron. Every synaptic
+connection between the input neurons and the output neuron will be plastic and have both STDP and
+homeostasis enabled. Each input neuron will be assigned a different input firing rate in ascending
+order from 0.2 Hz to 20 Hz. The synaptic weights will be randomly initialized and the simulation
+will then run for 1000 seconds. The spike and synaptic
+weight data will be visualized using the MATLAB OAT scripts provided in the:
+<tt>%%%CARLSIM_ROOT_DIR%%/doc/source/tutorial/3_plasticity/scripts</tt>. Users will see that
+homeostasis can successfully stabilize STDP by visualizing the weights before and after the 1000
+seconds of simulation.
 
 
-\author Kristofor D. Carlson
+\section tut3s2_network_setup 3.2 Network Setup
 
-The objective of this tutorial is become familiar with using STDP in CARLsim. This tutorial does
-not currently cover using short-term plasticity (STP). For more information on STP, please see:
-\ref ch5s1_short_term_plasticity. This tutorial creates 100 input neurons all connected to a single
-ouptut neuron with plastic connections. STDP and homestasis are used. The source code discussed is
-found in doc/source/tutorial/3_plasticity/main_plasticity.cpp.
+As always, the first step in setting up a CARLsim program is to include the <tt>libCARLsim</tt>
+library. We also include the vector library because we will be using the vector data structure.
+
+\code
+#include <carlsim.h>
+#include <stdio.h>
+#include <vector>
+\endcode
+
+\section tut3s2s1_config 3.2.1 CARLsim Program CONFIG State
 
 We first construct a simple SNN that has 100 Poisson input neurons (group ID = gPoiss) all connected
 to a single regular spiking (RS) Izhikevich output neuron (group ID = gExc) as shown below. Notice
@@ -38,6 +87,9 @@ EXCITATORY_POISSON and not EXCITATORY_NEURON. The setNeuronParameters call assig
 neuron parameter values to all neurons in the gExc group.
 
 \code
+// ---------------- CONFIG STATE -------------------
+// create a network with nPois Poisson neurons and nExc excitatory output
+// neurons
 CARLsim sim("plasticity simulation", GPU_MODE, USER);
 int nPois = 100; // 100 input neurons
 int nExc  = 1;   // 1 output neuron
@@ -77,16 +129,19 @@ that there will not be a neuromodulatory influence at this synapse. Finally, the
 specified by passing the stdpCurve_t data type with the desired STDP parameters.
 alpha_LTP(alpha_LTD) represents the magnitude of the increase(decrease) in synaptic weight while
 tau_LTP(tau_LTD) represents the time constant, which defines the width of the LTP(LTD) curve with
-respect to time.
+respect to time. Notice that alpha_LTD is passed as being negative. The alpha_ltp and alpha_ltd
+parameters are allowed to be positive or negative depending on the user's preference. This allows
+users to build the many different type of EXP_CURVE type STDP curves found in \ref
+\ref ch5s2_spike_timing_dependent_plasticity, Fig. 2(a-d) and 2(f-i). The tau_LTP/tau_LTD
+parameters, however, cannot be negative as they are time constants.
 
 \code
 // set E-STDP parameters.
-float alpha_LTP=0.001f; float tau_LTP=20.0f;
-float alpha_LTD=0.0015f; float tau_LTD=20.0f;
+float alpha_LTP=0.001f/100; float tau_LTP=20.0f;
+float alpha_LTD=0.0015f/100; float tau_LTD=20.0f;
 
-// set E-STDP to be STANDARD (without neuromodulatory influence) with an
-// EXP_CURVE type.
-sim.setESTDP(gExc, true, STANDARD, ExpCurve(alpha_LTP/100, tau_LTP, alpha_LTD/100, tau_LTP));
+// set E-STDP to be STANDARD (without neuromodulatory influence) with an EXP_CURVE type.
+sim.setESTDP(gExc, true, STANDARD, ExpCurve(alpha_LTP, tau_LTP, -alpha_LTD, tau_LTP));
 \endcode
 
 It should be noted that the function call CARLsim::setSTDP could have replaced the CARLsim::setESTDP
@@ -129,7 +184,7 @@ sim.setHomeoBaseFiringRate(gExc,targetFiringRate,0);
 \ref ch5_synaptic_plasticity
 
 
-\section tut3s2_setup 3.2 CARLsim Program SETUP State
+\section tut3s2s2_setup 3.2.2 CARLsim Program SETUP State
 
 During the SETUP state of CARLsim, CARLsim::setupNetwork is called. Two SpikeMonitor pointers are
 called and assigned SpikeMonitor objects created with the CARLsim::setSpikeMonitor function call.
@@ -137,6 +192,97 @@ The first argument to these functions are the group for which the spike data wil
 the second argument is the filename of the spike data files. The argument of "DEFAULT" denotes that
 the default filename conventions will be used, namely: "results/spk_{group name}.dat".
 
-//consider including ConnectionMonitor here.
+
+\code
+// ---------------- SETUP STATE -------------------
+sim.setupNetwork();
+SpikeMonitor* SpikeMonInput  = sim.setSpikeMonitor(gPois,"DEFAULT");
+SpikeMonitor* SpikeMonOutput = sim.setSpikeMonitor(gExc,"DEFAULT");
+\endcode
+
+
+\section tut3s2s3_run 3.2.3 CARLsim Program RUN State
+
+During the RUN state, we set the firing rates of each of the nPois (100) neurons. We assing the
+first input neuron an average firing rate of 0.2 Hz, the second input neuron an average firing rate
+of 0.4 Hz, and so on. This gives our 100th input a neuron an average firing rate of 20 Hz. We can
+now observe the weight change at each input/output synapse as a function of the average firing rate
+of the input neurons each having Poisson firing statistics.
+
+We first generate a vector that contains the average firing rate for each Poisson neuron with the
+following code:
+
+\code
+// ---------------- RUN STATE -------------------
+// set rate of each neuron
+std::vector <float> rates;
+for (int i=0; i<nPois; i++)
+	rates.push_back((i+1)*(20.0/100));
+\endcode
+
+The vector is then passed to the PoissRate object with the following call:
+
+\code
+poissRate.setRates(rates);
+\endcode
+
+Finally,
+
+\section tut3s3_network_output 3.3 Network Output
+
+\section tut3s4_network_vis 3.4 Network Visualization
+
+In order to plot network activity and observe weight changes in the network, we will make use of the
+MATLAB Offline Analysis Toolbox (OAT) (see \ref ch9_matlab_oat).
+
+The Tutorial subdirectory <tt>"scripts/"</tt> provides a MATLAB script <tt>"scripts/demoOAT.m"</tt> to
+demonstrate the usage of the OAT.
+The script looks like this:
+\code
+% OAT demo
+
+% first, init OAT by adding path
+initOAT
+
+% second, open a NetworkMonitor on the simulation file
+% and plot the activity of the network
+NM = NetworkMonitor('../results/sim_spnet.dat')
+NM.plot
+
+% third, observe weight changes in the network
+CM0 = ConnectionMonitor('exc','exc','../results')
+CM0.plot('histogram')
+
+CM1 = ConnectionMonitor('inh','exc','../results')
+CM1.plot('histogram')
+\endcode
+
+After adding the location of the OAT source code to the MATLAB path, a NetworkMonitor is opened on the
+simulation file <tt>"../results/sim_spnet.dat"</tt>, which was automatically created during the CARLsim
+simulation (note that the string "spnet" corresponds to the name given to the network in the CARLsim constructor).
+
+Calling the <tt>plot</tt> method will then visualize network activity using default settings and a plot type
+that depends on the spatial structure of the neuron groups.
+Since the network does not have any particular spatial structure, the default plot type is a raster plot,
+shown in frames of 1000ms, as seen in Fig. 1 below.
+
+\code
+\image html 2_nm_raster.jpg "Fig. 1. NetworkMonitor output for groups 'exc' and 'inh' (raster plot)"
+\endcode
+
+Fig. 2 shows the temporal evolution of weights from the recurrent excitatory connection on <tt>gExc</tt>.
+At the beginning of the experiment (leftmost panel), all weights are initialized to <tt>6.0f</tt>.
+Over time, these values start to diverge, but stay confined in the range <tt>[0.0f, 10.0f]</tt>.
+
+\code
+\image html 2_cm_hist.jpg "Fig. 2. ConnectionMonitor output for the connection 'exc'=>'exc' (histogram)"
+\endcode
+
+Similar behavior can be observed on the connection from <tt>gInh</tt> to <tt>gExc</tt>.
+
+It would also be possible to open a ConnectionMonitor on the fixed connection from <tt>gExc</tt> to <tt>gInh</tt>,
+but the expected output would be similar to the leftmost panel of Fig. 2, showing all weights initialized to
+<tt>5.0f</tt>, with no weight changes to report over time.
+
 
 */

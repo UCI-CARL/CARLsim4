@@ -46,7 +46,7 @@ int main() {
 	sim.setNeuronParameters(gExc, 0.02f, 0.2f, -65.0f, 8.0f);
 
 	// connect our groups with SYN_PLASTIC as the final argument.
-	sim.connect(gPois,gExc,"full",RangeWeight(0.0,1.0f/100, 20.0f/100), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_PLASTIC);
+	sim.connect(gPois,gExc,"full",RangeWeight(0.0,0.01, 0.03), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_PLASTIC);
 
 	// set conductances with default values
 	sim.setConductances(true);
@@ -55,12 +55,11 @@ int main() {
 	PoissonRate poissRate(nPois, true); // allocate on GPU for minimal memory copies
 
 	// set E-STDP parameters.
-	float alpha_LTP=0.001f; float tau_LTP=20.0f;
-	float alpha_LTD=0.0015f; float tau_LTD=20.0f;
+	float alpha_LTP=0.001f/5; float tau_LTP=20.0f;
+	float alpha_LTD=0.00033f/5; float tau_LTD=60.0f;
 
-	// set E-STDP to be STANDARD (without neuromodulatory influence) with an
-	// EXP_CURVE type.
-	sim.setESTDP(gExc, true, STANDARD, ExpCurve(alpha_LTP/100, tau_LTP, alpha_LTD/100, tau_LTP));
+	// set E-STDP to be STANDARD (without neuromodulatory influence) with an EXP_CURVE type.
+	sim.setESTDP(gExc, true, STANDARD, ExpCurve(alpha_LTP, tau_LTP, -alpha_LTD, tau_LTP));
 
 	// homeostasis constants
 	float homeoScale= 1.0; // homeostatic scaling factor
@@ -74,6 +73,9 @@ int main() {
 	sim.setupNetwork();
 	SpikeMonitor* SpikeMonInput  = sim.setSpikeMonitor(gPois,"DEFAULT");
 	SpikeMonitor* SpikeMonOutput = sim.setSpikeMonitor(gExc,"DEFAULT");
+	ConnectionMonitor* CM = sim.setConnectionMonitor(gPois,gExc,"DEFAULT");
+	// disable automatic output of synaptic weights from connection monitor
+	CM->setUpdateTimeIntervalSec(-1);
 
 	// ---------------- RUN STATE -------------------
 	// set rate of each neuron
@@ -85,12 +87,16 @@ int main() {
 	sim.setSpikeRate(gPois, &poissRate);
 
 	// run the established network for 1 sec
-	int runTimeSec = 10; // seconds
+	int runTimeSec = 1000; // seconds
 	int runTimeMs  = 0; // milliseconds
 	SpikeMonInput->startRecording();
+	// take a snapshot of the weights before we run the simulation
+	CM->takeSnapshot();
 	sim.runNetwork(runTimeSec, runTimeMs);
 	SpikeMonInput->stopRecording();
 	std::vector<float> inputFRs = SpikeMonInput->getAllFiringRates();
+	// take a snapshot of the weights after the simulation runs to completion
+	CM->takeSnapshot();
 
 	//for(int i=0;i<inputFRs.size();i++)
 		//std::cout << inputFRs[i] << std::endl;
