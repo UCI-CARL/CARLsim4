@@ -43,6 +43,8 @@
 
 #if (WIN32 || WIN64)
 	#define _CRT_SECURE_NO_WARNINGS
+	#include <periodic_spikegen.h>
+	#include <simple_weight_tuner.h>
 #endif
 
 int main(int argc, const char* argv[]) {
