@@ -98,8 +98,5 @@ int main() {
 	// take a snapshot of the weights after the simulation runs to completion
 	CM->takeSnapshot();
 
-	//for(int i=0;i<inputFRs.size();i++)
-		//std::cout << inputFRs[i] << std::endl;
-
   return 0;
 }

@@ -190,7 +190,14 @@ During the SETUP state of CARLsim, CARLsim::setupNetwork is called. Two SpikeMon
 called and assigned SpikeMonitor objects created with the CARLsim::setSpikeMonitor function call.
 The first argument to these functions are the group for which the spike data will be recorded while
 the second argument is the filename of the spike data files. The argument of "DEFAULT" denotes that
-the default filename conventions will be used, namely: "results/spk_{group name}.dat".
+the default filename conventions will be used, namely: "results/spk_{group name}.dat". We also
+create a ConnectionMonitor to record the synaptic weights for the connection between the input group
+and the output group. The CARLsim::setConnectionMonitor function is used, with the first argument
+being the presynaptic group, the second argument being the postsynaptic group, and the third
+argument the name of the filename. We use 'DEFAULT' which assigns the string:
+"results/conn_{pre-group}_{post-group}.dat" to the filename. Finally, we disable the automatic
+output of ConnectionMonitor by using the function call ConnectionMonitor::setUpdateTimeIntervalSec
+with an argument of -1. We will output the weight values manually, later in the simulation.
 
 
 \code
@@ -198,6 +205,9 @@ the default filename conventions will be used, namely: "results/spk_{group name}
 sim.setupNetwork();
 SpikeMonitor* SpikeMonInput  = sim.setSpikeMonitor(gPois,"DEFAULT");
 SpikeMonitor* SpikeMonOutput = sim.setSpikeMonitor(gExc,"DEFAULT");
+ConnectionMonitor* CM = sim.setConnectionMonitor(gPois,gExc,"DEFAULT");
+// disable automatic output of synaptic weights from connection monitor
+CM->setUpdateTimeIntervalSec(-1);
 \endcode
 
 
