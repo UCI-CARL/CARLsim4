@@ -180,7 +180,7 @@ private:
 	bool needToInit_;				//!< whether we have to initialize first
 	bool needToWriteFileHeader_;    //!< whether we have to write header section of conn file
 
-	bool tookSnapshot_;
+	bool tookSnapshotManually_;		//!< whether a manual snapshot was taken (needs to be dumped to file)
 
 	FILE* connFileId_;              //!< file pointer to the conn file or NULL
 	int connFileSignature_;         //!< int signature of conn file

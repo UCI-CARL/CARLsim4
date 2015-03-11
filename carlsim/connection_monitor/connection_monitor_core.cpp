@@ -29,7 +29,7 @@ ConnectionMonitorCore::ConnectionMonitorCore(CpuSNN* snn,int monitorId,short int
 	minWt_ = -1.0f;
 	maxWt_ = -1.0f;
 
-	tookSnapshot_ = false;
+	tookSnapshotManually_ = false;
 
 	connFileTimeIntervalSec_ = 1;
 }
@@ -69,6 +69,7 @@ void ConnectionMonitorCore::init() {
 
 	// then load current weigths from CpuSNN into weight matrix
 	takeSnapshot();
+	tookSnapshotManually_ = false;
 
 	needToInit_ = false;
 }
@@ -90,6 +91,7 @@ ConnectionMonitorCore::~ConnectionMonitorCore() {
 // calculate weight changes since last update (element-wise )
 std::vector< std::vector<float> > ConnectionMonitorCore::calcWeightChanges() {
 	takeSnapshot();
+	tookSnapshotManually_ = false;
 	std::vector< std::vector<float> > wtChange(nNeurPre_, vector<float>(nNeurPost_));
 
 	// take the naive approach for now
@@ -192,7 +194,7 @@ bool ConnectionMonitorCore::needToWriteSnapshot() {
 	if (simTimeMs_==simTimeMsLastWrite_)
 		return false;
 
-	if (tookSnapshot_) {
+	if (tookSnapshotManually_) {
 		// we just took a manual snapshot, so we need to store it in binary
 		return true;
 	} else {
@@ -204,7 +206,7 @@ bool ConnectionMonitorCore::needToWriteSnapshot() {
 }
 
 void ConnectionMonitorCore::print() {
-	takeSnapshot();
+	takeSnapshot();	tookSnapshotManually_ = false;
 
 	KERNEL_INFO("(t=%.3fs) ConnectionMonitor ID=%d: %d(%s) => %d(%s)", (double)simTimeMs_/1000.0f, connId_,
 		grpIdPre_, snn_->getGroupName(grpIdPre_).c_str(),
@@ -237,7 +239,7 @@ void ConnectionMonitorCore::printSparse(int neurPostId, int maxConn, int connPer
 	assert(maxConn>0);
 	assert(connPerLine>0);
 
-	takeSnapshot();
+	takeSnapshot();	tookSnapshotManually_ = false;
 	KERNEL_INFO("(t=%.3fs) ConnectionMonitor ID=%d %d(%s) => %d(%s): [preId,postId] wt (+/-wtChange in %ldms) "
 		"show first %d", (double)simTimeMs_/1000.0f, connId_,
 		grpIdPre_, snn_->getGroupName(grpIdPre_).c_str(), grpIdPost_, snn_->getGroupName(grpIdPost_).c_str(),
@@ -310,7 +312,7 @@ void ConnectionMonitorCore::setUpdateTimeIntervalSec(int intervalSec) {
 }
 
 std::vector< std::vector<float> > ConnectionMonitorCore::takeSnapshot() {
-	tookSnapshot_ = true;
+	tookSnapshotManually_ = true;
 	snn_->updateConnectionMonitor(connId_);
 
 	return wtMat_;
@@ -328,8 +330,6 @@ bool ConnectionMonitorCore::updateTime(unsigned int simTimeMs) {
 		// write weights of last timestep to file
 		// currently time interval can only be 1 or -1
 		writeConnectFileSnapshot();
-
-		tookSnapshot_ = false;
 
 		// copy wtMat_ to lastWtMat_ and set wtMat_=0
 		wtLastMat_.swap(wtMat_);
@@ -418,7 +418,7 @@ void ConnectionMonitorCore::writeConnectFileSnapshot() {
 	if (!needToWriteSnapshot())
 		return;
 
-	tookSnapshot_ = false;
+	tookSnapshotManually_ = false;
 	simTimeMsLastWrite_ = simTimeMs_;
 
 	// write time stamp
