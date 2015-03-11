@@ -12,14 +12,17 @@ In this tutorial we will implement an 80-20 random spiking neural network with s
 delay that are subject to spike-timing dependent plasticity (STDP).
 We follow the MATLAB implementation <tt>spnet.m</tt>, which can be obtained from
 <a href="http://izhikevich.org/publications/spnet.htm" target="_blank">Izhikevich's Website</a>.
+In addition, we will use various functions from the MATLAB Offline Analysis Toolbox (OAT) to visualize network activity
+and weight changes.
+
 
 At the end of the tutorial, you will know how to:
 - set up a 80-20 network of Izhikevich spiking neurons
 - inject current into the network
 - set up E-STDP and I-STDP for specific groups
 - run a network in CUBA mode
-- use a SpikeMonitor to visualize network activity
-- use a ConnectionMonitor to visualize weight changes
+- use a NetworkMonitor to visualize network activity (OAT)
+- use a ConnectionMonitor to visualize weight changes (OAT)
 
 This tutorial assumes you know how to:
 - run a simple CARLsim program (see \ref tut1_basic_concepts)

@@ -1123,7 +1123,7 @@ classdef GroupMonitor < handle
                 times = obj.spkData(1,:)>=startTime & obj.spkData(1,:)<stopTime;
                 plot(obj.spkData(1,times),obj.spkData(2,times),'.k')
                 axis image square
-                axis([startTime stopTime 1 prod(obj.grid3D)])
+                axis([startTime stopTime -1 prod(obj.grid3D)])
                 title(['Group ' obj.name])
                 xlabel('Time (ms)')
                 ylabel('Neuron ID')
@@ -1132,7 +1132,7 @@ classdef GroupMonitor < handle
                 % if enabled, display the frame number in lower left corner
                 if dispFrameNr
                     dX = startTime+(stopTime-startTime)*0.05;
-                    dY = prod(obj.grid3D)*0.05;
+                    dY = prod(obj.grid3D)*0.05-1;
                     text(dX, dY, num2str(frameNr), ...
                         'FontSize',10, 'BackgroundColor','white')
                 end

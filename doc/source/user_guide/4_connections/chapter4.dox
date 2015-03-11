@@ -19,7 +19,7 @@ has changed (see \ref ch4s4_migrating_connect).
 CARLsim provides a number of pre-defined connection types: All-to-all, random, one-to-one, and Gaussian connectivity.
 All-to-all (also known as "full") connectivity connects all neurons in the pre-synaptic group to all neurons in the
 post-synaptic group (with or without self-connections).
-One-to-one connectivity connects neuron i in the pre-synaptic group to neuron j in the post-synaptic group (both groups
+One-to-one connectivity connects neuron i in the pre-synaptic group to neuron i in the post-synaptic group (both groups
 should have the same number of neurons).
 Random connectivity connects a group of pre-synaptic neurons randomly to a group of post-synaptic neurons with a
 user-specified probability p.
@@ -208,7 +208,7 @@ calls; for example, when setting up a ConnectionMonitor (see \ref ch7s2_connecti
 
 \subsection ch4s1s7_1to1 4.1.7 One-to-One Connectivity
 
-One-to-one connectivity connects neuron i in the pre-synaptic group to neuron j in the post-synaptic group (both groups
+One-to-one connectivity connects neuron i in the pre-synaptic group to neuron i in the post-synaptic group (both groups
 should have the same number of neurons).
 
 The easiest way to achieve one-to-one connectivity with a fixed weight (e.g., 0.25f), connection probability 1 (100%),
