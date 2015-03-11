@@ -14,6 +14,9 @@ Build 3.0.1
 2015-03-11     Michael Beyeler <mbeyeler@uci.edu>
   * Updated and extended Tutorial 1.
   * Fixed frames==-1 issue in OAT monitors.
+  * Fixed no-recording issue with ConnectionMonitor::setUpdateTimeIntervalSec
+    interval -1.
+  * Fixed default target in CARLsim tests Makefile.
 
 2015-03-09     Michael Beyler <mbeyeler@uci.edu>
   + Added Tutorial 2 on 80-20 random networks.

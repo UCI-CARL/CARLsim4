@@ -2,8 +2,6 @@
 # point to the user.mk file
 USER_MK_PATH = ../../
 include $(USER_MK_PATH)user.mk
-# include the make recipe to build the google testing framework
-include gtest.mk
 
 # list of all test cpp files, but without directory and file extension (stem only)
 # e.g., file "test/coba.cpp" should appear here as "coba"
@@ -38,6 +36,8 @@ CARLSIM_LIBS  += -L$(CARLSIM_LIB_DIR)/lib -lCARLsim
 # this must come before including gtest.mk
 default: $(local_prog)
 
+# include the make recipe to build the google testing framework
+include gtest.mk
 gtest_deps := $(GTEST_LIB_DIR)/libgtest.a $(GTEST_LIB_DIR)/libgtest_main.a \
 	$(GTEST_LIB_DIR)/libgtest_custom_main.a
 
