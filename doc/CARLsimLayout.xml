@@ -67,7 +67,8 @@
 		<tab type="usergroup" visible="yes" title="Tutorial">
 			<tab type="usergroup" visible="yes" title="1. Basic Concepts" url="@ref tut1_basic_concepts">
 				<tab type="user" visible="no" title="1.1 A Simple CARLsim Program" url="@ref tut1s1_simple_prog"/>
-				<tab type="user" visible="no" title="1.2 CARLsim Output" url="@ref tut1s2_output"/>
+				<tab type="user" visible="no" title="1.2 Network Output" url="@ref tut1s2_network_output"/>
+				<tab type="user" visible="no" title="1.3 Visualizing Network Activity" url="@ref tut1s3_network_activity"/>
 			</tab>
 			<tab type="usergroup" visible="yes" title="2. 80-20 Random Spiking Network" url="@ref tut2_random_spnet">
 				<tab type="user" visible="no" title="2.1 80-20 Networks" url="@ref tut2s1_8020_networks"/>
