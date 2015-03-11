@@ -11,6 +11,9 @@ Release 3.0
 Build 3.0.1
 ---------------------
 
+2015-03-11     Michael Beyeler <mbeyeler@uci.edu>
+  * Updated and extended Tutorial 1.
+
 2015-03-09     Michael Beyler <mbeyeler@uci.edu>
   + Added Tutorial 2 on 80-20 random networks.
   * Fixed histogram plotting and plot titles in ConnectionMonitor.m (OAT).

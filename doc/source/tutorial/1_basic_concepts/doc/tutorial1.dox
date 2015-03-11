@@ -157,110 +157,8 @@ with 10Hz mean firing rate, but this number will be gradually increased every se
 
 \section tut1s2_network_output 1.2 Network Output
 
-Every second, we will gradually increase the mean firing rate of the Poisson spike generator group <tt>gIn</tt>,
-starting at 10 Hz and ending at 100 Hz.
-The simulation will be repeatedly run (or "stepped") for 1ms, up to the point at which a total of 10,000ms are
-simulated. After every 1,000ms
-
-\image html 1_gm_raster.jpg "Fig. 1. GroupMonitor output (raster plot)"
-
-\image html 1_ffcurve.jpg "Fig. 2. Input-output curve (FF curve)"
-
-
-
-
-The main simulation loop is encapsulated by a pair of SpikeMonitor::startRecording and SpikeMonitor::stopRecording
-calls, which instruct the SpikeMonitor objects to keep track of all spikes emitted by the neurons in their monitored
-group (see \ref ch7s1s2s1_start_stop_recording):
-\code
-	// ---------------- RUN STATE -------------------
-	SMexc->startRecording();
-	SMinh->startRecording();
-	for (int t=0; t<10000; t++) {
-		// main simulation loop
-		// etc.
-	}
-	SMexc->stopRecording();
-	SMinh->stopRecording();
-\endcode
-
-After (or during) the simulation these objects could be queried for more detailed spike metrics
-(see \ref ch7s1s2s3_spike_metrics), but for the sake of simplicity we will only print a condensed version of
-spike statistics at the end:
-\code
-	// print firing stats (but not the exact spike times)
-	SMexc->print(false);
-	SMinh->print(false);
-\endcode
-
-Finally, the main simulation loop consists of repeatedly stepping the model for 1ms.
-At every step we randomly choose a single neuron in the network to receive an external (thalamic) input current
-of <tt>20.0f</tt>.
-To achieve this, we maintain a vector of external currents for every neuron in the group, initialized to zero:
-\code
-		// random thalamic input to a single neuron from either gExc or gInh
-		std::vector<float> thalamCurrExc(nNeurExc, 0.0f);
-		std::vector<float> thalamCurrInh(nNeurInh, 0.0f);
-\endcode
-
-
-
-The objective of this tutorial is to hook up a Poisson spike generator to a single Izhikevich neuron and look
-at the output activity.
-
-CARLsim is broken into 3 different states: ::CONFIG_STATE, ::SETUP_STATE, and ::RUN_STATE.
-
-Before we discuss code in each state, note that we have included the <tt>carlsim.h</tt> header file, which is
-required for every CARLsim simulation.
-
-\code
-#include <carlsim.h>
-\endcode
-
-Inside the main function we have the following. First we begin with the ::CONFIG_STATE state code. Here we
-create a CARLsim object named "Hello World"  that runs on the CPU and outputs data to the console in
-USER mode. Next, we create a Poisson Group named "input" with 1 neuron in the group and create a
-single regular spiking (RS) izhikevich neuron named "output". We set the neuron parameters with a
-call to setNeuronParameters. Additionally, we give the output neuron NMDA and AMPA conductances by
-setting conductances to be true. Finally we connect the input neuron to the output neuron with a
-weight of 0.1 and a delay of 1.
-
-\code
-	// ---------------- CONFIG STATE -------------------
-	CARLsim sim("Hello World", CPU_MODE, USER);
-	int gIn = sim.createSpikeGeneratorGroup("input", 1, EXCITATORY_NEURON);
-	int gOut = sim.createGroup("output", 1, EXCITATORY_NEURON);
-	sim.setNeuronParameters(gOut, 0.02f, 0.2f, -65.0f, 8.0f);
-	sim.setConductances(true);
-	// connect our groups
-	sim.connect(gIn, gOut, "one-to-one", RangeWeight(0.05f), 1.0f);
-\endcode
-
-A call to CARLsim::setupNetwork takes the simulation from ::CONFIG_STATE to ::SETUP_STATE.
-This must be done before CARLsim::runNetwork can be called.
-In the setup state we create a SpikeMonitor object to monitor spike data from the output neuron.
-
-\code
-	// ---------------- SETUP STATE -------------------
-	sim.setupNetwork();
-	sim.setSpikeMonitor(gOut,"DEFAULT");
-\endcode
-
-Finally, the first call to CARLsim::runNetwork will take the simulation to ::RUN_STATE.
-Set the firing rate rate of the input neuron to 20 Hz and run the network for 10 seconds:
-\code
-	// ---------------- RUN STATE -------------------
-	PoissonRate in(1);
-	in.setRates(20.0f);
-	sim.setSpikeRate(gIn, &in);
-	sim.runNetwork(10,0);
-\endcode
-
-
-\section tut1s2_output 1.2 CARLsim Output
-
 After navigating to <tt>%%CARLSIM_ROOT_DIR%%/doc/source/tutorial/1_basic_concepts</tt>, the network can be
-compiled and run with the following commands (on Linux):
+compiled and run with the following commands (on Unix):
 \code
 $ make
 $ ./basic_concepts
@@ -269,38 +167,147 @@ On Windows, the <tt>.vcxproj</tt> file is already added to the <tt>CARLsim.sln</
 Thus the project can be built simply by opening the solution file in Visual Studio, by right-clicking the
 project directory and choosing "Build project".
 
-Some of the CARLsim console output is shown below:
-
+Some of the CARLsim output is shown below:
 \code
-*****************      Initializing CPU Simulation      *************************
-SpikeMonitor set for group 1 (output)
+* ****************      Initializing CPU Simulation      *************************
+  SpikeMonitor set for group 1 (output)
 
 * *******************      Running CPU Simulation      ***************************
 
-(t=10.000s) SpikeMonitor for group output(1) has 22 spikes in 1000ms (22.00 +/- 0.00 Hz)
+  (t=1.000s) SpikeMonitor for group output(1) has 7 spikes in 1000ms (7.00 +/- 0.00 Hz)
+  (t=2.000s) SpikeMonitor for group output(1) has 8 spikes in 1000ms (8.00 +/- 0.00 Hz)
+  (t=3.000s) SpikeMonitor for group output(1) has 11 spikes in 1000ms (11.00 +/- 0.00 Hz)
+  (t=4.000s) SpikeMonitor for group output(1) has 15 spikes in 1000ms (15.00 +/- 0.00 Hz)
+  (t=5.000s) SpikeMonitor for group output(1) has 16 spikes in 1000ms (16.00 +/- 0.00 Hz)
+  (t=6.000s) SpikeMonitor for group output(1) has 16 spikes in 1000ms (16.00 +/- 0.00 Hz)
+  (t=7.000s) SpikeMonitor for group output(1) has 17 spikes in 1000ms (17.00 +/- 0.00 Hz)
+  (t=8.000s) SpikeMonitor for group output(1) has 18 spikes in 1000ms (18.00 +/- 0.00 Hz)
+  (t=9.000s) SpikeMonitor for group output(1) has 23 spikes in 1000ms (23.00 +/- 0.00 Hz)
+  (t=10.000s) SpikeMonitor for group output(1) has 25 spikes in 1000ms (25.00 +/- 0.00 Hz)
 
 
 * *******************      CPU Simulation Summary      ***************************
-Network Parameters: 	numNeurons = 2 (numNExcReg:numNInhReg = 50.0:0.0)
-			numSynapses = 1
-			maxDelay = 1
-Simulation Mode:	COBA
-Random Seed:		1423948616
-Timing:			Model Simulation Time = 10 sec
-			Actual Execution Time = 0.00 sec
-Average Firing Rate:	2+ms delay = 0.000 Hz
-			1ms delay = inf Hz
-			Overall = 11.850 Hz
-Overall Firing Count:	2+ms delay = 0
-			1ms delay = 237
-			Total = 237
+  Network Parameters: 	numNeurons = 2 (numNExcReg:numNInhReg = 50.0:0.0)
+						numSynapses = 1
+						maxDelay = 1
+  Simulation Mode:		COBA
+  Random Seed:			1426108241
+  Timing:				Model Simulation Time = 10 sec
+						Actual Execution Time = 0.01 sec
+  Average Firing Rate:	2+ms delay = 0.000 Hz
+						1ms delay = inf Hz
+						Overall = 34.050 Hz
+  Overall Firing Count:	2+ms delay = 0
+						1ms delay = 681
+						Total = 681
 * ********************************************************************************
 \endcode
 
-The SpikeMonitor reports it has run for 10 seconds and recorded 22 spikes in most recent 1000 ms for
-an average firing rate of 22 Hz (since there is only one neuron in the group).
+The SpikeMonitor object produced one line of output at the end of every simulated second
+via implicitly calling SpikeMonitor::print.
+We observe a gradual increase of the output firing rate, which coincides with the
+gradual increase of input stimulation.
+Shown in parentheses on these lines are the mean firing rate of all neurons in the group
+(although there is only one neuron) and the standard deviation.
 
-Additionally, spike files and log files have been written to the results folder and can be easily
-visualized with the offline analysis toolbox (see \ref ch9_matlab_oat).
+At the end of the simulation a summary is printed, informing about the number of neurons and
+synapses created.
+The network was simulated for 10 seconds, yet its execution took only 0.01 seconds of wall-clock time,
+which means the network was run 1000 times faster than real-time.
+
+
+
+\section tut1s3_network_activity 1.3. Visualizing Network Activity
+
+In order to plot network activity and observe weight changes in the network, we will make use of the
+MATLAB Offline Analysis Toolbox (OAT) (see \ref ch9_matlab_oat).
+
+
+\subsection tu1s3s1_group_monitor 1.3.1 Group Monitor
+
+The Tutorial subdirectory <tt>"scripts/"</tt> provides a MATLAB script <tt>"scripts/demoOAT.m"</tt> to
+demonstrate the usage of the OAT.
+The script looks like this:
+\code
+% OAT demo
+
+% init OAT by adding path
+initOAT
+
+% then open a GroupMonitor on the group's
+% spike file and plot the activity
+GM = GroupMonitor('output','../results')
+GM.plot
+\endcode
+
+After adding the location of the OAT source code to the MATLAB path, a GroupMonitor is opened on the
+group with name <tt>"output"</tt> whose spike file resides in <tt>"../results"</tt>.
+This group is the same as the one assigned name <tt>"output"</tt> and ID <tt>gOut</tt> in the code above
+(see \ref tut1s1s1_config), and the reason a spike file <tt>"results/spk_output.dat"</tt> exists
+is that a SpikeMonitor was called on the group with <tt>"DEFAULT"</tt> file name (see \ref tut1s1s2_setup).
+
+Calling the <tt>plot</tt> method will then visualize group activity using default settings and a plot type
+that depends on the spatial structure of the neuron group.
+Since the network does not have any particular spatial structure, the default plot type is a raster plot,
+shown in frames of 1000ms, as seen in Fig. 1 below.
+
+\image html 1_gm_raster.jpg "Fig. 1. GroupMonitor output (raster plot)"
+
+
+\subsection tu1s3s2_ff_curve 1.3.2 Input-Output Curve (FF Curve)
+
+Alternatively, it is also possible to directly access the raw spike data by means of a SpikeReader.
+The Tutorial subdirectory <tt>"scripts/"</tt> provides a MATLAB script <tt>"scripts/ffcurve.m"</tt> to
+demonstrate the use of a SpikeReader. Its contents read as follows:
+\code
+% initialize OAT
+initOAT
+
+% open SpikeReader object on spike file
+SR = SpikeReader('../results/spk_output.dat');
+
+% read # spikes binned into 1000ms bins
+spk = SR.readSpikes(1000);
+
+% plot input-output (FF) curve
+plot(10:10:100, spk, 'bo-', 'LineWidth',2)
+xlabel('input rate (Hz)')
+ylabel('output rate (Hz)')
+\endcode
+
+After adding the location of the OAT source code to the MATLAB path, a SpikeReader is opened on the
+exact path to the spike file, <tt>"../results/spk_output.dat"</tt>.
+The SpikeReader allows to manipulate raw spike data directly, but it will not know how to plot things
+(as opposed to the OAT GroupMonitor), and it will not be aware of other groups in the network (as opposed
+to the OAT NetworkMonitor).
+
+Calling the <tt>readSpikes</tt> method will then parse the spike data and return the number of spikes
+binned into 1000ms bins.
+Since there is only a single neuron in the group, the returned data will be in 1D (vector) format, where
+the first element in the vector will contain the number of spikes the neuron emitted during the first 1000ms
+of the simulation (from t=0 until t=999ms).
+
+All that's left to do is then to plot these numbers (y-axis) vs. the corresponding input firing rate (x-axis).
+The latter is specified as a vector <tt>10:10:100</tt> containing the input firing rates in Hz.
+The result is shown in Fig. 2 below.
+
+\image html 1_ffcurve.jpg "Fig. 2. Input-output curve (FF curve)"
+
+Alternatively, it would have been possible to emulate the GroupMonitor plot from above
+(see \ref tu1s3s1_group_monitor) by calling the <tt>readSpikes</tt>
+method with value <tt>-1</tt> instead, which is code for returning spikes in AER format.
+Producing a raster plot would then have been as easy as:
+\code
+% return spikes in AER format [times;neurIds]
+spkAER = SR.readSpikes(-1);
+
+% raster plot
+plot(spkAER(1,:),spkAER(2,:),'.k')
+xlabel('time (ms)')
+\endcode
+
+For users of CARLsim 2.2, please note that the <tt>readSpikes</tt> method of SpikeReader is essentially the same
+as the no longer existing MATLAB script <tt>readSpikes.m</tt> (see \ref ch9s6_migrating_scripts).
+
 
 */
