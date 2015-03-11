@@ -272,7 +272,7 @@ classdef GroupMonitor < handle
             % BINWINDOWMS  - The binning window (ms) in which the data will
             %                be displayed. Default: 1000.
             if nargin<4,binWindowMs=obj.plotBinWinMs;end
-            if nargin<3 || isempty(frames) || numel(frames)==1 && frames==-1
+            if nargin<3 || isempty(frames) || sum(frames==-1)>0
                 obj.initSpikeReader()
                 frames = 1:ceil(obj.spkObj.getSimDurMs()/binWindowMs);
             end
@@ -388,7 +388,7 @@ classdef GroupMonitor < handle
             if nargin<7,winSize=obj.recordWinSize;end
             if nargin<6,fps=obj.recordFPS;end
             if nargin<5,binWindowMs=obj.plotBinWinMs;end
-            if nargin<4 || isempty(frames) || numel(frames)==1 && frames==-1
+            if nargin<4 || isempty(frames) || sum(frames==-1)>0
                 obj.initSpikeReader()
                 frames = 1:ceil(obj.spkObj.getSimDurMs()/binWindowMs);
             end

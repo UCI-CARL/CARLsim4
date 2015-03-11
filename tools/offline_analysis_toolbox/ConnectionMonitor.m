@@ -241,7 +241,7 @@ classdef ConnectionMonitor < handle
 			%                Default: display all frames.
 			obj.unsetError()
 			obj.initConnectionReader()
-			if nargin<2 || isempty(frames) || frames==-1
+			if nargin<2 || isempty(frames) || sum(frames==-1)>0
 				frames = 1:ceil(obj.CR.getNumSnapshots());
 			end
 			
@@ -331,7 +331,7 @@ classdef ConnectionMonitor < handle
 			obj.unsetError()
 			obj.initConnectionReader()
 			if nargin<2,plotType=obj.plotType;end
-			if nargin<3 || isempty(frames) || numel(frames)==1&&frames==-1
+			if nargin<3 || isempty(frames) || sum(frames==-1)>0
 				frames = 1:ceil(obj.CR.getNumSnapshots());
 			end
 			if nargin<4 || isempty(neurons) ...
@@ -456,7 +456,7 @@ classdef ConnectionMonitor < handle
 			%                window. Default: [0 0].
 			if nargin<6,winSize=obj.recordWinSize;end
 			if nargin<5,fps=obj.recordFPS;end
-			if nargin<4 || isempty(frames) || frames==-1
+			if nargin<4 || isempty(frames) || sum(frames==-1)>0
 				obj.initConnectionReader()
 				frames = 1:ceil(obj.CR.getNumSnapshots);
 			end

@@ -333,7 +333,7 @@ classdef NetworkMonitor < handle
             % BINWINDOWMS  - The binning window (ms) in which the data will
             %                be displayed. Default: 1000.
             if nargin<3,binWindowMs=obj.plotBinWinMs;end
-            if nargin<2 || isempty(frames) || sum(frames==-1)
+            if nargin<2 || isempty(frames) || sum(frames==-1)>0
                 frames = 1:ceil(obj.simObj.sim.simTimeSec*1000.0/binWindowMs);
             end
             obj.unsetError()
@@ -453,7 +453,7 @@ classdef NetworkMonitor < handle
             if nargin<6,winSize=obj.recordWinSize;end
             if nargin<5,fps=obj.recordFPS;end
             if nargin<4,binWindowMs=obj.plotBinWinMs;end
-            if nargin<3 || isempty(frames) || frames==-1
+            if nargin<3 || isempty(frames) || sum(frames==-1)>0
                 frames = 1:ceil(obj.simObj.sim.simTimeSec*1000.0/binWindowMs);
             end
             if nargin<2,fileName=obj.recordFile;end
