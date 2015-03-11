@@ -195,9 +195,10 @@ create a ConnectionMonitor to record the synaptic weights for the connection bet
 and the output group. The CARLsim::setConnectionMonitor function is used, with the first argument
 being the presynaptic group, the second argument being the postsynaptic group, and the third
 argument the name of the filename. We use 'DEFAULT' which assigns the string:
-"results/conn_{pre-group}_{post-group}.dat" to the filename. Finally, we disable the automatic
-output of ConnectionMonitor by using the function call ConnectionMonitor::setUpdateTimeIntervalSec
-with an argument of -1. We will output the weight values manually, later in the simulation.
+"results/conn_{pre-group name}_{post-group name}.dat" to the filename. Finally, we disable the
+automatic output of ConnectionMonitor by using the function call
+ConnectionMonitor::setUpdateTimeIntervalSec with an argument of -1. We will output the weight values
+manually, later in the simulation.
 
 
 \code
@@ -230,15 +231,157 @@ for (int i=0; i<nPois; i++)
 	rates.push_back((i+1)*(20.0/100));
 \endcode
 
-The vector is then passed to the PoissRate object with the following call:
+The vector is then passed to the PoissRate object and the poissRate is assigned to the gPois group
+with the following two calls. Additionally, we define the runTimeSec and runTimeMs variables
+explicitly here. This is common practice as there are often multiple calls to runNetwork with
+different run times for each call.
 
 \code
 poissRate.setRates(rates);
+sim.setSpikeRate(gPois, &poissRate);
+
+// run the established network for 1 sec
+int runTimeSec = 1000; // seconds
+int runTimeMs  = 0; // milliseconds
 \endcode
 
-Finally,
+Finally, we take a snapshot of the weights between the input and output groups before we run the
+simulation, then run the simulation, and then take a snapshot of the weights after the simulation
+has been run. This is shown in the code below:
+
+\code
+// take a snapshot of the weights before we run the simulation
+CM->takeSnapshot();
+
+sim.runNetwork(runTimeSec, runTimeMs);
+
+// take a snapshot of the weights after the simulation runs to completion
+CM->takeSnapshot();
+\endcode
 
 \section tut3s3_network_output 3.3 Network Output
+After navigating to <tt>%%CARLSIM_ROOT_DIR%%/doc/source/tutorial/3_plasticity</tt>, the network can be
+compiled and run with the following commands (on Unix):
+\code
+$ make
+$ ./plasticity
+\endcode
+
+On Windows, the <tt>.vcxproj</tt> file is already added to the <tt>CARLsim.sln</tt> solution file.
+Thus the project can be built simply by opening the solution file in Visual Studio, by right-clicking the
+project directory and choosing "Build project".
+
+Some of the CARLsim output is shown below:
+
+Notice that the simulator notifies you that E-STDP has been enabled for output(1). The (1) denotes
+the group ID. It also notifies you that homeostasis is enabled for the output group and details the
+exact parameter values being used.
+
+\code
+*********************************************************************************
+********************      Welcome to CARLsim 3.0      ***************************
+*********************************************************************************
+
+***************************** Configuring Network ********************************
+Starting CARLsim simulation "plasticity simulation" in USER mode
+Random number seed: 1426032481
+CUDA devices Configuration:
+  - Number of CUDA devices          =         1
+  - CUDA device ID with max GFLOPs  =         0
+  - Use CUDA device[0]              = GeForce GTX 980
+  - CUDA Compute Capability (CC)    =       5.2
+
+Running COBA mode:
+  - AMPA decay time            =     5 ms
+  - NMDA rise time (disabled)  =     0 ms
+  - GABAa decay time           =     6 ms
+  - GABAb rise time (disabled) =     0 ms
+  - GABAb decay time           =   150 ms
+E-STDP enabled for output(1)
+Homeostasis parameters enabled for 1 (output):	homeoScale: 1.000000, avgTimeScale: 5.000000
+Homeostatic base firing rate set for 1 (output):	baseFiring: 35.000, baseFiringStd: 0.000
+\endcode
+
+During the network setup, the simulator lists the parameter values for E-STDP. Here we see that
+'STANDARD' is selected as well. Notice that we are notified that two SpikeMonitors have been set,
+one for 0 and one for group 1. Finally, we are notified that a ConnectionMonitor has been set for
+the conncection between group 0 and group 1. The '...' denotes excluded output.
+
+\code
+***************************** Setting up Network **********************************
+...
+	- STDP:
+      - E-STDP TYPE            = STANDARD
+      - I-STDP TYPE            =  UNKNOWN
+      - ALPHA_PLUS_EXC         =  0.00020
+      - ALPHA_MINUS_EXC        = -0.00007
+      - TAU_PLUS_INV_EXC       =  0.05000
+      - TAU_MINUS_INV_EXC      =  0.05000
+      - BETA_LTP               =  0.00000
+      - BETA_LTD               =  0.00000
+      - LAMBDA                 =  0.00000
+      - DELTA                  =  0.00000
+...
+*****************      Initializing GPU Simulation      *************************
+...
+SpikeMonitor set for group 0 (input)
+SpikeMonitor set for group 1 (output)
+ConnectionMonitor 0 set for Connection 0: 0(input) => 1(output)
+\endcode
+
+CARLsim also outputs information about the synaptic weight strengths and their recent changes in
+synaptic weight. Below we see
+
+\code
+******************** Running GPU Simulation on GPU 0 ***************************
+
+(t=1000.000s) SpikeMonitor for group input(0) has 1010036 spikes in 1000ms (10100.36 +/- 5819.37 Hz)
+(t=1000.000s) SpikeMonitor for group output(1) has 37085 spikes in 1000ms (37085.00 +/- 0.00 Hz)
+(t=1000.000s) ConnectionMonitor ID=0 0(input) => 1(output): [preId,postId] wt (+/-wtChange in 1000ms) show first 100
+[ 0, 0] 0.0016 (+0.0004)   [ 1, 0] 0.0016 (+0.0000)   [ 2, 0] 0.0013 (-0.0002)   [ 3, 0] 0.0013 (-0.0001)   
+[ 4, 0] 0.0017 (-0.0000)   [ 5, 0] 0.0033 (+0.0002)   [ 6, 0] 0.0022 (+0.0002)   [ 7, 0] 0.0031 (-0.0003)   
+[ 8, 0] 0.0035 (+0.0000)   [ 9, 0] 0.0045 (+0.0001)   [10, 0] 0.0049 (-0.0002)   [11, 0] 0.0046 (-0.0002)   
+[12, 0] 0.0049 (-0.0001)   [13, 0] 0.0045 (-0.0001)   [14, 0] 0.0052 (+0.0003)   [15, 0] 0.0046 (-0.0004)   
+[16, 0] 0.0074 (-0.0002)   [17, 0] 0.0079 (+0.0004)   [18, 0] 0.0054 (-0.0002)   [19, 0] 0.0087 (+0.0004)   
+[20, 0] 0.0081 (+0.0001)   [21, 0] 0.0090 (+0.0014)   [22, 0] 0.0093 (+0.0005)   [23, 0] 0.0105 (+0.0003)   
+[24, 0] 0.0076 (-0.0002)   [25, 0] 0.0064 (+0.0002)   [26, 0] 0.0081 (-0.0004)   [27, 0] 0.0112 (+0.0004)   
+[28, 0] 0.0125 (-0.0003)   [29, 0] 0.0127 (-0.0004)   [30, 0] 0.0112 (-0.0004)   [31, 0] 0.0128 (+0.0010)   
+[32, 0] 0.0122 (+0.0001)   [33, 0] 0.0129 (+0.0006)   [34, 0] 0.0102 (+0.0003)   [35, 0] 0.0117 (-0.0009)   
+[36, 0] 0.0120 (-0.0003)   [37, 0] 0.0139 (+0.0005)   [38, 0] 0.0138 (-0.0001)   [39, 0] 0.0128 (+0.0000)   
+[40, 0] 0.0126 (+0.0003)   [41, 0] 0.0101 (-0.0009)   [42, 0] 0.0170 (+0.0011)   [43, 0] 0.0152 (-0.0002)   
+[44, 0] 0.0176 (-0.0003)   [45, 0] 0.0158 (+0.0006)   [46, 0] 0.0140 (-0.0009)   [47, 0] 0.0149 (+0.0002)   
+[48, 0] 0.0184 (+0.0002)   [49, 0] 0.0158 (+0.0002)   [50, 0] 0.0197 (+0.0009)   [51, 0] 0.0163 (+0.0005)   
+[52, 0] 0.0162 (+0.0001)   [53, 0] 0.0164 (+0.0003)   [54, 0] 0.0180 (+0.0003)   [55, 0] 0.0187 (+0.0001)   
+[56, 0] 0.0163 (+0.0001)   [57, 0] 0.0202 (+0.0004)   [58, 0] 0.0179 (+0.0006)   [59, 0] 0.0205 (+0.0013)   
+[60, 0] 0.0179 (-0.0009)   [61, 0] 0.0174 (-0.0007)   [62, 0] 0.0193 (-0.0007)   [63, 0] 0.0175 (+0.0003)   
+[64, 0] 0.0170 (-0.0011)   [65, 0] 0.0182 (-0.0012)   [66, 0] 0.0212 (-0.0016)   [67, 0] 0.0211 (+0.0000)   
+[68, 0] 0.0224 (-0.0010)   [69, 0] 0.0191 (-0.0001)   [70, 0] 0.0241 (-0.0008)   [71, 0] 0.0191 (-0.0011)   
+[72, 0] 0.0217 (+0.0001)   [73, 0] 0.0236 (-0.0002)   [74, 0] 0.0192 (-0.0010)   [75, 0] 0.0234 (+0.0003)   
+[76, 0] 0.0226 (-0.0002)   [77, 0] 0.0248 (-0.0002)   [78, 0] 0.0218 (+0.0007)   [79, 0] 0.0233 (-0.0005)   
+[80, 0] 0.0227 (+0.0003)   [81, 0] 0.0237 (+0.0014)   [82, 0] 0.0238 (-0.0006)   [83, 0] 0.0251 (+0.0005)   
+[84, 0] 0.0240 (-0.0006)   [85, 0] 0.0245 (-0.0010)   [86, 0] 0.0258 (+0.0002)   [87, 0] 0.0260 (-0.0003)   
+[88, 0] 0.0271 (-0.0008)   [89, 0] 0.0269 (-0.0009)   [90, 0] 0.0239 (+0.0003)   [91, 0] 0.0262 (-0.0013)   
+[92, 0] 0.0253 (-0.0005)   [93, 0] 0.0253 (-0.0007)   [94, 0] 0.0237 (+0.0005)   [95, 0] 0.0281 (-0.0001)   
+[96, 0] 0.0272 (+0.0013)   [97, 0] 0.0264 (-0.0020)   [98, 0] 0.0296 (+0.0017)   [99, 0] 0.0267 (-0.0002)
+\endcode
+
+\code
+********************      GPU Simulation Summary      ***************************
+Network Parameters: 	numNeurons = 101 (numNExcReg:numNInhReg = 1.0:0.0)
+			numSynapses = 100
+			maxDelay = 1
+Simulation Mode:	COBA
+Random Seed:		1426032481
+Timing:			Model Simulation Time = 1000 sec
+			Actual Execution Time = 53.43 sec
+Average Firing Rate:	2+ms delay = 0.000 Hz
+			1ms delay = inf Hz
+			Overall = 10.368 Hz
+Overall Firing Count:	2+ms delay = 0
+			1ms delay = 1047121
+			Total = 1047121
+*********************************************************************************
+\endcode
 
 \section tut3s4_network_vis 3.4 Network Visualization
 

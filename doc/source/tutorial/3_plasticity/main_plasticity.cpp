@@ -89,12 +89,12 @@ int main() {
 	// run the established network for 1 sec
 	int runTimeSec = 1000; // seconds
 	int runTimeMs  = 0; // milliseconds
-	SpikeMonInput->startRecording();
+
 	// take a snapshot of the weights before we run the simulation
 	CM->takeSnapshot();
+
 	sim.runNetwork(runTimeSec, runTimeMs);
-	SpikeMonInput->stopRecording();
-	std::vector<float> inputFRs = SpikeMonInput->getAllFiringRates();
+
 	// take a snapshot of the weights after the simulation runs to completion
 	CM->takeSnapshot();
 
