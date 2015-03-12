@@ -184,8 +184,8 @@ void CARLsim::CARLsimInit() {
 
 	// set default values for STDP params
 	// TODO: add ref
-	setDefaultESTDPparams(0.001f, 20.0f, 0.0012f, 20.0f, STANDARD);
-	setDefaultISTDPparams(0.001f, 0.0012f, 12.0f, 40.0f, STANDARD);
+	setDefaultESTDPparams(0.001f, 20.0f, -0.0012f, 20.0f, STANDARD);
+	setDefaultISTDPparams(-0.001f, 0.0012f, 12.0f, 40.0f, STANDARD);
 
 	// set default values for STP params
 	// Misha Tsodyks and Si Wu (2013) Short-term synaptic plasticity. Scholarpedia, 8(10):3153., revision #136920

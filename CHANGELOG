@@ -20,6 +20,7 @@ Build 3.0.1
   * Fixed calculation of mean firing rates and standard deviations in the
     CARLsim::runNetwork summary of CpuSNN::printStatusSpikeMonitor and
     CpuSNN::printStatusGroupMonitor.
+  * Fixed default values for E-STDP and I-STDP.
 
 2015-03-09     Michael Beyler <mbeyeler@uci.edu>
   + Added Tutorial 2 on 80-20 random networks.
