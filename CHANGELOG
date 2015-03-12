@@ -17,6 +17,9 @@ Build 3.0.1
   * Fixed no-recording issue with ConnectionMonitor::setUpdateTimeIntervalSec
     interval -1.
   * Fixed default target in CARLsim tests Makefile.
+  * Fixed calculation of mean firing rates and standard deviations in the
+    CARLsim::runNetwork summary of CpuSNN::printStatusSpikeMonitor and
+    CpuSNN::printStatusGroupMonitor.
 
 2015-03-09     Michael Beyler <mbeyeler@uci.edu>
   + Added Tutorial 2 on 80-20 random networks.

@@ -733,14 +733,17 @@ int CpuSNN::runNetwork(int _nsec, int _nmsec, bool printRunSummary, bool copySta
 
 		// if there are Monitors available and it's time to show the log, print status for each group
 		if (numSpikeMonitor) {
-			printStatusSpikeMonitor(ALL, runDurationMs);
+			printStatusSpikeMonitor(ALL);
 		}
 		if (numConnectionMonitor) {
 			printStatusConnectionMonitor(ALL);
 		}
 		if (numGroupMonitor) {
-			printStatusGroupMonitor(ALL, runDurationMs);
+			printStatusGroupMonitor(ALL);
 		}
+
+		// record time of run summary print
+		simTimeLastRunSummary = simTime;
 	}
 
 	// call updateSpike(Group)Monitor again to fetch all the left-over spikes and group status (neuromodulator)
@@ -1826,6 +1829,7 @@ void CpuSNN::CpuSNNinit() {
 
 	simTimeLastUpdSpkMon_ = 0;
 	simTimeRunStart     = 0;    simTimeRunStop      = 0;
+	simTimeLastRunSummary = 0;
 	simTimeMs	 		= 0;    simTimeSec          = 0;    simTime = 0;
 	spikeCountAll1secHost	= 0;    secD1fireCntHost    = 0;    secD2fireCntHost  = 0;
 	spikeCountAllHost 		= 0;    spikeCountD2Host    = 0;    spikeCountD1Host = 0;

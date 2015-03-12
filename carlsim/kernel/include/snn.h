@@ -664,8 +664,8 @@ private:
 	void printSimSummary(); 	//!< prints a simulation summary at the end of sim
 	void printState(FILE* fp);
 	void printStatusConnectionMonitor(int connId=ALL);
-	void printStatusGroupMonitor(int grpId=ALL, int runDurationMs=1000);
-	void printStatusSpikeMonitor(int grpId=ALL, int runDurationMs=1000);
+	void printStatusGroupMonitor(int grpId=ALL);
+	void printStatusSpikeMonitor(int grpId=ALL);
 	void printTuningLog(FILE* fp);
 	void printWeights(int preGrpId, int postGrpId=-1);
 
@@ -936,6 +936,7 @@ private:
 
 	unsigned int    simTimeRunStart; //!< the start time of current/last runNetwork call
 	unsigned int    simTimeRunStop;  //!< the end time of current/last runNetwork call
+	unsigned int    simTimeLastRunSummary; //!< the time at which the last run summary was printed
 
 	unsigned int	simTimeMs;
 	uint64_t        simTimeSec;		//!< this is used to store the seconds.
