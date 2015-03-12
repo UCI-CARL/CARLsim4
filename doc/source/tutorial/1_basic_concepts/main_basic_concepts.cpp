@@ -76,5 +76,7 @@ int main(int argc, const char* argv[]) {
 		sim.runNetwork(1,0);
 	}
 
+	sim.runNetwork(10,0);
+
 	return 0;
 }

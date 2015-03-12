@@ -183,8 +183,9 @@ void CARLsim::CARLsimInit() {
 	setDefaultConductanceTimeConstants(5, 0, 150, 6, 0, 150);
 
 	// set default values for STDP params
-	// TODO: add ref
-	setDefaultESTDPparams(0.001f, 20.0f, 0.0012f, 20.0f, STANDARD);
+	// \deprecated
+	// \TODO: replace with STDP structs
+	setDefaultESTDPparams(0.001f, 20.0f, -0.0012f, 20.0f, STANDARD);
 	setDefaultISTDPparams(0.001f, 0.0012f, 12.0f, 40.0f, STANDARD);
 
 	// set default values for STP params
@@ -1255,10 +1256,8 @@ void CARLsim::setDefaultSTDPparams(float alphaPlus, float tauPlus, float alphaMi
 void CARLsim::setDefaultESTDPparams(float alphaPlus, float tauPlus, float alphaMinus, float tauMinus, stdpType_t stdpType) {
     std::string funcName = "setDefaultESTDPparams()";
     UserErrors::assertTrue(carlsimState_==CONFIG_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "CONFIG.");
-	UserErrors::assertTrue(alphaPlus > 0, UserErrors::MUST_BE_POSITIVE, funcName);
-	UserErrors::assertTrue(alphaMinus > 0, UserErrors::MUST_BE_POSITIVE, funcName);
-	UserErrors::assertTrue(tauPlus > 0, UserErrors::MUST_BE_POSITIVE, funcName);
-	UserErrors::assertTrue(tauMinus > 0, UserErrors::MUST_BE_POSITIVE, funcName);
+	UserErrors::assertTrue(tauPlus > 0, UserErrors::MUST_BE_POSITIVE, funcName, "tauPlus");
+	UserErrors::assertTrue(tauMinus > 0, UserErrors::MUST_BE_POSITIVE, funcName, "tauMinus");
     switch(stdpType) {
         case STANDARD:
             def_STDP_type_ = STANDARD;

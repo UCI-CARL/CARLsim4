@@ -528,9 +528,9 @@ TEST(Interface, setDefaultSTDPparamsDeath) {
 	int	g1 = sim->createGroup("excit", 800, EXCITATORY_NEURON);
 	sim->setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f);
 
-	EXPECT_DEATH({sim->setDefaultESTDPparams(-1.0, 2.0, 3.0, 4.0,STANDARD);},"");
+//	EXPECT_DEATH({sim->setDefaultESTDPparams(-1.0, 2.0, 3.0, 4.0,STANDARD);},"");
 	EXPECT_DEATH({sim->setDefaultESTDPparams(1.0, -2.0, 3.0, 4.0,STANDARD);},"");
-	EXPECT_DEATH({sim->setDefaultESTDPparams(1.0, 2.0, -3.0, 4.0,STANDARD);},"");
+//	EXPECT_DEATH({sim->setDefaultESTDPparams(1.0, 2.0, -3.0, 4.0,STANDARD);},"");
 	EXPECT_DEATH({sim->setDefaultESTDPparams(1.0, 2.0, 3.0, -4.0,STANDARD);},"");
 	EXPECT_DEATH({sim->setDefaultESTDPparams(1.0, 2.0, 3.0, 4.0,UNKNOWN_STDP);},"");
     EXPECT_DEATH({sim->setDefaultISTDPparams(-1.0, 2.0, 3.0, 4.0,STANDARD);},"");

@@ -51,7 +51,7 @@ void SpikeGeneratorFromFile::openFile() {
 	fseek(fpBegin_	, sizeof(int)+sizeof(float), SEEK_SET);
 	int grid;
 	for (int i=1; i<=3; i++) {
-		fread(&grid, sizeof(int), 1, fpBegin_);
+		size_t result = fread(&grid, sizeof(int), 1, fpBegin_);
 		nNeur_ *= grid;
 	}
 
@@ -89,14 +89,15 @@ unsigned int SpikeGeneratorFromFile::nextSpikeTime(CARLsim* sim, int grpId, int 
 	int tmpNeurId = -1;
 
 	// read the next time and neuron ID in the file
-	fread(&tmpTime, sizeof(int), 1, fp); // i-th time
-	fread(&tmpNeurId, sizeof(int), 1, fp); // i-th nid
+	size_t result;
+	result = fread(&tmpTime, sizeof(int), 1, fp); // i-th time
+	result = fread(&tmpNeurId, sizeof(int), 1, fp); // i-th nid
 	fpOffsetNeur_[nid] += sizeof(int)*2;
 
 	// chances are this neuron ID is not the one we want, so we have to keep reading until we find the right one
 	while (tmpNeurId!=nid && !feof(fp)) {
-		fread(&tmpTime, sizeof(int), 1, fp); // j-th time
-		fread(&tmpNeurId, sizeof(int), 1, fp); // j-th nid
+		result = fread(&tmpTime, sizeof(int), 1, fp); // j-th time
+		result = fread(&tmpNeurId, sizeof(int), 1, fp); // j-th nid
 		fpOffsetNeur_[nid] += sizeof(int)*2;
 	}
 

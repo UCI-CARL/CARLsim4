@@ -108,49 +108,65 @@ void CpuSNN::printStatusConnectionMonitor(int connId) {
   }
 }
 
-void CpuSNN::printStatusSpikeMonitor(int grpId, int runDurationMs) {
-  if (grpId==ALL) {
-    for (int grpId1=0; grpId1<numGrp; grpId1++) {
-      printStatusSpikeMonitor(grpId1);
-    }
-  } else {
-    int monitorId = grp_Info[grpId].SpikeMonitorId;
-    if (monitorId==-1)
-      return;
+void CpuSNN::printStatusSpikeMonitor(int grpId) {
+	if (grpId==ALL) {
+		for (int grpId1=0; grpId1<numGrp; grpId1++) {
+			printStatusSpikeMonitor(grpId1);
+		}
+	} else {
+		int monitorId = grp_Info[grpId].SpikeMonitorId;
+		if (monitorId==-1) {
+			return;
+		}
 
-    // in GPU mode, need to get data from device first
-    if (simMode_==GPU_MODE)
-      copyFiringStateFromGPU(grpId);
+		// in GPU mode, need to get data from device first
+		if (simMode_==GPU_MODE)
+			copyFiringStateFromGPU(grpId);
 
-    // \TODO nSpikeCnt should really be a member of the SpikeMonitor object that gets populated if
-    // printRunSummary is true or mode==COUNT.....
-    // so then we can use spkMonObj->print(false); // showSpikeTimes==false
-    int grpSpk = 0;
-    for (int neurId=grp_Info[grpId].StartN; neurId<=grp_Info[grpId].EndN; neurId++)
-      grpSpk += nSpikeCnt[neurId]; // add up all neuronal spike counts
+		// \TODO nSpikeCnt should really be a member of the SpikeMonitor object that gets populated if
+		// printRunSummary is true or mode==COUNT.....
+		// so then we can use spkMonObj->print(false); // showSpikeTimes==false
+		int grpSpk = 0;
+		for (int neurId=grp_Info[grpId].StartN; neurId<=grp_Info[grpId].EndN; neurId++)
+			grpSpk += nSpikeCnt[neurId]; // add up all neuronal spike counts
 
-    float meanRate = grpSpk*1000.0/runDurationMs/grp_Info[grpId].SizeN;
-    float std = 0.0f;
-    if (grp_Info[grpId].SizeN > 1) {
-      for (int neurId=grp_Info[grpId].StartN; neurId<=grp_Info[grpId].EndN; neurId++)
-        std += (nSpikeCnt[neurId]-meanRate)*(nSpikeCnt[neurId]-meanRate);
+		// infer run duration by measuring how much time has passed since the last run summary was printed
+		unsigned int runDurationMs = simTime - simTimeLastRunSummary;
 
-      std = sqrt(std/(grp_Info[grpId].SizeN-1.0));
-    }
-
-
-    KERNEL_INFO("(t=%.3fs) SpikeMonitor for group %s(%d) has %d spikes in %dms (%.2f +/- %.2f Hz)",
-      (float)(simTime/1000.0),
-      grp_Info2[grpId].Name.c_str(),
-      grpId,
-      grpSpk,
-      runDurationMs,
-      meanRate,
-      std);
-  }
+		if (simTime <= simTimeLastRunSummary) {
+			KERNEL_INFO("(t=%.3fs) SpikeMonitor for group %s(%d) has %d spikes in %dms (%.2f +/- %.2f Hz)",
+				(float)(simTime/1000.0f),
+				grp_Info2[grpId].Name.c_str(),
+				grpId,
+				0,
+				0,
+				0.0f,
+				0.0f);
+		} else {
+			// if some time has passed since last print
+			float meanRate = grpSpk*1000.0f/runDurationMs/grp_Info[grpId].SizeN;
+			float std = 0.0f;
+			if (grp_Info[grpId].SizeN > 1) {
+				for (int neurId=grp_Info[grpId].StartN; neurId<=grp_Info[grpId].EndN; neurId++) {
+					float neurRate = nSpikeCnt[neurId]*1000.0f/runDurationMs;
+					std += (neurRate-meanRate)*(neurRate-meanRate);
+				}
+				std = sqrt(std/(grp_Info[grpId].SizeN-1.0));
+			}
+	
+			KERNEL_INFO("(t=%.3fs) SpikeMonitor for group %s(%d) has %d spikes in %ums (%.2f +/- %.2f Hz)",
+				(float)(simTime/1000.0f),
+				grp_Info2[grpId].Name.c_str(),
+				grpId,
+				grpSpk,
+				runDurationMs,
+				meanRate,
+				std);
+		}
+	}
 }
 
-void CpuSNN::printStatusGroupMonitor(int grpId, int runDurationMs) {
+void CpuSNN::printStatusGroupMonitor(int grpId) {
 	if (grpId == ALL) {
 		for (int g = 0; g < numGrp; g++) {
 			printStatusGroupMonitor(g);
@@ -163,12 +179,25 @@ void CpuSNN::printStatusGroupMonitor(int grpId, int runDurationMs) {
 		std::vector<int> peakTimeVector = groupMonCoreList[monitorId]->getPeakTimeVector();
 		int numPeaks = peakTimeVector.size();
 
-		KERNEL_INFO("(t=%.3fs) GroupMonitor for group %s(%d) has %d peak(s) in %dms",
-			(float)(simTime/1000.0),
-			grp_Info2[grpId].Name.c_str(),
-			grpId,
-			numPeaks,
-			runDurationMs);
+		// infer run duration by measuring how much time has passed since the last run summary was printed
+		unsigned int runDurationMs = simTime - simTimeLastRunSummary;
+
+		if (simTime <= simTimeLastRunSummary) {
+			KERNEL_INFO("(t=%.3fs) GroupMonitor for group %s(%d) has %d peak(s) in %dms",
+				(float)(simTime/1000.0f),
+				grp_Info2[grpId].Name.c_str(),
+				grpId,
+				0,
+				0);
+		} else {
+			// if some time has passed since last print
+			KERNEL_INFO("(t=%.3fs) GroupMonitor for group %s(%d) has %d peak(s) in %ums",
+				(float)(simTime/1000.0f),
+				grp_Info2[grpId].Name.c_str(),
+				grpId,
+				numPeaks,
+				runDurationMs);
+		}
 	}
 }
 

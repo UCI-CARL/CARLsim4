@@ -1458,26 +1458,30 @@ public:
 	void setDefaultSaveOptions(std::string fileName, bool saveSynapseInfo);
 
 	/*!
-	* \brief sets default values for STDP params
+	* \brief sets default STDP params
 	*
-	* \sa setDefaultESTDPparams
+	* Sets default STDP parameters. Do not use this function, it is deprecated.
+	*
+	* \STATE ::CONFIG_STATE
+	* \deprecated
 	*/
-
-    // choosing between STANDARD and DA_MOD -- KDC
 	void setDefaultSTDPparams(float alphaPlus, float tauPlus, float alphaMinus, float tauMinus, stdpType_t stdpType);
 
 	/*!
 	* \brief sets default values for E-STDP params
 	*
-	* \TODO finish docu
+	* Sets default E-STDP parameters. Do not use this function, it is deprecated.
+	*
 	* \STATE ::CONFIG_STATE
+	* \deprecated
 	*/
 	void setDefaultESTDPparams(float alphaPlus, float tauPlus, float alphaMinus, float tauMinus, stdpType_t stdpType);
 
 	/*!
 	* \brief sets default values for I-STDP params
 	*
-	* \TODO finish docu
+	* Sets default I-STDP parameters. Do not use this function, it is deprecated.
+	*
 	* \STATE ::CONFIG_STATE
 	*/
 	void setDefaultISTDPparams(float betaLTP, float betaLTD, float lambda, float delta, stdpType_t stdpType);
