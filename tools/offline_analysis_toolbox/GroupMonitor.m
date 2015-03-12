@@ -13,7 +13,7 @@ classdef GroupMonitor < handle
     % >> GM.recordMovie; % plots heat map and saves as 'movie.avi'
     % >> % etc.
     %
-    % Version 2/27/2015
+    % Version 3/11/2015
     % Author: Michael Beyeler <mbeyeler@uci.edu>
     
     %% PROPERTIES
@@ -39,6 +39,7 @@ classdef GroupMonitor < handle
         grid3D;             % Grid3D topography of group
         plotType;           % current plot type
         
+		plotTitleName;      % group name for plot title (parsed)
         plotHistNumBins;    % number of histogram bins
         plotHistShowRate;   % flag whether to plot mean rates (Hz) in hist
 
@@ -1007,6 +1008,11 @@ classdef GroupMonitor < handle
             obj.plotStepFrames = false;
             obj.plotStepFramesFW = false;
             obj.plotStepFramesBW = false;
+			
+			% for the group name in plot titles, mask underscores so that
+			% they're not interpreted as LaTeX; except for '_{', which
+			% should be interpreted as LaTeX for lowerscript
+			obj.plotTitleName = regexprep(strrep(obj.name, '_', '\_'),'\\_{','_{');
             
             obj.grid3D = -1;
             
@@ -1070,7 +1076,7 @@ classdef GroupMonitor < handle
                 quiver(x',y',frame(:,:,1)',frame(:,:,2)');
                 axis equal
                 axis([1 max(2,size(frame,1)) 1 max(2,size(frame,2))])
-                title(['Group ' obj.name])
+                title(['Group ' obj.plotTitleName])
                 xlabel('nrX')
                 ylabel('nrY')
                 set(gca, 'XTick', [1 obj.grid3D(1)/2 obj.grid3D(1)])
@@ -1087,7 +1093,7 @@ classdef GroupMonitor < handle
                 imagesc(frame, [0 maxD])
                 axis image equal
                 axis([1 obj.grid3D(1) 1 obj.grid3D(2)])
-                title(['Group ' obj.name ', rate = [0 , ' ...
+                title(['Group ' obj.plotTitleName ', rate = [0 , ' ...
                     num2str(maxD*1000/frameDur) ' Hz]'])
                 xlabel('nrX')
                 ylabel('nrY')
@@ -1112,7 +1118,7 @@ classdef GroupMonitor < handle
                 else
                     ylabel('number of spikes')
                 end
-                title(['Group ' obj.name])
+                title(['Group ' obj.plotTitleName])
 %                 axis square
                 a=axis; maxD = max(data(:))*1.2;
                 axis([a(1) a(2) 0 max(maxD,1)])
@@ -1124,7 +1130,7 @@ classdef GroupMonitor < handle
                 plot(obj.spkData(1,times),obj.spkData(2,times),'.k')
                 axis image square
                 axis([startTime stopTime -1 prod(obj.grid3D)])
-                title(['Group ' obj.name])
+                title(['Group ' obj.plotTitleName])
                 xlabel('Time (ms)')
                 ylabel('Neuron ID')
                 set(gca, 'YTick', 0:round(prod(obj.grid3D)/10):prod(obj.grid3D)+1)

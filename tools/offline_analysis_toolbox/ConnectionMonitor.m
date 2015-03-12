@@ -13,7 +13,7 @@ classdef ConnectionMonitor < handle
 	% >> CM.recordMovie; % plots hist and saves as 'movie.avi'
 	% >> % etc.
 	%
-	% Version 3/2/2015
+	% Version 3/11/2015
 	% Author: Michael Beyeler <mbeyeler@uci.edu>
 	
 	%% PROPERTIES
@@ -46,6 +46,9 @@ classdef ConnectionMonitor < handle
 		plotHistData;       % weight matrices binned for hist
 		plotHistBins;       % edges for hist
 		plotHistNumBins;    % number of histogram bins
+		
+		plotTitlePreName;	% name of pre-group for plot titles (parsed)
+		plotTitlePostName;  % name of post-group for plot titles (parsed)
 		
 		plotAbortPlotting;  % flag whether to abort plotting (on-click)
 		plotBgColor;        % bg color of plot (for plotting)
@@ -905,6 +908,12 @@ classdef ConnectionMonitor < handle
 			obj.plotStepFramesFW = false;
 			obj.plotStepFramesBW = false;
 			
+			% for the group name in plot titles, mask underscores so that
+			% they're not interpreted as LaTeX; except for '_{', which
+			% should be interpreted as LaTeX for lowerscript
+			obj.plotTitlePreName = regexprep(strrep(obj.grpPreName, '_', '\_'),'\\_{','_{');
+			obj.plotTitlePostName = regexprep(strrep(obj.grpPostName, '_', '\_'),'\\_{','_{');
+
 			obj.needToInitCR = true;
 			obj.needToLoadData = true;
 			
@@ -1109,7 +1118,7 @@ classdef ConnectionMonitor < handle
 				obj.throwError(['Unrecognized plot type "' obj.plotType '".'])
 				return
 			end
-			title({[obj.grpPreName '->' obj.grpPostName ', t=' ...
+			title({[obj.plotTitlePreName '->' obj.plotTitlePostName ', t=' ...
 							num2str(obj.timeStamps(frameNr)) 'ms'],subTitle})
 		end
 		
