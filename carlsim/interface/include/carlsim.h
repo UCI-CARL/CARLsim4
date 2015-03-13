@@ -494,22 +494,33 @@ public:
 	/*!
 	 * \brief Sets default STDP mode and params
 	 *
+	 * Set STDP parameters. Do not use this function, it is deprecated.
+	 *
 	 * \sa setESTDP
+	 * \deprecated For clearness, do not use default STDP settings.
+	 * \since v2.1
 	 */
 	void setSTDP(int grpId, bool isSet);
 
 	/*!
 	 * \brief Sets STDP params for a group, custom
 	 *
+	 * Set STDP parameters. Do not use this function, it is deprecated.
+	 *
 	 * \sa setESTDP
+	 * \deprecated For clearness, please use CARLsim::setESTDP() with E-STDP curve struct.
+	 * \since v2.1
 	 */
 	void setSTDP(int grpId, bool isSet, stdpType_t type, float alphaPlus, float tauPlus, float alphaMinus, float tauMinus);
 
 	/*!
-	 * \brief Sets default E-STDP mode and params
+	 * \brief Sets default E-STDP mode and parameters
 	 *
-	 * \TODO finish docu
+	 * Set E-STDP parameters using default settings. Do not use this function, it is deprecated.
+	 *
 	 * \STATE ::CONFIG_STATE
+	 * \deprecated For clearness, please do not use default STDP settings.
+	 * \since v3.0
 	 */
 	void setESTDP(int grpId, bool isSet);
 
@@ -524,16 +535,18 @@ public:
 	/*!
 	 * \brief Sets E-STDP mode with hebbian curve
 	 *
-	 * \TODO finish docu
 	 * \STATE ::CONFIG_STATE
 	 */
 	void setESTDP(int grupId, bool isSet, stdpType_t type, TimingBasedCurve curve);
 
 	/*!
-	 * \brief Sets default I-STDP mode and params
+	 * \brief Sets default I-STDP mode and parameters
 	 *
-	 * \TODO finish docu
+	 * Set I-STDP parameters using default settings. Do not use this function, it is deprecated.
+	 *
 	 * \STATE ::CONFIG_STATE
+	 * \deprecated For clearness, please do not use default STDP settings.
+	 * \since v3.0
 	 */
 	void setISTDP(int grpId, bool isSet);
 
@@ -1466,7 +1479,7 @@ public:
 	* Sets default STDP parameters. Do not use this function, it is deprecated.
 	*
 	* \STATE ::CONFIG_STATE
-	* \deprecated
+	* \deprecated For clearness, setting STDP parameters using setESTDP and setISTDP is strongly recommended.
 	*/
 	void setDefaultSTDPparams(float alphaPlus, float tauPlus, float alphaMinus, float tauMinus, stdpType_t stdpType);
 
@@ -1476,7 +1489,7 @@ public:
 	* Sets default E-STDP parameters. Do not use this function, it is deprecated.
 	*
 	* \STATE ::CONFIG_STATE
-	* \deprecated
+	* \deprecated For clearness, setting STDP parameters using setESTDP and setISTDP is strongly recommended.
 	*/
 	void setDefaultESTDPparams(float alphaPlus, float tauPlus, float alphaMinus, float tauMinus, stdpType_t stdpType);
 
@@ -1486,6 +1499,7 @@ public:
 	* Sets default I-STDP parameters. Do not use this function, it is deprecated.
 	*
 	* \STATE ::CONFIG_STATE
+	* \deprecated For clearness, setting STDP parameters using setESTDP and setISTDP is strongly recommended.
 	*/
 	void setDefaultISTDPparams(float betaLTP, float betaLTD, float lambda, float delta, stdpType_t stdpType);
 

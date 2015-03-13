@@ -348,14 +348,14 @@ typedef struct GroupSTDPInfo_s {
 	bool 		WithSTDP;			//!< enable STDP flag
 	bool		WithESTDP;			//!< enable E-STDP flag
 	bool		WithISTDP;			//!< enable I-STDP flag
-	stdpType_t  WithESTDPtype;		//!< the type of E-STDP (STARNDARD or DA_MOD)
-	stdpType_t  WithISTDPtype;		//!< the type of I-STDP (STARNDARD or DA_MOD)
+	stdpType_t  WithESTDPtype;		//!< the type of E-STDP (STANDARD or DA_MOD)
+	stdpType_t  WithISTDPtype;		//!< the type of I-STDP (STANDARD or DA_MOD)
 	stdpCurve_t WithESTDPcurve;		//!< the E-STDP curve
 	stdpCurve_t WithISTDPcurve;		//!< the I-STDP curve
-	float		TAU_PLUS_INV_EXC;	//!< the inverse of tau plus, if the exponential E-STDP curve is used
-	float		TAU_MINUS_INV_EXC;	//!< the inverse of tau minus, if the exponential E-STDP curve is used
-	float		ALPHA_PLUS_EXC;		//!< the amplitude of alpha plus, if the exponential E-STDP curve is used
-	float		ALPHA_MINUS_EXC;	//!< the amplitude of alpha minus, if the exponential E-STDP curve is used
+	float		TAU_PLUS_INV_EXC;	//!< the inverse of time constant plus, if the exponential or timing-based E-STDP curve is used
+	float		TAU_MINUS_INV_EXC;	//!< the inverse of time constant minus, if the exponential or timing-based E-STDP curve is used
+	float		ALPHA_PLUS_EXC;		//!< the amplitude of alpha plus, if the exponential or timing-based E-STDP curve is used
+	float		ALPHA_MINUS_EXC;	//!< the amplitude of alpha minus, if the exponential or timing-based E-STDP curve is used
 	float		TAU_PLUS_INV_INB;	//!< the inverse of tau plus, if the exponential I-STDP curve is used
 	float		TAU_MINUS_INV_INB;	//!< the inverse of tau minus, if the exponential I-STDP curve is used
 	float		ALPHA_PLUS_INB;		//!< the amplitude of alpha plus, if the exponential I-STDP curve is used
@@ -495,6 +495,7 @@ struct PulseCurve {
 		UserErrors::assertTrue(_betaLTD < 0.0f, UserErrors::MUST_BE_NEGATIVE, "PulseCurve", "betaLTD");
 		UserErrors::assertTrue(_lambda > 0.0f, UserErrors::MUST_BE_POSITIVE, "PulseCurve", "lambda");
 		UserErrors::assertTrue(_delta > 0.0f, UserErrors::MUST_BE_POSITIVE, "PulseCurve", "delta");
+		UserErrors::assertTure(_lambda > _delta, UserErrors::MUST_BE_LARGER, "PulseCurve", "lambda > delta");
 
 		stdpCurve = PULSE_CURVE;
 	}
