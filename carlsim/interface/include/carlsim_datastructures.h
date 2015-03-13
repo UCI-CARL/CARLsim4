@@ -335,29 +335,47 @@ struct RadiusRF {
 	const double radX, radY, radZ;
 };
 
+/*!
+ * \brief A struct for retrieving STDP related information of a group
+ *
+ * The struct is used in test suite only. CARLsim API call provides a getter function CARLsim::getGroupSTDPInfo()
+ * for retrieving STDP related information of a group. A developer can write his/her test cases to test the
+ * STDP parameters
+ *
+ * \sa CARLsim::getGroupSTDPInfo()
+ */
 typedef struct GroupSTDPInfo_s {
-	bool 		WithSTDP;
-	bool		WithESTDP;
-	bool		WithISTDP;
-	stdpType_t  WithESTDPtype;
-	stdpType_t  WithISTDPtype;
-	stdpCurve_t WithESTDPcurve;
-	stdpCurve_t WithISTDPcurve;
-	float		TAU_PLUS_INV_EXC;
-	float		TAU_MINUS_INV_EXC;
-	float		ALPHA_PLUS_EXC;
-	float		ALPHA_MINUS_EXC;
-	float		TAU_PLUS_INV_INB;
-	float		TAU_MINUS_INV_INB;
-	float		ALPHA_PLUS_INB;
-	float		ALPHA_MINUS_INB;
-	float		GAMMA;
-	float		BETA_LTP;
-	float		BETA_LTD;
-	float		LAMBDA;
-	float		DELTA;
+	bool 		WithSTDP;			//!< enable STDP flag
+	bool		WithESTDP;			//!< enable E-STDP flag
+	bool		WithISTDP;			//!< enable I-STDP flag
+	stdpType_t  WithESTDPtype;		//!< the type of E-STDP (STARNDARD or DA_MOD)
+	stdpType_t  WithISTDPtype;		//!< the type of I-STDP (STARNDARD or DA_MOD)
+	stdpCurve_t WithESTDPcurve;		//!< the E-STDP curve
+	stdpCurve_t WithISTDPcurve;		//!< the I-STDP curve
+	float		TAU_PLUS_INV_EXC;	//!< the inverse of tau plus, if the exponential E-STDP curve is used
+	float		TAU_MINUS_INV_EXC;	//!< the inverse of tau minus, if the exponential E-STDP curve is used
+	float		ALPHA_PLUS_EXC;		//!< the amplitude of alpha plus, if the exponential E-STDP curve is used
+	float		ALPHA_MINUS_EXC;	//!< the amplitude of alpha minus, if the exponential E-STDP curve is used
+	float		TAU_PLUS_INV_INB;	//!< the inverse of tau plus, if the exponential I-STDP curve is used
+	float		TAU_MINUS_INV_INB;	//!< the inverse of tau minus, if the exponential I-STDP curve is used
+	float		ALPHA_PLUS_INB;		//!< the amplitude of alpha plus, if the exponential I-STDP curve is used
+	float		ALPHA_MINUS_INB;	//!< the amplitude of alpha minus, if the exponential I-STDP curve is used
+	float		GAMMA;				//!< the turn over point if the timing-based E-STDP curve is used
+	float		BETA_LTP;			//!< the amplitude of inhibitory LTP if the pulse I-STDP curve is used
+	float		BETA_LTD;			//!< the amplitude of inhibitory LTD if the pulse I-STDP curve is used
+	float		LAMBDA;				//!< the range of inhibitory LTP if the pulse I-STDP curve is used
+	float		DELTA;				//!< the range of inhibitory LTD if the pulse I-STDP curve is used
 } GroupSTDPInfo_t;
 
+/*!
+ * \brief A struct for retrieving neuromodulator information of a group
+ *
+ * The struct is used in test suite only. CARLsim API call provides a getter function CARLsim::getGroupNeuromodulatorInfo()
+ * for retrieving neuromodulator information of a group. A developer can write his/her test cases to test the
+ * neuromodulator parameters
+ *
+ * \sa CARLsim::getGroupNeuromodulatorInfo()
+ */
 typedef struct GroupNeuromodulatorInfo_s {
 	float		baseDP;		//!< baseline concentration of Dopamine
 	float		base5HT;	//!< baseline concentration of Serotonin
@@ -429,7 +447,7 @@ struct Grid3D {
 };
 
 /*!
- * \brief struct to assign exponential curve
+ * \brief A struct to assign exponential curve
  */
 struct ExpCurve {
 	ExpCurve(float _alphaPlus, float _tauPlus, float _alphaMinus, float _tauMinus) : alphaPlus(_alphaPlus), tauPlus(_tauPlus), alphaMinus(_alphaMinus), tauMinus(_tauMinus) {
@@ -446,6 +464,9 @@ struct ExpCurve {
 	float tauMinus;
 };
 
+/*!
+ * \brief A struct to assign timing-based curve
+ */
 struct TimingBasedCurve {
 	TimingBasedCurve(float _alphaPlus, float _tauPlus, float _alphaMinus, float _tauMinus, float _gamma) : alphaPlus(_alphaPlus), tauPlus(_tauPlus), alphaMinus(_alphaMinus), tauMinus(_tauMinus) , gamma(_gamma) {
 		UserErrors::assertTrue(_alphaPlus > 0.0f, UserErrors::MUST_BE_POSITIVE, "TimingBasedCurve", "alphaPlus");

@@ -1317,16 +1317,19 @@ public:
 	/*!
 	 * \brief returns the stdp information of a group specified by grpId
 	 *
-	 * \TODO finish docu
+	 * This function returns the current STDP setting of a group.
 	 * \STATE ::SETUP_STATE, ::RUN_STATE
+	 * \sa GroupSTDPInfo_s
 	 */
 	GroupSTDPInfo_t getGroupSTDPInfo(int grpId);
 
 	/*!
 	 * \brief returns the neuromodulator information of a group specified by grpId
 	 *
-	 * \TODO finish docu
+	 * This function returns the current setting for neuromodulators.
+	 *
 	 * \STATE ::SETUP_STATE, ::RUN_STATE
+	 * \sa GroupNeuromodulatorInfo_s
 	 */
 	GroupNeuromodulatorInfo_t getGroupNeuromodulatorInfo(int grpId);
 
