@@ -10,6 +10,10 @@ Release 3.0
 ---------------------
 Build 3.0.1
 ---------------------
+2015-03-18     Kristofor D. Carlson <kdcarlso@uci.edu>
+	* Added Tutorial Chapter 3: Plasticity to Tutorial.
+	* Shifted appropriate Tutorial chapters around.
+
 2015-03-02     Kristofor D. Carlson <kdcarlso@uci.edu>
   * Updated Chapter 3 of User Guide.
 	* Fixed LaTeX/Doxygen configuration problems.
