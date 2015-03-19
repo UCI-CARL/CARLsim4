@@ -42,7 +42,7 @@ Spike timing-dependent plasticity (STDP) is a popular learning rule in spiking n
 (SNNs). STDP was first found in neurons in 1997 and is still under intense study (Sjöström
 Gerstner (2010)). SNNs are a unique class of neural network (NN) models that capture the
 temporal dynamics (spike times) of the network. Because of this, they are ideally sutied to
-implement STDP. However, STDP can often undergo 'runaway potentiation' or 'runaaway depotentiation'
+implement STDP. However, STDP can often undergo 'runaway potentiation' or 'runaway depotentiation'
 where the synaptic weights increase or decrease without bound, respectively. To avoid this, CARLsim
 users can utilize a model of homeostatic synaptic scaling implemented in CARLsim. The homeostatic
 synaptic scaling model (Carlson et al., 2014) is biologically plausible and works as follows. The
@@ -104,8 +104,9 @@ We next connect neurons from the gPoiss group to neurons (just one for now) in t
 full connectivity with a minimum weight value of 0.0, an initial value of 1.0f/100, and a maximum
 value of 20.0f/100. The connection probability is given as 1.0f, a delay of 1 is used for all
 synapses, and no receptive fields are specified (-1). Finally, the keyword 'SYN_PLASTIC' is used
-instead of 'SYN_FIXED' to enable plasticity for this connection. This is required. Also, set this
-simulation to use conductances with default parameter values with the CARLsim::setConductances call.
+instead of 'SYN_FIXED' to enable plasticity for this connection. This is required. Also, the
+simulation is set to use conductances with default parameter values with the
+CARLsim::setConductances call.
 
 \code
 // connect our groups with SYN_PLASTIC as the final argument.
@@ -187,8 +188,8 @@ sim.setHomeoBaseFiringRate(gExc,targetFiringRate,0);
 \section tut3s2s2_setup 3.2.2 CARLsim Program SETUP State
 
 During the SETUP state of CARLsim, CARLsim::setupNetwork is called. Two SpikeMonitor pointers are
-called and assigned SpikeMonitor objects created with the CARLsim::setSpikeMonitor function call.
-The first argument to these functions are the group for which the spike data will be recorded while
+declared and assigned SpikeMonitor objects created with the CARLsim::setSpikeMonitor function call.
+The first argument to these functions is the group for which the spike data will be recorded while
 the second argument is the filename of the spike data files. The argument of "DEFAULT" denotes that
 the default filename conventions will be used, namely: "results/spk_{group name}.dat". We also
 create a ConnectionMonitor to record the synaptic weights for the connection between the input group
@@ -214,9 +215,9 @@ CM->setUpdateTimeIntervalSec(-1);
 
 \section tut3s2s3_run 3.2.3 CARLsim Program RUN State
 
-During the RUN state, we set the firing rates of each of the nPois (100) neurons. We assing the
+During the RUN state, we set the firing rates of each of the nPois (100) neurons. We assign the
 first input neuron an average firing rate of 0.2 Hz, the second input neuron an average firing rate
-of 0.4 Hz, and so on. This gives our 100th input a neuron an average firing rate of 20 Hz. We can
+of 0.4 Hz, and so on. This gives our 100th input neuron an average firing rate of 20 Hz. We can
 now observe the weight change at each input/output synapse as a function of the average firing rate
 of the input neurons each having Poisson firing statistics.
 
@@ -246,7 +247,7 @@ int runTimeMs  = 0; // milliseconds
 \endcode
 
 Finally, we take a snapshot of the weights between the input and output groups before we run the
-simulation, then run the simulation, and then take a snapshot of the weights after the simulation
+simulation, run the simulation, and then take a snapshot of the weights after the simulation
 has been run. This is shown in the code below:
 
 \code
@@ -260,14 +261,14 @@ CM->takeSnapshot();
 \endcode
 
 \section tut3s3_network_output 3.3 Network Output
-After navigating to <tt>%%CARLSIM_ROOT_DIR%%/doc/source/tutorial/3_plasticity</tt>, the network can be
-compiled and run with the following commands (on Unix):
+In Linux, after navigating to <tt>%%CARLSIM_ROOT_DIR%%/doc/source/tutorial/3_plasticity</tt>, the
+network can be compiled and run with the following commands:
 \code
 $ make
 $ ./plasticity
 \endcode
 
-On Windows, the <tt>.vcxproj</tt> file is already added to the <tt>CARLsim.sln</tt> solution file.
+In Windows, the <tt>.vcxproj</tt> file is already added to the <tt>CARLsim.sln</tt> solution file.
 Thus the project can be built simply by opening the solution file in Visual Studio, by right-clicking the
 project directory and choosing "Build project".
 
@@ -278,11 +279,11 @@ the group ID. It also notifies you that homeostasis is enabled for the output gr
 exact parameter values being used.
 
 \code
-*********************************************************************************
-********************      Welcome to CARLsim 3.0      ***************************
-*********************************************************************************
+.********************************************************************************
+.*******************      Welcome to CARLsim 3.0      ***************************
+.********************************************************************************
 
-***************************** Configuring Network ********************************
+.*************************** Configuring Network ********************************
 Starting CARLsim simulation "plasticity simulation" in USER mode
 Random number seed: 1426032481
 CUDA devices Configuration:
@@ -300,6 +301,7 @@ Running COBA mode:
 E-STDP enabled for output(1)
 Homeostasis parameters enabled for 1 (output):	homeoScale: 1.000000, avgTimeScale: 5.000000
 Homeostatic base firing rate set for 1 (output):	baseFiring: 35.000, baseFiringStd: 0.000
+...
 \endcode
 
 During the network setup, the simulator lists the parameter values for E-STDP. Here we see that
@@ -308,21 +310,22 @@ one for 0 and one for group 1. Finally, we are notified that a ConnectionMonitor
 the conncection between group 0 and group 1. The '...' denotes excluded output.
 
 \code
-***************************** Setting up Network **********************************
+
+.***************************** Setting up Network **********************************
 ...
-	- STDP:
-      - E-STDP TYPE            = STANDARD
-      - I-STDP TYPE            =  UNKNOWN
-      - ALPHA_PLUS_EXC         =  0.00020
-      - ALPHA_MINUS_EXC        = -0.00007
-      - TAU_PLUS_INV_EXC       =  0.05000
-      - TAU_MINUS_INV_EXC      =  0.05000
-      - BETA_LTP               =  0.00000
-      - BETA_LTD               =  0.00000
-      - LAMBDA                 =  0.00000
-      - DELTA                  =  0.00000
+- STDP:
+    - E-STDP TYPE            = STANDARD
+    - I-STDP TYPE            =  UNKNOWN
+    - ALPHA_PLUS_EXC         =  0.00020
+    - ALPHA_MINUS_EXC        = -0.00007
+    - TAU_PLUS_INV_EXC       =  0.05000
+    - TAU_MINUS_INV_EXC      =  0.05000
+    - BETA_LTP               =  0.00000
+    - BETA_LTD               =  0.00000
+    - LAMBDA                 =  0.00000
+    - DELTA                  =  0.00000
 ...
-*****************      Initializing GPU Simulation      *************************
+.****************      Initializing GPU Simulation      *************************
 ...
 SpikeMonitor set for group 0 (input)
 SpikeMonitor set for group 1 (output)
@@ -330,10 +333,16 @@ ConnectionMonitor 0 set for Connection 0: 0(input) => 1(output)
 \endcode
 
 CARLsim also outputs information about the synaptic weight strengths and their recent changes in
-synaptic weight. Below we see
+synaptic weight. Below we see presynaptic neuron id and postsynaptic neuron id in brackets,
+indicating the specific synapse. For example [ 0, 0] indicates the synaptic connection from
+presynaptic neuron 0 to postsynaptic neuron 0. Here, you can see all synaptic connections have the
+same postsynaptic neuron id (0), meaning these are connections from many different presynaptic
+neurons to a single postsynaptic neuron. Next, is the value of the synaptic weight with the change
+in the last second in parenthesis. For example: 0.0016 (+0.0004) indicates that the weight has a
+value of 0.0016 and has increased 0.0004 in the past 1 second.
 
 \code
-******************** Running GPU Simulation on GPU 0 ***************************
+.******************* Running GPU Simulation on GPU 0 ***************************
 
 (t=1000.000s) SpikeMonitor for group input(0) has 1010036 spikes in 1000ms (10100.36 +/- 5819.37 Hz)
 (t=1000.000s) SpikeMonitor for group output(1) has 37085 spikes in 1000ms (37085.00 +/- 0.00 Hz)
@@ -365,8 +374,11 @@ synaptic weight. Below we see
 [96, 0] 0.0272 (+0.0013)   [97, 0] 0.0264 (-0.0020)   [98, 0] 0.0296 (+0.0017)   [99, 0] 0.0267 (-0.0002)
 \endcode
 
+Finally, we see the number of neurons involved in the total simulation (numNeurons = 101), the total
+number of synapses (numSynapses = 100), and the overall average firing rate: (Overall = 10.368 Hz).
+
 \code
-********************      GPU Simulation Summary      ***************************
+.*******************      GPU Simulation Summary      ***************************
 Network Parameters: 	numNeurons = 101 (numNExcReg:numNInhReg = 1.0:0.0)
 			numSynapses = 100
 			maxDelay = 1
@@ -380,62 +392,107 @@ Average Firing Rate:	2+ms delay = 0.000 Hz
 Overall Firing Count:	2+ms delay = 0
 			1ms delay = 1047121
 			Total = 1047121
-*********************************************************************************
+.********************************************************************************
 \endcode
 
 \section tut3s4_network_vis 3.4 Network Visualization
 
 In order to plot network activity and observe weight changes in the network, we will make use of the
-MATLAB Offline Analysis Toolbox (OAT) (see \ref ch9_matlab_oat).
-
-The Tutorial subdirectory <tt>"scripts/"</tt> provides a MATLAB script <tt>"scripts/demoOAT.m"</tt> to
-demonstrate the usage of the OAT.
-The script looks like this:
-\code
-% OAT demo
-
-% first, init OAT by adding path
-initOAT
-
-% second, open a NetworkMonitor on the simulation file
-% and plot the activity of the network
-NM = NetworkMonitor('../results/sim_spnet.dat')
-NM.plot
-
-% third, observe weight changes in the network
-CM0 = ConnectionMonitor('exc','exc','../results')
-CM0.plot('histogram')
-
-CM1 = ConnectionMonitor('inh','exc','../results')
-CM1.plot('histogram')
-\endcode
-
-After adding the location of the OAT source code to the MATLAB path, a NetworkMonitor is opened on the
-simulation file <tt>"../results/sim_spnet.dat"</tt>, which was automatically created during the CARLsim
-simulation (note that the string "spnet" corresponds to the name given to the network in the CARLsim constructor).
-
-Calling the <tt>plot</tt> method will then visualize network activity using default settings and a plot type
-that depends on the spatial structure of the neuron groups.
-Since the network does not have any particular spatial structure, the default plot type is a raster plot,
-shown in frames of 1000ms, as seen in Fig. 1 below.
+MATLAB Offline Analysis Toolbox (OAT) (see \ref ch9_matlab_oat). The CARLsim simulation will output
+spike and synaptic weight data files to the results directory. To run, the network visualization
+scripts, simply open MATLAB, change the current directory to the <tt>"scripts/"</tt> directory and
+run:
 
 \code
-\image html 2_nm_raster.jpg "Fig. 1. NetworkMonitor output for groups 'exc' and 'inh' (raster plot)"
+>> plasticityOAT
 \endcode
 
-Fig. 2 shows the temporal evolution of weights from the recurrent excitatory connection on <tt>gExc</tt>.
-At the beginning of the experiment (leftmost panel), all weights are initialized to <tt>6.0f</tt>.
-Over time, these values start to diverge, but stay confined in the range <tt>[0.0f, 10.0f]</tt>.
-
+The <tt>plasticityOAT.m</tt> script looks like this:
 \code
-\image html 2_cm_hist.jpg "Fig. 2. ConnectionMonitor output for the connection 'exc'=>'exc' (histogram)"
+% Tutorial 3 Plasticity OAT Scripts
+
+% First run initOAT script to set the correct path
+initOAT;
+
+% Read the spike files
+SR = SpikeReader('../results/spk_output.dat');
+
+% Bin the data into 1s (1000 ms) intervals
+spkData = SR.readSpikes(1000);
+
+% Generate time data
+time=linspace(1,1000,1000);
+
+% generate target firing rate data
+targetFR(1:1000)=35;
+figure(1);
+hold on;
+
+% plot the average output neuron firing rate in blue
+plot(time,spkData,'blue');
+
+% plot the target firing rate in red
+plot(time,targetFR,'red');
+
+% make labels and title
+xlabel('Time (sec)');
+ylabel('Average Firing Rate (Hz)');
+title('Average Firing Rate of Output Neuron vs. Time');
+
+% Read the synaptic weights using connectionReader
+CR = ConnectionReader('../results/conn_input_output.dat');
+
+% readWeights() returns time stamps and weights.
+
+% allTimestamps will contain the times of the individual weight snapshots
+% (in ms). We took a snapshot at the beginning of the simulation and at the
+% end, after 1000 seconds have elapsed, so we should have 2 values: 0 and
+% 1000000.
+
+% allWeights is of dimension numSnapshots X numSynapsesPossible.
+% numSnapshots is the number of the snapshots taken while
+% numSynapsesPossible is the total number of synapses possible in the
+% synaptic connection. For instance, if you have 30% connectivity between
+% two groups of size N1 and N2, the number of possible synapses would be
+% N1 X N2.
+[allTimestamps, allWeights] = CR.readWeights();
+
+% Generate x-axis of neuron ids
+x1=linspace(1, 100, 100);
+
+% output everything to figure 2
+figure(2);
+hold on;
+
+% plot the initial weights in red (first row of data).
+plot(x1,allWeights(1,:),'red');
+
+% plot the final weights in blue (second row of data).S\
+plot(x1,allWeights(2,:),'blue');
+xlabel('Neuron ID');
+ylabel('Synaptic Weight Strength');
+title('Synaptic Weight Strength vs. Neuron ID');
 \endcode
 
-Similar behavior can be observed on the connection from <tt>gInh</tt> to <tt>gExc</tt>.
+After adding the location of the OAT source code to the MATLAB path, a SpikeReader is opened on the
+spike data file: <tt>"../results/spk_output.dat"</tt> which was created during the CARLsim
+simulation because we created a SpikeMonitor.
 
-It would also be possible to open a ConnectionMonitor on the fixed connection from <tt>gExc</tt> to <tt>gInh</tt>,
-but the expected output would be similar to the leftmost panel of Fig. 2, showing all weights initialized to
-<tt>5.0f</tt>, with no weight changes to report over time.
+Calling the readSpikes method with an argument of '1000' creates 1000 ms wide bins in which it
+places the total number of spikes for that time period (1000 ms). The user can then easily create a
+plot or histogram with the data. Below <b>Fig. 1</b> shows the target firing rate and actual average
+firing rate of the output neuron.
 
+
+\image html FiringRates.png "Fig. 1. The Target (red) and average (blue) firing rate of the output neuron."
+
+To visualize the weights, we next open a ConnectionReader on the file
+<tt>"../results/conn_input_output.dat"</tt> which was created during the CARLsim simulation because
+we created a ConnectionMonitor. We use the readWeights method to return a matrix that contains the
+time stamps of when each synaptic weight snapshot was created. The synaptic weight values are output
+to the allWeights matrix. See the code comments for more information. Finally, we plot the initial
+weight values in red and the final weight values in blue as shown in <b>Fig. 2</b>.
+
+\image html Weights.png "Fig. 2. The initial (red) and final (blue) synaptic weight values."
 
 */
