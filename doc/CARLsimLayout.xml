@@ -76,12 +76,21 @@
 				<tab type="user" visible="no" title="2.3 Network Output" url="@ref tut2s3_network_output"/>
 				<tab type="user" visible="no" title="2.4 Visualizing Network Activity" url="@ref tut2s4_network_activity"/>
 			</tab>
-			<tab type="usergroup" visible="yes" title="3. Simple Weight Tuner" url="@ref tut3_simple_weight_tuner"/>
-			<tab type="usergroup" visible="yes" title="4. Parameter Tuning Interface (PTI)" url="@ref tut4_pti">
-				<tab type="user" visible="no" title="4.1 Introducton" url="@ref tut4s1_intro"/>
-				<tab type="user" visible="no" title="4.2 ECJ Parameter File" url="@ref tut4s2_parameter_file"/>
-				<tab type="user" visible="no" title="4.3 Parameter Tuning Interface (PTI)" url="@ref tut4s3_experiment_class"/>
-				<tab type="user" visible="no" title="4.4 Output Files" url="@ref tut4s4_output_files"/>
+			<tab type="usergroup" visible="yes" title="3. Plasticity" url="@ref tut3_plasticity">
+				<tab type="user" visible="no" title="3.1 STDP and Homeostatic Synaptic Scaling" url="@ref tut3s1_overview"/>
+				<tab type="user" visible="no" title="3.2 Network Setup" url="@ref tut3s2_network_setup"/>
+				<tab type="user" visible="no" title="3.3 Network Output" url="@ref tut3s3_network_output"/>
+				<tab type="user" visible="no" title="3.4 Network Visualization" url="@ref tut3s4_network_vis"/>
+			</tab>
+			<tab type="usergroup" visible="yes" title="4. Simple Weight Tuner" url="@ref tut4_simple_weight_tuner">
+				<tab type="user" visible="no" title="4.1 Problem" url="@ref tut4s1_problem"/>
+				<tab type="user" visible="no" title="4.2 Solution" url="@ref tut4s2_solution"/>
+			</tab>
+			<tab type="usergroup" visible="yes" title="5. Parameter Tuning Interface (PTI)" url="@ref tut5_pti">
+				<tab type="user" visible="no" title="5.1 Introducton" url="@ref tut5s1_intro"/>
+				<tab type="user" visible="no" title="5.2 ECJ Parameter File" url="@ref tut5s2_parameter_file"/>
+				<tab type="user" visible="no" title="5.3 Parameter Tuning Interface (PTI)" url="@ref tut5s3_experiment_class"/>
+				<tab type="user" visible="no" title="5.4 Output Files" url="@ref tut5s4_output_files"/>
 			</tab>
 		</tab>
 		<tab type="modules" visible="yes" title="" intro=""/>
