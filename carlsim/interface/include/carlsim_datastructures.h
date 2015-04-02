@@ -485,7 +485,13 @@ struct ExpCurve {
  * specifies the curve at the pre-post side. The curve is basically an exponential curve, which specified by
  * (_alphaPlus, _tauPlus), transformed by gamma. The value of gamma is the turn-over point. The STDP function at the
  * pre-post side is governed by the following equation:
- * \image html timing_based_stdp_curve.jpg
+\f[
+ STDP(t) =
+  \begin{cases}
+   \alpha^+(1-(1-e^{-\frac{t}{\tau^+}})(\frac{1+e^{-\frac{\gamma}{\tau^+}}}{1-e^{-\frac{\gamma}{\tau^+}}})) & \text{if } t < \gamma \\
+   -\alpha^+ e^{-\frac{t}{\tau^+}}       & \text{if } t \geq \gamma
+  \end{cases}
+\f]
  * Simply, if t is larger than gamma, the STDP function is the mirrored exponential curve along x-axis. If t is smaller
  * than gamma, the STDP function is the exponential curve stretched to the turn-over point. The parameters
  * (_alphaMinus, _tauMinus) specifies the exponential curve at the post-pre side. This curve requires _alphaMinus to be

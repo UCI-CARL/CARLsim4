@@ -797,8 +797,7 @@ IMAGE_PATH             = source/user_guide \
                          source/tutorial/2_random_spnet/doc \
                          source/tutorial/3_plasticity/doc \
                          source/tutorial/4_simple_weight_tuner/doc \
-                         source/tutorial/5_pti/doc \
-                         source/img
+                         source/tutorial/5_pti/doc
 
 
 # The INPUT_FILTER tag can be used to specify a program that doxygen should
