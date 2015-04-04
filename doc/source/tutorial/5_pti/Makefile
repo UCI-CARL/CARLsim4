@@ -8,7 +8,7 @@ local_targets := tuneFiringRatesECJ
 
 # name of ECJ parameter file.
 ecj_param_file := $(local_targets)Experiment.params
-output := *.dot *.dat *.log *.stat results/*
+output := *.dot *.dat *.log *.stat results/* debugInput.csv
 
 # -----------------------------------------------------------------------------
 # You should not need to edit the file beyond this point
