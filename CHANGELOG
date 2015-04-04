@@ -10,6 +10,9 @@ Release 3.0
 ---------------------
 Build 3.0.1
 ---------------------
+2015-04-04     Kristofor D. Carlson <kdcarlso@uci.edu>
+	* Added script to more easily debug parameter-tuning interface programs.
+
 2015-03-31     Kristofor D. Carlson <kdcarlso@uci.edu>
 	* Fixed minor bug that generates warning on setHomeBaseFiringRate call.
 
