@@ -4,7 +4,7 @@ parent.0 =                              @ec.simple.SimpleEvolutionState simple.p
 # =========================
 eval =					ecjapp.eval.SimpleGroupedEvaluator
 generations =				50
-pop.subpop.0.size =	 10
+pop.subpop.0.size	=	 10
 #evalthreads =				4
 #seed.0 =				time
 #seed.1 =				time
