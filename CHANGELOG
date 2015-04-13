@@ -12,6 +12,8 @@ Build 3.0.1
 ---------------------
 
 2015-04-13     Michael Beyeler <mbeyeler@uci.edu>
+  * Fixed allowed CARLsim states for CARLsim::setSpikeCounter.
+    Updated and improved SpikeCounter documentation.
   + Added Makefile target: uninstall
 
 2015-04-04     Kristofor D. Carlson <kdcarlso@uci.edu>
