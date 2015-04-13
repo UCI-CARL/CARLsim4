@@ -330,4 +330,27 @@ Then the new project is ready to be built, rebuilt, or cleaned directly through 
 
 \since v3.0
 
+
+\section ch1s4_deinstallation 1.4 Deinstallation
+\author Michael Beyeler
+
+
+\subsection ch1s4s1_linux 1.4.1 Linux / Mac OS X
+
+To deinstall CARLsim on a Unix platform, open a terminal, navigate to the CARLsim root directory, and type:
+\code
+$ sudo make uninstall
+\endcode
+
+This will remove the directory pointed to by the environment variable <tt>CARLSIM_LIB_DIR</tt>.
+By default, this variable points to the location <tt>"/opt/CARL/CARLsim"</tt>.
+
+\note Any environments that have been added to <tt>~/.bashrc</tt> must be removed manually.
+\attention Before uninstalling, make sure that the environment variable <tt>CARLSIM_LIB_DIR</tt> is properly set.
+
+
+\subsection ch1s4s2_windows 1.4.2 Windows
+
+On Windows, simply move all downloaded and unzipped CARLsim files to the recycle bin.
+
 */

@@ -10,14 +10,18 @@ Release 3.0
 ---------------------
 Build 3.0.1
 ---------------------
+
+2015-04-13     Michael Beyeler <mbeyeler@uci.edu>
+  + Added Makefile target: uninstall
+
 2015-04-04     Kristofor D. Carlson <kdcarlso@uci.edu>
-	* Added script to more easily debug parameter-tuning interface programs.
+	+ Added script to more easily debug parameter-tuning interface programs.
 
 2015-03-31     Kristofor D. Carlson <kdcarlso@uci.edu>
 	* Fixed minor bug that generates warning on setHomeBaseFiringRate call.
 
 2015-03-18     Kristofor D. Carlson <kdcarlso@uci.edu>
-	* Added Tutorial Chapter 3: Plasticity to Tutorial.
+	+ Added Tutorial Chapter 3: Plasticity to Tutorial.
 	* Shifted appropriate Tutorial chapters around.
 
 2015-03-11     Michael Beyeler <mbeyeler@uci.edu>
