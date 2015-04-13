@@ -876,7 +876,7 @@ GroupMonitor* CARLsim::setGroupMonitor(int grpId, const std::string& fname) {
 void CARLsim::setSpikeCounter(int grpId, int recordDur) {
 	std::stringstream funcName;	funcName << "setSpikeCounter(" << grpId << "," << recordDur << ")";
 	UserErrors::assertTrue(grpId!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName.str(), "grpId");
-	UserErrors::assertTrue(carlsimState_==CONFIG_STATE || carlsimState_==SETUP_STATE,
+	UserErrors::assertTrue(carlsimState_==CONFIG_STATE,
 					UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName.str(), "CONFIG or SETUP.");
 
 	snn_->setSpikeCounter(grpId,recordDur);
