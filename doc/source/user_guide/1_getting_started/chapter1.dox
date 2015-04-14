@@ -331,13 +331,13 @@ Then the new project is ready to be built, rebuilt, or cleaned directly through 
 \since v3.0
 
 
-\section ch1s4_deinstallation 1.4 Deinstallation
+\section ch1s4_uninstallation 1.4 Uninstallation
 \author Michael Beyeler
 
 
 \subsection ch1s4s1_linux 1.4.1 Linux / Mac OS X
 
-To deinstall CARLsim on a Unix platform, open a terminal, navigate to the CARLsim root directory, and type:
+To uninstall CARLsim on a Unix platform, open a terminal, navigate to the CARLsim root directory, and type:
 \code
 $ sudo make uninstall
 \endcode
