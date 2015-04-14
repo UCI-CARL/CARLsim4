@@ -42,13 +42,6 @@
 #include <error_code.h>
 #include <cuda_runtime.h>
 
-#if __CUDA3__
-// includes, library
-#include "cudpp/cudpp.h"
-#elif __CUDA5__
-
-#endif
-
 #define ROUNDED_TIMING_COUNT  (((1000+MAX_SynapticDelay+1)+127) & ~(127))  // (1000+maxDelay_) rounded to multiple 128
 
 #define  FIRE_CHUNK_CNT    (512)
