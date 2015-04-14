@@ -45,7 +45,7 @@
 #include <carlsim.h>
 #include <vector>
 
-#if (WIN32 || WIN64)
+#if defined(WIN32) || defined(WIN64)
 #include <periodic_spikegen.h>
 #include <spikegen_from_file.h>
 #include <spikegen_from_vector.h>

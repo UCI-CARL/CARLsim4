@@ -4,7 +4,7 @@
 #include <carlsim.h>
 #include <snn_definitions.h> // MAX_GRP_PER_SNN
 
-#if (WIN32 || WIN64)
+#if defined(WIN32) || defined(WIN64)
 #include <periodic_spikegen.h>
 #endif
 
@@ -309,7 +309,7 @@ TEST(SpikeMon, spikeTimes) {
 			for (int j=0; j<spkVector[i].size(); j++)
 				EXPECT_EQ(spkVector[i][j] % isi, 0);
 
-#if (WIN32 || WIN64)
+#if defined(WIN32) || defined(WIN64)
 		int ret = system("del spkG0.dat");
 #else
 		int ret = system("rm -rf spkG0.dat");
@@ -407,7 +407,7 @@ TEST(SpikeMon, getGroupFiringRate){
 		EXPECT_EQ(spikeMonG1->getPopNumSpikes(), g1Size/2);
 		EXPECT_FLOAT_EQ(spikeMonG1->getPopMeanFiringRate(), g1Size/(2.0*GRP_SIZE) * 1000.0/(runTimeMsOn+2*runTimeMsOff));
 
-#if (WIN32 || WIN64)
+#if defined(WIN32) || defined(WIN64)
 		int ret = system("del spkInputGrp.dat");
 		ret = system("del spkG1Grp.dat");
 #else
@@ -447,7 +447,7 @@ TEST(SpikeMon, getMaxMinNeuronFiringRate){
 
         sim->setupNetwork();
 
-#if (WIN32 || WIN64)
+#if defined(WIN32) || defined(WIN64)
 		int ret = system("del spkInputGrp.dat");
 		ret = system("del spkG1Grp.dat");
 #else
@@ -591,7 +591,7 @@ TEST(SpikeMon, setLogFile) {
 		// make sure calling setLogFile with "NULL" doesn't break things
 		spikeMonG0->setLogFile("NULL");
 
-#if (WIN32 || WIN64)
+#if defined(WIN32) || defined(WIN64)
 		system("del spkG0.dat");
 #else
 		system("rm -rf spkG0.dat");

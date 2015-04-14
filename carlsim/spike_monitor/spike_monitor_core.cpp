@@ -229,7 +229,7 @@ void SpikeMonitorCore::print(bool printSpikeTimes) {
 
 		for (int i=0; i<nNeurons_; i++) {
 			char buffer[200];
-#if (WIN32 || WIN64)
+#if defined(WIN32) || defined(WIN64)
 			_snprintf(buffer, 200, "| %7d | % 9.2f | ", i, getNeuronMeanFiringRate(i));
 #else
 			snprintf(buffer, 200, "| %7d | % 9.2f | ", i, getNeuronMeanFiringRate(i));
@@ -237,7 +237,7 @@ void SpikeMonitorCore::print(bool printSpikeTimes) {
 			int nSpk = spkVector_[i].size();
 			for (int j=0; j<nSpk; j++) {
 				char times[10];
-#if (WIN32 || WIN64)
+#if defined(WIN32) || defined(WIN64)
 				_snprintf(times, 10, "%8d", spkVector_[i][j]);
 #else
 				snprintf(times, 10, "%8d", spkVector_[i][j]);

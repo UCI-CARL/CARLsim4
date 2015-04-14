@@ -6,7 +6,7 @@
 #include <math.h>	// log
 #include <algorithm> // max
 
-#if (WIN32 || WIN64)
+#if defined(WIN32) || defined(WIN64)
 #include <periodic_spikegen.h>
 #endif
 
