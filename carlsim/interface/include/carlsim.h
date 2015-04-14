@@ -755,14 +755,14 @@ public:
 	 *
 	 * Manually resets the spike buffers of a Spike Counter to zero (for a specific group).
 	 * Buffers get reset to zero automatically after <tt>recordDur</tt> (see CARLsim::setSpikeCounter).
-	 * However, the buffer can be manually reset at any point in time (during ::RUN_STATE).
+	 * However, the buffer can be manually reset at any point in time (during ::SETUP_STATE and ::RUN_STATE).
 	 *
-	 * At any point in time (during ::RUN_STATE), all SpikeCounters can be reset via:
+	 * At any point in time (during ::SETUP_STATE or ::RUN_STATE), all SpikeCounters can be reset via:
 	 * \code
 	 * sim.resetSpikeCounters(-1); // reset for all groups, -1==ALL
 	 * \endcode
 	 *
-	 * \STATE ::RUN_STATE
+	 * \STATE ::SETUP_STATE, ::RUN_STATE
 	 * \param grpId the group for which to reset the spike counts. Set to ALL if you want to reset all SpikeCounters.
 	 * \see CARLsim::setSpikeCounter
 	 * \see CARLsim::getSpikeCounter

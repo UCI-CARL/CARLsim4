@@ -11,9 +11,12 @@ Release 3.0
 Build 3.0.1
 ---------------------
 
+2015-04-14     Michael Beyeler <mbeyeler@uci.edu>
+  * Fixed allowed CARLsim states for CARLsim::setSpikeCounter and
+    CARLsim::resetSpikeCounter. Updated and improved SpikeCounter
+    documentation.
+
 2015-04-13     Michael Beyeler <mbeyeler@uci.edu>
-  * Fixed allowed CARLsim states for CARLsim::setSpikeCounter.
-    Updated and improved SpikeCounter documentation.
   + Added Makefile target: uninstall
 
 2015-04-04     Kristofor D. Carlson <kdcarlso@uci.edu>
@@ -23,8 +26,8 @@ Build 3.0.1
 	* Fixed minor bug that generates warning on setHomeBaseFiringRate call.
 
 2015-03-18     Kristofor D. Carlson <kdcarlso@uci.edu>
-	+ Added Tutorial Chapter 3: Plasticity to Tutorial.
-	* Shifted appropriate Tutorial chapters around.
+	+ Added Tutorial Chapter 3: Plasticity.
+	* Shifted Tutorial chapters around appropriately.
 
 2015-03-11     Michael Beyeler <mbeyeler@uci.edu>
   * Updated and extended Tutorial 1.
