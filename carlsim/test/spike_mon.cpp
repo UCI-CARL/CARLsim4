@@ -592,9 +592,9 @@ TEST(SpikeMon, setLogFile) {
 		spikeMonG0->setLogFile("NULL");
 
 #if (WIN32 || WIN64)
-		system("del spkG0.dat");
+		int ret = system("del spkG0.dat");
 #else
-		system("rm -rf spkG0.dat");
+		int ret = system("rm -rf spkG0.dat");
 #endif
 		if (inputArray!=NULL) delete[] inputArray;
 		delete sim;
