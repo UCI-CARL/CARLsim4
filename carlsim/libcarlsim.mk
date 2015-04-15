@@ -69,3 +69,7 @@ install: $(carlsim_lib)
 		$(CARLSIM_LIB_DIR)/include/spike_generators
 	@install -m 0644 $(tools_swt_dir)/simple_weight_tuner.h \
 		$(CARLSIM_LIB_DIR)/include/simple_weight_tuner
+
+# uninstall LIB folder, which by default is under /opt/
+uninstall:
+	@test -d $(CARLSIM_LIB_DIR) && $(RM) $(CARLSIM_LIB_DIR)

@@ -767,11 +767,18 @@ public:
 	 * \brief reset Spike Counter to zero
 	 *
 	 * Manually resets the spike buffers of a Spike Counter to zero (for a specific group).
-	 * Buffers get reset to zero automatically after recordDur. However, you can reset the buffer manually at any
-	 * point in time, as long as you call setupNetwork() first.
+	 * Buffers get reset to zero automatically after <tt>recordDur</tt> (see CARLsim::setSpikeCounter).
+	 * However, the buffer can be manually reset at any point in time (during ::SETUP_STATE and ::RUN_STATE).
 	 *
-	 * \STATE ::RUN_STATE
-	 * \param grpId the group for which to reset the spike counts. Set to ALL if you want to reset all Spike Counters.
+	 * At any point in time (during ::SETUP_STATE or ::RUN_STATE), all SpikeCounters can be reset via:
+	 * \code
+	 * sim.resetSpikeCounters(-1); // reset for all groups, -1==ALL
+	 * \endcode
+	 *
+	 * \STATE ::SETUP_STATE, ::RUN_STATE
+	 * \param grpId the group for which to reset the spike counts. Set to ALL if you want to reset all SpikeCounters.
+	 * \see CARLsim::setSpikeCounter
+	 * \see CARLsim::getSpikeCounter
 	 */
 	void resetSpikeCounter(int grpId);
 
@@ -911,21 +918,28 @@ public:
 	GroupMonitor* setGroupMonitor(int grpId, const std::string& fname);
 
 	/*!
-	 * \brief A Spike Counter keeps track of the number of spikes per neuron in a group.
+	 * \brief A SpikeCounter keeps track of the number of spikes per neuron in a group.
 	 *
-	 * A Spike Counter keeps track of all spikes per neuron for a certain time period (recordDur).
+	 * A SpikeCounter keeps track of all spikes per neuron for a certain time period (recordDur).
 	 * After that, the spike buffers get reset to zero number of spikes.
-	 * Works for Izhikevich neurons as well as Spike Generators.
+	 *
+	 * This function works for Izhikevich neurons as well as Spike Generators.
+	 *
 	 * The recording time can be set to any x number of ms, so that after x ms the spike counts will be reset
 	 * to zero. If x==-1, then the spike counts will never be reset (should only overflow after 97 days of sim).
-	 * Also, spike counts can be manually reset at any time by calling snn->resetSpikeCounter(group);
-	 * At any time, you can call getSpikeCounter to get the spiking information out.
-	 * You can have only one spike counter per group. However, a group can have both a SpikeMonitor and a SpikeCounter.
+	 * Also, spike counts can be manually reset at any time by calling CARLsim::resetSpikeCounter(grpId);
 	 *
-	 * \STATE ::CONFIG_STATE, ::SETUP_STATE
+	 * At any point in time (during ::RUN_STATE), CARLsim::getSpikeCounter can be called to get an integer array
+	 * that contains the number of spikes for each neuron in the group.
+	 *
+	 * There can be only SpikeCounter per group. However, a group can have both a SpikeMonitor and a SpikeCounter.
+	 *
+	 * \STATE ::CONFIG_STATE
 	 * \param[in] grpId the group for which you want to enable a SpikeCounter
 	 * \param[in] recordDur number of ms for which to record spike numbers. Spike numbers will be reset to zero after
 	 * this. Set frameDur to -1 to never reset spike counts. Default: -1.
+	 * \see CARLsim::getSpikeCounter
+	 * \see CARLsim::resetSpikeCounter
 	 */
 	void setSpikeCounter(int grpId, int recordDur=-1);
 
@@ -1381,14 +1395,44 @@ public:
 	uint32_t getSimTimeMsec();
 
 	/*!
-	 * \brief return the number of spikes per neuron for a certain group
+	 * \brief Returns the number of spikes per neuron for a certain group
 	 *
-	 * A Spike Counter keeps track of all spikes per neuron for a certain time period (recordDur) at any point in time.
+	 * A SpikeCounter keeps track of all spikes per neuron binned into a certain time period (recordDur).
+	 * This function allows to query the spike array at any point in time.
+	 * It will return a pointer to an int array if the group has a valid SpikeCounter, or NULL otherwise. The number
+	 * of elements in the int array is the number of neurons in the group.
+	 *
+	 * Before this function can be used, a SpikeCounter must be set up for the group via CARLsim::setSpikeCounter.
+	 *
+	 * Usage example:
+	 * \code
+	 * // During CONFIG state, create a neuron group with 10 neurons.
+	 * int g0 = sim.createGroup("group0", 10, EXCITATORY_NEURON);
+	 *
+	 * // Set up a SpikeCounter on group g0 that counts the number
+	 * // of spikes in bins of 50 ms
+	 * sim.setSpikeCounter(g0, 50);
+	 *
+	 * // move to setup state
+	 * sim.setupNetwork();
+	 *
+	 * // run the network for a bit, say 32 ms
+	 * sim.runNetwork(0,32);
+	 *
+	 * // get the number of spikes in these 32 ms
+	 * int* spkArr = sim.getSpikeCounter(g0);
+	 * 
+	 * // print number of spikes for each neuron in the group
+	 * for (int i=0; i<10; i++)
+	 *    printf("Neuron %d has %d spikes\n",i,spkArr[i]);
+	 * \endcode
 	 *
 	 * \STATE ::RUN_STATE
 	 * \param[in] grpId	   the group for which you want the spikes (cannot be ALL)
-	 * \returns pointer to array of ints. Number of elements in array is the number of neurons in group.
+	 * \returns pointer to array of ints if SpikeCounter exists, else NULL. Number of elements in array is the number of neurons in group.
 	 * Each entry is the number of spikes for this neuron (int) since the last reset.
+	 * \see CARLsim::setSpikeCounter
+	 * \see CARLsim::resetSpikeCounter
 	 */
 	int* getSpikeCounter(int grpId);
 

@@ -51,8 +51,9 @@ For the most up-to-date information, software packages, and announcements, pleas
 
 The simulator—along with its various releases, computational studies, and sample code—has previously been published 
 in the following studies:
-- Beyeler*, M., Carlson*, K.D., Chou*, T.S., Dutt, N., and Krichmar, J.L. (submitted). CARLsim 3: A user-friendly
+- Beyeler*, M., Carlson*, K.D., Chou*, T.S., Dutt, N., and Krichmar, J.L. (2014). CARLsim 3: A user-friendly
   and highly optimized library for the creation of neurobiologically detailed spiking neural networks.
+  IEEE International Joint Conference on Neural Networks (accepted for publication).
   (*co-first authors)
 - Carlson, K.D., Nageswaran, J.M., Dutt, N., and Krichmar, J.L. (2014). An efficient automated parameter tuning 
   framework for spiking neural networks. Frontiers in Neuroscience 8(10). (CARLsim v2.2)

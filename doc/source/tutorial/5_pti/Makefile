@@ -8,7 +8,7 @@ local_targets := tuneFiringRatesECJ
 
 # name of ECJ parameter file.
 ecj_param_file := $(local_targets)Experiment.params
-output := *.dot *.dat *.log *.stat results/*
+output := *.dot *.dat *.log *.stat results/* debugInput.csv
 
 # -----------------------------------------------------------------------------
 # You should not need to edit the file beyond this point
@@ -32,6 +32,7 @@ ECJ_PTI_LIBS  += $(ECJ_PTI_DIR)/lib/libCARLsimPTI.a
 local_src  := main_$(local_targets).cpp
 local_prog := $(local_targets)
 carlsim_prog := carlsim_$(local_targets)
+debug_prog := debug_$(local_targets)
 
 .PHONY: all clean distclean
 all: $(local_targets)
@@ -46,8 +47,21 @@ $(carlsim_prog): $(local_src)
 	$(NVCC) $(CARLSIM_INCLUDES) $(ECJ_PTI_FLAGS) $(CARLSIM_FLAGS) \
 	$(CARLSIM_LFLAGS) $(CARLSIM_LIBS) $(ECJ_PTI_LIBS) $< -o $@
 
+# build debugging script
+$(debug_prog): scripts/generateTestInput.bash $(ecj_param_file) $(carlsim_prog)
+	@scripts/generateTestInput.bash $(ecj_param_file)
+	@echo "#!/bin/bash" > $(debug_prog)
+	@echo "# This script runs the CARLsim component of the parameter tuning" >> $(debug_prog)
+	@echo "# interface. The test input file (debugInput.csv) is generated" >> $(debug_prog)
+	@echo "# from a scripts/genereateTestInput.bash that reads the correct" >> $(debug_prog)
+	@echo "# parameter genome and generation size. Users can edit the .csv" >> $(debug_prog)
+	@echo "# file to pass specific parameter values. It currently passes a" >> $(debug_prog)
+	@echo "# single parameter value to all parameters." >> $(debug_prog)
+	@echo "cat debugInput.csv | ./$(carlsim_prog)" >> $(debug_prog)
+	@chmod u+x $(debug_prog)
+
 clean:
-	$(RM) $(local_prog) $(carlsim_prog)
+	$(RM) $(local_prog) $(carlsim_prog) $(debug_prog)
 
 distclean:
-	$(RM) $(local_prog) $(carlsim_prog) $(output)
+	$(RM) $(local_prog) $(carlsim_prog) $(debug_prog) $(output)
