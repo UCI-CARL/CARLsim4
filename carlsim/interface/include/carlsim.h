@@ -467,15 +467,15 @@ public:
 	 * group.
 	 *
 	 * \STATE ::CONFIG_STATE
-	 * \param grpId the symbolic name of a group
-	 * \param baseDP  the baseline concentration of Dopamine
-	 * \param tauDP the decay time constant of Dopamine
-	 * \param base5HT  the baseline concentration of Serotonin
-	 * \param tau5HT the decay time constant of Serotonin
-	 * \param baseACh  the baseline concentration of Acetylcholine
-	 * \param tauACh the decay time constant of Acetylcholine
-	 * \param baseNE  the baseline concentration of Noradrenaline
-	 * \param tauNE the decay time constant of Noradrenaline
+	 * \param[in] grpId the symbolic name of a group
+	 * \param[in] baseDP  the baseline concentration of Dopamine
+	 * \param[in] tauDP the decay time constant of Dopamine
+	 * \param[in] base5HT  the baseline concentration of Serotonin
+	 * \param[in] tau5HT the decay time constant of Serotonin
+	 * \param[in] baseACh  the baseline concentration of Acetylcholine
+	 * \param[in] tauACh the decay time constant of Acetylcholine
+	 * \param[in] baseNE  the baseline concentration of Noradrenaline
+	 * \param[in] tauNE the decay time constant of Noradrenaline
 	 */
 	void setNeuromodulator(int grpId, float baseDP, float tauDP, float base5HT, float tau5HT,
 							float baseACh, float tauACh, float baseNE, float tauNE);
@@ -525,19 +525,34 @@ public:
 	void setESTDP(int grpId, bool isSet);
 
 	/*!
-	 * \brief Sets E-STDP params for a group, custom
+	 * \brief Sets E-STDP with the exponential curve
 	 *
-	 * \TODO finish docu
+	 * \param[in] grpId the group ID of group for which these settings are applied
+	 * \param[in] isSet the flag indicating if E-STDP is enabled
+	 * \param[in] type the flag indicating if E-STDP is modulated by dopamine (i.e., DA-STDP)
+	 * \param[in] curve the struct defining the exponential curve
+	 *
 	 * \STATE ::CONFIG_STATE
+	 * \sa stdpType_t
+	 * \sa ExpCurve
+	 * \since v3.0
 	 */
-	void setESTDP(int grupId, bool isSet, stdpType_t type, ExpCurve curve);
+	void setESTDP(int grpId, bool isSet, stdpType_t type, ExpCurve curve);
 
 	/*!
-	 * \brief Sets E-STDP mode with hebbian curve
+	 * \brief Sets E-STDP with the timing-based curve
+	 *
+	 * \param[in] grpId the group ID of group for which these settings are applied
+	 * \param[in] isSet the flag indicating if E-STDP is enabled
+	 * \param[in] type the flag indicating if E-STDP is modulated by dopamine (i.e., DA-STDP)
+	 * \param[in] curve the struct defining the timing-based curve
 	 *
 	 * \STATE ::CONFIG_STATE
+	 * \sa stdpType_t
+	 * \sa TimingBasedCurve
+	 * \since v3.0
 	 */
-	void setESTDP(int grupId, bool isSet, stdpType_t type, TimingBasedCurve curve);
+	void setESTDP(int grpId, bool isSet, stdpType_t type, TimingBasedCurve curve);
 
 	/*!
 	 * \brief Sets default I-STDP mode and parameters
@@ -551,18 +566,32 @@ public:
 	void setISTDP(int grpId, bool isSet);
 
 	/*!
-	 * \brief Sets I-STDP mode with constant symmetric curve
+	 * \brief Sets I-STDP with the exponential curve
 	 *
-	 * \TODO finish docu
+	 * \param[in] grpId the group ID of group for which these settings are applied
+	 * \param[in] isSet the flag indicating if I-STDP is enabled
+	 * \param[in] type the flag indicating if I-STDP is modulated by dopamine (i.e., DA-STDP)
+	 * \param[in] curve the struct defining the exponential curve
+	 *
 	 * \STATE ::CONFIG_STATE
+	 * \sa stdpType_t
+	 * \sa ExpCurve
+	 * \since v3.0
 	 */
 	void setISTDP(int grpId, bool isSet, stdpType_t type, ExpCurve curve);
 
 	/*!
-	 * \brief Sets I-STDP mode with constant symmetric curve
+	 * \brief Sets I-STDP with the pulse curve
 	 *
-	 * \TODO finish docu
+	 * \param[in] grpId the group ID of group for which these settings are applied
+	 * \param[in] isSet the flag indicating if I-STDP is enabled
+	 * \param[in] type the flag indicating if I-STDP is modulated by dopamine (i.e., DA-STDP)
+	 * \param[in] curve the struct defining the pulse curve
+	 *
 	 * \STATE ::CONFIG_STATE
+	 * \sa stdpType_t
+	 * \sa PulseCurve
+	 * \since v3.0
 	 */
 	void setISTDP(int grpId, bool isSet, stdpType_t type, PulseCurve curve);
 
@@ -1346,7 +1375,7 @@ public:
 	 *
 	 * This function returns the current STDP setting of a group.
 	 * \STATE ::SETUP_STATE, ::RUN_STATE
-	 * \sa GroupSTDPInfo_s
+	 * \sa GroupSTDPInfo
 	 */
 	GroupSTDPInfo_t getGroupSTDPInfo(int grpId);
 
@@ -1356,7 +1385,7 @@ public:
 	 * This function returns the current setting for neuromodulators.
 	 *
 	 * \STATE ::SETUP_STATE, ::RUN_STATE
-	 * \sa GroupNeuromodulatorInfo_s
+	 * \sa GroupNeuromodulatorInfo
 	 */
 	GroupNeuromodulatorInfo_t getGroupNeuromodulatorInfo(int grpId);
 

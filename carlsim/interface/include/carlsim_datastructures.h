@@ -344,7 +344,7 @@ struct RadiusRF {
  *
  * \sa CARLsim::getGroupSTDPInfo()
  */
-typedef struct GroupSTDPInfo_s {
+typedef struct GroupSTDPInfo {
 	bool 		WithSTDP;			//!< enable STDP flag
 	bool		WithESTDP;			//!< enable E-STDP flag
 	bool		WithISTDP;			//!< enable I-STDP flag
@@ -376,7 +376,7 @@ typedef struct GroupSTDPInfo_s {
  *
  * \sa CARLsim::getGroupNeuromodulatorInfo()
  */
-typedef struct GroupNeuromodulatorInfo_s {
+typedef struct GroupNeuromodulatorInfo {
 	float		baseDP;		//!< baseline concentration of Dopamine
 	float		base5HT;	//!< baseline concentration of Serotonin
 	float		baseACh;	//!< baseline concentration of Acetylcholine
