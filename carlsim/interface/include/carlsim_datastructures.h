@@ -335,30 +335,48 @@ struct RadiusRF {
 	const double radX, radY, radZ;
 };
 
-typedef struct GroupSTDPInfo_s {
-	bool 		WithSTDP;
-	bool		WithESTDP;
-	bool		WithISTDP;
-	stdpType_t  WithESTDPtype;
-	stdpType_t  WithISTDPtype;
-	stdpCurve_t WithESTDPcurve;
-	stdpCurve_t WithISTDPcurve;
-	float		TAU_PLUS_INV_EXC;
-	float		TAU_MINUS_INV_EXC;
-	float		ALPHA_PLUS_EXC;
-	float		ALPHA_MINUS_EXC;
-	float		TAU_PLUS_INV_INB;
-	float		TAU_MINUS_INV_INB;
-	float		ALPHA_PLUS_INB;
-	float		ALPHA_MINUS_INB;
-	float		GAMMA;
-	float		BETA_LTP;
-	float		BETA_LTD;
-	float		LAMBDA;
-	float		DELTA;
+/*!
+ * \brief A struct for retrieving STDP related information of a group
+ *
+ * The struct is used in test suite only. CARLsim API call provides a getter function CARLsim::getGroupSTDPInfo()
+ * for retrieving STDP related information of a group. A developer can write his/her test cases to test the
+ * STDP parameters
+ *
+ * \sa CARLsim::getGroupSTDPInfo()
+ */
+typedef struct GroupSTDPInfo {
+	bool 		WithSTDP;			//!< enable STDP flag
+	bool		WithESTDP;			//!< enable E-STDP flag
+	bool		WithISTDP;			//!< enable I-STDP flag
+	stdpType_t  WithESTDPtype;		//!< the type of E-STDP (STANDARD or DA_MOD)
+	stdpType_t  WithISTDPtype;		//!< the type of I-STDP (STANDARD or DA_MOD)
+	stdpCurve_t WithESTDPcurve;		//!< the E-STDP curve
+	stdpCurve_t WithISTDPcurve;		//!< the I-STDP curve
+	float		TAU_PLUS_INV_EXC;	//!< the inverse of time constant plus, if the exponential or timing-based E-STDP curve is used
+	float		TAU_MINUS_INV_EXC;	//!< the inverse of time constant minus, if the exponential or timing-based E-STDP curve is used
+	float		ALPHA_PLUS_EXC;		//!< the amplitude of alpha plus, if the exponential or timing-based E-STDP curve is used
+	float		ALPHA_MINUS_EXC;	//!< the amplitude of alpha minus, if the exponential or timing-based E-STDP curve is used
+	float		TAU_PLUS_INV_INB;	//!< the inverse of tau plus, if the exponential I-STDP curve is used
+	float		TAU_MINUS_INV_INB;	//!< the inverse of tau minus, if the exponential I-STDP curve is used
+	float		ALPHA_PLUS_INB;		//!< the amplitude of alpha plus, if the exponential I-STDP curve is used
+	float		ALPHA_MINUS_INB;	//!< the amplitude of alpha minus, if the exponential I-STDP curve is used
+	float		GAMMA;				//!< the turn over point if the timing-based E-STDP curve is used
+	float		BETA_LTP;			//!< the amplitude of inhibitory LTP if the pulse I-STDP curve is used
+	float		BETA_LTD;			//!< the amplitude of inhibitory LTD if the pulse I-STDP curve is used
+	float		LAMBDA;				//!< the range of inhibitory LTP if the pulse I-STDP curve is used
+	float		DELTA;				//!< the range of inhibitory LTD if the pulse I-STDP curve is used
 } GroupSTDPInfo_t;
 
-typedef struct GroupNeuromodulatorInfo_s {
+/*!
+ * \brief A struct for retrieving neuromodulator information of a group
+ *
+ * The struct is used in test suite only. CARLsim API call provides a getter function CARLsim::getGroupNeuromodulatorInfo()
+ * for retrieving neuromodulator information of a group. A developer can write his/her test cases to test the
+ * neuromodulator parameters
+ *
+ * \sa CARLsim::getGroupNeuromodulatorInfo()
+ */
+typedef struct GroupNeuromodulatorInfo {
 	float		baseDP;		//!< baseline concentration of Dopamine
 	float		base5HT;	//!< baseline concentration of Serotonin
 	float		baseACh;	//!< baseline concentration of Acetylcholine
@@ -429,7 +447,21 @@ struct Grid3D {
 };
 
 /*!
- * \brief struct to assign exponential curve
+ * \brief A struct to assign exponential STDP curves
+ *
+ * This STDP curve can be any combination of two exponential curves. The parameters (_alphaPlus,_tauPlus) specifies the
+ * exponential STDP curve at the pre-post side (i.e., a pre-synaptic neuron fires before a post-synaptic neuron). the
+ * parameters (_alphaMinus,_tauMinus) specifies the exponential STDP curve at the post-pre side. _tauPlus and _tauMinus
+ * must be positive number while _alphaPlus and _alphaMinus can be positive or negative according to users' needs.
+ * A positive value of _alphaPlus or _alphaMinus will increase the strength of a synapse (no matter a synapse is
+ * excitatory or inhibitory). In contrast, a negative value will decrease the strength of a synapse.
+ *
+ * \param[in] _alphaPlus the amplitude of the exponential curve at pre-post side
+ * \param[in] _tauPlus the decay constant of the exponential curve at pre-post side
+ * \param[in] _alphaMinus the amplitude of the exponential curve at post-pre side
+ * \param[in] _tauMinus the decay constant of the exponential curve at post-pre side
+ *
+ * \since v3.0
  */
 struct ExpCurve {
 	ExpCurve(float _alphaPlus, float _tauPlus, float _alphaMinus, float _tauMinus) : alphaPlus(_alphaPlus), tauPlus(_tauPlus), alphaMinus(_alphaMinus), tauMinus(_tauMinus) {
@@ -439,13 +471,41 @@ struct ExpCurve {
 		stdpCurve = EXP_CURVE;
 	}
 
-	stdpCurve_t stdpCurve;
-	float alphaPlus;
-	float tauPlus;
-	float alphaMinus;
-	float tauMinus;
+	stdpCurve_t stdpCurve; //!< the type of STDP curve
+	float alphaPlus; //!< the amplitude of the exponential curve at pre-post side
+	float tauPlus; //!< the time constant of the exponential curve at pre-post side
+	float alphaMinus; //!< the amplitude of the exponential curve at post-pre side
+	float tauMinus; //!< the time constant of the exponential curve at post-pre side
 };
 
+/*!
+ * \brief A struct to assign a timing-based E-STDP curve
+ *
+ * This E-STDP curve is sensitive to spike timing at the pre-post side. The parameters (_alphaPlus, _tauPlus, gamma)
+ * specifies the curve at the pre-post side. The curve is basically an exponential curve, which specified by
+ * (_alphaPlus, _tauPlus), transformed by gamma. The value of gamma is the turn-over point. The STDP function at the
+ * pre-post side is governed by the following equation:
+\f[
+ STDP(t) =
+  \begin{cases}
+   \alpha^+(1-(1-e^{-\frac{t}{\tau^+}})(\frac{1+e^{-\frac{\gamma}{\tau^+}}}{1-e^{-\frac{\gamma}{\tau^+}}})) & \text{if } t < \gamma \\
+   -\alpha^+ e^{-\frac{t}{\tau^+}}       & \text{if } t \geq \gamma
+  \end{cases}
+\f]
+ * Simply, if t is larger than gamma, the STDP function is the mirrored exponential curve along x-axis. If t is smaller
+ * than gamma, the STDP function is the exponential curve stretched to the turn-over point. The parameters
+ * (_alphaMinus, _tauMinus) specifies the exponential curve at the post-pre side. This curve requires _alphaMinus to be
+ * a negative value.
+ *
+ * \note This curve can be applied to E-STDP only.
+ *
+ * \param[in] _alphaPlus the amplitude of the exponential curve at pre-post side
+ * \param[in] _tauPlus the decay constant of the exponential curve at pre-post side
+ * \param[in] _alphaMinus the amplitude of the exponential curve at post-pre side
+ * \param[in] _tauMinus the decay constant of the exponential curve at post-pre side
+ *
+ * \since v3.0
+ */
 struct TimingBasedCurve {
 	TimingBasedCurve(float _alphaPlus, float _tauPlus, float _alphaMinus, float _tauMinus, float _gamma) : alphaPlus(_alphaPlus), tauPlus(_tauPlus), alphaMinus(_alphaMinus), tauMinus(_tauMinus) , gamma(_gamma) {
 		UserErrors::assertTrue(_alphaPlus > 0.0f, UserErrors::MUST_BE_POSITIVE, "TimingBasedCurve", "alphaPlus");
@@ -453,20 +513,34 @@ struct TimingBasedCurve {
 		UserErrors::assertTrue(_tauPlus > 0.0f, UserErrors::MUST_BE_POSITIVE, "TimingBasedCurve", "tauPlus");
 		UserErrors::assertTrue(_tauMinus > 0.0f, UserErrors::MUST_BE_POSITIVE, "TimingBasedCurve", "tauMinus");
 		UserErrors::assertTrue(_gamma > 0.0f, UserErrors::MUST_BE_POSITIVE, "TimingBasedCurve", "gamma");
+		UserErrors::assertTrue(_tauPlus > _gamma, UserErrors::MUST_BE_LARGER, "TimingBasedCurve", "tauPlus");
 
 		stdpCurve = TIMING_BASED_CURVE;
 	}
 
-	stdpCurve_t stdpCurve;
-	float alphaPlus;
-	float tauPlus;
-	float alphaMinus;
-	float tauMinus;
-	float gamma;
+	stdpCurve_t stdpCurve; //!< the type of STDP curve
+	float alphaPlus; //!< the amplitude of the exponential curve at pre-post side
+	float tauPlus; //!< the time constant of the exponential curve at pre-post side
+	float alphaMinus; //!< the amplitude of the exponential curve at post-pre side
+	float tauMinus; //!< the time constant of the exponential curve at post-pre side
+	float gamma; //!< the turn-over point
 };
 
 /*!
- * \brief struct to assign pulse I-STDP curve
+ * \brief struct to assign a pulse I-STDP curve
+ *
+ * This curve is symmetric to y-axis, which means the STDP function is the same at the pre-post and post-pre sides.
+ * (_lambda, _delta) are used to determined the ranges of LTP and LTD. If t is smaller than _lambda, the STDP function
+ * results LTP with the amplitude of _betaLTP. If t is larger than _lambde and smaller than _delta, the STDP function
+ * results LTD with the amplitude of _betaLTD. If t is larger than _delta, there is neither LTD nor LTP.
+ *
+ * \param[in] _betaLTP the amplitude of inhibitory LTP
+ * \param[in] _betaLTD the amplitude of inhibitory LTD
+ * \param[in] _lambda the range of inhibitory LTP
+ * \param[in] _delta the range of inhibitory LTD
+ *
+ * \note This curve can be applied to I-STDP curve only.
+ * \since v3.0
  */
 struct PulseCurve {
 	PulseCurve(float _betaLTP, float _betaLTD, float _lambda, float _delta) : betaLTP(_betaLTP), betaLTD(_betaLTD), lambda(_lambda), delta(_delta) {
@@ -474,15 +548,16 @@ struct PulseCurve {
 		UserErrors::assertTrue(_betaLTD < 0.0f, UserErrors::MUST_BE_NEGATIVE, "PulseCurve", "betaLTD");
 		UserErrors::assertTrue(_lambda > 0.0f, UserErrors::MUST_BE_POSITIVE, "PulseCurve", "lambda");
 		UserErrors::assertTrue(_delta > 0.0f, UserErrors::MUST_BE_POSITIVE, "PulseCurve", "delta");
+		UserErrors::assertTrue(_lambda > _delta, UserErrors::MUST_BE_LARGER, "PulseCurve", "lambda > delta");
 
 		stdpCurve = PULSE_CURVE;
 	}
 
-	stdpCurve_t stdpCurve;
-	float betaLTP;
-	float betaLTD;
-	float lambda;
-	float delta;
+	stdpCurve_t stdpCurve; //!< the type of STDP curve
+	float betaLTP; //!< the amplitude of inhibitory LTP
+	float betaLTD; //!< the amplitude of inhibitory LTD
+	float lambda; //!< the range of inhibitory LTP
+	float delta; //!< the range of inhibitory LTD
 };
 
 #endif
