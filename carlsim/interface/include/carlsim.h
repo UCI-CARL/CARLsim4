@@ -467,15 +467,15 @@ public:
 	 * group.
 	 *
 	 * \STATE ::CONFIG_STATE
-	 * \param grpId the symbolic name of a group
-	 * \param baseDP  the baseline concentration of Dopamine
-	 * \param tauDP the decay time constant of Dopamine
-	 * \param base5HT  the baseline concentration of Serotonin
-	 * \param tau5HT the decay time constant of Serotonin
-	 * \param baseACh  the baseline concentration of Acetylcholine
-	 * \param tauACh the decay time constant of Acetylcholine
-	 * \param baseNE  the baseline concentration of Noradrenaline
-	 * \param tauNE the decay time constant of Noradrenaline
+	 * \param[in] grpId the symbolic name of a group
+	 * \param[in] baseDP  the baseline concentration of Dopamine
+	 * \param[in] tauDP the decay time constant of Dopamine
+	 * \param[in] base5HT  the baseline concentration of Serotonin
+	 * \param[in] tau5HT the decay time constant of Serotonin
+	 * \param[in] baseACh  the baseline concentration of Acetylcholine
+	 * \param[in] tauACh the decay time constant of Acetylcholine
+	 * \param[in] baseNE  the baseline concentration of Noradrenaline
+	 * \param[in] tauNE the decay time constant of Noradrenaline
 	 */
 	void setNeuromodulator(int grpId, float baseDP, float tauDP, float base5HT, float tau5HT,
 							float baseACh, float tauACh, float baseNE, float tauNE);
@@ -494,62 +494,104 @@ public:
 	/*!
 	 * \brief Sets default STDP mode and params
 	 *
+	 * Set STDP parameters. Do not use this function, it is deprecated.
+	 *
 	 * \sa setESTDP
+	 * \deprecated For clearness, do not use default STDP settings.
+	 * \since v2.1
 	 */
 	void setSTDP(int grpId, bool isSet);
 
 	/*!
 	 * \brief Sets STDP params for a group, custom
 	 *
+	 * Set STDP parameters. Do not use this function, it is deprecated.
+	 *
 	 * \sa setESTDP
+	 * \deprecated For clearness, please use CARLsim::setESTDP() with E-STDP curve struct.
+	 * \since v2.1
 	 */
 	void setSTDP(int grpId, bool isSet, stdpType_t type, float alphaPlus, float tauPlus, float alphaMinus, float tauMinus);
 
 	/*!
-	 * \brief Sets default E-STDP mode and params
+	 * \brief Sets default E-STDP mode and parameters
 	 *
-	 * \TODO finish docu
+	 * Set E-STDP parameters using default settings. Do not use this function, it is deprecated.
+	 *
 	 * \STATE ::CONFIG_STATE
+	 * \deprecated For clearness, please do not use default STDP settings.
+	 * \since v3.0
 	 */
 	void setESTDP(int grpId, bool isSet);
 
 	/*!
-	 * \brief Sets E-STDP params for a group, custom
+	 * \brief Sets E-STDP with the exponential curve
 	 *
-	 * \TODO finish docu
+	 * \param[in] grpId the group ID of group for which these settings are applied
+	 * \param[in] isSet the flag indicating if E-STDP is enabled
+	 * \param[in] type the flag indicating if E-STDP is modulated by dopamine (i.e., DA-STDP)
+	 * \param[in] curve the struct defining the exponential curve
+	 *
 	 * \STATE ::CONFIG_STATE
+	 * \sa stdpType_t
+	 * \sa ExpCurve
+	 * \since v3.0
 	 */
-	void setESTDP(int grupId, bool isSet, stdpType_t type, ExpCurve curve);
+	void setESTDP(int grpId, bool isSet, stdpType_t type, ExpCurve curve);
 
 	/*!
-	 * \brief Sets E-STDP mode with hebbian curve
+	 * \brief Sets E-STDP with the timing-based curve
 	 *
-	 * \TODO finish docu
+	 * \param[in] grpId the group ID of group for which these settings are applied
+	 * \param[in] isSet the flag indicating if E-STDP is enabled
+	 * \param[in] type the flag indicating if E-STDP is modulated by dopamine (i.e., DA-STDP)
+	 * \param[in] curve the struct defining the timing-based curve
+	 *
 	 * \STATE ::CONFIG_STATE
+	 * \sa stdpType_t
+	 * \sa TimingBasedCurve
+	 * \since v3.0
 	 */
-	void setESTDP(int grupId, bool isSet, stdpType_t type, TimingBasedCurve curve);
+	void setESTDP(int grpId, bool isSet, stdpType_t type, TimingBasedCurve curve);
 
 	/*!
-	 * \brief Sets default I-STDP mode and params
+	 * \brief Sets default I-STDP mode and parameters
 	 *
-	 * \TODO finish docu
+	 * Set I-STDP parameters using default settings. Do not use this function, it is deprecated.
+	 *
 	 * \STATE ::CONFIG_STATE
+	 * \deprecated For clearness, please do not use default STDP settings.
+	 * \since v3.0
 	 */
 	void setISTDP(int grpId, bool isSet);
 
 	/*!
-	 * \brief Sets I-STDP mode with constant symmetric curve
+	 * \brief Sets I-STDP with the exponential curve
 	 *
-	 * \TODO finish docu
+	 * \param[in] grpId the group ID of group for which these settings are applied
+	 * \param[in] isSet the flag indicating if I-STDP is enabled
+	 * \param[in] type the flag indicating if I-STDP is modulated by dopamine (i.e., DA-STDP)
+	 * \param[in] curve the struct defining the exponential curve
+	 *
 	 * \STATE ::CONFIG_STATE
+	 * \sa stdpType_t
+	 * \sa ExpCurve
+	 * \since v3.0
 	 */
 	void setISTDP(int grpId, bool isSet, stdpType_t type, ExpCurve curve);
 
 	/*!
-	 * \brief Sets I-STDP mode with constant symmetric curve
+	 * \brief Sets I-STDP with the pulse curve
 	 *
-	 * \TODO finish docu
+	 * \param[in] grpId the group ID of group for which these settings are applied
+	 * \param[in] isSet the flag indicating if I-STDP is enabled
+	 * \param[in] type the flag indicating if I-STDP is modulated by dopamine (i.e., DA-STDP)
+	 * \param[in] curve the struct defining the pulse curve
+	 *
 	 * \STATE ::CONFIG_STATE
+	 * \sa stdpType_t
+	 * \sa PulseCurve
+	 * \since v3.0
 	 */
 	void setISTDP(int grpId, bool isSet, stdpType_t type, PulseCurve curve);
 
@@ -1331,16 +1373,19 @@ public:
 	/*!
 	 * \brief returns the stdp information of a group specified by grpId
 	 *
-	 * \TODO finish docu
+	 * This function returns the current STDP setting of a group.
 	 * \STATE ::SETUP_STATE, ::RUN_STATE
+	 * \sa GroupSTDPInfo
 	 */
 	GroupSTDPInfo_t getGroupSTDPInfo(int grpId);
 
 	/*!
 	 * \brief returns the neuromodulator information of a group specified by grpId
 	 *
-	 * \TODO finish docu
+	 * This function returns the current setting for neuromodulators.
+	 *
 	 * \STATE ::SETUP_STATE, ::RUN_STATE
+	 * \sa GroupNeuromodulatorInfo
 	 */
 	GroupNeuromodulatorInfo_t getGroupNeuromodulatorInfo(int grpId);
 
@@ -1507,7 +1552,7 @@ public:
 	* Sets default STDP parameters. Do not use this function, it is deprecated.
 	*
 	* \STATE ::CONFIG_STATE
-	* \deprecated
+	* \deprecated For clearness, setting STDP parameters using setESTDP and setISTDP is strongly recommended.
 	*/
 	void setDefaultSTDPparams(float alphaPlus, float tauPlus, float alphaMinus, float tauMinus, stdpType_t stdpType);
 
@@ -1517,7 +1562,7 @@ public:
 	* Sets default E-STDP parameters. Do not use this function, it is deprecated.
 	*
 	* \STATE ::CONFIG_STATE
-	* \deprecated
+	* \deprecated For clearness, setting STDP parameters using setESTDP and setISTDP is strongly recommended.
 	*/
 	void setDefaultESTDPparams(float alphaPlus, float tauPlus, float alphaMinus, float tauMinus, stdpType_t stdpType);
 
@@ -1527,6 +1572,7 @@ public:
 	* Sets default I-STDP parameters. Do not use this function, it is deprecated.
 	*
 	* \STATE ::CONFIG_STATE
+	* \deprecated For clearness, setting STDP parameters using setESTDP and setISTDP is strongly recommended.
 	*/
 	void setDefaultISTDPparams(float betaLTP, float betaLTD, float lambda, float delta, stdpType_t stdpType);
 

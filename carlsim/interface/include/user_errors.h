@@ -48,6 +48,7 @@ public:
 		MUST_BE_ON,				//!< parameter must be on
 		MUST_BE_POSITIVE,		//!< parameter must have positive value
 		MUST_BE_SET_TO,			//!< parameter must be set to
+		MUST_BE_LARGER,			//!< parameter must be larger than
 		MUST_BE_SMALLER,		//!< parameter must be smaller than
 		MUST_BE_ZERO,           //!< parameter must be 0
 		MUST_HAVE_SAME_SIGN,	//!< some parameters must have the same sign
