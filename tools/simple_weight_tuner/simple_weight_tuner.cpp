@@ -184,7 +184,7 @@ void SimpleWeightTuner::initAlgo() {
 	// reset algo
 	wtShouldIncrease_ = true;
 	wtStepSize_ = stepSizeFraction_ * (wtRange_->max - wtRange_->min);
-#if (WIN32 || WIN64)
+#if defined(WIN32) || defined(WIN64)
 	currentError_ = DBL_MAX;
 #else
 	currentError_ = std::numeric_limits<double>::max();

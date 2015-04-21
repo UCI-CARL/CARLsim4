@@ -1744,7 +1744,7 @@ void CpuSNN::CpuSNNinit() {
 	case USER:
 		fpInf_ = stdout;
 		fpErr_ = stderr;
-		#if (WIN32 || WIN64)
+		#if defined(WIN32) || defined(WIN64)
 			fpDeb_ = fopen("nul","w");
 		#else
 			fpDeb_ = fopen("/dev/null","w");
@@ -1756,13 +1756,13 @@ void CpuSNN::CpuSNNinit() {
 		fpDeb_ = stdout;
 		break;
 	case SHOWTIME:
-		#if (WIN32 || WIN64)
+		#if defined(WIN32) || defined(WIN64)
 			fpInf_ = fopen("nul","w");
 		#else
 			fpInf_ = fopen("/dev/null","w");
 		#endif
 		fpErr_ = stderr;
-		#if (WIN32 || WIN64)
+		#if defined(WIN32) || defined(WIN64)
 			fpDeb_ = fopen("nul","w");
 		#else
 			fpDeb_ = fopen("/dev/null","w");
@@ -1770,7 +1770,7 @@ void CpuSNN::CpuSNNinit() {
 		break;
 	case SILENT:
 	case CUSTOM:
-		#if (WIN32 || WIN64)
+		#if defined(WIN32) || defined(WIN64)
 			fpInf_ = fopen("nul","w");
 			fpErr_ = fopen("nul","w");
 			fpDeb_ = fopen("nul","w");
@@ -1785,14 +1785,14 @@ void CpuSNN::CpuSNNinit() {
 		KERNEL_ERROR("Unknown logger mode");
 		exit(1);
 	}
-	#if (WIN32 || WIN64)
+	#if defined(WIN32) || defined(WIN64)
 		fpLog_= fopen("results\\carlsim.log","w");
 	#else
 		fpLog_ = fopen("results/carlsim.log","w");
 	#endif
 
 	#ifdef __REGRESSION_TESTING__
-	#if (WIN32 || WIN64)
+	#if defined(WIN32) || defined(WIN64)
 		fpInf_ = fopen("nul","w");
 		fpErr_ = fopen("nul","w");
 		fpDeb_ = fopen("nul","w");

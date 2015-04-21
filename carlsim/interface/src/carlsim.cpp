@@ -51,7 +51,7 @@
 
 // includes for mkdir
 #if CREATE_SPIKEDIR_IF_NOT_EXISTS
-	#if (WIN32 || WIN64)
+	#if defined(WIN32) || defined(WIN64)
 	#else
 		#include <sys/stat.h>
 		#include <errno.h>
@@ -67,7 +67,7 @@
 bool CARLsim::gpuAllocation[MAX_NUM_CUDA_DEVICES] = {false};
 std::string CARLsim::gpuOccupiedBy[MAX_NUM_CUDA_DEVICES];
 
-#if (WIN32 || WIN64)
+#if defined(WIN32) || defined(WIN64)
 HANDLE CARLsim::gpuAllocationLock = CreateMutex(NULL, FALSE, NULL);
 #else
 pthread_mutex_t CARLsim::gpuAllocationLock = PTHREAD_MUTEX_INITIALIZER;
@@ -122,7 +122,7 @@ CARLsim::~CARLsim() {
 		delete snn_;
 	snn_=NULL;
 
-#if (WIN32 || WIN64)
+#if defined(WIN32) || defined(WIN64)
 	if (simMode_ == GPU_MODE) {
 		WaitForSingleObject(gpuAllocationLock, INFINITE);
 		gpuAllocation[ithGPU_] = false;
@@ -151,7 +151,7 @@ void CARLsim::CARLsimInit() {
 			CARLSIM_ERROR(funcName.c_str(), "Maximum number of GPUs supported by CARLsim is 8");
 			exit(EXIT_FAILURE); // abort
 		}
-#if (WIN32 || WIN64)
+#if defined(WIN32) || defined(WIN64)
 		WaitForSingleObject(gpuAllocationLock, INFINITE);
 		if (!gpuAllocation[ithGPU_]) {
 			gpuAllocation[ithGPU_] = true;
@@ -712,7 +712,7 @@ void CARLsim::setLogFile(const std::string& fileName) {
 	std::string fileNameNonConst = fileName;
 	std::transform(fileNameNonConst.begin(), fileNameNonConst.end(), fileNameNonConst.begin(), ::tolower);
 	if (fileNameNonConst=="null") {
-#if (WIN32 || WIN64)
+#if defined(WIN32) || defined(WIN64)
 		fpLog = fopen("nul","w");
 #else
 		fpLog = fopen("/dev/null","w");

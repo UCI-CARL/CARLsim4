@@ -41,7 +41,7 @@
 #include <carlsim.h>
 #include <stdio.h>
 
-#if (WIN32 || WIN64)
+#if defined(WIN32) || defined(WIN64)
 	#define _CRT_SECURE_NO_WARNINGS
 	#include <periodic_spikegen.h>
 	#include <simple_weight_tuner.h>

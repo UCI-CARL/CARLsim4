@@ -17,7 +17,7 @@
 
 // we no longer support CUDA3 and CUDA4, but keep cuda_version_control.h for
 // handling future CUDA toolkit API differences
-#if defined(__CUDA5__) || defined(__CUDA6__)
+#if defined(__CUDA5__) || defined(__CUDA6__) || defined(__CUDA7__)
 	#include <helper_cuda.h>
 	#include <helper_functions.h>
 	#include <helper_timer.h>

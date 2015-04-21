@@ -59,7 +59,7 @@
 #include <linear_algebra.h>
 
 // Cross-platform definition (Linux, Windows)
-#if (WIN32 || WIN64)
+#if defined(WIN32) || defined(WIN64)
 #include <Windows.h>
 
 #include <algorithm>
@@ -1614,7 +1614,7 @@ private:
 	// +++++ PRIVATE STATIC PROPERTIES ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 	static bool gpuAllocation[MAX_NUM_CUDA_DEVICES];
 	static std::string gpuOccupiedBy[MAX_NUM_CUDA_DEVICES];
-#if (WIN32 || WIN64)
+#if defined(WIN32) || defined(WIN64)
 	static HANDLE gpuAllocationLock;
 #else
 	static pthread_mutex_t gpuAllocationLock;

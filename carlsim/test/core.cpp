@@ -4,7 +4,7 @@
 #include <carlsim.h>
 #include <vector>
 
-#if (WIN32 || WIN64)
+#if defined(WIN32) || defined(WIN64)
 #include <periodic_spikegen.h>
 #endif
 
