@@ -548,7 +548,7 @@ struct PulseCurve {
 		UserErrors::assertTrue(_betaLTD < 0.0f, UserErrors::MUST_BE_NEGATIVE, "PulseCurve", "betaLTD");
 		UserErrors::assertTrue(_lambda > 0.0f, UserErrors::MUST_BE_POSITIVE, "PulseCurve", "lambda");
 		UserErrors::assertTrue(_delta > 0.0f, UserErrors::MUST_BE_POSITIVE, "PulseCurve", "delta");
-		UserErrors::assertTrue(_lambda > _delta, UserErrors::MUST_BE_LARGER, "PulseCurve", "lambda > delta");
+		UserErrors::assertTrue(_lambda < _delta, UserErrors::MUST_BE_SMALLER, "PulseCurve", "lambda < delta");
 
 		stdpCurve = PULSE_CURVE;
 	}
