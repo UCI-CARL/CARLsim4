@@ -31,6 +31,7 @@ public:
 		CANNOT_BE_NEGATIVE,		//!< parameter cannot have negative value (opposite to "must be", but includes zero)
 		CANNOT_BE_NULL,			//!< parameter cannot have NULL value
 		CANNOT_BE_LARGER,		//!< parameter cannot have larger vaule than some vaule
+		CANNOT_BE_SMALLER,		//!< parameter cannot have smaller vaule than some vaule
 		CANNOT_BE_OFF,			//!< parameter cannot be off
 		CANNOT_BE_ON,			//!< parameter cannot be on
 		CANNOT_BE_POSITIVE,		//!< parameter cannot have positive value (opposite to "must be", but includes zero)

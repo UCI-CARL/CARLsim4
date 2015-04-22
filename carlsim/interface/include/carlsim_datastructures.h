@@ -513,7 +513,7 @@ struct TimingBasedCurve {
 		UserErrors::assertTrue(_tauPlus > 0.0f, UserErrors::MUST_BE_POSITIVE, "TimingBasedCurve", "tauPlus");
 		UserErrors::assertTrue(_tauMinus > 0.0f, UserErrors::MUST_BE_POSITIVE, "TimingBasedCurve", "tauMinus");
 		UserErrors::assertTrue(_gamma > 0.0f, UserErrors::MUST_BE_POSITIVE, "TimingBasedCurve", "gamma");
-		UserErrors::assertTrue(_tauPlus > _gamma, UserErrors::MUST_BE_LARGER, "TimingBasedCurve", "tauPlus");
+		UserErrors::assertTrue(_tauPlus >= _gamma, UserErrors::CANNOT_BE_SMALLER, "TimingBasedCurve", "tauPlus >= gamma");
 
 		stdpCurve = TIMING_BASED_CURVE;
 	}
