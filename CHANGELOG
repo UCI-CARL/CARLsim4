@@ -11,6 +11,9 @@ Release 3.0
 Build 3.0.1
 ---------------------
 
+2015-05-02     Michael Beyeler <mbeyeler@uci.edu>
+  * Fixed PoissonRate deallocation in VisualStimulus.
+
 2015-04-14     Michael Beyeler <mbeyeler@uci.edu>
   * Fixed allowed CARLsim states for CARLsim::setSpikeCounter and
     CARLsim::resetSpikeCounter. Updated and improved SpikeCounter

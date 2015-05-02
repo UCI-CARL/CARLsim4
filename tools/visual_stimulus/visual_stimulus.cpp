@@ -37,7 +37,7 @@ VisualStimulus::~VisualStimulus() {
 	stimFrame_=NULL;
 
 	if (stimFramePoiss_!=NULL)
-		delete[] stimFramePoiss_;
+		delete stimFramePoiss_;
 	stimFramePoiss_=NULL;
 
 	if (fileId_!=NULL)
@@ -79,7 +79,7 @@ void VisualStimulus::readFramePrivate() {
 	if (stimFrame_!=NULL)
 		delete[] stimFrame_;
 	if (stimFramePoiss_!=NULL)
-		delete[] stimFramePoiss_;
+		delete stimFramePoiss_;
 	stimFrame_ = NULL; stimFramePoiss_ = NULL;
 
 	// have we reached EOF?
