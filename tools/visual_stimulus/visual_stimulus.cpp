@@ -51,17 +51,19 @@ unsigned char* VisualStimulus::readFrame() {
 }
 
 // reads the next frame and returns the PoissonRate object
-PoissonRate* VisualStimulus::readFrame(float maxPoisson) {
-	assert(maxPoisson!=0);
+PoissonRate* VisualStimulus::readFrame(float maxPoisson, float minPoisson) {
+	assert(maxPoisson>0);
+	assert(maxPoisson>minPoisson);
 
 	// read next frame
 	readFramePrivate();
 
 	// create new Poisson object, assign 
 	stimFramePoiss_ = new PoissonRate(stimWidth_*stimHeight_*stimChannels_);
-	for (int i=0; i<stimWidth_*stimHeight_*stimChannels_; i++)
-		stimFramePoiss_->setRate(i, stimFrame_[i]*1.0f/255.0f*maxPoisson); // scale firing rates
-
+	for (int i=0; i<stimWidth_*stimHeight_*stimChannels_; i++) {
+		stimFramePoiss_->setRate(i, stimFrame_[i]*(maxPoisson-minPoisson)/255.0f + minPoisson); // scale firing rates
+	}
+	
 	return stimFramePoiss_;
 }
 

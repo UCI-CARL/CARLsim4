@@ -1,7 +1,19 @@
 Legend:
-	+ added element
-	- removed element
-	* changed element
+  + added element
+  - removed element
+  * changed element
+
+===============================================================================
+Release 3.1
+===============================================================================
+
+---------------------
+Build 3.1.0
+---------------------
+
+2015-05-02     Michael Beyeler <mbeyeler@uci.edu>
+  + Added minPoisson rate in VisualStimulus.
+
 
 ===============================================================================
 Release 3.0
@@ -23,14 +35,14 @@ Build 3.0.1
   + Added Makefile target: uninstall
 
 2015-04-04     Kristofor D. Carlson <kdcarlso@uci.edu>
-	+ Added script to more easily debug parameter-tuning interface programs.
+  + Added script to more easily debug parameter-tuning interface programs.
 
 2015-03-31     Kristofor D. Carlson <kdcarlso@uci.edu>
-	* Fixed minor bug that generates warning on setHomeBaseFiringRate call.
+  * Fixed minor bug that generates warning on setHomeBaseFiringRate call.
 
 2015-03-18     Kristofor D. Carlson <kdcarlso@uci.edu>
-	+ Added Tutorial Chapter 3: Plasticity.
-	* Shifted Tutorial chapters around appropriately.
+  + Added Tutorial Chapter 3: Plasticity.
+  * Shifted Tutorial chapters around appropriately.
 
 2015-03-11     Michael Beyeler <mbeyeler@uci.edu>
   * Updated and extended Tutorial 1.
@@ -51,7 +63,7 @@ Build 3.0.1
 
 2015-03-02     Kristofor D. Carlson <kdcarlso@uci.edu>
   * Updated Chapter 3 of User Guide.
-	* Fixed LaTeX/Doxygen configuration problems.
+  * Fixed LaTeX/Doxygen configuration problems.
 
 2015-03-02     Michael Beyeler <mbeyeler@uci.edu>
   * Fixed Chapter 2 of User Guide and removed superfluous source code.
@@ -85,9 +97,9 @@ Build 3.0.0
 ---------------------
 
 2015-02-14     Kristofor D. Carlson <kdcarlso@uci.edu>
-	+ Added tutorial for Basic Concepts.
-	+ Added tutorial for CARLsim-ECJ PTI.
-	* Cleaned up installation files.
+  + Added tutorial for Basic Concepts.
+  + Added tutorial for CARLsim-ECJ PTI.
+  * Cleaned up installation files.
 
 2015-02-10     Michael Beyeler <mbeyeler@uci.edu>
   + Added ConnectionMonitor::setUpdateTimeIntervalSec.
@@ -246,7 +258,7 @@ Build 3.0.0
 2014-10-03     Kristofor D. Carlson <kdcarlso@uci.edu>
   + Included CARLsim ECJ PTI tool
   + Added Makefiles for building and installation of CARLsim ECJ PTI tool.
-	* Fixed CARLsim ECJ PTI testing glitches.
+  * Fixed CARLsim ECJ PTI testing glitches.
   * Updated installation instructions in README.md.
 
 2014-10-01     Kristofor D. Carlson <kdcarlso@uci.edu>
@@ -330,8 +342,8 @@ Build 3.0.0
     * Users can now add CUDA compute capability of GPU during installation.
 
 2014-05-21     Ting-Shuo Chou <tingshuc@uci.edu>
-	* Fixed windows compatibility bugs. Added project for util.lib. Changed
-	  static allocation in updateSpikeMonitor to dynamic.
+  * Fixed windows compatibility bugs. Added project for util.lib. Changed
+    static allocation in updateSpikeMonitor to dynamic.
 
 2014-05-12     Kristofor D. Carlson <kdcarlso@uci.edu>
     + Created SpikeMonitor class to return spike activity information to the
@@ -339,86 +351,86 @@ Build 3.0.0
     - Removed and reorganized global variables associated with setSpikeMonitor.
     * Fixed memory leaks.
     + Added tests for setSpikeMonitor and SpikeMonitor.
-    + Included SpikeMonitor files in carlsim makefile and testing makefile.	
+    + Included SpikeMonitor files in carlsim makefile and testing makefile. 
     + Added spikeInfo example that demonstrates how to use the SpikeMonitor
       class.
 
 2014-05-09     Ting-Shuo Chou <tingshuc@uci.edu>
-	+ Added CARLsim states: CONFIG, SETUP, and EXECUTION. Certain API calls
-	  are supported only in certain states.
+  + Added CARLsim states: CONFIG, SETUP, and EXECUTION. Certain API calls
+    are supported only in certain states.
 
 2014-05-03     Michael Beyeler <mbeyeler@uci.edu>
-	* Changed API writeNetwork to saveSimulation. This function can be called
-	  at any time, specifying where to store the data and whether to include
-	  synaptic info (weights, delays, etc.).
-	  By default, saveSimulation is called in the destructor of CARLsim. This
-	  will save general information about the simulation and the network setup,
-	  but will not include all the nitty-gritty synapse details.
-	+ Added setDefaultSaveOptions, which allows the user to change the default
-	  location etc. of the saveSimulation file.
-	* Changed Matlab script readNetwork to loadSimulation.
-	* Fixed -nan bug in printSimSummary.
+  * Changed API writeNetwork to saveSimulation. This function can be called
+    at any time, specifying where to store the data and whether to include
+    synaptic info (weights, delays, etc.).
+    By default, saveSimulation is called in the destructor of CARLsim. This
+    will save general information about the simulation and the network setup,
+    but will not include all the nitty-gritty synapse details.
+  + Added setDefaultSaveOptions, which allows the user to change the default
+    location etc. of the saveSimulation file.
+  * Changed Matlab script readNetwork to loadSimulation.
+  * Fixed -nan bug in printSimSummary.
 
 2014-05-01     Michael Beyeler <mbeyeler@uci.edu>
-	+ Added structs RangeDelay and RangeWeights for simplified connect call.
-	  Inhibitory weights should now have positive sign, as they are weight
-	  magnitudes.
+  + Added structs RangeDelay and RangeWeights for simplified connect call.
+    Inhibitory weights should now have positive sign, as they are weight
+    magnitudes.
 
 2014-04-23     Kristofor D. Carlson <kdcarlso@uci.edu>
-	* Fixed interface error in setHomeBaseFiringRate.
+  * Fixed interface error in setHomeBaseFiringRate.
 
 2014-04-11     Michael Beyeler <mbeyeler@uci.edu>
-	+ Added InputStimulus utility, including InputStimulus.m (a Matlab class
-	  that lets you generate 2D visual stimuli, add noise to them, confine
-	  them to an aperture, and store them in binary files) and a corresponding
-	  C++ class that reads the binary files and converts them to raw char
-	  arrays or mean firing rates of PoissonRate objects.
+  + Added InputStimulus utility, including InputStimulus.m (a Matlab class
+    that lets you generate 2D visual stimuli, add noise to them, confine
+    them to an aperture, and store them in binary files) and a corresponding
+    C++ class that reads the binary files and converts them to raw char
+    arrays or mean firing rates of PoissonRate objects.
 
 2014-04-10     Ting-Shuo Chou <tingshuc@uci.edu>
-	+ Added setupNetwork().
+  + Added setupNetwork().
 
 2014-04-10     Michael Beyeler <mbeyeler@uci.edu>
-	* fixed snn_gpu.cu compiler warnings for CUDA 3
-	* fixed CARLSIM_TEST and CARLSIM_DEBUG Makefile options
-	- removed unnecessary linker flags in Makefile
-	+ added test case for user interface
+  * fixed snn_gpu.cu compiler warnings for CUDA 3
+  * fixed CARLSIM_TEST and CARLSIM_DEBUG Makefile options
+  - removed unnecessary linker flags in Makefile
+  + added test case for user interface
 
 2014-04-09     Ting-Shuo Chou <tingshuc@uci.edu>
-	+ added enum updateInterval_t and updateWeightChangeInterval() for weight
-	  update intervals
+  + added enum updateInterval_t and updateWeightChangeInterval() for weight
+    update intervals
 
 2014-04-08     Ting-Shuo Chou <tingshuc@uci.edu>
-	+ Added setNeuromodulator(), setWeightUpdateParameter(), getNumNeurons(),
-	  getNumPreSynapses(), getNumPostSynapses(), and getGroupNumNeurons()
-	+ Added isSetDASTDP flag in setSTDP()
-	* fixed initialization bug in CpuSNNInit() and updateConnectionMonitor()
+  + Added setNeuromodulator(), setWeightUpdateParameter(), getNumNeurons(),
+    getNumPreSynapses(), getNumPostSynapses(), and getGroupNumNeurons()
+  + Added isSetDASTDP flag in setSTDP()
+  * fixed initialization bug in CpuSNNInit() and updateConnectionMonitor()
 
 2014-04-08     Michael Beyeler <mbeyeler@uci.edu>
-	+ added carlsim_definitions.h and snn_definitions.h
-	- removed config.h
+  + added carlsim_definitions.h and snn_definitions.h
+  - removed config.h
 
 2014-04-03     Kristofor D. Carlson <kdcarlso@uci.edu>
   * Fixed the tuneFiringRates example to work with the new CARLsim/pti
-	  interface.
-	* Cleaned up Makefile and carlsim.mk a bit.
+    interface.
+  * Cleaned up Makefile and carlsim.mk a bit.
 
 2014-04-02     Michael Beyeler <mbeyeler@uci.edu>
-	+ added logger mode SHOWTIME
+  + added logger mode SHOWTIME
 
 2014-03-17     Kristofor D. Carlson <kdcarlso@uci.edu>
-	* carlsim_tests.mk: reorganized this file to support the implementation
-	  of CARLsim google tests in different source files instead of a single
-	  large source file.
-	+ gtest_custom_main.cpp: created this file as a custom implementation
-	  of a google tests main function. This allows us to control the output
-	  of google tests easier.
-	+ CHANGELOG_2.3: Added this CHANGELOG file to keep track of changes as
-	  we make them. We can then more easily write a CHANGELOG file when we
-	  release the code.
+  * carlsim_tests.mk: reorganized this file to support the implementation
+    of CARLsim google tests in different source files instead of a single
+    large source file.
+  + gtest_custom_main.cpp: created this file as a custom implementation
+    of a google tests main function. This allows us to control the output
+    of google tests easier.
+  + CHANGELOG_2.3: Added this CHANGELOG file to keep track of changes as
+    we make them. We can then more easily write a CHANGELOG file when we
+    release the code.
 
 2013-03-22     Michael Beyeler <mbeyeler@uci.edu>
-	* examples: reorganized files such that all source files, video files, and
-	  scripts of a specific example go in examples/. Fixed dynamic allocation.
+  * examples: reorganized files such that all source files, video files, and
+    scripts of a specific example go in examples/. Fixed dynamic allocation.
 
 
 ===============================================================================
@@ -426,38 +438,38 @@ Release 2.2
 ===============================================================================
 
 Publications:
-	Parameter tuning interface:
-	Carlson KD, Nageswaran JM, Dutt N and Krichmar JL (2014) An efficient 
-	automated parameter tuning framework for spiking neural networks. 
-	Front. Neurosci. 8:10. doi: 10.3389/fnins.2014.00010
+  Parameter tuning interface:
+  Carlson KD, Nageswaran JM, Dutt N and Krichmar JL (2014) An efficient 
+  automated parameter tuning framework for spiking neural networks. 
+  Front. Neurosci. 8:10. doi: 10.3389/fnins.2014.00010
 
     Homeostatic synaptic scaling model:
-	Carlson, K. D., Richert, M., Dutt, N., and Krichmar, J. L. (2013). 
-	“Biologically plausible models of homeostasis and STDP: stability and 
-	learning in spiking neural networks,” in Proceedings of the 2013 
-	International Joint Conference on Neural Networks (IJCNN) (Dallas, TX). 
-	doi: 10.1109/IJCNN.2013.6706961
+  Carlson, K. D., Richert, M., Dutt, N., and Krichmar, J. L. (2013). 
+  “Biologically plausible models of homeostasis and STDP: stability and 
+  learning in spiking neural networks,” in Proceedings of the 2013 
+  International Joint Conference on Neural Networks (IJCNN) (Dallas, TX). 
+  doi: 10.1109/IJCNN.2013.6706961
 
 ---------------------
 Build 2.2.0
 ---------------------
 
-2014-02-02    	Kristofor D. Carlson <kdcarlso@uci.edu>
-	* Makefile: rewritten to include CARLsim/PTI support and modular include
-	  files.
-	* snn_cpu.cpp/snn_gpu.cu/snn.h: included support for homeostasis.
-	* snn_cpu.cpp/snn_gpu.cu/snn.h: included support for parameter tuning
-	  interface.
-	+ libpti, include: added directories for parameter tuning source and
-	  headers.
-	* README.md, INSTALL, RELEASE_NOTES: updated for new installation.
+2014-02-02      Kristofor D. Carlson <kdcarlso@uci.edu>
+  * Makefile: rewritten to include CARLsim/PTI support and modular include
+    files.
+  * snn_cpu.cpp/snn_gpu.cu/snn.h: included support for homeostasis.
+  * snn_cpu.cpp/snn_gpu.cu/snn.h: included support for parameter tuning
+    interface.
+  + libpti, include: added directories for parameter tuning source and
+    headers.
+  * README.md, INSTALL, RELEASE_NOTES: updated for new installation.
 
 2013-11-05      Michael Beyeler <mbeyeler@uci.edu>
-	* Makefile: more general, more flexible Makefile. Options for fast math and
-	  CUDA5 support.
+  * Makefile: more general, more flexible Makefile. Options for fast math and
+    CUDA5 support.
 
 2013-11-04      Ting-Shuo Chou <tingshuc@uci.edu>
-	+ CUDAVersionControl.h, Makefile: added CUDA5 support
+  + CUDAVersionControl.h, Makefile: added CUDA5 support
 
 
 ===============================================================================
@@ -465,25 +477,25 @@ Release 2.1
 ===============================================================================
 
 Publication:
-	M Beyeler, M Richert, ND Dutt, JL Krichmar (2014). "Efficient spiking
-	neural network model of pattern motion selectivity in visual cortex",
-	Neuroinformatics.
+  M Beyeler, M Richert, ND Dutt, JL Krichmar (2014). "Efficient spiking
+  neural network model of pattern motion selectivity in visual cortex",
+  Neuroinformatics.
 
 ---------------------
 Build 2.1.3
 ---------------------
 
 2013-10-31      Michael Beyeler <mbeyeler@uci.edu>
-	* examples/v1MTLIP/main_v1MTLIP.cpp: corrected name of LIP group, fixed
-	  weights MT PDS -> LIP
-	+ examples/v1MTLIP/v1ColorME.cu (freeAllCUDA): added
-	* scripts/v1MTLIP/plotRDKdecision.m: corrected name of LIP spike file, added
-	  some comments
-	* snn_cpu.cpp (deleteObjects): fixed memory leaks (due to un-freed
-	  dynamically allocated structures)
-	+ snn_gpu.cu (deleteObjectsGPU): added, fixed memory leaks on GPU side
-	+ snn_gpu.cu (CpuSNNinitGPUparams): added, correctly instantiates global
-	  vars on GPU side
+  * examples/v1MTLIP/main_v1MTLIP.cpp: corrected name of LIP group, fixed
+    weights MT PDS -> LIP
+  + examples/v1MTLIP/v1ColorME.cu (freeAllCUDA): added
+  * scripts/v1MTLIP/plotRDKdecision.m: corrected name of LIP spike file, added
+    some comments
+  * snn_cpu.cpp (deleteObjects): fixed memory leaks (due to un-freed
+    dynamically allocated structures)
+  + snn_gpu.cu (deleteObjectsGPU): added, fixed memory leaks on GPU side
+  + snn_gpu.cu (CpuSNNinitGPUparams): added, correctly instantiates global
+    vars on GPU side
 
 
 ---------------------
@@ -491,13 +503,13 @@ Build 2.1.2
 ---------------------
 
 2013-10-09      Michael Beyeler <mbeyeler@uci.edu>
-	* snn_cpu.cpp (CpuSNN::setSpikeMonitor): if spike subdirectory does not
-	  exist, display error message and exit.
-	  If option CREATE_SPIKEDIR_IF_NOT_EXISTS is set in config.h, will attempt
-	  to create subdirectory (e.g., "Results/random", but NOT "Results")
-	+ config.h: added option CREATE_SPIKEDIR_IF_NOT_EXISTS (default: disabled)
-	* Makefile: fixed header dependencies
-	* examples: fixed path to spike files
+  * snn_cpu.cpp (CpuSNN::setSpikeMonitor): if spike subdirectory does not
+    exist, display error message and exit.
+    If option CREATE_SPIKEDIR_IF_NOT_EXISTS is set in config.h, will attempt
+    to create subdirectory (e.g., "Results/random", but NOT "Results")
+  + config.h: added option CREATE_SPIKEDIR_IF_NOT_EXISTS (default: disabled)
+  * Makefile: fixed header dependencies
+  * examples: fixed path to spike files
 
 
 ---------------------
@@ -505,57 +517,57 @@ Build 2.1.1
 ---------------------
 
 2013-10-04      Michael Beyeler <mbeyeler@uci.edu>
-	* scripts/v1MTLIP/plotSpeed.m: fixed a bug concerning the plotting of the
-	  speed tuning curve for a particular MT neuron; added a comment on the
-	  location within the visual field of the chosen neuron
-	* scripts/v1MTLIP/plotRDKdecision.m: fixed number of spikes per neuron
-	+ scripts/v1MTLIP: added "common" folder to path
-	* examples/v1MTLIP/main_v1MTLIP.cpp (connectMTtoMTpatt): fixed RF size
-	  thresholding gausPos
-	* Makefile: fixed error where v1ColorME.cu should read v1ColorMEold.cu
-	* snn.h: fixed version numbering
-	* RELEASE_NOTES: fixed version numbering
-	+ CHANGELOG: added
-	+ AUTHORS: added
+  * scripts/v1MTLIP/plotSpeed.m: fixed a bug concerning the plotting of the
+    speed tuning curve for a particular MT neuron; added a comment on the
+    location within the visual field of the chosen neuron
+  * scripts/v1MTLIP/plotRDKdecision.m: fixed number of spikes per neuron
+  + scripts/v1MTLIP: added "common" folder to path
+  * examples/v1MTLIP/main_v1MTLIP.cpp (connectMTtoMTpatt): fixed RF size
+    thresholding gausPos
+  * Makefile: fixed error where v1ColorME.cu should read v1ColorMEold.cu
+  * snn.h: fixed version numbering
+  * RELEASE_NOTES: fixed version numbering
+  + CHANGELOG: added
+  + AUTHORS: added
 
 
 ---------------------
 Build 2.1.0
 ---------------------
 2013-07-31      Michael Beyeler <mbeyeler@uci.edu>
-	+ examples/v1MTLIP/main_v1MTLIP.cpp: added complete source code to run
-	  motion energy model in COBA on CPU/GPU
-	+ scripts/v1MTLIP: added analysis scripts for motion energy model
-	* scripts/common: moved previous commonly used analysis scripts to this
-	  folder
-	+ snn_cpu.cpp (CpuSNN::runNetwork): added option to specify on which CUDA
-	  card to establish a context
-		The first time you run sim.runNetwork() add an int ithGPU that specifies
-		the device index.
-		> bool onGPU=true; // GPU mode on
-		> int ithGPU=2; // run on the third card
-		> sim.runNetwork(0,0,onGPU?GPU_MODE:CPU_MODE,ithGPU);
-		If ithGPU is invalid (e.g., exceeds the number of cards), it defaults to
-		using device 0.
-	+ snn_cpu.cpp (CpuSNN::allocateSNN_GPU): added GPU memory management summary
-		At beginning of simulation, prints how many cards are available, which
-		one has the most GFLOPs, on which card you're running your experiment,
-		how much memory is available, etc.
-	* snn_cpu.cpp (CpuSNN::printSimSummary): number of (actual vs. allocated)
-	  synapses
-	* snn_cpu.cpp (CpuSNN::globalStateUpdate): fixed storing of current[] when
-	  running COBA in CPU mode; capped conductances to prevent instability
-	* snn_cpu.cpp: fixed integer overflow issues for largest-scale simulations
-	* snn_gpu.cu: fixed GPU memory allocation for fixed-weight simulations
-	+ scripts/common/readSpikes.m: added functionality to return spikes in AER
-	  format
-	+ scripts/common/readSpikesAERtoFull.m: added; expands an AER representation
-	  of <spike time/neuron ID> to a full matrix
-	* scripts/common/readNetwork.m: fixed indexing issue (0-indexed)
-	* v1ColorME.cu: edge effects removed in CUDA, reproduces V1 contrast
-	  sensitivity function, features scaling factors from Simoncelli & Heeger,
-	  1998
-	* config.h: changed max. firing rate from 1000 Hz to 520 Hz
+  + examples/v1MTLIP/main_v1MTLIP.cpp: added complete source code to run
+    motion energy model in COBA on CPU/GPU
+  + scripts/v1MTLIP: added analysis scripts for motion energy model
+  * scripts/common: moved previous commonly used analysis scripts to this
+    folder
+  + snn_cpu.cpp (CpuSNN::runNetwork): added option to specify on which CUDA
+    card to establish a context
+    The first time you run sim.runNetwork() add an int ithGPU that specifies
+    the device index.
+    > bool onGPU=true; // GPU mode on
+    > int ithGPU=2; // run on the third card
+    > sim.runNetwork(0,0,onGPU?GPU_MODE:CPU_MODE,ithGPU);
+    If ithGPU is invalid (e.g., exceeds the number of cards), it defaults to
+    using device 0.
+  + snn_cpu.cpp (CpuSNN::allocateSNN_GPU): added GPU memory management summary
+    At beginning of simulation, prints how many cards are available, which
+    one has the most GFLOPs, on which card you're running your experiment,
+    how much memory is available, etc.
+  * snn_cpu.cpp (CpuSNN::printSimSummary): number of (actual vs. allocated)
+    synapses
+  * snn_cpu.cpp (CpuSNN::globalStateUpdate): fixed storing of current[] when
+    running COBA in CPU mode; capped conductances to prevent instability
+  * snn_cpu.cpp: fixed integer overflow issues for largest-scale simulations
+  * snn_gpu.cu: fixed GPU memory allocation for fixed-weight simulations
+  + scripts/common/readSpikes.m: added functionality to return spikes in AER
+    format
+  + scripts/common/readSpikesAERtoFull.m: added; expands an AER representation
+    of <spike time/neuron ID> to a full matrix
+  * scripts/common/readNetwork.m: fixed indexing issue (0-indexed)
+  * v1ColorME.cu: edge effects removed in CUDA, reproduces V1 contrast
+    sensitivity function, features scaling factors from Simoncelli & Heeger,
+    1998
+  * config.h: changed max. firing rate from 1000 Hz to 520 Hz
 
 
 
@@ -564,18 +576,18 @@ Release 2.0
 ===============================================================================
 
 Publication:
-	M Richert, JM Nageswaran, N Dutt, JL Krichmar (2011). "An efficient
-	simulation environment for modeling large-scale cortical processing",
-	Frontiers in Neuroinformatics 5(19):1-15.
+  M Richert, JM Nageswaran, N Dutt, JL Krichmar (2011). "An efficient
+  simulation environment for modeling large-scale cortical processing",
+  Frontiers in Neuroinformatics 5(19):1-15.
 
 --------------------
 Build 2.0.0
 --------------------
 2011-11-01       Micah Richert <richert@braincorporation.com>
-	+ /: added COBA mode, STDP (Song et al, 2000), STP (Markram et al, 1998; 
-	  Mongillo et al, 2008), removed configId support
-	+ examples: added example networks
-		+ (MDR/JN) Added COBA mode
+  + /: added COBA mode, STDP (Song et al, 2000), STP (Markram et al, 1998; 
+    Mongillo et al, 2008), removed configId support
+  + examples: added example networks
+    + (MDR/JN) Added COBA mode
 
 
 
@@ -584,14 +596,14 @@ Release 1.0
 ===============================================================================
 
 Publication:
-	JM Nageswaran, N Dutt, JL Krichmar, A Nicolau, AV Veidenbaum (2009). "A
-	configurable simulation environment for the efficient simulation of
-	large-scale spiking neural networks on graphics processors", Neural Networks
-	22:791-800.
+  JM Nageswaran, N Dutt, JL Krichmar, A Nicolau, AV Veidenbaum (2009). "A
+  configurable simulation environment for the efficient simulation of
+  large-scale spiking neural networks on graphics processors", Neural Networks
+  22:791-800.
 
 --------------------
 Build 1.0.0
 --------------------
 2011-11-01      Jayram Moorkanikara Nageswaran <nageswaran@braincorporation.com>
-	+ /: initial release
+  + /: initial release
 
