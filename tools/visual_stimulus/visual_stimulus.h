@@ -91,14 +91,20 @@ public:
 	 * PoissonRate* rates = IS.readFrame(50.0f);
 	 * snn.setSpikeRate(g1, rates);
 	 * Currently, only grayscale images are supported.
-	 * Note that this will advance the frame index. If you want to access the char array or PoissonRate object of a
-	 * frame that has already been read, use getCurrentFrameChar() or getCurrentFramePoisson() instead.
 	 *
-	 * \param[in] maxPoisson      the range of grayscale values [0,255] will be linearly mapped to the range of Poisson
-	 *                            rates [0,maxPoisson]. Default: 50 Hz.
+	 * \param[in] maxPoisson      Maximum Poisson rate (must be positive). The range of grayscale values [0,255] will be
+	 *                            linearly mapped to the range of Poisson rates [minPoisson,maxPoisson].
+	 * \param[in] minPoisson      Maximum Poisson rate (must be non-negative). The range of grayscale values [0,255]
+	 *                            will be linearly mapped to the range of Poisson rates [minPoisson,maxPoisson].
+	 *                            Default: 0 Hz.
 	 * \returns  pointer to a PoissonRate object
+	 *
+	 * \note maxPoisson must be greater than minPoisson. Neither of them can be 
+	 * \attention Each call to readFrame() will advance the frame index. If you want to access the char array or
+	 * PoissonRate object of a frame that has already been read, use getCurrentFrameChar() or getCurrentFramePoisson()
+	 * instead.
 	 */
-	PoissonRate* readFrame(float maxPoisson);
+	PoissonRate* readFrame(float maxPoisson, float minPoisson=0.0f);
 
 	/*!
 	 * \brief Rewinds the file pointer to the top
