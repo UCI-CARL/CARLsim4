@@ -29,6 +29,10 @@ Release 3.0
 Build 3.0.1
 ---------------------
 
+2015-05-06     Michael Beyeler <mbeyeler@uci.edu>
+  + Added CUDA7 support.
+  * Fixed compile flag generation for CUDA version and compute capability.
+
 2015-05-02     Michael Beyeler <mbeyeler@uci.edu>
   * Fixed PoissonRate deallocation in VisualStimulus.
 
