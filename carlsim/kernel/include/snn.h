@@ -394,8 +394,14 @@ public:
 	 */
 	void setSpikeRate(int grpId, PoissonRate* spikeRate, int refPeriod);
 
-	// sets the weight value of a specific synapse
+	//! sets the weight value of a specific synapse
 	void setWeight(short int connId, int neurIdPre, int neurIdPost, float weight, bool updateWeightRange=false);
+
+	//! enters a testing phase, where all weight updates are disabled
+	void startTesting(bool shallUpdateWeights=true);
+
+	//! exits a testing phase, making weight updates possible again
+	void stopTesting();
 
 	//! polls connection weights
 	void updateConnectionMonitor(int connId=ALL);
@@ -766,6 +772,7 @@ private:
 	void copyWeightsGPU(unsigned int nid, int src_grp);
 	void copyWeightState(network_ptr_t* dest, network_ptr_t* src, cudaMemcpyKind kind, //!< copy presynaptic info
 		bool allocateMem, int grpId=-1);
+	void copyNetworkInfo();
 
 	void deleteObjects_GPU();		//!< deallocates all used data structures in snn_gpu.cu
 	void doCurrentUpdate_GPU();
@@ -832,6 +839,9 @@ private:
 	float cpuExecutionTime;
 	float prevGpuExecutionTime;
 	float gpuExecutionTime;
+
+	//! switch to make all weights fixed (such as in testing phase) or not
+	bool sim_in_testing;
 
 
 	//! properties of the network (number of groups, network name, allocated neurons etc..)

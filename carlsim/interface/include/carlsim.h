@@ -36,7 +36,7 @@
  *					(TSC) Ting-Shuo Chou <tingshuc@uci.edu>
  *
  * CARLsim available from http://socsci.uci.edu/~jkrichma/CARLsim/
- * Ver 2/21/2014
+ * Ver 5/6/2015
  */
 
 #ifndef _CARLSIM_H_
@@ -1058,6 +1058,7 @@ public:
 	 * This method sets the weight value of the synapse that belongs to connection connId and connects pre-synaptic
 	 * neuron neurIdPre to post-synaptic neuron neurIdPost. Neuron IDs should be zero-indexed, so that the first
 	 * neuron in the group has ID 0.
+	 *
 	 * If a weight value is specified that lies outside the range [minWt,maxWt] of this connection, the range will be
 	 * updated accordingly if the flag updateWeightRange is set to true. If the flag is set to false, then the
 	 * specified weight value will be corrected to lie on the boundary (either minWt or maxWt).
@@ -1081,7 +1082,44 @@ public:
 	void setWeight(short int connId, int neurIdPre, int neurIdPost, float weight, bool updateWeightRange=false);
 
 	/*!
-	 * \brief function writes population weights from gIDpre to gIDpost to file fname in binary.
+	 * \brief Enters a testing phase in which all weight changes are disabled
+	 *
+	 * This function can be used to temporarily disable all weight updates (such as from STDP or homeostasis)
+	 * in the network. This can be useful in an experimental setting that consists of 1) a training phase, where
+	 * STDP or other plasticity mechanisms learn some input stimulus set, and 2) a testing phase, where the
+	 * learned synaptic weights are evaluated (without making any further weight modifications) by presenting
+	 * some test stimuli.
+	 *
+	 * An optional parameter specifies whether the accumulated weight updates so far should be applied to the weights
+	 * before entering the testing phase. Recall that although weight changes are accumulated every millisecond,
+	 * they are only applied to the weights every so often (see CARLsim::setWeightAndWeightChangeUpdate).
+	 * If updateWeights is set to true, then the accumulated weight changes will be applied to the weights, even if
+	 * CARLsim::startTesting is called off the weight update grid.
+	 *
+	 * \STATE ::SETUP_STATE, ::RUN_STATE
+	 * \param[in] updateWeights   whether to apply the accumulated weight changes before entering the testing phase
+	 * \note Calling this function on a simulation with no plastic synapses will have no effect.
+	 * \see CARLsim::stopTesting
+	 * \since v3.1
+	 */
+	void startTesting(bool updateWeights=true);
+
+	/*!
+	 * \brief Exits a testing phase, making weight changes possible again
+	 *
+	 * This function can be used to exit a testing phase (in which all weight changes were disabled), after which
+	 * weight modifications are possible again. This can be useful in an experimental setting with multiple training
+	 * phases followed by testing phases.
+	 *
+	 * \STATE ::SETUP_STATE, ::RUN_STATE
+	 * \note Calling this function on a simulation with no plastic synapses will have no effect.
+	 * \see CARLsim::startTesting
+	 * \since v3.1
+	 */
+	void stopTesting();
+
+	/*!
+	 * \brief Writes population weights from gIDpre to gIDpost to file fname in binary.
 	 *
 	 * \TODO finish docu
 	 * \STATE ::SETUP_STATE, ::RUN_STATE

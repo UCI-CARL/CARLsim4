@@ -487,6 +487,66 @@ TEST(CORE, numNeurons) {
 	}
 }
 
+TEST(CORE, startStopTestingPhase) {
+	::testing::FLAGS_gtest_death_test_style = "threadsafe";
+
+	CARLsim* sim;
+
+	// run twice, once with expected start/stop order, once with a bunch of additional (but
+	// irrelevant start/stop calls)
+	for (int run=0; run<=1; run++) {
+		for (int mode=0; mode<=1; mode++) {
+			sim = new CARLsim("CORE.startStopTestingPhase",mode?GPU_MODE:CPU_MODE,SILENT,0,42);
+
+			int gExc = sim->createGroup("output", 1, EXCITATORY_NEURON);
+			sim->setNeuronParameters(gExc, 0.02f, 0.2f, -65.0f, 8.0f); // RS
+			int gIn = sim->createSpikeGeneratorGroup("input", 10, EXCITATORY_NEURON);
+
+			int cInExc  = sim->connect(gIn, gExc, "full", RangeWeight(0.0f, 0.5f, 0.5f), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_PLASTIC);
+
+			// set E-STDP to be STANDARD (without neuromodulatory influence) with an EXP_CURVE type.
+			sim->setESTDP(gExc, true, STANDARD, ExpCurve(2e-4f,20.0f, -6.6e-5f,60.0f));
+			sim->setHomeostasis(gExc, true, 1.0f, 10.0f);  // homeo scaling factor, avg time scale
+			sim->setHomeoBaseFiringRate(gExc, 35.0f, 0.0f); // target firing, target firing st.d.
+
+			sim->setConductances(true);
+			sim->setupNetwork();
+			ConnectionMonitor* CM = sim->setConnectionMonitor(gIn, gExc, "NULL");
+
+			PoissonRate PR(10);
+			PR.setRates(50.0f);
+			sim->setSpikeRate(gIn, &PR);
+
+			// training: expect weight changes due to STDP
+			if (run==1) {
+				sim->startTesting(); // testing function calls in SETUP_STATE
+				sim->stopTesting();
+			}
+			sim->runNetwork(1,0);
+			double wtChange = CM->getTotalAbsWeightChange();
+			EXPECT_GT(CM->getTotalAbsWeightChange(), 0);
+
+			// testing: expect no weight changes
+			sim->startTesting();
+			if (run==1) {
+				sim->runNetwork(5,0);
+				sim->startTesting(); // start after start: redundant
+			} else {
+				sim->runNetwork(10,0);
+			}
+			EXPECT_FLOAT_EQ(CM->getTotalAbsWeightChange(), 0.0f);
+
+			// some more training: expect weight changes
+			sim->stopTesting();
+			CM->takeSnapshot();
+			sim->runNetwork(5,0);
+			EXPECT_GT(CM->getTotalAbsWeightChange(), 0);
+
+			delete sim;
+		}
+	}
+}
+
 TEST(CORE, saveLoadSimulation) {
 	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
