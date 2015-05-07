@@ -11,6 +11,12 @@ Release 3.1
 Build 3.1.0
 ---------------------
 
+2015-05-06     Michael Beyeler <mbeyeler@uci.edu>
+  + Added CARLsim::startTesting and CARLsim::stopTesting to disable weight
+    updates during a testing phase.
+  + Added CORE.startStopTestingPhase test.
+  * Fixed compiler warnings for SpikeMon test case.
+
 2015-05-02     Michael Beyeler <mbeyeler@uci.edu>
   + Added minPoisson rate in VisualStimulus.
 

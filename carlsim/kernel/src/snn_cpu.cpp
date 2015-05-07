@@ -4321,11 +4321,11 @@ void CpuSNN::stopGPUTiming() {
 
 // enters testing phase
 // in testing, no weight changes can be made, allowing you to evaluate learned weights, etc.
-void CpuSNN::startTesting() {
+void CpuSNN::startTesting(bool shallUpdateWeights) {
 	// because this can be called at any point in time, if we're off the 1-second grid, we want to make
 	// sure to apply the accumulated weight changes to the weight matrix
 	// but we don't reset the wt update interval counter
-	if (!sim_in_testing) {
+	if (shallUpdateWeights && !sim_in_testing) {
 		if (simMode_ == CPU_MODE) {
 			updateWeights();
 		} else{
@@ -4337,8 +4337,7 @@ void CpuSNN::startTesting() {
 	net_Info.sim_in_testing = true;
 
 	if (simMode_ == GPU_MODE) {
-		// copy new network info struct to GPU
-		// \TODO: we only need to copy one bool...
+		// copy new network info struct to GPU (|TODO copy only a single boolean)
 		copyNetworkInfo();
 	}
 }
@@ -4349,8 +4348,7 @@ void CpuSNN::stopTesting() {
 	net_Info.sim_in_testing = false;
 
 	if (simMode_ == GPU_MODE) {
-		// copy new network_info struct to GPU
-		// \TODO: we only need to copy one bool...
+		// copy new network_info struct to GPU (|TODO copy only a single boolean)
 		copyNetworkInfo();
 	}
 }

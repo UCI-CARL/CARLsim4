@@ -28,7 +28,8 @@
 				<tab type="user" visible="no" title="5.1 Short-Term Plasticity" url="@ref ch5s1_short_term_plasticity"/>
 				<tab type="user" visible="no" title="5.2 Spike-Timing Dependent Plasticity" url="@ref ch5s2_spike_timing_dependent_plasticity"/>
 				<tab type="user" visible="no" title="5.3 Homeostasis" url="@ref ch5s3_homeostasis"/>
-				<tab type="user" visible="no" title="5.4 References" url="@ref ch5s4_references"/>
+				<tab type="user" visible="no" title="5.4 Disabling Plasticity in a Testing Phase" url="@ref ch5s4_testing_phase"/>
+				<tab type="user" visible="no" title="5.5 References" url="@ref ch5s5_references"/>
 			</tab>
 			<tab type="usergroup" visible="yes" title="6. Input" url="@ref ch6_input">
 				<tab type="user" visible="no" title="6.1 Generating Spikes" url="@ref ch6s1_generating_spikes"/>

@@ -502,7 +502,6 @@ TEST(CORE, startStopTestingPhase) {
 			sim->setNeuronParameters(gExc, 0.02f, 0.2f, -65.0f, 8.0f); // RS
 			int gIn = sim->createSpikeGeneratorGroup("input", 10, EXCITATORY_NEURON);
 
-			// \TODO: delay ranges??
 			int cInExc  = sim->connect(gIn, gExc, "full", RangeWeight(0.0f, 0.5f, 0.5f), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_PLASTIC);
 
 			// set E-STDP to be STANDARD (without neuromodulatory influence) with an EXP_CURVE type.
@@ -520,7 +519,8 @@ TEST(CORE, startStopTestingPhase) {
 
 			// training: expect weight changes due to STDP
 			if (run==1) {
-				sim->stopTesting(); // stop at beginning: redundant
+				sim->startTesting(); // testing function calls in SETUP_STATE
+				sim->stopTesting();
 			}
 			sim->runNetwork(1,0);
 			double wtChange = CM->getTotalAbsWeightChange();

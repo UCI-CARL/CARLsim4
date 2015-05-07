@@ -394,10 +394,13 @@ public:
 	 */
 	void setSpikeRate(int grpId, PoissonRate* spikeRate, int refPeriod);
 
-	// sets the weight value of a specific synapse
+	//! sets the weight value of a specific synapse
 	void setWeight(short int connId, int neurIdPre, int neurIdPost, float weight, bool updateWeightRange=false);
 
-	void startTesting();
+	//! enters a testing phase, where all weight updates are disabled
+	void startTesting(bool shallUpdateWeights=true);
+
+	//! exits a testing phase, making weight updates possible again
 	void stopTesting();
 
 	//! polls connection weights

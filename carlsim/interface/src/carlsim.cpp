@@ -747,8 +747,8 @@ void CARLsim::biasWeights(short int connId, float bias, bool updateWeightRange) 
 	snn_->biasWeights(connId, bias, updateWeightRange);
 }
 
-void CARLsim::startTesting() {
-	snn_->startTesting();
+void CARLsim::startTesting(bool updateWeights) {
+	snn_->startTesting(updateWeights);
 }
 
 void CARLsim::stopTesting() {

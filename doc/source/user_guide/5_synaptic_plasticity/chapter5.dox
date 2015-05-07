@@ -279,7 +279,62 @@ sim.setHomeoBaseFiringRate(grp1, targetFiringRate,0);
 
 \since v2.0
 
-\section ch5s4_references 5.4 References
+
+
+\section ch5s4_testing_phase 5.4 Disabling Plasticity in a Testing Phase
+\author Michael Beyeler
+
+CARLsim provides a method to temporarily disable all synaptic weight updates, which may be helpful
+in a testing phase that is trying to evaluate some previously trained network.
+
+The testing phase can be entered via CARLsim::startTesting and exited via CARLsim::stopTesting:
+\code
+#include <carlsim.h>
+
+CARLsim sim("TestingPhase", CPU_MODE, USER, 0, 42);
+
+// ---------------- CONFIG STATE -------------------
+int gExc = sim.createGroup("output", 1, EXCITATORY_NEURON);
+sim.setNeuronParameters(gExc, 0.02f, 0.2f, -65.0f, 8.0f); // RS
+int gIn = sim.createSpikeGeneratorGroup("input", 10, EXCITATORY_NEURON);
+
+int cInExc  = sim.connect(gIn, gExc, "full", RangeWeight(0.0f, 0.5f, 0.5f), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_PLASTIC);
+
+// set E-STDP to be STANDARD (without neuromodulatory influence) with an EXP_CURVE type.
+sim.setESTDP(gExc, true, STANDARD, ExpCurve(2e-4f,20.0f, -6.6e-5f,60.0f));
+sim.setHomeostasis(gExc, true, 1.0f, 10.0f);  // homeo scaling factor, avg time scale
+sim.setHomeoBaseFiringRate(gExc, 35.0f, 0.0f); // target firing, target firing st.d.
+
+sim.setConductances(true);
+sim.setupNetwork();
+
+// ---------------- SETUP STATE -------------------
+ConnectionMonitor* CM = sim.setConnectionMonitor(gIn, gExc, "NULL");
+
+// set up some input firing
+PoissonRate PR(10);
+PR.setRates(50.0f);
+sim.setSpikeRate(gIn, &PR);
+
+// ---------------- RUN STATE -------------------
+// training: expect weight changes due to STDP
+sim.runNetwork(1,0);
+printf("Training Phase: Weight change = %f\n", CM->getTotalAbsWeightChange());
+
+// testing: expect no weight changes
+sim.startTesting();
+sim.runNetwork(10,0);
+printf("Testing Phase: Weight change = %f\n", CM->getTotalAbsWeightChange());
+
+// continue training...
+sim.stopTesting();
+// etc.
+\endcode
+
+\since v3.1
+
+
+\section ch5s5_references 5.5 References
 \author Kristofor D. Carlson
 
 Beyeler, M., Carlson, K. D., Chou, T. S., Dutt, N., Krichmar, J. L., CARLsim 3: A
