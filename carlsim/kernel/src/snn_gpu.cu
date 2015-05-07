@@ -704,7 +704,7 @@ __global__ 	void kernel_findFiring (int t, int sec, int simTime) {
 				if (retCode != 0) return;
 				// update based on stdp rule
 				// KILLME !!! if (simTime > 0))
-				if (gpuNetInfo.sim_with_stdp)
+				if (gpuNetInfo.sim_with_stdp && !gpuNetInfo.sim_in_testing)
 					gpu_updateLTP (fireTable, fireGrpId, fireCnt, simTime);
 
 				// reset counters
@@ -724,7 +724,7 @@ __global__ 	void kernel_findFiring (int t, int sec, int simTime) {
 		int retCode = newFireUpdate(fireTable, fireGrpId, fireCnt, fireCntD1, simTime);
 		if (retCode != 0) return;
 
-		if (gpuNetInfo.sim_with_stdp)
+		if (gpuNetInfo.sim_with_stdp && !gpuNetInfo.sim_in_testing)
 			gpu_updateLTP(fireTable, fireGrpId, fireCnt, simTime);
 	}
 }
@@ -1294,7 +1294,7 @@ __device__ int generatePostSynapticSpike(int& simTime, int& firingId, int& myDel
 	gpuPtrs.synSpikeTime[pos_ns] = simTime;		  //uncoalesced access
 
 	// STDP calculation: the post-synaptic neuron fires before the arrival of pre-synaptic neuron's spike
-	if (gpuGrpInfo[post_grpId].WithSTDP)  {
+	if (gpuGrpInfo[post_grpId].WithSTDP && !gpuNetInfo.sim_in_testing)  {
 		int stdp_tDiff = simTime-gpuPtrs.lastSpikeTime[nid];
 		if (stdp_tDiff >= 0) {
 			if (gpuGrpInfo[post_grpId].WithESTDP) {
@@ -2091,6 +2091,11 @@ void CpuSNN::copySTPState(network_ptr_t* dest, network_ptr_t* src, cudaMemcpyKin
 	delete [] tmp_stp;
 }
 
+void CpuSNN::copyNetworkInfo() {
+	checkAndSetGPUDevice();
+	CUDA_CHECK_ERRORS(cudaMemcpyToSymbol(gpuNetInfo, &net_Info, sizeof(network_info_t), 0, cudaMemcpyHostToDevice));
+}
+
 void CpuSNN::copyWeightState (network_ptr_t* dest, network_ptr_t* src,  cudaMemcpyKind kind, bool allocateMem, int grpId) {
 	checkAndSetGPUDevice();
 
@@ -2130,7 +2135,6 @@ void CpuSNN::copyWeightState (network_ptr_t* dest, network_ptr_t* src,  cudaMemc
 	    //if(allocateMem) CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->synSpikeTime, sizeof(int)*length_wt));
 		CUDA_CHECK_ERRORS( cudaMemcpy( &dest->synSpikeTime[cumPos_syn], &src->synSpikeTime[cumPos_syn], sizeof(int)*length_wt, kind));
 
-	    // added this to CARLsim 2.1 - 2.2 file merge -- KDC
 		if ((!sim_with_fixedwts) || sim_with_stdp) {
 			// synaptic weight derivative
 			//if(allocateMem)		CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->wtChange, sizeof(float)*length_wt));
@@ -2641,6 +2645,7 @@ void CpuSNN::allocateNetworkParameters() {
 	net_Info.sim_with_homeostasis = sim_with_homeostasis;
 	net_Info.sim_with_stdp = sim_with_stdp;
 	net_Info.sim_with_stp = sim_with_stp;
+	net_Info.sim_in_testing = sim_in_testing;
 	net_Info.numGrp = numGrp;
 	net_Info.numConnections = numConnections;
 	net_Info.stdpScaleFactor = stdpScaleFactor_;
@@ -2835,7 +2840,9 @@ void CpuSNN::allocateSNN_GPU() {
 	// copy relevant pointers and network information to GPU
 	void* devPtr;
 	CUDA_CHECK_ERRORS(cudaMemcpyToSymbol(gpuPtrs, &cpu_gpuNetPtrs, sizeof(network_ptr_t), 0, cudaMemcpyHostToDevice));
-	CUDA_CHECK_ERRORS(cudaMemcpyToSymbol(gpuNetInfo, &net_Info, sizeof(network_info_t), 0, cudaMemcpyHostToDevice));
+
+	copyNetworkInfo();
+//	CUDA_CHECK_ERRORS(cudaMemcpyToSymbol(gpuNetInfo, &net_Info, sizeof(network_info_t), 0, cudaMemcpyHostToDevice));
 	// FIXME: we can change the group properties such as STDP as the network is running.  So, we need a way to updating the GPU when changes are made.
 
 	CUDA_CHECK_ERRORS(cudaMemcpyToSymbol(d_mulSynFast, mulSynFast, sizeof(float)*numConnections, 0, cudaMemcpyHostToDevice));

@@ -683,13 +683,15 @@ int CpuSNN::runNetwork(int _nsec, int _nmsec, bool printRunSummary, bool copySta
 			doGPUSim();
 
 		// update weight every updateInterval ms if plastic synapses present
-		if (!sim_with_fixedwts && (wtANDwtChangeUpdateInterval_==++wtANDwtChangeUpdateIntervalCnt_)) {
+		if (!sim_with_fixedwts && wtANDwtChangeUpdateInterval_ == ++wtANDwtChangeUpdateIntervalCnt_) {
 			wtANDwtChangeUpdateIntervalCnt_ = 0; // reset counter
-
-			if (simMode_ == CPU_MODE) {
-				updateWeights();
-			} else{
-				updateWeights_GPU();
+			if (!sim_in_testing) {
+				// keep this if statement separate from the above, so that the counter is updated correctly
+				if (simMode_ == CPU_MODE) {
+					updateWeights();
+				} else{
+					updateWeights_GPU();
+				}
 			}
 		}
 
@@ -1863,6 +1865,7 @@ void CpuSNN::CpuSNNinit() {
 	sim_with_modulated_stdp = false;
 	sim_with_homeostasis = false;
 	sim_with_stp = false;
+	sim_in_testing = false;
 
 	maxSpikesD2 = maxSpikesD1 = 0;
 	loadSimFID = NULL;
@@ -2910,7 +2913,7 @@ void CpuSNN::findFiring() {
 					break;
 
 				// STDP calculation: the post-synaptic neuron fires after the arrival of a pre-synaptic spike
-				if (grp_Info[g].WithSTDP) {
+				if (!sim_in_testing && grp_Info[g].WithSTDP) {
 					unsigned int pos_ij = cumulativePre[i]; // the index of pre-synaptic neuron
 					for(int j=0; j < Npre_plastic[i]; pos_ij++, j++) {
 						int stdp_tDiff = (simTime-synSpikeTime[pos_ij]);
@@ -3081,7 +3084,7 @@ void CpuSNN::generatePostSpike(unsigned int pre_i, unsigned int idx_d, unsigned 
 	}
 
 	// STDP calculation: the post-synaptic neuron fires before the arrival of a pre-synaptic spike
-	if (grp_Info[post_grpId].WithSTDP) {
+	if (!sim_in_testing && grp_Info[post_grpId].WithSTDP) {
 		int stdp_tDiff = (simTime-lastSpikeTime[post_i]);
 
 		if (stdp_tDiff >= 0) {
@@ -4316,6 +4319,42 @@ void CpuSNN::stopGPUTiming() {
 	prevGpuExecutionTime = cumExecutionTime;
 }
 
+// enters testing phase
+// in testing, no weight changes can be made, allowing you to evaluate learned weights, etc.
+void CpuSNN::startTesting() {
+	// because this can be called at any point in time, if we're off the 1-second grid, we want to make
+	// sure to apply the accumulated weight changes to the weight matrix
+	// but we don't reset the wt update interval counter
+	if (!sim_in_testing) {
+		if (simMode_ == CPU_MODE) {
+			updateWeights();
+		} else{
+			updateWeights_GPU();
+		}
+	}
+
+	sim_in_testing = true;
+	net_Info.sim_in_testing = true;
+
+	if (simMode_ == GPU_MODE) {
+		// copy new network info struct to GPU
+		// \TODO: we only need to copy one bool...
+		copyNetworkInfo();
+	}
+}
+
+// exits testing phase
+void CpuSNN::stopTesting() {
+	sim_in_testing = false;
+	net_Info.sim_in_testing = false;
+
+	if (simMode_ == GPU_MODE) {
+		// copy new network_info struct to GPU
+		// \TODO: we only need to copy one bool...
+		copyNetworkInfo();
+	}
+}
+
 
 void CpuSNN::swapConnections(int nid, int oldPos, int newPos) {
 	unsigned int cumN=cumulativePost[nid];
@@ -4764,6 +4803,10 @@ void CpuSNN::updateSpikeMonitor(int grpId) {
 
 // This function updates the synaptic weights from its derivatives..
 void CpuSNN::updateWeights() {
+	// at this point we have already checked for sim_in_testing and sim_with_fixedwts
+	assert(sim_in_testing==false);
+	assert(sim_with_fixedwts==false);
+
 	// update synaptic weights here for all the neurons..
 	for(int g = 0; g < numGrp; g++) {
 		// no changable weights so continue without changing..

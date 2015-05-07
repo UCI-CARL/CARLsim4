@@ -747,6 +747,14 @@ void CARLsim::biasWeights(short int connId, float bias, bool updateWeightRange) 
 	snn_->biasWeights(connId, bias, updateWeightRange);
 }
 
+void CARLsim::startTesting() {
+	snn_->startTesting();
+}
+
+void CARLsim::stopTesting() {
+	snn_->stopTesting();
+}
+
 // reads network state from file
 void CARLsim::loadSimulation(FILE* fid) {
 	std::string funcName = "loadSimulation()";

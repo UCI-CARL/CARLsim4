@@ -36,7 +36,7 @@
  *					(TSC) Ting-Shuo Chou <tingshuc@uci.edu>
  *
  * CARLsim available from http://socsci.uci.edu/~jkrichma/CARLsim/
- * Ver 2/21/2014
+ * Ver 5/6/2015
  */
 
 #ifndef _CARLSIM_H_
@@ -770,6 +770,9 @@ public:
 	 * \since v3.0
 	 */
 	void biasWeights(short int connId, float bias, bool updateWeightRange=false);
+
+	void startTesting();
+	void stopTesting();
 
 	/*!
 	 * \brief Loads a simulation (and network state) from file. The file pointer fid must point to a

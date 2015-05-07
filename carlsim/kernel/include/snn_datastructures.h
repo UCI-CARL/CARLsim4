@@ -91,6 +91,7 @@ typedef struct network_info_s  {
 	bool 			sim_with_modulated_stdp;
 	bool 			sim_with_homeostasis;
 	bool 			sim_with_stp;
+	bool			sim_in_testing;
 	float 			stdpScaleFactor;
 	float 			wtChangeDecay; //!< the wtChange decay
 

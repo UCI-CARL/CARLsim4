@@ -196,6 +196,9 @@ class ConnectionMonitor {
 	 */
 	int getFanOut(int neurPreId);
 
+	double getMinWeight();
+	double getMaxWeight();
+
 	/*!
 	 * \brief Returns the number of pre-synaptic neurons 
 	 *
