@@ -35,7 +35,6 @@
 
 	#define CUDA_GET_MAXGFLOP_DEVICE_ID gpuGetMaxGflopsDeviceId
 	#define CUDA_DEVICE_RESET cudaDeviceReset
-
 #endif
 
 #endif /* _CUDA_VERSION_CONTROL_H_ */
