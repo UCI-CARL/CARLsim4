@@ -433,6 +433,8 @@ TEST(Interface, CARLsimState) {
 	EXPECT_DEATH({sim->getNumPostSynapses();},"");
 	EXPECT_DEATH({sim->getSpikeCounter(0);},"");
 	EXPECT_DEATH({sim->resetSpikeCounter(0);},"");
+	EXPECT_DEATH({sim->startTesting();},"");
+	EXPECT_DEATH({sim->stopTesting();},"");
 
 	sim->setConductances(true);
 
