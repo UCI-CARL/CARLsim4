@@ -443,7 +443,7 @@ public:
 	 * \param[in] baseFiring   target firing rate of every neuron in this group
 	 * \param[in] baseFiringSD standard deviation of target firing rate of every neuron in this group
 	 */
-	void setHomeoBaseFiringRate(int grpId, float baseFiring, float baseFiringSD);
+	void setHomeoBaseFiringRate(int grpId, float baseFiring, float baseFiringSD=0.0f);
 
 	/*!
 	 * \brief Sets Izhikevich params a, b, c, and d with as mean +- standard deviation
