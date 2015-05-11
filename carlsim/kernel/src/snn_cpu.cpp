@@ -1844,7 +1844,6 @@ void CpuSNN::CpuSNNinit() {
 	finishedPoissonGroup  = false;
 	connectBegin = NULL;
 
-	simTimeLastUpdSpkMon_ = 0;
 	simTimeRunStart     = 0;    simTimeRunStop      = 0;
 	simTimeLastRunSummary = 0;
 	simTimeMs	 		= 0;    simTimeSec          = 0;    simTime = 0;

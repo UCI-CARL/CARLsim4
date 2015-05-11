@@ -12,6 +12,7 @@ Build 3.1.0
 ---------------------
 
 2015-05-11     Michael Beyeler <mbeyeler@uci.edu>
+  - Removed CpuSNN variable simTimeLastUpdSpkMon_.
   * Fixed repeated calls to CARLsim::setSpikeMonitor, added test and updated
     User Guide.
 
