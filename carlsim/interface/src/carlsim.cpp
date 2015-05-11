@@ -514,6 +514,7 @@ void CARLsim::setSTDP(int grpId, bool isSet, stdpType_t type, float alphaPlus, f
 // set ESTDP, default
 void CARLsim::setESTDP(int grpId, bool isSet) {
 	std::string funcName = "setESTDP(\""+getGroupName(grpId)+"\")";
+	UserErrors::assertTrue(!isSet || isSet && !isPoissonGroup(grpId), UserErrors::WRONG_NEURON_TYPE, funcName, funcName);
 	UserErrors::assertTrue(carlsimState_==CONFIG_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "CONFIG.");
 
 	hasSetSTDPALL_ = grpId==ALL; // adding groups after this will not have conductances set
@@ -528,6 +529,7 @@ void CARLsim::setESTDP(int grpId, bool isSet) {
 // set ESTDP by stdp curve
 void CARLsim::setESTDP(int grpId, bool isSet, stdpType_t type, ExpCurve curve) {
 	std::string funcName = "setESTDP(\""+getGroupName(grpId)+","+stdpType_string[type]+"\")";
+	UserErrors::assertTrue(!isSet || isSet && !isPoissonGroup(grpId), UserErrors::WRONG_NEURON_TYPE, funcName, funcName);
 	UserErrors::assertTrue(type!=UNKNOWN_STDP, UserErrors::CANNOT_BE_UNKNOWN, funcName, "Mode");
 	UserErrors::assertTrue(carlsimState_==CONFIG_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "CONFIG.");
 
@@ -543,6 +545,7 @@ void CARLsim::setESTDP(int grpId, bool isSet, stdpType_t type, ExpCurve curve) {
 // set ESTDP by stdp curve
 void CARLsim::setESTDP(int grpId, bool isSet, stdpType_t type, TimingBasedCurve curve) {
 	std::string funcName = "setESTDP(\""+getGroupName(grpId)+","+stdpType_string[type]+"\")";
+	UserErrors::assertTrue(!isSet || isSet && !isPoissonGroup(grpId), UserErrors::WRONG_NEURON_TYPE, funcName, funcName);
 	UserErrors::assertTrue(type!=UNKNOWN_STDP, UserErrors::CANNOT_BE_UNKNOWN, funcName, "Mode");
 	UserErrors::assertTrue(carlsimState_==CONFIG_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "CONFIG.");
 
@@ -558,6 +561,7 @@ void CARLsim::setESTDP(int grpId, bool isSet, stdpType_t type, TimingBasedCurve 
 // set ISTDP, default
 void CARLsim::setISTDP(int grpId, bool isSet) {
 	std::string funcName = "setISTDP(\""+getGroupName(grpId)+"\")";
+	UserErrors::assertTrue(!isSet || isSet && !isPoissonGroup(grpId), UserErrors::WRONG_NEURON_TYPE, funcName, funcName);
 	UserErrors::assertTrue(carlsimState_==CONFIG_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "CONFIG.");
 
 	hasSetSTDPALL_ = grpId==ALL; // adding groups after this will not have conductances set
@@ -572,6 +576,7 @@ void CARLsim::setISTDP(int grpId, bool isSet) {
 // set ISTDP by stdp curve
 void CARLsim::setISTDP(int grpId, bool isSet, stdpType_t type, ExpCurve curve) {
 	std::string funcName = "setISTDP(\""+getGroupName(grpId)+","+stdpType_string[type]+"\")";
+	UserErrors::assertTrue(!isSet || isSet && !isPoissonGroup(grpId), UserErrors::WRONG_NEURON_TYPE, funcName, funcName);
 	UserErrors::assertTrue(type!=UNKNOWN_STDP, UserErrors::CANNOT_BE_UNKNOWN, funcName, "Mode");
 	UserErrors::assertTrue(carlsimState_==CONFIG_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "CONFIG.");
 
@@ -587,6 +592,7 @@ void CARLsim::setISTDP(int grpId, bool isSet, stdpType_t type, ExpCurve curve) {
 // set ISTDP by stdp curve
 void CARLsim::setISTDP(int grpId, bool isSet, stdpType_t type, PulseCurve curve) {
 	std::string funcName = "setISTDP(\""+getGroupName(grpId)+","+stdpType_string[type]+"\")";
+	UserErrors::assertTrue(!isSet || isSet && !isPoissonGroup(grpId), UserErrors::WRONG_NEURON_TYPE, funcName, funcName);
 	UserErrors::assertTrue(type!=UNKNOWN_STDP, UserErrors::CANNOT_BE_UNKNOWN, funcName, "Mode");
 	UserErrors::assertTrue(carlsimState_==CONFIG_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "CONFIG.");
 
@@ -1207,9 +1213,37 @@ RangeWeight CARLsim::getWeightRange(short int connId) {
 	return snn_->getWeightRange(connId);
 }
 
-bool CARLsim::isExcitatoryGroup(int grpId) { return snn_->isExcitatoryGroup(grpId); }
-bool CARLsim::isInhibitoryGroup(int grpId) { return snn_->isInhibitoryGroup(grpId); }
-bool CARLsim::isPoissonGroup(int grpId) { return snn_->isPoissonGroup(grpId); }
+bool CARLsim::isConnectionPlastic(short int connId) {
+	std::stringstream funcName; funcName << "isConnectionPlastic(" << connId << ")";
+	UserErrors::assertTrue(connId>=0 && connId<getNumConnections(), UserErrors::MUST_BE_IN_RANGE, funcName.str(),
+		"connId", "[0,getNumConnections()]");
+
+	return snn_->isConnectionPlastic(connId);
+}
+
+bool CARLsim::isExcitatoryGroup(int grpId) {
+	std::stringstream funcName; funcName << "isExcitatoryGroup(" << grpId << ")";
+	UserErrors::assertTrue(grpId>=0 && grpId<getNumGroups(), UserErrors::MUST_BE_IN_RANGE, funcName.str(),
+		"connId", "[0,getNumGroups()]");
+
+	return snn_->isExcitatoryGroup(grpId);
+}
+
+bool CARLsim::isInhibitoryGroup(int grpId) {
+	std::stringstream funcName; funcName << "isInhibitoryGroup(" << grpId << ")";
+	UserErrors::assertTrue(grpId>=0 && grpId<getNumGroups(), UserErrors::MUST_BE_IN_RANGE, funcName.str(),
+		"connId", "[0,getNumGroups()]");
+
+	return snn_->isInhibitoryGroup(grpId);
+}
+
+bool CARLsim::isPoissonGroup(int grpId) {
+	std::stringstream funcName; funcName << "isPoissonGroup(" << grpId << ")";
+	UserErrors::assertTrue(grpId>=0 && grpId<getNumGroups(), UserErrors::MUST_BE_IN_RANGE, funcName.str(),
+		"connId", "[0,getNumGroups()]");
+
+	return snn_->isPoissonGroup(grpId);
+}
 
 
 // +++++++++ PUBLIC METHODS: SET DEFAULTS +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //

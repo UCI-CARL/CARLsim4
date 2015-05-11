@@ -541,6 +541,7 @@ public:
 	//! temporary getter to return pointer to stpx[] \TODO replace with NeuronMonitor or ConnectionMonitor
 	float* getSTPx() { return stpx; }
 
+	//! returns whether synapses in connection are fixed (false) or plastic (true)
     bool isConnectionPlastic(short int connId);
 
 	//! returns RangeWeight struct of a connection
@@ -624,8 +625,12 @@ private:
 
 	void initSynapticWeights(); //!< initialize all the synaptic weights to appropriate values. total size of the synaptic connection is 'length'
 
+	void verifyNetwork();
+
+	void verifySTDP();
+	
 	//! performs a consistency check to see whether numN* class members have been accumulated correctly
-	bool isNumNeuronsConsistent();
+	void verifyNumNeurons();
 
 	void makePtrInfo();				//!< creates CPU net ptrs
 

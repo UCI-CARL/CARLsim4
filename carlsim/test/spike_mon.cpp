@@ -217,7 +217,7 @@ TEST(SpikeMon, persistentMode) {
  * \brief testing to make sure clear() function works.
  *
  */
-TEST(SpikeMon, clear){
+TEST(SpikeMon, clear) {
 	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
 	CARLsim* sim;

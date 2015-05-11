@@ -1534,6 +1534,17 @@ public:
 	RangeWeight getWeightRange(short int connId);
 
 	/*!
+	 * \brief Returns whether a connection is fixed or plastic
+	 *
+	 * This function returns whether the synapses in a certain connection ID are fixed (false) or plastic (true).
+	 *
+	 * \STATE ::CONFIG_STATE, ::SETUP_STATE, ::RUN_STATE
+	 * \param[in] connId connection ID
+	 * \since v3.1
+	 */
+	bool isConnectionPlastic(short int connId);
+
+	/*!
 	 * \brief returns
 	 *
 	 * \TODO finish docu

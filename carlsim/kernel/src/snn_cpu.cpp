@@ -2229,9 +2229,6 @@ void CpuSNN::buildNetwork() {
 	grpConnectInfo_t* newInfo = connectBegin;
 //	int curN = 0, curD = 0, numPostSynapses = 0, numPreSynapses = 0;
 
-	// make sure number of neuron parameters have been accumulated correctly
-	// NOTE: this used to be updateParameters
-	assert(isNumNeuronsConsistent());
 	int curN = numN;
 
 	// find the maximum values for number of pre- and post-synaptic neurons
@@ -3405,14 +3402,50 @@ bool CpuSNN::isConnectionPlastic(short int connId) {
 	return isPlastic;
 }
 
+// performs various verification checkups before building the network
+void CpuSNN::verifyNetwork() {
+	// make sure number of neuron parameters have been accumulated correctly
+	// NOTE: this used to be updateParameters
+	verifyNumNeurons();
+
+	// make sure STDP post-group has some incoming plastic connections
+	verifySTDP();
+}
+
+// checks whether STDP is set on a post-group with incoming plastic connections
+void CpuSNN::verifySTDP() {
+	for (int grpId=0; grpId<getNumGroups(); grpId++) {
+		if (grp_Info[grpId].WithSTDP) {
+			// for each post-group, check if any of the incoming connections are plastic
+			grpConnectInfo_t* connInfo = connectBegin;
+			bool isAnyPlastic = false;
+			while (connInfo) {
+				if (connInfo->grpDest == grpId) {
+					// get syn wt type from connection property
+					isAnyPlastic |= GET_FIXED_PLASTIC(connInfo->connProp);
+					if (isAnyPlastic) {
+						// at least one plastic connection found: break while
+						break;
+					}
+				}
+				connInfo = connInfo->next;
+			}
+			if (!isAnyPlastic) {
+				KERNEL_ERROR("If STDP on group %d (%s) is set, group must have some incoming plastic connections.",
+					grpId, grp_Info2[grpId].Name.c_str());
+				exitSimulation(1);
+			}
+		}
+
+	}
+}
+
 // checks whether the numN* class members are consistent and complete
-bool CpuSNN::isNumNeuronsConsistent() {
+void CpuSNN::verifyNumNeurons() {
 	int nExcPois = 0;
 	int nInhPois = 0;
 	int nExcReg = 0;
 	int nInhReg = 0;
-
-	bool isValid = true;
 
 	//  scan all the groups and find the required information
 	//  about the group (numN, numPostSynapses, numPreSynapses and others).
@@ -3433,14 +3466,22 @@ bool CpuSNN::isNumNeuronsConsistent() {
 	}
 
 	// check the newly gathered information with class members
-	isValid &= (numN == nExcReg+nInhReg+nExcPois+nInhPois);
-	isValid &= (numNReg == nExcReg+nInhReg);
-	isValid &= (numNPois == nExcPois+nInhPois);
+	if (numN != nExcReg+nInhReg+nExcPois+nInhPois) {
+		KERNEL_ERROR("nExcReg+nInhReg+nExcPois+nInhPois=%d does not add up to numN=%d",
+			nExcReg+nInhReg+nExcPois+nInhPois, numN);
+		exitSimulation(1);
+	}
+	if (numNReg != nExcReg+nInhReg) {
+		KERNEL_ERROR("nExcReg+nInhReg=%d does not add up to numNReg=%d", nExcReg+nInhReg, numNReg);
+		exitSimulation(1);
+	}
+	if (numNPois != nExcPois+nInhPois) {
+		KERNEL_ERROR("nExcPois+nInhPois=%d does not add up to numNPois=%d", nExcPois+nInhPois, numNPois);
+		exitSimulation(1);
+	}
 //	printf("numN=%d == %d\n",numN,nExcReg+nInhReg+nExcPois+nInhPois);
 //	printf("numNReg=%d == %d\n",numNReg, nExcReg+nInhReg);
 //	printf("numNPois=%d == %d\n",numNPois, nExcPois+nInhPois);
-
-	return isValid;
 }
 
 // \FIXME: not sure where this should go... maybe create some helper file?
@@ -3750,6 +3791,12 @@ void CpuSNN::reorganizeNetwork(bool removeTempMemory) {
 		return;
 
 	KERNEL_DEBUG("Beginning reorganization of network....");
+
+	// perform various consistency checks:
+	// - numNeurons vs. sum of all neurons
+	// - STDP set on a post-group with incoming plastic connections
+	// - etc.
+	verifyNetwork();
 
 	// time to build the complete network with relevant parameters..
 	buildNetwork();
