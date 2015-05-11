@@ -432,8 +432,9 @@ public:
 	 *
 	 * This function allows the user to set the homeostatic target firing with or without a standard
 	 * deviation. All neurons in the group will use homeostatic synaptic scaling to attain the target
-	 * firing rate. You can have a standard deviation to the base firing rate or you can disable it
-	 * by setting it to 0. It should be noted that the baseFiringSD only sets the base firing rate
+	 * firing rate. You can have a standard deviation to the base firing rate or you can leave this
+	 * argument blank, which will set the standard deviation to 0.
+	 * It should be noted that the baseFiringSD only sets the base firing rate
 	 * to a single value within that standard deviation. It does not vary the value of the base firing
 	 * rate from this value or within a particular range. For more information on this implementation
 	 * please see: Carlson, et al. (2013). Proc. of IJCNN 2013.
@@ -443,7 +444,7 @@ public:
 	 * \param[in] baseFiring   target firing rate of every neuron in this group
 	 * \param[in] baseFiringSD standard deviation of target firing rate of every neuron in this group
 	 */
-	void setHomeoBaseFiringRate(int grpId, float baseFiring, float baseFiringSD);
+	void setHomeoBaseFiringRate(int grpId, float baseFiring, float baseFiringSD=0);
 
 	/*!
 	 * \brief Sets Izhikevich params a, b, c, and d with as mean +- standard deviation
@@ -843,7 +844,7 @@ public:
 	 * post- synaptic groups) and are called automatically by the simulator every second.
 	 *
 	 * CARLsim supports two different recording mechanisms: Recording to a weight file (binary) and recording to a
-	 * ConnectionMonitor object. The former is useful for off-line analysis of synaptic weights (e.g., using 
+	 * ConnectionMonitor object. The former is useful for off-line analysis of synaptic weights (e.g., using
 	 * \ref ch9_matlab_oat).
 	 * The latter is useful to calculate different weight metrics and statistics on-line, such as the percentage of
 	 * weight values that fall in a certain weight range, or the number of weights that have been changed since the
@@ -1488,7 +1489,7 @@ public:
 	 *
 	 * // get the number of spikes in these 32 ms
 	 * int* spkArr = sim.getSpikeCounter(g0);
-	 * 
+	 *
 	 * // print number of spikes for each neuron in the group
 	 * for (int i=0; i<10; i++)
 	 *    printf("Neuron %d has %d spikes\n",i,spkArr[i]);

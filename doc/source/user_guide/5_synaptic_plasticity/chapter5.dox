@@ -239,43 +239,65 @@ update combining both STDP and homeostasis is as follows:
 
 
 \f[
-\frac{dw_{i,j}}{dt}  =  \bigg[ \alpha \cdot w_{i,j} \Big(1-\frac{R_{avg}}{R_{target}} \Big) + \beta(\mbox{pre-before-post}_{i,j} +
+\frac{dw_{i,j}}{dt}  =  \bigg[ \alpha \cdot w_{i,j} \Big(1-\frac{R_{avg}}{R_{target}} \Big) + \beta
+\cdot (\mbox{pre-before-post}_{i,j} +
 \mbox{pre-after-post}_{i,j}) \bigg] \cdot K
 \f]
 
-where \f$ \alpha \f$ is the homeostatic scaling factor, \f$ R_{avg} \f$ is the average firing rate
-of the neuron over a long period of time, \f$ R_{target} \f$ is a predetermined target firing rate
-for the neuron, and \f$ K \f$ is:
+In the equation above,
+the change in synaptic weight per timestep, \f$ \frac{dw_{i,j}}{dt} \f$ is the sum of a homeostatic
+term plus an STDP term times a stability factor, \f$ K \f$.
+Here \f$ \alpha \f$ is the homeostatic scaling factor, \f$ \beta \f$ is the STDP scaling factor,
+\f$ R_{avg} \f$, is the average firing rate
+of the neuron over a (relatively) long period of time, \f$ R_{target} \f$ is a predetermined target
+firing rate for the neuron, and \f$ K \f$ is:
 
 \f[
 K=\frac{R_{avg}}{T \cdot \Big( 1 + \vert 1- R_{avg}/R_{target} \vert \cdot \gamma  \Big) }
 \f]
 
-Here, \f$T\f$ is the time over which the firing rate is being averaged and \f$ \gamma \f$ is a
+Here, \f$ T \f$ is the time over which the firing rate is being averaged and \f$ \gamma \f$ is a
 tuning factor.
+
 
 \since v2.0
 
 \subsection ch5s3s2_usage_example 5.3.1 Homeostasis Usage Example
 
-Some example code below sets the homeostatic scaling factor \f$ \gamma \f$ and the time constant
-\f$ T \f$ for grp1. The first argument specifies grp1 as the group to enable homeostasis on. The second
-argument sets the 'enable homeostatis flag' to be true. Finally, the target firing rate for each
+Some example code below sets the homeostatic scaling factor \f$ \alpha \f$ and the time constant
+\f$ T \f$ for grp1. The first argument specifies grp1 as the group to enable homeostasis on. The
+second argument sets the 'enable homeostatis flag' to be true. The homeostatic scaling factor,
+\f$ \alpha \f$ and the time constant, \f$ T \f$, are set in arguments 3 and 4, respectively.
+Finally, the target firing rate for each
 neuron in grp1 needs to be set with the setHomeoBaseFiringRate function. The first argument
 specifies the group for which the target firing rate is being set, the second argument is the value
 of the target firing rate, and the third argument is the standard deviation of the target firing
-rate.
-
-\note When the standard deviation argument is used in this function, the target firing rate still
-gets a single value that is constant for the entire simulation.
+rate. The third argument can be left blank to indicate a standard deviation of the target firing
+rate with a value of 0.
 
 \code
-float gamma =             0.1;
-float T     =            10.0;
-float targetFiringRate = 10.0;
-sim.setHomeostasis(grp1, true, gamma, T);
-sim.setHomeoBaseFiringRate(grp1, targetFiringRate,0);
+float alpha    =         0.1;
+float T        =         10.0;
+float R_target =         10.0;
+sim.setHomeostasis(grp1, true, alpha, T);
+sim.setHomeoBaseFiringRate(grp1, R_target,0);
 \endcode
+
+\note When the standard deviation argument is used in CARLsim::setHomeoBaseFiringRate function, the
+target firing rate still gets a single value that is constant for the entire simulation.
+
+\note The STDP scaling term, \f$ \beta \f$, is always equal to 1 in
+CARLsim simulations. Therefore, to make the homeostatic term ,\f$ \alpha \f$, greater than
+\f$ \beta \f$, you simply set it to a value greater than 1.
+
+\note Users new to homeostasis should start with \f$ \alpha = 0.1 \f$ and \f$ T = 10.0 \f$ seconds.
+This means that STDP component will be 10 times stronger than the homeostatic synaptic scaling
+component. Setting the time constant for 10.0 seconds is within biologically observed values
+(Turrigiano, 2008) and a good place to start. In general homeostatic synaptic scaling should take
+place on a timescale longer than that of a single spike (1 ms). However, be aware that you must run
+your simulation for long enough to allow for homeostasis to take effect. It's probably a good idea
+to run your simulation for at least 5 times longer than your time constant, \f$ T \f$.
+In general you will probably run your simulations for much longer than this!
 
 \since v2.0
 
@@ -351,7 +373,7 @@ Mongillo, G, Barak, O., and Tsodyks, M. (2008) Synaptic theory of working memory
 319 (5869): 1543-1546.
 
 Morrison, A., Markus D., and Gerstner, W. (2008). Phenomenological models of synaptic plasticity
-based on spike timing." Biological Cybernetics 98: 459-478.
+based on spike timing. Biological Cybernetics 98: 459-478.
 
 Senn, W., Markram, H., and Tsodyks, M. (2001). An algorithm for modifying neurotransmitter release
 probability based on pre- and post-synaptic spike timing. Neural Comput, 13:35-67.
@@ -361,5 +383,7 @@ revision #142314
 
 Tsodyks, M. and Wu, S. (2013) Short-term synaptic plasticity. Scholarpedia, 8(10):3153., rev #136920
 
+Turrigiano, G., G., (2008) The self-tuning neuron: synaptic scaling of excitatory synapses. Cell
+135: 422-435.
 
 */

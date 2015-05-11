@@ -180,14 +180,14 @@ To specify the parameter range for each parameter individually, you define min-g
 values for additional pop.subpop members as is shown in the code below:
 
 \code
-pop.subpop.1.species.min-gene=0.0004
-pop.subpop.1.species.max-gene=0.004
-pop.subpop.2.species.min-gene=0.00005
-pop.subpop.2.species.max-gene=0.0005
-pop.subpop.3.species.min-gene=0.01
-pop.subpop.3.species.max-gene=0.1
-pop.subpop.4.species.min-gene=0.1
-pop.subpop.4.species.max-gene=0.2
+pop.subpop.0.species.min-gene.0=0.0004
+pop.subpop.0.species.max-gene.0=0.004
+pop.subpop.0.species.min-gene.1=0.00005
+pop.subpop.0.species.max-gene.1=0.0005
+pop.subpop.0.species.min-gene.2=0.01
+pop.subpop.0.species.max-gene.2=0.1
+pop.subpop.0.species.min-gene.3=0.1
+pop.subpop.0.species.max-gene.3=0.2
 
 \endcode
 

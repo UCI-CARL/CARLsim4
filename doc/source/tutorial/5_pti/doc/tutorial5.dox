@@ -88,19 +88,19 @@ After that, the user should only be concerned with writing the <tt>run</tt> memb
 
 \code
 ...
-			void run(const ParameterInstances &parameters, std::ostream &outputStream) const {
-				int indiNum = parameters.getNumInstances();
+void run(const ParameterInstances &parameters, std::ostream &outputStream) const {
+	int indiNum = parameters.getNumInstances();
 
-				int poissonGroup[indiNum];
-				int excGroup[indiNum];
-				int inhGroup[indiNum];
-				SpikeMonitor* excMonitor[indiNum];
-				SpikeMonitor* inhMonitor[indiNum];
-				float excHz[indiNum];
-				float inhHz[indiNum];
-				float excError[indiNum];
-				float inhError[indiNum];
-				float fitness[indiNum];
+	int poissonGroup[indiNum];
+	int excGroup[indiNum];
+	int inhGroup[indiNum];
+	SpikeMonitor* excMonitor[indiNum];
+	SpikeMonitor* inhMonitor[indiNum];
+	float excHz[indiNum];
+	float inhHz[indiNum];
+	float excError[indiNum];
+	float inhError[indiNum];
+	float fitness[indiNum];
 ...
 \endcode
 
@@ -112,56 +112,55 @@ Next we create our CARLsim network object and assign the 4 parameter values gene
 10 SNN individuals. We iterate over all 10 individuals and assign them 4 distinct parameters each.
 
 \code
-				CARLsim* const network = new CARLsim("tuneFiringRatesECJ", GPU_MODE, SILENT);
+CARLsim* const network = new CARLsim("tuneFiringRatesECJ", GPU_MODE, SILENT);
 
-				for(unsigned int i = 0; i < parameters.getNumInstances(); i++) {
-					poissonGroup[i] = network->createSpikeGeneratorGroup("poisson", NUM_NEURONS, EXCITATORY_NEURON);
-					excGroup[i] = network->createGroup("exc", NUM_NEURONS, EXCITATORY_NEURON);
-					inhGroup[i] = network->createGroup("inh", NUM_NEURONS, INHIBITORY_NEURON);
+for(unsigned int i = 0; i < parameters.getNumInstances(); i++) {
+	poissonGroup[i] = network->createSpikeGeneratorGroup("poisson", NUM_NEURONS, EXCITATORY_NEURON);
+	excGroup[i] = network->createGroup("exc", NUM_NEURONS, EXCITATORY_NEURON);
+	inhGroup[i] = network->createGroup("inh", NUM_NEURONS, INHIBITORY_NEURON);
 
-					network->setNeuronParameters(excGroup[i], REG_IZH[0], REG_IZH[1], REG_IZH[2], REG_IZH[3]);
-					network->setNeuronParameters(inhGroup[i], FAST_IZH[0], FAST_IZH[1], FAST_IZH[2], FAST_IZH[3]);
-					network->setConductances(true,COND_tAMPA,COND_tNMDA,COND_tGABAa,COND_tGABAb);
+	network->setNeuronParameters(excGroup[i], REG_IZH[0], REG_IZH[1], REG_IZH[2], REG_IZH[3]);
+	network->setNeuronParameters(inhGroup[i], FAST_IZH[0], FAST_IZH[1], FAST_IZH[2], FAST_IZH[3]);
+	network->setConductances(true,COND_tAMPA,COND_tNMDA,COND_tGABAa,COND_tGABAb);
 
-					network->connect(poissonGroup[i], excGroup[i], "random", RangeWeight(parameters.getParameter(i,0)), 0.5f, RangeDelay(1));
-					network->connect(excGroup[i], excGroup[i], "random", RangeWeight(parameters.getParameter(i,1)), 0.5f, RangeDelay(1));
-					network->connect(excGroup[i], inhGroup[i], "random", RangeWeight(parameters.getParameter(i,2)), 0.5f, RangeDelay(1));
-					network->connect(inhGroup[i], excGroup[i], "random", RangeWeight(parameters.getParameter(i,3)), 0.5f, RangeDelay(1));
+	network->connect(poissonGroup[i], excGroup[i], "random", RangeWeight(parameters.getParameter(i,0)), 0.5f, RangeDelay(1));
+	network->connect(excGroup[i], excGroup[i], "random", RangeWeight(parameters.getParameter(i,1)), 0.5f, RangeDelay(1));
+	network->connect(excGroup[i], inhGroup[i], "random", RangeWeight(parameters.getParameter(i,2)), 0.5f, RangeDelay(1));
+	network->connect(inhGroup[i], excGroup[i], "random", RangeWeight(parameters.getParameter(i,3)), 0.5f, RangeDelay(1));
 
-				}
-
+}
 \endcode
 
 We then setup the SNNs, begin recording their spike data with a SpikeMonitor, and run the SNNs.
 
 \code
 ...
-				network->setupNetwork();
+network->setupNetwork();
 ...
-					excMonitor[i] = network->setSpikeMonitor(excGroup[i], "/dev/null");
-					inhMonitor[i] = network->setSpikeMonitor(inhGroup[i], "/dev/null");
+excMonitor[i] = network->setSpikeMonitor(excGroup[i], "/dev/null");
+inhMonitor[i] = network->setSpikeMonitor(inhGroup[i], "/dev/null");
 
-					excMonitor[i]->startRecording();
-					inhMonitor[i]->startRecording();
+excMonitor[i]->startRecording();
+inhMonitor[i]->startRecording();
 ...
-				network->runNetwork(runTime,0);
+network->runNetwork(runTime,0);
 \endcode
 
 Finally we stop recording, get the average firing rate of each group and compute a fitness function
 which is output to ECJ using standard Linux streams.
 
 \code
-					excMonitor[i]->stopRecording();
-					inhMonitor[i]->stopRecording();
+excMonitor[i]->stopRecording();
+inhMonitor[i]->stopRecording();
 
-					excHz[i] = excMonitor[i]->getPopMeanFiringRate();
-					inhHz[i] = inhMonitor[i]->getPopMeanFiringRate();
+excHz[i] = excMonitor[i]->getPopMeanFiringRate();
+inhHz[i] = inhMonitor[i]->getPopMeanFiringRate();
 
-					excError[i] = fabs(excHz[i] - EXC_TARGET_HZ);
-					inhError[i] = fabs(inhHz[i] - INH_TARGET_HZ);
+excError[i] = fabs(excHz[i] - EXC_TARGET_HZ);
+inhError[i] = fabs(inhHz[i] - INH_TARGET_HZ);
 
-					fitness[i] = 1/(excError[i] + inhError[i]);
-					outputStream << fitness[i] << endl;
+fitness[i] = 1/(excError[i] + inhError[i]);
+outputStream << fitness[i] << endl;
 \endcode
 
 To compile and run the tuning framework we simply type:

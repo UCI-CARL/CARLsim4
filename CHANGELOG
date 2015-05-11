@@ -28,6 +28,12 @@ Release 3.0
 ---------------------
 Build 3.0.1
 ---------------------
+2015-05-11     Kristofor D. Carlson <kdcarlso@uci.edu>
+  * Added more accurate plasticity documentation on homeostasis.
+  * Allowed third argument of CARLsim::setHomeoBaseFiringRate that specifies
+    value of standard deviation to be left blank, which assigns a default value
+    of 0 to that argument.
+  * Fixed errors in User Guide in Chapter 10 (ECJ) and Tutorial 5.
 
 2015-05-06     Michael Beyeler <mbeyeler@uci.edu>
   + Added CUDA7 support.
