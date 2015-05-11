@@ -1017,6 +1017,10 @@ public:
 	 * group firing rate, number of silent neurons, etc.) or retrieve all spikes from a particular time window.
 	 * See \ref ch7s1_spike_monitor of the User Guide for more information on how to use SpikeMonitor.
 	 *
+	 * If you call setSpikeMonitor twice on the same group, the same SpikeMonitor pointer will be returned, and the
+	 * name of the spike file will be updated. This is the same as calling SpikeMonitor::setLogFile directly, and
+	 * allows you to redirect the spike file stream mid-simulation (see \ref ch7s1s3_redirecting_file_streams).
+	 *
 	 * \STATE ::CONFIG_STATE, ::SETUP_STATE
 	 * \param[in] grpId 		the group ID
 	 * \param[in] fileName 		name of the binary file to be created. Leave empty for default name

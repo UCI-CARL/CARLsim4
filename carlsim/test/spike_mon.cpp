@@ -46,6 +46,44 @@ TEST(setSpikeMon, grpId){
 	}
 }
 
+TEST(setSpikeMon, setSpikeMonRepeatedly) {
+	::testing::FLAGS_gtest_death_test_style = "threadsafe";
+
+	CARLsim* sim;
+	const int GRP_SIZE = 10;
+
+	// test in CONFIG and SETUP state
+	for(int state=0; state<=1; state++) {
+		// first iteration: CONFIG state, second: SETUP state
+		sim = new CARLsim("setSpikeMon.grpId",CPU_MODE,SILENT,0,42);
+
+		int g1 = sim->createGroup("g1", 10, EXCITATORY_NEURON);
+		int g3 = sim->createGroup("g3", GRP_SIZE, EXCITATORY_NEURON);
+		sim->setNeuronParameters(g1, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f);
+		sim->setNeuronParameters(g3, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f);
+		sim->connect(g1, g3, "random", RangeWeight(0.1f), 0.1f);
+		sim->setConductances(false);
+
+		if (state) {
+			// move to SETUP state
+			sim->setupNetwork();
+		}
+
+		SpikeMonitor* SM1 = sim->setSpikeMonitor(g1,"NULL");
+		SpikeMonitor* SM2 = sim->setSpikeMonitor(g1,"NULL");
+		SpikeMonitor* SM3 = sim->setSpikeMonitor(g3,"NULL");
+
+		EXPECT_EQ(SM1, SM2);
+		EXPECT_NE(SM1, SM3);
+		EXPECT_NE(SM2, SM3);
+		EXPECT_TRUE(SM1 != NULL);
+		EXPECT_TRUE(SM2 != NULL);
+		EXPECT_TRUE(SM3 != NULL);
+
+		delete sim;
+	}
+}
+
 /*!
  * \brief testing to make sure file name error is caught in setSpikeMonitor.
  *
@@ -90,8 +128,8 @@ TEST(SpikeMon, interfaceDeath) {
 
 	sim->connect(g0,g1,"random", RangeWeight(0.01), 0.5f);
 
-	// call setSpikeMonitor again on group, should fail
-	EXPECT_DEATH({sim->setSpikeMonitor(g0,"Default");},"");
+	// call setSpikeMonitor again on group, should NOT fail as of 3.1
+//	EXPECT_DEATH({sim->setSpikeMonitor(g0,"Default");},"");
 
 	// set up network and test all API calls that are not valid in certain modes
 	sim->setupNetwork();

@@ -511,8 +511,12 @@ public:
 	unsigned int getSimTimeSec()	{ return simTimeSec; }
 	unsigned int getSimTimeMs()		{ return simTimeMs; }
 
-	//! returns pointer to existing SpikeMonitor object, NULL else
+	//! Returns pointer to existing SpikeMonitor object, NULL else
 	SpikeMonitor* getSpikeMonitor(int grpId);
+
+	//! Returns pointer to existing SpikeMonitorCore object, NULL else.
+	//! Should not be exposed to user interface
+	SpikeMonitorCore* getSpikeMonitorCore(int grpId);
 
 	/*!
 	 * \brief return the number of spikes per neuron for a certain group

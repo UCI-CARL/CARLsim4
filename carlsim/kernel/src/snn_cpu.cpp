@@ -1073,38 +1073,44 @@ void CpuSNN::setSpikeCounter(int grpId, int recordDur) {
 SpikeMonitor* CpuSNN::setSpikeMonitor(int grpId, FILE* fid) {
 	// check whether group already has a SpikeMonitor
 	if (grp_Info[grpId].SpikeMonitorId >= 0) {
-		KERNEL_ERROR("setSpikeMonitor has already been called on Group %d (%s).",
-			grpId, grp_Info2[grpId].Name.c_str());
-		exitSimulation(1);
+		// in this case, return the current object and update fid
+		SpikeMonitor* spkMonObj = getSpikeMonitor(grpId);
+
+		// update spike file ID
+		SpikeMonitorCore* spkMonCoreObj = getSpikeMonitorCore(grpId);
+		spkMonCoreObj->setSpikeFileId(fid);
+
+		KERNEL_INFO("SpikeMonitor updated for group %d (%s)",grpId,grp_Info2[grpId].Name.c_str());
+		return spkMonObj;
+	} else {
+		// create new SpikeMonitorCore object in any case and initialize analysis components
+		// spkMonObj destructor (see below) will deallocate it
+		SpikeMonitorCore* spkMonCoreObj = new SpikeMonitorCore(this, numSpikeMonitor, grpId);
+		spikeMonCoreList[numSpikeMonitor] = spkMonCoreObj;
+
+		// assign spike file ID if we selected to write to a file, else it's NULL
+		// if file pointer exists, it has already been fopened
+		// this will also write the header section of the spike file
+		// spkMonCoreObj destructor will fclose it
+		spkMonCoreObj->setSpikeFileId(fid);
+
+		// create a new SpikeMonitor object for the user-interface
+		// CpuSNN::deleteObjects will deallocate it
+		SpikeMonitor* spkMonObj = new SpikeMonitor(spkMonCoreObj);
+		spikeMonList[numSpikeMonitor] = spkMonObj;
+
+		// also inform the grp that it is being monitored...
+		grp_Info[grpId].SpikeMonitorId	= numSpikeMonitor;
+
+    	// not eating much memory anymore, got rid of all buffers
+		cpuSnnSz.monitorInfoSize += sizeof(SpikeMonitor*);
+		cpuSnnSz.monitorInfoSize += sizeof(SpikeMonitorCore*);
+
+		numSpikeMonitor++;
+		KERNEL_INFO("SpikeMonitor set for group %d (%s)",grpId,grp_Info2[grpId].Name.c_str());
+
+		return spkMonObj;
 	}
-
-	// create new SpikeMonitorCore object in any case and initialize analysis components
-	// spkMonObj destructor (see below) will deallocate it
-	SpikeMonitorCore* spkMonCoreObj = new SpikeMonitorCore(this, numSpikeMonitor, grpId);
-	spikeMonCoreList[numSpikeMonitor] = spkMonCoreObj;
-
-	// assign spike file ID if we selected to write to a file, else it's NULL
-	// if file pointer exists, it has already been fopened
-	// this will also write the header section of the spike file
-	// spkMonCoreObj destructor will fclose it
-	spkMonCoreObj->setSpikeFileId(fid);
-
-	// create a new SpikeMonitor object for the user-interface
-	// CpuSNN::deleteObjects will deallocate it
-	SpikeMonitor* spkMonObj = new SpikeMonitor(spkMonCoreObj);
-	spikeMonList[numSpikeMonitor] = spkMonObj;
-
-	// also inform the grp that it is being monitored...
-	grp_Info[grpId].SpikeMonitorId	= numSpikeMonitor;
-
-    // not eating much memory anymore, got rid of all buffers
-	cpuSnnSz.monitorInfoSize += sizeof(SpikeMonitor*);
-	cpuSnnSz.monitorInfoSize += sizeof(SpikeMonitorCore*);
-
-	numSpikeMonitor++;
-	KERNEL_INFO("SpikeMonitor set for group %d (%s)",grpId,grp_Info2[grpId].Name.c_str());
-
-	return spkMonObj;
 }
 
 // assigns spike rate to group
@@ -1719,7 +1725,16 @@ int* CpuSNN::getSpikeCounter(int grpId) {
 SpikeMonitor* CpuSNN::getSpikeMonitor(int grpId) {
 	assert(grpId>=0 && grpId<getNumGroups());
 	if (grp_Info[grpId].SpikeMonitorId>=0) {
-		return spikeMonList[grp_Info[grpId].SpikeMonitorId];
+		return spikeMonList[(grp_Info[grpId].SpikeMonitorId)];
+	} else {
+		return NULL;
+	}
+}
+
+SpikeMonitorCore* CpuSNN::getSpikeMonitorCore(int grpId) {
+	assert(grpId>=0 && grpId<getNumGroups());
+	if (grp_Info[grpId].SpikeMonitorId>=0) {
+		return spikeMonCoreList[(grp_Info[grpId].SpikeMonitorId)];
 	} else {
 		return NULL;
 	}
