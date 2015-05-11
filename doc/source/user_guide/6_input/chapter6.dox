@@ -100,7 +100,9 @@ sim.runNetwork(0,10);                                 // no more input spikes
 PoissonRate object on the heap, you are responsible for correctly deallocating it.
 \attention Make sure to reset spike rate after use (i.e., for the next call to CARLsim::runNetwork), otherwise
 the rate will keep getting applied to the group.
-
+\attention You cannot use the same PoissonRate object for multiple
+spikeGenerators. Each PoissonRate objects can only be used for a single
+SpikeGenerator object at a time.
 
 
 \subsection ch6s1s2_periodic 6.1.2 Periodically Generating Spikes
