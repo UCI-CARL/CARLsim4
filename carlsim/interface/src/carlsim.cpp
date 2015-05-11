@@ -413,6 +413,7 @@ void CARLsim::setConductances(bool isSet, int tdAMPA, int trNMDA, int tdNMDA, in
 // set default homeostasis params
 void CARLsim::setHomeostasis(int grpId, bool isSet) {
 	std::string funcName = "setHomeostasis(\""+getGroupName(grpId)+"\")";
+	UserErrors::assertTrue(!isSet || isSet && !isPoissonGroup(grpId), UserErrors::WRONG_NEURON_TYPE, funcName, funcName);
 	UserErrors::assertTrue(carlsimState_==CONFIG_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "CONFIG.");
 
 	hasSetHomeoALL_ = grpId==ALL; // adding groups after this will not have homeostasis set
@@ -430,7 +431,10 @@ void CARLsim::setHomeostasis(int grpId, bool isSet) {
 // set custom homeostasis params for group
 void CARLsim::setHomeostasis(int grpId, bool isSet, float homeoScale, float avgTimeScale) {
 	std::string funcName = "setHomeostasis(\""+getGroupName(grpId)+"\")";
-	UserErrors::assertTrue(carlsimState_==CONFIG_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "CONFIG.");
+	UserErrors::assertTrue(!isSet || isSet && !isPoissonGroup(grpId), UserErrors::WRONG_NEURON_TYPE, funcName,
+		funcName);
+	UserErrors::assertTrue(carlsimState_==CONFIG_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName,
+		"CONFIG.");
 
 	hasSetHomeoALL_ = grpId==ALL; // adding groups after this will not have homeostasis set
 
@@ -447,7 +451,11 @@ void CARLsim::setHomeostasis(int grpId, bool isSet, float homeoScale, float avgT
 // set a homeostatic target firing rate (enforced through homeostatic synaptic scaling)
 void CARLsim::setHomeoBaseFiringRate(int grpId, float baseFiring, float baseFiringSD) {
 	std::string funcName = "setHomeoBaseFiringRate(\""+getGroupName(grpId)+"\")";
-	UserErrors::assertTrue(carlsimState_==CONFIG_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "CONFIG.");
+	UserErrors::assertTrue(!isPoissonGroup(grpId), UserErrors::WRONG_NEURON_TYPE, funcName, funcName);
+	UserErrors::assertTrue(isGroupWithHomeostasis(grpId), UserErrors::WRONG_NEURON_TYPE, funcName,
+		funcName, " Must call CARLsim::setHomeostasis first.");
+	UserErrors::assertTrue(carlsimState_==CONFIG_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName,
+		"CONFIG.");
 
 	hasSetHomeoBaseFiringALL_ = grpId==ALL; // adding groups after this will not have base firing set
 
@@ -458,7 +466,9 @@ void CARLsim::setHomeoBaseFiringRate(int grpId, float baseFiring, float baseFiri
 void CARLsim::setNeuronParameters(int grpId, float izh_a, float izh_a_sd, float izh_b, float izh_b_sd,
 							 		float izh_c, float izh_c_sd, float izh_d, float izh_d_sd) {
 	std::string funcName = "setNeuronParameters(\""+getGroupName(grpId)+"\")";
-	UserErrors::assertTrue(carlsimState_==CONFIG_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "CONFIG.");
+	UserErrors::assertTrue(!isPoissonGroup(grpId), UserErrors::WRONG_NEURON_TYPE, funcName, funcName);
+	UserErrors::assertTrue(carlsimState_==CONFIG_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName,
+		"CONFIG.");
 
 	// wrapper identical to core func
 	snn_->setNeuronParameters(grpId, izh_a, izh_a_sd, izh_b, izh_b_sd, izh_c, izh_c_sd, izh_d, izh_d_sd);
@@ -467,6 +477,7 @@ void CARLsim::setNeuronParameters(int grpId, float izh_a, float izh_a_sd, float 
 // set neuron parameters for Izhikevich neuron
 void CARLsim::setNeuronParameters(int grpId, float izh_a, float izh_b, float izh_c, float izh_d) {
 	std::string funcName = "setNeuronParameters(\""+getGroupName(grpId)+"\")";
+	UserErrors::assertTrue(!isPoissonGroup(grpId), UserErrors::WRONG_NEURON_TYPE, funcName, funcName);
 	UserErrors::assertTrue(carlsimState_==CONFIG_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "CONFIG.");
 
 	// set standard deviations of Izzy params to zero
@@ -514,6 +525,7 @@ void CARLsim::setSTDP(int grpId, bool isSet, stdpType_t type, float alphaPlus, f
 // set ESTDP, default
 void CARLsim::setESTDP(int grpId, bool isSet) {
 	std::string funcName = "setESTDP(\""+getGroupName(grpId)+"\")";
+	UserErrors::assertTrue(!isSet || isSet && !isPoissonGroup(grpId), UserErrors::WRONG_NEURON_TYPE, funcName, funcName);
 	UserErrors::assertTrue(carlsimState_==CONFIG_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "CONFIG.");
 
 	hasSetSTDPALL_ = grpId==ALL; // adding groups after this will not have conductances set
@@ -528,6 +540,7 @@ void CARLsim::setESTDP(int grpId, bool isSet) {
 // set ESTDP by stdp curve
 void CARLsim::setESTDP(int grpId, bool isSet, stdpType_t type, ExpCurve curve) {
 	std::string funcName = "setESTDP(\""+getGroupName(grpId)+","+stdpType_string[type]+"\")";
+	UserErrors::assertTrue(!isSet || isSet && !isPoissonGroup(grpId), UserErrors::WRONG_NEURON_TYPE, funcName, funcName);
 	UserErrors::assertTrue(type!=UNKNOWN_STDP, UserErrors::CANNOT_BE_UNKNOWN, funcName, "Mode");
 	UserErrors::assertTrue(carlsimState_==CONFIG_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "CONFIG.");
 
@@ -543,6 +556,7 @@ void CARLsim::setESTDP(int grpId, bool isSet, stdpType_t type, ExpCurve curve) {
 // set ESTDP by stdp curve
 void CARLsim::setESTDP(int grpId, bool isSet, stdpType_t type, TimingBasedCurve curve) {
 	std::string funcName = "setESTDP(\""+getGroupName(grpId)+","+stdpType_string[type]+"\")";
+	UserErrors::assertTrue(!isSet || isSet && !isPoissonGroup(grpId), UserErrors::WRONG_NEURON_TYPE, funcName, funcName);
 	UserErrors::assertTrue(type!=UNKNOWN_STDP, UserErrors::CANNOT_BE_UNKNOWN, funcName, "Mode");
 	UserErrors::assertTrue(carlsimState_==CONFIG_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "CONFIG.");
 
@@ -558,6 +572,7 @@ void CARLsim::setESTDP(int grpId, bool isSet, stdpType_t type, TimingBasedCurve 
 // set ISTDP, default
 void CARLsim::setISTDP(int grpId, bool isSet) {
 	std::string funcName = "setISTDP(\""+getGroupName(grpId)+"\")";
+	UserErrors::assertTrue(!isSet || isSet && !isPoissonGroup(grpId), UserErrors::WRONG_NEURON_TYPE, funcName, funcName);
 	UserErrors::assertTrue(carlsimState_==CONFIG_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "CONFIG.");
 
 	hasSetSTDPALL_ = grpId==ALL; // adding groups after this will not have conductances set
@@ -572,6 +587,7 @@ void CARLsim::setISTDP(int grpId, bool isSet) {
 // set ISTDP by stdp curve
 void CARLsim::setISTDP(int grpId, bool isSet, stdpType_t type, ExpCurve curve) {
 	std::string funcName = "setISTDP(\""+getGroupName(grpId)+","+stdpType_string[type]+"\")";
+	UserErrors::assertTrue(!isSet || isSet && !isPoissonGroup(grpId), UserErrors::WRONG_NEURON_TYPE, funcName, funcName);
 	UserErrors::assertTrue(type!=UNKNOWN_STDP, UserErrors::CANNOT_BE_UNKNOWN, funcName, "Mode");
 	UserErrors::assertTrue(carlsimState_==CONFIG_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "CONFIG.");
 
@@ -587,6 +603,7 @@ void CARLsim::setISTDP(int grpId, bool isSet, stdpType_t type, ExpCurve curve) {
 // set ISTDP by stdp curve
 void CARLsim::setISTDP(int grpId, bool isSet, stdpType_t type, PulseCurve curve) {
 	std::string funcName = "setISTDP(\""+getGroupName(grpId)+","+stdpType_string[type]+"\")";
+	UserErrors::assertTrue(!isSet || isSet && !isPoissonGroup(grpId), UserErrors::WRONG_NEURON_TYPE, funcName, funcName);
 	UserErrors::assertTrue(type!=UNKNOWN_STDP, UserErrors::CANNOT_BE_UNKNOWN, funcName, "Mode");
 	UserErrors::assertTrue(carlsimState_==CONFIG_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "CONFIG.");
 
@@ -1207,9 +1224,45 @@ RangeWeight CARLsim::getWeightRange(short int connId) {
 	return snn_->getWeightRange(connId);
 }
 
-bool CARLsim::isExcitatoryGroup(int grpId) { return snn_->isExcitatoryGroup(grpId); }
-bool CARLsim::isInhibitoryGroup(int grpId) { return snn_->isInhibitoryGroup(grpId); }
-bool CARLsim::isPoissonGroup(int grpId) { return snn_->isPoissonGroup(grpId); }
+bool CARLsim::isConnectionPlastic(short int connId) {
+	std::stringstream funcName; funcName << "isConnectionPlastic(" << connId << ")";
+	UserErrors::assertTrue(connId>=0 && connId<getNumConnections(), UserErrors::MUST_BE_IN_RANGE, funcName.str(),
+		"connId", "[0,getNumConnections()]");
+
+	return snn_->isConnectionPlastic(connId);
+}
+
+bool CARLsim::isGroupWithHomeostasis(int grpId) {
+	std::stringstream funcName; funcName << "isGroupWithHomeostasis(" << grpId << ")";
+	UserErrors::assertTrue(grpId>=0 && grpId<getNumGroups(), UserErrors::MUST_BE_IN_RANGE, funcName.str(),
+		"connId", "[0,getNumGroups()]");
+
+	return snn_->isGroupWithHomeostasis(grpId);	
+}
+
+bool CARLsim::isExcitatoryGroup(int grpId) {
+	std::stringstream funcName; funcName << "isExcitatoryGroup(" << grpId << ")";
+	UserErrors::assertTrue(grpId>=0 && grpId<getNumGroups(), UserErrors::MUST_BE_IN_RANGE, funcName.str(),
+		"connId", "[0,getNumGroups()]");
+
+	return snn_->isExcitatoryGroup(grpId);
+}
+
+bool CARLsim::isInhibitoryGroup(int grpId) {
+	std::stringstream funcName; funcName << "isInhibitoryGroup(" << grpId << ")";
+	UserErrors::assertTrue(grpId>=0 && grpId<getNumGroups(), UserErrors::MUST_BE_IN_RANGE, funcName.str(),
+		"connId", "[0,getNumGroups()]");
+
+	return snn_->isInhibitoryGroup(grpId);
+}
+
+bool CARLsim::isPoissonGroup(int grpId) {
+	std::stringstream funcName; funcName << "isPoissonGroup(" << grpId << ")";
+	UserErrors::assertTrue(grpId>=0 && grpId<getNumGroups(), UserErrors::MUST_BE_IN_RANGE, funcName.str(),
+		"connId", "[0,getNumGroups()]");
+
+	return snn_->isPoissonGroup(grpId);
+}
 
 
 // +++++++++ PUBLIC METHODS: SET DEFAULTS +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //

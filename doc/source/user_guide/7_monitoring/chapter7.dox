@@ -177,6 +177,9 @@ spkMon->setLogFile("testing.dat");
 sim.runNetwork(10,0);
 \endcode
 
+\note Instead of calling SpikeMonitor::setLogFile, you can also call CARLsim::setSpikeMonitor again on the same
+group, which has the same effect.
+
 
 \section ch7s2_connection_monitor 7.2 Connection Monitor
 \author Michael Beyeler

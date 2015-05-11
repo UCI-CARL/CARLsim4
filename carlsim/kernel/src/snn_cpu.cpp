@@ -303,6 +303,10 @@ int CpuSNN::createGroup(const std::string& grpName, const Grid3D& grid, int neur
 
 	grp_Info2[numGrp].Izh_a 			= -1; // \FIXME ???
 
+	// init homeostasis params even though not used
+	grp_Info2[numGrp].baseFiring        = 10.0f;
+	grp_Info2[numGrp].baseFiringSD      = 0.0f;
+
 	grp_Info2[numGrp].Name              = grpName;
 	finishedPoissonGroup				= true;
 
@@ -1073,38 +1077,44 @@ void CpuSNN::setSpikeCounter(int grpId, int recordDur) {
 SpikeMonitor* CpuSNN::setSpikeMonitor(int grpId, FILE* fid) {
 	// check whether group already has a SpikeMonitor
 	if (grp_Info[grpId].SpikeMonitorId >= 0) {
-		KERNEL_ERROR("setSpikeMonitor has already been called on Group %d (%s).",
-			grpId, grp_Info2[grpId].Name.c_str());
-		exitSimulation(1);
+		// in this case, return the current object and update fid
+		SpikeMonitor* spkMonObj = getSpikeMonitor(grpId);
+
+		// update spike file ID
+		SpikeMonitorCore* spkMonCoreObj = getSpikeMonitorCore(grpId);
+		spkMonCoreObj->setSpikeFileId(fid);
+
+		KERNEL_INFO("SpikeMonitor updated for group %d (%s)",grpId,grp_Info2[grpId].Name.c_str());
+		return spkMonObj;
+	} else {
+		// create new SpikeMonitorCore object in any case and initialize analysis components
+		// spkMonObj destructor (see below) will deallocate it
+		SpikeMonitorCore* spkMonCoreObj = new SpikeMonitorCore(this, numSpikeMonitor, grpId);
+		spikeMonCoreList[numSpikeMonitor] = spkMonCoreObj;
+
+		// assign spike file ID if we selected to write to a file, else it's NULL
+		// if file pointer exists, it has already been fopened
+		// this will also write the header section of the spike file
+		// spkMonCoreObj destructor will fclose it
+		spkMonCoreObj->setSpikeFileId(fid);
+
+		// create a new SpikeMonitor object for the user-interface
+		// CpuSNN::deleteObjects will deallocate it
+		SpikeMonitor* spkMonObj = new SpikeMonitor(spkMonCoreObj);
+		spikeMonList[numSpikeMonitor] = spkMonObj;
+
+		// also inform the grp that it is being monitored...
+		grp_Info[grpId].SpikeMonitorId	= numSpikeMonitor;
+
+    	// not eating much memory anymore, got rid of all buffers
+		cpuSnnSz.monitorInfoSize += sizeof(SpikeMonitor*);
+		cpuSnnSz.monitorInfoSize += sizeof(SpikeMonitorCore*);
+
+		numSpikeMonitor++;
+		KERNEL_INFO("SpikeMonitor set for group %d (%s)",grpId,grp_Info2[grpId].Name.c_str());
+
+		return spkMonObj;
 	}
-
-	// create new SpikeMonitorCore object in any case and initialize analysis components
-	// spkMonObj destructor (see below) will deallocate it
-	SpikeMonitorCore* spkMonCoreObj = new SpikeMonitorCore(this, numSpikeMonitor, grpId);
-	spikeMonCoreList[numSpikeMonitor] = spkMonCoreObj;
-
-	// assign spike file ID if we selected to write to a file, else it's NULL
-	// if file pointer exists, it has already been fopened
-	// this will also write the header section of the spike file
-	// spkMonCoreObj destructor will fclose it
-	spkMonCoreObj->setSpikeFileId(fid);
-
-	// create a new SpikeMonitor object for the user-interface
-	// CpuSNN::deleteObjects will deallocate it
-	SpikeMonitor* spkMonObj = new SpikeMonitor(spkMonCoreObj);
-	spikeMonList[numSpikeMonitor] = spkMonObj;
-
-	// also inform the grp that it is being monitored...
-	grp_Info[grpId].SpikeMonitorId	= numSpikeMonitor;
-
-    // not eating much memory anymore, got rid of all buffers
-	cpuSnnSz.monitorInfoSize += sizeof(SpikeMonitor*);
-	cpuSnnSz.monitorInfoSize += sizeof(SpikeMonitorCore*);
-
-	numSpikeMonitor++;
-	KERNEL_INFO("SpikeMonitor set for group %d (%s)",grpId,grp_Info2[grpId].Name.c_str());
-
-	return spkMonObj;
 }
 
 // assigns spike rate to group
@@ -1719,7 +1729,16 @@ int* CpuSNN::getSpikeCounter(int grpId) {
 SpikeMonitor* CpuSNN::getSpikeMonitor(int grpId) {
 	assert(grpId>=0 && grpId<getNumGroups());
 	if (grp_Info[grpId].SpikeMonitorId>=0) {
-		return spikeMonList[grp_Info[grpId].SpikeMonitorId];
+		return spikeMonList[(grp_Info[grpId].SpikeMonitorId)];
+	} else {
+		return NULL;
+	}
+}
+
+SpikeMonitorCore* CpuSNN::getSpikeMonitorCore(int grpId) {
+	assert(grpId>=0 && grpId<getNumGroups());
+	if (grp_Info[grpId].SpikeMonitorId>=0) {
+		return spikeMonCoreList[(grp_Info[grpId].SpikeMonitorId)];
 	} else {
 		return NULL;
 	}
@@ -1829,7 +1848,6 @@ void CpuSNN::CpuSNNinit() {
 	finishedPoissonGroup  = false;
 	connectBegin = NULL;
 
-	simTimeLastUpdSpkMon_ = 0;
 	simTimeRunStart     = 0;    simTimeRunStop      = 0;
 	simTimeLastRunSummary = 0;
 	simTimeMs	 		= 0;    simTimeSec          = 0;    simTime = 0;
@@ -2215,9 +2233,6 @@ void CpuSNN::buildNetwork() {
 	grpConnectInfo_t* newInfo = connectBegin;
 //	int curN = 0, curD = 0, numPostSynapses = 0, numPreSynapses = 0;
 
-	// make sure number of neuron parameters have been accumulated correctly
-	// NOTE: this used to be updateParameters
-	assert(isNumNeuronsConsistent());
 	int curN = numN;
 
 	// find the maximum values for number of pre- and post-synaptic neurons
@@ -3391,14 +3406,71 @@ bool CpuSNN::isConnectionPlastic(short int connId) {
 	return isPlastic;
 }
 
+// returns whether group has homeostasis enabled
+bool CpuSNN::isGroupWithHomeostasis(int grpId) {
+	assert(grpId>=0 && grpId<getNumGroups());
+	return (grp_Info[grpId].WithHomeostasis);
+}
+
+// performs various verification checkups before building the network
+void CpuSNN::verifyNetwork() {
+	// make sure number of neuron parameters have been accumulated correctly
+	// NOTE: this used to be updateParameters
+	verifyNumNeurons();
+
+	// make sure STDP post-group has some incoming plastic connections
+	verifySTDP();
+
+	// make sure every group with homeostasis also has STDP
+	verifyHomeostasis();
+}
+
+// checks whether STDP is set on a post-group with incoming plastic connections
+void CpuSNN::verifySTDP() {
+	for (int grpId=0; grpId<getNumGroups(); grpId++) {
+		if (grp_Info[grpId].WithSTDP) {
+			// for each post-group, check if any of the incoming connections are plastic
+			grpConnectInfo_t* connInfo = connectBegin;
+			bool isAnyPlastic = false;
+			while (connInfo) {
+				if (connInfo->grpDest == grpId) {
+					// get syn wt type from connection property
+					isAnyPlastic |= GET_FIXED_PLASTIC(connInfo->connProp);
+					if (isAnyPlastic) {
+						// at least one plastic connection found: break while
+						break;
+					}
+				}
+				connInfo = connInfo->next;
+			}
+			if (!isAnyPlastic) {
+				KERNEL_ERROR("If STDP on group %d (%s) is set, group must have some incoming plastic connections.",
+					grpId, grp_Info2[grpId].Name.c_str());
+				exitSimulation(1);
+			}
+		}
+	}
+}
+
+// checks whether every group with Homeostasis also has STDP
+void CpuSNN::verifyHomeostasis() {
+	for (int grpId=0; grpId<getNumGroups(); grpId++) {
+		if (grp_Info[grpId].WithHomeostasis) {
+			if (!grp_Info[grpId].WithSTDP) {
+				KERNEL_ERROR("If homeostasis is enabled on group %d (%s), then STDP must be enabled, too.",
+					grpId, grp_Info2[grpId].Name.c_str());
+				exitSimulation(1);
+			}
+		}
+	}
+}
+
 // checks whether the numN* class members are consistent and complete
-bool CpuSNN::isNumNeuronsConsistent() {
+void CpuSNN::verifyNumNeurons() {
 	int nExcPois = 0;
 	int nInhPois = 0;
 	int nExcReg = 0;
 	int nInhReg = 0;
-
-	bool isValid = true;
 
 	//  scan all the groups and find the required information
 	//  about the group (numN, numPostSynapses, numPreSynapses and others).
@@ -3419,14 +3491,22 @@ bool CpuSNN::isNumNeuronsConsistent() {
 	}
 
 	// check the newly gathered information with class members
-	isValid &= (numN == nExcReg+nInhReg+nExcPois+nInhPois);
-	isValid &= (numNReg == nExcReg+nInhReg);
-	isValid &= (numNPois == nExcPois+nInhPois);
+	if (numN != nExcReg+nInhReg+nExcPois+nInhPois) {
+		KERNEL_ERROR("nExcReg+nInhReg+nExcPois+nInhPois=%d does not add up to numN=%d",
+			nExcReg+nInhReg+nExcPois+nInhPois, numN);
+		exitSimulation(1);
+	}
+	if (numNReg != nExcReg+nInhReg) {
+		KERNEL_ERROR("nExcReg+nInhReg=%d does not add up to numNReg=%d", nExcReg+nInhReg, numNReg);
+		exitSimulation(1);
+	}
+	if (numNPois != nExcPois+nInhPois) {
+		KERNEL_ERROR("nExcPois+nInhPois=%d does not add up to numNPois=%d", nExcPois+nInhPois, numNPois);
+		exitSimulation(1);
+	}
 //	printf("numN=%d == %d\n",numN,nExcReg+nInhReg+nExcPois+nInhPois);
 //	printf("numNReg=%d == %d\n",numNReg, nExcReg+nInhReg);
 //	printf("numNPois=%d == %d\n",numNPois, nExcPois+nInhPois);
-
-	return isValid;
 }
 
 // \FIXME: not sure where this should go... maybe create some helper file?
@@ -3736,6 +3816,12 @@ void CpuSNN::reorganizeNetwork(bool removeTempMemory) {
 		return;
 
 	KERNEL_DEBUG("Beginning reorganization of network....");
+
+	// perform various consistency checks:
+	// - numNeurons vs. sum of all neurons
+	// - STDP set on a post-group with incoming plastic connections
+	// - etc.
+	verifyNetwork();
 
 	// time to build the complete network with relevant parameters..
 	buildNetwork();

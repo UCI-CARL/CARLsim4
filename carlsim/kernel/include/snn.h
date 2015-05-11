@@ -511,8 +511,12 @@ public:
 	unsigned int getSimTimeSec()	{ return simTimeSec; }
 	unsigned int getSimTimeMs()		{ return simTimeMs; }
 
-	//! returns pointer to existing SpikeMonitor object, NULL else
+	//! Returns pointer to existing SpikeMonitor object, NULL else
 	SpikeMonitor* getSpikeMonitor(int grpId);
+
+	//! Returns pointer to existing SpikeMonitorCore object, NULL else.
+	//! Should not be exposed to user interface
+	SpikeMonitorCore* getSpikeMonitorCore(int grpId);
 
 	/*!
 	 * \brief return the number of spikes per neuron for a certain group
@@ -537,6 +541,7 @@ public:
 	//! temporary getter to return pointer to stpx[] \TODO replace with NeuronMonitor or ConnectionMonitor
 	float* getSTPx() { return stpx; }
 
+	//! returns whether synapses in connection are fixed (false) or plastic (true)
     bool isConnectionPlastic(short int connId);
 
 	//! returns RangeWeight struct of a connection
@@ -546,6 +551,9 @@ public:
 	bool isInhibitoryGroup(int g) { return (grp_Info[g].Type&TARGET_GABAa) || (grp_Info[g].Type&TARGET_GABAb); }
 	bool isPoissonGroup(int g) { return (grp_Info[g].Type&POISSON_NEURON); }
 	bool isDopaminergicGroup(int g) { return (grp_Info[g].Type&TARGET_DA); }
+
+	//! returns whether group has homeostasis enabled (true) or not (false)
+	bool isGroupWithHomeostasis(int grpId);
 
 	//! checks whether a point pre lies in the receptive field for point post
 	double getRFDist3D(const RadiusRF& radius, const Point3D& pre, const Point3D& post);
@@ -620,10 +628,20 @@ private:
 
 	void initSynapticWeights(); //!< initialize all the synaptic weights to appropriate values. total size of the synaptic connection is 'length'
 
-	//! performs a consistency check to see whether numN* class members have been accumulated correctly
-	bool isNumNeuronsConsistent();
+	//! performs various verification checkups before building the network
+	void verifyNetwork();
 
-	void makePtrInfo();				//!< creates CPU net ptrs
+	//! make sure STDP post-group has some incoming plastic connections
+	void verifySTDP();
+
+	//! make sure every group with homeostasis also has STDP
+	void verifyHomeostasis();
+
+	//! performs a consistency check to see whether numN* class members have been accumulated correctly
+	void verifyNumNeurons();
+
+	//! creates CPU net pointers
+	void makePtrInfo();
 
 	/*!
 	 * \brief generates spike times according to a Poisson process

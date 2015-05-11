@@ -444,7 +444,7 @@ public:
 	 * \param[in] baseFiring   target firing rate of every neuron in this group
 	 * \param[in] baseFiringSD standard deviation of target firing rate of every neuron in this group
 	 */
-	void setHomeoBaseFiringRate(int grpId, float baseFiring, float baseFiringSD=0);
+	void setHomeoBaseFiringRate(int grpId, float baseFiring, float baseFiringSD=0.0f);
 
 	/*!
 	 * \brief Sets Izhikevich params a, b, c, and d with as mean +- standard deviation
@@ -1018,6 +1018,10 @@ public:
 	 * group firing rate, number of silent neurons, etc.) or retrieve all spikes from a particular time window.
 	 * See \ref ch7s1_spike_monitor of the User Guide for more information on how to use SpikeMonitor.
 	 *
+	 * If you call setSpikeMonitor twice on the same group, the same SpikeMonitor pointer will be returned, and the
+	 * name of the spike file will be updated. This is the same as calling SpikeMonitor::setLogFile directly, and
+	 * allows you to redirect the spike file stream mid-simulation (see \ref ch7s1s3_redirecting_file_streams).
+	 *
 	 * \STATE ::CONFIG_STATE, ::SETUP_STATE
 	 * \param[in] grpId 		the group ID
 	 * \param[in] fileName 		name of the binary file to be created. Leave empty for default name
@@ -1529,6 +1533,28 @@ public:
 	 * \since v3.0
 	 */
 	RangeWeight getWeightRange(short int connId);
+
+	/*!
+	 * \brief Returns whether a connection is fixed or plastic
+	 *
+	 * This function returns whether the synapses in a certain connection ID are fixed (false) or plastic (true).
+	 *
+	 * \STATE ::CONFIG_STATE, ::SETUP_STATE, ::RUN_STATE
+	 * \param[in] connId connection ID
+	 * \since v3.1
+	 */
+	bool isConnectionPlastic(short int connId);
+
+	/*!
+	 * \brief Returns whether a group has homeostasis enabled
+	 *
+	 * This functions returns whether a group has homeostasis enabled (true) or not (false).
+	 *
+	 * \STATE ::CONFIG_STATE, ::SETUP_STATE, ::RUN_STATE
+	 * \param[in] grpId group ID
+	 * \since v3.1
+	 */
+	bool isGroupWithHomeostasis(int grpId);
 
 	/*!
 	 * \brief returns
