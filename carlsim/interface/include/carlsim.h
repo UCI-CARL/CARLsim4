@@ -1545,6 +1545,17 @@ public:
 	bool isConnectionPlastic(short int connId);
 
 	/*!
+	 * \brief Returns whether a group has homeostasis enabled
+	 *
+	 * This functions returns whether a group has homeostasis enabled (true) or not (false).
+	 *
+	 * \STATE ::CONFIG_STATE, ::SETUP_STATE, ::RUN_STATE
+	 * \param[in] grpId group ID
+	 * \since v3.1
+	 */
+	bool isGroupWithHomeostasis(int grpId);
+
+	/*!
 	 * \brief returns
 	 *
 	 * \TODO finish docu

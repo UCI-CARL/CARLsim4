@@ -12,6 +12,13 @@ Build 3.1.0
 ---------------------
 
 2015-05-11     Michael Beyeler <mbeyeler@uci.edu>
+  + Added CpuSNN::verifyNetwork that will run CpuSNN::verifyNumNeurons,
+    CpuSNN::verifySTDP, and CpuSNN::verifyHomeostasis before network is built.
+  * Refactored CpuSNN::isNumNeuronsConsistent to CpuSNN::verifyNumNeurons.
+  + Added Interface tests for STDP and homeostasis consistency.
+  + Added CARLsim::isConnectionPlastic.
+  + Added CARLsim::isGroupWithHomeostasis.
+  + Added default value for baseFiringSD in CARLsim::setHomeoBaseFiringRate.
   - Removed CpuSNN variable simTimeLastUpdSpkMon_.
   * Fixed repeated calls to CARLsim::setSpikeMonitor, added test and updated
     User Guide.

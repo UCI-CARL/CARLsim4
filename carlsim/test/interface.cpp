@@ -320,6 +320,33 @@ TEST(Interface, setExternalCurrentDeath) {
 	delete sim;
 }
 
+TEST(Interface, setHomeostasisDeath) {
+	::testing::FLAGS_gtest_death_test_style = "threadsafe";
+
+	CARLsim sim("Interface.setHomeostasisDeath",CPU_MODE,SILENT,0,42);
+	int g1=sim.createGroup("excit", 10, EXCITATORY_NEURON);
+	sim.setNeuronParameters(g1, 0.02f, 0.2f,-65.0f,8.0f);
+
+	int g0=sim.createSpikeGeneratorGroup("input0", 10, EXCITATORY_NEURON);
+
+	sim.connect(g0,g1,"random",RangeWeight(0.01),0.1f,RangeDelay(1));
+
+	sim.setConductances(true);
+
+	// calling homeostasis on on SpikeGen
+	EXPECT_DEATH({sim.setHomeostasis(g0, true);},"");
+	EXPECT_DEATH({sim.setHomeoBaseFiringRate(g0, 20.0f, 0.0f);},"");
+
+	// calling homeo base firing first
+	EXPECT_DEATH({sim.setHomeoBaseFiringRate(g1, 20.0f, 0.0f);},"");
+
+	// will not fail just yet (no plastic connections), but will fail in setupNetwork
+	sim.setHomeostasis(g1, true);
+	sim.setHomeoBaseFiringRate(g1, 20.0f, 0.0f);
+
+	EXPECT_DEATH({sim.setupNetwork();},"");
+}
+
 
 //! Death tests for setNeuronParameters (test all possible silly values)
 TEST(Interface, setNeuronParametersDeath) {

@@ -46,6 +46,33 @@ TEST(setSpikeMon, grpId){
 	}
 }
 
+/*!
+ * \brief testing to make sure file name error is caught in setSpikeMonitor.
+ *
+ */
+TEST(setSpikeMon, fname){
+	::testing::FLAGS_gtest_death_test_style = "threadsafe";
+
+	CARLsim* sim;
+	const int GRP_SIZE = 10;
+
+	// loop over both CPU and GPU mode.
+	for(int mode=0; mode<=1; mode++){
+		// first iteration, test CPU mode, second test GPU mode
+		sim = new CARLsim("setSpikeMon.fname",mode?GPU_MODE:CPU_MODE,SILENT,0,42);
+
+		int g1 = sim->createGroup("g1", GRP_SIZE, EXCITATORY_NEURON);
+		int g2 = sim->createGroup("g2", GRP_SIZE, EXCITATORY_NEURON);
+		sim->setNeuronParameters(g1, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f);
+		sim->setNeuronParameters(g2, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f);
+
+		// this directory doesn't exist.
+		EXPECT_DEATH(sim->setSpikeMonitor(1,"absentDirectory/testSpikes.dat"),"");
+
+		delete sim;
+	}
+}
+
 TEST(setSpikeMon, setSpikeMonRepeatedly) {
 	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
@@ -84,55 +111,27 @@ TEST(setSpikeMon, setSpikeMonRepeatedly) {
 	}
 }
 
-/*!
- * \brief testing to make sure file name error is caught in setSpikeMonitor.
- *
- */
-TEST(setSpikeMon, fname){
-	::testing::FLAGS_gtest_death_test_style = "threadsafe";
-
-	CARLsim* sim;
-	const int GRP_SIZE = 10;
-
-	// loop over both CPU and GPU mode.
-	for(int mode=0; mode<=1; mode++){
-		// first iteration, test CPU mode, second test GPU mode
-		sim = new CARLsim("setSpikeMon.fname",mode?GPU_MODE:CPU_MODE,SILENT,0,42);
-
-		int g1 = sim->createGroup("g1", GRP_SIZE, EXCITATORY_NEURON);
-		int g2 = sim->createGroup("g2", GRP_SIZE, EXCITATORY_NEURON);
-		sim->setNeuronParameters(g1, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f);
-		sim->setNeuronParameters(g2, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f);
-
-		// this directory doesn't exist.
-		EXPECT_DEATH(sim->setSpikeMonitor(1,"absentDirectory/testSpikes.dat"),"");
-
-		delete sim;
-	}
-}
-
-
 TEST(SpikeMon, interfaceDeath) {
 	// use threadsafe version because we have deathtests
 	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
-	CARLsim* sim = new CARLsim("SpikeMon.interfaceDeath",CPU_MODE,SILENT,0,42);
+	CARLsim sim("SpikeMon.interfaceDeath",CPU_MODE,SILENT,0,42);
 
-	int g1 = sim->createGroup("g1", 5, EXCITATORY_NEURON);
-	sim->setNeuronParameters(g1, 0.02, 0.2, -65.0, 8.0);
+	int g1 = sim.createGroup("g1", 5, EXCITATORY_NEURON);
+	sim.setNeuronParameters(g1, 0.02, 0.2, -65.0, 8.0);
 
-	int g0 = sim->createSpikeGeneratorGroup("Input",5,EXCITATORY_NEURON);
-	SpikeMonitor* spkMon = sim->setSpikeMonitor(g0,"Default");
+	int g0 = sim.createSpikeGeneratorGroup("Input",5,EXCITATORY_NEURON);
+	SpikeMonitor* spkMon = sim.setSpikeMonitor(g0,"Default");
 
-	sim->setConductances(true);
+	sim.setConductances(true);
 
-	sim->connect(g0,g1,"random", RangeWeight(0.01), 0.5f);
+	sim.connect(g0,g1,"random", RangeWeight(0.01), 0.5f);
 
 	// call setSpikeMonitor again on group, should NOT fail as of 3.1
 //	EXPECT_DEATH({sim->setSpikeMonitor(g0,"Default");},"");
 
 	// set up network and test all API calls that are not valid in certain modes
-	sim->setupNetwork();
+	sim.setupNetwork();
 
 	// \TODO SpikeMonitor mode COUNT not yet implemented
 	EXPECT_DEATH(spkMon->setMode(COUNT),"");
@@ -157,8 +156,6 @@ TEST(SpikeMon, interfaceDeath) {
 	EXPECT_DEATH(spkMon->print(),"");
 	EXPECT_DEATH(spkMon->startRecording(),"");
 	EXPECT_DEATH(spkMon->setLogFile("meow.dat"),"");
-
-	delete sim;
 }
 
 

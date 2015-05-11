@@ -303,6 +303,10 @@ int CpuSNN::createGroup(const std::string& grpName, const Grid3D& grid, int neur
 
 	grp_Info2[numGrp].Izh_a 			= -1; // \FIXME ???
 
+	// init homeostasis params even though not used
+	grp_Info2[numGrp].baseFiring        = 10.0f;
+	grp_Info2[numGrp].baseFiringSD      = 0.0f;
+
 	grp_Info2[numGrp].Name              = grpName;
 	finishedPoissonGroup				= true;
 
@@ -3402,6 +3406,12 @@ bool CpuSNN::isConnectionPlastic(short int connId) {
 	return isPlastic;
 }
 
+// returns whether group has homeostasis enabled
+bool CpuSNN::isGroupWithHomeostasis(int grpId) {
+	assert(grpId>=0 && grpId<getNumGroups());
+	return (grp_Info[grpId].WithHomeostasis);
+}
+
 // performs various verification checkups before building the network
 void CpuSNN::verifyNetwork() {
 	// make sure number of neuron parameters have been accumulated correctly
@@ -3410,6 +3420,9 @@ void CpuSNN::verifyNetwork() {
 
 	// make sure STDP post-group has some incoming plastic connections
 	verifySTDP();
+
+	// make sure every group with homeostasis also has STDP
+	verifyHomeostasis();
 }
 
 // checks whether STDP is set on a post-group with incoming plastic connections
@@ -3436,7 +3449,19 @@ void CpuSNN::verifySTDP() {
 				exitSimulation(1);
 			}
 		}
+	}
+}
 
+// checks whether every group with Homeostasis also has STDP
+void CpuSNN::verifyHomeostasis() {
+	for (int grpId=0; grpId<getNumGroups(); grpId++) {
+		if (grp_Info[grpId].WithHomeostasis) {
+			if (!grp_Info[grpId].WithSTDP) {
+				KERNEL_ERROR("If homeostasis is enabled on group %d (%s), then STDP must be enabled, too.",
+					grpId, grp_Info2[grpId].Name.c_str());
+				exitSimulation(1);
+			}
+		}
 	}
 }
 

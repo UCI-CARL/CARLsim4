@@ -552,6 +552,9 @@ public:
 	bool isPoissonGroup(int g) { return (grp_Info[g].Type&POISSON_NEURON); }
 	bool isDopaminergicGroup(int g) { return (grp_Info[g].Type&TARGET_DA); }
 
+	//! returns whether group has homeostasis enabled (true) or not (false)
+	bool isGroupWithHomeostasis(int grpId);
+
 	//! checks whether a point pre lies in the receptive field for point post
 	double getRFDist3D(const RadiusRF& radius, const Point3D& pre, const Point3D& post);
 	bool isPoint3DinRF(const RadiusRF& radius, const Point3D& pre, const Point3D& post);
@@ -625,14 +628,20 @@ private:
 
 	void initSynapticWeights(); //!< initialize all the synaptic weights to appropriate values. total size of the synaptic connection is 'length'
 
+	//! performs various verification checkups before building the network
 	void verifyNetwork();
 
+	//! make sure STDP post-group has some incoming plastic connections
 	void verifySTDP();
-	
+
+	//! make sure every group with homeostasis also has STDP
+	void verifyHomeostasis();
+
 	//! performs a consistency check to see whether numN* class members have been accumulated correctly
 	void verifyNumNeurons();
 
-	void makePtrInfo();				//!< creates CPU net ptrs
+	//! creates CPU net pointers
+	void makePtrInfo();
 
 	/*!
 	 * \brief generates spike times according to a Poisson process
