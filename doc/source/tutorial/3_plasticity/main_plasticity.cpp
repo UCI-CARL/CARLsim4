@@ -59,15 +59,15 @@ int main() {
 	float alpha_LTD=0.00033f/5; float tau_LTD=60.0f;
 
 	// set E-STDP to be STANDARD (without neuromodulatory influence) with an EXP_CURVE type.
-	sim.setESTDP(gExc, true, STANDARD, ExpCurve(alpha_LTP, tau_LTP, -alpha_LTD, tau_LTP));
+	sim.setESTDP(gExc, true, STANDARD, ExpCurve(alpha_LTP, tau_LTP, -alpha_LTD, tau_LTD));
 
 	// homeostasis constants
-	float homeoScale= 1.0; // homeostatic scaling factor
-	float avgTimeScale = 5.0; // homeostatic time constant
-	float targetFiringRate = 35.0;
+	float alpha = 1.0; // homeostatic scaling factor
+	float T = 5.0; // homeostatic time constant
+	float R_target = 35.0; // target firing rate neuron tries to achieve
 
-	sim.setHomeostasis(gExc,true,homeoScale,avgTimeScale);
-  sim.setHomeoBaseFiringRate(gExc,targetFiringRate,0);
+	sim.setHomeostasis(gExc,true,alpha,T);
+  sim.setHomeoBaseFiringRate(gExc,R_target);
 
 	// ---------------- SETUP STATE -------------------
 	sim.setupNetwork();
