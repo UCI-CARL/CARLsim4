@@ -58,6 +58,8 @@ void UserErrors::throwError(std::string errorFunc, errorType error, std::string 
 		errorMsg += " cannot be on at this point."; break;
 	case CANNOT_BE_SET_TO:
 		errorMsg += " cannot be set to "; break;
+	case CANNOT_BE_SMALLER:
+		errorMsg += " cannot be smaller than "; break;
 	case CANNOT_BE_UNKNOWN:
 		errorMsg += " cannot be of type UNKNOWN."; break;
 	case CANNOT_BE_ZERO:
@@ -70,6 +72,8 @@ void UserErrors::throwError(std::string errorFunc, errorType error, std::string 
 		errorMsg += " is deprecated."; break;
 	case MUST_BE_IDENTICAL:
 		errorMsg += " must be identical."; break;
+	case MUST_BE_LARGER:
+		errorMsg += " must be larger than "; break;
 	case MUST_BE_NEGATIVE:
 		errorMsg += " must be negative."; break;
 	case MUST_BE_POSITIVE:

@@ -196,8 +196,39 @@ class ConnectionMonitor {
 	 */
 	int getFanOut(int neurPreId);
 
-	double getMinWeight();
-	double getMaxWeight();
+	/*!
+	 * \brief Returns the max weight in the connection
+	 *
+	 * This function returns the maximum weight value of all synapses in the connection.
+	 *
+	 * If getCurrent is set to true, then the function will return the *currently* largest weight value. In a
+	 * plastic connection, this value might be different from the upper bound of the weight range specified
+	 * when setting up the network (i.e., the max field of the ::RangeWeight struct).
+	 *
+	 * If getCurrent is set to false, then the upper bound of the configured weight range will be returned.
+	 *
+	 * \param[in] getCurrent whether to return the currently largest weight value (true) or the upper bound of
+	 *                       the weight range specified during setup (false). Default: false.
+	 * \since v3.1
+	 */
+	double getMaxWeight(bool getCurrent=false);
+
+	/*!
+	 * \brief Returns the min weight in the connection
+	 *
+	 * This function returns the minimum weight value of all synapses in the connection.
+	 *
+	 * If getCurrent is set to true, then the function will return the *currently* smallest weight value. In a
+	 * plastic connection, this value might be different from the lower bound of the weight range specified
+	 * when setting up the network (i.e., the min field of the ::RangeWeight struct).
+	 *
+	 * If getCurrent is set to false, then the lower bound of the configured weight range will be returned.
+	 *
+	 * \param[in] getCurrent whether to return the currently smallest weight value (true) or the lower bound of
+	 *                       the weight range specified during setup (false). Default: false.
+	 * \since v3.1
+	 */
+	double getMinWeight(bool getCurrent=false);
 
 	/*!
 	 * \brief Returns the number of pre-synaptic neurons 
@@ -232,6 +263,25 @@ class ConnectionMonitor {
 	 *                            counted towards the number of changed synapses
 	 */
 	int getNumWeightsChanged(double minAbsChanged=1e-5);
+
+	// range inclusive
+	int getNumWeightsInRange(double minValue, double maxValue);
+
+	/*!
+	 * \brief Returns the number of weights in the connection with a particular value
+	 *
+	 * This function returns the number of synaptic weights that have exactly some specific value.
+	 * It could be used to determine the sparsity of the connection matrix (wtValue=0.0f).
+	 *
+	 * \param[in] value the exact weight value to look for
+	 * \since v3.1
+	 */
+	int getNumWeightsWithValue(double value);
+
+	double getPercentWeigthsInRange(double maxValue, double minValue=0.0);
+
+	double getPercentWeightsWithValue(double value);
+
 
 	/*!
 	 * \brief Returns the percentage of weights that have changed since the last snapshot
