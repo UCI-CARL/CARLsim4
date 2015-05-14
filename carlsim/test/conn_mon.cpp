@@ -154,8 +154,15 @@ TEST(ConnMon, getters) {
 		EXPECT_EQ(CM->getNumWeightsInRange(CM->getMinWeight(false),CM->getMaxWeight(false)), GRP_SIZE_PRE*GRP_SIZE_POST);
 		EXPECT_EQ(CM->getNumWeightsInRange(0.0, 0.0), GRP_SIZE_POST);
 		EXPECT_EQ(CM->getNumWeightsInRange(wtScale, 2*wtScale), 2*GRP_SIZE_POST);
+		EXPECT_EQ(CM->getNumWeightsInRange(CM->getMaxWeight(false)*1.01, CM->getMaxWeight(false)*2), 0);
 		EXPECT_EQ(CM->getNumWeightsWithValue(0.0), GRP_SIZE_POST);
 		EXPECT_EQ(CM->getNumWeightsWithValue(wtScale), GRP_SIZE_POST);
+
+		EXPECT_FLOAT_EQ(CM->getPercentWeightsInRange(CM->getMinWeight(false),CM->getMaxWeight(false)), 100.0);
+		EXPECT_FLOAT_EQ(CM->getPercentWeightsInRange(0.0, 0.0), GRP_SIZE_POST*100.0/CM->getNumSynapses());
+		EXPECT_FLOAT_EQ(CM->getPercentWeightsInRange(wtScale, 2*wtScale), 2*GRP_SIZE_POST*100.0/CM->getNumSynapses());
+		EXPECT_FLOAT_EQ(CM->getPercentWeightsWithValue(0.0), GRP_SIZE_POST*100.0/CM->getNumSynapses());
+		EXPECT_FLOAT_EQ(CM->getPercentWeightsWithValue(wtScale), GRP_SIZE_POST*100.0/CM->getNumSynapses());
 
 //		EXPECT_EQ(CM->getTimeMsLastSnapshot(),-1);
 //		EXPECT_EQ(CM->getTimeMsSinceLastSnapshot(),1);

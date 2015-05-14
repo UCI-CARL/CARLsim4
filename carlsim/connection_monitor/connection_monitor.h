@@ -278,7 +278,7 @@ class ConnectionMonitor {
 	 */
 	int getNumWeightsWithValue(double value);
 
-	double getPercentWeigthsInRange(double maxValue, double minValue=0.0);
+	double getPercentWeightsInRange(double minValue, double maxValue);
 
 	double getPercentWeightsWithValue(double value);
 

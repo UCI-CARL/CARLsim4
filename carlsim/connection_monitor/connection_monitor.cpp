@@ -76,9 +76,15 @@ int ConnectionMonitor::getNumWeightsWithValue(double value) {
 }
 
 double ConnectionMonitor::getPercentWeightsChanged(double minAbsChanged) {
-	std::string funcName = "getPercentWeightsChanged()";
-	UserErrors::assertTrue(minAbsChanged>=0.0, UserErrors::CANNOT_BE_NEGATIVE, funcName, "minAbsChanged");
-	return getNumWeightsChanged(minAbsChanged)*1.0/getNumSynapses();
+	return getNumWeightsChanged(minAbsChanged)*100.0/getNumSynapses();
+}
+
+double ConnectionMonitor::getPercentWeightsInRange(double minVal, double maxVal) {
+	return getNumWeightsInRange(minVal,maxVal)*100.0/getNumSynapses();
+}
+
+double ConnectionMonitor::getPercentWeightsWithValue(double value) {
+	return getNumWeightsWithValue(value)*100.0/getNumSynapses();
 }
 
 long int ConnectionMonitor::getTimeMsCurrentSnapshot() {
