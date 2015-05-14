@@ -36,7 +36,7 @@
  *					(TSC) Ting-Shuo Chou <tingshuc@uci.edu>
  *
  * CARLsim available from http://socsci.uci.edu/~jkrichma/CARLsim/
- * Ver 2/10/2015
+ * Ver 5/14/2015
  */
 
 #ifndef _CONN_MON_H_
@@ -171,6 +171,7 @@ class ConnectionMonitor {
 	 *
 	 * \returns a 2D vector of weight changes, where the first dimension is pre-synaptic neuron ID and the second
 	 * dimension is post-synaptic neuron ID. Non-existent synapses are marked with NAN.
+	 * \since v3.0
 	 */
 	std::vector< std::vector<float> > calcWeightChanges();
 
@@ -179,6 +180,7 @@ class ConnectionMonitor {
 	 *
 	 * This function returns the connection ID that this ConnectionMonitor is managing. It is equivalent to the return
 	 * argument of CARLsim::connect.
+	 * \since v3.0
 	 */
 	short int getConnectId();
 
@@ -186,6 +188,7 @@ class ConnectionMonitor {
 	 * \brief Returns the number of incoming synapses for a specific post-synaptic neuron
 	 *
 	 * This function returns the number of incoming synapses for a specific post-synaptic neuron ID.
+	 * \since v3.0
 	 */
 	int getFanIn(int neurPostId);
 
@@ -193,16 +196,49 @@ class ConnectionMonitor {
 	 * \brief Returns the number of outgoing synapses for a specific pre-synaptic neuron
 	 *
 	 * This function returns the number of outgoing synapses for a specific pre-synaptic neuron ID.
+	 * \since v3.0
 	 */
 	int getFanOut(int neurPreId);
 
-	double getMinWeight();
-	double getMaxWeight();
+	/*!
+	 * \brief Returns the max weight in the connection
+	 *
+	 * This function returns the maximum weight value of all synapses in the connection.
+	 *
+	 * If getCurrent is set to true, then the function will return the *currently* largest weight value. In a
+	 * plastic connection, this value might be different from the upper bound of the weight range specified
+	 * when setting up the network (i.e., the max field of the ::RangeWeight struct).
+	 *
+	 * If getCurrent is set to false, then the upper bound of the configured weight range will be returned.
+	 *
+	 * \param[in] getCurrent whether to return the currently largest weight value (true) or the upper bound of
+	 *                       the weight range specified during setup (false). Default: false.
+	 * \since v3.1
+	 */
+	double getMaxWeight(bool getCurrent=false);
+
+	/*!
+	 * \brief Returns the min weight in the connection
+	 *
+	 * This function returns the minimum weight value of all synapses in the connection.
+	 *
+	 * If getCurrent is set to true, then the function will return the *currently* smallest weight value. In a
+	 * plastic connection, this value might be different from the lower bound of the weight range specified
+	 * when setting up the network (i.e., the min field of the ::RangeWeight struct).
+	 *
+	 * If getCurrent is set to false, then the lower bound of the configured weight range will be returned.
+	 *
+	 * \param[in] getCurrent whether to return the currently smallest weight value (true) or the lower bound of
+	 *                       the weight range specified during setup (false). Default: false.
+	 * \since v3.1
+	 */
+	double getMinWeight(bool getCurrent=false);
 
 	/*!
 	 * \brief Returns the number of pre-synaptic neurons 
 	 *
 	 * This function returns the number of neurons in the pre-synaptic group.
+	 * \since v3.0
 	 */
 	int getNumNeuronsPre();
 
@@ -210,6 +246,7 @@ class ConnectionMonitor {
 	 * \brief Returns the number of post-synaptic neurons 
 	 *
 	 * This function returns the number of neurons in the post-synaptic group.
+	 * \since v3.0
 	 */
 	int getNumNeuronsPost();
 
@@ -217,6 +254,7 @@ class ConnectionMonitor {
 	 * \brief Returns the number of allocated synapses
 	 *
 	 * This function returns the number of allocated synapses in the connection.
+	 * \since v3.0
 	 */
 	int getNumSynapses();
 
@@ -230,8 +268,83 @@ class ConnectionMonitor {
 	 *
 	 * \param[in]  minAbsChanged  the minimal value (inclusive) a weight has to have changed in order for it to be
 	 *                            counted towards the number of changed synapses
+	 * \since v3.0
 	 */
 	int getNumWeightsChanged(double minAbsChanged=1e-5);
+
+	/*!
+	 * \brief Returns the number of weights in the connection whose values are within some range (inclusive)
+	 *
+	 * This function returns the number of synaptic weights whose values are within some specific range
+	 * e[minVal,maxVal] (inclusive).
+	 *
+	 * \param[in] minValue the lower bound of the weight range (inclusive)
+	 * \param[in] maxValue the upper bound of the weight range (inclusive)
+	 * \note CM.getNumWeightsInRange(CM.getMinWeight(false),CM.getMaxWeight(false)) is the same as
+	 * CM.getNumSynapses().
+	 * \see ConnectionMonitor::getPercentWeightsInRange
+	 * \see ConnectionMonitor::getNumWeightsWithValue
+	 * \since v3.1
+	 */
+	int getNumWeightsInRange(double minValue, double maxValue);
+
+	/*!
+	 * \brief Returns the number of weights in the connection with a particular value
+	 *
+	 * This function returns the number of synaptic weights that have exactly some specific value.
+	 * It could be used to determine the sparsity of the connection matrix (wtValue==0.0f).
+	 *
+	 * Machine epsilon (FLT_EPSILON) is used for floating point equality. That is, the weight value is
+	 * considered equal to the input value if fabs(wt-value)<=FLT_EPSILON (inclusive).
+	 *
+	 * This is a convenience function whose result is equivalent to
+	 * getNumWeightsInRange(value-FLT_EPSILON,value+FLT_EPSILON).
+	 *
+	 * \param[in] value the exact weight value to look for
+	 * \see ConnectionMonitor::getPercentWeightsWithValue
+	 * \see ConnectionMonitor::getNumWeightsInRange
+	 * \since v3.1
+	 */
+	int getNumWeightsWithValue(double value);
+
+	/*!
+	 * \brief Returns the percentage of weights whose values are within some range (inclusive)
+	 *
+	 * This function returns the percentage of synaptic weights whose values are within some specific range
+	 * e[minVal,maxVal] (inclusive).
+	 *
+	 * This is a convenience function whose result is equivalent to
+	 * getNumWeightsInRange(minValue,maxValue)*100.0/getNumSynapses().
+	 *
+	 * \param[in] minValue the lower bound of the weight range (inclusive)
+	 * \param[in] maxValue the upper bound of the weight range (inclusive)
+	 * \note CM.getNumWeightsInRange(CM.getMinWeight(false),CM.getMaxWeight(false)) is the same as
+	 * CM.getNumSynapses().
+	 * \see ConnectionMonitor::getNumWeightsInRange
+	 * \see ConnectionMonitor::getNumWeightsWithValue
+	 * \since v3.1
+	 */
+	double getPercentWeightsInRange(double minValue, double maxValue);
+
+	/*!
+	 * \brief Returns the percentage of weights in the connection with a particular value
+	 *
+	 * This function returns the percentage of synaptic weights that have exactly some specific value.
+	 * It could be used to determine the sparsity of the connection matrix (wtValue==0.0f).
+	 *
+	 * Machine epsilon (FLT_EPSILON) is used for floating point equality. That is, the weight value is
+	 * considered equal to the input value if fabs(wt-value)<=FLT_EPSILON (inclusive).
+	 *
+	 * This is a convenience function whose result is equivalent to
+	 * getNumWeightsWithValue(value)*100.0/getNumSynapses().
+	 *
+	 * \param[in] value the exact weight value to look for
+	 * \see ConnectionMonitor::getNumWeightsWithValue
+	 * \see ConnectionMonitor::getNumWeightsInRange
+	 * \since v3.1
+	 */
+	double getPercentWeightsWithValue(double value);
+
 
 	/*!
 	 * \brief Returns the percentage of weights that have changed since the last snapshot
@@ -245,6 +358,7 @@ class ConnectionMonitor {
 	 *
 	 * \param[in]  minAbsChanged  the minimal value (inclusive) a weight has to have changed in order for it to be
 	 *                            counted towards the percentage of changed synapses
+	 * \since v3.0
 	 */
 	double getPercentWeightsChanged(double minAbsChanged=1e-5);
 
@@ -254,6 +368,7 @@ class ConnectionMonitor {
 	 * This function returns the timestamp of the current weight snapshot, reported as the amount of time that has
 	 * passed since the beginning of the simulation (in milliseconds). It will not take a snapshot by itself, so the
 	 * time reported here is not necessarily equal to the time reported by CARLsim::getSimTime.
+	 * \since v3.0
 	 */
 	long int getTimeMsCurrentSnapshot();
 
@@ -262,6 +377,7 @@ class ConnectionMonitor {
 	 *
 	 * This function returns the timestamp of the last weight snapshot, reported as the amount of time that has
 	 * passed since the beginning of the simulation (in milliseconds).
+	 * \since v3.0
 	 */
 	long int getTimeMsLastSnapshot();
 
@@ -272,6 +388,7 @@ class ConnectionMonitor {
 	 * (reported in ms).
 	 *
 	 * This is a convenience function whose result is equivalent to getTimeMsCurrentSnapshot()-getTimeMsLastSnapshot().
+	 * \since v3.0
 	 */
 	long int getTimeMsSinceLastSnapshot();
 
@@ -281,6 +398,7 @@ class ConnectionMonitor {
 	 * This function calculates the absolute sum of weight changes since the last snapshot was taken.
 	 *
 	 * In order to get the current state of the weight matrix, this function will take a snapshot itself.
+	 * \since v3.0
 	 */
 	double getTotalAbsWeightChange();
 
@@ -296,6 +414,7 @@ class ConnectionMonitor {
 	 *
 	 * \note Please note that this will visualize a getNumNeuronsPre() x getNumNeuronsPost() matrix on screen. For
 	 * connections between large neuronal groups, use ConnectionMonitor::printSparse.
+	 * \since v3.0
 	 */
 	void print();
 
@@ -316,6 +435,7 @@ class ConnectionMonitor {
 	 *                         Set to ALL to generate the list for all post-synaptic neurons.
 	 * \param[in] maxConn      The maximum number of weights to print.
 	 * \param[in] connPerLine  The number of weights to print per line.
+	 * \since v3.0
 	 */
 	void printSparse(int neurPostId=ALL, int maxConn=100, int connPerLine=4);
 
@@ -332,6 +452,7 @@ class ConnectionMonitor {
 	 *                         Set to -1 to disable periodic weight storing. Default: 1 (every second).
 	 *
 	 * \attention Currently, only values 1 (store every second) and -1 (disable periodic storing) are supported.
+	 * \since v3.0
 	 */
 	void setUpdateTimeIntervalSec(int intervalSec);
 
@@ -349,6 +470,7 @@ class ConnectionMonitor {
 	 * \returns a 2D vector of weights, where the first dimension is pre-synaptic neuron ID and the second dimension
 	 * is post-synaptic neuron ID. Non-existent synapses are marked with NAN.
 	 * \note Every snapshot taken will also be stored in the binary file.
+	 * \since v3.0
 	 */
 	std::vector< std::vector<float> > takeSnapshot();
 

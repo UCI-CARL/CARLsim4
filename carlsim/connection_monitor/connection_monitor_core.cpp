@@ -6,6 +6,7 @@
 #include <sstream>				// std::stringstream
 #include <algorithm>			// std::sort
 #include <iomanip>				// std::setfill, std::setw
+#include <float.h>				// FLT_EPSILON
 
 
 
@@ -138,27 +139,56 @@ int ConnectionMonitorCore::getFanOut(int neurPreId) {
 	return nSyn;
 }
 
-// calculate total absolute amount of weight change
-double ConnectionMonitorCore::getTotalAbsWeightChange() {
-	std::vector< std::vector<float> > wtChange = calcWeightChanges();
-	double wtTotalChange = 0.0;
-	for (int i=0; i<nNeurPre_; i++) {
-		for (int j=0; j<nNeurPost_; j++) {
-			// skip entries in matrix where no synapse exists
-			if (isnan(wtMat_[i][j]))
-				continue;
-			wtTotalChange += fabs(wtChange[i][j]);
+float ConnectionMonitorCore::getMaxWeight(bool getCurrent) {
+	float maxVal = minWt_;
+	if (getCurrent) {
+		std::vector< std::vector<float> > wts = takeSnapshot();
+		tookSnapshotManually_ = false;
+
+		// find currently largest weight value
+		for (int i=0; i<nNeurPre_; i++) {
+			for (int j=0; j<nNeurPost_; j++) {
+				// skip entries in matrix where no synapse exists
+				if (isnan(wts[i][j]))
+					continue;
+
+				if (wts[i][j] > maxVal) {
+					maxVal = wts[i][j];
+				}
+			}
 		}
+	} else {
+		// return RangeWeight.max
+		maxVal = maxWt_;
 	}
-	return wtTotalChange;
+
+	return maxVal;
 }
 
-// find (number of synapses whose weigths changed)/(total number synapses)
-double ConnectionMonitorCore::getPercentWeightsChanged(double minAbsChange) {
-	assert(minAbsChange>=0.0);
-	int nChanged = getNumWeightsChanged(minAbsChange);
+float ConnectionMonitorCore::getMinWeight(bool getCurrent) {
+	float minVal = maxWt_;
+	if (getCurrent) {
+		std::vector< std::vector<float> > wts = takeSnapshot();
+		tookSnapshotManually_ = false;
 
-	return nChanged*100.0/nSynapses_;
+		// find currently largest weight value
+		for (int i=0; i<nNeurPre_; i++) {
+			for (int j=0; j<nNeurPost_; j++) {
+				// skip entries in matrix where no synapse exists
+				if (isnan(wts[i][j]))
+					continue;
+
+				if (wts[i][j] < minVal) {
+					minVal = wts[i][j];
+				}
+			}
+		}
+	} else {
+		// return RangeWeight.max
+		minVal = minWt_;
+	}
+
+	return minVal;
 }
 
 // find number of synapses whose weights changed
@@ -180,6 +210,60 @@ int ConnectionMonitorCore::getNumWeightsChanged(double minAbsChange) {
 	}
 	return nChanged;
 }
+
+// finds the number of weights with values in some range
+int ConnectionMonitorCore::getNumWeightsInRange(double minVal, double maxVal) {
+	assert(maxVal>=minVal);
+
+	// make sure values are inside a reasonable range
+	if (minVal<=getMinWeight(false) && minVal>=getMaxWeight(false)) {
+		return getNumSynapses();
+	}
+
+	std::vector< std::vector<float> > wts = takeSnapshot();
+	tookSnapshotManually_ = false;
+
+	int cnt = 0;
+	for (int i=0; i<nNeurPre_; i++) {
+		for (int j=0; j<nNeurPost_; j++) {
+			// skip entries in matrix where no synapse exists
+			if (isnan(wts[i][j]))
+				continue;
+
+			if (wts[i][j]>=minVal && wts[i][j]<=maxVal) {
+				cnt++;
+			}
+		}
+	}
+
+	return cnt;
+}
+
+// finds the number of weights with some exact weight value
+int ConnectionMonitorCore::getNumWeightsWithValue(double value) {
+	// make sure value is inside a reasonable range
+	if (value<getMinWeight(false) || value>getMaxWeight(false)) {
+		return 0;
+	}
+
+	return getNumWeightsInRange(value-FLT_EPSILON, value+FLT_EPSILON);
+}
+
+// calculate total absolute amount of weight change
+double ConnectionMonitorCore::getTotalAbsWeightChange() {
+	std::vector< std::vector<float> > wtChange = calcWeightChanges();
+	double wtTotalChange = 0.0;
+	for (int i=0; i<nNeurPre_; i++) {
+		for (int j=0; j<nNeurPost_; j++) {
+			// skip entries in matrix where no synapse exists
+			if (isnan(wtMat_[i][j]))
+				continue;
+			wtTotalChange += fabs(wtChange[i][j]);
+		}
+	}
+	return wtTotalChange;
+}
+
 
 bool ConnectionMonitorCore::needToWriteSnapshot() {
 	// don't write if no file exists
@@ -311,6 +395,7 @@ void ConnectionMonitorCore::setUpdateTimeIntervalSec(int intervalSec) {
 	connFileTimeIntervalSec_ = intervalSec;
 }
 
+// public takeSnapshot method: this will dump the snapshot to file
 std::vector< std::vector<float> > ConnectionMonitorCore::takeSnapshot() {
 	tookSnapshotManually_ = true;
 	snn_->updateConnectionMonitor(connId_);

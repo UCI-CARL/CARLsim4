@@ -2720,13 +2720,17 @@ void CpuSNN::connectUserDefined (grpConnectInfo_t* info) {
 				if (GET_FIXED_PLASTIC(info->connProp) == SYN_FIXED)
 					maxWt = weight;
 
+				info->maxWt = maxWt;
+
 				assert(delay >= 1);
 				assert(delay <= MAX_SynapticDelay);
 				assert(abs(weight) <= abs(maxWt));
 
 				setConnection(grpSrc, grpDest, nid, nid2, weight, maxWt, delay, info->connProp, info->connId);
 				info->numberOfConnections++;
-				if(delay > info->maxDelay) info->maxDelay = delay;
+				if(delay > info->maxDelay) {
+					info->maxDelay = delay;
+				}
 			}
 		}
 	}

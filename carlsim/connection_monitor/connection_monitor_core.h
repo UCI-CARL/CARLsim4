@@ -84,6 +84,13 @@ public:
 	//! returns number of outgoing synapses of pre-synaptic neuron
 	int getFanOut(int neurPreId);
 
+	//! returns max weight in the connection (getCurrent=false: RangeWeight.max, true: current largest)
+	float getMaxWeight(bool getCurrent=false);
+
+	//! returns min weight in the connection (getCurrent=false: RangeWeight.min, true: current smallest)
+	float getMinWeight(bool getCurrent=false);
+
+
 	//! returns ConnectionMonitor ID
 	int getMonitorId() { return monitorId_; }
 
@@ -99,8 +106,11 @@ public:
 	//! returns number of weights with >=minAbsChanged weight change since last snapshot
 	int getNumWeightsChanged(double minAbsChanged=1e-5);
 
-	//! returns percentage of weights with >=minAbsChanged weight change since last snapshot
-	double getPercentWeightsChanged(double minAbsChanged=1e-5);
+	//! returns number of weights with values in range e[minVal,maxVal] (inclusive)
+	int getNumWeightsInRange(double minVal, double maxVal);
+
+	//! returns number of weights that have a certain value
+	int getNumWeightsWithValue(double value);
 
 	//! returns the timestamp of the current snapshot (not necessarily CARLsim::getSimTime)
 	long int getTimeMsCurrentSnapshot() { return simTimeMs_; }

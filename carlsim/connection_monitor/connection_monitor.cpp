@@ -46,6 +46,14 @@ int ConnectionMonitor::getNumNeuronsPost() {
 	return connMonCorePtr_->getNumNeuronsPost();
 }
 
+double ConnectionMonitor::getMaxWeight(bool getCurrent) {
+	return (double) (connMonCorePtr_->getMaxWeight(getCurrent));
+}
+
+double ConnectionMonitor::getMinWeight(bool getCurrent) {
+	return (double) (connMonCorePtr_->getMinWeight(getCurrent));
+}
+
 int ConnectionMonitor::getNumSynapses() {
 	return connMonCorePtr_->getNumSynapses();
 }
@@ -56,10 +64,27 @@ int ConnectionMonitor::getNumWeightsChanged(double minAbsChanged) {
 	return connMonCorePtr_->getNumWeightsChanged(minAbsChanged);
 }
 
+int ConnectionMonitor::getNumWeightsInRange(double minValue, double maxValue) {
+	std::string funcName = "getNumWeightsInRange()";
+	UserErrors::assertTrue(maxValue >= minValue, UserErrors::CANNOT_BE_SMALLER, funcName, "maxValue", "minValue");
+	return connMonCorePtr_->getNumWeightsInRange(minValue,maxValue);
+}
+
+int ConnectionMonitor::getNumWeightsWithValue(double value) {
+	std::string funcName = "getNumWeightsWithValue()";
+	return connMonCorePtr_->getNumWeightsWithValue(value);
+}
+
 double ConnectionMonitor::getPercentWeightsChanged(double minAbsChanged) {
-	std::string funcName = "getNumWeightsChanged()";
-	UserErrors::assertTrue(minAbsChanged>=0.0, UserErrors::CANNOT_BE_NEGATIVE, funcName, "minAbsChanged");
-	return connMonCorePtr_->getPercentWeightsChanged(minAbsChanged);
+	return getNumWeightsChanged(minAbsChanged)*100.0/getNumSynapses();
+}
+
+double ConnectionMonitor::getPercentWeightsInRange(double minVal, double maxVal) {
+	return getNumWeightsInRange(minVal,maxVal)*100.0/getNumSynapses();
+}
+
+double ConnectionMonitor::getPercentWeightsWithValue(double value) {
+	return getNumWeightsWithValue(value)*100.0/getNumSynapses();
 }
 
 long int ConnectionMonitor::getTimeMsCurrentSnapshot() {
