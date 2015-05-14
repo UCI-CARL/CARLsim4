@@ -11,6 +11,14 @@ Release 3.1
 Build 3.1.0
 ---------------------
 
+2015-05-14     Michael Beyeler <mbeyeler@uci.edu>
+  + Added ConnectionMonitor methods: getMinWeight, getMaxWeight,
+    getNumWeightsInRange, getNumWeightsWithValue, getPercentWeightsInRange,
+    getPercentWeightsWithValue.
+  * Fixed ConnectionMonitor::getPercentWeightsChanged.
+  * Fixed absence of maxWt field in ConnectInfo struct for user-defined
+    connections.
+
 2015-05-11     Michael Beyeler <mbeyeler@uci.edu>
   + Added CpuSNN::verifyNetwork that will run CpuSNN::verifyNumNeurons,
     CpuSNN::verifySTDP, and CpuSNN::verifyHomeostasis before network is built.
