@@ -66,12 +66,18 @@ TEST(setConnMon, interfaceDeath) {
 		sim->setConnectionMonitor(g0,g1,"Default");
 		EXPECT_DEATH({sim->setConnectionMonitor(g0,g1,"Default");},"");
 
+		fprintf(stderr,"before run\n");
+
 		// advance to EXE state
 		sim->runNetwork(1,0);
+
+		fprintf(stderr,"after run\n");
 
 		// ----- EXE ------- //
 		// calling setConnMon in EXE
 		EXPECT_DEATH({sim->setConnectionMonitor(g0,g1,"Default");},"");
+
+		fprintf(stderr,"after set\n");
 
 		delete sim;
 	}

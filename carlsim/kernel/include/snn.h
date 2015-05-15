@@ -398,7 +398,7 @@ public:
 	void setWeight(short int connId, int neurIdPre, int neurIdPost, float weight, bool updateWeightRange=false);
 
 	//! polls connection weights
-	void updateConnectionMonitor(int connId=ALL);
+	void updateConnectionMonitor(short int connId=ALL);
 
 	//! access group status (currently the concentration of neuromodulator)
 	void updateGroupMonitor(int grpId=ALL);
@@ -519,6 +519,8 @@ public:
 
 	//! temporary getter to return pointer to current[] \TODO replace with NeuronMonitor
 	float* getCurrent() { return current; }
+
+	std::vector< std::vector<float> > getWeightMatrix2D(short int connId);
 
 	std::vector<float> getConductanceAMPA(int grpId);
 	std::vector<float> getConductanceNMDA(int grpId);

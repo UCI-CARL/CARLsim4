@@ -4357,16 +4357,44 @@ void CpuSNN::swapConnections(int nid, int oldPos, int newPos) {
 	*preId = SET_CONN_ID( pre_nid, newPos, pre_gid);
 }
 
-// this function is usually called every second, but it can also be called via ConnectionMonitorCore::takeSnapshot
-void CpuSNN::updateConnectionMonitor(int connId) {
+void CpuSNN::updateConnectionMonitor(short int connId) {
 	grpConnectInfo_t* connInfo = connectBegin;
 
 	// loop over all connections and find the ones with Connection Monitors
 	while (connInfo) {
 		if (connInfo->ConnectionMonitorId>=0 && (connId==ALL || connInfo->connId==connId)) {
 			int monId = connInfo->ConnectionMonitorId;
+			if (connMonCoreList[monId]->getUpdateTimeIntervalSec() != -1) {
+				// this ConnectionMonitor wants periodic recording
+				connMonCoreList[monId]->writeConnectFileSnapshot(simTime, getWeightMatrix2D(connInfo->connId));
+			}
+		}
+		connInfo = connInfo->next;
+	}
+}
+
+
+std::vector< std::vector<float> > CpuSNN::getWeightMatrix2D(short int connId) {
+	assert(connId!=ALL);
+	grpConnectInfo_t* connInfo = connectBegin;
+	std::vector< std::vector<float> > wtConnId;
+
+	fprintf(stderr,"%u %d: in getWeightMatrix2D\n",simTime, connId);
+
+	// loop over all connections and find the ones with Connection Monitors
+	while (connInfo) {
+		if (connInfo->connId==connId) {
 			int grpIdPre = connInfo->grpSrc;
 			int grpIdPost = connInfo->grpDest;
+
+			// init weight matrix with right dimensions
+			for (int i=0; i<grp_Info[grpIdPre].SizeN; i++) {
+				std::vector<float> wtSlice;
+				for (int j=0; j<grp_Info[grpIdPost].SizeN; j++) {
+					wtSlice.push_back(NAN);
+				}
+				wtConnId.push_back(wtSlice);
+			}
 
 			// copy the weights for a given post-group from device
 			// \TODO: check if the weights for this grpIdPost have already been copied
@@ -4375,27 +4403,24 @@ void CpuSNN::updateConnectionMonitor(int connId) {
 				copyWeightState(&cpuNetPtrs, &cpu_gpuNetPtrs, cudaMemcpyDeviceToHost, false, grpIdPost);
 			}
 
-			// update time stamp of connection monitor
-			if (connMonCoreList[monId]->updateTime(simTime)) {
-				// only update weights if we haven't done so already for this timestamp
-				for (int postId=grp_Info[grpIdPost].StartN; postId<=grp_Info[grpIdPost].EndN; postId++) {
-					unsigned int pos_ij = cumulativePre[postId];
-					for (int i=0; i<Npre[postId]; i++, pos_ij++) {
-						// skip synapses that belong to a different connection ID
-						if (cumConnIdPre[pos_ij]!=connInfo->connId)
-							continue;
+			for (int postId=grp_Info[grpIdPost].StartN; postId<=grp_Info[grpIdPost].EndN; postId++) {
+				unsigned int pos_ij = cumulativePre[postId];
+				for (int i=0; i<Npre[postId]; i++, pos_ij++) {
+					// skip synapses that belong to a different connection ID
+					if (cumConnIdPre[pos_ij]!=connInfo->connId)
+						continue;
 
-						// find pre-neuron ID and update ConnectionMonitor container
-						int preId = GET_CONN_NEURON_ID(preSynapticIds[pos_ij]);
-						connMonCoreList[monId]->updateWeight(preId - getGroupStartNeuronId(grpIdPre),
-							postId - getGroupStartNeuronId(grpIdPost), wt[pos_ij]);
-					}
+					// find pre-neuron ID and update ConnectionMonitor container
+					int preId = GET_CONN_NEURON_ID(preSynapticIds[pos_ij]);
+					wtConnId[preId-getGroupStartNeuronId(grpIdPre)][postId-getGroupStartNeuronId(grpIdPost)] = wt[pos_ij];
 				}
 			}
+			break;
 		}
-
 		connInfo = connInfo->next;
 	}
+
+	return wtConnId;
 }
 
 void CpuSNN::updateGroupMonitor(int grpId) {
