@@ -2536,6 +2536,9 @@ void CpuSNN::updateFiringTable_GPU() {
 void CpuSNN::updateWeights_GPU() {
 	checkAndSetGPUDevice();
 
+	assert(sim_in_testing==false);
+	assert(sim_with_fixedwts==false);
+
 	int blkSize  = 128;
 	int gridSize = 64;
 

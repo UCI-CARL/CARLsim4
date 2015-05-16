@@ -502,7 +502,8 @@ TEST(CORE, startStopTestingPhase) {
 			sim->setNeuronParameters(gExc, 0.02f, 0.2f, -65.0f, 8.0f); // RS
 			int gIn = sim->createSpikeGeneratorGroup("input", 10, EXCITATORY_NEURON);
 
-			int cInExc  = sim->connect(gIn, gExc, "full", RangeWeight(0.0f, 0.5f, 0.5f), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_PLASTIC);
+			int cInExc  = sim->connect(gIn, gExc, "full", RangeWeight(0.0f, 0.5f, 0.5f), 1.0f, RangeDelay(1), 
+				RadiusRF(-1), SYN_PLASTIC);
 
 			// set E-STDP to be STANDARD (without neuromodulatory influence) with an EXP_CURVE type.
 			sim->setESTDP(gExc, true, STANDARD, ExpCurve(2e-4f,20.0f, -6.6e-5f,60.0f));

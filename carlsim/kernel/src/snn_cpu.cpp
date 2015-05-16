@@ -4436,10 +4436,17 @@ void CpuSNN::startTesting(bool shallUpdateWeights) {
 	// sure to apply the accumulated weight changes to the weight matrix
 	// but we don't reset the wt update interval counter
 	if (shallUpdateWeights && !sim_in_testing) {
-		if (simMode_ == CPU_MODE) {
-			updateWeights();
-		} else{
-			updateWeights_GPU();
+		// careful: need to temporarily adjust stdpScaleFactor to make this right
+		if (wtANDwtChangeUpdateIntervalCnt_) {
+			float storeScaleSTDP = stdpScaleFactor_;
+			stdpScaleFactor_ = 1.0f/wtANDwtChangeUpdateIntervalCnt_;
+
+			if (simMode_ == CPU_MODE) {
+				updateWeights();
+			} else{
+				updateWeights_GPU();
+			}
+			stdpScaleFactor_ = storeScaleSTDP;
 		}
 	}
 
@@ -4505,18 +4512,14 @@ void CpuSNN::swapConnections(int nid, int oldPos, int newPos) {
 }
 
 void CpuSNN::updateConnectionMonitor(short int connId) {
-	grpConnectInfo_t* connInfo = connectBegin;
-
-	// loop over all connections and find the ones with Connection Monitors
-	while (connInfo) {
-		if (connInfo->ConnectionMonitorId>=0 && (connId==ALL || connInfo->connId==connId)) {
-			int monId = connInfo->ConnectionMonitorId;
+	for (int monId=0; monId<numConnectionMonitor; monId++) {
+		if (connId==ALL || connMonCoreList[monId]->getConnectId()==connId) {
 			if (connMonCoreList[monId]->getUpdateTimeIntervalSec() != -1) {
 				// this ConnectionMonitor wants periodic recording
-				connMonCoreList[monId]->writeConnectFileSnapshot(simTime, getWeightMatrix2D(connInfo->connId));
+				connMonCoreList[monId]->writeConnectFileSnapshot(simTime,
+					getWeightMatrix2D(connMonCoreList[monId]->getConnectId()));
 			}
 		}
-		connInfo = connInfo->next;
 	}
 }
 
@@ -4557,7 +4560,8 @@ std::vector< std::vector<float> > CpuSNN::getWeightMatrix2D(short int connId) {
 
 					// find pre-neuron ID and update ConnectionMonitor container
 					int preId = GET_CONN_NEURON_ID(preSynapticIds[pos_ij]);
-					wtConnId[preId-getGroupStartNeuronId(grpIdPre)][postId-getGroupStartNeuronId(grpIdPost)] = wt[pos_ij];
+					wtConnId[preId-getGroupStartNeuronId(grpIdPre)][postId-getGroupStartNeuronId(grpIdPost)] =
+						wt[pos_ij];
 				}
 			}
 			break;

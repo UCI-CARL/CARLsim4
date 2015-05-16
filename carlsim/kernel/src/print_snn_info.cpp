@@ -95,17 +95,13 @@ void CpuSNN::printMemoryInfo(FILE* const fp) {
 }
 
 void CpuSNN::printStatusConnectionMonitor(int connId) {
-  grpConnectInfo_t* connInfo = connectBegin;
-
-  // connId can be either ALL or a specific connection ID
-  while (connInfo) {
-    if (connInfo->ConnectionMonitorId>=0 && (connId==ALL || connInfo->connId==connId)) {
-      // print connection weights (sparse representation: show only actually connected synapses)
-      // show the first hundred connections: (pre=>post) weight
-      connMonCoreList[connInfo->ConnectionMonitorId]->printSparse(ALL, 100, 4, false);
-    }
-    connInfo = connInfo->next;
-  }
+	for (int monId=0; monId<numConnectionMonitor; monId++) {
+		if (connId==ALL || connMonCoreList[monId]->getConnectId()==connId) {
+			// print connection weights (sparse representation: show only actually connected synapses)
+			// show the first hundred connections: (pre=>post) weight
+			connMonCoreList[monId]->printSparse(ALL, 100, 4, false);
+		}
+	}
 }
 
 void CpuSNN::printStatusSpikeMonitor(int grpId) {
