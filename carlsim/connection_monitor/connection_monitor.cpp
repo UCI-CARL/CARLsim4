@@ -118,8 +118,8 @@ void ConnectionMonitor::printSparse(int neurPostId, int maxConn, int connPerLine
 
 void ConnectionMonitor::setUpdateTimeIntervalSec(int intervalSec) {
 	std::string funcName = "setUpdateTimeIntervalSec()";
-	UserErrors::assertTrue(intervalSec==-1 || intervalSec==1, UserErrors::MUST_BE_SET_TO, funcName, "intervalSec",
-		"-1 or 1.");
+	UserErrors::assertTrue(intervalSec==-1 || intervalSec>=1, UserErrors::MUST_BE_SET_TO, funcName, "intervalSec",
+		"-1 or >= 1.");
 	connMonCorePtr_->setUpdateTimeIntervalSec(intervalSec);
 }
 

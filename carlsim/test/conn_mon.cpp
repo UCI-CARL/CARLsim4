@@ -229,8 +229,8 @@ TEST(ConnMon, weightFile) {
 	// loop over both CPU and GPU mode.
 	for (int mode=0; mode<=1; mode++) {
 		// loop over time interval options
-		long fileLength[2] = {0,0};
-		for (int interval=-1; interval<=1; interval+=2) {
+		long fileLength[3] = {0,0,0};
+		for (int interval=-1; interval<=3; interval+=2) {
 			sim = new CARLsim("ConnMon.setConnectionMonitorDeath",mode?GPU_MODE:CPU_MODE,SILENT,0,42);
 
 			int g0 = sim->createGroup("g0", GRP_SIZE, EXCITATORY_NEURON);
@@ -248,12 +248,12 @@ TEST(ConnMon, weightFile) {
 				// taking a snapshot in the beginning should not matter, because that snapshot is already
 				// being recorded automatically
 				CM->takeSnapshot();
-				sim->runNetwork(5,0);
+				sim->runNetwork(6,0);
 
 				// taking additional snapshots should not matter either
 				CM->takeSnapshot();
 				CM->takeSnapshot();
-				sim->runNetwork(5,200);
+				sim->runNetwork(4,200);
 			}
 
 			delete sim;
@@ -265,8 +265,10 @@ TEST(ConnMon, weightFile) {
 				wtFile.seekg( 0, std::ios::end );
 				if (interval==-1) {
 					fileLength[0] = wtFile.tellg(); // should contain 0 snapshots
+				} else if (interval==1) {
+					fileLength[1] = wtFile.tellg(); // should contain 11 snapshots
 				} else {
-					fileLength[1] = wtFile.tellg(); // should contain 10 snapshots
+					fileLength[2] = wtFile.tellg(); // should contain 5 snapshots
 				}
 			}
 		}
@@ -282,6 +284,9 @@ TEST(ConnMon, weightFile) {
 
 		// if interval==1: 11 snapshots from t = 0, 1, 2, ..., 10 sec plus one from 10.200 sec
 		EXPECT_EQ(headerSize, fileLength[1] - 12*(GRP_SIZE*GRP_SIZE+2)*4);
+
+		// if interval==3: 4 snapshots from t = 0, 3, 6, 9, plus one from 10.200 sec
+		EXPECT_EQ(headerSize, fileLength[2] - 5*(GRP_SIZE*GRP_SIZE+2)*4);
 	}
 }
 
