@@ -475,7 +475,6 @@ class ConnectionMonitor {
 	 * \param[in] intervalSec  The update time interval (number of seconds) for writing snapshots to file.
 	 *                         Set to -1 to disable periodic weight storing. Default: 1 (every second).
 	 *
-	 * \attention Currently, only values 1 (store every second) and -1 (disable periodic storing) are supported.
 	 * \since v3.0
 	 */
 	void setUpdateTimeIntervalSec(int intervalSec);

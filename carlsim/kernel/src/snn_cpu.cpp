@@ -4514,7 +4514,8 @@ void CpuSNN::swapConnections(int nid, int oldPos, int newPos) {
 void CpuSNN::updateConnectionMonitor(short int connId) {
 	for (int monId=0; monId<numConnectionMonitor; monId++) {
 		if (connId==ALL || connMonCoreList[monId]->getConnectId()==connId) {
-			if (connMonCoreList[monId]->getUpdateTimeIntervalSec() != -1) {
+			int timeInterval = connMonCoreList[monId]->getUpdateTimeIntervalSec();
+			if (timeInterval==1 || timeInterval>1 && (getSimTime()%timeInterval)==0) {
 				// this ConnectionMonitor wants periodic recording
 				connMonCoreList[monId]->writeConnectFileSnapshot(simTime,
 					getWeightMatrix2D(connMonCoreList[monId]->getConnectId()));

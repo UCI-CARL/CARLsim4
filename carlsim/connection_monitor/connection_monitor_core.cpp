@@ -382,7 +382,7 @@ void ConnectionMonitorCore::setConnectFileId(FILE* connFileId) {
 }
 
 void ConnectionMonitorCore::setUpdateTimeIntervalSec(int intervalSec) {
-	assert(intervalSec==-1 || intervalSec==1);
+	assert(intervalSec==-1 || intervalSec>=1);
 	connFileTimeIntervalSec_ = intervalSec;
 }
 

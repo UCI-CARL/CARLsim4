@@ -11,6 +11,9 @@ Release 3.1
 Build 3.1.0
 ---------------------
 
+2015-05-16     Michael Beyeler <mbeyeler@uci.edu>
+  + Added generic ConnectionMonitor update time interval.
+
 2015-05-15     Michael Beyeler <mbeyeler@uci.edu>
   * Fixed no-recording issue with ConnectionMonitor::setUpdateTimeIntervalSec
     interval -1. Now the binary file will not contain any snapshots if interval
