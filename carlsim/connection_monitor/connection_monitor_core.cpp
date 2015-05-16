@@ -67,11 +67,6 @@ void ConnectionMonitorCore::init() {
 
 	// then load current weigths from CpuSNN into weight matrix
 	updateStoredWeights();
-
-	// store the initial snapshot to file if update interval set
-	if (connFileTimeIntervalSec_ > 0) {
-		writeConnectFileSnapshot(0, wtMat_);
-	}
 }
 
 ConnectionMonitorCore::~ConnectionMonitorCore() {
@@ -189,8 +184,8 @@ int ConnectionMonitorCore::getNumWeightsChanged(double minAbsChange) {
 void ConnectionMonitorCore::print() {
 	updateStoredWeights();
 
-
-	KERNEL_INFO("(t=%.3fs) ConnectionMonitor ID=%d: %d(%s) => %d(%s)", (double)wtTime_/1000.0f, connId_,
+	KERNEL_INFO("(t=%.3fs) ConnectionMonitor ID=%d: %d(%s) => %d(%s)",
+		(getTimeMsCurrentSnapshot()/1000.0f), connId_,
 		grpIdPre_, snn_->getGroupName(grpIdPre_).c_str(),
 		grpIdPost_, snn_->getGroupName(grpIdPost_).c_str());
 
@@ -223,7 +218,7 @@ void ConnectionMonitorCore::printSparse(int neurPostId, int maxConn, int connPer
 
 	updateStoredWeights();
 	KERNEL_INFO("(t=%.3fs) ConnectionMonitor ID=%d %d(%s) => %d(%s): [preId,postId] wt (+/-wtChange in %ldms) "
-		"show first %d", (double)wtTime_/1000.0f, connId_,
+		"show first %d", getTimeMsCurrentSnapshot()/1000.0f, connId_,
 		grpIdPre_, snn_->getGroupName(grpIdPre_).c_str(), grpIdPost_, snn_->getGroupName(grpIdPost_).c_str(),
 		getTimeMsSinceLastSnapshot(), maxConn);
 
@@ -295,9 +290,7 @@ void ConnectionMonitorCore::setUpdateTimeIntervalSec(int intervalSec) {
 
 // updates the internally stored last two snapshots (current one and last one)
 void ConnectionMonitorCore::updateStoredWeights() {
-	fprintf(stderr,"%u: updateStoredWeights\n",snn_->getSimTime());
 	if (snn_->getSimTime() > wtTime_) {
-		fprintf(stderr,"%u: updateStoredWeights need to update\n",snn_->getSimTime());
 		// time has advanced: get new weights
 		wtMatLast_ = wtMat_;
 		wtTimeLast_ = wtTime_;
@@ -310,6 +303,7 @@ void ConnectionMonitorCore::updateStoredWeights() {
 // returns a current snapshot
 std::vector< std::vector<float> > ConnectionMonitorCore::takeSnapshot() {
 	updateStoredWeights();
+	writeConnectFileSnapshot(wtTime_, wtMat_);
 	return wtMat_;
 }
 

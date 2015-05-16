@@ -667,6 +667,14 @@ int CpuSNN::runNetwork(int _nsec, int _nmsec, bool printRunSummary, bool copySta
 	simTimeRunStop  = simTime+runDurationMs;
 	assert(simTimeRunStop>=simTimeRunStart); // check for arithmetic underflow
 
+	// ConnectionMonitor is a special case: we might want the first snapshot at t=0 in the binary
+	// but updateTime() is false for simTime==0.
+	// And we cannot put this code in ConnectionMonitorCore::init, because then the user would have no
+	// way to call ConnectionMonitor::setUpdateTimeIntervalSec before...
+	if (simTime==0 && numConnectionMonitor) {
+		updateConnectionMonitor();
+	}
+
 	// set the Poisson generation time slice to be at the run duration up to PROPOGATED_BUFFER_SIZE ms.
 	// \TODO: should it be PROPAGATED_BUFFER_SIZE-1 or PROPAGATED_BUFFER_SIZE ?
 	setGrpTimeSlice(ALL, MAX(1,MIN(runDurationMs,PROPAGATED_BUFFER_SIZE-1)));
@@ -4387,8 +4395,6 @@ std::vector< std::vector<float> > CpuSNN::getWeightMatrix2D(short int connId) {
 	assert(connId!=ALL);
 	grpConnectInfo_t* connInfo = connectBegin;
 	std::vector< std::vector<float> > wtConnId;
-
-	fprintf(stderr,"%u %d: in getWeightMatrix2D\n",simTime, connId);
 
 	// loop over all connections and find the ones with Connection Monitors
 	while (connInfo) {

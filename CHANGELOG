@@ -8,8 +8,20 @@ Release 3.0
 ===============================================================================
 
 ---------------------
+Build 3.0.2
+---------------------
+
+2015-05-15     Michael Beyeler <mbeyeler@uci.edu>
+  * Fixed no-recording issue with ConnectionMonitor::setUpdateTimeIntervalSec
+    interval -1. Now the binary file will not contain any snapshots if interval
+    is -1.
+  * Updated and improved ConnMon test case.
+
+
+---------------------
 Build 3.0.1
 ---------------------
+
 2015-05-11     Kristofor D. Carlson <kdcarlso@uci.edu>
   * Added more accurate plasticity documentation on homeostasis.
   * Allowed third argument of CARLsim::setHomeoBaseFiringRate that specifies

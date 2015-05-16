@@ -66,18 +66,12 @@ TEST(setConnMon, interfaceDeath) {
 		sim->setConnectionMonitor(g0,g1,"Default");
 		EXPECT_DEATH({sim->setConnectionMonitor(g0,g1,"Default");},"");
 
-		fprintf(stderr,"before run\n");
-
 		// advance to EXE state
 		sim->runNetwork(1,0);
-
-		fprintf(stderr,"after run\n");
 
 		// ----- EXE ------- //
 		// calling setConnMon in EXE
 		EXPECT_DEATH({sim->setConnectionMonitor(g0,g1,"Default");},"");
-
-		fprintf(stderr,"after set\n");
 
 		delete sim;
 	}
@@ -208,7 +202,6 @@ TEST(ConnMon, weightFile) {
 	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
 	CARLsim* sim;
-	ConnectPropToPreNeurId* connPre;
 
 	const int GRP_SIZE = 10;
 	float wtScale = 0.01f;
@@ -230,14 +223,17 @@ TEST(ConnMon, weightFile) {
 			ConnectionMonitor* CM = sim->setConnectionMonitor(g0,g0,"results/weights.dat");
 			CM->setUpdateTimeIntervalSec(interval);
 			if (interval==-1) {
-				CM->takeSnapshot();
 				sim->runNetwork(10,0);
-				CM->takeSnapshot();
 			} else {
 				// taking a snapshot in the beginning should not matter, because that snapshot is already
 				// being recorded automatically
 				CM->takeSnapshot();
-				sim->runNetwork(10,0);
+				sim->runNetwork(5,0);
+
+				// taking additional snapshots should not matter either
+				CM->takeSnapshot();
+				CM->takeSnapshot();
+				sim->runNetwork(5,200);
 			}
 
 			delete sim;
@@ -260,7 +256,70 @@ TEST(ConnMon, weightFile) {
 		// so choose a portable approach: estimate header size for both interval modes, and make
 		// sure they're the same
 		// file should have header+(number of snapshots)*((number of weights)+(timestamp as long int))*(bytes per word)
-		int headerSize = fileLength[0];
-		EXPECT_EQ(headerSize, fileLength[1] - 10*(GRP_SIZE*GRP_SIZE+2)*4);
+
+		// if interval==-1: no snapshots in the file
+		int headerSize = fileLength[0] - 0*(GRP_SIZE*GRP_SIZE+2)*4;
+
+		// if interval==1: 11 snapshots from t = 0, 1, 2, ..., 10 sec plus one from 10.200 sec
+		EXPECT_EQ(headerSize, fileLength[1] - 12*(GRP_SIZE*GRP_SIZE+2)*4);
+	}
+}
+
+TEST(ConnMon, weightChange) {
+	// set this flag to make all death tests thread-safe
+	::testing::FLAGS_gtest_death_test_style = "threadsafe";
+
+	CARLsim* sim;
+	ConnectPropToPreNeurId* connPre;
+
+	const int GRP_SIZE = 10;
+	float wtScale = 0.01f;
+
+	// loop over both CPU and GPU mode.
+	for (int mode=0; mode<=1; mode++) {
+		sim = new CARLsim("ConnMon.setConnectionMonitorDeath",mode?GPU_MODE:CPU_MODE,SILENT,0,42);
+
+		int g0 = sim->createGroup("g0", GRP_SIZE, EXCITATORY_NEURON);
+		sim->setNeuronParameters(g0, 0.02f, 0.2f, -65.0f, 8.0f);
+
+		short int c0 = sim->connect(g0,g0,"full",RangeWeight(wtScale),0.1f,RangeDelay(1),RadiusRF(-1),SYN_PLASTIC);
+		sim->setConductances(true);
+		sim->setupNetwork();
+
+		// take snapshot at beginning
+		ConnectionMonitor* CM = sim->setConnectionMonitor(g0, g0, "NULL");
+		CM->takeSnapshot();
+
+		// run for some time, make sure no weights changed (because there is no plasticity)
+		sim->runNetwork(0,500);
+		EXPECT_FLOAT_EQ(CM->getTotalAbsWeightChange(), 0.0f);
+
+		// set all weights to zero
+		sim->scaleWeights(c0, 0.0f);
+
+		// Run for some time, now CpuSNN::updateConnectionMonitor will be called, but MUST NOT
+		// interfere with the takeSnapshot method.
+		// So we expect the weight change to be from wtScale (at t=0.5s) to 0 (at t=1.5s), not from
+		// 0 (at t=1.0s) to 0 (at t=1.5s).
+		sim->runNetwork(1,0);
+		EXPECT_FLOAT_EQ(CM->getTotalAbsWeightChange(), wtScale*GRP_SIZE*GRP_SIZE);
+		EXPECT_EQ(CM->getTimeMsCurrentSnapshot(), 1500);
+		EXPECT_EQ(CM->getTimeMsLastSnapshot(), 500);
+		EXPECT_EQ(CM->getTimeMsSinceLastSnapshot(), 1000);
+
+		// If we call another weight method, then ConnectionMonitorCore::updateStoredWeights should not
+		// update the weight matrices. Instead it should operate on the same time interval as above,
+		// effectively giving the same result.
+		std::vector< std::vector<float> > wtChange = CM->calcWeightChanges();
+		for (int i=0; i<GRP_SIZE; i++) {
+			for (int j=0; j<GRP_SIZE; j++) {
+				EXPECT_FLOAT_EQ(wtChange[i][j], -wtScale);
+			}
+		}
+
+		EXPECT_EQ(CM->getNumWeightsChanged(), GRP_SIZE*GRP_SIZE);
+		EXPECT_FLOAT_EQ(CM->getPercentWeightsChanged(), 100.0f);
+
+		delete sim;
 	}
 }
