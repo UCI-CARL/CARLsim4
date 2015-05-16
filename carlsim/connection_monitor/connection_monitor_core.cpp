@@ -291,10 +291,21 @@ void ConnectionMonitorCore::print() {
 	}
 }
 
-void ConnectionMonitorCore::printSparse(int neurPostId, int maxConn, int connPerLine) {
+void ConnectionMonitorCore::printSparse(int neurPostId, int maxConn, int connPerLine, bool storeNewSnapshot) {
 	assert(neurPostId<nNeurPost_);
 	assert(maxConn>0);
 	assert(connPerLine>0);
+
+	// give the option of not storing the new snapshot
+	std::vector< std::vector<float> > wtNew, wtOld;
+	long int timeNew, timeOld;
+	if (!storeNewSnapshot) {
+		// make a copy of current snapshots so that we can restore them later
+		wtNew = wtMat_;
+		wtOld = wtMatLast_;
+		timeNew = wtTime_;
+		timeOld = wtTimeLast_;
+	}
 
 	updateStoredWeights();
 	KERNEL_INFO("(t=%.3fs) ConnectionMonitor ID=%d %d(%s) => %d(%s): [preId,postId] wt (+/-wtChange in %ldms) "
@@ -343,6 +354,13 @@ void ConnectionMonitorCore::printSparse(int neurPostId, int maxConn, int connPer
 	// flush
 	if (nConn % connPerLine)
 		KERNEL_INFO("%s",line.str().c_str());
+
+	if (!storeNewSnapshot) {
+		wtMat_ = wtNew;
+		wtMatLast_ = wtOld;
+		wtTime_ = timeNew;
+		wtTimeLast_ = timeOld;
+	}
 
 }
 

@@ -525,22 +525,32 @@ TEST(CORE, startStopTestingPhase) {
 			sim->runNetwork(1,0);
 			double wtChange = CM->getTotalAbsWeightChange();
 			EXPECT_GT(CM->getTotalAbsWeightChange(), 0);
+			EXPECT_EQ(CM->getTimeMsCurrentSnapshot(), 1000);
+			EXPECT_EQ(CM->getTimeMsLastSnapshot(), 0);
+			EXPECT_EQ(CM->getTimeMsSinceLastSnapshot(), 1000);
 
 			// testing: expect no weight changes
 			sim->startTesting();
 			if (run==1) {
 				sim->runNetwork(5,0);
 				sim->startTesting(); // start after start: redundant
+				sim->runNetwork(5,0);
 			} else {
 				sim->runNetwork(10,0);
 			}
 			EXPECT_FLOAT_EQ(CM->getTotalAbsWeightChange(), 0.0f);
+			EXPECT_EQ(CM->getTimeMsCurrentSnapshot(), 11000);
+			EXPECT_EQ(CM->getTimeMsLastSnapshot(), 1000);
+			EXPECT_EQ(CM->getTimeMsSinceLastSnapshot(), 10000);
 
 			// some more training: expect weight changes
 			sim->stopTesting();
 			CM->takeSnapshot();
 			sim->runNetwork(5,0);
 			EXPECT_GT(CM->getTotalAbsWeightChange(), 0);
+			EXPECT_EQ(CM->getTimeMsCurrentSnapshot(), 16000);
+			EXPECT_EQ(CM->getTimeMsLastSnapshot(), 11000);
+			EXPECT_EQ(CM->getTimeMsSinceLastSnapshot(), 5000);
 
 			delete sim;
 		}

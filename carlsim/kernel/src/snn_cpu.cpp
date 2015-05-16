@@ -648,6 +648,9 @@ int CpuSNN::runNetwork(int _nsec, int _nmsec, bool printRunSummary, bool copySta
 	// setupNetwork() must have already been called
 	assert(doneReorganization);
 
+	// don't bother printing if logger mode is SILENT
+	printRunSummary = (loggerMode_==SILENT) ? false : printRunSummary;
+
 	// first-time run: inform the user the simulation is running now
 	if (simTime==0 && printRunSummary) {
 		KERNEL_INFO("");

@@ -130,7 +130,9 @@ public:
 	void print();
 
 	//! prints current weight state as sparse list of (only allocated, existent) synapses
-	void printSparse(int neurPostId=ALL, int maxConn=100, int connPerLine=4);
+	//! give the option not to store the newly acquired snapshot (for printStatusConnectionMonitor); don't expose
+	//! to user level
+	void printSparse(int neurPostId=ALL, int maxConn=100, int connPerLine=4, bool storeNewSnapshot=true);
 
 	//! takes snapshot of current weight state and returns 2D matrix (non-existent synapses: NAN, existent but zero
 	//! weight: 0.0f).

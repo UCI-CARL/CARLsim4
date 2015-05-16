@@ -312,7 +312,11 @@ TEST(ConnMon, weightChange) {
 
 		// run for some time, make sure no weights changed (because there is no plasticity)
 		sim->runNetwork(0,500);
+		sim->runNetwork(1,0);
 		EXPECT_FLOAT_EQ(CM->getTotalAbsWeightChange(), 0.0f);
+		EXPECT_EQ(CM->getTimeMsCurrentSnapshot(), 1500);
+		EXPECT_EQ(CM->getTimeMsLastSnapshot(), 0);
+		EXPECT_EQ(CM->getTimeMsSinceLastSnapshot(), 1500);
 
 		// set all weights to zero
 		sim->scaleWeights(c0, 0.0f);
@@ -323,8 +327,8 @@ TEST(ConnMon, weightChange) {
 		// 0 (at t=1.0s) to 0 (at t=1.5s).
 		sim->runNetwork(1,0);
 		EXPECT_FLOAT_EQ(CM->getTotalAbsWeightChange(), wtScale*GRP_SIZE*GRP_SIZE);
-		EXPECT_EQ(CM->getTimeMsCurrentSnapshot(), 1500);
-		EXPECT_EQ(CM->getTimeMsLastSnapshot(), 500);
+		EXPECT_EQ(CM->getTimeMsCurrentSnapshot(), 2500);
+		EXPECT_EQ(CM->getTimeMsLastSnapshot(), 1500);
 		EXPECT_EQ(CM->getTimeMsSinceLastSnapshot(), 1000);
 
 		// If we call another weight method, then ConnectionMonitorCore::updateStoredWeights should not
