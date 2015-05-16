@@ -310,9 +310,9 @@ TEST(SpikeMon, spikeTimes) {
 				EXPECT_EQ(spkVector[i][j] % isi, 0);
 
 #if defined(WIN32) || defined(WIN64)
-		system("del spkG0.dat");
+		int ret = system("del spkG0.dat");
 #else
-		system("rm -rf spkG0.dat");
+		int ret = system("rm -rf spkG0.dat");
 #endif
 		if (inputArray!=NULL) delete[] inputArray;
 		delete sim;
@@ -408,11 +408,11 @@ TEST(SpikeMon, getGroupFiringRate){
 		EXPECT_FLOAT_EQ(spikeMonG1->getPopMeanFiringRate(), g1Size/(2.0*GRP_SIZE) * 1000.0/(runTimeMsOn+2*runTimeMsOff));
 
 #if defined(WIN32) || defined(WIN64)
-		system("del spkInputGrp.dat");
-		system("del spkG1Grp.dat");
+		int ret = system("del spkInputGrp.dat");
+		ret = system("del spkG1Grp.dat");
 #else
-		system("rm -rf spkInputGrp.dat");
-		system("rm -rf spkG1Grp.dat");
+		int ret = system("rm -rf spkInputGrp.dat");
+		ret = system("rm -rf spkG1Grp.dat");
 #endif
 
 		if (inputArray!=NULL) delete[] inputArray;
@@ -448,11 +448,11 @@ TEST(SpikeMon, getMaxMinNeuronFiringRate){
         sim->setupNetwork();
 
 #if defined(WIN32) || defined(WIN64)
-		system("del spkInputGrp.dat");
-		system("del spkG1Grp.dat");
+		int ret = system("del spkInputGrp.dat");
+		ret = system("del spkG1Grp.dat");
 #else
-		system("rm -rf spkInputGrp.dat");
-		system("rm -rf spkG1Grp.dat");
+		int ret = system("rm -rf spkInputGrp.dat");
+		ret = system("rm -rf spkG1Grp.dat");
 #endif
 		SpikeMonitor* spikeMonInput = sim->setSpikeMonitor(inputGroup,"spkInputGrp.dat");
 		SpikeMonitor* spikeMonG1 = sim->setSpikeMonitor(g1,"spkG1Grp.dat");
@@ -592,9 +592,9 @@ TEST(SpikeMon, setLogFile) {
 		spikeMonG0->setLogFile("NULL");
 
 #if defined(WIN32) || defined(WIN64)
-		system("del spkG0.dat");
+		int ret = system("del spkG0.dat");
 #else
-		system("rm -rf spkG0.dat");
+		int ret = system("rm -rf spkG0.dat");
 #endif
 		if (inputArray!=NULL) delete[] inputArray;
 		delete sim;
