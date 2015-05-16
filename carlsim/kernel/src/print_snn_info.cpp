@@ -102,7 +102,7 @@ void CpuSNN::printStatusConnectionMonitor(int connId) {
     if (connInfo->ConnectionMonitorId>=0 && (connId==ALL || connInfo->connId==connId)) {
       // print connection weights (sparse representation: show only actually connected synapses)
       // show the first hundred connections: (pre=>post) weight
-      connMonCoreList[connInfo->ConnectionMonitorId]->printSparse(ALL, 100, 4);
+      connMonCoreList[connInfo->ConnectionMonitorId]->printSparse(ALL, 100, 4, false);
     }
     connInfo = connInfo->next;
   }
