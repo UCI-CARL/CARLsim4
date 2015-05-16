@@ -248,7 +248,7 @@ TEST(ConnMon, weightFile) {
 			if (wtFile) {
 				wtFile.seekg( 0, std::ios::end );
 				if (interval==-1) {
-					fileLength[0] = wtFile.tellg(); // should contain 2 snapshots
+					fileLength[0] = wtFile.tellg(); // should contain 0 snapshots
 				} else {
 					fileLength[1] = wtFile.tellg(); // should contain 10 snapshots
 				}
@@ -260,7 +260,7 @@ TEST(ConnMon, weightFile) {
 		// so choose a portable approach: estimate header size for both interval modes, and make
 		// sure they're the same
 		// file should have header+(number of snapshots)*((number of weights)+(timestamp as long int))*(bytes per word)
-		int headerSize = fileLength[0] - 2*(GRP_SIZE*GRP_SIZE+2)*4;
-		EXPECT_EQ(headerSize, fileLength[1] - 11*(GRP_SIZE*GRP_SIZE+2)*4);
+		int headerSize = fileLength[0];
+		EXPECT_EQ(headerSize, fileLength[1] - 10*(GRP_SIZE*GRP_SIZE+2)*4);
 	}
 }
