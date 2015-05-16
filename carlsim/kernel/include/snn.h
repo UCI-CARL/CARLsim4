@@ -501,7 +501,7 @@ public:
 	int getRandSeed() { return randSeed_; }
 
 	simMode_t getSimMode()		{ return simMode_; }
-	uint64_t getSimTime()		{ return simTime; }
+	unsigned int getSimTime()		{ return simTime; }
 	unsigned int getSimTimeSec()	{ return simTimeSec; }
 	unsigned int getSimTimeMs()		{ return simTimeMs; }
 

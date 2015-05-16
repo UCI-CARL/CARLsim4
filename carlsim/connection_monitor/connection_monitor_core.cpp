@@ -78,6 +78,8 @@ ConnectionMonitorCore::~ConnectionMonitorCore() {
 	if (connFileId_!=NULL) {
 		// flush: store last snapshot to file if update interval set
 		if (connFileTimeIntervalSec_ > 0) {
+			// make sure CpuSNN is not already deallocated!
+			assert(snn_!=NULL);
 			writeConnectFileSnapshot(snn_->getSimTime(), snn_->getWeightMatrix2D(connId_));
 		}
 
@@ -293,7 +295,9 @@ void ConnectionMonitorCore::setUpdateTimeIntervalSec(int intervalSec) {
 
 // updates the internally stored last two snapshots (current one and last one)
 void ConnectionMonitorCore::updateStoredWeights() {
+	fprintf(stderr,"%u: updateStoredWeights\n",snn_->getSimTime());
 	if (snn_->getSimTime() > wtTime_) {
+		fprintf(stderr,"%u: updateStoredWeights need to update\n",snn_->getSimTime());
 		// time has advanced: get new weights
 		wtMatLast_ = wtMat_;
 		wtTimeLast_ = wtTime_;

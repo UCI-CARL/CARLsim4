@@ -3916,74 +3916,11 @@ void CpuSNN::resetNeuron(unsigned int neurId, int grpId) {
 }
 
 void CpuSNN::resetPointers(bool deallocate) {
-	if (voltage!=NULL && deallocate) delete[] voltage;
-	if (recovery!=NULL && deallocate) delete[] recovery;
-	if (current!=NULL && deallocate) delete[] current;
-	if (extCurrent!=NULL && deallocate) delete[] extCurrent;
-	voltage=NULL; recovery=NULL; current=NULL; extCurrent=NULL;
+	// order is important! monitor objects might point to CpuSNN or CARLsim,
+	// need to deallocate them first
 
-	if (Izh_a!=NULL && deallocate) delete[] Izh_a;
-	if (Izh_b!=NULL && deallocate) delete[] Izh_b;
-	if (Izh_c!=NULL && deallocate) delete[] Izh_c;
-	if (Izh_d!=NULL && deallocate) delete[] Izh_d;
-	Izh_a=NULL; Izh_b=NULL; Izh_c=NULL; Izh_d=NULL;
 
-	if (Npre!=NULL && deallocate) delete[] Npre;
-	if (Npre_plastic!=NULL && deallocate) delete[] Npre_plastic;
-	if (Npost!=NULL && deallocate) delete[] Npost;
-	Npre=NULL; Npre_plastic=NULL; Npost=NULL;
-
-	if (cumulativePre!=NULL && deallocate) delete[] cumulativePre;
-	if (cumulativePost!=NULL && deallocate) delete[] cumulativePost;
-	cumulativePre=NULL; cumulativePost=NULL;
-
-	if (gAMPA!=NULL && deallocate) delete[] gAMPA;
-	if (gNMDA!=NULL && deallocate) delete[] gNMDA;
-	if (gNMDA_r!=NULL && deallocate) delete[] gNMDA_r;
-	if (gNMDA_d!=NULL && deallocate) delete[] gNMDA_d;
-	if (gGABAa!=NULL && deallocate) delete[] gGABAa;
-	if (gGABAb!=NULL && deallocate) delete[] gGABAb;
-	if (gGABAb_r!=NULL && deallocate) delete[] gGABAb_r;
-	if (gGABAb_d!=NULL && deallocate) delete[] gGABAb_d;
-	gAMPA=NULL; gNMDA=NULL; gNMDA_r=NULL; gNMDA_d=NULL; gGABAa=NULL; gGABAb=NULL; gGABAb_r=NULL; gGABAb_d=NULL;
-
-	if (stpu!=NULL && deallocate) delete[] stpu;
-	if (stpx!=NULL && deallocate) delete[] stpx;
-	stpu=NULL; stpx=NULL;
-
-	if (avgFiring!=NULL && deallocate) delete[] avgFiring;
-	if (baseFiring!=NULL && deallocate) delete[] baseFiring;
-	avgFiring=NULL; baseFiring=NULL;
-
-	if (lastSpikeTime!=NULL && deallocate) delete[] lastSpikeTime;
-	if (synSpikeTime !=NULL && deallocate) delete[] synSpikeTime;
-	if (curSpike!=NULL && deallocate) delete[] curSpike;
-	if (nSpikeCnt!=NULL && deallocate) delete[] nSpikeCnt;
-	lastSpikeTime=NULL; synSpikeTime=NULL; curSpike=NULL; nSpikeCnt=NULL;
-
-	if (postDelayInfo!=NULL && deallocate) delete[] postDelayInfo;
-	if (preSynapticIds!=NULL && deallocate) delete[] preSynapticIds;
-	if (postSynapticIds!=NULL && deallocate) delete[] postSynapticIds;
-	postDelayInfo=NULL; preSynapticIds=NULL; postSynapticIds=NULL;
-
-	if (wt!=NULL && deallocate) delete[] wt;
-	if (maxSynWt!=NULL && deallocate) delete[] maxSynWt;
-	if (wtChange !=NULL && deallocate) delete[] wtChange;
-	wt=NULL; maxSynWt=NULL; wtChange=NULL;
-
-	if (mulSynFast!=NULL && deallocate) delete[] mulSynFast;
-	if (mulSynSlow!=NULL && deallocate) delete[] mulSynSlow;
-	if (cumConnIdPre!=NULL && deallocate) delete[] cumConnIdPre;
-	mulSynFast=NULL; mulSynSlow=NULL; cumConnIdPre=NULL;
-
-	if (grpIds!=NULL && deallocate) delete[] grpIds;
-	grpIds=NULL;
-
-	if (firingTableD2!=NULL && deallocate) delete[] firingTableD2;
-	if (firingTableD1!=NULL && deallocate) delete[] firingTableD1;
-	if (timeTableD2!=NULL && deallocate) delete[] timeTableD2;
-	if (timeTableD1!=NULL && deallocate) delete[] timeTableD1;
-	firingTableD2=NULL; firingTableD1=NULL; timeTableD2=NULL; timeTableD1=NULL;
+	// -------------- DEALLOCATE MONITOR OBJECTS ---------------------- //
 
 	// delete all SpikeMonitor objects
 	// don't kill SpikeMonitorCore objects, they will get killed automatically
@@ -4057,6 +3994,78 @@ void CpuSNN::resetPointers(bool deallocate) {
 		memset(grpAChBuffer, 0, sizeof(float*) * MAX_GRP_PER_SNN);
 		memset(grpNEBuffer, 0, sizeof(float*) * MAX_GRP_PER_SNN);
 	}
+
+
+	// -------------- DEALLOCATE CORE OBJECTS ---------------------- //
+
+	if (voltage!=NULL && deallocate) delete[] voltage;
+	if (recovery!=NULL && deallocate) delete[] recovery;
+	if (current!=NULL && deallocate) delete[] current;
+	if (extCurrent!=NULL && deallocate) delete[] extCurrent;
+	voltage=NULL; recovery=NULL; current=NULL; extCurrent=NULL;
+
+	if (Izh_a!=NULL && deallocate) delete[] Izh_a;
+	if (Izh_b!=NULL && deallocate) delete[] Izh_b;
+	if (Izh_c!=NULL && deallocate) delete[] Izh_c;
+	if (Izh_d!=NULL && deallocate) delete[] Izh_d;
+	Izh_a=NULL; Izh_b=NULL; Izh_c=NULL; Izh_d=NULL;
+
+	if (Npre!=NULL && deallocate) delete[] Npre;
+	if (Npre_plastic!=NULL && deallocate) delete[] Npre_plastic;
+	if (Npost!=NULL && deallocate) delete[] Npost;
+	Npre=NULL; Npre_plastic=NULL; Npost=NULL;
+
+	if (cumulativePre!=NULL && deallocate) delete[] cumulativePre;
+	if (cumulativePost!=NULL && deallocate) delete[] cumulativePost;
+	cumulativePre=NULL; cumulativePost=NULL;
+
+	if (gAMPA!=NULL && deallocate) delete[] gAMPA;
+	if (gNMDA!=NULL && deallocate) delete[] gNMDA;
+	if (gNMDA_r!=NULL && deallocate) delete[] gNMDA_r;
+	if (gNMDA_d!=NULL && deallocate) delete[] gNMDA_d;
+	if (gGABAa!=NULL && deallocate) delete[] gGABAa;
+	if (gGABAb!=NULL && deallocate) delete[] gGABAb;
+	if (gGABAb_r!=NULL && deallocate) delete[] gGABAb_r;
+	if (gGABAb_d!=NULL && deallocate) delete[] gGABAb_d;
+	gAMPA=NULL; gNMDA=NULL; gNMDA_r=NULL; gNMDA_d=NULL; gGABAa=NULL; gGABAb=NULL; gGABAb_r=NULL; gGABAb_d=NULL;
+
+	if (stpu!=NULL && deallocate) delete[] stpu;
+	if (stpx!=NULL && deallocate) delete[] stpx;
+	stpu=NULL; stpx=NULL;
+
+	if (avgFiring!=NULL && deallocate) delete[] avgFiring;
+	if (baseFiring!=NULL && deallocate) delete[] baseFiring;
+	avgFiring=NULL; baseFiring=NULL;
+
+	if (lastSpikeTime!=NULL && deallocate) delete[] lastSpikeTime;
+	if (synSpikeTime !=NULL && deallocate) delete[] synSpikeTime;
+	if (curSpike!=NULL && deallocate) delete[] curSpike;
+	if (nSpikeCnt!=NULL && deallocate) delete[] nSpikeCnt;
+	lastSpikeTime=NULL; synSpikeTime=NULL; curSpike=NULL; nSpikeCnt=NULL;
+
+	if (postDelayInfo!=NULL && deallocate) delete[] postDelayInfo;
+	if (preSynapticIds!=NULL && deallocate) delete[] preSynapticIds;
+	if (postSynapticIds!=NULL && deallocate) delete[] postSynapticIds;
+	postDelayInfo=NULL; preSynapticIds=NULL; postSynapticIds=NULL;
+
+	if (wt!=NULL && deallocate) delete[] wt;
+	if (maxSynWt!=NULL && deallocate) delete[] maxSynWt;
+	if (wtChange !=NULL && deallocate) delete[] wtChange;
+	wt=NULL; maxSynWt=NULL; wtChange=NULL;
+
+	if (mulSynFast!=NULL && deallocate) delete[] mulSynFast;
+	if (mulSynSlow!=NULL && deallocate) delete[] mulSynSlow;
+	if (cumConnIdPre!=NULL && deallocate) delete[] cumConnIdPre;
+	mulSynFast=NULL; mulSynSlow=NULL; cumConnIdPre=NULL;
+
+	if (grpIds!=NULL && deallocate) delete[] grpIds;
+	grpIds=NULL;
+
+	if (firingTableD2!=NULL && deallocate) delete[] firingTableD2;
+	if (firingTableD1!=NULL && deallocate) delete[] firingTableD1;
+	if (timeTableD2!=NULL && deallocate) delete[] timeTableD2;
+	if (timeTableD1!=NULL && deallocate) delete[] timeTableD1;
+	firingTableD2=NULL; firingTableD1=NULL; timeTableD2=NULL; timeTableD1=NULL;
 
 	// clear poisson generator
 	if (gpuPoissonRand != NULL) delete gpuPoissonRand;
