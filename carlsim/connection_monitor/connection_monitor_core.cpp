@@ -17,9 +17,10 @@ ConnectionMonitorCore::ConnectionMonitorCore(CpuSNN* snn,int monitorId,short int
 	grpIdPre_ = grpIdPre;
 	grpIdPost_ = grpIdPost;
 	monitorId_ = monitorId;
-	simTimeMs_ = -1;
-	simTimeSinceLastMs_ = 0;
-	simTimeMsLastWrite_ = -1;
+
+	wtTime_ = -1;
+	wtTimeLast_ = -1;
+	wtTimeWrite_ = -1;
 
 	connFileId_ = NULL;
 	needToWriteFileHeader_ = true;
@@ -29,8 +30,6 @@ ConnectionMonitorCore::ConnectionMonitorCore(CpuSNN* snn,int monitorId,short int
 
 	minWt_ = -1.0f;
 	maxWt_ = -1.0f;
-
-	tookSnapshotManually_ = false;
 
 	connFileTimeIntervalSec_ = 1;
 }
@@ -59,27 +58,28 @@ void ConnectionMonitorCore::init() {
 
 	// init weight matrix with right dimensions
 	for (int i=0; i<nNeurPre_; i++) {
-		std::vector<float> wt, wtChange;
+		std::vector<float> wt;
 		for (int j=0; j<nNeurPost_; j++) {
 			wt.push_back(NAN);
-			wtChange.push_back(0.0f);
 		}
 		wtMat_.push_back(wt);
-		wtLastMat_.push_back(wtChange);
+		wtMatLast_.push_back(wt);
 	}
 
 	// then load current weigths from CpuSNN into weight matrix
-	takeSnapshot();
-	tookSnapshotManually_ = false;
-
-	needToInit_ = false;
+	updateStoredWeights();
 }
 
 ConnectionMonitorCore::~ConnectionMonitorCore() {
 	if (connFileId_!=NULL) {
-		// flush: advance timestep so that the last weight snapshot will be written to file
-		updateTime(simTimeMs_+1);
+		// flush: store last snapshot to file if update interval set
+		if (connFileTimeIntervalSec_ > 0) {
+			// make sure CpuSNN is not already deallocated!
+			assert(snn_!=NULL);
+			writeConnectFileSnapshot(snn_->getSimTime(), snn_->getWeightMatrix2D(connId_));
+		}
 
+		// then close file and clean up
 		fclose(connFileId_);
 		connFileId_ = NULL;
 		needToInit_ = true;
@@ -91,14 +91,13 @@ ConnectionMonitorCore::~ConnectionMonitorCore() {
 
 // calculate weight changes since last update (element-wise )
 std::vector< std::vector<float> > ConnectionMonitorCore::calcWeightChanges() {
-	takeSnapshot();
-	tookSnapshotManually_ = false;
+	updateStoredWeights();
 	std::vector< std::vector<float> > wtChange(nNeurPre_, vector<float>(nNeurPost_));
 
 	// take the naive approach for now
 	for (int i=0; i<nNeurPre_; i++) {
 		for (int j=0; j<nNeurPost_; j++) {
-			wtChange[i][j] = wtMat_[i][j] - wtLastMat_[i][j];
+			wtChange[i][j] = wtMat_[i][j] - wtMatLast_[i][j];
 		}
 	}
 
@@ -111,6 +110,7 @@ void ConnectionMonitorCore::clear() {
 	for (int i=0; i<nNeurPre_; i++) {
 		for (int j=0; j<nNeurPost_; j++) {
 			wtMat_[i][j] = NAN;
+			wtMatLast_[i][j] = NAN;
 		}
 	}
 }
@@ -142,18 +142,17 @@ int ConnectionMonitorCore::getFanOut(int neurPreId) {
 float ConnectionMonitorCore::getMaxWeight(bool getCurrent) {
 	float maxVal = minWt_;
 	if (getCurrent) {
-		std::vector< std::vector<float> > wts = takeSnapshot();
-		tookSnapshotManually_ = false;
+		updateStoredWeights();
 
 		// find currently largest weight value
 		for (int i=0; i<nNeurPre_; i++) {
 			for (int j=0; j<nNeurPost_; j++) {
 				// skip entries in matrix where no synapse exists
-				if (isnan(wts[i][j]))
+				if (isnan(wtMat_[i][j]))
 					continue;
 
-				if (wts[i][j] > maxVal) {
-					maxVal = wts[i][j];
+				if (wtMat_[i][j] > maxVal) {
+					maxVal = wtMat_[i][j];
 				}
 			}
 		}
@@ -168,18 +167,17 @@ float ConnectionMonitorCore::getMaxWeight(bool getCurrent) {
 float ConnectionMonitorCore::getMinWeight(bool getCurrent) {
 	float minVal = maxWt_;
 	if (getCurrent) {
-		std::vector< std::vector<float> > wts = takeSnapshot();
-		tookSnapshotManually_ = false;
+		updateStoredWeights();
 
 		// find currently largest weight value
 		for (int i=0; i<nNeurPre_; i++) {
 			for (int j=0; j<nNeurPost_; j++) {
 				// skip entries in matrix where no synapse exists
-				if (isnan(wts[i][j]))
+				if (isnan(wtMat_[i][j]))
 					continue;
 
-				if (wts[i][j] < minVal) {
-					minVal = wts[i][j];
+				if (wtMat_[i][j] < minVal) {
+					minVal = wtMat_[i][j];
 				}
 			}
 		}
@@ -215,22 +213,21 @@ int ConnectionMonitorCore::getNumWeightsChanged(double minAbsChange) {
 int ConnectionMonitorCore::getNumWeightsInRange(double minVal, double maxVal) {
 	assert(maxVal>=minVal);
 
+	updateStoredWeights();
+
 	// make sure values are inside a reasonable range
 	if (minVal<=getMinWeight(false) && minVal>=getMaxWeight(false)) {
 		return getNumSynapses();
 	}
 
-	std::vector< std::vector<float> > wts = takeSnapshot();
-	tookSnapshotManually_ = false;
-
 	int cnt = 0;
 	for (int i=0; i<nNeurPre_; i++) {
 		for (int j=0; j<nNeurPost_; j++) {
 			// skip entries in matrix where no synapse exists
-			if (isnan(wts[i][j]))
+			if (isnan(wtMat_[i][j]))
 				continue;
 
-			if (wts[i][j]>=minVal && wts[i][j]<=maxVal) {
+			if (wtMat_[i][j]>=minVal && wtMat_[i][j]<=maxVal) {
 				cnt++;
 			}
 		}
@@ -264,35 +261,11 @@ double ConnectionMonitorCore::getTotalAbsWeightChange() {
 	return wtTotalChange;
 }
 
-
-bool ConnectionMonitorCore::needToWriteSnapshot() {
-	// don't write if no file exists
-	if (connFileId_==NULL)
-		return false;
-
-	// don't write to file at init
-	if (simTimeMs_<0)
-		return false;
-
-	// don't write to file if we already have for this time step
-	if (simTimeMs_==simTimeMsLastWrite_)
-		return false;
-
-	if (tookSnapshotManually_) {
-		// we just took a manual snapshot, so we need to store it in binary
-		return true;
-	} else {
-		// no manual snapshot taken, check interval
-		return (connFileTimeIntervalSec_ != -1);
-	}
-
-	return true;
-}
-
 void ConnectionMonitorCore::print() {
-	takeSnapshot();	tookSnapshotManually_ = false;
+	updateStoredWeights();
 
-	KERNEL_INFO("(t=%.3fs) ConnectionMonitor ID=%d: %d(%s) => %d(%s)", (double)simTimeMs_/1000.0f, connId_,
+	KERNEL_INFO("(t=%.3fs) ConnectionMonitor ID=%d: %d(%s) => %d(%s)",
+		(getTimeMsCurrentSnapshot()/1000.0f), connId_,
 		grpIdPre_, snn_->getGroupName(grpIdPre_).c_str(),
 		grpIdPost_, snn_->getGroupName(grpIdPost_).c_str());
 
@@ -323,11 +296,11 @@ void ConnectionMonitorCore::printSparse(int neurPostId, int maxConn, int connPer
 	assert(maxConn>0);
 	assert(connPerLine>0);
 
-	takeSnapshot();	tookSnapshotManually_ = false;
+	updateStoredWeights();
 	KERNEL_INFO("(t=%.3fs) ConnectionMonitor ID=%d %d(%s) => %d(%s): [preId,postId] wt (+/-wtChange in %ldms) "
-		"show first %d", (double)simTimeMs_/1000.0f, connId_,
+		"show first %d", getTimeMsCurrentSnapshot()/1000.0f, connId_,
 		grpIdPre_, snn_->getGroupName(grpIdPre_).c_str(), grpIdPost_, snn_->getGroupName(grpIdPost_).c_str(),
-		simTimeSinceLastMs_, maxConn);
+		getTimeMsSinceLastSnapshot(), maxConn);
 
 	int postA, postZ;
 	if (neurPostId==ALL) {
@@ -395,46 +368,23 @@ void ConnectionMonitorCore::setUpdateTimeIntervalSec(int intervalSec) {
 	connFileTimeIntervalSec_ = intervalSec;
 }
 
-// public takeSnapshot method: this will dump the snapshot to file
-std::vector< std::vector<float> > ConnectionMonitorCore::takeSnapshot() {
-	tookSnapshotManually_ = true;
-	snn_->updateConnectionMonitor(connId_);
+// updates the internally stored last two snapshots (current one and last one)
+void ConnectionMonitorCore::updateStoredWeights() {
+	if (snn_->getSimTime() > wtTime_) {
+		// time has advanced: get new weights
+		wtMatLast_ = wtMat_;
+		wtTimeLast_ = wtTime_;
 
-	return wtMat_;
-}
-
-// returns true if ConnMon needed updating
-bool ConnectionMonitorCore::updateTime(unsigned int simTimeMs) {
-	long int currTime = (long int)simTimeMs; // get rid of unsigned
-
-	bool needToUpdate = false;
-	if (currTime > simTimeMs_) {
-		// time has advances since last storage
-		needToUpdate = true;
-
-		// write weights of last timestep to file
-		// currently time interval can only be 1 or -1
-		writeConnectFileSnapshot();
-
-		// copy wtMat_ to lastWtMat_ and set wtMat_=0
-		wtLastMat_.swap(wtMat_);
-		clear();
-
-		// update timers
-		simTimeSinceLastMs_ = currTime-simTimeMs_; // delta t since last update
-		simTimeMs_ = currTime;
-		assert(simTimeSinceLastMs_>0);
+		wtMat_ = snn_->getWeightMatrix2D(connId_);
+		wtTime_ = snn_->getSimTime();
 	}
-
-	return needToUpdate;
 }
 
-// CpuSNN uses float in weight matrix to save storage
-// We want to do arithmetic on them, so use double instead (standard)
-void ConnectionMonitorCore::updateWeight(int preId, int postId, float wt) {
-	assert(preId < nNeurPre_);
-	assert(postId < nNeurPost_);
-	wtMat_[preId][postId] = wt;
+// returns a current snapshot
+std::vector< std::vector<float> > ConnectionMonitorCore::takeSnapshot() {
+	updateStoredWeights();
+	writeConnectFileSnapshot(wtTime_, wtMat_);
+	return wtMat_;
 }
 
 // write the header section of the spike file
@@ -499,21 +449,22 @@ void ConnectionMonitorCore::writeConnectFileHeader() {
 	needToWriteFileHeader_ = false;
 }
 
-void ConnectionMonitorCore::writeConnectFileSnapshot() {
-	if (!needToWriteSnapshot())
+void ConnectionMonitorCore::writeConnectFileSnapshot(unsigned int simTimeMs, std::vector< std::vector<float> > wts) {
+	// don't write if we have already written this timestamp to file (or file doesn't exist)
+	if ((long int)simTimeMs <= wtTimeWrite_ || connFileId_==NULL) {
 		return;
+	}
 
-	tookSnapshotManually_ = false;
-	simTimeMsLastWrite_ = simTimeMs_;
+	wtTimeWrite_ = (long int)simTimeMs;
 
 	// write time stamp
-	if (!fwrite(&simTimeMs_,sizeof(long int),1,connFileId_))
+	if (!fwrite(&wtTimeWrite_,sizeof(long int),1,connFileId_))
 		KERNEL_ERROR("ConnectionMonitor: writeConnectFileSnapshot has fwrite error");
 
 	// write all weights
 	for (int i=0; i<nNeurPre_; i++) {
 		for (int j=0; j<nNeurPost_; j++) {
-			if (!fwrite(&wtMat_[i][j],sizeof(float),1,connFileId_)) {
+			if (!fwrite(&wts[i][j],sizeof(float),1,connFileId_)) {
 				KERNEL_ERROR("ConnectionMonitor: writeConnectFileSnapshot has fwrite error");
 			}
 		}

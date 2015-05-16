@@ -11,6 +11,12 @@ Release 3.1
 Build 3.1.0
 ---------------------
 
+2015-05-15     Michael Beyeler <mbeyeler@uci.edu>
+  * Fixed no-recording issue with ConnectionMonitor::setUpdateTimeIntervalSec
+    interval -1. Now the binary file will not contain any snapshots if interval
+    is -1.
+  * Updated and improved ConnMon test case.
+
 2015-05-14     Michael Beyeler <mbeyeler@uci.edu>
   + Added ConnectionMonitor methods: getMinWeight, getMaxWeight,
     getNumWeightsInRange, getNumWeightsWithValue, getPercentWeightsInRange,
@@ -46,6 +52,17 @@ Build 3.1.0
 ===============================================================================
 Release 3.0
 ===============================================================================
+
+---------------------
+Build 3.0.2
+---------------------
+
+2015-05-15     Michael Beyeler <mbeyeler@uci.edu>
+  * Fixed no-recording issue with ConnectionMonitor::setUpdateTimeIntervalSec
+    interval -1. Now the binary file will not contain any snapshots if interval
+    is -1.
+  * Updated and improved ConnMon test case.
+
 
 ---------------------
 Build 3.0.1

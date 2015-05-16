@@ -404,7 +404,7 @@ public:
 	void stopTesting();
 
 	//! polls connection weights
-	void updateConnectionMonitor(int connId=ALL);
+	void updateConnectionMonitor(short int connId=ALL);
 
 	//! access group status (currently the concentration of neuromodulator)
 	void updateGroupMonitor(int grpId=ALL);
@@ -507,7 +507,7 @@ public:
 	int getRandSeed() { return randSeed_; }
 
 	simMode_t getSimMode()		{ return simMode_; }
-	uint64_t getSimTime()		{ return simTime; }
+	unsigned int getSimTime()		{ return simTime; }
 	unsigned int getSimTimeSec()	{ return simTimeSec; }
 	unsigned int getSimTimeMs()		{ return simTimeMs; }
 
@@ -529,6 +529,8 @@ public:
 
 	//! temporary getter to return pointer to current[] \TODO replace with NeuronMonitor
 	float* getCurrent() { return current; }
+
+	std::vector< std::vector<float> > getWeightMatrix2D(short int connId);
 
 	std::vector<float> getConductanceAMPA(int grpId);
 	std::vector<float> getConductanceNMDA(int grpId);

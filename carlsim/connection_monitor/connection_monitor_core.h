@@ -113,13 +113,15 @@ public:
 	int getNumWeightsWithValue(double value);
 
 	//! returns the timestamp of the current snapshot (not necessarily CARLsim::getSimTime)
-	long int getTimeMsCurrentSnapshot() { return simTimeMs_; }
+	long int getTimeMsCurrentSnapshot() { return wtTime_; }
 
 	//! returns the timestamp of the last snapshot
-	long int getTimeMsLastSnapshot() { return (simTimeMs_ - simTimeSinceLastMs_); }
+	long int getTimeMsLastSnapshot() { return wtTimeLast_; }
 
 	//! returns the time passed between current and last snapshot
-	long int getTimeMsSinceLastSnapshot() { return simTimeSinceLastMs_; }
+	long int getTimeMsSinceLastSnapshot() { return (wtTime_ - wtTimeLast_); }
+
+	int getUpdateTimeIntervalSec() { return connFileTimeIntervalSec_; }
 
 	//! returns absolute sum of all weight changes since last snapshot
 	double getTotalAbsWeightChange();
@@ -155,16 +157,18 @@ public:
 
 	//! sets time update interval (seconds) for periodically storing weights to file
 	void setUpdateTimeIntervalSec(int intervalSec);
+
+	//! writes each snapshot to connect file
+	void writeConnectFileSnapshot(unsigned int simTimeMs, std::vector< std::vector<float> > wts);
 	
 private:
 	//! indicates whether writing the current snapshot is necessary (false it has already been written)
 	bool needToWriteSnapshot();
 
+	void updateStoredWeights();
+	
 	//! writes the header section (file signature, version number) of a connect file
 	void writeConnectFileHeader();
-
-	//! writes each snapshot to connect file
-	void writeConnectFileSnapshot();
 
 	CpuSNN* snn_;                   //!< private CARLsim implementation
 	int monitorId_;                 //!< current ConnectionMonitor ID
@@ -178,19 +182,16 @@ private:
 	float minWt_;					//!< minimum weight magnitude of the connection
 	float maxWt_;					//!< maximum weight magnitude of the connection
 
-	long int simTimeMs_;            //!< timestamp of current snapshot
-	long int simTimeSinceLastMs_;   //!< time between current and last snapshot
-	long int simTimeMsLastWrite_;   //!< timestamp of last file write
-
 	bool isPlastic_; //!< whether this connection has plastic synapses
 
 	std::vector< std::vector<float> > wtMat_;      //!< current snapshot of weight matrix
-	std::vector< std::vector<float> > wtLastMat_;  //!< last snapshot of weight matrix
+	std::vector< std::vector<float> > wtMatLast_;  //!< last snapshot of weight matrix
+	long int wtTime_;
+	long int wtTimeLast_;
+	long int wtTimeWrite_;
 
 	bool needToInit_;				//!< whether we have to initialize first
 	bool needToWriteFileHeader_;    //!< whether we have to write header section of conn file
-
-	bool tookSnapshotManually_;		//!< whether a manual snapshot was taken (needs to be dumped to file)
 
 	FILE* connFileId_;              //!< file pointer to the conn file or NULL
 	int connFileSignature_;         //!< int signature of conn file

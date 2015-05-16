@@ -70,6 +70,8 @@ class ConnectionMonitorCore; // forward declaration of implementation
  *
  * If at least two snapshots have been taken, the method ConnectionMonitor::calcWeightChanges will calculate the weight
  * changes since the last snapshot.
+ * To make sure you are comparing the right snapshots, compare the timestamps returend by
+ * ConnectionMonitor::getTimeMsCurrentSnapshot and ConnectionMonitor::getTimeMsLastSnapshot.
  *
  * Weights can be visualized in the Matlab Offline Analysis Toolbox (OAT) using the ConnectionMonitor utility.
  * The OAT offers ways to plot 2D weight matrices, as well as receptive fields and response fields.
@@ -167,7 +169,8 @@ class ConnectionMonitor {
 	 * Synapses that are not allocated (i.e., that do not exist) are marked as float value NAN in the weight matrix.
 	 * Synapses that do exist, but have zero weight, are marked as 0.0f in the weight matrix.
 	 *
-	 * In order to get the current state of the weight matrix, this function will take a snapshot itself.
+	 * In order to get the current state of the weight matrix, this function will take a snapshot itself, but will
+	 * not write it to file.
 	 *
 	 * \returns a 2D vector of weight changes, where the first dimension is pre-synaptic neuron ID and the second
 	 * dimension is post-synaptic neuron ID. Non-existent synapses are marked with NAN.
@@ -208,6 +211,8 @@ class ConnectionMonitor {
 	 * If getCurrent is set to true, then the function will return the *currently* largest weight value. In a
 	 * plastic connection, this value might be different from the upper bound of the weight range specified
 	 * when setting up the network (i.e., the max field of the ::RangeWeight struct).
+	 * In order to get the current state of the weight matrix, this function will take a snapshot itself, but will
+	 * not write it to file.
 	 *
 	 * If getCurrent is set to false, then the upper bound of the configured weight range will be returned.
 	 *
@@ -225,6 +230,8 @@ class ConnectionMonitor {
 	 * If getCurrent is set to true, then the function will return the *currently* smallest weight value. In a
 	 * plastic connection, this value might be different from the lower bound of the weight range specified
 	 * when setting up the network (i.e., the min field of the ::RangeWeight struct).
+	 * In order to get the current state of the weight matrix, this function will take a snapshot itself, but will
+	 * not write it to file.
 	 *
 	 * If getCurrent is set to false, then the lower bound of the configured weight range will be returned.
 	 *
@@ -264,7 +271,8 @@ class ConnectionMonitor {
 	 * This function returns the number of weights whose absolute value has changed at least minAbsChanged (inclusive)
 	 * since the last snapshot was taken.
 	 *
-	 * In order to get the current state of the weight matrix, this function will take a snapshot itself.
+	 * In order to get the current state of the weight matrix, this function will take a snapshot itself, but will
+	 * not write it to file.
 	 *
 	 * \param[in]  minAbsChanged  the minimal value (inclusive) a weight has to have changed in order for it to be
 	 *                            counted towards the number of changed synapses
@@ -277,6 +285,9 @@ class ConnectionMonitor {
 	 *
 	 * This function returns the number of synaptic weights whose values are within some specific range
 	 * e[minVal,maxVal] (inclusive).
+	 *
+	 * In order to get the current state of the weight matrix, this function will take a snapshot itself, but will
+	 * not write it to file.
 	 *
 	 * \param[in] minValue the lower bound of the weight range (inclusive)
 	 * \param[in] maxValue the upper bound of the weight range (inclusive)
@@ -293,6 +304,9 @@ class ConnectionMonitor {
 	 *
 	 * This function returns the number of synaptic weights that have exactly some specific value.
 	 * It could be used to determine the sparsity of the connection matrix (wtValue==0.0f).
+	 *
+	 * In order to get the current state of the weight matrix, this function will take a snapshot itself, but will
+	 * not write it to file.
 	 *
 	 * Machine epsilon (FLT_EPSILON) is used for floating point equality. That is, the weight value is
 	 * considered equal to the input value if fabs(wt-value)<=FLT_EPSILON (inclusive).
@@ -313,6 +327,9 @@ class ConnectionMonitor {
 	 * This function returns the percentage of synaptic weights whose values are within some specific range
 	 * e[minVal,maxVal] (inclusive).
 	 *
+	 * In order to get the current state of the weight matrix, this function will take a snapshot itself, but will
+	 * not write it to file.
+	 *
 	 * This is a convenience function whose result is equivalent to
 	 * getNumWeightsInRange(minValue,maxValue)*100.0/getNumSynapses().
 	 *
@@ -331,6 +348,9 @@ class ConnectionMonitor {
 	 *
 	 * This function returns the percentage of synaptic weights that have exactly some specific value.
 	 * It could be used to determine the sparsity of the connection matrix (wtValue==0.0f).
+	 *
+	 * In order to get the current state of the weight matrix, this function will take a snapshot itself, but will
+	 * not write it to file.
 	 *
 	 * Machine epsilon (FLT_EPSILON) is used for floating point equality. That is, the weight value is
 	 * considered equal to the input value if fabs(wt-value)<=FLT_EPSILON (inclusive).
@@ -352,7 +372,8 @@ class ConnectionMonitor {
 	 * This function returns the percentage of weights whose absolute has changed at least minAbsChanged (inclusive)
 	 * since the last snapshot was taken.
 	 *
-	 * In order to get the current state of the weight matrix, this function will take a snapshot itself.
+	 * In order to get the current state of the weight matrix, this function will take a snapshot itself, but will
+	 * not write it to file.
 	 *
 	 * This is a convenience function whose result is equivalent to getNumWeightsChanged()*100.0/getNumSynapses().
 	 *
@@ -397,7 +418,8 @@ class ConnectionMonitor {
 	 *
 	 * This function calculates the absolute sum of weight changes since the last snapshot was taken.
 	 *
-	 * In order to get the current state of the weight matrix, this function will take a snapshot itself.
+	 * In order to get the current state of the weight matrix, this function will take a snapshot itself, but will
+	 * not write it to file.
 	 * \since v3.0
 	 */
 	double getTotalAbsWeightChange();
@@ -410,7 +432,8 @@ class ConnectionMonitor {
 	 * Synapses that are not allocated (i.e., that do not exist) are marked as float value NAN in the weight matrix.
 	 * Synapses that do exist, but have zero weight, are marked as 0.0f in the weight matrix.
 	 *
-	 * In order to get the current state of the weight matrix, this function will take a snapshot itself.
+	 * In order to get the current state of the weight matrix, this function will take a snapshot itself, but will
+	 * not write it to file.
 	 *
 	 * \note Please note that this will visualize a getNumNeuronsPre() x getNumNeuronsPost() matrix on screen. For
 	 * connections between large neuronal groups, use ConnectionMonitor::printSparse.
@@ -426,7 +449,8 @@ class ConnectionMonitor {
 	 * reported as [preId,postId] wt (+/- weight change in the last x ms). User can control for which post-synaptic
 	 * neurons the list should be generated, and set limits on how many connections to print in total and per line.
 	 *
-	 * In order to get the current state of the weight matrix, this function will take a snapshot itself.
+	 * In order to get the current state of the weight matrix, this function will take a snapshot itself, but will
+	 * not write it to file.
 	 *
 	 * \note Please note that this is the preferred way to visualize connections between large neuronal groups. The
 	 * method ConnectionMonitor::print should primarily be used for small-sized groups.
