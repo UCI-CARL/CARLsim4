@@ -10,6 +10,10 @@ Release 3.0
 ---------------------
 Build 3.0.1
 ---------------------
+
+2015-05-18     Michael Beyeler <mbeyeler@uci.edu>
+  * Fixed SimulationReader (OAT) for when loadSynapseInfo is set to true.
+  
 2015-05-11     Kristofor D. Carlson <kdcarlso@uci.edu>
   * Added more accurate plasticity documentation on homeostasis.
   * Allowed third argument of CARLsim::setHomeoBaseFiringRate that specifies

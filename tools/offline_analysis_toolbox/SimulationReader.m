@@ -13,10 +13,19 @@ classdef SimulationReader < handle
     % >> SR.sim.simTimeSec % print number of simulated seconds
     % >> SR.sim.exeTimeSec % print execution time in seconds
     %
+    % If the simulation file was created with saveSynapseInfo set to true
+    % in CARLsim::saveSimulation, then the file will also contain all
+    % synapse information (weights, delays, maxWeights, etc.).
+    %
+    % To read all the synapse information in MATLAB, use an optional input
+    % argument loadSynapseInfo:
+    % >> SR = SimulationReader('results/sim_random'dat',true);
+    % >> hist(SR.sim.syn_weights)
+    %
     % Note: Use of syn_* properties is deprecated. Use ConnectionMonitor or
     % ConnectionReader instead.
     %
-    % Version 2/28/2015
+    % Version 5/18/2015
     % Author: Michael Beyeler <mbeyeler@uci.edu>
     
     %% PROPERTIES
@@ -48,9 +57,9 @@ classdef SimulationReader < handle
     %% PUBLIC METHODS
     methods
         function obj = SimulationReader(simFile, loadSynapseInfo)
-            % SR = SimulationReader(simFile) creates a new instance of
-            % class SimulationReader, which can be used to read CARLsim
-            % simulation log files
+            % SR = SimulationReader(simFile, loadSynapseInfo) creates a
+            % new instance of class SimulationReader, which can be used
+            % to read CARLsim simulation log files.
             %
             % SIMFILE          - Path to simulation log file
             % LOADSYNAPSEINFO  - A flag indicating whether to read all
@@ -84,8 +93,8 @@ classdef SimulationReader < handle
             obj.fileVersionMajor = 0;
             obj.fileVersionMinor = 2;
 
-			% disable backtracing for warnings and errors
-			warning off backtrace
+            % disable backtracing for warnings and errors
+            warning off backtrace
         end
         
         function privOpenFile(obj, loadSynapseInfo)
@@ -111,7 +120,7 @@ classdef SimulationReader < handle
                     num2str(version) ' found'])
             end
             if feof(fid) ...
-					|| floor((version-obj.fileVersionMajor)*10.01)<obj.fileVersionMinor
+                    || floor((version-obj.fileVersionMajor)*10.01)<obj.fileVersionMinor
                 % check minor number: extract first digit after decimal point
                 % multiply 10.01 instead of 10 to avoid float rounding errors
                 error(['File version must be >= ' ...
@@ -146,7 +155,7 @@ classdef SimulationReader < handle
             % sim_with_homeostasis
             % sim_with_stp
             obj.sim = sim;
-			
+            
             
             %% READ GROUPS
             groups = struct('name',{},'startN',{},'endN',{},'sizeN',{},'grid3D',{});
@@ -168,7 +177,7 @@ classdef SimulationReader < handle
             %% READ SYNAPSES
             % reading synapse info is optional
             if loadSynapseInfo
-                weightData = cell(nrCells,1);
+                weightData = cell(sim.nNeurons,1);
                 nrSynTot = 0;
                 for i=1:sim.nNeurons
                     nrSyn = fread(fid,1,'int32');
@@ -176,9 +185,6 @@ classdef SimulationReader < handle
                     if nrSyn>0
                         weightData{i} = fread(fid,[18 nrSyn],'uint8=>uint8');
                     end
-                end
-                if ischar(filename)
-                    fclose(fid);
                 end
                 
                 alldata = cat(2,weightData{:});
