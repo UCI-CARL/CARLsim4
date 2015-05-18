@@ -16,6 +16,8 @@ Build 3.1.0
   + Added testsuite clean/distclean targets to main clean/distclean.
   + Added link to CARLsim mailing list to User Guide.
   * Fixed SimulationReader for loadSynapseInfo (OAT).
+  * Fixed error reporting in CpuSNN::loadSimulation_internal.
+  * Improved test CORE.saveLoadSimulation.
 
 2015-05-16     Michael Beyeler <mbeyeler@uci.edu>
   + Added generic ConnectionMonitor update time interval.
@@ -66,6 +68,11 @@ Release 3.0
 Build 3.0.2
 ---------------------
 
+2015-05-18     Michael Beyeler <mbeyeler@uci.edu>
+  * Fixed SimulationReader (OAT) for when loadSynapseInfo is set to true.
+  * Fixed error reporting in CpuSNN::loadSimulation_internal.
+  * Improved test CORE.saveLoadSimulation.
+
 2015-05-15     Michael Beyeler <mbeyeler@uci.edu>
   * Fixed no-recording issue with ConnectionMonitor::setUpdateTimeIntervalSec
     interval -1. Now the binary file will not contain any snapshots if interval
@@ -76,7 +83,6 @@ Build 3.0.2
 ---------------------
 Build 3.0.1
 ---------------------
-
 2015-05-11     Kristofor D. Carlson <kdcarlso@uci.edu>
   * Added more accurate plasticity documentation on homeostasis.
   * Allowed third argument of CARLsim::setHomeoBaseFiringRate that specifies
