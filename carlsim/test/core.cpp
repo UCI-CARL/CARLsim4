@@ -502,66 +502,61 @@ TEST(CORE, saveLoadSimulation) {
 	std::vector<std::vector<float> > weightsSave;
 	std::vector<std::vector<float> > weightsLoad;
 
-	for (int mode = 0; mode <= 0; mode++) {
-		for (int coba = 0; coba <= 0; coba++) {
-			for (int loadSim = 0; loadSim <= 1; loadSim++) {
-				// Run and save simulation ------------------------------ //
-				CARLsim* sim = new CARLsim("CORE.saveSimulation", mode?GPU_MODE:CPU_MODE, SILENT, 0, 42);
-				FILE* simFid = NULL;
+	for (int mode=0; mode<=1; mode++) {
+		for (int coba=0; coba<=1; coba++) {
+			for (int isPlastic=0; isPlastic<=1; isPlastic++) {
+				for (int loadSim=0; loadSim<=1; loadSim++) {
+					// Run and save simulation ------------------------------ //
+					CARLsim* sim = new CARLsim("CORE.saveSimulation", mode?GPU_MODE:CPU_MODE, SILENT, 0, 42);
+					FILE* simFid = NULL;
 
-				gPost = sim->createGroup("pre-ex", 10, EXCITATORY_NEURON);
-				sim->setNeuronParameters(gPost, 0.02f, 0.2f, -65.0f, 8.0f);
-				gPre = sim->createSpikeGeneratorGroup("post-ex", 10, EXCITATORY_NEURON);
-				sim->setSpikeGenerator(gPre, &spkGenG0);
+					gPost = sim->createGroup("pre-ex", 10, EXCITATORY_NEURON);
+					sim->setNeuronParameters(gPost, 0.02f, 0.2f, -65.0f, 8.0f);
+					gPre = sim->createSpikeGeneratorGroup("post-ex", 10, EXCITATORY_NEURON);
+					sim->setSpikeGenerator(gPre, &spkGenG0);
 
-				if (coba) {
 					sim->connect(gPre, gPost, "full", RangeWeight(0.0, 8.0f/100, 20.0f/100), 1.0f, RangeDelay(1, 5),
-						RadiusRF(-1), SYN_PLASTIC);
+						RadiusRF(-1), isPlastic?SYN_PLASTIC:SYN_FIXED);
 					sim->setSTDP(gPost, true, STANDARD, alphaPlus/100, tauPlus, alphaMinus/100, tauMinus);
-					sim->setConductances(true);
-				} else {
-					sim->connect(gPre, gPost, "full", RangeWeight(0.0, 8.0f, 20.0f), 1.0f, RangeDelay(1, 5),
-						RadiusRF(-1), SYN_PLASTIC);
-					sim->setSTDP(gPost, true, STANDARD, alphaPlus, tauPlus, alphaMinus, tauMinus);
-					sim->setConductances(false);
-				}
+					sim->setConductances(coba>0);
 
-				if (loadSim) {
+					if (loadSim) {
 					// load previous simulation
-					simFid = fopen("results/sim.dat", "rb");
-					sim->loadSimulation(simFid);
-				}
+						simFid = fopen("results/sim.dat", "rb");
+						sim->loadSimulation(simFid);
+					}
 
-				sim->setupNetwork();
+					sim->setupNetwork();
 
-				if (!loadSim) {
-					// first run: save network at the end
-					cmSave = sim->setConnectionMonitor(gPre, gPost, "NULL");
-					sim->runNetwork(20, 0, false, false);
+					if (!loadSim) {
+						// first run: save network at the end
+						cmSave = sim->setConnectionMonitor(gPre, gPost, "NULL");
+						sim->runNetwork(20, 0, false, false);
 
-					weightsSave = cmSave->takeSnapshot();
-					sim->saveSimulation("results/sim.dat", true);
-				} else {
-					// second run: load simulation
-					cmLoad = sim->setConnectionMonitor(gPre, gPost, "NULL");
-					sim->runNetwork(0, 2, false, false);
-					weightsLoad = cmLoad->takeSnapshot();
+						weightsSave = cmSave->takeSnapshot();
+						sim->saveSimulation("results/sim.dat", true);
+					} else {
+						// second run: load simulation
+						cmLoad = sim->setConnectionMonitor(gPre, gPost, "NULL");
+						sim->runNetwork(0, 2, false, false);
+						weightsLoad = cmLoad->takeSnapshot();
 
-					// test weights we saved are the same as weights we loaded
-					for (int i = 0; i < sim->getGroupNumNeurons(gPre); i++) {
-						for (int j = 0; j < sim->getGroupNumNeurons(gPost); j++) {
-							if (coba) {
-								EXPECT_FLOAT_EQ(weightsSave[i][j], weightsLoad[i][j]);
-							} else {
-								EXPECT_FLOAT_EQ(weightsSave[i][j], weightsLoad[i][j]);
+						// test weights we saved are the same as weights we loaded
+						for (int i = 0; i < sim->getGroupNumNeurons(gPre); i++) {
+							for (int j = 0; j < sim->getGroupNumNeurons(gPost); j++) {
+								if (coba) {
+									EXPECT_FLOAT_EQ(weightsSave[i][j], weightsLoad[i][j]);
+								} else {
+									EXPECT_FLOAT_EQ(weightsSave[i][j], weightsLoad[i][j]);
+								}
 							}
 						}
 					}
-				}
 
-				// close sim.dat
-				if (simFid != NULL) fclose(simFid);
-				delete sim;
+					// close sim.dat
+					if (simFid != NULL) fclose(simFid);
+					delete sim;
+				}
 			}
 		}
 	}
