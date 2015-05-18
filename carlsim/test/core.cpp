@@ -515,9 +515,9 @@ TEST(CORE, saveLoadSimulation) {
 					gPre = sim->createSpikeGeneratorGroup("post-ex", 10, EXCITATORY_NEURON);
 					sim->setSpikeGenerator(gPre, &spkGenG0);
 
-					sim->connect(gPre, gPost, "full", RangeWeight(0.0, 8.0f/100, 20.0f/100), 1.0f, RangeDelay(1, 5),
+					sim->connect(gPre, gPost, "full", RangeWeight(0.0, 20.0f/100, 20.0f/100), 1.0f, RangeDelay(1, 5),
 						RadiusRF(-1), isPlastic?SYN_PLASTIC:SYN_FIXED);
-					sim->setSTDP(gPost, true, STANDARD, alphaPlus/100, tauPlus, alphaMinus/100, tauMinus);
+					sim->setSTDP(gPost, isPlastic, STANDARD, alphaPlus/100, tauPlus, alphaMinus/100, tauMinus);
 					sim->setConductances(coba>0);
 
 					if (loadSim) {
