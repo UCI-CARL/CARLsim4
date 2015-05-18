@@ -577,11 +577,15 @@ public:
 
 private:
 	// +++++ CPU MODE +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
-	void CpuSNNinit();	//!< all unsafe operations of constructor
+	
+	//! all unsafe operations of constructor
+	void CpuSNNinit();
 
-	void buildNetworkInit(unsigned int nNeur, unsigned int nPostSyn, unsigned int nPreSyn, unsigned int maxDelay);
+	//! allocates and initializes all core datastructures
+	void buildNetworkInit();
 
-	int  addSpikeToTable(int id, int g); //!< add the entry that the current neuron has spiked
+	//! add the entry that the current neuron has spiked
+	int  addSpikeToTable(int id, int g);
 
 	void buildGroup(int groupId);
 	void buildNetwork();
@@ -589,6 +593,7 @@ private:
 
 	/*!
 	 * \brief reset Spike Counters to zero if simTime % recordDur == 0
+	 *
 	 * A Spike Counter keeps track of all spikes per neuron for a certain time period (recordDur)
 	 * after this period of time, the spike buffers need to be reset
 	 * this function checks simTime vs. recordDur and resets the spike buffers if necessary
@@ -628,7 +633,9 @@ private:
 
 	void globalStateUpdate();
 
-	void initSynapticWeights(); //!< initialize all the synaptic weights to appropriate values. total size of the synaptic connection is 'length'
+	//! initialize all the synaptic weights to appropriate values.
+	//! total size of the synaptic connection is 'length'
+	void initSynapticWeights();
 
 	//! performs various verification checkups before building the network
 	void verifyNetwork();
@@ -739,7 +746,9 @@ private:
 
 	// +++++ GPU MODE +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 	// TODO: consider moving to snn_gpu.h
-	void CpuSNNinit_GPU();	//!< initializes params needed in snn_gpu.cu (gets called in CpuSNN constructor)
+	
+	//! initializes params needed in snn_gpu.cu (gets called in CpuSNN constructor)
+	void CpuSNNinit_GPU();
 
 	void allocateGroupId();
 	void allocateNetworkParameters();
@@ -802,6 +811,7 @@ private:
 
 	/*!
 	 * \brief return the number of spikes per neuron for a certain group in GPU mode
+	 *
 	 * A Spike Counter keeps track of all spikes per neuron for a certain time period (recordDur)
 	 * at any point in time.
 	 * \param grpId	the group for which you want the spikes
@@ -819,6 +829,7 @@ private:
 
 	/*!
 	 * \brief reset spike counter to zero in GPU mode
+	 *
 	 * Buffers get reset to zero automatically after recordDur. However, you can reset the buffer manually at any
 	 * point in time through calling the public equivalent. This one gets called in
 	 * CpuSNN::resetSpikeCounter if we're running GPU mode.
@@ -906,8 +917,8 @@ private:
 
 	// spiking neural network related information, including neurons, synapses and network parameters
 	int	        	numN;				//!< number of neurons in the spiking neural network
-	int				numPostSynapses;	//!< maximum number of post-synaptic connections in groups
-	int				numPreSynapses;		//!< maximum number of pre-syanptic connections in groups
+	int				numPostSynapses_;	//!< maximum number of post-synaptic connections in groups
+	int				numPreSynapses_;		//!< maximum number of pre-syanptic connections in groups
 	int				maxDelay_;					//!< maximum axonal delay in groups
 	int				numNReg;			//!< number of regular (spking) neurons
 	int				numNExcReg;			//!< number of regular excitatory neurons

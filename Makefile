@@ -47,9 +47,11 @@ default:
 default: $(default_targets)
 
 clean:
+	cd carlsim/test;make clean;cd ../..
 	$(RM) $(objects)
 
 distclean:
+	cd carlsim/test;make distclean;cd ../..
 	$(RM) $(objects) $(libraries) $(output_files) doc/html
 
 devtest:

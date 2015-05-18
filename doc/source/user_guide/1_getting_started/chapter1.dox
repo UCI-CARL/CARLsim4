@@ -25,6 +25,7 @@ The rest of the chapter assumes you have successfully installed CUDA on appropri
 \subsection ch1s1s1_os 1.1.1 Supported Operating Systems
 CARLsim has been tested on the following platforms:
 - Windows 7
+- Windows 8
 - Ubuntu 12.04
 - Ubuntu 12.10
 - Ubuntu 13.04
