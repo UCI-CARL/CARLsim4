@@ -3565,72 +3565,149 @@ unsigned int CpuSNN::poissonSpike(unsigned int currTime, float frate, int refrac
 
 // \FIXME: this guy is a mess
 int CpuSNN::loadSimulation_internal(bool onlyPlastic) {
-	long file_position = ftell(loadSimFID); // so that we can restore the file position later...
+	// TSC: so that we can restore the file position later...
+	// MB: not sure why though...
+	long file_position = ftell(loadSimFID);
+	
 	int tmpInt;
 	float tmpFloat;
 
+	bool readErr = false; // keep track of reading errors
+	size_t result;
+
+
+	// ------- read header ----------------
+
+	fseek(loadSimFID, 0, SEEK_SET);
+
 	// read file signature
-	if (!fread(&tmpInt, sizeof(int), 1, loadSimFID)) return -11;
-	if (tmpInt != 294338571) return -10;
-	//KERNEL_DEBUG("Signature:%d", tmpInt);
-
-	// read version number
-	if (!fread(&tmpFloat, sizeof(float), 1, loadSimFID)) return -11;
-	if (tmpFloat > 1.0) return -10;
-	//KERNEL_DEBUG("Version number:%f", tmpFloat);
-
-	// read simulation and execution time
-	if (!fread(&tmpFloat, sizeof(float), 1, loadSimFID)) return -11;
-	//KERNEL_DEBUG("Past simluation time:%f", tmpFloat);
-
-	if (!fread(&tmpFloat, sizeof(float), 1, loadSimFID)) return -11;
-	//KERNEL_DEBUG("Past execution time:%f", tmpFloat);
-
-	// read number of neurons
-	if (!fread(&tmpInt,sizeof(int), 1, loadSimFID)) return -11;
-	int nrCells = tmpInt;
-	if (nrCells != numN) return -5;
-	//KERNEL_DEBUG("Number of neurons:%d %d", tmpInt, numN);
-
-	// read total synapse counts
-	if (!fread(&tmpInt,sizeof(int), 1, loadSimFID)) return -11;
-	//KERNEL_DEBUG("Number of pre-synapses:%d", tmpInt);
-
-	if (!fread(&tmpInt,sizeof(int), 1, loadSimFID)) return -11;
-	//KERNEL_DEBUG("Number of post-synapses:%d", tmpInt);
-
-	// read number of groups
-	if (!fread(&tmpInt,sizeof(int), 1, loadSimFID)) return -11;
-	if (numGrp != tmpInt) return -1;
-	//KERNEL_DEBUG("Number of groups:%d %d", tmpInt, numGrp);
-
-	char name[100];
-	int startN, endN;
-
-	for (int g=0;g<numGrp;g++) {
-		if (!fread(&startN,sizeof(int),1,loadSimFID)) return -11;
-		if (!fread(&endN,sizeof(int),1,loadSimFID)) return -11;
-		if (startN != grp_Info[g].StartN) return -2;
-		if (endN != grp_Info[g].EndN) return -3;
-
-		if (!fread(&tmpInt,sizeof(int), 1, loadSimFID)) return -11;
-		//KERNEL_DEBUG("Size X:%d", tmpInt);
-		if (!fread(&tmpInt,sizeof(int), 1, loadSimFID)) return -11;
-		//KERNEL_DEBUG("Size Y:%d", tmpInt);
-		if (!fread(&tmpInt,sizeof(int), 1, loadSimFID)) return -11;
-		//KERNEL_DEBUG("Size Z:%d", tmpInt);
-
-		if (!fread(name,1,100,loadSimFID)) return -11;
-		if (strcmp(name,grp_Info2[g].Name.c_str()) != 0) return -4;
-		//KERNEL_DEBUG("Name(%s)[%d,%d]", name, startN, endN);
+	result = fread(&tmpInt, sizeof(int), 1, loadSimFID);
+	readErr |= (result!=1);
+	if (tmpInt != 294338571) {
+		KERNEL_ERROR("loadSimulation: Unknown file signature. This does not seem to be a "
+			"simulation file created with CARLsim::saveSimulation.");
+		exitSimulation(-1);
 	}
 
-	for (unsigned int i=0;i<nrCells;i++) {
-		unsigned int nrSynapses = 0;
-		if (!fread(&nrSynapses, sizeof(int), 1, loadSimFID)) return -11;
-		//KERNEL_DEBUG("Number of synapses:%d", nrSynapses);
+	// read file version number
+	result = fread(&tmpFloat, sizeof(float), 1, loadSimFID);
+	readErr |= (result!=1);
+	if (tmpFloat > 0.2f) {
+		KERNEL_ERROR("loadSimulation: Unsupported version number (%f)",tmpFloat);
+		exitSimulation(-1);
+	}
 
-		for (int j=0;j<nrSynapses;j++) {
+	// read simulation time
+	result = fread(&tmpFloat, sizeof(float), 1, loadSimFID);
+	readErr |= (result!=1);
+
+	// read execution time
+	result = fread(&tmpFloat, sizeof(float), 1, loadSimFID);
+	readErr |= (result!=1);
+
+	// read number of neurons
+	result = fread(&tmpInt, sizeof(int), 1, loadSimFID);
+	readErr |= (result!=1);
+	if (tmpInt != numN) {
+		KERNEL_ERROR("loadSimulation: Number of neurons in file (%d) and simulation (%d) don't match.",
+			tmpInt, numN);
+		exitSimulation(-1);
+	}
+
+	// read number of pre-synapses
+	result = fread(&tmpInt, sizeof(int), 1, loadSimFID);
+	readErr |= (result!=1);
+	if (preSynCnt != tmpInt) {
+		KERNEL_ERROR("loadSimulation: preSynCnt in file (%d) and simulation (%d) don't match.",
+			tmpInt, preSynCnt);
+		exitSimulation(-1);
+	}
+
+	// read number of post-synapses
+	result = fread(&tmpInt, sizeof(int), 1, loadSimFID);
+	readErr |= (result!=1);
+	if (postSynCnt != tmpInt) {
+		KERNEL_ERROR("loadSimulation: postSynCnt in file (%d) and simulation (%d) don't match.",
+			tmpInt, postSynCnt);
+		exitSimulation(-1);
+	}
+
+	// read number of groups
+	result = fread(&tmpInt, sizeof(int), 1, loadSimFID);
+	readErr |= (result!=1);
+	if (tmpInt != numGrp) {
+		KERNEL_ERROR("loadSimulation: Number of groups in file (%d) and simulation (%d) don't match.",
+			tmpInt, numGrp);
+		exitSimulation(-1);
+	}
+
+	// throw reading error instead of proceeding
+	if (readErr) {
+		fprintf(stderr,"loadSimulation: Error while reading file header");
+		exitSimulation(-1);
+	}
+
+
+	// ------- read group information ----------------
+
+	for (int g=0; g<numGrp; g++) {
+		// read StartN
+		result = fread(&tmpInt, sizeof(int), 1, loadSimFID);
+		readErr |= (result!=1);
+		if (tmpInt != grp_Info[g].StartN) {
+			KERNEL_ERROR("loadSimulation: StartN in file (%d) and grpInfo (%d) for group %d don't match.",
+				tmpInt, grp_Info[g].StartN, g);
+			exitSimulation(-1);
+		}
+
+		// read EndN
+		result = fread(&tmpInt, sizeof(int), 1, loadSimFID);
+		readErr |= (result!=1);
+		if (tmpInt != grp_Info[g].EndN) {
+			KERNEL_ERROR("loadSimulation: EndN in file (%d) and grpInfo (%d) for group %d don't match.",
+				tmpInt, grp_Info[g].EndN, g);
+			exitSimulation(-1);
+		}
+
+		// read SizeX
+		result = fread(&tmpInt, sizeof(int), 1, loadSimFID);
+		readErr |= (result!=1);
+
+		// read SizeY
+		result = fread(&tmpInt, sizeof(int), 1, loadSimFID);
+		readErr |= (result!=1);
+
+		// read SizeZ
+		result = fread(&tmpInt, sizeof(int), 1, loadSimFID);
+		readErr |= (result!=1);
+
+		// read group name
+		char name[100];
+		result = fread(name, sizeof(char), 100, loadSimFID);
+		readErr |= (result!=100);
+		if (strcmp(name,grp_Info2[g].Name.c_str()) != 0) {
+			KERNEL_ERROR("loadSimulation: Group names in file (%s) and grpInfo (%s) don't match.", name,
+				grp_Info2[g].Name.c_str());
+			exitSimulation(-1);
+		}
+	}
+
+	if (readErr) {
+		KERNEL_ERROR("loadSimulation: Error while reading group info");
+		exitSimulation(-1);
+	}
+
+
+	// ------- read synapse information ----------------
+
+	for (unsigned int i=0; i<numN; i++) {
+		int nrSynapses = 0;
+
+		// read number of synapses
+		result = fread(&nrSynapses, sizeof(int), 1, loadSimFID);
+		readErr |= (result!=1);
+
+		for (int j=0; j<nrSynapses; j++) {
 			unsigned int nIDpre;
 			unsigned int nIDpost;
 			float weight, maxWeight;
@@ -3638,35 +3715,63 @@ int CpuSNN::loadSimulation_internal(bool onlyPlastic) {
 			uint8_t plastic;
 			short int connId;
 
-			if (!fread(&nIDpre,sizeof(int),1,loadSimFID)) return -11;
-			if (nIDpre != i) return -6;
-			//KERNEL_DEBUG("nIDPre:%d", nIDpre);
-			if (!fread(&nIDpost,sizeof(int),1,loadSimFID)) return -11;
-			if (nIDpost >= nrCells) return -7;
-			//KERNEL_DEBUG("nIDpost:%d", nIDpost);
-			if (!fread(&weight,sizeof(float),1,loadSimFID)) return -11;
-			//KERNEL_DEBUG("weight:%f", weight);
+			// read nIDpre
+			result = fread(&nIDpre, sizeof(int), 1, loadSimFID);
+			readErr |= (result!=1);
+			if (nIDpre != i) {
+				KERNEL_ERROR("loadSimulation: nIDpre in file (%u) and simulation (%u) don't match.", nIDpre, i);
+				exitSimulation(-1);
+			}
+
+			// read nIDpost
+			result = fread(&nIDpost, sizeof(int), 1, loadSimFID);
+			readErr |= (result!=1);
+			if (nIDpost >= numN) {
+				KERNEL_ERROR("loadSimulation: nIDpre in file (%u) is larger than in simulation (%u).", nIDpost, numN);
+				exitSimulation(-1);
+			}
+
+			// read weight
+			result = fread(&weight, sizeof(float), 1, loadSimFID);
+			readErr |= (result!=1);
 
 			short int gIDpre = grpIds[nIDpre];
 			if (IS_INHIBITORY_TYPE(grp_Info[gIDpre].Type) && (weight>0)
 					|| !IS_INHIBITORY_TYPE(grp_Info[gIDpre].Type) && (weight<0)) {
-				return -8;
+				KERNEL_ERROR("loadSimulation: Sign of weight value (%s) does not match neuron type (%s)",
+					((weight>=0.0f)?"plus":"minus"), 
+					(IS_INHIBITORY_TYPE(grp_Info[gIDpre].Type)?"inhibitory":"excitatory"));
+				exitSimulation(-1);
 			}
 
-			if (!fread(&maxWeight,sizeof(float),1,loadSimFID)) return -11;
-			//KERNEL_DEBUG("maxWeight:%f", maxWeight);
+			// read max weight
+			result = fread(&maxWeight, sizeof(float), 1, loadSimFID);
+			readErr |= (result!=1);
 			if (IS_INHIBITORY_TYPE(grp_Info[gIDpre].Type) && (maxWeight>=0)
 					|| !IS_INHIBITORY_TYPE(grp_Info[gIDpre].Type) && (maxWeight<=0)) {
-				return -8;
+				KERNEL_ERROR("loadSimulation: Sign of maxWeight value (%s) does not match neuron type (%s)",
+					((maxWeight>=0.0f)?"plus":"minus"), 
+					(IS_INHIBITORY_TYPE(grp_Info[gIDpre].Type)?"inhibitory":"excitatory"));
+				exitSimulation(-1);
 			}
 
-			if (!fread(&delay,sizeof(uint8_t),1,loadSimFID)) return -11;
-			//KERNEL_DEBUG("delay:%d", delay);
-			if (delay > MAX_SynapticDelay) return -9;
-			if (!fread(&plastic,sizeof(uint8_t),1,loadSimFID)) return -11;
-			//KERNEL_DEBUG("plastic:%d", plastic);
-			if (!fread(&connId,sizeof(short int),1,loadSimFID)) return -11;
-			//KERNEL_DEBUG("connId:%d", connId);
+			// read delay
+			result = fread(&delay, sizeof(uint8_t), 1, loadSimFID);
+			readErr |= (result!=1);
+			if (delay > MAX_SynapticDelay) {
+				KERNEL_ERROR("loadSimulation: delay in file (%d) is larger than MAX_SynapticDelay (%d)",
+					(int)delay, (int)MAX_SynapticDelay);
+				exitSimulation(-1);
+			}
+
+			assert(!isnan(weight));
+			// read plastic/fixed
+			result = fread(&plastic, sizeof(uint8_t), 1, loadSimFID);
+			readErr |= (result!=1);
+
+			// read connection ID
+			result = fread(&connId, sizeof(short int), 1, loadSimFID);
+			readErr |= (result!=1);
 
 			if ((plastic && onlyPlastic) || (!plastic && !onlyPlastic)) {
 				int gIDpost = grpIds[nIDpost];
