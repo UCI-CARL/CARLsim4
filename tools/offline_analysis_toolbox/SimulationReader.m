@@ -168,7 +168,7 @@ classdef SimulationReader < handle
             %% READ SYNAPSES
             % reading synapse info is optional
             if loadSynapseInfo
-                weightData = cell(nrCells,1);
+                weightData = cell(sim.nNeurons,1);
                 nrSynTot = 0;
                 for i=1:sim.nNeurons
                     nrSyn = fread(fid,1,'int32');
@@ -176,11 +176,8 @@ classdef SimulationReader < handle
                     if nrSyn>0
                         weightData{i} = fread(fid,[18 nrSyn],'uint8=>uint8');
                     end
-                end
-                if ischar(filename)
-                    fclose(fid);
-                end
-                
+				end
+				
                 alldata = cat(2,weightData{:});
                 clear weightData;
                 
