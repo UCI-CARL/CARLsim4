@@ -1907,8 +1907,8 @@ void CpuSNN::CpuSNNinit() {
 	numNExcReg = 0;
 	numNInhReg = 0;
 
-	numPostSynapses = 0;
-	numPreSynapses = 0;
+	numPostSynapses_ = 0;
+	numPreSynapses_ = 0;
 	maxDelay_ = 0;
 
 	// conductance info struct for simulation
@@ -2017,14 +2017,9 @@ void CpuSNN::CpuSNNinit() {
 //! allocate space for voltage, recovery, Izh_a, Izh_b, Izh_c, Izh_d, current, gAMPA, gNMDA, gGABAa, gGABAb
 //! lastSpikeTime, curSpike, nSpikeCnt, intrinsicWeight, stpu, stpx, Npre, Npre_plastic, Npost, cumulativePost, cumulativePre
 //! postSynapticIds, tmp_SynapticDely, postDelayInfo, wt, maxSynWt, preSynapticIds, timeTableD2, timeTableD1
-void CpuSNN::buildNetworkInit(unsigned int nNeur, unsigned int nPostSyn, unsigned int nPreSyn, unsigned int maxDelay) {
-	numN = nNeur;
-	numPostSynapses = nPostSyn;
-	maxDelay_ = maxDelay;
-	numPreSynapses = nPreSyn;
-
+void CpuSNN::buildNetworkInit() {
 	// \FIXME: need to figure out STP buffer for delays > 1
-	if (sim_with_stp && maxDelay>1) {
+	if (sim_with_stp && maxDelay_>1) {
 		KERNEL_ERROR("STP with delays > 1 ms is currently not supported.");
 		exitSimulation(1);
 	}
@@ -2129,12 +2124,12 @@ void CpuSNN::buildNetworkInit(unsigned int nNeur, unsigned int nPostSyn, unsigne
 		postSynCnt += (grp_Info[g].SizeN * grp_Info[g].numPostSynapses);
 		preSynCnt  += (grp_Info[g].SizeN * grp_Info[g].numPreSynapses);
 	}
-	assert(postSynCnt/numN <= numPostSynapses); // divide by numN to prevent INT overflow
+	assert(postSynCnt/numN <= numPostSynapses_); // divide by numN to prevent INT overflow
 	postSynapticIds		= new post_info_t[postSynCnt+100];
 	tmp_SynapticDelay	= new uint8_t[postSynCnt+100];	//!< Temporary array to store the delays of each connection
 	postDelayInfo		= new delay_info_t[numN*(maxDelay_+1)];	//!< Possible delay values are 0....maxDelay_ (inclusive of maxDelay_)
 	cpuSnnSz.networkInfoSize += ((sizeof(post_info_t)+sizeof(uint8_t))*postSynCnt+100)+(sizeof(delay_info_t)*numN*(maxDelay_+1));
-	assert(preSynCnt/numN <= numPreSynapses); // divide by numN to prevent INT overflow
+	assert(preSynCnt/numN <= numPreSynapses_); // divide by numN to prevent INT overflow
 
 	wt  			= new float[preSynCnt+100];
 	maxSynWt     	= new float[preSynCnt+100];
@@ -2254,8 +2249,8 @@ void CpuSNN::buildNetwork() {
 	int curD = updateSpikeTables();
 
 	assert((curN > 0) && (curN == numNExcReg + numNInhReg + numNPois));
-	assert(numPostSynapses > 0);
-	assert(numPreSynapses > 0);
+//	assert(numPostSynapses > 0);
+//	assert(numPreSynapses > 0);
 
 	// display the evaluated network and delay length....
 	KERNEL_INFO("\n");
@@ -2263,10 +2258,10 @@ void CpuSNN::buildNetwork() {
 	KERNEL_INFO("numN = %d, numPostSynapses = %d, numPreSynapses = %d, maxDelay = %d", curN, numPostSynapses,
 					numPreSynapses, curD);
 
-	assert(curD != 0);
-	assert(numPostSynapses != 0);
-	assert(curN != 0);
-	assert(numPreSynapses != 0);
+//	assert(curD != 0);
+//	assert(numPostSynapses != 0);
+//	assert(curN != 0);
+//	assert(numPreSynapses != 0);
 
 	if (numPostSynapses > MAX_nPostSynapses) {
 		for (int g=0;g<numGrp;g++) {
@@ -2291,7 +2286,7 @@ void CpuSNN::buildNetwork() {
 	//! allocate space for voltage, recovery, Izh_a, Izh_b, Izh_c, Izh_d, current, gAMPA, gNMDA, gGABAa, gGABAb
 	//! lastSpikeTime, curSpike, nSpikeCnt, intrinsicWeight, stpu, stpx, Npre, Npre_plastic, Npost, cumulativePost, cumulativePre
 	//! postSynapticIds, tmp_SynapticDely, postDelayInfo, wt, maxSynWt, preSynapticIds, timeTableD2, timeTableD1, grpDA, grp5HT, grpACh, grpNE
-	buildNetworkInit(curN, numPostSynapses, numPreSynapses, curD);
+	buildNetworkInit();
 
 	// we build network in the order...
 	/////    !!!!!!! IMPORTANT : NEURON ORGANIZATION/ARRANGEMENT MAP !!!!!!!!!!
@@ -4343,7 +4338,7 @@ inline void CpuSNN::setConnection(int srcGrp,  int destGrp,  unsigned int src, u
 
 	assert(Npost[src] >= 0);
 	assert(Npre[dest] >= 0);
-	assert((src * numPostSynapses + p) / numN < numPostSynapses); // divide by numN to prevent INT overflow
+	assert((src * numPostSynapses_ + p) / numN < numPostSynapses_); // divide by numN to prevent INT overflow
 
 	unsigned int post_pos = cumulativePost[src] + Npost[src];
 	unsigned int pre_pos  = cumulativePre[dest] + Npre[dest];

@@ -1599,10 +1599,10 @@ void CpuSNN::copyConnections(network_ptr_t* dest, int kind, bool allocateMem) {
 		assert(dest->memType == CPU_MODE);
 	}
 
-	net_Info.I_setLength = ceil(((numPreSynapses) / 32.0f));
+	net_Info.I_setLength = ceil(((numPreSynapses_) / 32.0f));
 	if(allocateMem)
 		cudaMallocPitch((void**)&dest->I_set, &net_Info.I_setPitch, sizeof(int) * numNReg, net_Info.I_setLength);
-	assert(net_Info.I_setPitch > 0);
+	assert(net_Info.I_setPitch > 0 || numPreSynapses_==0);
 	CUDA_CHECK_ERRORS(cudaMemset(dest->I_set, 0, net_Info.I_setPitch * net_Info.I_setLength));
 
 	// connection synaptic lengths and cumulative lengths...
@@ -2122,7 +2122,7 @@ void CpuSNN::copyWeightState (network_ptr_t* dest, network_ptr_t* src,  cudaMemc
 			cumPos_syn 	= dest->cumulativePre[id];
 		}
 
-		assert (cumPos_syn < preSynCnt);
+		assert (cumPos_syn < preSynCnt || preSynCnt==0);
 		assert (length_wt <= preSynCnt);
 
 	    //MDR FIXME, allocateMem option is VERY wrong
@@ -2148,7 +2148,6 @@ void CpuSNN::copyState(network_ptr_t* dest, bool allocateMem) {
 	checkAndSetGPUDevice();
 
 	assert(numN != 0);
-	assert(preSynCnt !=0);
 
 	if (dest->allocated && allocateMem) {
 		KERNEL_ERROR("GPU Memory already allocated..");
@@ -2631,7 +2630,7 @@ void CpuSNN::copyFiringInfo_GPU()
 
 void CpuSNN::allocateNetworkParameters() {
 	net_Info.numN  = numN;
-	net_Info.numPostSynapses  = numPostSynapses;
+	net_Info.numPostSynapses  = numPostSynapses_;
 	net_Info.maxDelay  = maxDelay_;
 	net_Info.numNExcReg = numNExcReg;
 	net_Info.numNInhReg	= numNInhReg;

@@ -579,7 +579,7 @@ private:
 	// +++++ CPU MODE +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 	void CpuSNNinit();	//!< all unsafe operations of constructor
 
-	void buildNetworkInit(unsigned int nNeur, unsigned int nPostSyn, unsigned int nPreSyn, unsigned int maxDelay);
+	void buildNetworkInit();
 
 	int  addSpikeToTable(int id, int g); //!< add the entry that the current neuron has spiked
 
@@ -906,8 +906,8 @@ private:
 
 	// spiking neural network related information, including neurons, synapses and network parameters
 	int	        	numN;				//!< number of neurons in the spiking neural network
-	int				numPostSynapses;	//!< maximum number of post-synaptic connections in groups
-	int				numPreSynapses;		//!< maximum number of pre-syanptic connections in groups
+	int				numPostSynapses_;	//!< maximum number of post-synaptic connections in groups
+	int				numPreSynapses_;		//!< maximum number of pre-syanptic connections in groups
 	int				maxDelay_;					//!< maximum axonal delay in groups
 	int				numNReg;			//!< number of regular (spking) neurons
 	int				numNExcReg;			//!< number of regular excitatory neurons
