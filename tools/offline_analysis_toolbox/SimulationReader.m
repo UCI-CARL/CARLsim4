@@ -13,10 +13,19 @@ classdef SimulationReader < handle
     % >> SR.sim.simTimeSec % print number of simulated seconds
     % >> SR.sim.exeTimeSec % print execution time in seconds
     %
+    % If the simulation file was created with saveSynapseInfo set to true
+    % in CARLsim::saveSimulation, then the file will also contain all
+    % synapse information (weights, delays, maxWeights, etc.).
+    %
+    % To read all the synapse information in MATLAB, use an optional input
+    % argument loadSynapseInfo:
+    % >> SR = SimulationReader('results/sim_random'dat',true);
+    % >> hist(SR.sim.syn_weights)
+    %
     % Note: Use of syn_* properties is deprecated. Use ConnectionMonitor or
     % ConnectionReader instead.
     %
-    % Version 2/28/2015
+    % Version 5/18/2015
     % Author: Michael Beyeler <mbeyeler@uci.edu>
     
     %% PROPERTIES
@@ -48,9 +57,9 @@ classdef SimulationReader < handle
     %% PUBLIC METHODS
     methods
         function obj = SimulationReader(simFile, loadSynapseInfo)
-            % SR = SimulationReader(simFile) creates a new instance of
-            % class SimulationReader, which can be used to read CARLsim
-            % simulation log files
+            % SR = SimulationReader(simFile, loadSynapseInfo) creates a
+            % new instance of class SimulationReader, which can be used
+            % to read CARLsim simulation log files.
             %
             % SIMFILE          - Path to simulation log file
             % LOADSYNAPSEINFO  - A flag indicating whether to read all
