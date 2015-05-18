@@ -15,6 +15,7 @@ Build 3.1.0
   + Added support for networks with zero connections.
   + Added testsuite clean/distclean targets to main clean/distclean.
   + Added link to CARLsim mailing list to User Guide.
+  * Fixed SimulationReader for loadSynapseInfo (OAT).
 
 2015-05-16     Michael Beyeler <mbeyeler@uci.edu>
   + Added generic ConnectionMonitor update time interval.
