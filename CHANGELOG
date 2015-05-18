@@ -15,18 +15,9 @@ Build 3.1.0
   + Added support for networks with zero connections.
   + Added testsuite clean/distclean targets to main clean/distclean.
   + Added link to CARLsim mailing list to User Guide.
-  * Fixed SimulationReader for loadSynapseInfo (OAT).
-  * Fixed error reporting in CpuSNN::loadSimulation_internal.
-  * Improved test CORE.saveLoadSimulation.
 
 2015-05-16     Michael Beyeler <mbeyeler@uci.edu>
   + Added generic ConnectionMonitor update time interval.
-
-2015-05-15     Michael Beyeler <mbeyeler@uci.edu>
-  * Fixed no-recording issue with ConnectionMonitor::setUpdateTimeIntervalSec
-    interval -1. Now the binary file will not contain any snapshots if interval
-    is -1.
-  * Updated and improved ConnMon test case.
 
 2015-05-14     Michael Beyeler <mbeyeler@uci.edu>
   + Added ConnectionMonitor methods: getMinWeight, getMaxWeight,
@@ -52,8 +43,6 @@ Build 3.1.0
   + Added CARLsim::startTesting and CARLsim::stopTesting to disable weight
     updates during a testing phase.
   + Added CORE.startStopTestingPhase test.
-  + Added CUDA7 support.
-  * Fixed compile flag generation for CUDA version and compute capability.
   * Fixed compiler warnings for SpikeMon test case.
 
 2015-05-02     Michael Beyeler <mbeyeler@uci.edu>
@@ -83,6 +72,7 @@ Build 3.0.2
 ---------------------
 Build 3.0.1
 ---------------------
+
 2015-05-11     Kristofor D. Carlson <kdcarlso@uci.edu>
   * Added more accurate plasticity documentation on homeostasis.
   * Allowed third argument of CARLsim::setHomeoBaseFiringRate that specifies
