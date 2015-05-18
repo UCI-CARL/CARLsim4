@@ -13,6 +13,8 @@ Build 3.0.2
 
 2015-05-18     Michael Beyeler <mbeyeler@uci.edu>
   * Fixed SimulationReader (OAT) for when loadSynapseInfo is set to true.
+  * Fixed error reporting in CpuSNN::loadSimulation_internal.
+  * Improved test CORE.saveLoadSimulation.
 
 2015-05-15     Michael Beyeler <mbeyeler@uci.edu>
   * Fixed no-recording issue with ConnectionMonitor::setUpdateTimeIntervalSec
