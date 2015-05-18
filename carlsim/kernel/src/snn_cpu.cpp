@@ -644,6 +644,9 @@ int CpuSNN::runNetwork(int _nsec, int _nmsec, bool printRunSummary, bool copySta
 	// setupNetwork() must have already been called
 	assert(doneReorganization);
 
+	// don't bother printing if we are in SILENT
+	printRunSummary = (loggerMode_==SILENT) ? false : printRunSummary;
+
 	// first-time run: inform the user the simulation is running now
 	if (simTime==0 && printRunSummary) {
 		KERNEL_INFO("");
@@ -666,6 +669,14 @@ int CpuSNN::runNetwork(int _nsec, int _nmsec, bool printRunSummary, bool copySta
 	simTimeRunStart = simTime;
 	simTimeRunStop  = simTime+runDurationMs;
 	assert(simTimeRunStop>=simTimeRunStart); // check for arithmetic underflow
+
+	// ConnectionMonitor is a special case: we might want the first snapshot at t=0 in the binary
+	// but updateTime() is false for simTime==0.
+	// And we cannot put this code in ConnectionMonitorCore::init, because then the user would have no
+	// way to call ConnectionMonitor::setUpdateTimeIntervalSec before...
+	if (simTime==0 && numConnectionMonitor) {
+		updateConnectionMonitor();
+	}
 
 	// set the Poisson generation time slice to be at the run duration up to PROPOGATED_BUFFER_SIZE ms.
 	// \TODO: should it be PROPAGATED_BUFFER_SIZE-1 or PROPAGATED_BUFFER_SIZE ?
@@ -3916,74 +3927,11 @@ void CpuSNN::resetNeuron(unsigned int neurId, int grpId) {
 }
 
 void CpuSNN::resetPointers(bool deallocate) {
-	if (voltage!=NULL && deallocate) delete[] voltage;
-	if (recovery!=NULL && deallocate) delete[] recovery;
-	if (current!=NULL && deallocate) delete[] current;
-	if (extCurrent!=NULL && deallocate) delete[] extCurrent;
-	voltage=NULL; recovery=NULL; current=NULL; extCurrent=NULL;
+	// order is important! monitor objects might point to CpuSNN or CARLsim,
+	// need to deallocate them first
 
-	if (Izh_a!=NULL && deallocate) delete[] Izh_a;
-	if (Izh_b!=NULL && deallocate) delete[] Izh_b;
-	if (Izh_c!=NULL && deallocate) delete[] Izh_c;
-	if (Izh_d!=NULL && deallocate) delete[] Izh_d;
-	Izh_a=NULL; Izh_b=NULL; Izh_c=NULL; Izh_d=NULL;
 
-	if (Npre!=NULL && deallocate) delete[] Npre;
-	if (Npre_plastic!=NULL && deallocate) delete[] Npre_plastic;
-	if (Npost!=NULL && deallocate) delete[] Npost;
-	Npre=NULL; Npre_plastic=NULL; Npost=NULL;
-
-	if (cumulativePre!=NULL && deallocate) delete[] cumulativePre;
-	if (cumulativePost!=NULL && deallocate) delete[] cumulativePost;
-	cumulativePre=NULL; cumulativePost=NULL;
-
-	if (gAMPA!=NULL && deallocate) delete[] gAMPA;
-	if (gNMDA!=NULL && deallocate) delete[] gNMDA;
-	if (gNMDA_r!=NULL && deallocate) delete[] gNMDA_r;
-	if (gNMDA_d!=NULL && deallocate) delete[] gNMDA_d;
-	if (gGABAa!=NULL && deallocate) delete[] gGABAa;
-	if (gGABAb!=NULL && deallocate) delete[] gGABAb;
-	if (gGABAb_r!=NULL && deallocate) delete[] gGABAb_r;
-	if (gGABAb_d!=NULL && deallocate) delete[] gGABAb_d;
-	gAMPA=NULL; gNMDA=NULL; gNMDA_r=NULL; gNMDA_d=NULL; gGABAa=NULL; gGABAb=NULL; gGABAb_r=NULL; gGABAb_d=NULL;
-
-	if (stpu!=NULL && deallocate) delete[] stpu;
-	if (stpx!=NULL && deallocate) delete[] stpx;
-	stpu=NULL; stpx=NULL;
-
-	if (avgFiring!=NULL && deallocate) delete[] avgFiring;
-	if (baseFiring!=NULL && deallocate) delete[] baseFiring;
-	avgFiring=NULL; baseFiring=NULL;
-
-	if (lastSpikeTime!=NULL && deallocate) delete[] lastSpikeTime;
-	if (synSpikeTime !=NULL && deallocate) delete[] synSpikeTime;
-	if (curSpike!=NULL && deallocate) delete[] curSpike;
-	if (nSpikeCnt!=NULL && deallocate) delete[] nSpikeCnt;
-	lastSpikeTime=NULL; synSpikeTime=NULL; curSpike=NULL; nSpikeCnt=NULL;
-
-	if (postDelayInfo!=NULL && deallocate) delete[] postDelayInfo;
-	if (preSynapticIds!=NULL && deallocate) delete[] preSynapticIds;
-	if (postSynapticIds!=NULL && deallocate) delete[] postSynapticIds;
-	postDelayInfo=NULL; preSynapticIds=NULL; postSynapticIds=NULL;
-
-	if (wt!=NULL && deallocate) delete[] wt;
-	if (maxSynWt!=NULL && deallocate) delete[] maxSynWt;
-	if (wtChange !=NULL && deallocate) delete[] wtChange;
-	wt=NULL; maxSynWt=NULL; wtChange=NULL;
-
-	if (mulSynFast!=NULL && deallocate) delete[] mulSynFast;
-	if (mulSynSlow!=NULL && deallocate) delete[] mulSynSlow;
-	if (cumConnIdPre!=NULL && deallocate) delete[] cumConnIdPre;
-	mulSynFast=NULL; mulSynSlow=NULL; cumConnIdPre=NULL;
-
-	if (grpIds!=NULL && deallocate) delete[] grpIds;
-	grpIds=NULL;
-
-	if (firingTableD2!=NULL && deallocate) delete[] firingTableD2;
-	if (firingTableD1!=NULL && deallocate) delete[] firingTableD1;
-	if (timeTableD2!=NULL && deallocate) delete[] timeTableD2;
-	if (timeTableD1!=NULL && deallocate) delete[] timeTableD1;
-	firingTableD2=NULL; firingTableD1=NULL; timeTableD2=NULL; timeTableD1=NULL;
+	// -------------- DEALLOCATE MONITOR OBJECTS ---------------------- //
 
 	// delete all SpikeMonitor objects
 	// don't kill SpikeMonitorCore objects, they will get killed automatically
@@ -4057,6 +4005,78 @@ void CpuSNN::resetPointers(bool deallocate) {
 		memset(grpAChBuffer, 0, sizeof(float*) * MAX_GRP_PER_SNN);
 		memset(grpNEBuffer, 0, sizeof(float*) * MAX_GRP_PER_SNN);
 	}
+
+
+	// -------------- DEALLOCATE CORE OBJECTS ---------------------- //
+
+	if (voltage!=NULL && deallocate) delete[] voltage;
+	if (recovery!=NULL && deallocate) delete[] recovery;
+	if (current!=NULL && deallocate) delete[] current;
+	if (extCurrent!=NULL && deallocate) delete[] extCurrent;
+	voltage=NULL; recovery=NULL; current=NULL; extCurrent=NULL;
+
+	if (Izh_a!=NULL && deallocate) delete[] Izh_a;
+	if (Izh_b!=NULL && deallocate) delete[] Izh_b;
+	if (Izh_c!=NULL && deallocate) delete[] Izh_c;
+	if (Izh_d!=NULL && deallocate) delete[] Izh_d;
+	Izh_a=NULL; Izh_b=NULL; Izh_c=NULL; Izh_d=NULL;
+
+	if (Npre!=NULL && deallocate) delete[] Npre;
+	if (Npre_plastic!=NULL && deallocate) delete[] Npre_plastic;
+	if (Npost!=NULL && deallocate) delete[] Npost;
+	Npre=NULL; Npre_plastic=NULL; Npost=NULL;
+
+	if (cumulativePre!=NULL && deallocate) delete[] cumulativePre;
+	if (cumulativePost!=NULL && deallocate) delete[] cumulativePost;
+	cumulativePre=NULL; cumulativePost=NULL;
+
+	if (gAMPA!=NULL && deallocate) delete[] gAMPA;
+	if (gNMDA!=NULL && deallocate) delete[] gNMDA;
+	if (gNMDA_r!=NULL && deallocate) delete[] gNMDA_r;
+	if (gNMDA_d!=NULL && deallocate) delete[] gNMDA_d;
+	if (gGABAa!=NULL && deallocate) delete[] gGABAa;
+	if (gGABAb!=NULL && deallocate) delete[] gGABAb;
+	if (gGABAb_r!=NULL && deallocate) delete[] gGABAb_r;
+	if (gGABAb_d!=NULL && deallocate) delete[] gGABAb_d;
+	gAMPA=NULL; gNMDA=NULL; gNMDA_r=NULL; gNMDA_d=NULL; gGABAa=NULL; gGABAb=NULL; gGABAb_r=NULL; gGABAb_d=NULL;
+
+	if (stpu!=NULL && deallocate) delete[] stpu;
+	if (stpx!=NULL && deallocate) delete[] stpx;
+	stpu=NULL; stpx=NULL;
+
+	if (avgFiring!=NULL && deallocate) delete[] avgFiring;
+	if (baseFiring!=NULL && deallocate) delete[] baseFiring;
+	avgFiring=NULL; baseFiring=NULL;
+
+	if (lastSpikeTime!=NULL && deallocate) delete[] lastSpikeTime;
+	if (synSpikeTime !=NULL && deallocate) delete[] synSpikeTime;
+	if (curSpike!=NULL && deallocate) delete[] curSpike;
+	if (nSpikeCnt!=NULL && deallocate) delete[] nSpikeCnt;
+	lastSpikeTime=NULL; synSpikeTime=NULL; curSpike=NULL; nSpikeCnt=NULL;
+
+	if (postDelayInfo!=NULL && deallocate) delete[] postDelayInfo;
+	if (preSynapticIds!=NULL && deallocate) delete[] preSynapticIds;
+	if (postSynapticIds!=NULL && deallocate) delete[] postSynapticIds;
+	postDelayInfo=NULL; preSynapticIds=NULL; postSynapticIds=NULL;
+
+	if (wt!=NULL && deallocate) delete[] wt;
+	if (maxSynWt!=NULL && deallocate) delete[] maxSynWt;
+	if (wtChange !=NULL && deallocate) delete[] wtChange;
+	wt=NULL; maxSynWt=NULL; wtChange=NULL;
+
+	if (mulSynFast!=NULL && deallocate) delete[] mulSynFast;
+	if (mulSynSlow!=NULL && deallocate) delete[] mulSynSlow;
+	if (cumConnIdPre!=NULL && deallocate) delete[] cumConnIdPre;
+	mulSynFast=NULL; mulSynSlow=NULL; cumConnIdPre=NULL;
+
+	if (grpIds!=NULL && deallocate) delete[] grpIds;
+	grpIds=NULL;
+
+	if (firingTableD2!=NULL && deallocate) delete[] firingTableD2;
+	if (firingTableD1!=NULL && deallocate) delete[] firingTableD1;
+	if (timeTableD2!=NULL && deallocate) delete[] timeTableD2;
+	if (timeTableD1!=NULL && deallocate) delete[] timeTableD1;
+	firingTableD2=NULL; firingTableD1=NULL; timeTableD2=NULL; timeTableD1=NULL;
 
 	// clear poisson generator
 	if (gpuPoissonRand != NULL) delete gpuPoissonRand;
@@ -4357,16 +4377,42 @@ void CpuSNN::swapConnections(int nid, int oldPos, int newPos) {
 	*preId = SET_CONN_ID( pre_nid, newPos, pre_gid);
 }
 
-// this function is usually called every second, but it can also be called via ConnectionMonitorCore::takeSnapshot
-void CpuSNN::updateConnectionMonitor(int connId) {
+void CpuSNN::updateConnectionMonitor(short int connId) {
 	grpConnectInfo_t* connInfo = connectBegin;
 
 	// loop over all connections and find the ones with Connection Monitors
 	while (connInfo) {
 		if (connInfo->ConnectionMonitorId>=0 && (connId==ALL || connInfo->connId==connId)) {
 			int monId = connInfo->ConnectionMonitorId;
+			if (connMonCoreList[monId]->getUpdateTimeIntervalSec() != -1) {
+				// this ConnectionMonitor wants periodic recording
+				connMonCoreList[monId]->writeConnectFileSnapshot(simTime, getWeightMatrix2D(connInfo->connId));
+			}
+		}
+		connInfo = connInfo->next;
+	}
+}
+
+
+std::vector< std::vector<float> > CpuSNN::getWeightMatrix2D(short int connId) {
+	assert(connId!=ALL);
+	grpConnectInfo_t* connInfo = connectBegin;
+	std::vector< std::vector<float> > wtConnId;
+
+	// loop over all connections and find the ones with Connection Monitors
+	while (connInfo) {
+		if (connInfo->connId==connId) {
 			int grpIdPre = connInfo->grpSrc;
 			int grpIdPost = connInfo->grpDest;
+
+			// init weight matrix with right dimensions
+			for (int i=0; i<grp_Info[grpIdPre].SizeN; i++) {
+				std::vector<float> wtSlice;
+				for (int j=0; j<grp_Info[grpIdPost].SizeN; j++) {
+					wtSlice.push_back(NAN);
+				}
+				wtConnId.push_back(wtSlice);
+			}
 
 			// copy the weights for a given post-group from device
 			// \TODO: check if the weights for this grpIdPost have already been copied
@@ -4375,27 +4421,24 @@ void CpuSNN::updateConnectionMonitor(int connId) {
 				copyWeightState(&cpuNetPtrs, &cpu_gpuNetPtrs, cudaMemcpyDeviceToHost, false, grpIdPost);
 			}
 
-			// update time stamp of connection monitor
-			if (connMonCoreList[monId]->updateTime(simTime)) {
-				// only update weights if we haven't done so already for this timestamp
-				for (int postId=grp_Info[grpIdPost].StartN; postId<=grp_Info[grpIdPost].EndN; postId++) {
-					unsigned int pos_ij = cumulativePre[postId];
-					for (int i=0; i<Npre[postId]; i++, pos_ij++) {
-						// skip synapses that belong to a different connection ID
-						if (cumConnIdPre[pos_ij]!=connInfo->connId)
-							continue;
+			for (int postId=grp_Info[grpIdPost].StartN; postId<=grp_Info[grpIdPost].EndN; postId++) {
+				unsigned int pos_ij = cumulativePre[postId];
+				for (int i=0; i<Npre[postId]; i++, pos_ij++) {
+					// skip synapses that belong to a different connection ID
+					if (cumConnIdPre[pos_ij]!=connInfo->connId)
+						continue;
 
-						// find pre-neuron ID and update ConnectionMonitor container
-						int preId = GET_CONN_NEURON_ID(preSynapticIds[pos_ij]);
-						connMonCoreList[monId]->updateWeight(preId - getGroupStartNeuronId(grpIdPre),
-							postId - getGroupStartNeuronId(grpIdPost), wt[pos_ij]);
-					}
+					// find pre-neuron ID and update ConnectionMonitor container
+					int preId = GET_CONN_NEURON_ID(preSynapticIds[pos_ij]);
+					wtConnId[preId-getGroupStartNeuronId(grpIdPre)][postId-getGroupStartNeuronId(grpIdPost)] = wt[pos_ij];
 				}
 			}
+			break;
 		}
-
 		connInfo = connInfo->next;
 	}
+
+	return wtConnId;
 }
 
 void CpuSNN::updateGroupMonitor(int grpId) {

@@ -70,6 +70,8 @@ class ConnectionMonitorCore; // forward declaration of implementation
  *
  * If at least two snapshots have been taken, the method ConnectionMonitor::calcWeightChanges will calculate the weight
  * changes since the last snapshot.
+ * To make sure you are comparing the right snapshots, compare the timestamps returend by
+ * ConnectionMonitor::getTimeMsCurrentSnapshot and ConnectionMonitor::getTimeMsLastSnapshot.
  *
  * Weights can be visualized in the Matlab Offline Analysis Toolbox (OAT) using the ConnectionMonitor utility.
  * The OAT offers ways to plot 2D weight matrices, as well as receptive fields and response fields.
