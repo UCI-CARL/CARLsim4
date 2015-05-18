@@ -2117,7 +2117,7 @@ void CpuSNN::buildNetworkInit() {
 
 	postSynCnt = 0;
 	preSynCnt  = 0;
-	for(int g = 0; g < numGrp; g++) {
+	for(int g=0; g<numGrp; g++) {
 		// check for INT overflow: postSynCnt is O(numNeurons*numSynapses), must be able to fit within u int limit
 		assert(postSynCnt < UINT_MAX - (grp_Info[g].SizeN * grp_Info[g].numPostSynapses));
 		assert(preSynCnt < UINT_MAX - (grp_Info[g].SizeN * grp_Info[g].numPreSynapses));
@@ -2237,49 +2237,40 @@ void CpuSNN::buildGroup(int grpId) {
  */
 void CpuSNN::buildNetwork() {
 	grpConnectInfo_t* newInfo = connectBegin;
-//	int curN = 0, curD = 0, numPostSynapses = 0, numPreSynapses = 0;
-
-	int curN = numN;
 
 	// find the maximum values for number of pre- and post-synaptic neurons
-	int numPostSynapses = 0, numPreSynapses = 0;
-	findMaxNumSynapses(&numPostSynapses, &numPreSynapses);
+	findMaxNumSynapses(&numPostSynapses_, &numPreSynapses_);
 
-	// update (initialize) maxSpikesD1, maxSpikesD2 and allocate sapce for firingTableD1 and firingTableD2
-	int curD = updateSpikeTables();
+	// update (initialize) maxSpikesD1, maxSpikesD2 and allocate space for firingTableD1 and firingTableD2
+	maxDelay_ = updateSpikeTables();
 
-	assert((curN > 0) && (curN == numNExcReg + numNInhReg + numNPois));
-//	assert(numPostSynapses > 0);
-//	assert(numPreSynapses > 0);
+	// make sure number of neurons and max delay are within bounds
+	assert(maxDelay_ <= MAX_SynapticDelay); 
+	assert(numN <= 1000000);
+	assert((numN > 0) && (numN == numNExcReg + numNInhReg + numNPois));
 
 	// display the evaluated network and delay length....
 	KERNEL_INFO("\n");
 	KERNEL_INFO("***************************** Setting up Network **********************************");
-	KERNEL_INFO("numN = %d, numPostSynapses = %d, numPreSynapses = %d, maxDelay = %d", curN, numPostSynapses,
-					numPreSynapses, curD);
+	KERNEL_INFO("numN = %d, numPostSynapses = %d, numPreSynapses = %d, maxDelay = %d", numN, numPostSynapses_,
+					numPreSynapses_, maxDelay_);
 
-//	assert(curD != 0);
-//	assert(numPostSynapses != 0);
-//	assert(curN != 0);
-//	assert(numPreSynapses != 0);
-
-	if (numPostSynapses > MAX_nPostSynapses) {
+	if (numPostSynapses_ > MAX_nPostSynapses) {
 		for (int g=0;g<numGrp;g++) {
 			if (grp_Info[g].numPostSynapses>MAX_nPostSynapses)
 				KERNEL_ERROR("Grp: %s(%d) has too many output synapses (%d), max %d.",grp_Info2[g].Name.c_str(),g,
 							grp_Info[g].numPostSynapses,MAX_nPostSynapses);
 		}
-		assert(numPostSynapses <= MAX_nPostSynapses);
+		assert(numPostSynapses_ <= MAX_nPostSynapses);
 	}
-	if (numPreSynapses > MAX_nPreSynapses) {
+	if (numPreSynapses_ > MAX_nPreSynapses) {
 		for (int g=0;g<numGrp;g++) {
 			if (grp_Info[g].numPreSynapses>MAX_nPreSynapses)
 				KERNEL_ERROR("Grp: %s(%d) has too many input synapses (%d), max %d.",grp_Info2[g].Name.c_str(),g,
  							grp_Info[g].numPreSynapses,MAX_nPreSynapses);
 		}
-		assert(numPreSynapses <= MAX_nPreSynapses);
+		assert(numPreSynapses_ <= MAX_nPreSynapses);
 	}
-	assert(curD <= MAX_SynapticDelay); assert(curN <= 1000000);
 
 	// initialize all the parameters....
 	//! update (initialize) numN, numPostSynapses, numPreSynapses, maxDelay_, postSynCnt, preSynCnt
