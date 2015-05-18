@@ -16,6 +16,9 @@ Richert et al., 2011).
 The functionality of the simulator has been greatly expanded by the addition of a number of features
 that enable and simplify the creation, tuning, and simulation of complex networks with spatial structure.
 
+All software is available on the
+<a href="http://www.socsci.uci.edu/~jkrichma/CARLsim/index.html" target="_blank"><b>CARL Website</b></a>.
+
 New features include:
 - improved platform compatibility (Linux, Mac OS X, and Windows)
 - real-time and offline data analysis tools (see \ref ch7_monitoring and \ref ch9_matlab_oat)
@@ -47,7 +50,9 @@ For a more example-driven approach, please refer to our Tutorials (e.g., \ref tu
 \section main_ref References
 
 For the most up-to-date information, software packages, and announcements, please refer to the
-<a href="http://www.socsci.uci.edu/~jkrichma/CARLsim/index.html" target="_blank"><b>CARL Website</b></a>.
+<a href="http://www.socsci.uci.edu/~jkrichma/CARLsim/index.html" target="_blank"><b>CARL Website</b></a> or
+join the <a href="https://department-lists.uci.edu/mailman/listinfo/ics-carlsim" target="_blank">CARLsim Release
+Info</a> mailing list.
 
 The simulator—along with its various releases, computational studies, and sample code—has previously been published 
 in the following studies:
