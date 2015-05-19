@@ -157,6 +157,9 @@ TEST(Interface, biasWeightsDeath) {
 	int g1=sim->createGroup("excit", Grid3D(10,10,1), EXCITATORY_NEURON);
 	sim->setNeuronParameters(g1, 0.02f, 0.2f,-65.0f,8.0f);
 	int c1=sim->connect(g1, g1, "full", RangeWeight(0.01), 1.0f, RangeDelay(1));
+
+	EXPECT_DEATH({sim->biasWeights(c1, 0.1, false);},""); // CONFIG state
+
 	sim->setConductances(true);
 	sim->setupNetwork();
 	sim->runNetwork(0,20);
@@ -172,6 +175,9 @@ TEST(Interface, scaleWeightsDeath) {
 	int g1=sim->createGroup("excit", Grid3D(10,10,1), EXCITATORY_NEURON);
 	sim->setNeuronParameters(g1, 0.02f, 0.2f,-65.0f,8.0f);
 	int c1=sim->connect(g1, g1, "full", RangeWeight(0.01), 1.0f, RangeDelay(1));
+
+	EXPECT_DEATH({sim->scaleWeights(c1, 0.1, false);},""); // CONFIG state
+
 	sim->setConductances(true);
 	sim->setupNetwork();
 	sim->runNetwork(0,20);
@@ -188,6 +194,9 @@ TEST(Interface, setWeightDeath) {
 	int g1=sim->createGroup("excit", Grid3D(10,10,1), EXCITATORY_NEURON);
 	sim->setNeuronParameters(g1, 0.02f, 0.2f,-65.0f,8.0f);
 	int c1=sim->connect(g1, g1, "full", RangeWeight(0.01), 1.0f, RangeDelay(1));
+
+	EXPECT_DEATH({sim->setWeight(c1, 0, 0, 0.1, false);},""); // CONFIG state
+
 	sim->setConductances(true);
 	sim->setupNetwork();
 	sim->runNetwork(0,20);
