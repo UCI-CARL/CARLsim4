@@ -1138,28 +1138,29 @@ void CpuSNN::setWeight(short int connId, int neurIdPre, int neurIdPost, float we
 	assert(neurIdPre>=0  && neurIdPre<getGroupNumNeurons(connInfo->grpSrc));
 	assert(neurIdPost>=0 && neurIdPost<getGroupNumNeurons(connInfo->grpDest));
 
+	float maxWt = fabs(connInfo->maxWt);
+	float minWt = 0.0f;
+
 	// inform user of acton taken if weight is out of bounds
-//	bool needToPrintDebug = (weight>connInfo->maxWt || weight<connInfo->minWt);
-	bool needToPrintDebug = (weight>connInfo->maxWt || weight<0.0f);
+	bool needToPrintDebug = (weight>maxWt || weight<minWt);
 
 	if (updateWeightRange) {
 		// if this flag is set, we need to update minWt,maxWt accordingly
 		// will be saving new maxSynWt and copying to GPU below
 //		connInfo->minWt = fmin(connInfo->minWt, weight);
-		connInfo->maxWt = fmax(connInfo->maxWt, weight);
+		maxWt = fmax(maxWt, weight);
 		if (needToPrintDebug) {
 			KERNEL_DEBUG("setWeight(%d,%d,%d,%f,%s): updated weight ranges to [%f,%f]", connId, neurIdPre, neurIdPost,
-				weight, (updateWeightRange?"true":"false"), 0.0f, connInfo->maxWt);
+				weight, (updateWeightRange?"true":"false"), minWt, maxWt);
 		}
 	} else {
 		// constrain weight to boundary values
 		// compared to above, we swap minWt/maxWt logic
-		weight = fmin(weight, connInfo->maxWt);
-//		weight = fmax(weight, connInfo->minWt);
-		weight = fmax(weight, 0.0f);
+		weight = fmin(weight, maxWt);
+		weight = fmax(weight, minWt);
 		if (needToPrintDebug) {
 			KERNEL_DEBUG("setWeight(%d,%d,%d,%f,%s): constrained weight %f to [%f,%f]", connId, neurIdPre, neurIdPost,
-				weight, (updateWeightRange?"true":"false"), weight, 0.0f, connInfo->maxWt);
+				weight, (updateWeightRange?"true":"false"), weight, minWt, maxWt);
 		}
 	}
 
@@ -1176,12 +1177,12 @@ void CpuSNN::setWeight(short int connId, int neurIdPre, int neurIdPost, float we
 		if (GET_CONN_NEURON_ID((*preId))==neurIdPreReal) {
 			assert(cumConnIdPre[pos_ij]==connId); // make sure we've got the right connection ID
 
-			wt[pos_ij] = weight;
-			maxSynWt[pos_ij] = connInfo->maxWt; // it's easier to just update, even if it hasn't changed
+			wt[pos_ij] = isExcitatoryGroup(connInfo->grpSrc) ? weight : -1.0*weight;
+			maxSynWt[pos_ij] = isExcitatoryGroup(connInfo->grpSrc) ? maxWt : -1.0*maxWt;
 
 			if (simMode_==GPU_MODE) {
 				// need to update datastructures on GPU
-				CUDA_CHECK_ERRORS( cudaMemcpy(&(cpu_gpuNetPtrs.wt[pos_ij]), &weight, sizeof(float), cudaMemcpyHostToDevice));
+				CUDA_CHECK_ERRORS( cudaMemcpy(&(cpu_gpuNetPtrs.wt[pos_ij]), &(wt[pos_ij]), sizeof(float), cudaMemcpyHostToDevice));
 				if (cpu_gpuNetPtrs.maxSynWt!=NULL) {
 					// only copy maxSynWt if datastructure actually exists on the GPU
 					// (that logic should be done elsewhere though)

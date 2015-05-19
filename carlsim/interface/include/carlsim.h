@@ -758,7 +758,7 @@ public:
 	 * If the flag is set to false, then the specified weight value will be corrected to lie on the boundary (either
 	 * minWt or maxWt).
 	 *
-	 * \STATE ::RUN_STATE
+	 * \STATE ::SETUP_STATE, ::RUN_STATE
 	 * \param[in] connId            the connection ID to manipulate
 	 * \param[in] bias              the bias value to add to every synapse
 	 * \param[in] updateWeightRange a flag specifying what to do when the specified weight+bias lies outside the range
@@ -822,7 +822,7 @@ public:
 	 * If the flag is set to false, then the specified weight value will be corrected to lie on the boundary (either
 	 * minWt or maxWt).
 	 *
-	 * \STATE ::RUN_STATE
+	 * \STATE ::SETUP_STATE, ::RUN_STATE
 	 * \param[in] connId            the connection ID to manipulate
 	 * \param[in] scale             the scaling factor to apply to every synapse (cannot be negative)
 	 * \param[in] updateWeightRange a flag specifying what to do when the specified weight*scale lies outside the range
@@ -1063,7 +1063,7 @@ public:
 	 * updated accordingly if the flag updateWeightRange is set to true. If the flag is set to false, then the
 	 * specified weight value will be corrected to lie on the boundary (either minWt or maxWt).
 	 *
-	 * \STATE ::RUN_STATE
+	 * \STATE ::SETUP_STATE, ::RUN_STATE
 	 * \param[in] connId            the connection ID to manipulate
 	 * \param[in] neurIdPre         pre-synaptic neuron ID (zero-indexed)
 	 * \param[in] neurIdPost        post-synaptic neuron ID (zero-indexed)
