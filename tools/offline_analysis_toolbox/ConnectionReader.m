@@ -13,7 +13,7 @@ classdef ConnectionReader < handle
     % >> hist(allWeights(end,:))
     % >> % etc.
     %
-    % Version 2/28/2014
+    % Version 5/21/2015
     % Author: Michael Beyeler <mbeyeler@uci.edu>
     
     %% PROPERTIES
@@ -223,8 +223,8 @@ classdef ConnectionReader < handle
             % sets class properties appropriately.
             obj.unsetError()
             
-            % try to open connect file
-            obj.fileId = fopen(obj.fileStr,'r');
+            % try to open connect file, use little-endian
+            obj.fileId = fopen(obj.fileStr, 'r', 'l');
             if obj.fileId==-1
                 obj.throwError(['Could not open file "' obj.fileStr ...
                     '" with read permission'])
@@ -233,9 +233,19 @@ classdef ConnectionReader < handle
             
             % read signature
             sign = fread(obj.fileId, 1, 'int32');
-            if feof(obj.fileId) || sign~=obj.fileSignature
-                obj.throwError(['Unknown file type: ' num2str(sign)]);
-                return
+            if feof(obj.fileId)
+                obj.throwError('File is empty.');
+            else
+                if sign~=obj.fileSignature
+                    % try big-endian instead
+                    fclose(obj.fileId);
+                    obj.fileId = fopen(obj.fileStr, 'r', 'b');
+                    sign = fread(obj.fileId, 1, 'int32');
+                    if sign~=obj.fileSignature
+                        obj.throwError(['Unknown file type: ' num2str(sign)]);
+                        return
+                    end
+                end
             end
             
             % read version number

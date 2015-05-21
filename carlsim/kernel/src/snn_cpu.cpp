@@ -2077,9 +2077,11 @@ void CpuSNN::buildNetworkInit(unsigned int nNeur, unsigned int nPostSyn, unsigne
 		baseFiring = new float[numN];
 	}
 
+	#ifdef NEURON_NOISE
 	intrinsicWeight  = new float[numN];
 	memset(intrinsicWeight,0,sizeof(float)*numN);
 	cpuSnnSz.neuronInfoSize += (sizeof(int)*numN*2+sizeof(bool)*numN);
+	#endif
 
 	// STP can be applied to spike generators, too -> numN
 	if (sim_with_stp) {
@@ -3329,10 +3331,10 @@ void  CpuSNN::globalStateUpdate() {
 								   );
 
 					#ifdef NEURON_NOISE
-						double noiseI = -intrinsicWeight[i]*log(drand48());
-						if (isnan(noiseI) || isinf(noiseI))
-							noiseI = 0;
-						tmp_I += noiseI;
+					double noiseI = -intrinsicWeight[i]*log(drand48());
+					if (isnan(noiseI) || isinf(noiseI))
+						noiseI = 0;
+					tmp_I += noiseI;
 					#endif
 
 					voltage[i] += ((0.04*voltage[i]+5.0)*voltage[i]+140.0-recovery[i]+tmp_I+extCurrent[i])

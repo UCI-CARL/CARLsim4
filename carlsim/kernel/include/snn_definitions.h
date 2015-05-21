@@ -163,6 +163,8 @@ inline bool isInhibitoryNeuron (unsigned int& nid, unsigned int& numNInhPois, un
 #define MAX_GRPS_PER_BLOCK 		100
 #define MAX_BLOCKS         		120
 
+// add noise to neuron current
+// #define NEURON_NOISE
 
 #define CONN_SYN_NEURON_BITS	20                               //!< last 20 bit denote neuron id. 1 Million neuron possible
 #define CONN_SYN_BITS			(32 -  CONN_SYN_NEURON_BITS)	 //!< remaining 12 bits denote connection id

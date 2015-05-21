@@ -211,7 +211,7 @@ int gOut = sim.createGroup("output", 100, EXCITATORY_NEURON);
 Here, ::EXCITATORY_NEURON denotes that the neurons in the group are glutamatergic. Neurons with GABAergic
 synapses are supported with the ::INHIBITORY_NEURON keyword.
 
-To refer to this group in later method calls, the CARLsim::createGroup method returns a group ID, <tt>gEx</tt>.
+To refer to this group in later method calls, the CARLsim::createGroup method returns a group ID, <tt>gOut</tt>.
 
 Next, specify the Izhikevich parameters, in this case for class 1 excitability (regular spiking) neurons
 (see \ref ch3s1s1_izhikevich_neurons):
