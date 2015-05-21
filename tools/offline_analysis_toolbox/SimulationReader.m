@@ -25,7 +25,7 @@ classdef SimulationReader < handle
     % Note: Use of syn_* properties is deprecated. Use ConnectionMonitor or
     % ConnectionReader instead.
     %
-    % Version 5/18/2015
+    % Version 5/21/2015
     % Author: Michael Beyeler <mbeyeler@uci.edu>
     
     %% PROPERTIES
@@ -98,8 +98,8 @@ classdef SimulationReader < handle
         end
         
         function privOpenFile(obj, loadSynapseInfo)
-            % try to open sim file
-            fid = fopen(obj.fileStr,'r');
+            % try to open sim file, use little-endian
+            fid = fopen(obj.fileStr, 'r', 'l');
             if fid==-1
                 error(['Could not open file "' obj.fileStr ...
                     '" with read permission'])
@@ -107,8 +107,19 @@ classdef SimulationReader < handle
             
             % read signature
             sign = fread(fid, 1, 'int32');
-            if feof(fid) || sign~=obj.fileSignature
-                error(['Unknown file type (' num2str(sign) ')'])
+            if feof(fid)
+                error('File is empty')
+            else
+                if sign~=obj.fileSignature
+                    % try big-endian instead
+                    fclose(fid);
+                    fid = fopen(obj.fileStr, 'r', 'b');
+                    sign = fread(fid, 1, 'int32');
+                    if sign~=obj.fileSignature
+                        obj.throwError(['Unknown file type: ' num2str(sign)]);
+                        return
+                    end
+                end
             end
             
             % read version number

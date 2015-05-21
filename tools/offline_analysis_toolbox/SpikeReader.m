@@ -14,7 +14,7 @@ classdef SpikeReader < handle
     % >> stimLengthMs = SR.getSimDurMs();
     % >> % etc.
     %
-    % Version 10/5/2014
+    % Version 5/21/2015
     % Author: Michael Beyeler <mbeyeler@uci.edu>
     
     %% PROPERTIES
@@ -266,8 +266,8 @@ classdef SpikeReader < handle
             % sets class properties appropriately.
             obj.unsetError()
             
-            % try to open spike file
-            obj.fileId = fopen(obj.fileStr,'r');
+            % try to open spike file, try little-endian
+            obj.fileId = fopen(obj.fileStr, 'r', 'l');
             if obj.fileId==-1
                 obj.throwError(['Could not open file "' obj.fileStr ...
                     '" with read permission'])
@@ -276,11 +276,21 @@ classdef SpikeReader < handle
             
             % read signature
             sign = fread(obj.fileId, 1, 'int32');
-            if feof(obj.fileId) || sign~=obj.fileSignature
-                obj.throwError(['Unknown file type (' num2str(sign) ')']);
-                return
-            end
-            
+            if feof(obj.fileId)
+                obj.throwError('File is empty.');
+            else
+                if sign~=obj.fileSignature
+                    % try big-endian instead
+                    fclose(obj.fileId);
+                    obj.fileId = fopen(obj.fileStr, 'r', 'b');
+                    sign = fread(obj.fileId, 1, 'int32');
+                    if sign~=obj.fileSignature
+                        obj.throwError(['Unknown file type: ' num2str(sign)]);
+                        return
+                    end
+                end
+            end          
+
             % read version number
             version = fread(obj.fileId, 1, 'float32');
             if feof(obj.fileId) || floor(version) ~= obj.fileVersionMajor
