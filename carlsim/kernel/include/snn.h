@@ -899,7 +899,9 @@ private:
 	uint32_t    	*synSpikeTime;	//!< stores the spike time of each synapse
 	unsigned int		postSynCnt; //!< stores the total number of post-synaptic connections in the network
 	unsigned int		preSynCnt; //!< stores the total number of pre-synaptic connections in the network
+	#ifdef NEURON_NOISE
 	float			*intrinsicWeight;
+	#endif
 	//added to include homeostasis. -- KDC
 	float					*baseFiring;
 	float                 *avgFiring;
