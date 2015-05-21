@@ -757,7 +757,7 @@ void CARLsim::setLogsFpCustom(FILE* fpInf, FILE* fpErr, FILE* fpDeb, FILE* fpLog
 void CARLsim::biasWeights(short int connId, float bias, bool updateWeightRange) {
 	std::stringstream funcName;	funcName << "biasWeights(" << connId << "," << bias << "," << updateWeightRange << ")";
 	UserErrors::assertTrue(carlsimState_==SETUP_STATE || carlsimState_==RUN_STATE,
-		UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName.str(), funcName.str(), "RUN.");
+		UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName.str(), funcName.str(), "SETUP or RUN.");
 	UserErrors::assertTrue(connId>=0 && connId<getNumConnections(), UserErrors::MUST_BE_IN_RANGE, funcName.str(),
 		"connId", "[0,getNumConnections()]");
 
@@ -799,7 +799,7 @@ void CARLsim::resetSpikeCounter(int grpId) {
 void CARLsim::scaleWeights(short int connId, float scale, bool updateWeightRange) {
 	std::stringstream funcName;	funcName << "scaleWeights(" << connId << "," << scale << "," << updateWeightRange << ")";
 	UserErrors::assertTrue(carlsimState_==SETUP_STATE || carlsimState_==RUN_STATE,
-		UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName.str(), funcName.str(), "RUN.");
+		UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName.str(), funcName.str(), "SETUP or RUN.");
 	UserErrors::assertTrue(connId>=0 && connId<getNumConnections(), UserErrors::MUST_BE_IN_RANGE, funcName.str(),
 		"connId", "[0,getNumConnections()]");
 	UserErrors::assertTrue(scale>=0.0f, UserErrors::CANNOT_BE_NEGATIVE, funcName.str(), "Scaling factor");
@@ -980,7 +980,7 @@ void CARLsim::setWeight(short int connId, int neurIdPre, int neurIdPost, float w
 	std::stringstream funcName;	funcName << "setWeight(" << connId << "," << neurIdPre << "," << neurIdPost << ","
 		<< updateWeightRange << ")";
 	UserErrors::assertTrue(carlsimState_==SETUP_STATE || carlsimState_==RUN_STATE,
-		UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName.str(), funcName.str(), "RUN.");
+		UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName.str(), funcName.str(), "SETUP or RUN.");
 	UserErrors::assertTrue(connId>=0 && connId<getNumConnections(), UserErrors::MUST_BE_IN_RANGE,
 		funcName.str(), "connectionId", "[0,getNumConnections()]");
 	UserErrors::assertTrue(weight>=0.0f, UserErrors::CANNOT_BE_NEGATIVE, funcName.str(), "Weight value");

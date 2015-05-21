@@ -57,6 +57,11 @@ Release 3.0
 Build 3.0.2
 ---------------------
 
+2015-05-21     Michael Beyeler <mbeyeler@uci.edu>
+  * Fixed Endianness issue in OAT readers.
+  * Fixed NEURON_NOISE preprocessor guards.
+  * Fixed neuron group ID in User Guide Chapter 3.
+
 2015-05-19     Michael Beyeler <mbeyeler@uci.edu>
   * Fixed weight sign issue in CARLsim::setWeight.
   * Fixed CARLsim state of CARLsim::setWeight, CARLsim::biasWeights, and

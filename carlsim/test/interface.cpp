@@ -161,6 +161,9 @@ TEST(Interface, biasWeightsDeath) {
 	EXPECT_DEATH({sim->biasWeights(c1, 0.1, false);},""); // CONFIG state
 
 	sim->setConductances(true);
+
+	EXPECT_DEATH({sim->biasWeights(c1, 0.1, false);},""); // CONFIG state
+
 	sim->setupNetwork();
 	sim->runNetwork(0,20);
 
