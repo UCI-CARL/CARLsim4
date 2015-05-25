@@ -160,24 +160,6 @@ TEST(ConnMon, getters) {
 				EXPECT_EQ(CM->getNumWeightsChanged(),0);
 				EXPECT_FLOAT_EQ(CM->getPercentWeightsChanged(),0.0f);
 				EXPECT_EQ(CM->getTimeMsCurrentSnapshot(),0);
-
-				EXPECT_FLOAT_EQ(CM->getMinWeight(false),0.0f);
-				EXPECT_FLOAT_EQ(CM->getMinWeight(true),0.0f);
-				EXPECT_FLOAT_EQ(CM->getMaxWeight(false),(grpSize[gPre]-1)*wtScale);
-				EXPECT_FLOAT_EQ(CM->getMaxWeight(true),(grpSize[gPre]-1)*wtScale);
-
-				EXPECT_EQ(CM->getNumWeightsInRange(CM->getMinWeight(false),CM->getMaxWeight(false)), grpSize[gPre]*grpSize[gPost]);
-				EXPECT_EQ(CM->getNumWeightsInRange(0.0, 0.0), grpSize[gPost]);
-				EXPECT_EQ(CM->getNumWeightsInRange(wtScale, 2*wtScale), 2*grpSize[gPost]);
-				EXPECT_EQ(CM->getNumWeightsInRange(CM->getMaxWeight(false)*1.01, CM->getMaxWeight(false)*2), 0);
-				EXPECT_EQ(CM->getNumWeightsWithValue(0.0), grpSize[gPost]);
-				EXPECT_EQ(CM->getNumWeightsWithValue(wtScale), grpSize[gPost]);
-
-				EXPECT_FLOAT_EQ(CM->getPercentWeightsInRange(CM->getMinWeight(false),CM->getMaxWeight(false)), 100.0);
-				EXPECT_FLOAT_EQ(CM->getPercentWeightsInRange(0.0, 0.0), grpSize[gPost]*100.0/CM->getNumSynapses());
-				EXPECT_FLOAT_EQ(CM->getPercentWeightsInRange(wtScale, 2*wtScale), 2*grpSize[gPost]*100.0/CM->getNumSynapses());
-				EXPECT_FLOAT_EQ(CM->getPercentWeightsWithValue(0.0), grpSize[gPost]*100.0/CM->getNumSynapses());
-				EXPECT_FLOAT_EQ(CM->getPercentWeightsWithValue(wtScale), grpSize[gPost]*100.0/CM->getNumSynapses());
 			}
 		}
 		delete sim;
