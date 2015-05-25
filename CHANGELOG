@@ -11,12 +11,6 @@ Release 3.1
 Build 3.1.0
 ---------------------
 
-2015-05-25     Michael Beyeler <mbeyeler@uci.edu>
-  * Improved handling of "gaussian" connection when pre and post have different
-    Grid3D sizes.
-  * Improved ConnMon test case.
-  * Fixed sign of weights in user-defined connections.
-
 2015-05-18     Michael Beyeler <mbeyeler@uci.edu>
   + Added support for networks with zero connections.
   + Added testsuite clean/distclean targets to main clean/distclean.
@@ -62,6 +56,13 @@ Release 3.0
 ---------------------
 Build 3.0.2
 ---------------------
+
+2015-05-25     Michael Beyeler <mbeyeler@uci.edu>
+  * Improved handling of "gaussian" connection when pre and post have different
+    Grid3D sizes.
+  * Improved ConnMon test case.
+  * Fixed SpikeMon.clear test.
+  * Fixed sign of weights in user-defined connections.
 
 2015-05-24     Michael Beyeler <mbeyeler@uci.edu>
   * Fixed ConnectionMonitor (OAT) issue concerning large number of subplots.
