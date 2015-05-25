@@ -540,15 +540,15 @@ TEST(STDP, ISTDPPulseCurve) {
 				std::vector< std::vector<float> > weights = CM->takeSnapshot();
 				if (offset == -5 || offset == 5) { // I-STDP LTP
 					if (coba) {
-						EXPECT_NEAR(-maxInhWeight/100, weights[0][0], 0.005f);
+						EXPECT_NEAR(maxInhWeight/100, weights[0][0], 0.005f);
 					} else {
-						EXPECT_NEAR(-maxInhWeight, weights[0][0], 0.5f);
+						EXPECT_NEAR(maxInhWeight, weights[0][0], 0.5f);
 					}
 				} else { // I-STDP LTD
 					if (coba) {
-						EXPECT_NEAR(-minInhWeight/100, weights[0][0], 0.005f);
+						EXPECT_NEAR(minInhWeight/100, weights[0][0], 0.005f);
 					} else {
-						EXPECT_NEAR(-minInhWeight, weights[0][0], 0.5f);
+						EXPECT_NEAR(minInhWeight, weights[0][0], 0.5f);
 					}
 				}
 
