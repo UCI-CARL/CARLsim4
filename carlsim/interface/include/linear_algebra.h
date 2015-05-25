@@ -82,7 +82,7 @@ public:
     bool operator>=(const Point3D& p) const { return (CompareTo(p)>=0); }
 	
 	// coordinates
-	const double x, y, z;
+	double x, y, z;
 
 private:
 	bool Equals(const Point3D& p) const { return (x==p.x && y==p.y && z==p.z); }

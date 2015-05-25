@@ -2891,9 +2891,6 @@ void CpuSNN::allocateSNN_GPU() {
 		KERNEL_DEBUG("\tspikeGen: %s",grp_Info[i].spikeGen==NULL?"Is Null":"Is set");
 		KERNEL_DEBUG("\tspikeMonitorRT: %s",grp_Info[i].withSpikeCounter?"Is set":"Is Null");
 		if (grp_Info[i].withSpikeCounter) {
-			int bufPos = grp_Info[i].spkCntBufPos;
-			for (int j=0; j<grp_Info[i].SizeN; j++)
-				KERNEL_DEBUG("\t%d",spkCntBuf[bufPos][j]);
 			KERNEL_DEBUG("\trecordDur: %d",grp_Info[i].spkCntRecordDur);
 		} 	
 		KERNEL_DEBUG("\tspikeGen: %s",grp_Info[i].spikeGen==NULL?"Is Null":"Is set");
