@@ -2612,17 +2612,21 @@ void CpuSNN::connectFull(grpConnectInfo_t* info) {
 }
 
 void CpuSNN::connectGaussian(grpConnectInfo_t* info) {
-	int grpSrc = info->grpSrc;
-	int grpDest = info->grpDest;
-
 	// rebuild struct for easier handling
 	// adjust with sqrt(2) in order to make the Gaussian kernel depend on 2*sigma^2
 	RadiusRF radius(info->radX, info->radY, info->radZ);
 
-	for(int i = grp_Info[grpSrc].StartN; i <= grp_Info[grpSrc].EndN; i++)  {
-		Point3D loc_i = getNeuronLocation3D(i); // 3D coordinates of i
-		for(int j = grp_Info[grpDest].StartN; j <= grp_Info[grpDest].EndN; j++) { // j: the temp neuron id
+	// in case pre and post have different Grid3D sizes: scale pre to the grid size of post
+	int grpSrc = info->grpSrc;
+	int grpDest = info->grpDest;
+	Grid3D grid_i = getGroupGrid3D(grpSrc);
+	Grid3D grid_j = getGroupGrid3D(grpDest);
+	Point3D scalePre = Point3D(grid_j.x, grid_j.y, grid_j.z) / Point3D(grid_i.x, grid_i.y, grid_i.z);
 
+	for(int i = grp_Info[grpSrc].StartN; i <= grp_Info[grpSrc].EndN; i++)  {
+		Point3D loc_i = getNeuronLocation3D(i)*scalePre; // i: adjusted 3D coordinates
+
+		for(int j = grp_Info[grpDest].StartN; j <= grp_Info[grpDest].EndN; j++) { // j: the temp neuron id
 			// check whether pre-neuron location is in RF of post-neuron
 			Point3D loc_j = getNeuronLocation3D(j); // 3D coordinates of j
 
@@ -2726,6 +2730,10 @@ void CpuSNN::connectUserDefined (grpConnectInfo_t* info) {
 				assert(delay >= 1);
 				assert(delay <= MAX_SynapticDelay);
 				assert(abs(weight) <= abs(maxWt));
+
+				// adjust the sign of the weight based on inh/exc connection
+				weight = isExcitatoryGroup(grpSrc) ? fabs(weight) : -1.0*fabs(weight);
+				maxWt  = isExcitatoryGroup(grpSrc) ? fabs(maxWt)  : -1.0*fabs(maxWt);
 
 				setConnection(grpSrc, grpDest, nid, nid2, weight, maxWt, delay, info->connProp, info->connId);
 				info->numberOfConnections++;
@@ -4656,7 +4664,7 @@ std::vector< std::vector<float> > CpuSNN::getWeightMatrix2D(short int connId) {
 					// find pre-neuron ID and update ConnectionMonitor container
 					int preId = GET_CONN_NEURON_ID(preSynapticIds[pos_ij]);
 					wtConnId[preId-getGroupStartNeuronId(grpIdPre)][postId-getGroupStartNeuronId(grpIdPost)] =
-						wt[pos_ij];
+						fabs(wt[pos_ij]);
 				}
 			}
 			break;

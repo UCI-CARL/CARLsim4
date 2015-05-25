@@ -219,7 +219,7 @@ TEST(SpikeMon, clear) {
 
 	CARLsim* sim;
 	const int GRP_SIZE = 5;
-    const int inputTargetFR = 5.0f;
+    const int inputTargetFR = 10.0f;
 	int runTimeMs = 2000;
 
 	// loop over both CPU and GPU mode.
