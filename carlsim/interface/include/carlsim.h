@@ -247,6 +247,7 @@ public:
 	 * \param[in] mulSynSlow a multiplication factor to be applied to the slow synaptic current (NMDA in the case of
 	 *                       excitatory, and GABAb in the case of inhibitory connections). Default: 1.0
 	 * \returns a unique ID associated with the newly created connection
+	 * \see ch4s1_primitive_types
 	 */
 	short int connect(int grpId1, int grpId2, const std::string& connType, const RangeWeight& wt, float connProb,
 		const RangeDelay& delay=RangeDelay(1), const RadiusRF& radRF=RadiusRF(-1), bool synWtType=SYN_FIXED,
@@ -257,6 +258,7 @@ public:
 	 * conductances (default is 1.0 for both)
 	 * \TODO finish docu
 	 * \STATE ::CONFIG_STATE
+	 * \see ch4s3_user_defined
 	 */
 	short int connect(int grpId1, int grpId2, ConnectionGenerator* conn, bool synWtType=SYN_FIXED, int maxM=0,
 						int maxPreM=0);
@@ -265,6 +267,7 @@ public:
 	 * \brief make connections with custom connectivity profile
 	 * \TODO finish docu
 	 * \STATE ::CONFIG_STATE
+	 * \see ch4s3_user_defined
 	 */
 	short int connect(int grpId1, int grpId2, ConnectionGenerator* conn, float mulSynFast, float mulSynSlow,
 						bool synWtType=SYN_FIXED, int maxM=0,int maxPreM=0);
