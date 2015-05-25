@@ -57,6 +57,9 @@ Release 3.0
 Build 3.0.2
 ---------------------
 
+2015-05-24     Michael Beyeler <mbeyeler@uci.edu>
+  * Fixed ConnectionMonitor (OAT) issue concerning large number of subplots.
+
 2015-05-21     Michael Beyeler <mbeyeler@uci.edu>
   * Fixed Endianness issue in OAT readers.
   * Fixed NEURON_NOISE preprocessor guards.

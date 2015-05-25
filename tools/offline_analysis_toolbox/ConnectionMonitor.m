@@ -54,6 +54,7 @@ classdef ConnectionMonitor < handle
 		plotBgColor;        % bg color of plot (for plotting)
 		plotDispFrameNr;    % flag whether to display frame number
 		plotFPS;            % frames per second for plotting
+		plotSubplotsPerFig; % max number of subplots per figure
 		
 		plotInteractiveMode;% flag whether to allow click/key events
 		plotStepFrames;     % flag whether to waitforbuttonpress btw frames
@@ -397,7 +398,10 @@ classdef ConnectionMonitor < handle
 				% in interactive mode, key press events are active
 				if obj.plotInteractiveMode
 					if idx==numel(frames)
-						waitforbuttonpress;
+						try
+							waitforbuttonpress;
+						catch
+						end
 						idx = idx + 1; % needed to exit
 					else
 						if obj.plotStepFrames
@@ -430,7 +434,7 @@ classdef ConnectionMonitor < handle
 					idx = idx + 1;
 				end
 			end
-			if obj.plotInteractiveMode,close;end
+			if obj.plotInteractiveMode,close all;end
 		end
 				
 		function recordMovie(obj, fileName, plotType, frames, fps, winSize)
@@ -575,6 +579,8 @@ classdef ConnectionMonitor < handle
 			%                   off. If it is off, key events/FPS/stepping
 			%                   will take no effect (helpful if you want to
 			%                   take over control yourself). Default: true.
+			% SUBPLOTSPERFIG  - Maximum number of subplots per figure.
+			%					Default: 80.
 			obj.unsetError()
 			
 			if isempty(varargin)
@@ -621,6 +627,11 @@ classdef ConnectionMonitor < handle
 						% interactive mode
 						throwErrNumeric = ~isnumeric(val) && ~islogical(val);
 						obj.plotInteractiveMode = logical(val);
+					case 'subplotsperfig'
+						reqRange = [1 100];
+						throwErrNumeric = ~isnumeric(val) ...
+							&& val<reqRange(1) || val>reqRange(2);
+						obj.plotSubplotsPerFig = val;
 					otherwise
 						% attribute does not exist
 						if isnumeric(attr) || islogical(attr)
@@ -783,12 +794,20 @@ classdef ConnectionMonitor < handle
 	
 	%% PRIVATE METHODS
 	methods (Hidden, Access = private)
-        function [nrR, nrC] = findPlotLayout(obj, numSubPlots)
+        function [nrP, nrR, nrC] = findPlotLayout(obj, numSubPlots)
             % given a total number of subplots, what should be optimal
             % number of rows and cols in the figure?
-            % \TODO could be static or in Utilities class
-            nrR = floor(sqrt(numSubPlots));
-            nrC = ceil(numSubPlots*1.0/nrR);
+			
+			% plot should have at most 100 subplots
+			nrP = ceil(numSubPlots/obj.plotSubplotsPerFig);
+			if nrP>10
+				obj.throwWarning(['Can plot at most 10 figures, ' ...
+					num2str(nrP) ' requested.'])
+				nrP = 10;
+			end
+			numSubPlotsPerPage = min(numSubPlots,obj.plotSubplotsPerFig);
+            nrR = floor(sqrt(numSubPlotsPerPage));
+            nrC = ceil(numSubPlotsPerPage*1.0/nrR);
 		end
 		
 		function initConnectionReader(obj)
@@ -914,6 +933,8 @@ classdef ConnectionMonitor < handle
 			obj.plotTitlePreName = regexprep(strrep(obj.grpPreName, '_', '\_'),'\\_{','_{');
 			obj.plotTitlePostName = regexprep(strrep(obj.grpPostName, '_', '\_'),'\\_{','_{');
 
+			obj.plotSubplotsPerFig = 80;
+			
 			obj.needToInitCR = true;
 			obj.needToLoadData = true;
 			
@@ -995,63 +1016,68 @@ classdef ConnectionMonitor < handle
 				grid3DPost = obj.CR.getGrid3DPost();
 				
 				nPlots = numel(neurons);
-				[nRows, nCols] = obj.findPlotLayout(nPlots);
-				for r=1:nRows
-					for c=1:nCols
-						idx = (r-1)*nCols+c;
-						if idx > numel(neurons)
-							break;
-						end
-						
-						% get all incoming weights to that neuron
-						neurIdPre = neurons(idx);
-						wts = obj.weights(:,neurIdPre,frameNr); % Y X T
-						wts = reshape(wts,grid3DPost);
-
-						% find RF in same z-plane
-						% for this: find z-coordinate of post, compare to
-						% all z-coordinates of pre, find the match
-						zPool = floor( (neurIdPre-1)/grid3DPre(1)/grid3DPre(2) );
-						zPre = zPool - (grid3DPre(3)-1.0)/2.0;
-						zPost = (0:grid3DPost(3)-1) - (grid3DPost(3)-1.0)/2.0;
-						zPostIdx = zPre==zPost; % find post-coord in all pre
-						
-						if sum(zPostIdx)==0
-							% this pre-neuron does not connect to any
-							% post-neurons in the same plane
-							continue;
-						end
-						
-						% plot RF
-						subplot(nRows,nCols,idx)
-						imagesc(wts(:,:,zPostIdx)', [0 max(obj.CR.getMaxWeight(),1e-10)])
-						axis equal
- 						axis([1 grid3DPost(1) 1 grid3DPost(2)])
-						if grid3DPost(1)>2
-							set(gca,'XTick',[1 grid3DPost(1)/2.0 grid3DPost(1)])
-							set(gca,'XTickLabel',[-grid3DPost(1)/2.0 0 grid3DPost(1)/2.0])
-						else
-							set(gca,'XTick',grid3DPost(1))
-							set(gca,'XTickLabel',0)
-						end
-						if grid3DPost(2)>2
-							set(gca,'YTick',[1 grid3DPost(2)/2.0 grid3DPost(2)])
-							set(gca,'YTickLabel',[-grid3DPost(2)/2.0 0 grid3DPost(2)/2.0])
-						else
-							set(gca,'YTick',grid3DPost(2))
-							set(gca,'YTickLabel',0)
-						end
-						xlabel('x')
-						ylabel('y')
-						subTitle = ['wt = [0 , ' num2str(obj.CR.getMaxWeight()) ...
-							'], z=' num2str(zPre)];
-						
-						% if enabled, display the frame number in lower left corner
-						if dispFrameNr
-							text(2,size(wts,2)-1,num2str(frameNr), ...
-								'FontSize',10,'BackgroundColor','white')
+				[nPlots, nRows, nCols] = obj.findPlotLayout(nPlots);
+				for p=1:nPlots
+					for r=1:nRows
+						for c=1:nCols
+							idxNeur = (r-1)*nCols+c+(p-1)*nRows*nCols;
+							idxSubplot = (r-1)*nCols+c;
+							if idxNeur > numel(neurons)
+								break;
+							end
+							
+							% get all incoming weights to that neuron
+							neurIdPre = neurons(idxNeur);
+							wts = obj.weights(:,neurIdPre,frameNr); % Y X T
+							wts = reshape(wts,grid3DPost);
+							
+							% find RF in same z-plane
+							% for this: find z-coordinate of post, compare to
+							% all z-coordinates of pre, find the match
+							zPool = floor( (neurIdPre-1)/grid3DPre(1)/grid3DPre(2) );
+							zPre = zPool - (grid3DPre(3)-1.0)/2.0;
+							zPost = (0:grid3DPost(3)-1) - (grid3DPost(3)-1.0)/2.0;
+							[~,j] = min(abs(zPre-zPost));
+							zPostIdx = j; % find post-coord in all pre
+							
+							if sum(zPostIdx)==0
+								% this pre-neuron does not connect to any
+								% post-neurons in the same plane
+								continue;
+							end
+							
+							% plot RF
+							subplot(nRows,nCols,idxSubplot)
+							imagesc(wts(:,:,zPostIdx)', [0 max(obj.CR.getMaxWeight(),1e-10)])
+							axis equal
+							axis([1 grid3DPost(1) 1 grid3DPost(2)])
+							if grid3DPost(1)>2
+								set(gca,'XTick',[1 grid3DPost(1)/2.0 grid3DPost(1)])
+								set(gca,'XTickLabel',[-grid3DPost(1)/2.0 0 grid3DPost(1)/2.0])
+							else
+								set(gca,'XTick',grid3DPost(1))
+								set(gca,'XTickLabel',0)
+							end
+							if grid3DPost(2)>2
+								set(gca,'YTick',[1 grid3DPost(2)/2.0 grid3DPost(2)])
+								set(gca,'YTickLabel',[-grid3DPost(2)/2.0 0 grid3DPost(2)/2.0])
+							else
+								set(gca,'YTick',grid3DPost(2))
+								set(gca,'YTickLabel',0)
+							end
+							xlabel('x')
+							ylabel('y')
+							subTitle = ['wt = [0 , ' num2str(obj.CR.getMaxWeight()) ...
+								'], z=' num2str(zPre)];
+							
+							% if enabled, display the frame number in lower left corner
+							if dispFrameNr
+								text(2,size(wts,2)-1,num2str(frameNr), ...
+									'FontSize',10,'BackgroundColor','white')
+							end
 						end
 					end
+					if p<nPlots,figure;end
 				end
 			elseif strcmpi(obj.plotType,'receptivefield')
 				% plot the connections from all corresponding pre-neurons
@@ -1060,59 +1086,64 @@ classdef ConnectionMonitor < handle
 				grid3DPost = obj.CR.getGrid3DPost();
 
 				nPlots = numel(neurons);
-				[nRows, nCols] = obj.findPlotLayout(nPlots);
-				for r=1:nRows
-					for c=1:nCols
-						idx = (r-1)*nCols+c;
-						if idx > numel(neurons)
-							break;
+				[nPlots, nRows, nCols] = obj.findPlotLayout(nPlots);
+				for p=1:nPlots
+					for r=1:nRows
+						for c=1:nCols
+							idxNeur = (r-1)*nCols+c+(p-1)*nRows*nCols;
+							idxSubplot = (r-1)*nCols+c;
+							if idxNeur > numel(neurons)
+								break;
+							end
+							
+							% get all incoming weights to that neuron
+							neurIdPost = neurons(idxNeur);
+							wts = obj.weights(neurIdPost,:,frameNr); % Y X T
+							wts = reshape(wts,grid3DPre);
+							
+							% find RF in same z-plane
+							% for this: find z-coordinate of post, compare to
+							% all z-coordinates of pre, find the match
+							zPool = floor( (neurIdPost-1)/grid3DPost(1)/grid3DPost(2) );
+							zPost = zPool - (grid3DPost(3)-1.0)/2.0;
+							zPre = (0:grid3DPre(3)-1) - (grid3DPre(3)-1.0)/2.0;
+							[~,j] = min(abs(zPre-zPost));
+							zPreIdx = j; % find post-coord in all pre
+							
+							if sum(zPreIdx)==0
+								% this pre-neuron does not connect to any
+								% post-neurons in the same plane
+								continue;
+							end
+							
+							% plot RF
+							subplot(nRows,nCols,idxSubplot)
+							imagesc(wts(:,:,zPreIdx)', [0 max(obj.CR.getMaxWeight(),1e-10)])
+							axis equal
+							if grid3DPre(1)>1 && grid3DPre(2)>1
+								axis([1 grid3DPre(1) 1 grid3DPre(2)])
+							end
+							if grid3DPre(1)>1
+								set(gca,'XTick',[1 grid3DPre(1)/2.0 grid3DPre(1)])
+								set(gca,'XTickLabel',[-grid3DPre(1)/2.0 0 grid3DPre(1)/2.0])
+							else
+								set(gca,'XTick',grid3DPre(1))
+								set(gca,'XTickLabel',0)
+							end
+							if grid3DPre(2)>1
+								set(gca,'YTick',[1 grid3DPre(2)/2.0 grid3DPre(2)])
+								set(gca,'YTickLabel',[-grid3DPre(2)/2.0 0 grid3DPre(2)/2.0])
+							else
+								set(gca,'YTick',grid3DPre(2))
+								set(gca,'YTickLabel',0)
+							end
+							xlabel('x')
+							ylabel('y')
+							subTitle = ['wt = [0 , ' num2str(obj.CR.getMaxWeight()) ...
+								'], z=' num2str(zPost)];
 						end
-						
-						% get all incoming weights to that neuron
-						neurIdPost = neurons(idx);
-						wts = obj.weights(neurIdPost,:,frameNr); % Y X T
-						wts = reshape(wts,grid3DPre);
-
-						% find RF in same z-plane
-						% for this: find z-coordinate of post, compare to
-						% all z-coordinates of pre, find the match
-						zPool = floor( (neurIdPost-1)/grid3DPost(1)/grid3DPost(2) );
-						zPost = zPool - (grid3DPost(3)-1.0)/2.0;
-						zPre = (0:grid3DPre(3)-1) - (grid3DPre(3)-1.0)/2.0;
-						zPreIdx = zPre==zPost; % find post-coord in all pre
-						
-						if sum(zPreIdx)==0
-							% this pre-neuron does not connect to any
-							% post-neurons in the same plane
-							continue;
-						end
-						
-						% plot RF
-						subplot(nRows,nCols,idx)
-						imagesc(wts(:,:,zPreIdx)', [0 max(obj.CR.getMaxWeight(),1e-10)])
-						axis equal
-						if grid3DPre(1)>1 && grid3DPre(2)>1
-	 						axis([1 grid3DPre(1) 1 grid3DPre(2)])
-						end
-						if grid3DPre(1)>1
-							set(gca,'XTick',[1 grid3DPre(1)/2.0 grid3DPre(1)])
-							set(gca,'XTickLabel',[-grid3DPre(1)/2.0 0 grid3DPre(1)/2.0])
-						else
-							set(gca,'XTick',grid3DPre(1))
-							set(gca,'XTickLabel',0)
-						end
-						if grid3DPre(2)>1
-							set(gca,'YTick',[1 grid3DPre(2)/2.0 grid3DPre(2)])
-							set(gca,'YTickLabel',[-grid3DPre(2)/2.0 0 grid3DPre(2)/2.0])
-						else
-							set(gca,'YTick',grid3DPre(2))
-							set(gca,'YTickLabel',0)
-						end
-						xlabel('x')
-						ylabel('y')
-						subTitle = ['wt = [0 , ' num2str(obj.CR.getMaxWeight()) ...
-							'], z=' num2str(zPost)];
 					end
+					if p<nPlots,figure;end
 				end
 			else
 				obj.throwError(['Unrecognized plot type "' obj.plotType '".'])
