@@ -112,9 +112,13 @@ TEST(ConnMon, getters) {
 	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
 	CARLsim* sim;
-	ConnectPropToPreNeurId* connPre;
+	std::vector<ConnectPropToPreNeurId*> connPre(4, NULL);
+	std::vector<short int> connId(4, -1);
+	std::vector<int> grpId(2, -1);
 
-	const int GRP_SIZE_PRE = 10, GRP_SIZE_POST = 20;
+	std::vector<int> grpSize(2, -1);
+	grpSize[0] = 10;
+	grpSize[1] = 20;
 	float wtScale = 0.01f;
 
 	// loop over both CPU and GPU mode.
@@ -122,32 +126,60 @@ TEST(ConnMon, getters) {
 		// first iteration, test CPU mode, second test GPU mode
 		sim = new CARLsim("ConnMon.setConnectionMonitorDeath",mode?GPU_MODE:CPU_MODE,SILENT,0,42);
 
-		int g0 = sim->createGroup("g0", GRP_SIZE_PRE, EXCITATORY_NEURON);
-		int g1 = sim->createGroup("g1", GRP_SIZE_POST, EXCITATORY_NEURON);
-		int g2 = sim->createGroup("g2", GRP_SIZE_POST, EXCITATORY_NEURON);
-		sim->setNeuronParameters(g0, 0.02f, 0.2f, -65.0f, 8.0f);
-		sim->setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f);
-		sim->setNeuronParameters(g2, 0.02f, 0.2f, -65.0f, 8.0f);
+		grpId[0] = sim->createGroup("g0", grpSize[0], EXCITATORY_NEURON);
+		grpId[1] = sim->createGroup("g1", grpSize[1], INHIBITORY_NEURON);
+		sim->setNeuronParameters(grpId[0], 0.02f, 0.2f, -65.0f, 8.0f);
+		sim->setNeuronParameters(grpId[1], 0.1f, 0.2f, -65.0f, 2.0f);
 
-		connPre = new ConnectPropToPreNeurId(wtScale);
-		int c0 = sim->connect(g0,g1,connPre,SYN_FIXED,1000,1000);
+		for (int i=0; i<4; i++) {
+			// the sign of the weight is not important: it will be corrected
+			connPre[i] = new ConnectPropToPreNeurId(-wtScale);
+		}
+
+		int cid = 0;
+		for (int gPre=0; gPre<=1; gPre++) {
+			for (int gPost=0; gPost<=1; gPost++, cid++) {
+				// exc to exc, exc to inh, inh to exc, inh to inh
+				connId[cid] = sim->connect(grpId[gPre], grpId[gPost], connPre[cid], SYN_FIXED, 1000, 1000);
+			}
+		}
+		sim->setConductances(true);
 		sim->setupNetwork();
 
-		ConnectionMonitor* CM = sim->setConnectionMonitor(g0,g1,"NULL");
+		cid = 0;
+		for (int gPre=0; gPre<=1; gPre++) {
+			for (int gPost=0; gPost<=1; gPost++, cid++) {
+				ConnectionMonitor* CM = sim->setConnectionMonitor(grpId[gPre], grpId[gPost], "NULL");
 
-		EXPECT_EQ(CM->getConnectId(),c0);
-		EXPECT_EQ(CM->getFanIn(0),GRP_SIZE_PRE);
-		EXPECT_EQ(CM->getFanOut(0),GRP_SIZE_POST);
-		EXPECT_EQ(CM->getNumNeuronsPre(),GRP_SIZE_PRE);
-		EXPECT_EQ(CM->getNumNeuronsPost(),GRP_SIZE_POST);
-		EXPECT_EQ(CM->getNumSynapses(),GRP_SIZE_PRE*GRP_SIZE_POST);
-		EXPECT_EQ(CM->getNumWeightsChanged(),0);
-		EXPECT_FLOAT_EQ(CM->getPercentWeightsChanged(),0.0);
-		EXPECT_EQ(CM->getTimeMsCurrentSnapshot(),0);
-//		EXPECT_EQ(CM->getTimeMsLastSnapshot(),-1);
-//		EXPECT_EQ(CM->getTimeMsSinceLastSnapshot(),1);
-//		EXPECT_FLOAT_EQ(CM->getTotalAbsWeightChange(),NAN);
+				EXPECT_EQ(CM->getConnectId(),connId[cid]);
+				EXPECT_EQ(CM->getFanIn(0),grpSize[gPre]);
+				EXPECT_EQ(CM->getFanOut(0),grpSize[gPost]);
+				EXPECT_EQ(CM->getNumNeuronsPre(),grpSize[gPre]);
+				EXPECT_EQ(CM->getNumNeuronsPost(),grpSize[gPost]);
+				EXPECT_EQ(CM->getNumSynapses(),grpSize[gPre]*grpSize[gPost]);
+				EXPECT_EQ(CM->getNumWeightsChanged(),0);
+				EXPECT_FLOAT_EQ(CM->getPercentWeightsChanged(),0.0f);
+				EXPECT_EQ(CM->getTimeMsCurrentSnapshot(),0);
 
+				EXPECT_FLOAT_EQ(CM->getMinWeight(false),0.0f);
+				EXPECT_FLOAT_EQ(CM->getMinWeight(true),0.0f);
+				EXPECT_FLOAT_EQ(CM->getMaxWeight(false),(grpSize[gPre]-1)*wtScale);
+				EXPECT_FLOAT_EQ(CM->getMaxWeight(true),(grpSize[gPre]-1)*wtScale);
+
+				EXPECT_EQ(CM->getNumWeightsInRange(CM->getMinWeight(false),CM->getMaxWeight(false)), grpSize[gPre]*grpSize[gPost]);
+				EXPECT_EQ(CM->getNumWeightsInRange(0.0, 0.0), grpSize[gPost]);
+				EXPECT_EQ(CM->getNumWeightsInRange(wtScale, 2*wtScale), 2*grpSize[gPost]);
+				EXPECT_EQ(CM->getNumWeightsInRange(CM->getMaxWeight(false)*1.01, CM->getMaxWeight(false)*2), 0);
+				EXPECT_EQ(CM->getNumWeightsWithValue(0.0), grpSize[gPost]);
+				EXPECT_EQ(CM->getNumWeightsWithValue(wtScale), grpSize[gPost]);
+
+				EXPECT_FLOAT_EQ(CM->getPercentWeightsInRange(CM->getMinWeight(false),CM->getMaxWeight(false)), 100.0);
+				EXPECT_FLOAT_EQ(CM->getPercentWeightsInRange(0.0, 0.0), grpSize[gPost]*100.0/CM->getNumSynapses());
+				EXPECT_FLOAT_EQ(CM->getPercentWeightsInRange(wtScale, 2*wtScale), 2*grpSize[gPost]*100.0/CM->getNumSynapses());
+				EXPECT_FLOAT_EQ(CM->getPercentWeightsWithValue(0.0), grpSize[gPost]*100.0/CM->getNumSynapses());
+				EXPECT_FLOAT_EQ(CM->getPercentWeightsWithValue(wtScale), grpSize[gPost]*100.0/CM->getNumSynapses());
+			}
+		}
 		delete sim;
 	}
 }
@@ -157,7 +189,9 @@ TEST(ConnMon, takeSnapshot) {
 	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
 	CARLsim* sim;
-	ConnectPropToPreNeurId* connPre;
+	std::vector<ConnectPropToPreNeurId*> connPre(4, NULL);
+	std::vector<short int> connId(4, -1);
+	std::vector<int> grpId(2, -1);
 
 	const int GRP_SIZE = 10;
 	float wtScale = 0.01f;
@@ -167,29 +201,41 @@ TEST(ConnMon, takeSnapshot) {
 		// first iteration, test CPU mode, second test GPU mode
 		sim = new CARLsim("ConnMon.setConnectionMonitorDeath",mode?GPU_MODE:CPU_MODE,SILENT,0,42);
 
-		int g0 = sim->createGroup("g0", GRP_SIZE, EXCITATORY_NEURON);
-		int g1 = sim->createGroup("g1", GRP_SIZE, EXCITATORY_NEURON);
-		int g2 = sim->createGroup("g2", GRP_SIZE, EXCITATORY_NEURON);
-		sim->setNeuronParameters(g0, 0.02f, 0.2f, -65.0f, 8.0f);
-		sim->setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f);
-		sim->setNeuronParameters(g2, 0.02f, 0.2f, -65.0f, 8.0f);
+		grpId[0] = sim->createGroup("g0", GRP_SIZE, EXCITATORY_NEURON);
+		grpId[1] = sim->createGroup("g1", GRP_SIZE, INHIBITORY_NEURON);
+		sim->setNeuronParameters(grpId[0], 0.02f, 0.2f, -65.0f, 8.0f);
+		sim->setNeuronParameters(grpId[1], 0.1f, 0.2f, -65.0f, 2.0f);
 
-		connPre = new ConnectPropToPreNeurId(wtScale);
-		sim->connect(g0,g1,connPre,SYN_FIXED,1000,1000);
+		for (int i=0; i<4; i++) {
+			// the sign of the weight is not important: it will be corrected
+			connPre[i] = new ConnectPropToPreNeurId(-wtScale);
+		}
+
+		int cid = 0;
+		for (int gPre=0; gPre<=1; gPre++) {
+			for (int gPost=0; gPost<=1; gPost++, cid++) {
+				// exc to exc, exc to inh, inh to exc, inh to inh
+				connId[cid] = sim->connect(grpId[gPre], grpId[gPost], connPre[cid], SYN_FIXED, 1000, 1000);
+			}
+		}
 		sim->setConductances(true);
 		sim->setupNetwork();
 
-		ConnectionMonitor* CM = sim->setConnectionMonitor(g0,g1,"NULL");
-
-		std::vector< std::vector<float> > wt = CM->takeSnapshot();
-		for (int i=0; i<GRP_SIZE; i++) {
-			for (int j=0; j<GRP_SIZE; j++) {
-#if defined(WIN32) || defined(WIN64)
-				EXPECT_FALSE(_isnan(wt[i][j]));
-#else
-				EXPECT_FALSE(isnan(wt[i][j]));
-#endif
-				EXPECT_FLOAT_EQ(wt[i][j], wtScale*i);
+		cid = 0;
+		for (int gPre=0; gPre<=1; gPre++) {
+			for (int gPost=0; gPost<=1; gPost++, cid++) {
+				ConnectionMonitor* CM = sim->setConnectionMonitor(grpId[gPre], grpId[gPost], "NULL");
+				std::vector< std::vector<float> > wt = CM->takeSnapshot();
+				for (int i=0; i<GRP_SIZE; i++) {
+					for (int j=0; j<GRP_SIZE; j++) {
+						#if defined(WIN32) || defined(WIN64)
+							EXPECT_FALSE(_isnan(wt[i][j]));
+						#else
+							EXPECT_FALSE(isnan(wt[i][j]));
+						#endif
+						EXPECT_FLOAT_EQ(wt[i][j], wtScale*i);
+					}
+				}
 			}
 		}
 
