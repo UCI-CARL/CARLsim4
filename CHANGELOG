@@ -57,6 +57,9 @@ Release 3.0
 Build 3.0.2
 ---------------------
 
+2015-05-26     Michael Beyeler <mbeyeler@uci.edu>
+  * Fixed third grid dimension in GroupMonitor (OAT) heatmap plot.
+  
 2015-05-25     Michael Beyeler <mbeyeler@uci.edu>
   * Improved handling of "gaussian" connection when pre and post have different
     Grid3D sizes.
