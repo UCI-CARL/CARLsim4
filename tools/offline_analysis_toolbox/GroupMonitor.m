@@ -1092,7 +1092,7 @@ classdef GroupMonitor < handle
                 frame = obj.spkData(:,:,frameNr);
                 imagesc(frame, [0 maxD])
                 axis image equal
-                axis([1 obj.grid3D(1) 1 obj.grid3D(2)])
+                axis([1 obj.grid3D(1)*obj.grid3D(3) 1 obj.grid3D(2)])
                 title(['Group ' obj.plotTitleName ', rate = [0 , ' ...
                     num2str(maxD*1000/frameDur) ' Hz]'])
                 xlabel('nrX')
