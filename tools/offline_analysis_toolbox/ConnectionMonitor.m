@@ -203,6 +203,14 @@ classdef ConnectionMonitor < handle
 			% of the neurId-th neuron in the pre-synaptic group (1-indexed).
 			% The 3D coordinates of the neuron are determined by the Grid3D
 			% dimensions of the group.
+			obj.unsetError()
+			obj.initConnectionReader()
+
+			if ~Utilities.verify(neurId,{{'isnumeric',[1 obj.getNumNeuronsPre()]}})
+				obj.throwError(['Neuron ID must be in the range e[1,' num2str(obj.getNumNeuronsPre()) '']')
+				return
+			end
+
 			neurId = neurId - 1;
 			grid3D = obj.CR.getGrid3DPre();
 			xyz(1) = mod(neurId, grid3D(1));
@@ -215,6 +223,14 @@ classdef ConnectionMonitor < handle
 			% of the neurId-th neuron in the pre-synaptic group (1-indexed).
 			% The 3D coordinates of the neuron are determined by the Grid3D
 			% dimensions of the group.
+			obj.unsetError()
+			obj.initConnectionReader()
+
+			if ~Utilities.verify(neurId,{{'isnumeric',[1 obj.getNumNeuronsPost()]}})
+				obj.throwError(['Neuron ID must be in the range e[1,' num2str(obj.getNumNeuronsPost()) '']')
+				return
+			end
+
 			neurId = neurId - 1;
 			grid3D = obj.CR.getGrid3DPost();
 			xyz(1) = mod(neurId, grid3D(1));
