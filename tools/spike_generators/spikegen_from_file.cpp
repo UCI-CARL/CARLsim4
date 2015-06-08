@@ -7,18 +7,16 @@
 #include <string.h>				// std::string
 #include <assert.h>				// assert
 
+#define VERBOSE
 
-SpikeGeneratorFromFile::SpikeGeneratorFromFile(std::string fileName) {
+SpikeGeneratorFromFile::SpikeGeneratorFromFile(std::string fileName, int offsetTimeMs) {
 	fileName_ = fileName;
 	fpBegin_ = NULL;
 	fpOffsetNeur_ = NULL;
 
 	nNeur_ = -1;
 	szByteHeader_ = -1;
-
-
-	// needToInit_ = true;
-	// needToAllocate_ = true;
+	offsetTimeMs_ = offsetTimeMs;
 
 	// move unsafe operations out of constructor
 	openFile();
@@ -26,20 +24,20 @@ SpikeGeneratorFromFile::SpikeGeneratorFromFile(std::string fileName) {
 }
 
 SpikeGeneratorFromFile::~SpikeGeneratorFromFile() {
-
-	// if (fpOffsetNeur_!=NULL) delete[] fpOffsetNeur_;
-	fclose(fpBegin_);
+	if (fpBegin_ != NULL) {
+		fclose(fpBegin_);
+	}
 }
 
 // rewind file pointers to beginning
-void SpikeGeneratorFromFile::rewind() {
-	// clear all spike times
-	for (int i=0; i<nNeur_; i++) {
-		spikes_[i].clear();
-	}
+void SpikeGeneratorFromFile::rewind(int offsetTimeMs) {
+	offsetTimeMs_ = offsetTimeMs;
 
-	// needToInit_ = true;
-	// init();
+	// reset all iterators
+	spikesIt_.clear();
+	for (int i=0; i<nNeur_; i++) {
+		spikesIt_.push_back(spikes_[i].begin());
+	}
 }
 
 void SpikeGeneratorFromFile::openFile() {
@@ -71,27 +69,28 @@ void SpikeGeneratorFromFile::openFile() {
 void SpikeGeneratorFromFile::init() {
 	assert(nNeur_>0);
 
-	// allocate
+	// allocate spike vector
+	// we organize AER format into a 2D spike vector: first dim=neuron, second dim=spike times
+	// then we just need to maintain an iterator for each neuron to know which spike to schedule next
 	for (int i=0; i<nNeur_; i++) {
 		spikes_.push_back(std::vector<int>());
 	}
 
 	// read spike file
 	FILE* fp = fpBegin_;
-	fseek(fp, szByteHeader_, SEEK_SET);
+	fseek(fp, szByteHeader_, SEEK_SET); // skip header section
 
 	int tmpTime = -1;
 	int tmpNeurId = -1;
 	size_t result;
-//	int maxTime = -1;
 
 	while (!feof(fp)) {
 		result = fread(&tmpTime, sizeof(int), 1, fp); // i-th time
 		result = fread(&tmpNeurId, sizeof(int), 1, fp); // i-th nid
-		spikes_[tmpNeurId].push_back(tmpTime);
-//		maxTime = tmpTime;
+		spikes_[tmpNeurId].push_back(tmpTime); // add spike time to 2D vector
 	}
 
+#ifdef VERBOSE
 	for (int neurId=0; neurId<1; neurId++) {
 		printf("[%d]: ",neurId);
 		for (int i=0; i<spikes_[neurId].size(); i++) {
@@ -99,14 +98,10 @@ void SpikeGeneratorFromFile::init() {
 		}
 		printf("\n");
 	}
+#endif
 
 	// initialize iterators
-	for (int i=0; i<nNeur_; i++) {
-		spikesIt_.push_back(spikes_[i].begin());
-	}
-
-
-//	printf("maxTime=%d\n",maxTime);
+	rewind();
 }
 
 unsigned int SpikeGeneratorFromFile::nextSpikeTime(CARLsim* sim, int grpId, int nid, unsigned int currentTime, 
@@ -115,41 +110,22 @@ unsigned int SpikeGeneratorFromFile::nextSpikeTime(CARLsim* sim, int grpId, int 
 	assert(nid < nNeur_);
 
 	if (spikesIt_[nid] != spikes_[nid].end()) {
-		if (*(spikesIt_[nid]) < endOfTimeSlice) {
+		// if there are spikes left in the vector ...
+
+		if (*(spikesIt_[nid])+offsetTimeMs_ < endOfTimeSlice) {
+			// ... and if the next spike time is in the current scheduling time slice:
+#ifdef VERBOSE
 			if (nid==0) {
-				printf("[0]: currTime=%u, lastTime=%u, endOfTime=%u, nextSpike=%u\n", currentTime,
-					lastScheduledSpikeTime, endOfTimeSlice, *(spikesIt_[nid]));
+			printf("[%d][%d]: currTime=%u, lastTime=%u, endOfTime=%u, nextSpike=%u\n", grpId, nid, currentTime,
+				lastScheduledSpikeTime, endOfTimeSlice, (unsigned int) (*(spikesIt_[nid])+offsetTimeMs_));
 			}
-			return (unsigned int)*(spikesIt_[nid]++);
+#endif
+			// return the next spike time and update iterator
+			return (unsigned int)(*(spikesIt_[nid]++)+offsetTimeMs_);
 		}
 	}
 
+	// if the next spike time is not a valid number, return a large positive number instead
+	// this will signal CARLsim to break the nextSpikeTime loop
 	return -1; // large positive number
-	
-	// FILE* fp = fpBegin_;
-	// fseek(fpBegin_, szByteHeader_, SEEK_SET);
-	// fseek(fp, fpOffsetNeur_[nid], SEEK_CUR);
-
-	// int tmpTime = -1;
-	// int tmpNeurId = -1;
-
-	// // read the next time and neuron ID in the file
-	// size_t result;
-	// result = fread(&tmpTime, sizeof(int), 1, fp); // i-th time
-	// result = fread(&tmpNeurId, sizeof(int), 1, fp); // i-th nid
-	// fpOffsetNeur_[nid] += sizeof(int)*2;
-
-	// // chances are this neuron ID is not the one we want, so we have to keep reading until we find the right one
-	// while (tmpNeurId!=nid && !feof(fp)) {
-	// 	result = fread(&tmpTime, sizeof(int), 1, fp); // j-th time
-	// 	result = fread(&tmpNeurId, sizeof(int), 1, fp); // j-th nid
-	// 	fpOffsetNeur_[nid] += sizeof(int)*2;
-	// }
-
-	// // if eof was reached, there are no more spikes for this neuron ID
-	// if (feof(fp))
-	// 	return -1; // large pos number
-
-	// // else return the valid spike time
-	// return tmpTime;
 }
