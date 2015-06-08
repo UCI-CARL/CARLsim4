@@ -3161,6 +3161,7 @@ void CpuSNN::generateSpikes() {
 }
 
 void CpuSNN::generateSpikesFromFuncPtr(int grpId) {
+	// \FIXME this function is a mess
 	bool done;
 	SpikeGeneratorCore* spikeGen = grp_Info[grpId].spikeGen;
 	int timeSlice = grp_Info[grpId].CurrTimeSlice;
@@ -3184,10 +3185,11 @@ void CpuSNN::generateSpikesFromFuncPtr(int grpId) {
 
 			// the generated spike time is valid only if:
 			// - it has not been scheduled before (nextSchedTime > nextTime)
+			//    - but careful: we would drop spikes at t=0, because we cannot initialize nextTime to -1...
 			// - it is within the scheduling time slice (nextSchedTime < endOfTimeWindow)
 			// - it is not in the past (nextSchedTime >= currTime)
-			if (nextSchedTime > nextTime && nextSchedTime < endOfTimeWindow && nextSchedTime >= currTime) {
-				fprintf(stderr,"%u: spike scheduled for %d at %u\n",currTime, i-grp_Info[grpId].StartN,nextTime);
+			if ((nextSchedTime==0 || nextSchedTime>nextTime) && nextSchedTime<endOfTimeWindow && nextSchedTime>=currTime) {
+//				fprintf(stderr,"%u: spike scheduled for %d at %u\n",currTime, i-grp_Info[grpId].StartN,nextSchedTime);
 				// scheduled spike...
 				// \TODO CPU mode does not check whether the same AER event has been scheduled before (bug #212)
 				// check how GPU mode does it, then do the same here.
@@ -4904,6 +4906,7 @@ void CpuSNN::updateSpikeMonitor(int grpId) {
 					int time = currentTimeSec*1000 + t;
 
 					if (writeSpikesToFile) {
+//						printf("%u: writing spike to file for %d at %d\n",simTime,nid,time);
 						int cnt;
 						cnt = fwrite(&time, sizeof(int), 1, spkFileId); assert(cnt==1);
 						cnt = fwrite(&nid,  sizeof(int), 1, spkFileId); assert(cnt==1);

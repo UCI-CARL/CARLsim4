@@ -7,7 +7,7 @@
 #include <string.h>				// std::string
 #include <assert.h>				// assert
 
-#define VERBOSE
+// #define VERBOSE
 
 SpikeGeneratorFromFile::SpikeGeneratorFromFile(std::string fileName, int offsetTimeMs) {
 	fileName_ = fileName;

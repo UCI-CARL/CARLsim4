@@ -147,15 +147,15 @@ TEST(SpikeGen, SpikeGeneratorFromFile) {
 					sim->setSpikeRate(g0, poiss);
 					SM0 = sim->setSpikeMonitor(g0, fileName0);
 					SM0->startRecording();
-					sim->runNetwork(0,100,false);
+					sim->runNetwork(1,0,false);
 					SM0->stopRecording();
 					spkVec0 = SM0->getSpikeVector2D();
 				} else {
 					// second run: generate new spike file, schedule in slices
 					SM1 = sim->setSpikeMonitor(g0, fileName1);
 					SM1->startRecording();
-					for (int i=0; i<10; i++) {
-						sim->runNetwork(0,10,false);
+					for (int i=0; i<200; i++) {
+						sim->runNetwork(0,5,false);
 					}
 					SM1->stopRecording();
 					spkVec1 = SM1->getSpikeVector2D();
