@@ -43,6 +43,7 @@
 
 #include <callback.h>
 #include <string>
+#include <vector>
 
 class CARLsim;
 
@@ -83,7 +84,7 @@ public:
 	 * \returns the next spike time (ms)
 	 */
 	unsigned int nextSpikeTime(CARLsim* sim, int grpId, int nid, unsigned int currentTime, 
-		unsigned int lastScheduledSpikeTime);
+		unsigned int lastScheduledSpikeTime, unsigned int endOfTimeSlice);
 
 private:
 	void openFile();
@@ -93,6 +94,9 @@ private:
 	FILE* fpBegin_;				//!< pointer to beginning of file
 	int szByteHeader_;          //!< number of bytes in header section
                                 //!< \FIXME: there should be a standardized SpikeReader++ utility
+
+	std::vector< std::vector<int> > spikes_;
+	std::vector< std::vector<int>::iterator > spikesIt_;
 
 	int nNeur_;                 //!< number of neurons in the group
 	long int* fpOffsetNeur_;	//!< file pointer array to store last read for each neuron

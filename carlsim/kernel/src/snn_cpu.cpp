@@ -3179,7 +3179,8 @@ void CpuSNN::generateSpikesFromFuncPtr(int grpId) {
 		done = false;
 		while (!done) {
 
-			nextTime = spikeGen->nextSpikeTime(this, grpId, i - grp_Info[grpId].StartN, currTime, nextTime);
+			nextTime = spikeGen->nextSpikeTime(this, grpId, i - grp_Info[grpId].StartN, currTime, nextTime, 
+				endOfTimeWindow);
 
 			// found a valid time window
 			if (nextTime < endOfTimeWindow) {

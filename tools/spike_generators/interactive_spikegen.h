@@ -56,7 +56,8 @@ public:
 
 	~InteractiveSpikeGenerator();
 
-	unsigned int nextSpikeTime(CARLsim* s, int grpId, int nid, unsigned int currentTime, unsigned int lastScheduledSpikeTime);
+	unsigned int nextSpikeTime(CARLsim* s, int grpId, int nid, unsigned int currentTime,
+		unsigned int lastScheduledSpikeTime, unsigned int endOfTimeSlice);
 
 	void setQuota(int nid_, int quota_);
 
