@@ -67,9 +67,11 @@ public:
 	 * \param i the neuron index in the group
 	 * \param currentTime the current simluation time
 	 * \param lastScheduledSpikeTime the last spike time which was scheduled
+	 * \param endOfTimeSlice the end of the current scheduling time slice. Spike times after this will not be scheduled.
 	 */
 	virtual unsigned int nextSpikeTime(CARLsim* s, int grpId, int i,
-											unsigned int currentTime, unsigned int lastScheduledSpikeTime) = 0;
+											unsigned int currentTime, unsigned int lastScheduledSpikeTime,
+											unsigned int endOfTimeSlice) = 0;
 };
 
 /*!

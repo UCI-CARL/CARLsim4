@@ -11,6 +11,12 @@ Release 3.0
 Build 3.0.2
 ---------------------
 
+2015-06-08     Michael Beyeler <mbeyeler@uci.edu>
+  * Fixed handling of scheduling time slice in SpikeGenerator::nextSpikeTime.
+  * Fixed dropping of spikes in SpikeGeneratorFromFile and
+    SpikeGeneratorFromVector.
+  * Fixed multiple scheduling of the same spike time in CPU mode.
+  
 2015-05-26     Michael Beyeler <mbeyeler@uci.edu>
   * Fixed third grid dimension in GroupMonitor (OAT) heatmap plot.
   

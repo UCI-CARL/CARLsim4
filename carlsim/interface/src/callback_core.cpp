@@ -52,9 +52,10 @@ SpikeGeneratorCore::SpikeGeneratorCore(CARLsim* c, SpikeGenerator* s) {
 }
 
 unsigned int SpikeGeneratorCore::nextSpikeTime(CpuSNN* s, int grpId, int i,
-											unsigned int currentTime, unsigned int lastScheduledSpikeTime) {
+											unsigned int currentTime, unsigned int lastScheduledSpikeTime,
+											unsigned int endOfTimeSlice) {
 	if (sGen != NULL)
-		return sGen->nextSpikeTime(carlsim, grpId, i, currentTime, lastScheduledSpikeTime);
+		return sGen->nextSpikeTime(carlsim, grpId, i, currentTime, lastScheduledSpikeTime, endOfTimeSlice);
 	else
 		return 0xFFFFFFFF;
 }
