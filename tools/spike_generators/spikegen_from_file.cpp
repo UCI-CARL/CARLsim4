@@ -12,7 +12,6 @@
 SpikeGeneratorFromFile::SpikeGeneratorFromFile(std::string fileName, int offsetTimeMs) {
 	fileName_ = fileName;
 	fpBegin_ = NULL;
-	fpOffsetNeur_ = NULL;
 
 	nNeur_ = -1;
 	szByteHeader_ = -1;

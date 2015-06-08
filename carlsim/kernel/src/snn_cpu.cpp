@@ -3178,26 +3178,28 @@ void CpuSNN::generateSpikesFromFuncPtr(int grpId) {
 
 		done = false;
 		while (!done) {
+			// generate the next spike time (nextSchedTime) from the nextSpikeTime callback
+			unsigned int nextSchedTime = spikeGen->nextSpikeTime(this, grpId, i - grp_Info[grpId].StartN, currTime, 
+				nextTime, endOfTimeWindow);
 
-			nextTime = spikeGen->nextSpikeTime(this, grpId, i - grp_Info[grpId].StartN, currTime, nextTime, 
-				endOfTimeWindow);
+			// the generated spike time is valid only if:
+			// - it has not been scheduled before (nextSchedTime > nextTime)
+			// - it is within the scheduling time slice (nextSchedTime < endOfTimeWindow)
+			// - it is not in the past (nextSchedTime >= currTime)
+			if (nextSchedTime > nextTime && nextSchedTime < endOfTimeWindow && nextSchedTime >= currTime) {
+				fprintf(stderr,"%u: spike scheduled for %d at %u\n",currTime, i-grp_Info[grpId].StartN,nextTime);
+				// scheduled spike...
+				// \TODO CPU mode does not check whether the same AER event has been scheduled before (bug #212)
+				// check how GPU mode does it, then do the same here.
+				nextTime = nextSchedTime;
+				pbuf->scheduleSpikeTargetGroup(i, nextTime - currTime);
+				spikeCnt++;
 
-			// found a valid time window
-			if (nextTime < endOfTimeWindow) {
-				if (nextTime >= currTime) {
-//					fprintf(stderr,"%u: spike scheduled for %d at %u\n",currTime, i-grp_Info[grpId].StartN,nextTime);
-					// scheduled spike...
-					// \TODO CPU mode does not check whether the same AER event has been scheduled before (bug #212)
-					// check how GPU mode does it, then do the same here.
-					pbuf->scheduleSpikeTargetGroup(i, nextTime - currTime);
-					spikeCnt++;
-
-					// update number of spikes if SpikeCounter set
-					if (grp_Info[grpId].withSpikeCounter) {
-						int bufPos = grp_Info[grpId].spkCntBufPos; // retrieve buf pos
-						int bufNeur = i-grp_Info[grpId].StartN;
-						spkCntBuf[bufPos][bufNeur]++;
-					}
+				// update number of spikes if SpikeCounter set
+				if (grp_Info[grpId].withSpikeCounter) {
+					int bufPos = grp_Info[grpId].spkCntBufPos; // retrieve buf pos
+					int bufNeur = i-grp_Info[grpId].StartN;
+					spkCntBuf[bufPos][bufNeur]++;
 				}
 			} else {
 				done = true;
