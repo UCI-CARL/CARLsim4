@@ -14,7 +14,12 @@ SpikeGeneratorFromVector::SpikeGeneratorFromVector(std::vector<int> spkTimes) {
 unsigned int SpikeGeneratorFromVector::nextSpikeTime(CARLsim* sim, int grpId, int nid, unsigned int currentTime, 
 	unsigned int lastScheduledSpikeTime, unsigned int endOfTimeSlice) {
 
-	return (currentIndex_<size_) ? spkTimes_[currentIndex_++] : -1; // -1: large positive number
+	// schedule spike if vector index valid and spike within scheduling time slice
+	if (currentIndex_ < size_ && spkTimes_[currentIndex_] < endOfTimeSlice) {
+		return spkTimes_[currentIndex_++];
+	}
+
+	return -1; // -1: large positive number
 }
 
 void SpikeGeneratorFromVector::checkSpikeVector() {
