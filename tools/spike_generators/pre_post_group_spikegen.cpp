@@ -48,7 +48,8 @@ PrePostGroupSpikeGenerator::PrePostGroupSpikeGenerator(int interSpikeInterval, i
 	setOffset = false;
 }
 
-unsigned int PrePostGroupSpikeGenerator::nextSpikeTime(CARLsim* s, int grpId, int nid, unsigned int currentTime, unsigned int lastScheduledSpikeTime) {
+unsigned int PrePostGroupSpikeGenerator::nextSpikeTime(CARLsim* s, int grpId, int nid, unsigned int currentTime, 
+	unsigned int lastScheduledSpikeTime, unsigned int endOfTimeSlice) {
 	if (grpId == g1)
 		return lastScheduledSpikeTime + isi;
 	else if (grpId == g2) {

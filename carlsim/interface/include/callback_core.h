@@ -66,7 +66,8 @@ public:
 	/*! \attention The virtual method should never be called directly
 	 */
 	virtual unsigned int nextSpikeTime(CpuSNN* s, int grpId, int i,
-											unsigned int currentTime, unsigned int lastScheduledSpikeTime);
+											unsigned int currentTime, unsigned int lastScheduledSpikeTime,
+											unsigned int endOfTimeSlice);
 
 private:
 	CARLsim* carlsim;

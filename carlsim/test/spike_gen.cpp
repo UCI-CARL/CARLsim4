@@ -114,61 +114,86 @@ TEST(SpikeGen, PeriodicSpikeGeneratorDeath) {
 }
 
 TEST(SpikeGen, SpikeGeneratorFromFile) {
-	int isi = 100; // ms
-	double rate = 1000.0/isi;
-	int nNeur = 5;
-	CARLsim sim("SpikeGeneratorFromFile",CPU_MODE,SILENT,0,42);
+	int nNeur = 1;
+	PoissonRate* poiss = NULL;
+	SpikeGeneratorFromFile* sgf = NULL;
+	CARLsim* sim = NULL;
+	std::string fileName0 = "results/spk_run0.dat", fileName1 = "results/spk_run1.dat";
+	std::vector< std::vector<int> > spkVec0, spkVec1;
+	SpikeMonitor *SM0, *SM1;
 
-	int g1 = sim.createGroup("g1", 1, EXCITATORY_NEURON);		
-	sim.setNeuronParameters(g1, 0.02, 0.2, -65.0, 8.0);
+	for (int isGPUmode=0; isGPUmode<=1; isGPUmode++) {
+		for (int isCOBA=0; isCOBA<=1; isCOBA++) {
+			for (int run=0; run<=1; run++) {
+				sim = new CARLsim("SpikeGeneratorFromFile",isGPUmode?GPU_MODE:CPU_MODE,SILENT,0,42);
+				int g1 = sim->createGroup("g1", 1, EXCITATORY_NEURON);		
+				sim->setNeuronParameters(g1, 0.02, 0.2, -65.0, 8.0);
 
-	int g0 = sim.createSpikeGeneratorGroup("Input0",nNeur,EXCITATORY_NEURON);
-	PeriodicSpikeGenerator spkGen0(rate,true);
-	sim.setSpikeGenerator(g0, &spkGen0);
+				int g0 = sim->createSpikeGeneratorGroup("g0",nNeur,EXCITATORY_NEURON);
+				if (run==1) {
+					// second run: load from file and compare spike times
+					sgf = new SpikeGeneratorFromFile(fileName0);
+					sim->setSpikeGenerator(g0, sgf);
+				}
+				sim->connect(g0,g1,"random",RangeWeight(0.1f), 0.5f);
+				sim->setConductances(isCOBA);
+				sim->setupNetwork();
 
-	sim.setConductances(true);
+				if (run==0) {
+					// first run: use Poisson spike generator as ground truth
+					// generate the spike file and run in one piece
+					poiss = new PoissonRate(nNeur);
+					poiss->setRates(50.0f);
+					sim->setSpikeRate(g0, poiss);
+					SM0 = sim->setSpikeMonitor(g0, fileName0);
+					SM0->startRecording();
+					sim->runNetwork(1,0,false);
+					SM0->stopRecording();
+					spkVec0 = SM0->getSpikeVector2D();
+				} else {
+					// second run: generate new spike file, schedule in slices
+					SM1 = sim->setSpikeMonitor(g0, fileName1);
+					SM1->startRecording();
+					for (int i=0; i<200; i++) {
+						sim->runNetwork(0,5,false);
+					}
+					SM1->stopRecording();
+					spkVec1 = SM1->getSpikeVector2D();
+				}
 
-	// add some dummy connections so we can actually run the network
-	sim.connect(g0,g1,"random", RangeWeight(0.01), 0.5f, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
+				if (run==1) {
+					// make sure we have the same spikes in both spike vectors
+					EXPECT_EQ(spkVec0.size(), spkVec1.size());
+					if (spkVec0.size() == spkVec1.size()) {
+						for (int neurId=0; neurId<spkVec0.size(); neurId++) {
+							EXPECT_EQ(spkVec0[neurId].size(), spkVec1[neurId].size());
+							if (spkVec0[neurId].size() == spkVec1[neurId].size()) {
+								for (int spk=0; spk<spkVec0[neurId].size(); spk++) {
+									EXPECT_EQ(spkVec0[neurId][spk], spkVec1[neurId][spk]);
+								}
+							}
+						}
+					}
+					spkVec0.clear();
+					spkVec1.clear();
+				}
 
-	sim.setupNetwork();
-	sim.setSpikeMonitor(g0,"spkInputGrp0.dat"); // save spikes to file
-	sim.runNetwork(1,0);
-
-
-	// now that we have created the spike file, run a different network using the spike file from above
-	CARLsim sim2("SpikeGeneratorFromVector2",CPU_MODE,SILENT,0,42);
-
-	g0 = sim2.createSpikeGeneratorGroup("Input",nNeur,EXCITATORY_NEURON);
-	SpikeGeneratorFromFile spkGen2("spkInputGrp0.dat");
-	sim2.setSpikeGenerator(g0, &spkGen2);
-
-	g1 = sim2.createGroup("g1", 1, EXCITATORY_NEURON);		
-	sim2.setNeuronParameters(g1, 0.02, 0.2, -65.0, 8.0);
-	sim2.setConductances(true);
-
-	// add some dummy connections so we can actually run the network
-	sim2.connect(g0,g1,"random", RangeWeight(0.01), 0.5f, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
-
-	sim2.setupNetwork();
-	sim2.setSpikeMonitor(g0,"spkInputFinal.dat"); // save spikes to file
-	sim2.runNetwork(1,0);
-
-	// explicitly read the spike file to make sure
-	int *inputArray0 = NULL;
-	long inputSize0;
-	readAndReturnSpikeFile("spkInputFinal.dat",inputArray0,inputSize0);
-
-	bool isSize0Correct = inputSize0/2 == nNeur * (int)rate;
-	EXPECT_TRUE(isSize0Correct);
-
-	if (isSize0Correct) {
-		for (int i=0; i<inputSize0; i+=2) {
-			EXPECT_EQ(inputArray0[i]%isi, 0);
+				// deallocate
+				if (poiss != NULL) {
+					delete poiss;
+				}
+				if (sgf != NULL) {
+					delete sgf;
+				}
+				if (sim != NULL) {
+					delete sim;
+				}
+				poiss = NULL;
+				sgf = NULL;
+				sim = NULL;
+			}
 		}
 	}
-
-	if (inputArray0!=NULL) delete[] inputArray0;
 }
 
 TEST(SpikeGen, SpikeGeneratorFromFileDeath) {

@@ -51,7 +51,8 @@ InteractiveSpikeGenerator::~InteractiveSpikeGenerator() {
 	delete [] quota;
 }
 
-unsigned int InteractiveSpikeGenerator::nextSpikeTime(CARLsim* s, int grpId, int nid, unsigned int currentTime, unsigned int lastScheduledSpikeTime) {
+unsigned int InteractiveSpikeGenerator::nextSpikeTime(CARLsim* s, int grpId, int nid, unsigned int currentTime, 
+	unsigned int lastScheduledSpikeTime, unsigned int endOfTimeSlice) {
 	if (nid < numNeurons && quota[nid] > 0) {
 		quota[nid]--;
 		if (lastScheduledSpikeTime + isi < currentTime) {
