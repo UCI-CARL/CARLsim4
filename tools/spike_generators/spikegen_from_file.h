@@ -96,8 +96,9 @@ class CARLsim;
  * // let's assume the first spike time occurs at t=42ms and the last at t=967ms
  * sim.runNetwork(1,0);
  *
- * // SGF can rewind to the beginning of the spike file, but now add offset of 1000ms
- * SGF.rewind(1000);
+ * // SGF can rewind to the beginning of the spike file, but now add offset of 1000ms: this can be done
+ * // either by hardcoding the number or by calling CARLsim::getSimTime:
+ * SGF.rewind((int)sim.getSimTime());
  *
  * // now spikes will be scheduled again, but the first spike is at t=42+1000ms, and the last at t=967+1000ms
  * sim.runNetwork(1,0);
@@ -122,6 +123,18 @@ public:
 
 	//! SpikeGeneratorFromFile destructor
 	~SpikeGeneratorFromFile();
+
+	/*!
+	 * \brief Loads a new spike file
+	 *
+	 * This function loads a new spike file (must be created from SpikeMonitor).
+	 * This allows changing files mid-simulation, which would otherwise not be possible without re-compiling the
+	 * network, because CARLsim::setSpikeGenerator can only be called in ::CONFIG_STATE.
+	 *
+	 * \param[in] fileName file name of spike file (must be created from SpikeMonitor)
+	 * \since v3.1
+	 */
+	void loadFile(std::string fileName);
 
 	/*!
 	 * \brief Rewinds the spike file to beginning of file

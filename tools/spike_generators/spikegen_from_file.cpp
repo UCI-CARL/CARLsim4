@@ -26,6 +26,20 @@ SpikeGeneratorFromFile::~SpikeGeneratorFromFile() {
 	if (fpBegin_ != NULL) {
 		fclose(fpBegin_);
 	}
+	fpBegin_ = NULL;
+}
+
+void SpikeGeneratorFromFile::loadFile(std::string fileName) {
+	// close previously opened file (if any)
+	if (fpBegin_ != NULL) {
+		fclose(fpBegin_);
+	}
+	fpBegin_ = NULL;
+
+	// update file name and open
+	fileName_ = fileName;
+	openFile();
+	init();
 }
 
 // rewind file pointers to beginning
@@ -71,6 +85,7 @@ void SpikeGeneratorFromFile::init() {
 	// allocate spike vector
 	// we organize AER format into a 2D spike vector: first dim=neuron, second dim=spike times
 	// then we just need to maintain an iterator for each neuron to know which spike to schedule next
+	spikes_.clear();
 	for (int i=0; i<nNeur_; i++) {
 		spikes_.push_back(std::vector<int>());
 	}
