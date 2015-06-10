@@ -62,22 +62,20 @@ void SpikeGeneratorFromFile::openFile() {
 	// \TODO there should be a common/standard way to read spike files
 	// \FIXME: this is a hack...to get the size of the header section
 	// needs to be updated every time header changes
+	FILE* fp = fpBegin_;
 	szByteHeader_ = 4*sizeof(int)+1*sizeof(float);
-	fseek(fpBegin_	, sizeof(int)+sizeof(float), SEEK_SET); // skipping signature+version
+	fseek(fp, sizeof(int)+sizeof(float), SEEK_SET); // skipping signature+version
 
 	// get number of neurons from header
 	nNeur_ = 1;
 	int grid;
 	for (int i=1; i<=3; i++) {
-		size_t result = fread(&grid, sizeof(int), 1, fpBegin_);
+		size_t result = fread(&grid, sizeof(int), 1, fp);
 		nNeur_ *= grid;
 	}
 
 	// make sure number of neurons is now valid
 	assert(nNeur_>0);
-
-	// reset file pointer to beginning of file
-	fseek(fpBegin_, 0, SEEK_SET);
 }
 
 void SpikeGeneratorFromFile::init() {
@@ -116,7 +114,7 @@ void SpikeGeneratorFromFile::init() {
 #endif
 
 	// initialize iterators
-	rewind(0);
+	rewind(offsetTimeMs_);
 }
 
 unsigned int SpikeGeneratorFromFile::nextSpikeTime(CARLsim* sim, int grpId, int nid, unsigned int currentTime, 
@@ -131,8 +129,9 @@ unsigned int SpikeGeneratorFromFile::nextSpikeTime(CARLsim* sim, int grpId, int 
 			// ... and if the next spike time is in the current scheduling time slice:
 #ifdef VERBOSE
 			if (nid==0) {
-			printf("[%d][%d]: currTime=%u, lastTime=%u, endOfTime=%u, nextSpike=%u\n", grpId, nid, currentTime,
-				lastScheduledSpikeTime, endOfTimeSlice, (unsigned int) (*(spikesIt_[nid])+offsetTimeMs_));
+			printf("[%d][%d]: currTime=%u, lastTime=%u, endOfTime=%u, offsetTimeMs=%u, nextSpike=%u\n", grpId, nid,
+				currentTime, lastScheduledSpikeTime, endOfTimeSlice, offsetTimeMs_,
+				(unsigned int) (*(spikesIt_[nid])+offsetTimeMs_));
 			}
 #endif
 			// return the next spike time and update iterator
