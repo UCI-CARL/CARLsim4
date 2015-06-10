@@ -96,8 +96,9 @@ class CARLsim;
  * // let's assume the first spike time occurs at t=42ms and the last at t=967ms
  * sim.runNetwork(1,0);
  *
- * // SGF can rewind to the beginning of the spike file, but now add offset of 1000ms
- * SGF.rewind(1000);
+ * // SGF can rewind to the beginning of the spike file, but now add offset of 1000ms: this can be done
+ * // either by hardcoding the number or by calling CARLsim::getSimTime:
+ * SGF.rewind((int)sim.getSimTime());
  *
  * // now spikes will be scheduled again, but the first spike is at t=42+1000ms, and the last at t=967+1000ms
  * sim.runNetwork(1,0);
@@ -126,21 +127,28 @@ public:
 	/*!
 	 * \brief Rewinds the spike file to beginning of file
 	 *
-	 * This function rewinds the spike file to the begining and applies an optional offset to the spike times.
+	 * This function rewinds the spike file to the begining and applies an offset to the spike times.
 	 * This means that the SpikeGenerator will continue to schedule spikes (starting over at the beginning of
 	 * the spike file), but this time it will add offsetTimeMs to all spike times.
 	 *
-	 * For example:
-	 * - Assume spike file contains only two spikes <neurId,spikeTime>: <2,123> and <6,987>
-	 * - CARLsim::runNetwork for a second will schedule exactly these two spikes at times t1=123ms and t2=987ms
-	 * - If we run CARLsim for longer, no additional spikes will be scheduled.
-	 * - However, calling SpikeGeneratorFromFile::rewind with offset 1000ms will re-schedule all spikes, but now
-	 *   t1=offsetTimeMs+123ms and t2=offsetTimeMs+123ms
+	 * Most often, this offset is the current simulation time (in ms), which can be retrieved via
+	 * CARLsim::getSimTime.
 	 *
-	 * \param[in] offsetTimeMs optional offset (ms) that will be applied to all scheduled spike times. Can assume
-	 *                         both positive and negative values. Default: 0.
+	 * Specifying an offset is necessary, because SpikeGeneratorFromFile has no direct access to CARLsim, and
+	 * thus cannot know how much time has already been simulated.
+	 *
+	 * Consider the following illustrative example:
+	 * -# Assume spike file contains only two spikes <neurId,spikeTime>: <2,123> and <6,987>
+	 * -# If we run CARLsim for a second, SpikeGeneratorFromFile will schedule exactly these two spikes at times
+	 *   t1=123ms and t2=987ms
+	 * -# If we run CARLsim for longer, no additional spikes will be scheduled.
+	 * -# However, calling SpikeGeneratorFromFile::rewind with offset 1000ms (which is what CARLsim::getSimTime
+	 *    will return at that point) will re-schedule all spikes, but now t1=1000+123ms and t2=100+123ms
+	 *
+	 * \param[in] offsetTimeMs offset (ms) that will be applied to all scheduled spike times. Can assume
+	 *                         both positive and negative values.
 	 */
-	void rewind(int offsetTimeMs=0);
+	void rewind(int offsetTimeMs);
 
 	/*!
 	 * \brief schedules the next spike time
