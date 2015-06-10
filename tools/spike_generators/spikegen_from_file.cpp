@@ -100,7 +100,7 @@ void SpikeGeneratorFromFile::init() {
 #endif
 
 	// initialize iterators
-	rewind();
+	rewind(offsetTimeMs_);
 }
 
 unsigned int SpikeGeneratorFromFile::nextSpikeTime(CARLsim* sim, int grpId, int nid, unsigned int currentTime, 
