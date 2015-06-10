@@ -11,6 +11,10 @@ Release 3.1
 Build 3.1.0
 ---------------------
 
+2015-06-10     Michael Beyeler <mbeyeler@uci.edu>
+  + Added SpikeGeneratorFromFile::loadFile.
+  * Made optional argument of SpikeGeneratorFromFile::rewind now mandatory.
+
 2015-06-01     Michael Beyeler <mbeyeler@uci.edu>
   * Fixed error checking in ConnectionMonitor.m.
 
