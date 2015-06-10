@@ -29,7 +29,7 @@ SpikeGeneratorFromFile::~SpikeGeneratorFromFile() {
 	fpBegin_ = NULL;
 }
 
-void SpikeGeneratorFromFile::loadFile(std::string fileName) {
+void SpikeGeneratorFromFile::loadFile(std::string fileName, int offsetTimeMs) {
 	// close previously opened file (if any)
 	if (fpBegin_ != NULL) {
 		fclose(fpBegin_);
@@ -38,6 +38,7 @@ void SpikeGeneratorFromFile::loadFile(std::string fileName) {
 
 	// update file name and open
 	fileName_ = fileName;
+	offsetTimeMs_ = offsetTimeMs;
 	openFile();
 	init();
 }

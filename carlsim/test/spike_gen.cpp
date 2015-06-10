@@ -122,6 +122,9 @@ TEST(SpikeGen, SpikeGeneratorFromFile) {
 	std::vector< std::vector<int> > spkVec0, spkVec1;
 	SpikeMonitor *SM0, *SM1;
 
+	// use the same object instance, but reload spike file
+	sgf = new SpikeGeneratorFromFile(fileName0);
+
 	for (int isGPUmode=0; isGPUmode<=1; isGPUmode++) {
 		for (int isCOBA=0; isCOBA<=1; isCOBA++) {
 			for (int run=0; run<=1; run++) {
@@ -189,11 +192,13 @@ TEST(SpikeGen, SpikeGeneratorFromFile) {
 					delete sim;
 				}
 				poiss = NULL;
-				sgf = NULL;
+//				sgf = NULL;
 				sim = NULL;
 			}
 		}
 	}
+
+	delete sgf;
 }
 
 TEST(SpikeGen, SpikeGeneratorFromFileDeath) {
