@@ -450,8 +450,8 @@ void CpuSNN::setHomeoBaseFiringRate(int grpId, float baseFiring, float baseFirin
 void CpuSNN::setNeuronParameters(int grpId, float izh_a, float izh_a_sd, float izh_b, float izh_b_sd,
 								float izh_c, float izh_c_sd, float izh_d, float izh_d_sd)
 {
-	assert(grpId>=-1); assert(izh_a>0); assert(izh_a_sd>=0); assert(izh_b>0); assert(izh_b_sd>=0); assert(izh_c_sd>=0);
-	assert(izh_d>0); assert(izh_d_sd>=0);
+	assert(grpId>=-1); assert(izh_a_sd>=0); assert(izh_b_sd>=0); assert(izh_c_sd>=0);
+	assert(izh_d_sd>=0);
 
 	if (grpId == ALL) { // shortcut for all groups
 		for(int grpId1=0; grpId1<numGrp; grpId1++) {
@@ -3180,7 +3180,7 @@ void CpuSNN::generateSpikesFromFuncPtr(int grpId) {
 		done = false;
 		while (!done) {
 			// generate the next spike time (nextSchedTime) from the nextSpikeTime callback
-			unsigned int nextSchedTime = spikeGen->nextSpikeTime(this, grpId, i - grp_Info[grpId].StartN, currTime, 
+			unsigned int nextSchedTime = spikeGen->nextSpikeTime(this, grpId, i - grp_Info[grpId].StartN, currTime,
 				nextTime, endOfTimeWindow);
 
 			// the generated spike time is valid only if:
@@ -3580,7 +3580,7 @@ int CpuSNN::loadSimulation_internal(bool onlyPlastic) {
 	// TSC: so that we can restore the file position later...
 	// MB: not sure why though...
 	long file_position = ftell(loadSimFID);
-	
+
 	int tmpInt;
 	float tmpFloat;
 
@@ -3751,7 +3751,7 @@ int CpuSNN::loadSimulation_internal(bool onlyPlastic) {
 			if (IS_INHIBITORY_TYPE(grp_Info[gIDpre].Type) && (weight>0)
 					|| !IS_INHIBITORY_TYPE(grp_Info[gIDpre].Type) && (weight<0)) {
 				KERNEL_ERROR("loadSimulation: Sign of weight value (%s) does not match neuron type (%s)",
-					((weight>=0.0f)?"plus":"minus"), 
+					((weight>=0.0f)?"plus":"minus"),
 					(IS_INHIBITORY_TYPE(grp_Info[gIDpre].Type)?"inhibitory":"excitatory"));
 				exitSimulation(-1);
 			}
@@ -3762,7 +3762,7 @@ int CpuSNN::loadSimulation_internal(bool onlyPlastic) {
 			if (IS_INHIBITORY_TYPE(grp_Info[gIDpre].Type) && (maxWeight>=0)
 					|| !IS_INHIBITORY_TYPE(grp_Info[gIDpre].Type) && (maxWeight<=0)) {
 				KERNEL_ERROR("loadSimulation: Sign of maxWeight value (%s) does not match neuron type (%s)",
-					((maxWeight>=0.0f)?"plus":"minus"), 
+					((maxWeight>=0.0f)?"plus":"minus"),
 					(IS_INHIBITORY_TYPE(grp_Info[gIDpre].Type)?"inhibitory":"excitatory"));
 				exitSimulation(-1);
 			}
@@ -4547,7 +4547,7 @@ std::vector< std::vector<float> > CpuSNN::getWeightMatrix2D(short int connId) {
 
 					// find pre-neuron ID and update ConnectionMonitor container
 					int preId = GET_CONN_NEURON_ID(preSynapticIds[pos_ij]);
-					wtConnId[preId-getGroupStartNeuronId(grpIdPre)][postId-getGroupStartNeuronId(grpIdPost)] = 
+					wtConnId[preId-getGroupStartNeuronId(grpIdPre)][postId-getGroupStartNeuronId(grpIdPost)] =
 					fabs(wt[pos_ij]);
 				}
 			}
