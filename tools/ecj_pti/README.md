@@ -12,6 +12,10 @@ on how to install ECJ, please go [here](http://cs.gmu.edu/~eclab/projects/ecj/).
 
 
 1) Set the ECJ_DIR and ECJ_PTI_DIR variables in user.mk.
+   NOTE: the ECJ_DIR includes the name of the ECJ jar file.
+	 EXAMPLE: if the ECJ jar file is found in /opt/ecj/jar, and named
+	 ecj.22.jar, then:
+	 ECJ_DIR=/opt/ecj/jar/ecj.22.jar.
 
 2) Change the current directory to ’tools/ecj_pti’.
 
