@@ -42,9 +42,9 @@ EO_PTI_DIR ?= /opt/CARL/carlsim_eo_pti
 #------------------------------------------------------------------------------
 # CARLsim/ECJ Parameter Tuning Interface Options
 #------------------------------------------------------------------------------
-# path of evolutionary computation in java installation for ECJ-PTI CARLsim
-# support
-ECJ_DIR ?= /opt/ecj
+# absolute path and name of evolutionary computation in java installation jar
+# file for ECJ-PTI CARLsim support.
+ECJ_DIR ?= /opt/ecj/jar/ecj.22.jar
 ECJ_PTI_DIR ?= /opt/CARL/carlsim_ecj_pti
 
 #------------------------------------------------------------------------------

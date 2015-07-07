@@ -3,8 +3,8 @@
 # PTI exmaple programs from libCARLsim.a.
 
 # set this to wherever user.mk is located
-USER_MK_PATH ?= ./
-include $(USER_MK_PATH)user.mk
+USER_MK_PATH ?= .
+include $(USER_MK_PATH)/user.mk
 
 # -----------------------------------------------------------------------------
 # You should not need to edit the file beyond this point
