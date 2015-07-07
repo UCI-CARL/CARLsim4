@@ -67,7 +67,7 @@ Build 3.0.2
 2015-07-04:    Kristofor D. Carlson <kdcarlso@uci.edu>
   * Changed USER_MK_PATH default path value (. instead of ./). Users
 	  should not have a slash at the end of their USER_MK_PATH variable.
-	* Removed assertions that forced Izh parameters to be positive.
+	- Removed assertions that forced Izh parameters to be positive.
 	* Changed format of ECJ_DIR environment variable. It now must name
 	  the ECJ jar file explicitly instead of pointing to the ECJ
 		installation directory.
