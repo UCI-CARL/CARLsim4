@@ -11,7 +11,7 @@
 
 
 // we aren't using namespace std so pay attention!
-ConnectionMonitorCore::ConnectionMonitorCore(CpuSNN* snn,int monitorId,short int connId,int grpIdPre,int grpIdPost) {
+ConnectionMonitorCore::ConnectionMonitorCore(SNN* snn,int monitorId,short int connId,int grpIdPre,int grpIdPost) {
 	snn_ = snn;
 	connId_= connId;
 	grpIdPre_ = grpIdPre;
@@ -66,7 +66,7 @@ void ConnectionMonitorCore::init() {
 		wtMatLast_.push_back(wt);
 	}
 
-	// then load current weigths from CpuSNN into weight matrix
+	// then load current weigths from SNN into weight matrix
 	updateStoredWeights();
 }
 
@@ -74,7 +74,7 @@ ConnectionMonitorCore::~ConnectionMonitorCore() {
 	if (connFileId_!=NULL) {
 		// flush: store last snapshot to file if update interval set
 		if (connFileTimeIntervalSec_ > 0) {
-			// make sure CpuSNN is not already deallocated!
+			// make sure SNN is not already deallocated!
 			assert(snn_!=NULL);
 			writeConnectFileSnapshot(snn_->getSimTime(), snn_->getWeightMatrix2D(connId_));
 		}

@@ -63,7 +63,7 @@ typedef struct {
 /*!
  *	This structure contains network information that is required for GPU simulation.
  *	The data in this structure are copied to device memory when running GPU simulation.
- *	\sa CpuSNN
+ *	\sa SNN
  */
 typedef struct network_info_s  {
 	size_t			STP_Pitch;		//!< numN rounded upwards to the nearest 256 boundary
@@ -121,7 +121,7 @@ typedef struct connectData_s {
 	float 					 mulSynSlow;				//!< factor to be applied to either gNMDA or gGABAb
 	int	  	  				 numPostSynapses;
 	int	  	  				 numPreSynapses;
-	int                      ConnectionMonitorId;
+	int                      connectionMonitorId;
 	uint32_t  				 connProp;
 	ConnectionGeneratorCore* conn;
 	conType_t 				 type;
@@ -132,7 +132,7 @@ typedef struct connectData_s {
 	struct connectData_s*    next;
 } grpConnectInfo_t;
 
-typedef struct network_ptr_s {
+typedef struct RuntimeData_s {
 	float*	voltage;
 	float*	recovery;
 	float*	Izh_a;
@@ -151,9 +151,13 @@ typedef struct network_ptr_s {
 	float*	gGABAb;				//!< conductance of gGABAb
 	float*	gGABAb_r;
 	float*	gGABAb_d;
-	int*	I_set;
+	int*	I_set;				// only used on GPU
 	simMode_t	memType;
 	int		allocated;				//!< true if all data has been allocated..
+
+	/* Tsodyks & Markram (1998), where the short-term dynamics of synapses is characterized by three parameters:
+	   U (which roughly models the release probability of a synaptic vesicle for the first spike in a train of spikes),
+	   maxDelay_ (time constant for recovery from depression), and F (time constant for recovery from facilitation). */
 	float*	stpx;
 	float*	stpu;
 
@@ -162,9 +166,9 @@ typedef struct network_ptr_s {
 	float*		Npre_plasticInv;	//!< stores the 1/number of plastic input connections, for use on the GPU
 	unsigned short*	Npost;				//!< stores the number of output connections from a neuron.
 	unsigned int*	lastSpikeTime;		//!< storees the firing time of the neuron
-	float*	wtChange;
-	float*	wt;				//!< stores the synaptic weight and weight change of a synaptic connection
-	float*	maxSynWt;			//!< maximum synaptic weight for given connection..
+	float*	wtChange;		//!< stores the weight change of a synaptic connection
+	float*	wt;				//!< stores the weight change of a synaptic connection
+	float*	maxSynWt;			//!< maximum synaptic weight for a connection
 	unsigned int*	synSpikeTime;
 	unsigned int*	neuronFiring;
 	unsigned int*	cumulativePost;
@@ -191,11 +195,9 @@ typedef struct network_ptr_s {
 	unsigned int*	poissonRandPtr;		//!< firing random number. max value is 10,000
 	int2*	neuronAllocation;		//!< .x: [31:0] index of the first neuron, .y: [31:16] number of neurons, [15:0] group id
 	int3*	groupIdInfo;			//!< .x , .y: the start and end index of neurons in a group, .z: gourd id, used for group Id calculations
-	short int*	synIdLimit;			//!<
-	float*	synMaxWts;				//!<
 	int*	nSpikeCnt;
 
-	int** spkCntBuf; //!< for copying 2D array to GPU (see CpuSNN::allocateSNN_GPU)
+	int** spkCntBuf; //!< for copying 2D array to GPU (see SNN::allocateSNN_GPU)
 	int* spkCntBufChild[MAX_GRP_PER_SNN]; //!< child pointers for above
 
 	//!< homeostatic plasticity variables
@@ -219,9 +221,9 @@ typedef struct network_ptr_s {
 
 	unsigned int*	spikeGenBits;
 	bool*		curSpike;
-} network_ptr_t;
+} RuntimeData;
 
-typedef struct group_info_s {
+typedef struct GroupConfig_s {
 	// properties of group of neurons size, location, initial weights etc.
 	PoissonRate*	RatePtr;
 	int			StartN;
@@ -303,14 +305,14 @@ typedef struct group_info_s {
 	bool 		writeSpikesToArray;	//!< whether spikes should be written to file (needs SpikeMonitorId>-1)
 	SpikeGeneratorCore*	spikeGen;
 	bool		newUpdates;  //!< FIXME this flag has mixed meaning and is not rechecked after the simulation is started
-} group_info_t;
+} GroupConfig;
 
 /*!
  * this group need not be shared with the GPU
  * separate group which has unique properties of
  * neuron in the current group.
  */
-typedef struct group_info2_s {
+typedef struct GroupInfo_s {
 	std::string		Name;
 	// properties of group of neurons size, location, initial weights etc.
 	//<! homeostatic plasticity variables
@@ -336,6 +338,6 @@ typedef struct group_info2_s {
 	int			maxPreConn;
 	int			sumPostConn;
 	int			sumPreConn;
-} group_info2_t;
+} GroupInfo;
 
 #endif

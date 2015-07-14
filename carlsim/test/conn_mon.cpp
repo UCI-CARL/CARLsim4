@@ -353,7 +353,7 @@ TEST(ConnMon, weightChange) {
 		// set all weights to zero
 		sim->scaleWeights(c0, 0.0f);
 
-		// Run for some time, now CpuSNN::updateConnectionMonitor will be called, but MUST NOT
+		// Run for some time, now SNN::updateConnectionMonitor will be called, but MUST NOT
 		// interfere with the takeSnapshot method.
 		// So we expect the weight change to be from wtScale (at t=0.5s) to 0 (at t=1.5s), not from
 		// 0 (at t=1.0s) to 0 (at t=1.5s).

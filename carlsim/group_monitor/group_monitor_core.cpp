@@ -6,7 +6,7 @@
 #include <algorithm>			// std::sort
 
 // we aren't using namespace std so pay attention!
-GroupMonitorCore::GroupMonitorCore(CpuSNN* snn, int monitorId, int grpId) {
+GroupMonitorCore::GroupMonitorCore(SNN* snn, int monitorId, int grpId) {
 	snn_ = snn;
 	grpId_= grpId;
 	monitorId_ = monitorId;

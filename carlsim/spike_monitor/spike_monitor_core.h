@@ -46,7 +46,7 @@
 #include <stdio.h>					// FILE
 #include <vector>					// std::vector
 
-class CpuSNN; // forward declaration of CpuSNN class
+class SNN; // forward declaration of SNN class
 
 
 /*
@@ -63,7 +63,7 @@ class CpuSNN; // forward declaration of CpuSNN class
 class SpikeMonitorCore {
 public:
 	//! constructor (called by CARLsim::setSpikeMonitor)
-	SpikeMonitorCore(CpuSNN* snn, int monitorId, int grpId);
+	SpikeMonitorCore(SNN* snn, int monitorId, int grpId);
 
 	//! destructor, cleans up all the memory upon object deletion
 	~SpikeMonitorCore();
@@ -210,7 +210,7 @@ private:
 	//! whether we have to write header section of spike file
 	bool needToWriteFileHeader_;
 
-	CpuSNN* snn_;	//!< private CARLsim implementation
+	SNN* snn_;	//!< private CARLsim implementation
 	int monitorId_;	//!< current SpikeMonitor ID
 	int grpId_;		//!< current group ID
 	int nNeurons_;	//!< number of neurons in the group

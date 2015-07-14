@@ -47,7 +47,7 @@
 #include <carlsim_datastructures.h> // spikeMonMode_t
 #include <vector>					// std::vector
 
-class CpuSNN; 			// forward declaration of CpuSNN class
+class SNN; 			// forward declaration of SNN class
 class SpikeMonitorCore; // forward declaration of implementation
 
 /*!

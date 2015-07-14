@@ -46,7 +46,7 @@
 #include <vector>					// std::vector
 #include <carlsim_definitions.h>	// ALL
 
-class CpuSNN; // forward declaration of CpuSNN class
+class SNN; // forward declaration of SNN class
 
 
 /*
@@ -61,7 +61,7 @@ class CpuSNN; // forward declaration of CpuSNN class
 class ConnectionMonitorCore {
 public: 
 	//! constructor, created by CARLsim::setConnectionMonitor
-	ConnectionMonitorCore(CpuSNN* snn, int monitorId, short int connId, int grpIdPre, int grpIdPost); 
+	ConnectionMonitorCore(SNN* snn, int monitorId, short int connId, int grpIdPre, int grpIdPost); 
 
 	//! destructor, cleans up all the memory upon object deletion
 	~ConnectionMonitorCore();
@@ -172,7 +172,7 @@ private:
 	//! writes the header section (file signature, version number) of a connect file
 	void writeConnectFileHeader();
 
-	CpuSNN* snn_;                   //!< private CARLsim implementation
+	SNN* snn_;                   //!< private CARLsim implementation
 	int monitorId_;                 //!< current ConnectionMonitor ID
 	short int connId_;              //!< current connection ID
 	int grpIdPre_;                  //!< pre-synaptic group ID

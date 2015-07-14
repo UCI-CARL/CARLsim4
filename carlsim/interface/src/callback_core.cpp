@@ -51,7 +51,7 @@ SpikeGeneratorCore::SpikeGeneratorCore(CARLsim* c, SpikeGenerator* s) {
 	sGen = s;
 }
 
-unsigned int SpikeGeneratorCore::nextSpikeTime(CpuSNN* s, int grpId, int i,
+unsigned int SpikeGeneratorCore::nextSpikeTime(SNN* s, int grpId, int i,
 											unsigned int currentTime, unsigned int lastScheduledSpikeTime,
 											unsigned int endOfTimeSlice) {
 	if (sGen != NULL)
@@ -65,7 +65,7 @@ ConnectionGeneratorCore::ConnectionGeneratorCore(CARLsim* c, ConnectionGenerator
 	cGen = cg;
 }
 
-void ConnectionGeneratorCore::connect(CpuSNN* s, int srcGrpId, int i, int destGrpId, int j, float& weight, float& maxWt,
+void ConnectionGeneratorCore::connect(SNN* s, int srcGrpId, int i, int destGrpId, int j, float& weight, float& maxWt,
 							float& delay, bool& connected) {
 	if (cGen != NULL)
 		cGen->connect(carlsim, srcGrpId, i, destGrpId, j, weight, maxWt, delay, connected);

@@ -175,8 +175,8 @@ void CARLsim::CARLsimInit() {
 		}
 	}
 
-	// init CpuSNN object
-	snn_ = new CpuSNN(netName_, simMode_, loggerMode_, ithGPU_, randSeed_);
+	// init SNN object
+	snn_ = new SNN(netName_, simMode_, loggerMode_, ithGPU_, randSeed_);
 
 	// set default time constants for synaptic current decay
 	// TODO: add ref

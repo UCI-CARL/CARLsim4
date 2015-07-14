@@ -46,7 +46,7 @@
 #include <stdio.h>					// FILE
 #include <vector>					// std::vector
 
-class CpuSNN; // forward declaration of CpuSNN class
+class SNN; // forward declaration of SNN class
 
 /*!
  * \brief GroupMonitor private core implementation
@@ -56,7 +56,7 @@ class CpuSNN; // forward declaration of CpuSNN class
 class GroupMonitorCore {
 public: 
 	//! constructor (called by CARLsim::setGroupMonitor)
-	GroupMonitorCore(CpuSNN* snn, int monitorId, int grpId); 
+	GroupMonitorCore(SNN* snn, int monitorId, int grpId); 
 
 	//! destructor, cleans up all the memory upon object deletion
 	~GroupMonitorCore();
@@ -148,7 +148,7 @@ private:
 	//! whether we have to write header section of group data file
 	bool needToWriteFileHeader_;
 
-	CpuSNN* snn_;	//!< private CARLsim implementation
+	SNN* snn_;	//!< private CARLsim implementation
 	int monitorId_;	//!< current GroupMonitor ID
 	int grpId_;		//!< current group ID
 	int nNeurons_;	//!< number of neurons in the group

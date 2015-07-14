@@ -8,7 +8,7 @@
 
 
 // we aren't using namespace std so pay attention!
-SpikeMonitorCore::SpikeMonitorCore(CpuSNN* snn, int monitorId, int grpId) {
+SpikeMonitorCore::SpikeMonitorCore(SNN* snn, int monitorId, int grpId) {
 	snn_ = snn;
 	grpId_= grpId;
 	monitorId_ = monitorId;

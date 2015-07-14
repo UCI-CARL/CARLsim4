@@ -43,7 +43,7 @@
 
 // TODO: as Kris put it, this should really be called something like
 // some_random_macros_and_hardware_limitation_dependent_param_checks.h ... for example, the MAX_... defines
-// should really be private members of CpuSNN. These ranges are limited by the data structures that implement
+// should really be private members of SNN. These ranges are limited by the data structures that implement
 // the corresponding functionality. For example, you can't just set MAX_nConnections > 32768, because connIds
 // are stored as short int.
 
@@ -100,7 +100,7 @@ inline bool isInhibitoryNeuron (unsigned int& nid, unsigned int& numNInhPois, un
 // the macro is slightly faster than an inline function, but we should consider changing it anyway because
 // it's unsafe
 //#define STP_BUF_SIZE 32
-// \FIXME D is the CpuSNN member variable for the max delay in the network, give it a better name dammit!!
+// \FIXME D is the SNN member variable for the max delay in the network, give it a better name dammit!!
 // we actually need D+1 entries. Say D=1ms. Then to update the current we need u^+ (right after the pre-spike, so
 // at t) and x^- (right before the spike, so at t-1).
 #define STP_BUF_POS(nid,t) ( nid*(maxDelay_+1) + ((t)%(maxDelay_+1)) )

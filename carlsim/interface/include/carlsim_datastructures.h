@@ -102,8 +102,8 @@ static const char* loggerMode_string[] = {
  * GPU_MODE:	run on a single GPU card
  *
  * When running GPU mode on a multi-GPU system, you can specify on which CUDA device to establish a context (ithGPU,
- * 0-indexed) when you create a new CpuSNN object.
- * The simulation mode will be fixed throughout the lifetime of a CpuSNN object.
+ * 0-indexed) when you create a new SNN object.
+ * The simulation mode will be fixed throughout the lifetime of a SNN object.
  */
 enum simMode_t {
 	 CPU_MODE,     //!< model is run on a single CPU core

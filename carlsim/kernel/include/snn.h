@@ -93,7 +93,7 @@ class ConnectionMonitor;
  *
  * This is a more elaborate description of our main class.
  */
-class CpuSNN {
+class SNN {
 
 /// **************************************************************************************************************** ///
 /// PUBLIC METHODS
@@ -109,13 +109,13 @@ public:
 	 * \param ithGPU
 	 * \param randSeed randomize seed of the random number generator
 	 */
-	CpuSNN(const std::string& name, simMode_t simMode, loggerMode_t loggerMode, int ithGPU, int randSeed);
+	SNN(const std::string& name, simMode_t simMode, loggerMode_t loggerMode, int ithGPU, int randSeed);
 
 	//! SNN Destructor
 	/*!
 	 * \brief clean up all allocated resource
 	 */
-	~CpuSNN();
+	~SNN();
 
 	// +++++ PUBLIC PROPERTIES ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
@@ -320,11 +320,11 @@ public:
 	void exitSimulation(int val=1);
 
 	//! reads the network state from file
-	//! Reads a CARLsim network file. Such a file can be created using CpuSNN:writeNetwork.
+	//! Reads a CARLsim network file. Such a file can be created using SNN:writeNetwork.
 	/*
-	 * \brief After calling CpuSNN::loadSimulation, you should run CpuSNN::runNetwork before calling fclose(fp).
+	 * \brief After calling SNN::loadSimulation, you should run SNN::runNetwork before calling fclose(fp).
 	 * \param fid: file pointer
-	 * \sa CpuSNN::saveSimulation()
+	 * \sa SNN::saveSimulation()
 	 */
 	 void loadSimulation(FILE* fid);
 
@@ -412,7 +412,7 @@ public:
 	/*!
 	 * \brief copy required spikes from firing buffer to spike buffer
 	 *
-	 * This function is public in CpuSNN, but it should probably not be a public user function in CARLsim.
+	 * This function is public in SNN, but it should probably not be a public user function in CARLsim.
 	 * It is usually called once every 1000ms by the core to update spike binaries and SpikeMonitor objects. In GPU
 	 * mode, it will first copy the firing info to the host. The input argument can either be a specific group ID or
 	 * keyword ALL (for all groups).
@@ -474,7 +474,7 @@ public:
 
 	Grid3D getGroupGrid3D(int grpId);
 	int getGroupId(std::string grpName);
-	group_info_t getGroupInfo(int groupId);
+	GroupConfig getGroupInfo(int groupId);
 	std::string getGroupName(int grpId);
 	GroupSTDPInfo_t getGroupSTDPInfo(int grpId);
 	GroupNeuromodulatorInfo_t getGroupNeuromodulatorInfo(int grpId);
@@ -747,7 +747,7 @@ private:
 	// +++++ GPU MODE +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 	// TODO: consider moving to snn_gpu.h
 	
-	//! initializes params needed in snn_gpu.cu (gets called in CpuSNN constructor)
+	//! initializes params needed in snn_gpu.cu (gets called in SNN constructor)
 	void CpuSNNinit_GPU();
 
 	void allocateGroupId();
@@ -758,21 +758,21 @@ private:
 	void assignPoissonFiringRate_GPU();
 
 	void checkAndSetGPUDevice();
-	void checkDestSrcPtrs(network_ptr_t* dest, network_ptr_t* src, cudaMemcpyKind kind, bool allocateMem, int grpId);
+	void checkDestSrcPtrs(RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind, bool allocateMem, int grpId);
 	void checkInitialization(char* testString=NULL);
 	void checkInitialization2(char* testString=NULL);
 	void configGPUDevice();
 
-	void copyConductanceAMPA(network_ptr_t* dest, network_ptr_t* src, cudaMemcpyKind kind, bool allocateMem, int grpId=-1);
-	void copyConductanceNMDA(network_ptr_t* dest, network_ptr_t* src, cudaMemcpyKind kind, bool allocateMem, int grpId=-1);
-	void copyConductanceGABAa(network_ptr_t* dest, network_ptr_t* src, cudaMemcpyKind kind, bool allocateMem, int grpId=-1);
-	void copyConductanceGABAb(network_ptr_t* dest, network_ptr_t* src, cudaMemcpyKind kind, bool allocateMem, int grpId=-1);
-	void copyConductanceState(network_ptr_t* dest, network_ptr_t* src, cudaMemcpyKind kind, bool allocateMem, int grpId=-1);
-	void copyConnections(network_ptr_t* dest, int kind, bool allocateMem);
-	void copyExternalCurrent(network_ptr_t* dest, network_ptr_t* src, bool allocateMem, int grpId=-1);
+	void copyConductanceAMPA(RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind, bool allocateMem, int grpId=-1);
+	void copyConductanceNMDA(RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind, bool allocateMem, int grpId=-1);
+	void copyConductanceGABAa(RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind, bool allocateMem, int grpId=-1);
+	void copyConductanceGABAb(RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind, bool allocateMem, int grpId=-1);
+	void copyConductanceState(RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind, bool allocateMem, int grpId=-1);
+	void copyConnections(RuntimeData* dest, int kind, bool allocateMem);
+	void copyExternalCurrent(RuntimeData* dest, RuntimeData* src, bool allocateMem, int grpId=-1);
 	void copyFiringInfo_GPU();
 	void copyFiringStateFromGPU (int grpId = -1);
-	void copyGroupState(network_ptr_t* dest, network_ptr_t* src,  cudaMemcpyKind kind, bool allocateMem, int grpId=-1);
+	void copyGroupState(RuntimeData* dest, RuntimeData* src,  cudaMemcpyKind kind, bool allocateMem, int grpId=-1);
 
 	/*!
 	 * \brief Copy neuron parameters (Izhikevich params, baseFiring) from host to device pointer
@@ -791,15 +791,15 @@ private:
 	 * a single group will be copied. If allocateMem is set to true, grpId must be set to -1 (must allocate all groups
 	 * at the same time in order to avoid memory fragmentation).
 	 */
-	void copyNeuronParametersFromHostToDevice(network_ptr_t* dest, bool allocateMem, int grpId=-1);
+	void copyNeuronParametersFromHostToDevice(RuntimeData* dest, bool allocateMem, int grpId=-1);
 
-	void copyNeuronState(network_ptr_t* dest, network_ptr_t* src, cudaMemcpyKind kind, bool allocateMem, int grpId=-1);
+	void copyNeuronState(RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind, bool allocateMem, int grpId=-1);
 	void copyParameters();
-	void copyPostConnectionInfo(network_ptr_t* dest, bool allocateMem);
-	void copyState(network_ptr_t* dest, bool allocateMem);
-	void copySTPState(network_ptr_t* dest, network_ptr_t* src, cudaMemcpyKind kind, bool allocateMem);
+	void copyPostConnectionInfo(RuntimeData* dest, bool allocateMem);
+	void copyState(RuntimeData* dest, bool allocateMem);
+	void copySTPState(RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind, bool allocateMem);
 	void copyWeightsGPU(unsigned int nid, int src_grp);
-	void copyWeightState(network_ptr_t* dest, network_ptr_t* src, cudaMemcpyKind kind, //!< copy presynaptic info
+	void copyWeightState(RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind, //!< copy presynaptic info
 		bool allocateMem, int grpId=-1);
 	void copyNetworkInfo();
 
@@ -832,7 +832,7 @@ private:
 	 *
 	 * Buffers get reset to zero automatically after recordDur. However, you can reset the buffer manually at any
 	 * point in time through calling the public equivalent. This one gets called in
-	 * CpuSNN::resetSpikeCounter if we're running GPU mode.
+	 * SNN::resetSpikeCounter if we're running GPU mode.
 	 * \param grpId	the group for which you want to reset the spikes
 	 */
 	void resetSpikeCounter_GPU(int grpId);
@@ -1074,8 +1074,8 @@ private:
 
 	network_info_t net_Info;
 
-	network_ptr_t gpuRuntimeData;
-	network_ptr_t cpuRuntimeData;
+	RuntimeData gpuRuntimeData;
+	RuntimeData cpuRuntimeData;
 
 	//int   Noffset;
 	int	  NgenFunc;					//!< this counts the spike generator offsets...
@@ -1090,8 +1090,8 @@ private:
 	unsigned int	gpu_tStep, gpu_simSec;		//!< this is used to store the seconds.
 	unsigned int	gpu_simTime;				//!< this value is not reset but keeps increasing to its max value.
 
-	group_info_t	  	grp_Info[MAX_GRP_PER_SNN];
-	group_info2_t		grp_Info2[MAX_GRP_PER_SNN];
+	GroupConfig	  	grp_Info[MAX_GRP_PER_SNN];
+	GroupInfo		grp_Info2[MAX_GRP_PER_SNN];
 	// duplicated uint32_t*	spikeGenBits;
 
 	// weight update parameter

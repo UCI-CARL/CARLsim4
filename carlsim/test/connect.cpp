@@ -10,7 +10,7 @@
 /// **************************************************************************************************************** ///
 
 /*
-// \FIXME: deactivate for now, because we don't want to instantiate CpuSNN
+// \FIXME: deactivate for now, because we don't want to instantiate SNN
 
 
 
@@ -194,7 +194,7 @@ TEST(CONNECT, connectRandom) {
 
 	sim->setupNetwork(); // need SETUP state for this function to work
 
-	// from CpuSNN::connect: estimate max number of connections needed using binomial distribution
+	// from SNN::connect: estimate max number of connections needed using binomial distribution
 	// at 6.5 standard deviations
 	int errorMargin = 6.5*sqrt(prob*(1-prob)*grid.N)+0.5;
 	EXPECT_NEAR(sim->getNumSynapticConnections(c0), prob * grid.N * grid.N, errorMargin);

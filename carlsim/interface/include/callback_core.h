@@ -43,7 +43,7 @@
 #define _CALLBACK_CORE_H_
 
 class CARLsim;
-class CpuSNN;
+class SNN;
 
 class ConnectionGenerator;
 class SpikeGenerator;
@@ -65,7 +65,7 @@ public:
 	//! controls spike generation using a callback mechanism
 	/*! \attention The virtual method should never be called directly
 	 */
-	virtual unsigned int nextSpikeTime(CpuSNN* s, int grpId, int i,
+	virtual unsigned int nextSpikeTime(SNN* s, int grpId, int i,
 											unsigned int currentTime, unsigned int lastScheduledSpikeTime,
 											unsigned int endOfTimeSlice);
 
@@ -86,7 +86,7 @@ public:
 	ConnectionGeneratorCore(CARLsim* c, ConnectionGenerator* cg);
 	//! specifies which synaptic connections (per group, per neuron, per synapse) should be made
 	/*! \attention The virtual method should never be called directly */
-	virtual void connect(CpuSNN* s, int srcGrpId, int i, int destGrpId, int j, float& weight, float& maxWt,
+	virtual void connect(SNN* s, int srcGrpId, int i, int destGrpId, int j, float& weight, float& maxWt,
 		float& delay, bool& connected);
 
 private:

@@ -92,11 +92,11 @@ TEST(CORE, getNeuronLocation3D) {
 }
 
 /*
-// \FIXME deactivate for now because we don't want to instantiate CpuSNN
+// \FIXME deactivate for now because we don't want to instantiate SNN
 
 // tests whether a point lies on a grid
 TEST(CORE, isPoint3DonGrid) {
-	CpuSNN snn("CORE.isPoint3DonGrid", CPU_MODE, SILENT, 0, 42);
+	SNN snn("CORE.isPoint3DonGrid", CPU_MODE, SILENT, 0, 42);
 	EXPECT_FALSE(snn.isPoint3DonGrid(Point3D(-1,-1,-1), Grid3D(10,5,2)));
 	EXPECT_FALSE(snn.isPoint3DonGrid(Point3D(0.5,0.5,0.5), Grid3D(10,5,2)));
 	EXPECT_FALSE(snn.isPoint3DonGrid(Point3D(10,5,2), Grid3D(10,5,2)));

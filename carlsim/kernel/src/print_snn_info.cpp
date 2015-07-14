@@ -42,24 +42,24 @@
 #include <connection_monitor_core.h>
 #include <group_monitor_core.h>
 
-void CpuSNN::printConnection(const std::string& fname) {
+void SNN::printConnection(const std::string& fname) {
 	FILE *fp = fopen(fname.c_str(), "w");
 	printConnection(fp);
 	fclose(fp);
 }
 
-void CpuSNN::printConnection(FILE* const fp) {
+void SNN::printConnection(FILE* const fp) {
 	printPostConnection(fp);
 	printPreConnection(fp);
 }
 
 //! print the connection info of grpId
-void CpuSNN::printConnection(int grpId, FILE* const fp) {
+void SNN::printConnection(int grpId, FILE* const fp) {
 	printPostConnection(grpId, fp);
 	printPreConnection(grpId, fp);
 }
 
-void CpuSNN::printMemoryInfo(FILE* const fp) {
+void SNN::printMemoryInfo(FILE* const fp) {
   if (!doneReorganization) {
     KERNEL_DEBUG("checkNetworkBuilt()");
     KERNEL_DEBUG("Network not yet elaborated and built...");
@@ -94,7 +94,7 @@ void CpuSNN::printMemoryInfo(FILE* const fp) {
 
 }
 
-void CpuSNN::printStatusConnectionMonitor(int connId) {
+void SNN::printStatusConnectionMonitor(int connId) {
 	for (int monId=0; monId<numConnectionMonitor; monId++) {
 		if (connId==ALL || connMonCoreList[monId]->getConnectId()==connId) {
 			// print connection weights (sparse representation: show only actually connected synapses)
@@ -104,7 +104,7 @@ void CpuSNN::printStatusConnectionMonitor(int connId) {
 	}
 }
 
-void CpuSNN::printStatusSpikeMonitor(int grpId) {
+void SNN::printStatusSpikeMonitor(int grpId) {
 	if (grpId==ALL) {
 		for (int grpId1=0; grpId1<numGrp; grpId1++) {
 			printStatusSpikeMonitor(grpId1);
@@ -162,7 +162,7 @@ void CpuSNN::printStatusSpikeMonitor(int grpId) {
 	}
 }
 
-void CpuSNN::printStatusGroupMonitor(int grpId) {
+void SNN::printStatusGroupMonitor(int grpId) {
 	if (grpId == ALL) {
 		for (int g = 0; g < numGrp; g++) {
 			printStatusGroupMonitor(g);
@@ -200,19 +200,19 @@ void CpuSNN::printStatusGroupMonitor(int grpId) {
 
 // This method allows us to print all information about the neuron.
 // If the enablePrint is false for a specific group, we do not print its state.
-void CpuSNN::printState(FILE* const fp) {
+void SNN::printState(FILE* const fp) {
 	for(int g=0; g < numGrp; g++)
 		printNeuronState(g, fp);
 }
 
-void CpuSNN::printTuningLog(FILE * const fp) {
+void SNN::printTuningLog(FILE * const fp) {
 	if (fp) {
 		fprintf(fp, "Generating Tuning log\n");
 //		printParameters(fp);
 	}
 }
 
-void CpuSNN::printConnectionInfo(FILE * const fp)
+void SNN::printConnectionInfo(FILE * const fp)
 {
   grpConnectInfo_t* newInfo = connectBegin;
 
@@ -239,7 +239,7 @@ void CpuSNN::printConnectionInfo(FILE * const fp)
   fflush(fp);
 }
 
-void CpuSNN::printConnectionInfo2(FILE * const fpg)
+void SNN::printConnectionInfo2(FILE * const fpg)
 {
   grpConnectInfo_t* newInfo = connectBegin;
 
@@ -258,7 +258,7 @@ void CpuSNN::printConnectionInfo2(FILE * const fpg)
 }
 
 // new print connection info, akin to printGroupInfo
-void CpuSNN::printConnectionInfo(short int connId) {
+void SNN::printConnectionInfo(short int connId) {
 	grpConnectInfo_t* connInfo = getConnectInfo(connId);
 
 	KERNEL_INFO("Connection ID %d: %s(%d) => %s(%d)", connId, grp_Info2[connInfo->grpSrc].Name.c_str(),
@@ -279,7 +279,7 @@ void CpuSNN::printConnectionInfo(short int connId) {
 	KERNEL_INFO("  - Avg numPostSynapses        = %8d", (int)avgPostM );
 }
 
-void CpuSNN::printGroupInfo(int grpId) {
+void SNN::printGroupInfo(int grpId) {
 	KERNEL_INFO("Group %s(%d): ", grp_Info2[grpId].Name.c_str(), grpId);
 	KERNEL_INFO("  - Type                       =  %s", isExcitatoryGroup(grpId) ? "  EXCIT" :
 		(isInhibitoryGroup(grpId) ? "  INHIB" : (isPoissonGroup(grpId)?" POISSON" :
@@ -324,7 +324,7 @@ void CpuSNN::printGroupInfo(int grpId) {
 	}
 }
 
-void CpuSNN::printGroupInfo2(FILE* const fpg)
+void SNN::printGroupInfo2(FILE* const fpg)
 {
   fprintf(fpg, "#Group Information\n");
   for(int g=0; g < numGrp; g++) {
@@ -344,7 +344,7 @@ void CpuSNN::printGroupInfo2(FILE* const fpg)
 }
 
 //! \deprecated
-void CpuSNN::printParameters(FILE* const fp) {
+void SNN::printParameters(FILE* const fp) {
 	KERNEL_WARN("printParameters is deprecated");
 /*	assert(fp!=NULL);
 	printGroupInfo(fp);
@@ -352,7 +352,7 @@ void CpuSNN::printParameters(FILE* const fp) {
 }
 
 // print all post-connections...
-void CpuSNN::printPostConnection(FILE * const fp)
+void SNN::printPostConnection(FILE * const fp)
 {
   if(fp) fprintf(fp, "PRINTING POST-SYNAPTIC CONNECTION TOPOLOGY\n");
   if(fp) fprintf(fp, "(((((((((((((((((((((())))))))))))))))))))))\n");
@@ -361,7 +361,7 @@ void CpuSNN::printPostConnection(FILE * const fp)
 }
 
 // print all the pre-connections...
-void CpuSNN::printPreConnection(FILE * const fp)
+void SNN::printPreConnection(FILE * const fp)
 {
   if(fp) fprintf(fp, "PRINTING PRE-SYNAPTIC CONNECTION TOPOLOGY\n");
   if(fp) fprintf(fp, "(((((((((((((((((((((())))))))))))))))))))))\n");
@@ -370,7 +370,7 @@ void CpuSNN::printPreConnection(FILE * const fp)
 }
 
 // print the connection info of grpId
-int CpuSNN::printPostConnection2(int grpId, FILE* const fpg)
+int SNN::printPostConnection2(int grpId, FILE* const fpg)
 {
   int maxLength = -1;
   for(int i=grp_Info[grpId].StartN; i<=grp_Info[grpId].EndN; i++) {
@@ -397,7 +397,7 @@ int CpuSNN::printPostConnection2(int grpId, FILE* const fpg)
   return maxLength;
 }
 
-void CpuSNN::printNetworkInfo(FILE* const fpg) {
+void SNN::printNetworkInfo(FILE* const fpg) {
 	int maxLengthPost = -1;
 	int maxLengthPre  = -1;
 	printGroupInfo2(fpg);
@@ -416,7 +416,7 @@ void CpuSNN::printNetworkInfo(FILE* const fpg) {
 	fclose(fpg);
 }
 
-void CpuSNN::printFiringRate(char *fname)
+void SNN::printFiringRate(char *fname)
 {
   static int printCnt = 0;
   FILE *fpg;
@@ -460,7 +460,7 @@ void CpuSNN::printFiringRate(char *fname)
 }
 
 // print the connection info of grpId
-void CpuSNN::printPostConnection(int grpId, FILE* const fp)
+void SNN::printPostConnection(int grpId, FILE* const fp)
 {
   for(int i=grp_Info[grpId].StartN; i<=grp_Info[grpId].EndN; i++) {
     if(fp) fprintf(fp, " %3d ( %3d ) : \t", i, cpuRuntimeData.Npost[i]);
@@ -483,7 +483,7 @@ void CpuSNN::printPostConnection(int grpId, FILE* const fp)
   }
 }
 
-int CpuSNN::printPreConnection2(int grpId, FILE* const fpg)
+int SNN::printPreConnection2(int grpId, FILE* const fpg)
 {
   int maxLength = -1;
   for(int i=grp_Info[grpId].StartN; i<=grp_Info[grpId].EndN; i++) {
@@ -500,7 +500,7 @@ int CpuSNN::printPreConnection2(int grpId, FILE* const fpg)
   return maxLength;
 }
 
-void CpuSNN::printPreConnection(int grpId, FILE* const fp)
+void SNN::printPreConnection(int grpId, FILE* const fp)
 {
   for(int i=grp_Info[grpId].StartN; i<=grp_Info[grpId].EndN; i++) {
     if(fp) fprintf(fp, " %d ( preCnt=%d, prePlastic=%d ) : (id => (wt, maxWt),(preId, P/F)\n\t", i, cpuRuntimeData.Npre[i], cpuRuntimeData.Npre_plastic[i]);
@@ -518,7 +518,7 @@ void CpuSNN::printPreConnection(int grpId, FILE* const fp)
 }
 
 
-void CpuSNN::printNeuronState(int grpId, FILE* const fp)
+void SNN::printNeuronState(int grpId, FILE* const fp)
 {
   if (simMode_==GPU_MODE) {
     copyNeuronState(&cpuRuntimeData, &gpuRuntimeData, cudaMemcpyDeviceToHost, false, grpId);
@@ -564,7 +564,7 @@ void CpuSNN::printNeuronState(int grpId, FILE* const fp)
 }
 
 // TODO: make KERNEL_INFO(), don't write to fpInf_
-void CpuSNN::printWeights(int preGrpId, int postGrpId) {
+void SNN::printWeights(int preGrpId, int postGrpId) {
 	int preA, preZ, postA, postZ;
 	if (preGrpId==ALL) {
 		preA = 0;

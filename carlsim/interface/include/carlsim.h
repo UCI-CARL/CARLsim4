@@ -107,7 +107,7 @@
 
 
 
-class CpuSNN; // forward-declaration of implementation
+class SNN; // forward-declaration of implementation
 class GroupMonitorCore;
 class ConnectionMonitorCore;
 class ConnectionGeneratorCore;
@@ -1689,7 +1689,7 @@ private:
 #endif
 	// +++++ PRIVATE PROPERTIES +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
-	CpuSNN* snn_;					//!< an instance of CARLsim core class
+	SNN* snn_;					//!< an instance of CARLsim core class
 	std::string netName_;			//!< network name
 	int randSeed_;					//!< RNG seed
 	simMode_t simMode_;				//!< CPU_MODE or GPU_MODE
