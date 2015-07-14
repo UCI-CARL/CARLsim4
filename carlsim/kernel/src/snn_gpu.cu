@@ -2009,9 +2009,9 @@ void CpuSNN::copyNeuronParametersFromHostToDevice(network_ptr_t* dest, bool allo
 		float* baseFiringInv = new float[length];
 		for(int i=0; i < length; i++) {
 			if (cpuRuntimeData.baseFiring[i]!=0.0)
-				cpuRuntimeData.baseFiringInv[i] = 1.0/cpuRuntimeData.baseFiring[ptrPos+i];
+				baseFiringInv[i] = 1.0/cpuRuntimeData.baseFiring[ptrPos+i];
 			else
-				cpuRuntimeData.baseFiringInv[i] = 0.0;
+				baseFiringInv[i] = 0.0;
 		}
 
 		if(allocateMem) CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->baseFiringInv, sizeof(float)*length));
