@@ -528,7 +528,7 @@ public:
 	int* getSpikeCounter(int grpId);
 
 	//! temporary getter to return pointer to current[] \TODO replace with NeuronMonitor
-	float* getCurrent() { return current; }
+	float* getCurrent() { return cpuRuntimeData.current; }
 
 	std::vector< std::vector<float> > getWeightMatrix2D(short int connId);
 
@@ -538,10 +538,10 @@ public:
 	std::vector<float> getConductanceGABAb(int grpId);
 
 	//! temporary getter to return pointer to stpu[] \TODO replace with NeuronMonitor or ConnectionMonitor
-	float* getSTPu() { return stpu; }
+	float* getSTPu() { return cpuRuntimeData.stpu; }
 
 	//! temporary getter to return pointer to stpx[] \TODO replace with NeuronMonitor or ConnectionMonitor
-	float* getSTPx() { return stpx; }
+	float* getSTPx() { return cpuRuntimeData.stpx; }
 
 	//! returns whether synapses in connection are fixed (false) or plastic (true)
     bool isConnectionPlastic(short int connId);
@@ -887,11 +887,11 @@ private:
 	unsigned int	allocatedPost;
 
 	grpConnectInfo_t* connectBegin;
-	short int 	*cumConnIdPre;		//!< connId, per synapse, presynaptic cumulative indexing
+	// duplicated short int* cumConnIdPre;		//!< connId, per synapse, presynaptic cumulative indexing
 	float 		*mulSynFast;	//!< scaling factor for fast synaptic currents, per connection
 	float 		*mulSynSlow;	//!< scaling factor for slow synaptic currents, per connection
 
-	short int *grpIds;
+	// duplicated short int *grpIds;
 
 	//! Buffer to store spikes
 	PropagatedSpikeBuffer* pbuf;
@@ -926,29 +926,38 @@ private:
 	int   			numNExcPois;		//!< number of excitatory poisson neurons
 	int				numNInhPois;		//!< number of inhibitory poisson neurons
 	int				numNPois;			//!< number of poisson neurons
-	float       	*voltage, *recovery, *Izh_a, *Izh_b, *Izh_c, *Izh_d, *current, *extCurrent;
-	bool			*curSpike;
-	int         	*nSpikeCnt;     //!< spike counts per neuron
-	unsigned short       	*Npre;			//!< stores the number of input connections to the neuron
-	unsigned short			*Npre_plastic;	//!< stores the number of excitatory input connection to the input
-	unsigned short       	*Npost;			//!< stores the number of output connections from a neuron.
-	uint32_t    	*lastSpikeTime;	//!< stores the most recent spike time of the neuron
-	float			*wtChange, *wt;	//!< stores the synaptic weight and weight change of a synaptic connection
-	float	 		*maxSynWt;		//!< maximum synaptic weight for given connection..
-	uint32_t    	*synSpikeTime;	//!< stores the spike time of each synapse
+	// duplicated float* voltage;
+	// duplicated float* recovery;
+	// duplicated float* Izh_a;
+	// duplicated float* Izh_b;
+	// duplicated float* Izh_c;
+	// duplicated float* Izh_d;
+	// duplicated float* current;
+	// duplicated float* extCurrent;
+	// duplicated bool* curSpike;
+	// duplicated int* nSpikeCnt;     //!< spike counts per neuron
+	// duplicated unsigned short* Npre;			//!< stores the number of input connections to the neuron
+	// duplicated unsigned short* Npre_plastic;	//!< stores the number of excitatory input connection to the input
+	// duplicated unsigned short* Npost;			//!< stores the number of output connections from a neuron.
+	// duplicated uint32_t* lastSpikeTime;	//!< stores the most recent spike time of the neuron
+	// duplicated float* wtChange;
+	// duplicated float* wt;	//!< stores the synaptic weight and weight change of a synaptic connection
+	// duplicated float* maxSynWt;		//!< maximum synaptic weight for given connection..
+	// duplicated uint32_t* synSpikeTime;	//!< stores the spike time of each synapse
 	unsigned int		postSynCnt; //!< stores the total number of post-synaptic connections in the network
 	unsigned int		preSynCnt; //!< stores the total number of pre-synaptic connections in the network
 	#ifdef NEURON_NOISE
 	float			*intrinsicWeight;
 	#endif
 	//added to include homeostasis. -- KDC
-	float					*baseFiring;
-	float                 *avgFiring;
-	unsigned int		*cumulativePost;
-	unsigned int		*cumulativePre;
-	post_info_t		*preSynapticIds;
-	post_info_t		*postSynapticIds;		//!< 10 bit syn id, 22 bit neuron id, ordered based on delay
-	delay_info_t    *postDelayInfo;      	//!< delay information
+	// duplicated float* baseFiring;
+	// duplicated float* avgFiring;
+
+	// duplicated unsigned int* cumulativePost;
+	// duplicated unsigned int* cumulativePre;
+	// duplicated post_info_t* preSynapticIds;
+	// duplicated post_info_t* postSynapticIds;		//!< 10 bit syn id, 22 bit neuron id, ordered based on delay
+	// duplicated delay_info_t* postDelayInfo;      	//!< delay information
 
 	//! size of memory used for different parts of the network
 	typedef struct snnSize_s {
@@ -968,10 +977,10 @@ private:
 	unsigned int	preConnCnt;
 
 	//! firing info
-	unsigned int		*timeTableD2;
-	unsigned int		*timeTableD1;
-	unsigned int		*firingTableD2;
-	unsigned int		*firingTableD1;
+	unsigned int* timeTableD2;
+	unsigned int* timeTableD1;
+	// duplicated unsigned int* firingTableD2;
+	// duplicated unsigned int* firingTableD1;
 	unsigned int		maxSpikesD1;
 	unsigned int		maxSpikesD2;
 
@@ -1027,10 +1036,10 @@ private:
 	GroupMonitor*		groupMonList[MAX_GRP_PER_SNN];
 
 	// group monitor assistive buffers
-	float*			grpDABuffer[MAX_GRP_PER_SNN];
-	float*			grp5HTBuffer[MAX_GRP_PER_SNN];
-	float*			grpAChBuffer[MAX_GRP_PER_SNN];
-	float*			grpNEBuffer[MAX_GRP_PER_SNN];
+	// duplicated float*			grpDABuffer[MAX_GRP_PER_SNN];
+	// duplicated float*			grp5HTBuffer[MAX_GRP_PER_SNN];
+	// duplicated float*			grpAChBuffer[MAX_GRP_PER_SNN];
+	// duplicated float*			grpNEBuffer[MAX_GRP_PER_SNN];
 
 	// neuron monitor variables
 //	NeuronMonitorCore* neurBufferCallback[MAX_]
@@ -1045,28 +1054,28 @@ private:
 	/* Tsodyks & Markram (1998), where the short-term dynamics of synapses is characterized by three parameters:
 	   U (which roughly models the release probability of a synaptic vesicle for the first spike in a train of spikes),
 	   maxDelay_ (time constant for recovery from depression), and F (time constant for recovery from facilitation). */
-	   float *stpu;
-	   float *stpx;
+	// duplicated float *stpu;
+	// duplicated float *stpx;
 
-	   float *gAMPA;
-	   float *gNMDA;
-	   float *gNMDA_r;
-	   float *gNMDA_d;
-	   float *gGABAa;
-	   float *gGABAb;
-	   float *gGABAb_r;
-	   float *gGABAb_d;
+	// duplicated float *gAMPA;
+	// duplicated float *gNMDA;
+	// duplicated float *gNMDA_r;
+	// duplicated float *gNMDA_d;
+	// duplicated float *gGABAa;
+	// duplicated float *gGABAb;
+	// duplicated float *gGABAb_r;
+	// duplicated float *gGABAb_d;
 
 	// concentration of neuromodulators for each group
-	float*	grpDA;
-	float*	grp5HT;
-	float*	grpACh;
-	float*	grpNE;
+	// duplicated float*	grpDA;
+	// duplicated float*	grp5HT;
+	// duplicated float*	grpACh;
+	// duplicated float*	grpNE;
 
-	network_info_t 	net_Info;
+	network_info_t net_Info;
 
-	network_ptr_t  		cpu_gpuNetPtrs;
-	network_ptr_t   	cpuNetPtrs;
+	network_ptr_t gpuRuntimeData;
+	network_ptr_t cpuRuntimeData;
 
 	//int   Noffset;
 	int	  NgenFunc;					//!< this counts the spike generator offsets...
@@ -1083,7 +1092,7 @@ private:
 
 	group_info_t	  	grp_Info[MAX_GRP_PER_SNN];
 	group_info2_t		grp_Info2[MAX_GRP_PER_SNN];
-	uint32_t*	spikeGenBits;
+	// duplicated uint32_t*	spikeGenBits;
 
 	// weight update parameter
 	int wtANDwtChangeUpdateInterval_;
