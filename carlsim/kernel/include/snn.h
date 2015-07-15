@@ -528,7 +528,7 @@ public:
 	int* getSpikeCounter(int grpId);
 
 	//! temporary getter to return pointer to current[] \TODO replace with NeuronMonitor
-	float* getCurrent() { return cpuRuntimeData.current; }
+	float* getCurrent() { return snnRuntimeData.current; }
 
 	std::vector< std::vector<float> > getWeightMatrix2D(short int connId);
 
@@ -538,10 +538,10 @@ public:
 	std::vector<float> getConductanceGABAb(int grpId);
 
 	//! temporary getter to return pointer to stpu[] \TODO replace with NeuronMonitor or ConnectionMonitor
-	float* getSTPu() { return cpuRuntimeData.stpu; }
+	float* getSTPu() { return snnRuntimeData.stpu; }
 
 	//! temporary getter to return pointer to stpx[] \TODO replace with NeuronMonitor or ConnectionMonitor
-	float* getSTPx() { return cpuRuntimeData.stpx; }
+	float* getSTPx() { return snnRuntimeData.stpx; }
 
 	//! returns whether synapses in connection are fixed (false) or plastic (true)
     bool isConnectionPlastic(short int connId);
@@ -648,9 +648,6 @@ private:
 
 	//! performs a consistency check to see whether numN* class members have been accumulated correctly
 	void verifyNumNeurons();
-
-	//! creates CPU net pointers
-	void makePtrInfo();
 
 	void compileSNN(bool removeTempMemory);
 	
@@ -1079,7 +1076,7 @@ private:
 	network_info_t net_Info;
 
 	RuntimeData gpuRuntimeData;
-	RuntimeData cpuRuntimeData;
+	RuntimeData snnRuntimeData;
 
 	//int   Noffset;
 	int	  NgenFunc;					//!< this counts the spike generator offsets...
