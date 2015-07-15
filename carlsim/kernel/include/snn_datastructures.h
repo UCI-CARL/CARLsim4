@@ -48,6 +48,15 @@
 //! connection types, used internally (externally it's a string)
 enum conType_t { CONN_RANDOM, CONN_ONE_TO_ONE, CONN_FULL, CONN_FULL_NO_DIRECT, CONN_GAUSSIAN, CONN_USER_DEFINED, CONN_UNKNOWN};
 
+//! the state of spiking neural network, used with in kernel.
+enum SNNState {
+	METADATA_SNN,
+	COMPILED_SNN,
+	LINKED_SNN,
+	OPTIMIZED_PARTITIONED_SNN,
+	EXECUTABLE_SNN
+};
+
 typedef struct {
 	short  delay_index_start;
 	short  delay_length;

@@ -60,38 +60,39 @@ void SNN::printConnection(int grpId, FILE* const fp) {
 }
 
 void SNN::printMemoryInfo(FILE* const fp) {
-  if (!doneReorganization) {
-    KERNEL_DEBUG("checkNetworkBuilt()");
-    KERNEL_DEBUG("Network not yet elaborated and built...");
-  }
+	if (snnState == METADATA_SNN || snnState == COMPILED_SNN || snnState == LINKED_SNN) {
+		KERNEL_DEBUG("checkNetworkBuilt()");
+		KERNEL_DEBUG("Network not yet elaborated and built...");
+	}
 
-  fprintf(fp, "************* Memory Info ***************\n");
-  int totMemSize = cpuSnnSz.networkInfoSize+cpuSnnSz.synapticInfoSize+cpuSnnSz.neuronInfoSize+cpuSnnSz.spikingInfoSize;
-  fprintf(fp, "Neuron Info Size:\t%3.2f %%\t(%3.2f MB)\n", cpuSnnSz.neuronInfoSize*100.0/totMemSize,   cpuSnnSz.neuronInfoSize/(1024.0*1024));
-  fprintf(fp, "Synaptic Info Size:\t%3.2f %%\t(%3.2f MB)\n", cpuSnnSz.synapticInfoSize*100.0/totMemSize, cpuSnnSz.synapticInfoSize/(1024.0*1024));
-  fprintf(fp, "Network Size:\t\t%3.2f %%\t(%3.2f MB)\n", cpuSnnSz.networkInfoSize*100.0/totMemSize,  cpuSnnSz.networkInfoSize/(1024.0*1024));
-  fprintf(fp, "Firing Info Size:\t%3.2f %%\t(%3.2f MB)\n", cpuSnnSz.spikingInfoSize*100.0/totMemSize,   cpuSnnSz.spikingInfoSize/(1024.0*1024));
-  fprintf(fp, "Additional Info:\t%3.2f %%\t(%3.2f MB)\n", cpuSnnSz.addInfoSize*100.0/totMemSize,      cpuSnnSz.addInfoSize/(1024.0*1024));
-  fprintf(fp, "DebugInfo Info:\t\t%3.2f %%\t(%3.2f MB)\n", cpuSnnSz.debugInfoSize*100.0/totMemSize,    cpuSnnSz.debugInfoSize/(1024.0*1024));
-  fprintf(fp, "*****************************************\n\n");
+	fprintf(fp, "************* Memory Info ***************\n");
+	int totMemSize = cpuSnnSz.networkInfoSize+cpuSnnSz.synapticInfoSize+cpuSnnSz.neuronInfoSize+cpuSnnSz.spikingInfoSize;
+	fprintf(fp, "Neuron Info Size:\t%3.2f %%\t(%3.2f MB)\n", cpuSnnSz.neuronInfoSize*100.0/totMemSize,   cpuSnnSz.neuronInfoSize/(1024.0*1024));
+	fprintf(fp, "Synaptic Info Size:\t%3.2f %%\t(%3.2f MB)\n", cpuSnnSz.synapticInfoSize*100.0/totMemSize, cpuSnnSz.synapticInfoSize/(1024.0*1024));
+	fprintf(fp, "Network Size:\t\t%3.2f %%\t(%3.2f MB)\n", cpuSnnSz.networkInfoSize*100.0/totMemSize,  cpuSnnSz.networkInfoSize/(1024.0*1024));
+	fprintf(fp, "Firing Info Size:\t%3.2f %%\t(%3.2f MB)\n", cpuSnnSz.spikingInfoSize*100.0/totMemSize,   cpuSnnSz.spikingInfoSize/(1024.0*1024));
+	fprintf(fp, "Additional Info:\t%3.2f %%\t(%3.2f MB)\n", cpuSnnSz.addInfoSize*100.0/totMemSize,      cpuSnnSz.addInfoSize/(1024.0*1024));
+	fprintf(fp, "DebugInfo Info:\t\t%3.2f %%\t(%3.2f MB)\n", cpuSnnSz.debugInfoSize*100.0/totMemSize,    cpuSnnSz.debugInfoSize/(1024.0*1024));
+	fprintf(fp, "*****************************************\n\n");
 
-  fprintf(fp, "************* Connection Info *************\n");
-  for(int g=0; g < numGrp; g++) {
-    int TNpost=0;
-    int TNpre=0;
-    int TNpre_plastic=0;
-    for(int i=grp_Info[g].StartN; i <= grp_Info[g].EndN; i++) {
-      TNpost += cpuRuntimeData.Npost[i];
-      TNpre  += cpuRuntimeData.Npre[i];
-      TNpre_plastic += cpuRuntimeData.Npre_plastic[i];
-    }
-    fprintf(fp, "%s Group (num_neurons=%5d): \n\t\tNpost[%2d] = %3d, Npre[%2d]=%3d Npre_plastic[%2d]=%3d \n\t\tcumPre[%5d]=%5d cumPre[%5d]=%5d cumPost[%5d]=%5d cumPost[%5d]=%5d \n",
-	    grp_Info2[g].Name.c_str(), grp_Info[g].SizeN, g, TNpost/grp_Info[g].SizeN, g, TNpre/grp_Info[g].SizeN, g, TNpre_plastic/grp_Info[g].SizeN,
-	    grp_Info[g].StartN, cpuRuntimeData.cumulativePre[grp_Info[g].StartN],  grp_Info[g].EndN, cpuRuntimeData.cumulativePre[grp_Info[g].EndN],
-	    grp_Info[g].StartN, cpuRuntimeData.cumulativePost[grp_Info[g].StartN], grp_Info[g].EndN, cpuRuntimeData.cumulativePost[grp_Info[g].EndN]);
-  }
-  fprintf(fp, "**************************************\n\n");
-
+	fprintf(fp, "************* Connection Info *************\n");
+	for(int g=0; g < numGrp; g++) {
+		int TNpost=0;
+		int TNpre=0;
+		int TNpre_plastic=0;
+		
+		for(int i=grp_Info[g].StartN; i <= grp_Info[g].EndN; i++) {
+			TNpost += cpuRuntimeData.Npost[i];
+			TNpre  += cpuRuntimeData.Npre[i];
+			TNpre_plastic += cpuRuntimeData.Npre_plastic[i];
+		}
+		
+	fprintf(fp, "%s Group (num_neurons=%5d): \n\t\tNpost[%2d] = %3d, Npre[%2d]=%3d Npre_plastic[%2d]=%3d \n\t\tcumPre[%5d]=%5d cumPre[%5d]=%5d cumPost[%5d]=%5d cumPost[%5d]=%5d \n",
+		grp_Info2[g].Name.c_str(), grp_Info[g].SizeN, g, TNpost/grp_Info[g].SizeN, g, TNpre/grp_Info[g].SizeN, g, TNpre_plastic/grp_Info[g].SizeN,
+		grp_Info[g].StartN, cpuRuntimeData.cumulativePre[grp_Info[g].StartN],  grp_Info[g].EndN, cpuRuntimeData.cumulativePre[grp_Info[g].EndN],
+		grp_Info[g].StartN, cpuRuntimeData.cumulativePost[grp_Info[g].StartN], grp_Info[g].EndN, cpuRuntimeData.cumulativePost[grp_Info[g].EndN]);
+	}
+	fprintf(fp, "**************************************\n\n");
 }
 
 void SNN::printStatusConnectionMonitor(int connId) {
@@ -290,10 +291,10 @@ void SNN::printGroupInfo(int grpId) {
 	KERNEL_INFO("  - numPostSynapses            = %8d", grp_Info[grpId].numPostSynapses);
 	KERNEL_INFO("  - numPreSynapses             = %8d", grp_Info[grpId].numPreSynapses);
 
-	if (doneReorganization) {
-		KERNEL_INFO("  - Avg post connections       = %8.5f", 1.0*grp_Info2[grpId].numPostConn/grp_Info[grpId].SizeN);
-		KERNEL_INFO("  - Avg pre connections        = %8.5f",  1.0*grp_Info2[grpId].numPreConn/grp_Info[grpId].SizeN);
-	}
+	//if (doneReorganization) {
+	//	KERNEL_INFO("  - Avg post connections       = %8.5f", 1.0*grp_Info2[grpId].numPostConn/grp_Info[grpId].SizeN);
+	//	KERNEL_INFO("  - Avg pre connections        = %8.5f",  1.0*grp_Info2[grpId].numPreConn/grp_Info[grpId].SizeN);
+	//}
 
 	if(grp_Info[grpId].Type&POISSON_NEURON) {
 		KERNEL_INFO("  - Refractory period          = %8.5f", grp_Info[grpId].RefractPeriod);
@@ -485,36 +486,36 @@ void SNN::printPostConnection(int grpId, FILE* const fp)
 
 int SNN::printPreConnection2(int grpId, FILE* const fpg)
 {
-  int maxLength = -1;
-  for(int i=grp_Info[grpId].StartN; i<=grp_Info[grpId].EndN; i++) {
-    fprintf(fpg, " id %d : group %d : prelength %d ", i, findGrpId(i), cpuRuntimeData.Npre[i]);
-    post_info_t* preIds = &(cpuRuntimeData.preSynapticIds[cpuRuntimeData.cumulativePre[i]]);
-    for(int j=0; j < cpuRuntimeData.Npre[i]; j++, preIds++) {
-      if (doneReorganization && (!memoryOptimized))
-	fprintf(fpg, ": %d,%s", GET_CONN_NEURON_ID((*preIds)), (j < cpuRuntimeData.Npre_plastic[i])?"P":"F");
-    }
-    if ( cpuRuntimeData.Npre[i] > maxLength)
-      maxLength = cpuRuntimeData.Npre[i];
-    fprintf(fpg, "\n");
-  }
-  return maxLength;
+	int maxLength = -1;
+	for(int i=grp_Info[grpId].StartN; i<=grp_Info[grpId].EndN; i++) {
+		fprintf(fpg, " id %d : group %d : prelength %d ", i, findGrpId(i), cpuRuntimeData.Npre[i]);
+		post_info_t* preIds = &(cpuRuntimeData.preSynapticIds[cpuRuntimeData.cumulativePre[i]]);
+		for(int j=0; j < cpuRuntimeData.Npre[i]; j++, preIds++) {
+			//if (doneReorganization && (!memoryOptimized))
+			//	fprintf(fpg, ": %d,%s", GET_CONN_NEURON_ID((*preIds)), (j < cpuRuntimeData.Npre_plastic[i])?"P":"F");
+		}
+		
+		if ( cpuRuntimeData.Npre[i] > maxLength)
+			maxLength = cpuRuntimeData.Npre[i];
+		fprintf(fpg, "\n");
+	}
+	return maxLength;
 }
 
 void SNN::printPreConnection(int grpId, FILE* const fp)
 {
-  for(int i=grp_Info[grpId].StartN; i<=grp_Info[grpId].EndN; i++) {
-    if(fp) fprintf(fp, " %d ( preCnt=%d, prePlastic=%d ) : (id => (wt, maxWt),(preId, P/F)\n\t", i, cpuRuntimeData.Npre[i], cpuRuntimeData.Npre_plastic[i]);
-    post_info_t* preIds = &(cpuRuntimeData.preSynapticIds[cpuRuntimeData.cumulativePre[i]]);
-    int  pos_i  = cpuRuntimeData.cumulativePre[i];
-    for(int j=0; j < cpuRuntimeData.Npre[i]; j++, pos_i++, preIds++) {
-      if(fp) fprintf(fp,  "  %d => (%f, %f)", j, cpuRuntimeData.wt[pos_i], cpuRuntimeData.maxSynWt[pos_i]);
-      if(doneReorganization && (!memoryOptimized))
-	if(fp) fprintf(fp, ",(%d, %s)",
-		       GET_CONN_NEURON_ID((*preIds)),
-		       (j < cpuRuntimeData.Npre_plastic[i])?"P":"F");
-    }
-    if(fp) fprintf(fp, "\n");
-  }
+	for(int i=grp_Info[grpId].StartN; i<=grp_Info[grpId].EndN; i++) {
+		if(fp) fprintf(fp, " %d ( preCnt=%d, prePlastic=%d ) : (id => (wt, maxWt),(preId, P/F)\n\t", i, cpuRuntimeData.Npre[i], cpuRuntimeData.Npre_plastic[i]);
+		post_info_t* preIds = &(cpuRuntimeData.preSynapticIds[cpuRuntimeData.cumulativePre[i]]);
+		int  pos_i  = cpuRuntimeData.cumulativePre[i];
+		for(int j=0; j < cpuRuntimeData.Npre[i]; j++, pos_i++, preIds++) {
+			if(fp) fprintf(fp,  "  %d => (%f, %f)", j, cpuRuntimeData.wt[pos_i], cpuRuntimeData.maxSynWt[pos_i]);
+			//if(doneReorganization && (!memoryOptimized))
+			//	if(fp) fprintf(fp, ",(%d, %s)", GET_CONN_NEURON_ID((*preIds)), (j < cpuRuntimeData.Npre_plastic[i])?"P":"F");
+		}
+		
+		if(fp) fprintf(fp, "\n");
+	}
 }
 
 

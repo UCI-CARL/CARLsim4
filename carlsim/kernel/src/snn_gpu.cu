@@ -1559,7 +1559,7 @@ void SNN::copyPostConnectionInfo(RuntimeData* dest, bool allocateMem) {
 	} else {
 		assert(dest->allocated == true);
 	}
-	assert(doneReorganization == true);
+	assert(snnState == OPTIMIZED_PARTITIONED_SNN || snnState == EXECUTABLE_SNN);
 
 	// beginning position for the post-synaptic information
 	if(allocateMem) 
@@ -2753,7 +2753,7 @@ void SNN::allocateSNN_GPU() {
 	gpuRuntimeData.poissonRandPtr = (unsigned int*) gpuPoissonRand->get_random_numbers();
 
 	//ensure that we dont do all the above optimizations again		
-	assert(doneReorganization == true);
+	assert(snnState == OPTIMIZED_PARTITIONED_SNN);
 
 	// display some memory management info
 	size_t avail, total, previous;
@@ -2917,6 +2917,8 @@ void SNN::allocateSNN_GPU() {
 //	CUDA_CHECK_ERRORS(cudaMemset(gpuRuntimeData.extCurrent, 0, sizeof(float)*numNReg));
 //	copyExternalCurrent(&gpuRuntimeData, &cpuRuntimeData, true);
 	initGPU(gridSize, blkSize);
+
+	snnState = EXECUTABLE_SNN;
 }
 
 void SNN::printSimSummary() {

@@ -633,6 +633,31 @@ void SNN::setWeightAndWeightChangeUpdate(updateInterval_t wtANDwtChangeUpdateInt
 	KERNEL_INFO("STDP scale factor = %1.3f, wtChangeDecay = %1.3f", stdpScaleFactor_, wtChangeDecay_);
 }
 
+/// ************************************************************************************************************ ///
+/// PUBLIC METHODS: GENERATE A SIMULATION
+/// ************************************************************************************************************ ///
+
+// reorganize the network and do the necessary allocation
+// of all variable for carrying out the simulation..
+// this code is run only one time during network initialization
+void SNN::setupNetwork(bool removeTempMem) {
+	switch (snnState) {
+	case METADATA_SNN:
+		compileSNN(removeTempMem);
+	case COMPILED_SNN:
+		linkSNN();
+	case LINKED_SNN:
+		optimizeAndPartitionSNN();
+	case OPTIMIZED_PARTITIONED_SNN:
+		allocateSNN();
+		break;
+	case EXECUTABLE_SNN:
+		break;
+	default:
+		KERNEL_ERROR("Unknown SNN state");
+		break;
+	}
+}
 
 /// ************************************************************************************************************ ///
 /// PUBLIC METHODS: RUNNING A SIMULATION
@@ -646,7 +671,7 @@ int SNN::runNetwork(int _nsec, int _nmsec, bool printRunSummary, bool copyState)
 		copyState?"y":"n");
 
 	// setupNetwork() must have already been called
-	assert(doneReorganization);
+	assert(snnState == EXECUTABLE_SNN);
 
 	// don't bother printing if logger mode is SILENT
 	printRunSummary = (loggerMode_==SILENT) ? false : printRunSummary;
@@ -1060,7 +1085,7 @@ void SNN::setExternalCurrent(int grpId, const std::vector<float>& current) {
 
 // sets up a spike generator
 void SNN::setSpikeGenerator(int grpId, SpikeGeneratorCore* spikeGen) {
-	assert(!doneReorganization); // must be called before setupNetwork to work on GPU
+	assert(snnState == METADATA_SNN); // must be called before setupNetwork() to work on GPU
 	assert(spikeGen);
 	assert (grp_Info[grpId].isSpikeGenerator);
 	grp_Info[grpId].spikeGen = spikeGen;
@@ -1335,7 +1360,7 @@ void SNN::writePopWeights(std::string fname, int grpIdPre, int grpIdPost) {
 	fid = fopen(fname.c_str(), "wb");
 	assert(fid != NULL);
 
-	if(!doneReorganization){
+	if(snnState == METADATA_SNN || snnState == COMPILED_SNN || snnState == LINKED_SNN){
 		KERNEL_ERROR("Simulation has not been run yet, cannot output weights.");
 		exitSimulation(1);
 	}
@@ -1773,6 +1798,9 @@ RangeWeight SNN::getWeightRange(short int connId) {
 void SNN::SNNinit() {
 	assert(ithGPU_>=0);
 
+	// initialize snnState
+	snnState = METADATA_SNN;
+	
 	// set logger mode (defines where to print all status, error, and debug messages)
 	switch (loggerMode_) {
 	case USER:
@@ -1877,8 +1905,6 @@ void SNN::SNNinit() {
 	allocatedN      = 0;
 	allocatedPre    = 0;
 	allocatedPost   = 0;
-	doneReorganization = false;
-	memoryOptimized	   = false;
 
 	cumExecutionTime = 0.0;
 	cpuExecutionTime = 0.0;
@@ -2020,6 +2046,24 @@ void SNN::SNNinit() {
 
 	if (simMode_ == GPU_MODE)
 		configGPUDevice();
+}
+
+void SNN::allocateSNN() {
+	switch (simMode_) {
+	case GPU_MODE:
+		allocateSNN_GPU();
+		break;
+	case CPU_MODE:
+		allocateSNN_CPU();
+		break;
+	default:
+		KERNEL_ERROR("Unknown simMode_");
+		break;
+	}
+}
+
+void SNN::allocateSNN_CPU() {
+	snnState = EXECUTABLE_SNN;
 }
 
 //! update (initialize) numN, numPostSynapses, numPreSynapses, maxDelay_, postSynCnt, preSynCnt
@@ -2617,6 +2661,57 @@ void SNN::connectFull(grpConnectInfo_t* info) {
 	grp_Info2[grpSrc].sumPostConn += info->numberOfConnections;
 	grp_Info2[grpDest].sumPreConn += info->numberOfConnections;
 }
+
+// after all the initalization. Its time to create the synaptic weights, weight change and also
+// time of firing these are the mostly costly arrays so dense packing is essential to minimize wastage of space
+void SNN::compileSNN(bool removeTempMemory) {
+	KERNEL_DEBUG("Beginning compilation of network....");
+
+	// perform various consistency checks:
+	// - numNeurons vs. sum of all neurons
+	// - STDP set on a post-group with incoming plastic connections
+	// - etc.
+	verifyNetwork();
+
+	// time to build the complete network with relevant parameters..
+	buildNetwork();
+
+	//..minimize any other wastage in that array by compacting the store
+	compactConnections();
+
+	// The post synaptic connections are sorted based on delay here
+	reorganizeDelay();
+
+	// Print the statistics again but dump the results to a file
+	printMemoryInfo(fpDeb_);
+
+	// initialize the synaptic weights accordingly..
+	initSynapticWeights();
+
+	updateSpikeGeneratorsInit();
+
+	// reset all spike cnt
+	resetSpikeCnt(ALL);
+
+	printTuningLog(fpDeb_);
+
+	makePtrInfo();
+
+	KERNEL_INFO("");
+	KERNEL_INFO("*****************      Initializing %s Simulation      *************************",
+		simMode_==GPU_MODE?"GPU":"CPU");
+
+	//if(removeTempMemory) {
+		//memoryOptimized = true;
+		delete[] tmp_SynapticDelay;
+		tmp_SynapticDelay = NULL;
+	//}
+
+	//ensure that we dont compile the network again
+	snnState = COMPILED_SNN;
+}
+
+
 
 void SNN::connectGaussian(grpConnectInfo_t* info) {
 	// rebuild struct for easier handling
@@ -3624,6 +3719,10 @@ unsigned int SNN::poissonSpike(unsigned int currTime, float frate, int refractPe
 	return nextTime;
 }
 
+void SNN::linkSNN() {
+	snnState = LINKED_SNN;
+}
+
 int SNN::loadSimulation_internal(bool onlyPlastic) {
 	// TSC: so that we can restore the file position later...
 	// MB: not sure why though...
@@ -3901,59 +4000,9 @@ void SNN::reorganizeDelay()
 	}
 }
 
-// after all the initalization. Its time to create the synaptic weights, weight change and also
-// time of firing these are the mostly costly arrays so dense packing is essential to minimize wastage of space
-void SNN::reorganizeNetwork(bool removeTempMemory) {
-	//Double check...sometimes by mistake we might call reorganize network again...
-	if(doneReorganization)
-		return;
-
-	KERNEL_DEBUG("Beginning reorganization of network....");
-
-	// perform various consistency checks:
-	// - numNeurons vs. sum of all neurons
-	// - STDP set on a post-group with incoming plastic connections
-	// - etc.
-	verifyNetwork();
-
-	// time to build the complete network with relevant parameters..
-	buildNetwork();
-
-	//..minimize any other wastage in that array by compacting the store
-	compactConnections();
-
-	// The post synaptic connections are sorted based on delay here
-	reorganizeDelay();
-
-	// Print the statistics again but dump the results to a file
-	printMemoryInfo(fpDeb_);
-
-	// initialize the synaptic weights accordingly..
-	initSynapticWeights();
-
-	updateSpikeGeneratorsInit();
-
-	//ensure that we dont do all the above optimizations again
-	doneReorganization = true;
-
-	// reset all spike cnt
-	resetSpikeCnt(ALL);
-
-	printTuningLog(fpDeb_);
-
-	makePtrInfo();
-
-	KERNEL_INFO("");
-	KERNEL_INFO("*****************      Initializing %s Simulation      *************************",
-		simMode_==GPU_MODE?"GPU":"CPU");
-
-	if(removeTempMemory) {
-		memoryOptimized = true;
-		delete[] tmp_SynapticDelay;
-		tmp_SynapticDelay = NULL;
-	}
+void SNN::optimizeAndPartitionSNN() {
+	snnState = OPTIMIZED_PARTITIONED_SNN;
 }
-
 
 void SNN::resetConductances() {
 	if (sim_with_conductances) {
@@ -4280,11 +4329,9 @@ void SNN::resetPropogationBuffer() {
 }
 
 // resets nSpikeCnt[]
+// used for CPU mode
 void SNN::resetSpikeCnt(int grpId) {
 	int startGrp, endGrp;
-
-	if (!doneReorganization)
-		return;
 
 	if (grpId == -1) {
 		startGrp = 0;
@@ -4488,18 +4535,6 @@ int SNN::setRandSeed(int seed) {
 	else
 		return seed;
 }
-
-// reorganize the network and do the necessary allocation
-// of all variable for carrying out the simulation..
-// this code is run only one time during network initialization
-void SNN::setupNetwork(bool removeTempMem) {
-	if(!doneReorganization)
-		reorganizeNetwork(removeTempMem);
-
-	if((simMode_ == GPU_MODE) && (gpuRuntimeData.allocated == false))
-		allocateSNN_GPU();
-}
-
 
 void SNN::startCPUTiming() { prevCpuExecutionTime = cumExecutionTime; }
 void SNN::startGPUTiming() { prevGpuExecutionTime = cumExecutionTime; }

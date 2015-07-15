@@ -652,6 +652,15 @@ private:
 	//! creates CPU net pointers
 	void makePtrInfo();
 
+	void compileSNN(bool removeTempMemory);
+	
+	void linkSNN();
+
+	void optimizeAndPartitionSNN();
+
+	void allocateSNN();
+
+
 	/*!
 	 * \brief generates spike times according to a Poisson process
 	 *
@@ -705,7 +714,6 @@ private:
 	int loadSimulation_internal(bool onlyPlastic);
 
 	void reorganizeDelay();
-	void reorganizeNetwork(bool removeTempMemory);
 
 	void resetConductances();
 	void resetCounters();
@@ -755,7 +763,8 @@ private:
 
 	void allocateGroupId();
 	void allocateNetworkParameters();
-	void allocateSNN_GPU(); //!< allocates required memory and then initialize the GPU
+	void allocateSNN_GPU(); //!< allocates runtime data on GPU memory and initialize GPU
+	void allocateSNN_CPU(); //!< allocates runtime data on CPU memory
 	int  allocateStaticLoad(int bufSize);
 
 	void assignPoissonFiringRate_GPU();
@@ -854,6 +863,7 @@ private:
 
 
 	// +++++ PRIVATE PROPERTIES +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
+	SNNState snnState; //!< state of the network
 	FILE* loadSimFID;
 
 	const std::string networkName_;	//!< network name
@@ -876,11 +886,6 @@ private:
 
 	//! switch to make all weights fixed (such as in testing phase) or not
 	bool sim_in_testing;
-
-
-	//! properties of the network (number of groups, network name, allocated neurons etc..)
-	bool			doneReorganization;
-	bool			memoryOptimized;
 
 	int				numGrp;
 	int				numConnections;		//!< number of connection calls (as in snn.connect(...))
@@ -1004,14 +1009,10 @@ private:
 	unsigned int	spikeCountD2Host;	//!< overall firing counts values
 	unsigned int	nPoissonSpikes;
 
-		//cuda keep track of performance...
-#if __CUDA3__
-		unsigned int    timer;
-#else
-		StopWatchInterface* timer;
-#endif
-		float		cumExecutionTime;
-		float		lastExecutionTime;
+	// cuda keep track of performance...
+	StopWatchInterface* timer;
+	float cumExecutionTime;
+	float lastExecutionTime;
 
 	FILE*	fpInf_;			//!< fp of where to write all simulation output (status info) if not in silent mode
 	FILE*	fpErr_;			//!< fp of where to write all errors if not in silent mode
