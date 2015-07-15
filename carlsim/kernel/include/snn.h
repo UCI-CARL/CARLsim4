@@ -579,7 +579,7 @@ private:
 	// +++++ CPU MODE +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 	
 	//! all unsafe operations of constructor
-	void CpuSNNinit();
+	void SNNinit();
 
 	//! allocates and initializes all core datastructures
 	void buildNetworkInit();
@@ -715,7 +715,10 @@ private:
 	void resetGroups();
 	void resetNeuromodulator(int grpId);
 	void resetNeuron(unsigned int nid, int grpId);
-	void resetPointers(bool deallocate=false);
+	//void resetPointers(bool deallocate=false);
+	void resetMonitors(bool deallocate=false);
+	void resetConnectionConfigs(bool deallocate=false);
+	void resetRuntimeData(bool deallocate=false);
 	void resetPoissonNeuron(unsigned int nid, int grpId);
 	void resetPropogationBuffer();
 	void resetSpikeCnt(int grpId=ALL);					//!< Resets the spike count for a particular group.

@@ -69,7 +69,7 @@ SNN::SNN(const std::string& name, simMode_t simMode, loggerMode_t loggerMode, in
 					  randSeed_(SNN::setRandSeed(randSeed)) // all of these are const
 {
 	// move all unsafe operations out of constructor
-	CpuSNNinit();
+	SNNinit();
 }
 
 // destructor
@@ -1770,7 +1770,7 @@ RangeWeight SNN::getWeightRange(short int connId) {
 /// **************************************************************************************************************** ///
 
 // all unsafe operations of SNN constructor
-void SNN::CpuSNNinit() {
+void SNN::SNNinit() {
 	assert(ithGPU_>=0);
 
 	// set logger mode (defines where to print all status, error, and debug messages)
@@ -1898,7 +1898,9 @@ void SNN::CpuSNNinit() {
 	sim_with_stp = false;
 	sim_in_testing = false;
 
-	maxSpikesD2 = maxSpikesD1 = 0;
+	maxSpikesD1 = 0;
+	maxSpikesD2 = 0;
+
 	loadSimFID = NULL;
 
 	numN = 0;
@@ -1928,8 +1930,13 @@ void SNN::CpuSNNinit() {
 	// each SNN object hold its own random number object
 	gpuPoissonRand = NULL;
 
-	// reset all pointers, don't deallocate (false)
-	resetPointers(false);
+	// reset all monitors, don't deallocate (false)
+	resetMonitors(false);
+
+	resetConnectionConfigs(false);
+
+	// reset all runtime data, don't deallocate (false)
+	resetRuntimeData(false);
 
 	memset(&cpuSnnSz, 0, sizeof(cpuSnnSz));
 
@@ -2284,9 +2291,9 @@ void SNN::buildNetwork() {
 	buildNetworkInit();
 
 	// we build network in the order...
-	/////    !!!!!!! IMPORTANT : NEURON ORGANIZATION/ARRANGEMENT MAP !!!!!!!!!!
-	////     <--- Excitatory --> | <-------- Inhibitory REGION ----------> | <-- Excitatory -->
-	///      Excitatory-Regular  | Inhibitory-Regular | Inhibitory-Poisson | Excitatory-Poisson
+	//    !!!!!!! IMPORTANT : NEURON ORGANIZATION/ARRANGEMENT MAP !!!!!!!!!!
+	//     <--- Excitatory --> | <-------- Inhibitory REGION ----------> | <-- Excitatory -->
+	//     Excitatory-Regular  | Inhibitory-Regular | Inhibitory-Poisson | Excitatory-Poisson
 	int allocatedGrp = 0;
 	for(int order = 0; order < 4; order++) {
 		for(int g = 0; g < numGrp; g++) {
@@ -2319,7 +2326,7 @@ void SNN::buildNetwork() {
 		for (int g=0; g<numGrp; g++) {
 			if (nid>=grp_Info[g].StartN && nid<=grp_Info[g].EndN) {
 				cpuRuntimeData.grpIds[nid] = (short int)g;
-//				printf("grpIds[%d] = %d\n",nid,g);
+				//printf("grpIds[%d] = %d\n",nid,g);
 				break;
 			}
 		}
@@ -2769,7 +2776,10 @@ void SNN::deleteObjects() {
 			fclose(fpLog_);
 	}
 
-	resetPointers(true); // deallocate pointers
+	// deallocate objects
+	resetMonitors(true);
+	resetConnectionConfigs(true);
+	resetRuntimeData(true);
 
 	// do the same as above, but for snn_gpu.cu
 	deleteObjects_GPU();
@@ -4087,7 +4097,7 @@ void SNN::resetNeuron(unsigned int neurId, int grpId) {
 	}
 }
 
-void SNN::resetPointers(bool deallocate) {
+void SNN::resetMonitors(bool deallocate) {
 	// order is important! monitor objects might point to SNN or CARLsim,
 	// need to deallocate them first
 
@@ -4114,18 +4124,9 @@ void SNN::resetPointers(bool deallocate) {
 		if (connMonList[i]!=NULL && deallocate) delete connMonList[i];
 		connMonList[i]=NULL;
 	}
+}
 
-	// delete all Spike Counters
-	for (int i=0; i<numSpkCnt; i++) {
-		if (spkCntBuf[i]!=NULL && deallocate)
-			delete[] spkCntBuf[i];
-		spkCntBuf[i]=NULL;
-	}
-
-	if (pbuf!=NULL && deallocate) delete pbuf;
-	if (cpuRuntimeData.spikeGenBits!=NULL && deallocate) delete[] cpuRuntimeData.spikeGenBits;
-	pbuf=NULL; cpuRuntimeData.spikeGenBits=NULL;
-
+void SNN::resetConnectionConfigs(bool deallocate) {
 	// clear all existing connection info
 	if (deallocate) {
 		while (connectBegin) {
@@ -4137,6 +4138,19 @@ void SNN::resetPointers(bool deallocate) {
 		}
 	}
 	connectBegin=NULL;
+}
+
+void SNN::resetRuntimeData(bool deallocate) {
+	// delete all Spike Counters
+	for (int i=0; i<numSpkCnt; i++) {
+		if (spkCntBuf[i]!=NULL && deallocate)
+			delete[] spkCntBuf[i];
+		spkCntBuf[i]=NULL;
+	}
+
+	if (pbuf!=NULL && deallocate) delete pbuf;
+	if (cpuRuntimeData.spikeGenBits!=NULL && deallocate) delete[] cpuRuntimeData.spikeGenBits;
+	pbuf=NULL; cpuRuntimeData.spikeGenBits=NULL;
 
 	// clear data (i.e., concentration of neuromodulator) of groups
 	if (cpuRuntimeData.grpDA != NULL && deallocate) delete [] cpuRuntimeData.grpDA;
