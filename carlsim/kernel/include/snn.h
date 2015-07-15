@@ -474,7 +474,7 @@ public:
 
 	Grid3D getGroupGrid3D(int grpId);
 	int getGroupId(std::string grpName);
-	GroupConfig getGroupInfo(int groupId);
+	GroupConfig getGroupConfig(int grpId);
 	std::string getGroupName(int grpId);
 	GroupSTDPInfo_t getGroupSTDPInfo(int grpId);
 	GroupNeuromodulatorInfo_t getGroupNeuromodulatorInfo(int grpId);
@@ -759,7 +759,7 @@ private:
 	void CpuSNNinit_GPU();
 
 	void allocateGroupId();
-	void allocateNetworkParameters();
+	void allocateNetworkConfig();
 	void allocateSNN_GPU(); //!< allocates runtime data on GPU memory and initialize GPU
 	void allocateSNN_CPU(); //!< allocates runtime data on CPU memory
 	int  allocateStaticLoad(int bufSize);
@@ -810,7 +810,7 @@ private:
 	void copyWeightsGPU(unsigned int nid, int src_grp);
 	void copyWeightState(RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind, //!< copy presynaptic info
 		bool allocateMem, int grpId=-1);
-	void copyNetworkInfo();
+	void copyNetworkConfig();
 
 	void deleteObjects_GPU();		//!< deallocates all used data structures in snn_gpu.cu
 	void doCurrentUpdate_GPU();

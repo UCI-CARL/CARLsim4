@@ -86,7 +86,7 @@ __device__ unsigned int	secD2fireCntTest;
 __device__ unsigned int	secD1fireCntTest;
 
 __device__ __constant__ RuntimeData		gpuPtrs;
-__device__ __constant__ NetworkConfig		gpuNetInfo;
+__device__ __constant__ NetworkConfig	gpuNetInfo;
 __device__ __constant__ GroupConfig		gpuGrpInfo[MAX_GRP_PER_SNN];
 
 __device__ __constant__ float               d_mulSynFast[MAX_nConnections];
@@ -94,9 +94,6 @@ __device__ __constant__ float               d_mulSynSlow[MAX_nConnections];
 
 __device__  int	  loadBufferCount; 
 __device__  int   loadBufferSize;
-
-float data[256];
-
 
 texture <int,    1, cudaReadModeElementType>  timingTableD2_tex;
 texture <int,    1, cudaReadModeElementType>  timingTableD1_tex;
@@ -130,22 +127,6 @@ void initTableQuickSynId()
 	cudaGetSymbolAddress(&devPtr, gpu_tableQuickSynId);
 	CUDA_CHECK_ERRORS( cudaMemcpy( devPtr, tableQuickSynId, sizeof(tableQuickSynId), cudaMemcpyHostToDevice));
 }
-	
-#if defined(__CUDA3__) || defined(__NO_ATOMIC_ADD__)
-	static __device__ inline float atomicAddf(float* address, float value)
-	{
-		float old = value;
-		float ret = atomicExch(address, 0.0f);
-		float new_old = ret + old;
-
-	  	while ((old = atomicExch(address, new_old)) != 0.0f) {
-			new_old = atomicExch(address, 0.0f);
-			new_old += old;
-		}
-
-		return ret;
-	}
-#endif
 
 __device__ inline bool isPoissonGroup(short int& grpId, unsigned int& nid)
 {
@@ -1282,11 +1263,7 @@ __device__ int generatePostSynapticSpike(int& simTime, int& firingId, int& myDel
 
 	// Got one spike from dopaminergic neuron, increase dopamine concentration in the target area
 	if (gpuGrpInfo[pre_grpId].Type & TARGET_DA) {
-#if defined(__CUDA3__) || defined(__NO_ATOMIC_ADD__)
-		atomicAddf(&(gpuPtrs.grpDA[post_grpId]), 0.04f);
-#else
 		atomicAdd(&(gpuPtrs.grpDA[post_grpId]), 0.04f);
-#endif
 	}
 
 	setFiringBitSynapses(nid, syn_id);
@@ -1647,11 +1624,6 @@ void SNN::copyConnections(RuntimeData* dest, int kind, bool allocateMem) {
 	if(allocateMem)
 		CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->poissonFireRate, sizeof(dest->poissonFireRate[0]) * numNPois));
 	CUDA_CHECK_ERRORS(cudaMemset(dest->poissonFireRate, 0, sizeof(dest->poissonFireRate[0]) * numNPois));
-
-	// neuron firing recently or not...
-	if(allocateMem)
-		CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->neuronFiring, sizeof(int) * numN));
-	CUDA_CHECK_ERRORS(cudaMemset(dest->neuronFiring, 0, sizeof(int) * numN));
 
 	copyPostConnectionInfo(dest, allocateMem);
 }
@@ -2091,7 +2063,7 @@ void SNN::copySTPState(RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind,
 	delete [] tmp_stp;
 }
 
-void SNN::copyNetworkInfo() {
+void SNN::copyNetworkConfig() {
 	checkAndSetGPUDevice();
 	CUDA_CHECK_ERRORS(cudaMemcpyToSymbol(gpuNetInfo, &networkConfig, sizeof(NetworkConfig), 0, cudaMemcpyHostToDevice));
 }
@@ -2384,7 +2356,6 @@ void SNN::deleteObjects_GPU() {
 	CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData.firingTableD2) );
 	CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData.firingTableD1) );
 	CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData.avgFiring) );
-	CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData.neuronFiring) );
 	CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData.baseFiring) );
 	CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData.baseFiringInv) );
 
@@ -2628,7 +2599,7 @@ void SNN::copyFiringInfo_GPU()
 }
 
 
-void SNN::allocateNetworkParameters() {
+void SNN::allocateNetworkConfig() {
 	networkConfig.numN  = numN;
 	networkConfig.numPostSynapses  = numPostSynapses_;
 	networkConfig.maxDelay  = maxDelay_;
@@ -2652,7 +2623,6 @@ void SNN::allocateNetworkParameters() {
 	networkConfig.numConnections = numConnections;
 	networkConfig.stdpScaleFactor = stdpScaleFactor_;
 	networkConfig.wtChangeDecay = wtChangeDecay_;
-	gpuRuntimeData.memType = GPU_MODE;
 
 	networkConfig.sim_with_NMDA_rise = sim_with_NMDA_rise;
 	networkConfig.sim_with_GABAb_rise = sim_with_GABAb_rise;
@@ -2765,24 +2735,20 @@ void SNN::allocateSNN_GPU() {
 		(float)(avail/toGB));
 	previous=avail;
 
-	// copy data to from SNN:: to NetworkConfig SNN::networkConfig
-	allocateNetworkParameters();
-	cudaMemGetInfo(&avail,&total);
-	KERNEL_INFO("Ntw Params:\t\t%2.3f GB\t%2.3f GB\t%2.3f GB",(float)(previous-avail)/toGB,(float)((total-avail)/toGB),
-		(float)(avail/toGB));
-	previous=avail;
+	// setup memory type of gpu runtime data
+	gpuRuntimeData.memType = GPU_MODE;
+
+	allocateNetworkConfig();
 
 	// initialize gpuRuntimeData.neuronAllocation, __device__ loadBufferCount, loadBufferSize
 	allocateStaticLoad(blkSize);
 	cudaMemGetInfo(&avail,&total);
-	KERNEL_INFO("Static Load:\t\t%2.3f GB\t%2.3f GB\t%2.3f GB",(float)(previous-avail)/toGB,
-		(float)((total-avail)/toGB),(float)(avail/toGB));
+	KERNEL_INFO("Static Load:\t\t%2.3f GB\t%2.3f GB\t%2.3f GB",(float)(previous-avail)/toGB, (float)((total-avail)/toGB),(float)(avail/toGB));
 	previous=avail;
 
 	allocateGroupId();
 	cudaMemGetInfo(&avail,&total);
-	KERNEL_INFO("Group Id:\t\t%2.3f GB\t%2.3f GB\t%2.3f GB",(float)(previous-avail)/toGB,(float)((total-avail)/toGB),
-		(float)(avail/toGB));
+	KERNEL_INFO("Group Id:\t\t%2.3f GB\t%2.3f GB\t%2.3f GB",(float)(previous-avail)/toGB,(float)((total-avail)/toGB), (float)(avail/toGB));
 	previous=avail;
 
 	// this table is useful for quick evaluation of the position of fired neuron
@@ -2790,15 +2756,15 @@ void SNN::allocateSNN_GPU() {
 	// initialize __device__ gpu_tableQuickSynId[256]
 	initTableQuickSynId();
 
-	// initialize (cudaMemset) gpuRuntimeData.I_set, gpuRuntimeData.poissonFireRate, gpuRuntimeData.neuronFiring
+	
+	// initialize (cudaMemset) gpuRuntimeData.I_set, gpuRuntimeData.poissonFireRate
 	// initialize (copy from SNN) gpuRuntimeData.Npre, gpuRuntimeData.Npre_plastic, gpuRuntimeData.Npre_plasticInv, gpuRuntimeData.cumulativePre
 	// initialize (copy from SNN) gpuRuntimeData.cumulativePost, gpuRuntimeData.Npost, gpuRuntimeData.postDelayInfo
 	// initialize (copy from SNN) gpuRuntimeData.postSynapticIds, gpuRuntimeData.preSynapticIds
 	// copy data to SNN:networkConfig.postSynCnt, preSynCnt
 	copyConnections(&gpuRuntimeData,  cudaMemcpyHostToDevice, 1);
 	cudaMemGetInfo(&avail,&total);
-	KERNEL_INFO("Conn Info:\t\t%2.3f GB\t%2.3f GB\t%2.3f GB",(float)(previous-avail)/toGB,(float)((total-avail)/toGB),
-		(float)(avail/toGB));
+	KERNEL_INFO("Conn Info:\t\t%2.3f GB\t%2.3f GB\t%2.3f GB",(float)(previous-avail)/toGB,(float)((total-avail)/toGB), (float)(avail/toGB));
 	previous=avail;
 
 	// initialize (copy from SNN) gpuRuntimeData.wt, gpuRuntimeData.wtChange, gpuRuntimeData.maxSynWt, gpuRuntimeData.synSpikeTime
@@ -2812,8 +2778,7 @@ void SNN::allocateSNN_GPU() {
 	// initialize (copy from SNN) gpuRuntimeData.grpDA, gpuRuntimeData.grp5HT, gpuRuntimeData.grpACh, gpuRuntimeData.grpNE
 	copyState(&gpuRuntimeData, 1);
 	cudaMemGetInfo(&avail,&total);
-	KERNEL_INFO("State Info:\t\t%2.3f GB\t%2.3f GB\t%2.3f GB\n\n",(float)(previous-avail)/toGB,(float)((total-avail)/toGB),
-		(float)(avail/toGB));
+	KERNEL_INFO("State Info:\t\t%2.3f GB\t%2.3f GB\t%2.3f GB\n\n",(float)(previous-avail)/toGB,(float)((total-avail)/toGB), (float)(avail/toGB));
 	previous=avail;
 
 	// copy Spike Counters
@@ -2840,12 +2805,11 @@ void SNN::allocateSNN_GPU() {
 	}
 
 	// copy relevant pointers and network information to GPU
-	void* devPtr;
 	CUDA_CHECK_ERRORS(cudaMemcpyToSymbol(gpuPtrs, &gpuRuntimeData, sizeof(RuntimeData), 0, cudaMemcpyHostToDevice));
 
-	copyNetworkInfo();
-//	CUDA_CHECK_ERRORS(cudaMemcpyToSymbol(gpuNetInfo, &networkConfig, sizeof(NetworkConfig), 0, cudaMemcpyHostToDevice));
-	// FIXME: we can change the group properties such as STDP as the network is running.  So, we need a way to updating the GPU when changes are made.
+	// copy data to from SNN:: to NetworkConfig SNN::networkConfig
+	copyNetworkConfig(); // FIXME: we can change the group properties such as STDP as the network is running.  So, we need a way to updating the GPU when changes are made.
+
 
 	CUDA_CHECK_ERRORS(cudaMemcpyToSymbol(d_mulSynFast, mulSynFast, sizeof(float)*numConnections, 0, cudaMemcpyHostToDevice));
 	CUDA_CHECK_ERRORS(cudaMemcpyToSymbol(d_mulSynSlow, mulSynSlow, sizeof(float)*numConnections, 0, cudaMemcpyHostToDevice));
@@ -2896,9 +2860,11 @@ void SNN::allocateSNN_GPU() {
 		KERNEL_DEBUG("\tspikeGen: %s",groupConfig[i].spikeGen==NULL?"Is Null":"Is set");
 	}
 
+	// allocation of gpu runtime data is done
 	gpuRuntimeData.allocated = true;
 
 	// map the timing table to texture.. saves a lot of headache in using shared memory
+	void* devPtr;
 	CUDA_CHECK_ERRORS(cudaGetSymbolAddress(&devPtr, timingTableD2));
 	size_t offset;
 	CUDA_CHECK_ERRORS(cudaBindTexture(&offset, timingTableD2_tex, devPtr, sizeof(int) * ROUNDED_TIMING_COUNT));

@@ -75,15 +75,15 @@ typedef struct {
  *	\sa SNN
  */
 typedef struct NetworkConfig_s  {
-	size_t			STP_Pitch;		//!< numN rounded upwards to the nearest 256 boundary
+	size_t			STP_Pitch;		//!< numN rounded upwards to the nearest 256 boundary, used for GPU only
 	unsigned int	numN;
 	unsigned int	numPostSynapses;
 	unsigned int	maxDelay;
 	unsigned int	numNExcReg;
 	unsigned int	numNInhReg;
 	unsigned int	numNReg;
-	unsigned int	I_setLength;
-	size_t			I_setPitch;
+	unsigned int	I_setLength;	//!< used for GPU only
+	size_t			I_setPitch;		//!< used for GPU only
 	unsigned int	preSynLength;
 	unsigned int	postSynCnt;
 	unsigned int	preSynCnt;
@@ -179,7 +179,6 @@ typedef struct RuntimeData_s {
 	float*	wt;				//!< stores the weight change of a synaptic connection
 	float*	maxSynWt;			//!< maximum synaptic weight for a connection
 	unsigned int*	synSpikeTime;	//!< stores the last spike time of a synapse
-	unsigned int*	neuronFiring;
 	unsigned int*	cumulativePost;
 	unsigned int*	cumulativePre;
 

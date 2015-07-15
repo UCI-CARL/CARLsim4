@@ -1629,7 +1629,7 @@ int SNN::getGroupId(std::string grpName) {
 	return -1;
 }
 
-GroupConfig SNN::getGroupInfo(int grpId) {
+GroupConfig SNN::getGroupConfig(int grpId) {
 	assert(grpId>=-1 && grpId<numGrp);
 	return groupConfig[grpId];
 }
@@ -4538,7 +4538,7 @@ void SNN::startTesting(bool shallUpdateWeights) {
 
 	if (simMode_ == GPU_MODE) {
 		// copy new network info struct to GPU (|TODO copy only a single boolean)
-		copyNetworkInfo();
+		copyNetworkConfig();
 	}
 }
 
@@ -4549,7 +4549,7 @@ void SNN::stopTesting() {
 
 	if (simMode_ == GPU_MODE) {
 		// copy new network_info struct to GPU (|TODO copy only a single boolean)
-		copyNetworkInfo();
+		copyNetworkConfig();
 	}
 }
 
