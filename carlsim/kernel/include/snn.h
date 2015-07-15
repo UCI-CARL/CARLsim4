@@ -482,9 +482,9 @@ public:
 	loggerMode_t getLoggerMode() { return loggerMode_; }
 
 	// get functions for GroupInfo
-	int getGroupStartNeuronId(int grpId)  { return grp_Info[grpId].StartN; }
-	int getGroupEndNeuronId(int grpId)    { return grp_Info[grpId].EndN; }
-	int getGroupNumNeurons(int grpId)     { return grp_Info[grpId].SizeN; }
+	int getGroupStartNeuronId(int grpId)  { return groupConfig[grpId].StartN; }
+	int getGroupEndNeuronId(int grpId)    { return groupConfig[grpId].EndN; }
+	int getGroupNumNeurons(int grpId)     { return groupConfig[grpId].SizeN; }
 
 	std::string getNetworkName() { return networkName_; }
 
@@ -549,10 +549,10 @@ public:
 	//! returns RangeWeight struct of a connection
 	RangeWeight getWeightRange(short int connId);
 
-	bool isExcitatoryGroup(int g) { return (grp_Info[g].Type&TARGET_AMPA) || (grp_Info[g].Type&TARGET_NMDA); }
-	bool isInhibitoryGroup(int g) { return (grp_Info[g].Type&TARGET_GABAa) || (grp_Info[g].Type&TARGET_GABAb); }
-	bool isPoissonGroup(int g) { return (grp_Info[g].Type&POISSON_NEURON); }
-	bool isDopaminergicGroup(int g) { return (grp_Info[g].Type&TARGET_DA); }
+	bool isExcitatoryGroup(int g) { return (groupConfig[g].Type&TARGET_AMPA) || (groupConfig[g].Type&TARGET_NMDA); }
+	bool isInhibitoryGroup(int g) { return (groupConfig[g].Type&TARGET_GABAa) || (groupConfig[g].Type&TARGET_GABAb); }
+	bool isPoissonGroup(int g) { return (groupConfig[g].Type&POISSON_NEURON); }
+	bool isDopaminergicGroup(int g) { return (groupConfig[g].Type&TARGET_DA); }
 
 	//! returns whether group has homeostasis enabled (true) or not (false)
 	bool isGroupWithHomeostasis(int grpId);
@@ -931,38 +931,8 @@ private:
 	int   			numNExcPois;		//!< number of excitatory poisson neurons
 	int				numNInhPois;		//!< number of inhibitory poisson neurons
 	int				numNPois;			//!< number of poisson neurons
-	// duplicated float* voltage;
-	// duplicated float* recovery;
-	// duplicated float* Izh_a;
-	// duplicated float* Izh_b;
-	// duplicated float* Izh_c;
-	// duplicated float* Izh_d;
-	// duplicated float* current;
-	// duplicated float* extCurrent;
-	// duplicated bool* curSpike;
-	// duplicated int* nSpikeCnt;     //!< spike counts per neuron
-	// duplicated unsigned short* Npre;			//!< stores the number of input connections to the neuron
-	// duplicated unsigned short* Npre_plastic;	//!< stores the number of excitatory input connection to the input
-	// duplicated unsigned short* Npost;			//!< stores the number of output connections from a neuron.
-	// duplicated uint32_t* lastSpikeTime;	//!< stores the most recent spike time of the neuron
-	// duplicated float* wtChange;
-	// duplicated float* wt;	//!< stores the synaptic weight and weight change of a synaptic connection
-	// duplicated float* maxSynWt;		//!< maximum synaptic weight for given connection..
-	// duplicated uint32_t* synSpikeTime;	//!< stores the spike time of each synapse
 	unsigned int		postSynCnt; //!< stores the total number of post-synaptic connections in the network
 	unsigned int		preSynCnt; //!< stores the total number of pre-synaptic connections in the network
-	#ifdef NEURON_NOISE
-	float			*intrinsicWeight;
-	#endif
-	//added to include homeostasis. -- KDC
-	// duplicated float* baseFiring;
-	// duplicated float* avgFiring;
-
-	// duplicated unsigned int* cumulativePost;
-	// duplicated unsigned int* cumulativePre;
-	// duplicated post_info_t* preSynapticIds;
-	// duplicated post_info_t* postSynapticIds;		//!< 10 bit syn id, 22 bit neuron id, ordered based on delay
-	// duplicated delay_info_t* postDelayInfo;      	//!< delay information
 
 	//! size of memory used for different parts of the network
 	typedef struct snnSize_s {
@@ -1024,26 +994,18 @@ private:
 	// \FIXME \DEPRECATED this one moved to group-based
 	long int    simTimeLastUpdSpkMon_; //!< last time we ran updateSpikeMonitor
 
-
-
 	unsigned int	numSpikeGenGrps;
 
 	int numSpkCnt; //!< number of real-time spike monitors in the network
 	int* spkCntBuf[MAX_GRP_PER_SNN]; //!< the actual buffer of spike counts (per group, per neuron)
 
-
+	// keep track of number of GroupMonitor/GroupMonitorCore objects
 	unsigned int		numGroupMonitor;
 	GroupMonitorCore*	groupMonCoreList[MAX_GRP_PER_SNN];
 	GroupMonitor*		groupMonList[MAX_GRP_PER_SNN];
 
-	// group monitor assistive buffers
-	// duplicated float*			grpDABuffer[MAX_GRP_PER_SNN];
-	// duplicated float*			grp5HTBuffer[MAX_GRP_PER_SNN];
-	// duplicated float*			grpAChBuffer[MAX_GRP_PER_SNN];
-	// duplicated float*			grpNEBuffer[MAX_GRP_PER_SNN];
-
 	// neuron monitor variables
-//	NeuronMonitorCore* neurBufferCallback[MAX_]
+	//NeuronMonitorCore* neurBufferCallback[MAX_]
 	int numNeuronMonitor;
 
 	// connection monitor variables
@@ -1051,38 +1013,14 @@ private:
 	ConnectionMonitorCore* connMonCoreList[MAX_nConnections];
 	ConnectionMonitor*     connMonList[MAX_nConnections];
 
-
-	/* Tsodyks & Markram (1998), where the short-term dynamics of synapses is characterized by three parameters:
-	   U (which roughly models the release probability of a synaptic vesicle for the first spike in a train of spikes),
-	   maxDelay_ (time constant for recovery from depression), and F (time constant for recovery from facilitation). */
-	// duplicated float *stpu;
-	// duplicated float *stpx;
-
-	// duplicated float *gAMPA;
-	// duplicated float *gNMDA;
-	// duplicated float *gNMDA_r;
-	// duplicated float *gNMDA_d;
-	// duplicated float *gGABAa;
-	// duplicated float *gGABAb;
-	// duplicated float *gGABAb_r;
-	// duplicated float *gGABAb_d;
-
-	// concentration of neuromodulators for each group
-	// duplicated float*	grpDA;
-	// duplicated float*	grp5HT;
-	// duplicated float*	grpACh;
-	// duplicated float*	grpNE;
-
-	network_info_t net_Info;
+	NetworkConfig networkConfig;
 
 	RuntimeData gpuRuntimeData;
+	//RuntimeData cpuRuntimeData;
 	RuntimeData snnRuntimeData;
 
 	//int   Noffset;
 	int	  NgenFunc;					//!< this counts the spike generator offsets...
-
-	bool finishedPoissonGroup;		//!< This variable is set after we have finished
-	//!< creating the poisson group...
 
 	bool showGrpFiringInfo;
 
@@ -1091,9 +1029,8 @@ private:
 	unsigned int	gpu_tStep, gpu_simSec;		//!< this is used to store the seconds.
 	unsigned int	gpu_simTime;				//!< this value is not reset but keeps increasing to its max value.
 
-	GroupConfig	  	grp_Info[MAX_GRP_PER_SNN];
-	GroupInfo		grp_Info2[MAX_GRP_PER_SNN];
-	// duplicated uint32_t*	spikeGenBits;
+	GroupConfig	  	groupConfig[MAX_GRP_PER_SNN];
+	GroupInfo		groupInfo[MAX_GRP_PER_SNN];
 
 	// weight update parameter
 	int wtANDwtChangeUpdateInterval_;

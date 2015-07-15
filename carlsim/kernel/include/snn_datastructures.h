@@ -74,7 +74,7 @@ typedef struct {
  *	The data in this structure are copied to device memory when running GPU simulation.
  *	\sa SNN
  */
-typedef struct network_info_s  {
+typedef struct NetworkConfig_s  {
 	size_t			STP_Pitch;		//!< numN rounded upwards to the nearest 256 boundary
 	unsigned int	numN;
 	unsigned int	numPostSynapses;
@@ -114,7 +114,7 @@ typedef struct network_info_s  {
 	double 			rGABAb;				//!< multiplication factor for rise time of GABAb
 	double 			dGABAb;				//!< multiplication factor for decay time of GABAb
 	double 			sGABAb;				//!< scaling factor for GABAb amplitude
-} network_info_t;
+} NetworkConfig;
 
 
 //! connection infos...
@@ -170,15 +170,15 @@ typedef struct RuntimeData_s {
 	float*	stpx;
 	float*	stpu;
 
-	unsigned short*	Npre;				//!< stores the number of input connections to the neuron
-	unsigned short*	Npre_plastic;		//!< stores the number of plastic input connections
-	float*		Npre_plasticInv;	//!< stores the 1/number of plastic input connections, for use on the GPU
+	unsigned short*	Npre;				//!< stores the number of input connections to a neuron
+	unsigned short*	Npre_plastic;		//!< stores the number of plastic input connections to a neuron
+	float*		Npre_plasticInv;	//!< stores the 1/number of plastic input connections, only used on GPU
 	unsigned short*	Npost;				//!< stores the number of output connections from a neuron.
-	unsigned int*	lastSpikeTime;		//!< storees the firing time of the neuron
+	unsigned int*	lastSpikeTime;		//!< stores the last spike time of a neuron
 	float*	wtChange;		//!< stores the weight change of a synaptic connection
 	float*	wt;				//!< stores the weight change of a synaptic connection
 	float*	maxSynWt;			//!< maximum synaptic weight for a connection
-	unsigned int*	synSpikeTime;
+	unsigned int*	synSpikeTime;	//!< stores the last spike time of a synapse
 	unsigned int*	neuronFiring;
 	unsigned int*	cumulativePost;
 	unsigned int*	cumulativePre;

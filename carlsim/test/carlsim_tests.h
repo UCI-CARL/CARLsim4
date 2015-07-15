@@ -62,9 +62,9 @@
  *
  * A) TESTING CORE FUNCTIONALITY
  * 1. Test core data structures when some functionality is enabled.
- *    For example: Set STP to true for a specific group, check grp_Info to make sure all values are set accordingly.
+ *    For example: Set STP to true for a specific group, check groupConfig to make sure all values are set accordingly.
  * 2. Test core data structures when some functionality is disabled.
- *    For example: Set STP to false for a specific group, check grp_Info to make sure it's disabled.
+ *    For example: Set STP to false for a specific group, check groupConfig to make sure it's disabled.
  * 3. Test behavior when values for input arguments are chosen unreasonably.
  *    For example: Create a group with N=-4 (number of neurons) and expect simulation to die. This is because each
  *    core function should have assertion statements to prevent the simulation from running unreasonable input values.

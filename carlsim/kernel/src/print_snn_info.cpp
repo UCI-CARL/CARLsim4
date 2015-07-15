@@ -81,16 +81,16 @@ void SNN::printMemoryInfo(FILE* const fp) {
 		int TNpre=0;
 		int TNpre_plastic=0;
 		
-		for(int i=grp_Info[g].StartN; i <= grp_Info[g].EndN; i++) {
+		for(int i=groupConfig[g].StartN; i <= groupConfig[g].EndN; i++) {
 			TNpost += snnRuntimeData.Npost[i];
 			TNpre  += snnRuntimeData.Npre[i];
 			TNpre_plastic += snnRuntimeData.Npre_plastic[i];
 		}
 		
 	fprintf(fp, "%s Group (num_neurons=%5d): \n\t\tNpost[%2d] = %3d, Npre[%2d]=%3d Npre_plastic[%2d]=%3d \n\t\tcumPre[%5d]=%5d cumPre[%5d]=%5d cumPost[%5d]=%5d cumPost[%5d]=%5d \n",
-		grp_Info2[g].Name.c_str(), grp_Info[g].SizeN, g, TNpost/grp_Info[g].SizeN, g, TNpre/grp_Info[g].SizeN, g, TNpre_plastic/grp_Info[g].SizeN,
-		grp_Info[g].StartN, snnRuntimeData.cumulativePre[grp_Info[g].StartN],  grp_Info[g].EndN, snnRuntimeData.cumulativePre[grp_Info[g].EndN],
-		grp_Info[g].StartN, snnRuntimeData.cumulativePost[grp_Info[g].StartN], grp_Info[g].EndN, snnRuntimeData.cumulativePost[grp_Info[g].EndN]);
+		groupInfo[g].Name.c_str(), groupConfig[g].SizeN, g, TNpost/groupConfig[g].SizeN, g, TNpre/groupConfig[g].SizeN, g, TNpre_plastic/groupConfig[g].SizeN,
+		groupConfig[g].StartN, snnRuntimeData.cumulativePre[groupConfig[g].StartN],  groupConfig[g].EndN, snnRuntimeData.cumulativePre[groupConfig[g].EndN],
+		groupConfig[g].StartN, snnRuntimeData.cumulativePost[groupConfig[g].StartN], groupConfig[g].EndN, snnRuntimeData.cumulativePost[groupConfig[g].EndN]);
 	}
 	fprintf(fp, "**************************************\n\n");
 }
@@ -111,7 +111,7 @@ void SNN::printStatusSpikeMonitor(int grpId) {
 			printStatusSpikeMonitor(grpId1);
 		}
 	} else {
-		int monitorId = grp_Info[grpId].SpikeMonitorId;
+		int monitorId = groupConfig[grpId].SpikeMonitorId;
 		if (monitorId==-1) {
 			return;
 		}
@@ -124,7 +124,7 @@ void SNN::printStatusSpikeMonitor(int grpId) {
 		// printRunSummary is true or mode==COUNT.....
 		// so then we can use spkMonObj->print(false); // showSpikeTimes==false
 		int grpSpk = 0;
-		for (int neurId=grp_Info[grpId].StartN; neurId<=grp_Info[grpId].EndN; neurId++)
+		for (int neurId=groupConfig[grpId].StartN; neurId<=groupConfig[grpId].EndN; neurId++)
 			grpSpk += snnRuntimeData.nSpikeCnt[neurId]; // add up all neuronal spike counts
 
 		// infer run duration by measuring how much time has passed since the last run summary was printed
@@ -133,7 +133,7 @@ void SNN::printStatusSpikeMonitor(int grpId) {
 		if (simTime <= simTimeLastRunSummary) {
 			KERNEL_INFO("(t=%.3fs) SpikeMonitor for group %s(%d) has %d spikes in %dms (%.2f +/- %.2f Hz)",
 				(float)(simTime/1000.0f),
-				grp_Info2[grpId].Name.c_str(),
+				groupInfo[grpId].Name.c_str(),
 				grpId,
 				0,
 				0,
@@ -141,19 +141,19 @@ void SNN::printStatusSpikeMonitor(int grpId) {
 				0.0f);
 		} else {
 			// if some time has passed since last print
-			float meanRate = grpSpk*1000.0f/runDurationMs/grp_Info[grpId].SizeN;
+			float meanRate = grpSpk*1000.0f/runDurationMs/groupConfig[grpId].SizeN;
 			float std = 0.0f;
-			if (grp_Info[grpId].SizeN > 1) {
-				for (int neurId=grp_Info[grpId].StartN; neurId<=grp_Info[grpId].EndN; neurId++) {
+			if (groupConfig[grpId].SizeN > 1) {
+				for (int neurId=groupConfig[grpId].StartN; neurId<=groupConfig[grpId].EndN; neurId++) {
 					float neurRate = snnRuntimeData.nSpikeCnt[neurId]*1000.0f/runDurationMs;
 					std += (neurRate-meanRate)*(neurRate-meanRate);
 				}
-				std = sqrt(std/(grp_Info[grpId].SizeN-1.0));
+				std = sqrt(std/(groupConfig[grpId].SizeN-1.0));
 			}
 	
 			KERNEL_INFO("(t=%.3fs) SpikeMonitor for group %s(%d) has %d spikes in %ums (%.2f +/- %.2f Hz)",
 				(float)(simTime/1000.0f),
-				grp_Info2[grpId].Name.c_str(),
+				groupInfo[grpId].Name.c_str(),
 				grpId,
 				grpSpk,
 				runDurationMs,
@@ -169,7 +169,7 @@ void SNN::printStatusGroupMonitor(int grpId) {
 			printStatusGroupMonitor(g);
 		}
 	} else {
-		int monitorId = grp_Info[grpId].GroupMonitorId;
+		int monitorId = groupConfig[grpId].GroupMonitorId;
 		if (monitorId == -1)
 			return;
 
@@ -182,7 +182,7 @@ void SNN::printStatusGroupMonitor(int grpId) {
 		if (simTime <= simTimeLastRunSummary) {
 			KERNEL_INFO("(t=%.3fs) GroupMonitor for group %s(%d) has %d peak(s) in %dms",
 				(float)(simTime/1000.0f),
-				grp_Info2[grpId].Name.c_str(),
+				groupInfo[grpId].Name.c_str(),
 				grpId,
 				0,
 				0);
@@ -190,7 +190,7 @@ void SNN::printStatusGroupMonitor(int grpId) {
 			// if some time has passed since last print
 			KERNEL_INFO("(t=%.3fs) GroupMonitor for group %s(%d) has %d peak(s) in %ums",
 				(float)(simTime/1000.0f),
-				grp_Info2[grpId].Name.c_str(),
+				groupInfo[grpId].Name.c_str(),
 				grpId,
 				numPeaks,
 				runDurationMs);
@@ -226,7 +226,7 @@ void SNN::printConnectionInfo(FILE * const fp)
   while(newInfo) {
     bool synWtType  = GET_FIXED_PLASTIC(newInfo->connProp);
     fprintf(fp, " // (%s => %s): numPostSynapses=%d, numPreSynapses=%d, iWt=%3.3f, mWt=%3.3f, ty=%x, maxD=%d, minD=%d %s\n",
-      grp_Info2[newInfo->grpSrc].Name.c_str(), grp_Info2[newInfo->grpDest].Name.c_str(),
+      groupInfo[newInfo->grpSrc].Name.c_str(), groupInfo[newInfo->grpDest].Name.c_str(),
       newInfo->numPostSynapses, newInfo->numPreSynapses, newInfo->initWt,   newInfo->maxWt,
       newInfo->connProp, newInfo->maxDelay, newInfo->minDelay, (synWtType == SYN_PLASTIC)?"(*)":"");
 
@@ -249,7 +249,7 @@ void SNN::printConnectionInfo2(FILE * const fpg)
 	while(newInfo) {
 		bool synWtType	= GET_FIXED_PLASTIC(newInfo->connProp);
 		fprintf(fpg, " %d => %d : %s => %s : numPostSynapses %d : numPreSynapses %d : initWeight %f : maxWeight %3.3f : type %s : maxDelay %d : minDelay %d\n",
-				newInfo->grpSrc, newInfo->grpDest, grp_Info2[newInfo->grpSrc].Name.c_str(), grp_Info2[newInfo->grpDest].Name.c_str(),
+				newInfo->grpSrc, newInfo->grpDest, groupInfo[newInfo->grpSrc].Name.c_str(), groupInfo[newInfo->grpDest].Name.c_str(),
 				newInfo->numPostSynapses, newInfo->numPreSynapses, newInfo->initWt,   newInfo->maxWt,
 				(synWtType == SYN_PLASTIC)?"plastic":"fixed", newInfo->maxDelay, newInfo->minDelay);
 		newInfo = newInfo->next;
@@ -262,8 +262,8 @@ void SNN::printConnectionInfo2(FILE * const fpg)
 void SNN::printConnectionInfo(short int connId) {
 	grpConnectInfo_t* connInfo = getConnectInfo(connId);
 
-	KERNEL_INFO("Connection ID %d: %s(%d) => %s(%d)", connId, grp_Info2[connInfo->grpSrc].Name.c_str(),
-		connInfo->grpSrc, grp_Info2[connInfo->grpDest].Name.c_str(), connInfo->grpDest);
+	KERNEL_INFO("Connection ID %d: %s(%d) => %s(%d)", connId, groupInfo[connInfo->grpSrc].Name.c_str(),
+		connInfo->grpSrc, groupInfo[connInfo->grpDest].Name.c_str(), connInfo->grpDest);
 	KERNEL_INFO("  - Type                       = %s", GET_FIXED_PLASTIC(connInfo->connProp)==SYN_PLASTIC?" PLASTIC":"   FIXED")
 	KERNEL_INFO("  - Min weight                 = %8.5f", 0.0f); // \TODO
 	KERNEL_INFO("  - Max weight                 = %8.5f", fabs(connInfo->maxWt));
@@ -274,54 +274,54 @@ void SNN::printConnectionInfo(short int connId) {
   KERNEL_INFO("  - Radius Y                   = %8.2f", connInfo->radY);
   KERNEL_INFO("  - Radius Z                   = %8.2f", connInfo->radZ);
 
-	float avgPostM = connInfo->numberOfConnections/grp_Info[connInfo->grpSrc].SizeN;
-	float avgPreM  = connInfo->numberOfConnections/grp_Info[connInfo->grpDest].SizeN;
+	float avgPostM = connInfo->numberOfConnections/groupConfig[connInfo->grpSrc].SizeN;
+	float avgPreM  = connInfo->numberOfConnections/groupConfig[connInfo->grpDest].SizeN;
 	KERNEL_INFO("  - Avg numPreSynapses         = %8d", (int)avgPreM );
 	KERNEL_INFO("  - Avg numPostSynapses        = %8d", (int)avgPostM );
 }
 
 void SNN::printGroupInfo(int grpId) {
-	KERNEL_INFO("Group %s(%d): ", grp_Info2[grpId].Name.c_str(), grpId);
+	KERNEL_INFO("Group %s(%d): ", groupInfo[grpId].Name.c_str(), grpId);
 	KERNEL_INFO("  - Type                       =  %s", isExcitatoryGroup(grpId) ? "  EXCIT" :
 		(isInhibitoryGroup(grpId) ? "  INHIB" : (isPoissonGroup(grpId)?" POISSON" :
 		(isDopaminergicGroup(grpId) ? "  DOPAM" : " UNKNOWN"))) );
-	KERNEL_INFO("  - Size                       = %8d", grp_Info[grpId].SizeN);
-	KERNEL_INFO("  - Start Id                   = %8d", grp_Info[grpId].StartN);
-	KERNEL_INFO("  - End Id                     = %8d", grp_Info[grpId].EndN);
-	KERNEL_INFO("  - numPostSynapses            = %8d", grp_Info[grpId].numPostSynapses);
-	KERNEL_INFO("  - numPreSynapses             = %8d", grp_Info[grpId].numPreSynapses);
+	KERNEL_INFO("  - Size                       = %8d", groupConfig[grpId].SizeN);
+	KERNEL_INFO("  - Start Id                   = %8d", groupConfig[grpId].StartN);
+	KERNEL_INFO("  - End Id                     = %8d", groupConfig[grpId].EndN);
+	KERNEL_INFO("  - numPostSynapses            = %8d", groupConfig[grpId].numPostSynapses);
+	KERNEL_INFO("  - numPreSynapses             = %8d", groupConfig[grpId].numPreSynapses);
 
 	//if (doneReorganization) {
-	//	KERNEL_INFO("  - Avg post connections       = %8.5f", 1.0*grp_Info2[grpId].numPostConn/grp_Info[grpId].SizeN);
-	//	KERNEL_INFO("  - Avg pre connections        = %8.5f",  1.0*grp_Info2[grpId].numPreConn/grp_Info[grpId].SizeN);
+	//	KERNEL_INFO("  - Avg post connections       = %8.5f", 1.0*groupInfo[grpId].numPostConn/groupConfig[grpId].SizeN);
+	//	KERNEL_INFO("  - Avg pre connections        = %8.5f",  1.0*groupInfo[grpId].numPreConn/groupConfig[grpId].SizeN);
 	//}
 
-	if(grp_Info[grpId].Type&POISSON_NEURON) {
-		KERNEL_INFO("  - Refractory period          = %8.5f", grp_Info[grpId].RefractPeriod);
+	if(groupConfig[grpId].Type&POISSON_NEURON) {
+		KERNEL_INFO("  - Refractory period          = %8.5f", groupConfig[grpId].RefractPeriod);
 	}
 
-	if (grp_Info[grpId].WithSTP) {
+	if (groupConfig[grpId].WithSTP) {
 		KERNEL_INFO("  - STP:");
-		KERNEL_INFO("      - STP_A                  = %8.5f", grp_Info[grpId].STP_A);
-		KERNEL_INFO("      - STP_U                  = %8.5f", grp_Info[grpId].STP_U);
-		KERNEL_INFO("      - STP_tau_u              = %8d", (int) (1.0f/grp_Info[grpId].STP_tau_u_inv));
-		KERNEL_INFO("      - STP_tau_x              = %8d", (int) (1.0f/grp_Info[grpId].STP_tau_x_inv));
+		KERNEL_INFO("      - STP_A                  = %8.5f", groupConfig[grpId].STP_A);
+		KERNEL_INFO("      - STP_U                  = %8.5f", groupConfig[grpId].STP_U);
+		KERNEL_INFO("      - STP_tau_u              = %8d", (int) (1.0f/groupConfig[grpId].STP_tau_u_inv));
+		KERNEL_INFO("      - STP_tau_x              = %8d", (int) (1.0f/groupConfig[grpId].STP_tau_x_inv));
 	}
 
-	if(grp_Info[grpId].WithSTDP) {
+	if(groupConfig[grpId].WithSTDP) {
 		KERNEL_INFO("  - STDP:")
-		KERNEL_INFO("      - E-STDP TYPE            = %s",     grp_Info[grpId].WithESTDPtype==STANDARD? "STANDARD" :
-			(grp_Info[grpId].WithESTDPtype==DA_MOD?"  DA_MOD":" UNKNOWN"));
-		KERNEL_INFO("      - I-STDP TYPE            = %s",     grp_Info[grpId].WithISTDPtype==STANDARD? "STANDARD" :
-			(grp_Info[grpId].WithISTDPtype==DA_MOD?"  DA_MOD":" UNKNOWN"));
-		KERNEL_INFO("      - ALPHA_PLUS_EXC         = %8.5f", grp_Info[grpId].ALPHA_PLUS_EXC);
-		KERNEL_INFO("      - ALPHA_MINUS_EXC        = %8.5f", grp_Info[grpId].ALPHA_MINUS_EXC);
-		KERNEL_INFO("      - TAU_PLUS_INV_EXC       = %8.5f", grp_Info[grpId].TAU_PLUS_INV_EXC);
-		KERNEL_INFO("      - TAU_MINUS_INV_EXC      = %8.5f", grp_Info[grpId].TAU_MINUS_INV_EXC);
-		KERNEL_INFO("      - BETA_LTP               = %8.5f", grp_Info[grpId].BETA_LTP);
-		KERNEL_INFO("      - BETA_LTD               = %8.5f", grp_Info[grpId].BETA_LTD);
-		KERNEL_INFO("      - LAMBDA                 = %8.5f", grp_Info[grpId].LAMBDA);
-		KERNEL_INFO("      - DELTA                  = %8.5f", grp_Info[grpId].DELTA);
+		KERNEL_INFO("      - E-STDP TYPE            = %s",     groupConfig[grpId].WithESTDPtype==STANDARD? "STANDARD" :
+			(groupConfig[grpId].WithESTDPtype==DA_MOD?"  DA_MOD":" UNKNOWN"));
+		KERNEL_INFO("      - I-STDP TYPE            = %s",     groupConfig[grpId].WithISTDPtype==STANDARD? "STANDARD" :
+			(groupConfig[grpId].WithISTDPtype==DA_MOD?"  DA_MOD":" UNKNOWN"));
+		KERNEL_INFO("      - ALPHA_PLUS_EXC         = %8.5f", groupConfig[grpId].ALPHA_PLUS_EXC);
+		KERNEL_INFO("      - ALPHA_MINUS_EXC        = %8.5f", groupConfig[grpId].ALPHA_MINUS_EXC);
+		KERNEL_INFO("      - TAU_PLUS_INV_EXC       = %8.5f", groupConfig[grpId].TAU_PLUS_INV_EXC);
+		KERNEL_INFO("      - TAU_MINUS_INV_EXC      = %8.5f", groupConfig[grpId].TAU_MINUS_INV_EXC);
+		KERNEL_INFO("      - BETA_LTP               = %8.5f", groupConfig[grpId].BETA_LTP);
+		KERNEL_INFO("      - BETA_LTD               = %8.5f", groupConfig[grpId].BETA_LTD);
+		KERNEL_INFO("      - LAMBDA                 = %8.5f", groupConfig[grpId].LAMBDA);
+		KERNEL_INFO("      - DELTA                  = %8.5f", groupConfig[grpId].DELTA);
 	}
 }
 
@@ -330,15 +330,15 @@ void SNN::printGroupInfo2(FILE* const fpg)
   fprintf(fpg, "#Group Information\n");
   for(int g=0; g < numGrp; g++) {
     fprintf(fpg, "group %d: name %s : type %s %s %s %s %s: size %d : start %d : end %d \n",
-      g, grp_Info2[g].Name.c_str(),
-      (grp_Info[g].Type&POISSON_NEURON) ? "poisson " : "",
-      (grp_Info[g].Type&TARGET_AMPA) ? "AMPA" : "",
-      (grp_Info[g].Type&TARGET_NMDA) ? "NMDA" : "",
-      (grp_Info[g].Type&TARGET_GABAa) ? "GABAa" : "",
-      (grp_Info[g].Type&TARGET_GABAb) ? "GABAb" : "",
-      grp_Info[g].SizeN,
-      grp_Info[g].StartN,
-      grp_Info[g].EndN);
+      g, groupInfo[g].Name.c_str(),
+      (groupConfig[g].Type&POISSON_NEURON) ? "poisson " : "",
+      (groupConfig[g].Type&TARGET_AMPA) ? "AMPA" : "",
+      (groupConfig[g].Type&TARGET_NMDA) ? "NMDA" : "",
+      (groupConfig[g].Type&TARGET_GABAa) ? "GABAa" : "",
+      (groupConfig[g].Type&TARGET_GABAb) ? "GABAb" : "",
+      groupConfig[g].SizeN,
+      groupConfig[g].StartN,
+      groupConfig[g].EndN);
   }
   fprintf(fpg, "\n");
   fflush(fpg);
@@ -374,7 +374,7 @@ void SNN::printPreConnection(FILE * const fp)
 int SNN::printPostConnection2(int grpId, FILE* const fpg)
 {
   int maxLength = -1;
-  for(int i=grp_Info[grpId].StartN; i<=grp_Info[grpId].EndN; i++) {
+  for(int i=groupConfig[grpId].StartN; i<=groupConfig[grpId].EndN; i++) {
     fprintf(fpg, " id %d : group %d : postlength %d ", i, findGrpId(i), snnRuntimeData.Npost[i]);
     // fetch the starting position
     post_info_t* postIds = &(snnRuntimeData.postSynapticIds[snnRuntimeData.cumulativePost[i]]);
@@ -437,7 +437,7 @@ void SNN::printFiringRate(char *fname)
   if(printCnt==0) {
     fprintf(fpg, "#network %s: size = %d\n", networkName_.c_str(), numN);
     for(int grpId=0; grpId < numGrp; grpId++) {
-      fprintf(fpg, "#group %d: name %s : size = %d\n", grpId, grp_Info2[grpId].Name.c_str(), grp_Info[grpId].SizeN);
+      fprintf(fpg, "#group %d: name %s : size = %d\n", grpId, groupInfo[grpId].Name.c_str(), groupConfig[grpId].SizeN);
     }
   }
   fprintf(fpg, "Time %d ms\n", simTime);
@@ -447,13 +447,13 @@ void SNN::printFiringRate(char *fname)
     fprintf(fpg, "group %d : \t", grpId);
     int   totSpike = 0;
     int   activeCnt  = 0;
-    for(int i=grp_Info[grpId].StartN; i<=grp_Info[grpId].EndN; i++) {
+    for(int i=groupConfig[grpId].StartN; i<=groupConfig[grpId].EndN; i++) {
       if (snnRuntimeData.nSpikeCnt[i] >= 1.0) {
 	totSpike += snnRuntimeData.nSpikeCnt[i];
 	activeCnt++;
       }
     }
-    fprintf(fpg, " activeNeurons = %3.3f : avgFiring = %3.3f  \n", activeCnt*1.0/grp_Info[grpId].SizeN, (activeCnt==0)?0.0:totSpike*1.0/activeCnt);
+    fprintf(fpg, " activeNeurons = %3.3f : avgFiring = %3.3f  \n", activeCnt*1.0/groupConfig[grpId].SizeN, (activeCnt==0)?0.0:totSpike*1.0/activeCnt);
   }
   printCnt++;
   fflush(fpg);
@@ -463,7 +463,7 @@ void SNN::printFiringRate(char *fname)
 // print the connection info of grpId
 void SNN::printPostConnection(int grpId, FILE* const fp)
 {
-  for(int i=grp_Info[grpId].StartN; i<=grp_Info[grpId].EndN; i++) {
+  for(int i=groupConfig[grpId].StartN; i<=groupConfig[grpId].EndN; i++) {
     if(fp) fprintf(fp, " %3d ( %3d ) : \t", i, snnRuntimeData.Npost[i]);
     // fetch the starting position
     post_info_t* postIds = &(snnRuntimeData.postSynapticIds[snnRuntimeData.cumulativePost[i]]);
@@ -487,7 +487,7 @@ void SNN::printPostConnection(int grpId, FILE* const fp)
 int SNN::printPreConnection2(int grpId, FILE* const fpg)
 {
 	int maxLength = -1;
-	for(int i=grp_Info[grpId].StartN; i<=grp_Info[grpId].EndN; i++) {
+	for(int i=groupConfig[grpId].StartN; i<=groupConfig[grpId].EndN; i++) {
 		fprintf(fpg, " id %d : group %d : prelength %d ", i, findGrpId(i), snnRuntimeData.Npre[i]);
 		post_info_t* preIds = &(snnRuntimeData.preSynapticIds[snnRuntimeData.cumulativePre[i]]);
 		for(int j=0; j < snnRuntimeData.Npre[i]; j++, preIds++) {
@@ -504,7 +504,7 @@ int SNN::printPreConnection2(int grpId, FILE* const fpg)
 
 void SNN::printPreConnection(int grpId, FILE* const fp)
 {
-	for(int i=grp_Info[grpId].StartN; i<=grp_Info[grpId].EndN; i++) {
+	for(int i=groupConfig[grpId].StartN; i<=groupConfig[grpId].EndN; i++) {
 		if(fp) fprintf(fp, " %d ( preCnt=%d, prePlastic=%d ) : (id => (wt, maxWt),(preId, P/F)\n\t", i, snnRuntimeData.Npre[i], snnRuntimeData.Npre_plastic[i]);
 		post_info_t* preIds = &(snnRuntimeData.preSynapticIds[snnRuntimeData.cumulativePre[i]]);
 		int  pos_i  = snnRuntimeData.cumulativePre[i];
@@ -527,23 +527,23 @@ void SNN::printNeuronState(int grpId, FILE* const fp)
 
   fprintf(fp, "[MODE=%s] ", simMode_string[simMode_]);
   fprintf(fp, "Group %s (%d) Neuron State Information (totSpike=%d, poissSpike=%d)\n",
-	  grp_Info2[grpId].Name.c_str(), grpId, spikeCountAllHost, nPoissonSpikes);
+	  groupInfo[grpId].Name.c_str(), grpId, spikeCountAllHost, nPoissonSpikes);
 
   // poisson group does not have default neuron state
-  if(grp_Info[grpId].Type&POISSON_NEURON) {
+  if(groupConfig[grpId].Type&POISSON_NEURON) {
     fprintf(fp, "t=%d msec ", simTime);
     int totSpikes = 0;
-    for (int nid=grp_Info[grpId].StartN; nid <= grp_Info[grpId].EndN; nid++) {
+    for (int nid=groupConfig[grpId].StartN; nid <= groupConfig[grpId].EndN; nid++) {
       totSpikes += snnRuntimeData.nSpikeCnt[nid];
       fprintf(fp, "%d ", snnRuntimeData.nSpikeCnt[nid]);
     }
     fprintf(fp, "\n");
-    fprintf(fp, "TotalSpikes [grp=%d, %s]=  %d\n", grpId, grp_Info2[grpId].Name.c_str(), totSpikes);
+    fprintf(fp, "TotalSpikes [grp=%d, %s]=  %d\n", grpId, groupInfo[grpId].Name.c_str(), totSpikes);
     return;
   }
 
   int totSpikes = 0;
-  for (int nid=grp_Info[grpId].StartN; nid <= grp_Info[grpId].EndN; nid++) {
+  for (int nid=groupConfig[grpId].StartN; nid <= groupConfig[grpId].EndN; nid++) {
     // copy the neuron firing information from the GPU to the CPU...
     totSpikes += snnRuntimeData.nSpikeCnt[nid];
     if(!sim_with_conductances) {
@@ -559,7 +559,7 @@ void SNN::printNeuronState(int grpId, FILE* const fp)
 		snnRuntimeData.gNMDA[nid], snnRuntimeData.gGABAa[nid], snnRuntimeData.gGABAb[nid], snnRuntimeData.nSpikeCnt[nid]);
     }
   }
-  fprintf(fp, "TotalSpikes [grp=%d, %s] = %d\n", grpId, grp_Info2[grpId].Name.c_str(), totSpikes);
+  fprintf(fp, "TotalSpikes [grp=%d, %s] = %d\n", grpId, groupInfo[grpId].Name.c_str(), totSpikes);
   fprintf(fp, "\n");
   fflush(fp);
 }
@@ -586,13 +586,13 @@ void SNN::printWeights(int preGrpId, int postGrpId) {
 		// for each postsynaptic group
 
 		fprintf(fpInf_,"Synapses from %s to %s (+/- change in last %d ms)\n",
-			(preGrpId==ALL)?"ALL":grp_Info2[preGrpId].Name.c_str(), grp_Info2[gPost].Name.c_str(), wtANDwtChangeUpdateInterval_);
+			(preGrpId==ALL)?"ALL":groupInfo[preGrpId].Name.c_str(), groupInfo[gPost].Name.c_str(), wtANDwtChangeUpdateInterval_);
 
 		if (simMode_ == GPU_MODE) {
 			copyWeightState (&snnRuntimeData, &gpuRuntimeData, cudaMemcpyDeviceToHost, false, gPost);
 		}
 
-		int i=grp_Info[gPost].StartN;
+		int i=groupConfig[gPost].StartN;
 		unsigned int offset = snnRuntimeData.cumulativePre[i];
 		for (int j=0; j<snnRuntimeData.Npre[i]; j++) {
 			int gPre = snnRuntimeData.grpIds[j];
@@ -600,7 +600,7 @@ void SNN::printWeights(int preGrpId, int postGrpId) {
 				continue;
 
 			float wt  = snnRuntimeData.wt[offset+j];
-			if (!grp_Info[gPost].FixedInputWts) {
+			if (!groupConfig[gPost].FixedInputWts) {
 				float wtC = snnRuntimeData.wtChange[offset+j];
 				fprintf(fpInf_, "%s%1.3f (%s%1.3f)\t", wt<0?"":" ", wt, wtC<0?"":"+", wtC);
 			} else {
