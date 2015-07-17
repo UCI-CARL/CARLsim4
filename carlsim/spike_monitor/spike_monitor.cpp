@@ -200,11 +200,11 @@ void SpikeMonitor::setPersistentData(bool persistentData) {
 	spikeMonitorCorePtr_->setPersistentData(persistentData);
 }
 
-spikeMonMode_t SpikeMonitor::getMode() {
+SpikeMonMode SpikeMonitor::getMode() {
 	return spikeMonitorCorePtr_->getMode();
 }
 
-void SpikeMonitor::setMode(spikeMonMode_t mode) {
+void SpikeMonitor::setMode(SpikeMonMode mode) {
 	// \TODO
 	UserErrors::assertTrue(false, UserErrors::UNKNOWN, "setMode()", "",
 		"This function call is not yet supported.");

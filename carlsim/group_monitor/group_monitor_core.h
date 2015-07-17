@@ -42,7 +42,7 @@
 #ifndef _GROUP_MON_CORE_H_
 #define _GROUP_MON_CORE_H_
 
-#include <carlsim_datastructures.h>	// neuromodulator_t
+#include <carlsim_datastructures.h>	// Neuromodulator
 #include <stdio.h>					// FILE
 #include <vector>					// std::vector
 

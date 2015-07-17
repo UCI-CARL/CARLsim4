@@ -44,7 +44,7 @@
 #ifndef _SPIKE_MON_H_
 #define _SPIKE_MON_H_
 
-#include <carlsim_datastructures.h> // spikeMonMode_t
+#include <carlsim_datastructures.h> // SpikeMonMode
 #include <vector>					// std::vector
 
 class SNN; 			// forward declaration of SNN class
@@ -432,7 +432,7 @@ class SpikeMonitor {
 	 * AER:     Will collect spike information in AER format (will collect both neuron IDs and
 	 *          spike times).
 	 */
-	spikeMonMode_t getMode();
+	SpikeMonMode getMode();
 
 	/*!
 	 * \brief Sets the current SpikeMonitor mode
@@ -444,7 +444,7 @@ class SpikeMonitor {
 	 * AER:     Will collect spike information in AER format (will collect both neuron IDs and
 	 *          spike times).
 	 */
-	void setMode(spikeMonMode_t mode=AER);
+	void setMode(SpikeMonMode mode=AER);
 
 	/*!
 	 * \brief Sets the name of the spike file binary

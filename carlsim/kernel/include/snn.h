@@ -109,7 +109,7 @@ public:
 	 * \param ithGPU
 	 * \param randSeed randomize seed of the random number generator
 	 */
-	SNN(const std::string& name, simMode_t simMode, loggerMode_t loggerMode, int ithGPU, int randSeed);
+	SNN(const std::string& name, SimMode simMode, LoggerMode loggerMode, int ithGPU, int randSeed);
 
 	//! SNN Destructor
 	/*!
@@ -248,7 +248,7 @@ public:
 	 * \param[in] alphaMinus max magnitude for LTD change (leave positive)
 	 * \param[in] tauMinus decay time constant for LTD
 	 */
-	void setESTDP(int grpId, bool isSet, stdpType_t type, stdpCurve_t curve, float alphaPlus, float tauPlus, float alphaMinus, float tauMinus, float gamma);
+	void setESTDP(int grpId, bool isSet, STDPType type, STDPCurve curve, float alphaPlus, float tauPlus, float alphaMinus, float tauMinus, float gamma);
 
 	//! Set the inhibitory spike-timing-dependent plasticity (STDP) with anti-hebbian curve for a neuron group
 	/*
@@ -263,7 +263,7 @@ public:
 	 * \param[in] tau1, the interval for LTP
 	 * \param[in] tau2, the interval for LTD
 	 */
-	void setISTDP(int grpId, bool isSet, stdpType_t type, stdpCurve_t curve, float ab1, float ab2, float tau1, float tau2);
+	void setISTDP(int grpId, bool isSet, STDPType type, STDPCurve curve, float ab1, float ab2, float tau1, float tau2);
 
 	/*!
 	 * \brief Sets STP params U, tau_u, and tau_x of a neuron group (pre-synaptically)
@@ -293,7 +293,7 @@ public:
 	 * \param[in] enableWtChangeDecay enable weight change decay
 	 * \param[in] wtChangeDecay the decay ratio of weight change (wtChange)
 	 */
-	void setWeightAndWeightChangeUpdate(updateInterval_t wtANDwtChangeUpdateInterval, bool enableWtChangeDecay, float wtChangeDecay);
+	void setWeightAndWeightChangeUpdate(UpdateInterval wtANDwtChangeUpdateInterval, bool enableWtChangeDecay, float wtChangeDecay);
 
 	// +++++ PUBLIC METHODS: RUNNING A SIMULATION +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
@@ -476,10 +476,10 @@ public:
 	int getGroupId(std::string grpName);
 	GroupConfigRT getGroupConfig(int grpId);
 	std::string getGroupName(int grpId);
-	GroupSTDPInfo_t getGroupSTDPInfo(int grpId);
-	GroupNeuromodulatorInfo_t getGroupNeuromodulatorInfo(int grpId);
+	GroupSTDPInfo getGroupSTDPInfo(int grpId);
+	GroupNeuromodulatorInfo getGroupNeuromodulatorInfo(int grpId);
 
-	loggerMode_t getLoggerMode() { return loggerMode_; }
+	LoggerMode getLoggerMode() { return loggerMode_; }
 
 	// get functions for GroupInfo
 	int getGroupStartNeuronId(int grpId)  { return groupConfig[grpId].StartN; }
@@ -506,7 +506,7 @@ public:
 
 	int getRandSeed() { return randSeed_; }
 
-	simMode_t getSimMode()		{ return simMode_; }
+	SimMode getSimMode()		{ return simMode_; }
 	unsigned int getSimTime()		{ return simTime; }
 	unsigned int getSimTimeSec()	{ return simTimeSec; }
 	unsigned int getSimTimeMs()		{ return simTimeMs; }
@@ -864,8 +864,8 @@ private:
 	FILE* loadSimFID;
 
 	const std::string networkName_;	//!< network name
-	const simMode_t simMode_;		//!< current simulation mode (CPU_MODE or GPU_MODE) FIXME: give better name
-	const loggerMode_t loggerMode_;	//!< current logger mode (USER, DEVELOPER, SILENT, CUSTOM)
+	const SimMode simMode_;		//!< current simulation mode (CPU_MODE or GPU_MODE) FIXME: give better name
+	const LoggerMode loggerMode_;	//!< current logger mode (USER, DEVELOPER, SILENT, CUSTOM)
 	const int ithGPU_;				//!< on which CUDA device to establish a context (only in GPU_MODE)
 	const int randSeed_;			//!< random number seed to use
 

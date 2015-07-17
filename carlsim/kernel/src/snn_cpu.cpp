@@ -64,7 +64,7 @@
 
 
 // TODO: consider moving unsafe computations out of constructor
-SNN::SNN(const std::string& name, simMode_t simMode, loggerMode_t loggerMode, int ithGPU, int randSeed)
+SNN::SNN(const std::string& name, SimMode simMode, LoggerMode loggerMode, int ithGPU, int randSeed)
 					: networkName_(name), simMode_(simMode), loggerMode_(loggerMode), ithGPU_(ithGPU),
 					  randSeed_(SNN::setRandSeed(randSeed)) // all of these are const
 {
@@ -486,7 +486,7 @@ void SNN::setNeuromodulator(int grpId, float baseDP, float tauDP, float base5HT,
 }
 
 // set ESTDP params
-void SNN::setESTDP(int grpId, bool isSet, stdpType_t type, stdpCurve_t curve, float alphaPlus, float tauPlus, float alphaMinus, float tauMinus, float gamma) {
+void SNN::setESTDP(int grpId, bool isSet, STDPType type, STDPCurve curve, float alphaPlus, float tauPlus, float alphaMinus, float tauMinus, float gamma) {
 	assert(grpId>=-1);
 	if (isSet) {
 		assert(type!=UNKNOWN_STDP);
@@ -519,7 +519,7 @@ void SNN::setESTDP(int grpId, bool isSet, stdpType_t type, stdpCurve_t curve, fl
 }
 
 // set ISTDP params
-void SNN::setISTDP(int grpId, bool isSet, stdpType_t type, stdpCurve_t curve, float ab1, float ab2, float tau1, float tau2) {
+void SNN::setISTDP(int grpId, bool isSet, STDPType type, STDPCurve curve, float ab1, float ab2, float tau1, float tau2) {
 	assert(grpId>=-1);
 	if (isSet) {
 		assert(type!=UNKNOWN_STDP);
@@ -590,7 +590,7 @@ void SNN::setSTP(int grpId, bool isSet, float STP_U, float STP_tau_u, float STP_
 	}
 }
 
-void SNN::setWeightAndWeightChangeUpdate(updateInterval_t wtANDwtChangeUpdateInterval, bool enableWtChangeDecay, float wtChangeDecay) {
+void SNN::setWeightAndWeightChangeUpdate(UpdateInterval wtANDwtChangeUpdateInterval, bool enableWtChangeDecay, float wtChangeDecay) {
 	assert(wtChangeDecay > 0.0f && wtChangeDecay < 1.0f);
 
 	switch (wtANDwtChangeUpdateInterval) {
@@ -1643,8 +1643,8 @@ std::string SNN::getGroupName(int grpId) {
 	return groupInfo[grpId].Name;
 }
 
-GroupSTDPInfo_t SNN::getGroupSTDPInfo(int grpId) {
-	GroupSTDPInfo_t gInfo;
+GroupSTDPInfo SNN::getGroupSTDPInfo(int grpId) {
+	GroupSTDPInfo gInfo;
 
 	gInfo.WithSTDP = groupConfig[grpId].WithSTDP;
 	gInfo.WithESTDP = groupConfig[grpId].WithESTDP;
@@ -1670,8 +1670,8 @@ GroupSTDPInfo_t SNN::getGroupSTDPInfo(int grpId) {
 	return gInfo;
 }
 
-GroupNeuromodulatorInfo_t SNN::getGroupNeuromodulatorInfo(int grpId) {
-	GroupNeuromodulatorInfo_t gInfo;
+GroupNeuromodulatorInfo SNN::getGroupNeuromodulatorInfo(int grpId) {
+	GroupNeuromodulatorInfo gInfo;
 
 	gInfo.baseDP = groupConfig[grpId].baseDP;
 	gInfo.base5HT = groupConfig[grpId].base5HT;

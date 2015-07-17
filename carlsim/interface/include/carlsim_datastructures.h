@@ -80,7 +80,7 @@
  * Location of the debug log file can be set in any mode using CARLsim::setLogDebugFp.
  * In mode CUSTOM, the other file pointers can be set using CARLsim::setLogsFp.
  */
-enum loggerMode_t {
+enum LoggerMode {
 	 USER,            //!< User mode, for experiment-oriented simulations.
 	 DEVELOPER,       //!< Developer mode, for developing and debugging code.
 	 SHOWTIME,        //!< Showtime mode, will only output warnings and errors.
@@ -105,7 +105,7 @@ static const char* loggerMode_string[] = {
  * 0-indexed) when you create a new SNN object.
  * The simulation mode will be fixed throughout the lifetime of a SNN object.
  */
-enum simMode_t {
+enum SimMode {
 	 CPU_MODE,     //!< model is run on a single CPU core
 	 GPU_MODE,     //!< model is run on a single GPU card
 	 UNKNOWN_SIM
@@ -122,7 +122,7 @@ static const char* simMode_string[] = {
  * STANDARD:	The standard model of Bi & Poo (2001), nearest-neighbor.
  * DA_MOD:      Dopamine-modulated STDP, nearest-neighbor.
  */
-enum stdpType_t {
+enum STDPType {
 	STANDARD,         //!< standard STDP of Bi & Poo (2001), nearest-neighbor
 	DA_MOD,           //!< dopamine-modulated STDP, nearest-neighbor
 	UNKNOWN_STDP
@@ -138,7 +138,7 @@ static const char* stdpType_string[] = {
  *
  * CARLsim supports different STDP curves
  */
-enum stdpCurve_t {
+enum STDPCurve {
 	EXP_CURVE,           //!< standard exponential curve
 	PULSE_CURVE,         //!< symmetric pulse curve
 	TIMING_BASED_CURVE,  //!< timing-based curve
@@ -161,7 +161,7 @@ static const char* stdpCurve_string[] = {
  * AER:     Will collect spike information in AER format (will collect both neuron IDs and
  *          spike times).
  */
-enum spikeMonMode_t {
+enum SpikeMonMode {
 	COUNT,      //!< mode in which only spike count information is collected
 	AER,        //!< mode in which spike information is collected in AER format
 };
@@ -179,7 +179,7 @@ static const char* spikeMonMode_string[] = {
  * NM_ACh Acetylcholine
  * NM_NE Noradrenaline
  */
-enum neuromodulator_t {
+enum Neuromodulator {
 	NM_DA,		//!< dopamine
 	NM_5HT,		//!< serotonin
 	NM_ACh,		//!< acetylcholine
@@ -198,7 +198,7 @@ static const char* neuromodulator_string[] = {
  * INTERVAL_100MS: the update interval will be 100 ms, which is 10Hz update frequency
  * INTERVAL_1000MS: the update interval will be 1000 ms, which is 1Hz update frequency
  */
-enum updateInterval_t {
+enum UpdateInterval {
 	INTERVAL_10MS,		//!< the update interval will be 10 ms, which is 100Hz update frequency
 	INTERVAL_100MS,		//!< the update interval will be 100 ms, which is 10Hz update frequency
 	INTERVAL_1000MS		//!< the update interval will be 1000 ms, which is 1Hz update frequency
@@ -220,7 +220,7 @@ static const char* updateInterval_string[] = {
  * Certain methods perform state transitions. CARLsim::setupNetwork will change the state from ::CONFIG_STATE to
  * ::SETUP_STATE. The first call to CARLsim::runNetwork will change the state from ::SETUP_STATE to ::RUN_STATE.
  */
-enum carlsimState_t {
+enum CARLsimState {
 	CONFIG_STATE,		//!< configuration state, where the neural network is configured
 	SETUP_STATE,		//!< setup state, where the neural network is prepared for execution and monitors are set
 	RUN_STATE			//!< run state, where the model is stepped
@@ -344,14 +344,14 @@ struct RadiusRF {
  *
  * \sa CARLsim::getGroupSTDPInfo()
  */
-typedef struct GroupSTDPInfo {
+typedef struct GroupSTDPInfo_s {
 	bool 		WithSTDP;			//!< enable STDP flag
 	bool		WithESTDP;			//!< enable E-STDP flag
 	bool		WithISTDP;			//!< enable I-STDP flag
-	stdpType_t  WithESTDPtype;		//!< the type of E-STDP (STANDARD or DA_MOD)
-	stdpType_t  WithISTDPtype;		//!< the type of I-STDP (STANDARD or DA_MOD)
-	stdpCurve_t WithESTDPcurve;		//!< the E-STDP curve
-	stdpCurve_t WithISTDPcurve;		//!< the I-STDP curve
+	STDPType  WithESTDPtype;		//!< the type of E-STDP (STANDARD or DA_MOD)
+	STDPType  WithISTDPtype;		//!< the type of I-STDP (STANDARD or DA_MOD)
+	STDPCurve WithESTDPcurve;		//!< the E-STDP curve
+	STDPCurve WithISTDPcurve;		//!< the I-STDP curve
 	float		TAU_PLUS_INV_EXC;	//!< the inverse of time constant plus, if the exponential or timing-based E-STDP curve is used
 	float		TAU_MINUS_INV_EXC;	//!< the inverse of time constant minus, if the exponential or timing-based E-STDP curve is used
 	float		ALPHA_PLUS_EXC;		//!< the amplitude of alpha plus, if the exponential or timing-based E-STDP curve is used
@@ -365,7 +365,7 @@ typedef struct GroupSTDPInfo {
 	float		BETA_LTD;			//!< the amplitude of inhibitory LTD if the pulse I-STDP curve is used
 	float		LAMBDA;				//!< the range of inhibitory LTP if the pulse I-STDP curve is used
 	float		DELTA;				//!< the range of inhibitory LTD if the pulse I-STDP curve is used
-} GroupSTDPInfo_t;
+} GroupSTDPInfo;
 
 /*!
  * \brief A struct for retrieving neuromodulator information of a group
@@ -376,7 +376,7 @@ typedef struct GroupSTDPInfo {
  *
  * \sa CARLsim::getGroupNeuromodulatorInfo()
  */
-typedef struct GroupNeuromodulatorInfo {
+typedef struct GroupNeuromodulatorInfo_s {
 	float		baseDP;		//!< baseline concentration of Dopamine
 	float		base5HT;	//!< baseline concentration of Serotonin
 	float		baseACh;	//!< baseline concentration of Acetylcholine
@@ -385,7 +385,7 @@ typedef struct GroupNeuromodulatorInfo {
 	float		decay5HT;		//!< decay rate for Serotonin
 	float		decayACh;		//!< decay rate for Acetylcholine
 	float		decayNE;		//!< decay rate for Noradrenaline
-} GroupNeuromodulatorInfo_t;
+} GroupNeuromodulatorInfo;
 
 /*!
  * \brief A struct to arrange neurons on a 3D grid (a primitive cubic Bravais lattice with cubic side length 1)
@@ -471,7 +471,7 @@ struct ExpCurve {
 		stdpCurve = EXP_CURVE;
 	}
 
-	stdpCurve_t stdpCurve; //!< the type of STDP curve
+	STDPCurve stdpCurve; //!< the type of STDP curve
 	float alphaPlus; //!< the amplitude of the exponential curve at pre-post side
 	float tauPlus; //!< the time constant of the exponential curve at pre-post side
 	float alphaMinus; //!< the amplitude of the exponential curve at post-pre side
@@ -518,7 +518,7 @@ struct TimingBasedCurve {
 		stdpCurve = TIMING_BASED_CURVE;
 	}
 
-	stdpCurve_t stdpCurve; //!< the type of STDP curve
+	STDPCurve stdpCurve; //!< the type of STDP curve
 	float alphaPlus; //!< the amplitude of the exponential curve at pre-post side
 	float tauPlus; //!< the time constant of the exponential curve at pre-post side
 	float alphaMinus; //!< the amplitude of the exponential curve at post-pre side
@@ -553,7 +553,7 @@ struct PulseCurve {
 		stdpCurve = PULSE_CURVE;
 	}
 
-	stdpCurve_t stdpCurve; //!< the type of STDP curve
+	STDPCurve stdpCurve; //!< the type of STDP curve
 	float betaLTP; //!< the amplitude of inhibitory LTP
 	float betaLTD; //!< the amplitude of inhibitory LTD
 	float lambda; //!< the range of inhibitory LTP

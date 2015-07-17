@@ -131,7 +131,7 @@ typedef struct RuntimeData_s {
 	float*	gGABAb_r;
 	float*	gGABAb_d;
 	int*	I_set;				// only used on GPU
-	simMode_t	memType;
+	SimMode	memType;
 	int		allocated;				//!< true if all data has been allocated..
 
 	/* Tsodyks & Markram (1998), where the short-term dynamics of synapses is characterized by three parameters:
@@ -275,10 +275,10 @@ typedef struct GroupConfigRT_s {
 	bool 		WithSTDP;
 	bool		WithESTDP;
 	bool		WithISTDP;
-	stdpType_t  WithESTDPtype;
-	stdpType_t  WithISTDPtype;
-	stdpCurve_t WithESTDPcurve;
-	stdpCurve_t WithISTDPcurve;
+	STDPType  WithESTDPtype;
+	STDPType  WithISTDPtype;
+	STDPCurve WithESTDPcurve;
+	STDPCurve WithISTDPcurve;
 	bool 		WithHomeostasis;
 	int			homeoId;
 	bool		FixedInputWts;

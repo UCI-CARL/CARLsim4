@@ -42,7 +42,7 @@
 #ifndef _SPIKE_MON_CORE_H_
 #define _SPIKE_MON_CORE_H_
 
-#include <carlsim_datastructures.h>	// spikeMonMode_t
+#include <carlsim_datastructures.h>	// SpikeMonMode
 #include <stdio.h>					// FILE
 #include <vector>					// std::vector
 
@@ -90,7 +90,7 @@ public:
 	float getMinFiringRate();
 
 	//! returns recording mode
-	spikeMonMode_t getMode() { return mode_; }
+	SpikeMonMode getMode() { return mode_; }
 
 	//! returns the SpikeMonitor ID
 	int getMonitorId() { return monitorId_; }
@@ -150,7 +150,7 @@ public:
 	void pushAER(int time, int neurId);
 
 	//! sets recording mode
-	void setMode(spikeMonMode_t mode) { mode_ = mode; }
+	void setMode(SpikeMonMode mode) { mode_ = mode; }
 
 	//! sets status of PersistentData mode
 	void setPersistentData(bool persistentData) { persistentData_ = persistentData; }
@@ -239,7 +239,7 @@ private:
 
     //! Indicates if we have returned true at least once in isBufferBig(). Gets reset in stopRecording(). Used to warn the user only once.
 	bool userHasBeenWarned_;
-    spikeMonMode_t mode_;
+    SpikeMonMode mode_;
 
 	// file pointers for error logging
 	const FILE* fpInf_;

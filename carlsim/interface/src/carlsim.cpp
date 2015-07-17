@@ -77,7 +77,7 @@ pthread_mutex_t CARLsim::gpuAllocationLock = PTHREAD_MUTEX_INITIALIZER;
 /// **************************************************************************************************************** ///
 
 // constructor
-CARLsim::CARLsim(const std::string& netName, simMode_t simMode, loggerMode_t loggerMode, int ithGPU,
+CARLsim::CARLsim(const std::string& netName, SimMode simMode, LoggerMode loggerMode, int ithGPU,
 						int randSeed)
 {
 	netName_ 					= netName;
@@ -518,7 +518,7 @@ void CARLsim::setSTDP(int grpId, bool isSet) {
 }
 
 // set STDP, custom, wrapper function
-void CARLsim::setSTDP(int grpId, bool isSet, stdpType_t type, float alphaPlus, float tauPlus, float alphaMinus, float tauMinus) {
+void CARLsim::setSTDP(int grpId, bool isSet, STDPType type, float alphaPlus, float tauPlus, float alphaMinus, float tauMinus) {
 		setESTDP(grpId, isSet, type, ExpCurve(alphaPlus, tauPlus, alphaMinus, tauMinus));
 }
 
@@ -538,7 +538,7 @@ void CARLsim::setESTDP(int grpId, bool isSet) {
 }
 
 // set ESTDP by stdp curve
-void CARLsim::setESTDP(int grpId, bool isSet, stdpType_t type, ExpCurve curve) {
+void CARLsim::setESTDP(int grpId, bool isSet, STDPType type, ExpCurve curve) {
 	std::string funcName = "setESTDP(\""+getGroupName(grpId)+","+stdpType_string[type]+"\")";
 	UserErrors::assertTrue(!isSet || isSet && !isPoissonGroup(grpId), UserErrors::WRONG_NEURON_TYPE, funcName, funcName);
 	UserErrors::assertTrue(type!=UNKNOWN_STDP, UserErrors::CANNOT_BE_UNKNOWN, funcName, "Mode");
@@ -554,7 +554,7 @@ void CARLsim::setESTDP(int grpId, bool isSet, stdpType_t type, ExpCurve curve) {
 }
 
 // set ESTDP by stdp curve
-void CARLsim::setESTDP(int grpId, bool isSet, stdpType_t type, TimingBasedCurve curve) {
+void CARLsim::setESTDP(int grpId, bool isSet, STDPType type, TimingBasedCurve curve) {
 	std::string funcName = "setESTDP(\""+getGroupName(grpId)+","+stdpType_string[type]+"\")";
 	UserErrors::assertTrue(!isSet || isSet && !isPoissonGroup(grpId), UserErrors::WRONG_NEURON_TYPE, funcName, funcName);
 	UserErrors::assertTrue(type!=UNKNOWN_STDP, UserErrors::CANNOT_BE_UNKNOWN, funcName, "Mode");
@@ -585,7 +585,7 @@ void CARLsim::setISTDP(int grpId, bool isSet) {
 }
 
 // set ISTDP by stdp curve
-void CARLsim::setISTDP(int grpId, bool isSet, stdpType_t type, ExpCurve curve) {
+void CARLsim::setISTDP(int grpId, bool isSet, STDPType type, ExpCurve curve) {
 	std::string funcName = "setISTDP(\""+getGroupName(grpId)+","+stdpType_string[type]+"\")";
 	UserErrors::assertTrue(!isSet || isSet && !isPoissonGroup(grpId), UserErrors::WRONG_NEURON_TYPE, funcName, funcName);
 	UserErrors::assertTrue(type!=UNKNOWN_STDP, UserErrors::CANNOT_BE_UNKNOWN, funcName, "Mode");
@@ -601,7 +601,7 @@ void CARLsim::setISTDP(int grpId, bool isSet, stdpType_t type, ExpCurve curve) {
 }
 
 // set ISTDP by stdp curve
-void CARLsim::setISTDP(int grpId, bool isSet, stdpType_t type, PulseCurve curve) {
+void CARLsim::setISTDP(int grpId, bool isSet, STDPType type, PulseCurve curve) {
 	std::string funcName = "setISTDP(\""+getGroupName(grpId)+","+stdpType_string[type]+"\")";
 	UserErrors::assertTrue(!isSet || isSet && !isPoissonGroup(grpId), UserErrors::WRONG_NEURON_TYPE, funcName, funcName);
 	UserErrors::assertTrue(type!=UNKNOWN_STDP, UserErrors::CANNOT_BE_UNKNOWN, funcName, "Mode");
@@ -656,7 +656,7 @@ void CARLsim::setSTP(int grpId, bool isSet, float STP_U, float STP_tau_u, float 
 	}
 }
 
-void CARLsim::setWeightAndWeightChangeUpdate(updateInterval_t wtANDwtChangeUpdateInterval, bool enableWtChangeDecay,
+void CARLsim::setWeightAndWeightChangeUpdate(UpdateInterval wtANDwtChangeUpdateInterval, bool enableWtChangeDecay,
 											 float wtChangeDecay) {
 	std::string funcName = "setWeightAndWeightChangeUpdate()";
 	UserErrors::assertTrue(wtChangeDecay > 0.0f, UserErrors::MUST_BE_POSITIVE, funcName);
@@ -1174,7 +1174,7 @@ int CARLsim::getNumPostSynapses() {
 	return snn_->getNumPostSynapses(); }
 
 
-GroupSTDPInfo_t CARLsim::getGroupSTDPInfo(int grpId) {
+GroupSTDPInfo CARLsim::getGroupSTDPInfo(int grpId) {
 	std::string funcName = "getGroupSTDPInfo()";
 	//UserErrors::assertTrue(carlsimState_ == SETUP_STATE || carlsimState_ == RUN_STATE,
 	//				UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, "SETUP or RUN.");
@@ -1182,7 +1182,7 @@ GroupSTDPInfo_t CARLsim::getGroupSTDPInfo(int grpId) {
 	return snn_->getGroupSTDPInfo(grpId);
 }
 
-GroupNeuromodulatorInfo_t CARLsim::getGroupNeuromodulatorInfo(int grpId) {
+GroupNeuromodulatorInfo CARLsim::getGroupNeuromodulatorInfo(int grpId) {
 	std::string funcName = "getGroupNeuromodulatorInfo()";
 	//UserErrors::assertTrue(carlsimState_ == SETUP_STATE || carlsimState_ == RUN_STATE,
 	//				UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, "SETUP or RUN.");
@@ -1191,7 +1191,7 @@ GroupNeuromodulatorInfo_t CARLsim::getGroupNeuromodulatorInfo(int grpId) {
 }
 
 
-simMode_t CARLsim::getSimMode() { return simMode_; }
+SimMode CARLsim::getSimMode() { return simMode_; }
 
 uint64_t CARLsim::getSimTime() { return snn_->getSimTime(); }
 uint32_t CARLsim::getSimTimeSec() { return snn_->getSimTimeSec(); }
@@ -1315,12 +1315,12 @@ void CARLsim::setDefaultSaveOptions(std::string fileName, bool saveSynapseInfo) 
 }
 
 // wrapper function, set default values for E-STDP params
-void CARLsim::setDefaultSTDPparams(float alphaPlus, float tauPlus, float alphaMinus, float tauMinus, stdpType_t stdpType) {
+void CARLsim::setDefaultSTDPparams(float alphaPlus, float tauPlus, float alphaMinus, float tauMinus, STDPType stdpType) {
 	setDefaultESTDPparams(alphaPlus, tauPlus, alphaMinus, tauMinus, stdpType);
 }
 
 // set default values for E-STDP params
-void CARLsim::setDefaultESTDPparams(float alphaPlus, float tauPlus, float alphaMinus, float tauMinus, stdpType_t stdpType) {
+void CARLsim::setDefaultESTDPparams(float alphaPlus, float tauPlus, float alphaMinus, float tauMinus, STDPType stdpType) {
     std::string funcName = "setDefaultESTDPparams()";
     UserErrors::assertTrue(carlsimState_==CONFIG_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "CONFIG.");
 	UserErrors::assertTrue(tauPlus > 0, UserErrors::MUST_BE_POSITIVE, funcName, "tauPlus");
@@ -1344,7 +1344,7 @@ void CARLsim::setDefaultESTDPparams(float alphaPlus, float tauPlus, float alphaM
 }
 
 // set default values for I-STDP params
-void CARLsim::setDefaultISTDPparams(float betaLTP, float betaLTD, float lambda, float delta, stdpType_t stdpType) {
+void CARLsim::setDefaultISTDPparams(float betaLTP, float betaLTD, float lambda, float delta, STDPType stdpType) {
 	std::string funcName = "setDefaultISTDPparams()";
 	UserErrors::assertTrue(carlsimState_==CONFIG_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "CONFIG.");
 	UserErrors::assertTrue(betaLTP > 0, UserErrors::MUST_BE_POSITIVE, funcName);

@@ -53,7 +53,7 @@ TEST(STDP, setSTDPTrue) {
 					}
 				}
 
-				GroupSTDPInfo_t gInfo = sim->getGroupSTDPInfo(g1);
+				GroupSTDPInfo gInfo = sim->getGroupSTDPInfo(g1);
 				EXPECT_TRUE(gInfo.WithSTDP);
 				EXPECT_TRUE(gInfo.WithESTDP);
 				EXPECT_TRUE(gInfo.WithISTDP);
@@ -120,7 +120,7 @@ TEST(STDP, setSTDPFalse) {
 		sim->setESTDP(g1,false,STANDARD, ExpCurve(alphaPlus,tauPlus,alphaMinus,tauMinus));
 		sim->setISTDP(g1,false,STANDARD, PulseCurve(betaLTP,betaLTD,lambda,delta));
 
-		GroupSTDPInfo_t gInfo = sim->getGroupSTDPInfo(g1);
+		GroupSTDPInfo gInfo = sim->getGroupSTDPInfo(g1);
 		EXPECT_FALSE(gInfo.WithSTDP);
 		EXPECT_FALSE(gInfo.WithESTDP);
 		EXPECT_FALSE(gInfo.WithISTDP);
@@ -172,11 +172,11 @@ TEST(STDP, setNeuromodulatorParameters) {
 
 		// Temporarily mark out the testing code
 		// Discuss whether carlsim user interface needs to spport GroupConfigRT
-		GroupSTDPInfo_t gInfo = sim->getGroupSTDPInfo(g1);
+		GroupSTDPInfo gInfo = sim->getGroupSTDPInfo(g1);
 		EXPECT_TRUE(gInfo.WithSTDP);
 		EXPECT_TRUE(gInfo.WithESTDPtype == DA_MOD);
 
-		GroupNeuromodulatorInfo_t gInfo2 = sim->getGroupNeuromodulatorInfo(g1);
+		GroupNeuromodulatorInfo gInfo2 = sim->getGroupNeuromodulatorInfo(g1);
 		EXPECT_FLOAT_EQ(gInfo2.baseDP, baseDP);
 		EXPECT_FLOAT_EQ(gInfo2.base5HT, base5HT);
 		EXPECT_FLOAT_EQ(gInfo2.baseACh, baseACh);

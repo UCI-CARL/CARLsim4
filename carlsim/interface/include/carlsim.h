@@ -176,7 +176,7 @@ public:
 	 * \see setLogFile
 	 * \see setLogsFpCustom
 	 */
-	CARLsim(const std::string& netName="SNN", simMode_t simMode=CPU_MODE, loggerMode_t loggerMode=USER, int ithGPU=0,
+	CARLsim(const std::string& netName="SNN", SimMode simMode=CPU_MODE, LoggerMode loggerMode=USER, int ithGPU=0,
 				int randSeed=-1);
 	~CARLsim();
 
@@ -515,7 +515,7 @@ public:
 	 * \deprecated For clearness, please use CARLsim::setESTDP() with E-STDP curve struct.
 	 * \since v2.1
 	 */
-	void setSTDP(int grpId, bool isSet, stdpType_t type, float alphaPlus, float tauPlus, float alphaMinus, float tauMinus);
+	void setSTDP(int grpId, bool isSet, STDPType type, float alphaPlus, float tauPlus, float alphaMinus, float tauMinus);
 
 	/*!
 	 * \brief Sets default E-STDP mode and parameters
@@ -537,11 +537,11 @@ public:
 	 * \param[in] curve the struct defining the exponential curve
 	 *
 	 * \STATE ::CONFIG_STATE
-	 * \sa stdpType_t
+	 * \sa STDPType
 	 * \sa ExpCurve
 	 * \since v3.0
 	 */
-	void setESTDP(int grpId, bool isSet, stdpType_t type, ExpCurve curve);
+	void setESTDP(int grpId, bool isSet, STDPType type, ExpCurve curve);
 
 	/*!
 	 * \brief Sets E-STDP with the timing-based curve
@@ -552,11 +552,11 @@ public:
 	 * \param[in] curve the struct defining the timing-based curve
 	 *
 	 * \STATE ::CONFIG_STATE
-	 * \sa stdpType_t
+	 * \sa STDPType
 	 * \sa TimingBasedCurve
 	 * \since v3.0
 	 */
-	void setESTDP(int grpId, bool isSet, stdpType_t type, TimingBasedCurve curve);
+	void setESTDP(int grpId, bool isSet, STDPType type, TimingBasedCurve curve);
 
 	/*!
 	 * \brief Sets default I-STDP mode and parameters
@@ -578,11 +578,11 @@ public:
 	 * \param[in] curve the struct defining the exponential curve
 	 *
 	 * \STATE ::CONFIG_STATE
-	 * \sa stdpType_t
+	 * \sa STDPType
 	 * \sa ExpCurve
 	 * \since v3.0
 	 */
-	void setISTDP(int grpId, bool isSet, stdpType_t type, ExpCurve curve);
+	void setISTDP(int grpId, bool isSet, STDPType type, ExpCurve curve);
 
 	/*!
 	 * \brief Sets I-STDP with the pulse curve
@@ -593,11 +593,11 @@ public:
 	 * \param[in] curve the struct defining the pulse curve
 	 *
 	 * \STATE ::CONFIG_STATE
-	 * \sa stdpType_t
+	 * \sa STDPType
 	 * \sa PulseCurve
 	 * \since v3.0
 	 */
-	void setISTDP(int grpId, bool isSet, stdpType_t type, PulseCurve curve);
+	void setISTDP(int grpId, bool isSet, STDPType type, PulseCurve curve);
 
 	/*!
 	 * \brief Sets STP params U, tau_u, and tau_x of a neuron group (pre-synaptically)
@@ -661,7 +661,7 @@ public:
 	 * \param[in] enableWtChangeDecay enable weight change decay
 	 * \param[in] wtChangeDecay the decay ratio of weight change (wtChange)
 	 */
-	void setWeightAndWeightChangeUpdate(updateInterval_t wtANDwtChangeUpdateInterval, bool enableWtChangeDecay, float wtChangeDecay=0.9f);
+	void setWeightAndWeightChangeUpdate(UpdateInterval wtANDwtChangeUpdateInterval, bool enableWtChangeDecay, float wtChangeDecay=0.9f);
 
 
 	// +++++ PUBLIC METHODS: RUNNING A SIMULATION ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
@@ -715,13 +715,13 @@ public:
 	 * \brief Sets the name of the log file
 	 *
 	 * This function sets a new path/name for the CARLsim log file. By default, the log file name is given depending on
-	 * the loggerMode_t specified in #CARLsim.
+	 * the LoggerMode specified in #CARLsim.
 	 * However, it can be manually overridden using this function.
 	 * In order to disable the log file, pass string "NULL".
 	 *
 	 * \STATE ::CONFIG_STATE, ::SETUP_STATE, ::RUN_STATE
 	 * \param fileName the name of the log file
-	 * \note This function cannot be called in loggerMode_t CUSTOM. In this case, use setLogsFpCustom instead
+	 * \note This function cannot be called in LoggerMode CUSTOM. In this case, use setLogsFpCustom instead
 	 * \attention Make sure the directory exists!
 	 * \see setLogsFpCustom
 	 */
@@ -730,7 +730,7 @@ public:
 	/*!
 	 * \brief Sets the file pointers for all log files in CUSTOM mode
 	 *
-	 * In loggerMode_t CUSTOM, custom file pointers can be used for the info, error, and debug log streams.
+	 * In LoggerMode CUSTOM, custom file pointers can be used for the info, error, and debug log streams.
 	 * In this case, CARLsim does not take ownership of the file pointers; that is, the user should fclose them.
 	 * Setting a file pointer to NULL will not change the currently assigned file pointer (default value points to the
 	 * bit bucket).
@@ -740,7 +740,7 @@ public:
 	 * \param[in] fpErr file pointer for errors/warnings
 	 * \param[in] fpDeb file pointer for debug info
 	 * \param[in] fpLog file pointer for debug log file that contains all the above info
-	 * \note This function can be called only in loggerMode_t CUSTOM.
+	 * \note This function can be called only in LoggerMode CUSTOM.
 	 * \note Use NULL in order not to change current file pointers.
 	 * \attention Make sure to fclose the file pointers. But, do not fclose stdout or stderr, or they will remain
 	 * closed for the remainder of the process.
@@ -1153,7 +1153,7 @@ public:
 	 * first call to runNetwork will change the state from ::SETUP_STATE to ::RUN_STATE.
 	 * \returns current CARLsim state
 	 */
-	carlsimState_t getCARLsimState() { return carlsimState_; }
+	CARLsimState getCARLsimState() { return carlsimState_; }
 
 	/*!
 	 * \brief gets AMPA vector of a group
@@ -1423,7 +1423,7 @@ public:
 	 * \STATE ::SETUP_STATE, ::RUN_STATE
 	 * \sa GroupSTDPInfo
 	 */
-	GroupSTDPInfo_t getGroupSTDPInfo(int grpId);
+	GroupSTDPInfo getGroupSTDPInfo(int grpId);
 
 	/*!
 	 * \brief returns the neuromodulator information of a group specified by grpId
@@ -1433,7 +1433,7 @@ public:
 	 * \STATE ::SETUP_STATE, ::RUN_STATE
 	 * \sa GroupNeuromodulatorInfo
 	 */
-	GroupNeuromodulatorInfo_t getGroupNeuromodulatorInfo(int grpId);
+	GroupNeuromodulatorInfo getGroupNeuromodulatorInfo(int grpId);
 
 	/*!
 	 * \brief returns the current simulation mode
@@ -1443,7 +1443,7 @@ public:
 	 * \return simulation mode
 	 * \since v3.0
 	 */
-	simMode_t getSimMode();
+	SimMode getSimMode();
 
 	/*!
 	 * \brief returns
@@ -1622,7 +1622,7 @@ public:
 	* \STATE ::CONFIG_STATE
 	* \deprecated For clearness, setting STDP parameters using setESTDP and setISTDP is strongly recommended.
 	*/
-	void setDefaultSTDPparams(float alphaPlus, float tauPlus, float alphaMinus, float tauMinus, stdpType_t stdpType);
+	void setDefaultSTDPparams(float alphaPlus, float tauPlus, float alphaMinus, float tauMinus, STDPType stdpType);
 
 	/*!
 	* \brief sets default values for E-STDP params
@@ -1632,7 +1632,7 @@ public:
 	* \STATE ::CONFIG_STATE
 	* \deprecated For clearness, setting STDP parameters using setESTDP and setISTDP is strongly recommended.
 	*/
-	void setDefaultESTDPparams(float alphaPlus, float tauPlus, float alphaMinus, float tauMinus, stdpType_t stdpType);
+	void setDefaultESTDPparams(float alphaPlus, float tauPlus, float alphaMinus, float tauMinus, STDPType stdpType);
 
 	/*!
 	* \brief sets default values for I-STDP params
@@ -1642,7 +1642,7 @@ public:
 	* \STATE ::CONFIG_STATE
 	* \deprecated For clearness, setting STDP parameters using setESTDP and setISTDP is strongly recommended.
 	*/
-	void setDefaultISTDPparams(float betaLTP, float betaLTD, float lambda, float delta, stdpType_t stdpType);
+	void setDefaultISTDPparams(float betaLTP, float betaLTD, float lambda, float delta, STDPType stdpType);
 
 	/*!
 	 * \brief Sets default values for STP params U, tau_u, and tau_x of a neuron group (pre-synaptically)
@@ -1692,8 +1692,8 @@ private:
 	SNN* snn_;					//!< an instance of CARLsim core class
 	std::string netName_;			//!< network name
 	int randSeed_;					//!< RNG seed
-	simMode_t simMode_;				//!< CPU_MODE or GPU_MODE
-	loggerMode_t loggerMode_;		//!< logger mode (USER, DEVELOPER, SILENT, CUSTOM)
+	SimMode simMode_;				//!< CPU_MODE or GPU_MODE
+	LoggerMode loggerMode_;		//!< logger mode (USER, DEVELOPER, SILENT, CUSTOM)
 	int ithGPU_;					//!< on which device to establish a context
 	bool enablePrint_;
 	bool copyState_;
@@ -1710,7 +1710,7 @@ private:
 	bool hasSetSTDPALL_; 			//!< informs that STDP have been set for ALL groups (can't add more groups)
 	bool hasSetSTPALL_; 			//!< informs that STP have been set for ALL groups (can't add more groups)
 	bool hasSetConductances_;		//!< informs that setConductances has been called
-	carlsimState_t carlsimState_;	//!< the current state of carlsim
+	CARLsimState carlsimState_;	//!< the current state of carlsim
 
 	int def_tdAMPA_;				//!< default value for AMPA decay (ms)
 	int def_trNMDA_;				//!< default value for NMDA rise (ms)
@@ -1720,7 +1720,7 @@ private:
 	int def_tdGABAb_;				//!< default value for GABAb decay (ms)
 
 	// all default values for STDP
-	stdpType_t def_STDP_type_;		//!< default mode for STDP
+	STDPType def_STDP_type_;		//!< default mode for STDP
 	float def_STDP_alphaLTP_;		//!< default value for LTP amplitude
 	float def_STDP_tauLTP_;			//!< default value for LTP decay (ms)
 	float def_STDP_alphaLTD_;		//!< default value for LTD amplitude
