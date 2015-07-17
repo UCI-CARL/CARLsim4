@@ -50,7 +50,7 @@ enum conType_t { CONN_RANDOM, CONN_ONE_TO_ONE, CONN_FULL, CONN_FULL_NO_DIRECT, C
 
 //! the state of spiking neural network, used with in kernel.
 enum SNNState {
-	METADATA_SNN,
+	CONFIG_SNN,
 	COMPILED_SNN,
 	LINKED_SNN,
 	OPTIMIZED_PARTITIONED_SNN,
@@ -68,57 +68,17 @@ typedef struct {
 } post_info_t;
 
 
-//! network information structure
+
+
 /*!
- *	This structure contains network information that is required for GPU simulation.
- *	The data in this structure are copied to device memory when running GPU simulation.
- *	\sa SNN
+ * \brief The configuration of a connection
+ *
+ * This structure contains the configurations of connections that are created during configuration state.
+ * The configurations are later processed by compileNetwork() and translated to meta data which are ready to
+ * be linked.
+ * \see CARLsimState
  */
-typedef struct NetworkConfig_s  {
-	size_t			STP_Pitch;		//!< numN rounded upwards to the nearest 256 boundary, used for GPU only
-	unsigned int	numN;
-	unsigned int	numPostSynapses;
-	unsigned int	maxDelay;
-	unsigned int	numNExcReg;
-	unsigned int	numNInhReg;
-	unsigned int	numNReg;
-	unsigned int	I_setLength;	//!< used for GPU only
-	size_t			I_setPitch;		//!< used for GPU only
-	unsigned int	preSynLength;
-	unsigned int	postSynCnt;
-	unsigned int	preSynCnt;
-	unsigned int	maxSpikesD2;
-	unsigned int	maxSpikesD1;
-	unsigned int   	numNExcPois;
-	unsigned int	numNInhPois;
-	unsigned int	numNPois;
-	unsigned int	numGrp;
-	int             numConnections;
-	bool 			sim_with_fixedwts;
-	bool 			sim_with_conductances;
-	bool 			sim_with_stdp;
-	bool 			sim_with_modulated_stdp;
-	bool 			sim_with_homeostasis;
-	bool 			sim_with_stp;
-	bool			sim_in_testing;
-	float 			stdpScaleFactor;
-	float 			wtChangeDecay; //!< the wtChange decay
-
-	bool 			sim_with_NMDA_rise;	//!< a flag to inform whether to compute NMDA rise time
-	bool 			sim_with_GABAb_rise;	//!< a flag to inform whether to compute GABAb rise time
-	double 			dAMPA;				//!< multiplication factor for decay time of AMPA conductance (gAMPA[i] *= dAMPA)
-	double 			rNMDA;				//!< multiplication factor for rise time of NMDA
-	double 			dNMDA;				//!< multiplication factor for decay time of NMDA
-	double 			sNMDA;				//!< scaling factor for NMDA amplitude
-	double 			dGABAa;				//!< multiplication factor for decay time of GABAa
-	double 			rGABAb;				//!< multiplication factor for rise time of GABAb
-	double 			dGABAb;				//!< multiplication factor for decay time of GABAb
-	double 			sGABAb;				//!< scaling factor for GABAb amplitude
-} NetworkConfig;
-
-
-//! connection infos...
-typedef struct connectData_s {
+typedef struct ConnectConfig_s {
 	int 	  				 grpSrc, grpDest;
 	uint8_t	  				 maxDelay;
 	uint8_t					 minDelay;
@@ -138,8 +98,18 @@ typedef struct connectData_s {
 	short int				 connId;					//!< connectID of the element in the linked list
 	bool					 newUpdates;
 	int		   				 numberOfConnections;
-	struct connectData_s*    next;
-} grpConnectInfo_t;
+	struct ConnectConfig_s*    next;
+} ConnectConfig;
+
+/*!
+ * \brief The configuration of a group
+ *
+ * This structure contains the configuration of groups that are created during configuration state.
+ * The configurations are later processed by compileNetwork() and translated to meata data which are ready
+ * to be linked.
+ * \see CARLsimState
+ */
+//typedef struct 
 
 typedef struct RuntimeData_s {
 	float*	voltage;
@@ -231,7 +201,55 @@ typedef struct RuntimeData_s {
 	bool*		curSpike;
 } RuntimeData;
 
-typedef struct GroupConfig_s {
+//! network information structure
+/*!
+ *	This structure contains the network configuration that is required for GPU simulation.
+ *	The data in this structure are copied to device memory when running GPU simulation.
+ *	\sa SNN
+ */
+typedef struct NetworkConfigRT_s  {
+	size_t			STP_Pitch;		//!< numN rounded upwards to the nearest 256 boundary, used for GPU only
+	unsigned int	numN;
+	unsigned int	numPostSynapses;
+	unsigned int	maxDelay;
+	unsigned int	numNExcReg;
+	unsigned int	numNInhReg;
+	unsigned int	numNReg;
+	unsigned int	I_setLength;	//!< used for GPU only
+	size_t			I_setPitch;		//!< used for GPU only
+	unsigned int	preSynLength;
+	unsigned int	postSynCnt;
+	unsigned int	preSynCnt;
+	unsigned int	maxSpikesD2;
+	unsigned int	maxSpikesD1;
+	unsigned int   	numNExcPois;
+	unsigned int	numNInhPois;
+	unsigned int	numNPois;
+	unsigned int	numGrp;
+	int             numConnections;
+	bool 			sim_with_fixedwts;
+	bool 			sim_with_conductances;
+	bool 			sim_with_stdp;
+	bool 			sim_with_modulated_stdp;
+	bool 			sim_with_homeostasis;
+	bool 			sim_with_stp;
+	bool			sim_in_testing;
+	float 			stdpScaleFactor;
+	float 			wtChangeDecay; //!< the wtChange decay
+
+	bool 			sim_with_NMDA_rise;	//!< a flag to inform whether to compute NMDA rise time
+	bool 			sim_with_GABAb_rise;	//!< a flag to inform whether to compute GABAb rise time
+	double 			dAMPA;				//!< multiplication factor for decay time of AMPA conductance (gAMPA[i] *= dAMPA)
+	double 			rNMDA;				//!< multiplication factor for rise time of NMDA
+	double 			dNMDA;				//!< multiplication factor for decay time of NMDA
+	double 			sNMDA;				//!< scaling factor for NMDA amplitude
+	double 			dGABAa;				//!< multiplication factor for decay time of GABAa
+	double 			rGABAb;				//!< multiplication factor for rise time of GABAb
+	double 			dGABAb;				//!< multiplication factor for decay time of GABAb
+	double 			sGABAb;				//!< scaling factor for GABAb amplitude
+} NetworkConfigRT;
+
+typedef struct GroupConfigRT_s {
 	// properties of group of neurons size, location, initial weights etc.
 	PoissonRate*	RatePtr;
 	int			StartN;
@@ -313,7 +331,7 @@ typedef struct GroupConfig_s {
 	bool 		writeSpikesToArray;	//!< whether spikes should be written to file (needs SpikeMonitorId>-1)
 	SpikeGeneratorCore*	spikeGen;
 	bool		newUpdates;  //!< FIXME this flag has mixed meaning and is not rechecked after the simulation is started
-} GroupConfig;
+} GroupConfigRT;
 
 /*!
  * this group need not be shared with the GPU

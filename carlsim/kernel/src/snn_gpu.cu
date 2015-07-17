@@ -86,8 +86,8 @@ __device__ unsigned int	secD2fireCntTest;
 __device__ unsigned int	secD1fireCntTest;
 
 __device__ __constant__ RuntimeData		gpuPtrs;
-__device__ __constant__ NetworkConfig	gpuNetInfo;
-__device__ __constant__ GroupConfig		gpuGrpInfo[MAX_GRP_PER_SNN];
+__device__ __constant__ NetworkConfigRT	gpuNetInfo;
+__device__ __constant__ GroupConfigRT		gpuGrpInfo[MAX_GRP_PER_SNN];
 
 __device__ __constant__ float               d_mulSynFast[MAX_nConnections];
 __device__ __constant__ float               d_mulSynSlow[MAX_nConnections];
@@ -2065,7 +2065,7 @@ void SNN::copySTPState(RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind,
 
 void SNN::copyNetworkConfig() {
 	checkAndSetGPUDevice();
-	CUDA_CHECK_ERRORS(cudaMemcpyToSymbol(gpuNetInfo, &networkConfig, sizeof(NetworkConfig), 0, cudaMemcpyHostToDevice));
+	CUDA_CHECK_ERRORS(cudaMemcpyToSymbol(gpuNetInfo, &networkConfig, sizeof(NetworkConfigRT), 0, cudaMemcpyHostToDevice));
 }
 
 void SNN::copyWeightState (RuntimeData* dest, RuntimeData* src,  cudaMemcpyKind kind, bool allocateMem, int grpId) {
@@ -2807,14 +2807,14 @@ void SNN::allocateSNN_GPU() {
 	// copy relevant pointers and network information to GPU
 	CUDA_CHECK_ERRORS(cudaMemcpyToSymbol(gpuPtrs, &gpuRuntimeData, sizeof(RuntimeData), 0, cudaMemcpyHostToDevice));
 
-	// copy data to from SNN:: to NetworkConfig SNN::networkConfig
+	// copy data to from SNN:: to NetworkConfigRT SNN::networkConfig
 	copyNetworkConfig(); // FIXME: we can change the group properties such as STDP as the network is running.  So, we need a way to updating the GPU when changes are made.
 
 
 	CUDA_CHECK_ERRORS(cudaMemcpyToSymbol(d_mulSynFast, mulSynFast, sizeof(float)*numConnections, 0, cudaMemcpyHostToDevice));
 	CUDA_CHECK_ERRORS(cudaMemcpyToSymbol(d_mulSynSlow, mulSynSlow, sizeof(float)*numConnections, 0, cudaMemcpyHostToDevice));
 
-	CUDA_CHECK_ERRORS(cudaMemcpyToSymbol(gpuGrpInfo, groupConfig, (networkConfig.numGrp) * sizeof(GroupConfig), 0, cudaMemcpyHostToDevice));
+	CUDA_CHECK_ERRORS(cudaMemcpyToSymbol(gpuGrpInfo, groupConfig, (networkConfig.numGrp) * sizeof(GroupConfigRT), 0, cudaMemcpyHostToDevice));
 
 	KERNEL_DEBUG("Transfering group settings to GPU:");
 	for (int i=0;i<numGrp;i++) {

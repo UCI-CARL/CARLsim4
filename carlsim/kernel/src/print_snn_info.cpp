@@ -60,7 +60,7 @@ void SNN::printConnection(int grpId, FILE* const fp) {
 }
 
 void SNN::printMemoryInfo(FILE* const fp) {
-	if (snnState == METADATA_SNN || snnState == COMPILED_SNN || snnState == LINKED_SNN) {
+	if (snnState == CONFIG_SNN || snnState == COMPILED_SNN || snnState == LINKED_SNN) {
 		KERNEL_DEBUG("checkNetworkBuilt()");
 		KERNEL_DEBUG("Network not yet elaborated and built...");
 	}
@@ -215,7 +215,7 @@ void SNN::printTuningLog(FILE * const fp) {
 
 void SNN::printConnectionInfo(FILE * const fp)
 {
-  grpConnectInfo_t* newInfo = connectBegin;
+  ConnectConfig* newInfo = connectBegin;
 
   //    fprintf(fp, "\nGlobal STDP Info: \n");
   //    fprintf(fp, "------------\n");
@@ -242,7 +242,7 @@ void SNN::printConnectionInfo(FILE * const fp)
 
 void SNN::printConnectionInfo2(FILE * const fpg)
 {
-  grpConnectInfo_t* newInfo = connectBegin;
+  ConnectConfig* newInfo = connectBegin;
 
 	fprintf(fpg, "#Connection Information \n");
 	fprintf(fpg, "#(e.g. from => to : approx. # of post (numPostSynapses) : approx. # of pre-synaptic (numPreSynapses) : weights.. : type plastic or fixed : max and min axonal delay\n");
@@ -260,7 +260,7 @@ void SNN::printConnectionInfo2(FILE * const fpg)
 
 // new print connection info, akin to printGroupInfo
 void SNN::printConnectionInfo(short int connId) {
-	grpConnectInfo_t* connInfo = getConnectInfo(connId);
+	ConnectConfig* connInfo = getConnectInfo(connId);
 
 	KERNEL_INFO("Connection ID %d: %s(%d) => %s(%d)", connId, groupInfo[connInfo->grpSrc].Name.c_str(),
 		connInfo->grpSrc, groupInfo[connInfo->grpDest].Name.c_str(), connInfo->grpDest);

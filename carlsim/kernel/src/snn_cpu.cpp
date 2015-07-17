@@ -109,7 +109,7 @@ short int SNN::connect(int grpId1, int grpId2, const std::string& _type, float i
 	Grid3D szPre = getGroupGrid3D(grpId1);
 	Grid3D szPost = getGroupGrid3D(grpId2);
 
-	grpConnectInfo_t* newInfo = (grpConnectInfo_t*) calloc(1, sizeof(grpConnectInfo_t));
+	ConnectConfig* newInfo = (ConnectConfig*) calloc(1, sizeof(ConnectConfig));
 	newInfo->grpSrc   		  = grpId1;
 	newInfo->grpDest  		  = grpId2;
 	newInfo->initWt	  		  = initWt;
@@ -228,7 +228,7 @@ short int SNN::connect(int grpId1, int grpId2, ConnectionGeneratorCore* conn, fl
 		assert(maxPreM <= MAX_nPreSynapses);
 	}
 
-	grpConnectInfo_t* newInfo = (grpConnectInfo_t*) calloc(1, sizeof(grpConnectInfo_t));
+	ConnectConfig* newInfo = (ConnectConfig*) calloc(1, sizeof(ConnectConfig));
 
 	newInfo->grpSrc   = grpId1;
 	newInfo->grpDest  = grpId2;
@@ -641,7 +641,7 @@ void SNN::setWeightAndWeightChangeUpdate(updateInterval_t wtANDwtChangeUpdateInt
 // this code is run only one time during network initialization
 void SNN::setupNetwork(bool removeTempMem) {
 	switch (snnState) {
-	case METADATA_SNN:
+	case CONFIG_SNN:
 		compileSNN(removeTempMem);
 	case COMPILED_SNN:
 		linkSNN();
@@ -808,7 +808,7 @@ int SNN::runNetwork(int _nsec, int _nmsec, bool printRunSummary, bool copyState)
 void SNN::biasWeights(short int connId, float bias, bool updateWeightRange) {
 	assert(connId>=0 && connId<numConnections);
 
-	grpConnectInfo_t* connInfo = getConnectInfo(connId);
+	ConnectConfig* connInfo = getConnectInfo(connId);
 
 	// iterate over all postsynaptic neurons
 	for (int i=groupConfig[connInfo->grpDest].StartN; i<=groupConfig[connInfo->grpDest].EndN; i++) {
@@ -911,7 +911,7 @@ void SNN::scaleWeights(short int connId, float scale, bool updateWeightRange) {
 	assert(connId>=0 && connId<numConnections);
 	assert(scale>=0.0f);
 
-	grpConnectInfo_t* connInfo = getConnectInfo(connId);
+	ConnectConfig* connInfo = getConnectInfo(connId);
 
 	// iterate over all postsynaptic neurons
 	for (int i=groupConfig[connInfo->grpDest].StartN; i<=groupConfig[connInfo->grpDest].EndN; i++) {
@@ -1017,7 +1017,7 @@ ConnectionMonitor* SNN::setConnectionMonitor(int grpIdPre, int grpIdPost, FILE* 
 	}
 
 	// check whether connection already has a connection monitor
-	grpConnectInfo_t* connInfo = getConnectInfo(connId);
+	ConnectConfig* connInfo = getConnectInfo(connId);
 	if (connInfo->connectionMonitorId >= 0) {
 		KERNEL_ERROR("setConnectionMonitor has already been called on Connection %d (MonitorId=%d)", connId, connInfo->connectionMonitorId);
 		exitSimulation(1);
@@ -1084,7 +1084,7 @@ void SNN::setExternalCurrent(int grpId, const std::vector<float>& current) {
 
 // sets up a spike generator
 void SNN::setSpikeGenerator(int grpId, SpikeGeneratorCore* spikeGen) {
-	assert(snnState == METADATA_SNN); // must be called before setupNetwork() to work on GPU
+	assert(snnState == CONFIG_SNN); // must be called before setupNetwork() to work on GPU
 	assert(spikeGen);
 	assert (groupConfig[grpId].isSpikeGenerator);
 	groupConfig[grpId].spikeGen = spikeGen;
@@ -1170,7 +1170,7 @@ void SNN::setWeight(short int connId, int neurIdPre, int neurIdPost, float weigh
 	assert(connId>=0 && connId<getNumConnections());
 	assert(weight>=0.0f);
 
-	grpConnectInfo_t* connInfo = getConnectInfo(connId);
+	ConnectConfig* connInfo = getConnectInfo(connId);
 	assert(neurIdPre>=0  && neurIdPre<getGroupNumNeurons(connInfo->grpSrc));
 	assert(neurIdPost>=0 && neurIdPost<getGroupNumNeurons(connInfo->grpDest));
 
@@ -1359,7 +1359,7 @@ void SNN::writePopWeights(std::string fname, int grpIdPre, int grpIdPost) {
 	fid = fopen(fname.c_str(), "wb");
 	assert(fid != NULL);
 
-	if(snnState == METADATA_SNN || snnState == COMPILED_SNN || snnState == LINKED_SNN){
+	if(snnState == CONFIG_SNN || snnState == COMPILED_SNN || snnState == LINKED_SNN){
 		KERNEL_ERROR("Simulation has not been run yet, cannot output weights.");
 		exitSimulation(1);
 	}
@@ -1458,7 +1458,7 @@ void SNN::setLogsFp(FILE* fpInf, FILE* fpErr, FILE* fpDeb, FILE* fpLog) {
 
 // loop over linked list entries to find a connection with the right pre-post pair, O(N)
 short int SNN::getConnectId(int grpIdPre, int grpIdPost) {
-	grpConnectInfo_t* connInfo = connectBegin;
+	ConnectConfig* connInfo = connectBegin;
 
 	short int connId = -1;
 	while (connInfo) {
@@ -1476,8 +1476,8 @@ short int SNN::getConnectId(int grpIdPre, int grpIdPost) {
 }
 
 //! used for parameter tuning functionality
-grpConnectInfo_t* SNN::getConnectInfo(short int connectId) {
-	grpConnectInfo_t* nextConn = connectBegin;
+ConnectConfig* SNN::getConnectInfo(short int connectId) {
+	ConnectConfig* nextConn = connectBegin;
 	CHECK_CONNECTION_ID(connectId, numConnections);
 
 	// clear all existing connection info...
@@ -1569,7 +1569,7 @@ std::vector<float> SNN::getConductanceGABAb(int grpId) {
 // returns RangeDelay struct of a connection
 RangeDelay SNN::getDelayRange(short int connId) {
 	assert(connId>=0 && connId<numConnections);
-	grpConnectInfo_t* connInfo = getConnectInfo(connId);
+	ConnectConfig* connInfo = getConnectInfo(connId);
 	return RangeDelay(connInfo->minDelay, connInfo->maxDelay);
 }
 
@@ -1629,7 +1629,7 @@ int SNN::getGroupId(std::string grpName) {
 	return -1;
 }
 
-GroupConfig SNN::getGroupConfig(int grpId) {
+GroupConfigRT SNN::getGroupConfig(int grpId) {
 	assert(grpId>=-1 && grpId<numGrp);
 	return groupConfig[grpId];
 }
@@ -1715,14 +1715,14 @@ Point3D SNN::getNeuronLocation3D(int grpId, int relNeurId) {
 
 // returns the number of synaptic connections associated with this connection.
 int SNN::getNumSynapticConnections(short int connectionId) {
-  grpConnectInfo_t* connInfo;
-  grpConnectInfo_t* connIterator = connectBegin;
+  ConnectConfig* connInfo;
+  ConnectConfig* connIterator = connectBegin;
   while(connIterator){
     if(connIterator->connId == connectionId){
       //found the corresponding connection
       return connIterator->numberOfConnections;
     }
-    //move to the next grpConnectInfo_t
+    //move to the next ConnectConfig
     connIterator=connIterator->next;
   }
   //we didn't find the connection.
@@ -1784,7 +1784,7 @@ SpikeMonitorCore* SNN::getSpikeMonitorCore(int grpId) {
 // returns RangeWeight struct of a connection
 RangeWeight SNN::getWeightRange(short int connId) {
 	assert(connId>=0 && connId<numConnections);
-	grpConnectInfo_t* connInfo = getConnectInfo(connId);
+	ConnectConfig* connInfo = getConnectInfo(connId);
 	return RangeWeight(0.0f, connInfo->initWt, connInfo->maxWt);
 }
 
@@ -1798,7 +1798,7 @@ void SNN::SNNinit() {
 	assert(ithGPU_>=0);
 
 	// initialize snnState
-	snnState = METADATA_SNN;
+	snnState = CONFIG_SNN;
 	
 	// set logger mode (defines where to print all status, error, and debug messages)
 	switch (loggerMode_) {
@@ -1970,7 +1970,7 @@ void SNN::SNNinit() {
 	pbuf = new PropagatedSpikeBuffer(0, PROPAGATED_BUFFER_SIZE);
 
 	memset(&gpuRuntimeData, 0, sizeof(RuntimeData));
-	memset(&networkConfig, 0, sizeof(NetworkConfig));
+	memset(&networkConfig, 0, sizeof(NetworkConfigRT));
 	gpuRuntimeData.allocated = false;
 
 	memset(&snnRuntimeData, 0, sizeof(RuntimeData));
@@ -2290,7 +2290,7 @@ void SNN::buildGroup(int grpId) {
  * \sa createGroup(), connect()
  */
 void SNN::buildNetwork() {
-	grpConnectInfo_t* newInfo = connectBegin;
+	ConnectConfig* newInfo = connectBegin;
 
 	// find the maximum values for number of pre- and post-synaptic neurons
 	findMaxNumSynapses(&numPostSynapses_, &numPreSynapses_);
@@ -2627,7 +2627,7 @@ void SNN::compactConnections() {
 }
 
 // make 'C' full connections from grpSrc to grpDest
-void SNN::connectFull(grpConnectInfo_t* info) {
+void SNN::connectFull(ConnectConfig* info) {
 	int grpSrc = info->grpSrc;
 	int grpDest = info->grpDest;
 	bool noDirect = (info->type == CONN_FULL_NO_DIRECT);
@@ -2707,7 +2707,7 @@ void SNN::compileSNN(bool removeTempMemory) {
 
 
 
-void SNN::connectGaussian(grpConnectInfo_t* info) {
+void SNN::connectGaussian(ConnectConfig* info) {
 	// rebuild struct for easier handling
 	// adjust with sqrt(2) in order to make the Gaussian kernel depend on 2*sigma^2
 	RadiusRF radius(info->radX, info->radY, info->radZ);
@@ -2754,7 +2754,7 @@ void SNN::connectGaussian(grpConnectInfo_t* info) {
 	groupInfo[grpDest].sumPreConn += info->numberOfConnections;
 }
 
-void SNN::connectOneToOne (grpConnectInfo_t* info) {
+void SNN::connectOneToOne (ConnectConfig* info) {
 	int grpSrc = info->grpSrc;
 	int grpDest = info->grpDest;
 	assert( groupConfig[grpDest].SizeN == groupConfig[grpSrc].SizeN );
@@ -2773,7 +2773,7 @@ void SNN::connectOneToOne (grpConnectInfo_t* info) {
 }
 
 // make 'C' random connections from grpSrc to grpDest
-void SNN::connectRandom (grpConnectInfo_t* info) {
+void SNN::connectRandom (ConnectConfig* info) {
 	int grpSrc = info->grpSrc;
 	int grpDest = info->grpDest;
 
@@ -2805,7 +2805,7 @@ void SNN::connectRandom (grpConnectInfo_t* info) {
 
 // user-defined functions called here...
 // This is where we define our user-defined call-back function.  -- KDC
-void SNN::connectUserDefined (grpConnectInfo_t* info) {
+void SNN::connectUserDefined (ConnectConfig* info) {
 	int grpSrc = info->grpSrc;
 	int grpDest = info->grpDest;
 	info->maxDelay = 0;
@@ -3501,7 +3501,7 @@ bool SNN::isConnectionPlastic(short int connId) {
 	assert(connId<numConnections);
 
 	// search linked list for right connection ID
-	grpConnectInfo_t* connInfo = connectBegin;
+	ConnectConfig* connInfo = connectBegin;
 	bool isPlastic = false;
 	while (connInfo) {
 		if (connId == connInfo->connId) {
@@ -3540,7 +3540,7 @@ void SNN::verifySTDP() {
 	for (int grpId=0; grpId<getNumGroups(); grpId++) {
 		if (groupConfig[grpId].WithSTDP) {
 			// for each post-group, check if any of the incoming connections are plastic
-			grpConnectInfo_t* connInfo = connectBegin;
+			ConnectConfig* connInfo = connectBegin;
 			bool isAnyPlastic = false;
 			while (connInfo) {
 				if (connInfo->grpDest == grpId) {
@@ -4144,7 +4144,7 @@ void SNN::resetConnectionConfigs(bool deallocate) {
 	// clear all existing connection info
 	if (deallocate) {
 		while (connectBegin) {
-			grpConnectInfo_t* nextConn = connectBegin->next;
+			ConnectConfig* nextConn = connectBegin->next;
 			if (connectBegin!=NULL && deallocate) {
 				free(connectBegin);
 				connectBegin = nextConn;
@@ -4343,15 +4343,15 @@ void SNN::resetSynapticConnections(bool changeWeights) {
 				int preId    = GET_CONN_NEURON_ID((*preIdPtr));
 				assert(preId < numN);
 				int srcGrp = snnRuntimeData.grpIds[preId];
-				grpConnectInfo_t* connInfo;
-				grpConnectInfo_t* connIterator = connectBegin;
+				ConnectConfig* connInfo;
+				ConnectConfig* connIterator = connectBegin;
 				while(connIterator) {
 					if(connIterator->grpSrc == srcGrp && connIterator->grpDest == destGrp) {
 						//we found the corresponding connection
 						connInfo=connIterator;
 						break;
 					}
-					//move to the next grpConnectInfo_t
+					//move to the next ConnectConfig
 					connIterator=connIterator->next;
 				}
 				assert(connInfo != NULL);
@@ -4382,7 +4382,7 @@ void SNN::resetSynapticConnections(bool changeWeights) {
 		groupConfig[destGrp].newUpdates = false;
 	}
 
-	grpConnectInfo_t* connInfo = connectBegin;
+	ConnectConfig* connInfo = connectBegin;
 	// clear all existing connection info...
 	while (connInfo) {
 		connInfo->newUpdates = false;
@@ -4610,7 +4610,7 @@ void SNN::updateConnectionMonitor(short int connId) {
 
 std::vector< std::vector<float> > SNN::getWeightMatrix2D(short int connId) {
 	assert(connId!=ALL);
-	grpConnectInfo_t* connInfo = connectBegin;
+	ConnectConfig* connInfo = connectBegin;
 	std::vector< std::vector<float> > wtConnId;
 
 	// loop over all connections and find the ones with Connection Monitors
@@ -4820,7 +4820,7 @@ int SNN::updateSpikeTables() {
 	int grpSrc;
 	// find the maximum delay in the given network
 	// and also the maximum delay for each group.
-	grpConnectInfo_t* newInfo = connectBegin;
+	ConnectConfig* newInfo = connectBegin;
 	while(newInfo) {
 		grpSrc = newInfo->grpSrc;
 		if (newInfo->maxDelay > curD)

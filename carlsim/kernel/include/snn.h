@@ -456,7 +456,7 @@ public:
 	// +++++ PUBLIC METHODS: GETTERS / SETTERS ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
 	short int getConnectId(int grpIdPre, int grpIdPost); //!< find connection ID based on pre-post group pair, O(N)
-	grpConnectInfo_t* getConnectInfo(short int connectId); //!< required for homeostasis
+	ConnectConfig* getConnectInfo(short int connectId); //!< required for homeostasis
 
 	//! returns the RangeDelay struct of a connection
 	RangeDelay getDelayRange(short int connId);
@@ -474,7 +474,7 @@ public:
 
 	Grid3D getGroupGrid3D(int grpId);
 	int getGroupId(std::string grpName);
-	GroupConfig getGroupConfig(int grpId);
+	GroupConfigRT getGroupConfig(int grpId);
 	std::string getGroupName(int grpId);
 	GroupSTDPInfo_t getGroupSTDPInfo(int grpId);
 	GroupNeuromodulatorInfo_t getGroupNeuromodulatorInfo(int grpId);
@@ -601,11 +601,11 @@ private:
 	void checkSpikeCounterRecordDur();
 
 	void compactConnections(); //!< minimize any other wastage in that array by compacting the store
-	void connectFull(grpConnectInfo_t* info);
-	void connectOneToOne(grpConnectInfo_t* info);
-	void connectRandom(grpConnectInfo_t* info);
-	void connectGaussian(grpConnectInfo_t* info);
-	void connectUserDefined(grpConnectInfo_t* info);
+	void connectFull(ConnectConfig* info);
+	void connectOneToOne(ConnectConfig* info);
+	void connectRandom(ConnectConfig* info);
+	void connectGaussian(ConnectConfig* info);
+	void connectUserDefined(ConnectConfig* info);
 
 	void deleteObjects();			//!< deallocates all used data structures in snn_cpu.cpp
 
@@ -891,7 +891,7 @@ private:
 	unsigned int	allocatedPre;
 	unsigned int	allocatedPost;
 
-	grpConnectInfo_t* connectBegin;
+	ConnectConfig* connectBegin;
 	// duplicated short int* cumConnIdPre;		//!< connId, per synapse, presynaptic cumulative indexing
 	float 		*mulSynFast;	//!< scaling factor for fast synaptic currents, per connection
 	float 		*mulSynSlow;	//!< scaling factor for slow synaptic currents, per connection
@@ -1013,7 +1013,7 @@ private:
 	ConnectionMonitorCore* connMonCoreList[MAX_nConnections];
 	ConnectionMonitor*     connMonList[MAX_nConnections];
 
-	NetworkConfig networkConfig;
+	NetworkConfigRT networkConfig;
 
 	RuntimeData gpuRuntimeData;
 	//RuntimeData cpuRuntimeData;
@@ -1029,7 +1029,7 @@ private:
 	unsigned int	gpu_tStep, gpu_simSec;		//!< this is used to store the seconds.
 	unsigned int	gpu_simTime;				//!< this value is not reset but keeps increasing to its max value.
 
-	GroupConfig	  	groupConfig[MAX_GRP_PER_SNN];
+	GroupConfigRT	  	groupConfig[MAX_GRP_PER_SNN];
 	GroupInfo		groupInfo[MAX_GRP_PER_SNN];
 
 	// weight update parameter

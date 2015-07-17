@@ -171,7 +171,7 @@ TEST(STDP, setNeuromodulatorParameters) {
 		sim->setNeuromodulator(g1, baseDP, tauDP, base5HT, tau5HT, baseACh, tauACh, baseNE, tauNE);
 
 		// Temporarily mark out the testing code
-		// Discuss whether carlsim user interface needs to spport GroupConfig
+		// Discuss whether carlsim user interface needs to spport GroupConfigRT
 		GroupSTDPInfo_t gInfo = sim->getGroupSTDPInfo(g1);
 		EXPECT_TRUE(gInfo.WithSTDP);
 		EXPECT_TRUE(gInfo.WithESTDPtype == DA_MOD);
