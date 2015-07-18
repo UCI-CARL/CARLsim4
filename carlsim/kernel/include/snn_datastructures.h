@@ -67,9 +67,6 @@ typedef struct {
 	uint8_t	grpId;
 } post_info_t;
 
-
-
-
 /*!
  * \brief The configuration of a connection
  *
@@ -109,48 +106,97 @@ typedef struct ConnectConfig_s {
  * to be linked.
  * \see CARLsimState
  */
-//typedef struct 
+typedef struct GroupConfig_s {
+	// properties of neural group size and location
+	std::string		Name;
+	unsigned int type;
+	int          numN;
+    int          sizeX;
+    int          sizeY;
+    int          sizeZ;
+	float        distX;
+	float        distY;
+	float        distZ;
+	float        offsetX;
+	float        offsetY;
+	float        offsetZ;
+
+	// properties of neural group dynamics
+	float 		Izh_a;
+	float 		Izh_a_sd;
+	float 		Izh_b;
+	float 		Izh_b_sd;
+	float 		Izh_c;
+	float 		Izh_c_sd;
+	float 		Izh_d;
+	float 		Izh_d_sd;
+
+	bool isSpikeGenerator;
+	SpikeGeneratorCore*	spikeGen;
+
+	//!< homeostatic plasticity configs
+	float baseFiring;
+	float baseFiringSD;
+	float avgTimeScale;
+	float avgTimeScaleDecay;
+	float homeostasisScale;
+
+	// parameters of neuromodulator
+	float baseDP;		//!< baseline concentration of Dopamine
+	float base5HT;	//!< baseline concentration of Serotonin
+	float baseACh;	//!< baseline concentration of Acetylcholine
+	float baseNE;		//!< baseline concentration of Noradrenaline
+	float decayDP;		//!< decay rate for Dopaamine
+	float decay5HT;		//!< decay rate for Serotonin
+	float decayACh;		//!< decay rate for Acetylcholine
+	float decayNE;		//!< decay rate for Noradrenaline
+} GroupConfig;
 
 typedef struct RuntimeData_s {
-	float*	voltage;
-	float*	recovery;
-	float*	Izh_a;
-	float*	Izh_b;
-	float*	Izh_c;
-	float*	Izh_d;
-	float*	current;
-	float*  extCurrent;
+	float* voltage;
+	float* recovery;
+	float* Izh_a;
+	float* Izh_b;
+	float* Izh_c;
+	float* Izh_d;
+	float* current;
+	float* extCurrent;
 
 	// conductances and stp values
-	float*	gNMDA;					//!< conductance of gNMDA
-	float*	gNMDA_r;
-	float*	gNMDA_d;
-	float*	gAMPA;					//!< conductance of gAMPA
-	float*	gGABAa;				//!< conductance of gGABAa
-	float*	gGABAb;				//!< conductance of gGABAb
-	float*	gGABAb_r;
-	float*	gGABAb_d;
-	int*	I_set;				// only used on GPU
+	float* gNMDA;					//!< conductance of gNMDA
+	float* gNMDA_r;
+	float* gNMDA_d;
+	float* gAMPA;					//!< conductance of gAMPA
+	float* gGABAa;				//!< conductance of gGABAa
+	float* gGABAb;				//!< conductance of gGABAb
+	float* gGABAb_r;
+	float* gGABAb_d;
+
+	int* I_set;				// only used on GPU
+
 	SimMode	memType;
-	int		allocated;				//!< true if all data has been allocated..
+	int     allocated;				//!< true if all data has been allocated..
 
 	/* Tsodyks & Markram (1998), where the short-term dynamics of synapses is characterized by three parameters:
 	   U (which roughly models the release probability of a synaptic vesicle for the first spike in a train of spikes),
 	   maxDelay_ (time constant for recovery from depression), and F (time constant for recovery from facilitation). */
-	float*	stpx;
-	float*	stpu;
+	float* stpx;
+	float* stpu;
 
 	unsigned short*	Npre;				//!< stores the number of input connections to a neuron
 	unsigned short*	Npre_plastic;		//!< stores the number of plastic input connections to a neuron
-	float*		Npre_plasticInv;	//!< stores the 1/number of plastic input connections, only used on GPU
-	unsigned short*	Npost;				//!< stores the number of output connections from a neuron.
-	unsigned int*	lastSpikeTime;		//!< stores the last spike time of a neuron
-	float*	wtChange;		//!< stores the weight change of a synaptic connection
-	float*	wt;				//!< stores the weight change of a synaptic connection
-	float*	maxSynWt;			//!< maximum synaptic weight for a connection
-	unsigned int*	synSpikeTime;	//!< stores the last spike time of a synapse
-	unsigned int*	cumulativePost;
-	unsigned int*	cumulativePre;
+	float*          Npre_plasticInv;	//!< stores the 1/number of plastic input connections, only used on GPU
+	unsigned short* Npost;				//!< stores the number of output connections from a neuron.
+
+	unsigned int* lastSpikeTime;		//!< stores the last spike time of a neuron
+	unsigned int* synSpikeTime;	//!< stores the last spike time of a synapse
+
+	float* wtChange;		//!< stores the weight change of a synaptic connection
+	float* wt;				//!< stores the weight change of a synaptic connection
+	float* maxSynWt;			//!< maximum synaptic weight for a connection
+	
+	unsigned int* cumulativePost;
+	unsigned int* cumulativePre;
 
 	short int* cumConnIdPre;	//!< connectId, per synapse, presynaptic cumulative indexing
 
@@ -162,26 +208,28 @@ typedef struct RuntimeData_s {
 	 * allows maximum synapses of 1024 and maximum network size of 4 million neurons, with 64 bit representation. we can
 	 * have larger networks for simulation
 	 */
-	post_info_t*	postSynapticIds;
+	post_info_t* postSynapticIds;
+	post_info_t* preSynapticIds;
 
-	post_info_t*	preSynapticIds;
-	delay_info_t*	postDelayInfo;  	//!< delay information
-	unsigned int*	firingTableD1;
-	unsigned int*	firingTableD2;
+	delay_info_t* postDelayInfo;  	//!< delay information
 
-	float*	poissonFireRate;
-	unsigned int*	poissonRandPtr;		//!< firing random number. max value is 10,000
-	int2*	neuronAllocation;		//!< .x: [31:0] index of the first neuron, .y: [31:16] number of neurons, [15:0] group id
-	int3*	groupIdInfo;			//!< .x , .y: the start and end index of neurons in a group, .z: gourd id, used for group Id calculations
-	int*	nSpikeCnt;
+	unsigned int* firingTableD1;
+	unsigned int* firingTableD2;
 
+	float*        poissonFireRate;
+	unsigned int* poissonRandPtr;		//!< firing random number. max value is 10,000
+
+	int2* neuronAllocation;		//!< .x: [31:0] index of the first neuron, .y: [31:16] number of neurons, [15:0] group id
+	int3* groupIdInfo;			//!< .x , .y: the start and end index of neurons in a group, .z: gourd id, used for group Id calculations
+
+	int*  nSpikeCnt;
 	int** spkCntBuf; //!< for copying 2D array to GPU (see SNN::allocateSNN_GPU)
-	int* spkCntBufChild[MAX_GRP_PER_SNN]; //!< child pointers for above
+	int*  spkCntBufChild[MAX_GRP_PER_SNN]; //!< child pointers for above
 
 	//!< homeostatic plasticity variables
-	float*	baseFiringInv; // only used on GPU
-	float*	baseFiring;
-	float*	avgFiring;
+	float* baseFiringInv; // only used on GPU
+	float* baseFiring;
+	float* avgFiring;
 
 	/*!
 	 * neuromodulator concentration for each group
@@ -197,8 +245,8 @@ typedef struct RuntimeData_s {
 	float* grpAChBuffer[MAX_GRP_PER_SNN];
 	float* grpNEBuffer[MAX_GRP_PER_SNN];
 
-	unsigned int*	spikeGenBits;
-	bool*		curSpike;
+	unsigned int* spikeGenBits;
+	bool*         curSpike;
 } RuntimeData;
 
 //! network information structure
