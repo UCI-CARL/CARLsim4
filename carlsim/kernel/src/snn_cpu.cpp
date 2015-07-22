@@ -164,18 +164,18 @@ short int SNN::connect(int grpId1, int grpId2, const std::string& _type, float i
 		exitSimulation(-1);
 	}
 
-	if (newInfo->numPostSynapses > MAX_nPostSynapses) {
+	if (newInfo->numPostSynapses > MAX_NUM_POST_SYN) {
 		KERNEL_ERROR("ConnID %d exceeded the maximum number of output synapses (%d), has %d.",
 			newInfo->connId,
-			MAX_nPostSynapses, newInfo->numPostSynapses);
-		assert(newInfo->numPostSynapses <= MAX_nPostSynapses);
+			MAX_NUM_POST_SYN, newInfo->numPostSynapses);
+		assert(newInfo->numPostSynapses <= MAX_NUM_POST_SYN);
 	}
 
-	if (newInfo->numPreSynapses > MAX_nPreSynapses) {
+	if (newInfo->numPreSynapses > MAX_NUM_PRE_SYN) {
 		KERNEL_ERROR("ConnID %d exceeded the maximum number of input synapses (%d), has %d.",
 			newInfo->connId,
-			MAX_nPreSynapses, newInfo->numPreSynapses);
-		assert(newInfo->numPreSynapses <= MAX_nPreSynapses);
+			MAX_NUM_PRE_SYN, newInfo->numPreSynapses);
+		assert(newInfo->numPreSynapses <= MAX_NUM_PRE_SYN);
 	}
 
 	// update the pre and post size...
@@ -190,7 +190,7 @@ short int SNN::connect(int grpId1, int grpId2, const std::string& _type, float i
 					groupInfo[grpId2].Name.c_str(),groupConfig[grpId2].numPreSynapses);
 
 	newInfo->connId	= numConnections++;
-	assert(numConnections <= MAX_nConnections);	// make sure we don't overflow connId
+	assert(numConnections <= MAX_CONN_PER_SNN);	// make sure we don't overflow connId
 
 	retId = newInfo->connId;
 
@@ -214,18 +214,18 @@ short int SNN::connect(int grpId1, int grpId2, ConnectionGeneratorCore* conn, fl
 	if (maxPreM == 0)
 		maxPreM = groupConfig[grpId1].SizeN;
 
-	if (maxM > MAX_nPostSynapses) {
+	if (maxM > MAX_NUM_POST_SYN) {
 		KERNEL_ERROR("Connection from %s (%d) to %s (%d) exceeded the maximum number of output synapses (%d), "
 							"has %d.", groupInfo[grpId1].Name.c_str(),grpId1,groupInfo[grpId2].Name.c_str(),
-							grpId2,	MAX_nPostSynapses,maxM);
-		assert(maxM <= MAX_nPostSynapses);
+							grpId2,	MAX_NUM_POST_SYN,maxM);
+		assert(maxM <= MAX_NUM_POST_SYN);
 	}
 
-	if (maxPreM > MAX_nPreSynapses) {
+	if (maxPreM > MAX_NUM_PRE_SYN) {
 		KERNEL_ERROR("Connection from %s (%d) to %s (%d) exceeded the maximum number of input synapses (%d), "
 							"has %d.\n", groupInfo[grpId1].Name.c_str(), grpId1,groupInfo[grpId2].Name.c_str(),
-							grpId2, MAX_nPreSynapses,maxPreM);
-		assert(maxPreM <= MAX_nPreSynapses);
+							grpId2, MAX_NUM_PRE_SYN,maxPreM);
+		assert(maxPreM <= MAX_NUM_PRE_SYN);
 	}
 
 	ConnectConfig* newInfo = (ConnectConfig*) calloc(1, sizeof(ConnectConfig));
@@ -234,7 +234,7 @@ short int SNN::connect(int grpId1, int grpId2, ConnectionGeneratorCore* conn, fl
 	newInfo->grpDest  = grpId2;
 	newInfo->initWt	  = 1;
 	newInfo->maxWt	  = 1;
-	newInfo->maxDelay = MAX_SynapticDelay;
+	newInfo->maxDelay = MAX_SYN_DELAY;
 	newInfo->minDelay = 1;
 	newInfo->mulSynFast = _mulSynFast;
 	newInfo->mulSynSlow = _mulSynSlow;
@@ -257,7 +257,7 @@ short int SNN::connect(int grpId1, int grpId2, ConnectionGeneratorCore* conn, fl
 					groupInfo[grpId2].Name.c_str(),groupConfig[grpId2].numPreSynapses);
 
 	newInfo->connId	= numConnections++;
-	assert(numConnections <= MAX_nConnections);	// make sure we don't overflow connId
+	assert(numConnections <= MAX_CONN_PER_SNN);	// make sure we don't overflow connId
 
 	retId = newInfo->connId;
 	assert(retId != -1);
@@ -2188,8 +2188,8 @@ void SNN::buildNetworkInit() {
 	snnRuntimeData.wt  			= new float[preSynCnt+100];
 	snnRuntimeData.maxSynWt     	= new float[preSynCnt+100];
 
-	mulSynFast 		= new float[MAX_nConnections];
-	mulSynSlow 		= new float[MAX_nConnections];
+	mulSynFast 		= new float[MAX_CONN_PER_SNN];
+	mulSynSlow 		= new float[MAX_CONN_PER_SNN];
 	snnRuntimeData.cumConnIdPre	= new short int[preSynCnt+100];
 
 	//! Temporary array to hold pre-syn connections. will be deleted later if necessary
@@ -2299,7 +2299,7 @@ void SNN::buildNetwork() {
 	maxDelay_ = updateSpikeTables();
 
 	// make sure number of neurons and max delay are within bounds
-	assert(maxDelay_ <= MAX_SynapticDelay); 
+	assert(maxDelay_ <= MAX_SYN_DELAY); 
 	assert(numN <= 1000000);
 	assert((numN > 0) && (numN == numNExcReg + numNInhReg + numNPois));
 
@@ -2309,21 +2309,21 @@ void SNN::buildNetwork() {
 	KERNEL_INFO("numN = %d, numPostSynapses = %d, numPreSynapses = %d, maxDelay = %d", numN, numPostSynapses_,
 					numPreSynapses_, maxDelay_);
 
-	if (numPostSynapses_ > MAX_nPostSynapses) {
+	if (numPostSynapses_ > MAX_NUM_POST_SYN) {
 		for (int g=0;g<numGrp;g++) {
-			if (groupConfig[g].numPostSynapses>MAX_nPostSynapses)
+			if (groupConfig[g].numPostSynapses>MAX_NUM_POST_SYN)
 				KERNEL_ERROR("Grp: %s(%d) has too many output synapses (%d), max %d.",groupInfo[g].Name.c_str(),g,
-							groupConfig[g].numPostSynapses,MAX_nPostSynapses);
+							groupConfig[g].numPostSynapses,MAX_NUM_POST_SYN);
 		}
-		assert(numPostSynapses_ <= MAX_nPostSynapses);
+		assert(numPostSynapses_ <= MAX_NUM_POST_SYN);
 	}
-	if (numPreSynapses_ > MAX_nPreSynapses) {
+	if (numPreSynapses_ > MAX_NUM_PRE_SYN) {
 		for (int g=0;g<numGrp;g++) {
-			if (groupConfig[g].numPreSynapses>MAX_nPreSynapses)
+			if (groupConfig[g].numPreSynapses>MAX_NUM_PRE_SYN)
 				KERNEL_ERROR("Grp: %s(%d) has too many input synapses (%d), max %d.",groupInfo[g].Name.c_str(),g,
- 							groupConfig[g].numPreSynapses,MAX_nPreSynapses);
+ 							groupConfig[g].numPreSynapses,MAX_NUM_PRE_SYN);
 		}
-		assert(numPreSynapses_ <= MAX_nPreSynapses);
+		assert(numPreSynapses_ <= MAX_NUM_PRE_SYN);
 	}
 
 	// initialize all the parameters....
@@ -2824,7 +2824,7 @@ void SNN::connectUserDefined (ConnectConfig* info) {
 				info->maxWt = maxWt;
 
 				assert(delay >= 1);
-				assert(delay <= MAX_SynapticDelay);
+				assert(delay <= MAX_SYN_DELAY);
 				assert(abs(weight) <= abs(maxWt));
 
 				// adjust the sign of the weight based on inh/exc connection
@@ -3882,9 +3882,9 @@ int SNN::loadSimulation_internal(bool onlyPlastic) {
 			// read delay
 			result = fread(&delay, sizeof(uint8_t), 1, loadSimFID);
 			readErr |= (result!=1);
-			if (delay > MAX_SynapticDelay) {
-				KERNEL_ERROR("loadSimulation: delay in file (%d) is larger than MAX_SynapticDelay (%d)",
-					(int)delay, (int)MAX_SynapticDelay);
+			if (delay > MAX_SYN_DELAY) {
+				KERNEL_ERROR("loadSimulation: delay in file (%d) is larger than MAX_SYN_DELAY (%d)",
+					(int)delay, (int)MAX_SYN_DELAY);
 				exitSimulation(-1);
 			}
 

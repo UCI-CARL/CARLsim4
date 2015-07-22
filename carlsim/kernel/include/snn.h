@@ -1010,8 +1010,8 @@ private:
 
 	// connection monitor variables
 	int numConnectionMonitor;
-	ConnectionMonitorCore* connMonCoreList[MAX_nConnections];
-	ConnectionMonitor*     connMonList[MAX_nConnections];
+	ConnectionMonitorCore* connMonCoreList[MAX_CONN_PER_SNN];
+	ConnectionMonitor*     connMonList[MAX_CONN_PER_SNN];
 
 	NetworkConfigRT networkConfig;
 

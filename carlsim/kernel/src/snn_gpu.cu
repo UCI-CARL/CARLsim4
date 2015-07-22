@@ -42,7 +42,7 @@
 #include <error_code.h>
 #include <cuda_runtime.h>
 
-#define ROUNDED_TIMING_COUNT  (((1000+MAX_SynapticDelay+1)+127) & ~(127))  // (1000+maxDelay_) rounded to multiple 128
+#define ROUNDED_TIMING_COUNT  (((1000+MAX_SYN_DELAY+1)+127) & ~(127))  // (1000+maxDelay_) rounded to multiple 128
 
 #define  FIRE_CHUNK_CNT    (512)
 
@@ -89,8 +89,8 @@ __device__ __constant__ RuntimeData		gpuPtrs;
 __device__ __constant__ NetworkConfigRT	gpuNetInfo;
 __device__ __constant__ GroupConfigRT		gpuGrpInfo[MAX_GRP_PER_SNN];
 
-__device__ __constant__ float               d_mulSynFast[MAX_nConnections];
-__device__ __constant__ float               d_mulSynSlow[MAX_nConnections];
+__device__ __constant__ float               d_mulSynFast[MAX_CONN_PER_SNN];
+__device__ __constant__ float               d_mulSynSlow[MAX_CONN_PER_SNN];
 
 __device__  int	  loadBufferCount; 
 __device__  int   loadBufferSize;
@@ -2697,8 +2697,8 @@ void SNN::copyWeightsGPU(unsigned int nid, int src_grp) {
 void SNN::allocateSNN_GPU() {
 	checkAndSetGPUDevice();
 	// \FIXME why is this even here? shouldn't this be checked way earlier? and then in CPU_MODE, too...
-	if (maxDelay_ > MAX_SynapticDelay) {
-		KERNEL_ERROR("You are using a synaptic delay (%d) greater than MAX_SynapticDelay defined in config.h",maxDelay_);
+	if (maxDelay_ > MAX_SYN_DELAY) {
+		KERNEL_ERROR("You are using a synaptic delay (%d) greater than MAX_SYN_DELAY defined in config.h",maxDelay_);
 		exitSimulation(1);
 	}
 
