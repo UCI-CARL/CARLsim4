@@ -1,5 +1,4 @@
-/*
- * Copyright (c) 2013 Regents of the University of California. All rights reserved.
+/* * Copyright (c) 2015 Regents of the University of California. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -30,12 +29,15 @@
  *
  * *********************************************************************************************** *
  * CARLsim
- * created by: 		(MDR) Micah Richert, (JN) Jayram M. Nageswaran
- * maintained by:	(MA) Mike Avery <averym@uci.edu>, (MB) Michael Beyeler <mbeyeler@uci.edu>,
- *					(KDC) Kristofor Carlson <kdcarlso@uci.edu>
+ * created by: (MDR) Micah Richert, (JN) Jayram M. Nageswaran
+ * maintained by:
+ * (MA) Mike Avery <averym@uci.edu>
+ * (MB) Michael Beyeler <mbeyeler@uci.edu>,
+ * (KDC) Kristofor Carlson <kdcarlso@uci.edu>
+ * (TSC) Ting-Shuo Chou <tingshuc@uci.edu>
  *
  * CARLsim available from http://socsci.uci.edu/~jkrichma/CARLsim/
- * Ver 4/7/2014
+ * Ver 5/22/2015
  */
 
 #ifndef _SNN_DATASTRUCTURES_H_
