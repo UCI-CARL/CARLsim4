@@ -201,7 +201,7 @@ typedef struct RuntimeData_s {
 	bool*		curSpike;
 } RuntimeData;
 
-//! network information structure
+//! runtime network configuration
 /*!
  *	This structure contains the network configuration that is required for GPU simulation.
  *	The data in this structure are copied to device memory when running GPU simulation.
@@ -249,6 +249,14 @@ typedef struct NetworkConfigRT_s  {
 	double 			sGABAb;				//!< scaling factor for GABAb amplitude
 } NetworkConfigRT;
 
+/*!
+ * \brief The runtime configuration of a group
+ *
+ * This structure contains the configurations of groups that are created by optimizeAndPartiionNetwork(),
+ * which is ready to be executed by computing backend.
+ * \see CARLsimState
+ * \see SNNState
+ */
 typedef struct GroupConfigRT_s {
 	// properties of group of neurons size, location, initial weights etc.
 	PoissonRate*	RatePtr;
@@ -365,5 +373,36 @@ typedef struct GroupInfo_s {
 	int			sumPostConn;
 	int			sumPreConn;
 } GroupInfo;
+
+/*!
+ * \brief The runtime configuration of a connection
+ *
+ * This structure contains the configurations of connections that are created by optimizeAndPartiionNetwork(),
+ * which is ready to be executed by computing backend.
+ * \see CARLsimState
+ * \see SNNState
+ */
+typedef struct ConnectConfigRT_s {
+	int 	  				 grpSrc, grpDest;
+	uint8_t	  				 maxDelay;
+	uint8_t					 minDelay;
+	float	  				 initWt, maxWt;
+	float                    radX;
+	float					 radY;
+	float					 radZ;
+	float 					 mulSynFast;				//!< factor to be applied to either gAMPA or gGABAa
+	float 					 mulSynSlow;				//!< factor to be applied to either gNMDA or gGABAb
+	int	  	  				 numPostSynapses;
+	int	  	  				 numPreSynapses;
+	int                      connectionMonitorId;
+	uint32_t  				 connProp;
+	ConnectionGeneratorCore* conn;
+	conType_t 				 type;
+	float					 p; 						//!< connection probability
+	short int				 connId;					//!< connectID of the element in the linked list
+	bool					 newUpdates;
+	int		   				 numberOfConnections;
+	struct ConnectConfig_s*    next;
+} ConnectConfigRT;
 
 #endif
