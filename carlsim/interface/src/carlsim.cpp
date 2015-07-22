@@ -239,7 +239,7 @@ short int CARLsim::connect(int grpId1, int grpId2, const std::string& connType, 
 
 	UserErrors::assertTrue(carlsimState_==CONFIG_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName,
 	 "CONFIG.");
-	assert(++numConnections_ <= MAX_nConnections);
+	assert(++numConnections_ <= MAX_CONN_PER_SNN);
 
 	// throw a warning if "one-to-one" is used in combination with a non-zero RF
 	if (connType.compare("one-to-one")==0 && (radRF.radX>0 || radRF.radY>0 || radRF.radZ>0)) {
@@ -270,7 +270,7 @@ short int CARLsim::connect(int grpId1, int grpId2, ConnectionGenerator* conn, bo
 	UserErrors::assertTrue(maxPreM>=0, UserErrors::CANNOT_BE_NEGATIVE, funcName, "maxPreM");
 
 	UserErrors::assertTrue(carlsimState_==CONFIG_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "CONFIG.");
-	assert(++numConnections_ <= MAX_nConnections);
+	assert(++numConnections_ <= MAX_CONN_PER_SNN);
 
 	// TODO: check for sign of weights
 	ConnectionGeneratorCore* CGC = new ConnectionGeneratorCore(this, conn);
@@ -295,7 +295,7 @@ short int CARLsim::connect(int grpId1, int grpId2, ConnectionGenerator* conn, fl
 	UserErrors::assertTrue(maxPreM>=0, UserErrors::CANNOT_BE_NEGATIVE, funcName, "maxPreM");
 
 	UserErrors::assertTrue(carlsimState_==CONFIG_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "CONFIG.");
-	assert(++numConnections_ <= MAX_nConnections);
+	assert(++numConnections_ <= MAX_CONN_PER_SNN);
 
 	ConnectionGeneratorCore* CGC = new ConnectionGeneratorCore(this, conn);
 	connGen_.push_back(CGC);

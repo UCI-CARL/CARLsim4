@@ -30,12 +30,13 @@
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="src\gpu_random.cu" />
-    <CudaCompile Include="src\snn_gpu.cu" />
+    <CudaCompile Include="src\snn_gpu_module.cu" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="src\snn_cpu_module.cpp" />
     <ClCompile Include="src\print_snn_info.cpp" />
     <ClCompile Include="src\propagated_spike_buffer.cpp" />
-    <ClCompile Include="src\snn_cpu.cpp" />
+    <ClCompile Include="src\snn_manager.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{713714BD-0AFF-4832-BF1B-29CB68F1CE39}</ProjectGuid>

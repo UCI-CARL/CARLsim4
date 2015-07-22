@@ -1,5 +1,4 @@
-/*
- * Copyright (c) 2013 Regents of the University of California. All rights reserved.
+/* * Copyright (c) 2015 Regents of the University of California. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -30,12 +29,15 @@
  *
  * *********************************************************************************************** *
  * CARLsim
- * created by: 		(MDR) Micah Richert, (JN) Jayram M. Nageswaran
- * maintained by:	(MA) Mike Avery <averym@uci.edu>, (MB) Michael Beyeler <mbeyeler@uci.edu>,
- *					(KDC) Kristofor Carlson <kdcarlso@uci.edu>
+ * created by: (MDR) Micah Richert, (JN) Jayram M. Nageswaran
+ * maintained by:
+ * (MA) Mike Avery <averym@uci.edu>
+ * (MB) Michael Beyeler <mbeyeler@uci.edu>,
+ * (KDC) Kristofor Carlson <kdcarlso@uci.edu>
+ * (TSC) Ting-Shuo Chou <tingshuc@uci.edu>
  *
  * CARLsim available from http://socsci.uci.edu/~jkrichma/CARLsim/
- * Ver 4/7/2014
+ * Ver 5/22/2015
  */
 
 #ifndef _SNN_DEFINITIONS_H_
@@ -44,7 +46,7 @@
 // TODO: as Kris put it, this should really be called something like
 // some_random_macros_and_hardware_limitation_dependent_param_checks.h ... for example, the MAX_... defines
 // should really be private members of SNN. These ranges are limited by the data structures that implement
-// the corresponding functionality. For example, you can't just set MAX_nConnections > 32768, because connIds
+// the corresponding functionality. For example, you can't just set MAX_CONN_PER_SNN > 32768, because connIds
 // are stored as short int.
 
 
@@ -127,13 +129,13 @@ inline bool isInhibitoryNeuron (unsigned int& nid, unsigned int& numNInhPois, un
 #define KERNEL_DEBUG_PRINT(fp, type, formatc, ...) fprintf((FILE*)fp,"[" type " %s:%d] " formatc "\n",__FILE__,__LINE__,##__VA_ARGS__)
 
 
-#define MAX_nPostSynapses 10000
-#define MAX_nPreSynapses 20000
-#define MAX_SynapticDelay 20
+#define MAX_NUM_POST_SYN 10000
+#define MAX_NUM_PRE_SYN 20000
+#define MAX_SYN_DELAY 20
 
 // increasing the following numbers will increase the load on constant memory
 // until a hard limit is reached, which is given by the datatype of the variable
-#define MAX_nConnections 256	// hard limit: 2^16
+#define MAX_CONN_PER_SNN 256	// hard limit: 2^16
 #define MAX_GRP_PER_SNN 128		// hard limit: 2^16
 
 #define COND_INTEGRATION_SCALE	2
