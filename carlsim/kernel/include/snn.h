@@ -895,8 +895,8 @@ private:
 	unsigned int	allocatedPre;
 	unsigned int	allocatedPost;
 
-	std::map<int, GroupConfig*> groupConfigMap;
-	std::map<int, ConnectConfig*> connectConfigMap;
+	std::map<int, GroupConfig> groupConfigMap;
+	std::map<int, ConnectConfig> connectConfigMap;
 	ConnectConfig* connectBegin;
 	// duplicated short int* cumConnIdPre;		//!< connId, per synapse, presynaptic cumulative indexing
 	float 		*mulSynFast;	//!< scaling factor for fast synaptic currents, per connection

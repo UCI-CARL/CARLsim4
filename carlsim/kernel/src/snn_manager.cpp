@@ -267,12 +267,61 @@ short int SNN::connect(int grpId1, int grpId2, ConnectionGeneratorCore* conn, fl
 int SNN::createGroup(const std::string& grpName, const Grid3D& grid, int neurType) {
 	assert(grid.numX * grid.numY * grid.numZ > 0);
 	assert(neurType >= 0);
+	assert(numGrp < MAX_GRP_PER_SNN);
 
 	if ( (!(neurType & TARGET_AMPA) && !(neurType & TARGET_NMDA) &&
 		  !(neurType & TARGET_GABAa) && !(neurType & TARGET_GABAb)) || (neurType & POISSON_NEURON)) {
 		KERNEL_ERROR("Invalid type using createGroup... Cannot create poisson generators here.");
 		exitSimulation(1);
 	}
+
+	//// initialize group configuration
+	//GroupConfig grpConfig;
+	//
+	//// init parameters of neural group size and location
+	//grpConfig.Name = grpName;
+	//grpConfig.type = neurType;
+	//grpConfig.numN = grid.N;;
+	//grpConfig.sizeX = grid.numX;
+	//grpConfig.sizeY = grid.numY;
+	//grpConfig.sizeZ = grid.numZ;
+	//grpConfig.distX = grid.distX;
+	//grpConfig.distY = grid.distY;
+	//grpConfig.distZ = grid.distZ;
+	//grpConfig.offsetX = grid.offsetX;
+	//grpConfig.offsetY = grid.offsetY;
+	//grpConfig.offsetZ = grid.offsetZ;
+
+	//// init parameters of neural group dynamics
+	//grpConfig.Izh_a = -1.0f;
+	//grpConfig.Izh_a_sd = -1.0f;
+	//grpConfig.Izh_b = -1.0f;
+	//grpConfig.Izh_b_sd = -1.0f;
+	//grpConfig.Izh_c = -1.0f;
+	//grpConfig.Izh_c_sd = -1.0f;
+	//grpConfig.Izh_d = -1.0f;
+	//grpConfig.Izh_d_sd = -1.0f;
+
+	//grpConfig.isSpikeGenerator = false;
+
+	//// init homeostatic plasticity configs
+	//grpConfig.baseFiring = -1.0f;
+	//grpConfig.baseFiringSD = -1.0f;
+	//grpConfig.avgTimeScale = -1.0f;
+	//grpConfig.avgTimeScaleDecay = -1.0f;
+	//grpConfig.homeostasisScale = -1.0f;
+
+	//// init parameters of neuromodulator
+	//grpConfig.baseDP = -1.0f;
+	//grpConfig.base5HT = -1.0f;
+	//grpConfig.baseACh = -1.0f;
+	//grpConfig.baseNE = -1.0f;
+	//grpConfig.decayDP = -1.0f;
+	//grpConfig.decay5HT = -1.0f;
+	//grpConfig.decayACh = -1.0f;
+	//grpConfig.decayNE = -1.0f;
+
+	//groupConfigMap[numGrp] = grpConfig;
 
 	// We don't store the Grid3D struct in groupConfig so we don't have to deal with allocating structs on the GPU
 	groupConfig[numGrp].SizeN = grid.N; // number of neurons in the group
@@ -293,10 +342,10 @@ int SNN::createGroup(const std::string& grpName, const Grid3D& grid, int neurTyp
 		groupConfig[numGrp].MaxFiringRate 	= EXCITATORY_NEURON_MAX_FIRING_RATE;
 	}
 
-	groupInfo[numGrp].Name  			= grpName;
 	groupConfig[numGrp].isSpikeGenerator	= false;
 	groupConfig[numGrp].MaxDelay			= 1;
-
+	
+	groupInfo[numGrp].Name  			= grpName;
 	groupInfo[numGrp].Izh_a 			= -1; // \FIXME ???
 
 	// init homeostasis params even though not used
@@ -313,6 +362,7 @@ int SNN::createGroup(const std::string& grpName, const Grid3D& grid, int neurTyp
 	numNReg += grid.N;
 	numN += grid.N;
 
+
 	numGrp++;
 	return (numGrp-1);
 }
@@ -321,8 +371,58 @@ int SNN::createGroup(const std::string& grpName, const Grid3D& grid, int neurTyp
 // use int for nNeur to avoid arithmetic underflow
 int SNN::createSpikeGeneratorGroup(const std::string& grpName, const Grid3D& grid, int neurType) {
 	assert(grid.numX * grid.numY * grid.numZ > 0);
-	assert(neurType>=0);
-	groupConfig[numGrp].SizeN = grid.numX * grid.numY * grid.numZ; // number of neurons in the group
+	assert(neurType >= 0);
+	assert(numGrp < MAX_GRP_PER_SNN);
+
+	//// initialize group configuration
+	//GroupConfig grpConfig;
+	//
+	//// init parameters of neural group size and location
+	//grpConfig.Name = grpName;
+	//grpConfig.type = neurType | POISSON_NEURON;
+	//grpConfig.numN = grid.N;;
+	//grpConfig.sizeX = grid.numX;
+	//grpConfig.sizeY = grid.numY;
+	//grpConfig.sizeZ = grid.numZ;
+	//grpConfig.distX = grid.distX;
+	//grpConfig.distY = grid.distY;
+	//grpConfig.distZ = grid.distZ;
+	//grpConfig.offsetX = grid.offsetX;
+	//grpConfig.offsetY = grid.offsetY;
+	//grpConfig.offsetZ = grid.offsetZ;
+
+	//// init parameters of neural group dynamics
+	//grpConfig.Izh_a = -1.0f;
+	//grpConfig.Izh_a_sd = -1.0f;
+	//grpConfig.Izh_b = -1.0f;
+	//grpConfig.Izh_b_sd = -1.0f;
+	//grpConfig.Izh_c = -1.0f;
+	//grpConfig.Izh_c_sd = -1.0f;
+	//grpConfig.Izh_d = -1.0f;
+	//grpConfig.Izh_d_sd = -1.0f;
+
+	//grpConfig.isSpikeGenerator = true;
+
+	//// init homeostatic plasticity configs
+	//grpConfig.baseFiring = -1.0f;
+	//grpConfig.baseFiringSD = -1.0f;
+	//grpConfig.avgTimeScale = -1.0f;
+	//grpConfig.avgTimeScaleDecay = -1.0f;
+	//grpConfig.homeostasisScale = -1.0f;
+
+	//// init parameters of neuromodulator
+	//grpConfig.baseDP = -1.0f;
+	//grpConfig.base5HT = -1.0f;
+	//grpConfig.baseACh = -1.0f;
+	//grpConfig.baseNE = -1.0f;
+	//grpConfig.decayDP = -1.0f;
+	//grpConfig.decay5HT = -1.0f;
+	//grpConfig.decayACh = -1.0f;
+	//grpConfig.decayNE = -1.0f;
+
+	//groupConfigMap[numGrp] = grpConfig;
+
+	groupConfig[numGrp].SizeN = grid.N; // number of neurons in the group
 	groupConfig[numGrp].SizeX = grid.numX; // number of neurons in first dim of Grid3D
 	groupConfig[numGrp].SizeY = grid.numY; // number of neurons in second dim of Grid3D
 	groupConfig[numGrp].SizeZ = grid.numZ; // number of neurons in third dim of Grid3D

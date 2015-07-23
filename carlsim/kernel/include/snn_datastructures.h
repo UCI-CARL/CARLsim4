@@ -134,7 +134,6 @@ typedef struct GroupConfig_s {
 	float 		Izh_d_sd;
 
 	bool isSpikeGenerator;
-	SpikeGeneratorCore*	spikeGen;
 
 	//!< homeostatic plasticity configs
 	float baseFiring;
