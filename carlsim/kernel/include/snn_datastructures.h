@@ -148,7 +148,7 @@ typedef struct GroupConfig_s {
 	float base5HT;	//!< baseline concentration of Serotonin
 	float baseACh;	//!< baseline concentration of Acetylcholine
 	float baseNE;		//!< baseline concentration of Noradrenaline
-	float decayDP;		//!< decay rate for Dopaamine
+	float decayDP;		//!< decay rate for Dopamine
 	float decay5HT;		//!< decay rate for Serotonin
 	float decayACh;		//!< decay rate for Acetylcholine
 	float decayNE;		//!< decay rate for Noradrenaline

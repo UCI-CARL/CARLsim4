@@ -206,15 +206,15 @@ void GroupMonitorCore::writeGroupFileHeader() {
 
 	// write grid dimensions
 	Grid3D grid = snn_->getGroupGrid3D(grpId_);
-	int tmpInt = grid.x;
+	int tmpInt = grid.numX;
 	if (!fwrite(&tmpInt,sizeof(int), 1, groupFileId_))
 		KERNEL_ERROR("GroupMonitorCore: writeGroupFileHeader has fwrite error");
 
-	tmpInt = grid.y;
+	tmpInt = grid.numY;
 	if (!fwrite(&tmpInt,sizeof(int),1,groupFileId_))
 		KERNEL_ERROR("GroupMonitorCore: writeGroupFileHeader has fwrite error");
 
-	tmpInt = grid.z;
+	tmpInt = grid.numZ;
 	if (!fwrite(&tmpInt,sizeof(int),1,groupFileId_))
 		KERNEL_ERROR("GroupMonitorCore: writeGroupFileHeader has fwrite error");
 

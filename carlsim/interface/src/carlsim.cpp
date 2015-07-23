@@ -312,9 +312,9 @@ int CARLsim::createGroup(const std::string& grpName, int nNeur, int neurType) {
 int CARLsim::createGroup(const std::string& grpName, const Grid3D& grid, int neurType) {
 	std::string funcName = "createGroup(\""+grpName+"\")";
 	UserErrors::assertTrue(carlsimState_==CONFIG_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "CONFIG.");
-	UserErrors::assertTrue(grid.x>0, UserErrors::CANNOT_BE_NEGATIVE, funcName, "grid.x");
-	UserErrors::assertTrue(grid.y>0, UserErrors::CANNOT_BE_NEGATIVE, funcName, "grid.y");
-	UserErrors::assertTrue(grid.z>0, UserErrors::CANNOT_BE_NEGATIVE, funcName, "grid.z");
+	UserErrors::assertTrue(grid.numX>0, UserErrors::CANNOT_BE_NEGATIVE, funcName, "grid.numX");
+	UserErrors::assertTrue(grid.numY>0, UserErrors::CANNOT_BE_NEGATIVE, funcName, "grid.numY");
+	UserErrors::assertTrue(grid.numZ>0, UserErrors::CANNOT_BE_NEGATIVE, funcName, "grid.numZ");
 
 	// if user has called any set functions with grpId=ALL, and is now adding another group, previously set properties
 	// will not apply to newly added group
@@ -342,9 +342,9 @@ int CARLsim::createSpikeGeneratorGroup(const std::string& grpName, int nNeur, in
 int CARLsim::createSpikeGeneratorGroup(const std::string& grpName, const Grid3D& grid, int neurType) {
 	std::string funcName = "createSpikeGeneratorGroup(\""+grpName+"\")";
 	UserErrors::assertTrue(carlsimState_==CONFIG_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "CONFIG.");
-	UserErrors::assertTrue(grid.x>0, UserErrors::CANNOT_BE_NEGATIVE, funcName, "grid.x");
-	UserErrors::assertTrue(grid.y>0, UserErrors::CANNOT_BE_NEGATIVE, funcName, "grid.y");
-	UserErrors::assertTrue(grid.z>0, UserErrors::CANNOT_BE_NEGATIVE, funcName, "grid.z");
+	UserErrors::assertTrue(grid.numX>0, UserErrors::CANNOT_BE_NEGATIVE, funcName, "grid.numX");
+	UserErrors::assertTrue(grid.numY>0, UserErrors::CANNOT_BE_NEGATIVE, funcName, "grid.numY");
+	UserErrors::assertTrue(grid.numZ>0, UserErrors::CANNOT_BE_NEGATIVE, funcName, "grid.numZ");
 
 	int grpId = snn_->createSpikeGeneratorGroup(grpName.c_str(),grid,neurType);
 	grpIds_.push_back(grpId); // keep track of all groups

@@ -69,6 +69,8 @@
 #ifndef _SNN_GOLD_H_
 #define _SNN_GOLD_H_
 
+#include <map>
+
 #include <carlsim.h>
 #include <callback_core.h>
 
@@ -877,6 +879,7 @@ private:
 	bool simulatorDeleted;
 	bool spikeRateUpdated;
 
+	//! vairables for tracking performance
 	float prevCpuExecutionTime;
 	float cpuExecutionTime;
 	float prevGpuExecutionTime;
@@ -892,6 +895,8 @@ private:
 	unsigned int	allocatedPre;
 	unsigned int	allocatedPost;
 
+	std::map<int, GroupConfig*> groupConfigMap;
+	std::map<int, ConnectConfig*> connectConfigMap;
 	ConnectConfig* connectBegin;
 	// duplicated short int* cumConnIdPre;		//!< connId, per synapse, presynaptic cumulative indexing
 	float 		*mulSynFast;	//!< scaling factor for fast synaptic currents, per connection

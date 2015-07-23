@@ -265,21 +265,20 @@ short int SNN::connect(int grpId1, int grpId2, ConnectionGeneratorCore* conn, fl
 // create group of Izhikevich neurons
 // use int for nNeur to avoid arithmetic underflow
 int SNN::createGroup(const std::string& grpName, const Grid3D& grid, int neurType) {
-	assert(grid.x*grid.y*grid.z>0);
-	assert(neurType>=0);
-	assert(numGrp < MAX_GRP_PER_SNN);
+	assert(grid.numX * grid.numY * grid.numZ > 0);
+	assert(neurType >= 0);
 
-	if ( (!(neurType&TARGET_AMPA) && !(neurType&TARGET_NMDA) &&
-		  !(neurType&TARGET_GABAa) && !(neurType&TARGET_GABAb)) || (neurType&POISSON_NEURON)) {
+	if ( (!(neurType & TARGET_AMPA) && !(neurType & TARGET_NMDA) &&
+		  !(neurType & TARGET_GABAa) && !(neurType & TARGET_GABAb)) || (neurType & POISSON_NEURON)) {
 		KERNEL_ERROR("Invalid type using createGroup... Cannot create poisson generators here.");
 		exitSimulation(1);
 	}
 
 	// We don't store the Grid3D struct in groupConfig so we don't have to deal with allocating structs on the GPU
-	groupConfig[numGrp].SizeN  			= grid.x * grid.y * grid.z; // number of neurons in the group
-	groupConfig[numGrp].SizeX              = grid.x; // number of neurons in first dim of Grid3D
-	groupConfig[numGrp].SizeY              = grid.y; // number of neurons in second dim of Grid3D
-	groupConfig[numGrp].SizeZ              = grid.z; // number of neurons in third dim of Grid3D
+	groupConfig[numGrp].SizeN = grid.N; // number of neurons in the group
+	groupConfig[numGrp].SizeX = grid.numX; // number of neurons in first dim of Grid3D
+	groupConfig[numGrp].SizeY = grid.numY; // number of neurons in second dim of Grid3D
+	groupConfig[numGrp].SizeZ = grid.numZ; // number of neurons in third dim of Grid3D
 
 	groupConfig[numGrp].Type   			= neurType;
 	groupConfig[numGrp].WithSTP			= false;
@@ -321,12 +320,12 @@ int SNN::createGroup(const std::string& grpName, const Grid3D& grid, int neurTyp
 // create spike generator group
 // use int for nNeur to avoid arithmetic underflow
 int SNN::createSpikeGeneratorGroup(const std::string& grpName, const Grid3D& grid, int neurType) {
-	assert(grid.x*grid.y*grid.z>0);
+	assert(grid.numX * grid.numY * grid.numZ > 0);
 	assert(neurType>=0);
-	groupConfig[numGrp].SizeN   		= grid.x * grid.y * grid.z; // number of neurons in the group
-	groupConfig[numGrp].SizeX          = grid.x; // number of neurons in first dim of Grid3D
-	groupConfig[numGrp].SizeY          = grid.y; // number of neurons in second dim of Grid3D
-	groupConfig[numGrp].SizeZ          = grid.z; // number of neurons in third dim of Grid3D
+	groupConfig[numGrp].SizeN = grid.numX * grid.numY * grid.numZ; // number of neurons in the group
+	groupConfig[numGrp].SizeX = grid.numX; // number of neurons in first dim of Grid3D
+	groupConfig[numGrp].SizeY = grid.numY; // number of neurons in second dim of Grid3D
+	groupConfig[numGrp].SizeZ = grid.numZ; // number of neurons in third dim of Grid3D
 	groupConfig[numGrp].Type    		= neurType | POISSON_NEURON;
 	groupConfig[numGrp].WithSTP		= false;
 	groupConfig[numGrp].WithSTDP		= false;
@@ -2714,7 +2713,7 @@ void SNN::connectGaussian(ConnectConfig* info) {
 	int grpDest = info->grpDest;
 	Grid3D grid_i = getGroupGrid3D(grpSrc);
 	Grid3D grid_j = getGroupGrid3D(grpDest);
-	Point3D scalePre = Point3D(grid_j.x, grid_j.y, grid_j.z) / Point3D(grid_i.x, grid_i.y, grid_i.z);
+	Point3D scalePre = Point3D(grid_j.numX, grid_j.numY, grid_j.numZ) / Point3D(grid_i.numX, grid_i.numY, grid_i.numZ);
 
 	for(int i = groupConfig[grpSrc].StartN; i <= groupConfig[grpSrc].EndN; i++)  {
 		Point3D loc_i = getNeuronLocation3D(i)*scalePre; // i: adjusted 3D coordinates

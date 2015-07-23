@@ -423,26 +423,58 @@ typedef struct GroupNeuromodulatorInfo_s {
  *   N                             the total number of neurons on the grid, N=x*y*z
  */
 struct Grid3D {
-    Grid3D(int w) : x(w), y(1), z(1), width(w), height(1), depth(1), columns(1), channels(1), N(w) {
-        UserErrors::assertTrue(w>0, UserErrors::MUST_BE_POSITIVE, "Grid3D", "width");
+    Grid3D(int _x) : numX(_x), numY(1), numZ(1), N(_x),
+	                 distX(1.0f), distY(1.0f), distZ(1.0f),
+	                 offsetX(1.0f), offsetY(1.0f), offsetZ(1.0f) {
+        UserErrors::assertTrue(_x > 0, UserErrors::MUST_BE_POSITIVE, "Grid3D", "numX");
     }
-    Grid3D(int w, int h) : x(w), y(h), z(1), width(w), height(h), depth(1), columns(1), channels(1), N(w*h) {
-        UserErrors::assertTrue(w>0, UserErrors::MUST_BE_POSITIVE, "Grid3D", "width");
-        UserErrors::assertTrue(h>0, UserErrors::MUST_BE_POSITIVE, "Grid3D", "height");
+	Grid3D(int _x, float _distX, float _offsetX) : numX(_x), numY(1), numZ(1), N(_x),
+	                                               distX(_distX), distY(1.0f), distZ(1.0f),
+	                                               offsetX(_offsetX), offsetY(1.0f), offsetZ(1.0f) {
+		UserErrors::assertTrue(_x > 0, UserErrors::MUST_BE_POSITIVE, "Grid3D", "numX");
+		UserErrors::assertTrue(_distX > 0.0f, UserErrors::MUST_BE_POSITIVE, "Grid3D", "distX");
+	}
+    Grid3D(int _x, int _y) : numX(_x), numY(_y), numZ(1), N(_x * _y),
+	                         distX(1.0f), distY(1.0f), distZ(1.0f),
+	                         offsetX(1.0f), offsetY(1.0f), offsetZ(1.0f) {
+        UserErrors::assertTrue(_x > 0, UserErrors::MUST_BE_POSITIVE, "Grid3D", "numX");
+        UserErrors::assertTrue(_y > 0, UserErrors::MUST_BE_POSITIVE, "Grid3D", "numY");
     }
-    Grid3D(int w, int h, int d) : x(w), y(h), z(d), width(w), height(h), depth(d), columns(d), channels(d), N(w*h*d) {
-         UserErrors::assertTrue(w>0, UserErrors::MUST_BE_POSITIVE, "Grid3D", "width");
-         UserErrors::assertTrue(h>0, UserErrors::MUST_BE_POSITIVE, "Grid3D", "height");
-         UserErrors::assertTrue(d>0, UserErrors::MUST_BE_POSITIVE, "Grid3D", "depth");
+	Grid3D(int _x, float _distX, float _offsetX, int _y, float _distY, float _offsetY)
+		: numX(_x), numY(_y), numZ(1), N(_x * _y),
+		  distX(_distX), distY(_distY), distZ(1.0f),
+		  offsetX(_offsetX), offsetY(_offsetY), offsetZ(1.0f) {
+		UserErrors::assertTrue(_x > 0, UserErrors::MUST_BE_POSITIVE, "Grid3D", "numX");
+		UserErrors::assertTrue(_distX > 0.0f, UserErrors::MUST_BE_POSITIVE, "Grid3D", "distX");
+		UserErrors::assertTrue(_y > 0, UserErrors::MUST_BE_POSITIVE, "Grid3D", "numY");
+		UserErrors::assertTrue(_distY > 0.0f, UserErrors::MUST_BE_POSITIVE, "Grid3D", "distY");
+	}
+    Grid3D(int _x, int _y, int _z) : numX(_x), numY(_y), numZ(_z), N(_x * _y * _z),
+	                                 distX(1.0f), distY(1.0f), distZ(1.0f),
+	                                 offsetX(1.0f), offsetY(1.0f), offsetZ(1.0f) {
+         UserErrors::assertTrue(_x>0, UserErrors::MUST_BE_POSITIVE, "Grid3D", "numX");
+         UserErrors::assertTrue(_y>0, UserErrors::MUST_BE_POSITIVE, "Grid3D", "numY");
+         UserErrors::assertTrue(_z>0, UserErrors::MUST_BE_POSITIVE, "Grid3D", "numZ");
     }
+	Grid3D(int _x, float _distX, float _offsetX, int _y, float _distY, float _offsetY, int _z, float _distZ, float _offsetZ)
+		: numX(_x), numY(_y), numZ(_z), N(_x * _y * _z),
+		  distX(_distX), distY(_distY), distZ(_distZ),
+		  offsetX(_offsetX), offsetY(_offsetY), offsetZ(_offsetZ) {
+		UserErrors::assertTrue(_x > 0, UserErrors::MUST_BE_POSITIVE, "Grid3D", "numX");
+		UserErrors::assertTrue(_distX > 0.0f, UserErrors::MUST_BE_POSITIVE, "Grid3D", "distX");
+		UserErrors::assertTrue(_y > 0, UserErrors::MUST_BE_POSITIVE, "Grid3D", "numY");
+		UserErrors::assertTrue(_distY > 0.0f, UserErrors::MUST_BE_POSITIVE, "Grid3D", "distY");
+		UserErrors::assertTrue(_z > 0, UserErrors::MUST_BE_POSITIVE, "Grid3D", "numZ");
+		UserErrors::assertTrue(_distZ > 0.0f, UserErrors::MUST_BE_POSITIVE, "Grid3D", "distZ");
+	}
 
     friend std::ostream& operator<<(std::ostream &strm, const Grid3D &g) {
-        return strm << "Grid3D=[" << g.x << "," << g.y << "," << g.z << "]";
+		return strm << "Grid3D=[" << g.numX << "," << g.numY << "," << g.numZ << "]";
     }
 
-    int x, y, z;
-    int width, height, depth;
-    int columns, channels;
+    int numX, numY, numZ;
+    float distX, distY, distZ;
+    float offsetX, offsetY, offsetZ;
     int N;
 };
 
