@@ -25,9 +25,9 @@ TEST(CORE, getGroupGrid3D) {
 
 	for (int g=g1; g<g2; g++) {
 		Grid3D getGrid = sim->getGroupGrid3D(g);
-		EXPECT_EQ(getGrid.x, grid.x);
-		EXPECT_EQ(getGrid.y, grid.y);
-		EXPECT_EQ(getGrid.z, grid.z);
+		EXPECT_EQ(getGrid.numX, grid.numX);
+		EXPECT_EQ(getGrid.numY, grid.numY);
+		EXPECT_EQ(getGrid.numZ, grid.numZ);
 		EXPECT_EQ(getGrid.N, grid.N);
 	}
 
@@ -71,16 +71,16 @@ TEST(CORE, getNeuronLocation3D) {
 		int x=0,y=0,z=0;
 		for (int neurId=grp*grid.N; neurId<(grp+1)*grid.N; neurId++) {
 			Point3D loc = sim->getNeuronLocation3D(neurId);
-			EXPECT_FLOAT_EQ(loc.x, x-(grid.x-1)/2.0f);
-			EXPECT_FLOAT_EQ(loc.y, y-(grid.y-1)/2.0f);
-			EXPECT_FLOAT_EQ(loc.z, z-(grid.z-1)/2.0f);
+			EXPECT_FLOAT_EQ(loc.x, x-(grid.numX-1)/2.0f);
+			EXPECT_FLOAT_EQ(loc.y, y-(grid.numY-1)/2.0f);
+			EXPECT_FLOAT_EQ(loc.z, z-(grid.numZ-1)/2.0f);
 
 			x++;
-			if (x==grid.x) {
+			if (x==grid.numX) {
 				x=0;
 				y++;
 			}
-			if (y==grid.y) {
+			if (y==grid.numY) {
 				x=0;
 				y=0;
 				z++;

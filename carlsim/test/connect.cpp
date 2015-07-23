@@ -93,8 +93,8 @@ TEST(CONNECT, connectFull) {
 	sim->setupNetwork(); // need SETUP state for this function to work
 
 	EXPECT_EQ(sim->getNumSynapticConnections(c0), grid.N * grid.N);
-	EXPECT_EQ(sim->getNumSynapticConnections(c1), grid.N * grid.x);
-	EXPECT_EQ(sim->getNumSynapticConnections(c2), grid.N * grid.x * grid.z);
+	EXPECT_EQ(sim->getNumSynapticConnections(c1), grid.N * grid.numX);
+	EXPECT_EQ(sim->getNumSynapticConnections(c2), grid.N * grid.numX * grid.numZ);
 	EXPECT_EQ(sim->getNumSynapticConnections(c3), 144); // these numbers are less than what the grid would
 	EXPECT_EQ(sim->getNumSynapticConnections(c4), 224); // say because of edge effects
 	EXPECT_EQ(sim->getNumSynapticConnections(c5), 320);
@@ -131,8 +131,8 @@ TEST(CONNECT, connectFullNoDirect) {
 
 	// same as connect full, but no self-connections
 	EXPECT_EQ(sim->getNumSynapticConnections(c0), grid.N * (grid.N-1) );
-	EXPECT_EQ(sim->getNumSynapticConnections(c1), grid.N * (grid.x-1) );
-	EXPECT_EQ(sim->getNumSynapticConnections(c2), grid.N * (grid.x*grid.z-1) );
+	EXPECT_EQ(sim->getNumSynapticConnections(c1), grid.N * (grid.numX-1) );
+	EXPECT_EQ(sim->getNumSynapticConnections(c2), grid.N * (grid.numX*grid.numZ-1) );
 	EXPECT_EQ(sim->getNumSynapticConnections(c3), 120); // these numbers are less than what the grid would
 	EXPECT_EQ(sim->getNumSynapticConnections(c4), 200); // say because of edge effects
 	EXPECT_EQ(sim->getNumSynapticConnections(c5), 296);
@@ -198,8 +198,8 @@ TEST(CONNECT, connectRandom) {
 	// at 6.5 standard deviations
 	int errorMargin = 6.5*sqrt(prob*(1-prob)*grid.N)+0.5;
 	EXPECT_NEAR(sim->getNumSynapticConnections(c0), prob * grid.N * grid.N, errorMargin);
-	EXPECT_NEAR(sim->getNumSynapticConnections(c1), prob * grid.N * grid.x, errorMargin);
-	EXPECT_NEAR(sim->getNumSynapticConnections(c2), prob * grid.N * grid.x * grid.z, errorMargin);
+	EXPECT_NEAR(sim->getNumSynapticConnections(c1), prob * grid.N * grid.numX, errorMargin);
+	EXPECT_NEAR(sim->getNumSynapticConnections(c2), prob * grid.N * grid.numX * grid.numZ, errorMargin);
 	EXPECT_NEAR(sim->getNumSynapticConnections(c3), prob*144, errorMargin); // these numbers are less than what the
 	EXPECT_NEAR(sim->getNumSynapticConnections(c4), prob*224, errorMargin); // grid would say because of edge effects
 	EXPECT_NEAR(sim->getNumSynapticConnections(c5), prob*320, errorMargin);
