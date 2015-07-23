@@ -78,26 +78,27 @@ typedef struct {
  * \see CARLsimState
  */
 typedef struct ConnectConfig_s {
-	int 	  				 grpSrc, grpDest;
-	uint8_t	  				 maxDelay;
-	uint8_t					 minDelay;
-	float	  				 initWt, maxWt;
+	int                      grpSrc;
+	int                      grpDest;
+	uint8_t                  maxDelay;
+	uint8_t                  minDelay;
+	float                    initWt;
+	float                    maxWt;
 	float                    radX;
-	float					 radY;
-	float					 radZ;
-	float 					 mulSynFast;				//!< factor to be applied to either gAMPA or gGABAa
-	float 					 mulSynSlow;				//!< factor to be applied to either gNMDA or gGABAb
-	int	  	  				 numPostSynapses;
-	int	  	  				 numPreSynapses;
+	float                    radY;
+	float                    radZ;
+	float                    mulSynFast;				//!< factor to be applied to either gAMPA or gGABAa
+	float                    mulSynSlow;				//!< factor to be applied to either gNMDA or gGABAb
+	int                      numPostSynapses;
+	int                      numPreSynapses;
 	int                      connectionMonitorId;
-	uint32_t  				 connProp;
+	uint32_t                 connProp;
 	ConnectionGeneratorCore* conn;
-	conType_t 				 type;
-	float					 p; 						//!< connection probability
-	short int				 connId;					//!< connectID of the element in the linked list
-	bool					 newUpdates;
-	int		   				 numberOfConnections;
-	struct ConnectConfig_s*    next;
+	conType_t                type;
+	float                    p; 						//!< connection probability
+	short int                connId;					//!< connectID of the element in the linked list
+	bool                     newUpdates;
+	int                      numberOfConnections;
 } ConnectConfig;
 
 /*!

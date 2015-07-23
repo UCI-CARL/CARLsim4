@@ -43,9 +43,9 @@ void ConnectionMonitorCore::init() {
 	isPlastic_ = snn_->isConnectionPlastic(connId_);
 	nSynapses_ = snn_->getNumSynapticConnections(connId_);
 
-	ConnectConfig* connInfo = snn_->getConnectInfo(connId_);
+	ConnectConfig connInfo = snn_->getConnectConfig(connId_);
 	minWt_ = 0.0f; // for now, no non-zero min weights allowed
-	maxWt_ = fabs(connInfo->maxWt);
+	maxWt_ = fabs(connInfo.maxWt);
 
 	assert(nNeurPre_>0);
 	assert(nNeurPost_>0);

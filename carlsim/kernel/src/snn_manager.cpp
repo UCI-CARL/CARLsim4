@@ -106,95 +106,99 @@ short int SNN::connect(int grpId1, int grpId2, const std::string& _type, float i
 	Grid3D szPre = getGroupGrid3D(grpId1);
 	Grid3D szPost = getGroupGrid3D(grpId2);
 
-	ConnectConfig* newInfo = (ConnectConfig*) calloc(1, sizeof(ConnectConfig));
-	newInfo->grpSrc   		  = grpId1;
-	newInfo->grpDest  		  = grpId2;
-	newInfo->initWt	  		  = initWt;
-	newInfo->maxWt	  		  = maxWt;
-	newInfo->maxDelay 		  = maxDelay;
-	newInfo->minDelay 		  = minDelay;
+	// initialize configuration of a connection
+	ConnectConfig connConfig;
+	//ConnectConfig* newInfo = (ConnectConfig*) calloc(1, sizeof(ConnectConfig));
+	connConfig.grpSrc   		  = grpId1;
+	connConfig.grpDest  		  = grpId2;
+	connConfig.initWt	  		  = initWt;
+	connConfig.maxWt	  		  = maxWt;
+	connConfig.maxDelay 		  = maxDelay;
+	connConfig.minDelay 		  = minDelay;
 //		newInfo->radX             = (radX<0) ? MAX(szPre.x,szPost.x) : radX; // <0 means full connectivity, so the
 //		newInfo->radY             = (radY<0) ? MAX(szPre.y,szPost.y) : radY; // effective group size is Grid3D.x. Grab
 //		newInfo->radZ             = (radZ<0) ? MAX(szPre.z,szPost.z) : radZ; // the larger of pre / post to connect all
-	newInfo->radX             = radX;
-	newInfo->radY             = radY;
-	newInfo->radZ             = radZ;
-	newInfo->mulSynFast       = _mulSynFast;
-	newInfo->mulSynSlow       = _mulSynSlow;
-	newInfo->connProp         = connProp;
-	newInfo->p                = prob;
-	newInfo->type             = CONN_UNKNOWN;
-	newInfo->numPostSynapses  = 1;
-	newInfo->connectionMonitorId = -1;
+	connConfig.radX             = radX;
+	connConfig.radY             = radY;
+	connConfig.radZ             = radZ;
+	connConfig.mulSynFast       = _mulSynFast;
+	connConfig.mulSynSlow       = _mulSynSlow;
+	connConfig.connProp         = connProp;
+	connConfig.p                = prob;
+	connConfig.type             = CONN_UNKNOWN;
+	connConfig.numPostSynapses  = 1;
+	connConfig.numPreSynapses   = 1;
+	connConfig.connectionMonitorId = -1;
+	connConfig.connId = -1;
 
-	newInfo->next 				= connectBegin; //linked list of connection..
-	connectBegin 				= newInfo;
+	//newInfo->next 				= connectBegin; //linked list of connection..
+	//connectBegin 				= newInfo;
 
 	if ( _type.find("random") != std::string::npos) {
-		newInfo->type 	= CONN_RANDOM;
-		newInfo->numPostSynapses	= MIN(groupConfig[grpId2].SizeN,((int) (prob*groupConfig[grpId2].SizeN +6.5*sqrt(prob*(1-prob)*groupConfig[grpId2].SizeN)+0.5))); // estimate the maximum number of connections we need.  This uses a binomial distribution at 6.5 stds.
-		newInfo->numPreSynapses   = MIN(groupConfig[grpId1].SizeN,((int) (prob*groupConfig[grpId1].SizeN +6.5*sqrt(prob*(1-prob)*groupConfig[grpId1].SizeN)+0.5))); // estimate the maximum number of connections we need.  This uses a binomial distribution at 6.5 stds.
+		connConfig.type = CONN_RANDOM;
+		connConfig.numPostSynapses = MIN(groupConfig[grpId2].SizeN,((int) (prob*groupConfig[grpId2].SizeN +6.5*sqrt(prob*(1-prob)*groupConfig[grpId2].SizeN)+0.5))); // estimate the maximum number of connections we need.  This uses a binomial distribution at 6.5 stds.
+		connConfig.numPreSynapses = MIN(groupConfig[grpId1].SizeN,((int) (prob*groupConfig[grpId1].SizeN +6.5*sqrt(prob*(1-prob)*groupConfig[grpId1].SizeN)+0.5))); // estimate the maximum number of connections we need.  This uses a binomial distribution at 6.5 stds.
 	}
 	//so you're setting the size to be prob*Number of synapses in group info + some standard deviation ...
 	else if ( _type.find("full-no-direct") != std::string::npos) {
-		newInfo->type 	= CONN_FULL_NO_DIRECT;
-		newInfo->numPostSynapses	= groupConfig[grpId2].SizeN-1;
-		newInfo->numPreSynapses	= groupConfig[grpId1].SizeN-1;
+		connConfig.type	= CONN_FULL_NO_DIRECT;
+		connConfig.numPostSynapses = groupConfig[grpId2].SizeN-1;
+		connConfig.numPreSynapses = groupConfig[grpId1].SizeN-1;
 	}
 	else if ( _type.find("full") != std::string::npos) {
-		newInfo->type 	= CONN_FULL;
-
-		newInfo->numPostSynapses	= groupConfig[grpId2].SizeN;
-		newInfo->numPreSynapses   = groupConfig[grpId1].SizeN;
+		connConfig.type = CONN_FULL;
+		connConfig.numPostSynapses = groupConfig[grpId2].SizeN;
+		connConfig.numPreSynapses = groupConfig[grpId1].SizeN;
 	}
 	else if ( _type.find("one-to-one") != std::string::npos) {
-		newInfo->type 	= CONN_ONE_TO_ONE;
-		newInfo->numPostSynapses	= 1;
-		newInfo->numPreSynapses	= 1;
+		connConfig.type = CONN_ONE_TO_ONE;
+		connConfig.numPostSynapses = 1;
+		connConfig.numPreSynapses = 1;
 	} else if ( _type.find("gaussian") != std::string::npos) {
-		newInfo->type   = CONN_GAUSSIAN;
+		connConfig.type   = CONN_GAUSSIAN;
 		// the following will soon go away, just assume the worst case for now
-		newInfo->numPostSynapses	= groupConfig[grpId2].SizeN;
-		newInfo->numPreSynapses   = groupConfig[grpId1].SizeN;
+		connConfig.numPostSynapses = groupConfig[grpId2].SizeN;
+		connConfig.numPreSynapses = groupConfig[grpId1].SizeN;
 	} else {
 		KERNEL_ERROR("Invalid connection type (should be 'random', 'full', 'one-to-one', 'full-no-direct', or 'gaussian')");
 		exitSimulation(-1);
 	}
 
-	if (newInfo->numPostSynapses > MAX_NUM_POST_SYN) {
+	// assign connection id
+	assert(connConfig.connId == -1);
+	connConfig.connId = numConnections;
+
+	if (connConfig.numPostSynapses > MAX_NUM_POST_SYN) {
 		KERNEL_ERROR("ConnID %d exceeded the maximum number of output synapses (%d), has %d.",
-			newInfo->connId,
-			MAX_NUM_POST_SYN, newInfo->numPostSynapses);
-		assert(newInfo->numPostSynapses <= MAX_NUM_POST_SYN);
+			connConfig.connId, MAX_NUM_POST_SYN, connConfig.numPostSynapses);
+		assert(connConfig.numPostSynapses <= MAX_NUM_POST_SYN);
 	}
 
-	if (newInfo->numPreSynapses > MAX_NUM_PRE_SYN) {
+	if (connConfig.numPreSynapses > MAX_NUM_PRE_SYN) {
 		KERNEL_ERROR("ConnID %d exceeded the maximum number of input synapses (%d), has %d.",
-			newInfo->connId,
-			MAX_NUM_PRE_SYN, newInfo->numPreSynapses);
-		assert(newInfo->numPreSynapses <= MAX_NUM_PRE_SYN);
+			connConfig.connId, MAX_NUM_PRE_SYN, connConfig.numPreSynapses);
+		assert(connConfig.numPreSynapses <= MAX_NUM_PRE_SYN);
 	}
 
 	// update the pre and post size...
 	// Subtlety: each group has numPost/PreSynapses from multiple connections.
 	// The newInfo->numPost/PreSynapses are just for this specific connection.
 	// We are adding the synapses counted in this specific connection to the totals for both groups.
-	groupConfig[grpId1].numPostSynapses 	+= newInfo->numPostSynapses;
-	groupConfig[grpId2].numPreSynapses 	+= newInfo->numPreSynapses;
+	groupConfig[grpId1].numPostSynapses	+= connConfig.numPostSynapses;
+	groupConfig[grpId2].numPreSynapses  += connConfig.numPreSynapses;
 
 	KERNEL_DEBUG("groupConfig[%d, %s].numPostSynapses = %d, groupConfig[%d, %s].numPreSynapses = %d",
 					grpId1,groupInfo[grpId1].Name.c_str(),groupConfig[grpId1].numPostSynapses,grpId2,
 					groupInfo[grpId2].Name.c_str(),groupConfig[grpId2].numPreSynapses);
 
-	newInfo->connId	= numConnections++;
-	assert(numConnections <= MAX_CONN_PER_SNN);	// make sure we don't overflow connId
+	KERNEL_DEBUG("CONNECT SETUP: connId=%d, mulFast=%f, mulSlow=%f", connConfig.connId, connConfig.mulSynFast, connConfig.mulSynSlow);
 
-	retId = newInfo->connId;
-
-	KERNEL_DEBUG("CONNECT SETUP: connId=%d, mulFast=%f, mulSlow=%f",newInfo->connId,newInfo->mulSynFast,
-						newInfo->mulSynSlow);
-	assert(retId != -1);
-	return retId;
+	connectConfigMap[numConnections] = connConfig; // connConfig.connId == numConnections
+	
+	assert(numConnections < MAX_CONN_PER_SNN);	// make sure we don't overflow connId
+	numConnections++;
+	
+	return (numConnections-1);
 }
 
 // make custom connections from grpId1 to grpId2
@@ -225,40 +229,47 @@ short int SNN::connect(int grpId1, int grpId2, ConnectionGeneratorCore* conn, fl
 		assert(maxPreM <= MAX_NUM_PRE_SYN);
 	}
 
-	ConnectConfig* newInfo = (ConnectConfig*) calloc(1, sizeof(ConnectConfig));
+	// initialize the configuration of a connection
+	ConnectConfig connConfig;
+	//ConnectConfig* newInfo = (ConnectConfig*) calloc(1, sizeof(ConnectConfig));
 
-	newInfo->grpSrc   = grpId1;
-	newInfo->grpDest  = grpId2;
-	newInfo->initWt	  = 1;
-	newInfo->maxWt	  = 1;
-	newInfo->maxDelay = MAX_SYN_DELAY;
-	newInfo->minDelay = 1;
-	newInfo->mulSynFast = _mulSynFast;
-	newInfo->mulSynSlow = _mulSynSlow;
-	newInfo->connProp = SET_CONN_PRESENT(1) | SET_FIXED_PLASTIC(synWtType);
-	newInfo->type	  = CONN_USER_DEFINED;
-	newInfo->numPostSynapses	  	  = maxM;
-	newInfo->numPreSynapses	  = maxPreM;
-	newInfo->conn	= conn;
-	newInfo->connectionMonitorId = -1;
+	connConfig.grpSrc   = grpId1;
+	connConfig.grpDest  = grpId2;
+	connConfig.initWt	  = 1;
+	connConfig.maxWt	  = 1;
+	connConfig.maxDelay = MAX_SYN_DELAY;
+	connConfig.minDelay = 1;
+	connConfig.mulSynFast = _mulSynFast;
+	connConfig.mulSynSlow = _mulSynSlow;
+	connConfig.connProp = SET_CONN_PRESENT(1) | SET_FIXED_PLASTIC(synWtType);
+	connConfig.type = CONN_USER_DEFINED;
+	connConfig.numPostSynapses = maxM;
+	connConfig.numPreSynapses = maxPreM;
+	connConfig.conn = conn;
+	connConfig.connectionMonitorId = -1;
+	connConfig.connId = -1;
 
-	newInfo->next	= connectBegin;  // build a linked list
-	connectBegin      = newInfo;
+	//newInfo->next	= connectBegin;  // build a linked list
+	//connectBegin      = newInfo;
 
 	// update the pre and post size...
-	groupConfig[grpId1].numPostSynapses    += newInfo->numPostSynapses;
-	groupConfig[grpId2].numPreSynapses += newInfo->numPreSynapses;
+	groupConfig[grpId1].numPostSynapses += connConfig.numPostSynapses;
+	groupConfig[grpId2].numPreSynapses += connConfig.numPreSynapses;
 
 	KERNEL_DEBUG("groupConfig[%d, %s].numPostSynapses = %d, groupConfig[%d, %s].numPreSynapses = %d",
 					grpId1,groupInfo[grpId1].Name.c_str(),groupConfig[grpId1].numPostSynapses,grpId2,
 					groupInfo[grpId2].Name.c_str(),groupConfig[grpId2].numPreSynapses);
 
-	newInfo->connId	= numConnections++;
-	assert(numConnections <= MAX_CONN_PER_SNN);	// make sure we don't overflow connId
+	// assign a connection id
+	assert(connConfig.connId == -1);
+	connConfig.connId = numConnections;
 
-	retId = newInfo->connId;
-	assert(retId != -1);
-	return retId;
+	connectConfigMap[numConnections] = connConfig; // connConfig.connId == numConnections
+
+	assert(numConnections < MAX_CONN_PER_SNN);	// make sure we don't overflow connId
+	numConnections++;
+
+	return (numConnections-1);
 }
 
 
@@ -361,7 +372,6 @@ int SNN::createGroup(const std::string& grpName, const Grid3D& grid, int neurTyp
 		numNExcReg += grid.N; // regular excitatory neuron
 	numNReg += grid.N;
 	numN += grid.N;
-
 
 	numGrp++;
 	return (numGrp-1);
@@ -904,10 +914,8 @@ int SNN::runNetwork(int _nsec, int _nmsec, bool printRunSummary, bool copyState)
 void SNN::biasWeights(short int connId, float bias, bool updateWeightRange) {
 	assert(connId>=0 && connId<numConnections);
 
-	ConnectConfig* connInfo = getConnectInfo(connId);
-
 	// iterate over all postsynaptic neurons
-	for (int i=groupConfig[connInfo->grpDest].StartN; i<=groupConfig[connInfo->grpDest].EndN; i++) {
+	for (int i=groupConfig[connectConfigMap[connId].grpDest].StartN; i<=groupConfig[connectConfigMap[connId].grpDest].EndN; i++) {
 		unsigned int cumIdx = snnRuntimeData.cumulativePre[i];
 
 		// iterate over all presynaptic neurons
@@ -919,32 +927,32 @@ void SNN::biasWeights(short int connId, float bias, bool updateWeightRange) {
 
 				// inform user of acton taken if weight is out of bounds
 //				bool needToPrintDebug = (weight+bias>connInfo->maxWt || weight+bias<connInfo->minWt);
-				bool needToPrintDebug = (weight>connInfo->maxWt || weight<0.0f);
+				bool needToPrintDebug = (weight > connectConfigMap[connId].maxWt || weight < 0.0f);
 
 				if (updateWeightRange) {
 					// if this flag is set, we need to update minWt,maxWt accordingly
 					// will be saving new maxSynWt and copying to GPU below
 //					connInfo->minWt = fmin(connInfo->minWt, weight);
-					connInfo->maxWt = fmax(connInfo->maxWt, weight);
+					connectConfigMap[connId].maxWt = fmax(connectConfigMap[connId].maxWt, weight);
 					if (needToPrintDebug) {
 						KERNEL_DEBUG("biasWeights(%d,%f,%s): updated weight ranges to [%f,%f]", connId, bias,
-							(updateWeightRange?"true":"false"), 0.0f, connInfo->maxWt);
+							(updateWeightRange?"true":"false"), 0.0f, connectConfigMap[connId].maxWt);
 					}
 				} else {
 					// constrain weight to boundary values
 					// compared to above, we swap minWt/maxWt logic
-					weight = fmin(weight, connInfo->maxWt);
+					weight = fmin(weight, connectConfigMap[connId].maxWt);
 //					weight = fmax(weight, connInfo->minWt);
 					weight = fmax(weight, 0.0f);
 					if (needToPrintDebug) {
 						KERNEL_DEBUG("biasWeights(%d,%f,%s): constrained weight %f to [%f,%f]", connId, bias,
-							(updateWeightRange?"true":"false"), weight, 0.0f, connInfo->maxWt);
+							(updateWeightRange?"true":"false"), weight, 0.0f, connectConfigMap[connId].maxWt);
 					}
 				}
 
 				// update datastructures
 				snnRuntimeData.wt[pos_ij] = weight;
-				snnRuntimeData.maxSynWt[pos_ij] = connInfo->maxWt; // it's easier to just update, even if it hasn't changed
+				snnRuntimeData.maxSynWt[pos_ij] = connectConfigMap[connId].maxWt; // it's easier to just update, even if it hasn't changed
 			}
 		}
 
@@ -1007,10 +1015,10 @@ void SNN::scaleWeights(short int connId, float scale, bool updateWeightRange) {
 	assert(connId>=0 && connId<numConnections);
 	assert(scale>=0.0f);
 
-	ConnectConfig* connInfo = getConnectInfo(connId);
+	//ConnectConfig* connInfo = getConnectInfo(connId);
 
 	// iterate over all postsynaptic neurons
-	for (int i=groupConfig[connInfo->grpDest].StartN; i<=groupConfig[connInfo->grpDest].EndN; i++) {
+	for (int i=groupConfig[connectConfigMap[connId].grpDest].StartN; i<=groupConfig[connectConfigMap[connId].grpDest].EndN; i++) {
 		unsigned int cumIdx = snnRuntimeData.cumulativePre[i];
 
 		// iterate over all presynaptic neurons
@@ -1022,32 +1030,32 @@ void SNN::scaleWeights(short int connId, float scale, bool updateWeightRange) {
 
 				// inform user of acton taken if weight is out of bounds
 //				bool needToPrintDebug = (weight>connInfo->maxWt || weight<connInfo->minWt);
-				bool needToPrintDebug = (weight>connInfo->maxWt || weight<0.0f);
+				bool needToPrintDebug = (weight > connectConfigMap[connId].maxWt || weight<0.0f);
 
 				if (updateWeightRange) {
 					// if this flag is set, we need to update minWt,maxWt accordingly
 					// will be saving new maxSynWt and copying to GPU below
 //					connInfo->minWt = fmin(connInfo->minWt, weight);
-					connInfo->maxWt = fmax(connInfo->maxWt, weight);
+					connectConfigMap[connId].maxWt = fmax(connectConfigMap[connId].maxWt, weight);
 					if (needToPrintDebug) {
 						KERNEL_DEBUG("scaleWeights(%d,%f,%s): updated weight ranges to [%f,%f]", connId, scale,
-							(updateWeightRange?"true":"false"), 0.0f, connInfo->maxWt);
+							(updateWeightRange?"true":"false"), 0.0f, connectConfigMap[connId].maxWt);
 					}
 				} else {
 					// constrain weight to boundary values
 					// compared to above, we swap minWt/maxWt logic
-					weight = fmin(weight, connInfo->maxWt);
+					weight = fmin(weight, connectConfigMap[connId].maxWt);
 //					weight = fmax(weight, connInfo->minWt);
 					weight = fmax(weight, 0.0f);
 					if (needToPrintDebug) {
 						KERNEL_DEBUG("scaleWeights(%d,%f,%s): constrained weight %f to [%f,%f]", connId, scale,
-							(updateWeightRange?"true":"false"), weight, 0.0f, connInfo->maxWt);
+							(updateWeightRange?"true":"false"), weight, 0.0f, connectConfigMap[connId].maxWt);
 					}
 				}
 
 				// update datastructures
 				snnRuntimeData.wt[pos_ij] = weight;
-				snnRuntimeData.maxSynWt[pos_ij] = connInfo->maxWt; // it's easier to just update, even if it hasn't changed
+				snnRuntimeData.maxSynWt[pos_ij] = connectConfigMap[connId].maxWt; // it's easier to just update, even if it hasn't changed
 			}
 		}
 
@@ -1113,15 +1121,15 @@ ConnectionMonitor* SNN::setConnectionMonitor(int grpIdPre, int grpIdPost, FILE* 
 	}
 
 	// check whether connection already has a connection monitor
-	ConnectConfig* connInfo = getConnectInfo(connId);
-	if (connInfo->connectionMonitorId >= 0) {
-		KERNEL_ERROR("setConnectionMonitor has already been called on Connection %d (MonitorId=%d)", connId, connInfo->connectionMonitorId);
+	//ConnectConfig* connInfo = getConnectInfo(connId);
+	if (connectConfigMap[connId].connectionMonitorId >= 0) {
+		KERNEL_ERROR("setConnectionMonitor has already been called on Connection %d (MonitorId=%d)", connId, connectConfigMap[connId].connectionMonitorId);
 		exitSimulation(1);
 	}
 
 	// inform the connection that it is being monitored...
 	// this needs to be called before new ConnectionMonitorCore
-	connInfo->connectionMonitorId = numConnectionMonitor;
+	connectConfigMap[connId].connectionMonitorId = numConnectionMonitor;
 
 	// create new ConnectionMonitorCore object in any case and initialize
 	// connMonObj destructor (see below) will deallocate it
@@ -1148,7 +1156,7 @@ ConnectionMonitor* SNN::setConnectionMonitor(int grpIdPre, int grpIdPost, FILE* 
 	cpuSnnSz.monitorInfoSize += sizeof(ConnectionMonitorCore*);
 
 	numConnectionMonitor++;
-	KERNEL_INFO("ConnectionMonitor %d set for Connection %d: %d(%s) => %d(%s)", connInfo->connectionMonitorId, connId, grpIdPre, getGroupName(grpIdPre).c_str(),
+	KERNEL_INFO("ConnectionMonitor %d set for Connection %d: %d(%s) => %d(%s)", connectConfigMap[connId].connectionMonitorId, connId, grpIdPre, getGroupName(grpIdPre).c_str(),
 		grpIdPost, getGroupName(grpIdPost).c_str());
 
 	return connMonObj;
@@ -1266,11 +1274,11 @@ void SNN::setWeight(short int connId, int neurIdPre, int neurIdPost, float weigh
 	assert(connId>=0 && connId<getNumConnections());
 	assert(weight>=0.0f);
 
-	ConnectConfig* connInfo = getConnectInfo(connId);
-	assert(neurIdPre>=0  && neurIdPre<getGroupNumNeurons(connInfo->grpSrc));
-	assert(neurIdPost>=0 && neurIdPost<getGroupNumNeurons(connInfo->grpDest));
+	//ConnectConfig* connInfo = getConnectInfo(connId);
+	assert(neurIdPre>=0  && neurIdPre<getGroupNumNeurons(connectConfigMap[connId].grpSrc));
+	assert(neurIdPost>=0 && neurIdPost<getGroupNumNeurons(connectConfigMap[connId].grpDest));
 
-	float maxWt = fabs(connInfo->maxWt);
+	float maxWt = fabs(connectConfigMap[connId].maxWt);
 	float minWt = 0.0f;
 
 	// inform user of acton taken if weight is out of bounds
@@ -1297,8 +1305,8 @@ void SNN::setWeight(short int connId, int neurIdPre, int neurIdPost, float weigh
 	}
 
 	// find real ID of pre- and post-neuron
-	int neurIdPreReal = groupConfig[connInfo->grpSrc].StartN+neurIdPre;
-	int neurIdPostReal = groupConfig[connInfo->grpDest].StartN+neurIdPost;
+	int neurIdPreReal = groupConfig[connectConfigMap[connId].grpSrc].StartN+neurIdPre;
+	int neurIdPostReal = groupConfig[connectConfigMap[connId].grpDest].StartN+neurIdPost;
 
 	// iterate over all presynaptic synapses until right one is found
 	bool synapseFound = false;
@@ -1309,8 +1317,8 @@ void SNN::setWeight(short int connId, int neurIdPre, int neurIdPost, float weigh
 		if (GET_CONN_NEURON_ID((*preId))==neurIdPreReal) {
 			assert(snnRuntimeData.cumConnIdPre[pos_ij]==connId); // make sure we've got the right connection ID
 
-			snnRuntimeData.wt[pos_ij] = isExcitatoryGroup(connInfo->grpSrc) ? weight : -1.0*weight;
-			snnRuntimeData.maxSynWt[pos_ij] = isExcitatoryGroup(connInfo->grpSrc) ? maxWt : -1.0*maxWt;
+			snnRuntimeData.wt[pos_ij] = isExcitatoryGroup(connectConfigMap[connId].grpSrc) ? weight : -1.0*weight;
+			snnRuntimeData.maxSynWt[pos_ij] = isExcitatoryGroup(connectConfigMap[connId].grpSrc) ? maxWt : -1.0*maxWt;
 
 			if (simMode_==GPU_MODE) {
 				// need to update datastructures on GPU
@@ -1554,40 +1562,61 @@ void SNN::setLogsFp(FILE* fpInf, FILE* fpErr, FILE* fpDeb, FILE* fpLog) {
 
 // loop over linked list entries to find a connection with the right pre-post pair, O(N)
 short int SNN::getConnectId(int grpIdPre, int grpIdPost) {
-	ConnectConfig* connInfo = connectBegin;
+	//ConnectConfig* connInfo = connectBegin;
 
 	short int connId = -1;
-	while (connInfo) {
-		// check whether pre and post match
-		if (connInfo->grpSrc == grpIdPre && connInfo->grpDest == grpIdPost) {
-			connId = connInfo->connId;
+	//while (connInfo) {
+	//	// check whether pre and post match
+	//	if (connInfo->grpSrc == grpIdPre && connInfo->grpDest == grpIdPost) {
+	//		connId = connInfo->connId;
+	//		break;
+	//	}
+
+	//	// otherwise, keep looking
+	//	connInfo = connInfo->next;
+	//}
+
+	for (std::map<int, ConnectConfig>::iterator it = connectConfigMap.begin(); it != connectConfigMap.end(); it++) {
+		if (it->second.grpSrc == grpIdPre && it->second.grpDest == grpIdPost) {
+			connId = it->second.connId;
 			break;
 		}
-
-		// otherwise, keep looking
-		connInfo = connInfo->next;
 	}
 
 	return connId;
 }
 
 //! used for parameter tuning functionality
-ConnectConfig* SNN::getConnectInfo(short int connectId) {
-	ConnectConfig* nextConn = connectBegin;
-	CHECK_CONNECTION_ID(connectId, numConnections);
+//ConnectConfig* SNN::getConnectInfo(short int connectId) {
+//	ConnectConfig* nextConn = connectBegin;
+//	CHECK_CONNECTION_ID(connectId, numConnections);
+//
+//	// clear all existing connection info...
+//	while (nextConn) {
+//		if (nextConn->connId == connectId) {
+//			nextConn->newUpdates = true;		// \FIXME: this is a Jay hack
+//			return nextConn;
+//		}
+//		nextConn = nextConn->next;
+//	}
+//
+//	KERNEL_DEBUG("Total Connections = %d", numConnections);
+//	KERNEL_DEBUG("ConnectId (%d) cannot be recognized", connectId);
+//	return NULL;
+//}
 
-	// clear all existing connection info...
-	while (nextConn) {
-		if (nextConn->connId == connectId) {
-			nextConn->newUpdates = true;		// \FIXME: this is a Jay hack
-			return nextConn;
-		}
-		nextConn = nextConn->next;
+ConnectConfig SNN::getConnectConfig(short int connId) {
+	//ConnectConfig* nextConn = connectBegin;
+	CHECK_CONNECTION_ID(connId, numConnections);
+
+	if (connectConfigMap.find(connId) == connectConfigMap.end()) {
+		KERNEL_ERROR("Total Connections = %d", numConnections);
+		KERNEL_ERROR("ConnectId (%d) cannot be recognized", connId);
 	}
+	
+	connectConfigMap[connId].newUpdates = true;// \FIXME: this is a Jay hack
 
-	KERNEL_DEBUG("Total Connections = %d", numConnections);
-	KERNEL_DEBUG("ConnectId (%d) cannot be recognized", connectId);
-	return NULL;
+	return connectConfigMap[connId];
 }
 
 std::vector<float> SNN::getConductanceAMPA(int grpId) {
@@ -1665,8 +1694,8 @@ std::vector<float> SNN::getConductanceGABAb(int grpId) {
 // returns RangeDelay struct of a connection
 RangeDelay SNN::getDelayRange(short int connId) {
 	assert(connId>=0 && connId<numConnections);
-	ConnectConfig* connInfo = getConnectInfo(connId);
-	return RangeDelay(connInfo->minDelay, connInfo->maxDelay);
+	//ConnectConfig* connInfo = getConnectInfo(connId);
+	return RangeDelay(connectConfigMap[connId].minDelay, connectConfigMap[connId].maxDelay);
 }
 
 
@@ -1810,20 +1839,26 @@ Point3D SNN::getNeuronLocation3D(int grpId, int relNeurId) {
 }
 
 // returns the number of synaptic connections associated with this connection.
-int SNN::getNumSynapticConnections(short int connectionId) {
-  ConnectConfig* connInfo;
-  ConnectConfig* connIterator = connectBegin;
-  while(connIterator){
-    if(connIterator->connId == connectionId){
-      //found the corresponding connection
-      return connIterator->numberOfConnections;
-    }
-    //move to the next ConnectConfig
-    connIterator=connIterator->next;
-  }
-  //we didn't find the connection.
-  KERNEL_ERROR("Connection ID was not found.  Quitting.");
-  exitSimulation(1);
+int SNN::getNumSynapticConnections(short int connId) {
+	//ConnectConfig* connInfo;
+	//ConnectConfig* connIterator = connectBegin;
+	//while(connIterator){
+	//  if(connIterator->connId == connectionId){
+	//    //found the corresponding connection
+	//    return connIterator->numberOfConnections;
+	//  }
+	//  //move to the next ConnectConfig
+	//  connIterator=connIterator->next;
+	//}
+
+
+	//we didn't find the connection.
+	if (connectConfigMap.find(connId) == connectConfigMap.end()) {
+		KERNEL_ERROR("Connection ID was not found.  Quitting.");
+		exitSimulation(1);
+	}
+
+	return connectConfigMap[connId].numberOfConnections;
 }
 
 // return spike buffer, which contains #spikes per neuron in the group
@@ -1880,8 +1915,8 @@ SpikeMonitorCore* SNN::getSpikeMonitorCore(int grpId) {
 // returns RangeWeight struct of a connection
 RangeWeight SNN::getWeightRange(short int connId) {
 	assert(connId>=0 && connId<numConnections);
-	ConnectConfig* connInfo = getConnectInfo(connId);
-	return RangeWeight(0.0f, connInfo->initWt, connInfo->maxWt);
+	//ConnectConfig* connInfo = getConnectInfo(connId);
+	return RangeWeight(0.0f, connectConfigMap[connId].initWt, connectConfigMap[connId].maxWt);
 }
 
 
@@ -1981,7 +2016,7 @@ void SNN::SNNinit() {
 	//getRand.seed(randSeed_*2);
 	//getRandClosed.seed(randSeed_*3);
 
-	connectBegin = NULL;
+	//connectBegin = NULL;
 
 	simTimeRunStart     = 0;    simTimeRunStop      = 0;
 	simTimeLastRunSummary = 0;
@@ -2386,7 +2421,7 @@ void SNN::buildGroup(int grpId) {
  * \sa createGroup(), connect()
  */
 void SNN::buildNetwork() {
-	ConnectConfig* newInfo = connectBegin;
+	//ConnectConfig* newInfo = connectBegin;
 
 	// find the maximum values for number of pre- and post-synaptic neurons
 	findMaxNumSynapses(&numPostSynapses_, &numPreSynapses_);
@@ -2481,22 +2516,23 @@ void SNN::buildNetwork() {
 		loadError = loadSimulation_internal(false); // read the fixed synapses second
 		KERNEL_DEBUG("loadSimulation_internal() error number:%d", loadError);
 		for(int con = 0; con < 2; con++) {
-			newInfo = connectBegin;
-			while(newInfo) {
-				bool synWtType = GET_FIXED_PLASTIC(newInfo->connProp);
+			//newInfo = connectBegin;
+			//while(newInfo) {
+			for (std::map<int, ConnectConfig>::iterator it = connectConfigMap.begin(); it != connectConfigMap.end(); it++) {
+				bool synWtType = GET_FIXED_PLASTIC(it->second.connProp);
 				if (synWtType == SYN_PLASTIC) {
 					// given group has plastic connection, and we need to apply STDP rule...
-					groupConfig[newInfo->grpDest].FixedInputWts = false;
+					groupConfig[it->second.grpDest].FixedInputWts = false;
 				}
 
 				// store scaling factors for synaptic currents in connection-centric array
-				mulSynFast[newInfo->connId] = newInfo->mulSynFast;
-				mulSynSlow[newInfo->connId] = newInfo->mulSynSlow;
+				mulSynFast[it->second.connId] = it->second.mulSynFast;
+				mulSynSlow[it->second.connId] = it->second.mulSynSlow;
 
 				if( ((con == 0) && (synWtType == SYN_PLASTIC)) || ((con == 1) && (synWtType == SYN_FIXED))) {
-					printConnectionInfo(newInfo->connId);
+					printConnectionInfo(it->second.connId);
 				}
-				newInfo = newInfo->next;
+				//newInfo = newInfo->next;
 			}
 		}
 	} else {
@@ -2507,47 +2543,48 @@ void SNN::buildNetwork() {
 		// this ensures that all the initial pre and post-synaptic
 		// connections are of fixed type and later if of plastic type
 		for(int con = 0; con < 2; con++) {
-			newInfo = connectBegin;
-			while(newInfo) {
-				bool synWtType = GET_FIXED_PLASTIC(newInfo->connProp);
+			//newInfo = connectBegin;
+			//while(newInfo) {
+			for (std::map<int, ConnectConfig>::iterator it = connectConfigMap.begin(); it != connectConfigMap.end(); it++) {
+				bool synWtType = GET_FIXED_PLASTIC(it->second.connProp);
 				if (synWtType == SYN_PLASTIC) {
 					// given group has plastic connection, and we need to apply STDP rule...
-					groupConfig[newInfo->grpDest].FixedInputWts = false;
+					groupConfig[it->second.grpDest].FixedInputWts = false;
 				}
 
 				// store scaling factors for synaptic currents in connection-centric array
-				mulSynFast[newInfo->connId] = newInfo->mulSynFast;
-				mulSynSlow[newInfo->connId] = newInfo->mulSynSlow;
+				mulSynFast[it->second.connId] = it->second.mulSynFast;
+				mulSynSlow[it->second.connId] = it->second.mulSynSlow;
 
 
 				if( ((con == 0) && (synWtType == SYN_PLASTIC)) || ((con == 1) && (synWtType == SYN_FIXED))) {
-					switch(newInfo->type) {
+					switch(it->second.type) {
 						case CONN_RANDOM:
-							connectRandom(newInfo);
+							connectRandom(it->second.connId);
 							break;
 						case CONN_FULL:
-							connectFull(newInfo);
+							connectFull(it->second.connId);
 							break;
 						case CONN_FULL_NO_DIRECT:
-							connectFull(newInfo);
+							connectFull(it->second.connId);
 							break;
 						case CONN_ONE_TO_ONE:
-							connectOneToOne(newInfo);
+							connectOneToOne(it->second.connId);
 							break;
 						case CONN_GAUSSIAN:
-							connectGaussian(newInfo);
+							connectGaussian(it->second.connId);
 							break;
 						case CONN_USER_DEFINED:
-							connectUserDefined(newInfo);
+							connectUserDefined(it->second.connId);
 							break;
 						default:
 							KERNEL_ERROR("Invalid connection type( should be 'random', 'full', 'full-no-direct', or 'one-to-one')");
 							exitSimulation(-1);
 					}
 
-					printConnectionInfo(newInfo->connId);
+					printConnectionInfo(it->second.connId);
 				}
-				newInfo = newInfo->next;
+				//newInfo = newInfo->next;
 			}
 		}
 	}
@@ -2723,13 +2760,13 @@ void SNN::compactConnections() {
 }
 
 // make 'C' full connections from grpSrc to grpDest
-void SNN::connectFull(ConnectConfig* info) {
-	int grpSrc = info->grpSrc;
-	int grpDest = info->grpDest;
-	bool noDirect = (info->type == CONN_FULL_NO_DIRECT);
+void SNN::connectFull(short int connId) {
+	int grpSrc = connectConfigMap[connId].grpSrc;
+	int grpDest = connectConfigMap[connId].grpDest;
+	bool noDirect = (connectConfigMap[connId].type == CONN_FULL_NO_DIRECT);
 
 	// rebuild struct for easier handling
-	RadiusRF radius(info->radX, info->radY, info->radZ);
+	RadiusRF radius(connectConfigMap[connId].radX, connectConfigMap[connId].radY, connectConfigMap[connId].radZ);
 
 	for(int i = groupConfig[grpSrc].StartN; i <= groupConfig[grpSrc].EndN; i++)  {
 		Point3D loc_i = getNeuronLocation3D(i); // 3D coordinates of i
@@ -2744,17 +2781,17 @@ void SNN::connectFull(ConnectConfig* info) {
 				continue;
 
 			//uint8_t dVal = info->minDelay + (int)(0.5 + (drand48() * (info->maxDelay - info->minDelay)));
-			uint8_t dVal = info->minDelay + rand() % (info->maxDelay - info->minDelay + 1);
-			assert((dVal >= info->minDelay) && (dVal <= info->maxDelay));
-			float synWt = getWeights(info->connProp, info->initWt, info->maxWt, i, grpSrc);
+			uint8_t dVal = connectConfigMap[connId].minDelay + rand() % (connectConfigMap[connId].maxDelay - connectConfigMap[connId].minDelay + 1);
+			assert((dVal >= connectConfigMap[connId].minDelay) && (dVal <= connectConfigMap[connId].maxDelay));
+			float synWt = getWeights(connectConfigMap[connId].connProp, connectConfigMap[connId].initWt, connectConfigMap[connId].maxWt, i, grpSrc);
 
-			setConnection(grpSrc, grpDest, i, j, synWt, info->maxWt, dVal, info->connProp, info->connId);
-			info->numberOfConnections++;
+			setConnection(grpSrc, grpDest, i, j, synWt, connectConfigMap[connId].maxWt, dVal, connectConfigMap[connId].connProp, connId);// info->connId);
+			connectConfigMap[connId].numberOfConnections++;
 		}
 	}
 
-	groupInfo[grpSrc].sumPostConn += info->numberOfConnections;
-	groupInfo[grpDest].sumPreConn += info->numberOfConnections;
+	groupInfo[grpSrc].sumPostConn += connectConfigMap[connId].numberOfConnections;
+	groupInfo[grpDest].sumPreConn += connectConfigMap[connId].numberOfConnections;
 }
 
 // after all the initalization. Its time to create the synaptic weights, weight change and also
@@ -2803,14 +2840,14 @@ void SNN::compileSNN(bool removeTempMemory) {
 
 
 
-void SNN::connectGaussian(ConnectConfig* info) {
+void SNN::connectGaussian(short int connId) {
 	// rebuild struct for easier handling
 	// adjust with sqrt(2) in order to make the Gaussian kernel depend on 2*sigma^2
-	RadiusRF radius(info->radX, info->radY, info->radZ);
+	RadiusRF radius(connectConfigMap[connId].radX, connectConfigMap[connId].radY, connectConfigMap[connId].radZ);
 
 	// in case pre and post have different Grid3D sizes: scale pre to the grid size of post
-	int grpSrc = info->grpSrc;
-	int grpDest = info->grpDest;
+	int grpSrc = connectConfigMap[connId].grpSrc;
+	int grpDest = connectConfigMap[connId].grpDest;
 	Grid3D grid_i = getGroupGrid3D(grpSrc);
 	Grid3D grid_j = getGroupGrid3D(grpDest);
 	Point3D scalePre = Point3D(grid_j.numX, grid_j.numY, grid_j.numZ) / Point3D(grid_i.numX, grid_i.numY, grid_i.numZ);
@@ -2836,45 +2873,45 @@ void SNN::connectGaussian(ConnectConfig* info) {
 			if (gauss < 0.1)
 				continue;
 
-			if (drand48() < info->p) {
-				uint8_t dVal = info->minDelay + rand() % (info->maxDelay - info->minDelay + 1);
-				assert((dVal >= info->minDelay) && (dVal <= info->maxDelay));
-				float synWt = gauss * info->initWt; // scale weight according to gauss distance
-				setConnection(grpSrc, grpDest, i, j, synWt, info->maxWt, dVal, info->connProp, info->connId);
-				info->numberOfConnections++;
+			if (drand48() < connectConfigMap[connId].p) {
+				uint8_t dVal = connectConfigMap[connId].minDelay + rand() % (connectConfigMap[connId].maxDelay - connectConfigMap[connId].minDelay + 1);
+				assert((dVal >= connectConfigMap[connId].minDelay) && (dVal <= connectConfigMap[connId].maxDelay));
+				float synWt = gauss * connectConfigMap[connId].initWt; // scale weight according to gauss distance
+				setConnection(grpSrc, grpDest, i, j, synWt, connectConfigMap[connId].maxWt, dVal, connectConfigMap[connId].connProp, connId);//info->connId);
+				connectConfigMap[connId].numberOfConnections++;
 			}
 		}
 	}
 
-	groupInfo[grpSrc].sumPostConn += info->numberOfConnections;
-	groupInfo[grpDest].sumPreConn += info->numberOfConnections;
+	groupInfo[grpSrc].sumPostConn += connectConfigMap[connId].numberOfConnections;
+	groupInfo[grpDest].sumPreConn += connectConfigMap[connId].numberOfConnections;
 }
 
-void SNN::connectOneToOne (ConnectConfig* info) {
-	int grpSrc = info->grpSrc;
-	int grpDest = info->grpDest;
+void SNN::connectOneToOne(short int connId) {
+	int grpSrc = connectConfigMap[connId].grpSrc;
+	int grpDest = connectConfigMap[connId].grpDest;
 	assert( groupConfig[grpDest].SizeN == groupConfig[grpSrc].SizeN );
 
 	// NOTE: RadiusRF does not make a difference here: ignore
 	for(int nid=groupConfig[grpSrc].StartN,j=groupConfig[grpDest].StartN; nid<=groupConfig[grpSrc].EndN; nid++, j++)  {
-		uint8_t dVal = info->minDelay + rand() % (info->maxDelay - info->minDelay + 1);
-		assert((dVal >= info->minDelay) && (dVal <= info->maxDelay));
-		float synWt = getWeights(info->connProp, info->initWt, info->maxWt, nid, grpSrc);
-		setConnection(grpSrc, grpDest, nid, j, synWt, info->maxWt, dVal, info->connProp, info->connId);
-		info->numberOfConnections++;
+		uint8_t dVal = connectConfigMap[connId].minDelay + rand() % (connectConfigMap[connId].maxDelay - connectConfigMap[connId].minDelay + 1);
+		assert((dVal >= connectConfigMap[connId].minDelay) && (dVal <= connectConfigMap[connId].maxDelay));
+		float synWt = getWeights(connectConfigMap[connId].connProp, connectConfigMap[connId].initWt, connectConfigMap[connId].maxWt, nid, grpSrc);
+		setConnection(grpSrc, grpDest, nid, j, synWt, connectConfigMap[connId].maxWt, dVal, connectConfigMap[connId].connProp, connId);//info->connId);
+		connectConfigMap[connId].numberOfConnections++;
 	}
 
-	groupInfo[grpSrc].sumPostConn += info->numberOfConnections;
-	groupInfo[grpDest].sumPreConn += info->numberOfConnections;
+	groupInfo[grpSrc].sumPostConn += connectConfigMap[connId].numberOfConnections;
+	groupInfo[grpDest].sumPreConn += connectConfigMap[connId].numberOfConnections;
 }
 
 // make 'C' random connections from grpSrc to grpDest
-void SNN::connectRandom (ConnectConfig* info) {
-	int grpSrc = info->grpSrc;
-	int grpDest = info->grpDest;
+void SNN::connectRandom(short int connId) {
+	int grpSrc = connectConfigMap[connId].grpSrc;
+	int grpDest = connectConfigMap[connId].grpDest;
 
 	// rebuild struct for easier handling
-	RadiusRF radius(info->radX, info->radY, info->radZ);
+	RadiusRF radius(connectConfigMap[connId].radX, connectConfigMap[connId].radY, connectConfigMap[connId].radZ);
 
 	for(int pre_nid=groupConfig[grpSrc].StartN; pre_nid<=groupConfig[grpSrc].EndN; pre_nid++) {
 		Point3D loc_pre = getNeuronLocation3D(pre_nid); // 3D coordinates of i
@@ -2884,27 +2921,27 @@ void SNN::connectRandom (ConnectConfig* info) {
 			if (!isPoint3DinRF(radius, loc_pre, loc_post))
 				continue;
 
-			if (drand48() < info->p) {
+			if (drand48() < connectConfigMap[connId].p) {
 				//uint8_t dVal = info->minDelay + (int)(0.5+(drand48()*(info->maxDelay-info->minDelay)));
-				uint8_t dVal = info->minDelay + rand() % (info->maxDelay - info->minDelay + 1);
-				assert((dVal >= info->minDelay) && (dVal <= info->maxDelay));
-				float synWt = getWeights(info->connProp, info->initWt, info->maxWt, pre_nid, grpSrc);
-				setConnection(grpSrc, grpDest, pre_nid, post_nid, synWt, info->maxWt, dVal, info->connProp, info->connId);
-				info->numberOfConnections++;
+				uint8_t dVal = connectConfigMap[connId].minDelay + rand() % (connectConfigMap[connId].maxDelay - connectConfigMap[connId].minDelay + 1);
+				assert((dVal >= connectConfigMap[connId].minDelay) && (dVal <= connectConfigMap[connId].maxDelay));
+				float synWt = getWeights(connectConfigMap[connId].connProp, connectConfigMap[connId].initWt, connectConfigMap[connId].maxWt, pre_nid, grpSrc);
+				setConnection(grpSrc, grpDest, pre_nid, post_nid, synWt, connectConfigMap[connId].maxWt, dVal, connectConfigMap[connId].connProp, connId); //info->connId);
+				connectConfigMap[connId].numberOfConnections++;
 			}
 		}
 	}
 
-	groupInfo[grpSrc].sumPostConn += info->numberOfConnections;
-	groupInfo[grpDest].sumPreConn += info->numberOfConnections;
+	groupInfo[grpSrc].sumPostConn += connectConfigMap[connId].numberOfConnections;
+	groupInfo[grpDest].sumPreConn += connectConfigMap[connId].numberOfConnections;
 }
 
 // user-defined functions called here...
 // This is where we define our user-defined call-back function.  -- KDC
-void SNN::connectUserDefined (ConnectConfig* info) {
-	int grpSrc = info->grpSrc;
-	int grpDest = info->grpDest;
-	info->maxDelay = 0;
+void SNN::connectUserDefined(short int connId) {
+	int grpSrc = connectConfigMap[connId].grpSrc;
+	int grpDest = connectConfigMap[connId].grpDest;
+	connectConfigMap[connId].maxDelay = 0;
 	for(int nid=groupConfig[grpSrc].StartN; nid<=groupConfig[grpSrc].EndN; nid++) {
 		for(int nid2=groupConfig[grpDest].StartN; nid2 <= groupConfig[grpDest].EndN; nid2++) {
 			int srcId  = nid  - groupConfig[grpSrc].StartN;
@@ -2912,12 +2949,12 @@ void SNN::connectUserDefined (ConnectConfig* info) {
 			float weight, maxWt, delay;
 			bool connected;
 
-			info->conn->connect(this, grpSrc, srcId, grpDest, destId, weight, maxWt, delay, connected);
+			connectConfigMap[connId].conn->connect(this, grpSrc, srcId, grpDest, destId, weight, maxWt, delay, connected);
 			if(connected)  {
-				if (GET_FIXED_PLASTIC(info->connProp) == SYN_FIXED)
+				if (GET_FIXED_PLASTIC(connectConfigMap[connId].connProp) == SYN_FIXED)
 					maxWt = weight;
 
-				info->maxWt = maxWt;
+				connectConfigMap[connId].maxWt = maxWt;
 
 				assert(delay >= 1);
 				assert(delay <= MAX_SYN_DELAY);
@@ -2927,17 +2964,17 @@ void SNN::connectUserDefined (ConnectConfig* info) {
 				weight = isExcitatoryGroup(grpSrc) ? fabs(weight) : -1.0*fabs(weight);
 				maxWt  = isExcitatoryGroup(grpSrc) ? fabs(maxWt)  : -1.0*fabs(maxWt);
 
-				setConnection(grpSrc, grpDest, nid, nid2, weight, maxWt, delay, info->connProp, info->connId);
-				info->numberOfConnections++;
-				if(delay > info->maxDelay) {
-					info->maxDelay = delay;
+				setConnection(grpSrc, grpDest, nid, nid2, weight, maxWt, delay, connectConfigMap[connId].connProp, connId);// info->connId);
+				connectConfigMap[connId].numberOfConnections++;
+				if(delay > connectConfigMap[connId].maxDelay) {
+					connectConfigMap[connId].maxDelay = delay;
 				}
 			}
 		}
 	}
 
-	groupInfo[grpSrc].sumPostConn += info->numberOfConnections;
-	groupInfo[grpDest].sumPreConn += info->numberOfConnections;
+	groupInfo[grpSrc].sumPostConn += connectConfigMap[connId].numberOfConnections;
+	groupInfo[grpDest].sumPreConn += connectConfigMap[connId].numberOfConnections;
 }
 
 
@@ -3192,23 +3229,25 @@ void SNN::initSynapticWeights() {
 
 // checks whether a connection ID contains plastic synapses O(#connections)
 bool SNN::isConnectionPlastic(short int connId) {
-	assert(connId!=ALL);
-	assert(connId<numConnections);
+	assert(connId != ALL);
+	assert(connId < numConnections);
 
-	// search linked list for right connection ID
-	ConnectConfig* connInfo = connectBegin;
-	bool isPlastic = false;
-	while (connInfo) {
-		if (connId == connInfo->connId) {
-			// get syn wt type from connection property
-			isPlastic = GET_FIXED_PLASTIC(connInfo->connProp);
-			break;
-		}
+	//// search linked list for right connection ID
+	//ConnectConfig* connInfo = connectBegin;
+	//bool isPlastic = false;
+	//while (connInfo) {
+	//	if (connId == connInfo->connId) {
+	//		// get syn wt type from connection property
+	//		isPlastic = GET_FIXED_PLASTIC(connInfo->connProp);
+	//		break;
+	//	}
 
-		connInfo = connInfo->next;
-	}
+	//	connInfo = connInfo->next;
+	//}
+	
+	return GET_FIXED_PLASTIC(connectConfigMap[connId].connProp);
 
-	return isPlastic;
+	//return isPlastic;
 }
 
 // returns whether group has homeostasis enabled
@@ -3235,18 +3274,19 @@ void SNN::verifySTDP() {
 	for (int grpId=0; grpId<getNumGroups(); grpId++) {
 		if (groupConfig[grpId].WithSTDP) {
 			// for each post-group, check if any of the incoming connections are plastic
-			ConnectConfig* connInfo = connectBegin;
+			//ConnectConfig* connInfo = connectBegin;
 			bool isAnyPlastic = false;
-			while (connInfo) {
-				if (connInfo->grpDest == grpId) {
+			//while (connInfo) {
+			for (std::map<int, ConnectConfig>::iterator it = connectConfigMap.begin(); it != connectConfigMap.end(); it++) {
+				if (it->second.grpDest == grpId) {
 					// get syn wt type from connection property
-					isAnyPlastic |= GET_FIXED_PLASTIC(connInfo->connProp);
+					isAnyPlastic |= GET_FIXED_PLASTIC(it->second.connProp);
 					if (isAnyPlastic) {
 						// at least one plastic connection found: break while
 						break;
 					}
 				}
-				connInfo = connInfo->next;
+				//connInfo = connInfo->next;
 			}
 			if (!isAnyPlastic) {
 				KERNEL_ERROR("If STDP on group %d (%s) is set, group must have some incoming plastic connections.",
@@ -3838,15 +3878,16 @@ void SNN::resetMonitors(bool deallocate) {
 void SNN::resetConnectionConfigs(bool deallocate) {
 	// clear all existing connection info
 	if (deallocate) {
-		while (connectBegin) {
-			ConnectConfig* nextConn = connectBegin->next;
-			if (connectBegin!=NULL && deallocate) {
-				free(connectBegin);
-				connectBegin = nextConn;
-			}
-		}
+		//while (connectBegin) {
+		//	ConnectConfig* nextConn = connectBegin->next;
+		//	if (connectBegin!=NULL && deallocate) {
+		//		free(connectBegin);
+		//		connectBegin = nextConn;
+		//	}
+		//}
+		connectConfigMap.clear();
 	}
-	connectBegin=NULL;
+	//connectBegin=NULL;
 }
 
 void SNN::resetRuntimeData(bool deallocate) {
@@ -4038,27 +4079,29 @@ void SNN::resetSynapticConnections(bool changeWeights) {
 				int preId    = GET_CONN_NEURON_ID((*preIdPtr));
 				assert(preId < numN);
 				int srcGrp = snnRuntimeData.grpIds[preId];
-				ConnectConfig* connInfo;
-				ConnectConfig* connIterator = connectBegin;
-				while(connIterator) {
-					if(connIterator->grpSrc == srcGrp && connIterator->grpDest == destGrp) {
-						//we found the corresponding connection
-						connInfo=connIterator;
-						break;
-					}
-					//move to the next ConnectConfig
-					connIterator=connIterator->next;
-				}
-				assert(connInfo != NULL);
-				int connProp   = connInfo->connProp;
-				bool   synWtType = GET_FIXED_PLASTIC(connProp);
+				short int connId = getConnectId(srcGrp, destGrp);
+				//ConnectConfig* connInfo;
+				//ConnectConfig* connIterator = connectBegin;
+				//while(connIterator) {
+				//	if(connIterator->grpSrc == srcGrp && connIterator->grpDest == destGrp) {
+				//		//we found the corresponding connection
+				//		connInfo=connIterator;
+				//		break;
+				//	}
+				//	//move to the next ConnectConfig
+				//	connIterator=connIterator->next;
+				//}
+				//assert(connInfo != NULL);
+				assert(connId != -1);
+				//int connProp   = connInfo->connProp;
+				bool   synWtType = GET_FIXED_PLASTIC(connectConfigMap[connId].connProp);
 				// print debug information...
 				if( prevPreGrp != srcGrp) {
 					if(nid==groupConfig[destGrp].StartN) {
-						const char* updateStr = (connInfo->newUpdates==true)? "(**)":"";
+						const char* updateStr = (connectConfigMap[connId].newUpdates==true)? "(**)":"";
 						KERNEL_DEBUG("\t%d (%s) start=%d, type=%s maxWts = %f %s", srcGrp,
 										groupInfo[srcGrp].Name.c_str(), j, (j<snnRuntimeData.Npre_plastic[nid]?"P":"F"),
-										connInfo->maxWt, updateStr);
+										connectConfigMap[connId].maxWt, updateStr);
 					}
 					prevPreGrp = srcGrp;
 				}
@@ -4068,20 +4111,21 @@ void SNN::resetSynapticConnections(bool changeWeights) {
 
 				// if connection was plastic or if the connection weights were updated we need to reset the weights
 				// TODO: How to account for user-defined connection reset
-				if ((synWtType == SYN_PLASTIC) || connInfo->newUpdates) {
-					*synWtPtr = getWeights(connInfo->connProp, connInfo->initWt, connInfo->maxWt, nid, srcGrp);
-					*maxWtPtr = connInfo->maxWt;
+				if ((synWtType == SYN_PLASTIC) ||  connectConfigMap[connId].newUpdates) {
+					*synWtPtr = getWeights(connectConfigMap[connId].connProp, connectConfigMap[connId].initWt, connectConfigMap[connId].maxWt, nid, srcGrp);
+					*maxWtPtr = connectConfigMap[connId].maxWt;
 				}
 			}
 		}
 		groupConfig[destGrp].newUpdates = false;
 	}
 
-	ConnectConfig* connInfo = connectBegin;
+	//ConnectConfig* connInfo = connectBegin;
 	// clear all existing connection info...
-	while (connInfo) {
-		connInfo->newUpdates = false;
-		connInfo = connInfo->next;
+	//while (connInfo) {
+	for (std::map<int, ConnectConfig>::iterator it = connectConfigMap.begin(); it != connectConfigMap.end(); it++) {
+		it->second.newUpdates = false;
+		//connInfo = connInfo->next;
 	}
 }
 
@@ -4305,14 +4349,14 @@ void SNN::updateConnectionMonitor(short int connId) {
 
 std::vector< std::vector<float> > SNN::getWeightMatrix2D(short int connId) {
 	assert(connId!=ALL);
-	ConnectConfig* connInfo = connectBegin;
+	//ConnectConfig* connInfo = connectBegin;
 	std::vector< std::vector<float> > wtConnId;
 
 	// loop over all connections and find the ones with Connection Monitors
-	while (connInfo) {
-		if (connInfo->connId==connId) {
-			int grpIdPre = connInfo->grpSrc;
-			int grpIdPost = connInfo->grpDest;
+	//while (connInfo) {
+	//	if (connInfo->connId==connId) {
+			int grpIdPre = connectConfigMap[connId].grpSrc;
+			int grpIdPost = connectConfigMap[connId].grpDest;
 
 			// init weight matrix with right dimensions
 			for (int i=0; i<groupConfig[grpIdPre].SizeN; i++) {
@@ -4334,7 +4378,7 @@ std::vector< std::vector<float> > SNN::getWeightMatrix2D(short int connId) {
 				unsigned int pos_ij = snnRuntimeData.cumulativePre[postId];
 				for (int i=0; i<snnRuntimeData.Npre[postId]; i++, pos_ij++) {
 					// skip synapses that belong to a different connection ID
-					if (snnRuntimeData.cumConnIdPre[pos_ij]!=connInfo->connId)
+					if (snnRuntimeData.cumConnIdPre[pos_ij] != connId) //connInfo->connId)
 						continue;
 
 					// find pre-neuron ID and update ConnectionMonitor container
@@ -4343,10 +4387,10 @@ std::vector< std::vector<float> > SNN::getWeightMatrix2D(short int connId) {
 						fabs(snnRuntimeData.wt[pos_ij]);
 				}
 			}
-			break;
-		}
-		connInfo = connInfo->next;
-	}
+			//break;
+	//	}
+	//	connInfo = connInfo->next;
+	//}
 
 	return wtConnId;
 }
@@ -4515,19 +4559,20 @@ int SNN::updateSpikeTables() {
 	int grpSrc;
 	// find the maximum delay in the given network
 	// and also the maximum delay for each group.
-	ConnectConfig* newInfo = connectBegin;
-	while(newInfo) {
-		grpSrc = newInfo->grpSrc;
-		if (newInfo->maxDelay > curD)
-			curD = newInfo->maxDelay;
+	//ConnectConfig* newInfo = connectBegin;
+	//while(newInfo) {
+	for (std::map<int, ConnectConfig>::iterator it = connectConfigMap.begin(); it != connectConfigMap.end(); it++) {
+		grpSrc = it->second.grpSrc;
+		if (it->second.maxDelay > curD)
+			curD = it->second.maxDelay;
 
 		// check if the current connection's delay meaning grp1's delay
 		// is greater than the MaxDelay for grp1. We find the maximum
 		// delay for the grp1 by this scheme.
-		if (newInfo->maxDelay > groupConfig[grpSrc].MaxDelay)
-		 	groupConfig[grpSrc].MaxDelay = newInfo->maxDelay;
+		if (it->second.maxDelay > groupConfig[grpSrc].MaxDelay)
+		 	groupConfig[grpSrc].MaxDelay = it->second.maxDelay;
 
-		newInfo = newInfo->next;
+		//newInfo = newInfo->next;
 	}
 
 	for(int g = 0; g < numGrp; g++) {

@@ -217,7 +217,7 @@ void SNN::printTuningLog(FILE * const fp) {
 
 void SNN::printConnectionInfo(FILE * const fp)
 {
-  ConnectConfig* newInfo = connectBegin;
+  //ConnectConfig* newInfo = connectBegin;
 
   //    fprintf(fp, "\nGlobal STDP Info: \n");
   //    fprintf(fp, "------------\n");
@@ -225,18 +225,19 @@ void SNN::printConnectionInfo(FILE * const fp)
 
   fprintf(fp, "\nConnections: \n");
   fprintf(fp, "------------\n");
-  while(newInfo) {
-    bool synWtType  = GET_FIXED_PLASTIC(newInfo->connProp);
+  //while(newInfo) {
+  for (std::map<int, ConnectConfig>::iterator it = connectConfigMap.begin(); it != connectConfigMap.end(); it++) {
+    bool synWtType  = GET_FIXED_PLASTIC(it->second.connProp);
     fprintf(fp, " // (%s => %s): numPostSynapses=%d, numPreSynapses=%d, iWt=%3.3f, mWt=%3.3f, ty=%x, maxD=%d, minD=%d %s\n",
-      groupInfo[newInfo->grpSrc].Name.c_str(), groupInfo[newInfo->grpDest].Name.c_str(),
-      newInfo->numPostSynapses, newInfo->numPreSynapses, newInfo->initWt,   newInfo->maxWt,
-      newInfo->connProp, newInfo->maxDelay, newInfo->minDelay, (synWtType == SYN_PLASTIC)?"(*)":"");
+      groupInfo[it->second.grpSrc].Name.c_str(), groupInfo[it->second.grpDest].Name.c_str(),
+      it->second.numPostSynapses, it->second.numPreSynapses, it->second.initWt, it->second.maxWt,
+      it->second.connProp, it->second.maxDelay, it->second.minDelay, (synWtType == SYN_PLASTIC)?"(*)":"");
 
     //      weights of input spike generating layers need not be observed...
     //          bool synWtType  = GET_FIXED_PLASTIC(newInfo->connProp);
     //      if ((synWtType == SYN_PLASTIC) && (enableSimLogs))
     //         storeWeights(newInfo->grpDest, newInfo->grpSrc, "logs");
-    newInfo = newInfo->next;
+    //newInfo = newInfo->next;
   }
 
   fflush(fp);
@@ -244,17 +245,18 @@ void SNN::printConnectionInfo(FILE * const fp)
 
 void SNN::printConnectionInfo2(FILE * const fpg)
 {
-  ConnectConfig* newInfo = connectBegin;
+  //ConnectConfig* newInfo = connectBegin;
 
 	fprintf(fpg, "#Connection Information \n");
 	fprintf(fpg, "#(e.g. from => to : approx. # of post (numPostSynapses) : approx. # of pre-synaptic (numPreSynapses) : weights.. : type plastic or fixed : max and min axonal delay\n");
-	while(newInfo) {
-		bool synWtType	= GET_FIXED_PLASTIC(newInfo->connProp);
+	//while(newInfo) {
+	for (std::map<int, ConnectConfig>::iterator it = connectConfigMap.begin(); it != connectConfigMap.end(); it++) {
+		bool synWtType	= GET_FIXED_PLASTIC(it->second.connProp);
 		fprintf(fpg, " %d => %d : %s => %s : numPostSynapses %d : numPreSynapses %d : initWeight %f : maxWeight %3.3f : type %s : maxDelay %d : minDelay %d\n",
-				newInfo->grpSrc, newInfo->grpDest, groupInfo[newInfo->grpSrc].Name.c_str(), groupInfo[newInfo->grpDest].Name.c_str(),
-				newInfo->numPostSynapses, newInfo->numPreSynapses, newInfo->initWt,   newInfo->maxWt,
-				(synWtType == SYN_PLASTIC)?"plastic":"fixed", newInfo->maxDelay, newInfo->minDelay);
-		newInfo = newInfo->next;
+				it->second.grpSrc, it->second.grpDest, groupInfo[it->second.grpSrc].Name.c_str(), groupInfo[it->second.grpDest].Name.c_str(),
+				it->second.numPostSynapses, it->second.numPreSynapses, it->second.initWt, it->second.maxWt,
+				(synWtType == SYN_PLASTIC)?"plastic":"fixed", it->second.maxDelay, it->second.minDelay);
+		//newInfo = newInfo->next;
 	}
 	fprintf(fpg, "\n");
 	fflush(fpg);
@@ -262,22 +264,22 @@ void SNN::printConnectionInfo2(FILE * const fpg)
 
 // new print connection info, akin to printGroupInfo
 void SNN::printConnectionInfo(short int connId) {
-	ConnectConfig* connInfo = getConnectInfo(connId);
+	ConnectConfig connConfig = connectConfigMap[connId];
 
-	KERNEL_INFO("Connection ID %d: %s(%d) => %s(%d)", connId, groupInfo[connInfo->grpSrc].Name.c_str(),
-		connInfo->grpSrc, groupInfo[connInfo->grpDest].Name.c_str(), connInfo->grpDest);
-	KERNEL_INFO("  - Type                       = %s", GET_FIXED_PLASTIC(connInfo->connProp)==SYN_PLASTIC?" PLASTIC":"   FIXED")
+	KERNEL_INFO("Connection ID %d: %s(%d) => %s(%d)", connId, groupInfo[connConfig.grpSrc].Name.c_str(),
+		connConfig.grpSrc, groupInfo[connConfig.grpDest].Name.c_str(), connConfig.grpDest);
+	KERNEL_INFO("  - Type                       = %s", GET_FIXED_PLASTIC(connConfig.connProp)==SYN_PLASTIC?" PLASTIC":"   FIXED")
 	KERNEL_INFO("  - Min weight                 = %8.5f", 0.0f); // \TODO
-	KERNEL_INFO("  - Max weight                 = %8.5f", fabs(connInfo->maxWt));
-	KERNEL_INFO("  - Initial weight             = %8.5f", fabs(connInfo->initWt));
-	KERNEL_INFO("  - Min delay                  = %8d", connInfo->minDelay);
-	KERNEL_INFO("  - Max delay                  = %8d", connInfo->maxDelay);
-  KERNEL_INFO("  - Radius X                   = %8.2f", connInfo->radX);
-  KERNEL_INFO("  - Radius Y                   = %8.2f", connInfo->radY);
-  KERNEL_INFO("  - Radius Z                   = %8.2f", connInfo->radZ);
+	KERNEL_INFO("  - Max weight                 = %8.5f", fabs(connConfig.maxWt));
+	KERNEL_INFO("  - Initial weight             = %8.5f", fabs(connConfig.initWt));
+	KERNEL_INFO("  - Min delay                  = %8d", connConfig.minDelay);
+	KERNEL_INFO("  - Max delay                  = %8d", connConfig.maxDelay);
+  KERNEL_INFO("  - Radius X                   = %8.2f", connConfig.radX);
+  KERNEL_INFO("  - Radius Y                   = %8.2f", connConfig.radY);
+  KERNEL_INFO("  - Radius Z                   = %8.2f", connConfig.radZ);
 
-	float avgPostM = connInfo->numberOfConnections/groupConfig[connInfo->grpSrc].SizeN;
-	float avgPreM  = connInfo->numberOfConnections/groupConfig[connInfo->grpDest].SizeN;
+	float avgPostM = connConfig.numberOfConnections/groupConfig[connConfig.grpSrc].SizeN;
+	float avgPreM  = connConfig.numberOfConnections/groupConfig[connConfig.grpDest].SizeN;
 	KERNEL_INFO("  - Avg numPreSynapses         = %8d", (int)avgPreM );
 	KERNEL_INFO("  - Avg numPostSynapses        = %8d", (int)avgPostM );
 }

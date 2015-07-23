@@ -459,7 +459,7 @@ public:
 	// +++++ PUBLIC METHODS: GETTERS / SETTERS ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
 	short int getConnectId(int grpIdPre, int grpIdPost); //!< find connection ID based on pre-post group pair, O(N)
-	ConnectConfig* getConnectInfo(short int connectId); //!< required for homeostasis
+	ConnectConfig getConnectConfig(short int connectId); //!< required for homeostasis
 
 	//! returns the RangeDelay struct of a connection
 	RangeDelay getDelayRange(short int connId);
@@ -604,11 +604,16 @@ private:
 	void checkSpikeCounterRecordDur();
 
 	void compactConnections(); //!< minimize any other wastage in that array by compacting the store
-	void connectFull(ConnectConfig* info);
-	void connectOneToOne(ConnectConfig* info);
-	void connectRandom(ConnectConfig* info);
-	void connectGaussian(ConnectConfig* info);
-	void connectUserDefined(ConnectConfig* info);
+	//void connectFull(ConnectConfig* info);
+	//void connectOneToOne(ConnectConfig* info);
+	//void connectRandom(ConnectConfig* info);
+	//void connectGaussian(ConnectConfig* info);
+	//void connectUserDefined(ConnectConfig* info);
+	void connectFull(short int connId);
+	void connectOneToOne(short int connId);
+	void connectRandom(short int connId);
+	void connectGaussian(short int connId);
+	void connectUserDefined(short int connId);
 
 	void deleteObjects();			//!< deallocates all used data structures in snn_cpu.cpp
 
@@ -897,8 +902,7 @@ private:
 
 	std::map<int, GroupConfig> groupConfigMap;
 	std::map<int, ConnectConfig> connectConfigMap;
-	ConnectConfig* connectBegin;
-	// duplicated short int* cumConnIdPre;		//!< connId, per synapse, presynaptic cumulative indexing
+
 	float 		*mulSynFast;	//!< scaling factor for fast synaptic currents, per connection
 	float 		*mulSynSlow;	//!< scaling factor for slow synaptic currents, per connection
 
