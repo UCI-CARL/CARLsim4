@@ -215,10 +215,9 @@ void SNN::printTuningLog(FILE * const fp) {
 	}
 }
 
+// This function has no caller
 void SNN::printConnectionInfo(FILE * const fp)
 {
-  //ConnectConfig* newInfo = connectBegin;
-
   //    fprintf(fp, "\nGlobal STDP Info: \n");
   //    fprintf(fp, "------------\n");
   //    fprintf(fp, " alpha_ltp: %f\n tau_ltp: %f\n alpha_ldp: %f\n tau_ldp: %f\n", ALPHA_LTP, TAU_LTP, ALPHA_LTD, TAU_LTD);
@@ -237,7 +236,6 @@ void SNN::printConnectionInfo(FILE * const fp)
     //          bool synWtType  = GET_FIXED_PLASTIC(newInfo->connProp);
     //      if ((synWtType == SYN_PLASTIC) && (enableSimLogs))
     //         storeWeights(newInfo->grpDest, newInfo->grpSrc, "logs");
-    //newInfo = newInfo->next;
   }
 
   fflush(fp);
@@ -245,18 +243,15 @@ void SNN::printConnectionInfo(FILE * const fp)
 
 void SNN::printConnectionInfo2(FILE * const fpg)
 {
-  //ConnectConfig* newInfo = connectBegin;
-
 	fprintf(fpg, "#Connection Information \n");
 	fprintf(fpg, "#(e.g. from => to : approx. # of post (numPostSynapses) : approx. # of pre-synaptic (numPreSynapses) : weights.. : type plastic or fixed : max and min axonal delay\n");
-	//while(newInfo) {
+
 	for (std::map<int, ConnectConfig>::iterator it = connectConfigMap.begin(); it != connectConfigMap.end(); it++) {
 		bool synWtType	= GET_FIXED_PLASTIC(it->second.connProp);
 		fprintf(fpg, " %d => %d : %s => %s : numPostSynapses %d : numPreSynapses %d : initWeight %f : maxWeight %3.3f : type %s : maxDelay %d : minDelay %d\n",
 				it->second.grpSrc, it->second.grpDest, groupInfo[it->second.grpSrc].Name.c_str(), groupInfo[it->second.grpDest].Name.c_str(),
 				it->second.numPostSynapses, it->second.numPreSynapses, it->second.initWt, it->second.maxWt,
 				(synWtType == SYN_PLASTIC)?"plastic":"fixed", it->second.maxDelay, it->second.minDelay);
-		//newInfo = newInfo->next;
 	}
 	fprintf(fpg, "\n");
 	fflush(fpg);
