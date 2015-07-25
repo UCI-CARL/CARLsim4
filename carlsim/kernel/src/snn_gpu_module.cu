@@ -68,15 +68,15 @@
 //  For more details kindly read the enclosed report (report.pdf) in the source directory
 //
 //
-//  timingTableD2[0] always is 0 -- index into firingTableD2
-//  timingTableD2[maxDelay_] -- should be the number of spikes "leftover" from the previous second
-//	timingTableD2[maxDelay_+1]-timingTableD2[maxDelay_] -- should be the number of spikes in the first ms of the current second
-//  timingTableD2[1000+maxDelay_] -- should be the number of spikes in the current second + the leftover spikes.
+//  timeTableD2GPU[0] always is 0 -- index into firingTableD2
+//  timeTableD2GPU[maxDelay_] -- should be the number of spikes "leftover" from the previous second
+//	timeTableD2GPU[maxDelay_+1]-timeTableD2GPU[maxDelay_] -- should be the number of spikes in the first ms of the current second
+//  timeTableD2GPU[1000+maxDelay_] -- should be the number of spikes in the current second + the leftover spikes.
 //
 ///////////////////////////////////////////////////////////////////
 
-__device__ int  timingTableD2[ROUNDED_TIMING_COUNT];
-__device__ int  timingTableD1[ROUNDED_TIMING_COUNT];
+__device__ int  timeTableD2GPU[ROUNDED_TIMING_COUNT];
+__device__ int  timeTableD1GPU[ROUNDED_TIMING_COUNT];
 
 __device__ unsigned int	secD2fireCnt;
 __device__ unsigned int	secD1fireCnt;
@@ -97,11 +97,11 @@ __device__ __constant__ float               d_mulSynSlow[MAX_CONN_PER_SNN];
 __device__  int	  loadBufferCount; 
 __device__  int   loadBufferSize;
 
-texture <int,    1, cudaReadModeElementType>  timingTableD2_tex;
-texture <int,    1, cudaReadModeElementType>  timingTableD1_tex;
+texture <int,    1, cudaReadModeElementType>  timeTableD2GPU_tex;
+texture <int,    1, cudaReadModeElementType>  timeTableD1GPU_tex;
 texture <int,    1, cudaReadModeElementType>  groupIdInfo_tex; // groupIDInfo is allocated using cudaMalloc thus doesn't require an offset when using textures
-__device__  int timingTableD1_tex_offset;
-__device__  int timingTableD2_tex_offset;
+__device__  int timeTableD1GPU_tex_offset;
+__device__  int timeTableD2GPU_tex_offset;
 
 // example of the quick synaptic table
 // index     cnt
@@ -110,9 +110,9 @@ __device__  int timingTableD2_tex_offset;
 // 0000010 - 1
 // 0100000 - 5
 // 0110000 - 4
-int tableQuickSynId[256];
-__device__ int  gpu_tableQuickSynId[256];
-void initTableQuickSynId()
+int quickSynIdTable[256];
+__device__ int  quickSynIdTableGPU[256];
+void initQuickSynIdTable()
 {
 	void* devPtr;
 	   
@@ -123,11 +123,11 @@ void initTableQuickSynId()
       		cnt++;
       		assert(cnt<=7);
     	}
-    	tableQuickSynId[i]=cnt;		 
+    	quickSynIdTable[i]=cnt;		 
 	}
 	   
-	cudaGetSymbolAddress(&devPtr, gpu_tableQuickSynId);
-	CUDA_CHECK_ERRORS( cudaMemcpy( devPtr, tableQuickSynId, sizeof(tableQuickSynId), cudaMemcpyHostToDevice));
+	cudaGetSymbolAddress(&devPtr, quickSynIdTableGPU);
+	CUDA_CHECK_ERRORS( cudaMemcpy( devPtr, quickSynIdTable, sizeof(quickSynIdTable), cudaMemcpyHostToDevice));
 }
 
 __device__ inline bool isPoissonGroup(short int& grpId, unsigned int& nid)
@@ -175,8 +175,8 @@ __device__ inline bool getPoissonSpike_GPU (unsigned int& nid)
 __global__ void kernel_timingTableUpdate(int t)
 {
    if ( threadIdx.x == 0 && blockIdx.x == 0) {
-		timingTableD2[t+networkConfigGPU.maxDelay+1]  = secD2fireCnt;
-		timingTableD1[t+networkConfigGPU.maxDelay+1]  = secD1fireCnt;
+		timeTableD2GPU[t+networkConfigGPU.maxDelay+1]  = secD2fireCnt;
+		timeTableD1GPU[t+networkConfigGPU.maxDelay+1]  = secD1fireCnt;
    }
    __syncthreads();									     
 }
@@ -190,8 +190,8 @@ __global__ void kernel_init ()
 {
 	if(threadIdx.x==0 && blockIdx.x==0) {
 		for(int i=0; i < ROUNDED_TIMING_COUNT; i++) {
-			timingTableD2[i]   = 0;
-			timingTableD1[i]   = 0;
+			timeTableD2GPU[i]   = 0;
+			timeTableD1GPU[i]   = 0;
 		}
 	}
 
@@ -720,12 +720,12 @@ __global__ 	void kernel_findFiring (int t, int sec, int simTime) {
 // Based on the bitvector used for indicating the presence of spike
 // the global conductance values are updated..
 __global__ void kernel_globalConductanceUpdate (int t, int sec, int simTime) {
-	__shared__ int sh_tableQuickSynId[256];
+	__shared__ int sh_quickSynIdTable[256];
 
 	// Table for quick access
 	for(int i=0; i < 256; i+=blockDim.x){
 		if((i+threadIdx.x) < 256){
-			sh_tableQuickSynId[i+threadIdx.x]=gpu_tableQuickSynId[i+threadIdx.x];
+			sh_quickSynIdTable[i+threadIdx.x]=quickSynIdTableGPU[i+threadIdx.x];
 		}
 	}
 
@@ -772,7 +772,7 @@ __global__ void kernel_globalConductanceUpdate (int t, int sec, int simTime) {
 						cnt = cnt+1;
 						continue;
 					}
-					int wt_i = sh_tableQuickSynId[k];
+					int wt_i = sh_quickSynIdTable[k];
 					int wtId = (j*32 + cnt*8 + wt_i);
 
 					post_info_t pre_Id   = runtimeDataGPU.preSynapticIds[cum_pos + wtId];
@@ -1175,10 +1175,10 @@ __global__ void kernel_updateFiring_static() {
 
 	// Shift the firing table so that the initial information in
 	// the firing table contain the firing information for the last maxDelay_ time step
-	for(int p=timingTableD2[999],k=0;
-		p<timingTableD2[999+networkConfigGPU.maxDelay+1];
+	for(int p=timeTableD2GPU[999],k=0;
+		p<timeTableD2GPU[999+networkConfigGPU.maxDelay+1];
 		p+=gnthreads,k+=gnthreads) {
-		if((p+threadIdx.x)<timingTableD2[999+networkConfigGPU.maxDelay+1])
+		if((p+threadIdx.x)<timeTableD2GPU[999+networkConfigGPU.maxDelay+1])
 			runtimeDataGPU.firingTableD2[k+threadIdx.x]=runtimeDataGPU.firingTableD2[p+threadIdx.x];
 	}
 }
@@ -1199,9 +1199,9 @@ __global__ void kernel_updateFiring()
 	// for the last maxDelay_ time steps to be used for the next cycle of the simulation
 	if(blockIdx.x==0) {
 		for(int i=threadIdx.x; i < maxDelay_; i+=blockDim.x) {
-			// use i+1 instead of just i because timingTableD2[0] should always be 0
-			timingTableD2[i+1] = timingTableD2[1000+i+1]-timingTableD2[1000];
-			timingTableD1[i+1] = timingTableD1[1000+i+1]-timingTableD1[1000];
+			// use i+1 instead of just i because timeTableD2GPU[0] should always be 0
+			timeTableD2GPU[i+1] = timeTableD2GPU[1000+i+1]-timeTableD2GPU[1000];
+			timeTableD1GPU[i+1] = timeTableD1GPU[1000+i+1]-timeTableD1GPU[1000];
 		}
 	}
 
@@ -1209,11 +1209,11 @@ __global__ void kernel_updateFiring()
 
 	// reset various counters for the firing information
 	if((blockIdx.x==0)&&(threadIdx.x==0)) {
-		timingTableD1[networkConfigGPU.maxDelay]  = 0;
+		timeTableD1GPU[networkConfigGPU.maxDelay]  = 0;
 		spikeCountD2	+= secD2fireCnt;
 		spikeCountD1	+= secD1fireCnt;
-		secD2fireCnt	= timingTableD2[networkConfigGPU.maxDelay];
-		secD2fireCntTest	= timingTableD2[networkConfigGPU.maxDelay];
+		secD2fireCnt	= timeTableD2GPU[networkConfigGPU.maxDelay];
+		secD2fireCntTest	= timeTableD2GPU[networkConfigGPU.maxDelay];
 		secD1fireCnt	= 0;
 		secD1fireCntTest = 0;
 	}
@@ -1224,12 +1224,12 @@ __global__ void kernel_updateFiring2()
 {
 	// reset various counters for the firing information
 	if((blockIdx.x==0)&&(threadIdx.x==0)) {
-		// timingTableD1[networkConfigGPU.maxDelay]  = 0;
+		// timeTableD1GPU[networkConfigGPU.maxDelay]  = 0;
 		spikeCountD2	+= secD2fireCnt;
 		spikeCountD1	+= secD1fireCnt;
-		secD2fireCnt	= 0; //timingTableD2[networkConfigGPU.maxDelay];
+		secD2fireCnt	= 0; //timeTableD2GPU[networkConfigGPU.maxDelay];
 		secD1fireCnt	= 0;
-		secD2fireCntTest = 0; //timingTableD2[networkConfigGPU.maxDelay];
+		secD2fireCntTest = 0; //timeTableD2GPU[networkConfigGPU.maxDelay];
 		secD1fireCntTest = 0;
 	}
 }
@@ -1346,7 +1346,7 @@ __global__ void kernel_doCurrentUpdateD2(int simTimeMs, int simTimeSec, int simT
 	int k      = secD2fireCnt - 1;
 
 	// stores the number of fired neurons at time (t - maxDelay_)
-	int k_end  = tex1Dfetch (timingTableD2_tex, simTimeMs+1+timingTableD2_tex_offset);
+	int k_end  = tex1Dfetch (timeTableD2GPU_tex, simTimeMs+1+timeTableD2GPU_tex_offset);
 
 	int t_pos  = simTimeMs;
 
@@ -1366,8 +1366,8 @@ __global__ void kernel_doCurrentUpdateD2(int simTimeMs, int simTimeSec, int simT
 				int nid = GET_FIRING_TABLE_NID(val);
 
 				// find the time of firing based on the firing number fPos
-				while ( !((fPos >= tex1Dfetch(timingTableD2_tex, t_pos+networkConfigGPU.maxDelay+timingTableD2_tex_offset)) 
-					&& (fPos <  tex1Dfetch(timingTableD2_tex, t_pos+networkConfigGPU.maxDelay+1+timingTableD2_tex_offset)))) {
+				while ( !((fPos >= tex1Dfetch(timeTableD2GPU_tex, t_pos+networkConfigGPU.maxDelay+timeTableD2GPU_tex_offset)) 
+					&& (fPos <  tex1Dfetch(timeTableD2GPU_tex, t_pos+networkConfigGPU.maxDelay+1+timeTableD2GPU_tex_offset)))) {
 					t_pos--;
 				}
 
@@ -1459,7 +1459,7 @@ __global__ void kernel_doCurrentUpdateD1(int simTimeMs, int simTimeSec, int simT
 	// load the time table for neuron firing
 	int computedNeurons = 0;
 	if (0==threadIdx.x) {
-		sh_timing = timingTableD1[simTimeMs+networkConfigGPU.maxDelay]; // ??? check check ???
+		sh_timing = timeTableD1GPU[simTimeMs+networkConfigGPU.maxDelay]; // ??? check check ???
 	}
 	__syncthreads();
 
@@ -2521,8 +2521,8 @@ __global__ void gpu_resetFiringInformation()
 {
 	if(threadIdx.x==0 && blockIdx.x==0) {
 		for(int i=0; i < ROUNDED_TIMING_COUNT; i++) {
-			timingTableD2[i]   = 0;
-			timingTableD1[i]   = 0;
+			timeTableD2GPU[i]   = 0;
+			timeTableD1GPU[i]   = 0;
 		}
 		secD2fireCnt=0;
 		secD1fireCnt=0;
@@ -2592,8 +2592,8 @@ void SNN::copyFiringInfo_GPU()
 	assert(gpu_secD2fireCnt<=maxSpikesD2);
 	CUDA_CHECK_ERRORS( cudaMemcpy(snnRuntimeData.firingTableD2, gpuRuntimeData.firingTableD2, sizeof(int)*gpu_secD2fireCnt, cudaMemcpyDeviceToHost));
 	CUDA_CHECK_ERRORS( cudaMemcpy(snnRuntimeData.firingTableD1, gpuRuntimeData.firingTableD1, sizeof(int)*gpu_secD1fireCnt, cudaMemcpyDeviceToHost));
-	CUDA_CHECK_ERRORS( cudaMemcpyFromSymbol(timeTableD2, timingTableD2, sizeof(int)*(1000+maxDelay_+1), 0, cudaMemcpyDeviceToHost));
-	CUDA_CHECK_ERRORS( cudaMemcpyFromSymbol(timeTableD1, timingTableD1, sizeof(int)*(1000+maxDelay_+1), 0, cudaMemcpyDeviceToHost));
+	CUDA_CHECK_ERRORS( cudaMemcpyFromSymbol(timeTableD2, timeTableD2GPU, sizeof(int)*(1000+maxDelay_+1), 0, cudaMemcpyDeviceToHost));
+	CUDA_CHECK_ERRORS( cudaMemcpyFromSymbol(timeTableD1, timeTableD1GPU, sizeof(int)*(1000+maxDelay_+1), 0, cudaMemcpyDeviceToHost));
 
 	// \TODO: why is this here? The CPU side doesn't have it. And if you can call updateSpikeMonitor() now at any time
 	// it might look weird without a time stamp.
@@ -2755,8 +2755,8 @@ void SNN::allocateSNN_GPU() {
 
 	// this table is useful for quick evaluation of the position of fired neuron
 	// given a sequence of bits denoting the firing..
-	// initialize __device__ gpu_tableQuickSynId[256]
-	initTableQuickSynId();
+	// initialize __device__ quickSynIdTableGPU[256]
+	initQuickSynIdTable();
 
 	
 	// initialize (cudaMemset) gpuRuntimeData.I_set, gpuRuntimeData.poissonFireRate
@@ -2867,17 +2867,17 @@ void SNN::allocateSNN_GPU() {
 
 	// map the timing table to texture.. saves a lot of headache in using shared memory
 	void* devPtr;
-	CUDA_CHECK_ERRORS(cudaGetSymbolAddress(&devPtr, timingTableD2));
+	CUDA_CHECK_ERRORS(cudaGetSymbolAddress(&devPtr, timeTableD2GPU));
 	size_t offset;
-	CUDA_CHECK_ERRORS(cudaBindTexture(&offset, timingTableD2_tex, devPtr, sizeof(int) * ROUNDED_TIMING_COUNT));
+	CUDA_CHECK_ERRORS(cudaBindTexture(&offset, timeTableD2GPU_tex, devPtr, sizeof(int) * ROUNDED_TIMING_COUNT));
 	offset = offset / sizeof(int);
-	CUDA_CHECK_ERRORS(cudaGetSymbolAddress(&devPtr, timingTableD2_tex_offset));
+	CUDA_CHECK_ERRORS(cudaGetSymbolAddress(&devPtr, timeTableD2GPU_tex_offset));
 	CUDA_CHECK_ERRORS(cudaMemcpy(devPtr, &offset, sizeof(int), cudaMemcpyHostToDevice));
 		
-	CUDA_CHECK_ERRORS(cudaGetSymbolAddress(&devPtr, timingTableD1));
-	CUDA_CHECK_ERRORS(cudaBindTexture(&offset, timingTableD1_tex, devPtr, sizeof(int) * ROUNDED_TIMING_COUNT));
+	CUDA_CHECK_ERRORS(cudaGetSymbolAddress(&devPtr, timeTableD1GPU));
+	CUDA_CHECK_ERRORS(cudaBindTexture(&offset, timeTableD1GPU_tex, devPtr, sizeof(int) * ROUNDED_TIMING_COUNT));
 	offset = offset / sizeof(int);
-	CUDA_CHECK_ERRORS(cudaGetSymbolAddress(&devPtr, timingTableD1_tex_offset));
+	CUDA_CHECK_ERRORS(cudaGetSymbolAddress(&devPtr, timeTableD1GPU_tex_offset));
 	CUDA_CHECK_ERRORS(cudaMemcpy(devPtr, &offset, sizeof(int), cudaMemcpyHostToDevice));
 
 	// initialize (memset) gpuRuntimeData.current
