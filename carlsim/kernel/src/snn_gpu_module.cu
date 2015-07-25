@@ -1578,10 +1578,10 @@ void SNN::copyConnections(RuntimeData* dest, int kind, bool allocateMem) {
 		assert(dest->memType == CPU_MODE);
 	}
 
-	networkConfig.I_setLength = ceil(((numPreSynapses_) / 32.0f));
+	networkConfig.I_setLength = ceil(((maxNumPreSynGrp) / 32.0f));
 	if(allocateMem)
 		cudaMallocPitch((void**)&dest->I_set, &networkConfig.I_setPitch, sizeof(int) * numNReg, networkConfig.I_setLength);
-	assert(networkConfig.I_setPitch > 0 || numPreSynapses_==0);
+	assert(networkConfig.I_setPitch > 0 || maxNumPreSynGrp==0);
 	CUDA_CHECK_ERRORS(cudaMemset(dest->I_set, 0, networkConfig.I_setPitch * networkConfig.I_setLength));
 
 	// connection synaptic lengths and cumulative lengths...
@@ -2603,7 +2603,7 @@ void SNN::copyFiringInfo_GPU()
 
 void SNN::allocateNetworkConfig() {
 	networkConfig.numN  = numN;
-	networkConfig.numPostSynapses  = numPostSynapses_;
+	//networkConfig.numPostSynapses  = maxNumPostSynGrp;
 	networkConfig.maxDelay  = maxDelay_;
 	networkConfig.numNExcReg = numNExcReg;
 	networkConfig.numNInhReg	= numNInhReg;

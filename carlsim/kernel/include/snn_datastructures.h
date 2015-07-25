@@ -260,7 +260,7 @@ typedef struct RuntimeData_s {
 typedef struct NetworkConfigRT_s  {
 	size_t			STP_Pitch;		//!< numN rounded upwards to the nearest 256 boundary, used for GPU only
 	unsigned int	numN;
-	unsigned int	numPostSynapses;
+	//unsigned int	numPostSynapses;
 	unsigned int	maxDelay;
 	unsigned int	numNExcReg;
 	unsigned int	numNInhReg;

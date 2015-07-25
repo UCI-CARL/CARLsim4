@@ -2034,8 +2034,8 @@ void SNN::SNNinit() {
 	numNExcReg = 0;
 	numNInhReg = 0;
 
-	numPostSynapses_ = 0;
-	numPreSynapses_ = 0;
+	maxNumPostSynGrp = 0;
+	maxNumPreSynGrp = 0;
 	maxDelay_ = 0;
 
 	// conductance info struct for simulation
@@ -2277,12 +2277,12 @@ void SNN::buildNetworkInit() {
 		postSynCnt += (groupConfig[g].SizeN * groupConfig[g].numPostSynapses);
 		preSynCnt  += (groupConfig[g].SizeN * groupConfig[g].numPreSynapses);
 	}
-	assert(postSynCnt/numN <= numPostSynapses_); // divide by numN to prevent INT overflow
+	assert(postSynCnt/numN <= maxNumPostSynGrp); // divide by numN to prevent INT overflow
 	snnRuntimeData.postSynapticIds		= new post_info_t[postSynCnt+100];
 	tmp_SynapticDelay	= new uint8_t[postSynCnt+100];	//!< Temporary array to store the delays of each connection
 	snnRuntimeData.postDelayInfo		= new delay_info_t[numN*(maxDelay_+1)];	//!< Possible delay values are 0....maxDelay_ (inclusive of maxDelay_)
 	cpuSnnSz.networkInfoSize += ((sizeof(post_info_t)+sizeof(uint8_t))*postSynCnt+100)+(sizeof(delay_info_t)*numN*(maxDelay_+1));
-	assert(preSynCnt/numN <= numPreSynapses_); // divide by numN to prevent INT overflow
+	assert(preSynCnt/numN <= maxNumPreSynGrp); // divide by numN to prevent INT overflow
 
 	snnRuntimeData.wt  			= new float[preSynCnt+100];
 	snnRuntimeData.maxSynWt     	= new float[preSynCnt+100];
@@ -2390,7 +2390,7 @@ void SNN::buildGroup(int grpId) {
  */
 void SNN::buildNetwork() {
 	// find the maximum values for number of pre- and post-synaptic neurons
-	findMaxNumSynapses(&numPostSynapses_, &numPreSynapses_);
+	findMaxNumSynapses(&maxNumPostSynGrp, &maxNumPreSynGrp);
 
 	// update (initialize) maxSpikesD1, maxSpikesD2 and allocate space for firingTableD1 and firingTableD2
 	maxDelay_ = updateSpikeTables();
@@ -2403,24 +2403,24 @@ void SNN::buildNetwork() {
 	// display the evaluated network and delay length....
 	KERNEL_INFO("\n");
 	KERNEL_INFO("***************************** Setting up Network **********************************");
-	KERNEL_INFO("numN = %d, numPostSynapses = %d, numPreSynapses = %d, maxDelay = %d", numN, numPostSynapses_,
-					numPreSynapses_, maxDelay_);
+	KERNEL_INFO("numN = %d, maxNumPostSynapsesGroup = %d, maxNumPreSynapsesGroup = %d, maxDelay = %d", numN, maxNumPostSynGrp,
+					maxNumPreSynGrp, maxDelay_);
 
-	if (numPostSynapses_ > MAX_NUM_POST_SYN) {
+	if (maxNumPostSynGrp > MAX_NUM_POST_SYN) {
 		for (int g=0;g<numGroups;g++) {
 			if (groupConfig[g].numPostSynapses>MAX_NUM_POST_SYN)
 				KERNEL_ERROR("Grp: %s(%d) has too many output synapses (%d), max %d.",groupInfo[g].Name.c_str(),g,
 							groupConfig[g].numPostSynapses,MAX_NUM_POST_SYN);
 		}
-		assert(numPostSynapses_ <= MAX_NUM_POST_SYN);
+		assert(maxNumPostSynGrp <= MAX_NUM_POST_SYN);
 	}
-	if (numPreSynapses_ > MAX_NUM_PRE_SYN) {
+	if (maxNumPreSynGrp > MAX_NUM_PRE_SYN) {
 		for (int g=0;g<numGroups;g++) {
 			if (groupConfig[g].numPreSynapses>MAX_NUM_PRE_SYN)
 				KERNEL_ERROR("Grp: %s(%d) has too many input synapses (%d), max %d.",groupInfo[g].Name.c_str(),g,
  							groupConfig[g].numPreSynapses,MAX_NUM_PRE_SYN);
 		}
-		assert(numPreSynapses_ <= MAX_NUM_PRE_SYN);
+		assert(maxNumPreSynGrp <= MAX_NUM_PRE_SYN);
 	}
 
 	// initialize all the parameters....
@@ -4092,7 +4092,7 @@ inline void SNN::setConnection(int srcGrp,  int destGrp,  unsigned int src, unsi
 
 	assert(snnRuntimeData.Npost[src] >= 0);
 	assert(snnRuntimeData.Npre[dest] >= 0);
-	assert((src * numPostSynapses_ + p) / numN < numPostSynapses_); // divide by numN to prevent INT overflow
+	assert((src * maxNumPostSynGrp + p) / numN < maxNumPostSynGrp); // divide by numN to prevent INT overflow
 
 	unsigned int post_pos = snnRuntimeData.cumulativePost[src] + snnRuntimeData.Npost[src];
 	unsigned int pre_pos  = snnRuntimeData.cumulativePre[dest] + snnRuntimeData.Npre[dest];

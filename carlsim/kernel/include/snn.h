@@ -932,8 +932,8 @@ private:
 
 	// spiking neural network related information, including neurons, synapses and network parameters
 	int	        	numN;				//!< number of neurons in the spiking neural network
-	int				numPostSynapses_;	//!< maximum number of post-synaptic connections in groups
-	int				numPreSynapses_;		//!< maximum number of pre-syanptic connections in groups
+	int				maxNumPostSynGrp;	//!< maximum number of post-synaptic connections in groups
+	int				maxNumPreSynGrp;		//!< maximum number of pre-syanptic connections in groups
 	int				maxDelay_;					//!< maximum axonal delay in groups
 	int				numNReg;			//!< number of regular (spking) neurons
 	int				numNExcReg;			//!< number of regular excitatory neurons
