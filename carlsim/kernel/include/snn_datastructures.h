@@ -275,7 +275,7 @@ typedef struct NetworkConfigRT_s  {
 	unsigned int   	numNExcPois;
 	unsigned int	numNInhPois;
 	unsigned int	numNPois;
-	unsigned int	numGrp;
+	unsigned int	numGroups;
 	int             numConnections;
 	bool 			sim_with_fixedwts;
 	bool 			sim_with_conductances;

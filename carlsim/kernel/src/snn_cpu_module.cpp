@@ -110,7 +110,7 @@ void SNN::doSTPUpdateAndDecayCond() {
 	int spikeBufferFull = 0;
 
 	//decay the STP variables before adding new spikes.
-	for(int g=0; (g < numGrp) & !spikeBufferFull; g++) {
+	for(int g=0; (g < numGroups) & !spikeBufferFull; g++) {
 		for(int i=groupConfig[g].StartN; i<=groupConfig[g].EndN; i++) {
 	   		//decay the STP variables before adding new spikes.
 			if (groupConfig[g].WithSTP) {
@@ -152,7 +152,7 @@ void SNN::doSTPUpdateAndDecayCond() {
 void SNN::findFiring() {
 	int spikeBufferFull = 0;
 
-	for(int g=0; (g < numGrp) & !spikeBufferFull; g++) {
+	for(int g=0; (g < numGroups) & !spikeBufferFull; g++) {
 		// given group of neurons belong to the poisson group....
 		if (groupConfig[g].Type&POISSON_NEURON)
 			continue;
@@ -368,7 +368,7 @@ void  SNN::globalStateUpdate() {
 	double tmp_iNMDA, tmp_I;
 	double tmp_gNMDA, tmp_gGABAb;
 
-	for(int g=0; g < numGrp; g++) {
+	for(int g=0; g < numGroups; g++) {
 		if (groupConfig[g].Type&POISSON_NEURON) {
 			if (groupConfig[g].WithHomeostasis) {
 				for(int i=groupConfig[g].StartN; i <= groupConfig[g].EndN; i++)
@@ -437,7 +437,7 @@ void  SNN::globalStateUpdate() {
 				snnRuntimeData.recovery[i]+=snnRuntimeData.Izh_a[i]*(snnRuntimeData.Izh_b[i]*snnRuntimeData.voltage[i]-snnRuntimeData.recovery[i]);
 			} // end COBA/CUBA
 		} // end StartN...EndN
-	} // end numGrp
+	} // end numGroups
 }
 
 // This function updates the synaptic weights from its derivatives..
@@ -447,7 +447,7 @@ void SNN::updateWeights() {
 	assert(sim_with_fixedwts==false);
 
 	// update synaptic weights here for all the neurons..
-	for(int g = 0; g < numGrp; g++) {
+	for(int g = 0; g < numGroups; g++) {
 		// no changable weights so continue without changing..
 		if(groupConfig[g].FixedInputWts || !(groupConfig[g].WithSTDP))
 			continue;
@@ -568,7 +568,7 @@ void SNN::updateFiringTable() {
 	spikeCountAll1secHost = 0;
 	secD2fireCntHost = timeTableD2[maxDelay_];
 
-	for (int i=0; i < numGrp; i++) {
+	for (int i=0; i < numGroups; i++) {
 		groupConfig[i].FiringCount1sec=0;
 	}
 }

@@ -496,7 +496,7 @@ public:
 
 	int getNumConnections() { return numConnections; }
 	int getNumSynapticConnections(short int connectionId);		//!< gets number of connections associated with a connection ID
-	int getNumGroups() { return numGrp; }
+	int getNumGroups() { return numGroups; }
 	int getNumNeurons() { return numN; }
 	int getNumNeuronsReg() { return numNReg; }
 	int getNumNeuronsRegExc() { return numNExcReg; }
@@ -893,7 +893,7 @@ private:
 	//! switch to make all weights fixed (such as in testing phase) or not
 	bool sim_in_testing;
 
-	int				numGrp;
+	int				numGroups;
 	int				numConnections;		//!< number of connection calls (as in snn.connect(...))
 	//! keeps track of total neurons/presynapses/postsynapses currently allocated
 	unsigned int	allocatedN;

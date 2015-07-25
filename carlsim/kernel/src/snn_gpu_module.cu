@@ -219,8 +219,8 @@ void SNN::allocateGroupId() {
 	checkAndSetGPUDevice();
 
 	assert (gpuRuntimeData.groupIdInfo == NULL);
-	int3* tempNeuronAllocation = (int3*)malloc(sizeof(int3) * networkConfig.numGrp);
-	for (int g = 0; g < networkConfig.numGrp; g++) {
+	int3* tempNeuronAllocation = (int3*)malloc(sizeof(int3) * networkConfig.numGroups);
+	for (int g = 0; g < networkConfig.numGroups; g++) {
 		int3  threadLoad;
 		threadLoad.x = groupConfig[g].StartN;
 		threadLoad.y = groupConfig[g].EndN;
@@ -228,9 +228,9 @@ void SNN::allocateGroupId() {
 		tempNeuronAllocation[g] = threadLoad;
 	}
 
-	CUDA_CHECK_ERRORS(cudaMalloc((void**)&gpuRuntimeData.groupIdInfo, sizeof(int3) * networkConfig.numGrp));
-	CUDA_CHECK_ERRORS(cudaMemcpy(gpuRuntimeData.groupIdInfo, tempNeuronAllocation, sizeof(int3) * networkConfig.numGrp, cudaMemcpyHostToDevice));
-	CUDA_CHECK_ERRORS(cudaBindTexture(NULL, groupIdInfo_tex, gpuRuntimeData.groupIdInfo, sizeof(int3) * networkConfig.numGrp));
+	CUDA_CHECK_ERRORS(cudaMalloc((void**)&gpuRuntimeData.groupIdInfo, sizeof(int3) * networkConfig.numGroups));
+	CUDA_CHECK_ERRORS(cudaMemcpy(gpuRuntimeData.groupIdInfo, tempNeuronAllocation, sizeof(int3) * networkConfig.numGroups, cudaMemcpyHostToDevice));
+	CUDA_CHECK_ERRORS(cudaBindTexture(NULL, groupIdInfo_tex, gpuRuntimeData.groupIdInfo, sizeof(int3) * networkConfig.numGroups));
 
 	free(tempNeuronAllocation);
 }
@@ -257,7 +257,7 @@ int SNN::allocateStaticLoad(int bufSize) {
 
 	// only one thread does the static load table
 	int bufferCnt = 0;
-	for (int g=0; g<networkConfig.numGrp; g++) {
+	for (int g=0; g<networkConfig.numGroups; g++) {
 		int grpBufCnt = (int) ceil(1.0f * groupConfig[g].SizeN / bufSize);
 		assert(grpBufCnt>=0);
 		bufferCnt += grpBufCnt;
@@ -271,7 +271,7 @@ int SNN::allocateStaticLoad(int bufSize) {
 	KERNEL_DEBUG("Buffer Size = %d, Buffer Count = %d", bufSize, bufferCnt);
 
 	bufferCnt = 0;
-	for (int g = 0; g < networkConfig.numGrp; g++) {
+	for (int g = 0; g < networkConfig.numGroups; g++) {
 		for (int n = groupConfig[g].StartN; n <= groupConfig[g].EndN; n += bufSize) {
 			int2  threadLoad;
 			// starting neuron id is saved...
@@ -474,7 +474,7 @@ void SNN::resetSpikeCnt_GPU(int _startGrp, int _endGrp) {
 
 __device__ void findGrpId_GPU(unsigned int& nid, int& grpId)
 {
-	for (int g=0; g < networkConfigGPU.numGrp; g++) {
+	for (int g=0; g < networkConfigGPU.numGroups; g++) {
 		//uint3 groupIdInfo = {1, 1, 1};
 		int startN  = tex1Dfetch (groupIdInfo_tex, g*3);
 		int endN    = tex1Dfetch (groupIdInfo_tex, g*3+1);
@@ -956,7 +956,7 @@ __global__ void kernel_globalGroupStateUpdate (int t)
 	// update group state
 	int grpIdx = blockIdx.x * blockDim.x + threadIdx.x;
 
-	if (grpIdx < networkConfigGPU.numGrp) {
+	if (grpIdx < networkConfigGPU.numGroups) {
 		// decay dopamine concentration
 		if ((groupConfigGPU[grpIdx].WithESTDPtype == DA_MOD || groupConfigGPU[grpIdx].WithISTDPtype == DA_MOD) && runtimeDataGPU.grpDA[grpIdx] > groupConfigGPU[grpIdx].baseDP) {
 			runtimeDataGPU.grpDA[grpIdx] *= groupConfigGPU[grpIdx].decayDP;
@@ -1889,18 +1889,18 @@ void SNN::copyGroupState(RuntimeData* dest, RuntimeData* src,  cudaMemcpyKind ki
 	checkAndSetGPUDevice();
 
 	if (allocateMem) {
-		CUDA_CHECK_ERRORS(cudaMalloc((void**) &dest->grpDA, sizeof(float) * numGrp)); 
-		CUDA_CHECK_ERRORS(cudaMalloc((void**) &dest->grp5HT, sizeof(float) * numGrp)); 
-		CUDA_CHECK_ERRORS(cudaMalloc((void**) &dest->grpACh, sizeof(float) * numGrp)); 
-		CUDA_CHECK_ERRORS(cudaMalloc((void**) &dest->grpNE, sizeof(float) * numGrp));
+		CUDA_CHECK_ERRORS(cudaMalloc((void**) &dest->grpDA, sizeof(float) * numGroups)); 
+		CUDA_CHECK_ERRORS(cudaMalloc((void**) &dest->grp5HT, sizeof(float) * numGroups)); 
+		CUDA_CHECK_ERRORS(cudaMalloc((void**) &dest->grpACh, sizeof(float) * numGroups)); 
+		CUDA_CHECK_ERRORS(cudaMalloc((void**) &dest->grpNE, sizeof(float) * numGroups));
 	}
-	CUDA_CHECK_ERRORS(cudaMemcpy(dest->grpDA, src->grpDA, sizeof(float) * numGrp, kind));
-	CUDA_CHECK_ERRORS(cudaMemcpy(dest->grp5HT, src->grp5HT, sizeof(float) * numGrp, kind));
-	CUDA_CHECK_ERRORS(cudaMemcpy(dest->grpACh, src->grpACh, sizeof(float) * numGrp, kind));
-	CUDA_CHECK_ERRORS(cudaMemcpy(dest->grpNE, src->grpNE, sizeof(float) * numGrp, kind));
+	CUDA_CHECK_ERRORS(cudaMemcpy(dest->grpDA, src->grpDA, sizeof(float) * numGroups, kind));
+	CUDA_CHECK_ERRORS(cudaMemcpy(dest->grp5HT, src->grp5HT, sizeof(float) * numGroups, kind));
+	CUDA_CHECK_ERRORS(cudaMemcpy(dest->grpACh, src->grpACh, sizeof(float) * numGroups, kind));
+	CUDA_CHECK_ERRORS(cudaMemcpy(dest->grpNE, src->grpNE, sizeof(float) * numGroups, kind));
 
 	if (grpId < 0) {
-		for (int i = 0; i < numGrp; i++) {
+		for (int i = 0; i < numGroups; i++) {
 			if (allocateMem) {
 				CUDA_CHECK_ERRORS(cudaMalloc((void**) &dest->grpDABuffer[i], sizeof(float) * 1000)); 
 				CUDA_CHECK_ERRORS(cudaMalloc((void**) &dest->grp5HTBuffer[i], sizeof(float) * 1000)); 
@@ -2244,7 +2244,7 @@ void SNN::findFiring_GPU(int gridSize, int blkSize) {
 int* SNN::getSpikeCounter_GPU(int grpId) {
 	checkAndSetGPUDevice();
 
-	assert(grpId>=0); assert(grpId<numGrp);
+	assert(grpId>=0); assert(grpId<numGroups);
 
 	int bufPos = groupConfig[grpId].spkCntBufPos;
 	CUDA_CHECK_ERRORS( cudaMemcpy(spkCntBuf[bufPos],gpuRuntimeData.spkCntBufChild[bufPos],
@@ -2258,7 +2258,7 @@ int* SNN::getSpikeCounter_GPU(int grpId) {
 void SNN::resetSpikeCounter_GPU(int grpId) {
 	checkAndSetGPUDevice();
 
-	assert(grpId>=0); assert(grpId<numGrp);
+	assert(grpId>=0); assert(grpId<numGroups);
 
 	int bufPos = groupConfig[grpId].spkCntBufPos;
 	CUDA_CHECK_ERRORS( cudaMemset(gpuRuntimeData.spkCntBufChild[bufPos],0,groupConfig[grpId].SizeN*sizeof(int)) );
@@ -2365,7 +2365,7 @@ void SNN::deleteObjects_GPU() {
 	CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData.grp5HT) );
 	CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData.grpACh) );
 	CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData.grpNE) );
-	for (int i = 0; i < numGrp; i++) {
+	for (int i = 0; i < numGroups; i++) {
 		CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData.grpDABuffer[i]) );
 		CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData.grp5HTBuffer[i]) );
 		CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData.grpAChBuffer[i]) );
@@ -2441,7 +2441,7 @@ void SNN::assignPoissonFiringRate_GPU() {
 	checkAndSetGPUDevice();
 
 	assert(gpuRuntimeData.poissonFireRate != NULL);
-	for (int grpId=0; grpId < numGrp; grpId++) {
+	for (int grpId=0; grpId < numGroups; grpId++) {
 		// given group of neurons belong to the poisson group....
 		if (groupConfig[grpId].isSpikeGenerator) {
 			int nid = groupConfig[grpId].StartN;
@@ -2621,7 +2621,7 @@ void SNN::allocateNetworkConfig() {
 	networkConfig.sim_with_stdp = sim_with_stdp;
 	networkConfig.sim_with_stp = sim_with_stp;
 	networkConfig.sim_in_testing = sim_in_testing;
-	networkConfig.numGrp = numGrp;
+	networkConfig.numGroups = numGroups;
 	networkConfig.numConnections = numConnections;
 	networkConfig.stdpScaleFactor = stdpScaleFactor_;
 	networkConfig.wtChangeDecay = wtChangeDecay_;
@@ -2710,7 +2710,7 @@ void SNN::allocateSNN_GPU() {
 	int gridSize = 64; int blkSize  = 128;
 
 	int numN=0;
-	for (int g=0;g<numGrp;g++) {
+	for (int g=0;g<numGroups;g++) {
 		numN += groupConfig[g].SizeN;
 	}
 
@@ -2788,7 +2788,7 @@ void SNN::allocateSNN_GPU() {
 	// cudaMalloc(), but then we need to cudaMemcpy() that array of pointers to the pointer that we got from the
 	// first cudaMalloc().
 	CUDA_CHECK_ERRORS( cudaMalloc( (void**) &(gpuRuntimeData.spkCntBuf), sizeof(int*)*MAX_GRP_PER_SNN));
-	for (int g=0; g<numGrp; g++) {
+	for (int g=0; g<numGroups; g++) {
 		if (!groupConfig[g].withSpikeCounter)
 			continue; // skip group if it doesn't have a spkMonRT
 
@@ -2816,10 +2816,10 @@ void SNN::allocateSNN_GPU() {
 	CUDA_CHECK_ERRORS(cudaMemcpyToSymbol(d_mulSynFast, mulSynFast, sizeof(float)*numConnections, 0, cudaMemcpyHostToDevice));
 	CUDA_CHECK_ERRORS(cudaMemcpyToSymbol(d_mulSynSlow, mulSynSlow, sizeof(float)*numConnections, 0, cudaMemcpyHostToDevice));
 
-	CUDA_CHECK_ERRORS(cudaMemcpyToSymbol(groupConfigGPU, groupConfig, (networkConfig.numGrp) * sizeof(GroupConfigRT), 0, cudaMemcpyHostToDevice));
+	CUDA_CHECK_ERRORS(cudaMemcpyToSymbol(groupConfigGPU, groupConfig, (networkConfig.numGroups) * sizeof(GroupConfigRT), 0, cudaMemcpyHostToDevice));
 
 	KERNEL_DEBUG("Transfering group settings to GPU:");
-	for (int i=0;i<numGrp;i++) {
+	for (int i=0;i<numGroups;i++) {
 		KERNEL_DEBUG("Settings for Group %s:", groupInfo[i].Name.c_str());
 		
 		KERNEL_DEBUG("\tType: %d",(int)groupConfig[i].Type);

@@ -78,7 +78,7 @@ void SNN::printMemoryInfo(FILE* const fp) {
 	fprintf(fp, "*****************************************\n\n");
 
 	fprintf(fp, "************* Connection Info *************\n");
-	for(int g=0; g < numGrp; g++) {
+	for(int g=0; g < numGroups; g++) {
 		int TNpost=0;
 		int TNpre=0;
 		int TNpre_plastic=0;
@@ -109,7 +109,7 @@ void SNN::printStatusConnectionMonitor(int connId) {
 
 void SNN::printStatusSpikeMonitor(int grpId) {
 	if (grpId==ALL) {
-		for (int grpId1=0; grpId1<numGrp; grpId1++) {
+		for (int grpId1=0; grpId1<numGroups; grpId1++) {
 			printStatusSpikeMonitor(grpId1);
 		}
 	} else {
@@ -167,7 +167,7 @@ void SNN::printStatusSpikeMonitor(int grpId) {
 
 void SNN::printStatusGroupMonitor(int grpId) {
 	if (grpId == ALL) {
-		for (int g = 0; g < numGrp; g++) {
+		for (int g = 0; g < numGroups; g++) {
 			printStatusGroupMonitor(g);
 		}
 	} else {
@@ -204,7 +204,7 @@ void SNN::printStatusGroupMonitor(int grpId) {
 // This method allows us to print all information about the neuron.
 // If the enablePrint is false for a specific group, we do not print its state.
 void SNN::printState(FILE* const fp) {
-	for(int g=0; g < numGrp; g++)
+	for(int g=0; g < numGroups; g++)
 		printNeuronState(g, fp);
 }
 
@@ -327,7 +327,7 @@ void SNN::printGroupInfo(int grpId) {
 void SNN::printGroupInfo2(FILE* const fpg)
 {
   fprintf(fpg, "#Group Information\n");
-  for(int g=0; g < numGrp; g++) {
+  for(int g=0; g < numGroups; g++) {
     fprintf(fpg, "group %d: name %s : type %s %s %s %s %s: size %d : start %d : end %d \n",
       g, groupInfo[g].Name.c_str(),
       (groupConfig[g].Type&POISSON_NEURON) ? "poisson " : "",
@@ -356,7 +356,7 @@ void SNN::printPostConnection(FILE * const fp)
 {
   if(fp) fprintf(fp, "PRINTING POST-SYNAPTIC CONNECTION TOPOLOGY\n");
   if(fp) fprintf(fp, "(((((((((((((((((((((())))))))))))))))))))))\n");
-  for(int i=0; i < numGrp; i++)
+  for(int i=0; i < numGroups; i++)
     printPostConnection(i,fp);
 }
 
@@ -365,7 +365,7 @@ void SNN::printPreConnection(FILE * const fp)
 {
   if(fp) fprintf(fp, "PRINTING PRE-SYNAPTIC CONNECTION TOPOLOGY\n");
   if(fp) fprintf(fp, "(((((((((((((((((((((())))))))))))))))))))))\n");
-  for(int i=0; i < numGrp; i++)
+  for(int i=0; i < numGroups; i++)
     printPreConnection(i,fp);
 }
 
@@ -404,7 +404,7 @@ void SNN::printNetworkInfo(FILE* const fpg) {
 	printConnectionInfo2(fpg);
 	fprintf(fpg, "#Flat Network Info Format \n");
 	fprintf(fpg, "#(neuron id : length (number of connections) : neuron_id0,delay0 : neuron_id1,delay1 : ... \n");
-	for(int g=0; g < numGrp; g++) {
+	for(int g=0; g < numGroups; g++) {
 		int postM = printPostConnection2(g, fpg);
 		int numPreSynapses  = printPreConnection2(g, fpg);
 		if (postM > maxLengthPost)
@@ -435,14 +435,14 @@ void SNN::printFiringRate(char *fname)
   fprintf(fpg, "#Average Firing Rate\n");
   if(printCnt==0) {
     fprintf(fpg, "#network %s: size = %d\n", networkName_.c_str(), numN);
-    for(int grpId=0; grpId < numGrp; grpId++) {
+    for(int grpId=0; grpId < numGroups; grpId++) {
       fprintf(fpg, "#group %d: name %s : size = %d\n", grpId, groupInfo[grpId].Name.c_str(), groupConfig[grpId].SizeN);
     }
   }
   fprintf(fpg, "Time %d ms\n", simTime);
   fprintf(fpg, "#activeNeurons ( <= 1.0) = fraction of neuron in the given group that are firing more than 1Hz\n");
   fprintf(fpg, "#avgFiring (in Hz) = Average firing rate of activeNeurons in given group\n");
-  for(int grpId=0; grpId < numGrp; grpId++) {
+  for(int grpId=0; grpId < numGroups; grpId++) {
     fprintf(fpg, "group %d : \t", grpId);
     int   totSpike = 0;
     int   activeCnt  = 0;
@@ -568,14 +568,14 @@ void SNN::printWeights(int preGrpId, int postGrpId) {
 	int preA, preZ, postA, postZ;
 	if (preGrpId==ALL) {
 		preA = 0;
-		preZ = numGrp;
+		preZ = numGroups;
 	} else {
 		preA = preGrpId;
 		preZ = preGrpId+1;
 	}
 	if (postGrpId==ALL) {
 		postA = 0;
-		postZ = numGrp;
+		postZ = numGroups;
 	} else {
 		postA = postGrpId;
 		postZ = postGrpId+1;
