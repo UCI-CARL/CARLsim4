@@ -603,12 +603,13 @@ private:
 	 */
 	void checkSpikeCounterRecordDur();
 
+	/*!
+	 * \brief scan all GroupConfigs and ConnectConfigs for generating the configuration of a network
+	 */
+	void collectNetworkConfig();
+
 	void compactConnections(); //!< minimize any other wastage in that array by compacting the store
-	//void connectFull(ConnectConfig* info);
-	//void connectOneToOne(ConnectConfig* info);
-	//void connectRandom(ConnectConfig* info);
-	//void connectGaussian(ConnectConfig* info);
-	//void connectUserDefined(ConnectConfig* info);
+	void compileGroupAndConnectConfig();
 	void connectFull(short int connId);
 	void connectOneToOne(short int connId);
 	void connectRandom(short int connId);
@@ -626,9 +627,11 @@ private:
 	void findFiring();
 	int findGrpId(int nid);//!< For the given neuron nid, find the group id
 
+	void findMaxDelay(int* _maxDelay);
 	//! finds the maximum post-synaptic and pre-synaptic length
 	//! this used to be in updateParameters
-	void findMaxNumSynapses(int* numPostSynapses, int* numPreSynapses);
+	void findMaxNumSynapses(int* _maxNumPostSynGrp, int* _maxNumPreSynGrp);
+	void findMaxSpikesD1D2(unsigned int* _maxSpikesD1, unsigned int* _maxSpikesD2);
 
 	void generatePostSpike(unsigned int pre_i, unsigned int idx_d, unsigned int offset, unsigned int tD);
 	void generateSpikes();
@@ -657,7 +660,7 @@ private:
 	//! performs a consistency check to see whether numN* class members have been accumulated correctly
 	void verifyNumNeurons();
 
-	void compileSNN(bool removeTempMemory);
+	void compileSNN();
 	
 	void linkSNN();
 
@@ -751,15 +754,15 @@ private:
 
 	void swapConnections(int nid, int oldPos, int newPos);
 
-	void updateAfterMaxTime();
+	//void updateAfterMaxTime();
+
 	void updateSpikesFromGrp(int grpId);
 	void updateSpikeGenerators();
 	void updateSpikeGeneratorsInit();
 
-	int  updateSpikeTables();
+	void updateSpikeTables();
 	//void updateStateAndFiringTable();
 	bool updateTime(); //!< updates simTime, returns true when a new second is started
-
 	// +++++ GPU MODE +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 	// TODO: consider moving to snn_gpu.h
 	

@@ -749,7 +749,7 @@ void SNN::setWeightAndWeightChangeUpdate(UpdateInterval wtANDwtChangeUpdateInter
 void SNN::setupNetwork(bool removeTempMem) {
 	switch (snnState) {
 	case CONFIG_SNN:
-		compileSNN(removeTempMem);
+		compileSNN();
 	case COMPILED_SNN:
 		linkSNN();
 	case LINKED_SNN:
@@ -2389,39 +2389,8 @@ void SNN::buildGroup(int grpId) {
  * \sa createGroup(), connect()
  */
 void SNN::buildNetwork() {
-	// find the maximum values for number of pre- and post-synaptic neurons
-	findMaxNumSynapses(&maxNumPostSynGrp, &maxNumPreSynGrp);
-
-	// update (initialize) maxSpikesD1, maxSpikesD2 and allocate space for firingTableD1 and firingTableD2
-	maxDelay_ = updateSpikeTables();
-
-	// make sure number of neurons and max delay are within bounds
-	assert(maxDelay_ <= MAX_SYN_DELAY); 
-	assert(numN <= 1000000);
-	assert((numN > 0) && (numN == numNExcReg + numNInhReg + numNPois));
-
-	// display the evaluated network and delay length....
-	KERNEL_INFO("\n");
-	KERNEL_INFO("***************************** Setting up Network **********************************");
-	KERNEL_INFO("numN = %d, maxNumPostSynapsesGroup = %d, maxNumPreSynapsesGroup = %d, maxDelay = %d", numN, maxNumPostSynGrp,
-					maxNumPreSynGrp, maxDelay_);
-
-	if (maxNumPostSynGrp > MAX_NUM_POST_SYN) {
-		for (int g=0;g<numGroups;g++) {
-			if (groupConfig[g].numPostSynapses>MAX_NUM_POST_SYN)
-				KERNEL_ERROR("Grp: %s(%d) has too many output synapses (%d), max %d.",groupInfo[g].Name.c_str(),g,
-							groupConfig[g].numPostSynapses,MAX_NUM_POST_SYN);
-		}
-		assert(maxNumPostSynGrp <= MAX_NUM_POST_SYN);
-	}
-	if (maxNumPreSynGrp > MAX_NUM_PRE_SYN) {
-		for (int g=0;g<numGroups;g++) {
-			if (groupConfig[g].numPreSynapses>MAX_NUM_PRE_SYN)
-				KERNEL_ERROR("Grp: %s(%d) has too many input synapses (%d), max %d.",groupInfo[g].Name.c_str(),g,
- 							groupConfig[g].numPreSynapses,MAX_NUM_PRE_SYN);
-		}
-		assert(maxNumPreSynGrp <= MAX_NUM_PRE_SYN);
-	}
+	// allocate space for firingTableD1 and firingTableD2
+	updateSpikeTables();
 
 	// initialize all the parameters....
 	//! update (initialize) numN, numPostSynapses, numPreSynapses, maxDelay_, postSynCnt, preSynCnt
@@ -2601,6 +2570,19 @@ void SNN::checkSpikeCounterRecordDur() {
 	}
 }
 
+void SNN::collectNetworkConfig() {
+	// find the maximum number of pre- and post-connections among groups
+	// SNN::maxNumPreSynGrp and SNN::maxNumPostSynGrp are updated
+	findMaxNumSynapses(&maxNumPostSynGrp, &maxNumPreSynGrp);
+
+	// find the maximum delay in the network
+	// SNN::maxDelay_ is updated
+	findMaxDelay(&maxDelay_);
+
+	// find the maximum number of spikes in D1 (i.e., maxDelay == 1) and D2 (i.e., maxDelay >= 2) sets
+	findMaxSpikesD1D2(&maxSpikesD1, &maxSpikesD2);
+}
+
 // We parallelly cleanup the postSynapticIds array to minimize any other wastage in that array by compacting the store
 // Appropriate alignment specified by ALIGN_COMPACTION macro is used to ensure some level of alignment (if necessary)
 void SNN::compactConnections() {
@@ -2755,8 +2737,17 @@ void SNN::connectFull(short int connId) {
 
 // after all the initalization. Its time to create the synaptic weights, weight change and also
 // time of firing these are the mostly costly arrays so dense packing is essential to minimize wastage of space
-void SNN::compileSNN(bool removeTempMemory) {
-	KERNEL_DEBUG("Beginning compilation of network....");
+void SNN::compileSNN() {
+	KERNEL_DEBUG("Beginning compilation of the network....");
+
+	// compile (update) group and connect configs according to their mutual information
+	// update the max delay for each group groupConfig[grpId].MaxDelay
+	compileGroupAndConnectConfig();
+
+	// collect the network configs according to compiled gorup and connect configs
+	// collect SNN::maxNumPreSynGrp, SNN::maxNumPostSynGrp, SNN::maxDelay_
+	// collect SNN::maxSpikesD1, SNN::maxSpikesD2
+	collectNetworkConfig();
 
 	// perform various consistency checks:
 	// - numNeurons vs. sum of all neurons
@@ -2764,34 +2755,14 @@ void SNN::compileSNN(bool removeTempMemory) {
 	// - etc.
 	verifyNetwork();
 
-	// time to build the complete network with relevant parameters..
-	buildNetwork();
-
-	//..minimize any other wastage in that array by compacting the store
-	compactConnections();
-
-	// The post synaptic connections are sorted based on delay here
-	reorganizeDelay();
-
-	// Print the statistics again but dump the results to a file
-	printMemoryInfo(fpDeb_);
-
-	// initialize the synaptic weights accordingly..
-	initSynapticWeights();
-
-	updateSpikeGeneratorsInit();
-
-	// reset all spike cnt
-	resetSpikeCnt(ALL);
-
-	printTuningLog(fpDeb_);
-
-	KERNEL_INFO("");
-	KERNEL_INFO("*****************      Initializing %s Simulation      *************************",
-		simMode_==GPU_MODE?"GPU":"CPU");
-
-	delete[] tmp_SynapticDelay;
-	tmp_SynapticDelay = NULL;
+	// display the network configuration
+	KERNEL_INFO("\n");
+	KERNEL_INFO("***************************** Network Configuration **********************************");
+	KERNEL_INFO("The number of neurons in the network (numN) = %d", numN);
+	KERNEL_INFO("The maximum number of post-connectoins among groups (maxNumPostSynGrp) = %d", maxNumPostSynGrp);
+	KERNEL_INFO("The maximum number of pre-connections among groups (maxNumPreSynGrp) = %d", maxNumPreSynGrp);
+	KERNEL_INFO("The maximum axonal delay in the network (maxDelay) = %d", maxDelay_);
+	KERNEL_INFO("\n");
 
 	//ensure that we dont compile the network again
 	snnState = COMPILED_SNN;
@@ -3005,18 +2976,38 @@ int SNN::findGrpId(int nid) {
 	exitSimulation(1);
 }
 
-void SNN::findMaxNumSynapses(int* numPostSynapses, int* numPreSynapses) {
-	*numPostSynapses = 0;
-	*numPreSynapses = 0;
+void SNN::findMaxDelay(int* _maxDelay) {
+	int grpSrc;
+	*_maxDelay = 0;
+	// scall all connect configs to find the maximum delay in the network
+	for (std::map<int, ConnectConfig>::iterator it = connectConfigMap.begin(); it != connectConfigMap.end(); it++) {
+		grpSrc = it->second.grpSrc;
+		if (it->second.maxDelay > *_maxDelay)
+			*_maxDelay = it->second.maxDelay;
+	}
+}
+
+void SNN::findMaxNumSynapses(int* _maxNumPostSynGrp, int* _maxNumPreSynGrp) {
+	*_maxNumPostSynGrp = 0;
+	*_maxNumPreSynGrp = 0;
 
 	//  scan all the groups and find the required information
-	for (int g=0; g<numGroups; g++) {
+	for (int g = 0; g < numGroups; g++) {
 		// find the values for maximum postsynaptic length
 		// and maximum pre-synaptic length
-		if (groupConfig[g].numPostSynapses >= *numPostSynapses)
-			*numPostSynapses = groupConfig[g].numPostSynapses;
-		if (groupConfig[g].numPreSynapses >= *numPreSynapses)
-			*numPreSynapses = groupConfig[g].numPreSynapses;
+		if (groupConfig[g].numPostSynapses > *_maxNumPostSynGrp)
+			*_maxNumPostSynGrp = groupConfig[g].numPostSynapses;
+		if (groupConfig[g].numPreSynapses > *_maxNumPreSynGrp)
+			*_maxNumPreSynGrp = groupConfig[g].numPreSynapses;
+	}
+}
+
+void SNN::findMaxSpikesD1D2(unsigned int* _maxSpikesD1, unsigned int* _maxSpikesD2) {
+	for(int g = 0; g < numGroups; g++) {
+		if (groupConfig[g].MaxDelay == 1)
+			*_maxSpikesD1 += (groupConfig[g].SizeN * groupConfig[g].MaxFiringRate);
+		else
+			*_maxSpikesD2 += (groupConfig[g].SizeN * groupConfig[g].MaxFiringRate);
 	}
 }
 
@@ -3211,6 +3202,34 @@ void SNN::verifyNetwork() {
 
 	// make sure every group with homeostasis also has STDP
 	verifyHomeostasis();
+
+	// make sure the max delay is within bound
+	assert(maxDelay_ <= MAX_SYN_DELAY);
+
+	// make sure there is sufficient buffer
+	if ((maxSpikesD1 + maxSpikesD2) < (numNExcReg + numNInhReg + numNPois) * UNKNOWN_NEURON_MAX_FIRING_RATE) {
+		KERNEL_ERROR("Insufficient amount of buffer allocated...");
+		exitSimulation(1);
+	}
+
+	// make sure the number of pre- and post-connection does not exceed the limitation
+	if (maxNumPostSynGrp > MAX_NUM_POST_SYN) {
+		for (int g = 0; g < numGroups; g++) {
+			if (groupConfig[g].numPostSynapses>MAX_NUM_POST_SYN)
+				KERNEL_ERROR("Grp: %s(%d) has too many output synapses (%d), max %d.",groupInfo[g].Name.c_str(),g,
+							groupConfig[g].numPostSynapses,MAX_NUM_POST_SYN);
+		}
+		assert(maxNumPostSynGrp <= MAX_NUM_POST_SYN);
+	}
+
+	if (maxNumPreSynGrp > MAX_NUM_PRE_SYN) {
+		for (int g = 0; g < numGroups; g++) {
+			if (groupConfig[g].numPreSynapses>MAX_NUM_PRE_SYN)
+				KERNEL_ERROR("Grp: %s(%d) has too many input synapses (%d), max %d.",groupInfo[g].Name.c_str(),g,
+ 							groupConfig[g].numPreSynapses,MAX_NUM_PRE_SYN);
+		}
+		assert(maxNumPreSynGrp <= MAX_NUM_PRE_SYN);
+	}
 }
 
 // checks whether STDP is set on a post-group with incoming plastic connections
@@ -3290,9 +3309,13 @@ void SNN::verifyNumNeurons() {
 		KERNEL_ERROR("nExcPois+nInhPois=%d does not add up to numNPois=%d", nExcPois+nInhPois, numNPois);
 		exitSimulation(1);
 	}
-//	printf("numN=%d == %d\n",numN,nExcReg+nInhReg+nExcPois+nInhPois);
-//	printf("numNReg=%d == %d\n",numNReg, nExcReg+nInhReg);
-//	printf("numNPois=%d == %d\n",numNPois, nExcPois+nInhPois);
+
+	//printf("numN=%d == %d\n",numN,nExcReg+nInhReg+nExcPois+nInhPois);
+	//printf("numNReg=%d == %d\n",numNReg, nExcReg+nInhReg);
+	//printf("numNPois=%d == %d\n",numNPois, nExcPois+nInhPois);
+	
+	assert(numN <= 1000000);
+	assert((numN > 0) && (numN == numNExcReg + numNInhReg + numNPois));
 }
 
 // \FIXME: not sure where this should go... maybe create some helper file?
@@ -3361,6 +3384,9 @@ unsigned int SNN::poissonSpike(unsigned int currTime, float frate, int refractPe
 }
 
 void SNN::linkSNN() {
+	// time to build the complete network with relevant parameters..
+	buildNetwork();
+
 	snnState = LINKED_SNN;
 }
 
@@ -3642,6 +3668,32 @@ void SNN::reorganizeDelay()
 }
 
 void SNN::optimizeAndPartitionSNN() {
+	//..minimize any other wastage in that array by compacting the store
+	compactConnections();
+
+	// The post synaptic connections are sorted based on delay here
+	reorganizeDelay();
+
+	// Print the statistics again but dump the results to a file
+	printMemoryInfo(fpDeb_);
+
+	// initialize the synaptic weights accordingly..
+	initSynapticWeights();
+
+	updateSpikeGeneratorsInit();
+
+	// reset all spike cnt
+	resetSpikeCnt(ALL);
+
+	printTuningLog(fpDeb_);
+
+	KERNEL_INFO("");
+	KERNEL_INFO("*****************      Initializing %s Simulation      *************************",
+		simMode_==GPU_MODE?"GPU":"CPU");
+
+	delete[] tmp_SynapticDelay;
+	tmp_SynapticDelay = NULL;
+
 	snnState = OPTIMIZED_PARTITIONED_SNN;
 }
 
@@ -4384,6 +4436,21 @@ void SNN::updateGroupMonitor(int grpId) {
 	}
 }
 
+void SNN::compileGroupAndConnectConfig() {
+	int grpSrc;
+
+	// find the maximum delay for each group.
+	for (std::map<int, ConnectConfig>::iterator it = connectConfigMap.begin(); it != connectConfigMap.end(); it++) {
+		grpSrc = it->second.grpSrc;
+		// check if the current connection's delay meaning grpSrc's delay
+		// is greater than the MaxDelay for grpSrc. We find the maximum
+		// delay for the grpSrc by this scheme.
+		if (it->second.maxDelay > groupConfig[grpSrc].MaxDelay)
+		 	groupConfig[grpSrc].MaxDelay = it->second.maxDelay;
+	}
+
+}
+
 void SNN::updateSpikesFromGrp(int grpId) {
 	assert(groupConfig[grpId].isSpikeGenerator==true);
 
@@ -4461,40 +4528,10 @@ void SNN::updateSpikeGeneratorsInit() {
 /*!
  * \return maximum delay in groups
  */
-int SNN::updateSpikeTables() {
-	int curD = 0;
-	int grpSrc;
-	// find the maximum delay in the given network
-	// and also the maximum delay for each group.
-	for (std::map<int, ConnectConfig>::iterator it = connectConfigMap.begin(); it != connectConfigMap.end(); it++) {
-		grpSrc = it->second.grpSrc;
-		if (it->second.maxDelay > curD)
-			curD = it->second.maxDelay;
-
-		// check if the current connection's delay meaning grp1's delay
-		// is greater than the MaxDelay for grp1. We find the maximum
-		// delay for the grp1 by this scheme.
-		if (it->second.maxDelay > groupConfig[grpSrc].MaxDelay)
-		 	groupConfig[grpSrc].MaxDelay = it->second.maxDelay;
-	}
-
-	for(int g = 0; g < numGroups; g++) {
-		if (groupConfig[g].MaxDelay == 1)
-			maxSpikesD1 += (groupConfig[g].SizeN * groupConfig[g].MaxFiringRate);
-		else
-			maxSpikesD2 += (groupConfig[g].SizeN * groupConfig[g].MaxFiringRate);
-	}
-
-	if ((maxSpikesD1 + maxSpikesD2) < (numNExcReg + numNInhReg + numNPois) * UNKNOWN_NEURON_MAX_FIRING_RATE) {
-		KERNEL_ERROR("Insufficient amount of buffer allocated...");
-		exitSimulation(1);
-	}
-
+void SNN::updateSpikeTables() {
 	snnRuntimeData.firingTableD2 = new unsigned int[maxSpikesD2];
 	snnRuntimeData.firingTableD1 = new unsigned int[maxSpikesD1];
 	cpuSnnSz.spikingInfoSize += sizeof(int) * ((maxSpikesD2 + maxSpikesD1) + 2* (1000 + maxDelay_ + 1));
-
-	return curD;
 }
 
 // updates simTime, returns true when new second started
