@@ -2603,7 +2603,6 @@ void SNN::copyFiringInfo_GPU()
 
 void SNN::allocateNetworkConfig() {
 	networkConfig.numN  = numN;
-	//networkConfig.numPostSynapses  = maxNumPostSynGrp;
 	networkConfig.maxDelay  = maxDelay_;
 	networkConfig.numNExcReg = numNExcReg;
 	networkConfig.numNInhReg	= numNInhReg;

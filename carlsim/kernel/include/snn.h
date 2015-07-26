@@ -70,6 +70,7 @@
 #define _SNN_GOLD_H_
 
 #include <map>
+#include <list>
 
 #include <carlsim.h>
 #include <callback_core.h>
@@ -158,12 +159,10 @@ public:
 	 * \param _grpIdPost ID of the post-synaptic group
 	 * \param _conn: pointer to an instance of class ConnectionGenerator
 	 * \param _synWtType: (optional) connection type, either SYN_FIXED or SYN_PLASTIC, default = SYN_FIXED
-	 * \param _maxPostM: (optional) maximum number of post-synaptic connections (per neuron), Set to 0 for no limit, default = 0
-	 * \param _maxPreM: (optional) maximum number of pre-synaptic connections (per neuron), Set to 0 for no limit, default = 0.
 	 * \return number of created synaptic projections
 	 */
 	short int connect(int gIDpre, int gIDpost, ConnectionGeneratorCore* conn, float mulSynFast, float mulSynSlow,
-		bool synWtType,	int maxM, int maxPreM);
+		bool synWtType);
 
 	//! Creates a group of Izhikevich spiking neurons
 	/*!
@@ -590,6 +589,7 @@ private:
 	//! add the entry that the current neuron has spiked
 	int  addSpikeToTable(int id, int g);
 
+	int assignGroup(int groupId, int availableNeuronId);
 	void buildGroup(int groupId);
 	void buildNetwork();
 	void buildPoissonGroup(int groupId);
@@ -609,7 +609,14 @@ private:
 	void collectNetworkConfig();
 
 	void compactConnections(); //!< minimize any other wastage in that array by compacting the store
-	void compileGroupAndConnectConfig();
+	void compileConnectConfig(); //!< for future use
+	void compileGroupConfig();
+
+	/*!
+	 * \brief generate connections among groups according to connect configuration
+	 */
+	void connectNetwork();
+	inline void connectNeurons(int srcGrp,  int destGrp, int srcN, int destN, short int connId);
 	void connectFull(short int connId);
 	void connectOneToOne(short int connId);
 	void connectRandom(short int connId);
@@ -899,12 +906,13 @@ private:
 	int				numGroups;
 	int				numConnections;		//!< number of connection calls (as in snn.connect(...))
 	//! keeps track of total neurons/presynapses/postsynapses currently allocated
-	unsigned int	allocatedN;
 	unsigned int	allocatedPre;
 	unsigned int	allocatedPost;
 
 	std::map<int, GroupConfig> groupConfigMap;
 	std::map<int, ConnectConfig> connectConfigMap;
+
+	std::list<ConnectionInfo> connectionList;
 
 	float 		*mulSynFast;	//!< scaling factor for fast synaptic currents, per connection
 	float 		*mulSynSlow;	//!< scaling factor for slow synaptic currents, per connection

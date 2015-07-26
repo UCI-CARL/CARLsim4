@@ -257,7 +257,7 @@ short int CARLsim::connect(int grpId1, int grpId2, const std::string& connType, 
 }
 
 // custom connectivity profile
-short int CARLsim::connect(int grpId1, int grpId2, ConnectionGenerator* conn, bool synWtType, int maxM, int maxPreM) {
+short int CARLsim::connect(int grpId1, int grpId2, ConnectionGenerator* conn, bool synWtType) {
 	std::string funcName = "connect(\""+getGroupName(grpId1)+"\",\""+getGroupName(grpId2)+"\")";
 	std::stringstream grpId1str; grpId1str << ". Group Id " << grpId1;
 	std::stringstream grpId2str; grpId2str << ". Group Id " << grpId2;
@@ -266,8 +266,6 @@ short int CARLsim::connect(int grpId1, int grpId2, ConnectionGenerator* conn, bo
 	UserErrors::assertTrue(!isPoissonGroup(grpId2), UserErrors::WRONG_NEURON_TYPE, funcName, grpId2str.str() +
 		" is PoissonGroup, connect");
 	UserErrors::assertTrue(conn!=NULL, UserErrors::CANNOT_BE_NULL, funcName, "ConnectionGenerator* conn");
-	UserErrors::assertTrue(maxM>=0, UserErrors::CANNOT_BE_NEGATIVE, funcName, "maxM");
-	UserErrors::assertTrue(maxPreM>=0, UserErrors::CANNOT_BE_NEGATIVE, funcName, "maxPreM");
 
 	UserErrors::assertTrue(carlsimState_==CONFIG_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "CONFIG.");
 	assert(++numConnections_ <= MAX_CONN_PER_SNN);
@@ -275,12 +273,12 @@ short int CARLsim::connect(int grpId1, int grpId2, ConnectionGenerator* conn, bo
 	// TODO: check for sign of weights
 	ConnectionGeneratorCore* CGC = new ConnectionGeneratorCore(this, conn);
 	connGen_.push_back(CGC);
-	return snn_->connect(grpId1, grpId2, CGC, 1.0f, 1.0f, synWtType, maxM, maxPreM);
+	return snn_->connect(grpId1, grpId2, CGC, 1.0f, 1.0f, synWtType);
 }
 
 // custom connectivity profile
 short int CARLsim::connect(int grpId1, int grpId2, ConnectionGenerator* conn, float mulSynFast, float mulSynSlow,
-						bool synWtType, int maxM, int maxPreM) {
+						bool synWtType) {
 	std::string funcName = "connect(\""+getGroupName(grpId1)+"\",\""+getGroupName(grpId2)+"\")";
 	std::stringstream grpId1str; grpId1str << ". Group Id " << grpId1;
 	std::stringstream grpId2str; grpId2str << ". Group Id " << grpId2;
@@ -291,16 +289,12 @@ short int CARLsim::connect(int grpId1, int grpId2, ConnectionGenerator* conn, fl
 	UserErrors::assertTrue(conn!=NULL, UserErrors::CANNOT_BE_NULL, funcName);
 	UserErrors::assertTrue(mulSynFast>=0.0f, UserErrors::CANNOT_BE_NEGATIVE, funcName, "mulSynFast");
 	UserErrors::assertTrue(mulSynSlow>=0.0f, UserErrors::CANNOT_BE_NEGATIVE, funcName, "mulSynSlow");
-	UserErrors::assertTrue(maxM>=0, UserErrors::CANNOT_BE_NEGATIVE, funcName, "maxM");
-	UserErrors::assertTrue(maxPreM>=0, UserErrors::CANNOT_BE_NEGATIVE, funcName, "maxPreM");
-
 	UserErrors::assertTrue(carlsimState_==CONFIG_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "CONFIG.");
 	assert(++numConnections_ <= MAX_CONN_PER_SNN);
 
 	ConnectionGeneratorCore* CGC = new ConnectionGeneratorCore(this, conn);
 	connGen_.push_back(CGC);
-	return snn_->connect(grpId1, grpId2, CGC, mulSynFast, mulSynSlow, synWtType,
-		maxM, maxPreM);
+	return snn_->connect(grpId1, grpId2, CGC, mulSynFast, mulSynSlow, synWtType);
 }
 
 // create group of Izhikevich spiking neurons on 1D grid

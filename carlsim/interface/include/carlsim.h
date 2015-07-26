@@ -260,8 +260,7 @@ public:
 	 * \STATE ::CONFIG_STATE
 	 * \see ch4s3_user_defined
 	 */
-	short int connect(int grpId1, int grpId2, ConnectionGenerator* conn, bool synWtType=SYN_FIXED, int maxM=0,
-						int maxPreM=0);
+	short int connect(int grpId1, int grpId2, ConnectionGenerator* conn, bool synWtType=SYN_FIXED);
 
 	/*!
 	 * \brief make connections with custom connectivity profile
@@ -270,7 +269,7 @@ public:
 	 * \see ch4s3_user_defined
 	 */
 	short int connect(int grpId1, int grpId2, ConnectionGenerator* conn, float mulSynFast, float mulSynSlow,
-						bool synWtType=SYN_FIXED, int maxM=0,int maxPreM=0);
+						bool synWtType=SYN_FIXED);
 
 
 	/*!

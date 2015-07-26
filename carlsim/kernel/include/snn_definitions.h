@@ -129,8 +129,8 @@ inline bool isInhibitoryNeuron (unsigned int& nid, unsigned int& numNInhPois, un
 #define KERNEL_DEBUG_PRINT(fp, type, formatc, ...) fprintf((FILE*)fp,"[" type " %s:%d] " formatc "\n",__FILE__,__LINE__,##__VA_ARGS__)
 
 
-#define MAX_NUM_POST_SYN 10000
-#define MAX_NUM_PRE_SYN 20000
+#define MAX_NUM_POST_SYN 100000
+#define MAX_NUM_PRE_SYN 200000
 #define MAX_SYN_DELAY 20
 
 // increasing the following numbers will increase the load on constant memory

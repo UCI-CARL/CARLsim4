@@ -69,6 +69,14 @@ typedef struct {
 	uint8_t	grpId;
 } post_info_t;
 
+typedef struct ConnectionInfo_s {
+	int grpSrc;
+	int grpDest;
+	int nSrc;
+	int nDest;
+	short int connId;
+} ConnectionInfo;
+
 /*!
  * \brief The configuration of a connection
  *
@@ -89,8 +97,8 @@ typedef struct ConnectConfig_s {
 	float                    radZ;
 	float                    mulSynFast;				//!< factor to be applied to either gAMPA or gGABAa
 	float                    mulSynSlow;				//!< factor to be applied to either gNMDA or gGABAb
-	int                      numPostSynapses;
-	int                      numPreSynapses;
+	//int                      numPostSynapses;
+	//int                      numPreSynapses;
 	int                      connectionMonitorId;
 	uint32_t                 connProp;
 	ConnectionGeneratorCore* conn;
@@ -260,7 +268,6 @@ typedef struct RuntimeData_s {
 typedef struct NetworkConfigRT_s  {
 	size_t			STP_Pitch;		//!< numN rounded upwards to the nearest 256 boundary, used for GPU only
 	unsigned int	numN;
-	//unsigned int	numPostSynapses;
 	unsigned int	maxDelay;
 	unsigned int	numNExcReg;
 	unsigned int	numNInhReg;
@@ -442,8 +449,6 @@ typedef struct ConnectConfigRT_s {
 	float					 radZ;
 	float 					 mulSynFast;				//!< factor to be applied to either gAMPA or gGABAa
 	float 					 mulSynSlow;				//!< factor to be applied to either gNMDA or gGABAb
-	int	  	  				 numPostSynapses;
-	int	  	  				 numPreSynapses;
 	int                      connectionMonitorId;
 	uint32_t  				 connProp;
 	ConnectionGeneratorCore* conn;

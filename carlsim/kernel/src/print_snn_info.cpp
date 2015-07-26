@@ -226,11 +226,11 @@ void SNN::printConnectionInfo(FILE * const fp)
   fprintf(fp, "------------\n");
   //while(newInfo) {
   for (std::map<int, ConnectConfig>::iterator it = connectConfigMap.begin(); it != connectConfigMap.end(); it++) {
-    bool synWtType  = GET_FIXED_PLASTIC(it->second.connProp);
-    fprintf(fp, " // (%s => %s): numPostSynapses=%d, numPreSynapses=%d, iWt=%3.3f, mWt=%3.3f, ty=%x, maxD=%d, minD=%d %s\n",
-      groupInfo[it->second.grpSrc].Name.c_str(), groupInfo[it->second.grpDest].Name.c_str(),
-      it->second.numPostSynapses, it->second.numPreSynapses, it->second.initWt, it->second.maxWt,
-      it->second.connProp, it->second.maxDelay, it->second.minDelay, (synWtType == SYN_PLASTIC)?"(*)":"");
+    //bool synWtType  = GET_FIXED_PLASTIC(it->second.connProp);
+    //fprintf(fp, " // (%s => %s): numPostSynapses=%d, numPreSynapses=%d, iWt=%3.3f, mWt=%3.3f, ty=%x, maxD=%d, minD=%d %s\n",
+    //  groupInfo[it->second.grpSrc].Name.c_str(), groupInfo[it->second.grpDest].Name.c_str(),
+    //  it->second.numPostSynapses, it->second.numPreSynapses, it->second.initWt, it->second.maxWt,
+    //  it->second.connProp, it->second.maxDelay, it->second.minDelay, (synWtType == SYN_PLASTIC)?"(*)":"");
 
     //      weights of input spike generating layers need not be observed...
     //          bool synWtType  = GET_FIXED_PLASTIC(newInfo->connProp);
@@ -246,13 +246,13 @@ void SNN::printConnectionInfo2(FILE * const fpg)
 	fprintf(fpg, "#Connection Information \n");
 	fprintf(fpg, "#(e.g. from => to : approx. # of post (numPostSynapses) : approx. # of pre-synaptic (numPreSynapses) : weights.. : type plastic or fixed : max and min axonal delay\n");
 
-	for (std::map<int, ConnectConfig>::iterator it = connectConfigMap.begin(); it != connectConfigMap.end(); it++) {
-		bool synWtType	= GET_FIXED_PLASTIC(it->second.connProp);
-		fprintf(fpg, " %d => %d : %s => %s : numPostSynapses %d : numPreSynapses %d : initWeight %f : maxWeight %3.3f : type %s : maxDelay %d : minDelay %d\n",
-				it->second.grpSrc, it->second.grpDest, groupInfo[it->second.grpSrc].Name.c_str(), groupInfo[it->second.grpDest].Name.c_str(),
-				it->second.numPostSynapses, it->second.numPreSynapses, it->second.initWt, it->second.maxWt,
-				(synWtType == SYN_PLASTIC)?"plastic":"fixed", it->second.maxDelay, it->second.minDelay);
-	}
+	//for (std::map<int, ConnectConfig>::iterator it = connectConfigMap.begin(); it != connectConfigMap.end(); it++) {
+	//	bool synWtType	= GET_FIXED_PLASTIC(it->second.connProp);
+	//	fprintf(fpg, " %d => %d : %s => %s : numPostSynapses %d : numPreSynapses %d : initWeight %f : maxWeight %3.3f : type %s : maxDelay %d : minDelay %d\n",
+	//			it->second.grpSrc, it->second.grpDest, groupInfo[it->second.grpSrc].Name.c_str(), groupInfo[it->second.grpDest].Name.c_str(),
+	//			it->second.numPostSynapses, it->second.numPreSynapses, it->second.initWt, it->second.maxWt,
+	//			(synWtType == SYN_PLASTIC)?"plastic":"fixed", it->second.maxDelay, it->second.minDelay);
+	//}
 	fprintf(fpg, "\n");
 	fflush(fpg);
 }
@@ -269,14 +269,14 @@ void SNN::printConnectionInfo(short int connId) {
 	KERNEL_INFO("  - Initial weight             = %8.5f", fabs(connConfig.initWt));
 	KERNEL_INFO("  - Min delay                  = %8d", connConfig.minDelay);
 	KERNEL_INFO("  - Max delay                  = %8d", connConfig.maxDelay);
-  KERNEL_INFO("  - Radius X                   = %8.2f", connConfig.radX);
-  KERNEL_INFO("  - Radius Y                   = %8.2f", connConfig.radY);
-  KERNEL_INFO("  - Radius Z                   = %8.2f", connConfig.radZ);
+	KERNEL_INFO("  - Radius X                   = %8.2f", connConfig.radX);
+	KERNEL_INFO("  - Radius Y                   = %8.2f", connConfig.radY);
+	KERNEL_INFO("  - Radius Z                   = %8.2f", connConfig.radZ);
 
-	float avgPostM = connConfig.numberOfConnections/groupConfig[connConfig.grpSrc].SizeN;
-	float avgPreM  = connConfig.numberOfConnections/groupConfig[connConfig.grpDest].SizeN;
-	KERNEL_INFO("  - Avg numPreSynapses         = %8d", (int)avgPreM );
-	KERNEL_INFO("  - Avg numPostSynapses        = %8d", (int)avgPostM );
+	float avgPostM = ((float)connConfig.numberOfConnections)/groupConfig[connConfig.grpSrc].SizeN;
+	float avgPreM  = ((float)connConfig.numberOfConnections)/groupConfig[connConfig.grpDest].SizeN;
+	KERNEL_INFO("  - Avg numPreSynapses         = %8.2f", avgPreM );
+	KERNEL_INFO("  - Avg numPostSynapses        = %8.2f", avgPostM );
 }
 
 void SNN::printGroupInfo(int grpId) {
