@@ -1557,14 +1557,14 @@ void SNN::copyPostConnectionInfo(RuntimeData* dest, bool allocateMem) {
 
 	// actual post synaptic connection information...
 	if(allocateMem)
-		CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->postSynapticIds, sizeof(snnRuntimeData.postSynapticIds[0]) * (postSynCnt + 10)));
-	CUDA_CHECK_ERRORS(cudaMemcpy(dest->postSynapticIds, snnRuntimeData.postSynapticIds, sizeof(snnRuntimeData.postSynapticIds[0]) * (postSynCnt + 10), cudaMemcpyHostToDevice)); //FIXME: why +10 post synapses
-	networkConfig.postSynCnt = postSynCnt;
+		CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->postSynapticIds, sizeof(snnRuntimeData.postSynapticIds[0]) * (numPostSynNet + 10)));
+	CUDA_CHECK_ERRORS(cudaMemcpy(dest->postSynapticIds, snnRuntimeData.postSynapticIds, sizeof(snnRuntimeData.postSynapticIds[0]) * (numPostSynNet + 10), cudaMemcpyHostToDevice)); //FIXME: why +10 post synapses
+	networkConfig.numPostSynNet = numPostSynNet;
 
 	if(allocateMem)
-		CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->preSynapticIds, sizeof(snnRuntimeData.preSynapticIds[0]) * (preSynCnt + 10)));
-	CUDA_CHECK_ERRORS(cudaMemcpy(dest->preSynapticIds, snnRuntimeData.preSynapticIds, sizeof(snnRuntimeData.preSynapticIds[0]) * (preSynCnt + 10), cudaMemcpyHostToDevice)); //FIXME: why +10 post synapses
-	networkConfig.preSynCnt = preSynCnt;
+		CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->preSynapticIds, sizeof(snnRuntimeData.preSynapticIds[0]) * (numPreSynNet + 10)));
+	CUDA_CHECK_ERRORS(cudaMemcpy(dest->preSynapticIds, snnRuntimeData.preSynapticIds, sizeof(snnRuntimeData.preSynapticIds[0]) * (numPreSynNet + 10), cudaMemcpyHostToDevice)); //FIXME: why +10 post synapses
+	networkConfig.numPreSynNet = numPreSynNet;
 }
 
 void SNN::copyConnections(RuntimeData* dest, int kind, bool allocateMem) {
@@ -2088,7 +2088,7 @@ void SNN::copyWeightState (RuntimeData* dest, RuntimeData* src,  cudaMemcpyKind 
 
 	for (int i=0; i < numCnt; i++) {
 		if (grpId == -1) {
-			length_wt 	= preSynCnt;
+			length_wt 	= numPreSynNet;
 			cumPos_syn  = 0;
 		} else {
 			int id = groupConfig[grpId].StartN + i;
@@ -2096,8 +2096,8 @@ void SNN::copyWeightState (RuntimeData* dest, RuntimeData* src,  cudaMemcpyKind 
 			cumPos_syn 	= dest->cumulativePre[id];
 		}
 
-		assert (cumPos_syn < preSynCnt || preSynCnt==0);
-		assert (length_wt <= preSynCnt);
+		assert (cumPos_syn < numPreSynNet || numPreSynNet==0);
+		assert (length_wt <= numPreSynNet);
 
 	    //MDR FIXME, allocateMem option is VERY wrong
 	    // synaptic information based
@@ -2132,29 +2132,29 @@ void SNN::copyState(RuntimeData* dest, bool allocateMem) {
 	cudaMemcpyKind kind = cudaMemcpyHostToDevice;
 
 	// synaptic information based
-	if(allocateMem)		CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->wt, sizeof(float)*preSynCnt));
-	CUDA_CHECK_ERRORS( cudaMemcpy( dest->wt,snnRuntimeData.wt, sizeof(float)*preSynCnt, kind));
+	if(allocateMem)		CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->wt, sizeof(float)*numPreSynNet));
+	CUDA_CHECK_ERRORS( cudaMemcpy( dest->wt,snnRuntimeData.wt, sizeof(float)*numPreSynNet, kind));
 
-	if(allocateMem)		CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->cumConnIdPre, sizeof(short int)*preSynCnt));
-	CUDA_CHECK_ERRORS( cudaMemcpy( dest->cumConnIdPre, snnRuntimeData.cumConnIdPre, sizeof(short int)*preSynCnt, kind));
+	if(allocateMem)		CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->cumConnIdPre, sizeof(short int)*numPreSynNet));
+	CUDA_CHECK_ERRORS( cudaMemcpy( dest->cumConnIdPre, snnRuntimeData.cumConnIdPre, sizeof(short int)*numPreSynNet, kind));
 
 	// we don't need these data structures if the network doesn't have any plastic synapses at all
 	// they show up in gpuUpdateLTP() and updateSynapticWeights(), two functions that do not get called if
 	// sim_with_fixedwts is set
 	if (!sim_with_fixedwts) {
 		// synaptic weight derivative
-		if(allocateMem)		CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->wtChange, sizeof(float)*preSynCnt));
-		CUDA_CHECK_ERRORS( cudaMemcpy( dest->wtChange, snnRuntimeData.wtChange, sizeof(float)*preSynCnt, kind));
+		if(allocateMem)		CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->wtChange, sizeof(float)*numPreSynNet));
+		CUDA_CHECK_ERRORS( cudaMemcpy( dest->wtChange, snnRuntimeData.wtChange, sizeof(float)*numPreSynNet, kind));
 
 		// synaptic weight maximum value
-		if(allocateMem)		CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->maxSynWt, sizeof(float)*preSynCnt));
-		CUDA_CHECK_ERRORS( cudaMemcpy( dest->maxSynWt, snnRuntimeData.maxSynWt, sizeof(float)*preSynCnt, kind));
+		if(allocateMem)		CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->maxSynWt, sizeof(float)*numPreSynNet));
+		CUDA_CHECK_ERRORS( cudaMemcpy( dest->maxSynWt, snnRuntimeData.maxSynWt, sizeof(float)*numPreSynNet, kind));
 	}
 
 	// firing time for individual synapses
-	if(allocateMem)		CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->synSpikeTime, sizeof(int)*preSynCnt));
-	CUDA_CHECK_ERRORS( cudaMemcpy( dest->synSpikeTime, snnRuntimeData.synSpikeTime, sizeof(int)*preSynCnt, kind));
-	networkConfig.preSynLength = preSynCnt;
+	if(allocateMem)		CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->synSpikeTime, sizeof(int)*numPreSynNet));
+	CUDA_CHECK_ERRORS( cudaMemcpy( dest->synSpikeTime, snnRuntimeData.synSpikeTime, sizeof(int)*numPreSynNet, kind));
+	networkConfig.preSynLength = numPreSynNet;
 
 	if(allocateMem) {
 		assert(dest->firingTableD1 == NULL);
@@ -2762,7 +2762,7 @@ void SNN::allocateSNN_GPU() {
 	// initialize (copy from SNN) gpuRuntimeData.Npre, gpuRuntimeData.Npre_plastic, gpuRuntimeData.Npre_plasticInv, gpuRuntimeData.cumulativePre
 	// initialize (copy from SNN) gpuRuntimeData.cumulativePost, gpuRuntimeData.Npost, gpuRuntimeData.postDelayInfo
 	// initialize (copy from SNN) gpuRuntimeData.postSynapticIds, gpuRuntimeData.preSynapticIds
-	// copy data to SNN:networkConfig.postSynCnt, preSynCnt
+	// copy data to SNN:networkConfig.numPostSynNet, numPreSynNet
 	copyConnections(&gpuRuntimeData,  cudaMemcpyHostToDevice, 1);
 	cudaMemGetInfo(&avail,&total);
 	KERNEL_INFO("Conn Info:\t\t%2.3f GB\t%2.3f GB\t%2.3f GB",(float)(previous-avail)/toGB,(float)((total-avail)/toGB), (float)(avail/toGB));
@@ -2913,7 +2913,7 @@ void SNN::printSimSummary() {
 
 	KERNEL_INFO("Network Parameters: \tnumNeurons = %d (numNExcReg:numNInhReg = %2.1f:%2.1f)", 
 		numN, 100.0*numNExcReg/numN, 100.0*numNInhReg/numN);
-	KERNEL_INFO("\t\t\tnumSynapses = %d", postSynCnt);
+	KERNEL_INFO("\t\t\tnumSynapses = %d", numPostSynNet);
 	KERNEL_INFO("\t\t\tmaxDelay = %d", maxDelay_);
 	KERNEL_INFO("Simulation Mode:\t%s",sim_with_conductances?"COBA":"CUBA");
 	KERNEL_INFO("Random Seed:\t\t%d", randSeed_);

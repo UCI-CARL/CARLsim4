@@ -275,8 +275,8 @@ typedef struct NetworkConfigRT_s  {
 	unsigned int	I_setLength;	//!< used for GPU only
 	size_t			I_setPitch;		//!< used for GPU only
 	unsigned int	preSynLength;
-	unsigned int	postSynCnt;
-	unsigned int	preSynCnt;
+	unsigned int	numPostSynNet;
+	unsigned int	numPreSynNet;
 	unsigned int	maxSpikesD2;
 	unsigned int	maxSpikesD1;
 	unsigned int   	numNExcPois;

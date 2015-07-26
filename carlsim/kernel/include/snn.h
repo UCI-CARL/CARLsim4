@@ -503,8 +503,8 @@ public:
 	int getNumNeuronsGen() { return numNPois; }
 	int getNumNeuronsGenExc() { return numNExcPois; }
 	int getNumNeuronsGenInh() { return numNInhPois; }
-	int getNumPreSynapses() { return preSynCnt; }
-	int getNumPostSynapses() { return postSynCnt; }
+	int getNumPreSynapses() { return numPreSynNet; }
+	int getNumPostSynapses() { return numPostSynNet; }
 
 	int getRandSeed() { return randSeed_; }
 
@@ -584,7 +584,7 @@ private:
 	void SNNinit();
 
 	//! allocates and initializes all core datastructures
-	void buildNetworkInit();
+	void allocateRuntimeData();
 
 	//! add the entry that the current neuron has spiked
 	int  addSpikeToTable(int id, int g);
@@ -635,10 +635,11 @@ private:
 	int findGrpId(int nid);//!< For the given neuron nid, find the group id
 
 	void findMaxDelay(int* _maxDelay);
-	//! finds the maximum post-synaptic and pre-synaptic length
+	//! find the maximum post-synaptic and pre-synaptic length
 	//! this used to be in updateParameters
-	void findMaxNumSynapses(int* _maxNumPostSynGrp, int* _maxNumPreSynGrp);
+	void findMaxNumSynapsesGroups(int* _maxNumPostSynGrp, int* _maxNumPreSynGrp);
 	void findMaxSpikesD1D2(unsigned int* _maxSpikesD1, unsigned int* _maxSpikesD2);
+	void findNumSynapsesNetwork(int* _numPostSynNet, int* _numPreSynNet); //!< find the total number of synapses in the network
 
 	void generatePostSpike(unsigned int pre_i, unsigned int idx_d, unsigned int offset, unsigned int tD);
 	void generateSpikes();
@@ -767,7 +768,7 @@ private:
 	void updateSpikeGenerators();
 	void updateSpikeGeneratorsInit();
 
-	void updateSpikeTables();
+	void allocateSpikeTables();
 	//void updateStateAndFiringTable();
 	bool updateTime(); //!< updates simTime, returns true when a new second is started
 	// +++++ GPU MODE +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
@@ -942,18 +943,18 @@ private:
 	bool sim_with_spikecounters; //!< flag will be true if there are any spike counters around
 
 	// spiking neural network related information, including neurons, synapses and network parameters
-	int	        	numN;				//!< number of neurons in the spiking neural network
-	int				maxNumPostSynGrp;	//!< maximum number of post-synaptic connections in groups
-	int				maxNumPreSynGrp;		//!< maximum number of pre-syanptic connections in groups
-	int				maxDelay_;					//!< maximum axonal delay in groups
-	int				numNReg;			//!< number of regular (spking) neurons
-	int				numNExcReg;			//!< number of regular excitatory neurons
-	int				numNInhReg;			//!< number of regular inhibitory neurons
-	int   			numNExcPois;		//!< number of excitatory poisson neurons
-	int				numNInhPois;		//!< number of inhibitory poisson neurons
-	int				numNPois;			//!< number of poisson neurons
-	unsigned int		postSynCnt; //!< stores the total number of post-synaptic connections in the network
-	unsigned int		preSynCnt; //!< stores the total number of pre-synaptic connections in the network
+	int	numN;             //!< number of neurons in the spiking neural network
+	int maxNumPostSynGrp; //!< maximum number of post-synaptic connections in groups
+	int maxNumPreSynGrp;  //!< maximum number of pre-syanptic connections in groups
+	int maxDelay_;        //!< maximum axonal delay in groups
+	int numNReg;          //!< number of regular (spking) neurons
+	int numNExcReg;       //!< number of regular excitatory neurons
+	int numNInhReg;       //!< number of regular inhibitory neurons
+	int numNExcPois;      //!< number of excitatory poisson neurons
+	int numNInhPois;      //!< number of inhibitory poisson neurons
+	int numNPois;         //!< number of poisson neurons
+	int numPostSynNet;    //!< total number of post-synaptic connections in the network
+	int numPreSynNet;     //!< total number of pre-synaptic connections in the network
 
 	//! size of memory used for different parts of the network
 	typedef struct snnSize_s {
@@ -969,8 +970,6 @@ private:
 
 	snnSize_t cpuSnnSz;
 	snnSize_t gpuSnnSz;
-	unsigned int 	postConnCnt;
-	unsigned int	preConnCnt;
 
 	//! firing info
 	unsigned int* timeTableD2;

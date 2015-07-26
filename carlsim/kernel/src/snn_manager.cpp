@@ -1308,8 +1308,8 @@ void SNN::saveSimulation(FILE* fid, bool saveSynapseInfo) {
 
 	// write network info
 	if (!fwrite(&numN,sizeof(int),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
-	if (!fwrite(&preSynCnt,sizeof(int),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
-	if (!fwrite(&postSynCnt,sizeof(int),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
+	if (!fwrite(&numPreSynNet,sizeof(int),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
+	if (!fwrite(&numPostSynNet,sizeof(int),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
 	if (!fwrite(&numGroups,sizeof(int),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
 
 	// write group info
@@ -2105,7 +2105,7 @@ void SNN::allocateSNN_CPU() {
 //! allocate space for voltage, recovery, Izh_a, Izh_b, Izh_c, Izh_d, current, gAMPA, gNMDA, gGABAa, gGABAb
 //! lastSpikeTime, curSpike, nSpikeCnt, intrinsicWeight, stpu, stpx, Npre, Npre_plastic, Npost, cumulativePost, cumulativePre
 //! postSynapticIds, tmp_SynapticDely, postDelayInfo, wt, maxSynWt, preSynapticIds, timeTableD2, timeTableD1
-void SNN::buildNetworkInit() {
+void SNN::allocateRuntimeData() {
 	snnRuntimeData.voltage	   = new float[numNReg];
 	snnRuntimeData.recovery   = new float[numNReg];
 	snnRuntimeData.Izh_a	   = new float[numNReg];
@@ -2193,33 +2193,23 @@ void SNN::buildNetworkInit() {
 	snnRuntimeData.cumulativePre  = new unsigned int[numN];
 	cpuSnnSz.networkInfoSize += (int)(sizeof(int) * numN * 3.5);
 
-	postSynCnt = 0;
-	preSynCnt  = 0;
-	for(int g=0; g<numGroups; g++) {
-		// check for INT overflow: postSynCnt is O(numNeurons*numSynapses), must be able to fit within u int limit
-		//assert(postSynCnt < UINT_MAX - (groupConfig[g].SizeN * groupConfig[g].numPostSynapses));
-		//assert(preSynCnt < UINT_MAX - (groupConfig[g].SizeN * groupConfig[g].numPreSynapses));
-		postSynCnt += (groupConfig[g].SizeN * groupConfig[g].numPostSynapses);
-		preSynCnt  += (groupConfig[g].SizeN * groupConfig[g].numPreSynapses);
-	}
-	assert(postSynCnt/numN <= maxNumPostSynGrp); // divide by numN to prevent INT overflow
-	snnRuntimeData.postSynapticIds		= new post_info_t[postSynCnt+100];
-	tmp_SynapticDelay	= new uint8_t[postSynCnt+100];	//!< Temporary array to store the delays of each connection
-	snnRuntimeData.postDelayInfo		= new delay_info_t[numN*(maxDelay_+1)];	//!< Possible delay values are 0....maxDelay_ (inclusive of maxDelay_)
-	cpuSnnSz.networkInfoSize += ((sizeof(post_info_t)+sizeof(uint8_t))*postSynCnt+100)+(sizeof(delay_info_t)*numN*(maxDelay_+1));
-	assert(preSynCnt/numN <= maxNumPreSynGrp); // divide by numN to prevent INT overflow
 
-	snnRuntimeData.wt  			= new float[preSynCnt+100];
-	snnRuntimeData.maxSynWt     	= new float[preSynCnt+100];
+	snnRuntimeData.postSynapticIds		= new post_info_t[numPostSynNet+100];
+	tmp_SynapticDelay	= new uint8_t[numPostSynNet+100];	//!< Temporary array to store the delays of each connection
+	snnRuntimeData.postDelayInfo		= new delay_info_t[numN*(maxDelay_+1)];	//!< Possible delay values are 0....maxDelay_ (inclusive of maxDelay_)
+	cpuSnnSz.networkInfoSize += ((sizeof(post_info_t)+sizeof(uint8_t))*numPostSynNet+100)+(sizeof(delay_info_t)*numN*(maxDelay_+1));
+
+	snnRuntimeData.wt  			= new float[numPreSynNet+100];
+	snnRuntimeData.maxSynWt     	= new float[numPreSynNet+100];
 
 	mulSynFast 		= new float[MAX_CONN_PER_SNN];
 	mulSynSlow 		= new float[MAX_CONN_PER_SNN];
-	snnRuntimeData.cumConnIdPre	= new short int[preSynCnt+100];
+	snnRuntimeData.cumConnIdPre	= new short int[numPreSynNet+100];
 
 	//! Temporary array to hold pre-syn connections. will be deleted later if necessary
-	snnRuntimeData.preSynapticIds	= new post_info_t[preSynCnt + 100];
+	snnRuntimeData.preSynapticIds	= new post_info_t[numPreSynNet + 100];
 	// size due to weights and maximum weights
-	cpuSnnSz.synapticInfoSize += ((sizeof(int) + 2 * sizeof(float) + sizeof(post_info_t)) * (preSynCnt + 100));
+	cpuSnnSz.synapticInfoSize += ((sizeof(int) + 2 * sizeof(float) + sizeof(post_info_t)) * (numPreSynNet + 100));
 
 	timeTableD2  = new unsigned int[1000 + maxDelay_ + 1];
 	timeTableD1  = new unsigned int[1000 + maxDelay_ + 1];
@@ -2320,8 +2310,8 @@ void SNN::buildGroup(int grpId) {
 		allocatedPre     += groupConfig[grpId].numPreSynapses;
 	}
 
-	assert(allocatedPost <= postSynCnt);
-	assert(allocatedPre  <= preSynCnt);
+	assert(allocatedPost <= numPostSynNet);
+	assert(allocatedPre  <= numPreSynNet);
 }
 
 //! build the network based on the current setting (e.g., group, connection)
@@ -2330,14 +2320,13 @@ void SNN::buildGroup(int grpId) {
  */
 void SNN::buildNetwork() {
 	// allocate space for firingTableD1 and firingTableD2
-	updateSpikeTables();
+	allocateSpikeTables();
 
 	// initialize all the parameters....
-	//! update (initialize) numN, numPostSynapses, numPreSynapses, maxDelay_, postSynCnt, preSynCnt
 	//! allocate space for voltage, recovery, Izh_a, Izh_b, Izh_c, Izh_d, current, gAMPA, gNMDA, gGABAa, gGABAb
 	//! lastSpikeTime, curSpike, nSpikeCnt, intrinsicWeight, stpu, stpx, Npre, Npre_plastic, Npost, cumulativePost, cumulativePre
 	//! postSynapticIds, tmp_SynapticDely, postDelayInfo, wt, maxSynWt, preSynapticIds, timeTableD2, timeTableD1, grpDA, grp5HT, grpACh, grpNE
-	buildNetworkInit();
+	allocateRuntimeData();
 
 	// we build network in the order...
 	//    !!!!!!! IMPORTANT : NEURON ORGANIZATION/ARRANGEMENT MAP !!!!!!!!!!
@@ -2479,8 +2468,8 @@ void SNN::buildPoissonGroup(int grpId) {
 		allocatedPost    += groupConfig[grpId].numPostSynapses;
 		allocatedPre     += groupConfig[grpId].numPreSynapses;
 	}
-	assert(allocatedPost <= postSynCnt);
-	assert(allocatedPre  <= preSynCnt);
+	assert(allocatedPost <= numPostSynNet);
+	assert(allocatedPre  <= numPreSynNet);
 }
 
 /*!
@@ -2513,7 +2502,7 @@ void SNN::checkSpikeCounterRecordDur() {
 void SNN::collectNetworkConfig() {
 	// find the maximum number of pre- and post-connections among groups
 	// SNN::maxNumPreSynGrp and SNN::maxNumPostSynGrp are updated
-	findMaxNumSynapses(&maxNumPostSynGrp, &maxNumPreSynGrp);
+	findMaxNumSynapsesGroups(&maxNumPostSynGrp, &maxNumPreSynGrp);
 
 	// find the maximum delay in the network
 	// SNN::maxDelay_ is updated
@@ -2521,6 +2510,9 @@ void SNN::collectNetworkConfig() {
 
 	// find the maximum number of spikes in D1 (i.e., maxDelay == 1) and D2 (i.e., maxDelay >= 2) sets
 	findMaxSpikesD1D2(&maxSpikesD1, &maxSpikesD2);
+
+	// find the total number of synapses in the network
+	findNumSynapsesNetwork(&numPostSynNet, &numPreSynNet);
 }
 
 // We parallelly cleanup the postSynapticIds array to minimize any other wastage in that array by compacting the store
@@ -2548,26 +2540,26 @@ void SNN::compactConnections() {
 	}
 
 	// compress the post_synaptic array according to the new values of the tmp_cumulative counts....
-	unsigned int tmp_postSynCnt = tmp_cumulativePost[numN-1]+snnRuntimeData.Npost[numN-1];
-	unsigned int tmp_preSynCnt  = tmp_cumulativePre[numN-1]+snnRuntimeData.Npre[numN-1];
-	assert(tmp_postSynCnt <= allocatedPost);
-	assert(tmp_preSynCnt  <= allocatedPre);
-	assert(tmp_postSynCnt <= postSynCnt);
-	assert(tmp_preSynCnt  <= preSynCnt);
+	unsigned int tmp_numPostSynNet = tmp_cumulativePost[numN-1]+snnRuntimeData.Npost[numN-1];
+	unsigned int tmp_numPreSynNet  = tmp_cumulativePre[numN-1]+snnRuntimeData.Npre[numN-1];
+	assert(tmp_numPostSynNet <= allocatedPost);
+	assert(tmp_numPreSynNet  <= allocatedPre);
+	assert(tmp_numPostSynNet <= numPostSynNet);
+	assert(tmp_numPreSynNet  <= numPreSynNet);
 	KERNEL_DEBUG("******************");
 	KERNEL_DEBUG("CompactConnection: ");
 	KERNEL_DEBUG("******************");
-	KERNEL_DEBUG("old_postCnt = %d, new_postCnt = %d", postSynCnt, tmp_postSynCnt);
-	KERNEL_DEBUG("old_preCnt = %d,  new_postCnt = %d", preSynCnt,  tmp_preSynCnt);
+	KERNEL_DEBUG("old_postCnt = %d, new_postCnt = %d", numPostSynNet, tmp_numPostSynNet);
+	KERNEL_DEBUG("old_preCnt = %d,  new_postCnt = %d", numPreSynNet,  tmp_numPreSynNet);
 
 	// new buffer with required size + 100 bytes of additional space just to provide limited overflow
-	post_info_t* tmp_postSynapticIds   = new post_info_t[tmp_postSynCnt+100];
+	post_info_t* tmp_postSynapticIds   = new post_info_t[tmp_numPostSynNet+100];
 
 	// new buffer with required size + 100 bytes of additional space just to provide limited overflow
-	post_info_t* tmp_preSynapticIds	= new post_info_t[tmp_preSynCnt+100];
-	float* tmp_wt	    	  		= new float[tmp_preSynCnt+100];
-	float* tmp_maxSynWt   	  		= new float[tmp_preSynCnt+100];
-	short int *tmp_cumConnIdPre 		= new short int[tmp_preSynCnt+100];
+	post_info_t* tmp_preSynapticIds	= new post_info_t[tmp_numPreSynNet+100];
+	float* tmp_wt	    	  		= new float[tmp_numPreSynNet+100];
+	float* tmp_maxSynWt   	  		= new float[tmp_numPreSynNet+100];
+	short int *tmp_cumConnIdPre 		= new short int[tmp_numPreSynNet+100];
 	float *tmp_mulSynFast 			= new float[numConnections];
 	float *tmp_mulSynSlow  			= new float[numConnections];
 
@@ -2594,8 +2586,8 @@ void SNN::compactConnections() {
 	// delete old buffer space
 	delete[] snnRuntimeData.postSynapticIds;
 	snnRuntimeData.postSynapticIds = tmp_postSynapticIds;
-	cpuSnnSz.networkInfoSize -= (sizeof(post_info_t)*postSynCnt);
-	cpuSnnSz.networkInfoSize += (sizeof(post_info_t)*(tmp_postSynCnt+100));
+	cpuSnnSz.networkInfoSize -= (sizeof(post_info_t)*numPostSynNet);
+	cpuSnnSz.networkInfoSize += (sizeof(post_info_t)*(tmp_numPostSynNet+100));
 
 	delete[] snnRuntimeData.cumulativePost;
 	snnRuntimeData.cumulativePost  = tmp_cumulativePost;
@@ -2605,18 +2597,18 @@ void SNN::compactConnections() {
 
 	delete[] snnRuntimeData.maxSynWt;
 	snnRuntimeData.maxSynWt = tmp_maxSynWt;
-	cpuSnnSz.synapticInfoSize -= (sizeof(float)*preSynCnt);
-	cpuSnnSz.synapticInfoSize += (sizeof(float)*(tmp_preSynCnt+100));
+	cpuSnnSz.synapticInfoSize -= (sizeof(float)*numPreSynNet);
+	cpuSnnSz.synapticInfoSize += (sizeof(float)*(tmp_numPreSynNet+100));
 
 	delete[] snnRuntimeData.wt;
 	snnRuntimeData.wt = tmp_wt;
-	cpuSnnSz.synapticInfoSize -= (sizeof(float)*preSynCnt);
-	cpuSnnSz.synapticInfoSize += (sizeof(float)*(tmp_preSynCnt+100));
+	cpuSnnSz.synapticInfoSize -= (sizeof(float)*numPreSynNet);
+	cpuSnnSz.synapticInfoSize += (sizeof(float)*(tmp_numPreSynNet+100));
 
 	delete[] snnRuntimeData.cumConnIdPre;
 	snnRuntimeData.cumConnIdPre = tmp_cumConnIdPre;
-	cpuSnnSz.synapticInfoSize -= (sizeof(short int)*preSynCnt);
-	cpuSnnSz.synapticInfoSize += (sizeof(short int)*(tmp_preSynCnt+100));
+	cpuSnnSz.synapticInfoSize -= (sizeof(short int)*numPreSynNet);
+	cpuSnnSz.synapticInfoSize += (sizeof(short int)*(tmp_numPreSynNet+100));
 
 	// compact connection-centric information
 	for (int i=0; i<numConnections; i++) {
@@ -2627,17 +2619,17 @@ void SNN::compactConnections() {
 	delete[] mulSynSlow;
 	mulSynFast = tmp_mulSynFast;
 	mulSynSlow = tmp_mulSynSlow;
-	cpuSnnSz.networkInfoSize -= (2*sizeof(uint8_t)*preSynCnt);
-	cpuSnnSz.networkInfoSize += (2*sizeof(uint8_t)*(tmp_preSynCnt+100));
+	cpuSnnSz.networkInfoSize -= (2*sizeof(uint8_t)*numPreSynNet);
+	cpuSnnSz.networkInfoSize += (2*sizeof(uint8_t)*(tmp_numPreSynNet+100));
 
 
 	delete[] snnRuntimeData.preSynapticIds;
 	snnRuntimeData.preSynapticIds  = tmp_preSynapticIds;
-	cpuSnnSz.synapticInfoSize -= (sizeof(post_info_t)*preSynCnt);
-	cpuSnnSz.synapticInfoSize += (sizeof(post_info_t)*(tmp_preSynCnt+100));
+	cpuSnnSz.synapticInfoSize -= (sizeof(post_info_t)*numPreSynNet);
+	cpuSnnSz.synapticInfoSize += (sizeof(post_info_t)*(tmp_numPreSynNet+100));
 
-	preSynCnt	= tmp_preSynCnt;
-	postSynCnt	= tmp_postSynCnt;
+	numPreSynNet	= tmp_numPreSynNet;
+	numPostSynNet	= tmp_numPostSynNet;
 }
 
 // after all the initalization. Its time to create the synaptic weights, weight change and also
@@ -2673,6 +2665,7 @@ void SNN::compileSNN() {
 	KERNEL_INFO("The maximum number of post-connectoins among groups (maxNumPostSynGrp) = %d", maxNumPostSynGrp);
 	KERNEL_INFO("The maximum number of pre-connections among groups (maxNumPreSynGrp) = %d", maxNumPreSynGrp);
 	KERNEL_INFO("The maximum axonal delay in the network (maxDelay) = %d", maxDelay_);
+	KERNEL_INFO("The tatol number of synapses in the network (numPreSynNet,numPostSynNet) = (%d,%d)", numPreSynNet, numPostSynNet);
 	KERNEL_INFO("\n");
 
 	//ensure that we dont compile the network again
@@ -2687,7 +2680,7 @@ void SNN::compileGroupConfig() {
 	int grpSrc;
 	bool synWtType;
 
-	// find the maximum delay for each group.
+	// find the maximum delay for each group according to incoming connection
 	for (std::map<int, ConnectConfig>::iterator it = connectConfigMap.begin(); it != connectConfigMap.end(); it++) {
 		// check if the current connection's delay meaning grpSrc's delay
 		// is greater than the MaxDelay for grpSrc. We find the maximum
@@ -2703,7 +2696,7 @@ void SNN::compileGroupConfig() {
 		}
 	}
 
-	// we assigned groups in the order...
+	// assigned neruon ids to each group in the order...
 	//    !!!!!!! IMPORTANT : NEURON ORGANIZATION/ARRANGEMENT MAP !!!!!!!!!!
 	//     <--- Excitatory --> | <-------- Inhibitory REGION ----------> | <-- Excitatory -->
 	//     Excitatory-Regular  | Inhibitory-Regular | Inhibitory-Poisson | Excitatory-Poisson
@@ -3206,7 +3199,7 @@ void SNN::findMaxDelay(int* _maxDelay) {
 	}
 }
 
-void SNN::findMaxNumSynapses(int* _maxNumPostSynGrp, int* _maxNumPreSynGrp) {
+void SNN::findMaxNumSynapsesGroups(int* _maxNumPostSynGrp, int* _maxNumPreSynGrp) {
 	*_maxNumPostSynGrp = 0;
 	*_maxNumPreSynGrp = 0;
 
@@ -3228,6 +3221,20 @@ void SNN::findMaxSpikesD1D2(unsigned int* _maxSpikesD1, unsigned int* _maxSpikes
 		else
 			*_maxSpikesD2 += (groupConfig[g].SizeN * groupConfig[g].MaxFiringRate);
 	}
+}
+
+void SNN::findNumSynapsesNetwork(int* _numPostSynNet, int* _numPreSynNet) {
+	*_numPostSynNet = 0;
+	*_numPreSynNet  = 0;
+
+	for(int g = 0; g < numGroups; g++) {
+		*_numPostSynNet += groupConfig[g].numPostSynapses;
+		*_numPreSynNet += groupConfig[g].numPreSynapses;
+		assert(*_numPostSynNet < INT_MAX);
+		assert(*_numPreSynNet <  INT_MAX);
+	}
+
+	assert(*_numPreSynNet == *_numPostSynNet);
 }
 
 void SNN::generateSpikes() {
@@ -3389,9 +3396,9 @@ float SNN::getWeights(int connProp, float initWt, float maxWt, unsigned int nid,
 // total size of the synaptic connection is 'length' ...
 void SNN::initSynapticWeights() {
 	// Initialize the network wtChange, wt, synaptic firing time
-	snnRuntimeData.wtChange         = new float[preSynCnt];
-	snnRuntimeData.synSpikeTime     = new uint32_t[preSynCnt];
-	cpuSnnSz.synapticInfoSize = sizeof(float)*(preSynCnt*2);
+	snnRuntimeData.wtChange         = new float[numPreSynNet];
+	snnRuntimeData.synSpikeTime     = new uint32_t[numPreSynNet];
+	cpuSnnSz.synapticInfoSize = sizeof(float)*(numPreSynNet*2);
 
 	resetSynapticConnections(false);
 }
@@ -3666,18 +3673,18 @@ int SNN::loadSimulation_internal(bool onlyPlastic) {
 	// read number of pre-synapses
 	result = fread(&tmpInt, sizeof(int), 1, loadSimFID);
 	readErr |= (result!=1);
-	if (preSynCnt != tmpInt) {
-		KERNEL_ERROR("loadSimulation: preSynCnt in file (%d) and simulation (%d) don't match.",
-			tmpInt, preSynCnt);
+	if (numPreSynNet != tmpInt) {
+		KERNEL_ERROR("loadSimulation: numPreSynNet in file (%d) and simulation (%d) don't match.",
+			tmpInt, numPreSynNet);
 		exitSimulation(-1);
 	}
 
 	// read number of post-synapses
 	result = fread(&tmpInt, sizeof(int), 1, loadSimFID);
 	readErr |= (result!=1);
-	if (postSynCnt != tmpInt) {
-		KERNEL_ERROR("loadSimulation: postSynCnt in file (%d) and simulation (%d) don't match.",
-			tmpInt, postSynCnt);
+	if (numPostSynNet != tmpInt) {
+		KERNEL_ERROR("loadSimulation: numPostSynNet in file (%d) and simulation (%d) don't match.",
+			tmpInt, numPostSynNet);
 		exitSimulation(-1);
 	}
 
@@ -4375,8 +4382,8 @@ inline void SNN::setConnection(int srcGrp,  int destGrp,  unsigned int src, unsi
 	unsigned int post_pos = snnRuntimeData.cumulativePost[src] + snnRuntimeData.Npost[src];
 	unsigned int pre_pos  = snnRuntimeData.cumulativePre[dest] + snnRuntimeData.Npre[dest];
 
-	assert(post_pos < postSynCnt);
-	assert(pre_pos  < preSynCnt);
+	assert(post_pos < numPostSynNet);
+	assert(pre_pos  < numPreSynNet);
 
 	//generate a new postSynapticIds id for the current connection
 	snnRuntimeData.postSynapticIds[post_pos]   = SET_CONN_ID(dest, snnRuntimeData.Npre[dest], destGrp);
@@ -4739,7 +4746,7 @@ void SNN::updateSpikeGeneratorsInit() {
 /*!
  * \return maximum delay in groups
  */
-void SNN::updateSpikeTables() {
+void SNN::allocateSpikeTables() {
 	snnRuntimeData.firingTableD2 = new unsigned int[maxSpikesD2];
 	snnRuntimeData.firingTableD1 = new unsigned int[maxSpikesD1];
 	cpuSnnSz.spikingInfoSize += sizeof(int) * ((maxSpikesD2 + maxSpikesD1) + 2* (1000 + maxDelay_ + 1));
