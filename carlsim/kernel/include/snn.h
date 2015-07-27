@@ -747,7 +747,8 @@ private:
 	void resetPropogationBuffer();
 	void resetSpikeCnt(int grpId=ALL);					//!< Resets the spike count for a particular group.
 	void resetSynapticConnections(bool changeWeights=false);
-	void resetTimingTable();
+	void resetTimeTable();
+	void resetFiringTable();
 
 	post_info_t SET_CONN_ID(int nid, int sid, int grpId);
 
