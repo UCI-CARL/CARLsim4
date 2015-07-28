@@ -76,6 +76,7 @@ typedef struct ConnectionInfo_s {
 	int nDest;
 	float initWt;
 	float maxWt;
+	int preSynId;
 	short int connId;
 	uint8_t delay;
 

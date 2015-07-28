@@ -2459,8 +2459,7 @@ void SNN::generateConnectionRuntime() {
 	
 	// parse ConnectionInfo stored in connectionList
 	// generate Npost, Npre, Npre_plastic
-	int parsedConnections = 0;
-	connectionList.sort(compareSrcNeuron);
+	int parsedConnections = 0;	
 	for (std::list<ConnectionInfo>::iterator it = connectionList.begin(); it != connectionList.end(); it++) {
 		snnRuntimeData.Npost[it->nSrc]++;
 		snnRuntimeData.Npre[it->nDest]++;
@@ -2495,9 +2494,53 @@ void SNN::generateConnectionRuntime() {
 		snnRuntimeData.cumulativePost[nId] = snnRuntimeData.cumulativePost[nId - 1] + snnRuntimeData.Npost[nId - 1];
 		snnRuntimeData.cumulativePre[nId] = snnRuntimeData.cumulativePre[nId - 1] + snnRuntimeData.Npre[nId - 1];
 	}
-	//memset(snnRuntimeData.Npost, 0, sizeof(short) * numN); // reset snnRuntimeData.Npost to zero, so that it can be used as synId
+
+	// generate preSynapticIds, parse plastic connections first
 	memset(snnRuntimeData.Npre, 0, sizeof(short) * numN); // reset snnRuntimeData.Npre to zero, so that it can be used as synId
-	
+	parsedConnections = 0;
+	for (std::list<ConnectionInfo>::iterator it = connectionList.begin(); it != connectionList.end(); it++) {
+		if (GET_FIXED_PLASTIC(connectConfigMap[it->connId].connProp) == SYN_PLASTIC) {
+			int pre_pos  = snnRuntimeData.cumulativePre[it->nDest] + snnRuntimeData.Npre[it->nDest];
+			assert(pre_pos  < numPreSynNet);
+
+			snnRuntimeData.preSynapticIds[pre_pos] = SET_CONN_ID(it->nSrc, 0, it->grpSrc); // snnRuntimeData.Npost[it->nSrc] is not availabe at this parse
+			//snnRuntimeData.wt[pre_pos] = it->initWt;
+			//snnRuntimeData.maxSynWt[pre_pos] = it->maxWt;
+			//snnRuntimeData.cumConnIdPre[pre_pos] = it->connId;
+			it->preSynId = snnRuntimeData.Npre[it->nDest]; // save snnRuntimeData.Npre[it->nDest] as synId
+
+			snnRuntimeData.Npre[it->nDest]++;
+			parsedConnections++;
+
+			// update the maximum number of and pre-connections of a neuron in a group
+			if (snnRuntimeData.Npre[it->nDest] > groupInfo[it->grpDest].maxPreConn)
+				groupInfo[it->grpDest].maxPreConn = snnRuntimeData.Npre[it->nDest];
+		}
+	}
+	// parse fixed connections
+	for (std::list<ConnectionInfo>::iterator it = connectionList.begin(); it != connectionList.end(); it++) {
+		if (GET_FIXED_PLASTIC(connectConfigMap[it->connId].connProp) == SYN_FIXED) {
+			int pre_pos  = snnRuntimeData.cumulativePre[it->nDest] + snnRuntimeData.Npre[it->nDest];
+			assert(pre_pos  < numPreSynNet);
+
+			snnRuntimeData.preSynapticIds[pre_pos] = SET_CONN_ID(it->nSrc, 0, it->grpSrc); // snnRuntimeData.Npost[it->nSrc] is not availabe at this parse
+			//snnRuntimeData.wt[pre_pos] = it->initWt;
+			//snnRuntimeData.maxSynWt[pre_pos] = it->maxWt;
+			//snnRuntimeData.cumConnIdPre[pre_pos] = it->connId;
+			it->preSynId = snnRuntimeData.Npre[it->nDest]; // save snnRuntimeData.Npre[it->nDest] as synId
+
+			snnRuntimeData.Npre[it->nDest]++;
+			parsedConnections++;
+
+			// update the maximum number of and pre-connections of a neuron in a group
+			if (snnRuntimeData.Npre[it->nDest] > groupInfo[it->grpDest].maxPreConn)
+				groupInfo[it->grpDest].maxPreConn = snnRuntimeData.Npre[it->nDest];
+		}
+	}
+	assert(parsedConnections == numPreSynNet);
+
+	// generate postSynapticIds
+	connectionList.sort(compareSrcNeuron);
 	for (int nId = 0; nId < numN; nId++) { // pre-neuron order
 		if (snnRuntimeData.Npost[nId] > 0) {
 			std::list<ConnectionInfo> postConnectionList;
@@ -2517,13 +2560,13 @@ void SNN::generateConnectionRuntime() {
 			for (std::list<ConnectionInfo>::iterator it = postConnectionList.begin(); it != postConnectionList.end(); it++) {
 				assert(it->nSrc == nId);
 				post_pos = snnRuntimeData.cumulativePost[it->nSrc] + snnRuntimeData.Npost[it->nSrc];
-				pre_pos  = snnRuntimeData.cumulativePre[it->nDest] + snnRuntimeData.Npre[it->nDest];
+				pre_pos  = snnRuntimeData.cumulativePre[it->nDest] + it->preSynId;
 
 				assert(post_pos < numPostSynNet);
-				assert(pre_pos  < numPreSynNet);
+				//assert(pre_pos  < numPreSynNet);
 
 				// generate a post synaptic id for the current connection
-				snnRuntimeData.postSynapticIds[post_pos] = SET_CONN_ID(it->nDest, snnRuntimeData.Npre[it->nDest], it->grpDest);
+				snnRuntimeData.postSynapticIds[post_pos] = SET_CONN_ID(it->nDest, it->preSynId, it->grpDest);// used stored snnRuntimeData.Npre[it->nDest] in it->preSynId
 				// generate a delay look up table by the way
 				assert(it->delay > 0);
 				if (it->delay > lastDelay) {
@@ -2537,20 +2580,22 @@ void SNN::generateConnectionRuntime() {
 				}
 				lastDelay = it->delay;
 
+				// update the corresponding pre synaptic id
+				post_info_t preId = snnRuntimeData.preSynapticIds[pre_pos];
+				assert(GET_CONN_NEURON_ID(preId) == it->nSrc);
+				assert(GET_CONN_GRP_ID(preId) == it->grpSrc);
 				snnRuntimeData.preSynapticIds[pre_pos] = SET_CONN_ID(it->nSrc, snnRuntimeData.Npost[it->nSrc], it->grpSrc);
 				snnRuntimeData.wt[pre_pos] = it->initWt;
 				snnRuntimeData.maxSynWt[pre_pos] = it->maxWt;
 				snnRuntimeData.cumConnIdPre[pre_pos] = it->connId;
 
-				snnRuntimeData.Npre[it->nDest]++;
+				/*snnRuntimeData.Npre[it->nDest]++;*/
 				snnRuntimeData.Npost[it->nSrc]++;
 				parsedConnections++;
 
-				// update the maximum number of pre- and post-connections of a neuron in a group
+				// update the maximum number of and post-connections of a neuron in a group
 				if (snnRuntimeData.Npost[it->nSrc] > groupInfo[it->grpSrc].maxPostConn)
 					groupInfo[it->grpSrc].maxPostConn = snnRuntimeData.Npost[it->nSrc];
-				if (snnRuntimeData.Npre[it->nDest] > groupInfo[it->grpDest].maxPreConn)
-					groupInfo[it->grpDest].maxPreConn = snnRuntimeData.Npre[it->nDest];
 			}
 			assert(parsedConnections == snnRuntimeData.Npost[nId]);
 			// note: elements in postConnectionList are deallocated automatically with postConnectionList
@@ -2906,6 +2951,7 @@ inline void SNN::connectNeurons(int _grpSrc,  int _grpDest, int _nSrc, int _nDes
 	connInfo.nSrc = _nSrc;
 	connInfo.nDest = _nDest;
 	connInfo.connId = _connId;
+	connInfo.preSynId = -1;
 	connInfo.initWt = 0.0f;
 	connInfo.maxWt = 0.0f;
 	connInfo.delay = 0;
