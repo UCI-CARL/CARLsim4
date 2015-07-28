@@ -78,6 +78,10 @@ typedef struct ConnectionInfo_s {
 	float maxWt;
 	short int connId;
 	uint8_t delay;
+
+	bool operator== (const struct ConnectionInfo_s& conn) {
+		return (nSrc == conn.nSrc);
+	}
 } ConnectionInfo;
 
 /*!

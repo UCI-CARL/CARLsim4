@@ -42,6 +42,7 @@
 
 #include <snn.h>
 #include <sstream>
+#include <algorithm>
 
 #include <connection_monitor.h>
 #include <connection_monitor_core.h>
@@ -2441,6 +2442,14 @@ void SNN::generateNetworkRuntime() {
 	//}
 }
 
+bool compareSrcNeuron(const ConnectionInfo& first, const ConnectionInfo& second) {
+	return (first.nSrc < second.nSrc);
+}
+
+bool compareDelay(const ConnectionInfo& first, const ConnectionInfo& second) {
+	return (first.delay < second.delay);
+}
+
 void SNN::generateConnectionRuntime() {
 	//assert(dest<=CONN_SYN_NEURON_MASK);			// total number of neurons is less than 1 million within a GPU
 	//assert((dVal >=1) && (dVal <= maxDelay_));
@@ -2451,7 +2460,9 @@ void SNN::generateConnectionRuntime() {
 
 	
 	// parse ConnectionInfo stored in connectionList
+	// generate Npost, Npre, Npre_plastic
 	int parsedConnections = 0;
+	connectionList.sort(compareSrcNeuron);
 	for (std::list<ConnectionInfo>::iterator it = connectionList.begin(); it != connectionList.end(); it++) {
 		snnRuntimeData.Npost[it->nSrc]++;
 		snnRuntimeData.Npre[it->nDest]++;
@@ -2469,8 +2480,11 @@ void SNN::generateConnectionRuntime() {
 		it->delay = connectConfigMap[it->connId].minDelay + rand() % (connectConfigMap[it->connId].maxDelay - connectConfigMap[it->connId].minDelay + 1);
 		assert((it->delay >= connectConfigMap[it->connId].minDelay) && (it->delay <= connectConfigMap[it->connId].maxDelay));
 		// generate the max weight and initial weight
-		it->maxWt = connectConfigMap[it->connId].maxWt;
-		it->initWt = generateWeight(connectConfigMap[it->connId].connProp, connectConfigMap[it->connId].initWt, connectConfigMap[it->connId].maxWt, it->nSrc, it->grpSrc);
+		float initWt = generateWeight(connectConfigMap[it->connId].connProp, connectConfigMap[it->connId].initWt, connectConfigMap[it->connId].maxWt, it->nSrc, it->grpSrc);
+		float maxWt = connectConfigMap[it->connId].maxWt;
+		// adjust sign of weight based on pre-group (negative if pre is inhibitory)
+		it->maxWt = isExcitatoryGroup(it->grpSrc) ? fabs(maxWt) : -1.0 * fabs(maxWt);
+		it->initWt = isExcitatoryGroup(it->grpSrc) ? fabs(initWt) : -1.0 * fabs(initWt);
 
 		parsedConnections++;
 	}
@@ -2479,10 +2493,72 @@ void SNN::generateConnectionRuntime() {
 	// generate cumulativePost and cumulativePre
 	snnRuntimeData.cumulativePost[0] = 0;
 	snnRuntimeData.cumulativePre[0] = 0;
-	for (int nid = 1; nid < numN; nid++) {
-		snnRuntimeData.cumulativePost[nid] = snnRuntimeData.cumulativePost[nid - 1] + snnRuntimeData.Npost[nid - 1];
-		snnRuntimeData.cumulativePre[nid] = snnRuntimeData.cumulativePre[nid - 1] + snnRuntimeData.Npre[nid - 1];
+	for (int nId = 1; nId < numN; nId++) {
+		snnRuntimeData.cumulativePost[nId] = snnRuntimeData.cumulativePost[nId - 1] + snnRuntimeData.Npost[nId - 1];
+		snnRuntimeData.cumulativePre[nId] = snnRuntimeData.cumulativePre[nId - 1] + snnRuntimeData.Npre[nId - 1];
 	}
+	//memset(snnRuntimeData.Npost, 0, sizeof(short) * numN); // reset snnRuntimeData.Npost to zero, so that it can be used as synId
+	memset(snnRuntimeData.Npre, 0, sizeof(short) * numN); // reset snnRuntimeData.Npre to zero, so that it can be used as synId
+	
+	for (int nId = 0; nId < numN; nId++) { // pre-neuron order
+		if (snnRuntimeData.Npost[nId] > 0) {
+			std::list<ConnectionInfo> postConnectionList;
+			ConnectionInfo targetConn;
+			targetConn.nSrc = nId; // the other fields does not matter
+			
+			std::list<ConnectionInfo>::iterator firstPostConn = std::find(connectionList.begin(), connectionList.end(), targetConn);
+			std::list<ConnectionInfo>::iterator lastPostConn = firstPostConn;
+			std::advance(lastPostConn, snnRuntimeData.Npost[nId]);
+			snnRuntimeData.Npost[nId] = 0; // reset snnRuntimeData.Npost[nId] to zero, so that it can be used as synId
+
+			postConnectionList.splice(postConnectionList.begin(), connectionList, firstPostConn, lastPostConn);
+			postConnectionList.sort(compareDelay);
+
+			int post_pos, pre_pos, lastDelay = 0;
+			parsedConnections = 0;
+			for (std::list<ConnectionInfo>::iterator it = postConnectionList.begin(); it != postConnectionList.end(); it++) {
+				assert(it->nSrc == nId);
+				post_pos = snnRuntimeData.cumulativePost[it->nSrc] + snnRuntimeData.Npost[it->nSrc];
+				pre_pos  = snnRuntimeData.cumulativePre[it->nDest] + snnRuntimeData.Npre[it->nDest];
+
+				assert(post_pos < numPostSynNet);
+				assert(pre_pos  < numPreSynNet);
+
+				// generate a post synaptic id for the current connection
+				snnRuntimeData.postSynapticIds[post_pos] = SET_CONN_ID(it->nDest, snnRuntimeData.Npre[it->nDest], it->grpDest);
+				// generate a delay look up table by the way
+				assert(it->delay > 0);
+				if (it->delay > lastDelay) {
+					snnRuntimeData.postDelayInfo[nId * (maxDelay_ + 1) + it->delay - 1].delay_index_start = snnRuntimeData.Npost[it->nSrc];
+					snnRuntimeData.postDelayInfo[nId * (maxDelay_ + 1) + it->delay - 1].delay_length++;
+				} else if (it->delay == lastDelay) {
+					snnRuntimeData.postDelayInfo[nId * (maxDelay_ + 1) + it->delay - 1].delay_length++;
+				} else {
+					KERNEL_ERROR("Post-synaptic delays not sorted correctly... pre_id=%d, delay[%d]=%d, delay[%d]=%d",
+						nId, snnRuntimeData.Npost[it->nSrc], it->delay, snnRuntimeData.Npost[it->nSrc] - 1, lastDelay);
+				}
+				lastDelay = it->delay;
+
+				snnRuntimeData.preSynapticIds[pre_pos] = SET_CONN_ID(it->nSrc, snnRuntimeData.Npost[it->nSrc], it->grpSrc);
+				snnRuntimeData.wt[pre_pos] = it->initWt;
+				snnRuntimeData.maxSynWt[pre_pos] = it->maxWt;
+				snnRuntimeData.cumConnIdPre[pre_pos] = it->connId;
+
+				snnRuntimeData.Npre[it->nDest]++;
+				snnRuntimeData.Npost[it->nSrc]++;
+				parsedConnections++;
+
+				// update the maximum number of pre- and post-connections of a neuron in a group
+				if (snnRuntimeData.Npost[it->nSrc] > groupInfo[it->grpSrc].maxPostConn)
+					groupInfo[it->grpSrc].maxPostConn = snnRuntimeData.Npost[it->nSrc];
+				if (snnRuntimeData.Npre[it->nDest] > groupInfo[it->grpDest].maxPreConn)
+					groupInfo[it->grpDest].maxPreConn = snnRuntimeData.Npre[it->nDest];
+			}
+			assert(parsedConnections == snnRuntimeData.Npost[nId]);
+			// note: elements in postConnectionList are deallocated automatically with postConnectionList
+		}
+	}
+	assert(connectionList.empty());
 
 	//int p = snnRuntimeData.Npost[src];
 
@@ -3815,10 +3891,10 @@ void SNN::optimizeAndPartitionSNN() {
 	generateNetworkRuntime();
 
 	//..minimize any other wastage in that array by compacting the store
-	compactConnections();
+	//compactConnections();
 
 	// The post synaptic connections are sorted based on delay here
-	reorganizeDelay();
+	//reorganizeDelay();
 
 	// Print the statistics again but dump the results to a file
 	printMemoryInfo(fpDeb_);
