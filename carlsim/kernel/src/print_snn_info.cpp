@@ -471,7 +471,7 @@ void SNN::printPostConnection(int grpId, FILE* const fp)
       int post_nid = GET_CONN_NEURON_ID((*postIds));
       int post_gid = GET_CONN_GRP_ID((*postIds));
       assert( findGrpId(post_nid) == post_gid);
-      if(fp) fprintf(fp, " %3d ( maxDelay_=%3d, Grp=%3d) ", post_nid, tmp_SynapticDelay[offset+j], post_gid);
+      //if(fp) fprintf(fp, " %3d ( maxDelay_=%3d, Grp=%3d) ", post_nid, tmp_SynapticDelay[offset+j], post_gid);
     }
     if(fp) fprintf(fp, "\n");
     if(fp) fprintf(fp, " Delay ( %3d ) : ", i);

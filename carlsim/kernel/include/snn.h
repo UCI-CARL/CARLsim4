@@ -609,7 +609,7 @@ private:
 	 */
 	void collectNetworkConfig();
 
-	void compactConnections(); //!< minimize any other wastage in that array by compacting the store
+	//void compactConnections(); //!< minimize any other wastage in that array by compacting the store
 	void compileConnectConfig(); //!< for future use
 	void compileGroupConfig();
 
@@ -730,7 +730,7 @@ private:
 
 	int loadSimulation_internal(bool onlyPlastic);
 
-	void reorganizeDelay();
+	//void reorganizeDelay();
 
 	void resetConductances();
 	void resetCounters();
@@ -753,8 +753,8 @@ private:
 
 	post_info_t SET_CONN_ID(int nid, int sid, int grpId);
 
-	inline void setConnection(int srcGrpId, int destGrpId, unsigned int src, unsigned int dest, float synWt,
-		float maxWt, uint8_t dVal, int connProp, short int connId);
+	//inline void setConnection(int srcGrpId, int destGrpId, unsigned int src, unsigned int dest, float synWt,
+	//	float maxWt, uint8_t dVal, int connProp, short int connId);
 
 	void setGrpTimeSlice(int grpId, int timeSlice); //!< used for the Poisson generator. TODO: further optimize
 	int setRandSeed(int seed);	//!< setter function for const member randSeed_
@@ -762,7 +762,7 @@ private:
 	void startCPUTiming();
 	void stopCPUTiming();
 
-	void swapConnections(int nid, int oldPos, int newPos);
+	//void swapConnections(int nid, int oldPos, int newPos);
 
 	//void updateAfterMaxTime();
 
@@ -889,10 +889,6 @@ private:
 	const LoggerMode loggerMode_;	//!< current logger mode (USER, DEVELOPER, SILENT, CUSTOM)
 	const int ithGPU_;				//!< on which CUDA device to establish a context (only in GPU_MODE)
 	const int randSeed_;			//!< random number seed to use
-
-
-	//! temporary variables created and deleted by network after initialization
-	uint8_t			*tmp_SynapticDelay;
 
 	bool simulatorDeleted;
 	bool spikeRateUpdated;
