@@ -1111,7 +1111,7 @@ void SNN::setExternalCurrent(int grpId, const std::vector<float>& current) {
 	}
 
 	// copy to GPU if necessary
-	// don't allocate; allocation done in buildNetwork
+	// don't allocate; allocation done in generateNetworkRuntime
 	if (simMode_==GPU_MODE) {
 		copyExternalCurrent(&gpuRuntimeData, &snnRuntimeData, false, grpId);
 	}
@@ -2213,7 +2213,7 @@ void SNN::allocateRuntimeData() {
 	memset(snnRuntimeData.Npre_plastic, 0, sizeof(short) * numN);
 	memset(snnRuntimeData.Npost, 0, sizeof(short) * numN);
 	memset(snnRuntimeData.cumulativePost, 0, sizeof(int) * numN);
-	memset(snnRuntimeData.cumConnIdPre, 0, sizeof(int) * numN);
+	memset(snnRuntimeData.cumulativePre, 0, sizeof(int) * numN);
 	cpuSnnSz.networkInfoSize += (int)(sizeof(int) * numN * 3.5);
 
 	snnRuntimeData.postSynapticIds = new post_info_t[numPostSynNet];
@@ -2312,172 +2312,226 @@ int SNN::assignGroup(int grpId, int availableNeuronId) {
 	return newAvailableNeuronId;
 }
 
-
-void SNN::buildGroup(int grpId) {
-	//int avgPostSynPerN = groupConfig[grpId].numPostSynapses/groupConfig[grpId].SizeN + 1;
-	//int avgPreSynPerN = groupConfig[grpId].numPreSynapses/groupConfig[grpId].SizeN + 1;
-
+void SNN::generateGroupRuntime(int grpId) {
 	resetNeuromodulator(grpId);
 
-	for(int i = groupConfig[grpId].StartN; i <= groupConfig[grpId].EndN; i++) {
+	for(int i = groupConfig[grpId].StartN; i <= groupConfig[grpId].EndN; i++)
 		resetNeuron(i, grpId);
-		//snnRuntimeData.Npre_plastic[i]   = 0;
-		//snnRuntimeData.Npre[i]           = 0;
-		//snnRuntimeData.Npost[i]          = 0;
-		//snnRuntimeData.cumulativePost[i] = allocatedPost;
-		//snnRuntimeData.cumulativePre[i]  = allocatedPre;
-		//allocatedPost    += avgPostSynPerN;
-		//allocatedPre     += avgPreSynPerN;
-	}
-
-	//assert(allocatedPost <= numPostSynNet);
-	//assert(allocatedPre  <= numPreSynNet);
 }
 
 //! build the network based on the current setting (e.g., group, connection)
 /*!
  * \sa createGroup(), connect()
  */
-void SNN::buildNetwork() {
+void SNN::generateNetworkRuntime() {
 	// allocate space for firingTableD1, firingTableD2, timeTableD1, timeTableD2
 	allocateSpikeTables();
 
 	// initialize all the parameters....
 	//! allocate space for voltage, recovery, Izh_a, Izh_b, Izh_c, Izh_d, current, gAMPA, gNMDA, gGABAa, gGABAb
 	//! lastSpikeTime, curSpike, nSpikeCnt, intrinsicWeight, stpu, stpx, Npre, Npre_plastic, Npost, cumulativePost, cumulativePre
-	//! postSynapticIds, tmp_SynapticDely, postDelayInfo, wt, maxSynWt, preSynapticIds, timeTableD2, timeTableD1, grpDA, grp5HT, grpACh, grpNE
+	//! postSynapticIds, tmp_SynapticDely, postDelayInfo, wt, maxSynWt, preSynapticIds
+	//! grpDA, grp5HT, grpACh, grpNE, grpDABuffer, grp5HTBuffer, grpAChBuffer, grpNEBuffer
 	allocateRuntimeData();
 
-	// we build network in the order...
-	//    !!!!!!! IMPORTANT : NEURON ORGANIZATION/ARRANGEMENT MAP !!!!!!!!!!
-	//     <--- Excitatory --> | <-------- Inhibitory REGION ----------> | <-- Excitatory -->
-	//     Excitatory-Regular  | Inhibitory-Regular | Inhibitory-Poisson | Excitatory-Poisson
-	int allocatedGrp = 0;
-	for(int order = 0; order < 4; order++) {
-		for(int g = 0; g < numGroups; g++) {
-			if (IS_EXCITATORY_TYPE(groupConfig[g].Type) && (groupConfig[g].Type & POISSON_NEURON) && order == 3) {
-				buildPoissonGroup(g);
-				allocatedGrp++;
-			} else if (IS_INHIBITORY_TYPE(groupConfig[g].Type) &&  (groupConfig[g].Type & POISSON_NEURON) && order == 2) {
-				buildPoissonGroup(g);
-				allocatedGrp++;
-			} else if (IS_EXCITATORY_TYPE(groupConfig[g].Type) && !(groupConfig[g].Type & POISSON_NEURON) && order == 0) {
-				buildGroup(g);
-				allocatedGrp++;
-			} else if (IS_INHIBITORY_TYPE(groupConfig[g].Type) && !(groupConfig[g].Type & POISSON_NEURON) && order == 1) {
-				buildGroup(g);
-				allocatedGrp++;
-			}
+	// generate runtime data for each group
+	for(int g = 0; g < numGroups; g++) {
+		if (groupConfig[g].Type & POISSON_NEURON) {
+			generatePoissonGroupRuntime(g);
+		} else {
+			generateGroupRuntime(g);
 		}
 	}
-	assert(allocatedGrp == numGroups);
 
 	snnRuntimeData.grpIds = new short int[numN];
-	for (int nid=0; nid<numN; nid++) {
+	for (int nid = 0; nid < numN; nid++) {
 		snnRuntimeData.grpIds[nid] = -1;
-		for (int g=0; g<numGroups; g++) {
-			if (nid>=groupConfig[g].StartN && nid<=groupConfig[g].EndN) {
+		for (int g = 0; g < numGroups; g++) {
+			if (nid >= groupConfig[g].StartN && nid <= groupConfig[g].EndN) {
 				snnRuntimeData.grpIds[nid] = (short int)g;
-				//printf("grpIds[%d] = %d\n",nid,g);
+				//printf("grpIds[%d] = %d\n", nid, g);
 				break;
 			}
 		}
-		assert(snnRuntimeData.grpIds[nid]!=-1);
+		assert(snnRuntimeData.grpIds[nid] != -1);
 	}
 
-	if (loadSimFID != NULL) {
-		int loadError;
-		// we the user specified loadSimulation the synaptic weights will be restored here...
-		KERNEL_DEBUG("Start to load simulation");
-		loadError = loadSimulation_internal(true); // read the plastic synapses first
-		KERNEL_DEBUG("loadSimulation_internal() error number:%d", loadError);
-		loadError = loadSimulation_internal(false); // read the fixed synapses second
-		KERNEL_DEBUG("loadSimulation_internal() error number:%d", loadError);
-		for(int con = 0; con < 2; con++) {
-			for (std::map<int, ConnectConfig>::iterator it = connectConfigMap.begin(); it != connectConfigMap.end(); it++) {
-				bool synWtType = GET_FIXED_PLASTIC(it->second.connProp);
-				if (synWtType == SYN_PLASTIC) {
-					// given group has plastic connection, and we need to apply STDP rule...
-					groupConfig[it->second.grpDest].FixedInputWts = false;
-				}
-
-				// store scaling factors for synaptic currents in connection-centric array
-				mulSynFast[it->second.connId] = it->second.mulSynFast;
-				mulSynSlow[it->second.connId] = it->second.mulSynSlow;
-
-				if( ((con == 0) && (synWtType == SYN_PLASTIC)) || ((con == 1) && (synWtType == SYN_FIXED))) {
-					printConnectionInfo(it->second.connId);
-				}
-			}
-		}
-	} else {
-		// build all the connections here...
-		// we run over the linked list two times...
-		// first time, we make all plastic connections...
-		// second time, we make all fixed connections...
-		// this ensures that all the initial pre and post-synaptic
-		// connections are of fixed type and later if of plastic type
-		for(int con = 0; con < 2; con++) {
-			for (std::map<int, ConnectConfig>::iterator it = connectConfigMap.begin(); it != connectConfigMap.end(); it++) {
-				bool synWtType = GET_FIXED_PLASTIC(it->second.connProp);
-				if (synWtType == SYN_PLASTIC) {
-					// given group has plastic connection, and we need to apply STDP rule...
-					groupConfig[it->second.grpDest].FixedInputWts = false;
-				}
-
-				// store scaling factors for synaptic currents in connection-centric array
-				mulSynFast[it->second.connId] = it->second.mulSynFast;
-				mulSynSlow[it->second.connId] = it->second.mulSynSlow;
-
-				if( ((con == 0) && (synWtType == SYN_PLASTIC)) || ((con == 1) && (synWtType == SYN_FIXED))) {
-					switch(it->second.type) {
-						case CONN_RANDOM:
-							connectRandom(it->second.connId);
-							break;
-						case CONN_FULL:
-							connectFull(it->second.connId);
-							break;
-						case CONN_FULL_NO_DIRECT:
-							connectFull(it->second.connId);
-							break;
-						case CONN_ONE_TO_ONE:
-							connectOneToOne(it->second.connId);
-							break;
-						case CONN_GAUSSIAN:
-							connectGaussian(it->second.connId);
-							break;
-						case CONN_USER_DEFINED:
-							connectUserDefined(it->second.connId);
-							break;
-						default:
-							KERNEL_ERROR("Invalid connection type( should be 'random', 'full', 'full-no-direct', or 'one-to-one')");
-							exitSimulation(-1);
-					}
-
-					printConnectionInfo(it->second.connId);
-				}
-			}
-		}
+	for (std::map<int, ConnectConfig>::iterator it = connectConfigMap.begin(); it != connectConfigMap.end(); it++) {
+		// store scaling factors for synaptic currents in connection-centric array
+		mulSynFast[it->second.connId] = it->second.mulSynFast;
+		mulSynSlow[it->second.connId] = it->second.mulSynSlow;
 	}
+
+	generateConnectionRuntime();
+
+	//if (loadSimFID != NULL) {
+	//	// FIXME: add new version of save and load functions
+	//	//int loadError;
+	//	//// we the user specified loadSimulation the synaptic weights will be restored here...
+	//	//KERNEL_DEBUG("Start to load simulation");
+	//	//loadError = loadSimulation_internal(true); // read the plastic synapses first
+	//	//KERNEL_DEBUG("loadSimulation_internal() error number:%d", loadError);
+	//	//loadError = loadSimulation_internal(false); // read the fixed synapses second
+	//	//KERNEL_DEBUG("loadSimulation_internal() error number:%d", loadError);
+	//	//for(int con = 0; con < 2; con++) {
+	//	//	for (std::map<int, ConnectConfig>::iterator it = connectConfigMap.begin(); it != connectConfigMap.end(); it++) {
+	//	//		bool synWtType = GET_FIXED_PLASTIC(it->second.connProp);
+	//	//		if (synWtType == SYN_PLASTIC) {
+	//	//			// given group has plastic connection, and we need to apply STDP rule...
+	//	//			groupConfig[it->second.grpDest].FixedInputWts = false;
+	//	//		}
+
+	//	//		// store scaling factors for synaptic currents in connection-centric array
+	//	//		mulSynFast[it->second.connId] = it->second.mulSynFast;
+	//	//		mulSynSlow[it->second.connId] = it->second.mulSynSlow;
+
+	//	//		if( ((con == 0) && (synWtType == SYN_PLASTIC)) || ((con == 1) && (synWtType == SYN_FIXED))) {
+	//	//			printConnectionInfo(it->second.connId);
+	//	//		}
+	//	//	}
+	//	//}
+	//} else {
+	//	// build all the connections here...
+	//	// we run over the linked list two times...
+	//	// first time, we make all plastic connections...
+	//	// second time, we make all fixed connections...
+	//	// this ensures that all the initial pre and post-synaptic
+	//	// connections are of fixed type and later if of plastic type
+	//	for(int con = 0; con < 2; con++) {
+	//		for (std::map<int, ConnectConfig>::iterator it = connectConfigMap.begin(); it != connectConfigMap.end(); it++) {
+	//			bool synWtType = GET_FIXED_PLASTIC(it->second.connProp);
+	//			if (synWtType == SYN_PLASTIC) {
+	//				// given group has plastic connection, and we need to apply STDP rule...
+	//				groupConfig[it->second.grpDest].FixedInputWts = false;
+	//			}
+
+	//			// store scaling factors for synaptic currents in connection-centric array
+	//			mulSynFast[it->second.connId] = it->second.mulSynFast;
+	//			mulSynSlow[it->second.connId] = it->second.mulSynSlow;
+
+	//			if( ((con == 0) && (synWtType == SYN_PLASTIC)) || ((con == 1) && (synWtType == SYN_FIXED))) {
+	//				switch(it->second.type) {
+	//					case CONN_RANDOM:
+	//						connectRandom(it->second.connId);
+	//						break;
+	//					case CONN_FULL:
+	//						connectFull(it->second.connId);
+	//						break;
+	//					case CONN_FULL_NO_DIRECT:
+	//						connectFull(it->second.connId);
+	//						break;
+	//					case CONN_ONE_TO_ONE:
+	//						connectOneToOne(it->second.connId);
+	//						break;
+	//					case CONN_GAUSSIAN:
+	//						connectGaussian(it->second.connId);
+	//						break;
+	//					case CONN_USER_DEFINED:
+	//						connectUserDefined(it->second.connId);
+	//						break;
+	//					default:
+	//						KERNEL_ERROR("Invalid connection type( should be 'random', 'full', 'full-no-direct', or 'one-to-one')");
+	//						exitSimulation(-1);
+	//				}
+
+	//				printConnectionInfo(it->second.connId);
+	//			}
+	//		}
+	//	}
+	//}
 }
 
-void SNN::buildPoissonGroup(int grpId) {
-	//int avgPostSynPerN = groupConfig[grpId].numPostSynapses/groupConfig[grpId].SizeN + 1;
-	//int avgPreSynPerN = groupConfig[grpId].numPreSynapses/groupConfig[grpId].SizeN + 1;
+void SNN::generateConnectionRuntime() {
+	//assert(dest<=CONN_SYN_NEURON_MASK);			// total number of neurons is less than 1 million within a GPU
+	//assert((dVal >=1) && (dVal <= maxDelay_));
 
-	for(int i = groupConfig[grpId].StartN; i <= groupConfig[grpId].EndN; i++) {
-		resetPoissonNeuron(i, grpId);
-		//snnRuntimeData.Npre_plastic[i]   = 0;
-		//snnRuntimeData.Npre[i]           = 0;
-		//snnRuntimeData.Npost[i]          = 0;
-		//snnRuntimeData.cumulativePost[i] = allocatedPost;
-		//snnRuntimeData.cumulativePre[i]  = allocatedPre;
-		//allocatedPost += avgPostSynPerN;
-		//allocatedPre  += avgPreSynPerN;
+	// adjust sign of weight based on pre-group (negative if pre is inhibitory)
+	//synWt = isExcitatoryGroup(srcGrp) ? fabs(synWt) : -1.0*fabs(synWt);
+	//maxWt = isExcitatoryGroup(srcGrp) ? fabs(maxWt) : -1.0*fabs(maxWt);
+
+	
+	// parse ConnectionInfo stored in connectionList
+	int parsedConnections = 0;
+	for (std::list<ConnectionInfo>::iterator it = connectionList.begin(); it != connectionList.end(); it++) {
+		snnRuntimeData.Npost[it->nSrc]++;
+		snnRuntimeData.Npre[it->nDest]++;
+
+		if (GET_FIXED_PLASTIC(connectConfigMap[it->connId].connProp) == SYN_PLASTIC) {
+			sim_with_fixedwts = false; // if network has any plastic synapses at all, this will be set to true
+			snnRuntimeData.Npre_plastic[it->nDest]++;
+
+			// homeostasis
+			if (groupConfig[it->grpDest].WithHomeostasis && groupConfig[it->grpDest].homeoId == -1)
+				groupConfig[it->grpDest].homeoId = it->nDest; // this neuron info will be printed
+		}
+
+		// generate the delay vaule
+		it->delay = connectConfigMap[it->connId].minDelay + rand() % (connectConfigMap[it->connId].maxDelay - connectConfigMap[it->connId].minDelay + 1);
+		assert((it->delay >= connectConfigMap[it->connId].minDelay) && (it->delay <= connectConfigMap[it->connId].maxDelay));
+		// generate the max weight and initial weight
+		it->maxWt = connectConfigMap[it->connId].maxWt;
+		it->initWt = generateWeight(connectConfigMap[it->connId].connProp, connectConfigMap[it->connId].initWt, connectConfigMap[it->connId].maxWt, it->nSrc, it->grpSrc);
+
+		parsedConnections++;
+	}
+	assert(parsedConnections == numPostSynNet && parsedConnections == numPreSynNet);
+
+	// generate cumulativePost and cumulativePre
+	snnRuntimeData.cumulativePost[0] = 0;
+	snnRuntimeData.cumulativePre[0] = 0;
+	for (int nid = 1; nid < numN; nid++) {
+		snnRuntimeData.cumulativePost[nid] = snnRuntimeData.cumulativePost[nid - 1] + snnRuntimeData.Npost[nid - 1];
+		snnRuntimeData.cumulativePre[nid] = snnRuntimeData.cumulativePre[nid - 1] + snnRuntimeData.Npre[nid - 1];
 	}
 
-	//assert(allocatedPost <= numPostSynNet);
-	//assert(allocatedPre  <= numPreSynNet);
+	//int p = snnRuntimeData.Npost[src];
+
+	//assert(snnRuntimeData.Npost[src] >= 0);
+	//assert(snnRuntimeData.Npre[dest] >= 0);
+	//assert((src * maxNumPostSynGrp + p) / numN < maxNumPostSynGrp); // divide by numN to prevent INT overflow
+
+	//unsigned int post_pos = snnRuntimeData.cumulativePost[src] + snnRuntimeData.Npost[src];
+	//unsigned int pre_pos  = snnRuntimeData.cumulativePre[dest] + snnRuntimeData.Npre[dest];
+
+	//assert(post_pos < numPostSynNet);
+	//assert(pre_pos  < numPreSynNet);
+
+	////generate a new postSynapticIds id for the current connection
+	//snnRuntimeData.postSynapticIds[post_pos]   = SET_CONN_ID(dest, snnRuntimeData.Npre[dest], destGrp);
+	//tmp_SynapticDelay[post_pos] = dVal;
+
+	//snnRuntimeData.preSynapticIds[pre_pos] = SET_CONN_ID(src, snnRuntimeData.Npost[src], srcGrp);
+	//snnRuntimeData.wt[pre_pos] 	  = synWt;
+	//snnRuntimeData.maxSynWt[pre_pos] = maxWt;
+	//snnRuntimeData.cumConnIdPre[pre_pos] = connId;
+
+	//bool synWtType = GET_FIXED_PLASTIC(connProp);
+
+	//if (synWtType == SYN_PLASTIC) {
+	//	sim_with_fixedwts = false; // if network has any plastic synapses at all, this will be set to true
+	//	snnRuntimeData.Npre_plastic[dest]++;
+	//	// homeostasis
+	//	if (groupConfig[destGrp].WithHomeostasis && groupConfig[destGrp].homeoId ==-1)
+	//		groupConfig[destGrp].homeoId = dest; // this neuron info will be printed
+	//}
+
+	//snnRuntimeData.Npre[dest] += 1;
+	//snnRuntimeData.Npost[src] += 1;
+
+	//groupInfo[srcGrp].numPostConn++;
+	//groupInfo[destGrp].numPreConn++;
+
+	//// update the maximum number of pre- and post-connections of a neuron in a group
+	//if (snnRuntimeData.Npost[src] > groupInfo[srcGrp].maxPostConn)
+	//	groupInfo[srcGrp].maxPostConn = snnRuntimeData.Npost[src];
+	//if (snnRuntimeData.Npre[dest] > groupInfo[destGrp].maxPreConn)
+	//	groupInfo[destGrp].maxPreConn = snnRuntimeData.Npre[src];
+}
+
+
+void SNN::generatePoissonGroupRuntime(int grpId) {
+	for(int i = groupConfig[grpId].StartN; i <= groupConfig[grpId].EndN; i++)
+		resetPoissonNeuron(i, grpId);
 }
 
 /*!
@@ -2778,6 +2832,9 @@ inline void SNN::connectNeurons(int _grpSrc,  int _grpDest, int _nSrc, int _nDes
 	connInfo.nSrc = _nSrc;
 	connInfo.nDest = _nDest;
 	connInfo.connId = _connId;
+	connInfo.initWt = 0.0f;
+	connInfo.maxWt = 0.0f;
+	connInfo.delay = 0;
 
 	connectionList.push_back(connInfo);
 }
@@ -2980,7 +3037,7 @@ void SNN::connectUserDefined(short int connId) {
 //			//uint8_t dVal = info->minDelay + (int)(0.5 + (drand48() * (info->maxDelay - info->minDelay)));
 //			uint8_t dVal = connectConfigMap[connId].minDelay + rand() % (connectConfigMap[connId].maxDelay - connectConfigMap[connId].minDelay + 1);
 //			assert((dVal >= connectConfigMap[connId].minDelay) && (dVal <= connectConfigMap[connId].maxDelay));
-//			float synWt = getWeights(connectConfigMap[connId].connProp, connectConfigMap[connId].initWt, connectConfigMap[connId].maxWt, i, grpSrc);
+//			float synWt = generateWeight(connectConfigMap[connId].connProp, connectConfigMap[connId].initWt, connectConfigMap[connId].maxWt, i, grpSrc);
 //
 //			setConnection(grpSrc, grpDest, i, j, synWt, connectConfigMap[connId].maxWt, dVal, connectConfigMap[connId].connProp, connId);// info->connId);
 //			connectConfigMap[connId].numberOfConnections++;
@@ -3047,7 +3104,7 @@ void SNN::connectUserDefined(short int connId) {
 //	for(int nid=groupConfig[grpSrc].StartN,j=groupConfig[grpDest].StartN; nid<=groupConfig[grpSrc].EndN; nid++, j++)  {
 //		uint8_t dVal = connectConfigMap[connId].minDelay + rand() % (connectConfigMap[connId].maxDelay - connectConfigMap[connId].minDelay + 1);
 //		assert((dVal >= connectConfigMap[connId].minDelay) && (dVal <= connectConfigMap[connId].maxDelay));
-//		float synWt = getWeights(connectConfigMap[connId].connProp, connectConfigMap[connId].initWt, connectConfigMap[connId].maxWt, nid, grpSrc);
+//		float synWt = generateWeight(connectConfigMap[connId].connProp, connectConfigMap[connId].initWt, connectConfigMap[connId].maxWt, nid, grpSrc);
 //		setConnection(grpSrc, grpDest, nid, j, synWt, connectConfigMap[connId].maxWt, dVal, connectConfigMap[connId].connProp, connId);//info->connId);
 //		connectConfigMap[connId].numberOfConnections++;
 //	}
@@ -3076,7 +3133,7 @@ void SNN::connectUserDefined(short int connId) {
 //				//uint8_t dVal = info->minDelay + (int)(0.5+(drand48()*(info->maxDelay-info->minDelay)));
 //				uint8_t dVal = connectConfigMap[connId].minDelay + rand() % (connectConfigMap[connId].maxDelay - connectConfigMap[connId].minDelay + 1);
 //				assert((dVal >= connectConfigMap[connId].minDelay) && (dVal <= connectConfigMap[connId].maxDelay));
-//				float synWt = getWeights(connectConfigMap[connId].connProp, connectConfigMap[connId].initWt, connectConfigMap[connId].maxWt, pre_nid, grpSrc);
+//				float synWt = generateWeight(connectConfigMap[connId].connProp, connectConfigMap[connId].initWt, connectConfigMap[connId].maxWt, pre_nid, grpSrc);
 //				setConnection(grpSrc, grpDest, pre_nid, post_nid, synWt, connectConfigMap[connId].maxWt, dVal, connectConfigMap[connId].connProp, connId); //info->connId);
 //				connectConfigMap[connId].numberOfConnections++;
 //			}
@@ -3158,33 +3215,6 @@ void SNN::deleteObjects() {
 	simulatorDeleted = true;
 }
 
-void SNN::doSnnSim() {
-	// for all Spike Counters, reset their spike counts to zero if simTime % recordDur == 0
-	if (sim_with_spikecounters) {
-		checkSpikeCounterRecordDur();
-	}
-
-	// decay STP vars and conductances
-	doSTPUpdateAndDecayCond();
-
-	updateSpikeGenerators();
-
-	//generate all the scheduled spikes from the spikeBuffer..
-	generateSpikes();
-
-	// find the neurons that has fired..
-	findFiring();
-
-	timeTableD2[simTimeMs+maxDelay_+1] = secD2fireCntHost;
-	timeTableD1[simTimeMs+maxDelay_+1] = secD1fireCntHost;
-
-	doD2CurrentUpdate();
-	doD1CurrentUpdate();
-	globalStateUpdate();
-
-	return;
-}
-
 int SNN::findGrpId(int nid) {
 	KERNEL_WARN("Using findGrpId is deprecated, use array grpIds[] instead...");
 	for(int g=0; g < numGroups; g++) {
@@ -3245,131 +3275,6 @@ void SNN::findNumSynapsesNetwork(int* _numPostSynNet, int* _numPreSynNet) {
 	assert(*_numPreSynNet == *_numPostSynNet);
 }
 
-void SNN::generateSpikes() {
-	PropagatedSpikeBuffer::const_iterator srg_iter;
-	PropagatedSpikeBuffer::const_iterator srg_iter_end = pbuf->endSpikeTargetGroups();
-
-	for( srg_iter = pbuf->beginSpikeTargetGroups(); srg_iter != srg_iter_end; ++srg_iter )  {
-		// Get the target neurons for the given groupId
-		int nid	 = srg_iter->stg;
-		//delaystep_t del = srg_iter->delay;
-		//generate a spike to all the target neurons from source neuron nid with a delay of del
-		short int g = snnRuntimeData.grpIds[nid];
-
-		addSpikeToTable (nid, g);
-		spikeCountAll1secHost++;
-		nPoissonSpikes++;
-	}
-
-	// advance the time step to the next phase...
-	pbuf->nextTimeStep();
-}
-
-void SNN::generateSpikesFromFuncPtr(int grpId) {
-	// \FIXME this function is a mess
-	bool done;
-	SpikeGeneratorCore* spikeGen = groupConfig[grpId].spikeGen;
-	int timeSlice = groupConfig[grpId].CurrTimeSlice;
-	unsigned int currTime = simTime;
-	int spikeCnt = 0;
-	for(int i = groupConfig[grpId].StartN; i <= groupConfig[grpId].EndN; i++) {
-		// start the time from the last time it spiked, that way we can ensure that the refractory period is maintained
-		unsigned int nextTime = snnRuntimeData.lastSpikeTime[i];
-		if (nextTime == MAX_SIMULATION_TIME)
-			nextTime = 0;
-
-		// the end of the valid time window is either the length of the scheduling time slice from now (because that
-		// is the max of the allowed propagated buffer size) or simply the end of the simulation
-		unsigned int endOfTimeWindow = MIN(currTime+timeSlice,simTimeRunStop);
-
-		done = false;
-		while (!done) {
-			// generate the next spike time (nextSchedTime) from the nextSpikeTime callback
-			unsigned int nextSchedTime = spikeGen->nextSpikeTime(this, grpId, i - groupConfig[grpId].StartN, currTime, 
-				nextTime, endOfTimeWindow);
-
-			// the generated spike time is valid only if:
-			// - it has not been scheduled before (nextSchedTime > nextTime)
-			//    - but careful: we would drop spikes at t=0, because we cannot initialize nextTime to -1...
-			// - it is within the scheduling time slice (nextSchedTime < endOfTimeWindow)
-			// - it is not in the past (nextSchedTime >= currTime)
-			if ((nextSchedTime==0 || nextSchedTime>nextTime) && nextSchedTime<endOfTimeWindow && nextSchedTime>=currTime) {
-//				fprintf(stderr,"%u: spike scheduled for %d at %u\n",currTime, i-groupConfig[grpId].StartN,nextSchedTime);
-				// scheduled spike...
-				// \TODO CPU mode does not check whether the same AER event has been scheduled before (bug #212)
-				// check how GPU mode does it, then do the same here.
-				nextTime = nextSchedTime;
-				pbuf->scheduleSpikeTargetGroup(i, nextTime - currTime);
-				spikeCnt++;
-
-				// update number of spikes if SpikeCounter set
-				if (groupConfig[grpId].withSpikeCounter) {
-					int bufPos = groupConfig[grpId].spkCntBufPos; // retrieve buf pos
-					int bufNeur = i-groupConfig[grpId].StartN;
-					spkCntBuf[bufPos][bufNeur]++;
-				}
-			} else {
-				done = true;
-			}
-		}
-	}
-}
-
-void SNN::generateSpikesFromRate(int grpId) {
-	bool done;
-	PoissonRate* rate = groupConfig[grpId].RatePtr;
-	float refPeriod = groupConfig[grpId].RefractPeriod;
-	int timeSlice   = groupConfig[grpId].CurrTimeSlice;
-	unsigned int currTime = simTime;
-	int spikeCnt = 0;
-
-	if (rate == NULL)
-		return;
-
-	if (rate->isOnGPU()) {
-		KERNEL_ERROR("Specifying rates on the GPU but using the CPU SNN is not supported.");
-		exitSimulation(1);
-	}
-
-	const int nNeur = rate->getNumNeurons();
-	if (nNeur != groupConfig[grpId].SizeN) {
-		KERNEL_ERROR("Length of PoissonRate array (%d) did not match number of neurons (%d) for group %d(%s).",
-			nNeur, groupConfig[grpId].SizeN, grpId, getGroupName(grpId).c_str());
-		exitSimulation(1);
-	}
-
-	for (int neurId=0; neurId<nNeur; neurId++) {
-		float frate = rate->getRate(neurId);
-
-		// start the time from the last time it spiked, that way we can ensure that the refractory period is maintained
-		unsigned int nextTime = snnRuntimeData.lastSpikeTime[groupConfig[grpId].StartN + neurId];
-		if (nextTime == MAX_SIMULATION_TIME)
-			nextTime = 0;
-
-		done = false;
-		while (!done && frate>0) {
-			nextTime = poissonSpike(nextTime, frate/1000.0, refPeriod);
-			// found a valid timeSlice
-			if (nextTime < (currTime+timeSlice)) {
-				if (nextTime >= currTime) {
-//					int nid = groupConfig[grpId].StartN+cnt;
-					pbuf->scheduleSpikeTargetGroup(groupConfig[grpId].StartN + neurId, nextTime-currTime);
-					spikeCnt++;
-
-					// update number of spikes if SpikeCounter set
-					if (groupConfig[grpId].withSpikeCounter) {
-						int bufPos = groupConfig[grpId].spkCntBufPos; // retrieve buf pos
-						spkCntBuf[bufPos][neurId]++;
-					}
-				}
-			}
-			else {
-				done=true;
-			}
-		}
-	}
-}
-
 inline int SNN::getPoissNeuronPos(int nid) {
 	int nPos = nid-numNReg;
 	assert(nid >= numNReg);
@@ -3381,7 +3286,7 @@ inline int SNN::getPoissNeuronPos(int nid) {
 //We need pass the neuron id (nid) and the grpId just for the case when we want to
 //ramp up/down the weights.  In that case we need to set the weights of each synapse
 //depending on their nid (their position with respect to one another). -- KDC
-float SNN::getWeights(int connProp, float initWt, float maxWt, unsigned int nid, int grpId) {
+float SNN::generateWeight(int connProp, float initWt, float maxWt, unsigned int nid, int grpId) {
 	float actWts;
 	// \FIXME: are these ramping thingies still supported?
 	bool setRandomWeights   = GET_INITWTS_RANDOM(connProp);
@@ -3907,7 +3812,7 @@ void SNN::reorganizeDelay()
 
 void SNN::optimizeAndPartitionSNN() {
 	// time to build the complete network with relevant parameters..
-	buildNetwork();
+	generateNetworkRuntime();
 
 	//..minimize any other wastage in that array by compacting the store
 	compactConnections();
@@ -4323,7 +4228,7 @@ void SNN::resetSynapticConnections(bool changeWeights) {
 				// if connection was plastic or if the connection weights were updated we need to reset the weights
 				// TODO: How to account for user-defined connection reset
 				if ((synWtType == SYN_PLASTIC) || connectConfigMap[connId].newUpdates) {
-					*synWtPtr = getWeights(connectConfigMap[connId].connProp, connectConfigMap[connId].initWt, connectConfigMap[connId].maxWt, nid, srcGrp);
+					*synWtPtr = generateWeight(connectConfigMap[connId].connProp, connectConfigMap[connId].initWt, connectConfigMap[connId].maxWt, nid, srcGrp);
 					*maxWtPtr = connectConfigMap[connId].maxWt;
 				}
 			}

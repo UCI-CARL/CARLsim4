@@ -74,7 +74,10 @@ typedef struct ConnectionInfo_s {
 	int grpDest;
 	int nSrc;
 	int nDest;
+	float initWt;
+	float maxWt;
 	short int connId;
+	uint8_t delay;
 } ConnectionInfo;
 
 /*!
@@ -333,8 +336,8 @@ typedef struct GroupConfigRT_s {
 	int			NewTimeSlice;
 	uint32_t 	SliceUpdateTime;
 	int 		FiringCount1sec;
-	int 		numPostSynapses;
-	int 		numPreSynapses;
+	int 		numPostSynapses; //!< the total number of post-connections of a group
+	int 		numPreSynapses; //!< the total number of pre-connections of a group
 	bool 		isSpikeGenerator;
 	bool 		WithSTP;
 	bool 		WithSTDP;
@@ -423,12 +426,12 @@ typedef struct GroupInfo_s {
 	 * default is false and we do not want any prints for the current group
 	 */
 	bool		enablePrint;
-	int			numPostConn;
-	int			numPreConn;
-	int			maxPostConn;
-	int			maxPreConn;
-	int			sumPostConn;
-	int			sumPreConn;
+	int			numPostConn; //!< the total number of post-connections of a group
+	int			numPreConn; //!< the total number of pre-connections of a group
+	int			maxPostConn; //!< the maximum number of post-connections of a neuron in a group
+	int			maxPreConn; //!< the maximum number of pre-connections of a neuron in a group
+	int			sumPostConn; //!< the total number of post-connections of a group
+	int			sumPreConn; //!< the total number of pre-connections of a group
 } GroupInfo;
 
 /*!

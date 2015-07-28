@@ -106,6 +106,33 @@ void SNN::doD2CurrentUpdate() {
 	}
 }
 
+void SNN::doSnnSim() {
+	// for all Spike Counters, reset their spike counts to zero if simTime % recordDur == 0
+	if (sim_with_spikecounters) {
+		checkSpikeCounterRecordDur();
+	}
+
+	// decay STP vars and conductances
+	doSTPUpdateAndDecayCond();
+
+	updateSpikeGenerators();
+
+	//generate all the scheduled spikes from the spikeBuffer..
+	generateSpikes();
+
+	// find the neurons that has fired..
+	findFiring();
+
+	timeTableD2[simTimeMs+maxDelay_+1] = secD2fireCntHost;
+	timeTableD1[simTimeMs+maxDelay_+1] = secD1fireCntHost;
+
+	doD2CurrentUpdate();
+	doD1CurrentUpdate();
+	globalStateUpdate();
+
+	return;
+}
+
 void SNN::doSTPUpdateAndDecayCond() {
 	int spikeBufferFull = 0;
 
@@ -361,6 +388,131 @@ void SNN::generatePostSpike(unsigned int pre_i, unsigned int idx_d, unsigned int
 			} else { /*do nothing*/ }
 		}
 		assert(!((stdp_tDiff < 0) && (snnRuntimeData.lastSpikeTime[post_i] != MAX_SIMULATION_TIME)));
+	}
+}
+
+void SNN::generateSpikes() {
+	PropagatedSpikeBuffer::const_iterator srg_iter;
+	PropagatedSpikeBuffer::const_iterator srg_iter_end = pbuf->endSpikeTargetGroups();
+
+	for( srg_iter = pbuf->beginSpikeTargetGroups(); srg_iter != srg_iter_end; ++srg_iter )  {
+		// Get the target neurons for the given groupId
+		int nid	 = srg_iter->stg;
+		//delaystep_t del = srg_iter->delay;
+		//generate a spike to all the target neurons from source neuron nid with a delay of del
+		short int g = snnRuntimeData.grpIds[nid];
+
+		addSpikeToTable (nid, g);
+		spikeCountAll1secHost++;
+		nPoissonSpikes++;
+	}
+
+	// advance the time step to the next phase...
+	pbuf->nextTimeStep();
+}
+
+void SNN::generateSpikesFromFuncPtr(int grpId) {
+	// \FIXME this function is a mess
+	bool done;
+	SpikeGeneratorCore* spikeGen = groupConfig[grpId].spikeGen;
+	int timeSlice = groupConfig[grpId].CurrTimeSlice;
+	unsigned int currTime = simTime;
+	int spikeCnt = 0;
+	for(int i = groupConfig[grpId].StartN; i <= groupConfig[grpId].EndN; i++) {
+		// start the time from the last time it spiked, that way we can ensure that the refractory period is maintained
+		unsigned int nextTime = snnRuntimeData.lastSpikeTime[i];
+		if (nextTime == MAX_SIMULATION_TIME)
+			nextTime = 0;
+
+		// the end of the valid time window is either the length of the scheduling time slice from now (because that
+		// is the max of the allowed propagated buffer size) or simply the end of the simulation
+		unsigned int endOfTimeWindow = MIN(currTime+timeSlice,simTimeRunStop);
+
+		done = false;
+		while (!done) {
+			// generate the next spike time (nextSchedTime) from the nextSpikeTime callback
+			unsigned int nextSchedTime = spikeGen->nextSpikeTime(this, grpId, i - groupConfig[grpId].StartN, currTime, 
+				nextTime, endOfTimeWindow);
+
+			// the generated spike time is valid only if:
+			// - it has not been scheduled before (nextSchedTime > nextTime)
+			//    - but careful: we would drop spikes at t=0, because we cannot initialize nextTime to -1...
+			// - it is within the scheduling time slice (nextSchedTime < endOfTimeWindow)
+			// - it is not in the past (nextSchedTime >= currTime)
+			if ((nextSchedTime==0 || nextSchedTime>nextTime) && nextSchedTime<endOfTimeWindow && nextSchedTime>=currTime) {
+//				fprintf(stderr,"%u: spike scheduled for %d at %u\n",currTime, i-groupConfig[grpId].StartN,nextSchedTime);
+				// scheduled spike...
+				// \TODO CPU mode does not check whether the same AER event has been scheduled before (bug #212)
+				// check how GPU mode does it, then do the same here.
+				nextTime = nextSchedTime;
+				pbuf->scheduleSpikeTargetGroup(i, nextTime - currTime);
+				spikeCnt++;
+
+				// update number of spikes if SpikeCounter set
+				if (groupConfig[grpId].withSpikeCounter) {
+					int bufPos = groupConfig[grpId].spkCntBufPos; // retrieve buf pos
+					int bufNeur = i-groupConfig[grpId].StartN;
+					spkCntBuf[bufPos][bufNeur]++;
+				}
+			} else {
+				done = true;
+			}
+		}
+	}
+}
+
+void SNN::generateSpikesFromRate(int grpId) {
+	bool done;
+	PoissonRate* rate = groupConfig[grpId].RatePtr;
+	float refPeriod = groupConfig[grpId].RefractPeriod;
+	int timeSlice   = groupConfig[grpId].CurrTimeSlice;
+	unsigned int currTime = simTime;
+	int spikeCnt = 0;
+
+	if (rate == NULL)
+		return;
+
+	if (rate->isOnGPU()) {
+		KERNEL_ERROR("Specifying rates on the GPU but using the CPU SNN is not supported.");
+		exitSimulation(1);
+	}
+
+	const int nNeur = rate->getNumNeurons();
+	if (nNeur != groupConfig[grpId].SizeN) {
+		KERNEL_ERROR("Length of PoissonRate array (%d) did not match number of neurons (%d) for group %d(%s).",
+			nNeur, groupConfig[grpId].SizeN, grpId, getGroupName(grpId).c_str());
+		exitSimulation(1);
+	}
+
+	for (int neurId=0; neurId<nNeur; neurId++) {
+		float frate = rate->getRate(neurId);
+
+		// start the time from the last time it spiked, that way we can ensure that the refractory period is maintained
+		unsigned int nextTime = snnRuntimeData.lastSpikeTime[groupConfig[grpId].StartN + neurId];
+		if (nextTime == MAX_SIMULATION_TIME)
+			nextTime = 0;
+
+		done = false;
+		while (!done && frate>0) {
+			nextTime = poissonSpike(nextTime, frate/1000.0, refPeriod);
+			// found a valid timeSlice
+			if (nextTime < (currTime+timeSlice)) {
+				if (nextTime >= currTime) {
+//					int nid = groupConfig[grpId].StartN+cnt;
+					pbuf->scheduleSpikeTargetGroup(groupConfig[grpId].StartN + neurId, nextTime-currTime);
+					spikeCnt++;
+
+					// update number of spikes if SpikeCounter set
+					if (groupConfig[grpId].withSpikeCounter) {
+						int bufPos = groupConfig[grpId].spkCntBufPos; // retrieve buf pos
+						spkCntBuf[bufPos][neurId]++;
+					}
+				}
+			}
+			else {
+				done=true;
+			}
+		}
 	}
 }
 

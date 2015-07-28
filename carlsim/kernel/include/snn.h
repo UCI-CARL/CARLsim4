@@ -590,9 +590,10 @@ private:
 	int  addSpikeToTable(int id, int g);
 
 	int assignGroup(int groupId, int availableNeuronId);
-	void buildGroup(int groupId);
-	void buildNetwork();
-	void buildPoissonGroup(int groupId);
+	void generateGroupRuntime(int groupId);
+	void generateNetworkRuntime();
+	void generatePoissonGroupRuntime(int groupId);
+	void generateConnectionRuntime();
 
 	/*!
 	 * \brief reset Spike Counters to zero if simTime % recordDur == 0
@@ -648,7 +649,7 @@ private:
 	void generateSpikesFromRate(int grpId);
 
 	int getPoissNeuronPos(int nid);
-	float getWeights(int connProp, float initWt, float maxWt, unsigned int nid, int grpId);
+	float generateWeight(int connProp, float initWt, float maxWt, unsigned int nid, int grpId);
 
 	void globalStateUpdate();
 

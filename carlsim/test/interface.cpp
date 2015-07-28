@@ -477,7 +477,7 @@ TEST(Interface, CARLsimState) {
 
 	sim->setConductances(true);
 
-	// test buildNetwork(), change carlsimState_ from CONFIG_STATE to SETUP_STATE
+	// test generateNetworkRuntime(), change carlsimState_ from CONFIG_STATE to SETUP_STATE
 	EXPECT_TRUE(sim->getCARLsimState() == CONFIG_STATE);
 	sim->setupNetwork();
 	EXPECT_TRUE(sim->getCARLsimState() == SETUP_STATE);
