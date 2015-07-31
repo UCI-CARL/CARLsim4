@@ -719,8 +719,4 @@ void SNN::updateFiringTable() {
 	secD1fireCntHost  = 0;
 	spikeCountAll1secHost = 0;
 	secD2fireCntHost = timeTableD2[maxDelay_];
-
-	for (int i=0; i < numGroups; i++) {
-		groupConfig[i].FiringCount1sec=0;
-	}
 }

@@ -1993,8 +1993,6 @@ void SNN::SNNinit() {
 
 	memset(&cpuSnnSz, 0, sizeof(cpuSnnSz));
 
-	showGrpFiringInfo = true;
-
 	// initialize propogated spike buffers.....
 	pbuf = new PropagatedSpikeBuffer(0, PROPAGATED_BUFFER_SIZE);
 
@@ -2010,10 +2008,8 @@ void SNN::SNNinit() {
 		groupConfig[i].MaxFiringRate = UNKNOWN_NEURON_MAX_FIRING_RATE;
 		groupConfig[i].SpikeMonitorId = -1;
 		groupConfig[i].GroupMonitorId = -1;
-//		groupConfig[i].ConnectionMonitorId = -1;
-		groupConfig[i].FiringCount1sec=0;
-		groupConfig[i].numPostSynapses 		= 0;	// default value
-		groupConfig[i].numPreSynapses 	= 0;	// default value
+		groupConfig[i].numPostSynapses = 0;	// default value
+		groupConfig[i].numPreSynapses = 0;	// default value
 		groupConfig[i].WithSTP = false;
 		groupConfig[i].WithSTDP = false;
 		groupConfig[i].WithESTDP = false;
@@ -2275,7 +2271,6 @@ int SNN::addSpikeToTable(int nid, int g) {
 		assert(nid < numN);
 		snnRuntimeData.firingTableD1[secD1fireCntHost] = nid;
 		secD1fireCntHost++;
-		groupConfig[g].FiringCount1sec++;
 		if (secD1fireCntHost >= maxSpikesD1) {
 			spikeBufferFull = 2;
 			secD1fireCntHost = maxSpikesD1-1;
@@ -2283,7 +2278,6 @@ int SNN::addSpikeToTable(int nid, int g) {
 	} else {
 		assert(nid < numN);
 		snnRuntimeData.firingTableD2[secD2fireCntHost] = nid;
-		groupConfig[g].FiringCount1sec++;
 		secD2fireCntHost++;
 		if (secD2fireCntHost >= maxSpikesD2) {
 			spikeBufferFull = 1;
@@ -2692,123 +2686,6 @@ void SNN::collectNetworkConfig() {
 	// find the total number of synapses in the network
 	findNumSynapsesNetwork(&numPostSynNet, &numPreSynNet);
 }
-
-// We parallelly cleanup the postSynapticIds array to minimize any other wastage in that array by compacting the store
-// Appropriate alignment specified by ALIGN_COMPACTION macro is used to ensure some level of alignment (if necessary)
-//void SNN::compactConnections() {
-//	unsigned int* tmp_cumulativePost = new unsigned int[numN];
-//	unsigned int* tmp_cumulativePre  = new unsigned int[numN];
-//	unsigned int lastCnt_pre         = 0;
-//	unsigned int lastCnt_post        = 0;
-//
-//	tmp_cumulativePost[0]   = 0;
-//	tmp_cumulativePre[0]    = 0;
-//
-//	for(int i=1; i < numN; i++) {
-//		lastCnt_post = tmp_cumulativePost[i-1]+snnRuntimeData.Npost[i-1]; //position of last pointer
-//		lastCnt_pre  = tmp_cumulativePre[i-1]+snnRuntimeData.Npre[i-1]; //position of last pointer
-//		#if COMPACTION_ALIGNMENT_POST
-//			lastCnt_post= lastCnt_post + COMPACTION_ALIGNMENT_POST-lastCnt_post%COMPACTION_ALIGNMENT_POST;
-//			lastCnt_pre = lastCnt_pre  + COMPACTION_ALIGNMENT_PRE- lastCnt_pre%COMPACTION_ALIGNMENT_PRE;
-//		#endif
-//		tmp_cumulativePost[i] = lastCnt_post;
-//		tmp_cumulativePre[i]  = lastCnt_pre;
-//		assert(tmp_cumulativePost[i] <= snnRuntimeData.cumulativePost[i]);
-//		assert(tmp_cumulativePre[i]  <= snnRuntimeData.cumulativePre[i]);
-//	}
-//
-//	// compress the post_synaptic array according to the new values of the tmp_cumulative counts....
-//	unsigned int tmp_numPostSynNet = tmp_cumulativePost[numN-1]+snnRuntimeData.Npost[numN-1];
-//	unsigned int tmp_numPreSynNet  = tmp_cumulativePre[numN-1]+snnRuntimeData.Npre[numN-1];
-//	assert(tmp_numPostSynNet <= allocatedPost);
-//	assert(tmp_numPreSynNet  <= allocatedPre);
-//	assert(tmp_numPostSynNet <= numPostSynNet);
-//	assert(tmp_numPreSynNet  <= numPreSynNet);
-//	KERNEL_DEBUG("******************");
-//	KERNEL_DEBUG("CompactConnection: ");
-//	KERNEL_DEBUG("******************");
-//	KERNEL_DEBUG("old_postCnt = %d, new_postCnt = %d", numPostSynNet, tmp_numPostSynNet);
-//	KERNEL_DEBUG("old_preCnt = %d,  new_postCnt = %d", numPreSynNet,  tmp_numPreSynNet);
-//
-//	// new buffer with required size + 100 bytes of additional space just to provide limited overflow
-//	post_info_t* tmp_postSynapticIds   = new post_info_t[tmp_numPostSynNet+100];
-//
-//	// new buffer with required size + 100 bytes of additional space just to provide limited overflow
-//	post_info_t* tmp_preSynapticIds	= new post_info_t[tmp_numPreSynNet+100];
-//	float* tmp_wt	    	  		= new float[tmp_numPreSynNet+100];
-//	float* tmp_maxSynWt   	  		= new float[tmp_numPreSynNet+100];
-//	short int *tmp_cumConnIdPre 		= new short int[tmp_numPreSynNet+100];
-//	float *tmp_mulSynFast 			= new float[numConnections];
-//	float *tmp_mulSynSlow  			= new float[numConnections];
-//
-//	// compact synaptic information
-//	for(int i=0; i<numN; i++) {
-//		assert(tmp_cumulativePost[i] <= snnRuntimeData.cumulativePost[i]);
-//		assert(tmp_cumulativePre[i]  <= snnRuntimeData.cumulativePre[i]);
-//		for( int j=0; j<snnRuntimeData.Npost[i]; j++) {
-//			unsigned int tmpPos = tmp_cumulativePost[i]+j;
-//			unsigned int oldPos = snnRuntimeData.cumulativePost[i]+j;
-//			tmp_postSynapticIds[tmpPos] = snnRuntimeData.postSynapticIds[oldPos];
-//			tmp_SynapticDelay[tmpPos]   = tmp_SynapticDelay[oldPos];
-//		}
-//		for( int j=0; j<snnRuntimeData.Npre[i]; j++) {
-//			unsigned int tmpPos =  tmp_cumulativePre[i]+j;
-//			unsigned int oldPos =  snnRuntimeData.cumulativePre[i]+j;
-//			tmp_preSynapticIds[tmpPos]  = snnRuntimeData.preSynapticIds[oldPos];
-//			tmp_maxSynWt[tmpPos] 	    = snnRuntimeData.maxSynWt[oldPos];
-//			tmp_wt[tmpPos]              = snnRuntimeData.wt[oldPos];
-//			tmp_cumConnIdPre[tmpPos]	= snnRuntimeData.cumConnIdPre[oldPos];
-//		}
-//	}
-//
-//	// delete old buffer space
-//	delete[] snnRuntimeData.postSynapticIds;
-//	snnRuntimeData.postSynapticIds = tmp_postSynapticIds;
-//	cpuSnnSz.networkInfoSize -= (sizeof(post_info_t)*numPostSynNet);
-//	cpuSnnSz.networkInfoSize += (sizeof(post_info_t)*(tmp_numPostSynNet+100));
-//
-//	delete[] snnRuntimeData.cumulativePost;
-//	snnRuntimeData.cumulativePost  = tmp_cumulativePost;
-//
-//	delete[] snnRuntimeData.cumulativePre;
-//	snnRuntimeData.cumulativePre   = tmp_cumulativePre;
-//
-//	delete[] snnRuntimeData.maxSynWt;
-//	snnRuntimeData.maxSynWt = tmp_maxSynWt;
-//	cpuSnnSz.synapticInfoSize -= (sizeof(float)*numPreSynNet);
-//	cpuSnnSz.synapticInfoSize += (sizeof(float)*(tmp_numPreSynNet+100));
-//
-//	delete[] snnRuntimeData.wt;
-//	snnRuntimeData.wt = tmp_wt;
-//	cpuSnnSz.synapticInfoSize -= (sizeof(float)*numPreSynNet);
-//	cpuSnnSz.synapticInfoSize += (sizeof(float)*(tmp_numPreSynNet+100));
-//
-//	delete[] snnRuntimeData.cumConnIdPre;
-//	snnRuntimeData.cumConnIdPre = tmp_cumConnIdPre;
-//	cpuSnnSz.synapticInfoSize -= (sizeof(short int)*numPreSynNet);
-//	cpuSnnSz.synapticInfoSize += (sizeof(short int)*(tmp_numPreSynNet+100));
-//
-//	// compact connection-centric information
-//	for (int i=0; i<numConnections; i++) {
-//		tmp_mulSynFast[i] = mulSynFast[i];
-//		tmp_mulSynSlow[i] = mulSynSlow[i];
-//	}
-//	delete[] mulSynFast;
-//	delete[] mulSynSlow;
-//	mulSynFast = tmp_mulSynFast;
-//	mulSynSlow = tmp_mulSynSlow;
-//	cpuSnnSz.networkInfoSize -= (2*sizeof(uint8_t)*numPreSynNet);
-//	cpuSnnSz.networkInfoSize += (2*sizeof(uint8_t)*(tmp_numPreSynNet+100));
-//
-//
-//	delete[] snnRuntimeData.preSynapticIds;
-//	snnRuntimeData.preSynapticIds  = tmp_preSynapticIds;
-//	cpuSnnSz.synapticInfoSize -= (sizeof(post_info_t)*numPreSynNet);
-//	cpuSnnSz.synapticInfoSize += (sizeof(post_info_t)*(tmp_numPreSynNet+100));
-//
-//	numPreSynNet	= tmp_numPreSynNet;
-//	numPostSynNet	= tmp_numPostSynNet;
-//}
 
 // after all the initalization. Its time to create the synaptic weights, weight change and also
 // time of firing these are the mostly costly arrays so dense packing is essential to minimize wastage of space
@@ -3878,64 +3755,9 @@ int SNN::loadSimulation_internal(bool onlyPlastic) {
 	return 0;
 }
 
-
-// The post synaptic connections are sorted based on delay here so that we can reduce storage requirement
-// and generation of spike at the post-synaptic side.
-// We also create the delay_info array has the delay_start and delay_length parameter
-//void SNN::reorganizeDelay()
-//{
-//	for(int grpId=0; grpId < numGroups; grpId++) {
-//		for(int nid=groupConfig[grpId].StartN; nid <= groupConfig[grpId].EndN; nid++) {
-//			unsigned int jPos=0;					// this points to the top of the delay queue
-//			unsigned int cumN=snnRuntimeData.cumulativePost[nid];	// cumulativePost[] is unsigned int
-//			unsigned int cumDelayStart=0; 			// Npost[] is unsigned short
-//			for(int td = 0; td < maxDelay_; td++) {
-//				unsigned int j=jPos;				// start searching from top of the queue until the end
-//				unsigned int cnt=0;					// store the number of nodes with a delay of td;
-//				while(j < snnRuntimeData.Npost[nid]) {
-//					// found a node j with delay=td and we put
-//					// the delay value = 1 at array location td=0;
-//					if(td==(tmp_SynapticDelay[cumN+j]-1)) {
-//						assert(jPos<snnRuntimeData.Npost[nid]);
-//						swapConnections(nid, j, jPos);
-//
-//						jPos=jPos+1;
-//						cnt=cnt+1;
-//					}
-//					j=j+1;
-//				}
-//
-//				// update the delay_length and start values...
-//				snnRuntimeData.postDelayInfo[nid*(maxDelay_+1)+td].delay_length	     = cnt;
-//				snnRuntimeData.postDelayInfo[nid*(maxDelay_+1)+td].delay_index_start  = cumDelayStart;
-//				cumDelayStart += cnt;
-//
-//				assert(cumDelayStart <= snnRuntimeData.Npost[nid]);
-//			}
-//
-//			// total cumulative delay should be equal to number of post-synaptic connections at the end of the loop
-//			assert(cumDelayStart == snnRuntimeData.Npost[nid]);
-//			for(unsigned int j=1; j < snnRuntimeData.Npost[nid]; j++) {
-//				unsigned int cumN=snnRuntimeData.cumulativePost[nid]; // cumulativePost[] is unsigned int
-//				if( tmp_SynapticDelay[cumN+j] < tmp_SynapticDelay[cumN+j-1]) {
-//	  				KERNEL_ERROR("Post-synaptic delays not sorted correctly... id=%d, delay[%d]=%d, delay[%d]=%d",
-//						nid, j, tmp_SynapticDelay[cumN+j], j-1, tmp_SynapticDelay[cumN+j-1]);
-//					assert( tmp_SynapticDelay[cumN+j] >= tmp_SynapticDelay[cumN+j-1]);
-//				}
-//			}
-//		}
-//	}
-//}
-
 void SNN::optimizeAndPartitionSNN() {
 	// time to build the complete network with relevant parameters..
 	generateNetworkRuntime();
-
-	//..minimize any other wastage in that array by compacting the store
-	//compactConnections();
-
-	// The post synaptic connections are sorted based on delay here
-	//reorganizeDelay();
 
 	// Print the statistics again but dump the results to a file
 	printMemoryInfo(fpDeb_);
@@ -4001,10 +3823,6 @@ void SNN::resetFiringInformation() {
 	spikeCountD1Host = 0;
 	secD1fireCntHost  = 0;
 	secD2fireCntHost  = 0;
-
-	for(int i=0; i < numGroups; i++) {
-		groupConfig[i].FiringCount1sec = 0;
-	}
 
 	// reset various times...
 	simTimeMs  = 0;
@@ -4380,74 +4198,6 @@ inline post_info_t SNN::SET_CONN_ID(int nid, int sid, int grpId) {
 	return p;
 }
 
-//! set one specific connection from neuron id 'src' to neuron id 'dest'
-//inline void SNN::setConnection(int srcGrp,  int destGrp,  unsigned int src, unsigned int dest, float synWt,
-//									float maxWt, uint8_t dVal, int connProp, short int connId) {
-//	assert(dest<=CONN_SYN_NEURON_MASK);			// total number of neurons is less than 1 million within a GPU
-//	assert((dVal >=1) && (dVal <= maxDelay_));
-//
-//	// adjust sign of weight based on pre-group (negative if pre is inhibitory)
-//	synWt = isExcitatoryGroup(srcGrp) ? fabs(synWt) : -1.0*fabs(synWt);
-//	maxWt = isExcitatoryGroup(srcGrp) ? fabs(maxWt) : -1.0*fabs(maxWt);
-//
-//	// we have exceeded the number of possible connection for one neuron
-//	if(snnRuntimeData.Npost[src] >= groupConfig[srcGrp].numPostSynapses)	{
-//		KERNEL_ERROR("setConnection(%d (Grp=%s), %d (Grp=%s), %f, %d)", src, groupInfo[srcGrp].Name.c_str(),
-//					dest, groupInfo[destGrp].Name.c_str(), synWt, dVal);
-//		KERNEL_ERROR("Large number of postsynaptic connections established (%d), max for this group %d.", snnRuntimeData.Npost[src], groupConfig[srcGrp].numPostSynapses);
-//		exitSimulation(1);
-//	}
-//
-//	if(snnRuntimeData.Npre[dest] >= groupConfig[destGrp].numPreSynapses) {
-//		KERNEL_ERROR("setConnection(%d (Grp=%s), %d (Grp=%s), %f, %d)", src, groupInfo[srcGrp].Name.c_str(),
-//					dest, groupInfo[destGrp].Name.c_str(), synWt, dVal);
-//		KERNEL_ERROR("Large number of presynaptic connections established (%d), max for this group %d.", snnRuntimeData.Npre[dest], groupConfig[destGrp].numPreSynapses);
-//		exitSimulation(1);
-//	}
-//
-//	int p = snnRuntimeData.Npost[src];
-//
-//	assert(snnRuntimeData.Npost[src] >= 0);
-//	assert(snnRuntimeData.Npre[dest] >= 0);
-//	assert((src * maxNumPostSynGrp + p) / numN < maxNumPostSynGrp); // divide by numN to prevent INT overflow
-//
-//	unsigned int post_pos = snnRuntimeData.cumulativePost[src] + snnRuntimeData.Npost[src];
-//	unsigned int pre_pos  = snnRuntimeData.cumulativePre[dest] + snnRuntimeData.Npre[dest];
-//
-//	assert(post_pos < numPostSynNet);
-//	assert(pre_pos  < numPreSynNet);
-//
-//	//generate a new postSynapticIds id for the current connection
-//	snnRuntimeData.postSynapticIds[post_pos]   = SET_CONN_ID(dest, snnRuntimeData.Npre[dest], destGrp);
-//	tmp_SynapticDelay[post_pos] = dVal;
-//
-//	snnRuntimeData.preSynapticIds[pre_pos] = SET_CONN_ID(src, snnRuntimeData.Npost[src], srcGrp);
-//	snnRuntimeData.wt[pre_pos] 	  = synWt;
-//	snnRuntimeData.maxSynWt[pre_pos] = maxWt;
-//	snnRuntimeData.cumConnIdPre[pre_pos] = connId;
-//
-//	bool synWtType = GET_FIXED_PLASTIC(connProp);
-//
-//	if (synWtType == SYN_PLASTIC) {
-//		sim_with_fixedwts = false; // if network has any plastic synapses at all, this will be set to true
-//		snnRuntimeData.Npre_plastic[dest]++;
-//		// homeostasis
-//		if (groupConfig[destGrp].WithHomeostasis && groupConfig[destGrp].homeoId ==-1)
-//			groupConfig[destGrp].homeoId = dest; // this neuron info will be printed
-//	}
-//
-//	snnRuntimeData.Npre[dest] += 1;
-//	snnRuntimeData.Npost[src] += 1;
-//
-//	groupInfo[srcGrp].numPostConn++;
-//	groupInfo[destGrp].numPreConn++;
-//
-//	if (snnRuntimeData.Npost[src] > groupInfo[srcGrp].maxPostConn)
-//		groupInfo[srcGrp].maxPostConn = snnRuntimeData.Npost[src];
-//	if (snnRuntimeData.Npre[dest] > groupInfo[destGrp].maxPreConn)
-//	groupInfo[destGrp].maxPreConn = snnRuntimeData.Npre[src];
-//}
-
 void SNN::setGrpTimeSlice(int grpId, int timeSlice) {
 	if (grpId == ALL) {
 		for(int g=0; (g < numGroups); g++) {
@@ -4523,47 +4273,6 @@ void SNN::stopTesting() {
 		copyNetworkConfig();
 	}
 }
-
-
-//void SNN::swapConnections(int nid, int oldPos, int newPos) {
-//	unsigned int cumN=snnRuntimeData.cumulativePost[nid];
-//
-//	// Put the node oldPos to the top of the delay queue
-//	post_info_t tmp = snnRuntimeData.postSynapticIds[cumN+oldPos];
-//	snnRuntimeData.postSynapticIds[cumN+oldPos]= snnRuntimeData.postSynapticIds[cumN+newPos];
-//	snnRuntimeData.postSynapticIds[cumN+newPos]= tmp;
-//
-//	// Ensure that you have shifted the delay accordingly....
-//	uint8_t tmp_delay = tmp_SynapticDelay[cumN+oldPos];
-//	tmp_SynapticDelay[cumN+oldPos] = tmp_SynapticDelay[cumN+newPos];
-//	tmp_SynapticDelay[cumN+newPos] = tmp_delay;
-//
-//	// update the pre-information for the postsynaptic neuron at the position oldPos.
-//	post_info_t  postInfo = snnRuntimeData.postSynapticIds[cumN+oldPos];
-//	int  post_nid = GET_CONN_NEURON_ID(postInfo);
-//	int  post_sid = GET_CONN_SYN_ID(postInfo);
-//
-//	post_info_t* preId    = &(snnRuntimeData.preSynapticIds[snnRuntimeData.cumulativePre[post_nid]+post_sid]);
-//	int  pre_nid  = GET_CONN_NEURON_ID((*preId));
-//	int  pre_sid  = GET_CONN_SYN_ID((*preId));
-//	int  pre_gid  = GET_CONN_GRP_ID((*preId));
-//	assert (pre_nid == nid);
-//	assert (pre_sid == newPos);
-//	*preId = SET_CONN_ID( pre_nid, oldPos, pre_gid);
-//
-//	// update the pre-information for the postsynaptic neuron at the position newPos
-//	postInfo = snnRuntimeData.postSynapticIds[cumN+newPos];
-//	post_nid = GET_CONN_NEURON_ID(postInfo);
-//	post_sid = GET_CONN_SYN_ID(postInfo);
-//
-//	preId    = &(snnRuntimeData.preSynapticIds[snnRuntimeData.cumulativePre[post_nid]+post_sid]);
-//	pre_nid  = GET_CONN_NEURON_ID((*preId));
-//	pre_sid  = GET_CONN_SYN_ID((*preId));
-//	pre_gid  = GET_CONN_GRP_ID((*preId));
-//	assert (pre_nid == nid);
-//	assert (pre_sid == oldPos);
-//	*preId = SET_CONN_ID( pre_nid, newPos, pre_gid);
-//}
 
 void SNN::updateConnectionMonitor(short int connId) {
 	for (int monId=0; monId<numConnectionMonitor; monId++) {
@@ -4925,3 +4634,277 @@ void SNN::updateSpikeMonitor(int grpId) {
 	}
 }
 
+//------------------------------ legacy code --------------------------------//
+
+// We parallelly cleanup the postSynapticIds array to minimize any other wastage in that array by compacting the store
+// Appropriate alignment specified by ALIGN_COMPACTION macro is used to ensure some level of alignment (if necessary)
+//void SNN::compactConnections() {
+//	unsigned int* tmp_cumulativePost = new unsigned int[numN];
+//	unsigned int* tmp_cumulativePre  = new unsigned int[numN];
+//	unsigned int lastCnt_pre         = 0;
+//	unsigned int lastCnt_post        = 0;
+//
+//	tmp_cumulativePost[0]   = 0;
+//	tmp_cumulativePre[0]    = 0;
+//
+//	for(int i=1; i < numN; i++) {
+//		lastCnt_post = tmp_cumulativePost[i-1]+snnRuntimeData.Npost[i-1]; //position of last pointer
+//		lastCnt_pre  = tmp_cumulativePre[i-1]+snnRuntimeData.Npre[i-1]; //position of last pointer
+//		#if COMPACTION_ALIGNMENT_POST
+//			lastCnt_post= lastCnt_post + COMPACTION_ALIGNMENT_POST-lastCnt_post%COMPACTION_ALIGNMENT_POST;
+//			lastCnt_pre = lastCnt_pre  + COMPACTION_ALIGNMENT_PRE- lastCnt_pre%COMPACTION_ALIGNMENT_PRE;
+//		#endif
+//		tmp_cumulativePost[i] = lastCnt_post;
+//		tmp_cumulativePre[i]  = lastCnt_pre;
+//		assert(tmp_cumulativePost[i] <= snnRuntimeData.cumulativePost[i]);
+//		assert(tmp_cumulativePre[i]  <= snnRuntimeData.cumulativePre[i]);
+//	}
+//
+//	// compress the post_synaptic array according to the new values of the tmp_cumulative counts....
+//	unsigned int tmp_numPostSynNet = tmp_cumulativePost[numN-1]+snnRuntimeData.Npost[numN-1];
+//	unsigned int tmp_numPreSynNet  = tmp_cumulativePre[numN-1]+snnRuntimeData.Npre[numN-1];
+//	assert(tmp_numPostSynNet <= allocatedPost);
+//	assert(tmp_numPreSynNet  <= allocatedPre);
+//	assert(tmp_numPostSynNet <= numPostSynNet);
+//	assert(tmp_numPreSynNet  <= numPreSynNet);
+//	KERNEL_DEBUG("******************");
+//	KERNEL_DEBUG("CompactConnection: ");
+//	KERNEL_DEBUG("******************");
+//	KERNEL_DEBUG("old_postCnt = %d, new_postCnt = %d", numPostSynNet, tmp_numPostSynNet);
+//	KERNEL_DEBUG("old_preCnt = %d,  new_postCnt = %d", numPreSynNet,  tmp_numPreSynNet);
+//
+//	// new buffer with required size + 100 bytes of additional space just to provide limited overflow
+//	post_info_t* tmp_postSynapticIds   = new post_info_t[tmp_numPostSynNet+100];
+//
+//	// new buffer with required size + 100 bytes of additional space just to provide limited overflow
+//	post_info_t* tmp_preSynapticIds	= new post_info_t[tmp_numPreSynNet+100];
+//	float* tmp_wt	    	  		= new float[tmp_numPreSynNet+100];
+//	float* tmp_maxSynWt   	  		= new float[tmp_numPreSynNet+100];
+//	short int *tmp_cumConnIdPre 		= new short int[tmp_numPreSynNet+100];
+//	float *tmp_mulSynFast 			= new float[numConnections];
+//	float *tmp_mulSynSlow  			= new float[numConnections];
+//
+//	// compact synaptic information
+//	for(int i=0; i<numN; i++) {
+//		assert(tmp_cumulativePost[i] <= snnRuntimeData.cumulativePost[i]);
+//		assert(tmp_cumulativePre[i]  <= snnRuntimeData.cumulativePre[i]);
+//		for( int j=0; j<snnRuntimeData.Npost[i]; j++) {
+//			unsigned int tmpPos = tmp_cumulativePost[i]+j;
+//			unsigned int oldPos = snnRuntimeData.cumulativePost[i]+j;
+//			tmp_postSynapticIds[tmpPos] = snnRuntimeData.postSynapticIds[oldPos];
+//			tmp_SynapticDelay[tmpPos]   = tmp_SynapticDelay[oldPos];
+//		}
+//		for( int j=0; j<snnRuntimeData.Npre[i]; j++) {
+//			unsigned int tmpPos =  tmp_cumulativePre[i]+j;
+//			unsigned int oldPos =  snnRuntimeData.cumulativePre[i]+j;
+//			tmp_preSynapticIds[tmpPos]  = snnRuntimeData.preSynapticIds[oldPos];
+//			tmp_maxSynWt[tmpPos] 	    = snnRuntimeData.maxSynWt[oldPos];
+//			tmp_wt[tmpPos]              = snnRuntimeData.wt[oldPos];
+//			tmp_cumConnIdPre[tmpPos]	= snnRuntimeData.cumConnIdPre[oldPos];
+//		}
+//	}
+//
+//	// delete old buffer space
+//	delete[] snnRuntimeData.postSynapticIds;
+//	snnRuntimeData.postSynapticIds = tmp_postSynapticIds;
+//	cpuSnnSz.networkInfoSize -= (sizeof(post_info_t)*numPostSynNet);
+//	cpuSnnSz.networkInfoSize += (sizeof(post_info_t)*(tmp_numPostSynNet+100));
+//
+//	delete[] snnRuntimeData.cumulativePost;
+//	snnRuntimeData.cumulativePost  = tmp_cumulativePost;
+//
+//	delete[] snnRuntimeData.cumulativePre;
+//	snnRuntimeData.cumulativePre   = tmp_cumulativePre;
+//
+//	delete[] snnRuntimeData.maxSynWt;
+//	snnRuntimeData.maxSynWt = tmp_maxSynWt;
+//	cpuSnnSz.synapticInfoSize -= (sizeof(float)*numPreSynNet);
+//	cpuSnnSz.synapticInfoSize += (sizeof(float)*(tmp_numPreSynNet+100));
+//
+//	delete[] snnRuntimeData.wt;
+//	snnRuntimeData.wt = tmp_wt;
+//	cpuSnnSz.synapticInfoSize -= (sizeof(float)*numPreSynNet);
+//	cpuSnnSz.synapticInfoSize += (sizeof(float)*(tmp_numPreSynNet+100));
+//
+//	delete[] snnRuntimeData.cumConnIdPre;
+//	snnRuntimeData.cumConnIdPre = tmp_cumConnIdPre;
+//	cpuSnnSz.synapticInfoSize -= (sizeof(short int)*numPreSynNet);
+//	cpuSnnSz.synapticInfoSize += (sizeof(short int)*(tmp_numPreSynNet+100));
+//
+//	// compact connection-centric information
+//	for (int i=0; i<numConnections; i++) {
+//		tmp_mulSynFast[i] = mulSynFast[i];
+//		tmp_mulSynSlow[i] = mulSynSlow[i];
+//	}
+//	delete[] mulSynFast;
+//	delete[] mulSynSlow;
+//	mulSynFast = tmp_mulSynFast;
+//	mulSynSlow = tmp_mulSynSlow;
+//	cpuSnnSz.networkInfoSize -= (2*sizeof(uint8_t)*numPreSynNet);
+//	cpuSnnSz.networkInfoSize += (2*sizeof(uint8_t)*(tmp_numPreSynNet+100));
+//
+//
+//	delete[] snnRuntimeData.preSynapticIds;
+//	snnRuntimeData.preSynapticIds  = tmp_preSynapticIds;
+//	cpuSnnSz.synapticInfoSize -= (sizeof(post_info_t)*numPreSynNet);
+//	cpuSnnSz.synapticInfoSize += (sizeof(post_info_t)*(tmp_numPreSynNet+100));
+//
+//	numPreSynNet	= tmp_numPreSynNet;
+//	numPostSynNet	= tmp_numPostSynNet;
+//}
+
+//The post synaptic connections are sorted based on delay here so that we can reduce storage requirement
+//and generation of spike at the post-synaptic side.
+//We also create the delay_info array has the delay_start and delay_length parameter
+//void SNN::reorganizeDelay()
+//{
+//	for(int grpId=0; grpId < numGroups; grpId++) {
+//		for(int nid=groupConfig[grpId].StartN; nid <= groupConfig[grpId].EndN; nid++) {
+//			unsigned int jPos=0;					// this points to the top of the delay queue
+//			unsigned int cumN=snnRuntimeData.cumulativePost[nid];	// cumulativePost[] is unsigned int
+//			unsigned int cumDelayStart=0; 			// Npost[] is unsigned short
+//			for(int td = 0; td < maxDelay_; td++) {
+//				unsigned int j=jPos;				// start searching from top of the queue until the end
+//				unsigned int cnt=0;					// store the number of nodes with a delay of td;
+//				while(j < snnRuntimeData.Npost[nid]) {
+//					// found a node j with delay=td and we put
+//					// the delay value = 1 at array location td=0;
+//					if(td==(tmp_SynapticDelay[cumN+j]-1)) {
+//						assert(jPos<snnRuntimeData.Npost[nid]);
+//						swapConnections(nid, j, jPos);
+//
+//						jPos=jPos+1;
+//						cnt=cnt+1;
+//					}
+//					j=j+1;
+//				}
+//
+//				// update the delay_length and start values...
+//				snnRuntimeData.postDelayInfo[nid*(maxDelay_+1)+td].delay_length	     = cnt;
+//				snnRuntimeData.postDelayInfo[nid*(maxDelay_+1)+td].delay_index_start  = cumDelayStart;
+//				cumDelayStart += cnt;
+//
+//				assert(cumDelayStart <= snnRuntimeData.Npost[nid]);
+//			}
+//
+//			// total cumulative delay should be equal to number of post-synaptic connections at the end of the loop
+//			assert(cumDelayStart == snnRuntimeData.Npost[nid]);
+//			for(unsigned int j=1; j < snnRuntimeData.Npost[nid]; j++) {
+//				unsigned int cumN=snnRuntimeData.cumulativePost[nid]; // cumulativePost[] is unsigned int
+//				if( tmp_SynapticDelay[cumN+j] < tmp_SynapticDelay[cumN+j-1]) {
+//	  				KERNEL_ERROR("Post-synaptic delays not sorted correctly... id=%d, delay[%d]=%d, delay[%d]=%d",
+//						nid, j, tmp_SynapticDelay[cumN+j], j-1, tmp_SynapticDelay[cumN+j-1]);
+//					assert( tmp_SynapticDelay[cumN+j] >= tmp_SynapticDelay[cumN+j-1]);
+//				}
+//			}
+//		}
+//	}
+//}
+
+//void SNN::swapConnections(int nid, int oldPos, int newPos) {
+//	unsigned int cumN=snnRuntimeData.cumulativePost[nid];
+//
+//	// Put the node oldPos to the top of the delay queue
+//	post_info_t tmp = snnRuntimeData.postSynapticIds[cumN+oldPos];
+//	snnRuntimeData.postSynapticIds[cumN+oldPos]= snnRuntimeData.postSynapticIds[cumN+newPos];
+//	snnRuntimeData.postSynapticIds[cumN+newPos]= tmp;
+//
+//	// Ensure that you have shifted the delay accordingly....
+//	uint8_t tmp_delay = tmp_SynapticDelay[cumN+oldPos];
+//	tmp_SynapticDelay[cumN+oldPos] = tmp_SynapticDelay[cumN+newPos];
+//	tmp_SynapticDelay[cumN+newPos] = tmp_delay;
+//
+//	// update the pre-information for the postsynaptic neuron at the position oldPos.
+//	post_info_t  postInfo = snnRuntimeData.postSynapticIds[cumN+oldPos];
+//	int  post_nid = GET_CONN_NEURON_ID(postInfo);
+//	int  post_sid = GET_CONN_SYN_ID(postInfo);
+//
+//	post_info_t* preId    = &(snnRuntimeData.preSynapticIds[snnRuntimeData.cumulativePre[post_nid]+post_sid]);
+//	int  pre_nid  = GET_CONN_NEURON_ID((*preId));
+//	int  pre_sid  = GET_CONN_SYN_ID((*preId));
+//	int  pre_gid  = GET_CONN_GRP_ID((*preId));
+//	assert (pre_nid == nid);
+//	assert (pre_sid == newPos);
+//	*preId = SET_CONN_ID( pre_nid, oldPos, pre_gid);
+//
+//	// update the pre-information for the postsynaptic neuron at the position newPos
+//	postInfo = snnRuntimeData.postSynapticIds[cumN+newPos];
+//	post_nid = GET_CONN_NEURON_ID(postInfo);
+//	post_sid = GET_CONN_SYN_ID(postInfo);
+//
+//	preId    = &(snnRuntimeData.preSynapticIds[snnRuntimeData.cumulativePre[post_nid]+post_sid]);
+//	pre_nid  = GET_CONN_NEURON_ID((*preId));
+//	pre_sid  = GET_CONN_SYN_ID((*preId));
+//	pre_gid  = GET_CONN_GRP_ID((*preId));
+//	assert (pre_nid == nid);
+//	assert (pre_sid == oldPos);
+//	*preId = SET_CONN_ID( pre_nid, newPos, pre_gid);
+//}
+
+// set one specific connection from neuron id 'src' to neuron id 'dest'
+//inline void SNN::setConnection(int srcGrp,  int destGrp,  unsigned int src, unsigned int dest, float synWt,
+//									float maxWt, uint8_t dVal, int connProp, short int connId) {
+//	assert(dest<=CONN_SYN_NEURON_MASK);			// total number of neurons is less than 1 million within a GPU
+//	assert((dVal >=1) && (dVal <= maxDelay_));
+//
+//	// adjust sign of weight based on pre-group (negative if pre is inhibitory)
+//	synWt = isExcitatoryGroup(srcGrp) ? fabs(synWt) : -1.0*fabs(synWt);
+//	maxWt = isExcitatoryGroup(srcGrp) ? fabs(maxWt) : -1.0*fabs(maxWt);
+//
+//	// we have exceeded the number of possible connection for one neuron
+//	if(snnRuntimeData.Npost[src] >= groupConfig[srcGrp].numPostSynapses)	{
+//		KERNEL_ERROR("setConnection(%d (Grp=%s), %d (Grp=%s), %f, %d)", src, groupInfo[srcGrp].Name.c_str(),
+//					dest, groupInfo[destGrp].Name.c_str(), synWt, dVal);
+//		KERNEL_ERROR("Large number of postsynaptic connections established (%d), max for this group %d.", snnRuntimeData.Npost[src], groupConfig[srcGrp].numPostSynapses);
+//		exitSimulation(1);
+//	}
+//
+//	if(snnRuntimeData.Npre[dest] >= groupConfig[destGrp].numPreSynapses) {
+//		KERNEL_ERROR("setConnection(%d (Grp=%s), %d (Grp=%s), %f, %d)", src, groupInfo[srcGrp].Name.c_str(),
+//					dest, groupInfo[destGrp].Name.c_str(), synWt, dVal);
+//		KERNEL_ERROR("Large number of presynaptic connections established (%d), max for this group %d.", snnRuntimeData.Npre[dest], groupConfig[destGrp].numPreSynapses);
+//		exitSimulation(1);
+//	}
+//
+//	int p = snnRuntimeData.Npost[src];
+//
+//	assert(snnRuntimeData.Npost[src] >= 0);
+//	assert(snnRuntimeData.Npre[dest] >= 0);
+//	assert((src * maxNumPostSynGrp + p) / numN < maxNumPostSynGrp); // divide by numN to prevent INT overflow
+//
+//	unsigned int post_pos = snnRuntimeData.cumulativePost[src] + snnRuntimeData.Npost[src];
+//	unsigned int pre_pos  = snnRuntimeData.cumulativePre[dest] + snnRuntimeData.Npre[dest];
+//
+//	assert(post_pos < numPostSynNet);
+//	assert(pre_pos  < numPreSynNet);
+//
+//	//generate a new postSynapticIds id for the current connection
+//	snnRuntimeData.postSynapticIds[post_pos]   = SET_CONN_ID(dest, snnRuntimeData.Npre[dest], destGrp);
+//	tmp_SynapticDelay[post_pos] = dVal;
+//
+//	snnRuntimeData.preSynapticIds[pre_pos] = SET_CONN_ID(src, snnRuntimeData.Npost[src], srcGrp);
+//	snnRuntimeData.wt[pre_pos] 	  = synWt;
+//	snnRuntimeData.maxSynWt[pre_pos] = maxWt;
+//	snnRuntimeData.cumConnIdPre[pre_pos] = connId;
+//
+//	bool synWtType = GET_FIXED_PLASTIC(connProp);
+//
+//	if (synWtType == SYN_PLASTIC) {
+//		sim_with_fixedwts = false; // if network has any plastic synapses at all, this will be set to true
+//		snnRuntimeData.Npre_plastic[dest]++;
+//		// homeostasis
+//		if (groupConfig[destGrp].WithHomeostasis && groupConfig[destGrp].homeoId ==-1)
+//			groupConfig[destGrp].homeoId = dest; // this neuron info will be printed
+//	}
+//
+//	snnRuntimeData.Npre[dest] += 1;
+//	snnRuntimeData.Npost[src] += 1;
+//
+//	groupInfo[srcGrp].numPostConn++;
+//	groupInfo[destGrp].numPreConn++;
+//
+//	if (snnRuntimeData.Npost[src] > groupInfo[srcGrp].maxPostConn)
+//		groupInfo[srcGrp].maxPostConn = snnRuntimeData.Npost[src];
+//	if (snnRuntimeData.Npre[dest] > groupInfo[destGrp].maxPreConn)
+//	groupInfo[destGrp].maxPreConn = snnRuntimeData.Npre[src];
+//}

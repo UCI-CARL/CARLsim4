@@ -355,7 +355,6 @@ public:
 	 * \param[in] grpIdPost ID of the post-synaptic neuron group
 	 * \param[in] connectionMon ConnectionMonitorCore class
 	 */
-//	void setConnectionMonitor(int grpIdPre, int grpIdPost, ConnectionMonitorCore* connectionMon);
 	ConnectionMonitor* setConnectionMonitor(int grpIdPre, int grpIdPost, FILE* fid);
 
 	//! injects current (mA) into the soma of every neuron in the group
@@ -609,7 +608,6 @@ private:
 	 */
 	void collectNetworkConfig();
 
-	//void compactConnections(); //!< minimize any other wastage in that array by compacting the store
 	void compileConnectConfig(); //!< for future use
 	void compileGroupConfig();
 
@@ -730,8 +728,6 @@ private:
 
 	int loadSimulation_internal(bool onlyPlastic);
 
-	//void reorganizeDelay();
-
 	void resetConductances();
 	void resetCounters();
 	void resetCPUTiming();
@@ -753,16 +749,11 @@ private:
 
 	post_info_t SET_CONN_ID(int nid, int sid, int grpId);
 
-	//inline void setConnection(int srcGrpId, int destGrpId, unsigned int src, unsigned int dest, float synWt,
-	//	float maxWt, uint8_t dVal, int connProp, short int connId);
-
 	void setGrpTimeSlice(int grpId, int timeSlice); //!< used for the Poisson generator. TODO: further optimize
 	int setRandSeed(int seed);	//!< setter function for const member randSeed_
 
 	void startCPUTiming();
 	void stopCPUTiming();
-
-	//void swapConnections(int nid, int oldPos, int newPos);
 
 	void updateSpikesFromGrp(int grpId);
 	void updateSpikeGenerators();
@@ -1030,17 +1021,9 @@ private:
 	//RuntimeData cpuRuntimeData;
 	RuntimeData snnRuntimeData;
 
-	//int   Noffset;
 	int	  NgenFunc;					//!< this counts the spike generator offsets...
 
-	bool showGrpFiringInfo;
-
-	// gpu related info...
-	// information about various data allocated at GPU side...
-	int gpu_tStep, gpu_simSec;		//!< this is used to store the seconds.
-	int gpu_simTime;				//!< this value is not reset but keeps increasing to its max value.
-
-	GroupConfigRT	  	groupConfig[MAX_GRP_PER_SNN];
+	GroupConfigRT	groupConfig[MAX_GRP_PER_SNN];
 	GroupInfo		groupInfo[MAX_GRP_PER_SNN];
 
 	// weight update parameter
