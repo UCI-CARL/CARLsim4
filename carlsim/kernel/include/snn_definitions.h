@@ -148,7 +148,7 @@ inline bool isInhibitoryNeuron (unsigned int& nid, unsigned int& numNInhPois, un
 #define STDP(t,a,b)       ((a)*exp(-(t)*(b))) // consider to use __expf(), which is accelerated by GPU hardware
 
 #define PROPAGATED_BUFFER_SIZE  (1023)
-#define MAX_SIMULATION_TIME     ((uint32_t)(0x7fffffff))
+#define MAX_SIMULATION_TIME     INT_MAX
 #define LARGE_NEGATIVE_VALUE    (-(1 << 30))
 
 

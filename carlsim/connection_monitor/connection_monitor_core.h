@@ -152,7 +152,7 @@ public:
 	void updateWeight(int preId, int postId, float wt);
 
 	//! updates timestamp of the snapshots, returns true if update was needed
-	bool updateTime(unsigned int simTimeMs);
+	bool updateTime(int simTimeMs);
 
 	//! sets pointer to connection file
 	void setConnectFileId(FILE* connFileId);
@@ -161,7 +161,7 @@ public:
 	void setUpdateTimeIntervalSec(int intervalSec);
 
 	//! writes each snapshot to connect file
-	void writeConnectFileSnapshot(unsigned int simTimeMs, std::vector< std::vector<float> > wts);
+	void writeConnectFileSnapshot(int simTimeMs, std::vector< std::vector<float> > wts);
 	
 private:
 	//! indicates whether writing the current snapshot is necessary (false it has already been written)

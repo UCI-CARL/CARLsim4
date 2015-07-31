@@ -1450,7 +1450,7 @@ public:
 	 * \TODO finish docu
 	 * \STATE ::SETUP_STATE, ::RUN_STATE
 	 */
-	uint64_t getSimTime();
+	int getSimTime();
 
 	/*!
 	 * \brief returns
@@ -1458,7 +1458,7 @@ public:
 	 * \TODO finish docu
 	 * \STATE ::SETUP_STATE, ::RUN_STATE
 	 */
-	uint32_t getSimTimeSec();
+	int getSimTimeSec();
 
 	/*!
 	 * \brief returns
@@ -1466,7 +1466,7 @@ public:
 	 * \TODO finish docu
 	 * \STATE ::SETUP_STATE, ::RUN_STATE
 	 */
-	uint32_t getSimTimeMsec();
+	int getSimTimeMsec();
 
 	/*!
 	 * \brief Returns the number of spikes per neuron for a certain group

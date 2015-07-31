@@ -56,8 +56,7 @@ private:
 public:
 	PrePostGroupSpikeGenerator(int interSpikeInterval, int offsetToFirstGroup, int firstGroup, int secondGroup);
 
-	unsigned int nextSpikeTime(CARLsim* s, int grpId, int nid, unsigned int currentTime, 
-		unsigned int lastScheduledSpikeTime, unsigned int endOfTimeSlice);
+	int nextSpikeTime(CARLsim* s, int grpId, int nid, int currentTime, int lastScheduledSpikeTime, int endOfTimeSlice);
 
 	void updateOffset(int newOffset);
 };

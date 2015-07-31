@@ -1933,9 +1933,6 @@ void SNN::SNNinit() {
 	NgenFunc = 0;
 	simulatorDeleted = false;
 
-	allocatedPre    = 0;
-	allocatedPost   = 0;
-
 	cumExecutionTime = 0.0;
 	cpuExecutionTime = 0.0;
 	gpuExecutionTime = 0.0;
@@ -2173,7 +2170,7 @@ void SNN::allocateRuntimeData() {
 		memset(snnRuntimeData.grpNEBuffer[i], 0, sizeof(float) * 1000);
 	}
 
-	snnRuntimeData.lastSpikeTime	= new uint32_t[numN];
+	snnRuntimeData.lastSpikeTime	= new int[numN];
 	memset(snnRuntimeData.lastSpikeTime, 0, sizeof(int) * numN);
 	cpuSnnSz.neuronInfoSize += sizeof(int) * numN;
 	
@@ -2199,9 +2196,9 @@ void SNN::allocateRuntimeData() {
 		snnRuntimeData.stpu = new float[numN*(maxDelay_+1)];
 		snnRuntimeData.stpx = new float[numN*(maxDelay_+1)];
 		memset(snnRuntimeData.stpu, 0, sizeof(float) * numN * (maxDelay_ + 1)); // memset works for 0.0
-		memset(snnRuntimeData.stpx, 0, sizeof(float) * numN * (maxDelay_ + 1));
-		//for (int i = 0; i < numN * (maxDelay_+1); i++)
-		//	snnRuntimeData.stpx[i] = 1.0f; // but memset doesn't work for 1.0
+		//memset(snnRuntimeData.stpx, 0, sizeof(float) * numN * (maxDelay_ + 1));
+		for (int i = 0; i < numN * (maxDelay_+1); i++)
+			snnRuntimeData.stpx[i] = 1.0f; // but memset doesn't work for 1.0
 		cpuSnnSz.synapticInfoSize += (2*sizeof(float)*numN*(maxDelay_+1));
 	}
 
@@ -3430,7 +3427,7 @@ float SNN::generateWeight(int connProp, float initWt, float maxWt, unsigned int 
 void SNN::initSynapticWeights() {
 	// Initialize the network wtChange, wt, synaptic firing time
 	snnRuntimeData.wtChange         = new float[numPreSynNet];
-	snnRuntimeData.synSpikeTime     = new uint32_t[numPreSynNet];
+	snnRuntimeData.synSpikeTime     = new int[numPreSynNet];
 	cpuSnnSz.synapticInfoSize = sizeof(float)*(numPreSynNet*2);
 
 	resetSynapticConnections(false);
@@ -3624,24 +3621,24 @@ double SNN::getRFDist3D(const RadiusRF& radius, const Point3D& pre, const Point3
 // The time between each pair of consecutive events has an exponential distribution with parameter \lambda and
 // each of these ISI values is assumed to be independent of other ISI values.
 // What follows a Poisson distribution is the actual number of spikes sent during a certain interval.
-unsigned int SNN::poissonSpike(unsigned int currTime, float frate, int refractPeriod) {
+int SNN::poissonSpike(int currTime, float frate, int refractPeriod) {
 	// refractory period must be 1 or greater, 0 means could have multiple spikes specified at the same time.
 	assert(refractPeriod>0);
 	assert(frate>=0.0f);
 
 	bool done = false;
-	unsigned int nextTime = 0;
+	int nextTime = 0;
 	while (!done) {
 		// A Poisson process will always generate inter-spike-interval (ISI) values from an exponential distribution.
 		float randVal = drand48();
-		unsigned int tmpVal  = -log(randVal)/frate;
+		int tmpVal  = -log(randVal)/frate;
 
 		// add new ISI to current time
 		// this might be faster than keeping currTime fixed until drand48() returns a large enough value for the ISI
 		nextTime = currTime + tmpVal;
 
 		// reject new firing time if ISI is smaller than refractory period
-		if ((nextTime - currTime) >= (unsigned) refractPeriod)
+		if ((nextTime - currTime) >= refractPeriod)
 			done = true;
 	}
 
@@ -4716,7 +4713,7 @@ void SNN::updateSpikesFromGrp(int grpId) {
 
 	// we dont generate any poisson spike if during the
 	// current call we might exceed the maximum 32 bit integer value
-	if (((uint64_t) currTime + timeSlice) >= MAX_SIMULATION_TIME)
+	if ((currTime + timeSlice) == MAX_SIMULATION_TIME || (currTime + timeSlice) < 0)
 		return;
 
 	if (groupConfig[grpId].spikeGen) {
@@ -4741,7 +4738,7 @@ void SNN::updateSpikeGenerators() {
 			// spikes for the next time slice
 			// we always have to run this the first millisecond of a new runNetwork call; that is,
 			// when simTime==simTimeRunStart
-			if(((simTime-groupConfig[g].SliceUpdateTime) >= (unsigned) groupConfig[g].CurrTimeSlice || simTime == simTimeRunStart)) {
+			if(((simTime-groupConfig[g].SliceUpdateTime) >= groupConfig[g].CurrTimeSlice || simTime == simTimeRunStart)) {
 				updateSpikesFromGrp(g);
 			}
 		}
@@ -4806,7 +4803,7 @@ bool SNN::updateTime() {
 	}
 
 	simTime++;
-	if(simTime >= MAX_SIMULATION_TIME){
+	if(simTime == MAX_SIMULATION_TIME || simTime < 0){
         // reached the maximum limit of the simulation time using 32 bit value...
         KERNEL_WARN("Maximum Simulation Time Reached...Resetting simulation time");
 	}

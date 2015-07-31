@@ -467,7 +467,7 @@ void ConnectionMonitorCore::writeConnectFileHeader() {
 	needToWriteFileHeader_ = false;
 }
 
-void ConnectionMonitorCore::writeConnectFileSnapshot(unsigned int simTimeMs, std::vector< std::vector<float> > wts) {
+void ConnectionMonitorCore::writeConnectFileSnapshot(int simTimeMs, std::vector< std::vector<float> > wts) {
 	// don't write if we have already written this timestamp to file (or file doesn't exist)
 	if ((long int)simTimeMs <= wtTimeWrite_ || connFileId_==NULL) {
 		return;

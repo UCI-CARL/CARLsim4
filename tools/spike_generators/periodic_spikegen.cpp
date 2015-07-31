@@ -55,8 +55,7 @@ PeriodicSpikeGenerator::PeriodicSpikeGenerator(float rate, bool spikeAtZero) {
 	checkFiringRate();
 }
 
-unsigned int PeriodicSpikeGenerator::nextSpikeTime(CARLsim* sim, int grpId, int nid, unsigned int currentTime, 
-	unsigned int lastScheduledSpikeTime, unsigned int endOfTimeSlice) {
+int PeriodicSpikeGenerator::nextSpikeTime(CARLsim* sim, int grpId, int nid, int currentTime, int lastScheduledSpikeTime, int endOfTimeSlice) {
 //		fprintf(stderr,"currentTime: %u lastScheduled: %u\n",currentTime,lastScheduledSpikeTime);
 
 	if (spikeAtZero_) {

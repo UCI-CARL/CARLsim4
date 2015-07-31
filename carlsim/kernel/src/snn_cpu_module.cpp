@@ -416,22 +416,22 @@ void SNN::generateSpikesFromFuncPtr(int grpId) {
 	bool done;
 	SpikeGeneratorCore* spikeGen = groupConfig[grpId].spikeGen;
 	int timeSlice = groupConfig[grpId].CurrTimeSlice;
-	unsigned int currTime = simTime;
+	int currTime = simTime;
 	int spikeCnt = 0;
 	for(int i = groupConfig[grpId].StartN; i <= groupConfig[grpId].EndN; i++) {
 		// start the time from the last time it spiked, that way we can ensure that the refractory period is maintained
-		unsigned int nextTime = snnRuntimeData.lastSpikeTime[i];
+		int nextTime = snnRuntimeData.lastSpikeTime[i];
 		if (nextTime == MAX_SIMULATION_TIME)
 			nextTime = 0;
 
 		// the end of the valid time window is either the length of the scheduling time slice from now (because that
 		// is the max of the allowed propagated buffer size) or simply the end of the simulation
-		unsigned int endOfTimeWindow = MIN(currTime+timeSlice,simTimeRunStop);
+		int endOfTimeWindow = MIN(currTime+timeSlice,simTimeRunStop);
 
 		done = false;
 		while (!done) {
 			// generate the next spike time (nextSchedTime) from the nextSpikeTime callback
-			unsigned int nextSchedTime = spikeGen->nextSpikeTime(this, grpId, i - groupConfig[grpId].StartN, currTime, 
+			int nextSchedTime = spikeGen->nextSpikeTime(this, grpId, i - groupConfig[grpId].StartN, currTime, 
 				nextTime, endOfTimeWindow);
 
 			// the generated spike time is valid only if:
@@ -466,7 +466,7 @@ void SNN::generateSpikesFromRate(int grpId) {
 	PoissonRate* rate = groupConfig[grpId].RatePtr;
 	float refPeriod = groupConfig[grpId].RefractPeriod;
 	int timeSlice   = groupConfig[grpId].CurrTimeSlice;
-	unsigned int currTime = simTime;
+	int currTime = simTime;
 	int spikeCnt = 0;
 
 	if (rate == NULL)
@@ -488,7 +488,7 @@ void SNN::generateSpikesFromRate(int grpId) {
 		float frate = rate->getRate(neurId);
 
 		// start the time from the last time it spiked, that way we can ensure that the refractory period is maintained
-		unsigned int nextTime = snnRuntimeData.lastSpikeTime[groupConfig[grpId].StartN + neurId];
+		int nextTime = snnRuntimeData.lastSpikeTime[groupConfig[grpId].StartN + neurId];
 		if (nextTime == MAX_SIMULATION_TIME)
 			nextTime = 0;
 

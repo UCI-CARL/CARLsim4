@@ -69,9 +69,7 @@ public:
 	 * \param lastScheduledSpikeTime the last spike time which was scheduled
 	 * \param endOfTimeSlice the end of the current scheduling time slice. Spike times after this will not be scheduled.
 	 */
-	virtual unsigned int nextSpikeTime(CARLsim* s, int grpId, int i,
-											unsigned int currentTime, unsigned int lastScheduledSpikeTime,
-											unsigned int endOfTimeSlice) = 0;
+	virtual int nextSpikeTime(CARLsim* s, int grpId, int i, int currentTime, int lastScheduledSpikeTime, int endOfTimeSlice) = 0;
 };
 
 /*!

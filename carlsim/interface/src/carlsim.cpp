@@ -1187,9 +1187,9 @@ GroupNeuromodulatorInfo CARLsim::getGroupNeuromodulatorInfo(int grpId) {
 
 SimMode CARLsim::getSimMode() { return simMode_; }
 
-uint64_t CARLsim::getSimTime() { return snn_->getSimTime(); }
-uint32_t CARLsim::getSimTimeSec() { return snn_->getSimTimeSec(); }
-uint32_t CARLsim::getSimTimeMsec() { return snn_->getSimTimeMs(); }
+int CARLsim::getSimTime() { return snn_->getSimTime(); }
+int CARLsim::getSimTimeSec() { return snn_->getSimTimeSec(); }
+int CARLsim::getSimTimeMsec() { return snn_->getSimTimeMs(); }
 
 // get spiking information out for a given group
 int* CARLsim::getSpikeCounter(int grpId) {

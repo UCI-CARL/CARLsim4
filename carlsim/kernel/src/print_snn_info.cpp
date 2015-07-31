@@ -130,7 +130,7 @@ void SNN::printStatusSpikeMonitor(int grpId) {
 			grpSpk += snnRuntimeData.nSpikeCnt[neurId]; // add up all neuronal spike counts
 
 		// infer run duration by measuring how much time has passed since the last run summary was printed
-		unsigned int runDurationMs = simTime - simTimeLastRunSummary;
+		int runDurationMs = simTime - simTimeLastRunSummary;
 
 		if (simTime <= simTimeLastRunSummary) {
 			KERNEL_INFO("(t=%.3fs) SpikeMonitor for group %s(%d) has %d spikes in %dms (%.2f +/- %.2f Hz)",
@@ -179,7 +179,7 @@ void SNN::printStatusGroupMonitor(int grpId) {
 		int numPeaks = peakTimeVector.size();
 
 		// infer run duration by measuring how much time has passed since the last run summary was printed
-		unsigned int runDurationMs = simTime - simTimeLastRunSummary;
+		int runDurationMs = simTime - simTimeLastRunSummary;
 
 		if (simTime <= simTimeLastRunSummary) {
 			KERNEL_INFO("(t=%.3fs) GroupMonitor for group %s(%d) has %d peak(s) in %dms",

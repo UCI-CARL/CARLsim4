@@ -75,8 +75,7 @@ public:
 	 * \param[in] lastScheduledSpikeTime the last time (ms) at which a spike was scheduled for this nid, grpId
 	 * \returns the next spike time (ms)
 	 */
-	unsigned int nextSpikeTime(CARLsim* sim, int grpId, int nid, unsigned int currentTime, 
-		unsigned int lastScheduledSpikeTime, unsigned int endOfTimeSlice);
+	int nextSpikeTime(CARLsim* sim, int grpId, int nid, int currentTime, int lastScheduledSpikeTime, int endOfTimeSlice);
 
 private:
 	void checkSpikeVector();

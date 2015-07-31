@@ -508,10 +508,10 @@ public:
 
 	int getRandSeed() { return randSeed_; }
 
-	SimMode getSimMode()		{ return simMode_; }
-	unsigned int getSimTime()		{ return simTime; }
-	unsigned int getSimTimeSec()	{ return simTimeSec; }
-	unsigned int getSimTimeMs()		{ return simTimeMs; }
+	SimMode getSimMode() { return simMode_; }
+	int getSimTime() { return simTime; }
+	int getSimTimeSec() { return simTimeSec; }
+	int getSimTimeMs() { return simTimeMs; }
 
 	//! Returns pointer to existing SpikeMonitor object, NULL else
 	SpikeMonitor* getSpikeMonitor(int grpId);
@@ -696,7 +696,7 @@ private:
      * \param[in] refractPeriod  refractory period to be honored (in ms)
      * \returns next spike time (current time plus generated ISI)
      */
-	unsigned int poissonSpike(unsigned int currTime, float frate, int refractPeriod);
+	int poissonSpike(int currTime, float frate, int refractPeriod);
 
 	// NOTE: all these printer functions should be in printSNNInfo.cpp
 	// FIXME: are any of these actually supposed to be public?? they are not yet in carlsim.h
@@ -763,8 +763,6 @@ private:
 	void stopCPUTiming();
 
 	//void swapConnections(int nid, int oldPos, int newPos);
-
-	//void updateAfterMaxTime();
 
 	void updateSpikesFromGrp(int grpId);
 	void updateSpikeGenerators();
@@ -904,9 +902,6 @@ private:
 
 	int				numGroups;
 	int				numConnections;		//!< number of connection calls (as in snn.connect(...))
-	//! keeps track of total neurons/presynapses/postsynapses currently allocated
-	unsigned int	allocatedPre;
-	unsigned int	allocatedPost;
 
 	std::map<int, GroupConfig> groupConfigMap;
 	std::map<int, ConnectConfig> connectConfigMap;
@@ -972,20 +967,18 @@ private:
 	//! firing info
 	unsigned int* timeTableD2;
 	unsigned int* timeTableD1;
-	// duplicated unsigned int* firingTableD2;
-	// duplicated unsigned int* firingTableD1;
-	unsigned int		maxSpikesD1;
-	unsigned int		maxSpikesD2;
+	unsigned int maxSpikesD1;
+	unsigned int maxSpikesD2;
 
 	//time and timestep
 
-	unsigned int    simTimeRunStart; //!< the start time of current/last runNetwork call
-	unsigned int    simTimeRunStop;  //!< the end time of current/last runNetwork call
-	unsigned int    simTimeLastRunSummary; //!< the time at which the last run summary was printed
+	int simTimeRunStart; //!< the start time of current/last runNetwork call
+	int simTimeRunStop;  //!< the end time of current/last runNetwork call
+	int simTimeLastRunSummary; //!< the time at which the last run summary was printed
+	int simTimeMs;
+	int simTimeSec;		//!< this is used to store the seconds.
+	int simTime;		//!< The absolute simulation time. The unit is millisecond. this value is not reset but keeps increasing to its max value.
 
-	unsigned int	simTimeMs;
-	uint64_t        simTimeSec;		//!< this is used to store the seconds.
-	unsigned int	simTime;		//!< The absolute simulation time. The unit is millisecond. this value is not reset but keeps increasing to its max value.
 	unsigned int	spikeCountAll1secHost;
 	unsigned int	secD1fireCntHost;
 	unsigned int	secD2fireCntHost;	//!< firing counts for each second
@@ -1012,7 +1005,7 @@ private:
 	// \FIXME \DEPRECATED this one moved to group-based
 	long int    simTimeLastUpdSpkMon_; //!< last time we ran updateSpikeMonitor
 
-	unsigned int	numSpikeGenGrps;
+	unsigned int numSpikeGenGrps;
 
 	int numSpkCnt; //!< number of real-time spike monitors in the network
 	int* spkCntBuf[MAX_GRP_PER_SNN]; //!< the actual buffer of spike counts (per group, per neuron)
@@ -1044,8 +1037,8 @@ private:
 
 	// gpu related info...
 	// information about various data allocated at GPU side...
-	unsigned int	gpu_tStep, gpu_simSec;		//!< this is used to store the seconds.
-	unsigned int	gpu_simTime;				//!< this value is not reset but keeps increasing to its max value.
+	int gpu_tStep, gpu_simSec;		//!< this is used to store the seconds.
+	int gpu_simTime;				//!< this value is not reset but keeps increasing to its max value.
 
 	GroupConfigRT	  	groupConfig[MAX_GRP_PER_SNN];
 	GroupInfo		groupInfo[MAX_GRP_PER_SNN];

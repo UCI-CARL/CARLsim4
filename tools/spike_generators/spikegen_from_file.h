@@ -178,8 +178,7 @@ public:
 	 *                           >= endOfTimeSlice will not be scheduled by CARLsim
 	 * \returns the next spike time (ms)
 	 */
-	unsigned int nextSpikeTime(CARLsim* sim, int grpId, int nid, unsigned int currentTime, 
-		unsigned int lastScheduledSpikeTime, unsigned int endOfTimeSlice);
+	int nextSpikeTime(CARLsim* sim, int grpId, int nid, int currentTime, int lastScheduledSpikeTime, int endOfTimeSlice);
 
 private:
 	void openFile();

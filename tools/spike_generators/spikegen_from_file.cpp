@@ -117,8 +117,7 @@ void SpikeGeneratorFromFile::init() {
 	rewind(offsetTimeMs_);
 }
 
-unsigned int SpikeGeneratorFromFile::nextSpikeTime(CARLsim* sim, int grpId, int nid, unsigned int currentTime, 
-	unsigned int lastScheduledSpikeTime, unsigned int endOfTimeSlice) {
+int SpikeGeneratorFromFile::nextSpikeTime(CARLsim* sim, int grpId, int nid, int currentTime, int lastScheduledSpikeTime, int endOfTimeSlice) {
 	assert(nNeur_>0);
 	assert(nid < nNeur_);
 

@@ -206,8 +206,8 @@ typedef struct RuntimeData_s {
 	float*          Npre_plasticInv;	//!< stores the 1/number of plastic input connections, only used on GPU
 	unsigned short* Npost;				//!< stores the number of output connections from a neuron.
 
-	unsigned int* lastSpikeTime;		//!< stores the last spike time of a neuron
-	unsigned int* synSpikeTime;	//!< stores the last spike time of a synapse
+	int* lastSpikeTime; //!< stores the last spike time of a neuron
+	int* synSpikeTime;  //!< stores the last spike time of a synapse
 
 	float* wtChange;		//!< stores the weight change of a synaptic connection
 	float* wt;				//!< stores the weight change of a synaptic connection
@@ -339,7 +339,7 @@ typedef struct GroupConfigRT_s {
 	float   	RefractPeriod;
 	int			CurrTimeSlice; //!< timeSlice is used by the Poisson generators in order to note generate too many or too few spikes within a window of time
 	int			NewTimeSlice;
-	uint32_t 	SliceUpdateTime;
+	int			SliceUpdateTime;
 	int 		FiringCount1sec;
 	int 		numPostSynapses; //!< the total number of post-connections of a group
 	int 		numPreSynapses; //!< the total number of pre-connections of a group
