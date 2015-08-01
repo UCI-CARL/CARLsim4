@@ -1334,7 +1334,7 @@ void SNN::saveSimulation(FILE* fid, bool saveSynapseInfo) {
 
 	// \FIXME: replace with faster version
 	if (saveSynapseInfo) {
-		for (unsigned int i=0;i<numN;i++) {
+		for (int i = 0; i < numN; i++) {
 			unsigned int offset = snnRuntimeData.cumulativePost[i];
 
 			unsigned int count = 0;
@@ -1923,8 +1923,8 @@ void SNN::SNNinit() {
 	simTimeRunStart     = 0;    simTimeRunStop      = 0;
 	simTimeLastRunSummary = 0;
 	simTimeMs	 		= 0;    simTimeSec          = 0;    simTime = 0;
-	spikeCountAll1secHost	= 0;    secD1fireCntHost    = 0;    secD2fireCntHost  = 0;
-	spikeCountAllHost 		= 0;    spikeCountD2Host    = 0;    spikeCountD1Host = 0;
+	spikeCountSec	= 0;    spikeCountD1Sec    = 0;    spikeCountD2Sec  = 0;
+	spikeCount 		= 0;    spikeCountD2    = 0;    spikeCountD1 = 0;
 	nPoissonSpikes 		= 0;
 
 	numGroups   = 0;
@@ -2269,19 +2269,19 @@ int SNN::addSpikeToTable(int nid, int g) {
 
 	if (groupConfig[g].MaxDelay == 1) {
 		assert(nid < numN);
-		snnRuntimeData.firingTableD1[secD1fireCntHost] = nid;
-		secD1fireCntHost++;
-		if (secD1fireCntHost >= maxSpikesD1) {
+		snnRuntimeData.firingTableD1[spikeCountD1Sec] = nid;
+		spikeCountD1Sec++;
+		if (spikeCountD1Sec >= maxSpikesD1) {
 			spikeBufferFull = 2;
-			secD1fireCntHost = maxSpikesD1-1;
+			spikeCountD1Sec = maxSpikesD1-1;
 		}
 	} else {
 		assert(nid < numN);
-		snnRuntimeData.firingTableD2[secD2fireCntHost] = nid;
-		secD2fireCntHost++;
-		if (secD2fireCntHost >= maxSpikesD2) {
+		snnRuntimeData.firingTableD2[spikeCountD2Sec] = nid;
+		spikeCountD2Sec++;
+		if (spikeCountD2Sec >= maxSpikesD2) {
 			spikeBufferFull = 1;
-			secD2fireCntHost = maxSpikesD2-1;
+			spikeCountD2Sec = maxSpikesD2-1;
 		}
 	}
 	return spikeBufferFull;
@@ -3280,7 +3280,7 @@ inline int SNN::getPoissNeuronPos(int nid) {
 //We need pass the neuron id (nid) and the grpId just for the case when we want to
 //ramp up/down the weights.  In that case we need to set the weights of each synapse
 //depending on their nid (their position with respect to one another). -- KDC
-float SNN::generateWeight(int connProp, float initWt, float maxWt, unsigned int nid, int grpId) {
+float SNN::generateWeight(int connProp, float initWt, float maxWt, int nid, int grpId) {
 	float actWts;
 	// \FIXME: are these ramping thingies still supported?
 	bool setRandomWeights   = GET_INITWTS_RANDOM(connProp);
@@ -3663,7 +3663,7 @@ int SNN::loadSimulation_internal(bool onlyPlastic) {
 
 	// ------- read synapse information ----------------
 
-	for (unsigned int i=0; i<numN; i++) {
+	for (int i = 0; i < numN; i++) {
 		int nrSynapses = 0;
 
 		// read number of synapses
@@ -3671,8 +3671,8 @@ int SNN::loadSimulation_internal(bool onlyPlastic) {
 		readErr |= (result!=1);
 
 		for (int j=0; j<nrSynapses; j++) {
-			unsigned int nIDpre;
-			unsigned int nIDpost;
+			int nIDpre;
+			int nIDpost;
 			float weight, maxWeight;
 			uint8_t delay;
 			uint8_t plastic;
@@ -3817,12 +3817,12 @@ void SNN::resetFiringInformation() {
 	// Reset firing tables and time tables to default values..
 
 	// reset Various Times..
-	spikeCountAllHost	  = 0;
-	spikeCountAll1secHost = 0;
-	spikeCountD2Host = 0;
-	spikeCountD1Host = 0;
-	secD1fireCntHost  = 0;
-	secD2fireCntHost  = 0;
+	spikeCount	  = 0;
+	spikeCountSec = 0;
+	spikeCountD2 = 0;
+	spikeCountD1 = 0;
+	spikeCountD1Sec  = 0;
+	spikeCountD2Sec  = 0;
 
 	// reset various times...
 	simTimeMs  = 0;
@@ -3873,7 +3873,7 @@ void SNN::resetNeuromodulator(int grpId) {
 	snnRuntimeData.grpNE[grpId] = groupConfig[grpId].baseNE;
 }
 
-void SNN::resetNeuron(unsigned int neurId, int grpId) {
+void SNN::resetNeuron(int neurId, int grpId) {
 	assert(neurId < numNReg);
     if (groupInfo[grpId].Izh_a == -1) {
 		KERNEL_ERROR("setNeuronParameters must be called for group %s (%d)",groupInfo[grpId].Name.c_str(),grpId);
@@ -4071,7 +4071,7 @@ void SNN::resetRuntimeData(bool deallocate) {
 }
 
 
-void SNN::resetPoissonNeuron(unsigned int nid, int grpId) {
+void SNN::resetPoissonNeuron(int nid, int grpId) {
 	assert(nid < numN);
 	snnRuntimeData.lastSpikeTime[nid]  = MAX_SIMULATION_TIME;
 	if (groupConfig[grpId].WithHomeostasis)
@@ -4415,7 +4415,7 @@ void SNN::updateSpikesFromGrp(int grpId) {
 
 	bool done;
 	//static FILE* _fp = fopen("spikes.txt", "w");
-	unsigned int currTime = simTime;
+	int currTime = simTime;
 
 	int timeSlice = groupConfig[grpId].CurrTimeSlice;
 	groupConfig[grpId].SliceUpdateTime  = simTime;
@@ -4488,8 +4488,8 @@ void SNN::updateSpikeGeneratorsInit() {
  * \return maximum delay in groups
  */
 void SNN::allocateSpikeTables() {
-	snnRuntimeData.firingTableD2 = new unsigned int[maxSpikesD2];
-	snnRuntimeData.firingTableD1 = new unsigned int[maxSpikesD1];
+	snnRuntimeData.firingTableD2 = new int[maxSpikesD2];
+	snnRuntimeData.firingTableD1 = new int[maxSpikesD1];
 	resetFiringTable();
 	cpuSnnSz.spikingInfoSize += sizeof(int) * ((maxSpikesD2 + maxSpikesD1) + 2* (1000 + maxDelay_ + 1));
 
@@ -4593,7 +4593,7 @@ void SNN::updateSpikeMonitor(int grpId) {
 		// may need need to dump these spikes to an output file
 		for (int k=0; k < 2; k++) {
 			unsigned int* timeTablePtr = (k==0)?timeTableD2:timeTableD1;
-			unsigned int* fireTablePtr = (k==0)?snnRuntimeData.firingTableD2:snnRuntimeData.firingTableD1;
+			int* fireTablePtr = (k==0)?snnRuntimeData.firingTableD2:snnRuntimeData.firingTableD1;
 			for(int t=numMsMin; t<numMsMax; t++) {
 				for(int i=timeTablePtr[t+maxDelay_]; i<timeTablePtr[t+maxDelay_+1];i++) {
 					// retrieve the neuron id

@@ -231,8 +231,8 @@ typedef struct RuntimeData_s {
 
 	delay_info_t* postDelayInfo;  	//!< delay information
 
-	unsigned int* firingTableD1;
-	unsigned int* firingTableD2;
+	int* firingTableD1;
+	int* firingTableD2;
 
 	float*        poissonFireRate;
 	unsigned int* poissonRandPtr;		//!< firing random number. max value is 10,000
@@ -275,23 +275,23 @@ typedef struct RuntimeData_s {
  */
 typedef struct NetworkConfigRT_s  {
 	size_t			STP_Pitch;		//!< numN rounded upwards to the nearest 256 boundary, used for GPU only
-	unsigned int	numN;
-	unsigned int	maxDelay;
-	unsigned int	numNExcReg;
-	unsigned int	numNInhReg;
-	unsigned int	numNReg;
+	int numN;
+	int maxDelay;
+	int numNExcReg;
+	int numNInhReg;
+	int numNReg;
 	unsigned int	I_setLength;	//!< used for GPU only
 	size_t			I_setPitch;		//!< used for GPU only
 	unsigned int	preSynLength;
-	unsigned int	numPostSynNet;
-	unsigned int	numPreSynNet;
-	unsigned int	maxSpikesD2;
-	unsigned int	maxSpikesD1;
-	unsigned int   	numNExcPois;
-	unsigned int	numNInhPois;
-	unsigned int	numNPois;
-	unsigned int	numGroups;
-	int             numConnections;
+	int numPostSynNet;
+	int numPreSynNet;
+	unsigned int maxSpikesD2;
+	unsigned int maxSpikesD1;
+	int numNExcPois;
+	int numNInhPois;
+	int numNPois;
+	int numGroups;
+	int numConnections;
 	bool 			sim_with_fixedwts;
 	bool 			sim_with_conductances;
 	bool 			sim_with_stdp;
@@ -340,7 +340,6 @@ typedef struct GroupConfigRT_s {
 	int			CurrTimeSlice; //!< timeSlice is used by the Poisson generators in order to note generate too many or too few spikes within a window of time
 	int			NewTimeSlice;
 	int			SliceUpdateTime;
-	int 		FiringCount1sec;
 	int 		numPostSynapses; //!< the total number of post-connections of a group
 	int 		numPreSynapses; //!< the total number of pre-connections of a group
 	bool 		isSpikeGenerator;

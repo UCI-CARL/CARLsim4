@@ -75,13 +75,13 @@
 //
 ///////////////////////////////////////////////////////////////////
 
-__device__ int  timeTableD2GPU[ROUNDED_TIMING_COUNT];
-__device__ int  timeTableD1GPU[ROUNDED_TIMING_COUNT];
+__device__ unsigned int  timeTableD2GPU[ROUNDED_TIMING_COUNT];
+__device__ unsigned int  timeTableD1GPU[ROUNDED_TIMING_COUNT];
 
-__device__ unsigned int	secD2fireCnt;
-__device__ unsigned int	secD1fireCnt;
-__device__ unsigned int spikeCountD2;
-__device__ unsigned int spikeCountD1;
+__device__ unsigned int	spikeCountD2SecGPU;
+__device__ unsigned int	spikeCountD1SecGPU;
+__device__ unsigned int spikeCountD2GPU;
+__device__ unsigned int spikeCountD1GPU;
 
 // I believe the following are all just test variables
 __device__ unsigned int	secD2fireCntTest;
@@ -130,24 +130,24 @@ void initQuickSynIdTable()
 	CUDA_CHECK_ERRORS( cudaMemcpy( devPtr, quickSynIdTable, sizeof(quickSynIdTable), cudaMemcpyHostToDevice));
 }
 
-__device__ inline bool isPoissonGroup(short int& grpId, unsigned int& nid)
+__device__ inline bool isPoissonGroup(short int& grpId, int& nid)
 {
 	return (groupConfigGPU[grpId].Type & POISSON_NEURON);
 }
 
-__device__ inline void setFiringBitSynapses(unsigned int& nid, int& syn_id)
+__device__ inline void setFiringBitSynapses(int& nid, int& syn_id)
 {
 	uint32_t* tmp_I_set_p = ((uint32_t*)((char*) runtimeDataGPU.I_set + ((syn_id>>5)*networkConfigGPU.I_setPitch)) + nid);
 	int atomicVal = atomicOr(tmp_I_set_p, 1 <<(syn_id%32));
 }
 
-__device__ inline uint32_t* getFiringBitGroupPtr(unsigned int& nid, int& synGrpId)
+__device__ inline uint32_t* getFiringBitGroupPtr(int& nid, int& synGrpId)
 {
 	uint32_t* tmp_ptr = (((uint32_t*)((char*) runtimeDataGPU.I_set + synGrpId*networkConfigGPU.I_setPitch)) + nid);
 	return tmp_ptr;
 }
 
-__device__ inline uint32_t getSTPBufPos(unsigned int nid, uint32_t t)
+__device__ inline uint32_t getSTPBufPos(int nid, uint32_t t)
 {
 //  return (((t%STP_BUF_SIZE)*networkConfigGPU.STP_Pitch) + nid);
   return ( (t%(networkConfigGPU.maxDelay+1))*networkConfigGPU.STP_Pitch + nid);
@@ -158,7 +158,7 @@ __device__ inline int2 getStaticThreadLoad(int& bufPos)
 	return (runtimeDataGPU.neuronAllocation[bufPos]);
 }
 
-__device__ inline bool getPoissonSpike_GPU (unsigned int& nid)
+__device__ inline bool getPoissonSpike_GPU (int& nid)
 {
 	// Random number value is less than the poisson firing probability
 	// if poisson firing probability is say 1.0 then the random poisson ptr
@@ -175,8 +175,8 @@ __device__ inline bool getPoissonSpike_GPU (unsigned int& nid)
 __global__ void kernel_timingTableUpdate(int t)
 {
    if ( threadIdx.x == 0 && blockIdx.x == 0) {
-		timeTableD2GPU[t+networkConfigGPU.maxDelay+1]  = secD2fireCnt;
-		timeTableD1GPU[t+networkConfigGPU.maxDelay+1]  = secD1fireCnt;
+		timeTableD2GPU[t+networkConfigGPU.maxDelay+1]  = spikeCountD2SecGPU;
+		timeTableD1GPU[t+networkConfigGPU.maxDelay+1]  = spikeCountD1SecGPU;
    }
    __syncthreads();									     
 }
@@ -319,7 +319,7 @@ int SNN::allocateStaticLoad(int bufSize) {
 /////////////////////////////////////////////////////////////////////////////////
 
 // update the spike-dependent part of du/dt and dx/dt
-__device__ void firingUpdateSTP (unsigned int& nid, int& simTime, short int&  grpId) {
+__device__ void firingUpdateSTP (int& nid, int& simTime, short int&  grpId) {
 	// we need to retrieve the STP values from the right buffer position (right before vs. right after the spike)
 	int ind_plus  = getSTPBufPos(nid, simTime);
 	int ind_minus = getSTPBufPos(nid, (simTime-1));
@@ -333,7 +333,7 @@ __device__ void firingUpdateSTP (unsigned int& nid, int& simTime, short int&  gr
 	runtimeDataGPU.stpx[ind_plus] -= runtimeDataGPU.stpu[ind_plus]*runtimeDataGPU.stpx[ind_minus];
 }
 
-__device__ void resetFiredNeuron(unsigned int& nid, short int & grpId, int& simTime)
+__device__ void resetFiredNeuron(int& nid, short int & grpId, int& simTime)
 {
 	// \FIXME \TODO: convert this to use coalesced access by grouping into a
 	// single 16 byte access. This might improve bandwidth performance
@@ -379,12 +379,12 @@ __device__ void updateFiringCounter(volatile unsigned int& fireCnt, volatile uns
 
 	// get a distinct counter to store firing info
 	// into the firing table
-	cntD2 = atomicAdd(&secD2fireCnt, fireCntD2);
-	cntD1 = atomicAdd(&secD1fireCnt, fireCntD1);
+	cntD2 = atomicAdd(&spikeCountD2SecGPU, fireCntD2);
+	cntD1 = atomicAdd(&spikeCountD1SecGPU, fireCntD1);
 }
 
 // update the firing table...
-__device__ void updateFiringTable(unsigned int& nid, short int& grpId, volatile unsigned int& cntD2, volatile unsigned int& cntD1)
+__device__ void updateFiringTable(int& nid, short int& grpId, volatile unsigned int& cntD2, volatile unsigned int& cntD1)
 {
 	int pos;
 	if (groupConfigGPU[grpId].MaxDelay == 1) {
@@ -423,7 +423,7 @@ __shared__ volatile int blkErrCode;
 	for (int i=threadIdx.x; i < fireCnt; i+=(blockDim.x)) {
 
 		// Read the firing id from the local table.....
-		unsigned int nid  = fireTablePtr[i];
+		int nid  = fireTablePtr[i];
 
 		updateFiringTable(nid, fireGrpId[i], cntD2, cntD1);
 
@@ -472,7 +472,7 @@ void SNN::resetSpikeCnt_GPU(int _startGrp, int _endGrp) {
 	gpu_resetSpikeCnt<<<gridSize,blkSize>>> (_startGrp,_endGrp);
 }
 
-__device__ void findGrpId_GPU(unsigned int& nid, int& grpId)
+__device__ void findGrpId_GPU(int& nid, int& grpId)
 {
 	for (int g=0; g < networkConfigGPU.numGroups; g++) {
 		//uint3 groupIdInfo = {1, 1, 1};
@@ -573,7 +573,7 @@ __device__ inline bool getSpikeGenBit_GPU (unsigned int& nidPos)
 }
 
 // setSpikeGenBit for given neuron and group..
-void SNN::setSpikeGenBit_GPU(unsigned int nid, int grp) {
+void SNN::setSpikeGenBit_GPU(int nid, int grp) {
 	checkAndSetGPUDevice();
 
 	unsigned int nidPos    = (nid - groupConfig[grp].StartN + groupConfig[grp].Noffset);
@@ -619,7 +619,7 @@ __global__ 	void kernel_findFiring (int t, int sec, int simTime) {
 		// instead of reading each neuron group separately .....
 		// read a whole buffer and use the result ......
 		int2 threadLoad  = getStaticThreadLoad(bufPos);
-		unsigned int  nid        = (STATIC_LOAD_START(threadLoad) + threadIdx.x);
+		int  nid        = (STATIC_LOAD_START(threadLoad) + threadIdx.x);
 		int  lastId      = STATIC_LOAD_SIZE(threadLoad);
 		short int grpId   = STATIC_LOAD_GROUP(threadLoad);
 		bool needToWrite = false;	// used by all neuron to indicate firing condition
@@ -737,7 +737,7 @@ __global__ void kernel_globalConductanceUpdate (int t, int sec, int simTime) {
 		// instead of reading each neuron group separately .....
 		// read a whole buffer and use the result ......
 		int2 threadLoad  = getStaticThreadLoad(bufPos);
-		unsigned int  post_nid        = (STATIC_LOAD_START(threadLoad) + threadIdx.x);
+		int  post_nid        = (STATIC_LOAD_START(threadLoad) + threadIdx.x);
 		int  lastId      = STATIC_LOAD_SIZE(threadLoad);
 
 		if ((threadIdx.x < lastId) && (IS_REGULAR_NEURON(post_nid, networkConfigGPU.numNReg, networkConfigGPU.numNPois))) {
@@ -862,7 +862,7 @@ __global__ void kernel_globalConductanceUpdate (int t, int sec, int simTime) {
 
 //************************ UPDATE GLOBAL STATE EVERY TIME STEP *******************************************************//
 
-__device__ void updateNeuronState(unsigned int& nid, int& grpId) {
+__device__ void updateNeuronState(int& nid, int& grpId) {
 	float v = runtimeDataGPU.voltage[nid];
 	float u = runtimeDataGPU.recovery[nid];
 	float I_sum, NMDAtmp;
@@ -906,7 +906,7 @@ __device__ void updateNeuronState(unsigned int& nid, int& grpId) {
 }
 
 // homeostasis in GPU_MODE
-__device__ inline void updateHomeoStaticState(unsigned int& pos, int& grpId)
+__device__ inline void updateHomeoStaticState(int& pos, int& grpId)
 {
 	// here the homeostasis adjustment
 	if (groupConfigGPU[grpId].WithHomeostasis)
@@ -928,7 +928,7 @@ __global__ void kernel_globalStateUpdate (int t, int sec, int simTime)
 		// instead of reading each neuron group separately .....
 		// read a whole buffer and use the result ......
 		int2 threadLoad  = getStaticThreadLoad(bufPos);
-		unsigned int nid = (STATIC_LOAD_START(threadLoad) + threadIdx.x);
+		int nid = (STATIC_LOAD_START(threadLoad) + threadIdx.x);
 		int  lastId = STATIC_LOAD_SIZE(threadLoad);
 		int  grpId = STATIC_LOAD_GROUP(threadLoad);
 
@@ -981,7 +981,7 @@ __global__ void kernel_STPUpdateAndDecayConductances (int t, int sec, int simTim
 		// instead of reading each neuron group separately .....
 		// read a whole buffer and use the result ......
 		int2 threadLoad  = getStaticThreadLoad(bufPos);
-		unsigned int nid        = (STATIC_LOAD_START(threadLoad) + threadIdx.x);
+		int nid        = (STATIC_LOAD_START(threadLoad) + threadIdx.x);
 		int  lastId      = STATIC_LOAD_SIZE(threadLoad);
 		uint32_t  grpId  = STATIC_LOAD_GROUP(threadLoad);
 
@@ -1210,11 +1210,11 @@ __global__ void kernel_updateFiring()
 	// reset various counters for the firing information
 	if((blockIdx.x==0)&&(threadIdx.x==0)) {
 		timeTableD1GPU[networkConfigGPU.maxDelay]  = 0;
-		spikeCountD2	+= secD2fireCnt;
-		spikeCountD1	+= secD1fireCnt;
-		secD2fireCnt	= timeTableD2GPU[networkConfigGPU.maxDelay];
+		spikeCountD2GPU += spikeCountD2SecGPU;
+		spikeCountD1GPU += spikeCountD1SecGPU;
+		spikeCountD2SecGPU	= timeTableD2GPU[networkConfigGPU.maxDelay];
 		secD2fireCntTest	= timeTableD2GPU[networkConfigGPU.maxDelay];
-		secD1fireCnt	= 0;
+		spikeCountD1SecGPU	= 0;
 		secD1fireCntTest = 0;
 	}
 }
@@ -1225,10 +1225,10 @@ __global__ void kernel_updateFiring2()
 	// reset various counters for the firing information
 	if((blockIdx.x==0)&&(threadIdx.x==0)) {
 		// timeTableD1GPU[networkConfigGPU.maxDelay]  = 0;
-		spikeCountD2	+= secD2fireCnt;
-		spikeCountD1	+= secD1fireCnt;
-		secD2fireCnt	= 0; //timeTableD2GPU[networkConfigGPU.maxDelay];
-		secD1fireCnt	= 0;
+		spikeCountD2GPU	+= spikeCountD2SecGPU;
+		spikeCountD1GPU	+= spikeCountD1SecGPU;
+		spikeCountD2SecGPU	= 0; //timeTableD2GPU[networkConfigGPU.maxDelay];
+		spikeCountD1SecGPU	= 0;
 		secD2fireCntTest = 0; //timeTableD2GPU[networkConfigGPU.maxDelay];
 		secD1fireCntTest = 0;
 	}
@@ -1243,7 +1243,7 @@ __device__ int generatePostSynapticSpike(int& simTime, int& firingId, int& myDel
 	post_info_t post_info = runtimeDataGPU.postSynapticIds[offset+myDelayIndex];
 
 	// get neuron id
-	unsigned int nid = GET_CONN_NEURON_ID(post_info);//(post_info&POST_SYN_NEURON_MASK);
+	int nid = GET_CONN_NEURON_ID(post_info);//(post_info&POST_SYN_NEURON_MASK);
 
 	// get synaptic id
 	int syn_id = GET_CONN_SYN_ID(post_info); //(post_info>>POST_SYN_NEURON_BITS)&POST_SYN_CONN_MASK;
@@ -1343,7 +1343,7 @@ __global__ void kernel_doCurrentUpdateD2(int simTimeMs, int simTimeSec, int simT
 	__syncthreads();
 
 	// stores the number of fired neurons at time t
-	int k      = secD2fireCnt - 1;
+	int k      = spikeCountD2SecGPU - 1;
 
 	// stores the number of fired neurons at time (t - maxDelay_)
 	int k_end  = tex1Dfetch (timeTableD2GPU_tex, simTimeMs+1+timeTableD2GPU_tex_offset);
@@ -1468,7 +1468,7 @@ __global__ void kernel_doCurrentUpdateD1(int simTimeMs, int simTimeSec, int simT
 	__syncthreads();
 
 	// Do as long as we have some valid neuron
-	while((kPos >=0)&&(kPos < secD1fireCnt)) {
+	while((kPos >=0)&&(kPos < spikeCountD1SecGPU)) {
 		int fPos = -1;
 		// a group of threads loads the delay information
 		if (threadIdx.x < numSwarps) {
@@ -1476,7 +1476,7 @@ __global__ void kernel_doCurrentUpdateD1(int simTimeMs, int simTimeSec, int simT
 			fPos = kPos + threadIdx.x;
 
 			// find the neuron nid and also delay information from fPos
-			if((fPos>=0)&&(fPos < secD1fireCnt)) {
+			if((fPos>=0)&&(fPos < spikeCountD1SecGPU)) {
 				atomicAdd((int*)&sh_NeuronCnt,1);
 				int val  = runtimeDataGPU.firingTableD1[fPos];
 				int nid  = GET_FIRING_TABLE_NID(val);
@@ -2524,12 +2524,12 @@ __global__ void gpu_resetFiringInformation()
 			timeTableD2GPU[i]   = 0;
 			timeTableD1GPU[i]   = 0;
 		}
-		secD2fireCnt=0;
-		secD1fireCnt=0;
+		spikeCountD2SecGPU=0;
+		spikeCountD1SecGPU=0;
 		secD2fireCntTest=0;
 		secD1fireCntTest=0;
-		spikeCountD2=0;
-		spikeCountD1=0;
+		spikeCountD2GPU=0;
+		spikeCountD1GPU=0;
 
 
     //spikeCountAll1Sec=0;//assigned in copyFiringInfo_GPU()
@@ -2583,21 +2583,22 @@ void SNN::copyExternalCurrent(RuntimeData* dest, RuntimeData* src, bool allocate
 
 void SNN::copyFiringInfo_GPU()
 {
-	unsigned int gpu_secD1fireCnt, gpu_secD2fireCnt;
-	CUDA_CHECK_ERRORS( cudaMemcpyFromSymbol( &gpu_secD2fireCnt, secD2fireCnt, sizeof(int), 0, cudaMemcpyDeviceToHost));
-	CUDA_CHECK_ERRORS( cudaMemcpyFromSymbol( &gpu_secD1fireCnt, secD1fireCnt, sizeof(int), 0, cudaMemcpyDeviceToHost));
-	spikeCountAll1secHost = gpu_secD1fireCnt + gpu_secD2fireCnt;
-	secD1fireCntHost  = gpu_secD1fireCnt;
-	assert(gpu_secD1fireCnt<=maxSpikesD1);
-	assert(gpu_secD2fireCnt<=maxSpikesD2);
-	CUDA_CHECK_ERRORS( cudaMemcpy(snnRuntimeData.firingTableD2, gpuRuntimeData.firingTableD2, sizeof(int)*gpu_secD2fireCnt, cudaMemcpyDeviceToHost));
-	CUDA_CHECK_ERRORS( cudaMemcpy(snnRuntimeData.firingTableD1, gpuRuntimeData.firingTableD1, sizeof(int)*gpu_secD1fireCnt, cudaMemcpyDeviceToHost));
+	unsigned int gpuSpikeCountD1Sec, gpuSpikeCountD2Sec;
+	CUDA_CHECK_ERRORS( cudaMemcpyFromSymbol( &gpuSpikeCountD2Sec, spikeCountD2SecGPU, sizeof(int), 0, cudaMemcpyDeviceToHost));
+	CUDA_CHECK_ERRORS( cudaMemcpyFromSymbol( &gpuSpikeCountD1Sec, spikeCountD1SecGPU, sizeof(int), 0, cudaMemcpyDeviceToHost));
+	spikeCountSec = gpuSpikeCountD1Sec + gpuSpikeCountD2Sec;
+	spikeCountD1Sec  = gpuSpikeCountD1Sec;
+	spikeCountD2Sec = gpuSpikeCountD2Sec;
+	assert(gpuSpikeCountD1Sec<=maxSpikesD1);
+	assert(gpuSpikeCountD2Sec<=maxSpikesD2);
+	CUDA_CHECK_ERRORS( cudaMemcpy(snnRuntimeData.firingTableD2, gpuRuntimeData.firingTableD2, sizeof(int)*gpuSpikeCountD2Sec, cudaMemcpyDeviceToHost));
+	CUDA_CHECK_ERRORS( cudaMemcpy(snnRuntimeData.firingTableD1, gpuRuntimeData.firingTableD1, sizeof(int)*gpuSpikeCountD1Sec, cudaMemcpyDeviceToHost));
 	CUDA_CHECK_ERRORS( cudaMemcpyFromSymbol(timeTableD2, timeTableD2GPU, sizeof(int)*(1000+maxDelay_+1), 0, cudaMemcpyDeviceToHost));
 	CUDA_CHECK_ERRORS( cudaMemcpyFromSymbol(timeTableD1, timeTableD1GPU, sizeof(int)*(1000+maxDelay_+1), 0, cudaMemcpyDeviceToHost));
 
 	// \TODO: why is this here? The CPU side doesn't have it. And if you can call updateSpikeMonitor() now at any time
 	// it might look weird without a time stamp.
-//	KERNEL_INFO("Total spikes Multiple Delays=%d, 1Ms Delay=%d", gpu_secD2fireCnt,gpu_secD1fireCnt);
+//	KERNEL_INFO("Total spikes Multiple Delays=%d, 1Ms Delay=%d", gpuSpikeCountD2Sec,gpuSpikeCountD1Sec);
 }
 
 
@@ -2681,7 +2682,7 @@ void SNN::checkAndSetGPUDevice() {
 	}
 }
 
-void SNN::copyWeightsGPU(unsigned int nid, int src_grp) {
+void SNN::copyWeightsGPU(int nid, int src_grp) {
 	checkAndSetGPUDevice();
 
 	assert(nid < numNReg);
@@ -2895,12 +2896,12 @@ void SNN::printSimSummary() {
 	if(simMode_ == GPU_MODE) {
 		stopGPUTiming();
 		etime = gpuExecutionTime;
-		CUDA_CHECK_ERRORS( cudaMemcpyFromSymbol( &spikeCountD2Host, secD2fireCnt, sizeof(int), 0, cudaMemcpyDeviceToHost));
-		CUDA_CHECK_ERRORS( cudaMemcpyFromSymbol( &spikeCountD1Host, secD1fireCnt, sizeof(int), 0, cudaMemcpyDeviceToHost));
-		spikeCountAll1secHost = spikeCountD1Host + spikeCountD2Host;
-		CUDA_CHECK_ERRORS( cudaMemcpyFromSymbol( &spikeCountD2Host, spikeCountD2, sizeof(int), 0, cudaMemcpyDeviceToHost));
-		CUDA_CHECK_ERRORS( cudaMemcpyFromSymbol( &spikeCountD1Host, spikeCountD1, sizeof(int), 0, cudaMemcpyDeviceToHost));
-		spikeCountAllHost      = spikeCountD1Host + spikeCountD2Host;
+		CUDA_CHECK_ERRORS( cudaMemcpyFromSymbol( &spikeCountD2Sec, spikeCountD2SecGPU, sizeof(int), 0, cudaMemcpyDeviceToHost));
+		CUDA_CHECK_ERRORS( cudaMemcpyFromSymbol( &spikeCountD1Sec, spikeCountD1SecGPU, sizeof(int), 0, cudaMemcpyDeviceToHost));
+		spikeCountSec = spikeCountD1Sec + spikeCountD2Sec;
+		CUDA_CHECK_ERRORS( cudaMemcpyFromSymbol( &spikeCountD2, spikeCountD2GPU, sizeof(int), 0, cudaMemcpyDeviceToHost));
+		CUDA_CHECK_ERRORS( cudaMemcpyFromSymbol( &spikeCountD1, spikeCountD1GPU, sizeof(int), 0, cudaMemcpyDeviceToHost));
+		spikeCount      = spikeCountD1 + spikeCountD2;
 	}
 	else {
 		stopCPUTiming();
@@ -2919,11 +2920,11 @@ void SNN::printSimSummary() {
 	KERNEL_INFO("Random Seed:\t\t%d", randSeed_);
 	KERNEL_INFO("Timing:\t\t\tModel Simulation Time = %lld sec", (unsigned long long)simTimeSec);
 	KERNEL_INFO("\t\t\tActual Execution Time = %4.2f sec", etime/1000.0);
-	KERNEL_INFO("Average Firing Rate:\t2+ms delay = %3.3f Hz", spikeCountD2Host/(1.0*simTimeSec*numNExcReg));
-	KERNEL_INFO("\t\t\t1ms delay = %3.3f Hz", spikeCountD1Host/(1.0*simTimeSec*numNInhReg));
-	KERNEL_INFO("\t\t\tOverall = %3.3f Hz", spikeCountAllHost/(1.0*simTimeSec*numN));
-	KERNEL_INFO("Overall Firing Count:\t2+ms delay = %d", spikeCountD2Host);
-	KERNEL_INFO("\t\t\t1ms delay = %d", spikeCountD1Host);
-	KERNEL_INFO("\t\t\tTotal = %d", spikeCountAllHost);
+	KERNEL_INFO("Average Firing Rate:\t2+ms delay = %3.3f Hz", spikeCountD2/(1.0*simTimeSec*numNExcReg));
+	KERNEL_INFO("\t\t\t1ms delay = %3.3f Hz", spikeCountD1/(1.0*simTimeSec*numNInhReg));
+	KERNEL_INFO("\t\t\tOverall = %3.3f Hz", spikeCount/(1.0*simTimeSec*numN));
+	KERNEL_INFO("Overall Firing Count:\t2+ms delay = %d", spikeCountD2);
+	KERNEL_INFO("\t\t\t1ms delay = %d", spikeCountD1);
+	KERNEL_INFO("\t\t\tTotal = %d", spikeCount);
 	KERNEL_INFO("*********************************************************************************\n");
 }

@@ -640,14 +640,14 @@ private:
 	void findMaxSpikesD1D2(unsigned int* _maxSpikesD1, unsigned int* _maxSpikesD2);
 	void findNumSynapsesNetwork(int* _numPostSynNet, int* _numPreSynNet); //!< find the total number of synapses in the network
 
-	void generatePostSpike(unsigned int pre_i, unsigned int idx_d, unsigned int offset, unsigned int tD);
+	void generatePostSpike(unsigned int pre_i, unsigned int idx_d, unsigned int offset, int tD);
 	void generateSpikes();
 	void generateSpikes(int grpId);
 	void generateSpikesFromFuncPtr(int grpId);
 	void generateSpikesFromRate(int grpId);
 
 	int getPoissNeuronPos(int nid);
-	float generateWeight(int connProp, float initWt, float maxWt, unsigned int nid, int grpId);
+	float generateWeight(int connProp, float initWt, float maxWt, int nid, int grpId);
 
 	void globalStateUpdate();
 
@@ -735,12 +735,12 @@ private:
 	void resetFiringInformation(); //!< resets the firing information when updateNetwork is called
 	void resetGroups();
 	void resetNeuromodulator(int grpId);
-	void resetNeuron(unsigned int nid, int grpId);
+	void resetNeuron(int nid, int grpId);
 	//void resetPointers(bool deallocate=false);
 	void resetMonitors(bool deallocate=false);
 	void resetConnectionConfigs(bool deallocate=false);
 	void resetRuntimeData(bool deallocate=false);
-	void resetPoissonNeuron(unsigned int nid, int grpId);
+	void resetPoissonNeuron(int nid, int grpId);
 	void resetPropogationBuffer();
 	void resetSpikeCnt(int grpId=ALL);					//!< Resets the spike count for a particular group.
 	void resetSynapticConnections(bool changeWeights=false);
@@ -817,7 +817,7 @@ private:
 	void copyPostConnectionInfo(RuntimeData* dest, bool allocateMem);
 	void copyState(RuntimeData* dest, bool allocateMem);
 	void copySTPState(RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind, bool allocateMem);
-	void copyWeightsGPU(unsigned int nid, int src_grp);
+	void copyWeightsGPU(int nid, int src_grp);
 	void copyWeightState(RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind, //!< copy presynaptic info
 		bool allocateMem, int grpId=-1);
 	void copyNetworkConfig();
@@ -834,8 +834,8 @@ private:
 	 * A Spike Counter keeps track of all spikes per neuron for a certain time period (recordDur)
 	 * at any point in time.
 	 * \param grpId	the group for which you want the spikes
-	 * \return pointer to array of unsigned ints. Number of elements in array is the number of neurons in group.
-	 * Each entry is the number of spikes for this neuron (unsigned int) since the last reset.
+	 * \return pointer to array of ints. Number of elements in array is the number of neurons in group.
+	 * Each entry is the number of spikes for this neuron (int) since the last reset.
 	 */
 	int* getSpikeCounter_GPU(int grpId);
 
@@ -856,7 +856,7 @@ private:
 	 */
 	void resetSpikeCounter_GPU(int grpId);
 
-	void setSpikeGenBit_GPU(unsigned int nid, int grp);
+	void setSpikeGenBit_GPU(int nid, int grp);
 	void spikeGeneratorUpdate_GPU();
 	void startGPUTiming();
 	void stopGPUTiming();
@@ -970,13 +970,13 @@ private:
 	int simTimeSec;		//!< this is used to store the seconds.
 	int simTime;		//!< The absolute simulation time. The unit is millisecond. this value is not reset but keeps increasing to its max value.
 
-	unsigned int	spikeCountAll1secHost;
-	unsigned int	secD1fireCntHost;
-	unsigned int	secD2fireCntHost;	//!< firing counts for each second
-	unsigned int	spikeCountAllHost;
-	unsigned int	spikeCountD1Host;
-	unsigned int	spikeCountD2Host;	//!< overall firing counts values
-	unsigned int	nPoissonSpikes;
+	unsigned int	spikeCountSec; //!< the total number of spikes in 1 second
+	unsigned int	spikeCountD1Sec;      //!< the total number of spikes with axonal delay == 1 in 1 second		
+	unsigned int	spikeCountD2Sec;	//!< the total number of spikes with axonal delay > 1 in 1 second
+	unsigned int	spikeCount;  //!< the total number of spikes in a simulation
+	unsigned int	spikeCountD1;   //!< the total number of spikes with anxonal delay == 1 in a simulation
+	unsigned int	spikeCountD2;	//!< the total number of spikes with anxonal delay > 1 in a simulation
+	unsigned int	nPoissonSpikes;		//!< the number of spikes of poisson neurons
 
 	// cuda keep track of performance...
 	StopWatchInterface* timer;
@@ -989,20 +989,20 @@ private:
 	FILE*	fpLog_;
 
 	// keep track of number of SpikeMonitor/SpikeMonitorCore objects
-	unsigned int numSpikeMonitor;
+	int numSpikeMonitor;
 	SpikeMonitorCore* spikeMonCoreList[MAX_GRP_PER_SNN];
 	SpikeMonitor*     spikeMonList[MAX_GRP_PER_SNN];
 
 	// \FIXME \DEPRECATED this one moved to group-based
 	long int    simTimeLastUpdSpkMon_; //!< last time we ran updateSpikeMonitor
 
-	unsigned int numSpikeGenGrps;
+	int numSpikeGenGrps;
 
 	int numSpkCnt; //!< number of real-time spike monitors in the network
 	int* spkCntBuf[MAX_GRP_PER_SNN]; //!< the actual buffer of spike counts (per group, per neuron)
 
 	// keep track of number of GroupMonitor/GroupMonitorCore objects
-	unsigned int		numGroupMonitor;
+	int numGroupMonitor;
 	GroupMonitorCore*	groupMonCoreList[MAX_GRP_PER_SNN];
 	GroupMonitor*		groupMonList[MAX_GRP_PER_SNN];
 
