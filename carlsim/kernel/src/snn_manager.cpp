@@ -2254,6 +2254,7 @@ int SNN::addSpikeToTable(int nid, int g) {
 		return 0;
 	}
 
+	// update STP for poinsson (input) neurons
 	if (groupConfig[g].WithSTP) {
 		// update the spike-dependent part of du/dt and dx/dt
 		// we need to retrieve the STP values from the right buffer position (right before vs. right after the spike)
@@ -2267,6 +2268,7 @@ int SNN::addSpikeToTable(int nid, int g) {
 		snnRuntimeData.stpx[ind_plus] -= snnRuntimeData.stpu[ind_plus]*snnRuntimeData.stpx[ind_minus];
 	}
 
+	// insert poisson (input) spikes into firingTableD1(D2)
 	if (groupConfig[g].MaxDelay == 1) {
 		assert(nid < numN);
 		snnRuntimeData.firingTableD1[spikeCountD1Sec] = nid;

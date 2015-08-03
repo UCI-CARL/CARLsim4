@@ -167,12 +167,12 @@ __device__ inline bool getPoissonSpike_GPU (int& nid)
 }
 
 ///////////////////////////////////////////////////////////////////
-// Device local function:      update_GPU_TimingTable			///
+// Device local function:      kerenl_updateTimeTable			///
 // KERNEL: After every iteration we update the timing table		///
 // so that we have the new values of the fired neurons for the	///
 // current time t.												///
 ///////////////////////////////////////////////////////////////////
-__global__ void kernel_timingTableUpdate(int t)
+__global__ void kernel_updateTimeTable(int t)
 {
    if ( threadIdx.x == 0 && blockIdx.x == 0) {
 		timeTableD2GPU[t+networkConfigGPU.maxDelay+1]  = spikeCountD2SecGPU;
@@ -574,7 +574,11 @@ __device__ inline bool getSpikeGenBit_GPU (unsigned int& nidPos)
 	return ((runtimeDataGPU.spikeGenBits[nidIndex]>>nidBitPos)&0x1);
 }
 
-// setSpikeGenBit for given neuron and group..
+/*
+ * \brief set spikeGenBit for given neuron and group
+ *
+ * 
+ */
 void SNN::setSpikeGenBit_GPU(int nid, int grp) {
 	checkAndSetGPUDevice();
 
@@ -969,10 +973,14 @@ __global__ void kernel_globalGroupStateUpdate (int t)
 }
 
 //******************************** UPDATE STP STATE  EVERY TIME STEP **********************************************
-///////////////////////////////////////////////////////////
-/// 	Global Kernel function: gpu_STPUpdate		///
-/// 	This function is called every time step			///
-///////////////////////////////////////////////////////////
+/*!
+ * \brief This function is called for updat STP and decay coductance every time step 
+ *
+ * net access sim_with_conductance, sim_with_NMDA_rise, sim_with_GABAb_rise, numNReg, numNPois, numN
+ * grp access WithSTP 
+ * rtd access gAMPA, gNMDA_r, gNMDA_d, gNMDA, gBABAa, gGABAb_r, gGABAb_d, gGABAb
+ * rtd access stpu, stpx
+ */
 __global__ void kernel_STPUpdateAndDecayConductances (int t, int sec, int simTime)
 {
 	// global id
@@ -2280,7 +2288,7 @@ void SNN::updateTimingTable_GPU() {
 
 	int blkSize  = 128;
 	int gridSize = 64;
-	kernel_timingTableUpdate <<<gridSize,blkSize >>> (simTimeMs);
+	kernel_updateTimeTable <<<gridSize,blkSize >>> (simTimeMs);
 	CUDA_GET_LAST_ERROR("timing Table update kernel failed\n");
 
 	return;
