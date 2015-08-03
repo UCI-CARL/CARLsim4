@@ -384,17 +384,19 @@ __device__ void updateFiringCounter(volatile unsigned int& fireCnt, volatile uns
 }
 
 // update the firing table...
-__device__ void updateFiringTable(int& nid, short int& grpId, volatile unsigned int& cntD2, volatile unsigned int& cntD1)
+__device__ void updateFiringTable(int& nId, short int& grpId, volatile unsigned int& cntD2, volatile unsigned int& cntD1)
 {
 	int pos;
 	if (groupConfigGPU[grpId].MaxDelay == 1) {
 		// this group has a delay of only 1
 		pos = atomicAdd((int*)&cntD1, 1);
-		runtimeDataGPU.firingTableD1[pos]  = SET_FIRING_TABLE(nid, grpId);
+		//runtimeDataGPU.firingTableD1[pos]  = SET_FIRING_TABLE(nid, grpId);
+		runtimeDataGPU.firingTableD1[pos] = nId;
 	} else {
 		// all other groups is dumped here 
 		pos = atomicAdd((int*)&cntD2, 1);
-		runtimeDataGPU.firingTableD2[pos]  = SET_FIRING_TABLE(nid, grpId);
+		//runtimeDataGPU.firingTableD2[pos]  = SET_FIRING_TABLE(nid, grpId);
+		runtimeDataGPU.firingTableD2[pos] = nId;
 	}
 }
 
@@ -775,9 +777,10 @@ __global__ void kernel_globalConductanceUpdate (int t, int sec, int simTime) {
 					int wt_i = sh_quickSynIdTable[k];
 					int wtId = (j*32 + cnt*8 + wt_i);
 
-					post_info_t pre_Id   = runtimeDataGPU.preSynapticIds[cum_pos + wtId];
-					uint8_t  pre_grpId  = GET_CONN_GRP_ID(pre_Id);
+					SynInfo pre_Id   = runtimeDataGPU.preSynapticIds[cum_pos + wtId];
+					//uint8_t  pre_grpId  = GET_CONN_GRP_ID(pre_Id);
 					uint32_t  pre_nid  = GET_CONN_NEURON_ID(pre_Id);
+					short int pre_grpId = runtimeDataGPU.grpIds[pre_nid];
 					char type = groupConfigGPU[pre_grpId].Type;
 
 					// load the synaptic weight for the wtId'th input
@@ -1240,7 +1243,7 @@ __device__ int generatePostSynapticSpike(int& simTime, int& firingId, int& myDel
 	int errCode = false;
 
 	// get the post synaptic information for specific delay
-	post_info_t post_info = runtimeDataGPU.postSynapticIds[offset+myDelayIndex];
+	SynInfo post_info = runtimeDataGPU.postSynapticIds[offset+myDelayIndex];
 
 	// get neuron id
 	int nid = GET_CONN_NEURON_ID(post_info);//(post_info&POST_SYN_NEURON_MASK);
@@ -1251,7 +1254,8 @@ __device__ int generatePostSynapticSpike(int& simTime, int& firingId, int& myDel
 	// get the actual position of the synapses and other variables...
 	unsigned int pos_ns = runtimeDataGPU.cumulativePre[nid] + syn_id;
 
-	short int pre_grpId = GET_FIRING_TABLE_GID(firingId);
+	short int pre_grpId = runtimeDataGPU.grpIds[firingId];
+	//short int pre_grpId = GET_FIRING_TABLE_GID(firingId);
 	//int pre_nid = GET_FIRING_TABLE_NID(firingId);
 
 	// Error MNJ... this should have been from nid.. not firingId...
@@ -1362,8 +1366,9 @@ __global__ void kernel_doCurrentUpdateD2(int simTimeMs, int simTimeSec, int simT
 			if ((fPos >= 0) && (fPos >= k_end)) {
 
 				// get the neuron nid here....
-				int val = runtimeDataGPU.firingTableD2[fPos];
-				int nid = GET_FIRING_TABLE_NID(val);
+				//int val = runtimeDataGPU.firingTableD2[fPos];
+				//int nid = GET_FIRING_TABLE_NID(val);
+				int nid = runtimeDataGPU.firingTableD2[fPos];
 
 				// find the time of firing based on the firing number fPos
 				while ( !((fPos >= tex1Dfetch(timeTableD2GPU_tex, t_pos+networkConfigGPU.maxDelay+timeTableD2GPU_tex_offset)) 
@@ -1377,7 +1382,8 @@ __global__ void kernel_doCurrentUpdateD2(int simTimeMs, int simTimeSec, int simT
 				// find the various delay parameters for neuron 'nid', with a delay of 'tD'
 				//sh_axonDelay[threadIdx.x]	 = tD;
 				int tPos = (networkConfigGPU.maxDelay+1)*nid+tD;
-				sh_firingId[threadIdx.x]	 	 = val;
+				//sh_firingId[threadIdx.x]	 	 = val;
+				sh_firingId[threadIdx.x] = nid;
 				sh_neuronOffsetTable[threadIdx.x]= runtimeDataGPU.cumulativePost[nid];
 				sh_delayLength[threadIdx.x]      = runtimeDataGPU.postDelayInfo[tPos].delay_length;
 				sh_delayIndexStart[threadIdx.x]  = runtimeDataGPU.postDelayInfo[tPos].delay_index_start;
@@ -1478,10 +1484,12 @@ __global__ void kernel_doCurrentUpdateD1(int simTimeMs, int simTimeSec, int simT
 			// find the neuron nid and also delay information from fPos
 			if((fPos>=0)&&(fPos < spikeCountD1SecGPU)) {
 				atomicAdd((int*)&sh_NeuronCnt,1);
-				int val  = runtimeDataGPU.firingTableD1[fPos];
-				int nid  = GET_FIRING_TABLE_NID(val);
+				//int val  = runtimeDataGPU.firingTableD1[fPos];
+				//int nid  = GET_FIRING_TABLE_NID(val);
+				int nid = runtimeDataGPU.firingTableD1[fPos];
 				int tPos = (networkConfigGPU.maxDelay+1)*nid;
-				sh_firingId[threadIdx.x] 	 	 = val;
+				//sh_firingId[threadIdx.x] 	 	 = val;
+				sh_firingId[threadIdx.x] = nid;
 				sh_neuronOffsetTable[threadIdx.x]= runtimeDataGPU.cumulativePost[nid];
 				sh_delayLength[threadIdx.x]      = runtimeDataGPU.postDelayInfo[tPos].delay_length;
 				sh_delayIndexStart[threadIdx.x]  = runtimeDataGPU.postDelayInfo[tPos].delay_index_start;

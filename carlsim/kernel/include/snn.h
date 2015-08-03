@@ -747,7 +747,7 @@ private:
 	void resetTimeTable();
 	void resetFiringTable();
 
-	post_info_t SET_CONN_ID(int nid, int sid, int grpId);
+	inline SynInfo SET_CONN_ID(int nid, int sid, int grpId);
 
 	void setGrpTimeSlice(int grpId, int timeSlice); //!< used for the Poisson generator. TODO: further optimize
 	int setRandSeed(int seed);	//!< setter function for const member randSeed_
@@ -901,8 +901,6 @@ private:
 
 	float 		*mulSynFast;	//!< scaling factor for fast synaptic currents, per connection
 	float 		*mulSynSlow;	//!< scaling factor for slow synaptic currents, per connection
-
-	// duplicated short int *grpIds;
 
 	//! Buffer to store spikes
 	PropagatedSpikeBuffer* pbuf;

@@ -265,7 +265,7 @@ void SNN::findFiring() {
 
 void SNN::generatePostSpike(unsigned int pre_i, unsigned int idx_d, unsigned int offset, int tD) {
 	// get synaptic info...
-	post_info_t post_info = snnRuntimeData.postSynapticIds[offset + idx_d];
+	SynInfo post_info = snnRuntimeData.postSynapticIds[offset + idx_d];
 
 	// get post-neuron id
 	unsigned int post_i = GET_CONN_NEURON_ID(post_info);

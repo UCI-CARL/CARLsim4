@@ -1243,7 +1243,7 @@ void SNN::setWeight(short int connId, int neurIdPre, int neurIdPost, float weigh
 	bool synapseFound = false;
 	int pos_ij = snnRuntimeData.cumulativePre[neurIdPostReal];
 	for (int j=0; j<snnRuntimeData.Npre[neurIdPostReal]; pos_ij++, j++) {
-		post_info_t* preId = &(snnRuntimeData.preSynapticIds[pos_ij]);
+		SynInfo* preId = &(snnRuntimeData.preSynapticIds[pos_ij]);
 		int pre_nid = GET_CONN_NEURON_ID((*preId));
 		if (GET_CONN_NEURON_ID((*preId))==neurIdPreReal) {
 			assert(snnRuntimeData.cumConnIdPre[pos_ij]==connId); // make sure we've got the right connection ID
@@ -1352,7 +1352,7 @@ void SNN::saveSimulation(FILE* fid, bool saveSynapseInfo) {
 
 				for(int idx_d=dPar.delay_index_start; idx_d<(dPar.delay_index_start+dPar.delay_length); idx_d++) {
 					// get synaptic info...
-					post_info_t post_info = snnRuntimeData.postSynapticIds[offset + idx_d];
+					SynInfo post_info = snnRuntimeData.postSynapticIds[offset + idx_d];
 
 					// get neuron id
 					//int p_i = (post_info&POST_SYN_NEURON_MASK);
@@ -1399,7 +1399,7 @@ void SNN::writePopWeights(std::string fname, int grpIdPre, int grpIdPost) {
 		exitSimulation(1);
 	}
 
-	post_info_t* preId;
+	SynInfo* preId;
 	int pre_nid, pos_ij;
 
 	//population sizes
@@ -1634,7 +1634,7 @@ uint8_t* SNN::getDelays(int gIDpre, int gIDpost, int& Npre, int& Npost, uint8_t*
 
 			for(int idx_d=dPar.delay_index_start; idx_d<(dPar.delay_index_start+dPar.delay_length); idx_d++) {
 				// get synaptic info...
-				post_info_t post_info = snnRuntimeData.postSynapticIds[offset + idx_d];
+				SynInfo post_info = snnRuntimeData.postSynapticIds[offset + idx_d];
 
 				// get neuron id
 				//int p_i = (post_info&POST_SYN_NEURON_MASK);
@@ -2210,11 +2210,11 @@ void SNN::allocateRuntimeData() {
 	memset(snnRuntimeData.cumulativePre, 0, sizeof(int) * numN);
 	cpuSnnSz.networkInfoSize += (int)(sizeof(int) * numN * 3.5);
 
-	snnRuntimeData.postSynapticIds = new post_info_t[numPostSynNet];
+	snnRuntimeData.postSynapticIds = new SynInfo[numPostSynNet];
 	snnRuntimeData.postDelayInfo   = new delay_info_t[numN * (maxDelay_ + 1)];	//!< Possible delay values are 0....maxDelay_ (inclusive of maxDelay_)
-	memset(snnRuntimeData.postSynapticIds, 0, sizeof(post_info_t) * numPostSynNet);
+	memset(snnRuntimeData.postSynapticIds, 0, sizeof(SynInfo) * numPostSynNet);
 	memset(snnRuntimeData.postDelayInfo, 0, sizeof(delay_info_t) * numN * (maxDelay_ + 1));
-	cpuSnnSz.networkInfoSize += ((sizeof(post_info_t) + sizeof(uint8_t)) * numPostSynNet) + (sizeof(delay_info_t) * numN * (maxDelay_ + 1));
+	cpuSnnSz.networkInfoSize += ((sizeof(SynInfo) + sizeof(uint8_t)) * numPostSynNet) + (sizeof(delay_info_t) * numN * (maxDelay_ + 1));
 
 	snnRuntimeData.wt       = new float[numPreSynNet];
 	snnRuntimeData.maxSynWt = new float[numPreSynNet];
@@ -2230,10 +2230,10 @@ void SNN::allocateRuntimeData() {
 	memset(snnRuntimeData.cumConnIdPre, 0, sizeof(short int) * numPreSynNet);
 
 	//! Temporary array to hold pre-syn connections. will be deleted later if necessary
-	snnRuntimeData.preSynapticIds	= new post_info_t[numPreSynNet];
-	memset(snnRuntimeData.preSynapticIds, 0, sizeof(post_info_t) * numPreSynNet);
+	snnRuntimeData.preSynapticIds	= new SynInfo[numPreSynNet];
+	memset(snnRuntimeData.preSynapticIds, 0, sizeof(SynInfo) * numPreSynNet);
 	// size due to weights and maximum weights
-	cpuSnnSz.synapticInfoSize += ((sizeof(int) + 2 * sizeof(float) + sizeof(post_info_t)) * (numPreSynNet));
+	cpuSnnSz.synapticInfoSize += ((sizeof(int) + 2 * sizeof(float) + sizeof(SynInfo)) * (numPreSynNet));
 
 	// poisson Firing Rate
 	cpuSnnSz.neuronInfoSize += (sizeof(int) * numNPois);
@@ -2447,7 +2447,13 @@ void SNN::generateConnectionRuntime() {
 	//synWt = isExcitatoryGroup(srcGrp) ? fabs(synWt) : -1.0*fabs(synWt);
 	//maxWt = isExcitatoryGroup(srcGrp) ? fabs(maxWt) : -1.0*fabs(maxWt);
 
-	
+	// generate mulSynFast, mulSynSlow in connection-centric array
+	for (std::map<int, ConnectConfig>::iterator it = connectConfigMap.begin(); it != connectConfigMap.end(); it++) {
+		// store scaling factors for synaptic currents in connection-centric array
+		mulSynFast[it->second.connId] = it->second.mulSynFast;
+		mulSynSlow[it->second.connId] = it->second.mulSynSlow;
+	}
+
 	// parse ConnectionInfo stored in connectionList
 	// generate Npost, Npre, Npre_plastic
 	int parsedConnections = 0;	
@@ -2495,9 +2501,6 @@ void SNN::generateConnectionRuntime() {
 			assert(pre_pos  < numPreSynNet);
 
 			snnRuntimeData.preSynapticIds[pre_pos] = SET_CONN_ID(it->nSrc, 0, it->grpSrc); // snnRuntimeData.Npost[it->nSrc] is not availabe at this parse
-			//snnRuntimeData.wt[pre_pos] = it->initWt;
-			//snnRuntimeData.maxSynWt[pre_pos] = it->maxWt;
-			//snnRuntimeData.cumConnIdPre[pre_pos] = it->connId;
 			it->preSynId = snnRuntimeData.Npre[it->nDest]; // save snnRuntimeData.Npre[it->nDest] as synId
 
 			snnRuntimeData.Npre[it->nDest]++;
@@ -2515,9 +2518,6 @@ void SNN::generateConnectionRuntime() {
 			assert(pre_pos  < numPreSynNet);
 
 			snnRuntimeData.preSynapticIds[pre_pos] = SET_CONN_ID(it->nSrc, 0, it->grpSrc); // snnRuntimeData.Npost[it->nSrc] is not availabe at this parse
-			//snnRuntimeData.wt[pre_pos] = it->initWt;
-			//snnRuntimeData.maxSynWt[pre_pos] = it->maxWt;
-			//snnRuntimeData.cumConnIdPre[pre_pos] = it->connId;
 			it->preSynId = snnRuntimeData.Npre[it->nDest]; // save snnRuntimeData.Npre[it->nDest] as synId
 
 			snnRuntimeData.Npre[it->nDest]++;
@@ -2572,15 +2572,14 @@ void SNN::generateConnectionRuntime() {
 				lastDelay = it->delay;
 
 				// update the corresponding pre synaptic id
-				post_info_t preId = snnRuntimeData.preSynapticIds[pre_pos];
+				SynInfo preId = snnRuntimeData.preSynapticIds[pre_pos];
 				assert(GET_CONN_NEURON_ID(preId) == it->nSrc);
-				assert(GET_CONN_GRP_ID(preId) == it->grpSrc);
+				//assert(GET_CONN_GRP_ID(preId) == it->grpSrc);
 				snnRuntimeData.preSynapticIds[pre_pos] = SET_CONN_ID(it->nSrc, snnRuntimeData.Npost[it->nSrc], it->grpSrc);
 				snnRuntimeData.wt[pre_pos] = it->initWt;
 				snnRuntimeData.maxSynWt[pre_pos] = it->maxWt;
 				snnRuntimeData.cumConnIdPre[pre_pos] = it->connId;
 
-				/*snnRuntimeData.Npre[it->nDest]++;*/
 				snnRuntimeData.Npost[it->nSrc]++;
 				parsedConnections++;
 
@@ -4131,7 +4130,7 @@ void SNN::resetSynapticConnections(bool changeWeights) {
 				snnRuntimeData.wtChange[offset+j] = 0.0;						// synaptic derivatives is reset
 				snnRuntimeData.synSpikeTime[offset+j] = MAX_SIMULATION_TIME;	// some large negative value..
 			}
-			post_info_t *preIdPtr = &(snnRuntimeData.preSynapticIds[snnRuntimeData.cumulativePre[nid]]);
+			SynInfo *preIdPtr = &(snnRuntimeData.preSynapticIds[snnRuntimeData.cumulativePre[nid]]);
 			float* synWtPtr       = &(snnRuntimeData.wt[snnRuntimeData.cumulativePre[nid]]);
 			float* maxWtPtr       = &(snnRuntimeData.maxSynWt[snnRuntimeData.cumulativePre[nid]]);
 			int prevPreGrp  = -1;
@@ -4186,16 +4185,24 @@ void SNN::resetFiringTable() {
 
 
 //! nid=neuron id, sid=synapse id, grpId=group id.
-inline post_info_t SNN::SET_CONN_ID(int nid, int sid, int grpId) {
-	if (sid > CONN_SYN_MASK) {
-		KERNEL_ERROR("Error: Syn Id (%d) exceeds maximum limit (%d) for neuron %d (group %d)", sid, CONN_SYN_MASK, nid,
-			grpId);
+inline SynInfo SNN::SET_CONN_ID(int nId, int sId, int grpId) {
+	if (sId > SYNAPSE_ID_MASK) {
+		KERNEL_ERROR("Error: Syn Id (%d) exceeds maximum limit (%d) for neuron %d (group %d)", sId, SYNAPSE_ID_MASK, nId, grpId);
 		exitSimulation(1);
 	}
-	post_info_t p;
-	p.postId = (((sid)<<CONN_SYN_NEURON_BITS)+((nid)&CONN_SYN_NEURON_MASK));
-	p.grpId  = grpId;
-	return p;
+
+	if (grpId > GROUP_ID_MASK) {
+		KERNEL_ERROR("Error: Group Id (%d) exceeds maximum limit (%d)", grpId, GROUP_ID_MASK);
+		exitSimulation(1);
+	}
+
+	SynInfo synInfo;
+	//p.postId = (((sid)<<CONN_SYN_NEURON_BITS)+((nid)&CONN_SYN_NEURON_MASK));
+	//p.grpId  = grpId;
+	synInfo.gsId = ((grpId << NUM_SYNAPSE_BITS) | sId);
+	synInfo.nId = nId;
+
+	return synInfo;
 }
 
 void SNN::setGrpTimeSlice(int grpId, int timeSlice) {
@@ -4597,9 +4604,9 @@ void SNN::updateSpikeMonitor(int grpId) {
 			for(int t=numMsMin; t<numMsMax; t++) {
 				for(int i=timeTablePtr[t+maxDelay_]; i<timeTablePtr[t+maxDelay_+1];i++) {
 					// retrieve the neuron id
-					int nid   = fireTablePtr[i];
-					if (simMode_ == GPU_MODE)
-						nid = GET_FIRING_TABLE_NID(nid);
+					int nid = fireTablePtr[i];
+					//if (simMode_ == GPU_MODE)
+					//	nid = GET_FIRING_TABLE_NID(nid);
 					assert(nid < numN);
 
 					// make sure neuron belongs to currently relevant group
@@ -4674,10 +4681,10 @@ void SNN::updateSpikeMonitor(int grpId) {
 //	KERNEL_DEBUG("old_preCnt = %d,  new_postCnt = %d", numPreSynNet,  tmp_numPreSynNet);
 //
 //	// new buffer with required size + 100 bytes of additional space just to provide limited overflow
-//	post_info_t* tmp_postSynapticIds   = new post_info_t[tmp_numPostSynNet+100];
+//	SynInfo* tmp_postSynapticIds   = new SynInfo[tmp_numPostSynNet+100];
 //
 //	// new buffer with required size + 100 bytes of additional space just to provide limited overflow
-//	post_info_t* tmp_preSynapticIds	= new post_info_t[tmp_numPreSynNet+100];
+//	SynInfo* tmp_preSynapticIds	= new SynInfo[tmp_numPreSynNet+100];
 //	float* tmp_wt	    	  		= new float[tmp_numPreSynNet+100];
 //	float* tmp_maxSynWt   	  		= new float[tmp_numPreSynNet+100];
 //	short int *tmp_cumConnIdPre 		= new short int[tmp_numPreSynNet+100];
@@ -4707,8 +4714,8 @@ void SNN::updateSpikeMonitor(int grpId) {
 //	// delete old buffer space
 //	delete[] snnRuntimeData.postSynapticIds;
 //	snnRuntimeData.postSynapticIds = tmp_postSynapticIds;
-//	cpuSnnSz.networkInfoSize -= (sizeof(post_info_t)*numPostSynNet);
-//	cpuSnnSz.networkInfoSize += (sizeof(post_info_t)*(tmp_numPostSynNet+100));
+//	cpuSnnSz.networkInfoSize -= (sizeof(SynInfo)*numPostSynNet);
+//	cpuSnnSz.networkInfoSize += (sizeof(SynInfo)*(tmp_numPostSynNet+100));
 //
 //	delete[] snnRuntimeData.cumulativePost;
 //	snnRuntimeData.cumulativePost  = tmp_cumulativePost;
@@ -4746,8 +4753,8 @@ void SNN::updateSpikeMonitor(int grpId) {
 //
 //	delete[] snnRuntimeData.preSynapticIds;
 //	snnRuntimeData.preSynapticIds  = tmp_preSynapticIds;
-//	cpuSnnSz.synapticInfoSize -= (sizeof(post_info_t)*numPreSynNet);
-//	cpuSnnSz.synapticInfoSize += (sizeof(post_info_t)*(tmp_numPreSynNet+100));
+//	cpuSnnSz.synapticInfoSize -= (sizeof(SynInfo)*numPreSynNet);
+//	cpuSnnSz.synapticInfoSize += (sizeof(SynInfo)*(tmp_numPreSynNet+100));
 //
 //	numPreSynNet	= tmp_numPreSynNet;
 //	numPostSynNet	= tmp_numPostSynNet;
@@ -4805,7 +4812,7 @@ void SNN::updateSpikeMonitor(int grpId) {
 //	unsigned int cumN=snnRuntimeData.cumulativePost[nid];
 //
 //	// Put the node oldPos to the top of the delay queue
-//	post_info_t tmp = snnRuntimeData.postSynapticIds[cumN+oldPos];
+//	SynInfo tmp = snnRuntimeData.postSynapticIds[cumN+oldPos];
 //	snnRuntimeData.postSynapticIds[cumN+oldPos]= snnRuntimeData.postSynapticIds[cumN+newPos];
 //	snnRuntimeData.postSynapticIds[cumN+newPos]= tmp;
 //
@@ -4815,11 +4822,11 @@ void SNN::updateSpikeMonitor(int grpId) {
 //	tmp_SynapticDelay[cumN+newPos] = tmp_delay;
 //
 //	// update the pre-information for the postsynaptic neuron at the position oldPos.
-//	post_info_t  postInfo = snnRuntimeData.postSynapticIds[cumN+oldPos];
+//	SynInfo  postInfo = snnRuntimeData.postSynapticIds[cumN+oldPos];
 //	int  post_nid = GET_CONN_NEURON_ID(postInfo);
 //	int  post_sid = GET_CONN_SYN_ID(postInfo);
 //
-//	post_info_t* preId    = &(snnRuntimeData.preSynapticIds[snnRuntimeData.cumulativePre[post_nid]+post_sid]);
+//	SynInfo* preId    = &(snnRuntimeData.preSynapticIds[snnRuntimeData.cumulativePre[post_nid]+post_sid]);
 //	int  pre_nid  = GET_CONN_NEURON_ID((*preId));
 //	int  pre_sid  = GET_CONN_SYN_ID((*preId));
 //	int  pre_gid  = GET_CONN_GRP_ID((*preId));

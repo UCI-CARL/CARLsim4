@@ -290,10 +290,10 @@ void SNN::printGroupInfo(int grpId) {
 	KERNEL_INFO("  - numPostSynapses            = %8d", groupConfig[grpId].numPostSynapses);
 	KERNEL_INFO("  - numPreSynapses             = %8d", groupConfig[grpId].numPreSynapses);
 
-	//if (doneReorganization) {
-	//	KERNEL_INFO("  - Avg post connections       = %8.5f", 1.0*groupInfo[grpId].numPostConn/groupConfig[grpId].SizeN);
-	//	KERNEL_INFO("  - Avg pre connections        = %8.5f",  1.0*groupInfo[grpId].numPreConn/groupConfig[grpId].SizeN);
-	//}
+	if (snnState == EXECUTABLE_SNN) {
+		KERNEL_INFO("  - Avg post connections       = %8.5f", ((float)groupInfo[grpId].numPostConn)/groupConfig[grpId].SizeN);
+		KERNEL_INFO("  - Avg pre connections        = %8.5f",  ((float)groupInfo[grpId].numPreConn)/groupConfig[grpId].SizeN);
+	}
 
 	if(groupConfig[grpId].Type&POISSON_NEURON) {
 		KERNEL_INFO("  - Refractory period          = %8.5f", groupConfig[grpId].RefractPeriod);
@@ -376,7 +376,7 @@ int SNN::printPostConnection2(int grpId, FILE* const fpg)
   for(int i=groupConfig[grpId].StartN; i<=groupConfig[grpId].EndN; i++) {
     fprintf(fpg, " id %d : group %d : postlength %d ", i, findGrpId(i), snnRuntimeData.Npost[i]);
     // fetch the starting position
-    post_info_t* postIds = &(snnRuntimeData.postSynapticIds[snnRuntimeData.cumulativePost[i]]);
+    SynInfo* postIds = &(snnRuntimeData.postSynapticIds[snnRuntimeData.cumulativePost[i]]);
     for(int j=0; j <= maxDelay_; j++) {
       int len   = snnRuntimeData.postDelayInfo[i*(maxDelay_+1)+j].delay_length;
       int start = snnRuntimeData.postDelayInfo[i*(maxDelay_+1)+j].delay_index_start;
@@ -465,11 +465,12 @@ void SNN::printPostConnection(int grpId, FILE* const fp)
   for(int i=groupConfig[grpId].StartN; i<=groupConfig[grpId].EndN; i++) {
     if(fp) fprintf(fp, " %3d ( %3d ) : \t", i, snnRuntimeData.Npost[i]);
     // fetch the starting position
-    post_info_t* postIds = &(snnRuntimeData.postSynapticIds[snnRuntimeData.cumulativePost[i]]);
+    SynInfo* postIds = &(snnRuntimeData.postSynapticIds[snnRuntimeData.cumulativePost[i]]);
     int  offset  = snnRuntimeData.cumulativePost[i];
     for(int j=0; j < snnRuntimeData.Npost[i]; j++, postIds++) {
       int post_nid = GET_CONN_NEURON_ID((*postIds));
-      int post_gid = GET_CONN_GRP_ID((*postIds));
+      //int post_gid = GET_CONN_GRP_ID((*postIds));
+	  int post_gid = snnRuntimeData.grpIds[post_nid];
       assert( findGrpId(post_nid) == post_gid);
       //if(fp) fprintf(fp, " %3d ( maxDelay_=%3d, Grp=%3d) ", post_nid, tmp_SynapticDelay[offset+j], post_gid);
     }
@@ -488,10 +489,10 @@ int SNN::printPreConnection2(int grpId, FILE* const fpg)
 	int maxLength = -1;
 	for(int i=groupConfig[grpId].StartN; i<=groupConfig[grpId].EndN; i++) {
 		fprintf(fpg, " id %d : group %d : prelength %d ", i, findGrpId(i), snnRuntimeData.Npre[i]);
-		post_info_t* preIds = &(snnRuntimeData.preSynapticIds[snnRuntimeData.cumulativePre[i]]);
+		SynInfo* preIds = &(snnRuntimeData.preSynapticIds[snnRuntimeData.cumulativePre[i]]);
 		for(int j=0; j < snnRuntimeData.Npre[i]; j++, preIds++) {
-			//if (doneReorganization && (!memoryOptimized))
-			//	fprintf(fpg, ": %d,%s", GET_CONN_NEURON_ID((*preIds)), (j < snnRuntimeData.Npre_plastic[i])?"P":"F");
+			if (snnState == EXECUTABLE_SNN)
+				fprintf(fpg, ": %d,%s", GET_CONN_NEURON_ID((*preIds)), (j < snnRuntimeData.Npre_plastic[i])?"P":"F");
 		}
 		
 		if ( snnRuntimeData.Npre[i] > maxLength)
@@ -505,12 +506,12 @@ void SNN::printPreConnection(int grpId, FILE* const fp)
 {
 	for(int i=groupConfig[grpId].StartN; i<=groupConfig[grpId].EndN; i++) {
 		if(fp) fprintf(fp, " %d ( preCnt=%d, prePlastic=%d ) : (id => (wt, maxWt),(preId, P/F)\n\t", i, snnRuntimeData.Npre[i], snnRuntimeData.Npre_plastic[i]);
-		post_info_t* preIds = &(snnRuntimeData.preSynapticIds[snnRuntimeData.cumulativePre[i]]);
+		SynInfo* preIds = &(snnRuntimeData.preSynapticIds[snnRuntimeData.cumulativePre[i]]);
 		int  pos_i  = snnRuntimeData.cumulativePre[i];
 		for(int j=0; j < snnRuntimeData.Npre[i]; j++, pos_i++, preIds++) {
 			if(fp) fprintf(fp,  "  %d => (%f, %f)", j, snnRuntimeData.wt[pos_i], snnRuntimeData.maxSynWt[pos_i]);
-			//if(doneReorganization && (!memoryOptimized))
-			//	if(fp) fprintf(fp, ",(%d, %s)", GET_CONN_NEURON_ID((*preIds)), (j < snnRuntimeData.Npre_plastic[i])?"P":"F");
+			if (snnState ==  EXECUTABLE_SNN)
+				if(fp) fprintf(fp, ",(%d, %s)", GET_CONN_NEURON_ID((*preIds)), (j < snnRuntimeData.Npre_plastic[i])?"P":"F");
 		}
 		
 		if(fp) fprintf(fp, "\n");

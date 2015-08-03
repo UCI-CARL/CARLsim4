@@ -48,10 +48,8 @@ TEST(Interface, connectDeath) {
 	// custom ConnectionGenerator with mulSyns
 	EXPECT_DEATH({sim->connect(g1,g2,CGNULL,1.0f,1.0f);},""); // CG=NULL
 	EXPECT_DEATH({sim->connect(g1,g1,CG,1.0f,1.0f);},""); // g-post cannot be PoissonGroup
-	EXPECT_DEATH({sim->connect(g1,g2,CG,-1.0f,1.0f,SYN_FIXED,0,0);},""); // mulSynFast<0
-	EXPECT_DEATH({sim->connect(g1,g2,CG,1.0f,-1.0f,SYN_FIXED,0,0);},""); // mulSynSlow<0
-	EXPECT_DEATH({sim->connect(g1,g2,CG,1.0f,1.0f,SYN_FIXED,-2,0);},""); // maxM<0
-	EXPECT_DEATH({sim->connect(g1,g2,CG,1.0f,1.0f,SYN_FIXED,0,-4);},""); // maxPreM<0
+	EXPECT_DEATH({sim->connect(g1,g2,CG,-1.0f,1.0f,SYN_FIXED);},""); // mulSynFast<0
+	EXPECT_DEATH({sim->connect(g1,g2,CG,1.0f,-1.0f,SYN_FIXED);},""); // mulSynSlow<0
 
 	delete CG;
 	delete sim;

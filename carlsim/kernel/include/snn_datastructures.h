@@ -64,10 +64,10 @@ typedef struct {
 	short  delay_length;
 } delay_info_t;
 
-typedef struct {
-	int	postId;
-	uint8_t	grpId;
-} post_info_t;
+typedef struct SynInfo_s {
+	int	gsId; //!< group id and synapse id
+	int nId; //!< neuron id
+} SynInfo;
 
 typedef struct ConnectionInfo_s {
 	int grpSrc;
@@ -226,8 +226,8 @@ typedef struct RuntimeData_s {
 	 * allows maximum synapses of 1024 and maximum network size of 4 million neurons, with 64 bit representation. we can
 	 * have larger networks for simulation
 	 */
-	post_info_t* postSynapticIds;
-	post_info_t* preSynapticIds;
+	SynInfo* postSynapticIds;
+	SynInfo* preSynapticIds;
 
 	delay_info_t* postDelayInfo;  	//!< delay information
 
