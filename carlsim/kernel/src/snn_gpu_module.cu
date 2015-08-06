@@ -261,7 +261,7 @@ int SNN::allocateStaticLoad(int bufSize) {
 		int grpBufCnt = (int) ceil(1.0f * groupConfig[g].SizeN / bufSize);
 		assert(grpBufCnt>=0);
 		bufferCnt += grpBufCnt;
-		KERNEL_DEBUG("Grp Size = %d, Total Buffer Cnt = %d, Buffer Cnt = %f", groupConfig[g].SizeN, bufferCnt, grpBufCnt);
+		KERNEL_DEBUG("Grp Size = %d, Total Buffer Cnt = %d, Buffer Cnt = %d", groupConfig[g].SizeN, bufferCnt, grpBufCnt);
 	}
 	assert(bufferCnt>0);
 
@@ -349,19 +349,18 @@ __device__ void resetFiredNeuron(int& nid, short int & grpId, int& simTime)
 	}
 }
 
-////////////////////////////////////////////////////////////////////////////////////////////////
-/// Device local function:      gpu_newFireUpdate                                           ///
-/// Description: 1. Copy neuron id from local table to global firing table.                 ///
-///		 2. Reset all neuron properties of neuron id in local table 		    			///
-//                                                                                          ///
-/// fireTablePtr:  local shared memory firing table with neuron ids of fired neuron         ///
-/// fireCntD2:      number of excitatory neurons in local table that has fired               ///
-/// fireCntD1:      number of inhibitory neurons in local table that has fired               ///
-/// simTime:      current global time step..stored as neuron firing time  entry             ///
-////////////////////////////////////////////////////////////////////////////////////////////////
+/*
+ * \brief 1. Copy neuron id from local table to global firing table. 2. Reset all neuron properties of neuron id in local table
+ *
+ *
+ * \param[in] fireTablePtr the local shared memory firing table with neuron ids of fired neuron
+ * \param[in] fireCntD2 the number of neurons in local table that has fired with group's max delay == 1
+ * \param[in] fireCntD1 the number of neurons in local table that has fired with group's max delay > 1
+ * \param[in] simTime the current time step, stored as neuron firing time  entry
+ */
 __device__ void updateFiringCounter(volatile unsigned int& fireCnt, volatile unsigned int& fireCntD1, volatile unsigned int& cntD2, volatile unsigned int& cntD1, volatile int&  blkErrCode)
 {
-	int fireCntD2 = fireCnt-fireCntD1;
+	int fireCntD2 = fireCnt - fireCntD1;
 
 	cntD2 = atomicAdd(&secD2fireCntTest, fireCntD2);
 	cntD1 = atomicAdd(&secD1fireCntTest, fireCntD1);
@@ -400,12 +399,8 @@ __device__ void updateFiringTable(int& nId, short int& grpId, volatile unsigned 
 	}
 }
 
-__device__ int newFireUpdate (	int* 	fireTablePtr,
-								short int* fireGrpId,
-								volatile unsigned int& 	fireCnt,
-								volatile unsigned int& 	fireCntD1,
-								int& 	simTime)
-{
+__device__ int updateNewFirings(int* fireTablePtr, short int* fireGrpId,
+                                volatile unsigned int& fireCnt, volatile unsigned int& fireCntD1, int& simTime) {
 __shared__ volatile unsigned int cntD2;
 __shared__ volatile unsigned int cntD1;
 __shared__ volatile int blkErrCode;
@@ -492,27 +487,21 @@ __device__ void findGrpId_GPU(int& nid, int& grpId)
 	return;
 }
 
-///////////////////////////////////////////////////////////////////////////
-/// Device local function:      gpu_updateLTP
-/// Description:                Computes the STDP update values for each of fired
-///                             neurons stored in the local firing table.
-///
-/// fireTablePtr:  local shared memory firing table with neuron ids of fired neuron
-/// fireCnt:      number of fired neurons in local firing table
-/// simTime:     current global time step..stored as neuron firing time  entry
-///////////////////////////////////////////////////////////////////////////
-// synaptic grouping for LTP Calculation
-#define		LTP_GROUPING_SZ     16
-__device__ void gpu_updateLTP(	int*     		fireTablePtr,
-				short int*  		fireGrpId,
-				volatile unsigned int&   fireCnt,
-				int&      		simTime)
-{
+#define LTP_GROUPING_SZ 16 //!< synaptic grouping for LTP Calculation
+/*
+ * \brief Computes the STDP update values for each of fired neurons stored in the local firing table.
+ *
+ * \param[in] fireTablePtr the local firing table with neuron ids of fired neuron
+ * \param[in] fireCnt the number of fired neurons in local firing table
+ * \param[in] simTime the current time step, stored as neuron firing time entry
+ */
+__device__ void gpu_updateLTP(int* fireTablePtr, short int* fireGrpId, volatile unsigned int& fireCnt, int& simTime) {
 	for(int pos=threadIdx.x/LTP_GROUPING_SZ; pos < fireCnt; pos += (blockDim.x/LTP_GROUPING_SZ))  {
 		// each neuron has two variable pre and pre_exc
 		// pre: number of pre-neuron
 		// pre_exc: number of neuron had has plastic connections
 		short int grpId = fireGrpId[pos];
+
 		// STDP calculation: the post-synaptic neron fires after the arrival of pre-synaptic neuron's spike
 		if (groupConfigGPU[grpId].WithSTDP) { // MDR, FIXME this probably will cause more thread divergence than need be...
 			int  nid   = fireTablePtr[pos];
@@ -591,18 +580,22 @@ void SNN::setSpikeGenBit_GPU(int nid, int grp) {
 	snnRuntimeData.spikeGenBits[nidIndex] |= (1 << nidBitPos);
 }
 
-
-
-///////////////////////////////////////////////////////////////////////////
-/// Device KERNEL function:     kernel_findFiring
-// -----------------------
-// KERNEL: findFiring
-// -----------------------
-// This kernel is responsible for finding the neurons that need to be fired.
-// We use a buffered firing table that allows neuron to gradually load
-// the buffer and make it easy to carry out the calculations in a single group.
-// A single firing function is used for simple neurons and also for poisson neurons
-///////////////////////////////////////////////////////////////////////////
+/*
+ * \brief This kernel is responsible for finding the neurons that need to be fired.
+ *
+ * We use a buffered firing table that allows neuron to gradually load
+ * the buffer and make it easy to carry out the calculations in a single group.
+ * A single function is used for simple neurons and also for poisson neurons.
+ * The function also update LTP
+ *
+ * device access: spikeCountD2SecGPU, spikeCountD1SecGPU
+ * net access: numNReg numNPois, numN, sim_with_stdp, sim_in_testing, sim_with_homeostasis, maxSpikesD1, maxSpikesD2
+ * grp access: Type, spikeGen, Noffset, withSpikeCounter, spkCntBufPos, StartN, WithSTP, avgTimeScale
+               WithSTDP, WithESTDP, WithISTDP, WithESTDPCurve, With ISTDPCurve, all STDP parameters
+ * rtd access: poissonRandPtr, poissonFireRate, spkCntBuf, nSpikeCnt, voltage, recovery, Izh_c, Izh_d
+ *             cumulativePre, Npre_plastic, synSpikeTime, lastSpikeTime, wtChange,
+ *             avgFiring
+ */
 __global__ 	void kernel_findFiring (int t, int sec, int simTime) {
 	__shared__ volatile unsigned int fireCnt;
 	__shared__ volatile unsigned int fireCntTest;
@@ -664,7 +657,7 @@ __global__ 	void kernel_findFiring (int t, int sec, int simTime) {
 
 		// loop through a few times to ensure that we have added/processed all spikes that need to be written
 		// if the buffer is small relative to the number of spikes needing to be written, we may have to empty the buffer a few times...
-		for (uint8_t c=0;c<2;c++) {
+		for (int c = 0; c < 2; c++) {
 			// we first increment fireCntTest to make sure we haven't filled the buffer
 			if (needToWrite)
 				fireId = atomicAdd((int*)&fireCntTest, 1);
@@ -685,11 +678,11 @@ __global__ 	void kernel_findFiring (int t, int sec, int simTime) {
 
 			__syncthreads();
 
-			// table is full.. dump the local table to the global table before proceeding
+			// the local firing table is full. dump the local firing table to the global firing table before proceeding
 			if (fireCntTest >= (FIRE_CHUNK_CNT)) {
 
 				// clear the table and update...
-				int retCode = newFireUpdate(fireTable,  fireGrpId, fireCnt, fireCntD1, simTime);
+				int retCode = updateNewFirings(fireTable,  fireGrpId, fireCnt, fireCntD1, simTime);
 				if (retCode != 0) return;
 				// update based on stdp rule
 				// KILLME !!! if (simTime > 0))
@@ -710,7 +703,7 @@ __global__ 	void kernel_findFiring (int t, int sec, int simTime) {
 
 	// few more fired neurons are left. we update their firing state here..
 	if (fireCnt) {
-		int retCode = newFireUpdate(fireTable, fireGrpId, fireCnt, fireCntD1, simTime);
+		int retCode = updateNewFirings(fireTable, fireGrpId, fireCnt, fireCntD1, simTime);
 		if (retCode != 0) return;
 
 		if (networkConfigGPU.sim_with_stdp && !networkConfigGPU.sim_in_testing)
@@ -976,7 +969,7 @@ __global__ void kernel_globalGroupStateUpdate (int t)
 /*!
  * \brief This function is called for updat STP and decay coductance every time step 
  *
- * net access sim_with_conductance, sim_with_NMDA_rise, sim_with_GABAb_rise, numNReg, numNPois, numN
+ * net access sim_with_conductance, sim_with_NMDA_rise, sim_with_GABAb_rise, numNReg, numNPois, numN, STP_Pitch, maxDelay
  * grp access WithSTP 
  * rtd access gAMPA, gNMDA_r, gNMDA_d, gNMDA, gBABAa, gGABAb_r, gGABAb_d, gGABAb
  * rtd access stpu, stpx
