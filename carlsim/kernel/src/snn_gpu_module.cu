@@ -46,10 +46,8 @@
 
 #define ROUNDED_TIMING_COUNT  (((1000+MAX_SYN_DELAY+1)+127) & ~(127))  // (1000+maxDelay_) rounded to multiple 128
 
-#define  FIRE_CHUNK_CNT    (512)
-
-#define LOG_WARP_SIZE		(5)
-#define WARP_SIZE			(1 << LOG_WARP_SIZE)
+#define FIRE_CHUNK_CNT 512
+#define WARP_SIZE 32
 
 ///////////////////////////////////////////////////////////////////
 // Some important ideas that explains the GPU execution are as follows:
@@ -166,12 +164,11 @@ __device__ inline bool getPoissonSpike_GPU (int& nid)
 	return runtimeDataGPU.poissonRandPtr[nid-networkConfigGPU.numNReg]*(1000.0f/RNG_rand48::MAX_RANGE) < runtimeDataGPU.poissonFireRate[nid-networkConfigGPU.numNReg];
 }
 
-///////////////////////////////////////////////////////////////////
-// Device local function:      kerenl_updateTimeTable			///
-// KERNEL: After every iteration we update the timing table		///
-// so that we have the new values of the fired neurons for the	///
-// current time t.												///
-///////////////////////////////////////////////////////////////////
+/*!
+ * \brief After every time step we update the time table
+ *
+ * Only one cuda thread is required for updating the time table
+ */
 __global__ void kernel_updateTimeTable(int t)
 {
    if ( threadIdx.x == 0 && blockIdx.x == 0) {
@@ -349,7 +346,7 @@ __device__ void resetFiredNeuron(int& nid, short int & grpId, int& simTime)
 	}
 }
 
-/*
+/*!
  * \brief 1. Copy neuron id from local table to global firing table. 2. Reset all neuron properties of neuron id in local table
  *
  *
@@ -358,7 +355,7 @@ __device__ void resetFiredNeuron(int& nid, short int & grpId, int& simTime)
  * \param[in] fireCntD1 the number of neurons in local table that has fired with group's max delay > 1
  * \param[in] simTime the current time step, stored as neuron firing time  entry
  */
-__device__ void updateFiringCounter(volatile unsigned int& fireCnt, volatile unsigned int& fireCntD1, volatile unsigned int& cntD2, volatile unsigned int& cntD1, volatile int&  blkErrCode)
+__device__ void updateSpikeCount(volatile unsigned int& fireCnt, volatile unsigned int& fireCntD1, volatile unsigned int& cntD2, volatile unsigned int& cntD1, volatile int&  blkErrCode)
 {
 	int fireCntD2 = fireCnt - fireCntD1;
 
@@ -401,13 +398,13 @@ __device__ void updateFiringTable(int& nId, short int& grpId, volatile unsigned 
 
 __device__ int updateNewFirings(int* fireTablePtr, short int* fireGrpId,
                                 volatile unsigned int& fireCnt, volatile unsigned int& fireCntD1, int& simTime) {
-__shared__ volatile unsigned int cntD2;
-__shared__ volatile unsigned int cntD1;
-__shared__ volatile int blkErrCode;
+	__shared__ volatile unsigned int cntD2;
+	__shared__ volatile unsigned int cntD1;
+	__shared__ volatile int blkErrCode;
 
 	blkErrCode = 0;
 	if (0==threadIdx.x) {
-		updateFiringCounter(fireCnt, fireCntD1, cntD2, cntD1, blkErrCode);
+		updateSpikeCount(fireCnt, fireCntD1, cntD2, cntD1, blkErrCode);
 	}
 
 	__syncthreads();
@@ -580,7 +577,7 @@ void SNN::setSpikeGenBit_GPU(int nid, int grp) {
 	snnRuntimeData.spikeGenBits[nidIndex] |= (1 << nidBitPos);
 }
 
-/*
+/*!
  * \brief This kernel is responsible for finding the neurons that need to be fired.
  *
  * We use a buffered firing table that allows neuron to gradually load
@@ -965,7 +962,7 @@ __global__ void kernel_globalGroupStateUpdate (int t)
 	}
 }
 
-//******************************** UPDATE STP STATE  EVERY TIME STEP **********************************************
+//******************************** UPDATE STP STATE EVERY TIME STEP **********************************************
 /*!
  * \brief This function is called for updat STP and decay coductance every time step 
  *
@@ -1239,23 +1236,22 @@ __global__ void kernel_updateFiring2()
 }
 
 //****************************** GENERATE POST-SYNAPTIC CURRENT EVERY TIME-STEP  ****************************
-__device__ int generatePostSynapticSpike(int& simTime, int& firingId, int& myDelayIndex, volatile int& offset, bool unitDelay)
-{
+__device__ int generatePostSynapticSpike(int& simTime, int& firingId, int& myDelayIndex, volatile int& offset, bool unitDelay) {
 	int errCode = false;
 
 	// get the post synaptic information for specific delay
-	SynInfo post_info = runtimeDataGPU.postSynapticIds[offset+myDelayIndex];
+	SynInfo postInfo = runtimeDataGPU.postSynapticIds[offset + myDelayIndex];
 
-	// get neuron id
-	int nid = GET_CONN_NEURON_ID(post_info);//(post_info&POST_SYN_NEURON_MASK);
+	// get post-neuron id
+	int postNId = GET_CONN_NEURON_ID(postInfo);
 
 	// get synaptic id
-	int syn_id = GET_CONN_SYN_ID(post_info); //(post_info>>POST_SYN_NEURON_BITS)&POST_SYN_CONN_MASK;
+	int preSynId = GET_CONN_SYN_ID(postInfo);
 
 	// get the actual position of the synapses and other variables...
-	unsigned int pos_ns = runtimeDataGPU.cumulativePre[nid] + syn_id;
+	unsigned int prePos = runtimeDataGPU.cumulativePre[postNId] + preSynId;
 
-	short int pre_grpId = runtimeDataGPU.grpIds[firingId];
+	short int preGrpId = runtimeDataGPU.grpIds[firingId];
 	//short int pre_grpId = GET_FIRING_TABLE_GID(firingId);
 	//int pre_nid = GET_FIRING_TABLE_NID(firingId);
 
@@ -1263,49 +1259,49 @@ __device__ int generatePostSynapticSpike(int& simTime, int& firingId, int& myDel
 	// int  nid  = GET_FIRING_TABLE_NID(firingId);
 //	int    post_grpId;		// STP uses pre_grpId, STDP used post_grpId...
 //	findGrpId_GPU(nid, post_grpId);
-	int post_grpId = runtimeDataGPU.grpIds[nid];
+	short int postGrpId = runtimeDataGPU.grpIds[postNId];
 
-	if(post_grpId == -1)
+	if(postGrpId == -1)
 		return CURRENT_UPDATE_ERROR4;
 
 	// Got one spike from dopaminergic neuron, increase dopamine concentration in the target area
-	if (groupConfigGPU[pre_grpId].Type & TARGET_DA) {
-		atomicAdd(&(runtimeDataGPU.grpDA[post_grpId]), 0.04f);
+	if (groupConfigGPU[preGrpId].Type & TARGET_DA) {
+		atomicAdd(&(runtimeDataGPU.grpDA[postGrpId]), 0.04f);
 	}
 
-	setFiringBitSynapses(nid, syn_id);
+	setFiringBitSynapses(postNId, preSynId);
 
-	runtimeDataGPU.synSpikeTime[pos_ns] = simTime;		  //uncoalesced access
+	runtimeDataGPU.synSpikeTime[prePos] = simTime;		  //uncoalesced access
 
 	// STDP calculation: the post-synaptic neuron fires before the arrival of pre-synaptic neuron's spike
-	if (groupConfigGPU[post_grpId].WithSTDP && !networkConfigGPU.sim_in_testing)  {
-		int stdp_tDiff = simTime-runtimeDataGPU.lastSpikeTime[nid];
+	if (groupConfigGPU[postGrpId].WithSTDP && !networkConfigGPU.sim_in_testing)  {
+		int stdp_tDiff = simTime - runtimeDataGPU.lastSpikeTime[postNId];
 		if (stdp_tDiff >= 0) {
-			if (groupConfigGPU[post_grpId].WithESTDP) {
+			if (groupConfigGPU[postGrpId].WithESTDP) {
 				// Handle E-STDP curves
-				switch (groupConfigGPU[post_grpId].WithESTDPcurve) {
+				switch (groupConfigGPU[postGrpId].WithESTDPcurve) {
 				case EXP_CURVE: // exponential curve
 				case TIMING_BASED_CURVE: // sc curve
-					if (stdp_tDiff * groupConfigGPU[post_grpId].TAU_MINUS_INV_EXC < 25.0f)
-						runtimeDataGPU.wtChange[pos_ns] += STDP( stdp_tDiff, groupConfigGPU[post_grpId].ALPHA_MINUS_EXC, groupConfigGPU[post_grpId].TAU_MINUS_INV_EXC); // uncoalesced access
+					if (stdp_tDiff * groupConfigGPU[postGrpId].TAU_MINUS_INV_EXC < 25.0f)
+						runtimeDataGPU.wtChange[prePos] += STDP( stdp_tDiff, groupConfigGPU[postGrpId].ALPHA_MINUS_EXC, groupConfigGPU[postGrpId].TAU_MINUS_INV_EXC); // uncoalesced access
 					break;
 				default:
 					break;
 				}
 			}
-			if (groupConfigGPU[post_grpId].WithISTDP) {
+			if (groupConfigGPU[postGrpId].WithISTDP) {
 				// Handle I-STDP curves
-				switch (groupConfigGPU[post_grpId].WithISTDPcurve) {
+				switch (groupConfigGPU[postGrpId].WithISTDPcurve) {
 				case EXP_CURVE: // exponential curve
-					if ((stdp_tDiff * groupConfigGPU[post_grpId].TAU_MINUS_INV_INB) < 25.0f) { // LTD of inhibitory syanpse, which increase synapse weight
-						runtimeDataGPU.wtChange[pos_ns] -= STDP(stdp_tDiff, groupConfigGPU[post_grpId].ALPHA_MINUS_INB, groupConfigGPU[post_grpId].TAU_MINUS_INV_INB);
+					if ((stdp_tDiff * groupConfigGPU[postGrpId].TAU_MINUS_INV_INB) < 25.0f) { // LTD of inhibitory syanpse, which increase synapse weight
+						runtimeDataGPU.wtChange[prePos] -= STDP(stdp_tDiff, groupConfigGPU[postGrpId].ALPHA_MINUS_INB, groupConfigGPU[postGrpId].TAU_MINUS_INV_INB);
 					}
 					break;
 				case PULSE_CURVE: // pulse curve
-					if (stdp_tDiff <= groupConfigGPU[post_grpId].LAMBDA) { // LTP of inhibitory synapse, which decreases synapse weight
-						runtimeDataGPU.wtChange[pos_ns] -= groupConfigGPU[post_grpId].BETA_LTP;
-					} else if (stdp_tDiff <= groupConfigGPU[post_grpId].DELTA) { // LTD of inhibitory syanpse, which increase synapse weight
-						runtimeDataGPU.wtChange[pos_ns] -= groupConfigGPU[post_grpId].BETA_LTD;
+					if (stdp_tDiff <= groupConfigGPU[postGrpId].LAMBDA) { // LTP of inhibitory synapse, which decreases synapse weight
+						runtimeDataGPU.wtChange[prePos] -= groupConfigGPU[postGrpId].BETA_LTP;
+					} else if (stdp_tDiff <= groupConfigGPU[postGrpId].DELTA) { // LTD of inhibitory syanpse, which increase synapse weight
+						runtimeDataGPU.wtChange[prePos] -= groupConfigGPU[postGrpId].BETA_LTD;
 					}
 					break;
 				default:
@@ -1319,23 +1315,23 @@ __device__ int generatePostSynapticSpike(int& simTime, int& firingId, int& myDel
 }
 
 #define NUM_THREADS 			128
-#define EXCIT_READ_CHUNK_SZ		(NUM_THREADS>>1)
+#define EXCIT_READ_CHUNK_SZ		64
 
-//  KERNEL DESCRIPTION:-
-//  This kernel is required for updating and generating spikes for delays greater than 1 from the fired neuron. 
-//  The LTD computation is also executed by this approach kernel.
-__global__ void kernel_doCurrentUpdateD2(int simTimeMs, int simTimeSec, int simTime)
-{
-	__shared__	volatile int sh_neuronOffsetTable[EXCIT_READ_CHUNK_SZ+2];
-	__shared__	int sh_delayLength[EXCIT_READ_CHUNK_SZ+2];
-	__shared__	int sh_delayIndexStart[EXCIT_READ_CHUNK_SZ+2];
-	__shared__	int sh_firingId[EXCIT_READ_CHUNK_SZ+2];
-	//__shared__	int sh_axonDelay[EXCIT_READ_CHUNK_SZ+2];
+/*!
+ * \brief This kernel updates and generates spikes for delays greater than 1 from the fired neuron. 
+ *
+ *  The LTD computation is also executed by this approach kernel.
+ */
+__global__ void kernel_doCurrentUpdateD2(int simTimeMs, int simTimeSec, int simTime) {
+	__shared__	volatile int sh_neuronOffsetTable[EXCIT_READ_CHUNK_SZ + 2];
+	__shared__	int sh_delayLength[EXCIT_READ_CHUNK_SZ + 2];
+	__shared__	int sh_delayIndexStart[EXCIT_READ_CHUNK_SZ + 2];
+	__shared__	int sh_firingId[EXCIT_READ_CHUNK_SZ + 2];
 	__shared__ volatile int sh_NeuronCnt;
 
-	const int threadIdSwarp	= (threadIdx.x%WARP_SIZE);
-	const int swarpId		= (threadIdx.x/WARP_SIZE);
-	int updateCnt	  	= 0;
+	const int threadIdWarp = (threadIdx.x % WARP_SIZE);
+	const int warpId       = (threadIdx.x / WARP_SIZE);
+	int updateCnt          = 0;
 
 	__shared__ volatile int sh_blkErrCode;
 
@@ -1348,22 +1344,21 @@ __global__ void kernel_doCurrentUpdateD2(int simTimeMs, int simTimeSec, int simT
 	__syncthreads();
 
 	// stores the number of fired neurons at time t
-	int k      = spikeCountD2SecGPU - 1;
+	int k = spikeCountD2SecGPU - 1;
 
 	// stores the number of fired neurons at time (t - maxDelay_)
-	int k_end  = tex1Dfetch (timeTableD2GPU_tex, simTimeMs+1+timeTableD2GPU_tex_offset);
+	int k_end  = tex1Dfetch (timeTableD2GPU_tex, simTimeMs + 1 + timeTableD2GPU_tex_offset);
 
 	int t_pos  = simTimeMs;
 
 	// we need to read (k-k_end) neurons from the firing 
 	// table and do necesary updates for all these post-synaptic
 	// connection in these neurons..
-	while((k>=k_end) &&(k>=0)) {
-
+	while ((k >= k_end) && (k >= 0)) {
 		// at any point of time EXCIT_READ_CHUNK_SZ neurons
 		// read different firing id from the firing table
-		if (threadIdx.x<EXCIT_READ_CHUNK_SZ) {
-			int fPos = k - (EXCIT_READ_CHUNK_SZ*blockIdx.x) - threadIdx.x; 
+		if (threadIdx.x < EXCIT_READ_CHUNK_SZ) { // use 64 threads
+			int fPos = k - (EXCIT_READ_CHUNK_SZ * blockIdx.x) - threadIdx.x; 
 			if ((fPos >= 0) && (fPos >= k_end)) {
 
 				// get the neuron nid here....
@@ -1373,7 +1368,7 @@ __global__ void kernel_doCurrentUpdateD2(int simTimeMs, int simTimeSec, int simT
 
 				// find the time of firing based on the firing number fPos
 				while ( !((fPos >= tex1Dfetch(timeTableD2GPU_tex, t_pos+networkConfigGPU.maxDelay+timeTableD2GPU_tex_offset)) 
-					&& (fPos <  tex1Dfetch(timeTableD2GPU_tex, t_pos+networkConfigGPU.maxDelay+1+timeTableD2GPU_tex_offset)))) {
+					&& (fPos < tex1Dfetch(timeTableD2GPU_tex, t_pos+networkConfigGPU.maxDelay+1+timeTableD2GPU_tex_offset)))) {
 					t_pos--;
 				}
 
@@ -1401,7 +1396,7 @@ __global__ void kernel_doCurrentUpdateD2(int simTimeMs, int simTimeSec, int simT
 		// post-synaptic firing, then we break the loop.
 		int cnt = sh_NeuronCnt;
 		updateCnt += cnt;
-		if (cnt==0) {
+		if (cnt == 0) {
 			break;
 		}
 
@@ -1410,13 +1405,12 @@ __global__ void kernel_doCurrentUpdateD2(int simTimeMs, int simTimeSec, int simT
 		// needs to generate (numPostSynapses/maxDelay_) spikes for every fired neuron, every second
 		// for numPostSynapses=500,maxDelay_=20, we need to generate 25 spikes for each fired neuron
 		// for numPostSynapses=600,maxDelay_=20, we need to generate 30 spikes for each fired neuron 
-		for (int pos=swarpId; pos < cnt; pos += (NUM_THREADS/WARP_SIZE)) {
+		for (int pos=warpId; pos < cnt; pos += (NUM_THREADS/WARP_SIZE)) {
 
-			int   delId     = threadIdSwarp;
+			int delId = threadIdWarp;
 
-			while(delId < sh_delayLength[pos]) {
-
-			int delIndex = sh_delayIndexStart[pos]+delId;
+			while (delId < sh_delayLength[pos]) {
+				int delIndex = sh_delayIndexStart[pos]+delId;
 
 				sh_blkErrCode = generatePostSynapticSpike(simTime,
 						sh_firingId[pos],				// presynaptic nid
@@ -1442,65 +1436,64 @@ __global__ void kernel_doCurrentUpdateD2(int simTimeMs, int simTimeSec, int simT
 	__syncthreads();
 }
 
-//  KERNEL DESCRIPTION:-
-//  This kernel is required for updating and generating spikes on connections
-//  with a delay of 1ms from the fired neuron. This function looks
-//  mostly like the previous kernel but has been optimized for a fixed delay of 1ms. 
-//  Ultimately we may merge this kernel with the previous kernel.
-__global__ void kernel_doCurrentUpdateD1(int simTimeMs, int simTimeSec, int simTime)
-{
+/*!
+ * \brief This kernel updating and generating spikes on connections with a delay of 1ms from the fired neuron.
+ *
+ * This function looks mostly like kernel_doCurrentUpdateD2() but has been optimized for a fixed delay of 1ms. 
+ * Ultimately we may merge this kernel with the kernel_doCurrentUpdateD2().
+ */
+__global__ void kernel_doCurrentUpdateD1(int simTimeMs, int simTimeSec, int simTime) {
 	__shared__ volatile	int sh_NeuronCnt;
-	__shared__ volatile int sh_neuronOffsetTable[NUM_THREADS/WARP_SIZE+2];
-//		__shared__	int sh_firedTimeTable[NUM_THREADS/WARP_SIZE+2];
-	__shared__	int sh_delayLength[NUM_THREADS/WARP_SIZE+2];
-	__shared__	int sh_firingId[NUM_THREADS/WARP_SIZE+2];
-	__shared__	int sh_delayIndexStart[NUM_THREADS/WARP_SIZE+2];
-	__shared__	int sh_timing;
+	__shared__ volatile int sh_neuronOffsetTable[NUM_THREADS / WARP_SIZE + 2];
+	__shared__ int sh_delayLength[NUM_THREADS / WARP_SIZE + 2];
+	__shared__ int sh_firingId[NUM_THREADS / WARP_SIZE + 2];
+	__shared__ int sh_delayIndexStart[NUM_THREADS / WARP_SIZE + 2];
+	__shared__ int sh_timing;
 
-	const int swarpId		= threadIdx.x/WARP_SIZE;  // swarp id within warp
-	const int numSwarps     = blockDim.x/WARP_SIZE;   // number of sub-warps (swarps)
-	const int threadIdSwarp	= threadIdx.x%WARP_SIZE;  // thread id within swarp
+	const int warpId       = threadIdx.x / WARP_SIZE;  // warp id
+	const int numWarps     = blockDim.x / WARP_SIZE;   // number of warp
+	const int threadIdWarp = threadIdx.x % WARP_SIZE;  // thread id within a warp
 
 	__shared__ volatile int sh_blkErrCode;
 
 	// load the time table for neuron firing
 	int computedNeurons = 0;
-	if (0==threadIdx.x) {
-		sh_timing = timeTableD1GPU[simTimeMs+networkConfigGPU.maxDelay]; // ??? check check ???
+	if (threadIdx.x == 0) {
+		sh_timing = timeTableD1GPU[simTimeMs + networkConfigGPU.maxDelay]; // ??? check check ???
 	}
 	__syncthreads();
 
-	int kPos = sh_timing + (blockIdx.x*numSwarps);
+	int kPos = sh_timing + (blockIdx.x * numWarps);
 
 	__syncthreads();
 
-	// Do as long as we have some valid neuron
-	while((kPos >=0)&&(kPos < spikeCountD1SecGPU)) {
+	// Do current update as long as we have some valid neuron
+	while ((kPos >= 0) && (kPos < spikeCountD1SecGPU)) {
 		int fPos = -1;
-		// a group of threads loads the delay information
-		if (threadIdx.x < numSwarps) {
+		// a group of threads (4 threads) loads the delay information
+		if (threadIdx.x < numWarps) {
 			sh_neuronOffsetTable[threadIdx.x] = -1;
 			fPos = kPos + threadIdx.x;
 
 			// find the neuron nid and also delay information from fPos
-			if((fPos>=0)&&(fPos < spikeCountD1SecGPU)) {
-				atomicAdd((int*)&sh_NeuronCnt,1);
+			if ((fPos >= 0) && (fPos < spikeCountD1SecGPU)) {
+				atomicAdd((int*)&sh_NeuronCnt, 1);
 				//int val  = runtimeDataGPU.firingTableD1[fPos];
 				//int nid  = GET_FIRING_TABLE_NID(val);
 				int nid = runtimeDataGPU.firingTableD1[fPos];
-				int tPos = (networkConfigGPU.maxDelay+1)*nid;
+				int tPos = (networkConfigGPU.maxDelay + 1) * nid;
 				//sh_firingId[threadIdx.x] 	 	 = val;
 				sh_firingId[threadIdx.x] = nid;
-				sh_neuronOffsetTable[threadIdx.x]= runtimeDataGPU.cumulativePost[nid];
-				sh_delayLength[threadIdx.x]      = runtimeDataGPU.postDelayInfo[tPos].delay_length;
-				sh_delayIndexStart[threadIdx.x]  = runtimeDataGPU.postDelayInfo[tPos].delay_index_start;
+				sh_neuronOffsetTable[threadIdx.x] = runtimeDataGPU.cumulativePost[nid];
+				sh_delayLength[threadIdx.x]       = runtimeDataGPU.postDelayInfo[tPos].delay_length;
+				sh_delayIndexStart[threadIdx.x]   = runtimeDataGPU.postDelayInfo[tPos].delay_index_start;
 			}
 		}
 
 		__syncthreads();
 
 		// useful to measure the load balance for each block..
-		if(threadIdx.x==0)  computedNeurons += sh_NeuronCnt;
+		if(threadIdx.x==0) computedNeurons += sh_NeuronCnt;
 
 		// no more fired neuron from table... we just break from loop
 		if (sh_NeuronCnt==0) {
@@ -1509,23 +1502,23 @@ __global__ void kernel_doCurrentUpdateD1(int simTimeMs, int simTimeSec, int simT
 
 		__syncthreads();
 
-		int offset = sh_neuronOffsetTable[swarpId];
+		int offset = sh_neuronOffsetTable[warpId];
 
 		if (threadIdx.x == 0) {
 			sh_NeuronCnt = 0;
 		}
 
-		if (offset>=0) {
-			int delId=threadIdSwarp;
+		// 32 threads for generatePostSynapticSpike()
+		if (offset >= 0) {
+			int delId=threadIdWarp;
 
-			while(delId < sh_delayLength[swarpId]) {
-
-				int delIndex = (sh_delayIndexStart[swarpId]+delId);
+			while (delId < sh_delayLength[warpId]) {
+				int delIndex = (sh_delayIndexStart[warpId] + delId);
 
 				sh_blkErrCode = generatePostSynapticSpike(simTime,
-						sh_firingId[swarpId],				// presynaptic nid
+						sh_firingId[warpId],				// presynaptic nid
 						delIndex,							// delayIndex
-						sh_neuronOffsetTable[swarpId], 		// offset
+						sh_neuronOffsetTable[warpId], 		// offset
 						true);								// true for unit delay connection..
 
 				delId += WARP_SIZE;
@@ -1534,7 +1527,7 @@ __global__ void kernel_doCurrentUpdateD1(int simTimeMs, int simTimeSec, int simT
 
 		__syncthreads();
 
-		kPos = kPos + (gridDim.x*numSwarps);
+		kPos = kPos + (gridDim.x * numWarps);
 	}
 }
 
@@ -2876,8 +2869,8 @@ void SNN::allocateSNN_GPU() {
 
 	// map the timing table to texture.. saves a lot of headache in using shared memory
 	void* devPtr;
-	CUDA_CHECK_ERRORS(cudaGetSymbolAddress(&devPtr, timeTableD2GPU));
 	size_t offset;
+	CUDA_CHECK_ERRORS(cudaGetSymbolAddress(&devPtr, timeTableD2GPU));
 	CUDA_CHECK_ERRORS(cudaBindTexture(&offset, timeTableD2GPU_tex, devPtr, sizeof(int) * ROUNDED_TIMING_COUNT));
 	offset = offset / sizeof(int);
 	CUDA_CHECK_ERRORS(cudaGetSymbolAddress(&devPtr, timeTableD2GPU_tex_offset));

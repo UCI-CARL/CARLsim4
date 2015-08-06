@@ -27,6 +27,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "tutorial_3_plasticity", "do
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "tutorial_4_simple_weight_tuner", "doc\source\tutorial\4_simple_weight_tuner\tutorial_4_simple_weight_tuner.vcxproj", "{332BE526-A286-45A1-925E-0D6FAFCAF1B7}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "test_kernel", "projects\test_kernel\test_kernel.vcxproj", "{5B062223-52B5-40E5-B4D8-4D9CEF5E20AA}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Mixed Platforms = Debug|Mixed Platforms
@@ -192,6 +194,18 @@ Global
 		{332BE526-A286-45A1-925E-0D6FAFCAF1B7}.Release|Win32.Build.0 = Release|Win32
 		{332BE526-A286-45A1-925E-0D6FAFCAF1B7}.Release|x64.ActiveCfg = Release|x64
 		{332BE526-A286-45A1-925E-0D6FAFCAF1B7}.Release|x64.Build.0 = Release|x64
+		{5B062223-52B5-40E5-B4D8-4D9CEF5E20AA}.Debug|Mixed Platforms.ActiveCfg = Debug|x64
+		{5B062223-52B5-40E5-B4D8-4D9CEF5E20AA}.Debug|Mixed Platforms.Build.0 = Debug|x64
+		{5B062223-52B5-40E5-B4D8-4D9CEF5E20AA}.Debug|Win32.ActiveCfg = Debug|Win32
+		{5B062223-52B5-40E5-B4D8-4D9CEF5E20AA}.Debug|Win32.Build.0 = Debug|Win32
+		{5B062223-52B5-40E5-B4D8-4D9CEF5E20AA}.Debug|x64.ActiveCfg = Debug|x64
+		{5B062223-52B5-40E5-B4D8-4D9CEF5E20AA}.Debug|x64.Build.0 = Debug|x64
+		{5B062223-52B5-40E5-B4D8-4D9CEF5E20AA}.Release|Mixed Platforms.ActiveCfg = Release|Win32
+		{5B062223-52B5-40E5-B4D8-4D9CEF5E20AA}.Release|Mixed Platforms.Build.0 = Release|Win32
+		{5B062223-52B5-40E5-B4D8-4D9CEF5E20AA}.Release|Win32.ActiveCfg = Release|Win32
+		{5B062223-52B5-40E5-B4D8-4D9CEF5E20AA}.Release|Win32.Build.0 = Release|Win32
+		{5B062223-52B5-40E5-B4D8-4D9CEF5E20AA}.Release|x64.ActiveCfg = Release|x64
+		{5B062223-52B5-40E5-B4D8-4D9CEF5E20AA}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
