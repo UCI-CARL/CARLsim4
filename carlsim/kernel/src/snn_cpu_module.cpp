@@ -289,7 +289,7 @@ void SNN::generatePostSpike(unsigned int pre_i, unsigned int idx_d, unsigned int
 	// mulSynFast/Slow per synapse or storing a pointer to grpConnectInfo_s)
 	// mulSynFast will be applied to fast currents (either AMPA or GABAa)
 	// mulSynSlow will be applied to slow currents (either NMDA or GABAb)
-	short int mulIndex = snnRuntimeData.cumConnIdPre[pos_i];
+	short int mulIndex = snnRuntimeData.connIdsPreIdx[pos_i];
 	assert(mulIndex>=0 && mulIndex<numConnections);
 
 
@@ -624,7 +624,7 @@ void SNN::updateWeights() {
 				//		KERNEL_DEBUG("%1.2f %1.2f \t", wt[offset+j]*10, wtChange[offset+j]*10);
 				float effectiveWtChange = stdpScaleFactor_ * snnRuntimeData.wtChange[offset + j];
 //				if (wtChange[offset+j])
-//					printf("connId=%d, wtChange[%d]=%f\n",cumConnIdPre[offset+j],offset+j,wtChange[offset+j]);
+//					printf("connId=%d, wtChange[%d]=%f\n",connIdsPreIdx[offset+j],offset+j,wtChange[offset+j]);
 
 				// homeostatic weight update
 				// FIXME: check WithESTDPtype and WithISTDPtype first and then do weight change update

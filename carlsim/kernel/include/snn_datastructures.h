@@ -216,7 +216,7 @@ typedef struct RuntimeData_s {
 	unsigned int* cumulativePost;
 	unsigned int* cumulativePre;
 
-	short int* cumConnIdPre;	//!< connectId, per synapse, presynaptic cumulative indexing
+	short int* connIdsPreIdx;	//!< connectId, per synapse, presynaptic cumulative indexing
 
 	short int* grpIds;
 

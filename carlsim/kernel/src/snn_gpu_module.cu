@@ -791,7 +791,7 @@ __global__ void kernel_globalConductanceUpdate (int t, int sec, int simTime) {
 					}
 
 					if (networkConfigGPU.sim_with_conductances) {
-						short int connId = runtimeDataGPU.cumConnIdPre[cum_pos+wtId];
+						short int connId = runtimeDataGPU.connIdsPreIdx[cum_pos+wtId];
 						if (type & TARGET_AMPA)
 							AMPA_sum += change*d_mulSynFast[connId];
 						if (type & TARGET_NMDA) {
@@ -2137,8 +2137,8 @@ void SNN::copyState(RuntimeData* dest, bool allocateMem) {
 	if(allocateMem)		CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->wt, sizeof(float)*numPreSynNet));
 	CUDA_CHECK_ERRORS( cudaMemcpy( dest->wt,snnRuntimeData.wt, sizeof(float)*numPreSynNet, kind));
 
-	if(allocateMem)		CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->cumConnIdPre, sizeof(short int)*numPreSynNet));
-	CUDA_CHECK_ERRORS( cudaMemcpy( dest->cumConnIdPre, snnRuntimeData.cumConnIdPre, sizeof(short int)*numPreSynNet, kind));
+	if(allocateMem)		CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->connIdsPreIdx, sizeof(short int)*numPreSynNet));
+	CUDA_CHECK_ERRORS( cudaMemcpy( dest->connIdsPreIdx, snnRuntimeData.connIdsPreIdx, sizeof(short int)*numPreSynNet, kind));
 
 	// we don't need these data structures if the network doesn't have any plastic synapses at all
 	// they show up in gpuUpdateLTP() and updateSynapticWeights(), two functions that do not get called if
@@ -2399,7 +2399,7 @@ void SNN::deleteObjects_GPU() {
 	CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData.stpu) );
 	CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData.stpx) );
 
-	CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData.cumConnIdPre) );
+	CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData.connIdsPreIdx) );
 
 	CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData.groupIdInfo) );
 	CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData.neuronAllocation) );

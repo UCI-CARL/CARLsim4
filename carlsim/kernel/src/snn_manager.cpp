@@ -856,7 +856,7 @@ void SNN::biasWeights(short int connId, float bias, bool updateWeightRange) {
 		// iterate over all presynaptic neurons
 		unsigned int pos_ij = cumIdx;
 		for (int j=0; j<snnRuntimeData.Npre[i]; pos_ij++, j++) {
-			if (snnRuntimeData.cumConnIdPre[pos_ij]==connId) {
+			if (snnRuntimeData.connIdsPreIdx[pos_ij]==connId) {
 				// apply bias to weight
 				float weight = snnRuntimeData.wt[pos_ij] + bias;
 
@@ -957,7 +957,7 @@ void SNN::scaleWeights(short int connId, float scale, bool updateWeightRange) {
 		// iterate over all presynaptic neurons
 		unsigned int pos_ij = cumIdx;
 		for (int j=0; j<snnRuntimeData.Npre[i]; pos_ij++, j++) {
-			if (snnRuntimeData.cumConnIdPre[pos_ij]==connId) {
+			if (snnRuntimeData.connIdsPreIdx[pos_ij]==connId) {
 				// apply bias to weight
 				float weight = snnRuntimeData.wt[pos_ij]*scale;
 
@@ -1246,7 +1246,7 @@ void SNN::setWeight(short int connId, int neurIdPre, int neurIdPost, float weigh
 		SynInfo* preId = &(snnRuntimeData.preSynapticIds[pos_ij]);
 		int pre_nid = GET_CONN_NEURON_ID((*preId));
 		if (GET_CONN_NEURON_ID((*preId))==neurIdPreReal) {
-			assert(snnRuntimeData.cumConnIdPre[pos_ij]==connId); // make sure we've got the right connection ID
+			assert(snnRuntimeData.connIdsPreIdx[pos_ij]==connId); // make sure we've got the right connection ID
 
 			snnRuntimeData.wt[pos_ij] = isExcitatoryGroup(connectConfigMap[connId].grpSrc) ? weight : -1.0*weight;
 			snnRuntimeData.maxSynWt[pos_ij] = isExcitatoryGroup(connectConfigMap[connId].grpSrc) ? maxWt : -1.0*maxWt;
@@ -1376,7 +1376,7 @@ void SNN::saveSimulation(FILE* fid, bool saveSynapseInfo) {
 					if (!fwrite(&(snnRuntimeData.maxSynWt[pos_i]),sizeof(float),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
 					if (!fwrite(&delay,sizeof(uint8_t),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
 					if (!fwrite(&plastic,sizeof(uint8_t),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
-					if (!fwrite(&(snnRuntimeData.cumConnIdPre[pos_i]),sizeof(short int),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
+					if (!fwrite(&(snnRuntimeData.connIdsPreIdx[pos_i]),sizeof(short int),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
 				}
 			}
 		}
@@ -2226,10 +2226,9 @@ void SNN::allocateRuntimeData() {
 	memset(mulSynFast, 0, sizeof(float) * MAX_CONN_PER_SNN);
 	memset(mulSynSlow, 0, sizeof(float) * MAX_CONN_PER_SNN);
 
-	snnRuntimeData.cumConnIdPre	= new short int[numPreSynNet];
-	memset(snnRuntimeData.cumConnIdPre, 0, sizeof(short int) * numPreSynNet);
+	snnRuntimeData.connIdsPreIdx	= new short int[numPreSynNet];
+	memset(snnRuntimeData.connIdsPreIdx, 0, sizeof(short int) * numPreSynNet);
 
-	//! Temporary array to hold pre-syn connections. will be deleted later if necessary
 	snnRuntimeData.preSynapticIds	= new SynInfo[numPreSynNet];
 	memset(snnRuntimeData.preSynapticIds, 0, sizeof(SynInfo) * numPreSynNet);
 	// size due to weights and maximum weights
@@ -2580,7 +2579,7 @@ void SNN::generateConnectionRuntime() {
 				snnRuntimeData.preSynapticIds[pre_pos] = SET_CONN_ID(it->nSrc, snnRuntimeData.Npost[it->nSrc], it->grpSrc);
 				snnRuntimeData.wt[pre_pos] = it->initWt;
 				snnRuntimeData.maxSynWt[pre_pos] = it->maxWt;
-				snnRuntimeData.cumConnIdPre[pre_pos] = it->connId;
+				snnRuntimeData.connIdsPreIdx[pre_pos] = it->connId;
 
 				snnRuntimeData.Npost[it->nSrc]++;
 				parsedConnections++;
@@ -2614,7 +2613,7 @@ void SNN::generateConnectionRuntime() {
 	//snnRuntimeData.preSynapticIds[pre_pos] = SET_CONN_ID(src, snnRuntimeData.Npost[src], srcGrp);
 	//snnRuntimeData.wt[pre_pos] 	  = synWt;
 	//snnRuntimeData.maxSynWt[pre_pos] = maxWt;
-	//snnRuntimeData.cumConnIdPre[pre_pos] = connId;
+	//snnRuntimeData.connIdsPreIdx[pre_pos] = connId;
 
 	//bool synWtType = GET_FIXED_PLASTIC(connProp);
 
@@ -4054,8 +4053,8 @@ void SNN::resetRuntimeData(bool deallocate) {
 
 	if (mulSynFast!=NULL && deallocate) delete[] mulSynFast;
 	if (mulSynSlow!=NULL && deallocate) delete[] mulSynSlow;
-	if (snnRuntimeData.cumConnIdPre!=NULL && deallocate) delete[] snnRuntimeData.cumConnIdPre;
-	mulSynFast=NULL; mulSynSlow=NULL; snnRuntimeData.cumConnIdPre=NULL;
+	if (snnRuntimeData.connIdsPreIdx!=NULL && deallocate) delete[] snnRuntimeData.connIdsPreIdx;
+	mulSynFast=NULL; mulSynSlow=NULL; snnRuntimeData.connIdsPreIdx=NULL;
 
 	if (snnRuntimeData.grpIds!=NULL && deallocate) delete[] snnRuntimeData.grpIds;
 	snnRuntimeData.grpIds=NULL;
@@ -4324,7 +4323,7 @@ std::vector< std::vector<float> > SNN::getWeightMatrix2D(short int connId) {
 		unsigned int pos_ij = snnRuntimeData.cumulativePre[postId];
 		for (int i=0; i<snnRuntimeData.Npre[postId]; i++, pos_ij++) {
 			// skip synapses that belong to a different connection ID
-			if (snnRuntimeData.cumConnIdPre[pos_ij] != connId) //connInfo->connId)
+			if (snnRuntimeData.connIdsPreIdx[pos_ij] != connId) //connInfo->connId)
 				continue;
 
 			// find pre-neuron ID and update ConnectionMonitor container
@@ -4709,7 +4708,7 @@ void SNN::updateSpikeMonitor(int grpId) {
 //			tmp_preSynapticIds[tmpPos]  = snnRuntimeData.preSynapticIds[oldPos];
 //			tmp_maxSynWt[tmpPos] 	    = snnRuntimeData.maxSynWt[oldPos];
 //			tmp_wt[tmpPos]              = snnRuntimeData.wt[oldPos];
-//			tmp_cumConnIdPre[tmpPos]	= snnRuntimeData.cumConnIdPre[oldPos];
+//			tmp_cumConnIdPre[tmpPos]	= snnRuntimeData.connIdsPreIdx[oldPos];
 //		}
 //	}
 //
@@ -4735,8 +4734,8 @@ void SNN::updateSpikeMonitor(int grpId) {
 //	cpuSnnSz.synapticInfoSize -= (sizeof(float)*numPreSynNet);
 //	cpuSnnSz.synapticInfoSize += (sizeof(float)*(tmp_numPreSynNet+100));
 //
-//	delete[] snnRuntimeData.cumConnIdPre;
-//	snnRuntimeData.cumConnIdPre = tmp_cumConnIdPre;
+//	delete[] snnRuntimeData.connIdsPreIdx;
+//	snnRuntimeData.connIdsPreIdx = tmp_cumConnIdPre;
 //	cpuSnnSz.synapticInfoSize -= (sizeof(short int)*numPreSynNet);
 //	cpuSnnSz.synapticInfoSize += (sizeof(short int)*(tmp_numPreSynNet+100));
 //
@@ -4894,7 +4893,7 @@ void SNN::updateSpikeMonitor(int grpId) {
 //	snnRuntimeData.preSynapticIds[pre_pos] = SET_CONN_ID(src, snnRuntimeData.Npost[src], srcGrp);
 //	snnRuntimeData.wt[pre_pos] 	  = synWt;
 //	snnRuntimeData.maxSynWt[pre_pos] = maxWt;
-//	snnRuntimeData.cumConnIdPre[pre_pos] = connId;
+//	snnRuntimeData.connIdsPreIdx[pre_pos] = connId;
 //
 //	bool synWtType = GET_FIXED_PLASTIC(connProp);
 //
