@@ -168,12 +168,14 @@ __device__ inline bool getPoissonSpike_GPU (int& nid)
  * \brief After every time step we update the time table
  *
  * Only one cuda thread is required for updating the time table
+ *
+ * \param[in] simTime The current time step
  */
-__global__ void kernel_updateTimeTable(int t)
+__global__ void kernel_updateTimeTable(int simTime)
 {
-   if ( threadIdx.x == 0 && blockIdx.x == 0) {
-		timeTableD2GPU[t+networkConfigGPU.maxDelay+1]  = spikeCountD2SecGPU;
-		timeTableD1GPU[t+networkConfigGPU.maxDelay+1]  = spikeCountD1SecGPU;
+   if (threadIdx.x == 0 && blockIdx.x == 0) {
+		timeTableD2GPU[simTime + networkConfigGPU.maxDelay + 1] = spikeCountD2SecGPU;
+		timeTableD1GPU[simTime + networkConfigGPU.maxDelay + 1] = spikeCountD1SecGPU;
    }
    __syncthreads();									     
 }
@@ -439,31 +441,37 @@ __device__ int updateNewFirings(int* fireTablePtr, short int* fireGrpId,
 }
 
 // zero GPU spike counts
-__global__ void gpu_resetSpikeCnt(int _startGrp, int _endGrp)
-{
-	//global calls are done serially while device calls are done per thread
-	//because this is a global call we want to make sure it only executes
-	//once (i.e. for a particular index).  
-	//TODO: I need to test and make sure this still works. TAGS:UPDATE.
-	if((blockIdx.x==0)&&(threadIdx.x==0)) {
-		//groupConfig seems to be accessible. -- KDC
-		for( int grpId=_startGrp; grpId < _endGrp; grpId++) {
-			int startN = groupConfigGPU[grpId].StartN;
-			int endN   = groupConfigGPU[grpId].EndN+1;
-			for (int i=startN; i < endN; i++){
-				runtimeDataGPU.nSpikeCnt[i] = 0;
-			}
+__global__ void gpu_resetSpikeCnt(int _grpId) {
+	const int totBuffers = loadBufferCount;
+
+	for (int bufPos = blockIdx.x; bufPos < totBuffers; bufPos += gridDim.x) {
+		// KILLME !!! This can be further optimized ....
+		// instead of reading each neuron group separately .....
+		// read a whole buffer and use the result ......
+		int2 threadLoad  = getStaticThreadLoad(bufPos);
+		int nid = (STATIC_LOAD_START(threadLoad) + threadIdx.x);
+		int  lastId = STATIC_LOAD_SIZE(threadLoad);
+		int  grpId = STATIC_LOAD_GROUP(threadLoad);
+
+		if ((grpId == _grpId) && (threadIdx.x < lastId) && (nid < networkConfigGPU.numN)) {
+			runtimeDataGPU.nSpikeCnt[nid] = 0;
 		}
 	}
 }
 
 // wrapper to call resetSpikeCnt
-void SNN::resetSpikeCnt_GPU(int _startGrp, int _endGrp) {
+void SNN::resetSpikeCnt_GPU(int grpId) {
 	checkAndSetGPUDevice();
 
 	int blkSize  = 128;
 	int gridSize = 64;
-	gpu_resetSpikeCnt<<<gridSize,blkSize>>> (_startGrp,_endGrp);
+
+	assert(grpId >= ALL); // ALL == -1
+
+	if (grpId == ALL)
+		CUDA_CHECK_ERRORS(cudaMemset((void*)gpuRuntimeData.nSpikeCnt, 0, sizeof(int) * numN));
+	else
+		gpu_resetSpikeCnt<<<gridSize,blkSize>>>(grpId);
 }
 
 __device__ void findGrpId_GPU(int& nid, int& grpId)
@@ -485,7 +493,7 @@ __device__ void findGrpId_GPU(int& nid, int& grpId)
 }
 
 #define LTP_GROUPING_SZ 16 //!< synaptic grouping for LTP Calculation
-/*
+/*!
  * \brief Computes the STDP update values for each of fired neurons stored in the local firing table.
  *
  * \param[in] fireTablePtr the local firing table with neuron ids of fired neuron

@@ -730,7 +730,7 @@ int SNN::runNetwork(int _nsec, int _nmsec, bool printRunSummary, bool copyState)
 
 	// reset all spike counters
 	if (simMode_==GPU_MODE)
-		resetSpikeCnt_GPU(0,numGroups);
+		resetSpikeCnt_GPU(ALL);
 	else
 		resetSpikeCnt(ALL);
 

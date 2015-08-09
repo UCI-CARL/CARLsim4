@@ -844,7 +844,7 @@ private:
 
 	void resetFiringInformation_GPU(); //!< resets the firing information in GPU_MODE when updateNetwork is called
 	void resetGPUTiming();
-	void resetSpikeCnt_GPU(int _startGrp, int _endGrp); //!< Utility function to clear spike counts in the GPU code.
+	void resetSpikeCnt_GPU(int gprId); //!< Utility function to clear spike counts in the GPU code.
 
 	/*!
 	 * \brief reset spike counter to zero in GPU mode
