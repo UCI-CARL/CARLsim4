@@ -537,9 +537,11 @@ void  SNN::globalStateUpdate() {
 
 		for(int i=groupConfig[g].StartN; i <= groupConfig[g].EndN; i++) {
 			assert(i < numNReg);
+			// update average firing rate for homeostasis
 			if (groupConfig[g].WithHomeostasis)
 				snnRuntimeData.avgFiring[i] *= groupConfig[g].avgTimeScale_decay;
 
+			// update conductances
 			if (sim_with_conductances) {
 				// COBA model
 
@@ -695,9 +697,11 @@ void SNN::updateWeights() {
 	}
 }
 
-// This function is called every second by simulator...
-// This function updates the firingTable by removing older firing values...
-void SNN::updateFiringTable() {
+/*!
+ * \brief This function is called every second by SNN::runNetwork(). It updates the firingTableD1(D2) and
+ * timeTableD1(D2) by removing older firing information.
+ */
+void SNN::shiftSpikeTables() {
 	// Read the neuron ids that fired in the last maxDelay_ seconds
 	// and put it to the beginning of the firing table...
 	for(int p=timeTableD2[999],k=0;p<timeTableD2[999+maxDelay_+1];p++,k++) {

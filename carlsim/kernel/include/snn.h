@@ -842,7 +842,7 @@ private:
 	void globalStateUpdate_GPU();
 	void initGPU(int gridSize, int blkSize);
 
-	void resetFiringInformation_GPU(); //!< resets the firing information in GPU_MODE when updateNetwork is called
+	//void resetFiringInformation_GPU(); //!< resets the firing information in GPU_MODE when updateNetwork is called
 	void resetGPUTiming();
 	void resetSpikeCnt_GPU(int gprId); //!< Utility function to clear spike counts in the GPU code.
 
@@ -860,8 +860,8 @@ private:
 	void spikeGeneratorUpdate_GPU();
 	void startGPUTiming();
 	void stopGPUTiming();
-	void updateFiringTable();
-	void updateFiringTable_GPU();
+	void shiftSpikeTables();
+	void shiftSpikeTables_GPU();
 	void updateNetwork_GPU(bool resetFiringInfo); //!< Allows parameters to be reset in the middle of the simulation
 	void updateWeights();
 	void updateWeights_GPU();

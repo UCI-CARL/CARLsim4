@@ -720,8 +720,7 @@ int SNN::runNetwork(int _nsec, int _nmsec, bool printRunSummary, bool copyState)
 	if (simTime==0 && printRunSummary) {
 		KERNEL_INFO("");
 		if (simMode_==GPU_MODE) {
-			KERNEL_INFO("******************** Running GPU Simulation on GPU %d ***************************",
-			ithGPU_);
+			KERNEL_INFO("******************** Running GPU Simulation on GPU %d ***************************", ithGPU_);
 		} else {
 			KERNEL_INFO("********************      Running CPU Simulation      ***************************");
 		}
@@ -736,20 +735,20 @@ int SNN::runNetwork(int _nsec, int _nmsec, bool printRunSummary, bool copyState)
 
 	// store current start time for future reference
 	simTimeRunStart = simTime;
-	simTimeRunStop  = simTime+runDurationMs;
-	assert(simTimeRunStop>=simTimeRunStart); // check for arithmetic underflow
+	simTimeRunStop  = simTime + runDurationMs;
+	assert(simTimeRunStop >= simTimeRunStart); // check for arithmetic underflow
 
 	// ConnectionMonitor is a special case: we might want the first snapshot at t=0 in the binary
 	// but updateTime() is false for simTime==0.
 	// And we cannot put this code in ConnectionMonitorCore::init, because then the user would have no
 	// way to call ConnectionMonitor::setUpdateTimeIntervalSec before...
-	if (simTime==0 && numConnectionMonitor) {
+	if (simTime == 0 && numConnectionMonitor) {
 		updateConnectionMonitor();
 	}
 
-	// set the Poisson generation time slice to be at the run duration up to PROPOGATED_BUFFER_SIZE ms.
+	// set the Poisson generation time slice to be at the run duration up to 1000 ms.
 	// \TODO: should it be PROPAGATED_BUFFER_SIZE-1 or PROPAGATED_BUFFER_SIZE ?
-	setGrpTimeSlice(ALL, MAX(1,MIN(runDurationMs,PROPAGATED_BUFFER_SIZE-1)));
+	setGrpTimeSlice(ALL, MAX(1, MIN(runDurationMs, 1000)));
 
 	CUDA_RESET_TIMER(timer);
 	CUDA_START_TIMER(timer);
@@ -789,9 +788,9 @@ int SNN::runNetwork(int _nsec, int _nmsec, bool printRunSummary, bool copyState)
 			}
 
 			if(simMode_ == CPU_MODE)
-				updateFiringTable();
+				shiftSpikeTables();
 			else
-				updateFiringTable_GPU();
+				shiftSpikeTables_GPU();
 		}
 
 		if(simMode_ == GPU_MODE){
@@ -4491,9 +4490,10 @@ void SNN::updateSpikeGeneratorsInit() {
 	}
 }
 
-//! update SNN::maxSpikesD1, SNN::maxSpikesD2 and allocate sapce for SNN::firingTableD1 and SNN::firingTableD2
 /*!
- * \return maximum delay in groups
+ * \brief Allocate and reset SNN::maxSpikesD1, SNN::maxSpikesD2 and allocate sapce for SNN::firingTableD1 and SNN::firingTableD2
+ *
+ * \note SpikeTables include firingTableD1(D2) and timeTableD1(D2)
  */
 void SNN::allocateSpikeTables() {
 	snnRuntimeData.firingTableD2 = new int[maxSpikesD2];

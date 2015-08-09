@@ -128,35 +128,35 @@ void initQuickSynIdTable()
 	CUDA_CHECK_ERRORS( cudaMemcpy( devPtr, quickSynIdTable, sizeof(quickSynIdTable), cudaMemcpyHostToDevice));
 }
 
-__device__ inline bool isPoissonGroup(short int& grpId, int& nid)
+__device__ inline bool isPoissonGroup(short int grpId, int nid)
 {
 	return (groupConfigGPU[grpId].Type & POISSON_NEURON);
 }
 
-__device__ inline void setFiringBitSynapses(int& nid, int& syn_id)
+__device__ inline void setFiringBitSynapses(int nid, int synId)
 {
-	uint32_t* tmp_I_set_p = ((uint32_t*)((char*) runtimeDataGPU.I_set + ((syn_id>>5)*networkConfigGPU.I_setPitch)) + nid);
-	int atomicVal = atomicOr(tmp_I_set_p, 1 <<(syn_id%32));
+	uint32_t* tmp_I_set_p = ((uint32_t*)((char*)runtimeDataGPU.I_set + ((synId >> 5) * networkConfigGPU.I_setPitch)) + nid);
+	int atomicVal = atomicOr(tmp_I_set_p, 1 << (synId % 32));
 }
 
-__device__ inline uint32_t* getFiringBitGroupPtr(int& nid, int& synGrpId)
+__device__ inline uint32_t* getFiringBitGroupPtr(int nid, int synId)
 {
-	uint32_t* tmp_ptr = (((uint32_t*)((char*) runtimeDataGPU.I_set + synGrpId*networkConfigGPU.I_setPitch)) + nid);
+	uint32_t* tmp_ptr = (((uint32_t*)((char*)runtimeDataGPU.I_set + synId * networkConfigGPU.I_setPitch)) + nid);
 	return tmp_ptr;
 }
 
-__device__ inline uint32_t getSTPBufPos(int nid, uint32_t t)
+__device__ inline int getSTPBufPos(int nid, int simTime)
 {
 //  return (((t%STP_BUF_SIZE)*networkConfigGPU.STP_Pitch) + nid);
-  return ( (t%(networkConfigGPU.maxDelay+1))*networkConfigGPU.STP_Pitch + nid);
+  return ((simTime % (networkConfigGPU.maxDelay + 1)) * networkConfigGPU.STP_Pitch + nid);
 }
 
-__device__ inline int2 getStaticThreadLoad(int& bufPos)
+__device__ inline int2 getStaticThreadLoad(int bufPos)
 {
 	return (runtimeDataGPU.neuronAllocation[bufPos]);
 }
 
-__device__ inline bool getPoissonSpike_GPU (int& nid)
+__device__ inline bool getPoissonSpike_GPU (int nid)
 {
 	// Random number value is less than the poisson firing probability
 	// if poisson firing probability is say 1.0 then the random poisson ptr
@@ -318,7 +318,7 @@ int SNN::allocateStaticLoad(int bufSize) {
 /////////////////////////////////////////////////////////////////////////////////
 
 // update the spike-dependent part of du/dt and dx/dt
-__device__ void firingUpdateSTP (int& nid, int& simTime, short int&  grpId) {
+__device__ void firingUpdateSTP (int nid, int simTime, short int grpId) {
 	// we need to retrieve the STP values from the right buffer position (right before vs. right after the spike)
 	int ind_plus  = getSTPBufPos(nid, simTime);
 	int ind_minus = getSTPBufPos(nid, (simTime-1));
@@ -332,7 +332,7 @@ __device__ void firingUpdateSTP (int& nid, int& simTime, short int&  grpId) {
 	runtimeDataGPU.stpx[ind_plus] -= runtimeDataGPU.stpu[ind_plus]*runtimeDataGPU.stpx[ind_minus];
 }
 
-__device__ void resetFiredNeuron(int& nid, short int & grpId, int& simTime)
+__device__ void resetFiredNeuron(int nid, short int grpId, int simTime)
 {
 	// \FIXME \TODO: convert this to use coalesced access by grouping into a
 	// single 16 byte access. This might improve bandwidth performance
@@ -382,7 +382,7 @@ __device__ void updateSpikeCount(volatile unsigned int& fireCnt, volatile unsign
 }
 
 // update the firing table...
-__device__ void updateFiringTable(int& nId, short int& grpId, volatile unsigned int& cntD2, volatile unsigned int& cntD1)
+__device__ void updateFiringTable(int nId, short int grpId, volatile unsigned int& cntD2, volatile unsigned int& cntD1)
 {
 	int pos;
 	if (groupConfigGPU[grpId].MaxDelay == 1) {
@@ -399,13 +399,13 @@ __device__ void updateFiringTable(int& nId, short int& grpId, volatile unsigned 
 }
 
 __device__ int updateNewFirings(int* fireTablePtr, short int* fireGrpId,
-                                volatile unsigned int& fireCnt, volatile unsigned int& fireCntD1, int& simTime) {
+                                volatile unsigned int& fireCnt, volatile unsigned int& fireCntD1, int simTime) {
 	__shared__ volatile unsigned int cntD2;
 	__shared__ volatile unsigned int cntD1;
 	__shared__ volatile int blkErrCode;
 
 	blkErrCode = 0;
-	if (0==threadIdx.x) {
+	if (threadIdx.x == 0) {
 		updateSpikeCount(fireCnt, fireCntD1, cntD2, cntD1, blkErrCode);
 	}
 
@@ -416,7 +416,7 @@ __device__ int updateNewFirings(int* fireTablePtr, short int* fireGrpId,
 	if (blkErrCode)
 		return blkErrCode;
 
-	for (int i=threadIdx.x; i < fireCnt; i+=(blockDim.x)) {
+	for (int i=threadIdx.x; i < fireCnt; i+= blockDim.x) {
 
 		// Read the firing id from the local table.....
 		int nid  = fireTablePtr[i];
@@ -474,12 +474,12 @@ void SNN::resetSpikeCnt_GPU(int grpId) {
 		gpu_resetSpikeCnt<<<gridSize,blkSize>>>(grpId);
 }
 
-__device__ void findGrpId_GPU(int& nid, int& grpId)
+__device__ void findGrpId_GPU(int nid, int grpId)
 {
 	for (int g=0; g < networkConfigGPU.numGroups; g++) {
 		//uint3 groupIdInfo = {1, 1, 1};
-		int startN  = tex1Dfetch (groupIdInfo_tex, g*3);
-		int endN    = tex1Dfetch (groupIdInfo_tex, g*3+1);
+		int startN  = tex1Dfetch(groupIdInfo_tex, g*3);
+		int endN    = tex1Dfetch(groupIdInfo_tex, g*3+1);
 		// printf("%d:%s s=%d e=%d\n", g, groupInfo[g].Name.c_str(), groupConfig[g].StartN, groupConfig[g].EndN);
 		//if ((nid >= groupIdInfo.x) && (nid <= groupIdInfo.y)) {
 		// grpId = groupIdInfo.z;
@@ -500,7 +500,7 @@ __device__ void findGrpId_GPU(int& nid, int& grpId)
  * \param[in] fireCnt the number of fired neurons in local firing table
  * \param[in] simTime the current time step, stored as neuron firing time entry
  */
-__device__ void gpu_updateLTP(int* fireTablePtr, short int* fireGrpId, volatile unsigned int& fireCnt, int& simTime) {
+__device__ void gpu_updateLTP(int* fireTablePtr, short int* fireGrpId, volatile unsigned int& fireCnt, int simTime) {
 	for(int pos=threadIdx.x/LTP_GROUPING_SZ; pos < fireCnt; pos += (blockDim.x/LTP_GROUPING_SZ))  {
 		// each neuron has two variable pre and pre_exc
 		// pre: number of pre-neuron
@@ -561,11 +561,11 @@ __device__ void gpu_updateLTP(int* fireTablePtr, short int* fireGrpId, volatile 
 	__syncthreads();
 }
 
-__device__ inline bool getSpikeGenBit_GPU (unsigned int& nidPos)
+__device__ inline bool getSpikeGenBit_GPU (unsigned int nidPos)
 {
-	const int nidBitPos = nidPos%32;
-	const int nidIndex  = nidPos/32;
-	return ((runtimeDataGPU.spikeGenBits[nidIndex]>>nidBitPos)&0x1);
+	const int nidBitPos = nidPos % 32;
+	const int nidIndex  = nidPos / 32;
+	return ((runtimeDataGPU.spikeGenBits[nidIndex] >> nidBitPos) & 0x1);
 }
 
 /*
@@ -601,7 +601,7 @@ void SNN::setSpikeGenBit_GPU(int nid, int grp) {
  *             cumulativePre, Npre_plastic, synSpikeTime, lastSpikeTime, wtChange,
  *             avgFiring
  */
-__global__ 	void kernel_findFiring (int t, int sec, int simTime) {
+__global__ 	void kernel_findFiring (int simTime) {
 	__shared__ volatile unsigned int fireCnt;
 	__shared__ volatile unsigned int fireCntTest;
 	__shared__ volatile unsigned int fireCntD1;
@@ -609,7 +609,7 @@ __global__ 	void kernel_findFiring (int t, int sec, int simTime) {
 	__shared__ short int	fireGrpId[FIRE_CHUNK_CNT];
 	__shared__ volatile int errCode;
 
-	if (0==threadIdx.x) {
+	if (threadIdx.x == 0) {
 		fireCnt	  = 0; // initialize total cnt to 0
 		fireCntD1  = 0; // initialize inh. cnt to 0
 	}
@@ -721,30 +721,38 @@ __global__ 	void kernel_findFiring (int t, int sec, int simTime) {
 #define LOG_CURRENT_GROUP 5
 #define CURRENT_GROUP	  (1 << LOG_CURRENT_GROUP)
 
-// Based on the bitvector used for indicating the presence of spike
-// the global conductance values are updated..
-__global__ void kernel_globalConductanceUpdate (int t, int sec, int simTime) {
+/*!
+ * \brief Based on the bitvector used for indicating the presence of spike, the global conductance values are updated.
+ *
+ * net access: numNReg, numNPois, I_setPitch, maxDelay, STP_Pitch, sim_with_conductances,
+               sim_with_NMDA_rise, sim_withGABAb_Rise, sNMDA, sGABAb
+ * grp access: WithSTP, STP_A
+ * rtd access: Npre, cumulativePre, I_set, preSynapticIds, grpIds, wt, stpx, stpu, connIdsPreIdx,
+               gAMPA, gGABAa, gNMDA_r, gNMDA_d, gNMDA, gGABAb_r, gGABAb_d, gGABAb
+ * glb access: d_mulSynFast, d_mulSynSlow
+ */
+__global__ void kernel_conductanceUpdate (int simTimeMs, int simTimeSec, int simTime) {
 	__shared__ int sh_quickSynIdTable[256];
 
 	// Table for quick access
-	for(int i=0; i < 256; i+=blockDim.x){
-		if((i+threadIdx.x) < 256){
-			sh_quickSynIdTable[i+threadIdx.x]=quickSynIdTableGPU[i+threadIdx.x];
+	for (int i = 0; i < 256; i += blockDim.x) {
+		if ((i + threadIdx.x) < 256) {
+			sh_quickSynIdTable[i + threadIdx.x] = quickSynIdTableGPU[i + threadIdx.x];
 		}
 	}
 
 	__syncthreads();
 
-	const int totBuffers=loadBufferCount;
+	const int totBuffers = loadBufferCount;
 	for (int bufPos = blockIdx.x; bufPos < totBuffers; bufPos += gridDim.x) {
 		// KILLME !!! This can be further optimized ....
 		// instead of reading each neuron group separately .....
 		// read a whole buffer and use the result ......
-		int2 threadLoad  = getStaticThreadLoad(bufPos);
-		int  post_nid        = (STATIC_LOAD_START(threadLoad) + threadIdx.x);
-		int  lastId      = STATIC_LOAD_SIZE(threadLoad);
+		int2 threadLoad = getStaticThreadLoad(bufPos);
+		int  postNId    = STATIC_LOAD_START(threadLoad) + threadIdx.x;
+		int  lastNId    = STATIC_LOAD_SIZE(threadLoad);
 
-		if ((threadIdx.x < lastId) && (IS_REGULAR_NEURON(post_nid, networkConfigGPU.numNReg, networkConfigGPU.numNPois))) {
+		if ((threadIdx.x < lastNId) && (IS_REGULAR_NEURON(postNId, networkConfigGPU.numNReg, networkConfigGPU.numNPois))) {
 			// load the initial current due to noise inputs for neuron 'post_nid'
 			// initial values of the conductances for neuron 'post_nid'
 			float AMPA_sum		 = 0.0f;
@@ -755,80 +763,79 @@ __global__ void kernel_globalConductanceUpdate (int t, int sec, int simTime) {
 			float GABAb_sum		 = 0.0f;
 			float GABAb_r_sum 	 = 0.0f;
 			float GABAb_d_sum 	 = 0.0f;
-			int   lmt      		 = runtimeDataGPU.Npre[post_nid];
-			unsigned int cum_pos = runtimeDataGPU.cumulativePre[post_nid];
+			int   lmt      		 = runtimeDataGPU.Npre[postNId];
+			unsigned int cum_pos = runtimeDataGPU.cumulativePre[postNId];
 
 			// find the total current to this neuron...
-			for(int j=0; (lmt)&&(j <= ((lmt-1)>>LOG_CURRENT_GROUP)); j++) {
+			for (int j = 0; (lmt) && (j <= ((lmt - 1) >> LOG_CURRENT_GROUP)); j++) {
 				// because of malloc2D operation we are using pitch, post_nid, j to get
 				// actual position of the input current....
 				// int* tmp_I_set_p = ((int*)((char*)runtimeDataGPU.I_set + j * networkConfigGPU.I_setPitch) + post_nid);
-				uint32_t* tmp_I_set_p  = getFiringBitGroupPtr(post_nid, j);
-
-				uint32_t  tmp_I_set     = *tmp_I_set_p;
+				uint32_t* tmp_I_set_p = getFiringBitGroupPtr(postNId, j);
+				uint32_t  tmp_I_set   = *tmp_I_set_p;
 
 				// table lookup based find bits that are set
 				int cnt = 0;
 				int tmp_I_cnt = 0;
-				while(tmp_I_set) {
-					int k=(tmp_I_set>>(8*cnt))&0xff;
-					if (k==0) {
-						cnt = cnt+1;
+				while (tmp_I_set) {
+					int k = (tmp_I_set >> (8 * cnt)) & 0xff;
+					if (k == 0) {
+						cnt = cnt + 1;
 						continue;
 					}
 					int wt_i = sh_quickSynIdTable[k];
-					int wtId = (j*32 + cnt*8 + wt_i);
+					int wtId = (j * 32 + cnt * 8 + wt_i);
 
-					SynInfo pre_Id   = runtimeDataGPU.preSynapticIds[cum_pos + wtId];
+					SynInfo synInfo = runtimeDataGPU.preSynapticIds[cum_pos + wtId];
 					//uint8_t  pre_grpId  = GET_CONN_GRP_ID(pre_Id);
-					uint32_t  pre_nid  = GET_CONN_NEURON_ID(pre_Id);
-					short int pre_grpId = runtimeDataGPU.grpIds[pre_nid];
-					char type = groupConfigGPU[pre_grpId].Type;
+					uint32_t  preNId  = GET_CONN_NEURON_ID(synInfo);
+					short int preGrpId = runtimeDataGPU.grpIds[preNId];
+					char type = groupConfigGPU[preGrpId].Type;
 
 					// load the synaptic weight for the wtId'th input
 					float change = runtimeDataGPU.wt[cum_pos + wtId];
 
 					// Adjust the weight according to STP scaling
-					if(groupConfigGPU[pre_grpId].WithSTP) {
+					if (groupConfigGPU[preGrpId].WithSTP) {
 						int tD = 0; // \FIXME find delay
 						// \FIXME I think pre_nid needs to be adjusted for the delay
-						int ind_minus = getSTPBufPos(pre_nid,(simTime-tD-1)); // \FIXME should be adjusted for delay
-						int ind_plus = getSTPBufPos(pre_nid,(simTime-tD));
+						int ind_minus = getSTPBufPos(preNId, (simTime - tD - 1)); // \FIXME should be adjusted for delay
+						int ind_plus = getSTPBufPos(preNId, (simTime - tD));
 						// dI/dt = -I/tau_S + A * u^+ * x^- * \delta(t-t_{spk})
-						change *= groupConfigGPU[pre_grpId].STP_A * runtimeDataGPU.stpx[ind_minus] * runtimeDataGPU.stpu[ind_plus];
+						change *= groupConfigGPU[preGrpId].STP_A * runtimeDataGPU.stpx[ind_minus] * runtimeDataGPU.stpu[ind_plus];
 					}
 
 					if (networkConfigGPU.sim_with_conductances) {
 						short int connId = runtimeDataGPU.connIdsPreIdx[cum_pos+wtId];
 						if (type & TARGET_AMPA)
-							AMPA_sum += change*d_mulSynFast[connId];
+							AMPA_sum += change * d_mulSynFast[connId];
 						if (type & TARGET_NMDA) {
 							if (networkConfigGPU.sim_with_NMDA_rise) {
-								NMDA_r_sum += change*d_mulSynSlow[connId]*networkConfigGPU.sNMDA;
-								NMDA_d_sum += change*d_mulSynSlow[connId]*networkConfigGPU.sNMDA;
+								NMDA_r_sum += change * d_mulSynSlow[connId] * networkConfigGPU.sNMDA;
+								NMDA_d_sum += change * d_mulSynSlow[connId] * networkConfigGPU.sNMDA;
 							} else {
 								NMDA_sum += change*d_mulSynSlow[connId];
 							}
 						}
 						if (type & TARGET_GABAa)
-							GABAa_sum += change*d_mulSynFast[connId];	// wt should be negative for GABAa and GABAb
+							GABAa_sum += change * d_mulSynFast[connId];	// wt should be negative for GABAa and GABAb
 						if (type & TARGET_GABAb) {						// but that is dealt with below
 							if (networkConfigGPU.sim_with_GABAb_rise) {
-								GABAb_r_sum += change*d_mulSynSlow[connId]*networkConfigGPU.sGABAb;
-								GABAb_d_sum += change*d_mulSynSlow[connId]*networkConfigGPU.sGABAb;
+								GABAb_r_sum += change * d_mulSynSlow[connId]*networkConfigGPU.sGABAb;
+								GABAb_d_sum += change * d_mulSynSlow[connId]*networkConfigGPU.sGABAb;
 							} else {
-								GABAb_sum += change*d_mulSynSlow[connId];
+								GABAb_sum += change * d_mulSynSlow[connId];
 							}
 						}
 					}
 					else {
 						// current based model with STP (CUBA)
 						// updated current for neuron 'post_nid'
-						AMPA_sum +=  change;
+						AMPA_sum += change;
 					}
 
 					tmp_I_cnt++;
-					tmp_I_set = tmp_I_set & (~(1<<(8*cnt+wt_i)));
+					tmp_I_set = tmp_I_set & (~(1 << (8 * cnt + wt_i)));
 				}
 
 				// reset the input if there are any bit'wt set
@@ -843,23 +850,23 @@ __global__ void kernel_globalConductanceUpdate (int t, int sec, int simTime) {
 			if (networkConfigGPU.sim_with_conductances) {
 				// don't add mulSynFast/mulSynSlow here, because they depend on the exact pre<->post connection, not
 				// just post_nid
-				runtimeDataGPU.gAMPA[post_nid]        += AMPA_sum;
-				runtimeDataGPU.gGABAa[post_nid]       -= GABAa_sum; // wt should be negative for GABAa and GABAb
+				runtimeDataGPU.gAMPA[postNId]        += AMPA_sum;
+				runtimeDataGPU.gGABAa[postNId]       -= GABAa_sum; // wt should be negative for GABAa and GABAb
 				if (networkConfigGPU.sim_with_NMDA_rise) {
-					runtimeDataGPU.gNMDA_r[post_nid]  += NMDA_r_sum;
-					runtimeDataGPU.gNMDA_d[post_nid]  += NMDA_d_sum;
+					runtimeDataGPU.gNMDA_r[postNId]  += NMDA_r_sum;
+					runtimeDataGPU.gNMDA_d[postNId]  += NMDA_d_sum;
 				} else {
-					runtimeDataGPU.gNMDA[post_nid]    += NMDA_sum;
+					runtimeDataGPU.gNMDA[postNId]    += NMDA_sum;
 				}
 				if (networkConfigGPU.sim_with_GABAb_rise) {
-					runtimeDataGPU.gGABAb_r[post_nid] -= GABAb_r_sum;
-					runtimeDataGPU.gGABAb_d[post_nid] -= GABAb_d_sum;
+					runtimeDataGPU.gGABAb_r[postNId] -= GABAb_r_sum;
+					runtimeDataGPU.gGABAb_d[postNId] -= GABAb_d_sum;
 				} else {
-					runtimeDataGPU.gGABAb[post_nid]   -= GABAb_sum;
+					runtimeDataGPU.gGABAb[postNId]   -= GABAb_sum;
 				}
 			}
 			else {
-				runtimeDataGPU.current[post_nid] += AMPA_sum;
+				runtimeDataGPU.current[postNId] += AMPA_sum;
 			}
 		}
 	}
@@ -867,38 +874,43 @@ __global__ void kernel_globalConductanceUpdate (int t, int sec, int simTime) {
 
 //************************ UPDATE GLOBAL STATE EVERY TIME STEP *******************************************************//
 
-__device__ void updateNeuronState(int& nid, int& grpId) {
+/*!
+ * \brief This device function implements the equations of neuron dynamics
+ *
+ * \param[in] nid The neuron id to be updated
+ * \param[in] grpId The group id of the neuron
+ */
+__device__ void updateNeuronState(int nid, int grpId) {
 	float v = runtimeDataGPU.voltage[nid];
 	float u = runtimeDataGPU.recovery[nid];
 	float I_sum, NMDAtmp;
 	float gNMDA, gGABAb;
 
 	// loop that allows smaller integration time step for v's and u's
-	for (int c=0; c<COND_INTEGRATION_SCALE; c++) {
+	for (int c = 0; c < COND_INTEGRATION_SCALE; c++) {
 		I_sum = 0.0f;
 		if (networkConfigGPU.sim_with_conductances) {
-			NMDAtmp = (v+80.0f)*(v+80.0f)/60.0f/60.0f;
-			gNMDA = (networkConfigGPU.sim_with_NMDA_rise) ? (runtimeDataGPU.gNMDA_d[nid]-runtimeDataGPU.gNMDA_r[nid]) : runtimeDataGPU.gNMDA[nid];
-			gGABAb = (networkConfigGPU.sim_with_GABAb_rise) ? (runtimeDataGPU.gGABAb_d[nid]-runtimeDataGPU.gGABAb_r[nid]) : runtimeDataGPU.gGABAb[nid];
-			I_sum = -(   runtimeDataGPU.gAMPA[nid]*(v-0.0f)
-					   + gNMDA*NMDAtmp/(1.0f+NMDAtmp)*(v-0.0f)
-					   + runtimeDataGPU.gGABAa[nid]*(v+70.0f)
-					   + gGABAb*(v+90.0f)
-					 );
-		}
-		else {
+			NMDAtmp = (v + 80.0f) * (v + 80.0f) / 60.0f / 60.0f;
+			gNMDA = (networkConfigGPU.sim_with_NMDA_rise) ? (runtimeDataGPU.gNMDA_d[nid] - runtimeDataGPU.gNMDA_r[nid]) : runtimeDataGPU.gNMDA[nid];
+			gGABAb = (networkConfigGPU.sim_with_GABAb_rise) ? (runtimeDataGPU.gGABAb_d[nid] - runtimeDataGPU.gGABAb_r[nid]) : runtimeDataGPU.gGABAb[nid];
+			I_sum = -(runtimeDataGPU.gAMPA[nid] * (v - 0.0f)
+						+ gNMDA * NMDAtmp / (1.0f + NMDAtmp) * (v - 0.0f)
+						+ runtimeDataGPU.gGABAa[nid] * (v + 70.0f)
+						+ gGABAb * (v + 90.0f));
+		} else {
 			I_sum = runtimeDataGPU.current[nid];
 		}
 
 		// update vpos and upos for the current neuron
-		v += ((0.04f*v+5.0f)*v+140.0f-u+I_sum+runtimeDataGPU.extCurrent[nid])/COND_INTEGRATION_SCALE;
+		v += ((0.04f * v + 5.0f) * v + 140.0f - u + I_sum + runtimeDataGPU.extCurrent[nid]) / COND_INTEGRATION_SCALE;
 		if (v > 30.0f) { 
 			v = 30.0f; // break the loop but evaluate u[i]
-			c=COND_INTEGRATION_SCALE;
+			c = COND_INTEGRATION_SCALE;
 		}
-		if (v < -90.0f)
-			v = -90.0f;
-		u += (runtimeDataGPU.Izh_a[nid]*(runtimeDataGPU.Izh_b[nid]*v-u)/COND_INTEGRATION_SCALE);
+
+		if (v < -90.0f) v = -90.0f;
+
+		u += (runtimeDataGPU.Izh_a[nid] * (runtimeDataGPU.Izh_b[nid] * v - u) / COND_INTEGRATION_SCALE);
 	}
 	if(networkConfigGPU.sim_with_conductances) {
 		runtimeDataGPU.current[nid] = I_sum;
@@ -910,21 +922,32 @@ __device__ void updateNeuronState(int& nid, int& grpId) {
 	runtimeDataGPU.recovery[nid] = u;
 }
 
-// homeostasis in GPU_MODE
-__device__ inline void updateHomeoStaticState(int& pos, int& grpId)
+/*!
+ * \brief This device function updates the average firing rate of each neuron, which is required for homeostasis
+ *
+ * \param[in] nid The neuron id to be updated
+ * \param[in] grpId The group id of the neuron
+ */
+__device__ inline void updateHomeoStaticState(int nid, int grpId)
 {
 	// here the homeostasis adjustment
 	if (groupConfigGPU[grpId].WithHomeostasis)
-		runtimeDataGPU.avgFiring[pos] *= (groupConfigGPU[grpId].avgTimeScale_decay);
+		runtimeDataGPU.avgFiring[nid] *= (groupConfigGPU[grpId].avgTimeScale_decay);
 }
 
-//!
-/*! Global Kernel function:      kernel_globalStateUpdate
+/*!
  *  \brief update neuron state
- *  change this with selective upgrading technique used for firing neurons
+ *
+ * This kernel update neurons' membrance potential according to neurons' dynamics model.
+ * This kernel also update variables required by homeostasis
+ *
+ * net access: numN, numNReg, numNPois, sim_with_conductances, sim_with_NMDA_rise, sim_with_GABAb_rise
+ * grp access: WithHomeostasis, avgTimeScale_decay
+ * rtd access: avgFiring, voltage, recovery, gNMDA, gNMDA_r, gNMDA_d, gGABAb, gGABAb_r, gGABAb_d, gAMPA, gGABAa,
+ *             current, extCurrent, Izh_a, Izh_b
+ * glb access:
  */
-__global__ void kernel_globalStateUpdate (int t, int sec, int simTime)
-{
+__global__ void kernel_neuronStateUpdate() {
 	const int totBuffers = loadBufferCount;
 
 	// update neuron state
@@ -934,13 +957,12 @@ __global__ void kernel_globalStateUpdate (int t, int sec, int simTime)
 		// read a whole buffer and use the result ......
 		int2 threadLoad  = getStaticThreadLoad(bufPos);
 		int nid = (STATIC_LOAD_START(threadLoad) + threadIdx.x);
-		int  lastId = STATIC_LOAD_SIZE(threadLoad);
-		int  grpId = STATIC_LOAD_GROUP(threadLoad);
+		int lastId = STATIC_LOAD_SIZE(threadLoad);
+		int grpId = STATIC_LOAD_GROUP(threadLoad);
 
 		if ((threadIdx.x < lastId) && (nid < networkConfigGPU.numN)) {
 
 			if (IS_REGULAR_NEURON(nid, networkConfigGPU.numNReg, networkConfigGPU.numNPois)) {
-
 				// update neuron state here....
 				updateNeuronState(nid, grpId);
 
@@ -951,12 +973,17 @@ __global__ void kernel_globalStateUpdate (int t, int sec, int simTime)
 	}		
 }
 
-//!
-/*! Global Kernel function:      kernel_globalGroupStateUpdate
- *  \brief update group state
- *  update the concentration of neuronmodulator
+/*!
+ *  \brief Update the state of groups, which includes concentration of dopamine currently
+ *
+ * Update the concentration of neuronmodulator
+ *
+ * net access: numGroups
+ * grp access: WithESTDPtype, WithISTDPtype, baseDP, decayDP
+ * rtd access: grpDA, grpDABuffer
+ * glb access:
  */
-__global__ void kernel_globalGroupStateUpdate (int t)
+__global__ void kernel_groupStateUpdate(int simTime)
 {
 	// update group state
 	int grpIdx = blockIdx.x * blockDim.x + threadIdx.x;
@@ -966,7 +993,7 @@ __global__ void kernel_globalGroupStateUpdate (int t)
 		if ((groupConfigGPU[grpIdx].WithESTDPtype == DA_MOD || groupConfigGPU[grpIdx].WithISTDPtype == DA_MOD) && runtimeDataGPU.grpDA[grpIdx] > groupConfigGPU[grpIdx].baseDP) {
 			runtimeDataGPU.grpDA[grpIdx] *= groupConfigGPU[grpIdx].decayDP;
 		}
-		runtimeDataGPU.grpDABuffer[grpIdx][t] = runtimeDataGPU.grpDA[grpIdx]; // log dopamine concentration
+		runtimeDataGPU.grpDABuffer[grpIdx][simTime] = runtimeDataGPU.grpDA[grpIdx]; // log dopamine concentration
 	}
 }
 
@@ -979,20 +1006,17 @@ __global__ void kernel_globalGroupStateUpdate (int t)
  * rtd access gAMPA, gNMDA_r, gNMDA_d, gNMDA, gBABAa, gGABAb_r, gGABAb_d, gGABAb
  * rtd access stpu, stpx
  */
-__global__ void kernel_STPUpdateAndDecayConductances (int t, int sec, int simTime)
-{
-	// global id
-	// int gid=threadIdx.x + blockDim.x*blockIdx.x;
+__global__ void kernel_STPUpdateAndDecayConductances (int t, int sec, int simTime) {
+	const int totBuffers = loadBufferCount;
 
-	const int totBuffers=loadBufferCount;
 	for (int bufPos = blockIdx.x; bufPos < totBuffers; bufPos += gridDim.x) {
 		// KILLME !!! This can be further optimized ....
 		// instead of reading each neuron group separately .....
 		// read a whole buffer and use the result ......
-		int2 threadLoad  = getStaticThreadLoad(bufPos);
-		int nid        = (STATIC_LOAD_START(threadLoad) + threadIdx.x);
-		int  lastId      = STATIC_LOAD_SIZE(threadLoad);
-		uint32_t  grpId  = STATIC_LOAD_GROUP(threadLoad);
+		int2 threadLoad = getStaticThreadLoad(bufPos);
+		int nid         = (STATIC_LOAD_START(threadLoad) + threadIdx.x);
+		int lastId      = STATIC_LOAD_SIZE(threadLoad);
+		int grpId       = STATIC_LOAD_GROUP(threadLoad);
 
 
     // update the conductane parameter of the current neron
@@ -1024,27 +1048,24 @@ __global__ void kernel_STPUpdateAndDecayConductances (int t, int sec, int simTim
 
 //********************************UPDATE SYNAPTIC WEIGHTS EVERY SECOND  *************************************************************
 
-//////////////////////////////////////////////////////////////////
-/// Global Kernel function:      kernel_updateWeights_static   ///
-// KERNEL DETAILS:
-//   This kernel is called every second to adjust the timingTable and globalFiringTable
-//   We do the following thing:
-//   1. We discard all firing information that happened more than 1000-maxDelay_ time step.
-//   2. We move the firing information that happened in the last 1000-maxDelay_ time step to
-//      the begining of the gloalFiringTable.
-//   3. We read each value of "wtChange" and update the value of "synaptic weights wt".
-//      We also clip the "synaptic weight wt" to lie within the required range.
-//////////////////////////////////////////////////////////////////
-
-// Rewritten updateSynapticWeights to include homeostasis.  We should consider using flag.
-__device__ void updateSynapticWeights(int& nid, unsigned int& jpos, int& grpId, float& diff_firing, float& homeostasisScale, float& baseFiring, float& avgTimeScaleInv)
-{
+/*!
+ * \brief This kernel update synaptic weights
+ *
+ * This kernel is called every second to adjust the timingTable and globalFiringTable
+ * We do the following thing:
+ * 1. We discard all firing information that happened more than 1000-maxDelay_ time step.
+ * 2. We move the firing information that happened in the last 1000-maxDelay_ time step to
+ * the begining of the gloalFiringTable.
+ * 3. We read each value of "wtChange" and update the value of "synaptic weights wt".
+ * We also clip the "synaptic weight wt" to lie within the required range.
+ */
+__device__ void updateSynapticWeights(int nid, unsigned int synId, int grpId, float diff_firing, float homeostasisScale, float baseFiring, float avgTimeScaleInv) {
 	// This function does not get called if the neuron group has all fixed weights.
 	// t_twChange is adjusted by stdpScaleFactor based on frequency of weight updates (e.g., 10ms, 100ms, 1s)	
-	float t_wt = runtimeDataGPU.wt[jpos];
-	float t_wtChange = runtimeDataGPU.wtChange[jpos];
+	float t_wt = runtimeDataGPU.wt[synId];
+	float t_wtChange = runtimeDataGPU.wtChange[synId];
 	float t_effectiveWtChange = networkConfigGPU.stdpScaleFactor * t_wtChange;
-	float t_maxWt = runtimeDataGPU.maxSynWt[jpos];
+	float t_maxWt = runtimeDataGPU.maxSynWt[synId];
 
 	switch (groupConfigGPU[grpId].WithESTDPtype) {
 	case STANDARD:
@@ -1105,23 +1126,30 @@ __device__ void updateSynapticWeights(int& nid, unsigned int& jpos, int& grpId, 
 		if (t_wt > 0.0f) t_wt = 0.0f;
 	}
 
-	runtimeDataGPU.wt[jpos] = t_wt;
-	runtimeDataGPU.wtChange[jpos] = t_wtChange;
+	runtimeDataGPU.wt[synId] = t_wt;
+	runtimeDataGPU.wtChange[synId] = t_wtChange;
 }
 
 
 #define UPWTS_CLUSTERING_SZ	32
-__global__ void kernel_updateWeights()
-{
+/*!
+ * \brief this kernel updates all synaptic weights
+ *
+ * net access: stdpScaleFactor, wtChangeDecay
+ * grp access: homeostasisScale, avgTimeScaleInv, FixedInputWts, WithESTDPtype, WithISTDOtype, WithHomeostasis
+ * rtd access: Npre_plastic, cumulativePre, avgFiring, baseFiringInv, baseFiring, wt, wtChange, maxSynWt
+ * glb access:
+ */
+__global__ void kernel_updateWeights() {
 	__shared__ volatile int errCode;
 	__shared__ int    		startId, lastId, grpId, totBuffers, grpNCnt;
 	__shared__ int2 		threadLoad;
 	// added for homeostasis
 	__shared__ float		homeostasisScale, avgTimeScaleInv;
 
-	if(threadIdx.x==0) {
-		totBuffers=loadBufferCount;
-		grpNCnt	= (blockDim.x/UPWTS_CLUSTERING_SZ) + ((blockDim.x%UPWTS_CLUSTERING_SZ)!=0);
+	if(threadIdx.x == 0) {
+		totBuffers = loadBufferCount;
+		grpNCnt	= (blockDim.x / UPWTS_CLUSTERING_SZ) + ((blockDim.x % UPWTS_CLUSTERING_SZ) != 0);
 	}
 
 	__syncthreads();
@@ -1130,13 +1158,15 @@ __global__ void kernel_updateWeights()
 		// KILLME !!! This can be further optimized ....
 		// instead of reading each neuron group separately .....
 		// read a whole buffer and use the result ......
-		if ( threadIdx.x) {
+		// if ( threadIdx.x) { // TSC: this could be a performance bug, 127 threads other than the first thread try to read
+		                       // threadLoad and wirte homeostatsisScale and avgTimeScaleInv at the same time
+		if (threadIdx.x == 0) {
 			threadLoad  = getStaticThreadLoad(bufPos);
 			startId 	= STATIC_LOAD_START(threadLoad);
 			lastId  	= STATIC_LOAD_SIZE(threadLoad);
 			grpId   	= STATIC_LOAD_GROUP(threadLoad);
 
-			// homestasis functions
+			// load homestasis parameters
 			if (groupConfigGPU[grpId].WithHomeostasis) {
 				homeostasisScale = groupConfigGPU[grpId].homeostasisScale;
 				avgTimeScaleInv = groupConfigGPU[grpId].avgTimeScaleInv;
@@ -1148,64 +1178,70 @@ __global__ void kernel_updateWeights()
 
 		__syncthreads();
 
-	// the weights are fixed for this group.. so dont make any changes on
-	// the weight and continue to the next set of neurons...
-	if (groupConfigGPU[grpId].FixedInputWts)
-		continue;
+		// the weights are fixed for this group.. so dont make any changes on
+		// the weight and continue to the next set of neurons...
+		if (groupConfigGPU[grpId].FixedInputWts)
+			continue;
 
-		int nid=(threadIdx.x/UPWTS_CLUSTERING_SZ) + startId;
+		int nid = (threadIdx.x / UPWTS_CLUSTERING_SZ) + startId;
 		// update the synaptic weights from the synaptic weight derivatives
-		for(; nid < startId+lastId; nid+=grpNCnt) {
+		for(; nid < startId + lastId; nid += grpNCnt) {
 			int Npre_plastic = runtimeDataGPU.Npre_plastic[nid];
 			unsigned int cumulativePre = runtimeDataGPU.cumulativePre[nid];
 			float diff_firing  = 0.0f;
 			float baseFiring = 0.0f;
 
 			if (groupConfigGPU[grpId].WithHomeostasis) {
-				diff_firing  = (1.0f-runtimeDataGPU.avgFiring[nid]*runtimeDataGPU.baseFiringInv[nid]);
+				diff_firing = (1.0f - runtimeDataGPU.avgFiring[nid] * runtimeDataGPU.baseFiringInv[nid]);
 				baseFiring = runtimeDataGPU.baseFiring[nid];
 			}
 
-			const int threadIdGrp   = (threadIdx.x%UPWTS_CLUSTERING_SZ);
-			// synaptic grouping
-			for(unsigned int j=cumulativePre; j < (cumulativePre+Npre_plastic); j+=UPWTS_CLUSTERING_SZ) {
+			const int threadIdGrp = (threadIdx.x % UPWTS_CLUSTERING_SZ);
+			// use 32 threads to update 32 synapses parallely
+			for(unsigned int synIdOffset = cumulativePre; synIdOffset < cumulativePre + Npre_plastic; synIdOffset += UPWTS_CLUSTERING_SZ) {
 				//excitatory connection change the synaptic weights
-				unsigned int jpos=j+threadIdGrp;
-				if(jpos < (cumulativePre+Npre_plastic)) {
-					updateSynapticWeights(nid, jpos, grpId, diff_firing, homeostasisScale, baseFiring, avgTimeScaleInv);
+				unsigned int synId = synIdOffset + threadIdGrp;
+				if(synId < cumulativePre + Npre_plastic) {
+					updateSynapticWeights(nid, synId, grpId, diff_firing, homeostasisScale, baseFiring, avgTimeScaleInv);
 				}
 			}
 		}
 	}
 }
 
-__global__ void kernel_updateFiring_static() {
-	int gnthreads=blockDim.x*gridDim.x;
+//********************************UPDATE TABLES AND COUNTERS EVERY SECOND  *************************************************************
 
-	// Shift the firing table so that the initial information in
-	// the firing table contain the firing information for the last maxDelay_ time step
-	for(int p=timeTableD2GPU[999],k=0;
-		p<timeTableD2GPU[999+networkConfigGPU.maxDelay+1];
-		p+=gnthreads,k+=gnthreads) {
-		if((p+threadIdx.x)<timeTableD2GPU[999+networkConfigGPU.maxDelay+1])
-			runtimeDataGPU.firingTableD2[k+threadIdx.x]=runtimeDataGPU.firingTableD2[p+threadIdx.x];
+/*!
+ * \brief This kernel shift the un-processed firing information in firingTableD2 to the beginning of
+ * firingTableD2 for the next second of simulation.
+ *
+ * net access: maxDelay
+ * grp access: N/A
+ * rtd access: firingTableD2
+ * glb access: timeTableD2GPU
+ */
+__global__ void kernel_shiftFiringTable() {
+	int gnthreads= blockDim.x * gridDim.x;
+
+	for(int p = timeTableD2GPU[999], k = 0; p < timeTableD2GPU[999 + networkConfigGPU.maxDelay + 1]; p += gnthreads, k += gnthreads) {
+		if ((p + threadIdx.x) < timeTableD2GPU[999 + networkConfigGPU.maxDelay + 1])
+			runtimeDataGPU.firingTableD2[k + threadIdx.x] = runtimeDataGPU.firingTableD2[p + threadIdx.x];
 	}
 }
 
-//********************************UPDATE TABLES AND COUNTERS EVERY SECOND  *************************************************************
-// KERNEL DESCRIPTION:
-// This is the second part of the previous kernel "kernel_updateWeightsFiring"
-// After all the threads/blocks had adjusted the firing table and the synaptic weights,
-// we update the timingTable so that the firing information that happended in the last maxDelay_
-// time step would become the first maxDelay_ time step firing information for the next cycle of simulation.
-// We also reset/update various counters to appropriate values as indicated in the second part 
-// of this kernel.
-__global__ void kernel_updateFiring()
-{
-	// CHECK !!!
+/*!
+ * \brief This kernel shift the un-processed firing information in timeTableD1(D2)GPU to the beginning of
+ * timeTableD1(D2)GPU for the next second of simulation.
+ *
+ * After all the threads/blocks had adjusted the firingTableD1(D2)GPU, we update the timeTableD1(D2)GPU
+ * so that the firing information that happended in the last maxDelay_ time step would become
+ * the first maxDelay_ time step firing information for the next second of simulation.
+ * We also reset/update all spike counters to appropriate values as indicated in the second part 
+ * of this kernel.
+ */
+__global__ void kernel_shiftTimeTable() {
 	int maxDelay_ = networkConfigGPU.maxDelay;
-	// reset the firing table so that we have the firing information
-	// for the last maxDelay_ time steps to be used for the next cycle of the simulation
+
 	if(blockIdx.x==0) {
 		for(int i=threadIdx.x; i < maxDelay_; i+=blockDim.x) {
 			// use i+1 instead of just i because timeTableD2GPU[0] should always be 0
@@ -1217,7 +1253,7 @@ __global__ void kernel_updateFiring()
 	__syncthreads();
 
 	// reset various counters for the firing information
-	if((blockIdx.x==0)&&(threadIdx.x==0)) {
+	if((blockIdx.x == 0) && (threadIdx.x == 0)) {
 		timeTableD1GPU[networkConfigGPU.maxDelay]  = 0;
 		spikeCountD2GPU += spikeCountD2SecGPU;
 		spikeCountD1GPU += spikeCountD1SecGPU;
@@ -1228,20 +1264,20 @@ __global__ void kernel_updateFiring()
 	}
 }
 
-/// THIS KERNEL IS USED BY BLOCK_CONFIG_VERSION
-__global__ void kernel_updateFiring2()
-{
-	// reset various counters for the firing information
-	if((blockIdx.x==0)&&(threadIdx.x==0)) {
-		// timeTableD1GPU[networkConfigGPU.maxDelay]  = 0;
-		spikeCountD2GPU	+= spikeCountD2SecGPU;
-		spikeCountD1GPU	+= spikeCountD1SecGPU;
-		spikeCountD2SecGPU	= 0; //timeTableD2GPU[networkConfigGPU.maxDelay];
-		spikeCountD1SecGPU	= 0;
-		secD2fireCntTest = 0; //timeTableD2GPU[networkConfigGPU.maxDelay];
-		secD1fireCntTest = 0;
-	}
-}
+// THIS KERNEL IS USED BY BLOCK_CONFIG_VERSION
+//__global__ void kernel_updateFiring2()
+//{
+//	// reset various counters for the firing information
+//	if((blockIdx.x==0)&&(threadIdx.x==0)) {
+//		// timeTableD1GPU[networkConfigGPU.maxDelay]  = 0;
+//		spikeCountD2GPU	+= spikeCountD2SecGPU;
+//		spikeCountD1GPU	+= spikeCountD1SecGPU;
+//		spikeCountD2SecGPU	= 0; //timeTableD2GPU[networkConfigGPU.maxDelay];
+//		spikeCountD1SecGPU	= 0;
+//		secD2fireCntTest = 0; //timeTableD2GPU[networkConfigGPU.maxDelay];
+//		secD1fireCntTest = 0;
+//	}
+//}
 
 //****************************** GENERATE POST-SYNAPTIC CURRENT EVERY TIME-STEP  ****************************
 __device__ int generatePostSynapticSpike(int& simTime, int& firingId, int& myDelayIndex, volatile int& offset, bool unitDelay) {
@@ -1324,11 +1360,16 @@ __device__ int generatePostSynapticSpike(int& simTime, int& firingId, int& myDel
 
 #define NUM_THREADS 			128
 #define EXCIT_READ_CHUNK_SZ		64
-
 /*!
  * \brief This kernel updates and generates spikes for delays greater than 1 from the fired neuron. 
  *
- *  The LTD computation is also executed by this approach kernel.
+ * The LTD computation is also executed by this kernel.
+ *
+ * net access: maxDelay, I_setPitch, sim_in_testing
+ * grp access: Type, WithSTDP, WithESTDP, WithESTDPcurve, WithISDP, WithISTDPcurve, all STDP parameters
+ * rtd access: firingTableD2, cumulativePost, postDelayInfo, postSynapticIds, cumulativePre, grpIds,
+ *             grpDA, I_set, synSpikeTime, wtChange
+ * glb access: spikeCountD2SecGPU, timeTableD2GPU_tex, timeTableD2GPU_tex_offset
  */
 __global__ void kernel_doCurrentUpdateD2(int simTimeMs, int simTimeSec, int simTime) {
 	__shared__	volatile int sh_neuronOffsetTable[EXCIT_READ_CHUNK_SZ + 2];
@@ -1375,8 +1416,8 @@ __global__ void kernel_doCurrentUpdateD2(int simTimeMs, int simTimeSec, int simT
 				int nid = runtimeDataGPU.firingTableD2[fPos];
 
 				// find the time of firing based on the firing number fPos
-				while ( !((fPos >= tex1Dfetch(timeTableD2GPU_tex, t_pos+networkConfigGPU.maxDelay+timeTableD2GPU_tex_offset)) 
-					&& (fPos < tex1Dfetch(timeTableD2GPU_tex, t_pos+networkConfigGPU.maxDelay+1+timeTableD2GPU_tex_offset)))) {
+				while ( !((fPos >= tex1Dfetch(timeTableD2GPU_tex, t_pos + networkConfigGPU.maxDelay + timeTableD2GPU_tex_offset)) 
+					&& (fPos < tex1Dfetch(timeTableD2GPU_tex, t_pos + networkConfigGPU.maxDelay + 1 + timeTableD2GPU_tex_offset)))) {
 					t_pos--;
 				}
 
@@ -1385,7 +1426,7 @@ __global__ void kernel_doCurrentUpdateD2(int simTimeMs, int simTimeSec, int simT
 
 				// find the various delay parameters for neuron 'nid', with a delay of 'tD'
 				//sh_axonDelay[threadIdx.x]	 = tD;
-				int tPos = (networkConfigGPU.maxDelay+1)*nid+tD;
+				int tPos = (networkConfigGPU.maxDelay + 1) * nid + tD;
 				//sh_firingId[threadIdx.x]	 	 = val;
 				sh_firingId[threadIdx.x] = nid;
 				sh_neuronOffsetTable[threadIdx.x]= runtimeDataGPU.cumulativePost[nid];
@@ -1394,7 +1435,7 @@ __global__ void kernel_doCurrentUpdateD2(int simTimeMs, int simTimeSec, int simT
 
 				// This is to indicate that the current thread
 				// has a valid delay parameter for post-synaptic firing generation
-				atomicAdd((int*)&sh_NeuronCnt,1);
+				atomicAdd((int*)&sh_NeuronCnt, 1);
 			}
 		}
 
@@ -1418,7 +1459,7 @@ __global__ void kernel_doCurrentUpdateD2(int simTimeMs, int simTimeSec, int simT
 			int delId = threadIdWarp;
 
 			while (delId < sh_delayLength[pos]) {
-				int delIndex = sh_delayIndexStart[pos]+delId;
+				int delIndex = sh_delayIndexStart[pos] + delId;
 
 				sh_blkErrCode = generatePostSynapticSpike(simTime,
 						sh_firingId[pos],				// presynaptic nid
@@ -1449,6 +1490,12 @@ __global__ void kernel_doCurrentUpdateD2(int simTimeMs, int simTimeSec, int simT
  *
  * This function looks mostly like kernel_doCurrentUpdateD2() but has been optimized for a fixed delay of 1ms. 
  * Ultimately we may merge this kernel with the kernel_doCurrentUpdateD2().
+ * The LTD computation is also executed by this kernel.
+ *
+ * net access: maxDelay, I_setPitch, sim_in_testing
+ * grp access: Type, grpDA, WithSTDP, WithESTDP, WithISTDP, WithESTDPcurve, WithISTDPcurve, all STDP parameters
+ * rtd access: postSynapticIds, cumulativePre, grpIds, I_set, wtChange
+ * glb access: timeTableD1GPU, spikeCountD1SecGPU, firingTableD1
  */
 __global__ void kernel_doCurrentUpdateD1(int simTimeMs, int simTimeSec, int simTime) {
 	__shared__ volatile	int sh_NeuronCnt;
@@ -1501,10 +1548,10 @@ __global__ void kernel_doCurrentUpdateD1(int simTimeMs, int simTimeSec, int simT
 		__syncthreads();
 
 		// useful to measure the load balance for each block..
-		if(threadIdx.x==0) computedNeurons += sh_NeuronCnt;
+		if(threadIdx.x == 0) computedNeurons += sh_NeuronCnt;
 
 		// no more fired neuron from table... we just break from loop
-		if (sh_NeuronCnt==0) {
+		if (sh_NeuronCnt == 0) {
 			break;
 		}
 
@@ -1518,7 +1565,7 @@ __global__ void kernel_doCurrentUpdateD1(int simTimeMs, int simTimeSec, int simT
 
 		// 32 threads for generatePostSynapticSpike()
 		if (offset >= 0) {
-			int delId=threadIdWarp;
+			int delId = threadIdWarp;
 
 			while (delId < sh_delayLength[warpId]) {
 				int delIndex = (sh_delayIndexStart[warpId] + delId);
@@ -2244,7 +2291,7 @@ void SNN::findFiring_GPU(int gridSize, int blkSize) {
 		
 	assert(gpuRuntimeData.allocated);
 
-	kernel_findFiring <<<gridSize,blkSize >>> (simTimeMs, simTimeSec, simTime);
+	kernel_findFiring<<<gridSize, blkSize>>>(simTime);
 	CUDA_GET_LAST_ERROR("findFiring kernel failed\n");
 	return;
 }
@@ -2282,7 +2329,7 @@ void SNN::updateTimingTable_GPU() {
 
 	int blkSize  = 128;
 	int gridSize = 64;
-	kernel_updateTimeTable <<<gridSize,blkSize >>> (simTimeMs);
+	kernel_updateTimeTable<<<gridSize, blkSize>>>(simTimeMs);
 	CUDA_GET_LAST_ERROR("timing Table update kernel failed\n");
 
 	return;
@@ -2297,12 +2344,12 @@ void SNN::doCurrentUpdate_GPU() {
 	int gridSize = 64;
 
 	if(maxDelay_ > 1) {
-		kernel_doCurrentUpdateD2 <<<gridSize, blkSize>>>(simTimeMs,simTimeSec,simTime);
+		kernel_doCurrentUpdateD2<<<gridSize, blkSize>>>(simTimeMs,simTimeSec,simTime);
 		CUDA_GET_LAST_ERROR("Kernel execution failed");
 	}
 
 
-	kernel_doCurrentUpdateD1 <<<gridSize, blkSize>>>(simTimeMs,simTimeSec,simTime);
+	kernel_doCurrentUpdateD1<<<gridSize, blkSize>>>(simTimeMs,simTimeSec,simTime);
 	CUDA_GET_LAST_ERROR("Kernel execution failed");
 }
 
@@ -2312,7 +2359,7 @@ void SNN::doSTPUpdateAndDecayCond_GPU(int gridSize, int blkSize) {
 	assert(gpuRuntimeData.allocated);
 
 	if (sim_with_stp || sim_with_conductances) {
-		kernel_STPUpdateAndDecayConductances <<<gridSize, blkSize>>>(simTimeMs, simTimeSec, simTime);
+		kernel_STPUpdateAndDecayConductances<<<gridSize, blkSize>>>(simTimeMs, simTimeSec, simTime);
 		CUDA_GET_LAST_ERROR("STP update\n");
 	}
 }
@@ -2322,7 +2369,7 @@ void SNN::initGPU(int gridSize, int blkSize) {
 
 	assert(gpuRuntimeData.allocated);
 
-	kernel_init <<< gridSize, blkSize >>> ();
+	kernel_init<<<gridSize, blkSize>>>();
 	CUDA_GET_LAST_ERROR("initGPU kernel failed\n");
 }
 
@@ -2434,16 +2481,16 @@ void SNN::globalStateUpdate_GPU() {
 	int blkSize  = 128;
 	int gridSize = 64;
 
-	kernel_globalConductanceUpdate <<<gridSize, blkSize>>> (simTimeMs, simTimeSec, simTime);
-	CUDA_GET_LAST_ERROR("kernel_globalConductanceUpdate failed");
+	kernel_conductanceUpdate<<<gridSize, blkSize>>>(simTimeMs, simTimeSec, simTime);
+	CUDA_GET_LAST_ERROR("kernel_conductanceUpdate failed");
 
-	// update all neuron state (i.e., voltage and recovery)
-	kernel_globalStateUpdate <<<gridSize, blkSize>>> (simTimeMs, simTimeSec, simTime);
+	// update all neuron state (i.e., voltage and recovery), including homeostasis
+	kernel_neuronStateUpdate<<<gridSize, blkSize>>>();
 	CUDA_GET_LAST_ERROR("Kernel execution failed");
 
 	// update all group state (i.e., concentration of neuronmodulators)
 	// currently support 4 x 128 groups
-	kernel_globalGroupStateUpdate <<<4, blkSize>>> (simTimeMs);
+	kernel_groupStateUpdate<<<4, blkSize>>>(simTimeMs);
 	CUDA_GET_LAST_ERROR("Kernel execution failed");
 }
 
@@ -2502,19 +2549,26 @@ void SNN::doGPUSim() {
 	globalStateUpdate_GPU();
 }
 
-void SNN::updateFiringTable_GPU() {
+/*!
+ * \brief This function is called every second by SNN::runNetwork(). It updates the firingTableD1(D2)GPU and
+ * timeTableD1(D2)GPU by removing older firing information.
+ */
+void SNN::shiftSpikeTables_GPU() {
 	checkAndSetGPUDevice();
 
 	int blkSize  = 128;
 	int gridSize = 64;
-	//void* devPtr;
 
-	//kernel_updateWeightsFiring  <<<gridSize, blkSize>>> ();
-	kernel_updateFiring_static<<<gridSize, blkSize>>>();
+	kernel_shiftFiringTable<<<gridSize, blkSize>>>();
 
-	kernel_updateFiring<<<gridSize, blkSize>>>();
+	kernel_shiftTimeTable<<<gridSize, blkSize>>>();
 }
 
+/*
+ * \brief Update syanptic weights every 10ms, 100ms, or 1000ms
+ *
+ *
+ */
 void SNN::updateWeights_GPU() {
 	checkAndSetGPUDevice();
 
@@ -2527,35 +2581,32 @@ void SNN::updateWeights_GPU() {
 	kernel_updateWeights<<<gridSize, blkSize>>>();
 }
 
-__global__ void gpu_resetFiringInformation()
-{
-	if(threadIdx.x==0 && blockIdx.x==0) {
-		for(int i=0; i < ROUNDED_TIMING_COUNT; i++) {
-			timeTableD2GPU[i]   = 0;
-			timeTableD1GPU[i]   = 0;
-		}
-		spikeCountD2SecGPU=0;
-		spikeCountD1SecGPU=0;
-		secD2fireCntTest=0;
-		secD1fireCntTest=0;
-		spikeCountD2GPU=0;
-		spikeCountD1GPU=0;
-
-
-    //spikeCountAll1Sec=0;//assigned in copyFiringInfo_GPU()
-	}
-
-}
-
-
-void SNN::resetFiringInformation_GPU() {
-	checkAndSetGPUDevice();
-
-	int blkSize  = 128;
-	int gridSize = 64;
-
-	gpu_resetFiringInformation<<<gridSize,blkSize>>>();
-}
+//__global__ void gpu_resetFiringInformation() {
+//	if(threadIdx.x==0 && blockIdx.x==0) {
+//		for(int i = 0; i < ROUNDED_TIMING_COUNT; i++) {
+//			timeTableD2GPU[i]   = 0;
+//			timeTableD1GPU[i]   = 0;
+//		}
+//		spikeCountD2SecGPU=0;
+//		spikeCountD1SecGPU=0;
+//		secD2fireCntTest=0;
+//		secD1fireCntTest=0;
+//		spikeCountD2GPU=0;
+//		spikeCountD1GPU=0;
+//
+//    //spikeCountAll1Sec=0;//assigned in copyFiringInfo_GPU()
+//	}
+//
+//}
+//
+//void SNN::resetFiringInformation_GPU() {
+//	checkAndSetGPUDevice();
+//
+//	int blkSize  = 128;
+//	int gridSize = 64;
+//
+//	gpu_resetFiringInformation<<<gridSize,blkSize>>>();
+//}
 
 
 void SNN::copyExternalCurrent(RuntimeData* dest, RuntimeData* src, bool allocateMem, int grpId) {
