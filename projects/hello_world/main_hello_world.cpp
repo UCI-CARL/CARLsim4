@@ -43,9 +43,9 @@
 
 int main() {
 	// create a network on GPU
-	int ithGPU = 0;
+	int numGPUs = 1;
 	int randSeed = 42;
-	CARLsim sim("hello world",GPU_MODE,USER,ithGPU,randSeed);
+	CARLsim sim("hello world", GPU_MODE, USER, numGPUs, randSeed);
 
 	// configure the network
 	// set up a COBA two-layer network with gaussian connectivity

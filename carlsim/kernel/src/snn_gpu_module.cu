@@ -1595,7 +1595,7 @@ void SNN::copyPostConnectionInfo(RuntimeData* dest, bool allocateMem) {
 	} else {
 		assert(dest->allocated == true);
 	}
-	assert(snnState == OPTIMIZED_PARTITIONED_SNN || snnState == EXECUTABLE_SNN);
+	assert(snnState == RUNTIME_GENERATED_SNN || snnState == EXECUTABLE_SNN);
 
 	// beginning position for the post-synaptic information
 	if(allocateMem) 
@@ -2711,16 +2711,31 @@ void SNN::configGPUDevice() {
 
 	devMax = CUDA_GET_MAXGFLOP_DEVICE_ID();
 	KERNEL_INFO("  - CUDA device ID with max GFLOPs  = %9d", devMax);
-
+	
 	// ithGPU_ gives an index number on which device to run the simulation
-	if (ithGPU_ < 0 || ithGPU_ >= devCount) {
-		KERNEL_ERROR("CUDA device[%d] does not exist, please choose from [0,%d]", ithGPU_, devCount - 1);
-		exitSimulation(1);
+	if (numGPUs_ <= 0) {
+		KERNEL_WARN("At lease 1 CUDA device is required to run GPU simulation");
+		if (devCount == 0) {
+			KERNEL_ERROR("No available CUDA device");
+			exitSimulation(1);
+		} else {
+			KERNEL_WARN("Adjust numGPUs to the number of available CUDA devices [%d]", devCount);
+			numGPUs_ = devCount;
+		}
+	}
+	
+	// adjust the number of GPUs if the usable cuda devices are fewer than specified numGPUs
+	if (devCount < numGPUs_) {
+		KERNEL_WARN("The available CUDA devices are fewer than specified numGPUs [%d]", numGPUs_);
+		KERNEL_WARN("Adjust numGPUs to the number of available CUDA devices [%d]", devCount);
+		numGPUs_ = devCount;
 	}
 
-	CUDA_CHECK_ERRORS(cudaGetDeviceProperties(&deviceProp, ithGPU_));
-	KERNEL_INFO("  - Use CUDA device[%1d]              = %9s", ithGPU_, deviceProp.name);
-	KERNEL_INFO("  - CUDA Compute Capability (CC)    =      %2d.%d\n", deviceProp.major, deviceProp.minor);
+	for (int ithGPU = 0; ithGPU < devCount; ithGPU++) {
+		CUDA_CHECK_ERRORS(cudaGetDeviceProperties(&deviceProp, ithGPU));
+		KERNEL_INFO("  + Use CUDA device[%1d]              = %9s", ithGPU, deviceProp.name);
+		KERNEL_INFO("  + CUDA Compute Capability (CC)    =      %2d.%d", deviceProp.major, deviceProp.minor);
+	}
 
     if (deviceProp.major < 2) {
 		// Unmark this when CC 1.3 is deprecated
@@ -2729,18 +2744,21 @@ void SNN::configGPUDevice() {
 		KERNEL_WARN("CUDA device with CC 1.3 will be deprecated in a future release");
 	}
 
-	CUDA_CHECK_ERRORS(cudaSetDevice(ithGPU_));
-	CUDA_DEVICE_RESET();
+	for (int ithGPU = 0; ithGPU < devCount; ithGPU++) {
+		CUDA_CHECK_ERRORS(cudaSetDevice(ithGPU));
+		CUDA_DEVICE_RESET();
+	}
 }
 
 void SNN::checkAndSetGPUDevice() {
-	int currentDevice;
-	cudaGetDevice(&currentDevice);
+	// FIXME: disable checking for development of multiGPUs mode
+	//int currentDevice;
+	//cudaGetDevice(&currentDevice);
 
-	if (currentDevice != ithGPU_) {
-		KERNEL_DEBUG("Inconsistent GPU context [%d %d]", currentDevice, ithGPU_);
-		cudaSetDevice(ithGPU_);
-	}
+	//if (currentDevice != ithGPU_) {
+	//	KERNEL_DEBUG("Inconsistent GPU context [%d %d]", currentDevice, ithGPU_);
+	//	cudaSetDevice(ithGPU_);
+	//}
 }
 
 void SNN::copyWeightsGPU(int nid, int src_grp) {
@@ -2786,7 +2804,7 @@ void SNN::allocateSNN_GPU() {
 	gpuRuntimeData.poissonRandPtr = (unsigned int*) gpuPoissonRand->get_random_numbers();
 
 	//ensure that we dont do all the above optimizations again		
-	assert(snnState == OPTIMIZED_PARTITIONED_SNN);
+	assert(snnState == RUNTIME_GENERATED_SNN);
 
 	// display some memory management info
 	size_t avail, total, previous;

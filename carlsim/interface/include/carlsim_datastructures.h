@@ -99,15 +99,15 @@ static const char* loggerMode_string[] = {
  *
  * When creating a new CARLsim object, you can choose from the following:
  * CPU_MODE:	run on a single CPU core
- * GPU_MODE:	run on a single GPU card
+ * GPU_MODE:	run on GPU card(s)
  *
- * When running GPU mode on a multi-GPU system, you can specify on which CUDA device to establish a context (ithGPU,
+ * When running GPU mode on a multi-GPU system, you can specify on which CUDA device to establish a context (numGPUs,
  * 0-indexed) when you create a new SNN object.
  * The simulation mode will be fixed throughout the lifetime of a SNN object.
  */
 enum SimMode {
 	 CPU_MODE,     //!< model is run on a single CPU core
-	 GPU_MODE,     //!< model is run on a single GPU card
+	 GPU_MODE,     //!< model is run on GPU card(s)
 	 UNKNOWN_SIM
 };
 static const char* simMode_string[] = {

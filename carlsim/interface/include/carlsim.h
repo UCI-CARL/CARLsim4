@@ -150,7 +150,7 @@ public:
 	 *
 	 * CARLsim allows execution on both generic x86 CPUs and standard off-the-shelf GPUs by specifying the simulation
 	 * mode (CPU_MODE and GPU_MODE, respectively). When using the latter in a multi-GPU system, the user can also
-	 * specify which CUDA device to use (param ithGPU, 0-indexed).
+	 * specify which CUDA device to use (param numGPUs, 0-indexed).
 	 *
 	 * The logger mode defines where to print all status, error, and debug messages. Logger mode can either be USER (for
 	 * experiment-oriented simulations), DEVELOPER (for developing and debugging code), SHOWTIME (where only warnings
@@ -171,12 +171,12 @@ public:
 	 * \param[in] netName 		network name
 	 * \param[in] simMode		either CPU_MODE or GPU_MODE
 	 * \param[in] loggerMode    either USER, DEVELOPER, SILENT, or CUSTOM
-	 * \param[in] ithGPU 		on which GPU to establish a context (only relevant in GPU_MODE)
+	 * \param[in] numGPUs 		on which GPU to establish a context (only relevant in GPU_MODE)
 	 * \param[in] randSeed 		random number generator seed
 	 * \see setLogFile
 	 * \see setLogsFpCustom
 	 */
-	CARLsim(const std::string& netName="SNN", SimMode simMode=CPU_MODE, LoggerMode loggerMode=USER, int ithGPU=0,
+	CARLsim(const std::string& netName="SNN", SimMode simMode=CPU_MODE, LoggerMode loggerMode=USER, int numGPUs=1,
 				int randSeed=-1);
 	~CARLsim();
 
@@ -1693,7 +1693,7 @@ private:
 	int randSeed_;					//!< RNG seed
 	SimMode simMode_;				//!< CPU_MODE or GPU_MODE
 	LoggerMode loggerMode_;		//!< logger mode (USER, DEVELOPER, SILENT, CUSTOM)
-	int ithGPU_;					//!< on which device to establish a context
+	int numGPUs_;					//!< how many devices to establish a context
 	bool enablePrint_;
 	bool copyState_;
 

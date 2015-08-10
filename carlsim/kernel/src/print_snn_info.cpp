@@ -62,7 +62,7 @@ void SNN::printConnection(int grpId, FILE* const fp) {
 }
 
 void SNN::printMemoryInfo(FILE* const fp) {
-	if (snnState == CONFIG_SNN || snnState == COMPILED_SNN || snnState == LINKED_SNN) {
+	if (snnState == CONFIG_SNN || snnState == COMPILED_SNN || snnState == PARTITIONED_SNN) {
 		KERNEL_DEBUG("checkNetworkBuilt()");
 		KERNEL_DEBUG("Network not yet elaborated and built...");
 	}

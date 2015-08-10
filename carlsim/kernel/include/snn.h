@@ -110,10 +110,10 @@ public:
 	 * \param simMode simulation mode, CPU_MODE: running simluation on CPUs, GPU_MODE: running simulation with GPU
 	 * acceleration, default = CPU_MODE
 	 * \param loggerMode log mode
-	 * \param ithGPU
+	 * \param numGPUs
 	 * \param randSeed randomize seed of the random number generator
 	 */
-	SNN(const std::string& name, SimMode simMode, LoggerMode loggerMode, int ithGPU, int randSeed);
+	SNN(const std::string& name, SimMode simMode, LoggerMode loggerMode, int numGPUs, int randSeed);
 
 	//! SNN Destructor
 	/*!
@@ -669,9 +669,9 @@ private:
 
 	void compileSNN();
 	
-	void linkSNN();
+	void partitionSNN();
 
-	void optimizeAndPartitionSNN();
+	void generateRuntimeSNN();
 
 	void allocateSNN();
 
@@ -876,8 +876,8 @@ private:
 	const std::string networkName_;	//!< network name
 	const SimMode simMode_;		//!< current simulation mode (CPU_MODE or GPU_MODE) FIXME: give better name
 	const LoggerMode loggerMode_;	//!< current logger mode (USER, DEVELOPER, SILENT, CUSTOM)
-	const int ithGPU_;				//!< on which CUDA device to establish a context (only in GPU_MODE)
 	const int randSeed_;			//!< random number seed to use
+	int numGPUs_;				//!< on which CUDA device to establish a context (only in GPU_MODE)
 
 	bool simulatorDeleted;
 	bool spikeRateUpdated;

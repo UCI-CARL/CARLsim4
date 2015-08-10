@@ -62,8 +62,8 @@
 
 
 // TODO: consider moving unsafe computations out of constructor
-SNN::SNN(const std::string& name, SimMode simMode, LoggerMode loggerMode, int ithGPU, int randSeed)
-					: networkName_(name), simMode_(simMode), loggerMode_(loggerMode), ithGPU_(ithGPU),
+SNN::SNN(const std::string& name, SimMode simMode, LoggerMode loggerMode, int numGPUs, int randSeed)
+					: networkName_(name), simMode_(simMode), loggerMode_(loggerMode), numGPUs_(numGPUs),
 					  randSeed_(SNN::setRandSeed(randSeed)) // all of these are const
 {
 	// move all unsafe operations out of constructor
@@ -685,10 +685,10 @@ void SNN::setupNetwork(bool removeTempMem) {
 	case CONFIG_SNN:
 		compileSNN();
 	case COMPILED_SNN:
-		linkSNN();
-	case LINKED_SNN:
-		optimizeAndPartitionSNN();
-	case OPTIMIZED_PARTITIONED_SNN:
+		partitionSNN();
+	case PARTITIONED_SNN:
+		generateRuntimeSNN();
+	case RUNTIME_GENERATED_SNN:
 		allocateSNN();
 		break;
 	case EXECUTABLE_SNN:
@@ -720,7 +720,7 @@ int SNN::runNetwork(int _nsec, int _nmsec, bool printRunSummary, bool copyState)
 	if (simTime==0 && printRunSummary) {
 		KERNEL_INFO("");
 		if (simMode_==GPU_MODE) {
-			KERNEL_INFO("******************** Running GPU Simulation on GPU %d ***************************", ithGPU_);
+			KERNEL_INFO("******************** Running GPU Simulation on %d GPU(s) ***************************", numGPUs_);
 		} else {
 			KERNEL_INFO("********************      Running CPU Simulation      ***************************");
 		}
@@ -1393,7 +1393,7 @@ void SNN::writePopWeights(std::string fname, int grpIdPre, int grpIdPost) {
 	fid = fopen(fname.c_str(), "wb");
 	assert(fid != NULL);
 
-	if(snnState == CONFIG_SNN || snnState == COMPILED_SNN || snnState == LINKED_SNN){
+	if(snnState == CONFIG_SNN || snnState == COMPILED_SNN || snnState == PARTITIONED_SNN){
 		KERNEL_ERROR("Simulation has not been run yet, cannot output weights.");
 		exitSimulation(1);
 	}
@@ -1831,8 +1831,6 @@ RangeWeight SNN::getWeightRange(short int connId) {
 
 // all unsafe operations of SNN constructor
 void SNN::SNNinit() {
-	assert(ithGPU_>=0);
-
 	// initialize snnState
 	snnState = CONFIG_SNN;
 	
@@ -2694,6 +2692,7 @@ void SNN::compileSNN() {
 	// compile (update) group and connect configs according to their mutual information
 	// update groupConfig[grpId].MaxDelay groupConfig[grpId].FixedInputWts
 	// assign groupConfig[grpId].StartN and groupConfig[grpId].EndN
+	// Note: the modified data in this function should be invariant in single GPU or multi GPUs
 	compileGroupConfig();
 
 	compileConnectConfig(); // for future use
@@ -3522,8 +3521,8 @@ int SNN::poissonSpike(int currTime, float frate, int refractPeriod) {
 	return nextTime;
 }
 
-void SNN::linkSNN() {
-	snnState = LINKED_SNN;
+void SNN::partitionSNN() {
+	snnState = PARTITIONED_SNN;
 }
 
 int SNN::loadSimulation_internal(bool onlyPlastic) {
@@ -3754,7 +3753,7 @@ int SNN::loadSimulation_internal(bool onlyPlastic) {
 	return 0;
 }
 
-void SNN::optimizeAndPartitionSNN() {
+void SNN::generateRuntimeSNN() {
 	// time to build the complete network with relevant parameters..
 	generateNetworkRuntime();
 
@@ -3775,7 +3774,7 @@ void SNN::optimizeAndPartitionSNN() {
 	KERNEL_INFO("*****************      Initializing %s Simulation      *************************",
 		simMode_==GPU_MODE?"GPU":"CPU");
 
-	snnState = OPTIMIZED_PARTITIONED_SNN;
+	snnState = RUNTIME_GENERATED_SNN;
 }
 
 void SNN::resetConductances() {
