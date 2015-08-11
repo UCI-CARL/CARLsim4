@@ -46,7 +46,8 @@
 
 #define ROUNDED_TIMING_COUNT  (((1000+MAX_SYN_DELAY+1)+127) & ~(127))  // (1000+maxDelay_) rounded to multiple 128
 
-#define FIRE_CHUNK_CNT 512
+#define NUM_THREADS 128
+#define NUM_BLOCKS 64
 #define WARP_SIZE 32
 
 ///////////////////////////////////////////////////////////////////
@@ -451,15 +452,12 @@ __global__ void gpu_resetSpikeCnt(int _grpId) {
 void SNN::resetSpikeCnt_GPU(int grpId) {
 	checkAndSetGPUDevice();
 
-	int blkSize  = 128;
-	int gridSize = 64;
-
 	assert(grpId >= ALL); // ALL == -1
 
 	if (grpId == ALL)
 		CUDA_CHECK_ERRORS(cudaMemset((void*)gpuRuntimeData.nSpikeCnt, 0, sizeof(int) * numN));
 	else
-		gpu_resetSpikeCnt<<<gridSize,blkSize>>>(grpId);
+		gpu_resetSpikeCnt<<<NUM_BLOCKS, NUM_THREADS>>>(grpId);
 }
 
 __device__ void findGrpId_GPU(int nid, int grpId)
@@ -572,6 +570,7 @@ void SNN::setSpikeGenBit_GPU(int nid, int grp) {
 	snnRuntimeData.spikeGenBits[nidIndex] |= (1 << nidBitPos);
 }
 
+#define FIRE_CHUNK_CNT 512
 /*!
  * \brief This kernel is responsible for finding the neurons that need to be fired.
  *
@@ -706,8 +705,6 @@ __global__ 	void kernel_findFiring (int simTime) {
 //******************************** UPDATE CONDUCTANCES AND TOTAL SYNAPTIC CURRENT EVERY TIME STEP *****************************
 
 #define LOG_CURRENT_GROUP 5
-#define CURRENT_GROUP	  (1 << LOG_CURRENT_GROUP)
-
 /*!
  * \brief Based on the bitvector used for indicating the presence of spike, the global conductance values are updated.
  *
@@ -1343,8 +1340,7 @@ __device__ int generatePostSynapticSpike(int& simTime, int& firingId, int& myDel
 	return errCode;
 }
 
-#define NUM_THREADS 			128
-#define EXCIT_READ_CHUNK_SZ		64
+#define READ_CHUNK_SZ 64
 /*!
  * \brief This kernel updates and generates spikes for delays greater than 1 from the fired neuron. 
  *
@@ -1357,10 +1353,10 @@ __device__ int generatePostSynapticSpike(int& simTime, int& firingId, int& myDel
  * glb access: spikeCountD2SecGPU, timeTableD2GPU_tex, timeTableD2GPU_tex_offset
  */
 __global__ void kernel_doCurrentUpdateD2(int simTimeMs, int simTimeSec, int simTime) {
-	__shared__	volatile int sh_neuronOffsetTable[EXCIT_READ_CHUNK_SZ + 2];
-	__shared__	int sh_delayLength[EXCIT_READ_CHUNK_SZ + 2];
-	__shared__	int sh_delayIndexStart[EXCIT_READ_CHUNK_SZ + 2];
-	__shared__	int sh_firingId[EXCIT_READ_CHUNK_SZ + 2];
+	__shared__	volatile int sh_neuronOffsetTable[READ_CHUNK_SZ + 2];
+	__shared__	int sh_delayLength[READ_CHUNK_SZ + 2];
+	__shared__	int sh_delayIndexStart[READ_CHUNK_SZ + 2];
+	__shared__	int sh_firingId[READ_CHUNK_SZ + 2];
 	__shared__ volatile int sh_NeuronCnt;
 
 	const int threadIdWarp = (threadIdx.x % WARP_SIZE);
@@ -1391,8 +1387,8 @@ __global__ void kernel_doCurrentUpdateD2(int simTimeMs, int simTimeSec, int simT
 	while ((k >= k_end) && (k >= 0)) {
 		// at any point of time EXCIT_READ_CHUNK_SZ neurons
 		// read different firing id from the firing table
-		if (threadIdx.x < EXCIT_READ_CHUNK_SZ) { // use 64 threads
-			int fPos = k - (EXCIT_READ_CHUNK_SZ * blockIdx.x) - threadIdx.x; 
+		if (threadIdx.x < READ_CHUNK_SZ) { // use 64 threads
+			int fPos = k - (READ_CHUNK_SZ * blockIdx.x) - threadIdx.x; 
 			if ((fPos >= 0) && (fPos >= k_end)) {
 
 				// get the neuron nid here....
@@ -1439,7 +1435,7 @@ __global__ void kernel_doCurrentUpdateD2(int simTimeMs, int simTimeSec, int simT
 		// needs to generate (numPostSynapses/maxDelay_) spikes for every fired neuron, every second
 		// for numPostSynapses=500,maxDelay_=20, we need to generate 25 spikes for each fired neuron
 		// for numPostSynapses=600,maxDelay_=20, we need to generate 30 spikes for each fired neuron 
-		for (int pos=warpId; pos < cnt; pos += (NUM_THREADS/WARP_SIZE)) {
+		for (int pos=warpId; pos < cnt; pos += (NUM_THREADS / WARP_SIZE)) {
 
 			int delId = threadIdWarp;
 
@@ -1462,7 +1458,7 @@ __global__ void kernel_doCurrentUpdateD2(int simTimeMs, int simTimeSec, int simT
 			sh_NeuronCnt = 0;
 		}
 
-		k = k - (gridDim.x*EXCIT_READ_CHUNK_SZ);
+		k = k - (gridDim.x * READ_CHUNK_SZ);
 
 		__syncthreads();
 	}
@@ -2271,12 +2267,12 @@ void SNN::spikeGeneratorUpdate_GPU() {
 	}
 }
 
-void SNN::findFiring_GPU(int gridSize, int blkSize) {
+void SNN::findFiring_GPU() {
 	checkAndSetGPUDevice();
 		
 	assert(gpuRuntimeData.allocated);
 
-	kernel_findFiring<<<gridSize, blkSize>>>(simTime);
+	kernel_findFiring<<<NUM_BLOCKS, NUM_THREADS>>>(simTime);
 	CUDA_GET_LAST_ERROR("findFiring kernel failed\n");
 	return;
 }
@@ -2312,9 +2308,7 @@ void SNN::updateTimingTable_GPU() {
 
 	assert(gpuRuntimeData.allocated);
 
-	int blkSize  = 128;
-	int gridSize = 64;
-	kernel_updateTimeTable<<<gridSize, blkSize>>>(simTimeMs);
+	kernel_updateTimeTable<<<NUM_BLOCKS, NUM_THREADS>>>(simTimeMs);
 	CUDA_GET_LAST_ERROR("timing Table update kernel failed\n");
 
 	return;
@@ -2325,36 +2319,33 @@ void SNN::doCurrentUpdate_GPU() {
 
 	assert(gpuRuntimeData.allocated);
 
-	int blkSize  = 128;
-	int gridSize = 64;
-
 	if(maxDelay_ > 1) {
-		kernel_doCurrentUpdateD2<<<gridSize, blkSize>>>(simTimeMs,simTimeSec,simTime);
+		kernel_doCurrentUpdateD2<<<NUM_BLOCKS, NUM_THREADS>>>(simTimeMs,simTimeSec,simTime);
 		CUDA_GET_LAST_ERROR("Kernel execution failed");
 	}
 
 
-	kernel_doCurrentUpdateD1<<<gridSize, blkSize>>>(simTimeMs,simTimeSec,simTime);
+	kernel_doCurrentUpdateD1<<<NUM_BLOCKS, NUM_THREADS>>>(simTimeMs,simTimeSec,simTime);
 	CUDA_GET_LAST_ERROR("Kernel execution failed");
 }
 
-void SNN::doSTPUpdateAndDecayCond_GPU(int gridSize, int blkSize) {
+void SNN::doSTPUpdateAndDecayCond_GPU() {
 	checkAndSetGPUDevice();
 		
 	assert(gpuRuntimeData.allocated);
 
 	if (sim_with_stp || sim_with_conductances) {
-		kernel_STPUpdateAndDecayConductances<<<gridSize, blkSize>>>(simTimeMs, simTimeSec, simTime);
+		kernel_STPUpdateAndDecayConductances<<<NUM_BLOCKS, NUM_THREADS>>>(simTimeMs, simTimeSec, simTime);
 		CUDA_GET_LAST_ERROR("STP update\n");
 	}
 }
 
-void SNN::initGPU(int gridSize, int blkSize) {
+void SNN::initGPU() {
 	checkAndSetGPUDevice();
 
 	assert(gpuRuntimeData.allocated);
 
-	kernel_init<<<gridSize, blkSize>>>();
+	kernel_init<<<NUM_BLOCKS, NUM_THREADS>>>();
 	CUDA_GET_LAST_ERROR("initGPU kernel failed\n");
 }
 
@@ -2463,19 +2454,16 @@ void SNN::deleteObjects_GPU() {
 void SNN::globalStateUpdate_GPU() {
 	checkAndSetGPUDevice();
 
-	int blkSize  = 128;
-	int gridSize = 64;
-
-	kernel_conductanceUpdate<<<gridSize, blkSize>>>(simTimeMs, simTimeSec, simTime);
+	kernel_conductanceUpdate<<<NUM_BLOCKS, NUM_THREADS>>>(simTimeMs, simTimeSec, simTime);
 	CUDA_GET_LAST_ERROR("kernel_conductanceUpdate failed");
 
 	// update all neuron state (i.e., voltage and recovery), including homeostasis
-	kernel_neuronStateUpdate<<<gridSize, blkSize>>>();
+	kernel_neuronStateUpdate<<<NUM_BLOCKS, NUM_THREADS>>>();
 	CUDA_GET_LAST_ERROR("Kernel execution failed");
 
 	// update all group state (i.e., concentration of neuronmodulators)
 	// currently support 4 x 128 groups
-	kernel_groupStateUpdate<<<4, blkSize>>>(simTimeMs);
+	kernel_groupStateUpdate<<<4, NUM_THREADS>>>(simTimeMs);
 	CUDA_GET_LAST_ERROR("Kernel execution failed");
 }
 
@@ -2512,11 +2500,8 @@ void SNN::doGPUSim() {
 	if (sim_with_spikecounters) {
 		checkSpikeCounterRecordDur();
 	}
-	
-	int blkSize  = 128;
-	int gridSize = 64;
 
-	doSTPUpdateAndDecayCond_GPU(gridSize, blkSize);
+	doSTPUpdateAndDecayCond_GPU();
 
 	// \TODO this should probably be in spikeGeneratorUpdate_GPU
 	if (spikeRateUpdated) {
@@ -2525,7 +2510,7 @@ void SNN::doGPUSim() {
 	}
 	spikeGeneratorUpdate_GPU();
 
-	findFiring_GPU(gridSize, blkSize);
+	findFiring_GPU();
 
 	updateTimingTable_GPU();
 
@@ -2541,12 +2526,9 @@ void SNN::doGPUSim() {
 void SNN::shiftSpikeTables_GPU() {
 	checkAndSetGPUDevice();
 
-	int blkSize  = 128;
-	int gridSize = 64;
+	kernel_shiftFiringTable<<<NUM_BLOCKS, NUM_THREADS>>>();
 
-	kernel_shiftFiringTable<<<gridSize, blkSize>>>();
-
-	kernel_shiftTimeTable<<<gridSize, blkSize>>>();
+	kernel_shiftTimeTable<<<NUM_BLOCKS, NUM_THREADS>>>();
 }
 
 /*
@@ -2560,10 +2542,7 @@ void SNN::updateWeights_GPU() {
 	assert(sim_in_testing==false);
 	assert(sim_with_fixedwts==false);
 
-	int blkSize  = 128;
-	int gridSize = 64;
-
-	kernel_updateWeights<<<gridSize, blkSize>>>();
+	kernel_updateWeights<<<NUM_BLOCKS, NUM_THREADS>>>();
 }
 
 //__global__ void gpu_resetFiringInformation() {
@@ -2587,10 +2566,7 @@ void SNN::updateWeights_GPU() {
 //void SNN::resetFiringInformation_GPU() {
 //	checkAndSetGPUDevice();
 //
-//	int blkSize  = 128;
-//	int gridSize = 64;
-//
-//	gpu_resetFiringInformation<<<gridSize,blkSize>>>();
+//	gpu_resetFiringInformation<<<NUM_BLOCKS,NUM_THREADS>>>();
 //}
 
 
@@ -2774,8 +2750,6 @@ void SNN::allocateSNN_GPU() {
 	// if we have already allocated the GPU data.. dont do it again...
 	if(gpuPoissonRand != NULL) return;
 
-	int gridSize = 64; int blkSize  = 128;
-
 	int numN=0;
 	for (int g=0;g<numGroups;g++) {
 		numN += groupConfig[g].SizeN;
@@ -2810,7 +2784,7 @@ void SNN::allocateSNN_GPU() {
 	allocateNetworkConfig();
 
 	// initialize gpuRuntimeData.neuronAllocation, __device__ loadBufferCount, loadBufferSize
-	allocateStaticLoad(blkSize);
+	allocateStaticLoad(NUM_THREADS);
 	cudaMemGetInfo(&avail,&total);
 	KERNEL_INFO("Static Load:\t\t%2.3f GB\t%2.3f GB\t%2.3f GB",(float)(previous-avail)/toGB, (float)((total-avail)/toGB),(float)(avail/toGB));
 	previous=avail;
@@ -2951,7 +2925,7 @@ void SNN::allocateSNN_GPU() {
 	CUDA_CHECK_ERRORS(cudaMemset(gpuRuntimeData.current, 0, sizeof(float) * numNReg));
 //	CUDA_CHECK_ERRORS(cudaMemset(gpuRuntimeData.extCurrent, 0, sizeof(float)*numNReg));
 //	copyExternalCurrent(&gpuRuntimeData, &snnRuntimeData, true);
-	initGPU(gridSize, blkSize);
+	initGPU();
 
 	snnState = EXECUTABLE_SNN;
 }

@@ -825,9 +825,9 @@ private:
 
 	void deleteObjects_GPU();		//!< deallocates all used data structures in snn_gpu.cu
 	void doCurrentUpdate_GPU();
-	void doSTPUpdateAndDecayCond_GPU(int gridSize=64, int blkSize=128);
+	void doSTPUpdateAndDecayCond_GPU();
 	void dumpSpikeBuffToFile_GPU(int gid);
-	void findFiring_GPU(int gridSize=64, int blkSize=128);
+	void findFiring_GPU();
 
 	/*!
 	 * \brief return the number of spikes per neuron for a certain group in GPU mode
@@ -841,7 +841,7 @@ private:
 	int* getSpikeCounter_GPU(int grpId);
 
 	void globalStateUpdate_GPU();
-	void initGPU(int gridSize, int blkSize);
+	void initGPU();
 
 	//void resetFiringInformation_GPU(); //!< resets the firing information in GPU_MODE when updateNetwork is called
 	void resetGPUTiming();
