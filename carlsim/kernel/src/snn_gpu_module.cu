@@ -128,36 +128,29 @@ void initQuickSynIdTable()
 	CUDA_CHECK_ERRORS( cudaMemcpy( devPtr, quickSynIdTable, sizeof(quickSynIdTable), cudaMemcpyHostToDevice));
 }
 
-__device__ inline bool isPoissonGroup(short int grpId, int nid)
-{
+__device__ inline bool isPoissonGroup(short int grpId, int nid) {
 	return (groupConfigGPU[grpId].Type & POISSON_NEURON);
 }
 
-__device__ inline void setFiringBitSynapses(int nid, int synId)
-{
-	uint32_t* tmp_I_set_p = ((uint32_t*)((char*)runtimeDataGPU.I_set + ((synId >> 5) * networkConfigGPU.I_setPitch)) + nid);
+__device__ inline void setFiringBitSynapses(int nid, int synId) {
+	unsigned int* tmp_I_set_p = ((unsigned int*)((char*)runtimeDataGPU.I_set + ((synId >> 5) * networkConfigGPU.I_setPitch)) + nid);
 	int atomicVal = atomicOr(tmp_I_set_p, 1 << (synId % 32));
 }
 
-__device__ inline uint32_t* getFiringBitGroupPtr(int nid, int synId)
-{
-	uint32_t* tmp_ptr = (((uint32_t*)((char*)runtimeDataGPU.I_set + synId * networkConfigGPU.I_setPitch)) + nid);
-	return tmp_ptr;
+__device__ inline unsigned int* getFiringBitGroupPtr(int nid, int synId) {
+	return (((unsigned int*)((char*)runtimeDataGPU.I_set + synId * networkConfigGPU.I_setPitch)) + nid);
 }
 
-__device__ inline int getSTPBufPos(int nid, int simTime)
-{
-//  return (((t%STP_BUF_SIZE)*networkConfigGPU.STP_Pitch) + nid);
-  return ((simTime % (networkConfigGPU.maxDelay + 1)) * networkConfigGPU.STP_Pitch + nid);
+__device__ inline int getSTPBufPos(int nid, int simTime) {
+	//return (((t%STP_BUF_SIZE)*networkConfigGPU.STP_Pitch) + nid);
+	return ((simTime % (networkConfigGPU.maxDelay + 1)) * networkConfigGPU.STP_Pitch + nid);
 }
 
-__device__ inline int2 getStaticThreadLoad(int bufPos)
-{
+__device__ inline int2 getStaticThreadLoad(int bufPos) {
 	return (runtimeDataGPU.neuronAllocation[bufPos]);
 }
 
-__device__ inline bool getPoissonSpike_GPU (int nid)
-{
+__device__ inline bool getPoissonSpike_GPU (int nid) {
 	// Random number value is less than the poisson firing probability
 	// if poisson firing probability is say 1.0 then the random poisson ptr
 	// will always be less than 1.0 and hence it will continiously fire
@@ -171,8 +164,7 @@ __device__ inline bool getPoissonSpike_GPU (int nid)
  *
  * \param[in] simTime The current time step
  */
-__global__ void kernel_updateTimeTable(int simTime)
-{
+__global__ void kernel_updateTimeTable(int simTime) {
    if (threadIdx.x == 0 && blockIdx.x == 0) {
 		timeTableD2GPU[simTime + networkConfigGPU.maxDelay + 1] = spikeCountD2SecGPU;
 		timeTableD1GPU[simTime + networkConfigGPU.maxDelay + 1] = spikeCountD1SecGPU;
@@ -185,8 +177,7 @@ __global__ void kernel_updateTimeTable(int simTime)
 // KERNEL: This kernel is called after initialization of various parameters   ///
 // so that we can reset all required parameters.                              ///
 /////////////////////////////////////////////////////////////////////////////////
-__global__ void kernel_init ()
-{
+__global__ void kernel_init () {
 	if(threadIdx.x==0 && blockIdx.x==0) {
 		for(int i=0; i < ROUNDED_TIMING_COUNT; i++) {
 			timeTableD2GPU[i]   = 0;
@@ -332,8 +323,7 @@ __device__ void firingUpdateSTP (int nid, int simTime, short int grpId) {
 	runtimeDataGPU.stpx[ind_plus] -= runtimeDataGPU.stpu[ind_plus]*runtimeDataGPU.stpx[ind_minus];
 }
 
-__device__ void resetFiredNeuron(int nid, short int grpId, int simTime)
-{
+__device__ void resetFiredNeuron(int nid, short int grpId, int simTime) {
 	// \FIXME \TODO: convert this to use coalesced access by grouping into a
 	// single 16 byte access. This might improve bandwidth performance
 	// This is fully uncoalsced access...need to convert to coalsced access..
@@ -357,8 +347,7 @@ __device__ void resetFiredNeuron(int nid, short int grpId, int simTime)
  * \param[in] fireCntD1 the number of neurons in local table that has fired with group's max delay > 1
  * \param[in] simTime the current time step, stored as neuron firing time  entry
  */
-__device__ void updateSpikeCount(volatile unsigned int& fireCnt, volatile unsigned int& fireCntD1, volatile unsigned int& cntD2, volatile unsigned int& cntD1, volatile int&  blkErrCode)
-{
+__device__ void updateSpikeCount(volatile unsigned int& fireCnt, volatile unsigned int& fireCntD1, volatile unsigned int& cntD2, volatile unsigned int& cntD1, volatile int&  blkErrCode) {
 	int fireCntD2 = fireCnt - fireCntD1;
 
 	cntD2 = atomicAdd(&secD2fireCntTest, fireCntD2);
@@ -382,8 +371,7 @@ __device__ void updateSpikeCount(volatile unsigned int& fireCnt, volatile unsign
 }
 
 // update the firing table...
-__device__ void updateFiringTable(int nId, short int grpId, volatile unsigned int& cntD2, volatile unsigned int& cntD1)
-{
+__device__ void updateFiringTable(int nId, short int grpId, volatile unsigned int& cntD2, volatile unsigned int& cntD1) {
 	int pos;
 	if (groupConfigGPU[grpId].MaxDelay == 1) {
 		// this group has a delay of only 1
@@ -453,7 +441,7 @@ __global__ void gpu_resetSpikeCnt(int _grpId) {
 		int  lastId = STATIC_LOAD_SIZE(threadLoad);
 		int  grpId = STATIC_LOAD_GROUP(threadLoad);
 
-		if ((grpId == _grpId) && (threadIdx.x < lastId) && (nid < networkConfigGPU.numN)) {
+		if ((_grpId == ALL || _grpId == grpId) && (nid <= lastId)) {
 			runtimeDataGPU.nSpikeCnt[nid] = 0;
 		}
 	}
@@ -561,8 +549,7 @@ __device__ void gpu_updateLTP(int* fireTablePtr, short int* fireGrpId, volatile 
 	__syncthreads();
 }
 
-__device__ inline bool getSpikeGenBit_GPU (unsigned int nidPos)
-{
+__device__ inline bool getSpikeGenBit_GPU (unsigned int nidPos) {
 	const int nidBitPos = nidPos % 32;
 	const int nidIndex  = nidPos / 32;
 	return ((runtimeDataGPU.spikeGenBits[nidIndex] >> nidBitPos) & 0x1);
@@ -772,7 +759,7 @@ __global__ void kernel_conductanceUpdate (int simTimeMs, int simTimeSec, int sim
 				// actual position of the input current....
 				// int* tmp_I_set_p = ((int*)((char*)runtimeDataGPU.I_set + j * networkConfigGPU.I_setPitch) + post_nid);
 				uint32_t* tmp_I_set_p = getFiringBitGroupPtr(postNId, j);
-				uint32_t  tmp_I_set   = *tmp_I_set_p;
+				uint32_t  tmp_I_set = *tmp_I_set_p;
 
 				// table lookup based find bits that are set
 				int cnt = 0;
@@ -928,8 +915,7 @@ __device__ void updateNeuronState(int nid, int grpId) {
  * \param[in] nid The neuron id to be updated
  * \param[in] grpId The group id of the neuron
  */
-__device__ inline void updateHomeoStaticState(int nid, int grpId)
-{
+__device__ inline void updateHomeoStaticState(int nid, int grpId) {
 	// here the homeostasis adjustment
 	if (groupConfigGPU[grpId].WithHomeostasis)
 		runtimeDataGPU.avgFiring[nid] *= (groupConfigGPU[grpId].avgTimeScale_decay);
@@ -983,8 +969,7 @@ __global__ void kernel_neuronStateUpdate() {
  * rtd access: grpDA, grpDABuffer
  * glb access:
  */
-__global__ void kernel_groupStateUpdate(int simTime)
-{
+__global__ void kernel_groupStateUpdate(int simTime) {
 	// update group state
 	int grpIdx = blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -1635,6 +1620,7 @@ void SNN::copyConnections(RuntimeData* dest, int kind, bool allocateMem) {
 		assert(dest->memType == CPU_MODE);
 	}
 
+	// FIXME: allocate too much space, use maxNumPreSynN instead of maxNumPreSynGrp
 	networkConfig.I_setLength = ceil(((maxNumPreSynGrp) / 32.0f));
 	if(allocateMem)
 		cudaMallocPitch((void**)&dest->I_set, &networkConfig.I_setPitch, sizeof(int) * numNReg, networkConfig.I_setLength);
@@ -1735,8 +1721,7 @@ void SNN::copyFiringStateFromGPU (int grpId) {
 	RuntimeData* src  = &gpuRuntimeData;
 
 	// Spike Cnt. Firing...
-	CUDA_CHECK_ERRORS( cudaMemcpy(&dest->nSpikeCnt[ptrPos], &src->nSpikeCnt[ptrPos], sizeof(int)*length, 
-		cudaMemcpyDeviceToHost) );
+	CUDA_CHECK_ERRORS( cudaMemcpy(&dest->nSpikeCnt[ptrPos], &src->nSpikeCnt[ptrPos], sizeof(int)*length, cudaMemcpyDeviceToHost) );
 }
 
 void SNN::copyConductanceAMPA(RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind, bool allocateMem, int grpId) {
@@ -2748,6 +2733,9 @@ void SNN::configGPUDevice() {
 		CUDA_CHECK_ERRORS(cudaSetDevice(ithGPU));
 		CUDA_DEVICE_RESET();
 	}
+
+	// use GPU0
+	cudaSetDevice(0);
 }
 
 void SNN::checkAndSetGPUDevice() {

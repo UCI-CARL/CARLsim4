@@ -637,6 +637,7 @@ private:
 	//! find the maximum post-synaptic and pre-synaptic length
 	//! this used to be in updateParameters
 	void findMaxNumSynapsesGroups(int* _maxNumPostSynGrp, int* _maxNumPreSynGrp);
+	//void findMaxNumSynapsesNeurons(int* _maxNumPostSynN, int* _maxNumPreSynN);
 	void findMaxSpikesD1D2(unsigned int* _maxSpikesD1, unsigned int* _maxSpikesD2);
 	void findNumSynapsesNetwork(int* _numPostSynNet, int* _numPreSynNet); //!< find the total number of synapses in the network
 
@@ -926,8 +927,10 @@ private:
 
 	// spiking neural network related information, including neurons, synapses and network parameters
 	int	numN;             //!< number of neurons in the spiking neural network
-	int maxNumPostSynGrp; //!< maximum number of post-synaptic connections in groups
-	int maxNumPreSynGrp;  //!< maximum number of pre-syanptic connections in groups
+	int maxNumPostSynGrp; //!< maximum number of post-synaptic connections among groups
+	int maxNumPreSynGrp;  //!< maximum number of pre-synaptic connections among groups
+	//int maxNumPostSynN;   //!< maximum number of post-synaptic connections among neurons
+	//int maxNumPreSynN;    //!< maximum number of pre-syanptic connections among neurons 
 	int maxDelay_;        //!< maximum axonal delay in groups
 	int numNReg;          //!< number of regular (spking) neurons
 	int numNExcReg;       //!< number of regular excitatory neurons

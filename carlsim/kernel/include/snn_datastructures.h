@@ -105,8 +105,6 @@ typedef struct ConnectConfig_s {
 	float                    radZ;
 	float                    mulSynFast;				//!< factor to be applied to either gAMPA or gGABAa
 	float                    mulSynSlow;				//!< factor to be applied to either gNMDA or gGABAb
-	//int                      numPostSynapses;
-	//int                      numPreSynapses;
 	int                      connectionMonitorId;
 	uint32_t                 connProp;
 	ConnectionGeneratorCore* conn;
@@ -160,14 +158,14 @@ typedef struct GroupConfig_s {
 	float homeostasisScale;
 
 	// parameters of neuromodulator
-	float baseDP;		//!< baseline concentration of Dopamine
-	float base5HT;	//!< baseline concentration of Serotonin
-	float baseACh;	//!< baseline concentration of Acetylcholine
-	float baseNE;		//!< baseline concentration of Noradrenaline
-	float decayDP;		//!< decay rate for Dopamine
-	float decay5HT;		//!< decay rate for Serotonin
-	float decayACh;		//!< decay rate for Acetylcholine
-	float decayNE;		//!< decay rate for Noradrenaline
+	float baseDP;   //!< baseline concentration of Dopamine
+	float base5HT;  //!< baseline concentration of Serotonin
+	float baseACh;  //!< baseline concentration of Acetylcholine
+	float baseNE;   //!< baseline concentration of Noradrenaline
+	float decayDP;  //!< decay rate for Dopamine
+	float decay5HT; //!< decay rate for Serotonin
+	float decayACh; //!< decay rate for Acetylcholine
+	float decayNE;  //!< decay rate for Noradrenaline
 } GroupConfig;
 
 typedef struct RuntimeData_s {
@@ -181,19 +179,19 @@ typedef struct RuntimeData_s {
 	float* extCurrent;
 
 	// conductances and stp values
-	float* gNMDA;					//!< conductance of gNMDA
+	float* gNMDA;   //!< conductance of gNMDA
 	float* gNMDA_r;
 	float* gNMDA_d;
-	float* gAMPA;					//!< conductance of gAMPA
-	float* gGABAa;				//!< conductance of gGABAa
-	float* gGABAb;				//!< conductance of gGABAb
+	float* gAMPA;   //!< conductance of gAMPA
+	float* gGABAa;  //!< conductance of gGABAa
+	float* gGABAb;  //!< conductance of gGABAb
 	float* gGABAb_r;
 	float* gGABAb_d;
 
-	int* I_set;				// only used on GPU
+	int* I_set; //!< an array of bits indicating which synapse got a spike, only used on GPU
 
 	SimMode	memType;
-	int     allocated;				//!< true if all data has been allocated..
+	int     allocated; //!< true if all data has been allocated..
 
 	/* Tsodyks & Markram (1998), where the short-term dynamics of synapses is characterized by three parameters:
 	   U (which roughly models the release probability of a synaptic vesicle for the first spike in a train of spikes),
@@ -209,9 +207,9 @@ typedef struct RuntimeData_s {
 	int* lastSpikeTime; //!< stores the last spike time of a neuron
 	int* synSpikeTime;  //!< stores the last spike time of a synapse
 
-	float* wtChange;		//!< stores the weight change of a synaptic connection
-	float* wt;				//!< stores the weight change of a synaptic connection
-	float* maxSynWt;			//!< maximum synaptic weight for a connection
+	float* wtChange; //!< stores the weight change of a synaptic connection
+	float* wt;       //!< stores the weight change of a synaptic connection
+	float* maxSynWt; //!< maximum synaptic weight for a connection
 	
 	unsigned int* cumulativePost;
 	unsigned int* cumulativePre;
@@ -342,6 +340,8 @@ typedef struct GroupConfigRT_s {
 	int			SliceUpdateTime;
 	int 		numPostSynapses; //!< the total number of post-connections of a group
 	int 		numPreSynapses; //!< the total number of pre-connections of a group
+	//int			maxNumPostSynN; //!< the max number of post-connections among neurons in a group
+	//int			maxNumPreSynN; //!< the max number of pre-connections among neurons in a group
 	bool 		isSpikeGenerator;
 	bool 		WithSTP;
 	bool 		WithSTDP;

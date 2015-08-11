@@ -1917,16 +1917,16 @@ void SNN::SNNinit() {
 	// init random seed
 	srand48(randSeed_);
 
-	simTimeRunStart     = 0;    simTimeRunStop      = 0;
+	simTimeRunStart = 0; simTimeRunStop = 0;
 	simTimeLastRunSummary = 0;
-	simTimeMs	 		= 0;    simTimeSec          = 0;    simTime = 0;
-	spikeCountSec	= 0;    spikeCountD1Sec    = 0;    spikeCountD2Sec  = 0;
-	spikeCount 		= 0;    spikeCountD2    = 0;    spikeCountD1 = 0;
-	nPoissonSpikes 		= 0;
+	simTimeMs = 0; simTimeSec = 0; simTime = 0;
+	spikeCountSec = 0; spikeCountD1Sec = 0; spikeCountD2Sec = 0;
+	spikeCount = 0; spikeCountD2 = 0; spikeCountD1 = 0;
+	nPoissonSpikes = 0;
 
-	numGroups   = 0;
+	numGroups = 0;
 	numConnections = 0;
-	numSpikeGenGrps  = 0;
+	numSpikeGenGrps = 0;
 	NgenFunc = 0;
 	simulatorDeleted = false;
 
@@ -1963,6 +1963,8 @@ void SNN::SNNinit() {
 
 	maxNumPostSynGrp = 0;
 	maxNumPreSynGrp = 0;
+	//maxNumPostSynN = 0;
+	//maxNumPreSynN = 0;
 	maxDelay_ = 0;
 
 	// conductance info struct for simulation
@@ -2007,6 +2009,8 @@ void SNN::SNNinit() {
 		groupConfig[i].GroupMonitorId = -1;
 		groupConfig[i].numPostSynapses = 0;	// default value
 		groupConfig[i].numPreSynapses = 0;	// default value
+		//groupConfig[i].maxNumPostSynN = 0;	// default value
+		//groupConfig[i].maxNumPreSynN = 0;	// default value
 		groupConfig[i].WithSTP = false;
 		groupConfig[i].WithSTDP = false;
 		groupConfig[i].WithESTDP = false;
@@ -2673,6 +2677,10 @@ void SNN::collectNetworkConfig() {
 	// SNN::maxNumPreSynGrp and SNN::maxNumPostSynGrp are updated
 	findMaxNumSynapsesGroups(&maxNumPostSynGrp, &maxNumPreSynGrp);
 
+	// find the maximum number of pre- and post-connections among neurons
+	// SNN::maxNumPreSynN and SNN::maxNumPostSynN are updated
+	//findMaxNumSynapsesNeurons(&maxNumPostSynN, &maxNumPreSynN);
+
 	// find the maximum delay in the network
 	// SNN::maxDelay_ is updated
 	findMaxDelay(&maxDelay_);
@@ -2717,6 +2725,8 @@ void SNN::compileSNN() {
 	KERNEL_INFO("The number of neurons in the network (numN) = %d", numN);
 	KERNEL_INFO("The maximum number of post-connectoins among groups (maxNumPostSynGrp) = %d", maxNumPostSynGrp);
 	KERNEL_INFO("The maximum number of pre-connections among groups (maxNumPreSynGrp) = %d", maxNumPreSynGrp);
+	//KERNEL_INFO("The maximum number of post-connectoins among neurons (maxNumPostSynN) = %d", maxNumPostSynN);
+	//KERNEL_INFO("The maximum number of pre-connections among neurons (maxNumPreSynN) = %d", maxNumPreSynN);
 	KERNEL_INFO("The maximum axonal delay in the network (maxDelay) = %d", maxDelay_);
 	KERNEL_INFO("The tatol number of synapses in the network (numPreSynNet,numPostSynNet) = (%d,%d)", numPreSynNet, numPostSynNet);
 	KERNEL_INFO("\n");
@@ -3243,6 +3253,21 @@ void SNN::findMaxNumSynapsesGroups(int* _maxNumPostSynGrp, int* _maxNumPreSynGrp
 			*_maxNumPreSynGrp = groupConfig[g].numPreSynapses;
 	}
 }
+
+//void SNN::findMaxNumSynapsesNeurons(int* _maxNumPostSynN, int* _maxNumPreSynN) {
+//	*_maxNumPostSynN = 0;
+//	*_maxNumPreSynN = 0;
+//
+//	//  scan all the groups and find the required information
+//	for (int g = 0; g < numGroups; g++) {
+//		// find the values for maximum postsynaptic length
+//		// and maximum pre-synaptic length
+//		if (groupConfig[g].maxNumPostSynN > *_maxNumPostSynN)
+//			*_maxNumPostSynN = groupConfig[g].maxNumPostSynN;
+//		if (groupConfig[g].maxNumPreSynN > *_maxNumPreSynN)
+//			*_maxNumPreSynN = groupConfig[g].maxNumPreSynN;
+//	}
+//}
 
 void SNN::findMaxSpikesD1D2(unsigned int* _maxSpikesD1, unsigned int* _maxSpikesD2) {
 	for(int g = 0; g < numGroups; g++) {
