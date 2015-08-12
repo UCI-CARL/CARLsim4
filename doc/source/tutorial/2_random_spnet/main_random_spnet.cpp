@@ -90,7 +90,6 @@ int main(int argc, const char* argv[]) {
 	sim.setConnectionMonitor(gExc, gExc, "DEFAULT");
 	sim.setConnectionMonitor(gInh, gExc, "DEFAULT");
 
-
 	// ---------------- RUN STATE -------------------
 	SMexc->startRecording();
 	SMinh->startRecording();

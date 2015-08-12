@@ -273,8 +273,8 @@ void SNN::printConnectionInfo(short int connId) {
 	KERNEL_INFO("  - Radius Y                   = %8.2f", connConfig.radY);
 	KERNEL_INFO("  - Radius Z                   = %8.2f", connConfig.radZ);
 
-	float avgPostM = ((float)connConfig.numberOfConnections)/groupConfig[connConfig.grpSrc].SizeN;
-	float avgPreM  = ((float)connConfig.numberOfConnections)/groupConfig[connConfig.grpDest].SizeN;
+	float avgPostM = ((float)connConfig.numberOfConnections)/groupConfigMap[connConfig.grpSrc].SizeN;
+	float avgPreM  = ((float)connConfig.numberOfConnections)/groupConfigMap[connConfig.grpDest].SizeN;
 	KERNEL_INFO("  - Avg numPreSynapses         = %8.2f", avgPreM );
 	KERNEL_INFO("  - Avg numPostSynapses        = %8.2f", avgPostM );
 }
@@ -284,43 +284,43 @@ void SNN::printGroupInfo(int grpId) {
 	KERNEL_INFO("  - Type                       =  %s", isExcitatoryGroup(grpId) ? "  EXCIT" :
 		(isInhibitoryGroup(grpId) ? "  INHIB" : (isPoissonGroup(grpId)?" POISSON" :
 		(isDopaminergicGroup(grpId) ? "  DOPAM" : " UNKNOWN"))) );
-	KERNEL_INFO("  - Size                       = %8d", groupConfig[grpId].SizeN);
-	KERNEL_INFO("  - Start Id                   = %8d", groupConfig[grpId].StartN);
-	KERNEL_INFO("  - End Id                     = %8d", groupConfig[grpId].EndN);
-	KERNEL_INFO("  - numPostSynapses            = %8d", groupConfig[grpId].numPostSynapses);
-	KERNEL_INFO("  - numPreSynapses             = %8d", groupConfig[grpId].numPreSynapses);
+	KERNEL_INFO("  - Size                       = %8d", groupConfigMap[grpId].SizeN);
+	KERNEL_INFO("  - Start Id                   = %8d", groupConfigMap[grpId].StartN);
+	KERNEL_INFO("  - End Id                     = %8d", groupConfigMap[grpId].EndN);
+	KERNEL_INFO("  - numPostSynapses            = %8d", groupConfigMap[grpId].numPostSynapses);
+	KERNEL_INFO("  - numPreSynapses             = %8d", groupConfigMap[grpId].numPreSynapses);
 
 	if (snnState == EXECUTABLE_SNN) {
-		KERNEL_INFO("  - Avg post connections       = %8.5f", ((float)groupInfo[grpId].numPostConn)/groupConfig[grpId].SizeN);
-		KERNEL_INFO("  - Avg pre connections        = %8.5f",  ((float)groupInfo[grpId].numPreConn)/groupConfig[grpId].SizeN);
+		KERNEL_INFO("  - Avg post connections       = %8.5f", ((float)groupInfo[grpId].numPostConn)/groupConfigMap[grpId].SizeN);
+		KERNEL_INFO("  - Avg pre connections        = %8.5f",  ((float)groupInfo[grpId].numPreConn)/groupConfigMap[grpId].SizeN);
 	}
 
-	if(groupConfig[grpId].Type&POISSON_NEURON) {
-		KERNEL_INFO("  - Refractory period          = %8.5f", groupConfig[grpId].RefractPeriod);
+	if(groupConfigMap[grpId].Type&POISSON_NEURON) {
+		KERNEL_INFO("  - Refractory period          = %8.5f", groupConfigMap[grpId].RefractPeriod);
 	}
 
-	if (groupConfig[grpId].WithSTP) {
+	if (groupConfigMap[grpId].WithSTP) {
 		KERNEL_INFO("  - STP:");
-		KERNEL_INFO("      - STP_A                  = %8.5f", groupConfig[grpId].STP_A);
-		KERNEL_INFO("      - STP_U                  = %8.5f", groupConfig[grpId].STP_U);
-		KERNEL_INFO("      - STP_tau_u              = %8d", (int) (1.0f/groupConfig[grpId].STP_tau_u_inv));
-		KERNEL_INFO("      - STP_tau_x              = %8d", (int) (1.0f/groupConfig[grpId].STP_tau_x_inv));
+		KERNEL_INFO("      - STP_A                  = %8.5f", groupConfigMap[grpId].STP_A);
+		KERNEL_INFO("      - STP_U                  = %8.5f", groupConfigMap[grpId].STP_U);
+		KERNEL_INFO("      - STP_tau_u              = %8d", (int) (1.0f/groupConfigMap[grpId].STP_tau_u_inv));
+		KERNEL_INFO("      - STP_tau_x              = %8d", (int) (1.0f/groupConfigMap[grpId].STP_tau_x_inv));
 	}
 
-	if(groupConfig[grpId].WithSTDP) {
+	if(groupConfigMap[grpId].WithSTDP) {
 		KERNEL_INFO("  - STDP:")
-		KERNEL_INFO("      - E-STDP TYPE            = %s",     groupConfig[grpId].WithESTDPtype==STANDARD? "STANDARD" :
-			(groupConfig[grpId].WithESTDPtype==DA_MOD?"  DA_MOD":" UNKNOWN"));
-		KERNEL_INFO("      - I-STDP TYPE            = %s",     groupConfig[grpId].WithISTDPtype==STANDARD? "STANDARD" :
-			(groupConfig[grpId].WithISTDPtype==DA_MOD?"  DA_MOD":" UNKNOWN"));
-		KERNEL_INFO("      - ALPHA_PLUS_EXC         = %8.5f", groupConfig[grpId].ALPHA_PLUS_EXC);
-		KERNEL_INFO("      - ALPHA_MINUS_EXC        = %8.5f", groupConfig[grpId].ALPHA_MINUS_EXC);
-		KERNEL_INFO("      - TAU_PLUS_INV_EXC       = %8.5f", groupConfig[grpId].TAU_PLUS_INV_EXC);
-		KERNEL_INFO("      - TAU_MINUS_INV_EXC      = %8.5f", groupConfig[grpId].TAU_MINUS_INV_EXC);
-		KERNEL_INFO("      - BETA_LTP               = %8.5f", groupConfig[grpId].BETA_LTP);
-		KERNEL_INFO("      - BETA_LTD               = %8.5f", groupConfig[grpId].BETA_LTD);
-		KERNEL_INFO("      - LAMBDA                 = %8.5f", groupConfig[grpId].LAMBDA);
-		KERNEL_INFO("      - DELTA                  = %8.5f", groupConfig[grpId].DELTA);
+		KERNEL_INFO("      - E-STDP TYPE            = %s",     groupConfigMap[grpId].WithESTDPtype==STANDARD? "STANDARD" :
+			(groupConfigMap[grpId].WithESTDPtype==DA_MOD?"  DA_MOD":" UNKNOWN"));
+		KERNEL_INFO("      - I-STDP TYPE            = %s",     groupConfigMap[grpId].WithISTDPtype==STANDARD? "STANDARD" :
+			(groupConfigMap[grpId].WithISTDPtype==DA_MOD?"  DA_MOD":" UNKNOWN"));
+		KERNEL_INFO("      - ALPHA_PLUS_EXC         = %8.5f", groupConfigMap[grpId].ALPHA_PLUS_EXC);
+		KERNEL_INFO("      - ALPHA_MINUS_EXC        = %8.5f", groupConfigMap[grpId].ALPHA_MINUS_EXC);
+		KERNEL_INFO("      - TAU_PLUS_INV_EXC       = %8.5f", groupConfigMap[grpId].TAU_PLUS_INV_EXC);
+		KERNEL_INFO("      - TAU_MINUS_INV_EXC      = %8.5f", groupConfigMap[grpId].TAU_MINUS_INV_EXC);
+		KERNEL_INFO("      - BETA_LTP               = %8.5f", groupConfigMap[grpId].BETA_LTP);
+		KERNEL_INFO("      - BETA_LTD               = %8.5f", groupConfigMap[grpId].BETA_LTD);
+		KERNEL_INFO("      - LAMBDA                 = %8.5f", groupConfigMap[grpId].LAMBDA);
+		KERNEL_INFO("      - DELTA                  = %8.5f", groupConfigMap[grpId].DELTA);
 	}
 }
 

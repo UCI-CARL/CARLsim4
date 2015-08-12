@@ -550,10 +550,10 @@ public:
 	//! returns RangeWeight struct of a connection
 	RangeWeight getWeightRange(short int connId);
 
-	bool isExcitatoryGroup(int g) { return (groupConfig[g].Type&TARGET_AMPA) || (groupConfig[g].Type&TARGET_NMDA); }
-	bool isInhibitoryGroup(int g) { return (groupConfig[g].Type&TARGET_GABAa) || (groupConfig[g].Type&TARGET_GABAb); }
-	bool isPoissonGroup(int g) { return (groupConfig[g].Type&POISSON_NEURON); }
-	bool isDopaminergicGroup(int g) { return (groupConfig[g].Type&TARGET_DA); }
+	bool isExcitatoryGroup(int g) { return (groupConfigMap[g].Type&TARGET_AMPA) || (groupConfigMap[g].Type&TARGET_NMDA); }
+	bool isInhibitoryGroup(int g) { return (groupConfigMap[g].Type&TARGET_GABAa) || (groupConfigMap[g].Type&TARGET_GABAb); }
+	bool isPoissonGroup(int g) { return (groupConfigMap[g].Type&POISSON_NEURON); }
+	bool isDopaminergicGroup(int g) { return (groupConfigMap[g].Type&TARGET_DA); }
 
 	//! returns whether group has homeostasis enabled (true) or not (false)
 	bool isGroupWithHomeostasis(int grpId);
@@ -661,6 +661,9 @@ private:
 	//! total size of the synaptic connection is 'length'
 	void initSynapticWeights();
 
+	//! initialize GroupConfigRT structure
+	void initGroupConfig(GroupConfigRT* groupConfig);
+
 	//! performs various verification checkups before building the network
 	void verifyNetwork();
 
@@ -740,6 +743,7 @@ private:
 	void resetCurrent();
 	void resetFiringInformation(); //!< resets the firing information when updateNetwork is called
 	void resetGroups();
+	void resetGroupConfigs(bool deallocate = false);
 	void resetNeuromodulator(int grpId);
 	void resetNeuron(int nid, int grpId);
 	//void resetPointers(bool deallocate=false);
@@ -900,7 +904,7 @@ private:
 	int				numGroups;
 	int				numConnections;		//!< number of connection calls (as in snn.connect(...))
 
-	std::map<int, GroupConfig> groupConfigMap;
+	std::map<int, GroupConfigRT> groupConfigMap;
 	std::map<int, ConnectConfig> connectConfigMap;
 
 	std::list<ConnectionInfo> connectionList;
