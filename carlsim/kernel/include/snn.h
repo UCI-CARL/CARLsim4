@@ -965,9 +965,11 @@ private:
 	snnSize_t cpuSnnSz;
 	snnSize_t gpuSnnSz;
 
-	//! firing info
-	unsigned int* timeTableD2;
-	unsigned int* timeTableD1;
+	//! Spike Tables (i.e., timeTableD1(D2, firingTableD1(D2)), auxiliary runtime data
+	unsigned int timeTableD2[TIMING_COUNT];
+	unsigned int timeTableD1[TIMING_COUNT];
+	int* firingTableD1;
+	int* firingTableD2;
 	unsigned int maxSpikesD1;
 	unsigned int maxSpikesD2;
 
