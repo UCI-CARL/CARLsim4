@@ -138,8 +138,6 @@ inline bool isInhibitoryNeuron (unsigned int& nid, unsigned int& numNInhPois, un
 #define MAX_CONN_PER_SNN 256	// hard limit: 2^16
 #define MAX_GRP_PER_SNN 128		// hard limit: 2^16
 
-#define TIMING_COUNT 1024  // (1000+maxDelay_) rounded to multiple 128
-
 #define COND_INTEGRATION_SCALE	2
 
 #define UNKNOWN_NEURON_MAX_FIRING_RATE    	25

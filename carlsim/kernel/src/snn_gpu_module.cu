@@ -44,6 +44,8 @@
 #include <error_code.h>
 #include <cuda_runtime.h>
 
+#define ROUNDED_TIMING_COUNT  (((1000+MAX_SYN_DELAY+1)+127) & ~(127))  // (1000+maxDelay_) rounded to multiple 128
+
 #define NUM_THREADS 128
 #define NUM_BLOCKS 64
 #define WARP_SIZE 32
@@ -72,10 +74,8 @@
 //
 ///////////////////////////////////////////////////////////////////
 
-__device__ unsigned int  timeTableD2GPU[TIMING_COUNT];
-__device__ unsigned int  timeTableD1GPU[TIMING_COUNT];
-__device__ __constant__ int* firingTableD2GPU;
-__device__ __constant__ int* firingTableD1GPU;
+__device__ unsigned int  timeTableD2GPU[ROUNDED_TIMING_COUNT];
+__device__ unsigned int  timeTableD1GPU[ROUNDED_TIMING_COUNT];
 
 __device__ unsigned int	spikeCountD2SecGPU;
 __device__ unsigned int	spikeCountD1SecGPU;
@@ -99,8 +99,8 @@ __device__  int   loadBufferSize;
 texture <int,    1, cudaReadModeElementType>  timeTableD2GPU_tex;
 texture <int,    1, cudaReadModeElementType>  timeTableD1GPU_tex;
 texture <int,    1, cudaReadModeElementType>  groupIdInfo_tex; // groupIDInfo is allocated using cudaMalloc thus doesn't require an offset when using textures
-__device__  __constant__ int timeTableD1GPU_tex_offset;
-__device__  __constant__ int timeTableD2GPU_tex_offset;
+__device__  int timeTableD1GPU_tex_offset;
+__device__  int timeTableD2GPU_tex_offset;
 
 // example of the quick synaptic table
 // index     cnt
@@ -180,7 +180,7 @@ __global__ void kernel_updateTimeTable(int simTime) {
 /////////////////////////////////////////////////////////////////////////////////
 __global__ void kernel_init () {
 	if(threadIdx.x==0 && blockIdx.x==0) {
-		for(int i=0; i < TIMING_COUNT; i++) {
+		for(int i=0; i < ROUNDED_TIMING_COUNT; i++) {
 			timeTableD2GPU[i]   = 0;
 			timeTableD1GPU[i]   = 0;
 		}
@@ -378,12 +378,12 @@ __device__ void updateFiringTable(int nId, short int grpId, volatile unsigned in
 		// this group has a delay of only 1
 		pos = atomicAdd((int*)&cntD1, 1);
 		//runtimeDataGPU.firingTableD1[pos]  = SET_FIRING_TABLE(nid, grpId);
-		firingTableD1GPU[pos] = nId;
+		runtimeDataGPU.firingTableD1[pos] = nId;
 	} else {
 		// all other groups is dumped here 
 		pos = atomicAdd((int*)&cntD2, 1);
 		//runtimeDataGPU.firingTableD2[pos]  = SET_FIRING_TABLE(nid, grpId);
-		firingTableD2GPU[pos] = nId;
+		runtimeDataGPU.firingTableD2[pos] = nId;
 	}
 }
 
@@ -1207,7 +1207,7 @@ __global__ void kernel_shiftFiringTable() {
 
 	for(int p = timeTableD2GPU[999], k = 0; p < timeTableD2GPU[999 + networkConfigGPU.maxDelay + 1]; p += gnthreads, k += gnthreads) {
 		if ((p + threadIdx.x) < timeTableD2GPU[999 + networkConfigGPU.maxDelay + 1])
-			firingTableD2GPU[k + threadIdx.x] = firingTableD2GPU[p + threadIdx.x];
+			runtimeDataGPU.firingTableD2[k + threadIdx.x] = runtimeDataGPU.firingTableD2[p + threadIdx.x];
 	}
 }
 
@@ -1394,7 +1394,7 @@ __global__ void kernel_doCurrentUpdateD2(int simTimeMs, int simTimeSec, int simT
 				// get the neuron nid here....
 				//int val = runtimeDataGPU.firingTableD2[fPos];
 				//int nid = GET_FIRING_TABLE_NID(val);
-				int nid = firingTableD2GPU[fPos];
+				int nid = runtimeDataGPU.firingTableD2[fPos];
 
 				// find the time of firing based on the firing number fPos
 				while ( !((fPos >= tex1Dfetch(timeTableD2GPU_tex, t_pos + networkConfigGPU.maxDelay + timeTableD2GPU_tex_offset)) 
@@ -1516,7 +1516,7 @@ __global__ void kernel_doCurrentUpdateD1(int simTimeMs, int simTimeSec, int simT
 				atomicAdd((int*)&sh_NeuronCnt, 1);
 				//int val  = runtimeDataGPU.firingTableD1[fPos];
 				//int nid  = GET_FIRING_TABLE_NID(val);
-				int nid = firingTableD1GPU[fPos];
+				int nid = runtimeDataGPU.firingTableD1[fPos];
 				int tPos = (networkConfigGPU.maxDelay + 1) * nid;
 				//sh_firingId[threadIdx.x] 	 	 = val;
 				sh_firingId[threadIdx.x] = nid;
@@ -2194,34 +2194,18 @@ void SNN::copyState(RuntimeData* dest, bool allocateMem) {
 	CUDA_CHECK_ERRORS( cudaMemcpy( dest->synSpikeTime, snnRuntimeData.synSpikeTime, sizeof(int)*numPreSynNet, kind));
 	networkConfig.preSynLength = numPreSynNet;
 
-	//if(allocateMem) {
-	//	assert(dest->firingTableD1 == NULL);
-	//	assert(dest->firingTableD2 == NULL);
-	//}
+	if(allocateMem) {
+		assert(dest->firingTableD1 == NULL);
+		assert(dest->firingTableD2 == NULL);
+	}
 
 	// allocate 1ms firing table
-	if(allocateMem) {
-		void* devPtr;
-		CUDA_CHECK_ERRORS(cudaMalloc((void**)&devPtr, sizeof(int) * networkConfig.maxSpikesD1));
-		CUDA_CHECK_ERRORS(cudaMemcpyToSymbol(firingTableD1GPU, &devPtr, sizeof(void*), 0, cudaMemcpyHostToDevice));
-	}
-	if (networkConfig.maxSpikesD1 > 0) {
-		void* devPtr;
-		CUDA_CHECK_ERRORS(cudaMemcpyFromSymbol(&devPtr, firingTableD1GPU, sizeof(void*), 0, cudaMemcpyDeviceToHost));
-		CUDA_CHECK_ERRORS(cudaMemcpy(devPtr, firingTableD1, sizeof(int) * networkConfig.maxSpikesD1, kind));
-	}
+	if(allocateMem)		CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->firingTableD1, sizeof(int)*networkConfig.maxSpikesD1));
+	if (networkConfig.maxSpikesD1>0) CUDA_CHECK_ERRORS( cudaMemcpy( dest->firingTableD1, snnRuntimeData.firingTableD1, sizeof(int)*networkConfig.maxSpikesD1, kind));
 
 	// allocate 2+ms firing table
-	if(allocateMem) {
-		void* devPtr;
-		CUDA_CHECK_ERRORS(cudaMalloc((void**)&devPtr, sizeof(int) * networkConfig.maxSpikesD2));
-		CUDA_CHECK_ERRORS(cudaMemcpyToSymbol(firingTableD2GPU, &devPtr, sizeof(void*), 0, cudaMemcpyHostToDevice));
-	}
-	if (networkConfig.maxSpikesD2 > 0) {
-		void* devPtr;
-		CUDA_CHECK_ERRORS(cudaMemcpyFromSymbol(&devPtr, firingTableD2GPU, sizeof(void*), 0, cudaMemcpyDeviceToHost));
-		CUDA_CHECK_ERRORS(cudaMemcpy(devPtr, firingTableD2, sizeof(int) * networkConfig.maxSpikesD2, kind));
-	}
+	if(allocateMem)		CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->firingTableD2, sizeof(int)*networkConfig.maxSpikesD2));
+	if (networkConfig.maxSpikesD2>0) CUDA_CHECK_ERRORS( cudaMemcpy( dest->firingTableD2, snnRuntimeData.firingTableD2, sizeof(int)*networkConfig.maxSpikesD2, kind));
 
 	// we don't need this data structure if the network doesn't have any plastic synapses at all
 	if (!sim_with_fixedwts) {
@@ -2387,13 +2371,6 @@ void SNN::deleteObjects_GPU() {
 	// wait for kernels to complete
 	CUDA_CHECK_ERRORS(cudaThreadSynchronize());
 
-	void* devPtr1;
-	void* devPtr2;
-	CUDA_CHECK_ERRORS(cudaMemcpyFromSymbol(&devPtr1, firingTableD1GPU, sizeof(int*), 0, cudaMemcpyDeviceToHost));
-	CUDA_CHECK_ERRORS(cudaMemcpyFromSymbol(&devPtr2, firingTableD2GPU, sizeof(int*), 0, cudaMemcpyDeviceToHost));
-	CUDA_CHECK_ERRORS(cudaFree(devPtr1));
-	CUDA_CHECK_ERRORS(cudaFree(devPtr2));
-
 	// cudaFree all device pointers
 	CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData.voltage) );
 	CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData.recovery) );
@@ -2411,9 +2388,12 @@ void SNN::deleteObjects_GPU() {
 	CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData.maxSynWt) );
 	CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData.nSpikeCnt) );
 	CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData.curSpike) ); // \FIXME exists but never used...
+	CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData.firingTableD2) );
+	CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData.firingTableD1) );
 	CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData.avgFiring) );
 	CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData.baseFiring) );
 	CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData.baseFiringInv) );
+
 	CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData.grpDA) );
 	CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData.grp5HT) );
 	CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData.grpACh) );
@@ -2626,18 +2606,15 @@ void SNN::copyExternalCurrent(RuntimeData* dest, RuntimeData* src, bool allocate
 void SNN::copyFiringInfo_GPU()
 {
 	unsigned int gpuSpikeCountD1Sec, gpuSpikeCountD2Sec;
-	void *devPtr1, *devPtr2;
-	CUDA_CHECK_ERRORS(cudaMemcpyFromSymbol(&gpuSpikeCountD2Sec, spikeCountD2SecGPU, sizeof(int), 0, cudaMemcpyDeviceToHost));
-	CUDA_CHECK_ERRORS(cudaMemcpyFromSymbol(&gpuSpikeCountD1Sec, spikeCountD1SecGPU, sizeof(int), 0, cudaMemcpyDeviceToHost));
+	CUDA_CHECK_ERRORS( cudaMemcpyFromSymbol( &gpuSpikeCountD2Sec, spikeCountD2SecGPU, sizeof(int), 0, cudaMemcpyDeviceToHost));
+	CUDA_CHECK_ERRORS( cudaMemcpyFromSymbol( &gpuSpikeCountD1Sec, spikeCountD1SecGPU, sizeof(int), 0, cudaMemcpyDeviceToHost));
 	spikeCountSec = gpuSpikeCountD1Sec + gpuSpikeCountD2Sec;
 	spikeCountD1Sec  = gpuSpikeCountD1Sec;
 	spikeCountD2Sec = gpuSpikeCountD2Sec;
 	assert(gpuSpikeCountD1Sec<=maxSpikesD1);
 	assert(gpuSpikeCountD2Sec<=maxSpikesD2);
-	CUDA_CHECK_ERRORS( cudaMemcpyFromSymbol(&devPtr2, firingTableD2GPU, sizeof(int*), 0, cudaMemcpyDeviceToHost));
-	CUDA_CHECK_ERRORS( cudaMemcpyFromSymbol(&devPtr1, firingTableD1GPU, sizeof(int*), 0, cudaMemcpyDeviceToHost));
-	CUDA_CHECK_ERRORS( cudaMemcpy(firingTableD2, devPtr2, sizeof(int) * gpuSpikeCountD2Sec, cudaMemcpyDeviceToHost));
-	CUDA_CHECK_ERRORS( cudaMemcpy(firingTableD1, devPtr1, sizeof(int) * gpuSpikeCountD1Sec, cudaMemcpyDeviceToHost));
+	CUDA_CHECK_ERRORS( cudaMemcpy(snnRuntimeData.firingTableD2, gpuRuntimeData.firingTableD2, sizeof(int)*gpuSpikeCountD2Sec, cudaMemcpyDeviceToHost));
+	CUDA_CHECK_ERRORS( cudaMemcpy(snnRuntimeData.firingTableD1, gpuRuntimeData.firingTableD1, sizeof(int)*gpuSpikeCountD1Sec, cudaMemcpyDeviceToHost));
 	CUDA_CHECK_ERRORS( cudaMemcpyFromSymbol(timeTableD2, timeTableD2GPU, sizeof(int)*(1000+maxDelay_+1), 0, cudaMemcpyDeviceToHost));
 	CUDA_CHECK_ERRORS( cudaMemcpyFromSymbol(timeTableD1, timeTableD1GPU, sizeof(int)*(1000+maxDelay_+1), 0, cudaMemcpyDeviceToHost));
 
@@ -2930,13 +2907,13 @@ void SNN::allocateSNN_GPU() {
 	void* devPtr;
 	size_t offset;
 	CUDA_CHECK_ERRORS(cudaGetSymbolAddress(&devPtr, timeTableD2GPU));
-	CUDA_CHECK_ERRORS(cudaBindTexture(&offset, timeTableD2GPU_tex, devPtr, sizeof(int) * TIMING_COUNT));
+	CUDA_CHECK_ERRORS(cudaBindTexture(&offset, timeTableD2GPU_tex, devPtr, sizeof(int) * ROUNDED_TIMING_COUNT));
 	offset = offset / sizeof(int);
 	CUDA_CHECK_ERRORS(cudaGetSymbolAddress(&devPtr, timeTableD2GPU_tex_offset));
 	CUDA_CHECK_ERRORS(cudaMemcpy(devPtr, &offset, sizeof(int), cudaMemcpyHostToDevice));
 		
 	CUDA_CHECK_ERRORS(cudaGetSymbolAddress(&devPtr, timeTableD1GPU));
-	CUDA_CHECK_ERRORS(cudaBindTexture(&offset, timeTableD1GPU_tex, devPtr, sizeof(int) * TIMING_COUNT));
+	CUDA_CHECK_ERRORS(cudaBindTexture(&offset, timeTableD1GPU_tex, devPtr, sizeof(int) * ROUNDED_TIMING_COUNT));
 	offset = offset / sizeof(int);
 	CUDA_CHECK_ERRORS(cudaGetSymbolAddress(&devPtr, timeTableD1GPU_tex_offset));
 	CUDA_CHECK_ERRORS(cudaMemcpy(devPtr, &offset, sizeof(int), cudaMemcpyHostToDevice));

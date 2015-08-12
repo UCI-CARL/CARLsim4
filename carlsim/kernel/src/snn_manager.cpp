@@ -2305,7 +2305,7 @@ int SNN::addSpikeToTable(int nid, int g) {
 	// insert poisson (input) spikes into firingTableD1(D2)
 	if (groupConfig[g].MaxDelay == 1) {
 		assert(nid < numN);
-		firingTableD1[spikeCountD1Sec] = nid;
+		snnRuntimeData.firingTableD1[spikeCountD1Sec] = nid;
 		spikeCountD1Sec++;
 		if (spikeCountD1Sec >= maxSpikesD1) {
 			spikeBufferFull = 2;
@@ -2313,7 +2313,7 @@ int SNN::addSpikeToTable(int nid, int g) {
 		}
 	} else {
 		assert(nid < numN);
-		firingTableD2[spikeCountD2Sec] = nid;
+		snnRuntimeData.firingTableD2[spikeCountD2Sec] = nid;
 		spikeCountD2Sec++;
 		if (spikeCountD2Sec >= maxSpikesD2) {
 			spikeBufferFull = 1;
@@ -4192,11 +4192,11 @@ void SNN::resetRuntimeData(bool deallocate) {
 	if (snnRuntimeData.grpIds!=NULL && deallocate) delete[] snnRuntimeData.grpIds;
 	snnRuntimeData.grpIds=NULL;
 
-	if (firingTableD2!=NULL && deallocate) delete[] firingTableD2;
-	if (firingTableD1!=NULL && deallocate) delete[] firingTableD1;
-	//if (timeTableD2!=NULL && deallocate) delete[] timeTableD2;
-	//if (timeTableD1!=NULL && deallocate) delete[] timeTableD1;
-	firingTableD2=NULL; firingTableD1=NULL; //timeTableD2=NULL; timeTableD1=NULL;
+	if (snnRuntimeData.firingTableD2!=NULL && deallocate) delete[] snnRuntimeData.firingTableD2;
+	if (snnRuntimeData.firingTableD1!=NULL && deallocate) delete[] snnRuntimeData.firingTableD1;
+	if (timeTableD2!=NULL && deallocate) delete[] timeTableD2;
+	if (timeTableD1!=NULL && deallocate) delete[] timeTableD1;
+	snnRuntimeData.firingTableD2=NULL; snnRuntimeData.firingTableD1=NULL; timeTableD2=NULL; timeTableD1=NULL;
 
 	// clear poisson generator
 	if (gpuPoissonRand != NULL) delete gpuPoissonRand;
@@ -4313,8 +4313,8 @@ void SNN::resetTimeTable() {
 }
 
 void SNN::resetFiringTable() {
-	memset(firingTableD2, 0, sizeof(int) * maxSpikesD2);
-	memset(firingTableD1, 0, sizeof(int) * maxSpikesD1);
+	memset(snnRuntimeData.firingTableD2, 0, sizeof(int) * maxSpikesD2);
+	memset(snnRuntimeData.firingTableD1, 0, sizeof(int) * maxSpikesD1);
 }
 
 
@@ -4630,13 +4630,13 @@ void SNN::updateSpikeGeneratorsInit() {
  * \note SpikeTables include firingTableD1(D2) and timeTableD1(D2)
  */
 void SNN::allocateSpikeTables() {
-	firingTableD2 = new int[maxSpikesD2];
-	firingTableD1 = new int[maxSpikesD1];
+	snnRuntimeData.firingTableD2 = new int[maxSpikesD2];
+	snnRuntimeData.firingTableD1 = new int[maxSpikesD1];
 	resetFiringTable();
 	cpuSnnSz.spikingInfoSize += sizeof(int) * ((maxSpikesD2 + maxSpikesD1) + 2* (1000 + maxDelay_ + 1));
 
-	//timeTableD2  = new unsigned int[1000 + maxDelay_ + 1];
-	//timeTableD1  = new unsigned int[1000 + maxDelay_ + 1];
+	timeTableD2  = new unsigned int[1000 + maxDelay_ + 1];
+	timeTableD1  = new unsigned int[1000 + maxDelay_ + 1];
 	resetTimeTable();
 	cpuSnnSz.spikingInfoSize += sizeof(int) * 2 * (1000 + maxDelay_ + 1);
 }
@@ -4735,7 +4735,7 @@ void SNN::updateSpikeMonitor(int grpId) {
 		// may need need to dump these spikes to an output file
 		for (int k=0; k < 2; k++) {
 			unsigned int* timeTablePtr = (k==0)?timeTableD2:timeTableD1;
-			int* fireTablePtr = (k==0)?firingTableD2:firingTableD1;
+			int* fireTablePtr = (k==0)?snnRuntimeData.firingTableD2:snnRuntimeData.firingTableD1;
 			for(int t=numMsMin; t<numMsMax; t++) {
 				for(int i=timeTablePtr[t+maxDelay_]; i<timeTablePtr[t+maxDelay_+1];i++) {
 					// retrieve the neuron id

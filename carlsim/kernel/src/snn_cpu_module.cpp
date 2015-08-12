@@ -50,7 +50,7 @@ void SNN::doD1CurrentUpdate() {
 
 	while((k>=k_end) && (k>=0)) {
 
-		int neuron_id = firingTableD1[k];
+		int neuron_id      = snnRuntimeData.firingTableD1[k];
 		assert(neuron_id<numN);
 
 		delay_info_t dPar = snnRuntimeData.postDelayInfo[neuron_id*(maxDelay_+1)];
@@ -76,7 +76,7 @@ void SNN::doD2CurrentUpdate() {
 	while((k>=k_end)&& (k >=0)) {
 
 		// get the neuron id from the index k
-		int i  = firingTableD2[k];
+		int i  = snnRuntimeData.firingTableD2[k];
 
 		// find the time of firing from the timeTable using index k
 		while (!((k >= timeTableD2[t_pos+maxDelay_])&&(k < timeTableD2[t_pos+maxDelay_+1]))) {
@@ -705,7 +705,7 @@ void SNN::shiftSpikeTables() {
 	// Read the neuron ids that fired in the last maxDelay_ seconds
 	// and put it to the beginning of the firing table...
 	for(int p=timeTableD2[999],k=0;p<timeTableD2[999+maxDelay_+1];p++,k++) {
-		firingTableD2[k] = firingTableD2[p];
+		snnRuntimeData.firingTableD2[k]=snnRuntimeData.firingTableD2[p];
 	}
 
 	for(int i=0; i < maxDelay_; i++) {

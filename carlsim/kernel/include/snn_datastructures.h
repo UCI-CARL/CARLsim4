@@ -229,8 +229,8 @@ typedef struct RuntimeData_s {
 
 	delay_info_t* postDelayInfo;  	//!< delay information
 
-	//int* firingTableD1;
-	//int* firingTableD2;
+	int* firingTableD1;
+	int* firingTableD2;
 
 	float*        poissonFireRate;
 	unsigned int* poissonRandPtr;		//!< firing random number. max value is 10,000
