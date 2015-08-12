@@ -272,17 +272,17 @@ typedef struct RuntimeData_s {
  *	\sa SNN
  */
 typedef struct NetworkConfigRT_s  {
-	size_t			STP_Pitch;		//!< numN rounded upwards to the nearest 256 boundary, used for GPU only
 	int numN;
 	int maxDelay;
 	int numNExcReg;
 	int numNInhReg;
 	int numNReg;
-	unsigned int	I_setLength;	//!< used for GPU only
-	size_t			I_setPitch;		//!< used for GPU only
-	unsigned int	preSynLength;
-	int numPostSynNet;
-	int numPreSynNet;
+	unsigned int I_setLength; //!< used for GPU only
+	size_t       I_setPitch;  //!< used for GPU only
+	size_t       STP_Pitch;   //!< numN rounded upwards to the nearest 256 boundary, used for GPU only
+	unsigned int preSynLength;
+	int numPostSynNet; //!< total number of post-connections in a network
+	int numPreSynNet;  //!< total number of pre-connections in a network
 	unsigned int maxSpikesD2;
 	unsigned int maxSpikesD1;
 	int numNExcPois;
@@ -290,26 +290,27 @@ typedef struct NetworkConfigRT_s  {
 	int numNPois;
 	int numGroups;
 	int numConnections;
-	bool 			sim_with_fixedwts;
-	bool 			sim_with_conductances;
-	bool 			sim_with_stdp;
-	bool 			sim_with_modulated_stdp;
-	bool 			sim_with_homeostasis;
-	bool 			sim_with_stp;
-	bool			sim_in_testing;
-	float 			stdpScaleFactor;
-	float 			wtChangeDecay; //!< the wtChange decay
+	bool sim_with_fixedwts;
+	bool sim_with_conductances;
+	bool sim_with_stdp;
+	bool sim_with_modulated_stdp;
+	bool sim_with_homeostasis;
+	bool sim_with_stp;
+	bool sim_in_testing;
 
-	bool 			sim_with_NMDA_rise;	//!< a flag to inform whether to compute NMDA rise time
-	bool 			sim_with_GABAb_rise;	//!< a flag to inform whether to compute GABAb rise time
-	double 			dAMPA;				//!< multiplication factor for decay time of AMPA conductance (gAMPA[i] *= dAMPA)
-	double 			rNMDA;				//!< multiplication factor for rise time of NMDA
-	double 			dNMDA;				//!< multiplication factor for decay time of NMDA
-	double 			sNMDA;				//!< scaling factor for NMDA amplitude
-	double 			dGABAa;				//!< multiplication factor for decay time of GABAa
-	double 			rGABAb;				//!< multiplication factor for rise time of GABAb
-	double 			dGABAb;				//!< multiplication factor for decay time of GABAb
-	double 			sGABAb;				//!< scaling factor for GABAb amplitude
+	float stdpScaleFactor;
+	float wtChangeDecay; //!< the wtChange decay
+
+	bool sim_with_NMDA_rise;  //!< a flag to inform whether to compute NMDA rise time
+	bool sim_with_GABAb_rise; //!< a flag to inform whether to compute GABAb rise time
+	double dAMPA;             //!< multiplication factor for decay time of AMPA conductance (gAMPA[i] *= dAMPA)
+	double rNMDA;             //!< multiplication factor for rise time of NMDA
+	double dNMDA;             //!< multiplication factor for decay time of NMDA
+	double sNMDA;             //!< scaling factor for NMDA amplitude
+	double dGABAa;            //!< multiplication factor for decay time of GABAa
+	double rGABAb;            //!< multiplication factor for rise time of GABAb
+	double dGABAb;            //!< multiplication factor for decay time of GABAb
+	double sGABAb;            //!< scaling factor for GABAb amplitude
 } NetworkConfigRT;
 
 /*!
@@ -378,26 +379,26 @@ typedef struct GroupConfigRT_s {
 	float		LAMBDA;
 	float		DELTA;
 
-	bool withSpikeCounter; //!< if this flag is set, we want to keep track of how many spikes per neuron in the group
-	int spkCntRecordDur; //!< record duration, after which spike buffer gets reset
+	bool withSpikeCounter;     //!< if this flag is set, we want to keep track of how many spikes per neuron in the group
+	int spkCntRecordDur;       //!< record duration, after which spike buffer gets reset
 	int spkCntRecordDurHelper; //!< counter to help make fast modulo
-	int spkCntBufPos; //!< which position in the spike buffer the group has
+	int spkCntBufPos;          //!< which position in the spike buffer the group has 
 
 	//!< homeostatic plasticity variables
-	float	avgTimeScale;
-	float 	avgTimeScale_decay;
-	float	avgTimeScaleInv;
-	float	homeostasisScale;
+	float avgTimeScale;
+	float avgTimeScale_decay;
+	float avgTimeScaleInv;
+	float homeostasisScale;
 
 	// parameters of neuromodulator
-	float		baseDP;		//!< baseline concentration of Dopamine
-	float		base5HT;	//!< baseline concentration of Serotonin
-	float		baseACh;	//!< baseline concentration of Acetylcholine
-	float		baseNE;		//!< baseline concentration of Noradrenaline
-	float		decayDP;		//!< decay rate for Dopaamine
-	float		decay5HT;		//!< decay rate for Serotonin
-	float		decayACh;		//!< decay rate for Acetylcholine
-	float		decayNE;		//!< decay rate for Noradrenaline
+	float baseDP;  //!< baseline concentration of Dopamine
+	float base5HT; //!< baseline concentration of Serotonin
+	float baseACh; //!< baseline concentration of Acetylcholine
+	float baseNE;  //!< baseline concentration of Noradrenaline
+	float decayDP; //!< decay rate for Dopaamine
+	float decay5HT;//!< decay rate for Serotonin
+	float decayACh;//!< decay rate for Acetylcholine
+	float decayNE; //!< decay rate for Noradrenaline
 
 	bool 		writeSpikesToFile; 	//!< whether spikes should be written to file (needs SpikeMonitorId>-1)
 	bool 		writeSpikesToArray;	//!< whether spikes should be written to file (needs SpikeMonitorId>-1)

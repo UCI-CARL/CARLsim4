@@ -1620,7 +1620,7 @@ void SNN::copyConnections(RuntimeData* dest, int kind, bool allocateMem) {
 	networkConfig.I_setLength = ceil(((maxNumPreSynGrp) / 32.0f));
 	if(allocateMem)
 		cudaMallocPitch((void**)&dest->I_set, &networkConfig.I_setPitch, sizeof(int) * numNReg, networkConfig.I_setLength);
-	assert(networkConfig.I_setPitch > 0 || maxNumPreSynGrp==0);
+	assert(networkConfig.I_setPitch > 0 || maxNumPreSynGrp == 0);
 	CUDA_CHECK_ERRORS(cudaMemset(dest->I_set, 0, networkConfig.I_setPitch * networkConfig.I_setLength));
 
 	// connection synaptic lengths and cumulative lengths...
@@ -2630,11 +2630,9 @@ void SNN::allocateNetworkConfig() {
 	networkConfig.numNExcReg = numNExcReg;
 	networkConfig.numNInhReg	= numNInhReg;
 	networkConfig.numNReg = numNReg;
-	assert(numNReg == (numNExcReg + numNInhReg));
 	networkConfig.numNPois = numNPois;
 	networkConfig.numNExcPois = numNExcPois;		
 	networkConfig.numNInhPois = numNInhPois;
-	assert(numNPois == (numNExcPois + numNInhPois));
 	networkConfig.maxSpikesD2 = maxSpikesD2;
 	networkConfig.maxSpikesD1 = maxSpikesD1;
 	networkConfig.sim_with_fixedwts = sim_with_fixedwts;
@@ -2741,19 +2739,9 @@ void SNN::copyWeightsGPU(int nid, int src_grp) {
 // Allocates required memory and then initialize the GPU
 void SNN::allocateSNN_GPU() {
 	checkAndSetGPUDevice();
-	// \FIXME why is this even here? shouldn't this be checked way earlier? and then in CPU_MODE, too...
-	if (maxDelay_ > MAX_SYN_DELAY) {
-		KERNEL_ERROR("You are using a synaptic delay (%d) greater than MAX_SYN_DELAY defined in config.h",maxDelay_);
-		exitSimulation(1);
-	}
 
 	// if we have already allocated the GPU data.. dont do it again...
 	if(gpuPoissonRand != NULL) return;
-
-	int numN=0;
-	for (int g=0;g<numGroups;g++) {
-		numN += groupConfig[g].SizeN;
-	}
 
 	// generate the random number for the poisson neuron here...
 	if(gpuPoissonRand == NULL) {

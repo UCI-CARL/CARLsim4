@@ -164,7 +164,7 @@ short int SNN::connect(int grpId1, int grpId2, const std::string& _type, float i
 	assert(numConnections < MAX_CONN_PER_SNN);	// make sure we don't overflow connId
 	numConnections++;
 	
-	return (numConnections-1);
+	return (numConnections - 1);
 }
 
 // make custom connections from grpId1 to grpId2
@@ -204,7 +204,7 @@ short int SNN::connect(int grpId1, int grpId2, ConnectionGeneratorCore* conn, fl
 	assert(numConnections < MAX_CONN_PER_SNN);	// make sure we don't overflow connId
 	numConnections++;
 
-	return (numConnections-1);
+	return (numConnections - 1);
 }
 
 
@@ -397,8 +397,7 @@ int SNN::createSpikeGeneratorGroup(const std::string& grpName, const Grid3D& gri
 }
 
 // set conductance values for a simulation (custom values or disable conductances alltogether)
-void SNN::setConductances(bool isSet, int tdAMPA, int trNMDA, int tdNMDA, int tdGABAa,
-int trGABAb, int tdGABAb) {
+void SNN::setConductances(bool isSet, int tdAMPA, int trNMDA, int tdNMDA, int tdGABAa, int trGABAb, int tdGABAb) {
 	if (isSet) {
 		assert(tdAMPA>0); assert(tdNMDA>0); assert(tdGABAa>0); assert(tdGABAb>0);
 		assert(trNMDA>=0); assert(trGABAb>=0); // 0 to disable rise times
@@ -2672,7 +2671,7 @@ void SNN::checkSpikeCounterRecordDur() {
 	}
 }
 
-void SNN::collectNetworkConfig() {
+void SNN::collectGlobalNetworkConfig() {
 	// find the maximum number of pre- and post-connections among groups
 	// SNN::maxNumPreSynGrp and SNN::maxNumPostSynGrp are updated
 	findMaxNumSynapsesGroups(&maxNumPostSynGrp, &maxNumPreSynGrp);
@@ -2685,6 +2684,7 @@ void SNN::collectNetworkConfig() {
 	// SNN::maxDelay_ is updated
 	findMaxDelay(&maxDelay_);
 
+	// FIXME: move this to SNN::collectLocalNetworkConfig()
 	// find the maximum number of spikes in D1 (i.e., maxDelay == 1) and D2 (i.e., maxDelay >= 2) sets
 	findMaxSpikesD1D2(&maxSpikesD1, &maxSpikesD2);
 
@@ -2697,21 +2697,26 @@ void SNN::collectNetworkConfig() {
 void SNN::compileSNN() {
 	KERNEL_DEBUG("Beginning compilation of the network....");
 
-	// compile (update) group and connect configs according to their mutual information
-	// update groupConfig[grpId].MaxDelay groupConfig[grpId].FixedInputWts
-	// assign groupConfig[grpId].StartN and groupConfig[grpId].EndN
-	// Note: the modified data in this function should be invariant in single GPU or multi GPUs
+	// compile (update) group and connection configs according to their mutual information
+	// update GroupConfig::MaxDelay GroupConfig::FixedInputWts
+	// assign GroupConfig::StartN and GroupConfig::EndN
+	// Note: MaxDelay, FixedInputWts, StartN, and EndN are invariant in single-GPU or multi-GPUs mode
 	compileGroupConfig();
 
 	compileConnectConfig(); // for future use
 
 	// generation connections among groups according to group and connect configs
+	// update ConnectConfig::numberOfConnections
+	// update GroupConfig::numPostSynapses, GroupConfig::numPreSynapses
 	connectNetwork();
 
-	// collect the network configs according to compiled gorup and connect configs
+	// collect the global network config according to compiled gorup and connection configs
 	// collect SNN::maxNumPreSynGrp, SNN::maxNumPostSynGrp, SNN::maxDelay_
-	// collect SNN::maxSpikesD1, SNN::maxSpikesD2
-	collectNetworkConfig();
+	// collect SNN::numPostSynNet, SNN::numPreSynNet
+	// Note: maxDelay_ is invariant in single-GPU or multi-GPUs mode
+	// Note: maxNumPreSynGrp and maxNumPostSynGrp, numPreSynNet, numPostSynNet are for users' information,
+	// they will be updated if the global network is partitioned into local networks.
+	collectGlobalNetworkConfig();
 
 	// perform various consistency checks:
 	// - numNeurons vs. sum of all neurons
@@ -2721,7 +2726,7 @@ void SNN::compileSNN() {
 
 	// display the network configuration
 	KERNEL_INFO("\n");
-	KERNEL_INFO("***************************** Network Configuration **********************************");
+	KERNEL_INFO("************************** Global Network Configuration *******************************");
 	KERNEL_INFO("The number of neurons in the network (numN) = %d", numN);
 	KERNEL_INFO("The maximum number of post-connectoins among groups (maxNumPostSynGrp) = %d", maxNumPostSynGrp);
 	KERNEL_INFO("The maximum number of pre-connections among groups (maxNumPreSynGrp) = %d", maxNumPreSynGrp);
@@ -3391,6 +3396,11 @@ void SNN::verifyNetwork() {
 	// \FIXME: need to figure out STP buffer for delays > 1
 	if (sim_with_stp && maxDelay_>1) {
 		KERNEL_ERROR("STP with delays > 1 ms is currently not supported.");
+		exitSimulation(1);
+	}
+
+	if (maxDelay_ > MAX_SYN_DELAY) {
+		KERNEL_ERROR("You are using a synaptic delay (%d) greater than MAX_SYN_DELAY defined in config.h", maxDelay_);
 		exitSimulation(1);
 	}
 }

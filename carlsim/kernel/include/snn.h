@@ -604,12 +604,17 @@ private:
 	void checkSpikeCounterRecordDur();
 
 	/*!
-	 * \brief scan all GroupConfigs and ConnectConfigs for generating the configuration of a network
+	 * \brief scan all GroupConfigs and ConnectConfigs for generating the configuration of a global network
 	 */
-	void collectNetworkConfig();
+	void collectGlobalNetworkConfig();
 
 	void compileConnectConfig(); //!< for future use
 	void compileGroupConfig();
+
+	/*!
+	 * \brief scan all group configs and connection configs for generating the configuration of a local network
+	 */
+	void collectLocalNetworkConfigs();
 
 	/*!
 	 * \brief generate connections among groups according to connect configuration
