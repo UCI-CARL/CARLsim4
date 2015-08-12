@@ -1677,6 +1677,8 @@ uint8_t* SNN::getDelays(int gIDpre, int gIDpost, int& Npre, int& Npost, uint8_t*
 	return delays;
 }
 
+// FIXME: distinguish the function call at CONFIG_STATE and SETUP_STATE, where group(connect)Config[] might not be available
+// or group(connect)ConfigMap is not sync with group(connect)Config[]
 Grid3D SNN::getGroupGrid3D(int grpId) {
 	assert(grpId>=0 && grpId<numGroups);
 	return Grid3D(groupConfigMap[grpId].SizeX, groupConfigMap[grpId].SizeY, groupConfigMap[grpId].SizeZ);
@@ -1693,10 +1695,10 @@ int SNN::getGroupId(std::string grpName) {
 	return -1;
 }
 
-GroupConfigRT SNN::getGroupConfig(int grpId) {
-	assert(grpId>=-1 && grpId<numGroups);
-	return groupConfig[grpId];
-}
+//GroupConfigRT SNN::getGroupConfig(int grpId) {
+//	assert(grpId>=-1 && grpId<numGroups);
+//	return groupConfig[grpId];
+//}
 
 std::string SNN::getGroupName(int grpId) {
 	assert(grpId>=-1 && grpId<numGroups);

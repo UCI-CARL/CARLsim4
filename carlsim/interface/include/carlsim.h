@@ -945,7 +945,7 @@ public:
 	 * \brief Sets a group monitor for a group, custom GroupMonitor class
 	 *
 	 * \TODO finish docu
-	 * \STATE ::CONFIG_STATE, ::SETUP_STATE
+	 * \STATE ::SETUP_STATE
 	 */
 	GroupMonitor* setGroupMonitor(int grpId, const std::string& fname);
 
@@ -1024,7 +1024,7 @@ public:
 	 * name of the spike file will be updated. This is the same as calling SpikeMonitor::setLogFile directly, and
 	 * allows you to redirect the spike file stream mid-simulation (see \ref ch7s1s3_redirecting_file_streams).
 	 *
-	 * \STATE ::CONFIG_STATE, ::SETUP_STATE
+	 * \STATE ::SETUP_STATE
 	 * \param[in] grpId 		the group ID
 	 * \param[in] fileName 		name of the binary file to be created. Leave empty for default name
 	 *                      	"results/spk_{grpName}.dat". Set to string "NULL" to suppress file creation. Default: ""
@@ -1070,7 +1070,7 @@ public:
 	 * updated accordingly if the flag updateWeightRange is set to true. If the flag is set to false, then the
 	 * specified weight value will be corrected to lie on the boundary (either minWt or maxWt).
 	 *
-	 * \STATE ::CONFIG_STATE, ::RUN_STATE
+	 * \STATE ::SETUP_STATE, ::RUN_STATE
 	 * \param[in] connId            the connection ID to manipulate
 	 * \param[in] neurIdPre         pre-synaptic neuron ID (zero-indexed)
 	 * \param[in] neurIdPost        post-synaptic neuron ID (zero-indexed)
@@ -1211,6 +1211,7 @@ public:
 	 */
 	uint8_t* getDelays(int gIDpre, int gIDpost, int& Npre, int& Npost, uint8_t* delays=NULL);
 
+	// FIXME: This function is called in SNN::connect() at CONFIG_STATE, which violate the restriction
 	/*!
 	 * \brief returns the 3D grid struct of a group
 	 *
@@ -1255,7 +1256,7 @@ public:
 	 * For more information see createGroup and the Grid3D struct.
  	 * See also getNeuronLocation3D(int grpId, int relNeurId).
 	 *
-	 * \STATE ::CONFIG_STATE, ::SETUP_STATE, EXE
+	 * \STATE ::CONFIG_STATE, ::SETUP_STATE, ::EXE_STATE
 	 * \param[in] neurId the neuron ID for which the 3D location should be returned
 	 * \returns the 3D location a neuron codes for as a Point3D struct
 	 */
@@ -1277,7 +1278,7 @@ public:
 	 * For more information see createGroup and the Grid3D struct.
 	 * See also getNeuronLocation3D(int neurId).
 	 *
-	 * \STATE ::CONFIG_STATE, ::SETUP_STATE, EXE
+	 * \STATE ::CONFIG_STATE, ::SETUP_STATE, ::EXE_STATE
 	 * \param[in] grpId       the group ID
 	 * \param[in] relNeurId   the neuron ID (relative to the group) for which the 3D location should be returned
 	 * \returns the 3D location a neuron codes for as a Point3D struct

@@ -475,7 +475,7 @@ public:
 
 	Grid3D getGroupGrid3D(int grpId);
 	int getGroupId(std::string grpName);
-	GroupConfigRT getGroupConfig(int grpId);
+	//GroupConfigRT getGroupConfig(int grpId);
 	std::string getGroupName(int grpId);
 	GroupSTDPInfo getGroupSTDPInfo(int grpId);
 	GroupNeuromodulatorInfo getGroupNeuromodulatorInfo(int grpId);
