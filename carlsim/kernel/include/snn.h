@@ -483,9 +483,9 @@ public:
 	LoggerMode getLoggerMode() { return loggerMode_; }
 
 	// get functions for GroupInfo
-	int getGroupStartNeuronId(int grpId)  { return groupConfig[grpId].StartN; }
-	int getGroupEndNeuronId(int grpId)    { return groupConfig[grpId].EndN; }
-	int getGroupNumNeurons(int grpId)     { return groupConfig[grpId].SizeN; }
+	int getGroupStartNeuronId(int grpId)  { return groupConfigs[0][grpId].StartN; }
+	int getGroupEndNeuronId(int grpId)    { return groupConfigs[0][grpId].EndN; }
+	int getGroupNumNeurons(int grpId)     { return groupConfigs[0][grpId].SizeN; }
 
 	std::string getNetworkName() { return networkName_; }
 
@@ -1035,9 +1035,10 @@ private:
 
 	GroupInfo		groupInfo[MAX_GRP_PER_SNN];
 
-	NetworkConfigRT networkConfig;
-	GroupConfigRT	groupConfig[MAX_GRP_PER_SNN];
-	ConnectConfigRT connectConfig[MAX_CONN_PER_SNN];
+	// Configurations
+	NetworkConfigRT networkConfigs[MAX_NET_PER_SNN]; //!< the network configs used on GPU(s);
+	GroupConfigRT	groupConfigs[MAX_NET_PER_SNN][MAX_GRP_PER_SNN];
+	ConnectConfigRT connectConfigs[MAX_NET_PER_SNN][MAX_CONN_PER_SNN]; //!< for future use
 
 	// weight update parameter
 	int wtANDwtChangeUpdateInterval_;

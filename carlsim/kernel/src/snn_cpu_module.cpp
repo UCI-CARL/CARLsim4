@@ -138,16 +138,16 @@ void SNN::doSTPUpdateAndDecayCond() {
 
 	//decay the STP variables before adding new spikes.
 	for(int g=0; (g < numGroups) & !spikeBufferFull; g++) {
-		for(int i=groupConfig[g].StartN; i<=groupConfig[g].EndN; i++) {
+		for(int i=groupConfigs[0][g].StartN; i<=groupConfigs[0][g].EndN; i++) {
 	   		//decay the STP variables before adding new spikes.
-			if (groupConfig[g].WithSTP) {
+			if (groupConfigs[0][g].WithSTP) {
 				int ind_plus  = STP_BUF_POS(i,simTime);
 				int ind_minus = STP_BUF_POS(i,(simTime-1));
-				snnRuntimeData.stpu[ind_plus] = snnRuntimeData.stpu[ind_minus]*(1.0-groupConfig[g].STP_tau_u_inv);
-				snnRuntimeData.stpx[ind_plus] = snnRuntimeData.stpx[ind_minus] + (1.0-snnRuntimeData.stpx[ind_minus])*groupConfig[g].STP_tau_x_inv;
+				snnRuntimeData.stpu[ind_plus] = snnRuntimeData.stpu[ind_minus]*(1.0-groupConfigs[0][g].STP_tau_u_inv);
+				snnRuntimeData.stpx[ind_plus] = snnRuntimeData.stpx[ind_minus] + (1.0-snnRuntimeData.stpx[ind_minus])*groupConfigs[0][g].STP_tau_x_inv;
 			}
 
-			if (groupConfig[g].Type&POISSON_NEURON)
+			if (groupConfigs[0][g].Type&POISSON_NEURON)
 				continue;
 
 			// decay conductances
@@ -181,11 +181,11 @@ void SNN::findFiring() {
 
 	for(int g=0; (g < numGroups) & !spikeBufferFull; g++) {
 		// given group of neurons belong to the poisson group....
-		if (groupConfig[g].Type&POISSON_NEURON)
+		if (groupConfigs[0][g].Type&POISSON_NEURON)
 			continue;
 
 		// his flag is set if with_stdp is set and also grpType is set to have GROUP_SYN_FIXED
-		for(int i=groupConfig[g].StartN; i <= groupConfig[g].EndN; i++) {
+		for(int i=groupConfigs[0][g].StartN; i <= groupConfigs[0][g].EndN; i++) {
 
 			assert(i < numNReg);
 
@@ -194,9 +194,9 @@ void SNN::findFiring() {
 				snnRuntimeData.recovery[i] += snnRuntimeData.Izh_d[i];
 
 				// if flag hasSpkMonRT is set, we want to keep track of how many spikes per neuron in the group
-				if (groupConfig[g].withSpikeCounter) {// put the condition for runNetwork
-					int bufPos = groupConfig[g].spkCntBufPos; // retrieve buf pos
-					int bufNeur = i-groupConfig[g].StartN;
+				if (groupConfigs[0][g].withSpikeCounter) {// put the condition for runNetwork
+					int bufPos = groupConfigs[0][g].spkCntBufPos; // retrieve buf pos
+					int bufNeur = i-groupConfigs[0][g].StartN;
 					spkCntBuf[bufPos][bufNeur]++;
 				}
 				spikeBufferFull = addSpikeToTable(i, g);
@@ -205,7 +205,7 @@ void SNN::findFiring() {
 					break;
 
 				// STDP calculation: the post-synaptic neuron fires after the arrival of a pre-synaptic spike
-				if (!sim_in_testing && groupConfig[g].WithSTDP) {
+				if (!sim_in_testing && groupConfigs[0][g].WithSTDP) {
 					unsigned int pos_ij = snnRuntimeData.cumulativePre[i]; // the index of pre-synaptic neuron
 					for(int j=0; j < snnRuntimeData.Npre_plastic[i]; pos_ij++, j++) {
 						int stdp_tDiff = (simTime-snnRuntimeData.synSpikeTime[pos_ij]);
@@ -213,39 +213,39 @@ void SNN::findFiring() {
 
 						if (stdp_tDiff > 0) {
 							// check this is an excitatory or inhibitory synapse
-							if (groupConfig[g].WithESTDP && snnRuntimeData.maxSynWt[pos_ij] >= 0) { // excitatory synapse
+							if (groupConfigs[0][g].WithESTDP && snnRuntimeData.maxSynWt[pos_ij] >= 0) { // excitatory synapse
 								// Handle E-STDP curve
-								switch (groupConfig[g].WithESTDPcurve) {
+								switch (groupConfigs[0][g].WithESTDPcurve) {
 								case EXP_CURVE: // exponential curve
-									if (stdp_tDiff * groupConfig[g].TAU_PLUS_INV_EXC < 25)
-										snnRuntimeData.wtChange[pos_ij] += STDP(stdp_tDiff, groupConfig[g].ALPHA_PLUS_EXC, groupConfig[g].TAU_PLUS_INV_EXC);
+									if (stdp_tDiff * groupConfigs[0][g].TAU_PLUS_INV_EXC < 25)
+										snnRuntimeData.wtChange[pos_ij] += STDP(stdp_tDiff, groupConfigs[0][g].ALPHA_PLUS_EXC, groupConfigs[0][g].TAU_PLUS_INV_EXC);
 									break;
 								case TIMING_BASED_CURVE: // sc curve
-									if (stdp_tDiff * groupConfig[g].TAU_PLUS_INV_EXC < 25) {
-										if (stdp_tDiff <= groupConfig[g].GAMMA)
-											snnRuntimeData.wtChange[pos_ij] += groupConfig[g].OMEGA + groupConfig[g].KAPPA * STDP(stdp_tDiff, groupConfig[g].ALPHA_PLUS_EXC, groupConfig[g].TAU_PLUS_INV_EXC);
+									if (stdp_tDiff * groupConfigs[0][g].TAU_PLUS_INV_EXC < 25) {
+										if (stdp_tDiff <= groupConfigs[0][g].GAMMA)
+											snnRuntimeData.wtChange[pos_ij] += groupConfigs[0][g].OMEGA + groupConfigs[0][g].KAPPA * STDP(stdp_tDiff, groupConfigs[0][g].ALPHA_PLUS_EXC, groupConfigs[0][g].TAU_PLUS_INV_EXC);
 										else // stdp_tDiff > GAMMA
-											snnRuntimeData.wtChange[pos_ij] -= STDP(stdp_tDiff, groupConfig[g].ALPHA_PLUS_EXC, groupConfig[g].TAU_PLUS_INV_EXC);
+											snnRuntimeData.wtChange[pos_ij] -= STDP(stdp_tDiff, groupConfigs[0][g].ALPHA_PLUS_EXC, groupConfigs[0][g].TAU_PLUS_INV_EXC);
 									}
 									break;
 								default:
 									KERNEL_ERROR("Invalid E-STDP curve!");
 									break;
 								}
-							} else if (groupConfig[g].WithISTDP && snnRuntimeData.maxSynWt[pos_ij] < 0) { // inhibitory synapse
+							} else if (groupConfigs[0][g].WithISTDP && snnRuntimeData.maxSynWt[pos_ij] < 0) { // inhibitory synapse
 								// Handle I-STDP curve
-								switch (groupConfig[g].WithISTDPcurve) {
+								switch (groupConfigs[0][g].WithISTDPcurve) {
 								case EXP_CURVE: // exponential curve
-									if (stdp_tDiff * groupConfig[g].TAU_PLUS_INV_INB < 25) { // LTP of inhibitory synapse, which decreases synapse weight
-										snnRuntimeData.wtChange[pos_ij] -= STDP(stdp_tDiff, groupConfig[g].ALPHA_PLUS_INB, groupConfig[g].TAU_PLUS_INV_INB);
+									if (stdp_tDiff * groupConfigs[0][g].TAU_PLUS_INV_INB < 25) { // LTP of inhibitory synapse, which decreases synapse weight
+										snnRuntimeData.wtChange[pos_ij] -= STDP(stdp_tDiff, groupConfigs[0][g].ALPHA_PLUS_INB, groupConfigs[0][g].TAU_PLUS_INV_INB);
 									}
 									break;
 								case PULSE_CURVE: // pulse curve
-									if (stdp_tDiff <= groupConfig[g].LAMBDA) { // LTP of inhibitory synapse, which decreases synapse weight
-										snnRuntimeData.wtChange[pos_ij] -= groupConfig[g].BETA_LTP;
+									if (stdp_tDiff <= groupConfigs[0][g].LAMBDA) { // LTP of inhibitory synapse, which decreases synapse weight
+										snnRuntimeData.wtChange[pos_ij] -= groupConfigs[0][g].BETA_LTP;
 										//printf("I-STDP LTP\n");
-									} else if (stdp_tDiff <= groupConfig[g].DELTA) { // LTD of inhibitory syanpse, which increase sysnapse weight
-										snnRuntimeData.wtChange[pos_ij] -= groupConfig[g].BETA_LTD;
+									} else if (stdp_tDiff <= groupConfigs[0][g].DELTA) { // LTD of inhibitory syanpse, which increase sysnapse weight
+										snnRuntimeData.wtChange[pos_ij] -= groupConfigs[0][g].BETA_LTD;
 										//printf("I-STDP LTD\n");
 									} else { /*do nothing*/}
 									break;
@@ -283,7 +283,7 @@ void SNN::generatePostSpike(unsigned int pre_i, unsigned int idx_d, unsigned int
 	short int post_grpId = snnRuntimeData.grpIds[post_i];
 	short int pre_grpId = snnRuntimeData.grpIds[pre_i];
 
-	unsigned int pre_type = groupConfig[pre_grpId].Type;
+	unsigned int pre_type = groupConfigs[0][pre_grpId].Type;
 
 	// get connect info from the cumulative synapse index for mulSynFast/mulSynSlow (requires less memory than storing
 	// mulSynFast/Slow per synapse or storing a pointer to grpConnectInfo_s)
@@ -297,7 +297,7 @@ void SNN::generatePostSpike(unsigned int pre_i, unsigned int idx_d, unsigned int
 	// generally speaking, this amplitude is the weight; but it can be modulated by STP
 	float change = snnRuntimeData.wt[pos_i];
 
-	if (groupConfig[pre_grpId].WithSTP) {
+	if (groupConfigs[0][pre_grpId].WithSTP) {
 		// if pre-group has STP enabled, we need to modulate the weight
 		// NOTE: Order is important! (Tsodyks & Markram, 1998; Mongillo, Barak, & Tsodyks, 2008)
 		// use u^+ (value right after spike-update) but x^- (value right before spike-update)
@@ -307,7 +307,7 @@ void SNN::generatePostSpike(unsigned int pre_i, unsigned int idx_d, unsigned int
 		int ind_minus = STP_BUF_POS(pre_i,(simTime-tD-1));
 		int ind_plus  = STP_BUF_POS(pre_i,(simTime-tD));
 
-		change *= groupConfig[pre_grpId].STP_A*snnRuntimeData.stpu[ind_plus]*snnRuntimeData.stpx[ind_minus];
+		change *= groupConfigs[0][pre_grpId].STP_A*snnRuntimeData.stpu[ind_plus]*snnRuntimeData.stpx[ind_minus];
 
 //		fprintf(stderr,"%d: %d[%d], numN=%d, td=%d, maxDelay_=%d, ind-=%d, ind+=%d, stpu=[%f,%f], stpx=[%f,%f], change=%f, wt=%f\n",
 //			simTime, pre_grpId, pre_i,
@@ -350,36 +350,36 @@ void SNN::generatePostSpike(unsigned int pre_i, unsigned int idx_d, unsigned int
 	}
 
 	// STDP calculation: the post-synaptic neuron fires before the arrival of a pre-synaptic spike
-	if (!sim_in_testing && groupConfig[post_grpId].WithSTDP) {
+	if (!sim_in_testing && groupConfigs[0][post_grpId].WithSTDP) {
 		int stdp_tDiff = (simTime-snnRuntimeData.lastSpikeTime[post_i]);
 
 		if (stdp_tDiff >= 0) {
-			if (groupConfig[post_grpId].WithISTDP && ((pre_type & TARGET_GABAa) || (pre_type & TARGET_GABAb))) { // inhibitory syanpse
+			if (groupConfigs[0][post_grpId].WithISTDP && ((pre_type & TARGET_GABAa) || (pre_type & TARGET_GABAb))) { // inhibitory syanpse
 				// Handle I-STDP curve
-				switch (groupConfig[post_grpId].WithISTDPcurve) {
+				switch (groupConfigs[0][post_grpId].WithISTDPcurve) {
 				case EXP_CURVE: // exponential curve
-					if ((stdp_tDiff*groupConfig[post_grpId].TAU_MINUS_INV_INB)<25) { // LTD of inhibitory syanpse, which increase synapse weight
-						snnRuntimeData.wtChange[pos_i] -= STDP(stdp_tDiff, groupConfig[post_grpId].ALPHA_MINUS_INB, groupConfig[post_grpId].TAU_MINUS_INV_INB);
+					if ((stdp_tDiff*groupConfigs[0][post_grpId].TAU_MINUS_INV_INB)<25) { // LTD of inhibitory syanpse, which increase synapse weight
+						snnRuntimeData.wtChange[pos_i] -= STDP(stdp_tDiff, groupConfigs[0][post_grpId].ALPHA_MINUS_INB, groupConfigs[0][post_grpId].TAU_MINUS_INV_INB);
 					}
 					break;
 				case PULSE_CURVE: // pulse curve
-					if (stdp_tDiff <= groupConfig[post_grpId].LAMBDA) { // LTP of inhibitory synapse, which decreases synapse weight
-						snnRuntimeData.wtChange[pos_i] -= groupConfig[post_grpId].BETA_LTP;
-					} else if (stdp_tDiff <= groupConfig[post_grpId].DELTA) { // LTD of inhibitory syanpse, which increase synapse weight
-						snnRuntimeData.wtChange[pos_i] -= groupConfig[post_grpId].BETA_LTD;
+					if (stdp_tDiff <= groupConfigs[0][post_grpId].LAMBDA) { // LTP of inhibitory synapse, which decreases synapse weight
+						snnRuntimeData.wtChange[pos_i] -= groupConfigs[0][post_grpId].BETA_LTP;
+					} else if (stdp_tDiff <= groupConfigs[0][post_grpId].DELTA) { // LTD of inhibitory syanpse, which increase synapse weight
+						snnRuntimeData.wtChange[pos_i] -= groupConfigs[0][post_grpId].BETA_LTD;
 					} else { /*do nothing*/ }
 					break;
 				default:
 					KERNEL_ERROR("Invalid I-STDP curve");
 					break;
 				}
-			} else if (groupConfig[post_grpId].WithESTDP && ((pre_type & TARGET_AMPA) || (pre_type & TARGET_NMDA))) { // excitatory synapse
+			} else if (groupConfigs[0][post_grpId].WithESTDP && ((pre_type & TARGET_AMPA) || (pre_type & TARGET_NMDA))) { // excitatory synapse
 				// Handle E-STDP curve
-				switch (groupConfig[post_grpId].WithESTDPcurve) {
+				switch (groupConfigs[0][post_grpId].WithESTDPcurve) {
 				case EXP_CURVE: // exponential curve
 				case TIMING_BASED_CURVE: // sc curve
-					if (stdp_tDiff * groupConfig[post_grpId].TAU_MINUS_INV_EXC < 25)
-						snnRuntimeData.wtChange[pos_i] += STDP(stdp_tDiff, groupConfig[post_grpId].ALPHA_MINUS_EXC, groupConfig[post_grpId].TAU_MINUS_INV_EXC);
+					if (stdp_tDiff * groupConfigs[0][post_grpId].TAU_MINUS_INV_EXC < 25)
+						snnRuntimeData.wtChange[pos_i] += STDP(stdp_tDiff, groupConfigs[0][post_grpId].ALPHA_MINUS_EXC, groupConfigs[0][post_grpId].TAU_MINUS_INV_EXC);
 					break;
 				default:
 					KERNEL_ERROR("Invalid E-STDP curve");
@@ -414,11 +414,11 @@ void SNN::generateSpikes() {
 void SNN::generateSpikesFromFuncPtr(int grpId) {
 	// \FIXME this function is a mess
 	bool done;
-	SpikeGeneratorCore* spikeGen = groupConfig[grpId].spikeGen;
-	int timeSlice = groupConfig[grpId].CurrTimeSlice;
+	SpikeGeneratorCore* spikeGen = groupConfigs[0][grpId].spikeGen;
+	int timeSlice = groupConfigs[0][grpId].CurrTimeSlice;
 	int currTime = simTime;
 	int spikeCnt = 0;
-	for(int i = groupConfig[grpId].StartN; i <= groupConfig[grpId].EndN; i++) {
+	for(int i = groupConfigs[0][grpId].StartN; i <= groupConfigs[0][grpId].EndN; i++) {
 		// start the time from the last time it spiked, that way we can ensure that the refractory period is maintained
 		int nextTime = snnRuntimeData.lastSpikeTime[i];
 		if (nextTime == MAX_SIMULATION_TIME)
@@ -431,7 +431,7 @@ void SNN::generateSpikesFromFuncPtr(int grpId) {
 		done = false;
 		while (!done) {
 			// generate the next spike time (nextSchedTime) from the nextSpikeTime callback
-			int nextSchedTime = spikeGen->nextSpikeTime(this, grpId, i - groupConfig[grpId].StartN, currTime, 
+			int nextSchedTime = spikeGen->nextSpikeTime(this, grpId, i - groupConfigs[0][grpId].StartN, currTime, 
 				nextTime, endOfTimeWindow);
 
 			// the generated spike time is valid only if:
@@ -440,7 +440,7 @@ void SNN::generateSpikesFromFuncPtr(int grpId) {
 			// - it is within the scheduling time slice (nextSchedTime < endOfTimeWindow)
 			// - it is not in the past (nextSchedTime >= currTime)
 			if ((nextSchedTime==0 || nextSchedTime>nextTime) && nextSchedTime<endOfTimeWindow && nextSchedTime>=currTime) {
-//				fprintf(stderr,"%u: spike scheduled for %d at %u\n",currTime, i-groupConfig[grpId].StartN,nextSchedTime);
+//				fprintf(stderr,"%u: spike scheduled for %d at %u\n",currTime, i-groupConfigs[0][grpId].StartN,nextSchedTime);
 				// scheduled spike...
 				// \TODO CPU mode does not check whether the same AER event has been scheduled before (bug #212)
 				// check how GPU mode does it, then do the same here.
@@ -449,9 +449,9 @@ void SNN::generateSpikesFromFuncPtr(int grpId) {
 				spikeCnt++;
 
 				// update number of spikes if SpikeCounter set
-				if (groupConfig[grpId].withSpikeCounter) {
-					int bufPos = groupConfig[grpId].spkCntBufPos; // retrieve buf pos
-					int bufNeur = i-groupConfig[grpId].StartN;
+				if (groupConfigs[0][grpId].withSpikeCounter) {
+					int bufPos = groupConfigs[0][grpId].spkCntBufPos; // retrieve buf pos
+					int bufNeur = i-groupConfigs[0][grpId].StartN;
 					spkCntBuf[bufPos][bufNeur]++;
 				}
 			} else {
@@ -463,9 +463,9 @@ void SNN::generateSpikesFromFuncPtr(int grpId) {
 
 void SNN::generateSpikesFromRate(int grpId) {
 	bool done;
-	PoissonRate* rate = groupConfig[grpId].RatePtr;
-	float refPeriod = groupConfig[grpId].RefractPeriod;
-	int timeSlice   = groupConfig[grpId].CurrTimeSlice;
+	PoissonRate* rate = groupConfigs[0][grpId].RatePtr;
+	float refPeriod = groupConfigs[0][grpId].RefractPeriod;
+	int timeSlice   = groupConfigs[0][grpId].CurrTimeSlice;
 	int currTime = simTime;
 	int spikeCnt = 0;
 
@@ -478,9 +478,9 @@ void SNN::generateSpikesFromRate(int grpId) {
 	}
 
 	const int nNeur = rate->getNumNeurons();
-	if (nNeur != groupConfig[grpId].SizeN) {
+	if (nNeur != groupConfigs[0][grpId].SizeN) {
 		KERNEL_ERROR("Length of PoissonRate array (%d) did not match number of neurons (%d) for group %d(%s).",
-			nNeur, groupConfig[grpId].SizeN, grpId, getGroupName(grpId).c_str());
+			nNeur, groupConfigs[0][grpId].SizeN, grpId, getGroupName(grpId).c_str());
 		exitSimulation(1);
 	}
 
@@ -488,7 +488,7 @@ void SNN::generateSpikesFromRate(int grpId) {
 		float frate = rate->getRate(neurId);
 
 		// start the time from the last time it spiked, that way we can ensure that the refractory period is maintained
-		int nextTime = snnRuntimeData.lastSpikeTime[groupConfig[grpId].StartN + neurId];
+		int nextTime = snnRuntimeData.lastSpikeTime[groupConfigs[0][grpId].StartN + neurId];
 		if (nextTime == MAX_SIMULATION_TIME)
 			nextTime = 0;
 
@@ -498,13 +498,13 @@ void SNN::generateSpikesFromRate(int grpId) {
 			// found a valid timeSlice
 			if (nextTime < (currTime+timeSlice)) {
 				if (nextTime >= currTime) {
-//					int nid = groupConfig[grpId].StartN+cnt;
-					pbuf->scheduleSpikeTargetGroup(groupConfig[grpId].StartN + neurId, nextTime-currTime);
+//					int nid = groupConfigs[0][grpId].StartN+cnt;
+					pbuf->scheduleSpikeTargetGroup(groupConfigs[0][grpId].StartN + neurId, nextTime-currTime);
 					spikeCnt++;
 
 					// update number of spikes if SpikeCounter set
-					if (groupConfig[grpId].withSpikeCounter) {
-						int bufPos = groupConfig[grpId].spkCntBufPos; // retrieve buf pos
+					if (groupConfigs[0][grpId].withSpikeCounter) {
+						int bufPos = groupConfigs[0][grpId].spkCntBufPos; // retrieve buf pos
 						spkCntBuf[bufPos][neurId]++;
 					}
 				}
@@ -521,25 +521,25 @@ void  SNN::globalStateUpdate() {
 	double tmp_gNMDA, tmp_gGABAb;
 
 	for(int g=0; g < numGroups; g++) {
-		if (groupConfig[g].Type&POISSON_NEURON) {
-			if (groupConfig[g].WithHomeostasis) {
-				for(int i=groupConfig[g].StartN; i <= groupConfig[g].EndN; i++)
-					snnRuntimeData.avgFiring[i] *= groupConfig[g].avgTimeScale_decay;
+		if (groupConfigs[0][g].Type&POISSON_NEURON) {
+			if (groupConfigs[0][g].WithHomeostasis) {
+				for(int i=groupConfigs[0][g].StartN; i <= groupConfigs[0][g].EndN; i++)
+					snnRuntimeData.avgFiring[i] *= groupConfigs[0][g].avgTimeScale_decay;
 			}
 			continue;
 		}
 
 		// decay dopamine concentration
-		if ((groupConfig[g].WithESTDPtype == DA_MOD || groupConfig[g].WithISTDP == DA_MOD) && snnRuntimeData.grpDA[g] > groupConfig[g].baseDP) {
-			snnRuntimeData.grpDA[g] *= groupConfig[g].decayDP;
+		if ((groupConfigs[0][g].WithESTDPtype == DA_MOD || groupConfigs[0][g].WithISTDP == DA_MOD) && snnRuntimeData.grpDA[g] > groupConfigs[0][g].baseDP) {
+			snnRuntimeData.grpDA[g] *= groupConfigs[0][g].decayDP;
 		}
 		snnRuntimeData.grpDABuffer[g][simTimeMs] = snnRuntimeData.grpDA[g];
 
-		for(int i=groupConfig[g].StartN; i <= groupConfig[g].EndN; i++) {
+		for(int i=groupConfigs[0][g].StartN; i <= groupConfigs[0][g].EndN; i++) {
 			assert(i < numNReg);
 			// update average firing rate for homeostasis
-			if (groupConfig[g].WithHomeostasis)
-				snnRuntimeData.avgFiring[i] *= groupConfig[g].avgTimeScale_decay;
+			if (groupConfigs[0][g].WithHomeostasis)
+				snnRuntimeData.avgFiring[i] *= groupConfigs[0][g].avgTimeScale_decay;
 
 			// update conductances
 			if (sim_with_conductances) {
@@ -603,26 +603,26 @@ void SNN::updateWeights() {
 	// update synaptic weights here for all the neurons..
 	for(int g = 0; g < numGroups; g++) {
 		// no changable weights so continue without changing..
-		if(groupConfig[g].FixedInputWts || !(groupConfig[g].WithSTDP))
+		if(groupConfigs[0][g].FixedInputWts || !(groupConfigs[0][g].WithSTDP))
 			continue;
 
-		for(int i = groupConfig[g].StartN; i <= groupConfig[g].EndN; i++) {
+		for(int i = groupConfigs[0][g].StartN; i <= groupConfigs[0][g].EndN; i++) {
 			assert(i < numNReg);
 			unsigned int offset = snnRuntimeData.cumulativePre[i];
 			float diff_firing = 0.0;
 			float homeostasisScale = 1.0;
 
-			if(groupConfig[g].WithHomeostasis) {
+			if(groupConfigs[0][g].WithHomeostasis) {
 				assert(snnRuntimeData.baseFiring[i]>0);
 				diff_firing = 1-snnRuntimeData.avgFiring[i]/snnRuntimeData.baseFiring[i];
-				homeostasisScale = groupConfig[g].homeostasisScale;
+				homeostasisScale = groupConfigs[0][g].homeostasisScale;
 			}
 
-			if (i==groupConfig[g].StartN)
+			if (i==groupConfigs[0][g].StartN)
 				KERNEL_DEBUG("Weights, Change at %lu (diff_firing: %f)", simTimeSec, diff_firing);
 
 			for(int j = 0; j < snnRuntimeData.Npre_plastic[i]; j++) {
-				//	if (i==groupConfig[g].StartN)
+				//	if (i==groupConfigs[0][g].StartN)
 				//		KERNEL_DEBUG("%1.2f %1.2f \t", wt[offset+j]*10, wtChange[offset+j]*10);
 				float effectiveWtChange = stdpScaleFactor_ * snnRuntimeData.wtChange[offset + j];
 //				if (wtChange[offset+j])
@@ -630,19 +630,19 @@ void SNN::updateWeights() {
 
 				// homeostatic weight update
 				// FIXME: check WithESTDPtype and WithISTDPtype first and then do weight change update
-				switch (groupConfig[g].WithESTDPtype) {
+				switch (groupConfigs[0][g].WithESTDPtype) {
 				case STANDARD:
-					if (groupConfig[g].WithHomeostasis) {
-						snnRuntimeData.wt[offset+j] += (diff_firing*snnRuntimeData.wt[offset+j]*homeostasisScale + snnRuntimeData.wtChange[offset+j])*snnRuntimeData.baseFiring[i]/groupConfig[g].avgTimeScale/(1+fabs(diff_firing)*50);
+					if (groupConfigs[0][g].WithHomeostasis) {
+						snnRuntimeData.wt[offset+j] += (diff_firing*snnRuntimeData.wt[offset+j]*homeostasisScale + snnRuntimeData.wtChange[offset+j])*snnRuntimeData.baseFiring[i]/groupConfigs[0][g].avgTimeScale/(1+fabs(diff_firing)*50);
 					} else {
 						// just STDP weight update
 						snnRuntimeData.wt[offset+j] += effectiveWtChange;
 					}
 					break;
 				case DA_MOD:
-					if (groupConfig[g].WithHomeostasis) {
+					if (groupConfigs[0][g].WithHomeostasis) {
 						effectiveWtChange = snnRuntimeData.grpDA[g] * effectiveWtChange;
-						snnRuntimeData.wt[offset+j] += (diff_firing*snnRuntimeData.wt[offset+j]*homeostasisScale + effectiveWtChange)*snnRuntimeData.baseFiring[i]/groupConfig[g].avgTimeScale/(1+fabs(diff_firing)*50);
+						snnRuntimeData.wt[offset+j] += (diff_firing*snnRuntimeData.wt[offset+j]*homeostasisScale + effectiveWtChange)*snnRuntimeData.baseFiring[i]/groupConfigs[0][g].avgTimeScale/(1+fabs(diff_firing)*50);
 					} else {
 						snnRuntimeData.wt[offset+j] += snnRuntimeData.grpDA[g] * effectiveWtChange;
 					}
@@ -653,19 +653,19 @@ void SNN::updateWeights() {
 					break;
 				}
 
-				switch (groupConfig[g].WithISTDPtype) {
+				switch (groupConfigs[0][g].WithISTDPtype) {
 				case STANDARD:
-					if (groupConfig[g].WithHomeostasis) {
-						snnRuntimeData.wt[offset+j] += (diff_firing*snnRuntimeData.wt[offset+j]*homeostasisScale + snnRuntimeData.wtChange[offset+j])*snnRuntimeData.baseFiring[i]/groupConfig[g].avgTimeScale/(1+fabs(diff_firing)*50);
+					if (groupConfigs[0][g].WithHomeostasis) {
+						snnRuntimeData.wt[offset+j] += (diff_firing*snnRuntimeData.wt[offset+j]*homeostasisScale + snnRuntimeData.wtChange[offset+j])*snnRuntimeData.baseFiring[i]/groupConfigs[0][g].avgTimeScale/(1+fabs(diff_firing)*50);
 					} else {
 						// just STDP weight update
 						snnRuntimeData.wt[offset+j] += effectiveWtChange;
 					}
 					break;
 				case DA_MOD:
-					if (groupConfig[g].WithHomeostasis) {
+					if (groupConfigs[0][g].WithHomeostasis) {
 						effectiveWtChange = snnRuntimeData.grpDA[g] * effectiveWtChange;
-						snnRuntimeData.wt[offset+j] += (diff_firing*snnRuntimeData.wt[offset+j]*homeostasisScale + effectiveWtChange)*snnRuntimeData.baseFiring[i]/groupConfig[g].avgTimeScale/(1+fabs(diff_firing)*50);
+						snnRuntimeData.wt[offset+j] += (diff_firing*snnRuntimeData.wt[offset+j]*homeostasisScale + effectiveWtChange)*snnRuntimeData.baseFiring[i]/groupConfigs[0][g].avgTimeScale/(1+fabs(diff_firing)*50);
 					} else {
 						snnRuntimeData.wt[offset+j] += snnRuntimeData.grpDA[g] * effectiveWtChange;
 					}
