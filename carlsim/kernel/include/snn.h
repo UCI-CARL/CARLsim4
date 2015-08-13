@@ -966,8 +966,8 @@ private:
 	snnSize_t gpuSnnSz;
 
 	//! firing info
-	unsigned int* timeTableD2;
-	unsigned int* timeTableD1;
+	unsigned int timeTableD2[TIMING_COUNT];
+	unsigned int timeTableD1[TIMING_COUNT];
 	unsigned int maxSpikesD1;
 	unsigned int maxSpikesD2;
 
@@ -1025,7 +1025,7 @@ private:
 	ConnectionMonitorCore* connMonCoreList[MAX_CONN_PER_SNN];
 	ConnectionMonitor*     connMonList[MAX_CONN_PER_SNN];
 
-	NetworkConfigRT networkConfig;
+	
 
 	RuntimeData gpuRuntimeData;
 	//RuntimeData cpuRuntimeData;
@@ -1033,8 +1033,11 @@ private:
 
 	int	  NgenFunc;					//!< this counts the spike generator offsets...
 
-	GroupConfigRT	groupConfig[MAX_GRP_PER_SNN];
 	GroupInfo		groupInfo[MAX_GRP_PER_SNN];
+
+	NetworkConfigRT networkConfig;
+	GroupConfigRT	groupConfig[MAX_GRP_PER_SNN];
+	ConnectConfigRT connectConfig[MAX_CONN_PER_SNN];
 
 	// weight update parameter
 	int wtANDwtChangeUpdateInterval_;

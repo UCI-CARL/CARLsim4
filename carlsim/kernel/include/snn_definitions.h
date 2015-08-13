@@ -137,6 +137,7 @@ inline bool isInhibitoryNeuron (unsigned int& nid, unsigned int& numNInhPois, un
 // until a hard limit is reached, which is given by the datatype of the variable
 #define MAX_CONN_PER_SNN 256	// hard limit: 2^16
 #define MAX_GRP_PER_SNN 128		// hard limit: 2^16
+#define MAX_NET_PER_SNN 8		// the maximum number of local networks (i.e., cuda devices) in a simulation
 
 #define COND_INTEGRATION_SCALE	2
 
@@ -150,6 +151,8 @@ inline bool isInhibitoryNeuron (unsigned int& nid, unsigned int& numNInhPois, un
 #define PROPAGATED_BUFFER_SIZE  (1023)
 #define MAX_SIMULATION_TIME     INT_MAX
 #define LARGE_NEGATIVE_VALUE    (-(1 << 30))
+
+#define TIMING_COUNT  1024 // (1000+maxDelay_) rounded to multiple 128
 
 
 #define MAX_SPIKE_MON_BUFFER_SIZE 52428800 // about 50 MB. size is in bytes. Max size of reduced AER vector in spikeMonitorCore objects.

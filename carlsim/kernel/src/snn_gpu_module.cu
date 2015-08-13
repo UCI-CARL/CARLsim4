@@ -44,8 +44,6 @@
 #include <error_code.h>
 #include <cuda_runtime.h>
 
-#define ROUNDED_TIMING_COUNT  (((1000+MAX_SYN_DELAY+1)+127) & ~(127))  // (1000+maxDelay_) rounded to multiple 128
-
 #define NUM_THREADS 128
 #define NUM_BLOCKS 64
 #define WARP_SIZE 32
@@ -74,8 +72,8 @@
 //
 ///////////////////////////////////////////////////////////////////
 
-__device__ unsigned int  timeTableD2GPU[ROUNDED_TIMING_COUNT];
-__device__ unsigned int  timeTableD1GPU[ROUNDED_TIMING_COUNT];
+__device__ unsigned int  timeTableD2GPU[TIMING_COUNT];
+__device__ unsigned int  timeTableD1GPU[TIMING_COUNT];
 
 __device__ unsigned int	spikeCountD2SecGPU;
 __device__ unsigned int	spikeCountD1SecGPU;
@@ -180,7 +178,7 @@ __global__ void kernel_updateTimeTable(int simTime) {
 /////////////////////////////////////////////////////////////////////////////////
 __global__ void kernel_init () {
 	if(threadIdx.x==0 && blockIdx.x==0) {
-		for(int i=0; i < ROUNDED_TIMING_COUNT; i++) {
+		for(int i=0; i < TIMING_COUNT; i++) {
 			timeTableD2GPU[i]   = 0;
 			timeTableD1GPU[i]   = 0;
 		}
@@ -2907,13 +2905,13 @@ void SNN::allocateSNN_GPU() {
 	void* devPtr;
 	size_t offset;
 	CUDA_CHECK_ERRORS(cudaGetSymbolAddress(&devPtr, timeTableD2GPU));
-	CUDA_CHECK_ERRORS(cudaBindTexture(&offset, timeTableD2GPU_tex, devPtr, sizeof(int) * ROUNDED_TIMING_COUNT));
+	CUDA_CHECK_ERRORS(cudaBindTexture(&offset, timeTableD2GPU_tex, devPtr, sizeof(int) * TIMING_COUNT));
 	offset = offset / sizeof(int);
 	CUDA_CHECK_ERRORS(cudaGetSymbolAddress(&devPtr, timeTableD2GPU_tex_offset));
 	CUDA_CHECK_ERRORS(cudaMemcpy(devPtr, &offset, sizeof(int), cudaMemcpyHostToDevice));
 		
 	CUDA_CHECK_ERRORS(cudaGetSymbolAddress(&devPtr, timeTableD1GPU));
-	CUDA_CHECK_ERRORS(cudaBindTexture(&offset, timeTableD1GPU_tex, devPtr, sizeof(int) * ROUNDED_TIMING_COUNT));
+	CUDA_CHECK_ERRORS(cudaBindTexture(&offset, timeTableD1GPU_tex, devPtr, sizeof(int) * TIMING_COUNT));
 	offset = offset / sizeof(int);
 	CUDA_CHECK_ERRORS(cudaGetSymbolAddress(&devPtr, timeTableD1GPU_tex_offset));
 	CUDA_CHECK_ERRORS(cudaMemcpy(devPtr, &offset, sizeof(int), cudaMemcpyHostToDevice));

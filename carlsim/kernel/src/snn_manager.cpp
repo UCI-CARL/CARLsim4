@@ -4194,9 +4194,9 @@ void SNN::resetRuntimeData(bool deallocate) {
 
 	if (snnRuntimeData.firingTableD2!=NULL && deallocate) delete[] snnRuntimeData.firingTableD2;
 	if (snnRuntimeData.firingTableD1!=NULL && deallocate) delete[] snnRuntimeData.firingTableD1;
-	if (timeTableD2!=NULL && deallocate) delete[] timeTableD2;
-	if (timeTableD1!=NULL && deallocate) delete[] timeTableD1;
-	snnRuntimeData.firingTableD2=NULL; snnRuntimeData.firingTableD1=NULL; timeTableD2=NULL; timeTableD1=NULL;
+	//if (timeTableD2!=NULL && deallocate) delete[] timeTableD2;
+	//if (timeTableD1!=NULL && deallocate) delete[] timeTableD1;
+	snnRuntimeData.firingTableD2=NULL; snnRuntimeData.firingTableD1=NULL; //timeTableD2=NULL; timeTableD1=NULL;
 
 	// clear poisson generator
 	if (gpuPoissonRand != NULL) delete gpuPoissonRand;
@@ -4635,8 +4635,8 @@ void SNN::allocateSpikeTables() {
 	resetFiringTable();
 	cpuSnnSz.spikingInfoSize += sizeof(int) * ((maxSpikesD2 + maxSpikesD1) + 2* (1000 + maxDelay_ + 1));
 
-	timeTableD2  = new unsigned int[1000 + maxDelay_ + 1];
-	timeTableD1  = new unsigned int[1000 + maxDelay_ + 1];
+	//timeTableD2  = new unsigned int[1000 + maxDelay_ + 1];
+	//timeTableD1  = new unsigned int[1000 + maxDelay_ + 1];
 	resetTimeTable();
 	cpuSnnSz.spikingInfoSize += sizeof(int) * 2 * (1000 + maxDelay_ + 1);
 }
