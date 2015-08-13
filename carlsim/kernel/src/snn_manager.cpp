@@ -2740,35 +2740,22 @@ void SNN::compileSNN() {
 
 	compileConnectConfig(); // for future use
 
-	// generation connections among groups according to group and connect configs
-	// update ConnectConfig::numberOfConnections
-	// update GroupConfig::numPostSynapses, GroupConfig::numPreSynapses
-	connectNetwork();
-
-	// collect the global network config according to compiled gorup and connection configs
-	// collect SNN::maxNumPreSynGrp, SNN::maxNumPostSynGrp, SNN::maxDelay_
-	// collect SNN::numPostSynNet, SNN::numPreSynNet
-	// Note: maxDelay_ is invariant in single-GPU or multi-GPUs mode
-	// Note: maxNumPreSynGrp and maxNumPostSynGrp, numPreSynNet, numPostSynNet are for users' information,
-	// they will be updated if the global network is partitioned into local networks.
-	collectGlobalNetworkConfig();
-
 	// perform various consistency checks:
 	// - numNeurons vs. sum of all neurons
 	// - STDP set on a post-group with incoming plastic connections
 	// - etc.
-	verifyNetwork();
+	//verifyNetwork();
 
 	// display the network configuration
 	KERNEL_INFO("\n");
 	KERNEL_INFO("************************** Global Network Configuration *******************************");
 	KERNEL_INFO("The number of neurons in the network (numN) = %d", numN);
-	KERNEL_INFO("The maximum number of post-connectoins among groups (maxNumPostSynGrp) = %d", maxNumPostSynGrp);
-	KERNEL_INFO("The maximum number of pre-connections among groups (maxNumPreSynGrp) = %d", maxNumPreSynGrp);
+	//KERNEL_INFO("The maximum number of post-connectoins among groups (maxNumPostSynGrp) = %d", maxNumPostSynGrp);
+	//KERNEL_INFO("The maximum number of pre-connections among groups (maxNumPreSynGrp) = %d", maxNumPreSynGrp);
 	//KERNEL_INFO("The maximum number of post-connectoins among neurons (maxNumPostSynN) = %d", maxNumPostSynN);
 	//KERNEL_INFO("The maximum number of pre-connections among neurons (maxNumPreSynN) = %d", maxNumPreSynN);
 	KERNEL_INFO("The maximum axonal delay in the network (maxDelay) = %d", maxDelay_);
-	KERNEL_INFO("The tatol number of synapses in the network (numPreSynNet,numPostSynNet) = (%d,%d)", numPreSynNet, numPostSynNet);
+	//KERNEL_INFO("The tatol number of synapses in the network (numPreSynNet,numPostSynNet) = (%d,%d)", numPreSynNet, numPostSynNet);
 	KERNEL_INFO("\n");
 
 	//ensure that we dont compile the network again
@@ -3643,9 +3630,23 @@ int SNN::poissonSpike(int currTime, float frate, int refractPeriod) {
 }
 
 void SNN::partitionSNN() {
+	// generation connections among groups according to group and connect configs
+	// update ConnectConfig::numberOfConnections
+	// update GroupConfig::numPostSynapses, GroupConfig::numPreSynapses
+	connectNetwork();
+
+	// collect the global network config according to compiled gorup and connection configs
+	// collect SNN::maxNumPreSynGrp, SNN::maxNumPostSynGrp, SNN::maxDelay_
+	// collect SNN::numPostSynNet, SNN::numPreSynNet
+	// Note: maxDelay_ is invariant in single-GPU or multi-GPUs mode
+	// Note: maxNumPreSynGrp and maxNumPostSynGrp, numPreSynNet, numPostSynNet are for users' information,
+	// they will be updated if the global network is partitioned into local networks.
+	collectGlobalNetworkConfig();
+
+
+
 	// transfer group configs in std::map to array
 	int grpId = 0;
-
 	for (std::map<int, GroupConfigRT>::iterator it = groupConfigMap.begin(); it != groupConfigMap.end(); it++) {
 		groupConfig[grpId] = it->second;
 		grpId++;

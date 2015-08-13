@@ -49,33 +49,21 @@
 // the corresponding functionality. For example, you can't just set MAX_CONN_PER_SNN > 32768, because connIds
 // are stored as short int.
 
-
-// FIXME:
-/////    !!!!!!! EVEN MORE IMPORTANT : IS THIS STILL BEING USED?? !!!!!!!!!!
-
-/////    !!!!!!! IMPORTANT : NEURON ORGANIZATION/ARRANGEMENT MAP !!!!!!!!!!
-////     <--- Excitatory --> | <-------- Inhibitory REGION ----------> | <-- Excitatory -->
-///      Excitatory-Regular  | Inhibitory-Regular | Inhibitory-Poisson | Excitatory-Poisson
-///      <--- numNExcReg --> | <-- numNInhReg --> | <-- numNInhPois -> | <---numNExcPois-->
-///      <------REGULAR NEURON REGION ----------> | <----- POISSON NEURON REGION --------->
-///      <----numNReg=(numNExcReg+numNInhReg)---> | <--numNPois=(numNInhPois+numNExcPois)->
-////     <--------------------- ALL NEURONS ( numN=numNReg+numNPois) --------------------->
-////	This organization scheme is only used/needed for the gpu_static code.
-#define IS_POISSON_NEURON(nid, numNReg, numNPois) ((nid) >= (numNReg) && ((nid) < (numNReg+numNPois)))
-#define IS_REGULAR_NEURON(nid, numNReg, numNPois) (((nid) < (numNReg)) && ((nid) < (numNReg+numNPois)))
+//    NEURON ORGANIZATION/ARRANGEMENT MAP
+//    <--- Excitatory --> | <-------- Inhibitory REGION ----------> | <-- Excitatory --> | <--------- EXTERNAL NEURONS --------->
+//    Excitatory-Regular  | Inhibitory-Regular | Inhibitory-Poisson | Excitatory-Poisson |
+//    <--- numNExcReg --> | <-- numNInhReg --> | <-- numNInhPois -> | <---numNExcPois--> |
+//    <------REGULAR NEURON REGION ----------> | <----- POISSON NEURON REGION ---------> |
+//    <----numNReg=(numNExcReg+numNInhReg)---> | <--numNPois=(numNInhPois+numNExcPois)-> | <------------ numNExtern ------------>
+//    <------------------ ALL LOCAL NEURONS (numN=numNReg+numNPois) -------------------> | <- ALL EXTERNAL NEURONS (numNExtern)->
+//    <-------------------------------- ALL ASSIGNED NEURONS (numNAssigned=numN+numNExtern) ------------------------------------>
+//    Note: this organization scheme is only used/needed for the gpu_static code.
+#define IS_POISSON_NEURON(nid, numNReg, numNPois) ((nid) >= (numNReg) && ((nid) < (numNReg + numNPois)))
+#define IS_REGULAR_NEURON(nid, numNReg, numNPois) (((nid) < (numNReg)) && ((nid) < (numNReg + numNPois)))
 #define IS_INHIBITORY(nid, numNInhPois, numNReg, numNExcReg, numN) (((nid) >= (numNExcReg)) && ((nid) < (numNReg + numNInhPois)))
 #define IS_EXCITATORY(nid, numNInhPois, numNReg, numNExcReg, numN) (((nid) < (numNReg)) && (((nid) < (numNExcReg)) || ((nid) >=  (numNReg + numNInhPois))))
-
-#if __CUDACC__
-inline bool isExcitatoryNeuron (unsigned int& nid, unsigned int& numNInhPois, unsigned int& numNReg, unsigned int& numNExcReg, unsigned int& numN)
-{
-	return ((nid < numN) && ((nid < numNExcReg) || (nid >= numNReg + numNInhPois)));
-}
-inline bool isInhibitoryNeuron (unsigned int& nid, unsigned int& numNInhPois, unsigned int& numNReg, unsigned int& numNExcReg, unsigned int& numN)
-{
-	return ((nid >= numNExcReg) && (nid < (numNReg + numNInhPois)));
-}
-#endif
+#define IS_LOCAL_NEURON(nid, numN, numNAssigned) ((nid) < (numN))
+#define IS_EXTERNAL_NEURON(nid, numN, numNAssigned) ((nid) >= (numN) && (nid) < (numNAssigned))
 
 #define STATIC_LOAD_START(n)  (n.x)
 #define STATIC_LOAD_GROUP(n)  (n.y & 0xff)

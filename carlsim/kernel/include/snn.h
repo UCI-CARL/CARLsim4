@@ -915,17 +915,17 @@ private:
 	//! Buffer to store spikes
 	PropagatedSpikeBuffer* pbuf;
 
-	bool sim_with_conductances;		//!< flag to inform whether we run in COBA mode (true) or CUBA mode (false)
-	bool sim_with_NMDA_rise;	//!< a flag to inform whether to compute NMDA rise time
-	bool sim_with_GABAb_rise;	//!< a flag to inform whether to compute GABAb rise time
-	double dAMPA;				//!< multiplication factor for decay time of AMPA conductance (gAMPA[i] *= dAMPA)
-	double rNMDA;				//!< multiplication factor for rise time of NMDA
-	double dNMDA;				//!< multiplication factor for decay time of NMDA
-	double sNMDA;				//!< scaling factor for NMDA amplitude
-	double dGABAa;				//!< multiplication factor for decay time of GABAa
-	double rGABAb;				//!< multiplication factor for rise time of GABAb
-	double dGABAb;				//!< multiplication factor for decay time of GABAb
-	double sGABAb;				//!< scaling factor for GABAb amplitude
+	bool sim_with_conductances; //!< flag to inform whether we run in COBA mode (true) or CUBA mode (false)
+	bool sim_with_NMDA_rise;    //!< a flag to inform whether to compute NMDA rise time
+	bool sim_with_GABAb_rise;   //!< a flag to inform whether to compute GABAb rise time
+	double dAMPA;               //!< multiplication factor for decay time of AMPA conductance (gAMPA[i] *= dAMPA)
+	double rNMDA;               //!< multiplication factor for rise time of NMDA
+	double dNMDA;               //!< multiplication factor for decay time of NMDA
+	double sNMDA;               //!< scaling factor for NMDA amplitude
+	double dGABAa;              //!< multiplication factor for decay time of GABAa
+	double rGABAb;              //!< multiplication factor for rise time of GABAb
+	double dGABAb;              //!< multiplication factor for decay time of GABAb
+	double sGABAb;              //!< scaling factor for GABAb amplitude
 
 	bool sim_with_fixedwts;
 	bool sim_with_stdp;
