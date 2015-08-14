@@ -522,7 +522,7 @@ void SNN::printPreConnection(int grpId, FILE* const fp)
 void SNN::printNeuronState(int grpId, FILE* const fp)
 {
   if (simMode_==GPU_MODE) {
-    copyNeuronState(&snnRuntimeData, &gpuRuntimeData, cudaMemcpyDeviceToHost, false, grpId);
+    copyNeuronState(&snnRuntimeData, &gpuRuntimeData[0], cudaMemcpyDeviceToHost, false, grpId);
   }
 
   fprintf(fp, "[MODE=%s] ", simMode_string[simMode_]);
@@ -589,7 +589,7 @@ void SNN::printWeights(int preGrpId, int postGrpId) {
 			(preGrpId==ALL)?"ALL":groupInfo[preGrpId].Name.c_str(), groupInfo[gPost].Name.c_str(), wtANDwtChangeUpdateInterval_);
 
 		if (simMode_ == GPU_MODE) {
-			copyWeightState (&snnRuntimeData, &gpuRuntimeData, cudaMemcpyDeviceToHost, false, gPost);
+			copyWeightState (&snnRuntimeData, &gpuRuntimeData[0], cudaMemcpyDeviceToHost, false, gPost);
 		}
 
 		int i=groupConfigs[0][gPost].StartN;

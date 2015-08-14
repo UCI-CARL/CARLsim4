@@ -814,10 +814,10 @@ int SNN::runNetwork(int _nsec, int _nmsec, bool printRunSummary, bool copyState)
 	// in GPU mode, copy info from device to host
 	if (simMode_==GPU_MODE) {
 		if(copyState) {
-			copyNeuronState(&snnRuntimeData, &gpuRuntimeData, cudaMemcpyDeviceToHost, false, ALL);
+			copyNeuronState(&snnRuntimeData, &gpuRuntimeData[0], cudaMemcpyDeviceToHost, false, ALL);
 
 			if (sim_with_stp) {
-				copySTPState(&snnRuntimeData, &gpuRuntimeData, cudaMemcpyDeviceToHost, false);
+				copySTPState(&snnRuntimeData, &gpuRuntimeData[0], cudaMemcpyDeviceToHost, false);
 			}
 		}
 	}
@@ -905,13 +905,13 @@ void SNN::biasWeights(short int connId, float bias, bool updateWeightRange) {
 
 		// update GPU datastructures in batches, grouped by post-neuron
 		if (simMode_==GPU_MODE) {
-			CUDA_CHECK_ERRORS( cudaMemcpy(&(gpuRuntimeData.wt[cumIdx]), &(snnRuntimeData.wt[cumIdx]), sizeof(float)*snnRuntimeData.Npre[i],
+			CUDA_CHECK_ERRORS( cudaMemcpy(&(gpuRuntimeData[0].wt[cumIdx]), &(snnRuntimeData.wt[cumIdx]), sizeof(float)*snnRuntimeData.Npre[i],
 				cudaMemcpyHostToDevice) );
 
-			if (gpuRuntimeData.maxSynWt!=NULL) {
+			if (gpuRuntimeData[0].maxSynWt!=NULL) {
 				// only copy maxSynWt if datastructure actually exists on the GPU
 				// (that logic should be done elsewhere though)
-				CUDA_CHECK_ERRORS( cudaMemcpy(&(gpuRuntimeData.maxSynWt[cumIdx]), &(snnRuntimeData.maxSynWt[cumIdx]),
+				CUDA_CHECK_ERRORS( cudaMemcpy(&(gpuRuntimeData[0].maxSynWt[cumIdx]), &(snnRuntimeData.maxSynWt[cumIdx]),
 					sizeof(float)*snnRuntimeData.Npre[i], cudaMemcpyHostToDevice) );
 			}
 		}
@@ -1006,13 +1006,13 @@ void SNN::scaleWeights(short int connId, float scale, bool updateWeightRange) {
 
 		// update GPU datastructures in batches, grouped by post-neuron
 		if (simMode_==GPU_MODE) {
-			CUDA_CHECK_ERRORS( cudaMemcpy(&(gpuRuntimeData.wt[cumIdx]), &(snnRuntimeData.wt[cumIdx]), sizeof(float)*snnRuntimeData.Npre[i],
+			CUDA_CHECK_ERRORS( cudaMemcpy(&(gpuRuntimeData[0].wt[cumIdx]), &(snnRuntimeData.wt[cumIdx]), sizeof(float)*snnRuntimeData.Npre[i],
 				cudaMemcpyHostToDevice) );
 
-			if (gpuRuntimeData.maxSynWt!=NULL) {
+			if (gpuRuntimeData[0].maxSynWt!=NULL) {
 				// only copy maxSynWt if datastructure actually exists on the GPU
 				// (that logic should be done elsewhere though)
-				CUDA_CHECK_ERRORS( cudaMemcpy(&(gpuRuntimeData.maxSynWt[cumIdx]), &(snnRuntimeData.maxSynWt[cumIdx]),
+				CUDA_CHECK_ERRORS( cudaMemcpy(&(gpuRuntimeData[0].maxSynWt[cumIdx]), &(snnRuntimeData.maxSynWt[cumIdx]),
 					sizeof(float)*snnRuntimeData.Npre[i], cudaMemcpyHostToDevice));
 			}
 		}
@@ -1130,7 +1130,7 @@ void SNN::setExternalCurrent(int grpId, const std::vector<float>& current) {
 	// copy to GPU if necessary
 	// don't allocate; allocation done in generateNetworkRuntime
 	if (simMode_==GPU_MODE) {
-		copyExternalCurrent(&gpuRuntimeData, &snnRuntimeData, false, grpId);
+		copyExternalCurrent(&gpuRuntimeData[0], &snnRuntimeData, false, grpId);
 	}
 }
 
@@ -1275,11 +1275,11 @@ void SNN::setWeight(short int connId, int neurIdPre, int neurIdPost, float weigh
 
 			if (simMode_==GPU_MODE) {
 				// need to update datastructures on GPU
-				CUDA_CHECK_ERRORS( cudaMemcpy(&(gpuRuntimeData.wt[pos_ij]), &(snnRuntimeData.wt[pos_ij]), sizeof(float), cudaMemcpyHostToDevice));
-				if (gpuRuntimeData.maxSynWt!=NULL) {
+				CUDA_CHECK_ERRORS( cudaMemcpy(&(gpuRuntimeData[0].wt[pos_ij]), &(snnRuntimeData.wt[pos_ij]), sizeof(float), cudaMemcpyHostToDevice));
+				if (gpuRuntimeData[0].maxSynWt!=NULL) {
 					// only copy maxSynWt if datastructure actually exists on the GPU
 					// (that logic should be done elsewhere though)
-					CUDA_CHECK_ERRORS( cudaMemcpy(&(gpuRuntimeData.maxSynWt[pos_ij]), &(snnRuntimeData.maxSynWt[pos_ij]), sizeof(float), cudaMemcpyHostToDevice));
+					CUDA_CHECK_ERRORS( cudaMemcpy(&(gpuRuntimeData[0].maxSynWt[pos_ij]), &(snnRuntimeData.maxSynWt[pos_ij]), sizeof(float), cudaMemcpyHostToDevice));
 				}
 			}
 
@@ -1350,7 +1350,7 @@ void SNN::saveSimulation(FILE* fid, bool saveSynapseInfo) {
 
 	// +++++ Fetch WEIGHT DATA (GPU Mode only) ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 	if (simMode_ == GPU_MODE)
-		copyWeightState(&snnRuntimeData, &gpuRuntimeData, cudaMemcpyDeviceToHost, false);
+		copyWeightState(&snnRuntimeData, &gpuRuntimeData[0], cudaMemcpyDeviceToHost, false);
 	// +++++ WRITE SYNAPSE INFO +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
 	// \FIXME: replace with faster version
@@ -1563,7 +1563,7 @@ std::vector<float> SNN::getConductanceAMPA(int grpId) {
 
 	// need to copy data from GPU first
 	if (getSimMode()==GPU_MODE) {
-		copyConductanceAMPA(&snnRuntimeData, &gpuRuntimeData, cudaMemcpyDeviceToHost, false, grpId);
+		copyConductanceAMPA(&snnRuntimeData, &gpuRuntimeData[0], cudaMemcpyDeviceToHost, false, grpId);
 	}
 
 	std::vector<float> gAMPAvec;
@@ -1578,7 +1578,7 @@ std::vector<float> SNN::getConductanceNMDA(int grpId) {
 
 	// need to copy data from GPU first
 	if (getSimMode()==GPU_MODE)
-		copyConductanceNMDA(&snnRuntimeData, &gpuRuntimeData, cudaMemcpyDeviceToHost, false, grpId);
+		copyConductanceNMDA(&snnRuntimeData, &gpuRuntimeData[0], cudaMemcpyDeviceToHost, false, grpId);
 
 	std::vector<float> gNMDAvec;
 	if (isSimulationWithNMDARise()) {
@@ -1599,7 +1599,7 @@ std::vector<float> SNN::getConductanceGABAa(int grpId) {
 
 	// need to copy data from GPU first
 	if (getSimMode()==GPU_MODE) {
-		copyConductanceGABAa(&snnRuntimeData, &gpuRuntimeData, cudaMemcpyDeviceToHost, false, grpId);
+		copyConductanceGABAa(&snnRuntimeData, &gpuRuntimeData[0], cudaMemcpyDeviceToHost, false, grpId);
 	}
 
 	std::vector<float> gGABAaVec;
@@ -1614,7 +1614,7 @@ std::vector<float> SNN::getConductanceGABAb(int grpId) {
 
 	// need to copy data from GPU first
 	if (getSimMode()==GPU_MODE)
-		copyConductanceGABAb(&snnRuntimeData, &gpuRuntimeData, cudaMemcpyDeviceToHost, false, grpId);
+		copyConductanceGABAb(&snnRuntimeData, &gpuRuntimeData[0], cudaMemcpyDeviceToHost, false, grpId);
 
 	std::vector<float> gGABAbVec;
 	if (isSimulationWithGABAbRise()) {
@@ -2027,9 +2027,9 @@ void SNN::SNNinit() {
 	// initialize propogated spike buffers.....
 	pbuf = new PropagatedSpikeBuffer(0, PROPAGATED_BUFFER_SIZE);
 
-	memset(&gpuRuntimeData, 0, sizeof(RuntimeData));
+	memset(&gpuRuntimeData[0], 0, sizeof(RuntimeData));
 	memset(networkConfigs, 0, sizeof(NetworkConfigRT) * MAX_NET_PER_SNN);
-	gpuRuntimeData.allocated = false;
+	gpuRuntimeData[0].allocated = false;
 
 	memset(&snnRuntimeData, 0, sizeof(RuntimeData));
 	snnRuntimeData.allocated = false;
@@ -3630,6 +3630,9 @@ int SNN::poissonSpike(int currTime, float frate, int refractPeriod) {
 }
 
 void SNN::partitionSNN() {
+	// partition algorithm, use naive partition for now
+	// put excitatory groups to GPU 0 and inhibitory groups to GPU 1
+
 	// generation connections among groups according to group and connect configs
 	// update ConnectConfig::numberOfConnections
 	// update GroupConfig::numPostSynapses, GroupConfig::numPreSynapses
@@ -3642,8 +3645,6 @@ void SNN::partitionSNN() {
 	// Note: maxNumPreSynGrp and maxNumPostSynGrp, numPreSynNet, numPostSynNet are for users' information,
 	// they will be updated if the global network is partitioned into local networks.
 	collectGlobalNetworkConfig();
-
-
 
 	// transfer group configs in std::map to array
 	int grpId = 0;
@@ -4450,7 +4451,7 @@ std::vector< std::vector<float> > SNN::getWeightMatrix2D(short int connId) {
 	// \TODO: check if the weights for this grpIdPost have already been copied
 	// \TODO: even better, but tricky because of ordering, make copyWeightState connection-based
 	if (simMode_==GPU_MODE) {
-		copyWeightState(&snnRuntimeData, &gpuRuntimeData, cudaMemcpyDeviceToHost, false, grpIdPost);
+		copyWeightState(&snnRuntimeData, &gpuRuntimeData[0], cudaMemcpyDeviceToHost, false, grpIdPost);
 	}
 
 	for (int postId=groupConfigs[0][grpIdPost].StartN; postId<=groupConfigs[0][grpIdPost].EndN; postId++) {
@@ -4501,7 +4502,7 @@ void SNN::updateGroupMonitor(int grpId) {
 
 		if (simMode_ == GPU_MODE) {
 			// copy the group status (neuromodulators) from the GPU to the CPU..
-			copyGroupState(&snnRuntimeData, &gpuRuntimeData, cudaMemcpyDeviceToHost, false);
+			copyGroupState(&snnRuntimeData, &gpuRuntimeData[0], cudaMemcpyDeviceToHost, false);
 		}
 
 		// find the time interval in which to update group status

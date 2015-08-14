@@ -1027,7 +1027,7 @@ private:
 
 	
 
-	RuntimeData gpuRuntimeData;
+	RuntimeData gpuRuntimeData[MAX_NET_PER_SNN];
 	//RuntimeData cpuRuntimeData;
 	RuntimeData snnRuntimeData;
 
