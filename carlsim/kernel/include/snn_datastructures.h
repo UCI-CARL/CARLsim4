@@ -322,67 +322,70 @@ typedef struct NetworkConfigRT_s  {
  * \see SNNState
  */
 typedef struct GroupConfigRT_s {
-	// properties of group of neurons size, location, initial weights etc.
-	PoissonRate*	RatePtr;
-	int			StartN;
-	int			EndN;
-	unsigned int	Type;
-	int			SizeN;
-    int         SizeX;
-    int         SizeY;
-    int         SizeZ;
-	int			NumTraceN;
-	short int  	MaxFiringRate; //!< this is for the monitoring mechanism, it needs to know what is the maximum firing rate in order to allocate a buffer big enough to store spikes...
-	int			SpikeMonitorId;		//!< spike monitor id
-	int			GroupMonitorId; //!< group monitor id
-	float   	RefractPeriod;
-	int			CurrTimeSlice; //!< timeSlice is used by the Poisson generators in order to note generate too many or too few spikes within a window of time
-	int			NewTimeSlice;
-	int			SliceUpdateTime;
-	int 		numPostSynapses; //!< the total number of post-connections of a group
-	int 		numPreSynapses; //!< the total number of pre-connections of a group
-	//int			maxNumPostSynN; //!< the max number of post-connections among neurons in a group
-	//int			maxNumPreSynN; //!< the max number of pre-connections among neurons in a group
-	bool 		isSpikeGenerator;
-	bool 		WithSTP;
-	bool 		WithSTDP;
-	bool		WithESTDP;
-	bool		WithISTDP;
-	STDPType  WithESTDPtype;
-	STDPType  WithISTDPtype;
-	STDPCurve WithESTDPcurve;
-	STDPCurve WithISTDPcurve;
-	bool 		WithHomeostasis;
-	int			homeoId;
-	bool		FixedInputWts;
-	int			Noffset;
-	int8_t		MaxDelay;
+	int          netId;
+	int          grpId;
+	int          StartN;
+	int          EndN;
+	int          localGrpId;
+	int          localStartN;
+	int          localEndN;
+	unsigned int Type;
+	int          SizeN;
+    int          SizeX;
+    int          SizeY;
+    int          SizeZ;
+	int          NumTraceN;
+	short int    MaxFiringRate; //!< this is for the monitoring mechanism, it needs to know what is the maximum firing rate in order to allocate a buffer big enough to store spikes...
+	int          SpikeMonitorId;		//!< spike monitor id
+	int          GroupMonitorId; //!< group monitor id
+	float        RefractPeriod;
+	int          CurrTimeSlice; //!< timeSlice is used by the Poisson generators in order to note generate too many or too few spikes within a window of time
+	int          NewTimeSlice;
+	int          SliceUpdateTime;
+	int          numPostSynapses; //!< the total number of post-connections of a group
+	int          numPreSynapses; //!< the total number of pre-connections of a group
+	//int maxNumPostSynN; //!< the max number of post-connections among neurons in a group
+	//int maxNumPreSynN; //!< the max number of pre-connections among neurons in a group
+	bool         isSpikeGenerator;
+	bool         WithSTP;
+	bool         WithSTDP;
+	bool         WithESTDP;
+	bool         WithISTDP;
+	STDPType     WithESTDPtype;
+	STDPType     WithISTDPtype;
+	STDPCurve    WithESTDPcurve;
+	STDPCurve    WithISTDPcurve;
+	bool         WithHomeostasis;
+	int          homeoId;
+	bool         FixedInputWts;
+	int          Noffset;
+	int8_t       MaxDelay;
 
-	long int    lastSTPupdate;
-	float 		STP_A;
-	float		STP_U;
-	float		STP_tau_u_inv;
-	float		STP_tau_x_inv;
-	float		TAU_PLUS_INV_EXC;
-	float		TAU_MINUS_INV_EXC;
-	float		ALPHA_PLUS_EXC;
-	float		ALPHA_MINUS_EXC;
-	float		GAMMA;
-	float		KAPPA;
-	float		OMEGA;
-	float		TAU_PLUS_INV_INB; //!< for furture use
-	float		TAU_MINUS_INV_INB; //!< for furture use
-	float		ALPHA_PLUS_INB; //!< for furture use
-	float		ALPHA_MINUS_INB; //!< for furture use
-	float		BETA_LTP;
-	float		BETA_LTD;
-	float		LAMBDA;
-	float		DELTA;
+	long int     lastSTPupdate;
+	float        STP_A;
+	float        STP_U;
+	float        STP_tau_u_inv;
+	float        STP_tau_x_inv;
+	float        TAU_PLUS_INV_EXC;
+	float        TAU_MINUS_INV_EXC;
+	float        ALPHA_PLUS_EXC;
+	float        ALPHA_MINUS_EXC;
+	float        GAMMA;
+	float        KAPPA;
+	float        OMEGA;
+	float        TAU_PLUS_INV_INB; //!< for furture use
+	float        TAU_MINUS_INV_INB; //!< for furture use
+	float        ALPHA_PLUS_INB; //!< for furture use
+	float        ALPHA_MINUS_INB; //!< for furture use
+	float        BETA_LTP;
+	float        BETA_LTD;
+	float        LAMBDA;
+	float        DELTA;
 
-	bool withSpikeCounter;     //!< if this flag is set, we want to keep track of how many spikes per neuron in the group
-	int spkCntRecordDur;       //!< record duration, after which spike buffer gets reset
-	int spkCntRecordDurHelper; //!< counter to help make fast modulo
-	int spkCntBufPos;          //!< which position in the spike buffer the group has 
+	bool         withSpikeCounter;     //!< if this flag is set, we want to keep track of how many spikes per neuron in the group
+	int          spkCntRecordDur;       //!< record duration, after which spike buffer gets reset
+	int          spkCntRecordDurHelper; //!< counter to help make fast modulo
+	int          spkCntBufPos;          //!< which position in the spike buffer the group has 
 
 	//!< homeostatic plasticity variables
 	float avgTimeScale;
@@ -403,6 +406,7 @@ typedef struct GroupConfigRT_s {
 	bool 		writeSpikesToFile; 	//!< whether spikes should be written to file (needs SpikeMonitorId>-1)
 	bool 		writeSpikesToArray;	//!< whether spikes should be written to file (needs SpikeMonitorId>-1)
 	SpikeGeneratorCore*	spikeGen;
+	PoissonRate* RatePtr;
 	bool		newUpdates;  //!< FIXME this flag has mixed meaning and is not rechecked after the simulation is started
 } GroupConfigRT;
 

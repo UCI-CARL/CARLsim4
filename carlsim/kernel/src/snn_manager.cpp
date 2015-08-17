@@ -311,8 +311,12 @@ int SNN::createGroup(const std::string& grpName, const Grid3D& grid, int neurTyp
 	numNReg += grid.N;
 	numN += grid.N;
 
+	// assign a group id
+	assert(grpConfig.grpId == -1);
+	grpConfig.grpId = numGroups;
+
 	// store the configuration of a group
-	groupConfigMap[numGroups] = grpConfig;
+	groupConfigMap[numGroups] = grpConfig; // numGroups == grpId
 
 	assert(numGroups < MAX_GRP_PER_SNN); // make sure we don't overflow connId
 	numGroups++;
@@ -399,6 +403,10 @@ int SNN::createSpikeGeneratorGroup(const std::string& grpName, const Grid3D& gri
 		numNExcPois += grid.N; // exc poisson group
 	numNPois += grid.N;
 	numN += grid.N;
+
+	// assign a group id
+	assert(grpConfig.grpId == -1);
+	grpConfig.grpId = numGroups;
 
 	// store the configuration of a group
 	groupConfigMap[numGroups] = grpConfig;
@@ -2750,11 +2758,13 @@ void SNN::compileSNN() {
 	KERNEL_INFO("\n");
 	KERNEL_INFO("************************** Global Network Configuration *******************************");
 	KERNEL_INFO("The number of neurons in the network (numN) = %d", numN);
+	KERNEL_INFO("The number of regular neurons in the network (numNReg) = %d", numNReg);
+	KERNEL_INFO("The number of poisson neurons in the network (numNPois) = %d", numNPois);
 	//KERNEL_INFO("The maximum number of post-connectoins among groups (maxNumPostSynGrp) = %d", maxNumPostSynGrp);
 	//KERNEL_INFO("The maximum number of pre-connections among groups (maxNumPreSynGrp) = %d", maxNumPreSynGrp);
 	//KERNEL_INFO("The maximum number of post-connectoins among neurons (maxNumPostSynN) = %d", maxNumPostSynN);
 	//KERNEL_INFO("The maximum number of pre-connections among neurons (maxNumPreSynN) = %d", maxNumPreSynN);
-	KERNEL_INFO("The maximum axonal delay in the network (maxDelay) = %d", maxDelay_);
+	//KERNEL_INFO("The maximum axonal delay in the network (maxDelay) = %d", maxDelay_);
 	//KERNEL_INFO("The tatol number of synapses in the network (numPreSynNet,numPostSynNet) = (%d,%d)", numPreSynNet, numPostSynNet);
 	KERNEL_INFO("\n");
 
@@ -3349,7 +3359,21 @@ float SNN::generateWeight(int connProp, float initWt, float maxWt, int nid, int 
 	return actWts;
 }
 
+/*!
+ * \brief This function initialize variables in GroupConfigRT to fail-safe vaule
+ */
 void SNN::initGroupConfig(GroupConfigRT* _groupConfig) {
+	// global idenfications
+	_groupConfig->netId = -1;
+	_groupConfig->grpId = -1;
+	_groupConfig->StartN = -1;
+	_groupConfig->EndN = -1;
+
+	// local idenfications
+	_groupConfig->localGrpId = -1;
+	_groupConfig->localStartN = -1;
+	_groupConfig->localEndN = -1;
+
 	_groupConfig->Type = UNKNOWN_NEURON;
 	_groupConfig->MaxFiringRate = UNKNOWN_NEURON_MAX_FIRING_RATE;
 	_groupConfig->SpikeMonitorId = -1;
@@ -3389,9 +3413,6 @@ void SNN::initGroupConfig(GroupConfigRT* _groupConfig) {
 	_groupConfig->spkCntRecordDur = -1;
 	_groupConfig->spkCntRecordDurHelper = 0;
 	_groupConfig->spkCntBufPos = -1;
-
-	_groupConfig->StartN       = -1;
-	_groupConfig->EndN       	 = -1;
 
 	_groupConfig->CurrTimeSlice = 0;
 	_groupConfig->NewTimeSlice = 0;
@@ -3632,6 +3653,44 @@ int SNN::poissonSpike(int currTime, float frate, int refractPeriod) {
 void SNN::partitionSNN() {
 	// partition algorithm, use naive partition for now
 	// put excitatory groups to GPU 0 and inhibitory groups to GPU 1
+	// this parse separates groups into each local network
+	for (std::map<int, GroupConfigRT>::iterator it = groupConfigMap.begin(); it != groupConfigMap.end(); it++) {
+		if (IS_EXCITATORY_TYPE(it->second.Type)) {
+			it->second.netId = 0;
+			groupPartitionList[0].push_back(it->second);
+		} else if (IS_INHIBITORY_TYPE(it->second.Type)) {
+			it->second.netId = 1;
+			groupPartitionList[1].push_back(it->second);
+		} else {
+			KERNEL_ERROR("Can't assign the group [%d] to any partition", it->second.grpId);
+			exitSimulation(-1);
+		}
+	}
+
+	// this parse finds local connections (i.e., connection configs that conect local groups)
+	for (int netId = 0; netId < MAX_NET_PER_SNN; netId++) {
+		if (!groupPartitionList[netId].empty()) {
+			for (std::map<int, ConnectConfig>::iterator connIt = connectConfigMap.begin(); connIt != connectConfigMap.end(); connIt++) {
+				if (groupConfigMap[connIt->second.grpSrc].netId == netId && groupConfigMap[connIt->second.grpDest].netId == netId) {
+					connectPartitionList[netId].push_back(connectConfigMap[connIt->second.connId]);
+				}
+			}
+		}
+	}
+
+	// this parse finds external groups and external connections
+	for (int netId = 0; netId < MAX_NET_PER_SNN; netId++) {
+		if (!groupPartitionList[netId].empty()) {
+			for (std::map<int, ConnectConfig>::iterator connIt = connectConfigMap.begin(); connIt != connectConfigMap.end(); connIt++) {
+				if (groupConfigMap[connIt->second.grpSrc].netId == netId && groupConfigMap[connIt->second.grpDest].netId != netId) {
+					groupPartitionList[netId].push_back(groupConfigMap[connIt->second.grpDest]);
+					connectPartitionList[netId].push_back(connectConfigMap[connIt->second.connId]);
+				}
+			}
+		}
+	}
+
+
 
 	// generation connections among groups according to group and connect configs
 	// update ConnectConfig::numberOfConnections

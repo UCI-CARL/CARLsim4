@@ -907,6 +907,9 @@ private:
 	std::map<int, GroupConfigRT> groupConfigMap;
 	std::map<int, ConnectConfig> connectConfigMap;
 
+	std::list<GroupConfigRT> groupPartitionList[MAX_NET_PER_SNN];
+	std::list<ConnectConfig> connectPartitionList[MAX_NET_PER_SNN];
+
 	std::list<ConnectionInfo> connectionList;
 
 	float 		*mulSynFast;	//!< scaling factor for fast synaptic currents, per connection
@@ -1024,8 +1027,6 @@ private:
 	int numConnectionMonitor;
 	ConnectionMonitorCore* connMonCoreList[MAX_CONN_PER_SNN];
 	ConnectionMonitor*     connMonList[MAX_CONN_PER_SNN];
-
-	
 
 	RuntimeData gpuRuntimeData[MAX_NET_PER_SNN];
 	//RuntimeData cpuRuntimeData;
