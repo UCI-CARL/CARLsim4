@@ -2346,6 +2346,24 @@ int SNN::assignGroup(int grpId, int availableNeuronId) {
 	return newAvailableNeuronId;
 }
 
+int SNN::assignGroup(std::list<GroupConfigRT>::iterator grpIt, int localGroupId, int availableNeuronId) {
+	int newAvailableNeuronId;
+	assert(grpIt->localGrpId == -1); // The group has not yet been assigned
+	grpIt->localGrpId = localGroupId;
+	grpIt->localStartN = availableNeuronId;
+	grpIt->localEndN = availableNeuronId + grpIt->SizeN - 1;
+
+	grpIt->LtoGOffset = grpIt->StartN - grpIt->localStartN;
+	grpIt->GtoLOffset = grpIt->localStartN - grpIt->StartN;
+
+	KERNEL_DEBUG("Allocation for group (%s) [id:%d, local id:%d], St=%d, End=%d", groupInfo[grpIt->grpId].Name.c_str(),
+		grpIt->grpId, grpIt->localGrpId, grpIt->localStartN, grpIt->localEndN);
+
+	newAvailableNeuronId = availableNeuronId + grpIt->SizeN;
+
+	return newAvailableNeuronId;
+}
+
 void SNN::generateGroupRuntime(int grpId) {
 	resetNeuromodulator(grpId);
 
@@ -3374,6 +3392,9 @@ void SNN::initGroupConfig(GroupConfigRT* _groupConfig) {
 	_groupConfig->localStartN = -1;
 	_groupConfig->localEndN = -1;
 
+	_groupConfig->LtoGOffset = 0;
+	_groupConfig->GtoLOffset = 0;
+
 	_groupConfig->Type = UNKNOWN_NEURON;
 	_groupConfig->MaxFiringRate = UNKNOWN_NEURON_MAX_FIRING_RATE;
 	_groupConfig->SpikeMonitorId = -1;
@@ -3651,15 +3672,19 @@ int SNN::poissonSpike(int currTime, float frate, int refractPeriod) {
 }
 
 void SNN::partitionSNN() {
+	int numAssignedNeurons[MAX_NET_PER_SNN] = {0};
+
 	// partition algorithm, use naive partition for now
 	// put excitatory groups to GPU 0 and inhibitory groups to GPU 1
-	// this parse separates groups into each local network
+	// this parse separates groups into each local network and assign each group a netId
 	for (std::map<int, GroupConfigRT>::iterator it = groupConfigMap.begin(); it != groupConfigMap.end(); it++) {
 		if (IS_EXCITATORY_TYPE(it->second.Type)) {
 			it->second.netId = 0;
+			numAssignedNeurons[0] += it->second.SizeN;
 			groupPartitionList[0].push_back(it->second);
 		} else if (IS_INHIBITORY_TYPE(it->second.Type)) {
 			it->second.netId = 1;
+			numAssignedNeurons[1] += it->second.SizeN;
 			groupPartitionList[1].push_back(it->second);
 		} else {
 			KERNEL_ERROR("Can't assign the group [%d] to any partition", it->second.grpId);
@@ -3683,6 +3708,7 @@ void SNN::partitionSNN() {
 		if (!groupPartitionList[netId].empty()) {
 			for (std::map<int, ConnectConfig>::iterator connIt = connectConfigMap.begin(); connIt != connectConfigMap.end(); connIt++) {
 				if (groupConfigMap[connIt->second.grpSrc].netId == netId && groupConfigMap[connIt->second.grpDest].netId != netId) {
+					numAssignedNeurons[netId] += groupConfigMap[connIt->second.grpDest].SizeN;
 					groupPartitionList[netId].push_back(groupConfigMap[connIt->second.grpDest]);
 					connectPartitionList[netId].push_back(connectConfigMap[connIt->second.connId]);
 				}
@@ -3690,6 +3716,38 @@ void SNN::partitionSNN() {
 		}
 	}
 
+	// assign local neuron id in the order
+	// MPORTANT : NEURON ORGANIZATION/ARRANGEMENT MAP
+	// <--- Excitatory --> | <-------- Inhibitory REGION ----------> | <-- Excitatory --> | <-- External -->
+	// Excitatory-Regular  | Inhibitory-Regular | Inhibitory-Poisson | Excitatory-Poisson | External Neurons
+	for (int netId = 0; netId < MAX_NET_PER_SNN; netId++) {
+		if (!groupPartitionList[netId].empty()) {
+			int availableNeuronId = 0;
+			int localGroupId = 0;
+			for (int order = 0; order < 5; order++) {
+				for (std::list<GroupConfigRT>::iterator grpIt = groupPartitionList[netId].begin(); grpIt != groupPartitionList[netId].end(); grpIt++) {
+					if (IS_EXCITATORY_TYPE(grpIt->Type) && (grpIt->Type & POISSON_NEURON) && order == 3 && grpIt->netId == netId) {
+						availableNeuronId = assignGroup(grpIt, localGroupId, availableNeuronId);
+						localGroupId++;
+					} else if (IS_INHIBITORY_TYPE(grpIt->Type) && (grpIt->Type & POISSON_NEURON) && order == 2 && grpIt->netId == netId) {
+						availableNeuronId = assignGroup(grpIt, localGroupId, availableNeuronId);
+						localGroupId++;
+					} else if (IS_EXCITATORY_TYPE(grpIt->Type) && !(grpIt->Type & POISSON_NEURON) && order == 0 && grpIt->netId == netId) {
+						availableNeuronId = assignGroup(grpIt, localGroupId, availableNeuronId);
+						localGroupId++;
+					} else if (IS_INHIBITORY_TYPE(grpIt->Type) && !(grpIt->Type & POISSON_NEURON) && order == 1 && grpIt->netId == netId) {
+						availableNeuronId = assignGroup(grpIt, localGroupId, availableNeuronId);
+						localGroupId++;
+					} else if (order == 4 && grpIt->netId != netId) {
+						availableNeuronId = assignGroup(grpIt, localGroupId, availableNeuronId);
+						localGroupId++;
+					}
+				}
+			}
+			assert(availableNeuronId == numAssignedNeurons[netId]);
+			assert(localGroupId == groupPartitionList[netId].size());
+		}
+	}
 
 
 	// generation connections among groups according to group and connect configs

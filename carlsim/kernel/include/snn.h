@@ -589,6 +589,7 @@ private:
 	int  addSpikeToTable(int id, int g);
 
 	int assignGroup(int groupId, int availableNeuronId);
+	int assignGroup(std::list<GroupConfigRT>::iterator grpIt, int localGroupId, int availableNeuronId);
 	void generateGroupRuntime(int groupId);
 	void generateNetworkRuntime();
 	void generatePoissonGroupRuntime(int groupId);
@@ -901,11 +902,11 @@ private:
 	//! switch to make all weights fixed (such as in testing phase) or not
 	bool sim_in_testing;
 
-	int				numGroups;
-	int				numConnections;		//!< number of connection calls (as in snn.connect(...))
+	int numGroups;      //!< the number of groups (as in snn.createGroup, snn.createSpikeGeneratorGroup)
+	int numConnections; //!< the number of connections (as in snn.connect(...))
 
-	std::map<int, GroupConfigRT> groupConfigMap;
-	std::map<int, ConnectConfig> connectConfigMap;
+	std::map<int, GroupConfigRT> groupConfigMap;   //!< the hash table storing group configs created at CONFIG_STATE
+	std::map<int, ConnectConfig> connectConfigMap; //!< the hash table storing connection configs created at CONFIG_STATE
 
 	std::list<GroupConfigRT> groupPartitionList[MAX_NET_PER_SNN];
 	std::list<ConnectConfig> connectPartitionList[MAX_NET_PER_SNN];
@@ -979,26 +980,26 @@ private:
 	int simTimeRunStart; //!< the start time of current/last runNetwork call
 	int simTimeRunStop;  //!< the end time of current/last runNetwork call
 	int simTimeLastRunSummary; //!< the time at which the last run summary was printed
-	int simTimeMs;
-	int simTimeSec;		//!< this is used to store the seconds.
-	int simTime;		//!< The absolute simulation time. The unit is millisecond. this value is not reset but keeps increasing to its max value.
+	int simTimeMs;      //!< The simulation time showing milliseconds within a second
+	int simTimeSec;     //!< The simulation time showing seconds in a simulation
+	int simTime;        //!< The absolute simulation time. The unit is millisecond. this value is not reset but keeps increasing to its max value.
 
-	unsigned int	spikeCountSec; //!< the total number of spikes in 1 second
-	unsigned int	spikeCountD1Sec;      //!< the total number of spikes with axonal delay == 1 in 1 second		
-	unsigned int	spikeCountD2Sec;	//!< the total number of spikes with axonal delay > 1 in 1 second
-	unsigned int	spikeCount;  //!< the total number of spikes in a simulation
-	unsigned int	spikeCountD1;   //!< the total number of spikes with anxonal delay == 1 in a simulation
-	unsigned int	spikeCountD2;	//!< the total number of spikes with anxonal delay > 1 in a simulation
-	unsigned int	nPoissonSpikes;		//!< the number of spikes of poisson neurons
+	unsigned int spikeCountSec;   //!< the total number of spikes in 1 second
+	unsigned int spikeCountD1Sec; //!< the total number of spikes with axonal delay == 1 in 1 second		
+	unsigned int spikeCountD2Sec; //!< the total number of spikes with axonal delay > 1 in 1 second
+	unsigned int spikeCount;      //!< the total number of spikes in a simulation
+	unsigned int spikeCountD1;    //!< the total number of spikes with anxonal delay == 1 in a simulation
+	unsigned int spikeCountD2;    //!< the total number of spikes with anxonal delay > 1 in a simulation
+	unsigned int nPoissonSpikes;  //!< the number of spikes of poisson neurons
 
 	// cuda keep track of performance...
 	StopWatchInterface* timer;
 	float cumExecutionTime;
 	float lastExecutionTime;
 
-	FILE*	fpInf_;			//!< fp of where to write all simulation output (status info) if not in silent mode
-	FILE*	fpErr_;			//!< fp of where to write all errors if not in silent mode
-	FILE*	fpDeb_;			//!< fp of where to write all debug info if not in silent mode
+	FILE*	fpInf_; //!< fp of where to write all simulation output (status info) if not in silent mode
+	FILE*	fpErr_; //!< fp of where to write all errors if not in silent mode
+	FILE*	fpDeb_; //!< fp of where to write all debug info if not in silent mode
 	FILE*	fpLog_;
 
 	// keep track of number of SpikeMonitor/SpikeMonitorCore objects
@@ -1032,9 +1033,9 @@ private:
 	//RuntimeData cpuRuntimeData;
 	RuntimeData snnRuntimeData;
 
-	int	  NgenFunc;					//!< this counts the spike generator offsets...
+	int NgenFunc; //!< this counts the spike generator offsets...
 
-	GroupInfo		groupInfo[MAX_GRP_PER_SNN];
+	GroupInfo groupInfo[MAX_GRP_PER_SNN];
 
 	// Configurations
 	NetworkConfigRT networkConfigs[MAX_NET_PER_SNN]; //!< the network configs used on GPU(s);

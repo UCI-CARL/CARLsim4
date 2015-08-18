@@ -329,6 +329,8 @@ typedef struct GroupConfigRT_s {
 	int          localGrpId;
 	int          localStartN;
 	int          localEndN;
+	int          LtoGOffset;
+	int          GtoLOffset;
 	unsigned int Type;
 	int          SizeN;
     int          SizeX;
