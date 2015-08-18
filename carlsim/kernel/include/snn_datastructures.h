@@ -410,6 +410,10 @@ typedef struct GroupConfigRT_s {
 	SpikeGeneratorCore*	spikeGen;
 	PoissonRate* RatePtr;
 	bool		newUpdates;  //!< FIXME this flag has mixed meaning and is not rechecked after the simulation is started
+
+	bool operator== (const struct GroupConfigRT_s& grp) {
+		return (grpId == grp.grpId);
+	}
 } GroupConfigRT;
 
 /*!

@@ -279,6 +279,27 @@ void SNN::printConnectionInfo(short int connId) {
 	KERNEL_INFO("  - Avg numPostSynapses        = %8.2f", avgPostM );
 }
 
+// print connection info, akin to printGroupInfo
+void SNN::printConnectionInfo(std::list<ConnectConfig>::iterator connIt) {
+
+	KERNEL_INFO("Connection ID %d: %s(%d) => %s(%d)", connIt->connId, groupInfo[connIt->grpSrc].Name.c_str(),
+		connIt->grpSrc, groupInfo[connIt->grpDest].Name.c_str(), connIt->grpDest);
+	KERNEL_INFO("  - Type                       = %s", GET_FIXED_PLASTIC(connIt->connProp)==SYN_PLASTIC?" PLASTIC":"   FIXED")
+	KERNEL_INFO("  - Min weight                 = %8.5f", 0.0f); // \TODO
+	KERNEL_INFO("  - Max weight                 = %8.5f", fabs(connIt->maxWt));
+	KERNEL_INFO("  - Initial weight             = %8.5f", fabs(connIt->initWt));
+	KERNEL_INFO("  - Min delay                  = %8d", connIt->minDelay);
+	KERNEL_INFO("  - Max delay                  = %8d", connIt->maxDelay);
+	KERNEL_INFO("  - Radius X                   = %8.2f", connIt->radX);
+	KERNEL_INFO("  - Radius Y                   = %8.2f", connIt->radY);
+	KERNEL_INFO("  - Radius Z                   = %8.2f", connIt->radZ);
+
+	float avgPostM = ((float)connIt->numberOfConnections)/groupConfigMap[connIt->grpSrc].SizeN;
+	float avgPreM  = ((float)connIt->numberOfConnections)/groupConfigMap[connIt->grpDest].SizeN;
+	KERNEL_INFO("  - Avg numPreSynapses         = %8.2f", avgPreM );
+	KERNEL_INFO("  - Avg numPostSynapses        = %8.2f", avgPostM );
+}
+
 void SNN::printGroupInfo(int grpId) {
 	KERNEL_INFO("Group %s(%d): ", groupInfo[grpId].Name.c_str(), grpId);
 	KERNEL_INFO("  - Type                       =  %s", isExcitatoryGroup(grpId) ? "  EXCIT" :
@@ -321,6 +342,51 @@ void SNN::printGroupInfo(int grpId) {
 		KERNEL_INFO("      - BETA_LTD               = %8.5f", groupConfigMap[grpId].BETA_LTD);
 		KERNEL_INFO("      - LAMBDA                 = %8.5f", groupConfigMap[grpId].LAMBDA);
 		KERNEL_INFO("      - DELTA                  = %8.5f", groupConfigMap[grpId].DELTA);
+	}
+}
+
+void SNN::printGroupInfo(int netId, std::list<GroupConfigRT>::iterator grpIt) {
+	KERNEL_INFO("%s Group %s(G:%d,L:%d): ", netId == grpIt->grpId ? "Local" : "External", groupInfo[grpIt->grpId].Name.c_str(), grpIt->grpId, grpIt->localGrpId);
+	KERNEL_INFO("  - Type                       =  %s", isExcitatoryGroup(grpIt->grpId) ? "  EXCIT" :
+		(isInhibitoryGroup(grpIt->grpId) ? "  INHIB" : (isPoissonGroup(grpIt->grpId)?" POISSON" :
+		(isDopaminergicGroup(grpIt->grpId) ? "  DOPAM" : " UNKNOWN"))) );
+	KERNEL_INFO("  - Size                       = %8d", grpIt->SizeN);
+	KERNEL_INFO("  - Start Id                   = (G:%d,L:%d)", grpIt->StartN, grpIt->localStartN);
+	KERNEL_INFO("  - End Id                     = (G:%d,L:%d)", grpIt->EndN, grpIt->localEndN);
+	KERNEL_INFO("  - numPostSynapses            = %8d", grpIt->numPostSynapses);
+	KERNEL_INFO("  - numPreSynapses             = %8d", grpIt->numPreSynapses);
+
+	//if (snnState == EXECUTABLE_SNN) {
+	//	KERNEL_INFO("  - Avg post connections       = %8.5f", ((float)groupInfo[grpId].numPostConn)/groupConfigMap[grpId].SizeN);
+	//	KERNEL_INFO("  - Avg pre connections        = %8.5f",  ((float)groupInfo[grpId].numPreConn)/groupConfigMap[grpId].SizeN);
+	//}
+
+	if(grpIt->Type&POISSON_NEURON) {
+		KERNEL_INFO("  - Refractory period          = %8.5f", grpIt->RefractPeriod);
+	}
+
+	if (grpIt->WithSTP) {
+		KERNEL_INFO("  - STP:");
+		KERNEL_INFO("      - STP_A                  = %8.5f", grpIt->STP_A);
+		KERNEL_INFO("      - STP_U                  = %8.5f", grpIt->STP_U);
+		KERNEL_INFO("      - STP_tau_u              = %8d", (int) (1.0f/grpIt->STP_tau_u_inv));
+		KERNEL_INFO("      - STP_tau_x              = %8d", (int) (1.0f/grpIt->STP_tau_x_inv));
+	}
+
+	if(grpIt->WithSTDP) {
+		KERNEL_INFO("  - STDP:")
+		KERNEL_INFO("      - E-STDP TYPE            = %s",     grpIt->WithESTDPtype==STANDARD? "STANDARD" :
+			(grpIt->WithESTDPtype==DA_MOD?"  DA_MOD":" UNKNOWN"));
+		KERNEL_INFO("      - I-STDP TYPE            = %s",     grpIt->WithISTDPtype==STANDARD? "STANDARD" :
+			(grpIt->WithISTDPtype==DA_MOD?"  DA_MOD":" UNKNOWN"));
+		KERNEL_INFO("      - ALPHA_PLUS_EXC         = %8.5f", grpIt->ALPHA_PLUS_EXC);
+		KERNEL_INFO("      - ALPHA_MINUS_EXC        = %8.5f", grpIt->ALPHA_MINUS_EXC);
+		KERNEL_INFO("      - TAU_PLUS_INV_EXC       = %8.5f", grpIt->TAU_PLUS_INV_EXC);
+		KERNEL_INFO("      - TAU_MINUS_INV_EXC      = %8.5f", grpIt->TAU_MINUS_INV_EXC);
+		KERNEL_INFO("      - BETA_LTP               = %8.5f", grpIt->BETA_LTP);
+		KERNEL_INFO("      - BETA_LTD               = %8.5f", grpIt->BETA_LTD);
+		KERNEL_INFO("      - LAMBDA                 = %8.5f", grpIt->LAMBDA);
+		KERNEL_INFO("      - DELTA                  = %8.5f", grpIt->DELTA);
 	}
 }
 

@@ -621,12 +621,12 @@ private:
 	 * \brief generate connections among groups according to connect configuration
 	 */
 	void connectNetwork();
-	inline void connectNeurons(int srcGrp,  int destGrp, int srcN, int destN, short int connId);
-	void connectFull(short int connId);
-	void connectOneToOne(short int connId);
-	void connectRandom(short int connId);
-	void connectGaussian(short int connId);
-	void connectUserDefined(short int connId);
+	inline void connectNeurons(int netId, int srcGrp,  int destGrp, int srcN, int destN, short int connId, int externalNetId);
+	void connectFull(int netId, std::list<ConnectConfig>::iterator connIt, bool isExternal);
+	void connectOneToOne(int netId, std::list<ConnectConfig>::iterator connIt, bool isExternal);
+	void connectRandom(int netId, std::list<ConnectConfig>::iterator connIt, bool isExternal);
+	void connectGaussian(int netId, std::list<ConnectConfig>::iterator connIt, bool isExternal);
+	void connectUserDefined(int netId, std::list<ConnectConfig>::iterator connIt, bool isExternal);
 
 	void deleteObjects();			//!< deallocates all used data structures in snn_cpu.cpp
 
@@ -712,11 +712,13 @@ private:
 	void printConnection(FILE* fp);
 	void printConnection(int grpId, FILE* fp); //!< print the connection info of grpId
 	void printConnectionInfo(short int connId);
+	void printConnectionInfo(std::list<ConnectConfig>::iterator connIt);
 	void printConnectionInfo(FILE* fp);
 	void printConnectionInfo2(FILE *fpg);
 	void printCurrentInfo(FILE* fp); //!< for GPU debugging
 	void printFiringRate(char *fname=NULL);
 	void printGroupInfo(int grpId);	//!< CARLSIM_INFO prints group info
+	void printGroupInfo(int netId, std::list<GroupConfigRT>::iterator grpIt);
 	void printGroupInfo2(FILE* fpg);
 	void printMemoryInfo(FILE* fp); //!< prints memory info to file
 	void printNetworkInfo(FILE* fp);
@@ -908,10 +910,11 @@ private:
 	std::map<int, GroupConfigRT> groupConfigMap;   //!< the hash table storing group configs created at CONFIG_STATE
 	std::map<int, ConnectConfig> connectConfigMap; //!< the hash table storing connection configs created at CONFIG_STATE
 
-	std::list<GroupConfigRT> groupPartitionList[MAX_NET_PER_SNN];
-	std::list<ConnectConfig> connectPartitionList[MAX_NET_PER_SNN];
+	std::list<GroupConfigRT> groupPartitionLists[MAX_NET_PER_SNN];
+	std::list<ConnectConfig> localConnectLists[MAX_NET_PER_SNN];
+	std::list<ConnectConfig> externalConnectLists[MAX_NET_PER_SNN];
 
-	std::list<ConnectionInfo> connectionList;
+	std::list<ConnectionInfo> connectionLists[MAX_NET_PER_SNN];
 
 	float 		*mulSynFast;	//!< scaling factor for fast synaptic currents, per connection
 	float 		*mulSynSlow;	//!< scaling factor for slow synaptic currents, per connection

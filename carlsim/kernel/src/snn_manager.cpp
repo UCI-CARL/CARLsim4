@@ -2516,10 +2516,10 @@ void SNN::generateConnectionRuntime() {
 		mulSynSlow[it->second.connId] = it->second.mulSynSlow;
 	}
 
-	// parse ConnectionInfo stored in connectionList
+	// parse ConnectionInfo stored in connectionLists[0]
 	// generate Npost, Npre, Npre_plastic
 	int parsedConnections = 0;	
-	for (std::list<ConnectionInfo>::iterator it = connectionList.begin(); it != connectionList.end(); it++) {
+	for (std::list<ConnectionInfo>::iterator it = connectionLists[0].begin(); it != connectionLists[0].end(); it++) {
 		snnRuntimeData.Npost[it->nSrc]++;
 		snnRuntimeData.Npre[it->nDest]++;
 
@@ -2557,7 +2557,7 @@ void SNN::generateConnectionRuntime() {
 	// generate preSynapticIds, parse plastic connections first
 	memset(snnRuntimeData.Npre, 0, sizeof(short) * numN); // reset snnRuntimeData.Npre to zero, so that it can be used as synId
 	parsedConnections = 0;
-	for (std::list<ConnectionInfo>::iterator it = connectionList.begin(); it != connectionList.end(); it++) {
+	for (std::list<ConnectionInfo>::iterator it = connectionLists[0].begin(); it != connectionLists[0].end(); it++) {
 		if (GET_FIXED_PLASTIC(connectConfigMap[it->connId].connProp) == SYN_PLASTIC) {
 			int pre_pos  = snnRuntimeData.cumulativePre[it->nDest] + snnRuntimeData.Npre[it->nDest];
 			assert(pre_pos  < numPreSynNet);
@@ -2574,10 +2574,10 @@ void SNN::generateConnectionRuntime() {
 		}
 	}
 	// parse fixed connections
-	for (std::list<ConnectionInfo>::iterator it = connectionList.begin(); it != connectionList.end(); it++) {
+	for (std::list<ConnectionInfo>::iterator it = connectionLists[0].begin(); it != connectionLists[0].end(); it++) {
 		if (GET_FIXED_PLASTIC(connectConfigMap[it->connId].connProp) == SYN_FIXED) {
 			int pre_pos  = snnRuntimeData.cumulativePre[it->nDest] + snnRuntimeData.Npre[it->nDest];
-			assert(pre_pos  < numPreSynNet);
+			assert(pre_pos < numPreSynNet);
 
 			snnRuntimeData.preSynapticIds[pre_pos] = SET_CONN_ID(it->nSrc, 0, it->grpSrc); // snnRuntimeData.Npost[it->nSrc] is not availabe at this parse
 			it->preSynId = snnRuntimeData.Npre[it->nDest]; // save snnRuntimeData.Npre[it->nDest] as synId
@@ -2593,19 +2593,19 @@ void SNN::generateConnectionRuntime() {
 	assert(parsedConnections == numPreSynNet);
 
 	// generate postSynapticIds
-	connectionList.sort(compareSrcNeuron);
+	connectionLists[0].sort(compareSrcNeuron);
 	for (int nId = 0; nId < numN; nId++) { // pre-neuron order
 		if (snnRuntimeData.Npost[nId] > 0) {
 			std::list<ConnectionInfo> postConnectionList;
 			ConnectionInfo targetConn;
 			targetConn.nSrc = nId; // the other fields does not matter
 			
-			std::list<ConnectionInfo>::iterator firstPostConn = std::find(connectionList.begin(), connectionList.end(), targetConn);
+			std::list<ConnectionInfo>::iterator firstPostConn = std::find(connectionLists[0].begin(), connectionLists[0].end(), targetConn);
 			std::list<ConnectionInfo>::iterator lastPostConn = firstPostConn;
 			std::advance(lastPostConn, snnRuntimeData.Npost[nId]);
 			snnRuntimeData.Npost[nId] = 0; // reset snnRuntimeData.Npost[nId] to zero, so that it can be used as synId
 
-			postConnectionList.splice(postConnectionList.begin(), connectionList, firstPostConn, lastPostConn);
+			postConnectionList.splice(postConnectionList.begin(), connectionLists[0], firstPostConn, lastPostConn);
 			postConnectionList.sort(compareDelay);
 
 			int post_pos, pre_pos, lastDelay = 0;
@@ -2653,7 +2653,7 @@ void SNN::generateConnectionRuntime() {
 			// note: elements in postConnectionList are deallocated automatically with postConnectionList
 		}
 	}
-	assert(connectionList.empty());
+	assert(connectionLists[0].empty());
 
 	//int p = snnRuntimeData.Npost[src];
 
@@ -2842,46 +2842,68 @@ void SNN::compileGroupConfig() {
 }
 
 void SNN::connectNetwork() {
-	for (std::map<int, ConnectConfig>::iterator it = connectConfigMap.begin(); it != connectConfigMap.end(); it++) {
-		switch(it->second.type) {
-			case CONN_RANDOM:
-				connectRandom(it->second.connId);
-				break;
-			case CONN_FULL:
-				connectFull(it->second.connId);
-				break;
-			case CONN_FULL_NO_DIRECT:
-				connectFull(it->second.connId);
-				break;
-			case CONN_ONE_TO_ONE:
-				connectOneToOne(it->second.connId);
-				break;
-			case CONN_GAUSSIAN:
-				connectGaussian(it->second.connId);
-				break;
-			case CONN_USER_DEFINED:
-				connectUserDefined(it->second.connId);
-				break;
-			default:
-				KERNEL_ERROR("Invalid connection type( should be 'random', 'full', 'full-no-direct', or 'one-to-one')");
-				exitSimulation(-1);
+	// this parse generates local connections
+	for (int netId = 0; netId < MAX_NET_PER_SNN; netId++) {
+		for (std::list<ConnectConfig>::iterator connIt = localConnectLists[netId].begin(); connIt != localConnectLists[netId].end(); connIt++) {
+			switch(connIt->type) {
+				case CONN_RANDOM:
+					connectRandom(netId, connIt, false);
+					break;
+				case CONN_FULL:
+					connectFull(netId, connIt, false);
+					break;
+				case CONN_FULL_NO_DIRECT:
+					connectFull(netId, connIt, false);
+					break;
+				case CONN_ONE_TO_ONE:
+					connectOneToOne(netId, connIt, false);
+					break;
+				case CONN_GAUSSIAN:
+					connectGaussian(netId, connIt, false);
+					break;
+				case CONN_USER_DEFINED:
+					connectUserDefined(netId, connIt, false);
+					break;
+				default:
+					KERNEL_ERROR("Invalid connection type( should be 'random', 'full', 'full-no-direct', or 'one-to-one')");
+					exitSimulation(-1);
+			}
 		}
 	}
 
-	// print group overview
-	for (int g = 0; g < numGroups; g++) {
-		printGroupInfo(g);
-	}
-
-	// print connection overview
-	for (std::map<int, ConnectConfig>::iterator it = connectConfigMap.begin(); it != connectConfigMap.end(); it++) {
-		printConnectionInfo(it->second.connId);
+	// this parse generates external connections
+	for (int netId = 0; netId < MAX_NET_PER_SNN; netId++) {
+		for (std::list<ConnectConfig>::iterator connIt = externalConnectLists[netId].begin(); connIt != externalConnectLists[netId].end(); connIt++) {
+			switch(connIt->type) {
+				case CONN_RANDOM:
+					connectRandom(netId, connIt, true);
+					break;
+				case CONN_FULL:
+					connectFull(netId, connIt, true);
+					break;
+				case CONN_FULL_NO_DIRECT:
+					connectFull(netId, connIt, true);
+					break;
+				case CONN_ONE_TO_ONE:
+					connectOneToOne(netId, connIt, true);
+					break;
+				case CONN_GAUSSIAN:
+					connectGaussian(netId, connIt, true);
+					break;
+				case CONN_USER_DEFINED:
+					connectUserDefined(netId, connIt, true);
+					break;
+				default:
+					KERNEL_ERROR("Invalid connection type( should be 'random', 'full', 'full-no-direct', or 'one-to-one')");
+					exitSimulation(-1);
+			}
+		}
 	}
 }
 
 //! set one specific connection from neuron id 'src' to neuron id 'dest'
-inline void SNN::connectNeurons(int _grpSrc,  int _grpDest, int _nSrc, int _nDest, short int _connId) {
-	//assert(destN <= CONN_SYN_NEURON_MASK);			// total number of neurons is less than 1 million within a GPU
+inline void SNN::connectNeurons(int netId, int _grpSrc, int _grpDest, int _nSrc, int _nDest, short int _connId, int externalNetId) {
+	//assert(destN <= CONN_SYN_NEURON_MASK); // total number of neurons is less than 1 million within a GPU
 	ConnectionInfo connInfo;
 	connInfo.grpSrc = _grpSrc;
 	connInfo.grpDest = _grpDest;
@@ -2893,17 +2915,26 @@ inline void SNN::connectNeurons(int _grpSrc,  int _grpDest, int _nSrc, int _nDes
 	connInfo.maxWt = 0.0f;
 	connInfo.delay = 0;
 
-	connectionList.push_back(connInfo);
+	connectionLists[netId].push_back(connInfo);
+
+	if (externalNetId >= 0)
+		connectionLists[externalNetId].push_back(connInfo);
 }
 
 // make 'C' full connections from grpSrc to grpDest
-void SNN::connectFull(short int connId) {
-	int grpSrc = connectConfigMap[connId].grpSrc;
-	int grpDest = connectConfigMap[connId].grpDest;
-	bool noDirect = (connectConfigMap[connId].type == CONN_FULL_NO_DIRECT);
+void SNN::connectFull(int netId, std::list<ConnectConfig>::iterator connIt, bool isExternal) {
+	int grpSrc = connIt->grpSrc;
+	int grpDest = connIt->grpDest;
+	bool noDirect = (connIt->type == CONN_FULL_NO_DIRECT);
+	int externalNetId = -1;
+
+	if (isExternal) {
+		externalNetId = groupConfigMap[grpDest].netId;
+		assert(netId != externalNetId);
+	}
 
 	// rebuild struct for easier handling
-	RadiusRF radius(connectConfigMap[connId].radX, connectConfigMap[connId].radY, connectConfigMap[connId].radZ);
+	RadiusRF radius(connIt->radX, connIt->radY, connIt->radZ);
 
 	for(int i = groupConfigMap[grpSrc].StartN; i <= groupConfigMap[grpSrc].EndN; i++)  {
 		//Point3D loc_i = getNeuronLocation3D(i); // 3D coordinates of i
@@ -2917,30 +2948,56 @@ void SNN::connectFull(short int connId) {
 			//if (!isPoint3DinRF(radius, loc_i, loc_j))
 			//	continue;
 
-			connectNeurons(grpSrc, grpDest, i, j, connId);
-			groupInfo[grpSrc].numPostConn++;
-			groupInfo[grpDest].numPreConn++;
-			connectConfigMap[connId].numberOfConnections++;
+			connectNeurons(netId, grpSrc, grpDest, i, j, connIt->connId, externalNetId);
+			connIt->numberOfConnections++;
 		}
 	}
 
-	groupConfigMap[grpSrc].numPostSynapses += connectConfigMap[connId].numberOfConnections;
-	groupConfigMap[grpDest].numPreSynapses += connectConfigMap[connId].numberOfConnections;
-	groupInfo[grpSrc].sumPostConn += connectConfigMap[connId].numberOfConnections;
-	groupInfo[grpDest].sumPreConn += connectConfigMap[connId].numberOfConnections;
+	std::list<GroupConfigRT>::iterator grpIt;
+	GroupConfigRT targetGrp;
+
+	// update numPostSynapses and numPreSynapses of groups in the local network
+	targetGrp.grpId = grpSrc; // the other fields does not matter
+	grpIt = std::find(groupPartitionLists[netId].begin(), groupPartitionLists[netId].end(), targetGrp);
+	assert(grpIt != groupPartitionLists[netId].end());
+	grpIt->numPostSynapses += connIt->numberOfConnections;
+
+	targetGrp.grpId = grpDest; // the other fields does not matter
+	grpIt = std::find(groupPartitionLists[netId].begin(), groupPartitionLists[netId].end(), targetGrp);
+	assert(grpIt != groupPartitionLists[netId].end());
+	grpIt->numPreSynapses += connIt->numberOfConnections;
+	
+	// also update numPostSynapses and numPreSynapses of groups in the external network if the connection is external
+	if (isExternal) {
+		targetGrp.grpId = grpSrc; // the other fields does not matter
+		grpIt = std::find(groupPartitionLists[externalNetId].begin(), groupPartitionLists[externalNetId].end(), targetGrp);
+		assert(grpIt != groupPartitionLists[externalNetId].end());
+		grpIt->numPostSynapses += connIt->numberOfConnections;
+
+		targetGrp.grpId = grpDest; // the other fields does not matter
+		grpIt = std::find(groupPartitionLists[externalNetId].begin(), groupPartitionLists[externalNetId].end(), targetGrp);
+		assert(grpIt != groupPartitionLists[externalNetId].end());
+		grpIt->numPreSynapses += connIt->numberOfConnections;
+	}
 }
 
-void SNN::connectGaussian(short int connId) {
+void SNN::connectGaussian(int netId, std::list<ConnectConfig>::iterator connIt, bool isExternal) {
 	// rebuild struct for easier handling
 	// adjust with sqrt(2) in order to make the Gaussian kernel depend on 2*sigma^2
-	RadiusRF radius(connectConfigMap[connId].radX, connectConfigMap[connId].radY, connectConfigMap[connId].radZ);
+	RadiusRF radius(connIt->radX, connIt->radY, connIt->radZ);
 
 	// in case pre and post have different Grid3D sizes: scale pre to the grid size of post
-	int grpSrc = connectConfigMap[connId].grpSrc;
-	int grpDest = connectConfigMap[connId].grpDest;
+	int grpSrc = connIt->grpSrc;
+	int grpDest = connIt->grpDest;
 	//Grid3D grid_i = getGroupGrid3D(grpSrc);
 	//Grid3D grid_j = getGroupGrid3D(grpDest);
 	//Point3D scalePre = Point3D(grid_j.numX, grid_j.numY, grid_j.numZ) / Point3D(grid_i.numX, grid_i.numY, grid_i.numZ);
+	int externalNetId = -1;
+
+	if (isExternal) {
+		externalNetId = groupConfigMap[grpDest].netId;
+		assert(netId != externalNetId);
+	}
 
 	for(int i = groupConfigMap[grpSrc].StartN; i <= groupConfigMap[grpSrc].EndN; i++)  {
 		//Point3D loc_i = getNeuronLocation3D(i)*scalePre; // i: adjusted 3D coordinates
@@ -2963,44 +3020,97 @@ void SNN::connectGaussian(short int connId) {
 			//if (gauss < 0.1)
 			//	continue;
 
-			if (drand48() < connectConfigMap[connId].p) {
-				connectNeurons(grpSrc, grpDest, i, j, connId);
-				groupInfo[grpSrc].numPostConn++;
-				groupInfo[grpDest].numPreConn++;
-				connectConfigMap[connId].numberOfConnections++;
+			if (drand48() < connIt->p) {
+				connectNeurons(netId, grpSrc, grpDest, i, j, connIt->connId, externalNetId);
+				connIt->numberOfConnections++;
 			}
 		}
 	}
 
-	groupConfigMap[grpSrc].numPostSynapses += connectConfigMap[connId].numberOfConnections;
-	groupConfigMap[grpDest].numPreSynapses += connectConfigMap[connId].numberOfConnections;
-	groupInfo[grpSrc].sumPostConn += connectConfigMap[connId].numberOfConnections;
-	groupInfo[grpDest].sumPreConn += connectConfigMap[connId].numberOfConnections;
+	std::list<GroupConfigRT>::iterator grpIt;
+	GroupConfigRT targetGrp;
+
+	// update numPostSynapses and numPreSynapses of groups in the local network
+	targetGrp.grpId = grpSrc; // the other fields does not matter
+	grpIt = std::find(groupPartitionLists[netId].begin(), groupPartitionLists[netId].end(), targetGrp);
+	assert(grpIt != groupPartitionLists[netId].end());
+	grpIt->numPostSynapses += connIt->numberOfConnections;
+
+	targetGrp.grpId = grpDest; // the other fields does not matter
+	grpIt = std::find(groupPartitionLists[netId].begin(), groupPartitionLists[netId].end(), targetGrp);
+	assert(grpIt != groupPartitionLists[netId].end());
+	grpIt->numPreSynapses += connIt->numberOfConnections;
+	
+	// also update numPostSynapses and numPreSynapses of groups in the external network if the connection is external
+	if (isExternal) {
+		targetGrp.grpId = grpSrc; // the other fields does not matter
+		grpIt = std::find(groupPartitionLists[externalNetId].begin(), groupPartitionLists[externalNetId].end(), targetGrp);
+		assert(grpIt != groupPartitionLists[externalNetId].end());
+		grpIt->numPostSynapses += connIt->numberOfConnections;
+
+		targetGrp.grpId = grpDest; // the other fields does not matter
+		grpIt = std::find(groupPartitionLists[externalNetId].begin(), groupPartitionLists[externalNetId].end(), targetGrp);
+		assert(grpIt != groupPartitionLists[externalNetId].end());
+		grpIt->numPreSynapses += connIt->numberOfConnections;
+	}
 }
 
-void SNN::connectOneToOne(short int connId) {
-	int grpSrc = connectConfigMap[connId].grpSrc;
-	int grpDest = connectConfigMap[connId].grpDest;
+void SNN::connectOneToOne(int netId, std::list<ConnectConfig>::iterator connIt, bool isExternal) {
+	int grpSrc = connIt->grpSrc;
+	int grpDest = connIt->grpDest;
+	int externalNetId = -1;
+
+	if (isExternal) {
+		externalNetId = groupConfigMap[grpDest].netId;
+		assert(netId != externalNetId);
+	}
+
 	assert( groupConfigMap[grpDest].SizeN == groupConfigMap[grpSrc].SizeN );
 
 	// NOTE: RadiusRF does not make a difference here: ignore
 	for(int nid = groupConfigMap[grpSrc].StartN, j = groupConfigMap[grpDest].StartN; nid <= groupConfigMap[grpSrc].EndN; nid++, j++)  {
-		connectNeurons(grpSrc, grpDest, nid, j, connId);
-		groupInfo[grpSrc].numPostConn++;
-		groupInfo[grpDest].numPreConn++;
-		connectConfigMap[connId].numberOfConnections++;
+		connectNeurons(netId, grpSrc, grpDest, nid, j, connIt->connId, externalNetId);
+		connIt->numberOfConnections++;
 	}
 
-	groupConfigMap[grpSrc].numPostSynapses += connectConfigMap[connId].numberOfConnections;
-	groupConfigMap[grpDest].numPreSynapses += connectConfigMap[connId].numberOfConnections;
-	groupInfo[grpSrc].sumPostConn += connectConfigMap[connId].numberOfConnections;
-	groupInfo[grpDest].sumPreConn += connectConfigMap[connId].numberOfConnections;
+	std::list<GroupConfigRT>::iterator grpIt;
+	GroupConfigRT targetGrp;
+
+	// update numPostSynapses and numPreSynapses of groups in the local network
+	targetGrp.grpId = grpSrc; // the other fields does not matter
+	grpIt = std::find(groupPartitionLists[netId].begin(), groupPartitionLists[netId].end(), targetGrp);
+	assert(grpIt != groupPartitionLists[netId].end());
+	grpIt->numPostSynapses += connIt->numberOfConnections;
+
+	targetGrp.grpId = grpDest; // the other fields does not matter
+	grpIt = std::find(groupPartitionLists[netId].begin(), groupPartitionLists[netId].end(), targetGrp);
+	assert(grpIt != groupPartitionLists[netId].end());
+	grpIt->numPreSynapses += connIt->numberOfConnections;
+	
+	// also update numPostSynapses and numPreSynapses of groups in the external network if the connection is external
+	if (isExternal) {
+		targetGrp.grpId = grpSrc; // the other fields does not matter
+		grpIt = std::find(groupPartitionLists[externalNetId].begin(), groupPartitionLists[externalNetId].end(), targetGrp);
+		assert(grpIt != groupPartitionLists[externalNetId].end());
+		grpIt->numPostSynapses += connIt->numberOfConnections;
+
+		targetGrp.grpId = grpDest; // the other fields does not matter
+		grpIt = std::find(groupPartitionLists[externalNetId].begin(), groupPartitionLists[externalNetId].end(), targetGrp);
+		assert(grpIt != groupPartitionLists[externalNetId].end());
+		grpIt->numPreSynapses += connIt->numberOfConnections;
+	}
 }
 
 // make 'C' random connections from grpSrc to grpDest
-void SNN::connectRandom(short int connId) {
-	int grpSrc = connectConfigMap[connId].grpSrc;
-	int grpDest = connectConfigMap[connId].grpDest;
+void SNN::connectRandom(int netId, std::list<ConnectConfig>::iterator connIt, bool isExternal) {
+	int grpSrc = connIt->grpSrc;
+	int grpDest = connIt->grpDest;
+	int externalNetId = -1;
+
+	if (isExternal) {
+		externalNetId = groupConfigMap[grpDest].netId;
+		assert(netId != externalNetId);
+	}
 
 	// rebuild struct for easier handling
 	//RadiusRF radius(connectConfigMap[connId].radX, connectConfigMap[connId].radY, connectConfigMap[connId].radZ);
@@ -3013,25 +3123,45 @@ void SNN::connectRandom(short int connId) {
 			//if (!isPoint3DinRF(radius, loc_pre, loc_post))
 			//	continue;
 
-			if (drand48() < connectConfigMap[connId].p) {
-				connectNeurons(grpSrc, grpDest, pre_nid, post_nid, connId);
-				groupInfo[grpSrc].numPostConn++;
-				groupInfo[grpDest].numPreConn++;
-				connectConfigMap[connId].numberOfConnections++;
+			if (drand48() < connIt->p) {
+				connectNeurons(netId, grpSrc, grpDest, pre_nid, post_nid, connIt->connId, externalNetId);
+				connIt->numberOfConnections++;
 			}
 		}
 	}
 
-	groupConfigMap[grpSrc].numPostSynapses += connectConfigMap[connId].numberOfConnections;
-	groupConfigMap[grpDest].numPreSynapses += connectConfigMap[connId].numberOfConnections;
-	groupInfo[grpSrc].sumPostConn += connectConfigMap[connId].numberOfConnections;
-	groupInfo[grpDest].sumPreConn += connectConfigMap[connId].numberOfConnections;
+	std::list<GroupConfigRT>::iterator grpIt;
+	GroupConfigRT targetGrp;
+
+	// update numPostSynapses and numPreSynapses of groups in the local network
+	targetGrp.grpId = grpSrc; // the other fields does not matter
+	grpIt = std::find(groupPartitionLists[netId].begin(), groupPartitionLists[netId].end(), targetGrp);
+	assert(grpIt != groupPartitionLists[netId].end());
+	grpIt->numPostSynapses += connIt->numberOfConnections;
+
+	targetGrp.grpId = grpDest; // the other fields does not matter
+	grpIt = std::find(groupPartitionLists[netId].begin(), groupPartitionLists[netId].end(), targetGrp);
+	assert(grpIt != groupPartitionLists[netId].end());
+	grpIt->numPreSynapses += connIt->numberOfConnections;
+	
+	// also update numPostSynapses and numPreSynapses of groups in the external network if the connection is external
+	if (isExternal) {
+		targetGrp.grpId = grpSrc; // the other fields does not matter
+		grpIt = std::find(groupPartitionLists[externalNetId].begin(), groupPartitionLists[externalNetId].end(), targetGrp);
+		assert(grpIt != groupPartitionLists[externalNetId].end());
+		grpIt->numPostSynapses += connIt->numberOfConnections;
+
+		targetGrp.grpId = grpDest; // the other fields does not matter
+		grpIt = std::find(groupPartitionLists[externalNetId].begin(), groupPartitionLists[externalNetId].end(), targetGrp);
+		assert(grpIt != groupPartitionLists[externalNetId].end());
+		grpIt->numPreSynapses += connIt->numberOfConnections;
+	}
 }
 
 // FIXME: rewrite user-define call-back function
 // user-defined functions called here...
 // This is where we define our user-defined call-back function.  -- KDC
-void SNN::connectUserDefined(short int connId) {
+void SNN::connectUserDefined(int netId, std::list<ConnectConfig>::iterator connIt, bool isExternal) {
 	//int grpSrc = connectConfigMap[connId].grpSrc;
 	//int grpDest = connectConfigMap[connId].grpDest;
 	//connectConfigMap[connId].maxDelay = 0;
@@ -3681,11 +3811,11 @@ void SNN::partitionSNN() {
 		if (IS_EXCITATORY_TYPE(it->second.Type)) {
 			it->second.netId = 0;
 			numAssignedNeurons[0] += it->second.SizeN;
-			groupPartitionList[0].push_back(it->second);
+			groupPartitionLists[0].push_back(it->second);
 		} else if (IS_INHIBITORY_TYPE(it->second.Type)) {
 			it->second.netId = 1;
 			numAssignedNeurons[1] += it->second.SizeN;
-			groupPartitionList[1].push_back(it->second);
+			groupPartitionLists[1].push_back(it->second);
 		} else {
 			KERNEL_ERROR("Can't assign the group [%d] to any partition", it->second.grpId);
 			exitSimulation(-1);
@@ -3694,10 +3824,10 @@ void SNN::partitionSNN() {
 
 	// this parse finds local connections (i.e., connection configs that conect local groups)
 	for (int netId = 0; netId < MAX_NET_PER_SNN; netId++) {
-		if (!groupPartitionList[netId].empty()) {
+		if (!groupPartitionLists[netId].empty()) {
 			for (std::map<int, ConnectConfig>::iterator connIt = connectConfigMap.begin(); connIt != connectConfigMap.end(); connIt++) {
 				if (groupConfigMap[connIt->second.grpSrc].netId == netId && groupConfigMap[connIt->second.grpDest].netId == netId) {
-					connectPartitionList[netId].push_back(connectConfigMap[connIt->second.connId]);
+					localConnectLists[netId].push_back(connectConfigMap[connIt->second.connId]);
 				}
 			}
 		}
@@ -3705,27 +3835,27 @@ void SNN::partitionSNN() {
 
 	// this parse finds external groups and external connections
 	for (int netId = 0; netId < MAX_NET_PER_SNN; netId++) {
-		if (!groupPartitionList[netId].empty()) {
+		if (!groupPartitionLists[netId].empty()) {
 			for (std::map<int, ConnectConfig>::iterator connIt = connectConfigMap.begin(); connIt != connectConfigMap.end(); connIt++) {
 				if (groupConfigMap[connIt->second.grpSrc].netId == netId && groupConfigMap[connIt->second.grpDest].netId != netId) {
 					numAssignedNeurons[netId] += groupConfigMap[connIt->second.grpDest].SizeN;
-					groupPartitionList[netId].push_back(groupConfigMap[connIt->second.grpDest]);
-					connectPartitionList[netId].push_back(connectConfigMap[connIt->second.connId]);
+					groupPartitionLists[netId].push_back(groupConfigMap[connIt->second.grpDest]);
+					externalConnectLists[netId].push_back(connectConfigMap[connIt->second.connId]);
 				}
 			}
 		}
 	}
 
-	// assign local neuron id in the order
+	// assign local neuron ids and, group ids for each local network in the order
 	// MPORTANT : NEURON ORGANIZATION/ARRANGEMENT MAP
 	// <--- Excitatory --> | <-------- Inhibitory REGION ----------> | <-- Excitatory --> | <-- External -->
 	// Excitatory-Regular  | Inhibitory-Regular | Inhibitory-Poisson | Excitatory-Poisson | External Neurons
 	for (int netId = 0; netId < MAX_NET_PER_SNN; netId++) {
-		if (!groupPartitionList[netId].empty()) {
+		if (!groupPartitionLists[netId].empty()) {
 			int availableNeuronId = 0;
 			int localGroupId = 0;
 			for (int order = 0; order < 5; order++) {
-				for (std::list<GroupConfigRT>::iterator grpIt = groupPartitionList[netId].begin(); grpIt != groupPartitionList[netId].end(); grpIt++) {
+				for (std::list<GroupConfigRT>::iterator grpIt = groupPartitionLists[netId].begin(); grpIt != groupPartitionLists[netId].end(); grpIt++) {
 					if (IS_EXCITATORY_TYPE(grpIt->Type) && (grpIt->Type & POISSON_NEURON) && order == 3 && grpIt->netId == netId) {
 						availableNeuronId = assignGroup(grpIt, localGroupId, availableNeuronId);
 						localGroupId++;
@@ -3745,7 +3875,7 @@ void SNN::partitionSNN() {
 				}
 			}
 			assert(availableNeuronId == numAssignedNeurons[netId]);
-			assert(localGroupId == groupPartitionList[netId].size());
+			assert(localGroupId == groupPartitionLists[netId].size());
 		}
 	}
 
@@ -3754,6 +3884,28 @@ void SNN::partitionSNN() {
 	// update ConnectConfig::numberOfConnections
 	// update GroupConfig::numPostSynapses, GroupConfig::numPreSynapses
 	connectNetwork();
+
+	// print group and connection overview
+	for (int netId = 0; netId < MAX_NET_PER_SNN; netId++) {
+		if (!groupPartitionLists[netId].empty()) {
+			KERNEL_INFO("\n+ Local Network (%d)", netId);
+			KERNEL_INFO("Group List:");
+			for (std::list<GroupConfigRT>::iterator grpIt = groupPartitionLists[netId].begin(); grpIt != groupPartitionLists[netId].end(); grpIt++)
+				printGroupInfo(netId, grpIt);
+		}
+		if (!localConnectLists[netId].empty()) {
+			KERNEL_INFO("Local Connection List:");
+			for (std::list<ConnectConfig>::iterator connIt = localConnectLists[netId].begin(); connIt != localConnectLists[netId].end(); connIt++)
+				printConnectionInfo(connIt);
+		}
+		if (!externalConnectLists[netId].empty()) {
+			KERNEL_INFO("External Connection List:");
+			for (std::list<ConnectConfig>::iterator connIt = externalConnectLists[netId].begin(); connIt != externalConnectLists[netId].end(); connIt++)
+				printConnectionInfo(connIt);
+		}
+	}
+
+
 
 	// collect the global network config according to compiled gorup and connection configs
 	// collect SNN::maxNumPreSynGrp, SNN::maxNumPostSynGrp, SNN::maxDelay_
