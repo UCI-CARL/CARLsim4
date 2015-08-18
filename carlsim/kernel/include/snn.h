@@ -607,7 +607,7 @@ private:
 	/*!
 	 * \brief scan all GroupConfigs and ConnectConfigs for generating the configuration of a global network
 	 */
-	void generateNetworkConfigs();
+	void collectGlobalNetworkConfig();
 
 	void compileConnectConfig(); //!< for future use
 	void compileGroupConfig();
@@ -902,9 +902,8 @@ private:
 	float gpuExecutionTime;
 
 	//! switch to make all weights fixed (such as in testing phase) or not
-	//bool sim_in_testing;
+	bool sim_in_testing;
 
-	// variables used in CONFIG_STATE
 	int numGroups;      //!< the number of groups (as in snn.createGroup, snn.createSpikeGeneratorGroup)
 	int numConnections; //!< the number of connections (as in snn.connect(...))
 
@@ -923,38 +922,40 @@ private:
 	//! Buffer to store spikes
 	PropagatedSpikeBuffer* pbuf;
 
-	//bool sim_with_conductances; //!< flag to inform whether we run in COBA mode (true) or CUBA mode (false)
-	//bool sim_with_NMDA_rise;    //!< a flag to inform whether to compute NMDA rise time
-	//bool sim_with_GABAb_rise;   //!< a flag to inform whether to compute GABAb rise time
-	//double dAMPA;               //!< multiplication factor for decay time of AMPA conductance (gAMPA[i] *= dAMPA)
-	//double rNMDA;               //!< multiplication factor for rise time of NMDA
-	//double dNMDA;               //!< multiplication factor for decay time of NMDA
-	//double sNMDA;               //!< scaling factor for NMDA amplitude
-	//double dGABAa;              //!< multiplication factor for decay time of GABAa
-	//double rGABAb;              //!< multiplication factor for rise time of GABAb
-	//double dGABAb;              //!< multiplication factor for decay time of GABAb
-	//double sGABAb;              //!< scaling factor for GABAb amplitude
+	bool sim_with_conductances; //!< flag to inform whether we run in COBA mode (true) or CUBA mode (false)
+	bool sim_with_NMDA_rise;    //!< a flag to inform whether to compute NMDA rise time
+	bool sim_with_GABAb_rise;   //!< a flag to inform whether to compute GABAb rise time
+	double dAMPA;               //!< multiplication factor for decay time of AMPA conductance (gAMPA[i] *= dAMPA)
+	double rNMDA;               //!< multiplication factor for rise time of NMDA
+	double dNMDA;               //!< multiplication factor for decay time of NMDA
+	double sNMDA;               //!< scaling factor for NMDA amplitude
+	double dGABAa;              //!< multiplication factor for decay time of GABAa
+	double rGABAb;              //!< multiplication factor for rise time of GABAb
+	double dGABAb;              //!< multiplication factor for decay time of GABAb
+	double sGABAb;              //!< scaling factor for GABAb amplitude
 
-	//bool sim_with_fixedwts;
-	//bool sim_with_stdp;
-	//bool sim_with_modulated_stdp;
-	//bool sim_with_homeostasis;
-	//bool sim_with_stp;
-	//bool sim_with_spikecounters; //!< flag will be true if there are any spike counters around
+	bool sim_with_fixedwts;
+	bool sim_with_stdp;
+	bool sim_with_modulated_stdp;
+	bool sim_with_homeostasis;
+	bool sim_with_stp;
+	bool sim_with_spikecounters; //!< flag will be true if there are any spike counters around
 
 	// spiking neural network related information, including neurons, synapses and network parameters
-	//int	numN;             
+	int	numN;             //!< number of neurons in the spiking neural network
 	int maxNumPostSynGrp; //!< maximum number of post-synaptic connections among groups
 	int maxNumPreSynGrp;  //!< maximum number of pre-synaptic connections among groups
-	//int maxDelay_;        
-	//int numNReg;         
-	//int numNExcReg;      
-	//int numNInhReg;       
-	//int numNExcPois;      
-	//int numNInhPois;      
-	//int numNPois;         
-	//int numPostSynNet;    //!< total number of post-synaptic connections in the network
-	//int numPreSynNet;     //!< total number of pre-synaptic connections in the network
+	//int maxNumPostSynN;   //!< maximum number of post-synaptic connections among neurons
+	//int maxNumPreSynN;    //!< maximum number of pre-syanptic connections among neurons 
+	int maxDelay_;        //!< maximum axonal delay in groups
+	int numNReg;          //!< number of regular (spking) neurons
+	int numNExcReg;       //!< number of regular excitatory neurons
+	int numNInhReg;       //!< number of regular inhibitory neurons
+	int numNExcPois;      //!< number of excitatory poisson neurons
+	int numNInhPois;      //!< number of inhibitory poisson neurons
+	int numNPois;         //!< number of poisson neurons
+	int numPostSynNet;    //!< total number of post-synaptic connections in the network
+	int numPreSynNet;     //!< total number of pre-synaptic connections in the network
 
 	//! size of memory used for different parts of the network
 	typedef struct snnSize_s {
@@ -974,8 +975,8 @@ private:
 	//! firing info
 	unsigned int timeTableD2[TIMING_COUNT];
 	unsigned int timeTableD1[TIMING_COUNT];
-	//unsigned int maxSpikesD1;
-	//unsigned int maxSpikesD2;
+	unsigned int maxSpikesD1;
+	unsigned int maxSpikesD2;
 
 	//time and timestep
 
@@ -1040,8 +1041,6 @@ private:
 	GroupInfo groupInfo[MAX_GRP_PER_SNN];
 
 	// Configurations
-	NetworkConfig globalNetworkConfig;
-
 	NetworkConfigRT networkConfigs[MAX_NET_PER_SNN]; //!< the network configs used on GPU(s);
 	GroupConfigRT	groupConfigs[MAX_NET_PER_SNN][MAX_GRP_PER_SNN];
 	ConnectConfigRT connectConfigs[MAX_NET_PER_SNN][MAX_CONN_PER_SNN]; //!< for future use
@@ -1049,8 +1048,8 @@ private:
 	// weight update parameter
 	int wtANDwtChangeUpdateInterval_;
 	int wtANDwtChangeUpdateIntervalCnt_;
-	//float stdpScaleFactor_;
-	//float wtChangeDecay_; //!< the wtChange decay
+	float stdpScaleFactor_;
+	float wtChangeDecay_; //!< the wtChange decay
 
 	RNG_rand48* gpuPoissonRand;
 };
