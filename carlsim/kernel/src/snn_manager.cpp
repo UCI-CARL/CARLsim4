@@ -2001,8 +2001,7 @@ void SNN::SNNinit() {
 
 	maxNumPostSynGrp = 0;
 	maxNumPreSynGrp = 0;
-	//maxNumPostSynN = 0;
-	//maxNumPreSynN = 0;
+
 	maxDelay_ = 0;
 
 	// conductance info struct for simulation
@@ -2036,6 +2035,7 @@ void SNN::SNNinit() {
 	pbuf = new PropagatedSpikeBuffer(0, PROPAGATED_BUFFER_SIZE);
 
 	memset(&gpuRuntimeData[0], 0, sizeof(RuntimeData));
+
 	memset(networkConfigs, 0, sizeof(NetworkConfigRT) * MAX_NET_PER_SNN);
 	gpuRuntimeData[0].allocated = false;
 
@@ -2732,7 +2732,7 @@ void SNN::checkSpikeCounterRecordDur() {
 	}
 }
 
-void SNN::collectGlobalNetworkConfig() {
+void SNN::generateNetworkConfigs() {
 	// find the maximum number of pre- and post-connections among groups
 	// SNN::maxNumPreSynGrp and SNN::maxNumPostSynGrp are updated
 	findMaxNumSynapsesGroups(&maxNumPostSynGrp, &maxNumPreSynGrp);
@@ -2815,9 +2815,9 @@ void SNN::compileGroupConfig() {
 	}
 
 	// assigned neruon ids to each group in the order...
-	//    !!!!!!! IMPORTANT : NEURON ORGANIZATION/ARRANGEMENT MAP !!!!!!!!!!
-	//     <--- Excitatory --> | <-------- Inhibitory REGION ----------> | <-- Excitatory -->
-	//     Excitatory-Regular  | Inhibitory-Regular | Inhibitory-Poisson | Excitatory-Poisson
+	// IMPORTANT : NEURON ORGANIZATION/ARRANGEMENT MAP
+	// <--- Excitatory --> | <-------- Inhibitory REGION ----------> | <-- Excitatory -->
+	// Excitatory-Regular  | Inhibitory-Regular | Inhibitory-Poisson | Excitatory-Poisson
 	int assignedGroup = 0;
 	int availableNeuronId = 0;
 	for(int order = 0; order < 4; order++) {
@@ -3892,37 +3892,29 @@ void SNN::partitionSNN() {
 			KERNEL_INFO("Group List:");
 			for (std::list<GroupConfigRT>::iterator grpIt = groupPartitionLists[netId].begin(); grpIt != groupPartitionLists[netId].end(); grpIt++)
 				printGroupInfo(netId, grpIt);
-		}
-		if (!localConnectLists[netId].empty()) {
-			KERNEL_INFO("Local Connection List:");
-			for (std::list<ConnectConfig>::iterator connIt = localConnectLists[netId].begin(); connIt != localConnectLists[netId].end(); connIt++)
-				printConnectionInfo(connIt);
-		}
-		if (!externalConnectLists[netId].empty()) {
-			KERNEL_INFO("External Connection List:");
-			for (std::list<ConnectConfig>::iterator connIt = externalConnectLists[netId].begin(); connIt != externalConnectLists[netId].end(); connIt++)
-				printConnectionInfo(connIt);
+
+			if (!localConnectLists[netId].empty()) {
+				KERNEL_INFO("Local Connection List:");
+				for (std::list<ConnectConfig>::iterator connIt = localConnectLists[netId].begin(); connIt != localConnectLists[netId].end(); connIt++)
+					printConnectionInfo(connIt);
+			}
+
+			if (!externalConnectLists[netId].empty()) {
+				KERNEL_INFO("External Connection List:");
+				for (std::list<ConnectConfig>::iterator connIt = externalConnectLists[netId].begin(); connIt != externalConnectLists[netId].end(); connIt++)
+					printConnectionInfo(connIt);
+			}
 		}
 	}
-
-
-
-	// collect the global network config according to compiled gorup and connection configs
-	// collect SNN::maxNumPreSynGrp, SNN::maxNumPostSynGrp, SNN::maxDelay_
-	// collect SNN::numPostSynNet, SNN::numPreSynNet
-	// Note: maxDelay_ is invariant in single-GPU or multi-GPUs mode
-	// Note: maxNumPreSynGrp and maxNumPostSynGrp, numPreSynNet, numPostSynNet are for users' information,
-	// they will be updated if the global network is partitioned into local networks.
-	collectGlobalNetworkConfig();
 
 	// transfer group configs in std::map to array
-	int grpId = 0;
-	for (std::map<int, GroupConfigRT>::iterator it = groupConfigMap.begin(); it != groupConfigMap.end(); it++) {
-		groupConfigs[0][grpId] = it->second;
-		grpId++;
-	}
+	//int grpId = 0;
+	//for (std::map<int, GroupConfigRT>::iterator it = groupConfigMap.begin(); it != groupConfigMap.end(); it++) {
+	//	groupConfigs[0][grpId] = it->second;
+	//	grpId++;
+	//}
 
-	assert(grpId == numGroups);
+	//assert(grpId == numGroups);
 	snnState = PARTITIONED_SNN;
 }
 
@@ -4155,6 +4147,14 @@ int SNN::loadSimulation_internal(bool onlyPlastic) {
 }
 
 void SNN::generateRuntimeSNN() {
+	// collect the global network config according to compiled gorup and connection configs
+	// collect SNN::maxNumPreSynGrp, SNN::maxNumPostSynGrp, SNN::maxDelay_
+	// collect SNN::numPostSynNet, SNN::numPreSynNet
+	// Note: maxDelay_ is invariant in single-GPU or multi-GPUs mode
+	// Note: maxNumPreSynGrp and maxNumPostSynGrp, numPreSynNet, numPostSynNet are for users' information,
+	// they will be updated if the global network is partitioned into local networks.
+	generateNetworkConfigs();
+
 	// time to build the complete network with relevant parameters..
 	generateNetworkRuntime();
 

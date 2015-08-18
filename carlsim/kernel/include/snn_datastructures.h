@@ -265,29 +265,70 @@ typedef struct RuntimeData_s {
 	bool*         curSpike;
 } RuntimeData;
 
-//! runtime network configuration
-/*!
- *	This structure contains the network configuration that is required for GPU simulation.
- *	The data in this structure are copied to device memory when running GPU simulation.
+/*! network configuration
+ *
+ *	This structure contains the network configuration that is configurated at CONFIG_STATE
  *	\sa SNN
  */
+typedef struct NetworkConfig_s  {
+	int numN;         //!< number of local neurons in this network
+	int numNExcReg;   //!< number of regular excitatory neurons
+	int numNInhReg;   //!< number of regular inhibitory neurons
+	int numNReg;      //!< number of regular (spking) neurons
+	int numNExcPois;  //!< number of excitatory poisson neurons
+	int numNInhPois;  //!< number of inhibitory poisson neurons
+	int numNPois;     //!< number of poisson neurons
+
+	bool sim_with_fixedwts;
+	bool sim_with_conductances;
+	bool sim_with_stdp;
+	bool sim_with_modulated_stdp;
+	bool sim_with_homeostasis;
+	bool sim_with_stp;
+
+	float stdpScaleFactor;
+	float wtChangeDecay; //!< the wtChange decay
+
+	bool sim_with_NMDA_rise;  //!< a flag to inform whether to compute NMDA rise time
+	bool sim_with_GABAb_rise; //!< a flag to inform whether to compute GABAb rise time
+	double dAMPA;             //!< multiplication factor for decay time of AMPA conductance (gAMPA[i] *= dAMPA)
+	double rNMDA;             //!< multiplication factor for rise time of NMDA
+	double dNMDA;             //!< multiplication factor for decay time of NMDA
+	double sNMDA;             //!< scaling factor for NMDA amplitude
+	double dGABAa;            //!< multiplication factor for decay time of GABAa
+	double rGABAb;            //!< multiplication factor for rise time of GABAb
+	double dGABAb;            //!< multiplication factor for decay time of GABAb
+	double sGABAb;            //!< scaling factor for GABAb amplitude
+} NetworkConfig;
+ 
+/*!
+ * \brief runtime network configuration
+ *
+ * This structure contains the network configuration that is required for GPU simulation.
+ * The data in this structure are copied to device memory when running GPU simulation.
+ * \sa SNN
+ */
 typedef struct NetworkConfigRT_s  {
-	int numN;
-	int maxDelay;
-	int numNExcReg;
-	int numNInhReg;
-	int numNReg;
+	int numN;         //!< number of local neurons in this network
+	int numNExcReg;   //!< number of regular excitatory neurons
+	int numNInhReg;   //!< number of regular inhibitory neurons
+	int numNReg;      //!< number of regular (spking) neurons
+	int numNExcPois;  //!< number of excitatory poisson neurons
+	int numNInhPois;  //!< number of inhibitory poisson neurons
+	int numNPois;     //!< number of poisson neurons
+	int numNExternal; //!< number of external neurons
+	int numNAssigned; //!< number of neurons assigned to this network
+	int maxDelay;     //!< maximum axonal delay in groups
 	unsigned int I_setLength; //!< used for GPU only
 	size_t       I_setPitch;  //!< used for GPU only
 	size_t       STP_Pitch;   //!< numN rounded upwards to the nearest 256 boundary, used for GPU only
 	unsigned int preSynLength;
-	int numPostSynNet; //!< total number of post-connections in a network
-	int numPreSynNet;  //!< total number of pre-connections in a network
+	int numPostSynNet;  //!< total number of post-connections in a network
+	int numPreSynNet;   //!< total number of pre-connections in a network
+	int maxNumPostSynN; //!< maximum number of post-synaptic connections among neurons
+	int maxNumPreSynN;  //!< maximum number of pre-syanptic connections among neurons 
 	unsigned int maxSpikesD2;
 	unsigned int maxSpikesD1;
-	int numNExcPois;
-	int numNInhPois;
-	int numNPois;
 	int numGroups;
 	int numConnections;
 	bool sim_with_fixedwts;
