@@ -277,6 +277,9 @@ typedef struct NetworkConfigRT_s  {
 	int numNExcReg;
 	int numNInhReg;
 	int numNReg;
+	int numNExcPois;
+	int numNInhPois;
+	int numNPois;
 	unsigned int I_setLength; //!< used for GPU only
 	size_t       I_setPitch;  //!< used for GPU only
 	size_t       STP_Pitch;   //!< numN rounded upwards to the nearest 256 boundary, used for GPU only
@@ -285,11 +288,10 @@ typedef struct NetworkConfigRT_s  {
 	int numPreSynNet;  //!< total number of pre-connections in a network
 	unsigned int maxSpikesD2;
 	unsigned int maxSpikesD1;
-	int numNExcPois;
-	int numNInhPois;
-	int numNPois;
+
 	int numGroups;
 	int numConnections;
+
 	bool sim_with_fixedwts;
 	bool sim_with_conductances;
 	bool sim_with_stdp;

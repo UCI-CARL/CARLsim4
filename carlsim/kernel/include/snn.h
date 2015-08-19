@@ -607,8 +607,9 @@ private:
 	/*!
 	 * \brief scan all GroupConfigs and ConnectConfigs for generating the configuration of a global network
 	 */
-	void collectGlobalNetworkConfig();
+	void generateNetworkConfigs();
 
+	void collectGlobalNetworkConfig();
 	void compileConnectConfig(); //!< for future use
 	void compileGroupConfig();
 
