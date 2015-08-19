@@ -680,9 +680,8 @@ public:
 	 * \brief build the network
 	 *
 	 * \STATE ::CONFIG_STATE. Will make CARLsim state switch from ::CONFIG_STATE to ::SETUP_STATE.
-	 * \param[in] removeTempMemory 	remove temp memory after building network
 	 */
-	void setupNetwork(bool removeTempMemory = true);
+	void setupNetwork();
 
 	// +++++ PUBLIC METHODS: LOGGING / PLOTTING +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 

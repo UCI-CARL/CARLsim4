@@ -55,7 +55,6 @@ enum SNNState {
 	CONFIG_SNN,
 	COMPILED_SNN,
 	PARTITIONED_SNN,
-	RUNTIME_GENERATED_SNN,
 	EXECUTABLE_SNN
 };
 
@@ -280,12 +279,16 @@ typedef struct NetworkConfigRT_s  {
 	int numNExcPois;
 	int numNInhPois;
 	int numNPois;
+	int numNExternal;
+	int numNAssigned;
 	unsigned int I_setLength; //!< used for GPU only
 	size_t       I_setPitch;  //!< used for GPU only
 	size_t       STP_Pitch;   //!< numN rounded upwards to the nearest 256 boundary, used for GPU only
 	unsigned int preSynLength;
 	int numPostSynNet; //!< total number of post-connections in a network
 	int numPreSynNet;  //!< total number of pre-connections in a network
+	int maxNumPostSynN;   //!< maximum number of post-synaptic connections among neurons
+	int maxNumPreSynN;    //!< maximum number of pre-syanptic connections among neurons 
 	unsigned int maxSpikesD2;
 	unsigned int maxSpikesD1;
 

@@ -701,7 +701,7 @@ void SNN::setWeightAndWeightChangeUpdate(UpdateInterval wtANDwtChangeUpdateInter
 // reorganize the network and do the necessary allocation
 // of all variable for carrying out the simulation..
 // this code is run only one time during network initialization
-void SNN::setupNetwork(bool removeTempMem) {
+void SNN::setupNetwork() {
 	switch (snnState) {
 	case CONFIG_SNN:
 		compileSNN();
@@ -709,8 +709,6 @@ void SNN::setupNetwork(bool removeTempMem) {
 		partitionSNN();
 	case PARTITIONED_SNN:
 		generateRuntimeSNN();
-	case RUNTIME_GENERATED_SNN:
-		allocateSNN();
 		break;
 	case EXECUTABLE_SNN:
 		break;
@@ -1136,7 +1134,7 @@ void SNN::setExternalCurrent(int grpId, const std::vector<float>& current) {
 	}
 
 	// copy to GPU if necessary
-	// don't allocate; allocation done in generateNetworkRuntime
+	// don't allocate; allocation done in generateRuntimeData
 	if (simMode_==GPU_MODE) {
 		copyExternalCurrent(&gpuRuntimeData[0], &snnRuntimeData, false, grpId);
 	}
@@ -1307,109 +1305,109 @@ void SNN::setWeight(short int connId, int neurIdPre, int neurIdPost, float weigh
 // handling of file pointer should be handled externally: as far as this function is concerned, it is simply
 // trying to write to file
 void SNN::saveSimulation(FILE* fid, bool saveSynapseInfo) {
-	int tmpInt;
-	float tmpFloat;
+	//int tmpInt;
+	//float tmpFloat;
 
-	// +++++ WRITE HEADER SECTION +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
+	//// +++++ WRITE HEADER SECTION +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
-	// write file signature
-	tmpInt = 294338571; // some int used to identify saveSimulation files
-	if (!fwrite(&tmpInt,sizeof(int),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
+	//// write file signature
+	//tmpInt = 294338571; // some int used to identify saveSimulation files
+	//if (!fwrite(&tmpInt,sizeof(int),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
 
-	// write version number
-	tmpFloat = 0.2f;
-	if (!fwrite(&tmpFloat,sizeof(int),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
+	//// write version number
+	//tmpFloat = 0.2f;
+	//if (!fwrite(&tmpFloat,sizeof(int),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
 
-	// write simulation time so far (in seconds)
-	tmpFloat = ((float)simTimeSec) + ((float)simTimeMs)/1000.0f;
-	if (!fwrite(&tmpFloat,sizeof(float),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
+	//// write simulation time so far (in seconds)
+	//tmpFloat = ((float)simTimeSec) + ((float)simTimeMs)/1000.0f;
+	//if (!fwrite(&tmpFloat,sizeof(float),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
 
-	// write execution time so far (in seconds)
-	if(simMode_ == GPU_MODE) {
-		stopGPUTiming();
-		tmpFloat = gpuExecutionTime/1000.0f;
-	} else {
-		stopCPUTiming();
-		tmpFloat = cpuExecutionTime/1000.0f;
-	}
-	if (!fwrite(&tmpFloat,sizeof(float),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
+	//// write execution time so far (in seconds)
+	//if(simMode_ == GPU_MODE) {
+	//	stopGPUTiming();
+	//	tmpFloat = gpuExecutionTime/1000.0f;
+	//} else {
+	//	stopCPUTiming();
+	//	tmpFloat = cpuExecutionTime/1000.0f;
+	//}
+	//if (!fwrite(&tmpFloat,sizeof(float),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
 
-	// TODO: add more params of interest
+	//// TODO: add more params of interest
 
-	// write network info
-	if (!fwrite(&numN,sizeof(int),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
-	if (!fwrite(&numPreSynNet,sizeof(int),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
-	if (!fwrite(&numPostSynNet,sizeof(int),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
-	if (!fwrite(&numGroups,sizeof(int),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
+	//// write network info
+	//if (!fwrite(&numN,sizeof(int),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
+	//if (!fwrite(&numPreSynNet,sizeof(int),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
+	//if (!fwrite(&numPostSynNet,sizeof(int),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
+	//if (!fwrite(&numGroups,sizeof(int),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
 
-	// write group info
-	char name[100];
-	for (int g=0;g<numGroups;g++) {
-		if (!fwrite(&groupConfigs[0][g].StartN,sizeof(int),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
-		if (!fwrite(&groupConfigs[0][g].EndN,sizeof(int),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
+	//// write group info
+	//char name[100];
+	//for (int g=0;g<numGroups;g++) {
+	//	if (!fwrite(&groupConfigs[0][g].StartN,sizeof(int),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
+	//	if (!fwrite(&groupConfigs[0][g].EndN,sizeof(int),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
 
-		if (!fwrite(&groupConfigs[0][g].SizeX,sizeof(int),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
-		if (!fwrite(&groupConfigs[0][g].SizeY,sizeof(int),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
-		if (!fwrite(&groupConfigs[0][g].SizeZ,sizeof(int),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
+	//	if (!fwrite(&groupConfigs[0][g].SizeX,sizeof(int),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
+	//	if (!fwrite(&groupConfigs[0][g].SizeY,sizeof(int),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
+	//	if (!fwrite(&groupConfigs[0][g].SizeZ,sizeof(int),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
 
-		strncpy(name,groupInfo[g].Name.c_str(),100);
-		if (!fwrite(name,1,100,fid)) KERNEL_ERROR("saveSimulation fwrite error");
-	}
+	//	strncpy(name,groupInfo[g].Name.c_str(),100);
+	//	if (!fwrite(name,1,100,fid)) KERNEL_ERROR("saveSimulation fwrite error");
+	//}
 
-	// +++++ Fetch WEIGHT DATA (GPU Mode only) ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
-	if (simMode_ == GPU_MODE)
-		copyWeightState(&snnRuntimeData, &gpuRuntimeData[0], cudaMemcpyDeviceToHost, false);
-	// +++++ WRITE SYNAPSE INFO +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
+	//// +++++ Fetch WEIGHT DATA (GPU Mode only) ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
+	//if (simMode_ == GPU_MODE)
+	//	copyWeightState(&snnRuntimeData, &gpuRuntimeData[0], cudaMemcpyDeviceToHost, false);
+	//// +++++ WRITE SYNAPSE INFO +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
-	// \FIXME: replace with faster version
-	if (saveSynapseInfo) {
-		for (int i = 0; i < numN; i++) {
-			unsigned int offset = snnRuntimeData.cumulativePost[i];
+	//// \FIXME: replace with faster version
+	//if (saveSynapseInfo) {
+	//	for (int i = 0; i < numN; i++) {
+	//		unsigned int offset = snnRuntimeData.cumulativePost[i];
 
-			unsigned int count = 0;
-			for (int t=0;t<maxDelay_;t++) {
-				delay_info_t dPar = snnRuntimeData.postDelayInfo[i*(maxDelay_+1)+t];
+	//		unsigned int count = 0;
+	//		for (int t=0;t<maxDelay_;t++) {
+	//			delay_info_t dPar = snnRuntimeData.postDelayInfo[i*(maxDelay_+1)+t];
 
-				for(int idx_d=dPar.delay_index_start; idx_d<(dPar.delay_index_start+dPar.delay_length); idx_d++)
-					count++;
-			}
+	//			for(int idx_d=dPar.delay_index_start; idx_d<(dPar.delay_index_start+dPar.delay_length); idx_d++)
+	//				count++;
+	//		}
 
-			if (!fwrite(&count,sizeof(int),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
+	//		if (!fwrite(&count,sizeof(int),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
 
-			for (int t=0;t<maxDelay_;t++) {
-				delay_info_t dPar = snnRuntimeData.postDelayInfo[i*(maxDelay_+1)+t];
+	//		for (int t=0;t<maxDelay_;t++) {
+	//			delay_info_t dPar = snnRuntimeData.postDelayInfo[i*(maxDelay_+1)+t];
 
-				for(int idx_d=dPar.delay_index_start; idx_d<(dPar.delay_index_start+dPar.delay_length); idx_d++) {
-					// get synaptic info...
-					SynInfo post_info = snnRuntimeData.postSynapticIds[offset + idx_d];
+	//			for(int idx_d=dPar.delay_index_start; idx_d<(dPar.delay_index_start+dPar.delay_length); idx_d++) {
+	//				// get synaptic info...
+	//				SynInfo post_info = snnRuntimeData.postSynapticIds[offset + idx_d];
 
-					// get neuron id
-					//int p_i = (post_info&POST_SYN_NEURON_MASK);
-					unsigned int p_i = GET_CONN_NEURON_ID(post_info);
-					assert(p_i<numN);
+	//				// get neuron id
+	//				//int p_i = (post_info&POST_SYN_NEURON_MASK);
+	//				unsigned int p_i = GET_CONN_NEURON_ID(post_info);
+	//				assert(p_i<numN);
 
-					// get syn id
-					unsigned int s_i = GET_CONN_SYN_ID(post_info);
-					//>>POST_SYN_NEURON_BITS)&POST_SYN_CONN_MASK;
-					assert(s_i<(snnRuntimeData.Npre[p_i]));
+	//				// get syn id
+	//				unsigned int s_i = GET_CONN_SYN_ID(post_info);
+	//				//>>POST_SYN_NEURON_BITS)&POST_SYN_CONN_MASK;
+	//				assert(s_i<(snnRuntimeData.Npre[p_i]));
 
-					// get the cumulative position for quick access...
-					unsigned int pos_i = snnRuntimeData.cumulativePre[p_i] + s_i;
+	//				// get the cumulative position for quick access...
+	//				unsigned int pos_i = snnRuntimeData.cumulativePre[p_i] + s_i;
 
-					uint8_t delay = t+1;
-					uint8_t plastic = s_i < snnRuntimeData.Npre_plastic[p_i]; // plastic or fixed.
+	//				uint8_t delay = t+1;
+	//				uint8_t plastic = s_i < snnRuntimeData.Npre_plastic[p_i]; // plastic or fixed.
 
-					if (!fwrite(&i,sizeof(int),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
-					if (!fwrite(&p_i,sizeof(int),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
-					if (!fwrite(&(snnRuntimeData.wt[pos_i]),sizeof(float),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
-					if (!fwrite(&(snnRuntimeData.maxSynWt[pos_i]),sizeof(float),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
-					if (!fwrite(&delay,sizeof(uint8_t),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
-					if (!fwrite(&plastic,sizeof(uint8_t),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
-					if (!fwrite(&(snnRuntimeData.connIdsPreIdx[pos_i]),sizeof(short int),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
-				}
-			}
-		}
-	}
+	//				if (!fwrite(&i,sizeof(int),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
+	//				if (!fwrite(&p_i,sizeof(int),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
+	//				if (!fwrite(&(snnRuntimeData.wt[pos_i]),sizeof(float),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
+	//				if (!fwrite(&(snnRuntimeData.maxSynWt[pos_i]),sizeof(float),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
+	//				if (!fwrite(&delay,sizeof(uint8_t),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
+	//				if (!fwrite(&plastic,sizeof(uint8_t),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
+	//				if (!fwrite(&(snnRuntimeData.connIdsPreIdx[pos_i]),sizeof(short int),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
+	//			}
+	//		}
+	//	}
+	//}
 }
 
 // writes population weights from gIDpre to gIDpost to file fname in binary
@@ -1986,8 +1984,8 @@ void SNN::SNNinit() {
 	sim_with_stp = false;
 	sim_in_testing = false;
 
-	maxSpikesD1 = 0;
-	maxSpikesD2 = 0;
+	//maxSpikesD1 = 0;
+	//maxSpikesD2 = 0;
 
 	loadSimFID = NULL;
 
@@ -2132,72 +2130,72 @@ void SNN::allocateSNN() {
 		KERNEL_ERROR("Unknown simMode_");
 		break;
 	}
+
+	snnState = EXECUTABLE_SNN;
 }
 
 void SNN::allocateSNN_CPU() {
 	snnRuntimeData.allocated = true;
 	snnRuntimeData.memType = CPU_MODE;
-
-	snnState = EXECUTABLE_SNN;
 }
 
 //! allocate space for voltage, recovery, Izh_a, Izh_b, Izh_c, Izh_d, current, gAMPA, gNMDA, gGABAa, gGABAb
 //! lastSpikeTime, curSpike, nSpikeCnt, intrinsicWeight, stpu, stpx, Npre, Npre_plastic, Npost, cumulativePost, cumulativePre
 //! postSynapticIds, tmp_SynapticDely, postDelayInfo, wt, maxSynWt, preSynapticIds, timeTableD2, timeTableD1
 void SNN::allocateRuntimeData() {
-	snnRuntimeData.voltage    = new float[numNReg];
-	snnRuntimeData.recovery   = new float[numNReg];
-	snnRuntimeData.Izh_a      = new float[numNReg];
-	snnRuntimeData.Izh_b      = new float[numNReg];
-	snnRuntimeData.Izh_c      = new float[numNReg];
-	snnRuntimeData.Izh_d      = new float[numNReg];
-	snnRuntimeData.current    = new float[numNReg];
-	snnRuntimeData.extCurrent = new float[numNReg];
-	memset(snnRuntimeData.voltage, 0, sizeof(float)*numNReg);
-	memset(snnRuntimeData.recovery, 0, sizeof(float)*numNReg);
-	memset(snnRuntimeData.Izh_a, 0, sizeof(float)*numNReg);
-	memset(snnRuntimeData.Izh_b, 0, sizeof(float)*numNReg);
-	memset(snnRuntimeData.Izh_c, 0, sizeof(float)*numNReg);
-	memset(snnRuntimeData.Izh_d, 0, sizeof(float)*numNReg);
+	snnRuntimeData.voltage    = new float[networkConfigs[0].numNReg];
+	snnRuntimeData.recovery   = new float[networkConfigs[0].numNReg];
+	snnRuntimeData.Izh_a      = new float[networkConfigs[0].numNReg];
+	snnRuntimeData.Izh_b      = new float[networkConfigs[0].numNReg];
+	snnRuntimeData.Izh_c      = new float[networkConfigs[0].numNReg];
+	snnRuntimeData.Izh_d      = new float[networkConfigs[0].numNReg];
+	snnRuntimeData.current    = new float[networkConfigs[0].numNReg];
+	snnRuntimeData.extCurrent = new float[networkConfigs[0].numNReg];
+	memset(snnRuntimeData.voltage, 0, sizeof(float)*networkConfigs[0].numNReg);
+	memset(snnRuntimeData.recovery, 0, sizeof(float)*networkConfigs[0].numNReg);
+	memset(snnRuntimeData.Izh_a, 0, sizeof(float)*networkConfigs[0].numNReg);
+	memset(snnRuntimeData.Izh_b, 0, sizeof(float)*networkConfigs[0].numNReg);
+	memset(snnRuntimeData.Izh_c, 0, sizeof(float)*networkConfigs[0].numNReg);
+	memset(snnRuntimeData.Izh_d, 0, sizeof(float)*networkConfigs[0].numNReg);
 	resetCurrent();
-	memset(snnRuntimeData.extCurrent, 0, sizeof(float)*numNReg);
-	cpuSnnSz.neuronInfoSize += (sizeof(float)*numNReg*8);
+	memset(snnRuntimeData.extCurrent, 0, sizeof(float)*networkConfigs[0].numNReg);
+	cpuSnnSz.neuronInfoSize += (sizeof(float)*networkConfigs[0].numNReg*8);
 
 	if (sim_with_conductances) {
-		snnRuntimeData.gAMPA  = new float[numNReg];
-		snnRuntimeData.gGABAa = new float[numNReg];
-		cpuSnnSz.neuronInfoSize += sizeof(float)*numNReg*2;
+		snnRuntimeData.gAMPA  = new float[networkConfigs[0].numNReg];
+		snnRuntimeData.gGABAa = new float[networkConfigs[0].numNReg];
+		cpuSnnSz.neuronInfoSize += sizeof(float)*networkConfigs[0].numNReg*2;
 
 		if (sim_with_NMDA_rise) {
 			// If NMDA rise time is enabled, we'll have to compute NMDA conductance in two steps (using an exponential
 			// for the rise time and one for the decay time)
-			snnRuntimeData.gNMDA_r = new float[numNReg];
-			snnRuntimeData.gNMDA_d = new float[numNReg];
-			cpuSnnSz.neuronInfoSize += sizeof(float)*numNReg*2;
+			snnRuntimeData.gNMDA_r = new float[networkConfigs[0].numNReg];
+			snnRuntimeData.gNMDA_d = new float[networkConfigs[0].numNReg];
+			cpuSnnSz.neuronInfoSize += sizeof(float)*networkConfigs[0].numNReg*2;
 		} else {
-			snnRuntimeData.gNMDA = new float[numNReg];
-			cpuSnnSz.neuronInfoSize += sizeof(float)*numNReg;
+			snnRuntimeData.gNMDA = new float[networkConfigs[0].numNReg];
+			cpuSnnSz.neuronInfoSize += sizeof(float)*networkConfigs[0].numNReg;
 		}
 
 		if (sim_with_GABAb_rise) {
-			snnRuntimeData.gGABAb_r = new float[numNReg];
-			snnRuntimeData.gGABAb_d = new float[numNReg];
-			cpuSnnSz.neuronInfoSize += sizeof(float)*numNReg*2;
+			snnRuntimeData.gGABAb_r = new float[networkConfigs[0].numNReg];
+			snnRuntimeData.gGABAb_d = new float[networkConfigs[0].numNReg];
+			cpuSnnSz.neuronInfoSize += sizeof(float)*networkConfigs[0].numNReg*2;
 		} else {
-			snnRuntimeData.gGABAb = new float[numNReg];
-			cpuSnnSz.neuronInfoSize += sizeof(float)*numNReg;
+			snnRuntimeData.gGABAb = new float[networkConfigs[0].numNReg];
+			cpuSnnSz.neuronInfoSize += sizeof(float)*networkConfigs[0].numNReg;
 		}
 	}
 	resetConductances();
 
-	snnRuntimeData.grpDA  = new float[numGroups];
-	snnRuntimeData.grp5HT = new float[numGroups];
-	snnRuntimeData.grpACh = new float[numGroups];
-	snnRuntimeData.grpNE  = new float[numGroups];
-	memset(snnRuntimeData.grpDA, 0, sizeof(float) * numGroups);
-	memset(snnRuntimeData.grp5HT, 0, sizeof(float) * numGroups);
-	memset(snnRuntimeData.grpACh, 0, sizeof(float) * numGroups);
-	memset(snnRuntimeData.grpNE, 0, sizeof(float) * numGroups);
+	snnRuntimeData.grpDA  = new float[networkConfigs[0].numGroups];
+	snnRuntimeData.grp5HT = new float[networkConfigs[0].numGroups];
+	snnRuntimeData.grpACh = new float[networkConfigs[0].numGroups];
+	snnRuntimeData.grpNE  = new float[networkConfigs[0].numGroups];
+	memset(snnRuntimeData.grpDA, 0, sizeof(float) * networkConfigs[0].numGroups);
+	memset(snnRuntimeData.grp5HT, 0, sizeof(float) * networkConfigs[0].numGroups);
+	memset(snnRuntimeData.grpACh, 0, sizeof(float) * networkConfigs[0].numGroups);
+	memset(snnRuntimeData.grpNE, 0, sizeof(float) * networkConfigs[0].numGroups);
 
 	// init neuromodulators and their assistive buffers
 	for (int i = 0; i < numGroups; i++) {
@@ -2211,76 +2209,76 @@ void SNN::allocateRuntimeData() {
 		memset(snnRuntimeData.grpNEBuffer[i], 0, sizeof(float) * 1000);
 	}
 
-	snnRuntimeData.lastSpikeTime	= new int[numN];
-	memset(snnRuntimeData.lastSpikeTime, 0, sizeof(int) * numN);
-	cpuSnnSz.neuronInfoSize += sizeof(int) * numN;
+	snnRuntimeData.lastSpikeTime	= new int[networkConfigs[0].numN];
+	memset(snnRuntimeData.lastSpikeTime, 0, sizeof(int) * networkConfigs[0].numN);
+	cpuSnnSz.neuronInfoSize += sizeof(int) * networkConfigs[0].numN;
 	
 
-	snnRuntimeData.curSpike   = new bool[numN];
-	snnRuntimeData.nSpikeCnt  = new int[numN];
-	memset(snnRuntimeData.curSpike, 0, sizeof(bool) * numN);
-	memset(snnRuntimeData.nSpikeCnt, 0, sizeof(int) * numN);
+	snnRuntimeData.curSpike   = new bool[networkConfigs[0].numN];
+	snnRuntimeData.nSpikeCnt  = new int[networkConfigs[0].numN];
+	memset(snnRuntimeData.curSpike, 0, sizeof(bool) * networkConfigs[0].numN);
+	memset(snnRuntimeData.nSpikeCnt, 0, sizeof(int) * networkConfigs[0].numN);
 	KERNEL_INFO("allocated nSpikeCnt");
 
 	//! homeostasis variables
 	if (sim_with_homeostasis) {
-		snnRuntimeData.avgFiring  = new float[numN];
-		snnRuntimeData.baseFiring = new float[numN];
-		memset(snnRuntimeData.avgFiring, 0, sizeof(float) * numN);
-		memset(snnRuntimeData.baseFiring, 0, sizeof(float) * numN);
+		snnRuntimeData.avgFiring  = new float[networkConfigs[0].numN];
+		snnRuntimeData.baseFiring = new float[networkConfigs[0].numN];
+		memset(snnRuntimeData.avgFiring, 0, sizeof(float) * networkConfigs[0].numN);
+		memset(snnRuntimeData.baseFiring, 0, sizeof(float) * networkConfigs[0].numN);
 	}
 
 	// STP can be applied to spike generators, too -> numN
 	if (sim_with_stp) {
 		// \TODO: The size of these data structures could be reduced to the max synaptic delay of all
 		// connections with STP. That number might not be the same as maxDelay_.
-		snnRuntimeData.stpu = new float[numN*(maxDelay_+1)];
-		snnRuntimeData.stpx = new float[numN*(maxDelay_+1)];
-		memset(snnRuntimeData.stpu, 0, sizeof(float) * numN * (maxDelay_ + 1)); // memset works for 0.0
+		snnRuntimeData.stpu = new float[networkConfigs[0].numN*(maxDelay_+1)];
+		snnRuntimeData.stpx = new float[networkConfigs[0].numN*(maxDelay_+1)];
+		memset(snnRuntimeData.stpu, 0, sizeof(float) * networkConfigs[0].numN * (maxDelay_ + 1)); // memset works for 0.0
 		//memset(snnRuntimeData.stpx, 0, sizeof(float) * numN * (maxDelay_ + 1));
-		for (int i = 0; i < numN * (maxDelay_+1); i++)
+		for (int i = 0; i < networkConfigs[0].numN * (maxDelay_+1); i++)
 			snnRuntimeData.stpx[i] = 1.0f; // but memset doesn't work for 1.0
-		cpuSnnSz.synapticInfoSize += (2*sizeof(float)*numN*(maxDelay_+1));
+		cpuSnnSz.synapticInfoSize += (2*sizeof(float)*networkConfigs[0].numN*(maxDelay_+1));
 	}
 
-	snnRuntimeData.Npre           = new unsigned short[numN];
-	snnRuntimeData.Npre_plastic   = new unsigned short[numN];
-	snnRuntimeData.Npost          = new unsigned short[numN];
-	snnRuntimeData.cumulativePost = new unsigned int[numN];
-	snnRuntimeData.cumulativePre  = new unsigned int[numN];
-	memset(snnRuntimeData.Npre, 0, sizeof(short) * numN);
-	memset(snnRuntimeData.Npre_plastic, 0, sizeof(short) * numN);
-	memset(snnRuntimeData.Npost, 0, sizeof(short) * numN);
-	memset(snnRuntimeData.cumulativePost, 0, sizeof(int) * numN);
-	memset(snnRuntimeData.cumulativePre, 0, sizeof(int) * numN);
-	cpuSnnSz.networkInfoSize += (int)(sizeof(int) * numN * 3.5);
+	snnRuntimeData.Npre           = new unsigned short[networkConfigs[0].numN];
+	snnRuntimeData.Npre_plastic   = new unsigned short[networkConfigs[0].numN];
+	snnRuntimeData.Npost          = new unsigned short[networkConfigs[0].numN];
+	snnRuntimeData.cumulativePost = new unsigned int[networkConfigs[0].numN];
+	snnRuntimeData.cumulativePre  = new unsigned int[networkConfigs[0].numN];
+	memset(snnRuntimeData.Npre, 0, sizeof(short) * networkConfigs[0].numN);
+	memset(snnRuntimeData.Npre_plastic, 0, sizeof(short) * networkConfigs[0].numN);
+	memset(snnRuntimeData.Npost, 0, sizeof(short) * networkConfigs[0].numN);
+	memset(snnRuntimeData.cumulativePost, 0, sizeof(int) * networkConfigs[0].numN);
+	memset(snnRuntimeData.cumulativePre, 0, sizeof(int) * networkConfigs[0].numN);
+	cpuSnnSz.networkInfoSize += (int)(sizeof(int) * networkConfigs[0].numN * 3.5);
 
-	snnRuntimeData.postSynapticIds = new SynInfo[numPostSynNet];
-	snnRuntimeData.postDelayInfo   = new delay_info_t[numN * (maxDelay_ + 1)];	//!< Possible delay values are 0....maxDelay_ (inclusive of maxDelay_)
-	memset(snnRuntimeData.postSynapticIds, 0, sizeof(SynInfo) * numPostSynNet);
-	memset(snnRuntimeData.postDelayInfo, 0, sizeof(delay_info_t) * numN * (maxDelay_ + 1));
-	cpuSnnSz.networkInfoSize += ((sizeof(SynInfo) + sizeof(uint8_t)) * numPostSynNet) + (sizeof(delay_info_t) * numN * (maxDelay_ + 1));
+	snnRuntimeData.postSynapticIds = new SynInfo[networkConfigs[0].numPostSynNet];
+	snnRuntimeData.postDelayInfo   = new delay_info_t[networkConfigs[0].numN * (maxDelay_ + 1)];	//!< Possible delay values are 0....maxDelay_ (inclusive of maxDelay_)
+	memset(snnRuntimeData.postSynapticIds, 0, sizeof(SynInfo) * networkConfigs[0].numPostSynNet);
+	memset(snnRuntimeData.postDelayInfo, 0, sizeof(delay_info_t) * networkConfigs[0].numN * (maxDelay_ + 1));
+	cpuSnnSz.networkInfoSize += ((sizeof(SynInfo) + sizeof(uint8_t)) * networkConfigs[0].numPostSynNet) + (sizeof(delay_info_t) * networkConfigs[0].numN * (maxDelay_ + 1));
 
-	snnRuntimeData.wt       = new float[numPreSynNet];
-	snnRuntimeData.maxSynWt = new float[numPreSynNet];
-	memset(snnRuntimeData.wt, 0, sizeof(float) * numPreSynNet);
-	memset(snnRuntimeData.maxSynWt, 0, sizeof(float) * numPreSynNet);
+	snnRuntimeData.wt       = new float[networkConfigs[0].numPreSynNet];
+	snnRuntimeData.maxSynWt = new float[networkConfigs[0].numPreSynNet];
+	memset(snnRuntimeData.wt, 0, sizeof(float) * networkConfigs[0].numPreSynNet);
+	memset(snnRuntimeData.maxSynWt, 0, sizeof(float) * networkConfigs[0].numPreSynNet);
 
 	mulSynFast = new float[MAX_CONN_PER_SNN];
 	mulSynSlow = new float[MAX_CONN_PER_SNN];
 	memset(mulSynFast, 0, sizeof(float) * MAX_CONN_PER_SNN);
 	memset(mulSynSlow, 0, sizeof(float) * MAX_CONN_PER_SNN);
 
-	snnRuntimeData.connIdsPreIdx	= new short int[numPreSynNet];
-	memset(snnRuntimeData.connIdsPreIdx, 0, sizeof(short int) * numPreSynNet);
+	snnRuntimeData.connIdsPreIdx	= new short int[networkConfigs[0].numPreSynNet];
+	memset(snnRuntimeData.connIdsPreIdx, 0, sizeof(short int) * networkConfigs[0].numPreSynNet);
 
-	snnRuntimeData.preSynapticIds	= new SynInfo[numPreSynNet];
-	memset(snnRuntimeData.preSynapticIds, 0, sizeof(SynInfo) * numPreSynNet);
+	snnRuntimeData.preSynapticIds	= new SynInfo[networkConfigs[0].numPreSynNet];
+	memset(snnRuntimeData.preSynapticIds, 0, sizeof(SynInfo) * networkConfigs[0].numPreSynNet);
 	// size due to weights and maximum weights
-	cpuSnnSz.synapticInfoSize += ((sizeof(int) + 2 * sizeof(float) + sizeof(SynInfo)) * (numPreSynNet));
+	cpuSnnSz.synapticInfoSize += ((sizeof(int) + 2 * sizeof(float) + sizeof(SynInfo)) * (networkConfigs[0].numPreSynNet));
 
 	// poisson Firing Rate
-	cpuSnnSz.neuronInfoSize += (sizeof(int) * numNPois);
+	cpuSnnSz.neuronInfoSize += (sizeof(int) * networkConfigs[0].numNPois);
 }
 
 
@@ -2317,17 +2315,17 @@ int SNN::addSpikeToTable(int nid, int g) {
 		assert(nid < numN);
 		snnRuntimeData.firingTableD1[spikeCountD1Sec] = nid;
 		spikeCountD1Sec++;
-		if (spikeCountD1Sec >= maxSpikesD1) {
+		if (spikeCountD1Sec >= networkConfigs[0].maxSpikesD1) {
 			spikeBufferFull = 2;
-			spikeCountD1Sec = maxSpikesD1-1;
+			spikeCountD1Sec = networkConfigs[0].maxSpikesD1-1;
 		}
 	} else {
 		assert(nid < numN);
 		snnRuntimeData.firingTableD2[spikeCountD2Sec] = nid;
 		spikeCountD2Sec++;
-		if (spikeCountD2Sec >= maxSpikesD2) {
+		if (spikeCountD2Sec >= networkConfigs[0].maxSpikesD2) {
 			spikeBufferFull = 1;
-			spikeCountD2Sec = maxSpikesD2-1;
+			spikeCountD2Sec = networkConfigs[0].maxSpikesD2-1;
 		}
 	}
 	return spikeBufferFull;
@@ -2373,21 +2371,71 @@ void SNN::generateGroupRuntime(int grpId) {
 		resetNeuron(i, grpId);
 }
 
+void SNN::generateGroupConfigs() {
+	for (int netId = 0; netId < MAX_NET_PER_SNN; netId++) {
+		for (std::list<GroupConfigRT>::iterator grpIt = groupPartitionLists[netId].begin(); grpIt != groupPartitionLists[netId].end(); grpIt++) {
+			groupConfigs[netId][grpIt->localGrpId] = *grpIt;
+		}
+
+		//groupPartitionLists[netId].clear();
+	}
+}
+
+void SNN::generateConnectConfigs() {
+	// for future use
+}
+
 void SNN::generateNetworkConfigs() {
 	for (int netId = 0; netId < MAX_NET_PER_SNN; netId++) {
-		// copy global network config to local network config
+		if (!groupPartitionLists[netId].empty()) {
+			// copy the global network config to local network configs
+			// global configuration for maximum axonal delay
+			networkConfigs[netId].maxDelay  = maxDelay_;
+	
+			// configurations for execution features
+			networkConfigs[netId].sim_with_fixedwts = sim_with_fixedwts;
+			networkConfigs[netId].sim_with_conductances = sim_with_conductances;
+			networkConfigs[netId].sim_with_homeostasis = sim_with_homeostasis;
+			networkConfigs[netId].sim_with_stdp = sim_with_stdp;
+			networkConfigs[netId].sim_with_stp = sim_with_stp;
+			networkConfigs[netId].sim_in_testing = sim_in_testing;
 
+			// stdp, da-stdp configurations
+			networkConfigs[netId].stdpScaleFactor = stdpScaleFactor_;
+			networkConfigs[netId].wtChangeDecay = wtChangeDecay_;
 
-		// find the maximum number of pre- and post-connections among neurons
-		// SNN::maxNumPreSynN and SNN::maxNumPostSynN are updated
-		//findMaxNumSynapsesNeurons(&maxNumPostSynN, &maxNumPreSynN);
+			// conductance configurations
+			networkConfigs[netId].sim_with_NMDA_rise = sim_with_NMDA_rise;
+			networkConfigs[netId].sim_with_GABAb_rise = sim_with_GABAb_rise;
+			networkConfigs[netId].dAMPA = dAMPA;
+			networkConfigs[netId].rNMDA = rNMDA;
+			networkConfigs[netId].dNMDA = dNMDA;
+			networkConfigs[netId].sNMDA = sNMDA;
+			networkConfigs[netId].dGABAa = dGABAa;
+			networkConfigs[netId].rGABAb = rGABAb;
+			networkConfigs[netId].dGABAb = dGABAb;
+			networkConfigs[netId].sGABAb = sGABAb;
 
-		// FIXME: move this to SNN::collectLocalNetworkConfig()
-		// find the maximum number of spikes in D1 (i.e., maxDelay == 1) and D2 (i.e., maxDelay >= 2) sets
-		findMaxSpikesD1D2(&maxSpikesD1, &maxSpikesD2);
+			// configurations for boundries of neural types
+			findNumN(netId, networkConfigs[netId].numN, networkConfigs[netId].numNExternal, networkConfigs[netId].numNAssigned,
+					 networkConfigs[netId].numNReg, networkConfigs[netId].numNExcReg, networkConfigs[netId].numNInhReg,
+					 networkConfigs[netId].numNPois, networkConfigs[netId].numNExcPois, networkConfigs[netId].numNInhPois);
 
-		// find the total number of synapses in the network
-		findNumSynapsesNetwork(&numPostSynNet, &numPreSynNet);
+			// configurations for assigned groups and connections
+			networkConfigs[netId].numGroups = groupPartitionLists[netId].size();
+			networkConfigs[netId].numConnections = localConnectLists[netId].size() + externalConnectLists[netId].size();
+		
+			// find the maximum number of pre- and post-connections among neurons
+			// SNN::maxNumPreSynN and SNN::maxNumPostSynN are updated
+			findMaxNumSynapsesNeurons(netId, networkConfigs[netId].maxNumPostSynN, networkConfigs[netId].maxNumPreSynN);
+
+			// FIXME: move this to SNN::collectLocalNetworkConfig()
+			// find the maximum number of spikes in D1 (i.e., maxDelay == 1) and D2 (i.e., maxDelay >= 2) sets
+			findMaxSpikesD1D2(netId, networkConfigs[netId].maxSpikesD1, networkConfigs[netId].maxSpikesD2);
+
+			// find the total number of synapses in the network
+			findNumSynapsesNetwork(netId, networkConfigs[netId].numPostSynNet, networkConfigs[netId].numPreSynNet);
+		}
 	}
 }
 
@@ -2395,7 +2443,7 @@ void SNN::generateNetworkConfigs() {
 /*!
  * \sa createGroup(), connect()
  */
-void SNN::generateNetworkRuntime() {
+void SNN::generateRuntimeData() {
 	// allocate space for firingTableD1, firingTableD2, timeTableD1, timeTableD2
 	allocateSpikeTables();
 
@@ -2564,7 +2612,7 @@ void SNN::generateConnectionRuntime() {
 
 		parsedConnections++;
 	}
-	assert(parsedConnections == numPostSynNet && parsedConnections == numPreSynNet);
+	assert(parsedConnections == networkConfigs[0].numPostSynNet && parsedConnections == networkConfigs[0].numPreSynNet);
 
 	// generate cumulativePost and cumulativePre
 	snnRuntimeData.cumulativePost[0] = 0;
@@ -2580,7 +2628,7 @@ void SNN::generateConnectionRuntime() {
 	for (std::list<ConnectionInfo>::iterator it = connectionLists[0].begin(); it != connectionLists[0].end(); it++) {
 		if (GET_FIXED_PLASTIC(connectConfigMap[it->connId].connProp) == SYN_PLASTIC) {
 			int pre_pos  = snnRuntimeData.cumulativePre[it->nDest] + snnRuntimeData.Npre[it->nDest];
-			assert(pre_pos  < numPreSynNet);
+			assert(pre_pos  < networkConfigs[0].numPreSynNet);
 
 			snnRuntimeData.preSynapticIds[pre_pos] = SET_CONN_ID(it->nSrc, 0, it->grpSrc); // snnRuntimeData.Npost[it->nSrc] is not availabe at this parse
 			it->preSynId = snnRuntimeData.Npre[it->nDest]; // save snnRuntimeData.Npre[it->nDest] as synId
@@ -2597,7 +2645,7 @@ void SNN::generateConnectionRuntime() {
 	for (std::list<ConnectionInfo>::iterator it = connectionLists[0].begin(); it != connectionLists[0].end(); it++) {
 		if (GET_FIXED_PLASTIC(connectConfigMap[it->connId].connProp) == SYN_FIXED) {
 			int pre_pos  = snnRuntimeData.cumulativePre[it->nDest] + snnRuntimeData.Npre[it->nDest];
-			assert(pre_pos < numPreSynNet);
+			assert(pre_pos < networkConfigs[0].numPreSynNet);
 
 			snnRuntimeData.preSynapticIds[pre_pos] = SET_CONN_ID(it->nSrc, 0, it->grpSrc); // snnRuntimeData.Npost[it->nSrc] is not availabe at this parse
 			it->preSynId = snnRuntimeData.Npre[it->nDest]; // save snnRuntimeData.Npre[it->nDest] as synId
@@ -2610,7 +2658,7 @@ void SNN::generateConnectionRuntime() {
 				groupInfo[it->grpDest].maxPreConn = snnRuntimeData.Npre[it->nDest];
 		}
 	}
-	assert(parsedConnections == numPreSynNet);
+	assert(parsedConnections == networkConfigs[0].numPreSynNet);
 
 	// generate postSynapticIds
 	connectionLists[0].sort(compareSrcNeuron);
@@ -2635,7 +2683,7 @@ void SNN::generateConnectionRuntime() {
 				post_pos = snnRuntimeData.cumulativePost[it->nSrc] + snnRuntimeData.Npost[it->nSrc];
 				pre_pos  = snnRuntimeData.cumulativePre[it->nDest] + it->preSynId;
 
-				assert(post_pos < numPostSynNet);
+				assert(post_pos < networkConfigs[0].numPostSynNet);
 				//assert(pre_pos  < numPreSynNet);
 
 				// generate a post synaptic id for the current connection
@@ -2756,7 +2804,7 @@ void SNN::checkSpikeCounterRecordDur() {
 void SNN::collectGlobalNetworkConfig() {
 	// find the maximum number of pre- and post-connections among groups
 	// SNN::maxNumPreSynGrp and SNN::maxNumPostSynGrp are updated
-	findMaxNumSynapsesGroups(&maxNumPostSynGrp, &maxNumPreSynGrp);
+	//findMaxNumSynapsesGroups(&maxNumPostSynGrp, &maxNumPreSynGrp);
 
 	// find the maximum delay in the network
 	// SNN::maxDelay_ is updated
@@ -2786,19 +2834,18 @@ void SNN::compileSNN() {
 	// - etc.
 	//verifyNetwork();
 
-	// display the network configuration
+	// display the global network configuration
 	KERNEL_INFO("\n");
 	KERNEL_INFO("************************** Global Network Configuration *******************************");
 	KERNEL_INFO("The number of neurons in the network (numN) = %d", numN);
-	KERNEL_INFO("The number of regular neurons in the network (numNReg) = %d", numNReg);
-	KERNEL_INFO("The number of poisson neurons in the network (numNPois) = %d", numNPois);
-	KERNEL_INFO("The maximum number of post-connectoins among groups (maxNumPostSynGrp) = %d", maxNumPostSynGrp);
-	KERNEL_INFO("The maximum number of pre-connections among groups (maxNumPreSynGrp) = %d", maxNumPreSynGrp);
+	KERNEL_INFO("The number of regular neurons in the network (numNReg:numNExcReg:numNInhReg) = %d:%d:%d", numNReg, numNExcReg, numNInhReg);
+	KERNEL_INFO("The number of poisson neurons in the network (numNPois:numNExcPois:numInhPois) = %d:%d:%d", numNPois, numNExcPois, numNInhPois);
+	//KERNEL_INFO("The maximum number of post-connectoins among groups (maxNumPostSynGrp) = %d", maxNumPostSynGrp);
+	//KERNEL_INFO("The maximum number of pre-connections among groups (maxNumPreSynGrp) = %d", maxNumPreSynGrp);
 	//KERNEL_INFO("The maximum number of post-connectoins among neurons (maxNumPostSynN) = %d", maxNumPostSynN);
 	//KERNEL_INFO("The maximum number of pre-connections among neurons (maxNumPreSynN) = %d", maxNumPreSynN);
 	KERNEL_INFO("The maximum axonal delay in the network (maxDelay) = %d", maxDelay_);
 	//KERNEL_INFO("The tatol number of synapses in the network (numPreSynNet,numPostSynNet) = (%d,%d)", numPreSynNet, numPostSynNet);
-	KERNEL_INFO("\n");
 
 	//ensure that we dont compile the network again
 	snnState = COMPILED_SNN;
@@ -3453,42 +3500,96 @@ void SNN::findMaxNumSynapsesGroups(int* _maxNumPostSynGrp, int* _maxNumPreSynGrp
 	}
 }
 
-//void SNN::findMaxNumSynapsesNeurons(int* _maxNumPostSynN, int* _maxNumPreSynN) {
-//	*_maxNumPostSynN = 0;
-//	*_maxNumPreSynN = 0;
-//
-//	//  scan all the groups and find the required information
-//	for (int g = 0; g < numGroups; g++) {
-//		// find the values for maximum postsynaptic length
-//		// and maximum pre-synaptic length
-//		if (groupConfigs[0][g].maxNumPostSynN > *_maxNumPostSynN)
-//			*_maxNumPostSynN = groupConfigs[0][g].maxNumPostSynN;
-//		if (groupConfigs[0][g].maxNumPreSynN > *_maxNumPreSynN)
-//			*_maxNumPreSynN = groupConfigs[0][g].maxNumPreSynN;
-//	}
-//}
+void SNN::findMaxNumSynapsesNeurons(int _netId, int& _maxNumPostSynN, int& _maxNumPreSynN) {
+	int *tempNpre, *tempNpost;
+	int nSrc, nDest, numNeurons;
+	std::map<int, int> globalToLocalOffset;
 
-void SNN::findMaxSpikesD1D2(unsigned int* _maxSpikesD1, unsigned int* _maxSpikesD2) {
-	for(int g = 0; g < numGroups; g++) {
-		if (groupConfigMap[g].MaxDelay == 1)
-			*_maxSpikesD1 += (groupConfigMap[g].SizeN * groupConfigMap[g].MaxFiringRate);
+	numNeurons = networkConfigs[_netId].numN;
+	tempNpre = new int[numNeurons];
+	tempNpost = new int[numNeurons];
+	memset(tempNpre, 0, sizeof(int) * numNeurons);
+	memset(tempNpost, 0, sizeof(int) * numNeurons);
+
+	// load offset between global neuron id and local neuron id 
+	for (std::list<GroupConfigRT>::iterator grpIt = groupPartitionLists[_netId].begin(); grpIt != groupPartitionLists[_netId].end(); grpIt++) {
+		globalToLocalOffset[grpIt->grpId] = grpIt->GtoLOffset;
+	}
+
+	// calculate number of pre- and post- connections of each neuron
+	for (std::list<ConnectionInfo>::iterator connIt = connectionLists[_netId].begin(); connIt != connectionLists[_netId].end(); connIt++) {
+		nSrc = connIt->nSrc + globalToLocalOffset[connIt->grpSrc];
+		nDest = connIt->nDest + globalToLocalOffset[connIt->grpDest];
+		assert(nSrc < numNeurons); assert(nDest < numNeurons);
+		tempNpost[nSrc]++;
+		tempNpre[nDest]++;
+	}
+
+	// find out the maximum number of pre- and post- connections among neurons in a local network
+	_maxNumPostSynN = 0;
+	_maxNumPreSynN = 0;
+	for (int nId = 0; nId < networkConfigs[_netId].numN; nId++) {
+		if (tempNpost[nId] > _maxNumPostSynN) _maxNumPostSynN = tempNpost[nId];
+		if (tempNpre[nId] > _maxNumPreSynN) _maxNumPreSynN = tempNpre[nId];
+	}
+
+	delete [] tempNpre;
+	delete [] tempNpost;
+}
+
+void SNN::findMaxSpikesD1D2(int _netId, unsigned int& _maxSpikesD1, unsigned int& _maxSpikesD2) {
+	_maxSpikesD1 = 0; _maxSpikesD2 = 0;
+	for(std::list<GroupConfigRT>::iterator grpIt = groupPartitionLists[_netId].begin(); grpIt != groupPartitionLists[_netId].end(); grpIt++) {
+		if (grpIt->MaxDelay == 1)
+			_maxSpikesD1 += (grpIt->SizeN * grpIt->MaxFiringRate);
 		else
-			*_maxSpikesD2 += (groupConfigMap[g].SizeN * groupConfigMap[g].MaxFiringRate);
+			_maxSpikesD2 += (grpIt->SizeN * grpIt->MaxFiringRate);
 	}
 }
 
-void SNN::findNumSynapsesNetwork(int* _numPostSynNet, int* _numPreSynNet) {
-	*_numPostSynNet = 0;
-	*_numPreSynNet  = 0;
-
-	for(int g = 0; g < numGroups; g++) {
-		*_numPostSynNet += groupConfigMap[g].numPostSynapses;
-		*_numPreSynNet += groupConfigMap[g].numPreSynapses;
-		assert(*_numPostSynNet < INT_MAX);
-		assert(*_numPreSynNet <  INT_MAX);
+void SNN::findNumN(int _netId, int& _numN, int& _numNExternal, int& _numNAssigned,
+                   int& _numNReg, int& _numNExcReg, int& _numNInhReg,
+                   int& _numNPois, int& _numNExcPois, int& _numNInhPois) {
+	_numN = 0; _numNExternal = 0; _numNAssigned = 0;
+	_numNReg = 0; _numNExcReg = 0; _numNInhReg = 0;
+	_numNPois = 0; _numNExcPois = 0; _numNInhPois = 0;
+	for (std::list<GroupConfigRT>::iterator grpIt = groupPartitionLists[_netId].begin(); grpIt != groupPartitionLists[_netId].end(); grpIt++) {
+		int sizeN = grpIt->SizeN;
+		if (IS_EXCITATORY_TYPE(grpIt->Type) && (grpIt->Type & POISSON_NEURON) && grpIt->netId == _netId) {
+			_numN += sizeN; _numNPois += sizeN; _numNExcPois += sizeN;
+		} else if (IS_INHIBITORY_TYPE(grpIt->Type) && (grpIt->Type & POISSON_NEURON) && grpIt->netId == _netId) {
+			_numN += sizeN; _numNPois += sizeN; _numNInhPois += sizeN;
+		} else if (IS_EXCITATORY_TYPE(grpIt->Type) && !(grpIt->Type & POISSON_NEURON) && grpIt->netId == _netId) {
+			_numN += sizeN; _numNReg += sizeN; _numNExcReg += sizeN;
+		} else if (IS_INHIBITORY_TYPE(grpIt->Type) && !(grpIt->Type & POISSON_NEURON) && grpIt->netId == _netId) {
+			_numN += sizeN; _numNReg += sizeN; _numNInhReg += sizeN;
+		} else if (grpIt->netId != _netId) {
+			_numNExternal += grpIt->SizeN;
+		} else {
+			KERNEL_ERROR("Can't find catagory for the group [%d] ", grpIt->grpId);
+			exitSimulation(-1);
+		}
+		_numNAssigned += sizeN;
 	}
 
-	assert(*_numPreSynNet == *_numPostSynNet);
+	assert(_numNReg == _numNExcReg + _numNInhReg);
+	assert(_numNPois == _numNExcPois + _numNInhPois);
+	assert(_numN == _numNReg + _numNPois);
+	assert(_numNAssigned == _numN + _numNExternal);
+}
+
+void SNN::findNumSynapsesNetwork(int _netId, int& _numPostSynNet, int& _numPreSynNet) {
+	_numPostSynNet = 0;
+	_numPreSynNet  = 0;
+
+	for (std::list<GroupConfigRT>::iterator grpIt = groupPartitionLists[_netId].begin(); grpIt != groupPartitionLists[_netId].end(); grpIt++) {
+		_numPostSynNet += grpIt->numPostSynapses;
+		_numPreSynNet += grpIt->numPreSynapses;
+		assert(_numPostSynNet < INT_MAX);
+		assert(_numPreSynNet <  INT_MAX);
+	}
+
+	assert(_numPreSynNet == _numPostSynNet);
 }
 
 inline int SNN::getPoissNeuronPos(int nid) {
@@ -3588,9 +3689,9 @@ void SNN::initGroupConfig(GroupConfigRT* _groupConfig) {
 // total size of the synaptic connection is 'length' ...
 void SNN::initSynapticWeights() {
 	// Initialize the network wtChange, wt, synaptic firing time
-	snnRuntimeData.wtChange         = new float[numPreSynNet];
-	snnRuntimeData.synSpikeTime     = new int[numPreSynNet];
-	cpuSnnSz.synapticInfoSize = sizeof(float)*(numPreSynNet*2);
+	snnRuntimeData.wtChange         = new float[networkConfigs[0].numPreSynNet];
+	snnRuntimeData.synSpikeTime     = new int[networkConfigs[0].numPreSynNet];
+	cpuSnnSz.synapticInfoSize = sizeof(float)*(networkConfigs[0].numPreSynNet*2);
 
 	resetSynapticConnections(false);
 }
@@ -3627,7 +3728,7 @@ void SNN::verifyNetwork() {
 	assert(maxDelay_ <= MAX_SYN_DELAY);
 
 	// make sure there is sufficient buffer
-	if ((maxSpikesD1 + maxSpikesD2) < (numNExcReg + numNInhReg + numNPois) * UNKNOWN_NEURON_MAX_FIRING_RATE) {
+	if ((networkConfigs[0].maxSpikesD1 + networkConfigs[0].maxSpikesD2) < (numNExcReg + numNInhReg + numNPois) * UNKNOWN_NEURON_MAX_FIRING_RATE) {
 		KERNEL_ERROR("Insufficient amount of buffer allocated...");
 		exitSimulation(1);
 	}
@@ -3822,18 +3923,22 @@ void SNN::partitionSNN() {
 	// put excitatory groups to GPU 0 and inhibitory groups to GPU 1
 	// this parse separates groups into each local network and assign each group a netId
 	for (std::map<int, GroupConfigRT>::iterator it = groupConfigMap.begin(); it != groupConfigMap.end(); it++) {
-		if (IS_EXCITATORY_TYPE(it->second.Type)) {
-			it->second.netId = 0;
-			numAssignedNeurons[0] += it->second.SizeN;
-			groupPartitionLists[0].push_back(it->second);
-		} else if (IS_INHIBITORY_TYPE(it->second.Type)) {
-			it->second.netId = 1;
-			numAssignedNeurons[1] += it->second.SizeN;
-			groupPartitionLists[1].push_back(it->second);
-		} else {
-			KERNEL_ERROR("Can't assign the group [%d] to any partition", it->second.grpId);
-			exitSimulation(-1);
-		}
+		//if (IS_EXCITATORY_TYPE(it->second.Type)) {
+		//	it->second.netId = 0;
+		//	numAssignedNeurons[0] += it->second.SizeN;
+		//	groupPartitionLists[0].push_back(it->second);
+		//} else if (IS_INHIBITORY_TYPE(it->second.Type)) {
+		//	it->second.netId = 1;
+		//	numAssignedNeurons[1] += it->second.SizeN;
+		//	groupPartitionLists[1].push_back(it->second);
+		//} else {
+		//	KERNEL_ERROR("Can't assign the group [%d] to any partition", it->second.grpId);
+		//	exitSimulation(-1);
+		//}
+
+		it->second.netId = 0;
+		numAssignedNeurons[0] += it->second.SizeN;
+		groupPartitionLists[0].push_back(it->second);
 	}
 
 	// this parse finds local connections (i.e., connection configs that conect local groups)
@@ -3903,267 +4008,265 @@ void SNN::partitionSNN() {
 	for (int netId = 0; netId < MAX_NET_PER_SNN; netId++) {
 		if (!groupPartitionLists[netId].empty()) {
 			KERNEL_INFO("\n+ Local Network (%d)", netId);
-			KERNEL_INFO("Group List:");
+			KERNEL_INFO("|-+ Group List:");
 			for (std::list<GroupConfigRT>::iterator grpIt = groupPartitionLists[netId].begin(); grpIt != groupPartitionLists[netId].end(); grpIt++)
 				printGroupInfo(netId, grpIt);
 		}
-		if (!localConnectLists[netId].empty()) {
-			KERNEL_INFO("Local Connection List:");
+
+		if (!localConnectLists[netId].empty() || !externalConnectLists[netId].empty()) {
+			KERNEL_INFO("|-+ Connection List:");
 			for (std::list<ConnectConfig>::iterator connIt = localConnectLists[netId].begin(); connIt != localConnectLists[netId].end(); connIt++)
-				printConnectionInfo(connIt);
-		}
-		if (!externalConnectLists[netId].empty()) {
-			KERNEL_INFO("External Connection List:");
+				printConnectionInfo(netId, connIt);
+
 			for (std::list<ConnectConfig>::iterator connIt = externalConnectLists[netId].begin(); connIt != externalConnectLists[netId].end(); connIt++)
-				printConnectionInfo(connIt);
+				printConnectionInfo(netId, connIt);
 		}
 	}
 
-	// transfer group configs in std::map to array
-	int grpId = 0;
-	for (std::map<int, GroupConfigRT>::iterator it = groupConfigMap.begin(); it != groupConfigMap.end(); it++) {
-		groupConfigs[0][grpId] = it->second;
-		grpId++;
-	}
-
-	assert(grpId == numGroups);
 	snnState = PARTITIONED_SNN;
 }
 
 int SNN::loadSimulation_internal(bool onlyPlastic) {
-	// TSC: so that we can restore the file position later...
-	// MB: not sure why though...
-	long file_position = ftell(loadSimFID);
-	
-	int tmpInt;
-	float tmpFloat;
+	//// TSC: so that we can restore the file position later...
+	//// MB: not sure why though...
+	//long file_position = ftell(loadSimFID);
+	//
+	//int tmpInt;
+	//float tmpFloat;
 
-	bool readErr = false; // keep track of reading errors
-	size_t result;
-
-
-	// ------- read header ----------------
-
-	fseek(loadSimFID, 0, SEEK_SET);
-
-	// read file signature
-	result = fread(&tmpInt, sizeof(int), 1, loadSimFID);
-	readErr |= (result!=1);
-	if (tmpInt != 294338571) {
-		KERNEL_ERROR("loadSimulation: Unknown file signature. This does not seem to be a "
-			"simulation file created with CARLsim::saveSimulation.");
-		exitSimulation(-1);
-	}
-
-	// read file version number
-	result = fread(&tmpFloat, sizeof(float), 1, loadSimFID);
-	readErr |= (result!=1);
-	if (tmpFloat > 0.2f) {
-		KERNEL_ERROR("loadSimulation: Unsupported version number (%f)",tmpFloat);
-		exitSimulation(-1);
-	}
-
-	// read simulation time
-	result = fread(&tmpFloat, sizeof(float), 1, loadSimFID);
-	readErr |= (result!=1);
-
-	// read execution time
-	result = fread(&tmpFloat, sizeof(float), 1, loadSimFID);
-	readErr |= (result!=1);
-
-	// read number of neurons
-	result = fread(&tmpInt, sizeof(int), 1, loadSimFID);
-	readErr |= (result!=1);
-	if (tmpInt != numN) {
-		KERNEL_ERROR("loadSimulation: Number of neurons in file (%d) and simulation (%d) don't match.",
-			tmpInt, numN);
-		exitSimulation(-1);
-	}
-
-	// read number of pre-synapses
-	result = fread(&tmpInt, sizeof(int), 1, loadSimFID);
-	readErr |= (result!=1);
-	if (numPreSynNet != tmpInt) {
-		KERNEL_ERROR("loadSimulation: numPreSynNet in file (%d) and simulation (%d) don't match.",
-			tmpInt, numPreSynNet);
-		exitSimulation(-1);
-	}
-
-	// read number of post-synapses
-	result = fread(&tmpInt, sizeof(int), 1, loadSimFID);
-	readErr |= (result!=1);
-	if (numPostSynNet != tmpInt) {
-		KERNEL_ERROR("loadSimulation: numPostSynNet in file (%d) and simulation (%d) don't match.",
-			tmpInt, numPostSynNet);
-		exitSimulation(-1);
-	}
-
-	// read number of groups
-	result = fread(&tmpInt, sizeof(int), 1, loadSimFID);
-	readErr |= (result!=1);
-	if (tmpInt != numGroups) {
-		KERNEL_ERROR("loadSimulation: Number of groups in file (%d) and simulation (%d) don't match.",
-			tmpInt, numGroups);
-		exitSimulation(-1);
-	}
-
-	// throw reading error instead of proceeding
-	if (readErr) {
-		fprintf(stderr,"loadSimulation: Error while reading file header");
-		exitSimulation(-1);
-	}
+	//bool readErr = false; // keep track of reading errors
+	//size_t result;
 
 
-	// ------- read group information ----------------
+	//// ------- read header ----------------
 
-	for (int g=0; g<numGroups; g++) {
-		// read StartN
-		result = fread(&tmpInt, sizeof(int), 1, loadSimFID);
-		readErr |= (result!=1);
-		if (tmpInt != groupConfigs[0][g].StartN) {
-			KERNEL_ERROR("loadSimulation: StartN in file (%d) and grpInfo (%d) for group %d don't match.",
-				tmpInt, groupConfigs[0][g].StartN, g);
-			exitSimulation(-1);
-		}
+	//fseek(loadSimFID, 0, SEEK_SET);
 
-		// read EndN
-		result = fread(&tmpInt, sizeof(int), 1, loadSimFID);
-		readErr |= (result!=1);
-		if (tmpInt != groupConfigs[0][g].EndN) {
-			KERNEL_ERROR("loadSimulation: EndN in file (%d) and grpInfo (%d) for group %d don't match.",
-				tmpInt, groupConfigs[0][g].EndN, g);
-			exitSimulation(-1);
-		}
+	//// read file signature
+	//result = fread(&tmpInt, sizeof(int), 1, loadSimFID);
+	//readErr |= (result!=1);
+	//if (tmpInt != 294338571) {
+	//	KERNEL_ERROR("loadSimulation: Unknown file signature. This does not seem to be a "
+	//		"simulation file created with CARLsim::saveSimulation.");
+	//	exitSimulation(-1);
+	//}
 
-		// read SizeX
-		result = fread(&tmpInt, sizeof(int), 1, loadSimFID);
-		readErr |= (result!=1);
+	//// read file version number
+	//result = fread(&tmpFloat, sizeof(float), 1, loadSimFID);
+	//readErr |= (result!=1);
+	//if (tmpFloat > 0.2f) {
+	//	KERNEL_ERROR("loadSimulation: Unsupported version number (%f)",tmpFloat);
+	//	exitSimulation(-1);
+	//}
 
-		// read SizeY
-		result = fread(&tmpInt, sizeof(int), 1, loadSimFID);
-		readErr |= (result!=1);
+	//// read simulation time
+	//result = fread(&tmpFloat, sizeof(float), 1, loadSimFID);
+	//readErr |= (result!=1);
 
-		// read SizeZ
-		result = fread(&tmpInt, sizeof(int), 1, loadSimFID);
-		readErr |= (result!=1);
+	//// read execution time
+	//result = fread(&tmpFloat, sizeof(float), 1, loadSimFID);
+	//readErr |= (result!=1);
 
-		// read group name
-		char name[100];
-		result = fread(name, sizeof(char), 100, loadSimFID);
-		readErr |= (result!=100);
-		if (strcmp(name,groupInfo[g].Name.c_str()) != 0) {
-			KERNEL_ERROR("loadSimulation: Group names in file (%s) and grpInfo (%s) don't match.", name,
-				groupInfo[g].Name.c_str());
-			exitSimulation(-1);
-		}
-	}
+	//// read number of neurons
+	//result = fread(&tmpInt, sizeof(int), 1, loadSimFID);
+	//readErr |= (result!=1);
+	//if (tmpInt != numN) {
+	//	KERNEL_ERROR("loadSimulation: Number of neurons in file (%d) and simulation (%d) don't match.",
+	//		tmpInt, numN);
+	//	exitSimulation(-1);
+	//}
 
-	if (readErr) {
-		KERNEL_ERROR("loadSimulation: Error while reading group info");
-		exitSimulation(-1);
-	}
+	//// read number of pre-synapses
+	//result = fread(&tmpInt, sizeof(int), 1, loadSimFID);
+	//readErr |= (result!=1);
+	//if (numPreSynNet != tmpInt) {
+	//	KERNEL_ERROR("loadSimulation: numPreSynNet in file (%d) and simulation (%d) don't match.",
+	//		tmpInt, numPreSynNet);
+	//	exitSimulation(-1);
+	//}
+
+	//// read number of post-synapses
+	//result = fread(&tmpInt, sizeof(int), 1, loadSimFID);
+	//readErr |= (result!=1);
+	//if (numPostSynNet != tmpInt) {
+	//	KERNEL_ERROR("loadSimulation: numPostSynNet in file (%d) and simulation (%d) don't match.",
+	//		tmpInt, numPostSynNet);
+	//	exitSimulation(-1);
+	//}
+
+	//// read number of groups
+	//result = fread(&tmpInt, sizeof(int), 1, loadSimFID);
+	//readErr |= (result!=1);
+	//if (tmpInt != numGroups) {
+	//	KERNEL_ERROR("loadSimulation: Number of groups in file (%d) and simulation (%d) don't match.",
+	//		tmpInt, numGroups);
+	//	exitSimulation(-1);
+	//}
+
+	//// throw reading error instead of proceeding
+	//if (readErr) {
+	//	fprintf(stderr,"loadSimulation: Error while reading file header");
+	//	exitSimulation(-1);
+	//}
 
 
-	// ------- read synapse information ----------------
+	//// ------- read group information ----------------
 
-	for (int i = 0; i < numN; i++) {
-		int nrSynapses = 0;
+	//for (int g=0; g<numGroups; g++) {
+	//	// read StartN
+	//	result = fread(&tmpInt, sizeof(int), 1, loadSimFID);
+	//	readErr |= (result!=1);
+	//	if (tmpInt != groupConfigs[0][g].StartN) {
+	//		KERNEL_ERROR("loadSimulation: StartN in file (%d) and grpInfo (%d) for group %d don't match.",
+	//			tmpInt, groupConfigs[0][g].StartN, g);
+	//		exitSimulation(-1);
+	//	}
 
-		// read number of synapses
-		result = fread(&nrSynapses, sizeof(int), 1, loadSimFID);
-		readErr |= (result!=1);
+	//	// read EndN
+	//	result = fread(&tmpInt, sizeof(int), 1, loadSimFID);
+	//	readErr |= (result!=1);
+	//	if (tmpInt != groupConfigs[0][g].EndN) {
+	//		KERNEL_ERROR("loadSimulation: EndN in file (%d) and grpInfo (%d) for group %d don't match.",
+	//			tmpInt, groupConfigs[0][g].EndN, g);
+	//		exitSimulation(-1);
+	//	}
 
-		for (int j=0; j<nrSynapses; j++) {
-			int nIDpre;
-			int nIDpost;
-			float weight, maxWeight;
-			uint8_t delay;
-			uint8_t plastic;
-			short int connId;
+	//	// read SizeX
+	//	result = fread(&tmpInt, sizeof(int), 1, loadSimFID);
+	//	readErr |= (result!=1);
 
-			// read nIDpre
-			result = fread(&nIDpre, sizeof(int), 1, loadSimFID);
-			readErr |= (result!=1);
-			if (nIDpre != i) {
-				KERNEL_ERROR("loadSimulation: nIDpre in file (%u) and simulation (%u) don't match.", nIDpre, i);
-				exitSimulation(-1);
-			}
+	//	// read SizeY
+	//	result = fread(&tmpInt, sizeof(int), 1, loadSimFID);
+	//	readErr |= (result!=1);
 
-			// read nIDpost
-			result = fread(&nIDpost, sizeof(int), 1, loadSimFID);
-			readErr |= (result!=1);
-			if (nIDpost >= numN) {
-				KERNEL_ERROR("loadSimulation: nIDpre in file (%u) is larger than in simulation (%u).", nIDpost, numN);
-				exitSimulation(-1);
-			}
+	//	// read SizeZ
+	//	result = fread(&tmpInt, sizeof(int), 1, loadSimFID);
+	//	readErr |= (result!=1);
 
-			// read weight
-			result = fread(&weight, sizeof(float), 1, loadSimFID);
-			readErr |= (result!=1);
+	//	// read group name
+	//	char name[100];
+	//	result = fread(name, sizeof(char), 100, loadSimFID);
+	//	readErr |= (result!=100);
+	//	if (strcmp(name,groupInfo[g].Name.c_str()) != 0) {
+	//		KERNEL_ERROR("loadSimulation: Group names in file (%s) and grpInfo (%s) don't match.", name,
+	//			groupInfo[g].Name.c_str());
+	//		exitSimulation(-1);
+	//	}
+	//}
 
-			short int gIDpre = snnRuntimeData.grpIds[nIDpre];
-			if (IS_INHIBITORY_TYPE(groupConfigs[0][gIDpre].Type) && (weight>0)
-					|| !IS_INHIBITORY_TYPE(groupConfigs[0][gIDpre].Type) && (weight<0)) {
-				KERNEL_ERROR("loadSimulation: Sign of weight value (%s) does not match neuron type (%s)",
-					((weight>=0.0f)?"plus":"minus"), 
-					(IS_INHIBITORY_TYPE(groupConfigs[0][gIDpre].Type)?"inhibitory":"excitatory"));
-				exitSimulation(-1);
-			}
+	//if (readErr) {
+	//	KERNEL_ERROR("loadSimulation: Error while reading group info");
+	//	exitSimulation(-1);
+	//}
 
-			// read max weight
-			result = fread(&maxWeight, sizeof(float), 1, loadSimFID);
-			readErr |= (result!=1);
-			if (IS_INHIBITORY_TYPE(groupConfigs[0][gIDpre].Type) && (maxWeight>=0)
-					|| !IS_INHIBITORY_TYPE(groupConfigs[0][gIDpre].Type) && (maxWeight<=0)) {
-				KERNEL_ERROR("loadSimulation: Sign of maxWeight value (%s) does not match neuron type (%s)",
-					((maxWeight>=0.0f)?"plus":"minus"), 
-					(IS_INHIBITORY_TYPE(groupConfigs[0][gIDpre].Type)?"inhibitory":"excitatory"));
-				exitSimulation(-1);
-			}
 
-			// read delay
-			result = fread(&delay, sizeof(uint8_t), 1, loadSimFID);
-			readErr |= (result!=1);
-			if (delay > MAX_SYN_DELAY) {
-				KERNEL_ERROR("loadSimulation: delay in file (%d) is larger than MAX_SYN_DELAY (%d)",
-					(int)delay, (int)MAX_SYN_DELAY);
-				exitSimulation(-1);
-			}
+	//// ------- read synapse information ----------------
 
-			assert(!isnan(weight));
-			// read plastic/fixed
-			result = fread(&plastic, sizeof(uint8_t), 1, loadSimFID);
-			readErr |= (result!=1);
+	//for (int i = 0; i < numN; i++) {
+	//	int nrSynapses = 0;
 
-			// read connection ID
-			result = fread(&connId, sizeof(short int), 1, loadSimFID);
-			readErr |= (result!=1);
+	//	// read number of synapses
+	//	result = fread(&nrSynapses, sizeof(int), 1, loadSimFID);
+	//	readErr |= (result!=1);
 
-			if ((plastic && onlyPlastic) || (!plastic && !onlyPlastic)) {
-				int gIDpost = snnRuntimeData.grpIds[nIDpost];
-				int connProp = SET_FIXED_PLASTIC(plastic?SYN_PLASTIC:SYN_FIXED);
+	//	for (int j=0; j<nrSynapses; j++) {
+	//		int nIDpre;
+	//		int nIDpost;
+	//		float weight, maxWeight;
+	//		uint8_t delay;
+	//		uint8_t plastic;
+	//		short int connId;
 
-				//setConnection(gIDpre, gIDpost, nIDpre, nIDpost, weight, maxWeight, delay, connProp, connId);
-				groupInfo[gIDpre].sumPostConn++;
-				groupInfo[gIDpost].sumPreConn++;
+	//		// read nIDpre
+	//		result = fread(&nIDpre, sizeof(int), 1, loadSimFID);
+	//		readErr |= (result!=1);
+	//		if (nIDpre != i) {
+	//			KERNEL_ERROR("loadSimulation: nIDpre in file (%u) and simulation (%u) don't match.", nIDpre, i);
+	//			exitSimulation(-1);
+	//		}
 
-				if (delay > groupConfigs[0][gIDpre].MaxDelay)
-					groupConfigs[0][gIDpre].MaxDelay = delay;
-			}
-		}
-	}
+	//		// read nIDpost
+	//		result = fread(&nIDpost, sizeof(int), 1, loadSimFID);
+	//		readErr |= (result!=1);
+	//		if (nIDpost >= numN) {
+	//			KERNEL_ERROR("loadSimulation: nIDpre in file (%u) is larger than in simulation (%u).", nIDpost, numN);
+	//			exitSimulation(-1);
+	//		}
 
-	fseek(loadSimFID,file_position,SEEK_SET);
+	//		// read weight
+	//		result = fread(&weight, sizeof(float), 1, loadSimFID);
+	//		readErr |= (result!=1);
+
+	//		short int gIDpre = snnRuntimeData.grpIds[nIDpre];
+	//		if (IS_INHIBITORY_TYPE(groupConfigs[0][gIDpre].Type) && (weight>0)
+	//				|| !IS_INHIBITORY_TYPE(groupConfigs[0][gIDpre].Type) && (weight<0)) {
+	//			KERNEL_ERROR("loadSimulation: Sign of weight value (%s) does not match neuron type (%s)",
+	//				((weight>=0.0f)?"plus":"minus"), 
+	//				(IS_INHIBITORY_TYPE(groupConfigs[0][gIDpre].Type)?"inhibitory":"excitatory"));
+	//			exitSimulation(-1);
+	//		}
+
+	//		// read max weight
+	//		result = fread(&maxWeight, sizeof(float), 1, loadSimFID);
+	//		readErr |= (result!=1);
+	//		if (IS_INHIBITORY_TYPE(groupConfigs[0][gIDpre].Type) && (maxWeight>=0)
+	//				|| !IS_INHIBITORY_TYPE(groupConfigs[0][gIDpre].Type) && (maxWeight<=0)) {
+	//			KERNEL_ERROR("loadSimulation: Sign of maxWeight value (%s) does not match neuron type (%s)",
+	//				((maxWeight>=0.0f)?"plus":"minus"), 
+	//				(IS_INHIBITORY_TYPE(groupConfigs[0][gIDpre].Type)?"inhibitory":"excitatory"));
+	//			exitSimulation(-1);
+	//		}
+
+	//		// read delay
+	//		result = fread(&delay, sizeof(uint8_t), 1, loadSimFID);
+	//		readErr |= (result!=1);
+	//		if (delay > MAX_SYN_DELAY) {
+	//			KERNEL_ERROR("loadSimulation: delay in file (%d) is larger than MAX_SYN_DELAY (%d)",
+	//				(int)delay, (int)MAX_SYN_DELAY);
+	//			exitSimulation(-1);
+	//		}
+
+	//		assert(!isnan(weight));
+	//		// read plastic/fixed
+	//		result = fread(&plastic, sizeof(uint8_t), 1, loadSimFID);
+	//		readErr |= (result!=1);
+
+	//		// read connection ID
+	//		result = fread(&connId, sizeof(short int), 1, loadSimFID);
+	//		readErr |= (result!=1);
+
+	//		if ((plastic && onlyPlastic) || (!plastic && !onlyPlastic)) {
+	//			int gIDpost = snnRuntimeData.grpIds[nIDpost];
+	//			int connProp = SET_FIXED_PLASTIC(plastic?SYN_PLASTIC:SYN_FIXED);
+
+	//			//setConnection(gIDpre, gIDpost, nIDpre, nIDpost, weight, maxWeight, delay, connProp, connId);
+	//			groupInfo[gIDpre].sumPostConn++;
+	//			groupInfo[gIDpost].sumPreConn++;
+
+	//			if (delay > groupConfigs[0][gIDpre].MaxDelay)
+	//				groupConfigs[0][gIDpre].MaxDelay = delay;
+	//		}
+	//	}
+	//}
+
+	//fseek(loadSimFID,file_position,SEEK_SET);
 
 	return 0;
 }
 
 void SNN::generateRuntimeSNN() {
 
+	// generate local network configs
 	generateNetworkConfigs();
 
-	// time to build the complete network with relevant parameters..
-	generateNetworkRuntime();
+	// generate (copy) group configs from groupPartitionLists[]
+	generateGroupConfigs();
+
+	// generate (copy) connection configs from localConnectLists[] and exeternalConnectLists[]
+	generateConnectConfigs();
+
+	// build the runtime data according to local network, group, connection configuirations
+	generateRuntimeData();
 
 	// Print the statistics again but dump the results to a file
 	printMemoryInfo(fpDeb_);
@@ -4182,7 +4285,7 @@ void SNN::generateRuntimeSNN() {
 	KERNEL_INFO("*****************      Initializing %s Simulation      *************************",
 		simMode_==GPU_MODE?"GPU":"CPU");
 
-	snnState = RUNTIME_GENERATED_SNN;
+	allocateSNN();
 }
 
 void SNN::resetConductances() {
@@ -4591,8 +4694,8 @@ void SNN::resetTimeTable() {
 }
 
 void SNN::resetFiringTable() {
-	memset(snnRuntimeData.firingTableD2, 0, sizeof(int) * maxSpikesD2);
-	memset(snnRuntimeData.firingTableD1, 0, sizeof(int) * maxSpikesD1);
+	memset(snnRuntimeData.firingTableD2, 0, sizeof(int) * networkConfigs[0].maxSpikesD2);
+	memset(snnRuntimeData.firingTableD1, 0, sizeof(int) * networkConfigs[0].maxSpikesD1);
 }
 
 
@@ -4908,10 +5011,10 @@ void SNN::updateSpikeGeneratorsInit() {
  * \note SpikeTables include firingTableD1(D2) and timeTableD1(D2)
  */
 void SNN::allocateSpikeTables() {
-	snnRuntimeData.firingTableD2 = new int[maxSpikesD2];
-	snnRuntimeData.firingTableD1 = new int[maxSpikesD1];
+	snnRuntimeData.firingTableD2 = new int[networkConfigs[0].maxSpikesD2];
+	snnRuntimeData.firingTableD1 = new int[networkConfigs[0].maxSpikesD1];
 	resetFiringTable();
-	cpuSnnSz.spikingInfoSize += sizeof(int) * ((maxSpikesD2 + maxSpikesD1) + 2* (1000 + maxDelay_ + 1));
+	cpuSnnSz.spikingInfoSize += sizeof(int) * ((networkConfigs[0].maxSpikesD2 + networkConfigs[0].maxSpikesD1) + 2 * (1000 + maxDelay_ + 1));
 
 	//timeTableD2  = new unsigned int[1000 + maxDelay_ + 1];
 	//timeTableD1  = new unsigned int[1000 + maxDelay_ + 1];

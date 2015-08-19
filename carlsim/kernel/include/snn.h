@@ -311,7 +311,7 @@ public:
 	 * \brief build the network
 	 * \param[in] removeTempMemory 	remove temp memory after building network
 	 */
-	void setupNetwork(bool removeTempMemory);
+	void setupNetwork();
 
 	// +++++ PUBLIC METHODS: INTERACTING WITH A SIMULATION ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
@@ -502,8 +502,8 @@ public:
 	int getNumNeuronsGen() { return numNPois; }
 	int getNumNeuronsGenExc() { return numNExcPois; }
 	int getNumNeuronsGenInh() { return numNInhPois; }
-	int getNumPreSynapses() { return numPreSynNet; }
-	int getNumPostSynapses() { return numPostSynNet; }
+	int getNumPreSynapses() { return networkConfigs[0].numPreSynNet; }
+	int getNumPostSynapses() { return networkConfigs[0].numPostSynNet; }
 
 	int getRandSeed() { return randSeed_; }
 
@@ -591,7 +591,7 @@ private:
 	int assignGroup(int groupId, int availableNeuronId);
 	int assignGroup(std::list<GroupConfigRT>::iterator grpIt, int localGroupId, int availableNeuronId);
 	void generateGroupRuntime(int groupId);
-	void generateNetworkRuntime();
+	void generateRuntimeData();
 	void generatePoissonGroupRuntime(int groupId);
 	void generateConnectionRuntime();
 
@@ -605,18 +605,18 @@ private:
 	void checkSpikeCounterRecordDur();
 
 	/*!
-	 * \brief scan all GroupConfigs and ConnectConfigs for generating the configuration of a global network
+	 * \brief scan all GroupConfigs and ConnectConfigs for generating the configuration of a local network
 	 */
 	void generateNetworkConfigs();
+	void generateGroupConfigs();
+	void generateConnectConfigs();
 
+	/*!
+	 * \brief scan all group configs and connection configs for generating the configuration of a global network
+	 */
 	void collectGlobalNetworkConfig();
 	void compileConnectConfig(); //!< for future use
 	void compileGroupConfig();
-
-	/*!
-	 * \brief scan all group configs and connection configs for generating the configuration of a local network
-	 */
-	void collectLocalNetworkConfigs();
 
 	/*!
 	 * \brief generate connections among groups according to connect configuration
@@ -644,9 +644,12 @@ private:
 	//! find the maximum post-synaptic and pre-synaptic length
 	//! this used to be in updateParameters
 	void findMaxNumSynapsesGroups(int* _maxNumPostSynGrp, int* _maxNumPreSynGrp);
-	//void findMaxNumSynapsesNeurons(int* _maxNumPostSynN, int* _maxNumPreSynN);
-	void findMaxSpikesD1D2(unsigned int* _maxSpikesD1, unsigned int* _maxSpikesD2);
-	void findNumSynapsesNetwork(int* _numPostSynNet, int* _numPreSynNet); //!< find the total number of synapses in the network
+	void findMaxNumSynapsesNeurons(int _netId, int& _maxNumPostSynN, int& _maxNumPreSynN);
+	void findMaxSpikesD1D2(int netId, unsigned int& _maxSpikesD1, unsigned int& _maxSpikesD2);
+	void findNumSynapsesNetwork(int netId, int& _numPostSynNet, int& _numPreSynNet); //!< find the total number of synapses in the network
+	void findNumN(int _netId, int& _numN, int& _nunNExternal, int& numNAssigned,
+                  int& _numNReg, int& _numNExcReg, int& _numNInhReg,
+                  int& _numNPois, int& _numNExcPois, int& _numNInhPois);
 
 	void generatePostSpike(unsigned int pre_i, unsigned int idx_d, unsigned int offset, int tD);
 	void generateSpikes();
@@ -713,7 +716,7 @@ private:
 	void printConnection(FILE* fp);
 	void printConnection(int grpId, FILE* fp); //!< print the connection info of grpId
 	void printConnectionInfo(short int connId);
-	void printConnectionInfo(std::list<ConnectConfig>::iterator connIt);
+	void printConnectionInfo(int netId, std::list<ConnectConfig>::iterator connIt);
 	void printConnectionInfo(FILE* fp);
 	void printConnectionInfo2(FILE *fpg);
 	void printCurrentInfo(FILE* fp); //!< for GPU debugging
@@ -946,8 +949,6 @@ private:
 	int	numN;             //!< number of neurons in the spiking neural network
 	int maxNumPostSynGrp; //!< maximum number of post-synaptic connections among groups
 	int maxNumPreSynGrp;  //!< maximum number of pre-synaptic connections among groups
-	//int maxNumPostSynN;   //!< maximum number of post-synaptic connections among neurons
-	//int maxNumPreSynN;    //!< maximum number of pre-syanptic connections among neurons 
 	int maxDelay_;        //!< maximum axonal delay in groups
 	int numNReg;          //!< number of regular (spking) neurons
 	int numNExcReg;       //!< number of regular excitatory neurons
@@ -955,8 +956,6 @@ private:
 	int numNExcPois;      //!< number of excitatory poisson neurons
 	int numNInhPois;      //!< number of inhibitory poisson neurons
 	int numNPois;         //!< number of poisson neurons
-	int numPostSynNet;    //!< total number of post-synaptic connections in the network
-	int numPreSynNet;     //!< total number of pre-synaptic connections in the network
 
 	//! size of memory used for different parts of the network
 	typedef struct snnSize_s {
@@ -973,11 +972,9 @@ private:
 	snnSize_t cpuSnnSz;
 	snnSize_t gpuSnnSz;
 
-	//! firing info
+	//! firing info used in CPU_MODE
 	unsigned int timeTableD2[TIMING_COUNT];
 	unsigned int timeTableD1[TIMING_COUNT];
-	unsigned int maxSpikesD1;
-	unsigned int maxSpikesD2;
 
 	//time and timestep
 

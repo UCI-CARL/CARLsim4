@@ -686,13 +686,13 @@ int CARLsim::runNetwork(int nSec, int nMsec, bool printRunSummary, bool copyStat
 }
 
 // setup network with custom options
-void CARLsim::setupNetwork(bool removeTempMemory) {
+void CARLsim::setupNetwork() {
 	std::string funcName = "setupNetwork()";
 	UserErrors::assertTrue(carlsimState_==CONFIG_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "CONFIG.");
 
 	carlsimState_ = SETUP_STATE;
 
-	snn_->setupNetwork(removeTempMemory);
+	snn_->setupNetwork();
 }
 
 // +++++++++ PUBLIC METHODS: LOGGING / PLOTTING +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
