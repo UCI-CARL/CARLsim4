@@ -529,7 +529,7 @@ public:
 	int* getSpikeCounter(int grpId);
 
 	//! temporary getter to return pointer to current[] \TODO replace with NeuronMonitor
-	float* getCurrent() { return snnRuntimeData.current; }
+	float* getCurrent() { return managerRuntimeData.current; }
 
 	std::vector< std::vector<float> > getWeightMatrix2D(short int connId);
 
@@ -539,10 +539,10 @@ public:
 	std::vector<float> getConductanceGABAb(int grpId);
 
 	//! temporary getter to return pointer to stpu[] \TODO replace with NeuronMonitor or ConnectionMonitor
-	float* getSTPu() { return snnRuntimeData.stpu; }
+	float* getSTPu() { return managerRuntimeData.stpu; }
 
 	//! temporary getter to return pointer to stpx[] \TODO replace with NeuronMonitor or ConnectionMonitor
-	float* getSTPx() { return snnRuntimeData.stpx; }
+	float* getSTPx() { return managerRuntimeData.stpx; }
 
 	//! returns whether synapses in connection are fixed (false) or plastic (true)
     bool isConnectionPlastic(short int connId);
@@ -727,7 +727,6 @@ private:
 	void printMemoryInfo(FILE* fp); //!< prints memory info to file
 	void printNetworkInfo(FILE* fp);
 	void printNeuronState(int grpId, FILE* fp);
-	void printParameters(FILE *fp);
 	void printPostConnection(FILE* fp); //!< print all post connections
 	void printPostConnection(int grpId, FILE* fp);
 	int  printPostConnection2(int grpId, FILE* fpg);
@@ -739,7 +738,6 @@ private:
 	void printStatusConnectionMonitor(int connId=ALL);
 	void printStatusGroupMonitor(int grpId=ALL);
 	void printStatusSpikeMonitor(int grpId=ALL);
-	void printTuningLog(FILE* fp);
 	void printWeights(int preGrpId, int postGrpId=-1);
 
 	int loadSimulation_internal(bool onlyPlastic);
@@ -914,6 +912,7 @@ private:
 	std::map<int, GroupConfigRT> groupConfigMap;   //!< the hash table storing group configs created at CONFIG_STATE
 	std::map<int, ConnectConfig> connectConfigMap; //!< the hash table storing connection configs created at CONFIG_STATE
 
+	// data structure assisting network partitioning
 	std::list<GroupConfigRT> groupPartitionLists[MAX_NET_PER_SNN];
 	std::list<ConnectConfig> localConnectLists[MAX_NET_PER_SNN];
 	std::list<ConnectConfig> externalConnectLists[MAX_NET_PER_SNN];
@@ -946,10 +945,9 @@ private:
 	bool sim_with_spikecounters; //!< flag will be true if there are any spike counters around
 
 	// spiking neural network related information, including neurons, synapses and network parameters
-	int	numN;             //!< number of neurons in the spiking neural network
-	int maxNumPostSynGrp; //!< maximum number of post-synaptic connections among groups
-	int maxNumPreSynGrp;  //!< maximum number of pre-synaptic connections among groups
 	int maxDelay_;        //!< maximum axonal delay in groups
+
+	int	numN;             //!< number of neurons in the spiking neural network
 	int numNReg;          //!< number of regular (spking) neurons
 	int numNExcReg;       //!< number of regular excitatory neurons
 	int numNInhReg;       //!< number of regular inhibitory neurons
@@ -977,7 +975,6 @@ private:
 	unsigned int timeTableD1[TIMING_COUNT];
 
 	//time and timestep
-
 	int simTimeRunStart; //!< the start time of current/last runNetwork call
 	int simTimeRunStop;  //!< the end time of current/last runNetwork call
 	int simTimeLastRunSummary; //!< the time at which the last run summary was printed
@@ -1032,7 +1029,7 @@ private:
 
 	RuntimeData gpuRuntimeData[MAX_NET_PER_SNN];
 	//RuntimeData cpuRuntimeData;
-	RuntimeData snnRuntimeData;
+	RuntimeData managerRuntimeData;
 
 	int NgenFunc; //!< this counts the spike generator offsets...
 

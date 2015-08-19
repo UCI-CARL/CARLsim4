@@ -820,10 +820,10 @@ int SNN::runNetwork(int _nsec, int _nmsec, bool printRunSummary, bool copyState)
 	// in GPU mode, copy info from device to host
 	if (simMode_==GPU_MODE) {
 		if(copyState) {
-			copyNeuronState(&snnRuntimeData, &gpuRuntimeData[0], cudaMemcpyDeviceToHost, false, ALL);
+			copyNeuronState(&managerRuntimeData, &gpuRuntimeData[0], cudaMemcpyDeviceToHost, false, ALL);
 
 			if (sim_with_stp) {
-				copySTPState(&snnRuntimeData, &gpuRuntimeData[0], cudaMemcpyDeviceToHost, false);
+				copySTPState(&managerRuntimeData, &gpuRuntimeData[0], cudaMemcpyDeviceToHost, false);
 			}
 		}
 	}
@@ -869,14 +869,14 @@ void SNN::biasWeights(short int connId, float bias, bool updateWeightRange) {
 
 	// iterate over all postsynaptic neurons
 	for (int i=groupConfigs[0][connectConfigMap[connId].grpDest].StartN; i<=groupConfigs[0][connectConfigMap[connId].grpDest].EndN; i++) {
-		unsigned int cumIdx = snnRuntimeData.cumulativePre[i];
+		unsigned int cumIdx = managerRuntimeData.cumulativePre[i];
 
 		// iterate over all presynaptic neurons
 		unsigned int pos_ij = cumIdx;
-		for (int j=0; j<snnRuntimeData.Npre[i]; pos_ij++, j++) {
-			if (snnRuntimeData.connIdsPreIdx[pos_ij]==connId) {
+		for (int j=0; j<managerRuntimeData.Npre[i]; pos_ij++, j++) {
+			if (managerRuntimeData.connIdsPreIdx[pos_ij]==connId) {
 				// apply bias to weight
-				float weight = snnRuntimeData.wt[pos_ij] + bias;
+				float weight = managerRuntimeData.wt[pos_ij] + bias;
 
 				// inform user of acton taken if weight is out of bounds
 //				bool needToPrintDebug = (weight+bias>connInfo->maxWt || weight+bias<connInfo->minWt);
@@ -904,21 +904,21 @@ void SNN::biasWeights(short int connId, float bias, bool updateWeightRange) {
 				}
 
 				// update datastructures
-				snnRuntimeData.wt[pos_ij] = weight;
-				snnRuntimeData.maxSynWt[pos_ij] = connectConfigMap[connId].maxWt; // it's easier to just update, even if it hasn't changed
+				managerRuntimeData.wt[pos_ij] = weight;
+				managerRuntimeData.maxSynWt[pos_ij] = connectConfigMap[connId].maxWt; // it's easier to just update, even if it hasn't changed
 			}
 		}
 
 		// update GPU datastructures in batches, grouped by post-neuron
 		if (simMode_==GPU_MODE) {
-			CUDA_CHECK_ERRORS( cudaMemcpy(&(gpuRuntimeData[0].wt[cumIdx]), &(snnRuntimeData.wt[cumIdx]), sizeof(float)*snnRuntimeData.Npre[i],
+			CUDA_CHECK_ERRORS( cudaMemcpy(&(gpuRuntimeData[0].wt[cumIdx]), &(managerRuntimeData.wt[cumIdx]), sizeof(float)*managerRuntimeData.Npre[i],
 				cudaMemcpyHostToDevice) );
 
 			if (gpuRuntimeData[0].maxSynWt!=NULL) {
 				// only copy maxSynWt if datastructure actually exists on the GPU
 				// (that logic should be done elsewhere though)
-				CUDA_CHECK_ERRORS( cudaMemcpy(&(gpuRuntimeData[0].maxSynWt[cumIdx]), &(snnRuntimeData.maxSynWt[cumIdx]),
-					sizeof(float)*snnRuntimeData.Npre[i], cudaMemcpyHostToDevice) );
+				CUDA_CHECK_ERRORS( cudaMemcpy(&(gpuRuntimeData[0].maxSynWt[cumIdx]), &(managerRuntimeData.maxSynWt[cumIdx]),
+					sizeof(float)*managerRuntimeData.Npre[i], cudaMemcpyHostToDevice) );
 			}
 		}
 	}
@@ -970,14 +970,14 @@ void SNN::scaleWeights(short int connId, float scale, bool updateWeightRange) {
 
 	// iterate over all postsynaptic neurons
 	for (int i=groupConfigs[0][connectConfigMap[connId].grpDest].StartN; i<=groupConfigs[0][connectConfigMap[connId].grpDest].EndN; i++) {
-		unsigned int cumIdx = snnRuntimeData.cumulativePre[i];
+		unsigned int cumIdx = managerRuntimeData.cumulativePre[i];
 
 		// iterate over all presynaptic neurons
 		unsigned int pos_ij = cumIdx;
-		for (int j=0; j<snnRuntimeData.Npre[i]; pos_ij++, j++) {
-			if (snnRuntimeData.connIdsPreIdx[pos_ij]==connId) {
+		for (int j=0; j<managerRuntimeData.Npre[i]; pos_ij++, j++) {
+			if (managerRuntimeData.connIdsPreIdx[pos_ij]==connId) {
 				// apply bias to weight
-				float weight = snnRuntimeData.wt[pos_ij]*scale;
+				float weight = managerRuntimeData.wt[pos_ij]*scale;
 
 				// inform user of acton taken if weight is out of bounds
 //				bool needToPrintDebug = (weight>connInfo->maxWt || weight<connInfo->minWt);
@@ -1005,21 +1005,21 @@ void SNN::scaleWeights(short int connId, float scale, bool updateWeightRange) {
 				}
 
 				// update datastructures
-				snnRuntimeData.wt[pos_ij] = weight;
-				snnRuntimeData.maxSynWt[pos_ij] = connectConfigMap[connId].maxWt; // it's easier to just update, even if it hasn't changed
+				managerRuntimeData.wt[pos_ij] = weight;
+				managerRuntimeData.maxSynWt[pos_ij] = connectConfigMap[connId].maxWt; // it's easier to just update, even if it hasn't changed
 			}
 		}
 
 		// update GPU datastructures in batches, grouped by post-neuron
 		if (simMode_==GPU_MODE) {
-			CUDA_CHECK_ERRORS( cudaMemcpy(&(gpuRuntimeData[0].wt[cumIdx]), &(snnRuntimeData.wt[cumIdx]), sizeof(float)*snnRuntimeData.Npre[i],
+			CUDA_CHECK_ERRORS( cudaMemcpy(&(gpuRuntimeData[0].wt[cumIdx]), &(managerRuntimeData.wt[cumIdx]), sizeof(float)*managerRuntimeData.Npre[i],
 				cudaMemcpyHostToDevice) );
 
 			if (gpuRuntimeData[0].maxSynWt!=NULL) {
 				// only copy maxSynWt if datastructure actually exists on the GPU
 				// (that logic should be done elsewhere though)
-				CUDA_CHECK_ERRORS( cudaMemcpy(&(gpuRuntimeData[0].maxSynWt[cumIdx]), &(snnRuntimeData.maxSynWt[cumIdx]),
-					sizeof(float)*snnRuntimeData.Npre[i], cudaMemcpyHostToDevice));
+				CUDA_CHECK_ERRORS( cudaMemcpy(&(gpuRuntimeData[0].maxSynWt[cumIdx]), &(managerRuntimeData.maxSynWt[cumIdx]),
+					sizeof(float)*managerRuntimeData.Npre[i], cudaMemcpyHostToDevice));
 			}
 		}
 	}
@@ -1130,13 +1130,13 @@ void SNN::setExternalCurrent(int grpId, const std::vector<float>& current) {
 
 	// store external current in array
 	for (int i=groupConfigs[0][grpId].StartN, j=0; i<=groupConfigs[0][grpId].EndN; i++, j++) {
-		snnRuntimeData.extCurrent[i] = current[j];
+		managerRuntimeData.extCurrent[i] = current[j];
 	}
 
 	// copy to GPU if necessary
 	// don't allocate; allocation done in generateRuntimeData
 	if (simMode_==GPU_MODE) {
-		copyExternalCurrent(&gpuRuntimeData[0], &snnRuntimeData, false, grpId);
+		copyExternalCurrent(&gpuRuntimeData[0], &managerRuntimeData, false, grpId);
 	}
 }
 
@@ -1269,23 +1269,23 @@ void SNN::setWeight(short int connId, int neurIdPre, int neurIdPost, float weigh
 
 	// iterate over all presynaptic synapses until right one is found
 	bool synapseFound = false;
-	int pos_ij = snnRuntimeData.cumulativePre[neurIdPostReal];
-	for (int j=0; j<snnRuntimeData.Npre[neurIdPostReal]; pos_ij++, j++) {
-		SynInfo* preId = &(snnRuntimeData.preSynapticIds[pos_ij]);
+	int pos_ij = managerRuntimeData.cumulativePre[neurIdPostReal];
+	for (int j=0; j<managerRuntimeData.Npre[neurIdPostReal]; pos_ij++, j++) {
+		SynInfo* preId = &(managerRuntimeData.preSynapticIds[pos_ij]);
 		int pre_nid = GET_CONN_NEURON_ID((*preId));
 		if (GET_CONN_NEURON_ID((*preId))==neurIdPreReal) {
-			assert(snnRuntimeData.connIdsPreIdx[pos_ij]==connId); // make sure we've got the right connection ID
+			assert(managerRuntimeData.connIdsPreIdx[pos_ij]==connId); // make sure we've got the right connection ID
 
-			snnRuntimeData.wt[pos_ij] = isExcitatoryGroup(connectConfigMap[connId].grpSrc) ? weight : -1.0*weight;
-			snnRuntimeData.maxSynWt[pos_ij] = isExcitatoryGroup(connectConfigMap[connId].grpSrc) ? maxWt : -1.0*maxWt;
+			managerRuntimeData.wt[pos_ij] = isExcitatoryGroup(connectConfigMap[connId].grpSrc) ? weight : -1.0*weight;
+			managerRuntimeData.maxSynWt[pos_ij] = isExcitatoryGroup(connectConfigMap[connId].grpSrc) ? maxWt : -1.0*maxWt;
 
 			if (simMode_==GPU_MODE) {
 				// need to update datastructures on GPU
-				CUDA_CHECK_ERRORS( cudaMemcpy(&(gpuRuntimeData[0].wt[pos_ij]), &(snnRuntimeData.wt[pos_ij]), sizeof(float), cudaMemcpyHostToDevice));
+				CUDA_CHECK_ERRORS( cudaMemcpy(&(gpuRuntimeData[0].wt[pos_ij]), &(managerRuntimeData.wt[pos_ij]), sizeof(float), cudaMemcpyHostToDevice));
 				if (gpuRuntimeData[0].maxSynWt!=NULL) {
 					// only copy maxSynWt if datastructure actually exists on the GPU
 					// (that logic should be done elsewhere though)
-					CUDA_CHECK_ERRORS( cudaMemcpy(&(gpuRuntimeData[0].maxSynWt[pos_ij]), &(snnRuntimeData.maxSynWt[pos_ij]), sizeof(float), cudaMemcpyHostToDevice));
+					CUDA_CHECK_ERRORS( cudaMemcpy(&(gpuRuntimeData[0].maxSynWt[pos_ij]), &(managerRuntimeData.maxSynWt[pos_ij]), sizeof(float), cudaMemcpyHostToDevice));
 				}
 			}
 
@@ -1356,17 +1356,17 @@ void SNN::saveSimulation(FILE* fid, bool saveSynapseInfo) {
 
 	//// +++++ Fetch WEIGHT DATA (GPU Mode only) ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 	//if (simMode_ == GPU_MODE)
-	//	copyWeightState(&snnRuntimeData, &gpuRuntimeData[0], cudaMemcpyDeviceToHost, false);
+	//	copyWeightState(&managerRuntimeData, &gpuRuntimeData[0], cudaMemcpyDeviceToHost, false);
 	//// +++++ WRITE SYNAPSE INFO +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
 	//// \FIXME: replace with faster version
 	//if (saveSynapseInfo) {
 	//	for (int i = 0; i < numN; i++) {
-	//		unsigned int offset = snnRuntimeData.cumulativePost[i];
+	//		unsigned int offset = managerRuntimeData.cumulativePost[i];
 
 	//		unsigned int count = 0;
 	//		for (int t=0;t<maxDelay_;t++) {
-	//			delay_info_t dPar = snnRuntimeData.postDelayInfo[i*(maxDelay_+1)+t];
+	//			delay_info_t dPar = managerRuntimeData.postDelayInfo[i*(maxDelay_+1)+t];
 
 	//			for(int idx_d=dPar.delay_index_start; idx_d<(dPar.delay_index_start+dPar.delay_length); idx_d++)
 	//				count++;
@@ -1375,11 +1375,11 @@ void SNN::saveSimulation(FILE* fid, bool saveSynapseInfo) {
 	//		if (!fwrite(&count,sizeof(int),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
 
 	//		for (int t=0;t<maxDelay_;t++) {
-	//			delay_info_t dPar = snnRuntimeData.postDelayInfo[i*(maxDelay_+1)+t];
+	//			delay_info_t dPar = managerRuntimeData.postDelayInfo[i*(maxDelay_+1)+t];
 
 	//			for(int idx_d=dPar.delay_index_start; idx_d<(dPar.delay_index_start+dPar.delay_length); idx_d++) {
 	//				// get synaptic info...
-	//				SynInfo post_info = snnRuntimeData.postSynapticIds[offset + idx_d];
+	//				SynInfo post_info = managerRuntimeData.postSynapticIds[offset + idx_d];
 
 	//				// get neuron id
 	//				//int p_i = (post_info&POST_SYN_NEURON_MASK);
@@ -1389,21 +1389,21 @@ void SNN::saveSimulation(FILE* fid, bool saveSynapseInfo) {
 	//				// get syn id
 	//				unsigned int s_i = GET_CONN_SYN_ID(post_info);
 	//				//>>POST_SYN_NEURON_BITS)&POST_SYN_CONN_MASK;
-	//				assert(s_i<(snnRuntimeData.Npre[p_i]));
+	//				assert(s_i<(managerRuntimeData.Npre[p_i]));
 
 	//				// get the cumulative position for quick access...
-	//				unsigned int pos_i = snnRuntimeData.cumulativePre[p_i] + s_i;
+	//				unsigned int pos_i = managerRuntimeData.cumulativePre[p_i] + s_i;
 
 	//				uint8_t delay = t+1;
-	//				uint8_t plastic = s_i < snnRuntimeData.Npre_plastic[p_i]; // plastic or fixed.
+	//				uint8_t plastic = s_i < managerRuntimeData.Npre_plastic[p_i]; // plastic or fixed.
 
 	//				if (!fwrite(&i,sizeof(int),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
 	//				if (!fwrite(&p_i,sizeof(int),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
-	//				if (!fwrite(&(snnRuntimeData.wt[pos_i]),sizeof(float),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
-	//				if (!fwrite(&(snnRuntimeData.maxSynWt[pos_i]),sizeof(float),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
+	//				if (!fwrite(&(managerRuntimeData.wt[pos_i]),sizeof(float),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
+	//				if (!fwrite(&(managerRuntimeData.maxSynWt[pos_i]),sizeof(float),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
 	//				if (!fwrite(&delay,sizeof(uint8_t),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
 	//				if (!fwrite(&plastic,sizeof(uint8_t),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
-	//				if (!fwrite(&(snnRuntimeData.connIdsPreIdx[pos_i]),sizeof(short int),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
+	//				if (!fwrite(&(managerRuntimeData.connIdsPreIdx[pos_i]),sizeof(short int),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
 	//			}
 	//		}
 	//	}
@@ -1439,10 +1439,10 @@ void SNN::writePopWeights(std::string fname, int grpIdPre, int grpIdPost) {
 	//iterate over all neurons in the post group
 	for (int i=groupConfigs[0][grpIdPost].StartN; i<=groupConfigs[0][grpIdPost].EndN; i++) {
 		// for every post-neuron, find all pre
-		pos_ij = snnRuntimeData.cumulativePre[i]; // i-th neuron, j=0th synapse
+		pos_ij = managerRuntimeData.cumulativePre[i]; // i-th neuron, j=0th synapse
 		//iterate over all presynaptic synapses
-		for(int j=0; j<snnRuntimeData.Npre[i]; pos_ij++,j++) {
-			preId = &snnRuntimeData.preSynapticIds[pos_ij];
+		for(int j=0; j<managerRuntimeData.Npre[i]; pos_ij++,j++) {
+			preId = &managerRuntimeData.preSynapticIds[pos_ij];
 			pre_nid = GET_CONN_NEURON_ID((*preId)); // neuron id of pre
 			if (pre_nid<groupConfigs[0][grpIdPre].StartN || pre_nid>groupConfigs[0][grpIdPre].EndN)
 				continue; // connection does not belong to group grpIdPre
@@ -1457,18 +1457,18 @@ void SNN::writePopWeights(std::string fname, int grpIdPre, int grpIdPost) {
 	//iterate over all neurons in the post group
 	for (int i=groupConfigs[0][grpIdPost].StartN; i<=groupConfigs[0][grpIdPost].EndN; i++) {
 		// for every post-neuron, find all pre
-		pos_ij = snnRuntimeData.cumulativePre[i]; // i-th neuron, j=0th synapse
+		pos_ij = managerRuntimeData.cumulativePre[i]; // i-th neuron, j=0th synapse
 		//do the GPU copy here.  Copy the current weights from GPU to CPU.
 		if(simMode_==GPU_MODE){
 			copyWeightsGPU(i,grpIdPre);
 		}
 		//iterate over all presynaptic synapses
-		for(int j=0; j<snnRuntimeData.Npre[i]; pos_ij++,j++) {
-			preId = &(snnRuntimeData.preSynapticIds[pos_ij]);
+		for(int j=0; j<managerRuntimeData.Npre[i]; pos_ij++,j++) {
+			preId = &(managerRuntimeData.preSynapticIds[pos_ij]);
 			pre_nid = GET_CONN_NEURON_ID((*preId)); // neuron id of pre
 			if (pre_nid<groupConfigs[0][grpIdPre].StartN || pre_nid>groupConfigs[0][grpIdPre].EndN)
 				continue; // connection does not belong to group grpIdPre
-			weights[curr] = snnRuntimeData.wt[pos_ij];
+			weights[curr] = managerRuntimeData.wt[pos_ij];
 			curr++;
 		}
 	}
@@ -1569,12 +1569,12 @@ std::vector<float> SNN::getConductanceAMPA(int grpId) {
 
 	// need to copy data from GPU first
 	if (getSimMode()==GPU_MODE) {
-		copyConductanceAMPA(&snnRuntimeData, &gpuRuntimeData[0], cudaMemcpyDeviceToHost, false, grpId);
+		copyConductanceAMPA(&managerRuntimeData, &gpuRuntimeData[0], cudaMemcpyDeviceToHost, false, grpId);
 	}
 
 	std::vector<float> gAMPAvec;
 	for (int i=groupConfigs[0][grpId].StartN; i<=groupConfigs[0][grpId].EndN; i++) {
-		gAMPAvec.push_back(snnRuntimeData.gAMPA[i]);
+		gAMPAvec.push_back(managerRuntimeData.gAMPA[i]);
 	}
 	return gAMPAvec;
 }
@@ -1584,17 +1584,17 @@ std::vector<float> SNN::getConductanceNMDA(int grpId) {
 
 	// need to copy data from GPU first
 	if (getSimMode()==GPU_MODE)
-		copyConductanceNMDA(&snnRuntimeData, &gpuRuntimeData[0], cudaMemcpyDeviceToHost, false, grpId);
+		copyConductanceNMDA(&managerRuntimeData, &gpuRuntimeData[0], cudaMemcpyDeviceToHost, false, grpId);
 
 	std::vector<float> gNMDAvec;
 	if (isSimulationWithNMDARise()) {
 		// need to construct conductance from rise and decay parts
 		for (int i=groupConfigs[0][grpId].StartN; i<=groupConfigs[0][grpId].EndN; i++) {
-			gNMDAvec.push_back(snnRuntimeData.gNMDA_d[i]-snnRuntimeData.gNMDA_r[i]);
+			gNMDAvec.push_back(managerRuntimeData.gNMDA_d[i]-managerRuntimeData.gNMDA_r[i]);
 		}
 	} else {
 		for (int i=groupConfigs[0][grpId].StartN; i<=groupConfigs[0][grpId].EndN; i++) {
-			gNMDAvec.push_back(snnRuntimeData.gNMDA[i]);
+			gNMDAvec.push_back(managerRuntimeData.gNMDA[i]);
 		}
 	}
 	return gNMDAvec;
@@ -1605,12 +1605,12 @@ std::vector<float> SNN::getConductanceGABAa(int grpId) {
 
 	// need to copy data from GPU first
 	if (getSimMode()==GPU_MODE) {
-		copyConductanceGABAa(&snnRuntimeData, &gpuRuntimeData[0], cudaMemcpyDeviceToHost, false, grpId);
+		copyConductanceGABAa(&managerRuntimeData, &gpuRuntimeData[0], cudaMemcpyDeviceToHost, false, grpId);
 	}
 
 	std::vector<float> gGABAaVec;
 	for (int i=groupConfigs[0][grpId].StartN; i<=groupConfigs[0][grpId].EndN; i++) {
-		gGABAaVec.push_back(snnRuntimeData.gGABAa[i]);
+		gGABAaVec.push_back(managerRuntimeData.gGABAa[i]);
 	}
 	return gGABAaVec;
 }
@@ -1620,17 +1620,17 @@ std::vector<float> SNN::getConductanceGABAb(int grpId) {
 
 	// need to copy data from GPU first
 	if (getSimMode()==GPU_MODE)
-		copyConductanceGABAb(&snnRuntimeData, &gpuRuntimeData[0], cudaMemcpyDeviceToHost, false, grpId);
+		copyConductanceGABAb(&managerRuntimeData, &gpuRuntimeData[0], cudaMemcpyDeviceToHost, false, grpId);
 
 	std::vector<float> gGABAbVec;
 	if (isSimulationWithGABAbRise()) {
 		// need to construct conductance from rise and decay parts
 		for (int i=groupConfigs[0][grpId].StartN; i<=groupConfigs[0][grpId].EndN; i++) {
-			gGABAbVec.push_back(snnRuntimeData.gGABAb_d[i]-snnRuntimeData.gGABAb_r[i]);
+			gGABAbVec.push_back(managerRuntimeData.gGABAb_d[i]-managerRuntimeData.gGABAb_r[i]);
 		}
 	} else {
 		for (int i=groupConfigs[0][grpId].StartN; i<=groupConfigs[0][grpId].EndN; i++) {
-			gGABAbVec.push_back(snnRuntimeData.gGABAb[i]);
+			gGABAbVec.push_back(managerRuntimeData.gGABAb[i]);
 		}
 	}
 	return gGABAbVec;
@@ -1654,14 +1654,14 @@ uint8_t* SNN::getDelays(int gIDpre, int gIDpost, int& Npre, int& Npost, uint8_t*
 	memset(delays,0,Npre*Npost);
 
 	for (int i=groupConfigs[0][gIDpre].StartN;i<groupConfigs[0][gIDpre].EndN;i++) {
-		unsigned int offset = snnRuntimeData.cumulativePost[i];
+		unsigned int offset = managerRuntimeData.cumulativePost[i];
 
 		for (int t=0;t<maxDelay_;t++) {
-			delay_info_t dPar = snnRuntimeData.postDelayInfo[i*(maxDelay_+1)+t];
+			delay_info_t dPar = managerRuntimeData.postDelayInfo[i*(maxDelay_+1)+t];
 
 			for(int idx_d=dPar.delay_index_start; idx_d<(dPar.delay_index_start+dPar.delay_length); idx_d++) {
 				// get synaptic info...
-				SynInfo post_info = snnRuntimeData.postSynapticIds[offset + idx_d];
+				SynInfo post_info = managerRuntimeData.postSynapticIds[offset + idx_d];
 
 				// get neuron id
 				//int p_i = (post_info&POST_SYN_NEURON_MASK);
@@ -1673,7 +1673,7 @@ uint8_t* SNN::getDelays(int gIDpre, int gIDpost, int& Npre, int& Npost, uint8_t*
 					int s_i = GET_CONN_SYN_ID(post_info);
 
 					// get the cumulative position for quick access...
-					unsigned int pos_i = snnRuntimeData.cumulativePre[p_i] + s_i;
+					unsigned int pos_i = managerRuntimeData.cumulativePre[p_i] + s_i;
 
 					delays[i+Npre*(p_i-groupConfigs[0][gIDpost].StartN)] = t+1;
 				}
@@ -1761,7 +1761,7 @@ GroupNeuromodulatorInfo SNN::getGroupNeuromodulatorInfo(int grpId) {
 // or groupConfigMap is not sync with groupConfigs[0][]
 Point3D SNN::getNeuronLocation3D(int neurId) {
 	assert(neurId>=0 && neurId<numN);
-	int grpId = snnRuntimeData.grpIds[neurId];
+	int grpId = managerRuntimeData.grpIds[neurId];
 	assert(neurId>=groupConfigMap[grpId].StartN && neurId<=groupConfigMap[grpId].EndN);
 
 	// adjust neurId for neuron ID of first neuron in the group
@@ -1997,10 +1997,6 @@ void SNN::SNNinit() {
 	numNExcReg = 0;
 	numNInhReg = 0;
 
-	maxNumPostSynGrp = 0;
-	maxNumPreSynGrp = 0;
-	//maxNumPostSynN = 0;
-	//maxNumPreSynN = 0;
 	maxDelay_ = 0;
 
 	// conductance info struct for simulation
@@ -2039,8 +2035,8 @@ void SNN::SNNinit() {
 	for (int netId = 0; netId < MAX_NET_PER_SNN; netId++) // FIXME: redundant??
 		gpuRuntimeData[netId].allocated = false;
 
-	memset(&snnRuntimeData, 0, sizeof(RuntimeData));
-	snnRuntimeData.allocated = false; // FIXME: redundant??
+	memset(&managerRuntimeData, 0, sizeof(RuntimeData));
+	managerRuntimeData.allocated = false; // FIXME: redundant??
 
 	//for (int i=0; i < MAX_GRP_PER_SNN; i++) {
 	//	groupConfigs[0][i].Type = UNKNOWN_NEURON;
@@ -2116,8 +2112,8 @@ void SNN::SNNinit() {
 
 void SNN::allocateSNN() {
 	// Confirm allocation of SNN runtime data in main memory
-	snnRuntimeData.allocated = true;
-	snnRuntimeData.memType = CPU_MODE;
+	managerRuntimeData.allocated = true;
+	managerRuntimeData.memType = CPU_MODE;
 
 	switch (simMode_) {
 	case GPU_MODE:
@@ -2135,145 +2131,145 @@ void SNN::allocateSNN() {
 }
 
 void SNN::allocateSNN_CPU() {
-	snnRuntimeData.allocated = true;
-	snnRuntimeData.memType = CPU_MODE;
+	managerRuntimeData.allocated = true;
+	managerRuntimeData.memType = CPU_MODE;
 }
 
 //! allocate space for voltage, recovery, Izh_a, Izh_b, Izh_c, Izh_d, current, gAMPA, gNMDA, gGABAa, gGABAb
 //! lastSpikeTime, curSpike, nSpikeCnt, intrinsicWeight, stpu, stpx, Npre, Npre_plastic, Npost, cumulativePost, cumulativePre
 //! postSynapticIds, tmp_SynapticDely, postDelayInfo, wt, maxSynWt, preSynapticIds, timeTableD2, timeTableD1
 void SNN::allocateRuntimeData() {
-	snnRuntimeData.voltage    = new float[networkConfigs[0].numNReg];
-	snnRuntimeData.recovery   = new float[networkConfigs[0].numNReg];
-	snnRuntimeData.Izh_a      = new float[networkConfigs[0].numNReg];
-	snnRuntimeData.Izh_b      = new float[networkConfigs[0].numNReg];
-	snnRuntimeData.Izh_c      = new float[networkConfigs[0].numNReg];
-	snnRuntimeData.Izh_d      = new float[networkConfigs[0].numNReg];
-	snnRuntimeData.current    = new float[networkConfigs[0].numNReg];
-	snnRuntimeData.extCurrent = new float[networkConfigs[0].numNReg];
-	memset(snnRuntimeData.voltage, 0, sizeof(float)*networkConfigs[0].numNReg);
-	memset(snnRuntimeData.recovery, 0, sizeof(float)*networkConfigs[0].numNReg);
-	memset(snnRuntimeData.Izh_a, 0, sizeof(float)*networkConfigs[0].numNReg);
-	memset(snnRuntimeData.Izh_b, 0, sizeof(float)*networkConfigs[0].numNReg);
-	memset(snnRuntimeData.Izh_c, 0, sizeof(float)*networkConfigs[0].numNReg);
-	memset(snnRuntimeData.Izh_d, 0, sizeof(float)*networkConfigs[0].numNReg);
+	managerRuntimeData.voltage    = new float[networkConfigs[0].numNReg];
+	managerRuntimeData.recovery   = new float[networkConfigs[0].numNReg];
+	managerRuntimeData.Izh_a      = new float[networkConfigs[0].numNReg];
+	managerRuntimeData.Izh_b      = new float[networkConfigs[0].numNReg];
+	managerRuntimeData.Izh_c      = new float[networkConfigs[0].numNReg];
+	managerRuntimeData.Izh_d      = new float[networkConfigs[0].numNReg];
+	managerRuntimeData.current    = new float[networkConfigs[0].numNReg];
+	managerRuntimeData.extCurrent = new float[networkConfigs[0].numNReg];
+	memset(managerRuntimeData.voltage, 0, sizeof(float)*networkConfigs[0].numNReg);
+	memset(managerRuntimeData.recovery, 0, sizeof(float)*networkConfigs[0].numNReg);
+	memset(managerRuntimeData.Izh_a, 0, sizeof(float)*networkConfigs[0].numNReg);
+	memset(managerRuntimeData.Izh_b, 0, sizeof(float)*networkConfigs[0].numNReg);
+	memset(managerRuntimeData.Izh_c, 0, sizeof(float)*networkConfigs[0].numNReg);
+	memset(managerRuntimeData.Izh_d, 0, sizeof(float)*networkConfigs[0].numNReg);
 	resetCurrent();
-	memset(snnRuntimeData.extCurrent, 0, sizeof(float)*networkConfigs[0].numNReg);
+	memset(managerRuntimeData.extCurrent, 0, sizeof(float)*networkConfigs[0].numNReg);
 	cpuSnnSz.neuronInfoSize += (sizeof(float)*networkConfigs[0].numNReg*8);
 
 	if (sim_with_conductances) {
-		snnRuntimeData.gAMPA  = new float[networkConfigs[0].numNReg];
-		snnRuntimeData.gGABAa = new float[networkConfigs[0].numNReg];
+		managerRuntimeData.gAMPA  = new float[networkConfigs[0].numNReg];
+		managerRuntimeData.gGABAa = new float[networkConfigs[0].numNReg];
 		cpuSnnSz.neuronInfoSize += sizeof(float)*networkConfigs[0].numNReg*2;
 
 		if (sim_with_NMDA_rise) {
 			// If NMDA rise time is enabled, we'll have to compute NMDA conductance in two steps (using an exponential
 			// for the rise time and one for the decay time)
-			snnRuntimeData.gNMDA_r = new float[networkConfigs[0].numNReg];
-			snnRuntimeData.gNMDA_d = new float[networkConfigs[0].numNReg];
+			managerRuntimeData.gNMDA_r = new float[networkConfigs[0].numNReg];
+			managerRuntimeData.gNMDA_d = new float[networkConfigs[0].numNReg];
 			cpuSnnSz.neuronInfoSize += sizeof(float)*networkConfigs[0].numNReg*2;
 		} else {
-			snnRuntimeData.gNMDA = new float[networkConfigs[0].numNReg];
+			managerRuntimeData.gNMDA = new float[networkConfigs[0].numNReg];
 			cpuSnnSz.neuronInfoSize += sizeof(float)*networkConfigs[0].numNReg;
 		}
 
 		if (sim_with_GABAb_rise) {
-			snnRuntimeData.gGABAb_r = new float[networkConfigs[0].numNReg];
-			snnRuntimeData.gGABAb_d = new float[networkConfigs[0].numNReg];
+			managerRuntimeData.gGABAb_r = new float[networkConfigs[0].numNReg];
+			managerRuntimeData.gGABAb_d = new float[networkConfigs[0].numNReg];
 			cpuSnnSz.neuronInfoSize += sizeof(float)*networkConfigs[0].numNReg*2;
 		} else {
-			snnRuntimeData.gGABAb = new float[networkConfigs[0].numNReg];
+			managerRuntimeData.gGABAb = new float[networkConfigs[0].numNReg];
 			cpuSnnSz.neuronInfoSize += sizeof(float)*networkConfigs[0].numNReg;
 		}
 	}
 	resetConductances();
 
-	snnRuntimeData.grpDA  = new float[networkConfigs[0].numGroups];
-	snnRuntimeData.grp5HT = new float[networkConfigs[0].numGroups];
-	snnRuntimeData.grpACh = new float[networkConfigs[0].numGroups];
-	snnRuntimeData.grpNE  = new float[networkConfigs[0].numGroups];
-	memset(snnRuntimeData.grpDA, 0, sizeof(float) * networkConfigs[0].numGroups);
-	memset(snnRuntimeData.grp5HT, 0, sizeof(float) * networkConfigs[0].numGroups);
-	memset(snnRuntimeData.grpACh, 0, sizeof(float) * networkConfigs[0].numGroups);
-	memset(snnRuntimeData.grpNE, 0, sizeof(float) * networkConfigs[0].numGroups);
+	managerRuntimeData.grpDA  = new float[networkConfigs[0].numGroups];
+	managerRuntimeData.grp5HT = new float[networkConfigs[0].numGroups];
+	managerRuntimeData.grpACh = new float[networkConfigs[0].numGroups];
+	managerRuntimeData.grpNE  = new float[networkConfigs[0].numGroups];
+	memset(managerRuntimeData.grpDA, 0, sizeof(float) * networkConfigs[0].numGroups);
+	memset(managerRuntimeData.grp5HT, 0, sizeof(float) * networkConfigs[0].numGroups);
+	memset(managerRuntimeData.grpACh, 0, sizeof(float) * networkConfigs[0].numGroups);
+	memset(managerRuntimeData.grpNE, 0, sizeof(float) * networkConfigs[0].numGroups);
 
 	// init neuromodulators and their assistive buffers
 	for (int i = 0; i < numGroups; i++) {
-		snnRuntimeData.grpDABuffer[i]  = new float[1000]; // 1 second DA buffer
-		snnRuntimeData.grp5HTBuffer[i] = new float[1000];
-		snnRuntimeData.grpAChBuffer[i] = new float[1000];
-		snnRuntimeData.grpNEBuffer[i]  = new float[1000];
-		memset(snnRuntimeData.grpDABuffer[i], 0, sizeof(float) * 1000);
-		memset(snnRuntimeData.grp5HTBuffer[i], 0, sizeof(float) * 1000);
-		memset(snnRuntimeData.grpAChBuffer[i], 0, sizeof(float) * 1000);
-		memset(snnRuntimeData.grpNEBuffer[i], 0, sizeof(float) * 1000);
+		managerRuntimeData.grpDABuffer[i]  = new float[1000]; // 1 second DA buffer
+		managerRuntimeData.grp5HTBuffer[i] = new float[1000];
+		managerRuntimeData.grpAChBuffer[i] = new float[1000];
+		managerRuntimeData.grpNEBuffer[i]  = new float[1000];
+		memset(managerRuntimeData.grpDABuffer[i], 0, sizeof(float) * 1000);
+		memset(managerRuntimeData.grp5HTBuffer[i], 0, sizeof(float) * 1000);
+		memset(managerRuntimeData.grpAChBuffer[i], 0, sizeof(float) * 1000);
+		memset(managerRuntimeData.grpNEBuffer[i], 0, sizeof(float) * 1000);
 	}
 
-	snnRuntimeData.lastSpikeTime	= new int[networkConfigs[0].numN];
-	memset(snnRuntimeData.lastSpikeTime, 0, sizeof(int) * networkConfigs[0].numN);
+	managerRuntimeData.lastSpikeTime	= new int[networkConfigs[0].numN];
+	memset(managerRuntimeData.lastSpikeTime, 0, sizeof(int) * networkConfigs[0].numN);
 	cpuSnnSz.neuronInfoSize += sizeof(int) * networkConfigs[0].numN;
 	
 
-	snnRuntimeData.curSpike   = new bool[networkConfigs[0].numN];
-	snnRuntimeData.nSpikeCnt  = new int[networkConfigs[0].numN];
-	memset(snnRuntimeData.curSpike, 0, sizeof(bool) * networkConfigs[0].numN);
-	memset(snnRuntimeData.nSpikeCnt, 0, sizeof(int) * networkConfigs[0].numN);
+	managerRuntimeData.curSpike   = new bool[networkConfigs[0].numN];
+	managerRuntimeData.nSpikeCnt  = new int[networkConfigs[0].numN];
+	memset(managerRuntimeData.curSpike, 0, sizeof(bool) * networkConfigs[0].numN);
+	memset(managerRuntimeData.nSpikeCnt, 0, sizeof(int) * networkConfigs[0].numN);
 	KERNEL_INFO("allocated nSpikeCnt");
 
 	//! homeostasis variables
 	if (sim_with_homeostasis) {
-		snnRuntimeData.avgFiring  = new float[networkConfigs[0].numN];
-		snnRuntimeData.baseFiring = new float[networkConfigs[0].numN];
-		memset(snnRuntimeData.avgFiring, 0, sizeof(float) * networkConfigs[0].numN);
-		memset(snnRuntimeData.baseFiring, 0, sizeof(float) * networkConfigs[0].numN);
+		managerRuntimeData.avgFiring  = new float[networkConfigs[0].numN];
+		managerRuntimeData.baseFiring = new float[networkConfigs[0].numN];
+		memset(managerRuntimeData.avgFiring, 0, sizeof(float) * networkConfigs[0].numN);
+		memset(managerRuntimeData.baseFiring, 0, sizeof(float) * networkConfigs[0].numN);
 	}
 
 	// STP can be applied to spike generators, too -> numN
 	if (sim_with_stp) {
 		// \TODO: The size of these data structures could be reduced to the max synaptic delay of all
 		// connections with STP. That number might not be the same as maxDelay_.
-		snnRuntimeData.stpu = new float[networkConfigs[0].numN*(maxDelay_+1)];
-		snnRuntimeData.stpx = new float[networkConfigs[0].numN*(maxDelay_+1)];
-		memset(snnRuntimeData.stpu, 0, sizeof(float) * networkConfigs[0].numN * (maxDelay_ + 1)); // memset works for 0.0
-		//memset(snnRuntimeData.stpx, 0, sizeof(float) * numN * (maxDelay_ + 1));
+		managerRuntimeData.stpu = new float[networkConfigs[0].numN*(maxDelay_+1)];
+		managerRuntimeData.stpx = new float[networkConfigs[0].numN*(maxDelay_+1)];
+		memset(managerRuntimeData.stpu, 0, sizeof(float) * networkConfigs[0].numN * (maxDelay_ + 1)); // memset works for 0.0
+		//memset(managerRuntimeData.stpx, 0, sizeof(float) * numN * (maxDelay_ + 1));
 		for (int i = 0; i < networkConfigs[0].numN * (maxDelay_+1); i++)
-			snnRuntimeData.stpx[i] = 1.0f; // but memset doesn't work for 1.0
+			managerRuntimeData.stpx[i] = 1.0f; // but memset doesn't work for 1.0
 		cpuSnnSz.synapticInfoSize += (2*sizeof(float)*networkConfigs[0].numN*(maxDelay_+1));
 	}
 
-	snnRuntimeData.Npre           = new unsigned short[networkConfigs[0].numN];
-	snnRuntimeData.Npre_plastic   = new unsigned short[networkConfigs[0].numN];
-	snnRuntimeData.Npost          = new unsigned short[networkConfigs[0].numN];
-	snnRuntimeData.cumulativePost = new unsigned int[networkConfigs[0].numN];
-	snnRuntimeData.cumulativePre  = new unsigned int[networkConfigs[0].numN];
-	memset(snnRuntimeData.Npre, 0, sizeof(short) * networkConfigs[0].numN);
-	memset(snnRuntimeData.Npre_plastic, 0, sizeof(short) * networkConfigs[0].numN);
-	memset(snnRuntimeData.Npost, 0, sizeof(short) * networkConfigs[0].numN);
-	memset(snnRuntimeData.cumulativePost, 0, sizeof(int) * networkConfigs[0].numN);
-	memset(snnRuntimeData.cumulativePre, 0, sizeof(int) * networkConfigs[0].numN);
+	managerRuntimeData.Npre           = new unsigned short[networkConfigs[0].numN];
+	managerRuntimeData.Npre_plastic   = new unsigned short[networkConfigs[0].numN];
+	managerRuntimeData.Npost          = new unsigned short[networkConfigs[0].numN];
+	managerRuntimeData.cumulativePost = new unsigned int[networkConfigs[0].numN];
+	managerRuntimeData.cumulativePre  = new unsigned int[networkConfigs[0].numN];
+	memset(managerRuntimeData.Npre, 0, sizeof(short) * networkConfigs[0].numN);
+	memset(managerRuntimeData.Npre_plastic, 0, sizeof(short) * networkConfigs[0].numN);
+	memset(managerRuntimeData.Npost, 0, sizeof(short) * networkConfigs[0].numN);
+	memset(managerRuntimeData.cumulativePost, 0, sizeof(int) * networkConfigs[0].numN);
+	memset(managerRuntimeData.cumulativePre, 0, sizeof(int) * networkConfigs[0].numN);
 	cpuSnnSz.networkInfoSize += (int)(sizeof(int) * networkConfigs[0].numN * 3.5);
 
-	snnRuntimeData.postSynapticIds = new SynInfo[networkConfigs[0].numPostSynNet];
-	snnRuntimeData.postDelayInfo   = new delay_info_t[networkConfigs[0].numN * (maxDelay_ + 1)];	//!< Possible delay values are 0....maxDelay_ (inclusive of maxDelay_)
-	memset(snnRuntimeData.postSynapticIds, 0, sizeof(SynInfo) * networkConfigs[0].numPostSynNet);
-	memset(snnRuntimeData.postDelayInfo, 0, sizeof(delay_info_t) * networkConfigs[0].numN * (maxDelay_ + 1));
+	managerRuntimeData.postSynapticIds = new SynInfo[networkConfigs[0].numPostSynNet];
+	managerRuntimeData.postDelayInfo   = new delay_info_t[networkConfigs[0].numN * (maxDelay_ + 1)];	//!< Possible delay values are 0....maxDelay_ (inclusive of maxDelay_)
+	memset(managerRuntimeData.postSynapticIds, 0, sizeof(SynInfo) * networkConfigs[0].numPostSynNet);
+	memset(managerRuntimeData.postDelayInfo, 0, sizeof(delay_info_t) * networkConfigs[0].numN * (maxDelay_ + 1));
 	cpuSnnSz.networkInfoSize += ((sizeof(SynInfo) + sizeof(uint8_t)) * networkConfigs[0].numPostSynNet) + (sizeof(delay_info_t) * networkConfigs[0].numN * (maxDelay_ + 1));
 
-	snnRuntimeData.wt       = new float[networkConfigs[0].numPreSynNet];
-	snnRuntimeData.maxSynWt = new float[networkConfigs[0].numPreSynNet];
-	memset(snnRuntimeData.wt, 0, sizeof(float) * networkConfigs[0].numPreSynNet);
-	memset(snnRuntimeData.maxSynWt, 0, sizeof(float) * networkConfigs[0].numPreSynNet);
+	managerRuntimeData.wt       = new float[networkConfigs[0].numPreSynNet];
+	managerRuntimeData.maxSynWt = new float[networkConfigs[0].numPreSynNet];
+	memset(managerRuntimeData.wt, 0, sizeof(float) * networkConfigs[0].numPreSynNet);
+	memset(managerRuntimeData.maxSynWt, 0, sizeof(float) * networkConfigs[0].numPreSynNet);
 
 	mulSynFast = new float[MAX_CONN_PER_SNN];
 	mulSynSlow = new float[MAX_CONN_PER_SNN];
 	memset(mulSynFast, 0, sizeof(float) * MAX_CONN_PER_SNN);
 	memset(mulSynSlow, 0, sizeof(float) * MAX_CONN_PER_SNN);
 
-	snnRuntimeData.connIdsPreIdx	= new short int[networkConfigs[0].numPreSynNet];
-	memset(snnRuntimeData.connIdsPreIdx, 0, sizeof(short int) * networkConfigs[0].numPreSynNet);
+	managerRuntimeData.connIdsPreIdx	= new short int[networkConfigs[0].numPreSynNet];
+	memset(managerRuntimeData.connIdsPreIdx, 0, sizeof(short int) * networkConfigs[0].numPreSynNet);
 
-	snnRuntimeData.preSynapticIds	= new SynInfo[networkConfigs[0].numPreSynNet];
-	memset(snnRuntimeData.preSynapticIds, 0, sizeof(SynInfo) * networkConfigs[0].numPreSynNet);
+	managerRuntimeData.preSynapticIds	= new SynInfo[networkConfigs[0].numPreSynNet];
+	memset(managerRuntimeData.preSynapticIds, 0, sizeof(SynInfo) * networkConfigs[0].numPreSynNet);
 	// size due to weights and maximum weights
 	cpuSnnSz.synapticInfoSize += ((sizeof(int) + 2 * sizeof(float) + sizeof(SynInfo)) * (networkConfigs[0].numPreSynNet));
 
@@ -2284,11 +2280,11 @@ void SNN::allocateRuntimeData() {
 
 int SNN::addSpikeToTable(int nid, int g) {
 	int spikeBufferFull = 0;
-	snnRuntimeData.lastSpikeTime[nid] = simTime;
-	snnRuntimeData.curSpike[nid] = true;
-	snnRuntimeData.nSpikeCnt[nid]++;
+	managerRuntimeData.lastSpikeTime[nid] = simTime;
+	managerRuntimeData.curSpike[nid] = true;
+	managerRuntimeData.nSpikeCnt[nid]++;
 	if (sim_with_homeostasis)
-		snnRuntimeData.avgFiring[nid] += 1000/(groupConfigs[0][g].avgTimeScale*1000);
+		managerRuntimeData.avgFiring[nid] += 1000/(groupConfigs[0][g].avgTimeScale*1000);
 
 	if (simMode_ == GPU_MODE) {
 		assert(groupConfigs[0][g].isSpikeGenerator == true);
@@ -2304,16 +2300,16 @@ int SNN::addSpikeToTable(int nid, int g) {
 	    int ind_minus = STP_BUF_POS(nid,(simTime-1)); // index of right before the spike, such as in u^-
 
 		// du/dt = -u/tau_F + U * (1-u^-) * \delta(t-t_{spk})
-		snnRuntimeData.stpu[ind_plus] += groupConfigs[0][g].STP_U*(1.0-snnRuntimeData.stpu[ind_minus]);
+		managerRuntimeData.stpu[ind_plus] += groupConfigs[0][g].STP_U*(1.0-managerRuntimeData.stpu[ind_minus]);
 
 		// dx/dt = (1-x)/tau_D - u^+ * x^- * \delta(t-t_{spk})
-		snnRuntimeData.stpx[ind_plus] -= snnRuntimeData.stpu[ind_plus]*snnRuntimeData.stpx[ind_minus];
+		managerRuntimeData.stpx[ind_plus] -= managerRuntimeData.stpu[ind_plus]*managerRuntimeData.stpx[ind_minus];
 	}
 
 	// insert poisson (input) spikes into firingTableD1(D2)
 	if (groupConfigs[0][g].MaxDelay == 1) {
 		assert(nid < numN);
-		snnRuntimeData.firingTableD1[spikeCountD1Sec] = nid;
+		managerRuntimeData.firingTableD1[spikeCountD1Sec] = nid;
 		spikeCountD1Sec++;
 		if (spikeCountD1Sec >= networkConfigs[0].maxSpikesD1) {
 			spikeBufferFull = 2;
@@ -2321,7 +2317,7 @@ int SNN::addSpikeToTable(int nid, int g) {
 		}
 	} else {
 		assert(nid < numN);
-		snnRuntimeData.firingTableD2[spikeCountD2Sec] = nid;
+		managerRuntimeData.firingTableD2[spikeCountD2Sec] = nid;
 		spikeCountD2Sec++;
 		if (spikeCountD2Sec >= networkConfigs[0].maxSpikesD2) {
 			spikeBufferFull = 1;
@@ -2463,23 +2459,17 @@ void SNN::generateRuntimeData() {
 		}
 	}
 
-	snnRuntimeData.grpIds = new short int[numN];
+	managerRuntimeData.grpIds = new short int[numN];
 	for (int nid = 0; nid < numN; nid++) {
-		snnRuntimeData.grpIds[nid] = -1;
+		managerRuntimeData.grpIds[nid] = -1;
 		for (int g = 0; g < numGroups; g++) {
 			if (nid >= groupConfigs[0][g].StartN && nid <= groupConfigs[0][g].EndN) {
-				snnRuntimeData.grpIds[nid] = (short int)g;
+				managerRuntimeData.grpIds[nid] = (short int)g;
 				//printf("grpIds[%d] = %d\n", nid, g);
 				break;
 			}
 		}
-		assert(snnRuntimeData.grpIds[nid] != -1);
-	}
-
-	for (std::map<int, ConnectConfig>::iterator it = connectConfigMap.begin(); it != connectConfigMap.end(); it++) {
-		// store scaling factors for synaptic currents in connection-centric array
-		mulSynFast[it->second.connId] = it->second.mulSynFast;
-		mulSynSlow[it->second.connId] = it->second.mulSynSlow;
+		assert(managerRuntimeData.grpIds[nid] != -1);
 	}
 
 	generateConnectionRuntime();
@@ -2588,12 +2578,12 @@ void SNN::generateConnectionRuntime() {
 	// generate Npost, Npre, Npre_plastic
 	int parsedConnections = 0;	
 	for (std::list<ConnectionInfo>::iterator it = connectionLists[0].begin(); it != connectionLists[0].end(); it++) {
-		snnRuntimeData.Npost[it->nSrc]++;
-		snnRuntimeData.Npre[it->nDest]++;
+		managerRuntimeData.Npost[it->nSrc]++;
+		managerRuntimeData.Npre[it->nDest]++;
 
 		if (GET_FIXED_PLASTIC(connectConfigMap[it->connId].connProp) == SYN_PLASTIC) {
 			sim_with_fixedwts = false; // if network has any plastic synapses at all, this will be set to true
-			snnRuntimeData.Npre_plastic[it->nDest]++;
+			managerRuntimeData.Npre_plastic[it->nDest]++;
 
 			// homeostasis
 			if (groupConfigs[0][it->grpDest].WithHomeostasis && groupConfigs[0][it->grpDest].homeoId == -1)
@@ -2615,47 +2605,47 @@ void SNN::generateConnectionRuntime() {
 	assert(parsedConnections == networkConfigs[0].numPostSynNet && parsedConnections == networkConfigs[0].numPreSynNet);
 
 	// generate cumulativePost and cumulativePre
-	snnRuntimeData.cumulativePost[0] = 0;
-	snnRuntimeData.cumulativePre[0] = 0;
+	managerRuntimeData.cumulativePost[0] = 0;
+	managerRuntimeData.cumulativePre[0] = 0;
 	for (int nId = 1; nId < numN; nId++) {
-		snnRuntimeData.cumulativePost[nId] = snnRuntimeData.cumulativePost[nId - 1] + snnRuntimeData.Npost[nId - 1];
-		snnRuntimeData.cumulativePre[nId] = snnRuntimeData.cumulativePre[nId - 1] + snnRuntimeData.Npre[nId - 1];
+		managerRuntimeData.cumulativePost[nId] = managerRuntimeData.cumulativePost[nId - 1] + managerRuntimeData.Npost[nId - 1];
+		managerRuntimeData.cumulativePre[nId] = managerRuntimeData.cumulativePre[nId - 1] + managerRuntimeData.Npre[nId - 1];
 	}
 
 	// generate preSynapticIds, parse plastic connections first
-	memset(snnRuntimeData.Npre, 0, sizeof(short) * numN); // reset snnRuntimeData.Npre to zero, so that it can be used as synId
+	memset(managerRuntimeData.Npre, 0, sizeof(short) * numN); // reset managerRuntimeData.Npre to zero, so that it can be used as synId
 	parsedConnections = 0;
 	for (std::list<ConnectionInfo>::iterator it = connectionLists[0].begin(); it != connectionLists[0].end(); it++) {
 		if (GET_FIXED_PLASTIC(connectConfigMap[it->connId].connProp) == SYN_PLASTIC) {
-			int pre_pos  = snnRuntimeData.cumulativePre[it->nDest] + snnRuntimeData.Npre[it->nDest];
+			int pre_pos  = managerRuntimeData.cumulativePre[it->nDest] + managerRuntimeData.Npre[it->nDest];
 			assert(pre_pos  < networkConfigs[0].numPreSynNet);
 
-			snnRuntimeData.preSynapticIds[pre_pos] = SET_CONN_ID(it->nSrc, 0, it->grpSrc); // snnRuntimeData.Npost[it->nSrc] is not availabe at this parse
-			it->preSynId = snnRuntimeData.Npre[it->nDest]; // save snnRuntimeData.Npre[it->nDest] as synId
+			managerRuntimeData.preSynapticIds[pre_pos] = SET_CONN_ID(it->nSrc, 0, it->grpSrc); // managerRuntimeData.Npost[it->nSrc] is not availabe at this parse
+			it->preSynId = managerRuntimeData.Npre[it->nDest]; // save managerRuntimeData.Npre[it->nDest] as synId
 
-			snnRuntimeData.Npre[it->nDest]++;
+			managerRuntimeData.Npre[it->nDest]++;
 			parsedConnections++;
 
 			// update the maximum number of and pre-connections of a neuron in a group
-			if (snnRuntimeData.Npre[it->nDest] > groupInfo[it->grpDest].maxPreConn)
-				groupInfo[it->grpDest].maxPreConn = snnRuntimeData.Npre[it->nDest];
+			if (managerRuntimeData.Npre[it->nDest] > groupInfo[it->grpDest].maxPreConn)
+				groupInfo[it->grpDest].maxPreConn = managerRuntimeData.Npre[it->nDest];
 		}
 	}
 	// parse fixed connections
 	for (std::list<ConnectionInfo>::iterator it = connectionLists[0].begin(); it != connectionLists[0].end(); it++) {
 		if (GET_FIXED_PLASTIC(connectConfigMap[it->connId].connProp) == SYN_FIXED) {
-			int pre_pos  = snnRuntimeData.cumulativePre[it->nDest] + snnRuntimeData.Npre[it->nDest];
+			int pre_pos  = managerRuntimeData.cumulativePre[it->nDest] + managerRuntimeData.Npre[it->nDest];
 			assert(pre_pos < networkConfigs[0].numPreSynNet);
 
-			snnRuntimeData.preSynapticIds[pre_pos] = SET_CONN_ID(it->nSrc, 0, it->grpSrc); // snnRuntimeData.Npost[it->nSrc] is not availabe at this parse
-			it->preSynId = snnRuntimeData.Npre[it->nDest]; // save snnRuntimeData.Npre[it->nDest] as synId
+			managerRuntimeData.preSynapticIds[pre_pos] = SET_CONN_ID(it->nSrc, 0, it->grpSrc); // managerRuntimeData.Npost[it->nSrc] is not availabe at this parse
+			it->preSynId = managerRuntimeData.Npre[it->nDest]; // save managerRuntimeData.Npre[it->nDest] as synId
 
-			snnRuntimeData.Npre[it->nDest]++;
+			managerRuntimeData.Npre[it->nDest]++;
 			parsedConnections++;
 
 			// update the maximum number of and pre-connections of a neuron in a group
-			if (snnRuntimeData.Npre[it->nDest] > groupInfo[it->grpDest].maxPreConn)
-				groupInfo[it->grpDest].maxPreConn = snnRuntimeData.Npre[it->nDest];
+			if (managerRuntimeData.Npre[it->nDest] > groupInfo[it->grpDest].maxPreConn)
+				groupInfo[it->grpDest].maxPreConn = managerRuntimeData.Npre[it->nDest];
 		}
 	}
 	assert(parsedConnections == networkConfigs[0].numPreSynNet);
@@ -2663,15 +2653,15 @@ void SNN::generateConnectionRuntime() {
 	// generate postSynapticIds
 	connectionLists[0].sort(compareSrcNeuron);
 	for (int nId = 0; nId < numN; nId++) { // pre-neuron order
-		if (snnRuntimeData.Npost[nId] > 0) {
+		if (managerRuntimeData.Npost[nId] > 0) {
 			std::list<ConnectionInfo> postConnectionList;
 			ConnectionInfo targetConn;
 			targetConn.nSrc = nId; // the other fields does not matter
 			
 			std::list<ConnectionInfo>::iterator firstPostConn = std::find(connectionLists[0].begin(), connectionLists[0].end(), targetConn);
 			std::list<ConnectionInfo>::iterator lastPostConn = firstPostConn;
-			std::advance(lastPostConn, snnRuntimeData.Npost[nId]);
-			snnRuntimeData.Npost[nId] = 0; // reset snnRuntimeData.Npost[nId] to zero, so that it can be used as synId
+			std::advance(lastPostConn, managerRuntimeData.Npost[nId]);
+			managerRuntimeData.Npost[nId] = 0; // reset managerRuntimeData.Npost[nId] to zero, so that it can be used as synId
 
 			postConnectionList.splice(postConnectionList.begin(), connectionLists[0], firstPostConn, lastPostConn);
 			postConnectionList.sort(compareDelay);
@@ -2680,91 +2670,91 @@ void SNN::generateConnectionRuntime() {
 			parsedConnections = 0;
 			for (std::list<ConnectionInfo>::iterator it = postConnectionList.begin(); it != postConnectionList.end(); it++) {
 				assert(it->nSrc == nId);
-				post_pos = snnRuntimeData.cumulativePost[it->nSrc] + snnRuntimeData.Npost[it->nSrc];
-				pre_pos  = snnRuntimeData.cumulativePre[it->nDest] + it->preSynId;
+				post_pos = managerRuntimeData.cumulativePost[it->nSrc] + managerRuntimeData.Npost[it->nSrc];
+				pre_pos  = managerRuntimeData.cumulativePre[it->nDest] + it->preSynId;
 
 				assert(post_pos < networkConfigs[0].numPostSynNet);
 				//assert(pre_pos  < numPreSynNet);
 
 				// generate a post synaptic id for the current connection
-				snnRuntimeData.postSynapticIds[post_pos] = SET_CONN_ID(it->nDest, it->preSynId, it->grpDest);// used stored snnRuntimeData.Npre[it->nDest] in it->preSynId
+				managerRuntimeData.postSynapticIds[post_pos] = SET_CONN_ID(it->nDest, it->preSynId, it->grpDest);// used stored managerRuntimeData.Npre[it->nDest] in it->preSynId
 				// generate a delay look up table by the way
 				assert(it->delay > 0);
 				if (it->delay > lastDelay) {
-					snnRuntimeData.postDelayInfo[nId * (maxDelay_ + 1) + it->delay - 1].delay_index_start = snnRuntimeData.Npost[it->nSrc];
-					snnRuntimeData.postDelayInfo[nId * (maxDelay_ + 1) + it->delay - 1].delay_length++;
+					managerRuntimeData.postDelayInfo[nId * (maxDelay_ + 1) + it->delay - 1].delay_index_start = managerRuntimeData.Npost[it->nSrc];
+					managerRuntimeData.postDelayInfo[nId * (maxDelay_ + 1) + it->delay - 1].delay_length++;
 				} else if (it->delay == lastDelay) {
-					snnRuntimeData.postDelayInfo[nId * (maxDelay_ + 1) + it->delay - 1].delay_length++;
+					managerRuntimeData.postDelayInfo[nId * (maxDelay_ + 1) + it->delay - 1].delay_length++;
 				} else {
 					KERNEL_ERROR("Post-synaptic delays not sorted correctly... pre_id=%d, delay[%d]=%d, delay[%d]=%d",
-						nId, snnRuntimeData.Npost[it->nSrc], it->delay, snnRuntimeData.Npost[it->nSrc] - 1, lastDelay);
+						nId, managerRuntimeData.Npost[it->nSrc], it->delay, managerRuntimeData.Npost[it->nSrc] - 1, lastDelay);
 				}
 				lastDelay = it->delay;
 
 				// update the corresponding pre synaptic id
-				SynInfo preId = snnRuntimeData.preSynapticIds[pre_pos];
+				SynInfo preId = managerRuntimeData.preSynapticIds[pre_pos];
 				assert(GET_CONN_NEURON_ID(preId) == it->nSrc);
 				//assert(GET_CONN_GRP_ID(preId) == it->grpSrc);
-				snnRuntimeData.preSynapticIds[pre_pos] = SET_CONN_ID(it->nSrc, snnRuntimeData.Npost[it->nSrc], it->grpSrc);
-				snnRuntimeData.wt[pre_pos] = it->initWt;
-				snnRuntimeData.maxSynWt[pre_pos] = it->maxWt;
-				snnRuntimeData.connIdsPreIdx[pre_pos] = it->connId;
+				managerRuntimeData.preSynapticIds[pre_pos] = SET_CONN_ID(it->nSrc, managerRuntimeData.Npost[it->nSrc], it->grpSrc);
+				managerRuntimeData.wt[pre_pos] = it->initWt;
+				managerRuntimeData.maxSynWt[pre_pos] = it->maxWt;
+				managerRuntimeData.connIdsPreIdx[pre_pos] = it->connId;
 
-				snnRuntimeData.Npost[it->nSrc]++;
+				managerRuntimeData.Npost[it->nSrc]++;
 				parsedConnections++;
 
 				// update the maximum number of and post-connections of a neuron in a group
-				if (snnRuntimeData.Npost[it->nSrc] > groupInfo[it->grpSrc].maxPostConn)
-					groupInfo[it->grpSrc].maxPostConn = snnRuntimeData.Npost[it->nSrc];
+				if (managerRuntimeData.Npost[it->nSrc] > groupInfo[it->grpSrc].maxPostConn)
+					groupInfo[it->grpSrc].maxPostConn = managerRuntimeData.Npost[it->nSrc];
 			}
-			assert(parsedConnections == snnRuntimeData.Npost[nId]);
+			assert(parsedConnections == managerRuntimeData.Npost[nId]);
 			// note: elements in postConnectionList are deallocated automatically with postConnectionList
 		}
 	}
 	assert(connectionLists[0].empty());
 
-	//int p = snnRuntimeData.Npost[src];
+	//int p = managerRuntimeData.Npost[src];
 
-	//assert(snnRuntimeData.Npost[src] >= 0);
-	//assert(snnRuntimeData.Npre[dest] >= 0);
+	//assert(managerRuntimeData.Npost[src] >= 0);
+	//assert(managerRuntimeData.Npre[dest] >= 0);
 	//assert((src * maxNumPostSynGrp + p) / numN < maxNumPostSynGrp); // divide by numN to prevent INT overflow
 
-	//unsigned int post_pos = snnRuntimeData.cumulativePost[src] + snnRuntimeData.Npost[src];
-	//unsigned int pre_pos  = snnRuntimeData.cumulativePre[dest] + snnRuntimeData.Npre[dest];
+	//unsigned int post_pos = managerRuntimeData.cumulativePost[src] + managerRuntimeData.Npost[src];
+	//unsigned int pre_pos  = managerRuntimeData.cumulativePre[dest] + managerRuntimeData.Npre[dest];
 
 	//assert(post_pos < numPostSynNet);
 	//assert(pre_pos  < numPreSynNet);
 
 	////generate a new postSynapticIds id for the current connection
-	//snnRuntimeData.postSynapticIds[post_pos]   = SET_CONN_ID(dest, snnRuntimeData.Npre[dest], destGrp);
+	//managerRuntimeData.postSynapticIds[post_pos]   = SET_CONN_ID(dest, managerRuntimeData.Npre[dest], destGrp);
 	//tmp_SynapticDelay[post_pos] = dVal;
 
-	//snnRuntimeData.preSynapticIds[pre_pos] = SET_CONN_ID(src, snnRuntimeData.Npost[src], srcGrp);
-	//snnRuntimeData.wt[pre_pos] 	  = synWt;
-	//snnRuntimeData.maxSynWt[pre_pos] = maxWt;
-	//snnRuntimeData.connIdsPreIdx[pre_pos] = connId;
+	//managerRuntimeData.preSynapticIds[pre_pos] = SET_CONN_ID(src, managerRuntimeData.Npost[src], srcGrp);
+	//managerRuntimeData.wt[pre_pos] 	  = synWt;
+	//managerRuntimeData.maxSynWt[pre_pos] = maxWt;
+	//managerRuntimeData.connIdsPreIdx[pre_pos] = connId;
 
 	//bool synWtType = GET_FIXED_PLASTIC(connProp);
 
 	//if (synWtType == SYN_PLASTIC) {
 	//	sim_with_fixedwts = false; // if network has any plastic synapses at all, this will be set to true
-	//	snnRuntimeData.Npre_plastic[dest]++;
+	//	managerRuntimeData.Npre_plastic[dest]++;
 	//	// homeostasis
 	//	if (groupConfigs[0][destGrp].WithHomeostasis && groupConfigs[0][destGrp].homeoId ==-1)
 	//		groupConfigs[0][destGrp].homeoId = dest; // this neuron info will be printed
 	//}
 
-	//snnRuntimeData.Npre[dest] += 1;
-	//snnRuntimeData.Npost[src] += 1;
+	//managerRuntimeData.Npre[dest] += 1;
+	//managerRuntimeData.Npost[src] += 1;
 
 	//groupInfo[srcGrp].numPostConn++;
 	//groupInfo[destGrp].numPreConn++;
 
 	//// update the maximum number of pre- and post-connections of a neuron in a group
-	//if (snnRuntimeData.Npost[src] > groupInfo[srcGrp].maxPostConn)
-	//	groupInfo[srcGrp].maxPostConn = snnRuntimeData.Npost[src];
-	//if (snnRuntimeData.Npre[dest] > groupInfo[destGrp].maxPreConn)
-	//	groupInfo[destGrp].maxPreConn = snnRuntimeData.Npre[src];
+	//if (managerRuntimeData.Npost[src] > groupInfo[srcGrp].maxPostConn)
+	//	groupInfo[srcGrp].maxPostConn = managerRuntimeData.Npost[src];
+	//if (managerRuntimeData.Npre[dest] > groupInfo[destGrp].maxPreConn)
+	//	groupInfo[destGrp].maxPreConn = managerRuntimeData.Npre[src];
 }
 
 
@@ -2802,10 +2792,6 @@ void SNN::checkSpikeCounterRecordDur() {
 
 
 void SNN::collectGlobalNetworkConfig() {
-	// find the maximum number of pre- and post-connections among groups
-	// SNN::maxNumPreSynGrp and SNN::maxNumPostSynGrp are updated
-	//findMaxNumSynapsesGroups(&maxNumPostSynGrp, &maxNumPreSynGrp);
-
 	// find the maximum delay in the network
 	// SNN::maxDelay_ is updated
 	findMaxDelay(&maxDelay_);
@@ -2825,7 +2811,7 @@ void SNN::compileSNN() {
 	compileConnectConfig(); // for future use
 
 	// collect the global network config according to compiled gorup and connection configs
-	// collect SNN::maxNumPreSynGrp, SNN::maxNumPostSynGrp, SNN::maxDelay_
+	// collect SNN::maxDelay_
 	collectGlobalNetworkConfig();
 
 	// perform various consistency checks:
@@ -2840,8 +2826,6 @@ void SNN::compileSNN() {
 	KERNEL_INFO("The number of neurons in the network (numN) = %d", numN);
 	KERNEL_INFO("The number of regular neurons in the network (numNReg:numNExcReg:numNInhReg) = %d:%d:%d", numNReg, numNExcReg, numNInhReg);
 	KERNEL_INFO("The number of poisson neurons in the network (numNPois:numNExcPois:numInhPois) = %d:%d:%d", numNPois, numNExcPois, numNInhPois);
-	//KERNEL_INFO("The maximum number of post-connectoins among groups (maxNumPostSynGrp) = %d", maxNumPostSynGrp);
-	//KERNEL_INFO("The maximum number of pre-connections among groups (maxNumPreSynGrp) = %d", maxNumPreSynGrp);
 	//KERNEL_INFO("The maximum number of post-connectoins among neurons (maxNumPostSynN) = %d", maxNumPostSynN);
 	//KERNEL_INFO("The maximum number of pre-connections among neurons (maxNumPreSynN) = %d", maxNumPreSynN);
 	KERNEL_INFO("The maximum axonal delay in the network (maxDelay) = %d", maxDelay_);
@@ -3689,8 +3673,8 @@ void SNN::initGroupConfig(GroupConfigRT* _groupConfig) {
 // total size of the synaptic connection is 'length' ...
 void SNN::initSynapticWeights() {
 	// Initialize the network wtChange, wt, synaptic firing time
-	snnRuntimeData.wtChange         = new float[networkConfigs[0].numPreSynNet];
-	snnRuntimeData.synSpikeTime     = new int[networkConfigs[0].numPreSynNet];
+	managerRuntimeData.wtChange         = new float[networkConfigs[0].numPreSynNet];
+	managerRuntimeData.synSpikeTime     = new int[networkConfigs[0].numPreSynNet];
 	cpuSnnSz.synapticInfoSize = sizeof(float)*(networkConfigs[0].numPreSynNet*2);
 
 	resetSynapticConnections(false);
@@ -3734,23 +3718,23 @@ void SNN::verifyNetwork() {
 	}
 
 	//make sure the number of pre- and post-connection does not exceed the limitation
-	if (maxNumPostSynGrp > MAX_NUM_POST_SYN) {
-		for (int g = 0; g < numGroups; g++) {
-			if (groupConfigMap[g].numPostSynapses>MAX_NUM_POST_SYN)
-				KERNEL_ERROR("Grp: %s(%d) has too many output synapses (%d), max %d.",groupInfo[g].Name.c_str(),g,
-							groupConfigMap[g].numPostSynapses,MAX_NUM_POST_SYN);
-		}
-		assert(maxNumPostSynGrp <= MAX_NUM_POST_SYN);
-	}
+	//if (maxNumPostSynGrp > MAX_NUM_POST_SYN) {
+	//	for (int g = 0; g < numGroups; g++) {
+	//		if (groupConfigMap[g].numPostSynapses>MAX_NUM_POST_SYN)
+	//			KERNEL_ERROR("Grp: %s(%d) has too many output synapses (%d), max %d.",groupInfo[g].Name.c_str(),g,
+	//						groupConfigMap[g].numPostSynapses,MAX_NUM_POST_SYN);
+	//	}
+	//	assert(maxNumPostSynGrp <= MAX_NUM_POST_SYN);
+	//}
 
-	if (maxNumPreSynGrp > MAX_NUM_PRE_SYN) {
-		for (int g = 0; g < numGroups; g++) {
-			if (groupConfigMap[g].numPreSynapses>MAX_NUM_PRE_SYN)
-				KERNEL_ERROR("Grp: %s(%d) has too many input synapses (%d), max %d.",groupInfo[g].Name.c_str(),g,
- 							groupConfigMap[g].numPreSynapses,MAX_NUM_PRE_SYN);
-		}
-		assert(maxNumPreSynGrp <= MAX_NUM_PRE_SYN);
-	}
+	//if (maxNumPreSynGrp > MAX_NUM_PRE_SYN) {
+	//	for (int g = 0; g < numGroups; g++) {
+	//		if (groupConfigMap[g].numPreSynapses>MAX_NUM_PRE_SYN)
+	//			KERNEL_ERROR("Grp: %s(%d) has too many input synapses (%d), max %d.",groupInfo[g].Name.c_str(),g,
+ //							groupConfigMap[g].numPreSynapses,MAX_NUM_PRE_SYN);
+	//	}
+	//	assert(maxNumPreSynGrp <= MAX_NUM_PRE_SYN);
+	//}
 
 	// make sure maxDelay == 1 if STP is enableed
 	// \FIXME: need to figure out STP buffer for delays > 1
@@ -4197,7 +4181,7 @@ int SNN::loadSimulation_internal(bool onlyPlastic) {
 	//		result = fread(&weight, sizeof(float), 1, loadSimFID);
 	//		readErr |= (result!=1);
 
-	//		short int gIDpre = snnRuntimeData.grpIds[nIDpre];
+	//		short int gIDpre = managerRuntimeData.grpIds[nIDpre];
 	//		if (IS_INHIBITORY_TYPE(groupConfigs[0][gIDpre].Type) && (weight>0)
 	//				|| !IS_INHIBITORY_TYPE(groupConfigs[0][gIDpre].Type) && (weight<0)) {
 	//			KERNEL_ERROR("loadSimulation: Sign of weight value (%s) does not match neuron type (%s)",
@@ -4236,7 +4220,7 @@ int SNN::loadSimulation_internal(bool onlyPlastic) {
 	//		readErr |= (result!=1);
 
 	//		if ((plastic && onlyPlastic) || (!plastic && !onlyPlastic)) {
-	//			int gIDpost = snnRuntimeData.grpIds[nIDpost];
+	//			int gIDpost = managerRuntimeData.grpIds[nIDpost];
 	//			int connProp = SET_FIXED_PLASTIC(plastic?SYN_PLASTIC:SYN_FIXED);
 
 	//			//setConnection(gIDpre, gIDpost, nIDpre, nIDpost, weight, maxWeight, delay, connProp, connId);
@@ -4255,6 +4239,9 @@ int SNN::loadSimulation_internal(bool onlyPlastic) {
 }
 
 void SNN::generateRuntimeSNN() {
+	KERNEL_INFO("");
+	KERNEL_INFO("*****************      Initializing %s Simulation      *************************",
+		simMode_==GPU_MODE?"GPU":"CPU");
 
 	// generate local network configs
 	generateNetworkConfigs();
@@ -4268,9 +4255,6 @@ void SNN::generateRuntimeSNN() {
 	// build the runtime data according to local network, group, connection configuirations
 	generateRuntimeData();
 
-	// Print the statistics again but dump the results to a file
-	printMemoryInfo(fpDeb_);
-
 	// initialize the synaptic weights accordingly..
 	initSynapticWeights();
 
@@ -4279,37 +4263,34 @@ void SNN::generateRuntimeSNN() {
 	// reset all spike cnt
 	resetSpikeCnt(ALL);
 
-	printTuningLog(fpDeb_);
-
-	KERNEL_INFO("");
-	KERNEL_INFO("*****************      Initializing %s Simulation      *************************",
-		simMode_==GPU_MODE?"GPU":"CPU");
-
 	allocateSNN();
+
+	// Print the statistics again but dump the results to a file
+	//printMemoryInfo(fpDeb_);
 }
 
 void SNN::resetConductances() {
 	if (sim_with_conductances) {
-		memset(snnRuntimeData.gAMPA, 0, sizeof(float)*numNReg);
+		memset(managerRuntimeData.gAMPA, 0, sizeof(float)*numNReg);
 		if (sim_with_NMDA_rise) {
-			memset(snnRuntimeData.gNMDA_r, 0, sizeof(float)*numNReg);
-			memset(snnRuntimeData.gNMDA_d, 0, sizeof(float)*numNReg);
+			memset(managerRuntimeData.gNMDA_r, 0, sizeof(float)*numNReg);
+			memset(managerRuntimeData.gNMDA_d, 0, sizeof(float)*numNReg);
 		} else {
-			memset(snnRuntimeData.gNMDA, 0, sizeof(float)*numNReg);
+			memset(managerRuntimeData.gNMDA, 0, sizeof(float)*numNReg);
 		}
-		memset(snnRuntimeData.gGABAa, 0, sizeof(float)*numNReg);
+		memset(managerRuntimeData.gGABAa, 0, sizeof(float)*numNReg);
 		if (sim_with_GABAb_rise) {
-			memset(snnRuntimeData.gGABAb_r, 0, sizeof(float)*numNReg);
-			memset(snnRuntimeData.gGABAb_d, 0, sizeof(float)*numNReg);
+			memset(managerRuntimeData.gGABAb_r, 0, sizeof(float)*numNReg);
+			memset(managerRuntimeData.gGABAb_d, 0, sizeof(float)*numNReg);
 		} else {
-			memset(snnRuntimeData.gGABAb, 0, sizeof(float)*numNReg);
+			memset(managerRuntimeData.gGABAb, 0, sizeof(float)*numNReg);
 		}
 	}
 }
 
 void SNN::resetCounters() {
 	assert(numNReg <= numN);
-	memset(snnRuntimeData.curSpike, 0, sizeof(bool) * numN);
+	memset(managerRuntimeData.curSpike, 0, sizeof(bool) * numN);
 }
 
 void SNN::resetCPUTiming() {
@@ -4318,8 +4299,8 @@ void SNN::resetCPUTiming() {
 }
 
 void SNN::resetCurrent() {
-	assert(snnRuntimeData.current != NULL);
-	memset(snnRuntimeData.current, 0, sizeof(float) * numNReg);
+	assert(managerRuntimeData.current != NULL);
+	memset(managerRuntimeData.current, 0, sizeof(float) * numNReg);
 }
 
 void SNN::resetFiringInformation() {
@@ -4376,10 +4357,10 @@ void SNN::resetGroups() {
 }
 
 void SNN::resetNeuromodulator(int grpId) {
-	snnRuntimeData.grpDA[grpId] = groupConfigs[0][grpId].baseDP;
-	snnRuntimeData.grp5HT[grpId] = groupConfigs[0][grpId].base5HT;
-	snnRuntimeData.grpACh[grpId] = groupConfigs[0][grpId].baseACh;
-	snnRuntimeData.grpNE[grpId] = groupConfigs[0][grpId].baseNE;
+	managerRuntimeData.grpDA[grpId] = groupConfigs[0][grpId].baseDP;
+	managerRuntimeData.grp5HT[grpId] = groupConfigs[0][grpId].base5HT;
+	managerRuntimeData.grpACh[grpId] = groupConfigs[0][grpId].baseACh;
+	managerRuntimeData.grpNE[grpId] = groupConfigs[0][grpId].baseNE;
 }
 
 void SNN::resetNeuron(int neurId, int grpId) {
@@ -4389,39 +4370,39 @@ void SNN::resetNeuron(int neurId, int grpId) {
 		exitSimulation(1);
 	}
 
-	snnRuntimeData.Izh_a[neurId] = groupInfo[grpId].Izh_a + groupInfo[grpId].Izh_a_sd*(float)drand48();
-	snnRuntimeData.Izh_b[neurId] = groupInfo[grpId].Izh_b + groupInfo[grpId].Izh_b_sd*(float)drand48();
-	snnRuntimeData.Izh_c[neurId] = groupInfo[grpId].Izh_c + groupInfo[grpId].Izh_c_sd*(float)drand48();
-	snnRuntimeData.Izh_d[neurId] = groupInfo[grpId].Izh_d + groupInfo[grpId].Izh_d_sd*(float)drand48();
+	managerRuntimeData.Izh_a[neurId] = groupInfo[grpId].Izh_a + groupInfo[grpId].Izh_a_sd*(float)drand48();
+	managerRuntimeData.Izh_b[neurId] = groupInfo[grpId].Izh_b + groupInfo[grpId].Izh_b_sd*(float)drand48();
+	managerRuntimeData.Izh_c[neurId] = groupInfo[grpId].Izh_c + groupInfo[grpId].Izh_c_sd*(float)drand48();
+	managerRuntimeData.Izh_d[neurId] = groupInfo[grpId].Izh_d + groupInfo[grpId].Izh_d_sd*(float)drand48();
 
-	snnRuntimeData.voltage[neurId] = snnRuntimeData.Izh_c[neurId];	// initial values for new_v
-	snnRuntimeData.recovery[neurId] = snnRuntimeData.Izh_b[neurId]*snnRuntimeData.voltage[neurId]; // initial values for u
+	managerRuntimeData.voltage[neurId] = managerRuntimeData.Izh_c[neurId];	// initial values for new_v
+	managerRuntimeData.recovery[neurId] = managerRuntimeData.Izh_b[neurId]*managerRuntimeData.voltage[neurId]; // initial values for u
 
 
  	if (groupConfigs[0][grpId].WithHomeostasis) {
 		// set the baseFiring with some standard deviation.
 		if(drand48()>0.5)   {
-			snnRuntimeData.baseFiring[neurId] = groupInfo[grpId].baseFiring + groupInfo[grpId].baseFiringSD*-log(drand48());
+			managerRuntimeData.baseFiring[neurId] = groupInfo[grpId].baseFiring + groupInfo[grpId].baseFiringSD*-log(drand48());
 		} else  {
-			snnRuntimeData.baseFiring[neurId] = groupInfo[grpId].baseFiring - groupInfo[grpId].baseFiringSD*-log(drand48());
-			if(snnRuntimeData.baseFiring[neurId] < 0.1) snnRuntimeData.baseFiring[neurId] = 0.1;
+			managerRuntimeData.baseFiring[neurId] = groupInfo[grpId].baseFiring - groupInfo[grpId].baseFiringSD*-log(drand48());
+			if(managerRuntimeData.baseFiring[neurId] < 0.1) managerRuntimeData.baseFiring[neurId] = 0.1;
 		}
 
 		if( groupInfo[grpId].baseFiring != 0.0) {
-			snnRuntimeData.avgFiring[neurId]  = snnRuntimeData.baseFiring[neurId];
+			managerRuntimeData.avgFiring[neurId]  = managerRuntimeData.baseFiring[neurId];
 		} else {
-			snnRuntimeData.baseFiring[neurId] = 0.0;
-			snnRuntimeData.avgFiring[neurId]  = 0;
+			managerRuntimeData.baseFiring[neurId] = 0.0;
+			managerRuntimeData.avgFiring[neurId]  = 0;
 		}
 	}
 
-	snnRuntimeData.lastSpikeTime[neurId]  = MAX_SIMULATION_TIME;
+	managerRuntimeData.lastSpikeTime[neurId]  = MAX_SIMULATION_TIME;
 
 	if(groupConfigs[0][grpId].WithSTP) {
 		for (int j=0; j<=maxDelay_; j++) { // is of size maxDelay_+1
 			int ind = STP_BUF_POS(neurId,j);
-			snnRuntimeData.stpu[ind] = 0.0f;
-			snnRuntimeData.stpx[ind] = 1.0f;
+			managerRuntimeData.stpu[ind] = 0.0f;
+			managerRuntimeData.stpx[ind] = 1.0f;
 		}
 	}
 }
@@ -4474,110 +4455,110 @@ void SNN::resetRuntimeData(bool deallocate) {
 	}
 
 	if (pbuf!=NULL && deallocate) delete pbuf;
-	if (snnRuntimeData.spikeGenBits!=NULL && deallocate) delete[] snnRuntimeData.spikeGenBits;
-	pbuf=NULL; snnRuntimeData.spikeGenBits=NULL;
+	if (managerRuntimeData.spikeGenBits!=NULL && deallocate) delete[] managerRuntimeData.spikeGenBits;
+	pbuf=NULL; managerRuntimeData.spikeGenBits=NULL;
 
 	// clear data (i.e., concentration of neuromodulator) of groups
-	if (snnRuntimeData.grpDA != NULL && deallocate) delete [] snnRuntimeData.grpDA;
-	if (snnRuntimeData.grp5HT != NULL && deallocate) delete [] snnRuntimeData.grp5HT;
-	if (snnRuntimeData.grpACh != NULL && deallocate) delete [] snnRuntimeData.grpACh;
-	if (snnRuntimeData.grpNE != NULL && deallocate) delete [] snnRuntimeData.grpNE;
-	snnRuntimeData.grpDA = NULL;
-	snnRuntimeData.grp5HT = NULL;
-	snnRuntimeData.grpACh = NULL;
-	snnRuntimeData.grpNE = NULL;
+	if (managerRuntimeData.grpDA != NULL && deallocate) delete [] managerRuntimeData.grpDA;
+	if (managerRuntimeData.grp5HT != NULL && deallocate) delete [] managerRuntimeData.grp5HT;
+	if (managerRuntimeData.grpACh != NULL && deallocate) delete [] managerRuntimeData.grpACh;
+	if (managerRuntimeData.grpNE != NULL && deallocate) delete [] managerRuntimeData.grpNE;
+	managerRuntimeData.grpDA = NULL;
+	managerRuntimeData.grp5HT = NULL;
+	managerRuntimeData.grpACh = NULL;
+	managerRuntimeData.grpNE = NULL;
 
 	// clear assistive data buffer for group monitor
 	if (deallocate) {
 		for (int i = 0; i < numGroups; i++) {
-			if (snnRuntimeData.grpDABuffer[i] != NULL) delete [] snnRuntimeData.grpDABuffer[i];
-			if (snnRuntimeData.grp5HTBuffer[i] != NULL) delete [] snnRuntimeData.grp5HTBuffer[i];
-			if (snnRuntimeData.grpAChBuffer[i] != NULL) delete [] snnRuntimeData.grpAChBuffer[i];
-			if (snnRuntimeData.grpNEBuffer[i] != NULL) delete [] snnRuntimeData.grpNEBuffer[i];
-			snnRuntimeData.grpDABuffer[i] = NULL;
-			snnRuntimeData.grp5HTBuffer[i] = NULL;
-			snnRuntimeData.grpAChBuffer[i] = NULL;
-			snnRuntimeData.grpNEBuffer[i] = NULL;
+			if (managerRuntimeData.grpDABuffer[i] != NULL) delete [] managerRuntimeData.grpDABuffer[i];
+			if (managerRuntimeData.grp5HTBuffer[i] != NULL) delete [] managerRuntimeData.grp5HTBuffer[i];
+			if (managerRuntimeData.grpAChBuffer[i] != NULL) delete [] managerRuntimeData.grpAChBuffer[i];
+			if (managerRuntimeData.grpNEBuffer[i] != NULL) delete [] managerRuntimeData.grpNEBuffer[i];
+			managerRuntimeData.grpDABuffer[i] = NULL;
+			managerRuntimeData.grp5HTBuffer[i] = NULL;
+			managerRuntimeData.grpAChBuffer[i] = NULL;
+			managerRuntimeData.grpNEBuffer[i] = NULL;
 		}
 	} else {
-		memset(snnRuntimeData.grpDABuffer, 0, sizeof(float*) * MAX_GRP_PER_SNN);
-		memset(snnRuntimeData.grp5HTBuffer, 0, sizeof(float*) * MAX_GRP_PER_SNN);
-		memset(snnRuntimeData.grpAChBuffer, 0, sizeof(float*) * MAX_GRP_PER_SNN);
-		memset(snnRuntimeData.grpNEBuffer, 0, sizeof(float*) * MAX_GRP_PER_SNN);
+		memset(managerRuntimeData.grpDABuffer, 0, sizeof(float*) * MAX_GRP_PER_SNN);
+		memset(managerRuntimeData.grp5HTBuffer, 0, sizeof(float*) * MAX_GRP_PER_SNN);
+		memset(managerRuntimeData.grpAChBuffer, 0, sizeof(float*) * MAX_GRP_PER_SNN);
+		memset(managerRuntimeData.grpNEBuffer, 0, sizeof(float*) * MAX_GRP_PER_SNN);
 	}
 
 
 	// -------------- DEALLOCATE CORE OBJECTS ---------------------- //
 
-	if (snnRuntimeData.voltage!=NULL && deallocate) delete[] snnRuntimeData.voltage;
-	if (snnRuntimeData.recovery!=NULL && deallocate) delete[] snnRuntimeData.recovery;
-	if (snnRuntimeData.current!=NULL && deallocate) delete[] snnRuntimeData.current;
-	if (snnRuntimeData.extCurrent!=NULL && deallocate) delete[] snnRuntimeData.extCurrent;
-	snnRuntimeData.voltage=NULL; snnRuntimeData.recovery=NULL; snnRuntimeData.current=NULL; snnRuntimeData.extCurrent=NULL;
+	if (managerRuntimeData.voltage!=NULL && deallocate) delete[] managerRuntimeData.voltage;
+	if (managerRuntimeData.recovery!=NULL && deallocate) delete[] managerRuntimeData.recovery;
+	if (managerRuntimeData.current!=NULL && deallocate) delete[] managerRuntimeData.current;
+	if (managerRuntimeData.extCurrent!=NULL && deallocate) delete[] managerRuntimeData.extCurrent;
+	managerRuntimeData.voltage=NULL; managerRuntimeData.recovery=NULL; managerRuntimeData.current=NULL; managerRuntimeData.extCurrent=NULL;
 
-	if (snnRuntimeData.Izh_a!=NULL && deallocate) delete[] snnRuntimeData.Izh_a;
-	if (snnRuntimeData.Izh_b!=NULL && deallocate) delete[] snnRuntimeData.Izh_b;
-	if (snnRuntimeData.Izh_c!=NULL && deallocate) delete[] snnRuntimeData.Izh_c;
-	if (snnRuntimeData.Izh_d!=NULL && deallocate) delete[] snnRuntimeData.Izh_d;
-	snnRuntimeData.Izh_a=NULL; snnRuntimeData.Izh_b=NULL; snnRuntimeData.Izh_c=NULL; snnRuntimeData.Izh_d=NULL;
+	if (managerRuntimeData.Izh_a!=NULL && deallocate) delete[] managerRuntimeData.Izh_a;
+	if (managerRuntimeData.Izh_b!=NULL && deallocate) delete[] managerRuntimeData.Izh_b;
+	if (managerRuntimeData.Izh_c!=NULL && deallocate) delete[] managerRuntimeData.Izh_c;
+	if (managerRuntimeData.Izh_d!=NULL && deallocate) delete[] managerRuntimeData.Izh_d;
+	managerRuntimeData.Izh_a=NULL; managerRuntimeData.Izh_b=NULL; managerRuntimeData.Izh_c=NULL; managerRuntimeData.Izh_d=NULL;
 
-	if (snnRuntimeData.Npre!=NULL && deallocate) delete[] snnRuntimeData.Npre;
-	if (snnRuntimeData.Npre_plastic!=NULL && deallocate) delete[] snnRuntimeData.Npre_plastic;
-	if (snnRuntimeData.Npost!=NULL && deallocate) delete[] snnRuntimeData.Npost;
-	snnRuntimeData.Npre=NULL; snnRuntimeData.Npre_plastic=NULL; snnRuntimeData.Npost=NULL;
+	if (managerRuntimeData.Npre!=NULL && deallocate) delete[] managerRuntimeData.Npre;
+	if (managerRuntimeData.Npre_plastic!=NULL && deallocate) delete[] managerRuntimeData.Npre_plastic;
+	if (managerRuntimeData.Npost!=NULL && deallocate) delete[] managerRuntimeData.Npost;
+	managerRuntimeData.Npre=NULL; managerRuntimeData.Npre_plastic=NULL; managerRuntimeData.Npost=NULL;
 
-	if (snnRuntimeData.cumulativePre!=NULL && deallocate) delete[] snnRuntimeData.cumulativePre;
-	if (snnRuntimeData.cumulativePost!=NULL && deallocate) delete[] snnRuntimeData.cumulativePost;
-	snnRuntimeData.cumulativePre=NULL; snnRuntimeData.cumulativePost=NULL;
+	if (managerRuntimeData.cumulativePre!=NULL && deallocate) delete[] managerRuntimeData.cumulativePre;
+	if (managerRuntimeData.cumulativePost!=NULL && deallocate) delete[] managerRuntimeData.cumulativePost;
+	managerRuntimeData.cumulativePre=NULL; managerRuntimeData.cumulativePost=NULL;
 
-	if (snnRuntimeData.gAMPA!=NULL && deallocate) delete[] snnRuntimeData.gAMPA;
-	if (snnRuntimeData.gNMDA!=NULL && deallocate) delete[] snnRuntimeData.gNMDA;
-	if (snnRuntimeData.gNMDA_r!=NULL && deallocate) delete[] snnRuntimeData.gNMDA_r;
-	if (snnRuntimeData.gNMDA_d!=NULL && deallocate) delete[] snnRuntimeData.gNMDA_d;
-	if (snnRuntimeData.gGABAa!=NULL && deallocate) delete[] snnRuntimeData.gGABAa;
-	if (snnRuntimeData.gGABAb!=NULL && deallocate) delete[] snnRuntimeData.gGABAb;
-	if (snnRuntimeData.gGABAb_r!=NULL && deallocate) delete[] snnRuntimeData.gGABAb_r;
-	if (snnRuntimeData.gGABAb_d!=NULL && deallocate) delete[] snnRuntimeData.gGABAb_d;
-	snnRuntimeData.gAMPA=NULL; snnRuntimeData.gNMDA=NULL; snnRuntimeData.gNMDA_r=NULL; snnRuntimeData.gNMDA_d=NULL;
-	snnRuntimeData.gGABAa=NULL; snnRuntimeData.gGABAb=NULL; snnRuntimeData.gGABAb_r=NULL; snnRuntimeData.gGABAb_d=NULL;
+	if (managerRuntimeData.gAMPA!=NULL && deallocate) delete[] managerRuntimeData.gAMPA;
+	if (managerRuntimeData.gNMDA!=NULL && deallocate) delete[] managerRuntimeData.gNMDA;
+	if (managerRuntimeData.gNMDA_r!=NULL && deallocate) delete[] managerRuntimeData.gNMDA_r;
+	if (managerRuntimeData.gNMDA_d!=NULL && deallocate) delete[] managerRuntimeData.gNMDA_d;
+	if (managerRuntimeData.gGABAa!=NULL && deallocate) delete[] managerRuntimeData.gGABAa;
+	if (managerRuntimeData.gGABAb!=NULL && deallocate) delete[] managerRuntimeData.gGABAb;
+	if (managerRuntimeData.gGABAb_r!=NULL && deallocate) delete[] managerRuntimeData.gGABAb_r;
+	if (managerRuntimeData.gGABAb_d!=NULL && deallocate) delete[] managerRuntimeData.gGABAb_d;
+	managerRuntimeData.gAMPA=NULL; managerRuntimeData.gNMDA=NULL; managerRuntimeData.gNMDA_r=NULL; managerRuntimeData.gNMDA_d=NULL;
+	managerRuntimeData.gGABAa=NULL; managerRuntimeData.gGABAb=NULL; managerRuntimeData.gGABAb_r=NULL; managerRuntimeData.gGABAb_d=NULL;
 
-	if (snnRuntimeData.stpu!=NULL && deallocate) delete[] snnRuntimeData.stpu;
-	if (snnRuntimeData.stpx!=NULL && deallocate) delete[] snnRuntimeData.stpx;
-	snnRuntimeData.stpu=NULL; snnRuntimeData.stpx=NULL;
+	if (managerRuntimeData.stpu!=NULL && deallocate) delete[] managerRuntimeData.stpu;
+	if (managerRuntimeData.stpx!=NULL && deallocate) delete[] managerRuntimeData.stpx;
+	managerRuntimeData.stpu=NULL; managerRuntimeData.stpx=NULL;
 
-	if (snnRuntimeData.avgFiring!=NULL && deallocate) delete[] snnRuntimeData.avgFiring;
-	if (snnRuntimeData.baseFiring!=NULL && deallocate) delete[] snnRuntimeData.baseFiring;
-	snnRuntimeData.avgFiring=NULL; snnRuntimeData.baseFiring=NULL;
+	if (managerRuntimeData.avgFiring!=NULL && deallocate) delete[] managerRuntimeData.avgFiring;
+	if (managerRuntimeData.baseFiring!=NULL && deallocate) delete[] managerRuntimeData.baseFiring;
+	managerRuntimeData.avgFiring=NULL; managerRuntimeData.baseFiring=NULL;
 
-	if (snnRuntimeData.lastSpikeTime!=NULL && deallocate) delete[] snnRuntimeData.lastSpikeTime;
-	if (snnRuntimeData.synSpikeTime !=NULL && deallocate) delete[] snnRuntimeData.synSpikeTime;
-	if (snnRuntimeData.curSpike!=NULL && deallocate) delete[] snnRuntimeData.curSpike;
-	if (snnRuntimeData.nSpikeCnt!=NULL && deallocate) delete[] snnRuntimeData.nSpikeCnt;
-	snnRuntimeData.lastSpikeTime=NULL; snnRuntimeData.synSpikeTime=NULL; snnRuntimeData.curSpike=NULL; snnRuntimeData.nSpikeCnt=NULL;
+	if (managerRuntimeData.lastSpikeTime!=NULL && deallocate) delete[] managerRuntimeData.lastSpikeTime;
+	if (managerRuntimeData.synSpikeTime !=NULL && deallocate) delete[] managerRuntimeData.synSpikeTime;
+	if (managerRuntimeData.curSpike!=NULL && deallocate) delete[] managerRuntimeData.curSpike;
+	if (managerRuntimeData.nSpikeCnt!=NULL && deallocate) delete[] managerRuntimeData.nSpikeCnt;
+	managerRuntimeData.lastSpikeTime=NULL; managerRuntimeData.synSpikeTime=NULL; managerRuntimeData.curSpike=NULL; managerRuntimeData.nSpikeCnt=NULL;
 
-	if (snnRuntimeData.postDelayInfo!=NULL && deallocate) delete[] snnRuntimeData.postDelayInfo;
-	if (snnRuntimeData.preSynapticIds!=NULL && deallocate) delete[] snnRuntimeData.preSynapticIds;
-	if (snnRuntimeData.postSynapticIds!=NULL && deallocate) delete[] snnRuntimeData.postSynapticIds;
-	snnRuntimeData.postDelayInfo=NULL; snnRuntimeData.preSynapticIds=NULL; snnRuntimeData.postSynapticIds=NULL;
+	if (managerRuntimeData.postDelayInfo!=NULL && deallocate) delete[] managerRuntimeData.postDelayInfo;
+	if (managerRuntimeData.preSynapticIds!=NULL && deallocate) delete[] managerRuntimeData.preSynapticIds;
+	if (managerRuntimeData.postSynapticIds!=NULL && deallocate) delete[] managerRuntimeData.postSynapticIds;
+	managerRuntimeData.postDelayInfo=NULL; managerRuntimeData.preSynapticIds=NULL; managerRuntimeData.postSynapticIds=NULL;
 
-	if (snnRuntimeData.wt!=NULL && deallocate) delete[] snnRuntimeData.wt;
-	if (snnRuntimeData.maxSynWt!=NULL && deallocate) delete[] snnRuntimeData.maxSynWt;
-	if (snnRuntimeData.wtChange !=NULL && deallocate) delete[] snnRuntimeData.wtChange;
-	snnRuntimeData.wt=NULL; snnRuntimeData.maxSynWt=NULL; snnRuntimeData.wtChange=NULL;
+	if (managerRuntimeData.wt!=NULL && deallocate) delete[] managerRuntimeData.wt;
+	if (managerRuntimeData.maxSynWt!=NULL && deallocate) delete[] managerRuntimeData.maxSynWt;
+	if (managerRuntimeData.wtChange !=NULL && deallocate) delete[] managerRuntimeData.wtChange;
+	managerRuntimeData.wt=NULL; managerRuntimeData.maxSynWt=NULL; managerRuntimeData.wtChange=NULL;
 
 	if (mulSynFast!=NULL && deallocate) delete[] mulSynFast;
 	if (mulSynSlow!=NULL && deallocate) delete[] mulSynSlow;
-	if (snnRuntimeData.connIdsPreIdx!=NULL && deallocate) delete[] snnRuntimeData.connIdsPreIdx;
-	mulSynFast=NULL; mulSynSlow=NULL; snnRuntimeData.connIdsPreIdx=NULL;
+	if (managerRuntimeData.connIdsPreIdx!=NULL && deallocate) delete[] managerRuntimeData.connIdsPreIdx;
+	mulSynFast=NULL; mulSynSlow=NULL; managerRuntimeData.connIdsPreIdx=NULL;
 
-	if (snnRuntimeData.grpIds!=NULL && deallocate) delete[] snnRuntimeData.grpIds;
-	snnRuntimeData.grpIds=NULL;
+	if (managerRuntimeData.grpIds!=NULL && deallocate) delete[] managerRuntimeData.grpIds;
+	managerRuntimeData.grpIds=NULL;
 
-	if (snnRuntimeData.firingTableD2!=NULL && deallocate) delete[] snnRuntimeData.firingTableD2;
-	if (snnRuntimeData.firingTableD1!=NULL && deallocate) delete[] snnRuntimeData.firingTableD1;
+	if (managerRuntimeData.firingTableD2!=NULL && deallocate) delete[] managerRuntimeData.firingTableD2;
+	if (managerRuntimeData.firingTableD1!=NULL && deallocate) delete[] managerRuntimeData.firingTableD1;
 	//if (timeTableD2!=NULL && deallocate) delete[] timeTableD2;
 	//if (timeTableD1!=NULL && deallocate) delete[] timeTableD1;
-	snnRuntimeData.firingTableD2=NULL; snnRuntimeData.firingTableD1=NULL; //timeTableD2=NULL; timeTableD1=NULL;
+	managerRuntimeData.firingTableD2=NULL; managerRuntimeData.firingTableD1=NULL; //timeTableD2=NULL; timeTableD1=NULL;
 
 	// clear poisson generator
 	if (gpuPoissonRand != NULL) delete gpuPoissonRand;
@@ -4587,15 +4568,15 @@ void SNN::resetRuntimeData(bool deallocate) {
 
 void SNN::resetPoissonNeuron(int nid, int grpId) {
 	assert(nid < numN);
-	snnRuntimeData.lastSpikeTime[nid]  = MAX_SIMULATION_TIME;
+	managerRuntimeData.lastSpikeTime[nid]  = MAX_SIMULATION_TIME;
 	if (groupConfigs[0][grpId].WithHomeostasis)
-		snnRuntimeData.avgFiring[nid] = 0.0;
+		managerRuntimeData.avgFiring[nid] = 0.0;
 
 	if(groupConfigs[0][grpId].WithSTP) {
 		for (int j=0; j<=maxDelay_; j++) { // is of size maxDelay_+1
 			int ind = STP_BUF_POS(nid,j);
-			snnRuntimeData.stpu[nid] = 0.0f;
-			snnRuntimeData.stpx[nid] = 1.0f;
+			managerRuntimeData.stpu[nid] = 0.0f;
+			managerRuntimeData.stpx[nid] = 1.0f;
 		}
 	}
 }
@@ -4621,7 +4602,7 @@ void SNN::resetSpikeCnt(int grpId) {
 		int startN = groupConfigs[0][g].StartN;
 		int endN   = groupConfigs[0][g].EndN;
 		for (int i=startN; i<=endN; i++)
-			snnRuntimeData.nSpikeCnt[i] = 0;
+			managerRuntimeData.nSpikeCnt[i] = 0;
 	}
 }
 
@@ -4640,20 +4621,20 @@ void SNN::resetSynapticConnections(bool changeWeights) {
 					groupConfigs[0][destGrp].EndN, updateStr);
 
 		for(int nid=groupConfigs[0][destGrp].StartN; nid <= groupConfigs[0][destGrp].EndN; nid++) {
-			unsigned int offset = snnRuntimeData.cumulativePre[nid];
-			for (j=0;j<snnRuntimeData.Npre[nid]; j++) {
-				snnRuntimeData.wtChange[offset+j] = 0.0;						// synaptic derivatives is reset
-				snnRuntimeData.synSpikeTime[offset+j] = MAX_SIMULATION_TIME;	// some large negative value..
+			unsigned int offset = managerRuntimeData.cumulativePre[nid];
+			for (j=0;j<managerRuntimeData.Npre[nid]; j++) {
+				managerRuntimeData.wtChange[offset+j] = 0.0;						// synaptic derivatives is reset
+				managerRuntimeData.synSpikeTime[offset+j] = MAX_SIMULATION_TIME;	// some large negative value..
 			}
-			SynInfo *preIdPtr = &(snnRuntimeData.preSynapticIds[snnRuntimeData.cumulativePre[nid]]);
-			float* synWtPtr       = &(snnRuntimeData.wt[snnRuntimeData.cumulativePre[nid]]);
-			float* maxWtPtr       = &(snnRuntimeData.maxSynWt[snnRuntimeData.cumulativePre[nid]]);
+			SynInfo *preIdPtr = &(managerRuntimeData.preSynapticIds[managerRuntimeData.cumulativePre[nid]]);
+			float* synWtPtr       = &(managerRuntimeData.wt[managerRuntimeData.cumulativePre[nid]]);
+			float* maxWtPtr       = &(managerRuntimeData.maxSynWt[managerRuntimeData.cumulativePre[nid]]);
 			int prevPreGrp  = -1;
 
-			for (j=0; j < snnRuntimeData.Npre[nid]; j++,preIdPtr++, synWtPtr++, maxWtPtr++) {
+			for (j=0; j < managerRuntimeData.Npre[nid]; j++,preIdPtr++, synWtPtr++, maxWtPtr++) {
 				int preId    = GET_CONN_NEURON_ID((*preIdPtr));
 				assert(preId < numN);
-				int srcGrp = snnRuntimeData.grpIds[preId];
+				int srcGrp = managerRuntimeData.grpIds[preId];
 				short int connId = getConnectId(srcGrp, destGrp);
 				assert(connId != -1);
 				bool   synWtType = GET_FIXED_PLASTIC(connectConfigMap[connId].connProp);
@@ -4662,7 +4643,7 @@ void SNN::resetSynapticConnections(bool changeWeights) {
 					if(nid==groupConfigs[0][destGrp].StartN) {
 						const char* updateStr = (connectConfigMap[connId].newUpdates==true)? "(**)":"";
 						KERNEL_DEBUG("\t%d (%s) start=%d, type=%s maxWts = %f %s", srcGrp,
-										groupInfo[srcGrp].Name.c_str(), j, (j<snnRuntimeData.Npre_plastic[nid]?"P":"F"),
+										groupInfo[srcGrp].Name.c_str(), j, (j<managerRuntimeData.Npre_plastic[nid]?"P":"F"),
 										connectConfigMap[connId].maxWt, updateStr);
 					}
 					prevPreGrp = srcGrp;
@@ -4694,8 +4675,8 @@ void SNN::resetTimeTable() {
 }
 
 void SNN::resetFiringTable() {
-	memset(snnRuntimeData.firingTableD2, 0, sizeof(int) * networkConfigs[0].maxSpikesD2);
-	memset(snnRuntimeData.firingTableD1, 0, sizeof(int) * networkConfigs[0].maxSpikesD1);
+	memset(managerRuntimeData.firingTableD2, 0, sizeof(int) * networkConfigs[0].maxSpikesD2);
+	memset(managerRuntimeData.firingTableD1, 0, sizeof(int) * networkConfigs[0].maxSpikesD1);
 }
 
 
@@ -4830,20 +4811,20 @@ std::vector< std::vector<float> > SNN::getWeightMatrix2D(short int connId) {
 	// \TODO: check if the weights for this grpIdPost have already been copied
 	// \TODO: even better, but tricky because of ordering, make copyWeightState connection-based
 	if (simMode_==GPU_MODE) {
-		copyWeightState(&snnRuntimeData, &gpuRuntimeData[0], cudaMemcpyDeviceToHost, false, grpIdPost);
+		copyWeightState(&managerRuntimeData, &gpuRuntimeData[0], cudaMemcpyDeviceToHost, false, grpIdPost);
 	}
 
 	for (int postId=groupConfigs[0][grpIdPost].StartN; postId<=groupConfigs[0][grpIdPost].EndN; postId++) {
-		unsigned int pos_ij = snnRuntimeData.cumulativePre[postId];
-		for (int i=0; i<snnRuntimeData.Npre[postId]; i++, pos_ij++) {
+		unsigned int pos_ij = managerRuntimeData.cumulativePre[postId];
+		for (int i=0; i<managerRuntimeData.Npre[postId]; i++, pos_ij++) {
 			// skip synapses that belong to a different connection ID
-			if (snnRuntimeData.connIdsPreIdx[pos_ij] != connId) //connInfo->connId)
+			if (managerRuntimeData.connIdsPreIdx[pos_ij] != connId) //connInfo->connId)
 				continue;
 
 			// find pre-neuron ID and update ConnectionMonitor container
-			int preId = GET_CONN_NEURON_ID(snnRuntimeData.preSynapticIds[pos_ij]);
+			int preId = GET_CONN_NEURON_ID(managerRuntimeData.preSynapticIds[pos_ij]);
 			wtConnId[preId-getGroupStartNeuronId(grpIdPre)][postId-getGroupStartNeuronId(grpIdPost)] =
-				fabs(snnRuntimeData.wt[pos_ij]);
+				fabs(managerRuntimeData.wt[pos_ij]);
 		}
 	}
 
@@ -4881,7 +4862,7 @@ void SNN::updateGroupMonitor(int grpId) {
 
 		if (simMode_ == GPU_MODE) {
 			// copy the group status (neuromodulators) from the GPU to the CPU..
-			copyGroupState(&snnRuntimeData, &gpuRuntimeData[0], cudaMemcpyDeviceToHost, false);
+			copyGroupState(&managerRuntimeData, &gpuRuntimeData[0], cudaMemcpyDeviceToHost, false);
 		}
 
 		// find the time interval in which to update group status
@@ -4913,7 +4894,7 @@ void SNN::updateGroupMonitor(int grpId) {
 		// may need need to dump these group status data to an output file
 		for(int t = numMsMin; t < numMsMax; t++) {
 			// fetch group status data, support dopamine concentration currently
-			data = snnRuntimeData.grpDABuffer[grpId][t];
+			data = managerRuntimeData.grpDABuffer[grpId][t];
 
 			// current time is last completed second plus whatever is leftover in t
 			int time = currentTimeSec*1000 + t;
@@ -4996,12 +4977,12 @@ void SNN::updateSpikeGeneratorsInit() {
 	}
 
 	// spikeGenBits can be set only once..
-	assert(snnRuntimeData.spikeGenBits == NULL);
+	assert(managerRuntimeData.spikeGenBits == NULL);
 
 	if (NgenFunc) {
-		snnRuntimeData.spikeGenBits = new uint32_t[NgenFunc/32+1];
+		managerRuntimeData.spikeGenBits = new uint32_t[NgenFunc/32+1];
 		// increase the total memory size used by the routine...
-		cpuSnnSz.addInfoSize += sizeof(snnRuntimeData.spikeGenBits[0])*(NgenFunc/32+1);
+		cpuSnnSz.addInfoSize += sizeof(managerRuntimeData.spikeGenBits[0])*(NgenFunc/32+1);
 	}
 }
 
@@ -5011,8 +4992,8 @@ void SNN::updateSpikeGeneratorsInit() {
  * \note SpikeTables include firingTableD1(D2) and timeTableD1(D2)
  */
 void SNN::allocateSpikeTables() {
-	snnRuntimeData.firingTableD2 = new int[networkConfigs[0].maxSpikesD2];
-	snnRuntimeData.firingTableD1 = new int[networkConfigs[0].maxSpikesD1];
+	managerRuntimeData.firingTableD2 = new int[networkConfigs[0].maxSpikesD2];
+	managerRuntimeData.firingTableD1 = new int[networkConfigs[0].maxSpikesD1];
 	resetFiringTable();
 	cpuSnnSz.spikingInfoSize += sizeof(int) * ((networkConfigs[0].maxSpikesD2 + networkConfigs[0].maxSpikesD1) + 2 * (1000 + maxDelay_ + 1));
 
@@ -5116,7 +5097,7 @@ void SNN::updateSpikeMonitor(int grpId) {
 		// may need need to dump these spikes to an output file
 		for (int k=0; k < 2; k++) {
 			unsigned int* timeTablePtr = (k==0)?timeTableD2:timeTableD1;
-			int* fireTablePtr = (k==0)?snnRuntimeData.firingTableD2:snnRuntimeData.firingTableD1;
+			int* fireTablePtr = (k==0)?managerRuntimeData.firingTableD2:managerRuntimeData.firingTableD1;
 			for(int t=numMsMin; t<numMsMax; t++) {
 				for(int i=timeTablePtr[t+maxDelay_]; i<timeTablePtr[t+maxDelay_+1];i++) {
 					// retrieve the neuron id
@@ -5126,7 +5107,7 @@ void SNN::updateSpikeMonitor(int grpId) {
 					assert(nid < numN);
 
 					// make sure neuron belongs to currently relevant group
-					int this_grpId = snnRuntimeData.grpIds[nid];
+					int this_grpId = managerRuntimeData.grpIds[nid];
 					if (this_grpId != grpId)
 						continue;
 
@@ -5171,21 +5152,21 @@ void SNN::updateSpikeMonitor(int grpId) {
 //	tmp_cumulativePre[0]    = 0;
 //
 //	for(int i=1; i < numN; i++) {
-//		lastCnt_post = tmp_cumulativePost[i-1]+snnRuntimeData.Npost[i-1]; //position of last pointer
-//		lastCnt_pre  = tmp_cumulativePre[i-1]+snnRuntimeData.Npre[i-1]; //position of last pointer
+//		lastCnt_post = tmp_cumulativePost[i-1]+managerRuntimeData.Npost[i-1]; //position of last pointer
+//		lastCnt_pre  = tmp_cumulativePre[i-1]+managerRuntimeData.Npre[i-1]; //position of last pointer
 //		#if COMPACTION_ALIGNMENT_POST
 //			lastCnt_post= lastCnt_post + COMPACTION_ALIGNMENT_POST-lastCnt_post%COMPACTION_ALIGNMENT_POST;
 //			lastCnt_pre = lastCnt_pre  + COMPACTION_ALIGNMENT_PRE- lastCnt_pre%COMPACTION_ALIGNMENT_PRE;
 //		#endif
 //		tmp_cumulativePost[i] = lastCnt_post;
 //		tmp_cumulativePre[i]  = lastCnt_pre;
-//		assert(tmp_cumulativePost[i] <= snnRuntimeData.cumulativePost[i]);
-//		assert(tmp_cumulativePre[i]  <= snnRuntimeData.cumulativePre[i]);
+//		assert(tmp_cumulativePost[i] <= managerRuntimeData.cumulativePost[i]);
+//		assert(tmp_cumulativePre[i]  <= managerRuntimeData.cumulativePre[i]);
 //	}
 //
 //	// compress the post_synaptic array according to the new values of the tmp_cumulative counts....
-//	unsigned int tmp_numPostSynNet = tmp_cumulativePost[numN-1]+snnRuntimeData.Npost[numN-1];
-//	unsigned int tmp_numPreSynNet  = tmp_cumulativePre[numN-1]+snnRuntimeData.Npre[numN-1];
+//	unsigned int tmp_numPostSynNet = tmp_cumulativePost[numN-1]+managerRuntimeData.Npost[numN-1];
+//	unsigned int tmp_numPreSynNet  = tmp_cumulativePre[numN-1]+managerRuntimeData.Npre[numN-1];
 //	assert(tmp_numPostSynNet <= allocatedPost);
 //	assert(tmp_numPreSynNet  <= allocatedPre);
 //	assert(tmp_numPostSynNet <= numPostSynNet);
@@ -5209,48 +5190,48 @@ void SNN::updateSpikeMonitor(int grpId) {
 //
 //	// compact synaptic information
 //	for(int i=0; i<numN; i++) {
-//		assert(tmp_cumulativePost[i] <= snnRuntimeData.cumulativePost[i]);
-//		assert(tmp_cumulativePre[i]  <= snnRuntimeData.cumulativePre[i]);
-//		for( int j=0; j<snnRuntimeData.Npost[i]; j++) {
+//		assert(tmp_cumulativePost[i] <= managerRuntimeData.cumulativePost[i]);
+//		assert(tmp_cumulativePre[i]  <= managerRuntimeData.cumulativePre[i]);
+//		for( int j=0; j<managerRuntimeData.Npost[i]; j++) {
 //			unsigned int tmpPos = tmp_cumulativePost[i]+j;
-//			unsigned int oldPos = snnRuntimeData.cumulativePost[i]+j;
-//			tmp_postSynapticIds[tmpPos] = snnRuntimeData.postSynapticIds[oldPos];
+//			unsigned int oldPos = managerRuntimeData.cumulativePost[i]+j;
+//			tmp_postSynapticIds[tmpPos] = managerRuntimeData.postSynapticIds[oldPos];
 //			tmp_SynapticDelay[tmpPos]   = tmp_SynapticDelay[oldPos];
 //		}
-//		for( int j=0; j<snnRuntimeData.Npre[i]; j++) {
+//		for( int j=0; j<managerRuntimeData.Npre[i]; j++) {
 //			unsigned int tmpPos =  tmp_cumulativePre[i]+j;
-//			unsigned int oldPos =  snnRuntimeData.cumulativePre[i]+j;
-//			tmp_preSynapticIds[tmpPos]  = snnRuntimeData.preSynapticIds[oldPos];
-//			tmp_maxSynWt[tmpPos] 	    = snnRuntimeData.maxSynWt[oldPos];
-//			tmp_wt[tmpPos]              = snnRuntimeData.wt[oldPos];
-//			tmp_cumConnIdPre[tmpPos]	= snnRuntimeData.connIdsPreIdx[oldPos];
+//			unsigned int oldPos =  managerRuntimeData.cumulativePre[i]+j;
+//			tmp_preSynapticIds[tmpPos]  = managerRuntimeData.preSynapticIds[oldPos];
+//			tmp_maxSynWt[tmpPos] 	    = managerRuntimeData.maxSynWt[oldPos];
+//			tmp_wt[tmpPos]              = managerRuntimeData.wt[oldPos];
+//			tmp_cumConnIdPre[tmpPos]	= managerRuntimeData.connIdsPreIdx[oldPos];
 //		}
 //	}
 //
 //	// delete old buffer space
-//	delete[] snnRuntimeData.postSynapticIds;
-//	snnRuntimeData.postSynapticIds = tmp_postSynapticIds;
+//	delete[] managerRuntimeData.postSynapticIds;
+//	managerRuntimeData.postSynapticIds = tmp_postSynapticIds;
 //	cpuSnnSz.networkInfoSize -= (sizeof(SynInfo)*numPostSynNet);
 //	cpuSnnSz.networkInfoSize += (sizeof(SynInfo)*(tmp_numPostSynNet+100));
 //
-//	delete[] snnRuntimeData.cumulativePost;
-//	snnRuntimeData.cumulativePost  = tmp_cumulativePost;
+//	delete[] managerRuntimeData.cumulativePost;
+//	managerRuntimeData.cumulativePost  = tmp_cumulativePost;
 //
-//	delete[] snnRuntimeData.cumulativePre;
-//	snnRuntimeData.cumulativePre   = tmp_cumulativePre;
+//	delete[] managerRuntimeData.cumulativePre;
+//	managerRuntimeData.cumulativePre   = tmp_cumulativePre;
 //
-//	delete[] snnRuntimeData.maxSynWt;
-//	snnRuntimeData.maxSynWt = tmp_maxSynWt;
+//	delete[] managerRuntimeData.maxSynWt;
+//	managerRuntimeData.maxSynWt = tmp_maxSynWt;
 //	cpuSnnSz.synapticInfoSize -= (sizeof(float)*numPreSynNet);
 //	cpuSnnSz.synapticInfoSize += (sizeof(float)*(tmp_numPreSynNet+100));
 //
-//	delete[] snnRuntimeData.wt;
-//	snnRuntimeData.wt = tmp_wt;
+//	delete[] managerRuntimeData.wt;
+//	managerRuntimeData.wt = tmp_wt;
 //	cpuSnnSz.synapticInfoSize -= (sizeof(float)*numPreSynNet);
 //	cpuSnnSz.synapticInfoSize += (sizeof(float)*(tmp_numPreSynNet+100));
 //
-//	delete[] snnRuntimeData.connIdsPreIdx;
-//	snnRuntimeData.connIdsPreIdx = tmp_cumConnIdPre;
+//	delete[] managerRuntimeData.connIdsPreIdx;
+//	managerRuntimeData.connIdsPreIdx = tmp_cumConnIdPre;
 //	cpuSnnSz.synapticInfoSize -= (sizeof(short int)*numPreSynNet);
 //	cpuSnnSz.synapticInfoSize += (sizeof(short int)*(tmp_numPreSynNet+100));
 //
@@ -5267,8 +5248,8 @@ void SNN::updateSpikeMonitor(int grpId) {
 //	cpuSnnSz.networkInfoSize += (2*sizeof(uint8_t)*(tmp_numPreSynNet+100));
 //
 //
-//	delete[] snnRuntimeData.preSynapticIds;
-//	snnRuntimeData.preSynapticIds  = tmp_preSynapticIds;
+//	delete[] managerRuntimeData.preSynapticIds;
+//	managerRuntimeData.preSynapticIds  = tmp_preSynapticIds;
 //	cpuSnnSz.synapticInfoSize -= (sizeof(SynInfo)*numPreSynNet);
 //	cpuSnnSz.synapticInfoSize += (sizeof(SynInfo)*(tmp_numPreSynNet+100));
 //
@@ -5284,16 +5265,16 @@ void SNN::updateSpikeMonitor(int grpId) {
 //	for(int grpId=0; grpId < numGroups; grpId++) {
 //		for(int nid=groupConfigs[0][grpId].StartN; nid <= groupConfigs[0][grpId].EndN; nid++) {
 //			unsigned int jPos=0;					// this points to the top of the delay queue
-//			unsigned int cumN=snnRuntimeData.cumulativePost[nid];	// cumulativePost[] is unsigned int
+//			unsigned int cumN=managerRuntimeData.cumulativePost[nid];	// cumulativePost[] is unsigned int
 //			unsigned int cumDelayStart=0; 			// Npost[] is unsigned short
 //			for(int td = 0; td < maxDelay_; td++) {
 //				unsigned int j=jPos;				// start searching from top of the queue until the end
 //				unsigned int cnt=0;					// store the number of nodes with a delay of td;
-//				while(j < snnRuntimeData.Npost[nid]) {
+//				while(j < managerRuntimeData.Npost[nid]) {
 //					// found a node j with delay=td and we put
 //					// the delay value = 1 at array location td=0;
 //					if(td==(tmp_SynapticDelay[cumN+j]-1)) {
-//						assert(jPos<snnRuntimeData.Npost[nid]);
+//						assert(jPos<managerRuntimeData.Npost[nid]);
 //						swapConnections(nid, j, jPos);
 //
 //						jPos=jPos+1;
@@ -5303,17 +5284,17 @@ void SNN::updateSpikeMonitor(int grpId) {
 //				}
 //
 //				// update the delay_length and start values...
-//				snnRuntimeData.postDelayInfo[nid*(maxDelay_+1)+td].delay_length	     = cnt;
-//				snnRuntimeData.postDelayInfo[nid*(maxDelay_+1)+td].delay_index_start  = cumDelayStart;
+//				managerRuntimeData.postDelayInfo[nid*(maxDelay_+1)+td].delay_length	     = cnt;
+//				managerRuntimeData.postDelayInfo[nid*(maxDelay_+1)+td].delay_index_start  = cumDelayStart;
 //				cumDelayStart += cnt;
 //
-//				assert(cumDelayStart <= snnRuntimeData.Npost[nid]);
+//				assert(cumDelayStart <= managerRuntimeData.Npost[nid]);
 //			}
 //
 //			// total cumulative delay should be equal to number of post-synaptic connections at the end of the loop
-//			assert(cumDelayStart == snnRuntimeData.Npost[nid]);
-//			for(unsigned int j=1; j < snnRuntimeData.Npost[nid]; j++) {
-//				unsigned int cumN=snnRuntimeData.cumulativePost[nid]; // cumulativePost[] is unsigned int
+//			assert(cumDelayStart == managerRuntimeData.Npost[nid]);
+//			for(unsigned int j=1; j < managerRuntimeData.Npost[nid]; j++) {
+//				unsigned int cumN=managerRuntimeData.cumulativePost[nid]; // cumulativePost[] is unsigned int
 //				if( tmp_SynapticDelay[cumN+j] < tmp_SynapticDelay[cumN+j-1]) {
 //	  				KERNEL_ERROR("Post-synaptic delays not sorted correctly... id=%d, delay[%d]=%d, delay[%d]=%d",
 //						nid, j, tmp_SynapticDelay[cumN+j], j-1, tmp_SynapticDelay[cumN+j-1]);
@@ -5325,12 +5306,12 @@ void SNN::updateSpikeMonitor(int grpId) {
 //}
 
 //void SNN::swapConnections(int nid, int oldPos, int newPos) {
-//	unsigned int cumN=snnRuntimeData.cumulativePost[nid];
+//	unsigned int cumN=managerRuntimeData.cumulativePost[nid];
 //
 //	// Put the node oldPos to the top of the delay queue
-//	SynInfo tmp = snnRuntimeData.postSynapticIds[cumN+oldPos];
-//	snnRuntimeData.postSynapticIds[cumN+oldPos]= snnRuntimeData.postSynapticIds[cumN+newPos];
-//	snnRuntimeData.postSynapticIds[cumN+newPos]= tmp;
+//	SynInfo tmp = managerRuntimeData.postSynapticIds[cumN+oldPos];
+//	managerRuntimeData.postSynapticIds[cumN+oldPos]= managerRuntimeData.postSynapticIds[cumN+newPos];
+//	managerRuntimeData.postSynapticIds[cumN+newPos]= tmp;
 //
 //	// Ensure that you have shifted the delay accordingly....
 //	uint8_t tmp_delay = tmp_SynapticDelay[cumN+oldPos];
@@ -5338,11 +5319,11 @@ void SNN::updateSpikeMonitor(int grpId) {
 //	tmp_SynapticDelay[cumN+newPos] = tmp_delay;
 //
 //	// update the pre-information for the postsynaptic neuron at the position oldPos.
-//	SynInfo  postInfo = snnRuntimeData.postSynapticIds[cumN+oldPos];
+//	SynInfo  postInfo = managerRuntimeData.postSynapticIds[cumN+oldPos];
 //	int  post_nid = GET_CONN_NEURON_ID(postInfo);
 //	int  post_sid = GET_CONN_SYN_ID(postInfo);
 //
-//	SynInfo* preId    = &(snnRuntimeData.preSynapticIds[snnRuntimeData.cumulativePre[post_nid]+post_sid]);
+//	SynInfo* preId    = &(managerRuntimeData.preSynapticIds[managerRuntimeData.cumulativePre[post_nid]+post_sid]);
 //	int  pre_nid  = GET_CONN_NEURON_ID((*preId));
 //	int  pre_sid  = GET_CONN_SYN_ID((*preId));
 //	int  pre_gid  = GET_CONN_GRP_ID((*preId));
@@ -5351,11 +5332,11 @@ void SNN::updateSpikeMonitor(int grpId) {
 //	*preId = SET_CONN_ID( pre_nid, oldPos, pre_gid);
 //
 //	// update the pre-information for the postsynaptic neuron at the position newPos
-//	postInfo = snnRuntimeData.postSynapticIds[cumN+newPos];
+//	postInfo = managerRuntimeData.postSynapticIds[cumN+newPos];
 //	post_nid = GET_CONN_NEURON_ID(postInfo);
 //	post_sid = GET_CONN_SYN_ID(postInfo);
 //
-//	preId    = &(snnRuntimeData.preSynapticIds[snnRuntimeData.cumulativePre[post_nid]+post_sid]);
+//	preId    = &(managerRuntimeData.preSynapticIds[managerRuntimeData.cumulativePre[post_nid]+post_sid]);
 //	pre_nid  = GET_CONN_NEURON_ID((*preId));
 //	pre_sid  = GET_CONN_SYN_ID((*preId));
 //	pre_gid  = GET_CONN_GRP_ID((*preId));
@@ -5375,59 +5356,59 @@ void SNN::updateSpikeMonitor(int grpId) {
 //	maxWt = isExcitatoryGroup(srcGrp) ? fabs(maxWt) : -1.0*fabs(maxWt);
 //
 //	// we have exceeded the number of possible connection for one neuron
-//	if(snnRuntimeData.Npost[src] >= groupConfigs[0][srcGrp].numPostSynapses)	{
+//	if(managerRuntimeData.Npost[src] >= groupConfigs[0][srcGrp].numPostSynapses)	{
 //		KERNEL_ERROR("setConnection(%d (Grp=%s), %d (Grp=%s), %f, %d)", src, groupInfo[srcGrp].Name.c_str(),
 //					dest, groupInfo[destGrp].Name.c_str(), synWt, dVal);
-//		KERNEL_ERROR("Large number of postsynaptic connections established (%d), max for this group %d.", snnRuntimeData.Npost[src], groupConfigs[0][srcGrp].numPostSynapses);
+//		KERNEL_ERROR("Large number of postsynaptic connections established (%d), max for this group %d.", managerRuntimeData.Npost[src], groupConfigs[0][srcGrp].numPostSynapses);
 //		exitSimulation(1);
 //	}
 //
-//	if(snnRuntimeData.Npre[dest] >= groupConfigs[0][destGrp].numPreSynapses) {
+//	if(managerRuntimeData.Npre[dest] >= groupConfigs[0][destGrp].numPreSynapses) {
 //		KERNEL_ERROR("setConnection(%d (Grp=%s), %d (Grp=%s), %f, %d)", src, groupInfo[srcGrp].Name.c_str(),
 //					dest, groupInfo[destGrp].Name.c_str(), synWt, dVal);
-//		KERNEL_ERROR("Large number of presynaptic connections established (%d), max for this group %d.", snnRuntimeData.Npre[dest], groupConfigs[0][destGrp].numPreSynapses);
+//		KERNEL_ERROR("Large number of presynaptic connections established (%d), max for this group %d.", managerRuntimeData.Npre[dest], groupConfigs[0][destGrp].numPreSynapses);
 //		exitSimulation(1);
 //	}
 //
-//	int p = snnRuntimeData.Npost[src];
+//	int p = managerRuntimeData.Npost[src];
 //
-//	assert(snnRuntimeData.Npost[src] >= 0);
-//	assert(snnRuntimeData.Npre[dest] >= 0);
+//	assert(managerRuntimeData.Npost[src] >= 0);
+//	assert(managerRuntimeData.Npre[dest] >= 0);
 //	assert((src * maxNumPostSynGrp + p) / numN < maxNumPostSynGrp); // divide by numN to prevent INT overflow
 //
-//	unsigned int post_pos = snnRuntimeData.cumulativePost[src] + snnRuntimeData.Npost[src];
-//	unsigned int pre_pos  = snnRuntimeData.cumulativePre[dest] + snnRuntimeData.Npre[dest];
+//	unsigned int post_pos = managerRuntimeData.cumulativePost[src] + managerRuntimeData.Npost[src];
+//	unsigned int pre_pos  = managerRuntimeData.cumulativePre[dest] + managerRuntimeData.Npre[dest];
 //
 //	assert(post_pos < numPostSynNet);
 //	assert(pre_pos  < numPreSynNet);
 //
 //	//generate a new postSynapticIds id for the current connection
-//	snnRuntimeData.postSynapticIds[post_pos]   = SET_CONN_ID(dest, snnRuntimeData.Npre[dest], destGrp);
+//	managerRuntimeData.postSynapticIds[post_pos]   = SET_CONN_ID(dest, managerRuntimeData.Npre[dest], destGrp);
 //	tmp_SynapticDelay[post_pos] = dVal;
 //
-//	snnRuntimeData.preSynapticIds[pre_pos] = SET_CONN_ID(src, snnRuntimeData.Npost[src], srcGrp);
-//	snnRuntimeData.wt[pre_pos] 	  = synWt;
-//	snnRuntimeData.maxSynWt[pre_pos] = maxWt;
-//	snnRuntimeData.connIdsPreIdx[pre_pos] = connId;
+//	managerRuntimeData.preSynapticIds[pre_pos] = SET_CONN_ID(src, managerRuntimeData.Npost[src], srcGrp);
+//	managerRuntimeData.wt[pre_pos] 	  = synWt;
+//	managerRuntimeData.maxSynWt[pre_pos] = maxWt;
+//	managerRuntimeData.connIdsPreIdx[pre_pos] = connId;
 //
 //	bool synWtType = GET_FIXED_PLASTIC(connProp);
 //
 //	if (synWtType == SYN_PLASTIC) {
 //		sim_with_fixedwts = false; // if network has any plastic synapses at all, this will be set to true
-//		snnRuntimeData.Npre_plastic[dest]++;
+//		managerRuntimeData.Npre_plastic[dest]++;
 //		// homeostasis
 //		if (groupConfigs[0][destGrp].WithHomeostasis && groupConfigs[0][destGrp].homeoId ==-1)
 //			groupConfigs[0][destGrp].homeoId = dest; // this neuron info will be printed
 //	}
 //
-//	snnRuntimeData.Npre[dest] += 1;
-//	snnRuntimeData.Npost[src] += 1;
+//	managerRuntimeData.Npre[dest] += 1;
+//	managerRuntimeData.Npost[src] += 1;
 //
 //	groupInfo[srcGrp].numPostConn++;
 //	groupInfo[destGrp].numPreConn++;
 //
-//	if (snnRuntimeData.Npost[src] > groupInfo[srcGrp].maxPostConn)
-//		groupInfo[srcGrp].maxPostConn = snnRuntimeData.Npost[src];
-//	if (snnRuntimeData.Npre[dest] > groupInfo[destGrp].maxPreConn)
-//	groupInfo[destGrp].maxPreConn = snnRuntimeData.Npre[src];
+//	if (managerRuntimeData.Npost[src] > groupInfo[srcGrp].maxPostConn)
+//		groupInfo[srcGrp].maxPostConn = managerRuntimeData.Npost[src];
+//	if (managerRuntimeData.Npre[dest] > groupInfo[destGrp].maxPreConn)
+//	groupInfo[destGrp].maxPreConn = managerRuntimeData.Npre[src];
 //}

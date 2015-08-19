@@ -84,15 +84,15 @@ void SNN::printMemoryInfo(FILE* const fp) {
 		int TNpre_plastic=0;
 		
 		for(int i=groupConfigs[0][g].StartN; i <= groupConfigs[0][g].EndN; i++) {
-			TNpost += snnRuntimeData.Npost[i];
-			TNpre  += snnRuntimeData.Npre[i];
-			TNpre_plastic += snnRuntimeData.Npre_plastic[i];
+			TNpost += managerRuntimeData.Npost[i];
+			TNpre  += managerRuntimeData.Npre[i];
+			TNpre_plastic += managerRuntimeData.Npre_plastic[i];
 		}
 		
 	fprintf(fp, "%s Group (num_neurons=%5d): \n\t\tNpost[%2d] = %3d, Npre[%2d]=%3d Npre_plastic[%2d]=%3d \n\t\tcumPre[%5d]=%5d cumPre[%5d]=%5d cumPost[%5d]=%5d cumPost[%5d]=%5d \n",
 		groupInfo[g].Name.c_str(), groupConfigs[0][g].SizeN, g, TNpost/groupConfigs[0][g].SizeN, g, TNpre/groupConfigs[0][g].SizeN, g, TNpre_plastic/groupConfigs[0][g].SizeN,
-		groupConfigs[0][g].StartN, snnRuntimeData.cumulativePre[groupConfigs[0][g].StartN],  groupConfigs[0][g].EndN, snnRuntimeData.cumulativePre[groupConfigs[0][g].EndN],
-		groupConfigs[0][g].StartN, snnRuntimeData.cumulativePost[groupConfigs[0][g].StartN], groupConfigs[0][g].EndN, snnRuntimeData.cumulativePost[groupConfigs[0][g].EndN]);
+		groupConfigs[0][g].StartN, managerRuntimeData.cumulativePre[groupConfigs[0][g].StartN],  groupConfigs[0][g].EndN, managerRuntimeData.cumulativePre[groupConfigs[0][g].EndN],
+		groupConfigs[0][g].StartN, managerRuntimeData.cumulativePost[groupConfigs[0][g].StartN], groupConfigs[0][g].EndN, managerRuntimeData.cumulativePost[groupConfigs[0][g].EndN]);
 	}
 	fprintf(fp, "**************************************\n\n");
 }
@@ -127,7 +127,7 @@ void SNN::printStatusSpikeMonitor(int grpId) {
 		// so then we can use spkMonObj->print(false); // showSpikeTimes==false
 		int grpSpk = 0;
 		for (int neurId=groupConfigs[0][grpId].StartN; neurId<=groupConfigs[0][grpId].EndN; neurId++)
-			grpSpk += snnRuntimeData.nSpikeCnt[neurId]; // add up all neuronal spike counts
+			grpSpk += managerRuntimeData.nSpikeCnt[neurId]; // add up all neuronal spike counts
 
 		// infer run duration by measuring how much time has passed since the last run summary was printed
 		int runDurationMs = simTime - simTimeLastRunSummary;
@@ -147,7 +147,7 @@ void SNN::printStatusSpikeMonitor(int grpId) {
 			float std = 0.0f;
 			if (groupConfigs[0][grpId].SizeN > 1) {
 				for (int neurId=groupConfigs[0][grpId].StartN; neurId<=groupConfigs[0][grpId].EndN; neurId++) {
-					float neurRate = snnRuntimeData.nSpikeCnt[neurId]*1000.0f/runDurationMs;
+					float neurRate = managerRuntimeData.nSpikeCnt[neurId]*1000.0f/runDurationMs;
 					std += (neurRate-meanRate)*(neurRate-meanRate);
 				}
 				std = sqrt(std/(groupConfigs[0][grpId].SizeN-1.0));
@@ -206,13 +206,6 @@ void SNN::printStatusGroupMonitor(int grpId) {
 void SNN::printState(FILE* const fp) {
 	for(int g=0; g < numGroups; g++)
 		printNeuronState(g, fp);
-}
-
-void SNN::printTuningLog(FILE * const fp) {
-	if (fp) {
-		fprintf(fp, "Generating Tuning log\n");
-//		printParameters(fp);
-	}
 }
 
 // This function has no caller
@@ -410,14 +403,6 @@ void SNN::printGroupInfo2(FILE* const fpg)
   fflush(fpg);
 }
 
-//! \deprecated
-void SNN::printParameters(FILE* const fp) {
-	KERNEL_WARN("printParameters is deprecated");
-/*	assert(fp!=NULL);
-	printGroupInfo(fp);
-	printConnectionInfo(fp);*/
-}
-
 // print all post-connections...
 void SNN::printPostConnection(FILE * const fp)
 {
@@ -441,21 +426,21 @@ int SNN::printPostConnection2(int grpId, FILE* const fpg)
 {
   int maxLength = -1;
   for(int i=groupConfigs[0][grpId].StartN; i<=groupConfigs[0][grpId].EndN; i++) {
-    fprintf(fpg, " id %d : group %d : postlength %d ", i, findGrpId(i), snnRuntimeData.Npost[i]);
+    fprintf(fpg, " id %d : group %d : postlength %d ", i, findGrpId(i), managerRuntimeData.Npost[i]);
     // fetch the starting position
-    SynInfo* postIds = &(snnRuntimeData.postSynapticIds[snnRuntimeData.cumulativePost[i]]);
+    SynInfo* postIds = &(managerRuntimeData.postSynapticIds[managerRuntimeData.cumulativePost[i]]);
     for(int j=0; j <= maxDelay_; j++) {
-      int len   = snnRuntimeData.postDelayInfo[i*(maxDelay_+1)+j].delay_length;
-      int start = snnRuntimeData.postDelayInfo[i*(maxDelay_+1)+j].delay_index_start;
+      int len   = managerRuntimeData.postDelayInfo[i*(maxDelay_+1)+j].delay_length;
+      int start = managerRuntimeData.postDelayInfo[i*(maxDelay_+1)+j].delay_index_start;
       for(int k=start; k < len; k++) {
 	int post_nid = GET_CONN_NEURON_ID((*postIds));
 	//					int post_gid = GET_CONN_GRP_ID((*postIds));
 	fprintf(fpg, " : %d,%d ", post_nid, j);
 	postIds++;
       }
-      if (snnRuntimeData.Npost[i] > maxLength)
-	maxLength = snnRuntimeData.Npost[i];
-      if ((start+len) >= snnRuntimeData.Npost[i])
+      if (managerRuntimeData.Npost[i] > maxLength)
+	maxLength = managerRuntimeData.Npost[i];
+      if ((start+len) >= managerRuntimeData.Npost[i])
 	break;
     }
     fprintf(fpg, "\n");
@@ -514,8 +499,8 @@ void SNN::printFiringRate(char *fname)
     int   totSpike = 0;
     int   activeCnt  = 0;
     for(int i=groupConfigs[0][grpId].StartN; i<=groupConfigs[0][grpId].EndN; i++) {
-      if (snnRuntimeData.nSpikeCnt[i] >= 1.0) {
-	totSpike += snnRuntimeData.nSpikeCnt[i];
+      if (managerRuntimeData.nSpikeCnt[i] >= 1.0) {
+	totSpike += managerRuntimeData.nSpikeCnt[i];
 	activeCnt++;
       }
     }
@@ -530,22 +515,22 @@ void SNN::printFiringRate(char *fname)
 void SNN::printPostConnection(int grpId, FILE* const fp)
 {
   for(int i=groupConfigs[0][grpId].StartN; i<=groupConfigs[0][grpId].EndN; i++) {
-    if(fp) fprintf(fp, " %3d ( %3d ) : \t", i, snnRuntimeData.Npost[i]);
+    if(fp) fprintf(fp, " %3d ( %3d ) : \t", i, managerRuntimeData.Npost[i]);
     // fetch the starting position
-    SynInfo* postIds = &(snnRuntimeData.postSynapticIds[snnRuntimeData.cumulativePost[i]]);
-    int  offset  = snnRuntimeData.cumulativePost[i];
-    for(int j=0; j < snnRuntimeData.Npost[i]; j++, postIds++) {
+    SynInfo* postIds = &(managerRuntimeData.postSynapticIds[managerRuntimeData.cumulativePost[i]]);
+    int  offset  = managerRuntimeData.cumulativePost[i];
+    for(int j=0; j < managerRuntimeData.Npost[i]; j++, postIds++) {
       int post_nid = GET_CONN_NEURON_ID((*postIds));
       //int post_gid = GET_CONN_GRP_ID((*postIds));
-	  int post_gid = snnRuntimeData.grpIds[post_nid];
+	  int post_gid = managerRuntimeData.grpIds[post_nid];
       assert( findGrpId(post_nid) == post_gid);
       //if(fp) fprintf(fp, " %3d ( maxDelay_=%3d, Grp=%3d) ", post_nid, tmp_SynapticDelay[offset+j], post_gid);
     }
     if(fp) fprintf(fp, "\n");
     if(fp) fprintf(fp, " Delay ( %3d ) : ", i);
     for(int j=0; j < maxDelay_; j++) {
-      if(fp) fprintf(fp, " %d,%d ", snnRuntimeData.postDelayInfo[i*(maxDelay_+1)+j].delay_length,
-		     snnRuntimeData.postDelayInfo[i*(maxDelay_+1)+j].delay_index_start);
+      if(fp) fprintf(fp, " %d,%d ", managerRuntimeData.postDelayInfo[i*(maxDelay_+1)+j].delay_length,
+		     managerRuntimeData.postDelayInfo[i*(maxDelay_+1)+j].delay_index_start);
     }
     if(fp) fprintf(fp, "\n");
   }
@@ -555,15 +540,15 @@ int SNN::printPreConnection2(int grpId, FILE* const fpg)
 {
 	int maxLength = -1;
 	for(int i=groupConfigs[0][grpId].StartN; i<=groupConfigs[0][grpId].EndN; i++) {
-		fprintf(fpg, " id %d : group %d : prelength %d ", i, findGrpId(i), snnRuntimeData.Npre[i]);
-		SynInfo* preIds = &(snnRuntimeData.preSynapticIds[snnRuntimeData.cumulativePre[i]]);
-		for(int j=0; j < snnRuntimeData.Npre[i]; j++, preIds++) {
+		fprintf(fpg, " id %d : group %d : prelength %d ", i, findGrpId(i), managerRuntimeData.Npre[i]);
+		SynInfo* preIds = &(managerRuntimeData.preSynapticIds[managerRuntimeData.cumulativePre[i]]);
+		for(int j=0; j < managerRuntimeData.Npre[i]; j++, preIds++) {
 			if (snnState == EXECUTABLE_SNN)
-				fprintf(fpg, ": %d,%s", GET_CONN_NEURON_ID((*preIds)), (j < snnRuntimeData.Npre_plastic[i])?"P":"F");
+				fprintf(fpg, ": %d,%s", GET_CONN_NEURON_ID((*preIds)), (j < managerRuntimeData.Npre_plastic[i])?"P":"F");
 		}
 		
-		if ( snnRuntimeData.Npre[i] > maxLength)
-			maxLength = snnRuntimeData.Npre[i];
+		if ( managerRuntimeData.Npre[i] > maxLength)
+			maxLength = managerRuntimeData.Npre[i];
 		fprintf(fpg, "\n");
 	}
 	return maxLength;
@@ -572,13 +557,13 @@ int SNN::printPreConnection2(int grpId, FILE* const fpg)
 void SNN::printPreConnection(int grpId, FILE* const fp)
 {
 	for(int i=groupConfigs[0][grpId].StartN; i<=groupConfigs[0][grpId].EndN; i++) {
-		if(fp) fprintf(fp, " %d ( preCnt=%d, prePlastic=%d ) : (id => (wt, maxWt),(preId, P/F)\n\t", i, snnRuntimeData.Npre[i], snnRuntimeData.Npre_plastic[i]);
-		SynInfo* preIds = &(snnRuntimeData.preSynapticIds[snnRuntimeData.cumulativePre[i]]);
-		int  pos_i  = snnRuntimeData.cumulativePre[i];
-		for(int j=0; j < snnRuntimeData.Npre[i]; j++, pos_i++, preIds++) {
-			if(fp) fprintf(fp,  "  %d => (%f, %f)", j, snnRuntimeData.wt[pos_i], snnRuntimeData.maxSynWt[pos_i]);
+		if(fp) fprintf(fp, " %d ( preCnt=%d, prePlastic=%d ) : (id => (wt, maxWt),(preId, P/F)\n\t", i, managerRuntimeData.Npre[i], managerRuntimeData.Npre_plastic[i]);
+		SynInfo* preIds = &(managerRuntimeData.preSynapticIds[managerRuntimeData.cumulativePre[i]]);
+		int  pos_i  = managerRuntimeData.cumulativePre[i];
+		for(int j=0; j < managerRuntimeData.Npre[i]; j++, pos_i++, preIds++) {
+			if(fp) fprintf(fp,  "  %d => (%f, %f)", j, managerRuntimeData.wt[pos_i], managerRuntimeData.maxSynWt[pos_i]);
 			if (snnState ==  EXECUTABLE_SNN)
-				if(fp) fprintf(fp, ",(%d, %s)", GET_CONN_NEURON_ID((*preIds)), (j < snnRuntimeData.Npre_plastic[i])?"P":"F");
+				if(fp) fprintf(fp, ",(%d, %s)", GET_CONN_NEURON_ID((*preIds)), (j < managerRuntimeData.Npre_plastic[i])?"P":"F");
 		}
 		
 		if(fp) fprintf(fp, "\n");
@@ -589,7 +574,7 @@ void SNN::printPreConnection(int grpId, FILE* const fp)
 void SNN::printNeuronState(int grpId, FILE* const fp)
 {
   if (simMode_==GPU_MODE) {
-    copyNeuronState(&snnRuntimeData, &gpuRuntimeData[0], cudaMemcpyDeviceToHost, false, grpId);
+    copyNeuronState(&managerRuntimeData, &gpuRuntimeData[0], cudaMemcpyDeviceToHost, false, grpId);
   }
 
   fprintf(fp, "[MODE=%s] ", simMode_string[simMode_]);
@@ -601,8 +586,8 @@ void SNN::printNeuronState(int grpId, FILE* const fp)
     fprintf(fp, "t=%d msec ", simTime);
     int totSpikes = 0;
     for (int nid=groupConfigs[0][grpId].StartN; nid <= groupConfigs[0][grpId].EndN; nid++) {
-      totSpikes += snnRuntimeData.nSpikeCnt[nid];
-      fprintf(fp, "%d ", snnRuntimeData.nSpikeCnt[nid]);
+      totSpikes += managerRuntimeData.nSpikeCnt[nid];
+      fprintf(fp, "%d ", managerRuntimeData.nSpikeCnt[nid]);
     }
     fprintf(fp, "\n");
     fprintf(fp, "TotalSpikes [grp=%d, %s]=  %d\n", grpId, groupInfo[grpId].Name.c_str(), totSpikes);
@@ -612,18 +597,18 @@ void SNN::printNeuronState(int grpId, FILE* const fp)
   int totSpikes = 0;
   for (int nid=groupConfigs[0][grpId].StartN; nid <= groupConfigs[0][grpId].EndN; nid++) {
     // copy the neuron firing information from the GPU to the CPU...
-    totSpikes += snnRuntimeData.nSpikeCnt[nid];
+    totSpikes += managerRuntimeData.nSpikeCnt[nid];
     if(!sim_with_conductances) {
-      if(snnRuntimeData.current[nid] != 0.0)
+      if(managerRuntimeData.current[nid] != 0.0)
 	fprintf(fp, "t=%d id=%d v=%+3.3f u=%+3.3f I=%+3.3f nSpikes=%d\n", simTime, nid,
-		snnRuntimeData.voltage[nid],     snnRuntimeData.recovery[nid],      snnRuntimeData.current[nid],
-		snnRuntimeData.nSpikeCnt[nid]);
+		managerRuntimeData.voltage[nid],     managerRuntimeData.recovery[nid],      managerRuntimeData.current[nid],
+		managerRuntimeData.nSpikeCnt[nid]);
     }
     else {
-      if (snnRuntimeData.gAMPA[nid]+ snnRuntimeData.gNMDA[nid]+snnRuntimeData.gGABAa[nid]+snnRuntimeData.gGABAb[nid] != 0.0)
+      if (managerRuntimeData.gAMPA[nid]+ managerRuntimeData.gNMDA[nid]+managerRuntimeData.gGABAa[nid]+managerRuntimeData.gGABAb[nid] != 0.0)
 	fprintf(fp, "t=%d id=%d v=%+3.3f u=%+3.3f I=%+3.3f gAMPA=%2.5f gNMDA=%2.5f gGABAa=%2.5f gGABAb=%2.5f nSpikes=%d\n", simTime, nid,
-		snnRuntimeData.voltage[nid],     snnRuntimeData.recovery[nid],      snnRuntimeData.current[nid], snnRuntimeData.gAMPA[nid],
-		snnRuntimeData.gNMDA[nid], snnRuntimeData.gGABAa[nid], snnRuntimeData.gGABAb[nid], snnRuntimeData.nSpikeCnt[nid]);
+		managerRuntimeData.voltage[nid],     managerRuntimeData.recovery[nid],      managerRuntimeData.current[nid], managerRuntimeData.gAMPA[nid],
+		managerRuntimeData.gNMDA[nid], managerRuntimeData.gGABAa[nid], managerRuntimeData.gGABAb[nid], managerRuntimeData.nSpikeCnt[nid]);
     }
   }
   fprintf(fp, "TotalSpikes [grp=%d, %s] = %d\n", grpId, groupInfo[grpId].Name.c_str(), totSpikes);
@@ -656,19 +641,19 @@ void SNN::printWeights(int preGrpId, int postGrpId) {
 			(preGrpId==ALL)?"ALL":groupInfo[preGrpId].Name.c_str(), groupInfo[gPost].Name.c_str(), wtANDwtChangeUpdateInterval_);
 
 		if (simMode_ == GPU_MODE) {
-			copyWeightState (&snnRuntimeData, &gpuRuntimeData[0], cudaMemcpyDeviceToHost, false, gPost);
+			copyWeightState (&managerRuntimeData, &gpuRuntimeData[0], cudaMemcpyDeviceToHost, false, gPost);
 		}
 
 		int i=groupConfigs[0][gPost].StartN;
-		unsigned int offset = snnRuntimeData.cumulativePre[i];
-		for (int j=0; j<snnRuntimeData.Npre[i]; j++) {
-			int gPre = snnRuntimeData.grpIds[j];
+		unsigned int offset = managerRuntimeData.cumulativePre[i];
+		for (int j=0; j<managerRuntimeData.Npre[i]; j++) {
+			int gPre = managerRuntimeData.grpIds[j];
 			if (gPre<preA || gPre>preZ)
 				continue;
 
-			float wt  = snnRuntimeData.wt[offset+j];
+			float wt  = managerRuntimeData.wt[offset+j];
 			if (!groupConfigs[0][gPost].FixedInputWts) {
-				float wtC = snnRuntimeData.wtChange[offset+j];
+				float wtC = managerRuntimeData.wtChange[offset+j];
 				fprintf(fpInf_, "%s%1.3f (%s%1.3f)\t", wt<0?"":" ", wt, wtC<0?"":"+", wtC);
 			} else {
 				fprintf(fpInf_, "%s%1.3f \t\t", wt<0?"":" ", wt);
