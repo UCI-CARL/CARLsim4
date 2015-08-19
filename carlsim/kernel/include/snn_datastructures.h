@@ -351,8 +351,6 @@ typedef struct GroupConfigRT_s {
 	int          SliceUpdateTime;
 	int          numPostSynapses; //!< the total number of post-connections of a group
 	int          numPreSynapses; //!< the total number of pre-connections of a group
-	//int maxNumPostSynN; //!< the max number of post-connections among neurons in a group
-	//int maxNumPreSynN; //!< the max number of pre-connections among neurons in a group
 	bool         isSpikeGenerator;
 	bool         WithSTP;
 	bool         WithSTDP;

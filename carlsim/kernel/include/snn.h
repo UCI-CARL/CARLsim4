@@ -591,7 +591,6 @@ private:
 	int assignGroup(int groupId, int availableNeuronId);
 	int assignGroup(std::list<GroupConfigRT>::iterator grpIt, int localGroupId, int availableNeuronId);
 	void generateGroupRuntime(int groupId);
-	void generateRuntimeData();
 	void generatePoissonGroupRuntime(int groupId);
 	void generateConnectionRuntime();
 
@@ -661,10 +660,6 @@ private:
 	float generateWeight(int connProp, float initWt, float maxWt, int nid, int grpId);
 
 	void globalStateUpdate();
-
-	//! initialize all the synaptic weights to appropriate values.
-	//! total size of the synaptic connection is 'length'
-	void initSynapticWeights();
 
 	//! initialize GroupConfigRT structure
 	void initGroupConfig(GroupConfigRT* groupConfig);
@@ -1030,6 +1025,20 @@ private:
 	RuntimeData gpuRuntimeData[MAX_NET_PER_SNN];
 	//RuntimeData cpuRuntimeData;
 	RuntimeData managerRuntimeData;
+
+	typedef struct ManagerRuntimeDataSize_s {
+		unsigned int maxMaxSpikeD1;
+		unsigned int maxMaxSpikeD2;
+		int maxNumN;
+		int maxNumNReg;
+		int maxNumGroups;
+		int maxNumConnections;
+		int maxNumPostSynNet;
+		int maxNumPreSynNet;
+	} ManagerRuntimeDataSize;
+
+	ManagerRuntimeDataSize managerRTDSize;
+
 
 	int NgenFunc; //!< this counts the spike generator offsets...
 
