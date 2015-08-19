@@ -4161,26 +4161,26 @@ void SNN::generateRuntimeSNN() {
 		if (!groupPartitionLists[netId].empty()) {	
 			// build the runtime data according to local network, group, connection configuirations
 			
+			// FIXME: local global id conversion
 			// generate runtime data for each group
-			for(int g = 0; g < numGroups; g++) {
-				if (groupConfigs[0][g].Type & POISSON_NEURON) {
-					generatePoissonGroupRuntime(g);
+			for(int lGrpId = 0; lGrpId < networkConfigs[netId].numGroups; lGrpId++) {
+				if (groupConfigs[netId][lGrpId].Type & POISSON_NEURON) {
+					generatePoissonGroupRuntime(lGrpId);
 				} else {
-					generateGroupRuntime(g);
+					generateGroupRuntime(lGrpId);
 				}
 			}
 
-			
-			for (int nid = 0; nid < numN; nid++) {
-				managerRuntimeData.grpIds[nid] = -1;
-				for (int g = 0; g < numGroups; g++) {
-					if (nid >= groupConfigs[0][g].StartN && nid <= groupConfigs[0][g].EndN) {
-						managerRuntimeData.grpIds[nid] = (short int)g;
-						//printf("grpIds[%d] = %d\n", nid, g);
+			// FIXME: local global id conversion
+			for (int nId = 0; nId < networkConfigs[netId].numN; nId++) {
+				managerRuntimeData.grpIds[nId] = -1;
+				for(int lGrpId = 0; lGrpId < networkConfigs[netId].numGroups; lGrpId++) {
+					if (nId >= groupConfigs[netId][lGrpId].localStartN && nId <= groupConfigs[netId][lGrpId].localEndN) {
+						managerRuntimeData.grpIds[nId] = (short int)lGrpId;
 						break;
 					}
 				}
-				assert(managerRuntimeData.grpIds[nid] != -1);
+				assert(managerRuntimeData.grpIds[nId] != -1);
 			}
 
 			generateConnectionRuntime();

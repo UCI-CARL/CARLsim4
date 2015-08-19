@@ -2848,15 +2848,6 @@ void SNN::allocateSNN_GPU() {
 	CUDA_CHECK_ERRORS(cudaMemcpyToSymbol(d_mulSynFast, mulSynFast, sizeof(float)*numConnections, 0, cudaMemcpyHostToDevice));
 	CUDA_CHECK_ERRORS(cudaMemcpyToSymbol(d_mulSynSlow, mulSynSlow, sizeof(float)*numConnections, 0, cudaMemcpyHostToDevice));
 
-	// transfer group configs in std::map to array
-	//GroupConfigRT* groupConfig = new GroupConfigRT[numGroups];
-	//int grpId = 0;
-	//for (std::map<int, GroupConfigRT>::iterator it = groupConfigMap.begin(); it != groupConfigMap.end(); it++) {
-	//	groupConfigs[0][grpId] = it->second;
-	//	grpId++;
-	//}
-	//assert(grpId == numGroups);
-	
 	CUDA_CHECK_ERRORS(cudaMemcpyToSymbol(groupConfigsGPU, groupConfigs[0], (networkConfigs[0].numGroups) * sizeof(GroupConfigRT), 0, cudaMemcpyHostToDevice));
 
 	KERNEL_DEBUG("Transfering group settings to GPU:");
