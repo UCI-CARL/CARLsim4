@@ -2131,9 +2131,6 @@ void SNN::allocateSNN_CPU() {
 	managerRuntimeData.memType = CPU_MODE;
 }
 
-//! allocate space for voltage, recovery, Izh_a, Izh_b, Izh_c, Izh_d, current, gAMPA, gNMDA, gGABAa, gGABAb
-//! lastSpikeTime, curSpike, nSpikeCnt, intrinsicWeight, stpu, stpx, Npre, Npre_plastic, Npost, cumulativePost, cumulativePre
-//! postSynapticIds, tmp_SynapticDely, postDelayInfo, wt, maxSynWt, preSynapticIds, timeTableD2, timeTableD1
 void SNN::allocateRuntimeData() {
 	managerRuntimeData.voltage    = new float[managerRTDSize.maxNumNReg];
 	managerRuntimeData.recovery   = new float[managerRTDSize.maxNumNReg];
@@ -2213,10 +2210,7 @@ void SNN::allocateRuntimeData() {
 	memset(managerRuntimeData.lastSpikeTime, 0, sizeof(int) * managerRTDSize.maxNumN);
 	cpuSnnSz.neuronInfoSize += sizeof(int) * managerRTDSize.maxNumN;
 	
-
-	managerRuntimeData.curSpike   = new bool[managerRTDSize.maxNumN];
 	managerRuntimeData.nSpikeCnt  = new int[managerRTDSize.maxNumN];
-	memset(managerRuntimeData.curSpike, 0, sizeof(bool) * managerRTDSize.maxNumN);
 	memset(managerRuntimeData.nSpikeCnt, 0, sizeof(int) * managerRTDSize.maxNumN);
 
 	//! homeostasis variables
@@ -2293,7 +2287,6 @@ void SNN::allocateRuntimeData() {
 int SNN::addSpikeToTable(int nid, int g) {
 	int spikeBufferFull = 0;
 	managerRuntimeData.lastSpikeTime[nid] = simTime;
-	managerRuntimeData.curSpike[nid] = true;
 	managerRuntimeData.nSpikeCnt[nid]++;
 	if (sim_with_homeostasis)
 		managerRuntimeData.avgFiring[nid] += 1000/(groupConfigs[0][g].avgTimeScale*1000);
@@ -2469,13 +2462,6 @@ bool compareDelay(const ConnectionInfo& first, const ConnectionInfo& second) {
 }
 
 void SNN::generateConnectionRuntime() {
-	//assert(dest<=CONN_SYN_NEURON_MASK);			// total number of neurons is less than 1 million within a GPU
-	//assert((dVal >=1) && (dVal <= maxDelay_));
-
-	// adjust sign of weight based on pre-group (negative if pre is inhibitory)
-	//synWt = isExcitatoryGroup(srcGrp) ? fabs(synWt) : -1.0*fabs(synWt);
-	//maxWt = isExcitatoryGroup(srcGrp) ? fabs(maxWt) : -1.0*fabs(maxWt);
-
 	// generate mulSynFast, mulSynSlow in connection-centric array
 	for (std::map<int, ConnectConfig>::iterator it = connectConfigMap.begin(); it != connectConfigMap.end(); it++) {
 		// store scaling factors for synaptic currents in connection-centric array
@@ -4148,15 +4134,19 @@ void SNN::generateRuntimeSNN() {
 	generateConnectConfigs();
 
 	// 2. allocate space of runtime data used by the manager
-	// allocate space for firingTableD1, firingTableD2, timeTableD1, timeTableD2
+	// - allocate firingTableD1, firingTableD2, timeTableD1, timeTableD2
+	// - reset firingTableD1, firingTableD2, timeTableD1, timeTableD2
 	allocateSpikeTables();
-	// allocate space for voltage, recovery, Izh_a, Izh_b, Izh_c, Izh_d, current, gAMPA, gNMDA, gGABAa, gGABAb
-	// lastSpikeTime, curSpike, nSpikeCnt, intrinsicWeight, stpu, stpx, Npre, Npre_plastic, Npost, cumulativePost, cumulativePre
-	// postSynapticIds, tmp_SynapticDely, postDelayInfo, wt, maxSynWt, preSynapticIds
-	// grpDA, grp5HT, grpACh, grpNE, grpDABuffer, grp5HTBuffer, grpAChBuffer, grpNEBuffer
+	// - allocate voltage, recovery, Izh_a, Izh_b, Izh_c, Izh_d, current, extCurrent, gAMPA, gNMDA, gGABAa, gGABAb
+	// lastSpikeTime, nSpikeCnt, stpu, stpx, Npre, Npre_plastic, Npost, cumulativePost, cumulativePre,
+	// postSynapticIds, postDelayInfo, wt, wtChange, synSpikeTime, maxSynWt, preSynapticIds, grpIds, connIdsPreIdx,
+	// grpDA, grp5HT, grpACh, grpNE, grpDABuffer, grp5HTBuffer, grpAChBuffer, grpNEBuffer, mulSynFast, mulSynSlow
+	// - reset all above
 	allocateRuntimeData();
 
-	// 3. initialize runtime data and copy (load) them to appropriate memory (cpu or gpu memory) for execution
+	// 3. initialize manager runtime data according to partitions (i.e., local networks)
+	// 4a. allocate appropriate memory space (e.g., main memory (CPU) or device memory (GPU)).
+	// 4b. load (copy) them to appropriate memory space for execution
 	for (int netId = 0; netId < MAX_NET_PER_SNN; netId++) {
 		if (!groupPartitionLists[netId].empty()) {	
 			// build the runtime data according to local network, group, connection configuirations
@@ -4165,13 +4155,21 @@ void SNN::generateRuntimeSNN() {
 			// generate runtime data for each group
 			for(int lGrpId = 0; lGrpId < networkConfigs[netId].numGroups; lGrpId++) {
 				if (groupConfigs[netId][lGrpId].Type & POISSON_NEURON) {
+					// - init lstSpikeTime
+					// - reset avgFiring, stpu, stpx
+					// - init stpx
 					generatePoissonGroupRuntime(lGrpId);
 				} else {
+					// - init grpDA, grp5HT, grpACh, grpNE
+					// - init Izh_a, Izh_b, Izh_c, Izh_d, voltage, recovery, stpu, stpx
+					// - init baseFiring, avgFiring
+					// - init lastSpikeTime
 					generateGroupRuntime(lGrpId);
 				}
 			}
 
 			// FIXME: local global id conversion
+			// - init grpIds
 			for (int nId = 0; nId < networkConfigs[netId].numN; nId++) {
 				managerRuntimeData.grpIds[nId] = -1;
 				for(int lGrpId = 0; lGrpId < networkConfigs[netId].numGroups; lGrpId++) {
@@ -4183,21 +4181,32 @@ void SNN::generateRuntimeSNN() {
 				assert(managerRuntimeData.grpIds[nId] != -1);
 			}
 
+			// - init mulSynFast, mulSynSlow
+			// - init Npre, Npre_plastic, Npost, cumulativePre, cumulativePost, preSynapticIds, postSynapticIds, postDelayInfo
+			// - init wt, maxSynWt
 			generateConnectionRuntime();
 
+			// - reset current
 			resetCurrent();
+			// - reset conductance
 			resetConductances();
+			// - init stpx
 			if (networkConfigs[netId].sim_with_stp) {
 				for (int i = 0; i < managerRTDSize.maxNumN * (maxDelay_+1); i++)
 					managerRuntimeData.stpx[i] = 1.0f; // but memset doesn't work for 1.0
 			}
 
-			// Initialize the network wtChange, wt, synaptic firing time
+			// - reset wtChange
+			// - init synSpikeTime
+			// - init wt, maxSynWt
 			resetSynapticConnections(false);
 
+			// - allocate spikeGenBits
+			// - init GroupConfig.Noffset, NgenFunc
 			updateSpikeGeneratorsInit();
 
 			// reset all spike cnt
+			// - reset nSpikeCnt
 			resetSpikeCnt(ALL);
 
 			allocateSNN();
@@ -4207,7 +4216,7 @@ void SNN::generateRuntimeSNN() {
 		}
 	}
 
-	// 4. declare the spiking neural network is excutable
+	// 5. declare the spiking neural network is excutable
 	snnState = EXECUTABLE_SNN;
 }
 
@@ -4228,11 +4237,6 @@ void SNN::resetConductances() {
 			memset(managerRuntimeData.gGABAb, 0, sizeof(float)*numNReg);
 		}
 	}
-}
-
-void SNN::resetCounters() {
-	assert(numNReg <= numN);
-	memset(managerRuntimeData.curSpike, 0, sizeof(bool) * numN);
 }
 
 void SNN::resetCPUTiming() {
@@ -4288,14 +4292,8 @@ void SNN::resetGroups() {
 		}
 	}
 
-	// reset the currents for each neuron
-	resetCurrent();
-
 	// reset the conductances...
 	resetConductances();
-
-	//  reset various counters in the group...
-	resetCounters();
 }
 
 void SNN::resetNeuromodulator(int grpId) {
@@ -4474,9 +4472,8 @@ void SNN::resetRuntimeData(bool deallocate) {
 
 	if (managerRuntimeData.lastSpikeTime!=NULL && deallocate) delete[] managerRuntimeData.lastSpikeTime;
 	if (managerRuntimeData.synSpikeTime !=NULL && deallocate) delete[] managerRuntimeData.synSpikeTime;
-	if (managerRuntimeData.curSpike!=NULL && deallocate) delete[] managerRuntimeData.curSpike;
 	if (managerRuntimeData.nSpikeCnt!=NULL && deallocate) delete[] managerRuntimeData.nSpikeCnt;
-	managerRuntimeData.lastSpikeTime=NULL; managerRuntimeData.synSpikeTime=NULL; managerRuntimeData.curSpike=NULL; managerRuntimeData.nSpikeCnt=NULL;
+	managerRuntimeData.lastSpikeTime=NULL; managerRuntimeData.synSpikeTime=NULL; managerRuntimeData.nSpikeCnt=NULL;
 
 	if (managerRuntimeData.postDelayInfo!=NULL && deallocate) delete[] managerRuntimeData.postDelayInfo;
 	if (managerRuntimeData.preSynapticIds!=NULL && deallocate) delete[] managerRuntimeData.preSynapticIds;

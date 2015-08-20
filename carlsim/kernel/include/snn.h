@@ -738,7 +738,6 @@ private:
 	int loadSimulation_internal(bool onlyPlastic);
 
 	void resetConductances();
-	void resetCounters();
 	void resetCPUTiming();
 	void resetCurrent();
 	void resetFiringInformation(); //!< resets the firing information when updateNetwork is called

@@ -97,8 +97,9 @@ typedef struct ConnectConfig_s {
 	int                      grpDest;
 	uint8_t                  maxDelay;
 	uint8_t                  minDelay;
-	float                    initWt;
 	float                    maxWt;
+	float                    initWt;
+	float                    minWt;
 	float                    radX;
 	float                    radY;
 	float                    radZ;
@@ -261,7 +262,6 @@ typedef struct RuntimeData_s {
 	float* grpNEBuffer[MAX_GRP_PER_SNN];
 
 	unsigned int* spikeGenBits;
-	bool*         curSpike;
 } RuntimeData;
 
 //! runtime network configuration
@@ -378,10 +378,10 @@ typedef struct GroupConfigRT_s {
 	float        GAMMA;
 	float        KAPPA;
 	float        OMEGA;
-	float        TAU_PLUS_INV_INB; //!< for furture use
-	float        TAU_MINUS_INV_INB; //!< for furture use
-	float        ALPHA_PLUS_INB; //!< for furture use
-	float        ALPHA_MINUS_INB; //!< for furture use
+	float        TAU_PLUS_INV_INB;
+	float        TAU_MINUS_INV_INB;
+	float        ALPHA_PLUS_INB;
+	float        ALPHA_MINUS_INB;
 	float        BETA_LTP;
 	float        BETA_LTD;
 	float        LAMBDA;
@@ -461,24 +461,26 @@ typedef struct GroupInfo_s {
  * \see SNNState
  */
 typedef struct ConnectConfigRT_s {
-	int 	  				 grpSrc, grpDest;
-	uint8_t	  				 maxDelay;
-	uint8_t					 minDelay;
-	float	  				 initWt, maxWt;
+	int                      grpSrc;
+	int                      grpDest;
+	uint8_t                  maxDelay;
+	uint8_t                  minDelay;
+	float                    maxWt;
+	float                    initWt;
+	float                    minWt;
 	float                    radX;
-	float					 radY;
-	float					 radZ;
-	float 					 mulSynFast;				//!< factor to be applied to either gAMPA or gGABAa
-	float 					 mulSynSlow;				//!< factor to be applied to either gNMDA or gGABAb
+	float                    radY;
+	float                    radZ;
+	float                    mulSynFast;				//!< factor to be applied to either gAMPA or gGABAa
+	float                    mulSynSlow;				//!< factor to be applied to either gNMDA or gGABAb
 	int                      connectionMonitorId;
-	uint32_t  				 connProp;
+	uint32_t                 connProp;
 	ConnectionGeneratorCore* conn;
-	conType_t 				 type;
-	float					 p; 						//!< connection probability
-	short int				 connId;					//!< connectID of the element in the linked list
-	bool					 newUpdates;
-	int		   				 numberOfConnections;
-	struct ConnectConfig_s*    next;
+	conType_t                type;
+	float                    p; 						//!< connection probability
+	short int                connId;					//!< connectID of the element in the linked list
+	bool                     newUpdates;
+	int                      numberOfConnections;
 } ConnectConfigRT;
 
 #endif

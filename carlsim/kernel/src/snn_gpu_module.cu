@@ -2247,8 +2247,6 @@ void SNN::spikeGeneratorUpdate_GPU() {
 
 	// this part of the code is invoked when we use spike generators
 	if (NgenFunc) {
-		resetCounters();
-
 		assert(managerRuntimeData.spikeGenBits!=NULL);
 
 		// reset the bit status of the spikeGenBits...
@@ -2385,7 +2383,6 @@ void SNN::deleteObjects_GPU() {
 	CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[0].wtChange) );
 	CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[0].maxSynWt) );
 	CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[0].nSpikeCnt) );
-	CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[0].curSpike) ); // \FIXME exists but never used...
 	CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[0].firingTableD2) );
 	CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[0].firingTableD1) );
 	CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[0].avgFiring) );
