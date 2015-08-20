@@ -58,10 +58,10 @@ enum SNNState {
 	EXECUTABLE_SNN
 };
 
-typedef struct {
+typedef struct DelayInfo_s {
 	short  delay_index_start;
 	short  delay_length;
-} delay_info_t;
+} DelayInfo;
 
 typedef struct SynInfo_s {
 	int	gsId; //!< group id and synapse id
@@ -73,6 +73,7 @@ typedef struct ConnectionInfo_s {
 	int grpDest;
 	int nSrc;
 	int nDest;
+	int srcGLoffset;
 	float initWt;
 	float maxWt;
 	int preSynId;
@@ -80,7 +81,7 @@ typedef struct ConnectionInfo_s {
 	uint8_t delay;
 
 	bool operator== (const struct ConnectionInfo_s& conn) {
-		return (nSrc == conn.nSrc);
+		return (nSrc + srcGLoffset == conn.nSrc);
 	}
 } ConnectionInfo;
 
@@ -125,7 +126,7 @@ typedef struct ConnectConfig_s {
  */
 typedef struct GroupConfig_s {
 	// properties of neural group size and location
-	std::string		Name;
+	std::string  Name;
 	unsigned int type;
 	int          numN;
     int          sizeX;
@@ -214,8 +215,7 @@ typedef struct RuntimeData_s {
 	unsigned int* cumulativePost;
 	unsigned int* cumulativePre;
 
-	short int* connIdsPreIdx;	//!< connectId, per synapse, presynaptic cumulative indexing
-
+	short int* connIdsPreIdx; //!< connectId, per synapse, presynaptic cumulative indexing
 	short int* grpIds;
 
 	/*!
@@ -227,7 +227,7 @@ typedef struct RuntimeData_s {
 	SynInfo* postSynapticIds;
 	SynInfo* preSynapticIds;
 
-	delay_info_t* postDelayInfo;  	//!< delay information
+	DelayInfo* postDelayInfo;  	//!< delay information
 
 	int* firingTableD1;
 	int* firingTableD2;
@@ -243,7 +243,7 @@ typedef struct RuntimeData_s {
 	int*  spkCntBufChild[MAX_GRP_PER_SNN]; //!< child pointers for above
 
 	//!< homeostatic plasticity variables
-	float* baseFiringInv; // only used on GPU
+	float* baseFiringInv; //!< only used on GPU
 	float* baseFiring;
 	float* avgFiring;
 
@@ -271,30 +271,36 @@ typedef struct RuntimeData_s {
  *	\sa SNN
  */
 typedef struct NetworkConfigRT_s  {
-	int numN;
-	int maxDelay;
-	int numNExcReg;
-	int numNInhReg;
-	int numNReg;
-	int numNExcPois;
-	int numNInhPois;
-	int numNPois;
-	int numNExternal;
-	int numNAssigned;
+	// global configuration for maximum axonal delay
+	int maxDelay; //!< maximum axonal delay in the gloabl network
+
+	// configurations for boundries of neural types
+	int numN;         //!< number of neurons in the spiking neural network
+	int numNExcReg;   //!< number of regular excitatory neurons
+	int numNInhReg;   //!< number of regular inhibitory neurons
+	int numNReg;      //!< number of regular (spking) neurons
+	int numNExcPois;  //!< number of excitatory poisson neurons
+	int numNInhPois;  //!< number of inhibitory poisson neurons
+	int numNPois;     //!< number of poisson neurons
+	int numNExternal; //!< number of external neurons in the view of this local network 
+	int numNAssigned; //!< number of total neurons assigned to this local network
+
+	// configurations for runtime data sizes
 	unsigned int I_setLength; //!< used for GPU only
 	size_t       I_setPitch;  //!< used for GPU only
 	size_t       STP_Pitch;   //!< numN rounded upwards to the nearest 256 boundary, used for GPU only
-	unsigned int preSynLength;
-	int numPostSynNet; //!< total number of post-connections in a network
-	int numPreSynNet;  //!< total number of pre-connections in a network
-	int maxNumPostSynN;   //!< maximum number of post-synaptic connections among neurons
-	int maxNumPreSynN;    //!< maximum number of pre-syanptic connections among neurons 
-	unsigned int maxSpikesD2;
-	unsigned int maxSpikesD1;
+	int numPostSynNet;        //!< the total number of post-connections in a network
+	int numPreSynNet;         //!< the total number of pre-connections in a network
+	int maxNumPostSynN;       //!< the maximum number of post-synaptic connections among neurons
+	int maxNumPreSynN;        //!< the maximum number of pre-syanptic connections among neurons 
+	unsigned int maxSpikesD2; //!< the estimated maximum number of spikes with delay >= 2 in a network
+	unsigned int maxSpikesD1; //!< the estimated maximum number of spikes with delay ===1 in a network
 
-	int numGroups;
-	int numConnections;
+	// configurations for assigned groups and connections
+	int numGroups;      //!< number of groups assigned to this local network
+	int numConnections; //!< number of connections assigned to this local network
 
+	// configurations for execution features
 	bool sim_with_fixedwts;
 	bool sim_with_conductances;
 	bool sim_with_stdp;
@@ -303,9 +309,11 @@ typedef struct NetworkConfigRT_s  {
 	bool sim_with_stp;
 	bool sim_in_testing;
 
+	// stdp, da-stdp configurations
 	float stdpScaleFactor;
-	float wtChangeDecay; //!< the wtChange decay
+	float wtChangeDecay;   //!< the wtChange decay
 
+	// conductance configurations
 	bool sim_with_NMDA_rise;  //!< a flag to inform whether to compute NMDA rise time
 	bool sim_with_GABAb_rise; //!< a flag to inform whether to compute GABAb rise time
 	double dAMPA;             //!< multiplication factor for decay time of AMPA conductance (gAMPA[i] *= dAMPA)

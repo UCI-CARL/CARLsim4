@@ -1574,7 +1574,7 @@ void SNN::copyPostConnectionInfo(RuntimeData* dest, bool allocateMem) {
 	} else {
 		assert(dest->allocated == true);
 	}
-	assert(snnState == EXECUTABLE_SNN);
+	assert(snnState == PARTITIONED_SNN);
 
 	// beginning position for the post-synaptic information
 	if(allocateMem) 
@@ -2190,7 +2190,6 @@ void SNN::copyState(RuntimeData* dest, bool allocateMem) {
 	// firing time for individual synapses
 	if(allocateMem)		CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->synSpikeTime, sizeof(int) * networkConfigs[0].numPreSynNet));
 	CUDA_CHECK_ERRORS( cudaMemcpy( dest->synSpikeTime, managerRuntimeData.synSpikeTime, sizeof(int) * networkConfigs[0].numPreSynNet, kind));
-	networkConfigs[0].preSynLength = networkConfigs[0].numPreSynNet;
 
 	if(allocateMem) {
 		assert(dest->firingTableD1 == NULL);
@@ -2618,51 +2617,6 @@ void SNN::copyFiringInfo_GPU()
 //	KERNEL_INFO("Total spikes Multiple Delays=%d, 1Ms Delay=%d", gpuSpikeCountD2Sec,gpuSpikeCountD1Sec);
 }
 
-
-void SNN::allocateNetworkConfig() {
-	//// global configuration for maximum axonal delay
-	//networkConfigs[0].maxDelay  = maxDelay_;
-	//
-	//// configurations for boundries of neural types
-	//networkConfigs[0].numN = numN;
-	//networkConfigs[0].numNExcReg = numNExcReg;
-	//networkConfigs[0].numNInhReg = numNInhReg;
-	//networkConfigs[0].numNReg = numNReg;
-	//networkConfigs[0].numNPois = numNPois;
-	//networkConfigs[0].numNExcPois = numNExcPois;		
-	//networkConfigs[0].numNInhPois = numNInhPois;
-	//networkConfigs[0].maxSpikesD2 = maxSpikesD2;
-	//networkConfigs[0].maxSpikesD1 = maxSpikesD1;
-
-	//// configurations for execution features
-	//networkConfigs[0].sim_with_fixedwts = sim_with_fixedwts;
-	//networkConfigs[0].sim_with_conductances = sim_with_conductances;
-	//networkConfigs[0].sim_with_homeostasis = sim_with_homeostasis;
-	//networkConfigs[0].sim_with_stdp = sim_with_stdp;
-	//networkConfigs[0].sim_with_stp = sim_with_stp;
-	//networkConfigs[0].sim_in_testing = sim_in_testing;
-
-	//// configurations for assigned groups and connections
-	//networkConfigs[0].numGroups = numGroups;
-	//networkConfigs[0].numConnections = numConnections;
-
-	//// stdp, da-stdp configurations
-	//networkConfigs[0].stdpScaleFactor = stdpScaleFactor_;
-	//networkConfigs[0].wtChangeDecay = wtChangeDecay_;
-
-	//// conductance configurations
-	//networkConfigs[0].sim_with_NMDA_rise = sim_with_NMDA_rise;
-	//networkConfigs[0].sim_with_GABAb_rise = sim_with_GABAb_rise;
-	//networkConfigs[0].dAMPA = dAMPA;
-	//networkConfigs[0].rNMDA = rNMDA;
-	//networkConfigs[0].dNMDA = dNMDA;
-	//networkConfigs[0].sNMDA = sNMDA;
-	//networkConfigs[0].dGABAa = dGABAa;
-	//networkConfigs[0].rGABAb = rGABAb;
-	//networkConfigs[0].dGABAb = dGABAb;
-	//networkConfigs[0].sGABAb = sGABAb;
-}
-
 void SNN::configGPUDevice() {
 	int devCount, devMax;
 	cudaDeviceProp deviceProp;
@@ -2768,8 +2722,6 @@ void SNN::allocateSNN_GPU() {
 
 	// setup memory type of gpu runtime data
 	gpuRuntimeData[0].memType = GPU_MODE;
-
-	allocateNetworkConfig();
 
 	// initialize gpuRuntimeData[0].neuronAllocation, __device__ loadBufferCount, loadBufferSize
 	allocateStaticLoad(NUM_THREADS);

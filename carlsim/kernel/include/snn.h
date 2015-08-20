@@ -586,13 +586,13 @@ private:
 	void allocateRuntimeData();
 
 	//! add the entry that the current neuron has spiked
-	int  addSpikeToTable(int id, int g);
+	int  addSpikeToTable(int nId, int grpId);
 
 	int assignGroup(int groupId, int availableNeuronId);
 	int assignGroup(std::list<GroupConfigRT>::iterator grpIt, int localGroupId, int availableNeuronId);
-	void generateGroupRuntime(int groupId);
-	void generatePoissonGroupRuntime(int groupId);
-	void generateConnectionRuntime();
+	void generateGroupRuntime(int netId, int grpId);
+	void generatePoissonGroupRuntime(int netId, int grpId);
+	void generateConnectionRuntime(int netId);
 
 	/*!
 	 * \brief reset Spike Counters to zero if simTime % recordDur == 0
@@ -743,13 +743,13 @@ private:
 	void resetFiringInformation(); //!< resets the firing information when updateNetwork is called
 	void resetGroups();
 	void resetGroupConfigs(bool deallocate = false);
-	void resetNeuromodulator(int grpId);
-	void resetNeuron(int nid, int grpId);
+	void resetNeuromodulator(int netId, int grpId);
+	void resetNeuron(int netId, int grpId, int nId);
 	//void resetPointers(bool deallocate=false);
 	void resetMonitors(bool deallocate=false);
 	void resetConnectionConfigs(bool deallocate=false);
 	void resetRuntimeData(bool deallocate=false);
-	void resetPoissonNeuron(int nid, int grpId);
+	void resetPoissonNeuron(int netId, int grpId, int nId); //!< use local ids
 	void resetPropogationBuffer();
 	void resetSpikeCnt(int grpId=ALL);					//!< Resets the spike count for a particular group.
 	void resetSynapticConnections(bool changeWeights=false);
@@ -778,7 +778,6 @@ private:
 	void CpuSNNinit_GPU();
 
 	void allocateGroupId();
-	void allocateNetworkConfig();
 	void allocateSNN_GPU(); //!< allocates runtime data on GPU memory and initialize GPU
 	void allocateSNN_CPU(); //!< allocates runtime data on CPU memory
 	int  allocateStaticLoad(int bufSize);
@@ -939,7 +938,7 @@ private:
 	bool sim_with_spikecounters; //!< flag will be true if there are any spike counters around
 
 	// spiking neural network related information, including neurons, synapses and network parameters
-	int maxDelay_;        //!< maximum axonal delay in groups
+	int maxDelay_;        //!< maximum axonal delay in the global network
 
 	int	numN;             //!< number of neurons in the spiking neural network
 	int numNReg;          //!< number of regular (spking) neurons

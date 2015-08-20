@@ -53,7 +53,7 @@ void SNN::doD1CurrentUpdate() {
 		int neuron_id      = managerRuntimeData.firingTableD1[k];
 		assert(neuron_id<numN);
 
-		delay_info_t dPar = managerRuntimeData.postDelayInfo[neuron_id*(maxDelay_+1)];
+		DelayInfo dPar = managerRuntimeData.postDelayInfo[neuron_id*(maxDelay_+1)];
 
 		unsigned int  offset = managerRuntimeData.cumulativePost[neuron_id];
 
@@ -91,7 +91,7 @@ void SNN::doD2CurrentUpdate() {
 		assert((tD<maxDelay_)&&(tD>=0));
 		assert(i<numN);
 
-		delay_info_t dPar = managerRuntimeData.postDelayInfo[i*(maxDelay_+1)+tD];
+		DelayInfo dPar = managerRuntimeData.postDelayInfo[i*(maxDelay_+1)+tD];
 
 		unsigned int offset = managerRuntimeData.cumulativePost[i];
 
