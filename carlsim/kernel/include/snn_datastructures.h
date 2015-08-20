@@ -112,7 +112,6 @@ typedef struct ConnectConfig_s {
 	conType_t                type;
 	float                    p; 						//!< connection probability
 	short int                connId;					//!< connectID of the element in the linked list
-	bool                     newUpdates;
 	int                      numberOfConnections;
 } ConnectConfig;
 
@@ -420,7 +419,6 @@ typedef struct GroupConfigRT_s {
 	bool 		writeSpikesToArray;	//!< whether spikes should be written to file (needs SpikeMonitorId>-1)
 	SpikeGeneratorCore*	spikeGen;
 	PoissonRate* RatePtr;
-	bool		newUpdates;  //!< FIXME this flag has mixed meaning and is not rechecked after the simulation is started
 
 	bool operator== (const struct GroupConfigRT_s& grp) {
 		return (grpId == grp.grpId);
@@ -487,7 +485,6 @@ typedef struct ConnectConfigRT_s {
 	conType_t                type;
 	float                    p; 						//!< connection probability
 	short int                connId;					//!< connectID of the element in the linked list
-	bool                     newUpdates;
 	int                      numberOfConnections;
 } ConnectConfigRT;
 

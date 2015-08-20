@@ -590,8 +590,8 @@ private:
 
 	int assignGroup(int groupId, int availableNeuronId);
 	int assignGroup(std::list<GroupConfigRT>::iterator grpIt, int localGroupId, int availableNeuronId);
-	void generateGroupRuntime(int netId, int grpId);
-	void generatePoissonGroupRuntime(int netId, int grpId);
+	void generateGroupRuntime(int netId, int lGrpId);
+	void generatePoissonGroupRuntime(int netId, int lGrpId);
 	void generateConnectionRuntime(int netId);
 
 	/*!
@@ -737,22 +737,21 @@ private:
 
 	int loadSimulation_internal(bool onlyPlastic);
 
-	void resetConductances();
+	void resetConductances(int netId);
 	void resetCPUTiming();
-	void resetCurrent();
+	void resetCurrent(int netId);
 	void resetFiringInformation(); //!< resets the firing information when updateNetwork is called
-	void resetGroups();
 	void resetGroupConfigs(bool deallocate = false);
-	void resetNeuromodulator(int netId, int grpId);
-	void resetNeuron(int netId, int grpId, int nId);
+	void resetNeuromodulator(int netId, int lGrpId);
+	void resetNeuron(int netId, int lGrpId, int lNId);
 	//void resetPointers(bool deallocate=false);
 	void resetMonitors(bool deallocate=false);
 	void resetConnectionConfigs(bool deallocate=false);
 	void resetRuntimeData(bool deallocate=false);
-	void resetPoissonNeuron(int netId, int grpId, int nId); //!< use local ids
+	void resetPoissonNeuron(int netId, int lGrpId, int lNId); //!< use local ids
 	void resetPropogationBuffer();
-	void resetSpikeCnt(int grpId=ALL);					//!< Resets the spike count for a particular group.
-	void resetSynapticConnections(bool changeWeights=false);
+	void resetSpikeCnt();					//!< Resets the spike count for a particular group.
+	void resetSynapse(int netId, bool changeWeights=false);
 	void resetTimeTable();
 	void resetFiringTable();
 
@@ -766,7 +765,7 @@ private:
 
 	void updateSpikesFromGrp(int grpId);
 	void updateSpikeGenerators();
-	void updateSpikeGeneratorsInit();
+	void updateSpikeGeneratorsInit(int netId);
 
 	void allocateSpikeTables();
 	//void updateStateAndFiringTable();
@@ -796,7 +795,7 @@ private:
 	void copyConductanceGABAb(RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind, bool allocateMem, int grpId=-1);
 	void copyConductanceState(RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind, bool allocateMem, int grpId=-1);
 	void copyConnections(RuntimeData* dest, int kind, bool allocateMem);
-	void copyExternalCurrent(RuntimeData* dest, RuntimeData* src, bool allocateMem, int grpId=-1);
+	void copyExternalCurrent(RuntimeData* dest, RuntimeData* src, bool allocateMem, int netId, int grpId=ALL);
 	void copyFiringInfo_GPU();
 	void copyFiringStateFromGPU (int grpId = -1);
 	void copyGroupState(RuntimeData* dest, RuntimeData* src,  cudaMemcpyKind kind, bool allocateMem, int grpId=-1);
@@ -1037,7 +1036,7 @@ private:
 
 	ManagerRuntimeDataSize managerRTDSize;
 
-
+	// FIXME: fix this for multi GPUs
 	int NgenFunc; //!< this counts the spike generator offsets...
 
 	GroupInfo groupInfo[MAX_GRP_PER_SNN];

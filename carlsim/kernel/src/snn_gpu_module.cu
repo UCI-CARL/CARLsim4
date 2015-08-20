@@ -1910,7 +1910,7 @@ void SNN::copyNeuronState(RuntimeData* dest, RuntimeData* src, cudaMemcpyKind ki
 	// copying external current needs to be done separately because setExternalCurrent needs to call it, too
 	// do it only from host to device
 	if (kind==cudaMemcpyHostToDevice) {
-		copyExternalCurrent(dest, src, allocateMem, grpId);
+		copyExternalCurrent(dest, src, allocateMem, 0, grpId);
 	}
 
 	if (sim_with_homeostasis) {
@@ -2564,29 +2564,27 @@ void SNN::updateWeights_GPU() {
 //}
 
 
-void SNN::copyExternalCurrent(RuntimeData* dest, RuntimeData* src, bool allocateMem, int grpId) {
+void SNN::copyExternalCurrent(RuntimeData* dest, RuntimeData* src, bool allocateMem, int netId, int lGrpId) {
 	// copy external current from CPU to GPU
 	int ptrPos, length;
 
-	if(grpId == -1) {
+	if(lGrpId == ALL) {
 		ptrPos  = 0;
-		length  = numNReg;
+		length  = networkConfigs[netId].numNReg;
+	} else {
+		assert(lGrpId >= 0);
+		//assert(!isPoissonGroup(grpId));
+		ptrPos = groupConfigs[netId][lGrpId].localStartN;
+		length = groupConfigs[netId][lGrpId].SizeN;
 	}
-	else {
-		assert(grpId>=0);
-		assert(!isPoissonGroup(grpId));
-		ptrPos  = groupConfigs[0][grpId].StartN;
-		length  = groupConfigs[0][grpId].SizeN;
-	}
-	assert(length  <= numNReg);
-	assert(length > 0);
+	assert(length > 0 && length <= networkConfigs[netId].numNReg);
 
-	KERNEL_DEBUG("copyExternalCurrent: grpId=%d, ptrPos=%d, length=%d, allocate=%s", grpId, ptrPos, length, 
+	KERNEL_DEBUG("copyExternalCurrent: lGrpId=%d, ptrPos=%d, length=%d, allocate=%s", lGrpId, ptrPos, length, 
 		allocateMem?"y":"n");
 
 	// when allocating we are allocating the memory.. we need to do it completely... to avoid memory fragmentation..
 	if(allocateMem)
-		assert(grpId == -1);
+		assert(lGrpId == ALL);
 
 	if(allocateMem) {
 		CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->extCurrent, sizeof(float) * length));

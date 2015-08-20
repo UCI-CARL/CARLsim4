@@ -53,8 +53,9 @@ int main() {
 	// set up a COBA two-layer network with gaussian connectivity
 	Grid3D gridIn(10, 10, 1); // pre is on a 10x10 grid
 	Grid3D gridOut(10, 10, 1); // post is on a 10x10 grid
-	int gin = sim.createSpikeGeneratorGroup("input", gridIn, EXCITATORY_NEURON);
 	int gout = sim.createGroup("output", gridOut, EXCITATORY_NEURON);
+	int gin = sim.createSpikeGeneratorGroup("input", gridIn, EXCITATORY_NEURON);
+
 	sim.setNeuronParameters(gout, 0.02f, 0.2f, -65.0f, 8.0f);
 	sim.connect(gin, gout, "random", RangeWeight(0.0, 2.0f/100, 20.0f/100), 0.2f, RangeDelay(1, 5), RadiusRF(-1), SYN_PLASTIC);
 	sim.setConductances(true);
@@ -77,7 +78,7 @@ int main() {
 	// run for a total of 10 seconds
 	// at the end of each runNetwork call, SpikeMonitor stats will be printed
 	//for (int i=0; i<10; i++)
-		sim.runNetwork(1,0);
+		sim.runNetwork(10, 0);
 
 	return 0;
 }
