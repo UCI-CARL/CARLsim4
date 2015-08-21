@@ -191,7 +191,7 @@ typedef struct RuntimeData_s {
 	int* I_set; //!< an array of bits indicating which synapse got a spike, only used on GPU
 
 	SimMode	memType;
-	int     allocated; //!< true if all data has been allocated..
+	bool     allocated; //!< true if all data has been allocated..
 
 	/* Tsodyks & Markram (1998), where the short-term dynamics of synapses is characterized by three parameters:
 	   U (which roughly models the release probability of a synaptic vesicle for the first spike in a train of spikes),

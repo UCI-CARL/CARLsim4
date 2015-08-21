@@ -2085,14 +2085,14 @@ void SNN::SNNinit() {
 		configGPUDevice();
 }
 
-void SNN::allocateSNN() {
+void SNN::allocateSNN(int netId) {
 	// Confirm allocation of SNN runtime data in main memory
 	managerRuntimeData.allocated = true;
 	managerRuntimeData.memType = CPU_MODE;
 
 	switch (simMode_) {
 	case GPU_MODE:
-		allocateSNN_GPU();
+		allocateSNN_GPU(netId);
 		break;
 	case CPU_MODE:
 		allocateSNN_CPU();
@@ -4176,7 +4176,7 @@ void SNN::generateRuntimeSNN() {
 			// - init GroupConfig.Noffset, NgenFunc
 			updateSpikeGeneratorsInit(netId);
 
-			allocateSNN();
+			allocateSNN(netId);
 
 			// Print the statistics again but dump the results to a file
 			//printMemoryInfo(fpDeb_);

@@ -682,7 +682,7 @@ private:
 
 	void generateRuntimeSNN();
 
-	void allocateSNN();
+	void allocateSNN(int netId);
 
 
 	/*!
@@ -776,10 +776,10 @@ private:
 	//! initializes params needed in snn_gpu.cu (gets called in SNN constructor)
 	void CpuSNNinit_GPU();
 
-	void allocateGroupId();
-	void allocateSNN_GPU(); //!< allocates runtime data on GPU memory and initialize GPU
+	void allocateGroupId(int netId);
+	void allocateSNN_GPU(int netId); //!< allocates runtime data on GPU memory and initialize GPU
 	void allocateSNN_CPU(); //!< allocates runtime data on CPU memory
-	int  allocateStaticLoad(int bufSize);
+	int  allocateStaticLoad(int netId, int bufSize);
 
 	void assignPoissonFiringRate_GPU();
 
@@ -794,7 +794,7 @@ private:
 	void copyConductanceGABAa(RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind, bool allocateMem, int grpId=-1);
 	void copyConductanceGABAb(RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind, bool allocateMem, int grpId=-1);
 	void copyConductanceState(RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind, bool allocateMem, int grpId=-1);
-	void copyConnections(RuntimeData* dest, int kind, bool allocateMem);
+	void copyConnections(int netId, RuntimeData* dest, bool allocateMem);
 	void copyExternalCurrent(RuntimeData* dest, RuntimeData* src, bool allocateMem, int netId, int grpId=ALL);
 	void copyFiringInfo_GPU();
 	void copyFiringStateFromGPU (int grpId = -1);
