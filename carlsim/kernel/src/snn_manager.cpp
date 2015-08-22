@@ -815,10 +815,10 @@ int SNN::runNetwork(int _nsec, int _nmsec, bool printRunSummary, bool copyState)
 	// in GPU mode, copy info from device to host
 	if (simMode_==GPU_MODE) {
 		if(copyState) {
-			copyNeuronState(&managerRuntimeData, &gpuRuntimeData[0], cudaMemcpyDeviceToHost, false, ALL);
+			fetchNeuronState(ALL);
 
 			if (sim_with_stp) {
-				copySTPState(&managerRuntimeData, &gpuRuntimeData[0], cudaMemcpyDeviceToHost, false);
+				fetchSTPState(ALL);
 			}
 		}
 	}
@@ -1134,7 +1134,7 @@ void SNN::setExternalCurrent(int grpId, const std::vector<float>& current) {
 	// copy to GPU if necessary
 	// don't allocate; allocation done in generateRuntimeData
 	if (simMode_ == GPU_MODE) {
-		copyExternalCurrent(&gpuRuntimeData[netId], &managerRuntimeData, false, netId, lGrpId);
+		copyExternalCurrent(netId, lGrpId, &gpuRuntimeData[netId], &managerRuntimeData, cudaMemcpyHostToDevice, false);
 	}
 }
 
@@ -1546,7 +1546,7 @@ std::vector<float> SNN::getConductanceAMPA(int grpId) {
 
 	// need to copy data from GPU first
 	if (getSimMode()==GPU_MODE) {
-		copyConductanceAMPA(&managerRuntimeData, &gpuRuntimeData[0], cudaMemcpyDeviceToHost, false, grpId);
+		fetchConductanceAMPA(grpId);
 	}
 
 	std::vector<float> gAMPAvec;
@@ -1561,7 +1561,7 @@ std::vector<float> SNN::getConductanceNMDA(int grpId) {
 
 	// need to copy data from GPU first
 	if (getSimMode()==GPU_MODE)
-		copyConductanceNMDA(&managerRuntimeData, &gpuRuntimeData[0], cudaMemcpyDeviceToHost, false, grpId);
+		fetchConductanceNMDA(grpId);
 
 	std::vector<float> gNMDAvec;
 	if (isSimulationWithNMDARise()) {
@@ -1582,7 +1582,7 @@ std::vector<float> SNN::getConductanceGABAa(int grpId) {
 
 	// need to copy data from GPU first
 	if (getSimMode()==GPU_MODE) {
-		copyConductanceGABAa(&managerRuntimeData, &gpuRuntimeData[0], cudaMemcpyDeviceToHost, false, grpId);
+		fetchConductanceGABAa(grpId);
 	}
 
 	std::vector<float> gGABAaVec;
@@ -1597,7 +1597,7 @@ std::vector<float> SNN::getConductanceGABAb(int grpId) {
 
 	// need to copy data from GPU first
 	if (getSimMode()==GPU_MODE)
-		copyConductanceGABAb(&managerRuntimeData, &gpuRuntimeData[0], cudaMemcpyDeviceToHost, false, grpId);
+		fetchConductanceGABAb(grpId);
 
 	std::vector<float> gGABAbVec;
 	if (isSimulationWithGABAbRise()) {
@@ -2383,7 +2383,7 @@ void SNN::generateNetworkConfigs() {
 					 networkConfigs[netId].numNPois, networkConfigs[netId].numNExcPois, networkConfigs[netId].numNInhPois);
 			// find the maximum number of numN and numNReg among local networks
 			if (networkConfigs[netId].numN > managerRTDSize.maxNumN) managerRTDSize.maxNumN = networkConfigs[netId].numN;
-			if (networkConfigs[netId].numNReg > managerRTDSize.maxNumNReg) managerRTDSize.maxNumNReg = networkConfigs[netId].numNExcReg;
+			if (networkConfigs[netId].numNReg > managerRTDSize.maxNumNReg) managerRTDSize.maxNumNReg = networkConfigs[netId].numNReg;
 
 			// configurations for assigned groups and connections
 			networkConfigs[netId].numGroups = groupPartitionLists[netId].size();
@@ -3444,6 +3444,27 @@ void SNN::findNumSynapsesNetwork(int _netId, int& _numPostSynNet, int& _numPreSy
 	}
 
 	assert(_numPreSynNet == _numPostSynNet);
+}
+
+void SNN::fetchGroupState(int grpId) {
+}
+
+void SNN::fetchNeuronState(int grpId) {
+}
+
+void SNN::fetchSTPState(int grpId) {
+}
+
+void SNN::fetchConductanceAMPA(int grpId) {
+}
+
+void SNN::fetchConductanceNMDA(int grpId) {
+}
+
+void SNN::fetchConductanceGABAa(int grpId) {
+}
+
+void SNN::fetchConductanceGABAb(int grpId) {
 }
 
 inline int SNN::getPoissNeuronPos(int nid) {
@@ -4592,7 +4613,7 @@ void SNN::startTesting(bool shallUpdateWeights) {
 
 	if (simMode_ == GPU_MODE) {
 		// copy new network info struct to GPU (|TODO copy only a single boolean)
-		copyNetworkConfig();
+		copyNetworkConfig(0);
 	}
 }
 
@@ -4603,7 +4624,7 @@ void SNN::stopTesting() {
 
 	if (simMode_ == GPU_MODE) {
 		// copy new network_info struct to GPU (|TODO copy only a single boolean)
-		copyNetworkConfig();
+		copyNetworkConfig(0);
 	}
 }
 
@@ -4692,7 +4713,7 @@ void SNN::updateGroupMonitor(int grpId) {
 
 		if (simMode_ == GPU_MODE) {
 			// copy the group status (neuromodulators) from the GPU to the CPU..
-			copyGroupState(&managerRuntimeData, &gpuRuntimeData[0], cudaMemcpyDeviceToHost, false);
+			fetchGroupState(ALL);
 		}
 
 		// find the time interval in which to update group status

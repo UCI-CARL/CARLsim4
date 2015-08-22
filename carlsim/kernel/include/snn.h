@@ -789,16 +789,15 @@ private:
 	void checkInitialization2(char* testString=NULL);
 	void configGPUDevice();
 
-	void copyConductanceAMPA(RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind, bool allocateMem, int grpId=-1);
-	void copyConductanceNMDA(RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind, bool allocateMem, int grpId=-1);
-	void copyConductanceGABAa(RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind, bool allocateMem, int grpId=-1);
-	void copyConductanceGABAb(RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind, bool allocateMem, int grpId=-1);
-	void copyConductanceState(RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind, bool allocateMem, int grpId=-1);
+	void copyAuxiliaryData(int netId, RuntimeData* dest, bool allocateMem);
+	void copyConductanceAMPA(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind, bool allocateMem);
+	void copyConductanceNMDA(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind, bool allocateMem);
+	void copyConductanceGABAa(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind, bool allocateMem);
+	void copyConductanceGABAb(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind, bool allocateMem);
 	void copyConnections(int netId, RuntimeData* dest, bool allocateMem);
-	void copyExternalCurrent(RuntimeData* dest, RuntimeData* src, bool allocateMem, int netId, int grpId=ALL);
+	void copyExternalCurrent(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind, bool allocateMem);
 	void copyFiringInfo_GPU();
 	void copyFiringStateFromGPU (int grpId = -1);
-	void copyGroupState(RuntimeData* dest, RuntimeData* src,  cudaMemcpyKind kind, bool allocateMem, int grpId=-1);
 
 	/*!
 	 * \brief Copy neuron parameters (Izhikevich params, baseFiring) from host to device pointer
@@ -817,23 +816,29 @@ private:
 	 * a single group will be copied. If allocateMem is set to true, grpId must be set to -1 (must allocate all groups
 	 * at the same time in order to avoid memory fragmentation).
 	 */
-	void copyNeuronParametersFromHostToDevice(RuntimeData* dest, bool allocateMem, int grpId=-1);
+	void copyNeuronParameters(int netId, int lGrpId, RuntimeData* dest, bool allocateMem);
 
-	void copyNeuronState(RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind, bool allocateMem, int grpId=-1);
-	void copyParameters();
-	void copyPostConnectionInfo(RuntimeData* dest, bool allocateMem);
-	void copyState(RuntimeData* dest, bool allocateMem);
-	void copySTPState(RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind, bool allocateMem);
+	void copyGroupState(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind, bool allocateMem);
+	void copyNeuronState(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind, bool allocateMem);
+	void copySynapseState(int netId, RuntimeData* dest, bool allocateMem);
+	void copySTPState(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind, bool allocateMem);
 	void copyWeightsGPU(int nid, int src_grp);
-	void copyWeightState(RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind, //!< copy presynaptic info
-		bool allocateMem, int grpId=-1);
-	void copyNetworkConfig();
+	void copyWeightState(RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind, bool allocateMem, int grpId=-1);//!< copy presynaptic info
+	void copyNetworkConfig(int netId);
 
 	void deleteObjects_GPU();		//!< deallocates all used data structures in snn_gpu.cu
 	void doCurrentUpdate_GPU();
 	void doSTPUpdateAndDecayCond_GPU();
 	void dumpSpikeBuffToFile_GPU(int gid);
 	void findFiring_GPU();
+
+	void fetchGroupState(int grpId);
+	void fetchNeuronState(int grpId);
+	void fetchSTPState(int grpId);
+	void fetchConductanceAMPA(int grpId);
+	void fetchConductanceNMDA(int grpId);
+	void fetchConductanceGABAa(int grpId);
+	void fetchConductanceGABAb(int grpId);
 
 	/*!
 	 * \brief return the number of spikes per neuron for a certain group in GPU mode
