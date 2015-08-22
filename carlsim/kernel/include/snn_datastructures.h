@@ -255,10 +255,10 @@ typedef struct RuntimeData_s {
 	float* grpNE;
 
 	// group monitor assistive buffers
-	float* grpDABuffer[MAX_GRP_PER_SNN];
-	float* grp5HTBuffer[MAX_GRP_PER_SNN];
-	float* grpAChBuffer[MAX_GRP_PER_SNN];
-	float* grpNEBuffer[MAX_GRP_PER_SNN];
+	float* grpDABuffer;
+	float* grp5HTBuffer;
+	float* grpAChBuffer;
+	float* grpNEBuffer;
 
 	unsigned int* spikeGenBits;
 } RuntimeData;

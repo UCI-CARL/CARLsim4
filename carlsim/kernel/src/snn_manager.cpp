@@ -2157,16 +2157,15 @@ void SNN::allocateRuntimeData() {
 	memset(managerRuntimeData.grpACh, 0, sizeof(float) * managerRTDSize.maxNumGroups);
 	memset(managerRuntimeData.grpNE, 0, sizeof(float) * managerRTDSize.maxNumGroups);
 
-	for (int lGrpId = 0; lGrpId < managerRTDSize.maxNumGroups; lGrpId++) {
-		managerRuntimeData.grpDABuffer[lGrpId]  = new float[1000]; // 1 second DA buffer
-		managerRuntimeData.grp5HTBuffer[lGrpId] = new float[1000];
-		managerRuntimeData.grpAChBuffer[lGrpId] = new float[1000];
-		managerRuntimeData.grpNEBuffer[lGrpId]  = new float[1000];
-		memset(managerRuntimeData.grpDABuffer[lGrpId], 0, sizeof(float) * 1000);
-		memset(managerRuntimeData.grp5HTBuffer[lGrpId], 0, sizeof(float) * 1000);
-		memset(managerRuntimeData.grpAChBuffer[lGrpId], 0, sizeof(float) * 1000);
-		memset(managerRuntimeData.grpNEBuffer[lGrpId], 0, sizeof(float) * 1000);
-	}
+
+	managerRuntimeData.grpDABuffer  = new float[managerRTDSize.maxNumGroups * 1000]; // 1 second DA buffer
+	managerRuntimeData.grp5HTBuffer = new float[managerRTDSize.maxNumGroups * 1000];
+	managerRuntimeData.grpAChBuffer = new float[managerRTDSize.maxNumGroups * 1000];
+	managerRuntimeData.grpNEBuffer  = new float[managerRTDSize.maxNumGroups * 1000];
+	memset(managerRuntimeData.grpDABuffer, 0, managerRTDSize.maxNumGroups * sizeof(float) * 1000);
+	memset(managerRuntimeData.grp5HTBuffer, 0, managerRTDSize.maxNumGroups * sizeof(float) * 1000);
+	memset(managerRuntimeData.grpAChBuffer, 0, managerRTDSize.maxNumGroups * sizeof(float) * 1000);
+	memset(managerRuntimeData.grpNEBuffer, 0, managerRTDSize.maxNumGroups * sizeof(float) * 1000);
 
 	managerRuntimeData.lastSpikeTime = new int[managerRTDSize.maxNumN];
 	memset(managerRuntimeData.lastSpikeTime, 0, sizeof(int) * managerRTDSize.maxNumN);
@@ -4382,23 +4381,16 @@ void SNN::resetRuntimeData(bool deallocate) {
 
 	// clear assistive data buffer for group monitor
 	if (deallocate) {
-		for (int i = 0; i < managerRTDSize.maxNumGroups; i++) {
-			if (managerRuntimeData.grpDABuffer[i] != NULL) delete [] managerRuntimeData.grpDABuffer[i];
-			if (managerRuntimeData.grp5HTBuffer[i] != NULL) delete [] managerRuntimeData.grp5HTBuffer[i];
-			if (managerRuntimeData.grpAChBuffer[i] != NULL) delete [] managerRuntimeData.grpAChBuffer[i];
-			if (managerRuntimeData.grpNEBuffer[i] != NULL) delete [] managerRuntimeData.grpNEBuffer[i];
-			managerRuntimeData.grpDABuffer[i] = NULL;
-			managerRuntimeData.grp5HTBuffer[i] = NULL;
-			managerRuntimeData.grpAChBuffer[i] = NULL;
-			managerRuntimeData.grpNEBuffer[i] = NULL;
-		}
+			if (managerRuntimeData.grpDABuffer != NULL) delete [] managerRuntimeData.grpDABuffer;
+			if (managerRuntimeData.grp5HTBuffer != NULL) delete [] managerRuntimeData.grp5HTBuffer;
+			if (managerRuntimeData.grpAChBuffer != NULL) delete [] managerRuntimeData.grpAChBuffer;
+			if (managerRuntimeData.grpNEBuffer != NULL) delete [] managerRuntimeData.grpNEBuffer;
+			managerRuntimeData.grpDABuffer = NULL; managerRuntimeData.grp5HTBuffer = NULL;
+			managerRuntimeData.grpAChBuffer = NULL; managerRuntimeData.grpNEBuffer = NULL;
 	} else {
-		memset(managerRuntimeData.grpDABuffer, 0, sizeof(float*) * MAX_GRP_PER_SNN);
-		memset(managerRuntimeData.grp5HTBuffer, 0, sizeof(float*) * MAX_GRP_PER_SNN);
-		memset(managerRuntimeData.grpAChBuffer, 0, sizeof(float*) * MAX_GRP_PER_SNN);
-		memset(managerRuntimeData.grpNEBuffer, 0, sizeof(float*) * MAX_GRP_PER_SNN);
+			managerRuntimeData.grpDABuffer = NULL; managerRuntimeData.grp5HTBuffer = NULL;
+			managerRuntimeData.grpAChBuffer = NULL; managerRuntimeData.grpNEBuffer = NULL;
 	}
-
 
 	// -------------- DEALLOCATE CORE OBJECTS ---------------------- //
 
@@ -4744,7 +4736,7 @@ void SNN::updateGroupMonitor(int grpId) {
 		// may need need to dump these group status data to an output file
 		for(int t = numMsMin; t < numMsMax; t++) {
 			// fetch group status data, support dopamine concentration currently
-			data = managerRuntimeData.grpDABuffer[grpId][t];
+			data = managerRuntimeData.grpDABuffer[grpId * 1000 + t];
 
 			// current time is last completed second plus whatever is leftover in t
 			int time = currentTimeSec*1000 + t;

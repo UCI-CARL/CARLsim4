@@ -533,7 +533,7 @@ void  SNN::globalStateUpdate() {
 		if ((groupConfigs[0][g].WithESTDPtype == DA_MOD || groupConfigs[0][g].WithISTDP == DA_MOD) && managerRuntimeData.grpDA[g] > groupConfigs[0][g].baseDP) {
 			managerRuntimeData.grpDA[g] *= groupConfigs[0][g].decayDP;
 		}
-		managerRuntimeData.grpDABuffer[g][simTimeMs] = managerRuntimeData.grpDA[g];
+		managerRuntimeData.grpDABuffer[g * 1000 + simTimeMs] = managerRuntimeData.grpDA[g];
 
 		for(int i=groupConfigs[0][g].StartN; i <= groupConfigs[0][g].EndN; i++) {
 			assert(i < numNReg);

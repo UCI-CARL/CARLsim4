@@ -177,6 +177,7 @@ __global__ void kernel_updateTimeTable(int simTime) {
 // so that we can reset all required parameters.                              ///
 /////////////////////////////////////////////////////////////////////////////////
 __global__ void kernel_init () {
+	// FIXME: use parallel access
 	if(threadIdx.x==0 && blockIdx.x==0) {
 		for(int i=0; i < TIMING_COUNT; i++) {
 			timeTableD2GPU[i]   = 0;
@@ -973,7 +974,7 @@ __global__ void kernel_groupStateUpdate(int simTime) {
 		if ((groupConfigsGPU[grpIdx].WithESTDPtype == DA_MOD || groupConfigsGPU[grpIdx].WithISTDPtype == DA_MOD) && runtimeDataGPU.grpDA[grpIdx] > groupConfigsGPU[grpIdx].baseDP) {
 			runtimeDataGPU.grpDA[grpIdx] *= groupConfigsGPU[grpIdx].decayDP;
 		}
-		runtimeDataGPU.grpDABuffer[grpIdx][simTime] = runtimeDataGPU.grpDA[grpIdx]; // log dopamine concentration
+		runtimeDataGPU.grpDABuffer[grpIdx * 1000 + simTime] = runtimeDataGPU.grpDA[grpIdx]; // log dopamine concentration
 	}
 }
 
@@ -1959,6 +1960,7 @@ void SNN::copyNeuronState(int netId, int lGrpId, RuntimeData* dest, RuntimeData*
 	}
 }
 
+// FIXME: move grpDA(5HT, ACh, NE)Buffer to copyAuxiliaryData
 /*!
  * \brief this function allocates device (GPU) memory sapce and copies variables related to group state to it
  *
@@ -1993,31 +1995,23 @@ void SNN::copyGroupState(int netId, int lGrpId, RuntimeData* dest, RuntimeData* 
 	CUDA_CHECK_ERRORS(cudaMemcpy(dest->grpNE, src->grpNE, sizeof(float) * networkConfigs[netId].numGroups, kind));
 
 	if (lGrpId < 0) {
-		for (int grp = 0; grp < networkConfigs[netId].numGroups; grp++) {
-			if (allocateMem) {
-				assert(dest->memType == GPU_MODE && !dest->allocated);
-				CUDA_CHECK_ERRORS(cudaMalloc((void**) &dest->grpDABuffer[grp], sizeof(float) * 1000)); 
-				CUDA_CHECK_ERRORS(cudaMalloc((void**) &dest->grp5HTBuffer[grp], sizeof(float) * 1000)); 
-				CUDA_CHECK_ERRORS(cudaMalloc((void**) &dest->grpAChBuffer[grp], sizeof(float) * 1000)); 
-				CUDA_CHECK_ERRORS(cudaMalloc((void**) &dest->grpNEBuffer[grp], sizeof(float) * 1000));
-			}
-			CUDA_CHECK_ERRORS(cudaMemcpy(dest->grpDABuffer[grp], src->grpDABuffer[grp], sizeof(float) * 1000, kind));
-			CUDA_CHECK_ERRORS(cudaMemcpy(dest->grp5HTBuffer[grp], src->grp5HTBuffer[grp], sizeof(float) * 1000, kind));
-			CUDA_CHECK_ERRORS(cudaMemcpy(dest->grpAChBuffer[grp], src->grpAChBuffer[grp], sizeof(float) * 1000, kind));
-			CUDA_CHECK_ERRORS(cudaMemcpy(dest->grpNEBuffer[grp], src->grpNEBuffer[grp], sizeof(float) * 1000, kind));
-		}
-	} else {
 		if (allocateMem) {
 			assert(dest->memType == GPU_MODE && !dest->allocated);
-			CUDA_CHECK_ERRORS(cudaMalloc((void**) &dest->grpDABuffer[lGrpId], sizeof(float) * 1000)); 
-			CUDA_CHECK_ERRORS(cudaMalloc((void**) &dest->grp5HTBuffer[lGrpId], sizeof(float) * 1000)); 
-			CUDA_CHECK_ERRORS(cudaMalloc((void**) &dest->grpAChBuffer[lGrpId], sizeof(float) * 1000)); 
-			CUDA_CHECK_ERRORS(cudaMalloc((void**) &dest->grpNEBuffer[lGrpId], sizeof(float) * 1000));
+			CUDA_CHECK_ERRORS(cudaMalloc((void**) &dest->grpDABuffer, sizeof(float) * 1000 * networkConfigs[netId].numGroups)); 
+			CUDA_CHECK_ERRORS(cudaMalloc((void**) &dest->grp5HTBuffer, sizeof(float) * 1000 * networkConfigs[netId].numGroups)); 
+			CUDA_CHECK_ERRORS(cudaMalloc((void**) &dest->grpAChBuffer, sizeof(float) * 1000 * networkConfigs[netId].numGroups)); 
+			CUDA_CHECK_ERRORS(cudaMalloc((void**) &dest->grpNEBuffer, sizeof(float) * 1000 * networkConfigs[netId].numGroups));
 		}
-		CUDA_CHECK_ERRORS(cudaMemcpy(dest->grpDABuffer[lGrpId], src->grpDABuffer[lGrpId], sizeof(float) * 1000, kind));
-		CUDA_CHECK_ERRORS(cudaMemcpy(dest->grp5HTBuffer[lGrpId], src->grp5HTBuffer[lGrpId], sizeof(float) * 1000, kind));
-		CUDA_CHECK_ERRORS(cudaMemcpy(dest->grpAChBuffer[lGrpId], src->grpAChBuffer[lGrpId], sizeof(float) * 1000, kind));
-		CUDA_CHECK_ERRORS(cudaMemcpy(dest->grpNEBuffer[lGrpId], src->grpNEBuffer[lGrpId], sizeof(float) * 1000, kind));
+		CUDA_CHECK_ERRORS(cudaMemcpy(dest->grpDABuffer, src->grpDABuffer, sizeof(float) * 1000 * networkConfigs[netId].numGroups, kind));
+		CUDA_CHECK_ERRORS(cudaMemcpy(dest->grp5HTBuffer, src->grp5HTBuffer, sizeof(float) * 1000 * networkConfigs[netId].numGroups, kind));
+		CUDA_CHECK_ERRORS(cudaMemcpy(dest->grpAChBuffer, src->grpAChBuffer, sizeof(float) * 1000 * networkConfigs[netId].numGroups, kind));
+		CUDA_CHECK_ERRORS(cudaMemcpy(dest->grpNEBuffer, src->grpNEBuffer, sizeof(float) * 1000 * networkConfigs[netId].numGroups, kind));
+	} else {
+		assert(!allocateMem);
+		CUDA_CHECK_ERRORS(cudaMemcpy(&dest->grpDABuffer[lGrpId * 1000], &src->grpDABuffer[lGrpId * 1000], sizeof(float) * 1000, kind));
+		CUDA_CHECK_ERRORS(cudaMemcpy(&dest->grp5HTBuffer[lGrpId * 1000], &src->grp5HTBuffer[lGrpId * 1000], sizeof(float) * 1000, kind));
+		CUDA_CHECK_ERRORS(cudaMemcpy(&dest->grpAChBuffer[lGrpId * 1000], &src->grpAChBuffer[lGrpId * 1000], sizeof(float) * 1000, kind));
+		CUDA_CHECK_ERRORS(cudaMemcpy(&dest->grpNEBuffer[lGrpId * 1000], &src->grpNEBuffer[lGrpId * 1000], sizeof(float) * 1000, kind));
 	}
 }
 
@@ -2368,7 +2362,7 @@ void SNN::copyAuxiliaryData(int netId, RuntimeData* dest, bool allocateMem) {
 		CUDA_CHECK_ERRORS(cudaMemcpy(dest->lastSpikeTime, managerRuntimeData.lastSpikeTime, sizeof(int) * networkConfigs[netId].numN, cudaMemcpyHostToDevice));
 	}
 
-	// spike count for each neuron
+	// auxiliary data for recording spike count of each neuron
 	if (allocateMem) CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->nSpikeCnt, sizeof(int) * networkConfigs[netId].numN));
 	CUDA_CHECK_ERRORS(cudaMemcpy(dest->nSpikeCnt, managerRuntimeData.nSpikeCnt, sizeof(int) * networkConfigs[netId].numN, cudaMemcpyHostToDevice));
 
@@ -2556,12 +2550,11 @@ void SNN::deleteObjects_GPU() {
 	CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[0].grp5HT) );
 	CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[0].grpACh) );
 	CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[0].grpNE) );
-	for (int i = 0; i < numGroups; i++) {
-		CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[0].grpDABuffer[i]) );
-		CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[0].grp5HTBuffer[i]) );
-		CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[0].grpAChBuffer[i]) );
-		CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[0].grpNEBuffer[i]) );
-	}
+
+	CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[0].grpDABuffer) );
+	CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[0].grp5HTBuffer) );
+	CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[0].grpAChBuffer) );
+	CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[0].grpNEBuffer) );
 
 	CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[0].grpIds) );
 
