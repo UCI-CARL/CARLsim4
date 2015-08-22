@@ -772,9 +772,6 @@ private:
 	bool updateTime(); //!< updates simTime, returns true when a new second is started
 	// +++++ GPU MODE +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 	// TODO: consider moving to snn_gpu.h
-	
-	//! initializes params needed in snn_gpu.cu (gets called in SNN constructor)
-	void CpuSNNinit_GPU();
 
 	void allocateGroupId(int netId);
 	void allocateSNN_GPU(int netId); //!< allocates runtime data on GPU memory and initialize GPU
@@ -796,8 +793,6 @@ private:
 	void copyConductanceGABAb(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind, bool allocateMem);
 	void copyConnections(int netId, RuntimeData* dest, bool allocateMem);
 	void copyExternalCurrent(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind, bool allocateMem);
-	void copyFiringInfo_GPU();
-	void copyFiringStateFromGPU (int grpId = -1);
 
 	/*!
 	 * \brief Copy neuron parameters (Izhikevich params, baseFiring) from host to device pointer
@@ -825,6 +820,7 @@ private:
 	void copyWeightsGPU(int nid, int src_grp);
 	void copyWeightState(RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind, bool allocateMem, int grpId=-1);//!< copy presynaptic info
 	void copyNetworkConfig(int netId);
+	void copyGroupConfigs(int netId);
 
 	void deleteObjects_GPU();		//!< deallocates all used data structures in snn_gpu.cu
 	void doCurrentUpdate_GPU();
@@ -832,6 +828,8 @@ private:
 	void dumpSpikeBuffToFile_GPU(int gid);
 	void findFiring_GPU();
 
+	void fetchSpikeTables();
+	void fetchNeuronSpikeCount (int grpId = -1);
 	void fetchGroupState(int grpId);
 	void fetchNeuronState(int grpId);
 	void fetchSTPState(int grpId);

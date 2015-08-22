@@ -808,7 +808,7 @@ int SNN::runNetwork(int _nsec, int _nmsec, bool printRunSummary, bool copyState)
 		}
 
 		if(simMode_ == GPU_MODE){
-			copyFiringStateFromGPU();
+			fetchNeuronSpikeCount();
 		}
 	}
 
@@ -4117,10 +4117,6 @@ int SNN::loadSimulation_internal(bool onlyPlastic) {
 }
 
 void SNN::generateRuntimeSNN() {
-	KERNEL_INFO("");
-	KERNEL_INFO("*****************      Initializing %s Simulation      *************************",
-		simMode_==GPU_MODE?"GPU":"CPU");
-
 	// 1. genearte configurations for the simulation
 	// generate local network configs and accquire maximum size of rumtime data
 	generateNetworkConfigs();
@@ -4145,6 +4141,9 @@ void SNN::generateRuntimeSNN() {
 	// 4b. load (copy) them to appropriate memory space for execution
 	for (int netId = 0; netId < MAX_NET_PER_SNN; netId++) {
 		if (!groupPartitionLists[netId].empty()) {	
+			KERNEL_INFO("");
+			KERNEL_INFO("*****************      Initializing %s %d Simulation      *************************",
+			simMode_ == GPU_MODE?"GPU":"CPU", netId);
 			// build the runtime data according to local network, group, connection configuirations
 			
 			// generate runtime data for each group
@@ -4913,7 +4912,7 @@ void SNN::updateSpikeMonitor(int grpId) {
        }
 		if (simMode_ == GPU_MODE) {
 			// copy the neuron firing information from the GPU to the CPU..
-			copyFiringInfo_GPU();
+			fetchSpikeTables();
 		}
 
 		// find the time interval in which to update spikes

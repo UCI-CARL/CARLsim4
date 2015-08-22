@@ -120,7 +120,7 @@ void SNN::printStatusSpikeMonitor(int grpId) {
 
 		// in GPU mode, need to get data from device first
 		if (simMode_==GPU_MODE)
-			copyFiringStateFromGPU(grpId);
+			fetchNeuronSpikeCount(grpId);
 
 		// \TODO nSpikeCnt should really be a member of the SpikeMonitor object that gets populated if
 		// printRunSummary is true or mode==COUNT.....
