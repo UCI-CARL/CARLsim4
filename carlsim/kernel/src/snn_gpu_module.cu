@@ -448,6 +448,7 @@ __global__ void gpu_resetSpikeCnt(int _grpId) {
 }
 
 // wrapper to call resetSpikeCnt
+// FIXME: modify this function for multi GPUs
 void SNN::resetSpikeCnt_GPU(int grpId) {
 	checkAndSetGPUDevice();
 
@@ -1591,31 +1592,31 @@ void SNN::copyConnections(int netId, RuntimeData* dest, bool allocateMem) {
 
 	// connection synaptic lengths and cumulative lengths...
 	if(allocateMem) 
-		CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->Npre, sizeof(short) * networkConfigs[netId].numN));
-	CUDA_CHECK_ERRORS(cudaMemcpy(dest->Npre, managerRuntimeData.Npre, sizeof(short) * networkConfigs[netId].numN, cudaMemcpyHostToDevice));
+		CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->Npre, sizeof(short) * networkConfigs[netId].numNAssigned));
+	CUDA_CHECK_ERRORS(cudaMemcpy(dest->Npre, managerRuntimeData.Npre, sizeof(short) * networkConfigs[netId].numNAssigned, cudaMemcpyHostToDevice));
 
 	// we don't need these data structures if the network doesn't have any plastic synapses at all
 	if (!sim_with_fixedwts) {
 		// presyn excitatory connections
 		if(allocateMem) 
-			CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->Npre_plastic, sizeof(short) * networkConfigs[netId].numN));
-		CUDA_CHECK_ERRORS(cudaMemcpy(dest->Npre_plastic, managerRuntimeData.Npre_plastic, sizeof(short) * networkConfigs[netId].numN, cudaMemcpyHostToDevice));
+			CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->Npre_plastic, sizeof(short) * networkConfigs[netId].numNAssigned));
+		CUDA_CHECK_ERRORS(cudaMemcpy(dest->Npre_plastic, managerRuntimeData.Npre_plastic, sizeof(short) * networkConfigs[netId].numNAssigned, cudaMemcpyHostToDevice));
 
-		float* Npre_plasticInv = new float[networkConfigs[netId].numN];
-		for (int i = 0; i < networkConfigs[netId].numN; i++)
+		float* Npre_plasticInv = new float[networkConfigs[netId].numNAssigned];
+		for (int i = 0; i < networkConfigs[netId].numNAssigned; i++)
 			Npre_plasticInv[i] = 1.0f / managerRuntimeData.Npre_plastic[i];
 
 		if(allocateMem)
-			CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->Npre_plasticInv, sizeof(float) * networkConfigs[netId].numN));
-		CUDA_CHECK_ERRORS(cudaMemcpy(dest->Npre_plasticInv, Npre_plasticInv, sizeof(float) * networkConfigs[netId].numN, cudaMemcpyHostToDevice));
+			CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->Npre_plasticInv, sizeof(float) * networkConfigs[netId].numNAssigned));
+		CUDA_CHECK_ERRORS(cudaMemcpy(dest->Npre_plasticInv, Npre_plasticInv, sizeof(float) * networkConfigs[netId].numNAssigned, cudaMemcpyHostToDevice));
 
 		delete[] Npre_plasticInv;
 	}
 		
 	// beginning position for the pre-synaptic information
 	if(allocateMem)
-		CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->cumulativePre, sizeof(int) * networkConfigs[netId].numN));
-	CUDA_CHECK_ERRORS(cudaMemcpy(dest->cumulativePre, managerRuntimeData.cumulativePre, sizeof(int) * networkConfigs[netId].numN, cudaMemcpyHostToDevice));
+		CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->cumulativePre, sizeof(int) * networkConfigs[netId].numNAssigned));
+	CUDA_CHECK_ERRORS(cudaMemcpy(dest->cumulativePre, managerRuntimeData.cumulativePre, sizeof(int) * networkConfigs[netId].numNAssigned, cudaMemcpyHostToDevice));
 
 	if(allocateMem)
 		CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->preSynapticIds, sizeof(SynInfo) * (networkConfigs[netId].numPreSynNet + 10)));
@@ -1623,13 +1624,13 @@ void SNN::copyConnections(int netId, RuntimeData* dest, bool allocateMem) {
 
 	// number of postsynaptic connections
 	if(allocateMem)
-		CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->Npost, sizeof(short) * networkConfigs[netId].numN));
-	CUDA_CHECK_ERRORS(cudaMemcpy( dest->Npost, managerRuntimeData.Npost, sizeof(short) * networkConfigs[netId].numN, cudaMemcpyHostToDevice));
+		CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->Npost, sizeof(short) * networkConfigs[netId].numNAssigned));
+	CUDA_CHECK_ERRORS(cudaMemcpy( dest->Npost, managerRuntimeData.Npost, sizeof(short) * networkConfigs[netId].numNAssigned, cudaMemcpyHostToDevice));
 	
 	// beginning position for the post-synaptic information
 	if(allocateMem) 
-		CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->cumulativePost, sizeof(int) * networkConfigs[netId].numN));
-	CUDA_CHECK_ERRORS(cudaMemcpy(dest->cumulativePost, managerRuntimeData.cumulativePost, sizeof(int) * networkConfigs[netId].numN, cudaMemcpyHostToDevice));
+		CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->cumulativePost, sizeof(int) * networkConfigs[netId].numNAssigned));
+	CUDA_CHECK_ERRORS(cudaMemcpy(dest->cumulativePost, managerRuntimeData.cumulativePost, sizeof(int) * networkConfigs[netId].numNAssigned, cudaMemcpyHostToDevice));
 
 	// actual post synaptic connection information...
 	if(allocateMem)
@@ -1638,8 +1639,8 @@ void SNN::copyConnections(int netId, RuntimeData* dest, bool allocateMem) {
 
 	// static specific mapping and actual post-synaptic delay metric
 	if(allocateMem)
-		CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->postDelayInfo, sizeof(DelayInfo) * networkConfigs[netId].numN * (maxDelay_ + 1)));
-	CUDA_CHECK_ERRORS(cudaMemcpy(dest->postDelayInfo, managerRuntimeData.postDelayInfo, sizeof(DelayInfo) * networkConfigs[netId].numN * (maxDelay_ + 1), cudaMemcpyHostToDevice));
+		CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->postDelayInfo, sizeof(DelayInfo) * networkConfigs[netId].numNAssigned * (maxDelay_ + 1)));
+	CUDA_CHECK_ERRORS(cudaMemcpy(dest->postDelayInfo, managerRuntimeData.postDelayInfo, sizeof(DelayInfo) * networkConfigs[netId].numNAssigned * (maxDelay_ + 1), cudaMemcpyHostToDevice));
 }
 
 void SNN::checkDestSrcPtrs(RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind, bool allocateMem, int lGrpId) {
@@ -2358,8 +2359,8 @@ void SNN::copyAuxiliaryData(int netId, RuntimeData* dest, bool allocateMem) {
 	// lastSpikeTime: an array indicates the last time of a neuron emitting a spike
 	if (!sim_with_fixedwts) {
 		// neuron firing time
-		if(allocateMem) CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->lastSpikeTime, sizeof(int) * networkConfigs[netId].numN));
-		CUDA_CHECK_ERRORS(cudaMemcpy(dest->lastSpikeTime, managerRuntimeData.lastSpikeTime, sizeof(int) * networkConfigs[netId].numN, cudaMemcpyHostToDevice));
+		if(allocateMem) CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->lastSpikeTime, sizeof(int) * networkConfigs[netId].numNAssigned));
+		CUDA_CHECK_ERRORS(cudaMemcpy(dest->lastSpikeTime, managerRuntimeData.lastSpikeTime, sizeof(int) * networkConfigs[netId].numNAssigned, cudaMemcpyHostToDevice));
 	}
 
 	// auxiliary data for recording spike count of each neuron
@@ -2367,8 +2368,8 @@ void SNN::copyAuxiliaryData(int netId, RuntimeData* dest, bool allocateMem) {
 	CUDA_CHECK_ERRORS(cudaMemcpy(dest->nSpikeCnt, managerRuntimeData.nSpikeCnt, sizeof(int) * networkConfigs[netId].numN, cudaMemcpyHostToDevice));
 
 	// quick lookup array for local group ids
-	if(allocateMem)	CUDA_CHECK_ERRORS(cudaMalloc( (void**)&dest->grpIds, sizeof(short int) * networkConfigs[netId].numN));
-	CUDA_CHECK_ERRORS(cudaMemcpy( dest->grpIds, managerRuntimeData.grpIds, sizeof(short int)*networkConfigs[netId].numN, cudaMemcpyHostToDevice));
+	if(allocateMem)	CUDA_CHECK_ERRORS(cudaMalloc( (void**)&dest->grpIds, sizeof(short int) * networkConfigs[netId].numNAssigned));
+	CUDA_CHECK_ERRORS(cudaMemcpy( dest->grpIds, managerRuntimeData.grpIds, sizeof(short int) * networkConfigs[netId].numNAssigned, cudaMemcpyHostToDevice));
 
 	// quick lookc up array for conn ids
 	if(allocateMem)	CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->connIdsPreIdx, sizeof(short int) * networkConfigs[netId].numPreSynNet));

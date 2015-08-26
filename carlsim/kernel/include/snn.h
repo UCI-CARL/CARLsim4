@@ -715,13 +715,13 @@ private:
 	void printConnectionInfo(FILE* fp);
 	void printConnectionInfo2(FILE *fpg);
 	void printCurrentInfo(FILE* fp); //!< for GPU debugging
-	void printFiringRate(char *fname=NULL);
+	//void printFiringRate(char *fname=NULL);
 	void printGroupInfo(int grpId);	//!< CARLSIM_INFO prints group info
 	void printGroupInfo(int netId, std::list<GroupConfigRT>::iterator grpIt);
 	void printGroupInfo2(FILE* fpg);
 	void printMemoryInfo(FILE* fp); //!< prints memory info to file
 	void printNetworkInfo(FILE* fp);
-	void printNeuronState(int grpId, FILE* fp);
+	//void printNeuronState(int grpId, FILE* fp);
 	void printPostConnection(FILE* fp); //!< print all post connections
 	void printPostConnection(int grpId, FILE* fp);
 	int  printPostConnection2(int grpId, FILE* fpg);
@@ -729,7 +729,7 @@ private:
 	void printPreConnection(int grpId, FILE* fp);
 	int  printPreConnection2(int grpId, FILE* fpg);
 	void printSimSummary(); 	//!< prints a simulation summary at the end of sim
-	void printState(FILE* fp);
+	//void printState(FILE* fp);
 	void printStatusConnectionMonitor(int connId=ALL);
 	void printStatusGroupMonitor(int grpId=ALL);
 	void printStatusSpikeMonitor(int grpId=ALL);
@@ -1031,6 +1031,7 @@ private:
 		unsigned int maxMaxSpikeD2;
 		int maxNumN;
 		int maxNumNReg;
+		int maxNumNAssigned;
 		int maxNumGroups;
 		int maxNumConnections;
 		int maxNumPostSynNet;

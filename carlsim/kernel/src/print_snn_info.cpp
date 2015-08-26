@@ -203,10 +203,10 @@ void SNN::printStatusGroupMonitor(int grpId) {
 
 // This method allows us to print all information about the neuron.
 // If the enablePrint is false for a specific group, we do not print its state.
-void SNN::printState(FILE* const fp) {
-	for(int g=0; g < numGroups; g++)
-		printNeuronState(g, fp);
-}
+//void SNN::printState(FILE* const fp) {
+//	for(int g=0; g < numGroups; g++)
+//		printNeuronState(g, fp);
+//}
 
 // This function has no caller
 void SNN::printConnectionInfo(FILE * const fp)
@@ -468,48 +468,48 @@ void SNN::printNetworkInfo(FILE* const fpg) {
 	fclose(fpg);
 }
 
-void SNN::printFiringRate(char *fname)
-{
-  static int printCnt = 0;
-  FILE *fpg;
-  std::string strFname;
-  if (fname == NULL)
-    strFname = networkName_;
-  else
-    strFname = fname;
-
-  strFname += ".stat";
-  if(printCnt==0)
-    fpg = fopen(strFname.c_str(), "w");
-  else
-    fpg = fopen(strFname.c_str(), "a");
-
-  fprintf(fpg, "#Average Firing Rate\n");
-  if(printCnt==0) {
-    fprintf(fpg, "#network %s: size = %d\n", networkName_.c_str(), numN);
-    for(int grpId=0; grpId < numGroups; grpId++) {
-      fprintf(fpg, "#group %d: name %s : size = %d\n", grpId, groupInfo[grpId].Name.c_str(), groupConfigs[0][grpId].SizeN);
-    }
-  }
-  fprintf(fpg, "Time %d ms\n", simTime);
-  fprintf(fpg, "#activeNeurons ( <= 1.0) = fraction of neuron in the given group that are firing more than 1Hz\n");
-  fprintf(fpg, "#avgFiring (in Hz) = Average firing rate of activeNeurons in given group\n");
-  for(int grpId=0; grpId < numGroups; grpId++) {
-    fprintf(fpg, "group %d : \t", grpId);
-    int   totSpike = 0;
-    int   activeCnt  = 0;
-    for(int i=groupConfigs[0][grpId].StartN; i<=groupConfigs[0][grpId].EndN; i++) {
-      if (managerRuntimeData.nSpikeCnt[i] >= 1.0) {
-	totSpike += managerRuntimeData.nSpikeCnt[i];
-	activeCnt++;
-      }
-    }
-    fprintf(fpg, " activeNeurons = %3.3f : avgFiring = %3.3f  \n", activeCnt*1.0/groupConfigs[0][grpId].SizeN, (activeCnt==0)?0.0:totSpike*1.0/activeCnt);
-  }
-  printCnt++;
-  fflush(fpg);
-  fclose(fpg);
-}
+//void SNN::printFiringRate(char *fname)
+//{
+//  static int printCnt = 0;
+//  FILE *fpg;
+//  std::string strFname;
+//  if (fname == NULL)
+//    strFname = networkName_;
+//  else
+//    strFname = fname;
+//
+//  strFname += ".stat";
+//  if(printCnt==0)
+//    fpg = fopen(strFname.c_str(), "w");
+//  else
+//    fpg = fopen(strFname.c_str(), "a");
+//
+//  fprintf(fpg, "#Average Firing Rate\n");
+//  if(printCnt==0) {
+//    fprintf(fpg, "#network %s: size = %d\n", networkName_.c_str(), numN);
+//    for(int grpId=0; grpId < numGroups; grpId++) {
+//      fprintf(fpg, "#group %d: name %s : size = %d\n", grpId, groupInfo[grpId].Name.c_str(), groupConfigs[0][grpId].SizeN);
+//    }
+//  }
+//  fprintf(fpg, "Time %d ms\n", simTime);
+//  fprintf(fpg, "#activeNeurons ( <= 1.0) = fraction of neuron in the given group that are firing more than 1Hz\n");
+//  fprintf(fpg, "#avgFiring (in Hz) = Average firing rate of activeNeurons in given group\n");
+//  for(int grpId=0; grpId < numGroups; grpId++) {
+//    fprintf(fpg, "group %d : \t", grpId);
+//    int   totSpike = 0;
+//    int   activeCnt  = 0;
+//    for(int i=groupConfigs[0][grpId].StartN; i<=groupConfigs[0][grpId].EndN; i++) {
+//      if (managerRuntimeData.nSpikeCnt[i] >= 1.0) {
+//	totSpike += managerRuntimeData.nSpikeCnt[i];
+//	activeCnt++;
+//      }
+//    }
+//    fprintf(fpg, " activeNeurons = %3.3f : avgFiring = %3.3f  \n", activeCnt*1.0/groupConfigs[0][grpId].SizeN, (activeCnt==0)?0.0:totSpike*1.0/activeCnt);
+//  }
+//  printCnt++;
+//  fflush(fpg);
+//  fclose(fpg);
+//}
 
 // print the connection info of grpId
 void SNN::printPostConnection(int grpId, FILE* const fp)
@@ -571,50 +571,50 @@ void SNN::printPreConnection(int grpId, FILE* const fp)
 }
 
 
-void SNN::printNeuronState(int grpId, FILE* const fp)
-{
-  if (simMode_==GPU_MODE) {
-    fetchNeuronState(grpId);
-  }
-
-  fprintf(fp, "[MODE=%s] ", simMode_string[simMode_]);
-  fprintf(fp, "Group %s (%d) Neuron State Information (totSpike=%d, poissSpike=%d)\n",
-	  groupInfo[grpId].Name.c_str(), grpId, spikeCount, nPoissonSpikes);
-
-  // poisson group does not have default neuron state
-  if(groupConfigs[0][grpId].Type&POISSON_NEURON) {
-    fprintf(fp, "t=%d msec ", simTime);
-    int totSpikes = 0;
-    for (int nid=groupConfigs[0][grpId].StartN; nid <= groupConfigs[0][grpId].EndN; nid++) {
-      totSpikes += managerRuntimeData.nSpikeCnt[nid];
-      fprintf(fp, "%d ", managerRuntimeData.nSpikeCnt[nid]);
-    }
-    fprintf(fp, "\n");
-    fprintf(fp, "TotalSpikes [grp=%d, %s]=  %d\n", grpId, groupInfo[grpId].Name.c_str(), totSpikes);
-    return;
-  }
-
-  int totSpikes = 0;
-  for (int nid=groupConfigs[0][grpId].StartN; nid <= groupConfigs[0][grpId].EndN; nid++) {
-    // copy the neuron firing information from the GPU to the CPU...
-    totSpikes += managerRuntimeData.nSpikeCnt[nid];
-    if(!sim_with_conductances) {
-      if(managerRuntimeData.current[nid] != 0.0)
-	fprintf(fp, "t=%d id=%d v=%+3.3f u=%+3.3f I=%+3.3f nSpikes=%d\n", simTime, nid,
-		managerRuntimeData.voltage[nid],     managerRuntimeData.recovery[nid],      managerRuntimeData.current[nid],
-		managerRuntimeData.nSpikeCnt[nid]);
-    }
-    else {
-      if (managerRuntimeData.gAMPA[nid]+ managerRuntimeData.gNMDA[nid]+managerRuntimeData.gGABAa[nid]+managerRuntimeData.gGABAb[nid] != 0.0)
-	fprintf(fp, "t=%d id=%d v=%+3.3f u=%+3.3f I=%+3.3f gAMPA=%2.5f gNMDA=%2.5f gGABAa=%2.5f gGABAb=%2.5f nSpikes=%d\n", simTime, nid,
-		managerRuntimeData.voltage[nid],     managerRuntimeData.recovery[nid],      managerRuntimeData.current[nid], managerRuntimeData.gAMPA[nid],
-		managerRuntimeData.gNMDA[nid], managerRuntimeData.gGABAa[nid], managerRuntimeData.gGABAb[nid], managerRuntimeData.nSpikeCnt[nid]);
-    }
-  }
-  fprintf(fp, "TotalSpikes [grp=%d, %s] = %d\n", grpId, groupInfo[grpId].Name.c_str(), totSpikes);
-  fprintf(fp, "\n");
-  fflush(fp);
-}
+//void SNN::printNeuronState(int grpId, FILE* const fp)
+//{
+//  if (simMode_==GPU_MODE) {
+//    fetchNeuronState(grpId);
+//  }
+//
+//  fprintf(fp, "[MODE=%s] ", simMode_string[simMode_]);
+//  fprintf(fp, "Group %s (%d) Neuron State Information (totSpike=%d, poissSpike=%d)\n",
+//	  groupInfo[grpId].Name.c_str(), grpId, spikeCount, nPoissonSpikes);
+//
+//  // poisson group does not have default neuron state
+//  if(groupConfigs[0][grpId].Type&POISSON_NEURON) {
+//    fprintf(fp, "t=%d msec ", simTime);
+//    int totSpikes = 0;
+//    for (int nid=groupConfigs[0][grpId].StartN; nid <= groupConfigs[0][grpId].EndN; nid++) {
+//      totSpikes += managerRuntimeData.nSpikeCnt[nid];
+//      fprintf(fp, "%d ", managerRuntimeData.nSpikeCnt[nid]);
+//    }
+//    fprintf(fp, "\n");
+//    fprintf(fp, "TotalSpikes [grp=%d, %s]=  %d\n", grpId, groupInfo[grpId].Name.c_str(), totSpikes);
+//    return;
+//  }
+//
+//  int totSpikes = 0;
+//  for (int nid=groupConfigs[0][grpId].StartN; nid <= groupConfigs[0][grpId].EndN; nid++) {
+//    // copy the neuron firing information from the GPU to the CPU...
+//    totSpikes += managerRuntimeData.nSpikeCnt[nid];
+//    if(!sim_with_conductances) {
+//      if(managerRuntimeData.current[nid] != 0.0)
+//	fprintf(fp, "t=%d id=%d v=%+3.3f u=%+3.3f I=%+3.3f nSpikes=%d\n", simTime, nid,
+//		managerRuntimeData.voltage[nid],     managerRuntimeData.recovery[nid],      managerRuntimeData.current[nid],
+//		managerRuntimeData.nSpikeCnt[nid]);
+//    }
+//    else {
+//      if (managerRuntimeData.gAMPA[nid]+ managerRuntimeData.gNMDA[nid]+managerRuntimeData.gGABAa[nid]+managerRuntimeData.gGABAb[nid] != 0.0)
+//	fprintf(fp, "t=%d id=%d v=%+3.3f u=%+3.3f I=%+3.3f gAMPA=%2.5f gNMDA=%2.5f gGABAa=%2.5f gGABAb=%2.5f nSpikes=%d\n", simTime, nid,
+//		managerRuntimeData.voltage[nid],     managerRuntimeData.recovery[nid],      managerRuntimeData.current[nid], managerRuntimeData.gAMPA[nid],
+//		managerRuntimeData.gNMDA[nid], managerRuntimeData.gGABAa[nid], managerRuntimeData.gGABAb[nid], managerRuntimeData.nSpikeCnt[nid]);
+//    }
+//  }
+//  fprintf(fp, "TotalSpikes [grp=%d, %s] = %d\n", grpId, groupInfo[grpId].Name.c_str(), totSpikes);
+//  fprintf(fp, "\n");
+//  fflush(fp);
+//}
 
 // TODO: make KERNEL_INFO(), don't write to fpInf_
 void SNN::printWeights(int preGrpId, int postGrpId) {
