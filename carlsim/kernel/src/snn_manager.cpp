@@ -3446,6 +3446,7 @@ void SNN::findNumSynapsesNetwork(int _netId, int& _numPostSynNet, int& _numPreSy
 }
 
 void SNN::fetchGroupState(int grpId) {
+
 }
 
 void SNN::fetchNeuronState(int grpId) {

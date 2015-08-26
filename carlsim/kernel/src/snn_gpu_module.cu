@@ -1586,10 +1586,8 @@ __global__ void kernel_doCurrentUpdateD1(int simTimeMs, int simTimeSec, int simT
 void SNN::copyConnections(int netId, RuntimeData* dest, bool allocateMem) {
 	checkAndSetGPUDevice();
 
-	// allocateMem memory only if destination memory is not allocated !!!
-	assert(allocateMem && !dest->allocated);
-	assert(dest->memType == GPU_MODE);
-	assert(snnState == PARTITIONED_SNN);
+	// check that the destination pointer is properly allocated..
+	checkDestSrcPtrs(dest, &managerRuntimeData, cudaMemcpyHostToDevice, allocateMem, ALL);
 
 	// connection synaptic lengths and cumulative lengths...
 	if(allocateMem) 
@@ -1659,14 +1657,14 @@ void SNN::checkDestSrcPtrs(RuntimeData* dest, RuntimeData* src, cudaMemcpyKind k
 	}
 
 	if (allocateMem) {
-		assert(dest->allocated == false); // if allocateMem = true, then the destination must be empty without allocation.
+		assert(!dest->allocated); // if allocateMem = true, then the destination must be empty without allocation.
 		assert(lGrpId == ALL); // if allocateMem = true, then we should not specify any specific group.
 	} else {
-		assert(dest->allocated == true); // if allocateMem = false, then the destination must be allocated.
+		assert(dest->allocated); // if allocateMem = false, then the destination must be allocated.
 	}
 
 	// source should always be allocated
-	assert(src->allocated == true);
+	assert(src->allocated);
 }
 
 // FIXME: modify this for muilt GPUs
@@ -1892,25 +1890,23 @@ void SNN::copyConductanceGABAb(int netId, int lGrpId, RuntimeData* dest, Runtime
  * This function:
  * (allocate and) copy voltage, recovery, current, avgFiring 
  *
- * This funcion is called by allocateSNN_GPU() and fetchNeuronState(). It supports bi-directional copying
+ * This funcion is called by allocateSNN_GPU(). Only copying from host to device is required
  *
  * \param[in] netId the id of a local network, which is the same as the device (GPU) id
  * \param[in] lGrpId the local group id in a local network, which specifiy the group(s) to be copied
  * \param[in] dest pointer to runtime data desitnation
- * \param[in] src pointer to runtime data source
- * \param[in] kind the direction of copying
  * \param[in] allocateMem a flag indicates whether allocating memory space before copying
  *
  * \sa allocateSNN_GPU fetchNeuronState
  * \since v3.0
  */
-void SNN::copyNeuronState(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind, bool allocateMem) {
+void SNN::copyNeuronState(int netId, int lGrpId, RuntimeData* dest, bool allocateMem) {
 	checkAndSetGPUDevice();
 
 	int ptrPos, length;
 
 	// check that the destination pointer is properly allocated..
-	checkDestSrcPtrs(dest, src, kind, allocateMem, lGrpId);
+	checkDestSrcPtrs(dest, &managerRuntimeData, cudaMemcpyHostToDevice, allocateMem, lGrpId);
 
 	if(lGrpId == ALL) {
 		ptrPos  = 0;
@@ -1928,35 +1924,34 @@ void SNN::copyNeuronState(int netId, int lGrpId, RuntimeData* dest, RuntimeData*
 		return;
 
 	if(allocateMem) CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->recovery, sizeof(float) * length));
-	CUDA_CHECK_ERRORS(cudaMemcpy(&dest->recovery[ptrPos], &src->recovery[ptrPos], sizeof(float) * length, kind));
+	CUDA_CHECK_ERRORS(cudaMemcpy(&dest->recovery[ptrPos], &managerRuntimeData.recovery[ptrPos], sizeof(float) * length, cudaMemcpyHostToDevice));
 
 	if(allocateMem) CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->voltage, sizeof(float) * length));
-	CUDA_CHECK_ERRORS(cudaMemcpy(&dest->voltage[ptrPos], &src->voltage[ptrPos], sizeof(float) * length, kind));
+	CUDA_CHECK_ERRORS(cudaMemcpy(&dest->voltage[ptrPos], &managerRuntimeData.voltage[ptrPos], sizeof(float) * length, cudaMemcpyHostToDevice));
 
 	//neuron input current...
 	if(allocateMem) CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->current, sizeof(float) * length));
-	CUDA_CHECK_ERRORS(cudaMemcpy(&dest->current[ptrPos], &src->current[ptrPos], sizeof(float) * length, kind));
+	CUDA_CHECK_ERRORS(cudaMemcpy(&dest->current[ptrPos], &managerRuntimeData.current[ptrPos], sizeof(float) * length, cudaMemcpyHostToDevice));
 
 	if (sim_with_conductances) {
 	    //conductance information
-	    copyConductanceAMPA(netId, lGrpId, dest, src, kind, allocateMem);
-		copyConductanceNMDA(netId, lGrpId, dest, src, kind, allocateMem);
-		copyConductanceGABAa(netId, lGrpId, dest, src, kind, allocateMem);
-		copyConductanceGABAb(netId, lGrpId, dest, src, kind, allocateMem);
+		copyConductanceAMPA(netId, lGrpId, dest, &managerRuntimeData, cudaMemcpyHostToDevice, allocateMem);
+		copyConductanceNMDA(netId, lGrpId, dest, &managerRuntimeData, cudaMemcpyHostToDevice, allocateMem);
+		copyConductanceGABAa(netId, lGrpId, dest, &managerRuntimeData, cudaMemcpyHostToDevice, allocateMem);
+		copyConductanceGABAb(netId, lGrpId, dest, &managerRuntimeData, cudaMemcpyHostToDevice, allocateMem);
 	}
 
 	// copying external current needs to be done separately because setExternalCurrent needs to call it, too
 	// do it only from host to device
-	copyExternalCurrent(netId, lGrpId, dest, src, kind, allocateMem);
+	copyExternalCurrent(netId, lGrpId, dest, &managerRuntimeData, cudaMemcpyHostToDevice, allocateMem);
 	
-	if (kind == cudaMemcpyHostToDevice)
-		copyNeuronParameters(netId, lGrpId, dest, allocateMem);
+	copyNeuronParameters(netId, lGrpId, dest, allocateMem);
 
 	if (sim_with_homeostasis) {
 		//Included to enable homeostasis in GPU_MODE.
 		// Avg. Firing...
 		if(allocateMem) CUDA_CHECK_ERRORS(cudaMalloc((void**) &dest->avgFiring, sizeof(float) * length));
-		CUDA_CHECK_ERRORS(cudaMemcpy(&dest->avgFiring[ptrPos], &src->avgFiring[ptrPos], sizeof(float) * length, kind));
+		CUDA_CHECK_ERRORS(cudaMemcpy(&dest->avgFiring[ptrPos], &managerRuntimeData.avgFiring[ptrPos], sizeof(float) * length, cudaMemcpyHostToDevice));
 	}
 }
 
@@ -1981,6 +1976,9 @@ void SNN::copyNeuronState(int netId, int lGrpId, RuntimeData* dest, RuntimeData*
  */
 void SNN::copyGroupState(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind, bool allocateMem) {
 	checkAndSetGPUDevice();
+
+	// check that the destination pointer is properly allocated..
+	checkDestSrcPtrs(dest, src, kind, allocateMem, lGrpId);
 
 	if (allocateMem) {
 		assert(dest->memType == GPU_MODE && !dest->allocated);
@@ -2037,6 +2035,9 @@ void SNN::copyNeuronParameters(int netId, int lGrpId, RuntimeData* dest, bool al
 	checkAndSetGPUDevice();
 
 	int ptrPos, length;
+
+	// check that the destination pointer is properly allocated..
+	checkDestSrcPtrs(dest, &managerRuntimeData, cudaMemcpyHostToDevice, allocateMem, lGrpId);
 
 	// check that the destination pointer is properly allocated..
 	// cannot use checkDestSrcPtrs here because src pointer would be NULL
@@ -2215,14 +2216,14 @@ void SNN::copyGroupConfigs(int netId) {
 	CUDA_CHECK_ERRORS(cudaMemcpyToSymbol(groupConfigsGPU, groupConfigs[netId], (networkConfigs[netId].numGroups) * sizeof(GroupConfigRT), 0, cudaMemcpyHostToDevice));
 }
 
+// FIXME: modify this function for multi-GPUs
 void SNN::copyWeightState (RuntimeData* dest, RuntimeData* src,  cudaMemcpyKind kind, bool allocateMem, int grpId) {
 	checkAndSetGPUDevice();
 
 	unsigned int length_wt, cumPos_syn;
 
-	assert(allocateMem==0);
-
-  // check that the destination pointer is properly allocated..
+	assert(!allocateMem);
+	// check that the destination pointer is properly allocated..
 	checkDestSrcPtrs(dest, src, kind, allocateMem, grpId);
 
 	int numCnt = 0;
@@ -2283,10 +2284,8 @@ void SNN::copySynapseState(int netId, RuntimeData* dest, bool allocateMem) {
 
 	assert(networkConfigs[netId].maxNumPreSynN > 0 && networkConfigs[netId].maxNumPostSynN > 0);
 	
-	if (dest->allocated && allocateMem) {
-		KERNEL_ERROR("GPU Memory already allocated..");
-		return;
-	}
+	// check that the destination pointer is properly allocated..
+	checkDestSrcPtrs(dest, &managerRuntimeData, cudaMemcpyHostToDevice, allocateMem, ALL);
 
 	// synaptic information based
 	if(allocateMem) CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->wt, sizeof(float) * networkConfigs[netId].numPreSynNet));
@@ -2328,8 +2327,9 @@ void SNN::copySynapseState(int netId, RuntimeData* dest, bool allocateMem) {
 void SNN::copyAuxiliaryData(int netId, RuntimeData* dest, bool allocateMem) {
 	checkAndSetGPUDevice();
 
-	assert(allocateMem && !dest->allocated);
-	assert(dest->memType == GPU_MODE);
+	// check that the destination pointer is properly allocated..
+	checkDestSrcPtrs(dest, &managerRuntimeData, cudaMemcpyHostToDevice, allocateMem, ALL);
+
 	assert(networkConfigs[netId].numN > 0);
 
 	// FIXME: modify NgenFunc for multi-GPUs
@@ -2852,6 +2852,7 @@ void SNN::checkAndSetGPUDevice() {
 	//}
 }
 
+// deprecated
 void SNN::copyWeightsGPU(int nid, int src_grp) {
 	checkAndSetGPUDevice();
 
@@ -2909,7 +2910,6 @@ void SNN::allocateSNN_GPU(int netId) {
 	KERNEL_INFO("Static Load:\t\t%2.3f GB\t%2.3f GB\t%2.3f GB",(float)(previous-avail)/toGB, (float)((total-avail)/toGB),(float)(avail/toGB));
 	previous=avail;
 
-	// initialize (cudaMemset) gpuRuntimeData[0].I_set, gpuRuntimeData[0].poissonFireRate
 	// initialize (copy from SNN) gpuRuntimeData[0].Npre, gpuRuntimeData[0].Npre_plastic, gpuRuntimeData[0].Npre_plasticInv, gpuRuntimeData[0].cumulativePre
 	// initialize (copy from SNN) gpuRuntimeData[0].cumulativePost, gpuRuntimeData[0].Npost, gpuRuntimeData[0].postDelayInfo
 	// initialize (copy from SNN) gpuRuntimeData[0].postSynapticIds, gpuRuntimeData[0].preSynapticIds
@@ -2929,7 +2929,7 @@ void SNN::allocateSNN_GPU(int netId) {
 	// initialize (copy from managerRuntimeData) gpuRuntimeData[0].gGABAa, gpuRuntimeData[0].gGABAb, gpuRuntimeData[0].gAMPA, gpuRuntimeData[0].gNMDA
 	// initialize (copy from SNN) gpuRuntimeData[0].Izh_a, gpuRuntimeData[0].Izh_b, gpuRuntimeData[0].Izh_c, gpuRuntimeData[0].Izh_d
 	// initialize (copy form SNN) gpuRuntimeData[0].baseFiring, gpuRuntimeData[0].baseFiringInv
-	copyNeuronState(netId, ALL, &gpuRuntimeData[netId], &managerRuntimeData, cudaMemcpyHostToDevice, true);
+	copyNeuronState(netId, ALL, &gpuRuntimeData[netId], true);
 
 	// copy STP state, considered as neuron state
 	if (sim_with_stp) {
@@ -2947,6 +2947,7 @@ void SNN::allocateSNN_GPU(int netId) {
 	KERNEL_INFO("Group State:\t\t%2.3f GB\t%2.3f GB\t%2.3f GB",(float)(previous-avail)/toGB,(float)((total-avail)/toGB), (float)(avail/toGB));
 	previous=avail;
 
+	// initialize (cudaMemset) gpuRuntimeData[0].I_set, gpuRuntimeData[0].poissonFireRate
 	// initialize (copy from SNN) gpuRuntimeData[0].firingTableD1, gpuRuntimeData[0].firingTableD2
 	// initialize (cudaMalloc) gpuRuntimeData[0].spikeGenBits
 	// initialize (copy from managerRuntimeData) gpuRuntimeData[0].nSpikeCnt,

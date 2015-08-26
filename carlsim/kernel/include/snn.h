@@ -814,7 +814,7 @@ private:
 	void copyNeuronParameters(int netId, int lGrpId, RuntimeData* dest, bool allocateMem);
 
 	void copyGroupState(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind, bool allocateMem);
-	void copyNeuronState(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind, bool allocateMem);
+	void copyNeuronState(int netId, int lGrpId, RuntimeData* dest, bool allocateMem);
 	void copySynapseState(int netId, RuntimeData* dest, bool allocateMem);
 	void copySTPState(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind, bool allocateMem);
 	void copyWeightsGPU(int nid, int src_grp);
