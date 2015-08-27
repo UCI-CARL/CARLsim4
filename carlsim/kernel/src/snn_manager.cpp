@@ -1940,7 +1940,6 @@ void SNN::SNNinit() {
 	numGroups = 0;
 	numConnections = 0;
 	numSpikeGenGrps = 0;
-	NgenFunc = 0;
 	simulatorDeleted = false;
 
 	cumExecutionTime = 0.0;
@@ -1960,9 +1959,6 @@ void SNN::SNNinit() {
 	sim_with_homeostasis = false;
 	sim_with_stp = false;
 	sim_in_testing = false;
-
-	//maxSpikesD1 = 0;
-	//maxSpikesD2 = 0;
 
 	loadSimFID = NULL;
 
@@ -1987,9 +1983,6 @@ void SNN::SNNinit() {
 	rGABAb = 1.0-1.0/100.0;
 	dGABAb = 1.0-1.0/150.0;
 	sGABAb = 1.0;
-
-	// each SNN object hold its own random number object
-	gpuPoissonRand = NULL;
 
 	// reset all monitors, don't deallocate (false)
 	resetMonitors(false);
@@ -2086,9 +2079,6 @@ void SNN::SNNinit() {
 }
 
 void SNN::allocateSNN(int netId) {
-	// Confirm allocation of SNN runtime data in main memory
-	managerRuntimeData.allocated = true;
-	managerRuntimeData.memType = CPU_MODE;
 
 	switch (simMode_) {
 	case GPU_MODE:
@@ -2235,8 +2225,12 @@ void SNN::allocateRuntimeData() {
 	memset(managerRuntimeData.grpIds, 0, sizeof(short int) * managerRTDSize.maxNumNAssigned);
 	cpuSnnSz.neuronInfoSize += sizeof(short int) * managerRTDSize.maxNumNAssigned;
 
-	// poisson Firing Rate
-	// cpuSnnSz.neuronInfoSize += (sizeof(int) * networkConfigs[0].numNPois);
+	managerRuntimeData.spikeGenBits = new unsigned int[managerRTDSize.maxNumNPois / 32 + 1];
+	cpuSnnSz.addInfoSize += sizeof(int) * (managerRTDSize.maxNumNPois / 32 + 1);
+
+	// Confirm allocation of SNN runtime data in main memory
+	managerRuntimeData.allocated = true;
+	managerRuntimeData.memType = CPU_MODE;
 }
 
 int SNN::addSpikeToTable(int nid, int g) {
@@ -2381,8 +2375,9 @@ void SNN::generateNetworkConfigs() {
 					 networkConfigs[netId].numNReg, networkConfigs[netId].numNExcReg, networkConfigs[netId].numNInhReg,
 					 networkConfigs[netId].numNPois, networkConfigs[netId].numNExcPois, networkConfigs[netId].numNInhPois);
 			// find the maximum number of numN and numNReg among local networks
-			if (networkConfigs[netId].numN > managerRTDSize.maxNumN) managerRTDSize.maxNumN = networkConfigs[netId].numN;
 			if (networkConfigs[netId].numNReg > managerRTDSize.maxNumNReg) managerRTDSize.maxNumNReg = networkConfigs[netId].numNReg;
+			if (networkConfigs[netId].numNPois > managerRTDSize.maxNumNPois) managerRTDSize.maxNumNPois = networkConfigs[netId].numNPois;
+			if (networkConfigs[netId].numN > managerRTDSize.maxNumN) managerRTDSize.maxNumN = networkConfigs[netId].numN;
 			if (networkConfigs[netId].numNAssigned > managerRTDSize.maxNumNAssigned) managerRTDSize.maxNumNAssigned = networkConfigs[netId].numNAssigned;
 
 			// configurations for assigned groups and connections
@@ -4195,8 +4190,7 @@ void SNN::generateRuntimeSNN() {
 			// - init wt, maxSynWt
 			resetSynapse(netId, false);
 			
-			// - allocate spikeGenBits
-			// - init GroupConfig.Noffset, NgenFunc
+			// - init GroupConfig.Noffset, numNSpikeGen
 			updateSpikeGeneratorsInit(netId);
 
 			allocateSNN(netId);
@@ -4804,30 +4798,23 @@ void SNN::updateSpikeGenerators() {
 }
 
 void SNN::updateSpikeGeneratorsInit(int netId) {
+	int numNSpikeGen = 0;
 	for(int lGrpId = 0; lGrpId < networkConfigs[netId].numGroups; lGrpId++) {
 		if (groupConfigs[netId][lGrpId].isSpikeGenerator) {
 			// This is done only during initialization
 			groupConfigs[netId][lGrpId].CurrTimeSlice = groupConfigs[netId][lGrpId].NewTimeSlice;
 
-			// we only need NgenFunc for spike generator callbacks that need to transfer their spikes to the GPU
+			// we only need numNSpikeGen for spike generator callbacks that need to transfer their spikes to the GPU
 			if (groupConfigs[netId][lGrpId].spikeGen) {
-				groupConfigs[netId][lGrpId].Noffset = NgenFunc;
-				NgenFunc += groupConfigs[netId][lGrpId].SizeN;
+				groupConfigs[netId][lGrpId].Noffset = numNSpikeGen;
+				numNSpikeGen += groupConfigs[netId][lGrpId].SizeN;
 			}
 			//Note: updateSpikeFromGrp() will be called first time in updateSpikeGenerators()
 			//updateSpikesFromGrp(g);
 		}
 	}
-
-	// spikeGenBits can be set only once..
-	assert(managerRuntimeData.spikeGenBits == NULL);
-	assert(NgenFunc <= networkConfigs[netId].numNPois);
-
-	if (NgenFunc) {
-		managerRuntimeData.spikeGenBits = new unsigned int[NgenFunc/32+1];
-		// increase the total memory size used by the routine...
-		cpuSnnSz.addInfoSize += sizeof(managerRuntimeData.spikeGenBits[0])*(NgenFunc/32+1);
-	}
+	assert(numNSpikeGen <= networkConfigs[netId].numNPois);
+	networkConfigs[netId].numNSpikeGen = numNSpikeGen;
 }
 
 /*!

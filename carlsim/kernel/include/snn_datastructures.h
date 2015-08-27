@@ -261,6 +261,8 @@ typedef struct RuntimeData_s {
 	float* grpNEBuffer;
 
 	unsigned int* spikeGenBits;
+
+	RNG_rand48* gpuPoissonRand;
 } RuntimeData;
 
 //! runtime network configuration
@@ -281,6 +283,8 @@ typedef struct NetworkConfigRT_s  {
 	int numNExcPois;  //!< number of excitatory poisson neurons
 	int numNInhPois;  //!< number of inhibitory poisson neurons
 	int numNPois;     //!< number of poisson neurons
+	int numNSpikeGen; //!< number of poisson neurons generating spikes based on callback functions
+	int numNRateGen;  //!< number of poisson neurons generating spikes based on firing rate
 	int numNExternal; //!< number of external neurons in the view of this local network 
 	int numNAssigned; //!< number of total neurons assigned to this local network
 
@@ -353,7 +357,7 @@ typedef struct GroupConfigRT_s {
 	int          SpikeMonitorId;		//!< spike monitor id
 	int          GroupMonitorId; //!< group monitor id
 	float        RefractPeriod;
-	int          CurrTimeSlice; //!< timeSlice is used by the Poisson generators in order to note generate too many or too few spikes within a window of time
+	int          CurrTimeSlice; //!< timeSlice is used by the Poisson generators in order to not generate too many or too few spikes within a window of time
 	int          NewTimeSlice;
 	int          SliceUpdateTime;
 	int          numPostSynapses; //!< the total number of post-connections of a group
@@ -370,7 +374,7 @@ typedef struct GroupConfigRT_s {
 	bool         WithHomeostasis;
 	int          homeoId;
 	bool         FixedInputWts;
-	int          Noffset;
+	int          Noffset;         //!< the offset of spike generator (poisson) neurons [0, numNPois)
 	int8_t       MaxDelay;
 
 	long int     lastSTPupdate;

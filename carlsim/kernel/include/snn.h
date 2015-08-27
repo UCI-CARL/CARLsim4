@@ -866,7 +866,7 @@ private:
 	 */
 	void resetSpikeCounter_GPU(int grpId);
 
-	void setSpikeGenBit_GPU(int nid, int grp);
+	void setSpikeGenBit_GPU(int netId, int lGrpId, int lNId);
 	void spikeGeneratorUpdate_GPU();
 	void startGPUTiming();
 	void stopGPUTiming();
@@ -1031,6 +1031,7 @@ private:
 		unsigned int maxMaxSpikeD2;
 		int maxNumN;
 		int maxNumNReg;
+		int maxNumNPois;
 		int maxNumNAssigned;
 		int maxNumGroups;
 		int maxNumConnections;
@@ -1039,9 +1040,6 @@ private:
 	} ManagerRuntimeDataSize;
 
 	ManagerRuntimeDataSize managerRTDSize;
-
-	// FIXME: fix this for multi GPUs
-	int NgenFunc; //!< this counts the spike generator offsets...
 
 	GroupInfo groupInfo[MAX_GRP_PER_SNN];
 
@@ -1055,8 +1053,6 @@ private:
 	int wtANDwtChangeUpdateIntervalCnt_;
 	float stdpScaleFactor_;
 	float wtChangeDecay_; //!< the wtChange decay
-
-	RNG_rand48* gpuPoissonRand;
 };
 
 #endif

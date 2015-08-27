@@ -558,14 +558,14 @@ __device__ inline bool getSpikeGenBit_GPU (unsigned int nidPos) {
  *
  * 
  */
-void SNN::setSpikeGenBit_GPU(int nid, int grp) {
+void SNN::setSpikeGenBit_GPU(int netId, int lGrpId, int lNId) {
 	checkAndSetGPUDevice();
 
-	unsigned int nidPos    = (nid - groupConfigs[0][grp].StartN + groupConfigs[0][grp].Noffset);
-	unsigned int nidBitPos = nidPos%32;
-	unsigned int nidIndex  = nidPos/32;
+	unsigned int nidPos    = (lNId - groupConfigs[netId][lGrpId].localStartN + groupConfigs[netId][lGrpId].Noffset);
+	unsigned int nidBitPos = nidPos % 32;
+	unsigned int nidIndex  = nidPos / 32;
 
-	assert(nidIndex < (NgenFunc/32+1));
+	assert(nidIndex < (networkConfigs[netId].numNSpikeGen / 32 + 1));
 
 	managerRuntimeData.spikeGenBits[nidIndex] |= (1 << nidBitPos);
 }
@@ -2333,10 +2333,9 @@ void SNN::copyAuxiliaryData(int netId, RuntimeData* dest, bool allocateMem) {
 
 	assert(networkConfigs[netId].numN > 0);
 
-	// FIXME: modify NgenFunc for multi-GPUs
 	if(allocateMem)
-		CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->spikeGenBits, sizeof(int) * (NgenFunc / 32 + 1)));
-	CUDA_CHECK_ERRORS(cudaMemset(dest->spikeGenBits, 0, sizeof(int) * (NgenFunc / 32 + 1)));
+		CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->spikeGenBits, sizeof(int) * (networkConfigs[netId].numNSpikeGen / 32 + 1)));
+	CUDA_CHECK_ERRORS(cudaMemset(dest->spikeGenBits, 0, sizeof(int) * (networkConfigs[netId].numNSpikeGen / 32 + 1)));
 
 	// allocate the poisson neuron poissonFireRate
 	if(allocateMem)
@@ -2396,28 +2395,32 @@ void SNN::copyAuxiliaryData(int netId, RuntimeData* dest, bool allocateMem) {
 void SNN::spikeGeneratorUpdate_GPU() {
 	checkAndSetGPUDevice();
 
-	assert(gpuRuntimeData[0].allocated);
+	for (int netId = 0; netId < MAX_NET_PER_SNN; netId++) {
+		if (groupPartitionLists[netId].empty()) {
+			assert(gpuRuntimeData[netId].allocated);
 
-	// this part of the code is useful for poisson spike generator function..
-	if((numNPois > 0) && (gpuPoissonRand != NULL)) {
-		gpuPoissonRand->generate(numNPois, RNG_rand48::MAX_RANGE);
-	}
+			// this part of the code is useful for poisson spike generator function..
+			if((networkConfigs[netId].numNPois > 0) && (gpuRuntimeData[netId].gpuPoissonRand != NULL)) {
+				gpuRuntimeData[netId].gpuPoissonRand->generate(networkConfigs[netId].numNPois, RNG_rand48::MAX_RANGE);
+			}
 
-	// this part of the code is invoked when we use spike generators
-	if (NgenFunc) {
-		assert(managerRuntimeData.spikeGenBits!=NULL);
+			// this part of the code is invoked when we use spike generators
+			if (networkConfigs[netId].numNSpikeGen > 0) {
+				assert(managerRuntimeData.spikeGenBits != NULL);
 
-		// reset the bit status of the spikeGenBits...
-		memset(managerRuntimeData.spikeGenBits, 0, sizeof(int)*(NgenFunc/32+1));
+				// reset the bit status of the spikeGenBits...
+				memset(managerRuntimeData.spikeGenBits, 0, sizeof(int) * (networkConfigs[netId].numNSpikeGen / 32 + 1));
 
-		// If time slice has expired, check if new spikes needs to be generated....
-		updateSpikeGenerators();
+				// If time slice has expired, check if new spikes needs to be generated....
+				updateSpikeGenerators();
 
-		// fill spikeGenBits accordingly...
-		generateSpikes();
+				// fill spikeGenBits accordingly...
+				generateSpikes();
 
-		// copy the spikeGenBits from the CPU to the GPU..
-		CUDA_CHECK_ERRORS( cudaMemcpy( gpuRuntimeData[0].spikeGenBits, managerRuntimeData.spikeGenBits, sizeof(int)*(NgenFunc/32+1), cudaMemcpyHostToDevice));
+				// copy the spikeGenBits from the CPU to the GPU..
+				CUDA_CHECK_ERRORS(cudaMemcpy(gpuRuntimeData[netId].spikeGenBits, managerRuntimeData.spikeGenBits, sizeof(int) * (networkConfigs[netId].numNSpikeGen / 32 + 1), cudaMemcpyHostToDevice));
+			}
+		}
 	}
 }
 
