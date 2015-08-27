@@ -990,10 +990,10 @@ public:
 	 *
 	 * \STATE ::CONFIG_STATE
 	 * \param[in] grpId           the group with which to associate a SpikeGenerator object
-	 * \param[in] spikeGen pointer to a custom SpikeGenerator object
+	 * \param[in] spikeGenFunc pointer to a custom SpikeGenerator object
 	 * \see \ref ch6s1_generating_spikes
 	 */
-	void setSpikeGenerator(int grpId, SpikeGenerator* spikeGen);
+	void setSpikeGenerator(int grpId, SpikeGenerator* spikeGenFunc);
 
 	/*!
 	 * \brief Sets a Spike Monitor for a groups, prints spikes to binary file

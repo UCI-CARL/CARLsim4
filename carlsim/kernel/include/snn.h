@@ -377,7 +377,7 @@ public:
 	void setSpikeCounter(int grpId, int recordDur);
 
 	//! sets up a spike generator
-	void setSpikeGenerator(int grpId, SpikeGeneratorCore* spikeGen);
+	void setSpikeGenerator(int grpId, SpikeGeneratorCore* spikeGenFunc);
 
 	//! sets up a spike monitor registered with a callback to process the spikes, there can only be one SpikeMonitor per group
 	/*!
@@ -649,6 +649,7 @@ private:
 	void findNumN(int _netId, int& _numN, int& _nunNExternal, int& numNAssigned,
                   int& _numNReg, int& _numNExcReg, int& _numNInhReg,
                   int& _numNPois, int& _numNExcPois, int& _numNInhPois);
+	void findNumNSpikeGen(int _netId, int& _numNSpikeGen);
 
 	void generatePostSpike(unsigned int pre_i, unsigned int idx_d, unsigned int offset, int tD);
 	void generateSpikes();
@@ -765,7 +766,6 @@ private:
 
 	void updateSpikesFromGrp(int grpId);
 	void updateSpikeGenerators();
-	void updateSpikeGeneratorsInit(int netId);
 
 	void allocateSpikeTables();
 	//void updateStateAndFiringTable();
@@ -1031,7 +1031,7 @@ private:
 		unsigned int maxMaxSpikeD2;
 		int maxNumN;
 		int maxNumNReg;
-		int maxNumNPois;
+		int maxNumNSpikeGen;
 		int maxNumNAssigned;
 		int maxNumGroups;
 		int maxNumConnections;
@@ -1053,6 +1053,8 @@ private:
 	int wtANDwtChangeUpdateIntervalCnt_;
 	float stdpScaleFactor_;
 	float wtChangeDecay_; //!< the wtChange decay
+
+	RNG_rand48* gpuPoissonRand;
 };
 
 #endif

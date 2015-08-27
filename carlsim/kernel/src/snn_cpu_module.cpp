@@ -414,7 +414,7 @@ void SNN::generateSpikes() {
 void SNN::generateSpikesFromFuncPtr(int grpId) {
 	// \FIXME this function is a mess
 	bool done;
-	SpikeGeneratorCore* spikeGen = groupConfigs[0][grpId].spikeGen;
+	SpikeGeneratorCore* spikeGenFunc = groupConfigs[0][grpId].spikeGenFunc;
 	int timeSlice = groupConfigs[0][grpId].CurrTimeSlice;
 	int currTime = simTime;
 	int spikeCnt = 0;
@@ -431,7 +431,7 @@ void SNN::generateSpikesFromFuncPtr(int grpId) {
 		done = false;
 		while (!done) {
 			// generate the next spike time (nextSchedTime) from the nextSpikeTime callback
-			int nextSchedTime = spikeGen->nextSpikeTime(this, grpId, i - groupConfigs[0][grpId].StartN, currTime, 
+			int nextSchedTime = spikeGenFunc->nextSpikeTime(this, grpId, i - groupConfigs[0][grpId].StartN, currTime, 
 				nextTime, endOfTimeWindow);
 
 			// the generated spike time is valid only if:

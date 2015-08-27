@@ -908,14 +908,14 @@ void CARLsim::setSpikeCounter(int grpId, int recordDur) {
 }
 
 // sets up a spike generator
-void CARLsim::setSpikeGenerator(int grpId, SpikeGenerator* spikeGen) {
+void CARLsim::setSpikeGenerator(int grpId, SpikeGenerator* spikeGenFunc) {
 	std::string funcName = "setSpikeGenerator(\""+getGroupName(grpId)+"\")";
 	UserErrors::assertTrue(grpId!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName, "grpId");		// groupId can't be ALL
 	UserErrors::assertTrue(isPoissonGroup(grpId), UserErrors::WRONG_NEURON_TYPE, funcName, funcName);
-	UserErrors::assertTrue(spikeGen!=NULL, UserErrors::CANNOT_BE_NULL, funcName);
+	UserErrors::assertTrue(spikeGenFunc!=NULL, UserErrors::CANNOT_BE_NULL, funcName);
 	UserErrors::assertTrue(carlsimState_==CONFIG_STATE,	UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "CONFIG.");
 
-	SpikeGeneratorCore* SGC = new SpikeGeneratorCore(this, spikeGen);
+	SpikeGeneratorCore* SGC = new SpikeGeneratorCore(this, spikeGenFunc);
 	spkGen_.push_back(SGC);
 	snn_->setSpikeGenerator(grpId, SGC);
 }

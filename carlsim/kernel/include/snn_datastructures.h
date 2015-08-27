@@ -262,7 +262,7 @@ typedef struct RuntimeData_s {
 
 	unsigned int* spikeGenBits;
 
-	RNG_rand48* gpuPoissonRand;
+	//RNG_rand48* gpuPoissonRand;
 } RuntimeData;
 
 //! runtime network configuration
@@ -358,7 +358,6 @@ typedef struct GroupConfigRT_s {
 	int          GroupMonitorId; //!< group monitor id
 	float        RefractPeriod;
 	int          CurrTimeSlice; //!< timeSlice is used by the Poisson generators in order to not generate too many or too few spikes within a window of time
-	int          NewTimeSlice;
 	int          SliceUpdateTime;
 	int          numPostSynapses; //!< the total number of post-connections of a group
 	int          numPreSynapses; //!< the total number of pre-connections of a group
@@ -421,7 +420,7 @@ typedef struct GroupConfigRT_s {
 
 	bool 		writeSpikesToFile; 	//!< whether spikes should be written to file (needs SpikeMonitorId>-1)
 	bool 		writeSpikesToArray;	//!< whether spikes should be written to file (needs SpikeMonitorId>-1)
-	SpikeGeneratorCore*	spikeGen;
+	SpikeGeneratorCore*	spikeGenFunc;
 	PoissonRate* RatePtr;
 
 	bool operator== (const struct GroupConfigRT_s& grp) {

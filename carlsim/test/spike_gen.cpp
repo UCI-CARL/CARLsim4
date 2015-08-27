@@ -52,7 +52,7 @@
 #endif
 
 // tests whether the binary file created by setSpikeMonitor matches the specifications of PeriodicSpikeGenerator
-TEST(SpikeGen, PeriodicSpikeGenerator) {
+TEST(spikeGenFunc, PeriodicSpikeGenerator) {
 	int isi = 100; // ms
 	double rate = 1000.0/isi;
 	int nNeur = 5;
@@ -106,14 +106,14 @@ TEST(SpikeGen, PeriodicSpikeGenerator) {
 	if (inputArray1!=NULL) delete[] inputArray1;
 }
 
-TEST(SpikeGen, PeriodicSpikeGeneratorDeath) {
+TEST(spikeGenFunc, PeriodicSpikeGeneratorDeath) {
 	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
 	EXPECT_DEATH({PeriodicSpikeGenerator spkGen(0.0);},"");
 	EXPECT_DEATH({PeriodicSpikeGenerator spkGen(-10.0);},"");
 }
 
-TEST(SpikeGen, SpikeGeneratorFromFile) {
+TEST(spikeGenFunc, SpikeGeneratorFromFile) {
 	int nNeur = 1;
 	PoissonRate* poiss = NULL;
 	SpikeGeneratorFromFile* sgf = NULL;
@@ -196,7 +196,7 @@ TEST(SpikeGen, SpikeGeneratorFromFile) {
 	}
 }
 
-TEST(SpikeGen, SpikeGeneratorFromFileLoadFile) {
+TEST(spikeGenFunc, SpikeGeneratorFromFileLoadFile) {
 	int nNeur = 1;
 	PoissonRate* poiss = NULL;
 	SpikeGeneratorFromFile* sgf = NULL;
@@ -301,7 +301,7 @@ TEST(SpikeGen, SpikeGeneratorFromFileLoadFile) {
 	}
 }
 
-TEST(SpikeGen, SpikeGeneratorFromFileDeath) {
+TEST(spikeGenFunc, SpikeGeneratorFromFileDeath) {
 	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 	EXPECT_DEATH({SpikeGeneratorFromFile spkGen("");},"");
 	EXPECT_DEATH({SpikeGeneratorFromFile spkGen("thisFile/doesNot/exist.dat");},"");
@@ -309,7 +309,7 @@ TEST(SpikeGen, SpikeGeneratorFromFileDeath) {
 
 // tests whether the binary spike file created by setSpikeMonitor contains the same spike times as specified
 // by a spike vector
-TEST(SpikeGen, SpikeGeneratorFromVector) {
+TEST(spikeGenFunc, SpikeGeneratorFromVector) {
 	int spkTimesArr[11] = {13, 42, 99, 102, 200, 523, 738, 820, 821, 912, 989};
 	std::vector<int> spkTimes(&spkTimesArr[0], &spkTimesArr[0]+11);
 
@@ -348,7 +348,7 @@ TEST(SpikeGen, SpikeGeneratorFromVector) {
 	if (inputArray0!=NULL) delete[] inputArray0;
 }
 
-TEST(SpikeGen, SpikeGeneratorFromVectorDeath) {
+TEST(spikeGenFunc, SpikeGeneratorFromVectorDeath) {
 	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
 	std::vector<int> emptyVec, negativeVec;

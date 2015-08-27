@@ -581,7 +581,7 @@ void SNN::setSpikeGenBit_GPU(int netId, int lGrpId, int lNId) {
  *
  * device access: spikeCountD2SecGPU, spikeCountD1SecGPU
  * net access: numNReg numNPois, numN, sim_with_stdp, sim_in_testing, sim_with_homeostasis, maxSpikesD1, maxSpikesD2
- * grp access: Type, spikeGen, Noffset, withSpikeCounter, spkCntBufPos, StartN, WithSTP, avgTimeScale
+ * grp access: Type, spikeGenFunc, Noffset, withSpikeCounter, spkCntBufPos, StartN, WithSTP, avgTimeScale
                WithSTDP, WithESTDP, WithISTDP, WithESTDPCurve, With ISTDPCurve, all STDP parameters
  * rtd access: poissonRandPtr, poissonFireRate, spkCntBuf, nSpikeCnt, voltage, recovery, Izh_c, Izh_d
  *             cumulativePre, Npre_plastic, synSpikeTime, lastSpikeTime, wtChange,
@@ -620,7 +620,7 @@ __global__ 	void kernel_findFiring (int simTime) {
 			// Simple poisson spiker uses the poisson firing probability
 			// to detect whether it has fired or not....
 			if( isPoissonGroup(grpId, nid) ) {
-				if(groupConfigsGPU[grpId].spikeGen) {
+				if(groupConfigsGPU[grpId].spikeGenFunc) {
 					unsigned int  offset      = nid-groupConfigsGPU[grpId].StartN+groupConfigsGPU[grpId].Noffset;
 					needToWrite = getSpikeGenBit_GPU(offset);
 				}
@@ -2400,8 +2400,8 @@ void SNN::spikeGeneratorUpdate_GPU() {
 			assert(gpuRuntimeData[netId].allocated);
 
 			// this part of the code is useful for poisson spike generator function..
-			if((networkConfigs[netId].numNPois > 0) && (gpuRuntimeData[netId].gpuPoissonRand != NULL)) {
-				gpuRuntimeData[netId].gpuPoissonRand->generate(networkConfigs[netId].numNPois, RNG_rand48::MAX_RANGE);
+			if((networkConfigs[netId].numNPois > 0) && (gpuPoissonRand != NULL)) {
+				gpuPoissonRand->generate(networkConfigs[netId].numNPois, RNG_rand48::MAX_RANGE);
 			}
 
 			// this part of the code is invoked when we use spike generators
@@ -2632,8 +2632,8 @@ void SNN::assignPoissonFiringRate_GPU() {
 			int nid = groupConfigs[0][grpId].StartN;
 			PoissonRate* rate = groupConfigs[0][grpId].RatePtr;
 
-			// if SpikeGen group does not have a Poisson pointer, skip
-			if (groupConfigs[0][grpId].spikeGen || rate == NULL)
+			// if spikeGenFunc group does not have a Poisson pointer, skip
+			if (groupConfigs[0][grpId].spikeGenFunc || rate == NULL)
 				continue;
 
 			if (rate->isOnGPU()) {
@@ -3031,12 +3031,12 @@ void SNN::allocateSNN_GPU(int netId) {
 //				KERNEL_DEBUG("\t\tSTP_tD: %f",groupConfigs[0][i].STP_tD);
 //				KERNEL_DEBUG("\t\tSTP_tF: %f",groupConfigs[0][i].STP_tF);
 		}
-		KERNEL_DEBUG("\tspikeGen: %s",groupConfigs[0][i].spikeGen==NULL?"Is Null":"Is set");
+		KERNEL_DEBUG("\tspikeGen: %s",groupConfigs[0][i].spikeGenFunc==NULL?"Is Null":"Is set");
 		KERNEL_DEBUG("\tspikeMonitorRT: %s",groupConfigs[0][i].withSpikeCounter?"Is set":"Is Null");
 		if (groupConfigs[0][i].withSpikeCounter) {
 			KERNEL_DEBUG("\trecordDur: %d",groupConfigs[0][i].spkCntRecordDur);
 		} 	
-		KERNEL_DEBUG("\tspikeGen: %s",groupConfigs[0][i].spikeGen==NULL?"Is Null":"Is set");
+		KERNEL_DEBUG("\tspikeGen: %s",groupConfigs[0][i].spikeGenFunc==NULL?"Is Null":"Is set");
 	}
 
 	// allocation of gpu runtime data is done

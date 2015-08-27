@@ -322,8 +322,8 @@ TEST(Interface, setExternalCurrentDeath) {
 	EXPECT_DEATH({sim->setExternalCurrent(100,current);},""); // grpId out of bounds
 	EXPECT_DEATH({sim->setExternalCurrent(-1,vecCurrent);},""); // ALL not allowed
 	EXPECT_DEATH({sim->setExternalCurrent(-1,current);},""); // ALL not allowed
-	EXPECT_DEATH({sim->setExternalCurrent(g0,vecCurrent);},""); // calling on SpikeGen grp
-	EXPECT_DEATH({sim->setExternalCurrent(g0,current);},""); // calling on SpikeGen grp
+	EXPECT_DEATH({sim->setExternalCurrent(g0,vecCurrent);},""); // calling on spikeGenFunc grp
+	EXPECT_DEATH({sim->setExternalCurrent(g0,current);},""); // calling on spikeGenFunc grp
 	std::vector<float> vecCurrent2(20, 0.1f);
 	EXPECT_DEATH({sim->setExternalCurrent(g1,vecCurrent2);},""); // current wrong size
 
@@ -343,7 +343,7 @@ TEST(Interface, setHomeostasisDeath) {
 
 	sim.setConductances(true);
 
-	// calling homeostasis on on SpikeGen
+	// calling homeostasis on on spikeGenFunc
 	EXPECT_DEATH({sim.setHomeostasis(g0, true);},"");
 	EXPECT_DEATH({sim.setHomeoBaseFiringRate(g0, 20.0f, 0.0f);},"");
 
@@ -551,7 +551,7 @@ TEST(Interface, CARLsimState) {
 	EXPECT_DEATH({sim->setConnectionMonitor(0, 1, "Default");},"");
 	EXPECT_DEATH({sim->setGroupMonitor(0, "Default");},"");
 	EXPECT_DEATH({sim->setSpikeCounter(g1);},"");
-	//EXPECT_DEATH({sim->setSpikeGenerator(0, SpikeGenerator* spikeGen);},"");
+	//EXPECT_DEATH({sim->setSpikeGenerator(0, SpikeGenerator* spikeGenFunc);},"");
 	EXPECT_DEATH({sim->setSpikeMonitor(0, "Default");},"");
 	//EXPECT_DEATH({sim->setSpikeMonitor(0, const std::string& fname, int configId=0);},"");
 	EXPECT_DEATH({sim->setDefaultConductanceTimeConstants(1, 2, 3, 4, 5, 6);},"");
@@ -602,7 +602,7 @@ TEST(Interface, setSTDPDeath) {
 	EXPECT_DEATH({sim->setESTDP(g1, true, STANDARD, TimingBasedCurve(1.0, 2.0, -3.0, -4.0, 5.0));},"");
 	EXPECT_DEATH({sim->setESTDP(g1, true, STANDARD, TimingBasedCurve(1.0, 2.0, -3.0, -4.0, -5.0));},"");
 
-	// setting on SpikeGen
+	// setting on spikeGenFunc
 	int g0 = sim->createSpikeGeneratorGroup("gen", 20, EXCITATORY_NEURON);
 	EXPECT_DEATH({sim->setSTDP(g0,true);},"");
 	EXPECT_DEATH({sim->setSTDP(g0,true,STANDARD,1.0f,2.0f,3.0f,4.0f);},"");

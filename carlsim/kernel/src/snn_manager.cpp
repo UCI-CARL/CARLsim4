@@ -1141,11 +1141,11 @@ void SNN::setExternalCurrent(int grpId, const std::vector<float>& current) {
 // FIXME: distinguish the function call at CONFIG_STATE and SETUP_STATE, where groupConfigs[0][] might not be available
 // or groupConfigMap is not sync with groupConfigs[0][]
 // sets up a spike generator
-void SNN::setSpikeGenerator(int grpId, SpikeGeneratorCore* spikeGen) {
+void SNN::setSpikeGenerator(int grpId, SpikeGeneratorCore* spikeGenFunc) {
 	assert(snnState == CONFIG_SNN); // must be called before setupNetwork() to work on GPU
-	assert(spikeGen);
+	assert(spikeGenFunc);
 	assert (groupConfigMap[grpId].isSpikeGenerator);
-	groupConfigMap[grpId].spikeGen = spikeGen;
+	groupConfigMap[grpId].spikeGenFunc = spikeGenFunc;
 }
 
 // A Spike Counter keeps track of the number of spikes per neuron in a group.
@@ -1788,7 +1788,7 @@ int* SNN::getSpikeCounter(int grpId) {
 	bool retrieveSpikesFromGPU = simMode_==GPU_MODE;
 	if (groupConfigs[0][grpId].isSpikeGenerator) {
 		// this flag should be set if group was created via CARLsim::createSpikeGeneratorGroup
-		// could be SpikeGen callback or PoissonRate
+		// could be spikeGenFunc callback or PoissonRate
 		if (groupConfigs[0][grpId].RatePtr != NULL) {
 			// group is Poisson group
 			// even though mean rates might be on either CPU or GPU (RatePtr->isOnGPU()), in GPU mode the
@@ -2040,7 +2040,7 @@ void SNN::SNNinit() {
 	//	groupConfigs[0][i].decayACh = 1 - (1.0f / 100);
 	//	groupConfigs[0][i].decayNE = 1 - (1.0f / 100);
 
-	//	groupConfigs[0][i].spikeGen = NULL;
+	//	groupConfigs[0][i].spikeGenFunc = NULL;
 
 	//	groupConfigs[0][i].withSpikeCounter = false;
 	//	groupConfigs[0][i].spkCntRecordDur = -1;
@@ -2051,7 +2051,6 @@ void SNN::SNNinit() {
 	//	groupConfigs[0][i].EndN       	 = -1;
 
 	//	groupConfigs[0][i].CurrTimeSlice = 0;
-	//	groupConfigs[0][i].NewTimeSlice = 0;
 	//	groupConfigs[0][i].SliceUpdateTime = 0;
 	//}
 
@@ -2225,8 +2224,8 @@ void SNN::allocateRuntimeData() {
 	memset(managerRuntimeData.grpIds, 0, sizeof(short int) * managerRTDSize.maxNumNAssigned);
 	cpuSnnSz.neuronInfoSize += sizeof(short int) * managerRTDSize.maxNumNAssigned;
 
-	managerRuntimeData.spikeGenBits = new unsigned int[managerRTDSize.maxNumNPois / 32 + 1];
-	cpuSnnSz.addInfoSize += sizeof(int) * (managerRTDSize.maxNumNPois / 32 + 1);
+	managerRuntimeData.spikeGenBits = new unsigned int[managerRTDSize.maxNumNSpikeGen / 32 + 1];
+	cpuSnnSz.addInfoSize += sizeof(int) * (managerRTDSize.maxNumNSpikeGen / 32 + 1);
 
 	// Confirm allocation of SNN runtime data in main memory
 	managerRuntimeData.allocated = true;
@@ -2242,7 +2241,7 @@ int SNN::addSpikeToTable(int nid, int g) {
 
 	if (simMode_ == GPU_MODE) {
 		assert(groupConfigs[0][g].isSpikeGenerator == true);
-		setSpikeGenBit_GPU(nid, g);
+		setSpikeGenBit_GPU(0, nid, g);
 		return 0;
 	}
 
@@ -2329,6 +2328,16 @@ void SNN::generateGroupConfigs() {
 			// write back the global-local mappings to groupConfigMap
 			groupConfigMap[grpIt->grpId] = *grpIt;
 		}
+
+		int numNSpikeGen = 0;
+		for(int lGrpId = 0; lGrpId < networkConfigs[netId].numGroups; lGrpId++) {
+			if (netId == groupConfigs[netId][lGrpId].netId && groupConfigs[netId][lGrpId].isSpikeGenerator && groupConfigs[netId][lGrpId].spikeGenFunc != NULL) {
+			// we only need numNSpikeGen for spike generator callbacks that need to transfer their spikes to the GPU
+				groupConfigs[netId][lGrpId].Noffset = numNSpikeGen;
+				numNSpikeGen += groupConfigs[netId][lGrpId].SizeN;
+			}
+		}
+		assert(numNSpikeGen <= networkConfigs[netId].numNPois);
 	}
 }
 
@@ -2376,9 +2385,11 @@ void SNN::generateNetworkConfigs() {
 					 networkConfigs[netId].numNPois, networkConfigs[netId].numNExcPois, networkConfigs[netId].numNInhPois);
 			// find the maximum number of numN and numNReg among local networks
 			if (networkConfigs[netId].numNReg > managerRTDSize.maxNumNReg) managerRTDSize.maxNumNReg = networkConfigs[netId].numNReg;
-			if (networkConfigs[netId].numNPois > managerRTDSize.maxNumNPois) managerRTDSize.maxNumNPois = networkConfigs[netId].numNPois;
 			if (networkConfigs[netId].numN > managerRTDSize.maxNumN) managerRTDSize.maxNumN = networkConfigs[netId].numN;
 			if (networkConfigs[netId].numNAssigned > managerRTDSize.maxNumNAssigned) managerRTDSize.maxNumNAssigned = networkConfigs[netId].numNAssigned;
+
+			findNumNSpikeGen(netId, networkConfigs[netId].numNSpikeGen);
+			if (networkConfigs[netId].numNSpikeGen > managerRTDSize.maxNumNSpikeGen) managerRTDSize.maxNumNSpikeGen = networkConfigs[netId].numNSpikeGen;
 
 			// configurations for assigned groups and connections
 			networkConfigs[netId].numGroups = groupPartitionLists[netId].size();
@@ -3429,6 +3440,14 @@ void SNN::findNumN(int _netId, int& _numN, int& _numNExternal, int& _numNAssigne
 	assert(_numNAssigned == _numN + _numNExternal);
 }
 
+void SNN::findNumNSpikeGen(int _netId, int& _numNSpikeGen) {
+	for(int lGrpId = 0; lGrpId < networkConfigs[_netId].numGroups; lGrpId++) {
+		if (_netId == groupConfigs[_netId][lGrpId].netId && groupConfigs[_netId][lGrpId].isSpikeGenerator && groupConfigs[_netId][lGrpId].spikeGenFunc != NULL) {
+			networkConfigs[_netId].numNSpikeGen += groupConfigs[_netId][lGrpId].SizeN;
+		}
+	}
+}
+
 void SNN::findNumSynapsesNetwork(int _netId, int& _numPostSynNet, int& _numPreSynNet) {
 	_numPostSynNet = 0;
 	_numPreSynNet  = 0;
@@ -3544,15 +3563,14 @@ void SNN::initGroupConfig(GroupConfigRT* _groupConfig) {
 	_groupConfig->decayACh = 1 - (1.0f / 100);
 	_groupConfig->decayNE = 1 - (1.0f / 100);
 
-	_groupConfig->spikeGen = NULL;
+	_groupConfig->spikeGenFunc = NULL;
 
 	_groupConfig->withSpikeCounter = false;
 	_groupConfig->spkCntRecordDur = -1;
 	_groupConfig->spkCntRecordDurHelper = 0;
 	_groupConfig->spkCntBufPos = -1;
 
-	_groupConfig->CurrTimeSlice = 0;
-	_groupConfig->NewTimeSlice = 0;
+	_groupConfig->CurrTimeSlice = 1000;
 	_groupConfig->SliceUpdateTime = 0;
 }
 
@@ -4116,12 +4134,12 @@ int SNN::loadSimulation_internal(bool onlyPlastic) {
 
 void SNN::generateRuntimeSNN() {
 	// 1. genearte configurations for the simulation
-	// generate local network configs and accquire maximum size of rumtime data
-	generateNetworkConfigs();
 	// generate (copy) group configs from groupPartitionLists[]
 	generateGroupConfigs();
 	// generate (copy) connection configs from localConnectLists[] and exeternalConnectLists[]
 	generateConnectConfigs();
+	// generate local network configs and accquire maximum size of rumtime data
+	generateNetworkConfigs();
 
 	// 2. allocate space of runtime data used by the manager
 	// - allocate firingTableD1, firingTableD2, timeTableD1, timeTableD2
@@ -4189,9 +4207,6 @@ void SNN::generateRuntimeSNN() {
 			// - init synSpikeTime
 			// - init wt, maxSynWt
 			resetSynapse(netId, false);
-			
-			// - init GroupConfig.Noffset, numNSpikeGen
-			updateSpikeGeneratorsInit(netId);
 
 			allocateSNN(netId);
 
@@ -4550,7 +4565,6 @@ void SNN::setGrpTimeSlice(int grpId, int timeSlice) {
 	} else {
 		assert((timeSlice > 0 ) && (timeSlice <  PROPAGATED_BUFFER_SIZE));
 		// the group should be poisson spike generator group
-		groupConfigs[0][grpId].NewTimeSlice = timeSlice;
 		groupConfigs[0][grpId].CurrTimeSlice = timeSlice;
 	}
 }
@@ -4768,7 +4782,7 @@ void SNN::updateSpikesFromGrp(int grpId) {
 	if ((currTime + timeSlice) == MAX_SIMULATION_TIME || (currTime + timeSlice) < 0)
 		return;
 
-	if (groupConfigs[0][grpId].spikeGen) {
+	if (groupConfigs[0][grpId].spikeGenFunc) {
 		generateSpikesFromFuncPtr(grpId);
 	} else {
 		// current mode is GPU, and GPU would take care of poisson generators
@@ -4795,26 +4809,6 @@ void SNN::updateSpikeGenerators() {
 			}
 		}
 	}
-}
-
-void SNN::updateSpikeGeneratorsInit(int netId) {
-	int numNSpikeGen = 0;
-	for(int lGrpId = 0; lGrpId < networkConfigs[netId].numGroups; lGrpId++) {
-		if (groupConfigs[netId][lGrpId].isSpikeGenerator) {
-			// This is done only during initialization
-			groupConfigs[netId][lGrpId].CurrTimeSlice = groupConfigs[netId][lGrpId].NewTimeSlice;
-
-			// we only need numNSpikeGen for spike generator callbacks that need to transfer their spikes to the GPU
-			if (groupConfigs[netId][lGrpId].spikeGen) {
-				groupConfigs[netId][lGrpId].Noffset = numNSpikeGen;
-				numNSpikeGen += groupConfigs[netId][lGrpId].SizeN;
-			}
-			//Note: updateSpikeFromGrp() will be called first time in updateSpikeGenerators()
-			//updateSpikesFromGrp(g);
-		}
-	}
-	assert(numNSpikeGen <= networkConfigs[netId].numNPois);
-	networkConfigs[netId].numNSpikeGen = numNSpikeGen;
 }
 
 /*!
