@@ -4475,10 +4475,6 @@ void SNN::resetRuntimeData(bool deallocate) {
 	//if (timeTableD2!=NULL && deallocate) delete[] timeTableD2;
 	//if (timeTableD1!=NULL && deallocate) delete[] timeTableD1;
 	managerRuntimeData.firingTableD2=NULL; managerRuntimeData.firingTableD1=NULL; //timeTableD2=NULL; timeTableD1=NULL;
-
-	// clear poisson generator
-	if (gpuPoissonRand != NULL) delete gpuPoissonRand;
-	gpuPoissonRand = NULL;
 }
 
 /*!

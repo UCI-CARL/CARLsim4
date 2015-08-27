@@ -45,6 +45,7 @@
 
 // include CUDA version-dependent macros and include files
 #include <cuda_version_control.h>
+#include <gpu_random.h>
 
 
 //! connection types, used internally (externally it's a string)
@@ -262,7 +263,7 @@ typedef struct RuntimeData_s {
 
 	unsigned int* spikeGenBits;
 
-	//RNG_rand48* gpuPoissonRand;
+	RNG_rand48* gpuPoissonRand;
 } RuntimeData;
 
 //! runtime network configuration

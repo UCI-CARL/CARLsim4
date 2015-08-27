@@ -2396,12 +2396,12 @@ void SNN::spikeGeneratorUpdate_GPU() {
 	checkAndSetGPUDevice();
 
 	for (int netId = 0; netId < MAX_NET_PER_SNN; netId++) {
-		if (groupPartitionLists[netId].empty()) {
+		if (!groupPartitionLists[netId].empty()) {
 			assert(gpuRuntimeData[netId].allocated);
 
 			// this part of the code is useful for poisson spike generator function..
-			if((networkConfigs[netId].numNPois > 0) && (gpuPoissonRand != NULL)) {
-				gpuPoissonRand->generate(networkConfigs[netId].numNPois, RNG_rand48::MAX_RANGE);
+			if((networkConfigs[netId].numNPois > 0) && (gpuRuntimeData[netId].gpuPoissonRand != NULL)) {
+				gpuRuntimeData[netId].gpuPoissonRand->generate(networkConfigs[netId].numNPois, RNG_rand48::MAX_RANGE);
 			}
 
 			// this part of the code is invoked when we use spike generators
@@ -2528,80 +2528,88 @@ void SNN::deleteObjects_GPU() {
 	// wait for kernels to complete
 	CUDA_CHECK_ERRORS(cudaThreadSynchronize());
 
-	// cudaFree all device pointers
-	CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[0].voltage) );
-	CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[0].recovery) );
-	CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[0].current) );
-	CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[0].extCurrent) );
-	CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[0].Npre) );
-	CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[0].Npre_plastic) );
-	CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[0].Npre_plasticInv) );
-	CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[0].Npost) );
-	CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[0].cumulativePost) );
-	CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[0].cumulativePre) );
-	CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[0].synSpikeTime) );
-	CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[0].wt) );
-	CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[0].wtChange) );
-	CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[0].maxSynWt) );
-	CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[0].nSpikeCnt) );
-	CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[0].firingTableD2) );
-	CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[0].firingTableD1) );
-	CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[0].avgFiring) );
-	CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[0].baseFiring) );
-	CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[0].baseFiringInv) );
+	for (int netId = 0; netId < MAX_NET_PER_SNN; netId++) {
+		// cudaFree all device pointers
+		CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[netId].voltage) );
+		CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[netId].recovery) );
+		CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[netId].current) );
+		CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[netId].extCurrent) );
+		CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[netId].Npre) );
+		CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[netId].Npre_plastic) );
+		CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[netId].Npre_plasticInv) );
+		CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[netId].Npost) );
+		CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[netId].cumulativePost) );
+		CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[netId].cumulativePre) );
+		CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[netId].synSpikeTime) );
+		CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[netId].wt) );
+		CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[netId].wtChange) );
+		CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[netId].maxSynWt) );
+		CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[netId].nSpikeCnt) );
+		CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[netId].firingTableD2) );
+		CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[netId].firingTableD1) );
+		CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[netId].avgFiring) );
+		CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[netId].baseFiring) );
+		CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[netId].baseFiringInv) );
 
-	CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[0].grpDA) );
-	CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[0].grp5HT) );
-	CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[0].grpACh) );
-	CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[0].grpNE) );
+		CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[netId].grpDA) );
+		CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[netId].grp5HT) );
+		CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[netId].grpACh) );
+		CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[netId].grpNE) );
 
-	CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[0].grpDABuffer) );
-	CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[0].grp5HTBuffer) );
-	CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[0].grpAChBuffer) );
-	CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[0].grpNEBuffer) );
+		CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[netId].grpDABuffer) );
+		CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[netId].grp5HTBuffer) );
+		CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[netId].grpAChBuffer) );
+		CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[netId].grpNEBuffer) );
 
-	CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[0].grpIds) );
+		CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[netId].grpIds) );
 
 
-	CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[0].Izh_a) );
-	CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[0].Izh_b) );
-	CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[0].Izh_c) );
-	CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[0].Izh_d) );
-	CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[0].gAMPA) );
-	if (sim_with_NMDA_rise) {
-		CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[0].gNMDA_r) );
-		CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[0].gNMDA_d) );
-	} else {
-		CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[0].gNMDA) );
+		CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[netId].Izh_a) );
+		CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[netId].Izh_b) );
+		CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[netId].Izh_c) );
+		CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[netId].Izh_d) );
+		CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[netId].gAMPA) );
+		if (sim_with_NMDA_rise) {
+			CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[netId].gNMDA_r) );
+			CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[netId].gNMDA_d) );
+		} else {
+			CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[netId].gNMDA) );
+		}
+		CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[netId].gGABAa) );
+		if (sim_with_GABAb_rise) {
+			CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[netId].gGABAb_r) );
+			CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[netId].gGABAb_d) );
+		} else {
+			CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[netId].gGABAb) );
+		}
+
+		CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[netId].stpu) );
+		CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[netId].stpx) );
+
+		CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[netId].connIdsPreIdx) );
+
+		CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[netId].groupIdInfo) );
+		CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[netId].neuronAllocation) );
+
+		CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[netId].postDelayInfo) );
+		CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[netId].postSynapticIds) );
+		CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[netId].preSynapticIds) );
+		CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[netId].I_set) );
+		CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[netId].poissonFireRate) );
+		CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[netId].lastSpikeTime) );
+		CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[netId].spikeGenBits) );
+
+		// delete all real-time spike monitors
+		CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[netId].spkCntBuf));
+		// FIXME: modify this for multi-GPUs
+		for (int i = 0; i < numSpkCnt; i++)
+			CUDA_CHECK_ERRORS(cudaFree(gpuRuntimeData[netId].spkCntBufChild[i]));
+
+		// delet poisson generator on GPU(s)
+		// Note: RNG_rand48 objects allocate device memory
+		if (gpuRuntimeData[netId].gpuPoissonRand != NULL) delete gpuRuntimeData[netId].gpuPoissonRand;
+		gpuRuntimeData[netId].gpuPoissonRand = NULL;
 	}
-	CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[0].gGABAa) );
-	if (sim_with_GABAb_rise) {
-		CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[0].gGABAb_r) );
-		CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[0].gGABAb_d) );
-	} else {
-		CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[0].gGABAb) );
-	}
-
-	CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[0].stpu) );
-	CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[0].stpx) );
-
-	CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[0].connIdsPreIdx) );
-
-	CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[0].groupIdInfo) );
-	CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[0].neuronAllocation) );
-
-	CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[0].postDelayInfo) );
-	CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[0].postSynapticIds) );
-	CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[0].preSynapticIds) );
-	CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[0].I_set) );
-	CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[0].poissonFireRate) );
-	CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[0].lastSpikeTime) );
-	CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[0].spikeGenBits) );
-
-	// delete all real-time spike monitors
-	CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[0].spkCntBuf));
-	for (int i=0; i<numSpkCnt; i++)
-		CUDA_CHECK_ERRORS(cudaFree(gpuRuntimeData[0].spkCntBufChild[i]));
 
 	CUDA_DELETE_TIMER(timer);
 }
@@ -2874,19 +2882,17 @@ void SNN::copyWeightsGPU(int nid, int src_grp) {
 void SNN::allocateSNN_GPU(int netId) {
 	checkAndSetGPUDevice();
 
-	// if we have already allocated the GPU data.. dont do it again...
-	if(gpuPoissonRand != NULL) return;
-
+	// allocate random number generator on GPU(s)
 	// generate the random number for the poisson neuron here...
-	if(gpuPoissonRand == NULL) {
-		gpuPoissonRand = new RNG_rand48(randSeed_);
+	if(gpuRuntimeData[netId].gpuPoissonRand == NULL) {
+		gpuRuntimeData[netId].gpuPoissonRand = new RNG_rand48(randSeed_);
 	}
 
 	// FIXME: gpuPoissonRand for multi-GPUs
-	gpuPoissonRand->generate(networkConfigs[netId].numNPois, RNG_rand48::MAX_RANGE);
+	gpuRuntimeData[netId].gpuPoissonRand->generate(networkConfigs[netId].numNPois, RNG_rand48::MAX_RANGE);
 
 	// initialize SNN::gpuRuntimeData[0].poissonRandPtr, save the random pointer as poisson generator....
-	gpuRuntimeData[netId].poissonRandPtr = (unsigned int*) gpuPoissonRand->get_random_numbers();
+	gpuRuntimeData[netId].poissonRandPtr = (unsigned int*) gpuRuntimeData[netId].gpuPoissonRand->get_random_numbers();
 
 	// display some memory management info
 	size_t avail, total, previous;

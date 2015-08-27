@@ -1054,7 +1054,7 @@ private:
 	float stdpScaleFactor_;
 	float wtChangeDecay_; //!< the wtChange decay
 
-	RNG_rand48* gpuPoissonRand;
+	//RNG_rand48* gpuPoissonRand;
 };
 
 #endif
