@@ -819,7 +819,7 @@ private:
 	void copySynapseState(int netId, RuntimeData* dest, bool allocateMem);
 	void copySTPState(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind, bool allocateMem);
 	//void copyWeightsGPU(int nid, int src_grp);
-	void copyWeightState(RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind, bool allocateMem, int grpId=-1);//!< copy presynaptic info
+	void copyWeightState(int netId, int lGrpId);
 	void copyNetworkConfig(int netId);
 	void copyGroupConfigs(int netId);
 
@@ -830,14 +830,15 @@ private:
 	void findFiring_GPU();
 
 	void fetchSpikeTables();
-	void fetchNeuronSpikeCount (int grpId = -1);
-	void fetchGroupState(int grpId);
-	void fetchNeuronState(int grpId);
-	void fetchSTPState(int grpId);
-	void fetchConductanceAMPA(int grpId);
-	void fetchConductanceNMDA(int grpId);
-	void fetchConductanceGABAa(int grpId);
-	void fetchConductanceGABAb(int grpId);
+	void fetchNeuronSpikeCount (int gGrpId);
+	void fetchGroupState(int gGrpId);
+	void fetchNeuronState(int gGrpId);
+	void fetchSTPState(int gGrpId);
+	void fetchWeightState(int gGprId);
+	void fetchConductanceAMPA(int gGrpId);
+	void fetchConductanceNMDA(int gGrpId);
+	void fetchConductanceGABAa(int gGrpId);
+	void fetchConductanceGABAb(int gGrpId);
 
 	/*!
 	 * \brief return the number of spikes per neuron for a certain group in GPU mode

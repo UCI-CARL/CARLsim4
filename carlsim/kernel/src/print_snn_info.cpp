@@ -617,51 +617,51 @@ void SNN::printPreConnection(int grpId, FILE* const fp)
 //}
 
 // TODO: make KERNEL_INFO(), don't write to fpInf_
-void SNN::printWeights(int preGrpId, int postGrpId) {
-	int preA, preZ, postA, postZ;
-	if (preGrpId==ALL) {
-		preA = 0;
-		preZ = numGroups;
-	} else {
-		preA = preGrpId;
-		preZ = preGrpId+1;
-	}
-	if (postGrpId==ALL) {
-		postA = 0;
-		postZ = numGroups;
-	} else {
-		postA = postGrpId;
-		postZ = postGrpId+1;
-	}
-
-	for (int gPost=postA; gPost<postZ; gPost++) {
-		// for each postsynaptic group
-
-		fprintf(fpInf_,"Synapses from %s to %s (+/- change in last %d ms)\n",
-			(preGrpId==ALL)?"ALL":groupInfo[preGrpId].Name.c_str(), groupInfo[gPost].Name.c_str(), wtANDwtChangeUpdateInterval_);
-
-		if (simMode_ == GPU_MODE) {
-			copyWeightState (&managerRuntimeData, &gpuRuntimeData[0], cudaMemcpyDeviceToHost, false, gPost);
-		}
-
-		int i=groupConfigs[0][gPost].StartN;
-		unsigned int offset = managerRuntimeData.cumulativePre[i];
-		for (int j=0; j<managerRuntimeData.Npre[i]; j++) {
-			int gPre = managerRuntimeData.grpIds[j];
-			if (gPre<preA || gPre>preZ)
-				continue;
-
-			float wt  = managerRuntimeData.wt[offset+j];
-			if (!groupConfigs[0][gPost].FixedInputWts) {
-				float wtC = managerRuntimeData.wtChange[offset+j];
-				fprintf(fpInf_, "%s%1.3f (%s%1.3f)\t", wt<0?"":" ", wt, wtC<0?"":"+", wtC);
-			} else {
-				fprintf(fpInf_, "%s%1.3f \t\t", wt<0?"":" ", wt);
-			}
-		}
-		fprintf(fpInf_,"\n");
-	}
-}
+//void SNN::printWeights(int preGrpId, int postGrpId) {
+//	int preA, preZ, postA, postZ;
+//	if (preGrpId==ALL) {
+//		preA = 0;
+//		preZ = numGroups;
+//	} else {
+//		preA = preGrpId;
+//		preZ = preGrpId+1;
+//	}
+//	if (postGrpId==ALL) {
+//		postA = 0;
+//		postZ = numGroups;
+//	} else {
+//		postA = postGrpId;
+//		postZ = postGrpId+1;
+//	}
+//
+//	for (int gPost=postA; gPost<postZ; gPost++) {
+//		// for each postsynaptic group
+//
+//		fprintf(fpInf_,"Synapses from %s to %s (+/- change in last %d ms)\n",
+//			(preGrpId==ALL)?"ALL":groupInfo[preGrpId].Name.c_str(), groupInfo[gPost].Name.c_str(), wtANDwtChangeUpdateInterval_);
+//
+//		if (simMode_ == GPU_MODE) {
+//			copyWeightState (&managerRuntimeData, &gpuRuntimeData[0], cudaMemcpyDeviceToHost, false, gPost);
+//		}
+//
+//		int i=groupConfigs[0][gPost].StartN;
+//		unsigned int offset = managerRuntimeData.cumulativePre[i];
+//		for (int j=0; j<managerRuntimeData.Npre[i]; j++) {
+//			int gPre = managerRuntimeData.grpIds[j];
+//			if (gPre<preA || gPre>preZ)
+//				continue;
+//
+//			float wt  = managerRuntimeData.wt[offset+j];
+//			if (!groupConfigs[0][gPost].FixedInputWts) {
+//				float wtC = managerRuntimeData.wtChange[offset+j];
+//				fprintf(fpInf_, "%s%1.3f (%s%1.3f)\t", wt<0?"":" ", wt, wtC<0?"":"+", wtC);
+//			} else {
+//				fprintf(fpInf_, "%s%1.3f \t\t", wt<0?"":" ", wt);
+//			}
+//		}
+//		fprintf(fpInf_,"\n");
+//	}
+//}
 
 
 

@@ -808,7 +808,7 @@ int SNN::runNetwork(int _nsec, int _nmsec, bool printRunSummary, bool copyState)
 		}
 
 		if(simMode_ == GPU_MODE){
-			fetchNeuronSpikeCount();
+			fetchNeuronSpikeCount(ALL);
 		}
 	}
 
@@ -3462,26 +3462,29 @@ void SNN::findNumSynapsesNetwork(int _netId, int& _numPostSynNet, int& _numPreSy
 	assert(_numPreSynNet == _numPostSynNet);
 }
 
-void SNN::fetchGroupState(int grpId) {
+void SNN::fetchGroupState(int gGrpId) {
 
 }
 
-void SNN::fetchNeuronState(int grpId) {
+void SNN::fetchNeuronState(int gGrpId) {
 }
 
-void SNN::fetchSTPState(int grpId) {
+void SNN::fetchSTPState(int gGrpId) {
 }
 
-void SNN::fetchConductanceAMPA(int grpId) {
+void SNN::fetchWeightState(int gGprId) {
 }
 
-void SNN::fetchConductanceNMDA(int grpId) {
+void SNN::fetchConductanceAMPA(int gGrpId) {
 }
 
-void SNN::fetchConductanceGABAa(int grpId) {
+void SNN::fetchConductanceNMDA(int gGrpId) {
 }
 
-void SNN::fetchConductanceGABAb(int grpId) {
+void SNN::fetchConductanceGABAa(int gGrpId) {
+}
+
+void SNN::fetchConductanceGABAb(int gGrpId) {
 }
 
 inline int SNN::getPoissNeuronPos(int nid) {
@@ -4668,7 +4671,7 @@ std::vector< std::vector<float> > SNN::getWeightMatrix2D(short int connId) {
 	// \TODO: check if the weights for this grpIdPost have already been copied
 	// \TODO: even better, but tricky because of ordering, make copyWeightState connection-based
 	if (simMode_==GPU_MODE) {
-		copyWeightState(&managerRuntimeData, &gpuRuntimeData[0], cudaMemcpyDeviceToHost, false, grpIdPost);
+		fetchWeightState(grpIdPost);
 	}
 
 	for (int postId=groupConfigs[0][grpIdPost].StartN; postId<=groupConfigs[0][grpIdPost].EndN; postId++) {
