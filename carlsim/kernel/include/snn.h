@@ -433,7 +433,7 @@ public:
 	void saveSimulation(FILE* fid, bool saveSynapseInfo=false);
 
 	//! function writes population weights from gIDpre to gIDpost to file fname in binary.
-	void writePopWeights(std::string fname, int gIDpre, int gIDpost);
+	//void writePopWeights(std::string fname, int gIDpre, int gIDpost);
 
 
 	// +++++ PUBLIC METHODS: LOGGING / PLOTTING +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
@@ -818,7 +818,7 @@ private:
 	void copyNeuronState(int netId, int lGrpId, RuntimeData* dest, bool allocateMem);
 	void copySynapseState(int netId, RuntimeData* dest, bool allocateMem);
 	void copySTPState(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind, bool allocateMem);
-	void copyWeightsGPU(int nid, int src_grp);
+	//void copyWeightsGPU(int nid, int src_grp);
 	void copyWeightState(RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind, bool allocateMem, int grpId=-1);//!< copy presynaptic info
 	void copyNetworkConfig(int netId);
 	void copyGroupConfigs(int netId);

@@ -1409,73 +1409,73 @@ void SNN::saveSimulation(FILE* fid, bool saveSynapseInfo) {
 }
 
 // writes population weights from gIDpre to gIDpost to file fname in binary
-void SNN::writePopWeights(std::string fname, int grpIdPre, int grpIdPost) {
-	assert(grpIdPre>=0); assert(grpIdPost>=0);
-
-	float* weights;
-	int matrixSize;
-	FILE* fid;
-	int numPre, numPost;
-	fid = fopen(fname.c_str(), "wb");
-	assert(fid != NULL);
-
-	if(snnState == CONFIG_SNN || snnState == COMPILED_SNN || snnState == PARTITIONED_SNN){
-		KERNEL_ERROR("Simulation has not been run yet, cannot output weights.");
-		exitSimulation(1);
-	}
-
-	SynInfo* preId;
-	int pre_nid, pos_ij;
-
-	//population sizes
-	numPre = groupConfigs[0][grpIdPre].SizeN;
-	numPost = groupConfigs[0][grpIdPost].SizeN;
-
-	//first iteration gets the number of synaptic weights to place in our
-	//weight matrix.
-	matrixSize=0;
-	//iterate over all neurons in the post group
-	for (int i=groupConfigs[0][grpIdPost].StartN; i<=groupConfigs[0][grpIdPost].EndN; i++) {
-		// for every post-neuron, find all pre
-		pos_ij = managerRuntimeData.cumulativePre[i]; // i-th neuron, j=0th synapse
-		//iterate over all presynaptic synapses
-		for(int j=0; j<managerRuntimeData.Npre[i]; pos_ij++,j++) {
-			preId = &managerRuntimeData.preSynapticIds[pos_ij];
-			pre_nid = GET_CONN_NEURON_ID((*preId)); // neuron id of pre
-			if (pre_nid<groupConfigs[0][grpIdPre].StartN || pre_nid>groupConfigs[0][grpIdPre].EndN)
-				continue; // connection does not belong to group grpIdPre
-			matrixSize++;
-		}
-	}
-
-	//now we have the correct size
-	weights = new float[matrixSize];
-	//second iteration assigns the weights
-	int curr = 0; // iterator for return array
-	//iterate over all neurons in the post group
-	for (int i=groupConfigs[0][grpIdPost].StartN; i<=groupConfigs[0][grpIdPost].EndN; i++) {
-		// for every post-neuron, find all pre
-		pos_ij = managerRuntimeData.cumulativePre[i]; // i-th neuron, j=0th synapse
-		//do the GPU copy here.  Copy the current weights from GPU to CPU.
-		if(simMode_==GPU_MODE){
-			copyWeightsGPU(i,grpIdPre);
-		}
-		//iterate over all presynaptic synapses
-		for(int j=0; j<managerRuntimeData.Npre[i]; pos_ij++,j++) {
-			preId = &(managerRuntimeData.preSynapticIds[pos_ij]);
-			pre_nid = GET_CONN_NEURON_ID((*preId)); // neuron id of pre
-			if (pre_nid<groupConfigs[0][grpIdPre].StartN || pre_nid>groupConfigs[0][grpIdPre].EndN)
-				continue; // connection does not belong to group grpIdPre
-			weights[curr] = managerRuntimeData.wt[pos_ij];
-			curr++;
-		}
-	}
-
-	fwrite(weights,sizeof(float),matrixSize,fid);
-	fclose(fid);
-	//Let my memory FREE!!!
-	delete [] weights;
-}
+//void SNN::writePopWeights(std::string fname, int grpIdPre, int grpIdPost) {
+//	assert(grpIdPre>=0); assert(grpIdPost>=0);
+//
+//	float* weights;
+//	int matrixSize;
+//	FILE* fid;
+//	int numPre, numPost;
+//	fid = fopen(fname.c_str(), "wb");
+//	assert(fid != NULL);
+//
+//	if(snnState == CONFIG_SNN || snnState == COMPILED_SNN || snnState == PARTITIONED_SNN){
+//		KERNEL_ERROR("Simulation has not been run yet, cannot output weights.");
+//		exitSimulation(1);
+//	}
+//
+//	SynInfo* preId;
+//	int pre_nid, pos_ij;
+//
+//	//population sizes
+//	numPre = groupConfigs[0][grpIdPre].SizeN;
+//	numPost = groupConfigs[0][grpIdPost].SizeN;
+//
+//	//first iteration gets the number of synaptic weights to place in our
+//	//weight matrix.
+//	matrixSize=0;
+//	//iterate over all neurons in the post group
+//	for (int i=groupConfigs[0][grpIdPost].StartN; i<=groupConfigs[0][grpIdPost].EndN; i++) {
+//		// for every post-neuron, find all pre
+//		pos_ij = managerRuntimeData.cumulativePre[i]; // i-th neuron, j=0th synapse
+//		//iterate over all presynaptic synapses
+//		for(int j=0; j<managerRuntimeData.Npre[i]; pos_ij++,j++) {
+//			preId = &managerRuntimeData.preSynapticIds[pos_ij];
+//			pre_nid = GET_CONN_NEURON_ID((*preId)); // neuron id of pre
+//			if (pre_nid<groupConfigs[0][grpIdPre].StartN || pre_nid>groupConfigs[0][grpIdPre].EndN)
+//				continue; // connection does not belong to group grpIdPre
+//			matrixSize++;
+//		}
+//	}
+//
+//	//now we have the correct size
+//	weights = new float[matrixSize];
+//	//second iteration assigns the weights
+//	int curr = 0; // iterator for return array
+//	//iterate over all neurons in the post group
+//	for (int i=groupConfigs[0][grpIdPost].StartN; i<=groupConfigs[0][grpIdPost].EndN; i++) {
+//		// for every post-neuron, find all pre
+//		pos_ij = managerRuntimeData.cumulativePre[i]; // i-th neuron, j=0th synapse
+//		//do the GPU copy here.  Copy the current weights from GPU to CPU.
+//		if(simMode_==GPU_MODE){
+//			copyWeightsGPU(i,grpIdPre);
+//		}
+//		//iterate over all presynaptic synapses
+//		for(int j=0; j<managerRuntimeData.Npre[i]; pos_ij++,j++) {
+//			preId = &(managerRuntimeData.preSynapticIds[pos_ij]);
+//			pre_nid = GET_CONN_NEURON_ID((*preId)); // neuron id of pre
+//			if (pre_nid<groupConfigs[0][grpIdPre].StartN || pre_nid>groupConfigs[0][grpIdPre].EndN)
+//				continue; // connection does not belong to group grpIdPre
+//			weights[curr] = managerRuntimeData.wt[pos_ij];
+//			curr++;
+//		}
+//	}
+//
+//	fwrite(weights,sizeof(float),matrixSize,fid);
+//	fclose(fid);
+//	//Let my memory FREE!!!
+//	delete [] weights;
+//}
 
 
 /// ************************************************************************************************************ ///

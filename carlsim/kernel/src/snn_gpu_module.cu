@@ -2922,18 +2922,18 @@ void SNN::checkAndSetGPUDevice(std::string funcName) {
 }
 
 // deprecated
-void SNN::copyWeightsGPU(int nid, int src_grp) {
-	checkAndSetGPUDevice("copyWeightsGPU");
-
-	assert(nid < numNReg);
-	unsigned int    cumId   =  managerRuntimeData.cumulativePre[nid];
-	float* synWts  = &(managerRuntimeData.wt[cumId]);
-	//TODO: NEEDED TO COMMENT THIS FOR CARLSIM 2.1-2.2 FILEMERGE -- KDC
-	// assert(cumId >= (nid-numNPois));
-	//assert(cumId < numPreSynapses*networkConfigs[0].numN);
-
-	CUDA_CHECK_ERRORS( cudaMemcpy( synWts, &gpuRuntimeData[0].wt[cumId], sizeof(float)*managerRuntimeData.Npre[nid], cudaMemcpyDeviceToHost));
-}
+//void SNN::copyWeightsGPU(int nid, int src_grp) {
+//	checkAndSetGPUDevice("copyWeightsGPU");
+//
+//	assert(nid < numNReg);
+//	unsigned int    cumId   =  managerRuntimeData.cumulativePre[nid];
+//	float* synWts  = &(managerRuntimeData.wt[cumId]);
+//	//TODO: NEEDED TO COMMENT THIS FOR CARLSIM 2.1-2.2 FILEMERGE -- KDC
+//	// assert(cumId >= (nid-numNPois));
+//	//assert(cumId < numPreSynapses*networkConfigs[0].numN);
+//
+//	CUDA_CHECK_ERRORS( cudaMemcpy( synWts, &gpuRuntimeData[0].wt[cumId], sizeof(float)*managerRuntimeData.Npre[nid], cudaMemcpyDeviceToHost));
+//}
 
 // Allocates required memory and then initialize the GPU
 void SNN::allocateSNN_GPU(int netId) {
