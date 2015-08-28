@@ -2160,8 +2160,8 @@ void SNN::allocateRuntimeData() {
 	memset(managerRuntimeData.lastSpikeTime, 0, sizeof(int) * managerRTDSize.maxNumNAssigned);
 	cpuSnnSz.neuronInfoSize += sizeof(int) * managerRTDSize.maxNumNAssigned;
 	
-	managerRuntimeData.nSpikeCnt = new int[managerRTDSize.maxNumN];
-	memset(managerRuntimeData.nSpikeCnt, 0, sizeof(int) * managerRTDSize.maxNumN);
+	managerRuntimeData.nSpikeCnt = new int[managerRTDSize.glbNumN];
+	memset(managerRuntimeData.nSpikeCnt, 0, sizeof(int) * managerRTDSize.glbNumN);
 
 	//! homeostasis variables
 	managerRuntimeData.avgFiring  = new float[managerRTDSize.maxNumN];
@@ -3831,13 +3831,13 @@ void SNN::partitionSNN() {
 		//	exitSimulation(-1);
 		//}
 
-		//it->second.netId = 0;
-		//numAssignedNeurons[0] += it->second.SizeN;
-		//groupPartitionLists[0].push_back(it->second);
+		it->second.netId = 0;
+		numAssignedNeurons[0] += it->second.SizeN;
+		groupPartitionLists[0].push_back(it->second);
 
-		it->second.netId = 1;
-		numAssignedNeurons[1] += it->second.SizeN;
-		groupPartitionLists[1].push_back(it->second);
+		//it->second.netId = 1;
+		//numAssignedNeurons[1] += it->second.SizeN;
+		//groupPartitionLists[1].push_back(it->second);
 	}
 
 	// this parse finds local connections (i.e., connection configs that conect local groups)

@@ -983,13 +983,13 @@ void CARLsim::setWeight(short int connId, int neurIdPre, int neurIdPost, float w
 }
 
 // function writes population weights from gIDpre to gIDpost to file fname in binary.
-void CARLsim::writePopWeights(std::string fname, int gIDpre, int gIDpost) {
-	std::string funcName = "writePopWeights("+fname+")";
-	UserErrors::assertTrue(carlsimState_ == SETUP_STATE || carlsimState_ == RUN_STATE,
-					UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "SETUP or RUN.");
-
-	snn_->writePopWeights(fname,gIDpre,gIDpost);
-}
+//void CARLsim::writePopWeights(std::string fname, int gIDpre, int gIDpost) {
+//	std::string funcName = "writePopWeights("+fname+")";
+//	UserErrors::assertTrue(carlsimState_ == SETUP_STATE || carlsimState_ == RUN_STATE,
+//					UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "SETUP or RUN.");
+//
+//	snn_->writePopWeights(fname,gIDpre,gIDpost);
+//}
 
 
 

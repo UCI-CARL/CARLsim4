@@ -1674,28 +1674,35 @@ void SNN::checkDestSrcPtrs(RuntimeData* dest, RuntimeData* src, cudaMemcpyKind k
 	assert(src->allocated);
 }
 
-// FIXME: modify this for muilt GPUs
-void SNN::fetchNeuronSpikeCount (int grpId) {
-	checkAndSetGPUDevice("fetchNeuronSpikeCount");
+/*!
+ * \brief This function copies spike count of each neuron from device (GPU) memory to main (CPU) memory
+ *
+ * \param[in] gGrpId the group id of the global network of which the spike count of each neuron with in the group are copied to manager runtime data
+ */
+void SNN::fetchNeuronSpikeCount (int gGrpId) {
+	int mngPos, srcPos, length, netId;
 
-	int ptrPos, length;
+	if (gGrpId == ALL) {
+		for (std::map<int, GroupConfigRT>::iterator grpIt = groupConfigMap.begin(); grpIt != groupConfigMap.end(); grpIt++) {
+			netId = grpIt->second.netId;
+			srcPos = grpIt->second.localStartN;
+			mngPos = grpIt->second.StartN;
+			length = grpIt->second.SizeN;
+			assert(length > 0 && length <= networkConfigs[netId].numN);
 
-	if(grpId == -1) {
-		ptrPos = 0;
-		length = networkConfigs[0].numN;
+			checkAndSetGPUDevice(netId);
+			CUDA_CHECK_ERRORS(cudaMemcpy(&managerRuntimeData.nSpikeCnt[mngPos], &gpuRuntimeData[netId].nSpikeCnt[srcPos], sizeof(int) * length, cudaMemcpyDeviceToHost));
+		}
+	} else {
+		netId = groupConfigMap[gGrpId].netId;
+		srcPos = groupConfigMap[gGrpId].localStartN;
+		mngPos = groupConfigMap[gGrpId].StartN;
+		length = groupConfigMap[gGrpId].SizeN;
+		assert(length > 0 && length <= networkConfigs[netId].numN);
+
+		checkAndSetGPUDevice(netId);
+		CUDA_CHECK_ERRORS(cudaMemcpy(&managerRuntimeData.nSpikeCnt[mngPos], &gpuRuntimeData[netId].nSpikeCnt[srcPos], sizeof(int) * length, cudaMemcpyDeviceToHost));
 	}
-	else {
-		ptrPos = groupConfigs[0][grpId].StartN;
-		length = groupConfigs[0][grpId].SizeN;
-	}
-
-	assert(length>0 && length <= networkConfigs[0].numN);
-
-	RuntimeData* dest = &managerRuntimeData;
-	RuntimeData* src  = &gpuRuntimeData[0];
-
-	// Spike Cnt. Firing...
-	CUDA_CHECK_ERRORS( cudaMemcpy(&dest->nSpikeCnt[ptrPos], &src->nSpikeCnt[ptrPos], sizeof(int)*length, cudaMemcpyDeviceToHost) );
 }
 
 /*!
@@ -2506,7 +2513,7 @@ void SNN::doSTPUpdateAndDecayCond_GPU() {
 	for (int netId = 0; netId < MAX_NET_PER_SNN; netId++) {
 		if (!groupPartitionLists[netId].empty()) {
 			checkAndSetGPUDevice(netId);
-			assert(gpuRuntimeData[0].allocated);
+			assert(gpuRuntimeData[netId].allocated);
 
 			if (sim_with_stp || sim_with_conductances) {
 				kernel_STPUpdateAndDecayConductances<<<NUM_BLOCKS, NUM_THREADS>>>(simTimeMs, simTimeSec, simTime);
@@ -2669,6 +2676,7 @@ void SNN::globalStateUpdate_GPU() {
 	}
 }
 
+// FIXME: modify this for multi-GPUs
 void SNN::assignPoissonFiringRate_GPU() {
 	checkAndSetGPUDevice("assignPoissonFiringRate_GPU");
 

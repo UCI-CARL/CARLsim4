@@ -1130,7 +1130,7 @@ public:
 	 * \TODO finish docu
 	 * \STATE ::SETUP_STATE, ::RUN_STATE
 	 */
-	void writePopWeights(std::string fname, int gIDpre, int gIDpost);
+	//void writePopWeights(std::string fname, int gIDpre, int gIDpost);
 
 
 
