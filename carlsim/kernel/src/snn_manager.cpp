@@ -4215,7 +4215,6 @@ void SNN::generateRuntimeSNN() {
 
 			// - reset wtChange
 			// - init synSpikeTime
-			// - init wt, maxSynWt
 			resetSynapse(netId, false);
 
 			allocateSNN(netId);

@@ -449,10 +449,10 @@ __global__ void gpu_resetSpikeCnt(int _grpId) {
 
 // wrapper to call resetSpikeCnt
 // FIXME: modify this function for multi GPUs
-void SNN::resetSpikeCnt_GPU(int grpId) {
-	assert(grpId >= ALL); // ALL == -1
+void SNN::resetSpikeCnt_GPU(int gGrpId) {
+	assert(gGrpId >= ALL); // ALL == -1
 
-	if (grpId == ALL) {
+	if (gGrpId == ALL) {
 		for (int netId = 0; netId < MAX_NET_PER_SNN; netId++) {
 			if (!groupPartitionLists[netId].empty()) {
 				checkAndSetGPUDevice(netId);
@@ -460,10 +460,9 @@ void SNN::resetSpikeCnt_GPU(int grpId) {
 			}
 		}
 	} else {
-		int netId = groupConfigMap[grpId].netId;
-		int lGrpId = groupConfigMap[grpId].localGrpId;
+		int netId = groupConfigMap[gGrpId].netId;
+		int lGrpId = groupConfigMap[gGrpId].localGrpId;
 
-		assert(netId >= 0);
 		checkAndSetGPUDevice(netId);
 		gpu_resetSpikeCnt<<<NUM_BLOCKS, NUM_THREADS>>>(lGrpId);
 	}
@@ -2907,7 +2906,7 @@ void SNN::checkAndSetGPUDevice(int netId) {
 	int currentDevice;
 	cudaGetDevice(&currentDevice);
 
-	assert(netId < numGPUs_);
+	assert(netId >= 0 && netId < numGPUs_);
 
 	if (currentDevice != netId) {
 		KERNEL_DEBUG("Change GPU context from GPU %d to GPU %d", currentDevice, netId);
