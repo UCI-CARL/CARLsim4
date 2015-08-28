@@ -3814,9 +3814,13 @@ void SNN::partitionSNN() {
 		//	exitSimulation(-1);
 		//}
 
-		it->second.netId = 0;
-		numAssignedNeurons[0] += it->second.SizeN;
-		groupPartitionLists[0].push_back(it->second);
+		//it->second.netId = 0;
+		//numAssignedNeurons[0] += it->second.SizeN;
+		//groupPartitionLists[0].push_back(it->second);
+
+		it->second.netId = 1;
+		numAssignedNeurons[1] += it->second.SizeN;
+		groupPartitionLists[1].push_back(it->second);
 	}
 
 	// this parse finds local connections (i.e., connection configs that conect local groups)
@@ -4162,6 +4166,9 @@ void SNN::generateRuntimeSNN() {
 			simMode_ == GPU_MODE?"GPU":"CPU", netId);
 			// build the runtime data according to local network, group, connection configuirations
 			
+			// switch to correct GPU context
+			checkAndSetGPUDevice(netId);
+
 			// generate runtime data for each group
 			for(int lGrpId = 0; lGrpId < networkConfigs[netId].numGroups; lGrpId++) {
 				// local poisson neurons

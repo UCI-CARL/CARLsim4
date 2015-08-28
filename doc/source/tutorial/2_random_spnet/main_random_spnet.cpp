@@ -44,7 +44,7 @@
 
 int main(int argc, const char* argv[]) {
 	// ---------------- CONFIG STATE -------------------
-	CARLsim sim("spnet", GPU_MODE, USER);
+	CARLsim sim("spnet", GPU_MODE, USER, 2);
 
 	int nNeur = 1000;			// number of neurons
 	int nNeurExc = 0.8*nNeur;	// number of excitatory neurons

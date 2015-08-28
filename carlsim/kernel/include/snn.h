@@ -483,9 +483,9 @@ public:
 	LoggerMode getLoggerMode() { return loggerMode_; }
 
 	// get functions for GroupInfo
-	int getGroupStartNeuronId(int grpId)  { return groupConfigs[0][grpId].StartN; }
-	int getGroupEndNeuronId(int grpId)    { return groupConfigs[0][grpId].EndN; }
-	int getGroupNumNeurons(int grpId)     { return groupConfigs[0][grpId].SizeN; }
+	int getGroupStartNeuronId(int grpId)  { return groupConfigMap[grpId].StartN; }
+	int getGroupEndNeuronId(int grpId)    { return groupConfigMap[grpId].EndN; }
+	int getGroupNumNeurons(int grpId)     { return groupConfigMap[grpId].SizeN; }
 
 	std::string getNetworkName() { return networkName_; }
 
@@ -780,7 +780,8 @@ private:
 
 	void assignPoissonFiringRate_GPU();
 
-	void checkAndSetGPUDevice();
+	void checkAndSetGPUDevice(int netId);
+	void checkAndSetGPUDevice(std::string funcName);
 	void checkDestSrcPtrs(RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind, bool allocateMem, int grpId);
 	void checkInitialization(char* testString=NULL);
 	void checkInitialization2(char* testString=NULL);
