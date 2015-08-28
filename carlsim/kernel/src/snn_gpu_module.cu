@@ -2829,19 +2829,49 @@ void SNN::copyExternalCurrent(int netId, int lGrpId, RuntimeData* dest, RuntimeD
 	CUDA_CHECK_ERRORS(cudaMemcpy(&(dest->extCurrent[ptrPos]), &(src->extCurrent[ptrPos]), sizeof(float) * length, kind));
 }
 
-// FIXME: modify this for multi-GPUs
-void SNN::fetchSpikeTables()
-{
+/*!
+ * \brief This function fetch the spike count in all local networks and sum the up
+ */
+void SNN::fetchSpikeCount() {
+	unsigned int gpuSpikeCountD1Sec, gpuSpikeCountD2Sec, gpuSpikeCountD1, gpuSpikeCountD2;
+
+	spikeCountD1Sec = 0; spikeCountD2Sec = 0; spikeCountD1 = 0; spikeCountD2 = 0;
+	for (int netId = 0; netId < MAX_NET_PER_SNN; netId++) {
+		if (!groupPartitionLists[netId].empty()) {
+			checkAndSetGPUDevice(netId);
+
+			CUDA_CHECK_ERRORS(cudaMemcpyFromSymbol(&gpuSpikeCountD2Sec, spikeCountD2SecGPU, sizeof(int), 0, cudaMemcpyDeviceToHost));
+			CUDA_CHECK_ERRORS(cudaMemcpyFromSymbol(&gpuSpikeCountD1Sec, spikeCountD1SecGPU, sizeof(int), 0, cudaMemcpyDeviceToHost));
+			spikeCountD1Sec += gpuSpikeCountD1Sec;
+			spikeCountD2Sec += gpuSpikeCountD2Sec;
+			assert(gpuSpikeCountD1Sec <= networkConfigs[netId].maxSpikesD1);
+			assert(gpuSpikeCountD2Sec <= networkConfigs[netId].maxSpikesD2);
+
+			CUDA_CHECK_ERRORS(cudaMemcpyFromSymbol(&gpuSpikeCountD2, spikeCountD2GPU, sizeof(int), 0, cudaMemcpyDeviceToHost));
+			CUDA_CHECK_ERRORS(cudaMemcpyFromSymbol(&gpuSpikeCountD1, spikeCountD1GPU, sizeof(int), 0, cudaMemcpyDeviceToHost));
+			spikeCountD2 += gpuSpikeCountD2;
+			spikeCountD1 += gpuSpikeCountD1;
+		}
+	}
+
+	spikeCountSec = spikeCountD1Sec + spikeCountD2Sec;
+	spikeCount = spikeCountD1 + spikeCountD2;
+}
+
+/*!
+ * \brief This function fetch spikeTables in the local network specified by netId
+ *
+ * \param[in] netId the id of local network of which timeTableD1(D2) and firingTableD1(D2) are copied to manager runtime data
+ */
+void SNN::fetchSpikeTables(int netId) {
 	unsigned int gpuSpikeCountD1Sec, gpuSpikeCountD2Sec;
-	CUDA_CHECK_ERRORS( cudaMemcpyFromSymbol( &gpuSpikeCountD2Sec, spikeCountD2SecGPU, sizeof(int), 0, cudaMemcpyDeviceToHost));
-	CUDA_CHECK_ERRORS( cudaMemcpyFromSymbol( &gpuSpikeCountD1Sec, spikeCountD1SecGPU, sizeof(int), 0, cudaMemcpyDeviceToHost));
-	spikeCountSec = gpuSpikeCountD1Sec + gpuSpikeCountD2Sec;
-	spikeCountD1Sec  = gpuSpikeCountD1Sec;
-	spikeCountD2Sec = gpuSpikeCountD2Sec;
-	assert(gpuSpikeCountD1Sec <= networkConfigs[0].maxSpikesD1);
-	assert(gpuSpikeCountD2Sec <= networkConfigs[0].maxSpikesD2);
-	CUDA_CHECK_ERRORS( cudaMemcpy(managerRuntimeData.firingTableD2, gpuRuntimeData[0].firingTableD2, sizeof(int)*gpuSpikeCountD2Sec, cudaMemcpyDeviceToHost));
-	CUDA_CHECK_ERRORS( cudaMemcpy(managerRuntimeData.firingTableD1, gpuRuntimeData[0].firingTableD1, sizeof(int)*gpuSpikeCountD1Sec, cudaMemcpyDeviceToHost));
+
+	checkAndSetGPUDevice(netId);
+
+	CUDA_CHECK_ERRORS(cudaMemcpyFromSymbol(&gpuSpikeCountD2Sec, spikeCountD2SecGPU, sizeof(int), 0, cudaMemcpyDeviceToHost));
+	CUDA_CHECK_ERRORS(cudaMemcpyFromSymbol(&gpuSpikeCountD1Sec, spikeCountD1SecGPU, sizeof(int), 0, cudaMemcpyDeviceToHost));
+	CUDA_CHECK_ERRORS( cudaMemcpy(managerRuntimeData.firingTableD2, gpuRuntimeData[netId].firingTableD2, sizeof(int)*gpuSpikeCountD2Sec, cudaMemcpyDeviceToHost));
+	CUDA_CHECK_ERRORS( cudaMemcpy(managerRuntimeData.firingTableD1, gpuRuntimeData[netId].firingTableD1, sizeof(int)*gpuSpikeCountD1Sec, cudaMemcpyDeviceToHost));
 	CUDA_CHECK_ERRORS( cudaMemcpyFromSymbol(timeTableD2, timeTableD2GPU, sizeof(int)*(1000+maxDelay_+1), 0, cudaMemcpyDeviceToHost));
 	CUDA_CHECK_ERRORS( cudaMemcpyFromSymbol(timeTableD1, timeTableD1GPU, sizeof(int)*(1000+maxDelay_+1), 0, cudaMemcpyDeviceToHost));
 
@@ -3118,44 +3148,4 @@ void SNN::allocateSNN_GPU(int netId) {
 	CUDA_CHECK_ERRORS(cudaMemcpy(devPtr, &offset, sizeof(int), cudaMemcpyHostToDevice));
 
 	initGPU();
-}
-
-void SNN::printSimSummary() {
-	checkAndSetGPUDevice("printSimSummary");
-
-	float etime;
-	if(simMode_ == GPU_MODE) {
-		stopGPUTiming();
-		etime = gpuExecutionTime;
-		CUDA_CHECK_ERRORS( cudaMemcpyFromSymbol( &spikeCountD2Sec, spikeCountD2SecGPU, sizeof(int), 0, cudaMemcpyDeviceToHost));
-		CUDA_CHECK_ERRORS( cudaMemcpyFromSymbol( &spikeCountD1Sec, spikeCountD1SecGPU, sizeof(int), 0, cudaMemcpyDeviceToHost));
-		spikeCountSec = spikeCountD1Sec + spikeCountD2Sec;
-		CUDA_CHECK_ERRORS( cudaMemcpyFromSymbol( &spikeCountD2, spikeCountD2GPU, sizeof(int), 0, cudaMemcpyDeviceToHost));
-		CUDA_CHECK_ERRORS( cudaMemcpyFromSymbol( &spikeCountD1, spikeCountD1GPU, sizeof(int), 0, cudaMemcpyDeviceToHost));
-		spikeCount      = spikeCountD1 + spikeCountD2;
-	}
-	else {
-		stopCPUTiming();
-		etime = cpuExecutionTime;
-	}
-
-	KERNEL_INFO("\n");
-	KERNEL_INFO("********************      %s Simulation Summary      ***************************",
-		simMode_==GPU_MODE?"GPU":"CPU");
-
-	KERNEL_INFO("Network Parameters: \tnumNeurons = %d (numNExcReg:numNInhReg = %2.1f:%2.1f)", 
-		networkConfigs[0].numN, 100.0*numNExcReg/networkConfigs[0].numN, 100.0*numNInhReg/networkConfigs[0].numN);
-	KERNEL_INFO("\t\t\tnumSynapses = %d", networkConfigs[0].numPostSynNet);
-	KERNEL_INFO("\t\t\tmaxDelay = %d", maxDelay_);
-	KERNEL_INFO("Simulation Mode:\t%s",sim_with_conductances?"COBA":"CUBA");
-	KERNEL_INFO("Random Seed:\t\t%d", randSeed_);
-	KERNEL_INFO("Timing:\t\t\tModel Simulation Time = %lld sec", (unsigned long long)simTimeSec);
-	KERNEL_INFO("\t\t\tActual Execution Time = %4.2f sec", etime/1000.0);
-	KERNEL_INFO("Average Firing Rate:\t2+ms delay = %3.3f Hz", spikeCountD2/(1.0*simTimeSec*numNExcReg));
-	KERNEL_INFO("\t\t\t1ms delay = %3.3f Hz", spikeCountD1/(1.0*simTimeSec*numNInhReg));
-	KERNEL_INFO("\t\t\tOverall = %3.3f Hz", spikeCount/(1.0*simTimeSec*numN));
-	KERNEL_INFO("Overall Firing Count:\t2+ms delay = %d", spikeCountD2);
-	KERNEL_INFO("\t\t\t1ms delay = %d", spikeCountD1);
-	KERNEL_INFO("\t\t\tTotal = %d", spikeCount);
-	KERNEL_INFO("*********************************************************************************\n");
 }

@@ -2346,9 +2346,6 @@ void SNN::generateConnectConfigs() {
 }
 
 void SNN::generateNetworkConfigs() {
-	// reset manager runtime data size
-	memset(&managerRTDSize, 0, sizeof(ManagerRuntimeDataSize));
-
 	for (int netId = 0; netId < MAX_NET_PER_SNN; netId++) {
 		if (!groupPartitionLists[netId].empty()) {
 			// copy the global network config to local network configs
@@ -2383,37 +2380,54 @@ void SNN::generateNetworkConfigs() {
 			findNumN(netId, networkConfigs[netId].numN, networkConfigs[netId].numNExternal, networkConfigs[netId].numNAssigned,
 					 networkConfigs[netId].numNReg, networkConfigs[netId].numNExcReg, networkConfigs[netId].numNInhReg,
 					 networkConfigs[netId].numNPois, networkConfigs[netId].numNExcPois, networkConfigs[netId].numNInhPois);
-			// find the maximum number of numN and numNReg among local networks
-			if (networkConfigs[netId].numNReg > managerRTDSize.maxNumNReg) managerRTDSize.maxNumNReg = networkConfigs[netId].numNReg;
-			if (networkConfigs[netId].numN > managerRTDSize.maxNumN) managerRTDSize.maxNumN = networkConfigs[netId].numN;
-			if (networkConfigs[netId].numNAssigned > managerRTDSize.maxNumNAssigned) managerRTDSize.maxNumNAssigned = networkConfigs[netId].numNAssigned;
+
 
 			findNumNSpikeGen(netId, networkConfigs[netId].numNSpikeGen);
-			if (networkConfigs[netId].numNSpikeGen > managerRTDSize.maxNumNSpikeGen) managerRTDSize.maxNumNSpikeGen = networkConfigs[netId].numNSpikeGen;
 
 			// configurations for assigned groups and connections
 			networkConfigs[netId].numGroups = groupPartitionLists[netId].size();
 			networkConfigs[netId].numConnections = localConnectLists[netId].size() + externalConnectLists[netId].size();
-			// find the maximum number of numGroups and numConnections among local networks
-			if (networkConfigs[netId].numGroups > managerRTDSize.maxNumGroups) managerRTDSize.maxNumGroups = networkConfigs[netId].numGroups;
-			if (networkConfigs[netId].numConnections > managerRTDSize.maxNumConnections) managerRTDSize.maxNumConnections = networkConfigs[netId].numConnections;
-		
+
 			// find the maximum number of pre- and post-connections among neurons
 			// SNN::maxNumPreSynN and SNN::maxNumPostSynN are updated
 			findMaxNumSynapsesNeurons(netId, networkConfigs[netId].maxNumPostSynN, networkConfigs[netId].maxNumPreSynN);
 
 			// find the maximum number of spikes in D1 (i.e., maxDelay == 1) and D2 (i.e., maxDelay >= 2) sets
 			findMaxSpikesD1D2(netId, networkConfigs[netId].maxSpikesD1, networkConfigs[netId].maxSpikesD2);
-			// find the maximum number of maxSipkesD1(D2) among networks
-			if (networkConfigs[netId].maxSpikesD1 > managerRTDSize.maxMaxSpikeD1) managerRTDSize.maxMaxSpikeD1 = networkConfigs[netId].maxSpikesD1;
-			if (networkConfigs[netId].maxSpikesD2 > managerRTDSize.maxMaxSpikeD2) managerRTDSize.maxMaxSpikeD2 = networkConfigs[netId].maxSpikesD2;
 
 
 			// find the total number of synapses in the network
 			findNumSynapsesNetwork(netId, networkConfigs[netId].numPostSynNet, networkConfigs[netId].numPreSynNet);
+		}
+	}
+
+	// find manager runtime data size, which is sufficient to hold the data of any gpu runtime
+	memset(&managerRTDSize, 0, sizeof(ManagerRuntimeDataSize));
+	for (int netId = 0; netId < MAX_NET_PER_SNN; netId++) {
+		if (!groupPartitionLists[netId].empty()) {
+			// find the maximum number of numN, numNReg ,and numNAssigned among local networks
+			if (networkConfigs[netId].numNReg > managerRTDSize.maxNumNReg) managerRTDSize.maxNumNReg = networkConfigs[netId].numNReg;
+			if (networkConfigs[netId].numN > managerRTDSize.maxNumN) managerRTDSize.maxNumN = networkConfigs[netId].numN;
+			if (networkConfigs[netId].numNAssigned > managerRTDSize.maxNumNAssigned) managerRTDSize.maxNumNAssigned = networkConfigs[netId].numNAssigned;
+
+			// find the maximum number of numNSpikeGen among local networks
+			if (networkConfigs[netId].numNSpikeGen > managerRTDSize.maxNumNSpikeGen) managerRTDSize.maxNumNSpikeGen = networkConfigs[netId].numNSpikeGen;
+			
+			// find the maximum number of numGroups and numConnections among local networks
+			if (networkConfigs[netId].numGroups > managerRTDSize.maxNumGroups) managerRTDSize.maxNumGroups = networkConfigs[netId].numGroups;
+			if (networkConfigs[netId].numConnections > managerRTDSize.maxNumConnections) managerRTDSize.maxNumConnections = networkConfigs[netId].numConnections;
+			
+			// find the maximum number of maxSipkesD1(D2) among networks
+			if (networkConfigs[netId].maxSpikesD1 > managerRTDSize.maxMaxSpikeD1) managerRTDSize.maxMaxSpikeD1 = networkConfigs[netId].maxSpikesD1;
+			if (networkConfigs[netId].maxSpikesD2 > managerRTDSize.maxMaxSpikeD2) managerRTDSize.maxMaxSpikeD2 = networkConfigs[netId].maxSpikesD2;
+			
 			// find the maximum number of total # of pre- and post-connections among local networks
 			if (networkConfigs[netId].numPreSynNet > managerRTDSize.maxNumPreSynNet) managerRTDSize.maxNumPreSynNet = networkConfigs[netId].numPreSynNet;
 			if (networkConfigs[netId].numPostSynNet > managerRTDSize.maxNumPostSynNet) managerRTDSize.maxNumPostSynNet = networkConfigs[netId].numPostSynNet;
+
+			// find the number of numN, and numNReg in the global network
+			managerRTDSize.glbNumN += networkConfigs[netId].numN;
+			managerRTDSize.glbNumNReg += networkConfigs[netId].numNReg;
 		}
 	}
 }
@@ -4852,7 +4866,7 @@ bool SNN::updateTime() {
 	return finishedOneSec;
 }
 
-
+// FIXME: modify this for multi-GPUs
 void SNN::updateSpikeMonitor(int grpId) {
 	// don't continue if no spike monitors in the network
 	if (!numSpikeMonitor)
@@ -4894,7 +4908,7 @@ void SNN::updateSpikeMonitor(int grpId) {
        }
 		if (simMode_ == GPU_MODE) {
 			// copy the neuron firing information from the GPU to the CPU..
-			fetchSpikeTables();
+			fetchSpikeTables(0);
 		}
 
 		// find the time interval in which to update spikes
@@ -4964,6 +4978,41 @@ void SNN::updateSpikeMonitor(int grpId) {
 		if (spkFileId!=NULL) // flush spike file
 			fflush(spkFileId);
 	}
+}
+
+void SNN::printSimSummary() {
+	checkAndSetGPUDevice("printSimSummary");
+
+	float etime;
+	if(simMode_ == GPU_MODE) {
+		stopGPUTiming();
+		etime = gpuExecutionTime;
+		fetchSpikeCount();
+	}
+	else {
+		stopCPUTiming();
+		etime = cpuExecutionTime;
+	}
+
+	KERNEL_INFO("\n");
+	KERNEL_INFO("********************      %s Simulation Summary      ***************************",
+		simMode_==GPU_MODE?"GPU":"CPU");
+
+	KERNEL_INFO("Network Parameters: \tnumNeurons = %d (numNExcReg:numNInhReg = %2.1f:%2.1f)", 
+		networkConfigs[0].numN, 100.0*numNExcReg/networkConfigs[0].numN, 100.0*numNInhReg/networkConfigs[0].numN);
+	KERNEL_INFO("\t\t\tnumSynapses = %d", networkConfigs[0].numPostSynNet);
+	KERNEL_INFO("\t\t\tmaxDelay = %d", maxDelay_);
+	KERNEL_INFO("Simulation Mode:\t%s",sim_with_conductances?"COBA":"CUBA");
+	KERNEL_INFO("Random Seed:\t\t%d", randSeed_);
+	KERNEL_INFO("Timing:\t\t\tModel Simulation Time = %lld sec", (unsigned long long)simTimeSec);
+	KERNEL_INFO("\t\t\tActual Execution Time = %4.2f sec", etime/1000.0);
+	KERNEL_INFO("Average Firing Rate:\t2+ms delay = %3.3f Hz", spikeCountD2/(1.0*simTimeSec*numNExcReg));
+	KERNEL_INFO("\t\t\t1ms delay = %3.3f Hz", spikeCountD1/(1.0*simTimeSec*numNInhReg));
+	KERNEL_INFO("\t\t\tOverall = %3.3f Hz", spikeCount/(1.0*simTimeSec*numN));
+	KERNEL_INFO("Overall Firing Count:\t2+ms delay = %d", spikeCountD2);
+	KERNEL_INFO("\t\t\t1ms delay = %d", spikeCountD1);
+	KERNEL_INFO("\t\t\tTotal = %d", spikeCount);
+	KERNEL_INFO("*********************************************************************************\n");
 }
 
 //------------------------------ legacy code --------------------------------//

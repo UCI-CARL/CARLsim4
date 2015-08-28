@@ -570,7 +570,6 @@ void SNN::printPreConnection(int grpId, FILE* const fp)
 	}
 }
 
-
 //void SNN::printNeuronState(int grpId, FILE* const fp)
 //{
 //  if (simMode_==GPU_MODE) {

@@ -829,8 +829,9 @@ private:
 	void dumpSpikeBuffToFile_GPU(int gid);
 	void findFiring_GPU();
 
-	void fetchSpikeTables();
-	void fetchNeuronSpikeCount (int gGrpId);
+	void fetchSpikeTables(int netId);
+	void fetchSpikeCount();
+	void fetchNeuronSpikeCount(int gGrpId);
 	void fetchGroupState(int gGrpId);
 	void fetchNeuronState(int gGrpId);
 	void fetchSTPState(int gGrpId);
@@ -1039,6 +1040,10 @@ private:
 		int maxNumConnections;
 		int maxNumPostSynNet;
 		int maxNumPreSynNet;
+		int glbNumN;
+		int glbNumNReg;
+		//int glbNumGroups;
+		//int glbNumConnections;
 	} ManagerRuntimeDataSize;
 
 	ManagerRuntimeDataSize managerRTDSize;
