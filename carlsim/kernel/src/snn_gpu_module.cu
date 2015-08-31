@@ -448,7 +448,6 @@ __global__ void gpu_resetSpikeCnt(int _grpId) {
 }
 
 // wrapper to call resetSpikeCnt
-// FIXME: modify this function for multi GPUs
 void SNN::resetSpikeCnt_GPU(int gGrpId) {
 	assert(gGrpId >= ALL); // ALL == -1
 
@@ -1576,79 +1575,149 @@ __global__ void kernel_doCurrentUpdateD1(int simTimeMs, int simTimeSec, int simT
 }
 
 /*!
- * \brief this function allocates device (GPU) memory sapce and copies information of connections to it
+ * \brief this function allocates device (GPU) memory sapce and copies information of pre-connections to it
  *
  * This function:
  * initialize Npre_plasticInv
  * (allocate and) copy Npre, Npre_plastic, Npre_plasticInv, cumulativePre, preSynapticIds
  * (allocate and) copy Npost, cumulativePost, postSynapticIds, postDelayInfo
  *
- * This funcion is only called by allocateSNN_GPU(). Only copying direction from host to device is required
  *
  * \param[in] netId the id of a local network, which is the same as the device (GPU) id
+ * \param[in] lGrpId the local group id in a local network, which specifiy the group(s) to be copied
  * \param[in] dest pointer to runtime data desitnation
+ * \param[in] src pointer to runtime data source
+ * \param[in] kind the direction of copying
  * \param[in] allocateMem a flag indicates whether allocating memory space before copying
  *
  * \sa allocateSNN_GPU
- * \since v3.0
+ * \since v4.0
  */
-void SNN::copyConnections(int netId, RuntimeData* dest, bool allocateMem) {
+void SNN::copyPreConnectionInfo(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind, bool allocateMem) {
 	checkAndSetGPUDevice(netId);
+	checkDestSrcPtrs(dest, src, kind, allocateMem, lGrpId); // check that the destination pointer is properly allocated..
 
-	// check that the destination pointer is properly allocated..
-	checkDestSrcPtrs(dest, &managerRuntimeData, cudaMemcpyHostToDevice, allocateMem, ALL);
+	int lengthN, lengthSyn, posN, posSyn;
+
+	if (lGrpId == ALL) {
+		lengthN = networkConfigs[netId].numNAssigned;
+		posN = 0;
+	} else {
+		lengthN = groupConfigs[netId][lGrpId].SizeN;
+		posN = groupConfigs[netId][lGrpId].localStartN;
+	}
 
 	// connection synaptic lengths and cumulative lengths...
 	if(allocateMem) 
 		CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->Npre, sizeof(short) * networkConfigs[netId].numNAssigned));
-	CUDA_CHECK_ERRORS(cudaMemcpy(dest->Npre, managerRuntimeData.Npre, sizeof(short) * networkConfigs[netId].numNAssigned, cudaMemcpyHostToDevice));
+	CUDA_CHECK_ERRORS(cudaMemcpy(&dest->Npre[posN], &src->Npre[posN], sizeof(short) * lengthN, kind));
 
 	// we don't need these data structures if the network doesn't have any plastic synapses at all
 	if (!sim_with_fixedwts) {
 		// presyn excitatory connections
 		if(allocateMem) 
 			CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->Npre_plastic, sizeof(short) * networkConfigs[netId].numNAssigned));
-		CUDA_CHECK_ERRORS(cudaMemcpy(dest->Npre_plastic, managerRuntimeData.Npre_plastic, sizeof(short) * networkConfigs[netId].numNAssigned, cudaMemcpyHostToDevice));
+		CUDA_CHECK_ERRORS(cudaMemcpy(&dest->Npre_plastic[posN], &src->Npre_plastic[posN], sizeof(short) * lengthN, kind));
 
-		float* Npre_plasticInv = new float[networkConfigs[netId].numNAssigned];
-		for (int i = 0; i < networkConfigs[netId].numNAssigned; i++)
-			Npre_plasticInv[i] = 1.0f / managerRuntimeData.Npre_plastic[i];
+		// Npre_plasticInv is only used on GPUs, only allocate and copy it during initialization
+		if(allocateMem) {
+			float* Npre_plasticInv = new float[networkConfigs[netId].numNAssigned];
 
-		if(allocateMem)
+			for (int i = 0; i < networkConfigs[netId].numNAssigned; i++)
+				Npre_plasticInv[i] = 1.0f / managerRuntimeData.Npre_plastic[i];
+
 			CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->Npre_plasticInv, sizeof(float) * networkConfigs[netId].numNAssigned));
-		CUDA_CHECK_ERRORS(cudaMemcpy(dest->Npre_plasticInv, Npre_plasticInv, sizeof(float) * networkConfigs[netId].numNAssigned, cudaMemcpyHostToDevice));
+			CUDA_CHECK_ERRORS(cudaMemcpy(dest->Npre_plasticInv, Npre_plasticInv, sizeof(float) * networkConfigs[netId].numNAssigned, kind));
 
-		delete[] Npre_plasticInv;
+			delete[] Npre_plasticInv;
+		}
 	}
 		
 	// beginning position for the pre-synaptic information
 	if(allocateMem)
 		CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->cumulativePre, sizeof(int) * networkConfigs[netId].numNAssigned));
-	CUDA_CHECK_ERRORS(cudaMemcpy(dest->cumulativePre, managerRuntimeData.cumulativePre, sizeof(int) * networkConfigs[netId].numNAssigned, cudaMemcpyHostToDevice));
+	CUDA_CHECK_ERRORS(cudaMemcpy(&dest->cumulativePre[posN], &src->cumulativePre[posN], sizeof(int) * lengthN, kind));
+
+	// Npre, cumulativePre has been copied to destination
+	if (lGrpId == ALL) {
+		lengthSyn = networkConfigs[netId].numPreSynNet;
+		posSyn = 0;
+	} else {
+		lengthSyn = 0;
+		for (int lNId = groupConfigs[netId][lGrpId].localStartN; lNId <= groupConfigs[netId][lGrpId].localEndN; lNId++)
+			lengthSyn += dest->Npre[lNId];
+
+		posSyn = dest->cumulativePre[groupConfigs[netId][lGrpId].localStartN];
+	}
 
 	if(allocateMem)
-		CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->preSynapticIds, sizeof(SynInfo) * (networkConfigs[netId].numPreSynNet + 10)));
-	CUDA_CHECK_ERRORS(cudaMemcpy(dest->preSynapticIds, managerRuntimeData.preSynapticIds, sizeof(SynInfo) * (networkConfigs[netId].numPreSynNet + 10), cudaMemcpyHostToDevice)); //FIXME: why +10 pre synapses
+		CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->preSynapticIds, sizeof(SynInfo) * networkConfigs[netId].numPreSynNet));
+	CUDA_CHECK_ERRORS(cudaMemcpy(&dest->preSynapticIds[posSyn], &src->preSynapticIds[posSyn], sizeof(SynInfo) * lengthSyn, kind));
+}
+
+/*!
+ * \brief this function allocates device (GPU) memory sapce and copies information of post-connections to it
+ *
+ * This function:
+ * (allocate and) copy Npost, cumulativePost, postSynapticIds, postDelayInfo
+ *
+ *
+ * \param[in] netId the id of a local network, which is the same as the device (GPU) id
+ * \param[in] lGrpId the local group id in a local network, which specifiy the group(s) to be copied
+ * \param[in] dest pointer to runtime data desitnation
+ * \param[in] src pointer to runtime data source
+ * \param[in] kind the direction of copying
+ * \param[in] allocateMem a flag indicates whether allocating memory space before copying
+ *
+ * \sa allocateSNN_GPU
+ * \since v4.0
+ */
+void SNN::copyPostConnectionInfo(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind, bool allocateMem) {
+	checkAndSetGPUDevice(netId);
+	checkDestSrcPtrs(dest, src, kind, allocateMem, lGrpId);// check that the destination pointer is properly allocated..
+
+	int lengthN, lengthSyn, posN, posSyn;
+
+	if (lGrpId == ALL) {
+		lengthN = networkConfigs[netId].numNAssigned;
+		posN = 0;
+	} else {
+		lengthN = groupConfigs[netId][lGrpId].SizeN;
+		posN = groupConfigs[netId][lGrpId].localStartN;
+	}
 
 	// number of postsynaptic connections
 	if(allocateMem)
 		CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->Npost, sizeof(short) * networkConfigs[netId].numNAssigned));
-	CUDA_CHECK_ERRORS(cudaMemcpy( dest->Npost, managerRuntimeData.Npost, sizeof(short) * networkConfigs[netId].numNAssigned, cudaMemcpyHostToDevice));
+	CUDA_CHECK_ERRORS(cudaMemcpy(&dest->Npost[posN], &src->Npost[posN], sizeof(short) * lengthN, kind));
 	
 	// beginning position for the post-synaptic information
 	if(allocateMem) 
 		CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->cumulativePost, sizeof(int) * networkConfigs[netId].numNAssigned));
-	CUDA_CHECK_ERRORS(cudaMemcpy(dest->cumulativePost, managerRuntimeData.cumulativePost, sizeof(int) * networkConfigs[netId].numNAssigned, cudaMemcpyHostToDevice));
+	CUDA_CHECK_ERRORS(cudaMemcpy(&dest->cumulativePost[posN], &src->cumulativePost[posN], sizeof(int) * lengthN, kind));
+
+	
+	// Npost, cumulativePost has been copied to destination
+	if (lGrpId == ALL) {
+		lengthSyn = networkConfigs[netId].numPostSynNet;
+		posSyn = 0;
+	} else {
+		lengthSyn = 0;
+		for (int lNId = groupConfigs[netId][lGrpId].localStartN; lNId <= groupConfigs[netId][lGrpId].localEndN; lNId++)
+			lengthSyn += dest->Npost[lNId];
+
+		posSyn = dest->cumulativePost[groupConfigs[netId][lGrpId].localStartN];
+	}
 
 	// actual post synaptic connection information...
 	if(allocateMem)
-		CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->postSynapticIds, sizeof(SynInfo) * (networkConfigs[netId].numPostSynNet + 10)));
-	CUDA_CHECK_ERRORS(cudaMemcpy(dest->postSynapticIds, managerRuntimeData.postSynapticIds, sizeof(SynInfo) * (networkConfigs[netId].numPostSynNet + 10), cudaMemcpyHostToDevice)); //FIXME: why +10 post synapses
+		CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->postSynapticIds, sizeof(SynInfo) * networkConfigs[netId].numPostSynNet));
+	CUDA_CHECK_ERRORS(cudaMemcpy(&dest->postSynapticIds[posSyn], &src->postSynapticIds[posSyn], sizeof(SynInfo) * lengthSyn, kind));
 
 	// static specific mapping and actual post-synaptic delay metric
 	if(allocateMem)
 		CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->postDelayInfo, sizeof(DelayInfo) * networkConfigs[netId].numNAssigned * (maxDelay_ + 1)));
-	CUDA_CHECK_ERRORS(cudaMemcpy(dest->postDelayInfo, managerRuntimeData.postDelayInfo, sizeof(DelayInfo) * networkConfigs[netId].numNAssigned * (maxDelay_ + 1), cudaMemcpyHostToDevice));
+	CUDA_CHECK_ERRORS(cudaMemcpy(&dest->postDelayInfo[posN * (maxDelay_ + 1)], &src->postDelayInfo[posN * (maxDelay_ + 1)], sizeof(DelayInfo) * lengthN * (maxDelay_ + 1), kind));
 }
 
 void SNN::checkDestSrcPtrs(RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind, bool allocateMem, int lGrpId) {
@@ -1990,9 +2059,7 @@ void SNN::copyNeuronState(int netId, int lGrpId, RuntimeData* dest, bool allocat
  */
 void SNN::copyGroupState(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind, bool allocateMem) {
 	checkAndSetGPUDevice(netId);
-
-	// check that the destination pointer is properly allocated..
-	checkDestSrcPtrs(dest, src, kind, allocateMem, lGrpId);
+	checkDestSrcPtrs(dest, src, kind, allocateMem, lGrpId);// check that the destination pointer is properly allocated..
 
 	if (allocateMem) {
 		assert(dest->memType == GPU_MODE && !dest->allocated);
@@ -2244,34 +2311,36 @@ void SNN::copyGroupConfigs(int netId) {
  * \sa fetchWeightState
  * \since v4.0
  */
-void SNN::copyWeightState (int netId, int lGrpId) {
-	int length_wt = 0, cumPos_syn = 0;
-
-	// check that the destination pointer is properly allocated..
-	checkDestSrcPtrs(&managerRuntimeData, &gpuRuntimeData[netId], cudaMemcpyDeviceToHost, false, lGrpId);
-	
+void SNN::copyWeightState(int netId, int lGrpId) {
 	checkAndSetGPUDevice(netId);
+	checkDestSrcPtrs(&managerRuntimeData, &gpuRuntimeData[netId], cudaMemcpyDeviceToHost, false, lGrpId); // check that the destination pointer is properly allocated..
+
+	int lengthSyn, posSyn;
 
 	if (lGrpId == ALL) {
-		length_wt  = networkConfigs[netId].numPreSynNet;
-		cumPos_syn = 0;
+		lengthSyn = networkConfigs[netId].numPreSynNet;
+		posSyn = 0;
 	} else {
+		copyPreConnectionInfo(netId, lGrpId, &managerRuntimeData, &gpuRuntimeData[netId], cudaMemcpyDeviceToHost, false);
+
+		lengthSyn = 0;
 		for (int lNId = groupConfigs[netId][lGrpId].localStartN; lNId <= groupConfigs[netId][lGrpId].localEndN; lNId++)
-			length_wt += gpuRuntimeData[netId].Npre[lNId];
-		cumPos_syn 	= gpuRuntimeData[netId].cumulativePre[groupConfigs[netId][lGrpId].localStartN];
+			lengthSyn += managerRuntimeData.Npre[lNId];
+
+		posSyn = managerRuntimeData.cumulativePre[groupConfigs[netId][lGrpId].localStartN];
 	}
 
-	assert(cumPos_syn < networkConfigs[netId].numPreSynNet || networkConfigs[netId].numPreSynNet == 0);
-	assert(length_wt <= networkConfigs[netId].numPreSynNet);
+	assert(posSyn < networkConfigs[netId].numPreSynNet || networkConfigs[netId].numPreSynNet == 0);
+	assert(lengthSyn <= networkConfigs[netId].numPreSynNet);
 
-	CUDA_CHECK_ERRORS(cudaMemcpy(&managerRuntimeData.wt[cumPos_syn], &gpuRuntimeData[netId].wt[cumPos_syn], sizeof(float) * length_wt, cudaMemcpyDeviceToHost));
+	CUDA_CHECK_ERRORS(cudaMemcpy(&managerRuntimeData.wt[posSyn], &gpuRuntimeData[netId].wt[posSyn], sizeof(float) * lengthSyn, cudaMemcpyDeviceToHost));
 
 	// copy firing time for individual synapses
-	CUDA_CHECK_ERRORS(cudaMemcpy(&managerRuntimeData.synSpikeTime[cumPos_syn], &gpuRuntimeData[netId].synSpikeTime[cumPos_syn], sizeof(int) * length_wt, cudaMemcpyDeviceToHost));
+	//CUDA_CHECK_ERRORS(cudaMemcpy(&managerRuntimeData.synSpikeTime[cumPos_syn], &gpuRuntimeData[netId].synSpikeTime[cumPos_syn], sizeof(int) * length_wt, cudaMemcpyDeviceToHost));
 
 	if ((!sim_with_fixedwts) || sim_with_stdp) {
 		// copy synaptic weight derivative
-		CUDA_CHECK_ERRORS(cudaMemcpy( &managerRuntimeData.wtChange[cumPos_syn], &gpuRuntimeData[netId].wtChange[cumPos_syn], sizeof(float) * length_wt, cudaMemcpyDeviceToHost));
+		CUDA_CHECK_ERRORS(cudaMemcpy( &managerRuntimeData.wtChange[posSyn], &gpuRuntimeData[netId].wtChange[posSyn], sizeof(float) * lengthSyn, cudaMemcpyDeviceToHost));
 	}
 }
 
@@ -2282,7 +2351,6 @@ void SNN::copyWeightState (int netId, int lGrpId) {
  * This function:
  * (allocate and) copy wt, wtChange, maxSynWt
  *
- * This funcion is only called by allocateSNN_GPU(). Only copying direction from host to device is required
  *
  * \param[in] netId the id of a local network, which is the same as the device (GPU) id
  * \param[in] dest pointer to runtime data desitnation
@@ -2293,11 +2361,9 @@ void SNN::copyWeightState (int netId, int lGrpId) {
  */
 void SNN::copySynapseState(int netId, RuntimeData* dest, bool allocateMem) {
 	checkAndSetGPUDevice(netId);
-
-	assert(networkConfigs[netId].maxNumPreSynN > 0 && networkConfigs[netId].maxNumPostSynN > 0);
+	checkDestSrcPtrs(dest, &managerRuntimeData, cudaMemcpyHostToDevice, allocateMem, ALL); // check that the destination pointer is properly allocated..
 	
-	// check that the destination pointer is properly allocated..
-	checkDestSrcPtrs(dest, &managerRuntimeData, cudaMemcpyHostToDevice, allocateMem, ALL);
+	assert(networkConfigs[netId].numPreSynNet > 0);
 
 	// synaptic information based
 	if(allocateMem) CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->wt, sizeof(float) * networkConfigs[netId].numPreSynNet));
@@ -2355,9 +2421,11 @@ void SNN::copyAuxiliaryData(int netId, RuntimeData* dest, bool allocateMem) {
 
 	// synaptic auxiliary data
 	// I_set: a bit vector indicates which synapse got a spike
-	networkConfigs[netId].I_setLength = ceil(((networkConfigs[netId].maxNumPreSynN) / 32.0f));
-	if(allocateMem)
+
+	if(allocateMem) {
+		networkConfigs[netId].I_setLength = ceil(((networkConfigs[netId].maxNumPreSynN) / 32.0f));
 		CUDA_CHECK_ERRORS(cudaMallocPitch((void**)&dest->I_set, &networkConfigs[netId].I_setPitch, sizeof(int) * networkConfigs[netId].numNReg, networkConfigs[netId].I_setLength));
+	}
 	assert(networkConfigs[netId].I_setPitch > 0 || networkConfigs[netId].maxNumPreSynN == 0);
 	CUDA_CHECK_ERRORS(cudaMemset(dest->I_set, 0, networkConfigs[netId].I_setPitch * networkConfigs[netId].I_setLength));
 
@@ -2381,7 +2449,7 @@ void SNN::copyAuxiliaryData(int netId, RuntimeData* dest, bool allocateMem) {
 	if(allocateMem)	CUDA_CHECK_ERRORS(cudaMalloc( (void**)&dest->grpIds, sizeof(short int) * networkConfigs[netId].numNAssigned));
 	CUDA_CHECK_ERRORS(cudaMemcpy( dest->grpIds, managerRuntimeData.grpIds, sizeof(short int) * networkConfigs[netId].numNAssigned, cudaMemcpyHostToDevice));
 
-	// quick lookc up array for conn ids
+	// quick lookup array for conn ids
 	if(allocateMem)	CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->connIdsPreIdx, sizeof(short int) * networkConfigs[netId].numPreSynNet));
 	CUDA_CHECK_ERRORS(cudaMemcpy(dest->connIdsPreIdx, managerRuntimeData.connIdsPreIdx, sizeof(short int) * networkConfigs[netId].numPreSynNet, cudaMemcpyHostToDevice));
 
@@ -2676,29 +2744,32 @@ void SNN::globalStateUpdate_GPU() {
 	}
 }
 
-// FIXME: modify this for multi-GPUs
 void SNN::assignPoissonFiringRate_GPU() {
-	checkAndSetGPUDevice("assignPoissonFiringRate_GPU");
+	for (int netId = 0; netId < MAX_NET_PER_SNN; netId++) {
+		if (!groupPartitionLists[netId].empty()) {
+			checkAndSetGPUDevice(netId);
 
-	assert(gpuRuntimeData[0].poissonFireRate != NULL);
-	for (int grpId=0; grpId < numGroups; grpId++) {
-		// given group of neurons belong to the poisson group....
-		if (groupConfigs[0][grpId].isSpikeGenerator) {
-			int nid = groupConfigs[0][grpId].StartN;
-			PoissonRate* rate = groupConfigs[0][grpId].RatePtr;
+			assert(gpuRuntimeData[netId].poissonFireRate != NULL);
+			for (int lGrpId = 0; lGrpId < networkConfigs[netId].numGroups; lGrpId++) {
+				// given group of neurons belong to the poisson group....
+				if (groupConfigs[netId][lGrpId].isSpikeGenerator) {
+					int lNId = groupConfigs[netId][lGrpId].localStartN;
+					PoissonRate* rate = groupConfigs[netId][lGrpId].RatePtr;
 
-			// if spikeGenFunc group does not have a Poisson pointer, skip
-			if (groupConfigs[0][grpId].spikeGenFunc || rate == NULL)
-				continue;
+					// if spikeGenFunc group does not have a Poisson pointer, skip
+					if (groupConfigs[netId][lGrpId].spikeGenFunc || rate == NULL)
+						continue;
 
-			if (rate->isOnGPU()) {
-				// rates allocated on GPU
-				CUDA_CHECK_ERRORS( cudaMemcpy( &gpuRuntimeData[0].poissonFireRate[nid-numNReg], rate->getRatePtrGPU(),
-					sizeof(float)*rate->getNumNeurons(), cudaMemcpyDeviceToDevice) );
-			} else {
-				// rates allocated on CPU
-				CUDA_CHECK_ERRORS( cudaMemcpy( &gpuRuntimeData[0].poissonFireRate[nid-numNReg], rate->getRatePtrCPU(),
-					sizeof(float)*rate->getNumNeurons(), cudaMemcpyHostToDevice) );
+					if (rate->isOnGPU()) {
+						// rates allocated on GPU
+						CUDA_CHECK_ERRORS(cudaMemcpy(&gpuRuntimeData[netId].poissonFireRate[lNId - networkConfigs[netId].numNReg], rate->getRatePtrGPU(),
+							sizeof(float) * rate->getNumNeurons(), cudaMemcpyDeviceToDevice) );
+					} else {
+						// rates allocated on CPU
+						CUDA_CHECK_ERRORS(cudaMemcpy(&gpuRuntimeData[netId].poissonFireRate[lNId - networkConfigs[netId].numNReg], rate->getRatePtrCPU(),
+							sizeof(float) * rate->getNumNeurons(), cudaMemcpyHostToDevice) );
+					}
+				}
 			}
 		}
 	}
@@ -2821,17 +2892,12 @@ void SNN::copyExternalCurrent(int netId, int lGrpId, RuntimeData* dest, RuntimeD
 		length  = networkConfigs[netId].numNReg;
 	} else {
 		assert(lGrpId >= 0);
-		assert(groupConfigs[netId][lGrpId].localEndN < networkConfigs[netId].numNReg); // assert NOT poisson neurons
 		ptrPos = groupConfigs[netId][lGrpId].localStartN;
 		length = groupConfigs[netId][lGrpId].SizeN;
 	}
-	assert(length > 0 && length <= networkConfigs[netId].numNReg);
+	assert(length > 0 && length <= networkConfigs[netId].numNReg); // assert NOT poisson neurons
 
 	KERNEL_DEBUG("copyExternalCurrent: lGrpId=%d, ptrPos=%d, length=%d, allocate=%s", lGrpId, ptrPos, length, allocateMem?"y":"n");
-
-	// when allocating we are allocating the memory.. we need to do it completely... to avoid memory fragmentation..
-	if(allocateMem)
-		assert(lGrpId == ALL);
 
 	if(allocateMem) CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->extCurrent, sizeof(float) * length));
 	CUDA_CHECK_ERRORS(cudaMemcpy(&(dest->extCurrent[ptrPos]), &(src->extCurrent[ptrPos]), sizeof(float) * length, kind));
@@ -2980,7 +3046,6 @@ void SNN::allocateSNN_GPU(int netId) {
 		gpuRuntimeData[netId].gpuPoissonRand = new RNG_rand48(randSeed_);
 	}
 
-	// FIXME: gpuPoissonRand for multi-GPUs
 	gpuRuntimeData[netId].gpuPoissonRand->generate(networkConfigs[netId].numNPois, RNG_rand48::MAX_RANGE);
 
 	// initialize SNN::gpuRuntimeData[0].poissonRandPtr, save the random pointer as poisson generator....
@@ -3015,7 +3080,8 @@ void SNN::allocateSNN_GPU(int netId) {
 	// initialize (copy from SNN) gpuRuntimeData[0].Npre, gpuRuntimeData[0].Npre_plastic, gpuRuntimeData[0].Npre_plasticInv, gpuRuntimeData[0].cumulativePre
 	// initialize (copy from SNN) gpuRuntimeData[0].cumulativePost, gpuRuntimeData[0].Npost, gpuRuntimeData[0].postDelayInfo
 	// initialize (copy from SNN) gpuRuntimeData[0].postSynapticIds, gpuRuntimeData[0].preSynapticIds
-	copyConnections(netId, &gpuRuntimeData[netId], true);
+	copyPreConnectionInfo(netId, ALL, &gpuRuntimeData[netId], &managerRuntimeData, cudaMemcpyHostToDevice, true);
+	copyPostConnectionInfo(netId, ALL, &gpuRuntimeData[netId], &managerRuntimeData, cudaMemcpyHostToDevice, true);
 	cudaMemGetInfo(&avail,&total);
 	KERNEL_INFO("Conn Info:\t\t%2.3f GB\t%2.3f GB\t%2.3f GB",(float)(previous-avail)/toGB,(float)((total-avail)/toGB), (float)(avail/toGB));
 	previous=avail;

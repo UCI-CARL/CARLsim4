@@ -36,7 +36,7 @@ int main() {
 	// ---------------- CONFIG STATE -------------------
 	// create a network with nPois Poisson neurons and nExc excitatory output
 	// neurons
-	CARLsim sim("plasticity simulation", GPU_MODE, USER);
+	CARLsim sim("plasticity simulation", GPU_MODE, USER, 2);
 	int nPois = 100; // 100 input neurons
 	int nExc  = 1;   // 1 output neuron
 

@@ -1216,14 +1216,17 @@ SpikeMonitor* SNN::setSpikeMonitor(int grpId, FILE* fid) {
 // or groupConfigMap is not sync with groupConfigs[0][]
 // assigns spike rate to group
 void SNN::setSpikeRate(int grpId, PoissonRate* ratePtr, int refPeriod) {
-	assert(grpId>=0 && grpId<numGroups);
-	assert(ratePtr);
-	assert(groupConfigs[0][grpId].isSpikeGenerator);
-	assert(ratePtr->getNumNeurons()==groupConfigs[0][grpId].SizeN);
-	assert(refPeriod>=1);
+	int netId = groupConfigMap[grpId].netId;
+	int lGrpId = groupConfigMap[grpId].localGrpId;
 
-	groupConfigs[0][grpId].RatePtr = ratePtr;
-	groupConfigs[0][grpId].RefractPeriod   = refPeriod;
+	assert(grpId >= 0 && lGrpId < networkConfigs[netId].numGroups);
+	assert(ratePtr);
+	assert(groupConfigs[netId][lGrpId].isSpikeGenerator);
+	assert(ratePtr->getNumNeurons() == groupConfigs[netId][lGrpId].SizeN);
+	assert(refPeriod >= 1);
+
+	groupConfigs[netId][lGrpId].RatePtr = ratePtr;
+	groupConfigs[netId][lGrpId].RefractPeriod   = refPeriod;
 	spikeRateUpdated = true;
 }
 
@@ -2326,7 +2329,8 @@ void SNN::generateGroupConfigs() {
 			// publish the group configs in an array for quick access and accessible on GPUs (cuda doesn't support std::list)
 			groupConfigs[netId][grpIt->localGrpId] = *grpIt;
 			// write back the global-local mappings to groupConfigMap
-			groupConfigMap[grpIt->grpId] = *grpIt;
+			if (grpIt->netId == netId)
+				groupConfigMap[grpIt->grpId] = *grpIt;
 		}
 
 		int numNSpikeGen = 0;
@@ -3477,16 +3481,17 @@ void SNN::findNumSynapsesNetwork(int _netId, int& _numPostSynNet, int& _numPreSy
 }
 
 void SNN::fetchGroupState(int gGrpId) {
-
 }
 
 void SNN::fetchNeuronState(int gGrpId) {
+	// TODO: fetch neuron state on demand, get voltage, recovery, current, etc at once is not necessary
 }
 
 void SNN::fetchSTPState(int gGrpId) {
 }
 
-void SNN::fetchWeightState(int gGprId) {
+void SNN::fetchWeightState(int gGrpId) {
+
 }
 
 void SNN::fetchConductanceAMPA(int gGrpId) {
@@ -3831,13 +3836,13 @@ void SNN::partitionSNN() {
 		//	exitSimulation(-1);
 		//}
 
-		it->second.netId = 0;
-		numAssignedNeurons[0] += it->second.SizeN;
-		groupPartitionLists[0].push_back(it->second);
+		//it->second.netId = 0;
+		//numAssignedNeurons[0] += it->second.SizeN;
+		//groupPartitionLists[0].push_back(it->second);
 
-		//it->second.netId = 1;
-		//numAssignedNeurons[1] += it->second.SizeN;
-		//groupPartitionLists[1].push_back(it->second);
+		it->second.netId = 1;
+		numAssignedNeurons[1] += it->second.SizeN;
+		groupPartitionLists[1].push_back(it->second);
 	}
 
 	// this parse finds local connections (i.e., connection configs that conect local groups)
@@ -4663,18 +4668,21 @@ void SNN::updateConnectionMonitor(short int connId) {
 	}
 }
 
-
+// FIXME: modify this for multi-GPUs
 std::vector< std::vector<float> > SNN::getWeightMatrix2D(short int connId) {
-	assert(connId!=ALL);
+	assert(connId > ALL); // ALL == -1
 	std::vector< std::vector<float> > wtConnId;
 
 	int grpIdPre = connectConfigMap[connId].grpSrc;
 	int grpIdPost = connectConfigMap[connId].grpDest;
 
+	int netIdPost = groupConfigMap[grpIdPost].netId;
+	int lGrpIdPost = groupConfigMap[grpIdPost].localGrpId;
+
 	// init weight matrix with right dimensions
-	for (int i=0; i<groupConfigs[0][grpIdPre].SizeN; i++) {
+	for (int i = 0; i < groupConfigMap[grpIdPre].SizeN; i++) {
 		std::vector<float> wtSlice;
-		for (int j=0; j<groupConfigs[0][grpIdPost].SizeN; j++) {
+		for (int j = 0; j < groupConfigMap[grpIdPost].SizeN; j++) {
 			wtSlice.push_back(NAN);
 		}
 		wtConnId.push_back(wtSlice);
@@ -4683,20 +4691,24 @@ std::vector< std::vector<float> > SNN::getWeightMatrix2D(short int connId) {
 	// copy the weights for a given post-group from device
 	// \TODO: check if the weights for this grpIdPost have already been copied
 	// \TODO: even better, but tricky because of ordering, make copyWeightState connection-based
-	if (simMode_==GPU_MODE) {
-		fetchWeightState(grpIdPost);
+	copyPreConnectionInfo(netIdPost, lGrpIdPost, &managerRuntimeData, &gpuRuntimeData[netIdPost], cudaMemcpyDeviceToHost, false);
+
+	assert(grpIdPost > ALL); // ALL == -1
+	if (simMode_ == GPU_MODE) {
+		copyWeightState(netIdPost, lGrpIdPost);
 	}
 
-	for (int postId=groupConfigs[0][grpIdPost].StartN; postId<=groupConfigs[0][grpIdPost].EndN; postId++) {
-		unsigned int pos_ij = managerRuntimeData.cumulativePre[postId];
-		for (int i=0; i<managerRuntimeData.Npre[postId]; i++, pos_ij++) {
+	for (int lNIdPost = groupConfigs[netIdPost][lGrpIdPost].localStartN; lNIdPost <= groupConfigs[netIdPost][lGrpIdPost].localEndN; lNIdPost++) {
+		unsigned int pos_ij = managerRuntimeData.cumulativePre[lNIdPost];
+		for (int i = 0; i < managerRuntimeData.Npre[lNIdPost]; i++, pos_ij++) {
 			// skip synapses that belong to a different connection ID
 			if (managerRuntimeData.connIdsPreIdx[pos_ij] != connId) //connInfo->connId)
 				continue;
 
 			// find pre-neuron ID and update ConnectionMonitor container
-			int preId = GET_CONN_NEURON_ID(managerRuntimeData.preSynapticIds[pos_ij]);
-			wtConnId[preId-getGroupStartNeuronId(grpIdPre)][postId-getGroupStartNeuronId(grpIdPost)] =
+			int lNIdPre = GET_CONN_NEURON_ID(managerRuntimeData.preSynapticIds[pos_ij]);
+			int lGrpIdPre = GET_CONN_GRP_ID(managerRuntimeData.preSynapticIds[pos_ij]);
+			wtConnId[lNIdPre - groupConfigs[netIdPost][lGrpIdPre].localStartN][lNIdPost - groupConfigs[netIdPost][lGrpIdPost].localStartN] =
 				fabs(managerRuntimeData.wt[pos_ij]);
 		}
 	}
