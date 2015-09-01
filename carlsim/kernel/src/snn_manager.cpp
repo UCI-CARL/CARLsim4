@@ -1134,7 +1134,7 @@ void SNN::setExternalCurrent(int grpId, const std::vector<float>& current) {
 	// copy to GPU if necessary
 	// don't allocate; allocation done in generateRuntimeData
 	if (simMode_ == GPU_MODE) {
-		copyExternalCurrent(netId, lGrpId, &gpuRuntimeData[netId], &managerRuntimeData, cudaMemcpyHostToDevice, false);
+		copyExternalCurrent(netId, lGrpId, &gpuRuntimeData[netId], false);
 	}
 }
 
@@ -3487,6 +3487,25 @@ void SNN::fetchNeuronState(int gGrpId) {
 	// TODO: fetch neuron state on demand, get voltage, recovery, current, etc at once is not necessary
 }
 
+/*!
+ * \brief This function copies spike count of each neuron from device (GPU) memory to main (CPU) memory
+ *
+ * \param[in] gGrpId the group id of the global network of which the spike count of each neuron with in the group are copied to manager runtime data
+ */
+void SNN::fetchNeuronSpikeCount (int gGrpId) {
+	if (gGrpId == ALL) {
+		for (int g = 0; g < numGroups; g++) {
+			fetchNeuronSpikeCount(g);
+		}
+	} else {
+		int netId = groupConfigMap[gGrpId].netId;
+		int lGrpId = groupConfigMap[gGrpId].localGrpId;
+		int LtoGOffset = groupConfigMap[gGrpId].LtoGOffset;
+
+		copyNeuronSpikeCount(netId, lGrpId, &managerRuntimeData, &gpuRuntimeData[netId], cudaMemcpyDeviceToHost, false, LtoGOffset);
+	}
+}
+
 void SNN::fetchSTPState(int gGrpId) {
 }
 
@@ -3836,13 +3855,13 @@ void SNN::partitionSNN() {
 		//	exitSimulation(-1);
 		//}
 
-		//it->second.netId = 0;
-		//numAssignedNeurons[0] += it->second.SizeN;
-		//groupPartitionLists[0].push_back(it->second);
+		it->second.netId = 0;
+		numAssignedNeurons[0] += it->second.SizeN;
+		groupPartitionLists[0].push_back(it->second);
 
-		it->second.netId = 1;
-		numAssignedNeurons[1] += it->second.SizeN;
-		groupPartitionLists[1].push_back(it->second);
+		//it->second.netId = 1;
+		//numAssignedNeurons[1] += it->second.SizeN;
+		//groupPartitionLists[1].push_back(it->second);
 	}
 
 	// this parse finds local connections (i.e., connection configs that conect local groups)

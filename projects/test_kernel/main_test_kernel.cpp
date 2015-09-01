@@ -45,7 +45,7 @@
 
 int main() {
 	// create a network on GPU
-	int numGPUs = 1;
+	int numGPUs = 2;
 	int randSeed = 42;
 	CARLsim sim("test kernel", GPU_MODE, USER, numGPUs, randSeed);
 
