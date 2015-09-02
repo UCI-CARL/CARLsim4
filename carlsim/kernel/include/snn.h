@@ -303,9 +303,8 @@ public:
 	 * \brief run the simulation for n sec
 	 *
 	 * \param[in] printRunSummary whether to print a basic summary of the run at the end
-	 * \param[in] copyState 	enable copying of data from device to host
 	 */
-	int runNetwork(int _nsec, int _nmsec, bool printRunSummary, bool copyState);
+	int runNetwork(int _nsec, int _nmsec, bool printRunSummary);
 
 	/*!
 	 * \brief build the network
@@ -832,7 +831,8 @@ private:
 	void findFiring_GPU();
 
 	void fetchSpikeTables(int netId);
-	void fetchSpikeCount();
+
+	void fetchNetworkSpikeCount();
 	void fetchNeuronSpikeCount(int gGrpId);
 	void fetchGroupState(int gGrpId);
 	void fetchNeuronState(int gGrpId);

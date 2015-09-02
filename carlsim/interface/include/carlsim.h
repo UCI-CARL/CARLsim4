@@ -672,9 +672,8 @@ public:
 	 * \param[in] nSec 			  number of seconds to run the network
 	 * \param[in] nMsec 		  number of milliseconds to run the network
 	 * \param[in] printRunSummary enable the printing of a summary at the end of this run
-	 * \param[in] copyState 	  enable copying of data from device to host
 	 */
-	int runNetwork(int nSec, int nMsec=0, bool printRunSummary=true, bool copyState=false);
+	int runNetwork(int nSec, int nMsec=0, bool printRunSummary=true);
 
 	/*!
 	 * \brief build the network
@@ -1675,8 +1674,6 @@ private:
 	bool existsGrpId(int grpId);		//!< checks whether a certain grpId exists in grpIds_
 
 	void handleUserWarnings(); 			//!< print all user warnings, continue only after user input
-
-	void printSimulationSpecs();
 
 	// +++++ PRIVATE STATIC PROPERTIES ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 	static bool gpuAllocation[MAX_NUM_CUDA_DEVICES];

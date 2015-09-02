@@ -2318,12 +2318,13 @@ void SNN::copyWeightState(int netId, int lGrpId) {
 
 	int lengthSyn, posSyn;
 
+	// first copy pre-connections info
+	copyPreConnectionInfo(netId, lGrpId, &managerRuntimeData, &gpuRuntimeData[netId], cudaMemcpyDeviceToHost, false);
+
 	if (lGrpId == ALL) {
 		lengthSyn = networkConfigs[netId].numPreSynNet;
 		posSyn = 0;
 	} else {
-		copyPreConnectionInfo(netId, lGrpId, &managerRuntimeData, &gpuRuntimeData[netId], cudaMemcpyDeviceToHost, false);
-
 		lengthSyn = 0;
 		for (int lNId = groupConfigs[netId][lGrpId].localStartN; lNId <= groupConfigs[netId][lGrpId].localEndN; lNId++)
 			lengthSyn += managerRuntimeData.Npre[lNId];
@@ -2901,7 +2902,7 @@ void SNN::copyExternalCurrent(int netId, int lGrpId, RuntimeData* dest, bool all
 /*!
  * \brief This function fetch the spike count in all local networks and sum the up
  */
-void SNN::fetchSpikeCount() {
+void SNN::fetchNetworkSpikeCount() {
 	unsigned int gpuSpikeCountD1Sec, gpuSpikeCountD2Sec, gpuSpikeCountD1, gpuSpikeCountD2;
 
 	spikeCountD1Sec = 0; spikeCountD2Sec = 0; spikeCountD1 = 0; spikeCountD2 = 0;

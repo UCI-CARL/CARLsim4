@@ -664,7 +664,7 @@ void CARLsim::setWeightAndWeightChangeUpdate(UpdateInterval wtANDwtChangeUpdateI
 // +++++++++ PUBLIC METHODS: RUNNING A SIMULATION +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
 // run network with custom options
-int CARLsim::runNetwork(int nSec, int nMsec, bool printRunSummary, bool copyState) {
+int CARLsim::runNetwork(int nSec, int nMsec, bool printRunSummary) {
 	std::string funcName = "runNetwork()";
 	UserErrors::assertTrue(carlsimState_ == SETUP_STATE || carlsimState_ == RUN_STATE,
 				UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "SETUP or RUN.");
@@ -682,7 +682,7 @@ int CARLsim::runNetwork(int nSec, int nMsec, bool printRunSummary, bool copyStat
 
 	carlsimState_ = RUN_STATE;
 
-	return snn_->runNetwork(nSec, nMsec, printRunSummary, copyState);
+	return snn_->runNetwork(nSec, nMsec, printRunSummary);
 }
 
 // setup network with custom options
@@ -1413,16 +1413,5 @@ void CARLsim::handleUserWarnings() {
 			fprintf(stdout,"Exiting...\n");
 			exit(1);
 		}
-	}
-}
-
-// print all simulation specs
-void CARLsim::printSimulationSpecs() {
-	if (simMode_==CPU_MODE) {
-		fprintf(stdout,"CPU_MODE, enablePrint=%s, copyState=%s\n\n",enablePrint_?"on":"off",copyState_?"on":"off");
-	} else {
-		// FIXME: multiGPUs mode should print out all GPU ids
-		fprintf(stdout,"GPU_MODE, GPUid=%d, enablePrint=%s, copyState=%s\n\n",numGPUs_,enablePrint_?"on":"off",
-					copyState_?"on":"off");
 	}
 }

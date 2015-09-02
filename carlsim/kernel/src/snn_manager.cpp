@@ -717,12 +717,11 @@ void SNN::setupNetwork() {
 /// PUBLIC METHODS: RUNNING A SIMULATION
 /// ************************************************************************************************************ ///
 
-int SNN::runNetwork(int _nsec, int _nmsec, bool printRunSummary, bool copyState) {
+int SNN::runNetwork(int _nsec, int _nmsec, bool printRunSummary) {
 	assert(_nmsec >= 0 && _nmsec < 1000);
 	assert(_nsec  >= 0);
 	int runDurationMs = _nsec*1000 + _nmsec;
-	KERNEL_DEBUG("runNetwork: runDur=%dms, printRunSummary=%s, copyState=%s", runDurationMs, printRunSummary?"y":"n",
-		copyState?"y":"n");
+	KERNEL_DEBUG("runNetwork: runDur=%dms, printRunSummary=%s", runDurationMs, printRunSummary?"y":"n");
 
 	// setupNetwork() must have already been called
 	assert(snnState == EXECUTABLE_SNN);
@@ -809,17 +808,6 @@ int SNN::runNetwork(int _nsec, int _nmsec, bool printRunSummary, bool copyState)
 
 		if(simMode_ == GPU_MODE){
 			fetchNeuronSpikeCount(ALL);
-		}
-	}
-
-	// in GPU mode, copy info from device to host
-	if (simMode_==GPU_MODE) {
-		if(copyState) {
-			fetchNeuronState(ALL);
-
-			if (sim_with_stp) {
-				fetchSTPState(ALL);
-			}
 		}
 	}
 
@@ -2164,7 +2152,7 @@ void SNN::allocateRuntimeData() {
 	cpuSnnSz.neuronInfoSize += sizeof(int) * managerRTDSize.maxNumNAssigned;
 	
 	managerRuntimeData.nSpikeCnt = new int[managerRTDSize.glbNumN];
-	memset(managerRuntimeData.nSpikeCnt, 0, sizeof(int) * managerRTDSize.glbNumN);
+	memset(managerRuntimeData.nSpikeCnt, 0, sizeof(int) * managerRTDSize.glbNumN); // sufficient to hold all neurons in the global network
 
 	//! homeostasis variables
 	managerRuntimeData.avgFiring  = new float[managerRTDSize.maxNumN];
@@ -2177,7 +2165,7 @@ void SNN::allocateRuntimeData() {
 	// connections with STP. That number might not be the same as maxDelay_.
 	managerRuntimeData.stpu = new float[managerRTDSize.maxNumN * (maxDelay_ + 1)];
 	managerRuntimeData.stpx = new float[managerRTDSize.maxNumN * (maxDelay_ + 1)];
-	memset(managerRuntimeData.stpu, 0, sizeof(float) * managerRTDSize.maxNumN * (maxDelay_ + 1)); // memset works for 0.0
+	memset(managerRuntimeData.stpu, 0, sizeof(float) * managerRTDSize.maxNumN * (maxDelay_ + 1));
 	memset(managerRuntimeData.stpx, 0, sizeof(float) * managerRTDSize.maxNumN * (maxDelay_ + 1));
 	cpuSnnSz.synapticInfoSize += (2 * sizeof(float) * managerRTDSize.maxNumN * (maxDelay_ + 1));
 
@@ -3855,13 +3843,13 @@ void SNN::partitionSNN() {
 		//	exitSimulation(-1);
 		//}
 
-		it->second.netId = 0;
-		numAssignedNeurons[0] += it->second.SizeN;
-		groupPartitionLists[0].push_back(it->second);
+		//it->second.netId = 0;
+		//numAssignedNeurons[0] += it->second.SizeN;
+		//groupPartitionLists[0].push_back(it->second);
 
-		//it->second.netId = 1;
-		//numAssignedNeurons[1] += it->second.SizeN;
-		//groupPartitionLists[1].push_back(it->second);
+		it->second.netId = 1;
+		numAssignedNeurons[1] += it->second.SizeN;
+		groupPartitionLists[1].push_back(it->second);
 	}
 
 	// this parse finds local connections (i.e., connection configs that conect local groups)
@@ -4710,11 +4698,11 @@ std::vector< std::vector<float> > SNN::getWeightMatrix2D(short int connId) {
 	// copy the weights for a given post-group from device
 	// \TODO: check if the weights for this grpIdPost have already been copied
 	// \TODO: even better, but tricky because of ordering, make copyWeightState connection-based
-	copyPreConnectionInfo(netIdPost, lGrpIdPost, &managerRuntimeData, &gpuRuntimeData[netIdPost], cudaMemcpyDeviceToHost, false);
 
 	assert(grpIdPost > ALL); // ALL == -1
 	if (simMode_ == GPU_MODE) {
-		copyWeightState(netIdPost, lGrpIdPost);
+		// Note, copyWeightState() also copies pre-connections information (e.g., Npre, Npre_plastic, cumulativePre, and preSynapticIds)
+		copyWeightState(netIdPost, lGrpIdPost); 
 	}
 
 	for (int lNIdPost = groupConfigs[netIdPost][lGrpIdPost].localStartN; lNIdPost <= groupConfigs[netIdPost][lGrpIdPost].localEndN; lNIdPost++) {
@@ -5018,7 +5006,7 @@ void SNN::printSimSummary() {
 	if(simMode_ == GPU_MODE) {
 		stopGPUTiming();
 		etime = gpuExecutionTime;
-		fetchSpikeCount();
+		fetchNetworkSpikeCount();
 	}
 	else {
 		stopCPUTiming();
