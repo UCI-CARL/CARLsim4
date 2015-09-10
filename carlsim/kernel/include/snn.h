@@ -860,7 +860,7 @@ private:
 	int* getSpikeCounter_GPU(int grpId);
 
 	void globalStateUpdate_GPU();
-	void initGPU();
+	void initGPU(int netId);
 
 	//void resetFiringInformation_GPU(); //!< resets the firing information in GPU_MODE when updateNetwork is called
 	void resetGPUTiming();

@@ -301,8 +301,10 @@ typedef struct NetworkConfigRT_s  {
 	unsigned int maxSpikesD1; //!< the estimated maximum number of spikes with delay ===1 in a network
 
 	// configurations for assigned groups and connections
-	int numGroups;      //!< number of groups assigned to this local network
-	int numConnections; //!< number of connections assigned to this local network
+	int numGroups;        //!< number of local groups in this local network
+	int numAssignedGroups; //!< number of groups assigned to this local network
+	int numConnections;   //!< number of local connections in this local network
+	//int numAssignedConnections; //!< number of connections assigned to this local network
 
 	// configurations for execution features
 	bool sim_with_fixedwts;

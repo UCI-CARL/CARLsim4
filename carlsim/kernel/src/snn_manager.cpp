@@ -2387,8 +2387,16 @@ void SNN::generateNetworkConfigs() {
 			findNumNSpikeGen(netId, networkConfigs[netId].numNSpikeGen);
 
 			// configurations for assigned groups and connections
-			networkConfigs[netId].numGroups = groupPartitionLists[netId].size();
-			networkConfigs[netId].numConnections = localConnectLists[netId].size() + externalConnectLists[netId].size();
+			networkConfigs[netId].numGroups = 0;
+			for (std::list<GroupConfigRT>::iterator grpIt = groupPartitionLists[netId].begin(); grpIt != groupPartitionLists[netId].end(); grpIt++) {
+				if (grpIt->netId == netId)
+					networkConfigs[netId].numGroups++;
+			}
+			networkConfigs[netId].numAssignedGroups = groupPartitionLists[netId].size();
+			//networkConfigs[netId].numConnections = localConnectLists[netId].size();
+			//networkConfigs[netId].numAssignedConnections = localConnectLists[netId].size() + externalConnectLists[netId].size();
+			//networkConfigs[netId].numConnections = localConnectLists[netId].size() + externalConnectLists[netId].size();
+			networkConfigs[netId].numConnections = connectConfigMap.size();// temporarily solution: copy all connection info to each GPU
 
 			// find the maximum number of pre- and post-connections among neurons
 			// SNN::maxNumPreSynN and SNN::maxNumPostSynN are updated
@@ -3910,26 +3918,26 @@ void SNN::partitionSNN() {
 	// put excitatory groups to GPU 0 and inhibitory groups to GPU 1
 	// this parse separates groups into each local network and assign each group a netId
 	for (std::map<int, GroupConfigRT>::iterator it = groupConfigMap.begin(); it != groupConfigMap.end(); it++) {
-		//if (IS_EXCITATORY_TYPE(it->second.Type)) {
-		//	it->second.netId = 0;
-		//	numAssignedNeurons[0] += it->second.SizeN;
-		//	groupPartitionLists[0].push_back(it->second);
-		//} else if (IS_INHIBITORY_TYPE(it->second.Type)) {
-		//	it->second.netId = 1;
-		//	numAssignedNeurons[1] += it->second.SizeN;
-		//	groupPartitionLists[1].push_back(it->second);
-		//} else {
-		//	KERNEL_ERROR("Can't assign the group [%d] to any partition", it->second.grpId);
-		//	exitSimulation(-1);
-		//}
+		if (IS_EXCITATORY_TYPE(it->second.Type)) {
+			it->second.netId = 0;
+			numAssignedNeurons[0] += it->second.SizeN;
+			groupPartitionLists[0].push_back(it->second);
+		} else if (IS_INHIBITORY_TYPE(it->second.Type)) {
+			it->second.netId = 1;
+			numAssignedNeurons[1] += it->second.SizeN;
+			groupPartitionLists[1].push_back(it->second);
+		} else {
+			KERNEL_ERROR("Can't assign the group [%d] to any partition", it->second.grpId);
+			exitSimulation(-1);
+		}
 
 		//it->second.netId = 0;
 		//numAssignedNeurons[0] += it->second.SizeN;
 		//groupPartitionLists[0].push_back(it->second);
 
-		it->second.netId = 1;
-		numAssignedNeurons[1] += it->second.SizeN;
-		groupPartitionLists[1].push_back(it->second);
+		//it->second.netId = 1;
+		//numAssignedNeurons[1] += it->second.SizeN;
+		//groupPartitionLists[1].push_back(it->second);
 	}
 
 	// this parse finds local connections (i.e., connection configs that conect local groups)
@@ -4300,7 +4308,7 @@ void SNN::generateRuntimeSNN() {
 			// - init grpIds
 			for (int lNId = 0; lNId < networkConfigs[netId].numNAssigned; lNId++) {
 				managerRuntimeData.grpIds[lNId] = -1;
-				for(int lGrpId = 0; lGrpId < networkConfigs[netId].numGroups; lGrpId++) {
+				for(int lGrpId = 0; lGrpId < networkConfigs[netId].numAssignedGroups; lGrpId++) {
 					if (lNId >= groupConfigs[netId][lGrpId].localStartN && lNId <= groupConfigs[netId][lGrpId].localEndN) {
 						managerRuntimeData.grpIds[lNId] = (short int)lGrpId;
 						break;

@@ -109,8 +109,7 @@ __device__  int timeTableD2GPU_tex_offset;
 // 0110000 - 4
 int quickSynIdTable[256];
 __device__ int  quickSynIdTableGPU[256];
-void initQuickSynIdTable()
-{
+void initQuickSynIdTable(int netId) {
 	void* devPtr;
 	   
 	for(int i = 1; i < 256; i++) {
@@ -122,7 +121,8 @@ void initQuickSynIdTable()
     	}
     	quickSynIdTable[i] = cnt;		 
 	}
-	   
+
+	cudaSetDevice(netId);
 	cudaGetSymbolAddress(&devPtr, quickSynIdTableGPU);
 	CUDA_CHECK_ERRORS(cudaMemcpy( devPtr, quickSynIdTable, sizeof(quickSynIdTable), cudaMemcpyHostToDevice));
 }
@@ -280,9 +280,9 @@ int SNN::allocateStaticLoad(int netId, int bufSize) {
 					bufferCnt, STATIC_LOAD_START(threadLoad),
 					STATIC_LOAD_SIZE(threadLoad),
 					STATIC_LOAD_GROUP(threadLoad),
-					groupInfo[testGrpId].Name.c_str(),
-					groupConfigs[0][testGrpId].SpikeMonitorId,
-					groupConfigs[0][testGrpId].GroupMonitorId);
+					groupInfo[groupConfigs[netId][testGrpId].grpId].Name.c_str(),
+					groupConfigs[netId][testGrpId].SpikeMonitorId,
+					groupConfigs[netId][testGrpId].GroupMonitorId);
 			bufferCnt++;
 		}
 	}
@@ -636,7 +636,7 @@ __global__ 	void kernel_findFiring (int simTime) {
 					// meow
 					if (needToWrite && groupConfigsGPU[grpId].withSpikeCounter) {
 						int bufPos = groupConfigsGPU[grpId].spkCntBufPos;
-						int bufNeur = nid-groupConfigsGPU[grpId].StartN;
+						int bufNeur = nid-groupConfigsGPU[grpId].localStartN;
 						runtimeDataGPU.spkCntBuf[bufPos][bufNeur]++;
 					}
 				}
@@ -646,7 +646,7 @@ __global__ 	void kernel_findFiring (int simTime) {
 					needToWrite = true;
 					if (groupConfigsGPU[grpId].withSpikeCounter) {
 						int bufPos = groupConfigsGPU[grpId].spkCntBufPos;
-						int bufNeur = nid-groupConfigsGPU[grpId].StartN;
+						int bufNeur = nid-groupConfigsGPU[grpId].localStartN;
 						runtimeDataGPU.spkCntBuf[bufPos][bufNeur]++;
 					}
 				}
@@ -1269,22 +1269,11 @@ __global__ void kernel_shiftTimeTable() {
 //}
 
 //****************************** GENERATE POST-SYNAPTIC CURRENT EVERY TIME-STEP  ****************************
-__device__ int generatePostSynapticSpike(int& simTime, int& firingId, int& myDelayIndex, volatile int& offset, bool unitDelay) {
-	int errCode = false;
-
-	// get the post synaptic information for specific delay
-	SynInfo postInfo = runtimeDataGPU.postSynapticIds[offset + myDelayIndex];
-
-	// get post-neuron id
-	int postNId = GET_CONN_NEURON_ID(postInfo);
-
-	// get synaptic id
-	int preSynId = GET_CONN_SYN_ID(postInfo);
-
+__device__ void generatePostSynapticSpike(int simTime, int preNId, int postNId, int synId) {
 	// get the actual position of the synapses and other variables...
-	unsigned int prePos = runtimeDataGPU.cumulativePre[postNId] + preSynId;
+	unsigned int prePos = runtimeDataGPU.cumulativePre[postNId] + synId;
 
-	short int preGrpId = runtimeDataGPU.grpIds[firingId];
+	short int preGrpId = runtimeDataGPU.grpIds[preNId];
 	//short int pre_grpId = GET_FIRING_TABLE_GID(firingId);
 	//int pre_nid = GET_FIRING_TABLE_NID(firingId);
 
@@ -1294,15 +1283,12 @@ __device__ int generatePostSynapticSpike(int& simTime, int& firingId, int& myDel
 //	findGrpId_GPU(nid, post_grpId);
 	short int postGrpId = runtimeDataGPU.grpIds[postNId];
 
-	if(postGrpId == -1)
-		return CURRENT_UPDATE_ERROR4;
-
 	// Got one spike from dopaminergic neuron, increase dopamine concentration in the target area
 	if (groupConfigsGPU[preGrpId].Type & TARGET_DA) {
 		atomicAdd(&(runtimeDataGPU.grpDA[postGrpId]), 0.04f);
 	}
 
-	setFiringBitSynapses(postNId, preSynId);
+	setFiringBitSynapses(postNId, synId);
 
 	runtimeDataGPU.synSpikeTime[prePos] = simTime;		  //uncoalesced access
 
@@ -1343,8 +1329,6 @@ __device__ int generatePostSynapticSpike(int& simTime, int& firingId, int& myDel
 			}
 		}
 	}
-	
-	return errCode;
 }
 
 #define READ_CHUNK_SZ 64
@@ -1447,13 +1431,13 @@ __global__ void kernel_doCurrentUpdateD2(int simTimeMs, int simTimeSec, int simT
 			int delId = threadIdWarp;
 
 			while (delId < sh_delayLength[pos]) {
-				int delIndex = sh_delayIndexStart[pos] + delId;
+				// get the post synaptic information for specific delay
+				SynInfo postInfo = runtimeDataGPU.postSynapticIds[sh_neuronOffsetTable[pos] + sh_delayIndexStart[pos] + delId];
+				int postNId = GET_CONN_NEURON_ID(postInfo); // get post-neuron id
+				int synId = GET_CONN_SYN_ID(postInfo);      // get synaptic id
 
-				sh_blkErrCode = generatePostSynapticSpike(simTime,
-						sh_firingId[pos],				// presynaptic nid
-						delIndex, 	// delayIndex
-						sh_neuronOffsetTable[pos], 		// offset
-						false);							// false for unitDelay type..
+				if (postNId < networkConfigGPU.numN) // test if post-neuron is a local neuron
+					generatePostSynapticSpike(simTime, sh_firingId[pos] /* preNId */, postNId, synId);
 
 				delId += WARP_SIZE;
 			}
@@ -1556,13 +1540,13 @@ __global__ void kernel_doCurrentUpdateD1(int simTimeMs, int simTimeSec, int simT
 			int delId = threadIdWarp;
 
 			while (delId < sh_delayLength[warpId]) {
-				int delIndex = (sh_delayIndexStart[warpId] + delId);
+				// get the post synaptic information for specific delay
+				SynInfo postInfo = runtimeDataGPU.postSynapticIds[offset + sh_delayIndexStart[warpId] + delId];
+				int postNId = GET_CONN_NEURON_ID(postInfo); // get post-neuron id
+				int synId = GET_CONN_SYN_ID(postInfo);      // get synaptic id
 
-				sh_blkErrCode = generatePostSynapticSpike(simTime,
-						sh_firingId[warpId],				// presynaptic nid
-						delIndex,							// delayIndex
-						sh_neuronOffsetTable[warpId], 		// offset
-						true);								// true for unit delay connection..
+				if (postNId < networkConfigGPU.numN) // test if post-neuron is a local neuron
+					generatePostSynapticSpike(simTime, sh_firingId[warpId] /* preNId */, postNId, synId);
 
 				delId += WARP_SIZE;
 			}
@@ -2300,7 +2284,7 @@ void SNN::copyNetworkConfig(int netId) {
  */
 void SNN::copyGroupConfigs(int netId) {
 	checkAndSetGPUDevice(netId);
-	CUDA_CHECK_ERRORS(cudaMemcpyToSymbol(groupConfigsGPU, groupConfigs[netId], (networkConfigs[netId].numGroups) * sizeof(GroupConfigRT), 0, cudaMemcpyHostToDevice));
+	CUDA_CHECK_ERRORS(cudaMemcpyToSymbol(groupConfigsGPU, groupConfigs[netId], (networkConfigs[netId].numAssignedGroups) * sizeof(GroupConfigRT), 0, cudaMemcpyHostToDevice));
 }
 
 /*!
@@ -2610,16 +2594,13 @@ void SNN::doSTPUpdateAndDecayCond_GPU() {
 	}
 }
 
-void SNN::initGPU() {
-	for (int netId = 0; netId < MAX_NET_PER_SNN; netId++) {
-		if (!groupPartitionLists[netId].empty()) {
-			checkAndSetGPUDevice(netId);
-			assert(gpuRuntimeData[netId].allocated);
+void SNN::initGPU(int netId) {
+	checkAndSetGPUDevice(netId);
 
-			kernel_init<<<NUM_BLOCKS, NUM_THREADS>>>();
-			CUDA_GET_LAST_ERROR("initGPU kernel failed\n");
-		}
-	}
+	assert(gpuRuntimeData[netId].allocated);
+
+	kernel_init<<<NUM_BLOCKS, NUM_THREADS>>>();
+	CUDA_GET_LAST_ERROR("initGPU kernel failed\n");
 }
 
 //void SNN::printCurrentInfo(FILE* fp) {
@@ -3087,7 +3068,7 @@ void SNN::allocateSNN_GPU(int netId) {
 	// this table is useful for quick evaluation of the position of fired neuron
 	// given a sequence of bits denoting the firing..
 	// initialize __device__ quickSynIdTableGPU[256]
-	initQuickSynIdTable();
+	initQuickSynIdTable(netId);
 	cudaMemGetInfo(&avail,&total);
 	KERNEL_INFO("Static Load:\t\t%2.3f GB\t%2.3f GB\t%2.3f GB",(float)(previous-avail)/toGB, (float)((total-avail)/toGB),(float)(avail/toGB));
 	previous=avail;
@@ -3175,7 +3156,7 @@ void SNN::allocateSNN_GPU(int netId) {
 	copyGroupConfigs(netId);
 
 	KERNEL_DEBUG("Transfering group settings to GPU:");
-	for (int lGrpId = 0; lGrpId < networkConfigs[netId].numGroups; lGrpId++) {
+	for (int lGrpId = 0; lGrpId < networkConfigs[netId].numAssignedGroups; lGrpId++) {
 		KERNEL_DEBUG("Settings for Group %s:", groupInfo[groupConfigs[netId][lGrpId].grpId].Name.c_str());
 		
 		KERNEL_DEBUG("\tType: %d",(int)groupConfigs[netId][lGrpId].Type);
@@ -3236,5 +3217,5 @@ void SNN::allocateSNN_GPU(int netId) {
 	CUDA_CHECK_ERRORS(cudaGetSymbolAddress(&devPtr, timeTableD1GPU_tex_offset));
 	CUDA_CHECK_ERRORS(cudaMemcpy(devPtr, &offset, sizeof(int), cudaMemcpyHostToDevice));
 
-	initGPU();
+	initGPU(netId);
 }
