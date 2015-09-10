@@ -107,28 +107,28 @@ void SNN::printStatusConnectionMonitor(int connId) {
 	}
 }
 
-void SNN::printStatusSpikeMonitor(int grpId) {
-	if (grpId==ALL) {
+void SNN::printStatusSpikeMonitor(int gGrpId) {
+	if (gGrpId==ALL) {
 		for (int g = 0; g < numGroups; g++) {
 			printStatusSpikeMonitor(g);
 		}
 	} else {
-		int netId = groupConfigMap[grpId].netId;
-		int lGrpId = groupConfigMap[grpId].localGrpId;
+		int netId = groupConfigMap[gGrpId].netId;
+		int lGrpId = groupConfigMap[gGrpId].localGrpId;
 		int monitorId = groupConfigs[netId][lGrpId].SpikeMonitorId;
 		
 		if (monitorId == -1) return;
 
 		// in GPU mode, need to get data from device first
 		if (simMode_ == GPU_MODE)
-			fetchNeuronSpikeCount(grpId);
+			fetchNeuronSpikeCount(gGrpId);
 
 		// \TODO nSpikeCnt should really be a member of the SpikeMonitor object that gets populated if
 		// printRunSummary is true or mode==COUNT.....
 		// so then we can use spkMonObj->print(false); // showSpikeTimes==false
 		int grpSpk = 0;
-		for (int lNId = groupConfigs[netId][lGrpId].localStartN; lNId <= groupConfigs[netId][lGrpId].localEndN; lNId++)
-			grpSpk += managerRuntimeData.nSpikeCnt[lNId]; // add up all neuronal spike counts
+		for (int gNId = groupConfigMap[gGrpId].StartN; gNId <= groupConfigMap[gGrpId].EndN; gNId++)
+			grpSpk += managerRuntimeData.nSpikeCnt[gNId]; // add up all neuronal spike counts
 
 		// infer run duration by measuring how much time has passed since the last run summary was printed
 		int runDurationMs = simTime - simTimeLastRunSummary;
@@ -136,15 +136,15 @@ void SNN::printStatusSpikeMonitor(int grpId) {
 		if (simTime <= simTimeLastRunSummary) {
 			KERNEL_INFO("(t=%.3fs) SpikeMonitor for group %s(%d) has %d spikes in %dms (%.2f +/- %.2f Hz)",
 				(float)(simTime/1000.0f),
-				groupInfo[grpId].Name.c_str(),
-				grpId,
+				groupInfo[gGrpId].Name.c_str(),
+				gGrpId,
 				0,
 				0,
 				0.0f,
 				0.0f);
 		} else {
 			// if some time has passed since last print
-			float meanRate = grpSpk * 1000.0f / runDurationMs / groupConfigs[netId][lGrpId].SizeN;
+			float meanRate = grpSpk * 1000.0f / runDurationMs / groupConfigMap[gGrpId].SizeN;
 			float std = 0.0f;
 			if (groupConfigs[netId][lGrpId].SizeN > 1) {
 				for (int lNId = groupConfigs[netId][lGrpId].localStartN; lNId <= groupConfigs[netId][lGrpId].localEndN; lNId++) {
@@ -156,8 +156,8 @@ void SNN::printStatusSpikeMonitor(int grpId) {
 	
 			KERNEL_INFO("(t=%.3fs) SpikeMonitor for group %s(%d) has %d spikes in %ums (%.2f +/- %.2f Hz)",
 				simTime / 1000.0f,
-				groupInfo[grpId].Name.c_str(),
-				grpId,
+				groupInfo[gGrpId].Name.c_str(),
+				gGrpId,
 				grpSpk,
 				runDurationMs,
 				meanRate,

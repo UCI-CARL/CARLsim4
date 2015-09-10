@@ -814,15 +814,17 @@ private:
 	 */
 	void copyNeuronParameters(int netId, int lGrpId, RuntimeData* dest, bool allocateMem);
 
-	void copyGroupState(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind, bool allocateMem, int destOffset);
+	void copyGroupState(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind, bool allocateMem);
 	void copyNeuronState(int netId, int lGrpId, RuntimeData* dest, bool allocateMem);
 	void copyNeuronSpikeCount(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind, bool allocateMem, int destOffset);
 	void copySynapseState(int netId, RuntimeData* dest, bool allocateMem);
-	void copySTPState(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind, bool allocateMem, int destOffset);
+	void copySTPState(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind, bool allocateMem);
 	//void copyWeightsGPU(int nid, int src_grp);
 	void copyWeightState(int netId, int lGrpId);
 	void copyNetworkConfig(int netId);
 	void copyGroupConfigs(int netId);
+	void copyGrpIdsLookupArray(int netId);
+	void copyConnIdsLookupArray(int netId);
 
 	void deleteObjects_GPU();		//!< deallocates all used data structures in snn_gpu.cu
 	void doCurrentUpdate_GPU();
@@ -830,18 +832,21 @@ private:
 	void dumpSpikeBuffToFile_GPU(int gid);
 	void findFiring_GPU();
 
-	void fetchSpikeTables(int netId);
-
-	void fetchNetworkSpikeCount();
-	void fetchNeuronSpikeCount(int gGrpId);
-	void fetchGroupState(int gGrpId);
-	void fetchNeuronState(int gGrpId);
-	void fetchSTPState(int gGrpId);
-	void fetchWeightState(int gGprId);
+	// fetch functions supporting local-to-global copy
 	void fetchConductanceAMPA(int gGrpId);
 	void fetchConductanceNMDA(int gGrpId);
 	void fetchConductanceGABAa(int gGrpId);
 	void fetchConductanceGABAb(int gGrpId);
+	void fetchNetworkSpikeCount();
+	void fetchNeuronSpikeCount(int gGrpId);
+	void fetchSTPState(int gGrpId);
+	
+	// fetch functions supporting local-to-local copy
+	void fetchSpikeTables(int netId);
+	void fetchGroupState(int netId, int lGrpId);
+	void fetchWeightState(int netId, int lGrpId);
+	void fetchGrpIdsLookupArray(int netId);
+	void fetchConnIdsLookupArray(int netId);
 
 	/*!
 	 * \brief return the number of spikes per neuron for a certain group in GPU mode

@@ -1010,17 +1010,19 @@ void SNN::scaleWeights(short int connId, float scale, bool updateWeightRange) {
 
 // FIXME: distinguish the function call at CONFIG_STATE and SETUP_STATE, where groupConfigs[0][] might not be available
 // or groupConfigMap is not sync with groupConfigs[0][]
-GroupMonitor* SNN::setGroupMonitor(int grpId, FILE* fid) {
+GroupMonitor* SNN::setGroupMonitor(int gGrpId, FILE* fid) {
+	int netId = groupConfigMap[gGrpId].netId;
+	int lGrpId = groupConfigMap[gGrpId].localGrpId;
+
 	// check whether group already has a GroupMonitor
-	if (groupConfigs[0][grpId].GroupMonitorId >= 0) {
-		KERNEL_ERROR("setGroupMonitor has already been called on Group %d (%s).",
-			grpId, groupInfo[grpId].Name.c_str());
+	if (groupConfigs[netId][lGrpId].GroupMonitorId >= 0) {
+		KERNEL_ERROR("setGroupMonitor has already been called on Group %d (%s).", gGrpId, groupInfo[gGrpId].Name.c_str());
 		exitSimulation(1);
 	}
 
 	// create new GroupMonitorCore object in any case and initialize analysis components
 	// grpMonObj destructor (see below) will deallocate it
-	GroupMonitorCore* grpMonCoreObj = new GroupMonitorCore(this, numGroupMonitor, grpId);
+	GroupMonitorCore* grpMonCoreObj = new GroupMonitorCore(this, numGroupMonitor, gGrpId);
 	groupMonCoreList[numGroupMonitor] = grpMonCoreObj;
 
 	// assign group status file ID if we selected to write to a file, else it's NULL
@@ -1035,14 +1037,14 @@ GroupMonitor* SNN::setGroupMonitor(int grpId, FILE* fid) {
 	groupMonList[numGroupMonitor] = grpMonObj;
 
 	// also inform the group that it is being monitored...
-	groupConfigs[0][grpId].GroupMonitorId = numGroupMonitor;
+	groupConfigs[netId][lGrpId].GroupMonitorId = numGroupMonitor;
 
     // not eating much memory anymore, got rid of all buffers
 	cpuSnnSz.monitorInfoSize += sizeof(GroupMonitor*);
 	cpuSnnSz.monitorInfoSize += sizeof(GroupMonitorCore*);
 
 	numGroupMonitor++;
-	KERNEL_INFO("GroupMonitor set for group %d (%s)",grpId,groupInfo[grpId].Name.c_str());
+	KERNEL_INFO("GroupMonitor set for group %d (%s)",gGrpId,groupInfo[gGrpId].Name.c_str());
 
 	return grpMonObj;
 }
@@ -1157,22 +1159,24 @@ void SNN::setSpikeCounter(int grpId, int recordDur) {
 // FIXME: distinguish the function call at CONFIG_STATE and SETUP_STATE, where groupConfigs[0][] might not be available
 // or groupConfigMap is not sync with groupConfigs[0][]
 // record spike information, return a SpikeInfo object
-SpikeMonitor* SNN::setSpikeMonitor(int grpId, FILE* fid) {
+SpikeMonitor* SNN::setSpikeMonitor(int gGrpId, FILE* fid) {
+	int netId = groupConfigMap[gGrpId].netId;
+	int lGrpId = groupConfigMap[gGrpId].localGrpId;
 	// check whether group already has a SpikeMonitor
-	if (groupConfigs[0][grpId].SpikeMonitorId >= 0) {
+	if (groupConfigs[netId][lGrpId].SpikeMonitorId >= 0) {
 		// in this case, return the current object and update fid
-		SpikeMonitor* spkMonObj = getSpikeMonitor(grpId);
+		SpikeMonitor* spkMonObj = getSpikeMonitor(gGrpId);
 
 		// update spike file ID
-		SpikeMonitorCore* spkMonCoreObj = getSpikeMonitorCore(grpId);
+		SpikeMonitorCore* spkMonCoreObj = getSpikeMonitorCore(gGrpId);
 		spkMonCoreObj->setSpikeFileId(fid);
 
-		KERNEL_INFO("SpikeMonitor updated for group %d (%s)",grpId,groupInfo[grpId].Name.c_str());
+		KERNEL_INFO("SpikeMonitor updated for group %d (%s)", gGrpId, groupInfo[gGrpId].Name.c_str());
 		return spkMonObj;
 	} else {
 		// create new SpikeMonitorCore object in any case and initialize analysis components
 		// spkMonObj destructor (see below) will deallocate it
-		SpikeMonitorCore* spkMonCoreObj = new SpikeMonitorCore(this, numSpikeMonitor, grpId);
+		SpikeMonitorCore* spkMonCoreObj = new SpikeMonitorCore(this, numSpikeMonitor, gGrpId);
 		spikeMonCoreList[numSpikeMonitor] = spkMonCoreObj;
 
 		// assign spike file ID if we selected to write to a file, else it's NULL
@@ -1187,14 +1191,14 @@ SpikeMonitor* SNN::setSpikeMonitor(int grpId, FILE* fid) {
 		spikeMonList[numSpikeMonitor] = spkMonObj;
 
 		// also inform the grp that it is being monitored...
-		groupConfigs[0][grpId].SpikeMonitorId	= numSpikeMonitor;
+		groupConfigs[netId][lGrpId].SpikeMonitorId	= numSpikeMonitor;
 
     	// not eating much memory anymore, got rid of all buffers
 		cpuSnnSz.monitorInfoSize += sizeof(SpikeMonitor*);
 		cpuSnnSz.monitorInfoSize += sizeof(SpikeMonitorCore*);
 
 		numSpikeMonitor++;
-		KERNEL_INFO("SpikeMonitor set for group %d (%s)",grpId,groupInfo[grpId].Name.c_str());
+		KERNEL_INFO("SpikeMonitor set for group %d (%s)", gGrpId, groupInfo[gGrpId].Name.c_str());
 
 		return spkMonObj;
 	}
@@ -1801,19 +1805,25 @@ int* SNN::getSpikeCounter(int grpId) {
 }
 
 // returns pointer to existing SpikeMonitor object, NULL else
-SpikeMonitor* SNN::getSpikeMonitor(int grpId) {
-	assert(grpId>=0 && grpId<getNumGroups());
-	if (groupConfigs[0][grpId].SpikeMonitorId>=0) {
-		return spikeMonList[(groupConfigs[0][grpId].SpikeMonitorId)];
+SpikeMonitor* SNN::getSpikeMonitor(int gGrpId) {
+	int netId = groupConfigMap[gGrpId].netId;
+	int lGrpId = groupConfigMap[gGrpId].localGrpId;
+
+	assert(gGrpId >= 0 && gGrpId < getNumGroups());
+	if (groupConfigs[netId][lGrpId].SpikeMonitorId >= 0) {
+		return spikeMonList[(groupConfigs[netId][lGrpId].SpikeMonitorId)];
 	} else {
 		return NULL;
 	}
 }
 
-SpikeMonitorCore* SNN::getSpikeMonitorCore(int grpId) {
-	assert(grpId>=0 && grpId<getNumGroups());
-	if (groupConfigs[0][grpId].SpikeMonitorId>=0) {
-		return spikeMonCoreList[(groupConfigs[0][grpId].SpikeMonitorId)];
+SpikeMonitorCore* SNN::getSpikeMonitorCore(int gGrpId) {
+	int netId = groupConfigMap[gGrpId].netId;
+	int lGrpId = groupConfigMap[gGrpId].localGrpId;
+
+	assert(gGrpId >= 0 && gGrpId < getNumGroups());
+	if (groupConfigs[netId][lGrpId].SpikeMonitorId >= 0) {
+		return spikeMonCoreList[(groupConfigs[netId][lGrpId].SpikeMonitorId)];
 	} else {
 		return NULL;
 	}
@@ -2107,25 +2117,25 @@ void SNN::allocateRuntimeData() {
 	memset(managerRuntimeData.extCurrent, 0, sizeof(float) * managerRTDSize.maxNumNReg);
 	cpuSnnSz.neuronInfoSize += (sizeof(float) * managerRTDSize.maxNumNReg * 8);
 
-	managerRuntimeData.gAMPA  = new float[managerRTDSize.maxNumNReg];
-	managerRuntimeData.gNMDA_r = new float[managerRTDSize.maxNumNReg];
-	managerRuntimeData.gNMDA_d = new float[managerRTDSize.maxNumNReg];
-	managerRuntimeData.gNMDA = new float[managerRTDSize.maxNumNReg];
-	memset(managerRuntimeData.gAMPA, 0, sizeof(float) * managerRTDSize.maxNumNReg);
-	memset(managerRuntimeData.gNMDA_r, 0, sizeof(float) * managerRTDSize.maxNumNReg);
-	memset(managerRuntimeData.gNMDA_d, 0, sizeof(float) * managerRTDSize.maxNumNReg);
-	memset(managerRuntimeData.gNMDA, 0, sizeof(float) * managerRTDSize.maxNumNReg);
-	cpuSnnSz.neuronInfoSize += sizeof(float) * managerRTDSize.maxNumNReg * 4;
+	managerRuntimeData.gAMPA  = new float[managerRTDSize.glbNumNReg]; // sufficient to hold all regular neurons in the global network
+	managerRuntimeData.gNMDA_r = new float[managerRTDSize.glbNumNReg]; // sufficient to hold all regular neurons in the global network
+	managerRuntimeData.gNMDA_d = new float[managerRTDSize.glbNumNReg]; // sufficient to hold all regular neurons in the global network
+	managerRuntimeData.gNMDA = new float[managerRTDSize.glbNumNReg]; // sufficient to hold all regular neurons in the global network
+	memset(managerRuntimeData.gAMPA, 0, sizeof(float) * managerRTDSize.glbNumNReg);
+	memset(managerRuntimeData.gNMDA_r, 0, sizeof(float) * managerRTDSize.glbNumNReg);
+	memset(managerRuntimeData.gNMDA_d, 0, sizeof(float) * managerRTDSize.glbNumNReg);
+	memset(managerRuntimeData.gNMDA, 0, sizeof(float) * managerRTDSize.glbNumNReg);
+	cpuSnnSz.neuronInfoSize += sizeof(float) * managerRTDSize.glbNumNReg * 4;
 
-	managerRuntimeData.gGABAa = new float[managerRTDSize.maxNumNReg];	
-	managerRuntimeData.gGABAb_r = new float[managerRTDSize.maxNumNReg];
-	managerRuntimeData.gGABAb_d = new float[managerRTDSize.maxNumNReg];
-	managerRuntimeData.gGABAb = new float[managerRTDSize.maxNumNReg];
-	memset(managerRuntimeData.gGABAa, 0, sizeof(float) * managerRTDSize.maxNumNReg);
-	memset(managerRuntimeData.gGABAb_r, 0, sizeof(float) * managerRTDSize.maxNumNReg);
-	memset(managerRuntimeData.gGABAb_d, 0, sizeof(float) * managerRTDSize.maxNumNReg);
-	memset(managerRuntimeData.gGABAb, 0, sizeof(float) * managerRTDSize.maxNumNReg);
-	cpuSnnSz.neuronInfoSize += sizeof(float) * managerRTDSize.maxNumNReg * 4;
+	managerRuntimeData.gGABAa = new float[managerRTDSize.glbNumNReg]; // sufficient to hold all regular neurons in the global network
+	managerRuntimeData.gGABAb_r = new float[managerRTDSize.glbNumNReg]; // sufficient to hold all regular neurons in the global network
+	managerRuntimeData.gGABAb_d = new float[managerRTDSize.glbNumNReg]; // sufficient to hold all regular neurons in the global network
+	managerRuntimeData.gGABAb = new float[managerRTDSize.glbNumNReg]; // sufficient to hold all regular neurons in the global network
+	memset(managerRuntimeData.gGABAa, 0, sizeof(float) * managerRTDSize.glbNumNReg);
+	memset(managerRuntimeData.gGABAb_r, 0, sizeof(float) * managerRTDSize.glbNumNReg);
+	memset(managerRuntimeData.gGABAb_d, 0, sizeof(float) * managerRTDSize.glbNumNReg);
+	memset(managerRuntimeData.gGABAb, 0, sizeof(float) * managerRTDSize.glbNumNReg);
+	cpuSnnSz.neuronInfoSize += sizeof(float) * managerRTDSize.glbNumNReg * 4;
 	
 	// allocate neuromodulators and their assistive buffers
 	managerRuntimeData.grpDA  = new float[managerRTDSize.maxNumGroups];
@@ -3468,11 +3478,12 @@ void SNN::findNumSynapsesNetwork(int _netId, int& _numPostSynNet, int& _numPreSy
 	assert(_numPreSynNet == _numPostSynNet);
 }
 
-void SNN::fetchGroupState(int gGrpId) {
+void SNN::fetchGroupState(int netId, int lGrpId) {
+	copyGroupState(netId, lGrpId, &managerRuntimeData, &gpuRuntimeData[netId], cudaMemcpyDeviceToHost, false);
 }
 
-void SNN::fetchNeuronState(int gGrpId) {
-	// TODO: fetch neuron state on demand, get voltage, recovery, current, etc at once is not necessary
+void SNN::fetchWeightState(int netId, int lGrpId) {
+	copyWeightState(netId, lGrpId);
 }
 
 /*!
@@ -3497,20 +3508,89 @@ void SNN::fetchNeuronSpikeCount (int gGrpId) {
 void SNN::fetchSTPState(int gGrpId) {
 }
 
-void SNN::fetchWeightState(int gGrpId) {
-
-}
-
+/*!
+ * \brief This function copies AMPA conductances from device (GPU) memory to main (CPU) memory
+ *
+ * \param[in] gGrpId the group id of the global network of which the spike count of each neuron in the group are copied to manager runtime data
+ */
 void SNN::fetchConductanceAMPA(int gGrpId) {
+	if (gGrpId == ALL) {
+		for (int g = 0; g < numGroups; g++) {
+			fetchConductanceAMPA(g);
+		}
+	} else {
+		int netId = groupConfigMap[gGrpId].netId;
+		int lGrpId = groupConfigMap[gGrpId].localGrpId;
+		int LtoGOffset = groupConfigMap[gGrpId].LtoGOffset;
+
+		copyConductanceAMPA(netId, lGrpId, &managerRuntimeData, &gpuRuntimeData[netId], cudaMemcpyDeviceToHost, false, LtoGOffset);
+	}
 }
 
+/*!
+ * \brief This function copies NMDA conductances from device (GPU) memory to main (CPU) memory
+ *
+ * \param[in] gGrpId the group id of the global network of which the spike count of each neuron in the group are copied to manager runtime data
+ */
 void SNN::fetchConductanceNMDA(int gGrpId) {
+	if (gGrpId == ALL) {
+		for (int g = 0; g < numGroups; g++) {
+			fetchConductanceNMDA(g);
+		}
+	} else {
+		int netId = groupConfigMap[gGrpId].netId;
+		int lGrpId = groupConfigMap[gGrpId].localGrpId;
+		int LtoGOffset = groupConfigMap[gGrpId].LtoGOffset;
+
+		copyConductanceNMDA(netId, lGrpId, &managerRuntimeData, &gpuRuntimeData[netId], cudaMemcpyDeviceToHost, false, LtoGOffset);
+	}
 }
 
+/*!
+ * \brief This function copies GABAa conductances from device (GPU) memory to main (CPU) memory
+ *
+ * \param[in] gGrpId the group id of the global network of which the spike count of each neuron in the group are copied to manager runtime data
+ */
 void SNN::fetchConductanceGABAa(int gGrpId) {
+	if (gGrpId == ALL) {
+		for (int g = 0; g < numGroups; g++) {
+			fetchConductanceGABAa(g);
+		}
+	} else {
+		int netId = groupConfigMap[gGrpId].netId;
+		int lGrpId = groupConfigMap[gGrpId].localGrpId;
+		int LtoGOffset = groupConfigMap[gGrpId].LtoGOffset;
+
+		copyConductanceGABAa(netId, lGrpId, &managerRuntimeData, &gpuRuntimeData[netId], cudaMemcpyDeviceToHost, false, LtoGOffset);
+	}
 }
 
+/*!
+ * \brief This function copies GABAb conductances from device (GPU) memory to main (CPU) memory
+ *
+ * \param[in] gGrpId the group id of the global network of which the spike count of each neuron in the group are copied to manager runtime data
+ */
 void SNN::fetchConductanceGABAb(int gGrpId) {
+	if (gGrpId == ALL) {
+		for (int g = 0; g < numGroups; g++) {
+			fetchConductanceGABAb(g);
+		}
+	} else {
+		int netId = groupConfigMap[gGrpId].netId;
+		int lGrpId = groupConfigMap[gGrpId].localGrpId;
+		int LtoGOffset = groupConfigMap[gGrpId].LtoGOffset;
+
+		copyConductanceGABAb(netId, lGrpId, &managerRuntimeData, &gpuRuntimeData[netId], cudaMemcpyDeviceToHost, false, LtoGOffset);
+	}
+}
+
+
+void SNN::fetchGrpIdsLookupArray(int netId) {
+	copyGrpIdsLookupArray(netId);
+}
+
+void SNN::fetchConnIdsLookupArray(int netId) {
+	copyConnIdsLookupArray(netId);
 }
 
 inline int SNN::getPoissNeuronPos(int nid) {
@@ -4702,7 +4782,8 @@ std::vector< std::vector<float> > SNN::getWeightMatrix2D(short int connId) {
 	assert(grpIdPost > ALL); // ALL == -1
 	if (simMode_ == GPU_MODE) {
 		// Note, copyWeightState() also copies pre-connections information (e.g., Npre, Npre_plastic, cumulativePre, and preSynapticIds)
-		copyWeightState(netIdPost, lGrpIdPost); 
+		fetchWeightState(netIdPost, lGrpIdPost);
+		fetchConnIdsLookupArray(netIdPost);
 	}
 
 	for (int lNIdPost = groupConfigs[netIdPost][lGrpIdPost].localStartN; lNIdPost <= groupConfigs[netIdPost][lGrpIdPost].localEndN; lNIdPost++) {
@@ -4723,45 +4804,45 @@ std::vector< std::vector<float> > SNN::getWeightMatrix2D(short int connId) {
 	return wtConnId;
 }
 
-void SNN::updateGroupMonitor(int grpId) {
+void SNN::updateGroupMonitor(int gGrpId) {
 	// don't continue if no group monitors in the network
 	if (!numGroupMonitor)
 		return;
 
-	if (grpId == ALL) {
+	if (gGrpId == ALL) {
 		for (int g = 0; g < numGroups; g++)
 			updateGroupMonitor(g);
 	} else {
+		int netId = groupConfigMap[gGrpId].netId;
+		int lGrpId = groupConfigMap[gGrpId].localEndN;
 		// update group monitor of a specific group
-
 		// find index in group monitor arrays
-		int monitorId = groupConfigs[0][grpId].GroupMonitorId;
+		int monitorId = groupConfigs[netId][lGrpId].GroupMonitorId;
 
 		// don't continue if no group monitor enabled for this group
-		if (monitorId < 0)
-			return;
+		if (monitorId < 0) return;
 
 		// find last update time for this group
 		GroupMonitorCore* grpMonObj = groupMonCoreList[monitorId];
 		int lastUpdate = grpMonObj->getLastUpdated();
 
 		// don't continue if time interval is zero (nothing to update)
-		if (getSimTime() - lastUpdate <=0)
+		if (getSimTime() - lastUpdate <= 0)
 			return;
 
 		if (getSimTime() - lastUpdate > 1000)
-			KERNEL_ERROR("updateGroupMonitor(grpId=%d) must be called at least once every second",grpId);
+			KERNEL_ERROR("updateGroupMonitor(grpId=%d) must be called at least once every second", gGrpId);
 
 		if (simMode_ == GPU_MODE) {
 			// copy the group status (neuromodulators) from the GPU to the CPU..
-			fetchGroupState(ALL);
+			fetchGroupState(netId, lGrpId);
 		}
 
 		// find the time interval in which to update group status
 		// usually, we call updateGroupMonitor once every second, so the time interval is [0,1000)
 		// however, updateGroupMonitor can be called at any time t \in [0,1000)... so we can have the cases
 		// [0,t), [t,1000), and even [t1, t2)
-		int numMsMin = lastUpdate%1000; // lower bound is given by last time we called update
+		int numMsMin = lastUpdate % 1000; // lower bound is given by last time we called update
 		int numMsMax = getSimTimeMs(); // upper bound is given by current time
 		if (numMsMax == 0)
 			numMsMax = 1000; // special case: full second
@@ -4786,10 +4867,10 @@ void SNN::updateGroupMonitor(int grpId) {
 		// may need need to dump these group status data to an output file
 		for(int t = numMsMin; t < numMsMax; t++) {
 			// fetch group status data, support dopamine concentration currently
-			data = managerRuntimeData.grpDABuffer[grpId * 1000 + t];
+			data = managerRuntimeData.grpDABuffer[lGrpId * 1000 + t];
 
 			// current time is last completed second plus whatever is leftover in t
-			int time = currentTimeSec*1000 + t;
+			int time = currentTimeSec * 1000 + t;
 
 			if (writeGroupToFile) {
 				// TODO: write to group status file
@@ -4886,59 +4967,61 @@ bool SNN::updateTime() {
 }
 
 // FIXME: modify this for multi-GPUs
-void SNN::updateSpikeMonitor(int grpId) {
+void SNN::updateSpikeMonitor(int gGrpId) {
 	// don't continue if no spike monitors in the network
 	if (!numSpikeMonitor)
 		return;
 
-	if (grpId==ALL) {
-		for (int g=0; g<numGroups; g++)
+	if (gGrpId == ALL) {
+		for (int g = 0; g < numGroups; g++)
 			updateSpikeMonitor(g);
 	} else {
+		int netId = groupConfigMap[gGrpId].netId;
+		int lGrpId = groupConfigMap[gGrpId].localGrpId;
 		// update spike monitor of a specific group
-
 		// find index in spike monitor arrays
-		int monitorId = groupConfigs[0][grpId].SpikeMonitorId;
+		int monitorId = groupConfigs[netId][lGrpId].SpikeMonitorId;
 
 		// don't continue if no spike monitor enabled for this group
-		if (monitorId<0)
-			return;
+		if (monitorId < 0) return;
 
 		// find last update time for this group
 		SpikeMonitorCore* spkMonObj = spikeMonCoreList[monitorId];
 		long int lastUpdate = spkMonObj->getLastUpdated();
 
 		// don't continue if time interval is zero (nothing to update)
-		if ( ((long int)getSimTime()) - lastUpdate <=0)
+		if ( ((long int)getSimTime()) - lastUpdate <= 0)
 			return;
 
 		if ( ((long int)getSimTime()) - lastUpdate > 1000)
-			KERNEL_ERROR("updateSpikeMonitor(grpId=%d) must be called at least once every second",grpId);
+			KERNEL_ERROR("updateSpikeMonitor(grpId=%d) must be called at least once every second",gGrpId);
 
         // AER buffer max size warning here.
         // Because of C++ short-circuit evaluation, the last condition should not be evaluated
         // if the previous conditions are false.
         if (spkMonObj->getAccumTime() > LONG_SPIKE_MON_DURATION \
-                && this->getGroupNumNeurons(grpId) > LARGE_SPIKE_MON_GRP_SIZE \
+                && this->getGroupNumNeurons(gGrpId) > LARGE_SPIKE_MON_GRP_SIZE \
                 && spkMonObj->isBufferBig()){
             // change this warning message to correct message
-            KERNEL_WARN("updateSpikeMonitor(grpId=%d) is becoming very large. (>%lu MB)",grpId,(long int) MAX_SPIKE_MON_BUFFER_SIZE/1024 );// make this better
-            KERNEL_WARN("Reduce the cumulative recording time (currently %lu minutes) or the group size (currently %d) to avoid this.",spkMonObj->getAccumTime()/(1000*60),this->getGroupNumNeurons(grpId));
-       }
+            KERNEL_WARN("updateSpikeMonitor(grpId=%d) is becoming very large. (>%lu MB)",gGrpId,(long int) MAX_SPIKE_MON_BUFFER_SIZE/1024 );// make this better
+            KERNEL_WARN("Reduce the cumulative recording time (currently %lu minutes) or the group size (currently %d) to avoid this.",spkMonObj->getAccumTime()/(1000*60),this->getGroupNumNeurons(gGrpId));
+		}
+
 		if (simMode_ == GPU_MODE) {
 			// copy the neuron firing information from the GPU to the CPU..
-			fetchSpikeTables(0);
+			fetchSpikeTables(netId);
+			fetchGrpIdsLookupArray(netId);
 		}
 
 		// find the time interval in which to update spikes
 		// usually, we call updateSpikeMonitor once every second, so the time interval is [0,1000)
 		// however, updateSpikeMonitor can be called at any time t \in [0,1000)... so we can have the cases
 		// [0,t), [t,1000), and even [t1, t2)
-		int numMsMin = lastUpdate%1000; // lower bound is given by last time we called update
+		int numMsMin = lastUpdate % 1000; // lower bound is given by last time we called update
 		int numMsMax = getSimTimeMs(); // upper bound is given by current time
-		if (numMsMax==0)
+		if (numMsMax == 0)
 			numMsMax = 1000; // special case: full second
-		assert(numMsMin<numMsMax);
+		assert(numMsMin < numMsMax);
 
 		// current time is last completed second in milliseconds (plus t to be added below)
 		// special case is after each completed second where !getSimTimeMs(): here we look 1s back
@@ -4951,44 +5034,45 @@ void SNN::updateSpikeMonitor(int grpId) {
 
 		// prepare fast access
 		FILE* spkFileId = spikeMonCoreList[monitorId]->getSpikeFileId();
-		bool writeSpikesToFile = spkFileId!=NULL;
+		bool writeSpikesToFile = spkFileId != NULL;
 		bool writeSpikesToArray = spkMonObj->getMode()==AER && spkMonObj->isRecording();
 
 		// Read one spike at a time from the buffer and put the spikes to an appopriate monitor buffer. Later the user
 		// may need need to dump these spikes to an output file
-		for (int k=0; k < 2; k++) {
-			unsigned int* timeTablePtr = (k==0)?timeTableD2:timeTableD1;
-			int* fireTablePtr = (k==0)?managerRuntimeData.firingTableD2:managerRuntimeData.firingTableD1;
-			for(int t=numMsMin; t<numMsMax; t++) {
-				for(int i=timeTablePtr[t+maxDelay_]; i<timeTablePtr[t+maxDelay_+1];i++) {
+		for (int k = 0; k < 2; k++) {
+			unsigned int* timeTablePtr = (k == 0) ? timeTableD2 : timeTableD1;
+			int* fireTablePtr = (k == 0) ? managerRuntimeData.firingTableD2 : managerRuntimeData.firingTableD1;
+			for(int t = numMsMin; t < numMsMax; t++) {
+				for(int i = timeTablePtr[t + maxDelay_]; i < timeTablePtr[t + maxDelay_ + 1]; i++) {
 					// retrieve the neuron id
-					int nid = fireTablePtr[i];
+					int lNId = fireTablePtr[i];
 					//if (simMode_ == GPU_MODE)
 					//	nid = GET_FIRING_TABLE_NID(nid);
-					assert(nid < numN);
+					assert(lNId < networkConfigs[netId].numN);
 
 					// make sure neuron belongs to currently relevant group
-					int this_grpId = managerRuntimeData.grpIds[nid];
-					if (this_grpId != grpId)
+					// FIXME: fetch grpIds from device memory
+					int this_grpId = managerRuntimeData.grpIds[lNId];
+					if (this_grpId != lGrpId)
 						continue;
 
 					// adjust nid to be 0-indexed for each group
 					// this way, if a group has 10 neurons, their IDs in the spike file and spike monitor will be
 					// indexed from 0..9, no matter what their real nid is
-					nid -= groupConfigs[0][grpId].StartN;
-					assert(nid>=0);
+					int nId = lNId - groupConfigs[netId][lGrpId].localStartN;
+					assert(nId >= 0);
 
 					// current time is last completed second plus whatever is leftover in t
-					int time = currentTimeSec*1000 + t;
+					int time = currentTimeSec * 1000 + t;
 
 					if (writeSpikesToFile) {
 						int cnt;
 						cnt = fwrite(&time, sizeof(int), 1, spkFileId); assert(cnt==1);
-						cnt = fwrite(&nid,  sizeof(int), 1, spkFileId); assert(cnt==1);
+						cnt = fwrite(&nId,  sizeof(int), 1, spkFileId); assert(cnt==1);
 					}
 
 					if (writeSpikesToArray) {
-						spkMonObj->pushAER(time,nid);
+						spkMonObj->pushAER(time, nId);
 					}
 				}
 			}
