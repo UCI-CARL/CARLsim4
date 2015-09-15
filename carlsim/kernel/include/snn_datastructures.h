@@ -232,8 +232,11 @@ typedef struct RuntimeData_s {
 	int* firingTableD1;
 	int* firingTableD2;
 
-	int** extFiringTableD1;
-	int** extFiringTableD2;
+	int** extFiringTableD1; //!< external firing table, only used on GPU
+	int** extFiringTableD2; //!< external firing table, only used on GPU
+	
+	int* extFiringTableEndIdxD1;
+	int* extFiringTableEndIdxD2;
 
 	float*        poissonFireRate;
 	unsigned int* poissonRandPtr;		//!< firing random number. max value is 10,000

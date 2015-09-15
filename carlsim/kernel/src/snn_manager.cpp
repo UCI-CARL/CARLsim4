@@ -3881,22 +3881,22 @@ void SNN::partitionSNN() {
 	// put excitatory groups to GPU 0 and inhibitory groups to GPU 1
 	// this parse separates groups into each local network and assign each group a netId
 	for (std::map<int, GroupConfigRT>::iterator it = groupConfigMap.begin(); it != groupConfigMap.end(); it++) {
-		//if (IS_EXCITATORY_TYPE(it->second.Type)) {
-		//	it->second.netId = 0;
-		//	numAssignedNeurons[0] += it->second.SizeN;
-		//	groupPartitionLists[0].push_back(it->second);
-		//} else if (IS_INHIBITORY_TYPE(it->second.Type)) {
-		//	it->second.netId = 1;
-		//	numAssignedNeurons[1] += it->second.SizeN;
-		//	groupPartitionLists[1].push_back(it->second);
-		//} else {
-		//	KERNEL_ERROR("Can't assign the group [%d] to any partition", it->second.grpId);
-		//	exitSimulation(-1);
-		//}
+		if (IS_EXCITATORY_TYPE(it->second.Type)) {
+			it->second.netId = 0;
+			numAssignedNeurons[0] += it->second.SizeN;
+			groupPartitionLists[0].push_back(it->second);
+		} else if (IS_INHIBITORY_TYPE(it->second.Type)) {
+			it->second.netId = 1;
+			numAssignedNeurons[1] += it->second.SizeN;
+			groupPartitionLists[1].push_back(it->second);
+		} else {
+			KERNEL_ERROR("Can't assign the group [%d] to any partition", it->second.grpId);
+			exitSimulation(-1);
+		}
 
-		it->second.netId = 0;
-		numAssignedNeurons[0] += it->second.SizeN;
-		groupPartitionLists[0].push_back(it->second);
+		//it->second.netId = 0;
+		//numAssignedNeurons[0] += it->second.SizeN;
+		//groupPartitionLists[0].push_back(it->second);
 
 		//it->second.netId = 1;
 		//numAssignedNeurons[1] += it->second.SizeN;
@@ -3919,7 +3919,12 @@ void SNN::partitionSNN() {
 		if (!groupPartitionLists[netId].empty()) {
 			for (std::map<int, ConnectConfig>::iterator connIt = connectConfigMap.begin(); connIt != connectConfigMap.end(); connIt++) {
 				if (groupConfigMap[connIt->second.grpSrc].netId == netId && groupConfigMap[connIt->second.grpDest].netId != netId) {
-					groupConfigMap[connIt->second.grpSrc].hasExternalConnect = true;
+					// search the source group in groupPartitionLists and mark it as having external connections
+					GroupConfigRT targetGroup;
+					targetGroup.grpId = connIt->second.grpSrc;
+					std::list<GroupConfigRT>::iterator grpIt = find(groupPartitionLists[netId].begin(), groupPartitionLists[netId].end(), targetGroup);
+					grpIt->hasExternalConnect = true;
+
 					numAssignedNeurons[netId] += groupConfigMap[connIt->second.grpDest].SizeN;
 					groupPartitionLists[netId].push_back(groupConfigMap[connIt->second.grpDest]);
 					externalConnectLists[netId].push_back(connectConfigMap[connIt->second.connId]);
@@ -4556,20 +4561,9 @@ void SNN::deleteRuntimeData() {
 	if (managerRuntimeData.firingTableD1!=NULL) delete[] managerRuntimeData.firingTableD1;
 	managerRuntimeData.firingTableD2=NULL; managerRuntimeData.firingTableD1=NULL;
 
-	if (managerRuntimeData.extFiringTableD1 != NULL) {
-		for (int i = 0; i < managerRTDSize.maxNumGroups; i++)
-			if (managerRuntimeData.extFiringTableD1[i] != NULL) delete[] managerRuntimeData.extFiringTableD1[i];
-
-		delete[] managerRuntimeData.extFiringTableD1;
-	}
-
-	if (managerRuntimeData.extFiringTableD2 != NULL) {
-		for (int i = 0; i < managerRTDSize.maxNumGroups; i++)
-			if (managerRuntimeData.extFiringTableD2[i] != NULL) delete[] managerRuntimeData.extFiringTableD2[i];
-
-		delete[] managerRuntimeData.extFiringTableD2;
-	}
-	managerRuntimeData.extFiringTableD1 = NULL; managerRuntimeData.extFiringTableD2 = NULL;
+	if (managerRuntimeData.extFiringTableEndIdxD1 != NULL) delete[] managerRuntimeData.extFiringTableEndIdxD1;
+	if (managerRuntimeData.extFiringTableEndIdxD2 != NULL) delete[] managerRuntimeData.extFiringTableEndIdxD2;
+	managerRuntimeData.extFiringTableEndIdxD1 = NULL; managerRuntimeData.extFiringTableEndIdxD2 = NULL;
 }
 
 /*!
@@ -4623,6 +4617,8 @@ void SNN::resetTimeTable() {
 void SNN::resetFiringTable() {
 	memset(managerRuntimeData.firingTableD2, 0, sizeof(int) * managerRTDSize.maxMaxSpikeD2);
 	memset(managerRuntimeData.firingTableD1, 0, sizeof(int) * managerRTDSize.maxMaxSpikeD1);
+	memset(managerRuntimeData.extFiringTableEndIdxD2, 0, sizeof(int) * managerRTDSize.maxNumGroups);
+	memset(managerRuntimeData.extFiringTableEndIdxD1, 0, sizeof(int) * managerRTDSize.maxNumGroups);
 }
 
 
@@ -4918,6 +4914,8 @@ void SNN::updateSpikeGenerators() {
 void SNN::allocateSpikeTables() {
 	managerRuntimeData.firingTableD2 = new int[managerRTDSize.maxMaxSpikeD2];
 	managerRuntimeData.firingTableD1 = new int[managerRTDSize.maxMaxSpikeD1];
+	managerRuntimeData.extFiringTableEndIdxD2 = new int[managerRTDSize.maxNumGroups];
+	managerRuntimeData.extFiringTableEndIdxD1 = new int[managerRTDSize.maxNumGroups];
 	resetFiringTable();
 	
 	// timeTableD1(D2) are statically allocated

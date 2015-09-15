@@ -2407,7 +2407,8 @@ void SNN::copyAuxiliaryData(int netId, int lGrpId, RuntimeData* dest, bool alloc
 	CUDA_CHECK_ERRORS(cudaMemset(dest->I_set, 0, networkConfigs[netId].I_setPitch * networkConfigs[netId].I_setLength));
 
 	// synSpikeTime: an array indicates the last time when a synapse got a spike
-	if(allocateMem) CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->synSpikeTime, sizeof(int) * networkConfigs[netId].numPreSynNet));
+	if(allocateMem)
+		CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->synSpikeTime, sizeof(int) * networkConfigs[netId].numPreSynNet));
 	CUDA_CHECK_ERRORS(cudaMemcpy(dest->synSpikeTime, managerRuntimeData.synSpikeTime, sizeof(int) * networkConfigs[netId].numPreSynNet, cudaMemcpyHostToDevice));
 
 	// neural auxiliary data
@@ -2422,11 +2423,13 @@ void SNN::copyAuxiliaryData(int netId, int lGrpId, RuntimeData* dest, bool alloc
 	copyNeuronSpikeCount(netId, lGrpId, dest, &managerRuntimeData, cudaMemcpyHostToDevice, true, 0);
 
 	// quick lookup array for local group ids
-	if(allocateMem)	CUDA_CHECK_ERRORS(cudaMalloc( (void**)&dest->grpIds, sizeof(short int) * networkConfigs[netId].numNAssigned));
+	if(allocateMem)
+		CUDA_CHECK_ERRORS(cudaMalloc( (void**)&dest->grpIds, sizeof(short int) * networkConfigs[netId].numNAssigned));
 	CUDA_CHECK_ERRORS(cudaMemcpy( dest->grpIds, managerRuntimeData.grpIds, sizeof(short int) * networkConfigs[netId].numNAssigned, cudaMemcpyHostToDevice));
 
 	// quick lookup array for conn ids
-	if(allocateMem)	CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->connIdsPreIdx, sizeof(short int) * networkConfigs[netId].numPreSynNet));
+	if(allocateMem)
+		CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->connIdsPreIdx, sizeof(short int) * networkConfigs[netId].numPreSynNet));
 	CUDA_CHECK_ERRORS(cudaMemcpy(dest->connIdsPreIdx, managerRuntimeData.connIdsPreIdx, sizeof(short int) * networkConfigs[netId].numPreSynNet, cudaMemcpyHostToDevice));
 
 	// firing table
@@ -2436,14 +2439,55 @@ void SNN::copyAuxiliaryData(int netId, int lGrpId, RuntimeData* dest, bool alloc
 	}
 
 	// allocate 1ms firing table
-	if(allocateMem) CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->firingTableD1, sizeof(int) * networkConfigs[netId].maxSpikesD1));
+	if(allocateMem)
+		CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->firingTableD1, sizeof(int) * networkConfigs[netId].maxSpikesD1));
 	if (networkConfigs[netId].maxSpikesD1 > 0)
 		CUDA_CHECK_ERRORS(cudaMemcpy(dest->firingTableD1, managerRuntimeData.firingTableD1, sizeof(int) * networkConfigs[netId].maxSpikesD1, cudaMemcpyHostToDevice));
 
 	// allocate 2+ms firing table
-	if(allocateMem) CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->firingTableD2, sizeof(int) * networkConfigs[netId].maxSpikesD2));
+	if(allocateMem)
+		CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->firingTableD2, sizeof(int) * networkConfigs[netId].maxSpikesD2));
 	if (networkConfigs[netId].maxSpikesD2 > 0)
 		CUDA_CHECK_ERRORS(cudaMemcpy(dest->firingTableD2, managerRuntimeData.firingTableD2, sizeof(int) * networkConfigs[netId].maxSpikesD2, cudaMemcpyHostToDevice));
+
+	// allocate external 1ms firing table
+	if (allocateMem) {
+		void* devPtr;
+		CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->extFiringTableD1, sizeof(int*) * networkConfigs[netId].numGroups));
+		CUDA_CHECK_ERRORS(cudaMemset(dest->extFiringTableD1, 0 /* NULL */, sizeof(int*) * networkConfigs[netId].numGroups));
+		for (int lGrpId = 0; lGrpId < networkConfigs[netId].numGroups; lGrpId++) {
+			if (groupConfigs[netId][lGrpId].hasExternalConnect) {
+				CUDA_CHECK_ERRORS(cudaMalloc((void**)&devPtr, sizeof(int) * groupConfigs[netId][lGrpId].SizeN * NEURON_MAX_FIRING_RATE));
+				CUDA_CHECK_ERRORS(cudaMemset(devPtr, 0 , sizeof(int) * groupConfigs[netId][lGrpId].SizeN * NEURON_MAX_FIRING_RATE));
+				CUDA_CHECK_ERRORS(cudaMemcpy(&dest->extFiringTableD1[lGrpId], &devPtr, sizeof(int*), cudaMemcpyHostToDevice));
+			}
+		}
+	}
+
+	// allocate external 2+ms firing table
+	if (allocateMem) {
+		void* devPtr;
+		CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->extFiringTableD2, sizeof(int*) * networkConfigs[netId].numGroups));
+		CUDA_CHECK_ERRORS(cudaMemset(dest->extFiringTableD2, 0 /* NULL */, sizeof(int*) * networkConfigs[netId].numGroups));
+		for (int lGrpId = 0; lGrpId < networkConfigs[netId].numGroups; lGrpId++) {
+			if (groupConfigs[netId][lGrpId].hasExternalConnect) {
+				CUDA_CHECK_ERRORS(cudaMalloc((void**)&devPtr, sizeof(int) * groupConfigs[netId][lGrpId].SizeN * NEURON_MAX_FIRING_RATE));
+				CUDA_CHECK_ERRORS(cudaMemset(devPtr, 0 , sizeof(int) * groupConfigs[netId][lGrpId].SizeN * NEURON_MAX_FIRING_RATE));
+				CUDA_CHECK_ERRORS(cudaMemcpy(&dest->extFiringTableD2[lGrpId], &devPtr, sizeof(int*), cudaMemcpyHostToDevice));
+			}
+		}
+	}
+
+	// allocate external 1ms firing table index
+	if (allocateMem)
+		CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->extFiringTableEndIdxD1, sizeof(int) * networkConfigs[netId].numGroups));
+	CUDA_CHECK_ERRORS(cudaMemset(dest->extFiringTableEndIdxD1, 0, sizeof(int) * networkConfigs[netId].numGroups));
+
+
+	// allocate external 2+ms firing table index
+	if (allocateMem)
+		CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->extFiringTableEndIdxD2, sizeof(int) * networkConfigs[netId].numGroups));
+	CUDA_CHECK_ERRORS(cudaMemset(dest->extFiringTableEndIdxD2, 0, sizeof(int) * networkConfigs[netId].numGroups));
 }
 
 void SNN::copyGrpIdsLookupArray(int netId) {
@@ -2631,8 +2675,6 @@ void SNN::deleteObjects_GPU() {
 			CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[netId].wtChange) );
 			CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[netId].maxSynWt) );
 			CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[netId].nSpikeCnt) );
-			CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[netId].firingTableD2) );
-			CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[netId].firingTableD1) );
 			CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[netId].avgFiring) );
 			CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[netId].baseFiring) );
 			CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[netId].baseFiringInv) );
@@ -2648,7 +2690,6 @@ void SNN::deleteObjects_GPU() {
 			CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[netId].grpNEBuffer) );
 
 			CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[netId].grpIds) );
-
 
 			CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[netId].Izh_a) );
 			CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[netId].Izh_b) );
@@ -2684,6 +2725,29 @@ void SNN::deleteObjects_GPU() {
 			CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[netId].poissonFireRate) );
 			CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[netId].lastSpikeTime) );
 			CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[netId].spikeGenBits) );
+
+			CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[netId].firingTableD2) );
+			CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[netId].firingTableD1) );
+
+			int** tempPtrs;
+			tempPtrs = new int*[networkConfigs[netId].numGroups];
+
+			// fetch device memory address stored in extFiringTableD2
+			CUDA_CHECK_ERRORS( cudaMemcpy(tempPtrs, gpuRuntimeData[netId].extFiringTableD2, sizeof(int*) * networkConfigs[netId].numGroups, cudaMemcpyDeviceToHost) );
+			for (int i = 0; i < networkConfigs[netId].numGroups; i++)
+				CUDA_CHECK_ERRORS( cudaFree(tempPtrs[i]) );
+			CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[netId].extFiringTableD2) );
+
+			// fetch device memory address stored in extFiringTableD1
+			CUDA_CHECK_ERRORS( cudaMemcpy(tempPtrs, gpuRuntimeData[netId].extFiringTableD1, sizeof(int*) * networkConfigs[netId].numGroups, cudaMemcpyDeviceToHost) );
+			for (int i = 0; i < networkConfigs[netId].numGroups; i++)
+				CUDA_CHECK_ERRORS( cudaFree(tempPtrs[i]) );
+			CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[netId].extFiringTableD1) );
+
+			delete[] tempPtrs;
+
+			CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[netId].extFiringTableEndIdxD2) );
+			CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[netId].extFiringTableEndIdxD1) );
 
 			// delete all real-time spike monitors
 			CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[netId].spkCntBuf));
