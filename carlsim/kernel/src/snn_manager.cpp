@@ -1985,15 +1985,15 @@ void SNN::SNNinit() {
 	dGABAb = 1.0-1.0/150.0;
 	sGABAb = 1.0;
 
+	mulSynFast = NULL;
+	mulSynSlow = NULL;
+
 	// reset all monitors, don't deallocate (false)
 	resetMonitors(false);
 
 	resetGroupConfigs(false);
 
 	resetConnectionConfigs(false);
-
-	// reset all runtime data, don't deallocate (false)
-	resetRuntimeData(false);
 
 	memset(&cpuSnnSz, 0, sizeof(cpuSnnSz));
 
@@ -2002,6 +2002,7 @@ void SNN::SNNinit() {
 
 	memset(networkConfigs, 0, sizeof(NetworkConfigRT) * MAX_NET_PER_SNN);
 	
+	// reset all runtime data
 	memset(gpuRuntimeData, 0, sizeof(RuntimeData) * MAX_NET_PER_SNN);
 	for (int netId = 0; netId < MAX_NET_PER_SNN; netId++) // FIXME: redundant??
 		gpuRuntimeData[netId].allocated = false;
@@ -2009,51 +2010,6 @@ void SNN::SNNinit() {
 	memset(&managerRuntimeData, 0, sizeof(RuntimeData));
 	managerRuntimeData.allocated = false; // FIXME: redundant??
 
-	//for (int i=0; i < MAX_GRP_PER_SNN; i++) {
-	//	groupConfigs[0][i].Type = UNKNOWN_NEURON;
-	//	groupConfigs[0][i].MaxFiringRate = UNKNOWN_NEURON_MAX_FIRING_RATE;
-	//	groupConfigs[0][i].SpikeMonitorId = -1;
-	//	groupConfigs[0][i].GroupMonitorId = -1;
-	//	groupConfigs[0][i].numPostSynapses = 0;	// default value
-	//	groupConfigs[0][i].numPreSynapses = 0;	// default value
-	//	groupConfigs[0][i].WithSTP = false;
-	//	groupConfigs[0][i].WithSTDP = false;
-	//	groupConfigs[0][i].WithESTDP = false;
-	//	groupConfigs[0][i].WithISTDP = false;
-	//	groupConfigs[0][i].WithESTDPtype = UNKNOWN_STDP;
-	//	groupConfigs[0][i].WithISTDPtype = UNKNOWN_STDP;
-	//	groupConfigs[0][i].WithESTDPcurve = UNKNOWN_CURVE;
-	//	groupConfigs[0][i].WithISTDPcurve = UNKNOWN_CURVE;
-	//	groupConfigs[0][i].FixedInputWts = true; // Default is true. This value changed to false
-	//	// if any incoming  connections are plastic
-	//	groupConfigs[0][i].isSpikeGenerator = false;
-	//	groupConfigs[0][i].RatePtr = NULL;
-
-	//	groupConfigs[0][i].homeoId = -1;
-	//	groupConfigs[0][i].avgTimeScale  = 10000.0;
-
-	//	groupConfigs[0][i].baseDP = 1.0f;
-	//	groupConfigs[0][i].base5HT = 1.0f;
-	//	groupConfigs[0][i].baseACh = 1.0f;
-	//	groupConfigs[0][i].baseNE = 1.0f;
-	//	groupConfigs[0][i].decayDP = 1 - (1.0f / 100);
-	//	groupConfigs[0][i].decay5HT = 1 - (1.0f / 100);
-	//	groupConfigs[0][i].decayACh = 1 - (1.0f / 100);
-	//	groupConfigs[0][i].decayNE = 1 - (1.0f / 100);
-
-	//	groupConfigs[0][i].spikeGenFunc = NULL;
-
-	//	groupConfigs[0][i].withSpikeCounter = false;
-	//	groupConfigs[0][i].spkCntRecordDur = -1;
-	//	groupConfigs[0][i].spkCntRecordDurHelper = 0;
-	//	groupConfigs[0][i].spkCntBufPos = -1;
-
-	//	groupConfigs[0][i].StartN       = -1;
-	//	groupConfigs[0][i].EndN       	 = -1;
-
-	//	groupConfigs[0][i].CurrTimeSlice = 0;
-	//	groupConfigs[0][i].SliceUpdateTime = 0;
-	//}
 
 	for (int i = 0; i < MAX_GRP_PER_SNN; i++) {
 		groupInfo[i].numPostConn = 0;
@@ -2426,6 +2382,11 @@ void SNN::generateNetworkConfigs() {
 			// find the maximum number of numGroups and numConnections among local networks
 			if (networkConfigs[netId].numGroups > managerRTDSize.maxNumGroups) managerRTDSize.maxNumGroups = networkConfigs[netId].numGroups;
 			if (networkConfigs[netId].numConnections > managerRTDSize.maxNumConnections) managerRTDSize.maxNumConnections = networkConfigs[netId].numConnections;
+			
+			// find the maximum number of neurons in a group among local networks
+			for (std::list<GroupConfigRT>::iterator grpIt = groupPartitionLists[netId].begin(); grpIt != groupPartitionLists[netId].end(); grpIt++) {
+				if (grpIt->SizeN > managerRTDSize.maxNumNPerGroup) managerRTDSize.maxNumNPerGroup = grpIt->SizeN;
+			}
 			
 			// find the maximum number of maxSipkesD1(D2) among networks
 			if (networkConfigs[netId].maxSpikesD1 > managerRTDSize.maxMaxSpikeD1) managerRTDSize.maxMaxSpikeD1 = networkConfigs[netId].maxSpikesD1;
@@ -3342,9 +3303,11 @@ void SNN::deleteObjects() {
 	// deallocate objects
 	resetMonitors(true);
 	resetConnectionConfigs(true);
-	resetRuntimeData(true);
+	
+	// delete manager runtime data
+	deleteRuntimeData();
 
-	// do the same as above, but for snn_gpu.cu
+	// delete gpu runtime data
 	deleteObjects_GPU();
 	simulatorDeleted = true;
 }
@@ -3663,8 +3626,8 @@ void SNN::initGroupConfig(GroupConfigRT* _groupConfig) {
 	_groupConfig->WithISTDPtype = UNKNOWN_STDP;
 	_groupConfig->WithESTDPcurve = UNKNOWN_CURVE;
 	_groupConfig->WithISTDPcurve = UNKNOWN_CURVE;
-	_groupConfig->FixedInputWts = true; // Default is true. This value changed to false
-	// if any incoming  connections are plastic
+	_groupConfig->FixedInputWts = true; // Default is true. This value changed to false if any incoming connections are plastic
+	_groupConfig->hasExternalConnect = false;
 	_groupConfig->isSpikeGenerator = false;
 	_groupConfig->RatePtr = NULL;
 
@@ -3918,22 +3881,22 @@ void SNN::partitionSNN() {
 	// put excitatory groups to GPU 0 and inhibitory groups to GPU 1
 	// this parse separates groups into each local network and assign each group a netId
 	for (std::map<int, GroupConfigRT>::iterator it = groupConfigMap.begin(); it != groupConfigMap.end(); it++) {
-		if (IS_EXCITATORY_TYPE(it->second.Type)) {
-			it->second.netId = 0;
-			numAssignedNeurons[0] += it->second.SizeN;
-			groupPartitionLists[0].push_back(it->second);
-		} else if (IS_INHIBITORY_TYPE(it->second.Type)) {
-			it->second.netId = 1;
-			numAssignedNeurons[1] += it->second.SizeN;
-			groupPartitionLists[1].push_back(it->second);
-		} else {
-			KERNEL_ERROR("Can't assign the group [%d] to any partition", it->second.grpId);
-			exitSimulation(-1);
-		}
+		//if (IS_EXCITATORY_TYPE(it->second.Type)) {
+		//	it->second.netId = 0;
+		//	numAssignedNeurons[0] += it->second.SizeN;
+		//	groupPartitionLists[0].push_back(it->second);
+		//} else if (IS_INHIBITORY_TYPE(it->second.Type)) {
+		//	it->second.netId = 1;
+		//	numAssignedNeurons[1] += it->second.SizeN;
+		//	groupPartitionLists[1].push_back(it->second);
+		//} else {
+		//	KERNEL_ERROR("Can't assign the group [%d] to any partition", it->second.grpId);
+		//	exitSimulation(-1);
+		//}
 
-		//it->second.netId = 0;
-		//numAssignedNeurons[0] += it->second.SizeN;
-		//groupPartitionLists[0].push_back(it->second);
+		it->second.netId = 0;
+		numAssignedNeurons[0] += it->second.SizeN;
+		groupPartitionLists[0].push_back(it->second);
 
 		//it->second.netId = 1;
 		//numAssignedNeurons[1] += it->second.SizeN;
@@ -3956,6 +3919,7 @@ void SNN::partitionSNN() {
 		if (!groupPartitionLists[netId].empty()) {
 			for (std::map<int, ConnectConfig>::iterator connIt = connectConfigMap.begin(); connIt != connectConfigMap.end(); connIt++) {
 				if (groupConfigMap[connIt->second.grpSrc].netId == netId && groupConfigMap[connIt->second.grpDest].netId != netId) {
+					groupConfigMap[connIt->second.grpSrc].hasExternalConnect = true;
 					numAssignedNeurons[netId] += groupConfigMap[connIt->second.grpDest].SizeN;
 					groupPartitionLists[netId].push_back(groupConfigMap[connIt->second.grpDest]);
 					externalConnectLists[netId].push_back(connectConfigMap[connIt->second.connId]);
@@ -4493,111 +4457,119 @@ void SNN::resetConnectionConfigs(bool deallocate) {
 	if (deallocate) connectConfigMap.clear();
 }
 
-void SNN::resetRuntimeData(bool deallocate) {
+void SNN::deleteRuntimeData() {
 	// delete all Spike Counters
-	for (int i=0; i<numSpkCnt; i++) {
-		if (spkCntBuf[i]!=NULL && deallocate)
+	for (int i = 0; i < numSpkCnt; i++) {
+		if (spkCntBuf[i] != NULL)
 			delete[] spkCntBuf[i];
 		spkCntBuf[i]=NULL;
 	}
 
-	if (pbuf!=NULL && deallocate) delete pbuf;
-	if (managerRuntimeData.spikeGenBits!=NULL && deallocate) delete[] managerRuntimeData.spikeGenBits;
+	if (pbuf!=NULL) delete pbuf;
+	if (managerRuntimeData.spikeGenBits!=NULL) delete[] managerRuntimeData.spikeGenBits;
 	pbuf=NULL; managerRuntimeData.spikeGenBits=NULL;
 
 	// clear data (i.e., concentration of neuromodulator) of groups
-	if (managerRuntimeData.grpDA != NULL && deallocate) delete [] managerRuntimeData.grpDA;
-	if (managerRuntimeData.grp5HT != NULL && deallocate) delete [] managerRuntimeData.grp5HT;
-	if (managerRuntimeData.grpACh != NULL && deallocate) delete [] managerRuntimeData.grpACh;
-	if (managerRuntimeData.grpNE != NULL && deallocate) delete [] managerRuntimeData.grpNE;
+	if (managerRuntimeData.grpDA != NULL) delete [] managerRuntimeData.grpDA;
+	if (managerRuntimeData.grp5HT != NULL) delete [] managerRuntimeData.grp5HT;
+	if (managerRuntimeData.grpACh != NULL) delete [] managerRuntimeData.grpACh;
+	if (managerRuntimeData.grpNE != NULL) delete [] managerRuntimeData.grpNE;
 	managerRuntimeData.grpDA = NULL;
 	managerRuntimeData.grp5HT = NULL;
 	managerRuntimeData.grpACh = NULL;
 	managerRuntimeData.grpNE = NULL;
 
 	// clear assistive data buffer for group monitor
-	if (deallocate) {
-			if (managerRuntimeData.grpDABuffer != NULL) delete [] managerRuntimeData.grpDABuffer;
-			if (managerRuntimeData.grp5HTBuffer != NULL) delete [] managerRuntimeData.grp5HTBuffer;
-			if (managerRuntimeData.grpAChBuffer != NULL) delete [] managerRuntimeData.grpAChBuffer;
-			if (managerRuntimeData.grpNEBuffer != NULL) delete [] managerRuntimeData.grpNEBuffer;
-			managerRuntimeData.grpDABuffer = NULL; managerRuntimeData.grp5HTBuffer = NULL;
-			managerRuntimeData.grpAChBuffer = NULL; managerRuntimeData.grpNEBuffer = NULL;
-	} else {
-			managerRuntimeData.grpDABuffer = NULL; managerRuntimeData.grp5HTBuffer = NULL;
-			managerRuntimeData.grpAChBuffer = NULL; managerRuntimeData.grpNEBuffer = NULL;
-	}
+	if (managerRuntimeData.grpDABuffer != NULL) delete [] managerRuntimeData.grpDABuffer;
+	if (managerRuntimeData.grp5HTBuffer != NULL) delete [] managerRuntimeData.grp5HTBuffer;
+	if (managerRuntimeData.grpAChBuffer != NULL) delete [] managerRuntimeData.grpAChBuffer;
+	if (managerRuntimeData.grpNEBuffer != NULL) delete [] managerRuntimeData.grpNEBuffer;
+	managerRuntimeData.grpDABuffer = NULL; managerRuntimeData.grp5HTBuffer = NULL;
+	managerRuntimeData.grpAChBuffer = NULL; managerRuntimeData.grpNEBuffer = NULL;
 
 	// -------------- DEALLOCATE CORE OBJECTS ---------------------- //
 
-	if (managerRuntimeData.voltage!=NULL && deallocate) delete[] managerRuntimeData.voltage;
-	if (managerRuntimeData.recovery!=NULL && deallocate) delete[] managerRuntimeData.recovery;
-	if (managerRuntimeData.current!=NULL && deallocate) delete[] managerRuntimeData.current;
-	if (managerRuntimeData.extCurrent!=NULL && deallocate) delete[] managerRuntimeData.extCurrent;
+	if (managerRuntimeData.voltage!=NULL) delete[] managerRuntimeData.voltage;
+	if (managerRuntimeData.recovery!=NULL) delete[] managerRuntimeData.recovery;
+	if (managerRuntimeData.current!=NULL) delete[] managerRuntimeData.current;
+	if (managerRuntimeData.extCurrent!=NULL) delete[] managerRuntimeData.extCurrent;
 	managerRuntimeData.voltage=NULL; managerRuntimeData.recovery=NULL; managerRuntimeData.current=NULL; managerRuntimeData.extCurrent=NULL;
 
-	if (managerRuntimeData.Izh_a!=NULL && deallocate) delete[] managerRuntimeData.Izh_a;
-	if (managerRuntimeData.Izh_b!=NULL && deallocate) delete[] managerRuntimeData.Izh_b;
-	if (managerRuntimeData.Izh_c!=NULL && deallocate) delete[] managerRuntimeData.Izh_c;
-	if (managerRuntimeData.Izh_d!=NULL && deallocate) delete[] managerRuntimeData.Izh_d;
+	if (managerRuntimeData.Izh_a!=NULL) delete[] managerRuntimeData.Izh_a;
+	if (managerRuntimeData.Izh_b!=NULL) delete[] managerRuntimeData.Izh_b;
+	if (managerRuntimeData.Izh_c!=NULL) delete[] managerRuntimeData.Izh_c;
+	if (managerRuntimeData.Izh_d!=NULL) delete[] managerRuntimeData.Izh_d;
 	managerRuntimeData.Izh_a=NULL; managerRuntimeData.Izh_b=NULL; managerRuntimeData.Izh_c=NULL; managerRuntimeData.Izh_d=NULL;
 
-	if (managerRuntimeData.Npre!=NULL && deallocate) delete[] managerRuntimeData.Npre;
-	if (managerRuntimeData.Npre_plastic!=NULL && deallocate) delete[] managerRuntimeData.Npre_plastic;
-	if (managerRuntimeData.Npost!=NULL && deallocate) delete[] managerRuntimeData.Npost;
+	if (managerRuntimeData.Npre!=NULL) delete[] managerRuntimeData.Npre;
+	if (managerRuntimeData.Npre_plastic!=NULL) delete[] managerRuntimeData.Npre_plastic;
+	if (managerRuntimeData.Npost!=NULL) delete[] managerRuntimeData.Npost;
 	managerRuntimeData.Npre=NULL; managerRuntimeData.Npre_plastic=NULL; managerRuntimeData.Npost=NULL;
 
-	if (managerRuntimeData.cumulativePre!=NULL && deallocate) delete[] managerRuntimeData.cumulativePre;
-	if (managerRuntimeData.cumulativePost!=NULL && deallocate) delete[] managerRuntimeData.cumulativePost;
+	if (managerRuntimeData.cumulativePre!=NULL) delete[] managerRuntimeData.cumulativePre;
+	if (managerRuntimeData.cumulativePost!=NULL) delete[] managerRuntimeData.cumulativePost;
 	managerRuntimeData.cumulativePre=NULL; managerRuntimeData.cumulativePost=NULL;
 
-	if (managerRuntimeData.gAMPA!=NULL && deallocate) delete[] managerRuntimeData.gAMPA;
-	if (managerRuntimeData.gNMDA!=NULL && deallocate) delete[] managerRuntimeData.gNMDA;
-	if (managerRuntimeData.gNMDA_r!=NULL && deallocate) delete[] managerRuntimeData.gNMDA_r;
-	if (managerRuntimeData.gNMDA_d!=NULL && deallocate) delete[] managerRuntimeData.gNMDA_d;
-	if (managerRuntimeData.gGABAa!=NULL && deallocate) delete[] managerRuntimeData.gGABAa;
-	if (managerRuntimeData.gGABAb!=NULL && deallocate) delete[] managerRuntimeData.gGABAb;
-	if (managerRuntimeData.gGABAb_r!=NULL && deallocate) delete[] managerRuntimeData.gGABAb_r;
-	if (managerRuntimeData.gGABAb_d!=NULL && deallocate) delete[] managerRuntimeData.gGABAb_d;
+	if (managerRuntimeData.gAMPA!=NULL) delete[] managerRuntimeData.gAMPA;
+	if (managerRuntimeData.gNMDA!=NULL) delete[] managerRuntimeData.gNMDA;
+	if (managerRuntimeData.gNMDA_r!=NULL) delete[] managerRuntimeData.gNMDA_r;
+	if (managerRuntimeData.gNMDA_d!=NULL) delete[] managerRuntimeData.gNMDA_d;
+	if (managerRuntimeData.gGABAa!=NULL) delete[] managerRuntimeData.gGABAa;
+	if (managerRuntimeData.gGABAb!=NULL) delete[] managerRuntimeData.gGABAb;
+	if (managerRuntimeData.gGABAb_r!=NULL) delete[] managerRuntimeData.gGABAb_r;
+	if (managerRuntimeData.gGABAb_d!=NULL) delete[] managerRuntimeData.gGABAb_d;
 	managerRuntimeData.gAMPA=NULL; managerRuntimeData.gNMDA=NULL; managerRuntimeData.gNMDA_r=NULL; managerRuntimeData.gNMDA_d=NULL;
 	managerRuntimeData.gGABAa=NULL; managerRuntimeData.gGABAb=NULL; managerRuntimeData.gGABAb_r=NULL; managerRuntimeData.gGABAb_d=NULL;
 
-	if (managerRuntimeData.stpu!=NULL && deallocate) delete[] managerRuntimeData.stpu;
-	if (managerRuntimeData.stpx!=NULL && deallocate) delete[] managerRuntimeData.stpx;
+	if (managerRuntimeData.stpu!=NULL) delete[] managerRuntimeData.stpu;
+	if (managerRuntimeData.stpx!=NULL) delete[] managerRuntimeData.stpx;
 	managerRuntimeData.stpu=NULL; managerRuntimeData.stpx=NULL;
 
-	if (managerRuntimeData.avgFiring!=NULL && deallocate) delete[] managerRuntimeData.avgFiring;
-	if (managerRuntimeData.baseFiring!=NULL && deallocate) delete[] managerRuntimeData.baseFiring;
+	if (managerRuntimeData.avgFiring!=NULL) delete[] managerRuntimeData.avgFiring;
+	if (managerRuntimeData.baseFiring!=NULL) delete[] managerRuntimeData.baseFiring;
 	managerRuntimeData.avgFiring=NULL; managerRuntimeData.baseFiring=NULL;
 
-	if (managerRuntimeData.lastSpikeTime!=NULL && deallocate) delete[] managerRuntimeData.lastSpikeTime;
-	if (managerRuntimeData.synSpikeTime !=NULL && deallocate) delete[] managerRuntimeData.synSpikeTime;
-	if (managerRuntimeData.nSpikeCnt!=NULL && deallocate) delete[] managerRuntimeData.nSpikeCnt;
+	if (managerRuntimeData.lastSpikeTime!=NULL) delete[] managerRuntimeData.lastSpikeTime;
+	if (managerRuntimeData.synSpikeTime !=NULL) delete[] managerRuntimeData.synSpikeTime;
+	if (managerRuntimeData.nSpikeCnt!=NULL) delete[] managerRuntimeData.nSpikeCnt;
 	managerRuntimeData.lastSpikeTime=NULL; managerRuntimeData.synSpikeTime=NULL; managerRuntimeData.nSpikeCnt=NULL;
 
-	if (managerRuntimeData.postDelayInfo!=NULL && deallocate) delete[] managerRuntimeData.postDelayInfo;
-	if (managerRuntimeData.preSynapticIds!=NULL && deallocate) delete[] managerRuntimeData.preSynapticIds;
-	if (managerRuntimeData.postSynapticIds!=NULL && deallocate) delete[] managerRuntimeData.postSynapticIds;
+	if (managerRuntimeData.postDelayInfo!=NULL) delete[] managerRuntimeData.postDelayInfo;
+	if (managerRuntimeData.preSynapticIds!=NULL) delete[] managerRuntimeData.preSynapticIds;
+	if (managerRuntimeData.postSynapticIds!=NULL) delete[] managerRuntimeData.postSynapticIds;
 	managerRuntimeData.postDelayInfo=NULL; managerRuntimeData.preSynapticIds=NULL; managerRuntimeData.postSynapticIds=NULL;
 
-	if (managerRuntimeData.wt!=NULL && deallocate) delete[] managerRuntimeData.wt;
-	if (managerRuntimeData.maxSynWt!=NULL && deallocate) delete[] managerRuntimeData.maxSynWt;
-	if (managerRuntimeData.wtChange !=NULL && deallocate) delete[] managerRuntimeData.wtChange;
+	if (managerRuntimeData.wt!=NULL) delete[] managerRuntimeData.wt;
+	if (managerRuntimeData.maxSynWt!=NULL) delete[] managerRuntimeData.maxSynWt;
+	if (managerRuntimeData.wtChange !=NULL) delete[] managerRuntimeData.wtChange;
 	managerRuntimeData.wt=NULL; managerRuntimeData.maxSynWt=NULL; managerRuntimeData.wtChange=NULL;
 
-	if (mulSynFast!=NULL && deallocate) delete[] mulSynFast;
-	if (mulSynSlow!=NULL && deallocate) delete[] mulSynSlow;
-	if (managerRuntimeData.connIdsPreIdx!=NULL && deallocate) delete[] managerRuntimeData.connIdsPreIdx;
+	if (mulSynFast!=NULL) delete[] mulSynFast;
+	if (mulSynSlow!=NULL) delete[] mulSynSlow;
+	if (managerRuntimeData.connIdsPreIdx!=NULL) delete[] managerRuntimeData.connIdsPreIdx;
 	mulSynFast=NULL; mulSynSlow=NULL; managerRuntimeData.connIdsPreIdx=NULL;
 
-	if (managerRuntimeData.grpIds!=NULL && deallocate) delete[] managerRuntimeData.grpIds;
+	if (managerRuntimeData.grpIds!=NULL) delete[] managerRuntimeData.grpIds;
 	managerRuntimeData.grpIds=NULL;
 
-	if (managerRuntimeData.firingTableD2!=NULL && deallocate) delete[] managerRuntimeData.firingTableD2;
-	if (managerRuntimeData.firingTableD1!=NULL && deallocate) delete[] managerRuntimeData.firingTableD1;
-	//if (timeTableD2!=NULL && deallocate) delete[] timeTableD2;
-	//if (timeTableD1!=NULL && deallocate) delete[] timeTableD1;
-	managerRuntimeData.firingTableD2=NULL; managerRuntimeData.firingTableD1=NULL; //timeTableD2=NULL; timeTableD1=NULL;
+	if (managerRuntimeData.firingTableD2!=NULL) delete[] managerRuntimeData.firingTableD2;
+	if (managerRuntimeData.firingTableD1!=NULL) delete[] managerRuntimeData.firingTableD1;
+	managerRuntimeData.firingTableD2=NULL; managerRuntimeData.firingTableD1=NULL;
+
+	if (managerRuntimeData.extFiringTableD1 != NULL) {
+		for (int i = 0; i < managerRTDSize.maxNumGroups; i++)
+			if (managerRuntimeData.extFiringTableD1[i] != NULL) delete[] managerRuntimeData.extFiringTableD1[i];
+
+		delete[] managerRuntimeData.extFiringTableD1;
+	}
+
+	if (managerRuntimeData.extFiringTableD2 != NULL) {
+		for (int i = 0; i < managerRTDSize.maxNumGroups; i++)
+			if (managerRuntimeData.extFiringTableD2[i] != NULL) delete[] managerRuntimeData.extFiringTableD2[i];
+
+		delete[] managerRuntimeData.extFiringTableD2;
+	}
+	managerRuntimeData.extFiringTableD1 = NULL; managerRuntimeData.extFiringTableD2 = NULL;
 }
 
 /*!

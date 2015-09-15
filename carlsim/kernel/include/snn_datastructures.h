@@ -232,6 +232,9 @@ typedef struct RuntimeData_s {
 	int* firingTableD1;
 	int* firingTableD2;
 
+	int** extFiringTableD1;
+	int** extFiringTableD2;
+
 	float*        poissonFireRate;
 	unsigned int* poissonRandPtr;		//!< firing random number. max value is 10,000
 
@@ -376,6 +379,7 @@ typedef struct GroupConfigRT_s {
 	bool         WithHomeostasis;
 	int          homeoId;
 	bool         FixedInputWts;
+	bool         hasExternalConnect;         
 	int          Noffset;         //!< the offset of spike generator (poisson) neurons [0, numNPois)
 	int8_t       MaxDelay;
 

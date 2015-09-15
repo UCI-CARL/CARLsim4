@@ -747,7 +747,7 @@ private:
 	//void resetPointers(bool deallocate=false);
 	void resetMonitors(bool deallocate=false);
 	void resetConnectionConfigs(bool deallocate=false);
-	void resetRuntimeData(bool deallocate=false);
+	void deleteRuntimeData();
 	void resetPoissonNeuron(int netId, int lGrpId, int lNId); //!< use local ids
 	void resetPropogationBuffer();
 	void resetSpikeCnt();					//!< Resets the spike count for a particular group.
@@ -1047,6 +1047,7 @@ private:
 		int maxNumConnections;
 		int maxNumPostSynNet;
 		int maxNumPreSynNet;
+		int maxNumNPerGroup;
 		int glbNumN;
 		int glbNumNReg;
 		//int glbNumGroups;
