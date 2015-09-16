@@ -626,6 +626,7 @@ private:
 	void connectRandom(int netId, std::list<ConnectConfig>::iterator connIt, bool isExternal);
 	void connectGaussian(int netId, std::list<ConnectConfig>::iterator connIt, bool isExternal);
 	void connectUserDefined(int netId, std::list<ConnectConfig>::iterator connIt, bool isExternal);
+	void clearExtFiringTable();
 
 	void deleteObjects();			//!< deallocates all used data structures in snn_cpu.cpp
 

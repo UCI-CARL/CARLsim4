@@ -366,18 +366,34 @@ __device__ void updateSpikeCount(volatile unsigned int& fireCnt, volatile unsign
 }
 
 // update the firing table...
-__device__ void updateFiringTable(int nId, short int grpId, volatile unsigned int& cntD2, volatile unsigned int& cntD1) {
+__device__ void updateFiringTable(int lNId, short int lGrpId, volatile unsigned int& cntD2, volatile unsigned int& cntD1) {
 	int pos;
-	if (groupConfigsGPU[grpId].MaxDelay == 1) {
+	if (groupConfigsGPU[lGrpId].MaxDelay == 1) {
 		// this group has a delay of only 1
 		pos = atomicAdd((int*)&cntD1, 1);
 		//runtimeDataGPU.firingTableD1[pos]  = SET_FIRING_TABLE(nid, grpId);
-		runtimeDataGPU.firingTableD1[pos] = nId;
+		runtimeDataGPU.firingTableD1[pos] = lNId;
 	} else {
 		// all other groups is dumped here 
 		pos = atomicAdd((int*)&cntD2, 1);
 		//runtimeDataGPU.firingTableD2[pos]  = SET_FIRING_TABLE(nid, grpId);
-		runtimeDataGPU.firingTableD2[pos] = nId;
+		runtimeDataGPU.firingTableD2[pos] = lNId;
+	}
+}
+
+// update the firing table...
+__device__ void updateExtFiringTable(int lNId, short int lGrpId) {
+	int pos;
+	if (groupConfigsGPU[lGrpId].MaxDelay == 1) {
+		// this group has a delay of only 1
+		pos = atomicAdd((int*)&runtimeDataGPU.extFiringTableEndIdxD1[lGrpId] , 1);
+		//runtimeDataGPU.firingTableD1[pos]  = SET_FIRING_TABLE(nid, grpId);
+		runtimeDataGPU.extFiringTableD1[lGrpId][pos] = lNId; // FIXME: convert to global neuron id
+	} else {
+		// all other groups is dumped here 
+		pos = atomicAdd((int*)&runtimeDataGPU.extFiringTableEndIdxD2[lGrpId], 1);
+		//runtimeDataGPU.firingTableD2[pos]  = SET_FIRING_TABLE(nid, grpId);
+		runtimeDataGPU.extFiringTableD2[lGrpId][pos] = lNId; // FIXME: convert to global neuron id
 	}
 }
 
@@ -404,6 +420,9 @@ __device__ int updateNewFirings(int* fireTablePtr, short int* fireGrpId,
 		int lNId = fireTablePtr[i];
 
 		updateFiringTable(lNId, fireGrpId[i], cntD2, cntD1);
+
+		if (groupConfigsGPU[fireGrpId[i]].hasExternalConnect)
+			updateExtFiringTable(lNId, fireGrpId[i]);
 
 		if (groupConfigsGPU[fireGrpId[i]].WithSTP)
 			firingUpdateSTP(lNId, simTime, fireGrpId[i]);
@@ -2809,6 +2828,36 @@ void SNN::assignPoissonFiringRate_GPU() {
 	}
 }
 
+// Note: for temporarily use, might be merged into exchangeExternalSpike
+void SNN::clearExtFiringTable() {
+	void** devPtrs;
+	for (int netId = 0; netId < MAX_NET_PER_SNN; netId++) {
+		if (!groupPartitionLists[netId].empty()) {
+			checkAndSetGPUDevice(netId);
+			
+			devPtrs = new void*[networkConfigs[netId].numGroups];
+			// fetch extFiringTableD2
+			CUDA_CHECK_ERRORS(cudaMemcpy(devPtrs, gpuRuntimeData[netId].extFiringTableD2, sizeof(int*) * networkConfigs[netId].numGroups, cudaMemcpyDeviceToHost));
+			for (int lGrpId = 0; lGrpId < networkConfigs[netId].numGroups; lGrpId++) {
+				if (groupConfigs[netId][lGrpId].hasExternalConnect) {
+					CUDA_CHECK_ERRORS(cudaMemset(devPtrs[lGrpId], 0 , sizeof(int) * groupConfigs[netId][lGrpId].SizeN * NEURON_MAX_FIRING_RATE));
+				}
+			}
+			// fetch extFiringTableD1
+			CUDA_CHECK_ERRORS(cudaMemcpy(devPtrs, gpuRuntimeData[netId].extFiringTableD1, sizeof(int*) * networkConfigs[netId].numGroups, cudaMemcpyDeviceToHost));
+			for (int lGrpId = 0; lGrpId < networkConfigs[netId].numGroups; lGrpId++) {
+				if (groupConfigs[netId][lGrpId].hasExternalConnect) {
+					CUDA_CHECK_ERRORS(cudaMemset(devPtrs[lGrpId], 0 , sizeof(int) * groupConfigs[netId][lGrpId].SizeN * NEURON_MAX_FIRING_RATE));
+				}
+			}
+			delete[] devPtrs;
+
+			CUDA_CHECK_ERRORS(cudaMemset(gpuRuntimeData[netId].extFiringTableEndIdxD1, 0, sizeof(int) * networkConfigs[netId].numGroups));
+			CUDA_CHECK_ERRORS(cudaMemset(gpuRuntimeData[netId].extFiringTableEndIdxD2, 0, sizeof(int) * networkConfigs[netId].numGroups));
+		}
+	}
+}
+
 void SNN::doGPUSim() {
 	// for all Spike Counters, reset their spike counts to zero if simTime % recordDur == 0
 	if (sim_with_spikecounters) {
@@ -2828,9 +2877,13 @@ void SNN::doGPUSim() {
 
 	updateTimingTable_GPU();
 
+	// Add exchange exeternal spike here...
+
 	doCurrentUpdate_GPU();
 
 	globalStateUpdate_GPU();
+
+	clearExtFiringTable();
 }
 
 /*!
