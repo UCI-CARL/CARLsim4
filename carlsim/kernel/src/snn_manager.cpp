@@ -3881,22 +3881,22 @@ void SNN::partitionSNN() {
 	// put excitatory groups to GPU 0 and inhibitory groups to GPU 1
 	// this parse separates groups into each local network and assign each group a netId
 	for (std::map<int, GroupConfigRT>::iterator it = groupConfigMap.begin(); it != groupConfigMap.end(); it++) {
-		if (IS_EXCITATORY_TYPE(it->second.Type)) {
-			it->second.netId = 0;
-			numAssignedNeurons[0] += it->second.SizeN;
-			groupPartitionLists[0].push_back(it->second);
-		} else if (IS_INHIBITORY_TYPE(it->second.Type)) {
-			it->second.netId = 1;
-			numAssignedNeurons[1] += it->second.SizeN;
-			groupPartitionLists[1].push_back(it->second);
-		} else {
-			KERNEL_ERROR("Can't assign the group [%d] to any partition", it->second.grpId);
-			exitSimulation(-1);
-		}
+		//if (IS_EXCITATORY_TYPE(it->second.Type)) {
+		//	it->second.netId = 0;
+		//	numAssignedNeurons[0] += it->second.SizeN;
+		//	groupPartitionLists[0].push_back(it->second);
+		//} else if (IS_INHIBITORY_TYPE(it->second.Type)) {
+		//	it->second.netId = 1;
+		//	numAssignedNeurons[1] += it->second.SizeN;
+		//	groupPartitionLists[1].push_back(it->second);
+		//} else {
+		//	KERNEL_ERROR("Can't assign the group [%d] to any partition", it->second.grpId);
+		//	exitSimulation(-1);
+		//}
 
-		//it->second.netId = 0;
-		//numAssignedNeurons[0] += it->second.SizeN;
-		//groupPartitionLists[0].push_back(it->second);
+		it->second.netId = 0;
+		numAssignedNeurons[0] += it->second.SizeN;
+		groupPartitionLists[0].push_back(it->second);
 
 		//it->second.netId = 1;
 		//numAssignedNeurons[1] += it->second.SizeN;

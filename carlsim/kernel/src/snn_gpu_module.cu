@@ -80,9 +80,10 @@ __device__ unsigned int	spikeCountD1SecGPU;
 __device__ unsigned int spikeCountD2GPU;
 __device__ unsigned int spikeCountD1GPU;
 
-// I believe the following are all just test variables
 __device__ unsigned int	secD2fireCntTest;
 __device__ unsigned int	secD1fireCntTest;
+
+__device__ unsigned int spikeCountLastSecLeftD2GPU;
 
 __device__ __constant__ RuntimeData     runtimeDataGPU;
 __device__ __constant__ NetworkConfigRT	networkConfigGPU;
@@ -164,11 +165,11 @@ __device__ inline bool getPoissonSpike_GPU (int nid) {
  * \param[in] simTime The current time step
  */
 __global__ void kernel_updateTimeTable(int simTime) {
-   if (threadIdx.x == 0 && blockIdx.x == 0) {
-		timeTableD2GPU[simTime + networkConfigGPU.maxDelay + 1] = spikeCountD2SecGPU;
+	if (threadIdx.x == 0 && blockIdx.x == 0) {
+		timeTableD2GPU[simTime + networkConfigGPU.maxDelay + 1] = spikeCountD2SecGPU + spikeCountLastSecLeftD2GPU;
 		timeTableD1GPU[simTime + networkConfigGPU.maxDelay + 1] = spikeCountD1SecGPU;
-   }
-   __syncthreads();									     
+	}
+	__syncthreads();									     
 }
 
 /////////////////////////////////////////////////////////////////////////////////
@@ -178,29 +179,23 @@ __global__ void kernel_updateTimeTable(int simTime) {
 /////////////////////////////////////////////////////////////////////////////////
 __global__ void kernel_init () {
 	// FIXME: use parallel access
-	if(threadIdx.x==0 && blockIdx.x==0) {
-		for(int i=0; i < TIMING_COUNT; i++) {
-			timeTableD2GPU[i]   = 0;
-			timeTableD1GPU[i]   = 0;
-		}
+	int timeTableIdx = blockIdx.x * blockDim.x + threadIdx.x;
+
+	if (timeTableIdx < TIMING_COUNT) {
+		timeTableD2GPU[timeTableIdx] = 0;
+		timeTableD1GPU[timeTableIdx] = 0;
 	}
 
-	const int totBuffers=loadBufferCount;
-	__syncthreads();
-	for (int bufPos = blockIdx.x; bufPos < totBuffers; bufPos += gridDim.x) {
-		// KILLME !!! This can be further optimized ....
-		// instead of reading each neuron group separately .....
-		// read a whole buffer and use the result ......
-		int2 	 threadLoad  = getStaticThreadLoad(bufPos);
-		int  	 nid        = STATIC_LOAD_START(threadLoad);
-		int  	 lastId      = STATIC_LOAD_SIZE(threadLoad);
-//		short int grpId   	 = STATIC_LOAD_GROUP(threadLoad);
+	if (threadIdx.x == 0 && blockIdx.x == 0) {
+		spikeCountD2SecGPU = 0;
+		spikeCountD1SecGPU = 0;
+		spikeCountD2GPU = 0;
+		spikeCountD1GPU = 0;
 
-		while ((threadIdx.x < lastId) && (nid < networkConfigGPU.numN)) {
-//				int totCnt = runtimeDataGPU.Npre[nid];			// total synaptic count
-//				int nCum   = runtimeDataGPU.cumulativePre[nid];	// total pre-synaptic count
-			nid=nid+1; // move to the next neuron in the group..
-		}
+		secD2fireCntTest = 0;
+		secD1fireCntTest = 0;
+
+		spikeCountLastSecLeftD2GPU = 0;
 	}
 }
 
@@ -366,7 +361,7 @@ __device__ void updateSpikeCount(volatile unsigned int& fireCnt, volatile unsign
 
 	// get a distinct counter to store firing info
 	// into the firing table
-	cntD2 = atomicAdd(&spikeCountD2SecGPU, fireCntD2);
+	cntD2 = atomicAdd(&spikeCountD2SecGPU, fireCntD2) + spikeCountLastSecLeftD2GPU;
 	cntD1 = atomicAdd(&spikeCountD1SecGPU, fireCntD1);
 }
 
@@ -1243,27 +1238,15 @@ __global__ void kernel_shiftTimeTable() {
 		timeTableD1GPU[networkConfigGPU.maxDelay]  = 0;
 		spikeCountD2GPU += spikeCountD2SecGPU;
 		spikeCountD1GPU += spikeCountD1SecGPU;
-		spikeCountD2SecGPU	= timeTableD2GPU[networkConfigGPU.maxDelay];
-		secD2fireCntTest	= timeTableD2GPU[networkConfigGPU.maxDelay];
-		spikeCountD1SecGPU	= 0;
+
+		spikeCountD2SecGPU = 0; 
+		spikeCountD1SecGPU = 0;
+
+		spikeCountLastSecLeftD2GPU = timeTableD2GPU[networkConfigGPU.maxDelay];
+		secD2fireCntTest = timeTableD2GPU[networkConfigGPU.maxDelay];
 		secD1fireCntTest = 0;
 	}
 }
-
-// THIS KERNEL IS USED BY BLOCK_CONFIG_VERSION
-//__global__ void kernel_updateFiring2()
-//{
-//	// reset various counters for the firing information
-//	if((blockIdx.x==0)&&(threadIdx.x==0)) {
-//		// timeTableD1GPU[networkConfigGPU.maxDelay]  = 0;
-//		spikeCountD2GPU	+= spikeCountD2SecGPU;
-//		spikeCountD1GPU	+= spikeCountD1SecGPU;
-//		spikeCountD2SecGPU	= 0; //timeTableD2GPU[networkConfigGPU.maxDelay];
-//		spikeCountD1SecGPU	= 0;
-//		secD2fireCntTest = 0; //timeTableD2GPU[networkConfigGPU.maxDelay];
-//		secD1fireCntTest = 0;
-//	}
-//}
 
 //****************************** GENERATE POST-SYNAPTIC CURRENT EVERY TIME-STEP  ****************************
 __device__ void generatePostSynapticSpike(int simTime, int preNId, int postNId, int synId) {
@@ -2986,13 +2969,14 @@ void SNN::fetchNetworkSpikeCount() {
  * \param[in] netId the id of local network of which timeTableD1(D2) and firingTableD1(D2) are copied to manager runtime data
  */
 void SNN::fetchSpikeTables(int netId) {
-	unsigned int gpuSpikeCountD1Sec, gpuSpikeCountD2Sec;
+	unsigned int gpuSpikeCountD1Sec, gpuSpikeCountD2Sec, gpuSpikeCountLastSecLeftD2;
 
 	checkAndSetGPUDevice(netId);
 
+	CUDA_CHECK_ERRORS(cudaMemcpyFromSymbol(&gpuSpikeCountLastSecLeftD2, spikeCountLastSecLeftD2GPU, sizeof(int), 0, cudaMemcpyDeviceToHost));
 	CUDA_CHECK_ERRORS(cudaMemcpyFromSymbol(&gpuSpikeCountD2Sec, spikeCountD2SecGPU, sizeof(int), 0, cudaMemcpyDeviceToHost));
 	CUDA_CHECK_ERRORS(cudaMemcpyFromSymbol(&gpuSpikeCountD1Sec, spikeCountD1SecGPU, sizeof(int), 0, cudaMemcpyDeviceToHost));
-	CUDA_CHECK_ERRORS( cudaMemcpy(managerRuntimeData.firingTableD2, gpuRuntimeData[netId].firingTableD2, sizeof(int)*gpuSpikeCountD2Sec, cudaMemcpyDeviceToHost));
+	CUDA_CHECK_ERRORS( cudaMemcpy(managerRuntimeData.firingTableD2, gpuRuntimeData[netId].firingTableD2, sizeof(int)*(gpuSpikeCountD2Sec+gpuSpikeCountLastSecLeftD2), cudaMemcpyDeviceToHost));
 	CUDA_CHECK_ERRORS( cudaMemcpy(managerRuntimeData.firingTableD1, gpuRuntimeData[netId].firingTableD1, sizeof(int)*gpuSpikeCountD1Sec, cudaMemcpyDeviceToHost));
 	CUDA_CHECK_ERRORS( cudaMemcpyFromSymbol(timeTableD2, timeTableD2GPU, sizeof(int)*(1000+maxDelay_+1), 0, cudaMemcpyDeviceToHost));
 	CUDA_CHECK_ERRORS( cudaMemcpyFromSymbol(timeTableD1, timeTableD1GPU, sizeof(int)*(1000+maxDelay_+1), 0, cudaMemcpyDeviceToHost));
