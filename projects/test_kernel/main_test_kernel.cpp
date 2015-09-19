@@ -50,34 +50,53 @@ int main() {
 	CARLsim sim("test kernel", GPU_MODE, USER, numGPUs, randSeed);
 
 	// configure the network
-	// set up a COBA two-layer network with gaussian connectivity
-	Grid3D gridIn(10, 10, 1); // pre is on a 10x10 grid
-	Grid3D gridOut(10, 10, 1); // post is on a 10x10 grid
-	int gout = sim.createGroup("output", gridOut, EXCITATORY_NEURON);
-	int gin = sim.createSpikeGeneratorGroup("input", gridIn, EXCITATORY_NEURON);
+	int gExc = sim.createGroup("exc", 10, EXCITATORY_NEURON);
+	sim.setNeuronParameters(gExc, 0.02f, 0.2f, -65.0f, 8.0f); // RS
 
-	sim.setNeuronParameters(gout, 0.02f, 0.2f, -65.0f, 8.0f);
-	sim.connect(gin, gout, "random", RangeWeight(0.0, 2.0f/100, 20.0f/100), 0.2f, RangeDelay(1, 5), RadiusRF(-1), SYN_PLASTIC);
-	sim.setConductances(true);
+	//int gInh = sim.createGroup("inh", 20, INHIBITORY_NEURON);
+	//sim.setNeuronParameters(gInh, 0.1f, 0.2f, -65.0f, 2.0f); // FS
+	int gExc2 = sim.createGroup("exc", 10, EXCITATORY_NEURON);
+	sim.setNeuronParameters(gExc2, 0.02f, 0.2f, -65.0f, 8.0f); // RS
 
-	sim.setESTDP(gout, true, STANDARD, ExpCurve(0.1f/100, 20, -0.12f/100, 20));
+	int gInput = sim.createSpikeGeneratorGroup("input", 10, EXCITATORY_NEURON);
+
+	sim.connect(gInput, gExc, "one-to-one", RangeWeight(50.0f), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
+	sim.connect(gExc, gExc2, "random", RangeWeight(10.0f), 0.4f, RangeDelay(1, 10), RadiusRF(-1), SYN_FIXED);
+	sim.connect(gExc2, gExc, "random", RangeWeight(0.0001f), 0.4f, RangeDelay(1, 10), RadiusRF(-1), SYN_FIXED);
+
+	sim.setConductances(false);
+
+	//sim.setESTDP(gExc, true, STANDARD, ExpCurve(0.1f/100, 20, -0.12f/100, 20));
 
 	// build the network
 	sim.setupNetwork();
 
 	// set some monitors
-	sim.setSpikeMonitor(gin, "DEFAULT");
-	sim.setSpikeMonitor(gout, "DEFAULT");
-	sim.setConnectionMonitor(gin, gout, "DEFAULT");
+	SpikeMonitor* smInput = sim.setSpikeMonitor(gInput, "DEFAULT");
+	SpikeMonitor* smExc = sim.setSpikeMonitor(gExc, "DEFAULT");
+	SpikeMonitor* smExc2 = sim.setSpikeMonitor(gExc2, "DEFAULT");
+	ConnectionMonitor* cmEE = sim.setConnectionMonitor(gExc, gExc2, "DEFAULT");
 
 	//setup some baseline input
-	PoissonRate in(gridIn.N);
-	in.setRates(10.0f);
-	sim.setSpikeRate(gin, &in);
+	PoissonRate in(10);
+	in.setRates(5.0f);
+	sim.setSpikeRate(gInput, &in);
 
 	// run for a total of 10 seconds
 	// at the end of each runNetwork call, SpikeMonitor stats will be printed
-	sim.runNetwork(10, 0);
+	smInput->startRecording();
+	smExc->startRecording();
+	smExc2->startRecording();
+	
+	sim.runNetwork(0, 100);
+	
+	smInput->stopRecording();
+	smExc->stopRecording();
+	smExc2->stopRecording();
+
+	smExc->print(true);
+	smExc2->print(true);
+	smInput->print(true);
 
 	return 0;
 }

@@ -755,6 +755,7 @@ private:
 	void resetSynapse(int netId, bool changeWeights=false);
 	void resetTimeTable();
 	void resetFiringTable();
+	void routeSpikes_GPU();
 
 	inline SynInfo SET_CONN_ID(int nid, int sid, int grpId);
 

@@ -1,3 +1,4 @@
 1. Make sure every API call access groupConfigMap before copying contents from groupConfigMap to groupConfig[] (happens at CONFIG_STATE -> SETUP_STATE)
 2. Fix 3d location system in connectFull, connetRandom, connectOneToOne
 3. Rewirte connectUserDefined and callback funtion prototype
+4. Fix the absence of external group config if the across connection from one partition to another is unidirectional

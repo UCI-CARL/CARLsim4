@@ -2451,16 +2451,16 @@ void SNN::generateConnectionRuntime(int netId) {
 		}
 
 		// generate the delay vaule
-		it->delay = connectConfigMap[it->connId].minDelay + rand() % (connectConfigMap[it->connId].maxDelay - connectConfigMap[it->connId].minDelay + 1);
-		assert((it->delay >= connectConfigMap[it->connId].minDelay) && (it->delay <= connectConfigMap[it->connId].maxDelay));
+		//it->delay = connectConfigMap[it->connId].minDelay + rand() % (connectConfigMap[it->connId].maxDelay - connectConfigMap[it->connId].minDelay + 1);
+		//assert((it->delay >= connectConfigMap[it->connId].minDelay) && (it->delay <= connectConfigMap[it->connId].maxDelay));
 		// generate the max weight and initial weight
 		//float initWt = generateWeight(connectConfigMap[it->connId].connProp, connectConfigMap[it->connId].initWt, connectConfigMap[it->connId].maxWt, it->nSrc, it->grpSrc);
-		float initWt = connectConfigMap[it->connId].initWt;
-		float maxWt = connectConfigMap[it->connId].maxWt;
+		//float initWt = connectConfigMap[it->connId].initWt;
+		//float maxWt = connectConfigMap[it->connId].maxWt;
 		// adjust sign of weight based on pre-group (negative if pre is inhibitory)
 		// this access is fine, isExcitatoryGroup() use global grpId
-		it->maxWt = isExcitatoryGroup(it->grpSrc) ? fabs(maxWt) : -1.0 * fabs(maxWt);
-		it->initWt = isExcitatoryGroup(it->grpSrc) ? fabs(initWt) : -1.0 * fabs(initWt);
+		//it->maxWt = isExcitatoryGroup(it->grpSrc) ? fabs(maxWt) : -1.0 * fabs(maxWt);
+		//it->initWt = isExcitatoryGroup(it->grpSrc) ? fabs(initWt) : -1.0 * fabs(initWt);
 
 		parsedConnections++;
 	}
@@ -2530,6 +2530,7 @@ void SNN::generateConnectionRuntime(int netId) {
 
 			int post_pos, pre_pos, lastDelay = 0;
 			parsedConnections = 0;
+			memset(&managerRuntimeData.postDelayInfo[lNId * (maxDelay_ + 1)], 0, sizeof(DelayInfo) * (maxDelay_ + 1));
 			for (std::list<ConnectionInfo>::iterator it = postConnectionList.begin(); it != postConnectionList.end(); it++) {
 				assert(it->nSrc + GLoffset[it->grpSrc] == lNId);
 				post_pos = managerRuntimeData.cumulativePost[it->nSrc + GLoffset[it->grpSrc]] + managerRuntimeData.Npost[it->nSrc + GLoffset[it->grpSrc]];
@@ -2571,6 +2572,15 @@ void SNN::generateConnectionRuntime(int netId) {
 			}
 			assert(parsedConnections == managerRuntimeData.Npost[lNId]);
 			// note: elements in postConnectionList are deallocated automatically with postConnectionList
+			/* for postDelayInfo debugging
+			printf("%d ", lNId);
+			for (int t = 0; t < maxDelay_ + 1; t ++) {
+				printf("[%d,%d]",
+					managerRuntimeData.postDelayInfo[lNId * (maxDelay_ + 1) + t].delay_index_start,
+					managerRuntimeData.postDelayInfo[lNId * (maxDelay_ + 1) + t].delay_length);
+			}
+			printf("\n");
+			*/
 		}
 	}
 	assert(connectionLists[0].empty());
@@ -2822,6 +2832,18 @@ inline void SNN::connectNeurons(int netId, int _grpSrc, int _grpDest, int _nSrc,
 	connInfo.initWt = 0.0f;
 	connInfo.maxWt = 0.0f;
 	connInfo.delay = 0;
+
+	// generate the delay vaule
+	connInfo.delay = connectConfigMap[_connId].minDelay + rand() % (connectConfigMap[_connId].maxDelay - connectConfigMap[_connId].minDelay + 1);
+	assert((connInfo.delay >= connectConfigMap[_connId].minDelay) && (connInfo.delay <= connectConfigMap[_connId].maxDelay));
+	// generate the max weight and initial weight
+	//float initWt = generateWeight(connectConfigMap[it->connId].connProp, connectConfigMap[it->connId].initWt, connectConfigMap[it->connId].maxWt, it->nSrc, it->grpSrc);
+	float initWt = connectConfigMap[_connId].initWt;
+	float maxWt = connectConfigMap[_connId].maxWt;
+	// adjust sign of weight based on pre-group (negative if pre is inhibitory)
+	// this access is fine, isExcitatoryGroup() use global grpId
+	connInfo.maxWt = isExcitatoryGroup(_grpSrc) ? fabs(maxWt) : -1.0 * fabs(maxWt);
+	connInfo.initWt = isExcitatoryGroup(_grpSrc) ? fabs(initWt) : -1.0 * fabs(initWt);
 
 	connectionLists[netId].push_back(connInfo);
 
@@ -3894,6 +3916,16 @@ void SNN::partitionSNN() {
 			exitSimulation(-1);
 		}
 
+		//if (it->second.grpId == 1) {
+		//	it->second.netId = 1;
+		//	numAssignedNeurons[1] += it->second.SizeN;
+		//	groupPartitionLists[1].push_back(it->second);
+		//} else {
+		//	it->second.netId = 0;
+		//	numAssignedNeurons[0] += it->second.SizeN;
+		//	groupPartitionLists[0].push_back(it->second);
+		//}
+
 		//it->second.netId = 0;
 		//numAssignedNeurons[0] += it->second.SizeN;
 		//groupPartitionLists[0].push_back(it->second);
@@ -4561,6 +4593,10 @@ void SNN::deleteRuntimeData() {
 	if (managerRuntimeData.firingTableD1!=NULL) delete[] managerRuntimeData.firingTableD1;
 	managerRuntimeData.firingTableD2=NULL; managerRuntimeData.firingTableD1=NULL;
 
+	if (managerRuntimeData.extFiringTableD2!=NULL) delete[] managerRuntimeData.extFiringTableD2;
+	if (managerRuntimeData.extFiringTableD1!=NULL) delete[] managerRuntimeData.extFiringTableD1;
+	managerRuntimeData.extFiringTableD2=NULL; managerRuntimeData.extFiringTableD1=NULL;
+
 	if (managerRuntimeData.extFiringTableEndIdxD1 != NULL) delete[] managerRuntimeData.extFiringTableEndIdxD1;
 	if (managerRuntimeData.extFiringTableEndIdxD2 != NULL) delete[] managerRuntimeData.extFiringTableEndIdxD2;
 	managerRuntimeData.extFiringTableEndIdxD1 = NULL; managerRuntimeData.extFiringTableEndIdxD2 = NULL;
@@ -4619,6 +4655,8 @@ void SNN::resetFiringTable() {
 	memset(managerRuntimeData.firingTableD1, 0, sizeof(int) * managerRTDSize.maxMaxSpikeD1);
 	memset(managerRuntimeData.extFiringTableEndIdxD2, 0, sizeof(int) * managerRTDSize.maxNumGroups);
 	memset(managerRuntimeData.extFiringTableEndIdxD1, 0, sizeof(int) * managerRTDSize.maxNumGroups);
+	memset(managerRuntimeData.extFiringTableD2, 0, sizeof(int*) * managerRTDSize.maxNumGroups);
+	memset(managerRuntimeData.extFiringTableD1, 0, sizeof(int*) * managerRTDSize.maxNumGroups);
 }
 
 
@@ -4916,6 +4954,8 @@ void SNN::allocateSpikeTables() {
 	managerRuntimeData.firingTableD1 = new int[managerRTDSize.maxMaxSpikeD1];
 	managerRuntimeData.extFiringTableEndIdxD2 = new int[managerRTDSize.maxNumGroups];
 	managerRuntimeData.extFiringTableEndIdxD1 = new int[managerRTDSize.maxNumGroups];
+	managerRuntimeData.extFiringTableD2 = new int*[managerRTDSize.maxNumGroups];
+	managerRuntimeData.extFiringTableD1 = new int*[managerRTDSize.maxNumGroups];
 	resetFiringTable();
 	
 	// timeTableD1(D2) are statically allocated
@@ -5026,7 +5066,7 @@ void SNN::updateSpikeMonitor(int gGrpId) {
 					int lNId = fireTablePtr[i];
 					//if (simMode_ == GPU_MODE)
 					//	nid = GET_FIRING_TABLE_NID(nid);
-					assert(lNId < networkConfigs[netId].numN);
+					//assert(lNId < networkConfigs[netId].numN);
 
 					// make sure neuron belongs to currently relevant group
 					// FIXME: fetch grpIds from device memory
