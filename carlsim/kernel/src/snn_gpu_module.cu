@@ -2961,7 +2961,7 @@ void SNN::routeSpikes_GPU() {
 				firingTableIdx += managerRuntimeData.extFiringTableEndIdxD2[lGrpId];
 			}
 		}
-		cudaDeviceSynchronize();
+		//cudaDeviceSynchronize();
 		timeTableD2[simTimeMs + maxDelay_ + 1] = firingTableIdx;
 		CUDA_CHECK_ERRORS( cudaMemcpyToSymbol(timeTableD2GPU, timeTableD2, sizeof(int)*(1000+maxDelay_+1), 0, cudaMemcpyHostToDevice));
 
@@ -2997,7 +2997,7 @@ void SNN::routeSpikes_GPU() {
 			}
 		}
 		timeTableD2[simTimeMs + maxDelay_ + 1] = firingTableIdx;
-		cudaDeviceSynchronize();
+		//cudaDeviceSynchronize();
 		CUDA_CHECK_ERRORS( cudaMemcpyToSymbol(timeTableD2GPU, timeTableD2, sizeof(int)*(1000+maxDelay_+1), 0, cudaMemcpyHostToDevice));
 	}
 	
