@@ -162,7 +162,7 @@ void GroupMonitorCore::stopRecording() {
 
 	// call updateGroupMonitor to make sure group data file and the data vector are up-to-date
 	// Caution: must be called before recordSet_ is set to false!
-	snn_->updateSpikeMonitor(grpId_);
+	snn_->updateGroupMonitor(grpId_);
 
 	recordSet_ = false;
 	stopTime_ = snn_->getSimTimeSec()*1000+snn_->getSimTimeMs();

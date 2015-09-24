@@ -43,8 +43,8 @@
 // include CARLsim user interface
 #include <carlsim.h>
 
-#define N_EXC 8000
-#define N_INH 2000
+#define N_EXC 800
+#define N_INH 200
 
 int main() {
 	// create a network on GPU
@@ -63,10 +63,10 @@ int main() {
 
 	int gInput = sim.createSpikeGeneratorGroup("input", N_EXC, EXCITATORY_NEURON);
 
-	sim.connect(gInput, gExc, "one-to-one", RangeWeight(30.0f), 1.0f, RangeDelay(1, 5), RadiusRF(-1), SYN_FIXED);
+	sim.connect(gInput, gExc, "one-to-one", RangeWeight(30.0f), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
 	sim.connect(gExc, gExc, "random", RangeWeight(6.0f), 0.1f, RangeDelay(1, 20), RadiusRF(-1), SYN_FIXED);
 	sim.connect(gExc, gInh, "random", RangeWeight(6.0f), 0.1f, RangeDelay(1, 20), RadiusRF(-1), SYN_FIXED);
-	sim.connect(gInh, gExc, "random", RangeWeight(5.0f), 0.125f, RangeDelay(1, 2), RadiusRF(-1), SYN_FIXED);
+	sim.connect(gInh, gExc, "random", RangeWeight(5.0f), 0.125f, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
 
 	sim.setConductances(false);
 

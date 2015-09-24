@@ -3903,18 +3903,18 @@ void SNN::partitionSNN() {
 	// put excitatory groups to GPU 0 and inhibitory groups to GPU 1
 	// this parse separates groups into each local network and assign each group a netId
 	for (std::map<int, GroupConfigRT>::iterator it = groupConfigMap.begin(); it != groupConfigMap.end(); it++) {
-		//if (IS_EXCITATORY_TYPE(it->second.Type)) {
-		//	it->second.netId = 0;
-		//	numAssignedNeurons[0] += it->second.SizeN;
-		//	groupPartitionLists[0].push_back(it->second);
-		//} else if (IS_INHIBITORY_TYPE(it->second.Type)) {
-		//	it->second.netId = 1;
-		//	numAssignedNeurons[1] += it->second.SizeN;
-		//	groupPartitionLists[1].push_back(it->second);
-		//} else {
-		//	KERNEL_ERROR("Can't assign the group [%d] to any partition", it->second.grpId);
-		//	exitSimulation(-1);
-		//}
+		if (IS_EXCITATORY_TYPE(it->second.Type)) {
+			it->second.netId = 0;
+			numAssignedNeurons[0] += it->second.SizeN;
+			groupPartitionLists[0].push_back(it->second);
+		} else if (IS_INHIBITORY_TYPE(it->second.Type)) {
+			it->second.netId = 1;
+			numAssignedNeurons[1] += it->second.SizeN;
+			groupPartitionLists[1].push_back(it->second);
+		} else {
+			KERNEL_ERROR("Can't assign the group [%d] to any partition", it->second.grpId);
+			exitSimulation(-1);
+		}
 
 		//if (it->second.grpId == 1) {
 		//	it->second.netId = 1;
@@ -3926,9 +3926,9 @@ void SNN::partitionSNN() {
 		//	groupPartitionLists[0].push_back(it->second);
 		//}
 
-		it->second.netId = 0;
-		numAssignedNeurons[0] += it->second.SizeN;
-		groupPartitionLists[0].push_back(it->second);
+		//it->second.netId = 0;
+		//numAssignedNeurons[0] += it->second.SizeN;
+		//groupPartitionLists[0].push_back(it->second);
 
 		//it->second.netId = 1;
 		//numAssignedNeurons[1] += it->second.SizeN;
@@ -5126,7 +5126,7 @@ void SNN::printSimSummary() {
 	KERNEL_INFO("Simulation Mode:\t%s",sim_with_conductances?"COBA":"CUBA");
 	KERNEL_INFO("Random Seed:\t\t%d", randSeed_);
 	KERNEL_INFO("Timing:\t\t\tModel Simulation Time = %lld sec", (unsigned long long)simTimeSec);
-	KERNEL_INFO("\t\t\tActual Execution Time = %4.2f sec", etime/1000.0);
+	KERNEL_INFO("\t\t\tActual Execution Time = %4.2f sec", etime/1000.0f);
 	KERNEL_INFO("Average Firing Rate:\t2+ms delay = %3.3f Hz", spikeCountD2/(1.0*simTimeSec*numNExcReg));
 	KERNEL_INFO("\t\t\t1ms delay = %3.3f Hz", spikeCountD1/(1.0*simTimeSec*numNInhReg));
 	KERNEL_INFO("\t\t\tOverall = %3.3f Hz", spikeCount/(1.0*simTimeSec*numN));
