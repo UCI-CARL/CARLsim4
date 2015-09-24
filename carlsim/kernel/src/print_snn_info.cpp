@@ -146,9 +146,9 @@ void SNN::printStatusSpikeMonitor(int gGrpId) {
 			// if some time has passed since last print
 			float meanRate = grpSpk * 1000.0f / runDurationMs / groupConfigMap[gGrpId].SizeN;
 			float std = 0.0f;
-			if (groupConfigs[netId][lGrpId].SizeN > 1) {
-				for (int lNId = groupConfigs[netId][lGrpId].localStartN; lNId <= groupConfigs[netId][lGrpId].localEndN; lNId++) {
-					float neurRate = managerRuntimeData.nSpikeCnt[lNId] * 1000.0f / runDurationMs;
+			if (groupConfigMap[gGrpId].SizeN > 1) {
+				for (int gNId = groupConfigMap[gGrpId].StartN; gNId <= groupConfigMap[gGrpId].EndN; gNId++) {
+					float neurRate = managerRuntimeData.nSpikeCnt[gNId] * 1000.0f / runDurationMs;
 					std += (neurRate - meanRate) * (neurRate - meanRate);
 				}
 				std = sqrt(std / (groupConfigs[netId][lGrpId].SizeN - 1.0));

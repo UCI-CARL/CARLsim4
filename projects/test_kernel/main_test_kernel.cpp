@@ -79,6 +79,7 @@ int main() {
 	//SpikeMonitor* smInput = sim.setSpikeMonitor(gInput, "DEFAULT");
 	SpikeMonitor* smExc = sim.setSpikeMonitor(gExc, "NULL");
 	SpikeMonitor* smInh = sim.setSpikeMonitor(gInh, "NULL");
+	SpikeMonitor* smInput = sim.setSpikeMonitor(gInput, "NULL");
 	//ConnectionMonitor* cmEE = sim.setConnectionMonitor(gExc, gExc2, "DEFAULT");
 
 	//setup some baseline input
@@ -91,12 +92,14 @@ int main() {
 	//smInput->startRecording();
 	smExc->startRecording();
 	smInh->startRecording();
+	smInput->startRecording();
 	
 	sim.runNetwork(10, 0);
 	
 	//smInput->stopRecording();
 	smExc->stopRecording();
 	smInh->stopRecording();
+	smInput->stopRecording();
 
 	//smExc->print(true);
 	//smExc2->print(true);
