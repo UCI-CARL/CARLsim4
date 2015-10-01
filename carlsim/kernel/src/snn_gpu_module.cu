@@ -486,24 +486,6 @@ void SNN::resetSpikeCnt_GPU(int gGrpId) {
 	}
 }
 
-__device__ void findGrpId_GPU(int nid, int grpId)
-{
-	for (int g=0; g < networkConfigGPU.numGroups; g++) {
-		//uint3 groupIdInfo = {1, 1, 1};
-		int startN  = tex1Dfetch(groupIdInfo_tex, g*3);
-		int endN    = tex1Dfetch(groupIdInfo_tex, g*3+1);
-		// printf("%d:%s s=%d e=%d\n", g, groupInfo[g].Name.c_str(), groupConfigs[0][g].StartN, groupConfigs[0][g].EndN);
-		//if ((nid >= groupIdInfo.x) && (nid <= groupIdInfo.y)) {
-		// grpId = groupIdInfo.z;
-		if ((nid >= startN) && (nid <= endN)) {
-			grpId = tex1Dfetch (groupIdInfo_tex, g*3+2);
-			return;
-		}
-	}
-	grpId = -1;
-	return;
-}
-
 #define LTP_GROUPING_SZ 16 //!< synaptic grouping for LTP Calculation
 /*!
  * \brief Computes the STDP update values for each of fired neurons stored in the local firing table.
@@ -1279,15 +1261,8 @@ __device__ void generatePostSynapticSpike(int simTime, int preNId, int postNId, 
 	// get the actual position of the synapses and other variables...
 	unsigned int prePos = runtimeDataGPU.cumulativePre[postNId] + synId;
 
-	short int preGrpId = runtimeDataGPU.grpIds[preNId];
-	//short int pre_grpId = GET_FIRING_TABLE_GID(firingId);
-	//int pre_nid = GET_FIRING_TABLE_NID(firingId);
-
-	// Error MNJ... this should have been from nid.. not firingId...
-	// int  nid  = GET_FIRING_TABLE_NID(firingId);
-//	int    post_grpId;		// STP uses pre_grpId, STDP used post_grpId...
-//	findGrpId_GPU(nid, post_grpId);
-	short int postGrpId = runtimeDataGPU.grpIds[postNId];
+	short int preGrpId = runtimeDataGPU.grpIds[preNId]; // STP uses preGrpId
+	short int postGrpId = runtimeDataGPU.grpIds[postNId]; // STDP uses postGrpId
 
 	// Got one spike from dopaminergic neuron, increase dopamine concentration in the target area
 	if (groupConfigsGPU[preGrpId].Type & TARGET_DA) {
@@ -2925,10 +2900,8 @@ void SNN::doGPUSim() {
 }
 
 void SNN::routeSpikes_GPU() {
-	unsigned int temp1, temp2;
 	int firingTableIdxD2, firingTableIdxD1;
 	int GtoLOffset;
-	int currentDevice;
 	// ToDo: route spikes using routing table. currently only exchange spikes between GPU0 and GPU1
 	// GPU0 -> GPU1
 	if (!groupPartitionLists[0].empty() && !groupPartitionLists[1].empty()) {

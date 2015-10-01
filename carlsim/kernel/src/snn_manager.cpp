@@ -534,13 +534,13 @@ void SNN::setNeuromodulator(int grpId, float baseDP, float tauDP, float base5HT,
 	float tauACh, float baseNE, float tauNE) {
 
 	groupConfigMap[grpId].baseDP	= baseDP;
-	groupConfigMap[grpId].decayDP = 1.0 - (1.0 / tauDP);
+	groupConfigMap[grpId].decayDP = 1.0f - (1.0f / tauDP);
 	groupConfigMap[grpId].base5HT = base5HT;
-	groupConfigMap[grpId].decay5HT = 1.0 - (1.0 / tau5HT);
+	groupConfigMap[grpId].decay5HT = 1.0f - (1.0f / tau5HT);
 	groupConfigMap[grpId].baseACh = baseACh;
-	groupConfigMap[grpId].decayACh = 1.0 - (1.0 / tauACh);
+	groupConfigMap[grpId].decayACh = 1.0f - (1.0f / tauACh);
 	groupConfigMap[grpId].baseNE	= baseNE;
-	groupConfigMap[grpId].decayNE = 1.0 - (1.0 / tauNE);
+	groupConfigMap[grpId].decayNE = 1.0f - (1.0f / tauNE);
 }
 
 // set ESTDP params
@@ -3332,17 +3332,6 @@ void SNN::deleteObjects() {
 	// delete gpu runtime data
 	deleteObjects_GPU();
 	simulatorDeleted = true;
-}
-
-int SNN::findGrpId(int nid) {
-	KERNEL_WARN("Using findGrpId is deprecated, use array grpIds[] instead...");
-	for(int g=0; g < numGroups; g++) {
-		if(nid >=groupConfigs[0][g].StartN && (nid <=groupConfigs[0][g].EndN)) {
-			return g;
-		}
-	}
-	KERNEL_ERROR("findGrp(): cannot find the group for neuron %d", nid);
-	exitSimulation(1);
 }
 
 void SNN::findMaxDelay(int* _maxDelay) {
