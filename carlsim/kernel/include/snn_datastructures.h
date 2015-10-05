@@ -245,8 +245,6 @@ typedef struct RuntimeData_s {
 	int3* groupIdInfo;			//!< .x , .y: the start and end index of neurons in a group, .z: gourd id, used for group Id calculations
 
 	int*  nSpikeCnt;
-	int** spkCntBuf; //!< for copying 2D array to GPU (see SNN::allocateSNN_GPU)
-	int*  spkCntBufChild[MAX_GRP_PER_SNN]; //!< child pointers for above
 
 	//!< homeostatic plasticity variables
 	float* baseFiringInv; //!< only used on GPU
@@ -406,11 +404,6 @@ typedef struct GroupConfigRT_s {
 	float        BETA_LTD;
 	float        LAMBDA;
 	float        DELTA;
-
-	bool         withSpikeCounter;     //!< if this flag is set, we want to keep track of how many spikes per neuron in the group
-	int          spkCntRecordDur;       //!< record duration, after which spike buffer gets reset
-	int          spkCntRecordDurHelper; //!< counter to help make fast modulo
-	int          spkCntBufPos;          //!< which position in the spike buffer the group has 
 
 	//!< homeostatic plasticity variables
 	float avgTimeScale;

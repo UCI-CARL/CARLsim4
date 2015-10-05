@@ -107,11 +107,6 @@ void SNN::doD2CurrentUpdate() {
 }
 
 void SNN::doSnnSim() {
-	// for all Spike Counters, reset their spike counts to zero if simTime % recordDur == 0
-	if (sim_with_spikecounters) {
-		checkSpikeCounterRecordDur();
-	}
-
 	// decay STP vars and conductances
 	doSTPUpdateAndDecayCond();
 
@@ -193,12 +188,6 @@ void SNN::findFiring() {
 				managerRuntimeData.voltage[i] = managerRuntimeData.Izh_c[i];
 				managerRuntimeData.recovery[i] += managerRuntimeData.Izh_d[i];
 
-				// if flag hasSpkMonRT is set, we want to keep track of how many spikes per neuron in the group
-				if (groupConfigs[0][g].withSpikeCounter) {// put the condition for runNetwork
-					int bufPos = groupConfigs[0][g].spkCntBufPos; // retrieve buf pos
-					int bufNeur = i-groupConfigs[0][g].StartN;
-					spkCntBuf[bufPos][bufNeur]++;
-				}
 				spikeBufferFull = addSpikeToTable(i, g);
 
 				if (spikeBufferFull)
@@ -447,13 +436,6 @@ void SNN::generateSpikesFromFuncPtr(int grpId) {
 				nextTime = nextSchedTime;
 				pbuf->scheduleSpikeTargetGroup(i, nextTime - currTime);
 				spikeCnt++;
-
-				// update number of spikes if SpikeCounter set
-				if (groupConfigs[0][grpId].withSpikeCounter) {
-					int bufPos = groupConfigs[0][grpId].spkCntBufPos; // retrieve buf pos
-					int bufNeur = i-groupConfigs[0][grpId].StartN;
-					spkCntBuf[bufPos][bufNeur]++;
-				}
 			} else {
 				done = true;
 			}
@@ -501,12 +483,6 @@ void SNN::generateSpikesFromRate(int grpId) {
 //					int nid = groupConfigs[0][grpId].StartN+cnt;
 					pbuf->scheduleSpikeTargetGroup(groupConfigs[0][grpId].StartN + neurId, nextTime-currTime);
 					spikeCnt++;
-
-					// update number of spikes if SpikeCounter set
-					if (groupConfigs[0][grpId].withSpikeCounter) {
-						int bufPos = groupConfigs[0][grpId].spkCntBufPos; // retrieve buf pos
-						spkCntBuf[bufPos][neurId]++;
-					}
 				}
 			}
 			else {

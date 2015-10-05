@@ -918,34 +918,6 @@ void SNN::loadSimulation(FILE* fid) {
 	loadSimFID = fid;
 }
 
-// reset spike counter to zero
-void SNN::resetSpikeCounter(int grpId) {
-	if (!sim_with_spikecounters)
-		return;
-
-	assert(grpId>=-1); assert(grpId<numGroups);
-
-	if (grpId == ALL) { // shortcut for all groups
-		for(int grpId1=0; grpId1<numGroups; grpId1 ++) {
-			resetSpikeCounter(grpId1);
-		}
-	} else {
-		// only update if SpikeMonRT is set for this group
-		if (!groupConfigs[0][grpId].withSpikeCounter)
-			return;
-
-		groupConfigs[0][grpId].spkCntRecordDurHelper = 0;
-
-		if (simMode_==GPU_MODE) {
-			resetSpikeCounter_GPU(grpId);
-		}
-		else {
-			int bufPos = groupConfigs[0][grpId].spkCntBufPos; // retrieve buf pos
-			memset(spkCntBuf[bufPos],0,groupConfigs[0][grpId].SizeN*sizeof(int)); // set all to 0
-		}
-	}
-}
-
 // multiplies every weight with a scaling factor
 void SNN::scaleWeights(short int connId, float scale, bool updateWeightRange) {
 	assert(connId>=0 && connId<numConnections);
@@ -1136,24 +1108,6 @@ void SNN::setSpikeGenerator(int grpId, SpikeGeneratorCore* spikeGenFunc) {
 	assert(spikeGenFunc);
 	assert (groupConfigMap[grpId].isSpikeGenerator);
 	groupConfigMap[grpId].spikeGenFunc = spikeGenFunc;
-}
-
-// A Spike Counter keeps track of the number of spikes per neuron in a group.
-void SNN::setSpikeCounter(int grpId, int recordDur) {
-	assert(grpId>=0); assert(grpId<numGroups);
-
-	sim_with_spikecounters = true; // inform simulation
-	groupConfigMap[grpId].withSpikeCounter = true; // inform the group
-	groupConfigMap[grpId].spkCntRecordDur = (recordDur>0)?recordDur:-1; // set record duration, after which spike buf will be reset
-	groupConfigMap[grpId].spkCntRecordDurHelper = 0; // counter to help make fast modulo
-	groupConfigMap[grpId].spkCntBufPos = numSpkCnt; // inform group which pos it has in spike buf
-	spkCntBuf[numSpkCnt] = new int[groupConfigMap[grpId].SizeN]; // create spike buf
-	memset(spkCntBuf[numSpkCnt],0,(groupConfigMap[grpId].SizeN)*sizeof(int)); // set all to 0
-
-	numSpkCnt++;
-
-	KERNEL_INFO("SpikeCounter set for Group %d (%s): %d ms recording window", grpId, groupInfo[grpId].Name.c_str(),
-		recordDur);
 }
 
 // FIXME: distinguish the function call at CONFIG_STATE and SETUP_STATE, where groupConfigs[0][] might not be available
@@ -1772,38 +1726,6 @@ int SNN::getNumSynapticConnections(short int connId) {
 	return connectConfigMap[connId].numberOfConnections;
 }
 
-// return spike buffer, which contains #spikes per neuron in the group
-int* SNN::getSpikeCounter(int grpId) {
-	assert(grpId>=0); assert(grpId<numGroups);
-
-	if (!groupConfigs[0][grpId].withSpikeCounter)
-		return NULL;
-
-	// determine whether spike counts are currently stored on CPU or GPU side
-	bool retrieveSpikesFromGPU = simMode_==GPU_MODE;
-	if (groupConfigs[0][grpId].isSpikeGenerator) {
-		// this flag should be set if group was created via CARLsim::createSpikeGeneratorGroup
-		// could be spikeGenFunc callback or PoissonRate
-		if (groupConfigs[0][grpId].RatePtr != NULL) {
-			// group is Poisson group
-			// even though mean rates might be on either CPU or GPU (RatePtr->isOnGPU()), in GPU mode the
-			// actual random numbers will always be generated on the GPU
-//			retrieveSpikesFromGPU = simMode_==GPU_MODE;
-		} else {
-			// group is generator with callback, CPU only
-			retrieveSpikesFromGPU = false;
-		}
-	}
-
-	// retrieve spikes from either CPU or GPU
-	if (retrieveSpikesFromGPU) {
-		return getSpikeCounter_GPU(grpId);
-	} else {
-		int bufPos = groupConfigs[0][grpId].spkCntBufPos; // retrieve buf pos
-		return spkCntBuf[bufPos]; // return pointer to buffer
-	}
-}
-
 // returns pointer to existing SpikeMonitor object, NULL else
 SpikeMonitor* SNN::getSpikeMonitor(int gGrpId) {
 	int netId = groupConfigMap[gGrpId].netId;
@@ -1951,7 +1873,6 @@ void SNN::SNNinit() {
 	numSpikeMonitor = 0;
 	numGroupMonitor = 0;
 	numConnectionMonitor = 0;
-	numSpkCnt = 0;
 
 	sim_with_fixedwts = true; // default is true, will be set to false if there are any plastic synapses
 	sim_with_conductances = false; // default is false
@@ -2633,33 +2554,6 @@ void SNN::generateConnectionRuntime(int netId) {
 void SNN::generatePoissonGroupRuntime(int netId, int lGrpId) {
 	for(int lNId = groupConfigs[netId][lGrpId].localStartN; lNId <= groupConfigs[netId][lGrpId].localEndN; lNId++)
 		resetPoissonNeuron(netId, lGrpId, lNId);
-}
-
-/*!
- * \brief check whether Spike Counters need to be reset
- *
- * A Spike Counter keeps track of all spikes per neuron for a certain time period (recordDur)
- * After this period of time, the spike buffers need to be reset. The trick is to reset it in the very next
- * millisecond, before continuing. For example, if recordDur=1000ms, we want to reset it right before we start
- * executing the 1001st millisecond, so that at t=1000ms the user is able to access non-zero data.
- */
-void SNN::checkSpikeCounterRecordDur() {
-	for (int g=0; g<numGroups; g++) {
-		// skip groups w/o spkMonRT or non-real record durations
-		if (!groupConfigs[0][g].withSpikeCounter || groupConfigs[0][g].spkCntRecordDur<=0)
-			continue;
-
-		// skip if simTime doesn't need udpating
-		// we want to update in spkCntRecordDur + 1, because this function is called rigth at the beginning
-		// of each millisecond
-		if ( (simTime % ++groupConfigs[0][g].spkCntRecordDurHelper) != 1)
-			continue;
-
- 		if (simMode_==GPU_MODE)
-			resetSpikeCounter_GPU(g);
-		else
-			resetSpikeCounter(g);
-	}
 }
 
 
@@ -3656,11 +3550,6 @@ void SNN::initGroupConfig(GroupConfigRT* _groupConfig) {
 
 	_groupConfig->spikeGenFunc = NULL;
 
-	_groupConfig->withSpikeCounter = false;
-	_groupConfig->spkCntRecordDur = -1;
-	_groupConfig->spkCntRecordDurHelper = 0;
-	_groupConfig->spkCntBufPos = -1;
-
 	_groupConfig->CurrTimeSlice = 1000;
 	_groupConfig->SliceUpdateTime = 0;
 }
@@ -4484,13 +4373,6 @@ void SNN::resetConnectionConfigs(bool deallocate) {
 }
 
 void SNN::deleteRuntimeData() {
-	// delete all Spike Counters
-	for (int i = 0; i < numSpkCnt; i++) {
-		if (spkCntBuf[i] != NULL)
-			delete[] spkCntBuf[i];
-		spkCntBuf[i]=NULL;
-	}
-
 	if (pbuf!=NULL) delete pbuf;
 	if (managerRuntimeData.spikeGenBits!=NULL) delete[] managerRuntimeData.spikeGenBits;
 	pbuf=NULL; managerRuntimeData.spikeGenBits=NULL;
@@ -5090,9 +4972,8 @@ void SNN::updateSpikeMonitor(int gGrpId) {
 	}
 }
 
+// FIXME: update summary format for multiGPUs
 void SNN::printSimSummary() {
-	checkAndSetGPUDevice("printSimSummary");
-
 	float etime;
 	if(simMode_ == GPU_MODE) {
 		stopGPUTiming();

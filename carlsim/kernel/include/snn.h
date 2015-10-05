@@ -518,15 +518,6 @@ public:
 	//! Should not be exposed to user interface
 	SpikeMonitorCore* getSpikeMonitorCore(int grpId);
 
-	/*!
-	 * \brief return the number of spikes per neuron for a certain group
-	 * A Spike Counter keeps track of all spikes per neuron for a certain time period (recordDur) at any point in time.
-	 * \param grpId	the group for which you want the spikes
-	 * \return pointer to array of ints. Number of elements in array is the number of neurons in group.
-	 * Each entry is the number of spikes for this neuron (int) since the last reset.
-	 */
-	int* getSpikeCounter(int grpId);
-
 	//! temporary getter to return pointer to current[] \TODO replace with NeuronMonitor
 	float* getCurrent() { return managerRuntimeData.current; }
 
@@ -592,15 +583,6 @@ private:
 	void generateGroupRuntime(int netId, int lGrpId);
 	void generatePoissonGroupRuntime(int netId, int lGrpId);
 	void generateConnectionRuntime(int netId);
-
-	/*!
-	 * \brief reset Spike Counters to zero if simTime % recordDur == 0
-	 *
-	 * A Spike Counter keeps track of all spikes per neuron for a certain time period (recordDur)
-	 * after this period of time, the spike buffers need to be reset
-	 * this function checks simTime vs. recordDur and resets the spike buffers if necessary
-	 */
-	void checkSpikeCounterRecordDur();
 
 	/*!
 	 * \brief scan all GroupConfigs and ConnectConfigs for generating the configuration of a local network
@@ -782,7 +764,6 @@ private:
 	void assignPoissonFiringRate_GPU();
 
 	void checkAndSetGPUDevice(int netId);
-	void checkAndSetGPUDevice(std::string funcName);
 	void checkDestSrcPtrs(RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind, bool allocateMem, int grpId, int destOffset);
 	void checkInitialization(char* testString=NULL);
 	void checkInitialization2(char* testString=NULL);
@@ -849,17 +830,6 @@ private:
 	void fetchWeightState(int netId, int lGrpId);
 	void fetchGrpIdsLookupArray(int netId);
 	void fetchConnIdsLookupArray(int netId);
-
-	/*!
-	 * \brief return the number of spikes per neuron for a certain group in GPU mode
-	 *
-	 * A Spike Counter keeps track of all spikes per neuron for a certain time period (recordDur)
-	 * at any point in time.
-	 * \param grpId	the group for which you want the spikes
-	 * \return pointer to array of ints. Number of elements in array is the number of neurons in group.
-	 * Each entry is the number of spikes for this neuron (int) since the last reset.
-	 */
-	int* getSpikeCounter_GPU(int grpId);
 
 	void globalStateUpdate_GPU();
 	void initGPU(int netId);
@@ -1016,9 +986,6 @@ private:
 	long int    simTimeLastUpdSpkMon_; //!< last time we ran updateSpikeMonitor
 
 	int numSpikeGenGrps;
-
-	int numSpkCnt; //!< number of real-time spike monitors in the network
-	int* spkCntBuf[MAX_GRP_PER_SNN]; //!< the actual buffer of spike counts (per group, per neuron)
 
 	// keep track of number of GroupMonitor/GroupMonitorCore objects
 	int numGroupMonitor;

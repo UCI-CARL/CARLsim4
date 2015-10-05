@@ -781,13 +781,13 @@ void CARLsim::loadSimulation(FILE* fid) {
 }
 
 // resets spike counters
-void CARLsim::resetSpikeCounter(int grpId) {
-	std::string funcName = "resetSpikeCounter()";
-	UserErrors::assertTrue(carlsimState_==SETUP_STATE||carlsimState_==RUN_STATE,
-		UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "SETUP or RUN.");
-
-	snn_->resetSpikeCounter(grpId);
-}
+//void CARLsim::resetSpikeCounter(int grpId) {
+//	std::string funcName = "resetSpikeCounter()";
+//	UserErrors::assertTrue(carlsimState_==SETUP_STATE||carlsimState_==RUN_STATE,
+//		UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "SETUP or RUN.");
+//
+//	snn_->resetSpikeCounter(grpId);
+//}
 
 // scales the weight of every synapse in the connection with a scaling factor
 void CARLsim::scaleWeights(short int connId, float scale, bool updateWeightRange) {
@@ -898,14 +898,14 @@ GroupMonitor* CARLsim::setGroupMonitor(int grpId, const std::string& fname) {
 }
 
 // sets a spike counter for a group
-void CARLsim::setSpikeCounter(int grpId, int recordDur) {
-	std::stringstream funcName;	funcName << "setSpikeCounter(" << grpId << "," << recordDur << ")";
-	UserErrors::assertTrue(grpId!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName.str(), "grpId");
-	UserErrors::assertTrue(carlsimState_==CONFIG_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE,
-		funcName.str(), funcName.str(), "CONFIG.");
-
-	snn_->setSpikeCounter(grpId,recordDur);
-}
+//void CARLsim::setSpikeCounter(int grpId, int recordDur) {
+//	std::stringstream funcName;	funcName << "setSpikeCounter(" << grpId << "," << recordDur << ")";
+//	UserErrors::assertTrue(grpId!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName.str(), "grpId");
+//	UserErrors::assertTrue(carlsimState_==CONFIG_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE,
+//		funcName.str(), funcName.str(), "CONFIG.");
+//
+//	snn_->setSpikeCounter(grpId,recordDur);
+//}
 
 // sets up a spike generator
 void CARLsim::setSpikeGenerator(int grpId, SpikeGenerator* spikeGenFunc) {
@@ -1192,14 +1192,14 @@ int CARLsim::getSimTimeSec() { return snn_->getSimTimeSec(); }
 int CARLsim::getSimTimeMsec() { return snn_->getSimTimeMs(); }
 
 // get spiking information out for a given group
-int* CARLsim::getSpikeCounter(int grpId) {
-	std::stringstream funcName;	funcName << "getSpikeCounter(" << grpId << ")";
-	UserErrors::assertTrue(grpId!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName.str(), "grpId");
-	UserErrors::assertTrue(carlsimState_==RUN_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName.str(),
-		"RUN.");
-
-	return snn_->getSpikeCounter(grpId);
-}
+//int* CARLsim::getSpikeCounter(int grpId) {
+//	std::stringstream funcName;	funcName << "getSpikeCounter(" << grpId << ")";
+//	UserErrors::assertTrue(grpId!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName.str(), "grpId");
+//	UserErrors::assertTrue(carlsimState_==RUN_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName.str(),
+//		"RUN.");
+//
+//	return snn_->getSpikeCounter(grpId);
+//}
 
 // returns pointer to existing SpikeMonitor object, NULL else
 SpikeMonitor* CARLsim::getSpikeMonitor(int grpId) {

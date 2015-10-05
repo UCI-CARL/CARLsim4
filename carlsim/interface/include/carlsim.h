@@ -810,7 +810,7 @@ public:
 	 * \see CARLsim::setSpikeCounter
 	 * \see CARLsim::getSpikeCounter
 	 */
-	void resetSpikeCounter(int grpId);
+	//void resetSpikeCounter(int grpId);
 
 	/*!
 	 * \brief Multiplies the weight of every synapse in the connection with a scaling factor
@@ -971,7 +971,7 @@ public:
 	 * \see CARLsim::getSpikeCounter
 	 * \see CARLsim::resetSpikeCounter
 	 */
-	void setSpikeCounter(int grpId, int recordDur=-1);
+	//void setSpikeCounter(int grpId, int recordDur=-1);
 
 	/*!
 	 * \brief Associates a SpikeGenerator object with a group
@@ -1507,7 +1507,7 @@ public:
 	 * \see CARLsim::setSpikeCounter
 	 * \see CARLsim::resetSpikeCounter
 	 */
-	int* getSpikeCounter(int grpId);
+	//int* getSpikeCounter(int grpId);
 
 	/*!
 	 * \brief returns pointer to previously allocated SpikeMonitor object, NULL else
