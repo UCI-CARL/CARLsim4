@@ -123,7 +123,7 @@ public:
 
 	// +++++ PUBLIC PROPERTIES ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
-	const static unsigned int MAJOR_VERSION = 3; //!< major release version, as in CARLsim X
+	const static unsigned int MAJOR_VERSION = 4; //!< major release version, as in CARLsim X
 	const static unsigned int MINOR_VERSION = 0; //!< minor release version, as in CARLsim 2.X
 
 

@@ -131,33 +131,50 @@ void initQuickSynIdTable(int netId) {
 	CUDA_CHECK_ERRORS(cudaMemcpy( devPtr, quickSynIdTable, sizeof(quickSynIdTable), cudaMemcpyHostToDevice));
 }
 
-__device__ inline bool isPoissonGroup(short int grpId, int nid) {
-	return (groupConfigsGPU[grpId].Type & POISSON_NEURON);
+__device__ inline bool isPoissonGroup(short int lGrpId) {
+	return (groupConfigsGPU[lGrpId].Type & POISSON_NEURON);
 }
 
-__device__ inline void setFiringBitSynapses(int nid, int synId) {
-	unsigned int* tmp_I_set_p = ((unsigned int*)((char*)runtimeDataGPU.I_set + ((synId >> 5) * networkConfigGPU.I_setPitch)) + nid);
-	int atomicVal = atomicOr(tmp_I_set_p, 1 << (synId % 32));
+__device__ inline void setFiringBitSynapses(int lNId, int synId) {
+	unsigned int* tmp_I_set_p = ((unsigned int*)((char*)runtimeDataGPU.I_set + ((synId >> 5) * networkConfigGPU.I_setPitch)) + lNId);
+	atomicOr(tmp_I_set_p, 1 << (synId % 32));
 }
 
-__device__ inline unsigned int* getFiringBitGroupPtr(int nid, int synId) {
-	return (((unsigned int*)((char*)runtimeDataGPU.I_set + synId * networkConfigGPU.I_setPitch)) + nid);
+__device__ inline unsigned int* getFiringBitGroupPtr(int lNId, int synId) {
+	return (((unsigned int*)((char*)runtimeDataGPU.I_set + synId * networkConfigGPU.I_setPitch)) + lNId);
 }
 
-__device__ inline int getSTPBufPos(int nid, int simTime) {
-	//return (((t%STP_BUF_SIZE)*networkConfigGPU.STP_Pitch) + nid);
-	return ((simTime % (networkConfigGPU.maxDelay + 1)) * networkConfigGPU.STP_Pitch + nid);
+__device__ inline int getSTPBufPos(int lNId, int simTime) {
+	return ((simTime % (networkConfigGPU.maxDelay + 1)) * networkConfigGPU.STP_Pitch + lNId);
 }
 
 __device__ inline int2 getStaticThreadLoad(int bufPos) {
 	return (runtimeDataGPU.neuronAllocation[bufPos]);
 }
 
-__device__ inline bool getPoissonSpike_GPU (int nid) {
+__device__ inline bool getPoissonSpike(int lNId) {
 	// Random number value is less than the poisson firing probability
 	// if poisson firing probability is say 1.0 then the random poisson ptr
 	// will always be less than 1.0 and hence it will continiously fire
-	return runtimeDataGPU.poissonRandPtr[nid-networkConfigGPU.numNReg]*(1000.0f/RNG_rand48::MAX_RANGE) < runtimeDataGPU.poissonFireRate[nid-networkConfigGPU.numNReg];
+	return runtimeDataGPU.poissonRandPtr[lNId - networkConfigGPU.numNReg] * (1000.0f / RNG_rand48::MAX_RANGE)
+			< runtimeDataGPU.poissonFireRate[lNId - networkConfigGPU.numNReg];
+}
+
+__device__ inline bool getSpikeGenBit(unsigned int nidPos) {
+	const int nidBitPos = nidPos % 32;
+	const int nidIndex  = nidPos / 32;
+	return ((runtimeDataGPU.spikeGenBits[nidIndex] >> nidBitPos) & 0x1);
+}
+
+/*!
+ * \brief This device function updates the average firing rate of each neuron, which is required for homeostasis
+ *
+ * \param[in] lNId The neuron id to be updated
+ * \param[in] lGrpId The group id of the neuron
+ */
+__device__ inline void updateHomeoStaticState(int lNId, int lGrpId) {
+	// here the homeostasis adjustment
+	runtimeDataGPU.avgFiring[lNId] *= (groupConfigsGPU[lGrpId].avgTimeScale_decay);
 }
 
 /*!
@@ -180,7 +197,7 @@ __global__ void kernel_updateTimeTable(int simTime) {
 // KERNEL: This kernel is called after initialization of various parameters   ///
 // so that we can reset all required parameters.                              ///
 /////////////////////////////////////////////////////////////////////////////////
-__global__ void kernel_init () {
+__global__ void kernel_initGPUMemory() {
 	// FIXME: use parallel access
 	int timeTableIdx = blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -448,7 +465,7 @@ __device__ int updateNewFirings(int* fireTablePtr, short int* fireGrpId,
 }
 
 // zero GPU spike counts
-__global__ void gpu_resetSpikeCnt(int _grpId) {
+__global__ void kernel_resetNSpikeCnt(int lGrpId) {
 	const int totBuffers = loadBufferCount;
 
 	for (int bufPos = blockIdx.x; bufPos < totBuffers; bufPos += gridDim.x) {
@@ -460,7 +477,7 @@ __global__ void gpu_resetSpikeCnt(int _grpId) {
 		int  lastId = STATIC_LOAD_SIZE(threadLoad);
 		int  grpId = STATIC_LOAD_GROUP(threadLoad);
 
-		if ((_grpId == ALL || _grpId == grpId) && (nid <= lastId)) {
+		if ((lGrpId == ALL || lGrpId == grpId) && (nid <= lastId)) {
 			runtimeDataGPU.nSpikeCnt[nid] = 0;
 		}
 	}
@@ -482,7 +499,7 @@ void SNN::resetSpikeCnt_GPU(int gGrpId) {
 		int lGrpId = groupConfigMap[gGrpId].localGrpId;
 
 		checkAndSetGPUDevice(netId);
-		gpu_resetSpikeCnt<<<NUM_BLOCKS, NUM_THREADS>>>(lGrpId);
+		kernel_resetNSpikeCnt<<<NUM_BLOCKS, NUM_THREADS>>>(lGrpId);
 	}
 }
 
@@ -494,7 +511,7 @@ void SNN::resetSpikeCnt_GPU(int gGrpId) {
  * \param[in] fireCnt the number of fired neurons in local firing table
  * \param[in] simTime the current time step, stored as neuron firing time entry
  */
-__device__ void gpu_updateLTP(int* fireTablePtr, short int* fireGrpId, volatile unsigned int& fireCnt, int simTime) {
+__device__ void updateLTP(int* fireTablePtr, short int* fireGrpId, volatile unsigned int& fireCnt, int simTime) {
 	for(int pos=threadIdx.x/LTP_GROUPING_SZ; pos < fireCnt; pos += (blockDim.x/LTP_GROUPING_SZ))  {
 		// each neuron has two variable pre and pre_exc
 		// pre: number of pre-neuron
@@ -553,12 +570,6 @@ __device__ void gpu_updateLTP(int* fireTablePtr, short int* fireGrpId, volatile 
 		}
 	}
 	__syncthreads();
-}
-
-__device__ inline bool getSpikeGenBit_GPU (unsigned int nidPos) {
-	const int nidBitPos = nidPos % 32;
-	const int nidIndex  = nidPos / 32;
-	return ((runtimeDataGPU.spikeGenBits[nidIndex] >> nidBitPos) & 0x1);
 }
 
 /*
@@ -627,12 +638,12 @@ __global__ 	void kernel_findFiring (int simTime) {
 		if ((threadIdx.x < lastLNId) && (lNId < networkConfigGPU.numN)) {
 			// Simple poisson spiker uses the poisson firing probability
 			// to detect whether it has fired or not....
-			if( isPoissonGroup(lGrpId, lNId) ) { // spikes generated by spikeGenFunc
+			if(isPoissonGroup(lGrpId)) { // spikes generated by spikeGenFunc
 				if(groupConfigsGPU[lGrpId].spikeGenFunc) {
 					unsigned int offset = lNId - groupConfigsGPU[lGrpId].localStartN + groupConfigsGPU[lGrpId].Noffset;
-					needToWrite = getSpikeGenBit_GPU(offset);
+					needToWrite = getSpikeGenBit(offset);
 				} else { // spikes generated by poission rate
-					needToWrite = getPoissonSpike_GPU(lNId);
+					needToWrite = getPoissonSpike(lNId);
 				}
 			} else {
 				if (runtimeDataGPU.voltage[lNId] >= 30.0f) {
@@ -673,7 +684,7 @@ __global__ 	void kernel_findFiring (int simTime) {
 				// update based on stdp rule
 				// KILLME !!! if (simTime > 0))
 				if (networkConfigGPU.sim_with_stdp && !networkConfigGPU.sim_in_testing)
-					gpu_updateLTP (fireTable, fireGrpId, fireCnt, simTime);
+					updateLTP (fireTable, fireGrpId, fireCnt, simTime);
 
 				// reset counters
 				if (0==threadIdx.x) {
@@ -693,7 +704,7 @@ __global__ 	void kernel_findFiring (int simTime) {
 		if (retCode != 0) return;
 
 		if (networkConfigGPU.sim_with_stdp && !networkConfigGPU.sim_in_testing)
-			gpu_updateLTP(fireTable, fireGrpId, fireCnt, simTime);
+			updateLTP(fireTable, fireGrpId, fireCnt, simTime);
 	}
 }
 
@@ -903,18 +914,6 @@ __device__ void updateNeuronState(int nid, int grpId) {
 }
 
 /*!
- * \brief This device function updates the average firing rate of each neuron, which is required for homeostasis
- *
- * \param[in] nid The neuron id to be updated
- * \param[in] grpId The group id of the neuron
- */
-__device__ inline void updateHomeoStaticState(int nid, int grpId) {
-	// here the homeostasis adjustment
-	if (groupConfigsGPU[grpId].WithHomeostasis)
-		runtimeDataGPU.avgFiring[nid] *= (groupConfigsGPU[grpId].avgTimeScale_decay);
-}
-
-/*!
  *  \brief update neuron state
  *
  * This kernel update neurons' membrance potential according to neurons' dynamics model.
@@ -945,8 +944,8 @@ __global__ void kernel_neuronStateUpdate() {
 				// update neuron state here....
 				updateNeuronState(nid, grpId);
 
-				// TODO: Could check with homeostasis flag here
-				updateHomeoStaticState(nid, grpId);
+				if (groupConfigsGPU[grpId].WithHomeostasis)
+					updateHomeoStaticState(nid, grpId);
 			}
 		}
 	}		
@@ -2608,8 +2607,8 @@ void SNN::initGPU(int netId) {
 
 	assert(gpuRuntimeData[netId].allocated);
 
-	kernel_init<<<NUM_BLOCKS, NUM_THREADS>>>();
-	CUDA_GET_LAST_ERROR("initGPU kernel failed\n");
+	kernel_initGPUMemory<<<NUM_BLOCKS, NUM_THREADS>>>();
+	CUDA_GET_LAST_ERROR("initGPUMemory kernel failed\n");
 }
 
 //void SNN::printCurrentInfo(FILE* fp) {

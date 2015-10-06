@@ -4158,7 +4158,7 @@ void SNN::generateRuntimeSNN() {
 	for (int netId = 0; netId < MAX_NET_PER_SNN; netId++) {
 		if (!groupPartitionLists[netId].empty()) {	
 			KERNEL_INFO("");
-			KERNEL_INFO("*****************      Initializing %s %d Simulation      *************************",
+			KERNEL_INFO("*****************      Initializing %s %d Runtime      *************************",
 			simMode_ == GPU_MODE?"GPU":"CPU", netId);
 			// build the runtime data according to local network, group, connection configuirations
 			
