@@ -25,7 +25,7 @@ TEST(setGroupMon, grpId){
 	// loop over both CPU and GPU mode.
 	for(int mode = 0; mode < 2; mode++){
 		// first iteration, test CPU mode, second test GPU mode
-		sim = new CARLsim("setGroupMon.grpId", mode?GPU_MODE:CPU_MODE, SILENT, 0, 42);
+		sim = new CARLsim("setGroupMon.grpId", mode?GPU_MODE:CPU_MODE, SILENT, 1, 42);
 		
 		int g1 = sim->createGroup("g1", GRP_SIZE, EXCITATORY_NEURON);
 		int g2 = sim->createGroup("g2", GRP_SIZE, EXCITATORY_NEURON);
@@ -54,7 +54,7 @@ TEST(setGroupMon, fname){
 	// loop over both CPU and GPU mode.
 	for(int mode = 0; mode < 2; mode++){
 		// first iteration, test CPU mode, second test GPU mode
-		sim = new CARLsim("setGroupMon.fname", mode?GPU_MODE:CPU_MODE, SILENT, 0, 42);
+		sim = new CARLsim("setGroupMon.fname", mode?GPU_MODE:CPU_MODE, SILENT, 1, 42);
 		
 		int g1 = sim->createGroup("g1", GRP_SIZE, EXCITATORY_NEURON);
 		int g2 = sim->createGroup("g2", GRP_SIZE, EXCITATORY_NEURON);
@@ -72,7 +72,7 @@ TEST(GroupMon, interfaceDeath) {
 	// use threadsafe version because we have deathtests
 	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
-	CARLsim* sim = new CARLsim("GroupMon.interfaceDeath", CPU_MODE, SILENT, 0, 42);
+	CARLsim* sim = new CARLsim("GroupMon.interfaceDeath", CPU_MODE, SILENT, 1, 42);
 
 	int g1 = sim->createGroup("g1", 5, EXCITATORY_NEURON);		
 	sim->setNeuronParameters(g1, 0.02, 0.2, -65.0, 8.0);
@@ -107,7 +107,7 @@ TEST(GroupMon, persistentMode) {
 	// use threadsafe version because we have deathtests
 	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
-	CARLsim* sim = new CARLsim("GroupMon.persistentMode", CPU_MODE, SILENT, 0, 42);
+	CARLsim* sim = new CARLsim("GroupMon.persistentMode", CPU_MODE, SILENT, 1, 42);
 
 	int g1 = sim->createGroup("g1", 5, EXCITATORY_NEURON);		
 	sim->setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f);
@@ -165,8 +165,8 @@ TEST(GroupMon, peakTimeAndValue) {
 	// loop over both CPU and GPU mode.
 	for(int mode = 0; mode < 2; mode++) {
 		// first iteration, test CPU mode, second test GPU mode
-		CARLsim* sim = new CARLsim("GroupMon.peakTimeAndValue", mode?GPU_MODE:CPU_MODE, SILENT, 0, 42);
-		//CARLsim* sim = new CARLsim("GroupMon.peakTimeAndValue", CPU_MODE, SILENT, 0, 42);
+		CARLsim* sim = new CARLsim("GroupMon.peakTimeAndValue", mode?GPU_MODE:CPU_MODE, SILENT, 1, 42);
+		//CARLsim* sim = new CARLsim("GroupMon.peakTimeAndValue", CPU_MODE, SILENT, 1, 42);
 		float tAMPA = 5.0, tNMDA = 150.0, tGABAa = 6.0, tGABAb = 150.0;
 		int g1 = sim->createGroup("g1", 10, EXCITATORY_NEURON);
 		sim->setNeuronParameters(g1, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f);

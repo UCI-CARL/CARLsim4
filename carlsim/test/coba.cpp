@@ -34,7 +34,7 @@ TEST(COBA, synRiseTime) {
 		int trGABAb = 100;
 		int tdGABAb = 150; // make sure it's larger than trGABAb
 
-		sim = new CARLsim("COBA.synRiseTime",mode?GPU_MODE:CPU_MODE,SILENT,0,42);
+		sim = new CARLsim("COBA.synRiseTime",mode?GPU_MODE:CPU_MODE,SILENT,1,42);
         Grid3D neur(1);
         Grid3D neur2(1);
 
@@ -57,8 +57,8 @@ TEST(COBA, synRiseTime) {
 		PeriodicSpikeGenerator* spk2 = new PeriodicSpikeGenerator(1.0f,true); // periodic spiking
 		sim->setSpikeGenerator(g0, spk1);
 		sim->setSpikeGenerator(g2, spk2);
-		sim->setupNetwork(true);
-		sim->runNetwork(1,0,false,false);
+		sim->setupNetwork();
+		sim->runNetwork(1,0,false);
 
 		// now observe gNMDA, gGABAb after spike, and make sure that the time at which they're max matches the
 		// analytical solution, and that the peak conductance is actually equal to the weight we set
@@ -131,7 +131,7 @@ TEST(COBA, condSingleNeuronCPUvsGPU) {
 	bool spikeAtZero = true;
 
 	for (int mode=0; mode<=1; mode++) {
-		sim = new CARLsim("COBA.condCPUvsGPU",mode?GPU_MODE:CPU_MODE,SILENT,0,42);
+		sim = new CARLsim("COBA.condCPUvsGPU",mode?GPU_MODE:CPU_MODE,SILENT,1,42);
 		grps[0]=sim->createGroup("excAMPA", Grid3D(nOutput), EXCITATORY_NEURON);
 		grps[1]=sim->createGroup("excNMDA", Grid3D(nOutput), EXCITATORY_NEURON);
 		grps[2]=sim->createGroup("excAMPA+NMDA", Grid3D(nOutput), EXCITATORY_NEURON);
@@ -163,11 +163,11 @@ TEST(COBA, condSingleNeuronCPUvsGPU) {
 		sim->setSpikeGenerator(g0, spkGen1);
 		sim->setSpikeGenerator(g1, spkGen2);
 
-		sim->setupNetwork(true);
+		sim->setupNetwork();
 
 		// run the network for 1ms, compare conductance values
 		for (int i=0; i<runDurationMs; i++) {
-			sim->runNetwork(0,1,false,true);
+			sim->runNetwork(0,1,false);
 
 			for (int g=0; g<nGrps; g++) {
 				// for all groups

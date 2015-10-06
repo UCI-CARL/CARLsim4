@@ -21,7 +21,7 @@ public:
 TEST(Interface, connectDeath) {
 	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
-	CARLsim* sim = new CARLsim("Interface.connectDeath",CPU_MODE,SILENT,0,42);
+	CARLsim* sim = new CARLsim("Interface.connectDeath",CPU_MODE,SILENT,1,42);
 	int g1=sim->createSpikeGeneratorGroup("excit", 10, EXCITATORY_NEURON);
 	int g2=sim->createGroup("excit", Grid3D(2,3,4), EXCITATORY_NEURON);
 	sim->setNeuronParameters(g2, 0.02f, 0.2f,-65.0f,8.0f);
@@ -60,7 +60,7 @@ TEST(Interface, connectDeath) {
 TEST(Interface, createGroupDeath) {
 	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
-	CARLsim* sim = new CARLsim("Interface.createGroupDeath",CPU_MODE,SILENT,0,42);
+	CARLsim* sim = new CARLsim("Interface.createGroupDeath",CPU_MODE,SILENT,1,42);
 
 	// set silly values to all possible input arguments
 	// e.g., negative values for things>=0, values>numGroups, etc.
@@ -80,7 +80,7 @@ TEST(Interface, createGroupDeath) {
 TEST(Interface, createSpikeGeneratorGroupDeath) {
 	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
-	CARLsim* sim = new CARLsim("Interface.createSpikeGeneratorGroupDeath",CPU_MODE,SILENT,0,42);
+	CARLsim* sim = new CARLsim("Interface.createSpikeGeneratorGroupDeath",CPU_MODE,SILENT,1,42);
 
 	// set silly values to all possible input arguments
 	// e.g., negative values for things>=0, values>numGroups, etc.
@@ -98,7 +98,7 @@ TEST(Interface, createSpikeGeneratorGroupDeath) {
 TEST(Interface, getGroupGrid3DDeath) {
 	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
-	CARLsim* sim = new CARLsim("Interface.getGroupGrid3D",CPU_MODE,SILENT,0,42);
+	CARLsim* sim = new CARLsim("Interface.getGroupGrid3D",CPU_MODE,SILENT,1,42);
 	int g1=sim->createGroup("excit", Grid3D(2,3,4), EXCITATORY_NEURON);
 	sim->setNeuronParameters(g1, 0.02f, 0.2f,-65.0f,8.0f);
 	sim->connect(g1, g1, "full", RangeWeight(0.01), 1.0f, RangeDelay(1));
@@ -114,7 +114,7 @@ TEST(Interface, getGroupGrid3DDeath) {
 TEST(Interface, getNeuronLocation3DDeath) {
 	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
-	CARLsim* sim = new CARLsim("Interface.createGroupDeath",CPU_MODE,SILENT,0,42);
+	CARLsim* sim = new CARLsim("Interface.createGroupDeath",CPU_MODE,SILENT,1,42);
 	Grid3D grid(2,3,4);
 	int g1=sim->createGroup("excit", grid, EXCITATORY_NEURON);
 	sim->setNeuronParameters(g1, 0.02f, 0.2f,-65.0f,8.0f);
@@ -136,22 +136,22 @@ TEST(Interface, loggerDeath) {
 	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 	CARLsim* sim = NULL;
 
-	sim = new CARLsim("Interface.loggerDeath",CPU_MODE,CUSTOM,0,42);
+	sim = new CARLsim("Interface.loggerDeath",CPU_MODE,CUSTOM,1,42);
 	EXPECT_DEATH({sim->setLogFile("meow.log");},"");
 	if (sim!=NULL) delete sim; sim = NULL;
 
-	sim = new CARLsim("Interface.loggerDeath",CPU_MODE,SILENT,0,42);
+	sim = new CARLsim("Interface.loggerDeath",CPU_MODE,SILENT,1,42);
 	EXPECT_DEATH({sim->setLogsFpCustom();},"");
 	if (sim!=NULL) delete sim; sim = NULL;
 
-	EXPECT_DEATH({CARLsim* sim = new CARLsim("Interface.loggerDeath",CPU_MODE,UNKNOWN_LOGGER,0,42);},"");
+	EXPECT_DEATH({CARLsim* sim = new CARLsim("Interface.loggerDeath",CPU_MODE,UNKNOWN_LOGGER,1,42);},"");
 	if (sim!=NULL) delete sim; sim = NULL;
 }
 
 TEST(Interface, biasWeightsDeath) {
 	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
-	CARLsim* sim = new CARLsim("Interface.biasWeightsDeath",CPU_MODE,SILENT,0,42);
+	CARLsim* sim = new CARLsim("Interface.biasWeightsDeath",CPU_MODE,SILENT,1,42);
 	int g1=sim->createGroup("excit", Grid3D(10,10,1), EXCITATORY_NEURON);
 	sim->setNeuronParameters(g1, 0.02f, 0.2f,-65.0f,8.0f);
 	int c1=sim->connect(g1, g1, "full", RangeWeight(0.01), 1.0f, RangeDelay(1));
@@ -172,7 +172,7 @@ TEST(Interface, biasWeightsDeath) {
 TEST(Interface, scaleWeightsDeath) {
 	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
-	CARLsim* sim = new CARLsim("Interface.scaleWeightsDeath",CPU_MODE,SILENT,0,42);
+	CARLsim* sim = new CARLsim("Interface.scaleWeightsDeath",CPU_MODE,SILENT,1,42);
 	int g1=sim->createGroup("excit", Grid3D(10,10,1), EXCITATORY_NEURON);
 	sim->setNeuronParameters(g1, 0.02f, 0.2f,-65.0f,8.0f);
 	int c1=sim->connect(g1, g1, "full", RangeWeight(0.01), 1.0f, RangeDelay(1));
@@ -191,7 +191,7 @@ TEST(Interface, scaleWeightsDeath) {
 TEST(Interface, setWeightDeath) {
 	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
-	CARLsim* sim = new CARLsim("Interface.setWeightDeath",CPU_MODE,SILENT,0,42);
+	CARLsim* sim = new CARLsim("Interface.setWeightDeath",CPU_MODE,SILENT,1,42);
 	int g1=sim->createGroup("excit", Grid3D(10,10,1), EXCITATORY_NEURON);
 	sim->setNeuronParameters(g1, 0.02f, 0.2f,-65.0f,8.0f);
 	int c1=sim->connect(g1, g1, "full", RangeWeight(0.01), 1.0f, RangeDelay(1));
@@ -214,7 +214,7 @@ TEST(Interface, setWeightDeath) {
 TEST(Interface, getDelayRangeDeath) {
 	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
-	CARLsim* sim = new CARLsim("Interface.getDelayRangeDeath",CPU_MODE,SILENT,0,42);
+	CARLsim* sim = new CARLsim("Interface.getDelayRangeDeath",CPU_MODE,SILENT,1,42);
 	int g1=sim->createGroup("excit", Grid3D(10,10,1), EXCITATORY_NEURON);
 	sim->setNeuronParameters(g1, 0.02f, 0.2f,-65.0f,8.0f);
 	int c1=sim->connect(g1, g1, "full", RangeWeight(0.01), 1.0f, RangeDelay(1,10));
@@ -235,7 +235,7 @@ TEST(Interface, getDelayRangeDeath) {
 TEST(Interface, getWeightRangeDeath) {
 	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
-	CARLsim* sim = new CARLsim("Interface.getWeightRangeDeath",CPU_MODE,SILENT,0,42);
+	CARLsim* sim = new CARLsim("Interface.getWeightRangeDeath",CPU_MODE,SILENT,1,42);
 	int g1=sim->createGroup("excit", Grid3D(10,10,1), EXCITATORY_NEURON);
 	sim->setNeuronParameters(g1, 0.02f, 0.2f,-65.0f,8.0f);
 	int c1=sim->connect(g1, g1, "full", RangeWeight(0.0, 0.1, 0.1), 1.0f, RangeDelay(1,10));
@@ -254,21 +254,10 @@ TEST(Interface, getWeightRangeDeath) {
 }
 
 //! trigger all UserErrors
-TEST(Interface, getSpikeCounterDeath) {
-	::testing::FLAGS_gtest_death_test_style = "threadsafe";
-
-	CARLsim* sim = new CARLsim("Interface.getSpikeCounterDeath",CPU_MODE,SILENT,0,42);
-	int g1=sim->createGroup("excit", 10, EXCITATORY_NEURON);
-	sim->setSpikeCounter(g1);
-	EXPECT_DEATH({sim->getSpikeCounter(ALL);},"");
-	delete sim;
-}
-
-//! trigger all UserErrors
 TEST(Interface, setConductancesDeath) {
 	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
-	CARLsim* sim = new CARLsim("Interface.setConductancesDeath",CPU_MODE,SILENT,0,42);
+	CARLsim* sim = new CARLsim("Interface.setConductancesDeath",CPU_MODE,SILENT,1,42);
 	int g1=sim->createGroup("excit", 10, EXCITATORY_NEURON);
 	sim->setNeuronParameters(g1, 0.02f, 0.2f,-65.0f,8.0f);
 	sim->connect(g1,g1,"random",RangeWeight(0.01),0.1f,RangeDelay(1));
@@ -302,7 +291,7 @@ TEST(Interface, setConductancesDeath) {
 TEST(Interface, setExternalCurrentDeath) {
 	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
-	CARLsim* sim = new CARLsim("Interface.setExternalCurrentDeath",CPU_MODE,SILENT,0,42);
+	CARLsim* sim = new CARLsim("Interface.setExternalCurrentDeath",CPU_MODE,SILENT,1,42);
 	int g1=sim->createGroup("excit", 10, EXCITATORY_NEURON);
 	sim->setNeuronParameters(g1, 0.02f, 0.2f,-65.0f,8.0f);
 	int g0=sim->createSpikeGeneratorGroup("input", 10, EXCITATORY_NEURON);
@@ -363,7 +352,7 @@ TEST(Interface, setNeuronParametersDeath) {
 	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
 	CARLsim* sim = NULL;
-	sim = new CARLsim("Interface.setNeuronParametersDeath",CPU_MODE,SILENT,0,42);
+	sim = new CARLsim("Interface.setNeuronParametersDeath",CPU_MODE,SILENT,1,42);
 	int g0=sim->createGroup("excit", Grid3D(10,1,1), EXCITATORY_NEURON);
 
 	// set silly values to all possible input arguments
@@ -391,14 +380,12 @@ TEST(Interface, setNeuronParametersDeath) {
 TEST(Interface, CARLsimConstructorDeathGPU) {
 	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
-	CARLsim *sim1=NULL, *sim2=NULL, *sim3=NULL;
+	CARLsim *sim1=NULL, *sim2=NULL;
 	EXPECT_DEATH({sim1 = new CARLsim("Interface.CARLsimConstructorDeathGPU", GPU_MODE, SILENT, -1);},"");
 	EXPECT_DEATH({sim2 = new CARLsim("Interface.CARLsimConstructorDeathGPU", GPU_MODE, SILENT, 42);},"");
-	// This test will fail if the machine has 8 GPUs
-	EXPECT_DEATH({sim3 = new CARLsim("Interface.CARLsimConstructorDeathGPU", GPU_MODE, SILENT, 7);},"");
+
 	if (sim1 != NULL) delete sim1;
 	if (sim2 != NULL) delete sim2;
-	if (sim3 != NULL) delete sim3;
 }
 
 TEST(Interface, AllocateGPUConflict) {
@@ -406,24 +393,14 @@ TEST(Interface, AllocateGPUConflict) {
 
 	CARLsim *sim1=NULL, *sim2=NULL;
 
-	sim1 = new CARLsim("Interface.AllocateGPUConflict_A", GPU_MODE, SILENT, 0);
-	EXPECT_DEATH({sim2 = new CARLsim("Interface.AllocateGPUConflict_B", GPU_MODE, SILENT, 0);},"");
+	sim1 = new CARLsim("Interface.AllocateGPUConflict_A", GPU_MODE, SILENT, 1);
+	EXPECT_DEATH({sim2 = new CARLsim("Interface.AllocateGPUConflict_B", GPU_MODE, SILENT, 1);},"");
 	if (sim1 != NULL) delete sim1;
 
-	sim1 = new CARLsim("Interface.AllocateGPUConflict", GPU_MODE, SILENT, 0);
+	sim1 = new CARLsim("Interface.AllocateGPUConflict", GPU_MODE, SILENT, 1);
 
 	if (sim1 != NULL) delete sim1;
 	if (sim2 != NULL) delete sim2;
-}
-
-//! trigger all UserErrors
-TEST(Interface, setSpikeCounter) {
-	::testing::FLAGS_gtest_death_test_style = "threadsafe";
-
-	CARLsim* sim = new CARLsim("Interface.setSpikeCounter",CPU_MODE,SILENT,0,42);
-	int g1=sim->createGroup("excit", 10, EXCITATORY_NEURON);
-	EXPECT_DEATH({sim->setSpikeCounter(ALL);},"");
-	delete sim;
 }
 
 //! trigger all UserErrors
@@ -448,7 +425,7 @@ TEST(Interface, CARLsimState) {
 	int g1, g2, i, j;
 	float wM[4];
 	float* w;
-	CARLsim* sim = new CARLsim("Interface.CARLsimState",CPU_MODE,SILENT,0,42);
+	CARLsim* sim = new CARLsim("Interface.CARLsimState",CPU_MODE,SILENT,1,42);
 	//----- CONFIG_STATE zone -----
 
 	g1 = sim->createGroup("excit", 80, EXCITATORY_NEURON);
@@ -460,7 +437,6 @@ TEST(Interface, CARLsimState) {
 	EXPECT_DEATH({sim->runNetwork(1, 0);},"");
 	EXPECT_DEATH({sim->saveSimulation("test.dat", true);},"");
 	EXPECT_DEATH({sim->setSpikeRate(g1, NULL);},"");
-	EXPECT_DEATH({sim->writePopWeights("test.dat", 0, 1);},"");
 	EXPECT_DEATH({sim->getDelays(0, 1, i, j);},"");
 	EXPECT_DEATH({sim->getGroupId("hello");},"");
 	EXPECT_DEATH({sim->getGroupStartNeuronId(0);},"");
@@ -468,8 +444,6 @@ TEST(Interface, CARLsimState) {
 	EXPECT_DEATH({sim->getNeuronLocation3D(0);},"");
 	EXPECT_DEATH({sim->getNumPreSynapses();},"");
 	EXPECT_DEATH({sim->getNumPostSynapses();},"");
-	EXPECT_DEATH({sim->getSpikeCounter(0);},"");
-	EXPECT_DEATH({sim->resetSpikeCounter(0);},"");
 	EXPECT_DEATH({sim->startTesting();},"");
 	EXPECT_DEATH({sim->stopTesting();},"");
 
@@ -503,9 +477,6 @@ TEST(Interface, CARLsimState) {
 	EXPECT_DEATH({sim->setISTDP(g1, true, STANDARD, PulseCurve(1.0, 2.0, 3.0, 4.0));},"");
 	EXPECT_DEATH({sim->setSTP(g1, true, 1.0, 2.0, 3.0);},"");
 	EXPECT_DEATH({sim->setSTP(g1, true);},"");
-	EXPECT_DEATH({sim->getSpikeCounter(0);},"");
-	EXPECT_DEATH({sim->setSpikeCounter(g1);},"");
-	EXPECT_DEATH({sim->getSpikeCounter(g1);},"");
 	EXPECT_DEATH({sim->setWeightAndWeightChangeUpdate(INTERVAL_1000MS, true, 0.9f);},"");
 	EXPECT_DEATH({sim->setupNetwork();},"");
 	EXPECT_DEATH({sim->loadSimulation(NULL);},"");
@@ -520,7 +491,8 @@ TEST(Interface, CARLsimState) {
 	sim->runNetwork(1, 0);
 	EXPECT_TRUE(sim->getCARLsimState() == RUN_STATE);
 	//----- RUN_STATE zone -----
-
+	SpikeGenerator* spikeGenFunc = NULL;
+	std::string fname = "test";
 	// test APIs that can't be called at RUN_STATE
 	EXPECT_DEATH({sim->setupNetwork();},"");
 	EXPECT_DEATH({sim->loadSimulation(NULL);},"");
@@ -550,10 +522,9 @@ TEST(Interface, CARLsimState) {
 	EXPECT_DEATH({sim->setWeightAndWeightChangeUpdate(INTERVAL_1000MS, true, 0.9f);},"");
 	EXPECT_DEATH({sim->setConnectionMonitor(0, 1, "Default");},"");
 	EXPECT_DEATH({sim->setGroupMonitor(0, "Default");},"");
-	EXPECT_DEATH({sim->setSpikeCounter(g1);},"");
-	//EXPECT_DEATH({sim->setSpikeGenerator(0, SpikeGenerator* spikeGenFunc);},"");
+	EXPECT_DEATH({sim->setSpikeGenerator(0, spikeGenFunc);},"");
 	EXPECT_DEATH({sim->setSpikeMonitor(0, "Default");},"");
-	//EXPECT_DEATH({sim->setSpikeMonitor(0, const std::string& fname, int configId=0);},"");
+	EXPECT_DEATH({sim->setSpikeMonitor(0, fname);},"");
 	EXPECT_DEATH({sim->setDefaultConductanceTimeConstants(1, 2, 3, 4, 5, 6);},"");
 	EXPECT_DEATH({sim->setDefaultHomeostasisParams(1.0, 2.0);},"");
 	EXPECT_DEATH({sim->setDefaultSaveOptions("test.dat", true);},"");
@@ -564,7 +535,7 @@ TEST(Interface, CARLsimState) {
 }
 
 TEST(Interface, setDefaultSTDPparamsDeath) {
-	CARLsim* sim = new CARLsim("Interface.setSTDPDeath",CPU_MODE,SILENT,0,42);
+	CARLsim* sim = new CARLsim("Interface.setSTDPDeath",CPU_MODE,SILENT,1,42);
 
 	int	g1 = sim->createGroup("excit", 800, EXCITATORY_NEURON);
 	sim->setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f);
@@ -584,7 +555,7 @@ TEST(Interface, setDefaultSTDPparamsDeath) {
 }
 
 TEST(Interface, setSTDPDeath) {
-	CARLsim* sim = new CARLsim("Interface.setSTDPDeath",CPU_MODE,SILENT,0,42);
+	CARLsim* sim = new CARLsim("Interface.setSTDPDeath",CPU_MODE,SILENT,1,42);
 
 	int	g1 = sim->createGroup("excit", 800, EXCITATORY_NEURON);
 	sim->setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f);

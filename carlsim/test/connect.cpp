@@ -34,7 +34,7 @@ TEST(CONNECT, connectInfo) {
 
 	for (int mode=0; mode<=1; mode++) {
 		for (int i=0; i<4; i++) {
-			sim = new CARLsim("CONNECT.connectInfo",mode?GPU_MODE:CPU_MODE,SILENT,0,42);
+			sim = new CARLsim("CONNECT.connectInfo",mode?GPU_MODE:CPU_MODE,SILENT,1,42);
 
             Grid3D neur(10,1,1);
 			int g0=sim->createSpikeGeneratorGroup("spike", neur, EXCITATORY_NEURON);
@@ -68,7 +68,7 @@ TEST(CONNECT, connectInfo) {
 TEST(CONNECT, connectFull) {
 	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
-	CARLsim* sim = new CARLsim("CONNECT.connectFull",CPU_MODE,SILENT,0,42);
+	CARLsim* sim = new CARLsim("CONNECT.connectFull",CPU_MODE,SILENT,1,42);
 	Grid3D grid(2,3,4);
 	int g0=sim->createGroup("excit0", grid, EXCITATORY_NEURON);
 	int g1=sim->createGroup("excit1", grid, EXCITATORY_NEURON);
@@ -105,7 +105,7 @@ TEST(CONNECT, connectFull) {
 TEST(CONNECT, connectFullNoDirect) {
 	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
-	CARLsim* sim = new CARLsim("CORE.connectRadiusRF",CPU_MODE,SILENT,0,42);
+	CARLsim* sim = new CARLsim("CORE.connectRadiusRF",CPU_MODE,SILENT,1,42);
 	Grid3D grid(2,3,4);
 	int g0=sim->createGroup("excit0", grid, EXCITATORY_NEURON);
 	int g1=sim->createGroup("excit1", grid, EXCITATORY_NEURON);
@@ -143,7 +143,7 @@ TEST(CONNECT, connectFullNoDirect) {
 TEST(CONNECT, connectOneToOne) {
 	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
-	CARLsim* sim = new CARLsim("CONNECT.connectOneToOne",CPU_MODE,SILENT,0,42);
+	CARLsim* sim = new CARLsim("CONNECT.connectOneToOne",CPU_MODE,SILENT,1,42);
 	Grid3D grid(2,3,4);
 	int g0=sim->createGroup("excit0", grid, EXCITATORY_NEURON);
 	int g1=sim->createGroup("excit1", grid, EXCITATORY_NEURON);
@@ -169,7 +169,7 @@ TEST(CONNECT, connectOneToOne) {
 TEST(CONNECT, connectRandom) {
 	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
-	CARLsim* sim = new CARLsim("CONNECT.connectRandom",CPU_MODE,SILENT,0,42);
+	CARLsim* sim = new CARLsim("CONNECT.connectRandom",CPU_MODE,SILENT,1,42);
 	Grid3D grid(2,3,4);
 	int g0=sim->createGroup("excit0", grid, EXCITATORY_NEURON);
 	int g1=sim->createGroup("excit1", grid, EXCITATORY_NEURON);
@@ -224,7 +224,7 @@ TEST(CONNECT, connectGaussian) {
 					continue;
 				}
 
-				sim = new CARLsim("CORE.connectGaussian",CPU_MODE,SILENT,0,42);
+				sim = new CARLsim("CORE.connectGaussian",CPU_MODE,SILENT,1,42);
 				Grid3D grid(11,11,11);
 				int g0=sim->createGroup("excit", grid, EXCITATORY_NEURON);
 				sim->setNeuronParameters(g0, 0.02f, 0.2f, -65.0f, 8.0f);

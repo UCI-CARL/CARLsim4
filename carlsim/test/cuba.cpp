@@ -50,7 +50,7 @@ TEST(CUBA, firingRateVsData) {
 
 	for (int hasHighFiring=0; hasHighFiring<=1; hasHighFiring++) {
 		for (int isGPUmode=0; isGPUmode<=1; isGPUmode++) {
-			CARLsim* sim = new CARLsim("CUBA.firingRateVsData",isGPUmode?GPU_MODE:CPU_MODE,SILENT,0,42);
+			CARLsim* sim = new CARLsim("CUBA.firingRateVsData",isGPUmode?GPU_MODE:CPU_MODE,SILENT,1,42);
 			int g1=sim->createGroup("excit", 1, EXCITATORY_NEURON);
 			sim->setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f); // RS
 

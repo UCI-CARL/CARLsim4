@@ -125,7 +125,7 @@ TEST(spikeGenFunc, SpikeGeneratorFromFile) {
 	for (int isGPUmode=0; isGPUmode<=1; isGPUmode++) {
 		for (int isCOBA=0; isCOBA<=1; isCOBA++) {
 			for (int run=0; run<=1; run++) {
-				sim = new CARLsim("SpikeGeneratorFromFile",isGPUmode?GPU_MODE:CPU_MODE,SILENT,0,42);
+				sim = new CARLsim("SpikeGeneratorFromFile",isGPUmode?GPU_MODE:CPU_MODE,SILENT,1,42);
 				int g1 = sim->createGroup("g1", 1, EXCITATORY_NEURON);		
 				sim->setNeuronParameters(g1, 0.02, 0.2, -65.0, 8.0);
 
@@ -208,7 +208,7 @@ TEST(spikeGenFunc, SpikeGeneratorFromFileLoadFile) {
 	for (int isGPUmode=0; isGPUmode<=1; isGPUmode++) {
 		for (int isCOBA=0; isCOBA<=1; isCOBA++) {
 			for (int run=0; run<=1; run++) {
-				sim = new CARLsim("SpikeGeneratorFromFileLoadFile",isGPUmode?GPU_MODE:CPU_MODE,SILENT,0,42);
+				sim = new CARLsim("SpikeGeneratorFromFileLoadFile",isGPUmode?GPU_MODE:CPU_MODE,SILENT,1,42);
 				int g1 = sim->createGroup("g1", 1, EXCITATORY_NEURON);		
 				sim->setNeuronParameters(g1, 0.02, 0.2, -65.0, 8.0);
 

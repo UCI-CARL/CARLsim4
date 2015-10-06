@@ -80,7 +80,7 @@ int main() {
 	SpikeMonitor* smExc = sim.setSpikeMonitor(gExc, "NULL");
 	SpikeMonitor* smInh = sim.setSpikeMonitor(gInh, "NULL");
 	SpikeMonitor* smInput = sim.setSpikeMonitor(gInput, "NULL");
-	//ConnectionMonitor* cmEE = sim.setConnectionMonitor(gExc, gExc2, "DEFAULT");
+	//ConnectionMonitor* cmEE = sim.setConnectionMonitor(gExc, gInh, "DEFAULT");
 
 	//setup some baseline input
 	PoissonRate in(N_EXC);

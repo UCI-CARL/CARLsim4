@@ -15,7 +15,7 @@
 TEST(CORE, getGroupGrid3D) {
 	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
-	CARLsim* sim = new CARLsim("CORE.getGroupGrid3D",CPU_MODE,SILENT,0,42);
+	CARLsim* sim = new CARLsim("CORE.getGroupGrid3D",CPU_MODE,SILENT,1,42);
 	Grid3D grid(2,3,4);
 	int g2=sim->createGroup("excit2", grid, EXCITATORY_NEURON);
 	sim->setNeuronParameters(g2, 0.02f, 0.2f, -65.0f, 8.0f);
@@ -37,7 +37,7 @@ TEST(CORE, getGroupGrid3D) {
 TEST(CORE, getGroupIdFromString) {
 	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
-	CARLsim* sim = new CARLsim("CORE.getGroupIdFromString",CPU_MODE,SILENT,0,42);
+	CARLsim* sim = new CARLsim("CORE.getGroupIdFromString",CPU_MODE,SILENT,1,42);
 	int g2=sim->createGroup("bananahama", Grid3D(1,2,3), INHIBITORY_NEURON);
 	sim->setNeuronParameters(g2, 0.02f, 0.2f, -65.0f, 8.0f);
 	int g1=sim->createSpikeGeneratorGroup("excit", Grid3D(2,3,4), EXCITATORY_NEURON);
@@ -56,7 +56,7 @@ TEST(CORE, getGroupIdFromString) {
 TEST(CORE, getNeuronLocation3D) {
 	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
-	CARLsim* sim = new CARLsim("CORE.getNeuronLocation3D",CPU_MODE,SILENT,0,42);
+	CARLsim* sim = new CARLsim("CORE.getNeuronLocation3D",CPU_MODE,SILENT,1,42);
 	Grid3D grid(2,3,4);
 	int g2=sim->createGroup("excit2", grid, EXCITATORY_NEURON);
 	sim->setNeuronParameters(g2, 0.02f, 0.2f, -65.0f, 8.0f);
@@ -121,7 +121,7 @@ TEST(CORE, setExternalCurrent) {
 
 	for (int hasCOBA=0; hasCOBA<=1; hasCOBA++) {
 		for (int isGPUmode=0; isGPUmode<=1; isGPUmode++) {
-			sim = new CARLsim("CORE.setExternalCurrent", isGPUmode?GPU_MODE:CPU_MODE, SILENT, 0, 42);
+			sim = new CARLsim("CORE.setExternalCurrent", isGPUmode?GPU_MODE:CPU_MODE, SILENT, 1, 42);
 			int g1=sim->createGroup("excit1", nNeur, EXCITATORY_NEURON);
 			sim->setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f);
 			int g0=sim->createSpikeGeneratorGroup("input0", nNeur, EXCITATORY_NEURON);
@@ -189,7 +189,7 @@ TEST(CORE, biasWeights) {
 	memset(nSpkHighWt, 0, nNeur*sizeof(int));
 
 	for (int isGPUmode=0; isGPUmode<=1; isGPUmode++) {
-		sim = new CARLsim("CORE.biasWeights",isGPUmode?GPU_MODE:CPU_MODE,SILENT,0,42);
+		sim = new CARLsim("CORE.biasWeights",isGPUmode?GPU_MODE:CPU_MODE,SILENT,1,42);
 		int g1=sim->createGroup("excit", nNeur, EXCITATORY_NEURON);
 		sim->setNeuronParameters(g1, 0.02f, 0.2f,-65.0f,8.0f);
 		int c1=sim->connect(g1, g1, "one-to-one", RangeWeight(0.5f), 1.0f, RangeDelay(1));
@@ -238,7 +238,7 @@ TEST(CORE, scaleWeights) {
 	memset(nSpkHighWt, 0, nNeur*sizeof(int));
 
 	for (int isGPUmode=0; isGPUmode<=1; isGPUmode++) {
-		sim = new CARLsim("CORE.scaleWeights",isGPUmode?GPU_MODE:CPU_MODE,SILENT,0,42);
+		sim = new CARLsim("CORE.scaleWeights",isGPUmode?GPU_MODE:CPU_MODE,SILENT,1,42);
 		int g1=sim->createGroup("excit", nNeur, EXCITATORY_NEURON);
 		sim->setNeuronParameters(g1, 0.02f, 0.2f,-65.0f,8.0f);
 		int c1=sim->connect(g1, g1, "one-to-one", RangeWeight(0.5f), 1.0f, RangeDelay(1));
@@ -287,7 +287,7 @@ TEST(CORE, setWeight) {
 	memset(nSpkHighWt, 0, nNeur*sizeof(int));
 
 	for (int isGPUmode=0; isGPUmode<=1; isGPUmode++) {
-		sim = new CARLsim("CORE.setWeight",isGPUmode?GPU_MODE:CPU_MODE,SILENT,0,42);
+		sim = new CARLsim("CORE.setWeight",isGPUmode?GPU_MODE:CPU_MODE,SILENT,1,42);
 		int g1=sim->createGroup("excit", nNeur, EXCITATORY_NEURON);
 		sim->setNeuronParameters(g1, 0.02f, 0.2f,-65.0f,8.0f);
 		int c1=sim->connect(g1, g1, "one-to-one", RangeWeight(0.5f), 1.0f, RangeDelay(1));
@@ -334,7 +334,7 @@ TEST(CORE, getDelayRange) {
 	int maxDelay = 10;
 
 	for (int isGPUmode=0; isGPUmode<=1; isGPUmode++) {
-		sim = new CARLsim("CORE.getDelayRange",isGPUmode?GPU_MODE:CPU_MODE,SILENT,0,42);
+		sim = new CARLsim("CORE.getDelayRange",isGPUmode?GPU_MODE:CPU_MODE,SILENT,1,42);
 		int g1=sim->createGroup("excit", nNeur, EXCITATORY_NEURON);
 		sim->setNeuronParameters(g1, 0.02f, 0.2f,-65.0f,8.0f);
 		int c1=sim->connect(g1, g1, "one-to-one", RangeWeight(0.5f), 1.0f, RangeDelay(minDelay,maxDelay));
@@ -371,7 +371,7 @@ TEST(CORE, getWeightRange) {
 	float maxWt = 10.0f;
 
 	for (int isGPUmode=0; isGPUmode<=1; isGPUmode++) {
-		sim = new CARLsim("CORE.getWeightRange",isGPUmode?GPU_MODE:CPU_MODE,SILENT,0,42);
+		sim = new CARLsim("CORE.getWeightRange",isGPUmode?GPU_MODE:CPU_MODE,SILENT,1,42);
 		int g1=sim->createGroup("excit", nNeur, EXCITATORY_NEURON);
 		sim->setNeuronParameters(g1, 0.02f, 0.2f,-65.0f,8.0f);
 		int c1=sim->connect(g1, g1, "one-to-one", RangeWeight(minWt,initWt,maxWt), 1.0f, RangeDelay(1), RadiusRF(-1),
@@ -496,7 +496,7 @@ TEST(CORE, startStopTestingPhase) {
 	// irrelevant start/stop calls)
 	for (int run=0; run<=1; run++) {
 		for (int mode=0; mode<=1; mode++) {
-			sim = new CARLsim("CORE.startStopTestingPhase",mode?GPU_MODE:CPU_MODE,SILENT,0,42);
+			sim = new CARLsim("CORE.startStopTestingPhase",mode?GPU_MODE:CPU_MODE,SILENT,1,42);
 
 			int gExc = sim->createGroup("output", 1, EXCITATORY_NEURON);
 			sim->setNeuronParameters(gExc, 0.02f, 0.2f, -65.0f, 8.0f); // RS
@@ -578,7 +578,7 @@ TEST(CORE, saveLoadSimulation) {
 			for (int isPlastic=0; isPlastic<=1; isPlastic++) {
 				for (int loadSim=0; loadSim<=1; loadSim++) {
 					// Run and save simulation ------------------------------ //
-					CARLsim* sim = new CARLsim("CORE.saveSimulation", mode?GPU_MODE:CPU_MODE, SILENT, 0, 42);
+					CARLsim* sim = new CARLsim("CORE.saveSimulation", mode?GPU_MODE:CPU_MODE, SILENT, 1, 42);
 					FILE* simFid = NULL;
 
 					gPost = sim->createGroup("pre-ex", 10, EXCITATORY_NEURON);
@@ -602,14 +602,14 @@ TEST(CORE, saveLoadSimulation) {
 					if (!loadSim) {
 						// first run: save network at the end
 						cmSave = sim->setConnectionMonitor(gPre, gPost, "NULL");
-						sim->runNetwork(20, 0, false, false);
+						sim->runNetwork(20, 0, false);
 
 						weightsSave = cmSave->takeSnapshot();
 						sim->saveSimulation("results/sim.dat", true);
 					} else {
 						// second run: load simulation
 						cmLoad = sim->setConnectionMonitor(gPre, gPost, "NULL");
-						sim->runNetwork(0, 2, false, false);
+						sim->runNetwork(0, 2, false);
 						weightsLoad = cmLoad->takeSnapshot();
 
 						// test weights we saved are the same as weights we loaded

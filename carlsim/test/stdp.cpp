@@ -31,7 +31,7 @@ TEST(STDP, setSTDPTrue) {
 	for (int mode=0; mode<=1; mode++) {
 		for (int stdpType = 0; stdpType < 2; stdpType++) { // we have two stdp types {STANDARD, DA_MOD}
 			for(int stdpCurve = 0; stdpCurve < 2; stdpCurve++) { // we have four stdp curves, two for ESTDP, two for ISTDP
-				sim = new CARLsim("STDP.setSTDPTrue",mode?GPU_MODE:CPU_MODE,SILENT,0,42);
+				sim = new CARLsim("STDP.setSTDPTrue",mode?GPU_MODE:CPU_MODE,SILENT,1,42);
 
 				int g1=sim->createGroup("excit", 10, EXCITATORY_NEURON);
 				sim->setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f);
@@ -113,7 +113,7 @@ TEST(STDP, setSTDPFalse) {
 	CARLsim* sim;
 
 	for (int mode=0; mode<=1; mode++) {
-		sim = new CARLsim("STDP.setSTDPFalse",mode?GPU_MODE:CPU_MODE,SILENT,0,42);
+		sim = new CARLsim("STDP.setSTDPFalse",mode?GPU_MODE:CPU_MODE,SILENT,1,42);
 
 		int g1=sim->createGroup("excit", 10, EXCITATORY_NEURON);
 		sim->setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f);
@@ -163,7 +163,7 @@ TEST(STDP, setNeuromodulatorParameters) {
 	CARLsim* sim;
 
 	for (int mode=0; mode<=1; mode++) {
-		sim = new CARLsim("STDP.setNeuromodulatorParameters",mode?GPU_MODE:CPU_MODE,SILENT,0,42);
+		sim = new CARLsim("STDP.setNeuromodulatorParameters",mode?GPU_MODE:CPU_MODE,SILENT,1,42);
 
 		int g1=sim->createGroup("excit", 10, EXCITATORY_NEURON);
 		sim->setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f);
@@ -213,7 +213,7 @@ TEST(STDP, DASTDPWeightBoost) {
 	for (int mode = 0; mode < 2; mode++) {
 		for (int coba = 0; coba < 2; coba++) {
 			for (int damod = 0; damod < 2; damod++) {
-				CARLsim* sim = new CARLsim("STDP.DASTDPWeightBoost", mode?GPU_MODE:CPU_MODE, SILENT, 0, 42);
+				CARLsim* sim = new CARLsim("STDP.DASTDPWeightBoost", mode?GPU_MODE:CPU_MODE, SILENT, 1, 42);
 
 				g1 = sim->createGroup("post-ex", 1, EXCITATORY_NEURON);
 				sim->setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f);
@@ -260,7 +260,7 @@ TEST(STDP, DASTDPWeightBoost) {
 				for (int t = 0; t < 200; t++) {
 					spikeMonPost->startRecording();
 					spikeMonPre->startRecording();
-					sim->runNetwork(1, 0, false, false);
+					sim->runNetwork(1, 0, false);
 					spikeMonPost->stopRecording();
 					spikeMonPre->stopRecording();
 
@@ -325,7 +325,7 @@ TEST(STDP, ESTDPExpCurve) {
 			for (int offset = -30; offset <= 30; offset += 5) {
 				if (offset == 0) continue; // skip offset == 0;
 				// create a network
-				CARLsim* sim = new CARLsim("STDP.ESTDPExpCurve", mode?GPU_MODE:CPU_MODE, SILENT, 0, 42);
+				CARLsim* sim = new CARLsim("STDP.ESTDPExpCurve", mode?GPU_MODE:CPU_MODE, SILENT, 1, 42);
 
 				g1 = sim->createGroup("excit", 1, EXCITATORY_NEURON);
 				sim->setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f);
@@ -360,7 +360,7 @@ TEST(STDP, ESTDPExpCurve) {
 
 				ConnectionMonitor* CM = sim->setConnectionMonitor(gex2, g1, "NULL");
 
-				sim->runNetwork(55, 0, true, true);
+				sim->runNetwork(55, 0, false);
 
 				std::vector< std::vector<float> > weights = CM->takeSnapshot();
 				if (offset > 0) { // pre-post
@@ -409,7 +409,7 @@ TEST(STDP, ESTDPTimingBasedCurve) {
 			for (int offset = -24; offset <= 24; offset += 3) {
 				if (offset == 0) continue; // skip offset == 0;
 				// create a network
-				CARLsim* sim = new CARLsim("STDP.ESTDTimingBasedCurve", mode?GPU_MODE:CPU_MODE, SILENT, 0, 42);
+				CARLsim* sim = new CARLsim("STDP.ESTDTimingBasedCurve", mode?GPU_MODE:CPU_MODE, SILENT, 1, 42);
 
 				g1 = sim->createGroup("excit", 1, EXCITATORY_NEURON);
 				sim->setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f);
@@ -443,7 +443,7 @@ TEST(STDP, ESTDPTimingBasedCurve) {
 
 				ConnectionMonitor* CM = sim->setConnectionMonitor(gex2, g1, "NULL");
 
-				sim->runNetwork(75, 0, true, true);
+				sim->runNetwork(75, 0, false);
 
 				std::vector< std::vector<float> > weights = CM->takeSnapshot();
 				if (offset > 0) { // pre-post
@@ -496,7 +496,7 @@ TEST(STDP, ISTDPPulseCurve) {
 		for (int coba = 0; coba < 2; coba++) {
 			for (int offset = -15; offset <= 15; offset += 10) {
 				// create a network
-				CARLsim* sim = new CARLsim("STDP.ISTDPPulseCurve", mode?GPU_MODE:CPU_MODE, SILENT, 0, 42);
+				CARLsim* sim = new CARLsim("STDP.ISTDPPulseCurve", mode?GPU_MODE:CPU_MODE, SILENT, 1, 42);
 
 				g1 = sim->createGroup("excit", 1, EXCITATORY_NEURON);
 				sim->setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f);
@@ -535,7 +535,7 @@ TEST(STDP, ISTDPPulseCurve) {
 				sim->setSpikeMonitor(gex, "Default");
 
 				// run for 20 seconds
-				sim->runNetwork(20,0, true, true);
+				sim->runNetwork(20,0, false);
 
 				std::vector< std::vector<float> > weights = CM->takeSnapshot();
 				if (offset == -5 || offset == 5) { // I-STDP LTP

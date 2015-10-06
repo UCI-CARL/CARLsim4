@@ -15,7 +15,7 @@
 TEST(STP, setSTPdeath) {
 	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
-	CARLsim* sim = new CARLsim("STP.setSTPdeath",CPU_MODE,SILENT,0,42);
+	CARLsim* sim = new CARLsim("STP.setSTPdeath",CPU_MODE,SILENT,1,42);
 	int g1=sim->createSpikeGeneratorGroup("excit", 10, EXCITATORY_NEURON);
 
 	// grpId
@@ -62,7 +62,7 @@ TEST(STP, firingRateSTDvsSTF) {
 				float rateG3noSTP = -1.0f;
 
 				for (int hasSTP=0; hasSTP<=1; hasSTP++) {
-					sim = new CARLsim("STP.firingRateSTDvsSTF",isGPUmode?GPU_MODE:CPU_MODE,SILENT,0,randSeed);
+					sim = new CARLsim("STP.firingRateSTDvsSTF",isGPUmode?GPU_MODE:CPU_MODE,SILENT,1,randSeed);
 					int g2=sim->createGroup("STD", 1, EXCITATORY_NEURON);
 					int g3=sim->createGroup("STF", 1, EXCITATORY_NEURON);
 					sim->setNeuronParameters(g2, 0.02f, 0.2f, -65.0f, 8.0f);
@@ -158,7 +158,7 @@ TEST(STP, spikeTimesCPUvsGPU) {
 		// compare spike times cpu vs gpu
 
 		for (int isGPUmode=0; isGPUmode<=1; isGPUmode++) {
-			sim = new CARLsim("STP.spikeTimesCPUvsGPU",isGPUmode?GPU_MODE:CPU_MODE,SILENT,0,42);
+			sim = new CARLsim("STP.spikeTimesCPUvsGPU",isGPUmode?GPU_MODE:CPU_MODE,SILENT,1,42);
 			int g2=sim->createGroup("STD", 1, EXCITATORY_NEURON);
 			int g3=sim->createGroup("STF", 1, EXCITATORY_NEURON);
 			sim->setNeuronParameters(g2, 0.02f, 0.2f, -65.0f, 8.0f);
