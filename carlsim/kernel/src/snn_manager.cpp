@@ -4460,16 +4460,22 @@ void SNN::deleteRuntimeData() {
 	if (managerRuntimeData.grpIds!=NULL) delete[] managerRuntimeData.grpIds;
 	managerRuntimeData.grpIds=NULL;
 
-	if (managerRuntimeData.firingTableD2!=NULL) delete[] managerRuntimeData.firingTableD2;
-	if (managerRuntimeData.firingTableD1!=NULL) delete[] managerRuntimeData.firingTableD1;
+	//if (managerRuntimeData.firingTableD2!=NULL) delete[] managerRuntimeData.firingTableD2;
+	//if (managerRuntimeData.firingTableD1!=NULL) delete[] managerRuntimeData.firingTableD1;
+	if (managerRuntimeData.firingTableD2!=NULL) CUDA_CHECK_ERRORS(cudaFreeHost(managerRuntimeData.firingTableD2));
+	if (managerRuntimeData.firingTableD1!=NULL) CUDA_CHECK_ERRORS(cudaFreeHost(managerRuntimeData.firingTableD1));
 	managerRuntimeData.firingTableD2=NULL; managerRuntimeData.firingTableD1=NULL;
 
-	if (managerRuntimeData.extFiringTableD2!=NULL) delete[] managerRuntimeData.extFiringTableD2;
-	if (managerRuntimeData.extFiringTableD1!=NULL) delete[] managerRuntimeData.extFiringTableD1;
+	//if (managerRuntimeData.extFiringTableD2!=NULL) delete[] managerRuntimeData.extFiringTableD2;
+	//if (managerRuntimeData.extFiringTableD1!=NULL) delete[] managerRuntimeData.extFiringTableD1;
+	if (managerRuntimeData.extFiringTableD2!=NULL) CUDA_CHECK_ERRORS(cudaFreeHost(managerRuntimeData.extFiringTableD2));
+	if (managerRuntimeData.extFiringTableD1!=NULL) CUDA_CHECK_ERRORS(cudaFreeHost(managerRuntimeData.extFiringTableD1));
 	managerRuntimeData.extFiringTableD2=NULL; managerRuntimeData.extFiringTableD1=NULL;
 
-	if (managerRuntimeData.extFiringTableEndIdxD1 != NULL) delete[] managerRuntimeData.extFiringTableEndIdxD1;
-	if (managerRuntimeData.extFiringTableEndIdxD2 != NULL) delete[] managerRuntimeData.extFiringTableEndIdxD2;
+	//if (managerRuntimeData.extFiringTableEndIdxD1 != NULL) delete[] managerRuntimeData.extFiringTableEndIdxD1;
+	//if (managerRuntimeData.extFiringTableEndIdxD2 != NULL) delete[] managerRuntimeData.extFiringTableEndIdxD2;
+	if (managerRuntimeData.extFiringTableEndIdxD1 != NULL) CUDA_CHECK_ERRORS(cudaFreeHost(managerRuntimeData.extFiringTableEndIdxD1));
+	if (managerRuntimeData.extFiringTableEndIdxD2 != NULL) CUDA_CHECK_ERRORS(cudaFreeHost(managerRuntimeData.extFiringTableEndIdxD2));
 	managerRuntimeData.extFiringTableEndIdxD1 = NULL; managerRuntimeData.extFiringTableEndIdxD2 = NULL;
 }
 
@@ -4821,12 +4827,19 @@ void SNN::updateSpikeGenerators() {
  * \note SpikeTables include firingTableD1(D2) and timeTableD1(D2)
  */
 void SNN::allocateSpikeTables() {
-	managerRuntimeData.firingTableD2 = new int[managerRTDSize.maxMaxSpikeD2];
-	managerRuntimeData.firingTableD1 = new int[managerRTDSize.maxMaxSpikeD1];
-	managerRuntimeData.extFiringTableEndIdxD2 = new int[managerRTDSize.maxNumGroups];
-	managerRuntimeData.extFiringTableEndIdxD1 = new int[managerRTDSize.maxNumGroups];
-	managerRuntimeData.extFiringTableD2 = new int*[managerRTDSize.maxNumGroups];
-	managerRuntimeData.extFiringTableD1 = new int*[managerRTDSize.maxNumGroups];
+	//managerRuntimeData.firingTableD2 = new int[managerRTDSize.maxMaxSpikeD2];
+	//managerRuntimeData.firingTableD1 = new int[managerRTDSize.maxMaxSpikeD1];
+	//managerRuntimeData.extFiringTableEndIdxD2 = new int[managerRTDSize.maxNumGroups];
+	//managerRuntimeData.extFiringTableEndIdxD1 = new int[managerRTDSize.maxNumGroups];
+	//managerRuntimeData.extFiringTableD2 = new int*[managerRTDSize.maxNumGroups];
+	//managerRuntimeData.extFiringTableD1 = new int*[managerRTDSize.maxNumGroups];
+
+	CUDA_CHECK_ERRORS(cudaMallocHost(&managerRuntimeData.firingTableD2, sizeof(int) * managerRTDSize.maxMaxSpikeD2));
+	CUDA_CHECK_ERRORS(cudaMallocHost(&managerRuntimeData.firingTableD1, sizeof(int) * managerRTDSize.maxMaxSpikeD1));
+	CUDA_CHECK_ERRORS(cudaMallocHost(&managerRuntimeData.extFiringTableEndIdxD2, sizeof(int) * managerRTDSize.maxNumGroups));
+	CUDA_CHECK_ERRORS(cudaMallocHost(&managerRuntimeData.extFiringTableEndIdxD1, sizeof(int) * managerRTDSize.maxNumGroups));
+	CUDA_CHECK_ERRORS(cudaMallocHost(&managerRuntimeData.extFiringTableD2, sizeof(int*) * managerRTDSize.maxNumGroups));
+	CUDA_CHECK_ERRORS(cudaMallocHost(&managerRuntimeData.extFiringTableD1, sizeof(int*) * managerRTDSize.maxNumGroups));
 	resetFiringTable();
 	
 	// timeTableD1(D2) are statically allocated
