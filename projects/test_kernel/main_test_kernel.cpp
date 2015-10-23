@@ -50,6 +50,7 @@ int main() {
 	// create a network on GPU
 	int numGPUs = 2;
 	int randSeed = 42;
+	float pConn = 100.0f / (N_EXC + N_INH); // connection probability
 	CARLsim sim("test kernel", GPU_MODE, USER, numGPUs, randSeed);
 
 	// configure the network
@@ -64,9 +65,9 @@ int main() {
 	int gInput = sim.createSpikeGeneratorGroup("input", N_EXC, EXCITATORY_NEURON);
 
 	sim.connect(gInput, gExc, "one-to-one", RangeWeight(30.0f), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
-	sim.connect(gExc, gExc, "random", RangeWeight(6.0f), 0.1f, RangeDelay(1, 20), RadiusRF(-1), SYN_FIXED);
-	sim.connect(gExc, gInh, "random", RangeWeight(6.0f), 0.1f, RangeDelay(1, 20), RadiusRF(-1), SYN_FIXED);
-	sim.connect(gInh, gExc, "random", RangeWeight(5.0f), 0.125f, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
+	sim.connect(gExc, gExc, "random", RangeWeight(6.0f), pConn, RangeDelay(1, 20), RadiusRF(-1), SYN_FIXED);
+	sim.connect(gExc, gInh, "random", RangeWeight(6.0f), pConn, RangeDelay(1, 20), RadiusRF(-1), SYN_FIXED);
+	sim.connect(gInh, gExc, "random", RangeWeight(5.0f), pConn * 1.25f, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
 
 	sim.setConductances(false);
 
@@ -90,16 +91,16 @@ int main() {
 	// run for a total of 10 seconds
 	// at the end of each runNetwork call, SpikeMonitor stats will be printed
 	//smInput->startRecording();
-	smExc->startRecording();
-	smInh->startRecording();
-	smInput->startRecording();
+	//smExc->startRecording();
+	//smInh->startRecording();
+	//smInput->startRecording();
 	
 	sim.runNetwork(10, 0);
 	
 	//smInput->stopRecording();
-	smExc->stopRecording();
-	smInh->stopRecording();
-	smInput->stopRecording();
+	//smExc->stopRecording();
+	//smInh->stopRecording();
+	//smInput->stopRecording();
 
 	//smExc->print(true);
 	//smExc2->print(true);
