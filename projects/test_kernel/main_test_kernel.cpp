@@ -54,10 +54,10 @@ int main() {
 	CARLsim sim("test kernel", GPU_MODE, USER, numGPUs, randSeed);
 
 	// configure the network
-	int gExc = sim.createGroup("exc", N_EXC, EXCITATORY_NEURON);
+	int gExc = sim.createGroup("exc", N_EXC, EXCITATORY_NEURON, 0);
 	sim.setNeuronParameters(gExc, 0.02f, 0.2f, -65.0f, 8.0f); // RS
 
-	int gInh = sim.createGroup("inh", N_INH, INHIBITORY_NEURON);
+	int gInh = sim.createGroup("inh", N_INH, INHIBITORY_NEURON, ANY);
 	sim.setNeuronParameters(gInh, 0.1f, 0.2f, -65.0f, 2.0f); // FS
 	//int gExc2 = sim.createGroup("exc", N_EXC, EXCITATORY_NEURON);
 	//sim.setNeuronParameters(gExc2, 0.02f, 0.2f, -65.0f, 8.0f); // RS

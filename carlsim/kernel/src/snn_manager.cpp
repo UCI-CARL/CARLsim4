@@ -208,7 +208,7 @@ short int SNN::connect(int grpId1, int grpId2, ConnectionGeneratorCore* conn, fl
 
 // create group of Izhikevich neurons
 // use int for nNeur to avoid arithmetic underflow
-int SNN::createGroup(const std::string& grpName, const Grid3D& grid, int neurType) {
+int SNN::createGroup(const std::string& grpName, const Grid3D& grid, int neurType, int preferedGPU) {
 	assert(grid.numX * grid.numY * grid.numZ > 0);
 	assert(neurType >= 0);
 	assert(numGroups < MAX_GRP_PER_SNN);
@@ -291,6 +291,8 @@ int SNN::createGroup(const std::string& grpName, const Grid3D& grid, int neurTyp
 
 	grpConfig.isSpikeGenerator	= false;
 	grpConfig.MaxDelay			= 1;
+
+	grpConfig.preferedNetId = preferedGPU;
 	
 	groupInfo[numGroups].Name  			= grpName;
 	groupInfo[numGroups].Izh_a 			= -1; // \FIXME ???
@@ -324,7 +326,7 @@ int SNN::createGroup(const std::string& grpName, const Grid3D& grid, int neurTyp
 
 // create spike generator group
 // use int for nNeur to avoid arithmetic underflow
-int SNN::createSpikeGeneratorGroup(const std::string& grpName, const Grid3D& grid, int neurType) {
+int SNN::createSpikeGeneratorGroup(const std::string& grpName, const Grid3D& grid, int neurType, int preferedGPU) {
 	assert(grid.numX * grid.numY * grid.numZ > 0);
 	assert(neurType >= 0);
 	assert(numGroups < MAX_GRP_PER_SNN);
@@ -393,6 +395,8 @@ int SNN::createSpikeGeneratorGroup(const std::string& grpName, const Grid3D& gri
 	grpConfig.isSpikeGenerator	= true;		// these belong to the spike generator class...
 	grpConfig.MaxFiringRate 	= POISSON_MAX_FIRING_RATE;
 
+	grpConfig.preferedNetId = preferedGPU;
+	
 	groupInfo[numGroups].Name          = grpName;
 
 	if ( (neurType&TARGET_GABAa) || (neurType&TARGET_GABAb))
@@ -3552,6 +3556,8 @@ void SNN::initGroupConfig(GroupConfigRT* _groupConfig) {
 
 	_groupConfig->CurrTimeSlice = 1000;
 	_groupConfig->SliceUpdateTime = 0;
+
+	_groupConfig->preferedNetId = ANY;
 }
 
 // checks whether a connection ID contains plastic synapses O(#connections)
@@ -3777,40 +3783,32 @@ int SNN::poissonSpike(int currTime, float frate, int refractPeriod) {
 void SNN::partitionSNN() {
 	int numAssignedNeurons[MAX_NET_PER_SNN] = {0};
 
-	// partition algorithm, use naive partition for now
-	// put excitatory groups to GPU 0 and inhibitory groups to GPU 1
-	// this parse separates groups into each local network and assign each group a netId
 	for (std::map<int, GroupConfigRT>::iterator it = groupConfigMap.begin(); it != groupConfigMap.end(); it++) {
-		if (IS_EXCITATORY_TYPE(it->second.Type)) {
-			it->second.netId = 0;
-			numAssignedNeurons[0] += it->second.SizeN;
-			groupPartitionLists[0].push_back(it->second);
-		} else if (IS_INHIBITORY_TYPE(it->second.Type)) {
-			it->second.netId = 1;
-			numAssignedNeurons[1] += it->second.SizeN;
-			groupPartitionLists[1].push_back(it->second);
+		// assign a group to the GPU specified by users
+		if (it->second.preferedNetId != ANY) {
+			assert(it->second.preferedNetId < numGPUs_ && it->second.preferedNetId > ANY);
+			it->second.netId = it->second.preferedNetId;
+			numAssignedNeurons[it->second.netId] += it->second.SizeN;
+			groupPartitionLists[it->second.netId].push_back(it->second);
 		} else {
+			// partition algorithm, use naive partition for now
+			// put excitatory groups to GPU 0 and inhibitory groups to GPU 1
+			// this parse separates groups into each local network and assign each group a netId
+			if (IS_EXCITATORY_TYPE(it->second.Type)) {
+				it->second.netId = 0;
+				numAssignedNeurons[0] += it->second.SizeN;
+				groupPartitionLists[0].push_back(it->second);
+			} else if (IS_INHIBITORY_TYPE(it->second.Type)) {
+				it->second.netId = 1;
+				numAssignedNeurons[1] += it->second.SizeN;
+				groupPartitionLists[1].push_back(it->second);
+			}
+		}
+
+		if (it->second.netId == -1) { // the group was not assigned to any GPU
 			KERNEL_ERROR("Can't assign the group [%d] to any partition", it->second.grpId);
 			exitSimulation(-1);
 		}
-
-		//if (it->second.grpId == 1) {
-		//	it->second.netId = 1;
-		//	numAssignedNeurons[1] += it->second.SizeN;
-		//	groupPartitionLists[1].push_back(it->second);
-		//} else {
-		//	it->second.netId = 0;
-		//	numAssignedNeurons[0] += it->second.SizeN;
-		//	groupPartitionLists[0].push_back(it->second);
-		//}
-
-		//it->second.netId = 0;
-		//numAssignedNeurons[0] += it->second.SizeN;
-		//groupPartitionLists[0].push_back(it->second);
-
-		//it->second.netId = 1;
-		//numAssignedNeurons[1] += it->second.SizeN;
-		//groupPartitionLists[1].push_back(it->second);
 	}
 
 	// this parse finds local connections (i.e., connection configs that conect local groups)
@@ -3836,6 +3834,7 @@ void SNN::partitionSNN() {
 					grpIt->hasExternalConnect = true;
 
 					numAssignedNeurons[netId] += groupConfigMap[connIt->second.grpDest].SizeN;
+					// FIXME: fail to write external group if the only one external link across GPUs is uni directional (GPU0 -> GPU1, no GPU1 -> GPU0)
 					groupPartitionLists[netId].push_back(groupConfigMap[connIt->second.grpDest]);
 					externalConnectLists[netId].push_back(connectConfigMap[connIt->second.connId]);
 				}

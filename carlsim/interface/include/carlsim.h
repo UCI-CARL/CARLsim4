@@ -277,7 +277,7 @@ public:
 	 * \TODO finish doc
 	 * \STATE ::CONFIG_STATE
 	 */
-	int createGroup(const std::string& grpName, int nNeur, int neurType);
+	int createGroup(const std::string& grpName, int nNeur, int neurType, int preferedGPU = ANY);
 
 	/*!
 	 * \brief Create a group of Izhikevich spiking neurons on a 3D grid (a primitive cubic Bravais lattice with cubic
@@ -300,14 +300,14 @@ public:
 	 * \param[in] neurType   either EXCITATORY_NEURON, INHIBITORY_NEURON or DOPAMINERGIC_NEURON
 	 * \since v3.0
 	 */
-	int createGroup(const std::string& grpName, const Grid3D& grid, int neurType);
+	int createGroup(const std::string& grpName, const Grid3D& grid, int neurType, int preferedGPU = ANY);
 
 	/*!
 	 * \brief  creates a spike generator group
 	 * \TODO finish docu
 	 * \STATE ::CONFIG_STATE
 	 */
-	int createSpikeGeneratorGroup(const std::string& grpName, int nNeur, int neurType);
+	int createSpikeGeneratorGroup(const std::string& grpName, int nNeur, int neurType, int preferedGPU = ANY);
 
 	/*!
 	 * \brief create a group of spike generators on a 3D grid
@@ -325,7 +325,7 @@ public:
 	 * \STATE ::CONFIG_STATE
 	 * \TODO finish doc
 	 */
-	int createSpikeGeneratorGroup(const std::string& grpName, const Grid3D& grid, int neurType);
+	int createSpikeGeneratorGroup(const std::string& grpName, const Grid3D& grid, int neurType, int preferedGPU = ANY);
 
 
 	/*!
@@ -1685,12 +1685,12 @@ private:
 #endif
 	// +++++ PRIVATE PROPERTIES +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
-	SNN* snn_;					//!< an instance of CARLsim core class
-	std::string netName_;			//!< network name
-	int randSeed_;					//!< RNG seed
-	SimMode simMode_;				//!< CPU_MODE or GPU_MODE
-	LoggerMode loggerMode_;		//!< logger mode (USER, DEVELOPER, SILENT, CUSTOM)
-	int numGPUs_;					//!< how many devices to establish a context
+	SNN* snn_;                  //!< an instance of CARLsim core class
+	std::string netName_;       //!< network name
+	int randSeed_;              //!< RNG seed
+	SimMode simMode_;           //!< CPU_MODE or GPU_MODE
+	LoggerMode loggerMode_;     //!< logger mode (USER, DEVELOPER, SILENT, CUSTOM)
+	int numGPUs_;               //!< how many devices to establish a context
 	bool enablePrint_;
 	bool copyState_;
 

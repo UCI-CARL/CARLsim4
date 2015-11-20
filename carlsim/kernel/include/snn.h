@@ -170,7 +170,7 @@ public:
 	 * \param grid  Grid3D struct to create neurons on a 3D grid (x,y,z)
 	 * \param nType the type of neuron
 	 */
-	int createGroup(const std::string& grpName, const Grid3D& grid, int neurType);
+	int createGroup(const std::string& grpName, const Grid3D& grid, int neurType, int preferedGPU);
 
 	//! Creates a spike generator group (dummy-neurons, not Izhikevich spiking neurons)
 	/*!
@@ -178,7 +178,7 @@ public:
 	 * \param grid Grid3D struct to create neurons on a 3D grid (x,y,z)
 	 * \param nType the type of neuron, currently only support EXCITATORY NEURON
 	 */
-	int createSpikeGeneratorGroup(const std::string& grpName, const Grid3D& grid, int neurType);
+	int createSpikeGeneratorGroup(const std::string& grpName, const Grid3D& grid, int neurType, int preferedGPU);
 
 
 	/*!

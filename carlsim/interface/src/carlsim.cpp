@@ -298,17 +298,19 @@ short int CARLsim::connect(int grpId1, int grpId2, ConnectionGenerator* conn, fl
 }
 
 // create group of Izhikevich spiking neurons on 1D grid
-int CARLsim::createGroup(const std::string& grpName, int nNeur, int neurType) {
-	return createGroup(grpName, Grid3D(nNeur,1,1), neurType);
+int CARLsim::createGroup(const std::string& grpName, int nNeur, int neurType, int preferedGPU) {
+	return createGroup(grpName, Grid3D(nNeur,1,1), neurType, preferedGPU);
 }
 
 // create group of Izhikevich spiking neurons on 3D grid
-int CARLsim::createGroup(const std::string& grpName, const Grid3D& grid, int neurType) {
+int CARLsim::createGroup(const std::string& grpName, const Grid3D& grid, int neurType, int preferedGPU) {
 	std::string funcName = "createGroup(\""+grpName+"\")";
 	UserErrors::assertTrue(carlsimState_==CONFIG_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "CONFIG.");
 	UserErrors::assertTrue(grid.numX>0, UserErrors::CANNOT_BE_NEGATIVE, funcName, "grid.numX");
 	UserErrors::assertTrue(grid.numY>0, UserErrors::CANNOT_BE_NEGATIVE, funcName, "grid.numY");
 	UserErrors::assertTrue(grid.numZ>0, UserErrors::CANNOT_BE_NEGATIVE, funcName, "grid.numZ");
+	UserErrors::assertTrue(preferedGPU < numGPUs_, UserErrors::CANNOT_BE_LARGER, funcName, "preferedGPU");
+
 
 	// if user has called any set functions with grpId=ALL, and is now adding another group, previously set properties
 	// will not apply to newly added group
@@ -321,26 +323,27 @@ int CARLsim::createGroup(const std::string& grpName, const Grid3D& grid, int neu
 	if (hasSetHomeoBaseFiringALL_)
 		userWarnings_.push_back("Make sure to call setHomeoBaseFiringRate on group "+grpName);
 
-	int grpId = snn_->createGroup(grpName.c_str(),grid,neurType);
+	int grpId = snn_->createGroup(grpName.c_str(),grid,neurType, preferedGPU);
 	grpIds_.push_back(grpId); // keep track of all groups
 
 	return grpId;
 }
 
 // create group of spike generators on 1D grid
-int CARLsim::createSpikeGeneratorGroup(const std::string& grpName, int nNeur, int neurType) {
-	return createSpikeGeneratorGroup(grpName, Grid3D(nNeur,1,1), neurType);
+int CARLsim::createSpikeGeneratorGroup(const std::string& grpName, int nNeur, int neurType, int preferedGPU) {
+	return createSpikeGeneratorGroup(grpName, Grid3D(nNeur,1,1), neurType, preferedGPU);
 }
 
 // create group of spike generators on 3D grid
-int CARLsim::createSpikeGeneratorGroup(const std::string& grpName, const Grid3D& grid, int neurType) {
+int CARLsim::createSpikeGeneratorGroup(const std::string& grpName, const Grid3D& grid, int neurType, int preferedGPU) {
 	std::string funcName = "createSpikeGeneratorGroup(\""+grpName+"\")";
 	UserErrors::assertTrue(carlsimState_==CONFIG_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "CONFIG.");
 	UserErrors::assertTrue(grid.numX>0, UserErrors::CANNOT_BE_NEGATIVE, funcName, "grid.numX");
 	UserErrors::assertTrue(grid.numY>0, UserErrors::CANNOT_BE_NEGATIVE, funcName, "grid.numY");
 	UserErrors::assertTrue(grid.numZ>0, UserErrors::CANNOT_BE_NEGATIVE, funcName, "grid.numZ");
+	UserErrors::assertTrue(preferedGPU < numGPUs_, UserErrors::CANNOT_BE_LARGER, funcName, "preferedGPU");
 
-	int grpId = snn_->createSpikeGeneratorGroup(grpName.c_str(),grid,neurType);
+	int grpId = snn_->createSpikeGeneratorGroup(grpName.c_str(),grid,neurType, preferedGPU);
 	grpIds_.push_back(grpId); // keep track of all groups
 
 	return grpId;

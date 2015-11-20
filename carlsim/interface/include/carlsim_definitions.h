@@ -47,7 +47,9 @@
 
 
 //! CARLsim common definitions
-#define ALL -1 //!< used for the set* methods to specify all groups and/or configIds
+#define ALL -1 //!< used for the set* methods to specify all groups or a specific group
+#define ANY -1 //!< used for create* method to specify any GPU or a specific GPU
+
 
 #define SYN_FIXED      false
 #define SYN_PLASTIC    true

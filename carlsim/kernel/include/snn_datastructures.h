@@ -346,6 +346,7 @@ typedef struct NetworkConfigRT_s  {
  */
 typedef struct GroupConfigRT_s {
 	int          netId;
+	int          preferedNetId; //!< user preference of netId
 	int          grpId;
 	int          StartN;
 	int          EndN;
