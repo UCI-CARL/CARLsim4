@@ -3826,17 +3826,33 @@ void SNN::partitionSNN() {
 	for (int netId = 0; netId < MAX_NET_PER_SNN; netId++) {
 		if (!groupPartitionLists[netId].empty()) {
 			for (std::map<int, ConnectConfig>::iterator connIt = connectConfigMap.begin(); connIt != connectConfigMap.end(); connIt++) {
-				if (groupConfigMap[connIt->second.grpSrc].netId == netId && groupConfigMap[connIt->second.grpDest].netId != netId) {
+				int srcNetId = groupConfigMap[connIt->second.grpSrc].netId;
+				int destNetId = groupConfigMap[connIt->second.grpDest].netId;
+				if (srcNetId == netId && destNetId != netId) {
 					// search the source group in groupPartitionLists and mark it as having external connections
 					GroupConfigRT targetGroup;
+					std::list<GroupConfigRT>::iterator srcGrpIt, destGrpIt;
+					
 					targetGroup.grpId = connIt->second.grpSrc;
-					std::list<GroupConfigRT>::iterator grpIt = find(groupPartitionLists[netId].begin(), groupPartitionLists[netId].end(), targetGroup);
-					grpIt->hasExternalConnect = true;
+					srcGrpIt = find(groupPartitionLists[srcNetId].begin(), groupPartitionLists[srcNetId].end(), targetGroup);
+					srcGrpIt->hasExternalConnect = true;
 
-					numAssignedNeurons[netId] += groupConfigMap[connIt->second.grpDest].SizeN;
 					// FIXME: fail to write external group if the only one external link across GPUs is uni directional (GPU0 -> GPU1, no GPU1 -> GPU0)
-					groupPartitionLists[netId].push_back(groupConfigMap[connIt->second.grpDest]);
-					externalConnectLists[netId].push_back(connectConfigMap[connIt->second.connId]);
+					targetGroup.grpId = connIt->second.grpDest;
+					destGrpIt = find(groupPartitionLists[srcNetId].begin(), groupPartitionLists[srcNetId].end(), targetGroup);
+					if (destGrpIt == groupPartitionLists[srcNetId].end()) { // the "external" dest group has not yet been copied to te "local" group partition list
+						numAssignedNeurons[srcNetId] += groupConfigMap[connIt->second.grpDest].SizeN;
+						groupPartitionLists[srcNetId].push_back(groupConfigMap[connIt->second.grpDest]);
+					}
+
+					targetGroup.grpId = connIt->second.grpSrc;
+					srcGrpIt = find(groupPartitionLists[destNetId].begin(), groupPartitionLists[destNetId].end(), targetGroup);
+					if (srcGrpIt == groupPartitionLists[destNetId].end()) {
+						numAssignedNeurons[destNetId] += groupConfigMap[connIt->second.grpSrc].SizeN;
+						groupPartitionLists[destNetId].push_back(groupConfigMap[connIt->second.grpSrc]);
+					}
+
+					externalConnectLists[srcNetId].push_back(connectConfigMap[connIt->second.connId]);
 				}
 			}
 		}
