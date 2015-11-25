@@ -228,7 +228,7 @@ void SNN::allocateGroupId(int netId) {
 
 	assert (gpuRuntimeData[netId].groupIdInfo == NULL);
 	int3* tempNeuronAllocation = (int3*)malloc(sizeof(int3) * networkConfigs[netId].numGroups);
-	for (int lGrpId = 0; lGrpId < networkConfigs[lGrpId].numGroups; lGrpId++) {
+	for (int lGrpId = 0; lGrpId < networkConfigs[netId].numGroups; lGrpId++) {
 		int3  threadLoad;
 		threadLoad.x = groupConfigs[netId][lGrpId].localStartN;
 		threadLoad.y = groupConfigs[netId][lGrpId].localEndN;
@@ -1941,8 +1941,8 @@ void SNN::copyNeuronState(int netId, int lGrpId, RuntimeData* dest, bool allocat
 		length  = groupConfigs[netId][lGrpId].SizeN;
 	}
 
-	assert(length  <= networkConfigs[netId].numNReg);
-	assert(length > 0);
+	assert(length <= networkConfigs[netId].numNReg);
+	assert(length >= 0);
 
 	if(!allocateMem && groupConfigs[netId][lGrpId].Type & POISSON_NEURON)
 		return;
@@ -3053,7 +3053,7 @@ void SNN::copyExternalCurrent(int netId, int lGrpId, RuntimeData* dest, bool all
 		posN = groupConfigs[netId][lGrpId].localStartN;
 		lengthN = groupConfigs[netId][lGrpId].SizeN;
 	}
-	assert(lengthN > 0 && lengthN <= networkConfigs[netId].numNReg); // assert NOT poisson neurons
+	assert(lengthN >= 0 && lengthN <= networkConfigs[netId].numNReg); // assert NOT poisson neurons
 
 	KERNEL_DEBUG("copyExternalCurrent: lGrpId=%d, ptrPos=%d, length=%d, allocate=%s", lGrpId, posN, lengthN, allocateMem?"y":"n");
 
