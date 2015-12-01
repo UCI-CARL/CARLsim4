@@ -4,7 +4,7 @@
 # Note: all paths should be absolute (start with /)
 #------------------------------------------------------------------------------
 # desired installation path of libcarlsim and headers
-CARLSIM_LIB_DIR ?= /opt/CARL/CARLsim
+CARLSIM_LIB_DIR ?= /home/tingshuc/CARL/CARLsim
 
 # cuda capability major version number for GPU device
 CUDA_MAJOR_NUM ?= 2
