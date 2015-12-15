@@ -40,63 +40,74 @@
  * Ver 5/22/2015
  */
 
-// include CARLsim user interface
+// include CARLsim user interface and gtest
+#include "gtest/gtest.h"
+#include "carlsim_tests.h"
 #include <carlsim.h>
 
-//int main() {
-//	// create a network on GPU
-//	int numGPUs = 2;
-//	int randSeed = 42;
-//	CARLsim sim("test kernel", GPU_MODE, USER, numGPUs, randSeed);
-//
-//	// configure the network
-//	int gExc = sim.createGroup("exc", 10, EXCITATORY_NEURON);
-//	sim.setNeuronParameters(gExc, 0.02f, 0.2f, -65.0f, 8.0f); // RS
-//
-//	//int gInh = sim.createGroup("inh", 20, INHIBITORY_NEURON);
-//	//sim.setNeuronParameters(gInh, 0.1f, 0.2f, -65.0f, 2.0f); // FS
-//	int gExc2 = sim.createGroup("exc", 10, EXCITATORY_NEURON);
-//	sim.setNeuronParameters(gExc2, 0.02f, 0.2f, -65.0f, 8.0f); // RS
-//
-//	int gInput = sim.createSpikeGeneratorGroup("input", 10, EXCITATORY_NEURON);
-//
-//	sim.connect(gInput, gExc, "one-to-one", RangeWeight(50.0f), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
-//	sim.connect(gExc, gExc2, "random", RangeWeight(10.0f), 0.4f, RangeDelay(1, 10), RadiusRF(-1), SYN_FIXED);
-//	sim.connect(gExc2, gExc, "random", RangeWeight(0.0001f), 0.4f, RangeDelay(1, 10), RadiusRF(-1), SYN_FIXED);
-//
-//	sim.setConductances(false);
-//
-//	//sim.setESTDP(gExc, true, STANDARD, ExpCurve(0.1f/100, 20, -0.12f/100, 20));
-//
-//	// build the network
-//	sim.setupNetwork();
-//
-//	// set some monitors
-//	SpikeMonitor* smInput = sim.setSpikeMonitor(gInput, "DEFAULT");
-//	SpikeMonitor* smExc = sim.setSpikeMonitor(gExc, "DEFAULT");
-//	SpikeMonitor* smExc2 = sim.setSpikeMonitor(gExc2, "DEFAULT");
-//	ConnectionMonitor* cmEE = sim.setConnectionMonitor(gExc, gExc2, "DEFAULT");
-//
-//	//setup some baseline input
-//	PoissonRate in(10);
-//	in.setRates(5.0f);
-//	sim.setSpikeRate(gInput, &in);
-//
-//	// run for a total of 10 seconds
-//	// at the end of each runNetwork call, SpikeMonitor stats will be printed
-//	smInput->startRecording();
-//	smExc->startRecording();
-//	smExc2->startRecording();
-//	
-//	sim.runNetwork(0, 100);
-//	
-//	smInput->stopRecording();
-//	smExc->stopRecording();
-//	smExc2->stopRecording();
-//
-//	smExc->print(true);
-//	smExc2->print(true);
-//	smInput->print(true);
-//
-//	return 0;
-//}
+TEST(MULTIGPUS, spikesSingleVsMulti) {
+	// create a network on GPU
+	int gExc, gExc2, gInput;
+	std::vector<std::vector<int> > spikesSingleGPU, spikesMultiGPU;
+	CARLsim* sim;
+	
+	for (int gpuId = 0; gpuId < 2; gpuId++) {
+		sim = new CARLsim("test kernel", GPU_MODE, USER, 2, 42);
+
+		// configure the network
+		gExc = sim->createGroup("exc", 10, EXCITATORY_NEURON, 0);
+		sim->setNeuronParameters(gExc, 0.02f, 0.2f, -65.0f, 8.0f); // RS
+
+		//int gInh = sim.createGroup("inh", 20, INHIBITORY_NEURON);
+		//sim.setNeuronParameters(gInh, 0.1f, 0.2f, -65.0f, 2.0f); // FS
+		gExc2 = sim->createGroup("exc2", 10, EXCITATORY_NEURON, gpuId);
+		sim->setNeuronParameters(gExc2, 0.02f, 0.2f, -65.0f, 8.0f); // RS
+
+		gInput = sim->createSpikeGeneratorGroup("input", 10, EXCITATORY_NEURON, 0);
+
+		sim->connect(gInput, gExc, "one-to-one", RangeWeight(50.0f), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
+		sim->connect(gExc, gExc2, "random", RangeWeight(10.0f), 0.4f, RangeDelay(1, 10), RadiusRF(-1), SYN_FIXED);
+
+		sim->setConductances(false);
+
+		//sim.setESTDP(gExc, true, STANDARD, ExpCurve(0.1f/100, 20, -0.12f/100, 20));
+
+		// build the network
+		sim->setupNetwork();
+
+		// set some monitors
+		SpikeMonitor* smInput = sim->setSpikeMonitor(gInput, "NULL");
+		SpikeMonitor* smExc = sim->setSpikeMonitor(gExc, "NULL");
+		SpikeMonitor* smExc2 = sim->setSpikeMonitor(gExc2, "NULL");
+		//ConnectionMonitor* cmEE = sim->setConnectionMonitor(gExc, gExc2, "NULL");
+
+		//setup some baseline input
+		PoissonRate in(10);
+		in.setRates(5.0f);
+		sim->setSpikeRate(gInput, &in);
+
+		// run for a total of 10 seconds
+		// at the end of each runNetwork call, SpikeMonitor stats will be printed
+		smInput->startRecording();
+		smExc->startRecording();
+		smExc2->startRecording();
+	
+		sim->runNetwork(1, 0);
+	
+		smInput->stopRecording();
+		smExc->stopRecording();
+		smExc2->stopRecording();
+
+		if (gpuId == 0) { // single gpu
+			spikesSingleGPU = smExc2->getSpikeVector2D();
+		} else {
+			spikesMultiGPU = smExc2->getSpikeVector2D();
+		}
+
+		smExc->print(true);
+		smExc2->print(true);
+		smInput->print(true);
+
+		delete sim;
+	}
+}
