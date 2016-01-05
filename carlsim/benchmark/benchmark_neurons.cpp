@@ -42,88 +42,125 @@
 
 // include CARLsim user interface
 #include <carlsim.h>
+#include <stopwatch.h>
 
-#define N_EXC 80000
-#define N_INH 20000
+#define NUM_GPUS 2
 
-int main() {
-	// create a network on GPU
-	int numGPUs = 2;
-	int randSeed = 42;
-	float pConn = 100.0f / (N_EXC + N_INH); // connection probability
-	CARLsim sim("test kernel", GPU_MODE, USER, numGPUs, randSeed);
+int main(int argc, char* argv[]) {
+	int gExc, gExc2, gInh, gInh2, gInput, gInput2;
+	int numN, numExc, numInh;
+	int randSeed;
+	float pConn;
+	CARLsim* sim;
+	Stopwatch watch(false);
+	FILE* single; 
+	FILE* multi;
 
-	// configure the network
-	int gExc = sim.createGroup("exc", N_EXC, EXCITATORY_NEURON, 0);
-	sim.setNeuronParameters(gExc, 0.02f, 0.2f, -65.0f, 8.0f); // RS
+	if (argc != 4) return 1; // 4 input parameters are required
 
-	int gExc2 = sim.createGroup("exc2", N_EXC, EXCITATORY_NEURON, 0);
-	sim.setNeuronParameters(gExc2, 0.02f, 0.2f, -65.0f, 8.0f);
+	// setup benchmark parameters
+	srand(time(NULL));
+	randSeed = rand();
 
-	int gInh = sim.createGroup("inh", N_INH, INHIBITORY_NEURON, 0);
-	sim.setNeuronParameters(gInh, 0.1f, 0.2f, -65.0f, 2.0f); // FS
+	numN = atoi(argv[1]);
+	numExc = numN * 8 / 10;
+	numInh = numN * 2 / 10;
+	pConn = 100.0f / (numExc + numInh); // connection probability
 
-	int gInh2 = sim.createGroup("inh2", N_INH, INHIBITORY_NEURON, 0);
-	sim.setNeuronParameters(gInh2, 0.1f, 0.2f, -65.0f, 2.0f);
-	//int gExc2 = sim.createGroup("exc", N_EXC, EXCITATORY_NEURON);
-	//sim.setNeuronParameters(gExc2, 0.02f, 0.2f, -65.0f, 8.0f); // RS
+	single = fopen(argv[2], "a");
+	multi = fopen(argv[3], "a");
 
-	int gInput = sim.createSpikeGeneratorGroup("input", N_EXC / 100, EXCITATORY_NEURON, 0);
+	for (int gpuId = 0; gpuId < NUM_GPUS; gpuId++) {
+		// create CARLsim object
+		sim = new CARLsim("benchmark_neurons", GPU_MODE, SILENT, NUM_GPUS, randSeed);
+		
+		// configure the network
+		watch.start();
+		gExc = sim->createGroup("exc", numExc, EXCITATORY_NEURON, 0);
+		sim->setNeuronParameters(gExc, 0.02f, 0.2f, -65.0f, 8.0f); // RS
 
-	int gInput2 = sim.createSpikeGeneratorGroup("input2", N_EXC / 100, EXCITATORY_NEURON, 0);
+		gExc2 = sim->createGroup("exc2", numExc, EXCITATORY_NEURON, gpuId);
+		sim->setNeuronParameters(gExc2, 0.02f, 0.2f, -65.0f, 8.0f);
 
-	sim.connect(gInput, gExc, "random", RangeWeight(30.0f), pConn, RangeDelay(1, 20), RadiusRF(-1), SYN_FIXED);
-	sim.connect(gExc, gExc, "random", RangeWeight(6.0f), pConn, RangeDelay(1, 20), RadiusRF(-1), SYN_FIXED);
-	sim.connect(gExc, gInh, "random", RangeWeight(6.0f), pConn, RangeDelay(1, 20), RadiusRF(-1), SYN_FIXED);
-	sim.connect(gInh, gExc, "random", RangeWeight(5.0f), pConn * 1.25f, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
+		gInh = sim->createGroup("inh", numInh, INHIBITORY_NEURON, gpuId);
+		sim->setNeuronParameters(gInh, 0.1f, 0.2f, -65.0f, 2.0f); // FS
 
-	sim.connect(gInput2, gExc2, "random", RangeWeight(30.0f), pConn, RangeDelay(1, 20), RadiusRF(-1), SYN_FIXED);
-	sim.connect(gExc2, gExc2, "random", RangeWeight(6.0f), pConn, RangeDelay(1, 20), RadiusRF(-1), SYN_FIXED);
-	sim.connect(gExc2, gInh2, "random", RangeWeight(6.0f), pConn, RangeDelay(1, 20), RadiusRF(-1), SYN_FIXED);
-	sim.connect(gInh2, gExc2, "random", RangeWeight(5.0f), pConn * 1.25f, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
+		gInh2 = sim->createGroup("inh2", numInh, INHIBITORY_NEURON, 0);
+		sim->setNeuronParameters(gInh2, 0.1f, 0.2f, -65.0f, 2.0f);
 
-	sim.setConductances(false);
+		gInput = sim->createSpikeGeneratorGroup("input", numExc / 100, EXCITATORY_NEURON, 0);
 
-	// build the network
-	sim.setupNetwork();
+		gInput2 = sim->createSpikeGeneratorGroup("input2", numExc / 100, EXCITATORY_NEURON, gpuId);
 
-	// set some monitors
-	//SpikeMonitor* smInput = sim.setSpikeMonitor(gInput, "DEFAULT");
-	SpikeMonitor* smExc = sim.setSpikeMonitor(gExc, "NULL");
-	SpikeMonitor* smInh = sim.setSpikeMonitor(gInh, "NULL");
-	SpikeMonitor* smInput = sim.setSpikeMonitor(gInput, "NULL");
+		sim->connect(gInput, gExc, "random", RangeWeight(30.0f), pConn, RangeDelay(1, 20), RadiusRF(-1), SYN_FIXED);
+		sim->connect(gExc, gExc, "random", RangeWeight(6.0f), pConn, RangeDelay(1, 20), RadiusRF(-1), SYN_FIXED);
+		sim->connect(gExc, gInh, "random", RangeWeight(6.0f), pConn, RangeDelay(1, 20), RadiusRF(-1), SYN_FIXED);
+		sim->connect(gInh, gExc, "random", RangeWeight(5.0f), pConn * 1.25f, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
 
-	SpikeMonitor* smExc2 = sim.setSpikeMonitor(gExc2, "NULL");
-	SpikeMonitor* smInh2 = sim.setSpikeMonitor(gInh2, "NULL");
-	SpikeMonitor* smInput2 = sim.setSpikeMonitor(gInput2, "NULL");
-	//ConnectionMonitor* cmEE = sim.setConnectionMonitor(gExc, gInh, "DEFAULT");
+		sim->connect(gInput2, gExc2, "random", RangeWeight(30.0f), pConn, RangeDelay(1, 20), RadiusRF(-1), SYN_FIXED);
+		sim->connect(gExc2, gExc2, "random", RangeWeight(6.0f), pConn, RangeDelay(1, 20), RadiusRF(-1), SYN_FIXED);
+		sim->connect(gExc2, gInh2, "random", RangeWeight(6.0f), pConn, RangeDelay(1, 20), RadiusRF(-1), SYN_FIXED);
+		sim->connect(gInh2, gExc2, "random", RangeWeight(5.0f), pConn * 1.25f, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
 
-	//setup some baseline input
-	PoissonRate in(N_EXC / 100);
-	in.setRates(1.0f);
-	sim.setSpikeRate(gInput, &in);
+		sim->setConductances(false);
 
-	PoissonRate in2(N_EXC / 100);
-	in2.setRates(1.0f);
-	sim.setSpikeRate(gInput2, &in2);
+		// build the network
+		watch.lap();
+		sim->setupNetwork();
 
-	// run for a total of 10 seconds
-	// at the end of each runNetwork call, SpikeMonitor stats will be printed
-	//smInput->startRecording();
-	//smExc->startRecording();
-	//smInh->startRecording();
-	//smInput->startRecording();
+		// set some monitors
+		//SpikeMonitor* smInput = sim->setSpikeMonitor(gInput, "DEFAULT");
+		//SpikeMonitor* smExc = sim->setSpikeMonitor(gExc, "NULL");
+		//SpikeMonitor* smInh = sim->setSpikeMonitor(gInh, "NULL");
+		//SpikeMonitor* smInput = sim->setSpikeMonitor(gInput, "NULL");
+
+		//SpikeMonitor* smExc2 = sim->setSpikeMonitor(gExc2, "NULL");
+		//SpikeMonitor* smInh2 = sim->setSpikeMonitor(gInh2, "NULL");
+		//SpikeMonitor* smInput2 = sim->setSpikeMonitor(gInput2, "NULL");
+
+		//setup some baseline input
+		PoissonRate in(numExc / 100);
+		in.setRates(1.0f);
+		sim->setSpikeRate(gInput, &in);
+
+		PoissonRate in2(numExc / 100);
+		in2.setRates(1.0f);
+		sim->setSpikeRate(gInput2, &in2);
+
+		// run the network for 10 seconds
+		watch.lap();
+		//smInput->startRecording();
+		//smExc->startRecording();
+		//smInh->startRecording();
+		//smInput->startRecording();
 	
-	sim.runNetwork(10, 0);
+		sim->runNetwork(10, 0);
 	
-	//smInput->stopRecording();
-	//smExc->stopRecording();
-	//smInh->stopRecording();
-	//smInput->stopRecording();
+		//smInput->stopRecording();
+		//smExc->stopRecording();
+		//smInh->stopRecording();
+		//smInput->stopRecording();
 
-	//smExc->print(true);
-	//smExc2->print(true);
-	//smInput->print(true);
+		//smExc->print(true);
+		//smExc2->print(true);
+		//smInput->print(true);
+		watch.stop(false);
+
+		if (gpuId == 0) { // single
+			fprintf(single, "%ld,%ld,%ld\n", watch.getLapTime(0), watch.getLapTime(1), watch.getLapTime(2));
+			printf("config %ld, setup %ld, run %ld\n", watch.getLapTime(0),watch.getLapTime(1), watch.getLapTime(2));
+		}
+
+		if (gpuId == 1) { // multi
+			fprintf(multi, "%ld,%ld,%ld\n", watch.getLapTime(3), watch.getLapTime(4), watch.getLapTime(5));
+			printf("config %ld, setup %ld, run %ld\n", watch.getLapTime(3), watch.getLapTime(4), watch.getLapTime(5));
+		}
+
+		delete sim;
+	}
+
+	fclose(single);
+	fclose(multi);
 
 	return 0;
 }
