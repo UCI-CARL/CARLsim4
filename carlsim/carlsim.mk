@@ -63,18 +63,22 @@ tools_swt_inc  := $(addprefix $(tools_swt_dir)/,simple_weight_tuner.h)
 tools_swt_src  := $(addprefix $(tools_swt_dir)/,simple_weight_tuner.cpp)
 tools_swt_objs := $(patsubst %.cpp, %.o, $(tools_swt_src))
 
+tools_stopwatch_inc  := $(addprefix $(tools_stopwatch_dir)/,stopwatch.h)
+tools_stopwatch_src  := $(addprefix $(tools_stopwatch_dir)/,stopwatch.cpp)
+tools_stopwatch_objs := $(patsubst %.cpp, %.o, $(tools_stopwatch_src))
+
 # motion energy objects
 util_2_0_objs := $(addprefix $(kernel_dir)/,v1ColorME.2.0.o)
 
 # carlsim variables all together in one place
 carlsim_inc += $(kernel_inc) $(interface_inc) $(conn_mon_inc) $(spike_mon_inc) $(group_mon_inc) \
-	$(tools_spikegen_inc) $(tools_visualstim_inc) $(tools_swt_inc)
+	$(tools_spikegen_inc) $(tools_visualstim_inc) $(tools_swt_inc) $(tools_stopwatch_inc)
 carlsim_objs += $(kernel_objs) $(interface_objs) $(conn_mon_objs) $(spike_mon_objs) $(group_mon_objs) \
-	$(tools_spikegen_objs) $(tools_visualstim_objs) $(tools_swt_objs)
+	$(tools_spikegen_objs) $(tools_visualstim_objs) $(tools_swt_objs) $(tools_stopwatch_objs)
 carlsim_sources += $(kernel_src) $(interface_src) $(conn_mon_src) $(spike_mon_src) $(group_mon_src) \
-	$(tools_spikegen_src) $(tools_visualstim_src) $(tools_swt_src)
+	$(tools_spikegen_src) $(tools_visualstim_src) $(tools_swt_src) $(tools_stopwatch_src)
 objects += $(carlsim_objs) $(interface_objs) $(conn_mon_objs) $(spike_mon_objs) $(group_mon_objs) \
-	$(tools_spikegen_objs) $(tools_visualstim_objs) $(tools_swt_objs)
+	$(tools_spikegen_objs) $(tools_visualstim_objs) $(tools_swt_objs) $(tools_stopwatch_objs)
 
 default_targets += carlsim
 
@@ -111,7 +115,11 @@ $(tools_visualstim_dir)/%.o: $(tools_visualstim_src) $(tools_visualstim_inc)
 
 # tools/simple_weight_tuner
 $(tools_swt_dir)/%.o: $(tools_swt_src) $(tools_swt_inc)
-	$(NVCC) -c $(CARLSIM_INCLUDES) $(CARLSIM_FLAGS) $(@D)/$*.cpp  -o $@
+	$(NVCC) -c $(CARLSIM_INCLUDES) $(CARLSIM_FLAGS) $(@D)/$*.cpp -o $@
+
+# tools/stopwatch
+$(tools_stopwatch_dir)/%.0: $(tools_stopwatch_src) $(tools_stopwatch_inc)
+	$(NVCC) -c $(CARLSIM_INCLUDES) $(CARLSIM_FLAGS) $(@D)/$*.cpp -o $@
 
 # kernel carlsim cpps
 $(kernel_dir)/src/%.o: $(kernel_dir)/src/%.cpp $(kernel_inc)
