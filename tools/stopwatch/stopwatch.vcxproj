@@ -19,26 +19,14 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\callback_core.cpp" />
-    <ClCompile Include="src\carlsim.cpp" />
-    <ClCompile Include="src\linear_algebra.cpp" />
-    <ClCompile Include="src\poisson_rate.cpp" />
-    <ClCompile Include="src\user_errors.cpp" />
+    <ClCompile Include="stopwatch.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="include\callback.h" />
-    <ClInclude Include="include\callback_core.h" />
-    <ClInclude Include="include\carlsim.h" />
-    <ClInclude Include="include\carlsim_datastructures.h" />
-    <ClInclude Include="include\carlsim_definitions.h" />
-    <ClInclude Include="include\carlsim_log_definitions.h" />
-    <ClInclude Include="include\linear_algebra.h" />
-    <ClInclude Include="include\poisson_rate.h" />
-    <ClInclude Include="include\user_errors.h" />
+    <ClInclude Include="stopwatch.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{FBD68119-1A8C-4A1A-96CE-522B651209BC}</ProjectGuid>
-    <RootNamespace>interface_</RootNamespace>
+    <ProjectGuid>{9032D439-A99B-4479-947D-431E000FC9FB}</ProjectGuid>
+    <RootNamespace>spike_generators</RootNamespace>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -102,8 +90,8 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32;__CUDA7__;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(CudaToolkitIncludeDir);$(NVCUDASAMPLES_ROOT)\common\inc;$(SolutionDir)carlsim\kernel\include;$(SolutionDir)carlsim\spike_monitor;$(SolutionDir)carlsim\connection_monitor;$(SolutionDir)carlsim\group_monitor;$(ProjectDir)include</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(CudaToolkitIncludeDir);$(SolutionDir)carlsim\kernel\include;$(SolutionDir)carlsim\interface\include;$(SolutionDir)carlsim\spike_monitor;$(SolutionDir)carlsim\connection_monitor;$(SolutionDir)carlsim\group_monitor;$(ProjectDir)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -119,8 +107,8 @@ copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN64;__CUDA7__;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(CudaToolkitIncludeDir);$(NVCUDASAMPLES_ROOT)\common\inc;$(SolutionDir)carlsim\kernel\include;$(SolutionDir)carlsim\spike_monitor;$(SolutionDir)carlsim\connection_monitor;$(SolutionDir)carlsim\group_monitor;$(ProjectDir)include</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN64;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(CudaToolkitIncludeDir);$(SolutionDir)carlsim\kernel\include;$(SolutionDir)carlsim\interface\include;$(SolutionDir)carlsim\spike_monitor;$(SolutionDir)carlsim\connection_monitor;$(SolutionDir)carlsim\group_monitor;$(ProjectDir)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -132,8 +120,6 @@ copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
 copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
     </PostBuildEvent>
     <CudaCompile>
-      <CodeGeneration>compute_20,sm_20</CodeGeneration>
-      <Include>$(NVCUDASAMPLES_ROOT)\common\inc;%(Include)</Include>
       <TargetMachinePlatform>64</TargetMachinePlatform>
     </CudaCompile>
   </ItemDefinitionGroup>
@@ -143,8 +129,8 @@ copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>WIN32;__CUDA7__;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(CudaToolkitIncludeDir);$(NVCUDASAMPLES_ROOT)\common\inc;$(SolutionDir)carlsim\kernel\include;$(SolutionDir)carlsim\spike_monitor;$(SolutionDir)carlsim\connection_monitor;$(SolutionDir)carlsim\group_monitor;$(ProjectDir)include</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(CudaToolkitIncludeDir);$(SolutionDir)carlsim\kernel\include;$(SolutionDir)carlsim\interface\include;$(SolutionDir)carlsim\spike_monitor;$(SolutionDir)carlsim\connection_monitor;$(SolutionDir)carlsim\group_monitor;$(ProjectDir)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -164,9 +150,8 @@ copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>WIN64;__CUDA7__;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <CompileAs>CompileAsCpp</CompileAs>
-      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(CudaToolkitIncludeDir);$(NVCUDASAMPLES_ROOT)\common\inc;$(SolutionDir)carlsim\kernel\include;$(SolutionDir)carlsim\spike_monitor;$(SolutionDir)carlsim\connection_monitor;$(SolutionDir)carlsim\group_monitor;$(ProjectDir)include</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN64;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(CudaToolkitIncludeDir);$(SolutionDir)carlsim\kernel\include;$(SolutionDir)carlsim\interface\include;$(SolutionDir)carlsim\spike_monitor;$(SolutionDir)carlsim\connection_monitor;$(SolutionDir)carlsim\group_monitor;$(ProjectDir)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -180,8 +165,6 @@ copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
 copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
     </PostBuildEvent>
     <CudaCompile>
-      <Include>$(NVCUDASAMPLES_ROOT)\common\inc;%(Include)</Include>
-      <CodeGeneration>compute_20,sm_21</CodeGeneration>
       <TargetMachinePlatform>64</TargetMachinePlatform>
     </CudaCompile>
   </ItemDefinitionGroup>
