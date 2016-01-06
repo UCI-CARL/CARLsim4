@@ -21,7 +21,8 @@ CARLSIM_FLAGS += -I$(CARLSIM_LIB_DIR)/include/kernel \
 				 -I$(CARLSIM_LIB_DIR)/include/spike_generators \
 				 -I$(CARLSIM_LIB_DIR)/include/visual_stimulus \
 				 -I$(CARLSIM_LIB_DIR)/include/simple_weight_tuner \
-				 -I$(CARLSIM_LIB_DIR)/include/group_monitor
+				 -I$(CARLSIM_LIB_DIR)/include/group_monitor \
+				 -I$(CARLSIM_LIB_DIR)/include/stopwatch
 CARLSIM_LIBS  += -L$(CARLSIM_LIB_DIR)/lib -lCARLsim
 
 local_src  := $(project)_neurons.cpp

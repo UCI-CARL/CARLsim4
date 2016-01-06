@@ -149,18 +149,20 @@ int main(int argc, char* argv[]) {
 		if (gpuId == 0) { // single
 			fprintf(single, "%ld,%ld,%ld\n", watch.getLapTime(0), watch.getLapTime(1), watch.getLapTime(2));
 			printf("config %ld, setup %ld, run %ld\n", watch.getLapTime(0),watch.getLapTime(1), watch.getLapTime(2));
+			fclose(single);
 		}
 
 		if (gpuId == 1) { // multi
 			fprintf(multi, "%ld,%ld,%ld\n", watch.getLapTime(3), watch.getLapTime(4), watch.getLapTime(5));
 			printf("config %ld, setup %ld, run %ld\n", watch.getLapTime(3), watch.getLapTime(4), watch.getLapTime(5));
+			fclose(multi);
 		}
 
 		delete sim;
 	}
 
-	fclose(single);
-	fclose(multi);
+	//fclose(single);
+	//fclose(multi);
 
 	return 0;
 }

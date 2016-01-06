@@ -118,7 +118,7 @@ $(tools_swt_dir)/%.o: $(tools_swt_src) $(tools_swt_inc)
 	$(NVCC) -c $(CARLSIM_INCLUDES) $(CARLSIM_FLAGS) $(@D)/$*.cpp -o $@
 
 # tools/stopwatch
-$(tools_stopwatch_dir)/%.0: $(tools_stopwatch_src) $(tools_stopwatch_inc)
+$(tools_stopwatch_dir)/%.o: $(tools_stopwatch_src) $(tools_stopwatch_inc)
 	$(NVCC) -c $(CARLSIM_INCLUDES) $(CARLSIM_FLAGS) $(@D)/$*.cpp -o $@
 
 # kernel carlsim cpps

@@ -51,6 +51,7 @@ install: $(carlsim_lib)
 	@install -m 0644 $(interface_dir)/include/callback.h \
 		$(interface_dir)/include/carlsim_datastructures.h \
 		$(interface_dir)/include/carlsim_definitions.h \
+		$(interface_dir)/include/carlsim_log_definitions.h \
 		$(interface_dir)/include/linear_algebra.h \
 		$(interface_dir)/include/poisson_rate.h \
 		$(interface_dir)/include/carlsim.h $(interface_dir)/include/user_errors.h \
