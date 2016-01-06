@@ -1,0 +1,15 @@
+#!/bin/bash
+
+numNeurons='1000 3160 10000'
+
+for numN in $numNeurons
+do
+	for iter in {0..20}
+	do
+		echo $numN $iter
+		./benchmark $numN $iter 0 s.csv # single GPU
+		./benchmark $numN $iter 1 m.csv # multi GPUs
+	done
+done
+
+
