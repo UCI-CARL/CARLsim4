@@ -1,10 +1,10 @@
 #!/bin/bash
 
-numNeurons='1000 3160 10000'
+numNeurons='1000 3160 10000 31600 100000 316000 1000000 3160000 10000000'
 
-for numN in $numNeurons
+for numN in $numNeurons # number of neurons, which defines the workload
 do
-	for iter in {0..20}
+	for iter in {1..20} # 20 iterations
 	do
 		echo $numN $iter
 		./benchmark $numN $iter 0 s.csv # single GPU
