@@ -45,8 +45,7 @@
 
 // include CUDA version-dependent macros and include files
 #include <cuda_version_control.h>
-#include <gpu_random.h>
-
+#include <curand.h>
 
 //! connection types, used internally (externally it's a string)
 enum conType_t { CONN_RANDOM, CONN_ONE_TO_ONE, CONN_FULL, CONN_FULL_NO_DIRECT, CONN_GAUSSIAN, CONN_USER_DEFINED, CONN_UNKNOWN};
@@ -238,8 +237,8 @@ typedef struct RuntimeData_s {
 	int* extFiringTableEndIdxD1;
 	int* extFiringTableEndIdxD2;
 
-	float*        poissonFireRate;
-	unsigned int* poissonRandPtr;		//!< firing random number. max value is 10,000
+	float* poissonFireRate;
+	float* gpuRandNums;		//!< firing random number. max value is 10,000
 
 	int2* neuronAllocation;		//!< .x: [31:0] index of the first neuron, .y: [31:16] number of neurons, [15:0] group id
 	int3* groupIdInfo;			//!< .x , .y: the start and end index of neurons in a group, .z: gourd id, used for group Id calculations
@@ -267,7 +266,7 @@ typedef struct RuntimeData_s {
 
 	unsigned int* spikeGenBits;
 
-	RNG_rand48* gpuPoissonRand;
+	curandGenerator_t gpuRandGen;
 } RuntimeData;
 
 //! runtime network configuration

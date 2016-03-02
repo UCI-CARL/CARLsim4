@@ -43,8 +43,8 @@
 // include CARLsim user interface
 #include <carlsim.h>
 
-#define N_EXC 80000
-#define N_INH 20000
+#define N_EXC 800
+#define N_INH 200
 
 int main() {
 	// create a network on GPU
