@@ -3154,8 +3154,8 @@ void SNN::configGPUDevice() {
 		KERNEL_INFO("  + Use CUDA device[%1d]              = %9s", ithGPU, deviceProp.name);
 		KERNEL_INFO("  + CUDA Compute Capability (CC)    =      %2d.%d", deviceProp.major, deviceProp.minor);
 	}
-
-    if (deviceProp.major < 2) {
+	
+	if (deviceProp.major < 2) {
 		// Unmark this when CC 1.3 is deprecated
 		//KERNEL_ERROR("CARLsim does not support CUDA devices older than CC 2.0");
 		//exitSimulation(1);
@@ -3167,20 +3167,22 @@ void SNN::configGPUDevice() {
 		CUDA_DEVICE_RESET();
 	}
 
-	// FIXME: generalize the initialization for mulit-GPUs up to 4 or 8
-	// enable P2P access
-	int canAccessPeer_0_1, canAccessPeer_1_0;
-	cudaDeviceCanAccessPeer(&canAccessPeer_0_1, 0, 1);
-	cudaDeviceCanAccessPeer(&canAccessPeer_1_0, 1, 0);
-	// enable peer access between GPU0 and GPU1
-	if (canAccessPeer_0_1 & canAccessPeer_1_0) {
-		cudaSetDevice(0);
-		cudaDeviceEnablePeerAccess(1, 0);
-		cudaSetDevice(1);
-		cudaDeviceEnablePeerAccess(0, 0);
-		KERNEL_INFO("* Peer Access is enabled");
-	} else {
-		KERNEL_INFO("* Peer Access is not enabled");
+	if (devCount >= 2) { // try to setup P2P access if more than 2 GPUs are presented
+		// FIXME: generalize the initialization for mulit-GPUs up to 4 or 8
+		// enable P2P access
+		int canAccessPeer_0_1, canAccessPeer_1_0;
+		cudaDeviceCanAccessPeer(&canAccessPeer_0_1, 0, 1);
+		cudaDeviceCanAccessPeer(&canAccessPeer_1_0, 1, 0);
+		// enable peer access between GPU0 and GPU1
+		if (canAccessPeer_0_1 & canAccessPeer_1_0) {
+			cudaSetDevice(0);
+			cudaDeviceEnablePeerAccess(1, 0);
+			cudaSetDevice(1);
+			cudaDeviceEnablePeerAccess(0, 0);
+			KERNEL_INFO("* Peer Access is enabled");
+		} else {
+			KERNEL_INFO("* Peer Access is not enabled");
+		}
 	}
 }
 
