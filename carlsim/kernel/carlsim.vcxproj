@@ -22,14 +22,12 @@
     <ClInclude Include="include\cuda_version_control.h" />
     <ClInclude Include="include\error_code.h" />
     <ClInclude Include="include\gpu.h" />
-    <ClInclude Include="include\gpu_random.h" />
     <ClInclude Include="include\propagated_spike_buffer.h" />
     <ClInclude Include="include\snn.h" />
     <ClInclude Include="include\snn_datastructures.h" />
     <ClInclude Include="include\snn_definitions.h" />
   </ItemGroup>
   <ItemGroup>
-    <CudaCompile Include="src\gpu_random.cu" />
     <CudaCompile Include="src\snn_gpu_module.cu" />
   </ItemGroup>
   <ItemGroup>
@@ -138,6 +136,12 @@ copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
       <Include>$(NVCUDASAMPLES_ROOT)\common\inc;$(ProjectDir)\include;%(Include)</Include>
       <TargetMachinePlatform>64</TargetMachinePlatform>
     </CudaCompile>
+    <Lib>
+      <AdditionalDependencies>curand.lib</AdditionalDependencies>
+    </Lib>
+    <Lib>
+      <AdditionalLibraryDirectories>$(CudaToolkitLibDir)</AdditionalLibraryDirectories>
+    </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -187,6 +191,15 @@ copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
       <Include>$(NVCUDASAMPLES_ROOT)\common\inc;$(ProjectDir)\include;%(Include)</Include>
       <TargetMachinePlatform>64</TargetMachinePlatform>
     </CudaCompile>
+    <Lib>
+      <AdditionalLibraryDirectories>$(CudaToolkitLibDir)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>curand.lib</AdditionalDependencies>
+    </Lib>
+    <CudaLink>
+      <AdditionalLibraryDirectories>
+      </AdditionalLibraryDirectories>
+      <AdditionalDependencies>curand.lib</AdditionalDependencies>
+    </CudaLink>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

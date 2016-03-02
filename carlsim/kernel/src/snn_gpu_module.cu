@@ -156,7 +156,7 @@ __device__ inline bool getPoissonSpike(int lNId) {
 	// Random number value is less than the poisson firing probability
 	// if poisson firing probability is say 1.0 then the random poisson ptr
 	// will always be less than 1.0 and hence it will continiously fire
-	return runtimeDataGPU.poissonRandPtr[lNId - networkConfigGPU.numNReg] * (1000.0f / RNG_rand48::MAX_RANGE)
+	return runtimeDataGPU.gpuRandNums[lNId - networkConfigGPU.numNReg] * 1000.0f
 			< runtimeDataGPU.poissonFireRate[lNId - networkConfigGPU.numNReg];
 }
 
@@ -602,7 +602,7 @@ void SNN::setSpikeGenBit_GPU(int netId, int lGrpId, int lNId) {
  * net access: numNReg numNPois, numN, sim_with_stdp, sim_in_testing, sim_with_homeostasis, maxSpikesD1, maxSpikesD2
  * grp access: Type, spikeGenFunc, Noffset, withSpikeCounter, spkCntBufPos, StartN, WithSTP, avgTimeScale
                WithSTDP, WithESTDP, WithISTDP, WithESTDPCurve, With ISTDPCurve, all STDP parameters
- * rtd access: poissonRandPtr, poissonFireRate, spkCntBuf, nSpikeCnt, voltage, recovery, Izh_c, Izh_d
+ * rtd access: gpuRandNums, poissonFireRate, spkCntBuf, nSpikeCnt, voltage, recovery, Izh_c, Izh_d
  *             cumulativePre, Npre_plastic, (R)synSpikeTime, (W)lastSpikeTime, (W)wtChange,
  *             avgFiring
  */
@@ -2515,8 +2515,8 @@ void SNN::spikeGeneratorUpdate_GPU() {
 			assert(gpuRuntimeData[netId].allocated);
 
 			// this part of the code is useful for poisson spike generator function..
-			if((networkConfigs[netId].numNPois > 0) && (gpuRuntimeData[netId].gpuPoissonRand != NULL)) {
-				gpuRuntimeData[netId].gpuPoissonRand->generate(networkConfigs[netId].numNPois, RNG_rand48::MAX_RANGE);
+			if((networkConfigs[netId].numNPois > 0) && (gpuRuntimeData[netId].gpuRandGen != NULL)) {
+				curandGenerateUniform(gpuRuntimeData[netId].gpuRandGen, gpuRuntimeData[netId].gpuRandNums, networkConfigs[netId].numNPois);
 			}
 
 			// this part of the code is invoked when we use spike generators
@@ -2725,10 +2725,13 @@ void SNN::deleteObjects_GPU() {
 			CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[netId].extFiringTableEndIdxD2) );
 			CUDA_CHECK_ERRORS( cudaFree(gpuRuntimeData[netId].extFiringTableEndIdxD1) );
 
-			// delet poisson generator on GPU(s)
+			// delete random numbr generator on GPU(s)
 			// Note: RNG_rand48 objects allocate device memory
-			if (gpuRuntimeData[netId].gpuPoissonRand != NULL) delete gpuRuntimeData[netId].gpuPoissonRand;
-			gpuRuntimeData[netId].gpuPoissonRand = NULL;
+			if (gpuRuntimeData[netId].gpuRandGen != NULL) curandDestroyGenerator(gpuRuntimeData[netId].gpuRandGen);
+			gpuRuntimeData[netId].gpuRandGen = NULL;
+
+			if (gpuRuntimeData[netId].gpuRandNums != NULL) CUDA_CHECK_ERRORS(cudaFree(gpuRuntimeData[netId].gpuRandNums));
+			gpuRuntimeData[netId].gpuRandNums = NULL;
 		}
 	}
 
@@ -3214,17 +3217,6 @@ void SNN::allocateSNN_GPU(int netId) {
 	// setup memory type of gpu runtime data
 	gpuRuntimeData[netId].memType = GPU_MODE;
 
-	// allocate random number generator on GPU(s)
-	// generate the random number for the poisson neuron here...
-	if(gpuRuntimeData[netId].gpuPoissonRand == NULL) {
-		gpuRuntimeData[netId].gpuPoissonRand = new RNG_rand48(randSeed_);
-	}
-
-	gpuRuntimeData[netId].gpuPoissonRand->generate(networkConfigs[netId].numNPois, RNG_rand48::MAX_RANGE);
-
-	// initialize SNN::gpuRuntimeData[0].poissonRandPtr, save the random pointer as poisson generator....
-	gpuRuntimeData[netId].poissonRandPtr = (unsigned int*) gpuRuntimeData[netId].gpuPoissonRand->get_random_numbers();
-
 	// display some memory management info
 	size_t avail, total, previous;
 	float toGB = std::pow(1024.0f,3);
@@ -3233,6 +3225,19 @@ void SNN::allocateSNN_GPU(int netId) {
 	KERNEL_INFO("Data\t\t\tSize\t\tTotal Used\tTotal Available");
 	KERNEL_INFO("Init:\t\t\t%2.3f GB\t%2.3f GB\t%2.3f GB",(float)(total)/toGB,(float)((total-avail)/toGB),
 		(float)(avail/toGB));
+	previous=avail;
+
+	// allocate random number generator on GPU(s)
+	if(gpuRuntimeData[netId].gpuRandGen == NULL) {
+		curandCreateGenerator(&gpuRuntimeData[netId].gpuRandGen, CURAND_RNG_PSEUDO_DEFAULT);
+		curandSetPseudoRandomGeneratorSeed(gpuRuntimeData[netId].gpuRandGen, randSeed_ + netId);
+	}
+
+	// allocate SNN::gpuRuntimeData[0].gpuRandNums for random number generators
+	CUDA_CHECK_ERRORS(cudaMalloc((void **)&gpuRuntimeData[netId].gpuRandNums, networkConfigs[netId].numNPois * sizeof(float)));
+
+	cudaMemGetInfo(&avail,&total);
+	KERNEL_INFO("Random Gen:\t\t%2.3f GB\t%2.3f GB\t%2.3f GB",(float)(previous-avail)/toGB, (float)((total-avail)/toGB),(float)(avail/toGB));
 	previous=avail;
 
 	// initialize gpuRuntimeData[0].neuronAllocation, __device__ loadBufferCount, loadBufferSize

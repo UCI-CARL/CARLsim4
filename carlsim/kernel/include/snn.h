@@ -80,7 +80,6 @@
 
 #include <propagated_spike_buffer.h>
 #include <poisson_rate.h>
-#include <gpu_random.h>
 
 class SpikeMonitor;
 class SpikeMonitorCore;
@@ -1037,8 +1036,6 @@ private:
 	int wtANDwtChangeUpdateIntervalCnt_;
 	float stdpScaleFactor_;
 	float wtChangeDecay_; //!< the wtChange decay
-
-	//RNG_rand48* gpuPoissonRand;
 };
 
 #endif

@@ -6,11 +6,11 @@
 # kernel variables
 kernel_inc := $(addprefix $(kernel_dir)/include/, snn.h gpu.h \
 	snn_definitions.h snn_datastructures.h \
-	gpu_random.h propagated_spike_buffer.h \
+	propagated_spike_buffer.h \
 	error_code.h cuda_version_control.h)
 kernel_cpp := $(addprefix $(kernel_dir)/src/, snn_manager.cpp snn_cpu_module.cpp \
 	propagated_spike_buffer.cpp print_snn_info.cpp)
-kernel_cu := $(addprefix $(kernel_dir)/src/, gpu_random.cu snn_gpu_module.cu)
+kernel_cu := $(addprefix $(kernel_dir)/src/, snn_gpu_module.cu)
 kernel_src := $(kernel_cpp) $(kernel_cu)
 kernel_cpp_objs := $(patsubst %.cpp, %.o, $(kernel_cpp))
 kernel_cu_objs := $(patsubst %.cu, %.o, $(kernel_cu))
