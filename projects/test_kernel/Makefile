@@ -7,7 +7,7 @@
 USER_MK_PATH = ../../
 include $(USER_MK_PATH)user.mk
 
-project := hello_world
+project := test_kernel
 output := *.dot *.dat *.log *.csv
 
 # You should not need to edit the file beyond this point
@@ -35,7 +35,7 @@ output_files += $(local_prog) $(local_objs)
 .PHONY: clean distclean
 # compile from CARLsim lib
 $(local_prog): $(local_src) $(local_objs)
-	$(NVCC) $(CARLSIM_INCLUDES) $(CARLSIM_FLAGS) $(CARLSIM_LFLAGS) $(CARLSIM_LIBS) $(local_objs) $< -o $@
+	$(NVCC) $(CARLSIM_INCLUDES) $(CARLSIM_FLAGS) $(CARLSIM_LFLAGS) $(CARLSIM_LIBS) -lcurand $(local_objs) $< -o $@
 
 clean:
 	$(RM) $(output_files)

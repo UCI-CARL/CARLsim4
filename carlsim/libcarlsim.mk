@@ -35,7 +35,7 @@ install: $(carlsim_lib)
 	@test -d $(CARLSIM_LIB_DIR)/include/spike_generators || mkdir \
 		$(CARLSIM_LIB_DIR)/include/spike_generators
 	@test -d $(CARLSIM_LIB_DIR)/include/simple_weight_tuner || mkdir \
-		$(CARLSIM_LIB_DIR)/include/simple_weight_tuner \
+		$(CARLSIM_LIB_DIR)/include/simple_weight_tuner
 	@test -d $(CARLSIM_LIB_DIR)/include/stopwatch || mkdir \
 		$(CARLSIM_LIB_DIR)/include/stopwatch
 	@test -d $(CARLSIM_LIB_DIR)/include/visual_stimulus || mkdir \
