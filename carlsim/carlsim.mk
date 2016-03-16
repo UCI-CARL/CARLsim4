@@ -4,7 +4,7 @@
 # CARLsim kernel variables
 #---------------------------------------------------------------------------
 # kernel variables
-kernel_inc := $(addprefix $(kernel_dir)/include/, snn.h gpu.h \
+kernel_inc := $(addprefix $(kernel_dir)/include/, snn.h \
 	snn_definitions.h snn_datastructures.h \
 	propagated_spike_buffer.h \
 	error_code.h cuda_version_control.h)
