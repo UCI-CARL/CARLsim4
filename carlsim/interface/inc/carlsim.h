@@ -91,13 +91,13 @@
 #endif
 
 #else
-#include <interactive_spikegen.h>
-#include <pre_post_group_spikegen.h>
-#include <periodic_spikegen.h>
-#include <spikegen_from_file.h>
-#include <spikegen_from_vector.h>
-#include <simple_weight_tuner.h>
-#include <visual_stimulus.h>
+// #include <interactive_spikegen.h>
+// #include <pre_post_group_spikegen.h>
+// #include <periodic_spikegen.h>
+// #include <spikegen_from_file.h>
+// #include <spikegen_from_vector.h>
+// #include <simple_weight_tuner.h>
+// #include <visual_stimulus.h>
 
 #include <pthread.h>
 #endif

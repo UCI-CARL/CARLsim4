@@ -1,72 +1,51 @@
-# Main Makefile for compiling, testing, and installing CARLsim
-# these variables collect the information from the other modules
-
-carlsim_major_num := 3
-carlsim_minor_num := 0
-carlsim_build_num := 0
-
-default_targets :=
-common_sources :=
-common_objs :=
-output_files :=
-libraries :=
+##----------------------------------------------------------------------------##
+##
+##   CARLsim4 Main Makefile
+##   ----------------------
+##
+##   Authors:   Michael Beyeler <mbeyeler@uci.edu>
+##              Kristofor Carlson <kdcarlso@uci.edu>
+##
+##   Institute: Cognitive Anteater Robotics Lab (CARL)
+##              Department of Cognitive Sciences
+##              University of California, Irvine
+##              Irvine, CA, 92697-5100, USA
+##
+##   Version:   12/07/2014
+##
+##----------------------------------------------------------------------------##
+	
+# the following are filled in the include files and passed up
+targets :=
 objects :=
+libraries :=
+output_files := doc/html
 
-# carlsim components
-kernel_dir     = carlsim/kernel
-interface_dir  = carlsim/interface
-conn_mon_dir   = carlsim/connection_monitor
-spike_mon_dir  = carlsim/spike_monitor
-group_mon_dir  = carlsim/group_monitor
-server_dir     = carlsim/server
-test_dir       = carlsim/test
+.PHONY: default clean distclean release debug
+default: release
 
-# carlsim tools
-tools_dir            = tools
-tools_spikegen_dir   = $(tools_dir)/spike_generators
-tools_visualstim_dir = $(tools_dir)/visual_stimulus
-tools_swt_dir        = $(tools_dir)/simple_weight_tuner
-tools_stopwatch_dir  = $(tools_dir)/stopwatch
+include carlsim/configure.mk   # import configuration settings
+include carlsim/carlsim.mk     # import CARLsim-related variables and rules
+include carlsim/libcarlsim.mk  # import libCARLsim-related variables and rules
 
-# CARLsim flags specific to the CARLsim installation
-CARLSIM_FLAGS += -I$(kernel_dir)/include -I$(interface_dir)/include \
-				 -I$(tools_spikegen_dir) -I$(tools_visualstim_dir) \
-				 -I$(spike_mon_dir) -I$(conn_mon_dir) -I$(group_mon_dir) -I$(tools_swt_dir) \
-				 -I$(tools_stopwatch_dir)
-
-# CAUTION: order of .mk includes matters!!!
-include user.mk
-include carlsim/carlsim.mk
-include carlsim/libcarlsim.mk
-
-# *.dat and results files are generated during carlsim_tests execution
-output_files += *.dot *.log tmp* *.status *.dat results carlsim/*.a
-
-# this blank 'default' is required
-default:
-
-.PHONY: default clean distclean
-default: $(default_targets)
-
+# clean all objects
 clean:
-	cd carlsim/test;make clean;cd ../..
 	$(RM) $(objects)
 
+# clean all objects and output files
 distclean:
-	cd carlsim/test;make distclean;cd ../..
-	$(RM) $(objects) $(libraries) $(output_files) doc/html
+	$(RM) $(objects) $(targets) $(libraries) $(output_files)
 
-devtest:
-	@echo $(OS_SIZE) $(OS_UPPER) $(OS_LOWER) $(DARWIN)
-
-# Print a help message
+# print a help message
 help:
-	@ echo
-	@ echo 'CARLsim Makefile options:'
-	@ echo
-	@ echo "make            Compiles the CARLsim code using the default compiler"
-	@ echo "make all          (Same thing)"
-	@ echo "make install    Installs CARLsim library (may require root privileges)"
+	@ echo 
+	@ echo "CARLsim4 Makefile options:"
+	@ echo 
+	@ echo "make            Compiles CARLsim4 in default mode (release)"
+	@ echo "make release    Compiles CARLsim4 in release mode (no debug output,"
+	@ echo "                using fast math and GPU optimization level 3)"
+	@ echo "make debug      Compiles CARLsim4 in debug mode (-g -Wall)"
+	@ echo "make install    Installs CARLsim4 library (may require root privileges)"
 	@ echo "make clean      Cleans out all object files"
-	@ echo "make distclean  Cleans out all objects files and output files"
-	@ echo "make help       Brings up this message!"
+	@ echo "make distclean  Cleans out all object and output files"
+	@ echo "make help       Brings up this message"
