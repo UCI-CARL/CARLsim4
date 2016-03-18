@@ -109,13 +109,13 @@ objects += $(krnl_obj_files) $(intf_obj_files) $(conn_obj_files) \
 .PHONY: release debug carlsim4
 
 # release build
-release: CXXFLAGS += -O3 -ffast-math
-release: NVCCFLAGS += --compiler-options "-O3 -ffast-math"
+release: CXXFL += -O3 -ffast-math
+release: NVCCFL += --compiler-options "-O3 -ffast-math"
 release: $(targets)
 
 # debug build
-debug: CXXFLAGS += -g -Wall
-debug: NVCCFLAGS += -g -G
+debug: CXXFL += -g -Wall
+debug: NVCCFL += -g -G
 debug: $(targets)
 
 # uninstall library
