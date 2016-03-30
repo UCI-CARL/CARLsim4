@@ -58,41 +58,43 @@ intf_dir       := carlsim/interface
 intf_inc_files := $(wildcard $(intf_dir)/inc/*.h)
 intf_cpp_files := $(wildcard $(intf_dir)/src/*.cpp)
 intf_cu_files  := $(wildcard $(intf_dir)/src/*.cu)
-intf_obj_files := $(patsubst %.cpp, %.cpp.o, $(intf_cpp_files))
-intf_obj_files += $(patsubst %.cu, %.cu.o, $(intf_cu_files))
+intf_obj_files := $(patsubst %.cpp, %-cpp.o, $(intf_cpp_files))
+intf_obj_files += $(patsubst %.cu, %-cu.o, $(intf_cu_files))
 INTFINCFL      := -I$(intf_dir)/inc
 
 krnl_dir       := carlsim/kernel
 krnl_inc_files := $(wildcard $(krnl_dir)/inc/*.h)
 krnl_cpp_files := $(wildcard $(krnl_dir)/src/*.cpp)
 krnl_cu_files  := $(wildcard $(krnl_dir)/src/*.cu)
-krnl_obj_files := $(patsubst %.cpp, %.cpp.o, $(krnl_cpp_files))
-krnl_obj_files += $(patsubst %.cu, %.cu.o, $(krnl_cu_files))
+krnl_obj_files := $(patsubst %.cpp, %-cpp.o, $(krnl_cpp_files))
+krnl_obj_files += $(patsubst %.cu, %-cu.o, $(krnl_cu_files))
 KRNLINCFL      := -I$(krnl_dir)/inc
 
 conn_dir       := carlsim/connection_monitor
 conn_inc_files := $(wildcard $(conn_dir)/*.h)
 conn_cpp_files := $(wildcard $(conn_dir)/*.cpp)
 conn_cu_files  := $(wildcard $(conn_dir)/src/*.cu)
-conn_obj_files := $(patsubst %.cpp, %.cpp.o, $(conn_cpp_files))
-conn_obj_files += $(patsubst %.cu, %.cu.o, $(conn_cu_files))
+conn_obj_files := $(patsubst %.cpp, %-cpp.o, $(conn_cpp_files))
+conn_obj_files += $(patsubst %.cu, %-cu.o, $(conn_cu_files))
 CONNINCFL      := -I$(conn_dir)
 
 grps_dir       := carlsim/group_monitor
 grps_inc_files := $(wildcard $(grps_dir)/*.h)
 grps_cpp_files := $(wildcard $(grps_dir)/*.cpp)
 grps_cu_files  := $(wildcard $(grps_dir)/src/*.cu)
-grps_obj_files := $(patsubst %.cpp, %.cpp.o, $(grps_cpp_files))
-grps_obj_files += $(patsubst %.cu, %.cu.o, $(grps_cu_files))
+grps_obj_files := $(patsubst %.cpp, %-cpp.o, $(grps_cpp_files))
+grps_obj_files += $(patsubst %.cu, %-cu.o, $(grps_cu_files))
 GRPSINCFL      := -I$(grps_dir)
 
 spks_dir       := carlsim/spike_monitor
 spks_inc_files := $(wildcard $(spks_dir)/*.h)
 spks_cpp_files := $(wildcard $(spks_dir)/*.cpp)
 spks_cu_files  := $(wildcard $(spks_dir)/src/*.cu)
-spks_obj_files := $(patsubst %.cpp, %.cpp.o, $(spks_cpp_files))
-spks_obj_files += $(patsubst %.cu, %.cu.o, $(spks_cu_files))
+spks_obj_files := $(patsubst %.cpp, %-cpp.o, $(spks_cpp_files))
+spks_obj_files += $(patsubst %.cu, %-cu.o, $(spks_cu_files))
 SPKSINCFL      := -I$(spks_dir)
+
+add_files      := $(addprefix carlsim/,configure.mk)
 
 
 
@@ -120,30 +122,30 @@ debug: $(targets)
 
 # uninstall library
 uninstall:
-	$(RM) $(CARLSIM_INSTALL_DIR)
+	$(RMR) $(CARLSIM4_INSTALL_DIR)
 
 # all CARLsim4 targets
 carlsim4: $(objects)
 
 test: $(intf_obj_files)
 	@ echo "hello"
-	@ echo $(intf_obj_files)
+	@ echo $(krnl_inc_files)
 
 
 
 # rule to compile local cpps
-$(intf_dir)/src/%.cpp.o: $(intf_dir)/src/%.cpp $(intf_inc_files)
+$(intf_dir)/src/%-cpp.o: $(intf_dir)/src/%.cpp $(intf_inc_files)
 	$(NVCC) $(NVCCSHRFL)-c $(NVCCINCFL) $(CARLSIMINCFL) $(NVCCFL) $< -o $@
-$(intf_dir)/src/%.cu.o: $(intf_dir)/src/%.cu $(intf_inc_files)
+$(intf_dir)/src/%-cu.o: $(intf_dir)/src/%.cu $(intf_inc_files)
 	$(NVCC) $(NVCCSHRFL)-c $(NVCCINCFL) $(CARLSIMINCFL) $(NVCCFL) $< -o $@
-$(krnl_dir)/src/%.cpp.o: $(krnl_dir)/src/%.cpp $(krnl_inc_files)
+$(krnl_dir)/src/%-cpp.o: $(krnl_dir)/src/%.cpp $(krnl_inc_files)
 	$(NVCC) $(NVCCSHRFL)-c $(NVCCINCFL) $(CARLSIMINCFL) $(NVCCFL) $< -o $@
-$(krnl_dir)/src/%.cu.o: $(krnl_dir)/src/%.cu $(krnl_inc_files)
+$(krnl_dir)/src/%-cu.o: $(krnl_dir)/src/%.cu $(krnl_inc_files)
 	$(NVCC) $(NVCCSHRFL)-c $(NVCCINCFL) $(CARLSIMINCFL) $(NVCCFL) $< -o $@
 
-$(conn_dir)/%.cpp.o: $(conn_dir)/%.cpp $(conn_inc_files)
+$(conn_dir)/%-cpp.o: $(conn_dir)/%.cpp $(conn_inc_files)
 	$(NVCC) $(NVCCSHRFL) -c $(NVCCINCFL) $(CARLSIMINCFL) $(NVCCFL) $< -o $@
-$(grps_dir)/%.cpp.o: $(grps_dir)/%.cpp $(grps_inc_files)
+$(grps_dir)/%-cpp.o: $(grps_dir)/%.cpp $(grps_inc_files)
 	$(NVCC) $(NVCCSHRFL) -c $(NVCCINCFL) $(CARLSIMINCFL) $(NVCCFL) $< -o $@
-$(spks_dir)/%.cpp.o: $(spks_dir)/%.cpp $(spks_inc_files)
+$(spks_dir)/%-cpp.o: $(spks_dir)/%.cpp $(spks_inc_files)
 	$(NVCC) $(NVCCSHRFL) -c $(NVCCINCFL) $(CARLSIMINCFL) $(NVCCFL) $< -o $@

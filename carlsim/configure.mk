@@ -12,7 +12,7 @@
 CUDA_PATH        ?= /usr/local/cuda
 
 # desired installation path of libcarlsim and headers
-CARLSIM_INSTALL_DIR ?= /opt/CARL/CARLsim4
+CARLSIM4_INSTALL_DIR ?= /opt/CARL/CARLsim4
 
 #------------------------------------------------------------------------------
 # CARLsim/ECJ Parameter Tuning Interface Options
@@ -42,7 +42,8 @@ CARLSIM_TEST ?= 0
 CXX   ?= g++
 CLANG ?= /usr/bin/clang
 MV    ?= mv -f
-RM    ?= rm -rf
+RM    ?= rm -f
+RMR   ?= rm -rf
 
 
 #------------------------------------------------------------------------------
@@ -141,8 +142,8 @@ CXXSHRFL += -fPIC -shared
 #------------------------------------------------------------------------------
 
 # use the following flags when building from CARLsim lib path
-LIBINCFL := -I$(CARLSIM_INSTALL_DIR)/include/interface -I$(CARLSIM_INSTALL_DIR)/include/kernel
-LIBLDFL  += -L$(CARLSIM_INSTALL_DIR)/lib -lCARLsim
+LIBINCFL := -I$(CARLSIM4_INSTALL_DIR)/inc
+LIBLDFL  += -L$(CARLSIM4_INSTALL_DIR)/lib -lCARLsim
 
 CARLSIMINCFL := $(LIBINCFL)
 CARLSIMLDFL := $(LIBLDFL) -ldl

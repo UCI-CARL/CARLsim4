@@ -11,7 +11,7 @@
 ##              University of California, Irvine
 ##              Irvine, CA, 92697-5100, USA
 ##
-##   Version:   12/07/2014
+##   Version:   03/30/2016
 ##
 ##----------------------------------------------------------------------------##
 	
@@ -19,7 +19,7 @@
 targets :=
 objects :=
 libraries :=
-output_files := doc/html
+output_folders := doc/html
 
 .PHONY: default clean distclean release debug
 default: release
@@ -34,7 +34,8 @@ clean:
 
 # clean all objects and output files
 distclean:
-	$(RM) $(objects) $(targets) $(libraries) $(output_files)
+	$(RM) $(objects) $(targets) $(libraries)
+	$(RMR) $(output_folders)
 
 # print a help message
 help:
