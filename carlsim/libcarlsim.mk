@@ -53,6 +53,9 @@ else
 endif
 
 create_files:
+ifneq ($(CARLSIM4_INSTALL_DIR),)
+	@test -d $(CARLSIM4_INSTALL_DIR) || mkdir $(CARLSIM4_INSTALL_DIR)
+endif
 	ar rcs $(lib_name).$(lib_ver) $(intf_obj_files) $(krnl_obj_files) $(grps_obj_files) $(spks_obj_files) $(conn_obj_files)
 	@test -d $(CARLSIM4_INC_DIR) || mkdir $(CARLSIM4_INC_DIR)
 	@test -d $(CARLSIM4_LIB_DIR) || mkdir $(CARLSIM4_LIB_DIR)
