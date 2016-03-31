@@ -1,39 +1,39 @@
-#------------------------------------------------------------------------------
-# CARLsim Configuration File
-#
-# Note: This file needs to be included in all projects, too.
-#------------------------------------------------------------------------------
+##----------------------------------------------------------------------------##
+##
+##   CARLsim4 Configuration
+##   ----------------------
+##
+##   Authors:   Michael Beyeler <mbeyeler@uci.edu>
+##              Kristofor Carlson <kdcarlso@uci.edu>
+##
+##   Institute: Cognitive Anteater Robotics Lab (CARL)
+##              Department of Cognitive Sciences
+##              University of California, Irvine
+##              Irvine, CA, 92697-5100, USA
+##
+##   Version:   03/31/2016
+##
+##----------------------------------------------------------------------------##
 
-################################################################################
-# USER-MODIFIABLE SECTION
-################################################################################
+#------------------------------------------------------------------------------
+# Common paths
+#------------------------------------------------------------------------------
 
 # path to CUDA installation
 CUDA_PATH        ?= /usr/local/cuda
 
-# desired installation path of libcarlsim and headers
-CARLSIM4_INSTALL_DIR ?= /opt/CARL/CARLsim4
+# path of installation of Google test framework
+# required to run CARLsim test suite
+GTEST_DIR ?= /opt/gtest
+
 
 #------------------------------------------------------------------------------
 # CARLsim/ECJ Parameter Tuning Interface Options
 #------------------------------------------------------------------------------
 # absolute path and name of evolutionary computation in java installation jar
 # file for ECJ-PTI CARLsim support.
-ECJ_JAR ?= /opt/ecj/jar/ecj.22.jar
+ECJ_JAR ?= /opt/ecj/jar/ecj.23.jar
 ECJ_PTI_DIR ?= /opt/CARL/carlsim_ecj_pti
-
-#------------------------------------------------------------------------------
-# CARLsim Developer Features: Running tests and compiling from sources
-#------------------------------------------------------------------------------
-# path of installation of Google test framework
-GTEST_DIR ?= /opt/gtest
-
-# whether to include flag for regression testing
-CARLSIM_TEST ?= 0
-
-################################################################################
-# END OF USER-MODIFIABLE SECTION
-################################################################################
 
 
 #------------------------------------------------------------------------------
@@ -101,9 +101,9 @@ CXXLIBFL        :=
 
 # link flags
 ifeq ($(OS_SIZE),32)
-  NVCCLDFL     := -L$(CUDA_PATH)/lib -lcudart 
+	NVCCLDFL     := -L$(CUDA_PATH)/lib -lcudart 
 else
-  NVCCLDFL     := -L$(CUDA_PATH)/lib64 -lcudart 
+	NVCCLDFL     := -L$(CUDA_PATH)/lib64 -lcudart 
 endif
 
 
@@ -118,19 +118,19 @@ NVCCFL          += $(GENCODE_SM20) $(GENCODE_SM30)
 
 # OS-specific build flags
 ifneq ($(DARWIN),) 
-  CXXLIBFL      += -rpath $(CUDA_PATH)/lib
-  CXXFL         += -arch $(OS_ARCH) $(STDLIB)  
+	CXXLIBFL      += -rpath $(CUDA_PATH)/lib
+	CXXFL         += -arch $(OS_ARCH) $(STDLIB)  
 else
-  ifeq ($(OS_ARCH),armv7l)
-    ifeq ($(abi),gnueabi)
-      CXXFL     += -mfloat-abi=softfp
-    else
-      # default to gnueabihf
-      override abi := gnueabihf
-      CXXLIBFL  += --dynamic-linker=/lib/ld-linux-armhf.so.3
-      CXXFL     += -mfloat-abi=hard
-    endif
-  endif
+	ifeq ($(OS_ARCH),armv7l)
+		ifeq ($(abi),gnueabi)
+			CXXFL     += -mfloat-abi=softfp
+		else
+			# default to gnueabihf
+			override abi := gnueabihf
+			CXXLIBFL  += --dynamic-linker=/lib/ld-linux-armhf.so.3
+			CXXFL     += -mfloat-abi=hard
+		endif
+	endif
 endif
 
 # shared library flags
@@ -141,22 +141,26 @@ CXXSHRFL += -fPIC -shared
 # CARLsim Library
 #------------------------------------------------------------------------------
 
+# variables starting with CARLSIM4_ are intended for the user
+# variables starting with SIM_ are for internal use when installing CARLsim
+SIM_LIB_NAME := carlsim
+SIM_MAJOR_NUM := 4
+SIM_MINOR_NUM := 0
+SIM_BUILD_NUM := 0
+
+sim_install_files :=
+
 # use the following flags when building from CARLsim lib path
-LIBINCFL := -I$(CARLSIM4_INSTALL_DIR)/inc
-LIBLDFL  += -L$(CARLSIM4_INSTALL_DIR)/lib -lCARLsim
+ifneq ($(CARLSIM4_INSTALL_DIR),)
+	CARLSIM4_INC_DIR  := $(CARLSIM4_INSTALL_DIR)/inc
+	CARLSIM4_LIB_DIR  := $(CARLSIM4_INSTALL_DIR)/lib
+	CARLSIM4_LD       := -L$(CARLSIM4_LIB_DIR)
+	sim_install_files += $(CARLSIM4_INSTALL_DIR)
+else
+	CARLSIM4_INC_DIR  := /usr/local/include/carlsim
+	CARLSIM4_LIB_DIR  := /usr/local/lib
+	sim_install_files += $(CARLSIM4_INC_DIR)
+endif
 
-CARLSIMINCFL := $(LIBINCFL)
-CARLSIMLDFL := $(LIBLDFL) -ldl
-
-
-# make sure nvcc is available
-# http://stackoverflow.com/questions/24599434/check-if-nvcc-is-available-in-makefile
-#NVCC_RESULT := $(shell which nvcc 2> NULL)
-#        NVCC_TEST := $(notdir $(NVCC_RESULT))
-#ifeq ($(NVCC_TEST),nvcc)
-#        CC := nvcc
-#else
-#        CC := g++
-#endif
-#test:
-#        @echo $(CC)
+CARLSIM4_INC      := -I$(CARLSIM4_INC_DIR)
+CARLSIM4_LD       += -l$(SIM_LIB_NAME) -lcurand

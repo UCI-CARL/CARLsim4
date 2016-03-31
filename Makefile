@@ -11,7 +11,7 @@
 ##              University of California, Irvine
 ##              Irvine, CA, 92697-5100, USA
 ##
-##   Version:   03/30/2016
+##   Version:   03/31/2016
 ##
 ##----------------------------------------------------------------------------##
 	
@@ -21,7 +21,7 @@ objects :=
 libraries :=
 output_folders := doc/html
 
-.PHONY: default clean distclean release debug
+.PHONY: default clean distclean help
 default: release
 
 include carlsim/configure.mk   # import configuration settings
@@ -42,11 +42,14 @@ help:
 	@ echo 
 	@ echo "CARLsim4 Makefile options:"
 	@ echo 
-	@ echo "make            Compiles CARLsim4 in default mode (release)"
-	@ echo "make release    Compiles CARLsim4 in release mode (no debug output,"
-	@ echo "                using fast math and GPU optimization level 3)"
-	@ echo "make debug      Compiles CARLsim4 in debug mode (-g -Wall)"
-	@ echo "make install    Installs CARLsim4 library (may require root privileges)"
-	@ echo "make clean      Cleans out all object files"
-	@ echo "make distclean  Cleans out all object and output files"
-	@ echo "make help       Brings up this message"
+	@ echo "make               Compiles CARLsim4 in default mode (release)"
+	@ echo "make release       Compiles CARLsim4 in release mode (no debug output,"
+	@ echo "                   using fast math and GPU optimization level 3)"
+	@ echo "make debug         Compiles CARLsim4 in debug mode (-g -Wall)"
+	@ echo "make -E install    Installs CARLsim4 library (make sure -E is set; may"
+	@ echo "                   require root privileges)"
+	@ echo "make -E uninstall  Uninstalls CARLsim4 library (make sure -E is set; may"
+	@ echo "                   require root privileges)"
+	@ echo "make clean         Cleans out all object files"
+	@ echo "make distclean     Cleans out all object and output files"
+	@ echo "make help          Brings up this message"
