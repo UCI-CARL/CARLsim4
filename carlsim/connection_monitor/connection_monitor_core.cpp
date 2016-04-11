@@ -57,14 +57,9 @@ void ConnectionMonitorCore::init() {
 	fpLog_ = snn_->getLogFpLog();
 
 	// init weight matrix with right dimensions
-	for (int i=0; i<nNeurPre_; i++) {
-		std::vector<float> wt;
-		for (int j=0; j<nNeurPost_; j++) {
-			wt.push_back(NAN);
-		}
-		wtMat_.push_back(wt);
-		wtMatLast_.push_back(wt);
-	}
+	std::vector< std::vector<float> > wt(nNeurPre_, std::vector<float>(nNeurPost_, NAN));
+	wtMat_ = wt; // deep copy
+	wtMatLast_ = wt;
 
 	// then load current weigths from SNN into weight matrix
 	updateStoredWeights();

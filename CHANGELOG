@@ -3,6 +3,25 @@ Legend:
   - removed element
   * changed element
 
+
+===============================================================================
+Release 4.0
+===============================================================================
+
+---------------------
+Build 4.0.0
+---------------------
+
+2016-04-11     Michael Beyeler <mbeyeler@uci.edu>
+  * Fix initialization of 2D weight matrix in ConnectionMonitor.
+
+
+So many things have happened since June 2015... And no CHANGELOG updates.
+How will we know which bugs in 3.1.x made it into 4.0? 
+And which ones got forgotten?
+
+
+
 ===============================================================================
 Release 3.1
 ===============================================================================
