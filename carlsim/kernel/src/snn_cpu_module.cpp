@@ -595,7 +595,7 @@ void SNN::updateWeights() {
 			}
 
 			if (i==groupConfigs[0][g].StartN)
-				KERNEL_DEBUG("Weights, Change at %lu (diff_firing: %f)", simTimeSec, diff_firing);
+				KERNEL_DEBUG("Weights, Change at %d (diff_firing: %f)", simTimeSec, diff_firing);
 
 			for(int j = 0; j < managerRuntimeData.Npre_plastic[i]; j++) {
 				//	if (i==groupConfigs[0][g].StartN)

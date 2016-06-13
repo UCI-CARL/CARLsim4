@@ -109,7 +109,7 @@ public:
 	 * \returns number of neurons
 	 * \since v3.0
 	 */
-	int getNumNeurons() { return nNeur_; }
+	int getNumNeurons();
 
 	/*!
 	 * \brief Returns the mean firing rate of a specific neuron ID
@@ -160,7 +160,7 @@ public:
 	 * \returns a flag whether allocated on GPU (true) or CPU (false)
 	 * \since v3.0
 	 */
-	bool isOnGPU() { return onGPU_; }
+	bool isOnGPU();
 
 	/*!
 	 * \brief Sets the mean firing rate of a particular neuron ID
@@ -195,10 +195,10 @@ public:
 
 
 private:
-	float *h_rates_;	//!< pointer to host allocation of underlying firing rate array
-	float *d_rates_;	//!< pointer to device allocation of underlying firing rate array
-	const int nNeur_;	//!< number of neurons to manage
-	const bool onGPU_;	//!< whether allocated on GPU (true) or CPU (false)
+	// This class provides a pImpl for the CARLsim User API.
+	// \see https://marcmutz.wordpress.com/translated-articles/pimp-my-pimpl/
+	class Impl;
+	Impl* _impl;
 };
 
 #endif
