@@ -34,7 +34,7 @@ struct RangeWeight;
  *	}
  * \endcode
  *
- * \see Tutorial: \ref ch12s3s1_simple_weight_tuner
+ * \see Tutorial: \ref ch12s4s1_simple_weight_tuner
  * \see Code example: <tt>tutorial/12_advanced_topics/simple_weight_tuner/main_simple_weight_tuner.cpp</tt>
  * \since v3.0
  */
@@ -150,36 +150,10 @@ public:
 
 
 private:
-	//! private method to initialize algorithm to initial conditions
-	void initAlgo();
-
-	// flags that manage state
-	bool needToInitConnection_;     //!< flag indicating whether to initialize connection params
-	bool needToInitTargetFiring_;   //!< flag indicating whether to initialize target firing params
-	bool needToInitAlgo_;           //!< flag indicating whether to initialize algorithm
-
-	// CARLsim data structures
-	CARLsim *sim_;                  //!< pointer to CARLsim object
-	SpikeMonitor *SM_;              //!< pointer to SpikeMonitor object
-	int grpId_;                     //!< CARLsim group ID
-	short int connId_;              //!< CARLsim connection ID
-	RangeWeight* wtRange_;          //!< pointer to CARLsim RangeWeight struct
-
-	// termination condition params
-	int maxIter_;                   //!< maximum number of iterations (termination condition)
-	double errorMargin_;            //!< error margin for firing rate (termination condition)
-	double targetRate_;             //!< target firing rate specified in setTargetFiringRate
-
-	// params that are updated every iteration step
-	int cntIter_;                   //!< current count of iteration number
-	double wtStepSize_;             //!< current weight step size
-	bool wtShouldIncrease_;         //!< flag indicating the direction of weight change (increase=true, decrease=false)
-	double currentError_;           //!< current firing error
-
-	// options
-	bool adjustRange_;              //!< flag indicating whether to update [minWt,maxWt] when weight goes out of bounds
-	double wtInit_;                 //!< initial weight specified in setConnectionToTune
-	double stepSizeFraction_;       //!< initial weight step size
+	// This class provides a pImpl for the CARLsim User API.
+	// \see https://marcmutz.wordpress.com/translated-articles/pimp-my-pimpl/
+	class Impl;
+	Impl* _impl;
 };
 
 #endif

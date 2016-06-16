@@ -12,6 +12,9 @@ Release 4.0
 Build 4.0.0
 ---------------------
 
+2016-06-16     Michael Beyeler <mbeyeler@uci.edu>
+  + Add proper pImpl for SimpleWeightTuner.
+
 2016-06-13     Michael Beyeler <mbeyeler@uci.edu>
   + Add proper pImpl for PoissonRate.
 
