@@ -70,11 +70,11 @@ GTEST_CPPFLAGS += -isystem $(GTEST_DIR)/include -DGTEST_LINKED_AS_SHARED_LIBRARY
 $(proj_target): $(main_src_file) $(inc_files) $(cpp_files) $(obj_files) $(gtest_deps)
 	$(NVCC) $(CARLSIM4_INC) $(GTEST_CPPFLAGS) $(CARLSIM4_LD) $(GTEST_LD) $(obj_files) $< -o $@
 
-%-cpp.o: %.cpp $(cpp_files)
+%-cpp.o: %.cpp $(inc_files)
 	$(NVCC) -c $(CARLSIM4_INC) $(GTEST_CPPFLAGS) $< -o $@
 	# $(CXX) -c $(CXXINCFL) $(CXXFL) $(GTEST_CPPFLAGS) $< -o $@
 
-%-cu.o: %.cu $(cu_files)
+%-cu.o: %.cu $(inc_files)
 	$(NVCC) -c $(NVCCINCFL) $(SIMINCFL) $(NVCCFL) $(GTEST_CPPFLAGS) $< -o $@
 
 # rule for our local custom gtest main

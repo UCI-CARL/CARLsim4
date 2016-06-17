@@ -79,15 +79,17 @@ distclean_files := $(clean_files) results/* *.dot *.dat *.csv *.log
 # Project targets and rules
 #------------------------------------------------------------------------------
 
-.PHONY: project $(proj_target) clean distclean help
+.PHONY: $(proj_target) clean distclean help
 default: $(proj_target)
+
 
 $(proj_target): $(main_src_file) $(inc_files) $(cpp_files) $(obj_files)
 	$(NVCC) $(CARLSIM4_INC) $(CARLSIM4_LD) $(obj_files) $< -o $@
 
-$(proj_src_dir)/%-cpp.o: $(proj_src_dir)/%.cpp $(cpp_files)
+$(proj_src_dir)/%-cpp.o: $(proj_src_dir)/%.cpp $(inc_files)
 	$(CXX) -c $(CXXINCFL) $(CXXFL) $< -o $@
-$(proj_src_dir)/%-cu.o: $(proj_src_dir)/%.cu $(cu_files)
+
+$(proj_src_dir)/%-cu.o: $(proj_src_dir)/%.cu $(inc_files)
 	$(NVCC) -c $(NVCCINCFL) $(SIMINCFL) $(NVCCFL) $< -o $@
 
 clean:
@@ -97,9 +99,9 @@ distclean:
 	$(RM) $(distclean_files)
 
 help:
-	$(info CARLsim4 Makefile options:)
+	$(info CARLsim4 Test Suite options:)
 	$(info )
-	$(info make               Compiles CARLsim4 in default mode (release))
+	$(info make               Compiles test suite
 	$(info make clean         Cleans out all object files)
 	$(info make distclean     Cleans out all object and output files)
 	$(info make help          Brings up this message)

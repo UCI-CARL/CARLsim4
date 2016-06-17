@@ -41,7 +41,16 @@
 // include CARLsim user interface
 #include <carlsim.h>
 
+// include stopwatch for timing
+#include <stopwatch.h>
+
 int main() {
+	// keep track of execution time
+	Stopwatch watch;
+	
+
+	// ---------------- CONFIG STATE -------------------
+	
 	// create a network on GPU
 	int numGPUs = 1;
 	int randSeed = 42;
@@ -56,8 +65,11 @@ int main() {
 	sim.setNeuronParameters(gout, 0.02f, 0.2f, -65.0f, 8.0f);
 	sim.connect(gin, gout, "gaussian", RangeWeight(0.05), 1.0f, RangeDelay(1), RadiusRF(3,3,1));
 	sim.setConductances(true);
+	// sim.setIntegrationMethod(FORWARD_EULER, 2);
 
+	// ---------------- SETUP STATE -------------------
 	// build the network
+	watch.lap("setupNetwork");
 	sim.setupNetwork();
 
 	// set some monitors
@@ -70,10 +82,18 @@ int main() {
 	in.setRates(30.0f);
 	sim.setSpikeRate(gin,&in);
 
+
+	// ---------------- RUN STATE -------------------
+	watch.lap("runNetwork");
+
 	// run for a total of 10 seconds
 	// at the end of each runNetwork call, SpikeMonitor stats will be printed
-	for (int i=0; i<10; i++)
+	for (int i=0; i<10; i++) {
 		sim.runNetwork(1,0);
+	}
 
+	// print stopwatch summary
+	watch.stop();
+	
 	return 0;
 }
