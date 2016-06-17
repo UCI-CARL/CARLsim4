@@ -44,7 +44,7 @@ InteractiveSpikeGenerator::InteractiveSpikeGenerator(unsigned int numNeurons_, u
 	numNeurons = numNeurons_;
 	isi = isi_;
 	quota = new int[numNeurons_];
-	for (int i = 0; i < numNeurons_; i++) quota[i] = 0;
+	for (unsigned int i = 0; i < numNeurons_; i++) quota[i] = 0;
 }
 
 InteractiveSpikeGenerator::~InteractiveSpikeGenerator() {
@@ -52,9 +52,9 @@ InteractiveSpikeGenerator::~InteractiveSpikeGenerator() {
 }
 
 int InteractiveSpikeGenerator::nextSpikeTime(CARLsim* s, int grpId, int nid, int currentTime, int lastScheduledSpikeTime, int endOfTimeSlice) {
-	if (nid < numNeurons && quota[nid] > 0) {
+	if ((unsigned int) nid < numNeurons && quota[nid] > 0) {
 		quota[nid]--;
-		if (lastScheduledSpikeTime + isi < currentTime) {
+		if (lastScheduledSpikeTime + isi < (unsigned int)currentTime) {
 			return currentTime + isi;
 		} else {
 			return lastScheduledSpikeTime + isi;
@@ -65,11 +65,11 @@ int InteractiveSpikeGenerator::nextSpikeTime(CARLsim* s, int grpId, int nid, int
 }
 
 void InteractiveSpikeGenerator::setQuota(int nid_, int quota_) {
-	if (nid_ < numNeurons)
+	if ((unsigned int)nid_ < numNeurons)
 		quota[nid_] = quota_;
 }
 
 void InteractiveSpikeGenerator::setQuotaAll(int quota_) {
-	for (int i = 0; i < numNeurons; i++)
+	for (unsigned int i = 0; i < numNeurons; i++)
 		quota[i] = quota_;
 }

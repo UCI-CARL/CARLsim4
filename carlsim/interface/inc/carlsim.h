@@ -46,17 +46,21 @@
 #include <string>		// std::string
 #include <vector>		// std::vector
 
-#include <callback.h>
 #include <carlsim_definitions.h>
 #include <carlsim_datastructures.h>
 
 // include the following core functionalities instead of forward-declaring, so that the user only needs to include
 // carlsim.h
+#include <callback.h>
 #include <poisson_rate.h>
 #include <spike_monitor.h>
 #include <connection_monitor.h>
 #include <group_monitor.h>
 #include <linear_algebra.h>
+
+class GroupMonitor;
+class ConnectionMonitor;
+
 
 // Cross-platform definition (Linux, Windows)
 #if defined(WIN32) || defined(WIN64)
@@ -91,27 +95,12 @@
 #endif
 
 #else
-// #include <interactive_spikegen.h>
-// #include <pre_post_group_spikegen.h>
-// #include <periodic_spikegen.h>
-// #include <spikegen_from_file.h>
-// #include <spikegen_from_vector.h>
-// #include <simple_weight_tuner.h>
-// #include <visual_stimulus.h>
-
+// Unix
 #include <pthread.h>
+
 #endif
 
-// \TODO: complete documentation
 
-
-
-
-class SNN; // forward-declaration of implementation
-class GroupMonitorCore;
-class ConnectionMonitorCore;
-class ConnectionGeneratorCore;
-class SpikeGeneratorCore;
 
 /*!
  * \brief CARLsim User Interface
@@ -1150,7 +1139,7 @@ public:
 	 * first call to runNetwork will change the state from ::SETUP_STATE to ::RUN_STATE.
 	 * \returns current CARLsim state
 	 */
-	CARLsimState getCARLsimState() { return carlsimState_; }
+	CARLsimState getCARLsimState();
 
 	/*!
 	 * \brief gets AMPA vector of a group
@@ -1667,79 +1656,9 @@ public:
 
 
 private:
-	// +++++ PRIVATE METHODS ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
-
-	void CARLsimInit();					//!< init function, unsafe computations that would usually go in constructor
-
-	bool existsGrpId(int grpId);		//!< checks whether a certain grpId exists in grpIds_
-
-	void handleUserWarnings(); 			//!< print all user warnings, continue only after user input
-
-	// +++++ PRIVATE STATIC PROPERTIES ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
-	static bool gpuAllocation[MAX_NUM_CUDA_DEVICES];
-	static std::string gpuOccupiedBy[MAX_NUM_CUDA_DEVICES];
-#if defined(WIN32) || defined(WIN64)
-	static HANDLE gpuAllocationLock;
-#else
-	static pthread_mutex_t gpuAllocationLock;
-#endif
-	// +++++ PRIVATE PROPERTIES +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
-
-	SNN* snn_;                  //!< an instance of CARLsim core class
-	std::string netName_;       //!< network name
-	int randSeed_;              //!< RNG seed
-	SimMode simMode_;           //!< CPU_MODE or GPU_MODE
-	LoggerMode loggerMode_;     //!< logger mode (USER, DEVELOPER, SILENT, CUSTOM)
-	int numGPUs_;               //!< how many devices to establish a context
-	bool enablePrint_;
-	bool copyState_;
-
-	unsigned int numConnections_;	//!< keep track of number of allocated connections
-	std::vector<std::string> userWarnings_; // !< an accumulated list of user warnings
-
-	std::vector<int> grpIds_;		//!< a list of all created group IDs
-	std::vector<SpikeGeneratorCore*> spkGen_; //!< a list of all created spike generators
-	std::vector<ConnectionGeneratorCore*> connGen_; //!< a list of all created connection generators
-
-	bool hasSetHomeoALL_;			//!< informs that homeostasis have been set for ALL groups (can't add more groups)
-	bool hasSetHomeoBaseFiringALL_;	//!< informs that base firing has been set for ALL groups (can't add more groups)
-	bool hasSetSTDPALL_; 			//!< informs that STDP have been set for ALL groups (can't add more groups)
-	bool hasSetSTPALL_; 			//!< informs that STP have been set for ALL groups (can't add more groups)
-	bool hasSetConductances_;		//!< informs that setConductances has been called
-	CARLsimState carlsimState_;	//!< the current state of carlsim
-
-	int def_tdAMPA_;				//!< default value for AMPA decay (ms)
-	int def_trNMDA_;				//!< default value for NMDA rise (ms)
-	int def_tdNMDA_;				//!< default value for NMDA decay (ms)
-	int def_tdGABAa_;				//!< default value for GABAa decay (ms)
-	int def_trGABAb_;				//!< default value for GABAb rise (ms)
-	int def_tdGABAb_;				//!< default value for GABAb decay (ms)
-
-	// all default values for STDP
-	STDPType def_STDP_type_;		//!< default mode for STDP
-	float def_STDP_alphaLTP_;		//!< default value for LTP amplitude
-	float def_STDP_tauLTP_;			//!< default value for LTP decay (ms)
-	float def_STDP_alphaLTD_;		//!< default value for LTD amplitude
-	float def_STDP_tauLTD_;			//!< default value for LTD decay (ms)
-	float def_STDP_betaLTP_;		//!< default value for LTP amplitude
-	float def_STDP_betaLTD_;		//!< default value for LTD amplitude
-	float def_STDP_lambda_;			//!< default value for interval of LTP
-	float def_STDP_delta_;			//!< default value for interval of LTD
-
-	// all default values for STP
-	float def_STP_U_exc_;			//!< default value for STP U excitatory
-	float def_STP_tau_u_exc_;		//!< default value for STP u decay (\tau_F) excitatory (ms)
-	float def_STP_tau_x_exc_;		//!< default value for STP x decay (\tau_D) excitatory (ms)
-	float def_STP_U_inh_;			//!< default value for STP U inhibitory
-	float def_STP_tau_u_inh_;		//!< default value for STP u decay (\tau_F) inhibitory (ms)
-	float def_STP_tau_x_inh_;		//!< default value for STP x decay (\tau_D) inhibitory (ms)
-
-	// all default values for homeostasis
-	float def_homeo_scale_;			//!< default homeoScale
-	float def_homeo_avgTimeScale_;	//!< default avgTimeScale
-
-	// all default values for save file
-	std::string def_save_fileName_;	//!< file name for saving network info
-	bool def_save_synapseInfo_;		//!< flag to inform whether to include synapse info in fpSave_
+	// This class provides a pImpl for the CARLsim User API.
+	// \see https://marcmutz.wordpress.com/translated-articles/pimp-my-pimpl/
+	class Impl;
+	Impl* _impl;
 };
 #endif

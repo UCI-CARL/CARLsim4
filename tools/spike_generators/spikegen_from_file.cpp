@@ -71,6 +71,7 @@ void SpikeGeneratorFromFile::openFile() {
 	int grid;
 	for (int i=1; i<=3; i++) {
 		size_t result = fread(&grid, sizeof(int), 1, fp);
+		UserErrors::assertTrue(result == 1, UserErrors::FILE_CANNOT_READ, funcName, fileName_);
 		nNeur_ *= grid;
 	}
 
@@ -93,13 +94,16 @@ void SpikeGeneratorFromFile::init() {
 	FILE* fp = fpBegin_;
 	fseek(fp, szByteHeader_, SEEK_SET); // skip header section
 
+	std::string funcName = "readFile("+fileName_+")";
 	int tmpTime = -1;
 	int tmpNeurId = -1;
 	size_t result;
 
 	while (!feof(fp)) {
 		result = fread(&tmpTime, sizeof(int), 1, fp); // i-th time
+		UserErrors::assertTrue(result == 1, UserErrors::FILE_CANNOT_READ, funcName, fileName_);
 		result = fread(&tmpNeurId, sizeof(int), 1, fp); // i-th nid
+		UserErrors::assertTrue(result == 1, UserErrors::FILE_CANNOT_READ, funcName, fileName_);
 		spikes_[tmpNeurId].push_back(tmpTime); // add spike time to 2D vector
 	}
 

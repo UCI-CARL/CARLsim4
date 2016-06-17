@@ -40,6 +40,7 @@ public:
 		CANNOT_BE_ZERO,			//!< parameter cannot be zero
 		FILE_CANNOT_CREATE,		//!< could not create a file
 		FILE_CANNOT_OPEN,		//!< could not open file
+		FILE_CANNOT_READ,       //!< could not read file
 		IS_DEPRECATED,			//!< deprecated function
 		MUST_BE_LOGGER_CUSTOM,	//!< must be in custom logger mode
 		MUST_BE_IDENTICAL,      //!< parameters must be identical

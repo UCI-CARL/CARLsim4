@@ -43,8 +43,6 @@
 #define _CARLSIM_DEFINITIONS_H_
 
 
-#include <cuda_version_control.h>
-
 
 //! CARLsim common definitions
 #define ALL -1 //!< used for the set* methods to specify all groups or a specific group

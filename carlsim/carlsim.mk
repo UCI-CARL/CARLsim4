@@ -130,7 +130,7 @@ release: $(targets)
 
 # debug build
 debug: CXXFL    += -g -Wall -O0
-debug: NVCCFL   += -g -G --compiler-options "-O0"
+debug: NVCCFL   += -g -G --compiler-options "-Wall -O0"
 debug: $(targets)
 
 # all CARLsim4 targets
@@ -143,13 +143,13 @@ carlsim4: $(objects)
 
 # rule to compile local cpps
 $(intf_dir)/src/%-cpp.o: $(intf_dir)/src/%.cpp $(intf_inc_files)
-	$(NVCC) $(NVCCSHRFL)-c $(NVCCINCFL) $(SIMINCFL) $(NVCCFL) $< -o $@
+	$(NVCC) $(NVCCSHRFL) -c $(NVCCINCFL) $(SIMINCFL) $(NVCCFL) $< -o $@
 $(intf_dir)/src/%-cu.o: $(intf_dir)/src/%.cu $(intf_inc_files)
-	$(NVCC) $(NVCCSHRFL)-c $(NVCCINCFL) $(SIMINCFL) $(NVCCFL) $< -o $@
+	$(NVCC) $(NVCCSHRFL) -c $(NVCCINCFL) $(SIMINCFL) $(NVCCFL) $< -o $@
 $(krnl_dir)/src/%-cpp.o: $(krnl_dir)/src/%.cpp $(krnl_inc_files)
-	$(NVCC) $(NVCCSHRFL)-c $(NVCCINCFL) $(SIMINCFL) $(NVCCFL) $< -o $@
+	$(NVCC) $(NVCCSHRFL) -c $(NVCCINCFL) $(SIMINCFL) $(NVCCFL) $< -o $@
 $(krnl_dir)/src/%-cu.o: $(krnl_dir)/src/%.cu $(krnl_inc_files)
-	$(NVCC) $(NVCCSHRFL)-c $(NVCCINCFL) $(SIMINCFL) $(NVCCFL) $< -o $@
+	$(NVCC) $(NVCCSHRFL) -c $(NVCCINCFL) $(SIMINCFL) $(NVCCFL) $< -o $@
 
 # utilities
 $(conn_dir)/%-cpp.o: $(conn_dir)/%.cpp $(conn_inc_files)
@@ -161,8 +161,8 @@ $(spks_dir)/%-cpp.o: $(spks_dir)/%.cpp $(spks_inc_files)
 
 # tools
 $(swt_dir)/%.o: $(swt_dir)/%.cpp $(swt_inc_files)
-	$(NVCC) $(NVCCSHRFL) -c $(NVCCINCFL) $(SIMINCFL) $(NVCCFL) $< -o $@
+	$(CXX) $(CXXSHRFL) -c $(CXXINCFL) $(SIMINCFL) $(CXXFL) $< -o $@
 $(spkgen_dir)/%.o: $(spkgen_dir)/%.cpp $(spkgen_inc_files)
-	$(NVCC) $(NVCCSHRFL) -c $(NVCCINCFL) $(SIMINCFL) $(NVCCFL) $< -o $@
+	$(CXX) $(CXXSHRFL) -c $(CXXINCFL) $(SIMINCFL) $(CXXFL) $< -o $@
 $(stp_dir)/%.o: $(stp_dir)/%.cpp $(stp_inc_files)
-	$(NVCC) $(NVCCSHRFL) -c $(NVCCINCFL) $(SIMINCFL) $(NVCCFL) $< -o $@
+	$(CXX) $(CXXSHRFL) -c $(CXXINCFL) $(SIMINCFL) $(CXXFL) $< -o $@

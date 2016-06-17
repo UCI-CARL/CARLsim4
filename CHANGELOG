@@ -13,6 +13,7 @@ Build 4.0.0
 ---------------------
 
 2016-06-17     Michael Beyeler <mbeyeler@uci.edu>
+  + Add proper pImpl for CARLsim.
   * Include tools in library install.
   * Fix Makefile for test suite.
   + Add Stopwatch to Hello World project.

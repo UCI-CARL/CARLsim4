@@ -68,6 +68,8 @@ void UserErrors::throwError(std::string errorFunc, errorType error, std::string 
 		errorMsg += " could not be created."; break;
 	case FILE_CANNOT_OPEN:
 		errorMsg += " could not be opened."; break;
+	case FILE_CANNOT_READ:
+		errorMsg += " could not be read."; break;
 	case IS_DEPRECATED:
 		errorMsg += " is deprecated."; break;
 	case MUST_BE_IDENTICAL:
