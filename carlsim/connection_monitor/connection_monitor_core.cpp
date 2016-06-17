@@ -87,7 +87,7 @@ ConnectionMonitorCore::~ConnectionMonitorCore() {
 // calculate weight changes since last update (element-wise )
 std::vector< std::vector<float> > ConnectionMonitorCore::calcWeightChanges() {
 	updateStoredWeights();
-	std::vector< std::vector<float> > wtChange(nNeurPre_, vector<float>(nNeurPost_));
+	std::vector< std::vector<float> > wtChange(nNeurPre_, std::vector<float>(nNeurPost_));
 
 	// take the naive approach for now
 	for (int i=0; i<nNeurPre_; i++) {

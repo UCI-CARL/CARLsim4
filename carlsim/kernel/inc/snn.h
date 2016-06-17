@@ -78,13 +78,15 @@
 #include <snn_definitions.h>
 #include <snn_datastructures.h>
 
-#include <propagated_spike_buffer.h>
+// #include <spike_buffer.h>
 #include <poisson_rate.h>
 
 class SpikeMonitor;
 class SpikeMonitorCore;
 class ConnectionMonitorCore;
 class ConnectionMonitor;
+
+class SpikeBuffer;
 
 
 /// **************************************************************************************************************** ///
@@ -899,7 +901,7 @@ private:
 	float 		*mulSynSlow;	//!< scaling factor for slow synaptic currents, per connection
 
 	//! Buffer to store spikes
-	PropagatedSpikeBuffer* pbuf;
+	SpikeBuffer* spikeBuf;
 
 	bool sim_with_conductances; //!< flag to inform whether we run in COBA mode (true) or CUBA mode (false)
 	bool sim_with_NMDA_rise;    //!< a flag to inform whether to compute NMDA rise time

@@ -16,6 +16,7 @@ Build 4.0.0
   + Add proper pImpl for CARLsim.
   * Include tools in library install.
   * Fix Makefile for test suite.
+  + Add new SpikeBuffer utility.
   + Add Stopwatch to Hello World project.
 
 2016-06-16     Michael Beyeler <mbeyeler@uci.edu>

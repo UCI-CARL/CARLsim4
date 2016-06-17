@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 Regents of the University of California. All rights reserved.
+ * Copyright (c) 2016 Regents of the University of California. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -35,8 +35,7 @@
  *					(KDC) Kristofor Carlson <kdcarlso@uci.edu>
  *					(TSC) Ting-Shuo Chou <tingshuc@uci.edu>
  *
- * CARLsim available from http://socsci.uci.edu/~jkrichma/CARLsim/
- * Ver 5/6/2015
+ * CARLsim available from http://socsci.uci.edu/~jkrichma/CARLsim
  */
 
 #ifndef _CARLSIM_H_

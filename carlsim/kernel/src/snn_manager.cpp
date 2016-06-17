@@ -51,6 +51,8 @@
 #include <group_monitor.h>
 #include <group_monitor_core.h>
 
+#include <spike_buffer.h>
+
 // \FIXME what are the following for? why were they all the way at the bottom of this file?
 
 #define COMPACTION_ALIGNMENT_PRE  16
@@ -763,9 +765,8 @@ int SNN::runNetwork(int _nsec, int _nmsec, bool printRunSummary) {
 		updateConnectionMonitor();
 	}
 
-	// set the Poisson generation time slice to be at the run duration up to 1000 ms.
-	// \TODO: should it be PROPAGATED_BUFFER_SIZE-1 or PROPAGATED_BUFFER_SIZE ?
-	setGrpTimeSlice(ALL, MAX(1, MIN(runDurationMs, 1000)));
+	// set the Poisson generation time slice to be at the run duration up to MAX_TIME_SLICE
+	setGrpTimeSlice(ALL, MAX(1, MIN(runDurationMs, MAX_TIME_SLICE)));
 
 	CUDA_RESET_TIMER(timer);
 	CUDA_START_TIMER(timer);
@@ -1922,8 +1923,8 @@ void SNN::SNNinit() {
 
 	memset(&cpuSnnSz, 0, sizeof(cpuSnnSz));
 
-	// initialize propogated spike buffers.....
-	pbuf = new PropagatedSpikeBuffer(0, PROPAGATED_BUFFER_SIZE);
+	// initialize spike buffer
+	spikeBuf = new SpikeBuffer(0, MAX_TIME_SLICE);
 
 	memset(networkConfigs, 0, sizeof(NetworkConfigRT) * MAX_NET_PER_SNN);
 	
@@ -4388,9 +4389,9 @@ void SNN::resetConnectionConfigs(bool deallocate) {
 }
 
 void SNN::deleteRuntimeData() {
-	if (pbuf!=NULL) delete pbuf;
+	if (spikeBuf!=NULL) delete spikeBuf;
 	if (managerRuntimeData.spikeGenBits!=NULL) delete[] managerRuntimeData.spikeGenBits;
-	pbuf=NULL; managerRuntimeData.spikeGenBits=NULL;
+	spikeBuf=NULL; managerRuntimeData.spikeGenBits=NULL;
 
 	// clear data (i.e., concentration of neuromodulator) of groups
 	if (managerRuntimeData.grpDA != NULL) delete [] managerRuntimeData.grpDA;
@@ -4514,7 +4515,7 @@ void SNN::resetPoissonNeuron(int netId, int lGrpId, int lNId) {
 
 void SNN::resetPropogationBuffer() {
 	// FIXME: why 1023?
-	pbuf->reset(0, 1023);
+	spikeBuf->reset(0, 1023);
 }
 
 // resets nSpikeCnt[]
@@ -4580,7 +4581,7 @@ void SNN::setGrpTimeSlice(int grpId, int timeSlice) {
 				setGrpTimeSlice(g, timeSlice);
 		}
 	} else {
-		assert((timeSlice > 0 ) && (timeSlice <  PROPAGATED_BUFFER_SIZE));
+		assert((timeSlice > 0 ) && (timeSlice <= MAX_TIME_SLICE));
 		// the group should be poisson spike generator group
 		groupConfigs[0][grpId].CurrTimeSlice = timeSlice;
 	}
