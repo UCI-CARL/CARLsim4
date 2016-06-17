@@ -71,11 +71,49 @@ SIMINCFL    += -I$(spks_dir)
 
 
 #------------------------------------------------------------------------------
+# CARLsim4 Tools
+#------------------------------------------------------------------------------
+
+tools_obj_files  :=
+
+# simple weight tuner
+swt_dir          := tools/simple_weight_tuner
+swt_inc_files    := $(wildcard $(swt_dir)/*h)
+swt_cpp_files    := $(wildcard $(swt_dir)/*.cpp)
+swt_cu_files     := $(wildcard $(swt_dir)/*.cu)
+swt_obj_files    := $(patsubst %.cpp, %.o, $(swt_cpp_files))
+swt_obj_files    += $(patsubst %.cu, %.o, $(swt_cu_files))
+tools_obj_files  += $(swt_obj_files)
+SIMINCFL         += -I$(swt_dir)
+
+# spike generators
+spkgen_dir       := tools/spike_generators
+spkgen_inc_files := $(wildcard $(spkgen_dir)/*.h)
+spkgen_cpp_files := $(wildcard $(spkgen_dir)/*.cpp)
+spkgen_cu_files  := $(wildcard $(spkgen_dir)/*.cu)
+spkgen_obj_files := $(patsubst %.cpp, %.o, $(spkgen_cpp_files))
+spkgen_obj_files += $(patsubst %.cu, %.o, $(spkgen_cu_files))
+tools_obj_files  += $(spkgen_obj_files)
+SIMINCFL         += -I$(spkgen_dir)
+
+# stopwatch
+stp_dir          := tools/stopwatch
+stp_inc_files    := $(wildcard $(stp_dir)/*h)
+stp_cpp_files    := $(wildcard $(stp_dir)/*.cpp)
+stp_cu_files     := $(wildcard $(stp_dir)/*.cu)
+stp_obj_files    := $(patsubst %.cpp, %.o, $(stp_cpp_files))
+stp_obj_files    += $(patsubst %.cu, %.o, $(stp_cu_files))
+tools_obj_files  += $(stp_obj_files)
+SIMINCFL         += -I$(stp_dir)
+
+
+#------------------------------------------------------------------------------
 # CARLsim4 Common
 #------------------------------------------------------------------------------
 
 targets         += carlsim4
-objects         += $(krnl_obj_files) $(intf_obj_files) $(conn_obj_files) $(grps_obj_files) $(spks_obj_files)
+objects         += $(krnl_obj_files) $(intf_obj_files) $(conn_obj_files) \
+	$(grps_obj_files) $(spks_obj_files) $(tools_obj_files)
 add_files       := $(addprefix carlsim/,configure.mk)
 
 
@@ -113,9 +151,18 @@ $(krnl_dir)/src/%-cpp.o: $(krnl_dir)/src/%.cpp $(krnl_inc_files)
 $(krnl_dir)/src/%-cu.o: $(krnl_dir)/src/%.cu $(krnl_inc_files)
 	$(NVCC) $(NVCCSHRFL)-c $(NVCCINCFL) $(SIMINCFL) $(NVCCFL) $< -o $@
 
+# utilities
 $(conn_dir)/%-cpp.o: $(conn_dir)/%.cpp $(conn_inc_files)
 	$(NVCC) $(NVCCSHRFL) -c $(NVCCINCFL) $(SIMINCFL) $(NVCCFL) $< -o $@
 $(grps_dir)/%-cpp.o: $(grps_dir)/%.cpp $(grps_inc_files)
 	$(NVCC) $(NVCCSHRFL) -c $(NVCCINCFL) $(SIMINCFL) $(NVCCFL) $< -o $@
 $(spks_dir)/%-cpp.o: $(spks_dir)/%.cpp $(spks_inc_files)
+	$(NVCC) $(NVCCSHRFL) -c $(NVCCINCFL) $(SIMINCFL) $(NVCCFL) $< -o $@
+
+# tools
+$(swt_dir)/%.o: $(swt_dir)/%.cpp $(swt_inc_files)
+	$(NVCC) $(NVCCSHRFL) -c $(NVCCINCFL) $(SIMINCFL) $(NVCCFL) $< -o $@
+$(spkgen_dir)/%.o: $(spkgen_dir)/%.cpp $(spkgen_inc_files)
+	$(NVCC) $(NVCCSHRFL) -c $(NVCCINCFL) $(SIMINCFL) $(NVCCFL) $< -o $@
+$(stp_dir)/%.o: $(stp_dir)/%.cpp $(stp_inc_files)
 	$(NVCC) $(NVCCSHRFL) -c $(NVCCINCFL) $(SIMINCFL) $(NVCCFL) $< -o $@

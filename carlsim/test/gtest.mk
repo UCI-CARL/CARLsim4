@@ -30,6 +30,7 @@ gtest_libs  = $(GTEST_LIB_DIR)/libgtest.a $(GTEST_LIB_DIR)/libgtest_main.a
 objects    += $(GTEST_LIB_DIR)/gtest-all.o $(GTEST_LIB_DIR)/gtest_main.o
 libraries  += $(GTEST_LIB_DIR)
 
+.PHONY: gtest
 gtest: $(gtest_libs)
 
 $(GTEST_LIB_DIR)/libgtest.a : $(GTEST_LIB_DIR)/gtest-all.o

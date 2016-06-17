@@ -1,59 +1,81 @@
-# Makefile for building test suite from the CARLsim library
-# point to the user.mk file
-USER_MK_PATH = ../../
-include $(USER_MK_PATH)user.mk
+##----------------------------------------------------------------------------##
+##
+##   CARLsim4 Project Makefile
+##   -------------------------
+##
+##   Authors:   Michael Beyeler <mbeyeler@uci.edu>
+##              Kristofor Carlson <kdcarlso@uci.edu>
+##
+##   Institute: Cognitive Anteater Robotics Lab (CARL)
+##              Department of Cognitive Sciences
+##              University of California, Irvine
+##              Irvine, CA, 92697-5100, USA
+##
+##   Version:   03/31/2016
+##
+##----------------------------------------------------------------------------##
 
-# list of all test cpp files, but without directory and file extension (stem only)
-# e.g., file "test/coba.cpp" should appear here as "coba"
-# the prefix (directory "test") and suffix (".cpp") will be appended afterwards
-# test cases might be run in reverse order (depends on compiler)
-carlsim_tests_cpps := stdp stp cuba coba interface spike_mon conn_mon group_mon \
-	core connect carlsim_tests_common spike_gen spike_counter poiss_rate
 
-local_src := $(addsuffix .cpp,$(carlsim_tests_cpps))
-local_objs := $(addsuffix .o,$(carlsim_tests_cpps))
-local_deps := $(local_src) carlsim_tests.h
-local_prog := carlsim_tests
+#------------------------------------------------------------------------------
+# Include configuration file
+#------------------------------------------------------------------------------
 
-output := *.dot *.dat *.log *.csv results/* lib/*
+# NOTE: If your CARLsim4 installation does not reside in the default path, make
+# sure the environment variable CARLSIM4_INSTALL_DIR is set.
+ifneq ($(CARLSIM4_INSTALL_DIR),)
+	CARLSIM4_INC_DIR  := $(CARLSIM4_INSTALL_DIR)/inc
+else
+	CARLSIM4_INC_DIR  := /usr/local/include/carlsim
+endif
 
-# -----------------------------------------------------------------------------
-# You should not need to edit the file beyond this point
-# -----------------------------------------------------------------------------
+# include compile flags etc.
+include $(CARLSIM4_INC_DIR)/configure.mk
 
-# we are compiling from lib
-CARLSIM_FLAGS += -I$(CARLSIM_LIB_DIR)/include/kernel \
-				 -I$(CARLSIM_LIB_DIR)/include/interface \
-				 -I$(CARLSIM_LIB_DIR)/include/spike_monitor \
-				 -I$(CARLSIM_LIB_DIR)/include/group_monitor \
-				 -I$(CARLSIM_LIB_DIR)/include/connection_monitor \
-				 -I$(CARLSIM_LIB_DIR)/include/spike_generators \
-				 -I$(CARLSIM_LIB_DIR)/include/visual_stimulus \
-				 -I$(CARLSIM_LIB_DIR)/include/simple_weight_tuner
-CARLSIM_LIBS  += -L$(CARLSIM_LIB_DIR)/lib -lCARLsim
+# main target for test suite
+proj_target := carlsim_test
+main_src_file := gtest_custom_main.cpp
 
-.PHONY: default clean distclean
-# this must come before including gtest.mk
-default: $(local_prog)
+.PHONY: project $(proj_target) clean distclean help gtest
+default: $(proj_target)
+
+
+#------------------------------------------------------------------------------
+# Build local variables
+#------------------------------------------------------------------------------
 
 # include the make recipe to build the google testing framework
 include gtest.mk
-gtest_deps := $(GTEST_LIB_DIR)/libgtest.a $(GTEST_LIB_DIR)/libgtest_main.a \
-	$(GTEST_LIB_DIR)/libgtest_custom_main.a
+gtest_deps := $(addprefix $(GTEST_LIB_DIR)/,libgtest.a libgtest_main.a libgtest_custom_main.a)
 
-# compile from CARLsim lib
-$(local_prog): $(local_src) $(local_objs) $(gtest_deps)
-	$(NVCC) $(CARLSIM_INCLUDES) $(CARLSIM_FLAGS) $(CARLSIM_LFLAGS) $(local_objs) \
-	$(GTEST_CPPFLAGS) $(CARLSIM_LIBS) -Llib -lgtest_custom_main $* -o $@
+cpp_files  := $(wildcard *.cpp)
+cpp_files  := $(filter-out $(main_src_file),$(cpp_files))
+cu_files   := $(wildcard *.cu)
+inc_files  := $(wildcard *.h)
 
-%.o: %.cpp
-	$(NVCC) $(CARLSIM_INCLUDES) $(CARLSIM_FLAGS) $(GTEST_CPPFLAGS) -c $< -o $@
+# compile .cpp files to -cpp.o, and .cu files to -cu.o
+obj_files  := $(patsubst %.cpp, %-cpp.o, $(cpp_files))
+obj_files  += $(patsubst %.cu, %-cu.o, $(cu_files))
 
-clean:
-	$(RM) $(local_prog) $(local_objs)
+# handled by clean and distclean
+clean_files := $(obj_files) $(proj_target)
+distclean_files := $(clean_files) results/* *.dot *.dat *.csv *.log
 
-distclean:
-	$(RM) $(local_prog) $(local_objs) $(output)
+GTEST_LD := -L$(GTEST_LIB_DIR) -lgtest_custom_main
+GTEST_CPPFLAGS += -isystem $(GTEST_DIR)/include -DGTEST_LINKED_AS_SHARED_LIBRARY=1
+
+#------------------------------------------------------------------------------
+# Project targets and rules
+#------------------------------------------------------------------------------
+
+$(proj_target): $(main_src_file) $(inc_files) $(cpp_files) $(obj_files) $(gtest_deps)
+	$(NVCC) $(CARLSIM4_INC) $(GTEST_CPPFLAGS) $(CARLSIM4_LD) $(GTEST_LD) $(obj_files) $< -o $@
+
+%-cpp.o: %.cpp $(cpp_files)
+	$(NVCC) -c $(CARLSIM4_INC) $(GTEST_CPPFLAGS) $< -o $@
+	# $(CXX) -c $(CXXINCFL) $(CXXFL) $(GTEST_CPPFLAGS) $< -o $@
+
+%-cu.o: %.cu $(cu_files)
+	$(NVCC) -c $(NVCCINCFL) $(SIMINCFL) $(NVCCFL) $(GTEST_CPPFLAGS) $< -o $@
 
 # rule for our local custom gtest main
 $(GTEST_LIB_DIR)/libgtest_custom_main.a: $(GTEST_LIB_DIR)/gtest-all.o \
@@ -64,3 +86,17 @@ $(GTEST_LIB_DIR)/gtest_custom_main.o: gtest_custom_main.cpp
 	@mkdir -p $(GTEST_LIB_DIR)
 	@$(CXX) $(GTEST_CPPFLAGS) -I$(GTEST_DIR) $(GTEST_CXXFLAGS) -c \
 	gtest_custom_main.cpp -o $@
+
+clean:
+	$(RM) $(clean_files)
+
+distclean:
+	$(RM) $(distclean_files)
+
+help:
+	$(info CARLsim4 Makefile options:)
+	$(info )
+	$(info make               Compiles CARLsim4 in default mode (release))
+	$(info make clean         Cleans out all object files)
+	$(info make distclean     Cleans out all object and output files)
+	$(info make help          Brings up this message)

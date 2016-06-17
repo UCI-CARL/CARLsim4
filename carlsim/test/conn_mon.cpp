@@ -3,6 +3,7 @@
 #include <periodic_spikegen.h>
 #include "carlsim.h"
 #include <fstream>                // std::ifstream
+#include <cmath>
 
 
 // connect such that the weight of the synapse is proportional to the pre-neuron ID

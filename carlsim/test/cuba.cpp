@@ -3,9 +3,8 @@
 
 #include <carlsim.h>
 
-#if defined(WIN32) || defined(WIN64)
 #include <periodic_spikegen.h>
-#endif
+
 
 /// ****************************************************************************
 /// current-based (cuba) model
