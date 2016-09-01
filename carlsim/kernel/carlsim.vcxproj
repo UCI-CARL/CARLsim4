@@ -21,10 +21,10 @@
   <ItemGroup>
     <ClInclude Include="include\cuda_version_control.h" />
     <ClInclude Include="include\error_code.h" />
-    <ClInclude Include="include\propagated_spike_buffer.h" />
     <ClInclude Include="include\snn.h" />
     <ClInclude Include="include\snn_datastructures.h" />
     <ClInclude Include="include\snn_definitions.h" />
+    <ClInclude Include="inc\spike_buffer.h" />
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="src\snn_gpu_module.cu" />
@@ -32,8 +32,8 @@
   <ItemGroup>
     <ClCompile Include="src\snn_cpu_module.cpp" />
     <ClCompile Include="src\print_snn_info.cpp" />
-    <ClCompile Include="src\propagated_spike_buffer.cpp" />
     <ClCompile Include="src\snn_manager.cpp" />
+    <ClCompile Include="src\spike_buffer.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{713714BD-0AFF-4832-BF1B-29CB68F1CE39}</ProjectGuid>
@@ -119,7 +119,7 @@ copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN64;__CUDA7__;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(CudaToolkitIncludeDir);$(NVCUDASAMPLES_ROOT)\common\inc;$(ProjectDir)include;$(SolutionDir)carlsim\spike_monitor;$(SolutionDir)carlsim\connection_monitor;$(SolutionDir)carlsim\interface\include;$(SolutionDir)carlsim\group_monitor</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(CudaToolkitIncludeDir);$(NVCUDASAMPLES_ROOT)\common\inc;$(ProjectDir)inc;$(SolutionDir)carlsim\spike_monitor;$(SolutionDir)carlsim\connection_monitor;$(SolutionDir)carlsim\interface\inc;$(SolutionDir)carlsim\group_monitor</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
