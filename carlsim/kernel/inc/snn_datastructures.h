@@ -432,39 +432,6 @@ typedef struct GroupConfigRT_s {
 } GroupConfigRT;
 
 /*!
- * this group need not be shared with the GPU
- * separate group which has unique properties of
- * neuron in the current group.
- */
-typedef struct GroupInfo_s {
-	std::string		Name;
-	// properties of group of neurons size, location, initial weights etc.
-	//<! homeostatic plasticity variables
-	float 		baseFiring;
-	float 		baseFiringSD;
-	float 		Izh_a;
-	float 		Izh_a_sd;
-	float 		Izh_b;
-	float 		Izh_b_sd;
-	float 		Izh_c;
-	float 		Izh_c_sd;
-	float 		Izh_d;
-	float 		Izh_d_sd;
-
-	/*!
-	 * \brief when we call print state, should the group properties be printed.
-	 * default is false and we do not want any prints for the current group
-	 */
-	bool		enablePrint;
-	int			numPostConn; //!< the total number of post-connections of a group
-	int			numPreConn; //!< the total number of pre-connections of a group
-	int			maxPostConn; //!< the maximum number of post-connections of a neuron in a group
-	int			maxPreConn; //!< the maximum number of pre-connections of a neuron in a group
-	int			sumPostConn; //!< the total number of post-connections of a group
-	int			sumPreConn; //!< the total number of pre-connections of a group
-} GroupInfo;
-
-/*!
  * \brief The runtime configuration of a connection
  *
  * This structure contains the configurations of connections that are created by optimizeAndPartiionNetwork(),
