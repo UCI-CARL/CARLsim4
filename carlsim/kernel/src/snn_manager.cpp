@@ -3474,14 +3474,6 @@ void SNN::fetchConnIdsLookupArray(int netId) {
 	copyConnIdsLookupArray(netId);
 }
 
-inline int SNN::getPoissNeuronPos(int nid) {
-	int nPos = nid-numNReg;
-	assert(nid >= numNReg);
-	assert(nid < numN);
-	assert((nid-numNReg) < numNPois);
-	return nPos;
-}
-
 //We need pass the neuron id (nid) and the grpId just for the case when we want to
 //ramp up/down the weights.  In that case we need to set the weights of each synapse
 //depending on their nid (their position with respect to one another). -- KDC

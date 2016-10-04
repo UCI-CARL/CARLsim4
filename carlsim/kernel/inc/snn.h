@@ -640,7 +640,6 @@ private:
 	void generateSpikesFromFuncPtr(int grpId);
 	void generateSpikesFromRate(int grpId);
 
-	int getPoissNeuronPos(int nid);
 	float generateWeight(int connProp, float initWt, float maxWt, int nid, int grpId);
 
 	void globalStateUpdate();
