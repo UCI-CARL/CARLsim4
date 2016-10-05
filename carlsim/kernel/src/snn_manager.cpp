@@ -210,7 +210,7 @@ short int SNN::connect(int grpId1, int grpId2, ConnectionGeneratorCore* conn, fl
 
 // create group of Izhikevich neurons
 // use int for nNeur to avoid arithmetic underflow
-int SNN::createGroup(const std::string& grpName, const Grid3D& grid, int neurType, int preferedGPU) {
+int SNN::createGroup(const std::string& grpName, const Grid3D& grid, int neurType, int preferredGPU) {
 	assert(grid.numX * grid.numY * grid.numZ > 0);
 	assert(neurType >= 0);
 	assert(numGroups < MAX_GRP_PER_SNN);
@@ -221,55 +221,55 @@ int SNN::createGroup(const std::string& grpName, const Grid3D& grid, int neurTyp
 		exitSimulation(1);
 	}
 
-	//// initialize group configuration
-	//GroupConfig grpConfig;
-	//
-	//// init parameters of neural group size and location
-	//grpConfig.Name = grpName;
-	//grpConfig.type = neurType;
-	//grpConfig.numN = grid.N;;
-	//grpConfig.sizeX = grid.numX;
-	//grpConfig.sizeY = grid.numY;
-	//grpConfig.sizeZ = grid.numZ;
-	//grpConfig.distX = grid.distX;
-	//grpConfig.distY = grid.distY;
-	//grpConfig.distZ = grid.distZ;
-	//grpConfig.offsetX = grid.offsetX;
-	//grpConfig.offsetY = grid.offsetY;
-	//grpConfig.offsetZ = grid.offsetZ;
+	// initialize group configuration
+	GroupConfig grpConfig;
+	
+	// init parameters of neural group size and location
+	grpConfig.Name = grpName;
+	grpConfig.type = neurType;
+	grpConfig.numN = grid.N;;
+	grpConfig.sizeX = grid.numX;
+	grpConfig.sizeY = grid.numY;
+	grpConfig.sizeZ = grid.numZ;
+	grpConfig.distX = grid.distX;
+	grpConfig.distY = grid.distY;
+	grpConfig.distZ = grid.distZ;
+	grpConfig.offsetX = grid.offsetX;
+	grpConfig.offsetY = grid.offsetY;
+	grpConfig.offsetZ = grid.offsetZ;
 
-	//// init parameters of neural group dynamics
-	//grpConfig.Izh_a = -1.0f;
-	//grpConfig.Izh_a_sd = -1.0f;
-	//grpConfig.Izh_b = -1.0f;
-	//grpConfig.Izh_b_sd = -1.0f;
-	//grpConfig.Izh_c = -1.0f;
-	//grpConfig.Izh_c_sd = -1.0f;
-	//grpConfig.Izh_d = -1.0f;
-	//grpConfig.Izh_d_sd = -1.0f;
+	grpConfig.preferredNetId = preferredGPU;
 
-	//grpConfig.isSpikeGenerator = false;
+	// init parameters of neural group dynamics
+	grpConfig.Izh_a = -1.0f;
+	grpConfig.Izh_a_sd = -1.0f;
+	grpConfig.Izh_b = -1.0f;
+	grpConfig.Izh_b_sd = -1.0f;
+	grpConfig.Izh_c = -1.0f;
+	grpConfig.Izh_c_sd = -1.0f;
+	grpConfig.Izh_d = -1.0f;
+	grpConfig.Izh_d_sd = -1.0f;
 
-	//// init homeostatic plasticity configs
-	//grpConfig.baseFiring = -1.0f;
-	//grpConfig.baseFiringSD = -1.0f;
-	//grpConfig.avgTimeScale = -1.0f;
-	//grpConfig.avgTimeScaleDecay = -1.0f;
-	//grpConfig.homeostasisScale = -1.0f;
+	grpConfig.isSpikeGenerator = false;
 
-	//// init parameters of neuromodulator
-	//grpConfig.baseDP = -1.0f;
-	//grpConfig.base5HT = -1.0f;
-	//grpConfig.baseACh = -1.0f;
-	//grpConfig.baseNE = -1.0f;
-	//grpConfig.decayDP = -1.0f;
-	//grpConfig.decay5HT = -1.0f;
-	//grpConfig.decayACh = -1.0f;
-	//grpConfig.decayNE = -1.0f;
+	// init homeostatic plasticity configs
+	grpConfig.baseFiring = -1.0f;
+	grpConfig.baseFiringSD = -1.0f;
+	grpConfig.avgTimeScale = -1.0f;
+	grpConfig.avgTimeScaleDecay = -1.0f;
+	grpConfig.homeostasisScale = -1.0f;
 
-	//groupConfigMap[numGroups] = grpConfig;
+	// init parameters of neuromodulator
+	grpConfig.baseDP = -1.0f;
+	grpConfig.base5HT = -1.0f;
+	grpConfig.baseACh = -1.0f;
+	grpConfig.baseNE = -1.0f;
+	grpConfig.decayDP = -1.0f;
+	grpConfig.decay5HT = -1.0f;
+	grpConfig.decayACh = -1.0f;
+	grpConfig.decayNE = -1.0f;
 
-	GroupConfigRT grpConfig;
+	/*GroupConfigRT grpConfig;
 	initGroupConfig(&grpConfig);
 
 	// We don't store the Grid3D struct in groupConfig so we don't have to deal with allocating structs on the GPU
@@ -295,16 +295,7 @@ int SNN::createGroup(const std::string& grpName, const Grid3D& grid, int neurTyp
 	grpConfig.MaxDelay			= 1;
 
 	grpConfig.preferedNetId = preferedGPU;
-	
-	groupInfo[numGroups].Name  			= grpName;
-	groupInfo[numGroups].Izh_a 			= -1; // \FIXME ???
-
-	// init homeostasis params even though not used
-	groupInfo[numGroups].baseFiring        = 10.0f;
-	groupInfo[numGroups].baseFiringSD      = 0.0f;
-
-	groupInfo[numGroups].Name              = grpName;
-
+	*/
 	// update number of neuron counters
 	if ( (neurType&TARGET_GABAa) || (neurType&TARGET_GABAb))
 		numNInhReg += grid.N; // regular inhibitory neuron
@@ -333,55 +324,55 @@ int SNN::createSpikeGeneratorGroup(const std::string& grpName, const Grid3D& gri
 	assert(neurType >= 0);
 	assert(numGroups < MAX_GRP_PER_SNN);
 
-	//// initialize group configuration
-	//GroupConfig grpConfig;
-	//
-	//// init parameters of neural group size and location
-	//grpConfig.Name = grpName;
-	//grpConfig.type = neurType | POISSON_NEURON;
-	//grpConfig.numN = grid.N;;
-	//grpConfig.sizeX = grid.numX;
-	//grpConfig.sizeY = grid.numY;
-	//grpConfig.sizeZ = grid.numZ;
-	//grpConfig.distX = grid.distX;
-	//grpConfig.distY = grid.distY;
-	//grpConfig.distZ = grid.distZ;
-	//grpConfig.offsetX = grid.offsetX;
-	//grpConfig.offsetY = grid.offsetY;
-	//grpConfig.offsetZ = grid.offsetZ;
+	// initialize group configuration
+	GroupConfig grpConfig;
+	
+	// init parameters of neural group size and location
+	grpConfig.Name = grpName;
+	grpConfig.type = neurType | POISSON_NEURON;
+	grpConfig.numN = grid.N;;
+	grpConfig.sizeX = grid.numX;
+	grpConfig.sizeY = grid.numY;
+	grpConfig.sizeZ = grid.numZ;
+	grpConfig.distX = grid.distX;
+	grpConfig.distY = grid.distY;
+	grpConfig.distZ = grid.distZ;
+	grpConfig.offsetX = grid.offsetX;
+	grpConfig.offsetY = grid.offsetY;
+	grpConfig.offsetZ = grid.offsetZ;
 
-	//// init parameters of neural group dynamics
-	//grpConfig.Izh_a = -1.0f;
-	//grpConfig.Izh_a_sd = -1.0f;
-	//grpConfig.Izh_b = -1.0f;
-	//grpConfig.Izh_b_sd = -1.0f;
-	//grpConfig.Izh_c = -1.0f;
-	//grpConfig.Izh_c_sd = -1.0f;
-	//grpConfig.Izh_d = -1.0f;
-	//grpConfig.Izh_d_sd = -1.0f;
+	grpConfig.preferredNetId = preferedGPU;
 
-	//grpConfig.isSpikeGenerator = true;
+	// init parameters of neural group dynamics
+	grpConfig.Izh_a = -1.0f;
+	grpConfig.Izh_a_sd = -1.0f;
+	grpConfig.Izh_b = -1.0f;
+	grpConfig.Izh_b_sd = -1.0f;
+	grpConfig.Izh_c = -1.0f;
+	grpConfig.Izh_c_sd = -1.0f;
+	grpConfig.Izh_d = -1.0f;
+	grpConfig.Izh_d_sd = -1.0f;
 
-	//// init homeostatic plasticity configs
-	//grpConfig.baseFiring = -1.0f;
-	//grpConfig.baseFiringSD = -1.0f;
-	//grpConfig.avgTimeScale = -1.0f;
-	//grpConfig.avgTimeScaleDecay = -1.0f;
-	//grpConfig.homeostasisScale = -1.0f;
+	grpConfig.isSpikeGenerator = true;
 
-	//// init parameters of neuromodulator
-	//grpConfig.baseDP = -1.0f;
-	//grpConfig.base5HT = -1.0f;
-	//grpConfig.baseACh = -1.0f;
-	//grpConfig.baseNE = -1.0f;
-	//grpConfig.decayDP = -1.0f;
-	//grpConfig.decay5HT = -1.0f;
-	//grpConfig.decayACh = -1.0f;
-	//grpConfig.decayNE = -1.0f;
+	// init homeostatic plasticity configs
+	grpConfig.baseFiring = -1.0f;
+	grpConfig.baseFiringSD = -1.0f;
+	grpConfig.avgTimeScale = -1.0f;
+	grpConfig.avgTimeScaleDecay = -1.0f;
+	grpConfig.homeostasisScale = -1.0f;
 
-	//groupConfigMap[numGroups] = grpConfig;
+	// init parameters of neuromodulator
+	grpConfig.baseDP = -1.0f;
+	grpConfig.base5HT = -1.0f;
+	grpConfig.baseACh = -1.0f;
+	grpConfig.baseNE = -1.0f;
+	grpConfig.decayDP = -1.0f;
+	grpConfig.decay5HT = -1.0f;
+	grpConfig.decayACh = -1.0f;
+	grpConfig.decayNE = -1.0f;
 
-	GroupConfigRT grpConfig;
+	/*GroupConfigRT grpConfig;
 	initGroupConfig(&grpConfig);
 
 	grpConfig.SizeN = grid.N; // number of neurons in the group
@@ -399,7 +390,7 @@ int SNN::createSpikeGeneratorGroup(const std::string& grpName, const Grid3D& gri
 
 	grpConfig.preferedNetId = preferedGPU;
 	
-	groupInfo[numGroups].Name          = grpName;
+	*/
 
 	if ( (neurType&TARGET_GABAa) || (neurType&TARGET_GABAb))
 		numNInhPois += grid.N; // inh poisson group
@@ -475,78 +466,76 @@ void SNN::setConductances(bool isSet, int tdAMPA, int trNMDA, int tdNMDA, int td
 }
 
 // set homeostasis for group
-void SNN::setHomeostasis(int grpId, bool isSet, float homeoScale, float avgTimeScale) {
-	if (grpId == ALL) { // shortcut for all groups
-		for(int grpId1=0; grpId1<numGroups; grpId1++) {
-			setHomeostasis(grpId1, isSet, homeoScale, avgTimeScale);
+void SNN::setHomeostasis(int gGrpId, bool isSet, float homeoScale, float avgTimeScale) {
+	if (gGrpId == ALL) { // shortcut for all groups
+		for(int grpId = 0; grpId < numGroups; grpId++) {
+			setHomeostasis(grpId, isSet, homeoScale, avgTimeScale);
 		}
 	} else {
 		// set conductances for a given group
-		sim_with_homeostasis 			   |= isSet;
-		groupConfigMap[grpId].WithHomeostasis    = isSet;
-		groupConfigMap[grpId].homeostasisScale   = homeoScale;
-		groupConfigMap[grpId].avgTimeScale       = avgTimeScale;
-		groupConfigMap[grpId].avgTimeScaleInv    = 1.0f/avgTimeScale;
-		groupConfigMap[grpId].avgTimeScale_decay = (avgTimeScale*1000.0f-1.0f)/(avgTimeScale*1000.0f);
+		sim_with_homeostasis					  |= isSet;
+		groupConfigMap[gGrpId].WithHomeostasis    = isSet;
+		groupConfigMap[gGrpId].homeostasisScale   = homeoScale;
+		groupConfigMap[gGrpId].avgTimeScale       = avgTimeScale;
+		//groupConfigMap[grpId].avgTimeScaleInv    = 1.0f/avgTimeScale;
+		//groupConfigMap[grpId].avgTimeScale_decay = (avgTimeScale*1000.0f-1.0f)/(avgTimeScale*1000.0f);
 
 		KERNEL_INFO("Homeostasis parameters %s for %d (%s):\thomeoScale: %f, avgTimeScale: %f",
-					isSet?"enabled":"disabled",grpId,groupInfo[grpId].Name.c_str(),homeoScale,avgTimeScale);
+					isSet?"enabled":"disabled", gGrpId, groupConfigMap[gGrpId].Name.c_str(), homeoScale, avgTimeScale);
 	}
 }
 
 // set a homeostatic target firing rate (enforced through homeostatic synaptic scaling)
-void SNN::setHomeoBaseFiringRate(int grpId, float baseFiring, float baseFiringSD) {
-	if (grpId == ALL) { // shortcut for all groups
-		for(int grpId1=0; grpId1<numGroups; grpId1++) {
-			setHomeoBaseFiringRate(grpId1, baseFiring, baseFiringSD);
+void SNN::setHomeoBaseFiringRate(int gGrpId, float baseFiring, float baseFiringSD) {
+	if (gGrpId == ALL) { // shortcut for all groups
+		for(int grpId = 0; grpId < numGroups; grpId++) {
+			setHomeoBaseFiringRate(grpId, baseFiring, baseFiringSD);
 		}
 	} else {
-		// set conductances for a given group
-		assert(groupConfigMap[grpId].WithHomeostasis);
-
-		groupInfo[grpId].baseFiring 	= baseFiring;
-		groupInfo[grpId].baseFiringSD 	= baseFiringSD;
+		// set homeostatsis for a given group
+		groupConfigMap[gGrpId].baseFiring = baseFiring;
+		groupConfigMap[gGrpId].baseFiringSD = baseFiringSD;
 
 		KERNEL_INFO("Homeostatic base firing rate set for %d (%s):\tbaseFiring: %3.3f, baseFiringStd: %3.3f",
-							grpId,groupInfo[grpId].Name.c_str(),baseFiring,baseFiringSD);
+							gGrpId, groupConfigMap[gGrpId].Name.c_str(), baseFiring, baseFiringSD);
 	}
 }
 
 
 // set Izhikevich parameters for group
-void SNN::setNeuronParameters(int grpId, float izh_a, float izh_a_sd, float izh_b, float izh_b_sd,
+void SNN::setNeuronParameters(int gGrpId, float izh_a, float izh_a_sd, float izh_b, float izh_b_sd,
 								float izh_c, float izh_c_sd, float izh_d, float izh_d_sd)
 {
-	assert(grpId>=-1); assert(izh_a_sd>=0); assert(izh_b_sd>=0); assert(izh_c_sd>=0);
-	assert(izh_d_sd>=0);
+	assert(gGrpId >= -1);
+	assert(izh_a_sd >= 0); assert(izh_b_sd >= 0); assert(izh_c_sd >= 0); assert(izh_d_sd >= 0);
 
-	if (grpId == ALL) { // shortcut for all groups
-		for(int grpId1=0; grpId1<numGroups; grpId1++) {
-			setNeuronParameters(grpId1, izh_a, izh_a_sd, izh_b, izh_b_sd, izh_c, izh_c_sd, izh_d, izh_d_sd);
+	if (gGrpId == ALL) { // shortcut for all groups
+		for(int grpId = 0; grpId < numGroups; grpId++) {
+			setNeuronParameters(grpId, izh_a, izh_a_sd, izh_b, izh_b_sd, izh_c, izh_c_sd, izh_d, izh_d_sd);
 		}
 	} else {
-		groupInfo[grpId].Izh_a	  	=   izh_a;
-		groupInfo[grpId].Izh_a_sd  =   izh_a_sd;
-		groupInfo[grpId].Izh_b	  	=   izh_b;
-		groupInfo[grpId].Izh_b_sd  =   izh_b_sd;
-		groupInfo[grpId].Izh_c		=   izh_c;
-		groupInfo[grpId].Izh_c_sd	=   izh_c_sd;
-		groupInfo[grpId].Izh_d		=   izh_d;
-		groupInfo[grpId].Izh_d_sd	=   izh_d_sd;
+		groupConfigMap[gGrpId].Izh_a = izh_a;
+		groupConfigMap[gGrpId].Izh_a_sd = izh_a_sd;
+		groupConfigMap[gGrpId].Izh_b = izh_b;
+		groupConfigMap[gGrpId].Izh_b_sd = izh_b_sd;
+		groupConfigMap[gGrpId].Izh_c = izh_c;
+		groupConfigMap[gGrpId].Izh_c_sd	= izh_c_sd;
+		groupConfigMap[gGrpId].Izh_d = izh_d;
+		groupConfigMap[gGrpId].Izh_d_sd	= izh_d_sd;
 	}
 }
 
-void SNN::setNeuromodulator(int grpId, float baseDP, float tauDP, float base5HT, float tau5HT, float baseACh,
+void SNN::setNeuromodulator(int gGrpId, float baseDP, float tauDP, float base5HT, float tau5HT, float baseACh,
 	float tauACh, float baseNE, float tauNE) {
 
-	groupConfigMap[grpId].baseDP	= baseDP;
-	groupConfigMap[grpId].decayDP = 1.0f - (1.0f / tauDP);
-	groupConfigMap[grpId].base5HT = base5HT;
-	groupConfigMap[grpId].decay5HT = 1.0f - (1.0f / tau5HT);
-	groupConfigMap[grpId].baseACh = baseACh;
-	groupConfigMap[grpId].decayACh = 1.0f - (1.0f / tauACh);
-	groupConfigMap[grpId].baseNE	= baseNE;
-	groupConfigMap[grpId].decayNE = 1.0f - (1.0f / tauNE);
+	groupConfigMap[gGrpId].baseDP = baseDP;
+	groupConfigMap[gGrpId].decayDP = 1.0f - (1.0f / tauDP);
+	groupConfigMap[gGrpId].base5HT = base5HT;
+	groupConfigMap[gGrpId].decay5HT = 1.0f - (1.0f / tau5HT);
+	groupConfigMap[gGrpId].baseACh = baseACh;
+	groupConfigMap[gGrpId].decayACh = 1.0f - (1.0f / tauACh);
+	groupConfigMap[gGrpId].baseNE = baseNE;
+	groupConfigMap[gGrpId].decayNE = 1.0f - (1.0f / tauNE);
 }
 
 // set ESTDP params
@@ -629,27 +618,27 @@ void SNN::setISTDP(int grpId, bool isSet, STDPType type, STDPCurve curve, float 
 }
 
 // set STP params
-void SNN::setSTP(int grpId, bool isSet, float STP_U, float STP_tau_u, float STP_tau_x) {
-	assert(grpId>=-1);
+void SNN::setSTP(int gGrpId, bool isSet, float STP_U, float STP_tau_u, float STP_tau_x) {
+	assert(gGrpId >= -1);
 	if (isSet) {
-		assert(STP_U>0 && STP_U<=1); assert(STP_tau_u>0); assert(STP_tau_x>0);
+		assert(STP_U > 0 && STP_U <= 1); assert(STP_tau_u > 0); assert(STP_tau_x > 0);
 	}
 
-	if (grpId == ALL) { // shortcut for all groups
-		for(int grpId1=0; grpId1<numGroups; grpId1++) {
-			setSTP(grpId1, isSet, STP_U, STP_tau_u, STP_tau_x);
+	if (gGrpId == ALL) { // shortcut for all groups
+		for(int grpId = 0; grpId < numGroups; grpId++) {
+			setSTP(grpId, isSet, STP_U, STP_tau_u, STP_tau_x);
 		}
 	} else {
 		// set STDP for a given group
-		sim_with_stp 				   |= isSet;
-		groupConfigMap[grpId].WithSTP 		= isSet;
-		groupConfigMap[grpId].STP_A 			= (STP_U>0.0f) ? 1.0/STP_U : 1.0f; // scaling factor
-		groupConfigMap[grpId].STP_U 			= STP_U;
-		groupConfigMap[grpId].STP_tau_u_inv	= 1.0f/STP_tau_u; // facilitatory
-		groupConfigMap[grpId].STP_tau_x_inv	= 1.0f/STP_tau_x; // depressive
+		sim_with_stp							|= isSet;
+		groupConfigMap[gGrpId].WithSTP			= isSet;
+		groupConfigMap[gGrpId].STP_A			= (STP_U > 0.0f) ? 1.0 / STP_U : 1.0f; // scaling factor
+		groupConfigMap[gGrpId].STP_U 			= STP_U;
+		groupConfigMap[gGrpId].STP_tau_u_inv	= 1.0f / STP_tau_u; // facilitatory
+		groupConfigMap[gGrpId].STP_tau_x_inv	= 1.0f / STP_tau_x; // depressive
 
 		KERNEL_INFO("STP %s for %d (%s):\tA: %1.4f, U: %1.4f, tau_u: %4.0f, tau_x: %4.0f", isSet?"enabled":"disabled",
-					grpId, groupInfo[grpId].Name.c_str(), groupConfigMap[grpId].STP_A, STP_U, STP_tau_u, STP_tau_x);
+					gGrpId, groupConfigMap[gGrpId].Name.c_str(), groupConfigMap[gGrpId].STP_A, STP_U, STP_tau_u, STP_tau_x);
 	}
 }
 

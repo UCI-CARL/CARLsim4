@@ -126,6 +126,8 @@ typedef struct ConnectConfig_s {
 typedef struct GroupConfig_s {
 	// properties of neural group size and location
 	std::string  Name;
+	int			 grpId;
+	int			 preferredNetId;
 	unsigned int type;
 	int          numN;
     int          sizeX;
@@ -148,9 +150,17 @@ typedef struct GroupConfig_s {
 	float 		Izh_d;
 	float 		Izh_d_sd;
 
+	// properties of short-term plasiticity
+	float WithSTP;
+	float STP_A; // scaling factor
+	float STP_U;
+	float STP_tau_u_inv; // facilitatory
+	float STP_tau_x_inv; // depressive
+
 	bool isSpikeGenerator;
 
 	//!< homeostatic plasticity configs
+	bool WithHomeostasis;
 	float baseFiring;
 	float baseFiringSD;
 	float avgTimeScale;

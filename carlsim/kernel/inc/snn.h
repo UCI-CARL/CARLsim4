@@ -483,9 +483,7 @@ public:
 	LoggerMode getLoggerMode() { return loggerMode_; }
 
 	// get functions for GroupInfo
-	int getGroupStartNeuronId(int grpId)  { return groupConfigMap[grpId].StartN; }
-	int getGroupEndNeuronId(int grpId)    { return groupConfigMap[grpId].EndN; }
-	int getGroupNumNeurons(int grpId)     { return groupConfigMap[grpId].SizeN; }
+	int getGroupNumNeurons(int grpId)     { return groupConfigMap[grpId].numN; }
 
 	std::string getNetworkName() { return networkName_; }
 
@@ -886,7 +884,7 @@ private:
 	int numGroups;      //!< the number of groups (as in snn.createGroup, snn.createSpikeGeneratorGroup)
 	int numConnections; //!< the number of connections (as in snn.connect(...))
 
-	std::map<int, GroupConfigRT> groupConfigMap;   //!< the hash table storing group configs created at CONFIG_STATE
+	std::map<int, GroupConfig> groupConfigMap;   //!< the hash table storing group configs created at CONFIG_STATE
 	std::map<int, ConnectConfig> connectConfigMap; //!< the hash table storing connection configs created at CONFIG_STATE
 
 	// data structure assisting network partitioning
@@ -1025,9 +1023,8 @@ private:
 
 	ManagerRuntimeDataSize managerRTDSize;
 
-	GroupInfo groupInfo[MAX_GRP_PER_SNN];
 
-	// Configurations
+	// runtime configurations
 	NetworkConfigRT networkConfigs[MAX_NET_PER_SNN]; //!< the network configs used on GPU(s);
 	GroupConfigRT	groupConfigs[MAX_NET_PER_SNN][MAX_GRP_PER_SNN];
 	ConnectConfigRT connectConfigs[MAX_NET_PER_SNN][MAX_CONN_PER_SNN]; //!< for future use
