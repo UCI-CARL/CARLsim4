@@ -124,23 +124,55 @@ typedef struct ConnectConfig_s {
  * \see CARLsimState
  */
 typedef struct GroupConfig_s {
+	GroupConfig_s() : grpName("N/A"), preferredNetId(-2), type(0), numN(-1), isSpikeGenerator(false)
+	{}
+
 	// properties of neural group size and location
-	std::string  Name;
-	int			 grpId;
+	std::string  grpName;
 	int			 preferredNetId;
 	unsigned int type;
 	int          numN;
-    int          sizeX;
-    int          sizeY;
-    int          sizeZ;
-	float        distX;
-	float        distY;
-	float        distZ;
-	float        offsetX;
-	float        offsetY;
-	float        offsetZ;
+	bool isSpikeGenerator;
 
-	// properties of neural group dynamics
+	Grid3D grid; //<! location information of neurons
+	NeuralDynamicsConfig neuralDynamicsConfig;
+	STPConfig stpConfig;
+	HomeostasisConfig homeoConfig;
+	NeuromodulatorConfig neuromodulatorConfig;
+} GroupConfig;
+
+typedef struct GroupConfigMD_s {
+	GroupConfigMD_s() : gGrpId(-1), gStartN(-1), gEndN(-1),
+						lGrpId(-1), lStartN(-1), lEndN(-1),
+					    netId(-1), maxIncomingDelay(1), fixedInputWts(true), hasExternalConnect(false),
+						LtoGOffset(0), GtoLOffset(0), numPostSynapses(0), numPreSynapses(0)
+	{}
+
+	int gGrpId;
+	int gStartN;
+	int gEndN;
+	int netId;
+	int lGrpId;
+	int lStartN;
+	int lEndN;
+	int LtoGOffset;
+	int GtoLOffset;
+	int numPostSynapses;
+	int numPreSynapses;
+	int maxIncomingDelay;
+	bool fixedInputWts;
+	bool hasExternalConnect;
+
+	bool operator== (const struct GroupConfigMD_s& grp) {
+		return (gGrpId == grp.gGrpId);
+	}
+} GroupConfigMD;
+
+//!< neural dynamics configuration
+typedef struct NeuralDynamicsConfig_s {
+	NeuralDynamicsConfig_s() : Izh_a(-1.0f), Izh_a_sd(-1.0f), Izh_b(-1.0f), Izh_b_sd(-1.0f),
+							   Izh_c(-1.0f), Izh_c_sd(-1.0f), Izh_d(-1.0f), Izh_d_sd(-1.0f)
+	{}
 	float 		Izh_a;
 	float 		Izh_a_sd;
 	float 		Izh_b;
@@ -149,25 +181,39 @@ typedef struct GroupConfig_s {
 	float 		Izh_c_sd;
 	float 		Izh_d;
 	float 		Izh_d_sd;
+} NeuralDynamicsConfig;
 
-	// properties of short-term plasiticity
-	float WithSTP;
+//!< short-term plasiticity configurations
+typedef struct STPConfig_s {
+	STPConfig_s() : STP_A(-1.0f), STP_U(-1.0f), STP_tau_u_inv(-1.0f), STP_tau_x_inv(-1.0f)
+	{}
+
 	float STP_A; // scaling factor
 	float STP_U;
 	float STP_tau_u_inv; // facilitatory
 	float STP_tau_x_inv; // depressive
+} STPConfig;
 
-	bool isSpikeGenerator;
+//!< homeostatic plasticity configurations
+typedef struct HomeostasisConfig_s {
+	HomeostasisConfig_s() : baseFiring(-1.0f), baseFiringSD(-1.0f),
+							avgTimeScale(-1.0f), avgTimeScaleDecay(-1.0f),
+							homeostasisScale(-1.0f)
+	{}
 
-	//!< homeostatic plasticity configs
-	bool WithHomeostasis;
 	float baseFiring;
 	float baseFiringSD;
 	float avgTimeScale;
 	float avgTimeScaleDecay;
 	float homeostasisScale;
+} HomeostasisConfig;
 
-	// parameters of neuromodulator
+//!< neuromodulator configurations
+typedef struct NeuromodulatorConfig_s {
+	NeuromodulatorConfig_s() : baseDP(-1.0f), base5HT(-1.0f), baseACh(-1.0f), baseNE(-1.0f),
+							   decayDP(-1.0f), decay5HT(-1.0f), decayACh(-1.0f)
+	{}
+
 	float baseDP;   //!< baseline concentration of Dopamine
 	float base5HT;  //!< baseline concentration of Serotonin
 	float baseACh;  //!< baseline concentration of Acetylcholine
@@ -176,7 +222,7 @@ typedef struct GroupConfig_s {
 	float decay5HT; //!< decay rate for Serotonin
 	float decayACh; //!< decay rate for Acetylcholine
 	float decayNE;  //!< decay rate for Noradrenaline
-} GroupConfig;
+} NeuromodulatorConfig;
 
 typedef struct RuntimeData_s {
 	float* voltage;
@@ -278,6 +324,22 @@ typedef struct RuntimeData_s {
 
 	curandGenerator_t gpuRandGen;
 } RuntimeData;
+
+typedef struct GlobalNetworkConfig_s {
+	GlobalNetworkConfig_s() : numN(0), numNReg(0), numNPois(0),
+							  numNExcReg(0), numNInhReg(0), numNExcPois(0), numNInhPois(0),
+							  maxDelay(-1)
+	{}
+
+	int numN;		  //!< number of neurons in the global network
+	int numNExcReg;   //!< number of regular excitatory neurons the global network
+	int numNInhReg;   //!< number of regular inhibitory neurons the global network
+	int numNReg;      //!< number of regular (spking) neurons the global network
+	int numNExcPois;  //!< number of excitatory poisson neurons the global network
+	int numNInhPois;  //!< number of inhibitory poisson neurons the global network
+	int numNPois;     //!< number of poisson neurons the global network
+	int maxDelay;	  //!< maximum axonal delay in the gloabl network
+} GlobalNetworkConfig;
 
 //! runtime network configuration
 /*!
@@ -435,10 +497,6 @@ typedef struct GroupConfigRT_s {
 	bool 		writeSpikesToArray;	//!< whether spikes should be written to file (needs SpikeMonitorId>-1)
 	SpikeGeneratorCore*	spikeGenFunc;
 	PoissonRate* RatePtr;
-
-	bool operator== (const struct GroupConfigRT_s& grp) {
-		return (grpId == grp.grpId);
-	}
 } GroupConfigRT;
 
 /*!

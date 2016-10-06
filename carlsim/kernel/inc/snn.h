@@ -493,13 +493,13 @@ public:
 	int getNumConnections() { return numConnections; }
 	int getNumSynapticConnections(short int connectionId);		//!< gets number of connections associated with a connection ID
 	int getNumGroups() { return numGroups; }
-	int getNumNeurons() { return numN; }
-	int getNumNeuronsReg() { return numNReg; }
-	int getNumNeuronsRegExc() { return numNExcReg; }
-	int getNumNeuronsRegInh() { return numNInhReg; }
-	int getNumNeuronsGen() { return numNPois; }
-	int getNumNeuronsGenExc() { return numNExcPois; }
-	int getNumNeuronsGenInh() { return numNInhPois; }
+	//int getNumNeurons() { return numN; }
+	//int getNumNeuronsReg() { return numNReg; }
+	//int getNumNeuronsRegExc() { return numNExcReg; }
+	//int getNumNeuronsRegInh() { return numNInhReg; }
+	//int getNumNeuronsGen() { return numNPois; }
+	//int getNumNeuronsGenExc() { return numNExcPois; }
+	//int getNumNeuronsGenInh() { return numNInhPois; }
 	int getNumPreSynapses() { return networkConfigs[0].numPreSynNet; }
 	int getNumPostSynapses() { return networkConfigs[0].numPostSynNet; }
 
@@ -539,10 +539,10 @@ public:
 	//! returns RangeWeight struct of a connection
 	RangeWeight getWeightRange(short int connId);
 
-	bool isExcitatoryGroup(int g) { return (groupConfigMap[g].Type&TARGET_AMPA) || (groupConfigMap[g].Type&TARGET_NMDA); }
-	bool isInhibitoryGroup(int g) { return (groupConfigMap[g].Type&TARGET_GABAa) || (groupConfigMap[g].Type&TARGET_GABAb); }
-	bool isPoissonGroup(int g) { return (groupConfigMap[g].Type&POISSON_NEURON); }
-	bool isDopaminergicGroup(int g) { return (groupConfigMap[g].Type&TARGET_DA); }
+	bool isExcitatoryGroup(int g) { return (groupConfigMap[g].type & TARGET_AMPA) || (groupConfigMap[g].type & TARGET_NMDA); }
+	bool isInhibitoryGroup(int g) { return (groupConfigMap[g].type & TARGET_GABAa) || (groupConfigMap[g].type & TARGET_GABAb); }
+	bool isPoissonGroup(int g) { return (groupConfigMap[g].type & POISSON_NEURON); }
+	bool isDopaminergicGroup(int g) { return (groupConfigMap[g].type & TARGET_DA); }
 
 	//! returns whether group has homeostasis enabled (true) or not (false)
 	bool isGroupWithHomeostasis(int grpId);
@@ -578,7 +578,7 @@ private:
 	int  addSpikeToTable(int nId, int grpId);
 
 	int assignGroup(int groupId, int availableNeuronId);
-	int assignGroup(std::list<GroupConfigRT>::iterator grpIt, int localGroupId, int availableNeuronId);
+	int assignGroup(std::list<GroupConfigMD>::iterator grpIt, int localGroupId, int availableNeuronId);
 	void generateGroupRuntime(int netId, int lGrpId);
 	void generatePoissonGroupRuntime(int netId, int lGrpId);
 	void generateConnectionRuntime(int netId);
@@ -698,7 +698,7 @@ private:
 	void printCurrentInfo(FILE* fp); //!< for GPU debugging
 	//void printFiringRate(char *fname=NULL);
 	void printGroupInfo(int grpId);	//!< CARLSIM_INFO prints group info
-	void printGroupInfo(int netId, std::list<GroupConfigRT>::iterator grpIt);
+	void printGroupInfo(int netId, std::list<GroupConfigMD>::iterator grpIt);
 	void printGroupInfo2(FILE* fpg);
 	void printMemoryInfo(FILE* fp); //!< prints memory info to file
 	void printNetworkInfo(FILE* fp);
@@ -885,10 +885,11 @@ private:
 	int numConnections; //!< the number of connections (as in snn.connect(...))
 
 	std::map<int, GroupConfig> groupConfigMap;   //!< the hash table storing group configs created at CONFIG_STATE
+	std::map<int, GroupConfigMD> groupConfigMDMap; //!< the hash table storing group configs meta data generated at SETUP_STATE
 	std::map<int, ConnectConfig> connectConfigMap; //!< the hash table storing connection configs created at CONFIG_STATE
 
 	// data structure assisting network partitioning
-	std::list<GroupConfigRT> groupPartitionLists[MAX_NET_PER_SNN];
+	std::list<GroupConfigMD> groupPartitionLists[MAX_NET_PER_SNN];
 	std::list<ConnectConfig> localConnectLists[MAX_NET_PER_SNN];
 	std::list<ConnectConfig> externalConnectLists[MAX_NET_PER_SNN];
 
@@ -920,15 +921,16 @@ private:
 	bool sim_with_spikecounters; //!< flag will be true if there are any spike counters around
 
 	// spiking neural network related information, including neurons, synapses and network parameters
-	int maxDelay_;        //!< maximum axonal delay in the global network
+	//int maxDelay_;        //!< maximum axonal delay in the global network
 
-	int	numN;             //!< number of neurons in the spiking neural network
-	int numNReg;          //!< number of regular (spking) neurons
-	int numNExcReg;       //!< number of regular excitatory neurons
-	int numNInhReg;       //!< number of regular inhibitory neurons
-	int numNExcPois;      //!< number of excitatory poisson neurons
-	int numNInhPois;      //!< number of inhibitory poisson neurons
-	int numNPois;         //!< number of poisson neurons
+	//int numN;             //!< number of neurons in the spiking neural network
+	//int numNReg;          //!< number of regular (spking) neurons
+	//int numNExcReg;       //!< number of regular excitatory neurons
+	//int numNInhReg;       //!< number of regular inhibitory neurons
+	//int numNExcPois;      //!< number of excitatory poisson neurons
+	//int numNInhPois;      //!< number of inhibitory poisson neurons
+	//int numNPois;         //!< number of poisson neurons
+	GlobalNetworkConfig glbNetworkConfig;
 
 	//! size of memory used for different parts of the network
 	typedef struct snnSize_s {

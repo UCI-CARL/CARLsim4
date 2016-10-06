@@ -275,14 +275,14 @@ void SNN::printGroupInfo(int grpId) {
 	}
 }
 
-void SNN::printGroupInfo(int netId, std::list<GroupConfigRT>::iterator grpIt) {
-	KERNEL_INFO("  |-+ %s Group %s(G:%d,L:%d): ", netId == grpIt->netId ? "Local" : "External", groupInfo[grpIt->grpId].Name.c_str(), grpIt->grpId, grpIt->localGrpId);
-	KERNEL_INFO("    |- Type                       =  %s", isExcitatoryGroup(grpIt->grpId) ? "  EXCIT" :
-		(isInhibitoryGroup(grpIt->grpId) ? "  INHIB" : (isPoissonGroup(grpIt->grpId)?" POISSON" :
-		(isDopaminergicGroup(grpIt->grpId) ? "  DOPAM" : " UNKNOWN"))) );
-	KERNEL_INFO("    |- Size                       = %8d", grpIt->SizeN);
-	KERNEL_INFO("    |- Start Id                   = (G:%d,L:%d)", grpIt->StartN, grpIt->localStartN);
-	KERNEL_INFO("    |- End Id                     = (G:%d,L:%d)", grpIt->EndN, grpIt->localEndN);
+void SNN::printGroupInfo(int netId, std::list<GroupConfigMD>::iterator grpIt) {
+	KERNEL_INFO("  |-+ %s Group %s(G:%d,L:%d): ", netId == grpIt->netId ? "Local" : "External", groupConfigMap[grpIt->gGrpId].grpName.c_str(), grpIt->gGrpId, grpIt->lGrpId);
+	KERNEL_INFO("    |- Type                       =  %s", isExcitatoryGroup(grpIt->gGrpId) ? "  EXCIT" :
+		(isInhibitoryGroup(grpIt->gGrpId) ? "  INHIB" : (isPoissonGroup(grpIt->gGrpId)?" POISSON" :
+		(isDopaminergicGroup(grpIt->gGrpId) ? "  DOPAM" : " UNKNOWN"))) );
+	KERNEL_INFO("    |- Size                       = %8d", groupConfigMap[grpIt->gGrpId].numN);
+	KERNEL_INFO("    |- Start Id                   = (G:%d,L:%d)", grpIt->gStartN, grpIt->lStartN);
+	KERNEL_INFO("    |- End Id                     = (G:%d,L:%d)", grpIt->gEndN, grpIt->lEndN);
 	KERNEL_INFO("    |- numPostSynapses            = %8d", grpIt->numPostSynapses);
 	KERNEL_INFO("    |- numPreSynapses             = %8d", grpIt->numPreSynapses);
 
@@ -291,33 +291,36 @@ void SNN::printGroupInfo(int netId, std::list<GroupConfigRT>::iterator grpIt) {
 	//	KERNEL_INFO("  - Avg pre connections        = %8.5f",  ((float)groupInfo[grpId].numPreConn)/groupConfigMap[grpId].SizeN);
 	//}
 
-	if(grpIt->Type&POISSON_NEURON) {
-		KERNEL_INFO("    |- Refractory period          = %8.5f", grpIt->RefractPeriod);
-	}
+	// ToDo: does refract period work?!
+	//if(grpIt->Type&POISSON_NEURON) {
+	//	KERNEL_INFO("    |- Refractory period          = %8.5f", grpIt->RefractPeriod);
+	//}
 
-	if (grpIt->WithSTP) {
-		KERNEL_INFO("    |- STP:");
-		KERNEL_INFO("        |- STP_A                  = %8.5f", grpIt->STP_A);
-		KERNEL_INFO("        |- STP_U                  = %8.5f", grpIt->STP_U);
-		KERNEL_INFO("        |- STP_tau_u              = %8d", (int) (1.0f/grpIt->STP_tau_u_inv));
-		KERNEL_INFO("        |- STP_tau_x              = %8d", (int) (1.0f/grpIt->STP_tau_x_inv));
-	}
+	// ToDo: fix STP printing
+	//if (grpIt->WithSTP) {
+	//	KERNEL_INFO("    |- STP:");
+	//	KERNEL_INFO("        |- STP_A                  = %8.5f", grpIt->STP_A);
+	//	KERNEL_INFO("        |- STP_U                  = %8.5f", grpIt->STP_U);
+	//	KERNEL_INFO("        |- STP_tau_u              = %8d", (int) (1.0f/grpIt->STP_tau_u_inv));
+	//	KERNEL_INFO("        |- STP_tau_x              = %8d", (int) (1.0f/grpIt->STP_tau_x_inv));
+	//}
 
-	if(grpIt->WithSTDP) {
-		KERNEL_INFO("    |- STDP:")
-		KERNEL_INFO("        |- E-STDP TYPE            = %s",     grpIt->WithESTDPtype==STANDARD? "STANDARD" :
-			(grpIt->WithESTDPtype==DA_MOD?"  DA_MOD":" UNKNOWN"));
-		KERNEL_INFO("        |- I-STDP TYPE            = %s",     grpIt->WithISTDPtype==STANDARD? "STANDARD" :
-			(grpIt->WithISTDPtype==DA_MOD?"  DA_MOD":" UNKNOWN"));
-		KERNEL_INFO("        |- ALPHA_PLUS_EXC         = %8.5f", grpIt->ALPHA_PLUS_EXC);
-		KERNEL_INFO("        |- ALPHA_MINUS_EXC        = %8.5f", grpIt->ALPHA_MINUS_EXC);
-		KERNEL_INFO("        |- TAU_PLUS_INV_EXC       = %8.5f", grpIt->TAU_PLUS_INV_EXC);
-		KERNEL_INFO("        |- TAU_MINUS_INV_EXC      = %8.5f", grpIt->TAU_MINUS_INV_EXC);
-		KERNEL_INFO("        |- BETA_LTP               = %8.5f", grpIt->BETA_LTP);
-		KERNEL_INFO("        |- BETA_LTD               = %8.5f", grpIt->BETA_LTD);
-		KERNEL_INFO("        |- LAMBDA                 = %8.5f", grpIt->LAMBDA);
-		KERNEL_INFO("        |- DELTA                  = %8.5f", grpIt->DELTA);
-	}
+	// ToDo: change to connection-base STDP
+	//if(grpIt->WithSTDP) {
+	//	KERNEL_INFO("    |- STDP:")
+	//	KERNEL_INFO("        |- E-STDP TYPE            = %s",     grpIt->WithESTDPtype==STANDARD? "STANDARD" :
+	//		(grpIt->WithESTDPtype==DA_MOD?"  DA_MOD":" UNKNOWN"));
+	//	KERNEL_INFO("        |- I-STDP TYPE            = %s",     grpIt->WithISTDPtype==STANDARD? "STANDARD" :
+	//		(grpIt->WithISTDPtype==DA_MOD?"  DA_MOD":" UNKNOWN"));
+	//	KERNEL_INFO("        |- ALPHA_PLUS_EXC         = %8.5f", grpIt->ALPHA_PLUS_EXC);
+	//	KERNEL_INFO("        |- ALPHA_MINUS_EXC        = %8.5f", grpIt->ALPHA_MINUS_EXC);
+	//	KERNEL_INFO("        |- TAU_PLUS_INV_EXC       = %8.5f", grpIt->TAU_PLUS_INV_EXC);
+	//	KERNEL_INFO("        |- TAU_MINUS_INV_EXC      = %8.5f", grpIt->TAU_MINUS_INV_EXC);
+	//	KERNEL_INFO("        |- BETA_LTP               = %8.5f", grpIt->BETA_LTP);
+	//	KERNEL_INFO("        |- BETA_LTD               = %8.5f", grpIt->BETA_LTD);
+	//	KERNEL_INFO("        |- LAMBDA                 = %8.5f", grpIt->LAMBDA);
+	//	KERNEL_INFO("        |- DELTA                  = %8.5f", grpIt->DELTA);
+	//}
 }
 
 void SNN::printGroupInfo2(FILE* const fpg)

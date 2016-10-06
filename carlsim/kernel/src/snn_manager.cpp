@@ -223,51 +223,15 @@ int SNN::createGroup(const std::string& grpName, const Grid3D& grid, int neurTyp
 
 	// initialize group configuration
 	GroupConfig grpConfig;
+	GroupConfigMD grpConfigMD;
 	
 	// init parameters of neural group size and location
-	grpConfig.Name = grpName;
+	grpConfig.grpName = grpName;
 	grpConfig.type = neurType;
-	grpConfig.numN = grid.N;;
-	grpConfig.sizeX = grid.numX;
-	grpConfig.sizeY = grid.numY;
-	grpConfig.sizeZ = grid.numZ;
-	grpConfig.distX = grid.distX;
-	grpConfig.distY = grid.distY;
-	grpConfig.distZ = grid.distZ;
-	grpConfig.offsetX = grid.offsetX;
-	grpConfig.offsetY = grid.offsetY;
-	grpConfig.offsetZ = grid.offsetZ;
-
+	grpConfig.numN = grid.N;
 	grpConfig.preferredNetId = preferredGPU;
-
-	// init parameters of neural group dynamics
-	grpConfig.Izh_a = -1.0f;
-	grpConfig.Izh_a_sd = -1.0f;
-	grpConfig.Izh_b = -1.0f;
-	grpConfig.Izh_b_sd = -1.0f;
-	grpConfig.Izh_c = -1.0f;
-	grpConfig.Izh_c_sd = -1.0f;
-	grpConfig.Izh_d = -1.0f;
-	grpConfig.Izh_d_sd = -1.0f;
-
 	grpConfig.isSpikeGenerator = false;
-
-	// init homeostatic plasticity configs
-	grpConfig.baseFiring = -1.0f;
-	grpConfig.baseFiringSD = -1.0f;
-	grpConfig.avgTimeScale = -1.0f;
-	grpConfig.avgTimeScaleDecay = -1.0f;
-	grpConfig.homeostasisScale = -1.0f;
-
-	// init parameters of neuromodulator
-	grpConfig.baseDP = -1.0f;
-	grpConfig.base5HT = -1.0f;
-	grpConfig.baseACh = -1.0f;
-	grpConfig.baseNE = -1.0f;
-	grpConfig.decayDP = -1.0f;
-	grpConfig.decay5HT = -1.0f;
-	grpConfig.decayACh = -1.0f;
-	grpConfig.decayNE = -1.0f;
+	grpConfig.grid = grid;
 
 	/*GroupConfigRT grpConfig;
 	initGroupConfig(&grpConfig);
@@ -294,83 +258,47 @@ int SNN::createGroup(const std::string& grpName, const Grid3D& grid, int neurTyp
 	grpConfig.isSpikeGenerator	= false;
 	grpConfig.MaxDelay			= 1;
 
-	grpConfig.preferedNetId = preferedGPU;
+	
 	*/
 	// update number of neuron counters
-	if ( (neurType&TARGET_GABAa) || (neurType&TARGET_GABAb))
-		numNInhReg += grid.N; // regular inhibitory neuron
-	else
-		numNExcReg += grid.N; // regular excitatory neuron
-	numNReg += grid.N;
-	numN += grid.N;
+	//if ( (neurType&TARGET_GABAa) || (neurType&TARGET_GABAb))
+	//	numNInhReg += grid.N; // regular inhibitory neuron
+	//else
+	//	numNExcReg += grid.N; // regular excitatory neuron
+	//numNReg += grid.N;
+	//numN += grid.N;
 
-	// assign a group id
-	assert(grpConfig.grpId == -1);
-	grpConfig.grpId = numGroups;
+	// assign a global group id
+	grpConfigMD.gGrpId = numGroups;
 
 	// store the configuration of a group
 	groupConfigMap[numGroups] = grpConfig; // numGroups == grpId
+	groupConfigMDMap[numGroups] = grpConfigMD;
 
 	assert(numGroups < MAX_GRP_PER_SNN); // make sure we don't overflow connId
 	numGroups++;
 
-	return (numGroups - 1);
+	return grpConfigMD.gGrpId;
 }
 
 // create spike generator group
 // use int for nNeur to avoid arithmetic underflow
-int SNN::createSpikeGeneratorGroup(const std::string& grpName, const Grid3D& grid, int neurType, int preferedGPU) {
+int SNN::createSpikeGeneratorGroup(const std::string& grpName, const Grid3D& grid, int neurType, int preferredGPU) {
 	assert(grid.numX * grid.numY * grid.numZ > 0);
 	assert(neurType >= 0);
 	assert(numGroups < MAX_GRP_PER_SNN);
 
 	// initialize group configuration
 	GroupConfig grpConfig;
+	GroupConfigMD grpConfigMD;
 	
 	// init parameters of neural group size and location
-	grpConfig.Name = grpName;
+	grpConfig.grpName = grpName;
 	grpConfig.type = neurType | POISSON_NEURON;
-	grpConfig.numN = grid.N;;
-	grpConfig.sizeX = grid.numX;
-	grpConfig.sizeY = grid.numY;
-	grpConfig.sizeZ = grid.numZ;
-	grpConfig.distX = grid.distX;
-	grpConfig.distY = grid.distY;
-	grpConfig.distZ = grid.distZ;
-	grpConfig.offsetX = grid.offsetX;
-	grpConfig.offsetY = grid.offsetY;
-	grpConfig.offsetZ = grid.offsetZ;
-
-	grpConfig.preferredNetId = preferedGPU;
-
-	// init parameters of neural group dynamics
-	grpConfig.Izh_a = -1.0f;
-	grpConfig.Izh_a_sd = -1.0f;
-	grpConfig.Izh_b = -1.0f;
-	grpConfig.Izh_b_sd = -1.0f;
-	grpConfig.Izh_c = -1.0f;
-	grpConfig.Izh_c_sd = -1.0f;
-	grpConfig.Izh_d = -1.0f;
-	grpConfig.Izh_d_sd = -1.0f;
-
+	grpConfig.numN = grid.N;
+	grpConfig.preferredNetId = preferredGPU;
 	grpConfig.isSpikeGenerator = true;
-
-	// init homeostatic plasticity configs
-	grpConfig.baseFiring = -1.0f;
-	grpConfig.baseFiringSD = -1.0f;
-	grpConfig.avgTimeScale = -1.0f;
-	grpConfig.avgTimeScaleDecay = -1.0f;
-	grpConfig.homeostasisScale = -1.0f;
-
-	// init parameters of neuromodulator
-	grpConfig.baseDP = -1.0f;
-	grpConfig.base5HT = -1.0f;
-	grpConfig.baseACh = -1.0f;
-	grpConfig.baseNE = -1.0f;
-	grpConfig.decayDP = -1.0f;
-	grpConfig.decay5HT = -1.0f;
-	grpConfig.decayACh = -1.0f;
-	grpConfig.decayNE = -1.0f;
+	grpConfig.grid = grid;
 
 	/*GroupConfigRT grpConfig;
 	initGroupConfig(&grpConfig);
@@ -392,25 +320,25 @@ int SNN::createSpikeGeneratorGroup(const std::string& grpName, const Grid3D& gri
 	
 	*/
 
-	if ( (neurType&TARGET_GABAa) || (neurType&TARGET_GABAb))
-		numNInhPois += grid.N; // inh poisson group
-	else
-		numNExcPois += grid.N; // exc poisson group
-	numNPois += grid.N;
-	numN += grid.N;
+	//if ( (neurType&TARGET_GABAa) || (neurType&TARGET_GABAb))
+	//	numNInhPois += grid.N; // inh poisson group
+	//else
+	//	numNExcPois += grid.N; // exc poisson group
+	//numNPois += grid.N;
+	//numN += grid.N;
 
-	// assign a group id
-	assert(grpConfig.grpId == -1);
-	grpConfig.grpId = numGroups;
+	// assign a global group id
+	grpConfigMD.gGrpId = numGroups;
 
 	// store the configuration of a group
 	groupConfigMap[numGroups] = grpConfig;
+	groupConfigMDMap[numGroups] = grpConfigMD;
 
 	assert(numGroups < MAX_GRP_PER_SNN); // make sure we don't overflow connId
 	numGroups++;
 	numSpikeGenGrps++;
 
-	return (numGroups - 1);
+	return grpConfigMD.gGrpId;
 }
 
 // set conductance values for a simulation (custom values or disable conductances alltogether)
@@ -2152,35 +2080,35 @@ int SNN::addSpikeToTable(int nid, int g) {
 	return spikeBufferFull;
 }
 
-int SNN::assignGroup(int grpId, int availableNeuronId) {
+int SNN::assignGroup(int gGrpId, int availableNeuronId) {
 	int newAvailableNeuronId;
-	assert(groupConfigMap[grpId].StartN == -1); // The group has not yet been assigned
-	groupConfigMap[grpId].StartN = availableNeuronId;
-	groupConfigMap[grpId].EndN = availableNeuronId + groupConfigMap[grpId].SizeN - 1;
+	assert(groupConfigMDMap[gGrpId].gStartN == -1); // The group has not yet been assigned
+	groupConfigMDMap[gGrpId].gStartN = availableNeuronId;
+	groupConfigMDMap[gGrpId].gEndN = availableNeuronId + groupConfigMap[gGrpId].numN - 1;
 
 	KERNEL_DEBUG("Allocation for %d(%s), St=%d, End=%d",
-				grpId, groupInfo[grpId].Name.c_str(), groupConfigMap[grpId].StartN, groupConfigMap[grpId].EndN);
+				gGrpId, groupConfigMap[gGrpId].grpName.c_str(), groupConfigMDMap[gGrpId].gStartN, groupConfigMDMap[gGrpId].gEndN);
 
-	newAvailableNeuronId = availableNeuronId + groupConfigMap[grpId].SizeN;
-	assert(newAvailableNeuronId <= numN);
+	newAvailableNeuronId = availableNeuronId + groupConfigMap[gGrpId].numN;
+	//assert(newAvailableNeuronId <= numN);
 
 	return newAvailableNeuronId;
 }
 
-int SNN::assignGroup(std::list<GroupConfigRT>::iterator grpIt, int localGroupId, int availableNeuronId) {
+int SNN::assignGroup(std::list<GroupConfigMD>::iterator grpIt, int localGroupId, int availableNeuronId) {
 	int newAvailableNeuronId;
-	assert(grpIt->localGrpId == -1); // The group has not yet been assigned
-	grpIt->localGrpId = localGroupId;
-	grpIt->localStartN = availableNeuronId;
-	grpIt->localEndN = availableNeuronId + grpIt->SizeN - 1;
+	assert(grpIt->lGrpId == -1); // The group has not yet been assigned
+	grpIt->lGrpId = localGroupId;
+	grpIt->lStartN = availableNeuronId;
+	grpIt->lEndN = availableNeuronId + groupConfigMap[grpIt->gGrpId].numN - 1;
 
-	grpIt->LtoGOffset = grpIt->StartN - grpIt->localStartN;
-	grpIt->GtoLOffset = grpIt->localStartN - grpIt->StartN;
+	grpIt->LtoGOffset = grpIt->gStartN - grpIt->lStartN;
+	grpIt->GtoLOffset = grpIt->lStartN - grpIt->gStartN;
 
-	KERNEL_DEBUG("Allocation for group (%s) [id:%d, local id:%d], St=%d, End=%d", groupInfo[grpIt->grpId].Name.c_str(),
-		grpIt->grpId, grpIt->localGrpId, grpIt->localStartN, grpIt->localEndN);
+	KERNEL_DEBUG("Allocation for group (%s) [id:%d, local id:%d], St=%d, End=%d", groupConfigMap[grpIt->gGrpId].grpName.c_str(),
+		grpIt->gGrpId, grpIt->lGrpId, grpIt->lStartN, grpIt->lEndN);
 
-	newAvailableNeuronId = availableNeuronId + grpIt->SizeN;
+	newAvailableNeuronId = availableNeuronId + groupConfigMap[grpIt->gGrpId].numN;
 
 	return newAvailableNeuronId;
 }
@@ -2552,9 +2480,29 @@ void SNN::generatePoissonGroupRuntime(int netId, int lGrpId) {
 
 
 void SNN::collectGlobalNetworkConfig() {
-	// find the maximum delay in the network
-	// SNN::maxDelay_ is updated
-	findMaxDelay(&maxDelay_);
+	// scan all connect configs to find the maximum delay in the global network, update glbNetworkConfig.maxDelay
+	for (std::map<int, ConnectConfig>::iterator it = connectConfigMap.begin(); it != connectConfigMap.end(); it++) {
+		if (it->second.maxDelay > glbNetworkConfig.maxDelay)
+			glbNetworkConfig.maxDelay = it->second.maxDelay;
+	}
+	assert(glbNetworkConfig.maxDelay != -1);
+
+	// scan all group configs to find the number of (reg, pois, exc, inh) neuron in the global network
+	for(int gGrpId = 0; gGrpId < numGroups; gGrpId++) {
+		if (IS_EXCITATORY_TYPE(groupConfigMap[gGrpId].type) && (groupConfigMap[gGrpId].type & POISSON_NEURON)) {
+			glbNetworkConfig.numNExcPois += groupConfigMap[gGrpId].numN;
+		} else if (IS_INHIBITORY_TYPE(groupConfigMap[gGrpId].type) &&  (groupConfigMap[gGrpId].type & POISSON_NEURON)) {
+			glbNetworkConfig.numNInhPois += groupConfigMap[gGrpId].numN;
+		} else if (IS_EXCITATORY_TYPE(groupConfigMap[gGrpId].type) && !(groupConfigMap[gGrpId].type & POISSON_NEURON)) {
+			glbNetworkConfig.numNExcReg += groupConfigMap[gGrpId].numN;
+		} else if (IS_INHIBITORY_TYPE(groupConfigMap[gGrpId].type) && !(groupConfigMap[gGrpId].type & POISSON_NEURON)) {
+			glbNetworkConfig.numNInhReg += groupConfigMap[gGrpId].numN;
+		}
+	}
+
+	glbNetworkConfig.numNReg = glbNetworkConfig.numNExcReg + glbNetworkConfig.numNInhReg;
+	glbNetworkConfig.numNPois = glbNetworkConfig.numNExcPois + glbNetworkConfig.numNInhPois;
+	glbNetworkConfig.numN = glbNetworkConfig.numNReg + glbNetworkConfig.numNPois;
 }
 
 // after all the initalization. Its time to create the synaptic weights, weight change and also
@@ -2583,12 +2531,12 @@ void SNN::compileSNN() {
 	// display the global network configuration
 	KERNEL_INFO("\n");
 	KERNEL_INFO("************************** Global Network Configuration *******************************");
-	KERNEL_INFO("The number of neurons in the network (numN) = %d", numN);
-	KERNEL_INFO("The number of regular neurons in the network (numNReg:numNExcReg:numNInhReg) = %d:%d:%d", numNReg, numNExcReg, numNInhReg);
-	KERNEL_INFO("The number of poisson neurons in the network (numNPois:numNExcPois:numInhPois) = %d:%d:%d", numNPois, numNExcPois, numNInhPois);
+	KERNEL_INFO("The number of neurons in the network (numN) = %d", glbNetworkConfig.numN);
+	KERNEL_INFO("The number of regular neurons in the network (numNReg:numNExcReg:numNInhReg) = %d:%d:%d", glbNetworkConfig.numNReg, glbNetworkConfig.numNExcReg, glbNetworkConfig.numNInhReg);
+	KERNEL_INFO("The number of poisson neurons in the network (numNPois:numNExcPois:numInhPois) = %d:%d:%d", glbNetworkConfig.numNPois, glbNetworkConfig.numNExcPois, glbNetworkConfig.numNInhPois);
 	//KERNEL_INFO("The maximum number of post-connectoins among neurons (maxNumPostSynN) = %d", maxNumPostSynN);
 	//KERNEL_INFO("The maximum number of pre-connections among neurons (maxNumPreSynN) = %d", maxNumPreSynN);
-	KERNEL_INFO("The maximum axonal delay in the network (maxDelay) = %d", maxDelay_);
+	KERNEL_INFO("The maximum axonal delay in the network (maxDelay) = %d", glbNetworkConfig.maxDelay);
 	//KERNEL_INFO("The tatol number of synapses in the network (numPreSynNet,numPostSynNet) = (%d,%d)", numPreSynNet, numPostSynNet);
 
 	//ensure that we dont compile the network again
@@ -2609,13 +2557,13 @@ void SNN::compileGroupConfig() {
 		// is greater than the MaxDelay for grpSrc. We find the maximum
 		// delay for the grpSrc by this scheme.
 		grpSrc = it->second.grpSrc;
-		if (it->second.maxDelay > groupConfigMap[grpSrc].MaxDelay)
-		 	groupConfigMap[grpSrc].MaxDelay = it->second.maxDelay;
+		if (it->second.maxDelay > groupConfigMDMap[grpSrc].maxIncomingDelay)
+		 	groupConfigMDMap[grpSrc].maxIncomingDelay = it->second.maxDelay;
 
 		// given group has plastic connection, and we need to apply STDP rule...
 		synWtType = GET_FIXED_PLASTIC(it->second.connProp);
 		if (synWtType == SYN_PLASTIC) {
-			groupConfigMap[it->second.grpDest].FixedInputWts = false;
+			groupConfigMDMap[it->second.grpDest].fixedInputWts = false;
 		}
 	}
 
@@ -2626,23 +2574,23 @@ void SNN::compileGroupConfig() {
 	int assignedGroup = 0;
 	int availableNeuronId = 0;
 	for(int order = 0; order < 4; order++) {
-		for(int g = 0; g < numGroups; g++) {
-			if (IS_EXCITATORY_TYPE(groupConfigMap[g].Type) && (groupConfigMap[g].Type & POISSON_NEURON) && order == 3) {
-				availableNeuronId = assignGroup(g, availableNeuronId);
+		for(int gGrpId = 0; gGrpId < numGroups; gGrpId++) {
+			if (IS_EXCITATORY_TYPE(groupConfigMap[gGrpId].type) && (groupConfigMap[gGrpId].type & POISSON_NEURON) && order == 3) {
+				availableNeuronId = assignGroup(gGrpId, availableNeuronId);
 				assignedGroup++;
-			} else if (IS_INHIBITORY_TYPE(groupConfigMap[g].Type) &&  (groupConfigMap[g].Type & POISSON_NEURON) && order == 2) {
-				availableNeuronId = assignGroup(g, availableNeuronId);
+			} else if (IS_INHIBITORY_TYPE(groupConfigMap[gGrpId].type) &&  (groupConfigMap[gGrpId].type & POISSON_NEURON) && order == 2) {
+				availableNeuronId = assignGroup(gGrpId, availableNeuronId);
 				assignedGroup++;
-			} else if (IS_EXCITATORY_TYPE(groupConfigMap[g].Type) && !(groupConfigMap[g].Type & POISSON_NEURON) && order == 0) {
-				availableNeuronId = assignGroup(g, availableNeuronId);
+			} else if (IS_EXCITATORY_TYPE(groupConfigMap[gGrpId].type) && !(groupConfigMap[gGrpId].type & POISSON_NEURON) && order == 0) {
+				availableNeuronId = assignGroup(gGrpId, availableNeuronId);
 				assignedGroup++;
-			} else if (IS_INHIBITORY_TYPE(groupConfigMap[g].Type) && !(groupConfigMap[g].Type & POISSON_NEURON) && order == 1) {
-				availableNeuronId = assignGroup(g, availableNeuronId);
+			} else if (IS_INHIBITORY_TYPE(groupConfigMap[gGrpId].type) && !(groupConfigMap[gGrpId].type & POISSON_NEURON) && order == 1) {
+				availableNeuronId = assignGroup(gGrpId, availableNeuronId);
 				assignedGroup++;
 			}
 		}
 	}
-	assert(availableNeuronId == numN);
+	//assert(availableNeuronId == numN);
 	assert(assignedGroup == numGroups);
 }
 
@@ -2747,18 +2695,18 @@ void SNN::connectFull(int netId, std::list<ConnectConfig>::iterator connIt, bool
 	int externalNetId = -1;
 
 	if (isExternal) {
-		externalNetId = groupConfigMap[grpDest].netId;
+		externalNetId = groupConfigMDMap[grpDest].netId;
 		assert(netId != externalNetId);
 	}
 
 	// rebuild struct for easier handling
 	RadiusRF radius(connIt->radX, connIt->radY, connIt->radZ);
 
-	for(int i = groupConfigMap[grpSrc].StartN; i <= groupConfigMap[grpSrc].EndN; i++)  {
+	for(int i = groupConfigMDMap[grpSrc].gStartN; i <= groupConfigMDMap[grpSrc].gEndN; i++)  {
 		//Point3D loc_i = getNeuronLocation3D(i); // 3D coordinates of i
-		for(int j = groupConfigMap[grpDest].StartN; j <= groupConfigMap[grpDest].EndN; j++) { // j: the temp neuron id
+		for(int j = groupConfigMDMap[grpDest].gStartN; j <= groupConfigMDMap[grpDest].gEndN; j++) { // j: the temp neuron id
 			// if flag is set, don't connect direct connections
-			if((noDirect) && (i - groupConfigMap[grpSrc].StartN) == (j - groupConfigMap[grpDest].StartN))
+			if((noDirect) && (i - groupConfigMDMap[grpSrc].gStartN) == (j - groupConfigMDMap[grpDest].gStartN))
 				continue;
 
 			// check whether pre-neuron location is in RF of post-neuron
@@ -2771,28 +2719,28 @@ void SNN::connectFull(int netId, std::list<ConnectConfig>::iterator connIt, bool
 		}
 	}
 
-	std::list<GroupConfigRT>::iterator grpIt;
-	GroupConfigRT targetGrp;
+	std::list<GroupConfigMD>::iterator grpIt;
+	GroupConfigMD targetGrp;
 
 	// update numPostSynapses and numPreSynapses of groups in the local network
-	targetGrp.grpId = grpSrc; // the other fields does not matter
+	targetGrp.gGrpId = grpSrc; // the other fields does not matter
 	grpIt = std::find(groupPartitionLists[netId].begin(), groupPartitionLists[netId].end(), targetGrp);
 	assert(grpIt != groupPartitionLists[netId].end());
 	grpIt->numPostSynapses += connIt->numberOfConnections;
 
-	targetGrp.grpId = grpDest; // the other fields does not matter
+	targetGrp.gGrpId = grpDest; // the other fields does not matter
 	grpIt = std::find(groupPartitionLists[netId].begin(), groupPartitionLists[netId].end(), targetGrp);
 	assert(grpIt != groupPartitionLists[netId].end());
 	grpIt->numPreSynapses += connIt->numberOfConnections;
 	
 	// also update numPostSynapses and numPreSynapses of groups in the external network if the connection is external
 	if (isExternal) {
-		targetGrp.grpId = grpSrc; // the other fields does not matter
+		targetGrp.gGrpId = grpSrc; // the other fields does not matter
 		grpIt = std::find(groupPartitionLists[externalNetId].begin(), groupPartitionLists[externalNetId].end(), targetGrp);
 		assert(grpIt != groupPartitionLists[externalNetId].end());
 		grpIt->numPostSynapses += connIt->numberOfConnections;
 
-		targetGrp.grpId = grpDest; // the other fields does not matter
+		targetGrp.gGrpId = grpDest; // the other fields does not matter
 		grpIt = std::find(groupPartitionLists[externalNetId].begin(), groupPartitionLists[externalNetId].end(), targetGrp);
 		assert(grpIt != groupPartitionLists[externalNetId].end());
 		grpIt->numPreSynapses += connIt->numberOfConnections;
@@ -2813,14 +2761,14 @@ void SNN::connectGaussian(int netId, std::list<ConnectConfig>::iterator connIt, 
 	int externalNetId = -1;
 
 	if (isExternal) {
-		externalNetId = groupConfigMap[grpDest].netId;
+		externalNetId = groupConfigMDMap[grpDest].netId;
 		assert(netId != externalNetId);
 	}
 
-	for(int i = groupConfigMap[grpSrc].StartN; i <= groupConfigMap[grpSrc].EndN; i++)  {
+	for(int i = groupConfigMDMap[grpSrc].gStartN; i <= groupConfigMDMap[grpSrc].gEndN; i++)  {
 		//Point3D loc_i = getNeuronLocation3D(i)*scalePre; // i: adjusted 3D coordinates
 
-		for(int j = groupConfigMap[grpDest].StartN; j <= groupConfigMap[grpDest].EndN; j++) { // j: the temp neuron id
+		for(int j = groupConfigMDMap[grpDest].gStartN; j <= groupConfigMDMap[grpDest].gEndN; j++) { // j: the temp neuron id
 			// check whether pre-neuron location is in RF of post-neuron
 			//Point3D loc_j = getNeuronLocation3D(j); // 3D coordinates of j
 
@@ -2845,28 +2793,28 @@ void SNN::connectGaussian(int netId, std::list<ConnectConfig>::iterator connIt, 
 		}
 	}
 
-	std::list<GroupConfigRT>::iterator grpIt;
-	GroupConfigRT targetGrp;
+	std::list<GroupConfigMD>::iterator grpIt;
+	GroupConfigMD targetGrp;
 
 	// update numPostSynapses and numPreSynapses of groups in the local network
-	targetGrp.grpId = grpSrc; // the other fields does not matter
+	targetGrp.gGrpId = grpSrc; // the other fields does not matter
 	grpIt = std::find(groupPartitionLists[netId].begin(), groupPartitionLists[netId].end(), targetGrp);
 	assert(grpIt != groupPartitionLists[netId].end());
 	grpIt->numPostSynapses += connIt->numberOfConnections;
 
-	targetGrp.grpId = grpDest; // the other fields does not matter
+	targetGrp.gGrpId = grpDest; // the other fields does not matter
 	grpIt = std::find(groupPartitionLists[netId].begin(), groupPartitionLists[netId].end(), targetGrp);
 	assert(grpIt != groupPartitionLists[netId].end());
 	grpIt->numPreSynapses += connIt->numberOfConnections;
 	
 	// also update numPostSynapses and numPreSynapses of groups in the external network if the connection is external
 	if (isExternal) {
-		targetGrp.grpId = grpSrc; // the other fields does not matter
+		targetGrp.gGrpId = grpSrc; // the other fields does not matter
 		grpIt = std::find(groupPartitionLists[externalNetId].begin(), groupPartitionLists[externalNetId].end(), targetGrp);
 		assert(grpIt != groupPartitionLists[externalNetId].end());
 		grpIt->numPostSynapses += connIt->numberOfConnections;
 
-		targetGrp.grpId = grpDest; // the other fields does not matter
+		targetGrp.gGrpId = grpDest; // the other fields does not matter
 		grpIt = std::find(groupPartitionLists[externalNetId].begin(), groupPartitionLists[externalNetId].end(), targetGrp);
 		assert(grpIt != groupPartitionLists[externalNetId].end());
 		grpIt->numPreSynapses += connIt->numberOfConnections;
@@ -2879,40 +2827,40 @@ void SNN::connectOneToOne(int netId, std::list<ConnectConfig>::iterator connIt, 
 	int externalNetId = -1;
 
 	if (isExternal) {
-		externalNetId = groupConfigMap[grpDest].netId;
+		externalNetId = groupConfigMDMap[grpDest].netId;
 		assert(netId != externalNetId);
 	}
 
-	assert( groupConfigMap[grpDest].SizeN == groupConfigMap[grpSrc].SizeN );
+	assert( groupConfigMap[grpDest].numN == groupConfigMap[grpSrc].numN);
 
 	// NOTE: RadiusRF does not make a difference here: ignore
-	for(int nid = groupConfigMap[grpSrc].StartN, j = groupConfigMap[grpDest].StartN; nid <= groupConfigMap[grpSrc].EndN; nid++, j++)  {
+	for(int nid = groupConfigMDMap[grpSrc].gStartN, j = groupConfigMDMap[grpDest].gStartN; nid <= groupConfigMDMap[grpSrc].gEndN; nid++, j++)  {
 		connectNeurons(netId, grpSrc, grpDest, nid, j, connIt->connId, externalNetId);
 		connIt->numberOfConnections++;
 	}
 
-	std::list<GroupConfigRT>::iterator grpIt;
-	GroupConfigRT targetGrp;
+	std::list<GroupConfigMD>::iterator grpIt;
+	GroupConfigMD targetGrp;
 
 	// update numPostSynapses and numPreSynapses of groups in the local network
-	targetGrp.grpId = grpSrc; // the other fields does not matter
+	targetGrp.gGrpId = grpSrc; // the other fields does not matter
 	grpIt = std::find(groupPartitionLists[netId].begin(), groupPartitionLists[netId].end(), targetGrp);
 	assert(grpIt != groupPartitionLists[netId].end());
 	grpIt->numPostSynapses += connIt->numberOfConnections;
 
-	targetGrp.grpId = grpDest; // the other fields does not matter
+	targetGrp.gGrpId = grpDest; // the other fields does not matter
 	grpIt = std::find(groupPartitionLists[netId].begin(), groupPartitionLists[netId].end(), targetGrp);
 	assert(grpIt != groupPartitionLists[netId].end());
 	grpIt->numPreSynapses += connIt->numberOfConnections;
 	
 	// also update numPostSynapses and numPreSynapses of groups in the external network if the connection is external
 	if (isExternal) {
-		targetGrp.grpId = grpSrc; // the other fields does not matter
+		targetGrp.gGrpId = grpSrc; // the other fields does not matter
 		grpIt = std::find(groupPartitionLists[externalNetId].begin(), groupPartitionLists[externalNetId].end(), targetGrp);
 		assert(grpIt != groupPartitionLists[externalNetId].end());
 		grpIt->numPostSynapses += connIt->numberOfConnections;
 
-		targetGrp.grpId = grpDest; // the other fields does not matter
+		targetGrp.gGrpId = grpDest; // the other fields does not matter
 		grpIt = std::find(groupPartitionLists[externalNetId].begin(), groupPartitionLists[externalNetId].end(), targetGrp);
 		assert(grpIt != groupPartitionLists[externalNetId].end());
 		grpIt->numPreSynapses += connIt->numberOfConnections;
@@ -2926,16 +2874,16 @@ void SNN::connectRandom(int netId, std::list<ConnectConfig>::iterator connIt, bo
 	int externalNetId = -1;
 
 	if (isExternal) {
-		externalNetId = groupConfigMap[grpDest].netId;
+		externalNetId = groupConfigMDMap[grpDest].netId;
 		assert(netId != externalNetId);
 	}
 
 	// rebuild struct for easier handling
 	//RadiusRF radius(connectConfigMap[connId].radX, connectConfigMap[connId].radY, connectConfigMap[connId].radZ);
 
-	for(int pre_nid = groupConfigMap[grpSrc].StartN; pre_nid <= groupConfigMap[grpSrc].EndN; pre_nid++) {
+	for(int pre_nid = groupConfigMDMap[grpSrc].gStartN; pre_nid <= groupConfigMDMap[grpSrc].gEndN; pre_nid++) {
 		//Point3D loc_pre = getNeuronLocation3D(pre_nid); // 3D coordinates of i
-		for(int post_nid = groupConfigMap[grpDest].StartN; post_nid <= groupConfigMap[grpDest].EndN; post_nid++) {
+		for(int post_nid = groupConfigMDMap[grpDest].gStartN; post_nid <= groupConfigMDMap[grpDest].gEndN; post_nid++) {
 			// check whether pre-neuron location is in RF of post-neuron
 			//Point3D loc_post = getNeuronLocation3D(post_nid); // 3D coordinates of j
 			//if (!isPoint3DinRF(radius, loc_pre, loc_post))
@@ -2948,28 +2896,28 @@ void SNN::connectRandom(int netId, std::list<ConnectConfig>::iterator connIt, bo
 		}
 	}
 
-	std::list<GroupConfigRT>::iterator grpIt;
-	GroupConfigRT targetGrp;
+	std::list<GroupConfigMD>::iterator grpIt;
+	GroupConfigMD targetGrp;
 
 	// update numPostSynapses and numPreSynapses of groups in the local network
-	targetGrp.grpId = grpSrc; // the other fields does not matter
+	targetGrp.gGrpId = grpSrc; // the other fields does not matter
 	grpIt = std::find(groupPartitionLists[netId].begin(), groupPartitionLists[netId].end(), targetGrp);
 	assert(grpIt != groupPartitionLists[netId].end());
 	grpIt->numPostSynapses += connIt->numberOfConnections;
 
-	targetGrp.grpId = grpDest; // the other fields does not matter
+	targetGrp.gGrpId = grpDest; // the other fields does not matter
 	grpIt = std::find(groupPartitionLists[netId].begin(), groupPartitionLists[netId].end(), targetGrp);
 	assert(grpIt != groupPartitionLists[netId].end());
 	grpIt->numPreSynapses += connIt->numberOfConnections;
 	
 	// also update numPostSynapses and numPreSynapses of groups in the external network if the connection is external
 	if (isExternal) {
-		targetGrp.grpId = grpSrc; // the other fields does not matter
+		targetGrp.gGrpId = grpSrc; // the other fields does not matter
 		grpIt = std::find(groupPartitionLists[externalNetId].begin(), groupPartitionLists[externalNetId].end(), targetGrp);
 		assert(grpIt != groupPartitionLists[externalNetId].end());
 		grpIt->numPostSynapses += connIt->numberOfConnections;
 
-		targetGrp.grpId = grpDest; // the other fields does not matter
+		targetGrp.gGrpId = grpDest; // the other fields does not matter
 		grpIt = std::find(groupPartitionLists[externalNetId].begin(), groupPartitionLists[externalNetId].end(), targetGrp);
 		assert(grpIt != groupPartitionLists[externalNetId].end());
 		grpIt->numPreSynapses += connIt->numberOfConnections;
@@ -3222,29 +3170,18 @@ void SNN::deleteObjects() {
 	simulatorDeleted = true;
 }
 
-void SNN::findMaxDelay(int* _maxDelay) {
-	int grpSrc;
-	*_maxDelay = 0;
-	// scall all connect configs to find the maximum delay in the network
-	for (std::map<int, ConnectConfig>::iterator it = connectConfigMap.begin(); it != connectConfigMap.end(); it++) {
-		grpSrc = it->second.grpSrc;
-		if (it->second.maxDelay > *_maxDelay)
-			*_maxDelay = it->second.maxDelay;
-	}
-}
-
 void SNN::findMaxNumSynapsesGroups(int* _maxNumPostSynGrp, int* _maxNumPreSynGrp) {
 	*_maxNumPostSynGrp = 0;
 	*_maxNumPreSynGrp = 0;
 
 	//  scan all the groups and find the required information
-	for (int g = 0; g < numGroups; g++) {
+	for (int gGrpId = 0; gGrpId < numGroups; gGrpId++) {
 		// find the values for maximum postsynaptic length
 		// and maximum pre-synaptic length
-		if (groupConfigMap[g].numPostSynapses > *_maxNumPostSynGrp)
-			*_maxNumPostSynGrp = groupConfigMap[g].numPostSynapses;
-		if (groupConfigMap[g].numPreSynapses > *_maxNumPreSynGrp)
-			*_maxNumPreSynGrp = groupConfigMap[g].numPreSynapses;
+		if (groupConfigMap[gGrpId].numPostSynapses > *_maxNumPostSynGrp)
+			*_maxNumPostSynGrp = groupConfigMap[gGrpId].numPostSynapses;
+		if (groupConfigMap[gGrpId].numPreSynapses > *_maxNumPreSynGrp)
+			*_maxNumPreSynGrp = groupConfigMap[gGrpId].numPreSynapses;
 	}
 }
 
@@ -3765,30 +3702,34 @@ int SNN::poissonSpike(int currTime, float frate, int refractPeriod) {
 void SNN::partitionSNN() {
 	int numAssignedNeurons[MAX_NET_PER_SNN] = {0};
 
-	for (std::map<int, GroupConfigRT>::iterator it = groupConfigMap.begin(); it != groupConfigMap.end(); it++) {
+	for (std::map<int, GroupConfigMD>::iterator grpIt = groupConfigMDMap.begin(); grpIt != groupConfigMDMap.end(); grpIt++) {
 		// assign a group to the GPU specified by users
-		if (it->second.preferedNetId != ANY) {
-			assert(it->second.preferedNetId < numGPUs_ && it->second.preferedNetId > ANY);
-			it->second.netId = it->second.preferedNetId;
-			numAssignedNeurons[it->second.netId] += it->second.SizeN;
-			groupPartitionLists[it->second.netId].push_back(it->second);
+		int gGrpId = grpIt->second.gGrpId;
+		int netId = groupConfigMap[gGrpId].preferredNetId;
+		if (netId != ANY) {
+			assert(netId < numGPUs_ && netId > ANY);
+			groupConfigMDMap[gGrpId].netId = netId;
+			numAssignedNeurons[netId] += groupConfigMap[gGrpId].numN;
+			groupPartitionLists[netId].push_back(grpIt->second);
 		} else {
+			// ToDo: add callback function that allow user to partition network by theirself
 			// partition algorithm, use naive partition for now
 			// put excitatory groups to GPU 0 and inhibitory groups to GPU 1
 			// this parse separates groups into each local network and assign each group a netId
-			if (IS_EXCITATORY_TYPE(it->second.Type)) {
-				it->second.netId = 0;
-				numAssignedNeurons[0] += it->second.SizeN;
-				groupPartitionLists[0].push_back(it->second);
-			} else if (IS_INHIBITORY_TYPE(it->second.Type)) {
-				it->second.netId = 1;
-				numAssignedNeurons[1] += it->second.SizeN;
-				groupPartitionLists[1].push_back(it->second);
+			unsigned int type = groupConfigMap[gGrpId].type;
+			if (IS_EXCITATORY_TYPE(type)) {
+				groupConfigMDMap[gGrpId].netId = 0;
+				numAssignedNeurons[0] += groupConfigMap[gGrpId].numN;
+				groupPartitionLists[0].push_back(grpIt->second);
+			} else if (IS_INHIBITORY_TYPE(type)) {
+				groupConfigMDMap[gGrpId].netId = 1;
+				numAssignedNeurons[1] += groupConfigMap[gGrpId].numN;
+				groupPartitionLists[1].push_back(grpIt->second);
 			}
 		}
 
-		if (it->second.netId == -1) { // the group was not assigned to any GPU
-			KERNEL_ERROR("Can't assign the group [%d] to any partition", it->second.grpId);
+		if (grpIt->second.netId == -1) { // the group was not assigned to any GPU
+			KERNEL_ERROR("Can't assign the group [%d] to any partition", grpIt->second.gGrpId);
 			exitSimulation(-1);
 		}
 	}
@@ -3797,7 +3738,7 @@ void SNN::partitionSNN() {
 	for (int netId = 0; netId < MAX_NET_PER_SNN; netId++) {
 		if (!groupPartitionLists[netId].empty()) {
 			for (std::map<int, ConnectConfig>::iterator connIt = connectConfigMap.begin(); connIt != connectConfigMap.end(); connIt++) {
-				if (groupConfigMap[connIt->second.grpSrc].netId == netId && groupConfigMap[connIt->second.grpDest].netId == netId) {
+				if (groupConfigMDMap[connIt->second.grpSrc].netId == netId && groupConfigMDMap[connIt->second.grpDest].netId == netId) {
 					localConnectLists[netId].push_back(connectConfigMap[connIt->second.connId]);
 				}
 			}
@@ -3808,30 +3749,30 @@ void SNN::partitionSNN() {
 	for (int netId = 0; netId < MAX_NET_PER_SNN; netId++) {
 		if (!groupPartitionLists[netId].empty()) {
 			for (std::map<int, ConnectConfig>::iterator connIt = connectConfigMap.begin(); connIt != connectConfigMap.end(); connIt++) {
-				int srcNetId = groupConfigMap[connIt->second.grpSrc].netId;
-				int destNetId = groupConfigMap[connIt->second.grpDest].netId;
+				int srcNetId = groupConfigMDMap[connIt->second.grpSrc].netId;
+				int destNetId = groupConfigMDMap[connIt->second.grpDest].netId;
 				if (srcNetId == netId && destNetId != netId) {
 					// search the source group in groupPartitionLists and mark it as having external connections
-					GroupConfigRT targetGroup;
-					std::list<GroupConfigRT>::iterator srcGrpIt, destGrpIt;
+					GroupConfigMD targetGroup;
+					std::list<GroupConfigMD>::iterator srcGrpIt, destGrpIt;
 					
-					targetGroup.grpId = connIt->second.grpSrc;
+					targetGroup.gGrpId = connIt->second.grpSrc;
 					srcGrpIt = find(groupPartitionLists[srcNetId].begin(), groupPartitionLists[srcNetId].end(), targetGroup);
 					srcGrpIt->hasExternalConnect = true;
 
 					// FIXME: fail to write external group if the only one external link across GPUs is uni directional (GPU0 -> GPU1, no GPU1 -> GPU0)
-					targetGroup.grpId = connIt->second.grpDest;
+					targetGroup.gGrpId = connIt->second.grpDest;
 					destGrpIt = find(groupPartitionLists[srcNetId].begin(), groupPartitionLists[srcNetId].end(), targetGroup);
 					if (destGrpIt == groupPartitionLists[srcNetId].end()) { // the "external" dest group has not yet been copied to te "local" group partition list
-						numAssignedNeurons[srcNetId] += groupConfigMap[connIt->second.grpDest].SizeN;
-						groupPartitionLists[srcNetId].push_back(groupConfigMap[connIt->second.grpDest]);
+						numAssignedNeurons[srcNetId] += groupConfigMap[connIt->second.grpDest].numN;
+						groupPartitionLists[srcNetId].push_back(groupConfigMDMap[connIt->second.grpDest]);
 					}
 
-					targetGroup.grpId = connIt->second.grpSrc;
+					targetGroup.gGrpId = connIt->second.grpSrc;
 					srcGrpIt = find(groupPartitionLists[destNetId].begin(), groupPartitionLists[destNetId].end(), targetGroup);
 					if (srcGrpIt == groupPartitionLists[destNetId].end()) {
-						numAssignedNeurons[destNetId] += groupConfigMap[connIt->second.grpSrc].SizeN;
-						groupPartitionLists[destNetId].push_back(groupConfigMap[connIt->second.grpSrc]);
+						numAssignedNeurons[destNetId] += groupConfigMap[connIt->second.grpSrc].numN;
+						groupPartitionLists[destNetId].push_back(groupConfigMDMap[connIt->second.grpSrc]);
 					}
 
 					externalConnectLists[srcNetId].push_back(connectConfigMap[connIt->second.connId]);
@@ -3849,17 +3790,18 @@ void SNN::partitionSNN() {
 			int availableNeuronId = 0;
 			int localGroupId = 0;
 			for (int order = 0; order < 5; order++) {
-				for (std::list<GroupConfigRT>::iterator grpIt = groupPartitionLists[netId].begin(); grpIt != groupPartitionLists[netId].end(); grpIt++) {
-					if (IS_EXCITATORY_TYPE(grpIt->Type) && (grpIt->Type & POISSON_NEURON) && order == 3 && grpIt->netId == netId) {
+				for (std::list<GroupConfigMD>::iterator grpIt = groupPartitionLists[netId].begin(); grpIt != groupPartitionLists[netId].end(); grpIt++) {
+					unsigned int type = groupConfigMap[grpIt->gGrpId].type;
+					if (IS_EXCITATORY_TYPE(type) && (type & POISSON_NEURON) && order == 3 && grpIt->netId == netId) {
 						availableNeuronId = assignGroup(grpIt, localGroupId, availableNeuronId);
 						localGroupId++;
-					} else if (IS_INHIBITORY_TYPE(grpIt->Type) && (grpIt->Type & POISSON_NEURON) && order == 2 && grpIt->netId == netId) {
+					} else if (IS_INHIBITORY_TYPE(type) && (type & POISSON_NEURON) && order == 2 && grpIt->netId == netId) {
 						availableNeuronId = assignGroup(grpIt, localGroupId, availableNeuronId);
 						localGroupId++;
-					} else if (IS_EXCITATORY_TYPE(grpIt->Type) && !(grpIt->Type & POISSON_NEURON) && order == 0 && grpIt->netId == netId) {
+					} else if (IS_EXCITATORY_TYPE(type) && !(type & POISSON_NEURON) && order == 0 && grpIt->netId == netId) {
 						availableNeuronId = assignGroup(grpIt, localGroupId, availableNeuronId);
 						localGroupId++;
-					} else if (IS_INHIBITORY_TYPE(grpIt->Type) && !(grpIt->Type & POISSON_NEURON) && order == 1 && grpIt->netId == netId) {
+					} else if (IS_INHIBITORY_TYPE(type) && !(type & POISSON_NEURON) && order == 1 && grpIt->netId == netId) {
 						availableNeuronId = assignGroup(grpIt, localGroupId, availableNeuronId);
 						localGroupId++;
 					} else if (order == 4 && grpIt->netId != netId) {
@@ -3884,7 +3826,7 @@ void SNN::partitionSNN() {
 		if (!groupPartitionLists[netId].empty()) {
 			KERNEL_INFO("\n+ Local Network (%d)", netId);
 			KERNEL_INFO("|-+ Group List:");
-			for (std::list<GroupConfigRT>::iterator grpIt = groupPartitionLists[netId].begin(); grpIt != groupPartitionLists[netId].end(); grpIt++)
+			for (std::list<GroupConfigMD>::iterator grpIt = groupPartitionLists[netId].begin(); grpIt != groupPartitionLists[netId].end(); grpIt++)
 				printGroupInfo(netId, grpIt);
 		}
 
