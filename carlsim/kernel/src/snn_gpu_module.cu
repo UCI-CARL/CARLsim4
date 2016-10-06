@@ -3318,10 +3318,10 @@ void SNN::allocateSNN_GPU(int netId) {
 
 	KERNEL_DEBUG("Transfering group settings to GPU:");
 	for (int lGrpId = 0; lGrpId < networkConfigs[netId].numAssignedGroups; lGrpId++) {
-		KERNEL_DEBUG("Settings for Group %s:", groupInfo[groupConfigs[netId][lGrpId].grpId].Name.c_str());
+		KERNEL_DEBUG("Settings for Group %s:", groupConfigMap[groupConfigs[netId][lGrpId].gGrpId].grpName.c_str());
 		
 		KERNEL_DEBUG("\tType: %d",(int)groupConfigs[netId][lGrpId].Type);
-		KERNEL_DEBUG("\tSizeN: %d",groupConfigs[netId][lGrpId].SizeN);
+		KERNEL_DEBUG("\tNumN: %d",groupConfigs[netId][lGrpId].numN);
 		KERNEL_DEBUG("\tMaxFiringRate: %d",(int)groupConfigs[netId][lGrpId].MaxFiringRate);
 		KERNEL_DEBUG("\tRefractPeriod: %f",groupConfigs[netId][lGrpId].RefractPeriod);
 		KERNEL_DEBUG("\tM: %d",groupConfigs[netId][lGrpId].numPostSynapses);

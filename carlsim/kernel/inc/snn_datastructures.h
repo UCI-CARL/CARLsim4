@@ -124,7 +124,7 @@ typedef struct ConnectConfig_s {
  * \see CARLsimState
  */
 typedef struct GroupConfig_s {
-	GroupConfig_s() : grpName("N/A"), preferredNetId(-2), type(0), numN(-1), isSpikeGenerator(false)
+	GroupConfig_s() : grpName("N/A"), preferredNetId(-2), type(0), numN(-1), isSpikeGenerator(false), spikeGenFunc(NULL)
 	{}
 
 	// properties of neural group size and location
@@ -133,9 +133,11 @@ typedef struct GroupConfig_s {
 	unsigned int type;
 	int          numN;
 	bool isSpikeGenerator;
+	SpikeGeneratorCore* spikeGenFunc;
 
 	Grid3D grid; //<! location information of neurons
 	NeuralDynamicsConfig neuralDynamicsConfig;
+	STDPConfig stdpConfig;
 	STPConfig stpConfig;
 	HomeostasisConfig homeoConfig;
 	NeuromodulatorConfig neuromodulatorConfig;
@@ -183,11 +185,41 @@ typedef struct NeuralDynamicsConfig_s {
 	float 		Izh_d_sd;
 } NeuralDynamicsConfig;
 
+//!< long-term plasiticity configurations
+typedef struct STDPConfig_s {
+	STDPConfig_s() : WithSTDP(false), WithESTDP(false), WithISTDP(false),
+		WithESTDPtype(UNKNOWN_STDP), WithISTDPtype(UNKNOWN_STDP), WithESTDPcurve(UNKNOWN_CURVE), WithISTDPcurve(UNKNOWN_CURVE)
+	{}
+	bool WithSTDP;
+	bool WithESTDP;
+	bool WithISTDP;
+	STDPType WithESTDPtype;
+	STDPType WithISTDPtype;
+	STDPCurve WithESTDPcurve;
+	STDPCurve WithISTDPcurve;
+	float        TAU_PLUS_INV_EXC;
+	float        TAU_MINUS_INV_EXC;
+	float        ALPHA_PLUS_EXC;
+	float        ALPHA_MINUS_EXC;
+	float        GAMMA;
+	float        KAPPA;
+	float        OMEGA;
+	float        TAU_PLUS_INV_INB;
+	float        TAU_MINUS_INV_INB;
+	float        ALPHA_PLUS_INB;
+	float        ALPHA_MINUS_INB;
+	float        BETA_LTP;
+	float        BETA_LTD;
+	float        LAMBDA;
+	float        DELTA;
+} STDPConfig;
+
 //!< short-term plasiticity configurations
 typedef struct STPConfig_s {
-	STPConfig_s() : STP_A(-1.0f), STP_U(-1.0f), STP_tau_u_inv(-1.0f), STP_tau_x_inv(-1.0f)
+	STPConfig_s() : WithSTP(false), STP_A(-1.0f), STP_U(-1.0f), STP_tau_u_inv(-1.0f), STP_tau_x_inv(-1.0f)
 	{}
 
+	bool WithSTP;
 	float STP_A; // scaling factor
 	float STP_U;
 	float STP_tau_u_inv; // facilitatory
@@ -196,14 +228,16 @@ typedef struct STPConfig_s {
 
 //!< homeostatic plasticity configurations
 typedef struct HomeostasisConfig_s {
-	HomeostasisConfig_s() : baseFiring(-1.0f), baseFiringSD(-1.0f),
-							avgTimeScale(-1.0f), avgTimeScaleDecay(-1.0f),
+	HomeostasisConfig_s() : WithHomeostasis(false), baseFiring(-1.0f), baseFiringSD(-1.0f),
+							avgTimeScale(-1.0f), avgTimeScaleInv(-1.0f), avgTimeScaleDecay(-1.0f),
 							homeostasisScale(-1.0f)
 	{}
 
+	bool WithHomeostasis;
 	float baseFiring;
 	float baseFiringSD;
 	float avgTimeScale;
+	float avgTimeScaleInv;
 	float avgTimeScaleDecay;
 	float homeostasisScale;
 } HomeostasisConfig;
@@ -352,7 +386,7 @@ typedef struct NetworkConfigRT_s  {
 	int maxDelay; //!< maximum axonal delay in the gloabl network
 
 	// configurations for boundries of neural types
-	int numN;         //!< number of neurons in the spiking neural network
+	int numN;         //!< number of neurons in th local network
 	int numNExcReg;   //!< number of regular excitatory neurons
 	int numNInhReg;   //!< number of regular inhibitory neurons
 	int numNReg;      //!< number of regular (spking) neurons
@@ -361,8 +395,8 @@ typedef struct NetworkConfigRT_s  {
 	int numNPois;     //!< number of poisson neurons
 	int numNSpikeGen; //!< number of poisson neurons generating spikes based on callback functions
 	int numNRateGen;  //!< number of poisson neurons generating spikes based on firing rate
-	int numNExternal; //!< number of external neurons in the view of this local network 
-	int numNAssigned; //!< number of total neurons assigned to this local network
+	int numNExternal; //!< number of external neurons in the view of the local network 
+	int numNAssigned; //!< number of total neurons assigned to the local network
 
 	// configurations for runtime data sizes
 	unsigned int I_setLength; //!< used for GPU only
@@ -373,7 +407,7 @@ typedef struct NetworkConfigRT_s  {
 	int maxNumPostSynN;       //!< the maximum number of post-synaptic connections among neurons
 	int maxNumPreSynN;        //!< the maximum number of pre-syanptic connections among neurons 
 	unsigned int maxSpikesD2; //!< the estimated maximum number of spikes with delay >= 2 in a network
-	unsigned int maxSpikesD1; //!< the estimated maximum number of spikes with delay ===1 in a network
+	unsigned int maxSpikesD1; //!< the estimated maximum number of spikes with delay == 1 in a network
 
 	// configurations for assigned groups and connections
 	int numGroups;        //!< number of local groups in this local network
@@ -417,23 +451,17 @@ typedef struct NetworkConfigRT_s  {
  */
 typedef struct GroupConfigRT_s {
 	int          netId;
-	int          preferedNetId; //!< user preference of netId
-	int          grpId;
-	int          StartN;
-	int          EndN;
-	int          localGrpId;
-	int          localStartN;
-	int          localEndN;
+	int          gGrpId;
+	int          gStartN;
+	int          gEndN;
+	int          lGrpId;
+	int          lStartN;
+	int          lEndN;
 	int          LtoGOffset;
 	int          GtoLOffset;
 	unsigned int Type;
-	int          SizeN;
-    int          SizeX;
-    int          SizeY;
-    int          SizeZ;
-	int          NumTraceN;
-	short int    MaxFiringRate; //!< this is for the monitoring mechanism, it needs to know what is the maximum firing rate in order to allocate a buffer big enough to store spikes...
-	int          SpikeMonitorId;		//!< spike monitor id
+	int          numN;
+	int          SpikeMonitorId; //!< spike monitor id
 	int          GroupMonitorId; //!< group monitor id
 	float        RefractPeriod;
 	int          CurrTimeSlice; //!< timeSlice is used by the Poisson generators in order to not generate too many or too few spikes within a window of time
@@ -456,7 +484,6 @@ typedef struct GroupConfigRT_s {
 	int          Noffset;         //!< the offset of spike generator (poisson) neurons [0, numNPois)
 	int8_t       MaxDelay;
 
-	long int     lastSTPupdate;
 	float        STP_A;
 	float        STP_U;
 	float        STP_tau_u_inv;

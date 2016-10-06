@@ -129,11 +129,7 @@
 
 #define COND_INTEGRATION_SCALE	2
 
-#define UNKNOWN_NEURON_MAX_FIRING_RATE    	25
-#define INHIBITORY_NEURON_MAX_FIRING_RATE 1000
-#define EXCITATORY_NEURON_MAX_FIRING_RATE 1000
-#define POISSON_MAX_FIRING_RATE           1000
-#define NEURON_MAX_FIRING_RATE            500
+#define NEURON_MAX_FIRING_RATE 500
 
 #define STDP(t,a,b)       ((a)*exp(-(t)*(b))) // consider to use __expf(), which is accelerated by GPU hardware
 
