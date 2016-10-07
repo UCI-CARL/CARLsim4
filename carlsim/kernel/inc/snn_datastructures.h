@@ -115,61 +115,6 @@ typedef struct ConnectConfig_s {
 	int                      numberOfConnections;
 } ConnectConfig;
 
-/*!
- * \brief The configuration of a group
- *
- * This structure contains the configuration of groups that are created during configuration state.
- * The configurations are later processed by compileNetwork() and translated to meata data which are ready
- * to be linked.
- * \see CARLsimState
- */
-typedef struct GroupConfig_s {
-	GroupConfig_s() : grpName("N/A"), preferredNetId(-2), type(0), numN(-1), isSpikeGenerator(false), spikeGenFunc(NULL)
-	{}
-
-	// properties of neural group size and location
-	std::string  grpName;
-	int			 preferredNetId;
-	unsigned int type;
-	int          numN;
-	bool isSpikeGenerator;
-	SpikeGeneratorCore* spikeGenFunc;
-
-	Grid3D grid; //<! location information of neurons
-	NeuralDynamicsConfig neuralDynamicsConfig;
-	STDPConfig stdpConfig;
-	STPConfig stpConfig;
-	HomeostasisConfig homeoConfig;
-	NeuromodulatorConfig neuromodulatorConfig;
-} GroupConfig;
-
-typedef struct GroupConfigMD_s {
-	GroupConfigMD_s() : gGrpId(-1), gStartN(-1), gEndN(-1),
-						lGrpId(-1), lStartN(-1), lEndN(-1),
-					    netId(-1), maxIncomingDelay(1), fixedInputWts(true), hasExternalConnect(false),
-						LtoGOffset(0), GtoLOffset(0), numPostSynapses(0), numPreSynapses(0)
-	{}
-
-	int gGrpId;
-	int gStartN;
-	int gEndN;
-	int netId;
-	int lGrpId;
-	int lStartN;
-	int lEndN;
-	int LtoGOffset;
-	int GtoLOffset;
-	int numPostSynapses;
-	int numPreSynapses;
-	int maxIncomingDelay;
-	bool fixedInputWts;
-	bool hasExternalConnect;
-
-	bool operator== (const struct GroupConfigMD_s& grp) {
-		return (gGrpId == grp.gGrpId);
-	}
-} GroupConfigMD;
-
 //!< neural dynamics configuration
 typedef struct NeuralDynamicsConfig_s {
 	NeuralDynamicsConfig_s() : Izh_a(-1.0f), Izh_a_sd(-1.0f), Izh_b(-1.0f), Izh_b_sd(-1.0f),
@@ -257,6 +202,70 @@ typedef struct NeuromodulatorConfig_s {
 	float decayACh; //!< decay rate for Acetylcholine
 	float decayNE;  //!< decay rate for Noradrenaline
 } NeuromodulatorConfig;
+
+/*!
+ * \brief The configuration of a group
+ *
+ * This structure contains the configuration of groups that are created during configuration state.
+ * The configurations are later processed by compileNetwork() and translated to meata data which are ready
+ * to be linked.
+ * \see CARLsimState
+ */
+typedef struct GroupConfig_s {
+	GroupConfig_s() : grpName("N/A"), preferredNetId(-2), type(0), numN(-1), isSpikeGenerator(false), spikeGenFunc(NULL)
+	{}
+
+	// properties of neural group size and location
+	std::string  grpName;
+	int			 preferredNetId;
+	unsigned int type;
+	int          numN;
+	bool isSpikeGenerator;
+	SpikeGeneratorCore* spikeGenFunc;
+
+	Grid3D grid; //<! location information of neurons
+	NeuralDynamicsConfig neuralDynamicsConfig;
+	STDPConfig stdpConfig;
+	STPConfig stpConfig;
+	HomeostasisConfig homeoConfig;
+	NeuromodulatorConfig neuromodulatorConfig;
+} GroupConfig;
+
+typedef struct GroupConfigMD_s {
+	GroupConfigMD_s() : gGrpId(-1), gStartN(-1), gEndN(-1),
+						lGrpId(-1), lStartN(-1), lEndN(-1),
+					    netId(-1), maxIncomingDelay(1), fixedInputWts(true), hasExternalConnect(false),
+						LtoGOffset(0), GtoLOffset(0), numPostSynapses(0), numPreSynapses(0), Noffset(0),
+						spikeMonitorId(-1), groupMonitorId(-1), currTimeSlice(1000), sliceUpdateTime(0), homeoId(-1), ratePtr(NULL)
+	{}
+
+	int gGrpId;
+	int gStartN;
+	int gEndN;
+	int netId;
+	int lGrpId;
+	int lStartN;
+	int lEndN;
+	int LtoGOffset;
+	int GtoLOffset;
+	int numPostSynapses;
+	int numPreSynapses;
+	int maxIncomingDelay;
+	bool fixedInputWts;
+	bool hasExternalConnect;
+	int spikeMonitorId;
+	int groupMonitorId;
+	float refractPeriod;
+	int currTimeSlice; //!< timeSlice is used by the Poisson generators in order to not generate too many or too few spikes within a window of time
+	int sliceUpdateTime;
+	int homeoId;
+	int Noffset; //!< the offset of spike generator (poisson) neurons [0, numNPois)
+	PoissonRate* ratePtr;
+
+	bool operator== (const struct GroupConfigMD_s& grp) {
+		return (gGrpId == grp.gGrpId);
+	}
+} GroupConfigMD;
 
 typedef struct RuntimeData_s {
 	float* voltage;
@@ -366,12 +375,12 @@ typedef struct GlobalNetworkConfig_s {
 	{}
 
 	int numN;		  //!< number of neurons in the global network
-	int numNExcReg;   //!< number of regular excitatory neurons the global network
-	int numNInhReg;   //!< number of regular inhibitory neurons the global network
-	int numNReg;      //!< number of regular (spking) neurons the global network
-	int numNExcPois;  //!< number of excitatory poisson neurons the global network
-	int numNInhPois;  //!< number of inhibitory poisson neurons the global network
-	int numNPois;     //!< number of poisson neurons the global network
+	int numNExcReg;   //!< number of regular excitatory neurons in the global network
+	int numNInhReg;   //!< number of regular inhibitory neurons in the global network
+	int numNReg;      //!< number of regular (spking) neurons in the global network
+	int numNExcPois;  //!< number of excitatory poisson neurons in the global network
+	int numNInhPois;  //!< number of inhibitory poisson neurons in the global network
+	int numNPois;     //!< number of poisson neurons in the global network
 	int maxDelay;	  //!< maximum axonal delay in the gloabl network
 } GlobalNetworkConfig;
 
@@ -450,80 +459,72 @@ typedef struct NetworkConfigRT_s  {
  * \see SNNState
  */
 typedef struct GroupConfigRT_s {
-	int          netId;
-	int          gGrpId;
-	int          gStartN;
-	int          gEndN;
-	int          lGrpId;
-	int          lStartN;
-	int          lEndN;
-	int          LtoGOffset;
-	int          GtoLOffset;
-	unsigned int Type;
-	int          numN;
-	int          SpikeMonitorId; //!< spike monitor id
-	int          GroupMonitorId; //!< group monitor id
-	float        RefractPeriod;
-	int          CurrTimeSlice; //!< timeSlice is used by the Poisson generators in order to not generate too many or too few spikes within a window of time
-	int          SliceUpdateTime;
-	int          numPostSynapses; //!< the total number of post-connections of a group
-	int          numPreSynapses; //!< the total number of pre-connections of a group
-	bool         isSpikeGenerator;
-	bool         WithSTP;
-	bool         WithSTDP;
-	bool         WithESTDP;
-	bool         WithISTDP;
-	STDPType     WithESTDPtype;
-	STDPType     WithISTDPtype;
-	STDPCurve    WithESTDPcurve;
-	STDPCurve    WithISTDPcurve;
-	bool         WithHomeostasis;
-	int          homeoId;
-	bool         FixedInputWts;
-	bool         hasExternalConnect;         
-	int          Noffset;         //!< the offset of spike generator (poisson) neurons [0, numNPois)
-	int8_t       MaxDelay;
+	int          netId;         //!< published by GroupConfigMD \sa GroupConfigMD
+	int          gGrpId;        //!< published by GroupConfigMD \sa GroupConfigMD
+	int          gStartN;       //!< published by GroupConfigMD \sa GroupConfigMD
+	int          gEndN;         //!< published by GroupConfigMD \sa GroupConfigMD
+	int          lGrpId;        //!< published by GroupConfigMD \sa GroupConfigMD
+	int          lStartN;       //!< published by GroupConfigMD \sa GroupConfigMD
+	int          lEndN;         //!< published by GroupConfigMD \sa GroupConfigMD
+	int          LtoGOffset;    //!< published by GroupConfigMD \sa GroupConfigMD
+	int          GtoLOffset;    //!< published by GroupConfigMD \sa GroupConfigMD
+	unsigned int Type;          //!< published by GroupConfig \sa GroupConfig
+	int          numN;          //!< published by GroupConfig \sa GroupConfig
+	int          numPostSynapses;   //!< the total number of post-connections of a group, published by GroupConfigMD \sa GroupConfigMD
+	int          numPreSynapses;    //!< the total number of pre-connections of a group, published by GroupConfigMD \sa GroupConfigMD
+	bool         isSpikeGenerator;  //!< published by GroupConfig \sa GroupConfig
+	bool         WithSTP;           //!< published by GroupConfig \sa GroupConfig
+	bool         WithSTDP;          //!< published by GroupConfig \sa GroupConfig
+	bool         WithESTDP;         //!< published by GroupConfig \sa GroupConfig
+	bool         WithISTDP;         //!< published by GroupConfig \sa GroupConfig
+	STDPType     WithESTDPtype;     //!< published by GroupConfig \sa GroupConfig
+	STDPType     WithISTDPtype;     //!< published by GroupConfig \sa GroupConfig
+	STDPCurve    WithESTDPcurve;    //!< published by GroupConfig \sa GroupConfig
+	STDPCurve    WithISTDPcurve;    //!< published by GroupConfig \sa GroupConfig
+	bool         WithHomeostasis;   //!< published by GroupConfig \sa GroupConfig
+	bool         FixedInputWts;     //!< published by GroupConfigMD \sa GroupConfigMD
+	bool         hasExternalConnect;//!< published by GroupConfigMD \sa GroupConfigMD
+	int          Noffset;           //!< the offset of spike generator (poisson) neurons [0, numNPois), published by GroupConfigMD \sa GroupConfigMD
+	int8_t       MaxDelay;          //!< published by GroupConfigMD \sa GroupConfigMD
 
-	float        STP_A;
-	float        STP_U;
-	float        STP_tau_u_inv;
-	float        STP_tau_x_inv;
-	float        TAU_PLUS_INV_EXC;
-	float        TAU_MINUS_INV_EXC;
-	float        ALPHA_PLUS_EXC;
-	float        ALPHA_MINUS_EXC;
-	float        GAMMA;
-	float        KAPPA;
-	float        OMEGA;
-	float        TAU_PLUS_INV_INB;
-	float        TAU_MINUS_INV_INB;
-	float        ALPHA_PLUS_INB;
-	float        ALPHA_MINUS_INB;
-	float        BETA_LTP;
-	float        BETA_LTD;
-	float        LAMBDA;
-	float        DELTA;
+	float        STP_A;             //!< published by GroupConfig \sa GroupConfig
+	float        STP_U;             //!< published by GroupConfig \sa GroupConfig
+	float        STP_tau_u_inv;     //!< published by GroupConfig \sa GroupConfig
+	float        STP_tau_x_inv;     //!< published by GroupConfig \sa GroupConfig
+	float        TAU_PLUS_INV_EXC;  //!< published by GroupConfig \sa GroupConfig
+	float        TAU_MINUS_INV_EXC; //!< published by GroupConfig \sa GroupConfig
+	float        ALPHA_PLUS_EXC;    //!< published by GroupConfig \sa GroupConfig
+	float        ALPHA_MINUS_EXC;   //!< published by GroupConfig \sa GroupConfig
+	float        GAMMA;             //!< published by GroupConfig \sa GroupConfig
+	float        KAPPA;             //!< published by GroupConfig \sa GroupConfig
+	float        OMEGA;             //!< published by GroupConfig \sa GroupConfig
+	float        TAU_PLUS_INV_INB;  //!< published by GroupConfig \sa GroupConfig
+	float        TAU_MINUS_INV_INB; //!< published by GroupConfig \sa GroupConfig
+	float        ALPHA_PLUS_INB;    //!< published by GroupConfig \sa GroupConfig
+	float        ALPHA_MINUS_INB;   //!< published by GroupConfig \sa GroupConfig
+	float        BETA_LTP;          //!< published by GroupConfig \sa GroupConfig
+	float        BETA_LTD;          //!< published by GroupConfig \sa GroupConfig
+	float        LAMBDA;            //!< published by GroupConfig \sa GroupConfig
+	float        DELTA;             //!< published by GroupConfig \sa GroupConfig
 
 	//!< homeostatic plasticity variables
-	float avgTimeScale;
-	float avgTimeScale_decay;
-	float avgTimeScaleInv;
-	float homeostasisScale;
+	float avgTimeScale;             //!< published by GroupConfig \sa GroupConfig
+	float avgTimeScale_decay;       //!< published by GroupConfig \sa GroupConfig
+	float avgTimeScaleInv;          //!< published by GroupConfig \sa GroupConfig
+	float homeostasisScale;         //!< published by GroupConfig \sa GroupConfig
 
 	// parameters of neuromodulator
-	float baseDP;  //!< baseline concentration of Dopamine
-	float base5HT; //!< baseline concentration of Serotonin
-	float baseACh; //!< baseline concentration of Acetylcholine
-	float baseNE;  //!< baseline concentration of Noradrenaline
-	float decayDP; //!< decay rate for Dopaamine
-	float decay5HT;//!< decay rate for Serotonin
-	float decayACh;//!< decay rate for Acetylcholine
-	float decayNE; //!< decay rate for Noradrenaline
+	float baseDP;  //!< baseline concentration of Dopamine, published by GroupConfig \sa GroupConfig
+	float base5HT; //!< baseline concentration of Serotonin, published by GroupConfig \sa GroupConfig
+	float baseACh; //!< baseline concentration of Acetylcholine, published by GroupConfig \sa GroupConfig
+	float baseNE;  //!< baseline concentration of Noradrenaline, published by GroupConfig \sa GroupConfig
+	float decayDP; //!< decay rate for Dopaamine, published by GroupConfig \sa GroupConfig
+	float decay5HT;//!< decay rate for Serotonin, published by GroupConfig \sa GroupConfig
+	float decayACh;//!< decay rate for Acetylcholine, published by GroupConfig \sa GroupConfig
+	float decayNE; //!< decay rate for Noradrenaline, published by GroupConfig \sa GroupConfig
 
-	bool 		writeSpikesToFile; 	//!< whether spikes should be written to file (needs SpikeMonitorId>-1)
-	bool 		writeSpikesToArray;	//!< whether spikes should be written to file (needs SpikeMonitorId>-1)
-	SpikeGeneratorCore*	spikeGenFunc;
-	PoissonRate* RatePtr;
+	SpikeGeneratorCore*	spikeGenFunc; //!< published by GroupConfig \sa GroupConfig
+	PoissonRate* ratePtr; //!< published by GroupConfigMD \sa GroupConfigMD
 } GroupConfigRT;
 
 /*!

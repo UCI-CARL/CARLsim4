@@ -190,8 +190,8 @@ void SNN::printStatusGroupMonitor(int grpId) {
 void SNN::printConnectionInfo(short int connId) {
 	ConnectConfig connConfig = connectConfigMap[connId];
 
-	KERNEL_INFO("Connection ID %d: %s(%d) => %s(%d)", connId, groupInfo[connConfig.grpSrc].Name.c_str(),
-		connConfig.grpSrc, groupInfo[connConfig.grpDest].Name.c_str(), connConfig.grpDest);
+	KERNEL_INFO("Connection ID %d: %s(%d) => %s(%d)", connId, groupConfigMap[connConfig.grpSrc].grpName.c_str(),
+		connConfig.grpSrc, groupConfigMap[connConfig.grpDest].grpName.c_str(), connConfig.grpDest);
 	KERNEL_INFO("  - Type                       = %s", GET_FIXED_PLASTIC(connConfig.connProp)==SYN_PLASTIC?" PLASTIC":"   FIXED")
 	KERNEL_INFO("  - Min weight                 = %8.5f", 0.0f); // \TODO
 	KERNEL_INFO("  - Max weight                 = %8.5f", fabs(connConfig.maxWt));
@@ -202,8 +202,8 @@ void SNN::printConnectionInfo(short int connId) {
 	KERNEL_INFO("  - Radius Y                   = %8.2f", connConfig.radY);
 	KERNEL_INFO("  - Radius Z                   = %8.2f", connConfig.radZ);
 
-	float avgPostM = ((float)connConfig.numberOfConnections)/groupConfigMap[connConfig.grpSrc].SizeN;
-	float avgPreM  = ((float)connConfig.numberOfConnections)/groupConfigMap[connConfig.grpDest].SizeN;
+	float avgPostM = ((float)connConfig.numberOfConnections)/groupConfigMap[connConfig.grpSrc].numN;
+	float avgPreM  = ((float)connConfig.numberOfConnections)/groupConfigMap[connConfig.grpDest].numN;
 	KERNEL_INFO("  - Avg numPreSynapses         = %8.2f", avgPreM );
 	KERNEL_INFO("  - Avg numPostSynapses        = %8.2f", avgPostM );
 }
@@ -224,54 +224,54 @@ void SNN::printConnectionInfo(int netId, std::list<ConnectConfig>::iterator conn
 	KERNEL_INFO("    |- Radius Y                   = %8.2f", connIt->radY);
 	KERNEL_INFO("    |- Radius Z                   = %8.2f", connIt->radZ);
 
-	float avgPostM = ((float)connIt->numberOfConnections)/groupConfigMap[connIt->grpSrc].SizeN;
-	float avgPreM  = ((float)connIt->numberOfConnections)/groupConfigMap[connIt->grpDest].SizeN;
+	float avgPostM = ((float)connIt->numberOfConnections)/groupConfigMap[connIt->grpSrc].numN;
+	float avgPreM  = ((float)connIt->numberOfConnections)/groupConfigMap[connIt->grpDest].numN;
 	KERNEL_INFO("    |- Avg numPreSynapses         = %8.2f", avgPreM );
 	KERNEL_INFO("    |- Avg numPostSynapses        = %8.2f", avgPostM );
 }
 
-void SNN::printGroupInfo(int grpId) {
-	KERNEL_INFO("Group %s(%d): ", groupInfo[grpId].Name.c_str(), grpId);
-	KERNEL_INFO("  - Type                       =  %s", isExcitatoryGroup(grpId) ? "  EXCIT" :
-		(isInhibitoryGroup(grpId) ? "  INHIB" : (isPoissonGroup(grpId)?" POISSON" :
-		(isDopaminergicGroup(grpId) ? "  DOPAM" : " UNKNOWN"))) );
-	KERNEL_INFO("  - Size                       = %8d", groupConfigMap[grpId].SizeN);
-	KERNEL_INFO("  - Start Id                   = %8d", groupConfigMap[grpId].StartN);
-	KERNEL_INFO("  - End Id                     = %8d", groupConfigMap[grpId].EndN);
-	KERNEL_INFO("  - numPostSynapses            = %8d", groupConfigMap[grpId].numPostSynapses);
-	KERNEL_INFO("  - numPreSynapses             = %8d", groupConfigMap[grpId].numPreSynapses);
+void SNN::printGroupInfo(int gGrpId) {
+	KERNEL_INFO("Group %s(%d): ", groupConfigMap[gGrpId].grpName.c_str(), gGrpId);
+	KERNEL_INFO("  - Type                       =  %s", isExcitatoryGroup(gGrpId) ? "  EXCIT" :
+		(isInhibitoryGroup(gGrpId) ? "  INHIB" : (isPoissonGroup(gGrpId)?" POISSON" :
+		(isDopaminergicGroup(gGrpId) ? "  DOPAM" : " UNKNOWN"))) );
+	KERNEL_INFO("  - Size                       = %8d", groupConfigMap[gGrpId].numN);
+	KERNEL_INFO("  - Start Id                   = %8d", groupConfigMDMap[gGrpId].gStartN);
+	KERNEL_INFO("  - End Id                     = %8d", groupConfigMDMap[gGrpId].gEndN);
+	KERNEL_INFO("  - numPostSynapses            = %8d", groupConfigMDMap[gGrpId].numPostSynapses);
+	KERNEL_INFO("  - numPreSynapses             = %8d", groupConfigMDMap[gGrpId].numPreSynapses);
 
 	if (snnState == EXECUTABLE_SNN) {
-		KERNEL_INFO("  - Avg post connections       = %8.5f", ((float)groupInfo[grpId].numPostConn)/groupConfigMap[grpId].SizeN);
-		KERNEL_INFO("  - Avg pre connections        = %8.5f",  ((float)groupInfo[grpId].numPreConn)/groupConfigMap[grpId].SizeN);
+		KERNEL_INFO("  - Avg post connections       = %8.5f", ((float)groupInfo[gGrpId].numPostConn)/groupConfigMap[gGrpId].SizeN);
+		KERNEL_INFO("  - Avg pre connections        = %8.5f",  ((float)groupInfo[gGrpId].numPreConn)/groupConfigMap[gGrpId].SizeN);
 	}
 
-	if(groupConfigMap[grpId].Type&POISSON_NEURON) {
-		KERNEL_INFO("  - Refractory period          = %8.5f", groupConfigMap[grpId].RefractPeriod);
+	if(groupConfigMap[gGrpId].Type&POISSON_NEURON) {
+		KERNEL_INFO("  - Refractory period          = %8.5f", groupConfigMap[gGrpId].RefractPeriod);
 	}
 
-	if (groupConfigMap[grpId].WithSTP) {
+	if (groupConfigMap[gGrpId].WithSTP) {
 		KERNEL_INFO("  - STP:");
-		KERNEL_INFO("      - STP_A                  = %8.5f", groupConfigMap[grpId].STP_A);
-		KERNEL_INFO("      - STP_U                  = %8.5f", groupConfigMap[grpId].STP_U);
-		KERNEL_INFO("      - STP_tau_u              = %8d", (int) (1.0f/groupConfigMap[grpId].STP_tau_u_inv));
-		KERNEL_INFO("      - STP_tau_x              = %8d", (int) (1.0f/groupConfigMap[grpId].STP_tau_x_inv));
+		KERNEL_INFO("      - STP_A                  = %8.5f", groupConfigMap[gGrpId].STP_A);
+		KERNEL_INFO("      - STP_U                  = %8.5f", groupConfigMap[gGrpId].STP_U);
+		KERNEL_INFO("      - STP_tau_u              = %8d", (int) (1.0f/groupConfigMap[gGrpId].STP_tau_u_inv));
+		KERNEL_INFO("      - STP_tau_x              = %8d", (int) (1.0f/groupConfigMap[gGrpId].STP_tau_x_inv));
 	}
 
-	if(groupConfigMap[grpId].WithSTDP) {
+	if(groupConfigMap[gGrpId].WithSTDP) {
 		KERNEL_INFO("  - STDP:")
-		KERNEL_INFO("      - E-STDP TYPE            = %s",     groupConfigMap[grpId].WithESTDPtype==STANDARD? "STANDARD" :
-			(groupConfigMap[grpId].WithESTDPtype==DA_MOD?"  DA_MOD":" UNKNOWN"));
-		KERNEL_INFO("      - I-STDP TYPE            = %s",     groupConfigMap[grpId].WithISTDPtype==STANDARD? "STANDARD" :
-			(groupConfigMap[grpId].WithISTDPtype==DA_MOD?"  DA_MOD":" UNKNOWN"));
-		KERNEL_INFO("      - ALPHA_PLUS_EXC         = %8.5f", groupConfigMap[grpId].ALPHA_PLUS_EXC);
-		KERNEL_INFO("      - ALPHA_MINUS_EXC        = %8.5f", groupConfigMap[grpId].ALPHA_MINUS_EXC);
-		KERNEL_INFO("      - TAU_PLUS_INV_EXC       = %8.5f", groupConfigMap[grpId].TAU_PLUS_INV_EXC);
-		KERNEL_INFO("      - TAU_MINUS_INV_EXC      = %8.5f", groupConfigMap[grpId].TAU_MINUS_INV_EXC);
-		KERNEL_INFO("      - BETA_LTP               = %8.5f", groupConfigMap[grpId].BETA_LTP);
-		KERNEL_INFO("      - BETA_LTD               = %8.5f", groupConfigMap[grpId].BETA_LTD);
-		KERNEL_INFO("      - LAMBDA                 = %8.5f", groupConfigMap[grpId].LAMBDA);
-		KERNEL_INFO("      - DELTA                  = %8.5f", groupConfigMap[grpId].DELTA);
+		KERNEL_INFO("      - E-STDP TYPE            = %s",     groupConfigMap[gGrpId].WithESTDPtype==STANDARD? "STANDARD" :
+			(groupConfigMap[gGrpId].WithESTDPtype==DA_MOD?"  DA_MOD":" UNKNOWN"));
+		KERNEL_INFO("      - I-STDP TYPE            = %s",     groupConfigMap[gGrpId].WithISTDPtype==STANDARD? "STANDARD" :
+			(groupConfigMap[gGrpId].WithISTDPtype==DA_MOD?"  DA_MOD":" UNKNOWN"));
+		KERNEL_INFO("      - ALPHA_PLUS_EXC         = %8.5f", groupConfigMap[gGrpId].ALPHA_PLUS_EXC);
+		KERNEL_INFO("      - ALPHA_MINUS_EXC        = %8.5f", groupConfigMap[gGrpId].ALPHA_MINUS_EXC);
+		KERNEL_INFO("      - TAU_PLUS_INV_EXC       = %8.5f", groupConfigMap[gGrpId].TAU_PLUS_INV_EXC);
+		KERNEL_INFO("      - TAU_MINUS_INV_EXC      = %8.5f", groupConfigMap[gGrpId].TAU_MINUS_INV_EXC);
+		KERNEL_INFO("      - BETA_LTP               = %8.5f", groupConfigMap[gGrpId].BETA_LTP);
+		KERNEL_INFO("      - BETA_LTD               = %8.5f", groupConfigMap[gGrpId].BETA_LTD);
+		KERNEL_INFO("      - LAMBDA                 = %8.5f", groupConfigMap[gGrpId].LAMBDA);
+		KERNEL_INFO("      - DELTA                  = %8.5f", groupConfigMap[gGrpId].DELTA);
 	}
 }
 
@@ -323,20 +323,21 @@ void SNN::printGroupInfo(int netId, std::list<GroupConfigMD>::iterator grpIt) {
 	//}
 }
 
+// FIXME: wrong to use groupConfigs[0]
 void SNN::printGroupInfo2(FILE* const fpg)
 {
   fprintf(fpg, "#Group Information\n");
   for(int g=0; g < numGroups; g++) {
     fprintf(fpg, "group %d: name %s : type %s %s %s %s %s: size %d : start %d : end %d \n",
-      g, groupInfo[g].Name.c_str(),
+		g, groupConfigMap[g].grpName.c_str(),
       (groupConfigs[0][g].Type&POISSON_NEURON) ? "poisson " : "",
       (groupConfigs[0][g].Type&TARGET_AMPA) ? "AMPA" : "",
       (groupConfigs[0][g].Type&TARGET_NMDA) ? "NMDA" : "",
       (groupConfigs[0][g].Type&TARGET_GABAa) ? "GABAa" : "",
       (groupConfigs[0][g].Type&TARGET_GABAb) ? "GABAb" : "",
-      groupConfigs[0][g].SizeN,
-      groupConfigs[0][g].StartN,
-      groupConfigs[0][g].EndN);
+      groupConfigs[0][g].numN,
+      groupConfigs[0][g].gStartN,
+      groupConfigs[0][g].gEndN);
   }
   fprintf(fpg, "\n");
   fflush(fpg);

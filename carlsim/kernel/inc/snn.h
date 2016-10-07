@@ -586,9 +586,9 @@ private:
 	/*!
 	 * \brief scan all GroupConfigs and ConnectConfigs for generating the configuration of a local network
 	 */
-	void generateNetworkConfigs();
-	void generateGroupConfigs();
-	void generateConnectConfigs();
+	void generateRuntimeNetworkConfigs();
+	void generateRuntimeGroupConfigs();
+	void generateRuntimeConnectConfigs();
 
 	/*!
 	 * \brief scan all group configs and connection configs for generating the configuration of a global network
