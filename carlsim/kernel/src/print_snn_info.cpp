@@ -44,6 +44,7 @@
 #include <connection_monitor_core.h>
 #include <group_monitor_core.h>
 
+// FIXME: wrong to use groupConfigs[0]
 void SNN::printMemoryInfo(FILE* const fp) {
 	if (snnState == CONFIG_SNN || snnState == COMPILED_SNN || snnState == PARTITIONED_SNN) {
 		KERNEL_DEBUG("checkNetworkBuilt()");
@@ -66,16 +67,16 @@ void SNN::printMemoryInfo(FILE* const fp) {
 		int TNpre=0;
 		int TNpre_plastic=0;
 		
-		for(int i=groupConfigs[0][g].StartN; i <= groupConfigs[0][g].EndN; i++) {
+		for(int i=groupConfigs[0][g].numN; i <= groupConfigs[0][g].numN; i++) {
 			TNpost += managerRuntimeData.Npost[i];
 			TNpre  += managerRuntimeData.Npre[i];
 			TNpre_plastic += managerRuntimeData.Npre_plastic[i];
 		}
 		
 	fprintf(fp, "%s Group (num_neurons=%5d): \n\t\tNpost[%2d] = %3d, Npre[%2d]=%3d Npre_plastic[%2d]=%3d \n\t\tcumPre[%5d]=%5d cumPre[%5d]=%5d cumPost[%5d]=%5d cumPost[%5d]=%5d \n",
-		groupInfo[g].Name.c_str(), groupConfigs[0][g].SizeN, g, TNpost/groupConfigs[0][g].SizeN, g, TNpre/groupConfigs[0][g].SizeN, g, TNpre_plastic/groupConfigs[0][g].SizeN,
-		groupConfigs[0][g].StartN, managerRuntimeData.cumulativePre[groupConfigs[0][g].StartN],  groupConfigs[0][g].EndN, managerRuntimeData.cumulativePre[groupConfigs[0][g].EndN],
-		groupConfigs[0][g].StartN, managerRuntimeData.cumulativePost[groupConfigs[0][g].StartN], groupConfigs[0][g].EndN, managerRuntimeData.cumulativePost[groupConfigs[0][g].EndN]);
+		groupConfigMap[g].grpName.c_str(), groupConfigs[0][g].numN, g, TNpost/groupConfigs[0][g].numN, g, TNpre/groupConfigs[0][g].numN, g, TNpre_plastic/groupConfigs[0][g].numN,
+		groupConfigs[0][g].gStartN, managerRuntimeData.cumulativePre[groupConfigs[0][g].gStartN],  groupConfigs[0][g].gEndN, managerRuntimeData.cumulativePre[groupConfigs[0][g].gEndN],
+		groupConfigs[0][g].gStartN, managerRuntimeData.cumulativePost[groupConfigs[0][g].gStartN], groupConfigs[0][g].gEndN, managerRuntimeData.cumulativePost[groupConfigs[0][g].gEndN]);
 	}
 	fprintf(fp, "**************************************\n\n");
 }
@@ -96,9 +97,9 @@ void SNN::printStatusSpikeMonitor(int gGrpId) {
 			printStatusSpikeMonitor(g);
 		}
 	} else {
-		int netId = groupConfigMap[gGrpId].netId;
-		int lGrpId = groupConfigMap[gGrpId].localGrpId;
-		int monitorId = groupConfigs[netId][lGrpId].SpikeMonitorId;
+		int netId = groupConfigMDMap[gGrpId].netId;
+		int lGrpId = groupConfigMDMap[gGrpId].lGrpId;
+		int monitorId = groupConfigMDMap[gGrpId].spikeMonitorId;
 		
 		if (monitorId == -1) return;
 
@@ -110,7 +111,7 @@ void SNN::printStatusSpikeMonitor(int gGrpId) {
 		// printRunSummary is true or mode==COUNT.....
 		// so then we can use spkMonObj->print(false); // showSpikeTimes==false
 		int grpSpk = 0;
-		for (int gNId = groupConfigMap[gGrpId].StartN; gNId <= groupConfigMap[gGrpId].EndN; gNId++)
+		for (int gNId = groupConfigMDMap[gGrpId].gStartN; gNId <= groupConfigMDMap[gGrpId].gEndN; gNId++)
 			grpSpk += managerRuntimeData.nSpikeCnt[gNId]; // add up all neuronal spike counts
 
 		// infer run duration by measuring how much time has passed since the last run summary was printed
@@ -118,8 +119,8 @@ void SNN::printStatusSpikeMonitor(int gGrpId) {
 
 		if (simTime <= simTimeLastRunSummary) {
 			KERNEL_INFO("(t=%.3fs) SpikeMonitor for group %s(%d) has %d spikes in %dms (%.2f +/- %.2f Hz)",
-				(float)(simTime/1000.0f),
-				groupInfo[gGrpId].Name.c_str(),
+				(float)(simTime / 1000.0f),
+				groupConfigMap[gGrpId].grpName.c_str(),
 				gGrpId,
 				0,
 				0,
@@ -127,19 +128,19 @@ void SNN::printStatusSpikeMonitor(int gGrpId) {
 				0.0f);
 		} else {
 			// if some time has passed since last print
-			float meanRate = grpSpk * 1000.0f / runDurationMs / groupConfigMap[gGrpId].SizeN;
+			float meanRate = grpSpk * 1000.0f / runDurationMs / groupConfigMap[gGrpId].numN;
 			float std = 0.0f;
-			if (groupConfigMap[gGrpId].SizeN > 1) {
-				for (int gNId = groupConfigMap[gGrpId].StartN; gNId <= groupConfigMap[gGrpId].EndN; gNId++) {
+			if (groupConfigMap[gGrpId].numN > 1) {
+				for (int gNId = groupConfigMDMap[gGrpId].gStartN; gNId <= groupConfigMDMap[gGrpId].gEndN; gNId++) {
 					float neurRate = managerRuntimeData.nSpikeCnt[gNId] * 1000.0f / runDurationMs;
 					std += (neurRate - meanRate) * (neurRate - meanRate);
 				}
-				std = sqrt(std / (groupConfigs[netId][lGrpId].SizeN - 1.0));
+				std = sqrt(std / (groupConfigs[netId][lGrpId].numN - 1.0));
 			}
 	
 			KERNEL_INFO("(t=%.3fs) SpikeMonitor for group %s(%d) has %d spikes in %ums (%.2f +/- %.2f Hz)",
 				simTime / 1000.0f,
-				groupInfo[gGrpId].Name.c_str(),
+				groupConfigMap[gGrpId].grpName.c_str(),
 				gGrpId,
 				grpSpk,
 				runDurationMs,
@@ -149,15 +150,15 @@ void SNN::printStatusSpikeMonitor(int gGrpId) {
 	}
 }
 
-void SNN::printStatusGroupMonitor(int grpId) {
-	if (grpId == ALL) {
+void SNN::printStatusGroupMonitor(int gGrpId) {
+	if (gGrpId == ALL) {
 		for (int g = 0; g < numGroups; g++) {
 			printStatusGroupMonitor(g);
 		}
 	} else {
-		int netId = groupConfigMap[grpId].netId;
-		int lGrpId = groupConfigMap[grpId].localGrpId;
-		int monitorId = groupConfigs[netId][lGrpId].GroupMonitorId;
+		int netId = groupConfigMDMap[gGrpId].netId;
+		int lGrpId = groupConfigMDMap[gGrpId].lGrpId;
+		int monitorId = groupConfigMDMap[gGrpId].groupMonitorId;
 
 		if (monitorId == -1) return;
 
@@ -169,17 +170,17 @@ void SNN::printStatusGroupMonitor(int grpId) {
 
 		if (simTime <= simTimeLastRunSummary) {
 			KERNEL_INFO("(t=%.3fs) GroupMonitor for group %s(%d) has %d peak(s) in %dms",
-				simTime/1000.0f,
-				groupInfo[grpId].Name.c_str(),
-				grpId,
+				simTime / 1000.0f,
+				groupConfigMap[gGrpId].grpName.c_str(),
+				gGrpId,
 				0,
 				0);
 		} else {
 			// if some time has passed since last print
 			KERNEL_INFO("(t=%.3fs) GroupMonitor for group %s(%d) has %d peak(s) in %ums",
-				simTime/1000.0f,
-				groupInfo[grpId].Name.c_str(),
-				grpId,
+				simTime / 1000.0f,
+				groupConfigMap[gGrpId].grpName.c_str(),
+				gGrpId,
 				numPeaks,
 				runDurationMs);
 		}
@@ -211,9 +212,9 @@ void SNN::printConnectionInfo(short int connId) {
 // print connection info, akin to printGroupInfo
 void SNN::printConnectionInfo(int netId, std::list<ConnectConfig>::iterator connIt) {
 
-	KERNEL_INFO("  |-+ %s Connection Id %d: %s(%d) => %s(%d)", netId == groupConfigMap[connIt->grpDest].netId ? "Local" : "External", connIt->connId,
-		groupInfo[connIt->grpSrc].Name.c_str(), connIt->grpSrc,
-		groupInfo[connIt->grpDest].Name.c_str(), connIt->grpDest);
+	KERNEL_INFO("  |-+ %s Connection Id %d: %s(%d) => %s(%d)", netId == groupConfigMDMap[connIt->grpDest].netId ? "Local" : "External", connIt->connId,
+		groupConfigMap[connIt->grpSrc].grpName.c_str(), connIt->grpSrc,
+		groupConfigMap[connIt->grpDest].grpName.c_str(), connIt->grpDest);
 	KERNEL_INFO("    |- Type                       = %s", GET_FIXED_PLASTIC(connIt->connProp)==SYN_PLASTIC?" PLASTIC":"   FIXED")
 	KERNEL_INFO("    |- Min weight                 = %8.5f", 0.0f); // \TODO
 	KERNEL_INFO("    |- Max weight                 = %8.5f", fabs(connIt->maxWt));
@@ -242,36 +243,36 @@ void SNN::printGroupInfo(int gGrpId) {
 	KERNEL_INFO("  - numPreSynapses             = %8d", groupConfigMDMap[gGrpId].numPreSynapses);
 
 	if (snnState == EXECUTABLE_SNN) {
-		KERNEL_INFO("  - Avg post connections       = %8.5f", ((float)groupInfo[gGrpId].numPostConn)/groupConfigMap[gGrpId].SizeN);
-		KERNEL_INFO("  - Avg pre connections        = %8.5f",  ((float)groupInfo[gGrpId].numPreConn)/groupConfigMap[gGrpId].SizeN);
+		KERNEL_INFO("  - Avg post connections       = %8.5f", ((float)groupConfigMDMap[gGrpId].numPostSynapses)/groupConfigMap[gGrpId].numN);
+		KERNEL_INFO("  - Avg pre connections        = %8.5f",  ((float)groupConfigMDMap[gGrpId].numPreSynapses )/groupConfigMap[gGrpId].numN);
 	}
 
-	if(groupConfigMap[gGrpId].Type&POISSON_NEURON) {
-		KERNEL_INFO("  - Refractory period          = %8.5f", groupConfigMap[gGrpId].RefractPeriod);
+	if(groupConfigMap[gGrpId].type & POISSON_NEURON) {
+		KERNEL_INFO("  - Refractory period          = %8.5f", groupConfigMDMap[gGrpId].refractPeriod);
 	}
 
-	if (groupConfigMap[gGrpId].WithSTP) {
+	if (groupConfigMap[gGrpId].stpConfig.WithSTP) {
 		KERNEL_INFO("  - STP:");
-		KERNEL_INFO("      - STP_A                  = %8.5f", groupConfigMap[gGrpId].STP_A);
-		KERNEL_INFO("      - STP_U                  = %8.5f", groupConfigMap[gGrpId].STP_U);
-		KERNEL_INFO("      - STP_tau_u              = %8d", (int) (1.0f/groupConfigMap[gGrpId].STP_tau_u_inv));
-		KERNEL_INFO("      - STP_tau_x              = %8d", (int) (1.0f/groupConfigMap[gGrpId].STP_tau_x_inv));
+		KERNEL_INFO("      - STP_A                  = %8.5f", groupConfigMap[gGrpId].stpConfig.STP_A);
+		KERNEL_INFO("      - STP_U                  = %8.5f", groupConfigMap[gGrpId].stpConfig.STP_U);
+		KERNEL_INFO("      - STP_tau_u              = %8d", (int) (1.0f/groupConfigMap[gGrpId].stpConfig.STP_tau_u_inv));
+		KERNEL_INFO("      - STP_tau_x              = %8d", (int) (1.0f/groupConfigMap[gGrpId].stpConfig.STP_tau_x_inv));
 	}
 
-	if(groupConfigMap[gGrpId].WithSTDP) {
+	if(groupConfigMap[gGrpId].stdpConfig.WithSTDP) {
 		KERNEL_INFO("  - STDP:")
-		KERNEL_INFO("      - E-STDP TYPE            = %s",     groupConfigMap[gGrpId].WithESTDPtype==STANDARD? "STANDARD" :
-			(groupConfigMap[gGrpId].WithESTDPtype==DA_MOD?"  DA_MOD":" UNKNOWN"));
-		KERNEL_INFO("      - I-STDP TYPE            = %s",     groupConfigMap[gGrpId].WithISTDPtype==STANDARD? "STANDARD" :
-			(groupConfigMap[gGrpId].WithISTDPtype==DA_MOD?"  DA_MOD":" UNKNOWN"));
-		KERNEL_INFO("      - ALPHA_PLUS_EXC         = %8.5f", groupConfigMap[gGrpId].ALPHA_PLUS_EXC);
-		KERNEL_INFO("      - ALPHA_MINUS_EXC        = %8.5f", groupConfigMap[gGrpId].ALPHA_MINUS_EXC);
-		KERNEL_INFO("      - TAU_PLUS_INV_EXC       = %8.5f", groupConfigMap[gGrpId].TAU_PLUS_INV_EXC);
-		KERNEL_INFO("      - TAU_MINUS_INV_EXC      = %8.5f", groupConfigMap[gGrpId].TAU_MINUS_INV_EXC);
-		KERNEL_INFO("      - BETA_LTP               = %8.5f", groupConfigMap[gGrpId].BETA_LTP);
-		KERNEL_INFO("      - BETA_LTD               = %8.5f", groupConfigMap[gGrpId].BETA_LTD);
-		KERNEL_INFO("      - LAMBDA                 = %8.5f", groupConfigMap[gGrpId].LAMBDA);
-		KERNEL_INFO("      - DELTA                  = %8.5f", groupConfigMap[gGrpId].DELTA);
+		KERNEL_INFO("      - E-STDP TYPE            = %s",     groupConfigMap[gGrpId].stdpConfig.WithESTDPtype == STANDARD ? "STANDARD" :
+			(groupConfigMap[gGrpId].stdpConfig.WithESTDPtype == DA_MOD ? "  DA_MOD" : " UNKNOWN"));
+		KERNEL_INFO("      - I-STDP TYPE            = %s",     groupConfigMap[gGrpId].stdpConfig.WithISTDPtype == STANDARD ? "STANDARD" :
+			(groupConfigMap[gGrpId].stdpConfig.WithISTDPtype == DA_MOD?"  DA_MOD":" UNKNOWN"));
+		KERNEL_INFO("      - ALPHA_PLUS_EXC         = %8.5f", groupConfigMap[gGrpId].stdpConfig.ALPHA_PLUS_EXC);
+		KERNEL_INFO("      - ALPHA_MINUS_EXC        = %8.5f", groupConfigMap[gGrpId].stdpConfig.ALPHA_MINUS_EXC);
+		KERNEL_INFO("      - TAU_PLUS_INV_EXC       = %8.5f", groupConfigMap[gGrpId].stdpConfig.TAU_PLUS_INV_EXC);
+		KERNEL_INFO("      - TAU_MINUS_INV_EXC      = %8.5f", groupConfigMap[gGrpId].stdpConfig.TAU_MINUS_INV_EXC);
+		KERNEL_INFO("      - BETA_LTP               = %8.5f", groupConfigMap[gGrpId].stdpConfig.BETA_LTP);
+		KERNEL_INFO("      - BETA_LTD               = %8.5f", groupConfigMap[gGrpId].stdpConfig.BETA_LTD);
+		KERNEL_INFO("      - LAMBDA                 = %8.5f", groupConfigMap[gGrpId].stdpConfig.LAMBDA);
+		KERNEL_INFO("      - DELTA                  = %8.5f", groupConfigMap[gGrpId].stdpConfig.DELTA);
 	}
 }
 

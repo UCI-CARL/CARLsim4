@@ -473,6 +473,7 @@ typedef struct GroupConfigRT_s {
 	int          numPostSynapses;   //!< the total number of post-connections of a group, published by GroupConfigMD \sa GroupConfigMD
 	int          numPreSynapses;    //!< the total number of pre-connections of a group, published by GroupConfigMD \sa GroupConfigMD
 	bool         isSpikeGenerator;  //!< published by GroupConfig \sa GroupConfig
+	bool         isSpikeGenFunc;    //!< published by GroupConfig \sa GroupConfig
 	bool         WithSTP;           //!< published by GroupConfig \sa GroupConfig
 	bool         WithSTDP;          //!< published by GroupConfig \sa GroupConfig
 	bool         WithESTDP;         //!< published by GroupConfig \sa GroupConfig
@@ -522,9 +523,6 @@ typedef struct GroupConfigRT_s {
 	float decay5HT;//!< decay rate for Serotonin, published by GroupConfig \sa GroupConfig
 	float decayACh;//!< decay rate for Acetylcholine, published by GroupConfig \sa GroupConfig
 	float decayNE; //!< decay rate for Noradrenaline, published by GroupConfig \sa GroupConfig
-
-	SpikeGeneratorCore*	spikeGenFunc; //!< published by GroupConfig \sa GroupConfig
-	PoissonRate* ratePtr; //!< published by GroupConfigMD \sa GroupConfigMD
 } GroupConfigRT;
 
 /*!

@@ -93,7 +93,7 @@ void SNN::doD2CurrentUpdate() {
 		int tD = simTimeMs - t_pos;
 
 		assert((tD<glbNetworkConfig.maxDelay)&&(tD>=0));
-		assert(i<numN);
+		assert(i < glbNetworkConfig.numN);
 
 		DelayInfo dPar = managerRuntimeData.postDelayInfo[i*(glbNetworkConfig.maxDelay+1)+tD];
 
@@ -132,12 +132,13 @@ void SNN::doSnnSim() {
 	return;
 }
 
+// FIXME: wrong to use groupConfigs[0]
 void SNN::doSTPUpdateAndDecayCond() {
 	int spikeBufferFull = 0;
 
 	//decay the STP variables before adding new spikes.
 	for(int g=0; (g < numGroups) & !spikeBufferFull; g++) {
-		for(int i=groupConfigs[0][g].StartN; i<=groupConfigs[0][g].EndN; i++) {
+		for(int i=groupConfigs[0][g].lStartN; i<=groupConfigs[0][g].lEndN; i++) {
 	   		//decay the STP variables before adding new spikes.
 			if (groupConfigs[0][g].WithSTP) {
 				int ind_plus  = STP_BUF_POS(i,simTime);
@@ -175,6 +176,7 @@ void SNN::doSTPUpdateAndDecayCond() {
 	}
 }
 
+// FIXME: wrong to use groupConfigs[0]
 void SNN::findFiring() {
 	int spikeBufferFull = 0;
 
@@ -184,9 +186,9 @@ void SNN::findFiring() {
 			continue;
 
 		// his flag is set if with_stdp is set and also grpType is set to have GROUP_SYN_FIXED
-		for(int i=groupConfigs[0][g].StartN; i <= groupConfigs[0][g].EndN; i++) {
+		for(int i=groupConfigs[0][g].lStartN; i <= groupConfigs[0][g].lEndN; i++) {
 
-			assert(i < numNReg);
+			assert(i < glbNetworkConfig.numNReg);
 
 			if (managerRuntimeData.voltage[i] >= 30.0) {
 				managerRuntimeData.voltage[i] = managerRuntimeData.Izh_c[i];
@@ -262,7 +264,7 @@ void SNN::generatePostSpike(unsigned int pre_i, unsigned int idx_d, unsigned int
 
 	// get post-neuron id
 	unsigned int post_i = GET_CONN_NEURON_ID(post_info);
-	assert(post_i<numN);
+	assert(post_i < glbNetworkConfig.numN);
 
 	// get syn id
 	int s_i = GET_CONN_SYN_ID(post_info);
@@ -270,7 +272,7 @@ void SNN::generatePostSpike(unsigned int pre_i, unsigned int idx_d, unsigned int
 
 	// get the cumulative position for quick access
 	unsigned int pos_i = managerRuntimeData.cumulativePre[post_i] + s_i;
-	assert(post_i < numNReg); // \FIXME is this assert supposed to be for pos_i?
+	assert(post_i < glbNetworkConfig.numNReg); // \FIXME is this assert supposed to be for pos_i?
 
 	// get group id of pre- / post-neuron
 	short int post_grpId = managerRuntimeData.grpIds[post_i];
@@ -407,14 +409,15 @@ void SNN::generateSpikes() {
 	spikeBuf->step();
 }
 
+// FIXME: wrong to use groupConfigs[0]
 void SNN::generateSpikesFromFuncPtr(int grpId) {
 	// \FIXME this function is a mess
 	bool done;
-	SpikeGeneratorCore* spikeGenFunc = groupConfigs[0][grpId].spikeGenFunc;
-	int timeSlice = groupConfigs[0][grpId].CurrTimeSlice;
+	SpikeGeneratorCore* spikeGenFunc = groupConfigMap[grpId].spikeGenFunc;
+	int timeSlice = groupConfigMDMap[grpId].currTimeSlice;
 	int currTime = simTime;
 	int spikeCnt = 0;
-	for(int i = groupConfigs[0][grpId].StartN; i <= groupConfigs[0][grpId].EndN; i++) {
+	for(int i = groupConfigs[0][grpId].gStartN; i <= groupConfigs[0][grpId].gEndN; i++) {
 		// start the time from the last time it spiked, that way we can ensure that the refractory period is maintained
 		int nextTime = managerRuntimeData.lastSpikeTime[i];
 		if (nextTime == MAX_SIMULATION_TIME)
@@ -427,7 +430,7 @@ void SNN::generateSpikesFromFuncPtr(int grpId) {
 		done = false;
 		while (!done) {
 			// generate the next spike time (nextSchedTime) from the nextSpikeTime callback
-			int nextSchedTime = spikeGenFunc->nextSpikeTime(this, grpId, i - groupConfigs[0][grpId].StartN, currTime, 
+			int nextSchedTime = spikeGenFunc->nextSpikeTime(this, grpId, i - groupConfigs[0][grpId].gStartN, currTime, 
 				nextTime, endOfTimeWindow);
 
 			// the generated spike time is valid only if:
@@ -468,9 +471,9 @@ void SNN::generateSpikesFromRate(int gGrpId) {
 	}
 
 	const int nNeur = rate->getNumNeurons();
-	if (nNeur != groupConfigs[0][gGrpId].numN) {
+	if (nNeur != groupConfigMap[gGrpId].numN) {
 		KERNEL_ERROR("Length of PoissonRate array (%d) did not match number of neurons (%d) for group %d(%s).",
-			nNeur, groupConfigs[0][grpId].numN, gGrpId, getGroupName(gGrpId).c_str());
+			nNeur, groupConfigMap[gGrpId].numN, gGrpId, groupConfigMap[gGrpId].grpName.c_str());
 		exitSimulation(1);
 	}
 
@@ -478,7 +481,7 @@ void SNN::generateSpikesFromRate(int gGrpId) {
 		float frate = rate->getRate(neurId);
 
 		// start the time from the last time it spiked, that way we can ensure that the refractory period is maintained
-		int nextTime = managerRuntimeData.lastSpikeTime[groupConfigs[0][grpId].StartN + neurId];
+		int nextTime = managerRuntimeData.lastSpikeTime[groupConfigMDMap[gGrpId].gStartN + neurId];
 		if (nextTime == MAX_SIMULATION_TIME)
 			nextTime = 0;
 
@@ -489,7 +492,7 @@ void SNN::generateSpikesFromRate(int gGrpId) {
 			if (nextTime < (currTime+timeSlice)) {
 				if (nextTime >= currTime) {
 //					int nid = groupConfigs[0][grpId].StartN+cnt;
-					spikeBuf->schedule(groupConfigs[0][grpId].StartN + neurId, nextTime-currTime);
+					spikeBuf->schedule(groupConfigMDMap[gGrpId].gStartN + neurId, nextTime-currTime);
 					spikeCnt++;
 				}
 			}
@@ -500,14 +503,15 @@ void SNN::generateSpikesFromRate(int gGrpId) {
 	}
 }
 
+// FIXME: wrong to use groupConfigs[0]
 void  SNN::globalStateUpdate() {
 	double tmp_iNMDA, tmp_I;
 	double tmp_gNMDA, tmp_gGABAb;
 
-	for(int g=0; g < numGroups; g++) {
-		if (groupConfigs[0][g].Type&POISSON_NEURON) {
+	for(int g = 0; g < numGroups; g++) {
+		if (groupConfigs[0][g].Type & POISSON_NEURON) {
 			if (groupConfigs[0][g].WithHomeostasis) {
-				for(int i=groupConfigs[0][g].StartN; i <= groupConfigs[0][g].EndN; i++)
+				for(int i=groupConfigs[0][g].gStartN; i <= groupConfigs[0][g].gEndN; i++)
 					managerRuntimeData.avgFiring[i] *= groupConfigs[0][g].avgTimeScale_decay;
 			}
 			continue;
@@ -519,8 +523,8 @@ void  SNN::globalStateUpdate() {
 		}
 		managerRuntimeData.grpDABuffer[g * 1000 + simTimeMs] = managerRuntimeData.grpDA[g];
 
-		for(int i=groupConfigs[0][g].StartN; i <= groupConfigs[0][g].EndN; i++) {
-			assert(i < numNReg);
+		for(int i=groupConfigs[0][g].gStartN; i <= groupConfigs[0][g].gEndN; i++) {
+			assert(i < glbNetworkConfig.numNReg);
 			// update average firing rate for homeostasis
 			if (groupConfigs[0][g].WithHomeostasis)
 				managerRuntimeData.avgFiring[i] *= groupConfigs[0][g].avgTimeScale_decay;
@@ -578,6 +582,7 @@ void  SNN::globalStateUpdate() {
 	} // end numGroups
 }
 
+// FIXME: wrong to use groupConfigs[0]
 // This function updates the synaptic weights from its derivatives..
 void SNN::updateWeights() {
 	// at this point we have already checked for sim_in_testing and sim_with_fixedwts
@@ -590,8 +595,8 @@ void SNN::updateWeights() {
 		if(groupConfigs[0][g].FixedInputWts || !(groupConfigs[0][g].WithSTDP))
 			continue;
 
-		for(int i = groupConfigs[0][g].StartN; i <= groupConfigs[0][g].EndN; i++) {
-			assert(i < numNReg);
+		for(int i = groupConfigs[0][g].gStartN; i <= groupConfigs[0][g].gEndN; i++) {
+			assert(i < glbNetworkConfig.numNReg);
 			unsigned int offset = managerRuntimeData.cumulativePre[i];
 			float diff_firing = 0.0;
 			float homeostasisScale = 1.0;
@@ -602,7 +607,7 @@ void SNN::updateWeights() {
 				homeostasisScale = groupConfigs[0][g].homeostasisScale;
 			}
 
-			if (i==groupConfigs[0][g].StartN)
+			if (i==groupConfigs[0][g].gStartN)
 				KERNEL_DEBUG("Weights, Change at %d (diff_firing: %f)", simTimeSec, diff_firing);
 
 			for(int j = 0; j < managerRuntimeData.Npre_plastic[i]; j++) {

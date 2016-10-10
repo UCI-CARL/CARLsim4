@@ -483,7 +483,9 @@ public:
 	LoggerMode getLoggerMode() { return loggerMode_; }
 
 	// get functions for GroupInfo
-	int getGroupNumNeurons(int grpId)     { return groupConfigMap[grpId].numN; }
+	int getGroupStartNeuronId(int gGrpId) { return groupConfigMDMap[gGrpId].gStartN; }
+	int getGroupEndNeuronId(int gGrpId) { return groupConfigMDMap[gGrpId].gEndN; }
+	int getGroupNumNeurons(int grpId) { return groupConfigMap[grpId].numN; }
 
 	std::string getNetworkName() { return networkName_; }
 
@@ -493,13 +495,13 @@ public:
 	int getNumConnections() { return numConnections; }
 	int getNumSynapticConnections(short int connectionId);		//!< gets number of connections associated with a connection ID
 	int getNumGroups() { return numGroups; }
-	//int getNumNeurons() { return numN; }
-	//int getNumNeuronsReg() { return numNReg; }
-	//int getNumNeuronsRegExc() { return numNExcReg; }
-	//int getNumNeuronsRegInh() { return numNInhReg; }
-	//int getNumNeuronsGen() { return numNPois; }
-	//int getNumNeuronsGenExc() { return numNExcPois; }
-	//int getNumNeuronsGenInh() { return numNInhPois; }
+	int getNumNeurons() { return glbNetworkConfig.numN; }
+	int getNumNeuronsReg() { return glbNetworkConfig.numNReg; }
+	int getNumNeuronsRegExc() { return glbNetworkConfig.numNExcReg; }
+	int getNumNeuronsRegInh() { return glbNetworkConfig.numNInhReg; }
+	int getNumNeuronsGen() { return glbNetworkConfig.numNPois; }
+	int getNumNeuronsGenExc() { return glbNetworkConfig.numNExcPois; }
+	int getNumNeuronsGenInh() { return glbNetworkConfig.numNInhPois; }
 	int getNumPreSynapses() { return networkConfigs[0].numPreSynNet; }
 	int getNumPostSynapses() { return networkConfigs[0].numPostSynNet; }
 
@@ -577,8 +579,8 @@ private:
 	//! add the entry that the current neuron has spiked
 	int  addSpikeToTable(int nId, int grpId);
 
-	int assignGroup(int groupId, int availableNeuronId);
-	int assignGroup(std::list<GroupConfigMD>::iterator grpIt, int localGroupId, int availableNeuronId);
+	int assignGroup(int gGrpId, int availableNeuronId);
+	int assignGroup(int gGrpId, int localGroupId, int availableNeuronId);
 	void generateGroupRuntime(int netId, int lGrpId);
 	void generatePoissonGroupRuntime(int netId, int lGrpId);
 	void generateConnectionRuntime(int netId);
