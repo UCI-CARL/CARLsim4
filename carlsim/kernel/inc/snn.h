@@ -541,10 +541,10 @@ public:
 	//! returns RangeWeight struct of a connection
 	RangeWeight getWeightRange(short int connId);
 
-	bool isExcitatoryGroup(int g) { return (groupConfigMap[g].type & TARGET_AMPA) || (groupConfigMap[g].type & TARGET_NMDA); }
-	bool isInhibitoryGroup(int g) { return (groupConfigMap[g].type & TARGET_GABAa) || (groupConfigMap[g].type & TARGET_GABAb); }
-	bool isPoissonGroup(int g) { return (groupConfigMap[g].type & POISSON_NEURON); }
-	bool isDopaminergicGroup(int g) { return (groupConfigMap[g].type & TARGET_DA); }
+	bool isExcitatoryGroup(int gGrpId) { return (groupConfigMap[gGrpId].type & TARGET_AMPA) || (groupConfigMap[gGrpId].type & TARGET_NMDA); }
+	bool isInhibitoryGroup(int gGrpId) { return (groupConfigMap[gGrpId].type & TARGET_GABAa) || (groupConfigMap[gGrpId].type & TARGET_GABAb); }
+	bool isPoissonGroup(int gGrpId) { return (groupConfigMap[gGrpId].type & POISSON_NEURON); }
+	bool isDopaminergicGroup(int gGrpId) { return (groupConfigMap[gGrpId].type & TARGET_DA); }
 
 	//! returns whether group has homeostasis enabled (true) or not (false)
 	bool isGroupWithHomeostasis(int grpId);
@@ -580,7 +580,7 @@ private:
 	int  addSpikeToTable(int nId, int grpId);
 
 	int assignGroup(int gGrpId, int availableNeuronId);
-	int assignGroup(int gGrpId, int localGroupId, int availableNeuronId);
+	int assignGroup(std::list<GroupConfigMD>::iterator grpIt, int localGroupId, int availableNeuronId);
 	void generateGroupRuntime(int netId, int lGrpId);
 	void generatePoissonGroupRuntime(int netId, int lGrpId);
 	void generateConnectionRuntime(int netId);

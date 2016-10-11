@@ -281,7 +281,7 @@ void SNN::printGroupInfo(int netId, std::list<GroupConfigMD>::iterator grpIt) {
 	KERNEL_INFO("    |- Type                       =  %s", isExcitatoryGroup(grpIt->gGrpId) ? "  EXCIT" :
 		(isInhibitoryGroup(grpIt->gGrpId) ? "  INHIB" : (isPoissonGroup(grpIt->gGrpId)?" POISSON" :
 		(isDopaminergicGroup(grpIt->gGrpId) ? "  DOPAM" : " UNKNOWN"))) );
-	KERNEL_INFO("    |- Size                       = %8d", groupConfigMap[grpIt->gGrpId].numN);
+	KERNEL_INFO("    |- Num of Neurons             = %8d", groupConfigMap[grpIt->gGrpId].numN);
 	KERNEL_INFO("    |- Start Id                   = (G:%d,L:%d)", grpIt->gStartN, grpIt->lStartN);
 	KERNEL_INFO("    |- End Id                     = (G:%d,L:%d)", grpIt->gEndN, grpIt->lEndN);
 	KERNEL_INFO("    |- numPostSynapses            = %8d", grpIt->numPostSynapses);
