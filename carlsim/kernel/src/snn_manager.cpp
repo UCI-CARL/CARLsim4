@@ -2019,8 +2019,8 @@ int SNN::addSpikeToTable(int nid, int g) {
 	if (groupConfigs[0][g].WithSTP) {
 		// update the spike-dependent part of du/dt and dx/dt
 		// we need to retrieve the STP values from the right buffer position (right before vs. right after the spike)
-		int ind_plus = STP_BUF_POS(nid,simTime); // index of right after the spike, such as in u^+
-	    int ind_minus = STP_BUF_POS(nid,(simTime-1)); // index of right before the spike, such as in u^-
+		int ind_plus = STP_BUF_POS(nid, simTime, glbNetworkConfig.maxDelay); // index of right after the spike, such as in u^+
+	    int ind_minus = STP_BUF_POS(nid, (simTime-1), glbNetworkConfig.maxDelay); // index of right before the spike, such as in u^-
 
 		// du/dt = -u/tau_F + U * (1-u^-) * \delta(t-t_{spk})
 		managerRuntimeData.stpu[ind_plus] += groupConfigs[0][g].STP_U*(1.0-managerRuntimeData.stpu[ind_minus]);
@@ -4247,7 +4247,7 @@ void SNN::resetNeuron(int netId, int lGrpId, int lNId) {
 
 	if(groupConfigs[netId][lGrpId].WithSTP) {
 		for (int j = 0; j <= networkConfigs[netId].maxDelay; j++) { // is of size maxDelay_+1
-			int index = STP_BUF_POS(lNId, j);
+			int index = STP_BUF_POS(lNId, j, networkConfigs[netId].maxDelay);
 			managerRuntimeData.stpu[index] = 0.0f;
 			managerRuntimeData.stpx[index] = 1.0f;
 		}
@@ -4411,7 +4411,7 @@ void SNN::resetPoissonNeuron(int netId, int lGrpId, int lNId) {
 
 	if (groupConfigs[netId][lGrpId].WithSTP) {
 		for (int j = 0; j <= networkConfigs[netId].maxDelay; j++) { // is of size maxDelay_+1
-			int index = STP_BUF_POS(lNId, j);
+			int index = STP_BUF_POS(lNId, j, networkConfigs[netId].maxDelay);
 			managerRuntimeData.stpu[index] = 0.0f;
 			managerRuntimeData.stpx[index] = 1.0f;
 		}

@@ -141,8 +141,8 @@ void SNN::doSTPUpdateAndDecayCond() {
 		for(int i=groupConfigs[0][g].lStartN; i<=groupConfigs[0][g].lEndN; i++) {
 	   		//decay the STP variables before adding new spikes.
 			if (groupConfigs[0][g].WithSTP) {
-				int ind_plus  = STP_BUF_POS(i,simTime);
-				int ind_minus = STP_BUF_POS(i,(simTime-1));
+				int ind_plus  = STP_BUF_POS(i, simTime, glbNetworkConfig.maxDelay);
+				int ind_minus = STP_BUF_POS(i, (simTime-1), glbNetworkConfig.maxDelay);
 				managerRuntimeData.stpu[ind_plus] = managerRuntimeData.stpu[ind_minus]*(1.0-groupConfigs[0][g].STP_tau_u_inv);
 				managerRuntimeData.stpx[ind_plus] = managerRuntimeData.stpx[ind_minus] + (1.0-managerRuntimeData.stpx[ind_minus])*groupConfigs[0][g].STP_tau_x_inv;
 			}
@@ -299,8 +299,8 @@ void SNN::generatePostSpike(unsigned int pre_i, unsigned int idx_d, unsigned int
 
 		// dI/dt = -I/tau_S + A * u^+ * x^- * \delta(t-t_{spk})
 		// I noticed that for connect(.., RangeDelay(1), ..) tD will be 0
-		int ind_minus = STP_BUF_POS(pre_i,(simTime-tD-1));
-		int ind_plus  = STP_BUF_POS(pre_i,(simTime-tD));
+		int ind_minus = STP_BUF_POS(pre_i, (simTime-tD-1), glbNetworkConfig.maxDelay);
+		int ind_plus  = STP_BUF_POS(pre_i, (simTime-tD), glbNetworkConfig.maxDelay);
 
 		change *= groupConfigs[0][pre_grpId].STP_A*managerRuntimeData.stpu[ind_plus]*managerRuntimeData.stpx[ind_minus];
 
