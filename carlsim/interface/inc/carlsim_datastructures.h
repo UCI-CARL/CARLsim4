@@ -423,23 +423,31 @@ typedef struct GroupNeuromodulatorInfo_s {
  *   N                             the total number of neurons on the grid, N=x*y*z
  */
 struct Grid3D {
+	Grid3D() : numX(-1), numY(-1), numZ(-1), N(-1),
+	                 distX(-1.0f), distY(-1.0f), distZ(-1.0f),
+	                 offsetX(-1.0f), offsetY(-1.0f), offsetZ(-1.0f) {
+	}
+
     Grid3D(int _x) : numX(_x), numY(1), numZ(1), N(_x),
 	                 distX(1.0f), distY(1.0f), distZ(1.0f),
 	                 offsetX(1.0f), offsetY(1.0f), offsetZ(1.0f) {
         UserErrors::assertTrue(_x > 0, UserErrors::MUST_BE_POSITIVE, "Grid3D", "numX");
     }
+
 	Grid3D(int _x, float _distX, float _offsetX) : numX(_x), numY(1), numZ(1), N(_x),
 	                                               distX(_distX), distY(1.0f), distZ(1.0f),
 	                                               offsetX(_offsetX), offsetY(1.0f), offsetZ(1.0f) {
 		UserErrors::assertTrue(_x > 0, UserErrors::MUST_BE_POSITIVE, "Grid3D", "numX");
 		UserErrors::assertTrue(_distX > 0.0f, UserErrors::MUST_BE_POSITIVE, "Grid3D", "distX");
 	}
+
     Grid3D(int _x, int _y) : numX(_x), numY(_y), numZ(1), N(_x * _y),
 	                         distX(1.0f), distY(1.0f), distZ(1.0f),
 	                         offsetX(1.0f), offsetY(1.0f), offsetZ(1.0f) {
         UserErrors::assertTrue(_x > 0, UserErrors::MUST_BE_POSITIVE, "Grid3D", "numX");
         UserErrors::assertTrue(_y > 0, UserErrors::MUST_BE_POSITIVE, "Grid3D", "numY");
     }
+
 	Grid3D(int _x, float _distX, float _offsetX, int _y, float _distY, float _offsetY)
 		: numX(_x), numY(_y), numZ(1), N(_x * _y),
 		  distX(_distX), distY(_distY), distZ(1.0f),

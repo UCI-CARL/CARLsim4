@@ -93,8 +93,7 @@
 // \FIXME D is the SNN member variable for the max delay in the network, give it a better name dammit!!
 // we actually need D+1 entries. Say D=1ms. Then to update the current we need u^+ (right after the pre-spike, so
 // at t) and x^- (right before the spike, so at t-1).
-#define STP_BUF_POS(nid,t) ( nid*(maxDelay_+1) + ((t)%(maxDelay_+1)) )
-
+#define STP_BUF_POS(nid, t, maxDelay) (nid * (maxDelay + 1) + ((t) % (maxDelay + 1)))
 
 // use these macros for logging / error printing
 // every message will be printed to one of fpOut_, fpErr_, fpDeb_ depending on the nature of the message
@@ -129,11 +128,7 @@
 
 #define COND_INTEGRATION_SCALE	2
 
-#define UNKNOWN_NEURON_MAX_FIRING_RATE    	25
-#define INHIBITORY_NEURON_MAX_FIRING_RATE 1000
-#define EXCITATORY_NEURON_MAX_FIRING_RATE 1000
-#define POISSON_MAX_FIRING_RATE           1000
-#define NEURON_MAX_FIRING_RATE            500
+#define NEURON_MAX_FIRING_RATE 500
 
 #define STDP(t,a,b)       ((a)*exp(-(t)*(b))) // consider to use __expf(), which is accelerated by GPU hardware
 

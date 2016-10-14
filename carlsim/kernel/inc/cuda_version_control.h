@@ -52,7 +52,7 @@
 	#include <helper_cuda.h>
 	#include <helper_functions.h>
 	#include <helper_timer.h>
-	#include <helper_math.h>
+	//#include <helper_math.h>
 
 	#define CUDA_CREATE_TIMER(x) sdkCreateTimer(&(x))
 	#define CUDA_DELETE_TIMER(x) sdkDeleteTimer(&(x))
