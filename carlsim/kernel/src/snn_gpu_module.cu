@@ -616,7 +616,8 @@ __global__ 	void kernel_findFiring (int simTime) {
 
 	if (threadIdx.x == 0) {
 		fireCnt	  = 0; // initialize total cnt to 0
-		fireCntD1  = 0; // initialize inh. cnt to 0
+		fireCntD1  = 0; // initialize d1 cnt to 0
+		fireCntTest = 0; // initialize test cnt to 0
 	}
 
 	const int totBuffers=loadBufferCount;
@@ -687,7 +688,7 @@ __global__ 	void kernel_findFiring (int simTime) {
 					updateLTP (fireTable, fireGrpId, fireCnt, simTime);
 
 				// reset counters
-				if (0==threadIdx.x) {
+				if (threadIdx.x == 0) {
 					fireCntD1  = 0;
 					fireCnt   = 0;
 					fireCntTest = 0;
