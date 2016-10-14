@@ -1840,7 +1840,7 @@ void SNN::allocateSNN(int netId) {
 		allocateSNN_GPU(netId);
 		break;
 	case CPU_MODE:
-		allocateSNN_CPU();
+		allocateSNN_CPU(netId);
 		break;
 	default:
 		KERNEL_ERROR("Unknown simMode_");
@@ -1848,12 +1848,7 @@ void SNN::allocateSNN(int netId) {
 	}
 }
 
-void SNN::allocateSNN_CPU() {
-	managerRuntimeData.allocated = true;
-	managerRuntimeData.memType = CPU_MODE;
-}
-
-void SNN::allocateRuntimeData() {
+void SNN::allocateManagerRuntimeData() {
 	managerRuntimeData.voltage    = new float[managerRTDSize.maxNumNReg];
 	managerRuntimeData.recovery   = new float[managerRTDSize.maxNumNReg];
 	managerRuntimeData.Izh_a      = new float[managerRTDSize.maxNumNReg];
@@ -4052,13 +4047,13 @@ void SNN::generateRuntimeSNN() {
 	// 2. allocate space of runtime data used by the manager
 	// - allocate firingTableD1, firingTableD2, timeTableD1, timeTableD2
 	// - reset firingTableD1, firingTableD2, timeTableD1, timeTableD2
-	allocateSpikeTables();
+	allocateManagerSpikeTables();
 	// - allocate voltage, recovery, Izh_a, Izh_b, Izh_c, Izh_d, current, extCurrent, gAMPA, gNMDA, gGABAa, gGABAb
 	// lastSpikeTime, nSpikeCnt, stpu, stpx, Npre, Npre_plastic, Npost, cumulativePost, cumulativePre,
 	// postSynapticIds, postDelayInfo, wt, wtChange, synSpikeTime, maxSynWt, preSynapticIds, grpIds, connIdsPreIdx,
 	// grpDA, grp5HT, grpACh, grpNE, grpDABuffer, grp5HTBuffer, grpAChBuffer, grpNEBuffer, mulSynFast, mulSynSlow
 	// - reset all above
-	allocateRuntimeData();
+	allocateManagerRuntimeData();
 
 	// 3. initialize manager runtime data according to partitions (i.e., local networks)
 	// 4a. allocate appropriate memory space (e.g., main memory (CPU) or device memory (GPU)).
@@ -4735,7 +4730,7 @@ void SNN::updateSpikeGenerators() {
  *
  * \note SpikeTables include firingTableD1(D2) and timeTableD1(D2)
  */
-void SNN::allocateSpikeTables() {
+void SNN::allocateManagerSpikeTables() {
 	//managerRuntimeData.firingTableD2 = new int[managerRTDSize.maxMaxSpikeD2];
 	//managerRuntimeData.firingTableD1 = new int[managerRTDSize.maxMaxSpikeD1];
 	//managerRuntimeData.extFiringTableEndIdxD2 = new int[managerRTDSize.maxNumGroups];

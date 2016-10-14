@@ -713,3 +713,8 @@ void SNN::shiftSpikeTables() {
 	spikeCountSec = 0;
 	spikeCountD2Sec = timeTableD2[glbNetworkConfig.maxDelay];
 }
+
+void SNN::allocateSNN_CPU(int netId) {
+	managerRuntimeData.allocated = true;
+	managerRuntimeData.memType = CPU_MODE;
+}

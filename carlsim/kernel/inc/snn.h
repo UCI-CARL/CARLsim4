@@ -574,7 +574,7 @@ private:
 	void SNNinit();
 
 	//! allocates and initializes all core datastructures
-	void allocateRuntimeData();
+	void allocateManagerRuntimeData();
 
 	//! add the entry that the current neuron has spiked
 	int  addSpikeToTable(int nId, int grpId);
@@ -750,7 +750,7 @@ private:
 	void updateSpikesFromGrp(int grpId);
 	void updateSpikeGenerators();
 
-	void allocateSpikeTables();
+	void allocateManagerSpikeTables();
 	//void updateStateAndFiringTable();
 	bool updateTime(); //!< updates simTime, returns true when a new second is started
 	// +++++ GPU MODE +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
@@ -758,7 +758,7 @@ private:
 
 	void allocateGroupId(int netId);
 	void allocateSNN_GPU(int netId); //!< allocates runtime data on GPU memory and initialize GPU
-	void allocateSNN_CPU(); //!< allocates runtime data on CPU memory
+	void allocateSNN_CPU(int netId); //!< allocates runtime data on CPU memory
 	int  allocateStaticLoad(int netId, int bufSize);
 
 	void assignPoissonFiringRate_GPU();
@@ -989,7 +989,7 @@ private:
 	ConnectionMonitor*     connMonList[MAX_CONN_PER_SNN];
 
 	RuntimeData gpuRuntimeData[MAX_NET_PER_SNN];
-	//RuntimeData cpuRuntimeData;
+	RuntimeData cpuRuntimeData[MAX_NET_PER_SNN];
 	RuntimeData managerRuntimeData;
 
 	typedef struct ManagerRuntimeDataSize_s {
