@@ -19,11 +19,11 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="include\cuda_version_control.h" />
-    <ClInclude Include="include\error_code.h" />
-    <ClInclude Include="include\snn.h" />
-    <ClInclude Include="include\snn_datastructures.h" />
-    <ClInclude Include="include\snn_definitions.h" />
+    <ClInclude Include="inc\cuda_version_control.h" />
+    <ClInclude Include="inc\error_code.h" />
+    <ClInclude Include="inc\snn.h" />
+    <ClInclude Include="inc\snn_datastructures.h" />
+    <ClInclude Include="inc\snn_definitions.h" />
     <ClInclude Include="inc\spike_buffer.h" />
   </ItemGroup>
   <ItemGroup>
