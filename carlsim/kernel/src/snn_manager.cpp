@@ -2097,6 +2097,8 @@ void SNN::generateRuntimeGroupConfigs() {
 			int gGrpId = grpIt->gGrpId;
 			int lGrpId = grpIt->lGrpId;
 
+			// Data published by groupConfigMDMap[] are generated in compileSNN() and are invariant in partitionSNN()
+			// Data published by grpIt are generated in partitionSNN() and maybe have duplicated copys
 			groupConfigs[netId][lGrpId].netId = groupConfigMDMap[gGrpId].netId;
 			groupConfigs[netId][lGrpId].gGrpId = groupConfigMDMap[gGrpId].gGrpId;
 			groupConfigs[netId][lGrpId].gStartN = groupConfigMDMap[gGrpId].gStartN;
@@ -2160,6 +2162,18 @@ void SNN::generateRuntimeGroupConfigs() {
 			groupConfigs[netId][lGrpId].decay5HT = groupConfigMap[gGrpId].neuromodulatorConfig.decay5HT;
 			groupConfigs[netId][lGrpId].decayACh = groupConfigMap[gGrpId].neuromodulatorConfig.decayACh;
 			groupConfigs[netId][lGrpId].decayNE = groupConfigMap[gGrpId].neuromodulatorConfig.decayNE;
+
+			// sync groupConfigs[][] and groupConfigMDMap[]
+			if (netId == grpIt->netId) {
+				groupConfigMDMap[gGrpId].lGrpId = grpIt->lGrpId;
+				groupConfigMDMap[gGrpId].lStartN = grpIt->lStartN;
+				groupConfigMDMap[gGrpId].lEndN = grpIt->lEndN;
+				groupConfigMDMap[gGrpId].LtoGOffset = grpIt->LtoGOffset;
+				groupConfigMDMap[gGrpId].GtoLOffset = grpIt->GtoLOffset;
+				groupConfigMDMap[gGrpId].numPostSynapses = grpIt->numPostSynapses;
+				groupConfigMDMap[gGrpId].numPreSynapses = grpIt->numPreSynapses;
+				groupConfigMDMap[gGrpId].hasExternalConnect = grpIt->hasExternalConnect;
+			}
 		}
 
 		// FIXME: How does networkConfigs[netId].numGroups be availabe at this time?! Bug?!
