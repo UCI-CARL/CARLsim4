@@ -934,21 +934,6 @@ private:
 	//int numNPois;         //!< number of poisson neurons
 	GlobalNetworkConfig glbNetworkConfig;
 
-	//! size of memory used for different parts of the network
-	typedef struct snnSize_s {
-		unsigned int		neuronInfoSize;
-		unsigned int		synapticInfoSize;
-		unsigned int		networkInfoSize;
-		unsigned int		spikingInfoSize;
-		unsigned int		debugInfoSize;
-		unsigned int		addInfoSize;	//!< includes random number generator etc.
-		unsigned int		blkInfoSize;
-		unsigned int		monitorInfoSize;
-	} snnSize_t;
-
-	snnSize_t cpuSnnSz;
-	snnSize_t gpuSnnSz;
-
 	//! firing info used in CPU_MODE
 	unsigned int timeTableD2[TIMING_COUNT];
 	unsigned int timeTableD1[TIMING_COUNT];

@@ -926,10 +926,6 @@ GroupMonitor* SNN::setGroupMonitor(int gGrpId, FILE* fid) {
 	// also inform the group that it is being monitored...
 	groupConfigMDMap[gGrpId].groupMonitorId = numGroupMonitor;
 
-    // not eating much memory anymore, got rid of all buffers
-	cpuSnnSz.monitorInfoSize += sizeof(GroupMonitor*);
-	cpuSnnSz.monitorInfoSize += sizeof(GroupMonitorCore*);
-
 	numGroupMonitor++;
 	KERNEL_INFO("GroupMonitor set for group %d (%s)", gGrpId, groupConfigMap[gGrpId].grpName.c_str());
 
@@ -976,10 +972,6 @@ ConnectionMonitor* SNN::setConnectionMonitor(int grpIdPre, int grpIdPost, FILE* 
 
 	// now init core object (depends on several datastructures allocated above)
 	connMonCoreObj->init();
-
-    // not eating much memory anymore, got rid of all buffers
-	cpuSnnSz.monitorInfoSize += sizeof(ConnectionMonitor*);
-	cpuSnnSz.monitorInfoSize += sizeof(ConnectionMonitorCore*);
 
 	numConnectionMonitor++;
 	KERNEL_INFO("ConnectionMonitor %d set for Connection %d: %d(%s) => %d(%s)", connectConfigMap[connId].connectionMonitorId, connId, grpIdPre, getGroupName(grpIdPre).c_str(),
@@ -1061,10 +1053,6 @@ SpikeMonitor* SNN::setSpikeMonitor(int gGrpId, FILE* fid) {
 
 		// also inform the grp that it is being monitored...
 		groupConfigMDMap[gGrpId].spikeMonitorId = numSpikeMonitor;
-
-    	// not eating much memory anymore, got rid of all buffers
-		cpuSnnSz.monitorInfoSize += sizeof(SpikeMonitor*);
-		cpuSnnSz.monitorInfoSize += sizeof(SpikeMonitorCore*);
 
 		numSpikeMonitor++;
 		KERNEL_INFO("SpikeMonitor set for group %d (%s)", gGrpId, groupConfigMap[gGrpId].grpName.c_str());
@@ -1819,8 +1807,6 @@ void SNN::SNNinit() {
 
 	resetConnectionConfigs(false);
 
-	memset(&cpuSnnSz, 0, sizeof(cpuSnnSz));
-
 	// initialize spike buffer
 	spikeBuf = new SpikeBuffer(0, MAX_TIME_SLICE);
 
@@ -1884,7 +1870,6 @@ void SNN::allocateRuntimeData() {
 	memset(managerRuntimeData.Izh_d, 0, sizeof(float) * managerRTDSize.maxNumNReg);
 	memset(managerRuntimeData.current, 0, sizeof(float) * managerRTDSize.maxNumNReg);
 	memset(managerRuntimeData.extCurrent, 0, sizeof(float) * managerRTDSize.maxNumNReg);
-	cpuSnnSz.neuronInfoSize += (sizeof(float) * managerRTDSize.maxNumNReg * 8);
 
 	managerRuntimeData.gAMPA  = new float[managerRTDSize.glbNumNReg]; // sufficient to hold all regular neurons in the global network
 	managerRuntimeData.gNMDA_r = new float[managerRTDSize.glbNumNReg]; // sufficient to hold all regular neurons in the global network
@@ -1894,7 +1879,6 @@ void SNN::allocateRuntimeData() {
 	memset(managerRuntimeData.gNMDA_r, 0, sizeof(float) * managerRTDSize.glbNumNReg);
 	memset(managerRuntimeData.gNMDA_d, 0, sizeof(float) * managerRTDSize.glbNumNReg);
 	memset(managerRuntimeData.gNMDA, 0, sizeof(float) * managerRTDSize.glbNumNReg);
-	cpuSnnSz.neuronInfoSize += sizeof(float) * managerRTDSize.glbNumNReg * 4;
 
 	managerRuntimeData.gGABAa = new float[managerRTDSize.glbNumNReg]; // sufficient to hold all regular neurons in the global network
 	managerRuntimeData.gGABAb_r = new float[managerRTDSize.glbNumNReg]; // sufficient to hold all regular neurons in the global network
@@ -1904,7 +1888,6 @@ void SNN::allocateRuntimeData() {
 	memset(managerRuntimeData.gGABAb_r, 0, sizeof(float) * managerRTDSize.glbNumNReg);
 	memset(managerRuntimeData.gGABAb_d, 0, sizeof(float) * managerRTDSize.glbNumNReg);
 	memset(managerRuntimeData.gGABAb, 0, sizeof(float) * managerRTDSize.glbNumNReg);
-	cpuSnnSz.neuronInfoSize += sizeof(float) * managerRTDSize.glbNumNReg * 4;
 	
 	// allocate neuromodulators and their assistive buffers
 	managerRuntimeData.grpDA  = new float[managerRTDSize.maxNumGroups];
@@ -1928,7 +1911,6 @@ void SNN::allocateRuntimeData() {
 
 	managerRuntimeData.lastSpikeTime = new int[managerRTDSize.maxNumNAssigned];
 	memset(managerRuntimeData.lastSpikeTime, 0, sizeof(int) * managerRTDSize.maxNumNAssigned);
-	cpuSnnSz.neuronInfoSize += sizeof(int) * managerRTDSize.maxNumNAssigned;
 	
 	managerRuntimeData.nSpikeCnt = new int[managerRTDSize.glbNumN];
 	memset(managerRuntimeData.nSpikeCnt, 0, sizeof(int) * managerRTDSize.glbNumN); // sufficient to hold all neurons in the global network
@@ -1946,7 +1928,6 @@ void SNN::allocateRuntimeData() {
 	managerRuntimeData.stpx = new float[managerRTDSize.maxNumN * (glbNetworkConfig.maxDelay + 1)];
 	memset(managerRuntimeData.stpu, 0, sizeof(float) * managerRTDSize.maxNumN * (glbNetworkConfig.maxDelay + 1));
 	memset(managerRuntimeData.stpx, 0, sizeof(float) * managerRTDSize.maxNumN * (glbNetworkConfig.maxDelay + 1));
-	cpuSnnSz.synapticInfoSize += (2 * sizeof(float) * managerRTDSize.maxNumN * (glbNetworkConfig.maxDelay + 1));
 
 	managerRuntimeData.Npre           = new unsigned short[managerRTDSize.maxNumNAssigned];
 	managerRuntimeData.Npre_plastic   = new unsigned short[managerRTDSize.maxNumNAssigned];
@@ -1958,17 +1939,14 @@ void SNN::allocateRuntimeData() {
 	memset(managerRuntimeData.Npost, 0, sizeof(short) * managerRTDSize.maxNumNAssigned);
 	memset(managerRuntimeData.cumulativePost, 0, sizeof(int) * managerRTDSize.maxNumNAssigned);
 	memset(managerRuntimeData.cumulativePre, 0, sizeof(int) * managerRTDSize.maxNumNAssigned);
-	cpuSnnSz.networkInfoSize += (int)(sizeof(int) * managerRTDSize.maxNumNAssigned * 3.5);
 
 	managerRuntimeData.postSynapticIds = new SynInfo[managerRTDSize.maxNumPostSynNet];
 	managerRuntimeData.postDelayInfo   = new DelayInfo[managerRTDSize.maxNumNAssigned * (glbNetworkConfig.maxDelay + 1)];	//!< Possible delay values are 0....maxDelay_ (inclusive of maxDelay_)
 	memset(managerRuntimeData.postSynapticIds, 0, sizeof(SynInfo) * managerRTDSize.maxNumPostSynNet);
 	memset(managerRuntimeData.postDelayInfo, 0, sizeof(DelayInfo) * managerRTDSize.maxNumNAssigned * (glbNetworkConfig.maxDelay + 1));
-	cpuSnnSz.networkInfoSize += (sizeof(SynInfo) * managerRTDSize.maxNumPostSynNet) + (sizeof(DelayInfo) * managerRTDSize.maxNumNAssigned * (glbNetworkConfig.maxDelay + 1));
 
 	managerRuntimeData.preSynapticIds	= new SynInfo[managerRTDSize.maxNumPreSynNet];
 	memset(managerRuntimeData.preSynapticIds, 0, sizeof(SynInfo) * managerRTDSize.maxNumPreSynNet);
-	cpuSnnSz.networkInfoSize += sizeof(SynInfo) * managerRTDSize.maxNumPreSynNet;
 
 	managerRuntimeData.wt           = new float[managerRTDSize.maxNumPreSynNet];
 	managerRuntimeData.wtChange     = new float[managerRTDSize.maxNumPreSynNet];
@@ -1978,24 +1956,19 @@ void SNN::allocateRuntimeData() {
 	memset(managerRuntimeData.wtChange, 0, sizeof(float) * managerRTDSize.maxNumPreSynNet);
 	memset(managerRuntimeData.maxSynWt, 0, sizeof(float) * managerRTDSize.maxNumPreSynNet);
 	memset(managerRuntimeData.synSpikeTime, 0, sizeof(int) * managerRTDSize.maxNumPreSynNet);
-	cpuSnnSz.synapticInfoSize += sizeof(float) * managerRTDSize.maxNumPreSynNet * 4;
 
 	mulSynFast = new float[managerRTDSize.maxNumConnections];
 	mulSynSlow = new float[managerRTDSize.maxNumConnections];
 	memset(mulSynFast, 0, sizeof(float) * managerRTDSize.maxNumConnections);
 	memset(mulSynSlow, 0, sizeof(float) * managerRTDSize.maxNumConnections);
-	cpuSnnSz.synapticInfoSize += sizeof(float) * managerRTDSize.maxNumConnections * 2;
 
 	managerRuntimeData.connIdsPreIdx	= new short int[managerRTDSize.maxNumPreSynNet];
 	memset(managerRuntimeData.connIdsPreIdx, 0, sizeof(short int) * managerRTDSize.maxNumPreSynNet);
-	cpuSnnSz.synapticInfoSize += sizeof(short int) * managerRTDSize.maxNumPreSynNet;
 
 	managerRuntimeData.grpIds = new short int[managerRTDSize.maxNumNAssigned];
 	memset(managerRuntimeData.grpIds, 0, sizeof(short int) * managerRTDSize.maxNumNAssigned);
-	cpuSnnSz.neuronInfoSize += sizeof(short int) * managerRTDSize.maxNumNAssigned;
 
 	managerRuntimeData.spikeGenBits = new unsigned int[managerRTDSize.maxNumNSpikeGen / 32 + 1];
-	cpuSnnSz.addInfoSize += sizeof(int) * (managerRTDSize.maxNumNSpikeGen / 32 + 1);
 
 	// Confirm allocation of SNN runtime data in main memory
 	managerRuntimeData.allocated = true;
@@ -4780,7 +4753,6 @@ void SNN::allocateSpikeTables() {
 	
 	// timeTableD1(D2) are statically allocated
 	resetTimeTable();
-	cpuSnnSz.spikingInfoSize += sizeof(int) * ((managerRTDSize.maxMaxSpikeD2 + managerRTDSize.maxMaxSpikeD1) + 2 * (1000 + glbNetworkConfig.maxDelay + 1));
 }
 
 // updates simTime, returns true when new second started
