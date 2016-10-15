@@ -327,6 +327,9 @@ typedef struct RuntimeData_s {
 
 	DelayInfo* postDelayInfo;  	//!< delay information
 
+	unsigned int* timeTableD1; //!< firing table, only used in CPU_MODE
+	unsigned int* timeTableD2; //!< firing table, only used in CPU_MODE
+	
 	int* firingTableD1;
 	int* firingTableD2;
 

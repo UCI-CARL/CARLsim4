@@ -980,33 +980,6 @@ ConnectionMonitor* SNN::setConnectionMonitor(int grpIdPre, int grpIdPost, FILE* 
 	return connMonObj;
 }
 
-void SNN::setExternalCurrent(int grpId, const std::vector<float>& current) {
-	assert(grpId >= 0); assert(grpId < numGroups);
-	assert(!isPoissonGroup(grpId));
-	assert(current.size() == getGroupNumNeurons(grpId));
-
-	int netId = groupConfigMDMap[grpId].netId;
-	int lGrpId = groupConfigMDMap[grpId].lGrpId;
-
-	// // update flag for faster handling at run-time
-	// if (count_if(current.begin(), current.end(), isGreaterThanZero)) {
-	// 	groupConfigs[0][grpId].WithCurrentInjection = true;
-	// } else {
-	// 	groupConfigs[0][grpId].WithCurrentInjection = false;
-	// }
-
-	// store external current in array
-	for (int lNId = groupConfigs[netId][lGrpId].lStartN, j = 0; lNId <= groupConfigs[netId][lGrpId].lEndN; lNId++, j++) {
-		managerRuntimeData.extCurrent[lNId] = current[j];
-	}
-
-	// copy to GPU if necessary
-	// don't allocate; allocation done in generateRuntimeData
-	if (simMode_ == GPU_MODE) {
-		copyExternalCurrent(netId, lGrpId, &gpuRuntimeData[netId], false);
-	}
-}
-
 // FIXME: distinguish the function call at CONFIG_STATE and SETUP_STATE, where groupConfigs[0][] might not be available
 // or groupConfigMap is not sync with groupConfigs[0][]
 // sets up a spike generator
@@ -1813,10 +1786,17 @@ void SNN::SNNinit() {
 	memset(networkConfigs, 0, sizeof(NetworkConfigRT) * MAX_NET_PER_SNN);
 	
 	// reset all runtime data
+	// GPU runtime data
 	memset(gpuRuntimeData, 0, sizeof(RuntimeData) * MAX_NET_PER_SNN);
 	for (int netId = 0; netId < MAX_NET_PER_SNN; netId++) // FIXME: redundant??
 		gpuRuntimeData[netId].allocated = false;
 
+	// CPU runtime data
+	memset(cpuRuntimeData, 0, sizeof(RuntimeData) * MAX_NET_PER_SNN);
+	for (int netId = 0; netId < MAX_NET_PER_SNN; netId++) // FIXME: redundant??
+		cpuRuntimeData[netId].allocated = false;
+
+	// Manager runtime data
 	memset(&managerRuntimeData, 0, sizeof(RuntimeData));
 	managerRuntimeData.allocated = false; // FIXME: redundant??
 
@@ -4064,9 +4044,6 @@ void SNN::generateRuntimeSNN() {
 			KERNEL_INFO("*****************      Initializing %s %d Runtime      *************************",
 			simMode_ == GPU_MODE?"GPU":"CPU", netId);
 			// build the runtime data according to local network, group, connection configuirations
-			
-			// switch to correct GPU context
-			checkAndSetGPUDevice(netId);
 
 			// generate runtime data for each group
 			for(int lGrpId = 0; lGrpId < networkConfigs[netId].numGroups; lGrpId++) {
