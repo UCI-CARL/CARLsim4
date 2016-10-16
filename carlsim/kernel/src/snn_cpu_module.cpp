@@ -858,14 +858,14 @@ void SNN::copyPreConnectionInfo(int netId, int lGrpId, RuntimeData* dest, Runtim
 
 	// connection synaptic lengths and cumulative lengths...
 	if(allocateMem) 
-		dest->Npre = new unsigned short[sizeof(short) * networkConfigs[netId].numNAssigned];
+		dest->Npre = new unsigned short[networkConfigs[netId].numNAssigned];
 	memcpy(&dest->Npre[posN], &src->Npre[posN], sizeof(short) * lengthN);
 
 	// we don't need these data structures if the network doesn't have any plastic synapses at all
 	if (!sim_with_fixedwts) {
 		// presyn excitatory connections
 		if(allocateMem) 
-			dest->Npre_plastic = new unsigned short[sizeof(short) * networkConfigs[netId].numNAssigned];
+			dest->Npre_plastic = new unsigned short[networkConfigs[netId].numNAssigned];
 		memcpy(&dest->Npre_plastic[posN], &src->Npre_plastic[posN], sizeof(short) * lengthN);
 
 		// Npre_plasticInv is only used on GPUs, only allocate and copy it during initialization
@@ -875,7 +875,7 @@ void SNN::copyPreConnectionInfo(int netId, int lGrpId, RuntimeData* dest, Runtim
 			for (int i = 0; i < networkConfigs[netId].numNAssigned; i++)
 				Npre_plasticInv[i] = 1.0f / managerRuntimeData.Npre_plastic[i];
 
-			dest->Npre_plasticInv = new float[sizeof(float) * networkConfigs[netId].numNAssigned];
+			dest->Npre_plasticInv = new float[networkConfigs[netId].numNAssigned];
 			memcpy(dest->Npre_plasticInv, Npre_plasticInv, sizeof(float) * networkConfigs[netId].numNAssigned);
 
 			delete[] Npre_plasticInv;
@@ -884,7 +884,7 @@ void SNN::copyPreConnectionInfo(int netId, int lGrpId, RuntimeData* dest, Runtim
 		
 	// beginning position for the pre-synaptic information
 	if(allocateMem)
-		dest->cumulativePre = new unsigned int[sizeof(int) * networkConfigs[netId].numNAssigned];
+		dest->cumulativePre = new unsigned int[networkConfigs[netId].numNAssigned];
 	memcpy(&dest->cumulativePre[posN], &src->cumulativePre[posN], sizeof(int) * lengthN);
 
 	// Npre, cumulativePre has been copied to destination
@@ -900,7 +900,7 @@ void SNN::copyPreConnectionInfo(int netId, int lGrpId, RuntimeData* dest, Runtim
 	}
 
 	if(allocateMem)
-		dest->preSynapticIds = new SynInfo[sizeof(SynInfo) * networkConfigs[netId].numPreSynNet];
+		dest->preSynapticIds = new SynInfo[networkConfigs[netId].numPreSynNet];
 	memcpy(&dest->preSynapticIds[posSyn], &src->preSynapticIds[posSyn], sizeof(SynInfo) * lengthSyn);
 }
 
@@ -933,12 +933,12 @@ void SNN::copyPostConnectionInfo(int netId, int lGrpId, RuntimeData* dest, Runti
 
 	// number of postsynaptic connections
 	if(allocateMem)
-		dest->Npost = new unsigned short[sizeof(short) * networkConfigs[netId].numNAssigned];
+		dest->Npost = new unsigned short[networkConfigs[netId].numNAssigned];
 	memcpy(&dest->Npost[posN], &src->Npost[posN], sizeof(short) * lengthN);
 	
 	// beginning position for the post-synaptic information
 	if(allocateMem) 
-		dest->cumulativePost = new unsigned int[sizeof(int) * networkConfigs[netId].numNAssigned];
+		dest->cumulativePost = new unsigned int[networkConfigs[netId].numNAssigned];
 	memcpy(&dest->cumulativePost[posN], &src->cumulativePost[posN], sizeof(int) * lengthN);
 
 	
@@ -956,12 +956,12 @@ void SNN::copyPostConnectionInfo(int netId, int lGrpId, RuntimeData* dest, Runti
 
 	// actual post synaptic connection information...
 	if(allocateMem)
-		dest->postSynapticIds = new SynInfo[sizeof(SynInfo) * networkConfigs[netId].numPostSynNet];
+		dest->postSynapticIds = new SynInfo[networkConfigs[netId].numPostSynNet];
 	memcpy(&dest->postSynapticIds[posSyn], &src->postSynapticIds[posSyn], sizeof(SynInfo) * lengthSyn);
 
 	// static specific mapping and actual post-synaptic delay metric
 	if(allocateMem)
-		dest->postDelayInfo = new DelayInfo[sizeof(DelayInfo) * networkConfigs[netId].numNAssigned * (glbNetworkConfig.maxDelay + 1)];
+		dest->postDelayInfo = new DelayInfo[networkConfigs[netId].numNAssigned * (glbNetworkConfig.maxDelay + 1)];
 	memcpy(&dest->postDelayInfo[posN * (glbNetworkConfig.maxDelay + 1)], &src->postDelayInfo[posN * (glbNetworkConfig.maxDelay + 1)], sizeof(DelayInfo) * lengthN * (glbNetworkConfig.maxDelay + 1));
 }
 
@@ -987,7 +987,7 @@ void SNN::copySynapseState(int netId, RuntimeData* dest, bool allocateMem) {
 
 	// synaptic information based
 	if(allocateMem)
-		dest->wt = new float[sizeof(float) * networkConfigs[netId].numPreSynNet];
+		dest->wt = new float[networkConfigs[netId].numPreSynNet];
 	memcpy(dest->wt, managerRuntimeData.wt, sizeof(float) * networkConfigs[netId].numPreSynNet);
 
 	// we don't need these data structures if the network doesn't have any plastic synapses at all
@@ -996,12 +996,12 @@ void SNN::copySynapseState(int netId, RuntimeData* dest, bool allocateMem) {
 	if (!sim_with_fixedwts) {
 		// synaptic weight derivative
 		if(allocateMem)
-			dest->wtChange = new float[sizeof(float) * networkConfigs[netId].numPreSynNet];
+			dest->wtChange = new float[networkConfigs[netId].numPreSynNet];
 		memcpy(dest->wtChange, managerRuntimeData.wtChange, sizeof(float) * networkConfigs[netId].numPreSynNet);
 
 		// synaptic weight maximum value
 		if(allocateMem)
-			dest->maxSynWt = new float[sizeof(float) * networkConfigs[netId].numPreSynNet];
+			dest->maxSynWt = new float[networkConfigs[netId].numPreSynNet];
 		memcpy(dest->maxSynWt, managerRuntimeData.maxSynWt, sizeof(float) * networkConfigs[netId].numPreSynNet);
 	}
 }
@@ -1041,16 +1041,16 @@ void SNN::copyNeuronState(int netId, int lGrpId, RuntimeData* dest, bool allocat
 		return;
 
 	if(allocateMem)
-		dest->recovery = new float[sizeof(float) * length];
+		dest->recovery = new float[length];
 	memcpy(&dest->recovery[ptrPos], &managerRuntimeData.recovery[ptrPos], sizeof(float) * length);
 
 	if(allocateMem)
-		dest->voltage = new float[sizeof(float) * length];
+		dest->voltage = new float[length];
 	memcpy(&dest->voltage[ptrPos], &managerRuntimeData.voltage[ptrPos], sizeof(float) * length);
 
 	//neuron input current...
 	if(allocateMem)
-		dest->current = new float[sizeof(float) * length];
+		dest->current = new float[length];
 	memcpy(&dest->current[ptrPos], &managerRuntimeData.current[ptrPos], sizeof(float) * length);
 
 	if (sim_with_conductances) {
@@ -1071,7 +1071,7 @@ void SNN::copyNeuronState(int netId, int lGrpId, RuntimeData* dest, bool allocat
 		//Included to enable homeostasis in GPU_MODE.
 		// Avg. Firing...
 		if(allocateMem)
-			dest->avgFiring = new float[sizeof(float) * length];
+			dest->avgFiring = new float[length];
 		memcpy(&dest->avgFiring[ptrPos], &managerRuntimeData.avgFiring[ptrPos], sizeof(float) * length);
 	}
 }
@@ -1112,7 +1112,7 @@ void SNN::copyConductanceAMPA(int netId, int lGrpId, RuntimeData* dest, RuntimeD
 	//conductance information
 	assert(src->gAMPA  != NULL);
 	if(allocateMem)
-		dest->gAMPA = new float[sizeof(float) * length];
+		dest->gAMPA = new float[length];
 	memcpy(&dest->gAMPA[ptrPos + destOffset], &src->gAMPA[ptrPos], sizeof(float) * length);
 }
 
@@ -1152,17 +1152,17 @@ void SNN::copyConductanceNMDA(int netId, int lGrpId, RuntimeData* dest, RuntimeD
 	if (isSimulationWithNMDARise()) {
 		assert(src->gNMDA_r != NULL);
 		if(allocateMem)
-			dest->gNMDA_r = new float[sizeof(float) * length];
+			dest->gNMDA_r = new float[length];
 		memcpy(&dest->gNMDA_r[ptrPos], &src->gNMDA_r[ptrPos], sizeof(float) * length);
 
 		assert(src->gNMDA_d != NULL);
 		if(allocateMem)
-			dest->gNMDA_d = new float[sizeof(float) * length];
+			dest->gNMDA_d = new float[length];
 		memcpy(&dest->gNMDA_d[ptrPos], &src->gNMDA_d[ptrPos], sizeof(float) * length);
 	} else {
 		assert(src->gNMDA != NULL);
 		if(allocateMem)
-			dest->gNMDA = new float[sizeof(float) * length];
+			dest->gNMDA = new float[length];
 		memcpy(&dest->gNMDA[ptrPos + destOffset], &src->gNMDA[ptrPos], sizeof(float) * length);
 	}
 }
@@ -1202,7 +1202,7 @@ void SNN::copyConductanceGABAa(int netId, int lGrpId, RuntimeData* dest, Runtime
 
 	assert(src->gGABAa != NULL);
 	if(allocateMem)
-		dest->gGABAa = new float[sizeof(float) * length];
+		dest->gGABAa = new float[length];
 	memcpy(&dest->gGABAa[ptrPos + destOffset], &src->gGABAa[ptrPos], sizeof(float) * length);
 }
 
@@ -1242,17 +1242,17 @@ void SNN::copyConductanceGABAb(int netId, int lGrpId, RuntimeData* dest, Runtime
 	if (isSimulationWithGABAbRise()) {
 		assert(src->gGABAb_r != NULL);
 		if(allocateMem)
-			dest->gGABAb_r = new float[sizeof(float) * length];
+			dest->gGABAb_r = new float[length];
 		memcpy(&dest->gGABAb_r[ptrPos], &src->gGABAb_r[ptrPos], sizeof(float) * length);
 
 		assert(src->gGABAb_d != NULL);
 		if(allocateMem) 
-			dest->gGABAb_d = new float[sizeof(float) * length];
+			dest->gGABAb_d = new float[length];
 		memcpy(&dest->gGABAb_d[ptrPos], &src->gGABAb_d[ptrPos], sizeof(float) * length);
 	} else {
 		assert(src->gGABAb != NULL);
 		if(allocateMem)
-			dest->gGABAb = new float[sizeof(float) * length];
+			dest->gGABAb = new float[length];
 		memcpy(&dest->gGABAb[ptrPos + destOffset], &src->gGABAb[ptrPos], sizeof(float) * length);
 	}
 }
@@ -1290,7 +1290,7 @@ void SNN::copyExternalCurrent(int netId, int lGrpId, RuntimeData* dest, bool all
 	KERNEL_DEBUG("copyExternalCurrent: lGrpId=%d, ptrPos=%d, length=%d, allocate=%s", lGrpId, posN, lengthN, allocateMem?"y":"n");
 
 	if(allocateMem)
-		dest->extCurrent = new float[sizeof(float) * lengthN];
+		dest->extCurrent = new float[lengthN];
 	memcpy(&(dest->extCurrent[posN]), &(managerRuntimeData.extCurrent[posN]), sizeof(float) * lengthN);
 }
 
@@ -1334,19 +1334,19 @@ void SNN::copyNeuronParameters(int netId, int lGrpId, RuntimeData* dest, bool al
 	}
 
 	if(allocateMem)
-		dest->Izh_a = new float[sizeof(float) * length];
+		dest->Izh_a = new float[length];
 	memcpy(&dest->Izh_a[ptrPos], &(managerRuntimeData.Izh_a[ptrPos]), sizeof(float) * length);
 
 	if(allocateMem)
-		dest->Izh_b = new float[sizeof(float) * length];
+		dest->Izh_b = new float[length];
 	memcpy(&dest->Izh_b[ptrPos], &(managerRuntimeData.Izh_b[ptrPos]), sizeof(float) * length);
 
 	if(allocateMem)
-		dest->Izh_c = new float[sizeof(float) * length];
+		dest->Izh_c = new float[length];
 	memcpy(&dest->Izh_c[ptrPos], &(managerRuntimeData.Izh_c[ptrPos]), sizeof(float) * length);
 
 	if(allocateMem)
-		dest->Izh_d = new float[sizeof(float) * length];
+		dest->Izh_d = new float[length];
 	memcpy(&dest->Izh_d[ptrPos], &(managerRuntimeData.Izh_d[ptrPos]), sizeof(float) * length);
 
 	// pre-compute baseFiringInv for fast computation on GPUs.
@@ -1360,11 +1360,11 @@ void SNN::copyNeuronParameters(int netId, int lGrpId, RuntimeData* dest, bool al
 		}
 
 		if(allocateMem)
-			dest->baseFiringInv = new float[sizeof(float) * length];
+			dest->baseFiringInv = new float[length];
 		memcpy(&dest->baseFiringInv[ptrPos], baseFiringInv, sizeof(float) * length);
 
 		if(allocateMem)
-			dest->baseFiring = new float[sizeof(float) * length];
+			dest->baseFiring = new float[length];
 		memcpy(&dest->baseFiring[ptrPos], managerRuntimeData.baseFiring, sizeof(float) * length);
 
 		delete [] baseFiringInv;
@@ -1401,11 +1401,11 @@ void SNN::copySTPState(int netId, int lGrpId, RuntimeData* dest, RuntimeData* sr
 	assert(src->stpu != NULL); assert(src->stpx != NULL);
 
 	if(allocateMem)
-		dest->stpu = new float[sizeof(float) * networkConfigs[netId].numN * networkConfigs[netId].maxDelay + 1];
+		dest->stpu = new float[networkConfigs[netId].numN * networkConfigs[netId].maxDelay + 1];
 	memcpy(dest->stpu, src->stpu, sizeof(float) * networkConfigs[netId].numN * networkConfigs[netId].maxDelay + 1);
 
 	if(allocateMem)
-		dest->stpx = new float[sizeof(float) * networkConfigs[netId].numN * networkConfigs[netId].maxDelay + 1];
+		dest->stpx = new float[networkConfigs[netId].numN * networkConfigs[netId].maxDelay + 1];
 	memcpy(dest->stpx, src->stpx, sizeof(float) * networkConfigs[netId].numN * networkConfigs[netId].maxDelay + 1);
 }
 
@@ -1430,10 +1430,10 @@ void SNN::copySTPState(int netId, int lGrpId, RuntimeData* dest, RuntimeData* sr
 void SNN::copyGroupState(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, bool allocateMem) {
 	if (allocateMem) {
 		assert(dest->memType == CPU_MODE && !dest->allocated);
-		dest->grpDA = new float[sizeof(float) * networkConfigs[netId].numGroups]; 
-		dest->grp5HT = new float[sizeof(float) * networkConfigs[netId].numGroups]; 
-		dest->grpACh = new float[sizeof(float) * networkConfigs[netId].numGroups]; 
-		dest->grpNE = new float[sizeof(float) * networkConfigs[netId].numGroups];
+		dest->grpDA = new float[networkConfigs[netId].numGroups]; 
+		dest->grp5HT = new float[networkConfigs[netId].numGroups]; 
+		dest->grpACh = new float[networkConfigs[netId].numGroups]; 
+		dest->grpNE = new float[networkConfigs[netId].numGroups];
 	}
 	memcpy(dest->grpDA, src->grpDA, sizeof(float) * networkConfigs[netId].numGroups);
 	memcpy(dest->grp5HT, src->grp5HT, sizeof(float) * networkConfigs[netId].numGroups);
@@ -1443,10 +1443,10 @@ void SNN::copyGroupState(int netId, int lGrpId, RuntimeData* dest, RuntimeData* 
 	if (lGrpId == ALL) {
 		if (allocateMem) {
 			assert(dest->memType == CPU_MODE && !dest->allocated);
-			dest->grpDABuffer = new float[sizeof(float) * 1000 * networkConfigs[netId].numGroups]; 
-			dest->grp5HTBuffer = new float[sizeof(float) * 1000 * networkConfigs[netId].numGroups]; 
-			dest->grpAChBuffer = new float[sizeof(float) * 1000 * networkConfigs[netId].numGroups]; 
-			dest->grpNEBuffer = new float[sizeof(float) * 1000 * networkConfigs[netId].numGroups];
+			dest->grpDABuffer = new float[1000 * networkConfigs[netId].numGroups]; 
+			dest->grp5HTBuffer = new float[1000 * networkConfigs[netId].numGroups]; 
+			dest->grpAChBuffer = new float[1000 * networkConfigs[netId].numGroups]; 
+			dest->grpNEBuffer = new float[1000 * networkConfigs[netId].numGroups];
 		}
 		memcpy(dest->grpDABuffer, src->grpDABuffer, sizeof(float) * 1000 * networkConfigs[netId].numGroups);
 		memcpy(dest->grp5HTBuffer, src->grp5HTBuffer, sizeof(float) * 1000 * networkConfigs[netId].numGroups);
@@ -1470,6 +1470,7 @@ void SNN::copyGroupState(int netId, int lGrpId, RuntimeData* dest, RuntimeData* 
  * (allocate and) copy synSpikeTime, lastSpikeTime
  * (allocate and) copy nSpikeCnt
  * (allocate and) copy grpIds, connIdsPreIdx
+ * (allocate and) copy timeTableD1, timeTableD2
  * (allocate and) copy firingTableD1, firingTableD2
  * This funcion is only called by allocateSNN_GPU. Therefore, only copying direction from host to device is required
  *
@@ -1484,19 +1485,19 @@ void SNN::copyAuxiliaryData(int netId, int lGrpId, RuntimeData* dest, bool alloc
 	assert(networkConfigs[netId].numN > 0);
 
 	if(allocateMem)
-		dest->spikeGenBits = new unsigned int[sizeof(int) * (networkConfigs[netId].numNSpikeGen / 32 + 1)];
+		dest->spikeGenBits = new unsigned int[networkConfigs[netId].numNSpikeGen / 32 + 1];
 	memset(dest->spikeGenBits, 0, sizeof(int) * (networkConfigs[netId].numNSpikeGen / 32 + 1));
 
 	// allocate the poisson neuron poissonFireRate
 	if(allocateMem)
-		dest->poissonFireRate = new float[sizeof(float) * networkConfigs[netId].numNPois];
+		dest->poissonFireRate = new float[networkConfigs[netId].numNPois];
 	memset(dest->poissonFireRate, 0, sizeof(float) * networkConfigs[netId].numNPois);
 
 	// synaptic auxiliary data
 	// I_set: a bit vector indicates which synapse got a spike
 	if(allocateMem) {
 		networkConfigs[netId].I_setLength = ceil(((networkConfigs[netId].maxNumPreSynN) / 32.0f));
-		dest->I_set = new int[sizeof(int) * networkConfigs[netId].numNReg * networkConfigs[netId].I_setLength];
+		dest->I_set = new int[networkConfigs[netId].numNReg * networkConfigs[netId].I_setLength];
 	}
 	assert(networkConfigs[netId].I_setPitch > 0 || networkConfigs[netId].maxNumPreSynN == 0);
 	memset(dest->I_set, 0, sizeof(int) * networkConfigs[netId].numNReg * networkConfigs[netId].I_setLength);
@@ -1528,14 +1529,28 @@ void SNN::copyAuxiliaryData(int netId, int lGrpId, RuntimeData* dest, bool alloc
 		dest->connIdsPreIdx = new short int[networkConfigs[netId].numPreSynNet];
 	memcpy(dest->connIdsPreIdx, managerRuntimeData.connIdsPreIdx, sizeof(short int) * networkConfigs[netId].numPreSynNet);
 
+	// time talbe
+	if (allocateMem) {
+		assert(dest->timeTableD1 == NULL);
+		assert(dest->timeTableD2 == NULL);
+	}
+
+	if (allocateMem)
+		dest->timeTableD1 = new unsigned int[TIMING_COUNT];
+	memcpy(dest->timeTableD1, timeTableD1, sizeof(int) * TIMING_COUNT);
+
+	if (allocateMem)
+		dest->timeTableD2 = new unsigned int[TIMING_COUNT];
+	memcpy(dest->timeTableD2, timeTableD2, sizeof(int) * TIMING_COUNT);
+
 	// firing table
-	if(allocateMem) {
+	if (allocateMem) {
 		assert(dest->firingTableD1 == NULL);
 		assert(dest->firingTableD2 == NULL);
 	}
 
 	// allocate 1ms firing table
-	if(allocateMem)
+	if (allocateMem)
 		dest->firingTableD1 = new int[networkConfigs[netId].maxSpikesD1];
 	if (networkConfigs[netId].maxSpikesD1 > 0)
 		memcpy(dest->firingTableD1, managerRuntimeData.firingTableD1, sizeof(int) * networkConfigs[netId].maxSpikesD1);
