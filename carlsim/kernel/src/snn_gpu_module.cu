@@ -3259,12 +3259,12 @@ void SNN::allocateSNN_GPU(int netId) {
 
 	// display some memory management info
 	size_t avail, total, previous;
-	float toGB = std::pow(1024.0f,3);
+	float toMB = std::pow(1024.0f, 2);
 	cudaMemGetInfo(&avail,&total);
-	KERNEL_INFO("GPU Memory Management: (Total %2.3f GB)",(float)(total/toGB));
+	KERNEL_INFO("GPU Memory Management: (Total %2.3f MB)",(float)(total/toMB));
 	KERNEL_INFO("Data\t\t\tSize\t\tTotal Used\tTotal Available");
-	KERNEL_INFO("Init:\t\t\t%2.3f GB\t%2.3f GB\t%2.3f GB",(float)(total)/toGB,(float)((total-avail)/toGB),
-		(float)(avail/toGB));
+	KERNEL_INFO("Init:\t\t\t%2.3f MB\t%2.3f MB\t%2.3f MB",(float)(total)/toMB,(float)((total-avail)/toMB),
+		(float)(avail/toMB));
 	previous=avail;
 
 	// allocate random number generator on GPU(s)
@@ -3277,7 +3277,7 @@ void SNN::allocateSNN_GPU(int netId) {
 	CUDA_CHECK_ERRORS(cudaMalloc((void **)&gpuRuntimeData[netId].gpuRandNums, networkConfigs[netId].numNPois * sizeof(float)));
 
 	cudaMemGetInfo(&avail,&total);
-	KERNEL_INFO("Random Gen:\t\t%2.3f GB\t%2.3f GB\t%2.3f GB",(float)(previous-avail)/toGB, (float)((total-avail)/toGB),(float)(avail/toGB));
+	KERNEL_INFO("Random Gen:\t\t%2.3f MB\t%2.3f MB\t%2.3f MB",(float)(previous-avail)/toMB, (float)((total-avail)/toMB),(float)(avail/toMB));
 	previous=avail;
 
 	// initialize gpuRuntimeData[0].neuronAllocation, __device__ loadBufferCount, loadBufferSize
@@ -3290,7 +3290,7 @@ void SNN::allocateSNN_GPU(int netId) {
 	// initialize __device__ quickSynIdTableGPU[256]
 	initQuickSynIdTable(netId);
 	cudaMemGetInfo(&avail,&total);
-	KERNEL_INFO("Static Load:\t\t%2.3f GB\t%2.3f GB\t%2.3f GB",(float)(previous-avail)/toGB, (float)((total-avail)/toGB),(float)(avail/toGB));
+	KERNEL_INFO("Static Load:\t\t%2.3f MB\t%2.3f MB\t%2.3f MB",(float)(previous-avail)/toMB, (float)((total-avail)/toMB),(float)(avail/toMB));
 	previous=avail;
 
 	// initialize (copy from SNN) gpuRuntimeData[0].Npre, gpuRuntimeData[0].Npre_plastic, gpuRuntimeData[0].Npre_plasticInv, gpuRuntimeData[0].cumulativePre
@@ -3299,13 +3299,13 @@ void SNN::allocateSNN_GPU(int netId) {
 	copyPreConnectionInfo(netId, ALL, &gpuRuntimeData[netId], &managerRuntimeData, cudaMemcpyHostToDevice, true);
 	copyPostConnectionInfo(netId, ALL, &gpuRuntimeData[netId], &managerRuntimeData, cudaMemcpyHostToDevice, true);
 	cudaMemGetInfo(&avail,&total);
-	KERNEL_INFO("Conn Info:\t\t%2.3f GB\t%2.3f GB\t%2.3f GB",(float)(previous-avail)/toGB,(float)((total-avail)/toGB), (float)(avail/toGB));
+	KERNEL_INFO("Conn Info:\t\t%2.3f MB\t%2.3f MB\t%2.3f MB",(float)(previous-avail)/toMB,(float)((total-avail)/toMB), (float)(avail/toMB));
 	previous=avail;
 	
 	// initialize (copy from SNN) gpuRuntimeData[0].wt, gpuRuntimeData[0].wtChange, gpuRuntimeData[0].maxSynWt
 	copySynapseState(netId, &gpuRuntimeData[netId], cudaMemcpyHostToDevice, true);
 	cudaMemGetInfo(&avail,&total);
-	KERNEL_INFO("Syn State:\t\t%2.3f GB\t%2.3f GB\t%2.3f GB",(float)(previous-avail)/toGB,(float)((total-avail)/toGB), (float)(avail/toGB));
+	KERNEL_INFO("Syn State:\t\t%2.3f MB\t%2.3f MB\t%2.3f MB",(float)(previous-avail)/toMB,(float)((total-avail)/toMB), (float)(avail/toMB));
 	previous=avail;
 	
 	// copy the neuron state information to the GPU..
@@ -3321,14 +3321,14 @@ void SNN::allocateSNN_GPU(int netId) {
 		copySTPState(netId, ALL, &gpuRuntimeData[netId], &managerRuntimeData, cudaMemcpyHostToDevice, true);
 	}
 	cudaMemGetInfo(&avail,&total);
-	KERNEL_INFO("Neuron State:\t\t%2.3f GB\t%2.3f GB\t%2.3f GB",(float)(previous-avail)/toGB,(float)((total-avail)/toGB), (float)(avail/toGB));
+	KERNEL_INFO("Neuron State:\t\t%2.3f MB\t%2.3f MB\t%2.3f MB",(float)(previous-avail)/toMB,(float)((total-avail)/toMB), (float)(avail/toMB));
 	previous=avail;
 		
 	// initialize (copy from SNN) gpuRuntimeData[0].grpDA(5HT,ACh,NE)
 	// initialize (copy from SNN) gpuRuntimeData[0].grpDA(5HT,ACh,NE)Buffer[]
 	copyGroupState(netId, ALL, &gpuRuntimeData[netId], &managerRuntimeData, cudaMemcpyHostToDevice, true);
 	cudaMemGetInfo(&avail,&total);
-	KERNEL_INFO("Group State:\t\t%2.3f GB\t%2.3f GB\t%2.3f GB",(float)(previous-avail)/toGB,(float)((total-avail)/toGB), (float)(avail/toGB));
+	KERNEL_INFO("Group State:\t\t%2.3f MB\t%2.3f MB\t%2.3f MB",(float)(previous-avail)/toMB,(float)((total-avail)/toMB), (float)(avail/toMB));
 	previous=avail;
 
 	// initialize (cudaMemset) gpuRuntimeData[0].I_set, gpuRuntimeData[0].poissonFireRate
@@ -3338,7 +3338,7 @@ void SNN::allocateSNN_GPU(int netId) {
 	// initialize (copy from SNN) gpuRuntimeData[0].synSpikeTime, gpuRuntimeData[0].lastSpikeTime
 	copyAuxiliaryData(netId, ALL, &gpuRuntimeData[netId], cudaMemcpyHostToDevice, true);
 	cudaMemGetInfo(&avail,&total);
-	KERNEL_INFO("Auxiliary Data:\t\t%2.3f GB\t%2.3f GB\t%2.3f GB\n\n",(float)(previous-avail)/toGB,(float)((total-avail)/toGB), (float)(avail/toGB));
+	KERNEL_INFO("Auxiliary Data:\t\t%2.3f MB\t%2.3f MB\t%2.3f MB\n\n",(float)(previous-avail)/toMB,(float)((total-avail)/toMB), (float)(avail/toMB));
 	previous=avail;
 
 	// copy relevant pointers and network information to GPU

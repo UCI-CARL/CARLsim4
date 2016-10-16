@@ -720,10 +720,10 @@ void SNN::allocateSNN_CPU(int netId) {
 
 	// display some memory management info
 	size_t avail, total, previous;
-	float toGB = std::pow(1024.0f,3);
-	KERNEL_INFO("GPU Memory Management: (Total %2.3f GB)",(float)(total/toGB));
+	float toMB = std::pow(1024.0f, 2);
+	KERNEL_INFO("CPU Memory Management: (Total %2.3f MB)",(float)(total/toMB));
 	KERNEL_INFO("Data\t\t\tSize\t\tTotal Used\tTotal Available");
-	KERNEL_INFO("Init:\t\t\t%2.3f GB\t%2.3f GB\t%2.3f GB",(float)(total)/toGB,(float)((total-avail)/toGB), (float)(avail/toGB));
+	KERNEL_INFO("Init:\t\t\t%2.3f MB\t%2.3f MB\t%2.3f MB",(float)(total)/toMB,(float)((total-avail)/toMB), (float)(avail/toMB));
 	previous=avail;
 
 	//// FIXME: necessary for CPU_MODE?? allocate random number generator on CPU(s)
@@ -734,7 +734,7 @@ void SNN::allocateSNN_CPU(int netId) {
 
 	//// allocate SNN::gpuRuntimeData[0].gpuRandNums for random number generators
 	//CUDA_CHECK_ERRORS(cudaMalloc((void **)&gpuRuntimeData[netId].gpuRandNums, networkConfigs[netId].numNPois * sizeof(float)));
-	KERNEL_INFO("Random Gen:\t\t%2.3f GB\t%2.3f GB\t%2.3f GB",(float)(previous-avail)/toGB, (float)((total-avail)/toGB),(float)(avail/toGB));
+	KERNEL_INFO("Random Gen:\t\t%2.3f MB\t%2.3f MB\t%2.3f MB",(float)(previous-avail)/toMB, (float)((total-avail)/toMB),(float)(avail/toMB));
 	previous=avail;
 
 
@@ -743,12 +743,12 @@ void SNN::allocateSNN_CPU(int netId) {
 	// initialize (copy from SNN) cpuRuntimeData[0].postSynapticIds, cpuRuntimeData[0].preSynapticIds
 	copyPreConnectionInfo(netId, ALL, &cpuRuntimeData[netId], &managerRuntimeData, true);
 	copyPostConnectionInfo(netId, ALL, &cpuRuntimeData[netId], &managerRuntimeData, true);
-	KERNEL_INFO("Conn Info:\t\t%2.3f GB\t%2.3f GB\t%2.3f GB",(float)(previous-avail)/toGB,(float)((total-avail)/toGB), (float)(avail/toGB));
+	KERNEL_INFO("Conn Info:\t\t%2.3f MB\t%2.3f MB\t%2.3f MB",(float)(previous-avail)/toMB,(float)((total-avail)/toMB), (float)(avail/toMB));
 	previous=avail;
 	
 	// initialize (copy from SNN) cpuRuntimeData[0].wt, cpuRuntimeData[0].wtChange, cpuRuntimeData[0].maxSynWt
 	copySynapseState(netId, &cpuRuntimeData[netId], true);
-	KERNEL_INFO("Syn State:\t\t%2.3f GB\t%2.3f GB\t%2.3f GB",(float)(previous-avail)/toGB,(float)((total-avail)/toGB), (float)(avail/toGB));
+	KERNEL_INFO("Syn State:\t\t%2.3f MB\t%2.3f MB\t%2.3f MB",(float)(previous-avail)/toMB,(float)((total-avail)/toMB), (float)(avail/toMB));
 	previous=avail;
 	
 	// copy the neuron state information to the GPU..
@@ -763,13 +763,13 @@ void SNN::allocateSNN_CPU(int netId) {
 		// initialize (copy from SNN) stpu, stpx
 		copySTPState(netId, ALL, &cpuRuntimeData[netId], &managerRuntimeData, true);
 	}
-	KERNEL_INFO("Neuron State:\t\t%2.3f GB\t%2.3f GB\t%2.3f GB",(float)(previous-avail)/toGB,(float)((total-avail)/toGB), (float)(avail/toGB));
+	KERNEL_INFO("Neuron State:\t\t%2.3f MB\t%2.3f MB\t%2.3f MB",(float)(previous-avail)/toMB,(float)((total-avail)/toMB), (float)(avail/toMB));
 	previous=avail;
 		
 	// initialize (copy from SNN) cpuRuntimeData[0].grpDA(5HT,ACh,NE)
 	// initialize (copy from SNN) cpuRuntimeData[0].grpDA(5HT,ACh,NE)Buffer[]
 	copyGroupState(netId, ALL, &cpuRuntimeData[netId], &managerRuntimeData, true);
-	KERNEL_INFO("Group State:\t\t%2.3f GB\t%2.3f GB\t%2.3f GB",(float)(previous-avail)/toGB,(float)((total-avail)/toGB), (float)(avail/toGB));
+	KERNEL_INFO("Group State:\t\t%2.3f MB\t%2.3f MB\t%2.3f MB",(float)(previous-avail)/toMB,(float)((total-avail)/toMB), (float)(avail/toMB));
 	previous=avail;
 
 	// initialize (cudaMemset) cpuRuntimeData[0].I_set, cpuRuntimeData[0].poissonFireRate
@@ -778,7 +778,7 @@ void SNN::allocateSNN_CPU(int netId) {
 	// initialize (copy from managerRuntimeData) cpuRuntimeData[0].nSpikeCnt,
 	// initialize (copy from SNN) cpuRuntimeData[0].synSpikeTime, cpuRuntimeData[0].lastSpikeTime
 	copyAuxiliaryData(netId, ALL, &cpuRuntimeData[netId], true);
-	KERNEL_INFO("Auxiliary Data:\t\t%2.3f GB\t%2.3f GB\t%2.3f GB\n\n",(float)(previous-avail)/toGB,(float)((total-avail)/toGB), (float)(avail/toGB));
+	KERNEL_INFO("Auxiliary Data:\t\t%2.3f MB\t%2.3f MB\t%2.3f MB\n\n",(float)(previous-avail)/toMB,(float)((total-avail)/toMB), (float)(avail/toMB));
 	previous=avail;
 
 	// TODO: move mulSynFast, mulSynSlow to ConnectConfig structure
