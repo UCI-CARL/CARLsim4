@@ -636,7 +636,7 @@ private:
 	void findNumNSpikeGen(int _netId, int& _numNSpikeGen);
 
 	void generatePostSynapticSpike(unsigned int pre_i, unsigned int idx_d, unsigned int offset, int tD);
-	void generateSpikes();
+	void fillSpikeGenBits(int netId);
 	void userDefinedSpikeGenerator(int gGrpId);
 	//void generateSpikesFromRate(int grpId);
 
@@ -748,8 +748,7 @@ private:
 	void startCPUTiming();
 	void stopCPUTiming();
 
-	void updateSpikesFromGrp(int grpId);
-	void updateSpikeGenerators();
+	void generateUserDefinedSpikes();
 
 	void allocateManagerSpikeTables();
 	//void updateStateAndFiringTable();
@@ -762,6 +761,7 @@ private:
 	void allocateSNN_CPU(int netId); //!< allocates runtime data on CPU memory
 	int  allocateStaticLoad(int netId, int bufSize);
 
+	void assignPoissonFiringRate();
 	void assignPoissonFiringRate_GPU();
 
 	void checkAndSetGPUDevice(int netId);
@@ -866,7 +866,6 @@ private:
 	 */
 	void resetSpikeCounter_GPU(int grpId);
 
-	void setSpikeGenBit_GPU(int netId, int lGrpId, int lNId);
 	void spikeGeneratorUpdate();
 	void spikeGeneratorUpdate_GPU();
 	void startGPUTiming();

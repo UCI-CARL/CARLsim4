@@ -1950,53 +1950,53 @@ void SNN::allocateManagerRuntimeData() {
 	managerRuntimeData.memType = CPU_MODE;
 }
 
-int SNN::addSpikeToTable(int gNId, int gGrpId) {
-	int spikeBufferFull = 0;
-	managerRuntimeData.lastSpikeTime[nid] = simTime;
-	managerRuntimeData.nSpikeCnt[nid]++;
-	if (sim_with_homeostasis)
-		managerRuntimeData.avgFiring[nid] += 1000/(groupConfigs[0][g].avgTimeScale*1000);
-
-	if (simMode_ == GPU_MODE) {
-		assert(groupConfigs[0][g].isSpikeGenerator == true);
-		setSpikeGenBit_GPU(0, nid, g);
-		return 0;
-	}
-
-	// update STP for poinsson (input) neurons
-	if (groupConfigs[0][g].WithSTP) {
-		// update the spike-dependent part of du/dt and dx/dt
-		// we need to retrieve the STP values from the right buffer position (right before vs. right after the spike)
-		int ind_plus = STP_BUF_POS(nid, simTime, glbNetworkConfig.maxDelay); // index of right after the spike, such as in u^+
-	    int ind_minus = STP_BUF_POS(nid, (simTime-1), glbNetworkConfig.maxDelay); // index of right before the spike, such as in u^-
-
-		// du/dt = -u/tau_F + U * (1-u^-) * \delta(t-t_{spk})
-		managerRuntimeData.stpu[ind_plus] += groupConfigs[0][g].STP_U*(1.0-managerRuntimeData.stpu[ind_minus]);
-
-		// dx/dt = (1-x)/tau_D - u^+ * x^- * \delta(t-t_{spk})
-		managerRuntimeData.stpx[ind_plus] -= managerRuntimeData.stpu[ind_plus]*managerRuntimeData.stpx[ind_minus];
-	}
-
-	// insert poisson (input) spikes into firingTableD1(D2)
-	if (groupConfigs[0][g].MaxDelay == 1) {
-		assert(nid < glbNetworkConfig.numN);
-		managerRuntimeData.firingTableD1[spikeCountD1Sec] = nid;
-		spikeCountD1Sec++;
-		if (spikeCountD1Sec >= networkConfigs[0].maxSpikesD1) {
-			spikeBufferFull = 2;
-			spikeCountD1Sec = networkConfigs[0].maxSpikesD1-1;
-		}
-	} else {
-		assert(nid < glbNetworkConfig.numN);
-		managerRuntimeData.firingTableD2[spikeCountD2Sec] = nid;
-		spikeCountD2Sec++;
-		if (spikeCountD2Sec >= networkConfigs[0].maxSpikesD2) {
-			spikeBufferFull = 1;
-			spikeCountD2Sec = networkConfigs[0].maxSpikesD2-1;
-		}
-	}
-	return spikeBufferFull;
-}
+//int SNN::addSpikeToTable(int gNId, int gGrpId) {
+//	int spikeBufferFull = 0;
+//	managerRuntimeData.lastSpikeTime[nid] = simTime;
+//	managerRuntimeData.nSpikeCnt[nid]++;
+//	if (sim_with_homeostasis)
+//		managerRuntimeData.avgFiring[nid] += 1000/(groupConfigs[0][g].avgTimeScale*1000);
+//
+//	if (simMode_ == GPU_MODE) {
+//		assert(groupConfigs[0][g].isSpikeGenerator == true);
+//		setSpikeGenBit_GPU(0, nid, g);
+//		return 0;
+//	}
+//
+//	// update STP for poinsson (input) neurons
+//	if (groupConfigs[0][g].WithSTP) {
+//		// update the spike-dependent part of du/dt and dx/dt
+//		// we need to retrieve the STP values from the right buffer position (right before vs. right after the spike)
+//		int ind_plus = STP_BUF_POS(nid, simTime, glbNetworkConfig.maxDelay); // index of right after the spike, such as in u^+
+//	    int ind_minus = STP_BUF_POS(nid, (simTime-1), glbNetworkConfig.maxDelay); // index of right before the spike, such as in u^-
+//
+//		// du/dt = -u/tau_F + U * (1-u^-) * \delta(t-t_{spk})
+//		managerRuntimeData.stpu[ind_plus] += groupConfigs[0][g].STP_U*(1.0-managerRuntimeData.stpu[ind_minus]);
+//
+//		// dx/dt = (1-x)/tau_D - u^+ * x^- * \delta(t-t_{spk})
+//		managerRuntimeData.stpx[ind_plus] -= managerRuntimeData.stpu[ind_plus]*managerRuntimeData.stpx[ind_minus];
+//	}
+//
+//	// insert poisson (input) spikes into firingTableD1(D2)
+//	if (groupConfigs[0][g].MaxDelay == 1) {
+//		assert(nid < glbNetworkConfig.numN);
+//		managerRuntimeData.firingTableD1[spikeCountD1Sec] = nid;
+//		spikeCountD1Sec++;
+//		if (spikeCountD1Sec >= networkConfigs[0].maxSpikesD1) {
+//			spikeBufferFull = 2;
+//			spikeCountD1Sec = networkConfigs[0].maxSpikesD1-1;
+//		}
+//	} else {
+//		assert(nid < glbNetworkConfig.numN);
+//		managerRuntimeData.firingTableD2[spikeCountD2Sec] = nid;
+//		spikeCountD2Sec++;
+//		if (spikeCountD2Sec >= networkConfigs[0].maxSpikesD2) {
+//			spikeBufferFull = 1;
+//			spikeCountD2Sec = networkConfigs[0].maxSpikesD2-1;
+//		}
+//	}
+//	return spikeBufferFull;
+//}
 
 int SNN::assignGroup(int gGrpId, int availableNeuronId) {
 	int newAvailableNeuronId;
@@ -4437,6 +4437,34 @@ int SNN::setRandSeed(int seed) {
 		return seed;
 }
 
+void SNN::fillSpikeGenBits(int netId) {
+	SpikeBuffer::SpikeIterator spikeBufIter;
+	SpikeBuffer::SpikeIterator spikeBufIterEnd = spikeBuf->back();
+
+	// Covert spikes stored in spikeBuffer to SpikeGenBit
+	for (spikeBufIter = spikeBuf->front(); spikeBufIter != spikeBufIterEnd; ++spikeBufIter) {
+		// get the global neuron id and group id for this particular spike
+		int gGrpId = spikeBufIter->grpId;
+		int lGrpId = groupConfigMDMap[gGrpId].lGrpId;
+		int lNId = spikeBufIter->neurId /* gNId */ + groupConfigMDMap[gGrpId].GtoLOffset;
+		
+
+		// add spike to spikeGentBit
+		assert(groupConfigMap[gGrpId].isSpikeGenerator == true);
+
+		int nIdPos    = (lNId - groupConfigs[netId][lGrpId].lStartN + groupConfigs[netId][lGrpId].Noffset);
+		int nIdBitPos = nIdPos % 32;
+		int nIdIndex  = nIdPos / 32;
+
+		assert(nIdIndex < (networkConfigs[netId].numNSpikeGen / 32 + 1));
+
+		managerRuntimeData.spikeGenBits[nIdIndex] |= (1 << nIdBitPos);
+	}
+
+	// tell the spike buffer to advance to the next time step
+	spikeBuf->step();
+}
+
 void SNN::startCPUTiming() { prevCpuExecutionTime = cumExecutionTime; }
 void SNN::startGPUTiming() { prevGpuExecutionTime = cumExecutionTime; }
 void SNN::stopCPUTiming() {
@@ -4649,7 +4677,8 @@ void SNN::userDefinedSpikeGenerator(int gGrpId) {
 
 	for(int gNId = groupConfigMDMap[gGrpId].gStartN; gNId <= groupConfigMDMap[gGrpId].gEndN; gNId++) {
 		// start the time from the last time it spiked, that way we can ensure that the refractory period is maintained
-		int nextTime = managerRuntimeData.lastSpikeTime[gNId];
+		int lNId = gNId + groupConfigMDMap[gGrpId].GtoLOffset;
+		int nextTime = managerRuntimeData.lastSpikeTime[lNId];
 		if (nextTime == MAX_SIMULATION_TIME)
 			nextTime = 0;
 
@@ -4673,7 +4702,7 @@ void SNN::userDefinedSpikeGenerator(int gGrpId) {
 				// \TODO CPU mode does not check whether the same AER event has been scheduled before (bug #212)
 				// check how GPU mode does it, then do the same here.
 				nextTime = nextSchedTime;
-				spikeBuf->schedule(gNId, nextTime - currTime);
+				spikeBuf->schedule(gNId, gGrpId, nextTime - currTime);
 			} else {
 				done = true;
 			}
@@ -4681,7 +4710,7 @@ void SNN::userDefinedSpikeGenerator(int gGrpId) {
 	}
 }
 
-void SNN::updateSpikeGenerators() {
+void SNN::generateUserDefinedSpikes() {
 	for(int gGrpId = 0; gGrpId < numGroups; gGrpId++) {
 		if (groupConfigMap[gGrpId].isSpikeGenerator) {
 			// This evaluation is done to check if its time to get new set of spikes..

@@ -77,9 +77,10 @@ public:
 
     // +++++ PUBLIC DATA STRUCTURES +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
-    //! linked list to hold the corresponding neuron ID and delivery delay for each spike
+    //! linked list to hold the corresponding neuron Id and delivery delay for each spike
     struct SpikeNode {
-        int neurId; //!< corresponding neuron ID
+        int neurId; //!< corresponding global neuron Id
+		int grpId; //!< corresponding global group Id
         unsigned short int delay; //!< scheduling delay (in number of time steps)
         SpikeNode* next; //!< pointer to the next element in the list
     };
@@ -123,7 +124,7 @@ public:
      * \param[in] neurId corresponding neuron ID
      * \param[in] delay scheduling delay (in number of time steps)
      */
-    void schedule(int neurId, unsigned short int delay);
+    void schedule(int neurId, int grpId, unsigned short int delay);
 
     //! advance to next time step
     void step();
