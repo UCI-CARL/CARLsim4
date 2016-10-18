@@ -33,6 +33,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "stopwatch", "tools\stopwatc
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "benchmark", "carlsim\benchmark\benchmark.vcxproj", "{59387F25-BFC1-4E45-B815-1BA87577567D}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "test_kernel2", "projects\test_kernel2\test_kernel2.vcxproj", "{9A43405F-86AE-495F-AE4B-EEBE8BB677E8}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Mixed Platforms = Debug|Mixed Platforms
@@ -234,6 +236,18 @@ Global
 		{59387F25-BFC1-4E45-B815-1BA87577567D}.Release|Win32.Build.0 = Release|Win32
 		{59387F25-BFC1-4E45-B815-1BA87577567D}.Release|x64.ActiveCfg = Release|x64
 		{59387F25-BFC1-4E45-B815-1BA87577567D}.Release|x64.Build.0 = Release|x64
+		{9A43405F-86AE-495F-AE4B-EEBE8BB677E8}.Debug|Mixed Platforms.ActiveCfg = Debug|Win32
+		{9A43405F-86AE-495F-AE4B-EEBE8BB677E8}.Debug|Mixed Platforms.Build.0 = Debug|Win32
+		{9A43405F-86AE-495F-AE4B-EEBE8BB677E8}.Debug|Win32.ActiveCfg = Debug|Win32
+		{9A43405F-86AE-495F-AE4B-EEBE8BB677E8}.Debug|Win32.Build.0 = Debug|Win32
+		{9A43405F-86AE-495F-AE4B-EEBE8BB677E8}.Debug|x64.ActiveCfg = Debug|x64
+		{9A43405F-86AE-495F-AE4B-EEBE8BB677E8}.Debug|x64.Build.0 = Debug|x64
+		{9A43405F-86AE-495F-AE4B-EEBE8BB677E8}.Release|Mixed Platforms.ActiveCfg = Release|Win32
+		{9A43405F-86AE-495F-AE4B-EEBE8BB677E8}.Release|Mixed Platforms.Build.0 = Release|Win32
+		{9A43405F-86AE-495F-AE4B-EEBE8BB677E8}.Release|Win32.ActiveCfg = Release|Win32
+		{9A43405F-86AE-495F-AE4B-EEBE8BB677E8}.Release|Win32.Build.0 = Release|Win32
+		{9A43405F-86AE-495F-AE4B-EEBE8BB677E8}.Release|x64.ActiveCfg = Release|x64
+		{9A43405F-86AE-495F-AE4B-EEBE8BB677E8}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
