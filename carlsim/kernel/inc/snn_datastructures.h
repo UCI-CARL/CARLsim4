@@ -340,7 +340,7 @@ typedef struct RuntimeData_s {
 	int* extFiringTableEndIdxD2;
 
 	float* poissonFireRate;
-	float* gpuRandNums;		//!< firing random number. max value is 10,000
+	float* randNum;		//!< firing random number. max value is 10,000
 
 	int2* neuronAllocation;		//!< .x: [31:0] index of the first neuron, .y: [31:16] number of neurons, [15:0] group id
 	int3* groupIdInfo;			//!< .x , .y: the start and end index of neurons in a group, .z: gourd id, used for group Id calculations

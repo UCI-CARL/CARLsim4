@@ -1950,7 +1950,7 @@ void SNN::allocateManagerRuntimeData() {
 	managerRuntimeData.memType = CPU_MODE;
 }
 
-int SNN::addSpikeToTable(int nid, int g) {
+int SNN::addSpikeToTable(int gNId, int gGrpId) {
 	int spikeBufferFull = 0;
 	managerRuntimeData.lastSpikeTime[nid] = simTime;
 	managerRuntimeData.nSpikeCnt[nid]++;
@@ -3400,6 +3400,10 @@ void SNN::fetchConnIdsLookupArray(int netId) {
 	copyConnIdsLookupArray(netId);
 }
 
+void SNN::fetchLastSpikeTime(int netId) {
+	copyLastSpikeTime(netId);
+}
+
 //We need pass the neuron id (nid) and the grpId just for the case when we want to
 //ramp up/down the weights.  In that case we need to set the weights of each synapse
 //depending on their nid (their position with respect to one another). -- KDC
@@ -4412,9 +4416,9 @@ inline SynInfo SNN::SET_CONN_ID(int nId, int sId, int grpId) {
 
 void SNN::setGrpTimeSlice(int gGrpId, int timeSlice) {
 	if (gGrpId == ALL) {
-		for(int grpId = 0; (gGrpId < numGroups); gGrpId++) {
-			if (groupConfigMap[gGrpId].isSpikeGenerator)
-				setGrpTimeSlice(gGrpId, timeSlice);
+		for(int grpId = 0; grpId < numGroups; grpId++) {
+			if (groupConfigMap[grpId].isSpikeGenerator)
+				setGrpTimeSlice(grpId, timeSlice);
 		}
 	} else {
 		assert((timeSlice > 0 ) && (timeSlice <= MAX_TIME_SLICE));
@@ -4629,23 +4633,51 @@ void SNN::updateGroupMonitor(int gGrpId) {
 	}
 }
 
-void SNN::updateSpikesFromGrp(int gGrpId) {
-	assert(groupConfigMap[gGrpId].isSpikeGenerator == true);
-
-	bool done;
-	//static FILE* _fp = fopen("spikes.txt", "w");
-	int currTime = simTime;
-
+// FIXME: wrong to use groupConfigs[0]
+void SNN::userDefinedSpikeGenerator(int gGrpId) {
+	// \FIXME this function is a mess
+	SpikeGeneratorCore* spikeGenFunc = groupConfigMap[gGrpId].spikeGenFunc;
+	int netId = groupConfigMDMap[gGrpId].netId;
 	int timeSlice = groupConfigMDMap[gGrpId].currTimeSlice;
-	groupConfigMDMap[gGrpId].sliceUpdateTime = simTime;
+	int currTime = simTime;
+	bool done;
 
-	// we dont generate any poisson spike if during the
-	// current call we might exceed the maximum 32 bit integer value
-	if ((currTime + timeSlice) == MAX_SIMULATION_TIME || (currTime + timeSlice) < 0)
-		return;
+	if (simMode_ == GPU_MODE)
+		fetchLastSpikeTime(netId);
+	else
+		memcpy(managerRuntimeData.lastSpikeTime, cpuRuntimeData[netId].lastSpikeTime, networkConfigs[netId].numN);
 
-	if (groupConfigMap[gGrpId].spikeGenFunc != NULL) {
-		generateSpikesFromFuncPtr(gGrpId);
+	for(int gNId = groupConfigMDMap[gGrpId].gStartN; gNId <= groupConfigMDMap[gGrpId].gEndN; gNId++) {
+		// start the time from the last time it spiked, that way we can ensure that the refractory period is maintained
+		int nextTime = managerRuntimeData.lastSpikeTime[gNId];
+		if (nextTime == MAX_SIMULATION_TIME)
+			nextTime = 0;
+
+		// the end of the valid time window is either the length of the scheduling time slice from now (because that
+		// is the max of the allowed propagated buffer size) or simply the end of the simulation
+		int endOfTimeWindow = MIN(currTime+timeSlice,simTimeRunStop);
+
+		done = false;
+		while (!done) {
+			// generate the next spike time (nextSchedTime) from the nextSpikeTime callback
+			int nextSchedTime = spikeGenFunc->nextSpikeTime(this, gGrpId, gNId - groupConfigMDMap[gGrpId].gStartN, currTime, nextTime, endOfTimeWindow);
+
+			// the generated spike time is valid only if:
+			// - it has not been scheduled before (nextSchedTime > nextTime)
+			//    - but careful: we would drop spikes at t=0, because we cannot initialize nextTime to -1...
+			// - it is within the scheduling time slice (nextSchedTime < endOfTimeWindow)
+			// - it is not in the past (nextSchedTime >= currTime)
+			if ((nextSchedTime==0 || nextSchedTime>nextTime) && nextSchedTime<endOfTimeWindow && nextSchedTime>=currTime) {
+//				fprintf(stderr,"%u: spike scheduled for %d at %u\n",currTime, i-groupConfigs[0][grpId].StartN,nextSchedTime);
+				// scheduled spike...
+				// \TODO CPU mode does not check whether the same AER event has been scheduled before (bug #212)
+				// check how GPU mode does it, then do the same here.
+				nextTime = nextSchedTime;
+				spikeBuf->schedule(gNId, nextTime - currTime);
+			} else {
+				done = true;
+			}
+		}
 	}
 }
 
@@ -4658,7 +4690,17 @@ void SNN::updateSpikeGenerators() {
 			// we always have to run this the first millisecond of a new runNetwork call; that is,
 			// when simTime==simTimeRunStart
 			if(((simTime - groupConfigMDMap[gGrpId].sliceUpdateTime) >= groupConfigMDMap[gGrpId].currTimeSlice || simTime == simTimeRunStart)) {
-				updateSpikesFromGrp(gGrpId);
+				int timeSlice = groupConfigMDMap[gGrpId].currTimeSlice;
+				groupConfigMDMap[gGrpId].sliceUpdateTime = simTime;
+				
+				// we dont generate any poisson spike if during the
+				// current call we might exceed the maximum 32 bit integer value
+				if ((simTime + timeSlice) == MAX_SIMULATION_TIME || (simTime + timeSlice) < 0)
+					return;
+
+				if (groupConfigMap[gGrpId].spikeGenFunc != NULL) {
+					userDefinedSpikeGenerator(gGrpId);
+				}
 			}
 		}
 	}

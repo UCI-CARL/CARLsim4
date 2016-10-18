@@ -637,8 +637,7 @@ private:
 
 	void generatePostSynapticSpike(unsigned int pre_i, unsigned int idx_d, unsigned int offset, int tD);
 	void generateSpikes();
-	void generateSpikes(int grpId);
-	void generateSpikesFromFuncPtr(int grpId);
+	void userDefinedSpikeGenerator(int gGrpId);
 	//void generateSpikesFromRate(int grpId);
 
 	float generateWeight(int connProp, float initWt, float maxWt, int nid, int grpId);
@@ -824,6 +823,7 @@ private:
 	void copyGroupConfigs(int netId);
 	void copyGrpIdsLookupArray(int netId);
 	void copyConnIdsLookupArray(int netId);
+	void copyLastSpikeTime(int netId);
 
 	void deleteObjects_GPU();		//!< deallocates all used data structures in snn_gpu.cu
 	void doCurrentUpdate();
@@ -847,6 +847,7 @@ private:
 	void fetchWeightState(int netId, int lGrpId);
 	void fetchGrpIdsLookupArray(int netId);
 	void fetchConnIdsLookupArray(int netId);
+	void fetchLastSpikeTime(int netId);
 
 	void globalStateUpdate_GPU();
 	void initGPU(int netId);

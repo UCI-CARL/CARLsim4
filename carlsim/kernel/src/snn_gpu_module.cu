@@ -156,7 +156,7 @@ __device__ inline bool getPoissonSpike(int lNId) {
 	// Random number value is less than the poisson firing probability
 	// if poisson firing probability is say 1.0 then the random poisson ptr
 	// will always be less than 1.0 and hence it will continiously fire
-	return runtimeDataGPU.gpuRandNums[lNId - networkConfigGPU.numNReg] * 1000.0f
+	return runtimeDataGPU.randNum[lNId - networkConfigGPU.numNReg] * 1000.0f
 			< runtimeDataGPU.poissonFireRate[lNId - networkConfigGPU.numNReg];
 }
 
@@ -602,7 +602,7 @@ void SNN::setSpikeGenBit_GPU(int netId, int lGrpId, int lNId) {
  * net access: numNReg numNPois, numN, sim_with_stdp, sim_in_testing, sim_with_homeostasis, maxSpikesD1, maxSpikesD2
  * grp access: Type, spikeGenFunc, Noffset, withSpikeCounter, spkCntBufPos, StartN, WithSTP, avgTimeScale
                WithSTDP, WithESTDP, WithISTDP, WithESTDPCurve, With ISTDPCurve, all STDP parameters
- * rtd access: gpuRandNums, poissonFireRate, spkCntBuf, nSpikeCnt, voltage, recovery, Izh_c, Izh_d
+ * rtd access: randNum, poissonFireRate, spkCntBuf, nSpikeCnt, voltage, recovery, Izh_c, Izh_d
  *             cumulativePre, Npre_plastic, (R)synSpikeTime, (W)lastSpikeTime, (W)wtChange,
  *             avgFiring
  */
@@ -2513,6 +2513,13 @@ void SNN::copyConnIdsLookupArray(int netId) {
 	CUDA_CHECK_ERRORS(cudaMemcpy(managerRuntimeData.connIdsPreIdx, gpuRuntimeData[netId].connIdsPreIdx, sizeof(short int) *  networkConfigs[netId].numPreSynNet, cudaMemcpyDeviceToHost));
 }
 
+void SNN::copyLastSpikeTime(int netId) {
+	checkAndSetGPUDevice(netId);
+	checkDestSrcPtrs(&managerRuntimeData, &gpuRuntimeData[netId], cudaMemcpyDeviceToHost, false, ALL, 0); // check that the destination pointer is properly allocated..
+
+	CUDA_CHECK_ERRORS(cudaMemcpy(managerRuntimeData.lastSpikeTime, gpuRuntimeData[netId].lastSpikeTime, sizeof(int) *  networkConfigs[netId].numN, cudaMemcpyDeviceToHost));
+}
+
 void SNN::setExternalCurrent(int grpId, const std::vector<float>& current) {
 	assert(grpId >= 0); assert(grpId < numGroups);
 	assert(!isPoissonGroup(grpId));
@@ -2551,7 +2558,7 @@ void SNN::spikeGeneratorUpdate_GPU() {
 
 			// this part of the code is useful for poisson spike generator function..
 			if((networkConfigs[netId].numNPois > 0) && (gpuRuntimeData[netId].gpuRandGen != NULL)) {
-				curandGenerateUniform(gpuRuntimeData[netId].gpuRandGen, gpuRuntimeData[netId].gpuRandNums, networkConfigs[netId].numNPois);
+				curandGenerateUniform(gpuRuntimeData[netId].gpuRandGen, gpuRuntimeData[netId].randNum, networkConfigs[netId].numNPois);
 			}
 
 			// Use spike generators (user-defined callback function)
@@ -2765,8 +2772,8 @@ void SNN::deleteObjects_GPU() {
 			if (gpuRuntimeData[netId].gpuRandGen != NULL) curandDestroyGenerator(gpuRuntimeData[netId].gpuRandGen);
 			gpuRuntimeData[netId].gpuRandGen = NULL;
 
-			if (gpuRuntimeData[netId].gpuRandNums != NULL) CUDA_CHECK_ERRORS(cudaFree(gpuRuntimeData[netId].gpuRandNums));
-			gpuRuntimeData[netId].gpuRandNums = NULL;
+			if (gpuRuntimeData[netId].randNum != NULL) CUDA_CHECK_ERRORS(cudaFree(gpuRuntimeData[netId].randNum));
+			gpuRuntimeData[netId].randNum = NULL;
 		}
 	}
 
@@ -3272,8 +3279,8 @@ void SNN::allocateSNN_GPU(int netId) {
 		curandSetPseudoRandomGeneratorSeed(gpuRuntimeData[netId].gpuRandGen, randSeed_ + netId);
 	}
 
-	// allocate SNN::gpuRuntimeData[0].gpuRandNums for random number generators
-	CUDA_CHECK_ERRORS(cudaMalloc((void **)&gpuRuntimeData[netId].gpuRandNums, networkConfigs[netId].numNPois * sizeof(float)));
+	// allocate SNN::gpuRuntimeData[0].randNum for random number generators
+	CUDA_CHECK_ERRORS(cudaMalloc((void **)&gpuRuntimeData[netId].randNum, networkConfigs[netId].numNPois * sizeof(float)));
 
 	cudaMemGetInfo(&avail,&total);
 	KERNEL_INFO("Random Gen:\t\t%2.3f MB\t%2.3f MB\t%2.3f MB",(float)(previous-avail)/toMB, (float)((total-avail)/toMB),(float)(avail/toMB));

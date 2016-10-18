@@ -73,9 +73,10 @@ void SNN::spikeGeneratorUpdate() {
 			assert(cpuRuntimeData[netId].allocated);
 
 			// this part of the code is useful for poisson spike generator function..
-			if(networkConfigs[netId].numNPois > 0) {
-				//curandGenerateUniform(gpuRuntimeData[netId].gpuRandGen, gpuRuntimeData[netId].gpuRandNums, networkConfigs[netId].numNPois);
+			for (int poisN = 0; poisN < networkConfigs[netId].numNPois; poisN++) {
+				//curandGenerateUniform(gpuRuntimeData[netId].gpuRandGen, gpuRuntimeData[netId].randNum, networkConfigs[netId].numNPois);
 				// set CPU_MODE Random Gen, store random number to g(c)puRandNums
+				cpuRuntimeData[netId].randNum[poisN] = drand48();
 			}
 
 			// Use spike generators (user-defined callback function)
@@ -436,13 +437,13 @@ void SNN::generateSpikes() {
 
 	for (spikeBufIter=spikeBuf->front(); spikeBufIter!=spikeBufIterEnd; ++spikeBufIter) {
 		// get the neuron id for this particular spike
-		int nid	 = spikeBufIter->neurId;
+		int gNId = spikeBufIter->neurId;
 
 		// find associated group ID
-		short int g = managerRuntimeData.grpIds[nid];
+		int gGrpId = managerRuntimeData.grpIds[gNId];
 
 		// add spike to scheduling table
-		addSpikeToTable (nid, g);
+		addSpikeToTable(gNId, gGrpId);
 
 		// keep track of number of spikes
 		spikeCountSec++;
@@ -451,50 +452,6 @@ void SNN::generateSpikes() {
 
 	// tell the spike buffer to advance to the next time step
 	spikeBuf->step();
-}
-
-// FIXME: wrong to use groupConfigs[0]
-void SNN::generateSpikesFromFuncPtr(int grpId) {
-	// \FIXME this function is a mess
-	bool done;
-	SpikeGeneratorCore* spikeGenFunc = groupConfigMap[grpId].spikeGenFunc;
-	int timeSlice = groupConfigMDMap[grpId].currTimeSlice;
-	int currTime = simTime;
-	int spikeCnt = 0;
-	for(int i = groupConfigs[0][grpId].gStartN; i <= groupConfigs[0][grpId].gEndN; i++) {
-		// start the time from the last time it spiked, that way we can ensure that the refractory period is maintained
-		int nextTime = managerRuntimeData.lastSpikeTime[i];
-		if (nextTime == MAX_SIMULATION_TIME)
-			nextTime = 0;
-
-		// the end of the valid time window is either the length of the scheduling time slice from now (because that
-		// is the max of the allowed propagated buffer size) or simply the end of the simulation
-		int endOfTimeWindow = MIN(currTime+timeSlice,simTimeRunStop);
-
-		done = false;
-		while (!done) {
-			// generate the next spike time (nextSchedTime) from the nextSpikeTime callback
-			int nextSchedTime = spikeGenFunc->nextSpikeTime(this, grpId, i - groupConfigs[0][grpId].gStartN, currTime, 
-				nextTime, endOfTimeWindow);
-
-			// the generated spike time is valid only if:
-			// - it has not been scheduled before (nextSchedTime > nextTime)
-			//    - but careful: we would drop spikes at t=0, because we cannot initialize nextTime to -1...
-			// - it is within the scheduling time slice (nextSchedTime < endOfTimeWindow)
-			// - it is not in the past (nextSchedTime >= currTime)
-			if ((nextSchedTime==0 || nextSchedTime>nextTime) && nextSchedTime<endOfTimeWindow && nextSchedTime>=currTime) {
-//				fprintf(stderr,"%u: spike scheduled for %d at %u\n",currTime, i-groupConfigs[0][grpId].StartN,nextSchedTime);
-				// scheduled spike...
-				// \TODO CPU mode does not check whether the same AER event has been scheduled before (bug #212)
-				// check how GPU mode does it, then do the same here.
-				nextTime = nextSchedTime;
-				spikeBuf->schedule(i, nextTime - currTime);
-				spikeCnt++;
-			} else {
-				done = true;
-			}
-		}
-	}
 }
 
 // FIXME: wrong to use groupConfigs[0]
@@ -726,8 +683,8 @@ void SNN::allocateSNN_CPU(int netId) {
 	//	curandSetPseudoRandomGeneratorSeed(gpuRuntimeData[netId].gpuRandGen, randSeed_ + netId);
 	//}
 
-	//// allocate SNN::gpuRuntimeData[0].gpuRandNums for random number generators
-	//CUDA_CHECK_ERRORS(cudaMalloc((void **)&gpuRuntimeData[netId].gpuRandNums, networkConfigs[netId].numNPois * sizeof(float)));
+	//// allocate SNN::gpuRuntimeData[0].randNum for random number generators
+	//CUDA_CHECK_ERRORS(cudaMalloc((void **)&gpuRuntimeData[netId].randNum, networkConfigs[netId].numNPois * sizeof(float)));
 	//KERNEL_INFO("Random Gen:\t\t%2.3f MB\t%2.3f MB\t%2.3f MB",(float)(previous-avail)/toMB, (float)((total-avail)/toMB),(float)(avail/toMB));
 	//previous=avail;
 
