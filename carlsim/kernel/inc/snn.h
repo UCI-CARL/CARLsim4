@@ -610,13 +610,14 @@ private:
 	void connectGaussian(int netId, std::list<ConnectConfig>::iterator connIt, bool isExternal);
 	void connectUserDefined(int netId, std::list<ConnectConfig>::iterator connIt, bool isExternal);
 	void clearExtFiringTable();
+	void clearExtFiringTable_GPU();
 
 	void deleteObjects();			//!< deallocates all used data structures in snn_cpu.cpp
 
-	void doD1CurrentUpdate();
-	void doD2CurrentUpdate();
+	void doCurrentUpdateD1(int netId);
+	void doCurrentUpdateD2(int netId);
 	void doGPUSim();
-	void doSnnSim();
+	void doCPUSim();
 	void doSTPUpdateAndDecayCond();
 
 	void findFiring();
@@ -634,7 +635,7 @@ private:
                   int& _numNPois, int& _numNExcPois, int& _numNInhPois);
 	void findNumNSpikeGen(int _netId, int& _numNSpikeGen);
 
-	void generatePostSpike(unsigned int pre_i, unsigned int idx_d, unsigned int offset, int tD);
+	void generatePostSynapticSpike(unsigned int pre_i, unsigned int idx_d, unsigned int offset, int tD);
 	void generateSpikes();
 	void generateSpikes(int grpId);
 	void generateSpikesFromFuncPtr(int grpId);
@@ -737,6 +738,7 @@ private:
 	void resetSynapse(int netId, bool changeWeights=false);
 	void resetTimeTable();
 	void resetFiringTable();
+	void routeSpikes();
 	void routeSpikes_GPU();
 
 	inline SynInfo SET_CONN_ID(int nid, int sid, int grpId);
@@ -824,6 +826,7 @@ private:
 	void copyConnIdsLookupArray(int netId);
 
 	void deleteObjects_GPU();		//!< deallocates all used data structures in snn_gpu.cu
+	void doCurrentUpdate();
 	void doCurrentUpdate_GPU();
 	void doSTPUpdateAndDecayCond_GPU();
 	void dumpSpikeBuffToFile_GPU(int gid);
@@ -863,6 +866,7 @@ private:
 	void resetSpikeCounter_GPU(int grpId);
 
 	void setSpikeGenBit_GPU(int netId, int lGrpId, int lNId);
+	void spikeGeneratorUpdate();
 	void spikeGeneratorUpdate_GPU();
 	void startGPUTiming();
 	void stopGPUTiming();
@@ -871,8 +875,9 @@ private:
 	void updateNetwork_GPU(bool resetFiringInfo); //!< Allows parameters to be reset in the middle of the simulation
 	void updateWeights();
 	void updateWeights_GPU();
-	//void updateStateAndFiringTable_GPU();
+	void updateTimingTable();
 	void updateTimingTable_GPU();
+	
 
 
 	// +++++ PRIVATE PROPERTIES +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //

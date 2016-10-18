@@ -2544,7 +2544,6 @@ void SNN::setExternalCurrent(int grpId, const std::vector<float>& current) {
 
 // spikeGeneratorUpdate on GPUs..
 void SNN::spikeGeneratorUpdate_GPU() {
-
 	for (int netId = 0; netId < MAX_NET_PER_SNN; netId++) {
 		if (!groupPartitionLists[netId].empty()) {
 			checkAndSetGPUDevice(netId);
@@ -2555,7 +2554,7 @@ void SNN::spikeGeneratorUpdate_GPU() {
 				curandGenerateUniform(gpuRuntimeData[netId].gpuRandGen, gpuRuntimeData[netId].gpuRandNums, networkConfigs[netId].numNPois);
 			}
 
-			// this part of the code is invoked when we use spike generators
+			// Use spike generators (user-defined callback function)
 			if (networkConfigs[netId].numNSpikeGen > 0) {
 				assert(managerRuntimeData.spikeGenBits != NULL);
 
@@ -2840,7 +2839,7 @@ void SNN::assignPoissonFiringRate_GPU() {
 }
 
 // Note: for temporarily use, might be merged into exchangeExternalSpike
-void SNN::clearExtFiringTable() {
+void SNN::clearExtFiringTable_GPU() {
 	for (int netId = 0; netId < MAX_NET_PER_SNN; netId++) {
 		if (!groupPartitionLists[netId].empty()) {
 			checkAndSetGPUDevice(netId);
@@ -2887,7 +2886,7 @@ void SNN::doGPUSim() {
 
 	globalStateUpdate_GPU();
 
-	clearExtFiringTable();
+	clearExtFiringTable_GPU();
 }
 
 void SNN::routeSpikes_GPU() {

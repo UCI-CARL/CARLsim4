@@ -685,7 +685,7 @@ int SNN::runNetwork(int _nsec, int _nmsec, bool printRunSummary) {
 	// if nsec=1, simTimeMs=10, we need to run the simulator for 1*1000+10, time Step;
 	for(int i=0; i<runDurationMs; i++) {
 		if(simMode_ == CPU_MODE)
-			doSnnSim();
+			doCPUSim();
 		else
 			doGPUSim();
 
@@ -3613,6 +3613,7 @@ double SNN::getRFDist3D(const RadiusRF& radius, const Point3D& pre, const Point3
 	return rfDist;
 }
 
+// ToDo: remove this, make possion spike generation consistent with GPU_MODE
 // will be used in generateSpikesFromRate
 // The time between each pair of consecutive events has an exponential distribution with parameter \lambda and
 // each of these ISI values is assumed to be independent of other ISI values.
