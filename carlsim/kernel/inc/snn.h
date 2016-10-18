@@ -639,7 +639,7 @@ private:
 	void generateSpikes();
 	void generateSpikes(int grpId);
 	void generateSpikesFromFuncPtr(int grpId);
-	void generateSpikesFromRate(int grpId);
+	//void generateSpikesFromRate(int grpId);
 
 	float generateWeight(int connProp, float initWt, float maxWt, int nid, int grpId);
 
@@ -687,7 +687,7 @@ private:
      * \param[in] refractPeriod  refractory period to be honored (in ms)
      * \returns next spike time (current time plus generated ISI)
      */
-	int poissonSpike(int currTime, float frate, int refractPeriod);
+	//int poissonSpike(int currTime, float frate, int refractPeriod);
 
 	// NOTE: all these printer functions should be in printSNNInfo.cpp
 	// FIXME: are any of these actually supposed to be public?? they are not yet in carlsim.h

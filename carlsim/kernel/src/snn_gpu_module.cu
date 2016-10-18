@@ -3081,7 +3081,7 @@ void SNN::updateWeights_GPU() {
 void SNN::copyExternalCurrent(int netId, int lGrpId, RuntimeData* dest, cudaMemcpyKind kind, bool allocateMem) {
 	checkAndSetGPUDevice(netId);
 	checkDestSrcPtrs(dest, &managerRuntimeData, cudaMemcpyHostToDevice, allocateMem, lGrpId, 0);// check that the destination pointer is properly allocated..
-	assert(kind = cudaMemcpyHostToDevice);
+	assert(kind == cudaMemcpyHostToDevice);
 	
 	int posN, lengthN;
 

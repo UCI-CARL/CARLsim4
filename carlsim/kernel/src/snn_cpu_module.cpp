@@ -498,57 +498,6 @@ void SNN::generateSpikesFromFuncPtr(int grpId) {
 }
 
 // FIXME: wrong to use groupConfigs[0]
-// ToDo: remove this, make possion spike generation consistent with GPU_MODE
-void SNN::generateSpikesFromRate(int gGrpId) {
-	bool done;
-	PoissonRate* rate = groupConfigMDMap[gGrpId].ratePtr;
-	float refPeriod = groupConfigMDMap[gGrpId].refractPeriod;
-	int timeSlice   = groupConfigMDMap[gGrpId].currTimeSlice;
-	int currTime = simTime;
-	int spikeCnt = 0;
-
-	if (rate == NULL)
-		return;
-
-	if (rate->isOnGPU()) {
-		KERNEL_ERROR("Specifying rates on the GPU but using the CPU SNN is not supported.");
-		exitSimulation(1);
-	}
-
-	const int nNeur = rate->getNumNeurons();
-	if (nNeur != groupConfigMap[gGrpId].numN) {
-		KERNEL_ERROR("Length of PoissonRate array (%d) did not match number of neurons (%d) for group %d(%s).",
-			nNeur, groupConfigMap[gGrpId].numN, gGrpId, groupConfigMap[gGrpId].grpName.c_str());
-		exitSimulation(1);
-	}
-
-	for (int neurId=0; neurId<nNeur; neurId++) {
-		float frate = rate->getRate(neurId);
-
-		// start the time from the last time it spiked, that way we can ensure that the refractory period is maintained
-		int nextTime = managerRuntimeData.lastSpikeTime[groupConfigMDMap[gGrpId].gStartN + neurId];
-		if (nextTime == MAX_SIMULATION_TIME)
-			nextTime = 0;
-
-		done = false;
-		while (!done && frate>0) {
-			nextTime = poissonSpike(nextTime, frate/1000.0, refPeriod);
-			// found a valid timeSlice
-			if (nextTime < (currTime+timeSlice)) {
-				if (nextTime >= currTime) {
-//					int nid = groupConfigs[0][grpId].StartN+cnt;
-					spikeBuf->schedule(groupConfigMDMap[gGrpId].gStartN + neurId, nextTime-currTime);
-					spikeCnt++;
-				}
-			}
-			else {
-				done=true;
-			}
-		}
-	}
-}
-
-// FIXME: wrong to use groupConfigs[0]
 void  SNN::globalStateUpdate() {
 	double tmp_iNMDA, tmp_I;
 	double tmp_gNMDA, tmp_gGABAb;
@@ -1674,3 +1623,84 @@ void SNN::copyNeuronSpikeCount(int netId, int lGrpId, RuntimeData* dest, Runtime
 		dest->nSpikeCnt = new int[lengthN];
 	memcpy(&dest->nSpikeCnt[posN + destOffset], &src->nSpikeCnt[posN], sizeof(int) * lengthN);
 }
+
+// ToDo: remove this, make possion spike generation consistent with GPU_MODE
+// will be used in generateSpikesFromRate
+// The time between each pair of consecutive events has an exponential distribution with parameter \lambda and
+// each of these ISI values is assumed to be independent of other ISI values.
+// What follows a Poisson distribution is the actual number of spikes sent during a certain interval.
+//int SNN::poissonSpike(int currTime, float frate, int refractPeriod) {
+//	// refractory period must be 1 or greater, 0 means could have multiple spikes specified at the same time.
+//	assert(refractPeriod>0);
+//	assert(frate>=0.0f);
+//
+//	bool done = false;
+//	int nextTime = 0;
+//	while (!done) {
+//		// A Poisson process will always generate inter-spike-interval (ISI) values from an exponential distribution.
+//		float randVal = drand48();
+//		int tmpVal  = -log(randVal)/frate;
+//
+//		// add new ISI to current time
+//		// this might be faster than keeping currTime fixed until drand48() returns a large enough value for the ISI
+//		nextTime = currTime + tmpVal;
+//
+//		// reject new firing time if ISI is smaller than refractory period
+//		if ((nextTime - currTime) >= refractPeriod)
+//			done = true;
+//	}
+//
+//	assert(nextTime != 0);
+//	return nextTime;
+//}
+
+// FIXME: wrong to use groupConfigs[0]
+// ToDo: remove this, make possion spike generation consistent with GPU_MODE
+//void SNN::generateSpikesFromRate(int gGrpId) {
+//	bool done;
+//	PoissonRate* rate = groupConfigMDMap[gGrpId].ratePtr;
+//	float refPeriod = groupConfigMDMap[gGrpId].refractPeriod;
+//	int timeSlice   = groupConfigMDMap[gGrpId].currTimeSlice;
+//	int currTime = simTime;
+//	int spikeCnt = 0;
+//
+//	if (rate == NULL)
+//		return;
+//
+//	if (rate->isOnGPU()) {
+//		KERNEL_ERROR("Specifying rates on the GPU but using the CPU SNN is not supported.");
+//		exitSimulation(1);
+//	}
+//
+//	const int nNeur = rate->getNumNeurons();
+//	if (nNeur != groupConfigMap[gGrpId].numN) {
+//		KERNEL_ERROR("Length of PoissonRate array (%d) did not match number of neurons (%d) for group %d(%s).",
+//			nNeur, groupConfigMap[gGrpId].numN, gGrpId, groupConfigMap[gGrpId].grpName.c_str());
+//		exitSimulation(1);
+//	}
+//
+//	for (int neurId=0; neurId<nNeur; neurId++) {
+//		float frate = rate->getRate(neurId);
+//
+//		// start the time from the last time it spiked, that way we can ensure that the refractory period is maintained
+//		int nextTime = managerRuntimeData.lastSpikeTime[groupConfigMDMap[gGrpId].gStartN + neurId];
+//		if (nextTime == MAX_SIMULATION_TIME)
+//			nextTime = 0;
+//
+//		done = false;
+//		while (!done && frate>0) {
+//			nextTime = poissonSpike(nextTime, frate/1000.0, refPeriod);
+//			// found a valid timeSlice
+//			if (nextTime < (currTime+timeSlice)) {
+//				if (nextTime >= currTime) {
+////					int nid = groupConfigs[0][grpId].StartN+cnt;
+//					spikeBuf->schedule(groupConfigMDMap[gGrpId].gStartN + neurId, nextTime-currTime);
+//					spikeCnt++;
+//				}
+//			}
+//			else {
+//				done=true;
+//			}
+//		}
+//	}
+//}

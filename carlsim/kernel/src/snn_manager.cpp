@@ -3613,36 +3613,6 @@ double SNN::getRFDist3D(const RadiusRF& radius, const Point3D& pre, const Point3
 	return rfDist;
 }
 
-// ToDo: remove this, make possion spike generation consistent with GPU_MODE
-// will be used in generateSpikesFromRate
-// The time between each pair of consecutive events has an exponential distribution with parameter \lambda and
-// each of these ISI values is assumed to be independent of other ISI values.
-// What follows a Poisson distribution is the actual number of spikes sent during a certain interval.
-int SNN::poissonSpike(int currTime, float frate, int refractPeriod) {
-	// refractory period must be 1 or greater, 0 means could have multiple spikes specified at the same time.
-	assert(refractPeriod>0);
-	assert(frate>=0.0f);
-
-	bool done = false;
-	int nextTime = 0;
-	while (!done) {
-		// A Poisson process will always generate inter-spike-interval (ISI) values from an exponential distribution.
-		float randVal = drand48();
-		int tmpVal  = -log(randVal)/frate;
-
-		// add new ISI to current time
-		// this might be faster than keeping currTime fixed until drand48() returns a large enough value for the ISI
-		nextTime = currTime + tmpVal;
-
-		// reject new firing time if ISI is smaller than refractory period
-		if ((nextTime - currTime) >= refractPeriod)
-			done = true;
-	}
-
-	assert(nextTime != 0);
-	return nextTime;
-}
-
 void SNN::partitionSNN() {
 	int numAssignedNeurons[MAX_NET_PER_SNN] = {0};
 
@@ -4674,17 +4644,8 @@ void SNN::updateSpikesFromGrp(int gGrpId) {
 	if ((currTime + timeSlice) == MAX_SIMULATION_TIME || (currTime + timeSlice) < 0)
 		return;
 
-	if (groupConfigMap[gGrpId].spikeGenFunc) {
+	if (groupConfigMap[gGrpId].spikeGenFunc != NULL) {
 		generateSpikesFromFuncPtr(gGrpId);
-	} else {
-		// current mode is GPU, and GPU would take care of poisson generators
-		// and other information about refractor period etc. So no need to continue further...
-#if !TESTING_CPU_GPU_POISSON
-    if(simMode_ == GPU_MODE)
-      return;
-#endif
-
-		generateSpikesFromRate(gGrpId);
 	}
 }
 
