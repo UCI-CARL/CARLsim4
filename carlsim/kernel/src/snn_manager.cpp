@@ -1963,19 +1963,6 @@ void SNN::allocateManagerRuntimeData() {
 //		return 0;
 //	}
 //
-//	// update STP for poinsson (input) neurons
-//	if (groupConfigs[0][g].WithSTP) {
-//		// update the spike-dependent part of du/dt and dx/dt
-//		// we need to retrieve the STP values from the right buffer position (right before vs. right after the spike)
-//		int ind_plus = STP_BUF_POS(nid, simTime, glbNetworkConfig.maxDelay); // index of right after the spike, such as in u^+
-//	    int ind_minus = STP_BUF_POS(nid, (simTime-1), glbNetworkConfig.maxDelay); // index of right before the spike, such as in u^-
-//
-//		// du/dt = -u/tau_F + U * (1-u^-) * \delta(t-t_{spk})
-//		managerRuntimeData.stpu[ind_plus] += groupConfigs[0][g].STP_U*(1.0-managerRuntimeData.stpu[ind_minus]);
-//
-//		// dx/dt = (1-x)/tau_D - u^+ * x^- * \delta(t-t_{spk})
-//		managerRuntimeData.stpx[ind_plus] -= managerRuntimeData.stpu[ind_plus]*managerRuntimeData.stpx[ind_minus];
-//	}
 //
 //	// insert poisson (input) spikes into firingTableD1(D2)
 //	if (groupConfigs[0][g].MaxDelay == 1) {

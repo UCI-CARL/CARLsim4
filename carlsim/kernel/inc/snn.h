@@ -878,7 +878,12 @@ private:
 	void updateTimingTable();
 	void updateTimingTable_GPU();
 	
-
+	// Utility functions
+	void firingUpdateSTP(int lNId, int lGrpId, int netId);
+	void updateLTP(int lNId, int lGrpId, int netId);
+	void resetFiredNeuron(int lNId, short int lGrpId, int netId);
+	bool getPoissonSpike(int lNId, int netId);
+	bool getSpikeGenBit(unsigned int nIdPos, int netId);
 
 	// +++++ PRIVATE PROPERTIES +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 	SNNState snnState; //!< state of the network
