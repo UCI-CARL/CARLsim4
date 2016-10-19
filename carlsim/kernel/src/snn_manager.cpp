@@ -1730,9 +1730,6 @@ void SNN::SNNinit() {
 	simTimeRunStart = 0; simTimeRunStop = 0;
 	simTimeLastRunSummary = 0;
 	simTimeMs = 0; simTimeSec = 0; simTime = 0;
-	spikeCountSec = 0; spikeCountD1Sec = 0; spikeCountD2Sec = 0;
-	spikeCount = 0; spikeCountD2 = 0; spikeCountD1 = 0;
-	nPoissonSpikes = 0;
 
 	numGroups = 0;
 	numConnections = 0;
@@ -1829,6 +1826,18 @@ void SNN::allocateSNN(int netId) {
 }
 
 void SNN::allocateManagerRuntimeData() {
+	// reset variable related to spike count
+	managerRuntimeData.spikeCountSec = 0;
+	managerRuntimeData.spikeCountD1Sec = 0;
+	managerRuntimeData.spikeCountD2Sec = 0;
+	managerRuntimeData.spikeCountLastSecLeftD2 = 0;
+	managerRuntimeData.spikeCount = 0;
+	managerRuntimeData.spikeCountD1 = 0;
+	managerRuntimeData.spikeCountD2 = 0;
+	managerRuntimeData.nPoissonSpikes = 0;
+	managerRuntimeData.spikeCountExtRxD1 = 0;
+	managerRuntimeData.spikeCountExtRxD2 = 0;
+
 	managerRuntimeData.voltage    = new float[managerRTDSize.maxNumNReg];
 	managerRuntimeData.recovery   = new float[managerRTDSize.maxNumNReg];
 	managerRuntimeData.Izh_a      = new float[managerRTDSize.maxNumNReg];
@@ -3149,8 +3158,10 @@ void SNN::deleteObjects() {
 	resetConnectionConfigs(true);
 	
 	// delete manager runtime data
-	deleteRuntimeData();
+	deleteManagerRuntimeData();
 
+	// delete cpu runtime data
+	deleteObjects_CPU();
 	// delete gpu runtime data
 	deleteObjects_GPU();
 	simulatorDeleted = true;
@@ -4092,16 +4103,9 @@ void SNN::resetCurrent(int netId) {
 	memset(managerRuntimeData.current, 0, sizeof(float) * networkConfigs[netId].numNReg);
 }
 
+// FIXME: unused function
 void SNN::resetFiringInformation() {
 	// Reset firing tables and time tables to default values..
-
-	// reset Various Times..
-	spikeCount	  = 0;
-	spikeCountSec = 0;
-	spikeCountD2 = 0;
-	spikeCountD1 = 0;
-	spikeCountD1Sec  = 0;
-	spikeCountD2Sec  = 0;
 
 	// reset various times...
 	simTimeMs  = 0;
@@ -4214,7 +4218,7 @@ void SNN::resetConnectionConfigs(bool deallocate) {
 	if (deallocate) connectConfigMap.clear();
 }
 
-void SNN::deleteRuntimeData() {
+void SNN::deleteManagerRuntimeData() {
 	if (spikeBuf!=NULL) delete spikeBuf;
 	if (managerRuntimeData.spikeGenBits!=NULL) delete[] managerRuntimeData.spikeGenBits;
 	spikeBuf=NULL; managerRuntimeData.spikeGenBits=NULL;
@@ -4302,6 +4306,10 @@ void SNN::deleteRuntimeData() {
 	if (managerRuntimeData.grpIds!=NULL) delete[] managerRuntimeData.grpIds;
 	managerRuntimeData.grpIds=NULL;
 
+	if (managerRuntimeData.timeTableD2 != NULL) delete [] managerRuntimeData.timeTableD2;
+	if (managerRuntimeData.timeTableD1 != NULL) delete [] managerRuntimeData.timeTableD1;
+	managerRuntimeData.timeTableD2 = NULL; managerRuntimeData.timeTableD1 = NULL;
+	
 	if (managerRuntimeData.firingTableD2!=NULL) delete[] managerRuntimeData.firingTableD2;
 	if (managerRuntimeData.firingTableD1!=NULL) delete[] managerRuntimeData.firingTableD1;
 	//if (managerRuntimeData.firingTableD2!=NULL) CUDA_CHECK_ERRORS(cudaFreeHost(managerRuntimeData.firingTableD2));
@@ -4365,8 +4373,8 @@ void SNN::resetSynapse(int netId, bool changeWeights) {
 }
 
 void SNN::resetTimeTable() {
-	memset(timeTableD2, 0, sizeof(int) * (1000 + glbNetworkConfig.maxDelay + 1));
-	memset(timeTableD1, 0, sizeof(int) * (1000 + glbNetworkConfig.maxDelay + 1));
+	memset(managerRuntimeData.timeTableD2, 0, sizeof(int) * (1000 + glbNetworkConfig.maxDelay + 1));
+	memset(managerRuntimeData.timeTableD1, 0, sizeof(int) * (1000 + glbNetworkConfig.maxDelay + 1));
 }
 
 void SNN::resetFiringTable() {
@@ -4743,7 +4751,8 @@ void SNN::allocateManagerSpikeTables() {
 	//CUDA_CHECK_ERRORS(cudaMallocHost(&managerRuntimeData.extFiringTableD1, sizeof(int*) * managerRTDSize.maxNumGroups));
 	resetFiringTable();
 	
-	// timeTableD1(D2) are statically allocated
+	managerRuntimeData.timeTableD2 = new unsigned int[TIMING_COUNT];
+	managerRuntimeData.timeTableD1 = new unsigned int[TIMING_COUNT];
 	resetTimeTable();
 }
 
@@ -4842,7 +4851,7 @@ void SNN::updateSpikeMonitor(int gGrpId) {
 		// Read one spike at a time from the buffer and put the spikes to an appopriate monitor buffer. Later the user
 		// may need need to dump these spikes to an output file
 		for (int k = 0; k < 2; k++) {
-			unsigned int* timeTablePtr = (k == 0) ? timeTableD2 : timeTableD1;
+			unsigned int* timeTablePtr = (k == 0) ? managerRuntimeData.timeTableD2 : managerRuntimeData.timeTableD1;
 			int* fireTablePtr = (k == 0) ? managerRuntimeData.firingTableD2 : managerRuntimeData.firingTableD1;
 			for(int t = numMsMin; t < numMsMax; t++) {
 				for(int i = timeTablePtr[t + glbNetworkConfig.maxDelay]; i < timeTablePtr[t + glbNetworkConfig.maxDelay + 1]; i++) {
@@ -4903,19 +4912,19 @@ void SNN::printSimSummary() {
 		simMode_==GPU_MODE?"GPU":"CPU");
 
 	KERNEL_INFO("Network Parameters: \tnumNeurons = %d (numNExcReg:numNInhReg = %2.1f:%2.1f)", 
-		networkConfigs[0].numN, 100.0*glbNetworkConfig.numNExcReg/networkConfigs[0].numN, 100.0 *glbNetworkConfig.numNInhReg/networkConfigs[0].numN);
+		glbNetworkConfig.numN, 100.0 * glbNetworkConfig.numNExcReg / glbNetworkConfig.numN, 100.0 * glbNetworkConfig.numNInhReg / glbNetworkConfig.numN);
 	KERNEL_INFO("\t\t\tnumSynapses = %d", networkConfigs[0].numPostSynNet);
 	KERNEL_INFO("\t\t\tmaxDelay = %d", glbNetworkConfig.maxDelay);
 	KERNEL_INFO("Simulation Mode:\t%s",sim_with_conductances?"COBA":"CUBA");
 	KERNEL_INFO("Random Seed:\t\t%d", randSeed_);
 	KERNEL_INFO("Timing:\t\t\tModel Simulation Time = %lld sec", (unsigned long long)simTimeSec);
 	KERNEL_INFO("\t\t\tActual Execution Time = %4.2f sec", etime/1000.0f);
-	KERNEL_INFO("Average Firing Rate:\t2+ms delay = %3.3f Hz", spikeCountD2 / (1.0 * simTimeSec * glbNetworkConfig.numNExcReg));
-	KERNEL_INFO("\t\t\t1ms delay = %3.3f Hz", spikeCountD1/(1.0 * simTimeSec * glbNetworkConfig.numNInhReg));
-	KERNEL_INFO("\t\t\tOverall = %3.3f Hz", spikeCount/(1.0*simTimeSec*glbNetworkConfig.numN));
-	KERNEL_INFO("Overall Firing Count:\t2+ms delay = %d", spikeCountD2);
-	KERNEL_INFO("\t\t\t1ms delay = %d", spikeCountD1);
-	KERNEL_INFO("\t\t\tTotal = %d", spikeCount);
+	KERNEL_INFO("Average Firing Rate:\t2+ms delay = %3.3f Hz", managerRuntimeData.spikeCountD2 / (1.0 * simTimeSec * glbNetworkConfig.numNExcReg));
+	KERNEL_INFO("\t\t\t1ms delay = %3.3f Hz", managerRuntimeData.spikeCountD1 / (1.0 * simTimeSec * glbNetworkConfig.numNInhReg));
+	KERNEL_INFO("\t\t\tOverall = %3.3f Hz", managerRuntimeData.spikeCount / (1.0 * simTimeSec * glbNetworkConfig.numN));
+	KERNEL_INFO("Overall Firing Count:\t2+ms delay = %d", managerRuntimeData.spikeCountD2);
+	KERNEL_INFO("\t\t\t1ms delay = %d", managerRuntimeData.spikeCountD1);
+	KERNEL_INFO("\t\t\tTotal = %d", managerRuntimeData.spikeCount);
 	KERNEL_INFO("*********************************************************************************\n");
 }
 

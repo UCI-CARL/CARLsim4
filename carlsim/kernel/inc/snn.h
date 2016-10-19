@@ -730,7 +730,7 @@ private:
 	//void resetPointers(bool deallocate=false);
 	void resetMonitors(bool deallocate=false);
 	void resetConnectionConfigs(bool deallocate=false);
-	void deleteRuntimeData();
+	void deleteManagerRuntimeData();
 	void resetPoissonNeuron(int netId, int lGrpId, int lNId); //!< use local ids
 	void resetPropogationBuffer();
 	void resetSpikeCnt();					//!< Resets the spike count for a particular group.
@@ -825,6 +825,7 @@ private:
 	void copyConnIdsLookupArray(int netId);
 	void copyLastSpikeTime(int netId);
 
+	void deleteObjects_CPU();
 	void deleteObjects_GPU();		//!< deallocates all used data structures in snn_gpu.cu
 	void doCurrentUpdate();
 	void doCurrentUpdate_GPU();
@@ -958,10 +959,6 @@ private:
 	//int numNPois;         //!< number of poisson neurons
 	GlobalNetworkConfig glbNetworkConfig;
 
-	//! firing info used in CPU_MODE
-	unsigned int timeTableD2[TIMING_COUNT];
-	unsigned int timeTableD1[TIMING_COUNT];
-
 	//time and timestep
 	int simTimeRunStart; //!< the start time of current/last runNetwork call
 	int simTimeRunStop;  //!< the end time of current/last runNetwork call
@@ -969,14 +966,6 @@ private:
 	int simTimeMs;      //!< The simulation time showing milliseconds within a second
 	int simTimeSec;     //!< The simulation time showing seconds in a simulation
 	int simTime;        //!< The absolute simulation time. The unit is millisecond. this value is not reset but keeps increasing to its max value.
-
-	unsigned int spikeCountSec;   //!< the total number of spikes in 1 second
-	unsigned int spikeCountD1Sec; //!< the total number of spikes with axonal delay == 1 in 1 second		
-	unsigned int spikeCountD2Sec; //!< the total number of spikes with axonal delay > 1 in 1 second
-	unsigned int spikeCount;      //!< the total number of spikes in a simulation
-	unsigned int spikeCountD1;    //!< the total number of spikes with anxonal delay == 1 in a simulation
-	unsigned int spikeCountD2;    //!< the total number of spikes with anxonal delay > 1 in a simulation
-	unsigned int nPoissonSpikes;  //!< the number of spikes of poisson neurons
 
 	// cuda keep track of performance...
 	StopWatchInterface* timer;
