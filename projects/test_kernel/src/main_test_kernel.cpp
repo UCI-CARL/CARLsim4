@@ -57,30 +57,30 @@ int main() {
 	int gExc = sim.createGroup("exc", N_EXC, EXCITATORY_NEURON, 0);
 	sim.setNeuronParameters(gExc, 0.02f, 0.2f, -65.0f, 8.0f); // RS
 
-	//int gExc2 = sim.createGroup("exc2", N_EXC, EXCITATORY_NEURON, 1);
-	//sim.setNeuronParameters(gExc2, 0.02f, 0.2f, -65.0f, 8.0f);
+	int gExc2 = sim.createGroup("exc2", N_EXC, EXCITATORY_NEURON, 1);
+	sim.setNeuronParameters(gExc2, 0.02f, 0.2f, -65.0f, 8.0f);
 
 	int gInh = sim.createGroup("inh", N_INH, INHIBITORY_NEURON, 1);
 	sim.setNeuronParameters(gInh, 0.1f, 0.2f, -65.0f, 2.0f); // FS
 
-	//int gInh2 = sim.createGroup("inh2", N_INH, INHIBITORY_NEURON, 0);
-	//sim.setNeuronParameters(gInh2, 0.1f, 0.2f, -65.0f, 2.0f);
+	int gInh2 = sim.createGroup("inh2", N_INH, INHIBITORY_NEURON, 0);
+	sim.setNeuronParameters(gInh2, 0.1f, 0.2f, -65.0f, 2.0f);
 	//int gExc2 = sim.createGroup("exc", N_EXC, EXCITATORY_NEURON);
 	//sim.setNeuronParameters(gExc2, 0.02f, 0.2f, -65.0f, 8.0f); // RS
 
 	int gInput = sim.createSpikeGeneratorGroup("input", N_EXC, EXCITATORY_NEURON, 0);
 
-	//int gInput2 = sim.createSpikeGeneratorGroup("input2", N_EXC, EXCITATORY_NEURON, 1);
+	int gInput2 = sim.createSpikeGeneratorGroup("input2", N_EXC, EXCITATORY_NEURON, 1);
 
 	sim.connect(gInput, gExc, "one-to-one", RangeWeight(30.0f), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
 	sim.connect(gExc, gExc, "random", RangeWeight(6.0f), pConn, RangeDelay(1, 20), RadiusRF(-1), SYN_FIXED);
 	sim.connect(gExc, gInh, "random", RangeWeight(6.0f), pConn, RangeDelay(1, 20), RadiusRF(-1), SYN_FIXED);
 	sim.connect(gInh, gExc, "random", RangeWeight(5.0f), pConn * 1.25f, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
 
-	//sim.connect(gInput2, gExc2, "one-to-one", RangeWeight(30.0f), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
-	//sim.connect(gExc2, gExc2, "random", RangeWeight(6.0f), pConn, RangeDelay(1, 20), RadiusRF(-1), SYN_FIXED);
-	//sim.connect(gExc2, gInh2, "random", RangeWeight(6.0f), pConn, RangeDelay(1, 20), RadiusRF(-1), SYN_FIXED);
-	//sim.connect(gInh2, gExc2, "random", RangeWeight(5.0f), pConn * 1.25f, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
+	sim.connect(gInput2, gExc2, "one-to-one", RangeWeight(30.0f), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
+	sim.connect(gExc2, gExc2, "random", RangeWeight(6.0f), pConn, RangeDelay(1, 20), RadiusRF(-1), SYN_FIXED);
+	sim.connect(gExc2, gInh2, "random", RangeWeight(6.0f), pConn, RangeDelay(1, 20), RadiusRF(-1), SYN_FIXED);
+	sim.connect(gInh2, gExc2, "random", RangeWeight(5.0f), pConn * 1.25f, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
 
 	sim.setConductances(false);
 
@@ -95,9 +95,9 @@ int main() {
 	SpikeMonitor* smInh = sim.setSpikeMonitor(gInh, "NULL");
 	SpikeMonitor* smInput = sim.setSpikeMonitor(gInput, "NULL");
 
-	//SpikeMonitor* smExc2 = sim.setSpikeMonitor(gExc2, "NULL");
-	//SpikeMonitor* smInh2 = sim.setSpikeMonitor(gInh2, "NULL");
-	//SpikeMonitor* smInput2 = sim.setSpikeMonitor(gInput2, "NULL");
+	SpikeMonitor* smExc2 = sim.setSpikeMonitor(gExc2, "NULL");
+	SpikeMonitor* smInh2 = sim.setSpikeMonitor(gInh2, "NULL");
+	SpikeMonitor* smInput2 = sim.setSpikeMonitor(gInput2, "NULL");
 	//ConnectionMonitor* cmEE = sim.setConnectionMonitor(gExc, gInh, "DEFAULT");
 
 	//setup some baseline input
@@ -105,9 +105,9 @@ int main() {
 	in.setRates(1.0f);
 	sim.setSpikeRate(gInput, &in);
 
-	//PoissonRate in2(N_EXC);
-	//in2.setRates(1.0f);
-	//sim.setSpikeRate(gInput2, &in2);
+	PoissonRate in2(N_EXC);
+	in2.setRates(1.0f);
+	sim.setSpikeRate(gInput2, &in2);
 
 	// run for a total of 10 seconds
 	// at the end of each runNetwork call, SpikeMonitor stats will be printed
@@ -116,7 +116,8 @@ int main() {
 	//smInh->startRecording();
 	//smInput->startRecording();
 	
-	sim.runNetwork(10, 0);
+
+	sim.runNetwork(2, 0);
 	
 	//smInput->stopRecording();
 	//smExc->stopRecording();
