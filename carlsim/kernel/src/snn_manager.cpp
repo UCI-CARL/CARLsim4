@@ -2172,6 +2172,8 @@ void SNN::generateRuntimeGroupConfigs() {
 				groupConfigMDMap[gGrpId].lGrpId = grpIt->lGrpId;
 				groupConfigMDMap[gGrpId].lStartN = grpIt->lStartN;
 				groupConfigMDMap[gGrpId].lEndN = grpIt->lEndN;
+				groupConfigMDMap[gGrpId].numPostSynapses = grpIt->numPostSynapses;
+				groupConfigMDMap[gGrpId].numPreSynapses = grpIt->numPreSynapses;
 				groupConfigMDMap[gGrpId].LtoGOffset = grpIt->LtoGOffset;
 				groupConfigMDMap[gGrpId].GtoLOffset = grpIt->GtoLOffset;
 				groupConfigMDMap[gGrpId].fixedInputWts = grpIt->fixedInputWts;
@@ -2313,8 +2315,8 @@ void SNN::generateConnectionRuntime(int netId) {
 
 	// load offset between global neuron id and local neuron id 
 	for (std::list<GroupConfigMD>::iterator grpIt = groupPartitionLists[netId].begin(); grpIt != groupPartitionLists[netId].end(); grpIt++) {
-		GLoffset[grpIt->gGrpId] = groupConfigMDMap[grpIt->gGrpId].GtoLOffset;
-		GLgrpId[grpIt->gGrpId] = groupConfigMDMap[grpIt->gGrpId].lGrpId;
+		GLoffset[grpIt->gGrpId] = grpIt->GtoLOffset;
+		GLgrpId[grpIt->gGrpId] = grpIt->lGrpId;
 	}
 	// FIXME: connId is global connId, use connectConfigs[netId][local connId] instead,
 	// FIXME; but note connectConfigs[netId][] are NOT complete, lack of exeternal incoming connections
@@ -3708,7 +3710,7 @@ void SNN::partitionSNN() {
 		int netId = groupConfigMap[gGrpId].preferredNetId;
 		if (netId != ANY) {
 			assert(netId < numGPUs_ && netId > ANY);
-			groupConfigMDMap[gGrpId].netId = netId;
+			grpIt->second.netId = netId;
 			numAssignedNeurons[netId] += groupConfigMap[gGrpId].numN;
 			groupPartitionLists[netId].push_back(grpIt->second); // Copy by value, create a copy
 		} else {
@@ -3718,11 +3720,11 @@ void SNN::partitionSNN() {
 			// this parse separates groups into each local network and assign each group a netId
 			unsigned int type = groupConfigMap[gGrpId].type;
 			if (IS_EXCITATORY_TYPE(type)) {
-				groupConfigMDMap[gGrpId].netId = 0;
+				grpIt->second.netId = 0;
 				numAssignedNeurons[0] += groupConfigMap[gGrpId].numN;
 				groupPartitionLists[0].push_back(grpIt->second); // Copy by value, create a copy
 			} else if (IS_INHIBITORY_TYPE(type)) {
-				groupConfigMDMap[gGrpId].netId = 1;
+				grpIt->second.netId = 1;
 				numAssignedNeurons[1] += groupConfigMap[gGrpId].numN;
 				groupPartitionLists[1].push_back(grpIt->second); // Copy by value, create a copy
 			}
