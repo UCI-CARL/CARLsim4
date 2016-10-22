@@ -2099,10 +2099,10 @@ void SNN::generateRuntimeGroupConfigs() {
 
 			// Data published by groupConfigMDMap[] are generated in compileSNN() and are invariant in partitionSNN()
 			// Data published by grpIt are generated in partitionSNN() and maybe have duplicated copys
-			groupConfigs[netId][lGrpId].netId = groupConfigMDMap[gGrpId].netId;
-			groupConfigs[netId][lGrpId].gGrpId = groupConfigMDMap[gGrpId].gGrpId;
-			groupConfigs[netId][lGrpId].gStartN = groupConfigMDMap[gGrpId].gStartN;
-			groupConfigs[netId][lGrpId].gEndN = groupConfigMDMap[gGrpId].gEndN;
+			groupConfigs[netId][lGrpId].netId = grpIt->netId;
+			groupConfigs[netId][lGrpId].gGrpId = grpIt->gGrpId;
+			groupConfigs[netId][lGrpId].gStartN = grpIt->gStartN;
+			groupConfigs[netId][lGrpId].gEndN = grpIt->gEndN;
 			groupConfigs[netId][lGrpId].lGrpId = grpIt->lGrpId;
 			groupConfigs[netId][lGrpId].lStartN = grpIt->lStartN;
 			groupConfigs[netId][lGrpId].lEndN = grpIt->lEndN;
@@ -2123,10 +2123,10 @@ void SNN::generateRuntimeGroupConfigs() {
 			groupConfigs[netId][lGrpId].WithESTDPcurve =  groupConfigMap[gGrpId].stdpConfig.WithESTDPcurve;
 			groupConfigs[netId][lGrpId].WithISTDPcurve =  groupConfigMap[gGrpId].stdpConfig.WithISTDPcurve;
 			groupConfigs[netId][lGrpId].WithHomeostasis =  groupConfigMap[gGrpId].homeoConfig.WithHomeostasis;
-			groupConfigs[netId][lGrpId].FixedInputWts = groupConfigMDMap[gGrpId].fixedInputWts;
+			groupConfigs[netId][lGrpId].FixedInputWts = grpIt->fixedInputWts;
 			groupConfigs[netId][lGrpId].hasExternalConnect = grpIt->hasExternalConnect;
-			groupConfigs[netId][lGrpId].Noffset = groupConfigMDMap[gGrpId].Noffset;
-			groupConfigs[netId][lGrpId].MaxDelay = groupConfigMDMap[gGrpId].maxIncomingDelay;
+			groupConfigs[netId][lGrpId].Noffset = grpIt->Noffset;
+			groupConfigs[netId][lGrpId].MaxDelay = grpIt->maxIncomingDelay;
 			groupConfigs[netId][lGrpId].STP_A = groupConfigMap[gGrpId].stpConfig.STP_A;
 			groupConfigs[netId][lGrpId].STP_U = groupConfigMap[gGrpId].stpConfig.STP_U;
 			groupConfigs[netId][lGrpId].STP_tau_u_inv = groupConfigMap[gGrpId].stpConfig.STP_tau_u_inv; 
@@ -2165,14 +2165,19 @@ void SNN::generateRuntimeGroupConfigs() {
 
 			// sync groupConfigs[][] and groupConfigMDMap[]
 			if (netId == grpIt->netId) {
+				groupConfigMDMap[gGrpId].netId = grpIt->netId;
+				groupConfigMDMap[gGrpId].gGrpId = grpIt->gGrpId;
+				groupConfigMDMap[gGrpId].gStartN = grpIt->gStartN;
+				groupConfigMDMap[gGrpId].gEndN = grpIt->gEndN;
 				groupConfigMDMap[gGrpId].lGrpId = grpIt->lGrpId;
 				groupConfigMDMap[gGrpId].lStartN = grpIt->lStartN;
 				groupConfigMDMap[gGrpId].lEndN = grpIt->lEndN;
 				groupConfigMDMap[gGrpId].LtoGOffset = grpIt->LtoGOffset;
 				groupConfigMDMap[gGrpId].GtoLOffset = grpIt->GtoLOffset;
-				groupConfigMDMap[gGrpId].numPostSynapses = grpIt->numPostSynapses;
-				groupConfigMDMap[gGrpId].numPreSynapses = grpIt->numPreSynapses;
+				groupConfigMDMap[gGrpId].fixedInputWts = grpIt->fixedInputWts;
 				groupConfigMDMap[gGrpId].hasExternalConnect = grpIt->hasExternalConnect;
+				groupConfigMDMap[gGrpId].Noffset = grpIt->Noffset;
+				groupConfigMDMap[gGrpId].maxIncomingDelay = grpIt->maxIncomingDelay;
 			}
 		}
 
