@@ -2043,10 +2043,10 @@ void SNN::generateRuntimeGroupConfigs() {
 
 			// Data published by groupConfigMDMap[] are generated in compileSNN() and are invariant in partitionSNN()
 			// Data published by grpIt are generated in partitionSNN() and maybe have duplicated copys
-			groupConfigs[netId][lGrpId].netId = groupConfigMDMap[gGrpId].netId;
-			groupConfigs[netId][lGrpId].gGrpId = groupConfigMDMap[gGrpId].gGrpId;
-			groupConfigs[netId][lGrpId].gStartN = groupConfigMDMap[gGrpId].gStartN;
-			groupConfigs[netId][lGrpId].gEndN = groupConfigMDMap[gGrpId].gEndN;
+			groupConfigs[netId][lGrpId].netId = grpIt->netId;
+			groupConfigs[netId][lGrpId].gGrpId = grpIt->gGrpId;
+			groupConfigs[netId][lGrpId].gStartN = grpIt->gStartN;
+			groupConfigs[netId][lGrpId].gEndN = grpIt->gEndN;
 			groupConfigs[netId][lGrpId].lGrpId = grpIt->lGrpId;
 			groupConfigs[netId][lGrpId].lStartN = grpIt->lStartN;
 			groupConfigs[netId][lGrpId].lEndN = grpIt->lEndN;
@@ -2067,10 +2067,10 @@ void SNN::generateRuntimeGroupConfigs() {
 			groupConfigs[netId][lGrpId].WithESTDPcurve =  groupConfigMap[gGrpId].stdpConfig.WithESTDPcurve;
 			groupConfigs[netId][lGrpId].WithISTDPcurve =  groupConfigMap[gGrpId].stdpConfig.WithISTDPcurve;
 			groupConfigs[netId][lGrpId].WithHomeostasis =  groupConfigMap[gGrpId].homeoConfig.WithHomeostasis;
-			groupConfigs[netId][lGrpId].FixedInputWts = groupConfigMDMap[gGrpId].fixedInputWts;
+			groupConfigs[netId][lGrpId].FixedInputWts = grpIt->fixedInputWts;
 			groupConfigs[netId][lGrpId].hasExternalConnect = grpIt->hasExternalConnect;
-			groupConfigs[netId][lGrpId].Noffset = groupConfigMDMap[gGrpId].Noffset;
-			groupConfigs[netId][lGrpId].MaxDelay = groupConfigMDMap[gGrpId].maxIncomingDelay;
+			groupConfigs[netId][lGrpId].Noffset = grpIt->Noffset;
+			groupConfigs[netId][lGrpId].MaxDelay = grpIt->maxIncomingDelay;
 			groupConfigs[netId][lGrpId].STP_A = groupConfigMap[gGrpId].stpConfig.STP_A;
 			groupConfigs[netId][lGrpId].STP_U = groupConfigMap[gGrpId].stpConfig.STP_U;
 			groupConfigs[netId][lGrpId].STP_tau_u_inv = groupConfigMap[gGrpId].stpConfig.STP_tau_u_inv; 
@@ -2109,14 +2109,21 @@ void SNN::generateRuntimeGroupConfigs() {
 
 			// sync groupConfigs[][] and groupConfigMDMap[]
 			if (netId == grpIt->netId) {
+				groupConfigMDMap[gGrpId].netId = grpIt->netId;
+				groupConfigMDMap[gGrpId].gGrpId = grpIt->gGrpId;
+				groupConfigMDMap[gGrpId].gStartN = grpIt->gStartN;
+				groupConfigMDMap[gGrpId].gEndN = grpIt->gEndN;
 				groupConfigMDMap[gGrpId].lGrpId = grpIt->lGrpId;
 				groupConfigMDMap[gGrpId].lStartN = grpIt->lStartN;
 				groupConfigMDMap[gGrpId].lEndN = grpIt->lEndN;
-				groupConfigMDMap[gGrpId].LtoGOffset = grpIt->LtoGOffset;
-				groupConfigMDMap[gGrpId].GtoLOffset = grpIt->GtoLOffset;
 				groupConfigMDMap[gGrpId].numPostSynapses = grpIt->numPostSynapses;
 				groupConfigMDMap[gGrpId].numPreSynapses = grpIt->numPreSynapses;
+				groupConfigMDMap[gGrpId].LtoGOffset = grpIt->LtoGOffset;
+				groupConfigMDMap[gGrpId].GtoLOffset = grpIt->GtoLOffset;
+				groupConfigMDMap[gGrpId].fixedInputWts = grpIt->fixedInputWts;
 				groupConfigMDMap[gGrpId].hasExternalConnect = grpIt->hasExternalConnect;
+				groupConfigMDMap[gGrpId].Noffset = grpIt->Noffset;
+				groupConfigMDMap[gGrpId].maxIncomingDelay = grpIt->maxIncomingDelay;
 			}
 		}
 
@@ -2252,8 +2259,8 @@ void SNN::generateConnectionRuntime(int netId) {
 
 	// load offset between global neuron id and local neuron id 
 	for (std::list<GroupConfigMD>::iterator grpIt = groupPartitionLists[netId].begin(); grpIt != groupPartitionLists[netId].end(); grpIt++) {
-		GLoffset[grpIt->gGrpId] = groupConfigMDMap[grpIt->gGrpId].GtoLOffset;
-		GLgrpId[grpIt->gGrpId] = groupConfigMDMap[grpIt->gGrpId].lGrpId;
+		GLoffset[grpIt->gGrpId] = grpIt->GtoLOffset;
+		GLgrpId[grpIt->gGrpId] = grpIt->lGrpId;
 	}
 	// FIXME: connId is global connId, use connectConfigs[netId][local connId] instead,
 	// FIXME; but note connectConfigs[netId][] are NOT complete, lack of exeternal incoming connections
@@ -3624,7 +3631,7 @@ void SNN::partitionSNN() {
 		int netId = groupConfigMap[gGrpId].preferredNetId;
 		if (netId != ANY) {
 			assert(netId < numGPUs_ && netId > ANY);
-			groupConfigMDMap[gGrpId].netId = netId;
+			grpIt->second.netId = netId;
 			numAssignedNeurons[netId] += groupConfigMap[gGrpId].numN;
 			groupPartitionLists[netId].push_back(grpIt->second); // Copy by value, create a copy
 		} else {
@@ -3634,11 +3641,11 @@ void SNN::partitionSNN() {
 			// this parse separates groups into each local network and assign each group a netId
 			unsigned int type = groupConfigMap[gGrpId].type;
 			if (IS_EXCITATORY_TYPE(type)) {
-				groupConfigMDMap[gGrpId].netId = 0;
+				grpIt->second.netId = 0;
 				numAssignedNeurons[0] += groupConfigMap[gGrpId].numN;
 				groupPartitionLists[0].push_back(grpIt->second); // Copy by value, create a copy
 			} else if (IS_INHIBITORY_TYPE(type)) {
-				groupConfigMDMap[gGrpId].netId = 1;
+				grpIt->second.netId = 1;
 				numAssignedNeurons[1] += groupConfigMap[gGrpId].numN;
 				groupPartitionLists[1].push_back(grpIt->second); // Copy by value, create a copy
 			}
