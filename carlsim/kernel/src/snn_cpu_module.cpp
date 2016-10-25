@@ -282,7 +282,7 @@ void SNN::findFiring() {
 
 void SNN::updateLTP(int lNId, int lGrpId, int netId) {
 	unsigned int pos_ij = cpuRuntimeData[netId].cumulativePre[lNId]; // the index of pre-synaptic neuron
-	for(int j = 0; j < managerRuntimeData.Npre_plastic[lNId]; pos_ij++, j++) {
+	for(int j = 0; j < cpuRuntimeData[netId].Npre_plastic[lNId]; pos_ij++, j++) {
 		int stdp_tDiff = (simTime - cpuRuntimeData[netId].synSpikeTime[pos_ij]);
 		assert(!((stdp_tDiff < 0) && (cpuRuntimeData[netId].synSpikeTime[pos_ij] != MAX_SIMULATION_TIME)));
 

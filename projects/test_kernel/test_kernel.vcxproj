@@ -36,7 +36,7 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="main_test_kernel.cpp" />
+    <ClCompile Include="src\main_test_kernel.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{5B062223-52B5-40E5-B4D8-4D9CEF5E20AA}</ProjectGuid>
