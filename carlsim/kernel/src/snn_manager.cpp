@@ -3147,19 +3147,6 @@ void SNN::deleteObjects() {
 
 	printSimSummary();
 
-	// fclose file streams, unless in custom mode
-	if (loggerMode_ != CUSTOM) {
-		// don't fclose if it's stdout or stderr, otherwise they're gonna stay closed for the rest of the process
-		if (fpInf_!=NULL && fpInf_!=stdout && fpInf_!=stderr)
-			fclose(fpInf_);
-		if (fpErr_!=NULL && fpErr_!=stdout && fpErr_!=stderr)
-			fclose(fpErr_);
-		if (fpDeb_!=NULL && fpDeb_!=stdout && fpDeb_!=stderr)
-			fclose(fpDeb_);
-		if (fpLog_!=NULL && fpLog_!=stdout && fpLog_!=stderr)
-			fclose(fpLog_);
-	}
-
 	// deallocate objects
 	resetMonitors(true);
 	resetConnectionConfigs(true);
@@ -3169,8 +3156,23 @@ void SNN::deleteObjects() {
 
 	// delete cpu runtime data
 	deleteObjects_CPU();
+
 	// delete gpu runtime data
 	deleteObjects_GPU();
+
+	// fclose file streams, unless in custom mode
+	if (loggerMode_ != CUSTOM) {
+		// don't fclose if it's stdout or stderr, otherwise they're gonna stay closed for the rest of the process
+		if (fpInf_ != NULL && fpInf_ != stdout && fpInf_ != stderr)
+			fclose(fpInf_);
+		if (fpErr_ != NULL && fpErr_ != stdout && fpErr_ != stderr)
+			fclose(fpErr_);
+		if (fpDeb_ != NULL && fpDeb_ != stdout && fpDeb_ != stderr)
+			fclose(fpDeb_);
+		if (fpLog_ != NULL && fpLog_ != stdout && fpLog_ != stderr)
+			fclose(fpLog_);
+	}
+
 	simulatorDeleted = true;
 }
 

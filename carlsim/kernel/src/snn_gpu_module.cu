@@ -727,6 +727,7 @@ __global__ void kernel_conductanceUpdate (int simTimeMs, int simTimeSec, int sim
 		int  lastNId    = STATIC_LOAD_SIZE(threadLoad);
 
 		if ((threadIdx.x < lastNId) && (IS_REGULAR_NEURON(postNId, networkConfigGPU.numNReg, networkConfigGPU.numNPois))) {
+			// P6-1
 			// load the initial current due to noise inputs for neuron 'post_nid'
 			// initial values of the conductances for neuron 'post_nid'
 			float AMPA_sum		 = 0.0f;
@@ -822,6 +823,7 @@ __global__ void kernel_conductanceUpdate (int simTimeMs, int simTimeSec, int sim
 
 			__syncthreads();
 
+			// P6-2
 			if (networkConfigGPU.sim_with_conductances) {
 				// don't add mulSynFast/mulSynSlow here, because they depend on the exact pre<->post connection, not
 				// just post_nid
@@ -925,9 +927,11 @@ __global__ void kernel_neuronStateUpdate() {
 		if ((threadIdx.x < lastId) && (nid < networkConfigGPU.numN)) {
 
 			if (IS_REGULAR_NEURON(nid, networkConfigGPU.numNReg, networkConfigGPU.numNPois)) {
+				// P7
 				// update neuron state here....
 				updateNeuronState(nid, grpId);
 
+				// P8
 				if (groupConfigsGPU[grpId].WithHomeostasis)
 					updateHomeoStaticState(nid, grpId);
 			}
@@ -949,6 +953,7 @@ __global__ void kernel_groupStateUpdate(int simTime) {
 	// update group state
 	int grpIdx = blockIdx.x * blockDim.x + threadIdx.x;
 
+	// P9
 	if (grpIdx < networkConfigGPU.numGroups) {
 		// decay dopamine concentration
 		if ((groupConfigsGPU[grpIdx].WithESTDPtype == DA_MOD || groupConfigsGPU[grpIdx].WithISTDPtype == DA_MOD) && runtimeDataGPU.grpDA[grpIdx] > groupConfigsGPU[grpIdx].baseDP) {
@@ -1229,6 +1234,20 @@ __global__ void kernel_shiftTimeTable() {
 }
 
 //****************************** GENERATE POST-SYNAPTIC CURRENT EVERY TIME-STEP  ****************************
+
+/*
+* The sequence of handling an post synaptic spike in GPU mode:
+* P1. Update synSpikeTime
+* P2. Update DA,5HT,ACh,NE accordingly
+* P3. Update STDP wtChange
+* P4. Load wt into change (temporary variable)
+* P5. Modulate change by STP (if enabled)
+* P6-1. Modulate change by d_mulSynSlow and d_mulSynFast
+* P6-2. Accumulate g(AMPA,NMDA,GABAa,GABAb) or current
+* P7. Update v(voltage), u(recovery)
+* P8. Update homeostasis
+* P9. Decay and log DA,5HT,ACh,NE
+*/
 __device__ void generatePostSynapticSpike(int simTime, int preNId, int postNId, int synId) {
 	// get the actual position of the synapses and other variables...
 	unsigned int pos = runtimeDataGPU.cumulativePre[postNId] + synId;
@@ -1238,13 +1257,16 @@ __device__ void generatePostSynapticSpike(int simTime, int preNId, int postNId, 
 
 	setFiringBitSynapses(postNId, synId);
 
+	// P1
 	runtimeDataGPU.synSpikeTime[pos] = simTime;		  //uncoalesced access
 
+	// P2
 	// Got one spike from dopaminergic neuron, increase dopamine concentration in the target area
 	if (groupConfigsGPU[preGrpId].Type & TARGET_DA) {
 		atomicAdd(&(runtimeDataGPU.grpDA[postGrpId]), 0.04f);
 	}
 
+	// P3
 	// STDP calculation: the post-synaptic neuron fires before the arrival of pre-synaptic neuron's spike
 	if (groupConfigsGPU[postGrpId].WithSTDP && !networkConfigGPU.sim_in_testing)  {
 		int stdp_tDiff = simTime - runtimeDataGPU.lastSpikeTime[postNId];

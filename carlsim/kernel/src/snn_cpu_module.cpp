@@ -420,6 +420,19 @@ bool SNN::getSpikeGenBit(unsigned int nIdPos, int netId) {
 	return ((cpuRuntimeData[netId].spikeGenBits[nIdIndex] >> nIdBitPos) & 0x1);
 }
 
+/*
+* The sequence of handling an post synaptic spike in CPU mode:
+* P1. Load wt into change (temporary variable)
+* P2. Modulate change by STP (if enabled)
+* P3-1. Modulate change by d_mulSynSlow and d_mulSynFast
+* P3-2. Accumulate g(AMPA,NMDA,GABAa,GABAb) or current
+* P4. Update synSpikeTime
+* P5. Update DA,5HT,ACh,NE accordingly
+* P6. Update STDP wtChange
+* P7. Update v(voltage), u(recovery)
+* P8. Update homeostasis
+* P9. Decay and log DA,5HT,ACh,NE
+*/
 void SNN::generatePostSynapticSpike(int preNId, int postNId, int synId, int tD, int netId) {
 	// get the cumulative position for quick access
 	unsigned int pos = cpuRuntimeData[netId].cumulativePre[postNId] + synId;
@@ -438,11 +451,12 @@ void SNN::generatePostSynapticSpike(int preNId, int postNId, int synId, int tD, 
 	short int mulIndex = cpuRuntimeData[netId].connIdsPreIdx[pos];
 	assert(mulIndex >= 0 && mulIndex < numConnections);
 
-
+	// P1
 	// for each presynaptic spike, postsynaptic (synaptic) current is going to increase by some amplitude (change)
 	// generally speaking, this amplitude is the weight; but it can be modulated by STP
 	float change = cpuRuntimeData[netId].wt[pos];
 
+	// P2
 	if (groupConfigs[netId][pre_grpId].WithSTP) {
 		// if pre-group has STP enabled, we need to modulate the weight
 		// NOTE: Order is important! (Tsodyks & Markram, 1998; Mongillo, Barak, & Tsodyks, 2008)
@@ -461,6 +475,7 @@ void SNN::generatePostSynapticSpike(int preNId, int postNId, int synId, int tD, 
 //					stpu[ind_minus], stpu[ind_plus], stpx[ind_minus], stpx[ind_plus], change, wt[pos]);
 	}
 
+	// P3-1, P3-2
 	// update currents
 	// NOTE: it's faster to += 0.0 rather than checking for zero and not updating
 	if (sim_with_conductances) {
@@ -488,13 +503,16 @@ void SNN::generatePostSynapticSpike(int preNId, int postNId, int synId, int tD, 
 		cpuRuntimeData[netId].current[postNId] += change;
 	}
 
+	// P4
 	cpuRuntimeData[netId].synSpikeTime[pos] = simTime;
 
+	// P5
 	// Got one spike from dopaminergic neuron, increase dopamine concentration in the target area
 	if (pre_type & TARGET_DA) {
 		cpuRuntimeData[netId].grpDA[post_grpId] += 0.04;
 	}
 
+	// P6
 	// STDP calculation: the post-synaptic neuron fires before the arrival of a pre-synaptic spike
 	if (!sim_in_testing && groupConfigs[netId][post_grpId].WithSTDP) {
 		int stdp_tDiff = (simTime - cpuRuntimeData[netId].lastSpikeTime[postNId]);
@@ -556,6 +574,7 @@ void  SNN::globalStateUpdate() {
 				for (int lNId = groupConfigs[netId][lGrpId].lStartN; lNId <= groupConfigs[netId][lGrpId].lEndN; lNId++) {
 					assert(lNId < networkConfigs[netId].numNReg);
 
+					// P7
 					// update conductances
 					if (networkConfigs[netId].sim_with_conductances) {
 						// COBA model
@@ -607,12 +626,14 @@ void  SNN::globalStateUpdate() {
 						cpuRuntimeData[netId].recovery[lNId] += cpuRuntimeData[netId].Izh_a[lNId] * (cpuRuntimeData[netId].Izh_b[lNId] * cpuRuntimeData[netId].voltage[lNId] - cpuRuntimeData[netId].recovery[lNId]);
 					} // end COBA/CUBA
 
+					// P8
 					// update average firing rate for homeostasis
 					if (groupConfigs[netId][lGrpId].WithHomeostasis)
 						cpuRuntimeData[netId].avgFiring[lNId] *= groupConfigs[netId][lGrpId].avgTimeScale_decay;
 				} // end StartN...EndN
 
-				// decay dopamine concentration
+				// P9
+				  // decay dopamine concentration
 				if ((groupConfigs[netId][lGrpId].WithESTDPtype == DA_MOD || groupConfigs[netId][lGrpId].WithISTDP == DA_MOD) && cpuRuntimeData[netId].grpDA[lGrpId] > groupConfigs[netId][lGrpId].baseDP) {
 					cpuRuntimeData[netId].grpDA[lGrpId] *= groupConfigs[netId][lGrpId].decayDP;
 				}
