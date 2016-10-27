@@ -39,6 +39,8 @@
     <ProjectGuid>{713714BD-0AFF-4832-BF1B-29CB68F1CE39}</ProjectGuid>
     <RootNamespace>carlsim</RootNamespace>
     <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
+    <CudaToolkitCustomDir>
+    </CudaToolkitCustomDir>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">

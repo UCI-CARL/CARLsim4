@@ -107,8 +107,8 @@ void SNN::spikeGeneratorUpdate() {
 void SNN::updateTimingTable() {
 	for (int netId = 0; netId < MAX_NET_PER_SNN; netId++) {
 		if (!groupPartitionLists[netId].empty()) {
-			cpuRuntimeData[netId].timeTableD2[simTimeMs+glbNetworkConfig.maxDelay+1] = cpuRuntimeData[netId].spikeCountD2Sec;
-			cpuRuntimeData[netId].timeTableD1[simTimeMs+glbNetworkConfig.maxDelay+1] = cpuRuntimeData[netId].spikeCountD1Sec;
+			cpuRuntimeData[netId].timeTableD2[simTimeMs + networkConfigs[netId].maxDelay+1] = cpuRuntimeData[netId].spikeCountD2Sec;
+			cpuRuntimeData[netId].timeTableD1[simTimeMs + networkConfigs[netId].maxDelay+1] = cpuRuntimeData[netId].spikeCountD1Sec;
 		}
 	}
 }
@@ -137,13 +137,13 @@ void SNN::doCurrentUpdate() {
 // and delivers the spikes to the appropriate post-synaptic neuron
 void SNN::doCurrentUpdateD1(int netId) {
 	int k     = cpuRuntimeData[netId].spikeCountD1Sec - 1;
-	int k_end = cpuRuntimeData[netId].timeTableD1[simTimeMs + glbNetworkConfig.maxDelay];
+	int k_end = cpuRuntimeData[netId].timeTableD1[simTimeMs + networkConfig[netId].maxDelay];
 
 	while((k >= k_end) && (k >= 0)) {
 		int lNId = cpuRuntimeData[netId].firingTableD1[k];
 		assert(lNId < networkConfigs[netId].numN);
 
-		DelayInfo dPar = cpuRuntimeData[netId].postDelayInfo[lNId * (glbNetworkConfig.maxDelay + 1)];
+		DelayInfo dPar = cpuRuntimeData[netId].postDelayInfo[lNId * (networkConfigs[netId].maxDelay + 1)];
 
 		unsigned int offset = cpuRuntimeData[netId].cumulativePost[lNId];
 
@@ -167,19 +167,19 @@ void SNN::doCurrentUpdateD2(int netId) {
 		int lNId  = cpuRuntimeData[netId].firingTableD2[k];
 
 		// find the time of firing from the timeTable using index k
-		while (!((k >= cpuRuntimeData[netId].timeTableD2[t_pos + glbNetworkConfig.maxDelay]) && (k < cpuRuntimeData[netId].timeTableD2[t_pos + glbNetworkConfig.maxDelay + 1]))) {
+		while (!((k >= cpuRuntimeData[netId].timeTableD2[t_pos + networkConfigs[netId].maxDelay]) && (k < cpuRuntimeData[netId].timeTableD2[t_pos + networkConfigs[netId].maxDelay + 1]))) {
 			t_pos = t_pos - 1;
-			assert((t_pos + glbNetworkConfig.maxDelay - 1) >= 0);
+			assert((t_pos + networkConfigs[netId].maxDelay - 1) >= 0);
 		}
 
 		// \TODO: Instead of using the complex timeTable, can neuronFiringTime value...???
 		// Calculate the time difference between time of firing of neuron and the current time...
 		int tD = simTimeMs - t_pos;
 
-		assert((tD < glbNetworkConfig.maxDelay) && (tD >= 0));
+		assert((tD < networkConfigs[netId].maxDelay) && (tD >= 0));
 		assert(lNId < networkConfigs[netId].numN);
 
-		DelayInfo dPar = cpuRuntimeData[netId].postDelayInfo[lNId * (glbNetworkConfig.maxDelay  +1) + tD];
+		DelayInfo dPar = cpuRuntimeData[netId].postDelayInfo[lNId * (networkConfigs[netId].maxDelay  +1) + tD];
 
 		unsigned int offset = cpuRuntimeData[netId].cumulativePost[lNId];
 
