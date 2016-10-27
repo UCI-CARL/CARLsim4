@@ -1,6 +1,8 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 2012
+# Visual Studio 14
+VisualStudioVersion = 14.0.25420.1
+MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "carlsim", "carlsim\kernel\carlsim.vcxproj", "{713714BD-0AFF-4832-BF1B-29CB68F1CE39}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "interface", "carlsim\interface\interface.vcxproj", "{FBD68119-1A8C-4A1A-96CE-522B651209BC}"
@@ -236,8 +238,8 @@ Global
 		{59387F25-BFC1-4E45-B815-1BA87577567D}.Release|Win32.Build.0 = Release|Win32
 		{59387F25-BFC1-4E45-B815-1BA87577567D}.Release|x64.ActiveCfg = Release|x64
 		{59387F25-BFC1-4E45-B815-1BA87577567D}.Release|x64.Build.0 = Release|x64
-		{9A43405F-86AE-495F-AE4B-EEBE8BB677E8}.Debug|Mixed Platforms.ActiveCfg = Debug|Win32
-		{9A43405F-86AE-495F-AE4B-EEBE8BB677E8}.Debug|Mixed Platforms.Build.0 = Debug|Win32
+		{9A43405F-86AE-495F-AE4B-EEBE8BB677E8}.Debug|Mixed Platforms.ActiveCfg = Debug|x64
+		{9A43405F-86AE-495F-AE4B-EEBE8BB677E8}.Debug|Mixed Platforms.Build.0 = Debug|x64
 		{9A43405F-86AE-495F-AE4B-EEBE8BB677E8}.Debug|Win32.ActiveCfg = Debug|Win32
 		{9A43405F-86AE-495F-AE4B-EEBE8BB677E8}.Debug|Win32.Build.0 = Debug|Win32
 		{9A43405F-86AE-495F-AE4B-EEBE8BB677E8}.Debug|x64.ActiveCfg = Debug|x64
