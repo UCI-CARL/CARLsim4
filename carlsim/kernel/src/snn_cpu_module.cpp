@@ -137,7 +137,7 @@ void SNN::doCurrentUpdate() {
 // and delivers the spikes to the appropriate post-synaptic neuron
 void SNN::doCurrentUpdateD1(int netId) {
 	int k     = cpuRuntimeData[netId].spikeCountD1Sec - 1;
-	int k_end = cpuRuntimeData[netId].timeTableD1[simTimeMs + networkConfig[netId].maxDelay];
+	int k_end = cpuRuntimeData[netId].timeTableD1[simTimeMs + networkConfigs[netId].maxDelay];
 
 	while((k >= k_end) && (k >= 0)) {
 		int lNId = cpuRuntimeData[netId].firingTableD1[k];
@@ -148,7 +148,16 @@ void SNN::doCurrentUpdateD1(int netId) {
 		unsigned int offset = cpuRuntimeData[netId].cumulativePost[lNId];
 
 		for(int idx_d = dPar.delay_index_start; idx_d < (dPar.delay_index_start + dPar.delay_length); idx_d = idx_d + 1) {
-				generatePostSynapticSpike(lNId, idx_d, offset, 0, netId);
+			// get synaptic info...
+			SynInfo postInfo = cpuRuntimeData[netId].postSynapticIds[offset + idx_d];
+
+			int postNId = GET_CONN_NEURON_ID(postInfo);
+			assert(postNId < networkConfigs[netId].numN);
+
+			int synId = GET_CONN_SYN_ID(postInfo);
+			assert(synId < (cpuRuntimeData[netId].Npre[postNId]));
+
+			generatePostSynapticSpike(lNId /* preNId */, postNId, synId, 0, netId);
 		}
 
 		k = k - 1;
@@ -179,13 +188,22 @@ void SNN::doCurrentUpdateD2(int netId) {
 		assert((tD < networkConfigs[netId].maxDelay) && (tD >= 0));
 		assert(lNId < networkConfigs[netId].numN);
 
-		DelayInfo dPar = cpuRuntimeData[netId].postDelayInfo[lNId * (networkConfigs[netId].maxDelay  +1) + tD];
+		DelayInfo dPar = cpuRuntimeData[netId].postDelayInfo[lNId * (networkConfigs[netId].maxDelay + 1) + tD];
 
 		unsigned int offset = cpuRuntimeData[netId].cumulativePost[lNId];
 
 		// for each delay variables
 		for(int idx_d = dPar.delay_index_start; idx_d < (dPar.delay_index_start + dPar.delay_length); idx_d = idx_d + 1) {
-			generatePostSynapticSpike(lNId, idx_d, offset, tD, netId);
+			// get synaptic info...
+			SynInfo postInfo = cpuRuntimeData[netId].postSynapticIds[offset + idx_d];
+
+			int postNId = GET_CONN_NEURON_ID(postInfo);
+			assert(postNId < networkConfigs[netId].numN);
+
+			int synId = GET_CONN_SYN_ID(postInfo);
+			assert(synId < (cpuRuntimeData[netId].Npre[postNId]));
+			
+			generatePostSynapticSpike(lNId /* preNId */, postNId, synId, tD, netId);
 		}
 
 		k = k - 1;
@@ -402,25 +420,14 @@ bool SNN::getSpikeGenBit(unsigned int nIdPos, int netId) {
 	return ((cpuRuntimeData[netId].spikeGenBits[nIdIndex] >> nIdBitPos) & 0x1);
 }
 
-void SNN::generatePostSynapticSpike(unsigned int pre_i, unsigned int idx_d, unsigned int offset, int tD, int netId) {
-	// get synaptic info...
-	SynInfo post_info = cpuRuntimeData[netId].postSynapticIds[offset + idx_d];
-
-	// get post-neuron id
-	unsigned int post_i = GET_CONN_NEURON_ID(post_info);
-	assert(post_i < networkConfigs[netId].numN);
-
-	// get syn id
-	int s_i = GET_CONN_SYN_ID(post_info);
-	assert(s_i < (cpuRuntimeData[netId].Npre[post_i]));
-
+void SNN::generatePostSynapticSpike(int preNId, int postNId, int synId, int tD, int netId) {
 	// get the cumulative position for quick access
-	unsigned int pos_i = cpuRuntimeData[netId].cumulativePre[post_i] + s_i;
-	assert(post_i < networkConfigs[netId].numNReg); // \FIXME is this assert supposed to be for pos_i?
+	unsigned int pos = cpuRuntimeData[netId].cumulativePre[postNId] + synId;
+	assert(postNId < networkConfigs[netId].numNReg); // \FIXME is this assert supposed to be for pos?
 
 	// get group id of pre- / post-neuron
-	short int post_grpId = cpuRuntimeData[netId].grpIds[post_i];
-	short int pre_grpId = cpuRuntimeData[netId].grpIds[pre_i];
+	short int post_grpId = cpuRuntimeData[netId].grpIds[postNId];
+	short int pre_grpId = cpuRuntimeData[netId].grpIds[preNId];
 
 	unsigned int pre_type = groupConfigs[netId][pre_grpId].Type;
 
@@ -428,13 +435,13 @@ void SNN::generatePostSynapticSpike(unsigned int pre_i, unsigned int idx_d, unsi
 	// mulSynFast/Slow per synapse or storing a pointer to grpConnectInfo_s)
 	// mulSynFast will be applied to fast currents (either AMPA or GABAa)
 	// mulSynSlow will be applied to slow currents (either NMDA or GABAb)
-	short int mulIndex = cpuRuntimeData[netId].connIdsPreIdx[pos_i];
+	short int mulIndex = cpuRuntimeData[netId].connIdsPreIdx[pos];
 	assert(mulIndex >= 0 && mulIndex < numConnections);
 
 
 	// for each presynaptic spike, postsynaptic (synaptic) current is going to increase by some amplitude (change)
 	// generally speaking, this amplitude is the weight; but it can be modulated by STP
-	float change = cpuRuntimeData[netId].wt[pos_i];
+	float change = cpuRuntimeData[netId].wt[pos];
 
 	if (groupConfigs[netId][pre_grpId].WithSTP) {
 		// if pre-group has STP enabled, we need to modulate the weight
@@ -443,45 +450,45 @@ void SNN::generatePostSynapticSpike(unsigned int pre_i, unsigned int idx_d, unsi
 
 		// dI/dt = -I/tau_S + A * u^+ * x^- * \delta(t-t_{spk})
 		// I noticed that for connect(.., RangeDelay(1), ..) tD will be 0
-		int ind_minus = STP_BUF_POS(pre_i, (simTime-tD-1), networkConfigs[netId].maxDelay);
-		int ind_plus  = STP_BUF_POS(pre_i, (simTime-tD), networkConfigs[netId].maxDelay);
+		int ind_minus = STP_BUF_POS(preNId, (simTime-tD-1), networkConfigs[netId].maxDelay);
+		int ind_plus  = STP_BUF_POS(preNId, (simTime-tD), networkConfigs[netId].maxDelay);
 
 		change *= groupConfigs[netId][pre_grpId].STP_A * cpuRuntimeData[netId].stpu[ind_plus] * cpuRuntimeData[netId].stpx[ind_minus];
 
 //		fprintf(stderr,"%d: %d[%d], numN=%d, td=%d, maxDelay_=%d, ind-=%d, ind+=%d, stpu=[%f,%f], stpx=[%f,%f], change=%f, wt=%f\n",
-//			simTime, pre_grpId, pre_i,
+//			simTime, pre_grpId, preNId,
 //					numN, tD, maxDelay_, ind_minus, ind_plus,
-//					stpu[ind_minus], stpu[ind_plus], stpx[ind_minus], stpx[ind_plus], change, wt[pos_i]);
+//					stpu[ind_minus], stpu[ind_plus], stpx[ind_minus], stpx[ind_plus], change, wt[pos]);
 	}
 
 	// update currents
 	// NOTE: it's faster to += 0.0 rather than checking for zero and not updating
 	if (sim_with_conductances) {
-		if (pre_type & TARGET_AMPA) // if post_i expresses AMPAR
-			cpuRuntimeData[netId].gAMPA [post_i] += change * mulSynFast[mulIndex]; // scale by some factor
+		if (pre_type & TARGET_AMPA) // if postNId expresses AMPAR
+			cpuRuntimeData[netId].gAMPA [postNId] += change * mulSynFast[mulIndex]; // scale by some factor
 		if (pre_type & TARGET_NMDA) {
 			if (sim_with_NMDA_rise) {
-				cpuRuntimeData[netId].gNMDA_r[post_i] += change * sNMDA * mulSynSlow[mulIndex];
-				cpuRuntimeData[netId].gNMDA_d[post_i] += change * sNMDA * mulSynSlow[mulIndex];
+				cpuRuntimeData[netId].gNMDA_r[postNId] += change * sNMDA * mulSynSlow[mulIndex];
+				cpuRuntimeData[netId].gNMDA_d[postNId] += change * sNMDA * mulSynSlow[mulIndex];
 			} else {
-				cpuRuntimeData[netId].gNMDA [post_i] += change * mulSynSlow[mulIndex];
+				cpuRuntimeData[netId].gNMDA [postNId] += change * mulSynSlow[mulIndex];
 			}
 		}
 		if (pre_type & TARGET_GABAa)
-			cpuRuntimeData[netId].gGABAa[post_i] -= change * mulSynFast[mulIndex]; // wt should be negative for GABAa and GABAb
+			cpuRuntimeData[netId].gGABAa[postNId] -= change * mulSynFast[mulIndex]; // wt should be negative for GABAa and GABAb
 		if (pre_type & TARGET_GABAb) {
 			if (sim_with_GABAb_rise) {
-				cpuRuntimeData[netId].gGABAb_r[post_i] -= change * sGABAb*mulSynSlow[mulIndex];
-				cpuRuntimeData[netId].gGABAb_d[post_i] -= change * sGABAb*mulSynSlow[mulIndex];
+				cpuRuntimeData[netId].gGABAb_r[postNId] -= change * sGABAb * mulSynSlow[mulIndex];
+				cpuRuntimeData[netId].gGABAb_d[postNId] -= change * sGABAb * mulSynSlow[mulIndex];
 			} else {
-				cpuRuntimeData[netId].gGABAb[post_i] -= change * mulSynSlow[mulIndex];
+				cpuRuntimeData[netId].gGABAb[postNId] -= change * mulSynSlow[mulIndex];
 			}
 		}
 	} else {
-		cpuRuntimeData[netId].current[post_i] += change;
+		cpuRuntimeData[netId].current[postNId] += change;
 	}
 
-	cpuRuntimeData[netId].synSpikeTime[pos_i] = simTime;
+	cpuRuntimeData[netId].synSpikeTime[pos] = simTime;
 
 	// Got one spike from dopaminergic neuron, increase dopamine concentration in the target area
 	if (pre_type & TARGET_DA) {
@@ -489,8 +496,8 @@ void SNN::generatePostSynapticSpike(unsigned int pre_i, unsigned int idx_d, unsi
 	}
 
 	// STDP calculation: the post-synaptic neuron fires before the arrival of a pre-synaptic spike
-	if (!sim_in_testing && groupConfigs[0][post_grpId].WithSTDP) {
-		int stdp_tDiff = (simTime - cpuRuntimeData[netId].lastSpikeTime[post_i]);
+	if (!sim_in_testing && groupConfigs[netId][post_grpId].WithSTDP) {
+		int stdp_tDiff = (simTime - cpuRuntimeData[netId].lastSpikeTime[postNId]);
 
 		if (stdp_tDiff >= 0) {
 			if (groupConfigs[netId][post_grpId].WithISTDP && ((pre_type & TARGET_GABAa) || (pre_type & TARGET_GABAb))) { // inhibitory syanpse
@@ -498,14 +505,14 @@ void SNN::generatePostSynapticSpike(unsigned int pre_i, unsigned int idx_d, unsi
 				switch (groupConfigs[netId][post_grpId].WithISTDPcurve) {
 				case EXP_CURVE: // exponential curve
 					if (stdp_tDiff * groupConfigs[netId][post_grpId].TAU_MINUS_INV_INB < 25) { // LTD of inhibitory syanpse, which increase synapse weight
-						cpuRuntimeData[netId].wtChange[pos_i] -= STDP(stdp_tDiff, groupConfigs[netId][post_grpId].ALPHA_MINUS_INB, groupConfigs[netId][post_grpId].TAU_MINUS_INV_INB);
+						cpuRuntimeData[netId].wtChange[pos] -= STDP(stdp_tDiff, groupConfigs[netId][post_grpId].ALPHA_MINUS_INB, groupConfigs[netId][post_grpId].TAU_MINUS_INV_INB);
 					}
 					break;
 				case PULSE_CURVE: // pulse curve
 					if (stdp_tDiff <= groupConfigs[netId][post_grpId].LAMBDA) { // LTP of inhibitory synapse, which decreases synapse weight
-						cpuRuntimeData[netId].wtChange[pos_i] -= groupConfigs[netId][post_grpId].BETA_LTP;
-					} else if (stdp_tDiff <= groupConfigs[0][post_grpId].DELTA) { // LTD of inhibitory syanpse, which increase synapse weight
-						cpuRuntimeData[netId].wtChange[pos_i] -= groupConfigs[netId][post_grpId].BETA_LTD;
+						cpuRuntimeData[netId].wtChange[pos] -= groupConfigs[netId][post_grpId].BETA_LTP;
+					} else if (stdp_tDiff <= groupConfigs[netId][post_grpId].DELTA) { // LTD of inhibitory syanpse, which increase synapse weight
+						cpuRuntimeData[netId].wtChange[pos] -= groupConfigs[netId][post_grpId].BETA_LTD;
 					} else { /*do nothing*/ }
 					break;
 				default:
@@ -518,7 +525,7 @@ void SNN::generatePostSynapticSpike(unsigned int pre_i, unsigned int idx_d, unsi
 				case EXP_CURVE: // exponential curve
 				case TIMING_BASED_CURVE: // sc curve
 					if (stdp_tDiff * groupConfigs[netId][post_grpId].TAU_MINUS_INV_EXC < 25)
-						cpuRuntimeData[netId].wtChange[pos_i] += STDP(stdp_tDiff, groupConfigs[netId][post_grpId].ALPHA_MINUS_EXC, groupConfigs[netId][post_grpId].TAU_MINUS_INV_EXC);
+						cpuRuntimeData[netId].wtChange[pos] += STDP(stdp_tDiff, groupConfigs[netId][post_grpId].ALPHA_MINUS_EXC, groupConfigs[netId][post_grpId].TAU_MINUS_INV_EXC);
 					break;
 				default:
 					KERNEL_ERROR("Invalid E-STDP curve");
@@ -526,87 +533,93 @@ void SNN::generatePostSynapticSpike(unsigned int pre_i, unsigned int idx_d, unsi
 				}
 			} else { /*do nothing*/ }
 		}
-		assert(!((stdp_tDiff < 0) && (cpuRuntimeData[netId].lastSpikeTime[post_i] != MAX_SIMULATION_TIME)));
+		assert(!((stdp_tDiff < 0) && (cpuRuntimeData[netId].lastSpikeTime[postNId] != MAX_SIMULATION_TIME)));
 	}
 }
 
 // FIXME: wrong to use groupConfigs[0]
 void  SNN::globalStateUpdate() {
-	double tmp_iNMDA, tmp_I;
-	double tmp_gNMDA, tmp_gGABAb;
+	for (int netId = 0; netId < MAX_NET_PER_SNN; netId++) {
+		if (!groupPartitionLists[netId].empty()) {
+			double tmp_iNMDA, tmp_I;
+			double tmp_gNMDA, tmp_gGABAb;
 
-	for(int g = 0; g < numGroups; g++) {
-		if (groupConfigs[0][g].Type & POISSON_NEURON) {
-			if (groupConfigs[0][g].WithHomeostasis) {
-				for(int i=groupConfigs[0][g].gStartN; i <= groupConfigs[0][g].gEndN; i++)
-					managerRuntimeData.avgFiring[i] *= groupConfigs[0][g].avgTimeScale_decay;
-			}
-			continue;
-		}
-
-		// decay dopamine concentration
-		if ((groupConfigs[0][g].WithESTDPtype == DA_MOD || groupConfigs[0][g].WithISTDP == DA_MOD) && managerRuntimeData.grpDA[g] > groupConfigs[0][g].baseDP) {
-			managerRuntimeData.grpDA[g] *= groupConfigs[0][g].decayDP;
-		}
-		managerRuntimeData.grpDABuffer[g * 1000 + simTimeMs] = managerRuntimeData.grpDA[g];
-
-		for(int i=groupConfigs[0][g].gStartN; i <= groupConfigs[0][g].gEndN; i++) {
-			assert(i < glbNetworkConfig.numNReg);
-			// update average firing rate for homeostasis
-			if (groupConfigs[0][g].WithHomeostasis)
-				managerRuntimeData.avgFiring[i] *= groupConfigs[0][g].avgTimeScale_decay;
-
-			// update conductances
-			if (sim_with_conductances) {
-				// COBA model
-
-				// all the tmpIs will be summed into current[i] in the following loop
-				managerRuntimeData.current[i] = 0.0f;
-
-				// \FIXME: these tmp vars cause a lot of rounding errors... consider rewriting
-				for (int j=0; j<COND_INTEGRATION_SCALE; j++) {
-					tmp_iNMDA = (managerRuntimeData.voltage[i]+80.0)*(managerRuntimeData.voltage[i]+80.0)/60.0/60.0;
-
-					tmp_gNMDA = sim_with_NMDA_rise ? managerRuntimeData.gNMDA_d[i]-managerRuntimeData.gNMDA_r[i] : managerRuntimeData.gNMDA[i];
-					tmp_gGABAb = sim_with_GABAb_rise ? managerRuntimeData.gGABAb_d[i]-managerRuntimeData.gGABAb_r[i] : managerRuntimeData.gGABAb[i];
-
-					tmp_I = -(   managerRuntimeData.gAMPA[i]*(managerRuntimeData.voltage[i]-0)
-									 + tmp_gNMDA*tmp_iNMDA/(1+tmp_iNMDA)*(managerRuntimeData.voltage[i]-0)
-									 + managerRuntimeData.gGABAa[i]*(managerRuntimeData.voltage[i]+70)
-									 + tmp_gGABAb*(managerRuntimeData.voltage[i]+90)
-								   );
-
-					managerRuntimeData.voltage[i] += ((0.04*managerRuntimeData.voltage[i]+5.0)*managerRuntimeData.voltage[i]+140.0-managerRuntimeData.recovery[i]+tmp_I+managerRuntimeData.extCurrent[i])
-						/ COND_INTEGRATION_SCALE;
-					assert(!isnan(managerRuntimeData.voltage[i]) && !isinf(managerRuntimeData.voltage[i]));
-
-					// keep track of total current
-					managerRuntimeData.current[i] += tmp_I;
-
-					if (managerRuntimeData.voltage[i] > 30) {
-						managerRuntimeData.voltage[i] = 30;
-						j=COND_INTEGRATION_SCALE; // break the loop but evaluate u[i]
-//						if (gNMDA[i]>=10.0f) KERNEL_WARN("High NMDA conductance (gNMDA>=10.0) may cause instability");
-//						if (gGABAb[i]>=2.0f) KERNEL_WARN("High GABAb conductance (gGABAb>=2.0) may cause instability");
+			for (int lGrpId = 0; lGrpId < networkConfigs[netId].numGroups; lGrpId++) {
+				if (groupConfigs[netId][lGrpId].Type & POISSON_NEURON) {
+					if (groupConfigs[netId][lGrpId].WithHomeostasis) {
+						for (int lNId = groupConfigs[netId][lGrpId].lStartN; lNId <= groupConfigs[netId][lGrpId].lEndN; lNId++)
+							cpuRuntimeData[netId].avgFiring[lNId] *= groupConfigs[netId][lGrpId].avgTimeScale_decay;
 					}
-					if (managerRuntimeData.voltage[i] < -90)
-						managerRuntimeData.voltage[i] = -90;
-					managerRuntimeData.recovery[i]+=managerRuntimeData.Izh_a[i]*(managerRuntimeData.Izh_b[i]*managerRuntimeData.voltage[i]-managerRuntimeData.recovery[i])/COND_INTEGRATION_SCALE;
-				} // end COND_INTEGRATION_SCALE loop
-			} else {
-				// CUBA model
-				managerRuntimeData.voltage[i] += 0.5*((0.04*managerRuntimeData.voltage[i]+5.0)*managerRuntimeData.voltage[i] + 140.0 - managerRuntimeData.recovery[i]
-					+ managerRuntimeData.current[i] + managerRuntimeData.extCurrent[i]); //for numerical stability
-				managerRuntimeData.voltage[i] += 0.5*((0.04*managerRuntimeData.voltage[i]+5.0)*managerRuntimeData.voltage[i] + 140.0 - managerRuntimeData.recovery[i]
-					+ managerRuntimeData.current[i] + managerRuntimeData.extCurrent[i]); //time step is 0.5 ms
-				if (managerRuntimeData.voltage[i] > 30)
-					managerRuntimeData.voltage[i] = 30;
-				if (managerRuntimeData.voltage[i] < -90)
-					managerRuntimeData.voltage[i] = -90;
-				managerRuntimeData.recovery[i]+=managerRuntimeData.Izh_a[i]*(managerRuntimeData.Izh_b[i]*managerRuntimeData.voltage[i]-managerRuntimeData.recovery[i]);
-			} // end COBA/CUBA
-		} // end StartN...EndN
-	} // end numGroups
+					continue;
+				}
+
+				for (int lNId = groupConfigs[netId][lGrpId].lStartN; lNId <= groupConfigs[netId][lGrpId].lEndN; lNId++) {
+					assert(lNId < networkConfigs[netId].numNReg);
+
+					// update conductances
+					if (networkConfigs[netId].sim_with_conductances) {
+						// COBA model
+
+						// all the tmpIs will be summed into current[i] in the following loop
+						cpuRuntimeData[netId].current[lNId] = 0.0f;
+
+						// \FIXME: these tmp vars cause a lot of rounding errors... consider rewriting
+						for (int j = 0; j < COND_INTEGRATION_SCALE; j++) {
+							tmp_iNMDA = (cpuRuntimeData[netId].voltage[lNId] + 80.0f) * (cpuRuntimeData[netId].voltage[lNId] + 80.0f) / 60.0f / 60.0f;
+
+							tmp_gNMDA = networkConfigs[netId].sim_with_NMDA_rise ? cpuRuntimeData[netId].gNMDA_d[lNId] - cpuRuntimeData[netId].gNMDA_r[lNId] : cpuRuntimeData[netId].gNMDA[lNId];
+							tmp_gGABAb = networkConfigs[netId].sim_with_GABAb_rise ? cpuRuntimeData[netId].gGABAb_d[lNId] - cpuRuntimeData[netId].gGABAb_r[lNId] : cpuRuntimeData[netId].gGABAb[lNId];
+
+							tmp_I = -(cpuRuntimeData[netId].gAMPA[lNId] * (cpuRuntimeData[netId].voltage[lNId] - 0.0f)
+								+ tmp_gNMDA * tmp_iNMDA / (1 + tmp_iNMDA) * (cpuRuntimeData[netId].voltage[lNId] - 0.0f)
+								+ cpuRuntimeData[netId].gGABAa[lNId] * (cpuRuntimeData[netId].voltage[lNId] + 70.0f)
+								+ tmp_gGABAb * (cpuRuntimeData[netId].voltage[lNId] + 90.0f)
+								);
+
+							cpuRuntimeData[netId].voltage[lNId] += ((0.04f * cpuRuntimeData[netId].voltage[lNId] + 5.0f) * cpuRuntimeData[netId].voltage[lNId] + 140.0f - cpuRuntimeData[netId].recovery[lNId] + tmp_I + cpuRuntimeData[netId].extCurrent[lNId])
+								/ COND_INTEGRATION_SCALE;
+							assert(!isnan(cpuRuntimeData[netId].voltage[lNId]) && !isinf(cpuRuntimeData[netId].voltage[lNId]));
+
+							// keep track of total current
+							cpuRuntimeData[netId].current[lNId] += tmp_I;
+
+							if (cpuRuntimeData[netId].voltage[lNId] > 30.0f) {
+								cpuRuntimeData[netId].voltage[lNId] = 30.0f;
+								j = COND_INTEGRATION_SCALE; // break the loop but evaluate u[i]
+		//						if (gNMDA[i]>=10.0f) KERNEL_WARN("High NMDA conductance (gNMDA>=10.0) may cause instability");
+		//						if (gGABAb[i]>=2.0f) KERNEL_WARN("High GABAb conductance (gGABAb>=2.0) may cause instability");
+							}
+							if (cpuRuntimeData[netId].voltage[lNId] < -90.0f)
+								cpuRuntimeData[netId].voltage[lNId] = -90.0f;
+							cpuRuntimeData[netId].recovery[lNId] += cpuRuntimeData[netId].Izh_a[lNId] * (cpuRuntimeData[netId].Izh_b[lNId] * cpuRuntimeData[netId].voltage[lNId] - cpuRuntimeData[netId].recovery[lNId]) / COND_INTEGRATION_SCALE;
+						} // end COND_INTEGRATION_SCALE loop
+					}
+					else {
+						// CUBA model
+						cpuRuntimeData[netId].voltage[lNId] += 0.5f * ((0.04f * cpuRuntimeData[netId].voltage[lNId] + 5.0f) * cpuRuntimeData[netId].voltage[lNId] + 140.0f - cpuRuntimeData[netId].recovery[lNId]
+							+ cpuRuntimeData[netId].current[lNId] + cpuRuntimeData[netId].extCurrent[lNId]); //for numerical stability
+						cpuRuntimeData[netId].voltage[lNId] += 0.5f * ((0.04f * cpuRuntimeData[netId].voltage[lNId] + 5.0f) * cpuRuntimeData[netId].voltage[lNId] + 140.0f - cpuRuntimeData[netId].recovery[lNId]
+							+ cpuRuntimeData[netId].current[lNId] + cpuRuntimeData[netId].extCurrent[lNId]); //time step is 0.5 ms
+						if (cpuRuntimeData[netId].voltage[lNId] > 30.0f)
+							cpuRuntimeData[netId].voltage[lNId] = 30.0f;
+						if (cpuRuntimeData[netId].voltage[lNId] < -90.0f)
+							cpuRuntimeData[netId].voltage[lNId] = -90.0f;
+						cpuRuntimeData[netId].recovery[lNId] += cpuRuntimeData[netId].Izh_a[lNId] * (cpuRuntimeData[netId].Izh_b[lNId] * cpuRuntimeData[netId].voltage[lNId] - cpuRuntimeData[netId].recovery[lNId]);
+					} // end COBA/CUBA
+
+					// update average firing rate for homeostasis
+					if (groupConfigs[netId][lGrpId].WithHomeostasis)
+						cpuRuntimeData[netId].avgFiring[lNId] *= groupConfigs[netId][lGrpId].avgTimeScale_decay;
+				} // end StartN...EndN
+
+				// decay dopamine concentration
+				if ((groupConfigs[netId][lGrpId].WithESTDPtype == DA_MOD || groupConfigs[netId][lGrpId].WithISTDP == DA_MOD) && cpuRuntimeData[netId].grpDA[lGrpId] > groupConfigs[netId][lGrpId].baseDP) {
+					cpuRuntimeData[netId].grpDA[lGrpId] *= groupConfigs[netId][lGrpId].decayDP;
+				}
+				cpuRuntimeData[netId].grpDABuffer[lGrpId * 1000 + simTimeMs] = cpuRuntimeData[netId].grpDA[lGrpId];
+			} // end numGroups
+		}
+	}
 }
 
 // FIXME: wrong to use groupConfigs[0]

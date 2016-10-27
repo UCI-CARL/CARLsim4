@@ -788,15 +788,15 @@ __global__ void kernel_conductanceUpdate (int simTimeMs, int simTimeSec, int sim
 								NMDA_r_sum += change * d_mulSynSlow[connId] * networkConfigGPU.sNMDA;
 								NMDA_d_sum += change * d_mulSynSlow[connId] * networkConfigGPU.sNMDA;
 							} else {
-								NMDA_sum += change*d_mulSynSlow[connId];
+								NMDA_sum += change * d_mulSynSlow[connId];
 							}
 						}
 						if (type & TARGET_GABAa)
 							GABAa_sum += change * d_mulSynFast[connId];	// wt should be negative for GABAa and GABAb
 						if (type & TARGET_GABAb) {						// but that is dealt with below
 							if (networkConfigGPU.sim_with_GABAb_rise) {
-								GABAb_r_sum += change * d_mulSynSlow[connId]*networkConfigGPU.sGABAb;
-								GABAb_d_sum += change * d_mulSynSlow[connId]*networkConfigGPU.sGABAb;
+								GABAb_r_sum += change * d_mulSynSlow[connId] * networkConfigGPU.sGABAb;
+								GABAb_d_sum += change * d_mulSynSlow[connId] * networkConfigGPU.sGABAb;
 							} else {
 								GABAb_sum += change * d_mulSynSlow[connId];
 							}
@@ -1231,19 +1231,19 @@ __global__ void kernel_shiftTimeTable() {
 //****************************** GENERATE POST-SYNAPTIC CURRENT EVERY TIME-STEP  ****************************
 __device__ void generatePostSynapticSpike(int simTime, int preNId, int postNId, int synId) {
 	// get the actual position of the synapses and other variables...
-	unsigned int prePos = runtimeDataGPU.cumulativePre[postNId] + synId;
+	unsigned int pos = runtimeDataGPU.cumulativePre[postNId] + synId;
 
 	short int preGrpId = runtimeDataGPU.grpIds[preNId]; // STP uses preGrpId
 	short int postGrpId = runtimeDataGPU.grpIds[postNId]; // STDP uses postGrpId
+
+	setFiringBitSynapses(postNId, synId);
+
+	runtimeDataGPU.synSpikeTime[pos] = simTime;		  //uncoalesced access
 
 	// Got one spike from dopaminergic neuron, increase dopamine concentration in the target area
 	if (groupConfigsGPU[preGrpId].Type & TARGET_DA) {
 		atomicAdd(&(runtimeDataGPU.grpDA[postGrpId]), 0.04f);
 	}
-
-	setFiringBitSynapses(postNId, synId);
-
-	runtimeDataGPU.synSpikeTime[prePos] = simTime;		  //uncoalesced access
 
 	// STDP calculation: the post-synaptic neuron fires before the arrival of pre-synaptic neuron's spike
 	if (groupConfigsGPU[postGrpId].WithSTDP && !networkConfigGPU.sim_in_testing)  {
@@ -1255,7 +1255,7 @@ __device__ void generatePostSynapticSpike(int simTime, int preNId, int postNId, 
 				case EXP_CURVE: // exponential curve
 				case TIMING_BASED_CURVE: // sc curve
 					if (stdp_tDiff * groupConfigsGPU[postGrpId].TAU_MINUS_INV_EXC < 25.0f)
-						runtimeDataGPU.wtChange[prePos] += STDP( stdp_tDiff, groupConfigsGPU[postGrpId].ALPHA_MINUS_EXC, groupConfigsGPU[postGrpId].TAU_MINUS_INV_EXC); // uncoalesced access
+						runtimeDataGPU.wtChange[pos] += STDP( stdp_tDiff, groupConfigsGPU[postGrpId].ALPHA_MINUS_EXC, groupConfigsGPU[postGrpId].TAU_MINUS_INV_EXC); // uncoalesced access
 					break;
 				default:
 					break;
@@ -1266,14 +1266,14 @@ __device__ void generatePostSynapticSpike(int simTime, int preNId, int postNId, 
 				switch (groupConfigsGPU[postGrpId].WithISTDPcurve) {
 				case EXP_CURVE: // exponential curve
 					if ((stdp_tDiff * groupConfigsGPU[postGrpId].TAU_MINUS_INV_INB) < 25.0f) { // LTD of inhibitory syanpse, which increase synapse weight
-						runtimeDataGPU.wtChange[prePos] -= STDP(stdp_tDiff, groupConfigsGPU[postGrpId].ALPHA_MINUS_INB, groupConfigsGPU[postGrpId].TAU_MINUS_INV_INB);
+						runtimeDataGPU.wtChange[pos] -= STDP(stdp_tDiff, groupConfigsGPU[postGrpId].ALPHA_MINUS_INB, groupConfigsGPU[postGrpId].TAU_MINUS_INV_INB);
 					}
 					break;
 				case PULSE_CURVE: // pulse curve
 					if (stdp_tDiff <= groupConfigsGPU[postGrpId].LAMBDA) { // LTP of inhibitory synapse, which decreases synapse weight
-						runtimeDataGPU.wtChange[prePos] -= groupConfigsGPU[postGrpId].BETA_LTP;
+						runtimeDataGPU.wtChange[pos] -= groupConfigsGPU[postGrpId].BETA_LTP;
 					} else if (stdp_tDiff <= groupConfigsGPU[postGrpId].DELTA) { // LTD of inhibitory syanpse, which increase synapse weight
-						runtimeDataGPU.wtChange[prePos] -= groupConfigsGPU[postGrpId].BETA_LTD;
+						runtimeDataGPU.wtChange[pos] -= groupConfigsGPU[postGrpId].BETA_LTD;
 					}
 					break;
 				default:

@@ -635,7 +635,7 @@ private:
                   int& _numNPois, int& _numNExcPois, int& _numNInhPois);
 	void findNumNSpikeGen(int _netId, int& _numNSpikeGen);
 
-	void generatePostSynapticSpike(unsigned int pre_i, unsigned int idx_d, unsigned int offset, int tD, int netId);
+	void generatePostSynapticSpike(int preNId, int postNId, int synId, int tD, int netId);
 	void fillSpikeGenBits(int netId);
 	void userDefinedSpikeGenerator(int gGrpId);
 	//void generateSpikesFromRate(int grpId);
