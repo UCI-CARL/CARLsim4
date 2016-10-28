@@ -97,7 +97,7 @@ void SNN::spikeGeneratorUpdate() {
 				// fill spikeGenBits from SpikeBuffer
 				fillSpikeGenBits(netId);
 
-				// copy the spikeGenBits from the CPU to the GPU..
+				// copy the spikeGenBits from the manager to the CPU runtime
 				memcpy(cpuRuntimeData[netId].spikeGenBits, managerRuntimeData.spikeGenBits, sizeof(int) * (networkConfigs[netId].numNSpikeGen / 32 + 1));
 			}
 		}
@@ -275,7 +275,7 @@ void SNN::findFiring() {
 	for (int netId = 0; netId < MAX_NET_PER_SNN; netId++) {
 		if (!groupPartitionLists[netId].empty()) {
 			for(int lGrpId = 0; lGrpId < networkConfigs[netId].numGroups; lGrpId++) {
-				for (int lNId = 0; lNId < groupConfigs[netId][lGrpId].numN; lNId++) {
+				for (int lNId = groupConfigs[netId][lGrpId].lStartN; lNId <= groupConfigs[netId][lGrpId].lEndN; lNId++) {
 					bool needToWrite = false;
 					// given group of neurons belong to the poisson group....
 					if (groupConfigs[netId][lGrpId].Type & POISSON_NEURON) {
@@ -815,14 +815,8 @@ void SNN::allocateSNN_CPU(int netId) {
 	//KERNEL_INFO("Init:\t\t\t%2.3f MB\t%2.3f MB\t%2.3f MB",(float)(total)/toMB,(float)((total-avail)/toMB), (float)(avail/toMB));
 	//previous=avail;
 
-	//// FIXME: necessary for CPU_MODE?? allocate random number generator on CPU(s)
-	//if(gpuRuntimeData[netId].gpuRandGen == NULL) {
-	//	curandCreateGenerator(&gpuRuntimeData[netId].gpuRandGen, CURAND_RNG_PSEUDO_DEFAULT);
-	//	curandSetPseudoRandomGeneratorSeed(gpuRuntimeData[netId].gpuRandGen, randSeed_ + netId);
-	//}
-
-	//// allocate SNN::gpuRuntimeData[0].randNum for random number generators
-	//CUDA_CHECK_ERRORS(cudaMalloc((void **)&gpuRuntimeData[netId].randNum, networkConfigs[netId].numNPois * sizeof(float)));
+	// allocate SNN::cpuRuntimeData[0].randNum for random number generators
+	cpuRuntimeData[netId].randNum = new float[networkConfigs[netId].numNPois];
 	//KERNEL_INFO("Random Gen:\t\t%2.3f MB\t%2.3f MB\t%2.3f MB",(float)(previous-avail)/toMB, (float)((total-avail)/toMB),(float)(avail/toMB));
 	//previous=avail;
 
@@ -840,7 +834,7 @@ void SNN::allocateSNN_CPU(int netId) {
 	//KERNEL_INFO("Syn State:\t\t%2.3f MB\t%2.3f MB\t%2.3f MB",(float)(previous-avail)/toMB,(float)((total-avail)/toMB), (float)(avail/toMB));
 	//previous=avail;
 	
-	// copy the neuron state information to the GPU..
+	// copy the neuron state information to the CPU runtime
 	// initialize (copy from managerRuntimeData) cpuRuntimeData[0].recovery, cpuRuntimeData[0].voltage, cpuRuntimeData[0].current
 	// initialize (copy from managerRuntimeData) cpuRuntimeData[0].gGABAa, cpuRuntimeData[0].gGABAb, cpuRuntimeData[0].gAMPA, cpuRuntimeData[0].gNMDA
 	// initialize (copy from SNN) cpuRuntimeData[0].Izh_a, cpuRuntimeData[0].Izh_b, cpuRuntimeData[0].Izh_c, cpuRuntimeData[0].Izh_d
@@ -1065,7 +1059,7 @@ void SNN::copyPostConnectionInfo(int netId, int lGrpId, RuntimeData* dest, Runti
  * \param[in] dest pointer to runtime data desitnation
  * \param[in] allocateMem a flag indicates whether allocating memory space before copying
  *
- * \sa allocateSNN_GPU
+ * \sa allocateSNN_CPU
  * \since v4.0
  */
 void SNN::copySynapseState(int netId, RuntimeData* dest, bool allocateMem) {
@@ -1077,7 +1071,7 @@ void SNN::copySynapseState(int netId, RuntimeData* dest, bool allocateMem) {
 	memcpy(dest->wt, managerRuntimeData.wt, sizeof(float) * networkConfigs[netId].numPreSynNet);
 
 	// we don't need these data structures if the network doesn't have any plastic synapses at all
-	// they show up in gpuUpdateLTP() and updateSynapticWeights(), two functions that do not get called if
+	// they show up in updateLTP() and updateSynapticWeights(), two functions that do not get called if
 	// sim_with_fixedwts is set
 	if (!sim_with_fixedwts) {
 		// synaptic weight derivative
@@ -1098,7 +1092,7 @@ void SNN::copySynapseState(int netId, RuntimeData* dest, bool allocateMem) {
  * This function:
  * (allocate and) copy voltage, recovery, current, avgFiring 
  *
- * This funcion is called by allocateSNN_GPU(). Only copying from host to device is required
+ * This funcion is called by allocateSNN_CPU(). Only copying from host to device is required
  *
  * \param[in] netId the id of a local network, which is the same as the Core (CPU) id
  * \param[in] lGrpId the local group id in a local network, which specifiy the group(s) to be copied
@@ -1154,7 +1148,7 @@ void SNN::copyNeuronState(int netId, int lGrpId, RuntimeData* dest, bool allocat
 	copyNeuronParameters(netId, lGrpId, dest, allocateMem);
 
 	if (sim_with_homeostasis) {
-		//Included to enable homeostasis in GPU_MODE.
+		//Included to enable homeostasis in CPU_MODE.
 		// Avg. Firing...
 		if(allocateMem)
 			dest->avgFiring = new float[length];
@@ -1435,7 +1429,7 @@ void SNN::copyNeuronParameters(int netId, int lGrpId, RuntimeData* dest, bool al
 		dest->Izh_d = new float[length];
 	memcpy(&dest->Izh_d[ptrPos], &(managerRuntimeData.Izh_d[ptrPos]), sizeof(float) * length);
 
-	// pre-compute baseFiringInv for fast computation on GPUs.
+	// pre-compute baseFiringInv for fast computation on CPU cores
 	if (sim_with_homeostasis) {
 		float* baseFiringInv = new float[length];
 		for(int nid = 0; nid < length; nid++) {
@@ -1464,7 +1458,7 @@ void SNN::copyNeuronParameters(int netId, int lGrpId, RuntimeData* dest, bool al
  * initialize STP_Pitch
  * (allocate and) copy stpu, stpx
  *
- * This funcion is called by allocateSNN_GPU() and fetchSTPState(). It supports bi-directional copying
+ * This funcion is called by allocateSNN_CPU() and fetchSTPState(). It supports bi-directional copying
  *
  * \param[in] netId the id of a local network, which is the same as the Core (CPU) id
  * \param[in] lGrpId the local group id in a local network, which specifiy the group(s) to be copied
@@ -1502,7 +1496,7 @@ void SNN::copySTPState(int netId, int lGrpId, RuntimeData* dest, RuntimeData* sr
  * This function:
  * (allocate and) copy grpDA, grp5HT, grpACh, grpNE, grpDABuffer, grp5HTBuffer, grpAChBuffer, grpNEBuffer
  *
- * This funcion is called by allocateSNN_GPU() and fetchGroupState(). It supports bi-directional copying
+ * This funcion is called by allocateSNN_CPU() and fetchGroupState(). It supports bi-directional copying
  *
  * \param[in] netId the id of a local network, which is the same as the Core (CPU) id
  * \param[in] lGrpId the local group id in a local network, which specifiy the group(s) to be copied
@@ -1510,7 +1504,7 @@ void SNN::copySTPState(int netId, int lGrpId, RuntimeData* dest, RuntimeData* sr
  * \param[in] src pointer to runtime data source
  * \param[in] allocateMem a flag indicates whether allocating memory space before copying
  *
- * \sa allocateSNN_GPU fetchGroupState
+ * \sa allocateSNN_CPU fetchGroupState
  * \since v3.0
  */
 void SNN::copyGroupState(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, bool allocateMem) {
@@ -1558,13 +1552,13 @@ void SNN::copyGroupState(int netId, int lGrpId, RuntimeData* dest, RuntimeData* 
  * (allocate and) copy grpIds, connIdsPreIdx
  * (allocate and) copy timeTableD1, timeTableD2
  * (allocate and) copy firingTableD1, firingTableD2
- * This funcion is only called by allocateSNN_GPU. Therefore, only copying direction from host to device is required
+ * This funcion is only called by allocateSNN_CPU. Therefore, only copying direction from host to device is required
  *
  * \param[in] netId the id of local network, which is the same as Core (CPU) id
  * \param[in] dest pointer to runtime data desitnation
  * \param[in] allocateMem a flag indicates whether allocating memory space before copying
  *
- * \sa allocateSNN_GPU
+ * \sa allocateSNN_CPU
  * \since v4.0
  */
 void SNN::copyAuxiliaryData(int netId, int lGrpId, RuntimeData* dest, bool allocateMem) {
@@ -1747,7 +1741,7 @@ void SNN::assignPoissonFiringRate() {
 					if (groupConfigMap[gGrpId].spikeGenFunc || rate == NULL)
 						continue;
 
-					assert(gpuRuntimeData[netId].poissonFireRate != NULL);
+					assert(cpuRuntimeData[netId].poissonFireRate != NULL);
 					assert(rate->isOnGPU() == false);
 					// rates allocated on CPU
 					memcpy(&cpuRuntimeData[netId].poissonFireRate[lNId - networkConfigs[netId].numNReg], rate->getRatePtrCPU(),
@@ -1761,83 +1755,4 @@ void SNN::assignPoissonFiringRate() {
 void SNN::deleteObjects_CPU() {
 	// ToDo: Add memory deallocation
 }
-// ToDo: remove this, make possion spike generation consistent with GPU_MODE
-// will be used in generateSpikesFromRate
-// The time between each pair of consecutive events has an exponential distribution with parameter \lambda and
-// each of these ISI values is assumed to be independent of other ISI values.
-// What follows a Poisson distribution is the actual number of spikes sent during a certain interval.
-//int SNN::poissonSpike(int currTime, float frate, int refractPeriod) {
-//	// refractory period must be 1 or greater, 0 means could have multiple spikes specified at the same time.
-//	assert(refractPeriod>0);
-//	assert(frate>=0.0f);
-//
-//	bool done = false;
-//	int nextTime = 0;
-//	while (!done) {
-//		// A Poisson process will always generate inter-spike-interval (ISI) values from an exponential distribution.
-//		float randVal = drand48();
-//		int tmpVal  = -log(randVal)/frate;
-//
-//		// add new ISI to current time
-//		// this might be faster than keeping currTime fixed until drand48() returns a large enough value for the ISI
-//		nextTime = currTime + tmpVal;
-//
-//		// reject new firing time if ISI is smaller than refractory period
-//		if ((nextTime - currTime) >= refractPeriod)
-//			done = true;
-//	}
-//
-//	assert(nextTime != 0);
-//	return nextTime;
-//}
 
-// FIXME: wrong to use groupConfigs[0]
-// ToDo: remove this, make possion spike generation consistent with GPU_MODE
-//void SNN::generateSpikesFromRate(int gGrpId) {
-//	bool done;
-//	PoissonRate* rate = groupConfigMDMap[gGrpId].ratePtr;
-//	float refPeriod = groupConfigMDMap[gGrpId].refractPeriod;
-//	int timeSlice   = groupConfigMDMap[gGrpId].currTimeSlice;
-//	int currTime = simTime;
-//	int spikeCnt = 0;
-//
-//	if (rate == NULL)
-//		return;
-//
-//	if (rate->isOnGPU()) {
-//		KERNEL_ERROR("Specifying rates on the GPU but using the CPU SNN is not supported.");
-//		exitSimulation(1);
-//	}
-//
-//	const int nNeur = rate->getNumNeurons();
-//	if (nNeur != groupConfigMap[gGrpId].numN) {
-//		KERNEL_ERROR("Length of PoissonRate array (%d) did not match number of neurons (%d) for group %d(%s).",
-//			nNeur, groupConfigMap[gGrpId].numN, gGrpId, groupConfigMap[gGrpId].grpName.c_str());
-//		exitSimulation(1);
-//	}
-//
-//	for (int neurId=0; neurId<nNeur; neurId++) {
-//		float frate = rate->getRate(neurId);
-//
-//		// start the time from the last time it spiked, that way we can ensure that the refractory period is maintained
-//		int nextTime = managerRuntimeData.lastSpikeTime[groupConfigMDMap[gGrpId].gStartN + neurId];
-//		if (nextTime == MAX_SIMULATION_TIME)
-//			nextTime = 0;
-//
-//		done = false;
-//		while (!done && frate>0) {
-//			nextTime = poissonSpike(nextTime, frate/1000.0, refPeriod);
-//			// found a valid timeSlice
-//			if (nextTime < (currTime+timeSlice)) {
-//				if (nextTime >= currTime) {
-////					int nid = groupConfigs[0][grpId].StartN+cnt;
-//					spikeBuf->schedule(groupConfigMDMap[gGrpId].gStartN + neurId, nextTime-currTime);
-//					spikeCnt++;
-//				}
-//			}
-//			else {
-//				done=true;
-//			}
-//		}
-//	}
-//}

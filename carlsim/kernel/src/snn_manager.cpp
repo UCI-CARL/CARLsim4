@@ -3154,11 +3154,13 @@ void SNN::deleteObjects() {
 	// delete manager runtime data
 	deleteManagerRuntimeData();
 
-	// delete cpu runtime data
-	deleteObjects_CPU();
-
-	// delete gpu runtime data
-	deleteObjects_GPU();
+	if (simMode_ == CPU_MODE) {
+		// delete cpu runtime data
+		deleteObjects_CPU();
+	} else {
+		// delete gpu runtime data
+		deleteObjects_GPU();
+	}
 
 	// fclose file streams, unless in custom mode
 	if (loggerMode_ != CUSTOM) {
