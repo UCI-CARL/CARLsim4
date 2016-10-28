@@ -3290,7 +3290,7 @@ void SNN::fetchGroupState(int netId, int lGrpId) {
 }
 
 void SNN::fetchWeightState(int netId, int lGrpId) {
-	if (simMode_ == CPU_MODE)
+	if (simMode_ == GPU_MODE)
 		copyWeightState(netId, lGrpId, cudaMemcpyDeviceToHost);
 	else
 		copyWeightState(netId, lGrpId);
