@@ -733,7 +733,7 @@ private:
 	void deleteManagerRuntimeData();
 	void resetPoissonNeuron(int netId, int lGrpId, int lNId); //!< use local ids
 	void resetPropogationBuffer();
-	void resetSpikeCnt();					//!< Resets the spike count for a particular group.
+	void resetSpikeCnt(int gGrpId);					//!< Resets the spike count for a particular group.
 	void resetSynapse(int netId, bool changeWeights=false);
 	void resetTimeTable();
 	void resetFiringTable();

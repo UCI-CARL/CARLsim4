@@ -119,6 +119,27 @@ void SNN::routeSpikes() {
 void SNN::clearExtFiringTable() {
 }
 
+// resets nSpikeCnt[]
+// used for management of manager runtime data
+// FIXME: make sure this is right when separating cpu_module to a standalone class
+// FIXME: currently this function clear nSpikeCnt of manager runtime data
+void SNN::resetSpikeCnt(int gGrpId) {
+	memset(managerRuntimeData.nSpikeCnt, 0, sizeof(int) * managerRTDSize.maxNumN);
+	assert(gGrpId >= ALL); // ALL == -1
+
+	if (gGrpId == ALL) {
+		for (int netId = 0; netId < MAX_NET_PER_SNN; netId++) {
+			if (!groupPartitionLists[netId].empty()) {
+				memset(cpuRuntimeData[netId].nSpikeCnt, 0, sizeof(int) * networkConfigs[netId].numN);
+			}
+		}
+	} else {
+		int netId = groupConfigMDMap[gGrpId].netId;
+		int lStartN = groupConfigMDMap[gGrpId].lStartN;
+		memset(cpuRuntimeData[netId].nSpikeCnt + lStartN, 0, sizeof(int) * groupConfigMap[gGrpId].numN);
+	}
+}
+
 void SNN::doCurrentUpdate() {
 	for (int netId = 0; netId < MAX_NET_PER_SNN; netId++) {
 		if (!groupPartitionLists[netId].empty()) {
@@ -650,97 +671,102 @@ void SNN::updateWeights() {
 	assert(sim_in_testing==false);
 	assert(sim_with_fixedwts==false);
 
-	// update synaptic weights here for all the neurons..
-	for(int g = 0; g < numGroups; g++) {
-		// no changable weights so continue without changing..
-		if(groupConfigs[0][g].FixedInputWts || !(groupConfigs[0][g].WithSTDP))
-			continue;
+	for (int netId = 0; netId < MAX_NET_PER_SNN; netId++) {
+		if (!groupPartitionLists[netId].empty()) {
+			// update synaptic weights here for all the neurons..
+			for (int lGrpId = 0; lGrpId < networkConfigs[netId].numGroups; lGrpId++) {
+				// no changable weights so continue without changing..
+				if (groupConfigs[netId][lGrpId].FixedInputWts || !(groupConfigs[netId][lGrpId].WithSTDP))
+					continue;
 
-		for(int i = groupConfigs[0][g].gStartN; i <= groupConfigs[0][g].gEndN; i++) {
-			assert(i < glbNetworkConfig.numNReg);
-			unsigned int offset = managerRuntimeData.cumulativePre[i];
-			float diff_firing = 0.0;
-			float homeostasisScale = 1.0;
+				for (int lNId = groupConfigs[netId][lGrpId].lStartN; lNId <= groupConfigs[netId][lGrpId].lEndN; lNId++) {
+					assert(lNId < networkConfigs[netId].numNReg);
+					unsigned int offset = cpuRuntimeData[netId].cumulativePre[lNId];
+					float diff_firing = 0.0;
+					float homeostasisScale = 1.0;
 
-			if(groupConfigs[0][g].WithHomeostasis) {
-				assert(managerRuntimeData.baseFiring[i]>0);
-				diff_firing = 1-managerRuntimeData.avgFiring[i]/managerRuntimeData.baseFiring[i];
-				homeostasisScale = groupConfigs[0][g].homeostasisScale;
-			}
-
-			if (i==groupConfigs[0][g].gStartN)
-				KERNEL_DEBUG("Weights, Change at %d (diff_firing: %f)", simTimeSec, diff_firing);
-
-			for(int j = 0; j < managerRuntimeData.Npre_plastic[i]; j++) {
-				//	if (i==groupConfigs[0][g].StartN)
-				//		KERNEL_DEBUG("%1.2f %1.2f \t", wt[offset+j]*10, wtChange[offset+j]*10);
-				float effectiveWtChange = stdpScaleFactor_ * managerRuntimeData.wtChange[offset + j];
-//				if (wtChange[offset+j])
-//					printf("connId=%d, wtChange[%d]=%f\n",connIdsPreIdx[offset+j],offset+j,wtChange[offset+j]);
-
-				// homeostatic weight update
-				// FIXME: check WithESTDPtype and WithISTDPtype first and then do weight change update
-				switch (groupConfigs[0][g].WithESTDPtype) {
-				case STANDARD:
-					if (groupConfigs[0][g].WithHomeostasis) {
-						managerRuntimeData.wt[offset+j] += (diff_firing*managerRuntimeData.wt[offset+j]*homeostasisScale + managerRuntimeData.wtChange[offset+j])*managerRuntimeData.baseFiring[i]/groupConfigs[0][g].avgTimeScale/(1+fabs(diff_firing)*50);
-					} else {
-						// just STDP weight update
-						managerRuntimeData.wt[offset+j] += effectiveWtChange;
+					if (groupConfigs[netId][lGrpId].WithHomeostasis) {
+						assert(cpuRuntimeData[netId].baseFiring[lNId] > 0);
+						diff_firing = 1 - cpuRuntimeData[netId].avgFiring[lNId] / cpuRuntimeData[netId].baseFiring[lNId];
+						homeostasisScale = groupConfigs[netId][lGrpId].homeostasisScale;
 					}
-					break;
-				case DA_MOD:
-					if (groupConfigs[0][g].WithHomeostasis) {
-						effectiveWtChange = managerRuntimeData.grpDA[g] * effectiveWtChange;
-						managerRuntimeData.wt[offset+j] += (diff_firing*managerRuntimeData.wt[offset+j]*homeostasisScale + effectiveWtChange)*managerRuntimeData.baseFiring[i]/groupConfigs[0][g].avgTimeScale/(1+fabs(diff_firing)*50);
-					} else {
-						managerRuntimeData.wt[offset+j] += managerRuntimeData.grpDA[g] * effectiveWtChange;
-					}
-					break;
-				case UNKNOWN_STDP:
-				default:
-					// we shouldn't even be in here if !WithSTDP
-					break;
-				}
 
-				switch (groupConfigs[0][g].WithISTDPtype) {
-				case STANDARD:
-					if (groupConfigs[0][g].WithHomeostasis) {
-						managerRuntimeData.wt[offset+j] += (diff_firing*managerRuntimeData.wt[offset+j]*homeostasisScale + managerRuntimeData.wtChange[offset+j])*managerRuntimeData.baseFiring[i]/groupConfigs[0][g].avgTimeScale/(1+fabs(diff_firing)*50);
-					} else {
-						// just STDP weight update
-						managerRuntimeData.wt[offset+j] += effectiveWtChange;
-					}
-					break;
-				case DA_MOD:
-					if (groupConfigs[0][g].WithHomeostasis) {
-						effectiveWtChange = managerRuntimeData.grpDA[g] * effectiveWtChange;
-						managerRuntimeData.wt[offset+j] += (diff_firing*managerRuntimeData.wt[offset+j]*homeostasisScale + effectiveWtChange)*managerRuntimeData.baseFiring[i]/groupConfigs[0][g].avgTimeScale/(1+fabs(diff_firing)*50);
-					} else {
-						managerRuntimeData.wt[offset+j] += managerRuntimeData.grpDA[g] * effectiveWtChange;
-					}
-					break;
-				case UNKNOWN_STDP:
-				default:
-					// we shouldn't even be in here if !WithSTDP
-					break;
-				}
+					if (lNId == groupConfigs[netId][lGrpId].lStartN)
+						KERNEL_DEBUG("Weights, Change at %d (diff_firing: %f)", simTimeSec, diff_firing);
 
-				// It is users' choice to decay weight change or not
-				// see setWeightAndWeightChangeUpdate()
-				managerRuntimeData.wtChange[offset+j] *= wtChangeDecay_;
+					for (int j = 0; j < cpuRuntimeData[netId].Npre_plastic[lNId]; j++) {
+						//	if (i==groupConfigs[0][g].StartN)
+						//		KERNEL_DEBUG("%1.2f %1.2f \t", wt[offset+j]*10, wtChange[offset+j]*10);
+						float effectiveWtChange = stdpScaleFactor_ * cpuRuntimeData[netId].wtChange[offset + j];
+						//				if (wtChange[offset+j])
+						//					printf("connId=%d, wtChange[%d]=%f\n",connIdsPreIdx[offset+j],offset+j,wtChange[offset+j]);
 
-				// if this is an excitatory or inhibitory synapse
-				if (managerRuntimeData.maxSynWt[offset + j] >= 0) {
-					if (managerRuntimeData.wt[offset + j] >= managerRuntimeData.maxSynWt[offset + j])
-						managerRuntimeData.wt[offset + j] = managerRuntimeData.maxSynWt[offset + j];
-					if (managerRuntimeData.wt[offset + j] < 0)
-						managerRuntimeData.wt[offset + j] = 0.0;
-				} else {
-					if (managerRuntimeData.wt[offset + j] <= managerRuntimeData.maxSynWt[offset + j])
-						managerRuntimeData.wt[offset + j] = managerRuntimeData.maxSynWt[offset + j];
-					if (managerRuntimeData.wt[offset+j] > 0)
-						managerRuntimeData.wt[offset+j] = 0.0;
+										// homeostatic weight update
+										// FIXME: check WithESTDPtype and WithISTDPtype first and then do weight change update
+						switch (groupConfigs[netId][lGrpId].WithESTDPtype) {
+						case STANDARD:
+							if (groupConfigs[netId][lGrpId].WithHomeostasis) {
+								cpuRuntimeData[netId].wt[offset + j] += (diff_firing*cpuRuntimeData[netId].wt[offset + j] * homeostasisScale + cpuRuntimeData[netId].wtChange[offset + j])*cpuRuntimeData[netId].baseFiring[lNId] / groupConfigs[netId][lGrpId].avgTimeScale / (1 + fabs(diff_firing) * 50);
+							} else {
+								// just STDP weight update
+								cpuRuntimeData[netId].wt[offset + j] += effectiveWtChange;
+							}
+							break;
+						case DA_MOD:
+							if (groupConfigs[netId][lGrpId].WithHomeostasis) {
+								effectiveWtChange = cpuRuntimeData[netId].grpDA[lGrpId] * effectiveWtChange;
+								cpuRuntimeData[netId].wt[offset + j] += (diff_firing*cpuRuntimeData[netId].wt[offset + j] * homeostasisScale + effectiveWtChange)*cpuRuntimeData[netId].baseFiring[lNId] / groupConfigs[netId][lGrpId].avgTimeScale / (1 + fabs(diff_firing) * 50);
+							} else {
+								cpuRuntimeData[netId].wt[offset + j] += cpuRuntimeData[netId].grpDA[lGrpId] * effectiveWtChange;
+							}
+							break;
+						case UNKNOWN_STDP:
+						default:
+							// we shouldn't even be in here if !WithSTDP
+							break;
+						}
+
+						switch (groupConfigs[netId][lGrpId].WithISTDPtype) {
+						case STANDARD:
+							if (groupConfigs[netId][lGrpId].WithHomeostasis) {
+								cpuRuntimeData[netId].wt[offset + j] += (diff_firing*cpuRuntimeData[netId].wt[offset + j] * homeostasisScale + cpuRuntimeData[netId].wtChange[offset + j])*cpuRuntimeData[netId].baseFiring[lNId] / groupConfigs[netId][lGrpId].avgTimeScale / (1 + fabs(diff_firing) * 50);
+							} else {
+								// just STDP weight update
+								cpuRuntimeData[netId].wt[offset + j] += effectiveWtChange;
+							}
+							break;
+						case DA_MOD:
+							if (groupConfigs[netId][lGrpId].WithHomeostasis) {
+								effectiveWtChange = cpuRuntimeData[netId].grpDA[lGrpId] * effectiveWtChange;
+								cpuRuntimeData[netId].wt[offset + j] += (diff_firing*cpuRuntimeData[netId].wt[offset + j] * homeostasisScale + effectiveWtChange)*cpuRuntimeData[netId].baseFiring[lNId] / groupConfigs[netId][lGrpId].avgTimeScale / (1 + fabs(diff_firing) * 50);
+							} else {
+								cpuRuntimeData[netId].wt[offset + j] += cpuRuntimeData[netId].grpDA[lGrpId] * effectiveWtChange;
+							}
+							break;
+						case UNKNOWN_STDP:
+						default:
+							// we shouldn't even be in here if !WithSTDP
+							break;
+						}
+
+						// It is users' choice to decay weight change or not
+						// see setWeightAndWeightChangeUpdate()
+						cpuRuntimeData[netId].wtChange[offset + j] *= wtChangeDecay_;
+
+						// if this is an excitatory or inhibitory synapse
+						if (cpuRuntimeData[netId].maxSynWt[offset + j] >= 0) {
+							if (cpuRuntimeData[netId].wt[offset + j] >= cpuRuntimeData[netId].maxSynWt[offset + j])
+								cpuRuntimeData[netId].wt[offset + j] = cpuRuntimeData[netId].maxSynWt[offset + j];
+							if (cpuRuntimeData[netId].wt[offset + j] < 0)
+								cpuRuntimeData[netId].wt[offset + j] = 0.0;
+						}
+						else {
+							if (cpuRuntimeData[netId].wt[offset + j] <= cpuRuntimeData[netId].maxSynWt[offset + j])
+								cpuRuntimeData[netId].wt[offset + j] = cpuRuntimeData[netId].maxSynWt[offset + j];
+							if (cpuRuntimeData[netId].wt[offset + j] > 0)
+								cpuRuntimeData[netId].wt[offset + j] = 0.0;
+						}
+					}
 				}
 			}
 		}
@@ -756,25 +782,23 @@ void SNN::shiftSpikeTables() {
 	// and put it to the beginning of the firing table...
 	for (int netId = 0; netId < MAX_NET_PER_SNN; netId++) {
 		if (!groupPartitionLists[netId].empty()) {
-			for(int p = cpuRuntimeData[netId].timeTableD2[999], k = 0; p < cpuRuntimeData[netId].timeTableD2[999 + glbNetworkConfig.maxDelay + 1]; p++, k++) {
+			for(int p = cpuRuntimeData[netId].timeTableD2[999], k = 0; p < cpuRuntimeData[netId].timeTableD2[999 + networkConfigs[netId].maxDelay + 1]; p++, k++) {
 				cpuRuntimeData[netId].firingTableD2[k] = cpuRuntimeData[netId].firingTableD2[p];
 			}
 
-			for(int i = 0; i < glbNetworkConfig.maxDelay; i++) {
+			for(int i = 0; i < networkConfigs[netId].maxDelay; i++) {
 				cpuRuntimeData[netId].timeTableD2[i + 1] = cpuRuntimeData[netId].timeTableD2[1000 + i + 1] - cpuRuntimeData[netId].timeTableD2[1000];
+				cpuRuntimeData[netId].timeTableD1[i + 1] = cpuRuntimeData[netId].timeTableD1[1000 + i + 1] - cpuRuntimeData[netId].timeTableD1[1000];
 			}
 
-			cpuRuntimeData[netId].timeTableD1[glbNetworkConfig.maxDelay] = 0;
-
-			/* the code of weight update has been moved to SNN::updateWeights() */
-
-			cpuRuntimeData[netId].spikeCount	+= cpuRuntimeData[netId].spikeCountSec;
-			cpuRuntimeData[netId].spikeCountD2 += (cpuRuntimeData[netId].spikeCountD2Sec - cpuRuntimeData[netId].timeTableD2[glbNetworkConfig.maxDelay]);
+			cpuRuntimeData[netId].timeTableD1[networkConfigs[netId].maxDelay] = 0;
+			cpuRuntimeData[netId].spikeCountD2 += cpuRuntimeData[netId].spikeCountD2Sec;
 			cpuRuntimeData[netId].spikeCountD1 += cpuRuntimeData[netId].spikeCountD1Sec;
 
-			cpuRuntimeData[netId].spikeCountD1Sec  = 0;
-			cpuRuntimeData[netId].spikeCountSec = 0;
-			cpuRuntimeData[netId].spikeCountD2Sec = cpuRuntimeData[netId].timeTableD2[glbNetworkConfig.maxDelay];
+			cpuRuntimeData[netId].spikeCountD2Sec = 0;
+			cpuRuntimeData[netId].spikeCountD1Sec = 0;
+
+			cpuRuntimeData[netId].spikeCountLastSecLeftD2 = cpuRuntimeData[netId].timeTableD2[networkConfigs[netId].maxDelay];
 		}
 	}
 }

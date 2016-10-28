@@ -657,10 +657,10 @@ int SNN::runNetwork(int _nsec, int _nmsec, bool printRunSummary) {
 	}
 
 	// reset all spike counters
-	if (simMode_==GPU_MODE)
+	if (simMode_ == GPU_MODE)
 		resetSpikeCnt_GPU(ALL);
 	else
-		resetSpikeCnt();
+		resetSpikeCnt(ALL);
 
 	// store current start time for future reference
 	simTimeRunStart = simTime;
@@ -4359,14 +4359,6 @@ void SNN::resetPoissonNeuron(int netId, int lGrpId, int lNId) {
 void SNN::resetPropogationBuffer() {
 	// FIXME: why 1023?
 	spikeBuf->reset(0, 1023);
-}
-
-// resets nSpikeCnt[]
-// used for management of manager runtime data
-// FIXME: make sure this is right when separating cpu_module to a standalone class
-// FIXME: currently this function clear nSpikeCnt of manager runtime data
-void SNN::resetSpikeCnt() {
-	memset(managerRuntimeData.nSpikeCnt, 0, sizeof(int) * managerRTDSize.maxNumN);
 }
 
 //Reset wt, wtChange, pre-firing time values to default values, rewritten to
