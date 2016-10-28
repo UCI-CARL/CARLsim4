@@ -2299,9 +2299,10 @@ void SNN::copyGroupConfigs(int netId) {
  * \sa fetchWeightState
  * \since v4.0
  */
-void SNN::copyWeightState(int netId, int lGrpId) {
+void SNN::copyWeightState(int netId, int lGrpId, cudaMemcpyKind kind) {
 	checkAndSetGPUDevice(netId);
 	checkDestSrcPtrs(&managerRuntimeData, &gpuRuntimeData[netId], cudaMemcpyDeviceToHost, false, lGrpId, 0); // check that the destination pointer is properly allocated..
+	assert(kind == cudaMemcpyDeviceToHost);
 
 	int lengthSyn, posSyn;
 
@@ -2505,23 +2506,26 @@ void SNN::copyAuxiliaryData(int netId, int lGrpId, RuntimeData* dest, cudaMemcpy
 	CUDA_CHECK_ERRORS(cudaMemset(dest->extFiringTableEndIdxD2, 0, sizeof(int) * networkConfigs[netId].numGroups));
 }
 
-void SNN::copyGrpIdsLookupArray(int netId) {
+void SNN::copyGrpIdsLookupArray(int netId, cudaMemcpyKind kind) {
 	checkAndSetGPUDevice(netId);
 	checkDestSrcPtrs(&managerRuntimeData, &gpuRuntimeData[netId], cudaMemcpyDeviceToHost, false, ALL, 0);// check that the destination pointer is properly allocated..
+	assert(kind == cudaMemcpyDeviceToHost);
 
 	CUDA_CHECK_ERRORS(cudaMemcpy(managerRuntimeData.grpIds, gpuRuntimeData[netId].grpIds, sizeof(short int) *  networkConfigs[netId].numNAssigned, cudaMemcpyDeviceToHost));
 }
 
-void SNN::copyConnIdsLookupArray(int netId) {
+void SNN::copyConnIdsLookupArray(int netId, cudaMemcpyKind kind) {
 	checkAndSetGPUDevice(netId);
 	checkDestSrcPtrs(&managerRuntimeData, &gpuRuntimeData[netId], cudaMemcpyDeviceToHost, false, ALL, 0);// check that the destination pointer is properly allocated..
+	assert(kind == cudaMemcpyDeviceToHost);
 
 	CUDA_CHECK_ERRORS(cudaMemcpy(managerRuntimeData.connIdsPreIdx, gpuRuntimeData[netId].connIdsPreIdx, sizeof(short int) *  networkConfigs[netId].numPreSynNet, cudaMemcpyDeviceToHost));
 }
 
-void SNN::copyLastSpikeTime(int netId) {
+void SNN::copyLastSpikeTime(int netId, cudaMemcpyKind kind) {
 	checkAndSetGPUDevice(netId);
 	checkDestSrcPtrs(&managerRuntimeData, &gpuRuntimeData[netId], cudaMemcpyDeviceToHost, false, ALL, 0); // check that the destination pointer is properly allocated..
+	assert(kind == cudaMemcpyDeviceToHost);
 
 	CUDA_CHECK_ERRORS(cudaMemcpy(managerRuntimeData.lastSpikeTime, gpuRuntimeData[netId].lastSpikeTime, sizeof(int) *  networkConfigs[netId].numN, cudaMemcpyDeviceToHost));
 }
@@ -3119,35 +3123,20 @@ void SNN::copyExternalCurrent(int netId, int lGrpId, RuntimeData* dest, cudaMemc
 /*!
  * \brief This function fetch the spike count in all local networks and sum the up
  */
-void SNN::fetchNetworkSpikeCount() {
-	unsigned int gpuSpikeCountD1Sec, gpuSpikeCountD2Sec, gpuSpikeCountD1, gpuSpikeCountD2, gpuSpikeCountExtD1, gpuSpikeCountExtD2;
+void SNN::copyNetworkSpikeCount(int netId, cudaMemcpyKind kind,
+								unsigned int* spikeCountD1Sec, unsigned int* spikeCountD2Sec, 
+								unsigned int* spikeCountD1, unsigned int* spikeCountD2,
+								unsigned int* spikeCountExtD1, unsigned int* spikeCountExtD2) {
 
-	managerRuntimeData.spikeCountD1Sec = 0;
-	managerRuntimeData.spikeCountD2Sec = 0;
-	managerRuntimeData.spikeCountD1 = 0;
-	managerRuntimeData.spikeCountD2 = 0;
-	for (int netId = 0; netId < MAX_NET_PER_SNN; netId++) {
-		if (!groupPartitionLists[netId].empty()) {
-			checkAndSetGPUDevice(netId);
+	checkAndSetGPUDevice(netId);
+	assert(kind == cudaMemcpyDeviceToHost);
 
-			CUDA_CHECK_ERRORS(cudaMemcpyFromSymbol(&gpuSpikeCountD2Sec, spikeCountD2SecGPU, sizeof(int), 0, cudaMemcpyDeviceToHost));
-			CUDA_CHECK_ERRORS(cudaMemcpyFromSymbol(&gpuSpikeCountD1Sec, spikeCountD1SecGPU, sizeof(int), 0, cudaMemcpyDeviceToHost));
-			managerRuntimeData.spikeCountD1Sec += gpuSpikeCountD1Sec;
-			managerRuntimeData.spikeCountD2Sec += gpuSpikeCountD2Sec;
-			assert(gpuSpikeCountD1Sec <= networkConfigs[netId].maxSpikesD1);
-			assert(gpuSpikeCountD2Sec <= networkConfigs[netId].maxSpikesD2);
-
-			CUDA_CHECK_ERRORS(cudaMemcpyFromSymbol(&gpuSpikeCountExtD2, spikeCountExtRxD2GPU, sizeof(int), 0, cudaMemcpyDeviceToHost));
-			CUDA_CHECK_ERRORS(cudaMemcpyFromSymbol(&gpuSpikeCountExtD1, spikeCountExtRxD1GPU, sizeof(int), 0, cudaMemcpyDeviceToHost));
-			CUDA_CHECK_ERRORS(cudaMemcpyFromSymbol(&gpuSpikeCountD2, spikeCountD2GPU, sizeof(int), 0, cudaMemcpyDeviceToHost));
-			CUDA_CHECK_ERRORS(cudaMemcpyFromSymbol(&gpuSpikeCountD1, spikeCountD1GPU, sizeof(int), 0, cudaMemcpyDeviceToHost));
-			managerRuntimeData.spikeCountD2 += gpuSpikeCountD2 - gpuSpikeCountExtD2;
-			managerRuntimeData.spikeCountD1 += gpuSpikeCountD1 - gpuSpikeCountExtD1;
-		}
-	}
-
-	managerRuntimeData.spikeCountSec = managerRuntimeData.spikeCountD1Sec + managerRuntimeData.spikeCountD2Sec;
-	managerRuntimeData.spikeCount = managerRuntimeData.spikeCountD1 + managerRuntimeData.spikeCountD2;
+	CUDA_CHECK_ERRORS(cudaMemcpyFromSymbol(spikeCountD2Sec, spikeCountD2SecGPU, sizeof(int), 0, cudaMemcpyDeviceToHost));
+	CUDA_CHECK_ERRORS(cudaMemcpyFromSymbol(spikeCountD1Sec, spikeCountD1SecGPU, sizeof(int), 0, cudaMemcpyDeviceToHost));
+	CUDA_CHECK_ERRORS(cudaMemcpyFromSymbol(spikeCountExtD2, spikeCountExtRxD2GPU, sizeof(int), 0, cudaMemcpyDeviceToHost));
+	CUDA_CHECK_ERRORS(cudaMemcpyFromSymbol(spikeCountExtD1, spikeCountExtRxD1GPU, sizeof(int), 0, cudaMemcpyDeviceToHost));
+	CUDA_CHECK_ERRORS(cudaMemcpyFromSymbol(spikeCountD2, spikeCountD2GPU, sizeof(int), 0, cudaMemcpyDeviceToHost));
+	CUDA_CHECK_ERRORS(cudaMemcpyFromSymbol(spikeCountD1, spikeCountD1GPU, sizeof(int), 0, cudaMemcpyDeviceToHost));
 }
 
 /*!
@@ -3155,10 +3144,11 @@ void SNN::fetchNetworkSpikeCount() {
  *
  * \param[in] netId the id of local network of which timeTableD1(D2) and firingTableD1(D2) are copied to manager runtime data
  */
-void SNN::fetchSpikeTables(int netId) {
+void SNN::copySpikeTables(int netId, cudaMemcpyKind kind) {
 	unsigned int gpuSpikeCountD1Sec, gpuSpikeCountD2Sec, gpuSpikeCountLastSecLeftD2;
 
 	checkAndSetGPUDevice(netId);
+	assert(kind == cudaMemcpyDeviceToHost);
 
 	CUDA_CHECK_ERRORS(cudaMemcpyFromSymbol(&gpuSpikeCountLastSecLeftD2, spikeCountLastSecLeftD2GPU, sizeof(int), 0, cudaMemcpyDeviceToHost));
 	CUDA_CHECK_ERRORS(cudaMemcpyFromSymbol(&gpuSpikeCountD2Sec, spikeCountD2SecGPU, sizeof(int), 0, cudaMemcpyDeviceToHost));
@@ -3167,10 +3157,6 @@ void SNN::fetchSpikeTables(int netId) {
 	CUDA_CHECK_ERRORS( cudaMemcpy(managerRuntimeData.firingTableD1, gpuRuntimeData[netId].firingTableD1, sizeof(int)*gpuSpikeCountD1Sec, cudaMemcpyDeviceToHost));
 	CUDA_CHECK_ERRORS( cudaMemcpyFromSymbol(managerRuntimeData.timeTableD2, timeTableD2GPU, sizeof(int)*(1000+glbNetworkConfig.maxDelay+1), 0, cudaMemcpyDeviceToHost));
 	CUDA_CHECK_ERRORS( cudaMemcpyFromSymbol(managerRuntimeData.timeTableD1, timeTableD1GPU, sizeof(int)*(1000+glbNetworkConfig.maxDelay+1), 0, cudaMemcpyDeviceToHost));
-
-	// \TODO: why is this here? The CPU side doesn't have it. And if you can call updateSpikeMonitor() now at any time
-	// it might look weird without a time stamp.
-//	KERNEL_INFO("Total spikes Multiple Delays=%d, 1Ms Delay=%d", gpuSpikeCountD2Sec,gpuSpikeCountD1Sec);
 }
 
 void SNN::configGPUDevice() {

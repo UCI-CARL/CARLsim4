@@ -766,8 +766,6 @@ private:
 
 	void checkAndSetGPUDevice(int netId);
 	void checkDestSrcPtrs(RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind, bool allocateMem, int grpId, int destOffset);
-	void checkInitialization(char* testString=NULL);
-	void checkInitialization2(char* testString=NULL);
 	void configGPUDevice();
 
 	void copyAuxiliaryData(int netId, int lGrpId, RuntimeData* dest, cudaMemcpyKind kind, bool allocateMem);
@@ -818,19 +816,32 @@ private:
 	void copySTPState(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind, bool allocateMem);
 	void copySTPState(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, bool allocateMem);
 	//void copyWeightsGPU(int nid, int src_grp);
+	void copyWeightState(int netId, int lGrpId, cudaMemcpyKind kind);
 	void copyWeightState(int netId, int lGrpId);
 	void copyNetworkConfig(int netId);
 	void copyGroupConfigs(int netId);
+	void copyGrpIdsLookupArray(int netId, cudaMemcpyKind kind);
 	void copyGrpIdsLookupArray(int netId);
+	void copyConnIdsLookupArray(int netId, cudaMemcpyKind kind);
 	void copyConnIdsLookupArray(int netId);
+	void copyLastSpikeTime(int netId, cudaMemcpyKind kind);
 	void copyLastSpikeTime(int netId);
+	void copyNetworkSpikeCount(int netId, cudaMemcpyKind kind,
+		unsigned int* spikeCountD1Sec, unsigned int* spikeCountD2Sec,
+		unsigned int* spikeCountD1, unsigned int* spikeCountD2,
+		unsigned int* spikeCountExtD1, unsigned int* spikeCountExtD2);
+	void copyNetworkSpikeCount(int netId,
+		unsigned int* spikeCountD1Sec, unsigned int* spikeCountD2Sec,
+		unsigned int* spikeCountD1, unsigned int* spikeCountD2,
+		unsigned int* spikeCountExtD1, unsigned int* spikeCountExtD2);
+	void copySpikeTables(int netId, cudaMemcpyKind kind);
+	void copySpikeTables(int netId);
 
 	void deleteObjects_CPU();
 	void deleteObjects_GPU();		//!< deallocates all used data structures in snn_gpu.cu
 	void doCurrentUpdate();
 	void doCurrentUpdate_GPU();
 	void doSTPUpdateAndDecayCond_GPU();
-	void dumpSpikeBuffToFile_GPU(int gid);
 	void findFiring_GPU();
 
 	// fetch functions supporting local-to-global copy

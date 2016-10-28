@@ -645,6 +645,8 @@ void  SNN::globalStateUpdate() {
 						if (cpuRuntimeData[netId].voltage[lNId] < -90.0f)
 							cpuRuntimeData[netId].voltage[lNId] = -90.0f;
 						cpuRuntimeData[netId].recovery[lNId] += cpuRuntimeData[netId].Izh_a[lNId] * (cpuRuntimeData[netId].Izh_b[lNId] * cpuRuntimeData[netId].voltage[lNId] - cpuRuntimeData[netId].recovery[lNId]);
+
+						cpuRuntimeData[netId].current[lNId] = 0.0f;
 					} // end COBA/CUBA
 
 					// P8
@@ -1750,6 +1752,96 @@ void SNN::assignPoissonFiringRate() {
 			}
 		}
 	}
+}
+
+/*!
+* \brief this function copy weight state in core (CPU) memory sapce to manager (CPU) memory space
+*
+* This function:
+* copy wt, wtChange synSpikeTime
+*
+* This funcion is only called by fetchWeightState(). Only copying direction from device to host is required.
+*
+* \param[in] netId the id of a local network, which is the same as the device (GPU) id
+* \param[in] lGrpId the local group id in a local network, which specifiy the group(s) to be copied
+*
+* \sa fetchWeightState
+* \since v4.0
+*/
+void SNN::copyWeightState(int netId, int lGrpId) {
+	int lengthSyn, posSyn;
+
+	// first copy pre-connections info
+	copyPreConnectionInfo(netId, lGrpId, &managerRuntimeData, &cpuRuntimeData[netId], false);
+
+	if (lGrpId == ALL) {
+		lengthSyn = networkConfigs[netId].numPreSynNet;
+		posSyn = 0;
+	}
+	else {
+		lengthSyn = 0;
+		for (int lNId = groupConfigs[netId][lGrpId].lStartN; lNId <= groupConfigs[netId][lGrpId].lEndN; lNId++)
+			lengthSyn += managerRuntimeData.Npre[lNId];
+
+		posSyn = managerRuntimeData.cumulativePre[groupConfigs[netId][lGrpId].lStartN];
+	}
+
+	assert(posSyn < networkConfigs[netId].numPreSynNet || networkConfigs[netId].numPreSynNet == 0);
+	assert(lengthSyn <= networkConfigs[netId].numPreSynNet);
+
+	memcpy(&managerRuntimeData.wt[posSyn], &cpuRuntimeData[netId].wt[posSyn], sizeof(float) * lengthSyn);
+
+	// copy firing time for individual synapses
+	//CUDA_CHECK_ERRORS(cudaMemcpy(&managerRuntimeData.synSpikeTime[cumPos_syn], &gpuRuntimeData[netId].synSpikeTime[cumPos_syn], sizeof(int) * length_wt, cudaMemcpyDeviceToHost));
+
+	if ((!sim_with_fixedwts) || sim_with_stdp) {
+		// copy synaptic weight derivative
+		memcpy(&managerRuntimeData.wtChange[posSyn], &cpuRuntimeData[netId].wtChange[posSyn], sizeof(float) * lengthSyn);
+	}
+}
+
+void SNN::copyGrpIdsLookupArray(int netId) {
+	memcpy(managerRuntimeData.grpIds, cpuRuntimeData[netId].grpIds, sizeof(short int) *  networkConfigs[netId].numNAssigned);
+}
+
+void SNN::copyConnIdsLookupArray(int netId) {
+	memcpy(managerRuntimeData.connIdsPreIdx, cpuRuntimeData[netId].connIdsPreIdx, sizeof(short int) *  networkConfigs[netId].numPreSynNet);
+}
+
+void SNN::copyLastSpikeTime(int netId) {
+	memcpy(managerRuntimeData.lastSpikeTime, cpuRuntimeData[netId].lastSpikeTime, sizeof(int) *  networkConfigs[netId].numN);
+}
+
+/*!
+* \brief This function fetch the spike count in all local networks and sum the up
+*/
+void SNN::copyNetworkSpikeCount(int netId,
+	unsigned int* spikeCountD1Sec, unsigned int* spikeCountD2Sec,
+	unsigned int* spikeCountD1, unsigned int* spikeCountD2,
+	unsigned int* spikeCountExtD1, unsigned int* spikeCountExtD2) {
+	*spikeCountD2Sec = cpuRuntimeData[netId].spikeCountD2Sec;
+	*spikeCountD1Sec = cpuRuntimeData[netId].spikeCountD1Sec;
+	*spikeCountExtD2 = cpuRuntimeData[netId].spikeCountExtRxD2;
+	*spikeCountExtD1 = cpuRuntimeData[netId].spikeCountExtRxD1;
+	*spikeCountD2 = cpuRuntimeData[netId].spikeCountD2;
+	*spikeCountD1 = cpuRuntimeData[netId].spikeCountD1;
+}
+
+/*!
+* \brief This function fetch spikeTables in the local network specified by netId
+*
+* \param[in] netId the id of local network of which timeTableD1(D2) and firingTableD1(D2) are copied to manager runtime data
+*/
+void SNN::copySpikeTables(int netId) {
+	unsigned int spikeCountD1Sec, spikeCountD2Sec, spikeCountLastSecLeftD2;
+
+	spikeCountLastSecLeftD2 = cpuRuntimeData[netId].spikeCountLastSecLeftD2;
+	spikeCountD2Sec = cpuRuntimeData[netId].spikeCountD2Sec;
+	spikeCountD1Sec = cpuRuntimeData[netId].spikeCountD1Sec;
+	memcpy(managerRuntimeData.firingTableD2, cpuRuntimeData[netId].firingTableD2, sizeof(int) * (spikeCountD2Sec + spikeCountLastSecLeftD2));
+	memcpy(managerRuntimeData.firingTableD1, cpuRuntimeData[netId].firingTableD1, sizeof(int) * spikeCountD1Sec);
+	memcpy(managerRuntimeData.timeTableD2, cpuRuntimeData[netId].timeTableD2, sizeof(int) * (1000 + networkConfigs[netId].maxDelay + 1));
+	memcpy(managerRuntimeData.timeTableD1, cpuRuntimeData[netId].timeTableD1, sizeof(int) * (1000 + networkConfigs[netId].maxDelay + 1));
 }
 
 void SNN::deleteObjects_CPU() {
