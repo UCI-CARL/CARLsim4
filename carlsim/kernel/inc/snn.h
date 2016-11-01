@@ -633,7 +633,7 @@ private:
 	void findNumN(int _netId, int& _numN, int& _nunNExternal, int& numNAssigned,
                   int& _numNReg, int& _numNExcReg, int& _numNInhReg,
                   int& _numNPois, int& _numNExcPois, int& _numNInhPois);
-	void findNumNSpikeGen(int _netId, int& _numNSpikeGen);
+	void findNumNSpikeGenAndOffset(int _netId);
 
 	void generatePostSynapticSpike(int preNId, int postNId, int synId, int tD, int netId);
 	void fillSpikeGenBits(int netId);

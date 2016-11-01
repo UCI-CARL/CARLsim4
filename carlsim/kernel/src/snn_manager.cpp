@@ -2087,7 +2087,7 @@ void SNN::generateRuntimeGroupConfigs() {
 			groupConfigs[netId][lGrpId].WithHomeostasis =  groupConfigMap[gGrpId].homeoConfig.WithHomeostasis;
 			groupConfigs[netId][lGrpId].FixedInputWts = grpIt->fixedInputWts;
 			groupConfigs[netId][lGrpId].hasExternalConnect = grpIt->hasExternalConnect;
-			groupConfigs[netId][lGrpId].Noffset = grpIt->Noffset;
+			groupConfigs[netId][lGrpId].Noffset = grpIt->Noffset; // Note: Noffset is not valid at this time
 			groupConfigs[netId][lGrpId].MaxDelay = grpIt->maxIncomingDelay;
 			groupConfigs[netId][lGrpId].STP_A = groupConfigMap[gGrpId].stpConfig.STP_A;
 			groupConfigs[netId][lGrpId].STP_U = groupConfigMap[gGrpId].stpConfig.STP_U;
@@ -2140,21 +2140,21 @@ void SNN::generateRuntimeGroupConfigs() {
 				groupConfigMDMap[gGrpId].GtoLOffset = grpIt->GtoLOffset;
 				groupConfigMDMap[gGrpId].fixedInputWts = grpIt->fixedInputWts;
 				groupConfigMDMap[gGrpId].hasExternalConnect = grpIt->hasExternalConnect;
-				groupConfigMDMap[gGrpId].Noffset = grpIt->Noffset;
+				groupConfigMDMap[gGrpId].Noffset = grpIt->Noffset; // Note: Noffset is not valid at this time
 				groupConfigMDMap[gGrpId].maxIncomingDelay = grpIt->maxIncomingDelay;
 			}
 		}
 
 		// FIXME: How does networkConfigs[netId].numGroups be availabe at this time?! Bug?!
-		int numNSpikeGen = 0;
-		for(int lGrpId = 0; lGrpId < networkConfigs[netId].numGroups; lGrpId++) {
-			if (netId == groupConfigs[netId][lGrpId].netId && groupConfigs[netId][lGrpId].isSpikeGenerator && groupConfigs[netId][lGrpId].isSpikeGenFunc) {
-			// we only need numNSpikeGen for spike generator callbacks that need to transfer their spikes to the GPU
-				groupConfigs[netId][lGrpId].Noffset = numNSpikeGen; // FIXME, Noffset is updated after publish group configs
-				numNSpikeGen += groupConfigs[netId][lGrpId].numN;
-			}
-		}
-		assert(numNSpikeGen <= networkConfigs[netId].numNPois);
+		//int numNSpikeGen = 0;
+		//for(int lGrpId = 0; lGrpId < networkConfigs[netId].numGroups; lGrpId++) {
+		//	if (netId == groupConfigs[netId][lGrpId].netId && groupConfigs[netId][lGrpId].isSpikeGenerator && groupConfigs[netId][lGrpId].isSpikeGenFunc) {
+		//	// we only need numNSpikeGen for spike generator callbacks that need to transfer their spikes to the GPU
+		//		groupConfigs[netId][lGrpId].Noffset = numNSpikeGen; // FIXME, Noffset is updated after publish group configs
+		//		numNSpikeGen += groupConfigs[netId][lGrpId].numN;
+		//	}
+		//}
+		//assert(numNSpikeGen <= networkConfigs[netId].numNPois);
 	}
 }
 
@@ -2198,9 +2198,6 @@ void SNN::generateRuntimeNetworkConfigs() {
 					 networkConfigs[netId].numNReg, networkConfigs[netId].numNExcReg, networkConfigs[netId].numNInhReg,
 					 networkConfigs[netId].numNPois, networkConfigs[netId].numNExcPois, networkConfigs[netId].numNInhPois);
 
-
-			findNumNSpikeGen(netId, networkConfigs[netId].numNSpikeGen);
-
 			// configurations for assigned groups and connections
 			networkConfigs[netId].numGroups = 0;
 			for (std::list<GroupConfigMD>::iterator grpIt = groupPartitionLists[netId].begin(); grpIt != groupPartitionLists[netId].end(); grpIt++) {
@@ -2220,9 +2217,12 @@ void SNN::generateRuntimeNetworkConfigs() {
 			// find the maximum number of spikes in D1 (i.e., maxDelay == 1) and D2 (i.e., maxDelay >= 2) sets
 			findMaxSpikesD1D2(netId, networkConfigs[netId].maxSpikesD1, networkConfigs[netId].maxSpikesD2);
 
-
 			// find the total number of synapses in the network
 			findNumSynapsesNetwork(netId, networkConfigs[netId].numPostSynNet, networkConfigs[netId].numPreSynNet);
+
+			// find out number of user-defined spike gen and update Noffset of each group config
+			// Note: groupConfigs[][].Noffset is valid at this time 
+			findNumNSpikeGenAndOffset(netId);
 		}
 	}
 
@@ -3290,12 +3290,17 @@ void SNN::findNumN(int _netId, int& _numN, int& _numNExternal, int& _numNAssigne
 	assert(_numNAssigned == _numN + _numNExternal);
 }
 
-void SNN::findNumNSpikeGen(int _netId, int& _numNSpikeGen) {
+void SNN::findNumNSpikeGenAndOffset(int _netId) {
+	networkConfigs[_netId].numNSpikeGen = 0;
+
 	for(int lGrpId = 0; lGrpId < networkConfigs[_netId].numGroups; lGrpId++) {
 		if (_netId == groupConfigs[_netId][lGrpId].netId && groupConfigs[_netId][lGrpId].isSpikeGenerator && groupConfigs[_netId][lGrpId].isSpikeGenFunc) {
+			groupConfigs[_netId][lGrpId].Noffset = networkConfigs[_netId].numNSpikeGen;
 			networkConfigs[_netId].numNSpikeGen += groupConfigs[_netId][lGrpId].numN;
 		}
 	}
+
+	assert(networkConfigs[_netId].numNSpikeGen <= networkConfigs[_netId].numNPois);
 }
 
 void SNN::findNumSynapsesNetwork(int _netId, int& _numPostSynNet, int& _numPreSynNet) {
