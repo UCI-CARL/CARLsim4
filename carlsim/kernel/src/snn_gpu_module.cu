@@ -2530,35 +2530,6 @@ void SNN::copyLastSpikeTime(int netId, cudaMemcpyKind kind) {
 	CUDA_CHECK_ERRORS(cudaMemcpy(managerRuntimeData.lastSpikeTime, gpuRuntimeData[netId].lastSpikeTime, sizeof(int) *  networkConfigs[netId].numN, cudaMemcpyDeviceToHost));
 }
 
-void SNN::setExternalCurrent(int grpId, const std::vector<float>& current) {
-	assert(grpId >= 0); assert(grpId < numGroups);
-	assert(!isPoissonGroup(grpId));
-	assert(current.size() == getGroupNumNeurons(grpId));
-
-	int netId = groupConfigMDMap[grpId].netId;
-	int lGrpId = groupConfigMDMap[grpId].lGrpId;
-
-	// // update flag for faster handling at run-time
-	// if (count_if(current.begin(), current.end(), isGreaterThanZero)) {
-	// 	groupConfigs[0][grpId].WithCurrentInjection = true;
-	// } else {
-	// 	groupConfigs[0][grpId].WithCurrentInjection = false;
-	// }
-
-	// store external current in array
-	for (int lNId = groupConfigs[netId][lGrpId].lStartN, j = 0; lNId <= groupConfigs[netId][lGrpId].lEndN; lNId++, j++) {
-		managerRuntimeData.extCurrent[lNId] = current[j];
-	}
-
-	// copy to GPU if necessary
-	// don't allocate; allocation done in generateRuntimeData
-	if (simMode_ == GPU_MODE) {
-		copyExternalCurrent(netId, lGrpId, &gpuRuntimeData[netId], cudaMemcpyHostToDevice, false);
-	} else {
-		copyExternalCurrent(netId, lGrpId, &cpuRuntimeData[netId], false);
-	}
-}
-
 // spikeGeneratorUpdate on GPUs..
 void SNN::spikeGeneratorUpdate_GPU() {
 	// If poisson rate has been updated, assign new poisson rate
@@ -2918,13 +2889,15 @@ void SNN::routeSpikes_GPU() {
 		CUDA_CHECK_ERRORS( cudaMemcpy(managerRuntimeData.extFiringTableEndIdxD1, gpuRuntimeData[0].extFiringTableEndIdxD1, sizeof(int) * networkConfigs[0].numGroups, cudaMemcpyDeviceToHost));
 		CUDA_CHECK_ERRORS( cudaMemcpy(managerRuntimeData.extFiringTableD2, gpuRuntimeData[0].extFiringTableD2, sizeof(int*) * networkConfigs[0].numGroups, cudaMemcpyDeviceToHost));
 		CUDA_CHECK_ERRORS( cudaMemcpy(managerRuntimeData.extFiringTableD1, gpuRuntimeData[0].extFiringTableD1, sizeof(int*) * networkConfigs[0].numGroups, cudaMemcpyDeviceToHost));
-		
+		//KERNEL_DEBUG("GPU0 D1ex:%d/D2ex:%d", managerRuntimeData.extFiringTableEndIdxD1[0], managerRuntimeData.extFiringTableEndIdxD2[0]);
+
 		checkAndSetGPUDevice(1);
 		CUDA_CHECK_ERRORS( cudaMemcpyFromSymbol(managerRuntimeData.timeTableD2, timeTableD2GPU, sizeof(int)*(1000+glbNetworkConfig.maxDelay+1), 0, cudaMemcpyDeviceToHost));
 		CUDA_CHECK_ERRORS( cudaMemcpyFromSymbol(managerRuntimeData.timeTableD1, timeTableD1GPU, sizeof(int)*(1000+glbNetworkConfig.maxDelay+1), 0, cudaMemcpyDeviceToHost));
-		
 		firingTableIdxD2 = managerRuntimeData.timeTableD2[simTimeMs + glbNetworkConfig.maxDelay + 1];
 		firingTableIdxD1 = managerRuntimeData.timeTableD1[simTimeMs + glbNetworkConfig.maxDelay + 1];
+		//KERNEL_DEBUG("GPU1 D1:%d/D2:%d", firingTableIdxD1, firingTableIdxD2);
+
 		for (int lGrpId = 0; lGrpId < networkConfigs[0].numGroups; lGrpId++) {
 			if (groupConfigs[0][lGrpId].hasExternalConnect && managerRuntimeData.extFiringTableEndIdxD2[lGrpId] > 0) {
 				CUDA_CHECK_ERRORS( cudaMemcpyPeer(gpuRuntimeData[1].firingTableD2 + firingTableIdxD2, 1,
@@ -2956,7 +2929,9 @@ void SNN::routeSpikes_GPU() {
 																	   firingTableIdxD1 + managerRuntimeData.extFiringTableEndIdxD1[lGrpId],
 																	   GtoLOffset); // [StartIdx, EndIdx)
 				firingTableIdxD1 += managerRuntimeData.extFiringTableEndIdxD1[lGrpId];
+
 			}
+			//KERNEL_DEBUG("GPU1 New D1:%d/D2:%d", firingTableIdxD1, firingTableIdxD2);
 		}
 		managerRuntimeData.timeTableD2[simTimeMs + glbNetworkConfig.maxDelay + 1] = firingTableIdxD2;
 		managerRuntimeData.timeTableD1[simTimeMs + glbNetworkConfig.maxDelay + 1] = firingTableIdxD1;
@@ -2971,12 +2946,15 @@ void SNN::routeSpikes_GPU() {
 		CUDA_CHECK_ERRORS( cudaMemcpy(managerRuntimeData.extFiringTableEndIdxD1, gpuRuntimeData[1].extFiringTableEndIdxD1, sizeof(int) * networkConfigs[1].numGroups, cudaMemcpyDeviceToHost));
 		CUDA_CHECK_ERRORS( cudaMemcpy(managerRuntimeData.extFiringTableD2, gpuRuntimeData[1].extFiringTableD2, sizeof(int*) * networkConfigs[1].numGroups, cudaMemcpyDeviceToHost));
 		CUDA_CHECK_ERRORS( cudaMemcpy(managerRuntimeData.extFiringTableD1, gpuRuntimeData[1].extFiringTableD1, sizeof(int*) * networkConfigs[1].numGroups, cudaMemcpyDeviceToHost));
-	
+		//KERNEL_DEBUG("GPU1 D1ex:%d/D2ex:%d", managerRuntimeData.extFiringTableEndIdxD1[0], managerRuntimeData.extFiringTableEndIdxD2[0]);
+
 		checkAndSetGPUDevice(0);
 		CUDA_CHECK_ERRORS( cudaMemcpyFromSymbol(managerRuntimeData.timeTableD2, timeTableD2GPU, sizeof(int)*(1000+glbNetworkConfig.maxDelay+1), 0, cudaMemcpyDeviceToHost));
 		CUDA_CHECK_ERRORS( cudaMemcpyFromSymbol(managerRuntimeData.timeTableD1, timeTableD1GPU, sizeof(int)*(1000+glbNetworkConfig.maxDelay+1), 0, cudaMemcpyDeviceToHost));
 		firingTableIdxD2 = managerRuntimeData.timeTableD2[simTimeMs + glbNetworkConfig.maxDelay + 1];
 		firingTableIdxD1 = managerRuntimeData.timeTableD1[simTimeMs + glbNetworkConfig.maxDelay + 1];
+		//KERNEL_DEBUG("GPU0 D1:%d/D2:%d", firingTableIdxD1, firingTableIdxD2);
+
 		for (int lGrpId = 0; lGrpId < networkConfigs[1].numGroups; lGrpId++) {
 			if (groupConfigs[1][lGrpId].hasExternalConnect && managerRuntimeData.extFiringTableEndIdxD2[lGrpId] > 0) {
 				CUDA_CHECK_ERRORS( cudaMemcpyPeer(gpuRuntimeData[0].firingTableD2 + firingTableIdxD2, 0,
@@ -3009,6 +2987,7 @@ void SNN::routeSpikes_GPU() {
 																	   GtoLOffset); // [StartIdx, EndIdx)
 				firingTableIdxD1 += managerRuntimeData.extFiringTableEndIdxD1[lGrpId];
 			}
+			//KERNEL_DEBUG("GPU0 New D1:%d/D2:%d", firingTableIdxD1, firingTableIdxD2);
 		}
 		managerRuntimeData.timeTableD2[simTimeMs + glbNetworkConfig.maxDelay + 1] = firingTableIdxD2;
 		managerRuntimeData.timeTableD1[simTimeMs + glbNetworkConfig.maxDelay + 1] = firingTableIdxD1;
@@ -3113,7 +3092,7 @@ void SNN::copyExternalCurrent(int netId, int lGrpId, RuntimeData* dest, cudaMemc
 	}
 	assert(lengthN >= 0 && lengthN <= networkConfigs[netId].numNReg); // assert NOT poisson neurons
 
-	KERNEL_DEBUG("copyExternalCurrent: lGrpId=%d, ptrPos=%d, length=%d, allocate=%s", lGrpId, posN, lengthN, allocateMem?"y":"n");
+	//KERNEL_DEBUG("copyExternalCurrent: lGrpId=%d, ptrPos=%d, length=%d, allocate=%s", lGrpId, posN, lengthN, allocateMem?"y":"n");
 
 	if(allocateMem)
 		CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->extCurrent, sizeof(float) * lengthN));
@@ -3233,7 +3212,7 @@ void SNN::checkAndSetGPUDevice(int netId) {
 	assert(netId >= 0 && netId < numGPUs_);
 
 	if (currentDevice != netId) {
-		KERNEL_DEBUG("Change GPU context from GPU %d to GPU %d", currentDevice, netId);
+		//KERNEL_DEBUG("Change GPU context from GPU %d to GPU %d", currentDevice, netId);
 		CUDA_CHECK_ERRORS(cudaSetDevice(netId));
 	}
 }

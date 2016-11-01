@@ -37,6 +37,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "benchmark", "carlsim\benchm
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "test_kernel2", "projects\test_kernel2\test_kernel2.vcxproj", "{9A43405F-86AE-495F-AE4B-EEBE8BB677E8}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "test_kernel3", "projects\test_kernel3\test_kernel3.vcxproj", "{FEDA719A-8D12-4523-937F-9C0782C89DF3}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Mixed Platforms = Debug|Mixed Platforms
@@ -250,6 +252,18 @@ Global
 		{9A43405F-86AE-495F-AE4B-EEBE8BB677E8}.Release|Win32.Build.0 = Release|Win32
 		{9A43405F-86AE-495F-AE4B-EEBE8BB677E8}.Release|x64.ActiveCfg = Release|x64
 		{9A43405F-86AE-495F-AE4B-EEBE8BB677E8}.Release|x64.Build.0 = Release|x64
+		{FEDA719A-8D12-4523-937F-9C0782C89DF3}.Debug|Mixed Platforms.ActiveCfg = Debug|Win32
+		{FEDA719A-8D12-4523-937F-9C0782C89DF3}.Debug|Mixed Platforms.Build.0 = Debug|Win32
+		{FEDA719A-8D12-4523-937F-9C0782C89DF3}.Debug|Win32.ActiveCfg = Debug|Win32
+		{FEDA719A-8D12-4523-937F-9C0782C89DF3}.Debug|Win32.Build.0 = Debug|Win32
+		{FEDA719A-8D12-4523-937F-9C0782C89DF3}.Debug|x64.ActiveCfg = Debug|x64
+		{FEDA719A-8D12-4523-937F-9C0782C89DF3}.Debug|x64.Build.0 = Debug|x64
+		{FEDA719A-8D12-4523-937F-9C0782C89DF3}.Release|Mixed Platforms.ActiveCfg = Release|Win32
+		{FEDA719A-8D12-4523-937F-9C0782C89DF3}.Release|Mixed Platforms.Build.0 = Release|Win32
+		{FEDA719A-8D12-4523-937F-9C0782C89DF3}.Release|Win32.ActiveCfg = Release|Win32
+		{FEDA719A-8D12-4523-937F-9C0782C89DF3}.Release|Win32.Build.0 = Release|Win32
+		{FEDA719A-8D12-4523-937F-9C0782C89DF3}.Release|x64.ActiveCfg = Release|x64
+		{FEDA719A-8D12-4523-937F-9C0782C89DF3}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

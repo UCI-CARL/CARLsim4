@@ -1122,6 +1122,36 @@ void SNN::setWeight(short int connId, int neurIdPre, int neurIdPost, float weigh
 	}
 }
 
+void SNN::setExternalCurrent(int grpId, const std::vector<float>& current) {
+	assert(grpId >= 0); assert(grpId < numGroups);
+	assert(!isPoissonGroup(grpId));
+	assert(current.size() == getGroupNumNeurons(grpId));
+
+	int netId = groupConfigMDMap[grpId].netId;
+	int lGrpId = groupConfigMDMap[grpId].lGrpId;
+
+	// // update flag for faster handling at run-time
+	// if (count_if(current.begin(), current.end(), isGreaterThanZero)) {
+	// 	groupConfigs[0][grpId].WithCurrentInjection = true;
+	// } else {
+	// 	groupConfigs[0][grpId].WithCurrentInjection = false;
+	// }
+
+	// store external current in array
+	for (int lNId = groupConfigs[netId][lGrpId].lStartN, j = 0; lNId <= groupConfigs[netId][lGrpId].lEndN; lNId++, j++) {
+		managerRuntimeData.extCurrent[lNId] = current[j];
+	}
+
+	// copy to GPU if necessary
+	// don't allocate; allocation done in generateRuntimeData
+	if (simMode_ == GPU_MODE) {
+		copyExternalCurrent(netId, lGrpId, &gpuRuntimeData[netId], cudaMemcpyHostToDevice, false);
+	}
+	else {
+		copyExternalCurrent(netId, lGrpId, &cpuRuntimeData[netId], false);
+	}
+}
+
 // writes network state to file
 // handling of file pointer should be handled externally: as far as this function is concerned, it is simply
 // trying to write to file

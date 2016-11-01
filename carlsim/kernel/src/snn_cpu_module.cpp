@@ -580,8 +580,8 @@ void SNN::generatePostSynapticSpike(int preNId, int postNId, int synId, int tD, 
 void  SNN::globalStateUpdate() {
 	for (int netId = 0; netId < MAX_NET_PER_SNN; netId++) {
 		if (!groupPartitionLists[netId].empty()) {
-			double tmp_iNMDA, tmp_I;
-			double tmp_gNMDA, tmp_gGABAb;
+			//double tmp_iNMDA, tmp_I;
+			//double tmp_gNMDA, tmp_gGABAb;
 
 			for (int lGrpId = 0; lGrpId < networkConfigs[netId].numGroups; lGrpId++) {
 				if (groupConfigs[netId][lGrpId].Type & POISSON_NEURON) {
@@ -597,57 +597,97 @@ void  SNN::globalStateUpdate() {
 
 					// P7
 					// update conductances
+		//			if (networkConfigs[netId].sim_with_conductances) {
+		//				// COBA model
+
+		//				// all the tmpIs will be summed into current[i] in the following loop
+		//				cpuRuntimeData[netId].current[lNId] = 0.0f;
+
+		//				// \FIXME: these tmp vars cause a lot of rounding errors... consider rewriting
+		//				for (int j = 0; j < COND_INTEGRATION_SCALE; j++) {
+		//					tmp_iNMDA = (cpuRuntimeData[netId].voltage[lNId] + 80.0f) * (cpuRuntimeData[netId].voltage[lNId] + 80.0f) / 60.0f / 60.0f;
+
+		//					tmp_gNMDA = networkConfigs[netId].sim_with_NMDA_rise ? cpuRuntimeData[netId].gNMDA_d[lNId] - cpuRuntimeData[netId].gNMDA_r[lNId] : cpuRuntimeData[netId].gNMDA[lNId];
+		//					tmp_gGABAb = networkConfigs[netId].sim_with_GABAb_rise ? cpuRuntimeData[netId].gGABAb_d[lNId] - cpuRuntimeData[netId].gGABAb_r[lNId] : cpuRuntimeData[netId].gGABAb[lNId];
+
+		//					tmp_I = -(cpuRuntimeData[netId].gAMPA[lNId] * (cpuRuntimeData[netId].voltage[lNId] - 0.0f)
+		//						+ tmp_gNMDA * tmp_iNMDA / (1 + tmp_iNMDA) * (cpuRuntimeData[netId].voltage[lNId] - 0.0f)
+		//						+ cpuRuntimeData[netId].gGABAa[lNId] * (cpuRuntimeData[netId].voltage[lNId] + 70.0f)
+		//						+ tmp_gGABAb * (cpuRuntimeData[netId].voltage[lNId] + 90.0f)
+		//						);
+
+		//					cpuRuntimeData[netId].voltage[lNId] += ((0.04f * cpuRuntimeData[netId].voltage[lNId] + 5.0f) * cpuRuntimeData[netId].voltage[lNId] + 140.0f - cpuRuntimeData[netId].recovery[lNId] + tmp_I + cpuRuntimeData[netId].extCurrent[lNId])
+		//						/ COND_INTEGRATION_SCALE;
+		//					assert(!isnan(cpuRuntimeData[netId].voltage[lNId]) && !isinf(cpuRuntimeData[netId].voltage[lNId]));
+
+		//					// keep track of total current
+		//					cpuRuntimeData[netId].current[lNId] += tmp_I;
+
+		//					if (cpuRuntimeData[netId].voltage[lNId] > 30.0f) {
+		//						cpuRuntimeData[netId].voltage[lNId] = 30.0f;
+		//						j = COND_INTEGRATION_SCALE; // break the loop but evaluate u[i]
+		////						if (gNMDA[i]>=10.0f) KERNEL_WARN("High NMDA conductance (gNMDA>=10.0) may cause instability");
+		////						if (gGABAb[i]>=2.0f) KERNEL_WARN("High GABAb conductance (gGABAb>=2.0) may cause instability");
+		//					}
+		//					if (cpuRuntimeData[netId].voltage[lNId] < -90.0f)
+		//						cpuRuntimeData[netId].voltage[lNId] = -90.0f;
+		//					cpuRuntimeData[netId].recovery[lNId] += cpuRuntimeData[netId].Izh_a[lNId] * (cpuRuntimeData[netId].Izh_b[lNId] * cpuRuntimeData[netId].voltage[lNId] - cpuRuntimeData[netId].recovery[lNId]) / COND_INTEGRATION_SCALE;
+		//				} // end COND_INTEGRATION_SCALE loop
+		//			}
+		//			else {
+		//				// CUBA model
+		//				cpuRuntimeData[netId].voltage[lNId] += 0.5f * ((0.04f * cpuRuntimeData[netId].voltage[lNId] + 5.0f) * cpuRuntimeData[netId].voltage[lNId] + 140.0f - cpuRuntimeData[netId].recovery[lNId]
+		//					+ cpuRuntimeData[netId].current[lNId] + cpuRuntimeData[netId].extCurrent[lNId]); //for numerical stability
+		//				cpuRuntimeData[netId].voltage[lNId] += 0.5f * ((0.04f * cpuRuntimeData[netId].voltage[lNId] + 5.0f) * cpuRuntimeData[netId].voltage[lNId] + 140.0f - cpuRuntimeData[netId].recovery[lNId]
+		//					+ cpuRuntimeData[netId].current[lNId] + cpuRuntimeData[netId].extCurrent[lNId]); //time step is 0.5 ms
+		//				if (cpuRuntimeData[netId].voltage[lNId] > 30.0f)
+		//					cpuRuntimeData[netId].voltage[lNId] = 30.0f;
+		//				if (cpuRuntimeData[netId].voltage[lNId] < -90.0f)
+		//					cpuRuntimeData[netId].voltage[lNId] = -90.0f;
+		//				cpuRuntimeData[netId].recovery[lNId] += cpuRuntimeData[netId].Izh_a[lNId] * (cpuRuntimeData[netId].Izh_b[lNId] * cpuRuntimeData[netId].voltage[lNId] - cpuRuntimeData[netId].recovery[lNId]);
+
+		//				cpuRuntimeData[netId].current[lNId] = 0.0f;
+		//			} // end COBA/CUBA
+					float v = cpuRuntimeData[netId].voltage[lNId];
+					float u = cpuRuntimeData[netId].recovery[lNId];
+					float I_sum, NMDAtmp;
+					float gNMDA, gGABAb;
+
+					// loop that allows smaller integration time step for v's and u's
+					for (int c = 0; c < COND_INTEGRATION_SCALE; c++) {
+						I_sum = 0.0f;
+						if (networkConfigs[netId].sim_with_conductances) {
+							NMDAtmp = (v + 80.0f) * (v + 80.0f) / 60.0f / 60.0f;
+							gNMDA = (networkConfigs[netId].sim_with_NMDA_rise) ? (cpuRuntimeData[netId].gNMDA_d[lNId] - cpuRuntimeData[netId].gNMDA_r[lNId]) : cpuRuntimeData[netId].gNMDA[lNId];
+							gGABAb = (networkConfigs[netId].sim_with_GABAb_rise) ? (cpuRuntimeData[netId].gGABAb_d[lNId] - cpuRuntimeData[netId].gGABAb_r[lNId]) : cpuRuntimeData[netId].gGABAb[lNId];
+							I_sum = -(cpuRuntimeData[netId].gAMPA[lNId] * (v - 0.0f)
+								+ gNMDA * NMDAtmp / (1.0f + NMDAtmp) * (v - 0.0f)
+								+ cpuRuntimeData[netId].gGABAa[lNId] * (v + 70.0f)
+								+ gGABAb * (v + 90.0f));
+						} else {
+							I_sum = cpuRuntimeData[netId].current[lNId];
+						}
+
+						// update vpos and upos for the current neuron
+						v += ((0.04f * v + 5.0f) * v + 140.0f - u + I_sum + cpuRuntimeData[netId].extCurrent[lNId]) / COND_INTEGRATION_SCALE;
+						if (v > 30.0f) {
+							v = 30.0f; // break the loop but evaluate u[i]
+							c = COND_INTEGRATION_SCALE;
+						}
+
+						if (v < -90.0f) v = -90.0f;
+
+						u += (cpuRuntimeData[netId].Izh_a[lNId] * (cpuRuntimeData[netId].Izh_b[lNId] * v - u) / COND_INTEGRATION_SCALE);
+					}
 					if (networkConfigs[netId].sim_with_conductances) {
-						// COBA model
-
-						// all the tmpIs will be summed into current[i] in the following loop
-						cpuRuntimeData[netId].current[lNId] = 0.0f;
-
-						// \FIXME: these tmp vars cause a lot of rounding errors... consider rewriting
-						for (int j = 0; j < COND_INTEGRATION_SCALE; j++) {
-							tmp_iNMDA = (cpuRuntimeData[netId].voltage[lNId] + 80.0f) * (cpuRuntimeData[netId].voltage[lNId] + 80.0f) / 60.0f / 60.0f;
-
-							tmp_gNMDA = networkConfigs[netId].sim_with_NMDA_rise ? cpuRuntimeData[netId].gNMDA_d[lNId] - cpuRuntimeData[netId].gNMDA_r[lNId] : cpuRuntimeData[netId].gNMDA[lNId];
-							tmp_gGABAb = networkConfigs[netId].sim_with_GABAb_rise ? cpuRuntimeData[netId].gGABAb_d[lNId] - cpuRuntimeData[netId].gGABAb_r[lNId] : cpuRuntimeData[netId].gGABAb[lNId];
-
-							tmp_I = -(cpuRuntimeData[netId].gAMPA[lNId] * (cpuRuntimeData[netId].voltage[lNId] - 0.0f)
-								+ tmp_gNMDA * tmp_iNMDA / (1 + tmp_iNMDA) * (cpuRuntimeData[netId].voltage[lNId] - 0.0f)
-								+ cpuRuntimeData[netId].gGABAa[lNId] * (cpuRuntimeData[netId].voltage[lNId] + 70.0f)
-								+ tmp_gGABAb * (cpuRuntimeData[netId].voltage[lNId] + 90.0f)
-								);
-
-							cpuRuntimeData[netId].voltage[lNId] += ((0.04f * cpuRuntimeData[netId].voltage[lNId] + 5.0f) * cpuRuntimeData[netId].voltage[lNId] + 140.0f - cpuRuntimeData[netId].recovery[lNId] + tmp_I + cpuRuntimeData[netId].extCurrent[lNId])
-								/ COND_INTEGRATION_SCALE;
-							assert(!isnan(cpuRuntimeData[netId].voltage[lNId]) && !isinf(cpuRuntimeData[netId].voltage[lNId]));
-
-							// keep track of total current
-							cpuRuntimeData[netId].current[lNId] += tmp_I;
-
-							if (cpuRuntimeData[netId].voltage[lNId] > 30.0f) {
-								cpuRuntimeData[netId].voltage[lNId] = 30.0f;
-								j = COND_INTEGRATION_SCALE; // break the loop but evaluate u[i]
-		//						if (gNMDA[i]>=10.0f) KERNEL_WARN("High NMDA conductance (gNMDA>=10.0) may cause instability");
-		//						if (gGABAb[i]>=2.0f) KERNEL_WARN("High GABAb conductance (gGABAb>=2.0) may cause instability");
-							}
-							if (cpuRuntimeData[netId].voltage[lNId] < -90.0f)
-								cpuRuntimeData[netId].voltage[lNId] = -90.0f;
-							cpuRuntimeData[netId].recovery[lNId] += cpuRuntimeData[netId].Izh_a[lNId] * (cpuRuntimeData[netId].Izh_b[lNId] * cpuRuntimeData[netId].voltage[lNId] - cpuRuntimeData[netId].recovery[lNId]) / COND_INTEGRATION_SCALE;
-						} // end COND_INTEGRATION_SCALE loop
+						cpuRuntimeData[netId].current[lNId] = I_sum;
 					}
 					else {
-						// CUBA model
-						cpuRuntimeData[netId].voltage[lNId] += 0.5f * ((0.04f * cpuRuntimeData[netId].voltage[lNId] + 5.0f) * cpuRuntimeData[netId].voltage[lNId] + 140.0f - cpuRuntimeData[netId].recovery[lNId]
-							+ cpuRuntimeData[netId].current[lNId] + cpuRuntimeData[netId].extCurrent[lNId]); //for numerical stability
-						cpuRuntimeData[netId].voltage[lNId] += 0.5f * ((0.04f * cpuRuntimeData[netId].voltage[lNId] + 5.0f) * cpuRuntimeData[netId].voltage[lNId] + 140.0f - cpuRuntimeData[netId].recovery[lNId]
-							+ cpuRuntimeData[netId].current[lNId] + cpuRuntimeData[netId].extCurrent[lNId]); //time step is 0.5 ms
-						if (cpuRuntimeData[netId].voltage[lNId] > 30.0f)
-							cpuRuntimeData[netId].voltage[lNId] = 30.0f;
-						if (cpuRuntimeData[netId].voltage[lNId] < -90.0f)
-							cpuRuntimeData[netId].voltage[lNId] = -90.0f;
-						cpuRuntimeData[netId].recovery[lNId] += cpuRuntimeData[netId].Izh_a[lNId] * (cpuRuntimeData[netId].Izh_b[lNId] * cpuRuntimeData[netId].voltage[lNId] - cpuRuntimeData[netId].recovery[lNId]);
-
+						// current must be reset here for CUBA and not STPUpdateAndDecayConductances
 						cpuRuntimeData[netId].current[lNId] = 0.0f;
-					} // end COBA/CUBA
+					}
+					cpuRuntimeData[netId].voltage[lNId] = v;
+					cpuRuntimeData[netId].recovery[lNId] = u;
 
 					// P8
 					// update average firing rate for homeostasis
