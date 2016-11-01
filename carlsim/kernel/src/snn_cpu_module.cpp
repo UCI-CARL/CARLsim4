@@ -114,9 +114,150 @@ void SNN::updateTimingTable() {
 }
 
 void SNN::routeSpikes() {
+	int firingTableIdxD2, firingTableIdxD1;
+	int GtoLOffset;
+	// ToDo: route spikes using routing table. currently only exchange spikes between GPU0 and GPU1
+	// GPU0 -> GPU1
+	if (!groupPartitionLists[0].empty() && !groupPartitionLists[1].empty()) {
+		memcpy(managerRuntimeData.extFiringTableEndIdxD2, cpuRuntimeData[0].extFiringTableEndIdxD2, sizeof(int) * networkConfigs[0].numGroups);
+		memcpy(managerRuntimeData.extFiringTableEndIdxD1, cpuRuntimeData[0].extFiringTableEndIdxD1, sizeof(int) * networkConfigs[0].numGroups);
+		memcpy(managerRuntimeData.extFiringTableD2, cpuRuntimeData[0].extFiringTableD2, sizeof(int*) * networkConfigs[0].numGroups);
+		memcpy(managerRuntimeData.extFiringTableD1, cpuRuntimeData[0].extFiringTableD1, sizeof(int*) * networkConfigs[0].numGroups);
+		//KERNEL_DEBUG("GPU0 D1ex:%d/D2ex:%d", managerRuntimeData.extFiringTableEndIdxD1[0], managerRuntimeData.extFiringTableEndIdxD2[0]);
+
+		memcpy(managerRuntimeData.timeTableD2, cpuRuntimeData[1].timeTableD2, sizeof(int) * (1000 + glbNetworkConfig.maxDelay + 1));
+		memcpy(managerRuntimeData.timeTableD1, cpuRuntimeData[1].timeTableD1, sizeof(int) * (1000 + glbNetworkConfig.maxDelay + 1));
+		firingTableIdxD2 = managerRuntimeData.timeTableD2[simTimeMs + glbNetworkConfig.maxDelay + 1];
+		firingTableIdxD1 = managerRuntimeData.timeTableD1[simTimeMs + glbNetworkConfig.maxDelay + 1];
+		//KERNEL_DEBUG("GPU1 D1:%d/D2:%d", firingTableIdxD1, firingTableIdxD2);
+
+		for (int lGrpId = 0; lGrpId < networkConfigs[0].numGroups; lGrpId++) {
+			if (groupConfigs[0][lGrpId].hasExternalConnect && managerRuntimeData.extFiringTableEndIdxD2[lGrpId] > 0) {
+				memcpy(cpuRuntimeData[1].firingTableD2 + firingTableIdxD2,
+					managerRuntimeData.extFiringTableD2[lGrpId],
+					sizeof(int) * managerRuntimeData.extFiringTableEndIdxD2[lGrpId]);
+
+				for (std::list<GroupConfigMD>::iterator grpIt = groupPartitionLists[1].begin(); grpIt != groupPartitionLists[1].end(); grpIt++) {
+					if (grpIt->gGrpId == groupConfigs[0][lGrpId].gGrpId)
+						GtoLOffset = grpIt->GtoLOffset;
+				}
+
+				convertExtSpikesD2(1, firingTableIdxD2, 
+					firingTableIdxD2 + managerRuntimeData.extFiringTableEndIdxD2[lGrpId],
+					GtoLOffset); // [StartIdx, EndIdx)
+				firingTableIdxD2 += managerRuntimeData.extFiringTableEndIdxD2[lGrpId];
+			}
+
+			if (groupConfigs[0][lGrpId].hasExternalConnect && managerRuntimeData.extFiringTableEndIdxD1[lGrpId] > 0) {
+				memcpy(cpuRuntimeData[1].firingTableD1 + firingTableIdxD1,
+					managerRuntimeData.extFiringTableD1[lGrpId],
+					sizeof(int) * managerRuntimeData.extFiringTableEndIdxD1[lGrpId]);
+
+				for (std::list<GroupConfigMD>::iterator grpIt = groupPartitionLists[1].begin(); grpIt != groupPartitionLists[1].end(); grpIt++) {
+					if (grpIt->gGrpId == groupConfigs[0][lGrpId].gGrpId)
+						GtoLOffset = grpIt->GtoLOffset;
+				}
+
+				convertExtSpikesD1(1, firingTableIdxD1,
+					firingTableIdxD1 + managerRuntimeData.extFiringTableEndIdxD1[lGrpId],
+					GtoLOffset); // [StartIdx, EndIdx)
+				firingTableIdxD1 += managerRuntimeData.extFiringTableEndIdxD1[lGrpId];
+
+			}
+			//KERNEL_DEBUG("GPU1 New D1:%d/D2:%d", firingTableIdxD1, firingTableIdxD2);
+		}
+		managerRuntimeData.timeTableD2[simTimeMs + glbNetworkConfig.maxDelay + 1] = firingTableIdxD2;
+		managerRuntimeData.timeTableD1[simTimeMs + glbNetworkConfig.maxDelay + 1] = firingTableIdxD1;
+		memcpy(cpuRuntimeData[1].timeTableD2, managerRuntimeData.timeTableD2, sizeof(int)*(1000 + glbNetworkConfig.maxDelay + 1));
+		memcpy(cpuRuntimeData[1].timeTableD1, managerRuntimeData.timeTableD1, sizeof(int)*(1000 + glbNetworkConfig.maxDelay + 1));
+	}
+
+	// GPU1 -> GPU0
+	if (!groupPartitionLists[1].empty() && !groupPartitionLists[0].empty()) {
+		memcpy(managerRuntimeData.extFiringTableEndIdxD2, cpuRuntimeData[1].extFiringTableEndIdxD2, sizeof(int) * networkConfigs[1].numGroups);
+		memcpy(managerRuntimeData.extFiringTableEndIdxD1, cpuRuntimeData[1].extFiringTableEndIdxD1, sizeof(int) * networkConfigs[1].numGroups);
+		memcpy(managerRuntimeData.extFiringTableD2, cpuRuntimeData[1].extFiringTableD2, sizeof(int*) * networkConfigs[1].numGroups);
+		memcpy(managerRuntimeData.extFiringTableD1, cpuRuntimeData[1].extFiringTableD1, sizeof(int*) * networkConfigs[1].numGroups);
+		//KERNEL_DEBUG("GPU1 D1ex:%d/D2ex:%d", managerRuntimeData.extFiringTableEndIdxD1[0], managerRuntimeData.extFiringTableEndIdxD2[0]);
+
+		memcpy(managerRuntimeData.timeTableD2, cpuRuntimeData[0].timeTableD2, sizeof(int)*(1000 + glbNetworkConfig.maxDelay + 1));
+		memcpy(managerRuntimeData.timeTableD1, cpuRuntimeData[0].timeTableD1, sizeof(int)*(1000 + glbNetworkConfig.maxDelay + 1));
+		firingTableIdxD2 = managerRuntimeData.timeTableD2[simTimeMs + glbNetworkConfig.maxDelay + 1];
+		firingTableIdxD1 = managerRuntimeData.timeTableD1[simTimeMs + glbNetworkConfig.maxDelay + 1];
+		//KERNEL_DEBUG("GPU0 D1:%d/D2:%d", firingTableIdxD1, firingTableIdxD2);
+
+		for (int lGrpId = 0; lGrpId < networkConfigs[1].numGroups; lGrpId++) {
+			if (groupConfigs[1][lGrpId].hasExternalConnect && managerRuntimeData.extFiringTableEndIdxD2[lGrpId] > 0) {
+				memcpy(cpuRuntimeData[0].firingTableD2 + firingTableIdxD2,
+					managerRuntimeData.extFiringTableD2[lGrpId],
+					sizeof(int) * managerRuntimeData.extFiringTableEndIdxD2[lGrpId]);
+
+				for (std::list<GroupConfigMD>::iterator grpIt = groupPartitionLists[0].begin(); grpIt != groupPartitionLists[0].end(); grpIt++) {
+					if (grpIt->gGrpId == groupConfigs[1][lGrpId].gGrpId)
+						GtoLOffset = grpIt->GtoLOffset;
+				}
+
+				convertExtSpikesD2(0, firingTableIdxD2,
+					firingTableIdxD2 + managerRuntimeData.extFiringTableEndIdxD2[lGrpId],
+					GtoLOffset); // [StartIdx, EndIdx)
+				firingTableIdxD2 += managerRuntimeData.extFiringTableEndIdxD2[lGrpId];
+			}
+
+			if (groupConfigs[1][lGrpId].hasExternalConnect && managerRuntimeData.extFiringTableEndIdxD1[lGrpId] > 0) {
+				memcpy(cpuRuntimeData[0].firingTableD1 + firingTableIdxD1,
+					managerRuntimeData.extFiringTableD1[lGrpId],
+					sizeof(int) * managerRuntimeData.extFiringTableEndIdxD1[lGrpId]);
+
+				for (std::list<GroupConfigMD>::iterator grpIt = groupPartitionLists[0].begin(); grpIt != groupPartitionLists[0].end(); grpIt++) {
+					if (grpIt->gGrpId == groupConfigs[1][lGrpId].gGrpId)
+						GtoLOffset = grpIt->GtoLOffset;
+				}
+
+				convertExtSpikesD1(0, firingTableIdxD1,
+					firingTableIdxD1 + managerRuntimeData.extFiringTableEndIdxD1[lGrpId],
+					GtoLOffset); // [StartIdx, EndIdx)
+				firingTableIdxD1 += managerRuntimeData.extFiringTableEndIdxD1[lGrpId];
+			}
+			//KERNEL_DEBUG("GPU0 New D1:%d/D2:%d", firingTableIdxD1, firingTableIdxD2);
+		}
+		managerRuntimeData.timeTableD2[simTimeMs + glbNetworkConfig.maxDelay + 1] = firingTableIdxD2;
+		managerRuntimeData.timeTableD1[simTimeMs + glbNetworkConfig.maxDelay + 1] = firingTableIdxD1;
+		memcpy(cpuRuntimeData[0].timeTableD2, managerRuntimeData.timeTableD2, sizeof(int)*(1000 + glbNetworkConfig.maxDelay + 1));
+		memcpy(cpuRuntimeData[0].timeTableD1, managerRuntimeData.timeTableD1, sizeof(int)*(1000 + glbNetworkConfig.maxDelay + 1));
+	}
+
+}
+
+void SNN::convertExtSpikesD2(int netId, int startIdx, int endIdx, int GtoLOffset) {
+	int spikeCountExtRx = endIdx - startIdx; // received external spike count
+
+	cpuRuntimeData[netId].spikeCountD2Sec += spikeCountExtRx;
+	cpuRuntimeData[netId].spikeCountExtRxD2 += spikeCountExtRx;
+
+	// FIXME: if endIdx - startIdx > 64 * 128
+	//if (firingTableIdx < endIdx)
+	for (int extIdx = startIdx; extIdx < endIdx; extIdx++)
+		cpuRuntimeData[netId].firingTableD2[extIdx] += GtoLOffset;
+}
+
+void SNN::convertExtSpikesD1(int netId, int startIdx, int endIdx, int GtoLOffset) {
+	int spikeCountExtRx = endIdx - startIdx; // received external spike count
+
+	cpuRuntimeData[netId].spikeCountD1Sec += spikeCountExtRx;
+	cpuRuntimeData[netId].spikeCountExtRxD1 += spikeCountExtRx;
+
+	// FIXME: if endIdx - startIdx > 64 * 128
+	for (int extIdx = startIdx; extIdx < endIdx; extIdx++)
+		cpuRuntimeData[netId].firingTableD1[extIdx] += GtoLOffset;
 }
 
 void SNN::clearExtFiringTable() {
+	for (int netId = 0; netId < MAX_NET_PER_SNN; netId++) {
+		if (!groupPartitionLists[netId].empty()) {
+			memset(cpuRuntimeData[netId].extFiringTableEndIdxD1, 0, sizeof(int) * networkConfigs[netId].numGroups);
+			memset(cpuRuntimeData[netId].extFiringTableEndIdxD2, 0, sizeof(int) * networkConfigs[netId].numGroups);
+		}
+	}
 }
 
 // resets nSpikeCnt[]
@@ -162,7 +303,7 @@ void SNN::doCurrentUpdateD1(int netId) {
 
 	while((k >= k_end) && (k >= 0)) {
 		int lNId = cpuRuntimeData[netId].firingTableD1[k];
-		assert(lNId < networkConfigs[netId].numN);
+		//assert(lNId < networkConfigs[netId].numN);
 
 		DelayInfo dPar = cpuRuntimeData[netId].postDelayInfo[lNId * (networkConfigs[netId].maxDelay + 1)];
 
@@ -173,12 +314,13 @@ void SNN::doCurrentUpdateD1(int netId) {
 			SynInfo postInfo = cpuRuntimeData[netId].postSynapticIds[offset + idx_d];
 
 			int postNId = GET_CONN_NEURON_ID(postInfo);
-			assert(postNId < networkConfigs[netId].numN);
+			//assert(postNId < networkConfigs[netId].numN);
 
 			int synId = GET_CONN_SYN_ID(postInfo);
-			assert(synId < (cpuRuntimeData[netId].Npre[postNId]));
+			//assert(synId < (cpuRuntimeData[netId].Npre[postNId]));
 
-			generatePostSynapticSpike(lNId /* preNId */, postNId, synId, 0, netId);
+			if (postNId < networkConfigs[netId].numN) // test if post-neuron is a local neuron
+				generatePostSynapticSpike(lNId /* preNId */, postNId, synId, 0, netId);
 		}
 
 		k = k - 1;
@@ -207,7 +349,7 @@ void SNN::doCurrentUpdateD2(int netId) {
 		int tD = simTimeMs - t_pos;
 
 		assert((tD < networkConfigs[netId].maxDelay) && (tD >= 0));
-		assert(lNId < networkConfigs[netId].numN);
+		//assert(lNId < networkConfigs[netId].numN);
 
 		DelayInfo dPar = cpuRuntimeData[netId].postDelayInfo[lNId * (networkConfigs[netId].maxDelay + 1) + tD];
 
@@ -219,12 +361,13 @@ void SNN::doCurrentUpdateD2(int netId) {
 			SynInfo postInfo = cpuRuntimeData[netId].postSynapticIds[offset + idx_d];
 
 			int postNId = GET_CONN_NEURON_ID(postInfo);
-			assert(postNId < networkConfigs[netId].numN);
+			//assert(postNId < networkConfigs[netId].numN);
 
 			int synId = GET_CONN_SYN_ID(postInfo);
-			assert(synId < (cpuRuntimeData[netId].Npre[postNId]));
+			//assert(synId < (cpuRuntimeData[netId].Npre[postNId]));
 			
-			generatePostSynapticSpike(lNId /* preNId */, postNId, synId, tD, netId);
+			if (postNId < networkConfigs[netId].numN) // test if post-neuron is a local neuron
+				generatePostSynapticSpike(lNId /* preNId */, postNId, synId, tD, netId);
 		}
 
 		k = k - 1;

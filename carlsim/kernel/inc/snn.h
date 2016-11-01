@@ -897,6 +897,9 @@ private:
 	bool getPoissonSpike(int lNId, int netId);
 	bool getSpikeGenBit(unsigned int nIdPos, int netId);
 
+	void convertExtSpikesD2(int netId, int startIdx, int endIdx, int GtoLOffset);
+	void convertExtSpikesD1(int netId, int startIdx, int endIdx, int GtoLOffset);
+
 	// +++++ PRIVATE PROPERTIES +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 	SNNState snnState; //!< state of the network
 	FILE* loadSimFID;
