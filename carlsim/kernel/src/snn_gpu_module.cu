@@ -2429,11 +2429,10 @@ void SNN::copyAuxiliaryData(int netId, int lGrpId, RuntimeData* dest, cudaMemcpy
 
 	// neural auxiliary data
 	// lastSpikeTime: an array indicates the last time of a neuron emitting a spike
-	if (!sim_with_fixedwts) {
-		// neuron firing time
-		if(allocateMem) CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->lastSpikeTime, sizeof(int) * networkConfigs[netId].numNAssigned));
-		CUDA_CHECK_ERRORS(cudaMemcpy(dest->lastSpikeTime, managerRuntimeData.lastSpikeTime, sizeof(int) * networkConfigs[netId].numNAssigned, cudaMemcpyHostToDevice));
-	}
+	// neuron firing time
+	if(allocateMem)
+		CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->lastSpikeTime, sizeof(int) * networkConfigs[netId].numNAssigned));
+	CUDA_CHECK_ERRORS(cudaMemcpy(dest->lastSpikeTime, managerRuntimeData.lastSpikeTime, sizeof(int) * networkConfigs[netId].numNAssigned, cudaMemcpyHostToDevice));
 
 	// auxiliary data for recording spike count of each neuron
 	copyNeuronSpikeCount(netId, lGrpId, dest, &managerRuntimeData, cudaMemcpyHostToDevice, true, 0);

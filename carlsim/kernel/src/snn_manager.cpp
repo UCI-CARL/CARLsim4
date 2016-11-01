@@ -4758,10 +4758,7 @@ void SNN::userDefinedSpikeGenerator(int gGrpId) {
 	int currTime = simTime;
 	bool done;
 
-	if (simMode_ == GPU_MODE)
-		fetchLastSpikeTime(netId);
-	else
-		memcpy(managerRuntimeData.lastSpikeTime, cpuRuntimeData[netId].lastSpikeTime, networkConfigs[netId].numN);
+	fetchLastSpikeTime(netId);
 
 	for(int gNId = groupConfigMDMap[gGrpId].gStartN; gNId <= groupConfigMDMap[gGrpId].gEndN; gNId++) {
 		// start the time from the last time it spiked, that way we can ensure that the refractory period is maintained

@@ -1774,12 +1774,10 @@ void SNN::copyAuxiliaryData(int netId, int lGrpId, RuntimeData* dest, bool alloc
 
 	// neural auxiliary data
 	// lastSpikeTime: an array indicates the last time of a neuron emitting a spike
-	if (!sim_with_fixedwts) {
-		// neuron firing time
-		if(allocateMem)
-			dest->lastSpikeTime = new int[networkConfigs[netId].numNAssigned];
-		memcpy(dest->lastSpikeTime, managerRuntimeData.lastSpikeTime, sizeof(int) * networkConfigs[netId].numNAssigned);
-	}
+	// neuron firing time
+	if(allocateMem)
+		dest->lastSpikeTime = new int[networkConfigs[netId].numNAssigned];
+	memcpy(dest->lastSpikeTime, managerRuntimeData.lastSpikeTime, sizeof(int) * networkConfigs[netId].numNAssigned);
 
 	// auxiliary data for recording spike count of each neuron
 	copyNeuronSpikeCount(netId, lGrpId, dest, &managerRuntimeData, true, 0);

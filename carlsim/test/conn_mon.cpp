@@ -284,7 +284,7 @@ TEST(ConnMon, weightFile) {
 
 			// make sure file size for CM binary is correct
 			std::ifstream wtFile("results/weights.dat", std::ios::binary | std::ios::ate);
-			EXPECT_TRUE(wtFile!=0);
+			EXPECT_TRUE(wtFile.is_open());
 			if (wtFile) {
 				wtFile.seekg( 0, std::ios::end );
 				if (interval==-1) {
