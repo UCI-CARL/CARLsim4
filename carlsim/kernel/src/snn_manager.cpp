@@ -988,12 +988,8 @@ void SNN::setSpikeGenerator(int gGrpId, SpikeGeneratorCore* spikeGenFunc) {
 	groupConfigMap[gGrpId].spikeGenFunc = spikeGenFunc;
 }
 
-// FIXME: distinguish the function call at CONFIG_STATE and SETUP_STATE, where groupConfigs[0][] might not be available
-// or groupConfigMap is not sync with groupConfigs[0][]
 // record spike information, return a SpikeInfo object
 SpikeMonitor* SNN::setSpikeMonitor(int gGrpId, FILE* fid) {
-	int netId = groupConfigMDMap[gGrpId].netId;
-	int lGrpId = groupConfigMDMap[gGrpId].lGrpId;
 	// check whether group already has a SpikeMonitor
 	if (groupConfigMDMap[gGrpId].spikeMonitorId >= 0) {
 		// in this case, return the current object and update fid

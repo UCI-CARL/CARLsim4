@@ -879,7 +879,7 @@ public:
 		std::string funcName = "setSpikeMonitor(\""+getGroupName(grpId)+"\",\""+fileName+"\")";
 		UserErrors::assertTrue(grpId!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName, "grpId");		// grpId can't be ALL
 		UserErrors::assertTrue(grpId>=0, UserErrors::CANNOT_BE_NEGATIVE, funcName, "grpId"); // grpId can't be negative
-		UserErrors::assertTrue(carlsimState_==SETUP_STATE,
+		UserErrors::assertTrue(carlsimState_==CONFIG_STATE || carlsimState_==SETUP_STATE, 
 			UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "CONFIG or SETUP.");
 
 		FILE* fid;
