@@ -4744,7 +4744,7 @@ void SNN::updateGroupMonitor(int gGrpId) {
 			updateGroupMonitor(gGrpId);
 	} else {
 		int netId = groupConfigMDMap[gGrpId].netId;
-		int lGrpId = groupConfigMDMap[gGrpId].lEndN;
+		int lGrpId = groupConfigMDMap[gGrpId].lGrpId;
 		// update group monitor of a specific group
 		// find index in group monitor arrays
 		int monitorId = groupConfigMDMap[gGrpId].groupMonitorId;
