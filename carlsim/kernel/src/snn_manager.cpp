@@ -763,14 +763,20 @@ int SNN::runNetwork(int _nsec, int _nmsec, bool printRunSummary) {
 void SNN::biasWeights(short int connId, float bias, bool updateWeightRange) {
 	assert(connId>=0 && connId<numConnections);
 
+	int netId = groupConfigMDMap[connectConfigMap[connId].grpDest].netId;
+	int lGrpId = groupConfigMDMap[connectConfigMap[connId].grpDest].lGrpId;
+
+	fetchPreConnectionInfo(netId);
+	fetchConnIdsLookupArray(netId);
+	fetchSynapseState(netId);
 	// iterate over all postsynaptic neurons
-	for (int i=groupConfigs[0][connectConfigMap[connId].grpDest].gStartN; i<=groupConfigs[0][connectConfigMap[connId].grpDest].gEndN; i++) {
-		unsigned int cumIdx = managerRuntimeData.cumulativePre[i];
+	for (int lNId = groupConfigs[netId][lGrpId].lStartN; lNId <= groupConfigs[netId][lGrpId].lEndN; lNId++) {
+		unsigned int cumIdx = managerRuntimeData.cumulativePre[lNId];
 
 		// iterate over all presynaptic neurons
 		unsigned int pos_ij = cumIdx;
-		for (int j=0; j<managerRuntimeData.Npre[i]; pos_ij++, j++) {
-			if (managerRuntimeData.connIdsPreIdx[pos_ij]==connId) {
+		for (int j = 0; j < managerRuntimeData.Npre[lNId]; pos_ij++, j++) {
+			if (managerRuntimeData.connIdsPreIdx[pos_ij] == connId) {
 				// apply bias to weight
 				float weight = managerRuntimeData.wt[pos_ij] + bias;
 
@@ -806,15 +812,23 @@ void SNN::biasWeights(short int connId, float bias, bool updateWeightRange) {
 		}
 
 		// update GPU datastructures in batches, grouped by post-neuron
-		if (simMode_==GPU_MODE) {
-			CUDA_CHECK_ERRORS( cudaMemcpy(&(gpuRuntimeData[0].wt[cumIdx]), &(managerRuntimeData.wt[cumIdx]), sizeof(float)*managerRuntimeData.Npre[i],
+		if (simMode_ == GPU_MODE) {
+			CUDA_CHECK_ERRORS( cudaMemcpy(&(gpuRuntimeData[netId].wt[cumIdx]), &(managerRuntimeData.wt[cumIdx]), sizeof(float)*managerRuntimeData.Npre[lNId],
 				cudaMemcpyHostToDevice) );
 
-			if (gpuRuntimeData[0].maxSynWt!=NULL) {
-				// only copy maxSynWt if datastructure actually exists on the GPU
+			if (gpuRuntimeData[netId].maxSynWt != NULL) {
+				// only copy maxSynWt if datastructure actually exists on the GPU runtime
 				// (that logic should be done elsewhere though)
-				CUDA_CHECK_ERRORS( cudaMemcpy(&(gpuRuntimeData[0].maxSynWt[cumIdx]), &(managerRuntimeData.maxSynWt[cumIdx]),
-					sizeof(float)*managerRuntimeData.Npre[i], cudaMemcpyHostToDevice) );
+				CUDA_CHECK_ERRORS( cudaMemcpy(&(gpuRuntimeData[netId].maxSynWt[cumIdx]), &(managerRuntimeData.maxSynWt[cumIdx]),
+					sizeof(float) * managerRuntimeData.Npre[lNId], cudaMemcpyHostToDevice) );
+			}
+		} else {
+			memcpy(&cpuRuntimeData[netId].wt[cumIdx], &managerRuntimeData.wt[cumIdx], sizeof(float) * managerRuntimeData.Npre[lNId]);
+
+			if (cpuRuntimeData[netId].maxSynWt != NULL) {
+				// only copy maxSynWt if datastructure actually exists on the CPU runtime
+				// (that logic should be done elsewhere though)
+				memcpy(&cpuRuntimeData[netId].maxSynWt[cumIdx], &managerRuntimeData.maxSynWt[cumIdx], sizeof(float) * managerRuntimeData.Npre[lNId]);
 			}
 		}
 	}
@@ -836,16 +850,23 @@ void SNN::scaleWeights(short int connId, float scale, bool updateWeightRange) {
 	assert(connId>=0 && connId<numConnections);
 	assert(scale>=0.0f);
 
+	int netId = groupConfigMDMap[connectConfigMap[connId].grpDest].netId;
+	int lGrpId = groupConfigMDMap[connectConfigMap[connId].grpDest].lGrpId;
+
+	fetchPreConnectionInfo(netId);
+	fetchConnIdsLookupArray(netId);
+	fetchSynapseState(netId);
+
 	// iterate over all postsynaptic neurons
-	for (int i=groupConfigs[0][connectConfigMap[connId].grpDest].gStartN; i<=groupConfigs[0][connectConfigMap[connId].grpDest].gEndN; i++) {
-		unsigned int cumIdx = managerRuntimeData.cumulativePre[i];
+	for (int lNId = groupConfigs[netId][lGrpId].lStartN; lNId <= groupConfigs[netId][lGrpId].lEndN; lNId++) {
+		unsigned int cumIdx = managerRuntimeData.cumulativePre[lNId];
 
 		// iterate over all presynaptic neurons
 		unsigned int pos_ij = cumIdx;
-		for (int j=0; j<managerRuntimeData.Npre[i]; pos_ij++, j++) {
+		for (int j = 0; j < managerRuntimeData.Npre[lNId]; pos_ij++, j++) {
 			if (managerRuntimeData.connIdsPreIdx[pos_ij]==connId) {
 				// apply bias to weight
-				float weight = managerRuntimeData.wt[pos_ij]*scale;
+				float weight = managerRuntimeData.wt[pos_ij] * scale;
 
 				// inform user of acton taken if weight is out of bounds
 //				bool needToPrintDebug = (weight>connInfo->maxWt || weight<connInfo->minWt);
@@ -879,15 +900,24 @@ void SNN::scaleWeights(short int connId, float scale, bool updateWeightRange) {
 		}
 
 		// update GPU datastructures in batches, grouped by post-neuron
-		if (simMode_==GPU_MODE) {
-			CUDA_CHECK_ERRORS( cudaMemcpy(&(gpuRuntimeData[0].wt[cumIdx]), &(managerRuntimeData.wt[cumIdx]), sizeof(float)*managerRuntimeData.Npre[i],
-				cudaMemcpyHostToDevice) );
+		if (simMode_ == GPU_MODE) {
+			CUDA_CHECK_ERRORS(cudaMemcpy(&gpuRuntimeData[netId].wt[cumIdx], &managerRuntimeData.wt[cumIdx], sizeof(float)*managerRuntimeData.Npre[lNId],
+				cudaMemcpyHostToDevice));
 
-			if (gpuRuntimeData[0].maxSynWt!=NULL) {
-				// only copy maxSynWt if datastructure actually exists on the GPU
+			if (gpuRuntimeData[netId].maxSynWt != NULL) {
+				// only copy maxSynWt if datastructure actually exists on the GPU runtime
 				// (that logic should be done elsewhere though)
-				CUDA_CHECK_ERRORS( cudaMemcpy(&(gpuRuntimeData[0].maxSynWt[cumIdx]), &(managerRuntimeData.maxSynWt[cumIdx]),
-					sizeof(float)*managerRuntimeData.Npre[i], cudaMemcpyHostToDevice));
+				CUDA_CHECK_ERRORS(cudaMemcpy(&gpuRuntimeData[netId].maxSynWt[cumIdx], &managerRuntimeData.maxSynWt[cumIdx],
+					sizeof(float) * managerRuntimeData.Npre[lNId], cudaMemcpyHostToDevice));
+			}
+		}
+		else {
+			memcpy(&cpuRuntimeData[netId].wt[cumIdx], &managerRuntimeData.wt[cumIdx], sizeof(float) * managerRuntimeData.Npre[lNId]);
+
+			if (cpuRuntimeData[netId].maxSynWt != NULL) {
+				// only copy maxSynWt if datastructure actually exists on the CPU runtime
+				// (that logic should be done elsewhere though)
+				memcpy(&cpuRuntimeData[netId].maxSynWt[cumIdx], &managerRuntimeData.maxSynWt[cumIdx], sizeof(float) * managerRuntimeData.Npre[lNId]);
 			}
 		}
 	}
@@ -1060,6 +1090,13 @@ void SNN::setWeight(short int connId, int neurIdPre, int neurIdPost, float weigh
 	// inform user of acton taken if weight is out of bounds
 	bool needToPrintDebug = (weight>maxWt || weight<minWt);
 
+	int netId = groupConfigMDMap[connectConfigMap[connId].grpDest].netId;
+	int lGrpId = groupConfigMDMap[connectConfigMap[connId].grpDest].lGrpId;
+
+	fetchPreConnectionInfo(netId);
+	fetchConnIdsLookupArray(netId);
+	fetchSynapseState(netId);
+
 	if (updateWeightRange) {
 		// if this flag is set, we need to update minWt,maxWt accordingly
 		// will be saving new maxSynWt and copying to GPU below
@@ -1081,28 +1118,36 @@ void SNN::setWeight(short int connId, int neurIdPre, int neurIdPost, float weigh
 	}
 
 	// find real ID of pre- and post-neuron
-	int neurIdPreReal = groupConfigs[0][connectConfigMap[connId].grpSrc].gStartN + neurIdPre;
-	int neurIdPostReal = groupConfigs[0][connectConfigMap[connId].grpDest].gStartN + neurIdPost;
+	int neurIdPreReal = groupConfigs[netId][lGrpId].lStartN + neurIdPre;
+	int neurIdPostReal = groupConfigs[netId][lGrpId].lStartN + neurIdPost;
 
 	// iterate over all presynaptic synapses until right one is found
 	bool synapseFound = false;
 	int pos_ij = managerRuntimeData.cumulativePre[neurIdPostReal];
-	for (int j=0; j<managerRuntimeData.Npre[neurIdPostReal]; pos_ij++, j++) {
+	for (int j = 0; j < managerRuntimeData.Npre[neurIdPostReal]; pos_ij++, j++) {
 		SynInfo* preId = &(managerRuntimeData.preSynapticIds[pos_ij]);
 		int pre_nid = GET_CONN_NEURON_ID((*preId));
-		if (GET_CONN_NEURON_ID((*preId))==neurIdPreReal) {
-			assert(managerRuntimeData.connIdsPreIdx[pos_ij]==connId); // make sure we've got the right connection ID
+		if (GET_CONN_NEURON_ID((*preId)) == neurIdPreReal) {
+			assert(managerRuntimeData.connIdsPreIdx[pos_ij] == connId); // make sure we've got the right connection ID
 
-			managerRuntimeData.wt[pos_ij] = isExcitatoryGroup(connectConfigMap[connId].grpSrc) ? weight : -1.0*weight;
-			managerRuntimeData.maxSynWt[pos_ij] = isExcitatoryGroup(connectConfigMap[connId].grpSrc) ? maxWt : -1.0*maxWt;
+			managerRuntimeData.wt[pos_ij] = isExcitatoryGroup(connectConfigMap[connId].grpSrc) ? weight : -1.0 * weight;
+			managerRuntimeData.maxSynWt[pos_ij] = isExcitatoryGroup(connectConfigMap[connId].grpSrc) ? maxWt : -1.0 * maxWt;
 
 			if (simMode_==GPU_MODE) {
-				// need to update datastructures on GPU
-				CUDA_CHECK_ERRORS( cudaMemcpy(&(gpuRuntimeData[0].wt[pos_ij]), &(managerRuntimeData.wt[pos_ij]), sizeof(float), cudaMemcpyHostToDevice));
-				if (gpuRuntimeData[0].maxSynWt!=NULL) {
-					// only copy maxSynWt if datastructure actually exists on the GPU
+				// need to update datastructures on GPU runtime
+				CUDA_CHECK_ERRORS(cudaMemcpy(&gpuRuntimeData[netId].wt[pos_ij], &managerRuntimeData.wt[pos_ij], sizeof(float), cudaMemcpyHostToDevice));
+				if (gpuRuntimeData[netId].maxSynWt != NULL) {
+					// only copy maxSynWt if datastructure actually exists on the GPU runtime
 					// (that logic should be done elsewhere though)
-					CUDA_CHECK_ERRORS( cudaMemcpy(&(gpuRuntimeData[0].maxSynWt[pos_ij]), &(managerRuntimeData.maxSynWt[pos_ij]), sizeof(float), cudaMemcpyHostToDevice));
+					CUDA_CHECK_ERRORS(cudaMemcpy(&gpuRuntimeData[netId].maxSynWt[pos_ij], &managerRuntimeData.maxSynWt[pos_ij], sizeof(float), cudaMemcpyHostToDevice));
+				}
+			} else {
+				// need to update datastructures on CPU runtime
+				memcpy(&cpuRuntimeData[netId].wt[pos_ij], &managerRuntimeData.wt[pos_ij], sizeof(float));
+				if (cpuRuntimeData[netId].maxSynWt != NULL) {
+					// only copy maxSynWt if datastructure actually exists on the CPU runtime
+					// (that logic should be done elsewhere though)
+					memcpy(&cpuRuntimeData[netId].maxSynWt[pos_ij], &managerRuntimeData.maxSynWt[pos_ij], sizeof(float));
 				}
 			}
 
@@ -1577,33 +1622,37 @@ GroupNeuromodulatorInfo SNN::getGroupNeuromodulatorInfo(int grpId) {
 
 // FIXME: distinguish the function call at CONFIG_STATE, SETUP_STATE, EXE_STATE, where groupConfigs[0][] might not be available
 // or groupConfigMap is not sync with groupConfigs[0][]
-Point3D SNN::getNeuronLocation3D(int neurId) {
-	assert(neurId >= 0 && neurId < glbNetworkConfig.numN);
-	int grpId = managerRuntimeData.grpIds[neurId];
-	assert(neurId>=groupConfigMDMap[grpId].gStartN && neurId<=groupConfigMDMap[grpId].gEndN);
+Point3D SNN::getNeuronLocation3D(int gNId) {
+	int gGrpId = -1;
+	assert(gNId >= 0 && gNId < glbNetworkConfig.numN);
+	
+	// search for global group id
+	for (std::map<int, GroupConfigMD>::iterator grpIt = groupConfigMDMap.begin(); grpIt != groupConfigMDMap.end(); grpIt++) {
+		if (gNId >= grpIt->second.gStartN && gNId <= grpIt->second.gEndN)
+			gGrpId = grpIt->second.gGrpId;
+	}
 
 	// adjust neurId for neuron ID of first neuron in the group
-	neurId -= groupConfigMDMap[grpId].gStartN;
+	int neurId = gNId - groupConfigMDMap[gGrpId].gStartN;
 
-	return getNeuronLocation3D(grpId, neurId);
+	return getNeuronLocation3D(gGrpId, neurId);
 }
 
 // FIXME: distinguish the function call at CONFIG_STATE and SETUP_STATE, EXE_STATE, where groupConfigs[0][] might not be available
 // or groupConfigMap is not sync with groupConfigs[0][]
 Point3D SNN::getNeuronLocation3D(int gGrpId, int relNeurId) {
+	Grid3D grid = groupConfigMap[gGrpId].grid;
 	assert(gGrpId >= 0 && gGrpId < numGroups);
 	assert(relNeurId >= 0 && relNeurId < getGroupNumNeurons(gGrpId));
 
-	// coordinates are in x e[-SizeX/2,SizeX/2], y e[-SizeY/2,SizeY/2], z e[-SizeZ/2,SizeZ/2]
-	// instead of x e[0,SizeX], etc.
-	int intX = relNeurId % groupConfigMap[gGrpId].grid.numX;
-	int intY = (relNeurId / groupConfigMap[gGrpId].grid.numX) % groupConfigMap[gGrpId].grid.numY;
-	int intZ = relNeurId / (groupConfigMap[gGrpId].grid.numX * groupConfigMap[gGrpId].grid.numY);
+	int intX = relNeurId % grid.numX;
+	int intY = (relNeurId / grid.numX) % grid.numY;
+	int intZ = relNeurId / (grid.numX * grid.numY);
 
-	// so subtract SizeX/2, etc. to get coordinates center around origin
-	double coordX = 1.0 * intX - (groupConfigMap[gGrpId].grid.numX-1)/2.0;
-	double coordY = 1.0 * intY - (groupConfigMap[gGrpId].grid.numY-1)/2.0;
-	double coordZ = 1.0 * intZ - (groupConfigMap[gGrpId].grid.numZ-1)/2.0;
+	// get coordinates center around origin
+	double coordX = grid.distX * intX + grid.offsetX;
+	double coordY = grid.distY * intY + grid.offsetY;
+	double coordZ = grid.distZ * intZ + grid.offsetZ;
 	return Point3D(coordX, coordY, coordZ);
 }
 
@@ -2501,7 +2550,7 @@ void SNN::collectGlobalNetworkConfig() {
 		if (connIt->second.maxDelay > glbNetworkConfig.maxDelay)
 			glbNetworkConfig.maxDelay = connIt->second.maxDelay;
 	}
-	assert(glbNetworkConfig.maxDelay != -1);
+	assert(connectConfigMap.size() > 0 || glbNetworkConfig.maxDelay != -1);
 
 	// scan all group configs to find the number of (reg, pois, exc, inh) neuron in the global network
 	for(int gGrpId = 0; gGrpId < numGroups; gGrpId++) {
@@ -3461,6 +3510,21 @@ void SNN::fetchLastSpikeTime(int netId) {
 	else
 		copyLastSpikeTime(netId);
 }
+
+void SNN::fetchPreConnectionInfo(int netId) {
+	if (simMode_ == GPU_MODE)
+		copyPreConnectionInfo(netId, ALL, &managerRuntimeData, &gpuRuntimeData[netId], cudaMemcpyDeviceToHost, false);
+	else
+		copyPreConnectionInfo(netId, ALL, &managerRuntimeData, &cpuRuntimeData[netId], false);
+}
+
+void SNN::fetchSynapseState(int netId) {
+	if (simMode_ == GPU_MODE)
+		copySynapseState(netId, &managerRuntimeData, &gpuRuntimeData[netId], cudaMemcpyDeviceToHost, false);
+	else
+		copySynapseState(netId, &managerRuntimeData, &cpuRuntimeData[netId], false);
+}
+
 
 /*!
 * \brief This function fetch the spike count in all local networks and sum the up

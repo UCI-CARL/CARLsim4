@@ -67,12 +67,12 @@ TEST(CORE, getNeuronLocation3D) {
 	for (int grp=0; grp<=1; grp++) {
 		// do for both spike gen and RS group
 
-		int x=0,y=0,z=0;
-		for (int neurId=grp*grid.N; neurId<(grp+1)*grid.N; neurId++) {
+		int x = 0,y = 0, z = 0;
+		for (int neurId = grp * grid.N; neurId < (grp + 1) * grid.N; neurId++) {
 			Point3D loc = sim->getNeuronLocation3D(neurId);
-			EXPECT_FLOAT_EQ(loc.x, x-(grid.numX-1)/2.0f);
-			EXPECT_FLOAT_EQ(loc.y, y-(grid.numY-1)/2.0f);
-			EXPECT_FLOAT_EQ(loc.z, z-(grid.numZ-1)/2.0f);
+			EXPECT_FLOAT_EQ(loc.x, x * grid.distX + grid.offsetX);
+			EXPECT_FLOAT_EQ(loc.y, y * grid.distY + grid.offsetY);
+			EXPECT_FLOAT_EQ(loc.z, z * grid.distZ + grid.offsetZ);
 
 			x++;
 			if (x==grid.numX) {
@@ -436,54 +436,30 @@ TEST(CORE, numNeurons) {
 	EXPECT_EQ(sim.getNumNeuronsGenExc(), 0);
 	EXPECT_EQ(sim.getNumNeuronsGenInh(), 0);
 
-	int nLoops = 4;
 	int nNeur = 10;
 
-	for (int i=0; i<nLoops; i++) {
-		sim.createGroup("regexc", nNeur, EXCITATORY_NEURON);
-		EXPECT_EQ(sim.getNumNeurons(), i*4*nNeur + nNeur);
-		EXPECT_EQ(sim.getNumNeuronsRegExc(), i*nNeur + nNeur);
-		EXPECT_EQ(sim.getNumNeuronsRegInh(), i*nNeur);
-		EXPECT_EQ(sim.getNumNeuronsGenExc(), i*nNeur);
-		EXPECT_EQ(sim.getNumNeuronsGenInh(), i*nNeur);
-		EXPECT_EQ(sim.getNumNeurons(), sim.getNumNeuronsRegExc() + sim.getNumNeuronsRegInh()
-			+ sim.getNumNeuronsGenExc() + sim.getNumNeuronsGenInh());
-		EXPECT_EQ(sim.getNumNeuronsReg(), sim.getNumNeuronsRegExc() + sim.getNumNeuronsRegInh());
-		EXPECT_EQ(sim.getNumNeuronsGen(), sim.getNumNeuronsGenExc() + sim.getNumNeuronsGenInh());
+	int g1 = sim.createGroup("regexc", nNeur, EXCITATORY_NEURON);
+	int g2 = sim.createGroup("reginh", nNeur, INHIBITORY_NEURON);
+	int g3 = sim.createSpikeGeneratorGroup("genexc", nNeur, EXCITATORY_NEURON);
+	int g4 = sim.createSpikeGeneratorGroup("geninh", nNeur, INHIBITORY_NEURON);
+	sim.setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f); // RS
+	sim.setNeuronParameters(g2, 0.1f, 0.2f, -65.0f, 2.0f); // FS
 
-		sim.createGroup("reginh", nNeur, INHIBITORY_NEURON);
-		EXPECT_EQ(sim.getNumNeurons(), i*4*nNeur + 2*nNeur);
-		EXPECT_EQ(sim.getNumNeuronsRegExc(), i*nNeur + nNeur);
-		EXPECT_EQ(sim.getNumNeuronsRegInh(), i*nNeur + nNeur);
-		EXPECT_EQ(sim.getNumNeuronsGenExc(), i*nNeur);
-		EXPECT_EQ(sim.getNumNeuronsGenInh(), i*nNeur);
-		EXPECT_EQ(sim.getNumNeurons(), sim.getNumNeuronsRegExc() + sim.getNumNeuronsRegInh()
-			+ sim.getNumNeuronsGenExc() + sim.getNumNeuronsGenInh());
-		EXPECT_EQ(sim.getNumNeuronsReg(), sim.getNumNeuronsRegExc() + sim.getNumNeuronsRegInh());
-		EXPECT_EQ(sim.getNumNeuronsGen(), sim.getNumNeuronsGenExc() + sim.getNumNeuronsGenInh());
+	sim.connect(g1, g2, "full", RangeWeight(0.5f), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
+	sim.connect(g3, g1, "full", RangeWeight(0.5f), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
+	sim.connect(g4, g1, "full", RangeWeight(0.5f), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
 
-		sim.createSpikeGeneratorGroup("genexc", nNeur, EXCITATORY_NEURON);
-		EXPECT_EQ(sim.getNumNeurons(), i*4*nNeur + 3*nNeur);
-		EXPECT_EQ(sim.getNumNeuronsRegExc(), i*nNeur + nNeur);
-		EXPECT_EQ(sim.getNumNeuronsRegInh(), i*nNeur + nNeur);
-		EXPECT_EQ(sim.getNumNeuronsGenExc(), i*nNeur + nNeur);
-		EXPECT_EQ(sim.getNumNeuronsGenInh(), i*nNeur);
-		EXPECT_EQ(sim.getNumNeurons(), sim.getNumNeuronsRegExc() + sim.getNumNeuronsRegInh()
-			+ sim.getNumNeuronsGenExc() + sim.getNumNeuronsGenInh());
-		EXPECT_EQ(sim.getNumNeuronsReg(), sim.getNumNeuronsRegExc() + sim.getNumNeuronsRegInh());
-		EXPECT_EQ(sim.getNumNeuronsGen(), sim.getNumNeuronsGenExc() + sim.getNumNeuronsGenInh());
+	sim.setupNetwork();
 
-		sim.createSpikeGeneratorGroup("geninh", nNeur, INHIBITORY_NEURON);
-		EXPECT_EQ(sim.getNumNeurons(), i*4*nNeur + 4*nNeur);
-		EXPECT_EQ(sim.getNumNeuronsRegExc(), i*nNeur + nNeur);
-		EXPECT_EQ(sim.getNumNeuronsRegInh(), i*nNeur + nNeur);
-		EXPECT_EQ(sim.getNumNeuronsGenExc(), i*nNeur + nNeur);
-		EXPECT_EQ(sim.getNumNeuronsGenInh(), i*nNeur + nNeur);
-		EXPECT_EQ(sim.getNumNeurons(), sim.getNumNeuronsRegExc() + sim.getNumNeuronsRegInh()
-			+ sim.getNumNeuronsGenExc() + sim.getNumNeuronsGenInh());
-		EXPECT_EQ(sim.getNumNeuronsReg(), sim.getNumNeuronsRegExc() + sim.getNumNeuronsRegInh());
-		EXPECT_EQ(sim.getNumNeuronsGen(), sim.getNumNeuronsGenExc() + sim.getNumNeuronsGenInh());
-	}
+	EXPECT_EQ(sim.getNumNeurons(), 4*nNeur);
+	EXPECT_EQ(sim.getNumNeuronsRegExc(), nNeur);
+	EXPECT_EQ(sim.getNumNeuronsRegInh(), nNeur);
+	EXPECT_EQ(sim.getNumNeuronsGenExc(), nNeur);
+	EXPECT_EQ(sim.getNumNeuronsGenInh(), nNeur);
+	EXPECT_EQ(sim.getNumNeurons(), sim.getNumNeuronsRegExc() + sim.getNumNeuronsRegInh()
+		+ sim.getNumNeuronsGenExc() + sim.getNumNeuronsGenInh());
+	EXPECT_EQ(sim.getNumNeuronsReg(), sim.getNumNeuronsRegExc() + sim.getNumNeuronsRegInh());
+	EXPECT_EQ(sim.getNumNeuronsGen(), sim.getNumNeuronsGenExc() + sim.getNumNeuronsGenInh());
 }
 
 TEST(CORE, startStopTestingPhase) {

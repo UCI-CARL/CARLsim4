@@ -26,15 +26,15 @@
     <ClCompile Include="src\user_errors.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="include\callback.h" />
-    <ClInclude Include="include\callback_core.h" />
-    <ClInclude Include="include\carlsim.h" />
-    <ClInclude Include="include\carlsim_datastructures.h" />
-    <ClInclude Include="include\carlsim_definitions.h" />
-    <ClInclude Include="include\carlsim_log_definitions.h" />
-    <ClInclude Include="include\linear_algebra.h" />
-    <ClInclude Include="include\poisson_rate.h" />
-    <ClInclude Include="include\user_errors.h" />
+    <ClInclude Include="inc\callback.h" />
+    <ClInclude Include="inc\callback_core.h" />
+    <ClInclude Include="inc\carlsim.h" />
+    <ClInclude Include="inc\carlsim_datastructures.h" />
+    <ClInclude Include="inc\carlsim_definitions.h" />
+    <ClInclude Include="inc\carlsim_log_definitions.h" />
+    <ClInclude Include="inc\linear_algebra.h" />
+    <ClInclude Include="inc\poisson_rate.h" />
+    <ClInclude Include="inc\user_errors.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{FBD68119-1A8C-4A1A-96CE-522B651209BC}</ProjectGuid>

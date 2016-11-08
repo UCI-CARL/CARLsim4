@@ -811,8 +811,8 @@ private:
 	void copyNeuronState(int netId, int lGrpId, RuntimeData* dest, bool allocateMem);
 	void copyNeuronSpikeCount(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind, bool allocateMem, int destOffset);
 	void copyNeuronSpikeCount(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, bool allocateMem, int destOffset);
-	void copySynapseState(int netId, RuntimeData* dest, cudaMemcpyKind kind, bool allocateMem);
-	void copySynapseState(int netId, RuntimeData* dest, bool allocateMem);
+	void copySynapseState(int netId, RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind, bool allocateMem);
+	void copySynapseState(int netId, RuntimeData* dest, RuntimeData* src, bool allocateMem);
 	void copySTPState(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind, bool allocateMem);
 	void copySTPState(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, bool allocateMem);
 	//void copyWeightsGPU(int nid, int src_grp);
@@ -860,6 +860,9 @@ private:
 	void fetchGrpIdsLookupArray(int netId);
 	void fetchConnIdsLookupArray(int netId);
 	void fetchLastSpikeTime(int netId);
+	void fetchPreConnectionInfo(int netId);
+	// void fetchPostConnectionInfo(int netId);
+	void fetchSynapseState(int netId);
 
 	void globalStateUpdate_GPU();
 	void initGPU(int netId);

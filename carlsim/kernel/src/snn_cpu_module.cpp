@@ -1019,7 +1019,7 @@ void SNN::allocateSNN_CPU(int netId) {
 	//previous=avail;
 	
 	// initialize (copy from SNN) cpuRuntimeData[0].wt, cpuRuntimeData[0].wtChange, cpuRuntimeData[0].maxSynWt
-	copySynapseState(netId, &cpuRuntimeData[netId], true);
+	copySynapseState(netId, &cpuRuntimeData[netId], &managerRuntimeData, true);
 	//KERNEL_INFO("Syn State:\t\t%2.3f MB\t%2.3f MB\t%2.3f MB",(float)(previous-avail)/toMB,(float)((total-avail)/toMB), (float)(avail/toMB));
 	//previous=avail;
 	
@@ -1246,18 +1246,19 @@ void SNN::copyPostConnectionInfo(int netId, int lGrpId, RuntimeData* dest, Runti
  *
  * \param[in] netId the id of a local network, which is the same as the Core (CPU) id
  * \param[in] dest pointer to runtime data desitnation
+ * \param[in] src pointer to runtime data source
  * \param[in] allocateMem a flag indicates whether allocating memory space before copying
  *
  * \sa allocateSNN_CPU
  * \since v4.0
  */
-void SNN::copySynapseState(int netId, RuntimeData* dest, bool allocateMem) {
+void SNN::copySynapseState(int netId, RuntimeData* dest, RuntimeData* src, bool allocateMem) {
 	assert(networkConfigs[netId].numPreSynNet > 0);
 
 	// synaptic information based
 	if(allocateMem)
 		dest->wt = new float[networkConfigs[netId].numPreSynNet];
-	memcpy(dest->wt, managerRuntimeData.wt, sizeof(float) * networkConfigs[netId].numPreSynNet);
+	memcpy(dest->wt, src->wt, sizeof(float) * networkConfigs[netId].numPreSynNet);
 
 	// we don't need these data structures if the network doesn't have any plastic synapses at all
 	// they show up in updateLTP() and updateSynapticWeights(), two functions that do not get called if
@@ -1266,12 +1267,12 @@ void SNN::copySynapseState(int netId, RuntimeData* dest, bool allocateMem) {
 		// synaptic weight derivative
 		if(allocateMem)
 			dest->wtChange = new float[networkConfigs[netId].numPreSynNet];
-		memcpy(dest->wtChange, managerRuntimeData.wtChange, sizeof(float) * networkConfigs[netId].numPreSynNet);
+		memcpy(dest->wtChange, src->wtChange, sizeof(float) * networkConfigs[netId].numPreSynNet);
 
 		// synaptic weight maximum value
 		if(allocateMem)
 			dest->maxSynWt = new float[networkConfigs[netId].numPreSynNet];
-		memcpy(dest->maxSynWt, managerRuntimeData.maxSynWt, sizeof(float) * networkConfigs[netId].numPreSynNet);
+		memcpy(dest->maxSynWt, src->maxSynWt, sizeof(float) * networkConfigs[netId].numPreSynNet);
 	}
 }
 
