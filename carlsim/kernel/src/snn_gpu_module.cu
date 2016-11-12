@@ -41,6 +41,7 @@
  */
 
 #include <snn.h>
+#include <spike_buffer.h>
 #include <error_code.h>
 #include <cuda_runtime.h>
 
@@ -1952,7 +1953,9 @@ void SNN::copyNeuronState(int netId, int lGrpId, RuntimeData* dest, cudaMemcpyKi
 	}
 
 	assert(length <= networkConfigs[netId].numNReg);
-	assert(length >= 0);
+	
+	if (length == 0)
+		return;
 
 	if(!allocateMem && groupConfigs[netId][lGrpId].Type & POISSON_NEURON)
 		return;
@@ -2568,6 +2571,9 @@ void SNN::spikeGeneratorUpdate_GPU() {
 			}
 		}
 	}
+
+	// tell the spike buffer to advance to the next time step
+	spikeBuf->step();
 }
 
 void SNN::findFiring_GPU() {

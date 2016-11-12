@@ -295,10 +295,106 @@ TEST(STDP, DASTDPWeightBoost) {
 			}
 
 			EXPECT_TRUE(weightDAMod >= weightNonDAMod);
+			printf("mode:%d coba:%d Non-DA w:%f DA w:%f\n", mode, coba, weightNonDAMod, weightDAMod);
 		}
 	}
 
 	delete iSpikeGen;
+}
+
+/*!
+* \brief testing the exponential E-STDP curve
+* This function tests whether E-STDP change synaptic weight as expected
+* Wtih control of pre- and post-neurons' spikes, the synaptic weights of CPU and GPU mode are expected
+* to be the same
+*/
+TEST(STDP, ESTDPExpCurveCPUvsGPU) {
+	// simulation details
+	int size;
+	int gex1, gex2, g1;
+	float ALPHA_LTP = 0.10f;
+	float ALPHA_LTD = -0.14f;
+	float TAU_LTP = 20.0f;
+	float TAU_LTD = 20.0f;
+	float maxInhWeight = 10.0f;
+	float initWeight = 5.0f;
+	float minInhWeight = 0.0f;
+	float cpuWeight, gpuWeight;
+
+	for (int coba = 0; coba < 2; coba++) {
+		for (int offset = -30; offset <= 30; offset += 5) {
+			
+			for (int mode = 0; mode < 2; mode++) {
+				if (offset == 0) continue; // skip offset == 0;
+										   // create a network
+				CARLsim* sim = new CARLsim("STDP.ESTDPExpCurve", mode ? GPU_MODE : CPU_MODE, SILENT, 1, 42);
+
+				g1 = sim->createGroup("excit", 1, EXCITATORY_NEURON, 0);
+				sim->setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f);
+
+				gex1 = sim->createSpikeGeneratorGroup("input-ex1", 1, EXCITATORY_NEURON, 0);
+				gex2 = sim->createSpikeGeneratorGroup("input-ex2", 1, EXCITATORY_NEURON, 0);
+
+				PrePostGroupSpikeGenerator* prePostSpikeGen = new PrePostGroupSpikeGenerator(100, offset, gex2, gex1);
+
+				if (coba) { // conductance-based
+					sim->connect(gex1, g1, "one-to-one", RangeWeight(40.0f / 100), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
+					sim->connect(gex2, g1, "one-to-one", RangeWeight(minInhWeight, initWeight / 100, maxInhWeight / 100), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_PLASTIC);
+
+					// enable COBA, set up ESTDP
+					sim->setConductances(true, 5, 150, 6, 150);
+					sim->setESTDP(g1, true, STANDARD, ExpCurve(ALPHA_LTP / 100, TAU_LTP, ALPHA_LTD / 100, TAU_LTP));
+				}
+				else { // current-based
+					sim->connect(gex1, g1, "one-to-one", RangeWeight(40.0f), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
+					sim->connect(gex2, g1, "one-to-one", RangeWeight(minInhWeight, initWeight, maxInhWeight), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_PLASTIC);
+
+					// set up ESTDP
+					sim->setConductances(false);
+					sim->setESTDP(g1, true, STANDARD, ExpCurve(ALPHA_LTP, TAU_LTP, ALPHA_LTD, TAU_LTP));
+				}
+
+				// set up spike controller on DA neurons
+				sim->setSpikeGenerator(gex1, prePostSpikeGen);
+				sim->setSpikeGenerator(gex2, prePostSpikeGen);
+
+				// build the network
+				sim->setupNetwork();
+
+				ConnectionMonitor* CM = sim->setConnectionMonitor(gex2, g1, "NULL");
+				CM->setUpdateTimeIntervalSec(-1);
+				SpikeMonitor* SMgex1 = sim->setSpikeMonitor(gex1, "Default");
+				SpikeMonitor* SMgex2 = sim->setSpikeMonitor(gex2, "Default");
+				SpikeMonitor* SMg1 = sim->setSpikeMonitor(g1, "Default");
+
+				//SMgex1->startRecording();
+				//SMgex2->startRecording();
+				//SMg1->startRecording();
+
+				sim->runNetwork(1, 0, false);
+
+				//SMgex1->stopRecording();
+				//SMgex2->stopRecording();
+				//SMg1->stopRecording();
+
+				//SMgex1->print(true);
+				//SMgex2->print(true);
+				//SMg1->print(true);
+
+				std::vector<std::vector<float> > weights = CM->takeSnapshot();
+				if (mode == 0)
+					cpuWeight = weights[0][0];
+				else
+					gpuWeight = weights[0][0];
+
+				delete prePostSpikeGen;
+				delete sim;
+			}
+
+			EXPECT_NEAR(cpuWeight / gpuWeight, 1.0f, 0.000001f);
+			printf("coba:%d offset:%d cpu/gpu ratio:%f\n", coba, offset, cpuWeight / gpuWeight);
+		}
+	}
 }
 
 /*!
@@ -309,7 +405,6 @@ TEST(STDP, DASTDPWeightBoost) {
  */
 TEST(STDP, ESTDPExpCurve) {
 	// simulation details
-	float* weights = NULL;
 	int size;
 	int gex1, gex2, g1;
 	float ALPHA_LTP = 0.10f;
@@ -327,11 +422,11 @@ TEST(STDP, ESTDPExpCurve) {
 				// create a network
 				CARLsim* sim = new CARLsim("STDP.ESTDPExpCurve", mode?GPU_MODE:CPU_MODE, SILENT, 1, 42);
 
-				g1 = sim->createGroup("excit", 1, EXCITATORY_NEURON);
+				g1 = sim->createGroup("excit", 1, EXCITATORY_NEURON, 0);
 				sim->setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f);
 
-				gex1 = sim->createSpikeGeneratorGroup("input-ex1", 1, EXCITATORY_NEURON);
-				gex2 = sim->createSpikeGeneratorGroup("input-ex2", 1, EXCITATORY_NEURON);
+				gex1 = sim->createSpikeGeneratorGroup("input-ex1", 1, EXCITATORY_NEURON, 0);
+				gex2 = sim->createSpikeGeneratorGroup("input-ex2", 1, EXCITATORY_NEURON, 0);
 
 				PrePostGroupSpikeGenerator* prePostSpikeGen = new PrePostGroupSpikeGenerator(100, offset, gex2, gex1);
 
@@ -359,27 +454,127 @@ TEST(STDP, ESTDPExpCurve) {
 				sim->setupNetwork();
 
 				ConnectionMonitor* CM = sim->setConnectionMonitor(gex2, g1, "NULL");
+				CM->setUpdateTimeIntervalSec(-1);
+				SpikeMonitor* SMgex1 = sim->setSpikeMonitor(gex1, "Default");
+				SpikeMonitor* SMgex2 = sim->setSpikeMonitor(gex2, "Default");
+				SpikeMonitor* SMg1 = sim->setSpikeMonitor(g1, "Default");
+
+				//SMgex1->startRecording();
+				//SMgex2->startRecording();
+				//SMg1->startRecording();
 
 				sim->runNetwork(55, 0, false);
 
-				std::vector< std::vector<float> > weights = CM->takeSnapshot();
+				//SMgex1->stopRecording();
+				//SMgex2->stopRecording();
+				//SMg1->stopRecording();
+
+				//SMgex1->print(true);
+				//SMgex2->print(true);
+				//SMg1->print(true);
+
+				std::vector<std::vector<float> > weights = CM->takeSnapshot();
 				if (offset > 0) { // pre-post
 					if (coba) {
 						EXPECT_NEAR(maxInhWeight/100, weights[0][0], 0.005f);
+						//printf("mode:%d coba:%d offset:%d w:%f\n", mode, coba, offset, weights[0][0]);
 					} else {
 						EXPECT_NEAR(maxInhWeight, weights[0][0], 0.5f);
+						//printf("mode:%d coba:%d offset:%d w:%f\n", mode, coba, offset, weights[0][0]);
 					}
 				} else { // post-pre
 					if (coba) {
 						EXPECT_NEAR(minInhWeight/100, weights[0][0], 0.005f);
+						//printf("mode:%d coba:%d offset:%d w:%f\n", mode, coba, offset, weights[0][0]);
 					} else {
 						EXPECT_NEAR(minInhWeight, weights[0][0], 0.5f);
+						//printf("mode:%d coba:%d offset:%d w:%f\n", mode, coba, offset, weights[0][0]);
 					}
 				}
 
 				delete prePostSpikeGen;
 				delete sim;
 			}
+		}
+	}
+}
+
+/*!
+* \brief testing the timing-based E-STDP curve
+* This function tests whether E-STDP change synaptic weight as expected
+* Wtih control of pre- and post-neurons' spikes, the synaptic weights of CPU and GPU mode are expected
+* to be the same
+*/
+TEST(STDP, ESTDPTimingBasedCurveCPUvsGPU) {
+	// simulation details
+	int size;
+	int gex1, gex2, g1;
+	float ALPHA_LTP = 0.10f;
+	float ALPHA_LTD = -0.14f;
+	float TAU_LTP = 20.0f;
+	float TAU_LTD = 20.0f;
+	float GAMMA = 20.0f;
+	float maxInhWeight = 10.0f;
+	float initWeight = 5.0f;
+	float minInhWeight = 0.0f;
+	float cpuWeight, gpuWeight;
+	
+	for (int coba = 0; coba < 2; coba++) {
+		for (int offset = -24; offset <= 24; offset += 3) {
+			for (int mode = 0; mode < 2; mode++) {
+				if (offset == 0) continue; // skip offset == 0;
+				// create a network
+				CARLsim* sim = new CARLsim("STDP.ESTDTimingBasedCurve", mode ? GPU_MODE : CPU_MODE, SILENT, 1, 42);
+
+				g1 = sim->createGroup("excit", 1, EXCITATORY_NEURON, 0);
+				sim->setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f);
+
+				gex1 = sim->createSpikeGeneratorGroup("input-ex1", 1, EXCITATORY_NEURON, 0);
+				gex2 = sim->createSpikeGeneratorGroup("input-ex2", 1, EXCITATORY_NEURON, 0);
+
+				PrePostGroupSpikeGenerator* prePostSpikeGen = new PrePostGroupSpikeGenerator(100, offset, gex2, gex1);
+
+				if (coba) { // conductance-based
+					sim->connect(gex1, g1, "one-to-one", RangeWeight(40.0f / 100), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
+					sim->connect(gex2, g1, "one-to-one", RangeWeight(minInhWeight, initWeight / 100, maxInhWeight / 100), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_PLASTIC);
+
+					// enable COBA, set up ESTDP
+					sim->setConductances(true, 5, 150, 6, 150);
+					sim->setESTDP(g1, true, STANDARD, TimingBasedCurve(ALPHA_LTP / 100, TAU_LTP, ALPHA_LTD / 100, TAU_LTP, GAMMA));
+				}
+				else { // current-based
+					sim->connect(gex1, g1, "one-to-one", RangeWeight(40.0f), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
+					sim->connect(gex2, g1, "one-to-one", RangeWeight(minInhWeight, initWeight, maxInhWeight), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_PLASTIC);
+
+					// set up ESTDP
+					sim->setConductances(false, 0, 0, 0, 0);
+					sim->setESTDP(g1, true, STANDARD, TimingBasedCurve(ALPHA_LTP, TAU_LTP, ALPHA_LTD, TAU_LTP, GAMMA));
+				}
+
+				sim->setSpikeGenerator(gex1, prePostSpikeGen);
+				sim->setSpikeGenerator(gex2, prePostSpikeGen);
+
+				// build the network
+				sim->setupNetwork();
+
+				ConnectionMonitor* CM = sim->setConnectionMonitor(gex2, g1, "NULL");
+				CM->setUpdateTimeIntervalSec(-1);
+
+				sim->runNetwork(1, 0, false);
+
+				std::vector< std::vector<float> > weights = CM->takeSnapshot();
+
+				if (mode == 0)
+					cpuWeight = weights[0][0];
+				else
+					gpuWeight = weights[0][0];
+
+				delete prePostSpikeGen;
+				delete sim;
+			}
+
+			EXPECT_NEAR(cpuWeight / gpuWeight, 1.0f, 0.000001f);
+			printf("coba:%d offset:%d cpu/gpu ratio:%f\n", coba, offset, cpuWeight / gpuWeight);
 		}
 	}
 }
@@ -392,7 +587,6 @@ TEST(STDP, ESTDPExpCurve) {
  */
 TEST(STDP, ESTDPTimingBasedCurve) {
 	// simulation details
-	float* weights = NULL;
 	int size;
 	int gex1, gex2, g1;
 	float ALPHA_LTP = 0.10f;
@@ -411,13 +605,13 @@ TEST(STDP, ESTDPTimingBasedCurve) {
 				// create a network
 				CARLsim* sim = new CARLsim("STDP.ESTDTimingBasedCurve", mode?GPU_MODE:CPU_MODE, SILENT, 1, 42);
 
-				g1 = sim->createGroup("excit", 1, EXCITATORY_NEURON);
+				g1 = sim->createGroup("excit", 1, EXCITATORY_NEURON, 0);
 				sim->setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f);
 
-				gex1 = sim->createSpikeGeneratorGroup("input-ex1", 1, EXCITATORY_NEURON);
-				gex2 = sim->createSpikeGeneratorGroup("input-ex2", 1, EXCITATORY_NEURON);
+				gex1 = sim->createSpikeGeneratorGroup("input-ex1", 1, EXCITATORY_NEURON, 0);	
+				gex2 = sim->createSpikeGeneratorGroup("input-ex2", 1, EXCITATORY_NEURON, 0);
 
-				PrePostGroupSpikeGenerator* proPostSpikeGen = new PrePostGroupSpikeGenerator(100, offset, gex2, gex1);
+				PrePostGroupSpikeGenerator* prePostSpikeGen = new PrePostGroupSpikeGenerator(100, offset, gex2, gex1);
 
 				if (coba) { // conductance-based
 					sim->connect(gex1, g1, "one-to-one", RangeWeight(40.0f/100), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
@@ -435,40 +629,146 @@ TEST(STDP, ESTDPTimingBasedCurve) {
 					sim->setESTDP(g1, true, STANDARD, TimingBasedCurve(ALPHA_LTP, TAU_LTP, ALPHA_LTD, TAU_LTP, GAMMA));
 				}
 
-				sim->setSpikeGenerator(gex1, proPostSpikeGen);
-				sim->setSpikeGenerator(gex2, proPostSpikeGen);
+				sim->setSpikeGenerator(gex1, prePostSpikeGen);
+				sim->setSpikeGenerator(gex2, prePostSpikeGen);
 
 				// build the network
 				sim->setupNetwork();
 
 				ConnectionMonitor* CM = sim->setConnectionMonitor(gex2, g1, "NULL");
+				CM->setUpdateTimeIntervalSec(-1);
 
 				sim->runNetwork(75, 0, false);
 
 				std::vector< std::vector<float> > weights = CM->takeSnapshot();
 				if (offset > 0) { // pre-post
 					if (coba) {
-						if (offset == 3 || offset == 6)
-							EXPECT_NEAR(maxInhWeight/100, weights[0][0], 0.005f);
-						else
-							EXPECT_NEAR(minInhWeight/100, weights[0][0], 0.005f);
+						if (offset == 3 || offset == 6) {
+							EXPECT_NEAR(maxInhWeight / 100, weights[0][0], 0.005f);
+							//printf("mode:%d coba:%d offset:%d w:%f\n", mode, coba, offset, weights[0][0]);
+						} else {
+							EXPECT_NEAR(minInhWeight / 100, weights[0][0], 0.005f);
+							//printf("mode:%d coba:%d offset:%d w:%f\n", mode, coba, offset, weights[0][0]);
+						}
 					} else {
-						if (offset == 3 || offset == 6 || offset == 9)
+						if (offset == 3 || offset == 6 || offset == 9) {
 							EXPECT_NEAR(maxInhWeight, weights[0][0], 0.5f);
-						else
+							//printf("mode:%d coba:%d offset:%d w:%f\n", mode, coba, offset, weights[0][0]);
+						} else {
 							EXPECT_NEAR(minInhWeight, weights[0][0], 0.5f);
+							//printf("mode:%d coba:%d offset:%d w:%f\n", mode, coba, offset, weights[0][0]);
+						}
 					}
 				} else { // post-pre
 					if (coba) {
 						EXPECT_NEAR(minInhWeight/100, weights[0][0], 0.005f);
+						//printf("mode:%d coba:%d offset:%d w:%f\n", mode, coba, offset, weights[0][0]);
 					} else {
 						EXPECT_NEAR(minInhWeight, weights[0][0], 0.5f);
+						//printf("mode:%d coba:%d offset:%d w:%f\n", mode, coba, offset, weights[0][0]);
 					}
 				}
 
-				delete proPostSpikeGen;
+				delete prePostSpikeGen;
 				delete sim;
 			}
+		}
+	}
+}
+
+/*!
+* \brief testing the pulse I-STDP curve
+* This function tests whether I-STDP change synaptic weight as expected
+* Wtih control of pre- and post-neurons' spikes, the synaptic weights of CPU and GPU mode are expected
+* to be the same
+*/
+TEST(STDP, ISTDPPulseCurveCPUvsGPU) {
+	// simulation details
+	int size;
+	int gin, gex, g1;
+	float BETA_LTP = 0.10f;
+	float BETA_LTD = -0.14f;
+	float LAMBDA = 9.0f;
+	float DELTA = 40.0f;
+	float maxInhWeight = 10.0f;
+	float initWeight = 5.0f;
+	float minInhWeight = 0.0f;
+	float cpuWeight, gpuWeight;
+
+	for (int coba = 0; coba < 2; coba++) {
+		for (int offset = -15; offset <= 15; offset += 10) {
+			for (int mode = 0; mode < 2; mode++) {
+				//int mode = 1;
+				//int coba = 0;
+				//int offset = -15;
+				// create a network
+				CARLsim* sim = new CARLsim("STDP.ISTDPPulseCurve", mode ? GPU_MODE : CPU_MODE, SILENT, 1, 42);
+
+				g1 = sim->createGroup("excit", 1, EXCITATORY_NEURON, 0);
+				sim->setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f);
+
+				gex = sim->createSpikeGeneratorGroup("input-ex", 1, EXCITATORY_NEURON, 0);
+				gin = sim->createSpikeGeneratorGroup("input-in", 1, INHIBITORY_NEURON, 0);
+
+				PrePostGroupSpikeGenerator* prePostSpikeGen = new PrePostGroupSpikeGenerator(100, offset, gin, gex);
+
+				if (coba) { // conductance-based
+					sim->connect(gex, g1, "one-to-one", RangeWeight(40.0f / 100), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
+					sim->connect(gin, g1, "one-to-one", RangeWeight(minInhWeight, initWeight / 100, maxInhWeight / 100), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_PLASTIC);
+
+					// enable COBA, set up ISTDP
+					sim->setConductances(true, 5, 150, 6, 150);
+					sim->setISTDP(g1, true, STANDARD, PulseCurve(BETA_LTP / 100, BETA_LTD / 100, LAMBDA, DELTA));
+				}
+				else { // current-based
+					sim->connect(gex, g1, "one-to-one", RangeWeight(40.0f), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
+					sim->connect(gin, g1, "one-to-one", RangeWeight(minInhWeight, initWeight, maxInhWeight), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_PLASTIC);
+
+					// set up ISTDP
+					sim->setConductances(false, 0, 0, 0, 0);
+					sim->setISTDP(g1, true, STANDARD, PulseCurve(BETA_LTP, BETA_LTD, LAMBDA, DELTA));
+				}
+
+				sim->setSpikeGenerator(gex, prePostSpikeGen);
+				sim->setSpikeGenerator(gin, prePostSpikeGen);
+
+				// build the network
+				sim->setupNetwork();
+
+				ConnectionMonitor* CM = sim->setConnectionMonitor(gin, g1, "NULL");
+				CM->setUpdateTimeIntervalSec(-1);
+
+				SpikeMonitor* SMg1 = sim->setSpikeMonitor(g1, "Default");
+				SpikeMonitor* SMgin = sim->setSpikeMonitor(gin, "Default");
+				SpikeMonitor* SMgex = sim->setSpikeMonitor(gex, "Default");
+
+				//SMg1->startRecording();
+				//SMgin->startRecording();
+				//SMgex->startRecording();
+
+				sim->runNetwork(1, 0, false);
+
+				//SMg1->stopRecording();
+				//SMgin->stopRecording();
+				//SMgex->stopRecording();
+
+				//SMgin->print(true);
+				//SMgex->print(true);
+				//SMg1->print(true);
+
+				std::vector< std::vector<float> > weights = CM->takeSnapshot();
+
+				if (mode == 0)
+					cpuWeight = weights[0][0];
+				else
+					gpuWeight = weights[0][0];
+
+				delete prePostSpikeGen;
+				delete sim;
+			}
+
+			EXPECT_NEAR(cpuWeight / gpuWeight, 1.0f, 0.000001f);
+			printf("coba:%d offset:%d cpu/gpu ratio:%f\n", coba, offset, cpuWeight / gpuWeight);
 		}
 	}
 }
@@ -481,7 +781,6 @@ TEST(STDP, ESTDPTimingBasedCurve) {
  */
 TEST(STDP, ISTDPPulseCurve) {
 	// simulation details
-	float* weights = NULL;
 	int size;
 	int gin, gex, g1;
 	float BETA_LTP = 0.10f;
@@ -495,16 +794,19 @@ TEST(STDP, ISTDPPulseCurve) {
 	for (int mode = 0; mode < 2; mode++) {
 		for (int coba = 0; coba < 2; coba++) {
 			for (int offset = -15; offset <= 15; offset += 10) {
+	//int mode = 1;
+	//int coba = 0;
+	//int offset = -15;
 				// create a network
 				CARLsim* sim = new CARLsim("STDP.ISTDPPulseCurve", mode?GPU_MODE:CPU_MODE, SILENT, 1, 42);
 
-				g1 = sim->createGroup("excit", 1, EXCITATORY_NEURON);
+				g1 = sim->createGroup("excit", 1, EXCITATORY_NEURON, 0);
 				sim->setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f);
 
-				gex = sim->createSpikeGeneratorGroup("input-ex", 1, EXCITATORY_NEURON);
-				gin = sim->createSpikeGeneratorGroup("input-in", 1, INHIBITORY_NEURON);
+				gex = sim->createSpikeGeneratorGroup("input-ex", 1, EXCITATORY_NEURON, 0);
+				gin = sim->createSpikeGeneratorGroup("input-in", 1, INHIBITORY_NEURON, 0);
 
-				PrePostGroupSpikeGenerator* proPostSpikeGen = new PrePostGroupSpikeGenerator(100, offset, gin, gex);
+				PrePostGroupSpikeGenerator* prePostSpikeGen = new PrePostGroupSpikeGenerator(100, offset, gin, gex);
 
 				if (coba) { // conductance-based
 					sim->connect(gex, g1, "one-to-one", RangeWeight(40.0f/100), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
@@ -522,37 +824,54 @@ TEST(STDP, ISTDPPulseCurve) {
 					sim->setISTDP(g1, true, STANDARD, PulseCurve(BETA_LTP, BETA_LTD, LAMBDA, DELTA));
 				}
 
-				sim->setSpikeGenerator(gex, proPostSpikeGen);
-				sim->setSpikeGenerator(gin, proPostSpikeGen);
+				sim->setSpikeGenerator(gex, prePostSpikeGen);
+				sim->setSpikeGenerator(gin, prePostSpikeGen);
 
 				// build the network
 				sim->setupNetwork();
 
 				ConnectionMonitor* CM = sim->setConnectionMonitor(gin, g1, "NULL");
+				CM->setUpdateTimeIntervalSec(-1);
 
-				sim->setSpikeMonitor(g1, "Default");
-				sim->setSpikeMonitor(gin, "Default");
-				sim->setSpikeMonitor(gex, "Default");
+				SpikeMonitor* SMg1 = sim->setSpikeMonitor(g1, "Default");
+				SpikeMonitor* SMgin = sim->setSpikeMonitor(gin, "Default");
+				SpikeMonitor* SMgex = sim->setSpikeMonitor(gex, "Default");
+
+				//SMg1->startRecording();
+				//SMgin->startRecording();
+				//SMgex->startRecording();
 
 				// run for 20 seconds
 				sim->runNetwork(20,0, false);
+
+				//SMg1->stopRecording();
+				//SMgin->stopRecording();
+				//SMgex->stopRecording();
+
+				//SMgin->print(true);
+				//SMgex->print(true);
+				//SMg1->print(true);
 
 				std::vector< std::vector<float> > weights = CM->takeSnapshot();
 				if (offset == -5 || offset == 5) { // I-STDP LTP
 					if (coba) {
 						EXPECT_NEAR(maxInhWeight/100, weights[0][0], 0.005f);
+						//printf("mode:%d coba:%d offset:%d w:%f\n", mode, coba, offset, weights[0][0]);
 					} else {
 						EXPECT_NEAR(maxInhWeight, weights[0][0], 0.5f);
+						//printf("mode:%d coba:%d offset:%d w:%f\n", mode, coba, offset, weights[0][0]);
 					}
 				} else { // I-STDP LTD
 					if (coba) {
 						EXPECT_NEAR(minInhWeight/100, weights[0][0], 0.005f);
+						//printf("mode:%d coba:%d offset:%d w:%f\n", mode, coba, offset, weights[0][0]);
 					} else {
 						EXPECT_NEAR(minInhWeight, weights[0][0], 0.5f);
+						//printf("mode:%d coba:%d offset:%d w:%f\n", mode, coba, offset, weights[0][0]);
 					}
 				}
 
-				delete proPostSpikeGen;
+				delete prePostSpikeGen;
 				delete sim;
 			}
 		}

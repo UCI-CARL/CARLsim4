@@ -44,7 +44,7 @@
 
 int main(int argc, const char* argv[]) {
 	// ---------------- CONFIG STATE -------------------
-	CARLsim sim("spnet", CPU_MODE, USER, 2, 42);
+	CARLsim sim("spnet", GPU_MODE, USER, 2, 42);
 
 	int nNeur = 1000;			// number of neurons
 	int nNeurExc = 0.8*nNeur;	// number of excitatory neurons
@@ -87,8 +87,8 @@ int main(int argc, const char* argv[]) {
 
 	SpikeMonitor* SMexc = sim.setSpikeMonitor(gExc, "DEFAULT");
 	SpikeMonitor* SMinh = sim.setSpikeMonitor(gInh, "DEFAULT");
-	sim.setConnectionMonitor(gExc, gExc, "DEFAULT");
-	sim.setConnectionMonitor(gInh, gExc, "DEFAULT");
+	ConnectionMonitor* CMee = sim.setConnectionMonitor(gExc, gExc, "DEFAULT");
+	ConnectionMonitor* CMei = sim.setConnectionMonitor(gInh, gExc, "DEFAULT");
 
 	// ---------------- RUN STATE -------------------
 	SMexc->startRecording();
@@ -119,6 +119,9 @@ int main(int argc, const char* argv[]) {
 	// print firing stats (but not the exact spike times)
 	SMexc->print(false);
 	SMinh->print(false);
+
+	CMee->printSparse();
+	CMei->printSparse();
 
 	return 0;
 }

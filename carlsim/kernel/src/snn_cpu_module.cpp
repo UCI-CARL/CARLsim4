@@ -103,6 +103,9 @@ void SNN::spikeGeneratorUpdate() {
 			}
 		}
 	}
+
+	// tell the spike buffer to advance to the next time step
+	spikeBuf->step();
 }
 
 void SNN::updateTimingTable() {
@@ -1305,7 +1308,9 @@ void SNN::copyNeuronState(int netId, int lGrpId, RuntimeData* dest, bool allocat
 	}
 
 	assert(length <= networkConfigs[netId].numNReg);
-	assert(length >= 0);
+	
+	if (length == 0)
+		return;
 
 	if(!allocateMem && groupConfigs[netId][lGrpId].Type & POISSON_NEURON)
 		return;

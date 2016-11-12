@@ -1576,46 +1576,47 @@ std::string SNN::getGroupName(int gGrpId) {
 	return groupConfigMap[gGrpId].grpName;
 }
 
-// FIXME: wrong to use groupConfig[0]
-GroupSTDPInfo SNN::getGroupSTDPInfo(int grpId) {
+GroupSTDPInfo SNN::getGroupSTDPInfo(int gGrpId) {
 	GroupSTDPInfo gInfo;
 
-	gInfo.WithSTDP = groupConfigs[0][grpId].WithSTDP;
-	gInfo.WithESTDP = groupConfigs[0][grpId].WithESTDP;
-	gInfo.WithISTDP = groupConfigs[0][grpId].WithISTDP;
-	gInfo.WithESTDPtype = groupConfigs[0][grpId].WithESTDPtype;
-	gInfo.WithISTDPtype = groupConfigs[0][grpId].WithISTDPtype;
-	gInfo.WithESTDPcurve = groupConfigs[0][grpId].WithESTDPcurve;
-	gInfo.WithISTDPcurve = groupConfigs[0][grpId].WithISTDPcurve;
-	gInfo.ALPHA_MINUS_EXC = groupConfigs[0][grpId].ALPHA_MINUS_EXC;
-	gInfo.ALPHA_PLUS_EXC = groupConfigs[0][grpId].ALPHA_PLUS_EXC;
-	gInfo.TAU_MINUS_INV_EXC = groupConfigs[0][grpId].TAU_MINUS_INV_EXC;
-	gInfo.TAU_PLUS_INV_EXC = groupConfigs[0][grpId].TAU_PLUS_INV_EXC;
-	gInfo.ALPHA_MINUS_INB = groupConfigs[0][grpId].ALPHA_MINUS_INB;
-	gInfo.ALPHA_PLUS_INB = groupConfigs[0][grpId].ALPHA_PLUS_INB;
-	gInfo.TAU_MINUS_INV_INB = groupConfigs[0][grpId].TAU_MINUS_INV_INB;
-	gInfo.TAU_PLUS_INV_INB = groupConfigs[0][grpId].TAU_PLUS_INV_INB;
-	gInfo.GAMMA = groupConfigs[0][grpId].GAMMA;
-	gInfo.BETA_LTP = groupConfigs[0][grpId].BETA_LTP;
-	gInfo.BETA_LTD = groupConfigs[0][grpId].BETA_LTD;
-	gInfo.LAMBDA = groupConfigs[0][grpId].LAMBDA;
-	gInfo.DELTA = groupConfigs[0][grpId].DELTA;
+
+
+	gInfo.WithSTDP = groupConfigMap[gGrpId].stdpConfig.WithSTDP;
+	gInfo.WithESTDP = groupConfigMap[gGrpId].stdpConfig.WithESTDP;
+	gInfo.WithISTDP = groupConfigMap[gGrpId].stdpConfig.WithISTDP;
+	gInfo.WithESTDPtype = groupConfigMap[gGrpId].stdpConfig.WithESTDPtype;
+	gInfo.WithISTDPtype = groupConfigMap[gGrpId].stdpConfig.WithISTDPtype;
+	gInfo.WithESTDPcurve = groupConfigMap[gGrpId].stdpConfig.WithESTDPcurve;
+	gInfo.WithISTDPcurve = groupConfigMap[gGrpId].stdpConfig.WithISTDPcurve;
+	gInfo.ALPHA_MINUS_EXC = groupConfigMap[gGrpId].stdpConfig.ALPHA_MINUS_EXC;
+	gInfo.ALPHA_PLUS_EXC = groupConfigMap[gGrpId].stdpConfig.ALPHA_PLUS_EXC;
+	gInfo.TAU_MINUS_INV_EXC = groupConfigMap[gGrpId].stdpConfig.TAU_MINUS_INV_EXC;
+	gInfo.TAU_PLUS_INV_EXC = groupConfigMap[gGrpId].stdpConfig.TAU_PLUS_INV_EXC;
+	gInfo.ALPHA_MINUS_INB = groupConfigMap[gGrpId].stdpConfig.ALPHA_MINUS_INB;
+	gInfo.ALPHA_PLUS_INB = groupConfigMap[gGrpId].stdpConfig.ALPHA_PLUS_INB;
+	gInfo.TAU_MINUS_INV_INB = groupConfigMap[gGrpId].stdpConfig.TAU_MINUS_INV_INB;
+	gInfo.TAU_PLUS_INV_INB = groupConfigMap[gGrpId].stdpConfig.TAU_PLUS_INV_INB;
+	gInfo.GAMMA = groupConfigMap[gGrpId].stdpConfig.GAMMA;
+	gInfo.BETA_LTP = groupConfigMap[gGrpId].stdpConfig.BETA_LTP;
+	gInfo.BETA_LTD = groupConfigMap[gGrpId].stdpConfig.BETA_LTD;
+	gInfo.LAMBDA = groupConfigMap[gGrpId].stdpConfig.LAMBDA;
+	gInfo.DELTA = groupConfigMap[gGrpId].stdpConfig.DELTA;
 
 	return gInfo;
 }
 
 // FIXME: wrong to use groupConfig[0]
-GroupNeuromodulatorInfo SNN::getGroupNeuromodulatorInfo(int grpId) {
+GroupNeuromodulatorInfo SNN::getGroupNeuromodulatorInfo(int gGrpId) {
 	GroupNeuromodulatorInfo gInfo;
 
-	gInfo.baseDP = groupConfigs[0][grpId].baseDP;
-	gInfo.base5HT = groupConfigs[0][grpId].base5HT;
-	gInfo.baseACh = groupConfigs[0][grpId].baseACh;
-	gInfo.baseNE = groupConfigs[0][grpId].baseNE;
-	gInfo.decayDP = groupConfigs[0][grpId].decayDP;
-	gInfo.decay5HT = groupConfigs[0][grpId].decay5HT;
-	gInfo.decayACh = groupConfigs[0][grpId].decayACh;
-	gInfo.decayNE = groupConfigs[0][grpId].decayNE;
+	gInfo.baseDP = groupConfigMap[gGrpId].neuromodulatorConfig.baseDP;
+	gInfo.base5HT = groupConfigMap[gGrpId].neuromodulatorConfig.base5HT;
+	gInfo.baseACh = groupConfigMap[gGrpId].neuromodulatorConfig.baseACh;
+	gInfo.baseNE = groupConfigMap[gGrpId].neuromodulatorConfig.baseNE;
+	gInfo.decayDP = groupConfigMap[gGrpId].neuromodulatorConfig.decayDP;
+	gInfo.decay5HT = groupConfigMap[gGrpId].neuromodulatorConfig.decay5HT;
+	gInfo.decayACh = groupConfigMap[gGrpId].neuromodulatorConfig.decayACh;
+	gInfo.decayNE = groupConfigMap[gGrpId].neuromodulatorConfig.decayNE;
 
 	return gInfo;
 }
@@ -2491,7 +2492,7 @@ void SNN::generateConnectionRuntime(int netId) {
 			*/
 		}
 	}
-	assert(connectionLists[0].empty());
+	assert(connectionLists[netId].empty());
 
 	//int p = managerRuntimeData.Npost[src];
 
@@ -4601,24 +4602,23 @@ void SNN::fillSpikeGenBits(int netId) {
 	for (spikeBufIter = spikeBuf->front(); spikeBufIter != spikeBufIterEnd; ++spikeBufIter) {
 		// get the global neuron id and group id for this particular spike
 		int gGrpId = spikeBufIter->grpId;
-		int lGrpId = groupConfigMDMap[gGrpId].lGrpId;
-		int lNId = spikeBufIter->neurId /* gNId */ + groupConfigMDMap[gGrpId].GtoLOffset;
-		
 
-		// add spike to spikeGentBit
-		assert(groupConfigMap[gGrpId].isSpikeGenerator == true);
+		if (groupConfigMDMap[gGrpId].netId == netId) {
+			int lGrpId = groupConfigMDMap[gGrpId].lGrpId;
+			int lNId = spikeBufIter->neurId /* gNId */ + groupConfigMDMap[gGrpId].GtoLOffset;
 
-		int nIdPos    = (lNId - groupConfigs[netId][lGrpId].lStartN + groupConfigs[netId][lGrpId].Noffset);
-		int nIdBitPos = nIdPos % 32;
-		int nIdIndex  = nIdPos / 32;
+			// add spike to spikeGentBit
+			assert(groupConfigMap[gGrpId].isSpikeGenerator == true);
 
-		assert(nIdIndex < (networkConfigs[netId].numNSpikeGen / 32 + 1));
+			int nIdPos = (lNId - groupConfigs[netId][lGrpId].lStartN + groupConfigs[netId][lGrpId].Noffset);
+			int nIdBitPos = nIdPos % 32;
+			int nIdIndex = nIdPos / 32;
 
-		managerRuntimeData.spikeGenBits[nIdIndex] |= (1 << nIdBitPos);
+			assert(nIdIndex < (networkConfigs[netId].numNSpikeGen / 32 + 1));
+
+			managerRuntimeData.spikeGenBits[nIdIndex] |= (1 << nIdBitPos);
+		}
 	}
-
-	// tell the spike buffer to advance to the next time step
-	spikeBuf->step();
 }
 
 void SNN::startCPUTiming() { prevCpuExecutionTime = cumExecutionTime; }
