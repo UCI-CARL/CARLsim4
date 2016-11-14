@@ -449,14 +449,24 @@ void SNN::setNeuronParameters(int gGrpId, float izh_a, float izh_a_sd, float izh
 void SNN::setNeuromodulator(int gGrpId, float baseDP, float tauDP, float base5HT, float tau5HT, float baseACh,
 	float tauACh, float baseNE, float tauNE) {
 
-	groupConfigMap[gGrpId].neuromodulatorConfig.baseDP = baseDP;
-	groupConfigMap[gGrpId].neuromodulatorConfig.decayDP = 1.0f - (1.0f / tauDP);
-	groupConfigMap[gGrpId].neuromodulatorConfig.base5HT = base5HT;
-	groupConfigMap[gGrpId].neuromodulatorConfig.decay5HT = 1.0f - (1.0f / tau5HT);
-	groupConfigMap[gGrpId].neuromodulatorConfig.baseACh = baseACh;
-	groupConfigMap[gGrpId].neuromodulatorConfig.decayACh = 1.0f - (1.0f / tauACh);
-	groupConfigMap[gGrpId].neuromodulatorConfig.baseNE = baseNE;
-	groupConfigMap[gGrpId].neuromodulatorConfig.decayNE = 1.0f - (1.0f / tauNE);
+	assert(gGrpId >= -1);
+	assert(baseDP > 0.0f); assert(base5HT > 0.0f); assert(baseACh > 0.0f); assert(baseNE > 0.0f);
+	assert(tauDP > 0); assert(tau5HT > 0); assert(tauACh > 0); assert(tauNE > 0);
+
+	if (gGrpId == ALL) { // shortcut for all groups
+		for (int grpId = 0; grpId < numGroups; grpId++) {
+			setNeuromodulator(grpId, baseDP, tauDP, base5HT, tau5HT, baseACh, tauACh, baseNE, tauNE);
+		}
+	} else {
+		groupConfigMap[gGrpId].neuromodulatorConfig.baseDP = baseDP;
+		groupConfigMap[gGrpId].neuromodulatorConfig.decayDP = 1.0f - (1.0f / tauDP);
+		groupConfigMap[gGrpId].neuromodulatorConfig.base5HT = base5HT;
+		groupConfigMap[gGrpId].neuromodulatorConfig.decay5HT = 1.0f - (1.0f / tau5HT);
+		groupConfigMap[gGrpId].neuromodulatorConfig.baseACh = baseACh;
+		groupConfigMap[gGrpId].neuromodulatorConfig.decayACh = 1.0f - (1.0f / tauACh);
+		groupConfigMap[gGrpId].neuromodulatorConfig.baseNE = baseNE;
+		groupConfigMap[gGrpId].neuromodulatorConfig.decayNE = 1.0f - (1.0f / tauNE);
+	}
 }
 
 // set ESTDP params

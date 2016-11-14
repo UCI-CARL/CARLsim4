@@ -213,7 +213,7 @@ TEST(STDP, DASTDPWeightBoost) {
 	for (int mode = 0; mode < 2; mode++) {
 		for (int coba = 0; coba < 2; coba++) {
 			for (int damod = 0; damod < 2; damod++) {
-				CARLsim* sim = new CARLsim("STDP.DASTDPWeightBoost", mode?GPU_MODE:CPU_MODE, SILENT, 1, 42);
+				CARLsim* sim = new CARLsim("STDP.DASTDPWeightBoost", mode?GPU_MODE:CPU_MODE, SILENT, 1, 43);
 
 				g1 = sim->createGroup("post-ex", 1, EXCITATORY_NEURON);
 				sim->setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f);
@@ -237,6 +237,8 @@ TEST(STDP, DASTDPWeightBoost) {
 					sim->setSTDP(g1, true, DA_MOD, alphaPlus, tauPlus, alphaMinus, tauMinus);
 					sim->setConductances(false);
 				}
+
+				sim->setNeuromodulator(ALL);
 
 				sim->setWeightAndWeightChangeUpdate(INTERVAL_10MS, true, 0.99f);
 
@@ -275,11 +277,14 @@ TEST(STDP, DASTDPWeightBoost) {
 							// if LTP is detected, set up reward (activate DA neurons ) to reinforcement this synapse
 							if (diff > 0 && diff <= 20) {
 								//printf("LTP\n");
-								if (damod) iSpikeGen->setQuotaAll(1);
+								if (damod) {
+									iSpikeGen->setQuotaAll(1);
+									//printf("release DA\n");
+								}
 							}
 
 							//if (diff < 0 && diff >= -20)
-							//printf("LTD\n");
+							//	printf("LTD\n");
 						}
 					}
 				}

@@ -89,13 +89,19 @@ int main(int argc, const char* argv[]) {
 
 	SpikeMonitor* SMexc = sim.setSpikeMonitor(gExc, "DEFAULT");
 	SpikeMonitor* SMinh = sim.setSpikeMonitor(gInh, "DEFAULT");
-	sim.setConnectionMonitor(gExc, gExc, "DEFAULT");
-	sim.setConnectionMonitor(gInh, gExc, "DEFAULT");
+	ConnectionMonitor* CMee = sim.setConnectionMonitor(gExc, gExc, "DEFAULT");
+	ConnectionMonitor* CMie =sim.setConnectionMonitor(gInh, gExc, "DEFAULT");
+
+	CMee->setUpdateTimeIntervalSec(-1);
+	CMie->setUpdateTimeIntervalSec(-1);
 
 	// ---------------- RUN STATE -------------------
 	SMexc->startRecording();
 	SMinh->startRecording();
-	for (int t = 0; t < 50; t++) {
+	CMee->takeSnapshot();
+	CMie->takeSnapshot();
+
+	for (int t = 0; t < 5000; t++) {
 		// random thalamic input to a single neuron from either gExc or gInh
 		std::vector<float> thalamCurrExc(nNeurExc, 0.0f);
 		std::vector<float> thalamCurrInh(nNeurInh, 0.0f);
@@ -117,33 +123,37 @@ int main(int argc, const char* argv[]) {
 	}
 	SMexc->stopRecording();
 	SMinh->stopRecording();
+	CMee->takeSnapshot();
+	CMie->takeSnapshot();
 
-	std::vector<std::vector<int>> exeSpikes = SMexc->getSpikeVector2D();
-	std::vector<std::vector<int>> inhSpikes = SMinh->getSpikeVector2D();
+	//std::vector<std::vector<int>> exeSpikes = SMexc->getSpikeVector2D();
+	//std::vector<std::vector<int>> inhSpikes = SMinh->getSpikeVector2D();
 
-	for (int nid = 0; nid < nNeurExc; nid++)
-	{
-		if (!exeSpikes[nid].empty()) {
-			printf("[NId:%d]", nid);
-			for (std::vector<int>::iterator it = exeSpikes[nid].begin(); it != exeSpikes[nid].end(); it++)
-				printf(" %d", *it);
-			printf("\n");
-		}
-	}
+	//for (int nid = 0; nid < nNeurExc; nid++)
+	//{
+	//	if (!exeSpikes[nid].empty()) {
+	//		printf("[NId:%d]", nid);
+	//		for (std::vector<int>::iterator it = exeSpikes[nid].begin(); it != exeSpikes[nid].end(); it++)
+	//			printf(" %d", *it);
+	//		printf("\n");
+	//	}
+	//}
 
-	for (int nid = 0; nid < nNeurInh; nid++)
-	{
-		if (!inhSpikes[nid].empty()) {
-			printf("[NId:%d]", nid);
-			for (std::vector<int>::iterator it = inhSpikes[nid].begin(); it != inhSpikes[nid].end(); it++)
-				printf(" %d ", *it);
-			printf("\n");
-		}
-	}
+	//for (int nid = 0; nid < nNeurInh; nid++)
+	//{
+	//	if (!inhSpikes[nid].empty()) {
+	//		printf("[NId:%d]", nid);
+	//		for (std::vector<int>::iterator it = inhSpikes[nid].begin(); it != inhSpikes[nid].end(); it++)
+	//			printf(" %d ", *it);
+	//		printf("\n");
+	//	}
+	//}
 
 	// print firing stats (but not the exact spike times)
 	SMexc->print(false);
 	SMinh->print(false);
+	CMee->printSparse();
+	CMie->printSparse();
 
 	return 0;
 }

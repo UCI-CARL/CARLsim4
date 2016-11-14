@@ -163,7 +163,8 @@ TEST(GroupMon, peakTimeAndValue) {
 	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
 	// loop over both CPU and GPU mode.
-	for(int mode = 0; mode < 2; mode++) {
+	//for(int mode = 0; mode < 2; mode++) {
+	int mode = 0;
 		// first iteration, test CPU mode, second test GPU mode
 		CARLsim* sim = new CARLsim("GroupMon.peakTimeAndValue", mode?GPU_MODE:CPU_MODE, SILENT, 1, 42);
 		//CARLsim* sim = new CARLsim("GroupMon.peakTimeAndValue", CPU_MODE, SILENT, 1, 42);
@@ -178,6 +179,8 @@ TEST(GroupMon, peakTimeAndValue) {
 		sim->connect(g0, g1, "one-to-one", RangeWeight(1.0f), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_PLASTIC);
 
 		sim->setESTDP(g1, true, DA_MOD, ExpCurve(0.1f/100, 20, -0.12f/100, 20));
+
+		sim->setNeuromodulator(ALL);
 
 		// use periodic spike generator to know the exact dopamine delivery
 		PeriodicSpikeGenerator* spkGen = new PeriodicSpikeGenerator(10, false);
@@ -196,6 +199,7 @@ TEST(GroupMon, peakTimeAndValue) {
 		std::vector<int> timeVector = groupMon->getPeakTimeVector();
 		for (int i = 0; i < timeVector.size(); i++) {
 			EXPECT_EQ(timeVector[i], (i+1) * 100); // the peaks shoul be at 100, 200, 300 ... ,900 (ms)
+			//printf("peak time:%d %d\n", timeVector[i], (i + 1) * 100);
 		}
 
 		// compare all group data and to analytic solution
@@ -212,9 +216,10 @@ TEST(GroupMon, peakTimeAndValue) {
 
 			//printf("(%d,%f,%f)", t, dataVector[t], da);
 			EXPECT_NEAR(dataVector[t], da, 0.02f);
+			//printf("DA value: %f %f\n", dataVector[t], da);
 		}
 
 		delete spkGen;
 		delete sim;
-	}
+	//}
 }
