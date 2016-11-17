@@ -117,7 +117,7 @@ int main() {
 	//smInput->startRecording();
 	
 
-	sim.runNetwork(2, 0);
+	sim.runNetwork(10, 0);
 	
 	//smInput->stopRecording();
 	//smExc->stopRecording();

@@ -316,7 +316,7 @@ void ConnectionMonitorCore::printSparse(int neurPostId, int maxConn, int connPer
 	int postA, postZ;
 	if (neurPostId==ALL) {
 		postA = 0;
-		postZ = nNeurPost_;
+		postZ = nNeurPost_ - 1;
 	} else {
 		postA = neurPostId;
 		postZ = neurPostId;
@@ -331,7 +331,7 @@ void ConnectionMonitorCore::printSparse(int neurPostId, int maxConn, int connPer
 	int nConn = 0;
 	int maxIntDigits = ceil(log10((double)std::max(nNeurPre_,nNeurPost_)));
 	for (int i=0; i<nNeurPre_; i++) {
-		for (int j=postA; j<postZ; j++) {
+		for (int j = postA; j <= postZ; j++) {
 			// display only so many connections
 			if (nConn>=maxConn)
 				break;
