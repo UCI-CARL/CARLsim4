@@ -213,7 +213,7 @@ TEST(STDP, DASTDPWeightBoost) {
 	for (int mode = 0; mode < 2; mode++) {
 		for (int coba = 0; coba < 2; coba++) {
 			for (int damod = 0; damod < 2; damod++) {
-				CARLsim* sim = new CARLsim("STDP.DASTDPWeightBoost", mode?GPU_MODE:CPU_MODE, SILENT, 1, 43);
+				CARLsim* sim = new CARLsim("STDP.DASTDPWeightBoost", mode?GPU_MODE:CPU_MODE, SILENT, 1, 42);
 
 				g1 = sim->createGroup("post-ex", 1, EXCITATORY_NEURON);
 				sim->setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f);
@@ -300,7 +300,7 @@ TEST(STDP, DASTDPWeightBoost) {
 			}
 
 			EXPECT_TRUE(weightDAMod >= weightNonDAMod);
-			printf("mode:%d coba:%d Non-DA w:%f DA w:%f\n", mode, coba, weightNonDAMod, weightDAMod);
+			//printf("mode:%d coba:%d Non-DA w:%f DA w:%f\n", mode, coba, weightNonDAMod, weightDAMod);
 		}
 	}
 
@@ -397,7 +397,7 @@ TEST(STDP, ESTDPExpCurveCPUvsGPU) {
 			}
 
 			EXPECT_NEAR(cpuWeight / gpuWeight, 1.0f, 0.000001f);
-			printf("coba:%d offset:%d cpu/gpu ratio:%f\n", coba, offset, cpuWeight / gpuWeight);
+			//printf("coba:%d offset:%d cpu/gpu ratio:%f\n", coba, offset, cpuWeight / gpuWeight);
 		}
 	}
 }
@@ -579,7 +579,7 @@ TEST(STDP, ESTDPTimingBasedCurveCPUvsGPU) {
 			}
 
 			EXPECT_NEAR(cpuWeight / gpuWeight, 1.0f, 0.000001f);
-			printf("coba:%d offset:%d cpu/gpu ratio:%f\n", coba, offset, cpuWeight / gpuWeight);
+			//printf("coba:%d offset:%d cpu/gpu ratio:%f\n", coba, offset, cpuWeight / gpuWeight);
 		}
 	}
 }
@@ -703,9 +703,6 @@ TEST(STDP, ISTDPPulseCurveCPUvsGPU) {
 	for (int coba = 0; coba < 2; coba++) {
 		for (int offset = -15; offset <= 15; offset += 10) {
 			for (int mode = 0; mode < 2; mode++) {
-				//int mode = 1;
-				//int coba = 0;
-				//int offset = -15;
 				// create a network
 				CARLsim* sim = new CARLsim("STDP.ISTDPPulseCurve", mode ? GPU_MODE : CPU_MODE, SILENT, 1, 42);
 
@@ -773,7 +770,7 @@ TEST(STDP, ISTDPPulseCurveCPUvsGPU) {
 			}
 
 			EXPECT_NEAR(cpuWeight / gpuWeight, 1.0f, 0.000001f);
-			printf("coba:%d offset:%d cpu/gpu ratio:%f\n", coba, offset, cpuWeight / gpuWeight);
+			//printf("coba:%d offset:%d cpu/gpu ratio:%f\n", coba, offset, cpuWeight / gpuWeight);
 		}
 	}
 }
@@ -799,9 +796,6 @@ TEST(STDP, ISTDPulseCurve) {
 	for (int mode = 0; mode < 2; mode++) {
 		for (int coba = 0; coba < 2; coba++) {
 			for (int offset = -15; offset <= 15; offset += 10) {
-	//int mode = 1;
-	//int coba = 0;
-	//int offset = -15;
 				// create a network
 				CARLsim* sim = new CARLsim("STDP.ISTDPPulseCurve", mode?GPU_MODE:CPU_MODE, SILENT, 1, 42);
 
@@ -906,9 +900,6 @@ TEST(STDP, ISTDPExpCurveCPUvsGPU) {
 		for (int offset = -24; offset <= 24; offset += 3) {
 			if (offset == 0) continue; // skip offset == 0;
 			for (int mode = 0; mode < 2; mode++) {
-				//int mode = 0;
-				//int coba = 0;
-				//int offset = 15;
 				// create a network
 				CARLsim* sim = new CARLsim("STDP.ISTDPPulseCurve", mode ? GPU_MODE : CPU_MODE, SILENT, 1, 42);
 
@@ -1007,9 +998,6 @@ TEST(STDP, ISTDPExpCurve) {
 		for (int coba = 0; coba < 2; coba++) {
 			for (int offset = -24; offset <= 24; offset += 3) {
 				if (offset == 0) continue; // skip offset == 0;
-				//int mode = 1;
-				//int coba = 0;
-				//int offset = -15;
 				// create a network
 				CARLsim* sim = new CARLsim("STDP.ISTDPPulseCurve", mode ? GPU_MODE : CPU_MODE, SILENT, 1, 42);
 
