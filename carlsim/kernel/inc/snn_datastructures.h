@@ -189,8 +189,8 @@ typedef struct HomeostasisConfig_s {
 
 //!< neuromodulator configurations
 typedef struct NeuromodulatorConfig_s {
-	NeuromodulatorConfig_s() : baseDP(-1.0f), base5HT(-1.0f), baseACh(-1.0f), baseNE(-1.0f),
-							   decayDP(-1.0f), decay5HT(-1.0f), decayACh(-1.0f)
+	NeuromodulatorConfig_s() : baseDP(1.0f), base5HT(1.0f), baseACh(1.0f), baseNE(1.0f),
+							   decayDP(0.99f), decay5HT(0.99f), decayACh(0.99f), decayNE(0.99f)
 	{}
 
 	float baseDP;   //!< baseline concentration of Dopamine

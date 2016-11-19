@@ -44,7 +44,7 @@
 
 int main(int argc, const char* argv[]) {
 	// ---------------- CONFIG STATE -------------------
-	CARLsim sim("spnet", CPU_MODE, USER, 2, 42);
+	CARLsim sim("test kernel 3", CPU_MODE, USER, 2, 42);
 
 	int nNeur = 1000;			// number of neurons
 	int nNeurExc = 0.8*nNeur;	// number of excitatory neurons
@@ -101,7 +101,7 @@ int main(int argc, const char* argv[]) {
 	CMee->takeSnapshot();
 	CMie->takeSnapshot();
 
-	for (int t = 0; t < 5000; t++) {
+	for (int t = 0; t < 10000; t++) {
 		// random thalamic input to a single neuron from either gExc or gInh
 		std::vector<float> thalamCurrExc(nNeurExc, 0.0f);
 		std::vector<float> thalamCurrInh(nNeurInh, 0.0f);
