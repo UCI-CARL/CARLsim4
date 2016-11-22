@@ -320,10 +320,10 @@ void SNN::doCurrentUpdateD1(int netId) {
 			SynInfo postInfo = cpuRuntimeData[netId].postSynapticIds[offset + idx_d];
 
 			int postNId = GET_CONN_NEURON_ID(postInfo);
-			//assert(postNId < networkConfigs[netId].numN);
+			assert(postNId < networkConfigs[netId].numNAssigned);
 
 			int synId = GET_CONN_SYN_ID(postInfo);
-			//assert(synId < (cpuRuntimeData[netId].Npre[postNId]));
+			assert(synId < (cpuRuntimeData[netId].Npre[postNId]));
 
 			if (postNId < networkConfigs[netId].numN) // test if post-neuron is a local neuron
 				generatePostSynapticSpike(lNId /* preNId */, postNId, synId, 0, netId);
@@ -368,10 +368,10 @@ void SNN::doCurrentUpdateD2(int netId) {
 			SynInfo postInfo = cpuRuntimeData[netId].postSynapticIds[offset + idx_d];
 
 			int postNId = GET_CONN_NEURON_ID(postInfo);
-			//assert(postNId < networkConfigs[netId].numN);
+			assert(postNId < networkConfigs[netId].numNAssigned);
 
 			int synId = GET_CONN_SYN_ID(postInfo);
-			//assert(synId < (cpuRuntimeData[netId].Npre[postNId]));
+			assert(synId < (cpuRuntimeData[netId].Npre[postNId]));
 			
 			if (postNId < networkConfigs[netId].numN) // test if post-neuron is a local neuron
 				generatePostSynapticSpike(lNId /* preNId */, postNId, synId, tD, netId);
