@@ -269,7 +269,6 @@ void SNN::clearExtFiringTable() {
 // FIXME: make sure this is right when separating cpu_module to a standalone class
 // FIXME: currently this function clear nSpikeCnt of manager runtime data
 void SNN::resetSpikeCnt(int gGrpId) {
-	memset(managerRuntimeData.nSpikeCnt, 0, sizeof(int) * managerRTDSize.maxNumN);
 	assert(gGrpId >= ALL); // ALL == -1
 
 	if (gGrpId == ALL) {

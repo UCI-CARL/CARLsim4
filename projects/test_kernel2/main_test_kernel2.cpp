@@ -51,7 +51,7 @@ int main() {
 	int numGPUs = 2;
 	int randSeed = 42;
 	float pConn = 100.0f / (N_EXC + N_INH); // connection probability
-	CARLsim sim("test kernel 2", GPU_MODE, USER, numGPUs, randSeed);
+	CARLsim sim("test kernel 2", CPU_MODE, USER, numGPUs, randSeed);
 
 	// configure the network
 	int gExc = sim.createGroup("exc", N_EXC, EXCITATORY_NEURON, 0);

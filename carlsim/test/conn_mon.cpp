@@ -44,9 +44,9 @@ TEST(setConnMon, interfaceDeath) {
 		// first iteration, test CPU mode, second test GPU mode
 		sim = new CARLsim("ConnMon.setConnectionMonitorDeath",mode?GPU_MODE:CPU_MODE,SILENT,1,42);
 
-		int g0 = sim->createGroup("g0", GRP_SIZE, EXCITATORY_NEURON);
-		int g1 = sim->createGroup("g1", GRP_SIZE, EXCITATORY_NEURON);
-		int g2 = sim->createGroup("g2", GRP_SIZE, EXCITATORY_NEURON);
+		int g0 = sim->createGroup("g0", GRP_SIZE, EXCITATORY_NEURON, 0);
+		int g1 = sim->createGroup("g1", GRP_SIZE, EXCITATORY_NEURON, 0);
+		int g2 = sim->createGroup("g2", GRP_SIZE, EXCITATORY_NEURON, 0);
 		sim->setNeuronParameters(g0, 0.02f, 0.2f, -65.0f, 8.0f);
 		sim->setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f);
 		sim->setNeuronParameters(g2, 0.02f, 0.2f, -65.0f, 8.0f);
@@ -94,8 +94,8 @@ TEST(setConnMon, fname) {
 		// first iteration, test CPU mode, second test GPU mode
 		sim = new CARLsim("setConnMon.fname",mode?GPU_MODE:CPU_MODE,SILENT,1,42);
 
-		int g1 = sim->createGroup("g1", GRP_SIZE, EXCITATORY_NEURON);
-		int g2 = sim->createGroup("g2", GRP_SIZE, EXCITATORY_NEURON);
+		int g1 = sim->createGroup("g1", GRP_SIZE, EXCITATORY_NEURON, 0);
+		int g2 = sim->createGroup("g2", GRP_SIZE, EXCITATORY_NEURON, 0);
 		sim->setNeuronParameters(g1, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f);
 		sim->setNeuronParameters(g2, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f);
 
@@ -126,10 +126,10 @@ TEST(ConnMon, getters) {
 	// loop over both CPU and GPU mode.
 	for(int mode=0; mode<=1; mode++){
 		// first iteration, test CPU mode, second test GPU mode
-		sim = new CARLsim("ConnMon.setConnectionMonitorDeath",mode?GPU_MODE:CPU_MODE,SILENT,1,42);
+		sim = new CARLsim("ConnMon.setConnectionMonitorDeath",mode?GPU_MODE:CPU_MODE,USER,1,42);
 
-		grpId[0] = sim->createGroup("g0", grpSize[0], EXCITATORY_NEURON);
-		grpId[1] = sim->createGroup("g1", grpSize[1], INHIBITORY_NEURON);
+		grpId[0] = sim->createGroup("g0", grpSize[0], EXCITATORY_NEURON, 0);
+		grpId[1] = sim->createGroup("g1", grpSize[1], INHIBITORY_NEURON, 0);
 		sim->setNeuronParameters(grpId[0], 0.02f, 0.2f, -65.0f, 8.0f);
 		sim->setNeuronParameters(grpId[1], 0.1f, 0.2f, -65.0f, 2.0f);
 
@@ -203,8 +203,8 @@ TEST(ConnMon, takeSnapshot) {
 		// first iteration, test CPU mode, second test GPU mode
 		sim = new CARLsim("ConnMon.setConnectionMonitorDeath",mode?GPU_MODE:CPU_MODE,SILENT,1,42);
 
-		grpId[0] = sim->createGroup("g0", GRP_SIZE, EXCITATORY_NEURON);
-		grpId[1] = sim->createGroup("g1", GRP_SIZE, INHIBITORY_NEURON);
+		grpId[0] = sim->createGroup("g0", GRP_SIZE, EXCITATORY_NEURON, 0);
+		grpId[1] = sim->createGroup("g1", GRP_SIZE, INHIBITORY_NEURON, 0);
 		sim->setNeuronParameters(grpId[0], 0.02f, 0.2f, -65.0f, 8.0f);
 		sim->setNeuronParameters(grpId[1], 0.1f, 0.2f, -65.0f, 2.0f);
 
@@ -257,7 +257,7 @@ TEST(ConnMon, weightFile) {
 		for (int interval=-1; interval<=3; interval+=2) {
 			sim = new CARLsim("ConnMon.setConnectionMonitorDeath",mode?GPU_MODE:CPU_MODE,SILENT,1,42);
 
-			int g0 = sim->createGroup("g0", GRP_SIZE, EXCITATORY_NEURON);
+			int g0 = sim->createGroup("g0", GRP_SIZE, EXCITATORY_NEURON, 0);
 			sim->setNeuronParameters(g0, 0.02f, 0.2f, -65.0f, 8.0f);
 
 			sim->connect(g0,g0,"full",RangeWeight(0.1f),0.1f);
@@ -328,7 +328,7 @@ TEST(ConnMon, weightChange) {
 	for (int mode=0; mode<=1; mode++) {
 		sim = new CARLsim("ConnMon.setConnectionMonitorDeath",mode?GPU_MODE:CPU_MODE,SILENT,1,42);
 
-		int g0 = sim->createGroup("g0", GRP_SIZE, EXCITATORY_NEURON);
+		int g0 = sim->createGroup("g0", GRP_SIZE, EXCITATORY_NEURON, 0);
 		sim->setNeuronParameters(g0, 0.02f, 0.2f, -65.0f, 8.0f);
 
 		short int c0 = sim->connect(g0,g0,"full",RangeWeight(wtScale),0.1f,RangeDelay(1),RadiusRF(-1),SYN_PLASTIC);
