@@ -134,7 +134,7 @@ copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
 copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
     </PostBuildEvent>
     <CudaCompile>
-      <CodeGeneration>compute_50,sm_50</CodeGeneration>
+      <CodeGeneration>compute_30,sm_30</CodeGeneration>
       <Include>$(NVCUDASAMPLES_ROOT)\common\inc;$(ProjectDir)\include;%(Include)</Include>
       <TargetMachinePlatform>64</TargetMachinePlatform>
     </CudaCompile>
