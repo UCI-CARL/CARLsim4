@@ -111,7 +111,7 @@ void SNN::spikeGeneratorUpdate() {
 void SNN::updateTimingTable() {
 	for (int netId = 0; netId < MAX_NET_PER_SNN; netId++) {
 		if (!groupPartitionLists[netId].empty()) {
-			cpuRuntimeData[netId].timeTableD2[simTimeMs + networkConfigs[netId].maxDelay + 1] = cpuRuntimeData[netId].spikeCountD2Sec;
+			cpuRuntimeData[netId].timeTableD2[simTimeMs + networkConfigs[netId].maxDelay + 1] = cpuRuntimeData[netId].spikeCountD2Sec + cpuRuntimeData[netId].spikeCountLastSecLeftD2;
 			cpuRuntimeData[netId].timeTableD1[simTimeMs + networkConfigs[netId].maxDelay + 1] = cpuRuntimeData[netId].spikeCountD1Sec;
 		}
 	}
@@ -477,11 +477,9 @@ void SNN::findFiring() {
 							if (groupConfigs[netId][lGrpId].MaxDelay == 1) {
 								extFireId = cpuRuntimeData[netId].extFiringTableEndIdxD1[lGrpId]++;
 								cpuRuntimeData[netId].extFiringTableD1[lGrpId][extFireId] = lNId + groupConfigs[netId][lGrpId].LtoGOffset;
-								cpuRuntimeData[netId].tempExtD1Sec++;
 							} else { // MaxDelay > 1
 								extFireId = cpuRuntimeData[netId].extFiringTableEndIdxD2[lGrpId]++;
 								cpuRuntimeData[netId].extFiringTableD2[lGrpId][extFireId] = lNId + groupConfigs[netId][lGrpId].LtoGOffset;
-								cpuRuntimeData[netId].tempExtD2Sec++;
 							}
 							assert(extFireId != -1);
 						}
@@ -999,13 +997,8 @@ void SNN::shiftSpikeTables() {
 			cpuRuntimeData[netId].spikeCountD2Sec = 0;
 			cpuRuntimeData[netId].spikeCountD1Sec = 0;
 
-			printf("netId:%d rx D1:%d D2:%d\n", netId, cpuRuntimeData[netId].spikeCountExtRxD1Sec, cpuRuntimeData[netId].spikeCountExtRxD2Sec);
 			cpuRuntimeData[netId].spikeCountExtRxD2Sec = 0;
 			cpuRuntimeData[netId].spikeCountExtRxD1Sec = 0;
-
-			printf("netId:%d tx D1:%d D2:%d\n", netId, cpuRuntimeData[netId].tempExtD1Sec, cpuRuntimeData[netId].tempExtD2Sec);
-			cpuRuntimeData[netId].tempExtD1Sec = 0;
-			cpuRuntimeData[netId].tempExtD2Sec = 0;
 
 			cpuRuntimeData[netId].spikeCountLastSecLeftD2 = cpuRuntimeData[netId].timeTableD2[networkConfigs[netId].maxDelay];
 		}
@@ -1826,8 +1819,6 @@ void SNN::copyAuxiliaryData(int netId, int lGrpId, RuntimeData* dest, bool alloc
 	dest->spikeCountD2Sec = 0;
 	dest->spikeCountExtRxD1Sec = 0;
 	dest->spikeCountExtRxD2Sec = 0;
-	dest->tempExtD1Sec = 0;
-	dest->tempExtD2Sec = 0;
 	dest->spikeCountLastSecLeftD2 = 0;
 	dest->spikeCount = 0;
 	dest->spikeCountD1 = 0;
@@ -2028,11 +2019,9 @@ void SNN::copyLastSpikeTime(int netId) {
 * \brief This function fetch the spike count in all local networks and sum the up
 */
 void SNN::copyNetworkSpikeCount(int netId,
-	unsigned int* spikeCountD1Sec, unsigned int* spikeCountD2Sec,
 	unsigned int* spikeCountD1, unsigned int* spikeCountD2,
 	unsigned int* spikeCountExtD1, unsigned int* spikeCountExtD2) {
-	*spikeCountD2Sec = cpuRuntimeData[netId].spikeCountD2Sec;
-	*spikeCountD1Sec = cpuRuntimeData[netId].spikeCountD1Sec;
+
 	*spikeCountExtD2 = cpuRuntimeData[netId].spikeCountExtRxD2;
 	*spikeCountExtD1 = cpuRuntimeData[netId].spikeCountExtRxD1;
 	*spikeCountD2 = cpuRuntimeData[netId].spikeCountD2;

@@ -827,11 +827,9 @@ private:
 	void copyLastSpikeTime(int netId, cudaMemcpyKind kind);
 	void copyLastSpikeTime(int netId);
 	void copyNetworkSpikeCount(int netId, cudaMemcpyKind kind,
-		unsigned int* spikeCountD1Sec, unsigned int* spikeCountD2Sec,
 		unsigned int* spikeCountD1, unsigned int* spikeCountD2,
 		unsigned int* spikeCountExtD1, unsigned int* spikeCountExtD2);
 	void copyNetworkSpikeCount(int netId,
-		unsigned int* spikeCountD1Sec, unsigned int* spikeCountD2Sec,
 		unsigned int* spikeCountD1, unsigned int* spikeCountD2,
 		unsigned int* spikeCountExtD1, unsigned int* spikeCountExtD2);
 	void copySpikeTables(int netId, cudaMemcpyKind kind);

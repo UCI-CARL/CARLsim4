@@ -348,8 +348,6 @@ typedef struct RuntimeData_s {
 	unsigned int spikeCountD2Sec; //!< the total number of spikes with axonal delay > 1 in 1 second, used in CPU_MODE currently
 	unsigned int spikeCountExtRxD1Sec;
 	unsigned int spikeCountExtRxD2Sec;
-	unsigned int tempExtD1Sec;
-	unsigned int tempExtD2Sec;
 	unsigned int spikeCount;      //!< the total number of spikes in a simulation, used in CPU_MODE currently
 	unsigned int spikeCountD1;    //!< the total number of spikes with anxonal delay == 1 in a simulation, used in CPU_MODE currently
 	unsigned int spikeCountD2;    //!< the total number of spikes with anxonal delay > 1 in a simulation, used in CPU_MODE currently

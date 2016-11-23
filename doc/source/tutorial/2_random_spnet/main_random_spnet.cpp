@@ -71,7 +71,7 @@ int main(int argc, const char* argv[]) {
 
 	// gInh receives input from nSynPerNeur neurons from gExc, all delays are 1ms, no plasticity
 	// every neuron in gInh should receive ~nSynPerNeur synapses
-	sim.connect(gExc, gInh, "random", RangeWeight(wtExc), pConn*nNeur/nNeurExc);
+	sim.connect(gExc, gInh, "random", RangeWeight(wtExc), pConn*nNeur/nNeurExc, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
 
 	// enable STDP on all incoming synapses to gExc
 	float alphaPlus = 0.1f, tauPlus = 20.0f, alphaMinus = 0.1f, tauMinus = 20.0f;

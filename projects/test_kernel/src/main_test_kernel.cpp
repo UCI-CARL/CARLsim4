@@ -46,17 +46,17 @@
 #define N_EXC 800
 #define N_INH 200
 
-class FixedSpikeGenerator : public SpikeGenerator {
-public:
-	FixedSpikeGenerator() {}
-
-	int nextSpikeTime(CARLsim* sim, int grpId, int nid, int currentTime, int lastScheduledSpikeTime, int endOfTimeSlice) {
-		if (lastScheduledSpikeTime <= currentTime)
-			return currentTime + nid + 100;
-		else
-			return endOfTimeSlice + 1;
-	}
-};
+//class FixedSpikeGenerator : public SpikeGenerator {
+//public:
+//	FixedSpikeGenerator() {}
+//
+//	int nextSpikeTime(CARLsim* sim, int grpId, int nid, int currentTime, int lastScheduledSpikeTime, int endOfTimeSlice) {
+//		if (lastScheduledSpikeTime <= currentTime)
+//			return currentTime + nid + 100;
+//		else
+//			return endOfTimeSlice + 1;
+//	}
+//};
 
 int main() {
 	// create a network on GPU
@@ -69,26 +69,26 @@ int main() {
 	int gExc = sim.createGroup("exc", N_EXC, EXCITATORY_NEURON, 0);
 	sim.setNeuronParameters(gExc, 0.02f, 0.2f, -65.0f, 8.0f); // RS
 
-	int gExc2 = sim.createGroup("exc2", N_EXC, EXCITATORY_NEURON, 0);
+	int gExc2 = sim.createGroup("exc2", N_EXC, EXCITATORY_NEURON, 1);
 	sim.setNeuronParameters(gExc2, 0.02f, 0.2f, -65.0f, 8.0f);
 
 	int gInh = sim.createGroup("inh", N_INH, INHIBITORY_NEURON, 1);
 	sim.setNeuronParameters(gInh, 0.1f, 0.2f, -65.0f, 2.0f); // FS
 
-	int gInh2 = sim.createGroup("inh2", N_INH, INHIBITORY_NEURON, 1);
+	int gInh2 = sim.createGroup("inh2", N_INH, INHIBITORY_NEURON, 0);
 	sim.setNeuronParameters(gInh2, 0.1f, 0.2f, -65.0f, 2.0f);
 	//int gExc2 = sim.createGroup("exc", N_EXC, EXCITATORY_NEURON);
 	//sim.setNeuronParameters(gExc2, 0.02f, 0.2f, -65.0f, 8.0f); // RS
 
 	int gInput = sim.createSpikeGeneratorGroup("input", N_EXC, EXCITATORY_NEURON, 0);
 
-	int gInput2 = sim.createSpikeGeneratorGroup("input2", N_EXC, EXCITATORY_NEURON, 0);
+	int gInput2 = sim.createSpikeGeneratorGroup("input2", N_EXC, EXCITATORY_NEURON, 1);
 
-	FixedSpikeGenerator* f1 = new FixedSpikeGenerator();
-	sim.setSpikeGenerator(gInput, f1);
+	//FixedSpikeGenerator* f1 = new FixedSpikeGenerator();
+	//sim.setSpikeGenerator(gInput, f1);
 
-	FixedSpikeGenerator* f2 = new FixedSpikeGenerator();
-	sim.setSpikeGenerator(gInput2, f2);
+	//FixedSpikeGenerator* f2 = new FixedSpikeGenerator();
+	//sim.setSpikeGenerator(gInput2, f2);
 
 	sim.connect(gInput, gExc, "one-to-one", RangeWeight(30.0f), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
 	sim.connect(gExc, gExc, "random", RangeWeight(6.0f), pConn, RangeDelay(1, 20), RadiusRF(-1), SYN_FIXED);
@@ -118,33 +118,33 @@ int main() {
 	//ConnectionMonitor* cmEE = sim.setConnectionMonitor(gExc, gInh, "DEFAULT");
 
 	//setup some baseline input
-	//PoissonRate in(N_EXC);
-	//in.setRates(1.0f);
-	//sim.setSpikeRate(gInput, &in);
+	PoissonRate in(N_EXC);
+	in.setRates(1.0f);
+	sim.setSpikeRate(gInput, &in);
 
-	//PoissonRate in2(N_EXC);
-	//in2.setRates(1.0f);
-	//sim.setSpikeRate(gInput2, &in2);
+	PoissonRate in2(N_EXC);
+	in2.setRates(1.0f);
+	sim.setSpikeRate(gInput2, &in2);
 
 
 	// run for a total of 10 seconds
 	// at the end of each runNetwork call, SpikeMonitor stats will be printed
-	for (int t = 0; t < 5; t++) {
-		//smInput->startRecording();
-		//smExc->startRecording();
-		//smInh->startRecording();
 
+	//smInput->startRecording();
+	//smExc->startRecording();
+	//smInh->startRecording();
+	
+	for (int t = 0; t < 10; t++) {
 		sim.runNetwork(1, 0, true);
-
-		//smInput->stopRecording();
-		//smExc->stopRecording();
-		//smInh->stopRecording();
-
-		//smExc->print(false);
-		//smInh->print(false);
-		//smInput->print(false);
 	}
 
+	//smInput->stopRecording();
+	//smExc->stopRecording();
+	//smInh->stopRecording();
+
+	//smExc->print(false);
+	//smInh->print(false);
+	//smInput->print(false);
 
 
 	return 0;

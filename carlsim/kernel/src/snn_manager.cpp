@@ -661,7 +661,7 @@ int SNN::runNetwork(int _nsec, int _nmsec, bool printRunSummary) {
 		if (simMode_==GPU_MODE) {
 			KERNEL_INFO("******************** Running GPU Simulation on %d GPU(s) ***************************", numGPUs_);
 		} else {
-			KERNEL_INFO("********************      Running CPU Simulation      ***************************");
+			KERNEL_INFO("***************** Running CPU Simulation on %d CPU Core(s) *************************", numGPUs_);
 		}
 		KERNEL_INFO("");
 	}
@@ -3574,37 +3574,31 @@ void SNN::fetchSynapseState(int netId) {
 * \brief This function fetch the spike count in all local networks and sum the up
 */
 void SNN::fetchNetworkSpikeCount() {
-	unsigned int spikeCountD1Sec, spikeCountD2Sec, spikeCountD1, spikeCountD2, spikeCountExtD1, spikeCountExtD2;
+	unsigned int spikeCountD1, spikeCountD2, spikeCountExtD1, spikeCountExtD2;
 
-	managerRuntimeData.spikeCountD1Sec = 0;
-	managerRuntimeData.spikeCountD2Sec = 0;
 	managerRuntimeData.spikeCountD1 = 0;
 	managerRuntimeData.spikeCountD2 = 0;
+	managerRuntimeData.spikeCountExtRxD2 = 0;
+	managerRuntimeData.spikeCountExtRxD1 = 0;
 	for (int netId = 0; netId < MAX_NET_PER_SNN; netId++) {
 		if (!groupPartitionLists[netId].empty()) {
 
 			if (simMode_ == GPU_MODE)
 				copyNetworkSpikeCount(netId, cudaMemcpyDeviceToHost,
-									  &spikeCountD1Sec, &spikeCountD2Sec,
 									  &spikeCountD1, &spikeCountD2,
 									  &spikeCountExtD1, &spikeCountExtD2);
 			else
 				copyNetworkSpikeCount(netId,
-									  &spikeCountD1Sec, &spikeCountD2Sec,
 									  &spikeCountD1, &spikeCountD2,
 									  &spikeCountExtD1, &spikeCountExtD2);
-			
-			managerRuntimeData.spikeCountD1Sec += spikeCountD1Sec;
-			managerRuntimeData.spikeCountD2Sec += spikeCountD2Sec;
-			assert(spikeCountD1Sec <= networkConfigs[netId].maxSpikesD1);
-			assert(spikeCountD2Sec <= networkConfigs[netId].maxSpikesD2);
 
 			managerRuntimeData.spikeCountD2 += spikeCountD2 - spikeCountExtD2;
 			managerRuntimeData.spikeCountD1 += spikeCountD1 - spikeCountExtD1;
+			managerRuntimeData.spikeCountExtRxD2 += spikeCountExtD2;
+			managerRuntimeData.spikeCountExtRxD1 += spikeCountExtD1;
 		}
 	}
 
-	managerRuntimeData.spikeCountSec = managerRuntimeData.spikeCountD1Sec + managerRuntimeData.spikeCountD2Sec;
 	managerRuntimeData.spikeCount = managerRuntimeData.spikeCountD1 + managerRuntimeData.spikeCountD2;
 }
 
@@ -5110,7 +5104,7 @@ void SNN::printSimSummary() {
 
 	KERNEL_INFO("Network Parameters: \tnumNeurons = %d (numNExcReg:numNInhReg = %2.1f:%2.1f)", 
 		glbNetworkConfig.numN, 100.0 * glbNetworkConfig.numNExcReg / glbNetworkConfig.numN, 100.0 * glbNetworkConfig.numNInhReg / glbNetworkConfig.numN);
-	KERNEL_INFO("\t\t\tnumSynapses = %d", networkConfigs[0].numPostSynNet);
+	KERNEL_INFO("\t\t\tnumSynapses = %d", networkConfigs[0].numPostSynNet); // FIXME: add up all synapses in the network
 	KERNEL_INFO("\t\t\tmaxDelay = %d", glbNetworkConfig.maxDelay);
 	KERNEL_INFO("Simulation Mode:\t%s",sim_with_conductances?"COBA":"CUBA");
 	KERNEL_INFO("Random Seed:\t\t%d", randSeed_);
@@ -5119,7 +5113,10 @@ void SNN::printSimSummary() {
 	KERNEL_INFO("Average Firing Rate:\t2+ms delay = %3.3f Hz", managerRuntimeData.spikeCountD2 / (1.0 * simTimeSec * glbNetworkConfig.numNExcReg));
 	KERNEL_INFO("\t\t\t1ms delay = %3.3f Hz", managerRuntimeData.spikeCountD1 / (1.0 * simTimeSec * glbNetworkConfig.numNInhReg));
 	KERNEL_INFO("\t\t\tOverall = %3.3f Hz", managerRuntimeData.spikeCount / (1.0 * simTimeSec * glbNetworkConfig.numN));
-	KERNEL_INFO("Overall Firing Count:\t2+ms delay = %d", managerRuntimeData.spikeCountD2);
+	KERNEL_INFO("Overall Spike Count Transferred:");
+	KERNEL_INFO("\t\t\t2+ms delay = %d", managerRuntimeData.spikeCountExtRxD2);
+	KERNEL_INFO("\t\t\t1ms delay = %d", managerRuntimeData.spikeCountExtRxD1);
+	KERNEL_INFO("Overall Spike Count:\t2+ms delay = %d", managerRuntimeData.spikeCountD2);
 	KERNEL_INFO("\t\t\t1ms delay = %d", managerRuntimeData.spikeCountD1);
 	KERNEL_INFO("\t\t\tTotal = %d", managerRuntimeData.spikeCount);
 	KERNEL_INFO("*********************************************************************************\n");

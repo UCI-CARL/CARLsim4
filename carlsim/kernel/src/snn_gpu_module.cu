@@ -86,6 +86,8 @@ __device__ unsigned int	secD1fireCntTest;
 
 __device__ unsigned int spikeCountLastSecLeftD2GPU;
 
+__device__ unsigned int spikeCountExtRxD1SecGPU;
+__device__ unsigned int spikeCountExtRxD2SecGPU;
 __device__ unsigned int spikeCountExtRxD2GPU;
 __device__ unsigned int spikeCountExtRxD1GPU;
 
@@ -220,6 +222,8 @@ __global__ void kernel_initGPUMemory() {
 
 		spikeCountExtRxD2GPU = 0;
 		spikeCountExtRxD1GPU = 0;
+		spikeCountExtRxD2SecGPU = 0;
+		spikeCountExtRxD1SecGPU = 0;
 	}
 }
 
@@ -1231,6 +1235,9 @@ __global__ void kernel_shiftTimeTable() {
 		spikeCountD2SecGPU = 0; 
 		spikeCountD1SecGPU = 0;
 
+		spikeCountExtRxD2SecGPU = 0;
+		spikeCountExtRxD1SecGPU = 0;
+
 		spikeCountLastSecLeftD2GPU = timeTableD2GPU[maxDelay];
 		secD2fireCntTest = timeTableD2GPU[maxDelay];
 		secD1fireCntTest = 0;
@@ -1536,6 +1543,7 @@ __global__ void kernel_convertExtSpikesD2(int startIdx, int endIdx, int GtoLOffs
 		secD2fireCntTest += spikeCountExtRx;
 		spikeCountD2SecGPU += spikeCountExtRx;
 		spikeCountExtRxD2GPU += spikeCountExtRx;
+		spikeCountExtRxD2SecGPU += spikeCountExtRx;
 	}
 
 	// FIXME: if endIdx - startIdx > 64 * 128
@@ -1551,6 +1559,7 @@ __global__ void kernel_convertExtSpikesD1(int startIdx, int endIdx, int GtoLOffs
 		secD1fireCntTest += spikeCountExtRx;
 		spikeCountD1SecGPU += spikeCountExtRx;
 		spikeCountExtRxD1GPU += spikeCountExtRx;
+		spikeCountExtRxD1SecGPU += spikeCountExtRx;
 	}
 
 	// FIXME: if endIdx - startIdx > 64 * 128
@@ -3111,15 +3120,12 @@ void SNN::copyExternalCurrent(int netId, int lGrpId, RuntimeData* dest, cudaMemc
  * \brief This function fetch the spike count in all local networks and sum the up
  */
 void SNN::copyNetworkSpikeCount(int netId, cudaMemcpyKind kind,
-								unsigned int* spikeCountD1Sec, unsigned int* spikeCountD2Sec, 
 								unsigned int* spikeCountD1, unsigned int* spikeCountD2,
 								unsigned int* spikeCountExtD1, unsigned int* spikeCountExtD2) {
 
 	checkAndSetGPUDevice(netId);
 	assert(kind == cudaMemcpyDeviceToHost);
 
-	CUDA_CHECK_ERRORS(cudaMemcpyFromSymbol(spikeCountD2Sec, spikeCountD2SecGPU, sizeof(int), 0, cudaMemcpyDeviceToHost));
-	CUDA_CHECK_ERRORS(cudaMemcpyFromSymbol(spikeCountD1Sec, spikeCountD1SecGPU, sizeof(int), 0, cudaMemcpyDeviceToHost));
 	CUDA_CHECK_ERRORS(cudaMemcpyFromSymbol(spikeCountExtD2, spikeCountExtRxD2GPU, sizeof(int), 0, cudaMemcpyDeviceToHost));
 	CUDA_CHECK_ERRORS(cudaMemcpyFromSymbol(spikeCountExtD1, spikeCountExtRxD1GPU, sizeof(int), 0, cudaMemcpyDeviceToHost));
 	CUDA_CHECK_ERRORS(cudaMemcpyFromSymbol(spikeCountD2, spikeCountD2GPU, sizeof(int), 0, cudaMemcpyDeviceToHost));
