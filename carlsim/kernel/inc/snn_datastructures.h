@@ -104,16 +104,43 @@ typedef struct ConnectConfig_s {
 	float                    radX;
 	float                    radY;
 	float                    radZ;
-	float                    mulSynFast;				//!< factor to be applied to either gAMPA or gGABAa
-	float                    mulSynSlow;				//!< factor to be applied to either gNMDA or gGABAb
+	float                    mulSynFast; //!< factor to be applied to either gAMPA or gGABAa
+	float                    mulSynSlow; //!< factor to be applied to either gNMDA or gGABAb
 	int                      connectionMonitorId;
 	uint32_t                 connProp;
 	ConnectionGeneratorCore* conn;
 	conType_t                type;
-	float                    p; 						//!< connection probability
-	short int                connId;					//!< connectID of the element in the linked list
+	float                    connProbability; //!< connection probability
+	short int                connId; //!< connectID of the element in the linked list
 	int                      numberOfConnections;
 } ConnectConfig;
+
+/*!
+ * \brief the intermediate data of connect config
+ *
+ * \note for futre use
+ */
+typedef struct ConnectConfigMD_s {
+	ConnectConfigMD_s() : gConnId(-1), lConnId(-1), connectionMonitorId(-1), numberOfConnections(-1)
+	{}
+	int gConnId;
+	int lConnId;
+	int connectionMonitorId;
+	int numberOfConnections;
+} ConnectConfigMD;
+
+/*!
+* \brief The runtime configuration of a connection
+*
+* This structure contains the configurations of connections that are created by optimizeAndPartiionNetwork(),
+* which is ready to be executed by computing backend.
+* \see CARLsimState
+* \see SNNState
+*/
+typedef struct ConnectConfigRT_s {
+	float* mulSynFast; //!< factor to be applied to either gAMPA or gGABAa
+	float* mulSynSlow; //!< factor to be applied to either gNMDA or gGABAb
+} ConnectConfigRT;
 
 //!< neural dynamics configuration
 typedef struct NeuralDynamicsConfig_s {
@@ -540,35 +567,5 @@ typedef struct NetworkConfigRT_s  {
 	double dGABAb;            //!< multiplication factor for decay time of GABAb
 	double sGABAb;            //!< scaling factor for GABAb amplitude
 } NetworkConfigRT;
-
-/*!
- * \brief The runtime configuration of a connection
- *
- * This structure contains the configurations of connections that are created by optimizeAndPartiionNetwork(),
- * which is ready to be executed by computing backend.
- * \see CARLsimState
- * \see SNNState
- */
-typedef struct ConnectConfigRT_s {
-	int                      grpSrc;
-	int                      grpDest;
-	uint8_t                  maxDelay;
-	uint8_t                  minDelay;
-	float                    maxWt;
-	float                    initWt;
-	float                    minWt;
-	float                    radX;
-	float                    radY;
-	float                    radZ;
-	float                    mulSynFast;				//!< factor to be applied to either gAMPA or gGABAa
-	float                    mulSynSlow;				//!< factor to be applied to either gNMDA or gGABAb
-	int                      connectionMonitorId;
-	uint32_t                 connProp;
-	ConnectionGeneratorCore* conn;
-	conType_t                type;
-	float                    p; 						//!< connection probability
-	short int                connId;					//!< connectID of the element in the linked list
-	int                      numberOfConnections;
-} ConnectConfigRT;
 
 #endif

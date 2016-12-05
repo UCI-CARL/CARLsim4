@@ -127,7 +127,7 @@ short int SNN::connect(int grpId1, int grpId2, const std::string& _type, float i
 	connConfig.mulSynFast       = _mulSynFast;
 	connConfig.mulSynSlow       = _mulSynSlow;
 	connConfig.connProp         = connProp;
-	connConfig.p                = prob;
+	connConfig.connProbability                = prob;
 	connConfig.type             = CONN_UNKNOWN;
 	connConfig.connectionMonitorId = -1;
 	connConfig.connId = -1;
@@ -2862,7 +2862,7 @@ void SNN::connectGaussian(int netId, std::list<ConnectConfig>::iterator connIt, 
 			//if (gauss < 0.1)
 			//	continue;
 
-			if (drand48() < connIt->p) {
+			if (drand48() < connIt->connProbability) {
 				connectNeurons(netId, grpSrc, grpDest, i, j, connIt->connId, externalNetId);
 				connIt->numberOfConnections++;
 			}
@@ -2965,7 +2965,7 @@ void SNN::connectRandom(int netId, std::list<ConnectConfig>::iterator connIt, bo
 			//if (!isPoint3DinRF(radius, loc_pre, loc_post))
 			//	continue;
 
-			if (drand48() < connIt->p) {
+			if (drand48() < connIt->connProbability) {
 				connectNeurons(netId, grpSrc, grpDest, pre_nid, post_nid, connIt->connId, externalNetId);
 				connIt->numberOfConnections++;
 			}
