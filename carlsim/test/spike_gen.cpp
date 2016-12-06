@@ -114,7 +114,6 @@ TEST(spikeGenFunc, PeriodicSpikeGeneratorDeath) {
 }
 
 TEST(spikeGenFunc, SpikeGeneratorFromFile) {
-	int nNeur = 1;
 	PoissonRate* poiss = NULL;
 	SpikeGeneratorFromFile* sgf = NULL;
 	CARLsim* sim = NULL;
@@ -129,20 +128,20 @@ TEST(spikeGenFunc, SpikeGeneratorFromFile) {
 				int g1 = sim->createGroup("g1", 1, EXCITATORY_NEURON);		
 				sim->setNeuronParameters(g1, 0.02, 0.2, -65.0, 8.0);
 
-				int g0 = sim->createSpikeGeneratorGroup("g0",nNeur,EXCITATORY_NEURON);
+				int g0 = sim->createSpikeGeneratorGroup("g0",1,EXCITATORY_NEURON);
 				if (run==1) {
 					// second run: load from file and compare spike times
 					sgf = new SpikeGeneratorFromFile(fileName0);
 					sim->setSpikeGenerator(g0, sgf);
 				}
-				sim->connect(g0,g1,"random",RangeWeight(0.1f), 0.5f);
+				sim->connect(g0,g1,"full",RangeWeight(0.1f), 0.5f);
 				sim->setConductances(isCOBA);
 				sim->setupNetwork();
 
 				if (run==0) {
 					// first run: use Poisson spike generator as ground truth
 					// generate the spike file and run in one piece
-					poiss = new PoissonRate(nNeur);
+					poiss = new PoissonRate(1);
 					poiss->setRates(50.0f);
 					sim->setSpikeRate(g0, poiss);
 					SM0 = sim->setSpikeMonitor(g0, fileName0);
@@ -197,7 +196,6 @@ TEST(spikeGenFunc, SpikeGeneratorFromFile) {
 }
 
 TEST(spikeGenFunc, SpikeGeneratorFromFileLoadFile) {
-	int nNeur = 1;
 	PoissonRate* poiss = NULL;
 	SpikeGeneratorFromFile* sgf = NULL;
 	CARLsim* sim = NULL;
@@ -212,20 +210,20 @@ TEST(spikeGenFunc, SpikeGeneratorFromFileLoadFile) {
 				int g1 = sim->createGroup("g1", 1, EXCITATORY_NEURON);		
 				sim->setNeuronParameters(g1, 0.02, 0.2, -65.0, 8.0);
 
-				int g0 = sim->createSpikeGeneratorGroup("g0",nNeur,EXCITATORY_NEURON);
+				int g0 = sim->createSpikeGeneratorGroup("g0",1,EXCITATORY_NEURON);
 				if (run==1) {
 					// second run: load from file and compare spike times
 					sgf = new SpikeGeneratorFromFile(fileName0);
 					sim->setSpikeGenerator(g0, sgf);
 				}
-				sim->connect(g0,g1,"random",RangeWeight(0.1f), 0.5f);
+				sim->connect(g0,g1,"full",RangeWeight(0.1f), 0.5f);
 				sim->setConductances(isCOBA);
 				sim->setupNetwork();
 
 				if (run==0) {
 					// first run: use Poisson spike generator as ground truth
 					// generate the spike file and run in one piece
-					poiss = new PoissonRate(nNeur);
+					poiss = new PoissonRate(1);
 					poiss->setRates(50.0f);
 					sim->setSpikeRate(g0, poiss);
 					SM0 = sim->setSpikeMonitor(g0, fileName0);
