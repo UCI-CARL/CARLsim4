@@ -2611,7 +2611,7 @@ void SNN::compileSNN() {
 	// - numNeurons vs. sum of all neurons
 	// - STDP set on a post-group with incoming plastic connections
 	// - etc.
-	//verifyNetwork();
+	verifyNetwork();
 
 	// display the global network configuration
 	KERNEL_INFO("\n");
@@ -3680,7 +3680,7 @@ bool SNN::isGroupWithHomeostasis(int grpId) {
 void SNN::verifyNetwork() {
 	// make sure number of neuron parameters have been accumulated correctly
 	// NOTE: this used to be updateParameters
-	verifyNumNeurons();
+	//verifyNumNeurons();
 
 	// make sure STDP post-group has some incoming plastic connections
 	verifySTDP();
@@ -3731,89 +3731,89 @@ void SNN::verifyNetwork() {
 
 // checks whether STDP is set on a post-group with incoming plastic connections
 void SNN::verifySTDP() {
-	//for (int grpId=0; grpId<getNumGroups(); grpId++) {
-	//	if (groupConfigMap[grpId].STDP.WithSTDP) {
-	//		// for each post-group, check if any of the incoming connections are plastic
-	//		bool isAnyPlastic = false;
-	//		for (std::map<int, ConnectConfig>::iterator it = connectConfigMap.begin(); it != connectConfigMap.end(); it++) {
-	//			if (it->second.grpDest == grpId) {
-	//				// get syn wt type from connection property
-	//				isAnyPlastic |= GET_FIXED_PLASTIC(it->second.connProp);
-	//				if (isAnyPlastic) {
-	//					// at least one plastic connection found: break while
-	//					break;
-	//				}
-	//			}
-	//		}
-	//		if (!isAnyPlastic) {
-	//			KERNEL_ERROR("If STDP on group %d (%s) is set, group must have some incoming plastic connections.",
-	//				grpId, groupInfo[grpId].Name.c_str());
-	//			exitSimulation(1);
-	//		}
-	//	}
-	//}
+	for (int gGrpId=0; gGrpId<getNumGroups(); gGrpId++) {
+		if (groupConfigMap[gGrpId].stdpConfig.WithSTDP) {
+			// for each post-group, check if any of the incoming connections are plastic
+			bool isAnyPlastic = false;
+			for (std::map<int, ConnectConfig>::iterator it = connectConfigMap.begin(); it != connectConfigMap.end(); it++) {
+				if (it->second.grpDest == gGrpId) {
+					// get syn wt type from connection property
+					isAnyPlastic |= GET_FIXED_PLASTIC(it->second.connProp);
+					if (isAnyPlastic) {
+						// at least one plastic connection found: break while
+						break;
+					}
+				}
+			}
+			if (!isAnyPlastic) {
+				KERNEL_ERROR("If STDP on group %d (%s) is set, group must have some incoming plastic connections.",
+					gGrpId, groupConfigMap[gGrpId].grpName.c_str());
+				exitSimulation(1);
+			}
+		}
+	}
 }
 
 // checks whether every group with Homeostasis also has STDP
 void SNN::verifyHomeostasis() {
-	//for (int grpId=0; grpId<getNumGroups(); grpId++) {
-	//	if (groupConfigMap[grpId].WithHomeostasis) {
-	//		if (!groupConfigMap[grpId].WithSTDP) {
-	//			KERNEL_ERROR("If homeostasis is enabled on group %d (%s), then STDP must be enabled, too.",
-	//				grpId, groupInfo[grpId].Name.c_str());
-	//			exitSimulation(1);
-	//		}
-	//	}
-	//}
+	for (int gGrpId=0; gGrpId<getNumGroups(); gGrpId++) {
+		if (groupConfigMap[gGrpId].homeoConfig.WithHomeostasis) {
+			if (!groupConfigMap[gGrpId].stdpConfig.WithSTDP) {
+				KERNEL_ERROR("If homeostasis is enabled on group %d (%s), then STDP must be enabled, too.",
+					gGrpId, groupConfigMap[gGrpId].grpName.c_str());
+				exitSimulation(1);
+			}
+		}
+	}
 }
 
-// checks whether the numN* class members are consistent and complete
-void SNN::verifyNumNeurons() {
-	//int nExcPois = 0;
-	//int nInhPois = 0;
-	//int nExcReg = 0;
-	//int nInhReg = 0;
-
-	////  scan all the groups and find the required information
-	////  about the group (numN, numPostSynapses, numPreSynapses and others).
-	//for(int g=0; g<numGroups; g++)  {
-	//	if (groupConfigMap[g].Type==UNKNOWN_NEURON) {
-	//		KERNEL_ERROR("Unknown group for %d (%s)", g, groupInfo[g].Name.c_str());
-	//		exitSimulation(1);
-	//	}
-
-	//	if (IS_INHIBITORY_TYPE(groupConfigMap[g].Type) && !(groupConfigMap[g].Type & POISSON_NEURON))
-	//		nInhReg += groupConfigMap[g].SizeN;
-	//	else if (IS_EXCITATORY_TYPE(groupConfigMap[g].Type) && !(groupConfigMap[g].Type & POISSON_NEURON))
-	//		nExcReg += groupConfigMap[g].SizeN;
-	//	else if (IS_EXCITATORY_TYPE(groupConfigMap[g].Type) &&  (groupConfigMap[g].Type & POISSON_NEURON))
-	//		nExcPois += groupConfigMap[g].SizeN;
-	//	else if (IS_INHIBITORY_TYPE(groupConfigMap[g].Type) &&  (groupConfigMap[g].Type & POISSON_NEURON))
-	//		nInhPois += groupConfigMap[g].SizeN;
-	//}
-
-	//// check the newly gathered information with class members
-	//if (numN != nExcReg+nInhReg+nExcPois+nInhPois) {
-	//	KERNEL_ERROR("nExcReg+nInhReg+nExcPois+nInhPois=%d does not add up to numN=%d",
-	//		nExcReg+nInhReg+nExcPois+nInhPois, numN);
-	//	exitSimulation(1);
-	//}
-	//if (numNReg != nExcReg+nInhReg) {
-	//	KERNEL_ERROR("nExcReg+nInhReg=%d does not add up to numNReg=%d", nExcReg+nInhReg, numNReg);
-	//	exitSimulation(1);
-	//}
-	//if (numNPois != nExcPois+nInhPois) {
-	//	KERNEL_ERROR("nExcPois+nInhPois=%d does not add up to numNPois=%d", nExcPois+nInhPois, numNPois);
-	//	exitSimulation(1);
-	//}
-
-	////printf("numN=%d == %d\n",numN,nExcReg+nInhReg+nExcPois+nInhPois);
-	////printf("numNReg=%d == %d\n",numNReg, nExcReg+nInhReg);
-	////printf("numNPois=%d == %d\n",numNPois, nExcPois+nInhPois);
-	//
-	//assert(numN <= 1000000);
-	//assert((numN > 0) && (numN == numNExcReg + numNInhReg + numNPois));
-}
+//// checks whether the numN* class members are consistent and complete
+//void SNN::verifyNumNeurons() {
+//	int nExcPois = 0;
+//	int nInhPois = 0;
+//	int nExcReg = 0;
+//	int nInhReg = 0;
+//
+//	//  scan all the groups and find the required information
+//	//  about the group (numN, numPostSynapses, numPreSynapses and others).
+//	for(int g=0; g<numGroups; g++)  {
+//		if (groupConfigMap[g].Type==UNKNOWN_NEURON) {
+//			KERNEL_ERROR("Unknown group for %d (%s)", g, groupInfo[g].Name.c_str());
+//			exitSimulation(1);
+//		}
+//
+//		if (IS_INHIBITORY_TYPE(groupConfigMap[g].Type) && !(groupConfigMap[g].Type & POISSON_NEURON))
+//			nInhReg += groupConfigMap[g].SizeN;
+//		else if (IS_EXCITATORY_TYPE(groupConfigMap[g].Type) && !(groupConfigMap[g].Type & POISSON_NEURON))
+//			nExcReg += groupConfigMap[g].SizeN;
+//		else if (IS_EXCITATORY_TYPE(groupConfigMap[g].Type) &&  (groupConfigMap[g].Type & POISSON_NEURON))
+//			nExcPois += groupConfigMap[g].SizeN;
+//		else if (IS_INHIBITORY_TYPE(groupConfigMap[g].Type) &&  (groupConfigMap[g].Type & POISSON_NEURON))
+//			nInhPois += groupConfigMap[g].SizeN;
+//	}
+//
+//	// check the newly gathered information with class members
+//	if (numN != nExcReg+nInhReg+nExcPois+nInhPois) {
+//		KERNEL_ERROR("nExcReg+nInhReg+nExcPois+nInhPois=%d does not add up to numN=%d",
+//			nExcReg+nInhReg+nExcPois+nInhPois, numN);
+//		exitSimulation(1);
+//	}
+//	if (numNReg != nExcReg+nInhReg) {
+//		KERNEL_ERROR("nExcReg+nInhReg=%d does not add up to numNReg=%d", nExcReg+nInhReg, numNReg);
+//		exitSimulation(1);
+//	}
+//	if (numNPois != nExcPois+nInhPois) {
+//		KERNEL_ERROR("nExcPois+nInhPois=%d does not add up to numNPois=%d", nExcPois+nInhPois, numNPois);
+//		exitSimulation(1);
+//	}
+//
+//	//printf("numN=%d == %d\n",numN,nExcReg+nInhReg+nExcPois+nInhPois);
+//	//printf("numNReg=%d == %d\n",numNReg, nExcReg+nInhReg);
+//	//printf("numNPois=%d == %d\n",numNPois, nExcPois+nInhPois);
+//	
+//	assert(numN <= 1000000);
+//	assert((numN > 0) && (numN == numNExcReg + numNInhReg + numNPois));
+//}
 
 // \FIXME: not sure where this should go... maybe create some helper file?
 bool SNN::isPoint3DinRF(const RadiusRF& radius, const Point3D& pre, const Point3D& post) {
