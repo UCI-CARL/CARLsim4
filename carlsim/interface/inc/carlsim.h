@@ -233,7 +233,7 @@ public:
 	 * \see ch4s1_primitive_types
 	 */
 	short int connect(int grpId1, int grpId2, const std::string& connType, const RangeWeight& wt, float connProb,
-		const RangeDelay& delay=RangeDelay(1), const RadiusRF& radRF=RadiusRF(-1), bool synWtType=SYN_FIXED,
+		const RangeDelay& delay=RangeDelay(1), const RadiusRF& radRF=RadiusRF(-1.0), bool synWtType=SYN_FIXED,
 		float mulSynFast=1.0f, float mulSynSlow=1.0f);
 
 	/*!

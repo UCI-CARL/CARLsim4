@@ -6,69 +6,13 @@
 #include <math.h> // sqrt
 
 /// **************************************************************************************************************** ///
-/// CONNECT FUNCTIONALITY
+/// Connect FUNCTIONALITY
 /// **************************************************************************************************************** ///
 
-/*
-// \FIXME: deactivate for now, because we don't want to instantiate SNN
-
-
-
-// \TODO make CARLsim-level, replace with ConnectionMonitor
-//! connect with certain mulSynFast, mulSynSlow and observe connectInfo
-
-/*
-TEST(CONNECT, connectInfo) {
-	CARLsim* sim = NULL;
-
-	int conn[4]            = {-1};
-	std::string typeStr[4] = {"random", "one-to-one", "full", "full-no-direct"};
-	float initWt[4]        = {0.05f, 0.1f, 0.21f, 0.42f};
-	float maxWt[4]         = {0.05f, 0.1f, 0.21f, 0.42f};
-	float prob[4]          = {0.1, 0.2, 0.3, 0.4};
-	int minDelay[4]        = {1,2,3,4};
-	int maxDelay[4]        = {1,2,3,4};
-	float mulSynFast[4]    = {0.2f, 0.8f, 1.2f, 0.0};
-	float mulSynSlow[4]    = {0.0f, 2.4f, 11.1f, 10.0f};
-	int synType[4]         = {SYN_FIXED,SYN_PLASTIC,SYN_FIXED,SYN_PLASTIC};
-
-	for (int mode=0; mode<=1; mode++) {
-		for (int i=0; i<4; i++) {
-			sim = new CARLsim("CONNECT.connectInfo",mode?GPU_MODE:CPU_MODE,SILENT,1,42);
-
-            Grid3D neur(10,1,1);
-			int g0=sim->createSpikeGeneratorGroup("spike", neur, EXCITATORY_NEURON);
-			int g1=sim->createGroup("excit0", neur, EXCITATORY_NEURON);
-			sim->setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f);
-			int g2=sim->createGroup("excit1", neur, EXCITATORY_NEURON);
-			sim->setNeuronParameters(g2, 0.02f, 0.2f, -65.0f, 8.0f);
-
-			conn[i] = sim->connect(g0, g1, typeStr[i], RangeWeight(0.0f,initWt[i],maxWt[i]), prob[i],
-				RangeDelay(minDelay[i],maxDelay[i]), RadiusRF(-1), synType[i], mulSynFast[i], mulSynSlow[i]);
-
-// \TODO: this should be replaced by ConnectionMonitor
-				for (int c=0; c<nConfig; c++) {
-					connInfo = sim->getConnectInfo(conn[i],c);
-					EXPECT_FLOAT_EQ(connInfo->initWt,initWt[i]);
-					EXPECT_FLOAT_EQ(connInfo->maxWt,maxWt[i]);
-					EXPECT_FLOAT_EQ(connInfo->p,prob[i]);
-					EXPECT_FLOAT_EQ(connInfo->mulSynFast,mulSynFast[i]);
-					EXPECT_FLOAT_EQ(connInfo->mulSynSlow,mulSynSlow[i]);
-					EXPECT_EQ(connInfo->minDelay,minDelay[i]);
-					EXPECT_EQ(connInfo->maxDelay,maxDelay[i]);
-					EXPECT_EQ(connInfo->type,type[i]);
-					EXPECT_EQ(GET_FIXED_PLASTIC(connInfo->connProp),synType[i]);
-				}
-			delete sim;
-		}
-	}
-}
-*/
-
-TEST(CONNECT, connectFull) {
+TEST(Connect, connectFull) {
 	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
-	CARLsim* sim = new CARLsim("CONNECT.connectFull",CPU_MODE,SILENT,1,42);
+	CARLsim* sim = new CARLsim("Connect.connectFull",CPU_MODE,SILENT,1,42);
 	Grid3D grid(2,3,4);
 	int g0=sim->createGroup("excit0", grid, EXCITATORY_NEURON);
 	int g1=sim->createGroup("excit1", grid, EXCITATORY_NEURON);
@@ -84,11 +28,11 @@ TEST(CONNECT, connectFull) {
 	sim->setNeuronParameters(g5, 0.02f, 0.2f, -65.0f, 8.0f);
 
 	int c0=sim->connect(g0,g0,"full",RangeWeight(0.1), 1.0, RangeDelay(1)); // full
-	int c1=sim->connect(g1,g1,"full",RangeWeight(0.1), 1.0, RangeDelay(1), RadiusRF(-1,0,0)); // all in x
-	int c2=sim->connect(g2,g2,"full",RangeWeight(0.1), 1.0, RangeDelay(1), RadiusRF(-1,0,-1)); // all in x and z
-	int c3=sim->connect(g3,g3,"full",RangeWeight(0.1), 1.0, RangeDelay(1), RadiusRF(2,3,0)); // 2D ellipse x,y
-	int c4=sim->connect(g4,g4,"full",RangeWeight(0.1), 1.0, RangeDelay(1), RadiusRF(0,2,3)); // 2D ellipse y,z
-	int c5=sim->connect(g5,g5,"full",RangeWeight(0.1), 1.0, RangeDelay(1), RadiusRF(2,2,2)); // 3D ellipsoid
+	int c1=sim->connect(g1,g1,"full",RangeWeight(0.1), 1.0, RangeDelay(1), RadiusRF(-1.0, 0.0, 0.0)); // all in x
+	int c2=sim->connect(g2,g2,"full",RangeWeight(0.1), 1.0, RangeDelay(1), RadiusRF(-1.0, 0.0, -1.0)); // all in x and z
+	int c3=sim->connect(g3,g3,"full",RangeWeight(0.1), 1.0, RangeDelay(1), RadiusRF(2.0, 3.0, 0.0)); // 2D ellipse x,y
+	int c4=sim->connect(g4,g4,"full",RangeWeight(0.1), 1.0, RangeDelay(1), RadiusRF(0.0, 2.0, 3.0)); // 2D ellipse y,z
+	int c5=sim->connect(g5,g5,"full",RangeWeight(0.1), 1.0, RangeDelay(1), RadiusRF(2.0, 2.0, 2.0)); // 3D ellipsoid
 
 	sim->setupNetwork(); // need SETUP state for this function to work
 
@@ -102,7 +46,7 @@ TEST(CONNECT, connectFull) {
 	delete sim;
 }
 
-TEST(CONNECT, connectFullNoDirect) {
+TEST(Connect, connectFullNoDirect) {
 	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
 	CARLsim* sim = new CARLsim("CORE.connectRadiusRF",CPU_MODE,SILENT,1,42);
@@ -121,11 +65,11 @@ TEST(CONNECT, connectFullNoDirect) {
 	sim->setNeuronParameters(g5, 0.02f, 0.2f, -65.0f, 8.0f);
 
 	int c0=sim->connect(g0,g0,"full-no-direct",RangeWeight(0.1), 1.0, RangeDelay(1)); // full
-	int c1=sim->connect(g1,g1,"full-no-direct",RangeWeight(0.1), 1.0, RangeDelay(1), RadiusRF(-1,0,0)); // all in x
-	int c2=sim->connect(g2,g2,"full-no-direct",RangeWeight(0.1), 1.0, RangeDelay(1), RadiusRF(-1,0,-1)); // all in x,z
-	int c3=sim->connect(g3,g3,"full-no-direct",RangeWeight(0.1), 1.0, RangeDelay(1), RadiusRF(2,3,0)); // ellipse x,y
-	int c4=sim->connect(g4,g4,"full-no-direct",RangeWeight(0.1), 1.0, RangeDelay(1), RadiusRF(0,2,3)); // ellipse y,z
-	int c5=sim->connect(g5,g5,"full-no-direct",RangeWeight(0.1), 1.0, RangeDelay(1), RadiusRF(2,2,2)); // ellipsoid
+	int c1=sim->connect(g1,g1,"full-no-direct",RangeWeight(0.1), 1.0, RangeDelay(1), RadiusRF(-1.0, 0.0, 0.0)); // all in x
+	int c2=sim->connect(g2,g2,"full-no-direct",RangeWeight(0.1), 1.0, RangeDelay(1), RadiusRF(-1.0, 0.0, -1.0)); // all in x,z
+	int c3=sim->connect(g3,g3,"full-no-direct",RangeWeight(0.1), 1.0, RangeDelay(1), RadiusRF(2.0, 3.0, 0.0)); // ellipse x,y
+	int c4=sim->connect(g4,g4,"full-no-direct",RangeWeight(0.1), 1.0, RangeDelay(1), RadiusRF(0.0, 2.0, 3.0)); // ellipse y,z
+	int c5=sim->connect(g5,g5,"full-no-direct",RangeWeight(0.1), 1.0, RangeDelay(1), RadiusRF(2.0, 2.0, 2.0)); // ellipsoid
 
 	sim->setupNetwork(); // need SETUP state for this function to work
 
@@ -140,10 +84,10 @@ TEST(CONNECT, connectFullNoDirect) {
 	delete sim;
 }
 
-TEST(CONNECT, connectOneToOne) {
+TEST(Connect, connectOneToOne) {
 	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
-	CARLsim* sim = new CARLsim("CONNECT.connectOneToOne",CPU_MODE,SILENT,1,42);
+	CARLsim* sim = new CARLsim("Connect.connectOneToOne",CPU_MODE,SILENT,1,42);
 	Grid3D grid(2,3,4);
 	int g0=sim->createGroup("excit0", grid, EXCITATORY_NEURON);
 	int g1=sim->createGroup("excit1", grid, EXCITATORY_NEURON);
@@ -153,8 +97,8 @@ TEST(CONNECT, connectOneToOne) {
 	sim->setNeuronParameters(g2, 0.02f, 0.2f, -65.0f, 8.0f);
 
 	int c0=sim->connect(g0,g0,"one-to-one",RangeWeight(0.1), 1.0, RangeDelay(1)); // full
-	int c1=sim->connect(g1,g1,"one-to-one",RangeWeight(0.1), 1.0, RangeDelay(1), RadiusRF(-1,0,0)); // all in x
-	int c2=sim->connect(g2,g2,"one-to-one",RangeWeight(0.1), 1.0, RangeDelay(1), RadiusRF(-1,0,-1)); // all in x,z
+	int c1=sim->connect(g1,g1,"one-to-one",RangeWeight(0.1), 1.0, RangeDelay(1), RadiusRF(-1.0, 0.0, 0.0)); // all in x
+	int c2=sim->connect(g2,g2,"one-to-one",RangeWeight(0.1), 1.0, RangeDelay(1), RadiusRF(-1.0, 0.0, -1.0)); // all in x,z
 
 	sim->setupNetwork(); // need SETUP state for this function to work
 
@@ -166,10 +110,10 @@ TEST(CONNECT, connectOneToOne) {
 	delete sim;
 }
 
-TEST(CONNECT, connectRandom) {
+TEST(Connect, connectRandom) {
 	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
-	CARLsim* sim = new CARLsim("CONNECT.connectRandom",CPU_MODE,SILENT,1,42);
+	CARLsim* sim = new CARLsim("Connect.connectRandom",CPU_MODE,SILENT,1,42);
 	Grid3D grid(2,3,4);
 	int g0=sim->createGroup("excit0", grid, EXCITATORY_NEURON);
 	int g1=sim->createGroup("excit1", grid, EXCITATORY_NEURON);
@@ -195,8 +139,8 @@ TEST(CONNECT, connectRandom) {
 	sim->setupNetwork(); // need SETUP state for this function to work
 
 	// from SNN::connect: estimate max number of connections needed using binomial distribution
-	// at 6.5 standard deviations
-	int errorMargin = 6.5*sqrt(prob*(1-prob)*grid.N)+0.5;
+	// at 7.5 standard deviations
+	int errorMargin = 7.5*sqrt(prob*(1-prob)*grid.N)+0.5;
 	EXPECT_NEAR(sim->getNumSynapticConnections(c0), prob * grid.N * grid.N, errorMargin);
 	EXPECT_NEAR(sim->getNumSynapticConnections(c1), prob * grid.N * grid.numX, errorMargin);
 	EXPECT_NEAR(sim->getNumSynapticConnections(c2), prob * grid.N * grid.numX * grid.numZ, errorMargin);
@@ -208,7 +152,7 @@ TEST(CONNECT, connectRandom) {
 }
 
 
-TEST(CONNECT, connectGaussian) {
+TEST(Connect, connectGaussian) {
 	CARLsim* sim = NULL;
 
 	// test all possible cases, where any dimension < 0, == 0, or some real-valued RF > 0

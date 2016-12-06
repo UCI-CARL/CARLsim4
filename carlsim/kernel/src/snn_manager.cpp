@@ -86,7 +86,7 @@ SNN::~SNN() {
 
 // make from each neuron in grpId1 to 'numPostSynapses' neurons in grpId2
 short int SNN::connect(int grpId1, int grpId2, const std::string& _type, float initWt, float maxWt, float prob,
-						uint8_t minDelay, uint8_t maxDelay, float radX, float radY, float radZ,
+						uint8_t minDelay, uint8_t maxDelay, RadiusRF radius,
 						float _mulSynFast, float _mulSynSlow, bool synWtType) {
 						//const std::string& wtType
 	int retId=-1;
@@ -112,23 +112,21 @@ short int SNN::connect(int grpId1, int grpId2, const std::string& _type, float i
 	// initialize configuration of a connection
 	ConnectConfig connConfig;
 
-	connConfig.grpSrc   		  = grpId1;
-	connConfig.grpDest  		  = grpId2;
-	connConfig.initWt	  		  = initWt;
-	connConfig.maxWt	  		  = maxWt;
-	connConfig.maxDelay 		  = maxDelay;
-	connConfig.minDelay 		  = minDelay;
+	connConfig.grpSrc   = grpId1;
+	connConfig.grpDest  = grpId2;
+	connConfig.initWt   = initWt;
+	connConfig.maxWt    = maxWt;
+	connConfig.maxDelay = maxDelay;
+	connConfig.minDelay = minDelay;
 //		newInfo->radX             = (radX<0) ? MAX(szPre.x,szPost.x) : radX; // <0 means full connectivity, so the
 //		newInfo->radY             = (radY<0) ? MAX(szPre.y,szPost.y) : radY; // effective group size is Grid3D.x. Grab
 //		newInfo->radZ             = (radZ<0) ? MAX(szPre.z,szPost.z) : radZ; // the larger of pre / post to connect all
-	connConfig.radX             = radX;
-	connConfig.radY             = radY;
-	connConfig.radZ             = radZ;
-	connConfig.mulSynFast       = _mulSynFast;
-	connConfig.mulSynSlow       = _mulSynSlow;
-	connConfig.connProp         = connProp;
-	connConfig.connProbability                = prob;
-	connConfig.type             = CONN_UNKNOWN;
+	connConfig.connRadius = radius;
+	connConfig.mulSynFast      = _mulSynFast;
+	connConfig.mulSynSlow      = _mulSynSlow;
+	connConfig.connProp        = connProp;
+	connConfig.connProbability = prob;
+	connConfig.type            = CONN_UNKNOWN;
 	connConfig.connectionMonitorId = -1;
 	connConfig.connId = -1;
 	connConfig.conn = NULL;
@@ -2808,22 +2806,21 @@ void SNN::connectFull(int netId, std::list<ConnectConfig>::iterator connIt, bool
 		assert(netId != externalNetId);
 	}
 
-	// rebuild struct for easier handling
-	RadiusRF radius(connIt->radX, connIt->radY, connIt->radZ);
-
-	for(int i = groupConfigMDMap[grpSrc].gStartN; i <= groupConfigMDMap[grpSrc].gEndN; i++)  {
-		//Point3D loc_i = getNeuronLocation3D(i); // 3D coordinates of i
-		for(int j = groupConfigMDMap[grpDest].gStartN; j <= groupConfigMDMap[grpDest].gEndN; j++) { // j: the temp neuron id
+	int gPreStart = groupConfigMDMap[grpSrc].gStartN;
+	for(int gPreN = groupConfigMDMap[grpSrc].gStartN; gPreN <= groupConfigMDMap[grpSrc].gEndN; gPreN++)  {
+		Point3D locPre = getNeuronLocation3D(grpSrc, gPreN - gPreStart); // 3D coordinates of i
+		int gPostStart = groupConfigMDMap[grpDest].gStartN;
+		for(int gPostN = groupConfigMDMap[grpDest].gStartN; gPostN <= groupConfigMDMap[grpDest].gEndN; gPostN++) { // j: the temp neuron id
 			// if flag is set, don't connect direct connections
-			if((noDirect) && (i - groupConfigMDMap[grpSrc].gStartN) == (j - groupConfigMDMap[grpDest].gStartN))
+			if(noDirect && gPreN == gPostN)
 				continue;
 
 			// check whether pre-neuron location is in RF of post-neuron
-			//Point3D loc_j = getNeuronLocation3D(j); // 3D coordinates of j
-			//if (!isPoint3DinRF(radius, loc_i, loc_j))
-			//	continue;
+			Point3D locPost = getNeuronLocation3D(grpDest, gPostN - gPostStart); // 3D coordinates of j
+			if (!isPoint3DinRF(connIt->connRadius, locPre, locPost))
+				continue;
 
-			connectNeurons(netId, grpSrc, grpDest, i, j, connIt->connId, externalNetId);
+			connectNeurons(netId, grpSrc, grpDest, gPreN, gPostN, connIt->connId, externalNetId);
 			connIt->numberOfConnections++;
 		}
 	}
@@ -2857,16 +2854,12 @@ void SNN::connectFull(int netId, std::list<ConnectConfig>::iterator connIt, bool
 }
 
 void SNN::connectGaussian(int netId, std::list<ConnectConfig>::iterator connIt, bool isExternal) {
-	// rebuild struct for easier handling
-	// adjust with sqrt(2) in order to make the Gaussian kernel depend on 2*sigma^2
-	RadiusRF radius(connIt->radX, connIt->radY, connIt->radZ);
-
 	// in case pre and post have different Grid3D sizes: scale pre to the grid size of post
 	int grpSrc = connIt->grpSrc;
 	int grpDest = connIt->grpDest;
-	//Grid3D grid_i = getGroupGrid3D(grpSrc);
-	//Grid3D grid_j = getGroupGrid3D(grpDest);
-	//Point3D scalePre = Point3D(grid_j.numX, grid_j.numY, grid_j.numZ) / Point3D(grid_i.numX, grid_i.numY, grid_i.numZ);
+	Grid3D grid_i = getGroupGrid3D(grpSrc);
+	Grid3D grid_j = getGroupGrid3D(grpDest);
+	Point3D scalePre = Point3D(grid_j.numX, grid_j.numY, grid_j.numZ) / Point3D(grid_i.numX, grid_i.numY, grid_i.numZ);
 	int externalNetId = -1;
 
 	if (isExternal) {
@@ -2875,25 +2868,25 @@ void SNN::connectGaussian(int netId, std::list<ConnectConfig>::iterator connIt, 
 	}
 
 	for(int i = groupConfigMDMap[grpSrc].gStartN; i <= groupConfigMDMap[grpSrc].gEndN; i++)  {
-		//Point3D loc_i = getNeuronLocation3D(i)*scalePre; // i: adjusted 3D coordinates
+		Point3D loc_i = getNeuronLocation3D(i)*scalePre; // i: adjusted 3D coordinates
 
 		for(int j = groupConfigMDMap[grpDest].gStartN; j <= groupConfigMDMap[grpDest].gEndN; j++) { // j: the temp neuron id
 			// check whether pre-neuron location is in RF of post-neuron
-			//Point3D loc_j = getNeuronLocation3D(j); // 3D coordinates of j
+			Point3D loc_j = getNeuronLocation3D(j); // 3D coordinates of j
 
 			// make sure point is in RF
-			//double rfDist = getRFDist3D(radius,loc_i,loc_j);
-			//if (rfDist < 0.0 || rfDist > 1.0)
-			//	continue;
+			double rfDist = getRFDist3D(connIt->connRadius,loc_i,loc_j);
+			if (rfDist < 0.0 || rfDist > 1.0)
+				continue;
 
 			// if rfDist is valid, it returns a number between 0 and 1
 			// we want these numbers to fit to Gaussian weigths, so that rfDist=0 corresponds to max Gaussian weight
 			// and rfDist=1 corresponds to 0.1 times max Gaussian weight
 			// so we're looking at gauss = exp(-a*rfDist), where a such that exp(-a)=0.1
 			// solving for a, we find that a = 2.3026
-			//double gauss = exp(-2.3026*rfDist);
-			//if (gauss < 0.1)
-			//	continue;
+			double gauss = exp(-2.3026*rfDist);
+			if (gauss < 0.1)
+				continue;
 
 			if (drand48() < connIt->connProbability) {
 				connectNeurons(netId, grpSrc, grpDest, i, j, connIt->connId, externalNetId);
@@ -2943,8 +2936,8 @@ void SNN::connectOneToOne(int netId, std::list<ConnectConfig>::iterator connIt, 
 	assert( groupConfigMap[grpDest].numN == groupConfigMap[grpSrc].numN);
 
 	// NOTE: RadiusRF does not make a difference here: ignore
-	for(int nid = groupConfigMDMap[grpSrc].gStartN, j = groupConfigMDMap[grpDest].gStartN; nid <= groupConfigMDMap[grpSrc].gEndN; nid++, j++)  {
-		connectNeurons(netId, grpSrc, grpDest, nid, j, connIt->connId, externalNetId);
+	for(int gPreN = groupConfigMDMap[grpSrc].gStartN, gPostN = groupConfigMDMap[grpDest].gStartN; gPreN <= groupConfigMDMap[grpSrc].gEndN; gPreN++, gPostN++)  {
+		connectNeurons(netId, grpSrc, grpDest, gPreN, gPostN, connIt->connId, externalNetId);
 		connIt->numberOfConnections++;
 	}
 
@@ -2987,19 +2980,18 @@ void SNN::connectRandom(int netId, std::list<ConnectConfig>::iterator connIt, bo
 		assert(netId != externalNetId);
 	}
 
-	// rebuild struct for easier handling
-	//RadiusRF radius(connectConfigMap[connId].radX, connectConfigMap[connId].radY, connectConfigMap[connId].radZ);
-
-	for(int pre_nid = groupConfigMDMap[grpSrc].gStartN; pre_nid <= groupConfigMDMap[grpSrc].gEndN; pre_nid++) {
-		//Point3D loc_pre = getNeuronLocation3D(pre_nid); // 3D coordinates of i
-		for(int post_nid = groupConfigMDMap[grpDest].gStartN; post_nid <= groupConfigMDMap[grpDest].gEndN; post_nid++) {
+	int gPreStart = groupConfigMDMap[grpSrc].gStartN;
+	for(int gPreN = groupConfigMDMap[grpSrc].gStartN; gPreN <= groupConfigMDMap[grpSrc].gEndN; gPreN++) {
+		Point3D locPre = getNeuronLocation3D(grpSrc, gPreN - gPreStart); // 3D coordinates of i
+		int gPostStart = groupConfigMDMap[grpDest].gStartN;
+		for(int gPostN = groupConfigMDMap[grpDest].gStartN; gPostN <= groupConfigMDMap[grpDest].gEndN; gPostN++) {
 			// check whether pre-neuron location is in RF of post-neuron
-			//Point3D loc_post = getNeuronLocation3D(post_nid); // 3D coordinates of j
-			//if (!isPoint3DinRF(radius, loc_pre, loc_post))
-			//	continue;
+			Point3D locPost = getNeuronLocation3D(grpDest, gPostN - gPostStart); // 3D coordinates of j
+			if (!isPoint3DinRF(connIt->connRadius, locPre, locPost))
+				continue;
 
 			if (drand48() < connIt->connProbability) {
-				connectNeurons(netId, grpSrc, grpDest, pre_nid, post_nid, connIt->connId, externalNetId);
+				connectNeurons(netId, grpSrc, grpDest, gPreN, gPostN, connIt->connId, externalNetId);
 				connIt->numberOfConnections++;
 			}
 		}

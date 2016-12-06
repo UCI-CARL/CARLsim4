@@ -101,9 +101,7 @@ typedef struct ConnectConfig_s {
 	float                    maxWt;
 	float                    initWt;
 	float                    minWt;
-	float                    radX;
-	float                    radY;
-	float                    radZ;
+	RadiusRF                 connRadius;
 	float                    mulSynFast; //!< factor to be applied to either gAMPA or gGABAa
 	float                    mulSynSlow; //!< factor to be applied to either gNMDA or gGABAb
 	int                      connectionMonitorId; // ToDo: move to ConnectConfigMD

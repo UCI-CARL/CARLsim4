@@ -181,7 +181,7 @@ public:
 		}
 
 		return snn_->connect(grpId1, grpId2, connType, wt.init, wt.max, connProb, delay.min, delay.max,
-			radRF.radX, radRF.radY, radRF.radZ, mulSynFast,	mulSynSlow, synWtType);
+			radRF, mulSynFast, mulSynSlow, synWtType);
 	}
 
 	// custom connectivity profile

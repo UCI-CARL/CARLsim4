@@ -151,7 +151,7 @@ public:
 	 * \return number of created synaptic projections
 	 */
 	short int connect(int gIDpre, int gIDpost, const std::string& _type, float initWt, float maxWt, float prob,
-		uint8_t minDelay, uint8_t maxDelay, float radX, float radY, float radZ,
+		uint8_t minDelay, uint8_t maxDelay, RadiusRF radius,
 		float mulSynFast, float mulSynSlow, bool synWtType);
 
 	/* Creates synaptic projections using a callback mechanism.
