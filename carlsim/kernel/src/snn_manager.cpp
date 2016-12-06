@@ -2889,7 +2889,12 @@ void SNN::connectGaussian(int netId, std::list<ConnectConfig>::iterator connIt, 
 				continue;
 
 			if (drand48() < connIt->connProbability) {
-				connectNeurons(netId, grpSrc, grpDest, i, j, connIt->connId, externalNetId);
+				float initWt = gauss * connIt->initWt; // scale weight according to gauss distance
+				float maxWt = connIt->maxWt;
+				uint8_t delay = connIt->minDelay + rand() % (connIt->maxDelay - connIt->minDelay + 1);
+				assert((delay >= connIt->minDelay) && (delay <= connIt->maxDelay));
+
+				connectNeurons(netId, grpSrc, grpDest, i, j, connIt->connId, initWt, maxWt, delay, externalNetId);
 				connIt->numberOfConnections++;
 			}
 		}
