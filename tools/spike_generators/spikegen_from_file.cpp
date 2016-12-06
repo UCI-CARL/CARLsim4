@@ -97,14 +97,15 @@ void SpikeGeneratorFromFile::init() {
 	std::string funcName = "readFile("+fileName_+")";
 	int tmpTime = -1;
 	int tmpNeurId = -1;
-	size_t result;
+	size_t result1, result2;
 
 	while (!feof(fp)) {
-		result = fread(&tmpTime, sizeof(int), 1, fp); // i-th time
-		UserErrors::assertTrue(result == 1, UserErrors::FILE_CANNOT_READ, funcName, fileName_);
-		result = fread(&tmpNeurId, sizeof(int), 1, fp); // i-th nid
-		UserErrors::assertTrue(result == 1, UserErrors::FILE_CANNOT_READ, funcName, fileName_);
-		spikes_[tmpNeurId].push_back(tmpTime); // add spike time to 2D vector
+		result1 = fread(&tmpTime, sizeof(int), 1, fp); // i-th time
+		//UserErrors::assertTrue(result == 1, UserErrors::FILE_CANNOT_READ, funcName, fileName_);
+		result2 = fread(&tmpNeurId, sizeof(int), 1, fp); // i-th nid
+		//UserErrors::assertTrue(result == 1, UserErrors::FILE_CANNOT_READ, funcName, fileName_);
+		if (result1 + result2 == 2) // validate the size of reading
+			spikes_[tmpNeurId].push_back(tmpTime); // add spike time to 2D vector
 	}
 
 #ifdef VERBOSE
