@@ -106,13 +106,13 @@ typedef struct ConnectConfig_s {
 	float                    radZ;
 	float                    mulSynFast; //!< factor to be applied to either gAMPA or gGABAa
 	float                    mulSynSlow; //!< factor to be applied to either gNMDA or gGABAb
-	int                      connectionMonitorId;
+	int                      connectionMonitorId; // ToDo: move to ConnectConfigMD
 	uint32_t                 connProp;
 	ConnectionGeneratorCore* conn;
 	conType_t                type;
 	float                    connProbability; //!< connection probability
 	short int                connId; //!< connectID of the element in the linked list
-	int                      numberOfConnections;
+	int                      numberOfConnections; // ToDo: move to ConnectConfigMD
 } ConnectConfig;
 
 /*!

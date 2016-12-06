@@ -21,6 +21,7 @@ public:
 		delay = 1;
 		weight = i*wtScale_;
 		maxWt = (net->getGroupNumNeurons(srcGrp)-1)*wtScale_;
+		//printf("[%d,%d,%f,%f]\n", i, j, weight, maxWt);
 	}
 
 private:
@@ -126,7 +127,7 @@ TEST(ConnMon, getters) {
 	// loop over both CPU and GPU mode.
 	for(int mode=0; mode<=1; mode++){
 		// first iteration, test CPU mode, second test GPU mode
-		sim = new CARLsim("ConnMon.setConnectionMonitorDeath",mode?GPU_MODE:CPU_MODE,USER,1,42);
+		sim = new CARLsim("ConnMon.setConnectionMonitorDeath",mode?GPU_MODE:CPU_MODE,SILENT,1,42);
 
 		grpId[0] = sim->createGroup("g0", grpSize[0], EXCITATORY_NEURON, 0);
 		grpId[1] = sim->createGroup("g1", grpSize[1], INHIBITORY_NEURON, 0);

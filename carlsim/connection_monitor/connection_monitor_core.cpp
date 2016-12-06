@@ -182,7 +182,7 @@ float ConnectionMonitorCore::getMinWeight(bool getCurrent) {
 			}
 		}
 	} else {
-		// return RangeWeight.max
+		// return RangeWeight.min
 		minVal = minWt_;
 	}
 

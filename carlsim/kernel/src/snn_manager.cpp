@@ -181,8 +181,8 @@ short int SNN::connect(int grpId1, int grpId2, ConnectionGeneratorCore* conn, fl
 
 	connConfig.grpSrc   = grpId1;
 	connConfig.grpDest  = grpId2;
-	connConfig.initWt	  = 1;
-	connConfig.maxWt	  = 1;
+	connConfig.initWt	  = 0.0f;
+	connConfig.maxWt	  = 0.0f;
 	connConfig.maxDelay = MAX_SYN_DELAY;
 	connConfig.minDelay = 1;
 	connConfig.mulSynFast = _mulSynFast;
@@ -2215,7 +2215,16 @@ void SNN::generateRuntimeGroupConfigs() {
 }
 
 void SNN::generateRuntimeConnectConfigs() {
-	// for future use
+	// sync localConnectLists and connectConfigMap
+	for (int netId = 0; netId < MAX_NET_PER_SNN; netId++) {
+		for (std::list<ConnectConfig>::iterator connIt = localConnectLists[netId].begin(); connIt != localConnectLists[netId].end(); connIt++) {
+			connectConfigMap[connIt->connId] = *connIt;
+		}
+
+		for (std::list<ConnectConfig>::iterator connIt = externalConnectLists[netId].begin(); connIt != externalConnectLists[netId].end(); connIt++) {
+			connectConfigMap[connIt->connId] = *connIt;
+		}
+	}
 }
 
 void SNN::generateRuntimeNetworkConfigs() {
@@ -2759,6 +2768,30 @@ inline void SNN::connectNeurons(int netId, int _grpSrc, int _grpDest, int _nSrc,
 
 	connectionLists[netId].push_back(connInfo);
 
+	// If the connection is external, copy the connection info to the external network
+	if (externalNetId >= 0)
+		connectionLists[externalNetId].push_back(connInfo);
+}
+
+//! set one specific connection from neuron id 'src' to neuron id 'dest'
+inline void SNN::connectNeurons(int netId, int _grpSrc, int _grpDest, int _nSrc, int _nDest, short int _connId, float initWt, float maxWt, uint8_t delay, int externalNetId) {
+	//assert(destN <= CONN_SYN_NEURON_MASK); // total number of neurons is less than 1 million within a GPU
+	ConnectionInfo connInfo;
+	connInfo.grpSrc = _grpSrc;
+	connInfo.grpDest = _grpDest;
+	connInfo.nSrc = _nSrc;
+	connInfo.nDest = _nDest;
+	connInfo.srcGLoffset = 0;
+	connInfo.connId = _connId;
+	connInfo.preSynId = -1;
+	// adjust the sign of the weight based on inh/exc connection
+	connInfo.initWt = isExcitatoryGroup(_grpSrc) ? fabs(initWt) : -1.0*fabs(initWt);
+	connInfo.maxWt = isExcitatoryGroup(_grpSrc) ? fabs(maxWt) : -1.0*fabs(maxWt);
+	connInfo.delay = delay;
+
+	connectionLists[netId].push_back(connInfo);
+
+	// If the connection is external, copy the connection info to the external network
 	if (externalNetId >= 0)
 		connectionLists[externalNetId].push_back(connInfo);
 }
@@ -3024,24 +3057,20 @@ void SNN::connectUserDefined(int netId, std::list<ConnectConfig>::iterator connI
 
 			connIt->conn->connect(this, grpSrc, pre_nid - preStartN, grpDest, post_nid - postStartN, weight, maxWt, delay, connected);
 			if (connected) {
-				if (GET_FIXED_PLASTIC(connIt->connProp) == SYN_FIXED)
-					maxWt = weight;
-
-				connIt->maxWt = maxWt;
-
 				assert(delay >= 1);
 				assert(delay <= MAX_SYN_DELAY);
 				assert(abs(weight) <= abs(maxWt));
 
-				// adjust the sign of the weight based on inh/exc connection
-				weight = isExcitatoryGroup(grpSrc) ? fabs(weight) : -1.0*fabs(weight);
-				maxWt = isExcitatoryGroup(grpSrc) ? fabs(maxWt) : -1.0*fabs(maxWt);
+				if (GET_FIXED_PLASTIC(connIt->connProp) == SYN_FIXED)
+					maxWt = weight;
 
-				if (delay > connIt->maxDelay) {
+				if (fabs(maxWt) > connIt->maxWt)
+					connIt->maxWt = fabs(maxWt);
+				
+				if (delay > connIt->maxDelay)
 					connIt->maxDelay = delay;
-				}
 
-				connectNeurons(netId, grpSrc, grpDest, pre_nid, post_nid, connIt->connId, externalNetId);
+				connectNeurons(netId, grpSrc, grpDest, pre_nid, post_nid, connIt->connId, weight, maxWt, delay, externalNetId);
 				connIt->numberOfConnections++;
 			}
 		}
