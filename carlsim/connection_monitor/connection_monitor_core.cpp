@@ -469,14 +469,14 @@ void ConnectionMonitorCore::writeConnectFileHeader() {
 
 void ConnectionMonitorCore::writeConnectFileSnapshot(int simTimeMs, std::vector< std::vector<float> > wts) {
 	// don't write if we have already written this timestamp to file (or file doesn't exist)
-	if ((long int)simTimeMs <= wtTimeWrite_ || connFileId_==NULL) {
+	if ((long long)simTimeMs <= wtTimeWrite_ || connFileId_==NULL) {
 		return;
 	}
 
-	wtTimeWrite_ = (long int)simTimeMs;
+	wtTimeWrite_ = (long long)simTimeMs;
 
 	// write time stamp
-	if (!fwrite(&wtTimeWrite_,sizeof(long int),1,connFileId_))
+	if (!fwrite(&wtTimeWrite_,sizeof(long long),1,connFileId_))
 		KERNEL_ERROR("ConnectionMonitor: writeConnectFileSnapshot has fwrite error");
 
 	// write all weights
