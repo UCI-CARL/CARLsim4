@@ -8,13 +8,13 @@
 
 
 /// **************************************************************************************************************** ///
-/// CORE FUNCTIONALITY
+/// Core FUNCTIONALITY
 /// **************************************************************************************************************** ///
 
-TEST(CORE, getGroupGrid3D) {
+TEST(Core, getGroupGrid3D) {
 	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
-	CARLsim* sim = new CARLsim("CORE.getGroupGrid3D",CPU_MODE,SILENT,1,42);
+	CARLsim* sim = new CARLsim("Core.getGroupGrid3D",CPU_MODE,SILENT,1,42);
 	Grid3D grid(2,3,4);
 	int g2=sim->createGroup("excit2", grid, EXCITATORY_NEURON);
 	sim->setNeuronParameters(g2, 0.02f, 0.2f, -65.0f, 8.0f);
@@ -33,10 +33,10 @@ TEST(CORE, getGroupGrid3D) {
 	delete sim;
 }
 
-TEST(CORE, getGroupIdFromString) {
+TEST(Core, getGroupIdFromString) {
 	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
-	CARLsim* sim = new CARLsim("CORE.getGroupIdFromString",CPU_MODE,SILENT,1,42);
+	CARLsim* sim = new CARLsim("Core.getGroupIdFromString",CPU_MODE,SILENT,1,42);
 	int g2=sim->createGroup("bananahama", Grid3D(1,2,3), INHIBITORY_NEURON);
 	sim->setNeuronParameters(g2, 0.02f, 0.2f, -65.0f, 8.0f);
 	int g1=sim->createSpikeGeneratorGroup("excit", Grid3D(2,3,4), EXCITATORY_NEURON);
@@ -52,10 +52,10 @@ TEST(CORE, getGroupIdFromString) {
 
 
 // This test creates a group on a grid and makes sure that the returned 3D location of each neuron is correct
-TEST(CORE, getNeuronLocation3D) {
+TEST(Core, getNeuronLocation3D) {
 	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
-	CARLsim* sim = new CARLsim("CORE.getNeuronLocation3D",CPU_MODE,SILENT,1,42);
+	CARLsim* sim = new CARLsim("Core.getNeuronLocation3D",CPU_MODE,SILENT,1,42);
 	Grid3D grid(2,3,4);
 	int g2=sim->createGroup("excit2", grid, EXCITATORY_NEURON);
 	sim->setNeuronParameters(g2, 0.02f, 0.2f, -65.0f, 8.0f);
@@ -90,29 +90,11 @@ TEST(CORE, getNeuronLocation3D) {
 	delete sim;
 }
 
-/*
-// \FIXME deactivate for now because we don't want to instantiate SNN
-
-// tests whether a point lies on a grid
-TEST(CORE, isPoint3DonGrid) {
-	SNN snn("CORE.isPoint3DonGrid", CPU_MODE, SILENT, 0, 42);
-	EXPECT_FALSE(snn.isPoint3DonGrid(Point3D(-1,-1,-1), Grid3D(10,5,2)));
-	EXPECT_FALSE(snn.isPoint3DonGrid(Point3D(0.5,0.5,0.5), Grid3D(10,5,2)));
-	EXPECT_FALSE(snn.isPoint3DonGrid(Point3D(10,5,2), Grid3D(10,5,2)));
-
-	EXPECT_TRUE(snn.isPoint3DonGrid(Point3D(0,0,0), Grid3D(10,5,2)));
-	EXPECT_TRUE(snn.isPoint3DonGrid(Point3D(0.0,0.0,0.0), Grid3D(10,5,2)));
-	EXPECT_TRUE(snn.isPoint3DonGrid(Point3D(1,1,1), Grid3D(10,5,2)));
-	EXPECT_TRUE(snn.isPoint3DonGrid(Point3D(9,4,1), Grid3D(10,5,2)));
-	EXPECT_TRUE(snn.isPoint3DonGrid(Point3D(9.0,4.0,1.0), Grid3D(10,5,2)));
-}
-*/
-
 // \TODO: using external current, make sure the Izhikevich model is correctly implemented
 // Run izhikevich.org MATLAB script to find number of spikes as a function of neuron type,
 // input current, and time period. Build test case to reproduce the exact numbers.
 
-TEST(CORE, setExternalCurrent) {
+TEST(Core, setExternalCurrent) {
 	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
 	CARLsim * sim;
@@ -120,7 +102,7 @@ TEST(CORE, setExternalCurrent) {
 
 	for (int hasCOBA=0; hasCOBA<=1; hasCOBA++) {
 		for (int isGPUmode=0; isGPUmode<=1; isGPUmode++) {
-			sim = new CARLsim("CORE.setExternalCurrent", isGPUmode?GPU_MODE:CPU_MODE, SILENT, 1, 42);
+			sim = new CARLsim("Core.setExternalCurrent", isGPUmode?GPU_MODE:CPU_MODE, SILENT, 1, 42);
 			int g1=sim->createGroup("excit1", nNeur, EXCITATORY_NEURON);
 			sim->setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f);
 			int g0=sim->createSpikeGeneratorGroup("input0", nNeur, EXCITATORY_NEURON);
@@ -179,7 +161,7 @@ TEST(CORE, setExternalCurrent) {
 	}
 }
 
-TEST(CORE, biasWeights) {
+TEST(Core, biasWeights) {
 	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
 	CARLsim* sim;
@@ -188,7 +170,7 @@ TEST(CORE, biasWeights) {
 	memset(nSpkHighWt, 0, nNeur*sizeof(int));
 
 	for (int isGPUmode=0; isGPUmode<=1; isGPUmode++) {
-		sim = new CARLsim("CORE.biasWeights",isGPUmode?GPU_MODE:CPU_MODE,SILENT,1,42);
+		sim = new CARLsim("Core.biasWeights",isGPUmode?GPU_MODE:CPU_MODE,SILENT,1,42);
 		int g1=sim->createGroup("excit", nNeur, EXCITATORY_NEURON);
 		sim->setNeuronParameters(g1, 0.02f, 0.2f,-65.0f,8.0f);
 		int c1=sim->connect(g1, g1, "one-to-one", RangeWeight(0.5f), 1.0f, RangeDelay(1));
@@ -228,7 +210,7 @@ TEST(CORE, biasWeights) {
 	delete[] nSpkHighWt;
 }
 
-TEST(CORE, scaleWeights) {
+TEST(Core, scaleWeights) {
 	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
 	CARLsim* sim;
@@ -237,7 +219,7 @@ TEST(CORE, scaleWeights) {
 	memset(nSpkHighWt, 0, nNeur*sizeof(int));
 
 	for (int isGPUmode=0; isGPUmode<=1; isGPUmode++) {
-		sim = new CARLsim("CORE.scaleWeights",isGPUmode?GPU_MODE:CPU_MODE,SILENT,1,42);
+		sim = new CARLsim("Core.scaleWeights",isGPUmode?GPU_MODE:CPU_MODE,SILENT,1,42);
 		int g1=sim->createGroup("excit", nNeur, EXCITATORY_NEURON);
 		sim->setNeuronParameters(g1, 0.02f, 0.2f,-65.0f,8.0f);
 		int c1=sim->connect(g1, g1, "one-to-one", RangeWeight(0.5f), 1.0f, RangeDelay(1));
@@ -277,7 +259,7 @@ TEST(CORE, scaleWeights) {
 	delete[] nSpkHighWt;
 }
 
-TEST(CORE, setWeight) {
+TEST(Core, setWeight) {
 	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
 	CARLsim* sim;
@@ -286,7 +268,7 @@ TEST(CORE, setWeight) {
 	memset(nSpkHighWt, 0, nNeur*sizeof(int));
 
 	for (int isGPUmode=0; isGPUmode<=1; isGPUmode++) {
-		sim = new CARLsim("CORE.setWeight",isGPUmode?GPU_MODE:CPU_MODE,SILENT,1,42);
+		sim = new CARLsim("Core.setWeight",isGPUmode?GPU_MODE:CPU_MODE,SILENT,1,42);
 		int g1=sim->createGroup("excit", nNeur, EXCITATORY_NEURON);
 		sim->setNeuronParameters(g1, 0.02f, 0.2f,-65.0f,8.0f);
 		int c1=sim->connect(g1, g1, "one-to-one", RangeWeight(0.5f), 1.0f, RangeDelay(1));
@@ -326,14 +308,14 @@ TEST(CORE, setWeight) {
 	delete[] nSpkHighWt;
 }
 
-TEST(CORE, getDelayRange) {
+TEST(Core, getDelayRange) {
 	CARLsim* sim;
 	int nNeur = 10;
 	int minDelay = 1;
 	int maxDelay = 10;
 
 	for (int isGPUmode=0; isGPUmode<=1; isGPUmode++) {
-		sim = new CARLsim("CORE.getDelayRange",isGPUmode?GPU_MODE:CPU_MODE,SILENT,1,42);
+		sim = new CARLsim("Core.getDelayRange",isGPUmode?GPU_MODE:CPU_MODE,SILENT,1,42);
 		int g1=sim->createGroup("excit", nNeur, EXCITATORY_NEURON);
 		sim->setNeuronParameters(g1, 0.02f, 0.2f,-65.0f,8.0f);
 		int c1=sim->connect(g1, g1, "one-to-one", RangeWeight(0.5f), 1.0f, RangeDelay(minDelay,maxDelay));
@@ -362,7 +344,7 @@ TEST(CORE, getDelayRange) {
 	}
 }
 
-TEST(CORE, getWeightRange) {
+TEST(Core, getWeightRange) {
 	CARLsim* sim;
 	int nNeur = 10;
 	float minWt = 0.0f;
@@ -370,7 +352,7 @@ TEST(CORE, getWeightRange) {
 	float maxWt = 10.0f;
 
 	for (int isGPUmode=0; isGPUmode<=1; isGPUmode++) {
-		sim = new CARLsim("CORE.getWeightRange",isGPUmode?GPU_MODE:CPU_MODE,SILENT,1,42);
+		sim = new CARLsim("Core.getWeightRange",isGPUmode?GPU_MODE:CPU_MODE,SILENT,1,42);
 		int g1=sim->createGroup("excit", nNeur, EXCITATORY_NEURON);
 		sim->setNeuronParameters(g1, 0.02f, 0.2f,-65.0f,8.0f);
 		int c1=sim->connect(g1, g1, "one-to-one", RangeWeight(minWt,initWt,maxWt), 1.0f, RangeDelay(1), RadiusRF(-1),
@@ -405,10 +387,10 @@ TEST(CORE, getWeightRange) {
 
 
 // make sure bookkeeping for number of groups is correct during CONFIG
-TEST(CORE, numGroups) {
+TEST(Core, numGroups) {
 	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
-	CARLsim sim("CORE.numGroups", CPU_MODE, SILENT, 0, 42);
+	CARLsim sim("Core.numGroups", CPU_MODE, SILENT, 0, 42);
 	EXPECT_EQ(sim.getNumGroups(), 0);
 
 	int nLoops = 4;
@@ -426,10 +408,10 @@ TEST(CORE, numGroups) {
 }
 
 // make sure bookkeeping for number of neurons is correct during CONFIG
-TEST(CORE, numNeurons) {
+TEST(Core, numNeurons) {
 	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
-	CARLsim sim("CORE.numNeurons", CPU_MODE, SILENT, 0, 42);
+	CARLsim sim("Core.numNeurons", CPU_MODE, SILENT, 0, 42);
 	EXPECT_EQ(sim.getNumNeurons(), 0);
 	EXPECT_EQ(sim.getNumNeuronsRegExc(), 0);
 	EXPECT_EQ(sim.getNumNeuronsRegInh(), 0);
@@ -462,7 +444,7 @@ TEST(CORE, numNeurons) {
 	EXPECT_EQ(sim.getNumNeuronsGen(), sim.getNumNeuronsGenExc() + sim.getNumNeuronsGenInh());
 }
 
-TEST(CORE, startStopTestingPhase) {
+TEST(Core, startStopTestingPhase) {
 	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
 	CARLsim* sim;
@@ -471,7 +453,7 @@ TEST(CORE, startStopTestingPhase) {
 	// irrelevant start/stop calls)
 	for (int run=0; run<=1; run++) {
 		for (int mode=0; mode<=1; mode++) {
-			sim = new CARLsim("CORE.startStopTestingPhase",mode?GPU_MODE:CPU_MODE,SILENT,1,42);
+			sim = new CARLsim("Core.startStopTestingPhase",mode?GPU_MODE:CPU_MODE,SILENT,1,42);
 
 			int gExc = sim->createGroup("output", 1, EXCITATORY_NEURON);
 			sim->setNeuronParameters(gExc, 0.02f, 0.2f, -65.0f, 8.0f); // RS
@@ -533,7 +515,7 @@ TEST(CORE, startStopTestingPhase) {
 	}
 }
 
-TEST(CORE, saveLoadSimulation) {
+TEST(Core, saveLoadSimulation) {
 	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
 	float tauPlus = 20.0f;
@@ -553,7 +535,7 @@ TEST(CORE, saveLoadSimulation) {
 			for (int isPlastic=0; isPlastic<=1; isPlastic++) {
 				for (int loadSim=0; loadSim<=1; loadSim++) {
 					// Run and save simulation ------------------------------ //
-					CARLsim* sim = new CARLsim("CORE.saveSimulation", mode?GPU_MODE:CPU_MODE, SILENT, 1, 42);
+					CARLsim* sim = new CARLsim("Core.saveSimulation", mode?GPU_MODE:CPU_MODE, SILENT, 1, 42);
 					FILE* simFid = NULL;
 
 					gPost = sim->createGroup("pre-ex", 10, EXCITATORY_NEURON);

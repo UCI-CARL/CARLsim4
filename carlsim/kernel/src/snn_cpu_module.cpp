@@ -563,7 +563,7 @@ void SNN::firingUpdateSTP(int lNId, int lGrpId, int netId) {
 	// update the spike-dependent part of du/dt and dx/dt
 	// we need to retrieve the STP values from the right buffer position (right before vs. right after the spike)
 	int ind_plus = STP_BUF_POS(lNId, simTime, networkConfigs[netId].maxDelay); // index of right after the spike, such as in u^+
-	int ind_minus = STP_BUF_POS(lNId, (simTime-1), networkConfigs[netId].maxDelay); // index of right before the spike, such as in u^-
+	int ind_minus = STP_BUF_POS(lNId, (simTime - 1), networkConfigs[netId].maxDelay); // index of right before the spike, such as in u^-
 
 	// du/dt = -u/tau_F + U * (1-u^-) * \delta(t-t_{spk})
 	cpuRuntimeData[netId].stpu[ind_plus] += groupConfigs[netId][lGrpId].STP_U * (1.0f - cpuRuntimeData[netId].stpu[ind_minus]);
@@ -647,10 +647,12 @@ void SNN::generatePostSynapticSpike(int preNId, int postNId, int synId, int tD, 
 
 		change *= groupConfigs[netId][pre_grpId].STP_A * cpuRuntimeData[netId].stpu[ind_plus] * cpuRuntimeData[netId].stpx[ind_minus];
 
-//		fprintf(stderr,"%d: %d[%d], numN=%d, td=%d, maxDelay_=%d, ind-=%d, ind+=%d, stpu=[%f,%f], stpx=[%f,%f], change=%f, wt=%f\n",
-//			simTime, pre_grpId, preNId,
-//					numN, tD, maxDelay_, ind_minus, ind_plus,
-//					stpu[ind_minus], stpu[ind_plus], stpx[ind_minus], stpx[ind_plus], change, wt[pos]);
+		//printf("%d: %d[%d], numN=%d, td=%d, maxDelay_=%d, ind-=%d, ind+=%d, stpu=[%f,%f], stpx=[%f,%f], change=%f, wt=%f\n",
+		//	simTime, pre_grpId, preNId,
+		//	groupConfigs[netId][pre_grpId].numN, tD, networkConfigs[netId].maxDelay, ind_minus, ind_plus,
+		//	cpuRuntimeData[netId].stpu[ind_minus], cpuRuntimeData[netId].stpu[ind_plus],
+		//	cpuRuntimeData[netId].stpx[ind_minus], cpuRuntimeData[netId].stpx[ind_plus],
+		//	change, cpuRuntimeData[netId].wt[pos]);
 	}
 
 	// P3-1, P3-2
@@ -1686,12 +1688,12 @@ void SNN::copySTPState(int netId, int lGrpId, RuntimeData* dest, RuntimeData* sr
 	assert(src->stpu != NULL); assert(src->stpx != NULL);
 
 	if(allocateMem)
-		dest->stpu = new float[networkConfigs[netId].numN * networkConfigs[netId].maxDelay + 1];
-	memcpy(dest->stpu, src->stpu, sizeof(float) * networkConfigs[netId].numN * networkConfigs[netId].maxDelay + 1);
+		dest->stpu = new float[networkConfigs[netId].numN * (networkConfigs[netId].maxDelay + 1)];
+	memcpy(dest->stpu, src->stpu, sizeof(float) * networkConfigs[netId].numN * (networkConfigs[netId].maxDelay + 1));
 
 	if(allocateMem)
-		dest->stpx = new float[networkConfigs[netId].numN * networkConfigs[netId].maxDelay + 1];
-	memcpy(dest->stpx, src->stpx, sizeof(float) * networkConfigs[netId].numN * networkConfigs[netId].maxDelay + 1);
+		dest->stpx = new float[networkConfigs[netId].numN * (networkConfigs[netId].maxDelay + 1)];
+	memcpy(dest->stpx, src->stpx, sizeof(float) * networkConfigs[netId].numN * (networkConfigs[netId].maxDelay + 1));
 }
 
 // ToDo: move grpDA(5HT, ACh, NE)Buffer to copyAuxiliaryData
@@ -2046,6 +2048,100 @@ void SNN::copySpikeTables(int netId) {
 }
 
 void SNN::deleteObjects_CPU() {
-	// ToDo: Add memory deallocation
+	for (int netId = 0; netId < MAX_NET_PER_SNN; netId++) {
+		if (!groupPartitionLists[netId].empty()) {
+			// free all pointers
+			delete [] cpuRuntimeData[netId].voltage;
+			delete [] cpuRuntimeData[netId].recovery;
+			delete [] cpuRuntimeData[netId].current;
+			delete [] cpuRuntimeData[netId].extCurrent;
+			delete [] cpuRuntimeData[netId].Npre;
+			delete [] cpuRuntimeData[netId].Npre_plastic;
+			delete [] cpuRuntimeData[netId].Npre_plasticInv;
+			delete [] cpuRuntimeData[netId].Npost;
+			delete [] cpuRuntimeData[netId].cumulativePost;
+			delete [] cpuRuntimeData[netId].cumulativePre;
+			delete [] cpuRuntimeData[netId].synSpikeTime;
+			delete [] cpuRuntimeData[netId].wt;
+			delete [] cpuRuntimeData[netId].wtChange;
+			delete [] cpuRuntimeData[netId].maxSynWt;
+			delete [] cpuRuntimeData[netId].nSpikeCnt;
+			delete [] cpuRuntimeData[netId].avgFiring;
+			delete [] cpuRuntimeData[netId].baseFiring;
+			delete [] cpuRuntimeData[netId].baseFiringInv;
+
+			delete [] cpuRuntimeData[netId].grpDA;
+			delete [] cpuRuntimeData[netId].grp5HT;
+			delete [] cpuRuntimeData[netId].grpACh;
+			delete [] cpuRuntimeData[netId].grpNE;
+
+			delete [] cpuRuntimeData[netId].grpDABuffer;
+			delete [] cpuRuntimeData[netId].grp5HTBuffer;
+			delete [] cpuRuntimeData[netId].grpAChBuffer;
+			delete [] cpuRuntimeData[netId].grpNEBuffer;
+
+			delete [] cpuRuntimeData[netId].grpIds;
+
+			delete [] cpuRuntimeData[netId].Izh_a;
+			delete [] cpuRuntimeData[netId].Izh_b;
+			delete [] cpuRuntimeData[netId].Izh_c;
+			delete [] cpuRuntimeData[netId].Izh_d;
+			delete [] cpuRuntimeData[netId].gAMPA;
+			if (sim_with_NMDA_rise) {
+				delete [] cpuRuntimeData[netId].gNMDA_r;
+				delete [] cpuRuntimeData[netId].gNMDA_d;
+			}
+			else {
+				delete [] cpuRuntimeData[netId].gNMDA;
+			}
+			delete [] cpuRuntimeData[netId].gGABAa;
+			if (sim_with_GABAb_rise) {
+				delete [] cpuRuntimeData[netId].gGABAb_r;
+				delete [] cpuRuntimeData[netId].gGABAb_d;
+			}
+			else {
+				delete [] cpuRuntimeData[netId].gGABAb;
+			}
+
+			delete [] cpuRuntimeData[netId].stpu;
+			delete [] cpuRuntimeData[netId].stpx;
+
+			delete [] cpuRuntimeData[netId].connIdsPreIdx;
+
+			delete [] cpuRuntimeData[netId].postDelayInfo;
+			delete [] cpuRuntimeData[netId].postSynapticIds;
+			delete [] cpuRuntimeData[netId].preSynapticIds;
+			delete [] cpuRuntimeData[netId].I_set;
+			delete [] cpuRuntimeData[netId].poissonFireRate;
+			delete [] cpuRuntimeData[netId].lastSpikeTime;
+			delete [] cpuRuntimeData[netId].spikeGenBits;
+
+			delete [] cpuRuntimeData[netId].firingTableD2;
+			delete [] cpuRuntimeData[netId].firingTableD1;
+
+			int** tempPtrs;
+			tempPtrs = new int*[networkConfigs[netId].numGroups];
+
+			// fetch device memory address stored in extFiringTableD2
+			memcpy(tempPtrs, cpuRuntimeData[netId].extFiringTableD2, sizeof(int*) * networkConfigs[netId].numGroups);
+			for (int i = 0; i < networkConfigs[netId].numGroups; i++)
+				delete [] tempPtrs[i];
+			delete [] cpuRuntimeData[netId].extFiringTableD2;
+
+			// fetch device memory address stored in extFiringTableD1
+			memcpy(tempPtrs, cpuRuntimeData[netId].extFiringTableD1, sizeof(int*) * networkConfigs[netId].numGroups);
+			for (int i = 0; i < networkConfigs[netId].numGroups; i++)
+				delete [] tempPtrs[i];
+			delete [] cpuRuntimeData[netId].extFiringTableD1;
+
+			delete[] tempPtrs;
+
+			delete [] cpuRuntimeData[netId].extFiringTableEndIdxD2;
+			delete [] cpuRuntimeData[netId].extFiringTableEndIdxD1;
+
+			if (cpuRuntimeData[netId].randNum != NULL) delete [] cpuRuntimeData[netId].randNum;
+			cpuRuntimeData[netId].randNum = NULL;
+		}
+	}
 }
 

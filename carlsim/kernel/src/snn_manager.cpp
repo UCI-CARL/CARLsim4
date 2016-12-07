@@ -4404,7 +4404,7 @@ void SNN::resetNeuron(int netId, int lGrpId, int lNId) {
 	managerRuntimeData.lastSpikeTime[lNId] = MAX_SIMULATION_TIME;
 
 	if(groupConfigs[netId][lGrpId].WithSTP) {
-		for (int j = 0; j <= networkConfigs[netId].maxDelay; j++) { // is of size maxDelay_+1
+		for (int j = 0; j < networkConfigs[netId].maxDelay + 1; j++) { // is of size maxDelay_+1
 			int index = STP_BUF_POS(lNId, j, networkConfigs[netId].maxDelay);
 			managerRuntimeData.stpu[index] = 0.0f;
 			managerRuntimeData.stpx[index] = 1.0f;
@@ -4572,7 +4572,7 @@ void SNN::resetPoissonNeuron(int netId, int lGrpId, int lNId) {
 		managerRuntimeData.avgFiring[lNId] = 0.0f;
 
 	if (groupConfigs[netId][lGrpId].WithSTP) {
-		for (int j = 0; j <= networkConfigs[netId].maxDelay; j++) { // is of size maxDelay_+1
+		for (int j = 0; j < networkConfigs[netId].maxDelay + 1; j++) { // is of size maxDelay_+1
 			int index = STP_BUF_POS(lNId, j, networkConfigs[netId].maxDelay);
 			managerRuntimeData.stpu[index] = 0.0f;
 			managerRuntimeData.stpx[index] = 1.0f;

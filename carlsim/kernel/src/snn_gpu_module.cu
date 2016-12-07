@@ -148,7 +148,7 @@ __device__ inline unsigned int* getFiringBitGroupPtr(int lNId, int synId) {
 }
 
 __device__ inline int getSTPBufPos(int lNId, int simTime) {
-	return ((simTime % (networkConfigGPU.maxDelay + 1)) * networkConfigGPU.STP_Pitch + lNId);
+	return (((simTime + 1) % (networkConfigGPU.maxDelay + 1)) * networkConfigGPU.STP_Pitch + lNId);
 }
 
 __device__ inline int2 getStaticThreadLoad(int bufPos) {
@@ -335,15 +335,15 @@ int SNN::allocateStaticLoad(int netId, int bufSize) {
 __device__ void firingUpdateSTP (int nid, int simTime, short int grpId) {
 	// we need to retrieve the STP values from the right buffer position (right before vs. right after the spike)
 	int ind_plus  = getSTPBufPos(nid, simTime);
-	int ind_minus = getSTPBufPos(nid, (simTime-1));
+	int ind_minus = getSTPBufPos(nid, (simTime - 1));
 
 	// at this point, stpu[ind_plus] has already been assigned, and the decay applied
 	// so add the spike-dependent part to that
 	// du/dt = -u/tau_F + U * (1-u^-) * \delta(t-t_{spk})
-	runtimeDataGPU.stpu[ind_plus] += groupConfigsGPU[grpId].STP_U*(1.0f-runtimeDataGPU.stpu[ind_minus]);
+	runtimeDataGPU.stpu[ind_plus] += groupConfigsGPU[grpId].STP_U * (1.0f - runtimeDataGPU.stpu[ind_minus]);
 
 	// dx/dt = (1-x)/tau_D - u^+ * x^- * \delta(t-t_{spk})
-	runtimeDataGPU.stpx[ind_plus] -= runtimeDataGPU.stpu[ind_plus]*runtimeDataGPU.stpx[ind_minus];
+	runtimeDataGPU.stpx[ind_plus] -= runtimeDataGPU.stpu[ind_plus] * runtimeDataGPU.stpx[ind_minus];
 }
 
 __device__ void resetFiredNeuron(int lNId, short int lGrpId, int simTime) {
@@ -2248,17 +2248,18 @@ void SNN::copySTPState(int netId, int lGrpId, RuntimeData* dest, RuntimeData* sr
 			// stpu in the CPU might be mapped in a specific way. we want to change the format
 			// to something that is okay with the GPU STP_U and STP_X variable implementation..
 			for (int n = 0; n < networkConfigs[netId].numN; n++) {
-				tmp_stp[n] = managerRuntimeData.stpu[STP_BUF_POS(n, t, glbNetworkConfig.maxDelay)];
-				assert(tmp_stp[n] == 0.0f);
+				int idx = STP_BUF_POS(n, t, glbNetworkConfig.maxDelay);
+				tmp_stp[n] = managerRuntimeData.stpu[idx];
+				//assert(tmp_stp[n] == 0.0f); // STP is not enabled for all groups
 			}
 			CUDA_CHECK_ERRORS(cudaMemcpy(&dest->stpu[t * networkConfigs[netId].STP_Pitch], tmp_stp, sizeof(float) * networkConfigs[netId].numN, cudaMemcpyHostToDevice));
 			for (int n = 0; n < networkConfigs[netId].numN; n++) {
-				tmp_stp[n] = managerRuntimeData.stpx[STP_BUF_POS(n, t, glbNetworkConfig.maxDelay)];
-				assert(tmp_stp[n] == 1.0f);
+				int idx = STP_BUF_POS(n, t, glbNetworkConfig.maxDelay);
+				tmp_stp[n] = managerRuntimeData.stpx[idx];
+				//assert(tmp_stp[n] == 1.0f); // STP is not enabled for all groups
 			}
 			CUDA_CHECK_ERRORS(cudaMemcpy(&dest->stpx[t * networkConfigs[netId].STP_Pitch], tmp_stp, sizeof(float) * networkConfigs[netId].numN, cudaMemcpyHostToDevice));
-		}
-		else {
+		} else {
 			CUDA_CHECK_ERRORS(cudaMemcpy(tmp_stp, &dest->stpu[t * networkConfigs[netId].STP_Pitch], sizeof(float) * networkConfigs[netId].numN, cudaMemcpyDeviceToHost));
 			for (int n = 0; n < networkConfigs[netId].numN; n++)
 				managerRuntimeData.stpu[STP_BUF_POS(n, t, glbNetworkConfig.maxDelay)] = tmp_stp[n];

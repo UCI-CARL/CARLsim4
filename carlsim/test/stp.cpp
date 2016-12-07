@@ -56,13 +56,17 @@ TEST(STP, firingRateSTDvsSTF) {
 	PeriodicSpikeGenerator *spkGenG0 = NULL, *spkGenG1 = NULL;
 
 	for (int isRunLong=0; isRunLong<=1; isRunLong++) {
+	//int isRunLong = 1;
 		for (int hasCOBA=0; hasCOBA<=1; hasCOBA++) {
+		//int hasCOBA = 1;
 			for (int isGPUmode=0; isGPUmode<=1; isGPUmode++) {
+			//int isGPUmode = 1;
 				// compare
 				float rateG2noSTP = -1.0f;
 				float rateG3noSTP = -1.0f;
 
 				for (int hasSTP=0; hasSTP<=1; hasSTP++) {
+				//int hasSTP = 1;
 					sim = new CARLsim("STP.firingRateSTDvsSTF",isGPUmode?GPU_MODE:CPU_MODE,SILENT,1,randSeed);
 					int g2=sim->createGroup("STD", 1, EXCITATORY_NEURON);
 					int g3=sim->createGroup("STF", 1, EXCITATORY_NEURON);
@@ -81,7 +85,7 @@ TEST(STP, firingRateSTDvsSTF) {
 						sim->setConductances(false);
 
 					if (hasSTP) {
-						sim->setSTP(g0, true, 0.45f, 50.0f,   750.0f); // depressive
+						sim->setSTP(g0, true, 0.45f, 50.0f, 750.0f); // depressive
 						sim->setSTP(g1, true, 0.15f, 750.0f, 50.0f); // facilitative
 					}
 
@@ -108,21 +112,23 @@ TEST(STP, firingRateSTDvsSTF) {
 					if (!hasSTP) {
 						// if STP is off: record spike rate, so that afterwards we can compare it to the one with STP
 						// enabled
+						//spkMonG2->print(true);
+						//spkMonG3->print(true);
 						rateG2noSTP = spkMonG2->getPopMeanFiringRate();
 						rateG3noSTP = spkMonG3->getPopMeanFiringRate();
 					} else {
+						//spkMonG2->print(true);
+						//spkMonG3->print(true);
+						//fprintf(stderr,"%s %s %s, G2 w/o=%f, G2 w/=%f\n", isRunLong?"long":"short",
+						//	isGPUmode?"GPU":"CPU",
+						//	hasCOBA?"COBA":"CUBA",
+						//	rateG2noSTP, spkMonG2->getPopMeanFiringRate());
+						//fprintf(stderr,"%s %s %s, G3 w/o=%f, G3 w/=%f\n", isRunLong?"long":"short",
+						//	isGPUmode?"GPU":"CPU",
+						//	hasCOBA?"COBA":"CUBA",
+						//	rateG3noSTP,
+						//	spkMonG3->getPopMeanFiringRate());
 
-/*
-						fprintf(stderr,"%s %s %s, G2 w/o=%f, G2 w/=%f\n", isRunLong?"long":"short",
-							isGPUmode?"GPU":"CPU",
-							hasCOBA?"COBA":"CUBA",
-							rateG2noSTP, spkMonG2->getPopMeanFiringRate());
-						fprintf(stderr,"%s %s %s, G3 w/o=%f, G3 w/=%f\n", isRunLong?"long":"short",
-							isGPUmode?"GPU":"CPU",
-							hasCOBA?"COBA":"CUBA",
-							rateG3noSTP,
-							spkMonG3->getPopMeanFiringRate());
-*/
 
 						// if STP is on: compare spike rate to the one recorded without STP
 						if (isRunLong) {
