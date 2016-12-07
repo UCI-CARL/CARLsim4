@@ -1074,7 +1074,7 @@ void SNN::allocateSNN_CPU(int netId) {
 	//CUDA_CHECK_ERRORS(cudaMemcpyToSymbol(d_mulSynSlow, mulSynSlow, sizeof(float) * networkConfigs[netId].numConnections, 0, cudaMemcpyHostToDevice));
 
 	KERNEL_DEBUG("Transfering group settings to CPU:");
-	for (int lGrpId = 0; lGrpId < networkConfigs[netId].numAssignedGroups; lGrpId++) {
+	for (int lGrpId = 0; lGrpId < networkConfigs[netId].numGroupsAssigned; lGrpId++) {
 		KERNEL_DEBUG("Settings for Group %s:", groupConfigMap[groupConfigs[netId][lGrpId].gGrpId].grpName.c_str());
 		
 		KERNEL_DEBUG("\tType: %d",(int)groupConfigs[netId][lGrpId].Type);

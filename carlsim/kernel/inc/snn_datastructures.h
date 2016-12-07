@@ -536,7 +536,7 @@ typedef struct NetworkConfigRT_s  {
 
 	// configurations for assigned groups and connections
 	int numGroups;        //!< number of local groups in this local network
-	int numAssignedGroups; //!< number of groups assigned to this local network
+	int numGroupsAssigned; //!< number of groups assigned to this local network
 	int numConnections;   //!< number of local connections in this local network
 	//int numAssignedConnections; //!< number of connections assigned to this local network
 

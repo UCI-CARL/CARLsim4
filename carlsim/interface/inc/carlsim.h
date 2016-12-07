@@ -1190,7 +1190,7 @@ public:
 	 * \TODO finish docu
 	 * \STATE ::SETUP_STATE, ::RUN_STATE
 	 */
-	uint8_t* getDelays(int gIDpre, int gIDpost, int& Npre, int& Npost, uint8_t* delays=NULL);
+	uint8_t* getDelays(int gIDpre, int gIDpost, int& Npre, int& Npost);
 
 	// FIXME: This function is called in SNN::connect() at CONFIG_STATE, which violate the restriction
 	/*!

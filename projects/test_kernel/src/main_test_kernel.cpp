@@ -126,7 +126,6 @@ int main() {
 	in2.setRates(1.0f);
 	sim.setSpikeRate(gInput2, &in2);
 
-
 	// run for a total of 10 seconds
 	// at the end of each runNetwork call, SpikeMonitor stats will be printed
 

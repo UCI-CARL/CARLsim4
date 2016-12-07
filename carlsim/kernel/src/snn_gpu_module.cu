@@ -2298,7 +2298,7 @@ void SNN::copyNetworkConfig(int netId) {
  */
 void SNN::copyGroupConfigs(int netId) {
 	checkAndSetGPUDevice(netId);
-	CUDA_CHECK_ERRORS(cudaMemcpyToSymbol(groupConfigsGPU, groupConfigs[netId], (networkConfigs[netId].numAssignedGroups) * sizeof(GroupConfigRT), 0, cudaMemcpyHostToDevice));
+	CUDA_CHECK_ERRORS(cudaMemcpyToSymbol(groupConfigsGPU, groupConfigs[netId], (networkConfigs[netId].numGroupsAssigned) * sizeof(GroupConfigRT), 0, cudaMemcpyHostToDevice));
 }
 
 /*!
@@ -3351,7 +3351,7 @@ void SNN::allocateSNN_GPU(int netId) {
 	copyGroupConfigs(netId);
 
 	KERNEL_DEBUG("Transfering group settings to GPU:");
-	for (int lGrpId = 0; lGrpId < networkConfigs[netId].numAssignedGroups; lGrpId++) {
+	for (int lGrpId = 0; lGrpId < networkConfigs[netId].numGroupsAssigned; lGrpId++) {
 		KERNEL_DEBUG("Settings for Group %s:", groupConfigMap[groupConfigs[netId][lGrpId].gGrpId].grpName.c_str());
 		
 		KERNEL_DEBUG("\tType: %d",(int)groupConfigs[netId][lGrpId].Type);

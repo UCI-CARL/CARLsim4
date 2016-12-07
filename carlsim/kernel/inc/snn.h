@@ -464,14 +464,14 @@ public:
 
 	//! Returns the delay information for all synaptic connections between a pre-synaptic and a post-synaptic neuron group
 	/*!
-	 * \param _grpIdPre ID of pre-synaptic group
-	 * \param _grpIdPost ID of post-synaptic group
-	 * \param _nPre return the number of pre-synaptic neurons
-	 * \param _nPost retrun the number of post-synaptic neurons
-	 * \param _delays (optional) return the delay information for all synapses, default = NULL
-	 * \return delay information for all synapses
+	 * \param gGrpIdPre ID of pre-synaptic group
+	 * \param gGrpIdPost ID of post-synaptic group
+	 * \param numPreN return the number of pre-synaptic neurons
+	 * \param numPostN retrun the number of post-synaptic neurons
+	 * \param delays (optional) return the delay information for all synapses, default = NULL
+	 * \return delays information for all synapses
 	 */
-	uint8_t* getDelays(int gIDpre, int gIDpost, int& Npre, int& Npost, uint8_t* delays);
+	uint8_t* getDelays(int gGrpIdPre, int gGrpIdPost, int& numPreN, int& numPostN);
 
 	Grid3D getGroupGrid3D(int grpId);
 	int getGroupId(std::string grpName);
@@ -860,7 +860,7 @@ private:
 	void fetchConnIdsLookupArray(int netId);
 	void fetchLastSpikeTime(int netId);
 	void fetchPreConnectionInfo(int netId);
-	// void fetchPostConnectionInfo(int netId);
+	void fetchPostConnectionInfo(int netId);
 	void fetchSynapseState(int netId);
 
 	void globalStateUpdate_GPU();
