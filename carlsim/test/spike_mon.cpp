@@ -32,8 +32,8 @@ TEST(setSpikeMon, grpId){
 		// first iteration, test CPU mode, second test GPU mode
 		sim = new CARLsim("setSpikeMon.grpId",mode?GPU_MODE:CPU_MODE,SILENT,1,42);
 
-		int g1 = sim->createGroup("g1", GRP_SIZE, EXCITATORY_NEURON);
-		int g2 = sim->createGroup("g2", GRP_SIZE, EXCITATORY_NEURON);
+		int g1 = sim->createGroup("g1", GRP_SIZE, EXCITATORY_NEURON, 0);
+		int g2 = sim->createGroup("g2", GRP_SIZE, EXCITATORY_NEURON, 0);
 		sim->setNeuronParameters(g1, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f);
 		sim->setNeuronParameters(g2, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f);
 
@@ -61,8 +61,8 @@ TEST(setSpikeMon, fname){
 		// first iteration, test CPU mode, second test GPU mode
 		sim = new CARLsim("setSpikeMon.fname",mode?GPU_MODE:CPU_MODE,SILENT,1,42);
 
-		int g1 = sim->createGroup("g1", GRP_SIZE, EXCITATORY_NEURON);
-		int g2 = sim->createGroup("g2", GRP_SIZE, EXCITATORY_NEURON);
+		int g1 = sim->createGroup("g1", GRP_SIZE, EXCITATORY_NEURON, 0);
+		int g2 = sim->createGroup("g2", GRP_SIZE, EXCITATORY_NEURON, 0);
 		sim->setNeuronParameters(g1, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f);
 		sim->setNeuronParameters(g2, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f);
 
@@ -84,8 +84,8 @@ TEST(setSpikeMon, setSpikeMonRepeatedly) {
 		// first iteration: CONFIG state, second: SETUP state
 		sim = new CARLsim("setSpikeMon.grpId",CPU_MODE,SILENT,1,42);
 
-		int g1 = sim->createGroup("g1", 10, EXCITATORY_NEURON);
-		int g3 = sim->createGroup("g3", GRP_SIZE, EXCITATORY_NEURON);
+		int g1 = sim->createGroup("g1", 10, EXCITATORY_NEURON, 0);
+		int g3 = sim->createGroup("g3", GRP_SIZE, EXCITATORY_NEURON, 0);
 		sim->setNeuronParameters(g1, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f);
 		sim->setNeuronParameters(g3, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f);
 		sim->connect(g1, g3, "random", RangeWeight(0.1f), 0.1f);
@@ -115,12 +115,12 @@ TEST(SpikeMon, interfaceDeath) {
 	// use threadsafe version because we have deathtests
 	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
-	CARLsim sim("SpikeMon.interfaceDeath",CPU_MODE,SILENT,0,42);
+	CARLsim sim("SpikeMon.interfaceDeath",CPU_MODE,SILENT,1,42);
 
-	int g1 = sim.createGroup("g1", 5, EXCITATORY_NEURON);
+	int g1 = sim.createGroup("g1", 5, EXCITATORY_NEURON, 0);
 	sim.setNeuronParameters(g1, 0.02, 0.2, -65.0, 8.0);
 
-	int g0 = sim.createSpikeGeneratorGroup("Input",5,EXCITATORY_NEURON);
+	int g0 = sim.createSpikeGeneratorGroup("Input",5,EXCITATORY_NEURON, 0);
 	SpikeMonitor* spkMon = sim.setSpikeMonitor(g0,"Default");
 
 	sim.setConductances(true);
@@ -165,10 +165,10 @@ TEST(SpikeMon, persistentMode) {
 
 	CARLsim* sim = new CARLsim("SpikeMon.persistentMode",CPU_MODE,SILENT,1,42);
 
-	int g1 = sim->createGroup("g1", 5, EXCITATORY_NEURON);
+	int g1 = sim->createGroup("g1", 5, EXCITATORY_NEURON, 0);
 	sim->setNeuronParameters(g1, 0.02, 0.2, -65.0, 8.0);
 
-	int g0 = sim->createSpikeGeneratorGroup("Input",5,EXCITATORY_NEURON);
+	int g0 = sim->createSpikeGeneratorGroup("Input",5,EXCITATORY_NEURON, 0);
 	SpikeMonitor* spkMon = sim->setSpikeMonitor(g0,"Default");
 
 	sim->setConductances(true);
@@ -228,12 +228,12 @@ TEST(SpikeMon, clear) {
 		sim = new CARLsim("SpikeMon.clear",mode?GPU_MODE:CPU_MODE,SILENT,1,42);
 
 		float COND_tAMPA=5.0, COND_tNMDA=150.0, COND_tGABAa=6.0, COND_tGABAb=150.0;
-		int g1 = sim->createGroup("g1", GRP_SIZE, EXCITATORY_NEURON);
-		int g2 = sim->createGroup("g2", GRP_SIZE, EXCITATORY_NEURON);
+		int g1 = sim->createGroup("g1", GRP_SIZE, EXCITATORY_NEURON, 0);
+		int g2 = sim->createGroup("g2", GRP_SIZE, EXCITATORY_NEURON, 0);
 		sim->setNeuronParameters(g1, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f);
 		sim->setNeuronParameters(g2, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f);
 
-		int inputGroup = sim->createSpikeGeneratorGroup("Input",GRP_SIZE,EXCITATORY_NEURON);
+		int inputGroup = sim->createSpikeGeneratorGroup("Input",GRP_SIZE,EXCITATORY_NEURON, 0);
 
 		sim->setConductances(true,COND_tAMPA,COND_tNMDA,COND_tGABAa,COND_tGABAb);
 		double initWeight = 0.05f;
@@ -297,10 +297,10 @@ TEST(SpikeMon, spikeTimes) {
 		// first iteration, test CPU mode, second test GPU mode
 		CARLsim* sim = new CARLsim("SpikeMon.spikeTimes",mode?GPU_MODE:CPU_MODE,SILENT,1,42);
 		float COND_tAMPA=5.0, COND_tNMDA=150.0, COND_tGABAa=6.0, COND_tGABAb=150.0;
-		int g1 = sim->createGroup("g1", GRP_SIZE, EXCITATORY_NEURON);
+		int g1 = sim->createGroup("g1", GRP_SIZE, EXCITATORY_NEURON, 0);
 		sim->setNeuronParameters(g1, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f);
 
-		int g0 = sim->createSpikeGeneratorGroup("Input",GRP_SIZE,EXCITATORY_NEURON);
+		int g0 = sim->createSpikeGeneratorGroup("Input",GRP_SIZE,EXCITATORY_NEURON, 0);
 
 		// use periodic spike generator to know the exact spike times
         PeriodicSpikeGenerator spkGenG0(rate);
@@ -379,10 +379,10 @@ TEST(SpikeMon, getGroupFiringRate){
 		sim = new CARLsim("SpikeMon.getGroupFiringRate",mode?GPU_MODE:CPU_MODE,SILENT,1,42);
 
 		float COND_tAMPA=5.0, COND_tNMDA=150.0, COND_tGABAa=6.0, COND_tGABAb=150.0;
-		int g1 = sim->createGroup("g1", GRP_SIZE, EXCITATORY_NEURON);
+		int g1 = sim->createGroup("g1", GRP_SIZE, EXCITATORY_NEURON, 0);
 		sim->setNeuronParameters(g1, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f);
 
-		int g0 = sim->createSpikeGeneratorGroup("Input",GRP_SIZE,EXCITATORY_NEURON);
+		int g0 = sim->createSpikeGeneratorGroup("Input",GRP_SIZE,EXCITATORY_NEURON, 0);
 
 		sim->setConductances(true,COND_tAMPA,COND_tNMDA,COND_tGABAa,COND_tGABAb);
 
@@ -468,10 +468,10 @@ TEST(SpikeMon, getMaxMinNeuronFiringRate){
 		CARLsim* sim = new CARLsim("SpikeMon.getMaxMinNeuronFiringRate",mode?GPU_MODE:CPU_MODE,SILENT,1,42);
 
 		float COND_tAMPA=5.0, COND_tNMDA=150.0, COND_tGABAa=6.0, COND_tGABAb=150.0;
-		int g1 = sim->createGroup("g1", GRP_SIZE, EXCITATORY_NEURON);
+		int g1 = sim->createGroup("g1", GRP_SIZE, EXCITATORY_NEURON, 0);
 		sim->setNeuronParameters(g1, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f);
 
-		int inputGroup = sim->createSpikeGeneratorGroup("Input",GRP_SIZE,EXCITATORY_NEURON);
+		int inputGroup = sim->createSpikeGeneratorGroup("Input",GRP_SIZE,EXCITATORY_NEURON, 0);
 
 		sim->setConductances(true,COND_tAMPA,COND_tNMDA,COND_tGABAa,COND_tGABAb);
 
@@ -563,10 +563,10 @@ TEST(SpikeMon, setLogFile) {
 	for(int mode=0; mode<=1; mode++){
 		// first iteration, test CPU mode, second test GPU mode
 		CARLsim* sim = new CARLsim("SpikeMon.setLogFile",mode?GPU_MODE:CPU_MODE,SILENT,1,42);
-		int g1 = sim->createGroup("g1", GRP_SIZE, EXCITATORY_NEURON);
+		int g1 = sim->createGroup("g1", GRP_SIZE, EXCITATORY_NEURON, 0);
 		sim->setNeuronParameters(g1, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f);
 
-		int g0 = sim->createSpikeGeneratorGroup("Input",GRP_SIZE,EXCITATORY_NEURON);
+		int g0 = sim->createSpikeGeneratorGroup("Input",GRP_SIZE,EXCITATORY_NEURON, 0);
 
 		// use periodic spike generator to know the exact spike times
         PeriodicSpikeGenerator spkGenG0(rate);

@@ -181,7 +181,7 @@ public:
 		}
 
 		return snn_->connect(grpId1, grpId2, connType, wt.init, wt.max, connProb, delay.min, delay.max,
-			radRF.radX, radRF.radY, radRF.radZ, mulSynFast,	mulSynSlow, synWtType);
+			radRF, mulSynFast, mulSynSlow, synWtType);
 	}
 
 	// custom connectivity profile
@@ -829,7 +829,7 @@ public:
 		std::string funcName = "setGroupMonitor(\""+getGroupName(grpId)+"\",\""+fname+"\")";
 		UserErrors::assertTrue(grpId!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName, "grpId");		// grpId can't be ALL
 		UserErrors::assertTrue(grpId>=0, UserErrors::CANNOT_BE_NEGATIVE, funcName, "grpId"); // grpId can't be negative
-		UserErrors::assertTrue(carlsimState_==SETUP_STATE,
+		UserErrors::assertTrue(carlsimState_==CONFIG_STATE || carlsimState_==SETUP_STATE,
 			UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "CONFIG or SETUP.");
 
 		FILE* fid;
@@ -879,7 +879,7 @@ public:
 		std::string funcName = "setSpikeMonitor(\""+getGroupName(grpId)+"\",\""+fileName+"\")";
 		UserErrors::assertTrue(grpId!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName, "grpId");		// grpId can't be ALL
 		UserErrors::assertTrue(grpId>=0, UserErrors::CANNOT_BE_NEGATIVE, funcName, "grpId"); // grpId can't be negative
-		UserErrors::assertTrue(carlsimState_==SETUP_STATE,
+		UserErrors::assertTrue(carlsimState_==CONFIG_STATE || carlsimState_==SETUP_STATE, 
 			UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "CONFIG or SETUP.");
 
 		FILE* fid;
@@ -993,7 +993,8 @@ public:
 		return snn_->getDelayRange(connId);
 	}
 
-	uint8_t* getDelays(int gIDpre, int gIDpost, int& Npre, int& Npost, uint8_t* delays) {
+	// \TODO bad API design (return allocated memory space)
+	uint8_t* getDelays(int gIDpre, int gIDpost, int& Npre, int& Npost) {
 		std::string funcName = "getDelays()";
 		UserErrors::assertTrue(carlsimState_ == SETUP_STATE || carlsimState_ == RUN_STATE,
 			UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "SETUP or RUN.");
@@ -1002,14 +1003,12 @@ public:
 		UserErrors::assertTrue(gIDpost>=0 && gIDpost<getNumGroups(), UserErrors::MUST_BE_IN_RANGE, funcName, "gIDpre",
 			"[0,getNumGroups()]");
 
-		return snn_->getDelays(gIDpre,gIDpost,Npre,Npost,delays);
+		return snn_->getDelays(gIDpre,gIDpost,Npre,Npost);
 	}
 
 	Grid3D getGroupGrid3D(int grpId) {
 		std::stringstream funcName;	funcName << "getGroupGrid3D(" << grpId << ")";
 		UserErrors::assertTrue(grpId!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName.str(), "grpId");
-		UserErrors::assertTrue(carlsimState_ == SETUP_STATE || carlsimState_ == RUN_STATE,
-			UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName.str(), funcName.str(), "SETUP or RUN.");
 		UserErrors::assertTrue(grpId>=0 && grpId<getNumGroups(), UserErrors::MUST_BE_IN_RANGE, funcName.str(),
 			"grpId", "[0,getNumGroups()]");
 
@@ -1017,10 +1016,6 @@ public:
 	}
 
 	int getGroupId(std::string grpName) {
-		std::string funcName = "getGroupId("+grpName+")";
-		UserErrors::assertTrue(carlsimState_ == SETUP_STATE || carlsimState_ == RUN_STATE,
-			UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "SETUP or RUN.");
-
 		return snn_->getGroupId(grpName);
 	}
 
@@ -1062,6 +1057,8 @@ public:
 
 	Point3D getNeuronLocation3D(int neurId) {
 		std::stringstream funcName;	funcName << "getNeuronLocation3D(" << neurId << ")";
+		UserErrors::assertTrue(carlsimState_ == SETUP_STATE || carlsimState_ == RUN_STATE,
+			UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName.str(), funcName.str(), "SETUP or RUN.");
 		UserErrors::assertTrue(neurId!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName.str(), "neurId");
 		UserErrors::assertTrue(neurId>=0 && neurId<getNumNeurons(), UserErrors::MUST_BE_IN_RANGE, funcName.str(),
 			"neurId", "[0,getNumNeurons()]");
@@ -1091,45 +1088,38 @@ public:
 	int getNumNeuronsGenExc() { return snn_->getNumNeuronsGenExc(); }
 	int getNumNeuronsGenInh() { return snn_->getNumNeuronsGenInh(); }
 
-	int getNumPreSynapses() {
-		std::string funcName = "getNumPreSynapses()";
-		UserErrors::assertTrue(carlsimState_ == SETUP_STATE || carlsimState_ == RUN_STATE,
-			UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "SETUP or RUN.");
-
-		return snn_->getNumPreSynapses();
-	}
-
 	int getNumSynapticConnections(short int connectionId) {
 		std::stringstream funcName;	funcName << "getNumConnections(" << connectionId << ")";
+		UserErrors::assertTrue(carlsimState_ == SETUP_STATE || carlsimState_ == RUN_STATE,
+			UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName.str(), funcName.str(), "SETUP or RUN.");
 		UserErrors::assertTrue(connectionId!=ALL, UserErrors::ALL_NOT_ALLOWED, funcName.str(), "connectionId");
 		UserErrors::assertTrue(connectionId>=0 && connectionId<getNumConnections(), UserErrors::MUST_BE_IN_RANGE,
 			funcName.str(), "connectionId", "[0,getNumSynapticConnections()]");
 		return snn_->getNumSynapticConnections(connectionId);
 	}
-	int getNumPostSynapses() {
-		std::string funcName = "getNumPostSynapses()";
+
+	int getNumSynapses() {
+		std::string funcName = "getNumSynapses()";
 		UserErrors::assertTrue(carlsimState_ == SETUP_STATE || carlsimState_ == RUN_STATE,
 			UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "SETUP or RUN.");
 
-		return snn_->getNumPostSynapses();
+		return snn_->getNumSynapses();
 	}
 
-
 	GroupSTDPInfo getGroupSTDPInfo(int grpId) {
-		std::string funcName = "getGroupSTDPInfo()";
-		//UserErrors::assertTrue(carlsimState_ == SETUP_STATE || carlsimState_ == RUN_STATE,
-		//				UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, "SETUP or RUN.");
+		std::stringstream funcName; funcName << "getGroupSTDPInfo(" << grpId << ")";
+		UserErrors::assertTrue(grpId >= 0 && grpId<getNumGroups(), UserErrors::MUST_BE_IN_RANGE, funcName.str(),
+			"grpId", "[0,getNumGroups()]");
 
 		return snn_->getGroupSTDPInfo(grpId);
 	}
 
 	GroupNeuromodulatorInfo getGroupNeuromodulatorInfo(int grpId) {
-		std::string funcName = "getGroupNeuromodulatorInfo()";
-		//UserErrors::assertTrue(carlsimState_ == SETUP_STATE || carlsimState_ == RUN_STATE,
-		//				UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, "SETUP or RUN.");
+		std::stringstream funcName; funcName << "getGroupNeuromodulatorInfo(" << grpId << ")";
+		UserErrors::assertTrue(grpId >= 0 && grpId<getNumGroups(), UserErrors::MUST_BE_IN_RANGE, funcName.str(),
+			"grpId", "[0,getNumGroups()]");
 		return snn_->getGroupNeuromodulatorInfo(grpId);
 	}
-
 
 	SimMode getSimMode() { return simMode_; }
 
@@ -1748,8 +1738,8 @@ std::vector<float> CARLsim::getConductanceGABAb(int grpId) { return _impl->getCo
 RangeDelay CARLsim::getDelayRange(short int connId) { return _impl->getDelayRange(connId); }
 
 // gets delays
-uint8_t* CARLsim::getDelays(int gIDpre, int gIDpost, int& Npre, int& Npost, uint8_t* delays) {
-	return _impl->getDelays(gIDpre, gIDpost, Npre, Npost, delays);
+uint8_t* CARLsim::getDelays(int gIDpre, int gIDpost, int& Npre, int& Npost) {
+	return _impl->getDelays(gIDpre, gIDpost, Npre, Npost);
 }
 
 // returns the 3D grid struct of a group
@@ -1796,11 +1786,8 @@ int CARLsim::getNumNeuronsGenExc() { return _impl->getNumNeuronsGenExc(); }
 // returns the total number of inhibitory spike generator neurons
 int CARLsim::getNumNeuronsGenInh() { return _impl->getNumNeuronsGenInh(); }
 
-// returns the total number of allocated pre-synaptic connections in the network
-int CARLsim::getNumPreSynapses() { return _impl->getNumPreSynapses(); }
-
 // returns the total number of allocated post-synaptic connections in the network
-int CARLsim::getNumPostSynapses() { return _impl->getNumPostSynapses(); }
+int CARLsim::getNumSynapses() { return _impl->getNumSynapses(); }
 
 // returns the first neuron id of a groupd specified by grpId
 int CARLsim::getGroupStartNeuronId(int grpId) { return _impl->getGroupStartNeuronId(grpId); }

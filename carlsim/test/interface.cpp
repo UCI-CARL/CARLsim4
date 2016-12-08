@@ -42,8 +42,6 @@ TEST(Interface, connectDeath) {
 	DummyCG* CG = new DummyCG;
 	EXPECT_DEATH({sim->connect(g1,g2,CGNULL);},""); // CG=NULL
 	EXPECT_DEATH({sim->connect(g1,g1,CG);},""); // g-post cannot be PoissonGroup
-	EXPECT_DEATH({sim->connect(g1,g2,CG,SYN_FIXED,-1,100);},""); // maxM<0
-	EXPECT_DEATH({sim->connect(g1,g2,CG,SYN_FIXED,100,-1);},""); // maxPreM<0
 
 	// custom ConnectionGenerator with mulSyns
 	EXPECT_DEATH({sim->connect(g1,g2,CGNULL,1.0f,1.0f);},""); // CG=NULL
@@ -359,18 +357,12 @@ TEST(Interface, setNeuronParametersDeath) {
 	// e.g., negative values for things>=0, values>numGroups, etc.
 	EXPECT_DEATH({sim->setNeuronParameters(-2, 0.02f, 0.2f, -65.0f, 8.0f);},"");
 	EXPECT_DEATH({sim->setNeuronParameters(g0+1, 0.02f, 0.2f, -65.0f, 8.0f);},"");
-	EXPECT_DEATH({sim->setNeuronParameters(g0, -0.02f, 0.2f, -65.0f, 8.0f);},"");
-	EXPECT_DEATH({sim->setNeuronParameters(g0, 0.02f, -0.2f, -65.0f, 8.0f);},"");
-	EXPECT_DEATH({sim->setNeuronParameters(g0, 0.02f, 0.2f, -65.0f, -8.0f);},"");
 
 	EXPECT_DEATH({sim->setNeuronParameters(-2, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f);},"");
 	EXPECT_DEATH({sim->setNeuronParameters(g0+1, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f);},"");
-	EXPECT_DEATH({sim->setNeuronParameters(g0, -0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f);},"");
 	EXPECT_DEATH({sim->setNeuronParameters(g0, 0.02f, -10.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f);},"");
-	EXPECT_DEATH({sim->setNeuronParameters(g0, 0.02f, 0.0f, -0.2f, 0.0f, -65.0f, 0.0f, 8.0f, 0.0f);},"");
 	EXPECT_DEATH({sim->setNeuronParameters(g0, 0.02f, 0.0f, 0.2f, -10.0f, -65.0f, 0.0f, 8.0f, 0.0f);},"");
-	EXPECT_DEATH({sim->setNeuronParameters(g0, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, -2.0f, 8.0f, 0.0f);},"");
-	EXPECT_DEATH({sim->setNeuronParameters(g0, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, -8.0f, 0.0f);},"");
+	EXPECT_DEATH({sim->setNeuronParameters(g0, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, -10.0f, 8.0f, 0.0f);},"");
 	EXPECT_DEATH({sim->setNeuronParameters(g0, 0.02f, 0.0f, 0.2f, 0.0f, -65.0f, 0.0f, 8.0f, -10.0f);},"");
 
 	if (sim!=NULL)
@@ -442,8 +434,7 @@ TEST(Interface, CARLsimState) {
 	EXPECT_DEATH({sim->getGroupStartNeuronId(0);},"");
 	EXPECT_DEATH({sim->getGroupEndNeuronId(0);},"");
 	EXPECT_DEATH({sim->getNeuronLocation3D(0);},"");
-	EXPECT_DEATH({sim->getNumPreSynapses();},"");
-	EXPECT_DEATH({sim->getNumPostSynapses();},"");
+	EXPECT_DEATH({sim->getNumSynapses();},"");
 	EXPECT_DEATH({sim->startTesting();},"");
 	EXPECT_DEATH({sim->stopTesting();},"");
 

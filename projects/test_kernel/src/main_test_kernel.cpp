@@ -46,12 +46,24 @@
 #define N_EXC 800
 #define N_INH 200
 
+//class FixedSpikeGenerator : public SpikeGenerator {
+//public:
+//	FixedSpikeGenerator() {}
+//
+//	int nextSpikeTime(CARLsim* sim, int grpId, int nid, int currentTime, int lastScheduledSpikeTime, int endOfTimeSlice) {
+//		if (lastScheduledSpikeTime <= currentTime)
+//			return currentTime + nid + 100;
+//		else
+//			return endOfTimeSlice + 1;
+//	}
+//};
+
 int main() {
 	// create a network on GPU
 	int numGPUs = 2;
 	int randSeed = 42;
 	float pConn = 100.0f / (N_EXC + N_INH); // connection probability
-	CARLsim sim("test kernel", GPU_MODE, USER, numGPUs, randSeed);
+	CARLsim sim("test kernel", CPU_MODE, USER, numGPUs, randSeed);
 
 	// configure the network
 	int gExc = sim.createGroup("exc", N_EXC, EXCITATORY_NEURON, 0);
@@ -72,6 +84,12 @@ int main() {
 
 	int gInput2 = sim.createSpikeGeneratorGroup("input2", N_EXC, EXCITATORY_NEURON, 1);
 
+	//FixedSpikeGenerator* f1 = new FixedSpikeGenerator();
+	//sim.setSpikeGenerator(gInput, f1);
+
+	//FixedSpikeGenerator* f2 = new FixedSpikeGenerator();
+	//sim.setSpikeGenerator(gInput2, f2);
+
 	sim.connect(gInput, gExc, "one-to-one", RangeWeight(30.0f), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
 	sim.connect(gExc, gExc, "random", RangeWeight(6.0f), pConn, RangeDelay(1, 20), RadiusRF(-1), SYN_FIXED);
 	sim.connect(gExc, gInh, "random", RangeWeight(6.0f), pConn, RangeDelay(1, 20), RadiusRF(-1), SYN_FIXED);
@@ -90,7 +108,6 @@ int main() {
 	sim.setupNetwork();
 
 	// set some monitors
-	//SpikeMonitor* smInput = sim.setSpikeMonitor(gInput, "DEFAULT");
 	SpikeMonitor* smExc = sim.setSpikeMonitor(gExc, "NULL");
 	SpikeMonitor* smInh = sim.setSpikeMonitor(gInh, "NULL");
 	SpikeMonitor* smInput = sim.setSpikeMonitor(gInput, "NULL");
@@ -111,22 +128,23 @@ int main() {
 
 	// run for a total of 10 seconds
 	// at the end of each runNetwork call, SpikeMonitor stats will be printed
+
 	//smInput->startRecording();
 	//smExc->startRecording();
 	//smInh->startRecording();
-	//smInput->startRecording();
 	
+	for (int t = 0; t < 10; t++) {
+		sim.runNetwork(1, 0, true);
+	}
 
-	sim.runNetwork(2, 0);
-	
 	//smInput->stopRecording();
 	//smExc->stopRecording();
 	//smInh->stopRecording();
-	//smInput->stopRecording();
 
-	//smExc->print(true);
-	//smExc2->print(true);
-	//smInput->print(true);
+	//smExc->print(false);
+	//smInh->print(false);
+	//smInput->print(false);
+
 
 	return 0;
 }

@@ -101,19 +101,44 @@ typedef struct ConnectConfig_s {
 	float                    maxWt;
 	float                    initWt;
 	float                    minWt;
-	float                    radX;
-	float                    radY;
-	float                    radZ;
-	float                    mulSynFast;				//!< factor to be applied to either gAMPA or gGABAa
-	float                    mulSynSlow;				//!< factor to be applied to either gNMDA or gGABAb
-	int                      connectionMonitorId;
+	RadiusRF                 connRadius;
+	float                    mulSynFast; //!< factor to be applied to either gAMPA or gGABAa
+	float                    mulSynSlow; //!< factor to be applied to either gNMDA or gGABAb
+	int                      connectionMonitorId; // ToDo: move to ConnectConfigMD
 	uint32_t                 connProp;
 	ConnectionGeneratorCore* conn;
 	conType_t                type;
-	float                    p; 						//!< connection probability
-	short int                connId;					//!< connectID of the element in the linked list
-	int                      numberOfConnections;
+	float                    connProbability; //!< connection probability
+	short int                connId; //!< connectID of the element in the linked list
+	int                      numberOfConnections; // ToDo: move to ConnectConfigMD
 } ConnectConfig;
+
+/*!
+ * \brief the intermediate data of connect config
+ *
+ * \note for futre use
+ */
+typedef struct ConnectConfigMD_s {
+	ConnectConfigMD_s() : gConnId(-1), lConnId(-1), connectionMonitorId(-1), numberOfConnections(-1)
+	{}
+	int gConnId;
+	int lConnId;
+	int connectionMonitorId;
+	int numberOfConnections;
+} ConnectConfigMD;
+
+/*!
+* \brief The runtime configuration of a connection
+*
+* This structure contains the configurations of connections that are created by optimizeAndPartiionNetwork(),
+* which is ready to be executed by computing backend.
+* \see CARLsimState
+* \see SNNState
+*/
+typedef struct ConnectConfigRT_s {
+	float* mulSynFast; //!< factor to be applied to either gAMPA or gGABAa
+	float* mulSynSlow; //!< factor to be applied to either gNMDA or gGABAb
+} ConnectConfigRT;
 
 //!< neural dynamics configuration
 typedef struct NeuralDynamicsConfig_s {
@@ -189,8 +214,8 @@ typedef struct HomeostasisConfig_s {
 
 //!< neuromodulator configurations
 typedef struct NeuromodulatorConfig_s {
-	NeuromodulatorConfig_s() : baseDP(-1.0f), base5HT(-1.0f), baseACh(-1.0f), baseNE(-1.0f),
-							   decayDP(-1.0f), decay5HT(-1.0f), decayACh(-1.0f)
+	NeuromodulatorConfig_s() : baseDP(1.0f), base5HT(1.0f), baseACh(1.0f), baseNE(1.0f),
+							   decayDP(0.99f), decay5HT(0.99f), decayACh(0.99f), decayNE(0.99f)
 	{}
 
 	float baseDP;   //!< baseline concentration of Dopamine
@@ -267,10 +292,87 @@ typedef struct GroupConfigMD_s {
 	}
 } GroupConfigMD;
 
+/*!
+* \brief The runtime configuration of a group
+*
+* This structure contains the configurations of groups that are created by optimizeAndPartiionNetwork(),
+* which is ready to be executed by computing backend.
+* \see CARLsimState
+* \see SNNState
+*/
+typedef struct GroupConfigRT_s {
+	int          netId;         //!< published by GroupConfigMD \sa GroupConfigMD
+	int          gGrpId;        //!< published by GroupConfigMD \sa GroupConfigMD
+	int          gStartN;       //!< published by GroupConfigMD \sa GroupConfigMD
+	int          gEndN;         //!< published by GroupConfigMD \sa GroupConfigMD
+	int          lGrpId;        //!< published by GroupConfigMD \sa GroupConfigMD
+	int          lStartN;       //!< published by GroupConfigMD \sa GroupConfigMD
+	int          lEndN;         //!< published by GroupConfigMD \sa GroupConfigMD
+	int          LtoGOffset;    //!< published by GroupConfigMD \sa GroupConfigMD
+	int          GtoLOffset;    //!< published by GroupConfigMD \sa GroupConfigMD
+	unsigned int Type;          //!< published by GroupConfig \sa GroupConfig
+	int          numN;          //!< published by GroupConfig \sa GroupConfig
+	int          numPostSynapses;   //!< the total number of post-connections of a group, published by GroupConfigMD \sa GroupConfigMD
+	int          numPreSynapses;    //!< the total number of pre-connections of a group, published by GroupConfigMD \sa GroupConfigMD
+	bool         isSpikeGenerator;  //!< published by GroupConfig \sa GroupConfig
+	bool         isSpikeGenFunc;    //!< published by GroupConfig \sa GroupConfig
+	bool         WithSTP;           //!< published by GroupConfig \sa GroupConfig
+	bool         WithSTDP;          //!< published by GroupConfig \sa GroupConfig
+	bool         WithESTDP;         //!< published by GroupConfig \sa GroupConfig
+	bool         WithISTDP;         //!< published by GroupConfig \sa GroupConfig
+	STDPType     WithESTDPtype;     //!< published by GroupConfig \sa GroupConfig
+	STDPType     WithISTDPtype;     //!< published by GroupConfig \sa GroupConfig
+	STDPCurve    WithESTDPcurve;    //!< published by GroupConfig \sa GroupConfig
+	STDPCurve    WithISTDPcurve;    //!< published by GroupConfig \sa GroupConfig
+	bool         WithHomeostasis;   //!< published by GroupConfig \sa GroupConfig
+	bool         FixedInputWts;     //!< published by GroupConfigMD \sa GroupConfigMD
+	bool         hasExternalConnect;//!< published by GroupConfigMD \sa GroupConfigMD
+	int          Noffset;           //!< the offset of spike generator (poisson) neurons [0, numNPois), published by GroupConfigMD \sa GroupConfigMD
+	int8_t       MaxDelay;          //!< published by GroupConfigMD \sa GroupConfigMD
+
+	float        STP_A;             //!< published by GroupConfig \sa GroupConfig
+	float        STP_U;             //!< published by GroupConfig \sa GroupConfig
+	float        STP_tau_u_inv;     //!< published by GroupConfig \sa GroupConfig
+	float        STP_tau_x_inv;     //!< published by GroupConfig \sa GroupConfig
+	float        TAU_PLUS_INV_EXC;  //!< published by GroupConfig \sa GroupConfig
+	float        TAU_MINUS_INV_EXC; //!< published by GroupConfig \sa GroupConfig
+	float        ALPHA_PLUS_EXC;    //!< published by GroupConfig \sa GroupConfig
+	float        ALPHA_MINUS_EXC;   //!< published by GroupConfig \sa GroupConfig
+	float        GAMMA;             //!< published by GroupConfig \sa GroupConfig
+	float        KAPPA;             //!< published by GroupConfig \sa GroupConfig
+	float        OMEGA;             //!< published by GroupConfig \sa GroupConfig
+	float        TAU_PLUS_INV_INB;  //!< published by GroupConfig \sa GroupConfig
+	float        TAU_MINUS_INV_INB; //!< published by GroupConfig \sa GroupConfig
+	float        ALPHA_PLUS_INB;    //!< published by GroupConfig \sa GroupConfig
+	float        ALPHA_MINUS_INB;   //!< published by GroupConfig \sa GroupConfig
+	float        BETA_LTP;          //!< published by GroupConfig \sa GroupConfig
+	float        BETA_LTD;          //!< published by GroupConfig \sa GroupConfig
+	float        LAMBDA;            //!< published by GroupConfig \sa GroupConfig
+	float        DELTA;             //!< published by GroupConfig \sa GroupConfig
+
+									//!< homeostatic plasticity variables
+	float avgTimeScale;             //!< published by GroupConfig \sa GroupConfig
+	float avgTimeScale_decay;       //!< published by GroupConfig \sa GroupConfig
+	float avgTimeScaleInv;          //!< published by GroupConfig \sa GroupConfig
+	float homeostasisScale;         //!< published by GroupConfig \sa GroupConfig
+
+									// parameters of neuromodulator
+	float baseDP;  //!< baseline concentration of Dopamine, published by GroupConfig \sa GroupConfig
+	float base5HT; //!< baseline concentration of Serotonin, published by GroupConfig \sa GroupConfig
+	float baseACh; //!< baseline concentration of Acetylcholine, published by GroupConfig \sa GroupConfig
+	float baseNE;  //!< baseline concentration of Noradrenaline, published by GroupConfig \sa GroupConfig
+	float decayDP; //!< decay rate for Dopaamine, published by GroupConfig \sa GroupConfig
+	float decay5HT;//!< decay rate for Serotonin, published by GroupConfig \sa GroupConfig
+	float decayACh;//!< decay rate for Acetylcholine, published by GroupConfig \sa GroupConfig
+	float decayNE; //!< decay rate for Noradrenaline, published by GroupConfig \sa GroupConfig
+} GroupConfigRT;
+
 typedef struct RuntimeData_s {
 	unsigned int spikeCountSec;   //!< the total number of spikes in 1 second, used in CPU_MODE currently
 	unsigned int spikeCountD1Sec; //!< the total number of spikes with axonal delay == 1 in 1 second, used in CPU_MODE currently	
 	unsigned int spikeCountD2Sec; //!< the total number of spikes with axonal delay > 1 in 1 second, used in CPU_MODE currently
+	unsigned int spikeCountExtRxD1Sec;
+	unsigned int spikeCountExtRxD2Sec;
 	unsigned int spikeCount;      //!< the total number of spikes in a simulation, used in CPU_MODE currently
 	unsigned int spikeCountD1;    //!< the total number of spikes with anxonal delay == 1 in a simulation, used in CPU_MODE currently
 	unsigned int spikeCountD2;    //!< the total number of spikes with anxonal delay > 1 in a simulation, used in CPU_MODE currently
@@ -385,7 +487,7 @@ typedef struct RuntimeData_s {
 typedef struct GlobalNetworkConfig_s {
 	GlobalNetworkConfig_s() : numN(0), numNReg(0), numNPois(0),
 							  numNExcReg(0), numNInhReg(0), numNExcPois(0), numNInhPois(0),
-							  maxDelay(-1)
+							  numSynNet(0), maxDelay(-1)
 	{}
 
 	int numN;		  //!< number of neurons in the global network
@@ -395,6 +497,7 @@ typedef struct GlobalNetworkConfig_s {
 	int numNExcPois;  //!< number of excitatory poisson neurons in the global network
 	int numNInhPois;  //!< number of inhibitory poisson neurons in the global network
 	int numNPois;     //!< number of poisson neurons in the global network
+	int numSynNet;    //!< number of total synaptic connections in the global network
 	int maxDelay;	  //!< maximum axonal delay in the gloabl network
 } GlobalNetworkConfig;
 
@@ -434,7 +537,7 @@ typedef struct NetworkConfigRT_s  {
 
 	// configurations for assigned groups and connections
 	int numGroups;        //!< number of local groups in this local network
-	int numAssignedGroups; //!< number of groups assigned to this local network
+	int numGroupsAssigned; //!< number of groups assigned to this local network
 	int numConnections;   //!< number of local connections in this local network
 	//int numAssignedConnections; //!< number of connections assigned to this local network
 
@@ -463,110 +566,5 @@ typedef struct NetworkConfigRT_s  {
 	double dGABAb;            //!< multiplication factor for decay time of GABAb
 	double sGABAb;            //!< scaling factor for GABAb amplitude
 } NetworkConfigRT;
-
-/*!
- * \brief The runtime configuration of a group
- *
- * This structure contains the configurations of groups that are created by optimizeAndPartiionNetwork(),
- * which is ready to be executed by computing backend.
- * \see CARLsimState
- * \see SNNState
- */
-typedef struct GroupConfigRT_s {
-	int          netId;         //!< published by GroupConfigMD \sa GroupConfigMD
-	int          gGrpId;        //!< published by GroupConfigMD \sa GroupConfigMD
-	int          gStartN;       //!< published by GroupConfigMD \sa GroupConfigMD
-	int          gEndN;         //!< published by GroupConfigMD \sa GroupConfigMD
-	int          lGrpId;        //!< published by GroupConfigMD \sa GroupConfigMD
-	int          lStartN;       //!< published by GroupConfigMD \sa GroupConfigMD
-	int          lEndN;         //!< published by GroupConfigMD \sa GroupConfigMD
-	int          LtoGOffset;    //!< published by GroupConfigMD \sa GroupConfigMD
-	int          GtoLOffset;    //!< published by GroupConfigMD \sa GroupConfigMD
-	unsigned int Type;          //!< published by GroupConfig \sa GroupConfig
-	int          numN;          //!< published by GroupConfig \sa GroupConfig
-	int          numPostSynapses;   //!< the total number of post-connections of a group, published by GroupConfigMD \sa GroupConfigMD
-	int          numPreSynapses;    //!< the total number of pre-connections of a group, published by GroupConfigMD \sa GroupConfigMD
-	bool         isSpikeGenerator;  //!< published by GroupConfig \sa GroupConfig
-	bool         isSpikeGenFunc;    //!< published by GroupConfig \sa GroupConfig
-	bool         WithSTP;           //!< published by GroupConfig \sa GroupConfig
-	bool         WithSTDP;          //!< published by GroupConfig \sa GroupConfig
-	bool         WithESTDP;         //!< published by GroupConfig \sa GroupConfig
-	bool         WithISTDP;         //!< published by GroupConfig \sa GroupConfig
-	STDPType     WithESTDPtype;     //!< published by GroupConfig \sa GroupConfig
-	STDPType     WithISTDPtype;     //!< published by GroupConfig \sa GroupConfig
-	STDPCurve    WithESTDPcurve;    //!< published by GroupConfig \sa GroupConfig
-	STDPCurve    WithISTDPcurve;    //!< published by GroupConfig \sa GroupConfig
-	bool         WithHomeostasis;   //!< published by GroupConfig \sa GroupConfig
-	bool         FixedInputWts;     //!< published by GroupConfigMD \sa GroupConfigMD
-	bool         hasExternalConnect;//!< published by GroupConfigMD \sa GroupConfigMD
-	int          Noffset;           //!< the offset of spike generator (poisson) neurons [0, numNPois), published by GroupConfigMD \sa GroupConfigMD
-	int8_t       MaxDelay;          //!< published by GroupConfigMD \sa GroupConfigMD
-
-	float        STP_A;             //!< published by GroupConfig \sa GroupConfig
-	float        STP_U;             //!< published by GroupConfig \sa GroupConfig
-	float        STP_tau_u_inv;     //!< published by GroupConfig \sa GroupConfig
-	float        STP_tau_x_inv;     //!< published by GroupConfig \sa GroupConfig
-	float        TAU_PLUS_INV_EXC;  //!< published by GroupConfig \sa GroupConfig
-	float        TAU_MINUS_INV_EXC; //!< published by GroupConfig \sa GroupConfig
-	float        ALPHA_PLUS_EXC;    //!< published by GroupConfig \sa GroupConfig
-	float        ALPHA_MINUS_EXC;   //!< published by GroupConfig \sa GroupConfig
-	float        GAMMA;             //!< published by GroupConfig \sa GroupConfig
-	float        KAPPA;             //!< published by GroupConfig \sa GroupConfig
-	float        OMEGA;             //!< published by GroupConfig \sa GroupConfig
-	float        TAU_PLUS_INV_INB;  //!< published by GroupConfig \sa GroupConfig
-	float        TAU_MINUS_INV_INB; //!< published by GroupConfig \sa GroupConfig
-	float        ALPHA_PLUS_INB;    //!< published by GroupConfig \sa GroupConfig
-	float        ALPHA_MINUS_INB;   //!< published by GroupConfig \sa GroupConfig
-	float        BETA_LTP;          //!< published by GroupConfig \sa GroupConfig
-	float        BETA_LTD;          //!< published by GroupConfig \sa GroupConfig
-	float        LAMBDA;            //!< published by GroupConfig \sa GroupConfig
-	float        DELTA;             //!< published by GroupConfig \sa GroupConfig
-
-	//!< homeostatic plasticity variables
-	float avgTimeScale;             //!< published by GroupConfig \sa GroupConfig
-	float avgTimeScale_decay;       //!< published by GroupConfig \sa GroupConfig
-	float avgTimeScaleInv;          //!< published by GroupConfig \sa GroupConfig
-	float homeostasisScale;         //!< published by GroupConfig \sa GroupConfig
-
-	// parameters of neuromodulator
-	float baseDP;  //!< baseline concentration of Dopamine, published by GroupConfig \sa GroupConfig
-	float base5HT; //!< baseline concentration of Serotonin, published by GroupConfig \sa GroupConfig
-	float baseACh; //!< baseline concentration of Acetylcholine, published by GroupConfig \sa GroupConfig
-	float baseNE;  //!< baseline concentration of Noradrenaline, published by GroupConfig \sa GroupConfig
-	float decayDP; //!< decay rate for Dopaamine, published by GroupConfig \sa GroupConfig
-	float decay5HT;//!< decay rate for Serotonin, published by GroupConfig \sa GroupConfig
-	float decayACh;//!< decay rate for Acetylcholine, published by GroupConfig \sa GroupConfig
-	float decayNE; //!< decay rate for Noradrenaline, published by GroupConfig \sa GroupConfig
-} GroupConfigRT;
-
-/*!
- * \brief The runtime configuration of a connection
- *
- * This structure contains the configurations of connections that are created by optimizeAndPartiionNetwork(),
- * which is ready to be executed by computing backend.
- * \see CARLsimState
- * \see SNNState
- */
-typedef struct ConnectConfigRT_s {
-	int                      grpSrc;
-	int                      grpDest;
-	uint8_t                  maxDelay;
-	uint8_t                  minDelay;
-	float                    maxWt;
-	float                    initWt;
-	float                    minWt;
-	float                    radX;
-	float                    radY;
-	float                    radZ;
-	float                    mulSynFast;				//!< factor to be applied to either gAMPA or gGABAa
-	float                    mulSynSlow;				//!< factor to be applied to either gNMDA or gGABAb
-	int                      connectionMonitorId;
-	uint32_t                 connProp;
-	ConnectionGeneratorCore* conn;
-	conType_t                type;
-	float                    p; 						//!< connection probability
-	short int                connId;					//!< connectID of the element in the linked list
-	int                      numberOfConnections;
-} ConnectConfigRT;
 
 #endif

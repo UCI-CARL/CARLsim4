@@ -151,7 +151,7 @@ public:
 	 * \return number of created synaptic projections
 	 */
 	short int connect(int gIDpre, int gIDpost, const std::string& _type, float initWt, float maxWt, float prob,
-		uint8_t minDelay, uint8_t maxDelay, float radX, float radY, float radZ,
+		uint8_t minDelay, uint8_t maxDelay, RadiusRF radius,
 		float mulSynFast, float mulSynSlow, bool synWtType);
 
 	/* Creates synaptic projections using a callback mechanism.
@@ -464,14 +464,14 @@ public:
 
 	//! Returns the delay information for all synaptic connections between a pre-synaptic and a post-synaptic neuron group
 	/*!
-	 * \param _grpIdPre ID of pre-synaptic group
-	 * \param _grpIdPost ID of post-synaptic group
-	 * \param _nPre return the number of pre-synaptic neurons
-	 * \param _nPost retrun the number of post-synaptic neurons
-	 * \param _delays (optional) return the delay information for all synapses, default = NULL
-	 * \return delay information for all synapses
+	 * \param gGrpIdPre ID of pre-synaptic group
+	 * \param gGrpIdPost ID of post-synaptic group
+	 * \param numPreN return the number of pre-synaptic neurons
+	 * \param numPostN retrun the number of post-synaptic neurons
+	 * \param delays (optional) return the delay information for all synapses, default = NULL
+	 * \return delays information for all synapses
 	 */
-	uint8_t* getDelays(int gIDpre, int gIDpost, int& Npre, int& Npost, uint8_t* delays);
+	uint8_t* getDelays(int gGrpIdPre, int gGrpIdPost, int& numPreN, int& numPostN);
 
 	Grid3D getGroupGrid3D(int grpId);
 	int getGroupId(std::string grpName);
@@ -502,8 +502,7 @@ public:
 	int getNumNeuronsGen() { return glbNetworkConfig.numNPois; }
 	int getNumNeuronsGenExc() { return glbNetworkConfig.numNExcPois; }
 	int getNumNeuronsGenInh() { return glbNetworkConfig.numNInhPois; }
-	int getNumPreSynapses() { return networkConfigs[0].numPreSynNet; }
-	int getNumPostSynapses() { return networkConfigs[0].numPostSynNet; }
+	int getNumSynapses() { return glbNetworkConfig.numSynNet; }
 
 	int getRandSeed() { return randSeed_; }
 
@@ -576,9 +575,6 @@ private:
 	//! allocates and initializes all core datastructures
 	void allocateManagerRuntimeData();
 
-	//! add the entry that the current neuron has spiked
-	int  addSpikeToTable(int nId, int grpId);
-
 	int assignGroup(int gGrpId, int availableNeuronId);
 	int assignGroup(std::list<GroupConfigMD>::iterator grpIt, int localGroupId, int availableNeuronId);
 	void generateGroupRuntime(int netId, int lGrpId);
@@ -595,15 +591,18 @@ private:
 	/*!
 	 * \brief scan all group configs and connection configs for generating the configuration of a global network
 	 */
-	void collectGlobalNetworkConfig();
+	void collectGlobalNetworkConfigC();
 	void compileConnectConfig(); //!< for future use
 	void compileGroupConfig();
+
+	void collectGlobalNetworkConfigP();
 
 	/*!
 	 * \brief generate connections among groups according to connect configuration
 	 */
 	void connectNetwork();
 	inline void connectNeurons(int netId, int srcGrp,  int destGrp, int srcN, int destN, short int connId, int externalNetId);
+	inline void connectNeurons(int netId, int _grpSrc, int _grpDest, int _nSrc, int _nDest, short int _connId, float initWt, float maxWt, uint8_t delay, int externalNetId);
 	void connectFull(int netId, std::list<ConnectConfig>::iterator connIt, bool isExternal);
 	void connectOneToOne(int netId, std::list<ConnectConfig>::iterator connIt, bool isExternal);
 	void connectRandom(int netId, std::list<ConnectConfig>::iterator connIt, bool isExternal);
@@ -633,7 +632,7 @@ private:
 	void findNumN(int _netId, int& _numN, int& _nunNExternal, int& numNAssigned,
                   int& _numNReg, int& _numNExcReg, int& _numNInhReg,
                   int& _numNPois, int& _numNExcPois, int& _numNInhPois);
-	void findNumNSpikeGen(int _netId, int& _numNSpikeGen);
+	void findNumNSpikeGenAndOffset(int _netId);
 
 	void generatePostSynapticSpike(int preNId, int postNId, int synId, int tD, int netId);
 	void fillSpikeGenBits(int netId);
@@ -811,8 +810,8 @@ private:
 	void copyNeuronState(int netId, int lGrpId, RuntimeData* dest, bool allocateMem);
 	void copyNeuronSpikeCount(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind, bool allocateMem, int destOffset);
 	void copyNeuronSpikeCount(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, bool allocateMem, int destOffset);
-	void copySynapseState(int netId, RuntimeData* dest, cudaMemcpyKind kind, bool allocateMem);
-	void copySynapseState(int netId, RuntimeData* dest, bool allocateMem);
+	void copySynapseState(int netId, RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind, bool allocateMem);
+	void copySynapseState(int netId, RuntimeData* dest, RuntimeData* src, bool allocateMem);
 	void copySTPState(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind, bool allocateMem);
 	void copySTPState(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, bool allocateMem);
 	//void copyWeightsGPU(int nid, int src_grp);
@@ -827,11 +826,9 @@ private:
 	void copyLastSpikeTime(int netId, cudaMemcpyKind kind);
 	void copyLastSpikeTime(int netId);
 	void copyNetworkSpikeCount(int netId, cudaMemcpyKind kind,
-		unsigned int* spikeCountD1Sec, unsigned int* spikeCountD2Sec,
 		unsigned int* spikeCountD1, unsigned int* spikeCountD2,
 		unsigned int* spikeCountExtD1, unsigned int* spikeCountExtD2);
 	void copyNetworkSpikeCount(int netId,
-		unsigned int* spikeCountD1Sec, unsigned int* spikeCountD2Sec,
 		unsigned int* spikeCountD1, unsigned int* spikeCountD2,
 		unsigned int* spikeCountExtD1, unsigned int* spikeCountExtD2);
 	void copySpikeTables(int netId, cudaMemcpyKind kind);
@@ -860,6 +857,9 @@ private:
 	void fetchGrpIdsLookupArray(int netId);
 	void fetchConnIdsLookupArray(int netId);
 	void fetchLastSpikeTime(int netId);
+	void fetchPreConnectionInfo(int netId);
+	void fetchPostConnectionInfo(int netId);
+	void fetchSynapseState(int netId);
 
 	void globalStateUpdate_GPU();
 	void initGPU(int netId);

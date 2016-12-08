@@ -326,6 +326,7 @@ struct RangeWeight {
  * \note A receptive field is defined from the point of view of a post-neuron.
  */
 struct RadiusRF {
+	RadiusRF() : radX(0.0), radY(0.0), radZ(0.0) {}
 	RadiusRF(double rad) : radX(rad), radY(rad), radZ(rad) {}
 	RadiusRF(double rad_x, double rad_y, double rad_z) : radX(rad_x), radY(rad_y), radZ(rad_z) {}
 
@@ -333,7 +334,7 @@ struct RadiusRF {
         return strm << "RadiusRF=[" << r.radX << "," << r.radY << "," << r.radZ << "]";
     }
 
-	const double radX, radY, radZ;
+	double radX, radY, radZ;
 };
 
 /*!

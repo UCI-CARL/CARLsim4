@@ -188,9 +188,9 @@ private:
 
 	std::vector< std::vector<float> > wtMat_;      //!< current snapshot of weight matrix
 	std::vector< std::vector<float> > wtMatLast_;  //!< last snapshot of weight matrix
-	long int wtTime_;
-	long int wtTimeLast_;
-	long int wtTimeWrite_;
+	long long wtTime_;
+	long long wtTimeLast_;
+	long long wtTimeWrite_;
 
 	bool needToInit_;				//!< whether we have to initialize first
 	bool needToWriteFileHeader_;    //!< whether we have to write header section of conn file

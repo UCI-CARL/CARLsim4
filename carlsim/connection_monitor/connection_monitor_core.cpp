@@ -57,9 +57,14 @@ void ConnectionMonitorCore::init() {
 	fpLog_ = snn_->getLogFpLog();
 
 	// init weight matrix with right dimensions
-	std::vector< std::vector<float> > wt(nNeurPre_, std::vector<float>(nNeurPost_, NAN));
-	wtMat_ = wt; // deep copy
-	wtMatLast_ = wt;
+	for (int i = 0; i < nNeurPre_; i++) {
+		std::vector<float> wt;
+		for (int j = 0; j < nNeurPost_; j++) {
+			wt.push_back(NAN);
+		}
+		wtMat_.push_back(wt);
+		wtMatLast_.push_back(wt);
+	}
 
 	// then load current weigths from SNN into weight matrix
 	updateStoredWeights();
@@ -177,7 +182,7 @@ float ConnectionMonitorCore::getMinWeight(bool getCurrent) {
 			}
 		}
 	} else {
-		// return RangeWeight.max
+		// return RangeWeight.min
 		minVal = minWt_;
 	}
 
@@ -311,7 +316,7 @@ void ConnectionMonitorCore::printSparse(int neurPostId, int maxConn, int connPer
 	int postA, postZ;
 	if (neurPostId==ALL) {
 		postA = 0;
-		postZ = nNeurPost_;
+		postZ = nNeurPost_ - 1;
 	} else {
 		postA = neurPostId;
 		postZ = neurPostId;
@@ -326,7 +331,7 @@ void ConnectionMonitorCore::printSparse(int neurPostId, int maxConn, int connPer
 	int nConn = 0;
 	int maxIntDigits = ceil(log10((double)std::max(nNeurPre_,nNeurPost_)));
 	for (int i=0; i<nNeurPre_; i++) {
-		for (int j=postA; j<postZ; j++) {
+		for (int j = postA; j <= postZ; j++) {
 			// display only so many connections
 			if (nConn>=maxConn)
 				break;
@@ -464,14 +469,14 @@ void ConnectionMonitorCore::writeConnectFileHeader() {
 
 void ConnectionMonitorCore::writeConnectFileSnapshot(int simTimeMs, std::vector< std::vector<float> > wts) {
 	// don't write if we have already written this timestamp to file (or file doesn't exist)
-	if ((long int)simTimeMs <= wtTimeWrite_ || connFileId_==NULL) {
+	if ((long long)simTimeMs <= wtTimeWrite_ || connFileId_==NULL) {
 		return;
 	}
 
-	wtTimeWrite_ = (long int)simTimeMs;
+	wtTimeWrite_ = (long long)simTimeMs;
 
 	// write time stamp
-	if (!fwrite(&wtTimeWrite_,sizeof(long int),1,connFileId_))
+	if (!fwrite(&wtTimeWrite_,sizeof(long long),1,connFileId_))
 		KERNEL_ERROR("ConnectionMonitor: writeConnectFileSnapshot has fwrite error");
 
 	// write all weights

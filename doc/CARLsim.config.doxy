@@ -32,7 +32,7 @@ PROJECT_NAME           = "CARLsim"
 # This could be handy for archiving the generated documentation or
 # if some version control system is used.
 
-PROJECT_NUMBER         = 4.0.0
+PROJECT_NUMBER         = 4.0.0 Beta
 
 # Using the PROJECT_BRIEF tag one can provide an optional one line description
 # for a project that appears at the top of each page and should give viewer
@@ -660,13 +660,16 @@ WARN_LOGFILE           =
 # directories like "/usr/src/myproject". Separate the files or directories
 # with spaces.
 
-INPUT                  = ../carlsim/interface/include \
-                         ../carlsim/spike_monitor/spike_monitor.h \
-                         ../carlsim/connection_monitor/connection_monitor.h \
-                         ../carlsim/group_monitor/group_monitor.h \
+INPUT                  = ../carlsim/interface/inc \
+                         ../carlsim/interface/src \
+                         ../carlsim/kernel/inc \
+                         ../carlsim/kernel/src \
+                         ../carlsim/spike_monitor \
+                         ../carlsim/connection_monitor \
+                         ../carlsim/group_monitor \
                          ../tools/ecj_pti \
                          ../tools/eo_pti \
-                         ../tools/visual_stimulus/visual_stimulus.h \
+                         ../tools/visual_stimulus \
                          ../tools/offline_analysis_toolbox \
                          ../tools/spike_generators \
                          ../tools/simple_weight_tuner \
@@ -727,11 +730,7 @@ RECURSIVE              = NO
 # Note that relative paths are relative to the directory from which doxygen is
 # run.
 
-EXCLUDE               =  ../carlsim/interface/include/callback_core.h \
-                         ../carlsim/interface/src/callback_core.cpp \
-                         ../tools/spike_generators/periodic_spikegen.cpp \
-                         ../tools/spike_generators/spikegen_from_file.cpp \
-                         ../tools/spike_generators/spikegen_from_vector.cpp
+EXCLUDE               =  NO
 
 # The EXCLUDE_SYMLINKS tag can be used to select whether or not files or
 # directories that are symbolic links (a Unix file system feature) are excluded

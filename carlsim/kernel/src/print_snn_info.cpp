@@ -161,10 +161,10 @@ void SNN::printConnectionInfo(short int connId) {
 	KERNEL_INFO("  - Initial weight             = %8.5f", fabs(connConfig.initWt));
 	KERNEL_INFO("  - Min delay                  = %8d", connConfig.minDelay);
 	KERNEL_INFO("  - Max delay                  = %8d", connConfig.maxDelay);
-	KERNEL_INFO("  - Radius X                   = %8.2f", connConfig.radX);
-	KERNEL_INFO("  - Radius Y                   = %8.2f", connConfig.radY);
-	KERNEL_INFO("  - Radius Z                   = %8.2f", connConfig.radZ);
-
+	KERNEL_INFO("  - Radius X                   = %8.2f", connConfig.connRadius.radX);
+	KERNEL_INFO("  - Radius Y                   = %8.2f", connConfig.connRadius.radY);
+	KERNEL_INFO("  - Radius Z                   = %8.2f", connConfig.connRadius.radZ);
+	KERNEL_INFO("  - Num of synapses            = %8.2f", connConfig.numberOfConnections);
 	float avgPostM = ((float)connConfig.numberOfConnections)/groupConfigMap[connConfig.grpSrc].numN;
 	float avgPreM  = ((float)connConfig.numberOfConnections)/groupConfigMap[connConfig.grpDest].numN;
 	KERNEL_INFO("  - Avg numPreSynapses         = %8.2f", avgPreM );
@@ -183,10 +183,10 @@ void SNN::printConnectionInfo(int netId, std::list<ConnectConfig>::iterator conn
 	KERNEL_INFO("    |- Initial weight             = %8.5f", fabs(connIt->initWt));
 	KERNEL_INFO("    |- Min delay                  = %8d", connIt->minDelay);
 	KERNEL_INFO("    |- Max delay                  = %8d", connIt->maxDelay);
-	KERNEL_INFO("    |- Radius X                   = %8.2f", connIt->radX);
-	KERNEL_INFO("    |- Radius Y                   = %8.2f", connIt->radY);
-	KERNEL_INFO("    |- Radius Z                   = %8.2f", connIt->radZ);
-
+	KERNEL_INFO("    |- Radius X                   = %8.2f", connIt->connRadius.radX);
+	KERNEL_INFO("    |- Radius Y                   = %8.2f", connIt->connRadius.radY);
+	KERNEL_INFO("    |- Radius Z                   = %8.2f", connIt->connRadius.radZ);
+	KERNEL_INFO("    |- Num of synapses            = %8.2f", connIt->numberOfConnections);
 	float avgPostM = ((float)connIt->numberOfConnections)/groupConfigMap[connIt->grpSrc].numN;
 	float avgPreM  = ((float)connIt->numberOfConnections)/groupConfigMap[connIt->grpDest].numN;
 	KERNEL_INFO("    |- Avg numPreSynapses         = %8.2f", avgPreM );

@@ -233,7 +233,7 @@ public:
 	 * \see ch4s1_primitive_types
 	 */
 	short int connect(int grpId1, int grpId2, const std::string& connType, const RangeWeight& wt, float connProb,
-		const RangeDelay& delay=RangeDelay(1), const RadiusRF& radRF=RadiusRF(-1), bool synWtType=SYN_FIXED,
+		const RangeDelay& delay=RangeDelay(1), const RadiusRF& radRF=RadiusRF(-1.0), bool synWtType=SYN_FIXED,
 		float mulSynFast=1.0f, float mulSynSlow=1.0f);
 
 	/*!
@@ -1190,7 +1190,7 @@ public:
 	 * \TODO finish docu
 	 * \STATE ::SETUP_STATE, ::RUN_STATE
 	 */
-	uint8_t* getDelays(int gIDpre, int gIDpost, int& Npre, int& Npost, uint8_t* delays=NULL);
+	uint8_t* getDelays(int gIDpre, int gIDpost, int& Npre, int& Npost);
 
 	// FIXME: This function is called in SNN::connect() at CONFIG_STATE, which violate the restriction
 	/*!
@@ -1358,20 +1358,12 @@ public:
 	int getNumNeuronsGenInh();
 
 	/*!
-	 * \brief returns the total number of allocated pre-synaptic connections in the network
+	 * \brief returns the total number of allocated synaptic connections in the network
 	 *
 	 * \TODO finish docu
 	 * \STATE ::CONFIG_STATE, ::SETUP_STATE, ::RUN_STATE
 	 */
-	int getNumPreSynapses();
-
-	/*!
-	 * \brief returns the total number of allocated post-synaptic connections in the network
-	 *
-	 * \TODO finish docu
-	 * \STATE ::CONFIG_STATE, ::SETUP_STATE, ::RUN_STATE
-	 */
-	int getNumPostSynapses();
+	int getNumSynapses();
 
 	/*!
 	 * \brief returns the first neuron id of a groupd specified by grpId

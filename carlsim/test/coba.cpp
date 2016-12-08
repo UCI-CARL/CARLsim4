@@ -36,14 +36,14 @@ TEST(COBA, synRiseTime) {
         Grid3D neur(1);
         Grid3D neur2(1);
 
-		int g1=sim->createGroup("excit", neur2, EXCITATORY_NEURON);
+		int g1=sim->createGroup("excit", neur2, EXCITATORY_NEURON, 0);
 		sim->setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f);
 
-		int g3=sim->createGroup("inhib", neur, INHIBITORY_NEURON);
+		int g3=sim->createGroup("inhib", neur, INHIBITORY_NEURON, 0);
 		sim->setNeuronParameters(g3, 0.1f,  0.2f, -65.0f, 2.0f);
 
-		int g0=sim->createSpikeGeneratorGroup("inputExc", neur, EXCITATORY_NEURON);
-		int g2=sim->createSpikeGeneratorGroup("inputInh", neur, INHIBITORY_NEURON);
+		int g0=sim->createSpikeGeneratorGroup("inputExc", neur, EXCITATORY_NEURON, 0);
+		int g2=sim->createSpikeGeneratorGroup("inputInh", neur, INHIBITORY_NEURON, 0);
 
 		sim->connect(g0,g1,"one-to-one",RangeWeight(0.5f),1.0,RangeDelay(1),RadiusRF(-1.0),SYN_FIXED,0.0,1.0); // NMDA
 		sim->connect(g2,g3,"one-to-one",RangeWeight(0.5f),1.0,RangeDelay(1),RadiusRF(-1.0),SYN_FIXED,0.0,1.0); // GABAb
@@ -130,14 +130,14 @@ TEST(COBA, condSingleNeuronCPUvsGPU) {
 
 	for (int mode=0; mode<=1; mode++) {
 		sim = new CARLsim("COBA.condCPUvsGPU",mode?GPU_MODE:CPU_MODE,SILENT,1,42);
-		grps[0]=sim->createGroup("excAMPA", Grid3D(nOutput), EXCITATORY_NEURON);
-		grps[1]=sim->createGroup("excNMDA", Grid3D(nOutput), EXCITATORY_NEURON);
-		grps[2]=sim->createGroup("excAMPA+NMDA", Grid3D(nOutput), EXCITATORY_NEURON);
-		grps[3]=sim->createGroup("inhGABAa", Grid3D(nOutput), INHIBITORY_NEURON);
-		grps[4]=sim->createGroup("inhGABAb", Grid3D(nOutput), INHIBITORY_NEURON);
-		grps[5]=sim->createGroup("inhGABAa+GABAb", Grid3D(nOutput), INHIBITORY_NEURON);
-		int g0=sim->createSpikeGeneratorGroup("spike0", Grid3D(nInput), EXCITATORY_NEURON);
-		int g1=sim->createSpikeGeneratorGroup("spike1", Grid3D(nInput), INHIBITORY_NEURON);
+		grps[0]=sim->createGroup("excAMPA", Grid3D(nOutput), EXCITATORY_NEURON, 0);
+		grps[1]=sim->createGroup("excNMDA", Grid3D(nOutput), EXCITATORY_NEURON, 0);
+		grps[2]=sim->createGroup("excAMPA+NMDA", Grid3D(nOutput), EXCITATORY_NEURON, 0);
+		grps[3]=sim->createGroup("inhGABAa", Grid3D(nOutput), INHIBITORY_NEURON, 0);
+		grps[4]=sim->createGroup("inhGABAb", Grid3D(nOutput), INHIBITORY_NEURON, 0);
+		grps[5]=sim->createGroup("inhGABAa+GABAb", Grid3D(nOutput), INHIBITORY_NEURON, 0);
+		int g0=sim->createSpikeGeneratorGroup("spike0", Grid3D(nInput), EXCITATORY_NEURON, 0);
+		int g1=sim->createSpikeGeneratorGroup("spike1", Grid3D(nInput), INHIBITORY_NEURON, 0);
 
 		sim->setNeuronParameters(grps[0], 0.02f, 0.2f, -65.0f, 8.0f); // RS
 		sim->setNeuronParameters(grps[1], 0.02f, 0.2f, -65.0f, 8.0f); // RS
@@ -231,10 +231,10 @@ TEST(COBA, firingRateCPUvsGPU) {
 //	fprintf(stderr,"runTime=%d, delay=%d, wt=%f, input=%f\n",runTimeMs,delay,wt,inputRate);
 
 for (int isGPUmode=0; isGPUmode<=1; isGPUmode++) {
-		CARLsim sim("COBA.firingRateCPUvsGPU",isGPUmode?GPU_MODE:CPU_MODE,SILENT,0,42);
-		int g1=sim.createGroup("output", 1, EXCITATORY_NEURON);
+		CARLsim sim("COBA.firingRateCPUvsGPU",isGPUmode?GPU_MODE:CPU_MODE,SILENT,1,42);
+		int g1=sim.createGroup("output", 1, EXCITATORY_NEURON, 0);
 		sim.setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f); // RS
-		int g0=sim.createSpikeGeneratorGroup("input", 1 ,EXCITATORY_NEURON);
+		int g0=sim.createSpikeGeneratorGroup("input", 1 ,EXCITATORY_NEURON, 0);
 		sim.setConductances(true); // make COBA explicit
 
 		sim.connect(g0, g1, "full", RangeWeight(wt), 1.0f, RangeDelay(1));
