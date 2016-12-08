@@ -268,6 +268,17 @@ typedef struct GroupConfigMD_s {
 } GroupConfigMD;
 
 typedef struct RuntimeData_s {
+	unsigned int spikeCountSec;   //!< the total number of spikes in 1 second, used in CPU_MODE currently
+	unsigned int spikeCountD1Sec; //!< the total number of spikes with axonal delay == 1 in 1 second, used in CPU_MODE currently	
+	unsigned int spikeCountD2Sec; //!< the total number of spikes with axonal delay > 1 in 1 second, used in CPU_MODE currently
+	unsigned int spikeCount;      //!< the total number of spikes in a simulation, used in CPU_MODE currently
+	unsigned int spikeCountD1;    //!< the total number of spikes with anxonal delay == 1 in a simulation, used in CPU_MODE currently
+	unsigned int spikeCountD2;    //!< the total number of spikes with anxonal delay > 1 in a simulation, used in CPU_MODE currently
+	unsigned int nPoissonSpikes;  //!< the total number of spikes of poisson neurons, used in CPU_MODE currently
+	unsigned int spikeCountLastSecLeftD2; //!< the nubmer of spike left in the last second, used in CPU_MODE currently
+	unsigned int spikeCountExtRxD2; //!< the number of external spikes with axonal delay > 1 in a simulation, used in CPU_MODE currently
+	unsigned int spikeCountExtRxD1; //!< the number of external spikes with axonal delay == 1 in a simulation, used in CPU_MODE currently
+
 	float* voltage;
 	float* recovery;
 	float* Izh_a;
@@ -287,7 +298,7 @@ typedef struct RuntimeData_s {
 	float* gGABAb_r;
 	float* gGABAb_d;
 
-	int* I_set; //!< an array of bits indicating which synapse got a spike, only used on GPU
+	int* I_set; //!< an array of bits indicating which synapse got a spike
 
 	SimMode	memType;
 	bool     allocated; //!< true if all data has been allocated..
@@ -327,6 +338,9 @@ typedef struct RuntimeData_s {
 
 	DelayInfo* postDelayInfo;  	//!< delay information
 
+	unsigned int* timeTableD1; //!< firing table, only used in CPU_MODE currently
+	unsigned int* timeTableD2; //!< firing table, only used in CPU_MODE currently
+	
 	int* firingTableD1;
 	int* firingTableD2;
 
@@ -337,7 +351,7 @@ typedef struct RuntimeData_s {
 	int* extFiringTableEndIdxD2;
 
 	float* poissonFireRate;
-	float* gpuRandNums;		//!< firing random number. max value is 10,000
+	float* randNum;		//!< firing random number. max value is 10,000
 
 	int2* neuronAllocation;		//!< .x: [31:0] index of the first neuron, .y: [31:16] number of neurons, [15:0] group id
 	int3* groupIdInfo;			//!< .x , .y: the start and end index of neurons in a group, .z: gourd id, used for group Id calculations

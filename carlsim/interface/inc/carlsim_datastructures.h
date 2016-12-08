@@ -127,6 +127,7 @@ enum STDPType {
 	DA_MOD,           //!< dopamine-modulated STDP, nearest-neighbor
 	UNKNOWN_STDP
 };
+
 static const char* stdpType_string[] = {
 	"Standard STDP",
 	"Dopamine-modulated STDP",

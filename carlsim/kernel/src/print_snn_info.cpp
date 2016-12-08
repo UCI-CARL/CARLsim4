@@ -44,43 +44,6 @@
 #include <connection_monitor_core.h>
 #include <group_monitor_core.h>
 
-// FIXME: wrong to use groupConfigs[0]
-void SNN::printMemoryInfo(FILE* const fp) {
-	if (snnState == CONFIG_SNN || snnState == COMPILED_SNN || snnState == PARTITIONED_SNN) {
-		KERNEL_DEBUG("checkNetworkBuilt()");
-		KERNEL_DEBUG("Network not yet elaborated and built...");
-	}
-
-	fprintf(fp, "************* Memory Info ***************\n");
-	int totMemSize = cpuSnnSz.networkInfoSize+cpuSnnSz.synapticInfoSize+cpuSnnSz.neuronInfoSize+cpuSnnSz.spikingInfoSize;
-	fprintf(fp, "Neuron Info Size:\t%3.2f %%\t(%3.2f MB)\n", cpuSnnSz.neuronInfoSize*100.0/totMemSize,   cpuSnnSz.neuronInfoSize/(1024.0*1024));
-	fprintf(fp, "Synaptic Info Size:\t%3.2f %%\t(%3.2f MB)\n", cpuSnnSz.synapticInfoSize*100.0/totMemSize, cpuSnnSz.synapticInfoSize/(1024.0*1024));
-	fprintf(fp, "Network Size:\t\t%3.2f %%\t(%3.2f MB)\n", cpuSnnSz.networkInfoSize*100.0/totMemSize,  cpuSnnSz.networkInfoSize/(1024.0*1024));
-	fprintf(fp, "Firing Info Size:\t%3.2f %%\t(%3.2f MB)\n", cpuSnnSz.spikingInfoSize*100.0/totMemSize,   cpuSnnSz.spikingInfoSize/(1024.0*1024));
-	fprintf(fp, "Additional Info:\t%3.2f %%\t(%3.2f MB)\n", cpuSnnSz.addInfoSize*100.0/totMemSize,      cpuSnnSz.addInfoSize/(1024.0*1024));
-	fprintf(fp, "DebugInfo Info:\t\t%3.2f %%\t(%3.2f MB)\n", cpuSnnSz.debugInfoSize*100.0/totMemSize,    cpuSnnSz.debugInfoSize/(1024.0*1024));
-	fprintf(fp, "*****************************************\n\n");
-
-	fprintf(fp, "************* Connection Info *************\n");
-	for(int g=0; g < numGroups; g++) {
-		int TNpost=0;
-		int TNpre=0;
-		int TNpre_plastic=0;
-		
-		for(int i=groupConfigs[0][g].numN; i <= groupConfigs[0][g].numN; i++) {
-			TNpost += managerRuntimeData.Npost[i];
-			TNpre  += managerRuntimeData.Npre[i];
-			TNpre_plastic += managerRuntimeData.Npre_plastic[i];
-		}
-		
-	fprintf(fp, "%s Group (num_neurons=%5d): \n\t\tNpost[%2d] = %3d, Npre[%2d]=%3d Npre_plastic[%2d]=%3d \n\t\tcumPre[%5d]=%5d cumPre[%5d]=%5d cumPost[%5d]=%5d cumPost[%5d]=%5d \n",
-		groupConfigMap[g].grpName.c_str(), groupConfigs[0][g].numN, g, TNpost/groupConfigs[0][g].numN, g, TNpre/groupConfigs[0][g].numN, g, TNpre_plastic/groupConfigs[0][g].numN,
-		groupConfigs[0][g].gStartN, managerRuntimeData.cumulativePre[groupConfigs[0][g].gStartN],  groupConfigs[0][g].gEndN, managerRuntimeData.cumulativePre[groupConfigs[0][g].gEndN],
-		groupConfigs[0][g].gStartN, managerRuntimeData.cumulativePost[groupConfigs[0][g].gStartN], groupConfigs[0][g].gEndN, managerRuntimeData.cumulativePost[groupConfigs[0][g].gEndN]);
-	}
-	fprintf(fp, "**************************************\n\n");
-}
-
 void SNN::printStatusConnectionMonitor(int connId) {
 	for (int monId=0; monId<numConnectionMonitor; monId++) {
 		if (connId==ALL || connMonCoreList[monId]->getConnectId()==connId) {
@@ -103,9 +66,8 @@ void SNN::printStatusSpikeMonitor(int gGrpId) {
 		
 		if (monitorId == -1) return;
 
-		// in GPU mode, need to get data from device first
-		if (simMode_ == GPU_MODE)
-			fetchNeuronSpikeCount(gGrpId);
+		// copy data to the manager runtime
+		fetchNeuronSpikeCount(gGrpId);
 
 		// \TODO nSpikeCnt should really be a member of the SpikeMonitor object that gets populated if
 		// printRunSummary is true or mode==COUNT.....

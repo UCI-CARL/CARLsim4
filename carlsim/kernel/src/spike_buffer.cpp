@@ -100,12 +100,13 @@ public:
 	}
 	
 	// schedule a spike at t + delay for neuron neurId
-	void schedule(int neurId, unsigned short int delay) {
+	void schedule(int neurId, int grpId, unsigned short int delay) {
 		SpikeNode* n = getFreeNode();
 
 		int writeIdx = (_currNodeId+delay) % _spikeBufFront.size();
 
 		n->neurId = neurId;
+		n->grpId = grpId;
 		n->delay = delay;
 		n->next = NULL;
 		if (_spikeBufFront[writeIdx] == NULL) {
@@ -208,7 +209,7 @@ SpikeBuffer::SpikeBuffer(int minDelay, int maxDelay) :
 SpikeBuffer::~SpikeBuffer() { delete _impl; }
 
 // public methods
-void SpikeBuffer::schedule(int neurId, unsigned short int delay) { _impl->schedule(neurId, delay); }
+void SpikeBuffer::schedule(int neurId, int grpId, unsigned short int delay) { _impl->schedule(neurId, grpId, delay); }
 void SpikeBuffer::step() { _impl->step(); }
 void SpikeBuffer::reset(int minDelay, int maxDelay) { _impl->reset(minDelay, maxDelay); }
 size_t SpikeBuffer::length() { return _impl->length(); }

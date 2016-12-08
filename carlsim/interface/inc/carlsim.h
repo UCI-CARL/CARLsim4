@@ -88,11 +88,6 @@ class ConnectionMonitor;
 #define drand48() (double(rand())/RAND_MAX)
 #endif
 
-#ifdef _MSC_VER
-#define INFINITY (DBL_MAX+DBL_MAX)
-#define NAN (INFINITY-INFINITY)
-#endif
-
 #else
 // Unix
 #include <pthread.h>
