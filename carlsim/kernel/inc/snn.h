@@ -502,8 +502,7 @@ public:
 	int getNumNeuronsGen() { return glbNetworkConfig.numNPois; }
 	int getNumNeuronsGenExc() { return glbNetworkConfig.numNExcPois; }
 	int getNumNeuronsGenInh() { return glbNetworkConfig.numNInhPois; }
-	int getNumPreSynapses() { return networkConfigs[0].numPreSynNet; }
-	int getNumPostSynapses() { return networkConfigs[0].numPostSynNet; }
+	int getNumSynapses() { return glbNetworkConfig.numSynNet; }
 
 	int getRandSeed() { return randSeed_; }
 
@@ -576,9 +575,6 @@ private:
 	//! allocates and initializes all core datastructures
 	void allocateManagerRuntimeData();
 
-	//! add the entry that the current neuron has spiked
-	int  addSpikeToTable(int nId, int grpId);
-
 	int assignGroup(int gGrpId, int availableNeuronId);
 	int assignGroup(std::list<GroupConfigMD>::iterator grpIt, int localGroupId, int availableNeuronId);
 	void generateGroupRuntime(int netId, int lGrpId);
@@ -595,9 +591,11 @@ private:
 	/*!
 	 * \brief scan all group configs and connection configs for generating the configuration of a global network
 	 */
-	void collectGlobalNetworkConfig();
+	void collectGlobalNetworkConfigC();
 	void compileConnectConfig(); //!< for future use
 	void compileGroupConfig();
+
+	void collectGlobalNetworkConfigP();
 
 	/*!
 	 * \brief generate connections among groups according to connect configuration

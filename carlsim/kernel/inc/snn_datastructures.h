@@ -487,7 +487,7 @@ typedef struct RuntimeData_s {
 typedef struct GlobalNetworkConfig_s {
 	GlobalNetworkConfig_s() : numN(0), numNReg(0), numNPois(0),
 							  numNExcReg(0), numNInhReg(0), numNExcPois(0), numNInhPois(0),
-							  maxDelay(-1)
+							  numSynNet(0), maxDelay(-1)
 	{}
 
 	int numN;		  //!< number of neurons in the global network
@@ -497,6 +497,7 @@ typedef struct GlobalNetworkConfig_s {
 	int numNExcPois;  //!< number of excitatory poisson neurons in the global network
 	int numNInhPois;  //!< number of inhibitory poisson neurons in the global network
 	int numNPois;     //!< number of poisson neurons in the global network
+	int numSynNet;    //!< number of total synaptic connections in the global network
 	int maxDelay;	  //!< maximum axonal delay in the gloabl network
 } GlobalNetworkConfig;
 

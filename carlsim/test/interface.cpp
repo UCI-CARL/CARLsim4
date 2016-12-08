@@ -434,8 +434,7 @@ TEST(Interface, CARLsimState) {
 	EXPECT_DEATH({sim->getGroupStartNeuronId(0);},"");
 	EXPECT_DEATH({sim->getGroupEndNeuronId(0);},"");
 	EXPECT_DEATH({sim->getNeuronLocation3D(0);},"");
-	EXPECT_DEATH({sim->getNumPreSynapses();},"");
-	EXPECT_DEATH({sim->getNumPostSynapses();},"");
+	EXPECT_DEATH({sim->getNumSynapses();},"");
 	EXPECT_DEATH({sim->startTesting();},"");
 	EXPECT_DEATH({sim->stopTesting();},"");
 

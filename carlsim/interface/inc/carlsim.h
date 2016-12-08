@@ -1358,20 +1358,12 @@ public:
 	int getNumNeuronsGenInh();
 
 	/*!
-	 * \brief returns the total number of allocated pre-synaptic connections in the network
+	 * \brief returns the total number of allocated synaptic connections in the network
 	 *
 	 * \TODO finish docu
 	 * \STATE ::CONFIG_STATE, ::SETUP_STATE, ::RUN_STATE
 	 */
-	int getNumPreSynapses();
-
-	/*!
-	 * \brief returns the total number of allocated post-synaptic connections in the network
-	 *
-	 * \TODO finish docu
-	 * \STATE ::CONFIG_STATE, ::SETUP_STATE, ::RUN_STATE
-	 */
-	int getNumPostSynapses();
+	int getNumSynapses();
 
 	/*!
 	 * \brief returns the first neuron id of a groupd specified by grpId

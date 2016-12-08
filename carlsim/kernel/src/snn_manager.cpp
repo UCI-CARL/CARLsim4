@@ -2026,41 +2026,6 @@ void SNN::allocateManagerRuntimeData() {
 	managerRuntimeData.memType = CPU_MODE;
 }
 
-//int SNN::addSpikeToTable(int gNId, int gGrpId) {
-//	int spikeBufferFull = 0;
-//	managerRuntimeData.lastSpikeTime[nid] = simTime;
-//	managerRuntimeData.nSpikeCnt[nid]++;
-//	if (sim_with_homeostasis)
-//		managerRuntimeData.avgFiring[nid] += 1000/(groupConfigs[0][g].avgTimeScale*1000);
-//
-//	if (simMode_ == GPU_MODE) {
-//		assert(groupConfigs[0][g].isSpikeGenerator == true);
-//		setSpikeGenBit_GPU(0, nid, g);
-//		return 0;
-//	}
-//
-//
-//	// insert poisson (input) spikes into firingTableD1(D2)
-//	if (groupConfigs[0][g].MaxDelay == 1) {
-//		assert(nid < glbNetworkConfig.numN);
-//		managerRuntimeData.firingTableD1[spikeCountD1Sec] = nid;
-//		spikeCountD1Sec++;
-//		if (spikeCountD1Sec >= networkConfigs[0].maxSpikesD1) {
-//			spikeBufferFull = 2;
-//			spikeCountD1Sec = networkConfigs[0].maxSpikesD1-1;
-//		}
-//	} else {
-//		assert(nid < glbNetworkConfig.numN);
-//		managerRuntimeData.firingTableD2[spikeCountD2Sec] = nid;
-//		spikeCountD2Sec++;
-//		if (spikeCountD2Sec >= networkConfigs[0].maxSpikesD2) {
-//			spikeBufferFull = 1;
-//			spikeCountD2Sec = networkConfigs[0].maxSpikesD2-1;
-//		}
-//	}
-//	return spikeBufferFull;
-//}
-
 int SNN::assignGroup(int gGrpId, int availableNeuronId) {
 	int newAvailableNeuronId;
 	assert(groupConfigMDMap[gGrpId].gStartN == -1); // The group has not yet been assigned
@@ -2557,7 +2522,7 @@ void SNN::generatePoissonGroupRuntime(int netId, int lGrpId) {
 }
 
 
-void SNN::collectGlobalNetworkConfig() {
+void SNN::collectGlobalNetworkConfigC() {
 	// scan all connect configs to find the maximum delay in the global network, update glbNetworkConfig.maxDelay
 	for (std::map<int, ConnectConfig>::iterator connIt = connectConfigMap.begin(); connIt != connectConfigMap.end(); connIt++) {
 		if (connIt->second.maxDelay > glbNetworkConfig.maxDelay)
@@ -2583,6 +2548,19 @@ void SNN::collectGlobalNetworkConfig() {
 	glbNetworkConfig.numN = glbNetworkConfig.numNReg + glbNetworkConfig.numNPois;
 }
 
+void SNN::collectGlobalNetworkConfigP() {
+	// print group and connection overview
+	for (int netId = 0; netId < MAX_NET_PER_SNN; netId++) {
+		if (!localConnectLists[netId].empty() || !externalConnectLists[netId].empty()) {
+			for (std::list<ConnectConfig>::iterator connIt = localConnectLists[netId].begin(); connIt != localConnectLists[netId].end(); connIt++)
+				glbNetworkConfig.numSynNet += connIt->numberOfConnections;
+
+			for (std::list<ConnectConfig>::iterator connIt = externalConnectLists[netId].begin(); connIt != externalConnectLists[netId].end(); connIt++)
+				glbNetworkConfig.numSynNet += connIt->numberOfConnections;
+		}
+	}
+}
+
 // after all the initalization. Its time to create the synaptic weights, weight change and also
 // time of firing these are the mostly costly arrays so dense packing is essential to minimize wastage of space
 void SNN::compileSNN() {
@@ -2598,7 +2576,7 @@ void SNN::compileSNN() {
 
 	// collect the global network config according to compiled gorup and connection configs
 	// collect SNN::maxDelay_
-	collectGlobalNetworkConfig();
+	collectGlobalNetworkConfigC();
 
 	// perform various consistency checks:
 	// - numNeurons vs. sum of all neurons
@@ -2612,10 +2590,7 @@ void SNN::compileSNN() {
 	KERNEL_INFO("The number of neurons in the network (numN) = %d", glbNetworkConfig.numN);
 	KERNEL_INFO("The number of regular neurons in the network (numNReg:numNExcReg:numNInhReg) = %d:%d:%d", glbNetworkConfig.numNReg, glbNetworkConfig.numNExcReg, glbNetworkConfig.numNInhReg);
 	KERNEL_INFO("The number of poisson neurons in the network (numNPois:numNExcPois:numInhPois) = %d:%d:%d", glbNetworkConfig.numNPois, glbNetworkConfig.numNExcPois, glbNetworkConfig.numNInhPois);
-	//KERNEL_INFO("The maximum number of post-connectoins among neurons (maxNumPostSynN) = %d", maxNumPostSynN);
-	//KERNEL_INFO("The maximum number of pre-connections among neurons (maxNumPreSynN) = %d", maxNumPreSynN);
 	KERNEL_INFO("The maximum axonal delay in the network (maxDelay) = %d", glbNetworkConfig.maxDelay);
-	//KERNEL_INFO("The tatol number of synapses in the network (numPreSynNet,numPostSynNet) = (%d,%d)", numPreSynNet, numPostSynNet);
 
 	//ensure that we dont compile the network again
 	snnState = COMPILED_SNN;
@@ -3927,7 +3902,7 @@ void SNN::partitionSNN() {
 						groupPartitionLists[destNetId].push_back(groupConfigMDMap[connIt->second.grpSrc]);
 					}
 
-					externalConnectLists[srcNetId].push_back(connectConfigMap[connIt->second.connId]);
+					externalConnectLists[srcNetId].push_back(connectConfigMap[connIt->second.connId]); // Copy by value
 				}
 			}
 		}
@@ -3972,6 +3947,8 @@ void SNN::partitionSNN() {
 	// update ConnectConfig::numberOfConnections
 	// update GroupConfig::numPostSynapses, GroupConfig::numPreSynapses
 	connectNetwork();
+
+	collectGlobalNetworkConfigP();
 
 	// print group and connection overview
 	for (int netId = 0; netId < MAX_NET_PER_SNN; netId++) {
@@ -5132,7 +5109,7 @@ void SNN::printSimSummary() {
 
 	KERNEL_INFO("Network Parameters: \tnumNeurons = %d (numNExcReg:numNInhReg = %2.1f:%2.1f)", 
 		glbNetworkConfig.numN, 100.0 * glbNetworkConfig.numNExcReg / glbNetworkConfig.numN, 100.0 * glbNetworkConfig.numNInhReg / glbNetworkConfig.numN);
-	KERNEL_INFO("\t\t\tnumSynapses = %d", networkConfigs[0].numPostSynNet); // FIXME: add up all synapses in the network
+	KERNEL_INFO("\t\t\tnumSynapses = %d", glbNetworkConfig.numSynNet);
 	KERNEL_INFO("\t\t\tmaxDelay = %d", glbNetworkConfig.maxDelay);
 	KERNEL_INFO("Simulation Mode:\t%s",sim_with_conductances?"COBA":"CUBA");
 	KERNEL_INFO("Random Seed:\t\t%d", randSeed_);

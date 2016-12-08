@@ -1088,14 +1088,6 @@ public:
 	int getNumNeuronsGenExc() { return snn_->getNumNeuronsGenExc(); }
 	int getNumNeuronsGenInh() { return snn_->getNumNeuronsGenInh(); }
 
-	int getNumPreSynapses() {
-		std::string funcName = "getNumPreSynapses()";
-		UserErrors::assertTrue(carlsimState_ == SETUP_STATE || carlsimState_ == RUN_STATE,
-			UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "SETUP or RUN.");
-
-		return snn_->getNumPreSynapses();
-	}
-
 	int getNumSynapticConnections(short int connectionId) {
 		std::stringstream funcName;	funcName << "getNumConnections(" << connectionId << ")";
 		UserErrors::assertTrue(carlsimState_ == SETUP_STATE || carlsimState_ == RUN_STATE,
@@ -1106,12 +1098,12 @@ public:
 		return snn_->getNumSynapticConnections(connectionId);
 	}
 
-	int getNumPostSynapses() {
-		std::string funcName = "getNumPostSynapses()";
+	int getNumSynapses() {
+		std::string funcName = "getNumSynapses()";
 		UserErrors::assertTrue(carlsimState_ == SETUP_STATE || carlsimState_ == RUN_STATE,
 			UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "SETUP or RUN.");
 
-		return snn_->getNumPostSynapses();
+		return snn_->getNumSynapses();
 	}
 
 	GroupSTDPInfo getGroupSTDPInfo(int grpId) {
@@ -1794,11 +1786,8 @@ int CARLsim::getNumNeuronsGenExc() { return _impl->getNumNeuronsGenExc(); }
 // returns the total number of inhibitory spike generator neurons
 int CARLsim::getNumNeuronsGenInh() { return _impl->getNumNeuronsGenInh(); }
 
-// returns the total number of allocated pre-synaptic connections in the network
-int CARLsim::getNumPreSynapses() { return _impl->getNumPreSynapses(); }
-
 // returns the total number of allocated post-synaptic connections in the network
-int CARLsim::getNumPostSynapses() { return _impl->getNumPostSynapses(); }
+int CARLsim::getNumSynapses() { return _impl->getNumSynapses(); }
 
 // returns the first neuron id of a groupd specified by grpId
 int CARLsim::getGroupStartNeuronId(int grpId) { return _impl->getGroupStartNeuronId(grpId); }
