@@ -1,7 +1,9 @@
-README for CARLsim SNN simulator
--------------------------------------------------------------------------------
+﻿# CARLsim4
 
-CARLsim is available from: http://socsci.uci.edu/~jkrichma/CARLsim/.
+[![Join the chat at https://gitter.im/UCI-CARL/CARLsim4](https://badges.gitter.im/UCI-CARL/CARLsim4.svg)](https://gitter.im/UCI-CARL/CARLsim4?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+CARLsim is an efficient, easy-to-use, GPU-accelerated library for simulating large-scale spiking neural network (SNN) models with a high degree of biological detail.
+
+CARLsim is also available from: http://socsci.uci.edu/~jkrichma/CARLsim/.
 
 For a list of all people who have contributed to this project, please refer to 
 AUTHORS.
