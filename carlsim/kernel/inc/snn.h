@@ -1,4 +1,4 @@
-/* * Copyright (c) 2015 Regents of the University of California. All rights reserved.
+/* * Copyright (c) 2016 Regents of the University of California. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -35,9 +35,15 @@
  * (MB) Michael Beyeler <mbeyeler@uci.edu>,
  * (KDC) Kristofor Carlson <kdcarlso@uci.edu>
  * (TSC) Ting-Shuo Chou <tingshuc@uci.edu>
+ * (HK) Hirak J Kashyap <kashyaph@uci.edu>
+ *
+ * CARLsim v1.0: JM, MDR
+ * CARLsim v2.0/v2.1/v2.2: JM, MDR, MA, MB, KDC
+ * CARLsim3: MB, KDC, TSC
+ * CARLsim4: TSC, HK
  *
  * CARLsim available from http://socsci.uci.edu/~jkrichma/CARLsim/
- * Ver 5/22/2015
+ * Ver 12/31/2016
  */
 
 /*
