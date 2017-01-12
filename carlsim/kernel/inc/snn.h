@@ -582,18 +582,15 @@ private:
 	void connectRandom(int netId, std::list<ConnectConfig>::iterator connIt, bool isExternal);
 	void connectGaussian(int netId, std::list<ConnectConfig>::iterator connIt, bool isExternal);
 	void connectUserDefined(int netId, std::list<ConnectConfig>::iterator connIt, bool isExternal);
-	void clearExtFiringTable();
+	void clearExtFiringTable_CPU();
 	void clearExtFiringTable_GPU();
 
 	void deleteObjects();			//!< deallocates all used data structures in snn_cpu.cpp
 
 	void doCurrentUpdateD1(int netId);
 	void doCurrentUpdateD2(int netId);
-	void doGPUSim();
-	void doCPUSim();
-	void doSTPUpdateAndDecayCond();
-
-	void findFiring();
+	void advSimStep_GPU();
+	void advSimStep_CPU();
 
 	void findMaxNumSynapsesGroups(int* _maxNumPostSynGrp, int* _maxNumPreSynGrp);
 	void findMaxNumSynapsesNeurons(int _netId, int& _maxNumPostSynN, int& _maxNumPreSynN);
@@ -609,8 +606,6 @@ private:
 	void userDefinedSpikeGenerator(int gGrpId);
 
 	float generateWeight(int connProp, float initWt, float maxWt, int nid, int grpId);
-
-	void globalStateUpdate();
 
 	//! performs various verification checkups before building the network
 	void verifyNetwork();
@@ -677,11 +672,10 @@ private:
 	void deleteManagerRuntimeData();
 	void resetPoissonNeuron(int netId, int lGrpId, int lNId); //!< use local ids
 	void resetPropogationBuffer();
-	void resetSpikeCnt(int gGrpId);					//!< Resets the spike count for a particular group.
 	void resetSynapse(int netId, bool changeWeights=false);
 	void resetTimeTable();
 	void resetFiringTable();
-	void routeSpikes();
+	void routeSpikes_CPU();
 	void routeSpikes_GPU();
 
 	inline SynInfo SET_CONN_ID(int nid, int sid, int grpId);
@@ -703,7 +697,7 @@ private:
 	void allocateSNN_CPU(int netId); //!< allocates runtime data on CPU memory
 	int  allocateStaticLoad(int netId, int bufSize);
 
-	void assignPoissonFiringRate();
+	void assignPoissonFiringRate_CPU();
 	void assignPoissonFiringRate_GPU();
 
 	void checkAndSetGPUDevice(int netId);
@@ -778,9 +772,11 @@ private:
 
 	void deleteObjects_CPU();
 	void deleteObjects_GPU();		//!< deallocates all used data structures in snn_gpu.cu
-	void doCurrentUpdate();
+	void doCurrentUpdate_CPU();
 	void doCurrentUpdate_GPU();
+	void doSTPUpdateAndDecayCond_CPU();
 	void doSTPUpdateAndDecayCond_GPU();
+	void findFiring_CPU();
 	void findFiring_GPU();
 
 	// fetch functions supporting local-to-global copy
@@ -803,21 +799,23 @@ private:
 	void fetchPostConnectionInfo(int netId);
 	void fetchSynapseState(int netId);
 
+	void globalStateUpdate_CPU();
 	void globalStateUpdate_GPU();
 	void initGPU(int netId);
 
 	void resetGPUTiming();
+	void resetSpikeCnt_CPU(int gGrpId);					//!< Resets the spike count for a particular group.
 	void resetSpikeCnt_GPU(int gGrpId); //!< Utility function to clear spike counts in the GPU code.
 
-	void spikeGeneratorUpdate();
+	void spikeGeneratorUpdate_CPU();
 	void spikeGeneratorUpdate_GPU();
 	void startGPUTiming();
 	void stopGPUTiming();
-	void shiftSpikeTables();
+	void shiftSpikeTables_CPU();
 	void shiftSpikeTables_GPU();
-	void updateWeights();
+	void updateWeights_CPU();
 	void updateWeights_GPU();
-	void updateTimingTable();
+	void updateTimingTable_CPU();
 	void updateTimingTable_GPU();
 	
 	// Utility functions

@@ -674,7 +674,7 @@ int SNN::runNetwork(int _nsec, int _nmsec, bool printRunSummary) {
 	if (simMode_ == GPU_MODE)
 		resetSpikeCnt_GPU(ALL);
 	else
-		resetSpikeCnt(ALL);
+		resetSpikeCnt_CPU(ALL);
 
 	// store current start time for future reference
 	simTimeRunStart = simTime;
@@ -699,9 +699,9 @@ int SNN::runNetwork(int _nsec, int _nmsec, bool printRunSummary) {
 	// if nsec=1, simTimeMs=10, we need to run the simulator for 1*1000+10, time Step;
 	for(int i=0; i<runDurationMs; i++) {
 		if(simMode_ == CPU_MODE)
-			doCPUSim();
+			advSimStep_CPU();
 		else
-			doGPUSim();
+			advSimStep_GPU();
 
 		// update weight every updateInterval ms if plastic synapses present
 		if (!sim_with_fixedwts && wtANDwtChangeUpdateInterval_ == ++wtANDwtChangeUpdateIntervalCnt_) {
@@ -709,7 +709,7 @@ int SNN::runNetwork(int _nsec, int _nmsec, bool printRunSummary) {
 			if (!sim_in_testing) {
 				// keep this if statement separate from the above, so that the counter is updated correctly
 				if (simMode_ == CPU_MODE) {
-					updateWeights();
+					updateWeights_CPU();
 				} else{
 					updateWeights_GPU();
 				}
@@ -730,7 +730,7 @@ int SNN::runNetwork(int _nsec, int _nmsec, bool printRunSummary) {
 			}
 
 			if(simMode_ == CPU_MODE)
-				shiftSpikeTables();
+				shiftSpikeTables_CPU();
 			else
 				shiftSpikeTables_GPU();
 		}
@@ -4680,6 +4680,7 @@ void SNN::stopGPUTiming() {
 	prevGpuExecutionTime = cumExecutionTime;
 }
 
+// FIXME: update the correct network config
 // enters testing phase
 // in testing, no weight changes can be made, allowing you to evaluate learned weights, etc.
 void SNN::startTesting(bool shallUpdateWeights) {
@@ -4693,7 +4694,7 @@ void SNN::startTesting(bool shallUpdateWeights) {
 			stdpScaleFactor_ = 1.0f/wtANDwtChangeUpdateIntervalCnt_;
 
 			if (simMode_ == CPU_MODE) {
-				updateWeights();
+				updateWeights_CPU();
 			} else{
 				updateWeights_GPU();
 			}
@@ -4710,6 +4711,7 @@ void SNN::startTesting(bool shallUpdateWeights) {
 	}
 }
 
+// FIXME: update the correct network config
 // exits testing phase
 void SNN::stopTesting() {
 	sim_in_testing = false;
@@ -5058,12 +5060,8 @@ void SNN::updateSpikeMonitor(int gGrpId) {
 				for(int i = timeTablePtr[t + glbNetworkConfig.maxDelay]; i < timeTablePtr[t + glbNetworkConfig.maxDelay + 1]; i++) {
 					// retrieve the neuron id
 					int lNId = fireTablePtr[i];
-					//if (simMode_ == GPU_MODE)
-					//	nid = GET_FIRING_TABLE_NID(nid);
-					//assert(lNId < networkConfigs[netId].numN);
 
 					// make sure neuron belongs to currently relevant group
-					// FIXME: fetch grpIds from device memory
 					int this_grpId = managerRuntimeData.grpIds[lNId];
 					if (this_grpId != lGrpId)
 						continue;

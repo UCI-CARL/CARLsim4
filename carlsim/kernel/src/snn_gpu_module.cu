@@ -2884,7 +2884,7 @@ void SNN::clearExtFiringTable_GPU() {
 	}
 }
 
-void SNN::doGPUSim() {
+void SNN::advSimStep_GPU() {
 	doSTPUpdateAndDecayCond_GPU();
 
 	spikeGeneratorUpdate_GPU();

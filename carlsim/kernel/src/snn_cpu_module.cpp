@@ -50,33 +50,29 @@
 
 #include <spike_buffer.h>
 
-void SNN::doCPUSim() {
-	// decay STP vars and conductances
-	doSTPUpdateAndDecayCond();
+void SNN::advSimStep_CPU() {
+	doSTPUpdateAndDecayCond_CPU();
 
-	spikeGeneratorUpdate();
+	spikeGeneratorUpdate_CPU();
 
-	// find the neurons that has fired..
-	findFiring();
+	findFiring_CPU();
 
-	updateTimingTable();
+	updateTimingTable_CPU();
 
-	routeSpikes();
+	routeSpikes_CPU();
 
-	doCurrentUpdate();
+	doCurrentUpdate_CPU();
 
-	globalStateUpdate();
+	globalStateUpdate_CPU();
 
-	clearExtFiringTable();
-
-	return;
+	clearExtFiringTable_CPU();
 }
 
-// spikeGeneratorUpdate on CPUs
-void SNN::spikeGeneratorUpdate() {
+// spikeGeneratorUpdate_CPU on CPUs
+void SNN::spikeGeneratorUpdate_CPU() {
 	// If poisson rate has been updated, assign new poisson rate
 	if (spikeRateUpdated) {
-		assignPoissonFiringRate();
+		assignPoissonFiringRate_CPU();
 		spikeRateUpdated = false;
 	}
 
@@ -114,7 +110,7 @@ void SNN::spikeGeneratorUpdate() {
 	spikeBuf->step();
 }
 
-void SNN::updateTimingTable() {
+void SNN::updateTimingTable_CPU() {
 	for (int netId = 0; netId < MAX_NET_PER_SNN; netId++) {
 		if (!groupPartitionLists[netId].empty()) {
 			cpuRuntimeData[netId].timeTableD2[simTimeMs + networkConfigs[netId].maxDelay + 1] = cpuRuntimeData[netId].spikeCountD2Sec + cpuRuntimeData[netId].spikeCountLastSecLeftD2;
@@ -123,7 +119,7 @@ void SNN::updateTimingTable() {
 	}
 }
 
-void SNN::routeSpikes() {
+void SNN::routeSpikes_CPU() {
 	int firingTableIdxD2, firingTableIdxD1;
 	int GtoLOffset;
 	// ToDo: route spikes using routing table. currently only exchange spikes between GPU0 and GPU1
@@ -263,7 +259,7 @@ void SNN::convertExtSpikesD1(int netId, int startIdx, int endIdx, int GtoLOffset
 		cpuRuntimeData[netId].firingTableD1[extIdx] += GtoLOffset;
 }
 
-void SNN::clearExtFiringTable() {
+void SNN::clearExtFiringTable_CPU() {
 	for (int netId = 0; netId < MAX_NET_PER_SNN; netId++) {
 		if (!groupPartitionLists[netId].empty()) {
 			memset(cpuRuntimeData[netId].extFiringTableEndIdxD1, 0, sizeof(int) * networkConfigs[netId].numGroups);
@@ -276,7 +272,7 @@ void SNN::clearExtFiringTable() {
 // used for management of manager runtime data
 // FIXME: make sure this is right when separating cpu_module to a standalone class
 // FIXME: currently this function clear nSpikeCnt of manager runtime data
-void SNN::resetSpikeCnt(int gGrpId) {
+void SNN::resetSpikeCnt_CPU(int gGrpId) {
 	assert(gGrpId >= ALL); // ALL == -1
 
 	if (gGrpId == ALL) {
@@ -292,7 +288,7 @@ void SNN::resetSpikeCnt(int gGrpId) {
 	}
 }
 
-void SNN::doCurrentUpdate() {
+void SNN::doCurrentUpdate_CPU() {
 	for (int netId = 0; netId < MAX_NET_PER_SNN; netId++) {
 		if (!groupPartitionLists[netId].empty()) {
 			doCurrentUpdateD2(netId);
@@ -387,7 +383,7 @@ void SNN::doCurrentUpdateD2(int netId) {
 	}
 }
 
-void SNN::doSTPUpdateAndDecayCond() {
+void SNN::doSTPUpdateAndDecayCond_CPU() {
 	// ToDo: This can be further optimized using multiple threads allocated on mulitple CPU cores
 	for (int netId = 0; netId < MAX_NET_PER_SNN; netId++) {
 		if (!groupPartitionLists[netId].empty()) {
@@ -426,7 +422,7 @@ void SNN::doSTPUpdateAndDecayCond() {
 }
 
 // FIXME: wrong to use groupConfigs[0]
-void SNN::findFiring() {
+void SNN::findFiring_CPU() {
 	// ToDo: This can be further optimized using multiple threads allocated on mulitple CPU cores
 	for (int netId = 0; netId < MAX_NET_PER_SNN; netId++) {
 		if (!groupPartitionLists[netId].empty()) {
@@ -741,8 +737,7 @@ void SNN::generatePostSynapticSpike(int preNId, int postNId, int synId, int tD, 
 	}
 }
 
-// FIXME: wrong to use groupConfigs[0]
-void  SNN::globalStateUpdate() {
+void  SNN::globalStateUpdate_CPU() {
 	for (int netId = 0; netId < MAX_NET_PER_SNN; netId++) {
 		if (!groupPartitionLists[netId].empty()) {
 			//double tmp_iNMDA, tmp_I;
@@ -873,7 +868,7 @@ void  SNN::globalStateUpdate() {
 
 // FIXME: wrong to use groupConfigs[0]
 // This function updates the synaptic weights from its derivatives..
-void SNN::updateWeights() {
+void SNN::updateWeights_CPU() {
 	// at this point we have already checked for sim_in_testing and sim_with_fixedwts
 	assert(sim_in_testing==false);
 	assert(sim_with_fixedwts==false);
@@ -984,7 +979,7 @@ void SNN::updateWeights() {
  * \brief This function is called every second by SNN::runNetwork(). It updates the firingTableD1(D2) and
  * timeTableD1(D2) by removing older firing information.
  */
-void SNN::shiftSpikeTables() {
+void SNN::shiftSpikeTables_CPU() {
 	// Read the neuron ids that fired in the last glbNetworkConfig.maxDelay seconds
 	// and put it to the beginning of the firing table...
 	for (int netId = 0; netId < MAX_NET_PER_SNN; netId++) {
@@ -1940,7 +1935,7 @@ void SNN::copyNeuronSpikeCount(int netId, int lGrpId, RuntimeData* dest, Runtime
 	memcpy(&dest->nSpikeCnt[posN + destOffset], &src->nSpikeCnt[posN], sizeof(int) * lengthN);
 }
 
-void SNN::assignPoissonFiringRate() {
+void SNN::assignPoissonFiringRate_CPU() {
 	for (int netId = 0; netId < MAX_NET_PER_SNN; netId++) {
 		if (!groupPartitionLists[netId].empty()) {
 			for (int lGrpId = 0; lGrpId < networkConfigs[netId].numGroups; lGrpId++) {
