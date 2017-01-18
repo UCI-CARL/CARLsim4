@@ -70,8 +70,8 @@
 
 
 // TODO: consider moving unsafe computations out of constructor
-SNN::SNN(const std::string& name, SimMode simMode, LoggerMode loggerMode, int numGPUs, int randSeed)
-					: networkName_(name), simMode_(simMode), loggerMode_(loggerMode), numGPUs_(numGPUs),
+SNN::SNN(const std::string& name, LoggerMode loggerMode, int randSeed)
+					: networkName_(name), loggerMode_(loggerMode),
 					  randSeed_(SNN::setRandSeed(randSeed)) // all of these are const
 {
 	// move all unsafe operations out of constructor
@@ -662,11 +662,7 @@ int SNN::runNetwork(int _nsec, int _nmsec, bool printRunSummary) {
 	// first-time run: inform the user the simulation is running now
 	if (simTime==0 && printRunSummary) {
 		KERNEL_INFO("");
-		if (simMode_==GPU_MODE) {
-			KERNEL_INFO("******************** Running GPU Simulation on %d GPU(s) ***************************", numGPUs_);
-		} else {
-			KERNEL_INFO("***************** Running CPU Simulation on %d CPU Core(s) *************************", numGPUs_);
-		}
+		KERNEL_INFO("******************** Running GPU Simulation on %d GPU(s) and %d CPU(s) ***************************", numGPUs, numCores);
 		KERNEL_INFO("");
 	}
 

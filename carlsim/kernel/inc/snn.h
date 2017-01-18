@@ -114,13 +114,10 @@ public:
 	/*!
 	 * \brief
 	 * \param name the symbolic name of a spiking neural network
-	 * \param simMode simulation mode, CPU_MODE: running simluation on CPUs, GPU_MODE: running simulation with GPU
-	 * acceleration, default = CPU_MODE
 	 * \param loggerMode log mode
-	 * \param numGPUs
 	 * \param randSeed randomize seed of the random number generator
 	 */
-	SNN(const std::string& name, SimMode simMode, LoggerMode loggerMode, int numGPUs, int randSeed);
+	SNN(const std::string& name, LoggerMode loggerMode, int randSeed);
 
 	//! SNN Destructor
 	/*!
@@ -482,7 +479,6 @@ public:
 
 	int getRandSeed() { return randSeed_; }
 
-	SimMode getSimMode() { return simMode_; }
 	int getSimTime() { return simTime; }
 	int getSimTimeSec() { return simTimeSec; }
 	int getSimTimeMs() { return simTimeMs; }
@@ -833,10 +829,11 @@ private:
 	FILE* loadSimFID;
 
 	const std::string networkName_;	//!< network name
-	const SimMode simMode_;		//!< current simulation mode (CPU_MODE or GPU_MODE) FIXME: give better name
 	const LoggerMode loggerMode_;	//!< current logger mode (USER, DEVELOPER, SILENT, CUSTOM)
 	const int randSeed_;			//!< random number seed to use
-	int numGPUs_;				//!< on which CUDA device to establish a context (only in GPU_MODE)
+
+	int numGPUs;    //!< number of GPU(s) is used in the simulation
+	int numCores;   //!< number of CPU Core(s) is used in the simulation
 
 	bool simulatorDeleted;
 	bool spikeRateUpdated;
