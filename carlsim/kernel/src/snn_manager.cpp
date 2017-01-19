@@ -823,22 +823,22 @@ void SNN::biasWeights(short int connId, float bias, bool updateWeightRange) {
 
 		// update GPU datastructures in batches, grouped by post-neuron
 		if (simMode_ == GPU_MODE) {
-			CUDA_CHECK_ERRORS( cudaMemcpy(&(gpuRuntimeData[netId].wt[cumIdx]), &(managerRuntimeData.wt[cumIdx]), sizeof(float)*managerRuntimeData.Npre[lNId],
+			CUDA_CHECK_ERRORS( cudaMemcpy(&(runtimeData[netId].wt[cumIdx]), &(managerRuntimeData.wt[cumIdx]), sizeof(float)*managerRuntimeData.Npre[lNId],
 				cudaMemcpyHostToDevice) );
 
-			if (gpuRuntimeData[netId].maxSynWt != NULL) {
+			if (runtimeData[netId].maxSynWt != NULL) {
 				// only copy maxSynWt if datastructure actually exists on the GPU runtime
 				// (that logic should be done elsewhere though)
-				CUDA_CHECK_ERRORS( cudaMemcpy(&(gpuRuntimeData[netId].maxSynWt[cumIdx]), &(managerRuntimeData.maxSynWt[cumIdx]),
+				CUDA_CHECK_ERRORS( cudaMemcpy(&(runtimeData[netId].maxSynWt[cumIdx]), &(managerRuntimeData.maxSynWt[cumIdx]),
 					sizeof(float) * managerRuntimeData.Npre[lNId], cudaMemcpyHostToDevice) );
 			}
 		} else {
-			memcpy(&cpuRuntimeData[netId].wt[cumIdx], &managerRuntimeData.wt[cumIdx], sizeof(float) * managerRuntimeData.Npre[lNId]);
+			memcpy(&runtimeData[netId].wt[cumIdx], &managerRuntimeData.wt[cumIdx], sizeof(float) * managerRuntimeData.Npre[lNId]);
 
-			if (cpuRuntimeData[netId].maxSynWt != NULL) {
+			if (runtimeData[netId].maxSynWt != NULL) {
 				// only copy maxSynWt if datastructure actually exists on the CPU runtime
 				// (that logic should be done elsewhere though)
-				memcpy(&cpuRuntimeData[netId].maxSynWt[cumIdx], &managerRuntimeData.maxSynWt[cumIdx], sizeof(float) * managerRuntimeData.Npre[lNId]);
+				memcpy(&runtimeData[netId].maxSynWt[cumIdx], &managerRuntimeData.maxSynWt[cumIdx], sizeof(float) * managerRuntimeData.Npre[lNId]);
 			}
 		}
 	}
@@ -911,23 +911,23 @@ void SNN::scaleWeights(short int connId, float scale, bool updateWeightRange) {
 
 		// update GPU datastructures in batches, grouped by post-neuron
 		if (simMode_ == GPU_MODE) {
-			CUDA_CHECK_ERRORS(cudaMemcpy(&gpuRuntimeData[netId].wt[cumIdx], &managerRuntimeData.wt[cumIdx], sizeof(float)*managerRuntimeData.Npre[lNId],
+			CUDA_CHECK_ERRORS(cudaMemcpy(&runtimeData[netId].wt[cumIdx], &managerRuntimeData.wt[cumIdx], sizeof(float)*managerRuntimeData.Npre[lNId],
 				cudaMemcpyHostToDevice));
 
-			if (gpuRuntimeData[netId].maxSynWt != NULL) {
+			if (runtimeData[netId].maxSynWt != NULL) {
 				// only copy maxSynWt if datastructure actually exists on the GPU runtime
 				// (that logic should be done elsewhere though)
-				CUDA_CHECK_ERRORS(cudaMemcpy(&gpuRuntimeData[netId].maxSynWt[cumIdx], &managerRuntimeData.maxSynWt[cumIdx],
+				CUDA_CHECK_ERRORS(cudaMemcpy(&runtimeData[netId].maxSynWt[cumIdx], &managerRuntimeData.maxSynWt[cumIdx],
 					sizeof(float) * managerRuntimeData.Npre[lNId], cudaMemcpyHostToDevice));
 			}
 		}
 		else {
-			memcpy(&cpuRuntimeData[netId].wt[cumIdx], &managerRuntimeData.wt[cumIdx], sizeof(float) * managerRuntimeData.Npre[lNId]);
+			memcpy(&runtimeData[netId].wt[cumIdx], &managerRuntimeData.wt[cumIdx], sizeof(float) * managerRuntimeData.Npre[lNId]);
 
-			if (cpuRuntimeData[netId].maxSynWt != NULL) {
+			if (runtimeData[netId].maxSynWt != NULL) {
 				// only copy maxSynWt if datastructure actually exists on the CPU runtime
 				// (that logic should be done elsewhere though)
-				memcpy(&cpuRuntimeData[netId].maxSynWt[cumIdx], &managerRuntimeData.maxSynWt[cumIdx], sizeof(float) * managerRuntimeData.Npre[lNId]);
+				memcpy(&runtimeData[netId].maxSynWt[cumIdx], &managerRuntimeData.maxSynWt[cumIdx], sizeof(float) * managerRuntimeData.Npre[lNId]);
 			}
 		}
 	}
@@ -1145,19 +1145,19 @@ void SNN::setWeight(short int connId, int neurIdPre, int neurIdPost, float weigh
 
 			if (simMode_==GPU_MODE) {
 				// need to update datastructures on GPU runtime
-				CUDA_CHECK_ERRORS(cudaMemcpy(&gpuRuntimeData[netId].wt[pos_ij], &managerRuntimeData.wt[pos_ij], sizeof(float), cudaMemcpyHostToDevice));
-				if (gpuRuntimeData[netId].maxSynWt != NULL) {
+				CUDA_CHECK_ERRORS(cudaMemcpy(&runtimeData[netId].wt[pos_ij], &managerRuntimeData.wt[pos_ij], sizeof(float), cudaMemcpyHostToDevice));
+				if (runtimeData[netId].maxSynWt != NULL) {
 					// only copy maxSynWt if datastructure actually exists on the GPU runtime
 					// (that logic should be done elsewhere though)
-					CUDA_CHECK_ERRORS(cudaMemcpy(&gpuRuntimeData[netId].maxSynWt[pos_ij], &managerRuntimeData.maxSynWt[pos_ij], sizeof(float), cudaMemcpyHostToDevice));
+					CUDA_CHECK_ERRORS(cudaMemcpy(&runtimeData[netId].maxSynWt[pos_ij], &managerRuntimeData.maxSynWt[pos_ij], sizeof(float), cudaMemcpyHostToDevice));
 				}
 			} else {
 				// need to update datastructures on CPU runtime
-				memcpy(&cpuRuntimeData[netId].wt[pos_ij], &managerRuntimeData.wt[pos_ij], sizeof(float));
-				if (cpuRuntimeData[netId].maxSynWt != NULL) {
+				memcpy(&runtimeData[netId].wt[pos_ij], &managerRuntimeData.wt[pos_ij], sizeof(float));
+				if (runtimeData[netId].maxSynWt != NULL) {
 					// only copy maxSynWt if datastructure actually exists on the CPU runtime
 					// (that logic should be done elsewhere though)
-					memcpy(&cpuRuntimeData[netId].maxSynWt[pos_ij], &managerRuntimeData.maxSynWt[pos_ij], sizeof(float));
+					memcpy(&runtimeData[netId].maxSynWt[pos_ij], &managerRuntimeData.maxSynWt[pos_ij], sizeof(float));
 				}
 			}
 
@@ -1196,10 +1196,10 @@ void SNN::setExternalCurrent(int grpId, const std::vector<float>& current) {
 	// copy to GPU if necessary
 	// don't allocate; allocation done in generateRuntimeData
 	if (simMode_ == GPU_MODE) {
-		copyExternalCurrent(netId, lGrpId, &gpuRuntimeData[netId], cudaMemcpyHostToDevice, false);
+		copyExternalCurrent(netId, lGrpId, &runtimeData[netId], cudaMemcpyHostToDevice, false);
 	}
 	else {
-		copyExternalCurrent(netId, lGrpId, &cpuRuntimeData[netId], false);
+		copyExternalCurrent(netId, lGrpId, &runtimeData[netId], false);
 	}
 }
 
@@ -1258,7 +1258,7 @@ void SNN::saveSimulation(FILE* fid, bool saveSynapseInfo) {
 
 	//// +++++ Fetch WEIGHT DATA (GPU Mode only) ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 	//if (simMode_ == GPU_MODE)
-	//	copyWeightState(&managerRuntimeData, &gpuRuntimeData[0], cudaMemcpyDeviceToHost, false);
+	//	copyWeightState(&managerRuntimeData, &runtimeData[0], cudaMemcpyDeviceToHost, false);
 	//// +++++ WRITE SYNAPSE INFO +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
 	//// \FIXME: replace with faster version
@@ -1853,14 +1853,14 @@ void SNN::SNNinit() {
 	
 	// reset all runtime data
 	// GPU runtime data
-	memset(gpuRuntimeData, 0, sizeof(RuntimeData) * MAX_NET_PER_SNN);
+	memset(runtimeData, 0, sizeof(RuntimeData) * MAX_NET_PER_SNN);
 	for (int netId = 0; netId < MAX_NET_PER_SNN; netId++) // FIXME: redundant??
-		gpuRuntimeData[netId].allocated = false;
+		runtimeData[netId].allocated = false;
 
 	// CPU runtime data
-	memset(cpuRuntimeData, 0, sizeof(RuntimeData) * MAX_NET_PER_SNN);
+	memset(runtimeData, 0, sizeof(RuntimeData) * MAX_NET_PER_SNN);
 	for (int netId = 0; netId < MAX_NET_PER_SNN; netId++) // FIXME: redundant??
-		cpuRuntimeData[netId].allocated = false;
+		runtimeData[netId].allocated = false;
 
 	// Manager runtime data
 	memset(&managerRuntimeData, 0, sizeof(RuntimeData));
@@ -3406,9 +3406,9 @@ void SNN::findNumSynapsesNetwork(int _netId, int& _numPostSynNet, int& _numPreSy
 
 void SNN::fetchGroupState(int netId, int lGrpId) {
 	if (simMode_ == GPU_MODE)
-		copyGroupState(netId, lGrpId, &managerRuntimeData, &gpuRuntimeData[netId], cudaMemcpyDeviceToHost, false);
+		copyGroupState(netId, lGrpId, &managerRuntimeData, &runtimeData[netId], cudaMemcpyDeviceToHost, false);
 	else
-		copyGroupState(netId, lGrpId, &managerRuntimeData, &cpuRuntimeData[netId], false);
+		copyGroupState(netId, lGrpId, &managerRuntimeData, &runtimeData[netId], false);
 }
 
 void SNN::fetchWeightState(int netId, int lGrpId) {
@@ -3434,9 +3434,9 @@ void SNN::fetchNeuronSpikeCount (int gGrpId) {
 		int LtoGOffset = groupConfigMDMap[gGrpId].LtoGOffset;
 
 		if (simMode_ == GPU_MODE)
-			copyNeuronSpikeCount(netId, lGrpId, &managerRuntimeData, &gpuRuntimeData[netId], cudaMemcpyDeviceToHost, false, LtoGOffset);
+			copyNeuronSpikeCount(netId, lGrpId, &managerRuntimeData, &runtimeData[netId], cudaMemcpyDeviceToHost, false, LtoGOffset);
 		else
-			copyNeuronSpikeCount(netId, lGrpId, &managerRuntimeData, &cpuRuntimeData[netId], false, LtoGOffset);
+			copyNeuronSpikeCount(netId, lGrpId, &managerRuntimeData, &runtimeData[netId], false, LtoGOffset);
 	}
 }
 
@@ -3459,9 +3459,9 @@ void SNN::fetchConductanceAMPA(int gGrpId) {
 		int LtoGOffset = groupConfigMDMap[gGrpId].LtoGOffset;
 
 		if (simMode_ == GPU_MODE)
-			copyConductanceAMPA(netId, lGrpId, &managerRuntimeData, &gpuRuntimeData[netId], cudaMemcpyDeviceToHost, false, LtoGOffset);
+			copyConductanceAMPA(netId, lGrpId, &managerRuntimeData, &runtimeData[netId], cudaMemcpyDeviceToHost, false, LtoGOffset);
 		else
-			copyConductanceAMPA(netId, lGrpId, &managerRuntimeData, &cpuRuntimeData[netId], false, LtoGOffset);
+			copyConductanceAMPA(netId, lGrpId, &managerRuntimeData, &runtimeData[netId], false, LtoGOffset);
 	}
 }
 
@@ -3481,9 +3481,9 @@ void SNN::fetchConductanceNMDA(int gGrpId) {
 		int LtoGOffset = groupConfigMDMap[gGrpId].LtoGOffset;
 
 		if (simMode_ == GPU_MODE)
-			copyConductanceNMDA(netId, lGrpId, &managerRuntimeData, &gpuRuntimeData[netId], cudaMemcpyDeviceToHost, false, LtoGOffset);
+			copyConductanceNMDA(netId, lGrpId, &managerRuntimeData, &runtimeData[netId], cudaMemcpyDeviceToHost, false, LtoGOffset);
 		else
-			copyConductanceNMDA(netId, lGrpId, &managerRuntimeData, &cpuRuntimeData[netId], false, LtoGOffset);
+			copyConductanceNMDA(netId, lGrpId, &managerRuntimeData, &runtimeData[netId], false, LtoGOffset);
 	}
 }
 
@@ -3503,9 +3503,9 @@ void SNN::fetchConductanceGABAa(int gGrpId) {
 		int LtoGOffset = groupConfigMDMap[gGrpId].LtoGOffset;
 
 		if (simMode_ == GPU_MODE)
-			copyConductanceGABAa(netId, lGrpId, &managerRuntimeData, &gpuRuntimeData[netId], cudaMemcpyDeviceToHost, false, LtoGOffset);
+			copyConductanceGABAa(netId, lGrpId, &managerRuntimeData, &runtimeData[netId], cudaMemcpyDeviceToHost, false, LtoGOffset);
 		else
-			copyConductanceGABAa(netId, lGrpId, &managerRuntimeData, &cpuRuntimeData[netId], false, LtoGOffset);
+			copyConductanceGABAa(netId, lGrpId, &managerRuntimeData, &runtimeData[netId], false, LtoGOffset);
 	}
 }
 
@@ -3525,9 +3525,9 @@ void SNN::fetchConductanceGABAb(int gGrpId) {
 		int LtoGOffset = groupConfigMDMap[gGrpId].LtoGOffset;
 
 		if (simMode_ == GPU_MODE)
-			copyConductanceGABAb(netId, lGrpId, &managerRuntimeData, &gpuRuntimeData[netId], cudaMemcpyDeviceToHost, false, LtoGOffset);
+			copyConductanceGABAb(netId, lGrpId, &managerRuntimeData, &runtimeData[netId], cudaMemcpyDeviceToHost, false, LtoGOffset);
 		else
-			copyConductanceGABAb(netId, lGrpId, &managerRuntimeData, &cpuRuntimeData[netId], false, LtoGOffset);
+			copyConductanceGABAb(netId, lGrpId, &managerRuntimeData, &runtimeData[netId], false, LtoGOffset);
 	}
 }
 
@@ -3555,23 +3555,23 @@ void SNN::fetchLastSpikeTime(int netId) {
 
 void SNN::fetchPreConnectionInfo(int netId) {
 	if (simMode_ == GPU_MODE)
-		copyPreConnectionInfo(netId, ALL, &managerRuntimeData, &gpuRuntimeData[netId], cudaMemcpyDeviceToHost, false);
+		copyPreConnectionInfo(netId, ALL, &managerRuntimeData, &runtimeData[netId], cudaMemcpyDeviceToHost, false);
 	else
-		copyPreConnectionInfo(netId, ALL, &managerRuntimeData, &cpuRuntimeData[netId], false);
+		copyPreConnectionInfo(netId, ALL, &managerRuntimeData, &runtimeData[netId], false);
 }
 
 void SNN::fetchPostConnectionInfo(int netId) {
 	if (simMode_ == GPU_MODE)
-		copyPostConnectionInfo(netId, ALL, &managerRuntimeData, &gpuRuntimeData[netId], cudaMemcpyDeviceToHost, false);
+		copyPostConnectionInfo(netId, ALL, &managerRuntimeData, &runtimeData[netId], cudaMemcpyDeviceToHost, false);
 	else
-		copyPostConnectionInfo(netId, ALL, &managerRuntimeData, &cpuRuntimeData[netId], false);
+		copyPostConnectionInfo(netId, ALL, &managerRuntimeData, &runtimeData[netId], false);
 }
 
 void SNN::fetchSynapseState(int netId) {
 	if (simMode_ == GPU_MODE)
-		copySynapseState(netId, &managerRuntimeData, &gpuRuntimeData[netId], cudaMemcpyDeviceToHost, false);
+		copySynapseState(netId, &managerRuntimeData, &runtimeData[netId], cudaMemcpyDeviceToHost, false);
 	else
-		copySynapseState(netId, &managerRuntimeData, &cpuRuntimeData[netId], false);
+		copySynapseState(netId, &managerRuntimeData, &runtimeData[netId], false);
 }
 
 
@@ -3835,7 +3835,7 @@ void SNN::partitionSNN() {
 		int gGrpId = grpIt->second.gGrpId;
 		int netId = groupConfigMap[gGrpId].preferredNetId;
 		if (netId != ANY) {
-			assert(netId < numGPUs_ && netId > ANY);
+			assert(netId > ANY);
 			grpIt->second.netId = netId;
 			numAssignedNeurons[netId] += groupConfigMap[gGrpId].numN;
 			groupPartitionLists[netId].push_back(grpIt->second); // Copy by value, create a copy

@@ -835,6 +835,8 @@ private:
 	int numGPUs;    //!< number of GPU(s) is used in the simulation
 	int numCores;   //!< number of CPU Core(s) is used in the simulation
 
+	int numAvailableGPUs; //!< number of available GPU(s) in the machine
+
 	bool simulatorDeleted;
 	bool spikeRateUpdated;
 
@@ -930,8 +932,7 @@ private:
 	ConnectionMonitorCore* connMonCoreList[MAX_CONN_PER_SNN];
 	ConnectionMonitor*     connMonList[MAX_CONN_PER_SNN];
 
-	RuntimeData gpuRuntimeData[MAX_NET_PER_SNN];
-	RuntimeData cpuRuntimeData[MAX_NET_PER_SNN];
+	RuntimeData runtimeData[MAX_NET_PER_SNN];
 	RuntimeData managerRuntimeData;
 
 	typedef struct ManagerRuntimeDataSize_s {
