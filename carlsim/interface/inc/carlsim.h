@@ -167,8 +167,7 @@ public:
 	 * \see setLogFile
 	 * \see setLogsFpCustom
 	 */
-	CARLsim(const std::string& netName="SNN", SimMode simMode=CPU_MODE, LoggerMode loggerMode=USER, int numGPUs=1,
-				int randSeed=-1);
+	CARLsim(const std::string& netName="SNN", LoggerMode loggerMode=USER, int randSeed=-1);
 	~CARLsim();
 
 
@@ -268,7 +267,7 @@ public:
 	 * \TODO finish doc
 	 * \STATE ::CONFIG_STATE
 	 */
-	int createGroup(const std::string& grpName, int nNeur, int neurType, int preferredGPU=ANY);
+	int createGroup(const std::string& grpName, int nNeur, int neurType, int preferredPartition = ANY, ComputingBackend preferredBackend = CPU_CORES);
 
 	/*!
 	 * \brief Create a group of Izhikevich spiking neurons on a 3D grid (a primitive cubic Bravais lattice with cubic
@@ -291,14 +290,14 @@ public:
 	 * \param[in] neurType   either EXCITATORY_NEURON, INHIBITORY_NEURON or DOPAMINERGIC_NEURON
 	 * \since v3.0
 	 */
-	int createGroup(const std::string& grpName, const Grid3D& grid, int neurType, int preferredGPU=ANY);
+	int createGroup(const std::string& grpName, const Grid3D& grid, int neurType, int preferredPartition = ANY, ComputingBackend preferredBackend = CPU_CORES);
 
 	/*!
 	 * \brief  creates a spike generator group
 	 * \TODO finish docu
 	 * \STATE ::CONFIG_STATE
 	 */
-	int createSpikeGeneratorGroup(const std::string& grpName, int nNeur, int neurType, int preferredGPU=ANY);
+	int createSpikeGeneratorGroup(const std::string& grpName, int nNeur, int neurType, int preferredPartition = ANY, ComputingBackend preferredBackend = CPU_CORES);
 
 	/*!
 	 * \brief create a group of spike generators on a 3D grid
@@ -316,7 +315,7 @@ public:
 	 * \STATE ::CONFIG_STATE
 	 * \TODO finish doc
 	 */
-	int createSpikeGeneratorGroup(const std::string& grpName, const Grid3D& grid, int neurType, int preferredGPU=ANY);
+	int createSpikeGeneratorGroup(const std::string& grpName, const Grid3D& grid, int neurType, int preferredPartition = ANY, ComputingBackend preferredBackend = CPU_CORES);
 
 
 	/*!

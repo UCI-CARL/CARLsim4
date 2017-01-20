@@ -121,6 +121,16 @@ static const char* simMode_string[] = {
 	"CPU mode","GPU mode","Unknown mode"
 };
 
+/*!
+ * \brief computing backend
+ * 
+ * CARLsim supports execution on standard x86 CPU Cores or off-the-shelf NVIDIA GPU (CUDA Cores) 
+ */
+enum ComputingBackend {
+	CPU_CORES,
+	GPU_CORES
+};
+
 // \TODO: extend documentation, add relevant references
 /*!
  * \brief STDP flavors

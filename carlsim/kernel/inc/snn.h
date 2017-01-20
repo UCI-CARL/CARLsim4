@@ -174,7 +174,7 @@ public:
 	 * \param grid  Grid3D struct to create neurons on a 3D grid (x,y,z)
 	 * \param nType the type of neuron
 	 */
-	int createGroup(const std::string& grpName, const Grid3D& grid, int neurType, int preferedGPU);
+	int createGroup(const std::string& grpName, const Grid3D& grid, int neurType, int preferredPartition, ComputingBackend preferredBackend);
 
 	//! Creates a spike generator group (dummy-neurons, not Izhikevich spiking neurons)
 	/*!
@@ -182,7 +182,7 @@ public:
 	 * \param grid Grid3D struct to create neurons on a 3D grid (x,y,z)
 	 * \param nType the type of neuron, currently only support EXCITATORY NEURON
 	 */
-	int createSpikeGeneratorGroup(const std::string& grpName, const Grid3D& grid, int neurType, int preferedGPU);
+	int createSpikeGeneratorGroup(const std::string& grpName, const Grid3D& grid, int neurType, int preferredPartition, ComputingBackend preferredBackend);
 
 
 	/*!
@@ -542,6 +542,9 @@ private:
 	//! all unsafe operations of constructor
 	void SNNinit();
 
+	//! advance time step in a simulation
+	void advSimStep(); 
+
 	//! allocates and initializes all core datastructures
 	void allocateManagerRuntimeData();
 
@@ -578,15 +581,14 @@ private:
 	void connectRandom(int netId, std::list<ConnectConfig>::iterator connIt, bool isExternal);
 	void connectGaussian(int netId, std::list<ConnectConfig>::iterator connIt, bool isExternal);
 	void connectUserDefined(int netId, std::list<ConnectConfig>::iterator connIt, bool isExternal);
-	void clearExtFiringTable_CPU();
-	void clearExtFiringTable_GPU();
+	void clearExtFiringTable();
+	void clearExtFiringTable_CPU(int netId);
+	void clearExtFiringTable_GPU(int netId);
 
 	void deleteObjects();			//!< deallocates all used data structures in snn_cpu.cpp
 
 	void doCurrentUpdateD1(int netId);
 	void doCurrentUpdateD2(int netId);
-	void advSimStep_GPU();
-	void advSimStep_CPU();
 
 	void findMaxNumSynapsesGroups(int* _maxNumPostSynGrp, int* _maxNumPreSynGrp);
 	void findMaxNumSynapsesNeurons(int _netId, int& _maxNumPostSynN, int& _maxNumPreSynN);
@@ -693,8 +695,8 @@ private:
 	void allocateSNN_CPU(int netId); //!< allocates runtime data on CPU memory
 	int  allocateStaticLoad(int netId, int bufSize);
 
-	void assignPoissonFiringRate_CPU();
-	void assignPoissonFiringRate_GPU();
+	void assignPoissonFiringRate_CPU(int netId);
+	void assignPoissonFiringRate_GPU(int netId);
 
 	void checkAndSetGPUDevice(int netId);
 	void checkDestSrcPtrs(RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind, bool allocateMem, int grpId, int destOffset);
@@ -766,14 +768,20 @@ private:
 	void copySpikeTables(int netId, cudaMemcpyKind kind);
 	void copySpikeTables(int netId);
 
-	void deleteObjects_CPU();
-	void deleteObjects_GPU();		//!< deallocates all used data structures in snn_gpu.cu
-	void doCurrentUpdate_CPU();
-	void doCurrentUpdate_GPU();
-	void doSTPUpdateAndDecayCond_CPU();
-	void doSTPUpdateAndDecayCond_GPU();
-	void findFiring_CPU();
-	void findFiring_GPU();
+	void deleteRuntimeData();
+	void deleteRuntimeData_CPU(int netId);
+	void deleteRuntimeData_GPU(int netId);		//!< deallocates all used data structures in snn_gpu.cu
+	void doCurrentUpdate();
+	void doCurrentUpdateD2_CPU(int netId);
+	void doCurrentUpdateD2_GPU(int netId);
+	void doCurrentUpdateD1_CPU(int netId);
+	void doCurrentUpdateD1_GPU(int netId);
+	void doSTPUpdateAndDecayCond();
+	void doSTPUpdateAndDecayCond_CPU(int netId);
+	void doSTPUpdateAndDecayCond_GPU(int netId);
+	void findFiring();
+	void findFiring_CPU(int netId);
+	void findFiring_GPU(int netId);
 
 	// fetch functions supporting local-to-global copy
 	void fetchConductanceAMPA(int gGrpId);
@@ -795,24 +803,33 @@ private:
 	void fetchPostConnectionInfo(int netId);
 	void fetchSynapseState(int netId);
 
-	void globalStateUpdate_CPU();
-	void globalStateUpdate_GPU();
+	void globalStateUpdate();
+	void globalStateUpdate_CPU(int netId);
+	void globalStateUpdate_C_GPU(int netId);
+	void globalStateUpdate_N_GPU(int netId);
+	void globalStateUpdate_G_GPU(int netId);
 	void initGPU(int netId);
 
 	void resetGPUTiming();
-	void resetSpikeCnt_CPU(int gGrpId);					//!< Resets the spike count for a particular group.
-	void resetSpikeCnt_GPU(int gGrpId); //!< Utility function to clear spike counts in the GPU code.
+	void resetSpikeCnt(int gGrpId);
+	void resetSpikeCnt_CPU(int netId, int lGrpId); //!< Resets the spike count for a particular group.
+	void resetSpikeCnt_GPU(int netId, int lGrpId); //!< Utility function to clear spike counts in the GPU code.
 
-	void spikeGeneratorUpdate_CPU();
-	void spikeGeneratorUpdate_GPU();
+	void spikeGeneratorUpdate();
+	void spikeGeneratorUpdate_CPU(int netId);
+	void spikeGeneratorUpdate_GPU(int netId);
 	void startGPUTiming();
 	void stopGPUTiming();
-	void shiftSpikeTables_CPU();
-	void shiftSpikeTables_GPU();
-	void updateWeights_CPU();
-	void updateWeights_GPU();
-	void updateTimingTable_CPU();
-	void updateTimingTable_GPU();
+	void shiftSpikeTables();
+	void shiftSpikeTables_CPU(int netId);
+	void shiftSpikeTables_F_GPU(int netId);
+	void shiftSpikeTables_T_GPU(int netId);
+	void updateWeights();
+	void updateWeights_CPU(int netId);
+	void updateWeights_GPU(int netId);
+	void updateTimingTable();
+	void updateTimingTable_CPU(int netId);
+	void updateTimingTable_GPU(int netId);
 	
 	// Utility functions
 	void firingUpdateSTP(int lNId, int lGrpId, int netId);
@@ -831,6 +848,8 @@ private:
 	const std::string networkName_;	//!< network name
 	const LoggerMode loggerMode_;	//!< current logger mode (USER, DEVELOPER, SILENT, CUSTOM)
 	const int randSeed_;			//!< random number seed to use
+
+	//SimMode simMode_ = CPU_MODE;
 
 	int numGPUs;    //!< number of GPU(s) is used in the simulation
 	int numCores;   //!< number of CPU Core(s) is used in the simulation

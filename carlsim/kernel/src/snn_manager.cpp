@@ -214,7 +214,7 @@ short int SNN::connect(int grpId1, int grpId2, ConnectionGeneratorCore* conn, fl
 
 // create group of Izhikevich neurons
 // use int for nNeur to avoid arithmetic underflow
-int SNN::createGroup(const std::string& grpName, const Grid3D& grid, int neurType, int preferredGPU) {
+int SNN::createGroup(const std::string& grpName, const Grid3D& grid, int neurType, int preferredPartition, ComputingBackend preferredBackend) {
 	assert(grid.numX * grid.numY * grid.numZ > 0);
 	assert(neurType >= 0);
 	assert(numGroups < MAX_GRP_PER_SNN);
@@ -233,38 +233,17 @@ int SNN::createGroup(const std::string& grpName, const Grid3D& grid, int neurTyp
 	grpConfig.grpName = grpName;
 	grpConfig.type = neurType;
 	grpConfig.numN = grid.N;
-	grpConfig.preferredNetId = preferredGPU;
+	
 	grpConfig.isSpikeGenerator = false;
 	grpConfig.grid = grid;
 
-	/*GroupConfigRT grpConfig;
-	initGroupConfig(&grpConfig);
-
-	// We don't store the Grid3D struct in groupConfig so we don't have to deal with allocating structs on the GPU
-	grpConfig.SizeN = grid.N; // number of neurons in the group
-	grpConfig.SizeX = grid.numX; // number of neurons in first dim of Grid3D
-	grpConfig.SizeY = grid.numY; // number of neurons in second dim of Grid3D
-	grpConfig.SizeZ = grid.numZ; // number of neurons in third dim of Grid3D
-
-	grpConfig.Type   			= neurType;
-	grpConfig.WithSTP			= false;
-	grpConfig.WithSTDP			= false;
-	grpConfig.WithESTDPtype      = UNKNOWN_STDP;
-	grpConfig.WithISTDPtype		= UNKNOWN_STDP;
-	grpConfig.WithHomeostasis	= false;
-
-	grpConfig.isSpikeGenerator	= false;
-	grpConfig.MaxDelay			= 1;
-
-	
-	*/
-	// update number of neuron counters
-	//if ( (neurType&TARGET_GABAa) || (neurType&TARGET_GABAb))
-	//	numNInhReg += grid.N; // regular inhibitory neuron
-	//else
-	//	numNExcReg += grid.N; // regular excitatory neuron
-	//numNReg += grid.N;
-	//numN += grid.N;
+	if (preferredPartition == ANY) {
+		grpConfig.preferredNetId = ANY;
+	} else if (preferredBackend == CPU_CORES) {
+		grpConfig.preferredNetId = preferredPartition + CPU_RUNTIME_BASE;
+	} else {
+		grpConfig.preferredNetId = preferredPartition + GPU_RUNTIME_BASE;
+	}
 
 	// assign a global group id
 	grpConfigMD.gGrpId = numGroups;
@@ -281,7 +260,7 @@ int SNN::createGroup(const std::string& grpName, const Grid3D& grid, int neurTyp
 
 // create spike generator group
 // use int for nNeur to avoid arithmetic underflow
-int SNN::createSpikeGeneratorGroup(const std::string& grpName, const Grid3D& grid, int neurType, int preferredGPU) {
+int SNN::createSpikeGeneratorGroup(const std::string& grpName, const Grid3D& grid, int neurType, int preferredPartition, ComputingBackend preferredBackend) {
 	assert(grid.numX * grid.numY * grid.numZ > 0);
 	assert(neurType >= 0);
 	assert(numGroups < MAX_GRP_PER_SNN);
@@ -294,35 +273,15 @@ int SNN::createSpikeGeneratorGroup(const std::string& grpName, const Grid3D& gri
 	grpConfig.grpName = grpName;
 	grpConfig.type = neurType | POISSON_NEURON;
 	grpConfig.numN = grid.N;
-	grpConfig.preferredNetId = preferredGPU;
 	grpConfig.isSpikeGenerator = true;
 	grpConfig.grid = grid;
 
-	/*GroupConfigRT grpConfig;
-	initGroupConfig(&grpConfig);
-
-	grpConfig.SizeN = grid.N; // number of neurons in the group
-	grpConfig.SizeX = grid.numX; // number of neurons in first dim of Grid3D
-	grpConfig.SizeY = grid.numY; // number of neurons in second dim of Grid3D
-	grpConfig.SizeZ = grid.numZ; // number of neurons in third dim of Grid3D
-	grpConfig.Type    		= neurType | POISSON_NEURON;
-	grpConfig.WithSTP		= false;
-	grpConfig.WithSTDP		= false;
-	grpConfig.WithESTDPtype  = UNKNOWN_STDP;
-	grpConfig.WithISTDPtype	= UNKNOWN_STDP;
-	grpConfig.WithHomeostasis	= false;
-	grpConfig.isSpikeGenerator	= true;		// these belong to the spike generator class...
-
-	grpConfig.preferedNetId = preferedGPU;
-	
-	*/
-
-	//if ( (neurType&TARGET_GABAa) || (neurType&TARGET_GABAb))
-	//	numNInhPois += grid.N; // inh poisson group
-	//else
-	//	numNExcPois += grid.N; // exc poisson group
-	//numNPois += grid.N;
-	//numN += grid.N;
+	if (preferredBackend == CPU_CORES) {
+		grpConfig.preferredNetId = preferredPartition + CPU_RUNTIME_BASE;
+	}
+	else {
+		grpConfig.preferredNetId = preferredPartition + GPU_RUNTIME_BASE;
+	}
 
 	// assign a global group id
 	grpConfigMD.gGrpId = numGroups;
@@ -667,10 +626,7 @@ int SNN::runNetwork(int _nsec, int _nmsec, bool printRunSummary) {
 	}
 
 	// reset all spike counters
-	if (simMode_ == GPU_MODE)
-		resetSpikeCnt_GPU(ALL);
-	else
-		resetSpikeCnt_CPU(ALL);
+	resetSpikeCnt(ALL);
 
 	// store current start time for future reference
 	simTimeRunStart = simTime;
@@ -693,22 +649,15 @@ int SNN::runNetwork(int _nsec, int _nmsec, bool printRunSummary) {
 
 	// if nsec=0, simTimeMs=10, we need to run the simulator for 10 timeStep;
 	// if nsec=1, simTimeMs=10, we need to run the simulator for 1*1000+10, time Step;
-	for(int i=0; i<runDurationMs; i++) {
-		if(simMode_ == CPU_MODE)
-			advSimStep_CPU();
-		else
-			advSimStep_GPU();
+	for(int i = 0; i < runDurationMs; i++) {
+		advSimStep();
 
 		// update weight every updateInterval ms if plastic synapses present
 		if (!sim_with_fixedwts && wtANDwtChangeUpdateInterval_ == ++wtANDwtChangeUpdateIntervalCnt_) {
 			wtANDwtChangeUpdateIntervalCnt_ = 0; // reset counter
 			if (!sim_in_testing) {
 				// keep this if statement separate from the above, so that the counter is updated correctly
-				if (simMode_ == CPU_MODE) {
-					updateWeights_CPU();
-				} else{
-					updateWeights_GPU();
-				}
+				updateWeights();
 			}
 		}
 
@@ -724,11 +673,8 @@ int SNN::runNetwork(int _nsec, int _nmsec, bool printRunSummary) {
 			if (numConnectionMonitor) {
 				updateConnectionMonitor();
 			}
-
-			if(simMode_ == CPU_MODE)
-				shiftSpikeTables_CPU();
-			else
-				shiftSpikeTables_GPU();
+			
+			shiftSpikeTables();
 		}
 
 		fetchNeuronSpikeCount(ALL);
@@ -822,7 +768,7 @@ void SNN::biasWeights(short int connId, float bias, bool updateWeightRange) {
 		}
 
 		// update GPU datastructures in batches, grouped by post-neuron
-		if (simMode_ == GPU_MODE) {
+		if (netId < CPU_RUNTIME_BASE) {
 			CUDA_CHECK_ERRORS( cudaMemcpy(&(runtimeData[netId].wt[cumIdx]), &(managerRuntimeData.wt[cumIdx]), sizeof(float)*managerRuntimeData.Npre[lNId],
 				cudaMemcpyHostToDevice) );
 
@@ -910,7 +856,7 @@ void SNN::scaleWeights(short int connId, float scale, bool updateWeightRange) {
 		}
 
 		// update GPU datastructures in batches, grouped by post-neuron
-		if (simMode_ == GPU_MODE) {
+		if (netId < CPU_RUNTIME_BASE) {
 			CUDA_CHECK_ERRORS(cudaMemcpy(&runtimeData[netId].wt[cumIdx], &managerRuntimeData.wt[cumIdx], sizeof(float)*managerRuntimeData.Npre[lNId],
 				cudaMemcpyHostToDevice));
 
@@ -1143,7 +1089,7 @@ void SNN::setWeight(short int connId, int neurIdPre, int neurIdPost, float weigh
 			managerRuntimeData.wt[pos_ij] = isExcitatoryGroup(connectConfigMap[connId].grpSrc) ? weight : -1.0 * weight;
 			managerRuntimeData.maxSynWt[pos_ij] = isExcitatoryGroup(connectConfigMap[connId].grpSrc) ? maxWt : -1.0 * maxWt;
 
-			if (simMode_==GPU_MODE) {
+			if (netId < CPU_RUNTIME_BASE) {
 				// need to update datastructures on GPU runtime
 				CUDA_CHECK_ERRORS(cudaMemcpy(&runtimeData[netId].wt[pos_ij], &managerRuntimeData.wt[pos_ij], sizeof(float), cudaMemcpyHostToDevice));
 				if (runtimeData[netId].maxSynWt != NULL) {
@@ -1195,7 +1141,7 @@ void SNN::setExternalCurrent(int grpId, const std::vector<float>& current) {
 
 	// copy to GPU if necessary
 	// don't allocate; allocation done in generateRuntimeData
-	if (simMode_ == GPU_MODE) {
+	if (netId < CPU_RUNTIME_BASE) {
 		copyExternalCurrent(netId, lGrpId, &runtimeData[netId], cudaMemcpyHostToDevice, false);
 	}
 	else {
@@ -1866,8 +1812,7 @@ void SNN::SNNinit() {
 	memset(&managerRuntimeData, 0, sizeof(RuntimeData));
 	managerRuntimeData.allocated = false; // FIXME: redundant??
 
-	CUDA_CREATE_TIMER(timer);
-	CUDA_RESET_TIMER(timer);
+
 
 	// default weight update parameter
 	wtANDwtChangeUpdateInterval_ = 1000; // update weights every 1000 ms (default)
@@ -1875,23 +1820,187 @@ void SNN::SNNinit() {
 	stdpScaleFactor_ = 1.0f;
 	wtChangeDecay_ = 0.0f;
 
-	if (simMode_ == GPU_MODE)
-		configGPUDevice();
+	// FIXME: use it when necessary
+	CUDA_CREATE_TIMER(timer);
+	CUDA_RESET_TIMER(timer);
+	configGPUDevice();
+}
+
+void SNN::advSimStep() {
+	doSTPUpdateAndDecayCond();
+
+	spikeGeneratorUpdate();
+
+	findFiring();
+
+	updateTimingTable();
+
+	//routeSpikes();
+	routeSpikes_GPU();
+
+	doCurrentUpdate();
+
+	globalStateUpdate();
+
+	clearExtFiringTable();
+}
+
+void SNN::doSTPUpdateAndDecayCond() {
+	for (int netId = 0; netId < MAX_NET_PER_SNN; netId++) {
+		if (!groupPartitionLists[netId].empty()) {
+			assert(runtimeData[netId].allocated);
+			if (netId < CPU_RUNTIME_BASE) // GPU runtime
+				doSTPUpdateAndDecayCond_GPU(netId);
+			else
+				doSTPUpdateAndDecayCond_CPU(netId);
+		}
+	}
+}
+
+void SNN::spikeGeneratorUpdate() {
+	// If poisson rate has been updated, assign new poisson rate
+	if (spikeRateUpdated) {
+		for (int netId = 0; netId < MAX_NET_PER_SNN; netId++) {
+			if (!groupPartitionLists[netId].empty()) {
+				if (netId < CPU_RUNTIME_BASE) // GPU runtime
+					assignPoissonFiringRate_GPU(netId);
+				else // CPU runtime
+					assignPoissonFiringRate_CPU(netId);
+			}
+		}
+		spikeRateUpdated = false;
+	}
+
+	// If time slice has expired, check if new spikes needs to be generated by user-defined spike generators
+	generateUserDefinedSpikes();
+
+	for (int netId = 0; netId < MAX_NET_PER_SNN; netId++) {
+		if (!groupPartitionLists[netId].empty()) {
+			if (netId < CPU_RUNTIME_BASE) // GPU runtime
+				spikeGeneratorUpdate_GPU(netId);
+			else // CPU runtime
+				spikeGeneratorUpdate_CPU(netId);
+		}
+	}
+
+	// tell the spike buffer to advance to the next time step
+	spikeBuf->step();
+}
+
+void SNN::findFiring() {
+	for (int netId = 0; netId < MAX_NET_PER_SNN; netId++) {
+		if (!groupPartitionLists[netId].empty()) {
+			if (netId < CPU_RUNTIME_BASE) // GPU runtime
+				findFiring_GPU(netId);
+			else // CPU runtime
+				findFiring_CPU(netId);
+		}
+	}
+}
+
+void SNN::doCurrentUpdate() {
+	for (int netId = 0; netId < MAX_NET_PER_SNN; netId++) {
+		if (!groupPartitionLists[netId].empty()) {
+			if (netId < CPU_RUNTIME_BASE) // GPU runtime
+				doCurrentUpdateD2_GPU(netId);
+			else // CPU runtime
+				doCurrentUpdateD2_CPU(netId);
+		}
+	}
+
+	for (int netId = 0; netId < MAX_NET_PER_SNN; netId++) {
+		if (!groupPartitionLists[netId].empty()) {
+			if (netId < CPU_RUNTIME_BASE) // GPU runtime
+				doCurrentUpdateD1_GPU(netId);
+			else // CPU runtime
+				doCurrentUpdateD1_CPU(netId);
+		}
+	}
+}
+
+void SNN::updateTimingTable() {
+	for (int netId = 0; netId < MAX_NET_PER_SNN; netId++) {
+		if (!groupPartitionLists[netId].empty()) {
+			if (netId < CPU_RUNTIME_BASE) // GPU runtime
+				updateTimingTable_GPU(netId);
+			else // CPU runtime
+				updateTimingTable_CPU(netId);
+		}
+	}
+}
+
+void SNN::globalStateUpdate() {
+	for (int netId = 0; netId < MAX_NET_PER_SNN; netId++) {
+		if (!groupPartitionLists[netId].empty()) {
+			if (netId < CPU_RUNTIME_BASE) // GPU runtime
+				globalStateUpdate_C_GPU(netId);
+			else // CPU runtime
+				globalStateUpdate_CPU(netId);
+		}
+	}
+
+	for (int netId = 0; netId < MAX_NET_PER_SNN; netId++) {
+		if (!groupPartitionLists[netId].empty()) {
+			if (netId < CPU_RUNTIME_BASE) // GPU runtime
+				globalStateUpdate_N_GPU(netId);
+		}
+	}
+
+	for (int netId = 0; netId < MAX_NET_PER_SNN; netId++) {
+		if (!groupPartitionLists[netId].empty()) {
+			if (netId < CPU_RUNTIME_BASE) // GPU runtime
+				globalStateUpdate_G_GPU(netId);
+		}
+	}
+}
+
+void SNN::clearExtFiringTable() {
+	for (int netId = 0; netId < MAX_NET_PER_SNN; netId++) {
+		if (!groupPartitionLists[netId].empty()) {
+			if (netId < CPU_RUNTIME_BASE) // GPU runtime
+				clearExtFiringTable_GPU(netId);
+			else // CPU runtime
+				clearExtFiringTable_CPU(netId);
+		}
+	}
+}
+
+void SNN::updateWeights() {
+	for (int netId = 0; netId < MAX_NET_PER_SNN; netId++) {
+		if (!groupPartitionLists[netId].empty()) {
+			if (netId < CPU_RUNTIME_BASE) // GPU runtime
+				updateWeights_GPU(netId);
+			else // CPU runtime
+				updateWeights_CPU(netId);
+		}
+	}
+}
+
+void SNN::shiftSpikeTables() {
+	for (int netId = 0; netId < MAX_NET_PER_SNN; netId++) {
+		if (!groupPartitionLists[netId].empty()) {
+			if (netId < CPU_RUNTIME_BASE) // GPU runtime
+				shiftSpikeTables_F_GPU(netId);
+			else // CPU runtime
+				shiftSpikeTables_CPU(netId);
+		}
+	}
+
+	for (int netId = 0; netId < MAX_NET_PER_SNN; netId++) {
+		if (!groupPartitionLists[netId].empty()) {
+			if (netId < CPU_RUNTIME_BASE) // GPU runtime
+				shiftSpikeTables_T_GPU(netId);
+		}
+	}
 }
 
 void SNN::allocateSNN(int netId) {
-
-	switch (simMode_) {
-	case GPU_MODE:
+	assert(netId > ANY && netId < MAX_NET_PER_SNN);
+	
+	if (netId < CPU_RUNTIME_BASE)
 		allocateSNN_GPU(netId);
-		break;
-	case CPU_MODE:
+	else 
 		allocateSNN_CPU(netId);
-		break;
-	default:
-		KERNEL_ERROR("Unknown simMode_");
-		break;
-	}
 }
 
 void SNN::allocateManagerRuntimeData() {
@@ -3245,6 +3354,23 @@ void SNN::connectUserDefined(int netId, std::list<ConnectConfig>::iterator connI
 //	groupInfo[grpDest].sumPreConn += connectConfigMap[connId].numberOfConnections;
 //}
 
+void SNN::deleteRuntimeData() {
+	// FIXME: assert simulation use GPU first
+	// wait for kernels to complete
+	CUDA_CHECK_ERRORS(cudaThreadSynchronize());
+
+	for (int netId = 0; netId < MAX_NET_PER_SNN; netId++) {
+		if (!groupPartitionLists[netId].empty()) {
+			if (netId < CPU_RUNTIME_BASE) // GPU runtime
+				deleteRuntimeData_GPU(netId);
+			else // CPU runtime
+				deleteRuntimeData_CPU(netId);
+		}
+	}
+
+	CUDA_DELETE_TIMER(timer);
+}
+
 // delete all objects (CPU and GPU side)
 void SNN::deleteObjects() {
 	if (simulatorDeleted)
@@ -3259,13 +3385,7 @@ void SNN::deleteObjects() {
 	// delete manager runtime data
 	deleteManagerRuntimeData();
 
-	if (simMode_ == CPU_MODE) {
-		// delete cpu runtime data
-		deleteObjects_CPU();
-	} else {
-		// delete gpu runtime data
-		deleteObjects_GPU();
-	}
+	deleteRuntimeData();
 
 	// fclose file streams, unless in custom mode
 	if (loggerMode_ != CUSTOM) {
@@ -3405,14 +3525,14 @@ void SNN::findNumSynapsesNetwork(int _netId, int& _numPostSynNet, int& _numPreSy
 }
 
 void SNN::fetchGroupState(int netId, int lGrpId) {
-	if (simMode_ == GPU_MODE)
+	if (netId < CPU_RUNTIME_BASE)
 		copyGroupState(netId, lGrpId, &managerRuntimeData, &runtimeData[netId], cudaMemcpyDeviceToHost, false);
 	else
 		copyGroupState(netId, lGrpId, &managerRuntimeData, &runtimeData[netId], false);
 }
 
 void SNN::fetchWeightState(int netId, int lGrpId) {
-	if (simMode_ == GPU_MODE)
+	if (netId < CPU_RUNTIME_BASE)
 		copyWeightState(netId, lGrpId, cudaMemcpyDeviceToHost);
 	else
 		copyWeightState(netId, lGrpId);
@@ -3433,7 +3553,7 @@ void SNN::fetchNeuronSpikeCount (int gGrpId) {
 		int lGrpId = groupConfigMDMap[gGrpId].lGrpId;
 		int LtoGOffset = groupConfigMDMap[gGrpId].LtoGOffset;
 
-		if (simMode_ == GPU_MODE)
+		if (netId < CPU_RUNTIME_BASE)
 			copyNeuronSpikeCount(netId, lGrpId, &managerRuntimeData, &runtimeData[netId], cudaMemcpyDeviceToHost, false, LtoGOffset);
 		else
 			copyNeuronSpikeCount(netId, lGrpId, &managerRuntimeData, &runtimeData[netId], false, LtoGOffset);
@@ -3458,7 +3578,7 @@ void SNN::fetchConductanceAMPA(int gGrpId) {
 		int lGrpId = groupConfigMDMap[gGrpId].lGrpId;
 		int LtoGOffset = groupConfigMDMap[gGrpId].LtoGOffset;
 
-		if (simMode_ == GPU_MODE)
+		if (netId < CPU_RUNTIME_BASE)
 			copyConductanceAMPA(netId, lGrpId, &managerRuntimeData, &runtimeData[netId], cudaMemcpyDeviceToHost, false, LtoGOffset);
 		else
 			copyConductanceAMPA(netId, lGrpId, &managerRuntimeData, &runtimeData[netId], false, LtoGOffset);
@@ -3480,7 +3600,7 @@ void SNN::fetchConductanceNMDA(int gGrpId) {
 		int lGrpId = groupConfigMDMap[gGrpId].lGrpId;
 		int LtoGOffset = groupConfigMDMap[gGrpId].LtoGOffset;
 
-		if (simMode_ == GPU_MODE)
+		if (netId < CPU_RUNTIME_BASE)
 			copyConductanceNMDA(netId, lGrpId, &managerRuntimeData, &runtimeData[netId], cudaMemcpyDeviceToHost, false, LtoGOffset);
 		else
 			copyConductanceNMDA(netId, lGrpId, &managerRuntimeData, &runtimeData[netId], false, LtoGOffset);
@@ -3502,7 +3622,7 @@ void SNN::fetchConductanceGABAa(int gGrpId) {
 		int lGrpId = groupConfigMDMap[gGrpId].lGrpId;
 		int LtoGOffset = groupConfigMDMap[gGrpId].LtoGOffset;
 
-		if (simMode_ == GPU_MODE)
+		if (netId < CPU_RUNTIME_BASE)
 			copyConductanceGABAa(netId, lGrpId, &managerRuntimeData, &runtimeData[netId], cudaMemcpyDeviceToHost, false, LtoGOffset);
 		else
 			copyConductanceGABAa(netId, lGrpId, &managerRuntimeData, &runtimeData[netId], false, LtoGOffset);
@@ -3524,7 +3644,7 @@ void SNN::fetchConductanceGABAb(int gGrpId) {
 		int lGrpId = groupConfigMDMap[gGrpId].lGrpId;
 		int LtoGOffset = groupConfigMDMap[gGrpId].LtoGOffset;
 
-		if (simMode_ == GPU_MODE)
+		if (netId < CPU_RUNTIME_BASE)
 			copyConductanceGABAb(netId, lGrpId, &managerRuntimeData, &runtimeData[netId], cudaMemcpyDeviceToHost, false, LtoGOffset);
 		else
 			copyConductanceGABAb(netId, lGrpId, &managerRuntimeData, &runtimeData[netId], false, LtoGOffset);
@@ -3533,42 +3653,42 @@ void SNN::fetchConductanceGABAb(int gGrpId) {
 
 
 void SNN::fetchGrpIdsLookupArray(int netId) {
-	if (simMode_ == GPU_MODE)
+	if (netId < CPU_RUNTIME_BASE)
 		copyGrpIdsLookupArray(netId, cudaMemcpyDeviceToHost);
 	else
 		copyGrpIdsLookupArray(netId);
 }
 
 void SNN::fetchConnIdsLookupArray(int netId) {
-	if (simMode_ == GPU_MODE)
+	if (netId < CPU_RUNTIME_BASE)
 		copyConnIdsLookupArray(netId, cudaMemcpyDeviceToHost);
 	else
 		copyConnIdsLookupArray(netId);
 }
 
 void SNN::fetchLastSpikeTime(int netId) {
-	if (simMode_ == GPU_MODE)
+	if (netId < CPU_RUNTIME_BASE)
 		copyLastSpikeTime(netId, cudaMemcpyDeviceToHost);
 	else
 		copyLastSpikeTime(netId);
 }
 
 void SNN::fetchPreConnectionInfo(int netId) {
-	if (simMode_ == GPU_MODE)
+	if (netId < CPU_RUNTIME_BASE)
 		copyPreConnectionInfo(netId, ALL, &managerRuntimeData, &runtimeData[netId], cudaMemcpyDeviceToHost, false);
 	else
 		copyPreConnectionInfo(netId, ALL, &managerRuntimeData, &runtimeData[netId], false);
 }
 
 void SNN::fetchPostConnectionInfo(int netId) {
-	if (simMode_ == GPU_MODE)
+	if (netId < CPU_RUNTIME_BASE)
 		copyPostConnectionInfo(netId, ALL, &managerRuntimeData, &runtimeData[netId], cudaMemcpyDeviceToHost, false);
 	else
 		copyPostConnectionInfo(netId, ALL, &managerRuntimeData, &runtimeData[netId], false);
 }
 
 void SNN::fetchSynapseState(int netId) {
-	if (simMode_ == GPU_MODE)
+	if (netId < CPU_RUNTIME_BASE)
 		copySynapseState(netId, &managerRuntimeData, &runtimeData[netId], cudaMemcpyDeviceToHost, false);
 	else
 		copySynapseState(netId, &managerRuntimeData, &runtimeData[netId], false);
@@ -3588,7 +3708,7 @@ void SNN::fetchNetworkSpikeCount() {
 	for (int netId = 0; netId < MAX_NET_PER_SNN; netId++) {
 		if (!groupPartitionLists[netId].empty()) {
 
-			if (simMode_ == GPU_MODE)
+			if (netId < CPU_RUNTIME_BASE)
 				copyNetworkSpikeCount(netId, cudaMemcpyDeviceToHost,
 									  &spikeCountD1, &spikeCountD2,
 									  &spikeCountExtD1, &spikeCountExtD2);
@@ -3608,7 +3728,7 @@ void SNN::fetchNetworkSpikeCount() {
 }
 
 void SNN::fetchSpikeTables(int netId) {
-	if (simMode_ == GPU_MODE)
+	if (netId < CPU_RUNTIME_BASE)
 		copySpikeTables(netId, cudaMemcpyDeviceToHost);
 	else
 		copySpikeTables(netId);
@@ -3835,22 +3955,23 @@ void SNN::partitionSNN() {
 		int gGrpId = grpIt->second.gGrpId;
 		int netId = groupConfigMap[gGrpId].preferredNetId;
 		if (netId != ANY) {
-			assert(netId > ANY);
+			assert(netId > ANY && netId < MAX_NET_PER_SNN);
 			grpIt->second.netId = netId;
 			numAssignedNeurons[netId] += groupConfigMap[gGrpId].numN;
 			groupPartitionLists[netId].push_back(grpIt->second); // Copy by value, create a copy
 		} else {
 			// ToDo: add callback function that allow user to partition network by theirself
+			// FIXME: make sure GPU(s) is available first
 			// partition algorithm, use naive partition for now
 			// put excitatory groups to GPU 0 and inhibitory groups to GPU 1
 			// this parse separates groups into each local network and assign each group a netId
 			unsigned int type = groupConfigMap[gGrpId].type;
 			if (IS_EXCITATORY_TYPE(type)) {
-				grpIt->second.netId = 0;
+				grpIt->second.netId = 0; // GPU 0
 				numAssignedNeurons[0] += groupConfigMap[gGrpId].numN;
 				groupPartitionLists[0].push_back(grpIt->second); // Copy by value, create a copy
 			} else if (IS_INHIBITORY_TYPE(type)) {
-				grpIt->second.netId = 1;
+				grpIt->second.netId = 1; // GPU 1
 				numAssignedNeurons[1] += groupConfigMap[gGrpId].numN;
 				groupPartitionLists[1].push_back(grpIt->second); // Copy by value, create a copy
 			}
@@ -4228,8 +4349,11 @@ void SNN::generateRuntimeSNN() {
 	for (int netId = 0; netId < MAX_NET_PER_SNN; netId++) {
 		if (!groupPartitionLists[netId].empty()) {	
 			KERNEL_INFO("");
-			KERNEL_INFO("*****************      Initializing %s %d Runtime      *************************",
-			simMode_ == GPU_MODE?"GPU":"CPU", netId);
+			if (netId < CPU_RUNTIME_BASE) {
+				KERNEL_INFO("*****************      Initializing GPU %d Runtime      *************************", netId);
+			} else {
+				KERNEL_INFO("*****************      Initializing CPU %d Runtime      *************************", (netId - CPU_RUNTIME_BASE));
+			}
 			// build the runtime data according to local network, group, connection configuirations
 
 			// generate runtime data for each group
@@ -4592,6 +4716,29 @@ void SNN::resetFiringTable() {
 	memset(managerRuntimeData.extFiringTableD1, 0, sizeof(int*) * managerRTDSize.maxNumGroups);
 }
 
+void SNN::resetSpikeCnt(int gGrpId) {
+	assert(gGrpId >= ALL);
+
+	if (gGrpId == ALL) {
+		for (int netId = 0; netId < MAX_NET_PER_SNN; netId++) {
+			if (!groupPartitionLists[netId].empty()) {
+				if (netId < CPU_RUNTIME_BASE) // GPU runtime
+					resetSpikeCnt_GPU(netId, ALL);
+				else // CPU runtime
+					resetSpikeCnt_CPU(netId, ALL);
+			}
+		}
+	} else {
+		int netId = groupConfigMDMap[gGrpId].netId;
+		int lGrpId = groupConfigMDMap[gGrpId].lGrpId;
+
+		if (netId < CPU_RUNTIME_BASE) // GPU runtime
+			resetSpikeCnt_GPU(netId, lGrpId);
+		else // CPU runtime
+			resetSpikeCnt_CPU(netId, lGrpId);
+	}
+}
+
 
 //! nid=neuron id, sid=synapse id, grpId=group id.
 inline SynInfo SNN::SET_CONN_ID(int nId, int sId, int grpId) {
@@ -4689,11 +4836,8 @@ void SNN::startTesting(bool shallUpdateWeights) {
 			float storeScaleSTDP = stdpScaleFactor_;
 			stdpScaleFactor_ = 1.0f/wtANDwtChangeUpdateIntervalCnt_;
 
-			if (simMode_ == CPU_MODE) {
-				updateWeights_CPU();
-			} else{
-				updateWeights_GPU();
-			}
+			updateWeights();
+
 			stdpScaleFactor_ = storeScaleSTDP;
 		}
 	}
@@ -4701,10 +4845,10 @@ void SNN::startTesting(bool shallUpdateWeights) {
 	sim_in_testing = true;
 	networkConfigs[0].sim_in_testing = true;
 
-	if (simMode_ == GPU_MODE) {
+	//if (netId < CPU_RUNTIME_BASE) {
 		// copy new network info struct to GPU (|TODO copy only a single boolean)
-		copyNetworkConfig(0);
-	}
+	//	copyNetworkConfig(0);
+	//}
 }
 
 // FIXME: update the correct network config
@@ -4713,10 +4857,10 @@ void SNN::stopTesting() {
 	sim_in_testing = false;
 	networkConfigs[0].sim_in_testing = false;
 
-	if (simMode_ == GPU_MODE) {
+	//if (netId < CPU_RUNTIME_BASE) {
 		// copy new network_info struct to GPU (|TODO copy only a single boolean)
-		copyNetworkConfig(0);
-	}
+	//	copyNetworkConfig(0);
+	//}
 }
 
 void SNN::updateConnectionMonitor(short int connId) {
@@ -5092,20 +5236,15 @@ void SNN::updateSpikeMonitor(int gGrpId) {
 // FIXME: update summary format for multiGPUs
 void SNN::printSimSummary() {
 	float etime;
-	if(simMode_ == GPU_MODE) {
-		stopGPUTiming();
-		etime = gpuExecutionTime;
-	}
-	else {
-		stopCPUTiming();
-		etime = cpuExecutionTime;
-	}
+
+	// FIXME: measure total execution time, and GPU excution time
+	stopGPUTiming();
+	etime = gpuExecutionTime;
 
 	fetchNetworkSpikeCount();
 
 	KERNEL_INFO("\n");
-	KERNEL_INFO("********************      %s Simulation Summary      ***************************",
-		simMode_==GPU_MODE?"GPU":"CPU");
+	KERNEL_INFO("********************    Simulation Summary      ***************************");
 
 	KERNEL_INFO("Network Parameters: \tnumNeurons = %d (numNExcReg:numNInhReg = %2.1f:%2.1f)", 
 		glbNetworkConfig.numN, 100.0 * glbNetworkConfig.numNExcReg / glbNetworkConfig.numN, 100.0 * glbNetworkConfig.numNInhReg / glbNetworkConfig.numN);
