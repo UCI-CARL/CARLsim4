@@ -53,6 +53,22 @@
 #include <cuda_version_control.h>
 #include <curand.h>
 
+
+/*!
+* \brief type of memory pointer
+*
+* CARLsim supports execution either on standard x86 central processing units (CPUs) or off-the-shelf NVIDIA GPUs.
+* The runtime data for CPU/GPU computing backend needs to be allocated in proper memory space.
+*
+* CPU_MEM: runtime data is allocated on CPU (main) memory
+* GPU_MEM: runtime data is allocated on GPU memory
+*
+*/
+enum MemType {
+	CPU_MEM,     //!< runtime data is allocated on CPU (main) memory
+	GPU_MEM,     //!< runtime data is allocated on GPU memory
+};
+
 //! connection types, used internally (externally it's a string)
 enum conType_t { CONN_RANDOM, CONN_ONE_TO_ONE, CONN_FULL, CONN_FULL_NO_DIRECT, CONN_GAUSSIAN, CONN_USER_DEFINED, CONN_UNKNOWN};
 
@@ -408,7 +424,7 @@ typedef struct RuntimeData_s {
 
 	int* I_set; //!< an array of bits indicating which synapse got a spike
 
-	SimMode	memType;
+	MemType memType;
 	bool     allocated; //!< true if all data has been allocated..
 
 	/* Tsodyks & Markram (1998), where the short-term dynamics of synapses is characterized by three parameters:

@@ -849,8 +849,6 @@ private:
 	const LoggerMode loggerMode_;	//!< current logger mode (USER, DEVELOPER, SILENT, CUSTOM)
 	const int randSeed_;			//!< random number seed to use
 
-	//SimMode simMode_ = CPU_MODE;
-
 	int numGPUs;    //!< number of GPU(s) is used in the simulation
 	int numCores;   //!< number of CPU Core(s) is used in the simulation
 

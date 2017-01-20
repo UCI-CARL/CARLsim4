@@ -1416,16 +1416,6 @@ public:
 	GroupNeuromodulatorInfo getGroupNeuromodulatorInfo(int grpId);
 
 	/*!
-	 * \brief returns the current simulation mode
-	 *
-	 * This function returns the current simulation mode. Currently supported are CPU_MODE and GPU_MODE.
-	 * \STATE ::CONFIG_STATE, ::SETUP_STATE, ::RUN_STATE
-	 * \return simulation mode
-	 * \since v3.0
-	 */
-	SimMode getSimMode();
-
-	/*!
 	 * \brief returns
 	 *
 	 * \TODO finish docu

@@ -2134,7 +2134,7 @@ void SNN::allocateManagerRuntimeData() {
 
 	// Confirm allocation of SNN runtime data in main memory
 	managerRuntimeData.allocated = true;
-	managerRuntimeData.memType = CPU_MODE;
+	managerRuntimeData.memType = CPU_MEM;
 }
 
 int SNN::assignGroup(int gGrpId, int availableNeuronId) {

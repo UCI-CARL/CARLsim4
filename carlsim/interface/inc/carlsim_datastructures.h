@@ -100,28 +100,6 @@ static const char* loggerMode_string[] = {
 };
 
 /*!
- * \brief simulation mode
- *
- * CARLsim supports execution either on standard x86 central processing units (CPUs) or off-the-shelf NVIDIA GPUs.
- *
- * When creating a new CARLsim object, you can choose from the following:
- * CPU_MODE:	run on a single CPU core
- * GPU_MODE:	run on GPU card(s)
- *
- * When running GPU mode on a multi-GPU system, you can specify on which CUDA device to establish a context (numGPUs,
- * 0-indexed) when you create a new SNN object.
- * The simulation mode will be fixed throughout the lifetime of a SNN object.
- */
-enum SimMode {
-	 CPU_MODE,     //!< model is run on a single CPU core
-	 GPU_MODE,     //!< model is run on GPU card(s)
-	 UNKNOWN_SIM
-};
-static const char* simMode_string[] = {
-	"CPU mode","GPU mode","Unknown mode"
-};
-
-/*!
  * \brief computing backend
  * 
  * CARLsim supports execution on standard x86 CPU Cores or off-the-shelf NVIDIA GPU (CUDA Cores) 
