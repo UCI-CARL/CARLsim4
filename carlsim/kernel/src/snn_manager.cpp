@@ -274,7 +274,10 @@ int SNN::createSpikeGeneratorGroup(const std::string& grpName, const Grid3D& gri
 	grpConfig.isSpikeGenerator = true;
 	grpConfig.grid = grid;
 
-	if (preferredBackend == CPU_CORES) {
+	if (preferredPartition == ANY) {
+		grpConfig.preferredNetId = ANY;
+	}
+	else if (preferredBackend == CPU_CORES) {
 		grpConfig.preferredNetId = preferredPartition + CPU_RUNTIME_BASE;
 	}
 	else {
