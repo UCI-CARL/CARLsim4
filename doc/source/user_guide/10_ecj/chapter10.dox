@@ -1,0 +1,248 @@
+/*!
+
+\page ch10_ecj Chapter 10: ECJ
+
+\tableofcontents
+
+\section ch10s1_overview CARLsim-ECJ Parameter-Tuning Framework Overview
+
+CARLsim now has a software interface to an evolutionary
+computation system written in Java (ECJ) (Luke et al., 2006) to provide an
+automated parameter tuning framework. We found that an automated tuning framework became
+increasingly useful as our SNN models became more complex. Evolutionary
+Algorithms (EAs) enable flexible parameter tuning by means
+of optimizing a generic fitness function. The first version of the automated paramter-tuning
+framework used an EA library called Evolving Objects (EO) as the EA engine (Carlson et al., 2014).
+ECJ was chosen to supercede EO because it is under active development (Linux), supports
+multi-threading, has excellent documentation, and implements a variety of EAs (Luke at al., 2006).
+
+\image html 10_ecj.png  "Fig. 1. General approach to parameter tuning. ECJ performs the EA and passes the current generation of parameters (red arrow) to CARLsim for evaluation using the parameter tuning interface (PTI) code. CARLsim assigns each parameter set to an SNN and evaluates all the individuals in parallel, passing the fitness values back to ECJ for selection of individuals in the next generation (black arrow)."
+
+Source: Beyeler et al., 2015
+
+Fig. 1 shows the general approach of the automated parameter tuning framework.
+ECJ implements an EA with a parameter file that includes: EA parameters, the number of
+individuals per generation, and parameter ranges. Each step of
+the EA is executed by ECJ except for the evaluation of the
+fitness function, which is completed by CARLsim. CARLsim
+evaluates the fitness function in parallel by running multiple
+SNN individuals simultaneously on the GPU, where the bulk
+of the computations occur. ECJ is written in Java, which is
+slower than C, but the majority of the execution time is spent
+running CARLsim’s optimized C++/CUDA code. At the
+beginning of every generation, the parameters to be tuned are
+passed from ECJ to CARLsim using standard input/output
+streams in Linux. CARLsim evaluates individuals in parallel
+and returns the resulting fitness values to ECJ via standard
+streams. The tuning framework allows users to tune virtually
+any SNN parameter, while the fitness functions can be written
+to depend on the neuronal activity or synaptic weights of the
+SNN.
+
+\since v3.0
+
+\section ch10s2_installation 10.2 Installation
+
+The current version of the CARLsim paramter-tuning framework uses Evolutionary
+Computations in Java (ECJ) (version 22 or greater is required). For information
+on how to install ECJ, please go  <a href="http://cs.gmu.edu/~eclab/projects/ecj/">here</a>.
+
+After ECJ version 22 or greater has been installed the user then needs to set the <tt>ECJ_DIR</tt>
+and <tt>ECJ_PTI_DIR</tt> environment variables in either the .bashrc file or the user.mk file
+located in the tools/ecj_pti subdirectory. The
+<tt>ECJ_DIR</tt> environment variable points to the current installation location of ECJ. The
+<tt>ECJ_PTI_DIR</tt> environment variable points to the desired location of the CARLsim-ECJ PTI
+code. The code below shows the default values that can be changed in the user.mk file:
+
+\code
+#------------------------------------------------------------------------------
+# CARLsim/ECJ Parameter Tuning Interface Options
+#------------------------------------------------------------------------------
+# path of evolutionary computation in java installation for ECJ-PTI CARLsim
+# support
+ECJ_DIR ?= /opt/ecj
+ECJ_PTI_DIR ?= /opt/CARL/carlsim_ecj_pti
+\endcode
+
+\warning The user should note that the user.mk file in the tools/ecj_pti directory is distinct from
+the user.mk file in the main carlsim directory and not confuse them. Here we are configuring the
+user.mk file in the tools/ecj_pti subdirectory.
+
+
+As an alternative, users can set these environment variables in their .bashrc files if they are
+using a Unix-like OS. The following lines would be appended to .bashrc.
+
+\code
+export ECJ_DIR = /opt/ecj
+export ECJ_PTI_DIR = /opt/CARL/carlsim_ecj_pti
+\endcode
+
+\note You may have to open a new shell or reboot to get export these variables.
+
+Once the environment variables have been set. Navigate to tools/ecj_pti and run:
+
+\code
+make && sudo make install
+\endcode
+
+This will install the CARLsim-ECJ PTI static library into the location pointed to by
+<tt>ECJ_PTI_DIR</tt>. To uninstall the CARLsim-ECJ-PTI
+
+\since v3.0
+
+\section ch10s3_usage 10.3 ECJ Usage
+In general, users will create their own project directory and model it after the tutorial program
+found in \ref tut5_pti. Users configure a ECJ parameter file and implement a CARLsim fitness
+evaluation function. ECJ performs the EA utilizing the user-defined parameter file and runs the
+CARLsim 'main' program every generation to evaluate the fitness for all individuals in parallel.
+Each individual represents a different SNN with a unique set of parameter values. ECJ outputs the
+fitness and parameter files to log files every generation. Parameter values from high-fitness SNNs
+can then be used in SNN modeling and simulation.
+
+First the ECJ configuration file must be edited. Parts of the ECJ
+configuration file are shown below:
+
+\code
+parent.0 =                              @ec.simple.SimpleEvolutionState simple.params
+
+# Modifications to the Simple EA boiler plate
+# =========================
+eval =					ecjapp.eval.SimpleGroupedEvaluator
+generations =				50
+pop.subpop.0.size =	 10
+
+# Set up our evolutionary algorithm
+# =========================
+pop.subpop.0.species =                  ec.vector.FloatVectorSpecies
+pop.subpop.0.species.pipe =             ec.vector.breed.VectorMutationPipeline
+pop.subpop.0.species.pipe.likelihood =  1.0
+pop.subpop.0.species.pipe.source.0 =    ec.vector.breed.VectorCrossoverPipeline
+pop.subpop.0.species.pipe.source.0.likelihood	= 0.9
+pop.subpop.0.species.pipe.source.0.source.0 = ec.select.TournamentSelection
+#pop.subpop.0.species.pipe.source.0.source.0 = ec.es.ESSelection
+pop.subpop.0.species.pipe.source.0.source.1 = same
+select.tournament.size =                2
+pop.subpop.0.species.ind =              ec.vector.DoubleVectorIndividual
+pop.subpop.0.species.fitness =          ec.simple.SimpleFitness
+pop.subpop.0.species.genome-size =      4
+
+pop.subpop.0.species.min-gene =         0.0005
+pop.subpop.0.species.max-gene =         0.5
+pop.subpop.0.species.mutation-type =    gauss
+pop.subpop.0.species.mutation-stdev =   0.1
+pop.subpop.0.species.mutation-bounded = true
+pop.subpop.0.species.mutation-prob =    0.4
+pop.subpop.0.species.crossover-likelihood =0.4
+#pop.subpop.0.species.crossover-prob=   0.9
+pop.subpop.0.species.crossover-type =   two
+
+
+# breed options
+breed =              ec.es.MuPlusLambdaBreeder
+breed.elite.0 = 1
+breed.reevaluate-elites.0 = false
+
+# evolution strategies options
+es.mu.0 =            5
+es.lambda.0 =        5
+
+
+# Termination condition
+quit-on-run-complete = true
+
+# Set up external fitness evaluation
+# =========================
+eval.problem.objective.idealFitnessValue = 0.333
+eval.problem =                          ecjapp.eval.problem.CommandProblem
+eval.problem.objective =                ecjapp.eval.problem.objective.StringToDoubleObjective
+eval.problem.simulationCommand =        $carlsim_tuneFiringRatesECJ
+\endcode
+
+It's probably easiest to start with this ECJ parameter file and modify it to your project's needs.
+The particular variables the user needs to edit are:
+
+<tt>eval.problem.simulationCommand</tt>: which is the name of the carlsim binary ECJ executes every
+generation to evaluate the fitness function. The $ sign means the path is relative to the location
+of the parameter file.
+
+<tt>generations</tt>: number of maximum generations to run.
+
+<tt>pop.subpop.0.size</tt>: number of individuals in each generation.
+
+<tt>pop.subpop.0.species.genome-size</tt>: total number of parameters to be tuned in each
+individual.
+
+<tt>pop.subpop.0.species.min-gene</tt>: default minimum range value for all parameters to be tuned
+
+<tt>pop.subpop.0.species.max-gene</tt>: default maximum range value for all parameters to be tuned
+
+To specify the parameter range for each parameter individually, you define min-gene and max.gene
+values for additional pop.subpop members as is shown in the code below:
+
+\code
+pop.subpop.0.species.min-gene.0=0.0004
+pop.subpop.0.species.max-gene.0=0.004
+pop.subpop.0.species.min-gene.1=0.00005
+pop.subpop.0.species.max-gene.1=0.0005
+pop.subpop.0.species.min-gene.2=0.01
+pop.subpop.0.species.max-gene.2=0.1
+pop.subpop.0.species.min-gene.3=0.1
+pop.subpop.0.species.max-gene.3=0.2
+
+\endcode
+
+However,you still need to keep the <tt>pop.subpop.0.species.min-gene</tt> and
+<tt>pop.subpop.0.species.max-gene</tt> in the parameter file.
+
+for more information about the ECJ configuration file, please visit the ECJ
+<a href="http://cs.gmu.edu/~eclab/projects/ecj/">homepage</a>.
+
+Users then need to implement their own CARLsim evaluation function. The overall structure is as
+follows. A specific Experiment class is implemented and inherited from the base Experiment class:
+
+\code
+class TuneFiringRatesECJExperiment : public Experiment {
+\endcode
+
+The only class functions functions are the default class constructor and the run function. The run
+function is where CARLsim code is written and executed. At the final step, the fitness values are
+output back to ECJ using standard Linux streams.
+
+\code
+void run(const ParameterInstances &parameters, std::ostream &outputStream) const {
+...
+CARLsim* const network = new CARLsim("tuneFiringRatesECJ", GPU_MODE, SILENT);
+...
+network->setupNetwork();
+...
+network->runNetwork(runTime,0);
+...
+
+for(unsigned int i = 0; i < parameters.getNumInstances(); i++) {
+...
+outputStream << fitness[i] << endl;
+...
+}
+\endcode
+
+\see \ref tut5_pti
+
+\since v3.0
+
+References
+\section ch10s4_references References
+
+Beyeler, M., Carlson, K. D., Chou, T. S., Dutt, N., Krichmar, J. L., CARLsim 3: A user-friendly
+and highly optimized library for the creation of neurobiologically detailed spiking
+neural networks. (Submitted)
+
+Carlson, K. D., Nageswaran, J. M., Dutt, N., Krichmar, J. L., An efficient automated parameter
+tuning framework for spiking neural networks, Front. Neurosci., vol. 8, no. 10, 2014.
+
+Luke, S., Panait, L., Balan, G., Paus, S., Skolicki, Z., Bassett, J., Hubley, R., and Chircop, A.,
+ECJ: A java-based evolutionary computation research system, http://cs. gmu. edu/eclab/projects/ecj,
+2006.
+
+
+
+*/

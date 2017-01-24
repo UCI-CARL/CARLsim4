@@ -1,3 +1,7 @@
+# =====================
+# C++ ignore list
+# =====================
+
 # Compiled Object files
 *.slo
 *.lo
@@ -20,6 +24,13 @@
 *.lai
 *.la
 *.a
+
+# =====================
+# emacs ignore list
+# =====================
+*~
+*.desktop
+*.desktop.lock
 *.lib
 
 # Executables

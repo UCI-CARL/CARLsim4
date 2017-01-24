@@ -1,0 +1,59 @@
+/*!
+
+\page ch11_regression_suite Chapter 11: Regression Suite
+
+\tableofcontents
+
+We provide test cases to A) test core functionality of CARLsim, to
+B) test the reproducibility of published results, and C) to benchmark simulation speed.
+
+We currently have incorporated part A) into the current CARLsim release with plans for inclusion of
+parts B) and C) in the future.
+
+For the most part, end users should not need to test their CARLsim installation. Users should
+only have to run the test suite if they modify the source code or are experiencing strange and
+inconsistent simulation behavior.
+
+CARLsim uses the googletest framework v1.7 for testing. For more information
+on using and installing googltest please visit the
+<a href=https://code.google.com/p/googletest/>website</a>.
+For a quick primer, visit this
+<a href=https://code.google.com/p/googletest/wiki/Primer>website</a>.
+
+After google tests has been installed:
+
+1) From the carlsim/test directory of the CARLsim installation, type:
+
+\code
+make carlsim_tests
+\endcode
+
+which compiles the carlsim tests
+
+2) To run the tests, run ‘carlsim_tests’:
+
+\code
+./carlsim_tests
+\endcode
+
+This runs the CARLsim tests which should all pass. If they do not pass,
+you may have inadvertantly modified the source code and should probably
+redownload CARLsim.
+
+3) To delete all testing output files type:
+
+\code
+make distclean
+\endcode
+
+You should only be here if something's broken.
+Why you would use it, what is it good for?
+
+
+-B) TESTING PUBLISHED RESULTS
+
+-C) BENCHMARK TESTS
+
+\since v3.0
+
+*/

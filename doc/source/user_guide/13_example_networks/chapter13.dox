@@ -1,0 +1,28 @@
+/*!
+
+\page ch13_example_networks Chapter 13: Example Networks
+
+\tableofcontents
+
+
+Advertised as starting templates for user networks.
+
+
+\section ch13s1_80_20_rain 13.1 80-20 RAIN
+
+CUBA and PoissonRates, produce RAIN for different noise levels. Maybe for CARLsim 3.1.
+
+
+
+\section ch13s2_pti_stdph 13.2 PTI STDPh
+\TODO KDC
+
+\section ch13s3_color_opponency 13.3 Color Opponency
+\TODO MB
+
+\section ch13s4_motion_energy 13.4 Motion Energy
+\TODO MB
+
+InputStimulus -> random dot fields. Either V1 or MT direction selectivity. Matlab script to show activity. Refer to publication for more info.
+
+*/

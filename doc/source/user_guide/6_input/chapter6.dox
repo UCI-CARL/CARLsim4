@@ -1,0 +1,393 @@
+/*!
+
+\page ch6_input Chapter 6: Generating Input
+
+\tableofcontents
+
+
+\section ch6s1_generating_spikes 6.1 Generating Spikes
+\author Michael Beyeler
+
+\subsection ch6s1s1_poisson_rate 6.1.1 Generating Poisson Spikes
+
+\subsubsection ch6s1s1s1 6.1.1.1 The PoissonRate Object
+
+The PoissonRate class allows a user create spike trains whose inter-spike interval follows a Poisson process.
+The object can then be linked to a spike generator group (created via CARLsim::createSpikeGeneratorGroup) by calling
+CARLsim::setSpikeRate.
+
+The easiest way to initialize a PoissonRate object is via the following:
+\code
+int nNeur = 50;                                       // # neurons
+PoissonRate poissRate(nNeur);
+\endcode
+
+This will generate a mean rate vector for 50 neurons.
+By default, these rates will be allocated on CPU. An optional second argument to the constructor allows allocation on
+GPU instead (`onGPU=true`). This allows the minimization of memory transfers when CARLsim is run in GPU_MODE:
+\code
+int nNeur = 50;                                       // # neurons
+bool onGPU = true;                                    // whether to allocate on GPU (true) or CPU (false)
+PoissonRate poissRate(nNeur, onGPU);
+\endcode
+
+
+\subsubsection ch6s1s1s2 6.1.1.2 Setting Mean Firing Rates
+
+At first, all the rates will be initialized to zero.
+The user then has several options to assign non-zero rates:
+\code
+// set all rates to 10 Hz
+poissRate.setRates(10.0f);
+
+// set rates according to some vector
+std::vector<float> someVector;
+for (int neurId=0; neurId<nNeur; neurId++)
+	someVector.push_back(neurId*2.0f);
+poissRate.setRates(someVector);
+
+// set rate of each neuron
+for (int neurId=0; neurId<nNeur; neurId++)
+	poissRate.setRate(neurId, neurId*2.0f);
+\endcode
+
+
+\subsubsection ch6s1s1s3 6.1.1.3 Retrieving Mean Firing Rates
+
+The mean firing rates can then be queried via the following getter functions:
+\code
+std::vector<float> rates = poissRate.getRates();      // get all rates in a vector
+float someRate = poissRate.getRate(17);               // get rate of neuron with ID=17
+\endcode
+
+
+\subsubsection ch6s1s1s4 6.1.1.4 Integrating PoissonRate with a CARLsim Simulation
+
+Finally, a PoissonRate object can be linked to a spike generator group (created via CARLsim::createSpikeGeneratorGroup)
+by calling CARLsim::setSpikeRate.
+For this to work, the number of neurons for the PoissonRate object must be the same as for the spike generator group.
+\code
+CARLsim sim("MyNet",GPU_MODE,0,42);                   // run simulation in GPU_MODE
+// configure network
+int nNeur = 10;                                       // # neurons in group
+int g0 = sim.createSpikeGeneratorGroup("grpPoiss", nNeur, EXCITATORY_NEURON);
+// ...
+sim.setupNetwork();
+
+// setup PoissonRate object
+PoissonRate poissRate(nNeur, true);                   // allocate on GPU for minimal memory copies
+poissRate.setRates(13.0f);                            // set all rates to 13 Hz
+
+// apply to neuron group g0
+// nNeur of PoissonRate must match that of createSpikeGeneratorGroup
+sim.setSpikeRate(g0, &poissRate);
+
+// run network
+// g0 will now produce Poisson spike trains with mean rate = 13 Hz
+sim.runNetwork(1,0);
+
+// note that spike rates will still be 13 Hz in subsequent runs ...
+sim.runNetwork(0,500);
+
+// ... until you reset the rates
+poissRate.setRates(0.0f);
+sim.setSpikeRate(g0, &poissRate);                     // need to call setSpikeRate again
+sim.runNetwork(0,10);                                 // no more input spikes
+\endcode
+
+\note This method can only be applied to SpikeGenerator groups.
+\attention CARLsim::setSpikeRate will *not* take over ownership of PoissonRate. In other words, if you allocate the
+PoissonRate object on the heap, you are responsible for correctly deallocating it.
+\attention Make sure to reset spike rate after use (i.e., for the next call to CARLsim::runNetwork), otherwise
+the rate will keep getting applied to the group.
+\attention You cannot use the same PoissonRate object for multiple
+spikeGenerators. Each PoissonRate objects can only be used for a single
+SpikeGenerator object at a time.
+
+
+\subsection ch6s1s2_periodic 6.1.2 Periodically Generating Spikes
+A PeriodicSpikeGenerator can be used to generate spike trains of a given mean firing rate with a constant
+inter-spike-interval (ISI) that is equal to 1/rate.
+
+A PeriodicSpikeGenerator is instantiated as follows:
+\code
+float rate = 10.0f;
+bool spikeAtZero = false;
+PeriodicSpikeGenerator PSG(rate, spikeAtZero);
+\endcode
+Here, the firing rate of the Spike Generator is 10 Hz (<tt>rate</tt>), which leads to an ISI of 100ms.
+Thus, the PeriodicSpikeGenerator will schedule spike for each neuron in the group it is applied to at t=100ms,
+t=200ms, t=300ms, etc.
+If the flag <tt>spikeAtZero</tt> is set to true, an additional spike will be scheduled at t=0.
+
+In order for a PeriodicSpikeGenerator to be associated with a SpikeGenerator group, CARLsim::setSpikeGenerator
+must be called on the group in ::CONFIG_STATE:
+\code
+#include <carlsim.h>
+
+// configure network
+CARLsim sim("PSG example",CPU_MODE,USER);
+int g0 = sim.createSpikeGeneratorGroup("input", 10, EXCITATORY_NEURON);
+// etc.
+
+// create periodic spike gen
+PeriodicSpikeGenerator PSG(50.0f, true);
+
+// associate group g0 with PSG
+sim.setSpikeGenerator(g0, &PSG);
+
+sim.setupNetwork();
+// etc.
+\endcode
+
+\since v3.0
+
+
+\subsection ch6s1s3_from_vector 6.1.3 Generating Spikes from a Vector
+A SpikeGeneratorFromVector can be used to schedule exact spike times (ms) from a vector.
+Note that currently the only option is to specify a single vector of spike times, which will apply to all neurons
+in the group. In the future, it should be possible to specify a vector of spike times for each neuron in the group.
+
+A SpikeGeneratorFromVector is instantiated as follows:
+\code
+std::vector<int> spikeTimes = {2, 14, 100, 1353};
+SpikeGeneratorFromVector SGV(spikeTimes);
+\endcode
+
+In order for a SpikeGeneratorFromVector to be associated with a SpikeGenerator group, CARLsim::setSpikeGenerator
+must be called on the group in ::CONFIG_STATE:
+\code
+#include <carlsim.h>
+
+// configure network
+CARLsim sim("SGV example",CPU_MODE,USER);
+int g0 = sim.createSpikeGeneratorGroup("input", 10, EXCITATORY_NEURON);
+// etc.
+
+// create spike gen from vector
+std::vector<int> spikeTimes = {2, 14, 100, 1353};
+SpikeGeneratorFromVector SGV(spikeTimes);
+
+// associate group g0 with PSG
+sim.setSpikeGenerator(g0, &SGV);
+
+sim.setupNetwork();
+// etc.
+\endcode
+
+\attention Currently the vector of spike times will apply to all neurons in the group.
+However, in a near-future release it should be possible to specify a vector of spike times for each neuron in the group.
+
+\since v3.0
+
+
+\subsection ch6s1s4_from_file 6.1.4 Generating Spikes from File
+A SpikeGeneratorFromFile can be used to schedule exact spike times (ms) from a spike file binary that was previously
+created with a SpikeMonitor.
+This makes it possible to repeatedely apply pre-recorded spike times to the same network (or a different network with
+the same amount of neurons in the associated group).
+
+A SpikeGeneratorFromFile is instantiated as follows:
+\code
+SpikeGeneratorFromFile SGF("results/spk_input.dat");
+\endcode
+where the string "results/spk_input.dat" points to a spike file previously created with a SpikeMonitor.
+
+In order for a SpikeGeneratorFromFile to be associated with a SpikeGenerator group, CARLsim::setSpikeGenerator
+must be called on the group in ::CONFIG_STATE:
+\code
+#include <carlsim.h>
+
+// configure network
+CARLsim sim("SGF example",CPU_MODE,USER);
+int g0 = sim.createSpikeGeneratorGroup("input", 10, EXCITATORY_NEURON);
+// etc.
+
+// create spike gen from file
+SpikeGeneratorFromFile SGF("results/spk_input.dat");
+
+// associate group g0 with SGF
+sim.setSpikeGenerator(g0, &SGF);
+
+sim.setupNetwork();
+// etc.
+\endcode
+
+\note The current implementation might be relatively slow for large networks and long simulations.
+However, a near-future release will take care of this issue.
+\since v3.0
+
+
+\subsection ch6s1s5_custom 6.1.5 Generating Custom Spikes
+For more fine-grained control over spike generation, individual spike times can be specified per neuron in each group.
+This is accomplished by using a callback mechanism, which is called at each time step, to specify whether a neuron
+has fired or not.
+
+In order to specify spike times, a new class is defined that derives from the SpikeGenerator class:
+\code
+class MySpikes : public SpikeGenerator {
+	// etc.
+}
+\endcode
+
+The user must then define a SpikeGenerator::nextSpikeTime method.
+The following is a simple example that generates a spike every 100ms for each neuron in the group.
+\code
+unsigned int nextSpikeTime(CARLsim* sim, int grpId, int nid, unsigned int currentTime, 
+		unsigned int lastScheduledSpikeTime) {
+		return (lastScheduledSpikeTime + 100);
+}
+\endcode
+
+In order for a custom SpikeGenerator to be associated with a SpikeGenerator group, CARLsim::setSpikeGenerator
+must be called on the group in ::CONFIG_STATE:
+\code
+#include <carlsim.h>
+
+// configure network
+CARLsim sim("custom SG example",CPU_MODE,USER);
+int g0 = sim.createSpikeGeneratorGroup("input", 10, EXCITATORY_NEURON);
+// etc.
+
+// create custom spike generator
+MySpikes CSG;
+
+// associate group g0 with CSG
+sim.setSpikeGenerator(g0, &CSG);
+
+sim.setupNetwork();
+// etc.
+\endcode
+
+
+\since v2.0
+
+
+\section ch6s2_generating_current 6.2 Generating Current
+\author Michael Beyeler
+
+CARLsim::setExternalCurrent can be used to inject currents, specified on a per-neuron basis, into the soma of each
+neuron in a group, at each timestep of the simulation (every millisecond).
+For this, a float vector of current amounts (mA) is specified, one element per neuron in the group.
+
+Note that once CARLsim::setExternalCurrent is called, the specified amount of current will be injected every timestep,
+until the user calls CARLsim::setExternalCurrent again with updated values (e.g., with value zero).
+
+To input different currents into a neuron over time, the idea is to run short periods of CARLsim::runNetwork and
+subsequently calling CARLsim::setExternalCurrent with updated current values.
+
+For example, the following code snippet injects 5mA for 50ms into the soma of every neuron in the group:
+\code
+#include <carlsim.h>
+CARLsim sim("Current Injection",CPU_MODE,USER);
+int g0 = sim.createGroup("input", 10, EXCITATORY_NEURON);
+// etc.
+
+sim.setupNetwork();
+
+std::vector<float> current(10, 5.0f);
+snn.setExternalCurrent(g0, current);
+snn.runNetwork(0,50);
+\endcode
+
+Note that in the case where the same current applies to every neuron, it is sufficient to pass a single float value:
+\code
+// the following statement ...
+sim.setExternalCurrent(g0, 5.0f);
+// ... is equivalent to:
+std::vector<float> current(10, 5.0f);
+sim.setExternalCurrent(g0, current);
+\endcode
+
+After stimulation, the idea is to reset the external current to zero:
+\code
+// apply current for 10ms
+sim.setExternalCurrent(g0, 5.0f);
+sim.runNetwork(0,10);
+
+// then reset current
+sim.setExternalCurrent(g0, 0.0f);
+sim.runNetwork(1,0);
+// etc.
+\endcode
+
+\note This method cannot be applied to SpikeGenerator groups.
+\note If all neurons in the group should receive the same amount of current, you can use the convenience
+function setExternalCurrent(int grpId, float current).
+
+\attention Make sure to reset current after use (i.e., for the next call to runNetwork), otherwise
+the current will keep getting applied to the group.
+
+\since v3.0
+
+
+
+\section ch6s3_visual_stimulus_toolbox 6.3 Visual Stimulus Toolbox
+\author Michael Beyeler
+
+The VisualStimulus utility consists of a MATLAB Toolbox that allows for the generation of 2D visual stimuli such
+as sinusoidal gratings, plaids, and random dot fields as well as some C++ CARLsim plug-in code.
+The MATLAB class allows to mix-and-match stimuli of different types, on a frame-by-frame basis. Stimuli
+can also be confined to visual aperture and combined with noise.
+Frames can then be dumped to a binary file, so that they can be reloaded later on.
+
+Usage example:
+The following MATLAB code snippet creates a 32x32 pixel grayscale stimulus that consists of a sinusoidal
+grating (first ten frames), followed by a blank frame (delay period), followed by a plaid stimulus (next ten
+frames), confined to a circular aperture.
+The resulting stimulus is first plotted in figure axes, then recorded to AVI, and finally stored as a binary
+with a default name depending on the stimulus type, such as "inpGratingPlaid_gray_32x32x21.dat".
+\code
+>> VS = VisualStimulus(32,32);
+>> VS.addSinGrating; % add 10 frames of a sinusoidal grating
+>> VS.addBlankFrames; % blank frame for delay period
+>> VS.addPlaid; % add 10 frames of a plaid stimulus
+>> VS.addApertureToExistingFrames; % confine frames to aperture
+>> VS.displayFrames; % plot them!
+>> VS.recordMovie; % record an AVI movie
+>> VS.saveToFile; % store the created stimulus to binary
+\endcode
+
+CARLsim provides plug-in code to interface the generated binary files with SpikeGenerator groups.
+This allows the user to create sophisticated visual stimuli in MATLAB, and interface them to a spiking network
+on a frame-by-frame basis.
+The class VisualStimulus reads frames from binary, and returns either the raw character array or a PoissonRate object
+with the same size as number of pixels in a stimulus frame.
+
+A VisualStimulus is instantiated as follows:
+\code
+VisualStimulus VS("inpGratingPlaid_gray_32x32x21.dat");
+int videoLength = VS.getStimulusLength();
+\endcode
+where the string "inpGratingPlaid_gray_32x32x21.dat" references the created file mentioned above.
+The number of frames can be retrieved with VisualStimulus::getStimulusLength.
+
+It is then straightforward to interface the recorded stimulus with a CARLsim simulation by making use of
+VisualStimulus::readFrame, which, whenever called, reads the <i>next</i> unread frame and returns it either as
+a raw character array or as a PoissonRate object.
+\code
+#include <carlsim.h>
+CARLsim sim("VisualStimulus Example",CPU_MODE,USER);
+int g0 = sim.createSpikeGeneratorGroup("VSinput", Grid3D(32,32,1), EXCITATORY_NEURON);
+// etc.
+sim.setupNetwork();
+
+for (int i=0; i<videoLength; i++) {
+	PoissonRate * rates = VS.readFrame(50.0f); // grayscale value 255 will be mapped to 50 Hz
+	sim.setSpikeRate(g0, rates); // for this to work, there must be 32x32=1024 neurons in g0
+	sim.runNetwork(1,0); // run the network
+}
+\endcode
+
+The following figures shows a number of different stimulus frames created with the MATLAB Visual Stimulus toolbox.
+The Toolbox provides methods to compose stimuli made of sinusoidal gratings, bars, dots, noise, and custom frames.
+Apertures can be rectangular or circular.
+Noise can be white, Gaussian, Poissonian, salt & pepper, or speckle.
+Random dots can exhibit translatory motion, rotations, expansions, contractions, and mixtures of those types.
+
+\image html 6_visualstimulus.jpg "VisualStimulus Toolbox examples: sinusoidal gratings, plaids, random dot fields, confined to apertures, with added noise."
+
+\note Currently only grayscale stimuli are supported. However, a near-future release will add support for RGB stimuli.
+
+
+*/

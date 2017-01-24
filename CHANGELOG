@@ -1,0 +1,754 @@
+Legend:
+  + added element
+  - removed element
+  * changed element
+
+
+===============================================================================
+Release 4.0
+===============================================================================
+
+---------------------
+Build 4.0.0
+---------------------
+
+2016-06-17     Michael Beyeler <mbeyeler@uci.edu>
+  + Add proper pImpl for CARLsim.
+  * Include tools in library install.
+  * Fix Makefile for test suite.
+  + Add new SpikeBuffer utility.
+  + Add Stopwatch to Hello World project.
+
+2016-06-16     Michael Beyeler <mbeyeler@uci.edu>
+  + Add proper pImpl for SimpleWeightTuner.
+
+2016-06-13     Michael Beyeler <mbeyeler@uci.edu>
+  + Add proper pImpl for PoissonRate.
+
+2016-04-11     Michael Beyeler <mbeyeler@uci.edu>
+  * Fix initialization of 2D weight matrix in ConnectionMonitor.
+
+2016-03-02     Ting-Shuo Chou <tingshuc@uci.edu>
+  * Replace gpu_random.cu with NVIDIA cuRand library.
+
+2015-09-23     Ting-Shuo Chou <tingshuc@uci.edu>
+  * Route spikes with delay = 1.
+  * Fix bugs in GroupMonitorCore::stopRecording()
+  * Adjust spikeCountD1(D2) with spikeCountExtD1(D2)
+
+2015-09-19     Ting-Shuo Chou <tingshuc@uci.edu>
+  * Finish implementation of routing spike
+  * Enable P2P Access
+  * Fix bugs in SNN::generateConnectionRuntime()
+
+
+
+===============================================================================
+Release 3.1
+===============================================================================
+
+---------------------
+Build 3.1.0
+---------------------
+
+2015-06-10     Michael Beyeler <mbeyeler@uci.edu>
+  + Added SpikeGeneratorFromFile::loadFile.
+  * Made optional argument of SpikeGeneratorFromFile::rewind now mandatory.
+
+2015-06-01     Michael Beyeler <mbeyeler@uci.edu>
+  * Fixed error checking in ConnectionMonitor.m.
+
+2015-05-18     Michael Beyeler <mbeyeler@uci.edu>
+  + Added support for networks with zero connections.
+  + Added testsuite clean/distclean targets to main clean/distclean.
+  + Added link to CARLsim mailing list to User Guide.
+
+2015-05-16     Michael Beyeler <mbeyeler@uci.edu>
+  + Added generic ConnectionMonitor update time interval.
+
+2015-05-14     Michael Beyeler <mbeyeler@uci.edu>
+  + Added ConnectionMonitor methods: getMinWeight, getMaxWeight,
+    getNumWeightsInRange, getNumWeightsWithValue, getPercentWeightsInRange,
+    getPercentWeightsWithValue.
+  * Fixed ConnectionMonitor::getPercentWeightsChanged.
+  * Fixed absence of maxWt field in ConnectInfo struct for user-defined
+    connections.
+
+2015-05-11     Michael Beyeler <mbeyeler@uci.edu>
+  + Added CpuSNN::verifyNetwork that will run CpuSNN::verifyNumNeurons,
+    CpuSNN::verifySTDP, and CpuSNN::verifyHomeostasis before network is built.
+  * Refactored CpuSNN::isNumNeuronsConsistent to CpuSNN::verifyNumNeurons.
+  + Added Interface tests for STDP and homeostasis consistency.
+  + Added CARLsim::isConnectionPlastic.
+  + Added CARLsim::isGroupWithHomeostasis.
+  + Added default value for baseFiringSD in CARLsim::setHomeoBaseFiringRate.
+  - Removed CpuSNN variable simTimeLastUpdSpkMon_.
+  * Fixed repeated calls to CARLsim::setSpikeMonitor, added test and updated
+    User Guide.
+
+2015-05-06     Michael Beyeler <mbeyeler@uci.edu>
+  + Added CARLsim::startTesting and CARLsim::stopTesting to disable weight
+    updates during a testing phase.
+  + Added CORE.startStopTestingPhase test.
+  * Fixed compiler warnings for SpikeMon test case.
+
+2015-05-02     Michael Beyeler <mbeyeler@uci.edu>
+  + Added minPoisson rate in VisualStimulus.
+
+
+===============================================================================
+Release 3.0
+===============================================================================
+
+---------------------
+Build 3.0.2
+---------------------
+
+2015-07-04:    Kristofor D. Carlson <kdcarlso@uci.edu>
+  * Changed USER_MK_PATH default path value (. instead of ./). Users
+	  should not have a slash at the end of their USER_MK_PATH variable.
+	- Removed assertions that forced Izh parameters to be positive.
+	* Changed format of ECJ_DIR environment variable. It now must name
+	  the ECJ jar file explicitly instead of pointing to the ECJ
+		installation directory.
+
+2015-06-08     Michael Beyeler <mbeyeler@uci.edu>
+  * Fixed handling of scheduling time slice in SpikeGenerator::nextSpikeTime.
+  * Fixed dropping of spikes in SpikeGeneratorFromFile and
+    SpikeGeneratorFromVector.
+  * Fixed multiple scheduling of the same spike time in CPU mode.
+  
+2015-05-26     Michael Beyeler <mbeyeler@uci.edu>
+  * Fixed third grid dimension in GroupMonitor (OAT) heatmap plot.
+  
+2015-05-25     Michael Beyeler <mbeyeler@uci.edu>
+  * Improved handling of "gaussian" connection when pre and post have different
+    Grid3D sizes.
+  * Improved ConnMon test case.
+  * Fixed SpikeMon.clear test.
+  * Fixed sign of weights in user-defined connections.
+
+2015-05-24     Michael Beyeler <mbeyeler@uci.edu>
+  * Fixed ConnectionMonitor (OAT) issue concerning large number of subplots.
+
+2015-05-21     Michael Beyeler <mbeyeler@uci.edu>
+  * Fixed Endianness issue in OAT readers.
+  * Fixed NEURON_NOISE preprocessor guards.
+  * Fixed neuron group ID in User Guide Chapter 3.
+
+2015-05-19     Michael Beyeler <mbeyeler@uci.edu>
+  * Fixed weight sign issue in CARLsim::setWeight.
+  * Fixed CARLsim state of CARLsim::setWeight, CARLsim::biasWeights, and
+    CARLsim::scaleWeights.
+    
+2015-05-18     Michael Beyeler <mbeyeler@uci.edu>
+  * Fixed SimulationReader (OAT) for when loadSynapseInfo is set to true.
+  * Fixed error reporting in CpuSNN::loadSimulation_internal.
+  * Improved test CORE.saveLoadSimulation.
+
+2015-05-15     Michael Beyeler <mbeyeler@uci.edu>
+  * Fixed no-recording issue with ConnectionMonitor::setUpdateTimeIntervalSec
+    interval -1. Now the binary file will not contain any snapshots if interval
+    is -1.
+  * Updated and improved ConnMon test case.
+
+
+---------------------
+Build 3.0.1
+---------------------
+
+2015-05-11     Kristofor D. Carlson <kdcarlso@uci.edu>
+  * Added more accurate plasticity documentation on homeostasis.
+  * Allowed third argument of CARLsim::setHomeoBaseFiringRate that specifies
+    value of standard deviation to be left blank, which assigns a default value
+    of 0 to that argument.
+  * Fixed errors in User Guide in Chapter 10 (ECJ) and Tutorial 5.
+
+2015-05-06     Michael Beyeler <mbeyeler@uci.edu>
+  + Added CUDA7 support.
+  * Fixed compile flag generation for CUDA version and compute capability.
+
+2015-05-02     Michael Beyeler <mbeyeler@uci.edu>
+  * Fixed PoissonRate deallocation in VisualStimulus.
+
+2015-04-14     Michael Beyeler <mbeyeler@uci.edu>
+  * Fixed allowed CARLsim states for CARLsim::setSpikeCounter and
+    CARLsim::resetSpikeCounter. Updated and improved SpikeCounter
+    documentation.
+
+2015-04-13     Michael Beyeler <mbeyeler@uci.edu>
+  + Added Makefile target: uninstall
+
+2015-04-04     Kristofor D. Carlson <kdcarlso@uci.edu>
+  + Added script to more easily debug parameter-tuning interface programs.
+
+2015-03-31     Kristofor D. Carlson <kdcarlso@uci.edu>
+  * Fixed minor bug that generates warning on setHomeBaseFiringRate call.
+
+2015-03-18     Kristofor D. Carlson <kdcarlso@uci.edu>
+  + Added Tutorial Chapter 3: Plasticity.
+  * Shifted Tutorial chapters around appropriately.
+
+2015-03-11     Michael Beyeler <mbeyeler@uci.edu>
+  * Updated and extended Tutorial 1.
+  * Fixed frames==-1 issue in OAT monitors.
+  * Fixed no-recording issue with ConnectionMonitor::setUpdateTimeIntervalSec
+    interval -1.
+  * Fixed default target in CARLsim tests Makefile.
+  * Fixed calculation of mean firing rates and standard deviations in the
+    CARLsim::runNetwork summary of CpuSNN::printStatusSpikeMonitor and
+    CpuSNN::printStatusGroupMonitor.
+  * Fixed default values for E-STDP and I-STDP. Marked the interface methods
+    CARLsim::setDefault{E|I}STDPparams as deprecated.
+
+2015-03-09     Michael Beyler <mbeyeler@uci.edu>
+  + Added Tutorial 2 on 80-20 random networks.
+  * Fixed histogram plotting and plot titles in ConnectionMonitor.m (OAT).
+  + Added minWt/maxWt to connect file (file version 0.3).
+
+2015-03-02     Kristofor D. Carlson <kdcarlso@uci.edu>
+  * Updated Chapter 3 of User Guide.
+  * Fixed LaTeX/Doxygen configuration problems.
+
+2015-03-02     Michael Beyeler <mbeyeler@uci.edu>
+  * Fixed Chapter 2 of User Guide and removed superfluous source code.
+  * Updated Chapter 9 of User Guide.
+  * Fixed setErrorMode in OAT monitors.
+  * Fixed file separator in OAT monitors.
+  * Fixed setDefaultPlotType in OAT monitors.
+  * Fixed plotting bug in ConnectionMonitor.m of OAT.
+  + Added plotType argument to recordMovie in OAT monitors.
+
+2015-02-24     Michael Beyeler <mbeyeler@uci.edu>
+  * Updated Chapter 4 of User Guide.
+  + Added OpenSUSE to list of supported platforms.
+  * Fixed values for CARLsim::setNeuronParameters in Tutorial 1.
+
+2015-02-18     Michael Beyeler <mbeyeler@uci.edu>
+  * Updated Chapters 6 and 8 of User Guide.
+  * Fixed CpuSNN::copyNeuronParametersFromHostToDevice.
+  * Improved code documentation on a number of CARLsim methods, datastructures
+    and CARLsim states.
+
+2015-02-17     Michael Beyeler <mbeyeler@uci.edu>
+  * Updated Chapter 1 of User Guide.
+
+2015-02-14     Ting-Shuo Chou <tingshuc@uci.edu>
+  * Quickfix for Windows solution files.
+
+
+---------------------
+Build 3.0.0
+---------------------
+
+2015-02-14     Kristofor D. Carlson <kdcarlso@uci.edu>
+  + Added tutorial for Basic Concepts.
+  + Added tutorial for CARLsim-ECJ PTI.
+  * Cleaned up installation files.
+
+2015-02-10     Michael Beyeler <mbeyeler@uci.edu>
+  + Added ConnectionMonitor::setUpdateTimeIntervalSec.
+  * Improved documentation on ConnectionMonitor.
+  
+2015-02-09     Michael Beyeler <mbeyeler@uci.edu>
+  + Added CARLsim::connect type "gaussian" for the generation of 1D, 2D, and 3D
+    Gaussian receptive fields.
+  * Fixed generation of CARLsim::connect user errors.
+  * Improved CpuSNN::getRFDist3D.
+  - Removed CpuSNN::isPoint3DOnGrid.
+  * Fixed refactoring issue in "orientation" example.
+  * Fixed ConnectionMonitor.m issue when connection has no synapses (OAT).
+
+2015-02-08     Michael Beyeler <mbeyeler@uci.edu>
+  + Added plot types "receptivefield", "responsfield" in ConnectionMonitor.m
+    (OAT).
+  * Fixed RadiusRF issues when one or more coordinates are zero.
+  * Fixed flow fields in GroupMonitor.m (OAT).
+  * Fixed setSpikeFileAttributes() issue in NetworkMonitor.m (OAT).
+  * Cleaned up OAT.
+
+2015-02-02     Michael Beyeler <mbeyeler@uci.edu>
+  * Fixed 3D coordinate calculation in Grid3D.
+  + Added Tutorial and code documentation on 3D topography.
+
+2015-01-10     Michael Beyeler <mbeyeler@uci.edu>
+  + Added SpikeCounter support for SpikeGenerator groups.
+  * Fixed the bug in GPU mode where Poisson groups cannot generate spikes if
+    there is another SpikeGenerator group (using the callback mechanism) with
+    a lower-number group ID.
+
+2015-01-07     Michael Beyeler <mbeyeler@uci.edu>
+  + Added getSnapshots() and getNumSnapshots() to ConnectionMonitor.m
+  * Miscellaneous fixes in ConnectionMonitor.m
+
+2015-01-06     Michael Beyeler <mbeyeler@uci.edu>
+  * Moved synaptic receptors (mulSynFast, mulSynSlow) to constant GPU memory
+    for better speedup.
+  * Changed all GPU code to exclusively use float literals for better speedup.
+  - Removed CUDA 3 support.
+
+2014-12-30     Michael Beyeler <mbeyeler@uci.edu>
+  * Fixed SET_CONN_ID behavior.
+  * Fixed error checking in all versions of CARLsim::connect.
+  * Fixed VisualStimulus paths and compiler warnings (previously InputStimulus).
+  
+2014-12-19     Michael Beyeler <mbeyeler@uci.edu>
+  + Added initOAT.m and demoOAT.m to scripts folder of projects.
+  * Fixed obj.resultsFolder='' issue in GroupMonitor.m (OAT).
+
+2014-12-17     Michael Beyeler <mbeyeler@uci.edu>
+  + Added SpikeMonitor::setLogFile.
+
+2014-12-13     Michael Beyeler <mbeyeler@uci.edu>
+  + Added CARLsim::setLogFile(string).
+  - Removed CARLsim::setLogDebugFp(FILE*).
+  * Renamed CARLsim::setLogsFp to CARLsim::setLogsFpCustom, added documentation
+    and fixed underpinning.
+  * Fixed linking errors for Hello World project.
+  + Added list of tested platforms and devices to RELEASE_NOTES.
+  + Added list of known issues to RELEASE_NOTES.
+  + Added forward/backward stepping OAT plotting.
+
+2014-12-12     Michael Beyeler <mbeyeler@uci.edu>
+  * Fixed docs generation in Doxygen 1.7.
+  - Removed support for Doxygen <= 1.6.
+  + Added GroupMonitor to docs.
+  * Fixed deallocation issue in test suite by removing all ASSERT_{...} calls.
+
+2014-12-09     Ting-Shuo Chou <tingshuc@uci.edu>
+  * Resume support for CC 1.3, print out warning message
+
+2014-12-08     Ting-Shuo Chou <tingshuc@uci.edu>
+  * Change set(Spike,Group,Connection)Monitor APIs
+
+2014-12-08     Michael Beyeler <mbeyeler@uci.edu>
+  + Added makedoc script to automatically generate doxygen files.
+  + Added SpikeGeneratorFromFile::rewind.
+  + Added setSpikeFileAttributes to NetworkMonitor.m (OAT).
+  * Moved loadAllGroupsFromFile to public interface NetworkMonitor.m (OAT).
+  * Minor bug fixes: error message for getGroupName, GroupMonitorCore include
+    in carlsim.cpp, CUDA config info.
+
+2014-12-06     Ting-Shuo Chou <tingshuc@uci.edu>
+  + Added GroupMonitor object.
+
+2014-12-03     Michael Beyeler <mbeyeler@uci.edu>
+  + Added SimpleWeightTuner to tools, to Tutorial Chapter 12 (explanation)
+    and Chapter 13 (example network).
+  + Added CARLsim::setWeight, CARLsim::biasWeights, and CARLsim::scaleWeights.
+  + Added Makefile for compiling test suite from libCARLsim.
+  * Included tools in CARLsim libcompile.
+  * Renamed CARLsim::getCARLsimState for consistency.
+  * Fixed display error bug in UserErrors class.
+
+
+2014-11-26     Michael Beyeler <mbeyeler@uci.edu>
+  * Improved PoissonRate class. Added documentation and tutorial chapter.
+  * Fixed PoissonRate segfault on GPU.
+
+2014-11-22     Ting-Shuo Chou <tingshuc@uci.edu>
+  + Added GPU allocation mechanism, allow multiple CARLsim objecs to use
+    different GPUs
+  + Added multiGPU example
+  - Removed MTRand from carlsim kernel
+
+2014-11-22     Michael Beyeler <mbeyeler@uci.edu>
+  * Fixed memory leaks on GPU side.
+  * Fixed CORE, CUBA, and COBA test cases.
+  * Fixed bug in CpuSNN::getConductanceGABAb.
+
+2014-11-21     Michael Beyeler <mbeyeler@uci.edu>
+  + Added current injection.
+
+2014-11-20     Michael Beyeler <mbeyeler@uci.edu>
+  + Added tutorial folder structure skeleton.
+
+2014-11-19     Michael Beyeler <mbeyeler@uci.edu>
+  + Added plotting types 'histogram' and 'flowfield' in GroupMonitor.m
+
+2014-11-17     Michael Beyeler <mbeyeler@uci.edu>
+  + Added improved ConnectionMonitor: Weight tracking and recording, on-line
+    and off-line (MATLAB) analysis.
+  - Removed CARLsim::getPopWeights and CARLsim::writePopWeights.
+  - Removed CARLsim::getWeightChanges.
+
+2014-11-07     Michael Beyeler <mbeyeler@uci.edu>
+  - Removed support for configId.
+  - Removed CARLsim::getGroupId and CARLsim::getConnectionId.
+  * Fixed memory leaks from setting up new monitors.
+  + Added "Hello world" project template.
+
+2014-11-06     Ting-Shuo Chou <tingshuc@uci.edu>
+  + Added support for inhibitory STDP (Anti-Hebbian).
+
+2014-10-24     Michael Beyeler <mbeyeler@uci.edu>
+  * Fixed handling of empty spike files in SpikeReader.
+  * Updated simulation summary.
+  + Added CARLsim::getNeuronLocation3D(int grpId, int relNeurId).
+
+2014-10-20     Michael Beyeler <mbeyeler@uci.edu>
+  * Fixed weight signs for custom connection callbacks.
+  * Fixed readNetwork_internal parsing of header section.
+  + Added error message if CARLsim::setSpikeMonitor is called on same group twice.
+
+2014-10-17     Michael Beyeler <mbeyeler@uci.edu>
+  + Added 3D receptive fields.
+  + Added CARLsim::getNumNeurons{Reg|Gen}{Exc|Inh} and the like.
+  * Changed allowed states of CARLsim::getNeuronLocation3D to include CONFIG.
+
+2014-10-06     Michael Beyeler <mbeyeler@uci.edu>
+  + Added MATLAB Offline Analysis Toolbox: NetworkMonitor, GroupMonitor,
+    SpikeReader, SimulationReader, Utilities.
+
+2014-10-03     Kristofor D. Carlson <kdcarlso@uci.edu>
+  + Included CARLsim ECJ PTI tool
+  + Added Makefiles for building and installation of CARLsim ECJ PTI tool.
+  * Fixed CARLsim ECJ PTI testing glitches.
+  * Updated installation instructions in README.md.
+
+2014-10-01     Kristofor D. Carlson <kdcarlso@uci.edu>
+  * Changed CARLSIM_LIB_INSTALL_DIR variable to CARLSIM_LIB_DIR in all files.
+
+2014-09-28     Kristofor D. Carlson <kdcarlso@uci.edu>
+  * Reorganized the CARLsim root directory.
+  + Made CARLsim into a statically linked library.
+  * Placed all user configuration in user.mk file.
+  + Added documentation.
+  + Added carlsim version numbers for releases.
+  - Removed broken examples.
+
+2014-08-30     Michael Beyeler <mbeyeler@uci.edu>
+  + Added PeriodicSpikeGenerator utility.
+  + Added SpikeGeneratorFromVector utility.
+  + Added SpikeGeneratorFromFile utility.
+
+2014-08-29     Michael Beyeler <mbeyeler@uci.edu>
+  + Added addCustomFrames function to InputStimulus.m utility.
+
+2014-08-15     Ting-Shuo Chou <tingshuc@uci.edu>
+  * Fixed cross-platform compatibility on gtest.
+
+2014-08-14     Michael Beyeler <mbeyeler@uci.edu>
+  + Added recordMovie function to InputStimulus.m utility.
+
+2014-08-13     Michael Beyeler <mbeyeler@uci.edu>
+  + Added Grid3D and Point3D structs.
+  + Added way to create neurons on a grid via CARLsim::createGroup and
+    CARLsim::createSpikeGeneratorGroup.
+  * Fixed interface errors on boundary checks and CARLsim states.
+  * Fixed console output of connection setup.
+  + Added CARLsim::getGroupId (from string).
+
+2014-08-08     Michael Beyeler <mbeyeler@uci.edu>
+  * Fixed broken COBA implementation in CPU mode.
+  + Added COBA tests for firing rate comparison of CPU/GPU mode.
+  * Condensed CUBA test case.
+  * Fixed assertion in CpuSNN::runNetwork to make sure that the function is
+    called only after CpuSNN::setupNetwork.
+  + Added CpuSNN interface getters such as getCurrent(), getConductanceAMPA(),
+    isSimulationWithCOBA(), etc.
+  * Refactored CpuSNN::copyNeuronState, so that it implicitly calls
+    CpuSNN::copyConductances, which itself calls CpuSNN::copyConductanceAMPA,
+    etc.
+  - Removed test COBA.synRiseTimeSettings.
+  * Fixed STP scaling factor, STP_A.
+  * Fixed and tested STP for delay=1ms in CUBA/COBA, CPU/GPU mode. Currently
+    STP is not support with delay>1ms, because STP buffer is broken.
+  * Fixed CARLsim state of setSpikeGenerator.
+  * Fixed calculation of standard deviation in class SpikeMonitor.
+  * Fixed assertion statement in CpuSNN::copyFiringStateFromGPU.
+  * Fixed initial value of recovery variable in CpuSNN::resetNeuron.
+
+2014-08-06     Kristofor D. Carlson <kdcarlso@uci.edu>
+  * Fixed broken CUBA implementation in GPU mode.
+  + Added CUBA tests for firing rate comparison of CPU/GPU mode.
+
+2014-07-31     Michael Beyeler <mbeyeler@uci.edu>
+  * Improved memory usage, execution time, and flexibility of SpikeMonitor
+    utility.
+  + Added setSpikeMonitor option to avoid the creation of .dat spike files.
+  + Added compatibility for SpikeMonitor modes COUNT and AER. COUNT is not
+    yet implemented.
+  + Added PersistentData mode.
+  + Added SpikeMonitor public methods such as getRecording*Time(), getMode(),
+    getNeuronNumSpikes(), and getNeuronMeanFiringRate().
+  * Renamed existing SpikeMonitor public methods for consistency.
+  * Fixed SpikeMonitor error message when totalTime==0. Fixed return
+    argument of getPercentage*. Fixed startRecording/stopRecording bug.
+  - Removed setLogCycle.
+  * Cleaned up runNetwork and added flag printRunSummary.
+  + Added error message type to debug.log.
+  * Fixed CARLsim state of setSpikeGenerator.
+  * Fixed missing spikes when runNetwork is called more than once per
+    simulation.
+
+2014-06-02     Kristofor D. Carlson <kdcarlso@uci.edu>
+    + Added support for CUDA 6.
+    * Users can now add CUDA compute capability of GPU during installation.
+
+2014-05-21     Ting-Shuo Chou <tingshuc@uci.edu>
+  * Fixed windows compatibility bugs. Added project for util.lib. Changed
+    static allocation in updateSpikeMonitor to dynamic.
+
+2014-05-12     Kristofor D. Carlson <kdcarlso@uci.edu>
+    + Created SpikeMonitor class to return spike activity information to the
+      user.
+    - Removed and reorganized global variables associated with setSpikeMonitor.
+    * Fixed memory leaks.
+    + Added tests for setSpikeMonitor and SpikeMonitor.
+    + Included SpikeMonitor files in carlsim makefile and testing makefile. 
+    + Added spikeInfo example that demonstrates how to use the SpikeMonitor
+      class.
+
+2014-05-09     Ting-Shuo Chou <tingshuc@uci.edu>
+  + Added CARLsim states: CONFIG, SETUP, and EXECUTION. Certain API calls
+    are supported only in certain states.
+
+2014-05-03     Michael Beyeler <mbeyeler@uci.edu>
+  * Changed API writeNetwork to saveSimulation. This function can be called
+    at any time, specifying where to store the data and whether to include
+    synaptic info (weights, delays, etc.).
+    By default, saveSimulation is called in the destructor of CARLsim. This
+    will save general information about the simulation and the network setup,
+    but will not include all the nitty-gritty synapse details.
+  + Added setDefaultSaveOptions, which allows the user to change the default
+    location etc. of the saveSimulation file.
+  * Changed Matlab script readNetwork to loadSimulation.
+  * Fixed -nan bug in printSimSummary.
+
+2014-05-01     Michael Beyeler <mbeyeler@uci.edu>
+  + Added structs RangeDelay and RangeWeights for simplified connect call.
+    Inhibitory weights should now have positive sign, as they are weight
+    magnitudes.
+
+2014-04-23     Kristofor D. Carlson <kdcarlso@uci.edu>
+  * Fixed interface error in setHomeBaseFiringRate.
+
+2014-04-11     Michael Beyeler <mbeyeler@uci.edu>
+  + Added InputStimulus utility, including InputStimulus.m (a Matlab class
+    that lets you generate 2D visual stimuli, add noise to them, confine
+    them to an aperture, and store them in binary files) and a corresponding
+    C++ class that reads the binary files and converts them to raw char
+    arrays or mean firing rates of PoissonRate objects.
+
+2014-04-10     Ting-Shuo Chou <tingshuc@uci.edu>
+  + Added setupNetwork().
+
+2014-04-10     Michael Beyeler <mbeyeler@uci.edu>
+  * fixed snn_gpu.cu compiler warnings for CUDA 3
+  * fixed CARLSIM_TEST and CARLSIM_DEBUG Makefile options
+  - removed unnecessary linker flags in Makefile
+  + added test case for user interface
+
+2014-04-09     Ting-Shuo Chou <tingshuc@uci.edu>
+  + added enum updateInterval_t and updateWeightChangeInterval() for weight
+    update intervals
+
+2014-04-08     Ting-Shuo Chou <tingshuc@uci.edu>
+  + Added setNeuromodulator(), setWeightUpdateParameter(), getNumNeurons(),
+    getNumPreSynapses(), getNumPostSynapses(), and getGroupNumNeurons()
+  + Added isSetDASTDP flag in setSTDP()
+  * fixed initialization bug in CpuSNNInit() and updateConnectionMonitor()
+
+2014-04-08     Michael Beyeler <mbeyeler@uci.edu>
+  + added carlsim_definitions.h and snn_definitions.h
+  - removed config.h
+
+2014-04-03     Kristofor D. Carlson <kdcarlso@uci.edu>
+  * Fixed the tuneFiringRates example to work with the new CARLsim/pti
+    interface.
+  * Cleaned up Makefile and carlsim.mk a bit.
+
+2014-04-02     Michael Beyeler <mbeyeler@uci.edu>
+  + added logger mode SHOWTIME
+
+2014-03-17     Kristofor D. Carlson <kdcarlso@uci.edu>
+  * carlsim_tests.mk: reorganized this file to support the implementation
+    of CARLsim google tests in different source files instead of a single
+    large source file.
+  + gtest_custom_main.cpp: created this file as a custom implementation
+    of a google tests main function. This allows us to control the output
+    of google tests easier.
+  + CHANGELOG_2.3: Added this CHANGELOG file to keep track of changes as
+    we make them. We can then more easily write a CHANGELOG file when we
+    release the code.
+
+2013-03-22     Michael Beyeler <mbeyeler@uci.edu>
+  * examples: reorganized files such that all source files, video files, and
+    scripts of a specific example go in examples/. Fixed dynamic allocation.
+
+
+===============================================================================
+Release 2.2
+===============================================================================
+
+Publications:
+  Parameter tuning interface:
+  Carlson KD, Nageswaran JM, Dutt N and Krichmar JL (2014) An efficient 
+  automated parameter tuning framework for spiking neural networks. 
+  Front. Neurosci. 8:10. doi: 10.3389/fnins.2014.00010
+
+    Homeostatic synaptic scaling model:
+  Carlson, K. D., Richert, M., Dutt, N., and Krichmar, J. L. (2013). 
+  “Biologically plausible models of homeostasis and STDP: stability and 
+  learning in spiking neural networks,” in Proceedings of the 2013 
+  International Joint Conference on Neural Networks (IJCNN) (Dallas, TX). 
+  doi: 10.1109/IJCNN.2013.6706961
+
+---------------------
+Build 2.2.0
+---------------------
+
+2014-02-02      Kristofor D. Carlson <kdcarlso@uci.edu>
+  * Makefile: rewritten to include CARLsim/PTI support and modular include
+    files.
+  * snn_cpu.cpp/snn_gpu.cu/snn.h: included support for homeostasis.
+  * snn_cpu.cpp/snn_gpu.cu/snn.h: included support for parameter tuning
+    interface.
+  + libpti, include: added directories for parameter tuning source and
+    headers.
+  * README.md, INSTALL, RELEASE_NOTES: updated for new installation.
+
+2013-11-05      Michael Beyeler <mbeyeler@uci.edu>
+  * Makefile: more general, more flexible Makefile. Options for fast math and
+    CUDA5 support.
+
+2013-11-04      Ting-Shuo Chou <tingshuc@uci.edu>
+  + CUDAVersionControl.h, Makefile: added CUDA5 support
+
+
+===============================================================================
+Release 2.1
+===============================================================================
+
+Publication:
+  M Beyeler, M Richert, ND Dutt, JL Krichmar (2014). "Efficient spiking
+  neural network model of pattern motion selectivity in visual cortex",
+  Neuroinformatics.
+
+---------------------
+Build 2.1.3
+---------------------
+
+2013-10-31      Michael Beyeler <mbeyeler@uci.edu>
+  * examples/v1MTLIP/main_v1MTLIP.cpp: corrected name of LIP group, fixed
+    weights MT PDS -> LIP
+  + examples/v1MTLIP/v1ColorME.cu (freeAllCUDA): added
+  * scripts/v1MTLIP/plotRDKdecision.m: corrected name of LIP spike file, added
+    some comments
+  * snn_cpu.cpp (deleteObjects): fixed memory leaks (due to un-freed
+    dynamically allocated structures)
+  + snn_gpu.cu (deleteObjectsGPU): added, fixed memory leaks on GPU side
+  + snn_gpu.cu (CpuSNNinitGPUparams): added, correctly instantiates global
+    vars on GPU side
+
+
+---------------------
+Build 2.1.2
+---------------------
+
+2013-10-09      Michael Beyeler <mbeyeler@uci.edu>
+  * snn_cpu.cpp (CpuSNN::setSpikeMonitor): if spike subdirectory does not
+    exist, display error message and exit.
+    If option CREATE_SPIKEDIR_IF_NOT_EXISTS is set in config.h, will attempt
+    to create subdirectory (e.g., "Results/random", but NOT "Results")
+  + config.h: added option CREATE_SPIKEDIR_IF_NOT_EXISTS (default: disabled)
+  * Makefile: fixed header dependencies
+  * examples: fixed path to spike files
+
+
+---------------------
+Build 2.1.1
+---------------------
+
+2013-10-04      Michael Beyeler <mbeyeler@uci.edu>
+  * scripts/v1MTLIP/plotSpeed.m: fixed a bug concerning the plotting of the
+    speed tuning curve for a particular MT neuron; added a comment on the
+    location within the visual field of the chosen neuron
+  * scripts/v1MTLIP/plotRDKdecision.m: fixed number of spikes per neuron
+  + scripts/v1MTLIP: added "common" folder to path
+  * examples/v1MTLIP/main_v1MTLIP.cpp (connectMTtoMTpatt): fixed RF size
+    thresholding gausPos
+  * Makefile: fixed error where v1ColorME.cu should read v1ColorMEold.cu
+  * snn.h: fixed version numbering
+  * RELEASE_NOTES: fixed version numbering
+  + CHANGELOG: added
+  + AUTHORS: added
+
+
+---------------------
+Build 2.1.0
+---------------------
+2013-07-31      Michael Beyeler <mbeyeler@uci.edu>
+  + examples/v1MTLIP/main_v1MTLIP.cpp: added complete source code to run
+    motion energy model in COBA on CPU/GPU
+  + scripts/v1MTLIP: added analysis scripts for motion energy model
+  * scripts/common: moved previous commonly used analysis scripts to this
+    folder
+  + snn_cpu.cpp (CpuSNN::runNetwork): added option to specify on which CUDA
+    card to establish a context
+    The first time you run sim.runNetwork() add an int ithGPU that specifies
+    the device index.
+    > bool onGPU=true; // GPU mode on
+    > int ithGPU=2; // run on the third card
+    > sim.runNetwork(0,0,onGPU?GPU_MODE:CPU_MODE,ithGPU);
+    If ithGPU is invalid (e.g., exceeds the number of cards), it defaults to
+    using device 0.
+  + snn_cpu.cpp (CpuSNN::allocateSNN_GPU): added GPU memory management summary
+    At beginning of simulation, prints how many cards are available, which
+    one has the most GFLOPs, on which card you're running your experiment,
+    how much memory is available, etc.
+  * snn_cpu.cpp (CpuSNN::printSimSummary): number of (actual vs. allocated)
+    synapses
+  * snn_cpu.cpp (CpuSNN::globalStateUpdate): fixed storing of current[] when
+    running COBA in CPU mode; capped conductances to prevent instability
+  * snn_cpu.cpp: fixed integer overflow issues for largest-scale simulations
+  * snn_gpu.cu: fixed GPU memory allocation for fixed-weight simulations
+  + scripts/common/readSpikes.m: added functionality to return spikes in AER
+    format
+  + scripts/common/readSpikesAERtoFull.m: added; expands an AER representation
+    of <spike time/neuron ID> to a full matrix
+  * scripts/common/readNetwork.m: fixed indexing issue (0-indexed)
+  * v1ColorME.cu: edge effects removed in CUDA, reproduces V1 contrast
+    sensitivity function, features scaling factors from Simoncelli & Heeger,
+    1998
+  * config.h: changed max. firing rate from 1000 Hz to 520 Hz
+
+
+
+===============================================================================
+Release 2.0
+===============================================================================
+
+Publication:
+  M Richert, JM Nageswaran, N Dutt, JL Krichmar (2011). "An efficient
+  simulation environment for modeling large-scale cortical processing",
+  Frontiers in Neuroinformatics 5(19):1-15.
+
+--------------------
+Build 2.0.0
+--------------------
+2011-11-01       Micah Richert <richert@braincorporation.com>
+  + /: added COBA mode, STDP (Song et al, 2000), STP (Markram et al, 1998; 
+    Mongillo et al, 2008), removed configId support
+  + examples: added example networks
+    + (MDR/JN) Added COBA mode
+
+
+
+===============================================================================
+Release 1.0
+===============================================================================
+
+Publication:
+  JM Nageswaran, N Dutt, JL Krichmar, A Nicolau, AV Veidenbaum (2009). "A
+  configurable simulation environment for the efficient simulation of
+  large-scale spiking neural networks on graphics processors", Neural Networks
+  22:791-800.
+
+--------------------
+Build 1.0.0
+--------------------
+2011-11-01      Jayram Moorkanikara Nageswaran <nageswaran@braincorporation.com>
+  + /: initial release
+

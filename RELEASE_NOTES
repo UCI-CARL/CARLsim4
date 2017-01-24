@@ -1,0 +1,213 @@
+===============================================================================
+CARLSIM RELEASE NOTES
+===============================================================================
+
+-------------------------------------------------------------------------------
+CARLsim 3.1
+-------------------------------------------------------------------------------
+
+tbd
+
+
+-------------------------------------------------------------------------------
+CARLsim 3.0
+-------------------------------------------------------------------------------
+
+Highlights:
+	New user interface.
+	Platform compatibility (Linux, Windows, and Mac OS X).
+	Shared library build. CUDA6 support.
+	E-STDP, I-STDP, DA-STDP.
+	Plugin for Evolutionary Computations in Java (ECJ).
+	Improved SpikeMonitor, ConnectionMonitor, and GroupMonitor.
+	3D Topography.
+	Current injection.
+	On-line weight tuning.
+	MATLAB Offline Analysis Toolbox.
+	MATLAB Visual Stimulus Toolbox.
+	Regression suite.
+	User Guide and Tutorial.
+	Bugfixes.
+
+Description:
+	tbd
+
+Publication:
+	tbd
+
+Tested platforms and devices:
+	* Platforms:
+	   - Linux: Ubuntu 10.04, 12.04, 12.10, 13.04, 13.10, 14.04, Arch Linux,
+	     CentOS 6, OpenSUSE 13.1
+	   - Windows: 7
+	   - Mac OS: X
+	* NVIDIA Toolkits: CUDA 5.0, 5.5, 6.0, 6.5
+	* CUDA compute capabilities: 2.0, 2.1, 3.0, 3.5
+	* CUDA devices: Tesla C1060, Tesla M2090, GTX 460, GTX 780, Quadro 600,
+	  NVS 4200M, TITAN Z
+	* Doxygen: 1.8
+
+Known bugs & issues:
+	* Currently, short-term plasticity (STP) can only be run in GPU mode if
+	  there are no synaptic delays greater than 1 ms. This is to prevent a
+	  known issue in kernel_globalConductanceUpdate, which will be fixed as
+	  soon as possible in a future release.
+	* Mistakingly calling CARLsim::setSTDP on a fixed connection will result
+	  in an unspecified launch failure in GPU mode.
+
+-------------------------------------------------------------------------------
+CARLsim 2.2
+-------------------------------------------------------------------------------
+
+Highlights:
+	Included model for homeostatic synaptic scaling.
+	Included support for parameter tuning interface (PTI) library, which
+	enables the automated parameter tuning of SNNs using evolutionary
+	algorithms.
+	Added CUDA5 support.
+
+Description:
+	As the desire for biologically realistic spiking neural networks (SNNs)
+	increases, tuning the enormous number of open parameters in these 
+	models becomes a difficult challenge. SNNs have been used to 
+	successfully model complex neural circuits that explore various neural 
+	phenomena such as neural plasticity, vision systems, auditory systems, 
+	neural oscillations, and many other important topics of neural 
+	function. Additionally, SNNs are particularly well-adapted to run on 
+	neuromorphic hardware that will support biological brain-scale 
+	architectures. Although the inclusion of realistic plasticity 
+	equations, neural dynamics, and recurrent topologies has increased the
+	descriptive power of SNNs, it has also made the task of tuning these 
+	biologically realistic SNNs difficult. To meet this challenge, we 
+	present an automated parameter tuning framework capable of tuning SNNs 
+	quickly and efficiently using evolutionary algorithms (EA) and 
+	inexpensive, readily accessible graphics processing units (GPUs). A 
+	sample SNN with 4104 neurons was tuned to give V1 simple cell-like 
+	tuning curve responses and produce self-organizing receptive fields 
+	(SORFs) when presented with a random sequence of counterphase 
+	sinusoidal grating stimuli. A performance analysis comparing the 
+	GPU-accelerated implementation to a single-threaded central 
+	processing unit (CPU) implementation was carried out and showed a 
+	speedup of 65× of the GPU implementation over the CPU implementation, 
+	or 0.35 h per generation for GPU vs. 23.5 h per generation for CPU. 
+	Additionally, the parameter value solutions found in the tuned SNN 
+	were studied and found to be stable and repeatable. The automated 
+	parameter tuning framework presented here will be of use to both the 
+	computational neuroscience and neuromorphic engineering communities, 
+	making the process of constructing and tuning large-scale SNNs much 
+	quicker and easier.
+
+Publications:
+	Parameter tuning interface:
+	Carlson KD, Nageswaran JM, Dutt N and Krichmar JL (2014) An efficient 
+	automated parameter tuning framework for spiking neural networks. 
+	Front. Neurosci. 8:10. doi: 10.3389/fnins.2014.00010
+
+    Homeostatic synaptic scaling model:
+	Carlson, K. D., Richert, M., Dutt, N., and Krichmar, J. L. (2013). 
+	“Biologically plausible models of homeostasis and STDP: stability and 
+	learning in spiking neural networks,” in Proceedings of the 2013 
+	International Joint Conference on Neural Networks (IJCNN) (Dallas, TX). 
+	doi: 10.1109/IJCNN.2013.6706961
+
+
+-------------------------------------------------------------------------------
+CARLsim 2.1
+-------------------------------------------------------------------------------
+
+Highlights:
+	Introduced "CARLsim" branding.
+	Efficient SNN model of pattern motion selectivity in visual cortex 
+	(V1, MT, LIP). Improved GPU memory management. Bugfixes.
+
+Description:
+	We present a two-stage model of visual area MT that we believe to be 
+	the first large-scale spiking network to demonstrate pattern direction 
+	selectivity. In this model, componentdirection-selective (CDS) cells in
+	MT linearly combine inputs from V1 cells that have spatiotemporal 
+	receptive fields according to the motion energy model of Simoncelli 
+	and Heeger. Pattern-direction-selective (PDS) cells in MT are 
+	constructed by pooling over MT CDS cells with a wide range of preferred
+	directions. Responses of our model neurons are comparable to 
+	electrophysiological results for grating and plaid stimuli as well as 
+	speed tuning. The behavioral response of the network in a motion 
+	discrimination task is in agreement with psychophysical data. Moreover,
+	our implementation outperforms a previous implementation of the motion
+	energy model by orders of magnitude in terms of computational speed and
+	memory usage. The full network, which comprises 153,216 neurons and 
+	approximately 40 million synapses, processes 20 frames per second of a 
+	32×32 input video in real-time using a single off-the-shelf GPU. To 
+	promote the use of this algorithm among neuroscientists and computer 
+	vision researchers, the source code for the simulator, the network, 
+	and analysis scripts are publicly available.
+
+Publication:
+	M Beyeler, M Richert, ND Dutt, JL Krichmar (2014). "Efficient spiking
+	neural network model of pattern motion selectivity in visual cortex",
+	Neuroinformatics.
+
+
+-------------------------------------------------------------------------------
+CARLsim 2.0
+-------------------------------------------------------------------------------
+
+Highlights:
+	Added COBA mode, STDP, and STP. Cortical model of color selectivity 
+	(color opponency). Cortical model of motion selectivity (V1, MT) and 
+	orientation selectivity (V1, V4).
+
+Description:
+	We have developed a spiking neural network simulator, which is both 
+	easy to use and computationally efficient, for the generation of 
+	large-scale computational neuroscience models. The simulator implements
+	current or conductance based Izhikevich neuron networks, having 
+	spike-timing dependent plasticity and short-term plasticity. It uses a
+	standard network construction interface. The simulator allows for 
+	execution on either GPUs or CPUs. The simulator, which is written in 
+	C/C++, allows for both fine grain and coarse grain specificity of a 
+	host of parameters. We demonstrate the ease of use and computational 
+	efficiency of this model by implementing a large-scale model of \
+	cortical areas V1, V4, and area MT. The complete model, which has 
+	138,240 neurons and approximately 30 million synapses, runs in 
+	real-time on an off-the-shelf GPU. The simulator source code, as well 
+	as the source code for the cortical model examples is publicly 
+	available.
+
+Publication:
+	M Richert, JM Nageswaran, N Dutt, JL Krichmar (2011). "An efficient 
+	simulation environment for modeling large-scale cortical processing", 
+	Frontiers in Neuroinformatics 5(19):1-15.
+
+
+-------------------------------------------------------------------------------
+CARLsim 1.0
+-------------------------------------------------------------------------------
+
+Highlights:
+	Initial release. CUBA mode. Demonstration of GPU speedup.
+
+Description:
+	We demonstrate an efficient, biologically realistic, large-scale SNN 
+	simulator that runs on a single GPU. The SNN model includes Izhikevich 
+	spiking neurons, detailed models of synaptic plasticity and variable 
+	axonal delay. We allow user-defined configuration of the GPU-SNN model 
+	by means of a high-level programming interface written in C++ but 
+	similar to the PyNN programming interface specification. The GPU 
+	implementation (on NVIDIA GTX-280 with 1 GB of memory) is up to 26 
+	times faster than a CPU version for the simulation of 100K neurons with
+	50 Million synaptic connections, firing at an average rate of 7 Hz. 
+	For simulation of 10 Million synaptic connections and 100K neurons, the
+	GPU SNN model is only 1.5 times slower than real-time. Further, we 
+	present a collection of new techniques related to parallelism 
+	extraction, mapping of irregular communication, and network 
+	representation for effective simulation of SNNs on GPUs. The fidelity 
+	of the simulation results was validated on CPU simulations using firing
+	rate, synaptic weight distribution, and inter-spike interval analysis. 
+	Our simulator is publicly available to the modeling community so
+	that researchers will have easy access to large-scale SNN simulations.
+
+Publication:
+	JM Nageswaran, N Dutt, JL Krichmar, A Nicolau, AV Veidenbaum (2009). 
+	"A configurable simulation environment for the efficient simulation of
+	large-scale spiking neural networks on graphics processors", 
+	Neural Networks 22:791-800.

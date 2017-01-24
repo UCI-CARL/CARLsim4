@@ -1,0 +1,389 @@
+/*!
+
+\page ch5_synaptic_plasticity Chapter 5: Synaptic Plasticity
+
+\tableofcontents
+
+
+\section ch5s1_short_term_plasticity 5.1 Short-Term Plasticity (STP)
+\author Michael Beyeler
+
+CARLsim provides standard equations for short-term plasticity (STP) (also called dynamical synapses).
+STP is a synaptic plasticity rule that acts on a time scale on the order of 100ms, and contributes to
+short-term facilitation (STF) or short-term depression (STD) based on pre-synaptic activity.
+STD is caused by depletion of neurotransmitters consumed during the synaptic signaling process at the
+axon terminal of a pre-synaptic neuron, whereas STF is caused by influx of calcium into the axon terminal
+after spike generation, which increases the release probability of neurotransmitters
+(Senn, Tsodyks, & Markram, 2001; Mongillo, Barak, & Tsodyks, 2008).
+
+
+\subsection ch5s1s1_model 5.1.1 Phenomenological Model of STP
+
+CARLsim implements the phenomenological STP model of (Senn, Tsodyks, & Markram, 2001; Mongillo,
+Barak, & Tsodyks, 2008):
+\f{eqnarray}
+\frac{du}{dt} & = & \frac{-u}{STP\_tau\_u} + STP\_U  (1-u^-)  \delta(t-t_{spk}) \\
+\frac{dx}{dt} & = & \frac{1-x}{STP\_tau\_x} - u^+  x^-  \delta(t-t_{spk}) \\
+\frac{dI}{dt} & = & \frac{-I}{\tau_S} + A  u^+  x-  \delta(t-t_{spk}) \f}
+where u- means value of variable u right before spike update, and x+ means value of variable x right after
+the spike update, and A is the synaptic weight.
+The STD effect is modeled by a normalized variable (0<=x<=1), denoting the fraction of resources that remain
+available after neurotransmitter depletion.
+The STF effect is modeled by a utilization parameter u, representing the fraction of available resources ready for
+use (release probability). Following a spike, (i) u increases due to spike-induced calcium influx to the
+presynaptic terminal, after which (ii) a fraction u of available resources is consumed to produce the post-synaptic
+current. Between spikes, u decays back to zero with time constant <tt>STP_tau_u</tt> (tau_F), and x recovers to value
+one with time constant <tt>STP_tau_x</tt> (tau_D).
+
+In CARLsim, the scaling factor <tt>A</tt> in (3) is automatically adjusted to the inverse of <tt>STP_U</tt>.
+The resulting effect is that the first spike under STP generates the same post-synaptic current as if STP were
+disabled on that synapse (governed by the synaptic weight set in CARLsim::connect).
+From there on forward the post-synaptic current will either increase (STF) or decrease (STD).
+
+\image html 5_stp.jpg "Fig. 1. Traces of generated post-synaptic currents for STD and STF (generated with CARLsim 3)."
+
+Source Tsodyks and Wu, 2013.
+
+\subsection ch5s1s2_usage_example 5.1.2 STP Usage Example
+
+In order to make use of STP in a simulation, STP must be enabled for a group (pre-synaptically):
+\code
+sim.setSTP(g0, true); // grpId, isSet
+\endcode
+
+This will enable STP on all outgoing synapses on all neurons in the group <tt>g0</tt>.
+STP parameters will be set to default value (according to the above citation).
+These default values can be overridden manually by using CARLsim::setDefaultSTPparams.
+
+Alternatively, values for the STP parameters can be specified explicitly:
+\code
+sim.setSTP(g0, true, 0.45f, 50.0f, 750.0f); // grpId, isSet, STP_U, STP_tau_u, STP_tau_x
+\endcode
+
+This will enable STP for group <tt>g0</tt>, set the increment of u induced by a spike to <tt>STP_U=0.45f</tt>,
+set the decay constant of <tt>u</tt> to <tt>STP_tau_u=50.0f</tt> ms (also called tau_F),
+and set the decay constant of <tt>x</tt> to <tt>STP_tau_x=750.0f</tt> ms (also called tau_D).
+
+
+
+By default, STP is disabled on all groups from the outset.
+
+\note STP will be applied to all outgoing synapses of all neurons in a (pre-synaptic) group.
+\note All outgoing synapses of a certain (pre-synaptic) neuron share the resources of that same neuron.
+\see CARLsim::setSTP(int, bool)
+\see CARLsim::setSTP(int, bool, float, float, float)
+\see CARLsim::setDefaultSTPparams
+
+
+
+\section ch5s2_spike_timing_dependent_plasticity 5.2 Spike-Timing Dependent Plasticity (STDP)
+\author Kristofor D. Carlson
+\author Ting-Shuo Chou
+
+CARLsim supports a popular spike-based learning phenomenon called spike-timing dependent plasticity
+(STDP). STDP is an important form of Hebbian learning where the precise timing of the pre
+and postsynaptic spike times influence synaptic weight changes. STDP is important because it
+operates on correlations between spikes and suggests a potential causal (or anti-causal)
+relationship between pre and postsynaptic spikes (Sjöström and Gerstner, 2010).
+
+The prototypical form of STDP acts as follows: spike-timings where the presynaptic spike
+arrival precedes postsynaptic spikes by a few milliseconds results in an increase in the synaptic
+weight, also referred to as long-term potentiation (LTP). Spike-timings where the presynaptic spike
+arrival follows postsynaptic spikes by a few milliseconds result in a decrease in the synaptic
+weight. (Bi and Poo, 1998). STDP of this type was observed at glutamatergic (excitatory) synapses.
+
+
+\subsection ch5s2s1_phenemological_model 5.2.1 Phenomenological Model of STDP
+Fig. 2 shows a variety of 'STDP Curves' possible using CARLsim. In each
+sub-figure, the horizontal axis represents the time difference between the time of the presynaptic
+spike arrival and the time of the postsynaptic arrival or \f$ \Delta t = t_{post} - t_{pre} \f$.
+Therefore, \f$ \Delta t \f$'s to the left of the vertical axis are \f$ \Delta t < 0 \f$
+(pre-after-post) while \f$ \Delta t \f$'s to the right of the vertical axis are
+\f$ \Delta t>0 \f$ (pre-before-post). The vertical axis represents the weight change of the synaptic
+weight magnitude (\f$ \Delta \vert w \vert \f$) at that synapse.
+
+\image html 5_stdp_curves.png "Fig. 2. Examples of possible STDP curves possible in CARLsim. Green curves can be applied to glutamatergic synapses, whereas red curves can be applied to GABAergic (inhibitory) synapses.STDP (2(a)-2(d)) and (2(f)-2(i)). are referred to as STDP type ExpCurve as they consist of two decaying exponentials. 2(e) is referred to as STDP type PulseCurve 2(j). is referred as STDP type TimingBasedCurve."
+
+Source: Beyeler, et al. 2015.
+
+CARLsim has 3 types of STDP: ExpCurve, PulseCurve, and TimingBasedCurve. The phenomenological model
+for STDP of type ExpCurve found in 2(a-d) and 2(f-i) is as follows.If \f$ \Delta t > 0 \f$,
+then \f$ \Delta w = A_{+} \exp(-\Delta t/\tau_{+}) \f$ else if
+\f$ \Delta t <= 0 \f$, then \f$ \Delta w = A_{-} \exp(-\Delta t/\tau_{-}) \f$. The TimeBasedCurve
+STDP type shown in 2(e) and the PulseCurve STDP type have a similar mathematical structure.
+
+Users can select the
+specific version of STDP ExpCurve by choosing the \f$ A_{+}\f$ and \f$ A_{-}\f$ parameters
+appropriately as these parameters are allowed to take both positive and negative values. Users also
+select the \f$ \tau_{+} \f$ and \f$\tau_{-}\f$ exponential decay parameters. Configuration of the
+PulseCurve and TimingBasedCurve is similar only it should be noted that none of the parameter values
+may be negative.
+
+CARLsim calculates the change in weight in two components, the pre-before-post component and the
+pre-after-post component. The change in weights is calculate with the following equation:
+
+\f[
+\frac{dw_{i,j}}{dt}  =  \delta + \beta(\mbox{pre-before-post}_{i,j} +
+\mbox{pre-after-post}_{i,j})
+\f]
+
+where \f$ w_{i,j} \f$ is the weight from presynaptic neuron \a i, to postsynaptic neuron \a j,
+\f$ \delta \f$ is a bias with a default value of 0, and \f$ \beta \f$ is the learning rate with a
+default value of 1. Additionally, \f$ \mbox{pre-before-post}_{i,j} \f$ is the pre-before-post
+weight change contribution and  \f$ \mbox{pre-after-post}_{i,j} \f$ is the pre-after-post weight
+change contribution.
+
+It is important to note that CARLsim uses nearest neighbor STDP (Morrison et al. 2008) where each
+presynaptic spike is paired with the last postsynaptic spike and each postsynaptic spike is paired
+with the last presynaptic spike to calculate the final weight change due to STDP.
+
+
+\image html 5_stdp_types.jpg "Fig. 3. The types of STDP"
+
+CARLsim characterizes STDP type by both STDP weight change curve (as shown in Fig. 2) and by type of
+synaptic connection (e.g. excitatory or inhibitory). As mentioned in previous chapters, excitatory
+synapses bring the postsynaptic neuron closer to its firing threshold while inhibitory
+synapses bring the postsynaptic neuron away from its firing threshold. The combination of STDP
+weight change curve and synapse type have functional implications for the neural circuit being
+constructed. E-STDP is defined as STDP on a connection where the presynaptic neuron groups are
+excitatory in nature. This is true for E to E and E to I connections. I-STDP is defined as STDP on a
+connection where the presynaptic neuron groups are inhibitory in nature. Fig. 3 shows illustrates
+how E-STDP and I-STDP are defined.
+
+\note CARLsim keeps track of the weight change every ms, but updates the weights every second by
+default. The update frequency of the weights can be changed with the
+CARLsim::setWeightAndWeightChangeUpdate function.
+
+\warning A common user error is trying to allow for STDP on connections that are fixed, instead of
+plastic.
+
+
+\subsection ch5s2s2_stdp_types 5.2.2 Excitatory STDP (E-STDP) and Inhibitory STDP (I-STDP)
+
+The possible types of E-STDP curves are shown in the top row of Fig. 2. The presynaptic group
+determines the identity of the STDP type (E-STDP or I-STDP). Currently CARLsim supports one set of
+unique STDP parameters for per STDP type. Therefore, in Fig. 3, the I to E and E to E plastic
+connections to the exctiatory neuron on the left could have completely different STDP curves (shown
+in Fig. 2). However, if a third connection were added, like another E to E connection, then
+STDP parameter values for that E to E connection must be identical to that of the other E to E
+connection. Users are responsible for choosing realistic STDP parameters all there are reasonable
+default parameters supplied by CARLsim.
+
+\since v3.0
+
+
+\subsection ch5s2s3_da_stdp 5.2.3 Dopamine-Modulated STDP (DA-STDP)
+
+The CARLsim dopamine-modulated STDP implementation allows users to easily implement
+reinforcement learning applications. Dopamine acts as a training signal in the sense that STDP only
+takes place in the presence of elevated dopamine concentrations. Below is a code snippet that
+implements dopamine-modulated STDP.
+
+\code
+// create groups
+int gDA = sim.createSpikeGeneratorGroup("DA input", 100,
+DOPAMINERGIC_NEURON);
+int gRS = Sim.createGroup(“RS”, 10, EXCITATORY_NEURON);
+Sim.setNeuronParameters(gRS, 0.02f, 0.2f, -65.0f, 8.0f);
+
+// “all-to-all” connectivity with plastic synapses
+// weights initialized to 0.01f, range is [0.0f, 0.1f]
+// receptive field struct is ignored
+Sim.connect(gDA, gRS, “full”,
+RangeWeight(0.0f, 0.01f, 0.1f), 1.0f,
+RangeDelay(1,10), RadiusRF(-1), SYN_PLASTIC);
+// set DA-STDP on all plastic synapses to gRS
+// alpha_LTP=0.001f, tau_LTP=20.0f
+// alpha_LTD=0.0015f, tau_LTD=20.0f
+Sim.setSTDP(gRS, DA_MOD, 0.001f, 20.0f, 0.0015f, 20.0f);
+
+\endcode
+
+\since v3.0
+
+\subsection ch5s2s4_usage_example 5.2.4 STDP Usage Example
+
+In order for STDP to be used, the connection between two groups must be plastic as indicated by the
+SYN_PLASTIC keyword:
+
+\code
+sim.connect(g1,g2,"one-to-one",RangeWeight(0.0,1.0f/100, 20.0f/100),1.0f, RangeDelay(1), RadiusRF(-1),SYN_PLASTIC);
+\endcode
+
+Assuming g1 and g2 are excitatory neurons, we should then set the E-STDP parameters:
+
+\code
+sim->setESTDP(g1, true, STANDARD, ExpCurve(ALPHA_LTP/100, TAU_LTP, ALPHA_LTD/100, TAU_LTP));
+\endcode
+
+Notice that the E-STDP call was done on the postsynaptic neuron group (g1) as the first argument.
+The second argument determines whether or STDP will be enabled and could be set to false as well.
+The third argument refers to the neuromodulatory effect present at this synapse. STDP without a
+neuromodulatory influence is referred to by the STANDARD keyword while STDP that is modulated by
+dopamine is referred to as DA_MOD. Here, we are using the ExpCurve STDP curve.
+
+
+
+\section ch5s3_homeostasis 5.3 Homeostasis
+\author Kristofor D. Carlson
+
+\subsection ch5s3s1_phenomenological_model 5.3.1 Homeostasis Phenomenological Model
+
+Homeostatic synaptic scaling has been observed experimentally and may serve to stabilize plasticity
+mechanisms that can otherwise undergo run-away behaviors. CARLsim implements a version of
+homeostatic synaptic scaling that helps stabilize STDP. Additionally, the synaptic plasticity model
+implemented by CARLsim is multiplicative in nature, preserving the relative synaptic weight
+differences between all synapses on a single neuron. Using the same mathematical conventions as
+in the phenomenological model of STDP discussion, the mathematical model for the synaptic weight
+update combining both STDP and homeostasis is as follows:
+
+
+\f[
+\frac{dw_{i,j}}{dt}  =  \bigg[ \alpha \cdot w_{i,j} \Big(1-\frac{R_{avg}}{R_{target}} \Big) + \beta
+\cdot (\mbox{pre-before-post}_{i,j} +
+\mbox{pre-after-post}_{i,j}) \bigg] \cdot K
+\f]
+
+In the equation above,
+the change in synaptic weight per timestep, \f$ \frac{dw_{i,j}}{dt} \f$ is the sum of a homeostatic
+term plus an STDP term times a stability factor, \f$ K \f$.
+Here \f$ \alpha \f$ is the homeostatic scaling factor, \f$ \beta \f$ is the STDP scaling factor,
+\f$ R_{avg} \f$, is the average firing rate
+of the neuron over a (relatively) long period of time, \f$ R_{target} \f$ is a predetermined target
+firing rate for the neuron, and \f$ K \f$ is:
+
+\f[
+K=\frac{R_{avg}}{T \cdot \Big( 1 + \vert 1- R_{avg}/R_{target} \vert \cdot \gamma  \Big) }
+\f]
+
+Here, \f$ T \f$ is the time over which the firing rate is being averaged and \f$ \gamma \f$ is a
+tuning factor.
+
+
+\since v2.0
+
+\subsection ch5s3s2_usage_example 5.3.1 Homeostasis Usage Example
+
+Some example code below sets the homeostatic scaling factor \f$ \alpha \f$ and the time constant
+\f$ T \f$ for grp1. The first argument specifies grp1 as the group to enable homeostasis on. The
+second argument sets the 'enable homeostatis flag' to be true. The homeostatic scaling factor,
+\f$ \alpha \f$ and the time constant, \f$ T \f$, are set in arguments 3 and 4, respectively.
+Finally, the target firing rate for each
+neuron in grp1 needs to be set with the setHomeoBaseFiringRate function. The first argument
+specifies the group for which the target firing rate is being set, the second argument is the value
+of the target firing rate, and the third argument is the standard deviation of the target firing
+rate. The third argument can be left blank to indicate a standard deviation of the target firing
+rate with a value of 0.
+
+\code
+float alpha    =         0.1;
+float T        =         10.0;
+float R_target =         10.0;
+sim.setHomeostasis(grp1, true, alpha, T);
+sim.setHomeoBaseFiringRate(grp1, R_target,0);
+\endcode
+
+\note When the standard deviation argument is used in CARLsim::setHomeoBaseFiringRate function, the
+target firing rate still gets a single value that is constant for the entire simulation.
+
+\note The STDP scaling term, \f$ \beta \f$, is always equal to 1 in
+CARLsim simulations. Therefore, to make the homeostatic term ,\f$ \alpha \f$, greater than
+\f$ \beta \f$, you simply set it to a value greater than 1.
+
+\note Users new to homeostasis should start with \f$ \alpha = 0.1 \f$ and \f$ T = 10.0 \f$ seconds.
+This means that STDP component will be 10 times stronger than the homeostatic synaptic scaling
+component. Setting the time constant for 10.0 seconds is within biologically observed values
+(Turrigiano, 2008) and a good place to start. In general homeostatic synaptic scaling should take
+place on a timescale longer than that of a single spike (1 ms). However, be aware that you must run
+your simulation for long enough to allow for homeostasis to take effect. It's probably a good idea
+to run your simulation for at least 5 times longer than your time constant, \f$ T \f$.
+In general you will probably run your simulations for much longer than this!
+
+\since v2.0
+
+
+
+\section ch5s4_testing_phase 5.4 Disabling Plasticity in a Testing Phase
+\author Michael Beyeler
+
+CARLsim provides a method to temporarily disable all synaptic weight updates, which may be helpful
+in a testing phase that is trying to evaluate some previously trained network.
+
+The testing phase can be entered via CARLsim::startTesting and exited via CARLsim::stopTesting:
+\code
+#include <carlsim.h>
+
+CARLsim sim("TestingPhase", CPU_MODE, USER, 0, 42);
+
+// ---------------- CONFIG STATE -------------------
+int gExc = sim.createGroup("output", 1, EXCITATORY_NEURON);
+sim.setNeuronParameters(gExc, 0.02f, 0.2f, -65.0f, 8.0f); // RS
+int gIn = sim.createSpikeGeneratorGroup("input", 10, EXCITATORY_NEURON);
+
+int cInExc  = sim.connect(gIn, gExc, "full", RangeWeight(0.0f, 0.5f, 0.5f), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_PLASTIC);
+
+// set E-STDP to be STANDARD (without neuromodulatory influence) with an EXP_CURVE type.
+sim.setESTDP(gExc, true, STANDARD, ExpCurve(2e-4f,20.0f, -6.6e-5f,60.0f));
+sim.setHomeostasis(gExc, true, 1.0f, 10.0f);  // homeo scaling factor, avg time scale
+sim.setHomeoBaseFiringRate(gExc, 35.0f, 0.0f); // target firing, target firing st.d.
+
+sim.setConductances(true);
+sim.setupNetwork();
+
+// ---------------- SETUP STATE -------------------
+ConnectionMonitor* CM = sim.setConnectionMonitor(gIn, gExc, "NULL");
+
+// set up some input firing
+PoissonRate PR(10);
+PR.setRates(50.0f);
+sim.setSpikeRate(gIn, &PR);
+
+// ---------------- RUN STATE -------------------
+// training: expect weight changes due to STDP
+sim.runNetwork(1,0);
+printf("Training Phase: Weight change = %f\n", CM->getTotalAbsWeightChange());
+
+// testing: expect no weight changes
+sim.startTesting();
+sim.runNetwork(10,0);
+printf("Testing Phase: Weight change = %f\n", CM->getTotalAbsWeightChange());
+
+// continue training...
+sim.stopTesting();
+// etc.
+\endcode
+
+\since v3.1
+
+
+\section ch5s5_references 5.5 References
+\author Kristofor D. Carlson
+
+Beyeler, M., Carlson, K. D., Chou, T. S., Dutt, N., Krichmar, J. L., CARLsim 3: A
+user-friendly and highly optimized library for the creation of neurobiologically detailed spiking
+neural networks. (Submitted)
+
+Bi, G. Q. and Poo, M. M. (1998). Synaptic modifications in cultured Hippocampal neurons: dependence
+on spike timing, synaptic strength, and postsynaptic cell type. J Neurosci, 18:10464-72.
+
+Bi, G. Q. and Poo, M. M. (2001). Synaptic modification of correlated activity: Hebb's postulate
+revisited. Ann. Rev. Neurosci., 24:139-166.
+
+Mongillo, G, Barak, O., and Tsodyks, M. (2008) Synaptic theory of working memory. Science.,
+319 (5869): 1543-1546.
+
+Morrison, A., Markus D., and Gerstner, W. (2008). Phenomenological models of synaptic plasticity
+based on spike timing. Biological Cybernetics 98: 459-478.
+
+Senn, W., Markram, H., and Tsodyks, M. (2001). An algorithm for modifying neurotransmitter release
+probability based on pre- and post-synaptic spike timing. Neural Comput, 13:35-67.
+
+Sjöström, J. and Gerstner, W. (2010) Spike-timing dependent plasticity. Scholarpedia, 5 (2):1362.,
+revision #142314
+
+Tsodyks, M. and Wu, S. (2013) Short-term synaptic plasticity. Scholarpedia, 8(10):3153., rev #136920
+
+Turrigiano, G., G., (2008) The self-tuning neuron: synaptic scaling of excitatory synapses. Cell
+135: 422-435.
+
+*/

@@ -1,0 +1,131 @@
+/*!
+
+\page ch2_basic_concepts Chapter 2: Basic Concepts
+
+\tableofcontents
+
+\section ch2s1_general_workflow 2.1 General Workflow
+\author Michael Beyeler
+
+The workflow of a typical CARLsim 3 simulation is organized into three distinct, consecutive states (see figure below):
+the configuration state, the set up state, and the run state.
+
+User functions in the C++ API are grouped according to these stages, which streamline the process and prevent race
+conditions.
+State transitions are handled by special user functions such as CARLsim::setupNetwork and CARLsim::runNetwork.
+
+\image html 2_carlsim_states.jpg "A diagram showing the possible states the CARLsim simulation can occupy."
+
+The first step in using CARLsim 3 (<tt>libCARLsim</tt>) imports the library and instantiates the main simulation
+object:
+\code
+#include <carlsim.h>
+CARLsim sim("example", GPU_MODE, USER);
+\endcode
+This prepares the simulation for execution in either ::CPU_MODE or ::GPU_MODE,
+and specifies the verbosity of the status reporting mechanism
+(::USER indicating the default logger mode that will print info and error messages to console and save debug messages
+in a text file). Other logger modes are available that print only error messages (::SHOWTIME), suppress console
+output alltogether (::SILENT), or allow to set custom file pointers for each message type (::CUSTOM).
+
+The ability to run a network either on standard x86 CPUs (::CPU_MODE) or off-the-shelf NVIDIA GPUs (::GPU_MODE)
+allow the user to exploit the advantages of both architectures.
+Whereas the CPU is more efficient for relatively small networks, the GPU is most advantageous fo rnetwork sizes
+of 10,000 neurons and up.
+In this regime, GPU mode should significantly outperform CPU mode (with roughly a factor of 20).
+On the other hand, CPU mode allows for execution of extremely large networks that would not fit within the GPU's
+memory.
+
+In addition, the user may want to specify on which CUDA device to run the simulation.
+For this, the CARLsim constructor allows specification of a "device index" (<tt>ithGPU</tt>, which can be used in
+multi-GPU systems to specify on which CUDA device to establish context.
+For example, in order to run a network on the third GPU in the system (<tt>ithGPU=2</tt>, 0-indexed)
+and use random seed 42, the constructor should be called as follows:
+\code
+CARLsim sim("example", GPU_MODE, USER, 2, 42);
+\endcode
+
+From then on, the simulation is in ::CONFIG_STATE, allowing the properties of the neural network to be specified.
+
+
+
+\subsection ch2s1s1_config 2.1.1 The CONFIG State
+\author Michael Beyeler
+
+Similar to PyNN and many other simulation environments, CARLsim uses groups of neurons
+(see \ref ch3_neurons_synapses_groups) and connections (see \ref ch4_connections) as an
+abstraction to aid defining synaptic connectivity.
+Different groups of neurons can be created from a one-dimensional array to a three-dimensional grid
+(see \ref ch3s3s2_topography) via CARLsim::createSpikeGeneratorGroup or CARLsim::createGroup,
+and connections can be specified depending on the relative placement of neurons via CARLsim::connect.
+This allows for the creation of networks with complex spatial structure.
+
+The present release allows users to choose from a number of synaptic plasticity mechanisms
+(see \ref ch5_synaptic_plasticity).
+These include standard equations for STP (see \ref ch5s1_short_term_plasticity),
+various forms of nearest-neighbor STDP (see \ref ch5s2_spike_timing_dependent_plasticity), and
+homeostatic synaptic plasticity in the form of synaptic scaling (see \ref ch5s3_homeostasis).
+
+For a selective list of available function calls in ::CONFIG_STATE, please refer to the left-hand side of the
+above figure.
+
+
+\subsection ch2s1s2_setup 2.1.2 The SETUP State
+\author Michael Beyeler
+
+Once the spiking network has been specified, the function CARLsim::setupNetwork optimizes the network state for
+the chosen back-end (CPU or GPU) and moves the simulation into ::SETUP_STATE.
+
+In this state, a number of monitors (see \ref ch7_monitoring) can be set up to record variables of interest 
+(e.g., spikes, weights, state variables) in binary files for off-line analysis (see \ref ch9_matlab_oat).
+New in CARLsim 3 is a means to make these data available at run-time (without the computational overhead of
+writing data to disk), which can be queried for data in the ::RUN_STATE.
+
+For example, Spike Monitors can be used to record output spikes for different neuronal groups
+(see \ref ch7s1_spike_monitor) either to a spike file (binary) or to a SpikeMonitor object.
+The former is useful for off-line analysis of activity (e.g., using \ref ch9_matlab_oat).
+The latter is useful to calculate different spike metrics and statistics on-line, such as
+mean firing rate and standard deviation, or the number of neurons whose firing rate lies
+in a certain interval.
+
+Similar monitors exist to record weights (see \ref ch7s2_connection_monitor). More monitors will
+be added in the future.
+
+
+\subsection ch2s1s3_run 2.1.3 The RUN State
+\author Michael Beyeler
+
+The first call to CARLsim::runNetwork will take the simulation into ::RUN_STATE.
+The simulation can be repeatedly run (or "stepped") for an arbitrary number of <tt>sec</tt>*1000 + <tt>msec</tt>
+milliseconds:
+\code
+sim.runNetwork(sec, msec);
+\endcode
+
+Input can be generated via current injection (see \ref ch6s2_generating_current)
+or spike injection (see \ref ch6s1_generating_spikes).
+We also provide plug-in code to create Poisson spike trains from animated visual stimuli such as sinusoidal
+gratings, plaids, and random dot fiels via the VisualStimulus MATLAB toolbox (see \ref ch6s3_visual_stimulus_toolbox).
+
+Once a network has reached ::CONFIG_STATE or ::RUN_STATE, the network state can be stored in a file for later
+processing or for restoring a specific network (see \ref ch8_saving_loading).
+The network state consists of all the synaptic connections, weights, delays, and whether the connections are plastic
+or fixed.
+Furthermore, the network can be stored after synaptic learning has occurred in order to externally analyze the
+learned synaptic patterns (for example, via a MATLAB ConnectionMonitor; see ch9s4_connection_monitor).
+
+As more complex biological features are integrated into spiking network models, it becomes increasingly important
+to provide users with a method of tuning the large number of open parameters.
+To this end, CARLsim 3 provides a paramer tuning interface that uses evolutionary algorithms to optimize a generic
+fitness function (see \ref ch10_ecj).
+A more modest approach is to use the SimpleWeightTuner utility that changes weights on-the-fly such that a certain
+group fires at a predefined target firing rate (see \ref ch12s3_online_weight_tuning).
+
+As mentioned before, once a network has been run, its activity and structure can be visualized using an
+Offline Analysis Toolbox (OAT) written in MATLAB (see \ref ch9_matlab_oat).
+In addition, the OAT provides means to access the saved data programmatically, and to store generated sequences of
+plots as an AVI file.
+
+\see \ref tut1_basic_concepts
+
+*/

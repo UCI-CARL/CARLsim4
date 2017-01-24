@@ -1,0 +1,99 @@
+/*!
+
+\page ch8_saving_loading Chapter 8: Saving and Loading
+\author Kristofor D. Carlson
+\author Michael Beyeler
+
+\tableofcontents
+
+Once a network has reached ::SETUP_STATE or ::RUN_STATE, the network state can be stored in a file
+for later processing or for restoring a specific network using the CARLsim::saveSimulation function.
+The network state consists of all the synaptic connections, weights, delays, and whether the
+connections are plastic or fixed. The network state data can be analyzed with the MATLAB
+ConnectionMonitor.
+
+Furthermore, the network state can be loaded from a file using the CARLsim::loadSimulation function
+call. However, this function can only be called in the ::CONFIG_STATE.
+
+Saving and loading network state data can be especially time-saving when an SNN is extremely large
+or if it must be trained for a long period of time.
+After training for the first run is completed and saved to file, subsequent testing runs will be
+much faster.
+
+
+\section ch8s1_savesimulation 8.1 Saving a Simulation File
+
+A network can be saved at any time in ::SETUP_STATE or ::RUN_STATE, for as many times as desired, via
+CARLsim::saveSimulation:
+\code
+#include <carlsim.h>
+CARLsim sim("saveSim", CPU_MODE, USER);
+
+// configure a network
+int gOut = sim.createGroup("gOut", 10, EXCITATORY_NEURON);
+int gIn  = sim.createSpikeGeneratorGroup("gIn", 10, EXCITATORY_NEURON);
+sim.connect(gIn, gOut, "one-to-one", RangeWeight(0.1f), 0.1f);
+// .. etc.
+
+sim.setupNetwork();
+
+// save initial network
+sim.saveSimulation("networkA.dat", true); // fileName, saveSynapseInfo
+
+// perform experiment, which might include synaptic plasticity and/or a training phase
+// etc.
+sim.runNetwork(1,0);
+
+// store network at the end of training
+sim.saveSimulation("networkZ.dat", true); // fileName, saveSynapseInfo
+\endcode
+where the user specifies a filename (e.g., "networkA.dat") and a flag whether or not to store the
+synapse information.
+In this example, "networkA.dat" will contain the network state at the beginning of the experiment,
+and "networkZ.dat" will contain the network state at the end of the experiment (which might be
+different from the beginning if there is synaptic plasticity enabled).
+If the flag <tt>saveSynapseInfo</tt> is set to true, the method will store all the synaptic connections,
+weights, delays, and whether the connections are plastic or fixed.
+The value of this flag is <tt>true</tt> by default.
+
+
+\section ch8s2_loadsimulation 8.2 Loading a Simulation File
+
+Past CARLsim networks can be loaded from file by setting up the same number of groups, connections, and neurons
+as was used to store the network via CARLsim::saveSimulation, and then calling CARLsim::loadSimulation to
+overwrite all corresponding synaptic weight and delay values from file.
+
+The following code snippet configures a network and calls CARLsim::loadSimulation with a file pointer to
+"networkA.dat", which is a file that was created with CARLsim::saveSimulation and flag <tt>saveSynapseInfo</tt>
+set to <tt>true</tt>:
+\code
+#include <carlsim.h>
+CARLsim sim("loadSim", CPU_MODE, USER);
+
+// configure the same network used with saveSimulation
+int gOut = sim.createGroup("gOut", 10, EXCITATORY_NEURON);
+int gIn  = sim.createSpikeGeneratorGroup("gIn", 10, EXCITATORY_NEURON);
+sim.connect(gIn, gOut, "one-to-one", RangeWeight(0.1f), 0.1f);
+// .. etc.
+
+// before calling setupNetwork, call loadSimulation
+FILE* fId = NULL;
+simFid = fopen("networkA.dat", "rb");
+sim.loadSimulation(fId);
+// don't fclose fId yet ...
+
+sim.setupNetwork();
+
+// ... wait until after setupNetwork is called
+fclose(fId);
+
+// perform experiment, etc.
+\endcode
+
+\note In order for CARLsim::loadSimulation to work, the configured network must have the identical number of
+groups, connections, and neurons as the one stored with CARLsim::saveSimulation.
+\note In addition, CARLsim::saveSimulation must have been called with flag <tt>saveSynapseInfo</tt> set to
+<tt>true</tt>.
+\attention Wait with calling fclose on the file pointer until ::SETUP_STATE!
+
+*/

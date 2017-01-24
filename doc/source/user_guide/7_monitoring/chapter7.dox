@@ -1,0 +1,330 @@
+/*!
+
+\page ch7_monitoring Chapter 7: Monitoring
+
+\tableofcontents
+
+
+
+\section ch7s1_spike_monitor 7.1 Spike Monitor
+
+\author Michael Beyeler
+\author Kristofor D. Carlson
+
+
+SpikeMonitors can be used to record output spikes for different neuronal groups.
+
+CARLsim supports two different recording mechanisms: Recording to a spike file (binary) and
+recording to a SpikeMonitor object.
+The former is useful for off-line analysis of activity (e.g., using \ref ch9_matlab_oat).
+The latter is useful to calculate different spike metrics and statistics on-line, such as
+mean firing rate and standard deviation, or the number of neurons whose firing rate lies
+in a certain interval.
+
+
+\subsection ch7s1s1_setting_up 7.1.1 Setting Up a Spike Monitor
+
+The easiest way to start recording the spikes of a group <tt>g0</tt> to file is to call
+the following function in CARLsim state ::CONFIG_STATE or ::SETUP_STATE:
+\code
+sim.setSpikeMonitor(g0,"DEFAULT");
+\endcode
+This will dump all spikes of the group (in AER format) to a binary, over the timecourse
+of the entire simulation. The default file name is <tt>"results/spk_{grpName}.dat"</tt>,
+where <tt>{grpName}</tt> is the name that was assigned to the group <tt>g0</tt> in
+createGroup or createSpikeGeneratorGroup.
+
+The Offline Analysis Toolbox will automatically look for names created according to this
+template, so that group or network activity can be plotted right away.
+If a custom name is used, setSpikeFileAttributes must be called in the Matlab utilities
+GroupMonitor.m or NetworkMonitor.m
+
+A custom name is passed to the function like this:
+\code
+sim.setSpikeMonitor(g0,"myDirectory/myFile.ext");
+\endcode
+However, make sure that the directory <tt>myDirectory</tt> exists.
+
+If no binary shall be created, use:
+\code
+sim.setSpikeMonitor(g0,"NULL");
+\endcode
+
+
+\subsection ch7s1s2_spike_monitor_object 7.1.2 The SpikeMonitor Object
+
+A second way to record group activity is to use the SpikeMonitor object that is returned
+by setSpikeMonitor, and query it for spike data, metrics, and statistics.
+\code
+SpikeMonitor* spkMon = sim.setSpikeMonitor(g0,"DEFAULT");
+\endcode
+
+\TODO extend
+
+
+\subsubsection ch7s1s2s1_start_stop_recording 7.1.2.1 Start and Stop Recording
+Spike data will not be recorded until the SpikeMonitor member function SpikeMonitor::startRecording
+is called. Before any metrics can be computed, the user must call SpikeMonitor::stopRecording. In
+general, a new recording period (the time period between startRecording and stopRecording calls)
+can be started at any point in time, and can last any number of milliseconds. The SpikeMonitor
+has a PersistentMode, which is off by default. When PersistentMode is off, only the last recording
+period will be considered. When PersistentMode is on, all the recording periods will be
+considered. By default, PersistentMode can be switched on/off by calling
+SpikeMonitor::setPersistentData(bool). The total time over which the metric is calculated can be
+retrieved by calling SpikeMonitor::getRecordingTotalTime().
+
+The following code starts recording spikes for the first second of the simulation then stops
+recording the spikes. The next second of simulation time is not recorded:
+
+\code
+// start recording spikes associated with spkMon object
+spkMon->startRecording();
+// run the network for one second
+sim.ruNetwork(1,0,0);
+// stop recording the spike data
+spkMon->stopRecording();
+// now run the network for two seconds
+sim.runNetwork(1,0,0);
+\endcode
+
+\warning running a SpikeMonitor in PersistentMode could use a lot of memory if your SNNs are large
+and/or your simulations are for long durations. You have been warned!
+
+\subsubsection ch7s1s2s3_spike_data 7.1.2.2 Spike Data
+There are two different modes that define what information is collected exactly, AER and COUNT mode.
+
+AER mode:   AER mode will collect the exact spike times of all neurons in the group and store them
+in a 2D spike spike vector. The first dimension of the vector is neuron id, the second dimension is
+spike times. Each element spkVector[i] is thus a vector of all spike times for the i-th neuron in
+the group. This mode is activated by default.
+
+\warning  Because of the sheer amount of information, it is unwise to run this mode for extended
+periods of time.
+
+\warning Recording in this mode may significantly slow down your simulation!
+
+COUNT mode: SpikeCount mode will only collect spike count information, such as the number of spikes
+per neuron. This mode cannot retrieve exact spike times. Thus it is not possible to calculate some
+of the more elaborate metrics, such as spike-time correlations.
+
+\subsubsection ch7s1s2s3_spike_metrics 7.1.2.3 Spike Metrics
+SpikeMonitor objects come with a number of useful metrics that allows the user to query CARLsim
+simulations programmatically. Users can get the total of number of spikes for the entire group using
+SpikeMonitor::getPopNumSpikes or the number of spikes per neuron in the group using
+SpikeMonitor::getNeuronNumSpikes. To get the maximum or minimum average firing rate of the group,
+SpikeMonitor::getMaxFiringRate or SpikeMonitor::getMinFiringRate can be used. An entire vector of
+firing rates is available using the function call SpikeMonitor::getAllFiringRates. Additionally,
+SpikeMonitor::getAllFiringRatesSorted returns the vector of firing rates for every neuron sorted.
+Another useful function is SpikeMonitor::getNumNeuronsWithFiringRate which allows users to find out
+how many neurons had an average firing rate within a specific user-specified range. These metrics
+become particularly useful when we begin to tune SNNs as we will see in \ref ch10_ecj and \ref
+ch12s3_online_weight_tuning.
+
+
+Users may want to get the AER 2D spike vector described in AER mode to do their own metrics or
+statistics, to do this, they can call SpikeMonitor::getSpikeVector2D. Users can manually clear
+the spike data stored in SpikeMonitor objects by calling SpikeMonitor::clear(). If PersistentMode
+is off this function is automatically called at the beginning of the SpikeMonitor::startRecording
+function call. Users can also print all the spiking informationin the group in legible format to the
+console with the SpikeMonitor::print call with an option for including the list of spike times for
+each neuron.
+
+Below is an example of a user printing data generated during a simulation. After that, the average
+firing rates for every neuron are output to a vector.
+
+\code
+// print a summary of the spike information
+spikeMon->print();
+// get the average firing rate of each of the neurons in group excGrpId
+vector<float> excFRs = spikeMon->getAllFiringRates();
+\endcode
+
+\subsubsection ch7s1s2s4_spike_statistics 7.1.2.4 Spike Statistics
+The average firing rate of the group as whole can be found using SpikeMonitor::getPopMeanFiringRate
+and the standard deviation can be calculated using SpikeMonitor::getPopStdFiringRate.
+A useful metric in characterizing neural activity can be found with
+SpikeMonitor::getPercentNeuronsWithFiringRate which returns the percentage of neurons found within a
+user-defined range. Code for this function is shown below.
+
+\code
+// return the percent of neurons with firing rates from 0 to 5 Hz
+spikeMon->getPercentNeuronsWithFiringRate(0.0,5.0);
+\endcode
+
+There are currently plans to include functions that calculate more in-depth statistics related to
+spike correlations and information theoretic measures in future CARLsim versions.
+
+\subsection ch7s1s3_redirecting_file_streams 7.1.3 Redirecting File Streams
+
+Using SpikeMonitor::setSpikeFile it is possible to redirect the file streams
+over the timecourse of a simulation, without having to recompile the network.
+Say, a simulation consists of three phases: 1) an initial phase, 2) a training phase,
+and 3) a testing phase.
+In such a scenario it might be desirable to store the spikes in different files,
+or, maybe in some phases, not record spikes at all.
+This can be achieved with ease using the following code snippet:
+\code
+// initial phase (don't record to file)
+SpikeMonitor* spkMon = sim.setSpikeMonitor(g0, "NULL");
+sim.runNetwork(10,0);
+
+// training phase (record to file)
+spkMon->setLogFile("training.dat");
+sim.runNetwork(10,0);
+
+// testing phase (record to different spike file)
+spkMon->setLogFile("testing.dat");
+sim.runNetwork(10,0);
+\endcode
+
+\note Instead of calling SpikeMonitor::setLogFile, you can also call CARLsim::setSpikeMonitor again on the same
+group, which has the same effect.
+
+
+\section ch7s2_connection_monitor 7.2 Connection Monitor
+\author Michael Beyeler
+
+ConnectionMonitors can be used to record synaptic weights from a specific connection.
+Instantaneous recordings of a 2D weight matrix ("snapshots") can be taken either programmatically
+or automatically every second.
+
+CARLsim supports two different recording mechanisms: Recording to a weight file (binary) and
+recording to a ConnectionMonitor object.
+The former is useful for off-line analysis of synaptic weights (e.g., using \ref ch9_matlab_oat).
+The latter is useful to calculate different weight metrics and statistics on-line, such as
+the percentage of weight values that fall in a certain weight range, or the number of weights
+that have been changed since the last snapshot.
+
+\subsection ch7s2s1_setting_up 7.2.1 Setting up a Connection Monitor
+
+The easiest way to start recording weights of a connection between pre-synaptic group <tt>grpIdPre</tt>
+and <tt>grpIdPost</tt> is to call the following function in CARLsim state ::CONFIG_STATE or ::SETUP_STATE:
+\code
+sim.setConnectionMonitor(grpIdPre,grpIdPost,"DEFAULT");
+\endcode
+This will take a snapshot of the 2D weight matrix every 1000 ms and dump the data to file.
+The default file name will be "results/conn_{name of pre-group}_{name of post-group}.dat".
+The first snapshot will be taken at t=0ms, the next one at t=1000ms, etc., until the end of the simulation
+is reached.
+
+It is also possible to specify a custom file name instead of using the "DEFAULT" name.
+Alternatively, the user may suppress creation of the binary file by using file string "NULL" instead.
+
+Periodic storing can be disabled by calling ConnectionMonitor::setUpdateTimeIntervalSec with argument
+<tt>intervalSec=-1</tt>.
+
+\since v3.0
+
+
+\subsection ch7s2s2_connection_monitor_object 7.2.2 The Connection Monitor Object
+
+An additional way to record weights is by quering the ConnectionMonitor object that is returned by
+CARLsim::setConnectionMonitor for connection data:
+\code
+ConnectionMonitor * CM = sim.setConnectionMonitor(grpIdPre,grpIdPost,"DEFAULT");
+\endcode
+where <tt>grpIdPre</tt> and <tt>grpIdPost</tt> are the IDs of the pre-synaptic and post-synaptic group, respectively.
+
+\since v3.0
+
+
+\subsubsection ch7s2s2s1_taking_snapshots 7.2.2.1 Taking Weight Snapshots
+
+Weight snapshots can also be taken programmatically, by quering the ConnectionMonitor object:
+\code
+ConnectionMonitor * CM = sim.setConnectionMonitor(grpIdPre,grpIdPost,"DEFAULT");
+std::vector< std::vector<float> > weights = CM->takeSnapshot();
+printf("The weight from pre-neuron ID 3 to post-neuron ID 7 is: %f\n",weights[3][7]);
+\endcode
+This will take an instantaneous snapshot of the weights (at the current simulation time) and return it in a 2D
+weight matrix.
+The first dimension of the matrix will be of size ConnectionMonitor::getNumNeuronsPre(), and the second dimension
+of the matrix will be of size ConnectionMonitor::getNumNeuronsPost().
+Synaptic connections in the matrix that do not exist will have value NAN and can be queried with
+<tt>isnan(wt[i][j])</tt>.
+
+Note that every snapshot taken with this method will also be dumped to file.
+If the user wants the binary file to contain only distinct snapshots as opposed to a periodic ones taken every
+second, the recording interval can be adjusted as follows:
+\code
+ConnectionMonitor * CM = sim.setConnectionMonitor(grpIdPre,grpIdPost,"DEFAULT");
+// disable periodid storing of snapshots in binary ...
+CM->setUpdateTimeIntervalSec(-1);
+
+// ... and instead take a snapshot yourself and put it in the binary
+CM->takeSnapshot();
+
+// run the network for 10 seconds
+sim.runNetwork(10,0);
+
+// take another snapshot at the end and put it in the binary
+CM->takeSnapshot();
+\endcode
+
+\note Every snapshot taken with this method will also be dumped to file.
+\since v3.0
+
+
+\subsubsection ch7s2s2s2_printing_weights 7.2.2.2 Printing Weights
+
+Weights can be printed in two ways: Either as a 2D weight matrix (pre x post) using ConnectionMonitor::print
+or as a sparse list of only existing synapses using ConnectionMonitor::printSparse:
+\code
+ConnectionMonitor * CM = sim.setConnectionMonitor(grpIdPre,grpIdPost,"DEFAULT");
+CM->print(); // print 2D weight matrix
+CM->printSparse(); // print sparse list
+\endcode
+
+ConnectionMonitor::printSparse also accepts up to three optional parameters that allow for formatting options.
+For more information see its code documentation.
+
+For more sophisticated visualization options please refer to \ref ch9_matlab_oat.
+
+\since v3.0
+
+
+\subsubsection ch7s2s2s3_weight_metrics 7.2.2.3 Weight Metrics
+
+The ConnectionMonitor class provides a number of methods useful to compute a variety of weight metrics and
+statistics.
+
+Metrics can be calculated either for the current snapshot (e.g., fan-in, fan-out)
+or by considering differences between the last two snapshots (e.g., number or percentage of weights that changed).
+
+Fan-in is the number of incoming synapses for a specific post-synaptic neuron, and can be calculated with
+ConnectionMonitor::getFanIn.
+Alternatively, ConnectionMonitor::getFanOut returns the number of outgoing synapses for a specific pre-synaptic
+neuron.
+
+Weight changes since the last snapshot can be calculated in a number of different ways.
+The number of weights whose absolute value has changed at least <tt>minAbsChanged</tt> (inclusive) since the
+last snapshot was taken can be calculated with ConnectionMonitor::getNumWeightsChanged.
+The same metric can be obtained as a percentage using ConnectionMonitor::getPercentWeightsChanged.
+
+The absolute sum of weight changes since the last snapshot can be calculated with
+ConnectionMonitor::getTotalAbsWeightChange.
+This function might be useful (for example) to run a network with plastic synapses until learning has saturated:
+\code
+// configure a network with plastic synapses
+int g0 = sim.createGroup("g0", 10, EXCITATORY_NEURON);
+int g1 = sim.createGroup("g1", 10, EXCITATORY_NEURON);
+sim.connect(g0, g1, "random", RangeWeight(0.0f,1.0f), 0.1f, RangeDelay(1,10), RadiusRF(-1), SYN_PLASTIC);
+// ... etc. ...
+sim.setupNetwork();
+
+// set a Connection Monitor
+ConnectionMonitor * CM = sim.setConnectionMonitor(g0,g1,"DEFAULT");
+
+// run network until absolute weight change is lower than some threshold value
+float threshold = 1e-2f;
+while (CM->getTotalAbsWeightChanged() > threshold) {
+	sim.runNetwork(1,0); // run for a second
+}
+
+// learning has saturated: do testing
+// etc.
+\endcode
+
+\since v3.0
+
+*/

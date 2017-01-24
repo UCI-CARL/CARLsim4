@@ -1,0 +1,55 @@
+parent.0 =                              @ec.simple.SimpleEvolutionState simple.params
+
+# Modifications to the Simple EA boiler plate
+# =========================
+eval =					ecjapp.eval.SimpleGroupedEvaluator
+generations =				151
+pop.subpop.0.size =			100
+eval.measureEvalTimes =                   true
+
+# Termination condition
+quit-on-run-complete = true
+
+# Set up our evolutionary algorithm
+# =========================
+
+pop.subpop.0.species =                  ec.vector.FloatVectorSpecies
+pop.subpop.0.species.pipe =             ec.vector.breed.VectorMutationPipeline 
+pop.subpop.0.species.pipe.likelihood =  1.0
+pop.subpop.0.species.pipe.source.0 =    ec.vector.breed.VectorCrossoverPipeline
+pop.subpop.0.species.pipe.source.0.likelihood	= 0.9
+pop.subpop.0.species.pipe.source.0.source.0 = ec.select.TournamentSelection
+pop.subpop.0.species.pipe.source.0.source.1 = same 
+select.tournament.size =                2
+
+pop.subpop.0.species.ind =              ec.vector.DoubleVectorIndividual
+pop.subpop.0.species.fitness =          ec.simple.SimpleFitness
+pop.subpop.0.species.genome-size =      8
+
+pop.subpop.0.species.min-gene =         -1.0
+pop.subpop.0.species.max-gene =         1.0
+pop.subpop.0.species.mutation-type =    gauss
+pop.subpop.0.species.mutation-stdev =   0.1
+pop.subpop.0.species.mutation-bounded = true
+pop.subpop.0.species.mutation-prob =    0.03
+
+#pop.subpop.0.species.crossover-likelihood =0.9
+#pop.subpop.0.species.crossover-prob=   0.9
+pop.subpop.0.species.crossover-type =   two 
+
+breed.elite.0 =			    	1
+breed.reevaluate-elites.0 =		false
+
+# Set up external fitness evaluation
+# =========================
+eval.problem =                          ecjapp.eval.problem.CommandProblem
+eval.problem.objective =                ecjapp.eval.problem.objective.StringToDoubleObjective
+eval.problem.objective.idealFitnessValue = 8.0
+eval.problem.simulationCommand =        $src/CARLsim-app/Examples/SumExample
+
+# Statistics
+# =========================
+stat.num-children = 1
+stat.child.0 =                          ecjapp.statistics.DoubleVectorGenomeStatistics
+stat.child.0.pVectorLength =		pop.subpop.0.species.genome-size
+stat.child.0.file =                     $genomes.csv
