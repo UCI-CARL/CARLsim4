@@ -67,6 +67,9 @@
 
 class GroupMonitor;
 class ConnectionMonitor;
+class SpikeMonitor;
+class SpikeGenerator;
+
 
 
 // Cross-platform definition (Linux, Windows)
@@ -159,15 +162,15 @@ public:
 	 * Location of the CARLsim log file can be set in any mode using setLogFile.
 	 * In mode CUSTOM, the other file pointers can be set using setLogsFpCustom.
 	 *
-	 * \param[in] netName 		network name
-	 * \param[in] simMode		either CPU_MODE or GPU_MODE
-	 * \param[in] loggerMode    either USER, DEVELOPER, SILENT, or CUSTOM
-	 * \param[in] numGPUs 		on which GPU to establish a context (only relevant in GPU_MODE)
-	 * \param[in] randSeed 		random number generator seed
+	 * \param[in] netName network name
+	 * \param[in] preferredSimMode CPU_MODE, GPU_MODE, or HYBRID_MODE
+	 * \param[in] loggerMode USER, DEVELOPER, SILENT, or CUSTOM
+	 * \param[in] ithGPUs on which GPU to establish a context (deprecated parameter)
+	 * \param[in] randSeed random number generator seed
 	 * \see setLogFile
 	 * \see setLogsFpCustom
 	 */
-	CARLsim(const std::string& netName="SNN", LoggerMode loggerMode=USER, int randSeed=-1);
+	CARLsim(const std::string& netName = "SNN", SimMode preferredSimMode = CPU_MODE, LoggerMode loggerMode = USER, int ithGPUs = 0, int randSeed = -1);
 	~CARLsim();
 
 

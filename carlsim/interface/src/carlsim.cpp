@@ -51,9 +51,8 @@
 
 //#include <callback.h>
 
-class SpikeGenerator;
-class ConnectionMonitor;
-// class SpikeMonitor;
+
+
 #include <callback_core.h>
 
 #include <iostream>		// std::cout, std::endl
@@ -81,9 +80,10 @@ class CARLsim::Impl {
 public:
 	// +++++ PUBLIC METHODS: SETUP / TEAR-DOWN ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
-	Impl(CARLsim* sim, const std::string& netName, LoggerMode loggerMode, int randSeed) {
+	Impl(CARLsim* sim, const std::string& netName, SimMode prferredSimMode, LoggerMode loggerMode, int randSeed) {
 		netName_ 					= netName;
 		loggerMode_ 				= loggerMode;
+		preferredSimMode_			= prferredSimMode;
 		randSeed_					= randSeed;
 		enablePrint_ = false;
 		copyState_ = false;
@@ -1320,7 +1320,7 @@ private:
 		UserErrors::assertTrue(loggerMode_!=UNKNOWN_LOGGER,UserErrors::CANNOT_BE_UNKNOWN,"CARLsim()","Logger mode");
 
 		// init SNN object
-		snn_ = new SNN(netName_, loggerMode_, randSeed_);
+		snn_ = new SNN(netName_, preferredSimMode_, loggerMode_, randSeed_);
 
 		// set default time constants for synaptic current decay
 		// TODO: add ref
@@ -1387,6 +1387,7 @@ private:
 	std::string netName_;       //!< network name
 	int randSeed_;              //!< RNG seed
 	LoggerMode loggerMode_;     //!< logger mode (USER, DEVELOPER, SILENT, CUSTOM)
+	SimMode preferredSimMode_;  //!< preferred simulation mode (CPU_MODE, GPU_MODE, HYBRID_MODE)
 	bool enablePrint_;
 	bool copyState_;
 
@@ -1457,8 +1458,8 @@ pthread_mutex_t CARLsim::Impl::gpuAllocationLock = PTHREAD_MUTEX_INITIALIZER;
 #endif
 
 // constructor / destructor
-CARLsim::CARLsim(const std::string& netName, LoggerMode loggerMode, int randSeed) : 
-_impl( new Impl(this, netName, loggerMode, randSeed) ) {}
+CARLsim::CARLsim(const std::string& netName, SimMode preferredSimMode, LoggerMode loggerMode, int ithGPUs, int randSeed) : 
+_impl( new Impl(this, netName, preferredSimMode, loggerMode, randSeed) ) {}
 CARLsim::~CARLsim() { delete _impl; }
 
 // connect with primitive type

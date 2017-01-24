@@ -589,4 +589,23 @@ typedef struct NetworkConfigRT_s  {
 	double sGABAb;            //!< scaling factor for GABAb amplitude
 } NetworkConfigRT;
 
+
+//! runtime spike routing table entry
+/*!
+*	This structure contains the spike routing information, including source net id, source global group id,
+*	destination net id, destination global group id
+*/
+typedef struct RoutingTableEntry_s {
+	RoutingTableEntry_s() : srcNetId(-1), destNetId(-1)	{}
+
+	RoutingTableEntry_s(int srcNetId_, int destNetId_) : srcNetId(srcNetId_), destNetId(destNetId_)	{}
+
+	int srcNetId;
+	int destNetId;
+
+	bool operator== (const struct RoutingTableEntry_s& rte) {
+		return (srcNetId == rte.srcNetId && destNetId == rte.destNetId);
+	}
+} RoutingTableEntry;
+
 #endif

@@ -117,7 +117,7 @@ public:
 	 * \param loggerMode log mode
 	 * \param randSeed randomize seed of the random number generator
 	 */
-	SNN(const std::string& name, LoggerMode loggerMode, int randSeed);
+	SNN(const std::string& name, SimMode preferredSimMode, LoggerMode loggerMode, int randSeed);
 
 	//! SNN Destructor
 	/*!
@@ -673,8 +673,10 @@ private:
 	void resetSynapse(int netId, bool changeWeights=false);
 	void resetTimeTable();
 	void resetFiringTable();
-	void routeSpikes_CPU();
-	void routeSpikes_GPU();
+	void routeSpikes();
+	//void routeSpikes_CPU();
+	//void routeSpikes_GPU();
+	void transferSpikes(void* dest, int destNetId, void* src, int srcNetId, int size);
 
 	inline SynInfo SET_CONN_ID(int nid, int sid, int grpId);
 
@@ -767,6 +769,8 @@ private:
 		unsigned int* spikeCountExtD1, unsigned int* spikeCountExtD2);
 	void copySpikeTables(int netId, cudaMemcpyKind kind);
 	void copySpikeTables(int netId);
+	void copyTimeTable(int netId, cudaMemcpyKind kind);
+	void copyTimeTable(int netId);
 
 	void deleteRuntimeData();
 	void deleteRuntimeData_CPU(int netId);
@@ -802,6 +806,9 @@ private:
 	void fetchPreConnectionInfo(int netId);
 	void fetchPostConnectionInfo(int netId);
 	void fetchSynapseState(int netId);
+	void fetchExtFiringTable(int netId);
+	void fetchTimeTable(int netId);
+	void writeBackTimeTable(int netId);
 
 	void globalStateUpdate();
 	void globalStateUpdate_CPU(int netId);
@@ -840,6 +847,10 @@ private:
 
 	void convertExtSpikesD2(int netId, int startIdx, int endIdx, int GtoLOffset);
 	void convertExtSpikesD1(int netId, int startIdx, int endIdx, int GtoLOffset);
+	void convertExtSpikesD2_CPU(int netId, int startIdx, int endIdx, int GtoLOffset);
+	void convertExtSpikesD1_CPU(int netId, int startIdx, int endIdx, int GtoLOffset);
+	void convertExtSpikesD2_GPU(int netId, int startIdx, int endIdx, int GtoLOffset);
+	void convertExtSpikesD1_GPU(int netId, int startIdx, int endIdx, int GtoLOffset);
 
 	// +++++ PRIVATE PROPERTIES +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 	SNNState snnState; //!< state of the network
@@ -847,6 +858,7 @@ private:
 
 	const std::string networkName_;	//!< network name
 	const LoggerMode loggerMode_;	//!< current logger mode (USER, DEVELOPER, SILENT, CUSTOM)
+	const SimMode preferredSimMode_;//!< preferred simulation mode
 	const int randSeed_;			//!< random number seed to use
 
 	int numGPUs;    //!< number of GPU(s) is used in the simulation
@@ -879,6 +891,8 @@ private:
 	std::list<ConnectConfig> externalConnectLists[MAX_NET_PER_SNN];
 
 	std::list<ConnectionInfo> connectionLists[MAX_NET_PER_SNN];
+
+	std::list<RoutingTableEntry> spikeRoutingTable;
 
 	float 		*mulSynFast;	//!< scaling factor for fast synaptic currents, per connection
 	float 		*mulSynSlow;	//!< scaling factor for slow synaptic currents, per connection

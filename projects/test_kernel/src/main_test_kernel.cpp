@@ -63,13 +63,13 @@ int main() {
 	int numGPUs = 2;
 	int randSeed = 42;
 	float pConn = 100.0f / (N_EXC + N_INH); // connection probability
-	CARLsim sim("test kernel", USER, randSeed);
+	CARLsim sim("test kernel", HYBRID_MODE, USER, 0, randSeed);
 
 	// configure the network
-	int gExc = sim.createGroup("exc", N_EXC, EXCITATORY_NEURON, 0, GPU_CORES);
+	int gExc = sim.createGroup("exc", N_EXC, EXCITATORY_NEURON, 0, CPU_CORES);
 	sim.setNeuronParameters(gExc, 0.02f, 0.2f, -65.0f, 8.0f); // RS
 
-	int gExc2 = sim.createGroup("exc2", N_EXC, EXCITATORY_NEURON, 1, GPU_CORES);
+	int gExc2 = sim.createGroup("exc2", N_EXC, EXCITATORY_NEURON, 1, CPU_CORES);
 	sim.setNeuronParameters(gExc2, 0.02f, 0.2f, -65.0f, 8.0f);
 
 	int gInh = sim.createGroup("inh", N_INH, INHIBITORY_NEURON, 1, GPU_CORES);
@@ -82,7 +82,7 @@ int main() {
 
 	int gInput = sim.createSpikeGeneratorGroup("input", N_EXC, EXCITATORY_NEURON, 0, GPU_CORES);
 
-	int gInput2 = sim.createSpikeGeneratorGroup("input2", N_EXC, EXCITATORY_NEURON, 1, GPU_CORES);
+	int gInput2 = sim.createSpikeGeneratorGroup("input2", N_EXC, EXCITATORY_NEURON, 2, CPU_CORES);
 
 	//FixedSpikeGenerator* f1 = new FixedSpikeGenerator();
 	//sim.setSpikeGenerator(gInput, f1);

@@ -100,6 +100,26 @@ static const char* loggerMode_string[] = {
 };
 
 /*!
+* \brief simulation mode
+*
+* CARLsim supports execution on standard x86 central processing units (CPUs) and off-the-shelf NVIDIA GPUs.
+*
+* When creating a new CARLsim object, you can set your prefferred simulation mode:
+* CPU_MODE:	run on CPU core(s)
+* GPU_MODE:	try to run on GPU card(s), if any
+* HYBRID_MODE: allow CARLsim to decide running on CPU Core(s), GPU card(s) or both
+*
+*/
+enum SimMode {
+	CPU_MODE,     //!< model is run on CPU core(s)
+	GPU_MODE,     //!< model is run on GPU card(s)
+	HYBRID_MODE   //!< model is run on CPU Core(s), GPU card(s) or both
+};
+static const char* simMode_string[] = {
+	"CPU mode","GPU mode","Hybrid mode"
+};
+
+/*!
  * \brief computing backend
  * 
  * CARLsim supports execution on standard x86 CPU Cores or off-the-shelf NVIDIA GPU (CUDA Cores) 
