@@ -3760,8 +3760,7 @@ void SNN::fetchTimeTable(int netId) {
 	if (netId < CPU_RUNTIME_BASE) { // GPU runtime
 		copyTimeTable(netId, cudaMemcpyDeviceToHost);
 	} else {
-		memcpy(managerRuntimeData.timeTableD2, runtimeData[netId].timeTableD2, sizeof(int) * (1000 + glbNetworkConfig.maxDelay + 1));
-		memcpy(managerRuntimeData.timeTableD1, runtimeData[netId].timeTableD1, sizeof(int) * (1000 + glbNetworkConfig.maxDelay + 1));
+		copyTimeTable(netId, true);
 	}
 }
 
@@ -3771,8 +3770,7 @@ void SNN::writeBackTimeTable(int netId) {
 	if (netId < CPU_RUNTIME_BASE) { // GPU runtime
 		copyTimeTable(netId, cudaMemcpyHostToDevice);
 	} else {
-		memcpy(runtimeData[netId].timeTableD2, managerRuntimeData.timeTableD2, sizeof(int)*(1000 + glbNetworkConfig.maxDelay + 1));
-		memcpy(runtimeData[netId].timeTableD1, managerRuntimeData.timeTableD1, sizeof(int)*(1000 + glbNetworkConfig.maxDelay + 1));
+		copyTimeTable(netId, false);
 	}
 }
 

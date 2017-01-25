@@ -231,6 +231,18 @@ void SNN::clearExtFiringTable_CPU(int netId) {
 	memset(runtimeData[netId].extFiringTableEndIdxD2, 0, sizeof(int) * networkConfigs[netId].numGroups);
 }
 
+void SNN::copyTimeTable(int netId, bool toManager) {
+	assert(netId >= CPU_RUNTIME_BASE);
+
+	if (toManager) {
+		memcpy(managerRuntimeData.timeTableD2, runtimeData[netId].timeTableD2, sizeof(int) * (1000 + glbNetworkConfig.maxDelay + 1));
+		memcpy(managerRuntimeData.timeTableD1, runtimeData[netId].timeTableD1, sizeof(int) * (1000 + glbNetworkConfig.maxDelay + 1));
+	} else {
+		memcpy(runtimeData[netId].timeTableD2, managerRuntimeData.timeTableD2, sizeof(int)*(1000 + glbNetworkConfig.maxDelay + 1));
+		memcpy(runtimeData[netId].timeTableD1, managerRuntimeData.timeTableD1, sizeof(int)*(1000 + glbNetworkConfig.maxDelay + 1));
+	}
+}
+
 // resets nSpikeCnt[]
 // used for management of manager runtime data
 // FIXME: make sure this is right when separating cpu_module to a standalone class

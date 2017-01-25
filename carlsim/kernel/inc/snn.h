@@ -819,7 +819,7 @@ private:
 		unsigned int* spikeCountD1, unsigned int* spikeCountD2,
 		unsigned int* spikeCountExtD1, unsigned int* spikeCountExtD2);
 	void copySpikeTables(int netId);
-	void copyTimeTable(int netId);
+	void copyTimeTable(int netId, bool toManager);
 	
 	// CPU backend: utility function
 	void firingUpdateSTP(int lNId, int lGrpId, int netId);
