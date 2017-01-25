@@ -642,9 +642,10 @@ private:
 	void printGroupInfo(int grpId);
 	void printGroupInfo(int netId, std::list<GroupConfigMD>::iterator grpIt);
 	void printSimSummary(); //!< prints a simulation summary at the end of sim
-	void printStatusConnectionMonitor(int connId=ALL);
-	void printStatusGroupMonitor(int grpId=ALL);
-	void printStatusSpikeMonitor(int grpId=ALL);
+	void printStatusConnectionMonitor(int connId = ALL);
+	void printStatusGroupMonitor(int gGrpId = ALL);
+	void printStatusSpikeMonitor(int gGrpId = ALL);
+	void printSikeRoutingInfo();
 
 	int loadSimulation_internal(bool onlyPlastic);
 
@@ -748,7 +749,7 @@ private:
 	int  allocateStaticLoad(int netId, int bufSize);
 	void checkAndSetGPUDevice(int netId);
 	void checkDestSrcPtrs(RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind, bool allocateMem, int grpId, int destOffset);
-	void configGPUDevice();
+	int configGPUDevice();
 	void initGPU(int netId);
 
 	// GPU backend: data transfer functions

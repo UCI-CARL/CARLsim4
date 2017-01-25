@@ -622,7 +622,7 @@ int SNN::runNetwork(int _nsec, int _nmsec, bool printRunSummary) {
 	// first-time run: inform the user the simulation is running now
 	if (simTime==0 && printRunSummary) {
 		KERNEL_INFO("");
-		KERNEL_INFO("******************** Running GPU Simulation on %d GPU(s) and %d CPU(s) ***************************", numGPUs, numCores);
+		KERNEL_INFO("******************** Running the simulation on %d GPU(s) and %d CPU(s) ***************************", numGPUs, numCores);
 		KERNEL_INFO("");
 	}
 
@@ -1799,12 +1799,7 @@ void SNN::SNNinit() {
 	memset(networkConfigs, 0, sizeof(NetworkConfigRT) * MAX_NET_PER_SNN);
 	
 	// reset all runtime data
-	// GPU runtime data
-	memset(runtimeData, 0, sizeof(RuntimeData) * MAX_NET_PER_SNN);
-	for (int netId = 0; netId < MAX_NET_PER_SNN; netId++) // FIXME: redundant??
-		runtimeData[netId].allocated = false;
-
-	// CPU runtime data
+	// GPU/CPU runtime data
 	memset(runtimeData, 0, sizeof(RuntimeData) * MAX_NET_PER_SNN);
 	for (int netId = 0; netId < MAX_NET_PER_SNN; netId++) // FIXME: redundant??
 		runtimeData[netId].allocated = false;
@@ -1824,7 +1819,6 @@ void SNN::SNNinit() {
 	// FIXME: use it when necessary
 	CUDA_CREATE_TIMER(timer);
 	CUDA_RESET_TIMER(timer);
-	configGPUDevice();
 }
 
 void SNN::advSimStep() {
@@ -4088,6 +4082,9 @@ double SNN::getRFDist3D(const RadiusRF& radius, const Point3D& pre, const Point3
 void SNN::partitionSNN() {
 	int numAssignedNeurons[MAX_NET_PER_SNN] = {0};
 
+	// get number of available GPU card(s) in the present machine
+	numAvailableGPUs = configGPUDevice();
+
 	for (std::map<int, GroupConfigMD>::iterator grpIt = groupConfigMDMap.begin(); grpIt != groupConfigMDMap.end(); grpIt++) {
 		// assign a group to the GPU specified by users
 		int gGrpId = grpIt->second.gGrpId;
@@ -4182,9 +4179,6 @@ void SNN::partitionSNN() {
 
 	spikeRoutingTable.unique();
 
-	for (std::list<RoutingTableEntry>::iterator rteItr = spikeRoutingTable.begin(); rteItr != spikeRoutingTable.end(); rteItr++)
-		printf("U: %d -> %d\n", rteItr->srcNetId, rteItr->destNetId);
-
 	// assign local neuron ids and, local group ids for each local network in the order
 	// MPORTANT : NEURON ORGANIZATION/ARRANGEMENT MAP
 	// <--- Excitatory --> | <-------- Inhibitory REGION ----------> | <-- Excitatory --> | <-- External -->
@@ -4245,6 +4239,9 @@ void SNN::partitionSNN() {
 				printConnectionInfo(netId, connIt);
 		}
 	}
+
+	// print spike routing table
+	printSikeRoutingInfo();
 
 	snnState = PARTITIONED_SNN;
 }
@@ -4556,10 +4553,16 @@ void SNN::generateRuntimeSNN() {
 			resetSynapse(netId, false);
 
 			allocateSNN(netId);
-
-			// Print the statistics again but dump the results to a file
-			//printMemoryInfo(fpDeb_);
 		}
+	}
+
+	// count allocated CPU/GPU runtime
+	numGPUs = 0; numCores = 0;
+	for (int netId = 0; netId < MAX_NET_PER_SNN; netId++) {
+		if (netId < CPU_RUNTIME_BASE && runtimeData[netId].allocated)
+			numGPUs++;
+		if (netId >= CPU_RUNTIME_BASE && runtimeData[netId].allocated)
+			numCores++;
 	}
 
 	// 5. declare the spiking neural network is excutable

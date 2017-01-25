@@ -290,4 +290,11 @@ void SNN::printGroupInfo(int netId, std::list<GroupConfigMD>::iterator grpIt) {
 	}
 }
 
+void SNN::printSikeRoutingInfo() {
+	if (!spikeRoutingTable.empty()) {
+		KERNEL_INFO("*****************          Spike Routing Table          *************************");
+		for (std::list<RoutingTableEntry>::iterator rteItr = spikeRoutingTable.begin(); rteItr != spikeRoutingTable.end(); rteItr++)
+			KERNEL_INFO("    |-Source net:[%d] -> Destination net[%d]", rteItr->srcNetId, rteItr->destNetId);
+	}
+}
 

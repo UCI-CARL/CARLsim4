@@ -3121,7 +3121,7 @@ void SNN::copyTimeTable(int netId, cudaMemcpyKind kind) {
 	}
 } 
 
-void SNN::configGPUDevice() {
+int SNN::configGPUDevice() {
 	int devCount, devMax;
 	cudaDeviceProp deviceProp;
 
@@ -3131,8 +3131,6 @@ void SNN::configGPUDevice() {
 
 	devMax = CUDA_GET_MAXGFLOP_DEVICE_ID();
 	KERNEL_INFO("  - CUDA device ID with max GFLOPs  = %9d", devMax);
-
-	numAvailableGPUs = devCount;
 
 	for (int ithGPU = 0; ithGPU < devCount; ithGPU++) {
 		CUDA_CHECK_ERRORS(cudaGetDeviceProperties(&deviceProp, ithGPU));
@@ -3169,6 +3167,8 @@ void SNN::configGPUDevice() {
 			KERNEL_INFO("* Peer Access is not enabled");
 		}
 	}
+
+	return devCount;
 }
 
 void SNN::convertExtSpikesD2_GPU(int netId, int startIdx, int endIdx, int GtoLOffset) {
