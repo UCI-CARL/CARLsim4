@@ -581,14 +581,8 @@ private:
 	void connectRandom(int netId, std::list<ConnectConfig>::iterator connIt, bool isExternal);
 	void connectGaussian(int netId, std::list<ConnectConfig>::iterator connIt, bool isExternal);
 	void connectUserDefined(int netId, std::list<ConnectConfig>::iterator connIt, bool isExternal);
-	void clearExtFiringTable();
-	void clearExtFiringTable_CPU(int netId);
-	void clearExtFiringTable_GPU(int netId);
 
 	void deleteObjects();			//!< deallocates all used data structures in snn_cpu.cpp
-
-	void doCurrentUpdateD1(int netId);
-	void doCurrentUpdateD2(int netId);
 
 	void findMaxNumSynapsesGroups(int* _maxNumPostSynGrp, int* _maxNumPreSynGrp);
 	void findMaxNumSynapsesNeurons(int _netId, int& _maxNumPostSynN, int& _maxNumPreSynN);
@@ -623,8 +617,6 @@ private:
 
 	void generateRuntimeSNN();
 
-	void allocateSNN(int netId);
-
 	/*!
 	 * \brief generates spike times according to a Poisson process
 	 *
@@ -645,8 +637,6 @@ private:
      */
 	//int poissonSpike(int currTime, float frate, int refractPeriod);
 
-	// NOTE: all these printer functions should be in printSNNInfo.cpp
-	// FIXME: are any of these actually supposed to be public?? they are not yet in carlsim.h
 	void printConnectionInfo(short int connId);
 	void printConnectionInfo(int netId, std::list<ConnectConfig>::iterator connIt);
 	void printGroupInfo(int grpId);
@@ -674,9 +664,8 @@ private:
 	void resetTimeTable();
 	void resetFiringTable();
 	void routeSpikes();
-	//void routeSpikes_CPU();
-	//void routeSpikes_GPU();
 	void transferSpikes(void* dest, int destNetId, void* src, int srcNetId, int size);
+	void resetGPUTiming();
 
 	inline SynInfo SET_CONN_ID(int nid, int sid, int grpId);
 
@@ -685,6 +674,8 @@ private:
 
 	void startCPUTiming();
 	void stopCPUTiming();
+	void startGPUTiming();
+	void stopGPUTiming();
 
 	void generateUserDefinedSpikes();
 
@@ -692,102 +683,23 @@ private:
 
 	bool updateTime(); //!< updates simTime, returns true when a new second is started
 
-	void allocateGroupId(int netId);
-	void allocateSNN_GPU(int netId); //!< allocates runtime data on GPU memory and initialize GPU
-	void allocateSNN_CPU(int netId); //!< allocates runtime data on CPU memory
-	int  allocateStaticLoad(int netId, int bufSize);
-
-	void assignPoissonFiringRate_CPU(int netId);
-	void assignPoissonFiringRate_GPU(int netId);
-
-	void checkAndSetGPUDevice(int netId);
-	void checkDestSrcPtrs(RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind, bool allocateMem, int grpId, int destOffset);
-	void configGPUDevice();
-
-	void copyAuxiliaryData(int netId, int lGrpId, RuntimeData* dest, cudaMemcpyKind kind, bool allocateMem);
-	void copyAuxiliaryData(int netId, int lGrpId, RuntimeData* dest, bool allocateMem);
-	void copyConductanceAMPA(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind, bool allocateMem, int destOffset);
-	void copyConductanceAMPA(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, bool allocateMem, int destOffset);
-	void copyConductanceNMDA(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind, bool allocateMem, int destOffset);
-	void copyConductanceNMDA(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, bool allocateMem, int destOffset);
-	void copyConductanceGABAa(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind, bool allocateMem, int destOffset);
-	void copyConductanceGABAa(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, bool allocateMem, int destOffset);
-	void copyConductanceGABAb(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind, bool allocateMem, int destOffset);
-	void copyConductanceGABAb(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, bool allocateMem, int destOffset);
-	void copyPreConnectionInfo(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind, bool allocateMem);
-	void copyPreConnectionInfo(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, bool allocateMem);
-	void copyPostConnectionInfo(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind, bool allocateMem);
-	void copyPostConnectionInfo(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, bool allocateMem);
-	void copyExternalCurrent(int netId, int lGrpId, RuntimeData* dest, cudaMemcpyKind kind, bool allocateMem);
-	void copyExternalCurrent(int netId, int lGrpId, RuntimeData* dest, bool allocateMem);
-
-	/*!
-	 * \brief Copy neuron parameters (Izhikevich params, baseFiring) from host to device pointer
-	 *
-	 * This function copies the neuron parameters (Izh_a, Izh_b, Izh_c, Izh_d, baseFiring, baseFiringInv) from the
-	 * host variables to a device pointer.
-	 *
-	 * In contrast to other copy methods, this one does not need the source pointer or a cudaMemcpyKind, because the
-	 * copy process can only go from host to device. Thus, the source is always Izh_a, Izh_b, etc. variables, and
-	 * cudaMemcpyKind is always cudaMemcpyHostToDevice.
-	 *
-	 * If allocateMem is set to true, then cudaMalloc is called first on the data structures, before contents are
-	 * copied. If allocateMem is false, only the contents will be copied.
-	 *
-	 * If grpId is set to -1, then the information of all groups will be copied. Otherwise the information of only
-	 * a single group will be copied. If allocateMem is set to true, grpId must be set to -1 (must allocate all groups
-	 * at the same time in order to avoid memory fragmentation).
-	 */
-	void copyNeuronParameters(int netId, int lGrpId, RuntimeData* dest, cudaMemcpyKind kind, bool allocateMem);
-	void copyNeuronParameters(int netId, int lGrpId, RuntimeData* dest, bool allocateMem);
-
-	void copyGroupState(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind, bool allocateMem);
-	void copyGroupState(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, bool allocateMem);
-	void copyNeuronState(int netId, int lGrpId, RuntimeData* dest, cudaMemcpyKind kind, bool allocateMem);
-	void copyNeuronState(int netId, int lGrpId, RuntimeData* dest, bool allocateMem);
-	void copyNeuronSpikeCount(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind, bool allocateMem, int destOffset);
-	void copyNeuronSpikeCount(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, bool allocateMem, int destOffset);
-	void copySynapseState(int netId, RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind, bool allocateMem);
-	void copySynapseState(int netId, RuntimeData* dest, RuntimeData* src, bool allocateMem);
-	void copySTPState(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind, bool allocateMem);
-	void copySTPState(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, bool allocateMem);
-	void copyWeightState(int netId, int lGrpId, cudaMemcpyKind kind);
-	void copyWeightState(int netId, int lGrpId);
-	void copyNetworkConfig(int netId);
-	void copyGroupConfigs(int netId);
-	void copyGrpIdsLookupArray(int netId, cudaMemcpyKind kind);
-	void copyGrpIdsLookupArray(int netId);
-	void copyConnIdsLookupArray(int netId, cudaMemcpyKind kind);
-	void copyConnIdsLookupArray(int netId);
-	void copyLastSpikeTime(int netId, cudaMemcpyKind kind);
-	void copyLastSpikeTime(int netId);
-	void copyNetworkSpikeCount(int netId, cudaMemcpyKind kind,
-		unsigned int* spikeCountD1, unsigned int* spikeCountD2,
-		unsigned int* spikeCountExtD1, unsigned int* spikeCountExtD2);
-	void copyNetworkSpikeCount(int netId,
-		unsigned int* spikeCountD1, unsigned int* spikeCountD2,
-		unsigned int* spikeCountExtD1, unsigned int* spikeCountExtD2);
-	void copySpikeTables(int netId, cudaMemcpyKind kind);
-	void copySpikeTables(int netId);
-	void copyTimeTable(int netId, cudaMemcpyKind kind);
-	void copyTimeTable(int netId);
-
-	void deleteRuntimeData();
-	void deleteRuntimeData_CPU(int netId);
-	void deleteRuntimeData_GPU(int netId);		//!< deallocates all used data structures in snn_gpu.cu
+	// Abstract layer for setupNetwork() and runNetwork()
+	void allocateSNN(int netId);
+	void clearExtFiringTable();
+	void convertExtSpikesD1(int netId, int startIdx, int endIdx, int GtoLOffset);
+	void convertExtSpikesD2(int netId, int startIdx, int endIdx, int GtoLOffset);	
 	void doCurrentUpdate();
-	void doCurrentUpdateD2_CPU(int netId);
-	void doCurrentUpdateD2_GPU(int netId);
-	void doCurrentUpdateD1_CPU(int netId);
-	void doCurrentUpdateD1_GPU(int netId);
 	void doSTPUpdateAndDecayCond();
-	void doSTPUpdateAndDecayCond_CPU(int netId);
-	void doSTPUpdateAndDecayCond_GPU(int netId);
+	void deleteRuntimeData();
 	void findFiring();
-	void findFiring_CPU(int netId);
-	void findFiring_GPU(int netId);
+	void globalStateUpdate();
+	void resetSpikeCnt(int gGrpId);
+	void shiftSpikeTables();
+	void spikeGeneratorUpdate();
+	void updateTimingTable();
+	void updateWeights();
 
-	// fetch functions supporting local-to-global copy
+	// Abstract layer for trasferring data (local-to-global copy)
 	void fetchConductanceAMPA(int gGrpId);
 	void fetchConductanceNMDA(int gGrpId);
 	void fetchConductanceGABAa(int gGrpId);
@@ -795,8 +707,8 @@ private:
 	void fetchNetworkSpikeCount();
 	void fetchNeuronSpikeCount(int gGrpId);
 	void fetchSTPState(int gGrpId);
-	
-	// fetch functions supporting local-to-local copy
+
+	// Abstract layer for trasferring data (local-to-local copy)
 	void fetchSpikeTables(int netId);
 	void fetchGroupState(int netId, int lGrpId);
 	void fetchWeightState(int netId, int lGrpId);
@@ -810,47 +722,111 @@ private:
 	void fetchTimeTable(int netId);
 	void writeBackTimeTable(int netId);
 
-	void globalStateUpdate();
-	void globalStateUpdate_CPU(int netId);
+	// GPU implementation for setupNetwork() and runNetwork()
+	void allocateSNN_GPU(int netId); //!< allocates runtime data on GPU memory and initialize GPU
+	void assignPoissonFiringRate_GPU(int netId);
+	void clearExtFiringTable_GPU(int netId);
+	void convertExtSpikesD1_GPU(int netId, int startIdx, int endIdx, int GtoLOffset);
+	void convertExtSpikesD2_GPU(int netId, int startIdx, int endIdx, int GtoLOffset);
+	void doCurrentUpdateD1_GPU(int netId);
+	void doCurrentUpdateD2_GPU(int netId);
+	void doSTPUpdateAndDecayCond_GPU(int netId);
+	void deleteRuntimeData_GPU(int netId);		//!< deallocates all used data structures in snn_gpu.cu
+	void findFiring_GPU(int netId);
 	void globalStateUpdate_C_GPU(int netId);
 	void globalStateUpdate_N_GPU(int netId);
 	void globalStateUpdate_G_GPU(int netId);
-	void initGPU(int netId);
-
-	void resetGPUTiming();
-	void resetSpikeCnt(int gGrpId);
-	void resetSpikeCnt_CPU(int netId, int lGrpId); //!< Resets the spike count for a particular group.
 	void resetSpikeCnt_GPU(int netId, int lGrpId); //!< Utility function to clear spike counts in the GPU code.
-
-	void spikeGeneratorUpdate();
-	void spikeGeneratorUpdate_CPU(int netId);
-	void spikeGeneratorUpdate_GPU(int netId);
-	void startGPUTiming();
-	void stopGPUTiming();
-	void shiftSpikeTables();
-	void shiftSpikeTables_CPU(int netId);
 	void shiftSpikeTables_F_GPU(int netId);
 	void shiftSpikeTables_T_GPU(int netId);
-	void updateWeights();
-	void updateWeights_CPU(int netId);
-	void updateWeights_GPU(int netId);
-	void updateTimingTable();
-	void updateTimingTable_CPU(int netId);
+	void spikeGeneratorUpdate_GPU(int netId);
 	void updateTimingTable_GPU(int netId);
+	void updateWeights_GPU(int netId);
+
+	// GPU backend: utility function
+	void allocateGroupId(int netId);
+	int  allocateStaticLoad(int netId, int bufSize);
+	void checkAndSetGPUDevice(int netId);
+	void checkDestSrcPtrs(RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind, bool allocateMem, int grpId, int destOffset);
+	void configGPUDevice();
+	void initGPU(int netId);
+
+	// GPU backend: data transfer functions
+	void copyAuxiliaryData(int netId, int lGrpId, RuntimeData* dest, cudaMemcpyKind kind, bool allocateMem);
+	void copyConductanceAMPA(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind, bool allocateMem, int destOffset);
+	void copyConductanceNMDA(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind, bool allocateMem, int destOffset);
+	void copyConductanceGABAa(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind, bool allocateMem, int destOffset);
+	void copyConductanceGABAb(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind, bool allocateMem, int destOffset);
+	void copyPreConnectionInfo(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind, bool allocateMem);
+	void copyPostConnectionInfo(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind, bool allocateMem);
+	void copyExternalCurrent(int netId, int lGrpId, RuntimeData* dest, cudaMemcpyKind kind, bool allocateMem);
+	void copyNeuronParameters(int netId, int lGrpId, RuntimeData* dest, cudaMemcpyKind kind, bool allocateMem);
+	void copyGroupState(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind, bool allocateMem);
+	void copyNeuronState(int netId, int lGrpId, RuntimeData* dest, cudaMemcpyKind kind, bool allocateMem);
+	void copyNeuronSpikeCount(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind, bool allocateMem, int destOffset);
+	void copySynapseState(int netId, RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind, bool allocateMem);
+	void copySTPState(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind, bool allocateMem);
+	void copyWeightState(int netId, int lGrpId, cudaMemcpyKind kind);
+	void copyNetworkConfig(int netId);
+	void copyGroupConfigs(int netId);
+	void copyGrpIdsLookupArray(int netId, cudaMemcpyKind kind);
+	void copyConnIdsLookupArray(int netId, cudaMemcpyKind kind);
+	void copyLastSpikeTime(int netId, cudaMemcpyKind kind);
+	void copyNetworkSpikeCount(int netId, cudaMemcpyKind kind,
+		unsigned int* spikeCountD1, unsigned int* spikeCountD2,
+		unsigned int* spikeCountExtD1, unsigned int* spikeCountExtD2);
+	void copySpikeTables(int netId, cudaMemcpyKind kind);
+	void copyTimeTable(int netId, cudaMemcpyKind kind);
+
+	// CPU implementation for setupNetwork() and runNetwork()
+	void assignPoissonFiringRate_CPU(int netId);
+	void allocateSNN_CPU(int netId); //!< allocates runtime data on CPU memory
+	void clearExtFiringTable_CPU(int netId);
+	void convertExtSpikesD2_CPU(int netId, int startIdx, int endIdx, int GtoLOffset);
+	void convertExtSpikesD1_CPU(int netId, int startIdx, int endIdx, int GtoLOffset);
+	void doCurrentUpdateD2_CPU(int netId);
+	void doCurrentUpdateD1_CPU(int netId);
+	void doSTPUpdateAndDecayCond_CPU(int netId);
+	void deleteRuntimeData_CPU(int netId);
+	void findFiring_CPU(int netId);
+	void globalStateUpdate_CPU(int netId);
+	void resetSpikeCnt_CPU(int netId, int lGrpId); //!< Resets the spike count for a particular group.
+	void shiftSpikeTables_CPU(int netId);
+	void spikeGeneratorUpdate_CPU(int netId);
+	void updateTimingTable_CPU(int netId);
+	void updateWeights_CPU(int netId);
+
+	// CPU computing backend: data transfer function
+	void copyAuxiliaryData(int netId, int lGrpId, RuntimeData* dest, bool allocateMem);
+	void copyConductanceAMPA(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, bool allocateMem, int destOffset);
+	void copyConductanceNMDA(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, bool allocateMem, int destOffset);
+	void copyConductanceGABAa(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, bool allocateMem, int destOffset);
+	void copyConductanceGABAb(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, bool allocateMem, int destOffset);
+	void copyPreConnectionInfo(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, bool allocateMem);
+	void copyPostConnectionInfo(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, bool allocateMem);
+	void copyExternalCurrent(int netId, int lGrpId, RuntimeData* dest, bool allocateMem);
+	void copyNeuronParameters(int netId, int lGrpId, RuntimeData* dest, bool allocateMem);	
+	void copyGroupState(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, bool allocateMem);	
+	void copyNeuronState(int netId, int lGrpId, RuntimeData* dest, bool allocateMem);	
+	void copyNeuronSpikeCount(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, bool allocateMem, int destOffset);	
+	void copySynapseState(int netId, RuntimeData* dest, RuntimeData* src, bool allocateMem);	
+	void copySTPState(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, bool allocateMem);	
+	void copyWeightState(int netId, int lGrpId);
+	void copyGrpIdsLookupArray(int netId);
+	void copyConnIdsLookupArray(int netId);
+	void copyLastSpikeTime(int netId);
+	void copyNetworkSpikeCount(int netId,
+		unsigned int* spikeCountD1, unsigned int* spikeCountD2,
+		unsigned int* spikeCountExtD1, unsigned int* spikeCountExtD2);
+	void copySpikeTables(int netId);
+	void copyTimeTable(int netId);
 	
-	// Utility functions
+	// CPU backend: utility function
 	void firingUpdateSTP(int lNId, int lGrpId, int netId);
 	void updateLTP(int lNId, int lGrpId, int netId);
 	void resetFiredNeuron(int lNId, short int lGrpId, int netId);
 	bool getPoissonSpike(int lNId, int netId);
 	bool getSpikeGenBit(unsigned int nIdPos, int netId);
-
-	void convertExtSpikesD2(int netId, int startIdx, int endIdx, int GtoLOffset);
-	void convertExtSpikesD1(int netId, int startIdx, int endIdx, int GtoLOffset);
-	void convertExtSpikesD2_CPU(int netId, int startIdx, int endIdx, int GtoLOffset);
-	void convertExtSpikesD1_CPU(int netId, int startIdx, int endIdx, int GtoLOffset);
-	void convertExtSpikesD2_GPU(int netId, int startIdx, int endIdx, int GtoLOffset);
-	void convertExtSpikesD1_GPU(int netId, int startIdx, int endIdx, int GtoLOffset);
 
 	// +++++ PRIVATE PROPERTIES +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 	SNNState snnState; //!< state of the network
