@@ -739,16 +739,15 @@ void  SNN::globalStateUpdate_CPU(int netId) {
 
 				u += (runtimeData[netId].Izh_a[lNId] * (runtimeData[netId].Izh_b[lNId] * v - u) / COND_INTEGRATION_SCALE);
 			}
+
 			if (networkConfigs[netId].sim_with_conductances) {
 				runtimeData[netId].current[lNId] = I_sum;
-			}
-			else {
+			} else {
 				// current must be reset here for CUBA and not STPUpdateAndDecayConductances
 				runtimeData[netId].current[lNId] = 0.0f;
 			}
 			runtimeData[netId].voltage[lNId] = v;
 			runtimeData[netId].recovery[lNId] = u;
-
 			// P8
 			// update average firing rate for homeostasis
 			if (groupConfigs[netId][lGrpId].WithHomeostasis)

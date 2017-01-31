@@ -2506,6 +2506,7 @@ void SNN::generateConnectionRuntime(int netId) {
 
 	// generate postSynapticIds
 	connectionLists[netId].sort(compareSrcNeuron); // sort by local nSrc id
+	memset(managerRuntimeData.postDelayInfo, 0, sizeof(DelayInfo) * (networkConfigs[netId].numNAssigned * (glbNetworkConfig.maxDelay + 1)));
 	for (int lNId = 0; lNId < networkConfigs[netId].numNAssigned; lNId++) { // pre-neuron order, local nId
 		if (managerRuntimeData.Npost[lNId] > 0) {
 			std::list<ConnectionInfo> postConnectionList;
@@ -2522,7 +2523,7 @@ void SNN::generateConnectionRuntime(int netId) {
 
 			int post_pos, pre_pos, lastDelay = 0;
 			parsedConnections = 0;
-			memset(&managerRuntimeData.postDelayInfo[lNId * (glbNetworkConfig.maxDelay + 1)], 0, sizeof(DelayInfo) * (glbNetworkConfig.maxDelay + 1));
+			//memset(&managerRuntimeData.postDelayInfo[lNId * (glbNetworkConfig.maxDelay + 1)], 0, sizeof(DelayInfo) * (glbNetworkConfig.maxDelay + 1));
 			for (std::list<ConnectionInfo>::iterator connIt = postConnectionList.begin(); connIt != postConnectionList.end(); connIt++) {
 				assert(connIt->nSrc + GLoffset[connIt->grpSrc] == lNId);
 				post_pos = managerRuntimeData.cumulativePost[connIt->nSrc + GLoffset[connIt->grpSrc]] + managerRuntimeData.Npost[connIt->nSrc + GLoffset[connIt->grpSrc]];
