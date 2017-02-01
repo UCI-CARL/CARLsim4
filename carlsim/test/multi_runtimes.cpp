@@ -190,8 +190,11 @@ TEST(MultiRuntimes, shuffleGroups) {
 							smExc->stopRecording();
 							smInh->stopRecording();
 
-							printf("[%d,%d][%d,%d][%d,%d]\n", partitionA, modeA, partitionB, modeB, partitionC, modeC);
-							printf("%f,%f,%f\n", smExc->getPopMeanFiringRate(), smInh->getPopMeanFiringRate(), smInput->getPopMeanFiringRate());
+							//printf("[%d,%d][%d,%d][%d,%d]\n", partitionA, modeA, partitionB, modeB, partitionC, modeC);
+							//printf("%f,%f,%f\n", smExc->getPopMeanFiringRate(), smInh->getPopMeanFiringRate(), smInput->getPopMeanFiringRate());
+							EXPECT_NEAR(smExc->getPopMeanFiringRate(), 6.3, 0.2);
+							EXPECT_NEAR(smInh->getPopMeanFiringRate(), 29.0, 2.0);
+							EXPECT_NEAR(smInput->getPopMeanFiringRate(), 1.0, 0.1);
 
 							delete sim;
 						}
