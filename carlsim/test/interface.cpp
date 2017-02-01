@@ -416,32 +416,6 @@ TEST(Interface, setNeuronParametersDeath) {
 		delete sim;
 }
 
-TEST(Interface, CARLsimConstructorDeathGPU) {
-	::testing::FLAGS_gtest_death_test_style = "threadsafe";
-
-	CARLsim *sim1=NULL, *sim2=NULL;
-	EXPECT_DEATH({sim1 = new CARLsim("Interface.CARLsimConstructorDeathGPU", GPU_MODE, SILENT, -1);},"");
-	EXPECT_DEATH({sim2 = new CARLsim("Interface.CARLsimConstructorDeathGPU", GPU_MODE, SILENT, 42);},"");
-
-	if (sim1 != NULL) delete sim1;
-	if (sim2 != NULL) delete sim2;
-}
-
-TEST(Interface, AllocateGPUConflict) {
-	::testing::FLAGS_gtest_death_test_style = "threadsafe";
-
-	CARLsim *sim1=NULL, *sim2=NULL;
-
-	sim1 = new CARLsim("Interface.AllocateGPUConflict_A", GPU_MODE, SILENT, 1);
-	EXPECT_DEATH({sim2 = new CARLsim("Interface.AllocateGPUConflict_B", GPU_MODE, SILENT, 1);},"");
-	if (sim1 != NULL) delete sim1;
-
-	sim1 = new CARLsim("Interface.AllocateGPUConflict", GPU_MODE, SILENT, 1);
-
-	if (sim1 != NULL) delete sim1;
-	if (sim2 != NULL) delete sim2;
-}
-
 //! trigger all UserErrors
 TEST(Interface, setDefaultConductanceTimeConstants) {
 	::testing::FLAGS_gtest_death_test_style = "threadsafe";
@@ -477,7 +451,6 @@ TEST(Interface, CARLsimState) {
 	EXPECT_DEATH({sim->saveSimulation("test.dat", true);},"");
 	EXPECT_DEATH({sim->setSpikeRate(g1, NULL);},"");
 	EXPECT_DEATH({sim->getDelays(0, 1, i, j);},"");
-	EXPECT_DEATH({sim->getGroupId("hello");},"");
 	EXPECT_DEATH({sim->getGroupStartNeuronId(0);},"");
 	EXPECT_DEATH({sim->getGroupEndNeuronId(0);},"");
 	EXPECT_DEATH({sim->getNeuronLocation3D(0);},"");

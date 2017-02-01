@@ -30,7 +30,7 @@
     <ClCompile Include="cuba.cpp" />
     <ClCompile Include="group_mon.cpp" />
     <ClCompile Include="interface.cpp" />
-    <ClCompile Include="multi_gpus.cpp" />
+    <ClCompile Include="multi_runtimes.cpp" />
     <ClCompile Include="poiss_rate.cpp" />
     <ClCompile Include="spike_gen.cpp" />
     <ClCompile Include="spike_mon.cpp" />

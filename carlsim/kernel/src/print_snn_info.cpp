@@ -245,6 +245,7 @@ void SNN::printGroupInfo(int gGrpId) {
 }
 
 void SNN::printGroupInfo(int netId, std::list<GroupConfigMD>::iterator grpIt) {
+	int gGrpId = grpIt->gGrpId;
 	KERNEL_INFO("  |-+ %s Group %s(G:%d,L:%d): ", netId == grpIt->netId ? "Local" : "External", groupConfigMap[grpIt->gGrpId].grpName.c_str(), grpIt->gGrpId, grpIt->lGrpId);
 	KERNEL_INFO("    |- Type                       =  %s", isExcitatoryGroup(grpIt->gGrpId) ? "  EXCIT" :
 		(isInhibitoryGroup(grpIt->gGrpId) ? "  INHIB" : (isPoissonGroup(grpIt->gGrpId)?" POISSON" :
@@ -255,60 +256,45 @@ void SNN::printGroupInfo(int netId, std::list<GroupConfigMD>::iterator grpIt) {
 	KERNEL_INFO("    |- numPostSynapses            = %8d", grpIt->numPostSynapses);
 	KERNEL_INFO("    |- numPreSynapses             = %8d", grpIt->numPreSynapses);
 
-	//if (snnState == EXECUTABLE_SNN) {
-	//	KERNEL_INFO("  - Avg post connections       = %8.5f", ((float)groupInfo[grpId].numPostConn)/groupConfigMap[grpId].SizeN);
-	//	KERNEL_INFO("  - Avg pre connections        = %8.5f",  ((float)groupInfo[grpId].numPreConn)/groupConfigMap[grpId].SizeN);
-	//}
+	if (snnState == EXECUTABLE_SNN) {
+		KERNEL_INFO("    |- Avg post connections       = %8.5f", ((float)grpIt->numPostSynapses) / groupConfigMap[gGrpId].numN);
+		KERNEL_INFO("    |- Avg pre connections        = %8.5f", ((float)grpIt->numPreSynapses) / groupConfigMap[gGrpId].numN);
+	}
 
-	// ToDo: does refract period work?!
-	//if(grpIt->Type&POISSON_NEURON) {
-	//	KERNEL_INFO("    |- Refractory period          = %8.5f", grpIt->RefractPeriod);
-	//}
+	if (groupConfigMap[gGrpId].type & POISSON_NEURON) {
+		KERNEL_INFO("    |- Refractory period          = %8.5f", grpIt->refractPeriod);
+	}
 
-	// ToDo: fix STP printing
-	//if (grpIt->WithSTP) {
-	//	KERNEL_INFO("    |- STP:");
-	//	KERNEL_INFO("        |- STP_A                  = %8.5f", grpIt->STP_A);
-	//	KERNEL_INFO("        |- STP_U                  = %8.5f", grpIt->STP_U);
-	//	KERNEL_INFO("        |- STP_tau_u              = %8d", (int) (1.0f/grpIt->STP_tau_u_inv));
-	//	KERNEL_INFO("        |- STP_tau_x              = %8d", (int) (1.0f/grpIt->STP_tau_x_inv));
-	//}
+	if (groupConfigMap[gGrpId].stpConfig.WithSTP) {
+		KERNEL_INFO("    |-+ STP:");
+		KERNEL_INFO("      |- STP_A                  = %8.5f", groupConfigMap[gGrpId].stpConfig.STP_A);
+		KERNEL_INFO("      |- STP_U                  = %8.5f", groupConfigMap[gGrpId].stpConfig.STP_U);
+		KERNEL_INFO("      |- STP_tau_u              = %8d", (int)(1.0f / groupConfigMap[gGrpId].stpConfig.STP_tau_u_inv));
+		KERNEL_INFO("      |- STP_tau_x              = %8d", (int)(1.0f / groupConfigMap[gGrpId].stpConfig.STP_tau_x_inv));
+	}
 
-	// ToDo: change to connection-base STDP
-	//if(grpIt->WithSTDP) {
-	//	KERNEL_INFO("    |- STDP:")
-	//	KERNEL_INFO("        |- E-STDP TYPE            = %s",     grpIt->WithESTDPtype==STANDARD? "STANDARD" :
-	//		(grpIt->WithESTDPtype==DA_MOD?"  DA_MOD":" UNKNOWN"));
-	//	KERNEL_INFO("        |- I-STDP TYPE            = %s",     grpIt->WithISTDPtype==STANDARD? "STANDARD" :
-	//		(grpIt->WithISTDPtype==DA_MOD?"  DA_MOD":" UNKNOWN"));
-	//	KERNEL_INFO("        |- ALPHA_PLUS_EXC         = %8.5f", grpIt->ALPHA_PLUS_EXC);
-	//	KERNEL_INFO("        |- ALPHA_MINUS_EXC        = %8.5f", grpIt->ALPHA_MINUS_EXC);
-	//	KERNEL_INFO("        |- TAU_PLUS_INV_EXC       = %8.5f", grpIt->TAU_PLUS_INV_EXC);
-	//	KERNEL_INFO("        |- TAU_MINUS_INV_EXC      = %8.5f", grpIt->TAU_MINUS_INV_EXC);
-	//	KERNEL_INFO("        |- BETA_LTP               = %8.5f", grpIt->BETA_LTP);
-	//	KERNEL_INFO("        |- BETA_LTD               = %8.5f", grpIt->BETA_LTD);
-	//	KERNEL_INFO("        |- LAMBDA                 = %8.5f", grpIt->LAMBDA);
-	//	KERNEL_INFO("        |- DELTA                  = %8.5f", grpIt->DELTA);
-	//}
+	if (groupConfigMap[gGrpId].stdpConfig.WithSTDP) {
+		KERNEL_INFO("    |-+ STDP:")
+		KERNEL_INFO("      |- E-STDP TYPE            = %s", groupConfigMap[gGrpId].stdpConfig.WithESTDPtype == STANDARD ? "STANDARD" :
+			(groupConfigMap[gGrpId].stdpConfig.WithESTDPtype == DA_MOD ? "  DA_MOD" : " UNKNOWN"));
+		KERNEL_INFO("      |- I-STDP TYPE            = %s", groupConfigMap[gGrpId].stdpConfig.WithISTDPtype == STANDARD ? "STANDARD" :
+			(groupConfigMap[gGrpId].stdpConfig.WithISTDPtype == DA_MOD ? "  DA_MOD" : " UNKNOWN"));
+		KERNEL_INFO("      |- ALPHA_PLUS_EXC         = %8.5f", groupConfigMap[gGrpId].stdpConfig.ALPHA_PLUS_EXC);
+		KERNEL_INFO("      |- ALPHA_MINUS_EXC        = %8.5f", groupConfigMap[gGrpId].stdpConfig.ALPHA_MINUS_EXC);
+		KERNEL_INFO("      |- TAU_PLUS_INV_EXC       = %8.5f", groupConfigMap[gGrpId].stdpConfig.TAU_PLUS_INV_EXC);
+		KERNEL_INFO("      |- TAU_MINUS_INV_EXC      = %8.5f", groupConfigMap[gGrpId].stdpConfig.TAU_MINUS_INV_EXC);
+		KERNEL_INFO("      |- BETA_LTP               = %8.5f", groupConfigMap[gGrpId].stdpConfig.BETA_LTP);
+		KERNEL_INFO("      |- BETA_LTD               = %8.5f", groupConfigMap[gGrpId].stdpConfig.BETA_LTD);
+		KERNEL_INFO("      |- LAMBDA                 = %8.5f", groupConfigMap[gGrpId].stdpConfig.LAMBDA);
+		KERNEL_INFO("      |- DELTA                  = %8.5f", groupConfigMap[gGrpId].stdpConfig.DELTA);
+	}
 }
 
-// FIXME: wrong to use groupConfigs[0]
-void SNN::printGroupInfo2(FILE* const fpg)
-{
-  fprintf(fpg, "#Group Information\n");
-  for(int g=0; g < numGroups; g++) {
-    fprintf(fpg, "group %d: name %s : type %s %s %s %s %s: size %d : start %d : end %d \n",
-		g, groupConfigMap[g].grpName.c_str(),
-      (groupConfigs[0][g].Type&POISSON_NEURON) ? "poisson " : "",
-      (groupConfigs[0][g].Type&TARGET_AMPA) ? "AMPA" : "",
-      (groupConfigs[0][g].Type&TARGET_NMDA) ? "NMDA" : "",
-      (groupConfigs[0][g].Type&TARGET_GABAa) ? "GABAa" : "",
-      (groupConfigs[0][g].Type&TARGET_GABAb) ? "GABAb" : "",
-      groupConfigs[0][g].numN,
-      groupConfigs[0][g].gStartN,
-      groupConfigs[0][g].gEndN);
-  }
-  fprintf(fpg, "\n");
-  fflush(fpg);
+void SNN::printSikeRoutingInfo() {
+	if (!spikeRoutingTable.empty()) {
+		KERNEL_INFO("*****************          Spike Routing Table          *************************");
+		for (std::list<RoutingTableEntry>::iterator rteItr = spikeRoutingTable.begin(); rteItr != spikeRoutingTable.end(); rteItr++)
+			KERNEL_INFO("    |-Source net:[%d] -> Destination net[%d]", rteItr->srcNetId, rteItr->destNetId);
+	}
 }
 

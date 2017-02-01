@@ -67,6 +67,9 @@
 
 class GroupMonitor;
 class ConnectionMonitor;
+class SpikeMonitor;
+class SpikeGenerator;
+
 
 
 // Cross-platform definition (Linux, Windows)
@@ -159,16 +162,15 @@ public:
 	 * Location of the CARLsim log file can be set in any mode using setLogFile.
 	 * In mode CUSTOM, the other file pointers can be set using setLogsFpCustom.
 	 *
-	 * \param[in] netName 		network name
-	 * \param[in] simMode		either CPU_MODE or GPU_MODE
-	 * \param[in] loggerMode    either USER, DEVELOPER, SILENT, or CUSTOM
-	 * \param[in] numGPUs 		on which GPU to establish a context (only relevant in GPU_MODE)
-	 * \param[in] randSeed 		random number generator seed
+	 * \param[in] netName network name
+	 * \param[in] preferredSimMode CPU_MODE, GPU_MODE, or HYBRID_MODE
+	 * \param[in] loggerMode USER, DEVELOPER, SILENT, or CUSTOM
+	 * \param[in] ithGPUs on which GPU to establish a context (deprecated parameter)
+	 * \param[in] randSeed random number generator seed
 	 * \see setLogFile
 	 * \see setLogsFpCustom
 	 */
-	CARLsim(const std::string& netName="SNN", SimMode simMode=CPU_MODE, LoggerMode loggerMode=USER, int numGPUs=1,
-				int randSeed=-1);
+	CARLsim(const std::string& netName = "SNN", SimMode preferredSimMode = CPU_MODE, LoggerMode loggerMode = USER, int ithGPUs = 0, int randSeed = -1);
 	~CARLsim();
 
 
@@ -268,7 +270,7 @@ public:
 	 * \TODO finish doc
 	 * \STATE ::CONFIG_STATE
 	 */
-	int createGroup(const std::string& grpName, int nNeur, int neurType, int preferredGPU=ANY);
+	int createGroup(const std::string& grpName, int nNeur, int neurType, int preferredPartition = ANY, ComputingBackend preferredBackend = CPU_CORES);
 
 	/*!
 	 * \brief Create a group of Izhikevich spiking neurons on a 3D grid (a primitive cubic Bravais lattice with cubic
@@ -291,14 +293,14 @@ public:
 	 * \param[in] neurType   either EXCITATORY_NEURON, INHIBITORY_NEURON or DOPAMINERGIC_NEURON
 	 * \since v3.0
 	 */
-	int createGroup(const std::string& grpName, const Grid3D& grid, int neurType, int preferredGPU=ANY);
+	int createGroup(const std::string& grpName, const Grid3D& grid, int neurType, int preferredPartition = ANY, ComputingBackend preferredBackend = CPU_CORES);
 
 	/*!
 	 * \brief  creates a spike generator group
 	 * \TODO finish docu
 	 * \STATE ::CONFIG_STATE
 	 */
-	int createSpikeGeneratorGroup(const std::string& grpName, int nNeur, int neurType, int preferredGPU=ANY);
+	int createSpikeGeneratorGroup(const std::string& grpName, int nNeur, int neurType, int preferredPartition = ANY, ComputingBackend preferredBackend = CPU_CORES);
 
 	/*!
 	 * \brief create a group of spike generators on a 3D grid
@@ -316,7 +318,7 @@ public:
 	 * \STATE ::CONFIG_STATE
 	 * \TODO finish doc
 	 */
-	int createSpikeGeneratorGroup(const std::string& grpName, const Grid3D& grid, int neurType, int preferredGPU=ANY);
+	int createSpikeGeneratorGroup(const std::string& grpName, const Grid3D& grid, int neurType, int preferredPartition = ANY, ComputingBackend preferredBackend = CPU_CORES);
 
 
 	/*!
@@ -1415,16 +1417,6 @@ public:
 	 * \sa GroupNeuromodulatorInfo
 	 */
 	GroupNeuromodulatorInfo getGroupNeuromodulatorInfo(int grpId);
-
-	/*!
-	 * \brief returns the current simulation mode
-	 *
-	 * This function returns the current simulation mode. Currently supported are CPU_MODE and GPU_MODE.
-	 * \STATE ::CONFIG_STATE, ::SETUP_STATE, ::RUN_STATE
-	 * \return simulation mode
-	 * \since v3.0
-	 */
-	SimMode getSimMode();
 
 	/*!
 	 * \brief returns
