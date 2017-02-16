@@ -5,13 +5,14 @@
 ##
 ##   Authors:   Michael Beyeler <mbeyeler@uci.edu>
 ##              Kristofor Carlson <kdcarlso@uci.edu>
+##              Ting-Shuo Chou <tingshuc@uci.edu>
 ##
 ##   Institute: Cognitive Anteater Robotics Lab (CARL)
 ##              Department of Cognitive Sciences
 ##              University of California, Irvine
 ##              Irvine, CA, 92697-5100, USA
 ##
-##   Version:   03/31/2016
+##   Version:   12/31/2016
 ##
 ##----------------------------------------------------------------------------##
 
@@ -45,29 +46,13 @@ SIMINCFL    += -I$(krnl_dir)/inc
 # CARLsim4 Utilities
 #------------------------------------------------------------------------------
 
-conn_dir        := carlsim/connection_monitor
-conn_inc_files  := $(wildcard $(conn_dir)/*.h)
-conn_cpp_files  := $(wildcard $(conn_dir)/*.cpp)
-conn_cu_files   := $(wildcard $(conn_dir)/src/*.cu)
-conn_obj_files  := $(patsubst %.cpp, %-cpp.o, $(conn_cpp_files))
-conn_obj_files  += $(patsubst %.cu, %-cu.o, $(conn_cu_files))
-SIMINCFL    += -I$(conn_dir)
-
-grps_dir        := carlsim/group_monitor
-grps_inc_files  := $(wildcard $(grps_dir)/*.h)
-grps_cpp_files  := $(wildcard $(grps_dir)/*.cpp)
-grps_cu_files   := $(wildcard $(grps_dir)/src/*.cu)
-grps_obj_files  := $(patsubst %.cpp, %-cpp.o, $(grps_cpp_files))
-grps_obj_files  += $(patsubst %.cu, %-cu.o, $(grps_cu_files))
-SIMINCFL    += -I$(grps_dir)
-
-spks_dir        := carlsim/spike_monitor
-spks_inc_files  := $(wildcard $(spks_dir)/*.h)
-spks_cpp_files  := $(wildcard $(spks_dir)/*.cpp)
-spks_cu_files   := $(wildcard $(spks_dir)/src/*.cu)
-spks_obj_files  := $(patsubst %.cpp, %-cpp.o, $(spks_cpp_files))
-spks_obj_files  += $(patsubst %.cu, %-cu.o, $(spks_cu_files))
-SIMINCFL    += -I$(spks_dir)
+mon_dir        := carlsim/monitor
+mon_inc_files  := $(wildcard $(mon_dir)/*.h)
+mon_cpp_files  := $(wildcard $(mon_dir)/*.cpp)
+mon_cu_files   := $(wildcard $(mon_dir)/src/*.cu)
+mon_obj_files  := $(patsubst %.cpp, %-cpp.o, $(mon_cpp_files))
+mon_obj_files  += $(patsubst %.cu, %-cu.o, $(mon_cu_files))
+SIMINCFL    += -I$(mon_dir)
 
 
 #------------------------------------------------------------------------------
@@ -112,8 +97,7 @@ SIMINCFL         += -I$(stp_dir)
 #------------------------------------------------------------------------------
 
 targets         += carlsim4
-objects         += $(krnl_obj_files) $(intf_obj_files) $(conn_obj_files) \
-	$(grps_obj_files) $(spks_obj_files) $(tools_obj_files)
+objects         += $(krnl_obj_files) $(intf_obj_files) $(mon_obj_files) $(tools_obj_files)
 add_files       := $(addprefix carlsim/,configure.mk)
 
 
@@ -152,11 +136,7 @@ $(krnl_dir)/src/%-cu.o: $(krnl_dir)/src/%.cu $(krnl_inc_files)
 	$(NVCC) $(NVCCSHRFL) -c $(NVCCINCFL) $(SIMINCFL) $(NVCCFL) $< -o $@
 
 # utilities
-$(conn_dir)/%-cpp.o: $(conn_dir)/%.cpp $(conn_inc_files)
-	$(NVCC) $(NVCCSHRFL) -c $(NVCCINCFL) $(SIMINCFL) $(NVCCFL) $< -o $@
-$(grps_dir)/%-cpp.o: $(grps_dir)/%.cpp $(grps_inc_files)
-	$(NVCC) $(NVCCSHRFL) -c $(NVCCINCFL) $(SIMINCFL) $(NVCCFL) $< -o $@
-$(spks_dir)/%-cpp.o: $(spks_dir)/%.cpp $(spks_inc_files)
+$(mon_dir)/%-cpp.o: $(mon_dir)/%.cpp $(mon_inc_files)
 	$(NVCC) $(NVCCSHRFL) -c $(NVCCINCFL) $(SIMINCFL) $(NVCCFL) $< -o $@
 
 # tools
