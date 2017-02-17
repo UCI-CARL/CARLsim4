@@ -1,4 +1,4 @@
-##----------------------------------------------------------------------------##
+#----------------------------------------------------------------------------##
 ##
 ##   CARLsim4 Kernel
 ##   ---------------
@@ -36,9 +36,12 @@ SIMINCFL    += -I$(intf_dir)/inc
 krnl_dir        := carlsim/kernel
 krnl_inc_files  := $(wildcard $(krnl_dir)/inc/*.h)
 krnl_cpp_files  := $(wildcard $(krnl_dir)/src/*.cpp)
-krnl_cu_files   := $(wildcard $(krnl_dir)/src/*.cu)
+krnl_cu_files   := $(wildcard $(krnl_dir)/src/gpu_module/*.cu)
+krnl_cpp_files_no_cuda := $(wildcard $(krnl_dir)/src/gpu_module/*.cpp)
 krnl_obj_files  := $(patsubst %.cpp, %-cpp.o, $(krnl_cpp_files))
 krnl_obj_files  += $(patsubst %.cu, %-cu.o, $(krnl_cu_files))
+krnl_obj_files_no_cuda := $(patsubst %.cpp, %-cpp.o, $(krnl_cpp_files))
+krnl_obj_files_no_cuda += $(patsubst %.cpp, %-cpp.o, $(krnl_cpp_files_no_cuda))
 SIMINCFL    += -I$(krnl_dir)/inc
 
 
@@ -96,7 +99,7 @@ SIMINCFL         += -I$(stp_dir)
 # CARLsim4 Common
 #------------------------------------------------------------------------------
 
-targets         += carlsim4
+targets += carlsim4
 objects         += $(krnl_obj_files) $(intf_obj_files) $(mon_obj_files) $(tools_obj_files)
 add_files       := $(addprefix carlsim/,configure.mk)
 
@@ -105,17 +108,31 @@ add_files       := $(addprefix carlsim/,configure.mk)
 # CARLsim4 Targets
 #------------------------------------------------------------------------------
 
-.PHONY: release debug carlsim4
+.PHONY: release debug release_no_cuda debug_no_cuda carlsim4
 
 # release build
 release: CXXFL  += -O3 -ffast-math
 release: NVCCFL += --compiler-options "-O3 -ffast-math"
-release: $(targets)
+release: $(objects)
 
 # debug build
 debug: CXXFL    += -g -Wall -O0
 debug: NVCCFL   += -g -G --compiler-options "-Wall -O0"
-debug: $(targets)
+debug: $(objects)
+
+# release build without CUDA library
+release_no_cuda: CXXFL += -O3 -ffast-math -D__NO_CUDA__
+release_no_cuda: NVCC := $(CXX)
+release_no_cuda: NVCCSHRFL := $(CXXSHRFL)
+release_no_cuda: NVCCINCFL := $(CXXINCFL)
+release_no_cuda: NVCCFL := -O3 -ffast-math -D__NO_CUDA__
+
+# debug build without CUDA library
+debug_no_cuda: CXXFL += -g -Wall -O0 -D__NO_CUDA__
+debug_no_cuda: NVCC := $(CXX)
+debug_no_cuda: NVCCSHRFL := $(CXXSHRFL)
+debug_no_cuda: NVCCINCFL := $(CXXINCFL)
+debug_no_cuda: NVCCFL := -g -Wall -O0 -D__NO_CUDA__
 
 # all CARLsim4 targets
 carlsim4: $(objects)
@@ -132,7 +149,7 @@ $(intf_dir)/src/%-cu.o: $(intf_dir)/src/%.cu $(intf_inc_files)
 	$(NVCC) $(NVCCSHRFL) -c $(NVCCINCFL) $(SIMINCFL) $(NVCCFL) $< -o $@
 $(krnl_dir)/src/%-cpp.o: $(krnl_dir)/src/%.cpp $(krnl_inc_files)
 	$(NVCC) $(NVCCSHRFL) -c $(NVCCINCFL) $(SIMINCFL) $(NVCCFL) $< -o $@
-$(krnl_dir)/src/%-cu.o: $(krnl_dir)/src/%.cu $(krnl_inc_files)
+$(krnl_dir)/src/gpu_module/%-cu.o: $(krnl_dir)/src/gpu_module/%.cu $(krnl_inc_files)
 	$(NVCC) $(NVCCSHRFL) -c $(NVCCINCFL) $(SIMINCFL) $(NVCCFL) $< -o $@
 
 # utilities

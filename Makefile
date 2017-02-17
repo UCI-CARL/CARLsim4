@@ -18,6 +18,7 @@
 # the following are filled in the include files and passed up
 targets :=
 objects :=
+objects_no_cuda :=
 libraries :=
 output_folders := doc/html
 
