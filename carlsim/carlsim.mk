@@ -101,6 +101,7 @@ SIMINCFL         += -I$(stp_dir)
 
 targets += carlsim4
 objects         += $(krnl_obj_files) $(intf_obj_files) $(mon_obj_files) $(tools_obj_files)
+objects_no_cuda += $(krnl_obj_files_no_cuda) $(intf_obj_files) $(mon_obj_files) $(tools_obj_files)
 add_files       := $(addprefix carlsim/,configure.mk)
 
 
@@ -108,17 +109,19 @@ add_files       := $(addprefix carlsim/,configure.mk)
 # CARLsim4 Targets
 #------------------------------------------------------------------------------
 
-.PHONY: release debug release_no_cuda debug_no_cuda carlsim4
+.PHONY: release debug release_no_cuda debug_no_cuda carlsim4 archive archive_no_cuda
 
 # release build
 release: CXXFL  += -O3 -ffast-math
 release: NVCCFL += --compiler-options "-O3 -ffast-math"
 release: $(objects)
+release: archive
 
 # debug build
 debug: CXXFL    += -g -Wall -O0
 debug: NVCCFL   += -g -G --compiler-options "-Wall -O0"
 debug: $(objects)
+debug: archive
 
 # release build without CUDA library
 release_no_cuda: CXXFL += -O3 -ffast-math -D__NO_CUDA__
@@ -126,6 +129,8 @@ release_no_cuda: NVCC := $(CXX)
 release_no_cuda: NVCCSHRFL := $(CXXSHRFL)
 release_no_cuda: NVCCINCFL := $(CXXINCFL)
 release_no_cuda: NVCCFL := -O3 -ffast-math -D__NO_CUDA__
+release_no_cuda: $(objects_no_cuda)
+release_no_cuda: archive_no_cuda
 
 # debug build without CUDA library
 debug_no_cuda: CXXFL += -g -Wall -O0 -D__NO_CUDA__
@@ -133,6 +138,8 @@ debug_no_cuda: NVCC := $(CXX)
 debug_no_cuda: NVCCSHRFL := $(CXXSHRFL)
 debug_no_cuda: NVCCINCFL := $(CXXINCFL)
 debug_no_cuda: NVCCFL := -g -Wall -O0 -D__NO_CUDA__
+debug_no_cuda: $(objects_no_cuda)
+debug_no_cuda: archive_no_cuda
 
 # all CARLsim4 targets
 carlsim4: $(objects)
@@ -163,3 +170,11 @@ $(spkgen_dir)/%.o: $(spkgen_dir)/%.cpp $(spkgen_inc_files)
 	$(CXX) $(CXXSHRFL) -c $(CXXINCFL) $(SIMINCFL) $(CXXFL) $< -o $@
 $(stp_dir)/%.o: $(stp_dir)/%.cpp $(stp_inc_files)
 	$(CXX) $(CXXSHRFL) -c $(CXXINCFL) $(SIMINCFL) $(CXXFL) $< -o $@
+
+# archive
+archive:
+	ar rcs $(lib_name).$(lib_ver) $(objects)
+
+archive_no_cuda:
+	ar rcs $(lib_name).$(lib_ver) $(intf_obj_files) $(krnl_obj_files_no_cuda) $(mon_obj_files) $(tools_obj_files)
+
