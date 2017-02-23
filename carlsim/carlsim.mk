@@ -99,7 +99,6 @@ SIMINCFL         += -I$(stp_dir)
 # CARLsim4 Common
 #------------------------------------------------------------------------------
 
-targets += carlsim4
 objects         += $(krnl_obj_files) $(intf_obj_files) $(mon_obj_files) $(tools_obj_files)
 objects_no_cuda += $(krnl_obj_files_no_cuda) $(intf_obj_files) $(mon_obj_files) $(tools_obj_files)
 add_files       := $(addprefix carlsim/,configure.mk)
@@ -109,7 +108,7 @@ add_files       := $(addprefix carlsim/,configure.mk)
 # CARLsim4 Targets
 #------------------------------------------------------------------------------
 
-.PHONY: release debug release_no_cuda debug_no_cuda carlsim4 archive archive_no_cuda
+.PHONY: release debug release_no_cuda debug_no_cuda archive archive_no_cuda
 
 # release build
 release: CXXFL  += -O3 -ffast-math
@@ -140,9 +139,6 @@ debug_no_cuda: NVCCINCFL := $(CXXINCFL)
 debug_no_cuda: NVCCFL := -g -Wall -O0 -D__NO_CUDA__
 debug_no_cuda: $(objects_no_cuda)
 debug_no_cuda: archive_no_cuda
-
-# all CARLsim4 targets
-carlsim4: $(objects)
 
 
 #------------------------------------------------------------------------------
@@ -176,5 +172,5 @@ archive:
 	ar rcs $(lib_name).$(lib_ver) $(objects)
 
 archive_no_cuda:
-	ar rcs $(lib_name).$(lib_ver) $(intf_obj_files) $(krnl_obj_files_no_cuda) $(mon_obj_files) $(tools_obj_files)
+	ar rcs $(lib_name).$(lib_ver) $(objects_no_cuda)
 

@@ -16,7 +16,6 @@
 ##----------------------------------------------------------------------------##
 	
 # the following are filled in the include files and passed up
-targets :=
 objects :=
 objects_no_cuda :=
 libraries :=
@@ -35,7 +34,7 @@ clean:
 
 # clean all objects and output files
 distclean:
-	$(RM) $(objects) $(targets) $(libraries)
+	$(RM) $(objects) $(libraries)
 	$(RMR) $(output_folders)
 
 # print a help message
