@@ -504,8 +504,9 @@ typedef struct RuntimeData_s {
 	float* grpNEBuffer;
 
 	unsigned int* spikeGenBits;
-
+#ifndef __NO_CUDA__
 	curandGenerator_t gpuRandGen;
+#endif
 } RuntimeData;
 
 typedef struct GlobalNetworkConfig_s {

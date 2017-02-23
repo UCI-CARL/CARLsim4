@@ -77,6 +77,11 @@
 
 #include <map>
 #include <list>
+#include <cmath>
+#include <cstring>
+#include <cassert>
+#include <cstdio>
+#include <climits>
 
 #include <carlsim.h>
 #include <callback_core.h>
@@ -717,6 +722,8 @@ private:
 	void fetchPostConnectionInfo(int netId);
 	void fetchSynapseState(int netId);
 	void fetchExtFiringTable(int netId);
+at prevExecutionTime;
+	float executionTime;
 	void fetchTimeTable(int netId);
 	void writeBackTimeTable(int netId);
 
@@ -750,7 +757,7 @@ private:
 	int configGPUDevice();
 	void initGPU(int netId);
 #else
-	int configGPUDevice() { return 0 };
+	int configGPUDevice() { return 0; }
 #endif
 
 #ifndef __NO_CUDA__
