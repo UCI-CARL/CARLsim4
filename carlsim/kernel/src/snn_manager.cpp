@@ -645,8 +645,10 @@ int SNN::runNetwork(int _nsec, int _nmsec, bool printRunSummary) {
 	// set the Poisson generation time slice to be at the run duration up to MAX_TIME_SLICE
 	setGrpTimeSlice(ALL, MAX(1, MIN(runDurationMs, MAX_TIME_SLICE)));
 
+#ifndef __NO_CUDA__
 	CUDA_RESET_TIMER(timer);
 	CUDA_START_TIMER(timer);
+#endif
 
 	// if nsec=0, simTimeMs=10, we need to run the simulator for 10 timeStep;
 	// if nsec=1, simTimeMs=10, we need to run the simulator for 1*1000+10, time Step;
@@ -704,9 +706,11 @@ int SNN::runNetwork(int _nsec, int _nmsec, bool printRunSummary) {
 	updateGroupMonitor();
 
 	// keep track of simulation time...
+#ifndef __NO_CUDA__
 	CUDA_STOP_TIMER(timer);
 	lastExecutionTime = CUDA_GET_TIMER_VALUE(timer);
 	cumExecutionTime += lastExecutionTime;
+#endif
 	return 0;
 }
 
@@ -1753,8 +1757,7 @@ void SNN::SNNinit() {
 	simulatorDeleted = false;
 
 	cumExecutionTime = 0.0;
-	cpuExecutionTime = 0.0;
-	gpuExecutionTime = 0.0;
+	executionTime = 0.0;
 
 	spikeRateUpdated = false;
 	numSpikeMonitor = 0;
@@ -1831,7 +1834,6 @@ void SNN::advSimStep() {
 	updateTimingTable();
 
 	routeSpikes();
-	//routeSpikes_GPU();
 
 	doCurrentUpdate();
 
@@ -3734,18 +3736,9 @@ void SNN::fetchExtFiringTable(int netId) {
 	assert(netId < MAX_NET_PER_SNN);
 	
 	if (netId < CPU_RUNTIME_BASE) { // GPU runtime
-		checkAndSetGPUDevice(netId);
-		CUDA_CHECK_ERRORS(cudaMemcpy(managerRuntimeData.extFiringTableEndIdxD2, runtimeData[netId].extFiringTableEndIdxD2, sizeof(int) * networkConfigs[netId].numGroups, cudaMemcpyDeviceToHost));
-		CUDA_CHECK_ERRORS(cudaMemcpy(managerRuntimeData.extFiringTableEndIdxD1, runtimeData[netId].extFiringTableEndIdxD1, sizeof(int) * networkConfigs[netId].numGroups, cudaMemcpyDeviceToHost));
-		CUDA_CHECK_ERRORS(cudaMemcpy(managerRuntimeData.extFiringTableD2, runtimeData[netId].extFiringTableD2, sizeof(int*) * networkConfigs[netId].numGroups, cudaMemcpyDeviceToHost));
-		CUDA_CHECK_ERRORS(cudaMemcpy(managerRuntimeData.extFiringTableD1, runtimeData[netId].extFiringTableD1, sizeof(int*) * networkConfigs[netId].numGroups, cudaMemcpyDeviceToHost));
-		//KERNEL_DEBUG("GPU0 D1ex:%d/D2ex:%d", managerRuntimeData.extFiringTableEndIdxD1[0], managerRuntimeData.extFiringTableEndIdxD2[0]);
+		copyExtFiringTable(netId, cudaMemcpyDeviceToHost);
 	} else { // CPU runtime
-		memcpy(managerRuntimeData.extFiringTableEndIdxD2, runtimeData[netId].extFiringTableEndIdxD2, sizeof(int) * networkConfigs[netId].numGroups);
-		memcpy(managerRuntimeData.extFiringTableEndIdxD1, runtimeData[netId].extFiringTableEndIdxD1, sizeof(int) * networkConfigs[netId].numGroups);
-		memcpy(managerRuntimeData.extFiringTableD2, runtimeData[netId].extFiringTableD2, sizeof(int*) * networkConfigs[netId].numGroups);
-		memcpy(managerRuntimeData.extFiringTableD1, runtimeData[netId].extFiringTableD1, sizeof(int*) * networkConfigs[netId].numGroups);
-		//KERNEL_DEBUG("GPU0 D1ex:%d/D2ex:%d", managerRuntimeData.extFiringTableEndIdxD1[0], managerRuntimeData.extFiringTableEndIdxD2[0]);
+		copyExtFiringTable(netId);
 	}
 }
 
@@ -4118,7 +4111,7 @@ void SNN::partitionSNN() {
 			}
 		}
 
-		if (grpIt->second.netId == -1) { // the group was not assigned to any GPU
+		if (grpIt->second.netId == -1) { // the group was not assigned to any computing backend
 			KERNEL_ERROR("Can't assign the group [%d] to any partition", grpIt->second.gGrpId);
 			exitSimulation(-1);
 		}
@@ -4589,11 +4582,6 @@ void SNN::resetConductances(int netId) {
 	}
 }
 
-void SNN::resetCPUTiming() {
-	prevCpuExecutionTime = cumExecutionTime;
-	cpuExecutionTime     = 0.0;
-}
-
 void SNN::resetCurrent(int netId) {
 	assert(managerRuntimeData.current != NULL);
 	memset(managerRuntimeData.current, 0, sizeof(float) * networkConfigs[netId].numNReg);
@@ -4614,9 +4602,9 @@ void SNN::resetFiringInformation() {
 	resetTimeTable();
 }
 
-void SNN::resetGPUTiming() {
-	prevGpuExecutionTime = cumExecutionTime;
-	gpuExecutionTime     = 0.0;
+void SNN::resetTiming() {
+	prevExecutionTime = cumExecutionTime;
+	executionTime = 0.0f;
 }
 
 void SNN::resetNeuromodulator(int netId, int lGrpId) {
@@ -4970,15 +4958,10 @@ void SNN::fillSpikeGenBits(int netId) {
 	}
 }
 
-void SNN::startCPUTiming() { prevCpuExecutionTime = cumExecutionTime; }
-void SNN::startGPUTiming() { prevGpuExecutionTime = cumExecutionTime; }
-void SNN::stopCPUTiming() {
-	cpuExecutionTime += (cumExecutionTime - prevCpuExecutionTime);
-	prevCpuExecutionTime = cumExecutionTime;
-}
-void SNN::stopGPUTiming() {
-	gpuExecutionTime += (cumExecutionTime - prevGpuExecutionTime);
-	prevGpuExecutionTime = cumExecutionTime;
+void SNN::startTiming() { prevExecutionTime = cumExecutionTime; }
+void SNN::stopTiming() {
+	executionTime += (cumExecutionTime - prevExecutionTime);
+	prevExecutionTime = cumExecutionTime;
 }
 
 // FIXME: update the correct network config
@@ -5396,8 +5379,8 @@ void SNN::printSimSummary() {
 	float etime;
 
 	// FIXME: measure total execution time, and GPU excution time
-	stopGPUTiming();
-	etime = gpuExecutionTime;
+	stopTiming();
+	etime = executionTime;
 
 	fetchNetworkSpikeCount();
 

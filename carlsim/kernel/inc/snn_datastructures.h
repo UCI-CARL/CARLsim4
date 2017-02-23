@@ -55,7 +55,6 @@
 	#include <curand.h>
 #endif
 
-
 /*!
 * \brief type of memory pointer
 *

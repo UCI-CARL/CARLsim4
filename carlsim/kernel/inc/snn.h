@@ -650,7 +650,6 @@ private:
 	int loadSimulation_internal(bool onlyPlastic);
 
 	void resetConductances(int netId);
-	void resetCPUTiming();
 	void resetCurrent(int netId);
 	void resetFiringInformation(); //!< resets the firing information when updateNetwork is called
 	void resetGroupConfigs(bool deallocate = false);
@@ -666,17 +665,15 @@ private:
 	void resetFiringTable();
 	void routeSpikes();
 	void transferSpikes(void* dest, int destNetId, void* src, int srcNetId, int size);
-	void resetGPUTiming();
+	void resetTiming();
 
 	inline SynInfo SET_CONN_ID(int nid, int sid, int grpId);
 
 	void setGrpTimeSlice(int grpId, int timeSlice); //!< used for the Poisson generator. TODO: further optimize
 	int setRandSeed(int seed);	//!< setter function for const member randSeed_
 
-	void startCPUTiming();
-	void stopCPUTiming();
-	void startGPUTiming();
-	void stopGPUTiming();
+	void startTiming();
+	void stopTiming();
 
 	void generateUserDefinedSpikes();
 
@@ -723,6 +720,7 @@ private:
 	void fetchTimeTable(int netId);
 	void writeBackTimeTable(int netId);
 
+#ifndef __NO_CUDA__
 	// GPU implementation for setupNetwork() and runNetwork()
 	void allocateSNN_GPU(int netId); //!< allocates runtime data on GPU memory and initialize GPU
 	void assignPoissonFiringRate_GPU(int netId);
@@ -751,7 +749,11 @@ private:
 	void checkDestSrcPtrs(RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind, bool allocateMem, int grpId, int destOffset);
 	int configGPUDevice();
 	void initGPU(int netId);
+#else
+	int configGPUDevice() { return 0 };
+#endif
 
+#ifndef __NO_CUDA__
 	// GPU backend: data transfer functions
 	void copyAuxiliaryData(int netId, int lGrpId, RuntimeData* dest, cudaMemcpyKind kind, bool allocateMem);
 	void copyConductanceAMPA(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind, bool allocateMem, int destOffset);
@@ -778,6 +780,42 @@ private:
 		unsigned int* spikeCountExtD1, unsigned int* spikeCountExtD2);
 	void copySpikeTables(int netId, cudaMemcpyKind kind);
 	void copyTimeTable(int netId, cudaMemcpyKind kind);
+	void copyExtFiringTable(int netId, cudaMemcpyKind kind);
+#else
+	#define cudaMemcpyKind int
+	#define cudaMemcpyHostToHost 0
+	#define cudaMemcpyHostToDevice 0
+	#define cudaMemcpyDeviceToHost 0
+	#define cudaMemcpyDeviceToDevice 0
+	#define cudaMemcpyDefault 0
+
+	void copyAuxiliaryData(int netId, int lGrpId, RuntimeData* dest, cudaMemcpyKind kind, bool allocateMem) {};
+	void copyConductanceAMPA(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind, bool allocateMem, int destOffset) {};
+	void copyConductanceNMDA(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind, bool allocateMem, int destOffset) {};
+	void copyConductanceGABAa(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind, bool allocateMem, int destOffset) {};
+	void copyConductanceGABAb(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind, bool allocateMem, int destOffset) {};
+	void copyPreConnectionInfo(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind, bool allocateMem) {};
+	void copyPostConnectionInfo(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind, bool allocateMem) {};
+	void copyExternalCurrent(int netId, int lGrpId, RuntimeData* dest, cudaMemcpyKind kind, bool allocateMem) {};
+	void copyNeuronParameters(int netId, int lGrpId, RuntimeData* dest, cudaMemcpyKind kind, bool allocateMem) {};
+	void copyGroupState(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind, bool allocateMem) {};
+	void copyNeuronState(int netId, int lGrpId, RuntimeData* dest, cudaMemcpyKind kind, bool allocateMem) {};
+	void copyNeuronSpikeCount(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind, bool allocateMem, int destOffset) {};
+	void copySynapseState(int netId, RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind, bool allocateMem) {};
+	void copySTPState(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind, bool allocateMem) {};
+	void copyWeightState(int netId, int lGrpId, cudaMemcpyKind kind) {};
+	void copyNetworkConfig(int netId) {};
+	void copyGroupConfigs(int netId) {};
+	void copyGrpIdsLookupArray(int netId, cudaMemcpyKind kind) {};
+	void copyConnIdsLookupArray(int netId, cudaMemcpyKind kind) {};
+	void copyLastSpikeTime(int netId, cudaMemcpyKind kind) {};
+	void copyNetworkSpikeCount(int netId, cudaMemcpyKind kind,
+		unsigned int* spikeCountD1, unsigned int* spikeCountD2,
+		unsigned int* spikeCountExtD1, unsigned int* spikeCountExtD2) {};
+	void copySpikeTables(int netId, cudaMemcpyKind kind) {};
+	void copyTimeTable(int netId, cudaMemcpyKind kind) {};
+	void copyExtFiringTable(int netId, cudaMemcpyKind kind) {};
+#endif
 
 	// CPU implementation for setupNetwork() and runNetwork()
 	void assignPoissonFiringRate_CPU(int netId);
@@ -821,6 +859,7 @@ private:
 		unsigned int* spikeCountExtD1, unsigned int* spikeCountExtD2);
 	void copySpikeTables(int netId);
 	void copyTimeTable(int netId, bool toManager);
+	void copyExtFiringTable(int netId);
 	
 	// CPU backend: utility function
 	void firingUpdateSTP(int lNId, int lGrpId, int netId);
@@ -845,12 +884,6 @@ private:
 
 	bool simulatorDeleted;
 	bool spikeRateUpdated;
-
-	//! vairables for tracking performance
-	float prevCpuExecutionTime;
-	float cpuExecutionTime;
-	float prevGpuExecutionTime;
-	float gpuExecutionTime;
 
 	//! switch to make all weights fixed (such as in testing phase) or not
 	bool sim_in_testing;
@@ -906,10 +939,14 @@ private:
 	int simTimeSec;     //!< The simulation time showing seconds in a simulation
 	int simTime;        //!< The absolute simulation time. The unit is millisecond. this value is not reset but keeps increasing to its max value.
 
-	// cuda keep track of performance
+	//! vairables for tracking performance
+#ifndef __NO_CUDA__
 	StopWatchInterface* timer;
+#endif
 	float cumExecutionTime;
 	float lastExecutionTime;
+	float prevExecutionTime;
+	float executionTime;
 
 	FILE*	fpInf_; //!< fp of where to write all simulation output (status info) if not in silent mode
 	FILE*	fpErr_; //!< fp of where to write all errors if not in silent mode

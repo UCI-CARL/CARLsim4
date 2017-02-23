@@ -243,6 +243,16 @@ void SNN::copyTimeTable(int netId, bool toManager) {
 	}
 }
 
+void SNN::copyExtFiringTable(int netId) {
+	assert(netId >= CPU_RUNTIME_BASE);
+
+	memcpy(managerRuntimeData.extFiringTableEndIdxD2, runtimeData[netId].extFiringTableEndIdxD2, sizeof(int) * networkConfigs[netId].numGroups);
+	memcpy(managerRuntimeData.extFiringTableEndIdxD1, runtimeData[netId].extFiringTableEndIdxD1, sizeof(int) * networkConfigs[netId].numGroups);
+	memcpy(managerRuntimeData.extFiringTableD2, runtimeData[netId].extFiringTableD2, sizeof(int*) * networkConfigs[netId].numGroups);
+	memcpy(managerRuntimeData.extFiringTableD1, runtimeData[netId].extFiringTableD1, sizeof(int*) * networkConfigs[netId].numGroups);
+	//KERNEL_DEBUG("GPU0 D1ex:%d/D2ex:%d", managerRuntimeData.extFiringTableEndIdxD1[0], managerRuntimeData.extFiringTableEndIdxD2[0]);
+}
+
 // resets nSpikeCnt[]
 // used for management of manager runtime data
 // FIXME: make sure this is right when separating cpu_module to a standalone class

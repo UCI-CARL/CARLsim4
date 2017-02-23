@@ -132,7 +132,12 @@
 #define MAX_GRP_PER_SNN 128		// hard limit: 2^16
 #define MAX_NET_PER_SNN 32		// the maximum number of local networks in a simulation
 
-#define CPU_RUNTIME_BASE 8
+#ifdef __NO_CUDA__
+	#define CPU_RUNTIME_BASE 0
+#else
+	#define CPU_RUNTIME_BASE 8
+#endif
+
 #define GPU_RUNTIME_BASE 0
 
 #define COND_INTEGRATION_SCALE	2

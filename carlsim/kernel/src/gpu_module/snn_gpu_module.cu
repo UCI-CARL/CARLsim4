@@ -3119,7 +3119,18 @@ void SNN::copyTimeTable(int netId, cudaMemcpyKind kind) {
 		CUDA_CHECK_ERRORS(cudaMemcpyToSymbol(timeTableD2GPU, managerRuntimeData.timeTableD2, sizeof(int)*(1000 + glbNetworkConfig.maxDelay + 1), 0, cudaMemcpyHostToDevice));
 		CUDA_CHECK_ERRORS(cudaMemcpyToSymbol(timeTableD1GPU, managerRuntimeData.timeTableD1, sizeof(int)*(1000 + glbNetworkConfig.maxDelay + 1), 0, cudaMemcpyHostToDevice));
 	}
-} 
+}
+
+void SNN::copyExtFiringTable(int netId, cudaMemcpyKind kind) {
+	assert(netId < CPU_RUNTIME_BASE);
+	checkAndSetGPUDevice(netId);
+
+	CUDA_CHECK_ERRORS(cudaMemcpy(managerRuntimeData.extFiringTableEndIdxD2, runtimeData[netId].extFiringTableEndIdxD2, sizeof(int) * networkConfigs[netId].numGroups, kind));
+	CUDA_CHECK_ERRORS(cudaMemcpy(managerRuntimeData.extFiringTableEndIdxD1, runtimeData[netId].extFiringTableEndIdxD1, sizeof(int) * networkConfigs[netId].numGroups, kind));
+	CUDA_CHECK_ERRORS(cudaMemcpy(managerRuntimeData.extFiringTableD2, runtimeData[netId].extFiringTableD2, sizeof(int*) * networkConfigs[netId].numGroups, kind));
+	CUDA_CHECK_ERRORS(cudaMemcpy(managerRuntimeData.extFiringTableD1, runtimeData[netId].extFiringTableD1, sizeof(int*) * networkConfigs[netId].numGroups, kind));
+	//KERNEL_DEBUG("GPU0 D1ex:%d/D2ex:%d", managerRuntimeData.extFiringTableEndIdxD1[0], managerRuntimeData.extFiringTableEndIdxD2[0]);
+}
 
 int SNN::configGPUDevice() {
 	int devCount, devMax;
