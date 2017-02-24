@@ -1,18 +1,17 @@
-#----------------------------------------------------------------------------##
+##----------------------------------------------------------------------------##
 ##
 ##   CARLsim4 Kernel
 ##   ---------------
 ##
 ##   Authors:   Michael Beyeler <mbeyeler@uci.edu>
 ##              Kristofor Carlson <kdcarlso@uci.edu>
-##              Ting-Shuo Chou <tingshuc@uci.edu>
 ##
 ##   Institute: Cognitive Anteater Robotics Lab (CARL)
 ##              Department of Cognitive Sciences
 ##              University of California, Irvine
 ##              Irvine, CA, 92697-5100, USA
 ##
-##   Version:   12/31/2016
+##   Version:   03/31/2016
 ##
 ##----------------------------------------------------------------------------##
 
@@ -36,12 +35,9 @@ SIMINCFL    += -I$(intf_dir)/inc
 krnl_dir        := carlsim/kernel
 krnl_inc_files  := $(wildcard $(krnl_dir)/inc/*.h)
 krnl_cpp_files  := $(wildcard $(krnl_dir)/src/*.cpp)
-krnl_cu_files   := $(wildcard $(krnl_dir)/src/gpu_module/*.cu)
-krnl_cpp_files_no_cuda := $(wildcard $(krnl_dir)/src/gpu_module/*.cpp)
+krnl_cu_files   := $(wildcard $(krnl_dir)/src/*.cu)
 krnl_obj_files  := $(patsubst %.cpp, %-cpp.o, $(krnl_cpp_files))
 krnl_obj_files  += $(patsubst %.cu, %-cu.o, $(krnl_cu_files))
-krnl_obj_files_no_cuda := $(patsubst %.cpp, %-cpp.o, $(krnl_cpp_files))
-krnl_obj_files_no_cuda += $(patsubst %.cpp, %-cpp.o, $(krnl_cpp_files_no_cuda))
 SIMINCFL    += -I$(krnl_dir)/inc
 
 
@@ -49,13 +45,29 @@ SIMINCFL    += -I$(krnl_dir)/inc
 # CARLsim4 Utilities
 #------------------------------------------------------------------------------
 
-mon_dir        := carlsim/monitor
-mon_inc_files  := $(wildcard $(mon_dir)/*.h)
-mon_cpp_files  := $(wildcard $(mon_dir)/*.cpp)
-mon_cu_files   := $(wildcard $(mon_dir)/src/*.cu)
-mon_obj_files  := $(patsubst %.cpp, %-cpp.o, $(mon_cpp_files))
-mon_obj_files  += $(patsubst %.cu, %-cu.o, $(mon_cu_files))
-SIMINCFL    += -I$(mon_dir)
+conn_dir        := carlsim/connection_monitor
+conn_inc_files  := $(wildcard $(conn_dir)/*.h)
+conn_cpp_files  := $(wildcard $(conn_dir)/*.cpp)
+conn_cu_files   := $(wildcard $(conn_dir)/src/*.cu)
+conn_obj_files  := $(patsubst %.cpp, %-cpp.o, $(conn_cpp_files))
+conn_obj_files  += $(patsubst %.cu, %-cu.o, $(conn_cu_files))
+SIMINCFL    += -I$(conn_dir)
+
+grps_dir        := carlsim/group_monitor
+grps_inc_files  := $(wildcard $(grps_dir)/*.h)
+grps_cpp_files  := $(wildcard $(grps_dir)/*.cpp)
+grps_cu_files   := $(wildcard $(grps_dir)/src/*.cu)
+grps_obj_files  := $(patsubst %.cpp, %-cpp.o, $(grps_cpp_files))
+grps_obj_files  += $(patsubst %.cu, %-cu.o, $(grps_cu_files))
+SIMINCFL    += -I$(grps_dir)
+
+spks_dir        := carlsim/spike_monitor
+spks_inc_files  := $(wildcard $(spks_dir)/*.h)
+spks_cpp_files  := $(wildcard $(spks_dir)/*.cpp)
+spks_cu_files   := $(wildcard $(spks_dir)/src/*.cu)
+spks_obj_files  := $(patsubst %.cpp, %-cpp.o, $(spks_cpp_files))
+spks_obj_files  += $(patsubst %.cu, %-cu.o, $(spks_cu_files))
+SIMINCFL    += -I$(spks_dir)
 
 
 #------------------------------------------------------------------------------
@@ -99,8 +111,9 @@ SIMINCFL         += -I$(stp_dir)
 # CARLsim4 Common
 #------------------------------------------------------------------------------
 
-objects         += $(krnl_obj_files) $(intf_obj_files) $(mon_obj_files) $(tools_obj_files)
-objects_no_cuda += $(krnl_obj_files_no_cuda) $(intf_obj_files) $(mon_obj_files) $(tools_obj_files)
+targets         += carlsim4
+objects         += $(krnl_obj_files) $(intf_obj_files) $(conn_obj_files) \
+	$(grps_obj_files) $(spks_obj_files) $(tools_obj_files)
 add_files       := $(addprefix carlsim/,configure.mk)
 
 
@@ -108,37 +121,20 @@ add_files       := $(addprefix carlsim/,configure.mk)
 # CARLsim4 Targets
 #------------------------------------------------------------------------------
 
-.PHONY: release debug release_no_cuda debug_no_cuda archive archive_no_cuda
+.PHONY: release debug carlsim4
 
 # release build
 release: CXXFL  += -O3 -ffast-math
 release: NVCCFL += --compiler-options "-O3 -ffast-math"
-release: $(objects)
-release: archive
+release: $(targets)
 
 # debug build
 debug: CXXFL    += -g -Wall -O0
 debug: NVCCFL   += -g -G --compiler-options "-Wall -O0"
-debug: $(objects)
-debug: archive
+debug: $(targets)
 
-# release build without CUDA library
-release_no_cuda: CXXFL += -O3 -ffast-math -D__NO_CUDA__
-release_no_cuda: NVCC := $(CXX)
-release_no_cuda: NVCCSHRFL := $(CXXSHRFL)
-release_no_cuda: NVCCINCFL := $(CXXINCFL)
-release_no_cuda: NVCCFL := -O3 -ffast-math -D__NO_CUDA__
-release_no_cuda: $(objects_no_cuda)
-release_no_cuda: archive_no_cuda
-
-# debug build without CUDA library
-debug_no_cuda: CXXFL += -g -Wall -O0 -D__NO_CUDA__
-debug_no_cuda: NVCC := $(CXX)
-debug_no_cuda: NVCCSHRFL := $(CXXSHRFL)
-debug_no_cuda: NVCCINCFL := $(CXXINCFL)
-debug_no_cuda: NVCCFL := -g -Wall -O0 -D__NO_CUDA__
-debug_no_cuda: $(objects_no_cuda)
-debug_no_cuda: archive_no_cuda
+# all CARLsim4 targets
+carlsim4: $(objects)
 
 
 #------------------------------------------------------------------------------
@@ -152,11 +148,15 @@ $(intf_dir)/src/%-cu.o: $(intf_dir)/src/%.cu $(intf_inc_files)
 	$(NVCC) $(NVCCSHRFL) -c $(NVCCINCFL) $(SIMINCFL) $(NVCCFL) $< -o $@
 $(krnl_dir)/src/%-cpp.o: $(krnl_dir)/src/%.cpp $(krnl_inc_files)
 	$(NVCC) $(NVCCSHRFL) -c $(NVCCINCFL) $(SIMINCFL) $(NVCCFL) $< -o $@
-$(krnl_dir)/src/gpu_module/%-cu.o: $(krnl_dir)/src/gpu_module/%.cu $(krnl_inc_files)
+$(krnl_dir)/src/%-cu.o: $(krnl_dir)/src/%.cu $(krnl_inc_files)
 	$(NVCC) $(NVCCSHRFL) -c $(NVCCINCFL) $(SIMINCFL) $(NVCCFL) $< -o $@
 
 # utilities
-$(mon_dir)/%-cpp.o: $(mon_dir)/%.cpp $(mon_inc_files)
+$(conn_dir)/%-cpp.o: $(conn_dir)/%.cpp $(conn_inc_files)
+	$(NVCC) $(NVCCSHRFL) -c $(NVCCINCFL) $(SIMINCFL) $(NVCCFL) $< -o $@
+$(grps_dir)/%-cpp.o: $(grps_dir)/%.cpp $(grps_inc_files)
+	$(NVCC) $(NVCCSHRFL) -c $(NVCCINCFL) $(SIMINCFL) $(NVCCFL) $< -o $@
+$(spks_dir)/%-cpp.o: $(spks_dir)/%.cpp $(spks_inc_files)
 	$(NVCC) $(NVCCSHRFL) -c $(NVCCINCFL) $(SIMINCFL) $(NVCCFL) $< -o $@
 
 # tools
@@ -166,11 +166,3 @@ $(spkgen_dir)/%.o: $(spkgen_dir)/%.cpp $(spkgen_inc_files)
 	$(CXX) $(CXXSHRFL) -c $(CXXINCFL) $(SIMINCFL) $(CXXFL) $< -o $@
 $(stp_dir)/%.o: $(stp_dir)/%.cpp $(stp_inc_files)
 	$(CXX) $(CXXSHRFL) -c $(CXXINCFL) $(SIMINCFL) $(CXXFL) $< -o $@
-
-# archive
-archive:
-	ar rcs $(lib_name).$(lib_ver) $(objects)
-
-archive_no_cuda:
-	ar rcs $(lib_name).$(lib_ver) $(objects_no_cuda)
-
