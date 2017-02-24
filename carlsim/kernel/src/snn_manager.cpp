@@ -774,6 +774,7 @@ void SNN::biasWeights(short int connId, float bias, bool updateWeightRange) {
 
 		// update GPU datastructures in batches, grouped by post-neuron
 		if (netId < CPU_RUNTIME_BASE) {
+#ifndef __NO_CUDA__
 			CUDA_CHECK_ERRORS( cudaMemcpy(&(runtimeData[netId].wt[cumIdx]), &(managerRuntimeData.wt[cumIdx]), sizeof(float)*managerRuntimeData.Npre[lNId],
 				cudaMemcpyHostToDevice) );
 
@@ -783,6 +784,9 @@ void SNN::biasWeights(short int connId, float bias, bool updateWeightRange) {
 				CUDA_CHECK_ERRORS( cudaMemcpy(&(runtimeData[netId].maxSynWt[cumIdx]), &(managerRuntimeData.maxSynWt[cumIdx]),
 					sizeof(float) * managerRuntimeData.Npre[lNId], cudaMemcpyHostToDevice) );
 			}
+#else
+			assert(false);
+#endif
 		} else {
 			memcpy(&runtimeData[netId].wt[cumIdx], &managerRuntimeData.wt[cumIdx], sizeof(float) * managerRuntimeData.Npre[lNId]);
 
@@ -862,6 +866,7 @@ void SNN::scaleWeights(short int connId, float scale, bool updateWeightRange) {
 
 		// update GPU datastructures in batches, grouped by post-neuron
 		if (netId < CPU_RUNTIME_BASE) {
+#ifndef __NO_CUDA__
 			CUDA_CHECK_ERRORS(cudaMemcpy(&runtimeData[netId].wt[cumIdx], &managerRuntimeData.wt[cumIdx], sizeof(float)*managerRuntimeData.Npre[lNId],
 				cudaMemcpyHostToDevice));
 
@@ -871,8 +876,10 @@ void SNN::scaleWeights(short int connId, float scale, bool updateWeightRange) {
 				CUDA_CHECK_ERRORS(cudaMemcpy(&runtimeData[netId].maxSynWt[cumIdx], &managerRuntimeData.maxSynWt[cumIdx],
 					sizeof(float) * managerRuntimeData.Npre[lNId], cudaMemcpyHostToDevice));
 			}
-		}
-		else {
+#else
+			assert(false);
+#endif
+		} else {
 			memcpy(&runtimeData[netId].wt[cumIdx], &managerRuntimeData.wt[cumIdx], sizeof(float) * managerRuntimeData.Npre[lNId]);
 
 			if (runtimeData[netId].maxSynWt != NULL) {
@@ -1095,6 +1102,7 @@ void SNN::setWeight(short int connId, int neurIdPre, int neurIdPost, float weigh
 			managerRuntimeData.maxSynWt[pos_ij] = isExcitatoryGroup(connectConfigMap[connId].grpSrc) ? maxWt : -1.0 * maxWt;
 
 			if (netId < CPU_RUNTIME_BASE) {
+#ifndef __NO_CUDA__
 				// need to update datastructures on GPU runtime
 				CUDA_CHECK_ERRORS(cudaMemcpy(&runtimeData[netId].wt[pos_ij], &managerRuntimeData.wt[pos_ij], sizeof(float), cudaMemcpyHostToDevice));
 				if (runtimeData[netId].maxSynWt != NULL) {
@@ -1102,6 +1110,9 @@ void SNN::setWeight(short int connId, int neurIdPre, int neurIdPost, float weigh
 					// (that logic should be done elsewhere though)
 					CUDA_CHECK_ERRORS(cudaMemcpy(&runtimeData[netId].maxSynWt[pos_ij], &managerRuntimeData.maxSynWt[pos_ij], sizeof(float), cudaMemcpyHostToDevice));
 				}
+#else
+				assert(false);
+#endif
 			} else {
 				// need to update datastructures on CPU runtime
 				memcpy(&runtimeData[netId].wt[pos_ij], &managerRuntimeData.wt[pos_ij], sizeof(float));
@@ -1820,8 +1831,10 @@ void SNN::SNNinit() {
 	wtChangeDecay_ = 0.0f;
 
 	// FIXME: use it when necessary
+#ifndef __NO_CUDA__
 	CUDA_CREATE_TIMER(timer);
 	CUDA_RESET_TIMER(timer);
+#endif
 }
 
 void SNN::advSimStep() {
@@ -3355,7 +3368,9 @@ void SNN::connectUserDefined(int netId, std::list<ConnectConfig>::iterator connI
 void SNN::deleteRuntimeData() {
 	// FIXME: assert simulation use GPU first
 	// wait for kernels to complete
+#ifndef __NO_CUDA__
 	CUDA_CHECK_ERRORS(cudaThreadSynchronize());
+#endif
 
 	for (int netId = 0; netId < MAX_NET_PER_SNN; netId++) {
 		if (!groupPartitionLists[netId].empty()) {
@@ -3365,8 +3380,9 @@ void SNN::deleteRuntimeData() {
 				deleteRuntimeData_CPU(netId);
 		}
 	}
-
+#ifndef __NO_CUDA__
 	CUDA_DELETE_TIMER(timer);
+#endif
 }
 
 // delete all objects (CPU and GPU side)
@@ -3763,6 +3779,7 @@ void SNN::writeBackTimeTable(int netId) {
 }
 
 void SNN::transferSpikes(void* dest, int destNetId, void* src, int srcNetId, int size) {
+#ifndef __NO_CUDA__
 	if (srcNetId < CPU_RUNTIME_BASE && destNetId < CPU_RUNTIME_BASE) {
 		checkAndSetGPUDevice(destNetId);
 		CUDA_CHECK_ERRORS(cudaMemcpyPeer(dest, destNetId, src, srcNetId, size));
@@ -3775,6 +3792,10 @@ void SNN::transferSpikes(void* dest, int destNetId, void* src, int srcNetId, int
 	} else if(srcNetId >= CPU_RUNTIME_BASE && destNetId >= CPU_RUNTIME_BASE) {
 		memcpy(dest, src, size);
 	}
+#else
+	assert(srcNetId >= CPU_RUNTIME_BASE && destNetId >= CPU_RUNTIME_BASE);
+	memcpy(dest, src, size);
+#endif
 }
 
 void SNN::convertExtSpikesD2(int netId, int startIdx, int endIdx, int GtoLOffset) {
