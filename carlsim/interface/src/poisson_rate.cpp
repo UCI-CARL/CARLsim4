@@ -38,12 +38,13 @@
  * CARLsim available from http://socsci.uci.edu/~jkrichma/CARLsim/
  * Ver 6/13/2016
  */
-#include <cassert>	// assert
+#include <cassert> // assert
+#include <cstdio>  // printf
 #include <cstring> // string, memset
 #include <cstdlib> // malloc, free, rand
 
 #include <poisson_rate.h>
-#include <carlsim_definitions.h> 	// ALL
+#include <carlsim_definitions.h> // ALL
 #ifndef __NO_CUDA__
 	#include <cuda_version_control.h>
 #endif
@@ -65,7 +66,7 @@ public:
 			CUDA_CHECK_ERRORS(cudaMalloc((void**)&d_rates_, sizeof(float)*nNeur));
 			CUDA_CHECK_ERRORS(cudaMemset(d_rates_, 0, sizeof(float)*nNeur));
 #else
-			printf("Cannot use onGPU when compiled with CPU-only mode.\n");
+			printf("Cannot use onGPU when compiled without CUDA library.\n");
 			assert(false);
 #endif
 		} else {
