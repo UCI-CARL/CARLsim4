@@ -111,9 +111,9 @@ class SpikeBuffer;
  */
 class SNN {
 
-/// **************************************************************************************************************** ///
-/// PUBLIC METHODS
-/// **************************************************************************************************************** ///
+	/// **************************************************************************************************************** ///
+	/// PUBLIC METHODS
+	/// **************************************************************************************************************** ///
 public:
 	//! SNN Constructor
 	/*!
@@ -192,7 +192,7 @@ public:
 
 	/*!
 	 * \brief Sets custom values for conductance decay (\tau_decay) or disables conductances alltogether
-  	 * These will be applied to all connections in a network
+	 * These will be applied to all connections in a network
 	 * For details on the ODE that is implemented refer to (Izhikevich et al, 2004), and for suitable values see (Dayan & Abbott, 2001).
 	 *
 	 * \param isSet: enables the use of COBA mode
@@ -230,7 +230,7 @@ public:
 	 * \param _d_sd the standard deviation value of izhikevich parameter d
 	 */
 	void setNeuronParameters(int grpId, float izh_a, float izh_a_sd, float izh_b, float izh_b_sd,
-								float izh_c, float izh_c_sd, float izh_d, float izh_d_sd);
+		float izh_c, float izh_c_sd, float izh_d, float izh_d_sd);
 
 	//! Sets baseline concentration and decay time constant of neuromodulators (DP, 5HT, ACh, NE) for a neuron group.
 	/*!
@@ -245,7 +245,7 @@ public:
 	 * \param tauNE the decay time constant of Noradrenaline
 	 */
 	void setNeuromodulator(int grpId, float baseDP, float tauDP, float base5HT, float tau5HT,
-							float baseACh, float tauACh, float baseNE, float tauNE);
+		float baseACh, float tauACh, float baseNE, float tauNE);
 
 	//! Set the spike-timing-dependent plasticity (STDP) for a neuron group.
 	/*
@@ -296,7 +296,7 @@ public:
 	 * \param[in] STP_tau_u   decay constant of u (\tau_F)
 	 * \param[in] STP_tau_x   decay constant of x (\tau_D)
 	 */
-	 void setSTP(int grpId, bool isSet, float STP_U, float STP_tau_u, float STP_tau_x);
+	void setSTP(int grpId, bool isSet, float STP_U, float STP_tau_u, float STP_tau_x);
 
 	//! Sets the weight and weight change update parameters
 	/*!
@@ -324,10 +324,10 @@ public:
 	// +++++ PUBLIC METHODS: INTERACTING WITH A SIMULATION ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
 	// adds a bias to every weight in the connection
-	void biasWeights(short int connId, float bias, bool updateWeightRange=false);
+	void biasWeights(short int connId, float bias, bool updateWeightRange = false);
 
 	//! deallocates all dynamical structures and exits
-	void exitSimulation(int val=1);
+	void exitSimulation(int val = 1);
 
 	//! reads the network state from file
 	//! Reads a CARLsim network file. Such a file can be created using SNN:writeNetwork.
@@ -336,10 +336,10 @@ public:
 	 * \param fid: file pointer
 	 * \sa SNN::saveSimulation()
 	 */
-	 void loadSimulation(FILE* fid);
+	void loadSimulation(FILE* fid);
 
 	// multiplies every weight with a scaling factor
-	void scaleWeights(short int connId, float scale, bool updateWeightRange=false);
+	void scaleWeights(short int connId, float scale, bool updateWeightRange = false);
 
 	//! sets up a group monitor registered with a callback to process the spikes.
 	/*!
@@ -379,19 +379,19 @@ public:
 	void setSpikeRate(int grpId, PoissonRate* spikeRate, int refPeriod);
 
 	//! sets the weight value of a specific synapse
-	void setWeight(short int connId, int neurIdPre, int neurIdPost, float weight, bool updateWeightRange=false);
+	void setWeight(short int connId, int neurIdPre, int neurIdPost, float weight, bool updateWeightRange = false);
 
 	//! enters a testing phase, where all weight updates are disabled
-	void startTesting(bool shallUpdateWeights=true);
+	void startTesting(bool shallUpdateWeights = true);
 
 	//! exits a testing phase, making weight updates possible again
 	void stopTesting();
 
 	//! polls connection weights
-	void updateConnectionMonitor(short int connId=ALL);
+	void updateConnectionMonitor(short int connId = ALL);
 
 	//! access group status (currently the concentration of neuromodulator)
-	void updateGroupMonitor(int grpId=ALL);
+	void updateGroupMonitor(int grpId = ALL);
 
 	/*!
 	 * \brief copy required spikes from firing buffer to spike buffer
@@ -403,13 +403,13 @@ public:
 	 * Core and utility functions can call updateSpikeMonitor at any point in time. The function will automatically
 	 * determine the last time it was called, and update SpikeMonitor information only if necessary.
 	 */
-	void updateSpikeMonitor(int grpId=ALL);
+	void updateSpikeMonitor(int grpId = ALL);
 
 	//! stores the pre and post synaptic neuron ids with the weight and delay
 	/*
 	 * \param fid file pointer
 	 */
-	void saveSimulation(FILE* fid, bool saveSynapseInfo=false);
+	void saveSimulation(FILE* fid, bool saveSynapseInfo = false);
 
 	//! function writes population weights from gIDpre to gIDpost to file fname in binary.
 	//void writePopWeights(std::string fname, int gIDpre, int gIDpost);
@@ -430,7 +430,7 @@ public:
 	 * \brief Sets the file pointers for all log files
 	 * file pointer NULL means don't change it.
 	 */
-	void setLogsFp(FILE* fpInf=NULL, FILE* fpErr=NULL, FILE* fpDeb=NULL, FILE* fpLog=NULL);
+	void setLogsFp(FILE* fpInf = NULL, FILE* fpErr = NULL, FILE* fpDeb = NULL, FILE* fpLog = NULL);
 
 
 	// +++++ PUBLIC METHODS: GETTERS / SETTERS ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
@@ -512,7 +512,7 @@ public:
 	float* getSTPx() { return managerRuntimeData.stpx; }
 
 	//! returns whether synapses in connection are fixed (false) or plastic (true)
-    bool isConnectionPlastic(short int connId);
+	bool isConnectionPlastic(short int connId);
 
 	//! returns RangeWeight struct of a connection
 	RangeWeight getWeightRange(short int connId);
@@ -539,16 +539,16 @@ public:
 	bool isSimulationWithSTDP() { return sim_with_stdp; }
 	bool isSimulationWithSTP() { return sim_with_stp; }
 
-// **************************************************************************************************************** //
-// PRIVATE METHODS
-// **************************************************************************************************************** //
+	// **************************************************************************************************************** //
+	// PRIVATE METHODS
+	// **************************************************************************************************************** //
 
 private:
 	//! all unsafe operations of constructor
 	void SNNinit();
 
 	//! advance time step in a simulation
-	void advSimStep(); 
+	void advSimStep();
 
 	//! allocates and initializes all core datastructures
 	void allocateManagerRuntimeData();
@@ -579,7 +579,7 @@ private:
 	 * \brief generate connections among groups according to connect configuration
 	 */
 	void connectNetwork();
-	inline void connectNeurons(int netId, int srcGrp,  int destGrp, int srcN, int destN, short int connId, int externalNetId);
+	inline void connectNeurons(int netId, int srcGrp, int destGrp, int srcN, int destN, short int connId, int externalNetId);
 	inline void connectNeurons(int netId, int _grpSrc, int _grpDest, int _nSrc, int _nDest, short int _connId, float initWt, float maxWt, uint8_t delay, int externalNetId);
 	void connectFull(int netId, std::list<ConnectConfig>::iterator connIt, bool isExternal);
 	void connectOneToOne(int netId, std::list<ConnectConfig>::iterator connIt, bool isExternal);
@@ -594,8 +594,8 @@ private:
 	void findMaxSpikesD1D2(int netId, unsigned int& _maxSpikesD1, unsigned int& _maxSpikesD2);
 	void findNumSynapsesNetwork(int netId, int& _numPostSynNet, int& _numPreSynNet); //!< find the total number of synapses in the network
 	void findNumN(int _netId, int& _numN, int& _nunNExternal, int& numNAssigned,
-                  int& _numNReg, int& _numNExcReg, int& _numNInhReg,
-                  int& _numNPois, int& _numNExcPois, int& _numNInhPois);
+		int& _numNReg, int& _numNExcReg, int& _numNInhReg,
+		int& _numNPois, int& _numNExcPois, int& _numNInhPois);
 	void findNumNSpikeGenAndOffset(int _netId);
 
 	void generatePostSynapticSpike(int preNId, int postNId, int synId, int tD, int netId);
@@ -617,7 +617,7 @@ private:
 	//void verifyNumNeurons();
 
 	void compileSNN();
-	
+
 	void partitionSNN();
 
 	void generateRuntimeSNN();
@@ -628,19 +628,19 @@ private:
 	 * This function generates the next spike time for a Poisson spike generator, given the current spike time
 	 * <tt>currTime</tt>. The function is used in generateSpikesFromRate.
 	 * A Poisson process will always generate inter-spike-interval (ISI) values from an exponential distribution.
-     * The time between each pair of consecutive events has an exponential distribution with parameter \lambda and
-     * each of these ISI values is assumed to be independent of other ISI values.
-     * What follows a Poisson distribution is the actual number of spikes sent during a certain interval.
-     *
-     * The refractory period (in ms) will assert that all spike pairs are at least <tt>refractPeriod</tt> milliseconds
-     * apart (inclusive). That is, the ISI generated from an exponential distribution will be discarded if it turns
-     * out that ISI < refractPeriod
-     * \param[in] currTime       time of current (or "last") spike
-     * \param[in] frate          mean firing rate to be achieved (same as \lambda of the exponential distribution)
-     * \param[in] refractPeriod  refractory period to be honored (in ms)
-     * \returns next spike time (current time plus generated ISI)
-     */
-	//int poissonSpike(int currTime, float frate, int refractPeriod);
+	 * The time between each pair of consecutive events has an exponential distribution with parameter \lambda and
+	 * each of these ISI values is assumed to be independent of other ISI values.
+	 * What follows a Poisson distribution is the actual number of spikes sent during a certain interval.
+	 *
+	 * The refractory period (in ms) will assert that all spike pairs are at least <tt>refractPeriod</tt> milliseconds
+	 * apart (inclusive). That is, the ISI generated from an exponential distribution will be discarded if it turns
+	 * out that ISI < refractPeriod
+	 * \param[in] currTime       time of current (or "last") spike
+	 * \param[in] frate          mean firing rate to be achieved (same as \lambda of the exponential distribution)
+	 * \param[in] refractPeriod  refractory period to be honored (in ms)
+	 * \returns next spike time (current time plus generated ISI)
+	 */
+	 //int poissonSpike(int currTime, float frate, int refractPeriod);
 
 	void printConnectionInfo(short int connId);
 	void printConnectionInfo(int netId, std::list<ConnectConfig>::iterator connIt);
@@ -660,12 +660,12 @@ private:
 	void resetGroupConfigs(bool deallocate = false);
 	void resetNeuromodulator(int netId, int lGrpId);
 	void resetNeuron(int netId, int lGrpId, int lNId);
-	void resetMonitors(bool deallocate=false);
-	void resetConnectionConfigs(bool deallocate=false);
+	void resetMonitors(bool deallocate = false);
+	void resetConnectionConfigs(bool deallocate = false);
 	void deleteManagerRuntimeData();
 	void resetPoissonNeuron(int netId, int lGrpId, int lNId); //!< use local ids
 	void resetPropogationBuffer();
-	void resetSynapse(int netId, bool changeWeights=false);
+	void resetSynapse(int netId, bool changeWeights = false);
 	void resetTimeTable();
 	void resetFiringTable();
 	void routeSpikes();
@@ -690,7 +690,7 @@ private:
 	void allocateSNN(int netId);
 	void clearExtFiringTable();
 	void convertExtSpikesD1(int netId, int startIdx, int endIdx, int GtoLOffset);
-	void convertExtSpikesD2(int netId, int startIdx, int endIdx, int GtoLOffset);	
+	void convertExtSpikesD2(int netId, int startIdx, int endIdx, int GtoLOffset);
 	void doCurrentUpdate();
 	void doSTPUpdateAndDecayCond();
 	void deleteRuntimeData();
@@ -722,8 +722,6 @@ private:
 	void fetchPostConnectionInfo(int netId);
 	void fetchSynapseState(int netId);
 	void fetchExtFiringTable(int netId);
-at prevExecutionTime;
-	float executionTime;
 	void fetchTimeTable(int netId);
 	void writeBackTimeTable(int netId);
 
@@ -748,7 +746,29 @@ at prevExecutionTime;
 	void spikeGeneratorUpdate_GPU(int netId);
 	void updateTimingTable_GPU(int netId);
 	void updateWeights_GPU(int netId);
+#else
+	void allocateSNN_GPU(int netId) {}; //!< allocates runtime data on GPU memory and initialize GPU
+	void assignPoissonFiringRate_GPU(int netId) {};
+	void clearExtFiringTable_GPU(int netId) {};
+	void convertExtSpikesD1_GPU(int netId, int startIdx, int endIdx, int GtoLOffset) {};
+	void convertExtSpikesD2_GPU(int netId, int startIdx, int endIdx, int GtoLOffset) {};
+	void doCurrentUpdateD1_GPU(int netId) {};
+	void doCurrentUpdateD2_GPU(int netId) {};
+	void doSTPUpdateAndDecayCond_GPU(int netId) {};
+	void deleteRuntimeData_GPU(int netId) {};		//!< deallocates all used data structures in snn_gpu.cu
+	void findFiring_GPU(int netId) {};
+	void globalStateUpdate_C_GPU(int netId) {};
+	void globalStateUpdate_N_GPU(int netId) {};
+	void globalStateUpdate_G_GPU(int netId) {};
+	void resetSpikeCnt_GPU(int netId, int lGrpId) {}; //!< Utility function to clear spike counts in the GPU code.
+	void shiftSpikeTables_F_GPU(int netId) {};
+	void shiftSpikeTables_T_GPU(int netId) {};
+	void spikeGeneratorUpdate_GPU(int netId) {};
+	void updateTimingTable_GPU(int netId) {};
+	void updateWeights_GPU(int netId) {};
+#endif
 
+#ifndef __NO_CUDA__
 	// GPU backend: utility function
 	void allocateGroupId(int netId);
 	int  allocateStaticLoad(int netId, int bufSize);

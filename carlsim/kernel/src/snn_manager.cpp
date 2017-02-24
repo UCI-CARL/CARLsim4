@@ -643,7 +643,7 @@ int SNN::runNetwork(int _nsec, int _nmsec, bool printRunSummary) {
 	}
 
 	// set the Poisson generation time slice to be at the run duration up to MAX_TIME_SLICE
-	setGrpTimeSlice(ALL, MAX(1, MIN(runDurationMs, MAX_TIME_SLICE)));
+	setGrpTimeSlice(ALL, std::max(1, std::min(runDurationMs, MAX_TIME_SLICE)));
 
 #ifndef __NO_CUDA__
 	CUDA_RESET_TIMER(timer);
@@ -749,7 +749,7 @@ void SNN::biasWeights(short int connId, float bias, bool updateWeightRange) {
 					// if this flag is set, we need to update minWt,maxWt accordingly
 					// will be saving new maxSynWt and copying to GPU below
 //					connInfo->minWt = fmin(connInfo->minWt, weight);
-					connectConfigMap[connId].maxWt = fmax(connectConfigMap[connId].maxWt, weight);
+					connectConfigMap[connId].maxWt = std::max(connectConfigMap[connId].maxWt, weight);
 					if (needToPrintDebug) {
 						KERNEL_DEBUG("biasWeights(%d,%f,%s): updated weight ranges to [%f,%f]", connId, bias,
 							(updateWeightRange?"true":"false"), 0.0f, connectConfigMap[connId].maxWt);
@@ -757,9 +757,9 @@ void SNN::biasWeights(short int connId, float bias, bool updateWeightRange) {
 				} else {
 					// constrain weight to boundary values
 					// compared to above, we swap minWt/maxWt logic
-					weight = fmin(weight, connectConfigMap[connId].maxWt);
+					weight = std::min(weight, connectConfigMap[connId].maxWt);
 //					weight = fmax(weight, connInfo->minWt);
-					weight = fmax(weight, 0.0f);
+					weight = std::max(weight, 0.0f);
 					if (needToPrintDebug) {
 						KERNEL_DEBUG("biasWeights(%d,%f,%s): constrained weight %f to [%f,%f]", connId, bias,
 							(updateWeightRange?"true":"false"), weight, 0.0f, connectConfigMap[connId].maxWt);
@@ -837,7 +837,7 @@ void SNN::scaleWeights(short int connId, float scale, bool updateWeightRange) {
 					// if this flag is set, we need to update minWt,maxWt accordingly
 					// will be saving new maxSynWt and copying to GPU below
 //					connInfo->minWt = fmin(connInfo->minWt, weight);
-					connectConfigMap[connId].maxWt = fmax(connectConfigMap[connId].maxWt, weight);
+					connectConfigMap[connId].maxWt = std::max(connectConfigMap[connId].maxWt, weight);
 					if (needToPrintDebug) {
 						KERNEL_DEBUG("scaleWeights(%d,%f,%s): updated weight ranges to [%f,%f]", connId, scale,
 							(updateWeightRange?"true":"false"), 0.0f, connectConfigMap[connId].maxWt);
@@ -845,9 +845,9 @@ void SNN::scaleWeights(short int connId, float scale, bool updateWeightRange) {
 				} else {
 					// constrain weight to boundary values
 					// compared to above, we swap minWt/maxWt logic
-					weight = fmin(weight, connectConfigMap[connId].maxWt);
+					weight = std::min(weight, connectConfigMap[connId].maxWt);
 //					weight = fmax(weight, connInfo->minWt);
-					weight = fmax(weight, 0.0f);
+					weight = std::max(weight, 0.0f);
 					if (needToPrintDebug) {
 						KERNEL_DEBUG("scaleWeights(%d,%f,%s): constrained weight %f to [%f,%f]", connId, scale,
 							(updateWeightRange?"true":"false"), weight, 0.0f, connectConfigMap[connId].maxWt);
@@ -5165,7 +5165,7 @@ void SNN::userDefinedSpikeGenerator(int gGrpId) {
 
 		// the end of the valid time window is either the length of the scheduling time slice from now (because that
 		// is the max of the allowed propagated buffer size) or simply the end of the simulation
-		int endOfTimeWindow = MIN(currTime+timeSlice,simTimeRunStop);
+		int endOfTimeWindow = std::min(currTime+timeSlice, simTimeRunStop);
 
 		done = false;
 		while (!done) {
