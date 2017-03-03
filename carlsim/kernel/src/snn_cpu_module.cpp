@@ -389,7 +389,8 @@ void SNN::doSTPUpdateAndDecayCond_CPU(int netId) {
 	}
 }
 
-void SNN::findFiring_CPU(int netId) {
+
+void* SNN::findFiring_CPU(int netId) {
 	assert(runtimeData[netId].memType == CPU_MEM);
 	// ToDo: This can be further optimized using multiple threads allocated on mulitple CPU cores
 	for(int lGrpId = 0; lGrpId < networkConfigs[netId].numGroups; lGrpId++) {
@@ -471,6 +472,14 @@ void SNN::findFiring_CPU(int netId) {
 		}
 	}
 }
+
+// Static multithreading subroutine method - helper for the above method  
+void* SNN::helperFindFiring_CPU(void* arguments) {
+	ThreadStruct* args = (ThreadStruct*) arguments;
+	//printf("\nThread ID: %lu and CPU: %d\n",pthread_self(), sched_getcpu());
+	return ((SNN *)args->snn_pointer) -> findFiring_CPU(args->netId);
+}
+
 
 void SNN::updateLTP(int lNId, int lGrpId, int netId) {
 	unsigned int pos_ij = runtimeData[netId].cumulativePre[lNId]; // the index of pre-synaptic neuron

@@ -611,4 +611,21 @@ typedef struct RoutingTableEntry_s {
 	}
 } RoutingTableEntry;
 
+
+//! CPU multithreading subroutine (that takes single argument) struct argument
+/*!
+*	This sturcture contains the snn object (because the 
+*	multithreading routing is a static method and does not recognize this object), 
+*	netID runtime used by the CPU runtime methods, local group ID, startIdx, 
+*	endIdx, GtoLOffset
+*/
+typedef struct ThreadStruct_s {
+	void* snn_pointer;
+	int netId;
+	int lGrpId;
+	int startIdx;
+	int endIdx;
+	int GtoLOffset;
+} ThreadStruct;
+
 #endif

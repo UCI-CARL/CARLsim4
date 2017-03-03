@@ -1898,12 +1898,34 @@ void SNN::spikeGeneratorUpdate() {
 }
 
 void SNN::findFiring() {
+	pthread_t threads[numCores + 1]; // 1 additional array size if numCores == 0, it may work though bad practice
+	pthread_attr_t attr;
+	cpu_set_t cpus;
+	pthread_attr_init(&attr);
+	ThreadStruct argsThreadRoutine[numCores + 1]; // same as above, +1 array size
+
+	for (int i=0; i<numCores; i++){
+		argsThreadRoutine[i].snn_pointer = this;
+		argsThreadRoutine[i].netId = i + CPU_RUNTIME_BASE;
+		argsThreadRoutine[i].lGrpId = 0;
+		argsThreadRoutine[i].startIdx = 0;
+		argsThreadRoutine[i].endIdx = 0;
+		argsThreadRoutine[i].GtoLOffset = 0;
+	}
+
 	for (int netId = 0; netId < MAX_NET_PER_SNN; netId++) {
 		if (!groupPartitionLists[netId].empty()) {
 			if (netId < CPU_RUNTIME_BASE) // GPU runtime
 				findFiring_GPU(netId);
-			else // CPU runtime
-				findFiring_CPU(netId);
+			else {// CPU runtime
+				CPU_ZERO(&cpus);
+				CPU_SET((netId - CPU_RUNTIME_BASE)%NUM_CPU_CORES, &cpus);
+				pthread_attr_setaffinity_np(&attr, sizeof(cpu_set_t), &cpus);
+				pthread_create(&threads[netId - CPU_RUNTIME_BASE], NULL, 
+				&SNN::helperFindFiring_CPU, (void*)&argsThreadRoutine[netId - CPU_RUNTIME_BASE]);
+
+				//findFiring_CPU(netId);
+			}
 		}
 	}
 }

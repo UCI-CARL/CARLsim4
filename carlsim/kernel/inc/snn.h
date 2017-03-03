@@ -854,13 +854,16 @@ private:
 	void doCurrentUpdateD1_CPU(int netId);
 	void doSTPUpdateAndDecayCond_CPU(int netId);
 	void deleteRuntimeData_CPU(int netId);
-	void findFiring_CPU(int netId);
+	void* findFiring_CPU(int netId);
 	void globalStateUpdate_CPU(int netId);
 	void resetSpikeCnt_CPU(int netId, int lGrpId); //!< Resets the spike count for a particular group.
 	void shiftSpikeTables_CPU(int netId);
 	void spikeGeneratorUpdate_CPU(int netId);
 	void updateTimingTable_CPU(int netId);
 	void updateWeights_CPU(int netId);
+
+	// static multithreading helper methods for all the above CPU setupNetwork() and runNetwork() methods
+	static void* helperFindFiring_CPU(void*);
 
 	// CPU computing backend: data transfer function
 	void copyAuxiliaryData(int netId, int lGrpId, RuntimeData* dest, bool allocateMem);

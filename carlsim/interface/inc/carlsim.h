@@ -99,6 +99,7 @@ class SpikeGenerator;
 #else
 // Unix
 #include <pthread.h>
+#include <unistd.h>
 
 #endif
 
