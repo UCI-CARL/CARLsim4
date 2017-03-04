@@ -477,7 +477,8 @@ void* SNN::findFiring_CPU(int netId) {
 void* SNN::helperFindFiring_CPU(void* arguments) {
 	ThreadStruct* args = (ThreadStruct*) arguments;
 	//printf("\nThread ID: %lu and CPU: %d\n",pthread_self(), sched_getcpu());
-	return ((SNN *)args->snn_pointer) -> findFiring_CPU(args->netId);
+	((SNN *)args->snn_pointer) -> findFiring_CPU(args->netId);
+	pthread_exit(0);
 }
 
 
