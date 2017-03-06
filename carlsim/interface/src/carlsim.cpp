@@ -51,9 +51,8 @@
 
 //#include <callback.h>
 
-class SpikeGenerator;
-class ConnectionMonitor;
-// class SpikeMonitor;
+
+
 #include <callback_core.h>
 
 #include <iostream>		// std::cout, std::endl
@@ -81,11 +80,10 @@ class CARLsim::Impl {
 public:
 	// +++++ PUBLIC METHODS: SETUP / TEAR-DOWN ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
-	Impl(CARLsim* sim, const std::string& netName, SimMode simMode, LoggerMode loggerMode, int numGPUs, int randSeed) {
+	Impl(CARLsim* sim, const std::string& netName, SimMode prferredSimMode, LoggerMode loggerMode, int randSeed) {
 		netName_ 					= netName;
-		simMode_ 					= simMode;
 		loggerMode_ 				= loggerMode;
-		numGPUs_ 					= numGPUs;
+		preferredSimMode_			= prferredSimMode;
 		randSeed_					= randSeed;
 		enablePrint_ = false;
 		copyState_ = false;
@@ -124,21 +122,6 @@ public:
 		if (snn_!=NULL)
 			delete snn_;
 		snn_=NULL;
-
-// FIXME: multiGPUs mode should de-allocate multiGPUs
-#if defined(WIN32) || defined(WIN64)
-		if (simMode_ == GPU_MODE) {
-			WaitForSingleObject(gpuAllocationLock, INFINITE);
-			gpuAllocation[numGPUs_] = false;
-			ReleaseMutex(gpuAllocationLock);
-		}
-#else // linux
-		if (simMode_ == GPU_MODE) {
-			pthread_mutex_lock(&gpuAllocationLock);
-			gpuAllocation[numGPUs_] = false;
-			pthread_mutex_unlock(&gpuAllocationLock);
-		}
-#endif
 	}
 
 
@@ -237,19 +220,18 @@ public:
 	}
 
 	// create group of Izhikevich spiking neurons on 1D grid
-	int createGroup(const std::string& grpName, int nNeur, int neurType, int preferredGPU) {
-		return createGroup(grpName, Grid3D(nNeur,1,1), neurType, preferredGPU);
+	int createGroup(const std::string& grpName, int nNeur, int neurType, int preferredPartition, ComputingBackend preferredBackend) {
+		return createGroup(grpName, Grid3D(nNeur,1,1), neurType, preferredPartition, preferredBackend);
 	}
 
 	// create group of Izhikevich spiking neurons on 3D grid
-	int createGroup(const std::string& grpName, const Grid3D& grid, int neurType, int preferredGPU) {
+	int createGroup(const std::string& grpName, const Grid3D& grid, int neurType, int preferredPartition, ComputingBackend preferredBackend) {
 		std::string funcName = "createGroup(\""+grpName+"\")";
 		UserErrors::assertTrue(carlsimState_==CONFIG_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, 
 			funcName, "CONFIG.");
 		UserErrors::assertTrue(grid.numX>0, UserErrors::CANNOT_BE_NEGATIVE, funcName, "grid.numX");
 		UserErrors::assertTrue(grid.numY>0, UserErrors::CANNOT_BE_NEGATIVE, funcName, "grid.numY");
 		UserErrors::assertTrue(grid.numZ>0, UserErrors::CANNOT_BE_NEGATIVE, funcName, "grid.numZ");
-		UserErrors::assertTrue(preferredGPU < numGPUs_, UserErrors::CANNOT_BE_LARGER, funcName, "preferredGPU");
 
 		// if user has called any set functions with grpId=ALL, and is now adding another group, previously set properties
 		// will not apply to newly added group
@@ -262,28 +244,27 @@ public:
 		if (hasSetHomeoBaseFiringALL_)
 			userWarnings_.push_back("Make sure to call setHomeoBaseFiringRate on group "+grpName);
 
-		int grpId = snn_->createGroup(grpName.c_str(),grid,neurType, preferredGPU);
+		int grpId = snn_->createGroup(grpName.c_str(), grid, neurType, preferredPartition, preferredBackend);
 		grpIds_.push_back(grpId); // keep track of all groups
 
 		return grpId;
 	}
 
 	// create group of spike generators on 1D grid
-	int createSpikeGeneratorGroup(const std::string& grpName, int nNeur, int neurType, int preferredGPU) {
-		return createSpikeGeneratorGroup(grpName, Grid3D(nNeur,1,1), neurType, preferredGPU);
+	int createSpikeGeneratorGroup(const std::string& grpName, int nNeur, int neurType, int preferredPartition, ComputingBackend preferredBackend) {
+		return createSpikeGeneratorGroup(grpName, Grid3D(nNeur,1,1), neurType, preferredPartition, preferredBackend);
 	}
 
 	// create group of spike generators on 3D grid
-	int createSpikeGeneratorGroup(const std::string& grpName, const Grid3D& grid, int neurType, int preferredGPU) {
+	int createSpikeGeneratorGroup(const std::string& grpName, const Grid3D& grid, int neurType, int preferredPartition, ComputingBackend preferredBackend) {
 		std::string funcName = "createSpikeGeneratorGroup(\""+grpName+"\")";
 		UserErrors::assertTrue(carlsimState_==CONFIG_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, 
 			funcName, "CONFIG.");
 		UserErrors::assertTrue(grid.numX>0, UserErrors::CANNOT_BE_NEGATIVE, funcName, "grid.numX");
 		UserErrors::assertTrue(grid.numY>0, UserErrors::CANNOT_BE_NEGATIVE, funcName, "grid.numY");
 		UserErrors::assertTrue(grid.numZ>0, UserErrors::CANNOT_BE_NEGATIVE, funcName, "grid.numZ");
-		UserErrors::assertTrue(preferredGPU < numGPUs_, UserErrors::CANNOT_BE_LARGER, funcName, "preferredGPU");
 
-		int grpId = snn_->createSpikeGeneratorGroup(grpName.c_str(),grid,neurType, preferredGPU);
+		int grpId = snn_->createSpikeGeneratorGroup(grpName.c_str(),grid,neurType, preferredPartition, preferredBackend);
 		grpIds_.push_back(grpId); // keep track of all groups
 
 		return grpId;
@@ -925,8 +906,9 @@ public:
 		UserErrors::assertTrue(isPoissonGroup(grpId), UserErrors::WRONG_NEURON_TYPE, funcName, funcName);
 		UserErrors::assertTrue(spikeRate->getNumNeurons()==getGroupNumNeurons(grpId), UserErrors::MUST_BE_IDENTICAL,
 			funcName, "PoissonRate length and the number of neurons in the group");
-		UserErrors::assertTrue(!spikeRate->isOnGPU() || spikeRate->isOnGPU()&&getSimMode()==GPU_MODE,
-			UserErrors::CAN_ONLY_BE_CALLED_IN_MODE, funcName, "PoissonRate on GPU", "GPU_MODE.");
+		// FIXME: make sure spikeRate->isOnGPU() consistent with simulation mode
+		//UserErrors::assertTrue(!spikeRate->isOnGPU() || spikeRate->isOnGPU()&&getSimMode()==GPU_MODE,
+		//	UserErrors::CAN_ONLY_BE_CALLED_IN_MODE, funcName, "PoissonRate on GPU", "GPU_MODE.");
 
 		snn_->setSpikeRate(grpId, spikeRate, refPeriod);
 	}
@@ -1127,8 +1109,6 @@ public:
 			"grpId", "[0,getNumGroups()]");
 		return snn_->getGroupNeuromodulatorInfo(grpId);
 	}
-
-	SimMode getSimMode() { return simMode_; }
 
 	int getSimTime() { return snn_->getSimTime(); }
 	int getSimTimeSec() { return snn_->getSimTimeSec(); }
@@ -1337,42 +1317,10 @@ private:
 		bool gpuAllocationResult = false;
 		std::string funcName = "CARLsimInit()";
 
-		UserErrors::assertTrue(simMode_!=UNKNOWN_SIM,UserErrors::CANNOT_BE_UNKNOWN,"CARLsim()","Simulation mode");
 		UserErrors::assertTrue(loggerMode_!=UNKNOWN_LOGGER,UserErrors::CANNOT_BE_UNKNOWN,"CARLsim()","Logger mode");
 
-		// FIXME: multiGPUs mode should allocate multi GPUs
-		// Allocate GPU
-		if (simMode_ == GPU_MODE) {
-			if (numGPUs_ >= MAX_NUM_CUDA_DEVICES || numGPUs_ < 0) {
-				CARLSIM_ERROR(funcName.c_str(), "Maximum number of GPUs supported by CARLsim is 8");
-				exit(EXIT_FAILURE); // abort
-			}
-#if defined(WIN32) || defined(WIN64)
-			WaitForSingleObject(gpuAllocationLock, INFINITE);
-			if (!gpuAllocation[numGPUs_]) {
-				gpuAllocation[numGPUs_] = true;
-				gpuAllocationResult = true;
-				gpuOccupiedBy[numGPUs_] = netName_;
-			}
-			ReleaseMutex(gpuAllocationLock);
-#else
-			pthread_mutex_lock(&gpuAllocationLock);
-			if (!gpuAllocation[numGPUs_]) {
-				gpuAllocation[numGPUs_] = true;
-				gpuAllocationResult = true;
-				gpuOccupiedBy[numGPUs_] = netName_;
-			}
-			pthread_mutex_unlock(&gpuAllocationLock);
-#endif
-			if (!gpuAllocationResult) {
-				std::string errorMsg = "GPU Allocation Conflict, GPU has been occupied by CARLsim object " + gpuOccupiedBy[numGPUs_];
-				CARLSIM_ERROR(funcName.c_str(), errorMsg.c_str());
-				exit(EXIT_FAILURE); // abort
-			}
-		}
-
 		// init SNN object
-		snn_ = new SNN(netName_, simMode_, loggerMode_, numGPUs_, randSeed_);
+		snn_ = new SNN(netName_, preferredSimMode_, loggerMode_, randSeed_);
 
 		// set default time constants for synaptic current decay
 		// TODO: add ref
@@ -1438,9 +1386,8 @@ private:
 	SNN* snn_;                  //!< an instance of CARLsim core class
 	std::string netName_;       //!< network name
 	int randSeed_;              //!< RNG seed
-	SimMode simMode_;           //!< CPU_MODE or GPU_MODE
 	LoggerMode loggerMode_;     //!< logger mode (USER, DEVELOPER, SILENT, CUSTOM)
-	int numGPUs_;               //!< how many devices to establish a context
+	SimMode preferredSimMode_;  //!< preferred simulation mode (CPU_MODE, GPU_MODE, HYBRID_MODE)
 	bool enablePrint_;
 	bool copyState_;
 
@@ -1511,8 +1458,8 @@ pthread_mutex_t CARLsim::Impl::gpuAllocationLock = PTHREAD_MUTEX_INITIALIZER;
 #endif
 
 // constructor / destructor
-CARLsim::CARLsim(const std::string& netName, SimMode simMode, LoggerMode loggerMode, int numGPUs, int randSeed) : 
-_impl( new Impl(this, netName, simMode, loggerMode, numGPUs, randSeed) ) {}
+CARLsim::CARLsim(const std::string& netName, SimMode preferredSimMode, LoggerMode loggerMode, int ithGPUs, int randSeed) : 
+_impl( new Impl(this, netName, preferredSimMode, loggerMode, randSeed) ) {}
 CARLsim::~CARLsim() { delete _impl; }
 
 // connect with primitive type
@@ -1533,19 +1480,19 @@ short int CARLsim::connect(int grpId1, int grpId2, ConnectionGenerator* conn, fl
 }
 
 // create group with / without grid
-int CARLsim::createGroup(const std::string& grpName, const Grid3D& grid, int neurType, int preferredGPU) {
-	return _impl->createGroup(grpName, grid, neurType, preferredGPU);
+int CARLsim::createGroup(const std::string& grpName, const Grid3D& grid, int neurType, int preferredPartition, ComputingBackend preferredBackend) {
+	return _impl->createGroup(grpName, grid, neurType, preferredPartition, preferredBackend);
 }
-int CARLsim::createGroup(const std::string& grpName, int nNeur, int neurType, int preferredGPU) {
-	return _impl->createGroup(grpName, nNeur, neurType, preferredGPU);
+int CARLsim::createGroup(const std::string& grpName, int nNeur, int neurType, int preferredPartition, ComputingBackend preferredBackend) {
+	return _impl->createGroup(grpName, nNeur, neurType, preferredPartition, preferredBackend);
 }
 
 // create spike gen group with / without grid
-int CARLsim::createSpikeGeneratorGroup(const std::string& grpName, const Grid3D& grid, int neurType, int preferredGPU) {
-	return _impl->createSpikeGeneratorGroup(grpName, grid, neurType, preferredGPU);
+int CARLsim::createSpikeGeneratorGroup(const std::string& grpName, const Grid3D& grid, int neurType, int preferredPartition, ComputingBackend preferredBackend) {
+	return _impl->createSpikeGeneratorGroup(grpName, grid, neurType, preferredPartition, preferredBackend);
 }
-int CARLsim::createSpikeGeneratorGroup(const std::string& grpName, int nNeur, int neurType, int preferredGPU) {
-	return _impl->createSpikeGeneratorGroup(grpName, nNeur, neurType, preferredGPU);
+int CARLsim::createSpikeGeneratorGroup(const std::string& grpName, int nNeur, int neurType, int preferredPartition, ComputingBackend preferredBackend) {
+	return _impl->createSpikeGeneratorGroup(grpName, nNeur, neurType, preferredPartition, preferredBackend);
 }
 
 // set conductances
@@ -1812,9 +1759,6 @@ GroupSTDPInfo CARLsim::getGroupSTDPInfo(int grpId) { return _impl->getGroupSTDPI
 GroupNeuromodulatorInfo CARLsim::getGroupNeuromodulatorInfo(int grpId) {
 	return _impl->getGroupNeuromodulatorInfo(grpId);
 }
-
-// returns the current simulation mode
-SimMode CARLsim::getSimMode() { return _impl->getSimMode(); }
 
 int CARLsim::getSimTime() { return _impl->getSimTime(); }
 

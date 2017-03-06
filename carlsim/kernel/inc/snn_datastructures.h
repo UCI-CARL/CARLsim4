@@ -53,6 +53,22 @@
 #include <cuda_version_control.h>
 #include <curand.h>
 
+
+/*!
+* \brief type of memory pointer
+*
+* CARLsim supports execution either on standard x86 central processing units (CPUs) or off-the-shelf NVIDIA GPUs.
+* The runtime data for CPU/GPU computing backend needs to be allocated in proper memory space.
+*
+* CPU_MEM: runtime data is allocated on CPU (main) memory
+* GPU_MEM: runtime data is allocated on GPU memory
+*
+*/
+enum MemType {
+	CPU_MEM,     //!< runtime data is allocated on CPU (main) memory
+	GPU_MEM,     //!< runtime data is allocated on GPU memory
+};
+
 //! connection types, used internally (externally it's a string)
 enum conType_t { CONN_RANDOM, CONN_ONE_TO_ONE, CONN_FULL, CONN_FULL_NO_DIRECT, CONN_GAUSSIAN, CONN_USER_DEFINED, CONN_UNKNOWN};
 
@@ -408,8 +424,8 @@ typedef struct RuntimeData_s {
 
 	int* I_set; //!< an array of bits indicating which synapse got a spike
 
-	SimMode	memType;
-	bool     allocated; //!< true if all data has been allocated..
+	MemType memType;
+	bool allocated; //!< true if all data has been allocated
 
 	/* Tsodyks & Markram (1998), where the short-term dynamics of synapses is characterized by three parameters:
 	   U (which roughly models the release probability of a synaptic vesicle for the first spike in a train of spikes),
@@ -572,5 +588,24 @@ typedef struct NetworkConfigRT_s  {
 	double dGABAb;            //!< multiplication factor for decay time of GABAb
 	double sGABAb;            //!< scaling factor for GABAb amplitude
 } NetworkConfigRT;
+
+
+//! runtime spike routing table entry
+/*!
+*	This structure contains the spike routing information, including source net id, source global group id,
+*	destination net id, destination global group id
+*/
+typedef struct RoutingTableEntry_s {
+	RoutingTableEntry_s() : srcNetId(-1), destNetId(-1)	{}
+
+	RoutingTableEntry_s(int srcNetId_, int destNetId_) : srcNetId(srcNetId_), destNetId(destNetId_)	{}
+
+	int srcNetId;
+	int destNetId;
+
+	bool operator== (const struct RoutingTableEntry_s& rte) {
+		return (srcNetId == rte.srcNetId && destNetId == rte.destNetId);
+	}
+} RoutingTableEntry;
 
 #endif
