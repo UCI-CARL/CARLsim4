@@ -863,7 +863,7 @@ private:
 	void updateTimingTable_CPU(int netId);
 	void updateWeights_CPU(int netId);
 #else // LINUX OR MAC
-	void assignPoissonFiringRate_CPU(int netId);
+	void* assignPoissonFiringRate_CPU(int netId);
 	void allocateSNN_CPU(int netId); //!< allocates runtime data on CPU memory
 	void clearExtFiringTable_CPU(int netId);
 	void convertExtSpikesD2_CPU(int netId, int startIdx, int endIdx, int GtoLOffset);
@@ -882,6 +882,8 @@ private:
 
 	// static multithreading helper methods for all the above CPU setupNetwork() and runNetwork() methods
 	//static void* assignPoissonFiringRate_CPU(void*);
+
+	static void* helperAssignPoissonFiringRate_CPU(void*);
 
 	static void* helperFindFiring_CPU(void*);
 #endif
