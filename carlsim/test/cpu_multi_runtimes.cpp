@@ -61,7 +61,7 @@ TEST(cpuMultiRuntimes, spikesSingleVsMulti) {
 	for (int mode = 0; mode < 2; mode++) {
 	//int mode = 1;
 	//int partition = 1;
-		for (int partition = 0; partition < 10; partition++) {
+		for (int partition = 0; partition < 2; partition++) {
 			sim = new CARLsim("test kernel", HYBRID_MODE, SILENT, 0, randSeed);
 
 			// configure the network
@@ -119,6 +119,8 @@ TEST(cpuMultiRuntimes, spikesSingleVsMulti) {
 			//smExc2->print(true);
 			//smInput->print(true);
 
+			printf("spikesSingleVsMulti - [%d , %d]", mode, partition);
+
 			delete sim;
 		}
 
@@ -134,72 +136,68 @@ TEST(cpuMultiRuntimes, shuffleGroups) {
 	int randSeed = 42;
 	float pConn = 100.0f / 1000; // connection probability
 	
-	for (int partitionA = 0; partitionA < 2; partitionA++) {
-		for (int partitionB = 0; partitionB < 2; partitionB++) {
-			for (int partitionC = 0; partitionC < 2; partitionC++) {
-				for (int modeA = 0; modeA < 2; modeA++) {
-					for (int modeB = 0; modeB < 2; modeB++) {
-						for (int modeC = 0; modeC < 2; modeC++) {
-							CARLsim* sim = new CARLsim("MultiRuntimes.shffleGroups", HYBRID_MODE, SILENT, 0, randSeed);
+	for (int partitionA = 0; partitionA < 5; partitionA++) {
+		for (int partitionB = 0; partitionB < 5; partitionB++) {
+			for (int partitionC = 0; partitionC < 5; partitionC++) {
+				
+				CARLsim* sim = new CARLsim("MultiRuntimes.shffleGroups", HYBRID_MODE, SILENT, 0, randSeed);
 
-							// configure the network
-							int gExc = sim->createGroup("exc", 800, EXCITATORY_NEURON, partitionA, CPU_CORES);
-							sim->setNeuronParameters(gExc, 0.02f, 0.2f, -65.0f, 8.0f); // RS
+				// configure the network
+				int gExc = sim->createGroup("exc", 800, EXCITATORY_NEURON, partitionA, CPU_CORES);
+				sim->setNeuronParameters(gExc, 0.02f, 0.2f, -65.0f, 8.0f); // RS
 
-							int gInh = sim->createGroup("inh", 200, INHIBITORY_NEURON, partitionB, CPU_CORES);
-							sim->setNeuronParameters(gInh, 0.1f, 0.2f, -65.0f, 2.0f); // FS
+				int gInh = sim->createGroup("inh", 200, INHIBITORY_NEURON, partitionB, CPU_CORES);
+				sim->setNeuronParameters(gInh, 0.1f, 0.2f, -65.0f, 2.0f); // FS
 
-							int gInput = sim->createSpikeGeneratorGroup("input", 800, EXCITATORY_NEURON, partitionC, CPU_CORES);
+				int gInput = sim->createSpikeGeneratorGroup("input", 800, EXCITATORY_NEURON, partitionC, CPU_CORES);
 
-							sim->connect(gInput, gExc, "one-to-one", RangeWeight(30.0f), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
-							sim->connect(gExc, gExc, "random", RangeWeight(6.0f), pConn, RangeDelay(1, 20), RadiusRF(-1), SYN_FIXED);
-							sim->connect(gExc, gInh, "random", RangeWeight(6.0f), pConn, RangeDelay(1, 20), RadiusRF(-1), SYN_FIXED);
-							sim->connect(gInh, gExc, "random", RangeWeight(5.0f), pConn * 1.25f, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
+				sim->connect(gInput, gExc, "one-to-one", RangeWeight(30.0f), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
+				sim->connect(gExc, gExc, "random", RangeWeight(6.0f), pConn, RangeDelay(1, 20), RadiusRF(-1), SYN_FIXED);
+				sim->connect(gExc, gInh, "random", RangeWeight(6.0f), pConn, RangeDelay(1, 20), RadiusRF(-1), SYN_FIXED);
+				sim->connect(gInh, gExc, "random", RangeWeight(5.0f), pConn * 1.25f, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
 
-							sim->setConductances(false);
+				sim->setConductances(false);
 
-							//sim->setESTDP(gExc, true, STANDARD, ExpCurve(0.1f/100, 20, -0.12f/100, 20));
+				//sim->setESTDP(gExc, true, STANDARD, ExpCurve(0.1f/100, 20, -0.12f/100, 20));
 
-							// build the network
-							sim->setupNetwork();
+				// build the network
+				sim->setupNetwork();
 
-							// set some monitors
-							SpikeMonitor* smExc = sim->setSpikeMonitor(gExc, "NULL");
-							SpikeMonitor* smInh = sim->setSpikeMonitor(gInh, "NULL");
-							SpikeMonitor* smInput = sim->setSpikeMonitor(gInput, "NULL");
+				// set some monitors
+				SpikeMonitor* smExc = sim->setSpikeMonitor(gExc, "NULL");
+				SpikeMonitor* smInh = sim->setSpikeMonitor(gInh, "NULL");
+				SpikeMonitor* smInput = sim->setSpikeMonitor(gInput, "NULL");
 
-							//ConnectionMonitor* cmEE = sim->setConnectionMonitor(gExc, gInh, "DEFAULT");
+				//ConnectionMonitor* cmEE = sim->setConnectionMonitor(gExc, gInh, "DEFAULT");
 
-							//setup some baseline input
-							PoissonRate in(800);
-							in.setRates(1.0f);
-							sim->setSpikeRate(gInput, &in);
+				//setup some baseline input
+				PoissonRate in(800);
+				in.setRates(1.0f);
+				sim->setSpikeRate(gInput, &in);
 
-							// run for a total of 10 seconds
-							// at the end of each runNetwork call, SpikeMonitor stats will be printed
+				// run for a total of 10 seconds
+				// at the end of each runNetwork call, SpikeMonitor stats will be printed
 
-							smInput->startRecording();
-							smExc->startRecording();
-							smInh->startRecording();
+				smInput->startRecording();
+				smExc->startRecording();
+				smInh->startRecording();
 
-							for (int t = 0; t < 4; t++) {
-								sim->runNetwork(1, 0, false);
-							}
-
-							smInput->stopRecording();
-							smExc->stopRecording();
-							smInh->stopRecording();
-
-							//printf("[%d,%d][%d,%d][%d,%d]\n", partitionA, modeA, partitionB, modeB, partitionC, modeC);
-							//printf("%f,%f,%f\n", smExc->getPopMeanFiringRate(), smInh->getPopMeanFiringRate(), smInput->getPopMeanFiringRate());
-							EXPECT_NEAR(smExc->getPopMeanFiringRate(), 6.3, 0.4);
-							EXPECT_NEAR(smInh->getPopMeanFiringRate(), 29.0, 2.0);
-							EXPECT_NEAR(smInput->getPopMeanFiringRate(), 1.0, 0.1);
-
-							delete sim;
-						}
-					}
+				for (int t = 0; t < 4; t++) {
+					sim->runNetwork(1, 0, false);
 				}
+
+				smInput->stopRecording();
+				smExc->stopRecording();
+				smInh->stopRecording();
+
+				//printf("[%d][%d][%d]\n", partitionA,  partitionB,  partitionC);
+				//printf("%f,%f,%f\n", smExc->getPopMeanFiringRate(), smInh->getPopMeanFiringRate(), smInput->getPopMeanFiringRate());
+							
+				EXPECT_NEAR(smExc->getPopMeanFiringRate(), 6.3, 0.4);
+				EXPECT_NEAR(smInh->getPopMeanFiringRate(), 29.0, 2.0);
+				EXPECT_NEAR(smInput->getPopMeanFiringRate(), 1.0, 0.1);
+
+				delete sim;
 			}
 		}
 	}
