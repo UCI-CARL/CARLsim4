@@ -66,7 +66,7 @@ int main() {
 	CARLsim sim("test kernel", HYBRID_MODE, USER, 0, randSeed);
 
 	// configure the network
-	int gExc = sim.createGroup("exc", N_EXC, EXCITATORY_NEURON, 0, CPU_CORES);
+	int gExc = sim.createGroup("exc", N_EXC, EXCITATORY_NEURON, 1, CPU_CORES);
 	sim.setNeuronParameters(gExc, 0.02f, 0.2f, -65.0f, 8.0f); // RS
 
 	int gExc2 = sim.createGroup("exc2", N_EXC, EXCITATORY_NEURON, 1, CPU_CORES);
@@ -75,12 +75,12 @@ int main() {
 	int gInh = sim.createGroup("inh", N_INH, INHIBITORY_NEURON, 1, CPU_CORES);
 	sim.setNeuronParameters(gInh, 0.1f, 0.2f, -65.0f, 2.0f); // FS
 
-	int gInh2 = sim.createGroup("inh2", N_INH, INHIBITORY_NEURON, 0, CPU_CORES);
+	int gInh2 = sim.createGroup("inh2", N_INH, INHIBITORY_NEURON, 1, CPU_CORES);
 	sim.setNeuronParameters(gInh2, 0.1f, 0.2f, -65.0f, 2.0f);
 	//int gExc2 = sim.createGroup("exc", N_EXC, EXCITATORY_NEURON);
 	//sim.setNeuronParameters(gExc2, 0.02f, 0.2f, -65.0f, 8.0f); // RS
 
-	int gInput = sim.createSpikeGeneratorGroup("input", N_EXC, EXCITATORY_NEURON, 0, CPU_CORES);
+	int gInput = sim.createSpikeGeneratorGroup("input", N_EXC, EXCITATORY_NEURON, 1, CPU_CORES);
 
 	int gInput2 = sim.createSpikeGeneratorGroup("input2", N_EXC, EXCITATORY_NEURON, 1, CPU_CORES);
 

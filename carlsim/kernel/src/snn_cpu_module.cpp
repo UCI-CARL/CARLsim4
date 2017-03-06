@@ -389,8 +389,11 @@ void SNN::doSTPUpdateAndDecayCond_CPU(int netId) {
 	}
 }
 
-
-void* SNN::findFiring_CPU(int netId) {
+#if defined(WIN32) || defined(WIN64)
+	void SNN::findFiring_CPU(int netId) {
+#else // POSIX
+	void* SNN::findFiring_CPU(int netId) {
+#endif
 	assert(runtimeData[netId].memType == CPU_MEM);
 	// ToDo: This can be further optimized using multiple threads allocated on mulitple CPU cores
 	for(int lGrpId = 0; lGrpId < networkConfigs[netId].numGroups; lGrpId++) {
@@ -473,13 +476,15 @@ void* SNN::findFiring_CPU(int netId) {
 	}
 }
 
-// Static multithreading subroutine method - helper for the above method  
-void* SNN::helperFindFiring_CPU(void* arguments) {
-	ThreadStruct* args = (ThreadStruct*) arguments;
-	//printf("\nThread ID: %lu and CPU: %d\n",pthread_self(), sched_getcpu());
-	((SNN *)args->snn_pointer) -> findFiring_CPU(args->netId);
-	pthread_exit(0);
-}
+#if !defined(WIN32) && !defined(WIN64) // Linux or MAC
+	// Static multithreading subroutine method - helper for the above method  
+	void* SNN::helperFindFiring_CPU(void* arguments) {
+		ThreadStruct* args = (ThreadStruct*) arguments;
+		//printf("\nThread ID: %lu and CPU: %d\n",pthread_self(), sched_getcpu());
+		((SNN *)args->snn_pointer) -> findFiring_CPU(args->netId);
+		pthread_exit(0);
+	}
+#endif
 
 
 void SNN::updateLTP(int lNId, int lGrpId, int netId) {
