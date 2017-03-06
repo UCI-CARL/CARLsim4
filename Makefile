@@ -16,8 +16,8 @@
 ##----------------------------------------------------------------------------##
 	
 # the following are filled in the include files and passed up
-targets :=
 objects :=
+objects_no_cuda :=
 libraries :=
 output_folders := doc/html
 
@@ -34,7 +34,7 @@ clean:
 
 # clean all objects and output files
 distclean:
-	$(RM) $(objects) $(targets) $(libraries)
+	$(RM) $(objects) $(libraries)
 	$(RMR) $(output_folders)
 
 # print a help message
@@ -45,7 +45,9 @@ help:
 	@ echo "make               Compiles CARLsim4 in default mode (release)"
 	@ echo "make release       Compiles CARLsim4 in release mode (no debug output,"
 	@ echo "                   using fast math and GPU optimization level 3)"
+	@ echo "make release_no_cuda Compiles CARLsim4 in release mode without CUDA library"
 	@ echo "make debug         Compiles CARLsim4 in debug mode (-g -Wall)"
+	@ echo "make debug_no_cuda   Compiles CARLsim4 in debug mode without CUDA library"
 	@ echo "make -E install    Installs CARLsim4 library (make sure -E is set; may"
 	@ echo "                   require root privileges)"
 	@ echo "make -E uninstall  Uninstalls CARLsim4 library (make sure -E is set; may"

@@ -5,13 +5,14 @@
 ##
 ##   Authors:   Michael Beyeler <mbeyeler@uci.edu>
 ##              Kristofor Carlson <kdcarlso@uci.edu>
+##              Ting-Shuo Chou <tingshuc@uci.edu>
 ##
 ##   Institute: Cognitive Anteater Robotics Lab (CARL)
 ##              Department of Cognitive Sciences
 ##              University of California, Irvine
 ##              Irvine, CA, 92697-5100, USA
 ##
-##   Version:   03/31/2016
+##   Version:   12/31/2016
 ##
 ##----------------------------------------------------------------------------##
 
@@ -38,6 +39,7 @@ krnl_cpp_files  := $(wildcard $(krnl_dir)/src/*.cpp)
 krnl_cu_files   := $(wildcard $(krnl_dir)/src/gpu_module/*.cu)
 krnl_obj_files  := $(patsubst %.cpp, %-cpp.o, $(krnl_cpp_files))
 krnl_obj_files  += $(patsubst %.cu, %-cu.o, $(krnl_cu_files))
+krnl_obj_files_no_cuda := $(patsubst %.cpp, %-cpp.o, $(krnl_cpp_files))
 SIMINCFL    += -I$(krnl_dir)/inc
 
 
@@ -97,6 +99,7 @@ SIMINCFL         += -I$(stp_dir)
 
 targets         += carlsim4
 objects         += $(krnl_obj_files) $(intf_obj_files) $(mon_obj_files) $(tools_obj_files)
+objects_no_cuda += $(krnl_obj_files_no_cuda) $(intf_obj_files) $(mon_obj_files) $(tools_obj_files)
 add_files       := $(addprefix carlsim/,configure.mk)
 
 
@@ -104,20 +107,38 @@ add_files       := $(addprefix carlsim/,configure.mk)
 # CARLsim4 Targets
 #------------------------------------------------------------------------------
 
-.PHONY: release debug carlsim4
+.PHONY: release debug archive release_no_cuda debug_no_cuda archive_no_cuda
 
 # release build
 release: CXXFL  += -O3 -ffast-math
 release: NVCCFL += --compiler-options "-O3 -ffast-math"
-release: $(targets)
+release: $(objects)
+release: archive
 
 # debug build
 debug: CXXFL    += -g -Wall -O0
 debug: NVCCFL   += -g -G --compiler-options "-Wall -O0"
-debug: $(targets)
+debug: $(objects)
+debug: archive
 
-# all CARLsim4 targets
-carlsim4: $(objects)
+# release build without cuda
+release_no_cuda: CXXFL += -O3 -ffast-math -D__NO_CUDA__
+release_no_cuda: NVCC := $(CXX)
+release_no_cuda: NVCCFL := $(CXXFL)
+release_no_cuda: NVCCSHRFL := $(CXXSHRFL)
+release_no_cuda: NVCCINCFL := $(CXXINCFL)
+release_no_cuda: $(objects_no_cuda)
+release_no_cuda: archive_no_cuda
+
+# debug build without cuda
+debug_no_cuda: CXXFL += -g -Wall -O0 -D__NO_CUDA__
+debug_no_cuda: NVCC := $(CXX)
+debug_no_cuda: NVCCFL := $(CXXFL)
+debug_no_cuda: NVCCSHRFL := $(CXXSHRFL)
+debug_no_cuda: NVCCINCFL := $(CXXINCFL)
+debug_no_cuda: $(objects_no_cuda)
+debug_no_cuda: archive_no_cuda
+
 
 
 #------------------------------------------------------------------------------
@@ -145,3 +166,11 @@ $(spkgen_dir)/%.o: $(spkgen_dir)/%.cpp $(spkgen_inc_files)
 	$(CXX) $(CXXSHRFL) -c $(CXXINCFL) $(SIMINCFL) $(CXXFL) $< -o $@
 $(stp_dir)/%.o: $(stp_dir)/%.cpp $(stp_inc_files)
 	$(CXX) $(CXXSHRFL) -c $(CXXINCFL) $(SIMINCFL) $(CXXFL) $< -o $@
+
+#archive
+archive:
+	ar rcs $(lib_name).$(lib_ver) $(objects)
+
+archive_no_cuda:
+	ar rcs $(lib_name).$(lib_ver) $(objects_no_cuda)
+

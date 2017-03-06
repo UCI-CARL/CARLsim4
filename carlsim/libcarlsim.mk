@@ -56,7 +56,7 @@ create_files:
 ifneq ($(CARLSIM4_INSTALL_DIR),)
 	@test -d $(CARLSIM4_INSTALL_DIR) || mkdir $(CARLSIM4_INSTALL_DIR)
 endif
-	ar rcs $(lib_name).$(lib_ver) $(intf_obj_files) $(krnl_obj_files) $(mon_obj_files) $(tools_obj_files)
+#	ar rcs $(lib_name).$(lib_ver) $(intf_obj_files) $(krnl_obj_files) $(mon_obj_files) $(tools_obj_files)
 	@test -d $(CARLSIM4_INC_DIR) || mkdir $(CARLSIM4_INC_DIR)
 	@test -d $(CARLSIM4_LIB_DIR) || mkdir $(CARLSIM4_LIB_DIR)
 	@install -m 0755 $(lib_name).$(lib_ver) $(CARLSIM4_LIB_DIR)
