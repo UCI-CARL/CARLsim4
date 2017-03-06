@@ -1850,7 +1850,12 @@ void SNN::copyNeuronSpikeCount(int netId, int lGrpId, RuntimeData* dest, Runtime
 	memcpy(&dest->nSpikeCnt[posN + destOffset], &src->nSpikeCnt[posN], sizeof(int) * lengthN);
 }
 
-void SNN::assignPoissonFiringRate_CPU(int netId) {
+
+#if defined(WIN32) || defined(WIN64)
+	void SNN::assignPoissonFiringRate_CPU(int netId) {
+#else // POSIX
+	void* SNN::assignPoissonFiringRate_CPU(int netId) {
+#endif
 	assert(runtimeData[netId].memType == CPU_MEM);
 
 	for (int lGrpId = 0; lGrpId < networkConfigs[netId].numGroups; lGrpId++) {
@@ -1872,6 +1877,16 @@ void SNN::assignPoissonFiringRate_CPU(int netId) {
 		}
 	}
 }
+
+#if !defined(WIN32) && !defined(WIN64) // Linux or MAC
+	// Static multithreading subroutine method - helper for the above method  
+	void* SNN::helperAssignPoissonFiringRate_CPU(void* arguments) {
+		ThreadStruct* args = (ThreadStruct*) arguments;
+		//printf("\nThread ID: %lu and CPU: %d\n",pthread_self(), sched_getcpu());
+		((SNN *)args->snn_pointer) -> assignPoissonFiringRate_CPU(args->netId);
+		pthread_exit(0);
+	}
+#endif
 
 /*!
 * \brief this function copy weight state in core (CPU) memory sapce to manager (CPU) memory space

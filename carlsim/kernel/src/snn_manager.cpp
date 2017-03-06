@@ -1888,14 +1888,48 @@ void SNN::doSTPUpdateAndDecayCond() {
 void SNN::spikeGeneratorUpdate() {
 	// If poisson rate has been updated, assign new poisson rate
 	if (spikeRateUpdated) {
+		#if !defined(WIN32) && !defined(WIN64) // Linux or MAC
+			pthread_t threads[numCores + 1]; // 1 additional array size if numCores == 0, it may work though bad practice
+			cpu_set_t cpus;	
+			ThreadStruct argsThreadRoutine[numCores + 1]; // same as above, +1 array size
+			int threadCount = 0;
+		#endif
+
 		for (int netId = 0; netId < MAX_NET_PER_SNN; netId++) {
 			if (!groupPartitionLists[netId].empty()) {
 				if (netId < CPU_RUNTIME_BASE) // GPU runtime
 					assignPoissonFiringRate_GPU(netId);
-				else // CPU runtime
-					assignPoissonFiringRate_CPU(netId);
+				else{ // CPU runtime
+					#if defined(WIN32) || defined(WIN64)
+						assignPoissonFiringRate_CPU(netId);
+					#else // Linux or MAC
+						pthread_attr_t attr;
+						pthread_attr_init(&attr);
+						CPU_ZERO(&cpus);
+						CPU_SET(threadCount%NUM_CPU_CORES, &cpus);
+						pthread_attr_setaffinity_np(&attr, sizeof(cpu_set_t), &cpus);
+
+						argsThreadRoutine[threadCount].snn_pointer = this;
+						argsThreadRoutine[threadCount].netId = netId;
+						argsThreadRoutine[threadCount].lGrpId = 0;
+						argsThreadRoutine[threadCount].startIdx = 0;
+						argsThreadRoutine[threadCount].endIdx = 0;
+						argsThreadRoutine[threadCount].GtoLOffset = 0;
+
+						pthread_create(&threads[threadCount], &attr, &SNN::helperAssignPoissonFiringRate_CPU, (void*)&argsThreadRoutine[threadCount]);
+						threadCount++;
+					#endif
+				}
 			}
 		}
+		
+		#if !defined(WIN32) && !defined(WIN64) // Linux or MAC
+			// join all the threads
+			for (int i=0; i<threadCount; i++){
+				pthread_join(threads[i], NULL);
+			}
+		#endif
+
 		spikeRateUpdated = false;
 	}
 
