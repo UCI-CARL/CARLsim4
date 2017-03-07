@@ -3945,6 +3945,13 @@ void SNN::routeSpikes() {
 		firingTableIdxD1 = managerRuntimeData.timeTableD1[simTimeMs + glbNetworkConfig.maxDelay + 1];
 		//KERNEL_DEBUG("GPU1 D1:%d/D2:%d", firingTableIdxD1, firingTableIdxD2);
 
+		#if !defined(WIN32) && !defined(WIN64) // Linux or MAC
+			pthread_t threads[numCores + 1]; // 1 additional array size if numCores == 0, it may work though bad practice
+			cpu_set_t cpus;	
+			ThreadStruct argsThreadRoutine[numCores + 1]; // same as above, +1 array size
+			int threadCount = 0;
+		#endif
+
 		for (int lGrpId = 0; lGrpId < networkConfigs[srcNetId].numGroups; lGrpId++) {
 			if (groupConfigs[srcNetId][lGrpId].hasExternalConnect && managerRuntimeData.extFiringTableEndIdxD2[lGrpId] > 0) {
 				// search GtoLOffset of the neural group at destination local network
@@ -3962,9 +3969,34 @@ void SNN::routeSpikes() {
 						managerRuntimeData.extFiringTableD2[lGrpId], srcNetId,
 						sizeof(int) * managerRuntimeData.extFiringTableEndIdxD2[lGrpId]);
 
-					convertExtSpikesD2(destNetId, firingTableIdxD2,
-						firingTableIdxD2 + managerRuntimeData.extFiringTableEndIdxD2[lGrpId],
-						GtoLOffset); // [StartIdx, EndIdx)
+					if (destNetId < CPU_RUNTIME_BASE)
+						convertExtSpikesD2_GPU(destNetId, firingTableIdxD2,
+							firingTableIdxD2 + managerRuntimeData.extFiringTableEndIdxD2[lGrpId],
+							GtoLOffset); // [StartIdx, EndIdx)
+					else{// CPU runtime
+							#if defined(WIN32) || defined(WIN64)
+								convertExtSpikesD2_CPU(destNetId, firingTableIdxD2,
+									firingTableIdxD2 + managerRuntimeData.extFiringTableEndIdxD2[lGrpId],
+									GtoLOffset); // [StartIdx, EndIdx)
+							#else // Linux or MAC
+								pthread_attr_t attr;
+								pthread_attr_init(&attr);
+								CPU_ZERO(&cpus);
+								CPU_SET(threadCount%NUM_CPU_CORES, &cpus);
+								pthread_attr_setaffinity_np(&attr, sizeof(cpu_set_t), &cpus);
+
+								argsThreadRoutine[threadCount].snn_pointer = this;
+								argsThreadRoutine[threadCount].netId = destNetId;
+								argsThreadRoutine[threadCount].lGrpId = 0;
+								argsThreadRoutine[threadCount].startIdx = firingTableIdxD2;
+								argsThreadRoutine[threadCount].endIdx = firingTableIdxD2 + managerRuntimeData.extFiringTableEndIdxD2[lGrpId];
+								argsThreadRoutine[threadCount].GtoLOffset = GtoLOffset;
+
+								pthread_create(&threads[threadCount], &attr, &SNN::helperConvertExtSpikesD2_CPU, (void*)&argsThreadRoutine[threadCount]);
+								threadCount++;
+							#endif
+					}
+
 					firingTableIdxD2 += managerRuntimeData.extFiringTableEndIdxD2[lGrpId];
 				}
 			}
@@ -3993,6 +4025,14 @@ void SNN::routeSpikes() {
 			}
 			//KERNEL_DEBUG("GPU1 New D1:%d/D2:%d", firingTableIdxD1, firingTableIdxD2);
 		}
+
+		#if !defined(WIN32) && !defined(WIN64) // Linux or MAC
+			// join all the threads
+			for (int i=0; i<threadCount; i++){
+				pthread_join(threads[i], NULL);
+			}
+		#endif
+
 		managerRuntimeData.timeTableD2[simTimeMs + glbNetworkConfig.maxDelay + 1] = firingTableIdxD2;
 		managerRuntimeData.timeTableD1[simTimeMs + glbNetworkConfig.maxDelay + 1] = firingTableIdxD1;
 		writeBackTimeTable(destNetId);

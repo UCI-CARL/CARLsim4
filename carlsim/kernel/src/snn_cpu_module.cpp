@@ -199,7 +199,11 @@ void SNN::updateTimingTable_CPU(int netId) {
 //
 //}
 
-void SNN::convertExtSpikesD2_CPU(int netId, int startIdx, int endIdx, int GtoLOffset) {
+#if defined(WIN32) || defined(WIN64)
+	void SNN::convertExtSpikesD2_CPU(int netId, int startIdx, int endIdx, int GtoLOffset) {
+#else // POSIX
+	void* SNN::convertExtSpikesD2_CPU(int netId, int startIdx, int endIdx, int GtoLOffset) {
+#endif
 	int spikeCountExtRx = endIdx - startIdx; // received external spike count
 
 	runtimeData[netId].spikeCountD2Sec += spikeCountExtRx;
@@ -211,6 +215,16 @@ void SNN::convertExtSpikesD2_CPU(int netId, int startIdx, int endIdx, int GtoLOf
 	for (int extIdx = startIdx; extIdx < endIdx; extIdx++)
 		runtimeData[netId].firingTableD2[extIdx] += GtoLOffset;
 }
+
+#if !defined(WIN32) && !defined(WIN64) // Linux or MAC
+	// Static multithreading subroutine method - helper for the above method  
+	void* SNN::helperConvertExtSpikesD2_CPU(void* arguments) {
+		ThreadStruct* args = (ThreadStruct*) arguments;
+		//printf("\nThread ID: %lu and CPU: %d\n",pthread_self(), sched_getcpu());
+		((SNN *)args->snn_pointer) -> convertExtSpikesD2_CPU(args->netId, args->startIdx, args->endIdx, args->GtoLOffset);
+		pthread_exit(0);
+	}
+#endif
 
 void SNN::convertExtSpikesD1_CPU(int netId, int startIdx, int endIdx, int GtoLOffset) {
 	int spikeCountExtRx = endIdx - startIdx; // received external spike count
