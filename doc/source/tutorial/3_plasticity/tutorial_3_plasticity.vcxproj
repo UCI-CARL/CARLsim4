@@ -19,9 +19,6 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="main_plasticity.cpp" />
-  </ItemGroup>
-  <ItemGroup>
     <ProjectReference Include="..\..\..\..\carlsim\connection_monitor\connection_monitor.vcxproj">
       <Project>{6b9e864c-a1b9-48ce-b88b-41ca17b4b1a9}</Project>
     </ProjectReference>
@@ -37,6 +34,9 @@
     <ProjectReference Include="..\..\..\..\carlsim\spike_monitor\spike_monitor.vcxproj">
       <Project>{5aa9a99d-3439-4c97-9949-c4c0ae5b855a}</Project>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\main_plasticity.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{B33263C5-0468-4132-AE6B-098F642BA570}</ProjectGuid>
