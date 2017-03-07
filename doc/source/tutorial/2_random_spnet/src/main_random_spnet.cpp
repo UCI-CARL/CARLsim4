@@ -48,6 +48,8 @@
 
 #include <carlsim.h>
 #include <vector>
+#include <cmath>
+#include <cstdlib>
 
 
 int main(int argc, const char* argv[]) {

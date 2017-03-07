@@ -19,9 +19,6 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="main_plasticity.cpp" />
-  </ItemGroup>
-  <ItemGroup>
     <ProjectReference Include="..\..\..\..\carlsim\interface\interface.vcxproj">
       <Project>{fbd68119-1a8c-4a1a-96ce-522b651209bc}</Project>
     </ProjectReference>
@@ -31,6 +28,9 @@
     <ProjectReference Include="..\..\..\..\carlsim\monitor\monitor.vcxproj">
       <Project>{5aa9a99d-3439-4c97-9949-c4c0ae5b855a}</Project>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\main_plasticity.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{B33263C5-0468-4132-AE6B-098F642BA570}</ProjectGuid>

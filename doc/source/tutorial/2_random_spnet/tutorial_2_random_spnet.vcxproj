@@ -19,9 +19,6 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="main_random_spnet.cpp" />
-  </ItemGroup>
-  <ItemGroup>
     <ProjectReference Include="..\..\..\..\carlsim\interface\interface.vcxproj">
       <Project>{fbd68119-1a8c-4a1a-96ce-522b651209bc}</Project>
     </ProjectReference>
@@ -31,6 +28,9 @@
     <ProjectReference Include="..\..\..\..\carlsim\monitor\monitor.vcxproj">
       <Project>{5aa9a99d-3439-4c97-9949-c4c0ae5b855a}</Project>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\main_random_spnet.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{AC28A77C-1D49-4060-93B7-20B48BC7B872}</ProjectGuid>
