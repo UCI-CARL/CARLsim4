@@ -68,7 +68,7 @@ GTEST_CPPFLAGS += -isystem $(GTEST_DIR)/include -DGTEST_LINKED_AS_SHARED_LIBRARY
 #------------------------------------------------------------------------------
 
 $(proj_target): $(main_src_file) $(inc_files) $(cpp_files) $(obj_files) $(gtest_deps)
-	$(NVCC) $(CARLSIM4_INC) $(GTEST_CPPFLAGS) $(CARLSIM4_LD) $(CUDA_LD) $(CUDA_LD) $(CUDA_LD) $(CUDA_LD) $(CUDA_LD) $(CUDA_LD) $(CUDA_LD) $(CUDA_LD) $(CUDA_LD) $(GTEST_LD) $(obj_files) $< -o $@
+	$(NVCC) $(CARLSIM4_INC) $(GTEST_CPPFLAGS) $(CARLSIM4_LD) $(CUDA_LD) $(CUDA_LD) $(GTEST_LD) $(obj_files) $< -o $@
 
 %-cpp.o: %.cpp $(inc_files)
 	$(NVCC) -c $(CARLSIM4_INC) $(GTEST_CPPFLAGS) $< -o $@
