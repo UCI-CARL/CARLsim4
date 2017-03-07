@@ -70,7 +70,7 @@ int main() {
 	sim.setConductances(true);
 
 	// create PoissonRate object of size nPoiss.
-	PoissonRate poissRate(nPois, true); // allocate on GPU for minimal memory copies
+	PoissonRate poissRate(nPois);
 
 	// set E-STDP parameters.
 	float alpha_LTP=0.001f/5; float tau_LTP=20.0f;

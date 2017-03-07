@@ -49,10 +49,11 @@
 #include <carlsim.h>
 #include <stdio.h>
 
+#include <periodic_spikegen.h>
+#include <simple_weight_tuner.h>
+
 #if defined(WIN32) || defined(WIN64)
 	#define _CRT_SECURE_NO_WARNINGS
-	#include <periodic_spikegen.h>
-	#include <simple_weight_tuner.h>
 #endif
 
 int main(int argc, const char* argv[]) {
@@ -82,6 +83,9 @@ int main(int argc, const char* argv[]) {
 	// ---------------- SETUP STATE -------------------
 
 	sim->setupNetwork();
+
+	SpikeMonitor* SpikeMonOut = sim->setSpikeMonitor(gOut, "NULL");
+	SpikeMonitor* SpikeMonHidden = sim->setSpikeMonitor(gHid, "NULL");
 
 	// accept firing rates within this range of target firing
 	double targetFiringHid = 27.4;	// target firing rate for gHid
@@ -117,7 +121,17 @@ int main(int argc, const char* argv[]) {
 
 	printf("\n- Step 3: Verify result (gHid=%.4fHz, gOut=%.4fHz, +/- %.4fHz)\n", targetFiringHid, targetFiringOut, 
 		errorMarginHz);
-	sim->runNetwork(1,0);
+
+	SpikeMonOut->startRecording();
+	SpikeMonHidden->startRecording();
+
+	sim->runNetwork(10, 0, false);
+
+	SpikeMonOut->stopRecording();
+	SpikeMonHidden->stopRecording();
+
+	SpikeMonOut->print(false);
+	SpikeMonHidden->print(false);
 
 	delete sim;
 	return 0;
