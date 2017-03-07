@@ -224,12 +224,26 @@ void SNN::convertExtSpikesD1_CPU(int netId, int startIdx, int endIdx, int GtoLOf
 		runtimeData[netId].firingTableD1[extIdx] += GtoLOffset;
 }
 
-void SNN::clearExtFiringTable_CPU(int netId) {
+#if defined(WIN32) || defined(WIN64)
+	void SNN::clearExtFiringTable_CPU(int netId) {
+#else // POSIX
+	void* SNN::clearExtFiringTable_CPU(int netId) {
+#endif
 	assert(runtimeData[netId].memType == CPU_MEM);
 
 	memset(runtimeData[netId].extFiringTableEndIdxD1, 0, sizeof(int) * networkConfigs[netId].numGroups);
 	memset(runtimeData[netId].extFiringTableEndIdxD2, 0, sizeof(int) * networkConfigs[netId].numGroups);
 }
+
+#if !defined(WIN32) && !defined(WIN64) // Linux or MAC
+	// Static multithreading subroutine method - helper for the above method  
+	void* SNN::helperClearExtFiringTable_CPU(void* arguments) {
+		ThreadStruct* args = (ThreadStruct*) arguments;
+		//printf("\nThread ID: %lu and CPU: %d\n",pthread_self(), sched_getcpu());
+		((SNN *)args->snn_pointer) -> clearExtFiringTable_CPU(args->netId);
+		pthread_exit(0);
+	}
+#endif
 
 void SNN::copyTimeTable(int netId, bool toManager) {
 	assert(netId >= CPU_RUNTIME_BASE);
