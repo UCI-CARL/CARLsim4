@@ -68,7 +68,7 @@ public:
 		for (int i = 0; i < maxConnections; i++) {
 			delays[i] = (rand() % (maxDelay - minDelay)) + minDelay;
 			connecteds[i] = rand() % 2 ? true : false; // 50%
-			printf("[%d %d]", delays[i], connecteds[i]);
+			//printf("[%d %d]", delays[i], connecteds[i]);
 		}
 	}
 
@@ -106,7 +106,7 @@ TEST(MultiRuntimes, spikesSingleVsMulti) {
 	//int mode = 1;
 	//int partition = 1;
 		for (int partition = 0; partition < 2; partition++) {
-			sim = new CARLsim("test kernel", HYBRID_MODE, USER, 0, randSeed);
+			sim = new CARLsim("MultiRumtimes.spikesSingleVsMulti", HYBRID_MODE, SILENT, 0, randSeed);
 
 			// configure the network
 			gExc = sim->createGroup("exc", 10, EXCITATORY_NEURON, 0, mode ? CPU_CORES : GPU_CORES);
@@ -236,7 +236,7 @@ TEST(MultiRuntimes, shuffleGroups) {
 
 							//printf("[%d,%d][%d,%d][%d,%d]\n", partitionA, modeA, partitionB, modeB, partitionC, modeC);
 							//printf("%f,%f,%f\n", smExc->getPopMeanFiringRate(), smInh->getPopMeanFiringRate(), smInput->getPopMeanFiringRate());
-							EXPECT_NEAR(smExc->getPopMeanFiringRate(), 6.3, 0.2);
+							EXPECT_NEAR(smExc->getPopMeanFiringRate(), 6.1, 0.4);
 							EXPECT_NEAR(smInh->getPopMeanFiringRate(), 29.0, 2.0);
 							EXPECT_NEAR(smInput->getPopMeanFiringRate(), 1.0, 0.1);
 
