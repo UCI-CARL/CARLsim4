@@ -1856,15 +1856,48 @@ void SNN::advSimStep() {
 }
 
 void SNN::doSTPUpdateAndDecayCond() {
+	#if !defined(WIN32) && !defined(WIN64) // Linux or MAC
+		pthread_t threads[numCores + 1]; // 1 additional array size if numCores == 0, it may work though bad practice
+		cpu_set_t cpus;	
+		ThreadStruct argsThreadRoutine[numCores + 1]; // same as above, +1 array size
+		int threadCount = 0;
+	#endif
+
 	for (int netId = 0; netId < MAX_NET_PER_SNN; netId++) {
 		if (!groupPartitionLists[netId].empty()) {
 			assert(runtimeData[netId].allocated);
 			if (netId < CPU_RUNTIME_BASE) // GPU runtime
 				doSTPUpdateAndDecayCond_GPU(netId);
-			else
-				doSTPUpdateAndDecayCond_CPU(netId);
+			else{//CPU runtime
+				#if defined(WIN32) || defined(WIN64)
+					doSTPUpdateAndDecayCond_CPU(netId);
+				#else // Linux or MAC
+					pthread_attr_t attr;
+					pthread_attr_init(&attr);
+					CPU_ZERO(&cpus);
+					CPU_SET(threadCount%NUM_CPU_CORES, &cpus);
+					pthread_attr_setaffinity_np(&attr, sizeof(cpu_set_t), &cpus);
+
+					argsThreadRoutine[threadCount].snn_pointer = this;
+					argsThreadRoutine[threadCount].netId = netId;
+					argsThreadRoutine[threadCount].lGrpId = 0;
+					argsThreadRoutine[threadCount].startIdx = 0;
+					argsThreadRoutine[threadCount].endIdx = 0;
+					argsThreadRoutine[threadCount].GtoLOffset = 0;
+
+					pthread_create(&threads[threadCount], &attr, &SNN::helperDoSTPUpdateAndDecayCond_CPU, (void*)&argsThreadRoutine[threadCount]);
+					threadCount++;
+				#endif
+			}
 		}
 	}
+
+	#if !defined(WIN32) && !defined(WIN64) // Linux or MAC
+		// join all the threads
+		for (int i=0; i<threadCount; i++){
+			pthread_join(threads[i], NULL);
+		}
+	#endif
 }
 
 void SNN::spikeGeneratorUpdate() {
@@ -3532,14 +3565,48 @@ void SNN::deleteRuntimeData() {
 	CUDA_CHECK_ERRORS(cudaThreadSynchronize());
 #endif
 
+	#if !defined(WIN32) && !defined(WIN64) // Linux or MAC
+		pthread_t threads[numCores + 1]; // 1 additional array size if numCores == 0, it may work though bad practice
+		cpu_set_t cpus;	
+		ThreadStruct argsThreadRoutine[numCores + 1]; // same as above, +1 array size
+		int threadCount = 0;
+	#endif
+
 	for (int netId = 0; netId < MAX_NET_PER_SNN; netId++) {
 		if (!groupPartitionLists[netId].empty()) {
 			if (netId < CPU_RUNTIME_BASE) // GPU runtime
 				deleteRuntimeData_GPU(netId);
-			else // CPU runtime
-				deleteRuntimeData_CPU(netId);
+			else{ // CPU runtime
+				#if defined(WIN32) || defined(WIN64)
+					deleteRuntimeData_CPU(netId);
+				#else // Linux or MAC
+					pthread_attr_t attr;
+					pthread_attr_init(&attr);
+					CPU_ZERO(&cpus);
+					CPU_SET(threadCount%NUM_CPU_CORES, &cpus);
+					pthread_attr_setaffinity_np(&attr, sizeof(cpu_set_t), &cpus);
+
+					argsThreadRoutine[threadCount].snn_pointer = this;
+					argsThreadRoutine[threadCount].netId = netId;
+					argsThreadRoutine[threadCount].lGrpId = 0;
+					argsThreadRoutine[threadCount].startIdx = 0;
+					argsThreadRoutine[threadCount].endIdx = 0;
+					argsThreadRoutine[threadCount].GtoLOffset = 0;
+
+					pthread_create(&threads[threadCount], &attr, &SNN::helperDeleteRuntimeData_CPU, (void*)&argsThreadRoutine[threadCount]);
+					threadCount++;
+				#endif
+			}
 		}
 	}
+
+	#if !defined(WIN32) && !defined(WIN64) // Linux or MAC
+		// join all the threads
+		for (int i=0; i<threadCount; i++){
+			pthread_join(threads[i], NULL);
+		}
+	#endif
+
 #ifndef __NO_CUDA__
 	CUDA_DELETE_TIMER(timer);
 #endif

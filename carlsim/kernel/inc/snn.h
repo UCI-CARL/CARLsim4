@@ -870,8 +870,8 @@ private:
 	void convertExtSpikesD1_CPU(int netId, int startIdx, int endIdx, int GtoLOffset);
 	void* doCurrentUpdateD2_CPU(int netId);
 	void* doCurrentUpdateD1_CPU(int netId);
-	void doSTPUpdateAndDecayCond_CPU(int netId);
-	void deleteRuntimeData_CPU(int netId);
+	void* doSTPUpdateAndDecayCond_CPU(int netId);
+	void* deleteRuntimeData_CPU(int netId);
 	void* findFiring_CPU(int netId);
 	void globalStateUpdate_CPU(int netId);
 	void resetSpikeCnt_CPU(int netId, int lGrpId); //!< Resets the spike count for a particular group.
@@ -884,12 +884,14 @@ private:
 	//static void* assignPoissonFiringRate_CPU(void*);
 	static void* helperAssignPoissonFiringRate_CPU(void*);
 	
-	//these found to be expensive, may be removed later
+	//these found to be expensive
 	static void* helperClearExtFiringTable_CPU(void*);
 	static void* helperConvertExtSpikesD2_CPU(void*);
 
 	static void* helperDoCurrentUpdateD2_CPU(void*);
 	static void* helperDoCurrentUpdateD1_CPU(void*);
+	static void* helperDoSTPUpdateAndDecayCond_CPU(void*);
+	static void* helperDeleteRuntimeData_CPU(void*);
 
 	static void* helperFindFiring_CPU(void*);
 #endif
