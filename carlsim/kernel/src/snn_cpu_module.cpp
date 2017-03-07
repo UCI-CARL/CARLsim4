@@ -786,7 +786,11 @@ void SNN::generatePostSynapticSpike(int preNId, int postNId, int synId, int tD, 
 	}
 }
 
-void  SNN::globalStateUpdate_CPU(int netId) {
+#if defined(WIN32) || defined(WIN64)
+	void  SNN::globalStateUpdate_CPU(int netId) {
+#else // POSIX
+	void*  SNN::globalStateUpdate_CPU(int netId) {
+#endif
 	assert(runtimeData[netId].memType == CPU_MEM);
 
 	for (int lGrpId = 0; lGrpId < networkConfigs[netId].numGroups; lGrpId++) {
@@ -857,6 +861,16 @@ void  SNN::globalStateUpdate_CPU(int netId) {
 		runtimeData[netId].grpDABuffer[lGrpId * 1000 + simTimeMs] = runtimeData[netId].grpDA[lGrpId];
 	} // end numGroups
 }
+
+#if !defined(WIN32) && !defined(WIN64) // Linux or MAC
+	// Static multithreading subroutine method - helper for the above method  
+	void* SNN::helperGlobalStateUpdate_CPU(void* arguments) {
+		ThreadStruct* args = (ThreadStruct*) arguments;
+		//printf("\nThread ID: %lu and CPU: %d\n",pthread_self(), sched_getcpu());
+		((SNN *)args->snn_pointer) -> globalStateUpdate_CPU(args->netId);
+		pthread_exit(0);
+	}
+#endif
 
 // This function updates the synaptic weights from its derivatives..
 void SNN::updateWeights_CPU(int netId) {

@@ -873,7 +873,7 @@ private:
 	void* doSTPUpdateAndDecayCond_CPU(int netId);
 	void* deleteRuntimeData_CPU(int netId);
 	void* findFiring_CPU(int netId);
-	void globalStateUpdate_CPU(int netId);
+	void* globalStateUpdate_CPU(int netId);
 	void resetSpikeCnt_CPU(int netId, int lGrpId); //!< Resets the spike count for a particular group.
 	void shiftSpikeTables_CPU(int netId);
 	void spikeGeneratorUpdate_CPU(int netId);
@@ -892,8 +892,8 @@ private:
 	static void* helperDoCurrentUpdateD1_CPU(void*);
 	static void* helperDoSTPUpdateAndDecayCond_CPU(void*);
 	static void* helperDeleteRuntimeData_CPU(void*);
-
 	static void* helperFindFiring_CPU(void*);
+	static void* helperGlobalStateUpdate_CPU(void*);
 #endif
 
 
