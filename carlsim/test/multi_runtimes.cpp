@@ -51,18 +51,62 @@
 #include "carlsim_tests.h"
 #include <carlsim.h>
 
+class FixedRandomConnGen : public ConnectionGenerator {
+public:
+	FixedRandomConnGen(int srcNumN, int destNumN, RangeWeight rt, RangeDelay rd) {
+		maxConnections = srcNumN * destNumN;
+		row = destNumN;
+		fixedWt = rt.init;
+		maxDelay = rd.max;
+		minDelay = rd.min;
+
+		delays = new int[maxConnections];
+		connecteds = new bool[maxConnections];
+		
+		srand((int)time(NULL));
+		
+		for (int i = 0; i < maxConnections; i++) {
+			delays[i] = (rand() % (maxDelay - minDelay)) + minDelay;
+			connecteds[i] = rand() % 2 ? true : false; // 50%
+			printf("[%d %d]", delays[i], connecteds[i]);
+		}
+	}
+
+	~FixedRandomConnGen() {
+		delete [] delays;
+		delete [] connecteds;
+	}
+
+	void connect(CARLsim* s, int srcGrpId, int i, int destGrpId, int j, float& weight, float& maxWt, float& delay, bool& connected) {
+		weight = fixedWt;
+		maxWt = fixedWt;
+		delay = delays[i * row + j];
+		connected = connecteds[i * row + j];
+	}
+
+private:
+	int maxConnections;
+	int row;
+	int maxDelay;
+	int minDelay;
+	float fixedWt;
+	int* delays;
+	bool* connecteds;
+};
+
 TEST(MultiRuntimes, spikesSingleVsMulti) {
 	// create a network on GPU
 	int gExc, gExc2, gInput;
 	std::vector<std::vector<int> > spikesSingleRuntime, spikesMultiRuntimes;
 	CARLsim* sim;
+	FixedRandomConnGen* frConnGen = new FixedRandomConnGen(10, 10, RangeWeight(10.0f), RangeDelay(1, 20));
 	
 	int randSeed = rand();
 	for (int mode = 0; mode < 2; mode++) {
 	//int mode = 1;
 	//int partition = 1;
 		for (int partition = 0; partition < 2; partition++) {
-			sim = new CARLsim("test kernel", HYBRID_MODE, SILENT, 0, randSeed);
+			sim = new CARLsim("test kernel", HYBRID_MODE, USER, 0, randSeed);
 
 			// configure the network
 			gExc = sim->createGroup("exc", 10, EXCITATORY_NEURON, 0, mode ? CPU_CORES : GPU_CORES);
@@ -76,7 +120,7 @@ TEST(MultiRuntimes, spikesSingleVsMulti) {
 			gInput = sim->createSpikeGeneratorGroup("input", 10, EXCITATORY_NEURON, 0, mode ? CPU_CORES : GPU_CORES);
 
 			sim->connect(gInput, gExc, "one-to-one", RangeWeight(50.0f), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
-			sim->connect(gExc, gExc2, "random", RangeWeight(10.0f), 0.5f, RangeDelay(1, 20), RadiusRF(-1), SYN_FIXED);
+			sim->connect(gExc, gExc2, frConnGen, SYN_FIXED);
 
 			sim->setConductances(false);
 
