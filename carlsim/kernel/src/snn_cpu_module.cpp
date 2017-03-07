@@ -410,7 +410,11 @@ void SNN::resetSpikeCnt_CPU(int netId, int lGrpId) {
 	}
 #endif
 
-void SNN::doSTPUpdateAndDecayCond_CPU(int netId) {
+#if defined(WIN32) || defined(WIN64)
+	void SNN::doSTPUpdateAndDecayCond_CPU(int netId) {
+#else // POSIX
+	void* SNN::doSTPUpdateAndDecayCond_CPU(int netId) {
+#endif
 	assert(runtimeData[netId].memType == CPU_MEM);
 	// ToDo: This can be further optimized using multiple threads allocated on mulitple CPU cores
 	//decay the STP variables before adding new spikes.
@@ -444,6 +448,16 @@ void SNN::doSTPUpdateAndDecayCond_CPU(int netId) {
 		}
 	}
 }
+
+#if !defined(WIN32) && !defined(WIN64) // Linux or MAC
+	// Static multithreading subroutine method - helper for the above method  
+	void* SNN::helperDoSTPUpdateAndDecayCond_CPU(void* arguments) {
+		ThreadStruct* args = (ThreadStruct*) arguments;
+		//printf("\nThread ID: %lu and CPU: %d\n",pthread_self(), sched_getcpu());
+		((SNN *)args->snn_pointer) -> doSTPUpdateAndDecayCond_CPU(args->netId);
+		pthread_exit(0);
+	}
+#endif
 
 #if defined(WIN32) || defined(WIN64)
 	void SNN::findFiring_CPU(int netId) {
@@ -2032,7 +2046,11 @@ void SNN::copySpikeTables(int netId) {
 	memcpy(managerRuntimeData.timeTableD1, runtimeData[netId].timeTableD1, sizeof(int) * (1000 + networkConfigs[netId].maxDelay + 1));
 }
 
-void SNN::deleteRuntimeData_CPU(int netId) {
+#if defined(WIN32) || defined(WIN64)
+	void SNN::deleteRuntimeData_CPU(int netId) {
+#else // POSIX
+	void* SNN::deleteRuntimeData_CPU(int netId) {
+#endif
 	assert(runtimeData[netId].memType == CPU_MEM);
 	// free all pointers
 	delete [] runtimeData[netId].voltage;
@@ -2126,4 +2144,14 @@ void SNN::deleteRuntimeData_CPU(int netId) {
 	if (runtimeData[netId].randNum != NULL) delete [] runtimeData[netId].randNum;
 	runtimeData[netId].randNum = NULL;
 }
+
+#if !defined(WIN32) && !defined(WIN64) // Linux or MAC
+	// Static multithreading subroutine method - helper for the above method  
+	void* SNN::helperDeleteRuntimeData_CPU(void* arguments) {
+		ThreadStruct* args = (ThreadStruct*) arguments;
+		//printf("\nThread ID: %lu and CPU: %d\n",pthread_self(), sched_getcpu());
+		((SNN *)args->snn_pointer) -> deleteRuntimeData_CPU(args->netId);
+		pthread_exit(0);
+	}
+#endif
 
