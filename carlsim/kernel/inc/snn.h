@@ -866,7 +866,7 @@ private:
 	void* assignPoissonFiringRate_CPU(int netId);
 	void allocateSNN_CPU(int netId); //!< allocates runtime data on CPU memory
 	void* clearExtFiringTable_CPU(int netId);
-	void convertExtSpikesD2_CPU(int netId, int startIdx, int endIdx, int GtoLOffset);
+	void* convertExtSpikesD2_CPU(int netId, int startIdx, int endIdx, int GtoLOffset);
 	void convertExtSpikesD1_CPU(int netId, int startIdx, int endIdx, int GtoLOffset);
 	void doCurrentUpdateD2_CPU(int netId);
 	void doCurrentUpdateD1_CPU(int netId);
@@ -884,6 +884,7 @@ private:
 	//static void* assignPoissonFiringRate_CPU(void*);
 	static void* helperAssignPoissonFiringRate_CPU(void*);
 	static void* helperClearExtFiringTable_CPU(void*);
+	static void* helperConvertExtSpikesD2_CPU(void*);
 
 	static void* helperFindFiring_CPU(void*);
 #endif
