@@ -63,9 +63,9 @@ int main(int argc, const char* argv[]) {
 	int maxDelay = 20;      	// maximal conduction delay
 
 	// create 80-20 network with 80% RS and 20% FS neurons
-	int gExc = sim.createGroup("exc", nNeurExc, EXCITATORY_NEURON, 0);
+	int gExc = sim.createGroup("exc", nNeurExc, EXCITATORY_NEURON, 0, GPU_CORES);
 	sim.setNeuronParameters(gExc, 0.02f, 0.2f, -65.0f, 8.0f); // RS
-	int gInh = sim.createGroup("inh", nNeurInh, INHIBITORY_NEURON, 1);
+	int gInh = sim.createGroup("inh", nNeurInh, INHIBITORY_NEURON, 1, GPU_CORES);
 	sim.setNeuronParameters(gInh, 0.1f, 0.2f, -65.0f, 2.0f); // FS
 
 	// specify connectivity

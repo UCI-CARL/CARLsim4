@@ -103,7 +103,7 @@ distclean:
 	$(RM) $(distclean_files)
 
 help:
-	$(info CARLsim4 project options:)
+	$(info CARLsim4 Project options:)
 	$(info )
 	$(info make               Compiles this project)
 	$(info make no_cuda       Compiles this project without CUDA library)

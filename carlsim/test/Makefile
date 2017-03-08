@@ -35,7 +35,7 @@ include $(CARLSIM4_INC_DIR)/configure.mk
 proj_target := carlsim_test
 main_src_file := gtest_custom_main.cpp
 
-.PHONY: project $(proj_target) clean distclean help gtest
+.PHONY: project $(proj_target) no_cuda clean distclean help gtest
 default: $(proj_target)
 
 
@@ -61,18 +61,20 @@ clean_files := $(obj_files) $(proj_target)
 distclean_files := $(clean_files) results/* *.dot *.dat *.csv *.log
 
 GTEST_LD := -L$(GTEST_LIB_DIR) -lgtest_custom_main
-GTEST_CPPFLAGS += -isystem $(GTEST_DIR)/include -DGTEST_LINKED_AS_SHARED_LIBRARY=1
+#GTEST_CPPFLAGS += -isystem $(GTEST_DIR)/include -DGTEST_LINKED_AS_SHARED_LIBRARY=1
 
 #------------------------------------------------------------------------------
 # Project targets and rules
 #------------------------------------------------------------------------------
 
 $(proj_target): $(main_src_file) $(inc_files) $(cpp_files) $(obj_files) $(gtest_deps)
-	$(NVCC) $(CARLSIM4_INC) $(GTEST_CPPFLAGS) $(CARLSIM4_LD) $(CUDA_LD) $(CUDA_LD) $(GTEST_LD) $(obj_files) $< -o $@
+	$(NVCC) $(CARLSIM4_INC) $(GTEST_CPPFLAGS) $(CARLSIM4_LD) $(CUDA_LD) $(GTEST_LD) $(obj_files) $< -o $@
+
+no_cuda: $(main_src_files) $(inc_files) $(cpp_files) $(obj_files) $(gtest_deps)
+	$(CXX) $(GTEST_LD) $(obj_files) $< -o $(proj_target) $(CARLSIM4_LD) -lpthread
 
 %-cpp.o: %.cpp $(inc_files)
-	$(NVCC) -c $(CARLSIM4_INC) $(GTEST_CPPFLAGS) $< -o $@
-	# $(CXX) -c $(CXXINCFL) $(CXXFL) $(GTEST_CPPFLAGS) $< -o $@
+	$(CXX) -c $(CARLSIM4_INC) $(GTEST_CPPFLAGS) $< -o $@
 
 %-cu.o: %.cu $(inc_files)
 	$(NVCC) -c $(NVCCINCFL) $(SIMINCFL) $(NVCCFL) $(GTEST_CPPFLAGS) $< -o $@
@@ -94,9 +96,10 @@ distclean:
 	$(RM) $(distclean_files)
 
 help:
-	$(info CARLsim4 Makefile options:)
+	$(info CARLsim4 Test Suite options:)
 	$(info )
-	$(info make               Compiles CARLsim4 in default mode (release))
+	$(info make               Compiles Test Cases in default mode (release))
+	$(info make no_cuda       Compiles Test Cases in default mode without CUDA library)
 	$(info make clean         Cleans out all object files)
 	$(info make distclean     Cleans out all object and output files)
 	$(info make help          Brings up this message)

@@ -69,6 +69,7 @@ inc_files  := $(wildcard $(proj_inc_dir)/*.h)
 # compile .cpp files to -cpp.o, and .cu files to -cu.o
 obj_files  := $(patsubst %.cpp, %-cpp.o, $(cpp_files))
 obj_files  += $(patsubst %.cu, %-cu.o, $(cu_files))
+obj_files_no_cuda := $(patsubst %.cpp, %-cpp.o, $(cpp_files))
 
 # handled by clean and distclean
 clean_files := $(obj_files) $(proj_target)
@@ -79,12 +80,15 @@ distclean_files := $(clean_files) results/* *.dot *.dat *.csv *.log
 # Project targets and rules
 #------------------------------------------------------------------------------
 
-.PHONY: $(proj_target) clean distclean help
+.PHONY: $(proj_target) no_cuda clean distclean help
 default: $(proj_target)
 
 
 $(proj_target): $(main_src_file) $(inc_files) $(cpp_files) $(obj_files)
-	$(NVCC) $(CARLSIM4_INC) $(CARLSIM4_LD) $(obj_files) $< -o $@
+	$(NVCC) $(CARLSIM4_INC) $(obj_files) $< -o $(proj_target) $(CARLSIM4_LD) $(CUDA_LD) 
+
+no_cuda: $(main_src_file) $(inc_files) $(cpp_files) $(obj_files_no_cuda)
+	$(CXX) $(CARLSIM4_INC) $(obj_files_no_cuda) $< -o $(proj_target) $(CARLSIM4_LD)
 
 $(proj_src_dir)/%-cpp.o: $(proj_src_dir)/%.cpp $(inc_files)
 	$(CXX) -c $(CXXINCFL) $(CXXFL) $< -o $@
@@ -99,9 +103,10 @@ distclean:
 	$(RM) $(distclean_files)
 
 help:
-	$(info CARLsim4 Test Suite options:)
+	$(info CARLsim4 Project options:)
 	$(info )
-	$(info make               Compiles test suite
+	$(info make               Compiles this project)
+	$(info make no_cuda       Compiles this project without CUDA library)
 	$(info make clean         Cleans out all object files)
 	$(info make distclean     Cleans out all object and output files)
 	$(info make help          Brings up this message)
