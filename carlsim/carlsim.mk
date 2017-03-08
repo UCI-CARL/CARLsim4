@@ -24,8 +24,8 @@ intf_dir        := carlsim/interface
 intf_inc_files  := $(wildcard $(intf_dir)/inc/*.h)
 intf_cpp_files  := $(wildcard $(intf_dir)/src/*.cpp)
 intf_cu_files   := $(wildcard $(intf_dir)/src/*.cu)
-intf_obj_files  := $(patsubst %.cpp, %-cpp.o, $(intf_cpp_files))
-intf_obj_files  += $(patsubst %.cu, %-cu.o, $(intf_cu_files))
+intf_cpp_obj    := $(patsubst %.cpp, %-cpp.o, $(intf_cpp_files))
+intf_cu_obj     := $(patsubst %.cu, %-cu.o, $(intf_cu_files))
 SIMINCFL    += -I$(intf_dir)/inc
 
 

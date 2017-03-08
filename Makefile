@@ -27,6 +27,7 @@ default: release
 include carlsim/configure.mk   # import configuration settings
 include carlsim/carlsim.mk     # import CARLsim-related variables and rules
 include carlsim/libcarlsim.mk  # import libCARLsim-related variables and rules
+include carlsim/test.mk        # import test-related variables and rules
 
 # clean all objects
 clean:

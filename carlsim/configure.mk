@@ -11,7 +11,7 @@
 ##              University of California, Irvine
 ##              Irvine, CA, 92697-5100, USA
 ##
-##   Version:   03/31/2016
+##   Version:   03/07/2017
 ##
 ##----------------------------------------------------------------------------##
 
@@ -20,12 +20,13 @@
 #------------------------------------------------------------------------------
 
 # path to CUDA installation
-CUDA_PATH ?= /usr/local/cuda
+CUDA_PATH        ?= /usr/local/cuda
 
-# path of installation of Google test framework
-# required to run CARLsim test suite
-GTEST_DIR ?= /opt/gtest
+# enable CPU-only mode
+CARLSIM4_CPU_ONLY ?= 0
 
+# enable gcov
+CARLSIM4_COVERAGE ?= 0
 
 #------------------------------------------------------------------------------
 # CARLsim/ECJ Parameter Tuning Interface Options
@@ -115,6 +116,7 @@ NVCCFL          += -D__CUDA$(NVCC_MAJOR_NUM)__
 GENCODE_SM20       := -gencode arch=compute_20,code=sm_20
 GENCODE_SM30       := -gencode arch=compute_30,code=sm_30 -gencode arch=compute_35,code=\"sm_35,compute_35\"
 NVCCFL          += $(GENCODE_SM20) $(GENCODE_SM30)
+NVCCFL          += -Wno-deprecated-gpu-targets
 
 # OS-specific build flags
 ifneq ($(DARWIN),) 
@@ -136,6 +138,21 @@ endif
 # shared library flags
 CXXSHRFL += -fPIC -shared
 
+ifeq ($(CARLSIM4_COVERAGE),1)
+	CXXFL += -fprofile-arcs -ftest-coverage
+	CXXLIBFL += -lgcov
+	clean_objects += *.gcda *.gcno
+	targets += *.gcov
+endif
+
+ifeq ($(CARLSIM4_CPU_ONLY),1)
+	CXXFL += -D__CPU_ONLY__
+	NVCC := $(CXX)
+	NVCCINCFL := $(CXXINCFL)
+	NVCCLDFL := $(CXXLIBFL)
+	NVCCFL := $(CXXFL)
+endif
+
 
 #------------------------------------------------------------------------------
 # CARLsim Library
@@ -151,10 +168,9 @@ SIM_BUILD_NUM := 0
 sim_install_files :=
 
 # use the following flags when building from CARLsim lib path
-ifneq ($(CARLSIM4_INSTALL_DIR),)
+ifdef CARLSIM4_INSTALL_DIR
 	CARLSIM4_INC_DIR  := $(CARLSIM4_INSTALL_DIR)/inc
 	CARLSIM4_LIB_DIR  := $(CARLSIM4_INSTALL_DIR)/lib
-	CARLSIM4_LD       := -L$(CARLSIM4_LIB_DIR)
 	sim_install_files += $(CARLSIM4_INSTALL_DIR)
 else
 	CARLSIM4_INC_DIR  := /usr/local/include/carlsim
@@ -162,6 +178,16 @@ else
 	sim_install_files += $(CARLSIM4_INC_DIR)
 endif
 
-CARLSIM4_INC      := -I$(CARLSIM4_INC_DIR)
-CARLSIM4_LD       += -l$(SIM_LIB_NAME)
-CUDA_LD           := -lcurand
+CARLSIM4_FLG := -I$(CARLSIM4_INC_DIR) -L$(CARLSIM4_LIB_DIR)
+CARLSIM4_LIB := -l$(SIM_LIB_NAME)
+ifeq ($(CARLSIM4_CPU_ONLY),1)
+	CARLSIM4_FLG += -D__CPU_ONLY__
+else
+	CARLSIM4_LIB += -lcurand
+endif
+
+ifeq ($(CARLSIM4_COVERAGE),1)
+	CARLSIM4_FLG += -fprofile-arcs -ftest-coverage
+	CARLSIM4_LIB += -lgcov
+endif
+
