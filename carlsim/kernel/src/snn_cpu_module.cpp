@@ -91,13 +91,26 @@
 	}
 #endif
 
-
-void SNN::updateTimingTable_CPU(int netId) {
+#if defined(WIN32) || defined(WIN64)
+	void SNN::updateTimingTable_CPU(int netId) {
+#else // POSIX
+	void* SNN::updateTimingTable_CPU(int netId) {
+#endif
 	assert(runtimeData[netId].memType == CPU_MEM);
 
 	runtimeData[netId].timeTableD2[simTimeMs + networkConfigs[netId].maxDelay + 1] = runtimeData[netId].spikeCountD2Sec + runtimeData[netId].spikeCountLastSecLeftD2;
 	runtimeData[netId].timeTableD1[simTimeMs + networkConfigs[netId].maxDelay + 1] = runtimeData[netId].spikeCountD1Sec;
 }
+
+#if !defined(WIN32) && !defined(WIN64) // Linux or MAC
+	// Static multithreading subroutine method - helper for the above method  
+	void* SNN::helperUpdateTimingTable_CPU(void* arguments) {
+		ThreadStruct* args = (ThreadStruct*) arguments;
+		//printf("\nThread ID: %lu and CPU: %d\n",pthread_self(), sched_getcpu());
+		((SNN *)args->snn_pointer) -> updateTimingTable_CPU(args->netId);
+		pthread_exit(0);
+	}
+#endif
 
 //void SNN::routeSpikes_CPU() {
 //	int firingTableIdxD2, firingTableIdxD1;
