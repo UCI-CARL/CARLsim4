@@ -20,7 +20,7 @@
 #------------------------------------------------------------------------------
 
 # path to CUDA installation
-CUDA_PATH        ?= /usr/local/cuda
+CUDA_PATH ?= /usr/local/cuda
 
 # path of installation of Google test framework
 # required to run CARLsim test suite
@@ -163,4 +163,5 @@ else
 endif
 
 CARLSIM4_INC      := -I$(CARLSIM4_INC_DIR)
-CARLSIM4_LD       += -l$(SIM_LIB_NAME) -lcurand
+CARLSIM4_LD       += -l$(SIM_LIB_NAME)
+CUDA_LD           := -lcurand

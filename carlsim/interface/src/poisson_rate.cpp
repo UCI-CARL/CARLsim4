@@ -38,15 +38,14 @@
  * CARLsim available from http://socsci.uci.edu/~jkrichma/CARLsim/
  * Ver 6/13/2016
  */
+#include <cassert> // assert
+#include <cstdio>  // printf
+#include <cstring> // string, memset
+#include <cstdlib> // malloc, free, rand
+
 #include <poisson_rate.h>
-
-#include <assert.h>	// assert
-#include <string.h> // string, memset
-#include <stdlib.h> // malloc, free, rand
-
-
-#include <carlsim_definitions.h> 	// ALL
-#ifndef __CPU_ONLY__
+#include <carlsim_definitions.h> // ALL
+#ifndef __NO_CUDA__
 	#include <cuda_version_control.h>
 #endif
 
@@ -62,12 +61,12 @@ public:
 		d_rates_ = NULL;
 
 		if (onGPU) {
-#ifndef __CPU_ONLY__
+#ifndef __NO_CUDA__
 			// allocate rates on device and set to zero
 			CUDA_CHECK_ERRORS(cudaMalloc((void**)&d_rates_, sizeof(float)*nNeur));
 			CUDA_CHECK_ERRORS(cudaMemset(d_rates_, 0, sizeof(float)*nNeur));
 #else
-			printf("Cannot use onGPU when compiled with CPU-only mode.\n");
+			printf("Cannot use onGPU when compiled without CUDA library.\n");
 			assert(false);
 #endif
 		} else {
@@ -79,7 +78,7 @@ public:
 
 	~Impl() {
 		if (isOnGPU()) {
-#ifndef __CPU_ONLY__
+#ifndef __NO_CUDA__
 			// clean up device
 			if (d_rates_!=NULL) {
 				CUDA_CHECK_ERRORS(cudaFree(d_rates_)); // free memory
@@ -104,7 +103,7 @@ public:
 		assert(neurId>=0 && neurId<getNumNeurons());
 
 		if (isOnGPU()) {
-#ifndef __CPU_ONLY__
+#ifndef __NO_CUDA__
 			// get data from device (might have kernel launch overhead because float is small)
 			float h_d_rate = 0.0f;
 			CUDA_CHECK_ERRORS( cudaMemcpy(&h_d_rate, &(d_rates_[neurId]), sizeof(float), cudaMemcpyDeviceToHost) );
@@ -119,7 +118,7 @@ public:
 	// get all rates as vector
 	std::vector<float> getRates() {
 		if (isOnGPU()) {
-#ifndef __CPU_ONLY__
+#ifndef __NO_CUDA__
 			// get data from device
 			float *h_d_rates = (float*)malloc(sizeof(float)*getNumNeurons());
 			CUDA_CHECK_ERRORS( cudaMemcpy(h_d_rates, d_rates_, sizeof(float)*getNumNeurons(), cudaMemcpyDeviceToHost) );
@@ -160,7 +159,7 @@ public:
 		} else {
 			assert(neurId>=0 && neurId<getNumNeurons());
 			if (isOnGPU()) {
-#ifndef __CPU_ONLY__
+#ifndef __NO_CUDA__
 				// copy float to device (might have kernel launch overhead because float is small)
 				CUDA_CHECK_ERRORS( cudaMemcpy(&(d_rates_[neurId]), &rate, sizeof(float), cudaMemcpyHostToDevice) );
 #endif
@@ -184,7 +183,7 @@ public:
 		assert(rate.size()==getNumNeurons());
 
 		if (isOnGPU()) {
-#ifndef __CPU_ONLY__
+#ifndef __NO_CUDA__
 			// copy to device
 			float *h_rates_arr = new float[getNumNeurons()];
 			std::copy(rate.begin(), rate.end(), h_rates_arr);
