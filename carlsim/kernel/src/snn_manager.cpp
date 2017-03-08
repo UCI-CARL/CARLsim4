@@ -4237,9 +4237,9 @@ void SNN::routeSpikes() {
 		//KERNEL_DEBUG("GPU1 D1:%d/D2:%d", firingTableIdxD1, firingTableIdxD2);
 
 		#if !defined(WIN32) && !defined(WIN64) // Linux or MAC
-			pthread_t threads[numCores + 1]; // 1 additional array size if numCores == 0, it may work though bad practice
+			pthread_t threads[(2 * networkConfigs[srcNetId].numGroups) + 1]; // 1 additional array size if numCores == 0, it may work though bad practice
 			cpu_set_t cpus;	
-			ThreadStruct argsThreadRoutine[numCores + 1]; // same as above, +1 array size
+			ThreadStruct argsThreadRoutine[(2 * networkConfigs[srcNetId].numGroups) + 1]; // same as above, +1 array size
 			int threadCount = 0;
 		#endif
 
@@ -4260,10 +4260,11 @@ void SNN::routeSpikes() {
 						managerRuntimeData.extFiringTableD2[lGrpId], srcNetId,
 						sizeof(int) * managerRuntimeData.extFiringTableEndIdxD2[lGrpId]);
 
-					if (destNetId < CPU_RUNTIME_BASE)
+					if (destNetId < CPU_RUNTIME_BASE){
 						convertExtSpikesD2_GPU(destNetId, firingTableIdxD2,
 							firingTableIdxD2 + managerRuntimeData.extFiringTableEndIdxD2[lGrpId],
 							GtoLOffset); // [StartIdx, EndIdx)
+					}
 					else{// CPU runtime
 							#if defined(WIN32) || defined(WIN64)
 								convertExtSpikesD2_CPU(destNetId, firingTableIdxD2,
@@ -4307,10 +4308,34 @@ void SNN::routeSpikes() {
 					transferSpikes(runtimeData[destNetId].firingTableD1 + firingTableIdxD1, destNetId,
 						managerRuntimeData.extFiringTableD1[lGrpId], srcNetId,
 						sizeof(int) * managerRuntimeData.extFiringTableEndIdxD1[lGrpId]);
+					if (destNetId < CPU_RUNTIME_BASE){
+						convertExtSpikesD1_GPU(destNetId, firingTableIdxD1,
+							firingTableIdxD1 + managerRuntimeData.extFiringTableEndIdxD1[lGrpId],
+							GtoLOffset); // [StartIdx, EndIdx)
+					}
+					else{// CPU runtime
+						#if defined(WIN32) || defined(WIN64)
+								convertExtSpikesD1_CPU(destNetId, firingTableIdxD1,
+									firingTableIdxD1 + managerRuntimeData.extFiringTableEndIdxD1[lGrpId],
+									GtoLOffset); // [StartIdx, EndIdx)
+							#else // Linux or MAC
+								pthread_attr_t attr;
+								pthread_attr_init(&attr);
+								CPU_ZERO(&cpus);
+								CPU_SET(threadCount%NUM_CPU_CORES, &cpus);
+								pthread_attr_setaffinity_np(&attr, sizeof(cpu_set_t), &cpus);
 
-					convertExtSpikesD1(destNetId, firingTableIdxD1,
-						firingTableIdxD1 + managerRuntimeData.extFiringTableEndIdxD1[lGrpId],
-						GtoLOffset); // [StartIdx, EndIdx)
+								argsThreadRoutine[threadCount].snn_pointer = this;
+								argsThreadRoutine[threadCount].netId = destNetId;
+								argsThreadRoutine[threadCount].lGrpId = 0;
+								argsThreadRoutine[threadCount].startIdx = firingTableIdxD1;
+								argsThreadRoutine[threadCount].endIdx = firingTableIdxD1 + managerRuntimeData.extFiringTableEndIdxD1[lGrpId];
+								argsThreadRoutine[threadCount].GtoLOffset = GtoLOffset;
+
+								pthread_create(&threads[threadCount], &attr, &SNN::helperConvertExtSpikesD1_CPU, (void*)&argsThreadRoutine[threadCount]);
+								threadCount++;
+							#endif
+					}
 					firingTableIdxD1 += managerRuntimeData.extFiringTableEndIdxD1[lGrpId];
 				}
 			}
