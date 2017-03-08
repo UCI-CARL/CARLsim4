@@ -90,7 +90,7 @@ On Windows 7/10: Simply download the code and open/run the "Hello World" project
 
 CARLsim 4 comes with the following requirements:
 - (Windows) Microsoft Visual Studio 2012 or higher.
-- (optional) CUDA Toolkit 5.0 or higher. For platform-specific CUDA installation instructions, please navigate to 
+- (optional) CUDA Toolkit 6.0 or higher. For platform-specific CUDA installation instructions, please navigate to 
   the [NVIDIA CUDA Zone](https://developer.nvidia.com/cuda-zone).
   This is only required if you want to run CARLsim in `GPU_MODE`. Make sure to install the 
   CUDA samples, too, as CARLsim relies on the file `helper_cuda.h`.
