@@ -606,7 +606,7 @@ typedef struct RoutingTableEntry_s {
 	int srcNetId;
 	int destNetId;
 
-	bool operator== (const struct RoutingTableEntry_s& rte) {
+	bool operator== (const struct RoutingTableEntry_s& rte) const {
 		return (srcNetId == rte.srcNetId && destNetId == rte.destNetId);
 	}
 } RoutingTableEntry;
