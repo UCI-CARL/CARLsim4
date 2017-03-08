@@ -22,9 +22,6 @@
 # path to CUDA installation
 CUDA_PATH        ?= /usr/local/cuda
 
-# enable CPU-only mode
-CARLSIM4_NO_CUDA ?= 0
-
 # enable gcov
 CARLSIM4_COVERAGE ?= 0
 
@@ -146,14 +143,6 @@ ifeq ($(CARLSIM4_COVERAGE),1)
 	output         += *.gcda *.gcno *.gcov
 endif
 
-ifeq ($(CARLSIM4_NO_CUDA),1)
-	CXXFL          += -D__NO_CUDA__
-	NVCC           := $(CXX)
-	NVCCINCFL      := $(CXXINCFL)
-	NVCCLDFL       := $(CXXLIBFL)
-	NVCCFL         := $(CXXFL)
-endif
-
 
 #------------------------------------------------------------------------------
 # CARLsim Library
@@ -187,18 +176,3 @@ endif
 
 CARLSIM4_FLG := -I$(CARLSIM4_INC_DIR) -L$(CARLSIM4_LIB_DIR)
 CARLSIM4_LIB := -l$(SIM_LIB_NAME)
-ifeq ($(CARLSIM4_NO_CUDA),1)
-	CARLSIM4_FLG += -D__NO_CUDA__
-else
-	CARLSIM4_FLG += -Wno-deprecated-gpu-targets
-	CARLSIM4_LIB += -lcurand
-endif
-
-ifeq ($(CARLSIM4_COVERAGE),1)
-ifeq ($(CARLSIM4_NO_CUDA),1)
-	CARLSIM4_FLG += -fprofile-arcs -ftest-coverage
-else
-	CARLSIM4_FLG += --compiler-options "-fprofile-arcs -ftest-coverage"
-endif
-	CARLSIM4_LIB += -lgcov
-endif

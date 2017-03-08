@@ -93,16 +93,9 @@ SIMINCFL         += -I$(stp_dir)
 # CARLsim4 Common
 #------------------------------------------------------------------------------
 
-outputs         += carlsim4
+output          += carlsim4
 objects_cpp     += $(krnl_cpp_obj) $(intf_cpp_obj) $(mon_cpp_obj) $(tools_cpp_obj)
 objects_cu      += $(krnl_cu_obj) $(intf_cu_obj) $(mon_cu_obj) $(tools_cu_obj)
-
-# list of objects depend on build mode
-ifeq ($(CARLSIM4_NO_CUDA),1)
-objects         += $(objects_cpp)
-else
-objects         += $(objects_cpp) $(objects_cu)
-endif
 
 ifeq ($(CARLSIM4_COVERAGE),1)
 output          += $(addprefix $(intf_dir)/*/,*.gcda *.gcno)
@@ -119,25 +112,54 @@ add_files       := $(addprefix carlsim/,configure.mk)
 # CARLsim4 Targets
 #------------------------------------------------------------------------------
 
-.PHONY: release debug archive 
+.PHONY: prepare_cuda prepare_nocuda release debug archive archive_nocuda
 
-release: CXXFL  += -O3 -ffast-math
-ifeq ($(CARLSIM4_NO_CUDA),1)
-release: NVCCFL += -O3 -ffast-math
-else
-release: NVCCFL += --compiler-options "-O3 -ffast-math"
+# These have to be replicated for every user-called target.
+# In CUDA mode:
+prepare_cuda: CXXFL  += -O3 -ffast-math
+prepare_cuda: NVCCFL += --compiler-options "-O3 -ffast-math"
+ifeq ($(CARLSIM4_COVERAGE),1)
+preapre_cuda: CARLSIM4_FLG += --compiler-options "-fprofile-arcs -ftest-coverage"
+prepare_cuda: CARLSIM4_LIB += -lgcov
 endif
-release: $(objects)
+prepare_cuda: CARLSIM4_FLG += -Wno-deprecated-gpu-targets
+prepare_cuda: CARLSIM4_LIB += -lcurand
+
+# These have to be replicated for every user-called target.
+# In CUDA mode:
+prepare_nocuda: CXXFL  += -D__NO_CUDA__
+prepare_nocuda: CARLSIM4_FLG += -D __NO_CUDA__
+prepare_nocuda: NVCCFL += --compiler-options "-O3 -ffast-math"
+ifeq ($(CARLSIM4_COVERAGE),1)
+prepare_nocuda: CARLSIM4_FLG += -fprofile-arcs -ftest-coverage
+prepare_nocuda: CARLSIM4_LIB += -lgcov
+endif
+prepare_nocuda: NVCC := $(CXX)
+prepare_nocuda: NVCCINCFL := $(CXXINCFL)
+prepare_nocuda: NVCCLDFL := $(CXXLIBFL)
+prepare_nocuda: NVCCFL := $(CXXFL)
+
+
+# Actual release targets
+release: prepare_cuda
+release: $(objects_cpp) $(objects_cu)
 release: archive
 
-debug: CXXFL    += -g -Wall -O0
-ifeq ($(CARLSIM4_NO_CUDA),1)
-debug: NVCCFL   += -g -Wall -O0
-else
-debug: NVCCFL   += -g -G --compiler-options "-Wall -O0"
-endif
-debug: $(objects)
-debug: archive
+release_nocuda: prepare_nocuda
+release_nocuda: $(objects_cpp)
+release_nocuda: archive_nocuda
+
+
+# Actual debug targets
+
+# debug: CXXFL    += -g -Wall -O0
+# ifeq ($(CARLSIM4_NO_CUDA),1)
+# debug: NVCCFL   += -g -Wall -O0
+# else
+# debug: NVCCFL   += -g -G --compiler-options "-Wall -O0"
+# endif
+# debug: $(objects)
+# debug: archive
 
 
 
@@ -168,5 +190,8 @@ $(stp_dir)/%.o: $(stp_dir)/%.cpp $(stp_inc_files)
 	$(CXX) $(CXXSHRFL) -c $(CXXINCFL) $(SIMINCFL) $(CXXFL) $< -o $@
 
 # archive
-archive: $(objects)
-	ar rcs $(lib_name).$(lib_ver) $(objects)
+archive: $(objects_cpp) $(objects_cu) prepare_cuda
+	ar rcs $(lib_name).$(lib_ver) $(objects_cpp) $(objects_cu)
+
+archive_nocuda: $(objects_cpp) prepare_nocuda
+	ar rcs $(lib_name).$(lib_ver) $(objects_cpp)
