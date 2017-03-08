@@ -44,7 +44,7 @@ proj_src_dir   := src
 
 # NOTE: If your CARLsim4 installation does not reside in the default path, make
 # sure the environment variable CARLSIM4_INSTALL_DIR is set.
-ifneq ($(CARLSIM4_INSTALL_DIR),)
+ifdef CARLSIM4_INSTALL_DIR
 	CARLSIM4_INC_DIR  := $(CARLSIM4_INSTALL_DIR)/inc
 else
 	CARLSIM4_INC_DIR  := /usr/local/include/carlsim
