@@ -92,11 +92,16 @@ SIMINCFL         += -I$(stp_dir)
 # CARLsim4 Common
 #------------------------------------------------------------------------------
 
-targets         += carlsim4
+outputs         += carlsim4
 objects_cpp     += $(krnl_cpp_obj) $(intf_cpp_obj) $(mon_cpp_obj) $(tools_cpp_obj)
 objects_cu      += $(krnl_cu_obj) $(intf_cu_obj) $(mon_cu_obj) $(tools_cu_obj)
+
+# list of objects depend on build mode
+ifeq ($(CARLSIM4_NO_CUDA),1)
+objects         := $(objects_cpp)
+else
 objects         := $(objects_cpp) $(objects_cu)
-objects_no_cuda := $(objects_cpp)
+endif
 
 # additional files that need to be installed
 add_files       := $(addprefix carlsim/,configure.mk)
@@ -106,48 +111,25 @@ add_files       := $(addprefix carlsim/,configure.mk)
 # CARLsim4 Targets
 #------------------------------------------------------------------------------
 
-.PHONY: release debug archive release_no_cuda debug_no_cuda archive_no_cuda
+.PHONY: release debug archive 
 
-# release build
 release: CXXFL  += -O3 -ffast-math
+ifeq ($(CARLSIM4_NO_CUDA),1)
+release: NVCCFL += -O3 -ffast-math
+else
 release: NVCCFL += --compiler-options "-O3 -ffast-math"
-release: CARLSIM4_LIB += -lcurand
+endif
 release: $(objects)
 release: archive
 
-# debug build
 debug: CXXFL    += -g -Wall -O0
+ifeq ($(CARLSIM4_NO_CUDA),1)
+debug: NVCCFL   += -g -Wall -O0
+else
 debug: NVCCFL   += -g -G --compiler-options "-Wall -O0"
-debug: CARLSIM4_LIB += -lcurand
+endif
 debug: $(objects)
 debug: archive
-
-# release build without cuda
-release_no_cuda: CXXFL += -O3 -ffast-math -D__NO_CUDA__
-release_no_cuda: NVCC := $(CXX)
-release_no_cuda: NVCCFL := $(CXXFL)
-release_no_cuda: NVCCSHRFL := $(CXXSHRFL)
-release_no_cuda: NVCCINCFL := $(CXXINCFL)
-release_no_cuda: $(objects_no_cuda)
-release_no_cuda: archive_no_cuda
-
-# debug build without cuda
-debug_no_cuda: CXXFL += -g -Wall -O0 -D__NO_CUDA__
-debug_no_cuda: NVCC := $(CXX)
-debug_no_cuda: NVCCFL := $(CXXFL)
-debug_no_cuda: NVCCSHRFL := $(CXXSHRFL)
-debug_no_cuda: NVCCINCFL := $(CXXINCFL)
-debug_no_cuda: $(objects_no_cuda)
-debug_no_cuda: archive_no_cuda
-
-
-# coverage report
-coverage: CXXFL += -fprofile-arcs -ftest-coverage
-coverage: CXXLIBFL += -lgcov
-coverage: CARLSIM4_FLG += -fprofile-arcs -ftest-coverage
-coverage: CARLSIM4_LIB += -lgcov
-coverage: output += *.gcda *.gcno *gcov
-
 
 
 
@@ -180,6 +162,3 @@ $(stp_dir)/%.o: $(stp_dir)/%.cpp $(stp_inc_files)
 # archive
 archive: $(objects)
 	ar rcs $(lib_name).$(lib_ver) $(objects)
-
-archive_no_cuda: $(objects_no_cuda)
-	ar rcs $(lib_name).$(lib_ver) $(objects_no_cuda)

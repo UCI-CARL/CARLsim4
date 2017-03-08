@@ -22,6 +22,12 @@
 # path to CUDA installation
 CUDA_PATH        ?= /usr/local/cuda
 
+# enable CPU-only mode
+CARLSIM4_NO_CUDA ?= 0
+
+# enable gcov
+CARLSIM4_COVERAGE ?= 0
+
 #------------------------------------------------------------------------------
 # CARLsim/ECJ Parameter Tuning Interface Options
 #------------------------------------------------------------------------------
@@ -109,8 +115,8 @@ NVCCFL          += -D__CUDA$(NVCC_MAJOR_NUM)__
 # CUDA code generation flags
 GENCODE_SM20       := -gencode arch=compute_20,code=sm_20
 GENCODE_SM30       := -gencode arch=compute_30,code=sm_30 -gencode arch=compute_35,code=\"sm_35,compute_35\"
-NVCCFL          += $(GENCODE_SM20) $(GENCODE_SM30)
-NVCCFL          += -Wno-deprecated-gpu-targets
+NVCCFL             += $(GENCODE_SM20) $(GENCODE_SM30)
+NVCCFL             += -Wno-deprecated-gpu-targets
 
 # OS-specific build flags
 ifneq ($(DARWIN),)
@@ -132,6 +138,20 @@ endif
 # shared library flags
 CXXSHRFL += -fPIC -shared
 
+ifeq ($(CARLSIM4_COVERAGE),1)
+	CXXFL += -fprofile-arcs -ftest-coverage
+	CXXLIBFL += -lgcov
+	output += *.gcda *.gcno *.gcov
+endif
+
+ifeq ($(CARLSIM4_NO_CUDA),1)
+	CXXFL += -D__NO_CUDA__
+	NVCC := $(CXX)
+	NVCCINCFL := $(CXXINCFL)
+	NVCCLDFL := $(CXXLIBFL)
+	NVCCFL := $(CXXFL)
+endif
+
 
 #------------------------------------------------------------------------------
 # CARLsim Library
@@ -144,7 +164,13 @@ SIM_MAJOR_NUM := 4
 SIM_MINOR_NUM := 0
 SIM_BUILD_NUM := 0
 
-sim_install_files :=
+lib_name := lib$(SIM_LIB_NAME).a
+lib_ver := $(SIM_MAJOR_NUM).$(SIM_MINOR_NUM).$(SIM_BUILD_NUM)
+
+output += $(lib_name) $(lib_name).$(lib_ver)
+
+sim_install_files += $(CARLSIM4_LIB_DIR)/$(lib_name)*
+
 
 # use the following flags when building from CARLsim lib path
 ifdef CARLSIM4_INSTALL_DIR
@@ -157,6 +183,15 @@ else
 	sim_install_files += $(CARLSIM4_INC_DIR)
 endif
 
-CARLSIM4_FLG := -I$(CARLSIM4_INC_DIR) -L$(CARLSIM4_LIB_DIR)
-CARLSIM4_LD := -l$(SIM_LIB_NAME)
-CUDA_LD := -lcurand
+CARLSIM4_FLG := -I$(CARLSIM4_INC_DIR) -L$(CARLSIM4_LIB_DIR) -Wno-deprecated-gpu-targets 
+CARLSIM4_LIB := -l$(SIM_LIB_NAME)
+ifeq ($(CARLSIM4_NO_CUDA),1)
+	CARLSIM4_FLG += -D__NO_CUDA__
+else
+	CARLSIM4_LIB += -lcurand
+endif
+
+ifeq ($(CARLSIM4_COVERAGE),1)
+	CARLSIM4_FLG += -fprofile-arcs -ftest-coverage
+	CARLSIM4_LIB += -lgcov
+endif

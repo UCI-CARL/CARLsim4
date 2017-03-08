@@ -20,10 +20,10 @@
 # CARLsim4 Test Files
 #------------------------------------------------------------------------------
 
-GTEST_DIR := external/googletest/googletest
+GTEST_DIR := external/googletest
 GTEST_FLG := -I$(GTEST_DIR)/include -L$(GTEST_DIR)/build
 GTEST_LIB := -lgtest
-ifeq ($(CARLSIM4_CPU_ONLY),1)
+ifeq ($(CARLSIM4_NO_CUDA),1)
 	GTEST_LIB += -pthread
 endif
 
@@ -31,24 +31,18 @@ test_dir := carlsim/test
 test_inc_files := $(wildcard $(test_dir)/*.h)
 test_cpp_files := $(wildcard $(test_dir)/*.cpp)
 test_target := $(test_dir)/carlsim_tests
-targets += $(test_target)
+output += $(test_target)
 
 
 #------------------------------------------------------------------------------
 # CARLsim4 Targets and Rules
 #------------------------------------------------------------------------------
 
-.PHONY: test $(test_target)
-
-release_no_cuda: GTEST_LIB += -pthread
-debug_no_cuda: GTEST_LIB += -pthread
+.PHONY: test test_no_cuda $(test_target)
 
 test: $(test_target)
 
 $(test_target): $(test_cpp_files) $(test_inc_files)
-	$(NVCC) $(CARLSIM4_FLG) $(GTEST_FLG) $(GTEST_LD) $(test_cpp_files) -o $@ $(GTEST_LIB) $(CARLSIM4_LD) $(CUDA_LD)
-
-$(test_target)_no_cuda: $(test_cpp_files) $(test_inc_files)
-	$(NVCC) $(CARLSIM4_FLG) $(GTEST_FLG) $(GTEST_LD) $(test_cpp_files) -o $@ $(GTEST_LIB) $(CARLSIM4_LD)
+	$(NVCC) $(CARLSIM4_FLG) $(GTEST_FLG) $(GTEST_LD) $(test_cpp_files) -o $@ $(GTEST_LIB) $(CARLSIM4_LIB)
 
 
