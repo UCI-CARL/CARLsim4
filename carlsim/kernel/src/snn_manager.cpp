@@ -5187,15 +5187,49 @@ void SNN::resetSpikeCnt(int gGrpId) {
 	assert(gGrpId >= ALL);
 
 	if (gGrpId == ALL) {
+		#if !defined(WIN32) && !defined(WIN64) // Linux or MAC
+			pthread_t threads[numCores + 1]; // 1 additional array size if numCores == 0, it may work though bad practice
+			cpu_set_t cpus;	
+			ThreadStruct argsThreadRoutine[numCores + 1]; // same as above, +1 array size
+			int threadCount = 0;
+		#endif
+		
 		for (int netId = 0; netId < MAX_NET_PER_SNN; netId++) {
 			if (!groupPartitionLists[netId].empty()) {
 				if (netId < CPU_RUNTIME_BASE) // GPU runtime
 					resetSpikeCnt_GPU(netId, ALL);
-				else // CPU runtime
-					resetSpikeCnt_CPU(netId, ALL);
+				else{ // CPU runtime
+					#if defined(WIN32) || defined(WIN64)
+						resetSpikeCnt_CPU(netId, ALL);
+					#else // Linux or MAC
+						pthread_attr_t attr;
+						pthread_attr_init(&attr);
+						CPU_ZERO(&cpus);
+						CPU_SET(threadCount%NUM_CPU_CORES, &cpus);
+						pthread_attr_setaffinity_np(&attr, sizeof(cpu_set_t), &cpus);
+
+						argsThreadRoutine[threadCount].snn_pointer = this;
+						argsThreadRoutine[threadCount].netId = netId;
+						argsThreadRoutine[threadCount].lGrpId = ALL;
+						argsThreadRoutine[threadCount].startIdx = 0;
+						argsThreadRoutine[threadCount].endIdx = 0;
+						argsThreadRoutine[threadCount].GtoLOffset = 0;
+
+						pthread_create(&threads[threadCount], &attr, &SNN::helperResetSpikeCnt_CPU, (void*)&argsThreadRoutine[threadCount]);
+						threadCount++;
+					#endif
+				}
 			}
 		}
-	} else {
+
+		#if !defined(WIN32) && !defined(WIN64) // Linux or MAC
+			// join all the threads
+			for (int i=0; i<threadCount; i++){
+				pthread_join(threads[i], NULL);
+			}
+		#endif
+	} 
+	else {
 		int netId = groupConfigMDMap[gGrpId].netId;
 		int lGrpId = groupConfigMDMap[gGrpId].lGrpId;
 

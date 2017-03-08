@@ -51,84 +51,124 @@
 #include "carlsim_tests.h"
 #include <carlsim.h>
 
+class FixedRandomConnGen : public ConnectionGenerator {
+public:
+        FixedRandomConnGen(int srcNumN, int destNumN, RangeWeight rt, RangeDelay rd) {
+                maxConnections = srcNumN * destNumN;
+                row = destNumN;
+                fixedWt = rt.init;
+                maxDelay = rd.max;
+                minDelay = rd.min;
+
+                delays = new int[maxConnections];
+                connecteds = new bool[maxConnections];
+
+                srand((int)time(NULL));
+
+                for (int i = 0; i < maxConnections; i++) {
+                        delays[i] = (rand() % (maxDelay - minDelay)) + minDelay;
+                        connecteds[i] = rand() % 2 ? true : false; // 50%
+                        //printf("[%d %d]", delays[i], connecteds[i]);
+                }
+        }
+
+        ~FixedRandomConnGen() {
+                delete [] delays;
+                delete [] connecteds;
+        }
+
+        void connect(CARLsim* s, int srcGrpId, int i, int destGrpId, int j, float& weight, float& maxWt, float& delay, bool& connected) {
+                weight = fixedWt;
+                maxWt = fixedWt;
+                delay = delays[i * row + j];
+                connected = connecteds[i * row + j];
+        }
+
+private:
+        int maxConnections;
+        int row;
+        int maxDelay;
+        int minDelay;
+        float fixedWt;
+        int* delays;
+        bool* connecteds;
+};
+
 TEST(cpuMultiRuntimes, spikesSingleVsMulti) {
 	// create a network on GPU
 	int gExc, gExc2, gInput;
 	std::vector<std::vector<int> > spikesSingleRuntime, spikesMultiRuntimes;
 	CARLsim* sim;
-	
+	FixedRandomConnGen* frConnGen = new FixedRandomConnGen(10, 10, RangeWeight(10.0f), RangeDelay(1, 20));
+
 	int randSeed = rand();
-	for (int mode = 0; mode < 2; mode++) {
-	//int mode = 1;
-	//int partition = 1;
-		for (int partition = 0; partition < 2; partition++) {
-			sim = new CARLsim("test kernel", HYBRID_MODE, SILENT, 0, randSeed);
+	for (int partition = 0; partition < 10; partition++) {
+		sim = new CARLsim("test kernel", HYBRID_MODE, SILENT, 0, randSeed);
 
-			// configure the network
-			gExc = sim->createGroup("exc", 10, EXCITATORY_NEURON, 0, CPU_CORES);
-			sim->setNeuronParameters(gExc, 0.02f, 0.2f, -65.0f, 8.0f); // RS
+		// configure the network
+		gExc = sim->createGroup("exc", 10, EXCITATORY_NEURON, 0, CPU_CORES);
+		sim->setNeuronParameters(gExc, 0.02f, 0.2f, -65.0f, 8.0f); // RS
 
-			//int gInh = sim.createGroup("inh", 20, INHIBITORY_NEURON);
-			//sim.setNeuronParameters(gInh, 0.1f, 0.2f, -65.0f, 2.0f); // FS
-			gExc2 = sim->createGroup("exc2", 10, EXCITATORY_NEURON, partition, CPU_CORES);
-			sim->setNeuronParameters(gExc2, 0.02f, 0.2f, -65.0f, 8.0f); // RS
+		//int gInh = sim.createGroup("inh", 20, INHIBITORY_NEURON);
+		//sim.setNeuronParameters(gInh, 0.1f, 0.2f, -65.0f, 2.0f); // FS
+		gExc2 = sim->createGroup("exc2", 10, EXCITATORY_NEURON, partition, CPU_CORES);
+		sim->setNeuronParameters(gExc2, 0.02f, 0.2f, -65.0f, 8.0f); // RS
 
-			gInput = sim->createSpikeGeneratorGroup("input", 10, EXCITATORY_NEURON, 0, CPU_CORES);
+		gInput = sim->createSpikeGeneratorGroup("input", 10, EXCITATORY_NEURON, 0, CPU_CORES);
 
-			sim->connect(gInput, gExc, "one-to-one", RangeWeight(50.0f), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
-			sim->connect(gExc, gExc2, "random", RangeWeight(10.0f), 0.5f, RangeDelay(1, 20), RadiusRF(-1), SYN_FIXED);
+		sim->connect(gInput, gExc, "one-to-one", RangeWeight(50.0f), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
+		sim->connect(gExc, gExc2, frConnGen, SYN_FIXED);
 
-			sim->setConductances(false);
+		sim->setConductances(false);
 
 			//sim.setESTDP(gExc, true, STANDARD, ExpCurve(0.1f/100, 20, -0.12f/100, 20));
 
 			// build the network
-			sim->setupNetwork();
+		sim->setupNetwork();
 
 			// set some monitors
 			//SpikeMonitor* smInput = sim->setSpikeMonitor(gInput, "NULL");
 			//SpikeMonitor* smExc = sim->setSpikeMonitor(gExc, "NULL");
-			SpikeMonitor* smExc2 = sim->setSpikeMonitor(gExc2, "NULL");
+		SpikeMonitor* smExc2 = sim->setSpikeMonitor(gExc2, "NULL");
 			//ConnectionMonitor* cmEE = sim->setConnectionMonitor(gExc, gExc2, "NULL");
 
 			//setup some baseline input
-			PoissonRate in(10);
-			in.setRates(5.0f);
-			sim->setSpikeRate(gInput, &in);
+		PoissonRate in(10);
+		in.setRates(5.0f);
+		sim->setSpikeRate(gInput, &in);
 
 			// run for a total of 10 seconds
 			// at the end of each runNetwork call, SpikeMonitor stats will be printed
 			//smInput->startRecording();
 			//smExc->startRecording();
-			smExc2->startRecording();
+		smExc2->startRecording();
 
-			sim->runNetwork(1, 0);
+		sim->runNetwork(1, 0);
 
 			//smInput->stopRecording();
 			//smExc->stopRecording();
-			smExc2->stopRecording();
+		smExc2->stopRecording();
 
-			if (partition == 0) { // single gpu
-				spikesSingleRuntime = smExc2->getSpikeVector2D();
-			}
-			else {
-				spikesMultiRuntimes = smExc2->getSpikeVector2D();
-			}
+		if (partition == 0) { // single cpu
+			spikesSingleRuntime = smExc2->getSpikeVector2D();
+		}
+		else {
+			spikesMultiRuntimes = smExc2->getSpikeVector2D();
+		}
 
 			//smExc->print(true);
 			//smExc2->print(true);
 			//smInput->print(true);
 
-			printf("spikesSingleVsMulti - [%d , %d]", mode, partition);
+		//printf("spikesSingleVsMulti - [0 , %d]", partition);
 
-			delete sim;
-		}
+		delete sim;
+	}
 
-		for (int nId = 0; nId < spikesSingleRuntime.size(); nId++) {
-			EXPECT_EQ(spikesSingleRuntime[nId].size(), spikesMultiRuntimes[nId].size()); // the same number of spikes
-			for (int s = 0; s < spikesSingleRuntime[nId].size(); s++)
-				EXPECT_EQ(spikesSingleRuntime[nId][s], spikesMultiRuntimes[nId][s]); // the same spike timing
-		}
+	for (int nId = 0; nId < spikesSingleRuntime.size(); nId++) {
+		EXPECT_EQ(spikesSingleRuntime[nId].size(), spikesMultiRuntimes[nId].size()); // the same number of spikes
+		for (int s = 0; s < spikesSingleRuntime[nId].size(); s++)
+			EXPECT_EQ(spikesSingleRuntime[nId][s], spikesMultiRuntimes[nId][s]); // the same spike timing
 	}
 }
 
