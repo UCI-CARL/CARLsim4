@@ -51,7 +51,11 @@
 #include <spike_buffer.h>
 
 // spikeGeneratorUpdate_CPU on CPUs
-void SNN::spikeGeneratorUpdate_CPU(int netId) {
+#if defined(WIN32) || defined(WIN64)
+	void SNN::spikeGeneratorUpdate_CPU(int netId) {
+#else // POSIX
+	void* SNN::spikeGeneratorUpdate_CPU(int netId) {
+#endif
 	assert(runtimeData[netId].allocated);
 	assert(runtimeData[netId].memType == CPU_MEM);
 
@@ -76,6 +80,17 @@ void SNN::spikeGeneratorUpdate_CPU(int netId) {
 		memcpy(runtimeData[netId].spikeGenBits, managerRuntimeData.spikeGenBits, sizeof(int) * (networkConfigs[netId].numNSpikeGen / 32 + 1));
 	}
 }
+
+#if !defined(WIN32) && !defined(WIN64) // Linux or MAC
+	// Static multithreading subroutine method - helper for the above method  
+	void* SNN::helperSpikeGeneratorUpdate_CPU(void* arguments) {
+		ThreadStruct* args = (ThreadStruct*) arguments;
+		//printf("\nThread ID: %lu and CPU: %d\n",pthread_self(), sched_getcpu());
+		((SNN *)args->snn_pointer) -> spikeGeneratorUpdate_CPU(args->netId);
+		pthread_exit(0);
+	}
+#endif
+
 
 void SNN::updateTimingTable_CPU(int netId) {
 	assert(runtimeData[netId].memType == CPU_MEM);
