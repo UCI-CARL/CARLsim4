@@ -915,7 +915,11 @@ void SNN::generatePostSynapticSpike(int preNId, int postNId, int synId, int tD, 
 #endif
 
 // This function updates the synaptic weights from its derivatives..
-void SNN::updateWeights_CPU(int netId) {
+#if defined(WIN32) || defined(WIN64)
+	void SNN::updateWeights_CPU(int netId) {
+#else // POSIX
+	void* SNN::updateWeights_CPU(int netId) {
+#endif
 	// at this point we have already checked for sim_in_testing and sim_with_fixedwts
 	assert(sim_in_testing==false);
 	assert(sim_with_fixedwts==false);
@@ -1018,6 +1022,16 @@ void SNN::updateWeights_CPU(int netId) {
 		}
 	}
 }
+
+#if !defined(WIN32) && !defined(WIN64) // Linux or MAC
+	// Static multithreading subroutine method - helper for the above method  
+	void* SNN::helperUpdateWeights_CPU(void* arguments) {
+		ThreadStruct* args = (ThreadStruct*) arguments;
+		//printf("\nThread ID: %lu and CPU: %d\n",pthread_self(), sched_getcpu());
+		((SNN *)args->snn_pointer) -> updateWeights_CPU(args->netId);
+		pthread_exit(0);
+	}
+#endif
 
 /*!
  * \brief This function is called every second by SNN::runNetwork(). It updates the firingTableD1(D2) and
