@@ -183,11 +183,12 @@ else
 	sim_install_files += $(CARLSIM4_INC_DIR)
 endif
 
-CARLSIM4_FLG := -I$(CARLSIM4_INC_DIR) -L$(CARLSIM4_LIB_DIR) -Wno-deprecated-gpu-targets 
+CARLSIM4_FLG := -I$(CARLSIM4_INC_DIR) -L$(CARLSIM4_LIB_DIR)
 CARLSIM4_LIB := -l$(SIM_LIB_NAME)
 ifeq ($(CARLSIM4_NO_CUDA),1)
 	CARLSIM4_FLG += -D__NO_CUDA__
 else
+	CARLSIM4_FLG += -Wno-deprecated-gpu-targets
 	CARLSIM4_LIB += -lcurand
 endif
 

@@ -29,6 +29,7 @@ install:
   - make install
 
 script:
+  - mkdir results
   - make test
   - ./carlsim/test/carlsim_tests
 

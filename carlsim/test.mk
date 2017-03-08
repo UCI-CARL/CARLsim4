@@ -31,7 +31,7 @@ test_dir := carlsim/test
 test_inc_files := $(wildcard $(test_dir)/*.h)
 test_cpp_files := $(wildcard $(test_dir)/*.cpp)
 test_target := $(test_dir)/carlsim_tests
-output += $(test_target)
+output += $(test_target) *.dat
 
 
 #------------------------------------------------------------------------------

@@ -59,11 +59,12 @@ SIMINCFL         += -I$(mon_dir)
 # CARLsim4 Tools
 #------------------------------------------------------------------------------
 
+tools_dir        := tools
 tools_cpp_obj    :=
 tools_cu_obj     :=
 
 # simple weight tuner
-swt_dir          := tools/simple_weight_tuner
+swt_dir          := $(tools_dir)/simple_weight_tuner
 swt_inc_files    := $(wildcard $(swt_dir)/*h)
 swt_cpp_files    := $(wildcard $(swt_dir)/*.cpp)
 swt_cu_files     := $(wildcard $(swt_dir)/*.cu)
@@ -72,7 +73,7 @@ tools_cpp_obj    += $(swt_cpp_obj)
 SIMINCFL         += -I$(swt_dir)
 
 # spike generators
-spkgen_dir       := tools/spike_generators
+spkgen_dir       := $(tools_dir)/spike_generators
 spkgen_inc_files := $(wildcard $(spkgen_dir)/*.h)
 spkgen_cpp_files := $(wildcard $(spkgen_dir)/*.cpp)
 spkgen_cpp_obj   := $(patsubst %.cpp, %.o, $(spkgen_cpp_files))
@@ -80,7 +81,7 @@ tools_cpp_obj    += $(spkgen_cpp_obj)
 SIMINCFL         += -I$(spkgen_dir)
 
 # stopwatch
-stp_dir          := tools/stopwatch
+stp_dir          := $(tools_dir)/stopwatch
 stp_inc_files    := $(wildcard $(stp_dir)/*h)
 stp_cpp_files    := $(wildcard $(stp_dir)/*.cpp)
 stp_cpp_obj      := $(patsubst %.cpp, %.o, $(stp_cpp_files))
@@ -98,9 +99,16 @@ objects_cu      += $(krnl_cu_obj) $(intf_cu_obj) $(mon_cu_obj) $(tools_cu_obj)
 
 # list of objects depend on build mode
 ifeq ($(CARLSIM4_NO_CUDA),1)
-objects         := $(objects_cpp)
+objects         += $(objects_cpp)
 else
-objects         := $(objects_cpp) $(objects_cu)
+objects         += $(objects_cpp) $(objects_cu)
+endif
+
+ifeq ($(CARLSIM4_COVERAGE),1)
+output          += $(addprefix $(intf_dir)/*/,*.gcda *.gcno)
+output          += $(addprefix $(krnl_dir)/*/,*.gcda *.gcno)
+output          += $(addprefix $(mon_dir)/,*.gcda *.gcno)
+output          += $(addprefix $(tools_dir)/*/,*.gcda *.gcno)
 endif
 
 # additional files that need to be installed
