@@ -22,12 +22,6 @@
 # path to CUDA installation
 CUDA_PATH        ?= /usr/local/cuda
 
-# enable CPU-only mode
-CARLSIM4_CPU_ONLY ?= 0
-
-# enable gcov
-CARLSIM4_COVERAGE ?= 0
-
 #------------------------------------------------------------------------------
 # CARLsim/ECJ Parameter Tuning Interface Options
 #------------------------------------------------------------------------------
@@ -72,7 +66,7 @@ ifeq ("$(OSUPPER)","LINUX")
 else
   ifneq ($(DARWIN),)
     # for some newer versions of XCode, CLANG is the default compiler, so we need to include this
-    ifneq ($(MAVERICKS),
+    ifdef MAVERICKS
       NVCC   ?= $(CUDA_PATH)/bin/nvcc -ccbin $(CLANG)
       STDLIB ?= -stdlib=libstdc++
     else
@@ -119,7 +113,7 @@ NVCCFL          += $(GENCODE_SM20) $(GENCODE_SM30)
 NVCCFL          += -Wno-deprecated-gpu-targets
 
 # OS-specific build flags
-ifneq ($(DARWIN),) 
+ifneq ($(DARWIN),)
 	CXXLIBFL      += -rpath $(CUDA_PATH)/lib
 	CXXFL         += -arch $(OS_ARCH) $(STDLIB)  
 else
@@ -137,21 +131,6 @@ endif
 
 # shared library flags
 CXXSHRFL += -fPIC -shared
-
-ifeq ($(CARLSIM4_COVERAGE),1)
-	CXXFL += -fprofile-arcs -ftest-coverage
-	CXXLIBFL += -lgcov
-	clean_objects += *.gcda *.gcno
-	targets += *.gcov
-endif
-
-ifeq ($(CARLSIM4_CPU_ONLY),1)
-	CXXFL += -D__CPU_ONLY__
-	NVCC := $(CXX)
-	NVCCINCFL := $(CXXINCFL)
-	NVCCLDFL := $(CXXLIBFL)
-	NVCCFL := $(CXXFL)
-endif
 
 
 #------------------------------------------------------------------------------
@@ -179,15 +158,5 @@ else
 endif
 
 CARLSIM4_FLG := -I$(CARLSIM4_INC_DIR) -L$(CARLSIM4_LIB_DIR)
-CARLSIM4_LIB := -l$(SIM_LIB_NAME)
-ifeq ($(CARLSIM4_CPU_ONLY),1)
-	CARLSIM4_FLG += -D__CPU_ONLY__
-else
-	CARLSIM4_LIB += -lcurand
-endif
-
-ifeq ($(CARLSIM4_COVERAGE),1)
-	CARLSIM4_FLG += -fprofile-arcs -ftest-coverage
-	CARLSIM4_LIB += -lgcov
-endif
-
+CARLSIM4_LD := -l$(SIM_LIB_NAME)
+CUDA_LD := -lcurand

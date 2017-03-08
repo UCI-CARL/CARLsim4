@@ -46,5 +46,9 @@ debug_no_cuda: GTEST_LIB += -pthread
 test: $(test_target)
 
 $(test_target): $(test_cpp_files) $(test_inc_files)
-	$(NVCC) $(CARLSIM4_INC) $(GTEST_FLG) $(GTEST_LD) $(test_cpp_files) -o $@ $(GTEST_LIB) $(CARLSIM4_LD)
+	$(NVCC) $(CARLSIM4_FLG) $(GTEST_FLG) $(GTEST_LD) $(test_cpp_files) -o $@ $(GTEST_LIB) $(CARLSIM4_LD) $(CUDA_LD)
+
+$(test_target)_no_cuda: $(test_cpp_files) $(test_inc_files)
+	$(NVCC) $(CARLSIM4_FLG) $(GTEST_FLG) $(GTEST_LD) $(test_cpp_files) -o $@ $(GTEST_LIB) $(CARLSIM4_LD)
+
 

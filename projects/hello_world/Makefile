@@ -85,10 +85,10 @@ default: $(proj_target)
 
 
 $(proj_target): $(main_src_file) $(inc_files) $(cpp_files) $(obj_files)
-	$(NVCC) $(CARLSIM4_INC) $(obj_files) $< -o $(proj_target) $(CARLSIM4_LD) $(CUDA_LD) 
+	$(NVCC) $(CARLSIM4_FLG) $(obj_files) $< -o $(proj_target) $(CARLSIM4_LD) $(CUDA_LD) 
 
 no_cuda: $(main_src_file) $(inc_files) $(cpp_files) $(obj_files_no_cuda)
-	$(CXX) $(CARLSIM4_INC) $(obj_files_no_cuda) $< -o $(proj_target) $(CARLSIM4_LD)
+	$(CXX) $(CARLSIM4_FLG) $(obj_files_no_cuda) $< -o $(proj_target) $(CARLSIM4_LD)
 
 $(proj_src_dir)/%-cpp.o: $(proj_src_dir)/%.cpp $(inc_files)
 	$(CXX) -c $(CXXINCFL) $(CXXFL) $< -o $@
