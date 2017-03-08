@@ -59,9 +59,12 @@ Once you have downloaded and compiled the Google Test framework, all CARLsim tes
 compiled and run from the CARLsim root directory:
 
 \code
+$ mkdir results
 $ make test
 $ ./carlsim/test/carlsim_tests
 \endcode
+
+\note The test suite needs a <tt>results/</tt> directory to run.
 
 This should produce output like the following, possibly all green:
 

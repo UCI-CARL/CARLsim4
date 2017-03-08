@@ -90,27 +90,27 @@ endif
 #------------------------------------------------------------------------------
 
 # nvcc compile flags
-NVCCFL          := -m${OS_SIZE}
-NVCCINCFL       := -I$(CUDA_PATH)/samples/common/inc
-NVCCLDFL        :=
+NVCCFL             := -m${OS_SIZE}
+NVCCINCFL          := -I$(CUDA_PATH)/samples/common/inc
+NVCCLDFL           :=
 
 # gcc compile flags
-CXXFL           :=
-CXXSHRFL        :=
-CXXINCFL        :=
-CXXLIBFL        :=
+CXXFL              :=
+CXXSHRFL           :=
+CXXINCFL           :=
+CXXLIBFL           :=
 
 # link flags
 ifeq ($(OS_SIZE),32)
-	NVCCLDFL     := -L$(CUDA_PATH)/lib -lcudart 
+	NVCCLDFL       := -L$(CUDA_PATH)/lib -lcudart 
 else
-	NVCCLDFL     := -L$(CUDA_PATH)/lib64 -lcudart 
+	NVCCLDFL       := -L$(CUDA_PATH)/lib64 -lcudart 
 endif
 
 
 # find NVCC version
 NVCC_MAJOR_NUM     := $(shell nvcc -V 2>/dev/null | grep -o 'release [0-9]\.' | grep -o '[0-9]')
-NVCCFL          += -D__CUDA$(NVCC_MAJOR_NUM)__
+NVCCFL             += -D__CUDA$(NVCC_MAJOR_NUM)__
 
 # CUDA code generation flags
 GENCODE_SM20       := -gencode arch=compute_20,code=sm_20
@@ -120,8 +120,8 @@ NVCCFL             += -Wno-deprecated-gpu-targets
 
 # OS-specific build flags
 ifneq ($(DARWIN),)
-	CXXLIBFL      += -rpath $(CUDA_PATH)/lib
-	CXXFL         += -arch $(OS_ARCH) $(STDLIB)  
+	CXXLIBFL       += -rpath $(CUDA_PATH)/lib
+	CXXFL          += -arch $(OS_ARCH) $(STDLIB)  
 else
 	ifeq ($(OS_ARCH),armv7l)
 		ifeq ($(abi),gnueabi)
@@ -136,20 +136,22 @@ else
 endif
 
 # shared library flags
-CXXSHRFL += -fPIC -shared
+CXXSHRFL           += -fPIC -shared
 
 ifeq ($(CARLSIM4_COVERAGE),1)
-	CXXFL += -fprofile-arcs -ftest-coverage
-	CXXLIBFL += -lgcov
-	output += *.gcda *.gcno *.gcov
+	CXXFL          += -fprofile-arcs -ftest-coverage
+	CXXLIBFL       += -lgcov
+	NVCCFL         += --compiler-options "-fprofile-arcs -ftest-coverage"
+	NVCCLDFL       += -lgcov
+	output         += *.gcda *.gcno *.gcov
 endif
 
 ifeq ($(CARLSIM4_NO_CUDA),1)
-	CXXFL += -D__NO_CUDA__
-	NVCC := $(CXX)
-	NVCCINCFL := $(CXXINCFL)
-	NVCCLDFL := $(CXXLIBFL)
-	NVCCFL := $(CXXFL)
+	CXXFL          += -D__NO_CUDA__
+	NVCC           := $(CXX)
+	NVCCINCFL      := $(CXXINCFL)
+	NVCCLDFL       := $(CXXLIBFL)
+	NVCCFL         := $(CXXFL)
 endif
 
 
@@ -193,6 +195,10 @@ else
 endif
 
 ifeq ($(CARLSIM4_COVERAGE),1)
+ifeq ($(CARLSIM4_NO_CUDA),1)
 	CARLSIM4_FLG += -fprofile-arcs -ftest-coverage
+else
+	CARLSIM4_FLG += --compiler-options "-fprofile-arcs -ftest-coverage"
+endif
 	CARLSIM4_LIB += -lgcov
 endif
