@@ -643,10 +643,12 @@ int SNN::runNetwork(int _nsec, int _nmsec, bool printRunSummary) {
 	}
 
 	// set the Poisson generation time slice to be at the run duration up to MAX_TIME_SLICE
-	setGrpTimeSlice(ALL, MAX(1, MIN(runDurationMs, MAX_TIME_SLICE)));
+	setGrpTimeSlice(ALL, std::max(1, std::min(runDurationMs, MAX_TIME_SLICE)));
 
+#ifndef __NO_CUDA__
 	CUDA_RESET_TIMER(timer);
 	CUDA_START_TIMER(timer);
+#endif
 
 	// if nsec=0, simTimeMs=10, we need to run the simulator for 10 timeStep;
 	// if nsec=1, simTimeMs=10, we need to run the simulator for 1*1000+10, time Step;
@@ -704,9 +706,11 @@ int SNN::runNetwork(int _nsec, int _nmsec, bool printRunSummary) {
 	updateGroupMonitor();
 
 	// keep track of simulation time...
+#ifndef __NO_CUDA__
 	CUDA_STOP_TIMER(timer);
 	lastExecutionTime = CUDA_GET_TIMER_VALUE(timer);
 	cumExecutionTime += lastExecutionTime;
+#endif
 	return 0;
 }
 
@@ -745,7 +749,7 @@ void SNN::biasWeights(short int connId, float bias, bool updateWeightRange) {
 					// if this flag is set, we need to update minWt,maxWt accordingly
 					// will be saving new maxSynWt and copying to GPU below
 //					connInfo->minWt = fmin(connInfo->minWt, weight);
-					connectConfigMap[connId].maxWt = fmax(connectConfigMap[connId].maxWt, weight);
+					connectConfigMap[connId].maxWt = std::max(connectConfigMap[connId].maxWt, weight);
 					if (needToPrintDebug) {
 						KERNEL_DEBUG("biasWeights(%d,%f,%s): updated weight ranges to [%f,%f]", connId, bias,
 							(updateWeightRange?"true":"false"), 0.0f, connectConfigMap[connId].maxWt);
@@ -753,9 +757,9 @@ void SNN::biasWeights(short int connId, float bias, bool updateWeightRange) {
 				} else {
 					// constrain weight to boundary values
 					// compared to above, we swap minWt/maxWt logic
-					weight = fmin(weight, connectConfigMap[connId].maxWt);
+					weight = std::min(weight, connectConfigMap[connId].maxWt);
 //					weight = fmax(weight, connInfo->minWt);
-					weight = fmax(weight, 0.0f);
+					weight = std::max(weight, 0.0f);
 					if (needToPrintDebug) {
 						KERNEL_DEBUG("biasWeights(%d,%f,%s): constrained weight %f to [%f,%f]", connId, bias,
 							(updateWeightRange?"true":"false"), weight, 0.0f, connectConfigMap[connId].maxWt);
@@ -770,6 +774,7 @@ void SNN::biasWeights(short int connId, float bias, bool updateWeightRange) {
 
 		// update GPU datastructures in batches, grouped by post-neuron
 		if (netId < CPU_RUNTIME_BASE) {
+#ifndef __NO_CUDA__
 			CUDA_CHECK_ERRORS( cudaMemcpy(&(runtimeData[netId].wt[cumIdx]), &(managerRuntimeData.wt[cumIdx]), sizeof(float)*managerRuntimeData.Npre[lNId],
 				cudaMemcpyHostToDevice) );
 
@@ -779,6 +784,9 @@ void SNN::biasWeights(short int connId, float bias, bool updateWeightRange) {
 				CUDA_CHECK_ERRORS( cudaMemcpy(&(runtimeData[netId].maxSynWt[cumIdx]), &(managerRuntimeData.maxSynWt[cumIdx]),
 					sizeof(float) * managerRuntimeData.Npre[lNId], cudaMemcpyHostToDevice) );
 			}
+#else
+			assert(false);
+#endif
 		} else {
 			memcpy(&runtimeData[netId].wt[cumIdx], &managerRuntimeData.wt[cumIdx], sizeof(float) * managerRuntimeData.Npre[lNId]);
 
@@ -833,7 +841,7 @@ void SNN::scaleWeights(short int connId, float scale, bool updateWeightRange) {
 					// if this flag is set, we need to update minWt,maxWt accordingly
 					// will be saving new maxSynWt and copying to GPU below
 //					connInfo->minWt = fmin(connInfo->minWt, weight);
-					connectConfigMap[connId].maxWt = fmax(connectConfigMap[connId].maxWt, weight);
+					connectConfigMap[connId].maxWt = std::max(connectConfigMap[connId].maxWt, weight);
 					if (needToPrintDebug) {
 						KERNEL_DEBUG("scaleWeights(%d,%f,%s): updated weight ranges to [%f,%f]", connId, scale,
 							(updateWeightRange?"true":"false"), 0.0f, connectConfigMap[connId].maxWt);
@@ -841,9 +849,9 @@ void SNN::scaleWeights(short int connId, float scale, bool updateWeightRange) {
 				} else {
 					// constrain weight to boundary values
 					// compared to above, we swap minWt/maxWt logic
-					weight = fmin(weight, connectConfigMap[connId].maxWt);
+					weight = std::min(weight, connectConfigMap[connId].maxWt);
 //					weight = fmax(weight, connInfo->minWt);
-					weight = fmax(weight, 0.0f);
+					weight = std::max(weight, 0.0f);
 					if (needToPrintDebug) {
 						KERNEL_DEBUG("scaleWeights(%d,%f,%s): constrained weight %f to [%f,%f]", connId, scale,
 							(updateWeightRange?"true":"false"), weight, 0.0f, connectConfigMap[connId].maxWt);
@@ -858,6 +866,7 @@ void SNN::scaleWeights(short int connId, float scale, bool updateWeightRange) {
 
 		// update GPU datastructures in batches, grouped by post-neuron
 		if (netId < CPU_RUNTIME_BASE) {
+#ifndef __NO_CUDA__
 			CUDA_CHECK_ERRORS(cudaMemcpy(&runtimeData[netId].wt[cumIdx], &managerRuntimeData.wt[cumIdx], sizeof(float)*managerRuntimeData.Npre[lNId],
 				cudaMemcpyHostToDevice));
 
@@ -867,8 +876,10 @@ void SNN::scaleWeights(short int connId, float scale, bool updateWeightRange) {
 				CUDA_CHECK_ERRORS(cudaMemcpy(&runtimeData[netId].maxSynWt[cumIdx], &managerRuntimeData.maxSynWt[cumIdx],
 					sizeof(float) * managerRuntimeData.Npre[lNId], cudaMemcpyHostToDevice));
 			}
-		}
-		else {
+#else
+			assert(false);
+#endif
+		} else {
 			memcpy(&runtimeData[netId].wt[cumIdx], &managerRuntimeData.wt[cumIdx], sizeof(float) * managerRuntimeData.Npre[lNId]);
 
 			if (runtimeData[netId].maxSynWt != NULL) {
@@ -1091,6 +1102,7 @@ void SNN::setWeight(short int connId, int neurIdPre, int neurIdPost, float weigh
 			managerRuntimeData.maxSynWt[pos_ij] = isExcitatoryGroup(connectConfigMap[connId].grpSrc) ? maxWt : -1.0 * maxWt;
 
 			if (netId < CPU_RUNTIME_BASE) {
+#ifndef __NO_CUDA__
 				// need to update datastructures on GPU runtime
 				CUDA_CHECK_ERRORS(cudaMemcpy(&runtimeData[netId].wt[pos_ij], &managerRuntimeData.wt[pos_ij], sizeof(float), cudaMemcpyHostToDevice));
 				if (runtimeData[netId].maxSynWt != NULL) {
@@ -1098,6 +1110,9 @@ void SNN::setWeight(short int connId, int neurIdPre, int neurIdPost, float weigh
 					// (that logic should be done elsewhere though)
 					CUDA_CHECK_ERRORS(cudaMemcpy(&runtimeData[netId].maxSynWt[pos_ij], &managerRuntimeData.maxSynWt[pos_ij], sizeof(float), cudaMemcpyHostToDevice));
 				}
+#else
+				assert(false);
+#endif
 			} else {
 				// need to update datastructures on CPU runtime
 				memcpy(&runtimeData[netId].wt[pos_ij], &managerRuntimeData.wt[pos_ij], sizeof(float));
@@ -1753,8 +1768,7 @@ void SNN::SNNinit() {
 	simulatorDeleted = false;
 
 	cumExecutionTime = 0.0;
-	cpuExecutionTime = 0.0;
-	gpuExecutionTime = 0.0;
+	executionTime = 0.0;
 
 	spikeRateUpdated = false;
 	numSpikeMonitor = 0;
@@ -1817,8 +1831,10 @@ void SNN::SNNinit() {
 	wtChangeDecay_ = 0.0f;
 
 	// FIXME: use it when necessary
+#ifndef __NO_CUDA__
 	CUDA_CREATE_TIMER(timer);
 	CUDA_RESET_TIMER(timer);
+#endif
 }
 
 void SNN::advSimStep() {
@@ -1831,7 +1847,6 @@ void SNN::advSimStep() {
 	updateTimingTable();
 
 	routeSpikes();
-	//routeSpikes_GPU();
 
 	doCurrentUpdate();
 
@@ -3353,7 +3368,9 @@ void SNN::connectUserDefined(int netId, std::list<ConnectConfig>::iterator connI
 void SNN::deleteRuntimeData() {
 	// FIXME: assert simulation use GPU first
 	// wait for kernels to complete
+#ifndef __NO_CUDA__
 	CUDA_CHECK_ERRORS(cudaThreadSynchronize());
+#endif
 
 	for (int netId = 0; netId < MAX_NET_PER_SNN; netId++) {
 		if (!groupPartitionLists[netId].empty()) {
@@ -3363,8 +3380,9 @@ void SNN::deleteRuntimeData() {
 				deleteRuntimeData_CPU(netId);
 		}
 	}
-
+#ifndef __NO_CUDA__
 	CUDA_DELETE_TIMER(timer);
+#endif
 }
 
 // delete all objects (CPU and GPU side)
@@ -3734,18 +3752,9 @@ void SNN::fetchExtFiringTable(int netId) {
 	assert(netId < MAX_NET_PER_SNN);
 	
 	if (netId < CPU_RUNTIME_BASE) { // GPU runtime
-		checkAndSetGPUDevice(netId);
-		CUDA_CHECK_ERRORS(cudaMemcpy(managerRuntimeData.extFiringTableEndIdxD2, runtimeData[netId].extFiringTableEndIdxD2, sizeof(int) * networkConfigs[netId].numGroups, cudaMemcpyDeviceToHost));
-		CUDA_CHECK_ERRORS(cudaMemcpy(managerRuntimeData.extFiringTableEndIdxD1, runtimeData[netId].extFiringTableEndIdxD1, sizeof(int) * networkConfigs[netId].numGroups, cudaMemcpyDeviceToHost));
-		CUDA_CHECK_ERRORS(cudaMemcpy(managerRuntimeData.extFiringTableD2, runtimeData[netId].extFiringTableD2, sizeof(int*) * networkConfigs[netId].numGroups, cudaMemcpyDeviceToHost));
-		CUDA_CHECK_ERRORS(cudaMemcpy(managerRuntimeData.extFiringTableD1, runtimeData[netId].extFiringTableD1, sizeof(int*) * networkConfigs[netId].numGroups, cudaMemcpyDeviceToHost));
-		//KERNEL_DEBUG("GPU0 D1ex:%d/D2ex:%d", managerRuntimeData.extFiringTableEndIdxD1[0], managerRuntimeData.extFiringTableEndIdxD2[0]);
+		copyExtFiringTable(netId, cudaMemcpyDeviceToHost);
 	} else { // CPU runtime
-		memcpy(managerRuntimeData.extFiringTableEndIdxD2, runtimeData[netId].extFiringTableEndIdxD2, sizeof(int) * networkConfigs[netId].numGroups);
-		memcpy(managerRuntimeData.extFiringTableEndIdxD1, runtimeData[netId].extFiringTableEndIdxD1, sizeof(int) * networkConfigs[netId].numGroups);
-		memcpy(managerRuntimeData.extFiringTableD2, runtimeData[netId].extFiringTableD2, sizeof(int*) * networkConfigs[netId].numGroups);
-		memcpy(managerRuntimeData.extFiringTableD1, runtimeData[netId].extFiringTableD1, sizeof(int*) * networkConfigs[netId].numGroups);
-		//KERNEL_DEBUG("GPU0 D1ex:%d/D2ex:%d", managerRuntimeData.extFiringTableEndIdxD1[0], managerRuntimeData.extFiringTableEndIdxD2[0]);
+		copyExtFiringTable(netId);
 	}
 }
 
@@ -3770,6 +3779,7 @@ void SNN::writeBackTimeTable(int netId) {
 }
 
 void SNN::transferSpikes(void* dest, int destNetId, void* src, int srcNetId, int size) {
+#ifndef __NO_CUDA__
 	if (srcNetId < CPU_RUNTIME_BASE && destNetId < CPU_RUNTIME_BASE) {
 		checkAndSetGPUDevice(destNetId);
 		CUDA_CHECK_ERRORS(cudaMemcpyPeer(dest, destNetId, src, srcNetId, size));
@@ -3782,6 +3792,10 @@ void SNN::transferSpikes(void* dest, int destNetId, void* src, int srcNetId, int
 	} else if(srcNetId >= CPU_RUNTIME_BASE && destNetId >= CPU_RUNTIME_BASE) {
 		memcpy(dest, src, size);
 	}
+#else
+	assert(srcNetId >= CPU_RUNTIME_BASE && destNetId >= CPU_RUNTIME_BASE);
+	memcpy(dest, src, size);
+#endif
 }
 
 void SNN::convertExtSpikesD2(int netId, int startIdx, int endIdx, int GtoLOffset) {
@@ -4118,7 +4132,7 @@ void SNN::partitionSNN() {
 			}
 		}
 
-		if (grpIt->second.netId == -1) { // the group was not assigned to any GPU
+		if (grpIt->second.netId == -1) { // the group was not assigned to any computing backend
 			KERNEL_ERROR("Can't assign the group [%d] to any partition", grpIt->second.gGrpId);
 			exitSimulation(-1);
 		}
@@ -4589,11 +4603,6 @@ void SNN::resetConductances(int netId) {
 	}
 }
 
-void SNN::resetCPUTiming() {
-	prevCpuExecutionTime = cumExecutionTime;
-	cpuExecutionTime     = 0.0;
-}
-
 void SNN::resetCurrent(int netId) {
 	assert(managerRuntimeData.current != NULL);
 	memset(managerRuntimeData.current, 0, sizeof(float) * networkConfigs[netId].numNReg);
@@ -4614,9 +4623,9 @@ void SNN::resetFiringInformation() {
 	resetTimeTable();
 }
 
-void SNN::resetGPUTiming() {
-	prevGpuExecutionTime = cumExecutionTime;
-	gpuExecutionTime     = 0.0;
+void SNN::resetTiming() {
+	prevExecutionTime = cumExecutionTime;
+	executionTime = 0.0f;
 }
 
 void SNN::resetNeuromodulator(int netId, int lGrpId) {
@@ -4970,15 +4979,10 @@ void SNN::fillSpikeGenBits(int netId) {
 	}
 }
 
-void SNN::startCPUTiming() { prevCpuExecutionTime = cumExecutionTime; }
-void SNN::startGPUTiming() { prevGpuExecutionTime = cumExecutionTime; }
-void SNN::stopCPUTiming() {
-	cpuExecutionTime += (cumExecutionTime - prevCpuExecutionTime);
-	prevCpuExecutionTime = cumExecutionTime;
-}
-void SNN::stopGPUTiming() {
-	gpuExecutionTime += (cumExecutionTime - prevGpuExecutionTime);
-	prevGpuExecutionTime = cumExecutionTime;
+void SNN::startTiming() { prevExecutionTime = cumExecutionTime; }
+void SNN::stopTiming() {
+	executionTime += (cumExecutionTime - prevExecutionTime);
+	prevExecutionTime = cumExecutionTime;
 }
 
 // FIXME: update the correct network config
@@ -5182,7 +5186,7 @@ void SNN::userDefinedSpikeGenerator(int gGrpId) {
 
 		// the end of the valid time window is either the length of the scheduling time slice from now (because that
 		// is the max of the allowed propagated buffer size) or simply the end of the simulation
-		int endOfTimeWindow = MIN(currTime+timeSlice,simTimeRunStop);
+		int endOfTimeWindow = std::min(currTime+timeSlice, simTimeRunStop);
 
 		done = false;
 		while (!done) {
@@ -5396,8 +5400,8 @@ void SNN::printSimSummary() {
 	float etime;
 
 	// FIXME: measure total execution time, and GPU excution time
-	stopGPUTiming();
-	etime = gpuExecutionTime;
+	stopTiming();
+	etime = executionTime;
 
 	fetchNetworkSpikeCount();
 
