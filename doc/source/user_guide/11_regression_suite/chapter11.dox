@@ -1,59 +1,210 @@
 /*!
 
 \page ch11_regression_suite Chapter 11: Regression Suite
+/*!
+
+\page ch11_regression_suite Chapter 11: Regression Suite
 
 \tableofcontents
 
-We provide test cases to A) test core functionality of CARLsim, to
-B) test the reproducibility of published results, and C) to benchmark simulation speed.
+In order to ensure that the addition of new functionality did not compromise the existing code base,
+CARLsim comes with a regression suite,
+which relies on the <a href="https://github.com/google/googletest">Google Test</a> framework.
 
-We currently have incorporated part A) into the current CARLsim release with plans for inclusion of
-parts B) and C) in the future.
 
-For the most part, end users should not need to test their CARLsim installation. Users should
-only have to run the test suite if they modify the source code or are experiencing strange and
-inconsistent simulation behavior.
+\section ch11s1_installation 11.1 Installing Google Test
 
-CARLsim uses the googletest framework v1.7 for testing. For more information
-on using and installing googltest please visit the
-<a href=https://code.google.com/p/googletest/>website</a>.
-For a quick primer, visit this
-<a href=https://code.google.com/p/googletest/wiki/Primer>website</a>.
+\subsection ch11s1s1_checkingout 11.1.1 Checking out the Code from GitHub
 
-After google tests has been installed:
+The Google Test framework is included in the CARLsim package as an external dependency.
+If you cloned the CARLsim repo using the <tt>--recursive</tt> flag, you already have a local copy of
+the Google Test codebase (see \ref ch1s2_installation).
 
-1) From the carlsim/test directory of the CARLsim installation, type:
+If you forgot to include the <tt>--recursive</tt> flag, you might encounter an empty directory when
+you navigate to <tt>external/googletest</tt>.
+If this is the case, you have to initialize the submodule yourself.
+Simply navigate to the CARLsim root directory and run the following:
 
 \code
-make carlsim_tests
+$ git submodule update --init --recursive
 \endcode
 
-which compiles the carlsim tests
 
-2) To run the tests, run ‘carlsim_tests’:
+\subsection ch11s1s2_compiling 11.1.2 Compiling the Code
+
+Google Test can be installed with the help of CMake, per the following recipe:
+
+1. Navigate to the Google Test folder and create a new directory called <tt>build</tt>:
+   \code
+   $ cd external/googletest
+   $ mkdir build
+
+2. Change into the <tt>build</tt> directory and run <tt>cmake</tt>:
+   \code
+   $ cd build
+   $ cmake ..
+   \endcode
+
+3. This will generate a Makefile. Run it:
+   \code
+   $ make
+   \endcode
+
+And done!
+
+
+\section ch11s2_running 11.2 Running Google Test
+
+Once you have downloaded and compiled the Google Test framework, all CARLsim test cases can be
+compiled and run from the CARLsim root directory:
 
 \code
-./carlsim_tests
+$ make test
+$ ./carlsim/test/carlsim_tests
 \endcode
 
-This runs the CARLsim tests which should all pass. If they do not pass,
-you may have inadvertantly modified the source code and should probably
-redownload CARLsim.
-
-3) To delete all testing output files type:
+This should produce output like the following, possibly all green:
 
 \code
-make distclean
+[==========] Running 100 tests from 17 test cases.
+[----------] Global test environment set-up.
+[----------] 7 tests from SpikeGen
+[ RUN      ] SpikeGen.PeriodicSpikeGenerator
+[       OK ] SpikeGen.PeriodicSpikeGenerator (339 ms)
+[ RUN      ] SpikeGen.PeriodicSpikeGeneratorDeath
+[       OK ] SpikeGen.PeriodicSpikeGeneratorDeath (351 ms)
+[ RUN      ] SpikeGen.SpikeGeneratorFromFile
+[       OK ] SpikeGen.SpikeGeneratorFromFile (1715 ms)
 \endcode
 
-You should only be here if something's broken.
-Why you would use it, what is it good for?
+\note If you installed CARLsim without GPU support (\ref ch1s2s1s3_cpuonly), all GPU-related tests
+will be excluded from the test suite build.
 
-
--B) TESTING PUBLISHED RESULTS
-
--C) BENCHMARK TESTS
 
 \since v3.0
 
+
+\section ch11s3_contributing 11.3 Contributing New Tests
+
+If you wish to contribute a new feature to CARLsim, you are expected to provide code that appropriately
+tests the new functionality.
+
+
+\subsection ch11s3s1_choosing_test_cases 11.3.1 Choosing the Right Test Case
+
+Tests are grouped into different test cases, such as <tt>Interface</tt>, <tt>Core</tt>, <tt>CUBA</tt>, etc.
+Identify the right test case depending on the topic your new feature belongs to:
+
+- <tt>core</tt>: All core functionality that involves running the whole CARLsim pipeline.
+
+- <tt>CUBA</tt>/<tt>COBA</tt>: Functionality that is specific to either CUBA or COBA mode.
+
+- <tt>Interface</tt>: Everything related to the CARLsim API.
+
+- <tt>SpikeMon</tt>/<tt>ConnMon</tt>/<tt>GroupMon</tt>: Everything related to Spike, Connection, or Group Monitors.
+
+- <tt>STDP</tt>/<tt>STP</tt>: Everything related to STDP or STP.
+
+- <tt>Compartments</tt>: Everything related to compartmental models.
+
+- etc.
+
+
+
+\subsection ch11s3s2_writing_tests 11.3.2 Writing Tests
+
+Every test is wrapped into some Google Test syntax:
+\code
+TEST(testCase, testName) {
+	
+}
+\endcode
+where the name of your test (<tt>testName</tt>) belongs to a certain test case (or group of tests, <tt>testCase</tt>).
+
+Within this code block, you can write whatever CARLsim network you want.
+
+After a network is run, you want to make sure its output is correct.
+This is achieved via Google Test-provided assertions such as:
+
+- <tt>EXPECT_EQ</tt>: Expects to variables to be equal. For example:
+  \code
+  EXPECT_EQ(a, 4);
+  \endcode
+  This expects the variable <tt>a</tt> to be equal to 4.
+
+- <tt>EXPECT_LT</tt>: Expects the first variable to be smaller than the second. For example:
+  \code
+  EXPECT_LT(a, 10);
+  \endcode
+  This expects the variable <tt>a</tt> to be smaller than 10.
+
+All Google Test function calls are described <a href="https://github.com/google/googletest/blob/master/googletest/docs/Primer.md">here</a>.
+
+
+\subsection ch11s3s3_writing_death_tests 11.3.3 Writing Death Tests
+
+If you write tests that expect the program to die (i.e., raise an Exception) in combination with
+<tt>EXPECT_DEATH</tt>, make sure the test is run in thread-safe mode by adding the following decorator:
+
+\code
+TEST(testCase, testName) {
+	::testing::FLAGS_gtest_death_test_style = "threadsafe";
+
+	EXPECT_DEATH(...)	
+}
+\endcode
+
+\since v3.0
+
+
+\section ch11s4_coverage 11.4 Code Coverage
+
+If you are on a Linux machine, it is also fairly simple to generate a code
+coverage report using
+<a href="https://gcc.gnu.org/onlinedocs/gcc/Gcov.html"><tt>gcov</tt></a>.
+It's a bit harder on Mac OS X, but it
+<a href="https://github.com/eddyxu/cpp-coveralls">can be done</a>.
+
+Simply follow the following procedure:
+
+-# Uninstall CARLsim, because we will have to re-install it with some
+   additional compile flags:
+   \code
+   $ make uninstall
+   $ make clean
+   \endcode
+
+-# Enable code coverage generation via an environment variable:
+   \code
+   $ export CARLSIM4_COVERAGE=1
+   \endcode
+
+-# Re-install CARLsim:
+   \code
+   $ make -j4
+   $ sudo -E make install
+   \endcode
+
+-# Re-compile and run the test suite:
+   \code
+   $ make test
+   $ ./carlsim/test/carlsim_tests
+   \endcode
+
+-# This should have generated a bunch of <tt>.gcda</tt> files, which can now
+   be investigated. The easiest way to do this is to use <tt>lcov</tt> and
+   generate a HTML report:
+   \code
+   $ lcov --directory ./ --capture --output-file ./code_coverage.info -rc lcov_branch_coverage=1
+   $ genhtml code_coverage.info --branch-coverage --output-directory ./code_coverage_report/
+   \endcode
+
+-# Open the coverage report in a browser:
+   \code
+   $ google-chrome code_coverage_report/index.html &
+   \endcode
+
+\since v3.1
+
 */
+

@@ -546,6 +546,8 @@ TEST(Interface, CARLsimState) {
 }
 
 TEST(Interface, setDefaultSTDPparamsDeath) {
+	::testing::FLAGS_gtest_death_test_style = "threadsafe";
+	
 	CARLsim* sim = new CARLsim("Interface.setSTDPDeath",CPU_MODE,SILENT,1,42);
 
 	int	g1 = sim->createGroup("excit", 800, EXCITATORY_NEURON);
@@ -566,6 +568,8 @@ TEST(Interface, setDefaultSTDPparamsDeath) {
 }
 
 TEST(Interface, setSTDPDeath) {
+	 ::testing::FLAGS_gtest_death_test_style = "threadsafe";
+
 	CARLsim* sim = new CARLsim("Interface.setSTDPDeath",CPU_MODE,SILENT,1,42);
 
 	int	g1 = sim->createGroup("excit", 800, EXCITATORY_NEURON);
