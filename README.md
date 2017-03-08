@@ -6,7 +6,7 @@
 
 [![Build Status](https://travis-ci.org/UCI-CARL/CARLsim4.svg?branch=master)](https://travis-ci.org/UCI-CARL/CARLsim4)
 [![Coverage Status](https://coveralls.io/repos/github/UCI-CARL/CARLsim4/badge.svg?branch=master)](https://coveralls.io/github/UCI-CARL/CARLsim4?branch=master)
-[![Docs](https://img.shields.io/badge/docs-v4.0.0alpha-blue.svg)](http://uci-carl.github.io/CARLsim4)
+[![Docs](https://img.shields.io/badge/docs-v4.0.0beta-blue.svg)](http://uci-carl.github.io/CARLsim4)
 [![Google group](https://img.shields.io/badge/Google-Discussion%20group-blue.svg)](https://groups.google.com/forum/#!forum/carlsim-snn-simulator)
 
 CARLsim is an efficient, easy-to-use, GPU-accelerated library for simulating large-scale spiking neural network (SNN) models with a high degree of biological detail. CARLsim allows execution of networks of Izhikevich spiking neurons with realistic synaptic dynamics on both generic x86 CPUs and standard off-the-shelf GPUs. The simulator provides a PyNN-like programming interface in C/C++, which allows for details and parameters to be specified at the synapse, neuron, and network level.
