@@ -82,6 +82,16 @@ In brief (OS X/Linux):
    $ ./hello_world
    ```
 
+   You can easily create your own project based on this template using the `init.sh` script:
+
+   ```
+   $ cd projects
+   $ ./init.sh project_name
+   ```
+   where `project_name` is the name of your new project.
+   The script will copy all files from `hello_world/` to `project_name/`, make all required
+   file changes to compile the new project, and add all new files to git.
+
 On Windows 7/10: Simply download the code and open/run the "Hello World" project file
 `projects\hello_world\hello_world.vcxproj`.
 
