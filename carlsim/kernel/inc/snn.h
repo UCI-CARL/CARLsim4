@@ -878,7 +878,7 @@ private:
 	void* shiftSpikeTables_CPU(int netId);
 	void* spikeGeneratorUpdate_CPU(int netId);
 	void* updateTimingTable_CPU(int netId);
-	void updateWeights_CPU(int netId);
+	void* updateWeights_CPU(int netId);
 
 	// static multithreading helper methods for all the above CPU setupNetwork() and runNetwork() methods
 	//static void* assignPoissonFiringRate_CPU(void*);
@@ -898,6 +898,7 @@ private:
 	static void* helperShiftSpikeTables_CPU(void*);
 	static void* helperSpikeGeneratorUpdate_CPU(void*);
 	static void* helperUpdateTimingTable_CPU(void*);
+	static void* helperUpdateWeights_CPU(void*);
 #endif
 
 
