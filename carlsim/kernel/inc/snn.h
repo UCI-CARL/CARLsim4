@@ -877,7 +877,7 @@ private:
 	void* resetSpikeCnt_CPU(int netId, int lGrpId); //!< Resets the spike count for a particular group.
 	void* shiftSpikeTables_CPU(int netId);
 	void* spikeGeneratorUpdate_CPU(int netId);
-	void updateTimingTable_CPU(int netId);
+	void* updateTimingTable_CPU(int netId);
 	void updateWeights_CPU(int netId);
 
 	// static multithreading helper methods for all the above CPU setupNetwork() and runNetwork() methods
@@ -897,6 +897,7 @@ private:
 	static void* helperResetSpikeCnt_CPU(void*);
 	static void* helperShiftSpikeTables_CPU(void*);
 	static void* helperSpikeGeneratorUpdate_CPU(void*);
+	static void* helperUpdateTimingTable_CPU(void*);
 #endif
 
 
