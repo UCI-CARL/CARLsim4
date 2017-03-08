@@ -995,7 +995,11 @@ void SNN::updateWeights_CPU(int netId) {
  * \brief This function is called every second by SNN::runNetwork(). It updates the firingTableD1(D2) and
  * timeTableD1(D2) by removing older firing information.
  */
-void SNN::shiftSpikeTables_CPU(int netId) {
+ #if defined(WIN32) || defined(WIN64)
+	void SNN::shiftSpikeTables_CPU(int netId) {
+#else // POSIX
+	void* SNN::shiftSpikeTables_CPU(int netId) {
+#endif
 	assert(runtimeData[netId].memType == CPU_MEM);
 	// Read the neuron ids that fired in the last glbNetworkConfig.maxDelay seconds
 	// and put it to the beginning of the firing table...
@@ -1020,6 +1024,16 @@ void SNN::shiftSpikeTables_CPU(int netId) {
 
 	runtimeData[netId].spikeCountLastSecLeftD2 = runtimeData[netId].timeTableD2[networkConfigs[netId].maxDelay];
 }
+
+#if !defined(WIN32) && !defined(WIN64) // Linux or MAC
+	// Static multithreading subroutine method - helper for the above method  
+	void* SNN::helperShiftSpikeTables_CPU(void* arguments) {
+		ThreadStruct* args = (ThreadStruct*) arguments;
+		//printf("\nThread ID: %lu and CPU: %d\n",pthread_self(), sched_getcpu());
+		((SNN *)args->snn_pointer) -> shiftSpikeTables_CPU(args->netId);
+		pthread_exit(0);
+	}
+#endif
 
 void SNN::allocateSNN_CPU(int netId) {
 	// setup memory type of CPU runtime data

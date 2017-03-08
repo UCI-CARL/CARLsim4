@@ -875,7 +875,7 @@ private:
 	void* findFiring_CPU(int netId);
 	void* globalStateUpdate_CPU(int netId);
 	void* resetSpikeCnt_CPU(int netId, int lGrpId); //!< Resets the spike count for a particular group.
-	void shiftSpikeTables_CPU(int netId);
+	void* shiftSpikeTables_CPU(int netId);
 	void spikeGeneratorUpdate_CPU(int netId);
 	void updateTimingTable_CPU(int netId);
 	void updateWeights_CPU(int netId);
@@ -895,6 +895,7 @@ private:
 	static void* helperFindFiring_CPU(void*);
 	static void* helperGlobalStateUpdate_CPU(void*);
 	static void* helperResetSpikeCnt_CPU(void*);
+	static void* helperShiftSpikeTables_CPU(void*);
 #endif
 
 
