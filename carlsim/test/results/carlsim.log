@@ -5,7 +5,7 @@
 [INFO carlsim/kernel/src/snn_manager.cpp:1747] ***************************** Configuring Network ********************************
 [INFO carlsim/kernel/src/snn_manager.cpp:1749] Starting CARLsim simulation "MultiRuntimes.shffleGroups" in SILENT mode
 [INFO carlsim/kernel/src/snn_manager.cpp:1750] Random number seed: 42
-[DEBUG carlsim/kernel/src/snn_manager.cpp:1756] Current local time and date: Tue Mar  7 19:37:37 2017
+[DEBUG carlsim/kernel/src/snn_manager.cpp:1756] Current local time and date: Tue Mar  7 21:19:11 2017
 
 [DEBUG carlsim/kernel/src/snn_manager.cpp:162] CONNECT SETUP: connId=0, mulFast=1.000000, mulSlow=1.000000
 [DEBUG carlsim/kernel/src/snn_manager.cpp:162] CONNECT SETUP: connId=1, mulFast=1.000000, mulSlow=1.000000
@@ -31,9 +31,9 @@
 [DEBUG carlsim/kernel/src/snn_manager.cpp:2533] Allocation for group (exc) [id:0, local id:0], St=0, End=799
 [DEBUG carlsim/kernel/src/snn_manager.cpp:2533] Allocation for group (inh) [id:1, local id:1], St=800, End=999
 [DEBUG carlsim/kernel/src/snn_manager.cpp:2533] Allocation for group (input) [id:2, local id:2], St=1000, End=1799
-[INFO carlsim/kernel/src/snn_manager.cpp:4673] 
+[INFO carlsim/kernel/src/snn_manager.cpp:4698] 
 + Local Network (12)
-[INFO carlsim/kernel/src/snn_manager.cpp:4674] |-+ Group List:
+[INFO carlsim/kernel/src/snn_manager.cpp:4699] |-+ Group List:
 [INFO carlsim/kernel/src/print_snn_info.cpp:249]   |-+ Local Group exc(G:0,L:0): 
 [INFO carlsim/kernel/src/print_snn_info.cpp:252]     |- Type                       =    EXCIT
 [INFO carlsim/kernel/src/print_snn_info.cpp:253]     |- Num of Neurons             =      800
@@ -56,7 +56,7 @@
 [INFO carlsim/kernel/src/print_snn_info.cpp:256]     |- numPostSynapses            =      800
 [INFO carlsim/kernel/src/print_snn_info.cpp:257]     |- numPreSynapses             =        0
 [INFO carlsim/kernel/src/print_snn_info.cpp:265]     |- Refractory period          =  0.00000
-[INFO carlsim/kernel/src/snn_manager.cpp:4680] |-+ Connection List:
+[INFO carlsim/kernel/src/snn_manager.cpp:4705] |-+ Connection List:
 [INFO carlsim/kernel/src/print_snn_info.cpp:185]   |-+ Local Connection Id 0: input(2) => exc(0)
 [INFO carlsim/kernel/src/print_snn_info.cpp:186]     |- Type                       =    FIXED
 [INFO carlsim/kernel/src/print_snn_info.cpp:187]     |- Min weight                 =  0.00000
@@ -109,43 +109,43 @@
 [INFO carlsim/kernel/src/print_snn_info.cpp:195]     |- Num of synapses            = 19973
 [INFO carlsim/kernel/src/print_snn_info.cpp:198]     |- Avg numPreSynapses         =    24.97
 [INFO carlsim/kernel/src/print_snn_info.cpp:199]     |- Avg numPostSynapses        =    99.86
-[INFO carlsim/kernel/src/snn_manager.cpp:4948] 
-[INFO carlsim/kernel/src/snn_manager.cpp:4952] *****************      Initializing CPU 4 Runtime      *************************
-[DEBUG carlsim/kernel/src/snn_cpu_module.cpp:1647] copyExternalCurrent: lGrpId=-1, ptrPos=0, length=1000, allocate=y
-[DEBUG carlsim/kernel/src/snn_cpu_module.cpp:1146] Transfering group settings to CPU:
-[DEBUG carlsim/kernel/src/snn_cpu_module.cpp:1148] Settings for Group exc:
-[DEBUG carlsim/kernel/src/snn_cpu_module.cpp:1150] 	Type: 6
-[DEBUG carlsim/kernel/src/snn_cpu_module.cpp:1151] 	NumN: 800
-[DEBUG carlsim/kernel/src/snn_cpu_module.cpp:1152] 	M: 80362
-[DEBUG carlsim/kernel/src/snn_cpu_module.cpp:1153] 	PreM: 84874
-[DEBUG carlsim/kernel/src/snn_cpu_module.cpp:1154] 	spikeGenerator: 0
-[DEBUG carlsim/kernel/src/snn_cpu_module.cpp:1155] 	FixedInputWts: 1
-[DEBUG carlsim/kernel/src/snn_cpu_module.cpp:1156] 	MaxDelay: 20
-[DEBUG carlsim/kernel/src/snn_cpu_module.cpp:1157] 	WithSTDP: 0
-[DEBUG carlsim/kernel/src/snn_cpu_module.cpp:1174] 	WithSTP: 0
-[DEBUG carlsim/kernel/src/snn_cpu_module.cpp:1180] 	spikeGen: is not set 
-[DEBUG carlsim/kernel/src/snn_cpu_module.cpp:1148] Settings for Group inh:
-[DEBUG carlsim/kernel/src/snn_cpu_module.cpp:1150] 	Type: 24
-[DEBUG carlsim/kernel/src/snn_cpu_module.cpp:1151] 	NumN: 200
-[DEBUG carlsim/kernel/src/snn_cpu_module.cpp:1152] 	M: 19973
-[DEBUG carlsim/kernel/src/snn_cpu_module.cpp:1153] 	PreM: 16261
-[DEBUG carlsim/kernel/src/snn_cpu_module.cpp:1154] 	spikeGenerator: 0
-[DEBUG carlsim/kernel/src/snn_cpu_module.cpp:1155] 	FixedInputWts: 1
-[DEBUG carlsim/kernel/src/snn_cpu_module.cpp:1156] 	MaxDelay: 1
-[DEBUG carlsim/kernel/src/snn_cpu_module.cpp:1157] 	WithSTDP: 0
-[DEBUG carlsim/kernel/src/snn_cpu_module.cpp:1174] 	WithSTP: 0
-[DEBUG carlsim/kernel/src/snn_cpu_module.cpp:1180] 	spikeGen: is not set 
-[DEBUG carlsim/kernel/src/snn_cpu_module.cpp:1148] Settings for Group input:
-[DEBUG carlsim/kernel/src/snn_cpu_module.cpp:1150] 	Type: 7
-[DEBUG carlsim/kernel/src/snn_cpu_module.cpp:1151] 	NumN: 800
-[DEBUG carlsim/kernel/src/snn_cpu_module.cpp:1152] 	M: 800
-[DEBUG carlsim/kernel/src/snn_cpu_module.cpp:1153] 	PreM: 0
-[DEBUG carlsim/kernel/src/snn_cpu_module.cpp:1154] 	spikeGenerator: 1
-[DEBUG carlsim/kernel/src/snn_cpu_module.cpp:1155] 	FixedInputWts: 1
-[DEBUG carlsim/kernel/src/snn_cpu_module.cpp:1156] 	MaxDelay: 1
-[DEBUG carlsim/kernel/src/snn_cpu_module.cpp:1157] 	WithSTDP: 0
-[DEBUG carlsim/kernel/src/snn_cpu_module.cpp:1174] 	WithSTP: 0
-[DEBUG carlsim/kernel/src/snn_cpu_module.cpp:1180] 	spikeGen: is not set 
+[INFO carlsim/kernel/src/snn_manager.cpp:4973] 
+[INFO carlsim/kernel/src/snn_manager.cpp:4977] *****************      Initializing CPU 4 Runtime      *************************
+[DEBUG carlsim/kernel/src/snn_cpu_module.cpp:1661] copyExternalCurrent: lGrpId=-1, ptrPos=0, length=1000, allocate=y
+[DEBUG carlsim/kernel/src/snn_cpu_module.cpp:1160] Transfering group settings to CPU:
+[DEBUG carlsim/kernel/src/snn_cpu_module.cpp:1162] Settings for Group exc:
+[DEBUG carlsim/kernel/src/snn_cpu_module.cpp:1164] 	Type: 6
+[DEBUG carlsim/kernel/src/snn_cpu_module.cpp:1165] 	NumN: 800
+[DEBUG carlsim/kernel/src/snn_cpu_module.cpp:1166] 	M: 80362
+[DEBUG carlsim/kernel/src/snn_cpu_module.cpp:1167] 	PreM: 84874
+[DEBUG carlsim/kernel/src/snn_cpu_module.cpp:1168] 	spikeGenerator: 0
+[DEBUG carlsim/kernel/src/snn_cpu_module.cpp:1169] 	FixedInputWts: 1
+[DEBUG carlsim/kernel/src/snn_cpu_module.cpp:1170] 	MaxDelay: 20
+[DEBUG carlsim/kernel/src/snn_cpu_module.cpp:1171] 	WithSTDP: 0
+[DEBUG carlsim/kernel/src/snn_cpu_module.cpp:1188] 	WithSTP: 0
+[DEBUG carlsim/kernel/src/snn_cpu_module.cpp:1194] 	spikeGen: is not set 
+[DEBUG carlsim/kernel/src/snn_cpu_module.cpp:1162] Settings for Group inh:
+[DEBUG carlsim/kernel/src/snn_cpu_module.cpp:1164] 	Type: 24
+[DEBUG carlsim/kernel/src/snn_cpu_module.cpp:1165] 	NumN: 200
+[DEBUG carlsim/kernel/src/snn_cpu_module.cpp:1166] 	M: 19973
+[DEBUG carlsim/kernel/src/snn_cpu_module.cpp:1167] 	PreM: 16261
+[DEBUG carlsim/kernel/src/snn_cpu_module.cpp:1168] 	spikeGenerator: 0
+[DEBUG carlsim/kernel/src/snn_cpu_module.cpp:1169] 	FixedInputWts: 1
+[DEBUG carlsim/kernel/src/snn_cpu_module.cpp:1170] 	MaxDelay: 1
+[DEBUG carlsim/kernel/src/snn_cpu_module.cpp:1171] 	WithSTDP: 0
+[DEBUG carlsim/kernel/src/snn_cpu_module.cpp:1188] 	WithSTP: 0
+[DEBUG carlsim/kernel/src/snn_cpu_module.cpp:1194] 	spikeGen: is not set 
+[DEBUG carlsim/kernel/src/snn_cpu_module.cpp:1162] Settings for Group input:
+[DEBUG carlsim/kernel/src/snn_cpu_module.cpp:1164] 	Type: 7
+[DEBUG carlsim/kernel/src/snn_cpu_module.cpp:1165] 	NumN: 800
+[DEBUG carlsim/kernel/src/snn_cpu_module.cpp:1166] 	M: 800
+[DEBUG carlsim/kernel/src/snn_cpu_module.cpp:1167] 	PreM: 0
+[DEBUG carlsim/kernel/src/snn_cpu_module.cpp:1168] 	spikeGenerator: 1
+[DEBUG carlsim/kernel/src/snn_cpu_module.cpp:1169] 	FixedInputWts: 1
+[DEBUG carlsim/kernel/src/snn_cpu_module.cpp:1170] 	MaxDelay: 1
+[DEBUG carlsim/kernel/src/snn_cpu_module.cpp:1171] 	WithSTDP: 0
+[DEBUG carlsim/kernel/src/snn_cpu_module.cpp:1188] 	WithSTP: 0
+[DEBUG carlsim/kernel/src/snn_cpu_module.cpp:1194] 	spikeGen: is not set 
 [INFO carlsim/kernel/src/snn_manager.cpp:1023] SpikeMonitor set for group 0 (exc)
 [INFO carlsim/kernel/src/snn_manager.cpp:1023] SpikeMonitor set for group 1 (inh)
 [INFO carlsim/kernel/src/snn_manager.cpp:1023] SpikeMonitor set for group 2 (input)
@@ -153,24 +153,24 @@
 [DEBUG carlsim/kernel/src/snn_manager.cpp:614] runNetwork: runDur=1000ms, printRunSummary=n
 [DEBUG carlsim/kernel/src/snn_manager.cpp:614] runNetwork: runDur=1000ms, printRunSummary=n
 [DEBUG carlsim/kernel/src/snn_manager.cpp:614] runNetwork: runDur=1000ms, printRunSummary=n
-[INFO carlsim/kernel/src/snn_manager.cpp:5873] 
+[INFO carlsim/kernel/src/snn_manager.cpp:5898] 
 
-[INFO carlsim/kernel/src/snn_manager.cpp:5874] ********************    Simulation Summary      ***************************
-[INFO carlsim/kernel/src/snn_manager.cpp:5877] Network Parameters: 	numNeurons = 1800 (numNExcReg:numNInhReg = 44.4:11.1)
-[INFO carlsim/kernel/src/snn_manager.cpp:5878] 			numSynapses = 101135
-[INFO carlsim/kernel/src/snn_manager.cpp:5879] 			maxDelay = 20
-[INFO carlsim/kernel/src/snn_manager.cpp:5880] Simulation Mode:	CUBA
-[INFO carlsim/kernel/src/snn_manager.cpp:5881] Random Seed:		42
-[INFO carlsim/kernel/src/snn_manager.cpp:5882] Timing:			Model Simulation Time = 4 sec
-[INFO carlsim/kernel/src/snn_manager.cpp:5883] 			Actual Execution Time = -0.50 sec
-[INFO carlsim/kernel/src/snn_manager.cpp:5884] Average Firing Rate:	2+ms delay = 6.097 Hz
-[INFO carlsim/kernel/src/snn_manager.cpp:5885] 			1ms delay = 33.560 Hz
-[INFO carlsim/kernel/src/snn_manager.cpp:5886] 			Overall = 6.439 Hz
-[INFO carlsim/kernel/src/snn_manager.cpp:5887] Overall Spike Count Transferred:
-[INFO carlsim/kernel/src/snn_manager.cpp:5888] 			2+ms delay = 0
-[INFO carlsim/kernel/src/snn_manager.cpp:5889] 			1ms delay = 0
-[INFO carlsim/kernel/src/snn_manager.cpp:5890] Overall Spike Count:	2+ms delay = 19510
-[INFO carlsim/kernel/src/snn_manager.cpp:5891] 			1ms delay = 26848
-[INFO carlsim/kernel/src/snn_manager.cpp:5892] 			Total = 46358
-[INFO carlsim/kernel/src/snn_manager.cpp:5893] *********************************************************************************
+[INFO carlsim/kernel/src/snn_manager.cpp:5899] ********************    Simulation Summary      ***************************
+[INFO carlsim/kernel/src/snn_manager.cpp:5902] Network Parameters: 	numNeurons = 1800 (numNExcReg:numNInhReg = 44.4:11.1)
+[INFO carlsim/kernel/src/snn_manager.cpp:5903] 			numSynapses = 101135
+[INFO carlsim/kernel/src/snn_manager.cpp:5904] 			maxDelay = 20
+[INFO carlsim/kernel/src/snn_manager.cpp:5905] Simulation Mode:	CUBA
+[INFO carlsim/kernel/src/snn_manager.cpp:5906] Random Seed:		42
+[INFO carlsim/kernel/src/snn_manager.cpp:5907] Timing:			Model Simulation Time = 4 sec
+[INFO carlsim/kernel/src/snn_manager.cpp:5908] 			Actual Execution Time = -0.16 sec
+[INFO carlsim/kernel/src/snn_manager.cpp:5909] Average Firing Rate:	2+ms delay = 6.097 Hz
+[INFO carlsim/kernel/src/snn_manager.cpp:5910] 			1ms delay = 33.560 Hz
+[INFO carlsim/kernel/src/snn_manager.cpp:5911] 			Overall = 6.439 Hz
+[INFO carlsim/kernel/src/snn_manager.cpp:5912] Overall Spike Count Transferred:
+[INFO carlsim/kernel/src/snn_manager.cpp:5913] 			2+ms delay = 0
+[INFO carlsim/kernel/src/snn_manager.cpp:5914] 			1ms delay = 0
+[INFO carlsim/kernel/src/snn_manager.cpp:5915] Overall Spike Count:	2+ms delay = 19510
+[INFO carlsim/kernel/src/snn_manager.cpp:5916] 			1ms delay = 26848
+[INFO carlsim/kernel/src/snn_manager.cpp:5917] 			Total = 46358
+[INFO carlsim/kernel/src/snn_manager.cpp:5918] *********************************************************************************
 
