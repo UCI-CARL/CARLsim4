@@ -135,14 +135,6 @@ endif
 # shared library flags
 CXXSHRFL           += -fPIC -shared
 
-ifeq ($(CARLSIM4_COVERAGE),1)
-	CXXFL          += -fprofile-arcs -ftest-coverage
-	CXXLIBFL       += -lgcov
-	NVCCFL         += --compiler-options "-fprofile-arcs -ftest-coverage"
-	NVCCLDFL       += -lgcov
-	output         += *.gcda *.gcno *.gcov
-endif
-
 
 #------------------------------------------------------------------------------
 # CARLsim Library

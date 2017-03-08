@@ -16,8 +16,6 @@ before_install:
 install:
   - mkdir $HOME/install
   - export CARLSIM4_INSTALL_DIR=$HOME/install
-  - export CARLSIM4_NO_CUDA=1
-  - export CARLSIM4_COVERAGE=1
   - cd external/googletest
   - mkdir build
   - cd build
@@ -25,12 +23,11 @@ install:
   - make
   - cd ../../..
   - pwd
-  - make -j4
+  - make release_nocuda_coverage -j4
   - make install
 
 script:
-  - mkdir results
-  - make test
+  - make test_nocuda_coverage
   - ./carlsim/test/carlsim_tests
 
 after_success:
