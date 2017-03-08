@@ -16,19 +16,6 @@
 ##----------------------------------------------------------------------------##
 
 #------------------------------------------------------------------------------
-# CARLsim4 Library Variables
-#------------------------------------------------------------------------------
-
-lib_name := lib$(SIM_LIB_NAME).a
-lib_ver := $(SIM_MAJOR_NUM).$(SIM_MINOR_NUM).$(SIM_BUILD_NUM)
-
-targets += $(lib_name)
-libraries += $(lib_name).$(lib_ver)
-
-sim_install_files += $(CARLSIM4_LIB_DIR)/$(lib_name)*
-
-
-#------------------------------------------------------------------------------
 # CARLsim4 Library Targets
 #------------------------------------------------------------------------------
 
@@ -41,19 +28,19 @@ uninstall: test_env delete_files farewell
 
 
 test_env:
-ifeq ($(CARLSIM4_LIB_DIR),)
+ifndef CARLSIM4_LIB_DIR
 	$(error CARLSIM4_LIB_DIR not set. Run with -E: $$ sudo -E make install)
 else
 	$(info CARLsim4 library path: $(CARLSIM4_LIB_DIR))
 endif
-ifeq ($(CARLSIM4_INC_DIR),)
+ifndef CARLSIM4_INC_DIR
 	$(error CARLSIM4_INC_DIR not set. Run with -E: $$ sudo -E make install)
 else
 	$(info CARLsim4 include path: $(CARLSIM4_INC_DIR))
 endif
 
 create_files:
-ifneq ($(CARLSIM4_INSTALL_DIR),)
+ifdef CARLSIM4_INSTALL_DIR
 	@test -d $(CARLSIM4_INSTALL_DIR) || mkdir $(CARLSIM4_INSTALL_DIR)
 endif
 #	ar rcs $(lib_name).$(lib_ver) $(intf_obj_files) $(krnl_obj_files) $(mon_obj_files) $(tools_obj_files)
