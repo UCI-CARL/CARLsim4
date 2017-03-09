@@ -115,17 +115,10 @@ add_files       := $(addprefix carlsim/,configure.mk)
 
 .PHONY: release release_nocuda release_coverage release_nocuda_coverage debug debug_nocuda archive archive_nocuda prepare prep_nocuda
 
-prep_release:
-	$(eval CXXFL += -O3 -ffast-math)
-	$(eval NVCCFL += --compiler-options "-O3 -ffast-math")
-
-prep_debug:
-	$(eval CXXFL += -g -Wall -O0)
- 	$(eval NVCCFL += -g -G --compiler-options "-Wall -O0")
-
 prep_cuda:
-	$(eval CARLSIM4_FLG += --compiler-options "-fprofile-arcs -ftest-coverage")
-	$(eval CARLSIM4_LIB += -lgcov)
+	$(eval CARLSIM4_FLG += -Wno-deprecated-gpu-targets)
+	$(eval CARLSIM4_LIB += -lcurand)
+
 prep_nocuda:
 	$(eval CXXFL += -D__NO_CUDA__)
 	$(eval CARLSIM4_FLG += -D __NO_CUDA__)
@@ -134,6 +127,14 @@ prep_nocuda:
 	$(eval NVCCINCFL := $(CXXINCFL))
 	$(eval NVCCLDFL := $(CXXLIBFL))
 	$(eval NVCCFL := $(CXXFL))
+
+prep_release:
+	$(eval CXXFL += -O3 -ffast-math)
+	$(eval NVCCFL += --compiler-options "-O3 -ffast-math")
+
+prep_debug:
+	$(eval CXXFL += -g -Wall -O0)
+ 	$(eval NVCCFL += -g -G --compiler-options "-Wall -O0")
 
 prep_coverage:
 	$(eval CXXFL += -fprofile-arcs -ftest-coverage)

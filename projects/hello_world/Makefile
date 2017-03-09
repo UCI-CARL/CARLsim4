@@ -70,12 +70,6 @@ inc_files  := $(wildcard $(proj_inc_dir)/*.h)
 obj_cpp  := $(patsubst %.cpp, %-cpp.o, $(cpp_files))
 obj_cu  += $(patsubst %.cu, %-cu.o, $(cu_files))
 
-ifeq ($(CARLSIM4_NO_CUDA),1)
-obj_files := $(obj_cpp)
-else
-obj_files := $(obj_cpp) $(obj_cu)
-endif
-
 # handled by clean and distclean
 clean_files := $(obj_files) $(proj_target)
 distclean_files := $(clean_files) results/* *.dot *.dat *.csv *.log
@@ -85,12 +79,18 @@ distclean_files := $(clean_files) results/* *.dot *.dat *.csv *.log
 # Project targets and rules
 #------------------------------------------------------------------------------
 
-.PHONY: $(proj_target) clean distclean help
+.PHONY: $(proj_target) nocuda clean distclean help
 default: $(proj_target)
 
 
-$(proj_target): $(main_src_file) $(inc_files) $(obj_files)
-	$(NVCC) $(CARLSIM4_FLG) $(obj_files) $< -o $(proj_target) $(CARLSIM4_LIB)
+$(proj_target): $(main_src_file) $(inc_files) $(obj_cpp) $(obj_cu)
+	$(eval CARLSIM4_FLG += -Wno-deprecated-gpu-targets)
+	$(eval CARLSIM4_LIB += -lcurand)
+	$(NVCC) $(CARLSIM4_FLG) $(obj_cpp) $(obj_cu) $< -o $(proj_target) $(CARLSIM4_LIB)
+
+nocuda: $(main_src_file) $(inc_files) $(obj_cpp)
+	$(eval CARLSIM4_FLG += -D __NO_CUDA__)
+	$(CXX) $(CARLSIM4_FLG) $(obj_cpp) $(obj_cu) $< -o $(proj_target) $(CARLSIM4_LIB)
 
 $(proj_src_dir)/%-cpp.o: $(proj_src_dir)/%.cpp $(inc_files)
 	$(CXX) -c $(CXXINCFL) $(CXXFL) $< -o $@
