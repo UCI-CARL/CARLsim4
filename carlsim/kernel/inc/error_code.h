@@ -90,4 +90,7 @@
 
 #define POISSON_COUNT_ERROR_0				0x99
 
+#define UNKNOWN_LOGGER_ERROR				0x8001
+#define NO_LOGGER_DIR_ERROR					0x8002
+
 #endif
