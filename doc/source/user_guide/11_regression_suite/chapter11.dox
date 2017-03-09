@@ -63,6 +63,17 @@ $ make test
 $ ./carlsim/test/carlsim_tests
 \endcode
 
+Similary, if you installed CARLsim without GPU support,
+or if you want to exclude all GPU tests from the suite,
+run:
+
+\code
+$ make test_nocuda
+$ ./carlsim/test/carlsim_tests
+\endcode
+
+\note The test suite needs a <tt>results/</tt> directory to run.
+
 This should produce output like the following, possibly all green:
 
 \code
@@ -174,22 +185,21 @@ Simply follow the following procedure:
    $ make clean
    \endcode
 
--# Enable code coverage generation via an environment variable:
+-# Enable code coverage generation by using a different target:
    \code
-   $ export CARLSIM4_COVERAGE=1
-   \endcode
-
--# Re-install CARLsim:
-   \code
-   $ make -j4
+   $ make release_coverage -j4
    $ sudo -E make install
    \endcode
+   You can also use `release_nocuda_coverage`, `debug_coverage`,
+   or `debug_nocuda_coverage`.
 
 -# Re-compile and run the test suite:
    \code
-   $ make test
+   $ make test_coverage
    $ ./carlsim/test/carlsim_tests
    \endcode
+   If you ran the above with a `nocuda` option, make sure to run
+   `test_nocuda_coverage`.
 
 -# This should have generated a bunch of <tt>.gcda</tt> files, which can now
    be investigated. The easiest way to do this is to use <tt>lcov</tt> and
