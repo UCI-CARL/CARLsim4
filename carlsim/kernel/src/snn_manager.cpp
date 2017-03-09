@@ -1741,8 +1741,7 @@ void SNN::SNNinit() {
 		fprintf(stderr, "Could not create directory \"results/\", which is required to "
 			"store simulation results. Aborting simulation...\n");
 		exit(NO_LOGGER_DIR_ERROR);
-	}
-	else {
+	} else {
 		// open log file
 		fpLog_ = fopen("results/carlsim.log", "w");
 
