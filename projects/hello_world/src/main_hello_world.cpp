@@ -71,7 +71,7 @@ int main() {
 	int gin=sim.createSpikeGeneratorGroup("input", gridIn, EXCITATORY_NEURON);
 	int gout=sim.createGroup("output", gridOut, EXCITATORY_NEURON);
 	sim.setNeuronParameters(gout, 0.02f, 0.2f, -65.0f, 8.0f);
-	sim.connect(gin, gout, "gaussian", RangeWeight(0.05), 1.0f, RangeDelay(1), RadiusRF(3,3,1));
+	sim.connect(gin, gout, "gaussian", RangeWeight(0.05f), 1.0f, RangeDelay(1), RadiusRF(3,3,1));
 	sim.setConductances(true);
 	// sim.setIntegrationMethod(FORWARD_EULER, 2);
 
