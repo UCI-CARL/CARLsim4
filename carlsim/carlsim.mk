@@ -20,86 +20,92 @@
 # CARLsim4 Interface
 #------------------------------------------------------------------------------
 
-intf_dir        := carlsim/interface
-intf_inc_files  := $(wildcard $(intf_dir)/inc/*.h)
-intf_cpp_files  := $(wildcard $(intf_dir)/src/*.cpp)
-intf_cu_files   := $(wildcard $(intf_dir)/src/*.cu)
-intf_obj_files  := $(patsubst %.cpp, %-cpp.o, $(intf_cpp_files))
-intf_obj_files  += $(patsubst %.cu, %-cu.o, $(intf_cu_files))
-SIMINCFL    += -I$(intf_dir)/inc
+intf_dir          := carlsim/interface
+intf_inc_files    := $(wildcard $(intf_dir)/inc/*.h)
+intf_cpp_files    := $(wildcard $(intf_dir)/src/*.cpp)
+intf_cu_files     := $(wildcard $(intf_dir)/src/*.cu)
+intf_cpp_obj      := $(patsubst %.cpp, %-cpp.o, $(intf_cpp_files))
+intf_cu_obj       := $(patsubst %.cu, %-cu.o, $(intf_cu_files))
+SIMINCFL          += -I$(intf_dir)/inc
 
 
 #------------------------------------------------------------------------------
 # CARLsim4 Kernel
 #------------------------------------------------------------------------------
 
-krnl_dir        := carlsim/kernel
-krnl_inc_files  := $(wildcard $(krnl_dir)/inc/*.h)
-krnl_cpp_files  := $(wildcard $(krnl_dir)/src/*.cpp)
-krnl_cu_files   := $(wildcard $(krnl_dir)/src/gpu_module/*.cu)
-krnl_obj_files  := $(patsubst %.cpp, %-cpp.o, $(krnl_cpp_files))
-krnl_obj_files  += $(patsubst %.cu, %-cu.o, $(krnl_cu_files))
-krnl_obj_files_no_cuda := $(patsubst %.cpp, %-cpp.o, $(krnl_cpp_files))
-SIMINCFL    += -I$(krnl_dir)/inc
+krnl_dir          := carlsim/kernel
+krnl_inc_files    := $(wildcard $(krnl_dir)/inc/*.h)
+krnl_cpp_files    := $(wildcard $(krnl_dir)/src/*.cpp)
+krnl_cu_files     := $(wildcard $(krnl_dir)/src/gpu_module/*.cu)
+krnl_cpp_obj      := $(patsubst %.cpp, %-cpp.o, $(krnl_cpp_files))
+krnl_cu_obj       := $(patsubst %.cu, %-cu.o, $(krnl_cu_files))
+SIMINCFL          += -I$(krnl_dir)/inc
 
 
 #------------------------------------------------------------------------------
 # CARLsim4 Utilities
 #------------------------------------------------------------------------------
 
-mon_dir        := carlsim/monitor
-mon_inc_files  := $(wildcard $(mon_dir)/*.h)
-mon_cpp_files  := $(wildcard $(mon_dir)/*.cpp)
-mon_cu_files   := $(wildcard $(mon_dir)/src/*.cu)
-mon_obj_files  := $(patsubst %.cpp, %-cpp.o, $(mon_cpp_files))
-mon_obj_files  += $(patsubst %.cu, %-cu.o, $(mon_cu_files))
-SIMINCFL    += -I$(mon_dir)
+mon_dir          := carlsim/monitor
+mon_inc_files    := $(wildcard $(mon_dir)/*.h)
+mon_cpp_files    := $(wildcard $(mon_dir)/*.cpp)
+mon_cu_files     := $(wildcard $(mon_dir)/src/*.cu)
+mon_cpp_obj      := $(patsubst %.cpp, %-cpp.o, $(mon_cpp_files))
+mon_cu_obj       := $(patsubst %.cu, %-cu.o, $(mon_cu_files))
+SIMINCFL         += -I$(mon_dir)
 
 
 #------------------------------------------------------------------------------
 # CARLsim4 Tools
 #------------------------------------------------------------------------------
 
-tools_obj_files  :=
+tools_dir        := tools
+tools_cpp_obj    :=
+tools_cu_obj     :=
 
 # simple weight tuner
-swt_dir          := tools/simple_weight_tuner
+swt_dir          := $(tools_dir)/simple_weight_tuner
 swt_inc_files    := $(wildcard $(swt_dir)/*h)
 swt_cpp_files    := $(wildcard $(swt_dir)/*.cpp)
 swt_cu_files     := $(wildcard $(swt_dir)/*.cu)
-swt_obj_files    := $(patsubst %.cpp, %.o, $(swt_cpp_files))
-swt_obj_files    += $(patsubst %.cu, %.o, $(swt_cu_files))
-tools_obj_files  += $(swt_obj_files)
+swt_cpp_obj      := $(patsubst %.cpp, %.o, $(swt_cpp_files))
+tools_cpp_obj    += $(swt_cpp_obj)
 SIMINCFL         += -I$(swt_dir)
 
 # spike generators
-spkgen_dir       := tools/spike_generators
+spkgen_dir       := $(tools_dir)/spike_generators
 spkgen_inc_files := $(wildcard $(spkgen_dir)/*.h)
 spkgen_cpp_files := $(wildcard $(spkgen_dir)/*.cpp)
-spkgen_cu_files  := $(wildcard $(spkgen_dir)/*.cu)
-spkgen_obj_files := $(patsubst %.cpp, %.o, $(spkgen_cpp_files))
-spkgen_obj_files += $(patsubst %.cu, %.o, $(spkgen_cu_files))
-tools_obj_files  += $(spkgen_obj_files)
+spkgen_cpp_obj   := $(patsubst %.cpp, %.o, $(spkgen_cpp_files))
+tools_cpp_obj    += $(spkgen_cpp_obj)
 SIMINCFL         += -I$(spkgen_dir)
 
 # stopwatch
-stp_dir          := tools/stopwatch
+stp_dir          := $(tools_dir)/stopwatch
 stp_inc_files    := $(wildcard $(stp_dir)/*h)
 stp_cpp_files    := $(wildcard $(stp_dir)/*.cpp)
-stp_cu_files     := $(wildcard $(stp_dir)/*.cu)
-stp_obj_files    := $(patsubst %.cpp, %.o, $(stp_cpp_files))
-stp_obj_files    += $(patsubst %.cu, %.o, $(stp_cu_files))
-tools_obj_files  += $(stp_obj_files)
+stp_cpp_obj      := $(patsubst %.cpp, %.o, $(stp_cpp_files))
+tools_cpp_obj    += $(stp_cpp_obj)
 SIMINCFL         += -I$(stp_dir)
+
+# prepare clean-up
+output += *.gcda *.gcno *.gcov coverage.info
+output += $(addprefix $(intf_dir)/*/,*.gcda *.gcno)
+output += $(addprefix $(krnl_dir)/*/,*.gcda *.gcno)
+output += $(addprefix $(krnl_dir)/*/gpu_module/,*.gcda *.gcno)
+output += $(addprefix $(mon_dir)/,*.gcda *.gcno)
+output += $(addprefix $(tools_dir)/*/,*.gcda *.gcno)
 
 
 #------------------------------------------------------------------------------
 # CARLsim4 Common
 #------------------------------------------------------------------------------
 
-targets         += carlsim4
-objects         += $(krnl_obj_files) $(intf_obj_files) $(mon_obj_files) $(tools_obj_files)
-objects_no_cuda += $(krnl_obj_files_no_cuda) $(intf_obj_files) $(mon_obj_files) $(tools_obj_files)
+output          += carlsim4
+objects_cpp     += $(krnl_cpp_obj) $(intf_cpp_obj) $(mon_cpp_obj) $(tools_cpp_obj)
+objects_cu      += $(krnl_cu_obj) $(intf_cu_obj) $(mon_cu_obj) $(tools_cu_obj)
+
+# additional files that need to be installed
 add_files       := $(addprefix carlsim/,configure.mk)
 
 
@@ -107,38 +113,42 @@ add_files       := $(addprefix carlsim/,configure.mk)
 # CARLsim4 Targets
 #------------------------------------------------------------------------------
 
-.PHONY: release debug archive release_no_cuda debug_no_cuda archive_no_cuda
+.PHONY: release release_nocuda release_coverage release_nocuda_coverage debug debug_nocuda archive archive_nocuda prepare prep_nocuda
 
-# release build
-release: CXXFL  += -O3 -ffast-math
-release: NVCCFL += --compiler-options "-O3 -ffast-math"
-release: $(objects)
-release: archive
+prep_cuda:
+	$(eval CARLSIM4_FLG += -Wno-deprecated-gpu-targets)
+	$(eval CARLSIM4_LIB += -lcurand)
 
-# debug build
-debug: CXXFL    += -g -Wall -O0
-debug: NVCCFL   += -g -G --compiler-options "-Wall -O0"
-debug: $(objects)
-debug: archive
+prep_nocuda:
+	$(eval CXXFL += -D__NO_CUDA__)
+	$(eval CARLSIM4_FLG += -D __NO_CUDA__)
+	$(eval NVCCFL += --compiler-options "-O3 -ffast-math")
+	$(eval NVCC := $(CXX))
+	$(eval NVCCINCFL := $(CXXINCFL))
+	$(eval NVCCLDFL := $(CXXLIBFL))
+	$(eval NVCCFL := $(CXXFL))
 
-# release build without cuda
-release_no_cuda: CXXFL += -O3 -ffast-math -D__NO_CUDA__
-release_no_cuda: NVCC := $(CXX)
-release_no_cuda: NVCCFL := $(CXXFL)
-release_no_cuda: NVCCSHRFL := $(CXXSHRFL)
-release_no_cuda: NVCCINCFL := $(CXXINCFL)
-release_no_cuda: $(objects_no_cuda)
-release_no_cuda: archive_no_cuda
+prep_release:
+	$(eval CXXFL += -O3 -ffast-math)
+	$(eval NVCCFL += --compiler-options "-O3 -ffast-math")
 
-# debug build without cuda
-debug_no_cuda: CXXFL += -g -Wall -O0 -D__NO_CUDA__
-debug_no_cuda: NVCC := $(CXX)
-debug_no_cuda: NVCCFL := $(CXXFL)
-debug_no_cuda: NVCCSHRFL := $(CXXSHRFL)
-debug_no_cuda: NVCCINCFL := $(CXXINCFL)
-debug_no_cuda: $(objects_no_cuda)
-debug_no_cuda: archive_no_cuda
+prep_debug:
+	$(eval CXXFL += -g -Wall -O0)
+ 	$(eval NVCCFL += -g -G --compiler-options "-Wall -O0")
 
+prep_coverage:
+	$(eval CXXFL += -fprofile-arcs -ftest-coverage)
+	$(eval CXXLIBFL += -lgcov)
+	$(eval NVCCFL += --compiler-options "-fprofile-arcs -ftest-coverage")
+	$(eval NVCCLDFL += -lgcov)
+	$(eval CARLSIM4_FLG += -fprofile-arcs -ftest-coverage)
+	$(eval CARLSIM4_LIB += -lgcov)
+
+
+release: prep_release prep_cuda $(objects_cpp) $(objects_cu) archive
+release_nocuda: prep_release prep_nocuda $(objects_cpp) archive_nocuda
+release_coverage: prep_release prep_coverage prep_cuda $(objects_cpp) $(objects_cu) archive
+release_nocuda_coverage: prep_release prep_coverage prep_nocuda $(objects_cpp) archive_nocuda
 
 
 #------------------------------------------------------------------------------
@@ -167,10 +177,9 @@ $(spkgen_dir)/%.o: $(spkgen_dir)/%.cpp $(spkgen_inc_files)
 $(stp_dir)/%.o: $(stp_dir)/%.cpp $(stp_inc_files)
 	$(CXX) $(CXXSHRFL) -c $(CXXINCFL) $(SIMINCFL) $(CXXFL) $< -o $@
 
-#archive
-archive:
-	ar rcs $(lib_name).$(lib_ver) $(objects)
+# archive
+archive: prep_cuda $(objects_cpp) $(objects_cu)
+	ar rcs $(lib_name).$(lib_ver) $(objects_cpp) $(objects_cu)
 
-archive_no_cuda:
-	ar rcs $(lib_name).$(lib_ver) $(objects_no_cuda)
-
+archive_nocuda: prep_nocuda $(objects_cpp)
+	ar rcs $(lib_name).$(lib_ver) $(objects_cpp)

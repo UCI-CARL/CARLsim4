@@ -1,0 +1,42 @@
+sudo: false
+
+dist: trusty
+
+language:
+  - cpp
+
+addons:
+  apt:
+    sources:
+      - ubuntu-toolchain-r-test
+    packages:
+      - lcov
+
+before_install:
+  - gem install coveralls-lcov
+
+install:
+  - mkdir $HOME/install
+  - export CARLSIM4_INSTALL_DIR=$HOME/install
+  - cd external/googletest
+  - mkdir build
+  - cd build
+  - cmake ..
+  - make
+  - cd ../../..
+  - pwd
+  - make release_nocuda_coverage -j4
+  - make install
+
+script:
+  - make test_nocuda_coverage
+  - ./carlsim/test/carlsim_tests
+
+after_success:
+- lcov -b . -d . -c -o ./coverage.info
+- lcov -r coverage.info "/usr*" -o coverage.info
+- lcov -r coverage.info "/tmp*" -o coverage.info
+- lcov -r coverage.info "external/*" -o coverage.info
+- lcov -r coverage.info "*.h" -o coverage.info
+- coveralls-lcov coverage.info
+

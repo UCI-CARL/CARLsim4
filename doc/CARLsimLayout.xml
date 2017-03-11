@@ -59,7 +59,12 @@
 				<tab type="user" visible="no" title="10.3 Usage" url="@ref ch10s3_usage"/>
 				<tab type="user" visible="no" title="10.4 References" url="@ref ch10s4_references"/>
 			</tab>
-			<tab type="usergroup" visible="yes" title="11. Regression Suite" url="@ref ch11_regression_suite"/>
+			<tab type="usergroup" visible="yes" title="11. Regression Suite" url="@ref ch11_regression_suite">
+				<tab type="user" visible="no" title="11.1 Installing Google Test" url="@ref ch11s1_installation"/>
+				<tab type="user" visible="no" title="11.2 Running Google Test" url="@ref ch11s1_running"/>
+				<tab type="user" visible="no" title="11.3 Contributing New Tests" url="@ref ch11s3_contributing"/>
+				<tab type="user" visible="no" title="11.4 Code Coverage" url="@ref ch11s4_coverage"/>
+			</tab>
 			<tab type="usergroup" visible="yes" title="12. Advanced Topics" url="@ref ch12_advanced_topics">
 				<tab type="user" visible="no" title="12.1 Best Practices" url="@ref ch12s1_best_practices"/>
 				<tab type="user" visible="no" title="12.2 Multi-GPU" url="@ref ch12s2_multi_gpu"/>
