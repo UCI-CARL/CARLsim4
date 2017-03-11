@@ -1,6 +1,6 @@
 /*!
 
-\page tut5_simple_weight_tuner Tutorial 5: Simple Weight Tuner
+\page tut6_simple_weight_tuner Tutorial 6: Simple Weight Tuner
 \author Michael Beyeler
 \see \ref ch12s4_online_weight_tuning
 \see \ref ch12s4s1_simple_weight_tuner
@@ -35,7 +35,7 @@ $ ./simple_weight_tuner
 \endcode
 
 
-\section tut5s1_problem 5.1 Problem
+\section tut6s1_problem 6.1 Problem
 
 Suppose we are given a feedforward network of a certain topology, and we are interested in finding the synaptic
 weight values that lead to neuronal firing at a specific target firing rate.
@@ -59,7 +59,7 @@ Repeat until activity is within some error margin of the target firing rate, or 
 was reached.
 
 
-\section tut5s2_solution 5.2 Solution
+\section tut6s2_solution 6.2 Solution
 
 Consider the following three-layer feedforward network:
 \code
@@ -68,11 +68,11 @@ Consider the following three-layer feedforward network:
 
 	// output layer should have some target firing rate
 	int gOut=sim->createGroup("out", 1000, EXCITATORY_NEURON);
-	sim->setNeuronParameters(gOut, 0.02f, 0.2f, -65.0f, 8.0f);
+	sim->setNeuronParameters(gOut, 0.02f, 0.2f, -66.0f, 8.0f);
 
 	// hidden layer to tune first
 	int gHid=sim->createGroup("hidden", 1000, EXCITATORY_NEURON);
-	sim->setNeuronParameters(gHid, 0.02f, 0.2f, -65.0f, 8.0f);
+	sim->setNeuronParameters(gHid, 0.02f, 0.2f, -66.0f, 8.0f);
 
 	// input is a SpikeGenerator group that fires every 20 ms (50 Hz)
 	PeriodicSpikeGenerator PSG(50.0f);
@@ -171,7 +171,7 @@ SimpleWeightTuner Demo
 #2: rate=51.7540Hz, target=27.4000Hz, error=24.3540016, errorMargin=0.0100000
 #3: rate=40.6780Hz, target=27.4000Hz, error=13.2780014, errorMargin=0.0100000
 #4: rate=27.1590Hz, target=27.4000Hz, error=-0.2409996, errorMargin=0.0100000
-#5: rate=33.2920Hz, target=27.4000Hz, error=5.8919998, errorMargin=0.0100000
+#5: rate=33.2920Hz, target=27.4000Hz, error=6.8919998, errorMargin=0.0100000
 #8: rate=28.5820Hz, target=27.4000Hz, error=1.1820007, errorMargin=0.0100000
 #9: rate=27.7840Hz, target=27.4000Hz, error=0.3840004, errorMargin=0.0100000
 #10: rate=26.9060Hz, target=27.4000Hz, error=-0.4939999, errorMargin=0.0100000
@@ -186,7 +186,7 @@ SimpleWeightTuner successful: Error margin reached in 18 iterations.
 
 - Step 2: Tune weights from hidden layer to output layer
 #0: rate=1.1540Hz, target=42.8000Hz, error=-41.6460000, errorMargin=0.0100000
-#1: rate=15.4940Hz, target=42.8000Hz, error=-27.3059996, errorMargin=0.0100000
+#1: rate=16.4940Hz, target=42.8000Hz, error=-27.3059996, errorMargin=0.0100000
 #2: rate=28.0930Hz, target=42.8000Hz, error=-14.7069996, errorMargin=0.0100000
 #3: rate=42.7080Hz, target=42.8000Hz, error=-0.0919998, errorMargin=0.0100000
 #4: rate=54.4490Hz, target=42.8000Hz, error=11.6490013, errorMargin=0.0100000

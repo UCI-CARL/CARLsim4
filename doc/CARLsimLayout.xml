@@ -59,16 +59,17 @@
 				<tab type="user" visible="no" title="10.3 Usage" url="@ref ch10s3_usage"/>
 				<tab type="user" visible="no" title="10.4 References" url="@ref ch10s4_references"/>
 			</tab>
-			<tab type="usergroup" visible="yes" title="11. Regression Suite" url="@ref ch11_regression_suite">
-				<tab type="user" visible="no" title="11.1 Installing Google Test" url="@ref ch11s1_installation"/>
-				<tab type="user" visible="no" title="11.2 Running Google Test" url="@ref ch11s1_running"/>
-				<tab type="user" visible="no" title="11.3 Contributing New Tests" url="@ref ch11s3_contributing"/>
-				<tab type="user" visible="no" title="11.4 Code Coverage" url="@ref ch11s4_coverage"/>
-			</tab>
+      			<tab type="usergroup" visible="yes" title="11. Regression Suite" url="@ref ch11_regression_suite">
+		        	<tab type="user" visible="no" title="11.1 Installing Google Test" url="@ref ch11s1_installation"/>
+        			<tab type="user" visible="no" title="11.2 Running Google Test" url="@ref ch11s1_running"/>
+        			<tab type="user" visible="no" title="11.3 Contributing New Tests" url="@ref ch11s3_contributing"/>
+       				<tab type="user" visible="no" title="11.4 Code Coverage" url="@ref ch11s4_coverage"/>
+      			</tab>
 			<tab type="usergroup" visible="yes" title="12. Advanced Topics" url="@ref ch12_advanced_topics">
 				<tab type="user" visible="no" title="12.1 Best Practices" url="@ref ch12s1_best_practices"/>
-				<tab type="user" visible="no" title="12.2 Multi-GPU" url="@ref ch12s2_multi_gpu"/>
-				<tab type="user" visible="no" title="12.3 On-Line Weight Tuning" url="@ref ch12s3_online_weight_tuning"/>
+				<tab type="user" visible="no" title="12.2 Numerical Integration Methods" url="@ref ch12s2_num_int"/>
+				<tab type="user" visible="no" title="12.3 Multi-GPU" url="@ref ch12s3_multi_gpu"/>
+				<tab type="user" visible="no" title="12.4 On-Line Weight Tuning" url="@ref ch12s4_online_weight_tuning"/>
 			</tab>
 		</tab>
 		<tab type="usergroup" visible="yes" title="Tutorial">
@@ -94,15 +95,20 @@
 				<tab type="user" visible="no" title="4.2 Gaussian Blur" url="@ref tut4s2_gaussian_blur"/>
 				<tab type="user" visible="no" title="4.3 Difference of Gaussians" url="@ref tut4s3_dog"/>
 			</tab>
-			<tab type="usergroup" visible="yes" title="5. Simple Weight Tuner" url="@ref tut5_simple_weight_tuner">
-				<tab type="user" visible="no" title="5.1 Problem" url="@ref tut5s1_problem"/>
-				<tab type="user" visible="no" title="5.2 Solution" url="@ref tut5s2_solution"/>
+			<tab type="usergroup" visible="yes" title="5. Motion Energy" url="@ref tut5_motion_energy">
+				<tab type="user" visible="no" title="5.1 The MotionEnergy package" url="@ref tut5s1_me"/>
+				<tab type="user" visible="no" title="5.2 Stimuli" url="@ref tut5s2_stimuli"/>
+				<tab type="user" visible="no" title="5.3 Network" url="@ref tut5s2_network"/>
 			</tab>
-			<tab type="usergroup" visible="yes" title="6. Parameter Tuning Interface (PTI)" url="@ref tut6_pti">
-				<tab type="user" visible="no" title="6.1 Introducton" url="@ref tut6s1_intro"/>
-				<tab type="user" visible="no" title="6.2 ECJ Parameter File" url="@ref tut6s2_parameter_file"/>
-				<tab type="user" visible="no" title="6.3 Parameter Tuning Interface (PTI)" url="@ref tut6s3_experiment_class"/>
-				<tab type="user" visible="no" title="6.4 Output Files" url="@ref tut6s4_output_files"/>
+			<tab type="usergroup" visible="yes" title="6. Simple Weight Tuner" url="@ref tut6_simple_weight_tuner">
+				<tab type="user" visible="no" title="6.1 Problem" url="@ref tut6s1_problem"/>
+				<tab type="user" visible="no" title="6.2 Solution" url="@ref tut6s2_solution"/>
+			</tab>
+			<tab type="usergroup" visible="yes" title="7. Parameter Tuning Interface (PTI)" url="@ref tut7_pti">
+				<tab type="user" visible="no" title="7.1 Introducton" url="@ref tut7s1_intro"/>
+				<tab type="user" visible="no" title="7.2 ECJ Parameter File" url="@ref tut7s2_parameter_file"/>
+				<tab type="user" visible="no" title="7.3 Parameter Tuning Interface (PTI)" url="@ref tut7s3_experiment_class"/>
+				<tab type="user" visible="no" title="7.4 Output Files" url="@ref tut7s4_output_files"/>
 			</tab>
 		</tab>
 		<tab type="modules" visible="yes" title="" intro=""/>
