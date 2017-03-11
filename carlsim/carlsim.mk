@@ -88,28 +88,22 @@ stp_cpp_obj      := $(patsubst %.cpp, %.o, $(stp_cpp_files))
 tools_cpp_obj    += $(stp_cpp_obj)
 SIMINCFL         += -I$(stp_dir)
 
+# prepare clean-up
+output += *.gcda *.gcno *.gcov coverage.info
+output += $(addprefix $(intf_dir)/*/,*.gcda *.gcno)
+output += $(addprefix $(krnl_dir)/*/,*.gcda *.gcno)
+output += $(addprefix $(krnl_dir)/*/gpu_module/,*.gcda *.gcno)
+output += $(addprefix $(mon_dir)/,*.gcda *.gcno)
+output += $(addprefix $(tools_dir)/*/,*.gcda *.gcno)
+
 
 #------------------------------------------------------------------------------
 # CARLsim4 Common
 #------------------------------------------------------------------------------
 
-outputs         += carlsim4
+output          += carlsim4
 objects_cpp     += $(krnl_cpp_obj) $(intf_cpp_obj) $(mon_cpp_obj) $(tools_cpp_obj)
 objects_cu      += $(krnl_cu_obj) $(intf_cu_obj) $(mon_cu_obj) $(tools_cu_obj)
-
-# list of objects depend on build mode
-ifeq ($(CARLSIM4_NO_CUDA),1)
-objects         += $(objects_cpp)
-else
-objects         += $(objects_cpp) $(objects_cu)
-endif
-
-ifeq ($(CARLSIM4_COVERAGE),1)
-output          += $(addprefix $(intf_dir)/*/,*.gcda *.gcno)
-output          += $(addprefix $(krnl_dir)/*/,*.gcda *.gcno)
-output          += $(addprefix $(mon_dir)/,*.gcda *.gcno)
-output          += $(addprefix $(tools_dir)/*/,*.gcda *.gcno)
-endif
 
 # additional files that need to be installed
 add_files       := $(addprefix carlsim/,configure.mk)
@@ -119,26 +113,42 @@ add_files       := $(addprefix carlsim/,configure.mk)
 # CARLsim4 Targets
 #------------------------------------------------------------------------------
 
-.PHONY: release debug archive 
+.PHONY: release release_nocuda release_coverage release_nocuda_coverage debug debug_nocuda archive archive_nocuda prepare prep_nocuda
 
-release: CXXFL  += -O3 -ffast-math
-ifeq ($(CARLSIM4_NO_CUDA),1)
-release: NVCCFL += -O3 -ffast-math
-else
-release: NVCCFL += --compiler-options "-O3 -ffast-math"
-endif
-release: $(objects)
-release: archive
+prep_cuda:
+	$(eval CARLSIM4_FLG += -Wno-deprecated-gpu-targets)
+	$(eval CARLSIM4_LIB += -lcurand)
 
-debug: CXXFL    += -g -Wall -O0
-ifeq ($(CARLSIM4_NO_CUDA),1)
-debug: NVCCFL   += -g -Wall -O0
-else
-debug: NVCCFL   += -g -G --compiler-options "-Wall -O0"
-endif
-debug: $(objects)
-debug: archive
+prep_nocuda:
+	$(eval CXXFL += -D__NO_CUDA__)
+	$(eval CARLSIM4_FLG += -D __NO_CUDA__)
+	$(eval NVCCFL += --compiler-options "-O3 -ffast-math")
+	$(eval NVCC := $(CXX))
+	$(eval NVCCINCFL := $(CXXINCFL))
+	$(eval NVCCLDFL := $(CXXLIBFL))
+	$(eval NVCCFL := $(CXXFL))
 
+prep_release:
+	$(eval CXXFL += -O3 -ffast-math)
+	$(eval NVCCFL += --compiler-options "-O3 -ffast-math")
+
+prep_debug:
+	$(eval CXXFL += -g -Wall -O0)
+ 	$(eval NVCCFL += -g -G --compiler-options "-Wall -O0")
+
+prep_coverage:
+	$(eval CXXFL += -fprofile-arcs -ftest-coverage)
+	$(eval CXXLIBFL += -lgcov)
+	$(eval NVCCFL += --compiler-options "-fprofile-arcs -ftest-coverage")
+	$(eval NVCCLDFL += -lgcov)
+	$(eval CARLSIM4_FLG += -fprofile-arcs -ftest-coverage)
+	$(eval CARLSIM4_LIB += -lgcov)
+
+
+release: prep_release prep_cuda $(objects_cpp) $(objects_cu) archive
+release_nocuda: prep_release prep_nocuda $(objects_cpp) archive_nocuda
+release_coverage: prep_release prep_coverage prep_cuda $(objects_cpp) $(objects_cu) archive
+release_nocuda_coverage: prep_release prep_coverage prep_nocuda $(objects_cpp) archive_nocuda
 
 
 #------------------------------------------------------------------------------
@@ -168,5 +178,8 @@ $(stp_dir)/%.o: $(stp_dir)/%.cpp $(stp_inc_files)
 	$(CXX) $(CXXSHRFL) -c $(CXXINCFL) $(SIMINCFL) $(CXXFL) $< -o $@
 
 # archive
-archive: $(objects)
-	ar rcs $(lib_name).$(lib_ver) $(objects)
+archive: prep_cuda $(objects_cpp) $(objects_cu)
+	ar rcs $(lib_name).$(lib_ver) $(objects_cpp) $(objects_cu)
+
+archive_nocuda: prep_nocuda $(objects_cpp)
+	ar rcs $(lib_name).$(lib_ver) $(objects_cpp)

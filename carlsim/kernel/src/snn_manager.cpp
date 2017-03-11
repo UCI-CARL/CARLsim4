@@ -58,6 +58,7 @@
 #include <group_monitor_core.h>
 
 #include <spike_buffer.h>
+#include <error_code.h>
 
 // \FIXME what are the following for? why were they all the way at the bottom of this file?
 
@@ -1719,25 +1720,42 @@ void SNN::SNNinit() {
 	default:
 		fpErr_ = stderr; // need to open file stream first
 		KERNEL_ERROR("Unknown logger mode");
-		exit(1);
-	}
-	#if defined(WIN32) || defined(WIN64)
-		fpLog_= fopen("results\\carlsim.log","w");
-	#else
-		fpLog_ = fopen("results/carlsim.log","w");
-	#endif
+		exit(UNKNOWN_LOGGER_ERROR);
 
-	#ifdef __REGRESSION_TESTING__
-	#if defined(WIN32) || defined(WIN64)
-		fpInf_ = fopen("nul","w");
-		fpErr_ = fopen("nul","w");
-		fpDeb_ = fopen("nul","w");
-	#else
-		fpInf_ = fopen("/dev/null","w");
-		fpErr_ = fopen("/dev/null","w");
-		fpDeb_ = fopen("/dev/null","w");
-	#endif
-	#endif
+	}
+
+	// try to open log file in results folder: create if not exists
+#if defined(WIN32) || defined(WIN64)
+	CreateDirectory("results", NULL);
+	fpLog_ = fopen("results/carlsim.log", "w");
+#else
+	struct stat sb;
+	int createDir = 1;
+	if (stat("results", &sb) == -1 || !S_ISDIR(sb.st_mode)) {
+		// results dir does not exist, try to create:
+		createDir = mkdir("results", 0777);
+	}
+
+	if (createDir == -1) {
+		// tried to create dir, but failed
+		fprintf(stderr, "Could not create directory \"results/\", which is required to "
+			"store simulation results. Aborting simulation...\n");
+		exit(NO_LOGGER_DIR_ERROR);
+	} else {
+		// open log file
+		fpLog_ = fopen("results/carlsim.log", "w");
+
+		if (createDir == 0) {
+			// newly created dir: now that fpLog_/fpInf_ exist, inform user
+			KERNEL_INFO("Created results directory \"results/\".");
+		}
+	}
+#endif
+	if (fpLog_ == NULL) {
+		fprintf(stderr, "Could not create the directory \"results/\" or the log file \"results/carlsim.log\""
+			", which is required to store simulation results. Aborting simulation...\n");
+		exit(NO_LOGGER_DIR_ERROR);
+	}
 
 	KERNEL_INFO("*********************************************************************************");
 	KERNEL_INFO("********************      Welcome to CARLsim %d.%d      ***************************",

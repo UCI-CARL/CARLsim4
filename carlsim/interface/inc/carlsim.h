@@ -97,8 +97,9 @@ class SpikeGenerator;
 #endif
 
 #else
-// Unix
-#include <pthread.h>
+
+#include <pthread.h> // pthread
+#include <sys/stat.h> // mkdir
 
 #endif
 

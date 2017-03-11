@@ -43,28 +43,19 @@ In brief (OS X/Linux):
      ```
    - For the latest development branch, you are already on the right branch (`master`).
 
-4. Consider your options: You can choose the installation directory and whether you want GPU support.
-   - Installation directory: By default, the CARLsim library lives in `/usr/local/lib`, and CARLsim
+4. Choose the installation directory: By default, the CARLsim library lives in `/usr/local/lib`, and CARLsim
      include files live in `/usr/local/include/carlsim`.
      You can overwrite these by exporting an evironment variable called `CARLSIM4_INSTALL_DIR`:
      ```
      $ export CARLSIM4_INSTALL_DIR=/path/to/your/preferred/dir
      ```
-     
-   - GPU support: By default, CARLsim comes with CUDA support. Obviously, this requires CUDA to be installed
-     first. If you want to run CARLsim without GPU support, you need to export an environment variable
-     called `CARLSIM4_NO_CUDA` and set it to `1`:
-     ```
-     $ export CARLSIM4_NO_CUDA=1
-     ```
 
-6. Make and install:
+5. Make and install:
    ```
    $ make -j4
    $ sudo -E make install
    ```
-   Note the `-E` flag, which will cause `sudo` to remember any environment variables you set above
-   (such as `CARLSIM4_INSTALL_DIR` and `CARLSIM4_NO_CUDA`).
+   Note the `-E` flag, which will cause `sudo` to remember the `CARLSIM4_INSTALL_DIR`.
 
 7. In order to make sure the installation was successful, you can run the regression suite:
 
