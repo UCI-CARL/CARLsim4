@@ -4,3 +4,6 @@
 [submodule "external/VisualStimulusToolbox"]
 	path = external/VisualStimulusToolbox
 	url = https://github.com/UCI-CARL/VisualStimulusToolbox.git
+[submodule "external/MotionEnergy"]
+	path = external/MotionEnergy
+	url = https://github.com/UCI-CARL/MotionEnergy.git
