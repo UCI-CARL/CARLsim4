@@ -1,3 +1,6 @@
 [submodule "external/googletest"]
 	path = external/googletest
 	url = https://github.com/google/googletest
+[submodule "external/VisualStimulusToolbox"]
+	path = external/VisualStimulusToolbox
+	url = https://github.com/UCI-CARL/VisualStimulusToolbox.git
