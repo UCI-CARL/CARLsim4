@@ -61,15 +61,14 @@
 			</tab>
       			<tab type="usergroup" visible="yes" title="11. Regression Suite" url="@ref ch11_regression_suite">
 		        	<tab type="user" visible="no" title="11.1 Installing Google Test" url="@ref ch11s1_installation"/>
-        			<tab type="user" visible="no" title="11.2 Running Google Test" url="@ref ch11s1_running"/>
+        			<tab type="user" visible="no" title="11.2 Running Google Test" url="@ref ch11s2_running"/>
         			<tab type="user" visible="no" title="11.3 Contributing New Tests" url="@ref ch11s3_contributing"/>
        				<tab type="user" visible="no" title="11.4 Code Coverage" url="@ref ch11s4_coverage"/>
       			</tab>
 			<tab type="usergroup" visible="yes" title="12. Advanced Topics" url="@ref ch12_advanced_topics">
 				<tab type="user" visible="no" title="12.1 Best Practices" url="@ref ch12s1_best_practices"/>
-				<tab type="user" visible="no" title="12.2 Numerical Integration Methods" url="@ref ch12s2_num_int"/>
-				<tab type="user" visible="no" title="12.3 Multi-GPU" url="@ref ch12s3_multi_gpu"/>
-				<tab type="user" visible="no" title="12.4 On-Line Weight Tuning" url="@ref ch12s4_online_weight_tuning"/>
+				<tab type="user" visible="no" title="12.2 Multi-GPU" url="@ref ch12s2_multi_gpu"/>
+				<tab type="user" visible="no" title="12.3 On-Line Weight Tuning" url="@ref ch12s3_online_weight_tuning"/>
 			</tab>
 		</tab>
 		<tab type="usergroup" visible="yes" title="Tutorial">
@@ -98,7 +97,7 @@
 			<tab type="usergroup" visible="yes" title="5. Motion Energy" url="@ref tut5_motion_energy">
 				<tab type="user" visible="no" title="5.1 The MotionEnergy package" url="@ref tut5s1_me"/>
 				<tab type="user" visible="no" title="5.2 Stimuli" url="@ref tut5s2_stimuli"/>
-				<tab type="user" visible="no" title="5.3 Network" url="@ref tut5s2_network"/>
+				<tab type="user" visible="no" title="5.3 Network" url="@ref tut5s3_network"/>
 			</tab>
 			<tab type="usergroup" visible="yes" title="6. Simple Weight Tuner" url="@ref tut6_simple_weight_tuner">
 				<tab type="user" visible="no" title="6.1 Problem" url="@ref tut6s1_problem"/>
