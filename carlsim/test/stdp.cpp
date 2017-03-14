@@ -306,7 +306,7 @@ TEST(STDP, DASTDPWeightBoost) {
 				sim->setSpikeRate(gin, &in);
 				sim->setSpikeRate(g1noise, &in);
 
-				for (int t = 0; t < 200; t++) {
+				for (int t = 0; t < 100; t++) {
 					spikeMonPost->startRecording();
 					spikeMonPre->startRecording();
 					sim->runNetwork(1, 0, false);
@@ -469,7 +469,7 @@ TEST(STDP, ESTDPExpCurve) {
 
 	for (int mode = 0; mode < 2; mode++) {
 		for (int coba = 0; coba < 2; coba++) {
-			for (int offset = -30; offset <= 30; offset += 5) {
+			for (int offset = -10; offset <= 10; offset += 5) {
 				if (offset == 0) continue; // skip offset == 0;
 				// create a network
 				CARLsim* sim = new CARLsim("STDP.ESTDPExpCurve", mode?GPU_MODE:CPU_MODE, SILENT, 1, 42);
@@ -515,7 +515,7 @@ TEST(STDP, ESTDPExpCurve) {
 				//SMgex2->startRecording();
 				//SMg1->startRecording();
 
-				sim->runNetwork(55, 0, false);
+				sim->runNetwork(25, 0, false);
 
 				//SMgex1->stopRecording();
 				//SMgex2->stopRecording();
@@ -652,7 +652,7 @@ TEST(STDP, ESTDPTimingBasedCurve) {
 
 	for (int mode = 0; mode < 2; mode++) {
 		for (int coba = 0; coba < 2; coba++) {
-			for (int offset = -24; offset <= 24; offset += 3) {
+			for (int offset = -12; offset <= 12; offset += 3) {
 				if (offset == 0) continue; // skip offset == 0;
 				// create a network
 				CARLsim* sim = new CARLsim("STDP.ESTDTimingBasedCurve", mode?GPU_MODE:CPU_MODE, SILENT, 1, 42);
@@ -690,7 +690,7 @@ TEST(STDP, ESTDPTimingBasedCurve) {
 				ConnectionMonitor* CM = sim->setConnectionMonitor(gex2, g1, "NULL");
 				CM->setUpdateTimeIntervalSec(-1);
 
-				sim->runNetwork(75, 0, false);
+				sim->runNetwork(25, 0, false);
 
 				std::vector< std::vector<float> > weights = CM->takeSnapshot();
 				if (offset > 0) { // pre-post
@@ -887,8 +887,8 @@ TEST(STDP, ISTDPulseCurve) {
 				//SMgin->startRecording();
 				//SMgex->startRecording();
 
-				// run for 20 seconds
-				sim->runNetwork(20,0, false);
+				// run for 5 seconds
+				sim->runNetwork(5,0, false);
 
 				//SMg1->stopRecording();
 				//SMgin->stopRecording();
@@ -1043,7 +1043,7 @@ TEST(STDP, ISTDPExpCurve) {
 
 	for (int mode = 0; mode < 2; mode++) {
 		for (int coba = 0; coba < 2; coba++) {
-			for (int offset = -24; offset <= 24; offset += 3) {
+			for (int offset = -12; offset <= 12; offset += 3) {
 				if (offset == 0) continue; // skip offset == 0;
 				// create a network
 				CARLsim* sim = new CARLsim("STDP.ISTDPPulseCurve", mode ? GPU_MODE : CPU_MODE, SILENT, 1, 42);
@@ -1090,8 +1090,8 @@ TEST(STDP, ISTDPExpCurve) {
 				//SMgin->startRecording();
 				//SMgex->startRecording();
 
-				// run for 20 seconds
-				sim->runNetwork(25, 0, false);
+				// run for 10 seconds
+				sim->runNetwork(10, 0, false);
 
 				//SMg1->stopRecording();
 				//SMgin->stopRecording();

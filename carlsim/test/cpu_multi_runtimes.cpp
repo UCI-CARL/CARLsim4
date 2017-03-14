@@ -51,6 +51,13 @@
 #include "carlsim_tests.h"
 #include <carlsim.h>
 
+/*
+	class FixedRandomConnGen - Subclass of the connectionGenerator class to define custom connections between two groups
+ 	using a callback connect() method. The constructor takes #source neurons, #destination neurons,
+ 	an instance of rangeweight struct, and an instance of rangedelay struct. The callback connect() method
+ 	can be used to set a connection from neuron i of source group to neuron j of dest group and to set
+ 	the synapse parameters
+*/
 class FixedRandomConnGen : public ConnectionGenerator {
 public:
         FixedRandomConnGen(int srcNumN, int destNumN, RangeWeight rt, RangeDelay rd) {

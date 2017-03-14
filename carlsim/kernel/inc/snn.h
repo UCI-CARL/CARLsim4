@@ -866,7 +866,7 @@ private:
 	void spikeGeneratorUpdate_CPU(int netId);
 	void updateTimingTable_CPU(int netId);
 	void updateWeights_CPU(int netId);
-#else // POSIX
+#else // for POSIX systems - returns a void* to pthread_create - only differ in the return type compared to the counterparts above
 	void* assignPoissonFiringRate_CPU(int netId);
 	void* clearExtFiringTable_CPU(int netId);
 	void* convertExtSpikesD2_CPU(int netId, int startIdx, int endIdx, int GtoLOffset);
