@@ -30,7 +30,8 @@ install:
 
 script:
   - make test_nocuda_coverage
-  - travis_wait 30 ./carlsim/test/carlsim_tests
+  - travis_wait 50
+  - ./carlsim/test/carlsim_tests
 
 after_success:
 - lcov -b . -d . -c -o ./coverage.info
