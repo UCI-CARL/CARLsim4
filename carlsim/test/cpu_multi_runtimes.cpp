@@ -233,7 +233,7 @@ TEST(cpuMultiRuntimes, shuffleGroups) {
 				//printf("[%d][%d][%d]\n", partitionA,  partitionB,  partitionC);
 				//printf("%f,%f,%f\n", smExc->getPopMeanFiringRate(), smInh->getPopMeanFiringRate(), smInput->getPopMeanFiringRate());
 							
-				EXPECT_NEAR(smExc->getPopMeanFiringRate(), 6.3, 0.4);
+				EXPECT_NEAR(smExc->getPopMeanFiringRate(), 6.1, 0.4);
 				EXPECT_NEAR(smInh->getPopMeanFiringRate(), 29.0, 2.0);
 				EXPECT_NEAR(smInput->getPopMeanFiringRate(), 1.0, 0.1);
 

@@ -1,0 +1,21 @@
+[0;32m[==========] [mRunning 96 tests from 17 test cases.
+[0;32m[----------] [mGlobal test environment set-up.
+[0;32m[----------] [m3 tests from COBA
+[0;32m[ RUN      ] [mCOBA.synRiseTime
+[0;32m[       OK ] [mCOBA.synRiseTime (339 ms)
+[0;32m[ RUN      ] [mCOBA.condSingleNeuronCPUvsGPU
+[0;32m[       OK ] [mCOBA.condSingleNeuronCPUvsGPU (648 ms)
+[0;32m[ RUN      ] [mCOBA.firingRateCPUvsGPU
+[0;32m[       OK ] [mCOBA.firingRateCPUvsGPU (144 ms)
+[0;32m[----------] [m3 tests from COBA (1131 ms total)
+
+[0;32m[----------] [m5 tests from Connect
+[0;32m[ RUN      ] [mConnect.connectFull
+[0;32m[       OK ] [mConnect.connectFull (1 ms)
+[0;32m[ RUN      ] [mConnect.connectFullNoDirect
+[0;32m[       OK ] [mConnect.connectFullNoDirect (1 ms)
+[0;32m[ RUN      ] [mConnect.connectOneToOne
+[0;32m[       OK ] [mConnect.connectOneToOne (1 ms)
+[0;32m[ RUN      ] [mConnect.connectRandom
+[0;32m[       OK ] [mConnect.connectRandom (1 ms)
+[0;32m[ RUN      ] [mConnect.connectGaussian
