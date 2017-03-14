@@ -102,6 +102,7 @@ class SpikeGenerator;
 #include <sys/stat.h> // mkdir
 #include <unistd.h> //unix thread affinity macros
 
+
 #endif
 
 
