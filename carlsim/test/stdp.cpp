@@ -469,7 +469,7 @@ TEST(STDP, ESTDPExpCurve) {
 
 	for (int mode = 0; mode < 2; mode++) {
 		for (int coba = 0; coba < 2; coba++) {
-			for (int offset = -10; offset <= 10; offset += 5) {
+			for (int offset = -30; offset <= 30; offset += 5) {
 				if (offset == 0) continue; // skip offset == 0;
 				// create a network
 				CARLsim* sim = new CARLsim("STDP.ESTDPExpCurve", mode?GPU_MODE:CPU_MODE, SILENT, 1, 42);
@@ -652,7 +652,7 @@ TEST(STDP, ESTDPTimingBasedCurve) {
 
 	for (int mode = 0; mode < 2; mode++) {
 		for (int coba = 0; coba < 2; coba++) {
-			for (int offset = -6; offset <= 6; offset += 3) {
+			for (int offset = -24; offset <= 24; offset += 3) {
 				if (offset == 0) continue; // skip offset == 0;
 				// create a network
 				CARLsim* sim = new CARLsim("STDP.ESTDTimingBasedCurve", mode?GPU_MODE:CPU_MODE, SILENT, 1, 42);
@@ -1043,7 +1043,7 @@ TEST(STDP, ISTDPExpCurve) {
 
 	for (int mode = 0; mode < 2; mode++) {
 		for (int coba = 0; coba < 2; coba++) {
-			for (int offset = -12; offset <= 12; offset += 3) {
+			for (int offset = -24; offset <= 24; offset += 3) {
 				if (offset == 0) continue; // skip offset == 0;
 				// create a network
 				CARLsim* sim = new CARLsim("STDP.ISTDPPulseCurve", mode ? GPU_MODE : CPU_MODE, SILENT, 1, 42);
