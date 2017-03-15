@@ -1,0 +1,3 @@
+#!/bin/bash
+
+rm -rf *.txt EA-Data *.status tmp* *.dot spikeFiles tuningCurvesFiles weightFiles
