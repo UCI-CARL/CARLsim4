@@ -170,7 +170,7 @@ void SNN::printConnectionInfo(short int connId) {
 	KERNEL_INFO("  - Radius X                   = %8.2f", connConfig.connRadius.radX);
 	KERNEL_INFO("  - Radius Y                   = %8.2f", connConfig.connRadius.radY);
 	KERNEL_INFO("  - Radius Z                   = %8.2f", connConfig.connRadius.radZ);
-	KERNEL_INFO("  - Num of synapses            = %8.2f", connConfig.numberOfConnections);
+	KERNEL_INFO("  - Num of synapses            = %d", connConfig.numberOfConnections);
 	float avgPostM = ((float)connConfig.numberOfConnections)/groupConfigMap[connConfig.grpSrc].numN;
 	float avgPreM  = ((float)connConfig.numberOfConnections)/groupConfigMap[connConfig.grpDest].numN;
 	KERNEL_INFO("  - Avg numPreSynapses         = %8.2f", avgPreM );
@@ -192,7 +192,7 @@ void SNN::printConnectionInfo(int netId, std::list<ConnectConfig>::iterator conn
 	KERNEL_INFO("    |- Radius X                   = %8.2f", connIt->connRadius.radX);
 	KERNEL_INFO("    |- Radius Y                   = %8.2f", connIt->connRadius.radY);
 	KERNEL_INFO("    |- Radius Z                   = %8.2f", connIt->connRadius.radZ);
-	KERNEL_INFO("    |- Num of synapses            = %8.2f", connIt->numberOfConnections);
+	KERNEL_INFO("    |- Num of synapses            = %d", connIt->numberOfConnections);
 	float avgPostM = ((float)connIt->numberOfConnections)/groupConfigMap[connIt->grpSrc].numN;
 	float avgPreM  = ((float)connIt->numberOfConnections)/groupConfigMap[connIt->grpDest].numN;
 	KERNEL_INFO("    |- Avg numPreSynapses         = %8.2f", avgPreM );
