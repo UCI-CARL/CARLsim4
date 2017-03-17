@@ -1,10 +1,10 @@
 /*!
 
-\page tut5_pti Tutorial 5: Parameter Tuning Interface (PTI)
+\page tut7_pti Tutorial 7: Parameter Tuning Interface (PTI)
 \tableofcontents
 \author Kristofor D. Carlson
 
-\section tut5s1_intro 5.1 Introduction
+\section tut7s1_intro 7.1 Introduction
 
 In this tutorial we introduce the parameter tuning interface and how to tune the weight ranges of a
 simple SNN to achieve a particular target firing rate. We will be tuning four parameter values that
@@ -31,7 +31,7 @@ experiment class function called <tt>run</tt>.
 
 A more in-depth overview of CARLsim and ECJ can be found in \ref ch10_ecj.
 
-\section tut5s2_parameter_file 5.2 The ECJ Parameter File
+\section tut7s2_parameter_file 7.2 The ECJ Parameter File
 
 This example has an ECJ parameter file named <tt>TuneFiringRatesECJExperiment.params</tt>. As
 mentioned in \ref ch10_ecj, users must first configure this file if they want to parameter tune
@@ -71,7 +71,7 @@ eval.problem.simulationCommand =        $carlsim_tuneFiringRatesECJ
 Of course any of these parameters can be changed. For more information on ECJ parameter file
 configuration please visit the ECJ <a href="http://cs.gmu.edu/~eclab/projects/ecj/">homepage</a>.
 
-\section tut5s3_experiment_class 5.3 The Experiment Class
+\section tut7s3_experiment_class 7.3 The Experiment Class
 We next discuss the CARLsim code found in the experiment class. This code is found in the
 main_tuneFiringRatesECJ.cpp file. Users should use this tutorial as template for writing their own
 code. First a specific experiment class must be inherited from the base class and default
@@ -104,7 +104,7 @@ void run(const ParameterInstances &parameters, std::ostream &outputStream) const
 ...
 \endcode
 
-Notice we can user the parameters object to query how many instances/individuals we have defined in
+Notice we can use the parameters object to query how many instances/individuals we have defined in
 the ECJ parameter file. Now that we have that value, we manually create arrays neuron groups of size
 <tt>indiNum</tt>. In our case we have defined 10 individuals per generation.
 
@@ -179,10 +179,12 @@ The simulation should run to completion and output the best fitness each generat
 This results in an ECJ out.stat file that we talk about in the next section.
 
 
-\section tut5s4_output_files 5.4 ECJ Output Files
+\section tut7s4_output_files 7.4 ECJ Output Files
 
 The output.stat file generated contains the best fitness for that generation along with the four
 parameter values associated with that individual. CARLsim users can then use these parameters for
 their tuned SNN models.
+
+\see \ref ch10_ecj
 
 */

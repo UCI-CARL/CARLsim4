@@ -4,6 +4,22 @@
 #include <string>
 class PoissonRate;
 
+	/*!
+	 * \brief List of stimulus file types
+	 * 
+	 */
+	enum stimType_t {
+		UNKNOWN_STIM=-1,
+		GRATING_STIM=0,
+		PLAID_STIM=1,
+		DOT_STIM=2,
+		BAR_STIM=3,
+		PICTURE_STIM=4,
+		MOVIE_STIM=5,
+		COMPOUND_STIM=6
+	};
+
+
 /*!
  * \brief Class to integrate CARLsim with a stimulus created using VisualStimulus.m
  * Version: 4/11/14
@@ -54,15 +70,6 @@ public:
 
 	//! default destructor
 	~VisualStimulus();
-
-	/*!
-	 * \brief List of stimulus file types
-	 * 
-	 * STIM_GRAY:      grayscale image
-	 * STIM_RGB:       RGB image
-	 * STIM_UNKNOWN:   unknown image type
-	 */
-	enum stimType_t {STIM_GRAY, STIM_RGB, STIM_UNKNOWN};
 	
 
 	// +++++ PUBLIC METHODS: READING FRAMES +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
@@ -79,7 +86,7 @@ public:
 	 *
 	 * \returns  pointer to the char array of raw grayscale values
 	 */
-	unsigned char* readFrame();
+	unsigned char* readFrameChar();
 
 	/*!
 	 * \brief Reads the next image frame and returns a pointer to a PoissonRate object
@@ -104,7 +111,7 @@ public:
 	 * PoissonRate object of a frame that has already been read, use getCurrentFrameChar() or getCurrentFramePoisson()
 	 * instead.
 	 */
-	PoissonRate* readFrame(float maxPoisson, float minPoisson=0.0f);
+	PoissonRate* readFramePoisson(float maxPoisson, float minPoisson=0.0f);
 
 	/*!
 	 * \brief Rewinds the file pointer to the top
@@ -114,46 +121,27 @@ public:
 	 */
 	void rewind();
 
+	void print();
+
 
 	// +++++ PUBLIC METHODS: GETTERS / SETTERS ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
-	int getStimulusWidth()  { return stimWidth_; } //!< returns the stimulus width (number of pixels)
-	int getStimulusHeight() { return stimHeight_; } //!< returns the stimulus height (number of pixels)
-	int getStimulusLength() { return stimLength_; } //!< returns the stimulus length (number of frames)
-	int getStimulusChannels() { return stimChannels_; } //!< returns the number of channels (1=grayscale, 3=RGB)
-	stimType_t getStimulusType() { return stimType_; } //!< returns the stimulus type (STIM_GRAY, STIM_RGB, etc.)
+	int getWidth(); 						//!< returns the stimulus width (number of pixels)
+	int getHeight(); 						//!< returns the stimulus height (number of pixels)
+	int getLength(); 						//!< returns the stimulus length (number of frames)
+	int getChannels(); 						//!< returns the number of channels (1=grayscale, 3=RGB)
+	stimType_t getType();					//!< returns the stimulus type (STIM_GRAY, STIM_RGB, etc.)
 
-	unsigned char* getCurrentFrameChar() { return stimFrame_; } //!< returns char array of current frame
-	PoissonRate* getCurrentFramePoisson() { return stimFramePoiss_; } //!< returns PoissonRate object of current frame
-	int getCurrentFrameNumber() { return stimFrameNr_; } //! returns the current frame number (0-indexed)
+	unsigned char* getCurrentFrameChar(); 	//!< returns char array of current frame
+	PoissonRate* getCurrentFramePoisson(); 	//!< returns PoissonRate object of current frame
+	int getCurrentFrameNumber();			//! returns the current frame number (0-indexed)
+
 
 private:
-	// +++++ PRIVATE METHODS ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
-
-	void readFramePrivate();		//!< reads the next frame
-	void readHeader();				//!< reads the header section of the binary file
-
-
-	// +++++ PRIVATE MEMBERS ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
-
-	FILE* fileId_;					//!< pointer to FILE stream
-	std::string fileName_;			//!< file name
-	int fileSignature_;				//!< a unique file signature used for VisualStimulus files
-
-	long fileHeaderSize_;			//!< the number of bytes in the header section
-	bool wrapAroundEOF_;			//!< if EOF is reached, whether to start reading from the top
-
-	unsigned char* stimFrame_;		//!< char array of current frame
-	int stimFrameNr_;				//!< current frame index (0-indexed)
-
-	PoissonRate* stimFramePoiss_;	//!< pointer to a PoissonRate object that contains the current frame
-
-	int stimWidth_;					//!< stimulus width in number of pixels (neurons)
-	int stimHeight_;				//!< stimulus height in number of pixels (neurons)
-	int stimLength_;				//!< stimulus length in number of frames
-
-	int stimChannels_;				//!< number of channels (1=grayscale, 3=RGB)
-	stimType_t stimType_;			//!< stimulus type (grayscale, RGB, etc.)
+	// This class provides a pImpl for the CARLsim User API.
+	// \see https://marcmutz.wordpress.com/translated-articles/pimp-my-pimpl/
+	class Impl;
+	Impl* _impl;
 };
 
 #endif
