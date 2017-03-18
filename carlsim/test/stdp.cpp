@@ -1090,7 +1090,7 @@ TEST(STDP, ISTDPExpCurve) {
 				//SMgin->startRecording();
 				//SMgex->startRecording();
 
-				// run for 20 seconds
+				// run for 25 seconds
 				sim->runNetwork(25, 0, false);
 
 				//SMg1->stopRecording();

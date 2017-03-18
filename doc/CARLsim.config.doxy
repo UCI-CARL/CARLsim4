@@ -690,8 +690,10 @@ INPUT                  = ../carlsim/interface/inc \
                          source/tutorial/1_basic_concepts/doc \
                          source/tutorial/2_random_spnet/doc \
                          source/tutorial/3_plasticity/doc \
-                         source/tutorial/4_simple_weight_tuner/doc \
-                         source/tutorial/5_pti/doc
+                         source/tutorial/4_image_processing/doc \
+                         source/tutorial/5_motion_energy/doc \
+                         source/tutorial/6_simple_weight_tuner/doc \
+                         source/tutorial/7_pti/doc
 
 # This tag can be used to specify the character encoding of the source files
 # that doxygen parses. Internally doxygen uses the UTF-8 encoding, which is
@@ -795,8 +797,11 @@ IMAGE_PATH             = source/user_guide \
                          source/tutorial/1_basic_concepts/doc \
                          source/tutorial/2_random_spnet/doc \
                          source/tutorial/3_plasticity/doc \
-                         source/tutorial/4_simple_weight_tuner/doc \
-                         source/tutorial/5_pti/doc
+                         source/tutorial/4_image_processing/input \
+                         source/tutorial/4_image_processing/doc \
+                         source/tutorial/5_motion_energy/doc \
+                         source/tutorial/6_simple_weight_tuner/doc \
+                         source/tutorial/7_pti/doc
 
 
 # The INPUT_FILTER tag can be used to specify a program that doxygen should

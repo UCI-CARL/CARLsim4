@@ -138,6 +138,8 @@
 	#define CPU_RUNTIME_BASE 8
 #endif
 
+#define NUM_CPU_CORES sysconf(_SC_NPROCESSORS_ONLN)
+
 #define GPU_RUNTIME_BASE 0
 
 #define COND_INTEGRATION_SCALE	2
