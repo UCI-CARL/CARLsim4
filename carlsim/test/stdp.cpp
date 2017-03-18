@@ -239,6 +239,19 @@ TEST(STDP, setNeuromodulatorParameters) {
 
 
 float run_DASTDPWeightBoost(int mode, int coba, int damod) {
+	float tauPlus = 20.0f;
+	float tauMinus = 20.0f;
+	float alphaPlus = 0.1f;
+	float alphaMinus = -0.1f;
+	int g1, gin, g1noise, gda;
+	InteractiveSpikeGenerator* iSpikeGen = new InteractiveSpikeGenerator(500, 500);
+	std::vector<int> spikesPost;
+	std::vector<int> spikesPre;
+	float* weights;
+	int size;
+	SpikeMonitor* spikeMonPost;
+	SpikeMonitor* spikeMonPre;
+
 	CARLsim* sim = new CARLsim("STDP.DASTDPWeightBoost", mode?GPU_MODE:CPU_MODE, SILENT, 1, 42);
 
 	g1 = sim->createGroup("post-ex", 1, EXCITATORY_NEURON);
@@ -325,18 +338,6 @@ float run_DASTDPWeightBoost(int mode, int coba, int damod) {
  * The the synaptic weight modulated by dopamine is expected to be higher than that without dopamine modulation
  */
 TEST(STDP, DASTDPWeightBoost_CPU_CUBA) {
-	float tauPlus = 20.0f;
-	float tauMinus = 20.0f;
-	float alphaPlus = 0.1f;
-	float alphaMinus = -0.1f;
-	int g1, gin, g1noise, gda;
-	InteractiveSpikeGenerator* iSpikeGen = new InteractiveSpikeGenerator(500, 500);
-	std::vector<int> spikesPost;
-	std::vector<int> spikesPre;
-	float* weights;
-	int size;
-	SpikeMonitor* spikeMonPost;
-	SpikeMonitor* spikeMonPre;
 	float weightDAMod, weightNonDAMod;
 
 	int mode = 0;
@@ -362,18 +363,6 @@ TEST(STDP, DASTDPWeightBoost_CPU_CUBA) {
 }
 
 TEST(STDP, DASTDPWeightBoost_CPU_COBA) {
-	float tauPlus = 20.0f;
-	float tauMinus = 20.0f;
-	float alphaPlus = 0.1f;
-	float alphaMinus = -0.1f;
-	int g1, gin, g1noise, gda;
-	InteractiveSpikeGenerator* iSpikeGen = new InteractiveSpikeGenerator(500, 500);
-	std::vector<int> spikesPost;
-	std::vector<int> spikesPre;
-	float* weights;
-	int size;
-	SpikeMonitor* spikeMonPost;
-	SpikeMonitor* spikeMonPre;
 	float weightDAMod, weightNonDAMod;
 
 	int mode = 0;
@@ -399,18 +388,6 @@ TEST(STDP, DASTDPWeightBoost_CPU_COBA) {
 }
 
 TEST(STDP, DASTDPWeightBoost_GPU_CUBA) {
-	float tauPlus = 20.0f;
-	float tauMinus = 20.0f;
-	float alphaPlus = 0.1f;
-	float alphaMinus = -0.1f;
-	int g1, gin, g1noise, gda;
-	InteractiveSpikeGenerator* iSpikeGen = new InteractiveSpikeGenerator(500, 500);
-	std::vector<int> spikesPost;
-	std::vector<int> spikesPre;
-	float* weights;
-	int size;
-	SpikeMonitor* spikeMonPost;
-	SpikeMonitor* spikeMonPre;
 	float weightDAMod, weightNonDAMod;
 
 	int mode = 1;
@@ -436,18 +413,6 @@ TEST(STDP, DASTDPWeightBoost_GPU_CUBA) {
 }
 
 TEST(STDP, DASTDPWeightBoost_CPU_COBA) {
-	float tauPlus = 20.0f;
-	float tauMinus = 20.0f;
-	float alphaPlus = 0.1f;
-	float alphaMinus = -0.1f;
-	int g1, gin, g1noise, gda;
-	InteractiveSpikeGenerator* iSpikeGen = new InteractiveSpikeGenerator(500, 500);
-	std::vector<int> spikesPost;
-	std::vector<int> spikesPre;
-	float* weights;
-	int size;
-	SpikeMonitor* spikeMonPost;
-	SpikeMonitor* spikeMonPre;
 	float weightDAMod, weightNonDAMod;
 
 	int mode = 1;
