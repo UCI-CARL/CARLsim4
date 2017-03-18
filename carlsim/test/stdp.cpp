@@ -244,64 +244,63 @@ float run_DASTDPWeightBoost(int mode, int coba, int damod) {
 	float alphaPlus = 0.1f;
 	float alphaMinus = -0.1f;
 	int g1, gin, g1noise, gda;
-	InteractiveSpikeGenerator* iSpikeGen = new InteractiveSpikeGenerator(500, 500);
+	InteractiveSpikeGenerator iSpikeGen(500, 500);
 	std::vector<int> spikesPost;
 	std::vector<int> spikesPre;
-	float* weights;
 	int size;
 	SpikeMonitor* spikeMonPost;
 	SpikeMonitor* spikeMonPre;
 
-	CARLsim* sim = new CARLsim("STDP.DASTDPWeightBoost", mode?GPU_MODE:CPU_MODE, SILENT, 1, 42);
+	CARLsim sim("STDP.DASTDPWeightBoost", mode?GPU_MODE:CPU_MODE, SILENT, 1, 42);
 
-	g1 = sim->createGroup("post-ex", 1, EXCITATORY_NEURON);
-	sim->setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f);
+	g1 = sim.createGroup("post-ex", 1, EXCITATORY_NEURON);
+	sim.setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f);
 
-	gin = sim->createSpikeGeneratorGroup("pre-ex", 1, EXCITATORY_NEURON);
-	g1noise = sim->createSpikeGeneratorGroup("post-ex-noise", 1, EXCITATORY_NEURON);
-	gda = sim->createSpikeGeneratorGroup("DA neurons", 500, DOPAMINERGIC_NEURON);
+	gin = sim.createSpikeGeneratorGroup("pre-ex", 1, EXCITATORY_NEURON);
+	g1noise = sim.createSpikeGeneratorGroup("post-ex-noise", 1, EXCITATORY_NEURON);
+	gda = sim.createSpikeGeneratorGroup("DA neurons", 500, DOPAMINERGIC_NEURON);
 
 	if (coba) {
-		sim->connect(gin,g1,"one-to-one", RangeWeight(0.0, 1.0f/100, 20.0f/100), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_PLASTIC);
-		sim->connect(g1noise, g1, "one-to-one", RangeWeight(40.0f/100), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
-		sim->connect(gda, g1, "full", RangeWeight(0.0), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
+		sim.connect(gin,g1,"one-to-one", RangeWeight(0.0, 1.0f/100, 20.0f/100), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_PLASTIC);
+		sim.connect(g1noise, g1, "one-to-one", RangeWeight(40.0f/100), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
+		sim.connect(gda, g1, "full", RangeWeight(0.0), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
 		// enable COBA, set up STDP, enable dopamine-modulated STDP
-		sim->setConductances(true,5,150,6,150);
-		sim->setSTDP(g1, true, DA_MOD, alphaPlus/100, tauPlus, alphaMinus/100, tauMinus);
+		sim.setConductances(true,5,150,6,150);
+		sim.setSTDP(g1, true, DA_MOD, alphaPlus/100, tauPlus, alphaMinus/100, tauMinus);
 	} else { // cuba mode
-		sim->connect(gin,g1,"one-to-one", RangeWeight(0.0, 1.0f, 20.0f), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_PLASTIC);
-		sim->connect(g1noise, g1, "one-to-one", RangeWeight(40.0f), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
-		sim->connect(gda, g1, "full", RangeWeight(0.0), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
+		sim.connect(gin,g1,"one-to-one", RangeWeight(0.0, 1.0f, 20.0f), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_PLASTIC);
+		sim.connect(g1noise, g1, "one-to-one", RangeWeight(40.0f), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
+		sim.connect(gda, g1, "full", RangeWeight(0.0), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
 		// set up STDP, enable dopamine-modulated STDP
-		sim->setSTDP(g1, true, DA_MOD, alphaPlus, tauPlus, alphaMinus, tauMinus);
-		sim->setConductances(false);
+		sim.setSTDP(g1, true, DA_MOD, alphaPlus, tauPlus, alphaMinus, tauMinus);
+		sim.setConductances(false);
 	}
 
-	sim->setNeuromodulator(ALL);
+	sim.setNeuromodulator(ALL);
 
-	sim->setWeightAndWeightChangeUpdate(INTERVAL_10MS, true, 0.99f);
+	sim.setWeightAndWeightChangeUpdate(INTERVAL_10MS, true, 0.99f);
 
 	// set up spike controller on DA neurons
-	sim->setSpikeGenerator(gda, iSpikeGen);
+	sim.setSpikeGenerator(gda, &iSpikeGen);
 
-	sim->setupNetwork();
+	sim.setupNetwork();
 
-	ConnectionMonitor* CM = sim->setConnectionMonitor(gin, g1, "NULL");
+	ConnectionMonitor* CM = sim.setConnectionMonitor(gin, g1, "NULL");
 
-	spikeMonPost = sim->setSpikeMonitor(g1, "NULL");
-	spikeMonPre = sim->setSpikeMonitor(gin, "NULL");
-	sim->setSpikeMonitor(gda, "NULL");
+	spikeMonPost = sim.setSpikeMonitor(g1, "NULL");
+	spikeMonPre = sim.setSpikeMonitor(gin, "NULL");
+	sim.setSpikeMonitor(gda, "NULL");
 
 	//setup baseline firing rate
 	PoissonRate in(1);
 	in.setRates(6.0f); // 6Hz
-	sim->setSpikeRate(gin, &in);
-	sim->setSpikeRate(g1noise, &in);
+	sim.setSpikeRate(gin, &in);
+	sim.setSpikeRate(g1noise, &in);
 
 	for (int t = 0; t < 200; t++) {
 		spikeMonPost->startRecording();
 		spikeMonPre->startRecording();
-		sim->runNetwork(1, 0, false);
+		sim.runNetwork(1, 0, false);
 		spikeMonPost->stopRecording();
 		spikeMonPre->stopRecording();
 
@@ -317,13 +316,9 @@ float run_DASTDPWeightBoost(int mode, int coba, int damod) {
 				if (diff > 0 && diff <= 20) {
 					//printf("LTP\n");
 					if (damod) {
-						iSpikeGen->setQuotaAll(1);
-						//printf("release DA\n");
+						iSpikeGen.setQuotaAll(1);
 					}
 				}
-
-				//if (diff < 0 && diff >= -20)
-				//	printf("LTD\n");
 			}
 		}
 	}
@@ -352,14 +347,9 @@ TEST(STDP, DASTDPWeightBoost_CPU_CUBA) {
 		} else {
 			weightNonDAMod = weight;
 		}
-
-		delete sim;
 	}
 
 	EXPECT_TRUE(weightDAMod >= weightNonDAMod);
-	//printf("mode:%d coba:%d Non-DA w:%f DA w:%f\n", mode, coba, weightNonDAMod, weightDAMod);
-
-	delete iSpikeGen;
 }
 
 TEST(STDP, DASTDPWeightBoost_CPU_COBA) {
@@ -377,14 +367,9 @@ TEST(STDP, DASTDPWeightBoost_CPU_COBA) {
 		} else {
 			weightNonDAMod = weight;
 		}
-
-		delete sim;
 	}
 
 	EXPECT_TRUE(weightDAMod >= weightNonDAMod);
-	//printf("mode:%d coba:%d Non-DA w:%f DA w:%f\n", mode, coba, weightNonDAMod, weightDAMod);
-
-	delete iSpikeGen;
 }
 
 TEST(STDP, DASTDPWeightBoost_GPU_CUBA) {
@@ -401,18 +386,13 @@ TEST(STDP, DASTDPWeightBoost_GPU_CUBA) {
 			weightDAMod = weight;
 		} else {
 			weightNonDAMod = weight;
-		}
-
-		delete sim;
+		}	
 	}
 
 	EXPECT_TRUE(weightDAMod >= weightNonDAMod);
-	//printf("mode:%d coba:%d Non-DA w:%f DA w:%f\n", mode, coba, weightNonDAMod, weightDAMod);
-
-	delete iSpikeGen;
 }
 
-TEST(STDP, DASTDPWeightBoost_CPU_COBA) {
+TEST(STDP, DASTDPWeightBoost_GPU_COBA) {
 	float weightDAMod, weightNonDAMod;
 
 	int mode = 1;
@@ -426,15 +406,10 @@ TEST(STDP, DASTDPWeightBoost_CPU_COBA) {
 			weightDAMod = weight;
 		} else {
 			weightNonDAMod = weight;
-		}
-
-		delete sim;
+		}	
 	}
 
 	EXPECT_TRUE(weightDAMod >= weightNonDAMod);
-	//printf("mode:%d coba:%d Non-DA w:%f DA w:%f\n", mode, coba, weightNonDAMod, weightDAMod);
-
-	delete iSpikeGen;
 }
 
 /*!
