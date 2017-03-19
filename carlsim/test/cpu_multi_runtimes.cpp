@@ -179,73 +179,143 @@ TEST(cpuMultiRuntimes, spikesSingleVsMulti) {
 	}
 }
 
-TEST(cpuMultiRuntimes, shuffleGroups) {
+void run_shuffleGroups(int partitionA, int partitionB, int partitionC, float& smExcRate, float& smInhRate,
+	float& smInputRate)
+{
 	int randSeed = 42;
 	float pConn = 100.0f / 1000; // connection probability
-	
-	for (int partitionA = 0; partitionA < 5; partitionA++) {
-		for (int partitionB = 0; partitionB < 5; partitionB++) {
-			for (int partitionC = 0; partitionC < 5; partitionC++) {
-				
-				CARLsim* sim = new CARLsim("MultiRuntimes.shffleGroups", HYBRID_MODE, SILENT, 0, randSeed);
 
-				// configure the network
-				int gExc = sim->createGroup("exc", 800, EXCITATORY_NEURON, partitionA, CPU_CORES);
-				sim->setNeuronParameters(gExc, 0.02f, 0.2f, -65.0f, 8.0f); // RS
+	CARLsim sim("MultiRuntimes.shffleGroups", HYBRID_MODE, SILENT, 0, randSeed);
 
-				int gInh = sim->createGroup("inh", 200, INHIBITORY_NEURON, partitionB, CPU_CORES);
-				sim->setNeuronParameters(gInh, 0.1f, 0.2f, -65.0f, 2.0f); // FS
+	// configure the network
+	int gExc = sim.createGroup("exc", 800, EXCITATORY_NEURON, partitionA, CPU_CORES);
+	sim.setNeuronParameters(gExc, 0.02f, 0.2f, -65.0f, 8.0f); // RS
 
-				int gInput = sim->createSpikeGeneratorGroup("input", 800, EXCITATORY_NEURON, partitionC, CPU_CORES);
+	int gInh = sim.createGroup("inh", 200, INHIBITORY_NEURON, partitionB, CPU_CORES);
+	sim.setNeuronParameters(gInh, 0.1f, 0.2f, -65.0f, 2.0f); // FS
 
-				sim->connect(gInput, gExc, "one-to-one", RangeWeight(30.0f), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
-				sim->connect(gExc, gExc, "random", RangeWeight(6.0f), pConn, RangeDelay(1, 20), RadiusRF(-1), SYN_FIXED);
-				sim->connect(gExc, gInh, "random", RangeWeight(6.0f), pConn, RangeDelay(1, 20), RadiusRF(-1), SYN_FIXED);
-				sim->connect(gInh, gExc, "random", RangeWeight(5.0f), pConn * 1.25f, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
+	int gInput = sim.createSpikeGeneratorGroup("input", 800, EXCITATORY_NEURON, partitionC, CPU_CORES);
 
-				sim->setConductances(false);
+	sim.connect(gInput, gExc, "one-to-one", RangeWeight(30.0f), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
+	sim.connect(gExc, gExc, "random", RangeWeight(6.0f), pConn, RangeDelay(1, 20), RadiusRF(-1), SYN_FIXED);
+	sim.connect(gExc, gInh, "random", RangeWeight(6.0f), pConn, RangeDelay(1, 20), RadiusRF(-1), SYN_FIXED);
+	sim.connect(gInh, gExc, "random", RangeWeight(5.0f), pConn * 1.25f, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
 
-				//sim->setESTDP(gExc, true, STANDARD, ExpCurve(0.1f/100, 20, -0.12f/100, 20));
+	sim.setConductances(false);
 
-				// build the network
-				sim->setupNetwork();
+	// build the network
+	sim.setupNetwork();
 
-				// set some monitors
-				SpikeMonitor* smExc = sim->setSpikeMonitor(gExc, "NULL");
-				SpikeMonitor* smInh = sim->setSpikeMonitor(gInh, "NULL");
-				SpikeMonitor* smInput = sim->setSpikeMonitor(gInput, "NULL");
+	// set some monitors
+	SpikeMonitor* smExc = sim.setSpikeMonitor(gExc, "NULL");
+	SpikeMonitor* smInh = sim.setSpikeMonitor(gInh, "NULL");
+	SpikeMonitor* smInput = sim.setSpikeMonitor(gInput, "NULL");
 
-				//ConnectionMonitor* cmEE = sim->setConnectionMonitor(gExc, gInh, "DEFAULT");
+	//setup some baseline input
+	PoissonRate in(800);
+	in.setRates(1.0f);
+	sim.setSpikeRate(gInput, &in);
 
-				//setup some baseline input
-				PoissonRate in(800);
-				in.setRates(1.0f);
-				sim->setSpikeRate(gInput, &in);
+	// run for a total of 10 seconds
+	// at the end of each runNetwork call, SpikeMonitor stats will be printed
 
-				// run for a total of 10 seconds
-				// at the end of each runNetwork call, SpikeMonitor stats will be printed
+	smInput->startRecording();
+	smExc->startRecording();
+	smInh->startRecording();
 
-				smInput->startRecording();
-				smExc->startRecording();
-				smInh->startRecording();
+	sim.runNetwork(4, 0, false);
 
-				for (int t = 0; t < 4; t++) {
-					sim->runNetwork(1, 0, false);
-				}
+	smInput->stopRecording();
+	smExc->stopRecording();
+	smInh->stopRecording();
 
-				smInput->stopRecording();
-				smExc->stopRecording();
-				smInh->stopRecording();
+	smExcRate = smExc->getPopMeanFiringRate();
+	smInhRate = smInh->getPopMeanFiringRate();
+	smInputRate = smInput->getPopMeanFiringRate();
+}
 
-				//printf("[%d][%d][%d]\n", partitionA,  partitionB,  partitionC);
-				//printf("%f,%f,%f\n", smExc->getPopMeanFiringRate(), smInh->getPopMeanFiringRate(), smInput->getPopMeanFiringRate());
-							
-				EXPECT_NEAR(smExc->getPopMeanFiringRate(), 6.1, 0.4);
-				EXPECT_NEAR(smInh->getPopMeanFiringRate(), 29.0, 2.0);
-				EXPECT_NEAR(smInput->getPopMeanFiringRate(), 1.0, 0.1);
 
-				delete sim;
-			}
+TEST(cpuMultiRuntimes, shuffleGroups0) {
+	int partitionA = 0;
+	for (int partitionB = 0; partitionB < 5; partitionB++) {
+		for (int partitionC = 0; partitionC < 5; partitionC++) {
+			float smExcRate;
+			float smInhRate;
+			float smInputRate;
+
+			run_shuffleGroups(partitionA, partitionB, partitionC, &smExcRate, &smInhRate, &smInputRate);
+
+			EXPECT_NEAR(smExcRate, 6.1, 0.4);
+			EXPECT_NEAR(smInhRate, 29.0, 2.0);
+			EXPECT_NEAR(smInputRate, 1.0, 0.1);
+		}
+	}
+}
+
+TEST(cpuMultiRuntimes, shuffleGroups1) {
+	int partitionA = 1;
+	for (int partitionB = 0; partitionB < 5; partitionB++) {
+		for (int partitionC = 0; partitionC < 5; partitionC++) {
+			float smExcRate;
+			float smInhRate;
+			float smInputRate;
+
+			run_shuffleGroups(partitionA, partitionB, partitionC, &smExcRate, &smInhRate, &smInputRate);
+
+			EXPECT_NEAR(smExcRate, 6.1, 0.4);
+			EXPECT_NEAR(smInhRate, 29.0, 2.0);
+			EXPECT_NEAR(smInputRate, 1.0, 0.1);
+		}
+	}
+}
+
+TEST(cpuMultiRuntimes, shuffleGroups2) {
+	int partitionA = 2;
+	for (int partitionB = 0; partitionB < 5; partitionB++) {
+		for (int partitionC = 0; partitionC < 5; partitionC++) {
+			float smExcRate;
+			float smInhRate;
+			float smInputRate;
+
+			run_shuffleGroups(partitionA, partitionB, partitionC, &smExcRate, &smInhRate, &smInputRate);
+
+			EXPECT_NEAR(smExcRate, 6.1, 0.4);
+			EXPECT_NEAR(smInhRate, 29.0, 2.0);
+			EXPECT_NEAR(smInputRate, 1.0, 0.1);
+		}
+	}
+}
+
+TEST(cpuMultiRuntimes, shuffleGroups3) {
+	int partitionA = 3;
+	for (int partitionB = 0; partitionB < 5; partitionB++) {
+		for (int partitionC = 0; partitionC < 5; partitionC++) {
+			float smExcRate;
+			float smInhRate;
+			float smInputRate;
+
+			run_shuffleGroups(partitionA, partitionB, partitionC, &smExcRate, &smInhRate, &smInputRate);
+
+			EXPECT_NEAR(smExcRate, 6.1, 0.4);
+			EXPECT_NEAR(smInhRate, 29.0, 2.0);
+			EXPECT_NEAR(smInputRate, 1.0, 0.1);
+		}
+	}
+}
+
+TEST(cpuMultiRuntimes, shuffleGroups4) {
+	int partitionA = 4;
+	for (int partitionB = 0; partitionB < 5; partitionB++) {
+		for (int partitionC = 0; partitionC < 5; partitionC++) {
+			float smExcRate;
+			float smInhRate;
+			float smInputRate;
+
+			run_shuffleGroups(partitionA, partitionB, partitionC, &smExcRate, &smInhRate, &smInputRate);
+
+			EXPECT_NEAR(smExcRate, 6.1, 0.4);
+			EXPECT_NEAR(smInhRate, 29.0, 2.0);
+			EXPECT_NEAR(smInputRate, 1.0, 0.1);
 		}
 	}
 }
