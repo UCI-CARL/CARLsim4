@@ -233,45 +233,9 @@ void run_shuffleGroups(int partitionA, int partitionB, int partitionC, float* sm
 }
 
 
-TEST(cpuMultiRuntimes, shuffleGroups0) {
+TEST(cpuMultiRuntimes, shuffleGroups4) {
 	::testing::FLAGS_gtest_death_test_style = "threadsafe";
-	int partitionA = 0;
-	for (int partitionB = 0; partitionB < 5; partitionB++) {
-		for (int partitionC = 0; partitionC < 5; partitionC++) {
-			float smExcRate;
-			float smInhRate;
-			float smInputRate;
-
-			run_shuffleGroups(partitionA, partitionB, partitionC, &smExcRate, &smInhRate, &smInputRate);
-
-			EXPECT_NEAR(smExcRate, 6.1, 0.4);
-			EXPECT_NEAR(smInhRate, 29.0, 2.0);
-			EXPECT_NEAR(smInputRate, 1.0, 0.1);
-		}
-	}
-}
-
-TEST(cpuMultiRuntimes, shuffleGroups1) {
-	::testing::FLAGS_gtest_death_test_style = "threadsafe";
-	int partitionA = 1;
-	for (int partitionB = 0; partitionB < 5; partitionB++) {
-		for (int partitionC = 0; partitionC < 5; partitionC++) {
-			float smExcRate;
-			float smInhRate;
-			float smInputRate;
-
-			run_shuffleGroups(partitionA, partitionB, partitionC, &smExcRate, &smInhRate, &smInputRate);
-
-			EXPECT_NEAR(smExcRate, 6.1, 0.4);
-			EXPECT_NEAR(smInhRate, 29.0, 2.0);
-			EXPECT_NEAR(smInputRate, 1.0, 0.1);
-		}
-	}
-}
-
-TEST(cpuMultiRuntimes, shuffleGroups2) {
-	::testing::FLAGS_gtest_death_test_style = "threadsafe";
-	int partitionA = 2;
+	int partitionA = 4;
 	for (int partitionB = 0; partitionB < 5; partitionB++) {
 		for (int partitionC = 0; partitionC < 5; partitionC++) {
 			float smExcRate;
@@ -305,9 +269,45 @@ TEST(cpuMultiRuntimes, shuffleGroups3) {
 	}
 }
 
-TEST(cpuMultiRuntimes, shuffleGroups4) {
+TEST(cpuMultiRuntimes, shuffleGroups2) {
 	::testing::FLAGS_gtest_death_test_style = "threadsafe";
-	int partitionA = 4;
+	int partitionA = 2;
+	for (int partitionB = 0; partitionB < 5; partitionB++) {
+		for (int partitionC = 0; partitionC < 5; partitionC++) {
+			float smExcRate;
+			float smInhRate;
+			float smInputRate;
+
+			run_shuffleGroups(partitionA, partitionB, partitionC, &smExcRate, &smInhRate, &smInputRate);
+
+			EXPECT_NEAR(smExcRate, 6.1, 0.4);
+			EXPECT_NEAR(smInhRate, 29.0, 2.0);
+			EXPECT_NEAR(smInputRate, 1.0, 0.1);
+		}
+	}
+}
+
+TEST(cpuMultiRuntimes, shuffleGroups1) {
+	::testing::FLAGS_gtest_death_test_style = "threadsafe";
+	int partitionA = 1;
+	for (int partitionB = 0; partitionB < 5; partitionB++) {
+		for (int partitionC = 0; partitionC < 5; partitionC++) {
+			float smExcRate;
+			float smInhRate;
+			float smInputRate;
+
+			run_shuffleGroups(partitionA, partitionB, partitionC, &smExcRate, &smInhRate, &smInputRate);
+
+			EXPECT_NEAR(smExcRate, 6.1, 0.4);
+			EXPECT_NEAR(smInhRate, 29.0, 2.0);
+			EXPECT_NEAR(smInputRate, 1.0, 0.1);
+		}
+	}
+}
+
+TEST(cpuMultiRuntimes, shuffleGroups0) {
+	::testing::FLAGS_gtest_death_test_style = "threadsafe";
+	int partitionA = 0;
 	for (int partitionB = 0; partitionB < 5; partitionB++) {
 		for (int partitionC = 0; partitionC < 5; partitionC++) {
 			float smExcRate;
