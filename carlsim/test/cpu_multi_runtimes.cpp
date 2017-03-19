@@ -232,11 +232,28 @@ void run_shuffleGroups(int partitionA, int partitionB, int partitionC, float* sm
 	*smInputRate = smInput->getPopMeanFiringRate();
 }
 
+TEST(cpuMultiRuntimes, shuffleGroups5) {
+	::testing::FLAGS_gtest_death_test_style = "threadsafe";
+	int partitionA = 4;
+	for (int partitionB = 0; partitionB < 3; partitionB++) {
+		for (int partitionC = 0; partitionC < 5; partitionC++) {
+			float smExcRate;
+			float smInhRate;
+			float smInputRate;
+
+			run_shuffleGroups(partitionA, partitionB, partitionC, &smExcRate, &smInhRate, &smInputRate);
+
+			EXPECT_NEAR(smExcRate, 6.1, 0.4);
+			EXPECT_NEAR(smInhRate, 29.0, 2.0);
+			EXPECT_NEAR(smInputRate, 1.0, 0.1);
+		}
+	}
+}
 
 TEST(cpuMultiRuntimes, shuffleGroups4) {
 	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 	int partitionA = 4;
-	for (int partitionB = 0; partitionB < 5; partitionB++) {
+	for (int partitionB = 3; partitionB < 5; partitionB++) {
 		for (int partitionC = 0; partitionC < 5; partitionC++) {
 			float smExcRate;
 			float smInhRate;
