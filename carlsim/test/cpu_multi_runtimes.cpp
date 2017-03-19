@@ -179,8 +179,8 @@ TEST(cpuMultiRuntimes, spikesSingleVsMulti) {
 	}
 }
 
-void run_shuffleGroups(int partitionA, int partitionB, int partitionC, float& smExcRate, float& smInhRate,
-	float& smInputRate)
+void run_shuffleGroups(int partitionA, int partitionB, int partitionC, float* smExcRate, float* smInhRate,
+	float* smInputRate)
 {
 	int randSeed = 42;
 	float pConn = 100.0f / 1000; // connection probability
@@ -229,9 +229,9 @@ void run_shuffleGroups(int partitionA, int partitionB, int partitionC, float& sm
 	smExc->stopRecording();
 	smInh->stopRecording();
 
-	smExcRate = smExc->getPopMeanFiringRate();
-	smInhRate = smInh->getPopMeanFiringRate();
-	smInputRate = smInput->getPopMeanFiringRate();
+	*smExcRate = smExc->getPopMeanFiringRate();
+	*smInhRate = smInh->getPopMeanFiringRate();
+	*smInputRate = smInput->getPopMeanFiringRate();
 }
 
 
