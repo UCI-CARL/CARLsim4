@@ -216,9 +216,6 @@ void run_shuffleGroups(int partitionA, int partitionB, int partitionC, float* sm
 	in.setRates(1.0f);
 	sim.setSpikeRate(gInput, &in);
 
-	// run for a total of 10 seconds
-	// at the end of each runNetwork call, SpikeMonitor stats will be printed
-
 	smInput->startRecording();
 	smExc->startRecording();
 	smInh->startRecording();
@@ -229,6 +226,7 @@ void run_shuffleGroups(int partitionA, int partitionB, int partitionC, float* sm
 	smExc->stopRecording();
 	smInh->stopRecording();
 
+	// store output
 	*smExcRate = smExc->getPopMeanFiringRate();
 	*smInhRate = smInh->getPopMeanFiringRate();
 	*smInputRate = smInput->getPopMeanFiringRate();
@@ -236,6 +234,7 @@ void run_shuffleGroups(int partitionA, int partitionB, int partitionC, float* sm
 
 
 TEST(cpuMultiRuntimes, shuffleGroups0) {
+	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 	int partitionA = 0;
 	for (int partitionB = 0; partitionB < 5; partitionB++) {
 		for (int partitionC = 0; partitionC < 5; partitionC++) {
@@ -253,6 +252,7 @@ TEST(cpuMultiRuntimes, shuffleGroups0) {
 }
 
 TEST(cpuMultiRuntimes, shuffleGroups1) {
+	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 	int partitionA = 1;
 	for (int partitionB = 0; partitionB < 5; partitionB++) {
 		for (int partitionC = 0; partitionC < 5; partitionC++) {
@@ -270,6 +270,7 @@ TEST(cpuMultiRuntimes, shuffleGroups1) {
 }
 
 TEST(cpuMultiRuntimes, shuffleGroups2) {
+	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 	int partitionA = 2;
 	for (int partitionB = 0; partitionB < 5; partitionB++) {
 		for (int partitionC = 0; partitionC < 5; partitionC++) {
@@ -287,6 +288,7 @@ TEST(cpuMultiRuntimes, shuffleGroups2) {
 }
 
 TEST(cpuMultiRuntimes, shuffleGroups3) {
+	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 	int partitionA = 3;
 	for (int partitionB = 0; partitionB < 5; partitionB++) {
 		for (int partitionC = 0; partitionC < 5; partitionC++) {
@@ -304,6 +306,7 @@ TEST(cpuMultiRuntimes, shuffleGroups3) {
 }
 
 TEST(cpuMultiRuntimes, shuffleGroups4) {
+	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 	int partitionA = 4;
 	for (int partitionB = 0; partitionB < 5; partitionB++) {
 		for (int partitionC = 0; partitionC < 5; partitionC++) {
