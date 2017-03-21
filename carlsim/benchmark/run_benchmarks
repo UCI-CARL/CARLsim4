@@ -1,6 +1,6 @@
 #!/bin/bash
 
-numNeurons='1000 3160 10000 31600 100000 316000 1000000 3160000 10000000'
+numNeurons='1000 3160'
 
 for numN in $numNeurons # number of neurons, which defines the workload
 do

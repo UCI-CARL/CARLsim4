@@ -108,13 +108,13 @@ int main() {
 	sim.setupNetwork();
 
 	// set some monitors
-	SpikeMonitor* smExc = sim.setSpikeMonitor(gExc, "NULL");
-	SpikeMonitor* smInh = sim.setSpikeMonitor(gInh, "NULL");
-	SpikeMonitor* smInput = sim.setSpikeMonitor(gInput, "NULL");
+//	SpikeMonitor* smExc = sim.setSpikeMonitor(gExc, "NULL");
+//	SpikeMonitor* smInh = sim.setSpikeMonitor(gInh, "NULL");
+//	SpikeMonitor* smInput = sim.setSpikeMonitor(gInput, "NULL");
 
-	SpikeMonitor* smExc2 = sim.setSpikeMonitor(gExc2, "NULL");
-	SpikeMonitor* smInh2 = sim.setSpikeMonitor(gInh2, "NULL");
-	SpikeMonitor* smInput2 = sim.setSpikeMonitor(gInput2, "NULL");
+//	SpikeMonitor* smExc2 = sim.setSpikeMonitor(gExc2, "NULL");
+//	SpikeMonitor* smInh2 = sim.setSpikeMonitor(gInh2, "NULL");
+//	SpikeMonitor* smInput2 = sim.setSpikeMonitor(gInput2, "NULL");
 	//ConnectionMonitor* cmEE = sim.setConnectionMonitor(gExc, gInh, "DEFAULT");
 
 	//setup some baseline input
