@@ -11,7 +11,7 @@
 ##              University of California, Irvine
 ##              Irvine, CA, 92697-5100, USA
 ##
-##   Version:   03/31/2016
+##   Version:   03/07/2017
 ##
 ##----------------------------------------------------------------------------##
 
@@ -22,10 +22,8 @@
 # path to CUDA installation
 CUDA_PATH        ?= /usr/local/cuda
 
-# path of installation of Google test framework
-# required to run CARLsim test suite
-GTEST_DIR ?= /opt/gtest
-
+# enable gcov
+CARLSIM4_COVERAGE ?= 0
 
 #------------------------------------------------------------------------------
 # CARLsim/ECJ Parameter Tuning Interface Options
@@ -71,7 +69,7 @@ ifeq ("$(OSUPPER)","LINUX")
 else
   ifneq ($(DARWIN),)
     # for some newer versions of XCode, CLANG is the default compiler, so we need to include this
-    ifneq ($(MAVERICKS),
+    ifdef MAVERICKS
       NVCC   ?= $(CUDA_PATH)/bin/nvcc -ccbin $(CLANG)
       STDLIB ?= -stdlib=libstdc++
     else
@@ -89,37 +87,38 @@ endif
 #------------------------------------------------------------------------------
 
 # nvcc compile flags
-NVCCFL          := -m${OS_SIZE}
-NVCCINCFL       := -I$(CUDA_PATH)/samples/common/inc
-NVCCLDFL        :=
+NVCCFL             := -m${OS_SIZE}
+NVCCINCFL          := -I$(CUDA_PATH)/samples/common/inc
+NVCCLDFL           :=
 
 # gcc compile flags
-CXXFL           :=
-CXXSHRFL        :=
-CXXINCFL        :=
-CXXLIBFL        :=
+CXXFL              :=
+CXXSHRFL           :=
+CXXINCFL           :=
+CXXLIBFL           :=
 
 # link flags
 ifeq ($(OS_SIZE),32)
-	NVCCLDFL     := -L$(CUDA_PATH)/lib -lcudart 
+	NVCCLDFL       := -L$(CUDA_PATH)/lib -lcudart 
 else
-	NVCCLDFL     := -L$(CUDA_PATH)/lib64 -lcudart 
+	NVCCLDFL       := -L$(CUDA_PATH)/lib64 -lcudart 
 endif
 
 
 # find NVCC version
 NVCC_MAJOR_NUM     := $(shell nvcc -V 2>/dev/null | grep -o 'release [0-9]\.' | grep -o '[0-9]')
-NVCCFL          += -D__CUDA$(NVCC_MAJOR_NUM)__
+NVCCFL             += -D__CUDA$(NVCC_MAJOR_NUM)__
 
 # CUDA code generation flags
 GENCODE_SM20       := -gencode arch=compute_20,code=sm_20
 GENCODE_SM30       := -gencode arch=compute_30,code=sm_30 -gencode arch=compute_35,code=\"sm_35,compute_35\"
-NVCCFL          += $(GENCODE_SM20) $(GENCODE_SM30)
+NVCCFL             += $(GENCODE_SM20) $(GENCODE_SM30)
+NVCCFL             += -Wno-deprecated-gpu-targets
 
 # OS-specific build flags
-ifneq ($(DARWIN),) 
-	CXXLIBFL      += -rpath $(CUDA_PATH)/lib
-	CXXFL         += -arch $(OS_ARCH) $(STDLIB)  
+ifneq ($(DARWIN),)
+	CXXLIBFL       += -rpath $(CUDA_PATH)/lib
+	CXXFL          += -arch $(OS_ARCH) $(STDLIB)  
 else
 	ifeq ($(OS_ARCH),armv7l)
 		ifeq ($(abi),gnueabi)
@@ -134,7 +133,7 @@ else
 endif
 
 # shared library flags
-CXXSHRFL += -fPIC -shared
+CXXSHRFL           += -fPIC -shared
 
 
 #------------------------------------------------------------------------------
@@ -148,13 +147,18 @@ SIM_MAJOR_NUM := 4
 SIM_MINOR_NUM := 0
 SIM_BUILD_NUM := 0
 
-sim_install_files :=
+lib_name := lib$(SIM_LIB_NAME).a
+lib_ver := $(SIM_MAJOR_NUM).$(SIM_MINOR_NUM).$(SIM_BUILD_NUM)
+
+output += $(lib_name) $(lib_name).$(lib_ver)
+
+sim_install_files += $(CARLSIM4_LIB_DIR)/$(lib_name)*
+
 
 # use the following flags when building from CARLsim lib path
-ifneq ($(CARLSIM4_INSTALL_DIR),)
+ifdef CARLSIM4_INSTALL_DIR
 	CARLSIM4_INC_DIR  := $(CARLSIM4_INSTALL_DIR)/inc
 	CARLSIM4_LIB_DIR  := $(CARLSIM4_INSTALL_DIR)/lib
-	CARLSIM4_LD       := -L$(CARLSIM4_LIB_DIR)
 	sim_install_files += $(CARLSIM4_INSTALL_DIR)
 else
 	CARLSIM4_INC_DIR  := /usr/local/include/carlsim
@@ -162,5 +166,5 @@ else
 	sim_install_files += $(CARLSIM4_INC_DIR)
 endif
 
-CARLSIM4_INC      := -I$(CARLSIM4_INC_DIR)
-CARLSIM4_LD       += -l$(SIM_LIB_NAME) -lcurand
+CARLSIM4_FLG := -I$(CARLSIM4_INC_DIR) -L$(CARLSIM4_LIB_DIR)
+CARLSIM4_LIB := -l$(SIM_LIB_NAME)

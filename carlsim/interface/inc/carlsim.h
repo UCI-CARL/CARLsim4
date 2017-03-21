@@ -52,6 +52,7 @@
 #include <stdint.h>		// uint64_t, uint32_t, etc.
 #include <string>		// std::string
 #include <vector>		// std::vector
+#include <algorithm>
 
 #include <carlsim_definitions.h>
 #include <carlsim_datastructures.h>
@@ -76,10 +77,6 @@ class SpikeGenerator;
 #if defined(WIN32) || defined(WIN64)
 #include <Windows.h>
 
-#include <algorithm>
-#define fmin (std::min)
-#define fmax (std::max)
-
 #include <float.h>
 #include <time.h>
 
@@ -100,8 +97,11 @@ class SpikeGenerator;
 #endif
 
 #else
-// Unix
-#include <pthread.h>
+
+#include <pthread.h> // pthread
+#include <sys/stat.h> // mkdir
+#include <unistd.h> //unix thread affinity macros
+
 
 #endif
 

@@ -5,13 +5,14 @@
 ##
 ##   Authors:   Michael Beyeler <mbeyeler@uci.edu>
 ##              Kristofor Carlson <kdcarlso@uci.edu>
+##              Ting-Shuo Chou <tingshuc@uci.edu>
 ##
 ##   Institute: Cognitive Anteater Robotics Lab (CARL)
 ##              Department of Cognitive Sciences
 ##              University of California, Irvine
 ##              Irvine, CA, 92697-5100, USA
 ##
-##   Version:   03/31/2016
+##   Version:   12/31/2016
 ##
 ##----------------------------------------------------------------------------##
 
@@ -19,101 +20,92 @@
 # CARLsim4 Interface
 #------------------------------------------------------------------------------
 
-intf_dir        := carlsim/interface
-intf_inc_files  := $(wildcard $(intf_dir)/inc/*.h)
-intf_cpp_files  := $(wildcard $(intf_dir)/src/*.cpp)
-intf_cu_files   := $(wildcard $(intf_dir)/src/*.cu)
-intf_obj_files  := $(patsubst %.cpp, %-cpp.o, $(intf_cpp_files))
-intf_obj_files  += $(patsubst %.cu, %-cu.o, $(intf_cu_files))
-SIMINCFL    += -I$(intf_dir)/inc
+intf_dir          := carlsim/interface
+intf_inc_files    := $(wildcard $(intf_dir)/inc/*.h)
+intf_cpp_files    := $(wildcard $(intf_dir)/src/*.cpp)
+intf_cu_files     := $(wildcard $(intf_dir)/src/*.cu)
+intf_cpp_obj      := $(patsubst %.cpp, %-cpp.o, $(intf_cpp_files))
+intf_cu_obj       := $(patsubst %.cu, %-cu.o, $(intf_cu_files))
+SIMINCFL          += -I$(intf_dir)/inc
 
 
 #------------------------------------------------------------------------------
 # CARLsim4 Kernel
 #------------------------------------------------------------------------------
 
-krnl_dir        := carlsim/kernel
-krnl_inc_files  := $(wildcard $(krnl_dir)/inc/*.h)
-krnl_cpp_files  := $(wildcard $(krnl_dir)/src/*.cpp)
-krnl_cu_files   := $(wildcard $(krnl_dir)/src/*.cu)
-krnl_obj_files  := $(patsubst %.cpp, %-cpp.o, $(krnl_cpp_files))
-krnl_obj_files  += $(patsubst %.cu, %-cu.o, $(krnl_cu_files))
-SIMINCFL    += -I$(krnl_dir)/inc
+krnl_dir          := carlsim/kernel
+krnl_inc_files    := $(wildcard $(krnl_dir)/inc/*.h)
+krnl_cpp_files    := $(wildcard $(krnl_dir)/src/*.cpp)
+krnl_cu_files     := $(wildcard $(krnl_dir)/src/gpu_module/*.cu)
+krnl_cpp_obj      := $(patsubst %.cpp, %-cpp.o, $(krnl_cpp_files))
+krnl_cu_obj       := $(patsubst %.cu, %-cu.o, $(krnl_cu_files))
+SIMINCFL          += -I$(krnl_dir)/inc
 
 
 #------------------------------------------------------------------------------
 # CARLsim4 Utilities
 #------------------------------------------------------------------------------
 
-conn_dir        := carlsim/connection_monitor
-conn_inc_files  := $(wildcard $(conn_dir)/*.h)
-conn_cpp_files  := $(wildcard $(conn_dir)/*.cpp)
-conn_cu_files   := $(wildcard $(conn_dir)/src/*.cu)
-conn_obj_files  := $(patsubst %.cpp, %-cpp.o, $(conn_cpp_files))
-conn_obj_files  += $(patsubst %.cu, %-cu.o, $(conn_cu_files))
-SIMINCFL    += -I$(conn_dir)
-
-grps_dir        := carlsim/group_monitor
-grps_inc_files  := $(wildcard $(grps_dir)/*.h)
-grps_cpp_files  := $(wildcard $(grps_dir)/*.cpp)
-grps_cu_files   := $(wildcard $(grps_dir)/src/*.cu)
-grps_obj_files  := $(patsubst %.cpp, %-cpp.o, $(grps_cpp_files))
-grps_obj_files  += $(patsubst %.cu, %-cu.o, $(grps_cu_files))
-SIMINCFL    += -I$(grps_dir)
-
-spks_dir        := carlsim/spike_monitor
-spks_inc_files  := $(wildcard $(spks_dir)/*.h)
-spks_cpp_files  := $(wildcard $(spks_dir)/*.cpp)
-spks_cu_files   := $(wildcard $(spks_dir)/src/*.cu)
-spks_obj_files  := $(patsubst %.cpp, %-cpp.o, $(spks_cpp_files))
-spks_obj_files  += $(patsubst %.cu, %-cu.o, $(spks_cu_files))
-SIMINCFL    += -I$(spks_dir)
+mon_dir          := carlsim/monitor
+mon_inc_files    := $(wildcard $(mon_dir)/*.h)
+mon_cpp_files    := $(wildcard $(mon_dir)/*.cpp)
+mon_cu_files     := $(wildcard $(mon_dir)/src/*.cu)
+mon_cpp_obj      := $(patsubst %.cpp, %-cpp.o, $(mon_cpp_files))
+mon_cu_obj       := $(patsubst %.cu, %-cu.o, $(mon_cu_files))
+SIMINCFL         += -I$(mon_dir)
 
 
 #------------------------------------------------------------------------------
 # CARLsim4 Tools
 #------------------------------------------------------------------------------
 
-tools_obj_files  :=
+tools_dir        := tools
+tools_cpp_obj    :=
+tools_cu_obj     :=
 
 # simple weight tuner
-swt_dir          := tools/simple_weight_tuner
+swt_dir          := $(tools_dir)/simple_weight_tuner
 swt_inc_files    := $(wildcard $(swt_dir)/*h)
 swt_cpp_files    := $(wildcard $(swt_dir)/*.cpp)
 swt_cu_files     := $(wildcard $(swt_dir)/*.cu)
-swt_obj_files    := $(patsubst %.cpp, %.o, $(swt_cpp_files))
-swt_obj_files    += $(patsubst %.cu, %.o, $(swt_cu_files))
-tools_obj_files  += $(swt_obj_files)
+swt_cpp_obj      := $(patsubst %.cpp, %.o, $(swt_cpp_files))
+tools_cpp_obj    += $(swt_cpp_obj)
 SIMINCFL         += -I$(swt_dir)
 
 # spike generators
-spkgen_dir       := tools/spike_generators
+spkgen_dir       := $(tools_dir)/spike_generators
 spkgen_inc_files := $(wildcard $(spkgen_dir)/*.h)
 spkgen_cpp_files := $(wildcard $(spkgen_dir)/*.cpp)
-spkgen_cu_files  := $(wildcard $(spkgen_dir)/*.cu)
-spkgen_obj_files := $(patsubst %.cpp, %.o, $(spkgen_cpp_files))
-spkgen_obj_files += $(patsubst %.cu, %.o, $(spkgen_cu_files))
-tools_obj_files  += $(spkgen_obj_files)
+spkgen_cpp_obj   := $(patsubst %.cpp, %.o, $(spkgen_cpp_files))
+tools_cpp_obj    += $(spkgen_cpp_obj)
 SIMINCFL         += -I$(spkgen_dir)
 
 # stopwatch
-stp_dir          := tools/stopwatch
+stp_dir          := $(tools_dir)/stopwatch
 stp_inc_files    := $(wildcard $(stp_dir)/*h)
 stp_cpp_files    := $(wildcard $(stp_dir)/*.cpp)
-stp_cu_files     := $(wildcard $(stp_dir)/*.cu)
-stp_obj_files    := $(patsubst %.cpp, %.o, $(stp_cpp_files))
-stp_obj_files    += $(patsubst %.cu, %.o, $(stp_cu_files))
-tools_obj_files  += $(stp_obj_files)
+stp_cpp_obj      := $(patsubst %.cpp, %.o, $(stp_cpp_files))
+tools_cpp_obj    += $(stp_cpp_obj)
 SIMINCFL         += -I$(stp_dir)
+
+# prepare clean-up
+output += *.gcda *.gcno *.gcov coverage.info
+output += $(addprefix $(intf_dir)/*/,*.gcda *.gcno)
+output += $(addprefix $(krnl_dir)/*/,*.gcda *.gcno)
+output += $(addprefix $(krnl_dir)/*/gpu_module/,*.gcda *.gcno)
+output += $(addprefix $(mon_dir)/,*.gcda *.gcno)
+output += $(addprefix $(tools_dir)/*/,*.gcda *.gcno)
 
 
 #------------------------------------------------------------------------------
 # CARLsim4 Common
 #------------------------------------------------------------------------------
 
-targets         += carlsim4
-objects         += $(krnl_obj_files) $(intf_obj_files) $(conn_obj_files) \
-	$(grps_obj_files) $(spks_obj_files) $(tools_obj_files)
+output          += carlsim4
+objects_cpp     += $(krnl_cpp_obj) $(intf_cpp_obj) $(mon_cpp_obj) $(tools_cpp_obj)
+objects_cu      += $(krnl_cu_obj) $(intf_cu_obj) $(mon_cu_obj) $(tools_cu_obj)
+
+# additional files that need to be installed
 add_files       := $(addprefix carlsim/,configure.mk)
 
 
@@ -121,20 +113,42 @@ add_files       := $(addprefix carlsim/,configure.mk)
 # CARLsim4 Targets
 #------------------------------------------------------------------------------
 
-.PHONY: release debug carlsim4
+.PHONY: release release_nocuda release_coverage release_nocuda_coverage debug debug_nocuda archive archive_nocuda prepare prep_nocuda
 
-# release build
-release: CXXFL  += -O3 -ffast-math
-release: NVCCFL += --compiler-options "-O3 -ffast-math"
-release: $(targets)
+prep_cuda:
+	$(eval CARLSIM4_FLG += -Wno-deprecated-gpu-targets)
+	$(eval CARLSIM4_LIB += -lcurand)
 
-# debug build
-debug: CXXFL    += -g -Wall -O0
-debug: NVCCFL   += -g -G --compiler-options "-Wall -O0"
-debug: $(targets)
+prep_nocuda:
+	$(eval CXXFL += -D__NO_CUDA__)
+	$(eval CARLSIM4_FLG += -D __NO_CUDA__)
+	$(eval NVCCFL += --compiler-options "-O3 -ffast-math")
+	$(eval NVCC := $(CXX))
+	$(eval NVCCINCFL := $(CXXINCFL))
+	$(eval NVCCLDFL := $(CXXLIBFL))
+	$(eval NVCCFL := $(CXXFL))
 
-# all CARLsim4 targets
-carlsim4: $(objects)
+prep_release:
+	$(eval CXXFL += -O3 -ffast-math)
+	$(eval NVCCFL += --compiler-options "-O3 -ffast-math")
+
+prep_debug:
+	$(eval CXXFL += -g -Wall -O0)
+ 	$(eval NVCCFL += -g -G --compiler-options "-Wall -O0")
+
+prep_coverage:
+	$(eval CXXFL += -fprofile-arcs -ftest-coverage)
+	$(eval CXXLIBFL += -lgcov)
+	$(eval NVCCFL += --compiler-options "-fprofile-arcs -ftest-coverage")
+	$(eval NVCCLDFL += -lgcov)
+	$(eval CARLSIM4_FLG += -fprofile-arcs -ftest-coverage)
+	$(eval CARLSIM4_LIB += -lgcov)
+
+
+release: prep_release prep_cuda $(objects_cpp) $(objects_cu) archive
+release_nocuda: prep_release prep_nocuda $(objects_cpp) archive_nocuda
+release_coverage: prep_release prep_coverage prep_cuda $(objects_cpp) $(objects_cu) archive
+release_nocuda_coverage: prep_release prep_coverage prep_nocuda $(objects_cpp) archive_nocuda
 
 
 #------------------------------------------------------------------------------
@@ -148,15 +162,11 @@ $(intf_dir)/src/%-cu.o: $(intf_dir)/src/%.cu $(intf_inc_files)
 	$(NVCC) $(NVCCSHRFL) -c $(NVCCINCFL) $(SIMINCFL) $(NVCCFL) $< -o $@
 $(krnl_dir)/src/%-cpp.o: $(krnl_dir)/src/%.cpp $(krnl_inc_files)
 	$(NVCC) $(NVCCSHRFL) -c $(NVCCINCFL) $(SIMINCFL) $(NVCCFL) $< -o $@
-$(krnl_dir)/src/%-cu.o: $(krnl_dir)/src/%.cu $(krnl_inc_files)
+$(krnl_dir)/src/gpu_module/%-cu.o: $(krnl_dir)/src/gpu_module/%.cu $(krnl_inc_files)
 	$(NVCC) $(NVCCSHRFL) -c $(NVCCINCFL) $(SIMINCFL) $(NVCCFL) $< -o $@
 
 # utilities
-$(conn_dir)/%-cpp.o: $(conn_dir)/%.cpp $(conn_inc_files)
-	$(NVCC) $(NVCCSHRFL) -c $(NVCCINCFL) $(SIMINCFL) $(NVCCFL) $< -o $@
-$(grps_dir)/%-cpp.o: $(grps_dir)/%.cpp $(grps_inc_files)
-	$(NVCC) $(NVCCSHRFL) -c $(NVCCINCFL) $(SIMINCFL) $(NVCCFL) $< -o $@
-$(spks_dir)/%-cpp.o: $(spks_dir)/%.cpp $(spks_inc_files)
+$(mon_dir)/%-cpp.o: $(mon_dir)/%.cpp $(mon_inc_files)
 	$(NVCC) $(NVCCSHRFL) -c $(NVCCINCFL) $(SIMINCFL) $(NVCCFL) $< -o $@
 
 # tools
@@ -166,3 +176,10 @@ $(spkgen_dir)/%.o: $(spkgen_dir)/%.cpp $(spkgen_inc_files)
 	$(CXX) $(CXXSHRFL) -c $(CXXINCFL) $(SIMINCFL) $(CXXFL) $< -o $@
 $(stp_dir)/%.o: $(stp_dir)/%.cpp $(stp_inc_files)
 	$(CXX) $(CXXSHRFL) -c $(CXXINCFL) $(SIMINCFL) $(CXXFL) $< -o $@
+
+# archive
+archive: prep_cuda $(objects_cpp) $(objects_cu)
+	ar rcs $(lib_name).$(lib_ver) $(objects_cpp) $(objects_cu)
+
+archive_nocuda: prep_nocuda $(objects_cpp)
+	ar rcs $(lib_name).$(lib_ver) $(objects_cpp)

@@ -50,9 +50,10 @@
 #define _SNN_DATASTRUCTURES_H_
 
 // include CUDA version-dependent macros and include files
-#include <cuda_version_control.h>
-#include <curand.h>
-
+#ifndef __NO_CUDA__
+	#include <cuda_version_control.h>
+	#include <curand.h>
+#endif
 
 /*!
 * \brief type of memory pointer
@@ -476,9 +477,10 @@ typedef struct RuntimeData_s {
 
 	float* poissonFireRate;
 	float* randNum;		//!< firing random number. max value is 10,000
-
+#ifndef __NO_CUDA__
 	int2* neuronAllocation;		//!< .x: [31:0] index of the first neuron, .y: [31:16] number of neurons, [15:0] group id
 	int3* groupIdInfo;			//!< .x , .y: the start and end index of neurons in a group, .z: gourd id, used for group Id calculations
+#endif
 
 	int*  nSpikeCnt;
 
@@ -502,8 +504,9 @@ typedef struct RuntimeData_s {
 	float* grpNEBuffer;
 
 	unsigned int* spikeGenBits;
-
+#ifndef __NO_CUDA__
 	curandGenerator_t gpuRandGen;
+#endif
 } RuntimeData;
 
 typedef struct GlobalNetworkConfig_s {
@@ -603,9 +606,26 @@ typedef struct RoutingTableEntry_s {
 	int srcNetId;
 	int destNetId;
 
-	bool operator== (const struct RoutingTableEntry_s& rte) {
+	bool operator== (const struct RoutingTableEntry_s& rte) const {
 		return (srcNetId == rte.srcNetId && destNetId == rte.destNetId);
 	}
 } RoutingTableEntry;
+
+
+//! CPU multithreading subroutine (that takes single argument) struct argument
+/*!
+*	This sturcture contains the snn object (because the 
+*	multithreading routing is a static method and does not recognize this object), 
+*	netID runtime used by the CPU runtime methods, local group ID, startIdx, 
+*	endIdx, GtoLOffset
+*/
+typedef struct ThreadStruct_s {
+	void* snn_pointer;
+	int netId;
+	int lGrpId;
+	int startIdx;
+	int endIdx;
+	int GtoLOffset;
+} ThreadStruct;
 
 #endif

@@ -6,35 +6,31 @@
 
 \section ch1s1_preinstallation 1.1 Pre-Installation
 \author Kristofor D. Carlson
+\author Michael Beyeler
 
-CARLsim currently requires the NVIDIA CUDA parallel computing platform to be installed
-even if one does not plan to use the GPU implementation.
-Future version are planned that allow users to run the CPU implementation without having CUDA installed.
+CARLsim runs on both generic x86 CPUs and off-the-shelf NVIDIA GPUs.
+Full support of all CARLsim features requires that the NVIDIA CUDA parallel computing platform be installed.
+It is now also possible to compile CARLsim without GPU support (see \ref ch1s2s1s3_cpuonly).
 
 CARLsim requires GPUs with a compute capability of 2.0 or higher.
 To find the compute capability of your device please refer to the
 <a href="http://en.wikipedia.org/wiki/CUDA" target="_blank"><b>CUDA article on Wikipedia</b></a>.
 
-CARLsim also requires CUDA Toolkit 5.0 or higher.
+CARLsim also requires CUDA Toolkit 6.0 or higher.
 For platform-specific CUDA installation instructions, please navigate to the
 <a href="https://developer.nvidia.com/cuda-zone" target="_blank"><b>NVIDIA CUDA Zone</b></a>.
 
 The rest of the chapter assumes you have successfully installed CUDA on appropriate hardware.
 
+\note Please make sure you install the CUDA SDK samples, as CARLsim relies on
+the file <tt>helper_cuda.h</tt>, which usually resides in
+<tt>/usr/local/cuda/samples/common/inc</tt>.
 
 \subsection ch1s1s1_os 1.1.1 Supported Operating Systems
 CARLsim has been tested on the following platforms:
-- Windows 7
-- Windows 8
-- Ubuntu 12.04
-- Ubuntu 12.10
-- Ubuntu 13.04
-- Ubuntu 13.10
-- Ubuntu 14.04
-- Arch Linux
-- CentOS 6
-- OpenSUSE 13.1
-- Mac OS X
+- Windows 10
+- Ubuntu 16.04
+
 
 \subsection ch1s1s2_os 1.1.2 Source Directory Layout
 Below is the directory layout of the CARLsim source code.
@@ -53,16 +49,16 @@ scripts, spike generators, and tools for visual stimuli.
 
 \code
 ├── carlsim                       # CARLsim source code directory
-│   ├── connection_monitor          # Utility to record synaptic data
-│   ├── group_monitor               # Utility to record neuron group data
 │   ├── interface                   # CARLsim interface (public user interface)
 │   ├── kernel                      # CARLsim core functionality
+│   ├── monitor                     # Monitors for groups, connections, spikes, etc.
 │   ├── server                      # Utility to implement real-time server functionality
-│   ├── spike_monitor               # Utility to record neuron spike data
 │   └── test                        # Google test regression suite tests
 ├── doc                           # CARLsim documentation generation directory
 │   ├── html                        # Generated documentation in html
 │   └── source                      # Documentation source code
+├── external                      # External dependencies
+│   ├── googletest                  # Google Test framework
 ├── projects                      # User projects directory
 │   └── hello_world                 # Project template for new users
 └── tools                         # CARLsim tools that are not built-in
@@ -82,8 +78,41 @@ scripts, spike generators, and tools for visual stimuli.
 \author Ting-Shuo Chou
 \author Michael Beyeler
 
-To install CARLsim, first download and unzip the zip file from the
-<a href="http://www.socsci.uci.edu/~jkrichma/CARLsim/index.html">CARL website</a>.
+CARLsim is now available on <a href="https://github.com/UCI-CARL/CARLsim4">GitHub</a>.
+
+If you are familiar with Git and GitHub, the preferred way to obtain the software
+is to fork and clone the GitHub repository.
+This will give you a way to access the latest stable and development versions of the code,
+and allow you to easily update your codebase later on.
+
+This can be done in three steps:
+
+-# Navigate to CARLsim's
+   <a href="https://github.com/UCI-CARL/CARLsim4">GitHub page</a> and click on the
+   <a href="https://github.com/UCI-CARL/CARLsim4#fork-destination-box"><tt>Fork</tt></a> box in the
+   top-right corner.
+
+-# Switch to a terminal (or <a href="https://desktop.github.com/">GitHub Desktop</a>)
+   and clone the repository:
+   \code
+   $ git clone --recursive https://github.com/UCI-CARL/YourUsername/CARLsim4
+   $ cd CARLsim4
+   \endcode
+   where <tt>YourUsername</tt> is your GitHub user name.
+   Note the <tt>--recursive</tt> option: It will make sure all external software
+   dependencies get installed (e.g., Google Test).
+
+-# Choose your software version:
+   - If you want the latest stable release, switch to the <tt>stable</tt> branch:
+     \code
+     $ git checkout stable
+     \endcode
+   - If you want the latest development version, simply stay on the <tt>master</tt>
+     branch.
+
+Alternatively, you may download the latest stable release from the 
+<a href="https://github.com/UCI-CARL/CARLsim4/releases">GitHub Release</a> page (.zip or .tar.gz).
+
 For installation instructions on Linux and Mac OS X platforms, please refer to \ref ch1s2s1_linux below.
 For installation instructions on Windows platforms, please refer to \ref ch1s2s2_windows below.
 
@@ -94,87 +123,165 @@ Instructions for Linux/Mac OS X installation assume you are using the Bash shell
 GNU GCC compiler collection and GNU Make build environment should be installed. 
 On most platforms, these are already installed by default.
 
-After you have unzipped the downloaded CARLsim files, you can either install CARLsim in its default
-location, or in a user-specified directory.
+
+\subsubsection ch1s2s1s1_environment_variables 1.2.1.1 Environment Variables
+
+CARLsim 4 allows configuration via environment variables.
+The easiest way to set these is to add them to your
+<tt>~/.bashrc</tt> file.
+
+The following options are available:
+
+- Installation directory: By default, the CARLsim library lives in <tt>/usr/local/lib</tt>,
+  and CARLsim include files live in <tt>/usr/local/include/carlsim</tt>.
+  You can overwrite these by exporting an evironment variable called
+  <tt>CARLSIM4_INSTALL_DIR</tt>:
+  \code
+  $ export CARLSIM4_INSTALL_DIR=/path/to/your/preferred/location
+  \endcode
+
+- GPU support: By default, CARLsim comes with CUDA support.
+  Obviously, this requires CUDA to be installed first.
+  If you want to run CARLsim without GPU support, you need to export an
+  environment variable called <tt>CARLSIM4_NO_CUDA</tt> and set it to 1:
+  \code
+  $ export CARLSIM4_NO_CUDA=1
+  \endcode
+
+- Custom CUDA paths: By default, CARLsim assumes that your CUDA library lives in
+  <tt>/usr/local/cuda</tt>. If this is not the case on your system, make sure to
+  set adjust an environment variable called <tt>CUDA_PATH</tt>:
+  \code
+  $ export CUDA_PATH=/path/to/CUDA
+  \endcode
+
+- ECJ support: By default, CARLsim assumes that the Parameter Tuning Interface
+  lives in <tt>/opt/CARL/carlsim_ecj_pti</tt>, with the JAR file located at
+  <tt>/opt/ecj/jar/ecj.23.jar</tt>. If these paths are not correct and you wish
+  to use the Parameter Tuning Interface (see \ref ch10_ecj), please update
+  your environment variables accordingly:
+  \code
+  $ export ECJ_JAR=/path/to/ECJ/JAR/file
+  $ export ECJ_PTI_DIR=/path/to/ECJ/PTI
+  \endcode
+
+- Code coverage: If you are a CARLsim developer, you can run the regression
+  suite and generate a code coverage report using an environment variable
+  called <tt>CARLSIM4_COVERAGE</tt>:
+  \code
+  $ export CARLSIM4_COVERAGE=1
+  \endcode
+  The whole procedure is described in ch11s4_coverage.
 
 
-\subsubsection ch1s2s1s1_default_location 1.2.1.1 Default Installation
-
-The easiest way to install CARLsim is through two simple commands:
-
-\code
-$ make -j8
-$ sudo make install
-\endcode
-
-The first command will compile all source code (<tt>-j8</tt> launching 8 threads to speed up
-installation), and the second command will install the library in the default location,
-which is <tt>/usr/local/include/carlsim</tt> for include files and <tt>/usr/local/lib</tt>
-for the libary itself.
-
-The CARLsim installation will automatically detect your OS, bit architecture, and CUDA version.
-
-By default, the above command will compile a <tt>release</tt> build, which has all debug flags
-turned off and hardware acceleration enabled (<tt>-O3 --fast-math</tt>).
-Alternatively, a <tt>debug</tt> build can be compiled, which has all debug flags turned on
-and hardware acceleration turned off (<tt>-O0</tt>):
-
-\code
-$ make
-$ make release      # release build, same as default: no debug prints, hardware acceleration on
-$ make debug        # debug build: all debug flags, hardware acceleration off
-\endcode
-
-More options can be found via command <tt>make help</tt>.
-
-
-\subsubsection ch1s2s1s2_custom_location 1.2.1.2 Custom Installation
-
-If you wish to install CARLsim in a different directory, you can specify a directory with
-an environment variable, which is to be put in your <tt>~/.bashrc</tt> file:
-
-\code
-# specify custom installation directory
-export CARLSIM4_INSTALL_DIR=~/carlsim
-\endcode
-
-After you edited and saved the <tt>~/.bashrc</tt> file, make sure to <tt>source</tt> it:
-
+Once you have made changes to your <tt>~/.bashrc</tt>, make sure they go into
+effect by either typing:
 \code
 $ source ~/.bashrc
 \endcode
+or by closing the shell and opening another one.
 
-In order for this specification to take effect in the installation procedure, make sure you turn
-the <tt>-E</tt> flag on during installation, otherwise <tt>sudo</tt> will not find the environment
-variable:
+Older versions of CARLsim used a configuration file called <tt>user.mk</tt>.
+This file is obsolete as of CARLsim 3.1.2.
 
+
+
+\subsubsection ch1s2s1s2_cuda_version 1.2.1.2 Finding CUDA Toolkit Version and Compute Capability
+
+The CUDA Toolkit version can be found via:
 \code
-$ make -j8
-$ sudo -E make install
+$ nvcc --version
+\endcode
+You need only input the major number of the toolkit version
+(e.g. 6 for 6.5).
+
+The compute capability of the GPU device can be found by compiling the <tt>deviceQuery</tt> sample in 
+the directory <tt>1_Utilities</tt> of the CUDA Toolkit.
+\code
+# copy NVIDIA Toolkit to home directory
+$ cd /usr/local/cuda/bin
+$ ./cuda-install-samples-6.5.sh ~
+$ cd ~/NVIDIA_CUDA-6.5_Samples/1_Utilities/deviceQuery
+
+# compile and run deviceQuery
+$ make
+$ ./deviceQuery
+\endcode
+For CUDA Toolkits other than version 6.5, the paths above need to be changed accordingly.
+
+\note Please make sure you install the CUDA SDK samples, as CARLsim relies on
+the file <tt>helper_cuda.h</tt>, which usually resides in
+<tt>/usr/local/cuda/samples/common/inc</tt>.
+
+
+\subsubsection ch1s2s1s3_cpuonly 1.2.1.3 Installing CARLsim Without GPU Support
+
+As mentioned above,
+GPU support can be disabled by exporting an environment
+variable called <tt>CARLSIM4_NO_CUDA</tt> and by setting it to 1:
+\code
+$ export CARLSIM4_NO_CUDA=1
 \endcode
 
+In this case, the NVIDIA CUDA toolkit is not required.
+But, obviously you will not be able to run CARLsim in ::GPU_MODE.
+
+\see \ref ch1s2s1s1_environment_variables
 
 
-\subsubsection ch1s2s1s3_troubleshooting 1.2.1.3 Troubleshooting the Installation
+\subsubsection ch1s2s1s4_compiling 1.2.1.4 Compiling the CARLsim Library
 
-CARLsim4 has been tested on a number of Unix platforms including Ubuntu 12.04 and Mac OS X
-(for a complete list, see \ref ch1s1s1_os).
+When it comes to compiling and installing CARLsim, you have two options:
 
-However, if things do go wrong, there are a few things to look out for:
+-# Install a <tt>release</tt> version:
+   \code
+   $ make -j4
+   $ sudo -E make install
+   \endcode
+   This will enable hardware accelerations using the <tt>-O3</tt> and
+   <tt>-ffast-math</tt> compile flags.
 
-- Installation assumes that CUDA is installed in <tt>/usr/local/cuda</tt>. If this is not the case
-  for your system, you can override this path with an environment variable <tt>CUDA_PATH</tt> in
-  your <tt>~/.bashrc</tt>.
-- Installation assumes that Google Test is installed in <tt>/opt/gtest</tt>. If this is not the case
-  for your system, you can override this path with an environment variable <tt>GTEST_DIR</tt> in
-  your <tt>~/.bashrc</tt>. For more information see \ref ch11_regression_suite.
-- Installation assumes that ECJ is installed in <tt>/opt/ecj</tt>. The ECJ PTI requires a few additional
-  environment variables, which can be set in your <tt>~/.bashrc</tt>.
-  For more information see \ref ch10_ecj.
-- The CARLsim4 installation tries to automatically detect your OS, bit architecture, and CUDA version.
-  This happens in the file <tt>carlsim/configure.mk</tt>. If something goes wrong, you can always browse
-  the file and hardcode the necessary flags yourself. Or reach out to us for support.
+-# Install a <tt>debug</tt> version:
+   \code
+   $ make debug -j4
+   $ sudo -E make install
+   \endcode
+   This will disable hardware accelerations (via <tt>-O0</tt>) and enable
+   extensive debug prints (via <tt>-g -Wall</tt>).
 
+\note Note the <tt>-E</tt> flag in the commands above,
+which will cause <tt>sudo</tt> to remember any environment
+variables you set above (such as <tt>CARLSIM4_INSTALL_DIR</tt> and
+<tt>CARLSIM4_NO_CUDA</tt>).
+You don't need this flag if you're not installing with <tt>sudo</tt>.
+
+\note Also, note the <tt>-j4</tt> flag, which will install CARLsim using
+four workers.
+You can increase the number on systems with more than four cores if you wish,
+or omit the flag if you're working on a single-core machine.
+
+
+
+CARLsim comes with an optional automated parameter tuning framework. For more information about
+how to install the framework please see \ref ch10_ecj. Additionally, CARLsim now comes with a
+regression suite that uses <a href="https://code.google.com/p/googletest/">Google Test</a>.
+For more information on how to use the regression suite, please see \ref ch11_regression_suite.
+
+\since v3.1
+
+
+\subsubsection ch1s2s1s5_verifying 1.2.1.5 Verifying the Installation
+
+In order to make sure the installation was successful,
+you can run the regression suite:
+
+\code
+$ make test
+$ ./carlsim/test_carlsim_tests
+\endcode
+
+For more information on the regression suite, please refer to
+\ref ch11_regression_suite.
 
 
 
@@ -348,3 +455,4 @@ By default, this variable points to the location <tt>"/opt/CARL/CARLsim"</tt>.
 On Windows, simply move all downloaded and unzipped CARLsim files to the recycle bin.
 
 */
+

@@ -1,204 +1,108 @@
-﻿# CARLsim4
+<div align="center">
+	<img src="http://socsci.uci.edu/~jkrichma/CARL-Logo-small.jpg" width="300"/>
+</div>
 
-[![Join the chat at https://gitter.im/UCI-CARL/CARLsim4](https://badges.gitter.im/UCI-CARL/CARLsim4.svg)](https://gitter.im/UCI-CARL/CARLsim4?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
-CARLsim is an efficient, easy-to-use, GPU-accelerated library for simulating large-scale spiking neural network (SNN) models with a high degree of biological detail.
+# CARLsim 4
 
-CARLsim is also available from: http://socsci.uci.edu/~jkrichma/CARLsim/.
+[![Build Status](https://travis-ci.org/UCI-CARL/CARLsim4.svg?branch=master)](https://travis-ci.org/UCI-CARL/CARLsim4)
+[![Coverage Status](https://coveralls.io/repos/github/UCI-CARL/CARLsim4/badge.svg?branch=master)](https://coveralls.io/github/UCI-CARL/CARLsim4?branch=master)
+[![Docs](https://img.shields.io/badge/docs-v4.0.0beta-blue.svg)](http://uci-carl.github.io/CARLsim4)
+[![Google group](https://img.shields.io/badge/Google-Discussion%20group-blue.svg)](https://groups.google.com/forum/#!forum/carlsim-snn-simulator)
 
-For a list of all people who have contributed to this project, please refer to 
-AUTHORS.
+CARLsim is an efficient, easy-to-use, GPU-accelerated library for simulating large-scale spiking neural network (SNN) models with a high degree of biological detail. CARLsim allows execution of networks of Izhikevich spiking neurons with realistic synaptic dynamics on both generic x86 CPUs and standard off-the-shelf GPUs. The simulator provides a PyNN-like programming interface in C/C++, which allows for details and parameters to be specified at the synapse, neuron, and network level.
 
-For more detailed installation instructions, please refer to INSTALL.
-
-For a log of source code changes, refer to CHANGELOG.
-
-For a description of added features please refer to the RELEASE_NOTES.
-
-### REQUIREMENTS
-**Operating System**: Windows/Linux/MacOS (for a complete list of supported OS’s
-see the INSTALL file)
-
-**Software**: NVIDIA CUDA drivers/toolkits/SDKs version 6.0 and up shold be installed and
-configured correctly.
-
-**Hardware**: An NVIDIA CUDA-capable GPU device with a compute capability of 3.5
-or higher is required.
-
-### QUICKSTART INSTALLATION
-**For Linux**:
-Set the required environment variables in your .bashrc file. They are described
-below:
-
-`CARLSIM4_INSTALL_DIR`: desired installation location of the CARLsim library, the default is /usr/local
-`CUDA_PATH`:  location of CUDA installation
-
-You can copy and paste the below code into your .bashrc file replacing their
-values with values appropriate for your system.
-
-```
-# set CARLsim variables
-export CARLSIM4_INSTALL_DIR=/home/USER_NAME
-export CUDA_PATH=/usr/local/cuda
-```
-
-Enter the unzipped CARLsim directory (same directory in which this README is
-located) and run the following:
-
-```
-make && sudo make install
-```
-
-This will compile and install the CARLsim library.
-
-Note: ‘sudo’ is only necessary when installing CARLsim in a location other than
-your home directory.
-
-**For Windows**:
-
-On Windows platform, CARLsim4 includes a solution file and project files for each examples and
-regression suite. For more information, please see \ref ch11_regression_suite. The solution file
-was created by Visual Studio (VS) 2015 with CUDA 8.0. If you happen to use the same version,
-<tt>Build Solution</tt> in VS 2015 will generate all executables (.exe) and static library
-(.lib) for you. Before buiding the solution or projects, please make sure <tt>Configuration</tt>
-is set to <tt>x64</tt> and <tt>Release</tt> for example executables and <tt>Debug</tt> for
-regression suite.
+New features in CARLsim 4 include:
+- TODO
+- Multi-GPU support
+- Hybrid mode
+- etc.
 
 
-### SOURCE CODE DIRECTORY DESCRIPTION
-Below is the directory layout of the CARLsim source code.
 
-<pre>
-├── carlsim                       # CARLsim source code folder
-│   ├── connection_monitor          # Utility to record synaptic data
-│   ├── group_monitor               # Utility to record neuron group data
-│   ├── interface                   # CARLsim interface (public user interface)
-│   ├── kernel                      # CARLsim core functionality
-│   ├── server                      # Utility to implement real-time server functionality
-│   ├── spike_monitor               # Utility to record neuron spike data
-│   └── test                        # Google test regression suite tests
-├── doc                           # CARLsim documentation generation folder
-│   ├── html                        # Generated documentation in html
-│   └── source                      # Documentation source code
-├── projects                      # User projects directory
-│   └── hello_world                 # Project template for new users
-└── tools                         # CARLsim tools that are not built-in
-    ├── ecj_pti                     # Automated parameter-tuning interface using ECJ
-    ├── eo_pti                      # Automated parameter-tuning interface using EO (deprecated)
-    ├── offline_analysis_toolbox    # Collection of MATLAB scripts for data analysis
-    ├── simple_weight_tuner         # Simple weight parameter-tuning tool
-    ├── spike_generators            # Collection of input spike generation tools
-    └── visual_stimulus             # Collection of MATLAB/CARLsim tools for visual stimuli
-</pre>
+## Installation
+
+Detailed instructions for installing the latest stable release of CARLsim on Mac OS X / Linux / Windows
+can be found in our [User Guide](http://uci-carl.github.io/CARLsim4/ch1_getting_started.html).
+
+In brief (OS X/Linux):
+
+1. Fork CARLsim 4 by clicking on the [`Fork`](https://github.com/UCI-CARL/CARLsim4#fork-destination-box) box
+   in the top-right corner.
+
+2. Clone the repo, where `YourUsername` is your actual GitHub user name:
+   ```
+   $ git clone --recursive https://github.com/YourUsername/CARLsim4
+   $ cd CARLsim4
+   ```
+   Note the `--recursive` option: It will make sure Google Test gets installed.
+
+3. Choose between stable release and latest development version:
+   - For the stable release, use the `stable` branch:
+     ```
+     $ git checkout stable
+     ```
+   - For the latest development branch, you are already on the right branch (`master`).
+
+4. Choose the installation directory: By default, the CARLsim library lives in `/usr/local/lib`, and CARLsim
+     include files live in `/usr/local/include/carlsim`.
+     You can overwrite these by exporting an evironment variable called `CARLSIM4_INSTALL_DIR`:
+     ```
+     $ export CARLSIM4_INSTALL_DIR=/path/to/your/preferred/dir
+     ```
+
+5. Make and install:
+   ```
+   $ make -j4
+   $ sudo -E make install
+   ```
+   Note the `-E` flag, which will cause `sudo` to remember the `CARLSIM4_INSTALL_DIR`.
+
+7. In order to make sure the installation was successful, you can run the regression suite:
+
+   ```
+   $ make test
+   $ ./carlsim/test/carlsim_tests
+   ```
+   
+8. Start your own project! The "Hello World" project is a goot starting point for this.
+   Make sure it runs:
+
+   ```
+   $ cd projects/hello_world
+   $ make
+   $ ./hello_world
+   ```
+
+   You can easily create your own project based on this template using the `init.sh` script:
+
+   ```
+   $ cd projects
+   $ ./init.sh project_name
+   ```
+   where `project_name` is the name of your new project.
+   The script will copy all files from `hello_world/` to `project_name/`, make all required
+   file changes to compile the new project, and add all new files to git.
+
+On Windows 7/10: Simply download the code and open/run the "Hello World" project file
+`projects\hello_world\hello_world.vcxproj`.
 
 
-* Main directory - contains the Makefile, documentation files, and other
-directories.
+## Prerequisites
 
-* carlsim - contains the source code of CARLsim.
+CARLsim 4 comes with the following requirements:
+- (Windows) Microsoft Visual Studio 2012 or higher.
+- (optional) CUDA Toolkit 6.0 or higher. For platform-specific CUDA installation instructions, please navigate to 
+  the [NVIDIA CUDA Zone](https://developer.nvidia.com/cuda-zone).
+  This is only required if you want to run CARLsim in `GPU_MODE`. Make sure to install the 
+  CUDA samples, too, as CARLsim relies on the file `helper_cuda.h`.
+- (optional) A GPU with compute capability 2.0 or higher. To find the compute capability of your device please 
+  refer to the [CUDA article on Wikipedia](http://en.wikipedia.org/wiki/CUDA).
+  This is only required if you want to run CARLsim in `GPU_MODE`.
+- (optional) MATLAB R2014a or higher. This is only required if you want to use the Offline Analysis Toolbox (OAT).
 
-* doc - location of user-guide, tutorial, and source code for documentation.
+As of CARLsim 3.1 it is no longer necessary to have the CUDA framework installed. However, CARLsim development 
+will continue to focus on the GPU implementation.
 
-* projects - meant to contain user’s CARLsim projects, all it is not
-necessary to place project code here as long as the user.mk is configured
-correctly and the CARLsim library is installed.
-
-* tools - contains additional tools to be used with CARLsim.
-
-### CARLSIM PROJECT DEVELOPMENT
-To compile a project from the library, please copy the template makefile, make, and run.
-
-```
-cd projects/
-./init.sh my_project
-cd my_project
-make
-./my_project
-```
-
-### DOCUMENTATION
-The documentation is already generated and can be found in doc/html. It can be
-accessed by opening index.html in a web browswer. In Linux, documentation
-can be generated by entering the ‘doc’ directory and typing `./makedoc`.
-Currently, we have a user-guide, a tutorial, an FAQ, and doxygen-generated
-source code documentation.
-
-### Using the CARLsim testing framework
-CARLsim uses the googletest framework v1.7 for testing. For more information
-on googltest please visit the website at https://code.google.com/p/googletest/.
-For a quick primer, visit: https://code.google.com/p/googletest/wiki/Primer.
-
-After google tests has been installed:
-
-1) From the carlsim/test directory of the CARLsim installation, type:
-
-```
-make
-```
-
-which compiles the carlsim tests
-
-2) To run the tests, run ‘carlsim_tests’:
-
-```
-./carlsim_tests
-```
-
-This runs the CARLsim tests which should all pass. If they do not pass,
-you may have inadvertantly modified the source code and should probably
-redownload CARLsim.
-
-3) To delete all testing output files type:
-
-...
-make distclean
-...
-
-### FAQ
-1. **Why do I need to have CUDA installed for CARLsim’s CPU mode?**
-
-CARLsim was written primarily as a GPU SNN simulator with the CPU mode being
-used mainly for validation and prototyping. Because of this, code for the CPU
-and GPU mode is intermingled. CARLsim v4.0 will separate these code-bases
-completely.
-
-2. **I’m having trouble installing CUDA in Linux. Any tips?**
-
-As of the writing of this README (2/2015) the CUDA driver/toolkit/SDK are all
-installed with the same installation script/package.  Once ‘./deviceQuery’
-returns valid information about your runtime and driver CUDA installation, you
-are in business. There are often problems with NVIDIA driver conflicts and
-other video drivers in a Linux install. Often times people purge all NVIDIA
-packages before attempting to install CUDA.
-
-Usually you have to add a few key environment variables to your .bashrc file.
-Below we set the CUDA_HOME variable to where CUDA is installed. we then set my
-LD_LIBRARY_PATH variable to the CUDA_HOME/lib64 directory. Finally, we point to
-the location of the CUDA tools/compiler (nvcc) by setting the PATH variable to
-the CUDA_HOME/bin directory.
-
-```
-# set CUDA variables
-export CUDA_HOME=/usr/local/cuda
-export LD_LIBRARY_PATH=${CUDA_HOME}/lib64
-export PATH=$PATH:${CUDA_HOME}/bin
-```
-
-3. **How do I install the parameter-tuning tools?**
-
-Instructions for installing the parameter-tuning tools can be found in their
-respective directories in the tools directory. For example, if you want to
-install the automated parameter-tuning interface using ECJ,the installation
-instructions are located in tools/ecj_pti.
-
-4. **How do I install Google Tests?**
-
-In general you should:
-
-1)  Download google tests and unzip them to a location of your choice.
-
-2)  Edit the environment variables GTEST_DIR (in carlsim/configure.mk) and GTEST_LIB_DIR
-    (in carlsim/test/gtest.mk). GTEST_DIR should point to the location of the
-    unzipped google test source code that you  downloaded. GTEST_LIB_DIR
-    should point to the location you want the compiled google test libraries
-    to which you will be linking should be installed.
-
+The current release has been tested on the following platforms:
+- Windows 10
+- Ubuntu 16.04

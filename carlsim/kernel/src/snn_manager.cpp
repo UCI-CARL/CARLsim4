@@ -58,6 +58,7 @@
 #include <group_monitor_core.h>
 
 #include <spike_buffer.h>
+#include <error_code.h>
 
 // \FIXME what are the following for? why were they all the way at the bottom of this file?
 
@@ -643,10 +644,12 @@ int SNN::runNetwork(int _nsec, int _nmsec, bool printRunSummary) {
 	}
 
 	// set the Poisson generation time slice to be at the run duration up to MAX_TIME_SLICE
-	setGrpTimeSlice(ALL, MAX(1, MIN(runDurationMs, MAX_TIME_SLICE)));
+	setGrpTimeSlice(ALL, std::max(1, std::min(runDurationMs, MAX_TIME_SLICE)));
 
+#ifndef __NO_CUDA__
 	CUDA_RESET_TIMER(timer);
 	CUDA_START_TIMER(timer);
+#endif
 
 	// if nsec=0, simTimeMs=10, we need to run the simulator for 10 timeStep;
 	// if nsec=1, simTimeMs=10, we need to run the simulator for 1*1000+10, time Step;
@@ -704,9 +707,11 @@ int SNN::runNetwork(int _nsec, int _nmsec, bool printRunSummary) {
 	updateGroupMonitor();
 
 	// keep track of simulation time...
+#ifndef __NO_CUDA__
 	CUDA_STOP_TIMER(timer);
 	lastExecutionTime = CUDA_GET_TIMER_VALUE(timer);
 	cumExecutionTime += lastExecutionTime;
+#endif
 	return 0;
 }
 
@@ -745,7 +750,7 @@ void SNN::biasWeights(short int connId, float bias, bool updateWeightRange) {
 					// if this flag is set, we need to update minWt,maxWt accordingly
 					// will be saving new maxSynWt and copying to GPU below
 //					connInfo->minWt = fmin(connInfo->minWt, weight);
-					connectConfigMap[connId].maxWt = fmax(connectConfigMap[connId].maxWt, weight);
+					connectConfigMap[connId].maxWt = std::max(connectConfigMap[connId].maxWt, weight);
 					if (needToPrintDebug) {
 						KERNEL_DEBUG("biasWeights(%d,%f,%s): updated weight ranges to [%f,%f]", connId, bias,
 							(updateWeightRange?"true":"false"), 0.0f, connectConfigMap[connId].maxWt);
@@ -753,9 +758,9 @@ void SNN::biasWeights(short int connId, float bias, bool updateWeightRange) {
 				} else {
 					// constrain weight to boundary values
 					// compared to above, we swap minWt/maxWt logic
-					weight = fmin(weight, connectConfigMap[connId].maxWt);
+					weight = std::min(weight, connectConfigMap[connId].maxWt);
 //					weight = fmax(weight, connInfo->minWt);
-					weight = fmax(weight, 0.0f);
+					weight = std::max(weight, 0.0f);
 					if (needToPrintDebug) {
 						KERNEL_DEBUG("biasWeights(%d,%f,%s): constrained weight %f to [%f,%f]", connId, bias,
 							(updateWeightRange?"true":"false"), weight, 0.0f, connectConfigMap[connId].maxWt);
@@ -770,6 +775,7 @@ void SNN::biasWeights(short int connId, float bias, bool updateWeightRange) {
 
 		// update GPU datastructures in batches, grouped by post-neuron
 		if (netId < CPU_RUNTIME_BASE) {
+#ifndef __NO_CUDA__
 			CUDA_CHECK_ERRORS( cudaMemcpy(&(runtimeData[netId].wt[cumIdx]), &(managerRuntimeData.wt[cumIdx]), sizeof(float)*managerRuntimeData.Npre[lNId],
 				cudaMemcpyHostToDevice) );
 
@@ -779,6 +785,9 @@ void SNN::biasWeights(short int connId, float bias, bool updateWeightRange) {
 				CUDA_CHECK_ERRORS( cudaMemcpy(&(runtimeData[netId].maxSynWt[cumIdx]), &(managerRuntimeData.maxSynWt[cumIdx]),
 					sizeof(float) * managerRuntimeData.Npre[lNId], cudaMemcpyHostToDevice) );
 			}
+#else
+			assert(false);
+#endif
 		} else {
 			memcpy(&runtimeData[netId].wt[cumIdx], &managerRuntimeData.wt[cumIdx], sizeof(float) * managerRuntimeData.Npre[lNId]);
 
@@ -833,7 +842,7 @@ void SNN::scaleWeights(short int connId, float scale, bool updateWeightRange) {
 					// if this flag is set, we need to update minWt,maxWt accordingly
 					// will be saving new maxSynWt and copying to GPU below
 //					connInfo->minWt = fmin(connInfo->minWt, weight);
-					connectConfigMap[connId].maxWt = fmax(connectConfigMap[connId].maxWt, weight);
+					connectConfigMap[connId].maxWt = std::max(connectConfigMap[connId].maxWt, weight);
 					if (needToPrintDebug) {
 						KERNEL_DEBUG("scaleWeights(%d,%f,%s): updated weight ranges to [%f,%f]", connId, scale,
 							(updateWeightRange?"true":"false"), 0.0f, connectConfigMap[connId].maxWt);
@@ -841,9 +850,9 @@ void SNN::scaleWeights(short int connId, float scale, bool updateWeightRange) {
 				} else {
 					// constrain weight to boundary values
 					// compared to above, we swap minWt/maxWt logic
-					weight = fmin(weight, connectConfigMap[connId].maxWt);
+					weight = std::min(weight, connectConfigMap[connId].maxWt);
 //					weight = fmax(weight, connInfo->minWt);
-					weight = fmax(weight, 0.0f);
+					weight = std::max(weight, 0.0f);
 					if (needToPrintDebug) {
 						KERNEL_DEBUG("scaleWeights(%d,%f,%s): constrained weight %f to [%f,%f]", connId, scale,
 							(updateWeightRange?"true":"false"), weight, 0.0f, connectConfigMap[connId].maxWt);
@@ -858,6 +867,7 @@ void SNN::scaleWeights(short int connId, float scale, bool updateWeightRange) {
 
 		// update GPU datastructures in batches, grouped by post-neuron
 		if (netId < CPU_RUNTIME_BASE) {
+#ifndef __NO_CUDA__
 			CUDA_CHECK_ERRORS(cudaMemcpy(&runtimeData[netId].wt[cumIdx], &managerRuntimeData.wt[cumIdx], sizeof(float)*managerRuntimeData.Npre[lNId],
 				cudaMemcpyHostToDevice));
 
@@ -867,8 +877,10 @@ void SNN::scaleWeights(short int connId, float scale, bool updateWeightRange) {
 				CUDA_CHECK_ERRORS(cudaMemcpy(&runtimeData[netId].maxSynWt[cumIdx], &managerRuntimeData.maxSynWt[cumIdx],
 					sizeof(float) * managerRuntimeData.Npre[lNId], cudaMemcpyHostToDevice));
 			}
-		}
-		else {
+#else
+			assert(false);
+#endif
+		} else {
 			memcpy(&runtimeData[netId].wt[cumIdx], &managerRuntimeData.wt[cumIdx], sizeof(float) * managerRuntimeData.Npre[lNId]);
 
 			if (runtimeData[netId].maxSynWt != NULL) {
@@ -1091,6 +1103,7 @@ void SNN::setWeight(short int connId, int neurIdPre, int neurIdPost, float weigh
 			managerRuntimeData.maxSynWt[pos_ij] = isExcitatoryGroup(connectConfigMap[connId].grpSrc) ? maxWt : -1.0 * maxWt;
 
 			if (netId < CPU_RUNTIME_BASE) {
+#ifndef __NO_CUDA__
 				// need to update datastructures on GPU runtime
 				CUDA_CHECK_ERRORS(cudaMemcpy(&runtimeData[netId].wt[pos_ij], &managerRuntimeData.wt[pos_ij], sizeof(float), cudaMemcpyHostToDevice));
 				if (runtimeData[netId].maxSynWt != NULL) {
@@ -1098,6 +1111,9 @@ void SNN::setWeight(short int connId, int neurIdPre, int neurIdPost, float weigh
 					// (that logic should be done elsewhere though)
 					CUDA_CHECK_ERRORS(cudaMemcpy(&runtimeData[netId].maxSynWt[pos_ij], &managerRuntimeData.maxSynWt[pos_ij], sizeof(float), cudaMemcpyHostToDevice));
 				}
+#else
+				assert(false);
+#endif
 			} else {
 				// need to update datastructures on CPU runtime
 				memcpy(&runtimeData[netId].wt[pos_ij], &managerRuntimeData.wt[pos_ij], sizeof(float));
@@ -1704,25 +1720,42 @@ void SNN::SNNinit() {
 	default:
 		fpErr_ = stderr; // need to open file stream first
 		KERNEL_ERROR("Unknown logger mode");
-		exit(1);
-	}
-	#if defined(WIN32) || defined(WIN64)
-		fpLog_= fopen("results\\carlsim.log","w");
-	#else
-		fpLog_ = fopen("results/carlsim.log","w");
-	#endif
+		exit(UNKNOWN_LOGGER_ERROR);
 
-	#ifdef __REGRESSION_TESTING__
-	#if defined(WIN32) || defined(WIN64)
-		fpInf_ = fopen("nul","w");
-		fpErr_ = fopen("nul","w");
-		fpDeb_ = fopen("nul","w");
-	#else
-		fpInf_ = fopen("/dev/null","w");
-		fpErr_ = fopen("/dev/null","w");
-		fpDeb_ = fopen("/dev/null","w");
-	#endif
-	#endif
+	}
+
+	// try to open log file in results folder: create if not exists
+#if defined(WIN32) || defined(WIN64)
+	CreateDirectory("results", NULL);
+	fpLog_ = fopen("results/carlsim.log", "w");
+#else
+	struct stat sb;
+	int createDir = 1;
+	if (stat("results", &sb) == -1 || !S_ISDIR(sb.st_mode)) {
+		// results dir does not exist, try to create:
+		createDir = mkdir("results", 0777);
+	}
+
+	if (createDir == -1) {
+		// tried to create dir, but failed
+		fprintf(stderr, "Could not create directory \"results/\", which is required to "
+			"store simulation results. Aborting simulation...\n");
+		exit(NO_LOGGER_DIR_ERROR);
+	} else {
+		// open log file
+		fpLog_ = fopen("results/carlsim.log", "w");
+
+		if (createDir == 0) {
+			// newly created dir: now that fpLog_/fpInf_ exist, inform user
+			KERNEL_INFO("Created results directory \"results/\".");
+		}
+	}
+#endif
+	if (fpLog_ == NULL) {
+		fprintf(stderr, "Could not create the directory \"results/\" or the log file \"results/carlsim.log\""
+			", which is required to store simulation results. Aborting simulation...\n");
+		exit(NO_LOGGER_DIR_ERROR);
+	}
 
 	KERNEL_INFO("*********************************************************************************");
 	KERNEL_INFO("********************      Welcome to CARLsim %d.%d      ***************************",
@@ -1753,8 +1786,7 @@ void SNN::SNNinit() {
 	simulatorDeleted = false;
 
 	cumExecutionTime = 0.0;
-	cpuExecutionTime = 0.0;
-	gpuExecutionTime = 0.0;
+	executionTime = 0.0;
 
 	spikeRateUpdated = false;
 	numSpikeMonitor = 0;
@@ -1817,8 +1849,10 @@ void SNN::SNNinit() {
 	wtChangeDecay_ = 0.0f;
 
 	// FIXME: use it when necessary
+#ifndef __NO_CUDA__
 	CUDA_CREATE_TIMER(timer);
 	CUDA_RESET_TIMER(timer);
+#endif
 }
 
 void SNN::advSimStep() {
@@ -1831,7 +1865,6 @@ void SNN::advSimStep() {
 	updateTimingTable();
 
 	routeSpikes();
-	//routeSpikes_GPU();
 
 	doCurrentUpdate();
 
@@ -1841,98 +1874,356 @@ void SNN::advSimStep() {
 }
 
 void SNN::doSTPUpdateAndDecayCond() {
+	#if !defined(WIN32) && !defined(WIN64) // Linux or MAC
+		pthread_t threads[numCores + 1]; // 1 additional array size if numCores == 0, it may work though bad practice
+		cpu_set_t cpus;	
+		ThreadStruct argsThreadRoutine[numCores + 1]; // same as above, +1 array size
+		int threadCount = 0;
+	#endif
+
 	for (int netId = 0; netId < MAX_NET_PER_SNN; netId++) {
 		if (!groupPartitionLists[netId].empty()) {
 			assert(runtimeData[netId].allocated);
 			if (netId < CPU_RUNTIME_BASE) // GPU runtime
 				doSTPUpdateAndDecayCond_GPU(netId);
-			else
-				doSTPUpdateAndDecayCond_CPU(netId);
+			else{//CPU runtime
+				#if defined(WIN32) || defined(WIN64)
+					doSTPUpdateAndDecayCond_CPU(netId);
+				#else // Linux or MAC
+					pthread_attr_t attr;
+					pthread_attr_init(&attr);
+					CPU_ZERO(&cpus);
+					CPU_SET(threadCount%NUM_CPU_CORES, &cpus);
+					pthread_attr_setaffinity_np(&attr, sizeof(cpu_set_t), &cpus);
+
+					argsThreadRoutine[threadCount].snn_pointer = this;
+					argsThreadRoutine[threadCount].netId = netId;
+					argsThreadRoutine[threadCount].lGrpId = 0;
+					argsThreadRoutine[threadCount].startIdx = 0;
+					argsThreadRoutine[threadCount].endIdx = 0;
+					argsThreadRoutine[threadCount].GtoLOffset = 0;
+
+					pthread_create(&threads[threadCount], &attr, &SNN::helperDoSTPUpdateAndDecayCond_CPU, (void*)&argsThreadRoutine[threadCount]);
+					threadCount++;
+				#endif
+			}
 		}
 	}
+
+	#if !defined(WIN32) && !defined(WIN64) // Linux or MAC
+		// join all the threads
+		for (int i=0; i<threadCount; i++){
+			pthread_join(threads[i], NULL);
+		}
+	#endif
 }
 
 void SNN::spikeGeneratorUpdate() {
 	// If poisson rate has been updated, assign new poisson rate
 	if (spikeRateUpdated) {
+		#if !defined(WIN32) && !defined(WIN64) // Linux or MAC
+			pthread_t threads[numCores + 1]; // 1 additional array size if numCores == 0, it may work though bad practice
+			cpu_set_t cpus;	
+			ThreadStruct argsThreadRoutine[numCores + 1]; // same as above, +1 array size
+			int threadCount = 0;
+		#endif
+
 		for (int netId = 0; netId < MAX_NET_PER_SNN; netId++) {
 			if (!groupPartitionLists[netId].empty()) {
 				if (netId < CPU_RUNTIME_BASE) // GPU runtime
 					assignPoissonFiringRate_GPU(netId);
-				else // CPU runtime
-					assignPoissonFiringRate_CPU(netId);
+				else{ // CPU runtime
+					#if defined(WIN32) || defined(WIN64)
+						assignPoissonFiringRate_CPU(netId);
+					#else // Linux or MAC
+						pthread_attr_t attr;
+						pthread_attr_init(&attr);
+						CPU_ZERO(&cpus);
+						CPU_SET(threadCount%NUM_CPU_CORES, &cpus);
+						pthread_attr_setaffinity_np(&attr, sizeof(cpu_set_t), &cpus);
+
+						argsThreadRoutine[threadCount].snn_pointer = this;
+						argsThreadRoutine[threadCount].netId = netId;
+						argsThreadRoutine[threadCount].lGrpId = 0;
+						argsThreadRoutine[threadCount].startIdx = 0;
+						argsThreadRoutine[threadCount].endIdx = 0;
+						argsThreadRoutine[threadCount].GtoLOffset = 0;
+
+						pthread_create(&threads[threadCount], &attr, &SNN::helperAssignPoissonFiringRate_CPU, (void*)&argsThreadRoutine[threadCount]);
+						threadCount++;
+					#endif
+				}
 			}
 		}
+
+		#if !defined(WIN32) && !defined(WIN64) // Linux or MAC
+			// join all the threads
+			for (int i=0; i<threadCount; i++){
+				pthread_join(threads[i], NULL);
+			}
+		#endif
+
 		spikeRateUpdated = false;
 	}
 
 	// If time slice has expired, check if new spikes needs to be generated by user-defined spike generators
 	generateUserDefinedSpikes();
 
+	#if !defined(WIN32) && !defined(WIN64) // Linux or MAC
+		pthread_t threads[numCores + 1]; // 1 additional array size if numCores == 0, it may work though bad practice
+		cpu_set_t cpus;	
+		ThreadStruct argsThreadRoutine[numCores + 1]; // same as above, +1 array size
+		int threadCount = 0;
+	#endif
+
 	for (int netId = 0; netId < MAX_NET_PER_SNN; netId++) {
 		if (!groupPartitionLists[netId].empty()) {
 			if (netId < CPU_RUNTIME_BASE) // GPU runtime
 				spikeGeneratorUpdate_GPU(netId);
-			else // CPU runtime
-				spikeGeneratorUpdate_CPU(netId);
+			else{ // CPU runtime
+				#if defined(WIN32) || defined(WIN64)
+					spikeGeneratorUpdate_CPU(netId);
+				#else // Linux or MAC
+					pthread_attr_t attr;
+					pthread_attr_init(&attr);
+					CPU_ZERO(&cpus);
+					CPU_SET(threadCount%NUM_CPU_CORES, &cpus);
+					pthread_attr_setaffinity_np(&attr, sizeof(cpu_set_t), &cpus);
+
+					argsThreadRoutine[threadCount].snn_pointer = this;
+					argsThreadRoutine[threadCount].netId = netId;
+					argsThreadRoutine[threadCount].lGrpId = 0;
+					argsThreadRoutine[threadCount].startIdx = 0;
+					argsThreadRoutine[threadCount].endIdx = 0;
+					argsThreadRoutine[threadCount].GtoLOffset = 0;
+
+					pthread_create(&threads[threadCount], &attr, &SNN::helperSpikeGeneratorUpdate_CPU, (void*)&argsThreadRoutine[threadCount]);
+					threadCount++;
+				#endif
+			}
 		}
 	}
+
+	#if !defined(WIN32) && !defined(WIN64) // Linux or MAC
+		// join all the threads
+		for (int i=0; i<threadCount; i++){
+			pthread_join(threads[i], NULL);
+		}
+	#endif
 
 	// tell the spike buffer to advance to the next time step
 	spikeBuf->step();
 }
 
 void SNN::findFiring() {
+	#if !defined(WIN32) && !defined(WIN64) // Linux or MAC
+		pthread_t threads[numCores + 1]; // 1 additional array size if numCores == 0, it may work though bad practice
+		cpu_set_t cpus;	
+		ThreadStruct argsThreadRoutine[numCores + 1]; // same as above, +1 array size
+		int threadCount = 0;
+	#endif
+
 	for (int netId = 0; netId < MAX_NET_PER_SNN; netId++) {
 		if (!groupPartitionLists[netId].empty()) {
 			if (netId < CPU_RUNTIME_BASE) // GPU runtime
 				findFiring_GPU(netId);
-			else // CPU runtime
-				findFiring_CPU(netId);
+			else {// CPU runtime
+				#if defined(WIN32) || defined(WIN64)
+					findFiring_CPU(netId);
+				#else // Linux or MAC
+					pthread_attr_t attr;
+					pthread_attr_init(&attr);
+					CPU_ZERO(&cpus);
+					CPU_SET(threadCount%NUM_CPU_CORES, &cpus);
+					pthread_attr_setaffinity_np(&attr, sizeof(cpu_set_t), &cpus);
+
+					argsThreadRoutine[threadCount].snn_pointer = this;
+					argsThreadRoutine[threadCount].netId = netId;
+					argsThreadRoutine[threadCount].lGrpId = 0;
+					argsThreadRoutine[threadCount].startIdx = 0;
+					argsThreadRoutine[threadCount].endIdx = 0;
+					argsThreadRoutine[threadCount].GtoLOffset = 0;
+
+					pthread_create(&threads[threadCount], &attr, &SNN::helperFindFiring_CPU, (void*)&argsThreadRoutine[threadCount]);
+					threadCount++;
+				#endif
+			}
 		}
 	}
+
+	#if !defined(WIN32) && !defined(WIN64) // Linux or MAC
+		// join all the threads
+		for (int i=0; i<threadCount; i++){
+			pthread_join(threads[i], NULL);
+		}
+	#endif
 }
 
 void SNN::doCurrentUpdate() {
+	#if !defined(WIN32) && !defined(WIN64) // Linux or MAC
+		pthread_t threads[numCores + 1]; // 1 additional array size if numCores == 0, it may work though bad practice
+		cpu_set_t cpus;	
+		ThreadStruct argsThreadRoutine[numCores + 1]; // same as above, +1 array size
+		int threadCount = 0;
+	#endif
+
 	for (int netId = 0; netId < MAX_NET_PER_SNN; netId++) {
 		if (!groupPartitionLists[netId].empty()) {
 			if (netId < CPU_RUNTIME_BASE) // GPU runtime
 				doCurrentUpdateD2_GPU(netId);
-			else // CPU runtime
-				doCurrentUpdateD2_CPU(netId);
+			else{ // CPU runtime
+				#if defined(WIN32) || defined(WIN64)
+					doCurrentUpdateD2_CPU(netId);
+				#else // Linux or MAC
+					pthread_attr_t attr;
+					pthread_attr_init(&attr);
+					CPU_ZERO(&cpus);
+					CPU_SET(threadCount%NUM_CPU_CORES, &cpus);
+					pthread_attr_setaffinity_np(&attr, sizeof(cpu_set_t), &cpus);
+
+					argsThreadRoutine[threadCount].snn_pointer = this;
+					argsThreadRoutine[threadCount].netId = netId;
+					argsThreadRoutine[threadCount].lGrpId = 0;
+					argsThreadRoutine[threadCount].startIdx = 0;
+					argsThreadRoutine[threadCount].endIdx = 0;
+					argsThreadRoutine[threadCount].GtoLOffset = 0;
+
+					pthread_create(&threads[threadCount], &attr, &SNN::helperDoCurrentUpdateD2_CPU, (void*)&argsThreadRoutine[threadCount]);
+					threadCount++;
+				#endif
+			}
 		}
 	}
+
+	#if !defined(WIN32) && !defined(WIN64) // Linux or MAC
+		// join all the threads
+		for (int i=0; i<threadCount; i++){
+			pthread_join(threads[i], NULL);
+		}
+		threadCount = 0;
+	#endif
 
 	for (int netId = 0; netId < MAX_NET_PER_SNN; netId++) {
 		if (!groupPartitionLists[netId].empty()) {
 			if (netId < CPU_RUNTIME_BASE) // GPU runtime
 				doCurrentUpdateD1_GPU(netId);
-			else // CPU runtime
-				doCurrentUpdateD1_CPU(netId);
+			else{ // CPU runtime
+				#if defined(WIN32) || defined(WIN64)
+					doCurrentUpdateD1_CPU(netId);
+				#else // Linux or MAC
+					pthread_attr_t attr;
+					pthread_attr_init(&attr);
+					CPU_ZERO(&cpus);
+					CPU_SET(threadCount%NUM_CPU_CORES, &cpus);
+					pthread_attr_setaffinity_np(&attr, sizeof(cpu_set_t), &cpus);
+
+					argsThreadRoutine[threadCount].snn_pointer = this;
+					argsThreadRoutine[threadCount].netId = netId;
+					argsThreadRoutine[threadCount].lGrpId = 0;
+					argsThreadRoutine[threadCount].startIdx = 0;
+					argsThreadRoutine[threadCount].endIdx = 0;
+					argsThreadRoutine[threadCount].GtoLOffset = 0;
+
+					pthread_create(&threads[threadCount], &attr, &SNN::helperDoCurrentUpdateD1_CPU, (void*)&argsThreadRoutine[threadCount]);
+					threadCount++;
+				#endif
+			}
 		}
 	}
+
+	#if !defined(WIN32) && !defined(WIN64) // Linux or MAC
+		// join all the threads
+		for (int i=0; i<threadCount; i++){
+			pthread_join(threads[i], NULL);
+		}
+	#endif
 }
 
 void SNN::updateTimingTable() {
+	#if !defined(WIN32) && !defined(WIN64) // Linux or MAC
+		pthread_t threads[numCores + 1]; // 1 additional array size if numCores == 0, it may work though bad practice
+		cpu_set_t cpus;	
+		ThreadStruct argsThreadRoutine[numCores + 1]; // same as above, +1 array size
+		int threadCount = 0;
+	#endif
+
 	for (int netId = 0; netId < MAX_NET_PER_SNN; netId++) {
 		if (!groupPartitionLists[netId].empty()) {
 			if (netId < CPU_RUNTIME_BASE) // GPU runtime
 				updateTimingTable_GPU(netId);
-			else // CPU runtime
-				updateTimingTable_CPU(netId);
+			else{ // CPU runtime
+				#if defined(WIN32) || defined(WIN64)
+					updateTimingTable_CPU(netId);
+				#else // Linux or MAC
+					pthread_attr_t attr;
+					pthread_attr_init(&attr);
+					CPU_ZERO(&cpus);
+					CPU_SET(threadCount%NUM_CPU_CORES, &cpus);
+					pthread_attr_setaffinity_np(&attr, sizeof(cpu_set_t), &cpus);
+
+					argsThreadRoutine[threadCount].snn_pointer = this;
+					argsThreadRoutine[threadCount].netId = netId;
+					argsThreadRoutine[threadCount].lGrpId = 0;
+					argsThreadRoutine[threadCount].startIdx = 0;
+					argsThreadRoutine[threadCount].endIdx = 0;
+					argsThreadRoutine[threadCount].GtoLOffset = 0;
+
+					pthread_create(&threads[threadCount], &attr, &SNN::helperUpdateTimingTable_CPU, (void*)&argsThreadRoutine[threadCount]);
+					threadCount++;
+				#endif
+			}
 		}
 	}
+	#if !defined(WIN32) && !defined(WIN64) // Linux or MAC
+		// join all the threads
+		for (int i=0; i<threadCount; i++){
+			pthread_join(threads[i], NULL);
+		}
+	#endif
 }
 
 void SNN::globalStateUpdate() {
+	#if !defined(WIN32) && !defined(WIN64) // Linux or MAC
+		pthread_t threads[numCores + 1]; // 1 additional array size if numCores == 0, it may work though bad practice
+		cpu_set_t cpus;	
+		ThreadStruct argsThreadRoutine[numCores + 1]; // same as above, +1 array size
+		int threadCount = 0;
+	#endif
+
 	for (int netId = 0; netId < MAX_NET_PER_SNN; netId++) {
 		if (!groupPartitionLists[netId].empty()) {
 			if (netId < CPU_RUNTIME_BASE) // GPU runtime
 				globalStateUpdate_C_GPU(netId);
-			else // CPU runtime
-				globalStateUpdate_CPU(netId);
+			else{ // CPU runtime
+				#if defined(WIN32) || defined(WIN64)
+					globalStateUpdate_CPU(netId);
+				#else // Linux or MAC
+					pthread_attr_t attr;
+					pthread_attr_init(&attr);
+					CPU_ZERO(&cpus);
+					CPU_SET(threadCount%NUM_CPU_CORES, &cpus);
+					pthread_attr_setaffinity_np(&attr, sizeof(cpu_set_t), &cpus);
+
+					argsThreadRoutine[threadCount].snn_pointer = this;
+					argsThreadRoutine[threadCount].netId = netId;
+					argsThreadRoutine[threadCount].lGrpId = 0;
+					argsThreadRoutine[threadCount].startIdx = 0;
+					argsThreadRoutine[threadCount].endIdx = 0;
+					argsThreadRoutine[threadCount].GtoLOffset = 0;
+
+					pthread_create(&threads[threadCount], &attr, &SNN::helperGlobalStateUpdate_CPU, (void*)&argsThreadRoutine[threadCount]);
+					threadCount++;
+				#endif
+			}
 		}
 	}
+
+	#if !defined(WIN32) && !defined(WIN64) // Linux or MAC
+		// join all the threads
+		for (int i=0; i<threadCount; i++){
+			pthread_join(threads[i], NULL);
+		}
+	#endif
 
 	for (int netId = 0; netId < MAX_NET_PER_SNN; netId++) {
 		if (!groupPartitionLists[netId].empty()) {
@@ -1950,36 +2241,135 @@ void SNN::globalStateUpdate() {
 }
 
 void SNN::clearExtFiringTable() {
+	#if !defined(WIN32) && !defined(WIN64) // Linux or MAC
+		pthread_t threads[numCores + 1]; // 1 additional array size if numCores == 0, it may work though bad practice
+		cpu_set_t cpus;	
+		ThreadStruct argsThreadRoutine[numCores + 1]; // same as above, +1 array size
+		int threadCount = 0;
+	#endif
+
 	for (int netId = 0; netId < MAX_NET_PER_SNN; netId++) {
 		if (!groupPartitionLists[netId].empty()) {
 			if (netId < CPU_RUNTIME_BASE) // GPU runtime
 				clearExtFiringTable_GPU(netId);
-			else // CPU runtime
-				clearExtFiringTable_CPU(netId);
+			else{ // CPU runtime
+				#if defined(WIN32) || defined(WIN64)
+					clearExtFiringTable_CPU(netId);
+				#else // Linux or MAC
+					pthread_attr_t attr;
+					pthread_attr_init(&attr);
+					CPU_ZERO(&cpus);
+					CPU_SET(threadCount%NUM_CPU_CORES, &cpus);
+					pthread_attr_setaffinity_np(&attr, sizeof(cpu_set_t), &cpus);
+
+					argsThreadRoutine[threadCount].snn_pointer = this;
+					argsThreadRoutine[threadCount].netId = netId;
+					argsThreadRoutine[threadCount].lGrpId = 0;
+					argsThreadRoutine[threadCount].startIdx = 0;
+					argsThreadRoutine[threadCount].endIdx = 0;
+					argsThreadRoutine[threadCount].GtoLOffset = 0;
+
+					pthread_create(&threads[threadCount], &attr, &SNN::helperClearExtFiringTable_CPU, (void*)&argsThreadRoutine[threadCount]);
+					threadCount++;
+				#endif
+			}
 		}
 	}
+
+	#if !defined(WIN32) && !defined(WIN64) // Linux or MAC
+		// join all the threads
+		for (int i=0; i<threadCount; i++){
+			pthread_join(threads[i], NULL);
+		}
+	#endif
 }
 
 void SNN::updateWeights() {
+	#if !defined(WIN32) && !defined(WIN64) // Linux or MAC
+		pthread_t threads[numCores + 1]; // 1 additional array size if numCores == 0, it may work though bad practice
+		cpu_set_t cpus;	
+		ThreadStruct argsThreadRoutine[numCores + 1]; // same as above, +1 array size
+		int threadCount = 0;
+	#endif
+
 	for (int netId = 0; netId < MAX_NET_PER_SNN; netId++) {
 		if (!groupPartitionLists[netId].empty()) {
 			if (netId < CPU_RUNTIME_BASE) // GPU runtime
 				updateWeights_GPU(netId);
-			else // CPU runtime
-				updateWeights_CPU(netId);
+			else{ // CPU runtime
+				#if defined(WIN32) || defined(WIN64)
+					updateWeights_CPU(netId);
+				#else // Linux or MAC
+					pthread_attr_t attr;
+					pthread_attr_init(&attr);
+					CPU_ZERO(&cpus);
+					CPU_SET(threadCount%NUM_CPU_CORES, &cpus);
+					pthread_attr_setaffinity_np(&attr, sizeof(cpu_set_t), &cpus);
+
+					argsThreadRoutine[threadCount].snn_pointer = this;
+					argsThreadRoutine[threadCount].netId = netId;
+					argsThreadRoutine[threadCount].lGrpId = 0;
+					argsThreadRoutine[threadCount].startIdx = 0;
+					argsThreadRoutine[threadCount].endIdx = 0;
+					argsThreadRoutine[threadCount].GtoLOffset = 0;
+
+					pthread_create(&threads[threadCount], &attr, &SNN::helperUpdateWeights_CPU, (void*)&argsThreadRoutine[threadCount]);
+					threadCount++;
+				#endif
+			}
 		}
 	}
+	#if !defined(WIN32) && !defined(WIN64) // Linux or MAC
+		// join all the threads
+		for (int i=0; i<threadCount; i++){
+			pthread_join(threads[i], NULL);
+		}
+	#endif
+
 }
 
 void SNN::shiftSpikeTables() {
+	#if !defined(WIN32) && !defined(WIN64) // Linux or MAC
+		pthread_t threads[numCores + 1]; // 1 additional array size if numCores == 0, it may work though bad practice
+		cpu_set_t cpus;	
+		ThreadStruct argsThreadRoutine[numCores + 1]; // same as above, +1 array size
+		int threadCount = 0;
+	#endif
+
 	for (int netId = 0; netId < MAX_NET_PER_SNN; netId++) {
 		if (!groupPartitionLists[netId].empty()) {
 			if (netId < CPU_RUNTIME_BASE) // GPU runtime
 				shiftSpikeTables_F_GPU(netId);
-			else // CPU runtime
-				shiftSpikeTables_CPU(netId);
+			else{ // CPU runtime
+				#if defined(WIN32) || defined(WIN64)
+					shiftSpikeTables_CPU(netId);
+				#else // Linux or MAC
+					pthread_attr_t attr;
+					pthread_attr_init(&attr);
+					CPU_ZERO(&cpus);
+					CPU_SET(threadCount%NUM_CPU_CORES, &cpus);
+					pthread_attr_setaffinity_np(&attr, sizeof(cpu_set_t), &cpus);
+
+					argsThreadRoutine[threadCount].snn_pointer = this;
+					argsThreadRoutine[threadCount].netId = netId;
+					argsThreadRoutine[threadCount].lGrpId = 0;
+					argsThreadRoutine[threadCount].startIdx = 0;
+					argsThreadRoutine[threadCount].endIdx = 0;
+					argsThreadRoutine[threadCount].GtoLOffset = 0;
+
+					pthread_create(&threads[threadCount], &attr, &SNN::helperShiftSpikeTables_CPU, (void*)&argsThreadRoutine[threadCount]);
+					threadCount++;
+				#endif
+			}
 		}
 	}
+
+	#if !defined(WIN32) && !defined(WIN64) // Linux or MAC
+		// join all the threads
+		for (int i=0; i<threadCount; i++){
+			pthread_join(threads[i], NULL);
+		}
+	#endif
 
 	for (int netId = 0; netId < MAX_NET_PER_SNN; netId++) {
 		if (!groupPartitionLists[netId].empty()) {
@@ -3353,18 +3743,55 @@ void SNN::connectUserDefined(int netId, std::list<ConnectConfig>::iterator connI
 void SNN::deleteRuntimeData() {
 	// FIXME: assert simulation use GPU first
 	// wait for kernels to complete
+#ifndef __NO_CUDA__
 	CUDA_CHECK_ERRORS(cudaThreadSynchronize());
+#endif
+
+	#if !defined(WIN32) && !defined(WIN64) // Linux or MAC
+		pthread_t threads[numCores + 1]; // 1 additional array size if numCores == 0, it may work though bad practice
+		cpu_set_t cpus;	
+		ThreadStruct argsThreadRoutine[numCores + 1]; // same as above, +1 array size
+		int threadCount = 0;
+	#endif
 
 	for (int netId = 0; netId < MAX_NET_PER_SNN; netId++) {
 		if (!groupPartitionLists[netId].empty()) {
 			if (netId < CPU_RUNTIME_BASE) // GPU runtime
 				deleteRuntimeData_GPU(netId);
-			else // CPU runtime
-				deleteRuntimeData_CPU(netId);
+			else{ // CPU runtime
+				#if defined(WIN32) || defined(WIN64)
+					deleteRuntimeData_CPU(netId);
+				#else // Linux or MAC
+					pthread_attr_t attr;
+					pthread_attr_init(&attr);
+					CPU_ZERO(&cpus);
+					CPU_SET(threadCount%NUM_CPU_CORES, &cpus);
+					pthread_attr_setaffinity_np(&attr, sizeof(cpu_set_t), &cpus);
+
+					argsThreadRoutine[threadCount].snn_pointer = this;
+					argsThreadRoutine[threadCount].netId = netId;
+					argsThreadRoutine[threadCount].lGrpId = 0;
+					argsThreadRoutine[threadCount].startIdx = 0;
+					argsThreadRoutine[threadCount].endIdx = 0;
+					argsThreadRoutine[threadCount].GtoLOffset = 0;
+
+					pthread_create(&threads[threadCount], &attr, &SNN::helperDeleteRuntimeData_CPU, (void*)&argsThreadRoutine[threadCount]);
+					threadCount++;
+				#endif
+			}
 		}
 	}
 
+	#if !defined(WIN32) && !defined(WIN64) // Linux or MAC
+		// join all the threads
+		for (int i=0; i<threadCount; i++){
+			pthread_join(threads[i], NULL);
+		}
+	#endif
+
+#ifndef __NO_CUDA__
 	CUDA_DELETE_TIMER(timer);
+#endif
 }
 
 // delete all objects (CPU and GPU side)
@@ -3734,18 +4161,9 @@ void SNN::fetchExtFiringTable(int netId) {
 	assert(netId < MAX_NET_PER_SNN);
 	
 	if (netId < CPU_RUNTIME_BASE) { // GPU runtime
-		checkAndSetGPUDevice(netId);
-		CUDA_CHECK_ERRORS(cudaMemcpy(managerRuntimeData.extFiringTableEndIdxD2, runtimeData[netId].extFiringTableEndIdxD2, sizeof(int) * networkConfigs[netId].numGroups, cudaMemcpyDeviceToHost));
-		CUDA_CHECK_ERRORS(cudaMemcpy(managerRuntimeData.extFiringTableEndIdxD1, runtimeData[netId].extFiringTableEndIdxD1, sizeof(int) * networkConfigs[netId].numGroups, cudaMemcpyDeviceToHost));
-		CUDA_CHECK_ERRORS(cudaMemcpy(managerRuntimeData.extFiringTableD2, runtimeData[netId].extFiringTableD2, sizeof(int*) * networkConfigs[netId].numGroups, cudaMemcpyDeviceToHost));
-		CUDA_CHECK_ERRORS(cudaMemcpy(managerRuntimeData.extFiringTableD1, runtimeData[netId].extFiringTableD1, sizeof(int*) * networkConfigs[netId].numGroups, cudaMemcpyDeviceToHost));
-		//KERNEL_DEBUG("GPU0 D1ex:%d/D2ex:%d", managerRuntimeData.extFiringTableEndIdxD1[0], managerRuntimeData.extFiringTableEndIdxD2[0]);
+		copyExtFiringTable(netId, cudaMemcpyDeviceToHost);
 	} else { // CPU runtime
-		memcpy(managerRuntimeData.extFiringTableEndIdxD2, runtimeData[netId].extFiringTableEndIdxD2, sizeof(int) * networkConfigs[netId].numGroups);
-		memcpy(managerRuntimeData.extFiringTableEndIdxD1, runtimeData[netId].extFiringTableEndIdxD1, sizeof(int) * networkConfigs[netId].numGroups);
-		memcpy(managerRuntimeData.extFiringTableD2, runtimeData[netId].extFiringTableD2, sizeof(int*) * networkConfigs[netId].numGroups);
-		memcpy(managerRuntimeData.extFiringTableD1, runtimeData[netId].extFiringTableD1, sizeof(int*) * networkConfigs[netId].numGroups);
-		//KERNEL_DEBUG("GPU0 D1ex:%d/D2ex:%d", managerRuntimeData.extFiringTableEndIdxD1[0], managerRuntimeData.extFiringTableEndIdxD2[0]);
+		copyExtFiringTable(netId);
 	}
 }
 
@@ -3770,6 +4188,7 @@ void SNN::writeBackTimeTable(int netId) {
 }
 
 void SNN::transferSpikes(void* dest, int destNetId, void* src, int srcNetId, int size) {
+#ifndef __NO_CUDA__
 	if (srcNetId < CPU_RUNTIME_BASE && destNetId < CPU_RUNTIME_BASE) {
 		checkAndSetGPUDevice(destNetId);
 		CUDA_CHECK_ERRORS(cudaMemcpyPeer(dest, destNetId, src, srcNetId, size));
@@ -3782,6 +4201,10 @@ void SNN::transferSpikes(void* dest, int destNetId, void* src, int srcNetId, int
 	} else if(srcNetId >= CPU_RUNTIME_BASE && destNetId >= CPU_RUNTIME_BASE) {
 		memcpy(dest, src, size);
 	}
+#else
+	assert(srcNetId >= CPU_RUNTIME_BASE && destNetId >= CPU_RUNTIME_BASE);
+	memcpy(dest, src, size);
+#endif
 }
 
 void SNN::convertExtSpikesD2(int netId, int startIdx, int endIdx, int GtoLOffset) {
@@ -3813,6 +4236,13 @@ void SNN::routeSpikes() {
 		firingTableIdxD1 = managerRuntimeData.timeTableD1[simTimeMs + glbNetworkConfig.maxDelay + 1];
 		//KERNEL_DEBUG("GPU1 D1:%d/D2:%d", firingTableIdxD1, firingTableIdxD2);
 
+		#if !defined(WIN32) && !defined(WIN64) // Linux or MAC
+			pthread_t threads[(2 * networkConfigs[srcNetId].numGroups) + 1]; // 1 additional array size if numCores == 0, it may work though bad practice
+			cpu_set_t cpus;	
+			ThreadStruct argsThreadRoutine[(2 * networkConfigs[srcNetId].numGroups) + 1]; // same as above, +1 array size
+			int threadCount = 0;
+		#endif
+
 		for (int lGrpId = 0; lGrpId < networkConfigs[srcNetId].numGroups; lGrpId++) {
 			if (groupConfigs[srcNetId][lGrpId].hasExternalConnect && managerRuntimeData.extFiringTableEndIdxD2[lGrpId] > 0) {
 				// search GtoLOffset of the neural group at destination local network
@@ -3830,9 +4260,35 @@ void SNN::routeSpikes() {
 						managerRuntimeData.extFiringTableD2[lGrpId], srcNetId,
 						sizeof(int) * managerRuntimeData.extFiringTableEndIdxD2[lGrpId]);
 
-					convertExtSpikesD2(destNetId, firingTableIdxD2,
-						firingTableIdxD2 + managerRuntimeData.extFiringTableEndIdxD2[lGrpId],
-						GtoLOffset); // [StartIdx, EndIdx)
+					if (destNetId < CPU_RUNTIME_BASE){
+						convertExtSpikesD2_GPU(destNetId, firingTableIdxD2,
+							firingTableIdxD2 + managerRuntimeData.extFiringTableEndIdxD2[lGrpId],
+							GtoLOffset); // [StartIdx, EndIdx)
+					}
+					else{// CPU runtime
+							#if defined(WIN32) || defined(WIN64)
+								convertExtSpikesD2_CPU(destNetId, firingTableIdxD2,
+									firingTableIdxD2 + managerRuntimeData.extFiringTableEndIdxD2[lGrpId],
+									GtoLOffset); // [StartIdx, EndIdx)
+							#else // Linux or MAC
+								pthread_attr_t attr;
+								pthread_attr_init(&attr);
+								CPU_ZERO(&cpus);
+								CPU_SET(threadCount%NUM_CPU_CORES, &cpus);
+								pthread_attr_setaffinity_np(&attr, sizeof(cpu_set_t), &cpus);
+
+								argsThreadRoutine[threadCount].snn_pointer = this;
+								argsThreadRoutine[threadCount].netId = destNetId;
+								argsThreadRoutine[threadCount].lGrpId = 0;
+								argsThreadRoutine[threadCount].startIdx = firingTableIdxD2;
+								argsThreadRoutine[threadCount].endIdx = firingTableIdxD2 + managerRuntimeData.extFiringTableEndIdxD2[lGrpId];
+								argsThreadRoutine[threadCount].GtoLOffset = GtoLOffset;
+
+								pthread_create(&threads[threadCount], &attr, &SNN::helperConvertExtSpikesD2_CPU, (void*)&argsThreadRoutine[threadCount]);
+								threadCount++;
+							#endif
+					}
+
 					firingTableIdxD2 += managerRuntimeData.extFiringTableEndIdxD2[lGrpId];
 				}
 			}
@@ -3852,15 +4308,47 @@ void SNN::routeSpikes() {
 					transferSpikes(runtimeData[destNetId].firingTableD1 + firingTableIdxD1, destNetId,
 						managerRuntimeData.extFiringTableD1[lGrpId], srcNetId,
 						sizeof(int) * managerRuntimeData.extFiringTableEndIdxD1[lGrpId]);
+					if (destNetId < CPU_RUNTIME_BASE){
+						convertExtSpikesD1_GPU(destNetId, firingTableIdxD1,
+							firingTableIdxD1 + managerRuntimeData.extFiringTableEndIdxD1[lGrpId],
+							GtoLOffset); // [StartIdx, EndIdx)
+					}
+					else{// CPU runtime
+						#if defined(WIN32) || defined(WIN64)
+								convertExtSpikesD1_CPU(destNetId, firingTableIdxD1,
+									firingTableIdxD1 + managerRuntimeData.extFiringTableEndIdxD1[lGrpId],
+									GtoLOffset); // [StartIdx, EndIdx)
+							#else // Linux or MAC
+								pthread_attr_t attr;
+								pthread_attr_init(&attr);
+								CPU_ZERO(&cpus);
+								CPU_SET(threadCount%NUM_CPU_CORES, &cpus);
+								pthread_attr_setaffinity_np(&attr, sizeof(cpu_set_t), &cpus);
 
-					convertExtSpikesD1(destNetId, firingTableIdxD1,
-						firingTableIdxD1 + managerRuntimeData.extFiringTableEndIdxD1[lGrpId],
-						GtoLOffset); // [StartIdx, EndIdx)
+								argsThreadRoutine[threadCount].snn_pointer = this;
+								argsThreadRoutine[threadCount].netId = destNetId;
+								argsThreadRoutine[threadCount].lGrpId = 0;
+								argsThreadRoutine[threadCount].startIdx = firingTableIdxD1;
+								argsThreadRoutine[threadCount].endIdx = firingTableIdxD1 + managerRuntimeData.extFiringTableEndIdxD1[lGrpId];
+								argsThreadRoutine[threadCount].GtoLOffset = GtoLOffset;
+
+								pthread_create(&threads[threadCount], &attr, &SNN::helperConvertExtSpikesD1_CPU, (void*)&argsThreadRoutine[threadCount]);
+								threadCount++;
+							#endif
+					}
 					firingTableIdxD1 += managerRuntimeData.extFiringTableEndIdxD1[lGrpId];
 				}
 			}
 			//KERNEL_DEBUG("GPU1 New D1:%d/D2:%d", firingTableIdxD1, firingTableIdxD2);
 		}
+
+		#if !defined(WIN32) && !defined(WIN64) // Linux or MAC
+			// join all the threads
+			for (int i=0; i<threadCount; i++){
+				pthread_join(threads[i], NULL);
+			}
+		#endif
+
 		managerRuntimeData.timeTableD2[simTimeMs + glbNetworkConfig.maxDelay + 1] = firingTableIdxD2;
 		managerRuntimeData.timeTableD1[simTimeMs + glbNetworkConfig.maxDelay + 1] = firingTableIdxD1;
 		writeBackTimeTable(destNetId);
@@ -4118,7 +4606,7 @@ void SNN::partitionSNN() {
 			}
 		}
 
-		if (grpIt->second.netId == -1) { // the group was not assigned to any GPU
+		if (grpIt->second.netId == -1) { // the group was not assigned to any computing backend
 			KERNEL_ERROR("Can't assign the group [%d] to any partition", grpIt->second.gGrpId);
 			exitSimulation(-1);
 		}
@@ -4589,11 +5077,6 @@ void SNN::resetConductances(int netId) {
 	}
 }
 
-void SNN::resetCPUTiming() {
-	prevCpuExecutionTime = cumExecutionTime;
-	cpuExecutionTime     = 0.0;
-}
-
 void SNN::resetCurrent(int netId) {
 	assert(managerRuntimeData.current != NULL);
 	memset(managerRuntimeData.current, 0, sizeof(float) * networkConfigs[netId].numNReg);
@@ -4614,9 +5097,9 @@ void SNN::resetFiringInformation() {
 	resetTimeTable();
 }
 
-void SNN::resetGPUTiming() {
-	prevGpuExecutionTime = cumExecutionTime;
-	gpuExecutionTime     = 0.0;
+void SNN::resetTiming() {
+	prevExecutionTime = cumExecutionTime;
+	executionTime = 0.0f;
 }
 
 void SNN::resetNeuromodulator(int netId, int lGrpId) {
@@ -4878,15 +5361,49 @@ void SNN::resetSpikeCnt(int gGrpId) {
 	assert(gGrpId >= ALL);
 
 	if (gGrpId == ALL) {
+		#if !defined(WIN32) && !defined(WIN64) // Linux or MAC
+			pthread_t threads[numCores + 1]; // 1 additional array size if numCores == 0, it may work though bad practice
+			cpu_set_t cpus;	
+			ThreadStruct argsThreadRoutine[numCores + 1]; // same as above, +1 array size
+			int threadCount = 0;
+		#endif
+		
 		for (int netId = 0; netId < MAX_NET_PER_SNN; netId++) {
 			if (!groupPartitionLists[netId].empty()) {
 				if (netId < CPU_RUNTIME_BASE) // GPU runtime
 					resetSpikeCnt_GPU(netId, ALL);
-				else // CPU runtime
-					resetSpikeCnt_CPU(netId, ALL);
+				else{ // CPU runtime
+					#if defined(WIN32) || defined(WIN64)
+						resetSpikeCnt_CPU(netId, ALL);
+					#else // Linux or MAC
+						pthread_attr_t attr;
+						pthread_attr_init(&attr);
+						CPU_ZERO(&cpus);
+						CPU_SET(threadCount%NUM_CPU_CORES, &cpus);
+						pthread_attr_setaffinity_np(&attr, sizeof(cpu_set_t), &cpus);
+
+						argsThreadRoutine[threadCount].snn_pointer = this;
+						argsThreadRoutine[threadCount].netId = netId;
+						argsThreadRoutine[threadCount].lGrpId = ALL;
+						argsThreadRoutine[threadCount].startIdx = 0;
+						argsThreadRoutine[threadCount].endIdx = 0;
+						argsThreadRoutine[threadCount].GtoLOffset = 0;
+
+						pthread_create(&threads[threadCount], &attr, &SNN::helperResetSpikeCnt_CPU, (void*)&argsThreadRoutine[threadCount]);
+						threadCount++;
+					#endif
+				}
 			}
 		}
-	} else {
+
+		#if !defined(WIN32) && !defined(WIN64) // Linux or MAC
+			// join all the threads
+			for (int i=0; i<threadCount; i++){
+				pthread_join(threads[i], NULL);
+			}
+		#endif
+	} 
+	else {
 		int netId = groupConfigMDMap[gGrpId].netId;
 		int lGrpId = groupConfigMDMap[gGrpId].lGrpId;
 
@@ -4970,15 +5487,10 @@ void SNN::fillSpikeGenBits(int netId) {
 	}
 }
 
-void SNN::startCPUTiming() { prevCpuExecutionTime = cumExecutionTime; }
-void SNN::startGPUTiming() { prevGpuExecutionTime = cumExecutionTime; }
-void SNN::stopCPUTiming() {
-	cpuExecutionTime += (cumExecutionTime - prevCpuExecutionTime);
-	prevCpuExecutionTime = cumExecutionTime;
-}
-void SNN::stopGPUTiming() {
-	gpuExecutionTime += (cumExecutionTime - prevGpuExecutionTime);
-	prevGpuExecutionTime = cumExecutionTime;
+void SNN::startTiming() { prevExecutionTime = cumExecutionTime; }
+void SNN::stopTiming() {
+	executionTime += (cumExecutionTime - prevExecutionTime);
+	prevExecutionTime = cumExecutionTime;
 }
 
 // FIXME: update the correct network config
@@ -5182,7 +5694,7 @@ void SNN::userDefinedSpikeGenerator(int gGrpId) {
 
 		// the end of the valid time window is either the length of the scheduling time slice from now (because that
 		// is the max of the allowed propagated buffer size) or simply the end of the simulation
-		int endOfTimeWindow = MIN(currTime+timeSlice,simTimeRunStop);
+		int endOfTimeWindow = std::min(currTime+timeSlice, simTimeRunStop);
 
 		done = false;
 		while (!done) {
@@ -5396,8 +5908,8 @@ void SNN::printSimSummary() {
 	float etime;
 
 	// FIXME: measure total execution time, and GPU excution time
-	stopGPUTiming();
-	etime = gpuExecutionTime;
+	stopTiming();
+	etime = executionTime;
 
 	fetchNetworkSpikeCount();
 
