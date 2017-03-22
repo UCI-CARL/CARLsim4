@@ -81,9 +81,13 @@ default: $(proj_target1)
 
 
 $(proj_target1): $(main_src_file1) $(inc_files)
+	$(eval CARLSIM4_FLG += -Wno-deprecated-gpu-targets)
+	$(eval CARLSIM4_LIB += -lcurand)
 	$(NVCC) $(CARLSIM4_FLG) $(obj_files) $< -o $@ $(CARLSIM4_LIB)
 
 $(proj_target2): $(main_src_file2) $(inc_files)
+	$(eval CARLSIM4_FLG += -Wno-deprecated-gpu-targets)
+	$(eval CARLSIM4_LIB += -lcurand)
 	$(NVCC) $(CARLSIM4_FLG) $(obj_files) $< -o $@ $(CARLSIM4_LIB)
 
 clean:
