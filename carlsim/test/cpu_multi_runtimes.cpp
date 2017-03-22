@@ -324,6 +324,7 @@ TEST(cpuMultiRuntimes, shuffleGroups1) {
 	}
 }
 
+/*
 TEST(cpuMultiRuntimes, shuffleGroups0) {
 	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 	int partitionA = 0;
@@ -341,3 +342,4 @@ TEST(cpuMultiRuntimes, shuffleGroups0) {
 		}
 	}
 }
+*/
