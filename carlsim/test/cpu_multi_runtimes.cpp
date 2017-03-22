@@ -232,6 +232,7 @@ void run_shuffleGroups(int partitionA, int partitionB, int partitionC, float* sm
 	*smInputRate = smInput->getPopMeanFiringRate();
 }
 
+/*
 TEST(cpuMultiRuntimes, shuffleGroups5) {
 	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 	int partitionA = 4;
@@ -267,6 +268,7 @@ TEST(cpuMultiRuntimes, shuffleGroups4) {
 		}
 	}
 }
+*/
 
 TEST(cpuMultiRuntimes, shuffleGroups3) {
 	::testing::FLAGS_gtest_death_test_style = "threadsafe";
