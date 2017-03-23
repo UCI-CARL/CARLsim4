@@ -157,12 +157,12 @@ sim_install_files += $(CARLSIM4_LIB_DIR)/$(lib_name)*
 
 # use the following flags when building from CARLsim lib path
 ifdef CARLSIM4_INSTALL_DIR
-	CARLSIM4_INC_DIR  := $(CARLSIM4_INSTALL_DIR)/inc
+	CARLSIM4_INC_DIR  := $(CARLSIM4_INSTALL_DIR)/include
 	CARLSIM4_LIB_DIR  := $(CARLSIM4_INSTALL_DIR)/lib
 	sim_install_files += $(CARLSIM4_INSTALL_DIR)
 else
-	CARLSIM4_INC_DIR  := /usr/local/include/carlsim
-	CARLSIM4_LIB_DIR  := /usr/local/lib
+	CARLSIM4_INC_DIR  := ~/CARL/include
+	CARLSIM4_LIB_DIR  := ~/CARL/lib
 	sim_install_files += $(CARLSIM4_INC_DIR)
 endif
 
