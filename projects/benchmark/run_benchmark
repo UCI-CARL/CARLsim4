@@ -1,0 +1,25 @@
+#!/bin/bash
+
+numNeurons='200'
+numSynapses='100 200'
+
+
+for numN in $numNeurons # number of neurons, which defines the workload
+do
+	for numS in $numSynapses # number of synapse per neuron
+	do
+		echo $numN $numS
+		./benchmark $numN 0.8 0.1 42 $numS "record.csv" 10 1 30 6 5
+		#11 parameters in total.
+		#1,number of neurons | 2, excitatory neurons ratio | 3,ratio of input neurons to total neurons(exc+inh)
+		#4,randSeed | 5,number of synapse per neuron | 6,name of document saving data
+		#7, simulate time | 8, inputRate
+		#9, weight of synapse whose pre-synaptic group is input neurons
+		#10, weight of synapse whose pre-synaptic group is excitatory
+		#11, weight of synapse whose pre-synaptic group is inhibitory
+		#12, whether need to tune the weights(1-yes,0-no)
+	done
+done
+
+
+
