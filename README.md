@@ -18,16 +18,47 @@ New features in CARLsim 4 include:
 - etc.
 
 
-
 ## Installation
 
 Detailed instructions for installing the latest stable release of CARLsim on Mac OS X / Linux / Windows
 can be found in our [User Guide](http://uci-carl.github.io/CARLsim4/ch1_getting_started.html).
 
-In brief (OS X/Linux):
+On Linux / OS X:
 
-1. Fork CARLsim 4 by clicking on the [`Fork`](https://github.com/UCI-CARL/CARLsim4#fork-destination-box) box
-   in the top-right corner.
+For Beginner
+1. Download CARLsim 4 zip file by clicking on the `Clone or download` box in the top-right corner.
+
+2. Unzip the source code.
+
+3. Go into `CARLsim4` folder
+   ```
+   $ cd CARLsim4
+   ```
+
+4. Make and install
+   ```
+   $ make
+   $ make install
+   ```
+
+5. Verify installation
+   ```
+   $ cd ~
+   $ ls
+   ```
+   You will see `CARL` folder
+
+6. Go back to `CARLsim4` folder and start your own project! The "Hello World" project is a goot starting point for this.
+   Make sure it runs:
+   ```
+   $ cd CARLsim4
+   $ cd projects/hello_world
+   $ make
+   $ ./hello_world
+   ```
+
+For Advanced User and Developer
+1. Fork CARLsim 4 by clicking on the `Fork` box in the top-right corner.
 
 2. Clone the repo, where `YourUsername` is your actual GitHub user name:
    ```
@@ -43,12 +74,16 @@ In brief (OS X/Linux):
      ```
    - For the latest development branch, you are already on the right branch (`master`).
 
-4. Choose the installation directory: By default, the CARLsim library lives in `/usr/local/lib`, and CARLsim
-     include files live in `/usr/local/include/carlsim`.
-     You can overwrite these by exporting an evironment variable called `CARLSIM4_INSTALL_DIR`:
-     ```
-     $ export CARLSIM4_INSTALL_DIR=/path/to/your/preferred/dir
-     ```
+4. Choose the installation directory: By default, the CARLsim library lives in `~/CARL/lib`, and CARLsim include files live in `~/CARL/include`.
+    You can overwrite these by exporting an evironment variable called `CARLSIM4_INSTALL_DIR`:
+    ```
+    $ export CARLSIM4_INSTALL_DIR=/path/to/your/preferred/dir
+    ```
+    or
+    ```
+    $ export CARLSIM4_INSTALL_DIR=/usr/local
+    ```
+    if you want to install CARLsim library for all users
 
 5. Make and install:
    ```
@@ -83,14 +118,14 @@ In brief (OS X/Linux):
    The script will copy all files from `hello_world/` to `project_name/`, make all required
    file changes to compile the new project, and add all new files to git.
 
-On Windows 7/10: Simply download the code and open/run the "Hello World" project file
+On Windows 7/10: Simply download the code. Open and build `CARLsim.sln`. Run the "Hello World" project file
 `projects\hello_world\hello_world.vcxproj`.
 
 
 ## Prerequisites
 
 CARLsim 4 comes with the following requirements:
-- (Windows) Microsoft Visual Studio 2012 or higher.
+- (Windows) Microsoft Visual Studio 2015 or higher.
 - (optional) CUDA Toolkit 6.0 or higher. For platform-specific CUDA installation instructions, please navigate to 
   the [NVIDIA CUDA Zone](https://developer.nvidia.com/cuda-zone).
   This is only required if you want to run CARLsim in `GPU_MODE`. Make sure to install the 
@@ -104,5 +139,5 @@ As of CARLsim 3.1 it is no longer necessary to have the CUDA framework installed
 will continue to focus on the GPU implementation.
 
 The current release has been tested on the following platforms:
-- Windows 10
+- Windows 7/10
 - Ubuntu 16.04
