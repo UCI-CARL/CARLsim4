@@ -23,7 +23,7 @@
 
 # Name of the binary file to be created.
 # NOTE: There must be a corresponding .cpp file named main_$(proj_target).cpp!
-proj_target    := benchmark
+proj_target    := benchmark2
 
 # Directory where all include files reside. The Makefile will automatically
 # detect and include all .h files within that directory.

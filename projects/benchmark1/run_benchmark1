@@ -9,7 +9,7 @@ do
 	for numS in $numSynapses # number of synapse per neuron
 	do
 		echo $numN $numS
-		./benchmark $numN 0.8 0.1 42 $numS "record.csv" 10 1 30 6 5
+		./benchmark1 $numN 0.8 0.1 42 $numS "record.csv" 10 1 30 6 5
 		#11 parameters in total.
 		#1,number of neurons | 2, excitatory neurons ratio | 3,ratio of input neurons to total neurons(exc+inh)
 		#4,randSeed | 5,number of synapse per neuron | 6,name of document saving data

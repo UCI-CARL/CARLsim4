@@ -1,0 +1,23 @@
+#!/bin/bash
+
+numNeurons='200'
+numSynapses='100'
+
+
+for numN in $numNeurons # number of neurons, which defines the workload
+do
+	for numS in $numSynapses # number of synapse per neuron
+	do
+		echo $numN $numS
+		./benchmark2 $numN $numN $numN $numN $numS 100  42  "record.csv" 10 1 30 6 0
+		#13 parameters in total.
+		#1,number of neurons in group1 | 2, number of neurons in group2
+		#3,number of neurons in group3 | 4, number of neurons in group4
+		#5,number of synapse per neuron | 5, numebr of input neurons
+		#7, randSeed | 8, recordFile | 9, simulateTime | 10, inputFireRate
+		#11, inputWeight | 12, excWeight | 13, need weight tuning or not
+	done
+done
+
+
+
