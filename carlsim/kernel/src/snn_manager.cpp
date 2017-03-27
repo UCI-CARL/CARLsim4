@@ -2045,6 +2045,7 @@ void SNN::findFiring() {
 					argsThreadRoutine[threadCount].GtoLOffset = 0;
 
 					pthread_create(&threads[threadCount], &attr, &SNN::helperFindFiring_CPU, (void*)&argsThreadRoutine[threadCount]);
+					pthread_attr_destroy(&attr);
 					threadCount++;
 				#endif
 			}
