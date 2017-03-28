@@ -65,9 +65,9 @@
 #define COMPACTION_ALIGNMENT_PRE  16
 #define COMPACTION_ALIGNMENT_POST 0
 
-/// **************************************************************************************************************** ///
-/// CONSTRUCTOR / DESTRUCTOR
-/// **************************************************************************************************************** ///
+// **************************************************************************************************************** //
+// CONSTRUCTOR / DESTRUCTOR
+// **************************************************************************************************************** //
 
 
 // TODO: consider moving unsafe computations out of constructor
@@ -85,11 +85,7 @@ SNN::~SNN() {
 		deleteObjects();
 }
 
-/// ************************************************************************************************************ ///
-/// PUBLIC METHODS: SETTING UP A SIMULATION
-/// ************************************************************************************************************ ///
-
-// make from each neuron in grpId1 to 'numPostSynapses' neurons in grpId2
+// synaptic projections from a pre-synaptic group to a post-synaptic group - declared in snn.h
 short int SNN::connect(int grpId1, int grpId2, const std::string& _type, float initWt, float maxWt, float prob,
 						uint8_t minDelay, uint8_t maxDelay, RadiusRF radius,
 						float _mulSynFast, float _mulSynSlow, bool synWtType) {

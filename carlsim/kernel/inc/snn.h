@@ -141,9 +141,9 @@ public:
 
 	// NOTE: there should be no default argument values in here, this should be handled by the user interface
 
-	//! Creates synaptic projections from a pre-synaptic group to a post-synaptic group using a pre-defined primitive
-	//! type.
-	/*!
+	/** Creates synaptic projections from a pre-synaptic group to a post-synaptic group using a pre-defined primitive
+	 * type.
+	 *
 	 * \brief make from each neuron in grpId1 to 'numPostSynapses' neurons in grpId2
 	 *
 	 * \param grpIdPre ID of the pre-synaptic group
