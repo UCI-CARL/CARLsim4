@@ -75,7 +75,7 @@ TEST(STDP, setSTDPTrue) {
 	float delta = 40.0f;
 	CARLsim* sim;
 
-	for (int mode=0; mode<=1; mode++) {
+	for (int mode = 0; mode < TESTED_MODES; mode++) {
 		for (int stdpType = 0; stdpType < 2; stdpType++) { // we have two stdp types {STANDARD, DA_MOD}
 			for(int stdpCurve = 0; stdpCurve < 2; stdpCurve++) { // we have four stdp curves, two for ESTDP, two for ISTDP
 				sim = new CARLsim("STDP.setSTDPTrue",mode?GPU_MODE:CPU_MODE,SILENT,1,42);
@@ -159,7 +159,7 @@ TEST(STDP, setSTDPFalse) {
 	float delta = 4.0f;
 	CARLsim* sim;
 
-	for (int mode=0; mode<=1; mode++) {
+	for (int mode = 0; mode < TESTED_MODES; mode++) {
 		sim = new CARLsim("STDP.setSTDPFalse",mode?GPU_MODE:CPU_MODE,SILENT,1,42);
 
 		int g1=sim->createGroup("excit", 10, EXCITATORY_NEURON);
@@ -209,7 +209,7 @@ TEST(STDP, setNeuromodulatorParameters) {
 	float tauNE = 400.0f;
 	CARLsim* sim;
 
-	for (int mode=0; mode<=1; mode++) {
+	for (int mode = 0; mode < TESTED_MODES; mode++) {
 		sim = new CARLsim("STDP.setNeuromodulatorParameters",mode?GPU_MODE:CPU_MODE,SILENT,1,42);
 
 		int g1=sim->createGroup("excit", 10, EXCITATORY_NEURON);
@@ -257,7 +257,7 @@ TEST(STDP, DASTDPWeightBoost) {
 	SpikeMonitor* spikeMonPre;
 	float weightDAMod, weightNonDAMod;
 
-	for (int mode = 0; mode < 2; mode++) {
+	for (int mode = 0; mode < TESTED_MODES; mode++) {
 		for (int coba = 0; coba < 2; coba++) {
 			for (int damod = 0; damod < 2; damod++) {
 				CARLsim* sim = new CARLsim("STDP.DASTDPWeightBoost", mode?GPU_MODE:CPU_MODE, SILENT, 1, 42);
@@ -354,6 +354,7 @@ TEST(STDP, DASTDPWeightBoost) {
 	delete iSpikeGen;
 }
 
+#ifndef __NO_CUDA__
 /*!
 * \brief testing the exponential E-STDP curve
 * This function tests whether E-STDP change synaptic weight as expected
@@ -376,7 +377,7 @@ TEST(STDP, ESTDPExpCurveCPUvsGPU) {
 	for (int coba = 0; coba < 2; coba++) {
 		for (int offset = -30; offset <= 30; offset += 5) {
 			
-			for (int mode = 0; mode < 2; mode++) {
+			for (int mode = 0; mode < TESTED_MODES; mode++) {
 				if (offset == 0) continue; // skip offset == 0;
 										   // create a network
 				CARLsim* sim = new CARLsim("STDP.ESTDPExpCurve", mode ? GPU_MODE : CPU_MODE, SILENT, 1, 42);
@@ -448,6 +449,7 @@ TEST(STDP, ESTDPExpCurveCPUvsGPU) {
 		}
 	}
 }
+#endif // !__NO_CUDA__
 
 /*!
  * \brief testing the exponential E-STDP curve
@@ -467,7 +469,7 @@ TEST(STDP, ESTDPExpCurve) {
 	float initWeight = 5.0f;
 	float minInhWeight = 0.0f;
 
-	for (int mode = 0; mode < 2; mode++) {
+	for (int mode = 0; mode < TESTED_MODES; mode++) {
 		for (int coba = 0; coba < 2; coba++) {
 			for (int offset = -30; offset <= 30; offset += 5) {
 				if (offset == 0) continue; // skip offset == 0;
@@ -551,6 +553,7 @@ TEST(STDP, ESTDPExpCurve) {
 	}
 }
 
+#ifndef __NO_CUDA__
 /*!
 * \brief testing the timing-based E-STDP curve
 * This function tests whether E-STDP change synaptic weight as expected
@@ -573,7 +576,7 @@ TEST(STDP, ESTDPTimingBasedCurveCPUvsGPU) {
 	
 	for (int coba = 0; coba < 2; coba++) {
 		for (int offset = -24; offset <= 24; offset += 3) {
-			for (int mode = 0; mode < 2; mode++) {
+			for (int mode = 0; mode < TESTED_MODES; mode++) {
 				if (offset == 0) continue; // skip offset == 0;
 				// create a network
 				CARLsim* sim = new CARLsim("STDP.ESTDTimingBasedCurve", mode ? GPU_MODE : CPU_MODE, SILENT, 1, 42);
@@ -630,6 +633,7 @@ TEST(STDP, ESTDPTimingBasedCurveCPUvsGPU) {
 		}
 	}
 }
+#endif // !__NO_CUDA__
 
 /*!
  * \brief testing the timing-based E-STDP curve
@@ -650,7 +654,7 @@ TEST(STDP, ESTDPTimingBasedCurve) {
 	float initWeight = 5.0f;
 	float minInhWeight = 0.0f;
 
-	for (int mode = 0; mode < 2; mode++) {
+	for (int mode = 0; mode < TESTED_MODES; mode++) {
 		for (int coba = 0; coba < 2; coba++) {
 			for (int offset = -24; offset <= 24; offset += 3) {
 				if (offset == 0) continue; // skip offset == 0;
@@ -728,6 +732,7 @@ TEST(STDP, ESTDPTimingBasedCurve) {
 	}
 }
 
+#ifndef __NO_CUDA__
 /*!
 * \brief testing the pulse I-STDP curve
 * This function tests whether I-STDP change synaptic weight as expected
@@ -749,7 +754,7 @@ TEST(STDP, ISTDPPulseCurveCPUvsGPU) {
 
 	for (int coba = 0; coba < 2; coba++) {
 		for (int offset = -15; offset <= 15; offset += 10) {
-			for (int mode = 0; mode < 2; mode++) {
+			for (int mode = 0; mode < TESTED_MODES; mode++) {
 				// create a network
 				CARLsim* sim = new CARLsim("STDP.ISTDPPulseCurve", mode ? GPU_MODE : CPU_MODE, SILENT, 1, 42);
 
@@ -821,6 +826,7 @@ TEST(STDP, ISTDPPulseCurveCPUvsGPU) {
 		}
 	}
 }
+#endif // !__NO_CUDA__
 
 /*!
  * \brief testing the pulse I-STDP curve
@@ -840,7 +846,7 @@ TEST(STDP, ISTDPulseCurve) {
 	float initWeight = 5.0f;
 	float minInhWeight = 0.0f;
 
-	for (int mode = 0; mode < 2; mode++) {
+	for (int mode = 0; mode < TESTED_MODES; mode++) {
 		for (int coba = 0; coba < 2; coba++) {
 			for (int offset = -15; offset <= 15; offset += 10) {
 				// create a network
@@ -924,6 +930,7 @@ TEST(STDP, ISTDPulseCurve) {
 	}
 }
 
+#ifndef __NO_CUDA__
 /*!
 * \brief testing the exponential I-STDP curve
 * This function tests whether I-STDP change synaptic weight as expected
@@ -946,7 +953,7 @@ TEST(STDP, ISTDPExpCurveCPUvsGPU) {
 	for (int coba = 0; coba < 2; coba++) {
 		for (int offset = -24; offset <= 24; offset += 3) {
 			if (offset == 0) continue; // skip offset == 0;
-			for (int mode = 0; mode < 2; mode++) {
+			for (int mode = 0; mode < TESTED_MODES; mode++) {
 				// create a network
 				CARLsim* sim = new CARLsim("STDP.ISTDPPulseCurve", mode ? GPU_MODE : CPU_MODE, SILENT, 1, 42);
 
@@ -1022,6 +1029,7 @@ TEST(STDP, ISTDPExpCurveCPUvsGPU) {
 		}
 	}
 }
+#endif // !__NO_CUDA__
 
 /*!
 * \brief testing the Exponential I-STDP curve
@@ -1041,7 +1049,7 @@ TEST(STDP, ISTDPExpCurve) {
 	float initWeight = 5.0f;
 	float minInhWeight = 0.0f;
 
-	for (int mode = 0; mode < 2; mode++) {
+	for (int mode = 0; mode < TESTED_MODES; mode++) {
 		for (int coba = 0; coba < 2; coba++) {
 			for (int offset = -24; offset <= 24; offset += 3) {
 				if (offset == 0) continue; // skip offset == 0;

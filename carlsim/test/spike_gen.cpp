@@ -128,10 +128,10 @@ TEST(spikeGenFunc, SpikeGeneratorFromFile) {
 	std::vector< std::vector<int> > spkVec0, spkVec1;
 	SpikeMonitor *SM0, *SM1;
 
-	for (int isGPUmode=0; isGPUmode<=1; isGPUmode++) {
+	for (int mode = 0; mode < TESTED_MODES; mode++) {
 		for (int isCOBA=0; isCOBA<=1; isCOBA++) {
 			for (int run=0; run<=1; run++) {
-				sim = new CARLsim("SpikeGeneratorFromFile",isGPUmode?GPU_MODE:CPU_MODE,SILENT,1,42);
+				sim = new CARLsim("SpikeGeneratorFromFile",mode?GPU_MODE:CPU_MODE,SILENT,1,42);
 				int g1 = sim->createGroup("g1", 1, EXCITATORY_NEURON);		
 				sim->setNeuronParameters(g1, 0.02, 0.2, -65.0, 8.0);
 
@@ -210,10 +210,10 @@ TEST(spikeGenFunc, SpikeGeneratorFromFileLoadFile) {
 	std::vector< std::vector<int> > spkVec0, spkVec1;
 	SpikeMonitor *SM0, *SM1;
 
-	for (int isGPUmode=0; isGPUmode<=1; isGPUmode++) {
+	for (int mode = 0; mode < TESTED_MODES; mode++) {
 		for (int isCOBA=0; isCOBA<=1; isCOBA++) {
 			for (int run=0; run<=1; run++) {
-				sim = new CARLsim("SpikeGeneratorFromFileLoadFile",isGPUmode?GPU_MODE:CPU_MODE,SILENT,1,42);
+				sim = new CARLsim("SpikeGeneratorFromFileLoadFile",mode?GPU_MODE:CPU_MODE,SILENT,1,42);
 				int g1 = sim->createGroup("g1", 1, EXCITATORY_NEURON);		
 				sim->setNeuronParameters(g1, 0.02, 0.2, -65.0, 8.0);
 

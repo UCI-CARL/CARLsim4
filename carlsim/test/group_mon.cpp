@@ -70,7 +70,7 @@ TEST(setGroupMon, grpId){
 	const int GRP_SIZE = 10;
 
 	// loop over both CPU and GPU mode.
-	for(int mode = 0; mode < 2; mode++){
+	for (int mode = 0; mode < TESTED_MODES; mode++) {
 		// first iteration, test CPU mode, second test GPU mode
 		sim = new CARLsim("setGroupMon.grpId", mode?GPU_MODE:CPU_MODE, SILENT, 1, 42);
 		
@@ -99,7 +99,7 @@ TEST(setGroupMon, fname){
 	const int GRP_SIZE = 10;
 
 	// loop over both CPU and GPU mode.
-	for(int mode = 0; mode < 2; mode++){
+	for (int mode = 0; mode < TESTED_MODES; mode++) {
 		// first iteration, test CPU mode, second test GPU mode
 		sim = new CARLsim("setGroupMon.fname", mode?GPU_MODE:CPU_MODE, SILENT, 1, 42);
 		
@@ -210,8 +210,7 @@ TEST(GroupMon, peakTimeAndValue) {
 	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
 	// loop over both CPU and GPU mode.
-	//for(int mode = 0; mode < 2; mode++) {
-	int mode = 0;
+	for (int mode = 0; mode < TESTED_MODES; mode++) {
 		// first iteration, test CPU mode, second test GPU mode
 		CARLsim* sim = new CARLsim("GroupMon.peakTimeAndValue", mode?GPU_MODE:CPU_MODE, SILENT, 1, 42);
 		//CARLsim* sim = new CARLsim("GroupMon.peakTimeAndValue", CPU_MODE, SILENT, 1, 42);
@@ -268,5 +267,5 @@ TEST(GroupMon, peakTimeAndValue) {
 
 		delete spkGen;
 		delete sim;
-	//}
+	}
 }
