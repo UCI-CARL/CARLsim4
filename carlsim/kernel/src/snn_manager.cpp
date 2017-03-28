@@ -2328,6 +2328,15 @@ void SNN::updateWeights() {
 
 }
 
+void SNN::updateNetworkConfig(int netId) {
+	assert(netId < MAX_NET_PER_SNN);
+
+	if (netId < CPU_RUNTIME_BASE) // GPU runtime
+		copyNetworkConfig(netId, cudaMemcpyHostToDevice);
+	else
+		copyNetworkConfig(netId); // CPU runtime
+}
+
 void SNN::shiftSpikeTables() {
 	#if !defined(WIN32) && !defined(WIN64) // Linux or MAC
 		pthread_t threads[numCores + 1]; // 1 additional array size if numCores == 0, it may work though bad practice
@@ -2340,7 +2349,7 @@ void SNN::shiftSpikeTables() {
 		if (!groupPartitionLists[netId].empty()) {
 			if (netId < CPU_RUNTIME_BASE) // GPU runtime
 				shiftSpikeTables_F_GPU(netId);
-			else{ // CPU runtime
+			else { // CPU runtime
 				#if defined(WIN32) || defined(WIN64)
 					shiftSpikeTables_CPU(netId);
 				#else // Linux or MAC
@@ -5493,7 +5502,6 @@ void SNN::stopTiming() {
 	prevExecutionTime = cumExecutionTime;
 }
 
-// FIXME: update the correct network config
 // enters testing phase
 // in testing, no weight changes can be made, allowing you to evaluate learned weights, etc.
 void SNN::startTesting(bool shallUpdateWeights) {
@@ -5513,24 +5521,25 @@ void SNN::startTesting(bool shallUpdateWeights) {
 	}
 
 	sim_in_testing = true;
-	networkConfigs[0].sim_in_testing = true;
 
-	//if (netId < CPU_RUNTIME_BASE) {
-		// copy new network info struct to GPU (|TODO copy only a single boolean)
-	//	copyNetworkConfig(0);
-	//}
+	for (int netId = 0; netId < MAX_NET_PER_SNN; netId++) {
+		if (!groupPartitionLists[netId].empty()) {
+			networkConfigs[netId].sim_in_testing = true;
+			updateNetworkConfig(netId); // update networkConfigRT struct (|TODO copy only a single boolean)
+		}
+	}
 }
 
-// FIXME: update the correct network config
 // exits testing phase
 void SNN::stopTesting() {
 	sim_in_testing = false;
-	networkConfigs[0].sim_in_testing = false;
 
-	//if (netId < CPU_RUNTIME_BASE) {
-		// copy new network_info struct to GPU (|TODO copy only a single boolean)
-	//	copyNetworkConfig(0);
-	//}
+	for (int netId = 0; netId < MAX_NET_PER_SNN; netId++) {
+		if (!groupPartitionLists[netId].empty()) {
+			networkConfigs[netId].sim_in_testing = false;
+			updateNetworkConfig(netId); // update networkConfigRT struct (|TODO copy only a single boolean)
+		}
+	}
 }
 
 void SNN::updateConnectionMonitor(short int connId) {
