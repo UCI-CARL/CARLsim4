@@ -89,7 +89,7 @@ $(proj_target): $(main_src_file) $(inc_files) $(obj_cpp) $(obj_cu)
 	$(NVCC) $(CARLSIM4_FLG) $(obj_cpp) $(obj_cu) $< -o $(proj_target) $(CARLSIM4_LIB)
 
 nocuda: $(main_src_file) $(inc_files) $(obj_cpp)
-	$(eval CARLSIM4_FLG += -D __NO_CUDA__)
+	$(eval CARLSIM4_FLG += -D__NO_CUDA__)
 	$(CXX) $(CARLSIM4_FLG) $(obj_cpp) $(obj_cu) $< -o $(proj_target) $(CARLSIM4_LIB) -lpthread
 
 $(proj_src_dir)/%-cpp.o: $(proj_src_dir)/%.cpp $(inc_files)

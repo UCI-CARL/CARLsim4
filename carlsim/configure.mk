@@ -152,8 +152,6 @@ lib_ver := $(SIM_MAJOR_NUM).$(SIM_MINOR_NUM).$(SIM_BUILD_NUM)
 
 output += $(lib_name) $(lib_name).$(lib_ver)
 
-#sim_install_files += $(CARLSIM4_LIB_DIR)/$(lib_name)*
-
 
 # use the following flags when building from CARLsim lib path
 ifdef CARLSIM4_INSTALL_DIR
