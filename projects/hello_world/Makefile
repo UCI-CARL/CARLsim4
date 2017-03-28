@@ -45,9 +45,9 @@ proj_src_dir   := src
 # NOTE: If your CARLsim4 installation does not reside in the default path, make
 # sure the environment variable CARLSIM4_INSTALL_DIR is set.
 ifdef CARLSIM4_INSTALL_DIR
-	CARLSIM4_INC_DIR  := $(CARLSIM4_INSTALL_DIR)/inc
+	CARLSIM4_INC_DIR  := $(CARLSIM4_INSTALL_DIR)/include
 else
-	CARLSIM4_INC_DIR  := /usr/local/include/carlsim
+	CARLSIM4_INC_DIR  := $(HOME)/CARL/include
 endif
 
 # include compile flags etc.
@@ -90,7 +90,7 @@ $(proj_target): $(main_src_file) $(inc_files) $(obj_cpp) $(obj_cu)
 
 nocuda: $(main_src_file) $(inc_files) $(obj_cpp)
 	$(eval CARLSIM4_FLG += -D __NO_CUDA__)
-	$(CXX) $(CARLSIM4_FLG) $(obj_cpp) $(obj_cu) $< -o $(proj_target) $(CARLSIM4_LIB)
+	$(CXX) $(CARLSIM4_FLG) $(obj_cpp) $(obj_cu) $< -o $(proj_target) $(CARLSIM4_LIB) -lpthread
 
 $(proj_src_dir)/%-cpp.o: $(proj_src_dir)/%.cpp $(inc_files)
 	$(CXX) -c $(CXXINCFL) $(CXXFL) $< -o $@
