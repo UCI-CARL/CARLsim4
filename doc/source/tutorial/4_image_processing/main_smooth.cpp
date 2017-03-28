@@ -37,11 +37,12 @@
  * CARLsim available from http://socsci.uci.edu/~jkrichma/CARL/CARLsim
  */
 #include <carlsim.h>
+#include <visual_stimulus.h>
 
 #include <vector>
-#include <assert.h>
+#include <cassert>
 
-#include <stdio.h>
+#include <cstdio>
 
 
 
@@ -62,7 +63,7 @@ int main(int argc, const char* argv[]) {
 	// The output group should be smaller than the input, depending on the
 	// Gaussian kernel. The number of channels here should be 1, since we
 	// will be summing over all color channels.
-	Grid3D imgSmallDim(imgDim.width/2, imgDim.height/2, 1);
+	Grid3D imgSmallDim(imgDim.numX/2, imgDim.numY/2, 1);
 
 	int gIn = sim.createSpikeGeneratorGroup("input", imgDim, EXCITATORY_NEURON);
 	int gSmooth = sim.createGroup("smooth", imgSmallDim, EXCITATORY_NEURON);

@@ -28,17 +28,11 @@
     <ProjectReference Include="..\..\..\..\carlsim\monitor\monitor.vcxproj">
       <Project>{5aa9a99d-3439-4c97-9949-c4c0ae5b855a}</Project>
     </ProjectReference>
-    <ProjectReference Include="..\..\..\..\tools\simple_weight_tuner\simple_weight_tuner.vcxproj">
-      <Project>{788e328d-89a7-44df-9eec-bc30cfc7658e}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\..\..\..\tools\spike_generators\spike_generators.vcxproj">
-      <Project>{5c02490d-8c39-4c36-a3c9-cd683bdf43e0}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\..\..\..\tools\visual_stimulus\visual_stimulus.vcxproj">
-      <Project>{6B9E864C-A1B9-48CE-B88B-41CA17B4B1A9}</Project>
-    </ProjectReference>
     <ProjectReference Include="..\..\..\..\external\MotionEnergy\cppME\motion_energy.vcxproj">
       <Project>{FBD68119-1A8C-4A1A-96CE-522B651209BC}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\..\tools\visual_stimulus\visual_stimulus.vcxproj">
+      <Project>{07bea5b4-2d2d-4eb3-be11-3c3842f6a89d}</Project>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
@@ -124,7 +118,7 @@ copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN64;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(CudaToolkitIncludeDir);$(NVCUDASAMPLES_ROOT)\common\inc;$(SolutionDir)carlsim\interface\inc;$(SolutionDir)carlsim\kernel\inc;$(SolutionDir)carlsim\monitor;$(SolutionDir)tools\spike_generators;$(SolutionDir)tools\simple_weight_tuner;$(SolutionDir)tools\visual_stimulus;$(SolutionDir)external\MotionEnergy\cppME\inc</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(CudaToolkitIncludeDir);$(NVCUDASAMPLES_ROOT)\common\inc;$(SolutionDir)carlsim\interface\inc;$(SolutionDir)carlsim\kernel\inc;$(SolutionDir)carlsim\monitor;$(SolutionDir)tools\spike_generators;$(SolutionDir)tools\simple_weight_tuner;$(SolutionDir)tools\visual_stimulus;$(SolutionDir)external\MotionEnergy\cppME\cppME\inc;$(SolutionDir)tools\visual_stimulus</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -172,7 +166,7 @@ copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN64;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(CudaToolkitIncludeDir);$(NVCUDASAMPLES_ROOT)\common\inc;$(SolutionDir)carlsim\interface\inc;$(SolutionDir)carlsim\kernel\inc;$(SolutionDir)carlsim\monitor;$(SolutionDir)tools\spike_generators;$(SolutionDir)tools\simple_weight_tuner;$(SolutionDir)tools\visual_stimulus;$(SolutionDir)external\MotionEnergy\cppME\inc</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(CudaToolkitIncludeDir);$(NVCUDASAMPLES_ROOT)\common\inc;$(SolutionDir)carlsim\interface\inc;$(SolutionDir)carlsim\kernel\inc;$(SolutionDir)carlsim\monitor;$(SolutionDir)tools\spike_generators;$(SolutionDir)tools\simple_weight_tuner;$(SolutionDir)tools\visual_stimulus;$(SolutionDir)external\MotionEnergy\cppME\cppME\inc</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
