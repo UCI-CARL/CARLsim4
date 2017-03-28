@@ -38,11 +38,12 @@
 #include <carlsim.h>
 
 #include <motion_energy.h>
+#include <visual_stimulus.h>
 
 #include <vector>
-#include <assert.h>
+#include <cassert>
 
-#include <stdio.h>
+#include <cstdio>
 
 
 
@@ -72,8 +73,7 @@ int main(int argc, const char* argv[]) {
 	// object. Filter responses of the `MotionEnergy` object will be converted to
 	// mean firing rates of a Poisson process (using the `PoissonRate` object).
 	int gV1=sim.createSpikeGeneratorGroup("V1", gridV1, EXCITATORY_NEURON);
-	PoissonRate rateV1(gridV1.N, onGPU);
-	sim.setSpikeRate(gV1, &rateV1);
+
 
 	// Middle temporal area (MT) neurons will sum over V1 neurons using a Gaussian
 	// kernel in x and y (7x7 pixels), but will not sum across directions (the third
@@ -89,6 +89,9 @@ int main(int argc, const char* argv[]) {
 
 	// ---------------- SETUP STATE -------------------
 	sim.setupNetwork();
+
+	PoissonRate rateV1(gridV1.N, onGPU);
+	sim.setSpikeRate(gV1, &rateV1);
 
 	sim.setSpikeMonitor(gV1, "DEFAULT");
 	sim.setSpikeMonitor(gMT, "DEFAULT");

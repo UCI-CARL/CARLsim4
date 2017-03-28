@@ -37,13 +37,14 @@
  * CARLsim available from http://socsci.uci.edu/~jkrichma/CARL/CARLsim
  */
 #include <carlsim.h>
+#include <visual_stimulus.h>
 
 #include <algorithm>
 #include <vector>
-#include <assert.h>
+#include <cassert>
+#include <cstdio>
 
-#include <stdio.h>
-
+using namespace std;
 
 class ConstantISI : public SpikeGenerator {
 public:
@@ -61,21 +62,21 @@ public:
 			float rateHz = (float)stimGray[i] / 255.0f * (maxRateHz - minRateHz) + minRateHz;
 
 			// invert firing rate to get inter-spike interval (ISI)
-			int isi = (rateHz > 0.0f) ? std::max(1, (int)(1000 / rateHz)) : 1000000;
+			int isi = (rateHz > 0.0f) ? max(1, (int)(1000 / rateHz)) : 1000000;
 
 			// add value to vector
 			_isi.push_back(isi);
 		}
 	}
 
-	unsigned int nextSpikeTime(CARLsim* sim, int grpId, int nid, unsigned int currentTime,
-		unsigned int lastScheduledSpikeTime, unsigned int endOfTimeSlice)
+	int nextSpikeTime(CARLsim* sim, int grpId, int nid, int currentTime,
+		int lastScheduledSpikeTime, int endOfTimeSlice)
 	{
 		// printf("_numNeur=%d, getGroupNumNeurons=%d\n",_numNeur, sim->getGroupNumNeurons(grpId));
 		assert(_numNeur == sim->getGroupNumNeurons(grpId));
 
 		// periodic spiking according to ISI
-		return (std::max(currentTime, lastScheduledSpikeTime) + _isi[nid]);
+		return (max(currentTime, lastScheduledSpikeTime) + _isi[nid]);
 	}
 
 private:
@@ -103,7 +104,7 @@ int main(int argc, const char* argv[]) {
 	// The output group should be smaller than the input, depending on the
 	// Gaussian kernel. The number of channels here should be 1, since we
 	// will be summing over all color channels.
-	Grid3D imgSmallDim(imgDim.width, imgDim.height, 1);
+	Grid3D imgSmallDim(imgDim.numX, imgDim.numY, 1);
 
 
 	// Input group has firing rates at constant inter-spike intervals (ISI),

@@ -54,6 +54,7 @@ endif
 	@install -m 0644 $(swt_inc_files) $(CARLSIM4_INC_DIR)
 	@install -m 0644 $(spkgen_inc_files) $(CARLSIM4_INC_DIR)
 	@install -m 0644 $(stp_inc_files) $(CARLSIM4_INC_DIR)
+	@install -m 0644 $(vs_inc_files) $(CARLSIM4_INC_DIR)
 	@install -m 0644 $(add_files) $(CARLSIM4_INC_DIR)
 
 delete_files: test_env
