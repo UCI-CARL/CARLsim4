@@ -44,15 +44,15 @@ proj_src_dir   := .
 #------------------------------------------------------------------------------
 
 # NOTE: If your CARLsim4 installation does not reside in the default path, make
-# sure the environment variable CARLSIM3_INSTALL_DIR is set.
-ifneq ($(CARLSIM3_INSTALL_DIR),)
-	CARLSIM3_INC_DIR  := $(CARLSIM3_INSTALL_DIR)/inc
+# sure the environment variable CARLSIM4_INSTALL_DIR is set.
+ifneq ($(CARLSIM4_INSTALL_DIR),)
+	CARLSIM4_INC_DIR  := $(CARLSIM4_INSTALL_DIR)/inc
 else
-	CARLSIM3_INC_DIR  := /usr/local/include/carlsim
+	CARLSIM4_INC_DIR  := /usr/local/include/carlsim
 endif
 
 # include compile flags etc.
-include $(CARLSIM3_INC_DIR)/configure.mk
+include $(CARLSIM4_INC_DIR)/configure.mk
 
 
 #------------------------------------------------------------------------------
@@ -81,10 +81,14 @@ default: $(proj_target1)
 
 
 $(proj_target1): $(main_src_file1) $(inc_files)
-	$(NVCC) $(CARLSIM3_FLG) $(obj_files) $< -o $@ $(CARLSIM3_LIB)
+	$(eval CARLSIM4_FLG += -Wno-deprecated-gpu-targets)
+	$(eval CARLSIM4_LIB += -lcurand)
+	$(NVCC) $(CARLSIM4_FLG) $(obj_files) $< -o $@ $(CARLSIM4_LIB)
 
 $(proj_target2): $(main_src_file2) $(inc_files)
-	$(NVCC) $(CARLSIM3_FLG) $(obj_files) $< -o $@ $(CARLSIM3_LIB)
+	$(eval CARLSIM4_FLG += -Wno-deprecated-gpu-targets)
+	$(eval CARLSIM4_LIB += -lcurand)
+	$(NVCC) $(CARLSIM4_FLG) $(obj_files) $< -o $@ $(CARLSIM4_LIB)
 
 clean:
 	$(RM) $(clean_files)

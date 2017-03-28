@@ -701,6 +701,7 @@ private:
 	void spikeGeneratorUpdate();
 	void updateTimingTable();
 	void updateWeights();
+	void updateNetworkConfig(int netId);
 
 	// Abstract layer for trasferring data (local-to-global copy)
 	void fetchConductanceAMPA(int gGrpId);
@@ -797,7 +798,7 @@ private:
 	void copySynapseState(int netId, RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind, bool allocateMem);
 	void copySTPState(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind, bool allocateMem);
 	void copyWeightState(int netId, int lGrpId, cudaMemcpyKind kind);
-	void copyNetworkConfig(int netId);
+	void copyNetworkConfig(int netId, cudaMemcpyKind kind);
 	void copyGroupConfigs(int netId);
 	void copyGrpIdsLookupArray(int netId, cudaMemcpyKind kind);
 	void copyConnIdsLookupArray(int netId, cudaMemcpyKind kind);
@@ -831,7 +832,7 @@ private:
 	void copySynapseState(int netId, RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind, bool allocateMem) { assert(false); }
 	void copySTPState(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind, bool allocateMem) { assert(false); }
 	void copyWeightState(int netId, int lGrpId, cudaMemcpyKind kind) { assert(false); }
-	void copyNetworkConfig(int netId) { assert(false); }
+	void copyNetworkConfig(int netId, cudaMemcpyKind kind) { assert(false); }
 	void copyGroupConfigs(int netId) { assert(false); }
 	void copyGrpIdsLookupArray(int netId, cudaMemcpyKind kind) { assert(false); }
 	void copyConnIdsLookupArray(int netId, cudaMemcpyKind kind) { assert(false); }
@@ -917,6 +918,7 @@ private:
 	void copySynapseState(int netId, RuntimeData* dest, RuntimeData* src, bool allocateMem);	
 	void copySTPState(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, bool allocateMem);	
 	void copyWeightState(int netId, int lGrpId);
+	void copyNetworkConfig(int netId);
 	void copyGrpIdsLookupArray(int netId);
 	void copyConnIdsLookupArray(int netId);
 	void copyLastSpikeTime(int netId);
