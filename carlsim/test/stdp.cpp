@@ -242,7 +242,7 @@ TEST(STDP, setNeuromodulatorParameters) {
  * This function tests the effect of dopamine modulation on a single synapse (reinforcement learning).
  * The the synaptic weight modulated by dopamine is expected to be higher than that without dopamine modulation
  */
-TEST(STDP, DASTDPWeightBoost) {
+TEST(STDP, DASTDPWeightBoost_Adv) {
 	float tauPlus = 20.0f;
 	float tauMinus = 20.0f;
 	float alphaPlus = 0.1f;
@@ -361,7 +361,7 @@ TEST(STDP, DASTDPWeightBoost) {
 * Wtih control of pre- and post-neurons' spikes, the synaptic weights of CPU and GPU mode are expected
 * to be the same
 */
-TEST(STDP, ESTDPExpCurveCPUvsGPU) {
+TEST(STDP, ESTDPExpCurveCPUvsGPU_Adv) {
 	// simulation details
 	int size;
 	int gex1, gex2, g1;
@@ -457,7 +457,7 @@ TEST(STDP, ESTDPExpCurveCPUvsGPU) {
  * Wtih control of pre- and post-neurons' spikes, the synaptic weight is expected to increase or decrease to
  * maximum or minimum synaptic weight respectively.
  */
-TEST(STDP, ESTDPExpCurve) {
+TEST(STDP, ESTDPExpCurve_Adv) {
 	// simulation details
 	int size;
 	int gex1, gex2, g1;
@@ -560,7 +560,7 @@ TEST(STDP, ESTDPExpCurve) {
 * Wtih control of pre- and post-neurons' spikes, the synaptic weights of CPU and GPU mode are expected
 * to be the same
 */
-TEST(STDP, ESTDPTimingBasedCurveCPUvsGPU) {
+TEST(STDP, ESTDPTimingBasedCurveCPUvsGPU_Adv) {
 	// simulation details
 	int size;
 	int gex1, gex2, g1;
@@ -641,7 +641,7 @@ TEST(STDP, ESTDPTimingBasedCurveCPUvsGPU) {
  * Wtih control of pre- and post-neurons' spikes, the synaptic weight is expected to increase or decrease to
  * maximum or minimum synaptic weith respectively.
  */
-TEST(STDP, ESTDPTimingBasedCurve) {
+TEST(STDP, ESTDPTimingBasedCurve_Adv) {
 	// simulation details
 	int size;
 	int gex1, gex2, g1;
@@ -739,7 +739,7 @@ TEST(STDP, ESTDPTimingBasedCurve) {
 * Wtih control of pre- and post-neurons' spikes, the synaptic weights of CPU and GPU mode are expected
 * to be the same
 */
-TEST(STDP, ISTDPPulseCurveCPUvsGPU) {
+TEST(STDP, ISTDPPulseCurveCPUvsGPU_Adv) {
 	// simulation details
 	int size;
 	int gin, gex, g1;
@@ -834,7 +834,7 @@ TEST(STDP, ISTDPPulseCurveCPUvsGPU) {
  * Wtih control of pre- and post-neurons' spikes, the synaptic weight is expected to increase or decrease to
  * maximum or minimum synaptic weith respectively.
  */
-TEST(STDP, ISTDPulseCurve) {
+TEST(STDP, ISTDPulseCurve_Adv) {
 	// simulation details
 	int size;
 	int gin, gex, g1;
@@ -937,7 +937,7 @@ TEST(STDP, ISTDPulseCurve) {
 * Wtih control of pre- and post-neurons' spikes, the synaptic weights of CPU and GPU mode are expected
 * to be the same
 */
-TEST(STDP, ISTDPExpCurveCPUvsGPU) {
+TEST(STDP, ISTDPExpCurveCPUvsGPU_Adv) {
 	// simulation details
 	int size;
 	int gin, gex, g1;
@@ -1037,7 +1037,7 @@ TEST(STDP, ISTDPExpCurveCPUvsGPU) {
 * Wtih control of pre- and post-neurons' spikes, the synaptic weight is expected to increase or decrease to
 * maximum or minimum synaptic weith respectively.
 */
-TEST(STDP, ISTDPExpCurve) {
+TEST(STDP, ISTDPExpCurve_Adv) {
 	// simulation details
 	int size;
 	int gin, gex, g1;
