@@ -664,6 +664,7 @@ INPUT                  = ../carlsim/interface/inc \
                          ../carlsim/interface/src \
                          ../carlsim/kernel/inc \
                          ../carlsim/kernel/src \
+                         ../carlsim/kernel/src/gpu_module \
                          ../carlsim/spike_monitor \
                          ../carlsim/connection_monitor \
                          ../carlsim/group_monitor \
