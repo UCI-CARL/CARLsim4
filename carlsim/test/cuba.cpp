@@ -95,8 +95,8 @@ TEST(CUBA, firingRateVsData) {
 	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
 	for (int hasHighFiring=0; hasHighFiring<=1; hasHighFiring++) {
-		for (int isGPUmode=0; isGPUmode<=1; isGPUmode++) {
-			CARLsim* sim = new CARLsim("CUBA.firingRateVsData",isGPUmode?GPU_MODE:CPU_MODE,SILENT,1,42);
+		for (int mode = 0; mode < TESTED_MODES; mode++) {
+			CARLsim* sim = new CARLsim("CUBA.firingRateVsData",mode?GPU_MODE:CPU_MODE,SILENT,1,42);
 			int g1=sim->createGroup("excit", 1, EXCITATORY_NEURON);
 			sim->setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f); // RS
 
@@ -135,7 +135,7 @@ TEST(CUBA, firingRateVsData) {
 	}
 }
 
-
+#ifndef __NO_CUDA__
 /*
  * \brief testing CARLsim CUBA output (spike rates) CPU vs GPU
  *
@@ -154,8 +154,8 @@ TEST(CUBA, firingRateCPUvsGPU) {
 	int runTimeMs = 767;
 //	fprintf(stderr,"runTime=%d, delay=%d, wt=%f, input=%f\n",runTimeMs,delay,wt,inputRate);
 
-	for (int isGPUmode=0; isGPUmode<=1; isGPUmode++) {
-		CARLsim sim("CUBA.firingRateCPUvsGPU",isGPUmode?GPU_MODE:CPU_MODE,SILENT,0,42);
+	for (int mode = 0; mode < TESTED_MODES; mode++) {
+		CARLsim sim("CUBA.firingRateCPUvsGPU",mode?GPU_MODE:CPU_MODE,SILENT,0,42);
 		int g1=sim.createGroup("excit", 1, EXCITATORY_NEURON);
 		sim.setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f); // RS
 
@@ -180,7 +180,7 @@ TEST(CUBA, firingRateCPUvsGPU) {
 		spkMonG0->stopRecording();
 		spkMonG1->stopRecording();
 
-		if (!isGPUmode) {
+		if (!mode) {
 			// CPU mode: store spike times and spike rate for future comparison
 			spkRateG0CPU = spkMonG0->getPopMeanFiringRate();
 			spkRateG1CPU = spkMonG1->getPopMeanFiringRate();
@@ -214,3 +214,4 @@ TEST(CUBA, firingRateCPUvsGPU) {
 		}
 	}
 }
+#endif // !__NO_CUDA__

@@ -148,8 +148,8 @@ TEST(Core, setExternalCurrent) {
 	int nNeur = 10;
 
 	for (int hasCOBA=0; hasCOBA<=1; hasCOBA++) {
-		for (int isGPUmode=0; isGPUmode<=1; isGPUmode++) {
-			sim = new CARLsim("Core.setExternalCurrent", isGPUmode?GPU_MODE:CPU_MODE, SILENT, 1, 42);
+		for (int mode = 0; mode < TESTED_MODES; mode++) {
+			sim = new CARLsim("Core.setExternalCurrent", mode ? GPU_MODE : CPU_MODE, SILENT, 1, 42);
 			int g1=sim->createGroup("excit1", nNeur, EXCITATORY_NEURON);
 			sim->setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f);
 			int g0=sim->createSpikeGeneratorGroup("input0", nNeur, EXCITATORY_NEURON);
@@ -216,8 +216,8 @@ TEST(Core, biasWeights) {
 	int *nSpkHighWt = new int[nNeur];
 	memset(nSpkHighWt, 0, nNeur*sizeof(int));
 
-	for (int isGPUmode=0; isGPUmode<=1; isGPUmode++) {
-		sim = new CARLsim("Core.biasWeights",isGPUmode?GPU_MODE:CPU_MODE,SILENT,1,42);
+	for (int mode = 0; mode < TESTED_MODES; mode++) {
+		sim = new CARLsim("Core.biasWeights",mode?GPU_MODE:CPU_MODE,SILENT,1,42);
 		int g1=sim->createGroup("excit", nNeur, EXCITATORY_NEURON);
 		sim->setNeuronParameters(g1, 0.02f, 0.2f,-65.0f,8.0f);
 		int c1=sim->connect(g1, g1, "one-to-one", RangeWeight(0.5f), 1.0f, RangeDelay(1));
@@ -265,8 +265,8 @@ TEST(Core, scaleWeights) {
 	int *nSpkHighWt = new int[nNeur];
 	memset(nSpkHighWt, 0, nNeur*sizeof(int));
 
-	for (int isGPUmode=0; isGPUmode<=1; isGPUmode++) {
-		sim = new CARLsim("Core.scaleWeights",isGPUmode?GPU_MODE:CPU_MODE,SILENT,1,42);
+	for (int mode = 0; mode < TESTED_MODES; mode++) {
+		sim = new CARLsim("Core.scaleWeights",mode?GPU_MODE:CPU_MODE,SILENT,1,42);
 		int g1=sim->createGroup("excit", nNeur, EXCITATORY_NEURON);
 		sim->setNeuronParameters(g1, 0.02f, 0.2f,-65.0f,8.0f);
 		int c1=sim->connect(g1, g1, "one-to-one", RangeWeight(0.5f), 1.0f, RangeDelay(1));
@@ -314,8 +314,8 @@ TEST(Core, setWeight) {
 	int *nSpkHighWt = new int[nNeur];
 	memset(nSpkHighWt, 0, nNeur*sizeof(int));
 
-	for (int isGPUmode=0; isGPUmode<=1; isGPUmode++) {
-		sim = new CARLsim("Core.setWeight",isGPUmode?GPU_MODE:CPU_MODE,SILENT,1,42);
+	for (int mode = 0; mode < TESTED_MODES; mode++) {
+		sim = new CARLsim("Core.setWeight",mode?GPU_MODE:CPU_MODE,SILENT,1,42);
 		int g1=sim->createGroup("excit", nNeur, EXCITATORY_NEURON);
 		sim->setNeuronParameters(g1, 0.02f, 0.2f,-65.0f,8.0f);
 		int c1=sim->connect(g1, g1, "one-to-one", RangeWeight(0.5f), 1.0f, RangeDelay(1));
@@ -361,8 +361,8 @@ TEST(Core, getDelayRange) {
 	int minDelay = 1;
 	int maxDelay = 10;
 
-	for (int isGPUmode=0; isGPUmode<=1; isGPUmode++) {
-		sim = new CARLsim("Core.getDelayRange",isGPUmode?GPU_MODE:CPU_MODE,SILENT,1,42);
+	for (int mode = 0; mode < TESTED_MODES; mode++) {
+		sim = new CARLsim("Core.getDelayRange",mode?GPU_MODE:CPU_MODE,SILENT,1,42);
 		int g1=sim->createGroup("excit", nNeur, EXCITATORY_NEURON);
 		sim->setNeuronParameters(g1, 0.02f, 0.2f,-65.0f,8.0f);
 		int c1=sim->connect(g1, g1, "one-to-one", RangeWeight(0.5f), 1.0f, RangeDelay(minDelay,maxDelay));
@@ -398,8 +398,8 @@ TEST(Core, getWeightRange) {
 	float initWt = 1.25f;
 	float maxWt = 10.0f;
 
-	for (int isGPUmode=0; isGPUmode<=1; isGPUmode++) {
-		sim = new CARLsim("Core.getWeightRange",isGPUmode?GPU_MODE:CPU_MODE,SILENT,1,42);
+	for (int mode = 0; mode < TESTED_MODES; mode++) {
+		sim = new CARLsim("Core.getWeightRange",mode?GPU_MODE:CPU_MODE,SILENT,1,42);
 		int g1=sim->createGroup("excit", nNeur, EXCITATORY_NEURON);
 		sim->setNeuronParameters(g1, 0.02f, 0.2f,-65.0f,8.0f);
 		int c1=sim->connect(g1, g1, "one-to-one", RangeWeight(minWt,initWt,maxWt), 1.0f, RangeDelay(1), RadiusRF(-1),
@@ -499,7 +499,7 @@ TEST(Core, startStopTestingPhase) {
 	// run twice, once with expected start/stop order, once with a bunch of additional (but
 	// irrelevant start/stop calls)
 	for (int run=0; run<=1; run++) {
-		for (int mode=0; mode<=1; mode++) {
+		for (int mode = 0; mode < TESTED_MODES; mode++) {
 			sim = new CARLsim("Core.startStopTestingPhase",mode?GPU_MODE:CPU_MODE,SILENT,1,42);
 
 			int gExc = sim->createGroup("output", 1, EXCITATORY_NEURON);
@@ -577,7 +577,7 @@ TEST(Core, saveLoadSimulation) {
 	std::vector<std::vector<float> > weightsSave;
 	std::vector<std::vector<float> > weightsLoad;
 
-	for (int mode=0; mode<=1; mode++) {
+	for (int mode = 0; mode < TESTED_MODES; mode++) {
 		for (int coba=0; coba<=1; coba++) {
 			for (int isPlastic=0; isPlastic<=1; isPlastic++) {
 				for (int loadSim=0; loadSim<=1; loadSim++) {

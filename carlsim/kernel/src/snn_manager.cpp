@@ -1904,6 +1904,7 @@ void SNN::doSTPUpdateAndDecayCond() {
 					argsThreadRoutine[threadCount].GtoLOffset = 0;
 
 					pthread_create(&threads[threadCount], &attr, &SNN::helperDoSTPUpdateAndDecayCond_CPU, (void*)&argsThreadRoutine[threadCount]);
+					pthread_attr_destroy(&attr);
 					threadCount++;
 				#endif
 			}
@@ -1950,6 +1951,7 @@ void SNN::spikeGeneratorUpdate() {
 						argsThreadRoutine[threadCount].GtoLOffset = 0;
 
 						pthread_create(&threads[threadCount], &attr, &SNN::helperAssignPoissonFiringRate_CPU, (void*)&argsThreadRoutine[threadCount]);
+						pthread_attr_destroy(&attr);
 						threadCount++;
 					#endif
 				}
@@ -1998,6 +2000,7 @@ void SNN::spikeGeneratorUpdate() {
 					argsThreadRoutine[threadCount].GtoLOffset = 0;
 
 					pthread_create(&threads[threadCount], &attr, &SNN::helperSpikeGeneratorUpdate_CPU, (void*)&argsThreadRoutine[threadCount]);
+					pthread_attr_destroy(&attr);
 					threadCount++;
 				#endif
 			}
@@ -2045,6 +2048,7 @@ void SNN::findFiring() {
 					argsThreadRoutine[threadCount].GtoLOffset = 0;
 
 					pthread_create(&threads[threadCount], &attr, &SNN::helperFindFiring_CPU, (void*)&argsThreadRoutine[threadCount]);
+					pthread_attr_destroy(&attr);
 					threadCount++;
 				#endif
 			}
@@ -2089,6 +2093,7 @@ void SNN::doCurrentUpdate() {
 					argsThreadRoutine[threadCount].GtoLOffset = 0;
 
 					pthread_create(&threads[threadCount], &attr, &SNN::helperDoCurrentUpdateD2_CPU, (void*)&argsThreadRoutine[threadCount]);
+					pthread_attr_destroy(&attr);
 					threadCount++;
 				#endif
 			}
@@ -2125,6 +2130,7 @@ void SNN::doCurrentUpdate() {
 					argsThreadRoutine[threadCount].GtoLOffset = 0;
 
 					pthread_create(&threads[threadCount], &attr, &SNN::helperDoCurrentUpdateD1_CPU, (void*)&argsThreadRoutine[threadCount]);
+					pthread_attr_destroy(&attr);
 					threadCount++;
 				#endif
 			}
@@ -2169,6 +2175,7 @@ void SNN::updateTimingTable() {
 					argsThreadRoutine[threadCount].GtoLOffset = 0;
 
 					pthread_create(&threads[threadCount], &attr, &SNN::helperUpdateTimingTable_CPU, (void*)&argsThreadRoutine[threadCount]);
+					pthread_attr_destroy(&attr);
 					threadCount++;
 				#endif
 			}
@@ -2212,6 +2219,7 @@ void SNN::globalStateUpdate() {
 					argsThreadRoutine[threadCount].GtoLOffset = 0;
 
 					pthread_create(&threads[threadCount], &attr, &SNN::helperGlobalStateUpdate_CPU, (void*)&argsThreadRoutine[threadCount]);
+					pthread_attr_destroy(&attr);
 					threadCount++;
 				#endif
 			}
@@ -2270,6 +2278,7 @@ void SNN::clearExtFiringTable() {
 					argsThreadRoutine[threadCount].GtoLOffset = 0;
 
 					pthread_create(&threads[threadCount], &attr, &SNN::helperClearExtFiringTable_CPU, (void*)&argsThreadRoutine[threadCount]);
+					pthread_attr_destroy(&attr);
 					threadCount++;
 				#endif
 			}
@@ -2314,6 +2323,7 @@ void SNN::updateWeights() {
 					argsThreadRoutine[threadCount].GtoLOffset = 0;
 
 					pthread_create(&threads[threadCount], &attr, &SNN::helperUpdateWeights_CPU, (void*)&argsThreadRoutine[threadCount]);
+					pthread_attr_destroy(&attr);
 					threadCount++;
 				#endif
 			}
@@ -2367,6 +2377,7 @@ void SNN::shiftSpikeTables() {
 					argsThreadRoutine[threadCount].GtoLOffset = 0;
 
 					pthread_create(&threads[threadCount], &attr, &SNN::helperShiftSpikeTables_CPU, (void*)&argsThreadRoutine[threadCount]);
+					pthread_attr_destroy(&attr);
 					threadCount++;
 				#endif
 			}
@@ -3785,6 +3796,7 @@ void SNN::deleteRuntimeData() {
 					argsThreadRoutine[threadCount].GtoLOffset = 0;
 
 					pthread_create(&threads[threadCount], &attr, &SNN::helperDeleteRuntimeData_CPU, (void*)&argsThreadRoutine[threadCount]);
+					pthread_attr_destroy(&attr);
 					threadCount++;
 				#endif
 			}
@@ -4294,6 +4306,7 @@ void SNN::routeSpikes() {
 								argsThreadRoutine[threadCount].GtoLOffset = GtoLOffset;
 
 								pthread_create(&threads[threadCount], &attr, &SNN::helperConvertExtSpikesD2_CPU, (void*)&argsThreadRoutine[threadCount]);
+								pthread_attr_destroy(&attr);
 								threadCount++;
 							#endif
 					}
@@ -4342,6 +4355,7 @@ void SNN::routeSpikes() {
 								argsThreadRoutine[threadCount].GtoLOffset = GtoLOffset;
 
 								pthread_create(&threads[threadCount], &attr, &SNN::helperConvertExtSpikesD1_CPU, (void*)&argsThreadRoutine[threadCount]);
+								pthread_attr_destroy(&attr);
 								threadCount++;
 							#endif
 					}
@@ -5399,6 +5413,7 @@ void SNN::resetSpikeCnt(int gGrpId) {
 						argsThreadRoutine[threadCount].GtoLOffset = 0;
 
 						pthread_create(&threads[threadCount], &attr, &SNN::helperResetSpikeCnt_CPU, (void*)&argsThreadRoutine[threadCount]);
+						pthread_attr_destroy(&attr);
 						threadCount++;
 					#endif
 				}

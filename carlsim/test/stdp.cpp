@@ -75,7 +75,7 @@ TEST(STDP, setSTDPTrue) {
 	float delta = 40.0f;
 	CARLsim* sim;
 
-	for (int mode=0; mode<=1; mode++) {
+	for (int mode = 0; mode < TESTED_MODES; mode++) {
 		for (int stdpType = 0; stdpType < 2; stdpType++) { // we have two stdp types {STANDARD, DA_MOD}
 			for(int stdpCurve = 0; stdpCurve < 2; stdpCurve++) { // we have four stdp curves, two for ESTDP, two for ISTDP
 				sim = new CARLsim("STDP.setSTDPTrue",mode?GPU_MODE:CPU_MODE,SILENT,1,42);
@@ -159,7 +159,7 @@ TEST(STDP, setSTDPFalse) {
 	float delta = 4.0f;
 	CARLsim* sim;
 
-	for (int mode=0; mode<=1; mode++) {
+	for (int mode = 0; mode < TESTED_MODES; mode++) {
 		sim = new CARLsim("STDP.setSTDPFalse",mode?GPU_MODE:CPU_MODE,SILENT,1,42);
 
 		int g1=sim->createGroup("excit", 10, EXCITATORY_NEURON);
@@ -209,7 +209,7 @@ TEST(STDP, setNeuromodulatorParameters) {
 	float tauNE = 400.0f;
 	CARLsim* sim;
 
-	for (int mode=0; mode<=1; mode++) {
+	for (int mode = 0; mode < TESTED_MODES; mode++) {
 		sim = new CARLsim("STDP.setNeuromodulatorParameters",mode?GPU_MODE:CPU_MODE,SILENT,1,42);
 
 		int g1=sim->createGroup("excit", 10, EXCITATORY_NEURON);
@@ -242,7 +242,7 @@ TEST(STDP, setNeuromodulatorParameters) {
  * This function tests the effect of dopamine modulation on a single synapse (reinforcement learning).
  * The the synaptic weight modulated by dopamine is expected to be higher than that without dopamine modulation
  */
-TEST(STDP, DASTDPWeightBoost) {
+TEST(STDP, DASTDPWeightBoost_Adv) {
 	float tauPlus = 20.0f;
 	float tauMinus = 20.0f;
 	float alphaPlus = 0.1f;
@@ -257,7 +257,7 @@ TEST(STDP, DASTDPWeightBoost) {
 	SpikeMonitor* spikeMonPre;
 	float weightDAMod, weightNonDAMod;
 
-	for (int mode = 0; mode < 2; mode++) {
+	for (int mode = 0; mode < TESTED_MODES; mode++) {
 		for (int coba = 0; coba < 2; coba++) {
 			for (int damod = 0; damod < 2; damod++) {
 				CARLsim* sim = new CARLsim("STDP.DASTDPWeightBoost", mode?GPU_MODE:CPU_MODE, SILENT, 1, 42);
@@ -354,13 +354,14 @@ TEST(STDP, DASTDPWeightBoost) {
 	delete iSpikeGen;
 }
 
+#ifndef __NO_CUDA__
 /*!
 * \brief testing the exponential E-STDP curve
 * This function tests whether E-STDP change synaptic weight as expected
 * Wtih control of pre- and post-neurons' spikes, the synaptic weights of CPU and GPU mode are expected
 * to be the same
 */
-TEST(STDP, ESTDPExpCurveCPUvsGPU) {
+TEST(STDP, ESTDPExpCurveCPUvsGPU_Adv) {
 	// simulation details
 	int size;
 	int gex1, gex2, g1;
@@ -376,7 +377,7 @@ TEST(STDP, ESTDPExpCurveCPUvsGPU) {
 	for (int coba = 0; coba < 2; coba++) {
 		for (int offset = -30; offset <= 30; offset += 5) {
 			
-			for (int mode = 0; mode < 2; mode++) {
+			for (int mode = 0; mode < TESTED_MODES; mode++) {
 				if (offset == 0) continue; // skip offset == 0;
 										   // create a network
 				CARLsim* sim = new CARLsim("STDP.ESTDPExpCurve", mode ? GPU_MODE : CPU_MODE, SILENT, 1, 42);
@@ -448,6 +449,7 @@ TEST(STDP, ESTDPExpCurveCPUvsGPU) {
 		}
 	}
 }
+#endif // !__NO_CUDA__
 
 /*!
  * \brief testing the exponential E-STDP curve
@@ -455,7 +457,7 @@ TEST(STDP, ESTDPExpCurveCPUvsGPU) {
  * Wtih control of pre- and post-neurons' spikes, the synaptic weight is expected to increase or decrease to
  * maximum or minimum synaptic weight respectively.
  */
-TEST(STDP, ESTDPExpCurve) {
+TEST(STDP, ESTDPExpCurve_Adv) {
 	// simulation details
 	int size;
 	int gex1, gex2, g1;
@@ -467,7 +469,7 @@ TEST(STDP, ESTDPExpCurve) {
 	float initWeight = 5.0f;
 	float minInhWeight = 0.0f;
 
-	for (int mode = 0; mode < 2; mode++) {
+	for (int mode = 0; mode < TESTED_MODES; mode++) {
 		for (int coba = 0; coba < 2; coba++) {
 			for (int offset = -30; offset <= 30; offset += 5) {
 				if (offset == 0) continue; // skip offset == 0;
@@ -551,13 +553,14 @@ TEST(STDP, ESTDPExpCurve) {
 	}
 }
 
+#ifndef __NO_CUDA__
 /*!
 * \brief testing the timing-based E-STDP curve
 * This function tests whether E-STDP change synaptic weight as expected
 * Wtih control of pre- and post-neurons' spikes, the synaptic weights of CPU and GPU mode are expected
 * to be the same
 */
-TEST(STDP, ESTDPTimingBasedCurveCPUvsGPU) {
+TEST(STDP, ESTDPTimingBasedCurveCPUvsGPU_Adv) {
 	// simulation details
 	int size;
 	int gex1, gex2, g1;
@@ -573,7 +576,7 @@ TEST(STDP, ESTDPTimingBasedCurveCPUvsGPU) {
 	
 	for (int coba = 0; coba < 2; coba++) {
 		for (int offset = -24; offset <= 24; offset += 3) {
-			for (int mode = 0; mode < 2; mode++) {
+			for (int mode = 0; mode < TESTED_MODES; mode++) {
 				if (offset == 0) continue; // skip offset == 0;
 				// create a network
 				CARLsim* sim = new CARLsim("STDP.ESTDTimingBasedCurve", mode ? GPU_MODE : CPU_MODE, SILENT, 1, 42);
@@ -630,6 +633,7 @@ TEST(STDP, ESTDPTimingBasedCurveCPUvsGPU) {
 		}
 	}
 }
+#endif // !__NO_CUDA__
 
 /*!
  * \brief testing the timing-based E-STDP curve
@@ -637,7 +641,7 @@ TEST(STDP, ESTDPTimingBasedCurveCPUvsGPU) {
  * Wtih control of pre- and post-neurons' spikes, the synaptic weight is expected to increase or decrease to
  * maximum or minimum synaptic weith respectively.
  */
-TEST(STDP, ESTDPTimingBasedCurve) {
+TEST(STDP, ESTDPTimingBasedCurve_Adv) {
 	// simulation details
 	int size;
 	int gex1, gex2, g1;
@@ -650,7 +654,7 @@ TEST(STDP, ESTDPTimingBasedCurve) {
 	float initWeight = 5.0f;
 	float minInhWeight = 0.0f;
 
-	for (int mode = 0; mode < 2; mode++) {
+	for (int mode = 0; mode < TESTED_MODES; mode++) {
 		for (int coba = 0; coba < 2; coba++) {
 			for (int offset = -24; offset <= 24; offset += 3) {
 				if (offset == 0) continue; // skip offset == 0;
@@ -728,13 +732,14 @@ TEST(STDP, ESTDPTimingBasedCurve) {
 	}
 }
 
+#ifndef __NO_CUDA__
 /*!
 * \brief testing the pulse I-STDP curve
 * This function tests whether I-STDP change synaptic weight as expected
 * Wtih control of pre- and post-neurons' spikes, the synaptic weights of CPU and GPU mode are expected
 * to be the same
 */
-TEST(STDP, ISTDPPulseCurveCPUvsGPU) {
+TEST(STDP, ISTDPPulseCurveCPUvsGPU_Adv) {
 	// simulation details
 	int size;
 	int gin, gex, g1;
@@ -749,7 +754,7 @@ TEST(STDP, ISTDPPulseCurveCPUvsGPU) {
 
 	for (int coba = 0; coba < 2; coba++) {
 		for (int offset = -15; offset <= 15; offset += 10) {
-			for (int mode = 0; mode < 2; mode++) {
+			for (int mode = 0; mode < TESTED_MODES; mode++) {
 				// create a network
 				CARLsim* sim = new CARLsim("STDP.ISTDPPulseCurve", mode ? GPU_MODE : CPU_MODE, SILENT, 1, 42);
 
@@ -821,6 +826,7 @@ TEST(STDP, ISTDPPulseCurveCPUvsGPU) {
 		}
 	}
 }
+#endif // !__NO_CUDA__
 
 /*!
  * \brief testing the pulse I-STDP curve
@@ -828,7 +834,7 @@ TEST(STDP, ISTDPPulseCurveCPUvsGPU) {
  * Wtih control of pre- and post-neurons' spikes, the synaptic weight is expected to increase or decrease to
  * maximum or minimum synaptic weith respectively.
  */
-TEST(STDP, ISTDPulseCurve) {
+TEST(STDP, ISTDPulseCurve_Adv) {
 	// simulation details
 	int size;
 	int gin, gex, g1;
@@ -840,7 +846,7 @@ TEST(STDP, ISTDPulseCurve) {
 	float initWeight = 5.0f;
 	float minInhWeight = 0.0f;
 
-	for (int mode = 0; mode < 2; mode++) {
+	for (int mode = 0; mode < TESTED_MODES; mode++) {
 		for (int coba = 0; coba < 2; coba++) {
 			for (int offset = -15; offset <= 15; offset += 10) {
 				// create a network
@@ -924,13 +930,14 @@ TEST(STDP, ISTDPulseCurve) {
 	}
 }
 
+#ifndef __NO_CUDA__
 /*!
 * \brief testing the exponential I-STDP curve
 * This function tests whether I-STDP change synaptic weight as expected
 * Wtih control of pre- and post-neurons' spikes, the synaptic weights of CPU and GPU mode are expected
 * to be the same
 */
-TEST(STDP, ISTDPExpCurveCPUvsGPU) {
+TEST(STDP, ISTDPExpCurveCPUvsGPU_Adv) {
 	// simulation details
 	int size;
 	int gin, gex, g1;
@@ -946,7 +953,7 @@ TEST(STDP, ISTDPExpCurveCPUvsGPU) {
 	for (int coba = 0; coba < 2; coba++) {
 		for (int offset = -24; offset <= 24; offset += 3) {
 			if (offset == 0) continue; // skip offset == 0;
-			for (int mode = 0; mode < 2; mode++) {
+			for (int mode = 0; mode < TESTED_MODES; mode++) {
 				// create a network
 				CARLsim* sim = new CARLsim("STDP.ISTDPPulseCurve", mode ? GPU_MODE : CPU_MODE, SILENT, 1, 42);
 
@@ -1022,6 +1029,7 @@ TEST(STDP, ISTDPExpCurveCPUvsGPU) {
 		}
 	}
 }
+#endif // !__NO_CUDA__
 
 /*!
 * \brief testing the Exponential I-STDP curve
@@ -1029,7 +1037,7 @@ TEST(STDP, ISTDPExpCurveCPUvsGPU) {
 * Wtih control of pre- and post-neurons' spikes, the synaptic weight is expected to increase or decrease to
 * maximum or minimum synaptic weith respectively.
 */
-TEST(STDP, ISTDPExpCurve) {
+TEST(STDP, ISTDPExpCurve_Adv) {
 	// simulation details
 	int size;
 	int gin, gex, g1;
@@ -1041,7 +1049,7 @@ TEST(STDP, ISTDPExpCurve) {
 	float initWeight = 5.0f;
 	float minInhWeight = 0.0f;
 
-	for (int mode = 0; mode < 2; mode++) {
+	for (int mode = 0; mode < TESTED_MODES; mode++) {
 		for (int coba = 0; coba < 2; coba++) {
 			for (int offset = -24; offset <= 24; offset += 3) {
 				if (offset == 0) continue; // skip offset == 0;
