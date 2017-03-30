@@ -665,9 +665,7 @@ INPUT                  = ../carlsim/interface/inc \
                          ../carlsim/kernel/inc \
                          ../carlsim/kernel/src \
                          ../carlsim/kernel/src/gpu_module \
-                         ../carlsim/spike_monitor \
-                         ../carlsim/connection_monitor \
-                         ../carlsim/group_monitor \
+                         ../carlsim/monitor \
                          ../tools/ecj_pti \
                          ../tools/eo_pti \
                          ../tools/visual_stimulus \
