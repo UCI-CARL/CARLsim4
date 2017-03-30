@@ -92,7 +92,7 @@ public:
 	//! specifies which synaptic connections (per group, per neuron, per synapse) should be made
 	/*! \attention The virtual method should never be called directly */
 	virtual void connect(SNN* s, int srcGrpId, int i, int destGrpId, int j, float& weight, float& maxWt,
-		float& delay, bool& connected);
+		int& delay, bool& connected);
 
 private:
 	CARLsim* carlsim;

@@ -96,7 +96,7 @@ public:
 	 *
 	 * \attention The virtual method should never be called directly */
 	virtual void connect(CARLsim* s, int srcGrpId, int i, int destGrpId, int j, float& weight, float& maxWt,
-							float& delay, bool& connected) = 0;
+							int& delay, bool& connected) = 0;
 };
 
 

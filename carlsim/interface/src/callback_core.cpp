@@ -71,7 +71,7 @@ ConnectionGeneratorCore::ConnectionGeneratorCore(CARLsim* c, ConnectionGenerator
 }
 
 void ConnectionGeneratorCore::connect(SNN* s, int srcGrpId, int i, int destGrpId, int j, float& weight, float& maxWt,
-							float& delay, bool& connected) {
+							int& delay, bool& connected) {
 	if (cGen != NULL)
 		cGen->connect(carlsim, srcGrpId, i, destGrpId, j, weight, maxWt, delay, connected);
 }

@@ -216,7 +216,7 @@ void SNN::printGroupInfo(int gGrpId) {
 	}
 
 	if(groupConfigMap[gGrpId].type & POISSON_NEURON) {
-		KERNEL_INFO("  - Refractory period          = %8.5f", groupConfigMDMap[gGrpId].refractPeriod);
+		KERNEL_INFO("  - Refractory period          = %8d", groupConfigMDMap[gGrpId].refractPeriod);
 	}
 
 	if (groupConfigMap[gGrpId].stpConfig.WithSTP) {
@@ -262,7 +262,7 @@ void SNN::printGroupInfo(int netId, std::list<GroupConfigMD>::iterator grpIt) {
 	}
 
 	if (groupConfigMap[gGrpId].type & POISSON_NEURON) {
-		KERNEL_INFO("    |- Refractory period          = %8.5f", grpIt->refractPeriod);
+		KERNEL_INFO("    |- Refractory period          = %8d", grpIt->refractPeriod);
 	}
 
 	if (groupConfigMap[gGrpId].stpConfig.WithSTP) {

@@ -303,7 +303,7 @@ typedef struct GroupConfigMD_s {
 	bool hasExternalConnect;
 	int spikeMonitorId;
 	int groupMonitorId;
-	float refractPeriod;
+	int refractPeriod;
 	int currTimeSlice; //!< timeSlice is used by the Poisson generators in order to not generate too many or too few spikes within a window of time
 	int sliceUpdateTime;
 	int homeoId;

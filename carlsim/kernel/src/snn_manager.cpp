@@ -528,7 +528,7 @@ void SNN::setSTP(int gGrpId, bool isSet, float STP_U, float STP_tau_u, float STP
 		// set STDP for a given group
 		sim_with_stp									|= isSet;
 		groupConfigMap[gGrpId].stpConfig.WithSTP		= isSet;
-		groupConfigMap[gGrpId].stpConfig.STP_A			= (STP_U > 0.0f) ? 1.0 / STP_U : 1.0f; // scaling factor
+		groupConfigMap[gGrpId].stpConfig.STP_A			= (STP_U > 0.0f) ? 1.0f / STP_U : 1.0f; // scaling factor
 		groupConfigMap[gGrpId].stpConfig.STP_U 			= STP_U;
 		groupConfigMap[gGrpId].stpConfig.STP_tau_u_inv	= 1.0f / STP_tau_u; // facilitatory
 		groupConfigMap[gGrpId].stpConfig.STP_tau_x_inv	= 1.0f / STP_tau_x; // depressive
@@ -1099,8 +1099,8 @@ void SNN::setWeight(short int connId, int neurIdPre, int neurIdPost, float weigh
 		if (GET_CONN_NEURON_ID((*preId)) == neurIdPreReal) {
 			assert(managerRuntimeData.connIdsPreIdx[pos_ij] == connId); // make sure we've got the right connection ID
 
-			managerRuntimeData.wt[pos_ij] = isExcitatoryGroup(connectConfigMap[connId].grpSrc) ? weight : -1.0 * weight;
-			managerRuntimeData.maxSynWt[pos_ij] = isExcitatoryGroup(connectConfigMap[connId].grpSrc) ? maxWt : -1.0 * maxWt;
+			managerRuntimeData.wt[pos_ij] = isExcitatoryGroup(connectConfigMap[connId].grpSrc) ? weight : -1.0f * weight;
+			managerRuntimeData.maxSynWt[pos_ij] = isExcitatoryGroup(connectConfigMap[connId].grpSrc) ? maxWt : -1.0f * maxWt;
 
 			if (netId < CPU_RUNTIME_BASE) {
 #ifndef __NO_CUDA__
@@ -3248,8 +3248,8 @@ inline void SNN::connectNeurons(int netId, int _grpSrc, int _grpDest, int _nSrc,
 	float maxWt = connectConfigMap[_connId].maxWt;
 	// adjust sign of weight based on pre-group (negative if pre is inhibitory)
 	// this access is fine, isExcitatoryGroup() use global grpId
-	connInfo.maxWt = isExcitatoryGroup(_grpSrc) ? fabs(maxWt) : -1.0 * fabs(maxWt);
-	connInfo.initWt = isExcitatoryGroup(_grpSrc) ? fabs(initWt) : -1.0 * fabs(initWt);
+	connInfo.maxWt = isExcitatoryGroup(_grpSrc) ? fabs(maxWt) : -1.0f * fabs(maxWt);
+	connInfo.initWt = isExcitatoryGroup(_grpSrc) ? fabs(initWt) : -1.0f * fabs(initWt);
 
 	connectionLists[netId].push_back(connInfo);
 
@@ -3270,8 +3270,8 @@ inline void SNN::connectNeurons(int netId, int _grpSrc, int _grpDest, int _nSrc,
 	connInfo.connId = _connId;
 	connInfo.preSynId = -1;
 	// adjust the sign of the weight based on inh/exc connection
-	connInfo.initWt = isExcitatoryGroup(_grpSrc) ? fabs(initWt) : -1.0*fabs(initWt);
-	connInfo.maxWt = isExcitatoryGroup(_grpSrc) ? fabs(maxWt) : -1.0*fabs(maxWt);
+	connInfo.initWt = isExcitatoryGroup(_grpSrc) ? fabs(initWt) : -1.0f * fabs(initWt);
+	connInfo.maxWt = isExcitatoryGroup(_grpSrc) ? fabs(maxWt) : -1.0f * fabs(maxWt);
 	connInfo.delay = delay;
 
 	connectionLists[netId].push_back(connInfo);
