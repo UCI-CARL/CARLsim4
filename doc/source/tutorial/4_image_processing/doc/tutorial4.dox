@@ -1,0 +1,452 @@
+/*!
+
+\page tut4_image_processing Tutorial 4: Image Processing
+\tableofcontents
+
+\author Michael Beyeler
+\see \ref ch1_getting_started
+\see \ref ch2_basic_concepts
+\see \ref ch3_neurons_synapses_groups
+\see \ref ch4_connections
+\see \ref ch9_matlab_oat
+
+In this tutorial, we will take a closer look at CARLsim's spatial connectivity
+profiles by implementing a simple image filter.
+Specifically, we will use the Gaussian connectivity profile to implement a
+smoothening operation and an edge detector (using a difference of Gaussians).
+To make this work, we will make use of both the Offline Analysis Toolbox
+and the Visual Stimulus Toolbox.
+
+At the end of the tutorial, you will know how to:
+- implement Gaussian connectivity profiles
+- use the ::Grid3D and ::RadiusRF structs for 2-D and 3-D transforms
+- import stimuli from the VisualStimulusToolbox into CARLsim
+- set up a custom SpikeGenerator object
+- create Gaussian connections for neurons arranged on a 2D/3D grid
+
+
+The source code of this tutorial can be found in
+<tt>%%%CARLSIM_ROOT_DIR%%/doc/source/tutorial/4_image_processing</tt>.
+
+
+
+\section tut4s1_visual_stimulus 4.1 VisualStimulusToolbox
+
+CARLsim uses VisualStimulusToolbox in MATLAB to convert images into binary
+files that CARLsim can understand.
+
+VisualStimulusToolbox is a lightweight MATLAB toolbox for generating,
+storing, and plotting 2D visual stimuli commonly used in vision and
+neuroscience research, such as sinusoidal gratings, plaids, random dot
+fields, and noise.
+Every stimulus can be plotted, recorded to AVI, and stored to binary:
+
+<img src="https://camo.githubusercontent.com/35212d317105107855aaa4f5dc2bbb306edf343a/687474703a2f2f7563692d6361726c2e6769746875622e696f2f56697375616c5374696d756c7573546f6f6c626f782f696d672f76697375616c7374696d756c75732e6a7067" style="width: 40%"/>
+
+
+\subsection tut4s1s1_installing_vst 4.1.1 Installing VisualStimulusToolbox
+
+VisualStimulusToolbox is available on <a href="https://github.com/UCI-CARL/VisualStimulusToolbox">GitHub</a>,
+but CARLsim comes pre-installed with an appropriate version of it
+(see <tt>external/VisualStimulusToolbox</tt>).
+
+If you followed the CARLsim installation instructions outlined in
+\ref ch1_getting_started, you are already good to go!
+
+However, if your <tt>external/VisualStimulusToolbox</tt> directory is empty
+(e.g., because you forgot the <tt>--recursive</tt> flag when you cloned
+CARLsim), you have to initialize the submodule yourself.
+Simply navigate to the CARLsim root directory and run the following:
+
+\code
+$ git submodule update --init --recursive
+\endcode
+
+The scripts below will automatically add the toolbox to your MATLAB path.
+Alternatively, you can install the toolbox as an add-on
+(MATLAB R2016a and newer):
+To open the Add-On Manager, go to the <tt>Home</tt> tab, and select
+<tt>Add-Ons > Manage Add-Ons</tt>.
+
+\see http://uci-carl.github.io/VisualStimulusToolbox
+
+
+\subsection tut4s1s2_first_steps 4.1.2 First Steps
+
+To make sure VisualStimulusToolbox has been installed correctly,
+try opening an image file. In MATLAB, navigate to the <tt>input</tt>
+directory of this tutorial, then type:
+
+\code
+>> pic = PictureStim('carl.jpg')
+
+pic = 
+
+  PictureStim with properties:
+
+                  width: 2182
+                 height: 2255
+               channels: 1
+                 length: 1
+                   stim: [2255x2182 double]
+    supportedNoiseTypes: {'gaussian'  'localvar'  'poisson'  'salt & pepper'  'speckle'}
+\endcode
+
+You can then have a look at the picture you just loaded by typing:
+
+\code
+>> pic.plot()
+\endcode
+
+\image html 4_carl_raw.jpg "CARL logo"
+
+
+
+\subsection tut4s1s2_converting 4.1.3 Converting an Image
+
+In order to convert an image, you can use the script <tt>createStimFromImage.m</tt>
+located in the <tt>scripts</tt> folder of this tutorial.
+
+The script is executed as follows:
+
+\code
+>> createStimFromImage('../input/carl.jpg', '../input/carl.dat', [256 256], 'gray')
+\endcode
+
+This will resize the grayscale image <tt>../input/carl.jpg</tt> to 256x256 pixels
+and store the image in a binary format that CARLsim can understand
+(<tt>../input/carl.dat</tt>).
+
+
+
+\section tut4s2_gaussian_blur 4.2 Gaussian Blur
+
+The first image processing technique we will look at is Gaussian smoothening.
+This technique is implemented in <tt>main_smooth.cpp</tt>.
+
+
+\subsection tut4s2s1_importing 4.2.1 Importing the Image
+
+The idea is to assign every pixel in the image to a neuron in the spiking
+network.
+In order to preserve spatial relationships, we arrange all neurons in a grid
+that matches the image dimensions.
+The image is simply imported by:
+\code
+VisualStimulus stim("input/carl.dat");
+\endcode
+
+
+\subsection tut4s2s2_assigning 4.2.2 Assigning Image Pixels to Neurons
+
+We can create a ::Grid3D struct from the <tt>stim</tt> dimensions:
+\code
+Grid3D imgDim(stim.getWidth(), stim.getHeight(), stim.getChannels());
+\endcode
+
+We also want a grid for the downscaled, blurred version of the image:
+\code
+Grid3D imgSmallDim(imgDim.width/2, imgDim.height/2, 1);
+\endcode
+
+So all we need to do is create groups with the above grids:
+
+\code
+// ---------------- CONFIG STATE -------------------
+CARLsim sim("smooth", GPU_MODE, USER);
+
+int gIn = sim.createSpikeGeneratorGroup("input", imgDim, EXCITATORY_NEURON);
+int gSmooth = sim.createGroup("smooth", imgSmallDim, EXCITATORY_NEURON);
+sim.setNeuronParameters(gSmooth, 0.02f, 0.2f, -65.0f, 8.0f);
+\endcode
+
+
+
+\subsection tut4s2s3_smoothing 4.2.3 Performing the Smoothing
+
+The Gaussian blur is simply implemented by a Gaussian connection.
+The trick is to use the ::RadiusRF struct to define the Gaussian kernel.
+For image processing, we want a Gaussian kernel in x and y dimensions, such as
+a 5x5 kernel. This is equivalent to ::RadiusRF(5, 5, 0).
+Here, the zero specifies that the smoothing will be performed separately for
+every channel (third dimension).
+If we wanted to smooth over the third dimension (e.g., a Gaussian voxel),
+we would choose ::RadiusRF(5, 5, 5).
+
+However, what we really want is to sum or average over all three color channels
+if the image is RGB. We do this by specifying ::RadiusRF(5, 5, -1):
+\code
+sim.connect(gIn, gSmooth, "gaussian", RangeWeight(2.0f), 1.0f,
+	RangeDelay(1), RadiusRF(5,5,-1));
+\endcode
+
+We set up some SpikeMonitor objects so that we can have a look at the output:
+\code
+// ---------------- SETUP STATE -------------------
+sim.setupNetwork();
+
+sim.setSpikeMonitor(gIn, "DEFAULT");
+sim.setSpikeMonitor(gSmooth, "DEFAULT");
+\endcode
+
+We then read the pixels of the image using the VisualStimulus bindings:
+\code
+PoissonRate* rates = stim.readFramePoisson(50.0f, 0.0f);
+\endcode
+This reads all pixel values and normalizes them in the range [0, 50Hz],
+such that white pixels (grayscale value 255) is assigned to 50 Hz,
+and 0 is 0.
+
+The PoissonRate object that is returned from this call neatly fits into
+CARLsim::setSpikeRate:
+\code
+sim.setSpikeRate(gIn, rates);
+\endcode
+
+Then all that is left to do is run the network:
+\code
+sim.runNetwork(1,0); // run the network
+\endcode
+
+This works for movies as well (where the number of frames > 1).
+For this, we simply wrap the above commands in a for loop, and repeated
+calls to <tt>readFrame</tt> will simply process the next frame in the loop:
+\code
+// ---------------- RUN STATE -------------------
+for (int i=0; i<stim.getLength(); i++) {
+	PoissonRate* rates = stim.readFramePoisson(50.0f, 0.0f);
+	sim.setSpikeRate(gIn, rates);
+ 	sim.runNetwork(1,0); // run the network
+}
+\endcode
+
+And done!
+
+
+
+\subsection tut4s2s4_plotting 4.2.4 Visualizing the Output
+
+You can compile and run the above network as follows:
+
+\code
+$ make smooth
+$ ./smooth
+\endcode
+
+The result can then be analyzed using the OAT.
+Visualizing network activity is easiest with the NetworkMonitor.
+Go back to the <tt>scripts</tt> folder in MATLAB, and run:
+
+\code
+>> demoSmooth
+\endcode
+
+\image html 4_carl_smooth.jpg "Gaussian smoothing using CARLsim"
+
+
+
+
+
+
+
+\section tut4s3_dog 4.3 Difference of Gaussians: Edge Detection
+
+We can extend the above example by implementing an edge detector using
+a difference of Gaussians (DOG) operation.
+For this, we will first convolve the image with a small Gaussian kernel
+::RadiusRF(0.5, 0.5, -1), which is basically a "one-to-one" connection.
+From the output of this operation, we will then
+subtract a blurred version of the image.
+The result will be an edge map.
+
+
+
+\subsection tut4s3s1_setup 4.3.1 Setting up the Network
+
+Importing the image and setting up the ::Grid3D structs is the same as above:
+
+\code
+CARLsim sim("dog", GPU_MODE, USER);
+
+VisualStimulus stim("input/carl.dat");
+stim.print();
+
+Grid3D imgDim(stim.getWidth(), stim.getHeight(), stim.getChannels());
+Grid3D imgSmallDim(imgDim.width/2, imgDim.height/2, 1);
+\endcode
+
+
+From these specs, we will create the input and smoothing groups as above:
+\code
+int gIn = sim.createSpikeGeneratorGroup("input", imgDim, EXCITATORY_NEURON);
+int gSmoothExc = sim.createGroup("smoothExc", imgSmallDim, EXCITATORY_NEURON);
+sim.setNeuronParameters(gSmoothExc, 0.02f, 0.2f, -65.0f, 8.0f);
+\endcode
+
+However, this time around we also need an inhibitory group, so that we can
+subtract the blurred version of the image,
+and an output group that will contain the edge map:
+\code
+int gSmoothInh = sim.createGroup("smoothInh", imgSmallDim, INHIBITORY_NEURON);
+sim.setNeuronParameters(gSmoothInh, 0.02f, 0.2f, -65.0f, 8.0f);
+
+int gEdges = sim.createGroup("edges", imgSmallDim, EXCITATORY_NEURON);
+sim.setNeuronParameters(gEdges, 0.02f, 0.2f, -65.0f, 8.0f);
+\endcode
+
+
+\subsection tut4s3s2_dog 4.3.2 Performing the Difference of Gaussians (DOG) Operation
+
+Setting up the connectivity is straightforward, too.
+The only annoying thing is that you will have to tune the synaptic weights
+in order to get this right.
+
+Luckily I have already done this for you.
+We need two feedforward connections from the input group:
+One with a small kernel to an excitatory group,
+and another with a larger kernel to an inhibitory group.
+\code
+sim.connect(gIn, gSmoothExc, "gaussian", RangeWeight(10.0f), 1.0f,
+	RangeDelay(1), RadiusRF(0.5,0.5,-1));
+
+sim.connect(gIn, gSmoothInh, "gaussian", RangeWeight(5.0f), 1.0f,
+	RangeDelay(1), RadiusRF(3,3,-1));
+\endcode
+
+We then want to subtract the output of <tt>gSmoothInh</tt> from
+<tt>gSmoothExc</tt>:
+\code
+sim.connect(gSmoothExc, gEdges, "one-to-one", RangeWeight(16.0f), 1.0f,
+	RangeDelay(1));
+sim.connect(gSmoothInh, gEdges, "one-to-one", RangeWeight(100.0f), 1.0f,
+	RangeDelay(1));
+\endcode
+
+
+\subsection tut4s3s3_converting 4.3.3 Converting Pixels to Spikes
+
+This time around, we want the input to be a little more exact than
+a Poisson rate.
+The problem with the Poisson distribution is that the actual firing rate
+you get from a specified mean firing rate lambda has variance
+equal to lambda!
+
+A more exact translation would be to convert the grayscale value of a
+pixel to a constant inter-spike interval (ISI), so that the firing rate
+of the corresponding neuron is 1/ISI.
+
+We do this by subclassing SpikeGenerator and creating our own spike
+generator class:
+
+\code
+class ConstantISI : public SpikeGenerator {
+public:
+	ConstantISI(int numNeur) {
+		_numNeur = numNeur;
+	}
+	~ConstantISI() {}
+
+	...
+
+private:
+	int _numNeur;
+	std::vector<int> _isi;
+};
+\endcode
+
+The class has a private integer <tt>_numNeur</tt> that holds the number of
+neurons in the group, and a vector <tt>_isi</tt> that holds the ISI for
+every neuron in the group.
+
+We then need to specify a <tt>nextSpikeTime</tt> method.
+This method is supposed to return the next spike time of a specific neuron
+<tt>nid</tt> in the group <tt>grpId</tt>.
+In our case, the next spike time is simply: the last spike of the neuron
+plus its ISI:
+\code
+unsigned int nextSpikeTime(CARLsim* sim, int grpId, int nid, unsigned int currentTime,
+	unsigned int lastScheduledSpikeTime, unsigned int endOfTimeSlice)
+{
+	// printf("_numNeur=%d, getGroupNumNeurons=%d\n",_numNeur, sim->getGroupNumNeurons(grpId));
+	assert(_numNeur == sim->getGroupNumNeurons(grpId));
+
+	// periodic spiking according to ISI
+	return (std::max(currentTime, lastScheduledSpikeTime) + _isi[nid]);
+}
+\endcode
+
+What's left is a method to update the ISI on the fly.
+Here we accept as input an array of grayscale values <tt>stimGray</tt>,
+which should have the same elements as the number of neurons in the group,
+and the upper and lower bounds of our firing rates.
+For every neuron in the group,
+we read the grayscale value of the corresponding pixel,
+convert it to a mean firing rate,
+and then invert the firing rate to get an ISI:
+\code
+void updateISI(unsigned char* stimGray, float maxRateHz=50.0f, float minRateHz=0.0f) {
+	_isi.clear();
+
+	// calculate inter-spike interval (ISI) from firing rate
+	for (int i=0; i<_numNeur; i++) {
+		// convert grayscale value to firing rate
+		float rateHz = (float)stimGray[i] / 255.0f * (maxRateHz - minRateHz) + minRateHz;
+
+		// invert firing rate to get inter-spike interval (ISI)
+		int isi = (rateHz > 0.0f) ? std::max(1, (int)(1000 / rateHz)) : 1000000;
+
+		// add value to vector
+		_isi.push_back(isi);
+	}
+}
+\endcode
+
+\note Yes, we could have implemented a constant-firing-rate class instead.
+After all, firing rate is 1/ISI.
+However, going with the ISI has the advantage that we need not think about the
+division by zero, and we only have to deal with integers.
+
+
+
+\subsection tut4s3s4 4.3.4 Running the Network
+
+With our <tt>ConstantISI</tt> class in hand,
+we can assign to the input group:
+\code
+ConstantISI constISI(imgDim.N);
+sim.setSpikeGenerator(gIn, &constISI);
+\endcode
+
+Then we can use the <tt>readFrameChar</tt> method of the VisualStimulus
+bindings to get access to the raw grayscale values, and pass these to
+the <tt>updateISI</tt> method we wrote above:
+\code
+// ---------------- RUN STATE -------------------
+for (int i=0; i<stim.getLength(); i++) {
+	constISI.updateISI(stim.readFrameChar(), 50.0f, 0.0f);
+	sim.runNetwork(1,0); // run the network
+}
+\endcode
+
+
+
+\subsection tut4s3s5_plotting 4.3.5 Visualizing the Output
+
+You can compile and run the above network as follows:
+
+\code
+$ make dog
+$ ./dog
+\endcode
+
+The result can then be analyzed using the OAT.
+Visualizing network activity is easiest with the NetworkMonitor.
+Go back to the <tt>scripts</tt> folder in MATLAB, and run:
+
+\code
+>> demoDOG
+\endcode
+
+\image html 4_carl_dog.jpg "Edge detection with CARLsim"
+
+*/

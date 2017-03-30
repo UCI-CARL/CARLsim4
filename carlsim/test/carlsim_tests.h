@@ -53,12 +53,11 @@
 #include <string>			// std::string, memset
 #include <cassert>			// assert
 
-// FIXME: I added this flag, because as it stands now most CPUvsGPU comparisons fail. And they should, because the
-// order of execution in doCPUSim() and doGPUsim() is really different. No wonder we get, for example, different
-// spike counts in the end.
-// So for now, these CPUvsGPU tests will produce a lot of gtest error messages, which are annoying. Use this flag
-// to disable them for now until the issue is fixed.
-#define ENABLE_CPU_GPU_TESTS (0)
+#ifndef __NO_CUDA__
+#define TESTED_MODES 2
+#else
+#define TESTED_MODES 1
+#endif
 
 /*
  * GENERAL TESTING STRATEGY

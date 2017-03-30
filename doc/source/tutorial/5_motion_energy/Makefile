@@ -23,7 +23,7 @@
 
 # Name of the binary file to be created.
 # NOTE: There must be a corresponding .cpp file named main_$(proj_target).cpp!
-proj_target    := simple_weight_tuner
+proj_target    := motion_energy
 
 # Directory where all include files reside. The Makefile will automatically
 # detect and include all .h files within that directory.
@@ -45,9 +45,9 @@ proj_src_dir   := src
 # NOTE: If your CARLsim4 installation does not reside in the default path, make
 # sure the environment variable CARLSIM4_INSTALL_DIR is set.
 ifdef CARLSIM4_INSTALL_DIR
-	CARLSIM4_INC_DIR  := $(CARLSIM4_INSTALL_DIR)/inc
+	CARLSIM4_INC_DIR  := $(CARLSIM4_INSTALL_DIR)/include
 else
-	CARLSIM4_INC_DIR  := /usr/local/include/carlsim
+	CARLSIM4_INC_DIR  := $(HOME)/CARL/include
 endif
 
 # include compile flags etc.
@@ -72,6 +72,8 @@ obj_files  := $(patsubst %.cpp, %-cpp.o, $(cpp_files))
 clean_files := $(obj_files) $(proj_target)
 distclean_files := $(clean_files) results/* *.dot *.dat *.csv *.log
 
+PROJ_FL := -I/opt/CARL/ME/inc -L/opt/CARL/ME/lib
+PROJ_LIB := -lME
 
 #------------------------------------------------------------------------------
 # Project targets and rules
@@ -84,14 +86,10 @@ default: $(proj_target)
 $(proj_target): $(main_src_file) $(inc_files) $(cpp_files) $(obj_files)
 	$(eval CARLSIM4_FLG += -Wno-deprecated-gpu-targets)
 	$(eval CARLSIM4_LIB += -lcurand)
-	$(NVCC) $(CARLSIM4_FLG) $(obj_files) $< -o $(proj_target) $(CARLSIM4_LIB)
-
-nocuda: $(main_src_file) $(inc_files) $(obj_cpp)
-	$(eval CARLSIM4_FLG += -D __NO_CUDA__)
-	$(CXX) $(CARLSIM4_FLG) $(obj_cpp) $(obj_cu) $< -o $(proj_target) $(CARLSIM4_LIB)
+	$(NVCC) $(CARLSIM4_FLG) $(PROJ_FL) $(obj_files) $< -o $(proj_target) $(CARLSIM4_LIB) $(PROJ_LIB)
 
 $(proj_src_dir)/%-cpp.o: $(proj_src_dir)/%.cpp $(inc_files)
-	$(CXX) -c $(CXXINCFL) $(CXXFL) $< -o $@
+	$(NVCC) -c $(NVCCINCFL) $(NVCCFL) $(PROJ_FL) $< -o $@ $(PROJ_LIB)
 
 clean:
 	$(RM) $(clean_files)

@@ -2280,8 +2280,10 @@ void SNN::copySTPState(int netId, int lGrpId, RuntimeData* dest, RuntimeData* sr
  *
  * \since v4.0
  */
-void SNN::copyNetworkConfig(int netId) {
+void SNN::copyNetworkConfig(int netId, cudaMemcpyKind kind) {
 	checkAndSetGPUDevice(netId);
+	assert(kind == cudaMemcpyHostToDevice);
+
 	CUDA_CHECK_ERRORS(cudaMemcpyToSymbol(networkConfigGPU, &networkConfigs[netId], sizeof(NetworkConfigRT), 0, cudaMemcpyHostToDevice));
 }
 
@@ -3312,7 +3314,7 @@ void SNN::allocateSNN_GPU(int netId) {
 	CUDA_CHECK_ERRORS(cudaMemcpyToSymbol(runtimeDataGPU, &runtimeData[netId], sizeof(RuntimeData), 0, cudaMemcpyHostToDevice));
 
 	// copy data to from SNN:: to NetworkConfigRT SNN::networkConfigs[0]
-	copyNetworkConfig(netId); // FIXME: we can change the group properties such as STDP as the network is running.  So, we need a way to updating the GPU when changes are made.
+	copyNetworkConfig(netId, cudaMemcpyHostToDevice); // FIXME: we can change the group properties such as STDP as the network is running.  So, we need a way to updating the GPU when changes are made.
 
 	// TODO: move mulSynFast, mulSynSlow to ConnectConfig structure
 	// copy connection configs

@@ -43,7 +43,6 @@ create_files:
 ifdef CARLSIM4_INSTALL_DIR
 	@test -d $(CARLSIM4_INSTALL_DIR) || mkdir $(CARLSIM4_INSTALL_DIR)
 endif
-#	ar rcs $(lib_name).$(lib_ver) $(intf_obj_files) $(krnl_obj_files) $(mon_obj_files) $(tools_obj_files)
 	@test -d $(CARLSIM4_INC_DIR) || mkdir $(CARLSIM4_INC_DIR)
 	@test -d $(CARLSIM4_LIB_DIR) || mkdir $(CARLSIM4_LIB_DIR)
 	@install -m 0755 $(lib_name).$(lib_ver) $(CARLSIM4_LIB_DIR)
@@ -55,6 +54,7 @@ endif
 	@install -m 0644 $(swt_inc_files) $(CARLSIM4_INC_DIR)
 	@install -m 0644 $(spkgen_inc_files) $(CARLSIM4_INC_DIR)
 	@install -m 0644 $(stp_inc_files) $(CARLSIM4_INC_DIR)
+	@install -m 0644 $(vs_inc_files) $(CARLSIM4_INC_DIR)
 	@install -m 0644 $(add_files) $(CARLSIM4_INC_DIR)
 
 delete_files: test_env

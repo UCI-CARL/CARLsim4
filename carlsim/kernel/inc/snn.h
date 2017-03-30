@@ -701,6 +701,7 @@ private:
 	void spikeGeneratorUpdate();
 	void updateTimingTable();
 	void updateWeights();
+	void updateNetworkConfig(int netId);
 
 	// Abstract layer for trasferring data (local-to-global copy)
 	void fetchConductanceAMPA(int gGrpId);
@@ -797,7 +798,7 @@ private:
 	void copySynapseState(int netId, RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind, bool allocateMem);
 	void copySTPState(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind, bool allocateMem);
 	void copyWeightState(int netId, int lGrpId, cudaMemcpyKind kind);
-	void copyNetworkConfig(int netId);
+	void copyNetworkConfig(int netId, cudaMemcpyKind kind);
 	void copyGroupConfigs(int netId);
 	void copyGrpIdsLookupArray(int netId, cudaMemcpyKind kind);
 	void copyConnIdsLookupArray(int netId, cudaMemcpyKind kind);
@@ -831,22 +832,27 @@ private:
 	void copySynapseState(int netId, RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind, bool allocateMem) { assert(false); }
 	void copySTPState(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind, bool allocateMem) { assert(false); }
 	void copyWeightState(int netId, int lGrpId, cudaMemcpyKind kind) { assert(false); }
-	void copyNetworkConfig(int netId) { assert(false); }
+	void copyNetworkConfig(int netId, cudaMemcpyKind kind) { assert(false); }
 	void copyGroupConfigs(int netId) { assert(false); }
 	void copyGrpIdsLookupArray(int netId, cudaMemcpyKind kind) { assert(false); }
 	void copyConnIdsLookupArray(int netId, cudaMemcpyKind kind) { assert(false); }
 	void copyLastSpikeTime(int netId, cudaMemcpyKind kind) { assert(false); }
 	void copyNetworkSpikeCount(int netId, cudaMemcpyKind kind,
-		unsigned int* spikeCountD1, unsigned int* spikeCountD2,
-		unsigned int* spikeCountExtD1, unsigned int* spikeCountExtD2) { assert(false); }
+	unsigned int* spikeCountD1, unsigned int* spikeCountD2,
+	unsigned int* spikeCountExtD1, unsigned int* spikeCountExtD2) { assert(false); }
 	void copySpikeTables(int netId, cudaMemcpyKind kind) { assert(false); }
 	void copyTimeTable(int netId, cudaMemcpyKind kind) { assert(false); }
 	void copyExtFiringTable(int netId, cudaMemcpyKind kind) { assert(false); }
 #endif
 
 	// CPU implementation for setupNetwork() and runNetwork()
+
+	//allocates runtime data on CPU memory
+	void allocateSNN_CPU(int netId); 
+
+	// runNetwork functions - multithreaded in POSIX using pthreads
+#if defined(WIN32) || defined(WIN64)
 	void assignPoissonFiringRate_CPU(int netId);
-	void allocateSNN_CPU(int netId); //!< allocates runtime data on CPU memory
 	void clearExtFiringTable_CPU(int netId);
 	void convertExtSpikesD2_CPU(int netId, int startIdx, int endIdx, int GtoLOffset);
 	void convertExtSpikesD1_CPU(int netId, int startIdx, int endIdx, int GtoLOffset);
@@ -861,6 +867,40 @@ private:
 	void spikeGeneratorUpdate_CPU(int netId);
 	void updateTimingTable_CPU(int netId);
 	void updateWeights_CPU(int netId);
+#else // for POSIX systems - returns a void* to pthread_create - only differ in the return type compared to the counterparts above
+	void* assignPoissonFiringRate_CPU(int netId);
+	void* clearExtFiringTable_CPU(int netId);
+	void* convertExtSpikesD2_CPU(int netId, int startIdx, int endIdx, int GtoLOffset);
+	void* convertExtSpikesD1_CPU(int netId, int startIdx, int endIdx, int GtoLOffset);
+	void* doCurrentUpdateD2_CPU(int netId);
+	void* doCurrentUpdateD1_CPU(int netId);
+	void* doSTPUpdateAndDecayCond_CPU(int netId);
+	void* deleteRuntimeData_CPU(int netId);
+	void* findFiring_CPU(int netId);
+	void* globalStateUpdate_CPU(int netId);
+	void* resetSpikeCnt_CPU(int netId, int lGrpId); //!< Resets the spike count for a particular group.
+	void* shiftSpikeTables_CPU(int netId);
+	void* spikeGeneratorUpdate_CPU(int netId);
+	void* updateTimingTable_CPU(int netId);
+	void* updateWeights_CPU(int netId);
+
+	// static multithreading helper methods for the above CPU runNetwork() methods
+	static void* helperAssignPoissonFiringRate_CPU(void*);
+	static void* helperClearExtFiringTable_CPU(void*);
+	static void* helperConvertExtSpikesD2_CPU(void*);
+	static void* helperConvertExtSpikesD1_CPU(void*);
+	static void* helperDoCurrentUpdateD2_CPU(void*);
+	static void* helperDoCurrentUpdateD1_CPU(void*);
+	static void* helperDoSTPUpdateAndDecayCond_CPU(void*);
+	static void* helperDeleteRuntimeData_CPU(void*);
+	static void* helperFindFiring_CPU(void*);
+	static void* helperGlobalStateUpdate_CPU(void*);
+	static void* helperResetSpikeCnt_CPU(void*);
+	static void* helperShiftSpikeTables_CPU(void*);
+	static void* helperSpikeGeneratorUpdate_CPU(void*);
+	static void* helperUpdateTimingTable_CPU(void*);
+	static void* helperUpdateWeights_CPU(void*);
+#endif
 
 	// CPU computing backend: data transfer function
 	void copyAuxiliaryData(int netId, int lGrpId, RuntimeData* dest, bool allocateMem);
@@ -878,12 +918,13 @@ private:
 	void copySynapseState(int netId, RuntimeData* dest, RuntimeData* src, bool allocateMem);	
 	void copySTPState(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, bool allocateMem);	
 	void copyWeightState(int netId, int lGrpId);
+	void copyNetworkConfig(int netId);
 	void copyGrpIdsLookupArray(int netId);
 	void copyConnIdsLookupArray(int netId);
 	void copyLastSpikeTime(int netId);
 	void copyNetworkSpikeCount(int netId,
-		unsigned int* spikeCountD1, unsigned int* spikeCountD2,
-		unsigned int* spikeCountExtD1, unsigned int* spikeCountExtD2);
+	unsigned int* spikeCountD1, unsigned int* spikeCountD2,
+	unsigned int* spikeCountExtD1, unsigned int* spikeCountExtD2);
 	void copySpikeTables(int netId);
 	void copyTimeTable(int netId, bool toManager);
 	void copyExtFiringTable(int netId);

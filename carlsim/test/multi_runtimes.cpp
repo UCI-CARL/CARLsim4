@@ -51,6 +51,13 @@
 #include "carlsim_tests.h"
 #include <carlsim.h>
 
+/*
+	class FixedRandomConnGen - Subclass of the connectionGenerator class to define custom connections between two groups
+ 	using a callback connect() method. The constructor takes #source neurons, #destination neurons,
+ 	an instance of rangeweight struct, and an instance of rangedelay struct. The callback connect() method
+ 	can be used to set a connection from neuron i of source group to neuron j of dest group and to set
+ 	the synapse parameters
+*/
 class FixedRandomConnGen : public ConnectionGenerator {
 public:
 	FixedRandomConnGen(int srcNumN, int destNumN, RangeWeight rt, RangeDelay rd) {
@@ -102,22 +109,22 @@ TEST(MultiRuntimes, spikesSingleVsMulti) {
 	FixedRandomConnGen* frConnGen = new FixedRandomConnGen(10, 10, RangeWeight(10.0f), RangeDelay(1, 20));
 	
 	int randSeed = rand();
-	for (int mode = 0; mode < 2; mode++) {
+	for (int mode = 0; mode < TESTED_MODES; mode++) {
 	//int mode = 1;
 	//int partition = 1;
 		for (int partition = 0; partition < 2; partition++) {
 			sim = new CARLsim("MultiRumtimes.spikesSingleVsMulti", HYBRID_MODE, SILENT, 0, randSeed);
 
 			// configure the network
-			gExc = sim->createGroup("exc", 10, EXCITATORY_NEURON, 0, mode ? CPU_CORES : GPU_CORES);
+			gExc = sim->createGroup("exc", 10, EXCITATORY_NEURON, 0, mode ? GPU_CORES : CPU_CORES);
 			sim->setNeuronParameters(gExc, 0.02f, 0.2f, -65.0f, 8.0f); // RS
 
 			//int gInh = sim.createGroup("inh", 20, INHIBITORY_NEURON);
 			//sim.setNeuronParameters(gInh, 0.1f, 0.2f, -65.0f, 2.0f); // FS
-			gExc2 = sim->createGroup("exc2", 10, EXCITATORY_NEURON, partition, mode ? CPU_CORES : GPU_CORES);
+			gExc2 = sim->createGroup("exc2", 10, EXCITATORY_NEURON, partition, mode ? GPU_CORES : CPU_CORES);
 			sim->setNeuronParameters(gExc2, 0.02f, 0.2f, -65.0f, 8.0f); // RS
 
-			gInput = sim->createSpikeGeneratorGroup("input", 10, EXCITATORY_NEURON, 0, mode ? CPU_CORES : GPU_CORES);
+			gInput = sim->createSpikeGeneratorGroup("input", 10, EXCITATORY_NEURON, 0, mode ? GPU_CORES : CPU_CORES);
 
 			sim->connect(gInput, gExc, "one-to-one", RangeWeight(50.0f), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
 			sim->connect(gExc, gExc2, frConnGen, SYN_FIXED);
@@ -181,19 +188,19 @@ TEST(MultiRuntimes, shuffleGroups) {
 	for (int partitionA = 0; partitionA < 2; partitionA++) {
 		for (int partitionB = 0; partitionB < 2; partitionB++) {
 			for (int partitionC = 0; partitionC < 2; partitionC++) {
-				for (int modeA = 0; modeA < 2; modeA++) {
-					for (int modeB = 0; modeB < 2; modeB++) {
-						for (int modeC = 0; modeC < 2; modeC++) {
+				for (int modeA = 0; modeA < TESTED_MODES; modeA++) {
+					for (int modeB = 0; modeB < TESTED_MODES; modeB++) {
+						for (int modeC = 0; modeC < TESTED_MODES; modeC++) {
 							CARLsim* sim = new CARLsim("MultiRuntimes.shffleGroups", HYBRID_MODE, SILENT, 0, randSeed);
 
 							// configure the network
-							int gExc = sim->createGroup("exc", 800, EXCITATORY_NEURON, partitionA, modeA ? CPU_CORES : GPU_CORES);
+							int gExc = sim->createGroup("exc", 800, EXCITATORY_NEURON, partitionA, modeA ? GPU_CORES : CPU_CORES);
 							sim->setNeuronParameters(gExc, 0.02f, 0.2f, -65.0f, 8.0f); // RS
 
-							int gInh = sim->createGroup("inh", 200, INHIBITORY_NEURON, partitionB, modeB ? CPU_CORES : GPU_CORES);
+							int gInh = sim->createGroup("inh", 200, INHIBITORY_NEURON, partitionB, modeB ? GPU_CORES : CPU_CORES);
 							sim->setNeuronParameters(gInh, 0.1f, 0.2f, -65.0f, 2.0f); // FS
 
-							int gInput = sim->createSpikeGeneratorGroup("input", 800, EXCITATORY_NEURON, partitionC, modeC ? CPU_CORES : GPU_CORES);
+							int gInput = sim->createSpikeGeneratorGroup("input", 800, EXCITATORY_NEURON, partitionC, modeC ? GPU_CORES : CPU_CORES);
 
 							sim->connect(gInput, gExc, "one-to-one", RangeWeight(30.0f), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
 							sim->connect(gExc, gExc, "random", RangeWeight(6.0f), pConn, RangeDelay(1, 20), RadiusRF(-1), SYN_FIXED);
@@ -236,7 +243,7 @@ TEST(MultiRuntimes, shuffleGroups) {
 
 							//printf("[%d,%d][%d,%d][%d,%d]\n", partitionA, modeA, partitionB, modeB, partitionC, modeC);
 							//printf("%f,%f,%f\n", smExc->getPopMeanFiringRate(), smInh->getPopMeanFiringRate(), smInput->getPopMeanFiringRate());
-							EXPECT_NEAR(smExc->getPopMeanFiringRate(), 6.1, 0.4);
+							EXPECT_NEAR(smExc->getPopMeanFiringRate(), 6.1, 0.5);
 							EXPECT_NEAR(smInh->getPopMeanFiringRate(), 29.0, 2.0);
 							EXPECT_NEAR(smInput->getPopMeanFiringRate(), 1.0, 0.1);
 

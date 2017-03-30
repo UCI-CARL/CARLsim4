@@ -71,7 +71,7 @@ TEST(COBA, synRiseTime) {
 	float time_abs_error = 2.0; // 2 ms
 	float wt_abs_error = 0.1; // error for wt
 
-	for (int mode=0; mode<=1; mode++) {
+	for (int mode = 0; mode < TESTED_MODES; mode++) {
 		int tdAMPA  = 5;
 		int trNMDA  = 20;
 		int tdNMDA  = 150; // make sure it's larger than trNMDA
@@ -79,7 +79,7 @@ TEST(COBA, synRiseTime) {
 		int trGABAb = 100;
 		int tdGABAb = 150; // make sure it's larger than trGABAb
 
-		sim = new CARLsim("COBA.synRiseTime",mode?GPU_MODE:CPU_MODE,SILENT,1,42);
+		sim = new CARLsim("COBA.synRiseTime", mode ? GPU_MODE : CPU_MODE, SILENT, 1, 42);
         Grid3D neur(1);
         Grid3D neur2(1);
 
@@ -142,7 +142,7 @@ TEST(COBA, synRiseTime) {
 	}
 }
 
-
+#ifndef __NO_CUDA__
 /*!
  * \brief This test ensures that CPUmode and GPUmode produce the exact same conductance values over some time period
  *
@@ -175,8 +175,8 @@ TEST(COBA, condSingleNeuronCPUvsGPU) {
 	float rate = 30.0f;
 	bool spikeAtZero = true;
 
-	for (int mode=0; mode<=1; mode++) {
-		sim = new CARLsim("COBA.condCPUvsGPU",mode?GPU_MODE:CPU_MODE,SILENT,1,42);
+	for (int mode = 0; mode < TESTED_MODES; mode++) {
+		sim = new CARLsim("COBA.condCPUvsGPU",mode ? GPU_MODE : CPU_MODE, SILENT, 1, 42);
 		grps[0]=sim->createGroup("excAMPA", Grid3D(nOutput), EXCITATORY_NEURON, 0);
 		grps[1]=sim->createGroup("excNMDA", Grid3D(nOutput), EXCITATORY_NEURON, 0);
 		grps[2]=sim->createGroup("excAMPA+NMDA", Grid3D(nOutput), EXCITATORY_NEURON, 0);
@@ -255,7 +255,9 @@ TEST(COBA, condSingleNeuronCPUvsGPU) {
 		delete sim;
 	}	
 }
+#endif // !__NO_CUUDA__
 
+#ifndef __NO_CUDA__
 /*
  * \brief testing CARLsim COBA output (spike rates) CPU vs GPU
  *
@@ -277,8 +279,8 @@ TEST(COBA, firingRateCPUvsGPU) {
 	int runTimeMs = 526;
 //	fprintf(stderr,"runTime=%d, delay=%d, wt=%f, input=%f\n",runTimeMs,delay,wt,inputRate);
 
-for (int isGPUmode=0; isGPUmode<=1; isGPUmode++) {
-		CARLsim sim("COBA.firingRateCPUvsGPU",isGPUmode?GPU_MODE:CPU_MODE,SILENT,1,42);
+for (int mode = 0; mode < TESTED_MODES; mode++) {
+		CARLsim sim("COBA.firingRateCPUvsGPU", mode ? GPU_MODE : CPU_MODE, SILENT, 1, 42);
 		int g1=sim.createGroup("output", 1, EXCITATORY_NEURON, 0);
 		sim.setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f); // RS
 		int g0=sim.createSpikeGeneratorGroup("input", 1 ,EXCITATORY_NEURON, 0);
@@ -304,7 +306,7 @@ for (int isGPUmode=0; isGPUmode<=1; isGPUmode++) {
 //		fprintf(stderr,"input g0=%d, nid=%d\n",g0,sim.getGroupStartNeuronId(g0));
 //		fprintf(stderr,"excit g1=%d, nid=%d\n",g1,sim.getGroupStartNeuronId(g1));
 
-		if (!isGPUmode) {
+		if (!mode) {
 			// CPU mode: store spike times and spike rate for future comparison
 			spkRateG0CPU = spkMonG0->getPopMeanFiringRate();
 			spkRateG1CPU = spkMonG1->getPopMeanFiringRate();
@@ -338,3 +340,5 @@ for (int isGPUmode=0; isGPUmode<=1; isGPUmode++) {
 		}
 	}
 }
+#endif // !__NO_CUDA__
+
