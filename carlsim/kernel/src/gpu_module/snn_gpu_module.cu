@@ -51,33 +51,27 @@
 #include <error_code.h>
 #include <cuda_runtime.h>
 
-#define NUM_THREADS 128
-#define NUM_BLOCKS 64
-#define WARP_SIZE 32
+#define NUM_THREADS 128 //!< default number of threads per block
+#define NUM_BLOCKS 64   //!< default number of blocks
+#define WARP_SIZE 32    //!< dufault number of threads per warp
 
-///////////////////////////////////////////////////////////////////
 // Some important ideas that explains the GPU execution are as follows:
 //  1. Each GPU block has a local firing table (called fireTable). The block of threads
 //     reads a bunch of neurons parameters and determines if it needs to fire or not
 //     Whenever a neuron need to fire, it keeps track of the fired neuron in the local
 //     table. When the table is full, we go and write back the fireTable to the global
 //     firing table. 
-//  2. Firing information is maintained in two tables globally (timingTable and the globalFiringTable)
-//     for excitatory neuron population and inhibitory neurons.
-//     The globalFiringTable only stores a sequence of id corresponding to fired neurons.
-//     The timingTable store the total number of fired neurons till the current time step t.
-//     These two tables are flushed and adjusted every second.
+//  2. Firing information is maintained in four tables globally (timeTableD1(D2)GPU and the firingTableD1(D2))
+//     The firingTableD1(D2) only stores a sequence of id corresponding to fired neurons.
+//     The timingTableD1(D2)GPU store the total number of fired neurons till the current time step t.
+//     These four tables are flushed and adjusted every second.
 //     This approach requires about half of the memory compared to the traditional AER scheme which
 //     stores the firing time and firing id together.
-//  For more details kindly read the enclosed report (report.pdf) in the source directory
 //
-//
-//  timeTableD2GPU[0] always is 0 -- index into firingTableD2
-//  timeTableD2GPU[maxDelay_] -- should be the number of spikes "leftover" from the previous second
-//	timeTableD2GPU[maxDelay_+1]-timeTableD2GPU[maxDelay_] -- should be the number of spikes in the first ms of the current second
-//  timeTableD2GPU[1000+maxDelay_] -- should be the number of spikes in the current second + the leftover spikes.
-//
-///////////////////////////////////////////////////////////////////
+//  timeTableD2GPU[0] always is 0: index into firingTableD2
+//  timeTableD2GPU[maxDelay_]: the number of spikes "leftover" from the previous second
+//  timeTableD2GPU[maxDelay_ + 1] - timeTableD2GPU[maxDelay_]: the number of spikes in the first ms of the current second
+//  timeTableD2GPU[1000 + maxDelay_]: the number of spikes in the current second + the leftover spikes.
 
 __device__ unsigned int  timeTableD2GPU[TIMING_COUNT];
 __device__ unsigned int  timeTableD1GPU[TIMING_COUNT];
@@ -97,21 +91,21 @@ __device__ unsigned int spikeCountExtRxD2SecGPU;
 __device__ unsigned int spikeCountExtRxD2GPU;
 __device__ unsigned int spikeCountExtRxD1GPU;
 
-__device__ __constant__ RuntimeData     runtimeDataGPU;
-__device__ __constant__ NetworkConfigRT	networkConfigGPU;
-__device__ __constant__ GroupConfigRT   groupConfigsGPU[MAX_GRP_PER_SNN];
+__device__ __constant__ RuntimeData runtimeDataGPU;
+__device__ __constant__ NetworkConfigRT networkConfigGPU;
+__device__ __constant__ GroupConfigRT groupConfigsGPU[MAX_GRP_PER_SNN];
 
-__device__ __constant__ float               d_mulSynFast[MAX_CONN_PER_SNN];
-__device__ __constant__ float               d_mulSynSlow[MAX_CONN_PER_SNN];
+__device__ __constant__ float d_mulSynFast[MAX_CONN_PER_SNN];
+__device__ __constant__ float d_mulSynSlow[MAX_CONN_PER_SNN];
 
-__device__  int	  loadBufferCount; 
-__device__  int   loadBufferSize;
+__device__ int loadBufferCount; 
+__device__ int loadBufferSize;
 
-texture <int,    1, cudaReadModeElementType>  timeTableD2GPU_tex;
-texture <int,    1, cudaReadModeElementType>  timeTableD1GPU_tex;
-texture <int,    1, cudaReadModeElementType>  groupIdInfo_tex; // groupIDInfo is allocated using cudaMalloc thus doesn't require an offset when using textures
-__device__  int timeTableD1GPU_tex_offset;
-__device__  int timeTableD2GPU_tex_offset;
+texture <int, 1, cudaReadModeElementType>  timeTableD2GPU_tex;
+texture <int, 1, cudaReadModeElementType>  timeTableD1GPU_tex;
+texture <int, 1, cudaReadModeElementType>  groupIdInfo_tex; // groupIDInfo is allocated using cudaMalloc thus doesn't require an offset when using textures
+__device__ int timeTableD1GPU_tex_offset;
+__device__ int timeTableD2GPU_tex_offset;
 
 // example of the quick synaptic table
 // index     cnt
@@ -121,18 +115,18 @@ __device__  int timeTableD2GPU_tex_offset;
 // 0100000 - 5
 // 0110000 - 4
 int quickSynIdTable[256];
-__device__ int  quickSynIdTableGPU[256];
+__device__ int quickSynIdTableGPU[256];
 void initQuickSynIdTable(int netId) {
 	void* devPtr;
-	   
+   
 	for(int i = 1; i < 256; i++) {
 		int cnt = 0;
 		while(i) {
 			if(((i >> cnt) & 1) == 1) break;
-      		cnt++;
-      		assert(cnt <= 7);
-    	}
-    	quickSynIdTable[i] = cnt;		 
+			cnt++;
+			assert(cnt <= 7);
+		}
+		quickSynIdTable[i] = cnt;		 
 	}
 
 	cudaSetDevice(netId);
@@ -176,10 +170,12 @@ __device__ inline bool getSpikeGenBit(unsigned int nidPos) {
 }
 
 /*!
- * \brief This device function updates the average firing rate of each neuron, which is required for homeostasis
+ * \brief The device function updates the average firing rate of each neuron
  *
- * \param[in] lNId The neuron id to be updated
- * \param[in] lGrpId The group id of the neuron
+ * The device function updated the average firing rate of each neuron, which is required for homeostasis
+ *
+ * \param[in] lNId The local neuron id to be updated
+ * \param[in] lGrpId The local group id of the neuron
  */
 __device__ inline void updateHomeoStaticState(int lNId, int lGrpId) {
 	// here the homeostasis adjustment
@@ -187,11 +183,14 @@ __device__ inline void updateHomeoStaticState(int lNId, int lGrpId) {
 }
 
 /*!
- * \brief After every time step we update the time table
+ * \brief After every time step, this kernel function updates the time tables.
  *
- * Only one cuda thread is required for updating the time table
+ * After every time step, this kernel is launched to update time tables.
+ * The accumulated number of spikes is stored in the array indexed by the current time setp.
+ *.The kernel function use onlu one thread to update the time tables.
  *
  * \param[in] simTime The current time step
+ * \return void
  */
 __global__ void kernel_updateTimeTable(int simTime) {
 	if (threadIdx.x == 0 && blockIdx.x == 0) {
@@ -201,13 +200,14 @@ __global__ void kernel_updateTimeTable(int simTime) {
 	__syncthreads();									     
 }
 
-/////////////////////////////////////////////////////////////////////////////////
-// Device Kernel Function:  Intialization of the GPU side of the simulator    ///
-// KERNEL: This kernel is called after initialization of various parameters   ///
-// so that we can reset all required parameters.                              ///
-/////////////////////////////////////////////////////////////////////////////////
+/*! 
+ * \brief This kernel initilize variables in GPU memory
+ *
+ * This kernel function initialize/reset timeTableD1(D2) and all spike counters.
+ *
+ * \return void
+ */
 __global__ void kernel_initGPUMemory() {
-	// FIXME: use parallel access
 	int timeTableIdx = blockIdx.x * blockDim.x + threadIdx.x;
 
 	if (timeTableIdx < TIMING_COUNT) {
@@ -328,25 +328,27 @@ int SNN::allocateStaticLoad(int netId, int bufSize) {
 	return bufferCnt;
 }
 
-//////////////////////////////////////////////////
-// 1. KERNELS used when a specific neuron fires //
-//////////////////////////////////////////////////
-
-/////////////////////////////////////////////////////////////////////////////////
-// Device local function:      	Update the STP Variables                      ///
-// update the STPU and STPX variable after firing                             ///
-/////////////////////////////////////////////////////////////////////////////////
-
-// update the spike-dependent part of du/dt and dx/dt
-__device__ void firingUpdateSTP (int nid, int simTime, short int grpId) {
+/*!
+ * \brief This device funtion updates the STP Variables
+ *
+ * The device function updates the STPU and STPX variable after the neuron fires.
+ * Update the spike-dependent part of du/dt and dx/dt.
+ *
+ * \param[in] lNId The local neuron id to be updated
+ * \param[in] simTime The current time setp
+ * \param[in] lGrpId The local group id of the neuron
+ *
+ * \return void
+ */
+__device__ void firingUpdateSTP (int lNId, int simTime, short int lGrpId) {
 	// we need to retrieve the STP values from the right buffer position (right before vs. right after the spike)
-	int ind_plus  = getSTPBufPos(nid, simTime);
-	int ind_minus = getSTPBufPos(nid, (simTime - 1));
+	int ind_plus  = getSTPBufPos(lNId, simTime);
+	int ind_minus = getSTPBufPos(lNId, (simTime - 1));
 
 	// at this point, stpu[ind_plus] has already been assigned, and the decay applied
 	// so add the spike-dependent part to that
 	// du/dt = -u/tau_F + U * (1-u^-) * \delta(t-t_{spk})
-	runtimeDataGPU.stpu[ind_plus] += groupConfigsGPU[grpId].STP_U * (1.0f - runtimeDataGPU.stpu[ind_minus]);
+	runtimeDataGPU.stpu[ind_plus] += groupConfigsGPU[lGrpId].STP_U * (1.0f - runtimeDataGPU.stpu[ind_minus]);
 
 	// dx/dt = (1-x)/tau_D - u^+ * x^- * \delta(t-t_{spk})
 	runtimeDataGPU.stpx[ind_plus] -= runtimeDataGPU.stpu[ind_plus] * runtimeDataGPU.stpx[ind_minus];
@@ -699,18 +701,19 @@ __global__ 	void kernel_findFiring (int simTime) {
 	}
 }
 
-//******************************** UPDATE CONDUCTANCES AND TOTAL SYNAPTIC CURRENT EVERY TIME STEP *****************************
 
 #define LOG_CURRENT_GROUP 5
 /*!
- * \brief Based on the bitvector used for indicating the presence of spike, the global conductance values are updated.
+ * \brief Based on the bitvector indicating the presence of spike, the conductance is updated.
  *
- * net access: numNReg, numNPois, I_setPitch, maxDelay, STP_Pitch, sim_with_conductances,
+ * This kernel function update the conductance of each neuron based on the bitvector indicating the presence of spikes.
+ *
+ * \n net access: numNReg, numNPois, I_setPitch, maxDelay, STP_Pitch, sim_with_conductances,
                sim_with_NMDA_rise, sim_withGABAb_Rise, sNMDA, sGABAb
- * grp access: WithSTP, STP_A
- * rtd access: Npre, cumulativePre, I_set, preSynapticIds, grpIds, wt, stpx, stpu, connIdsPreIdx,
+ * \n grp access: WithSTP, STP_A
+ * \n rtd access: Npre, cumulativePre, I_set, preSynapticIds, grpIds, wt, stpx, stpu, connIdsPreIdx,
                gAMPA, gGABAa, gNMDA_r, gNMDA_d, gNMDA, gGABAb_r, gGABAb_d, gGABAb
- * glb access: d_mulSynFast, d_mulSynSlow
+ * \n glb access: d_mulSynFast, d_mulSynSlow
  */
 __global__ void kernel_conductanceUpdate (int simTimeMs, int simTimeSec, int simTime) {
 	__shared__ int sh_quickSynIdTable[256];
@@ -856,13 +859,13 @@ __global__ void kernel_conductanceUpdate (int simTimeMs, int simTimeSec, int sim
 	}
 }
 
-//************************ UPDATE GLOBAL STATE EVERY TIME STEP *******************************************************//
 
 /*!
  * \brief This device function implements the equations of neuron dynamics
  *
  * \param[in] nid The neuron id to be updated
  * \param[in] grpId The group id of the neuron
+ * \return void
  */
 __device__ void updateNeuronState(int nid, int grpId) {
 	float v = runtimeDataGPU.voltage[nid];
@@ -970,7 +973,6 @@ __global__ void kernel_groupStateUpdate(int simTime) {
 	}
 }
 
-//******************************** UPDATE STP STATE EVERY TIME STEP **********************************************
 /*!
  * \brief This function is called for updat STP and decay coductance every time step 
  *
@@ -1019,7 +1021,6 @@ __global__ void kernel_STPUpdateAndDecayConductances (int t, int sec, int simTim
 	}
 }
 
-//********************************UPDATE SYNAPTIC WEIGHTS EVERY SECOND  *************************************************************
 
 /*!
  * \brief This kernel update synaptic weights
@@ -1108,10 +1109,10 @@ __device__ void updateSynapticWeights(int nid, unsigned int synId, int grpId, fl
 /*!
  * \brief this kernel updates all synaptic weights
  *
- * net access: stdpScaleFactor, wtChangeDecay
- * grp access: homeostasisScale, avgTimeScaleInv, FixedInputWts, WithESTDPtype, WithISTDOtype, WithHomeostasis
- * rtd access: Npre_plastic, cumulativePre, avgFiring, baseFiringInv, baseFiring, wt, wtChange, maxSynWt
- * glb access:
+ * \n net access: stdpScaleFactor, wtChangeDecay
+ * \n grp access: homeostasisScale, avgTimeScaleInv, FixedInputWts, WithESTDPtype, WithISTDOtype, WithHomeostasis
+ * \n rtd access: Npre_plastic, cumulativePre, avgFiring, baseFiringInv, baseFiring, wt, wtChange, maxSynWt
+ * \n glb access:
  */
 __global__ void kernel_updateWeights() {
 	__shared__ volatile int errCode;
@@ -1182,7 +1183,6 @@ __global__ void kernel_updateWeights() {
 	}
 }
 
-//********************************UPDATE TABLES AND COUNTERS EVERY SECOND  *************************************************************
 
 /*!
  * \brief This kernel shift the un-processed firing information in firingTableD2 to the beginning of
@@ -1243,7 +1243,6 @@ __global__ void kernel_shiftTimeTable() {
 	}
 }
 
-//****************************** GENERATE POST-SYNAPTIC CURRENT EVERY TIME-STEP  ****************************
 
 /*
 * The sequence of handling an post synaptic spike in GPU mode:
@@ -1444,10 +1443,10 @@ __global__ void kernel_doCurrentUpdateD2(int simTimeMs, int simTimeSec, int simT
  * Ultimately we may merge this kernel with the kernel_doCurrentUpdateD2().
  * The LTD computation is also executed by this kernel.
  *
- * net access: maxDelay, I_setPitch, sim_in_testing
- * grp access: Type, grpDA, WithSTDP, WithESTDP, WithISTDP, WithESTDPcurve, WithISTDPcurve, all STDP parameters
- * rtd access: postSynapticIds, cumulativePre, grpIds, I_set, wtChange, (R)lastSpikeTime, (W)synSpikeTime
- * glb access: timeTableD1GPU, spikeCountD1SecGPU, firingTableD1
+ * \n net access: maxDelay, I_setPitch, sim_in_testing
+ * \n grp access: Type, grpDA, WithSTDP, WithESTDP, WithISTDP, WithESTDPcurve, WithISTDPcurve, all STDP parameters
+ * \n rtd access: postSynapticIds, cumulativePre, grpIds, I_set, wtChange, (R)lastSpikeTime, (W)synSpikeTime
+ * \n glb access: timeTableD1GPU, spikeCountD1SecGPU, firingTableD1
  */
 __global__ void kernel_doCurrentUpdateD1(int simTimeMs, int simTimeSec, int simTime) {
 	__shared__ volatile	int sh_NeuronCnt;
@@ -1570,9 +1569,9 @@ __global__ void kernel_convertExtSpikesD1(int startIdx, int endIdx, int GtoLOffs
  * \brief this function allocates device (GPU) memory sapce and copies information of pre-connections to it
  *
  * This function:
- * initialize Npre_plasticInv
- * (allocate and) copy Npre, Npre_plastic, Npre_plasticInv, cumulativePre, preSynapticIds
- * (allocate and) copy Npost, cumulativePost, postSynapticIds, postDelayInfo
+ * \n initialize Npre_plasticInv
+ * \n (allocate and) copy Npre, Npre_plastic, Npre_plasticInv, cumulativePre, preSynapticIds
+ * \n (allocate and) copy Npost, cumulativePost, postSynapticIds, postDelayInfo
  *
  *
  * \param[in] netId the id of a local network, which is the same as the device (GPU) id
@@ -1651,7 +1650,7 @@ void SNN::copyPreConnectionInfo(int netId, int lGrpId, RuntimeData* dest, Runtim
  * \brief this function allocates device (GPU) memory sapce and copies information of post-connections to it
  *
  * This function:
- * (allocate and) copy Npost, cumulativePost, postSynapticIds, postDelayInfo
+ * \n (allocate and) copy Npost, cumulativePost, postSynapticIds, postDelayInfo
  *
  *
  * \param[in] netId the id of a local network, which is the same as the device (GPU) id
@@ -1789,9 +1788,9 @@ void SNN::copyConductanceAMPA(int netId, int lGrpId, RuntimeData* dest, RuntimeD
  * \brief this function allocates device (GPU) memory sapce and copies NMDA conductance to it
  *
  * This function:
- * (allocate and) copy gNMDA, gNMDA_r, gNMDA_d
+ * \n (allocate and) copy gNMDA, gNMDA_r, gNMDA_d
  *
- * This funcion is called by copyNeuronState() and fetchConductanceNMDA(). It supports bi-directional copying
+ * \n This funcion is called by copyNeuronState() and fetchConductanceNMDA(). It supports bi-directional copying
  *
  * \param[in] netId the id of a local network, which is the same as the device (GPU) id
  * \param[in] lGrpId the local group id in a local network, which specifiy the group(s) to be copied
@@ -1840,9 +1839,9 @@ void SNN::copyConductanceNMDA(int netId, int lGrpId, RuntimeData* dest, RuntimeD
  * \brief this function allocates device (GPU) memory sapce and copies GABAa conductance to it
  *
  * This function:
- * (allocate and) copy gGABAa
+ * \n (allocate and) copy gGABAa
  *
- * This funcion is called by copyNeuronState() and fetchConductanceGABAa(). It supports bi-directional copying
+ * \n This funcion is called by copyNeuronState() and fetchConductanceGABAa(). It supports bi-directional copying
  *
  * \param[in] netId the id of a local network, which is the same as the device (GPU) id
  * \param[in] lGrpId the local group id in a local network, which specifiy the group(s) to be copied
@@ -2274,7 +2273,7 @@ void SNN::copySTPState(int netId, int lGrpId, RuntimeData* dest, RuntimeData* sr
  * \brief This function copies networkConfig form host to device
  *
  * This function:
- * copy networkConfig
+ * \n copy networkConfig
  *
  * \param[in] netId the id of a local network whose networkConfig will be copied to device (GPU) memory
  *
@@ -2306,9 +2305,9 @@ void SNN::copyGroupConfigs(int netId) {
  * \brief this function copy weight state in device (GPU) memory sapce to main (CPU) memory space
  *
  * This function:
- * copy wt, wtChange synSpikeTime
+ * \n copy wt, wtChange synSpikeTime
  *
- * This funcion is only called by fetchWeightState(). Only copying direction from device to host is required.
+ * \n This funcion is only called by fetchWeightState(). Only copying direction from device to host is required.
  *
  * \param[in] netId the id of a local network, which is the same as the device (GPU) id
  * \param[in] lGrpId the local group id in a local network, which specifiy the group(s) to be copied
