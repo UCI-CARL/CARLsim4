@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+VisualStudioVersion = 14.0.25123.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "carlsim", "carlsim\kernel\carlsim.vcxproj", "{713714BD-0AFF-4832-BF1B-29CB68F1CE39}"
 EndProject
@@ -44,6 +44,10 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "tutorial_4_image_processing_smooth", "doc\source\tutorial\4_image_processing\tutorial_4_image_processing_smooth.vcxproj", "{59B22E8F-7713-48D1-A521-A9CF7FCB24F8}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "visual_stimulus", "tools\visual_stimulus\visual_stimulus.vcxproj", "{07BEA5B4-2D2D-4EB3-BE11-3C3842F6A89D}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "gtest-md", "external\googletest\msvc\gtest-md.vcxproj", "{C8F6C172-56F2-4E76-B5FA-C3B423B31BE8}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "gtest_main-md", "external\googletest\msvc\gtest_main-md.vcxproj", "{3AF54C8A-10BF-4332-9147-F68ED9862033}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -307,6 +311,28 @@ Global
 		{07BEA5B4-2D2D-4EB3-BE11-3C3842F6A89D}.Release|Win32.Build.0 = Release|Win32
 		{07BEA5B4-2D2D-4EB3-BE11-3C3842F6A89D}.Release|x64.ActiveCfg = Release|x64
 		{07BEA5B4-2D2D-4EB3-BE11-3C3842F6A89D}.Release|x64.Build.0 = Release|x64
+		{C8F6C172-56F2-4E76-B5FA-C3B423B31BE8}.Debug|Mixed Platforms.ActiveCfg = Debug|Win32
+		{C8F6C172-56F2-4E76-B5FA-C3B423B31BE8}.Debug|Mixed Platforms.Build.0 = Debug|Win32
+		{C8F6C172-56F2-4E76-B5FA-C3B423B31BE8}.Debug|Win32.ActiveCfg = Debug|Win32
+		{C8F6C172-56F2-4E76-B5FA-C3B423B31BE8}.Debug|Win32.Build.0 = Debug|Win32
+		{C8F6C172-56F2-4E76-B5FA-C3B423B31BE8}.Debug|x64.ActiveCfg = Debug|x64
+		{C8F6C172-56F2-4E76-B5FA-C3B423B31BE8}.Debug|x64.Build.0 = Debug|x64
+		{C8F6C172-56F2-4E76-B5FA-C3B423B31BE8}.Release|Mixed Platforms.ActiveCfg = Release|Win32
+		{C8F6C172-56F2-4E76-B5FA-C3B423B31BE8}.Release|Mixed Platforms.Build.0 = Release|Win32
+		{C8F6C172-56F2-4E76-B5FA-C3B423B31BE8}.Release|Win32.ActiveCfg = Release|Win32
+		{C8F6C172-56F2-4E76-B5FA-C3B423B31BE8}.Release|Win32.Build.0 = Release|Win32
+		{C8F6C172-56F2-4E76-B5FA-C3B423B31BE8}.Release|x64.ActiveCfg = Release|Win32
+		{3AF54C8A-10BF-4332-9147-F68ED9862033}.Debug|Mixed Platforms.ActiveCfg = Debug|Win32
+		{3AF54C8A-10BF-4332-9147-F68ED9862033}.Debug|Mixed Platforms.Build.0 = Debug|Win32
+		{3AF54C8A-10BF-4332-9147-F68ED9862033}.Debug|Win32.ActiveCfg = Debug|Win32
+		{3AF54C8A-10BF-4332-9147-F68ED9862033}.Debug|Win32.Build.0 = Debug|Win32
+		{3AF54C8A-10BF-4332-9147-F68ED9862033}.Debug|x64.ActiveCfg = Debug|x64
+		{3AF54C8A-10BF-4332-9147-F68ED9862033}.Debug|x64.Build.0 = Debug|x64
+		{3AF54C8A-10BF-4332-9147-F68ED9862033}.Release|Mixed Platforms.ActiveCfg = Release|Win32
+		{3AF54C8A-10BF-4332-9147-F68ED9862033}.Release|Mixed Platforms.Build.0 = Release|Win32
+		{3AF54C8A-10BF-4332-9147-F68ED9862033}.Release|Win32.ActiveCfg = Release|Win32
+		{3AF54C8A-10BF-4332-9147-F68ED9862033}.Release|Win32.Build.0 = Release|Win32
+		{3AF54C8A-10BF-4332-9147-F68ED9862033}.Release|x64.ActiveCfg = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

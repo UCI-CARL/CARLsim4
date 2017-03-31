@@ -38,6 +38,12 @@
     <ClCompile Include="stp.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\external\googletest\msvc\gtest-md.vcxproj">
+      <Project>{c8f6c172-56f2-4e76-b5fa-c3b423b31be8}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\external\googletest\msvc\gtest_main-md.vcxproj">
+      <Project>{3af54c8a-10bf-4332-9147-f68ed9862033}</Project>
+    </ProjectReference>
     <ProjectReference Include="..\..\tools\spike_generators\spike_generators.vcxproj">
       <Project>{5c02490d-8c39-4c36-a3c9-cd683bdf43e0}</Project>
     </ProjectReference>
@@ -129,12 +135,12 @@ copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN64;__CUDA7__;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(CudaToolkitIncludeDir);$(NVCUDASAMPLES_ROOT)\common\inc;$(SolutionDir)carlsim\interface\inc;$(SolutionDir)carlsim\kernel\inc;$(SolutionDir)carlsim\monitor;$(SolutionDir)tools\spike_generators;$(SolutionDir)gtest\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(CudaToolkitIncludeDir);$(NVCUDASAMPLES_ROOT)\common\inc;$(SolutionDir)carlsim\interface\inc;$(SolutionDir)carlsim\kernel\inc;$(SolutionDir)carlsim\monitor;$(SolutionDir)tools\spike_generators;$(SolutionDir)external\googletest\include</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
-      <AdditionalDependencies>cudart.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;gtest.lib;gtest_main.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>cudart.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories);$(CudaToolkitLibDir);$(OutDir)</AdditionalLibraryDirectories>
       <OutputFile>$(ProjectDir)$(TargetName)$(TargetExt)</OutputFile>
     </Link>
