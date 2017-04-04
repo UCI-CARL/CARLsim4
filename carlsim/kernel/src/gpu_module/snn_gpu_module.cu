@@ -98,23 +98,32 @@ __device__ __constant__ GroupConfigRT groupConfigsGPU[MAX_GRP_PER_SNN]; //!< The
 __device__ __constant__ float d_mulSynFast[MAX_CONN_PER_SNN]; //!< The multiply factor of fast rising synaptic channel
 __device__ __constant__ float d_mulSynSlow[MAX_CONN_PER_SNN]; //!< Thu multiply factor of slow rising synaptic channel
 
-__device__ int loadBufferCount; 
-__device__ int loadBufferSize;
+__device__ int loadCount; //<! The total number of workloads assigned to CUDA streaming multiprocessors.
 
 texture <int, 1, cudaReadModeElementType>  timeTableD2GPU_tex; //!< Texture mapping for quick accessing timeTableD2GPU
 texture <int, 1, cudaReadModeElementType>  timeTableD1GPU_tex; //!< Texture mapping for quick accessing timeTableD1GPU
 __device__ int timeTableD1GPU_tex_offset; //!< The offset used to access texture
 __device__ int timeTableD2GPU_tex_offset; //!< The offset used to access texture
 
-// example of the quick synaptic table
+// example of the quick synaptic id lookup table
 // index     cnt
 // 0000000 - 0
 // 0000001 - 0
 // 0000010 - 1
 // 0100000 - 5
 // 0110000 - 4
-int quickSynIdTable[256];
-__device__ int quickSynIdTableGPU[256];
+
+int quickSynIdTable[256]; //!< The quick synaptic id lookup table
+__device__ int quickSynIdTableGPU[256]; //!< The quick synaptic id lookup table in GPU memory space
+
+/*!
+ * \brief This function initializes the quick synaptic id lookup table
+ *
+ * This function generates the quick synaptic id lookup table and copies it to the GPU memory space specified by netId
+ * 
+ * \param[in] netId The local network id, which is also used to control GPU context
+ * \return void
+ */
 void initQuickSynIdTable(int netId) {
 	void* devPtr;
    
@@ -248,13 +257,13 @@ __global__ void kernel_initGPUMemory() {
 //  756  :   2    :   256
 // 1012  :   2    :    88
 //-----------------------
-int SNN::allocateStaticLoad(int netId, int bufSize) {
+int SNN::allocateStaticLoad(int netId, int loadSize) {
 	checkAndSetGPUDevice(netId);
 
 	// only one thread does the static load table
 	int bufferCnt = 0;
 	for (int lGrpId = 0; lGrpId < networkConfigs[netId].numGroups; lGrpId++) {
-		int grpBufCnt = (int) ceil(1.0f * groupConfigs[netId][lGrpId].numN / bufSize);
+		int grpBufCnt = (int) ceil(1.0f * groupConfigs[netId][lGrpId].numN / loadSize);
 		assert(grpBufCnt >= 0);
 		bufferCnt += grpBufCnt;
 		KERNEL_DEBUG("Grp Size = %d, Total Buffer Cnt = %d, Buffer Cnt = %d", groupConfigs[netId][lGrpId].numN, bufferCnt, grpBufCnt);
@@ -264,17 +273,17 @@ int SNN::allocateStaticLoad(int netId, int bufSize) {
 	int2*  tempNeuronAllocation = (int2*)malloc(sizeof(int2) * bufferCnt);
 	KERNEL_DEBUG("STATIC THREAD ALLOCATION");
 	KERNEL_DEBUG("------------------------");
-	KERNEL_DEBUG("Buffer Size = %d, Buffer Count = %d", bufSize, bufferCnt);
+	KERNEL_DEBUG("Buffer Size = %d, Buffer Count = %d", loadSize, bufferCnt);
 
 	bufferCnt = 0;
 	for (int lGrpId = 0; lGrpId < networkConfigs[netId].numGroups; lGrpId++) {
-		for (int lNId = groupConfigs[netId][lGrpId].lStartN; lNId <= groupConfigs[netId][lGrpId].lEndN; lNId += bufSize) {
+		for (int lNId = groupConfigs[netId][lGrpId].lStartN; lNId <= groupConfigs[netId][lGrpId].lEndN; lNId += loadSize) {
 			int2  threadLoad;
 			// starting neuron id is saved...
 			threadLoad.x = lNId;
-			if ((lNId + bufSize - 1) <= groupConfigs[netId][lGrpId].lEndN)
+			if ((lNId + loadSize - 1) <= groupConfigs[netId][lGrpId].lEndN)
 				// grpID + full size
-				threadLoad.y = (lGrpId + (bufSize << 16)); // can't support group id > 2^16
+				threadLoad.y = (lGrpId + (loadSize << 16)); // can't support group id > 2^16
 			else
 				// grpID + left-over size
 				threadLoad.y = (lGrpId + ((groupConfigs[netId][lGrpId].lEndN - lNId + 1) << 16)); // can't support group id > 2^16
@@ -296,9 +305,8 @@ int SNN::allocateStaticLoad(int netId, int bufSize) {
 	assert(runtimeData[netId].allocated == false);
 	// Finally writeback the total bufferCnt
 	// Note down the buffer size for reference
-	KERNEL_DEBUG("GPU loadBufferSize = %d, GPU loadBufferCount = %d", bufSize, bufferCnt);
-	CUDA_CHECK_ERRORS(cudaMemcpyToSymbol(loadBufferCount, &bufferCnt, sizeof(int), 0, cudaMemcpyHostToDevice));
-	CUDA_CHECK_ERRORS(cudaMemcpyToSymbol(loadBufferSize, &bufSize, sizeof(int), 0, cudaMemcpyHostToDevice));
+	KERNEL_DEBUG("GPU loadCount = %d", bufferCnt);
+	CUDA_CHECK_ERRORS(cudaMemcpyToSymbol(loadCount, &bufferCnt, sizeof(int), 0, cudaMemcpyHostToDevice));
 	CUDA_CHECK_ERRORS(cudaMalloc((void**) &runtimeData[netId].neuronAllocation, sizeof(int2) * bufferCnt));
 	CUDA_CHECK_ERRORS(cudaMemcpy(runtimeData[netId].neuronAllocation, tempNeuronAllocation, sizeof(int2) * bufferCnt, cudaMemcpyHostToDevice));
 	free(tempNeuronAllocation);
@@ -456,7 +464,7 @@ __device__ int updateNewFirings(int* fireTablePtr, short int* fireGrpId,
 
 // zero GPU spike counts
 __global__ void kernel_resetNSpikeCnt(int lGrpId) {
-	const int totBuffers = loadBufferCount;
+	const int totBuffers = loadCount;
 
 	for (int bufPos = blockIdx.x; bufPos < totBuffers; bufPos += gridDim.x) {
 		// KILLME !!! This can be further optimized ....
@@ -586,7 +594,7 @@ __global__ 	void kernel_findFiring (int simTime) {
 		fireCntTest = 0; // initialize test cnt to 0
 	}
 
-	const int totBuffers=loadBufferCount;
+	const int totBuffers = loadCount;
 
 	__syncthreads();
 
@@ -704,7 +712,7 @@ __global__ void kernel_conductanceUpdate (int simTimeMs, int simTimeSec, int sim
 
 	__syncthreads();
 
-	const int totBuffers = loadBufferCount;
+	const int totBuffers = loadCount;
 	for (int bufPos = blockIdx.x; bufPos < totBuffers; bufPos += gridDim.x) {
 		// KILLME !!! This can be further optimized ....
 		// instead of reading each neuron group separately .....
@@ -899,7 +907,7 @@ __device__ void updateNeuronState(int nid, int grpId) {
  * glb access:
  */
 __global__ void kernel_neuronStateUpdate() {
-	const int totBuffers = loadBufferCount;
+	const int totBuffers = loadCount;
 
 	// update neuron state
 	for (int bufPos = blockIdx.x; bufPos < totBuffers; bufPos += gridDim.x) {
@@ -959,7 +967,7 @@ __global__ void kernel_groupStateUpdate(int simTime) {
  * rtd access stpu, stpx
  */
 __global__ void kernel_STPUpdateAndDecayConductances (int t, int sec, int simTime) {
-	const int totBuffers = loadBufferCount;
+	const int totBuffers = loadCount;
 
 	for (int bufPos = blockIdx.x; bufPos < totBuffers; bufPos += gridDim.x) {
 		// KILLME !!! This can be further optimized ....
@@ -1099,7 +1107,7 @@ __global__ void kernel_updateWeights() {
 	__shared__ float		homeostasisScale, avgTimeScaleInv;
 
 	if(threadIdx.x == 0) {
-		totBuffers = loadBufferCount;
+		totBuffers = loadCount;
 		grpNCnt	= (blockDim.x / UPWTS_CLUSTERING_SZ) + ((blockDim.x % UPWTS_CLUSTERING_SZ) != 0);
 	}
 
@@ -2775,185 +2783,6 @@ void SNN::clearExtFiringTable_GPU(int netId) {
 	CUDA_CHECK_ERRORS(cudaMemset(runtimeData[netId].extFiringTableEndIdxD2, 0, sizeof(int) * networkConfigs[netId].numGroups));
 }
 
-//void SNN::routeSpikes_GPU() {
-//	int firingTableIdxD2, firingTableIdxD1;
-//	int GtoLOffset;
-//	// ToDo: route spikes using routing table. currently only exchange spikes between GPU0 and GPU1
-//	// GPU0 -> GPU1
-//	if (!groupPartitionLists[0].empty() && !groupPartitionLists[1].empty()) {
-//		checkAndSetGPUDevice(0);
-//		CUDA_CHECK_ERRORS( cudaMemcpy(managerRuntimeData.extFiringTableEndIdxD2, runtimeData[0].extFiringTableEndIdxD2, sizeof(int) * networkConfigs[0].numGroups, cudaMemcpyDeviceToHost));
-//		CUDA_CHECK_ERRORS( cudaMemcpy(managerRuntimeData.extFiringTableEndIdxD1, runtimeData[0].extFiringTableEndIdxD1, sizeof(int) * networkConfigs[0].numGroups, cudaMemcpyDeviceToHost));
-//		CUDA_CHECK_ERRORS( cudaMemcpy(managerRuntimeData.extFiringTableD2, runtimeData[0].extFiringTableD2, sizeof(int*) * networkConfigs[0].numGroups, cudaMemcpyDeviceToHost));
-//		CUDA_CHECK_ERRORS( cudaMemcpy(managerRuntimeData.extFiringTableD1, runtimeData[0].extFiringTableD1, sizeof(int*) * networkConfigs[0].numGroups, cudaMemcpyDeviceToHost));
-//		//KERNEL_DEBUG("GPU0 D1ex:%d/D2ex:%d", managerRuntimeData.extFiringTableEndIdxD1[0], managerRuntimeData.extFiringTableEndIdxD2[0]);
-//
-//		checkAndSetGPUDevice(1);
-//		CUDA_CHECK_ERRORS( cudaMemcpyFromSymbol(managerRuntimeData.timeTableD2, timeTableD2GPU, sizeof(int)*(1000+glbNetworkConfig.maxDelay+1), 0, cudaMemcpyDeviceToHost));
-//		CUDA_CHECK_ERRORS( cudaMemcpyFromSymbol(managerRuntimeData.timeTableD1, timeTableD1GPU, sizeof(int)*(1000+glbNetworkConfig.maxDelay+1), 0, cudaMemcpyDeviceToHost));
-//		firingTableIdxD2 = managerRuntimeData.timeTableD2[simTimeMs + glbNetworkConfig.maxDelay + 1];
-//		firingTableIdxD1 = managerRuntimeData.timeTableD1[simTimeMs + glbNetworkConfig.maxDelay + 1];
-//		//KERNEL_DEBUG("GPU1 D1:%d/D2:%d", firingTableIdxD1, firingTableIdxD2);
-//
-//		for (int lGrpId = 0; lGrpId < networkConfigs[0].numGroups; lGrpId++) {
-//			if (groupConfigs[0][lGrpId].hasExternalConnect && managerRuntimeData.extFiringTableEndIdxD2[lGrpId] > 0) {
-//				CUDA_CHECK_ERRORS( cudaMemcpyPeer(runtimeData[1].firingTableD2 + firingTableIdxD2, 1,
-//												  managerRuntimeData.extFiringTableD2[lGrpId], 0,
-//												  sizeof(int) * managerRuntimeData.extFiringTableEndIdxD2[lGrpId]));
-//
-//				for (std::list<GroupConfigMD>::iterator grpIt = groupPartitionLists[1].begin(); grpIt != groupPartitionLists[1].end(); grpIt++) {
-//					if (grpIt->gGrpId == groupConfigs[0][lGrpId].gGrpId)
-//						GtoLOffset = grpIt->GtoLOffset;
-//				}
-//
-//				kernel_convertExtSpikesD2<<<NUM_BLOCKS, NUM_THREADS>>>(firingTableIdxD2,
-//																	   firingTableIdxD2 + managerRuntimeData.extFiringTableEndIdxD2[lGrpId],
-//																	   GtoLOffset); // [StartIdx, EndIdx)
-//				firingTableIdxD2 += managerRuntimeData.extFiringTableEndIdxD2[lGrpId];
-//			}
-//
-//			if (groupConfigs[0][lGrpId].hasExternalConnect && managerRuntimeData.extFiringTableEndIdxD1[lGrpId] > 0) {
-//				CUDA_CHECK_ERRORS( cudaMemcpyPeer(runtimeData[1].firingTableD1 + firingTableIdxD1, 1,
-//												  managerRuntimeData.extFiringTableD1[lGrpId], 0,
-//												  sizeof(int) * managerRuntimeData.extFiringTableEndIdxD1[lGrpId]));
-//
-//				for (std::list<GroupConfigMD>::iterator grpIt = groupPartitionLists[1].begin(); grpIt != groupPartitionLists[1].end(); grpIt++) {
-//					if (grpIt->gGrpId == groupConfigs[0][lGrpId].gGrpId)
-//						GtoLOffset = grpIt->GtoLOffset;
-//				}
-//
-//				kernel_convertExtSpikesD1<<<NUM_BLOCKS, NUM_THREADS>>>(firingTableIdxD1,
-//																	   firingTableIdxD1 + managerRuntimeData.extFiringTableEndIdxD1[lGrpId],
-//																	   GtoLOffset); // [StartIdx, EndIdx)
-//				firingTableIdxD1 += managerRuntimeData.extFiringTableEndIdxD1[lGrpId];
-//
-//			}
-//			//KERNEL_DEBUG("GPU1 New D1:%d/D2:%d", firingTableIdxD1, firingTableIdxD2);
-//		}
-//		managerRuntimeData.timeTableD2[simTimeMs + glbNetworkConfig.maxDelay + 1] = firingTableIdxD2;
-//		managerRuntimeData.timeTableD1[simTimeMs + glbNetworkConfig.maxDelay + 1] = firingTableIdxD1;
-//		CUDA_CHECK_ERRORS( cudaMemcpyToSymbol(timeTableD2GPU, managerRuntimeData.timeTableD2, sizeof(int)*(1000+glbNetworkConfig.maxDelay+1), 0, cudaMemcpyHostToDevice));
-//		CUDA_CHECK_ERRORS( cudaMemcpyToSymbol(timeTableD1GPU, managerRuntimeData.timeTableD1, sizeof(int)*(1000+glbNetworkConfig.maxDelay+1), 0, cudaMemcpyHostToDevice));
-//	}
-//
-//	// GPU1 -> GPU0
-//	if (!groupPartitionLists[1].empty() && !groupPartitionLists[0].empty()) {
-//		checkAndSetGPUDevice(1);
-//		CUDA_CHECK_ERRORS( cudaMemcpy(managerRuntimeData.extFiringTableEndIdxD2, runtimeData[1].extFiringTableEndIdxD2, sizeof(int) * networkConfigs[1].numGroups, cudaMemcpyDeviceToHost));
-//		CUDA_CHECK_ERRORS( cudaMemcpy(managerRuntimeData.extFiringTableEndIdxD1, runtimeData[1].extFiringTableEndIdxD1, sizeof(int) * networkConfigs[1].numGroups, cudaMemcpyDeviceToHost));
-//		CUDA_CHECK_ERRORS( cudaMemcpy(managerRuntimeData.extFiringTableD2, runtimeData[1].extFiringTableD2, sizeof(int*) * networkConfigs[1].numGroups, cudaMemcpyDeviceToHost));
-//		CUDA_CHECK_ERRORS( cudaMemcpy(managerRuntimeData.extFiringTableD1, runtimeData[1].extFiringTableD1, sizeof(int*) * networkConfigs[1].numGroups, cudaMemcpyDeviceToHost));
-//		//KERNEL_DEBUG("GPU1 D1ex:%d/D2ex:%d", managerRuntimeData.extFiringTableEndIdxD1[0], managerRuntimeData.extFiringTableEndIdxD2[0]);
-//
-//		checkAndSetGPUDevice(0);
-//		CUDA_CHECK_ERRORS( cudaMemcpyFromSymbol(managerRuntimeData.timeTableD2, timeTableD2GPU, sizeof(int)*(1000+glbNetworkConfig.maxDelay+1), 0, cudaMemcpyDeviceToHost));
-//		CUDA_CHECK_ERRORS( cudaMemcpyFromSymbol(managerRuntimeData.timeTableD1, timeTableD1GPU, sizeof(int)*(1000+glbNetworkConfig.maxDelay+1), 0, cudaMemcpyDeviceToHost));
-//		firingTableIdxD2 = managerRuntimeData.timeTableD2[simTimeMs + glbNetworkConfig.maxDelay + 1];
-//		firingTableIdxD1 = managerRuntimeData.timeTableD1[simTimeMs + glbNetworkConfig.maxDelay + 1];
-//		//KERNEL_DEBUG("GPU0 D1:%d/D2:%d", firingTableIdxD1, firingTableIdxD2);
-//
-//		for (int lGrpId = 0; lGrpId < networkConfigs[1].numGroups; lGrpId++) {
-//			if (groupConfigs[1][lGrpId].hasExternalConnect && managerRuntimeData.extFiringTableEndIdxD2[lGrpId] > 0) {
-//				CUDA_CHECK_ERRORS( cudaMemcpyPeer(runtimeData[0].firingTableD2 + firingTableIdxD2, 0,
-//												  managerRuntimeData.extFiringTableD2[lGrpId], 1,
-//												  sizeof(int) * managerRuntimeData.extFiringTableEndIdxD2[lGrpId]));
-//
-//				for (std::list<GroupConfigMD>::iterator grpIt = groupPartitionLists[0].begin(); grpIt != groupPartitionLists[0].end(); grpIt++) {
-//					if (grpIt->gGrpId == groupConfigs[1][lGrpId].gGrpId)
-//						GtoLOffset = grpIt->GtoLOffset;
-//				}
-//			
-//				kernel_convertExtSpikesD2<<<NUM_BLOCKS, NUM_THREADS>>>(firingTableIdxD2,
-//																	   firingTableIdxD2 + managerRuntimeData.extFiringTableEndIdxD2[lGrpId],
-//																	   GtoLOffset); // [StartIdx, EndIdx)
-//				firingTableIdxD2 += managerRuntimeData.extFiringTableEndIdxD2[lGrpId];
-//			}
-//
-//			if (groupConfigs[1][lGrpId].hasExternalConnect && managerRuntimeData.extFiringTableEndIdxD1[lGrpId] > 0) {
-//				CUDA_CHECK_ERRORS( cudaMemcpyPeer(runtimeData[0].firingTableD1 + firingTableIdxD1, 0,
-//												  managerRuntimeData.extFiringTableD1[lGrpId], 1,
-//												  sizeof(int) * managerRuntimeData.extFiringTableEndIdxD1[lGrpId]));
-//
-//				for (std::list<GroupConfigMD>::iterator grpIt = groupPartitionLists[0].begin(); grpIt != groupPartitionLists[0].end(); grpIt++) {
-//					if (grpIt->gGrpId == groupConfigs[1][lGrpId].gGrpId)
-//						GtoLOffset = grpIt->GtoLOffset;
-//				}
-//			
-//				kernel_convertExtSpikesD1<<<NUM_BLOCKS, NUM_THREADS>>>(firingTableIdxD1,
-//																	   firingTableIdxD1 + managerRuntimeData.extFiringTableEndIdxD1[lGrpId],
-//																	   GtoLOffset); // [StartIdx, EndIdx)
-//				firingTableIdxD1 += managerRuntimeData.extFiringTableEndIdxD1[lGrpId];
-//			}
-//			//KERNEL_DEBUG("GPU0 New D1:%d/D2:%d", firingTableIdxD1, firingTableIdxD2);
-//		}
-//		managerRuntimeData.timeTableD2[simTimeMs + glbNetworkConfig.maxDelay + 1] = firingTableIdxD2;
-//		managerRuntimeData.timeTableD1[simTimeMs + glbNetworkConfig.maxDelay + 1] = firingTableIdxD1;
-//		CUDA_CHECK_ERRORS( cudaMemcpyToSymbol(timeTableD2GPU, managerRuntimeData.timeTableD2, sizeof(int)*(1000+glbNetworkConfig.maxDelay+1), 0, cudaMemcpyHostToDevice));
-//		CUDA_CHECK_ERRORS( cudaMemcpyToSymbol(timeTableD1GPU, managerRuntimeData.timeTableD1, sizeof(int)*(1000+glbNetworkConfig.maxDelay+1), 0, cudaMemcpyHostToDevice));
-//	}
-//	
-//
-//	for (std::list<RoutingTableEntry>::iterator rteItr = spikeRoutingTable.begin(); rteItr != spikeRoutingTable.end(); rteItr++) {
-//		int srcNetId = rteItr->srcNetId;
-//		int destNetId = rteItr->destNetId;
-//		assert(srcNetId < CPU_RUNTIME_BASE);
-//		assert(destNetId < CPU_RUNTIME_BASE);
-//		checkAndSetGPUDevice(srcNetId);
-//		CUDA_CHECK_ERRORS( cudaMemcpy(managerRuntimeData.extFiringTableEndIdxD2, runtimeData[srcNetId].extFiringTableEndIdxD2, sizeof(int) * networkConfigs[srcNetId].numGroups, cudaMemcpyDeviceToHost));
-//		CUDA_CHECK_ERRORS( cudaMemcpy(managerRuntimeData.extFiringTableEndIdxD1, runtimeData[srcNetId].extFiringTableEndIdxD1, sizeof(int) * networkConfigs[srcNetId].numGroups, cudaMemcpyDeviceToHost));
-//		CUDA_CHECK_ERRORS( cudaMemcpy(managerRuntimeData.extFiringTableD2, runtimeData[srcNetId].extFiringTableD2, sizeof(int*) * networkConfigs[srcNetId].numGroups, cudaMemcpyDeviceToHost));
-//		CUDA_CHECK_ERRORS( cudaMemcpy(managerRuntimeData.extFiringTableD1, runtimeData[srcNetId].extFiringTableD1, sizeof(int*) * networkConfigs[srcNetId].numGroups, cudaMemcpyDeviceToHost));
-//		//KERNEL_DEBUG("GPU0 D1ex:%d/D2ex:%d", managerRuntimeData.extFiringTableEndIdxD1[0], managerRuntimeData.extFiringTableEndIdxD2[0]);
-//
-//		checkAndSetGPUDevice(destNetId);
-//		CUDA_CHECK_ERRORS( cudaMemcpyFromSymbol(managerRuntimeData.timeTableD2, timeTableD2GPU, sizeof(int)*(1000+glbNetworkConfig.maxDelay+1), 0, cudaMemcpyDeviceToHost));
-//		CUDA_CHECK_ERRORS( cudaMemcpyFromSymbol(managerRuntimeData.timeTableD1, timeTableD1GPU, sizeof(int)*(1000+glbNetworkConfig.maxDelay+1), 0, cudaMemcpyDeviceToHost));
-//		firingTableIdxD2 = managerRuntimeData.timeTableD2[simTimeMs + glbNetworkConfig.maxDelay + 1];
-//		firingTableIdxD1 = managerRuntimeData.timeTableD1[simTimeMs + glbNetworkConfig.maxDelay + 1];
-//		//KERNEL_DEBUG("GPU1 D1:%d/D2:%d", firingTableIdxD1, firingTableIdxD2);
-//
-//		for (int lGrpId = 0; lGrpId < networkConfigs[srcNetId].numGroups; lGrpId++) {
-//			if (groupConfigs[srcNetId][lGrpId].hasExternalConnect && managerRuntimeData.extFiringTableEndIdxD2[lGrpId] > 0) {
-//				CUDA_CHECK_ERRORS( cudaMemcpyPeer(runtimeData[destNetId].firingTableD2 + firingTableIdxD2, destNetId,
-//												  managerRuntimeData.extFiringTableD2[lGrpId], srcNetId,
-//												  sizeof(int) * managerRuntimeData.extFiringTableEndIdxD2[lGrpId]));
-//
-//				for (std::list<GroupConfigMD>::iterator grpIt = groupPartitionLists[destNetId].begin(); grpIt != groupPartitionLists[destNetId].end(); grpIt++) {
-//					if (grpIt->gGrpId == groupConfigs[srcNetId][lGrpId].gGrpId)
-//						GtoLOffset = grpIt->GtoLOffset;
-//				}
-//
-//				kernel_convertExtSpikesD2<<<NUM_BLOCKS, NUM_THREADS>>>(firingTableIdxD2,
-//																	   firingTableIdxD2 + managerRuntimeData.extFiringTableEndIdxD2[lGrpId],
-//																	   GtoLOffset); // [StartIdx, EndIdx)
-//				firingTableIdxD2 += managerRuntimeData.extFiringTableEndIdxD2[lGrpId];
-//			}
-//
-//			if (groupConfigs[srcNetId][lGrpId].hasExternalConnect && managerRuntimeData.extFiringTableEndIdxD1[lGrpId] > 0) {
-//				CUDA_CHECK_ERRORS( cudaMemcpyPeer(runtimeData[destNetId].firingTableD1 + firingTableIdxD1, destNetId,
-//												  managerRuntimeData.extFiringTableD1[lGrpId], srcNetId,
-//												  sizeof(int) * managerRuntimeData.extFiringTableEndIdxD1[lGrpId]));
-//
-//				for (std::list<GroupConfigMD>::iterator grpIt = groupPartitionLists[destNetId].begin(); grpIt != groupPartitionLists[destNetId].end(); grpIt++) {
-//					if (grpIt->gGrpId == groupConfigs[srcNetId][lGrpId].gGrpId)
-//						GtoLOffset = grpIt->GtoLOffset;
-//				}
-//
-//				kernel_convertExtSpikesD1<<<NUM_BLOCKS, NUM_THREADS>>>(firingTableIdxD1,
-//																	   firingTableIdxD1 + managerRuntimeData.extFiringTableEndIdxD1[lGrpId],
-//																	   GtoLOffset); // [StartIdx, EndIdx)
-//				firingTableIdxD1 += managerRuntimeData.extFiringTableEndIdxD1[lGrpId];
-//
-//			}
-//			//KERNEL_DEBUG("GPU1 New D1:%d/D2:%d", firingTableIdxD1, firingTableIdxD2);
-//		}
-//		managerRuntimeData.timeTableD2[simTimeMs + glbNetworkConfig.maxDelay + 1] = firingTableIdxD2;
-//		managerRuntimeData.timeTableD1[simTimeMs + glbNetworkConfig.maxDelay + 1] = firingTableIdxD1;
-//		CUDA_CHECK_ERRORS( cudaMemcpyToSymbol(timeTableD2GPU, managerRuntimeData.timeTableD2, sizeof(int)*(1000+glbNetworkConfig.maxDelay+1), 0, cudaMemcpyHostToDevice));
-//		CUDA_CHECK_ERRORS( cudaMemcpyToSymbol(timeTableD1GPU, managerRuntimeData.timeTableD1, sizeof(int)*(1000+glbNetworkConfig.maxDelay+1), 0, cudaMemcpyHostToDevice));
-//	}
-//}
-
 /*!
  * \brief This function is called every second by SNN::runNetwork(). It updates the firingTableD1(D2)GPU and
  * timeTableD1(D2)GPU by removing older firing information.
@@ -2983,30 +2812,6 @@ void SNN::updateWeights_GPU(int netId) {
 
 	kernel_updateWeights<<<NUM_BLOCKS, NUM_THREADS>>>();
 }
-
-//__global__ void gpu_resetFiringInformation() {
-//	if(threadIdx.x==0 && blockIdx.x==0) {
-//		for(int i = 0; i < ROUNDED_TIMING_COUNT; i++) {
-//			timeTableD2GPU[i]   = 0;
-//			timeTableD1GPU[i]   = 0;
-//		}
-//		spikeCountD2SecGPU=0;
-//		spikeCountD1SecGPU=0;
-//		secD2fireCntTest=0;
-//		secD1fireCntTest=0;
-//		spikeCountD2GPU=0;
-//		spikeCountD1GPU=0;
-//
-//    //spikeCountAll1Sec=0;//assigned in fetchSpikeTables()
-//	}
-//
-//}
-//
-//void SNN::resetFiringInformation_GPU() {
-//	checkAndSetGPUDevice();
-//
-//	gpu_resetFiringInformation<<<NUM_BLOCKS,NUM_THREADS>>>();
-//}
 
 /*!
  * \brief this function allocates device (GPU) memory sapce and copies external current to it
@@ -3180,20 +2985,6 @@ void SNN::checkAndSetGPUDevice(int netId) {
 	}
 }
 
-// deprecated
-//void SNN::copyWeightsGPU(int nid, int src_grp) {
-//	checkAndSetGPUDevice("copyWeightsGPU");
-//
-//	assert(nid < numNReg);
-//	unsigned int    cumId   =  managerRuntimeData.cumulativePre[nid];
-//	float* synWts  = &(managerRuntimeData.wt[cumId]);
-//	//TODO: NEEDED TO COMMENT THIS FOR CARLSIM 2.1-2.2 FILEMERGE -- KDC
-//	// assert(cumId >= (nid-numNPois));
-//	//assert(cumId < numPreSynapses*networkConfigs[0].numN);
-//
-//	CUDA_CHECK_ERRORS( cudaMemcpy( synWts, &runtimeData[0].wt[cumId], sizeof(float)*managerRuntimeData.Npre[nid], cudaMemcpyDeviceToHost));
-//}
-
 // Allocates required memory and then initialize the GPU
 void SNN::allocateSNN_GPU(int netId) {
 	checkAndSetGPUDevice(netId);
@@ -3224,7 +3015,7 @@ void SNN::allocateSNN_GPU(int netId) {
 	KERNEL_INFO("Random Gen:\t\t%2.3f MB\t%2.3f MB\t%2.3f MB",(float)(previous-avail)/toMB, (float)((total-avail)/toMB),(float)(avail/toMB));
 	previous=avail;
 
-	// initialize runtimeData[0].neuronAllocation, __device__ loadBufferCount, loadBufferSize
+	// initialize runtimeData[0].neuronAllocation, __device__ int loadCount
 	allocateStaticLoad(netId, NUM_THREADS);
 
 	// this table is useful for quick evaluation of the position of fired neuron

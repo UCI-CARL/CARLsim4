@@ -771,7 +771,7 @@ private:
 
 #ifndef __NO_CUDA__
 	// GPU backend: utility function
-	int  allocateStaticLoad(int netId, int bufSize);
+	int  allocateStaticLoad(int netId, int loadSize);
 	void checkAndSetGPUDevice(int netId);
 	void checkDestSrcPtrs(RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind, bool allocateMem, int grpId, int destOffset);
 	int configGPUDevice();
