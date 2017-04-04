@@ -85,7 +85,11 @@ SNN::~SNN() {
 		deleteObjects();
 }
 
-// synaptic projections from a pre-synaptic group to a post-synaptic group - declared in snn.h
+// ************************************************************************************************************ //
+// PUBLIC METHODS: SETTING UP A SIMULATION
+// ************************************************************************************************************ //
+
+// make from each neuron in grpId1 to 'numPostSynapses' neurons in grpId2
 short int SNN::connect(int grpId1, int grpId2, const std::string& _type, float initWt, float maxWt, float prob,
 						uint8_t minDelay, uint8_t maxDelay, RadiusRF radius,
 						float _mulSynFast, float _mulSynSlow, bool synWtType) {
@@ -576,9 +580,9 @@ void SNN::setWeightAndWeightChangeUpdate(UpdateInterval wtANDwtChangeUpdateInter
 	KERNEL_INFO("STDP scale factor = %1.3f, wtChangeDecay = %1.3f", stdpScaleFactor_, wtChangeDecay_);
 }
 
-/// ************************************************************************************************************ ///
-/// PUBLIC METHODS: GENERATE A SIMULATION
-/// ************************************************************************************************************ ///
+// ************************************************************************************************************ //
+// PUBLIC METHODS: GENERATE A SIMULATION
+// ************************************************************************************************************ //
 
 // reorganize the network and do the necessary allocation
 // of all variable for carrying out the simulation..
@@ -600,9 +604,9 @@ void SNN::setupNetwork() {
 	}
 }
 
-/// ************************************************************************************************************ ///
-/// PUBLIC METHODS: RUNNING A SIMULATION
-/// ************************************************************************************************************ ///
+// ************************************************************************************************************ //
+// PUBLIC METHODS: RUNNING A SIMULATION
+// ************************************************************************************************************ //
 
 int SNN::runNetwork(int _nsec, int _nmsec, bool printRunSummary) {
 	assert(_nmsec >= 0 && _nmsec < 1000);
@@ -713,9 +717,9 @@ int SNN::runNetwork(int _nsec, int _nmsec, bool printRunSummary) {
 
 
 
-/// ************************************************************************************************************ ///
-/// PUBLIC METHODS: INTERACTING WITH A SIMULATION
-/// ************************************************************************************************************ ///
+// ************************************************************************************************************ //
+// PUBLIC METHODS: INTERACTING WITH A SIMULATION
+// ************************************************************************************************************ //
 
 // adds a bias to every weight in the connection
 void SNN::biasWeights(short int connId, float bias, bool updateWeightRange) {

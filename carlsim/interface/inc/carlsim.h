@@ -441,26 +441,40 @@ public:
 	 */
 	void setHomeoBaseFiringRate(int grpId, float baseFiring, float baseFiringSD=0.0f);
 
-	/*!
-	 * \brief Sets Izhikevich params a, b, c, and d with as mean +- standard deviation
+	/** Sets Izhikevich params a, b, c, and d with mean +- standard deviation.
+	 * \brief Sets Izhikevich params a, b, c, and d with mean +- standard deviation.
 	 *
-	 * \TODO finish docu
 	 * \STATE ::CONFIG_STATE
+	 * \param grpId the ID of the group whose izhikevich neuron parameters are set
+	 * \param izh_a  the mean value of izhikevich parameter a
+	 * \param izh_a_sd the standard deviation value of izhikevich parameter a
+	 * \param izh_b  the mean value of izhikevich parameter b
+	 * \param izh_b_sd the standard deviation value of izhikevich parameter b
+	 * \param izh_c  the mean value of izhikevich parameter c
+	 * \param izh_c_sd the standard deviation value of izhikevich parameter c
+	 * \param izh_d  the mean value of izhikevich parameter d
+	 * \param izh_d_sd the standard deviation value of izhikevich parameter d
 	 */
 	void setNeuronParameters(int grpId, float izh_a, float izh_a_sd, float izh_b, float izh_b_sd,
 							 float izh_c, float izh_c_sd, float izh_d, float izh_d_sd);
 
-	/*!
+	/** Sets Izhikevich params a, b, c, and d of a neuron group.
 	 * \brief Sets Izhikevich params a, b, c, and d of a neuron group.
 	 *
-	 * \TODO finish docu
 	 * \STATE ::CONFIG_STATE
+	 * \param grpId the ID of the group whose izhikevich neuron parameters are set
+	 * \param izh_a  the mean value of izhikevich parameter a
+	 * \param izh_b  the mean value of izhikevich parameter b
+	 * \param izh_c  the mean value of izhikevich parameter c
+	 * \param izh_d  the mean value of izhikevich parameter d
+	 * 
 	 */
 	void setNeuronParameters(int grpId, float izh_a, float izh_b, float izh_c, float izh_d);
 
-	/*!
+	/** Sets baseline concentration and decay time constant of neuromodulators (DP, 5HT, ACh, NE) for a neuron
+	 *  group.
 	 * \brief Sets baseline concentration and decay time constant of neuromodulators (DP, 5HT, ACh, NE) for a neuron
-	 * group.
+	 *  group.
 	 *
 	 * \STATE ::CONFIG_STATE
 	 * \param[in] grpId the symbolic name of a group
