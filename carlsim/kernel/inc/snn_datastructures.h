@@ -479,7 +479,6 @@ typedef struct RuntimeData_s {
 	float* randNum;		//!< firing random number. max value is 10,000
 #ifndef __NO_CUDA__
 	int2* neuronAllocation;		//!< .x: [31:0] index of the first neuron, .y: [31:16] number of neurons, [15:0] group id
-	int3* groupIdInfo;			//!< .x , .y: the start and end index of neurons in a group, .z: gourd id, used for group Id calculations
 #endif
 
 	int*  nSpikeCnt;
