@@ -892,7 +892,7 @@ void SNN::scaleWeights(short int connId, float scale, bool updateWeightRange) {
 	}
 }
 
-// FIXME: distinguish the function call at CONFIG_STATE and SETUP_STATE, where groupConfigs[0][] might not be available
+// TODO: distinguish the function call at CONFIG_STATE and SETUP_STATE, where groupConfigs[0][] might not be available
 // or groupConfigMap is not sync with groupConfigs[0][]
 GroupMonitor* SNN::setGroupMonitor(int gGrpId, FILE* fid) {
 	int netId = groupConfigMDMap[gGrpId].netId;
@@ -929,7 +929,7 @@ GroupMonitor* SNN::setGroupMonitor(int gGrpId, FILE* fid) {
 	return grpMonObj;
 }
 
-// FIXME: distinguish the function call at CONFIG_STATE and SETUP_STATE, where group(connect)Config[] might not be available
+// TODO: distinguish the function call at CONFIG_STATE and SETUP_STATE, where group(connect)Config[] might not be available
 // or group(connect)ConfigMap is not sync with group(connect)Config[]
 ConnectionMonitor* SNN::setConnectionMonitor(int grpIdPre, int grpIdPost, FILE* fid) {
 	// find connection based on pre-post pair
@@ -977,7 +977,7 @@ ConnectionMonitor* SNN::setConnectionMonitor(int grpIdPre, int grpIdPost, FILE* 
 	return connMonObj;
 }
 
-// FIXME: distinguish the function call at CONFIG_STATE and SETUP_STATE, where groupConfigs[0][] might not be available
+// TODO: distinguish the function call at CONFIG_STATE and SETUP_STATE, where groupConfigs[0][] might not be available
 // or groupConfigMap is not sync with groupConfigs[0][]
 // sets up a spike generator
 void SNN::setSpikeGenerator(int gGrpId, SpikeGeneratorCore* spikeGenFunc) {
@@ -1027,7 +1027,7 @@ SpikeMonitor* SNN::setSpikeMonitor(int gGrpId, FILE* fid) {
 	}
 }
 
-// FIXME: distinguish the function call at CONFIG_STATE and RUN_STATE, where groupConfigs[0][] might not be available
+// TODO: distinguish the function call at CONFIG_STATE and RUN_STATE, where groupConfigs[0][] might not be available
 // or groupConfigMap is not sync with groupConfigs[0][]
 // assigns spike rate to group
 void SNN::setSpikeRate(int gGrpId, PoissonRate* ratePtr, int refPeriod) {
@@ -1224,7 +1224,7 @@ void SNN::saveSimulation(FILE* fid, bool saveSynapseInfo) {
 	//	copyWeightState(&managerRuntimeData, &runtimeData[0], cudaMemcpyDeviceToHost, false);
 	//// +++++ WRITE SYNAPSE INFO +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
-	//// \FIXME: replace with faster version
+	//// \TODO: replace with faster version
 	//if (saveSynapseInfo) {
 	//	for (int i = 0; i < numN; i++) {
 	//		unsigned int offset = managerRuntimeData.cumulativePost[i];

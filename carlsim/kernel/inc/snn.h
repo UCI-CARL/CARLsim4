@@ -383,7 +383,7 @@ public:
 
 	// +++++ PUBLIC METHODS: INTERACTING WITH A SIMULATION ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
-	/**This method adds a constant bias to the weight of every synapse in the connection specified by connId. The bias
+	/** This method adds a constant bias to the weight of every synapse in the connection specified by connId. The bias
 	 * can be positive or negative.
 	 * If a bias is specified that makes any weight+bias lie outside the range [minWt,maxWt] of this connection, the
 	 * range will be updated accordingly if the flag updateWeightRange is set to true.
@@ -397,11 +397,11 @@ public:
 	 * \param bias              the bias value to add to every synapse
 	 * \param updateWeightRange a flag specifying what to do when the specified weight+bias lies outside the range
 	 *                              [minWt,maxWt]. Set to true to update the range accordingly. Set to false to adjust
-	 *                              the weight to be either minWt or maxWt.
+	 *                              the weight to be either minWt or maxWt. Default: false.
 	 *
-	 * \note A weight cannot drop below zero, no matter what.
 	 * \see setWeight
 	 * \see scaleWeights
+	 * \note A weight cannot drop below zero, no matter what.
 	 */
 	void biasWeights(short int connId, float bias, bool updateWeightRange = false);
 
@@ -423,76 +423,217 @@ public:
 	 */
 	void loadSimulation(FILE* fid);
 
-	// multiplies every weight with a scaling factor
+	/** This method scales the weight of every synapse in the connection specified by connId with a scaling factor.
+	 *  The scaling factor cannot be negative.
+	 *  If a scaling factor is specified that makes any weight*scale lie outside the range [minWt,maxWt] of this
+	 *  connection, the range will be updated accordingly if the flag updateWeightRange is set to true.
+	 *  If the flag is set to false, then the specified weight value will be corrected to lie on the boundary (either
+	 *  minWt or maxWt).
+	 *
+	 * \brief Multiplies the weight of every synapse in the connection with a scaling factor
+	 *
+	 * \STATE ::SETUP_STATE, ::RUN_STATE
+	 * \param connId            the connection ID to manipulate
+	 * \param scale             the scaling factor to apply to every synapse (cannot be negative)
+	 * \param updateWeightRange a flag specifying what to do when the specified weight*scale lies outside the range
+	 *                              [minWt,maxWt]. Set to true to update the range accordingly. Set to false to adjust
+	 *                              the weight to be either minWt or maxWt. Default: false.
+	 *
+	 * \note A weight cannot drop below zero, no matter what.
+	 * \see setWeight
+	 * \see biasWeights
+	 */
 	void scaleWeights(short int connId, float scale, bool updateWeightRange = false);
 
-	//! sets up a group monitor registered with a callback to process the spikes.
-	/*!
-	 * \param[in] grpId ID of the neuron group
-	 * \param[in] fid file pointer for recording group status (neuromodulators)
+	/** Sets up a group monitor registered with a callback to process the spikes.
+	 *  The method first checks if the group already has a monitor and if it does not, then
+	 *  creates a new GroupMonitorCore object and initialize analysis components. If file pointer exists, it has already been fopened
+	 *  this will also write the header section of the group status file. It also 
+	 *  creates a new GroupMonitor object for the user-interface, which later will be deallocated by
+	 *  SNN::deleteObjects.
+	 *
+	 * \param grpId ID of the neuron group
+	 * \param fid file pointer for recording group status (neuromodulators)
+	 * \return A GroupMonitor object for the group
 	 */
 	GroupMonitor* setGroupMonitor(int grpId, FILE* fid);
 
-	//! sets up a network monitor registered with a callback to process the spikes.
-	/*!
-	 * \param[in] grpIdPre ID of the pre-synaptic neuron group
-	 * \param[in] grpIdPost ID of the post-synaptic neuron group
-	 * \param[in] connectionMon ConnectionMonitorCore class
+	/** To retrieve connection status, a connection-monitoring callback mechanism is used. This mechanism allows the user
+	 *  to monitor connection status between groups. Connection monitors are registered for two groups (i.e., pre- and
+	 *  post- synaptic groups) and are called automatically by the simulator every second.
+	 *
+	 *  CARLsim supports two different recording mechanisms: Recording to a weight file (binary) and recording to a
+	 *  ConnectionMonitor object. The former is useful for off-line analysis of synaptic weights (e.g., using
+	 *  \ref ch9_matlab_oat).
+	 *  The latter is useful to calculate different weight metrics and statistics on-line, such as the percentage of
+	 *  weight values that fall in a certain weight range, or the number of weights that have been changed since the
+	 *  last snapshot.
+	 *
+	 *  The function returns a pointer to a ConnectionMonitor object, which can be used to calculate weight changes
+	 *  and other connection stats.
+	 *  
+	 * \brief Sets a connection monitor for connections between two groups, custom ConnectionMonitor class
+	 *
+	 * \param grpIdPre 		the pre-synaptic group ID
+	 * \param grpIdPost 	the post-synaptic group ID
+	 * \param fname         file pointer of the binary to be created
+	 * \return a new ConnectionMonitor object for the user-interface
 	 */
+
 	ConnectionMonitor* setConnectionMonitor(int grpIdPre, int grpIdPost, FILE* fid);
 
-	//! injects current (mA) into the soma of every neuron in the group
+	/** This method injects current, specified on a per-neuron basis, into the soma of each neuron in the group, at
+	 * each timestep of the simulation. current is a float vector of current amounts (mA), one element per neuron in
+	 * the group.
+	 *
+	 * To input different currents into a neuron over time, the idea is to run short periods of runNetwork and
+	 * subsequently calling setExternalCurrent again with updated current values.
+	 *
+	 * \brief Sets the amount of current (mA) to inject into a group
+	 *
+	 * \STATE ::SETUP_STATE, ::RUN_STATE
+	 * \param grpId    the group ID
+	 * \param current  a float vector of current amounts (mA), one value per neuron in the group
+	 *
+	 * \note This method cannot be applied to SpikeGenerator groups.
+	 *
+	 * \see setSpikeRate
+	 * \see setSpikeGenerator
+	 */
 	void setExternalCurrent(int grpId, const std::vector<float>& current);
 
-	//! sets up a spike generator
+	/** A custom SpikeGenerator object can be used to allow for more fine-grained control overs spike generation by
+	 * specifying individual spike times for each neuron in a group.
+	 *
+	 * In order to specify spike times, a new class must be defined first that derives from the SpikeGenerator class
+	 * and implements the virtual method SpikeGenerator::nextSpikeTime.
+	 * Then, in order for a custom SpikeGenerator to be associated with a SpikeGenerator group,
+	 *
+	 * \brief Associates a SpikeGenerator object with a group for fine grained specificaion of spike times for individual neurons
+	 *
+	 * \param grpId           the group with which to associate a SpikeGenerator object
+	 * \param spikeGenFunc pointer to a custom SpikeGenerator object
+	 */
 	void setSpikeGenerator(int grpId, SpikeGeneratorCore* spikeGenFunc);
 
-	//! sets up a spike monitor registered with a callback to process the spikes, there can only be one SpikeMonitor per group
-	/*!
-	 * \param grpId ID of the neuron group
-	 * \param spikeMon (optional) spikeMonitor class
-	 * \return SpikeMonitor* pointer to a SpikeMonitor object
+	/** To retrieve outputs, a spike-monitoring callback mechanism is used. This mechanism allows the user to calculate
+	 * basic statistics, store spike trains, or perform more complicated output monitoring. Spike monitors are
+	 * registered for a group and are called automatically by the simulator every second. Similar to an address event
+	 * representation (AER), the spike monitor indicates which neurons spiked by using the neuron ID within a group
+	 * (0-indexed) and the time of the spike. Only one spike monitor is allowed per group.
+	 *
+	 * CARLsim supports two different recording mechanisms: Recording to a spike file (binary) and recording to a
+	 * SpikeMonitor object. The former is useful for off-line analysis of activity (e.g., using \ref ch9_matlab_oat).
+	 * The latter is useful to calculate different spike metrics and statistics on-line, such as mean firing rate and
+	 * standard deviation, or the number of neurons whose firing rate lies in a certain interval.
+	 *
+	 * The function returns a pointer to a SpikeMonitor object, which can be used to calculate spike statistics (such
+	 * group firing rate, number of silent neurons, etc.) or retrieve all spikes from a particular time window.
+	 *
+	 * If you call setSpikeMonitor twice on the same group, the same SpikeMonitor pointer will be returned, and the
+	 * name of the spike file will be updated. This is the same as calling SpikeMonitor::setLogFile directly, and
+	 * allows you to redirect the spike file stream mid-simulation (see \ref ch7s1s3_redirecting_file_streams).
+	 *
+	 * \brief Sets a Spike Monitor for a groups, prints spikes to binary file
+	 *
+	 * \param gid 		the group ID
+	 * \param fid 		file pointer to the binary to be created
+	 * \return   SpikeMonitor*	pointer to a SpikeMonitor object, which can be used to calculate spike statistics
+	 *                          (such as group firing rate, number of silent neurons, etc.) or retrieve all spikes in
+	 * 							AER format
+	 *
+	 * \note Only one SpikeMonitor is allowed per group.
 	 */
 	SpikeMonitor* setSpikeMonitor(int gid, FILE* fid);
 
-	//!Sets the Poisson spike rate for a group. For information on how to set up spikeRate, see Section Poisson spike generators in the Tutorial.
-	/*!Input arguments:
-	 * \param grpId ID of the neuron group
-	 * \param spikeRate pointer to a PoissonRate instance
-	 * \param refPeriod (optional) refractive period,  default = 1
+	/** Sets firing rate and refractory period for a SpikeGenerator group
+	 *
+	 * \brief Sets a spike rate of a SpikeGenerator group
+	 *
+	 * \STATE ::SETUP_STATE, ::RUN_STATE
+	 * \param grpId      SpikeGenerator group ID
+	 * \param spikeRate  pointer to PoissonRate object
+	 * \param refPeriod  refactory period (ms)
+	 *
+	 * \note If you allocate the PoissonRate object on the heap, you are responsible for correctly deallocating it.
+	 * \see setSpikeGenerator
 	 */
 	void setSpikeRate(int grpId, PoissonRate* spikeRate, int refPeriod);
 
-	//! sets the weight value of a specific synapse
+	/** This method sets the weight value of the synapse that belongs to connection connId and connects pre-synaptic
+	 * neuron neurIdPre to post-synaptic neuron neurIdPost. Neuron IDs should be zero-indexed, so that the first
+	 * neuron in the group has ID 0.
+	 *
+	 * If a weight value is specified that lies outside the range [minWt,maxWt] of this connection, the range will be
+	 * updated accordingly if the flag updateWeightRange is set to true. If the flag is set to false, then the
+	 * specified weight value will be corrected to lie on the boundary (either minWt or maxWt).
+	 *
+	 * \STATE ::SETUP_STATE, ::RUN_STATE
+	 * \param connId            the connection ID to manipulate
+	 * \param neurIdPre         pre-synaptic neuron ID (zero-indexed)
+	 * \param neurIdPost        post-synaptic neuron ID (zero-indexed)
+	 * \param weight            the weight value to set for this synapse
+	 * \param updateWeightRange a flag specifying what to do when the specified weight lies outside the range
+	 *                              [minWt,maxWt].
+	 */
 	void setWeight(short int connId, int neurIdPre, int neurIdPost, float weight, bool updateWeightRange = false);
 
-	//! enters a testing phase, where all weight updates are disabled
+	/** This function can be used to temporarily disable all weight updates (such as from STDP or homeostasis)
+	 *  in the network. An optional parameter specifies whether the accumulated weight updates so far should be applied to the weights
+	 *  before entering the testing phase.
+	 *
+	 *  \STATE ::SETUP_STATE, ::RUN_STATE
+	 *
+	 * \param shallUpdateWeights   whether to apply the accumulated weight changes before entering the testing phase
+	 * \note Calling this function on a simulation with no plastic synapses will have no effect.
+	 */
 	void startTesting(bool shallUpdateWeights = true);
 
-	//! exits a testing phase, making weight updates possible again
+	/** Exits a testing phase, making weight updates possible again
+	 * \brief Exits a testing phase, making weight updates possible again
+	 */
 	void stopTesting();
 
-	//! polls connection weights
+	/** Polls the specified ConnectionMonitor to record the connection weights it is monitoring
+	 * \brief Polls ConnectionMonitor to record connection weights
+	 * 
+	 * \param connId ConnectionMonitor ID
+	 */
 	void updateConnectionMonitor(short int connId = ALL);
 
-	//! access group status (currently the concentration of neuromodulator)
+	/** Upadates the group status to the groupMonitor object from the runtime buffer since the last
+	 * update time. Usually done in every second, but not mandatory. Currently the concentration of neuromodulator.
+	 *
+	 * \brief Upadates the group status to the groupMonitor object 
+	 * \param grpId Group ID for which status update is sought
+	 *
+	 */
 	void updateGroupMonitor(int grpId = ALL);
 
-	/*!
-	 * \brief copy required spikes from firing buffer to spike buffer
-	 *
-	 * This function is public in SNN, but it should probably not be a public user function in CARLsim.
+	/** This function is public in SNN, but it should probably not be a public user function in CARLsim.
 	 * It is usually called once every 1000ms by the core to update spike binaries and SpikeMonitor objects. In GPU
 	 * mode, it will first copy the firing info to the host. The input argument can either be a specific group ID or
 	 * keyword ALL (for all groups).
 	 * Core and utility functions can call updateSpikeMonitor at any point in time. The function will automatically
 	 * determine the last time it was called, and update SpikeMonitor information only if necessary.
+	 *
+	 * \brief copy required spikes from firing buffer to spike buffer
+	 * \param grpId Group ID for which firing statistic update is sought
 	 */
 	void updateSpikeMonitor(int grpId = ALL);
 
-	//! stores the pre and post synaptic neuron ids with the weight and delay
-	/*
-	 * \param fid file pointer
+	/** The network state consists of all
+	 * the synaptic connections, weights, delays, and whether the connections are plastic or fixed. As an
+	 * option, the user can choose whether or not to save the synaptic weight information (which could be
+	 * a large amount of data) with the saveSynapseInfo argument.
+	 *
+	 * \brief Saves network configuration and simulation information to a file
+	 *
+	 * \STATE ::SETUP_STATE, ::RUN_STATE
+	 * \param fid          file pointer to use for saving simulation data.
+	 * \param saveSynapseInfo   boolean value that determines if the weight values are written to
+	 *                              the data file or not. The weight values are written if the boolean value is true.
+	 * \see SNN::loadSimulation
 	 */
 	void saveSimulation(FILE* fid, bool saveSynapseInfo = false);
 
